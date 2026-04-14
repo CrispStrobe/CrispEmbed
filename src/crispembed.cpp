@@ -62,6 +62,7 @@ struct crispembed_context {
     core_gguf::WeightLoad wl;
     ggml_backend_t backend = nullptr;
     int n_threads = 4;
+    int pool_method = 0;  // 0=mean, 1=cls, 2=last-token
     std::vector<float> last_output;  // reused buffer
 };
 
@@ -98,6 +99,9 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     hp.n_intermediate  = u32("bert.intermediate_size", 1536);
     hp.n_output        = u32("bert.output_dim", hp.n_embd);
     hp.layer_norm_eps  = f32("bert.layer_norm_eps", 1e-12f);
+
+    // Pooling method: 0=mean (default), 1=cls, 2=last-token
+    ctx->pool_method   = u32("bert.pooling_method", 0);
 
     // Load tokenizer vocab from GGUF metadata
     int ki = gguf_find_key(g, "tokenizer.ggml.tokens");
@@ -314,22 +318,42 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
     ggml_tensor * out = ggml_graph_get_tensor(gf, "encoder_out");
     float * out_data = (float *)out->data;
 
-    // Mean pooling over non-padding tokens
-    int n_real = 0;
-    for (int t = 0; t < T; t++) {
-        if (tokens.attn_mask[t]) n_real++;
-    }
-
+    // Pooling — method determined by model metadata or default
     int dim = hp.n_output > 0 ? hp.n_output : H;
     std::vector<float> pooled(dim, 0.0f);
-    if (n_real > 0) {
-        for (int t = 0; t < T; t++) {
-            if (!tokens.attn_mask[t]) continue;
-            for (int h = 0; h < std::min(H, dim); h++) {
-                pooled[h] += out_data[h + t * H];
-            }
+
+    // Check pooling method from model hparams (0=mean, 1=cls, 2=last)
+    int pool_method = ctx->pool_method;  // set during load from metadata
+
+    if (pool_method == 1) {
+        // CLS pooling: take the first token (position 0 = [CLS])
+        for (int h = 0; h < std::min(H, dim); h++) {
+            pooled[h] = out_data[h + 0 * H];  // token 0 = [CLS]
         }
-        for (int h = 0; h < dim; h++) pooled[h] /= n_real;
+    } else if (pool_method == 2) {
+        // Last-token pooling (decoder models)
+        int last_t = 0;
+        for (int t = T - 1; t >= 0; t--) {
+            if (tokens.attn_mask[t]) { last_t = t; break; }
+        }
+        for (int h = 0; h < std::min(H, dim); h++) {
+            pooled[h] = out_data[h + last_t * H];
+        }
+    } else {
+        // Mean pooling (default)
+        int n_real = 0;
+        for (int t = 0; t < T; t++) {
+            if (tokens.attn_mask[t]) n_real++;
+        }
+        if (n_real > 0) {
+            for (int t = 0; t < T; t++) {
+                if (!tokens.attn_mask[t]) continue;
+                for (int h = 0; h < std::min(H, dim); h++) {
+                    pooled[h] += out_data[h + t * H];
+                }
+            }
+            for (int h = 0; h < dim; h++) pooled[h] /= n_real;
+        }
     }
 
     // L2 normalize

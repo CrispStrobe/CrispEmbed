@@ -40,9 +40,9 @@ def main():
     wt = f32 if args.dtype == "f32" else f16
 
     print(f"Loading model: {args.model}")
-    config = AutoConfig.from_pretrained(args.model)
-    model = AutoModel.from_pretrained(args.model)
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
+    model = AutoModel.from_pretrained(args.model, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     model.eval()
     sd = model.state_dict()
 
@@ -61,6 +61,25 @@ def main():
     writer.add_uint32("bert.intermediate_size", config.intermediate_size)
     writer.add_float32("bert.layer_norm_eps", getattr(config, "layer_norm_eps", 1e-12))
     writer.add_uint32("bert.output_dim", config.hidden_size)
+
+    # Detect pooling method from sentence-transformers config
+    pool_method = 0  # default: mean
+    try:
+        from huggingface_hub import hf_hub_download
+        pool_path = hf_hub_download(repo_id=args.model, filename="1_Pooling/config.json")
+        with open(pool_path) as f:
+            pool_cfg = json.load(f)
+        if pool_cfg.get("pooling_mode_cls_token", False):
+            pool_method = 1  # CLS
+            print(f"  pooling: CLS (from 1_Pooling/config.json)")
+        elif pool_cfg.get("pooling_mode_lasttoken", False):
+            pool_method = 2  # last token
+            print(f"  pooling: last-token (from 1_Pooling/config.json)")
+        else:
+            print(f"  pooling: mean (from 1_Pooling/config.json)")
+    except Exception:
+        print(f"  pooling: mean (default, no 1_Pooling/config.json)")
+    writer.add_uint32("bert.pooling_method", pool_method)
 
     # Tokenizer vocab
     vocab = tokenizer.get_vocab()
