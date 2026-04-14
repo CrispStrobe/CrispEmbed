@@ -159,6 +159,7 @@ CrispEmbed/
 | all-MiniLM-L6-v2 | 384 | mean | 87 MB | 0.999999 | 0.0003 |
 | gte-small | 384 | mean | 128 MB | 0.999999 | 0.0003 |
 | arctic-embed-xs | 384 | CLS | 87 MB | 1.000000 | 0.0002 |
+| Octen-Embedding-0.6B | 1024 | last-token | 2.3 GB | 0.999891 | 0.0029 |
 
 ### SentencePiece tokenizer (XLM-RoBERTa models) — partially working
 

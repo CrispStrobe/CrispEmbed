@@ -98,13 +98,33 @@ std::vector<float> decoder_encode_tokens(
     // Allocate hidden state [T, H]
     std::vector<float> hidden(T * H, 0.0f);
 
-    // Token embedding lookup (manual, from backend tensor)
-    for (int t = 0; t < T; t++) {
-        int tid = tokens.ids[t];
-        if (tid >= 0 && tid < m.n_vocab) {
-            ggml_backend_tensor_get(m.token_embd, hidden.data() + t * H,
-                                     (size_t)tid * H * sizeof(float), H * sizeof(float));
-        }
+    // Token embedding lookup via ggml graph (handles quantized embeddings)
+    {
+        size_t emb_mem = (size_t)H * T * 4 + (size_t)T * 4
+                       + ggml_tensor_overhead() * 10 + ggml_graph_overhead()
+                       + 4 * 1024 * 1024;
+        std::vector<uint8_t> ebuf(emb_mem);
+        ggml_init_params eip = { emb_mem, ebuf.data(), false };
+        ggml_context * ectx = ggml_init(eip);
+        ggml_cgraph * egf = ggml_new_graph(ectx);
+
+        ggml_tensor * ids_t = ggml_new_tensor_1d(ectx, GGML_TYPE_I32, T);
+        for (int t = 0; t < T; t++)
+            ((int32_t *)ids_t->data)[t] = tokens.ids[t];
+
+        ggml_tensor * emb = ggml_get_rows(ectx, m.token_embd, ids_t);
+        ggml_set_name(emb, "emb_out");
+        ggml_build_forward_expand(egf, emb);
+
+        struct ggml_cplan cp = ggml_graph_plan(egf, 1, NULL);
+        std::vector<uint8_t> ew;
+        if (cp.work_size > 0) { ew.resize(cp.work_size); cp.work_data = ew.data(); }
+        ggml_graph_compute(egf, &cp);
+
+        ggml_tensor * eout = ggml_graph_get_tensor(egf, "emb_out");
+        // eout is [H, T] in ggml = [T, H] row-major
+        memcpy(hidden.data(), eout->data, H * T * sizeof(float));
+        ggml_free(ectx);
     }
 
     // Debug: dump embedding output
