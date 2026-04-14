@@ -70,8 +70,8 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
         L.down_w = get(p + "ffn.down.weight");
     }
 
-    fprintf(stderr, "decoder_embed: loaded %d layers, %d dims, %d vocab, %d heads (%d kv)\n",
-            m.n_layer, m.n_embd, m.n_vocab, m.n_head, m.n_kv_head);
+    fprintf(stderr, "decoder_embed: loaded %d layers, %d dims, %d vocab, %d heads (%d kv), rope_theta=%.0f\n",
+            m.n_layer, m.n_embd, m.n_vocab, m.n_head, m.n_kv_head, m.rope_theta);
     return true;
 }
 

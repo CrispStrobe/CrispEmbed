@@ -61,12 +61,22 @@ def main():
     n_kv_heads = getattr(config, "num_key_value_heads", config.num_attention_heads)
     writer.add_uint32("decoder.num_key_value_heads", n_kv_heads)
     writer.add_uint32("decoder.intermediate_size", config.intermediate_size)
+    head_dim = getattr(config, "head_dim", config.hidden_size // config.num_attention_heads)
+    writer.add_uint32("decoder.head_dim", head_dim)
     writer.add_uint32("decoder.max_position_embeddings",
                        getattr(config, "max_position_embeddings", 8192))
     writer.add_float32("decoder.rms_norm_eps",
                         getattr(config, "rms_norm_eps", 1e-6))
-    rope_theta = getattr(config, "rope_theta", 10000.0)
-    writer.add_float32("decoder.rope_theta", rope_theta)
+    # Rope theta — check multiple locations
+    rope_theta = getattr(config, "rope_theta", None)
+    if rope_theta is None:
+        rp = getattr(config, "rope_parameters", None) or getattr(config, "rope_scaling", None)
+        if isinstance(rp, dict):
+            rope_theta = rp.get("rope_theta", 10000.0)
+        else:
+            rope_theta = 10000.0
+    writer.add_float32("decoder.rope_theta", float(rope_theta))
+    print(f"  rope_theta: {rope_theta}")
     writer.add_uint32("decoder.pooling_method", 2)  # last-token
 
     # Tokenizer
