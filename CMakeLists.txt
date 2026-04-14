@@ -20,6 +20,7 @@ target_link_libraries(crispembed-core PUBLIC ggml)
 # CrispEmbed library
 add_library(crispembed STATIC
     src/crispembed.cpp
+    src/decoder_embed.cpp
     src/tokenizer.cpp
     src/tokenizer_spm.cpp
 )

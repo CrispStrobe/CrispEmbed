@@ -85,24 +85,47 @@ def main():
     if tokenizer.pad_token_id is not None:
         writer.add_uint32("tokenizer.ggml.padding_token_id", tokenizer.pad_token_id)
 
-    # Token embeddings
-    for key in ["model.embed_tokens.weight", "embeddings.word_embeddings.weight"]:
+    # Token embeddings — search multiple naming conventions
+    embd_keys = ["model.embed_tokens.weight", "embed_tokens.weight",
+                  "embeddings.word_embeddings.weight"]
+    for key in embd_keys:
         if key in sd:
             writer.add_tensor("token_embd.weight", f32(sd[key]))
             print(f"  token_embd: {sd[key].shape}")
             break
+    else:
+        print("  WARNING: token_embd not found!")
+
+    # Detect layer prefix — models vary: "model.layers.{i}" vs "layers.{i}"
+    layer_prefix = None
+    for candidate in ["model.layers", "layers", "encoder.layer"]:
+        if f"{candidate}.0.self_attn.q_proj.weight" in sd:
+            layer_prefix = candidate
+            break
+        if f"{candidate}.0.attention.self.query.weight" in sd:
+            layer_prefix = candidate
+            break
+    if not layer_prefix:
+        print("  WARNING: cannot detect layer naming convention")
+        # Try to find any layer key
+        for key in sd:
+            if ".self_attn.q_proj.weight" in key:
+                parts = key.split(".self_attn")[0]
+                # e.g. "layers.0" → prefix is "layers"
+                idx = parts.rfind(".")
+                if idx >= 0:
+                    layer_prefix = parts[:idx]
+                    print(f"  Detected layer prefix: '{layer_prefix}'")
+                break
 
     # Decoder layers
     for i in range(config.num_hidden_layers):
-        # Try Qwen3/LLaMA naming
-        prefixes = [f"model.layers.{i}", f"encoder.layer.{i}"]
-        pfx = None
-        for p in prefixes:
-            if f"{p}.self_attn.q_proj.weight" in sd or f"{p}.attention.self.query.weight" in sd:
-                pfx = p
-                break
-        if not pfx:
-            print(f"  WARNING: layer {i} not found")
+        pfx = f"{layer_prefix}.{i}" if layer_prefix else f"layers.{i}"
+
+        # Check this layer exists
+        has_layer = any(k.startswith(pfx + ".") for k in sd)
+        if not has_layer:
+            print(f"  WARNING: layer {i} not found (prefix: {pfx})")
             continue
 
         # RMSNorm / LayerNorm
@@ -128,6 +151,13 @@ def main():
                         writer.add_tensor(f"dec.{i}.attn.{proj}.bias", f32(sd[bkey]))
                     break
 
+        # QK norm (Qwen3 feature)
+        for norm_name, out_name in [("self_attn.q_norm", "q_norm"),
+                                     ("self_attn.k_norm", "k_norm")]:
+            nkey = f"{pfx}.{norm_name}.weight"
+            if nkey in sd:
+                writer.add_tensor(f"dec.{i}.attn.{out_name}.weight", f32(sd[nkey]))
+
         # Post-attention norm
         for norm_key in [f"{pfx}.post_attention_layernorm.weight",
                           f"{pfx}.output.LayerNorm.weight"]:
@@ -136,25 +166,23 @@ def main():
                 break
 
         # FFN (SwiGLU: gate + up + down, or standard: fc1 + fc2)
-        for gate_key in [f"{pfx}.mlp.gate_proj.weight"]:
-            if gate_key in sd:
-                writer.add_tensor(f"dec.{i}.ffn.gate.weight", wt(sd[gate_key]))
-                writer.add_tensor(f"dec.{i}.ffn.up.weight", wt(sd[f"{pfx}.mlp.up_proj.weight"]))
-                writer.add_tensor(f"dec.{i}.ffn.down.weight", wt(sd[f"{pfx}.mlp.down_proj.weight"]))
-                break
+        gate_key = f"{pfx}.mlp.gate_proj.weight"
+        if gate_key in sd:
+            writer.add_tensor(f"dec.{i}.ffn.gate.weight", wt(sd[gate_key]))
+            writer.add_tensor(f"dec.{i}.ffn.up.weight", wt(sd[f"{pfx}.mlp.up_proj.weight"]))
+            writer.add_tensor(f"dec.{i}.ffn.down.weight", wt(sd[f"{pfx}.mlp.down_proj.weight"]))
         else:
-            for fc1_key in [f"{pfx}.intermediate.dense.weight"]:
-                if fc1_key in sd:
-                    writer.add_tensor(f"dec.{i}.ffn.fc1.weight", wt(sd[fc1_key]))
-                    writer.add_tensor(f"dec.{i}.ffn.fc1.bias", f32(sd[f"{pfx}.intermediate.dense.bias"]))
-                    writer.add_tensor(f"dec.{i}.ffn.fc2.weight", wt(sd[f"{pfx}.output.dense.weight"]))
-                    writer.add_tensor(f"dec.{i}.ffn.fc2.bias", f32(sd[f"{pfx}.output.dense.bias"]))
-                    break
+            fc1_key = f"{pfx}.intermediate.dense.weight"
+            if fc1_key in sd:
+                writer.add_tensor(f"dec.{i}.ffn.fc1.weight", wt(sd[fc1_key]))
+                writer.add_tensor(f"dec.{i}.ffn.fc1.bias", f32(sd[f"{pfx}.intermediate.dense.bias"]))
+                writer.add_tensor(f"dec.{i}.ffn.fc2.weight", wt(sd[f"{pfx}.output.dense.weight"]))
+                writer.add_tensor(f"dec.{i}.ffn.fc2.bias", f32(sd[f"{pfx}.output.dense.bias"]))
 
         print(f"  dec.{i}: ok")
 
     # Final norm
-    for key in ["model.norm.weight", "encoder.layer_norm.weight"]:
+    for key in ["model.norm.weight", "norm.weight", "encoder.layer_norm.weight"]:
         if key in sd:
             writer.add_tensor("output_norm.weight", f32(sd[key]))
             print(f"  output_norm: ok")

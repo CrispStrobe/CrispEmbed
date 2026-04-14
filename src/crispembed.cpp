@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <cstring>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -56,8 +57,12 @@ struct embed_model {
     ggml_tensor * pooler_b     = nullptr;
 };
 
+#include "decoder_embed_internal.h"
+
 struct crispembed_context {
     embed_model model;
+    std::unique_ptr<dec_model> dec;  // non-null for decoder models
+    bool is_decoder = false;
     WordPieceTokenizer wp_tokenizer;
     SentencePieceTokenizer sp_tokenizer;
     bool use_sentencepiece = false;
@@ -400,9 +405,35 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
 extern "C" crispembed_context * crispembed_init(const char * model_path, int n_threads) {
     auto * ctx = new crispembed_context;
     ctx->n_threads = n_threads > 0 ? n_threads : 4;
-    if (!load_model(ctx, model_path)) {
-        delete ctx;
-        return nullptr;
+
+    // Detect model type from GGUF metadata
+    gguf_init_params gp = { true, nullptr };
+    gguf_context * g = gguf_init_from_file(model_path, gp);
+    bool is_dec = false;
+    if (g) {
+        is_dec = gguf_find_key(g, "decoder.hidden_size") >= 0;
+        gguf_free(g);
+    }
+
+    if (is_dec) {
+        ctx->is_decoder = true;
+        ctx->dec = std::make_unique<dec_model>();
+        ctx->backend = ggml_backend_init_best();
+        if (!load_decoder_model(*ctx->dec, ctx->wl, model_path, ctx->backend)) {
+            delete ctx;
+            return nullptr;
+        }
+        ctx->model.hparams.n_embd = ctx->dec->n_embd;
+        ctx->model.hparams.n_layer = ctx->dec->n_layer;
+        ctx->model.hparams.n_vocab = ctx->dec->n_vocab;
+        ctx->model.hparams.n_output = ctx->dec->n_embd;
+        // Load tokenizer for decoder (BPE/SentencePiece)
+        // TODO: load from GGUF metadata
+    } else {
+        if (!load_model(ctx, model_path)) {
+            delete ctx;
+            return nullptr;
+        }
     }
     return ctx;
 }
@@ -418,7 +449,11 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx,
     auto tokens = ctx->use_sentencepiece
         ? ctx->sp_tokenizer.encode(text)
         : ctx->wp_tokenizer.encode(text);
-    ctx->last_output = encode_tokens(ctx, tokens);
+    if (ctx->is_decoder && ctx->dec) {
+        ctx->last_output = decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads);
+    } else {
+        ctx->last_output = encode_tokens(ctx, tokens);
+    }
     if (out_n_dim) *out_n_dim = (int)ctx->last_output.size();
     return ctx->last_output.data();
 }
