@@ -189,3 +189,21 @@ Could reuse CrispASR's voxtral/qwen3 decoder patterns.
 - Add ggml_backend_sched path for GPU offload
 - Quantize models (Q4_K/Q8_0) and benchmark vs ONNX fastembed
 - SentencePiece pre-tokenization regex for full XLM-R support
+
+---
+
+## Decoder model architecture variants
+
+Each decoder embedding model uses a different base architecture:
+
+| Model | Base | Architecture | Notes |
+|-------|------|-------------|-------|
+| Qwen3-Embedding-0.6B | Qwen3 | GQA + SwiGLU + RoPE + RMSNorm | Same as CrispASR qwen3_asr |
+| Octen-Embedding-0.6B | Qwen3 | Same as above | |
+| F2LLM-v2-0.6B | Qwen3 | Same as above | |
+| Jina v5 nano | Qwen3 | Same as above | |
+| Jina v5 small | Qwen3 | Same as above | 677M |
+| Harrier-OSS-v1-270M | Gemma3 | Different attention + GeGLU | |
+| Harrier-OSS-v1-0.6B | Qwen3 | Same as Qwen3 | |
+
+Most models are Qwen3-based → single decoder graph builder covers 6 of 7.
