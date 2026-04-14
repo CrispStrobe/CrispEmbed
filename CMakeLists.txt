@@ -45,3 +45,27 @@ add_executable(crispembed-cli
 target_link_libraries(crispembed-cli PRIVATE crispembed)
 set_target_properties(crispembed-cli PROPERTIES OUTPUT_NAME crispembed)
 install(TARGETS crispembed-cli RUNTIME)
+
+# Server binary
+add_executable(crispembed-server
+    examples/server/server.cpp
+)
+target_include_directories(crispembed-server PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/examples/server
+)
+target_link_libraries(crispembed-server PRIVATE crispembed)
+install(TARGETS crispembed-server RUNTIME)
+
+# Shared library for Python bindings
+add_library(crispembed-shared SHARED
+    src/crispembed.cpp
+    src/tokenizer.cpp
+    src/tokenizer_spm.cpp
+)
+target_include_directories(crispembed-shared PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
+)
+target_link_libraries(crispembed-shared PUBLIC crispembed-core ggml ggml-base ggml-cpu Threads::Threads)
+set_target_properties(crispembed-shared PROPERTIES OUTPUT_NAME crispembed)
