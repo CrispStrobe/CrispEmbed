@@ -138,27 +138,32 @@ std::vector<float> decoder_encode_tokens(
 
         ggml_tensor * residual = cur;
 
+        // Debug: save tensor pointers for post-compute inspection
+        ggml_tensor * dbg_input_ln = nullptr;
+        ggml_tensor * dbg_q_proj = nullptr;
+        ggml_tensor * dbg_k_proj = nullptr;
+        ggml_tensor * dbg_q_norm = nullptr;
+        ggml_tensor * dbg_k_norm = nullptr;
+        ggml_tensor * dbg_o_proj = nullptr;
+
         // RMSNorm
         if (L.attn_norm_w) {
             cur = ggml_rms_norm(lctx, cur, eps);
             cur = ggml_mul(lctx, cur, L.attn_norm_w);
         }
+        if (il == 0) dbg_input_ln = cur;
 
         // Q/K/V projections
         ggml_tensor * Q = ggml_mul_mat(lctx, L.q_w, cur);
         if (L.q_b) Q = ggml_add(lctx, Q, L.q_b);
+        if (il == 0) dbg_q_proj = Q;
         ggml_tensor * K = ggml_mul_mat(lctx, L.k_w, cur);
         if (L.k_b) K = ggml_add(lctx, K, L.k_b);
+        if (il == 0) dbg_k_proj = K;
         ggml_tensor * V = ggml_mul_mat(lctx, L.v_w, cur);
         if (L.v_b) V = ggml_add(lctx, V, L.v_b);
 
         // Reshape for multi-head
-        if (il == 0) {
-            fprintf(stderr, "decoder: Q ne=(%lld,%lld) head_dim=%d n_heads=%d T=%d q_dim=%d\n",
-                    (long long)Q->ne[0], (long long)Q->ne[1], head_dim, n_heads, T, q_dim);
-            fprintf(stderr, "decoder: K ne=(%lld,%lld) kv_dim=%d n_kv=%d\n",
-                    (long long)K->ne[0], (long long)K->ne[1], kv_dim, n_kv_heads);
-        }
         Q = ggml_reshape_3d(lctx, Q, head_dim, n_heads, T);
         K = ggml_reshape_3d(lctx, K, head_dim, n_kv_heads, T);
         V = ggml_reshape_3d(lctx, V, head_dim, n_kv_heads, T);
@@ -168,22 +173,22 @@ std::vector<float> decoder_encode_tokens(
             Q = ggml_rms_norm(lctx, Q, eps);
             Q = ggml_mul(lctx, Q, L.q_norm_w);
         }
+        if (il == 0) dbg_q_norm = Q;
         if (L.k_norm_w) {
             K = ggml_rms_norm(lctx, K, eps);
             K = ggml_mul(lctx, K, L.k_norm_w);
         }
+        if (il == 0) dbg_k_norm = K;
 
-        // RoPE — rotary position encoding
-        // Q/K are [head_dim, n_heads/n_kv_heads, T] at this point
-        // ggml_rope_ext needs [head_dim, n_heads, T] and applies rotation
-        // in-place on pairs of dimensions.
+        // RoPE on [head_dim, n_heads, T] — ne[2]=T matches ggml_rope_ext's
+        // position dimension requirement. Applied BEFORE permute.
+        // HF's equivalent: transpose(1,2) puts T in dim 2 of [B,n_heads,T,hd],
+        // and ggml's layout [hd,n_heads,T] has T as ne[2] — same dimension.
         {
-            // Build position tensor [T]
             ggml_tensor * pos = ggml_new_tensor_1d(lctx, GGML_TYPE_I32, T);
             for (int t = 0; t < T; t++)
                 ((int32_t *)pos->data)[t] = t;
 
-            // mode=2 = NEOX (pairs (i, i+d/2)), freq_base = rope_theta
             int rope_mode = 2;  // GGML_ROPE_TYPE_NEOX
             Q = ggml_rope_ext(lctx, Q, pos, nullptr,
                                head_dim, rope_mode, 0,
@@ -193,7 +198,7 @@ std::vector<float> decoder_encode_tokens(
                                m.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
         }
 
-        // Permute for attention: [head_dim, T, n_heads]
+        // Permute: [head_dim, n_heads, T] → [head_dim, T, n_heads]
         Q = ggml_cont(lctx, ggml_permute(lctx, Q, 0, 2, 1, 3));
         K = ggml_cont(lctx, ggml_permute(lctx, K, 0, 2, 1, 3));
         V = ggml_cont(lctx, ggml_permute(lctx, V, 0, 2, 1, 3));
@@ -201,12 +206,9 @@ std::vector<float> decoder_encode_tokens(
         // GQA: repeat K/V heads to match Q heads
         // After permute: K/V are [head_dim, T, n_kv_heads]
         // Need: [head_dim, T, n_heads]
-        if (n_kv_heads < n_heads) {
-            ggml_tensor * k_rep = ggml_new_tensor_3d(lctx, K->type, head_dim, T, n_heads);
-            ggml_tensor * v_rep = ggml_new_tensor_3d(lctx, V->type, head_dim, T, n_heads);
-            K = ggml_repeat(lctx, K, k_rep);
-            V = ggml_repeat(lctx, V, v_rep);
-        }
+        // GQA: ggml_mul_mat broadcasts ne[2] automatically when
+        // Q has n_heads and K/V have n_kv_heads (n_heads % n_kv_heads == 0).
+        // No explicit repeat needed — mul_mat handles it.
 
         // Attention scores with causal mask
         float scale = 1.0f / sqrtf((float)head_dim);
@@ -222,13 +224,14 @@ std::vector<float> decoder_encode_tokens(
         ggml_tensor * V_perm = ggml_cont(lctx, ggml_permute(lctx, V, 1, 0, 2, 3));
         ggml_tensor * attn = ggml_mul_mat(lctx, V_perm, scores);
 
-        // Reshape back to [q_dim, T]
+        // Reshape back to [q_dim, T] (q_dim = n_heads * head_dim, may differ from H for GQA)
         attn = ggml_cont(lctx, ggml_permute(lctx, attn, 0, 2, 1, 3));
-        attn = ggml_reshape_2d(lctx, attn, n_heads * head_dim, T);
+        attn = ggml_reshape_2d(lctx, attn, q_dim, T);
 
         // Output projection
         attn = ggml_mul_mat(lctx, L.o_w, attn);
         if (L.o_b) attn = ggml_add(lctx, attn, L.o_b);
+        if (il == 0) dbg_o_proj = attn;
 
         // Residual add
         cur = ggml_add(lctx, residual, attn);
@@ -266,8 +269,25 @@ std::vector<float> decoder_encode_tokens(
         memcpy(hidden.data(), lout->data, H * T * sizeof(float));
 
         if (il == 0) {
-            fprintf(stderr, "decoder: after_L0[0,:4]: %.6f %.6f %.6f %.6f\n",
-                    hidden[0], hidden[1], hidden[2], hidden[3]);
+            auto dump = [](const char * label, ggml_tensor * t) {
+                if (!t || !t->data) { fprintf(stderr, "  %-16s: (null)\n", label); return; }
+                const float * d = (const float *)t->data;
+                fprintf(stderr, "  %-16s:", label);
+                for (int i = 0; i < std::min(8, (int)(t->ne[0])); i++)
+                    fprintf(stderr, " %.6f", d[i]);
+                fprintf(stderr, "\n");
+            };
+            fprintf(stderr, "decoder L0 intermediates (t=0):\n");
+            dump("input_ln", dbg_input_ln);
+            dump("q_proj", dbg_q_proj);
+            dump("k_proj", dbg_k_proj);
+            dump("q_norm", dbg_q_norm);
+            dump("k_norm", dbg_k_norm);
+            dump("o_proj", dbg_o_proj);
+            fprintf(stderr, "  %-16s: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
+                    "layer_out",
+                    hidden[0], hidden[1], hidden[2], hidden[3],
+                    hidden[4], hidden[5], hidden[6], hidden[7]);
         }
 
         ggml_free(lctx);
