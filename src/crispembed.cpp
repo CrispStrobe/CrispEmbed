@@ -246,22 +246,20 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
         cur = ggml_add(gctx, cur, m.embd_ln_b);
     }
 
-    // Transformer layers
+    // Transformer layers (BERT post-LN architecture):
+    //   attn_out = MHA(cur)
+    //   cur = LN1(cur + attn_out)     ← LayerNorm AFTER residual add
+    //   ffn_out = FFN(cur)
+    //   cur = LN2(cur + ffn_out)      ← LayerNorm AFTER residual add
     for (int il = 0; il < hp.n_layer; il++) {
         const auto & L = m.layers[il];
-        ggml_tensor * residual = cur;
 
-        // Pre-attention LN
-        ggml_tensor * x = ggml_norm(gctx, cur, ln_eps);
-        x = ggml_mul(gctx, x, L.ln1_w);
-        x = ggml_add(gctx, x, L.ln1_b);
+        // Self-attention
+        ggml_tensor * Q = ggml_add(gctx, ggml_mul_mat(gctx, L.q_w, cur), L.q_b);
+        ggml_tensor * K = ggml_add(gctx, ggml_mul_mat(gctx, L.k_w, cur), L.k_b);
+        ggml_tensor * V = ggml_add(gctx, ggml_mul_mat(gctx, L.v_w, cur), L.v_b);
 
-        // Q/K/V projections
-        ggml_tensor * Q = ggml_add(gctx, ggml_mul_mat(gctx, L.q_w, x), L.q_b);
-        ggml_tensor * K = ggml_add(gctx, ggml_mul_mat(gctx, L.k_w, x), L.k_b);
-        ggml_tensor * V = ggml_add(gctx, ggml_mul_mat(gctx, L.v_w, x), L.v_b);
-
-        // Multi-head attention (same pattern as CrispASR wav2vec2)
+        // Multi-head attention
         Q = ggml_reshape_3d(gctx, Q, head_dim, n_heads, T);
         K = ggml_reshape_3d(gctx, K, head_dim, n_heads, T);
         V = ggml_reshape_3d(gctx, V, head_dim, n_heads, T);
@@ -272,9 +270,6 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
         float scale = 1.0f / sqrtf((float)head_dim);
         ggml_tensor * scores = ggml_mul_mat(gctx, K, Q);
         scores = ggml_scale(gctx, scores, scale);
-
-        // TODO: apply attention mask for padding tokens
-
         scores = ggml_soft_max(gctx, scores);
 
         ggml_tensor * V_perm = ggml_cont(gctx, ggml_permute(gctx, V, 1, 0, 2, 3));
@@ -282,20 +277,25 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
         attn = ggml_cont(gctx, ggml_permute(gctx, attn, 0, 2, 1, 3));
         attn = ggml_reshape_2d(gctx, attn, H, T);
 
-        // Output projection + residual
+        // Output projection
         attn = ggml_add(gctx, ggml_mul_mat(gctx, L.o_w, attn), L.o_b);
-        cur = ggml_add(gctx, residual, attn);
 
-        // Post-attention LN + FFN
-        residual = cur;
-        x = ggml_norm(gctx, cur, ln_eps);
-        x = ggml_mul(gctx, x, L.ln2_w);
-        x = ggml_add(gctx, x, L.ln2_b);
+        // Post-attention: residual add → LayerNorm (BERT post-LN)
+        cur = ggml_add(gctx, cur, attn);
+        cur = ggml_norm(gctx, cur, ln_eps);
+        cur = ggml_mul(gctx, cur, L.ln1_w);
+        cur = ggml_add(gctx, cur, L.ln1_b);
 
-        x = ggml_add(gctx, ggml_mul_mat(gctx, L.fc1_w, x), L.fc1_b);
-        x = ggml_gelu(gctx, x);
-        x = ggml_add(gctx, ggml_mul_mat(gctx, L.fc2_w, x), L.fc2_b);
-        cur = ggml_add(gctx, residual, x);
+        // FFN
+        ggml_tensor * ffn = ggml_add(gctx, ggml_mul_mat(gctx, L.fc1_w, cur), L.fc1_b);
+        ffn = ggml_gelu(gctx, ffn);
+        ffn = ggml_add(gctx, ggml_mul_mat(gctx, L.fc2_w, ffn), L.fc2_b);
+
+        // Post-FFN: residual add → LayerNorm (BERT post-LN)
+        cur = ggml_add(gctx, cur, ffn);
+        cur = ggml_norm(gctx, cur, ln_eps);
+        cur = ggml_mul(gctx, cur, L.ln2_w);
+        cur = ggml_add(gctx, cur, L.ln2_b);
     }
 
     ggml_set_name(cur, "encoder_out");
