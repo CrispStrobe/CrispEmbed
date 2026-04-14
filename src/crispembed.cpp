@@ -226,14 +226,15 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
     size_t mem = (size_t)H * T * 4 * 30
                + (size_t)T * T * n_heads * 4 * 2
                + (size_t)hp.n_intermediate * T * 4
-               + ggml_tensor_overhead() * 200
-               + ggml_graph_overhead_custom(512, false)
+               + ggml_tensor_overhead() * (size_t)(hp.n_layer * 30 + 100)
+               + ggml_graph_overhead_custom(hp.n_layer * 30 + 256, false)
                + 32 * 1024 * 1024;
 
     std::vector<uint8_t> buf(mem);
     ggml_init_params ip = { mem, buf.data(), false };
     ggml_context * gctx = ggml_init(ip);
-    ggml_cgraph * gf = ggml_new_graph_custom(gctx, 512, false);
+    int graph_size = std::max(2048, hp.n_layer * 30 + 256);
+    ggml_cgraph * gf = ggml_new_graph_custom(gctx, graph_size, false);
 
     // Token embeddings: gather from embedding table
     // token_embd is [n_embd, n_vocab], we need rows for each token id
