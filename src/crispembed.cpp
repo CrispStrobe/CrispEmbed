@@ -58,7 +58,9 @@ struct embed_model {
 
 struct crispembed_context {
     embed_model model;
-    WordPieceTokenizer tokenizer;
+    WordPieceTokenizer wp_tokenizer;
+    SentencePieceTokenizer sp_tokenizer;
+    bool use_sentencepiece = false;
     core_gguf::WeightLoad wl;
     ggml_backend_t backend = nullptr;
     int n_threads = 4;
@@ -111,12 +113,36 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         for (int i = 0; i < n; i++)
             vocab[i] = gguf_get_arr_str(g, ki, i);
 
-        int cls_id = u32("tokenizer.ggml.cls_token_id", 101);
-        int sep_id = u32("tokenizer.ggml.sep_token_id", 102);
-        int unk_id = u32("tokenizer.ggml.unknown_token_id", 100);
-        int pad_id = u32("tokenizer.ggml.padding_token_id", 0);
+        // Load scores if available (SentencePiece models)
+        std::vector<float> scores;
+        int si = gguf_find_key(g, "tokenizer.ggml.scores");
+        if (si >= 0 && gguf_get_arr_type(g, si) == GGUF_TYPE_FLOAT32) {
+            int sn = (int)gguf_get_arr_n(g, si);
+            scores.resize(sn);
+            const float * sd = (const float *)gguf_get_arr_data(g, si);
+            std::memcpy(scores.data(), sd, sn * sizeof(float));
+        }
 
-        ctx->tokenizer.load(vocab, cls_id, sep_id, unk_id, pad_id, hp.n_max_tokens);
+        // Detect tokenizer type: SentencePiece for XLM-R (vocab > 100K)
+        int tokenizer_type = u32("tokenizer.ggml.type", 0); // 0=WordPiece, 1=BPE, 2=SentencePiece
+        if (tokenizer_type == 2 || n > 100000) {
+            // SentencePiece / XLM-RoBERTa
+            int bos_id = u32("tokenizer.ggml.bos_token_id", 0);
+            int eos_id = u32("tokenizer.ggml.eos_token_id", 2);
+            int unk_id = u32("tokenizer.ggml.unknown_token_id", 3);
+            int pad_id = u32("tokenizer.ggml.padding_token_id", 1);
+            ctx->sp_tokenizer.load(vocab, scores, bos_id, eos_id, unk_id, pad_id, hp.n_max_tokens);
+            ctx->use_sentencepiece = true;
+            fprintf(stderr, "crispembed: using SentencePiece tokenizer (%d tokens)\n", n);
+        } else {
+            // WordPiece / BERT
+            int cls_id = u32("tokenizer.ggml.cls_token_id", 101);
+            int sep_id = u32("tokenizer.ggml.sep_token_id", 102);
+            int unk_id = u32("tokenizer.ggml.unknown_token_id", 100);
+            int pad_id = u32("tokenizer.ggml.padding_token_id", 0);
+            ctx->wp_tokenizer.load(vocab, cls_id, sep_id, unk_id, pad_id, hp.n_max_tokens);
+            fprintf(stderr, "crispembed: using WordPiece tokenizer (%d tokens)\n", n);
+        }
     }
 
     gguf_free(g);
@@ -388,7 +414,9 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx,
                                             const char * text,
                                             int * out_n_dim) {
     if (!ctx || !text) return nullptr;
-    auto tokens = ctx->tokenizer.encode(text);
+    auto tokens = ctx->use_sentencepiece
+        ? ctx->sp_tokenizer.encode(text)
+        : ctx->wp_tokenizer.encode(text);
     ctx->last_output = encode_tokens(ctx, tokens);
     if (out_n_dim) *out_n_dim = (int)ctx->last_output.size();
     return ctx->last_output.data();
@@ -404,7 +432,9 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
         : ctx->model.hparams.n_embd;
     ctx->last_output.resize(n_texts * dim);
     for (int i = 0; i < n_texts; i++) {
-        auto tokens = ctx->tokenizer.encode(texts[i]);
+        auto tokens = ctx->use_sentencepiece
+            ? ctx->sp_tokenizer.encode(texts[i])
+            : ctx->wp_tokenizer.encode(texts[i]);
         auto vec = encode_tokens(ctx, tokens);
         std::memcpy(ctx->last_output.data() + i * dim, vec.data(), dim * sizeof(float));
     }

@@ -86,10 +86,30 @@ def main():
     id_to_token = {v: k for k, v in vocab.items()}
     tokens = [id_to_token.get(i, f"[UNK_{i}]") for i in range(config.vocab_size)]
     writer.add_array("tokenizer.ggml.tokens", tokens)
-    writer.add_uint32("tokenizer.ggml.cls_token_id", tokenizer.cls_token_id or 101)
-    writer.add_uint32("tokenizer.ggml.sep_token_id", tokenizer.sep_token_id or 102)
-    writer.add_uint32("tokenizer.ggml.unknown_token_id", tokenizer.unk_token_id or 100)
-    writer.add_uint32("tokenizer.ggml.padding_token_id", tokenizer.pad_token_id or 0)
+
+    # Detect tokenizer type
+    is_sentencepiece = hasattr(tokenizer, 'sp_model') or config.vocab_size > 100000
+    if is_sentencepiece:
+        writer.add_uint32("tokenizer.ggml.type", 2)  # SentencePiece
+        writer.add_uint32("tokenizer.ggml.bos_token_id", tokenizer.bos_token_id or 0)
+        writer.add_uint32("tokenizer.ggml.eos_token_id", tokenizer.eos_token_id or 2)
+        writer.add_uint32("tokenizer.ggml.unknown_token_id", tokenizer.unk_token_id or 3)
+        writer.add_uint32("tokenizer.ggml.padding_token_id", tokenizer.pad_token_id or 1)
+        # Store vocab scores if available (for SentencePiece unigram)
+        try:
+            sp = tokenizer.sp_model
+            scores = [sp.GetScore(i) for i in range(config.vocab_size)]
+            writer.add_array("tokenizer.ggml.scores", scores)
+            print(f"  tokenizer: SentencePiece ({config.vocab_size} tokens, with scores)")
+        except Exception:
+            print(f"  tokenizer: SentencePiece ({config.vocab_size} tokens, no scores)")
+    else:
+        writer.add_uint32("tokenizer.ggml.type", 0)  # WordPiece
+        writer.add_uint32("tokenizer.ggml.cls_token_id", tokenizer.cls_token_id or 101)
+        writer.add_uint32("tokenizer.ggml.sep_token_id", tokenizer.sep_token_id or 102)
+        writer.add_uint32("tokenizer.ggml.unknown_token_id", tokenizer.unk_token_id or 100)
+        writer.add_uint32("tokenizer.ggml.padding_token_id", tokenizer.pad_token_id or 0)
+        print(f"  tokenizer: WordPiece ({config.vocab_size} tokens)")
 
     # Embeddings
     writer.add_tensor("token_embd.weight", f32(sd["embeddings.word_embeddings.weight"]))

@@ -42,3 +42,30 @@ private:
     // WordPiece: split a single word into subword tokens.
     std::vector<int> wordpiece(const std::string & word) const;
 };
+
+// SentencePiece-style tokenizer for XLM-RoBERTa models.
+// Uses unigram (greedy longest-match) from vocab + optional scores.
+class SentencePieceTokenizer {
+public:
+    bool load(const std::vector<std::string> & vocab,
+              const std::vector<float> & scores,
+              int bos_id, int eos_id, int unk_id, int pad_id,
+              int max_length = 512);
+
+    embed_tokens encode(const std::string & text) const;
+
+    int vocab_size() const { return (int)id_to_token_.size(); }
+    int max_length() const { return max_length_; }
+
+private:
+    std::unordered_map<std::string, int> token_to_id_;
+    std::vector<std::string> id_to_token_;
+    std::vector<float> scores_;
+    int bos_id_ = 0;
+    int eos_id_ = 2;
+    int unk_id_ = 3;
+    int pad_id_ = 1;
+    int max_length_ = 512;
+
+    std::vector<int> tokenize_text(const std::string & text) const;
+};
