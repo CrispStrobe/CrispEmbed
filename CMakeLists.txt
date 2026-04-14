@@ -23,6 +23,7 @@ add_library(crispembed STATIC
     src/decoder_embed.cpp
     src/tokenizer.cpp
     src/tokenizer_spm.cpp
+    src/tokenizer_bpe.cpp
 )
 target_include_directories(crispembed PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src

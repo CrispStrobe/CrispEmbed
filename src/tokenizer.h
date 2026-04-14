@@ -69,3 +69,24 @@ private:
 
     std::vector<int> tokenize_text(const std::string & text) const;
 };
+
+// GPT-2 BPE tokenizer for decoder embedding models (Qwen3, etc.)
+class BPETokenizer {
+public:
+    bool load(const std::vector<std::string> & vocab,
+              const std::vector<std::string> & merges,
+              int eos_id, int pad_id,
+              int max_length = 8192);
+
+    embed_tokens encode(const std::string & text) const;
+
+    int vocab_size() const { return (int)id_to_token_.size(); }
+
+private:
+    std::unordered_map<std::string, int32_t> token_to_id_;
+    std::unordered_map<std::string, int32_t> merge_rank_;
+    std::vector<std::string> id_to_token_;
+    int eos_id_ = 151645;
+    int pad_id_ = 151643;
+    int max_length_ = 8192;
+};

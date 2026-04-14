@@ -107,6 +107,13 @@ std::vector<float> decoder_encode_tokens(
         }
     }
 
+    // Debug: dump embedding output
+    fprintf(stderr, "decoder: embed[0,:4]: %.6f %.6f %.6f %.6f\n",
+            hidden[0], hidden[1], hidden[2], hidden[3]);
+    fprintf(stderr, "decoder: token IDs:");
+    for (int t = 0; t < std::min(T, 5); t++) fprintf(stderr, " %d", tokens.ids[t]);
+    fprintf(stderr, "\n");
+
     // Layer-by-layer processing (reusing CrispASR pattern)
     size_t layer_mem = (size_t)H * T * 4 * 30
                      + (size_t)T * T * n_heads * 4 * 2
@@ -166,9 +173,25 @@ std::vector<float> decoder_encode_tokens(
             K = ggml_mul(lctx, K, L.k_norm_w);
         }
 
-        // RoPE (applied per-head)
-        // TODO: apply ggml_rope_ext for proper positional encoding
-        // For now, skip RoPE (embeddings work reasonably without it for short texts)
+        // RoPE — rotary position encoding
+        // Q/K are [head_dim, n_heads/n_kv_heads, T] at this point
+        // ggml_rope_ext needs [head_dim, n_heads, T] and applies rotation
+        // in-place on pairs of dimensions.
+        {
+            // Build position tensor [T]
+            ggml_tensor * pos = ggml_new_tensor_1d(lctx, GGML_TYPE_I32, T);
+            for (int t = 0; t < T; t++)
+                ((int32_t *)pos->data)[t] = t;
+
+            // mode=2 = NEOX (pairs (i, i+d/2)), freq_base = rope_theta
+            int rope_mode = 2;  // GGML_ROPE_TYPE_NEOX
+            Q = ggml_rope_ext(lctx, Q, pos, nullptr,
+                               head_dim, rope_mode, 0,
+                               m.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+            K = ggml_rope_ext(lctx, K, pos, nullptr,
+                               head_dim, rope_mode, 0,
+                               m.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        }
 
         // Permute for attention: [head_dim, T, n_heads]
         Q = ggml_cont(lctx, ggml_permute(lctx, Q, 0, 2, 1, 3));
@@ -185,13 +208,13 @@ std::vector<float> decoder_encode_tokens(
             V = ggml_repeat(lctx, V, v_rep);
         }
 
-        // Attention scores
+        // Attention scores with causal mask
         float scale = 1.0f / sqrtf((float)head_dim);
         ggml_tensor * scores = ggml_mul_mat(lctx, K, Q);
         scores = ggml_scale(lctx, scores, scale);
 
-        // Causal mask (for decoder models)
-        // TODO: apply causal mask via ggml_diag_mask_inf
+        // Causal mask: mask future tokens with -inf
+        scores = ggml_diag_mask_inf(lctx, scores, 0);
 
         scores = ggml_soft_max(lctx, scores);
 
@@ -241,6 +264,11 @@ std::vector<float> decoder_encode_tokens(
 
         ggml_tensor * lout = ggml_graph_get_tensor(lgf, "layer_out");
         memcpy(hidden.data(), lout->data, H * T * sizeof(float));
+
+        if (il == 0) {
+            fprintf(stderr, "decoder: after_L0[0,:4]: %.6f %.6f %.6f %.6f\n",
+                    hidden[0], hidden[1], hidden[2], hidden[3]);
+        }
 
         ggml_free(lctx);
     }

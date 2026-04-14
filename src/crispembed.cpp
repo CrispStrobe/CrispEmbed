@@ -65,7 +65,9 @@ struct crispembed_context {
     bool is_decoder = false;
     WordPieceTokenizer wp_tokenizer;
     SentencePieceTokenizer sp_tokenizer;
+    BPETokenizer bpe_tokenizer;
     bool use_sentencepiece = false;
+    bool use_bpe = false;
     core_gguf::WeightLoad wl;
     ggml_backend_t backend = nullptr;
     int n_threads = 4;
@@ -427,8 +429,42 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
         ctx->model.hparams.n_layer = ctx->dec->n_layer;
         ctx->model.hparams.n_vocab = ctx->dec->n_vocab;
         ctx->model.hparams.n_output = ctx->dec->n_embd;
-        // Load tokenizer for decoder (BPE/SentencePiece)
-        // TODO: load from GGUF metadata
+
+        // Load BPE tokenizer from GGUF
+        gguf_init_params gp2 = { true, nullptr };
+        gguf_context * g2 = gguf_init_from_file(model_path, gp2);
+        if (g2) {
+            int ki2 = gguf_find_key(g2, "tokenizer.ggml.tokens");
+            int mi2 = gguf_find_key(g2, "tokenizer.ggml.merges");
+            if (ki2 >= 0) {
+                int nv = (int)gguf_get_arr_n(g2, ki2);
+                std::vector<std::string> vocab(nv);
+                for (int i = 0; i < nv; i++)
+                    vocab[i] = gguf_get_arr_str(g2, ki2, i);
+
+                std::vector<std::string> merges;
+                if (mi2 >= 0) {
+                    int nm = (int)gguf_get_arr_n(g2, mi2);
+                    merges.resize(nm);
+                    for (int i = 0; i < nm; i++)
+                        merges[i] = gguf_get_arr_str(g2, mi2, i);
+                }
+
+                auto u32g = [&](const char * key, int def) -> int {
+                    int k = gguf_find_key(g2, key);
+                    return k >= 0 ? (int)gguf_get_val_u32(g2, k) : def;
+                };
+                int eos_id = u32g("tokenizer.ggml.eos_token_id", 151645);
+                int pad_id = u32g("tokenizer.ggml.padding_token_id", 151643);
+
+                ctx->bpe_tokenizer.load(vocab, merges, eos_id, pad_id,
+                                         ctx->dec->n_max_pos);
+                ctx->use_bpe = true;
+                fprintf(stderr, "crispembed: BPE tokenizer (%d tokens, %zu merges)\n",
+                        nv, merges.size());
+            }
+            gguf_free(g2);
+        }
     } else {
         if (!load_model(ctx, model_path)) {
             delete ctx;
@@ -446,9 +482,14 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx,
                                             const char * text,
                                             int * out_n_dim) {
     if (!ctx || !text) return nullptr;
-    auto tokens = ctx->use_sentencepiece
-        ? ctx->sp_tokenizer.encode(text)
-        : ctx->wp_tokenizer.encode(text);
+    embed_tokens tokens;
+    if (ctx->use_bpe) {
+        tokens = ctx->bpe_tokenizer.encode(text);
+    } else if (ctx->use_sentencepiece) {
+        tokens = ctx->sp_tokenizer.encode(text);
+    } else {
+        tokens = ctx->wp_tokenizer.encode(text);
+    }
     if (ctx->is_decoder && ctx->dec) {
         ctx->last_output = decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads);
     } else {

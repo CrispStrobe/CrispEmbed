@@ -75,6 +75,26 @@ def main():
     tokens = [id_to_token.get(i, f"<unk_{i}>") for i in range(config.vocab_size)]
     writer.add_array("tokenizer.ggml.tokens", tokens)
     writer.add_uint32("tokenizer.ggml.type", 1)  # BPE
+
+    # Store BPE merges if available
+    try:
+        from huggingface_hub import hf_hub_download
+        tok_json_path = hf_hub_download(repo_id=args.model, filename="tokenizer.json")
+        with open(tok_json_path) as f:
+            tok_json = json.load(f)
+        raw_merges = tok_json.get("model", {}).get("merges", [])
+        if raw_merges:
+            # Merges can be list[str] ("a b") or list[list[str]] (["a", "b"])
+            merges = []
+            for m in raw_merges:
+                if isinstance(m, list):
+                    merges.append(" ".join(m))
+                else:
+                    merges.append(str(m))
+            writer.add_array("tokenizer.ggml.merges", merges)
+            print(f"  merges: {len(merges)}")
+    except Exception as e:
+        print(f"  merges: not found ({e})")
     if tokenizer.bos_token_id is not None:
         writer.add_uint32("tokenizer.ggml.bos_token_id", tokenizer.bos_token_id)
     if tokenizer.eos_token_id is not None:
