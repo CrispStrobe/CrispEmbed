@@ -160,10 +160,32 @@ CrispEmbed/
 | gte-small | 384 | mean | 128 MB | 0.999999 | 0.0003 |
 | arctic-embed-xs | 384 | CLS | 87 MB | 1.000000 | 0.0002 |
 
-### Needs SentencePiece tokenizer (XLM-RoBERTa models)
+### SentencePiece tokenizer (XLM-RoBERTa models) — partially working
 
-- multilingual-e5-small, arctic-embed-l-v2, arctic-embed-m-v2, PIXIE-Rune
+Proper Viterbi bigram merging implemented (from llama.cpp). Short texts
+match perfectly (cos=1.0); longer texts ~0.94-0.97 due to pre-tokenization
+regex differences. Graph runs correctly for all sizes including 24-layer.
+
+| Model | Status | Notes |
+|-------|--------|-------|
+| multilingual-e5-small | short texts PASS, long ~0.97 | pre-tokenization gap |
+| arctic-embed-l-v2 | runs, produces output | needs ground-truth validation |
+| arctic-embed-m-v2 | needs conversion | custom code trust |
+| PIXIE-Rune-v1 | needs conversion | XLM-R based |
 
 ### Needs decoder architecture (Qwen3/LLaMA-based)
 
-- Qwen3-Embedding-0.6B, Octen-0.6B, F2LLM-v2-0.6B, Jina v5, Harrier-OSS
+These models use autoregressive transformers with causal attention +
+last-token pooling. Separate graph builder needed (not BERT encoder).
+Could reuse CrispASR's voxtral/qwen3 decoder patterns.
+
+- Qwen3-Embedding-0.6B, Octen-0.6B, F2LLM-v2-0.6B
+- Jina v5 nano/small (Qwen3-based)
+- Harrier-OSS-v1-270M (decoder)
+
+### Optimization next steps
+
+- Use layer-by-layer graphs (CrispASR pattern) for memory efficiency
+- Add ggml_backend_sched path for GPU offload
+- Quantize models (Q4_K/Q8_0) and benchmark vs ONNX fastembed
+- SentencePiece pre-tokenization regex for full XLM-R support
