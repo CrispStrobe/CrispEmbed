@@ -1,0 +1,8 @@
+build/
+__pycache__/
+*.pyc
+*.o
+*.a
+*.so
+*.dll
+*.gguf
