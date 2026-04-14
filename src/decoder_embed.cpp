@@ -38,6 +38,8 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
     m.n_max_pos = u32("decoder.max_position_embeddings", 8192);
     m.rms_norm_eps = f32v("decoder.rms_norm_eps", 1e-6f);
     m.rope_theta = f32v("decoder.rope_theta", 10000.0f);
+    m.is_bidirectional = u32("decoder.is_bidirectional", 0) != 0;
+    m.activation = u32("decoder.activation", 0);
 
     gguf_free(g);
 
@@ -230,13 +232,15 @@ std::vector<float> decoder_encode_tokens(
         // Q has n_heads and K/V have n_kv_heads (n_heads % n_kv_heads == 0).
         // No explicit repeat needed — mul_mat handles it.
 
-        // Attention scores with causal mask
+        // Attention scores
         float scale = 1.0f / sqrtf((float)head_dim);
         ggml_tensor * scores = ggml_mul_mat(lctx, K, Q);
         scores = ggml_scale(lctx, scores, scale);
 
-        // Causal mask: mask future tokens with -inf
-        scores = ggml_diag_mask_inf(lctx, scores, 0);
+        // Causal mask for decoder models (skip for bidirectional encoders like EuroBERT)
+        if (!m.is_bidirectional) {
+            scores = ggml_diag_mask_inf(lctx, scores, 0);
+        }
 
         scores = ggml_soft_max(lctx, scores);
 
@@ -264,9 +268,10 @@ std::vector<float> decoder_encode_tokens(
         }
 
         if (L.gate_w && L.up_w && L.down_w) {
-            // SwiGLU: down(silu(gate(x)) * up(x))
+            // Gated FFN: down(act(gate(x)) * up(x))
+            // SwiGLU uses silu, GeGLU uses gelu
             ggml_tensor * gate = ggml_mul_mat(lctx, L.gate_w, cur);
-            gate = ggml_silu(lctx, gate);
+            gate = (m.activation == 1) ? ggml_gelu(lctx, gate) : ggml_silu(lctx, gate);
             ggml_tensor * up = ggml_mul_mat(lctx, L.up_w, cur);
             ggml_tensor * ffn = ggml_mul(lctx, gate, up);
             ffn = ggml_mul_mat(lctx, L.down_w, ffn);

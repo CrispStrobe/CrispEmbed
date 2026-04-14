@@ -32,6 +32,8 @@ struct dec_model {
     int n_max_pos = 8192;
     float rms_norm_eps = 1e-6f;
     float rope_theta = 10000.0f;
+    bool is_bidirectional = false;  // true for EuroBERT-style encoder models
+    int activation = 0;  // 0=silu (SwiGLU), 1=gelu (GeGLU)
 
     ggml_tensor * token_embd = nullptr;
     ggml_tensor * output_norm = nullptr;

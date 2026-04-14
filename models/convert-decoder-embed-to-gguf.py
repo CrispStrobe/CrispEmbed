@@ -72,12 +72,30 @@ def main():
     if rope_theta is None:
         rp = getattr(config, "rope_parameters", None) or getattr(config, "rope_scaling", None)
         if isinstance(rp, dict):
-            rope_theta = rp.get("rope_theta", 10000.0)
+            rope_theta = rp.get("rope_theta", None)
+            # Gemma3 has nested rope configs — try full_attention.rope_theta
+            if rope_theta is None and "full_attention" in rp:
+                rope_theta = rp["full_attention"].get("rope_theta", 10000.0)
+            if rope_theta is None:
+                rope_theta = 10000.0
         else:
             rope_theta = 10000.0
     writer.add_float32("decoder.rope_theta", float(rope_theta))
     print(f"  rope_theta: {rope_theta}")
     writer.add_uint32("decoder.pooling_method", 2)  # last-token
+
+    # Hidden activation: silu (SwiGLU) vs gelu (GeGLU)
+    act = getattr(config, "hidden_act", getattr(config, "hidden_activation", "silu"))
+    act_id = 1 if "gelu" in str(act).lower() else 0  # 0=silu, 1=gelu
+    writer.add_uint32("decoder.activation", act_id)
+    print(f"  activation: {'gelu' if act_id else 'silu'} (config: {act})")
+
+    # Detect if bidirectional (encoder) vs causal (decoder)
+    # EuroBERT/ModernBERT are encoder models with decoder-style weights
+    is_bidirectional = "bert" in config.model_type.lower() or "encoder" in str(config.architectures).lower()
+    writer.add_uint32("decoder.is_bidirectional", int(is_bidirectional))
+    if is_bidirectional:
+        print(f"  attention: bidirectional (no causal mask)")
 
     # Tokenizer
     vocab = tokenizer.get_vocab()
