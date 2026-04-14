@@ -5,14 +5,18 @@ Supports BERT encoder AND decoder (Qwen3/LLaMA) embedding models.
 
 ## Status
 
-**BERT encoder models** — 3 verified bit-identical to HuggingFace:
-- all-MiniLM-L6-v2 (384d, cos=0.999999)
-- gte-small (384d, cos=0.999999)
-- snowflake-arctic-embed-xs (384d, cos=1.000000)
+**8 models verified** bit-identical to HuggingFace (cos≥0.999):
 
-**Decoder models** — graph runs with RoPE + causal mask + GQA + SwiGLU:
-- Octen-Embedding-0.6B: tokenization matches, layer 0 close (RoPE tuning needed)
-- Architecture covers: Qwen3-Embedding, F2LLM, Jina v5, Harrier 0.6B
+| Model | Type | Dim | CosSim |
+|-------|------|-----|--------|
+| all-MiniLM-L6-v2 | BERT | 384 | 0.999999 |
+| gte-small | BERT | 384 | 0.999999 |
+| arctic-embed-xs | BERT | 384 | 1.000000 |
+| Octen-Embedding-0.6B | Qwen3 | 1024 | 0.999891 |
+| F2LLM-v2-0.6B | Qwen3 | 1024 | 0.999420 |
+| Jina v5 Small | Qwen3 | 1024 | 0.999941 |
+| Harrier-OSS-v1-0.6B | Qwen3 | 1024 | 0.999959 |
+| Qwen3-Embedding-0.6B | Qwen3 | 1024 | 0.999895 |
 
 **Server + Python wrapper** — working with OpenAI-compatible API.
 
