@@ -75,7 +75,7 @@ class BPETokenizer {
 public:
     bool load(const std::vector<std::string> & vocab,
               const std::vector<std::string> & merges,
-              int eos_id, int pad_id,
+              int eos_id, int pad_id, int suffix_id,
               int max_length = 8192);
 
     embed_tokens encode(const std::string & text) const;
@@ -88,5 +88,6 @@ private:
     std::vector<std::string> id_to_token_;
     int eos_id_ = 151645;
     int pad_id_ = 151643;
+    int suffix_id_ = 151643;  // token appended after text (model-specific)
     int max_length_ = 8192;
 };

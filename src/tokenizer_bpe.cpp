@@ -9,7 +9,7 @@
 
 bool BPETokenizer::load(const std::vector<std::string> & vocab,
                          const std::vector<std::string> & merges,
-                         int eos_id, int pad_id,
+                         int eos_id, int pad_id, int suffix_id,
                          int max_length) {
     id_to_token_ = vocab;
     token_to_id_.clear();
@@ -26,6 +26,7 @@ bool BPETokenizer::load(const std::vector<std::string> & vocab,
 
     eos_id_ = eos_id;
     pad_id_ = pad_id;
+    suffix_id_ = suffix_id;
     max_length_ = max_length;
     return !vocab.empty();
 }
@@ -34,8 +35,11 @@ embed_tokens BPETokenizer::encode(const std::string & text) const {
     // Use core_bpe's tokenize_simple (GPT-2 byte-level BPE)
     auto ids = core_bpe::tokenize_simple(token_to_id_, merge_rank_, text);
 
-    // Append pad token at end (Qwen3 convention: text + <|endoftext|>)
-    ids.push_back(pad_id_);
+    // Append suffix token if model uses one (detected during conversion)
+    // Octen: 151643, F2LLM: 151645, Jina v5: none (-1)
+    if (suffix_id_ >= 0) {
+        ids.push_back(suffix_id_);
+    }
 
     // Build result (no padding for decoder models — variable length)
     int seq_len = std::min((int)ids.size(), max_length_);

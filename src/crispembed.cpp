@@ -456,9 +456,11 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
                 };
                 int eos_id = u32g("tokenizer.ggml.eos_token_id", 151645);
                 int pad_id = u32g("tokenizer.ggml.padding_token_id", 151643);
+                int ki_sfx = gguf_find_key(g2, "tokenizer.ggml.suffix_token_id");
+                int suffix_id = ki_sfx >= 0 ? (int)gguf_get_val_i32(g2, ki_sfx) : pad_id;
 
                 ctx->bpe_tokenizer.load(vocab, merges, eos_id, pad_id,
-                                         ctx->dec->n_max_pos);
+                                         suffix_id, ctx->dec->n_max_pos);
                 ctx->use_bpe = true;
                 fprintf(stderr, "crispembed: BPE tokenizer (%d tokens, %zu merges)\n",
                         nv, merges.size());

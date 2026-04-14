@@ -115,6 +115,18 @@ def main():
     if tokenizer.pad_token_id is not None:
         writer.add_uint32("tokenizer.ggml.padding_token_id", tokenizer.pad_token_id)
 
+    # Detect suffix token: what gets appended after the text
+    # Compare encode("a") with just tokenizing "a" to see if tokenizer adds a suffix
+    test_ids = tokenizer.encode("a")
+    raw_ids = tokenizer.convert_tokens_to_ids(["a"])
+    if len(test_ids) > len(raw_ids) and test_ids[-1] != raw_ids[-1]:
+        suffix_id = test_ids[-1]
+        print(f"  suffix_token_id: {suffix_id} (appended by tokenizer)")
+    else:
+        suffix_id = -1  # no suffix
+        print(f"  suffix_token_id: none (tokenizer does not append special tokens)")
+    writer.add_int32("tokenizer.ggml.suffix_token_id", suffix_id)
+
     # Token embeddings — search multiple naming conventions
     embd_keys = ["model.embed_tokens.weight", "embed_tokens.weight",
                   "embeddings.word_embeddings.weight"]
