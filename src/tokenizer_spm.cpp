@@ -186,17 +186,19 @@ std::vector<int> SentencePieceTokenizer::tokenize_text(const std::string & text)
 }
 
 embed_tokens SentencePieceTokenizer::encode(const std::string & text) const {
-    // SentencePiece convention: prepend ▁ (space) and normalize
-    std::string processed;
-    // XLM-R prepends a space before tokenization
-    processed = "\xe2\x96\x81";  // ▁
-    for (char c : text) {
+    // SentencePiece convention for XLM-R: prepend a space to the text,
+    // then replace all spaces with ▁ (U+2581). The BPE merge algorithm
+    // then operates on the ▁-prefixed text.
+    std::string processed = " " + text;  // leading space (XLM-R convention)
+    std::string with_marker;
+    for (char c : processed) {
         if (c == ' ') {
-            processed += "\xe2\x96\x81";
+            with_marker += "\xe2\x96\x81";  // ▁
         } else {
-            processed += c;
+            with_marker += c;
         }
     }
+    processed = with_marker;
 
     auto token_ids = tokenize_text(processed);
 
