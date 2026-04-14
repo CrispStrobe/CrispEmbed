@@ -21,6 +21,7 @@ target_link_libraries(crispembed-core PUBLIC ggml)
 add_library(crispembed STATIC
     src/crispembed.cpp
     src/tokenizer.cpp
+    src/tokenizer_spm.cpp
 )
 target_include_directories(crispembed PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
