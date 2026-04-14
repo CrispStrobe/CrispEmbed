@@ -147,3 +147,23 @@ CrispEmbed/
 └── tests/
     └── test_encode.py          compare vs HF reference
 ```
+
+---
+
+## Status (April 2026)
+
+### Verified working (ground-truth match vs HF sentence-transformers)
+
+| Model | Dim | Pooling | Size | CosSim | MaxDiff |
+|-------|-----|---------|------|--------|---------|
+| all-MiniLM-L6-v2 | 384 | mean | 87 MB | 0.999999 | 0.0003 |
+| gte-small | 384 | mean | 128 MB | 0.999999 | 0.0003 |
+| arctic-embed-xs | 384 | CLS | 87 MB | 1.000000 | 0.0002 |
+
+### Needs SentencePiece tokenizer (XLM-RoBERTa models)
+
+- multilingual-e5-small, arctic-embed-l-v2, arctic-embed-m-v2, PIXIE-Rune
+
+### Needs decoder architecture (Qwen3/LLaMA-based)
+
+- Qwen3-Embedding-0.6B, Octen-0.6B, F2LLM-v2-0.6B, Jina v5, Harrier-OSS
