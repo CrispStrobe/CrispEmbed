@@ -14,8 +14,14 @@ Single-text encoding latency via HTTP server (`/embed` endpoint).
 | octen-0.6b | Q8_0 | 600M | 1024 | 308 | 3.2 |
 | octen-0.6b | Q4_K | 600M | 1024 | 294 | 3.4 |
 
-Optimizations applied: graph caching (reuse across calls), flash attention
-(fused QKV attention), buffer reuse (zero allocation per call).
+**Batch mode** (10 texts per request):
+
+| Model | Batch Latency | Per-text | Texts/s |
+|-------|--------------|----------|---------|
+| all-MiniLM-L6-v2 | 114ms | 11.4ms | 88 |
+
+Optimizations: graph caching, flash attention (fused QKV), buffer reuse,
+sorted batch processing (group by token count for graph cache hits).
 
 ## Comparison with HuggingFace and fastembed (ONNX)
 
