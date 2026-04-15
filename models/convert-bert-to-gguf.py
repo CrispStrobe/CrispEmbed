@@ -78,15 +78,20 @@ def main():
           f"vocab={config.vocab_size}")
 
     # Detect architecture: XLM-R vs BERT
-    is_xlmr = config.model_type in ("roberta", "xlm-roberta")
-    arch = "xlmr" if (is_xlmr and ollama_mode) else ARCH
+    # True XLM-R: model_type is "roberta" or "xlm-roberta" → needs position offset
+    # SentencePiece BERT: model_type is "bert" but uses SP tokenizer → no position offset
+    is_true_xlmr = config.model_type in ("roberta", "xlm-roberta")
+    is_sentencepiece_model = hasattr(tokenizer, 'sp_model') or config.vocab_size > 100000
+    # For Ollama: use xlmr arch for true XLM-R, bert arch for SP-BERT
+    # (Ollama's bert model only supports WordPiece, SP-BERT needs xlmr arch but no offset)
+    needs_xlmr_arch = is_true_xlmr or (is_sentencepiece_model and ollama_mode)
+    arch = "xlmr" if needs_xlmr_arch else ARCH
 
-    # Position embedding offset: RoBERTa/XLM-R uses padding_idx + 1
+    # Position embedding offset: only true RoBERTa/XLM-R uses padding_idx + 1
     pos_offset = 0
-    if hasattr(config, "pad_token_id") and config.pad_token_id is not None:
-        if is_xlmr:
-            pos_offset = config.pad_token_id + 1
-            print(f"  position_offset: {pos_offset} (RoBERTa-style)")
+    if is_true_xlmr and hasattr(config, "pad_token_id") and config.pad_token_id is not None:
+        pos_offset = config.pad_token_id + 1
+        print(f"  position_offset: {pos_offset} (RoBERTa-style)")
 
     # Detect pooling method from sentence-transformers config
     pool_method_crisp = 0  # CrispEmbed: 0=mean, 1=CLS, 2=last
