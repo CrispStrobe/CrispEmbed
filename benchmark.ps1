@@ -151,38 +151,47 @@ Write-Host ""
 # --- CrispEmbed CLI benchmark ---
 Write-Host "--- CrispEmbed CLI ---" -ForegroundColor Yellow
 
-# Warmup — use temp files to separate stdout from stderr cleanly
+# Warmup — use temp files to separate stdout from stderr
 Write-Host "  Loading model (may download on first run)..."
 $tmpOut = [System.IO.Path]::GetTempFileName()
 $tmpErr = [System.IO.Path]::GetTempFileName()
 
-# First call may trigger download (stderr shows progress)
-$proc = Start-Process -FilePath $Binary -ArgumentList "-m",$Model,"warmup" `
+# First call may trigger download
+$null = Start-Process -FilePath $Binary -ArgumentList "-m",$Model,"warmup" `
     -NoNewWindow -Wait -PassThru -RedirectStandardOutput $tmpOut -RedirectStandardError $tmpErr
-# Second call: capture actual embedding output
-$proc = Start-Process -FilePath $Binary -ArgumentList "-m",$Model,$TestText `
+
+# Second call captures embedding
+$null = Start-Process -FilePath $Binary -ArgumentList "-m",$Model,$TestText `
     -NoNewWindow -Wait -PassThru -RedirectStandardOutput $tmpOut -RedirectStandardError $tmpErr
-$warmup = (Get-Content $tmpOut -Raw).Trim()
+$warmup = (Get-Content $tmpOut -Raw -ErrorAction SilentlyContinue)
+if ($warmup) { $warmup = $warmup.Trim() }
+
+# Show what backend was used (from stderr)
+$stderrContent = Get-Content $tmpErr -Raw -ErrorAction SilentlyContinue
+if ($stderrContent -match "using (\S+ backend)") { Write-Host "  Backend: $($Matches[1])" }
 Remove-Item $tmpOut, $tmpErr -Force -ErrorAction SilentlyContinue
 
 if (-not $warmup -or $warmup.Length -lt 5) {
-    Write-Host "  [ERROR] CLI produced no embedding output. Check model." -ForegroundColor Red
+    Write-Host "  [ERROR] CLI produced no embedding output." -ForegroundColor Red
     Write-Host "  Try: $Binary -m $Model `"Hello world`"" -ForegroundColor Yellow
 } else {
-    $dim = ($warmup -split '\s+').Count
+    # Count floats (each separated by space)
+    $dim = ($warmup -split '\s+' | Where-Object { $_ -match '^-?[0-9]' }).Count
     Write-Host "  Dimension: $dim"
 
-    # Benchmark loop — use Start-Process for clean stderr handling
+    # Benchmark loop (CLI mode includes model load per call — slow for GPU)
+    Write-Host "  Benchmarking CLI ($NRuns runs)..."
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
     for ($i = 0; $i -lt $NRuns; $i++) {
-        $proc = Start-Process -FilePath $Binary -ArgumentList "-m",$Model,$TestText `
+        $null = Start-Process -FilePath $Binary -ArgumentList "-m",$Model,$TestText `
             -NoNewWindow -Wait -PassThru -RedirectStandardOutput $tmpOut -RedirectStandardError $tmpErr
     }
     $sw.Stop()
     Remove-Item $tmpOut, $tmpErr -Force -ErrorAction SilentlyContinue
     $cliMs = $sw.ElapsedMilliseconds / $NRuns
     $cliTps = $NRuns / ($sw.ElapsedMilliseconds / 1000.0)
-    Write-Host ("  CLI:    {0:F1}ms/text  {1:F0} texts/s (includes model load)" -f $cliMs, $cliTps)
+    Write-Host ("  CLI:    {0:F1}ms/text  {1:F0} texts/s (includes model load + GPU init)" -f $cliMs, $cliTps)
+    Write-Host "  NOTE: Server mode is much faster (model stays loaded)" -ForegroundColor DarkGray
 }
 
 # --- CrispEmbed Server benchmark ---
@@ -251,6 +260,14 @@ if (-not $SkipHF -and $HfModel) {
     Write-Host ""
     Write-Host "--- HuggingFace sentence-transformers ---" -ForegroundColor Yellow
 
+    # Check if sentence-transformers is installed, offer to install
+    $stCheck = python -c "import sentence_transformers; print('ok')" 2>$null
+    if ($stCheck -ne "ok") {
+        Write-Host "  sentence-transformers not installed." -ForegroundColor Yellow
+        Write-Host "  Installing: pip install sentence-transformers..." -ForegroundColor DarkGray
+        python -m pip install -q sentence-transformers 2>$null
+    }
+
     $pyScript = @"
 import time
 try:
@@ -293,9 +310,16 @@ if (-not $SkipFastembed) {
     Write-Host ""
     Write-Host "--- fastembed (ONNX Runtime) ---" -ForegroundColor Yellow
 
+    # Check if fastembed is installed, offer to install
+    $feCheck = python -c "import fastembed; print('ok')" 2>$null
+    if ($feCheck -ne "ok") {
+        Write-Host "  fastembed not installed." -ForegroundColor Yellow
+        Write-Host "  Installing: pip install fastembed..." -ForegroundColor DarkGray
+        python -m pip install -q fastembed 2>$null
+    }
+
     $feModel = $HfModel
-    # fastembed uses different model IDs for some models
-    if ($feModel -eq "thenlper/gte-small") { $feModel = "" }  # not supported
+    if ($feModel -eq "thenlper/gte-small") { $feModel = "" }
 
     if ($feModel) {
         $pyScript = @"
