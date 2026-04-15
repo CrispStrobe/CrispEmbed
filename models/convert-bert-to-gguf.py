@@ -78,14 +78,12 @@ def main():
           f"vocab={config.vocab_size}")
 
     # Detect architecture: XLM-R vs BERT
-    # True XLM-R: model_type is "roberta" or "xlm-roberta" → needs position offset
-    # SentencePiece BERT: model_type is "bert" but uses SP tokenizer → no position offset
+    # True XLM-R: model_type is "roberta" or "xlm-roberta" → needs position offset + xlmr arch
+    # SentencePiece BERT: model_type is "bert" but uses SP tokenizer → bert arch, no offset
+    #   (Ollama's BERT model now supports SP Unigram and BPE tokenizers)
     is_true_xlmr = config.model_type in ("roberta", "xlm-roberta")
     is_sentencepiece_model = hasattr(tokenizer, 'sp_model') or config.vocab_size > 100000
-    # For Ollama: use xlmr arch for true XLM-R, bert arch for SP-BERT
-    # (Ollama's bert model only supports WordPiece, SP-BERT needs xlmr arch but no offset)
-    needs_xlmr_arch = is_true_xlmr or (is_sentencepiece_model and ollama_mode)
-    arch = "xlmr" if needs_xlmr_arch else ARCH
+    arch = "xlmr" if (is_true_xlmr and ollama_mode) else ARCH
 
     # Position embedding offset: only true RoBERTa/XLM-R uses padding_idx + 1
     pos_offset = 0
