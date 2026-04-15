@@ -8,8 +8,6 @@
 #   ./benchmark.sh -n 200                            # 200 iterations
 #   ./benchmark.sh --skip-hf --skip-fastembed        # CrispEmbed only
 
-set -e
-
 PORT=8090
 N_RUNS=50
 MODEL_PATH=""
@@ -211,31 +209,29 @@ try:
     from sentence_transformers import SentenceTransformer
 except ImportError:
     import subprocess
-    print('  Installing sentence-transformers...')
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q', 'sentence-transformers'])
+    print('  Installing sentence-transformers...', flush=True)
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q', 'sentence-transformers'],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     from sentence_transformers import SentenceTransformer
 
-try:
-    model = SentenceTransformer('$HF_MODEL', trust_remote_code=True)
-    text = '$TEXT'
-    model.encode([text], normalize_embeddings=True)  # warmup
-    N = $N_RUNS
-    t0 = time.perf_counter()
-    for _ in range(N):
-        model.encode([text], normalize_embeddings=True)
-    elapsed = time.perf_counter() - t0
-    print(f'  Single: {elapsed/N*1000:.1f}ms/text  {N/elapsed:.0f} texts/s')
-    # Batch
-    batch = [text] * 10
-    t0 = time.perf_counter()
-    runs = max(10, N // 5)
-    for _ in range(runs):
-        model.encode(batch, normalize_embeddings=True, batch_size=32)
-    elapsed = time.perf_counter() - t0
-    print(f'  Batch:  {elapsed/runs*1000:.1f}ms/10texts  {runs*10/elapsed:.0f} texts/s')
-except Exception as e:
-    print(f'  [ERROR] {e}')
-" 2>/dev/null
+model = SentenceTransformer('$HF_MODEL', trust_remote_code=True)
+text = '$TEXT'
+model.encode([text], normalize_embeddings=True)  # warmup
+N = $N_RUNS
+t0 = time.perf_counter()
+for _ in range(N):
+    model.encode([text], normalize_embeddings=True)
+elapsed = time.perf_counter() - t0
+print(f'  Single: {elapsed/N*1000:.1f}ms/text  {N/elapsed:.0f} texts/s')
+# Batch
+batch = [text] * 10
+t0 = time.perf_counter()
+runs = max(10, N // 5)
+for _ in range(runs):
+    model.encode(batch, normalize_embeddings=True, batch_size=32)
+elapsed = time.perf_counter() - t0
+print(f'  Batch:  {elapsed/runs*1000:.1f}ms/10texts  {runs*10/elapsed:.0f} texts/s')
+" || echo "  [ERROR] HuggingFace benchmark failed (pip install or model load issue)"
 fi
 
 # --- FastEmbed (Python ONNX) ---
@@ -249,23 +245,21 @@ try:
     from fastembed import TextEmbedding
 except ImportError:
     import subprocess
-    print('  Installing fastembed...')
-    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q', 'fastembed'])
+    print('  Installing fastembed...', flush=True)
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q', 'fastembed'],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     from fastembed import TextEmbedding
 
-try:
-    model = TextEmbedding('$HF_MODEL')
-    text = '$TEXT'
-    list(model.embed([text]))  # warmup
-    N = $N_RUNS
-    t0 = time.perf_counter()
-    for _ in range(N):
-        list(model.embed([text]))
-    elapsed = time.perf_counter() - t0
-    print(f'  Single: {elapsed/N*1000:.1f}ms/text  {N/elapsed:.0f} texts/s')
-except Exception as e:
-    print(f'  Skipped ({e})')
-" 2>/dev/null
+model = TextEmbedding('$HF_MODEL')
+text = '$TEXT'
+list(model.embed([text]))  # warmup
+N = $N_RUNS
+t0 = time.perf_counter()
+for _ in range(N):
+    list(model.embed([text]))
+elapsed = time.perf_counter() - t0
+print(f'  Single: {elapsed/N*1000:.1f}ms/text  {N/elapsed:.0f} texts/s')
+" || echo "  [SKIP] fastembed not available for this model"
 fi
 
 # --- fastembed-rs (Rust ONNX) ---
