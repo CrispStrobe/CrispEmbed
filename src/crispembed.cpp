@@ -31,6 +31,8 @@ struct embed_layer {
     ggml_tensor * k_w = nullptr, * k_b = nullptr;
     ggml_tensor * v_w = nullptr, * v_b = nullptr;
     ggml_tensor * o_w = nullptr, * o_b = nullptr;
+    // Pre-merged QKV (created at load time for fused projection)
+    ggml_tensor * qkv_w = nullptr, * qkv_b = nullptr;
     // Post-attention LayerNorm
     ggml_tensor * ln2_w = nullptr;
     ggml_tensor * ln2_b = nullptr;
@@ -79,6 +81,7 @@ struct crispembed_context {
     std::vector<float> last_output;  // reused buffer
     std::vector<uint8_t> work_buf;   // reused graph compute workspace
     std::vector<uint8_t> graph_buf;  // reused graph context memory
+    ggml_context * qkv_ctx = nullptr;  // pre-merged QKV weights
 
     // Cached encoder graph (reused when seq_len matches)
     struct cached_graph {
@@ -251,6 +254,31 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     m.pooler_w = get("pooler.weight");
     m.pooler_b = get("pooler.bias");
 
+    // Pre-merge QKV weights for fused projection (1 matmul instead of 3)
+    // Allocate a separate context for merged weights
+    {
+        const int H = hp.n_embd;
+        size_t qkv_mem = (size_t)hp.n_layer * (3 * H * H + 3 * H) * sizeof(float)
+                       + hp.n_layer * 2 * ggml_tensor_overhead() + 1024;
+        ggml_init_params qkv_ip = { qkv_mem, nullptr, false };
+        ctx->qkv_ctx = ggml_init(qkv_ip);
+        for (int i = 0; i < hp.n_layer; i++) {
+            auto & L = m.layers[i];
+            if (!L.q_w || !L.k_w || !L.v_w) continue;
+            // Create merged weight [H, 3H] = concat(Q_w, K_w, V_w) along dim 1
+            L.qkv_w = ggml_new_tensor_2d(ctx->qkv_ctx, GGML_TYPE_F32, H, 3 * H);
+            ggml_backend_tensor_get(L.q_w, (char *)L.qkv_w->data, 0, H * H * sizeof(float));
+            ggml_backend_tensor_get(L.k_w, (char *)L.qkv_w->data + H * H * sizeof(float), 0, H * H * sizeof(float));
+            ggml_backend_tensor_get(L.v_w, (char *)L.qkv_w->data + 2 * H * H * sizeof(float), 0, H * H * sizeof(float));
+            if (L.q_b && L.k_b && L.v_b) {
+                L.qkv_b = ggml_new_tensor_1d(ctx->qkv_ctx, GGML_TYPE_F32, 3 * H);
+                ggml_backend_tensor_get(L.q_b, (char *)L.qkv_b->data, 0, H * sizeof(float));
+                ggml_backend_tensor_get(L.k_b, (char *)L.qkv_b->data + H * sizeof(float), 0, H * sizeof(float));
+                ggml_backend_tensor_get(L.v_b, (char *)L.qkv_b->data + 2 * H * sizeof(float), 0, H * sizeof(float));
+            }
+        }
+    }
+
     fprintf(stderr, "crispembed: loaded %d layers, %d dims, %d vocab\n",
             hp.n_layer, hp.n_embd, hp.n_vocab);
     return true;
@@ -319,9 +347,20 @@ static void build_encoder_graph(crispembed_context * ctx, int T) {
     for (int il = 0; il < hp.n_layer; il++) {
         const auto & L = m.layers[il];
 
-        ggml_tensor * Q = ggml_add(gctx, ggml_mul_mat(gctx, L.q_w, cur), L.q_b);
-        ggml_tensor * K = ggml_add(gctx, ggml_mul_mat(gctx, L.k_w, cur), L.k_b);
-        ggml_tensor * V = ggml_add(gctx, ggml_mul_mat(gctx, L.v_w, cur), L.v_b);
+        // QKV projection
+        ggml_tensor * Q, * K, * V;
+        if (L.qkv_w) {
+            // Fused: one matmul [3H, T] then split via view+cont
+            ggml_tensor * qkv = ggml_mul_mat(gctx, L.qkv_w, cur);  // [3H, T]
+            if (L.qkv_b) qkv = ggml_add(gctx, qkv, L.qkv_b);
+            Q = ggml_cont(gctx, ggml_view_2d(gctx, qkv, H, T, 3 * H * sizeof(float), 0));
+            K = ggml_cont(gctx, ggml_view_2d(gctx, qkv, H, T, 3 * H * sizeof(float), H * sizeof(float)));
+            V = ggml_cont(gctx, ggml_view_2d(gctx, qkv, H, T, 3 * H * sizeof(float), 2 * H * sizeof(float)));
+        } else {
+            Q = ggml_add(gctx, ggml_mul_mat(gctx, L.q_w, cur), L.q_b);
+            K = ggml_add(gctx, ggml_mul_mat(gctx, L.k_w, cur), L.k_b);
+            V = ggml_add(gctx, ggml_mul_mat(gctx, L.v_w, cur), L.v_b);
+        }
 
         // Reshape for multi-head: [H, T] -> [head_dim, n_heads, T]
         Q = ggml_reshape_3d(gctx, Q, head_dim, n_heads, T);
@@ -329,24 +368,23 @@ static void build_encoder_graph(crispembed_context * ctx, int T) {
         V = ggml_reshape_3d(gctx, V, head_dim, n_heads, T);
 
         // Flash attention: fused QK^T*scale + softmax + @V
-        // Input:  q/k/v [head_dim, n_heads, T] -> permuted to [head_dim, T, n_heads]
-        // Output: [head_dim, n_heads, T] (already permuted for us)
         float scale = 1.0f / sqrtf((float)head_dim);
-        ggml_tensor * Qp = ggml_permute(gctx, Q, 0, 2, 1, 3);  // [hd, T, nh]
+        ggml_tensor * Qp = ggml_permute(gctx, Q, 0, 2, 1, 3);
         ggml_tensor * Kp = ggml_permute(gctx, K, 0, 2, 1, 3);
         ggml_tensor * Vp = ggml_permute(gctx, V, 0, 2, 1, 3);
         ggml_tensor * attn = ggml_flash_attn_ext(gctx, Qp, Kp, Vp,
                                                    nullptr, scale, 0.0f, 0.0f);
-        // Result is [head_dim, n_heads, T] -> reshape to [H, T]
         attn = ggml_reshape_2d(gctx, attn, H, T);
 
         attn = ggml_add(gctx, ggml_mul_mat(gctx, L.o_w, attn), L.o_b);
 
+        // Post-attention: residual + LayerNorm
         cur = ggml_add(gctx, cur, attn);
         cur = ggml_norm(gctx, cur, ln_eps);
         cur = ggml_mul(gctx, cur, L.ln1_w);
         cur = ggml_add(gctx, cur, L.ln1_b);
 
+        // FFN
         ggml_tensor * ffn = ggml_add(gctx, ggml_mul_mat(gctx, L.fc1_w, cur), L.fc1_b);
         ffn = ggml_gelu(gctx, ffn);
         ffn = ggml_add(gctx, ggml_mul_mat(gctx, L.fc2_w, ffn), L.fc2_b);
@@ -704,6 +742,7 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
 extern "C" void crispembed_free(crispembed_context * ctx) {
     if (!ctx) return;
     if (ctx->enc_cache.ctx) { ggml_free(ctx->enc_cache.ctx); ctx->enc_cache.ctx = nullptr; }
+    if (ctx->qkv_ctx) { ggml_free(ctx->qkv_ctx); ctx->qkv_ctx = nullptr; }
     core_gguf::free_weights(ctx->wl);
     if (ctx->sched) {
         ggml_backend_sched_free(ctx->sched);
