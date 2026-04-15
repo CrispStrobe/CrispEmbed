@@ -14,7 +14,19 @@ Single-text encoding latency via HTTP server (`/embed` endpoint).
 | octen-0.6b | Q8_0 | 600M | 1024 | 308 | 3.2 |
 | octen-0.6b | Q4_K | 600M | 1024 | 294 | 3.4 |
 
-**Batch mode** (10 texts per request):
+## GPU Inference (CUDA)
+
+Tested on NVIDIA RTX A1000 Laptop GPU (4GB VRAM), via HTTP server.
+
+| Model | Quant | Avg (ms) | Texts/s | Batch (10) |
+|-------|-------|----------|---------|------------|
+| all-MiniLM-L6-v2 | F32 | 7.4 | 135 | 211/s |
+
+GPU inference is **2.1x faster** than our optimized CPU (15.5ms) and
+**4x faster** than fastembed ONNX on CPU (29.5ms). The ggml_backend_sched
+dispatcher automatically offloads matmul, attention, and norm ops to CUDA.
+
+## CPU Batch Mode
 
 | Model | Batch Latency | Per-text | Texts/s |
 |-------|--------------|----------|---------|
