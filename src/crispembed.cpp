@@ -594,16 +594,21 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
                                                    int n_texts,
                                                    int * out_n_dim) {
     if (!ctx || !texts || n_texts <= 0) return nullptr;
-    int dim = ctx->model.hparams.n_output > 0
-        ? ctx->model.hparams.n_output
-        : ctx->model.hparams.n_embd;
+
+    // Encode each text via the single-text API (handles all model types + Matryoshka)
+    int dim = 0;
+    const float * first = crispembed_encode(ctx, texts[0], &dim);
+    if (!first || dim == 0) return nullptr;
+
     ctx->last_output.resize(n_texts * dim);
-    for (int i = 0; i < n_texts; i++) {
-        auto tokens = ctx->use_sentencepiece
-            ? ctx->sp_tokenizer.encode(texts[i])
-            : ctx->wp_tokenizer.encode(texts[i]);
-        auto vec = encode_tokens(ctx, tokens);
-        std::memcpy(ctx->last_output.data() + i * dim, vec.data(), dim * sizeof(float));
+    std::memcpy(ctx->last_output.data(), first, dim * sizeof(float));
+
+    for (int i = 1; i < n_texts; i++) {
+        int d = 0;
+        const float * vec = crispembed_encode(ctx, texts[i], &d);
+        if (vec && d == dim) {
+            std::memcpy(ctx->last_output.data() + i * dim, vec, dim * sizeof(float));
+        }
     }
     if (out_n_dim) *out_n_dim = dim;
     return ctx->last_output.data();
