@@ -51,8 +51,14 @@ echo [INFO] Initializing MSVC environment...
 call "!vcvars!"
 
 :: Configure
+:: Clean old shared lib build if present (avoids ggml.dll not found errors)
+if exist "build-cuda\ggml.dll" (
+    echo [INFO] Cleaning old shared lib build...
+    rmdir /s /q build-cuda 2>nul
+)
+
 echo [INFO] Configuring with CUDA + Ninja...
-cmake -G Ninja -B build-cuda -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DCRISPEMBED_BUILD_SHARED=OFF %*
+cmake -G Ninja -B build-cuda -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DBUILD_SHARED_LIBS=OFF -DCRISPEMBED_BUILD_SHARED=OFF %*
 
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] CMake configuration failed.
@@ -73,3 +79,10 @@ echo [SUCCESS] CUDA build complete!
 echo   CLI:      build-cuda\crispembed.exe
 echo   Server:   build-cuda\crispembed-server.exe
 echo   Quantize: build-cuda\crispembed-quantize.exe
+echo.
+echo Quick test:
+echo   build-cuda\crispembed.exe -m model.gguf "Hello world"
+echo.
+echo Benchmark:
+echo   benchmark.bat model.gguf
+echo   powershell -File benchmark.ps1 -Model model.gguf

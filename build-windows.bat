@@ -44,8 +44,14 @@ echo [INFO] Initializing MSVC environment...
 call "!vcvars!"
 
 :: Configure
+:: Clean old shared lib build if present
+if exist "build\ggml.dll" (
+    echo [INFO] Cleaning old shared lib build...
+    rmdir /s /q build 2>nul
+)
+
 echo [INFO] Configuring with Ninja...
-cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_BUILD_SHARED=OFF %*
+cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCRISPEMBED_BUILD_SHARED=OFF %*
 
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] CMake configuration failed.

@@ -70,12 +70,31 @@ if (-not $Binary) {
     exit 1
 }
 
-# Auto-detect model
+# Auto-detect model: search current dir, models/, and common cache dirs
 if (-not $Model) {
-    $GGUFs = Get-ChildItem -Path "." -Filter "*.gguf" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($GGUFs) { $Model = $GGUFs.FullName }
-    else {
-        Write-Host "[ERROR] No .gguf model found. Specify with -Model" -ForegroundColor Red
+    $SearchDirs = @(".", "models", "$env:USERPROFILE\.cache\crispembed")
+    foreach ($dir in $SearchDirs) {
+        if (Test-Path $dir) {
+            $found = Get-ChildItem -Path $dir -Filter "*.gguf" -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($found) { $Model = $found.FullName; break }
+        }
+    }
+    if (-not $Model) {
+        Write-Host "[ERROR] No .gguf model found. Specify with -Model <path-to-file.gguf>" -ForegroundColor Red
+        Write-Host "  Download models from: https://huggingface.co/cstr" -ForegroundColor Yellow
+        exit 1
+    }
+}
+
+# Validate model path exists
+if (-not (Test-Path $Model)) {
+    # Maybe it's a model name, not a path — search for it
+    $found = Get-ChildItem -Path "." -Filter "*$Model*.gguf" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($found) {
+        $Model = $found.FullName
+    } else {
+        Write-Host "[ERROR] Model not found: $Model" -ForegroundColor Red
+        Write-Host "  Specify a .gguf file path, e.g.: .\benchmark.ps1 -Model .\all-MiniLM-L6-v2.gguf" -ForegroundColor Yellow
         exit 1
     }
 }
@@ -128,15 +147,31 @@ if ($Server) {
     Write-Host ""
     Write-Host "--- CrispEmbed Server ---" -ForegroundColor Yellow
 
-    $threadArg = if ($Threads -gt 0) { "-t $Threads" } else { "" }
-    $serverProc = Start-Process -FilePath $Server -ArgumentList "-m `"$Model`" --port $Port $threadArg" -PassThru -WindowStyle Hidden
-    Start-Sleep -Seconds 3
+    $threadArg = if ($Threads -gt 0) { @("-t", "$Threads") } else { @() }
+    $serverArgs = @("-m", $Model, "--port", "$Port") + $threadArg
+    $serverProc = Start-Process -FilePath $Server -ArgumentList $serverArgs -PassThru -WindowStyle Hidden
+
+    # Wait for server to be ready (CUDA init can take 5-10s)
+    Write-Host "  Waiting for server to load model..."
+    $ready = $false
+    for ($wait = 0; $wait -lt 30; $wait++) {
+        Start-Sleep -Seconds 1
+        try {
+            $null = Invoke-RestMethod -Uri "http://localhost:${Port}/health" -Method GET -TimeoutSec 2 -ErrorAction SilentlyContinue
+            $ready = $true; break
+        } catch { }
+    }
+    if (-not $ready) {
+        Write-Host "  [WARN] Server may not be ready after 30s, trying anyway..." -ForegroundColor Yellow
+    }
 
     try {
         # Warmup
         for ($i = 0; $i -lt 5; $i++) {
-            $body = @{ texts = @($TestText) } | ConvertTo-Json
-            $null = Invoke-RestMethod -Uri "http://localhost:${Port}/embed" -Method POST -Body $body -ContentType "application/json" -TimeoutSec 30
+            try {
+                $body = @{ texts = @($TestText) } | ConvertTo-Json
+                $null = Invoke-RestMethod -Uri "http://localhost:${Port}/embed" -Method POST -Body $body -ContentType "application/json" -TimeoutSec 60
+            } catch { Start-Sleep -Seconds 1 }
         }
 
         # Benchmark

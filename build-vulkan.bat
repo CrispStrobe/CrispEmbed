@@ -56,8 +56,14 @@ echo [INFO] Initializing MSVC environment...
 call "!vcvars!"
 
 :: Configure
+:: Clean old shared lib build if present
+if exist "build-vulkan\ggml.dll" (
+    echo [INFO] Cleaning old shared lib build...
+    rmdir /s /q build-vulkan 2>nul
+)
+
 echo [INFO] Configuring with Vulkan + Ninja...
-cmake -G Ninja -B build-vulkan -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON -DCRISPEMBED_BUILD_SHARED=OFF %*
+cmake -G Ninja -B build-vulkan -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON -DBUILD_SHARED_LIBS=OFF -DCRISPEMBED_BUILD_SHARED=OFF %*
 
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] CMake configuration failed.
