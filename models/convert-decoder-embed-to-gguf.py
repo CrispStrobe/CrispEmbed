@@ -78,6 +78,23 @@ def main():
     model = AutoModel.from_pretrained(args.model, trust_remote_code=True)
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     model.eval()
+
+    # Detect and merge LoRA adapters (e.g. Jina v5 task-specific adapters)
+    has_lora = any("lora_A" in k or "base_layer" in k for k in model.state_dict())
+    if has_lora:
+        try:
+            # Select retrieval adapter if available (most common use case)
+            if hasattr(model, 'active_adapters'):
+                adapters = list(getattr(model, 'peft_config', {}).keys())
+                target = "retrieval" if "retrieval" in adapters else (adapters[0] if adapters else None)
+                if target and hasattr(model, 'set_adapter'):
+                    model.set_adapter(target)
+                    print(f"  LoRA: selected adapter '{target}' from {adapters}")
+            model = model.merge_and_unload()
+            print(f"  LoRA: merged ({len(model.state_dict())} weights)")
+        except Exception as e:
+            print(f"  WARNING: LoRA merge failed ({e}), using raw weights")
+
     sd = model.state_dict()
 
     print(f"Architecture: {config.architectures}")
