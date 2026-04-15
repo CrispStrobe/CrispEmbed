@@ -21,6 +21,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  -m MODEL         path to GGUF model or model name (auto-download)\n");
     fprintf(stderr, "  -f FILE          read texts from file (one per line)\n");
     fprintf(stderr, "  -t N             number of threads (default: 4)\n");
+    fprintf(stderr, "  -d N             output dimension (Matryoshka truncation)\n");
     fprintf(stderr, "  --json           output as JSON array\n");
     fprintf(stderr, "  --dim            print embedding dimension and exit\n");
     fprintf(stderr, "  --auto-download  download model automatically if not found\n");
@@ -40,6 +41,7 @@ int main(int argc, char ** argv) {
     std::string file_path;
     std::vector<std::string> texts;
     int n_threads = 4;
+    int output_dim = 0;  // 0 = model default
     bool json_output = false;
     bool print_dim = false;
     bool auto_download = false;
@@ -51,6 +53,8 @@ int main(int argc, char ** argv) {
             file_path = argv[++i];
         } else if (strcmp(argv[i], "-t") == 0 && i + 1 < argc) {
             n_threads = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "-d") == 0 && i + 1 < argc) {
+            output_dim = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--json") == 0) {
             json_output = true;
         } else if (strcmp(argv[i], "--dim") == 0) {
@@ -100,6 +104,11 @@ int main(int argc, char ** argv) {
     if (!ctx) {
         fprintf(stderr, "error: failed to load model '%s'\n", model_path.c_str());
         return 1;
+    }
+
+    // Set Matryoshka output dimension if requested
+    if (output_dim > 0) {
+        crispembed_set_dim(ctx, output_dim);
     }
 
     const auto * hp = crispembed_get_hparams(ctx);

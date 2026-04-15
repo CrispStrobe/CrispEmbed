@@ -75,6 +75,7 @@ struct crispembed_context {
     int n_threads = 4;
     int pool_method = 0;  // 0=mean, 1=cls, 2=last-token
     int pos_offset = 0;   // position embedding offset (2 for RoBERTa/XLM-R)
+    int matryoshka_dim = 0;  // 0 = use model default
     std::vector<float> last_output;  // reused buffer
 };
 
@@ -566,8 +567,24 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx,
     } else {
         ctx->last_output = encode_tokens(ctx, tokens);
     }
+
+    // Matryoshka dimension truncation: truncate + re-normalize
+    if (ctx->matryoshka_dim > 0 && ctx->matryoshka_dim < (int)ctx->last_output.size()) {
+        ctx->last_output.resize(ctx->matryoshka_dim);
+        float norm = 0;
+        for (int i = 0; i < ctx->matryoshka_dim; i++)
+            norm += ctx->last_output[i] * ctx->last_output[i];
+        norm = sqrtf(std::max(norm, 1e-12f));
+        for (int i = 0; i < ctx->matryoshka_dim; i++)
+            ctx->last_output[i] /= norm;
+    }
+
     if (out_n_dim) *out_n_dim = (int)ctx->last_output.size();
     return ctx->last_output.data();
+}
+
+extern "C" void crispembed_set_dim(crispembed_context * ctx, int dim) {
+    if (ctx) ctx->matryoshka_dim = dim;
 }
 
 extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,

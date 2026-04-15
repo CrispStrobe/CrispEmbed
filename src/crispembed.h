@@ -33,6 +33,11 @@ struct crispembed_hparams {
 // Returns NULL on failure.
 crispembed_context * crispembed_init(const char * model_path, int n_threads);
 
+// Set Matryoshka output dimension. 0 = use model default.
+// Must be <= model's native dimension. The embedding is truncated
+// and re-normalized to the specified dimension.
+void crispembed_set_dim(crispembed_context * ctx, int dim);
+
 // Get model hyperparameters.
 const crispembed_hparams * crispembed_get_hparams(const crispembed_context * ctx);
 
