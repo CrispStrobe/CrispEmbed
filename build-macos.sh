@@ -58,6 +58,7 @@ echo "[INFO] Configuring..."
 cmake -S . -B "$BUILD_DIR" \
     -DCMAKE_BUILD_TYPE=Release \
     -DGGML_METAL="$METAL" \
+    -DGGML_METAL_EMBED_LIBRARY=ON \
     -DCRISPEMBED_BUILD_SHARED="$SHARED" \
     "${CMAKE_EXTRA[@]+"${CMAKE_EXTRA[@]}"}"
 

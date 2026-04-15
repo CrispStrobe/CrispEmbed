@@ -135,7 +135,11 @@ fmt_rate() {
 # --- CrispEmbed CLI Benchmark ---
 echo "--- CrispEmbed CLI ---"
 echo "  Loading model (may download on first run)..."
-"$BIN" -m "$MODEL_PATH" "warmup" >/dev/null 2>&1 || true
+WARMUP_STDERR=$("$BIN" -m "$MODEL_PATH" "warmup" 2>&1 >/dev/null || true)
+BACKEND=$(echo "$WARMUP_STDERR" | grep -o "using [^ ]* backend" | head -1)
+if [ -n "$BACKEND" ]; then
+    echo "  Backend: $BACKEND"
+fi
 
 START=$(get_ms)
 for ((i = 0; i < N_RUNS; i++)); do
