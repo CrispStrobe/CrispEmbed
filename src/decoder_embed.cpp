@@ -40,6 +40,10 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
     m.rope_theta = f32v("decoder.rope_theta", 10000.0f);
     m.is_bidirectional = u32("decoder.is_bidirectional", 0) != 0;
     m.activation = u32("decoder.activation", 0);
+    m.head_dim = u32("decoder.head_dim", 0);
+    m.attn_scale = f32v("decoder.attn_scale", 0.0f);
+    m.embed_scale = f32v("decoder.embed_scale", 1.0f);
+    m.gemma_norm = u32("decoder.gemma_norm", 0) != 0;
 
     gguf_free(g);
 
@@ -70,6 +74,8 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
         L.gate_w = get(p + "ffn.gate.weight");
         L.up_w = get(p + "ffn.up.weight");
         L.down_w = get(p + "ffn.down.weight");
+        L.pre_ffn_norm_w = get(p + "pre_ffn_norm.weight");
+        L.post_ffn_norm_w = get(p + "post_ffn_norm.weight");
     }
 
     fprintf(stderr, "decoder_embed: loaded %d layers, %d dims, %d vocab, %d heads (%d kv), rope_theta=%.0f\n",
@@ -89,11 +95,10 @@ std::vector<float> decoder_encode_tokens(
     const int H = m.n_embd;
     const int n_heads = m.n_head;
     const int n_kv_heads = m.n_kv_head;
-    // Detect head_dim from Q weight shape
-    // q_w in ggml has ne[0]=H (input), ne[1]=q_dim (output)
-    // q_dim = n_heads * head_dim
+    // Detect head_dim: use explicit value from GGUF or infer from Q weight
     int q_dim = m.layers[0].q_w ? (int)m.layers[0].q_w->ne[1] : H;
-    const int head_dim = q_dim / n_heads;
+    const int head_dim = (m.head_dim > 0) ? m.head_dim : (q_dim / n_heads);
+    q_dim = n_heads * head_dim;  // recalculate in case head_dim was explicit
     const int kv_dim = n_kv_heads * head_dim;
     const float eps = m.rms_norm_eps;
 
@@ -129,12 +134,34 @@ std::vector<float> decoder_encode_tokens(
         ggml_free(ectx);
     }
 
+    // Gemma3: scale embeddings by sqrt(hidden_size)
+    if (m.embed_scale != 1.0f) {
+        for (int i = 0; i < T * H; i++) {
+            hidden[i] *= m.embed_scale;
+        }
+    }
+
     // Debug: dump embedding output
-    fprintf(stderr, "decoder: embed[0,:4]: %.6f %.6f %.6f %.6f\n",
-            hidden[0], hidden[1], hidden[2], hidden[3]);
-    fprintf(stderr, "decoder: token IDs:");
-    for (int t = 0; t < std::min(T, 5); t++) fprintf(stderr, " %d", tokens.ids[t]);
-    fprintf(stderr, "\n");
+    // fprintf(stderr, "decoder: embed[0,:4]: %.6f %.6f %.6f %.6f\n",
+    //         hidden[0], hidden[1], hidden[2], hidden[3]);
+    // fprintf(stderr, "decoder: token IDs:");
+    // for (int t = 0; t < std::min(T, 5); t++) fprintf(stderr, " %d", tokens.ids[t]);
+    // fprintf(stderr, "\n");
+
+    // Helper: Gemma-style RMSNorm uses (1 + weight) instead of weight
+    auto rms_norm = [&](ggml_context * ctx, ggml_tensor * x, ggml_tensor * w) -> ggml_tensor * {
+        x = ggml_rms_norm(ctx, x, eps);
+        if (m.gemma_norm) {
+            // Gemma: output * (1.0 + weight)
+            ggml_tensor * ones = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, w->ne[0]);
+            float * d = (float *)ones->data;
+            for (int i = 0; i < (int)w->ne[0]; i++) d[i] = 1.0f;
+            ggml_tensor * w_plus_1 = ggml_add(ctx, w, ones);
+            return ggml_mul(ctx, x, w_plus_1);
+        } else {
+            return ggml_mul(ctx, x, w);
+        }
+    };
 
     // Layer-by-layer processing (reusing CrispASR pattern)
     size_t layer_mem = (size_t)H * T * 4 * 30
@@ -168,10 +195,9 @@ std::vector<float> decoder_encode_tokens(
         ggml_tensor * dbg_k_norm = nullptr;
         ggml_tensor * dbg_o_proj = nullptr;
 
-        // RMSNorm
+        // RMSNorm (pre-attention)
         if (L.attn_norm_w) {
-            cur = ggml_rms_norm(lctx, cur, eps);
-            cur = ggml_mul(lctx, cur, L.attn_norm_w);
+            cur = rms_norm(lctx, cur, L.attn_norm_w);
         }
         if (il == 0) dbg_input_ln = cur;
 
@@ -190,15 +216,13 @@ std::vector<float> decoder_encode_tokens(
         K = ggml_reshape_3d(lctx, K, head_dim, n_kv_heads, T);
         V = ggml_reshape_3d(lctx, V, head_dim, n_kv_heads, T);
 
-        // QK norm (Qwen3)
+        // QK norm (Qwen3/Gemma3)
         if (L.q_norm_w) {
-            Q = ggml_rms_norm(lctx, Q, eps);
-            Q = ggml_mul(lctx, Q, L.q_norm_w);
+            Q = rms_norm(lctx, Q, L.q_norm_w);
         }
         if (il == 0) dbg_q_norm = Q;
         if (L.k_norm_w) {
-            K = ggml_rms_norm(lctx, K, eps);
-            K = ggml_mul(lctx, K, L.k_norm_w);
+            K = rms_norm(lctx, K, L.k_norm_w);
         }
         if (il == 0) dbg_k_norm = K;
 
@@ -233,7 +257,10 @@ std::vector<float> decoder_encode_tokens(
         // No explicit repeat needed — mul_mat handles it.
 
         // Attention scores
-        float scale = 1.0f / sqrtf((float)head_dim);
+        // Gemma3 uses query_pre_attn_scalar; others use 1/sqrt(head_dim)
+        float scale = (m.attn_scale > 0.0f)
+                        ? (1.0f / sqrtf(m.attn_scale))
+                        : (1.0f / sqrtf((float)head_dim));
         ggml_tensor * scores = ggml_mul_mat(lctx, K, Q);
         scores = ggml_scale(lctx, scores, scale);
 
@@ -257,24 +284,46 @@ std::vector<float> decoder_encode_tokens(
         if (L.o_b) attn = ggml_add(lctx, attn, L.o_b);
         if (il == 0) dbg_o_proj = attn;
 
-        // Residual add
-        cur = ggml_add(lctx, residual, attn);
-
-        // FFN: RMSNorm → SwiGLU → residual
-        residual = cur;
-        if (L.ffn_norm_w) {
-            cur = ggml_rms_norm(lctx, cur, eps);
-            cur = ggml_mul(lctx, cur, L.ffn_norm_w);
+        // Gemma3 flow: post_attention_layernorm is applied to attn output
+        // BEFORE the residual add, then pre_feedforward_layernorm is applied
+        // to the FFN input. Qwen3/LLaMA: just one norm (post_attention_layernorm
+        // = ffn_norm) applied AFTER the residual add.
+        if (L.pre_ffn_norm_w) {
+            // Gemma3: post_attn_norm(attn) + residual → pre_ffn_norm → FFN → post_ffn_norm + residual
+            if (L.ffn_norm_w) {
+                attn = rms_norm(lctx, attn, L.ffn_norm_w);
+            }
+            cur = ggml_add(lctx, residual, attn);
+            residual = cur;
+            cur = rms_norm(lctx, cur, L.pre_ffn_norm_w);
+        } else {
+            // Qwen3/LLaMA: residual + attn → norm → FFN → residual
+            cur = ggml_add(lctx, residual, attn);
+            residual = cur;
+            if (L.ffn_norm_w) {
+                cur = rms_norm(lctx, cur, L.ffn_norm_w);
+            }
         }
 
         if (L.gate_w && L.up_w && L.down_w) {
             // Gated FFN: down(act(gate(x)) * up(x))
-            // SwiGLU uses silu, GeGLU uses gelu
             ggml_tensor * gate = ggml_mul_mat(lctx, L.gate_w, cur);
-            gate = (m.activation == 1) ? ggml_gelu(lctx, gate) : ggml_silu(lctx, gate);
+            if (m.activation == 2) {
+                gate = ggml_gelu(lctx, gate);  // gelu_pytorch_tanh ≈ ggml_gelu (tanh approx)
+            } else if (m.activation == 1) {
+                gate = ggml_gelu(lctx, gate);
+            } else {
+                gate = ggml_silu(lctx, gate);
+            }
             ggml_tensor * up = ggml_mul_mat(lctx, L.up_w, cur);
             ggml_tensor * ffn = ggml_mul(lctx, gate, up);
             ffn = ggml_mul_mat(lctx, L.down_w, ffn);
+
+            // Gemma3 post-feedforward norm
+            if (L.post_ffn_norm_w) {
+                ffn = rms_norm(lctx, ffn, L.post_ffn_norm_w);
+            }
+
             cur = ggml_add(lctx, residual, ffn);
         } else {
             cur = residual;
@@ -293,27 +342,24 @@ std::vector<float> decoder_encode_tokens(
         ggml_tensor * lout = ggml_graph_get_tensor(lgf, "layer_out");
         memcpy(hidden.data(), lout->data, H * T * sizeof(float));
 
-        if (il == 0) {
-            auto dump = [](const char * label, ggml_tensor * t) {
-                if (!t || !t->data) { fprintf(stderr, "  %-16s: (null)\n", label); return; }
-                const float * d = (const float *)t->data;
-                fprintf(stderr, "  %-16s:", label);
-                for (int i = 0; i < std::min(8, (int)(t->ne[0])); i++)
-                    fprintf(stderr, " %.6f", d[i]);
-                fprintf(stderr, "\n");
-            };
-            fprintf(stderr, "decoder L0 intermediates (t=0):\n");
-            dump("input_ln", dbg_input_ln);
-            dump("q_proj", dbg_q_proj);
-            dump("k_proj", dbg_k_proj);
-            dump("q_norm", dbg_q_norm);
-            dump("k_norm", dbg_k_norm);
-            dump("o_proj", dbg_o_proj);
-            fprintf(stderr, "  %-16s: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
-                    "layer_out",
-                    hidden[0], hidden[1], hidden[2], hidden[3],
-                    hidden[4], hidden[5], hidden[6], hidden[7]);
-        }
+        // Debug: uncomment to dump layer 0 intermediates
+        // if (il == 0) {
+        //     auto dump = [](const char * label, ggml_tensor * t) {
+        //         if (!t || !t->data) { fprintf(stderr, "  %-16s: (null)\n", label); return; }
+        //         const float * d = (const float *)t->data;
+        //         fprintf(stderr, "  %-16s:", label);
+        //         for (int i = 0; i < std::min(8, (int)(t->ne[0])); i++)
+        //             fprintf(stderr, " %.6f", d[i]);
+        //         fprintf(stderr, "\n");
+        //     };
+        //     fprintf(stderr, "decoder L0 intermediates (t=0):\n");
+        //     dump("input_ln", dbg_input_ln);
+        //     dump("q_proj", dbg_q_proj);
+        //     dump("k_proj", dbg_k_proj);
+        //     dump("q_norm", dbg_q_norm);
+        //     dump("k_norm", dbg_k_norm);
+        //     dump("o_proj", dbg_o_proj);
+        // }
 
         ggml_free(lctx);
     }
@@ -321,7 +367,6 @@ std::vector<float> decoder_encode_tokens(
     // Final RMSNorm
     if (m.output_norm) {
         // Manual RMSNorm since we're outside a graph
-        const float * nw = nullptr;
         std::vector<float> norm_w(H);
         ggml_backend_tensor_get(m.output_norm, norm_w.data(), 0, H * sizeof(float));
 
@@ -330,7 +375,11 @@ std::vector<float> decoder_encode_tokens(
             float ss = 0;
             for (int i = 0; i < H; i++) ss += h[i] * h[i];
             ss = 1.0f / sqrtf(ss / H + eps);
-            for (int i = 0; i < H; i++) h[i] = h[i] * ss * norm_w[i];
+            if (m.gemma_norm) {
+                for (int i = 0; i < H; i++) h[i] = h[i] * ss * (1.0f + norm_w[i]);
+            } else {
+                for (int i = 0; i < H; i++) h[i] = h[i] * ss * norm_w[i];
+            }
         }
     }
 

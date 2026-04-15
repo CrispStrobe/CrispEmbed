@@ -43,6 +43,10 @@ target_link_libraries(crispembed PUBLIC Threads::Threads)
 # CLI binary
 add_executable(crispembed-cli
     examples/cli/main.cpp
+    examples/cli/model_mgr.cpp
+)
+target_include_directories(crispembed-cli PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/examples/cli
 )
 target_link_libraries(crispembed-cli PRIVATE crispembed)
 set_target_properties(crispembed-cli PROPERTIES OUTPUT_NAME crispembed)

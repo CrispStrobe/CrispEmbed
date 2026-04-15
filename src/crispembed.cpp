@@ -72,6 +72,7 @@ struct crispembed_context {
     ggml_backend_t backend = nullptr;
     int n_threads = 4;
     int pool_method = 0;  // 0=mean, 1=cls, 2=last-token
+    int pos_offset = 0;   // position embedding offset (2 for RoBERTa/XLM-R)
     std::vector<float> last_output;  // reused buffer
 };
 
@@ -111,6 +112,9 @@ static bool load_model(crispembed_context * ctx, const char * path) {
 
     // Pooling method: 0=mean (default), 1=cls, 2=last-token
     ctx->pool_method   = u32("bert.pooling_method", 0);
+    // Position embedding offset: 0 for BERT, 2 for RoBERTa/XLM-R
+    ctx->pos_offset    = u32("bert.position_offset", 0);
+    // fprintf(stderr, "crispembed: pool_method=%d pos_offset=%d\n", ctx->pool_method, ctx->pos_offset);
 
     // Load tokenizer vocab from GGUF metadata
     int ki = gguf_find_key(g, "tokenizer.ggml.tokens");
@@ -140,7 +144,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             int pad_id = u32("tokenizer.ggml.padding_token_id", 1);
             ctx->sp_tokenizer.load(vocab, scores, bos_id, eos_id, unk_id, pad_id, hp.n_max_tokens);
             ctx->use_sentencepiece = true;
-            fprintf(stderr, "crispembed: using SentencePiece tokenizer (%d tokens)\n", n);
+            fprintf(stderr, "crispembed: using SentencePiece tokenizer (%d tokens, %zu scores)\n",
+                    n, scores.size());
         } else {
             // WordPiece / BERT
             int cls_id = u32("tokenizer.ggml.cls_token_id", 101);
@@ -230,12 +235,16 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
     const float ln_eps = hp.layer_norm_eps;
 
     // Allocate context for one-shot graph
-    size_t mem = (size_t)H * T * 4 * 30
-               + (size_t)T * T * n_heads * 4 * 2
-               + (size_t)hp.n_intermediate * T * 4
+    // Per layer: ~20 ops each needing H*T or n_intermediate*T storage,
+    // plus attention scores T*T*n_heads per layer
+    size_t per_layer = (size_t)H * T * 4 * 20
+                     + (size_t)T * T * n_heads * 4
+                     + (size_t)hp.n_intermediate * T * 4 * 2;
+    size_t mem = per_layer * hp.n_layer
+               + (size_t)H * T * 4 * 10  // embeddings + final output
                + ggml_tensor_overhead() * (size_t)(hp.n_layer * 30 + 100)
                + ggml_graph_overhead_custom(hp.n_layer * 30 + 256, false)
-               + 32 * 1024 * 1024;
+               + 64 * 1024 * 1024;  // extra headroom
 
     std::vector<uint8_t> buf(mem);
     ggml_init_params ip = { mem, buf.data(), false };
@@ -257,8 +266,9 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
                                      (size_t)tid * H * sizeof(float),
                                      H * sizeof(float));
             float pos_buf[4096];
+            int pos_idx = t + ctx->pos_offset;  // RoBERTa offset
             ggml_backend_tensor_get(m.pos_embd, pos_buf,
-                                     (size_t)t * H * sizeof(float),
+                                     (size_t)pos_idx * H * sizeof(float),
                                      H * sizeof(float));
             for (int h = 0; h < H; h++) {
                 dst[h + t * H] = tok_buf[h] + pos_buf[h];
@@ -456,13 +466,17 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
                 };
                 int eos_id = u32g("tokenizer.ggml.eos_token_id", 151645);
                 int pad_id = u32g("tokenizer.ggml.padding_token_id", 151643);
+                int bos_id = u32g("tokenizer.ggml.bos_token_id", -1);
                 int ki_sfx = gguf_find_key(g2, "tokenizer.ggml.suffix_token_id");
                 int suffix_id = ki_sfx >= 0 ? (int)gguf_get_val_i32(g2, ki_sfx) : pad_id;
+                bool is_spm_bpe = u32g("tokenizer.ggml.is_spm_bpe", 0) != 0;
 
                 ctx->bpe_tokenizer.load(vocab, merges, eos_id, pad_id,
-                                         suffix_id, ctx->dec->n_max_pos);
+                                         suffix_id, bos_id, is_spm_bpe,
+                                         ctx->dec->n_max_pos);
                 ctx->use_bpe = true;
-                fprintf(stderr, "crispembed: BPE tokenizer (%d tokens, %zu merges)\n",
+                fprintf(stderr, "crispembed: %s BPE tokenizer (%d tokens, %zu merges)\n",
+                        is_spm_bpe ? "SentencePiece" : "GPT-2",
                         nv, merges.size());
             }
             gguf_free(g2);
@@ -492,6 +506,19 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx,
     } else {
         tokens = ctx->wp_tokenizer.encode(text);
     }
+    // Trim padding: only keep tokens where attn_mask == 1
+    {
+        int actual_len = 0;
+        for (int i = (int)tokens.attn_mask.size() - 1; i >= 0; i--) {
+            if (tokens.attn_mask[i]) { actual_len = i + 1; break; }
+        }
+        if (actual_len > 0 && actual_len < (int)tokens.ids.size()) {
+            tokens.ids.resize(actual_len);
+            tokens.type_ids.resize(actual_len);
+            tokens.attn_mask.resize(actual_len);
+        }
+    }
+
     if (ctx->is_decoder && ctx->dec) {
         ctx->last_output = decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads);
     } else {

@@ -1,0 +1,23 @@
+#pragma once
+// model_mgr.h — Auto-download model manager for CrispEmbed.
+//
+// Resolves model names (e.g., "octen-0.6b") to local GGUF paths,
+// downloading from HuggingFace if needed.
+
+#include <string>
+
+namespace crispembed_mgr {
+
+// Cache directory: ~/.cache/crispembed (or $CRISPEMBED_CACHE_DIR)
+std::string cache_dir();
+
+// Resolve a model argument to a local file path.
+// If arg is an existing file, returns it directly.
+// If arg is a known model name, downloads from HF if not cached.
+// Returns empty string on failure.
+std::string resolve_model(const std::string & arg, bool auto_download = false);
+
+// List available model names
+void list_models();
+
+}  // namespace crispembed_mgr

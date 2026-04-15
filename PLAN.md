@@ -152,59 +152,35 @@ CrispEmbed/
 
 ## Status (April 2026)
 
-### Verified working (ground-truth match vs HF sentence-transformers)
+### Verified working — 12 models, cos >= 0.999 vs HF
 
-| Model | Dim | Pooling | Size | CosSim | MaxDiff |
-|-------|-----|---------|------|--------|---------|
-| all-MiniLM-L6-v2 | 384 | mean | 87 MB | 0.999999 | 0.0003 |
-| gte-small | 384 | mean | 128 MB | 0.999999 | 0.0003 |
-| arctic-embed-xs | 384 | CLS | 87 MB | 1.000000 | 0.0002 |
-| Octen-Embedding-0.6B | 1024 | last-token | 2.3 GB | 0.999891 | 0.0029 |
+| Model | Type | Dim | Pooling | CosSim |
+|-------|------|-----|---------|--------|
+| all-MiniLM-L6-v2 | BERT | 384 | mean | 0.999999 |
+| gte-small | BERT | 384 | mean | 1.000000 |
+| arctic-embed-xs | BERT | 384 | CLS | 1.000000 |
+| multilingual-e5-small | XLM-R | 384 | mean | 1.000000 |
+| PIXIE-Rune-v1.0 | XLM-R | 1024 | CLS | 0.999993 |
+| arctic-embed-l-v2 | XLM-R | 1024 | CLS | 0.999993 |
+| Octen-Embedding-0.6B | Qwen3 | 1024 | last-token | 0.999891 |
+| F2LLM-v2-0.6B | Qwen3 | 1024 | last-token | 0.999420 |
+| Jina v5 Small | Qwen3 | 1024 | last-token | 0.999941 |
+| Harrier-OSS-v1-0.6B | Qwen3 | 1024 | last-token | 0.999959 |
+| Qwen3-Embedding-0.6B | Qwen3 | 1024 | last-token | 0.999895 |
+| Harrier-OSS-v1-270M | Gemma3 | 640 | last-token | 0.999948 |
 
-### SentencePiece tokenizer (XLM-RoBERTa models) — partially working
+### Supported architectures
 
-Proper Viterbi bigram merging implemented (from llama.cpp). Short texts
-match perfectly (cos=1.0); longer texts ~0.94-0.97 due to pre-tokenization
-regex differences. Graph runs correctly for all sizes including 24-layer.
-
-| Model | Status | Notes |
-|-------|--------|-------|
-| multilingual-e5-small | short texts PASS, long ~0.97 | pre-tokenization gap |
-| arctic-embed-l-v2 | runs, produces output | needs ground-truth validation |
-| arctic-embed-m-v2 | needs conversion | custom code trust |
-| PIXIE-Rune-v1 | needs conversion | XLM-R based |
-
-### Needs decoder architecture (Qwen3/LLaMA-based)
-
-These models use autoregressive transformers with causal attention +
-last-token pooling. Separate graph builder needed (not BERT encoder).
-Could reuse CrispASR's voxtral/qwen3 decoder patterns.
-
-- Qwen3-Embedding-0.6B, Octen-0.6B, F2LLM-v2-0.6B
-- Jina v5 nano/small (Qwen3-based)
-- Harrier-OSS-v1-270M (decoder)
+| Architecture | Tokenizer | Key features | Models |
+|---|---|---|---|
+| BERT encoder | WordPiece | Post-LN, GELU FFN | MiniLM, GTE, arctic-xs |
+| XLM-R encoder | SentencePiece Unigram (Viterbi) | Post-LN, GELU FFN, pos_offset=2 | PIXIE-Rune, e5, arctic-l-v2 |
+| Qwen3 decoder | GPT-2 BPE | RMSNorm, SwiGLU, RoPE, GQA, causal mask | Octen, F2LLM, Jina, Harrier-0.6B |
+| Gemma3 decoder | SentencePiece BPE | Gemma RMSNorm(1+w), GeGLU, embed*sqrt(H), extra norms | Harrier-270M |
 
 ### Optimization next steps
 
-- Use layer-by-layer graphs (CrispASR pattern) for memory efficiency
 - Add ggml_backend_sched path for GPU offload
-- Quantize models (Q4_K/Q8_0) and benchmark vs ONNX fastembed
-- SentencePiece pre-tokenization regex for full XLM-R support
-
----
-
-## Decoder model architecture variants
-
-Each decoder embedding model uses a different base architecture:
-
-| Model | Base | Architecture | Notes |
-|-------|------|-------------|-------|
-| Qwen3-Embedding-0.6B | Qwen3 | GQA + SwiGLU + RoPE + RMSNorm | Same as CrispASR qwen3_asr |
-| Octen-Embedding-0.6B | Qwen3 | Same as above | |
-| F2LLM-v2-0.6B | Qwen3 | Same as above | |
-| Jina v5 nano | Qwen3 | Same as above | |
-| Jina v5 small | Qwen3 | Same as above | 677M |
-| Harrier-OSS-v1-270M | Gemma3 | Different attention + GeGLU | |
-| Harrier-OSS-v1-0.6B | Qwen3 | Same as Qwen3 | |
-
-Most models are Qwen3-based → single decoder graph builder covers 6 of 7.
+- Quantize all models (Q4_K/Q8_0) and benchmark vs ONNX fastembed
+- Batch encoding (multi-text parallelism)
+- Matryoshka dimension truncation support

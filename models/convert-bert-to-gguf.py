@@ -29,15 +29,31 @@ def f16(t: torch.Tensor) -> np.ndarray:
     return t.detach().float().cpu().numpy().astype(np.float16)
 
 
+def q8_0(t: torch.Tensor) -> np.ndarray:
+    """Quantize to Q8_0 if dimensions allow."""
+    data = t.detach().float().cpu().numpy().astype(np.float32)
+    if data.ndim < 2 or data.shape[-1] % 32 != 0:
+        return data
+    try:
+        return gguf.quantize(data, gguf.GGMLQuantizationType.Q8_0)
+    except Exception:
+        return data
+
+
 def main():
     parser = argparse.ArgumentParser(description="Convert BERT-family model to GGUF")
     parser.add_argument("--model", required=True, help="HF model ID or local path")
     parser.add_argument("--output", required=True, help="Output .gguf path")
-    parser.add_argument("--dtype", choices=["f16", "f32"], default="f32",
+    parser.add_argument("--dtype", choices=["f16", "f32", "q8_0"], default="f32",
                         help="Weight dtype for linear layers (default: f32)")
     args = parser.parse_args()
 
-    wt = f32 if args.dtype == "f32" else f16
+    if args.dtype == "q8_0":
+        wt = q8_0
+    elif args.dtype == "f16":
+        wt = f16
+    else:
+        wt = f32
 
     print(f"Loading model: {args.model}")
     config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
@@ -61,6 +77,14 @@ def main():
     writer.add_uint32("bert.intermediate_size", config.intermediate_size)
     writer.add_float32("bert.layer_norm_eps", getattr(config, "layer_norm_eps", 1e-12))
     writer.add_uint32("bert.output_dim", config.hidden_size)
+
+    # Position embedding offset: RoBERTa/XLM-R uses padding_idx + 1
+    pos_offset = 0
+    if hasattr(config, "pad_token_id") and config.pad_token_id is not None:
+        if config.model_type in ("roberta", "xlm-roberta"):
+            pos_offset = config.pad_token_id + 1
+            print(f"  position_offset: {pos_offset} (RoBERTa-style)")
+    writer.add_uint32("bert.position_offset", pos_offset)
 
     # Detect pooling method from sentence-transformers config
     pool_method = 0  # default: mean
@@ -95,14 +119,39 @@ def main():
         writer.add_uint32("tokenizer.ggml.eos_token_id", tokenizer.eos_token_id or 2)
         writer.add_uint32("tokenizer.ggml.unknown_token_id", tokenizer.unk_token_id or 3)
         writer.add_uint32("tokenizer.ggml.padding_token_id", tokenizer.pad_token_id or 1)
-        # Store vocab scores if available (for SentencePiece unigram)
-        try:
-            sp = tokenizer.sp_model
-            scores = [sp.GetScore(i) for i in range(config.vocab_size)]
-            writer.add_array("tokenizer.ggml.scores", scores)
-            print(f"  tokenizer: SentencePiece ({config.vocab_size} tokens, with scores)")
-        except Exception:
-            print(f"  tokenizer: SentencePiece ({config.vocab_size} tokens, no scores)")
+        # Store vocab scores (for SentencePiece unigram model)
+        scores_loaded = False
+        # Method 1: from sp_model (classic SentencePiece)
+        if hasattr(tokenizer, 'sp_model') and tokenizer.sp_model:
+            try:
+                sp = tokenizer.sp_model
+                scores = [sp.GetScore(i) for i in range(config.vocab_size)]
+                writer.add_array("tokenizer.ggml.scores", scores)
+                scores_loaded = True
+                print(f"  tokenizer: SentencePiece ({config.vocab_size} tokens, scores from sp_model)")
+            except Exception:
+                pass
+        # Method 2: from tokenizer.json Unigram vocab (HF fast tokenizer)
+        if not scores_loaded:
+            try:
+                from huggingface_hub import hf_hub_download
+                tok_json_path = hf_hub_download(repo_id=args.model, filename="tokenizer.json")
+                with open(tok_json_path) as f:
+                    tok_json = json.load(f)
+                tj_vocab = tok_json.get("model", {}).get("vocab", [])
+                if tj_vocab and isinstance(tj_vocab[0], list) and len(tj_vocab[0]) == 2:
+                    # Unigram model: vocab is [[token, score], ...]
+                    scores = [0.0] * config.vocab_size
+                    for i, (tok_str, score) in enumerate(tj_vocab):
+                        if i < config.vocab_size:
+                            scores[i] = float(score)
+                    writer.add_array("tokenizer.ggml.scores", scores)
+                    scores_loaded = True
+                    print(f"  tokenizer: SentencePiece ({config.vocab_size} tokens, scores from tokenizer.json)")
+            except Exception as e:
+                print(f"  warning: could not load scores from tokenizer.json: {e}")
+        if not scores_loaded:
+            print(f"  tokenizer: SentencePiece ({config.vocab_size} tokens, NO SCORES — tokenization may be wrong)")
     else:
         writer.add_uint32("tokenizer.ggml.type", 0)  # WordPiece
         writer.add_uint32("tokenizer.ggml.cls_token_id", tokenizer.cls_token_id or 101)

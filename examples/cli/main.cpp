@@ -2,10 +2,12 @@
 //
 // Usage:
 //   crispembed -m model.gguf "query: hello world"
+//   crispembed -m octen-0.6b "hello world"        # auto-download
 //   crispembed -m model.gguf -f texts.txt          (one text per line)
-//   crispembed --server -m model.gguf --port 8080
+//   crispembed --list-models
 
 #include "crispembed.h"
+#include "model_mgr.h"
 
 #include <cstdio>
 #include <cstring>
@@ -16,25 +18,35 @@
 static void print_usage(const char * prog) {
     fprintf(stderr, "Usage: %s -m MODEL [options] [TEXT ...]\n\n", prog);
     fprintf(stderr, "Options:\n");
-    fprintf(stderr, "  -m MODEL     path to GGUF embedding model\n");
-    fprintf(stderr, "  -f FILE      read texts from file (one per line)\n");
-    fprintf(stderr, "  -t N         number of threads (default: 4)\n");
-    fprintf(stderr, "  --json       output as JSON array\n");
-    fprintf(stderr, "  --dim        print embedding dimension and exit\n");
+    fprintf(stderr, "  -m MODEL         path to GGUF model or model name (auto-download)\n");
+    fprintf(stderr, "  -f FILE          read texts from file (one per line)\n");
+    fprintf(stderr, "  -t N             number of threads (default: 4)\n");
+    fprintf(stderr, "  --json           output as JSON array\n");
+    fprintf(stderr, "  --dim            print embedding dimension and exit\n");
+    fprintf(stderr, "  --auto-download  download model automatically if not found\n");
+    fprintf(stderr, "  --list-models    list available models\n");
+    fprintf(stderr, "  --cache-dir DIR  set model cache directory\n");
+    fprintf(stderr, "\n");
+    fprintf(stderr, "Model names (auto-download from HuggingFace):\n");
+    fprintf(stderr, "  all-MiniLM-L6-v2, gte-small, arctic-embed-xs,\n");
+    fprintf(stderr, "  multilingual-e5-small, pixie-rune-v1, arctic-embed-l-v2,\n");
+    fprintf(stderr, "  octen-0.6b, f2llm-v2-0.6b, jina-v5-nano, jina-v5-small,\n");
+    fprintf(stderr, "  harrier-0.6b, harrier-270m, qwen3-embed-0.6b\n");
     fprintf(stderr, "\n");
 }
 
 int main(int argc, char ** argv) {
-    std::string model_path;
+    std::string model_arg;
     std::string file_path;
     std::vector<std::string> texts;
     int n_threads = 4;
     bool json_output = false;
     bool print_dim = false;
+    bool auto_download = false;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-m") == 0 && i + 1 < argc) {
-            model_path = argv[++i];
+            model_arg = argv[++i];
         } else if (strcmp(argv[i], "-f") == 0 && i + 1 < argc) {
             file_path = argv[++i];
         } else if (strcmp(argv[i], "-t") == 0 && i + 1 < argc) {
@@ -43,6 +55,13 @@ int main(int argc, char ** argv) {
             json_output = true;
         } else if (strcmp(argv[i], "--dim") == 0) {
             print_dim = true;
+        } else if (strcmp(argv[i], "--auto-download") == 0) {
+            auto_download = true;
+        } else if (strcmp(argv[i], "--list-models") == 0) {
+            crispembed_mgr::list_models();
+            return 0;
+        } else if (strcmp(argv[i], "--cache-dir") == 0 && i + 1 < argc) {
+            setenv("CRISPEMBED_CACHE_DIR", argv[++i], 1);
         } else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
             print_usage(argv[0]);
             return 0;
@@ -51,9 +70,15 @@ int main(int argc, char ** argv) {
         }
     }
 
-    if (model_path.empty()) {
+    if (model_arg.empty()) {
         fprintf(stderr, "error: no model specified (-m)\n");
         print_usage(argv[0]);
+        return 1;
+    }
+
+    // Resolve model path (handles auto-download)
+    std::string model_path = crispembed_mgr::resolve_model(model_arg, auto_download);
+    if (model_path.empty()) {
         return 1;
     }
 

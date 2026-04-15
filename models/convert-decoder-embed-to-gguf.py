@@ -31,14 +31,38 @@ def f16(t):
     return t.detach().float().cpu().numpy().astype(np.float16)
 
 
+class Q8Tensor:
+    """Wrapper for Q8_0 quantized tensor data + original shape."""
+    def __init__(self, data, shape):
+        self.data = data      # quantized bytes (numpy uint8 array)
+        self.shape = shape    # original f32 shape
+
+
+def q8_0(t):
+    """Quantize tensor to Q8_0 (block size 32)."""
+    data = t.detach().float().cpu().numpy().astype(np.float32)
+    if data.ndim < 2 or data.shape[-1] % 32 != 0:
+        return data  # keep f32 for norms/biases or non-aligned
+    try:
+        q = gguf.quantize(data, gguf.GGMLQuantizationType.Q8_0)
+        return Q8Tensor(q, data.shape)
+    except Exception:
+        return data  # fallback to f32
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--dtype", choices=["f16", "f32"], default="f32")
+    parser.add_argument("--dtype", choices=["f16", "f32", "q8_0"], default="f32")
     args = parser.parse_args()
 
-    wt = f32 if args.dtype == "f32" else f16
+    if args.dtype == "q8_0":
+        wt = q8_0
+    elif args.dtype == "f16":
+        wt = f16
+    else:
+        wt = f32
 
     print(f"Loading: {args.model}")
     config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
@@ -52,6 +76,22 @@ def main():
           f"Heads: {config.num_attention_heads}, Vocab: {config.vocab_size}")
 
     writer = gguf.GGUFWriter(str(args.output), arch=ARCH)
+
+    def add_tensor(name, data):
+        """Add tensor, handling Q8_0 quantized data."""
+        if isinstance(data, Q8Tensor):
+            # raw_shape must be the byte-level shape, not the logical shape
+            # For Q8_0: each block of 32 f32 = 34 bytes (32 int8 + 2 byte scale)
+            # So row_bytes = (row_width / 32) * 34
+            shape = data.shape
+            row_width = shape[-1]
+            row_bytes = (row_width // 32) * 34
+            byte_shape = list(shape[:-1]) + [row_bytes]
+            writer.add_tensor(name, data.data,
+                              raw_shape=byte_shape,
+                              raw_dtype=gguf.GGMLQuantizationType.Q8_0)
+        else:
+            writer.add_tensor(name, data)
 
     # Metadata
     writer.add_uint32("decoder.vocab_size", config.vocab_size)
@@ -84,11 +124,47 @@ def main():
     print(f"  rope_theta: {rope_theta}")
     writer.add_uint32("decoder.pooling_method", 2)  # last-token
 
-    # Hidden activation: silu (SwiGLU) vs gelu (GeGLU)
+    # Hidden activation: silu (SwiGLU) vs gelu (GeGLU) vs gelu_pytorch_tanh
     act = getattr(config, "hidden_act", getattr(config, "hidden_activation", "silu"))
-    act_id = 1 if "gelu" in str(act).lower() else 0  # 0=silu, 1=gelu
+    act_str = str(act).lower()
+    if "gelu_pytorch_tanh" in act_str:
+        act_id = 2  # gelu_pytorch_tanh (Gemma3)
+    elif "gelu" in act_str:
+        act_id = 1  # gelu (GeGLU)
+    else:
+        act_id = 0  # silu (SwiGLU)
     writer.add_uint32("decoder.activation", act_id)
-    print(f"  activation: {'gelu' if act_id else 'silu'} (config: {act})")
+    act_names = {0: "silu", 1: "gelu", 2: "gelu_pytorch_tanh"}
+    print(f"  activation: {act_names[act_id]} (config: {act})")
+
+    # Gemma3-specific: query_pre_attn_scalar (attention scale)
+    qpas = getattr(config, "query_pre_attn_scalar", 0)
+    if qpas:
+        writer.add_float32("decoder.attn_scale", float(qpas))
+        print(f"  attn_scale: {qpas}")
+
+    # Embedding scale: Gemma3 multiplies token embeddings by sqrt(hidden_size)
+    # Detect from model class: if it passes embed_scale to the embedding layer
+    embed_scale = 1.0
+    try:
+        m = model
+        if hasattr(m, 'model'):
+            m = m.model
+        if hasattr(m, 'embed_tokens') and hasattr(m.embed_tokens, 'embed_scale'):
+            embed_scale = float(m.embed_tokens.embed_scale)
+        elif "gemma" in config.model_type.lower():
+            embed_scale = float(config.hidden_size ** 0.5)
+    except:
+        pass
+    if embed_scale != 1.0:
+        writer.add_float32("decoder.embed_scale", embed_scale)
+        print(f"  embed_scale: {embed_scale:.4f}")
+
+    # Gemma-style RMSNorm: uses (1 + weight) instead of weight
+    gemma_norm = "gemma" in config.model_type.lower()
+    writer.add_uint32("decoder.gemma_norm", int(gemma_norm))
+    if gemma_norm:
+        print(f"  gemma_norm: true (RMSNorm uses 1+weight)")
 
     # Detect if bidirectional (encoder) vs causal (decoder)
     # EuroBERT/ModernBERT are encoder models with decoder-style weights
@@ -125,6 +201,22 @@ def main():
         print(f"  merges: not found ({e})")
     if tokenizer.bos_token_id is not None:
         writer.add_uint32("tokenizer.ggml.bos_token_id", tokenizer.bos_token_id)
+
+    # Detect SentencePiece-style BPE (Gemma) vs GPT-2-style BPE (Qwen3)
+    # SentencePiece BPE uses ▁ as space marker; GPT-2 uses byte-level encoding
+    is_spm_bpe = False
+    vocab_dict = tokenizer.get_vocab()
+    for token_str in ["▁the", "▁a", "▁world"]:
+        if token_str in vocab_dict:
+            is_spm_bpe = True
+            break
+    # Also check: Gemma tokenizers have ▁ tokens in the vocab
+    spm_count = sum(1 for t in vocab_dict if t.startswith("▁"))
+    if spm_count > 1000:
+        is_spm_bpe = True
+    writer.add_uint32("tokenizer.ggml.is_spm_bpe", int(is_spm_bpe))
+    if is_spm_bpe:
+        print(f"  tokenizer_style: SentencePiece BPE ({spm_count} ▁-prefixed tokens)")
     if tokenizer.eos_token_id is not None:
         eos = tokenizer.eos_token_id
         if isinstance(eos, list):
@@ -150,7 +242,7 @@ def main():
                   "embeddings.word_embeddings.weight"]
     for key in embd_keys:
         if key in sd:
-            writer.add_tensor("token_embd.weight", f32(sd[key]))
+            add_tensor("token_embd.weight", f32(sd[key]))
             print(f"  token_embd: {sd[key].shape}")
             break
     else:
@@ -192,7 +284,7 @@ def main():
         for norm_key in [f"{pfx}.input_layernorm.weight",
                           f"{pfx}.attention.output.LayerNorm.weight"]:
             if norm_key in sd:
-                writer.add_tensor(f"dec.{i}.attn_norm.weight", f32(sd[norm_key]))
+                add_tensor(f"dec.{i}.attn_norm.weight", f32(sd[norm_key]))
                 break
 
         # Attention Q/K/V/O
@@ -205,10 +297,10 @@ def main():
             for n in names:
                 wkey = f"{pfx}.{n}.weight"
                 if wkey in sd:
-                    writer.add_tensor(f"dec.{i}.attn.{proj}.weight", wt(sd[wkey]))
+                    add_tensor(f"dec.{i}.attn.{proj}.weight", wt(sd[wkey]))
                     bkey = f"{pfx}.{n}.bias"
                     if bkey in sd:
-                        writer.add_tensor(f"dec.{i}.attn.{proj}.bias", f32(sd[bkey]))
+                        add_tensor(f"dec.{i}.attn.{proj}.bias", f32(sd[bkey]))
                     break
 
         # QK norm (Qwen3 feature)
@@ -216,35 +308,43 @@ def main():
                                      ("self_attn.k_norm", "k_norm")]:
             nkey = f"{pfx}.{norm_name}.weight"
             if nkey in sd:
-                writer.add_tensor(f"dec.{i}.attn.{out_name}.weight", f32(sd[nkey]))
+                add_tensor(f"dec.{i}.attn.{out_name}.weight", f32(sd[nkey]))
 
         # Post-attention norm
         for norm_key in [f"{pfx}.post_attention_layernorm.weight",
                           f"{pfx}.output.LayerNorm.weight"]:
             if norm_key in sd:
-                writer.add_tensor(f"dec.{i}.ffn_norm.weight", f32(sd[norm_key]))
+                add_tensor(f"dec.{i}.ffn_norm.weight", f32(sd[norm_key]))
                 break
+
+        # Gemma3 extra norms: pre/post feedforward layernorms
+        pre_ffn_key = f"{pfx}.pre_feedforward_layernorm.weight"
+        if pre_ffn_key in sd:
+            add_tensor(f"dec.{i}.pre_ffn_norm.weight", f32(sd[pre_ffn_key]))
+        post_ffn_key = f"{pfx}.post_feedforward_layernorm.weight"
+        if post_ffn_key in sd:
+            add_tensor(f"dec.{i}.post_ffn_norm.weight", f32(sd[post_ffn_key]))
 
         # FFN (SwiGLU: gate + up + down, or standard: fc1 + fc2)
         gate_key = f"{pfx}.mlp.gate_proj.weight"
         if gate_key in sd:
-            writer.add_tensor(f"dec.{i}.ffn.gate.weight", wt(sd[gate_key]))
-            writer.add_tensor(f"dec.{i}.ffn.up.weight", wt(sd[f"{pfx}.mlp.up_proj.weight"]))
-            writer.add_tensor(f"dec.{i}.ffn.down.weight", wt(sd[f"{pfx}.mlp.down_proj.weight"]))
+            add_tensor(f"dec.{i}.ffn.gate.weight", wt(sd[gate_key]))
+            add_tensor(f"dec.{i}.ffn.up.weight", wt(sd[f"{pfx}.mlp.up_proj.weight"]))
+            add_tensor(f"dec.{i}.ffn.down.weight", wt(sd[f"{pfx}.mlp.down_proj.weight"]))
         else:
             fc1_key = f"{pfx}.intermediate.dense.weight"
             if fc1_key in sd:
-                writer.add_tensor(f"dec.{i}.ffn.fc1.weight", wt(sd[fc1_key]))
-                writer.add_tensor(f"dec.{i}.ffn.fc1.bias", f32(sd[f"{pfx}.intermediate.dense.bias"]))
-                writer.add_tensor(f"dec.{i}.ffn.fc2.weight", wt(sd[f"{pfx}.output.dense.weight"]))
-                writer.add_tensor(f"dec.{i}.ffn.fc2.bias", f32(sd[f"{pfx}.output.dense.bias"]))
+                add_tensor(f"dec.{i}.ffn.fc1.weight", wt(sd[fc1_key]))
+                add_tensor(f"dec.{i}.ffn.fc1.bias", f32(sd[f"{pfx}.intermediate.dense.bias"]))
+                add_tensor(f"dec.{i}.ffn.fc2.weight", wt(sd[f"{pfx}.output.dense.weight"]))
+                add_tensor(f"dec.{i}.ffn.fc2.bias", f32(sd[f"{pfx}.output.dense.bias"]))
 
         print(f"  dec.{i}: ok")
 
     # Final norm
     for key in ["model.norm.weight", "norm.weight", "encoder.layer_norm.weight"]:
         if key in sd:
-            writer.add_tensor("output_norm.weight", f32(sd[key]))
+            add_tensor("output_norm.weight", f32(sd[key]))
             print(f"  output_norm: ok")
             break
 

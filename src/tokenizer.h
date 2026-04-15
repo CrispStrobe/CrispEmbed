@@ -66,16 +66,22 @@ private:
     int unk_id_ = 3;
     int pad_id_ = 1;
     int max_length_ = 512;
+    int max_token_len_ = 64;  // max byte length of any vocab token
 
     std::vector<int> tokenize_text(const std::string & text) const;
 };
 
-// GPT-2 BPE tokenizer for decoder embedding models (Qwen3, etc.)
+// BPE tokenizer for decoder embedding models.
+// Supports two modes:
+//   GPT-2 style (Qwen3): byte-level encoding with Ġ space marker
+//   SentencePiece style (Gemma): ▁ space marker, BOS/EOS tokens
 class BPETokenizer {
 public:
     bool load(const std::vector<std::string> & vocab,
               const std::vector<std::string> & merges,
               int eos_id, int pad_id, int suffix_id,
+              int bos_id = -1,  // -1 = no BOS
+              bool spm_style = false,  // true for SentencePiece BPE (Gemma)
               int max_length = 8192);
 
     embed_tokens encode(const std::string & text) const;
@@ -89,5 +95,10 @@ private:
     int eos_id_ = 151645;
     int pad_id_ = 151643;
     int suffix_id_ = 151643;  // token appended after text (model-specific)
+    int bos_id_ = -1;         // BOS token (-1 = none)
+    bool spm_style_ = false;  // SentencePiece BPE mode
     int max_length_ = 8192;
+
+    // SentencePiece BPE: merge-based tokenization on ▁-prefixed text
+    std::vector<int32_t> bpe_merge(const std::string & text) const;
 };

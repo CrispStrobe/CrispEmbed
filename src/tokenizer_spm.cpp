@@ -1,20 +1,21 @@
-// tokenizer_spm.cpp — SentencePiece unigram tokenizer.
+// tokenizer_spm.cpp — SentencePiece Unigram tokenizer.
 //
-// Adapted from llama.cpp's llm_tokenizer_spm_session (MIT license).
-// Uses a priority-queue bigram merging approach with vocab scores.
+// Uses Viterbi dynamic programming to find the optimal segmentation
+// given unigram log-probability scores. This matches HuggingFace's
+// tokenizers library behavior for XLM-RoBERTa and similar models.
 
 #include "tokenizer.h"
 
 #include <algorithm>
 #include <cassert>
+#include <cfloat>
 #include <cstdio>
-#include <functional>
-#include <queue>
+#include <cstring>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-// UTF-8 character length
+// UTF-8 character byte length from lead byte
 static size_t utf8_len(unsigned char c) {
     if (c < 0x80) return 1;
     if ((c & 0xE0) == 0xC0) return 2;
@@ -22,27 +23,6 @@ static size_t utf8_len(unsigned char c) {
     if ((c & 0xF8) == 0xF0) return 4;
     return 1;
 }
-
-// Symbol in the merge chain
-struct spm_symbol {
-    const char * text = nullptr;
-    size_t       n    = 0;
-    int          prev = -1;
-    int          next = -1;
-};
-
-// Bigram merge candidate
-struct spm_bigram {
-    int    left;
-    int    right;
-    float  score;
-    size_t size;
-
-    bool operator<(const spm_bigram & other) const {
-        // Higher score = higher priority
-        return score < other.score;
-    }
-};
 
 bool SentencePieceTokenizer::load(const std::vector<std::string> & vocab,
                                    const std::vector<float> & scores,
@@ -59,6 +39,12 @@ bool SentencePieceTokenizer::load(const std::vector<std::string> & vocab,
     if (scores_.size() < vocab.size()) {
         scores_.resize(vocab.size(), 0.0f);
     }
+    // Find max token length for Viterbi window
+    max_token_len_ = 0;
+    for (const auto & t : vocab) {
+        if ((int)t.size() > max_token_len_)
+            max_token_len_ = (int)t.size();
+    }
     bos_id_ = bos_id;
     eos_id_ = eos_id;
     unk_id_ = unk_id;
@@ -67,127 +53,84 @@ bool SentencePieceTokenizer::load(const std::vector<std::string> & vocab,
     return !vocab.empty();
 }
 
+// Viterbi dynamic programming: find optimal segmentation of text
+// into tokens that maximizes total score.
 std::vector<int> SentencePieceTokenizer::tokenize_text(const std::string & text) const {
     if (text.empty()) return {};
 
-    // Initialize: split into UTF-8 characters as initial symbols
-    std::vector<spm_symbol> symbols;
-    std::unordered_map<std::string, std::pair<int,int>> rev_merge;
-    int index = 0;
-    size_t offs = 0;
+    const int n = (int)text.size();
 
-    while (offs < text.size()) {
-        spm_symbol sym;
-        size_t len = utf8_len((unsigned char)text[offs]);
-        sym.text = text.c_str() + offs;
-        sym.n = std::min(len, text.size() - offs);
-        offs += sym.n;
-        sym.prev = index - 1;
-        sym.next = (offs == text.size()) ? -1 : index + 1;
-        index++;
-        symbols.push_back(sym);
-    }
+    // best[i] = best total score for text[0..i)
+    // back[i] = (token_id, start_pos) for backtracking
+    std::vector<float> best(n + 1, -1e30f);
+    std::vector<std::pair<int, int>> back(n + 1, {-1, -1});
+    best[0] = 0.0f;
 
-    // Try to add a bigram merge
-    auto try_add_bigram = [&](int left, int right,
-                               std::priority_queue<spm_bigram> & queue) {
-        if (left < 0 || right < 0) return;
-        std::string merged(symbols[left].text,
-                           symbols[left].n + symbols[right].n);
-        auto it = token_to_id_.find(merged);
-        if (it == token_to_id_.end()) return;
-        int tid = it->second;
-        if (tid < 0 || tid >= (int)scores_.size()) return;
+    for (int i = 0; i < n; i++) {
+        if (best[i] <= -1e29f) continue;  // unreachable position
 
-        spm_bigram bg;
-        bg.left = left;
-        bg.right = right;
-        bg.score = scores_[tid];
-        bg.size = merged.size();
-        queue.push(bg);
-        rev_merge[merged] = {left, right};
-    };
+        // Try all tokens starting at position i
+        int max_len = std::min(max_token_len_, n - i);
+        for (int len = 1; len <= max_len; len++) {
+            // Only try lengths that end on UTF-8 character boundaries
+            // (avoid splitting mid-character)
+            int end = i + len;
+            if (end < n) {
+                unsigned char c = (unsigned char)text[end];
+                if ((c & 0xC0) == 0x80) continue;  // mid-sequence byte
+            }
 
-    // Seed queue with all adjacent pairs
-    std::priority_queue<spm_bigram> queue;
-    for (int i = 1; i < (int)symbols.size(); i++) {
-        try_add_bigram(i - 1, i, queue);
-    }
+            std::string piece = text.substr(i, len);
+            auto it = token_to_id_.find(piece);
+            if (it == token_to_id_.end()) continue;
 
-    // Greedily merge highest-score bigrams
-    while (!queue.empty()) {
-        auto bg = queue.top();
-        queue.pop();
+            int tid = it->second;
+            float score = (tid < (int)scores_.size()) ? scores_[tid] : 0.0f;
+            float candidate = best[i] + score;
 
-        auto & left_sym = symbols[bg.left];
-        auto & right_sym = symbols[bg.right];
-
-        // Skip if already merged
-        if (left_sym.n == 0 || right_sym.n == 0 ||
-            left_sym.n + right_sym.n != bg.size) {
-            continue;
-        }
-
-        // Merge right into left
-        left_sym.n += right_sym.n;
-        right_sym.n = 0;
-
-        // Update linked list
-        left_sym.next = right_sym.next;
-        if (right_sym.next >= 0) {
-            symbols[right_sym.next].prev = bg.left;
-        }
-
-        // Try new bigrams around the merged symbol
-        try_add_bigram(left_sym.prev, bg.left, queue);
-        try_add_bigram(bg.left, left_sym.next, queue);
-    }
-
-    // Collect result tokens
-    std::vector<int> output;
-
-    // Recursive resegment for unmatched pieces
-    std::function<void(const std::string &)> resegment;
-    resegment = [&](const std::string & piece) {
-        auto it = token_to_id_.find(piece);
-        if (it != token_to_id_.end()) {
-            output.push_back(it->second);
-            return;
-        }
-        auto rm = rev_merge.find(piece);
-        if (rm != rev_merge.end()) {
-            int l = rm->second.first;
-            int r = rm->second.second;
-            resegment(std::string(symbols[l].text, symbols[l].n));
-            resegment(std::string(symbols[r].text, symbols[r].n));
-            return;
-        }
-        // Byte fallback
-        for (size_t i = 0; i < piece.size(); i++) {
-            // Try <0xHH> format (common in SentencePiece byte fallback)
-            char hex[8];
-            snprintf(hex, sizeof(hex), "<0x%02X>", (unsigned char)piece[i]);
-            auto bit = token_to_id_.find(hex);
-            if (bit != token_to_id_.end()) {
-                output.push_back(bit->second);
-            } else {
-                output.push_back(unk_id_);
+            if (candidate > best[end]) {
+                best[end] = candidate;
+                back[end] = {tid, i};
             }
         }
-    };
 
-    for (int i = 0; i != -1; i = symbols[i].next) {
-        if (symbols[i].n == 0) continue;
-        std::string piece(symbols[i].text, symbols[i].n);
-        resegment(piece);
+        // Byte fallback: if no token starts here, try single-byte fallback
+        // (ensures we can always reach the next position)
+        if (best[i + 1] <= -1e29f && i + 1 <= n) {
+            unsigned char byte = (unsigned char)text[i];
+            char hex[8];
+            snprintf(hex, sizeof(hex), "<0x%02X>", byte);
+            auto it = token_to_id_.find(hex);
+            int tid = (it != token_to_id_.end()) ? it->second : unk_id_;
+            float score = -100.0f;  // heavy penalty for byte fallback
+            float candidate = best[i] + score;
+            if (candidate > best[i + 1]) {
+                best[i + 1] = candidate;
+                back[i + 1] = {tid, i};
+            }
+        }
     }
 
-    return output;
+    // Backtrack to recover token sequence
+    std::vector<int> tokens;
+    int pos = n;
+    while (pos > 0) {
+        auto [tid, start] = back[pos];
+        if (tid < 0) {
+            // Should not happen if byte fallback works
+            pos--;
+            continue;
+        }
+        tokens.push_back(tid);
+        pos = start;
+    }
+    std::reverse(tokens.begin(), tokens.end());
+    return tokens;
 }
 
 embed_tokens SentencePieceTokenizer::encode(const std::string & text) const {
     // SentencePiece convention for XLM-R: prepend a space to the text,
-    // then replace all spaces with ▁ (U+2581). The BPE merge algorithm
+    // then replace all spaces with ▁ (U+2581). The Viterbi algorithm
     // then operates on the ▁-prefixed text.
     std::string processed = " " + text;  // leading space (XLM-R convention)
     std::string with_marker;
