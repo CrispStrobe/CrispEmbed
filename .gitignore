@@ -7,3 +7,5 @@ __pycache__/
 *.dll
 *.gguf
 .bench-venv/
+.fastembed_cache/
+gguf-export
