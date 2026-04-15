@@ -175,8 +175,9 @@ if (-not $warmup -or $warmup.Length -lt 5) {
     Write-Host "  [ERROR] CLI produced no embedding output." -ForegroundColor Red
     Write-Host "  Try: $Binary -m $Model `"Hello world`"" -ForegroundColor Yellow
 } else {
-    # Count floats (each separated by space)
-    $dim = ($warmup -split '\s+' | Where-Object { $_ -match '^-?[0-9]' }).Count
+    # Count floats — take only the first line (embedding), skip blanks
+    $firstLine = ($warmup -split "`n" | Where-Object { $_.Trim() -match '^-?[0-9]' } | Select-Object -First 1).Trim()
+    $dim = ($firstLine -split '\s+').Count
     Write-Host "  Dimension: $dim"
 
     # Benchmark loop (CLI mode includes model load per call — slow for GPU)
@@ -365,22 +366,43 @@ except Exception as e:
 # --- fastembed-rs benchmark ---
 if (-not $SkipFastembed) {
     Write-Host ""
-    Write-Host "--- fastembed-rs (if available) ---" -ForegroundColor Yellow
+    Write-Host "--- fastembed-rs (Rust ONNX) ---" -ForegroundColor Yellow
 
+    $feRsDir = "..\fastembed-rs"
+
+    # Auto-clone if not present
+    if (-not (Test-Path $feRsDir)) {
+        Write-Host "  Cloning fastembed-rs from CrispStrobe fork..." -ForegroundColor DarkGray
+        git clone -b feat/new-model-entries https://github.com/CrispStrobe/fastembed-rs.git $feRsDir 2>$null
+    }
+
+    # Build if needed
     $feRsBinary = $null
     $feRsPaths = @(
-        "..\fastembed-rs\target\release\fastembed-bench.exe",
-        "..\fastembed-rs\target\release\examples\bench.exe",
-        "fastembed-bench.exe"
+        "$feRsDir\target\release\examples\bench.exe",
+        "$feRsDir\target\release\fastembed-bench.exe"
     )
     foreach ($p in $feRsPaths) { if (Test-Path $p) { $feRsBinary = $p; break } }
 
+    if (-not $feRsBinary -and (Test-Path "$feRsDir\Cargo.toml")) {
+        # Check for Rust
+        $rustOk = (Get-Command cargo -ErrorAction SilentlyContinue) -ne $null
+        if ($rustOk) {
+            Write-Host "  Building fastembed-rs (cargo build --release)..." -ForegroundColor DarkGray
+            Push-Location $feRsDir
+            cargo build --release --example bench 2>$null
+            Pop-Location
+            foreach ($p in $feRsPaths) { if (Test-Path $p) { $feRsBinary = $p; break } }
+        } else {
+            Write-Host "  Rust/cargo not installed. Install from https://rustup.rs/" -ForegroundColor Yellow
+        }
+    }
+
     if ($feRsBinary) {
         Write-Host "  Binary: $feRsBinary"
-        # Run fastembed-rs benchmark if available
         & $feRsBinary --model $HfModel --text $TestText --n-runs $NRuns 2>$null
     } else {
-        Write-Host "  Not found. Build fastembed-rs with: cd ..\fastembed-rs && cargo build --release"
+        Write-Host "  Not available (clone failed or no Rust toolchain)" -ForegroundColor DarkGray
     }
 }
 
@@ -388,3 +410,7 @@ Write-Host ""
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "  Benchmark Complete" -ForegroundColor Cyan
 Write-Host "============================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "NOTE: CrispEmbed server mode is the fair comparison" -ForegroundColor DarkGray
+Write-Host "  (model loaded once, no process startup overhead)" -ForegroundColor DarkGray
+Write-Host "  CLI mode includes ~1s GPU init per call." -ForegroundColor DarkGray
