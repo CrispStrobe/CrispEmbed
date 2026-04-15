@@ -58,7 +58,7 @@ if exist "build-cuda\ggml.dll" (
 )
 
 echo [INFO] Configuring with CUDA + Ninja...
-cmake -G Ninja -B build-cuda -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DGGML_LLAMAFILE=ON -DBUILD_SHARED_LIBS=OFF -DCRISPEMBED_BUILD_SHARED=OFF %*
+cmake -G Ninja -B build-cuda -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DGGML_LLAMAFILE=ON -DGGML_CUDA_GRAPHS=ON -DBUILD_SHARED_LIBS=OFF -DCRISPEMBED_BUILD_SHARED=OFF %*
 
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] CMake configuration failed.

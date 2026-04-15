@@ -82,6 +82,7 @@ struct crispembed_context {
     std::vector<uint8_t> compute_meta;  // graph metadata buffer (no_alloc=true)
     ggml_context * qkv_ctx = nullptr;   // pre-merged QKV tensor metadata
     ggml_backend_buffer_t qkv_buf = nullptr;  // backend buffer for merged QKV
+    int reserved_T = 0;                  // scheduler reserved for this seq len
 };
 
 // ---------------------------------------------------------------------------
@@ -347,7 +348,7 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
     for (int il = 0; il < hp.n_layer; il++) {
         const auto & L = m.layers[il];
 
-        // QKV projection on [H, T*B] → [H, T*B] per Q/K/V
+        // QKV projection (fused: 1 matmul + 3 view+cont, or 3 separate matmuls)
         ggml_tensor * Q, * K, * V;
         if (L.qkv_w) {
             ggml_tensor * qkv = ggml_mul_mat(gctx, L.qkv_w, cur);
@@ -418,16 +419,37 @@ static bool sched_graph_compute(ggml_backend_sched_t sched, ggml_cgraph * gf, in
     return ggml_backend_sched_graph_compute(sched, gf) == GGML_STATUS_SUCCESS;
 }
 
+// Bucket sequence length to reduce scheduler re-reserves
+static int bucket_seq_len(int T) {
+    if (T <= 8)   return 8;
+    if (T <= 16)  return 16;
+    if (T <= 32)  return 32;
+    if (T <= 64)  return 64;
+    if (T <= 128) return 128;
+    if (T <= 256) return 256;
+    if (T <= 512) return 512;
+    return T;
+}
+
 static std::vector<float> encode_tokens(crispembed_context * ctx,
                                          const embed_tokens & tokens) {
     const auto & hp = ctx->model.hparams;
     const int T = (int)tokens.ids.size();
     const int H = hp.n_embd;
 
-    // Build graph (fresh each call, metadata-only — scheduler allocates buffers)
+    // Pad T to bucket for scheduler reservation reuse
+    int T_bucket = bucket_seq_len(T);
+
+    // Reserve scheduler for this bucket if not already reserved
+    if (ctx->reserved_T != T_bucket) {
+        ggml_cgraph * measure_gf = build_encoder_graph(ctx, T_bucket);
+        ggml_backend_sched_reserve(ctx->sched, measure_gf);
+        ctx->reserved_T = T_bucket;
+    }
+
+    // Build graph for actual T (metadata only — scheduler already has buffers)
     ggml_cgraph * gf = build_encoder_graph(ctx, T);
 
-    // Allocate graph on backends (GPU + CPU)
     ggml_backend_sched_reset(ctx->sched);
     if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
         fprintf(stderr, "crispembed: failed to allocate encoder graph\n");
