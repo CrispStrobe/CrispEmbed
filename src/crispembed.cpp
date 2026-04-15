@@ -298,41 +298,45 @@ static bool load_model(crispembed_context * ctx, const char * path) {
 // Graph: build fresh each call (no_alloc=true), scheduler handles allocation
 // ---------------------------------------------------------------------------
 
-static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T) {
+// Build encoder graph for T tokens × B batch items.
+// When B=1: standard single-text graph.
+// When B>1: batched graph with 4D attention via flash_attn_ext.
+static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B = 1) {
     const auto & m = ctx->model;
     const auto & hp = m.hparams;
     const int H = hp.n_embd;
     const int n_heads = hp.n_head;
     const int head_dim = H / n_heads;
     const float ln_eps = hp.layer_norm_eps;
+    const int TB = T * B;  // total tokens in batch
 
     int graph_size = std::max(2048, hp.n_layer * 30 + 256);
 
-    // Metadata-only context (no_alloc=true — scheduler allocates buffers)
     ggml_init_params ip = { ctx->compute_meta.size(), ctx->compute_meta.data(), true };
     ggml_context * gctx = ggml_init(ip);
     ggml_cgraph * gf = ggml_new_graph_custom(gctx, graph_size, false);
 
-    // Input tensors (marked so scheduler keeps them on CPU for easy data set)
-    ggml_tensor * tok_ids = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T);
+    // Input: flattened token IDs [T*B] and position IDs [T*B]
+    ggml_tensor * tok_ids = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, TB);
     ggml_set_name(tok_ids, "tok_ids");
     ggml_set_input(tok_ids);
-    ggml_tensor * pos_ids = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T);
+    ggml_tensor * pos_ids = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, TB);
     ggml_set_name(pos_ids, "pos_ids");
     ggml_set_input(pos_ids);
 
+    // Embeddings: [H, T*B]
     ggml_tensor * embd = ggml_get_rows(gctx, m.token_embd, tok_ids);
     ggml_tensor * pos_embd = ggml_get_rows(gctx, m.pos_embd, pos_ids);
     embd = ggml_add(gctx, embd, pos_embd);
 
     if (m.type_embd) {
-        ggml_tensor * type_ids_t = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T);
+        ggml_tensor * type_ids_t = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, TB);
         ggml_set_name(type_ids_t, "type_ids");
         ggml_set_input(type_ids_t);
-        ggml_tensor * type_embd = ggml_get_rows(gctx, m.type_embd, type_ids_t);
-        embd = ggml_add(gctx, embd, type_embd);
+        embd = ggml_add(gctx, embd, ggml_get_rows(gctx, m.type_embd, type_ids_t));
     }
 
+    // cur: [H, T*B] — all matmuls batch naturally
     ggml_tensor * cur = embd;
     if (m.embd_ln_w) {
         cur = ggml_norm(gctx, cur, ln_eps);
@@ -343,32 +347,37 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T) {
     for (int il = 0; il < hp.n_layer; il++) {
         const auto & L = m.layers[il];
 
-        // QKV projection (fused if merged weights available, separate otherwise)
+        // QKV projection on [H, T*B] → [H, T*B] per Q/K/V
         ggml_tensor * Q, * K, * V;
         if (L.qkv_w) {
             ggml_tensor * qkv = ggml_mul_mat(gctx, L.qkv_w, cur);
             if (L.qkv_b) qkv = ggml_add(gctx, qkv, L.qkv_b);
-            Q = ggml_cont(gctx, ggml_view_2d(gctx, qkv, H, T, 3*H*sizeof(float), 0));
-            K = ggml_cont(gctx, ggml_view_2d(gctx, qkv, H, T, 3*H*sizeof(float), H*sizeof(float)));
-            V = ggml_cont(gctx, ggml_view_2d(gctx, qkv, H, T, 3*H*sizeof(float), 2*H*sizeof(float)));
+            Q = ggml_cont(gctx, ggml_view_2d(gctx, qkv, H, TB, 3*H*sizeof(float), 0));
+            K = ggml_cont(gctx, ggml_view_2d(gctx, qkv, H, TB, 3*H*sizeof(float), H*sizeof(float)));
+            V = ggml_cont(gctx, ggml_view_2d(gctx, qkv, H, TB, 3*H*sizeof(float), 2*H*sizeof(float)));
         } else {
             Q = ggml_add(gctx, ggml_mul_mat(gctx, L.q_w, cur), L.q_b);
             K = ggml_add(gctx, ggml_mul_mat(gctx, L.k_w, cur), L.k_b);
             V = ggml_add(gctx, ggml_mul_mat(gctx, L.v_w, cur), L.v_b);
         }
 
-        Q = ggml_reshape_3d(gctx, Q, head_dim, n_heads, T);
-        K = ggml_reshape_3d(gctx, K, head_dim, n_heads, T);
-        V = ggml_reshape_3d(gctx, V, head_dim, n_heads, T);
+        // Reshape for attention: [H, T*B] → [head_dim, T, n_heads, B]
+        // flash_attn_ext: q[hd, T, nh, B], k[hd, T, nh, B], v[hd, T, nh, B]
+        Q = ggml_reshape_4d(gctx, Q, head_dim, n_heads, T, B);
+        K = ggml_reshape_4d(gctx, K, head_dim, n_heads, T, B);
+        V = ggml_reshape_4d(gctx, V, head_dim, n_heads, T, B);
 
-        // Flash attention
+        // Permute: [hd, nh, T, B] → [hd, T, nh, B]
+        Q = ggml_permute(gctx, Q, 0, 2, 1, 3);
+        K = ggml_permute(gctx, K, 0, 2, 1, 3);
+        V = ggml_permute(gctx, V, 0, 2, 1, 3);
+
+        // Flash attention with batch dim (each B item has independent T×T attention)
         float scale = 1.0f / sqrtf((float)head_dim);
-        ggml_tensor * attn = ggml_flash_attn_ext(gctx,
-            ggml_permute(gctx, Q, 0, 2, 1, 3),
-            ggml_permute(gctx, K, 0, 2, 1, 3),
-            ggml_permute(gctx, V, 0, 2, 1, 3),
-            nullptr, scale, 0.0f, 0.0f);
-        attn = ggml_reshape_2d(gctx, attn, H, T);
+        ggml_tensor * attn = ggml_flash_attn_ext(gctx, Q, K, V,
+                                                   nullptr, scale, 0.0f, 0.0f);
+        // Result: [hd, nh, T, B] → reshape to [H, T*B]
+        attn = ggml_reshape_2d(gctx, attn, H, TB);
 
         attn = ggml_add(gctx, ggml_mul_mat(gctx, L.o_w, attn), L.o_b);
 
@@ -499,6 +508,105 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
     for (int h = 0; h < dim; h++) pooled[h] /= norm;
 
     return pooled;
+}
+
+// Batched encoding: multiple texts in one graph (padded to max length)
+static std::vector<std::vector<float>> encode_tokens_batch(
+    crispembed_context * ctx,
+    const std::vector<embed_tokens> & batch) {
+
+    const auto & hp = ctx->model.hparams;
+    const int H = hp.n_embd;
+    const int B = (int)batch.size();
+    if (B == 0) return {};
+
+    // Find max token count and pad all texts
+    int T_max = 0;
+    for (auto & t : batch) T_max = std::max(T_max, (int)t.ids.size());
+
+    // Build batched graph [T_max * B tokens]
+    ggml_cgraph * gf = build_encoder_graph(ctx, T_max, B);
+
+    ggml_backend_sched_reset(ctx->sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
+        fprintf(stderr, "crispembed: failed to allocate batched graph\n");
+        return {};
+    }
+
+    // Prepare flattened input arrays [T_max * B]
+    int TB = T_max * B;
+    std::vector<int32_t> all_tok(TB, 0);   // pad token = 0
+    std::vector<int32_t> all_pos(TB, 0);
+    std::vector<int32_t> all_type(TB, 0);
+    std::vector<std::vector<int>> attn_masks(B);
+
+    for (int b = 0; b < B; b++) {
+        const auto & t = batch[b];
+        int len = (int)t.ids.size();
+        attn_masks[b] = std::vector<int>(t.attn_mask.begin(), t.attn_mask.end());
+        attn_masks[b].resize(T_max, 0);  // pad mask with 0s
+        for (int i = 0; i < len; i++) {
+            all_tok[b * T_max + i] = t.ids[i];
+            all_pos[b * T_max + i] = i + ctx->pos_offset;
+            if (i < (int)t.type_ids.size())
+                all_type[b * T_max + i] = t.type_ids[i];
+        }
+    }
+
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"),
+                            all_tok.data(), 0, TB * sizeof(int32_t));
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
+                            all_pos.data(), 0, TB * sizeof(int32_t));
+    if (ctx->model.type_embd) {
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "type_ids"),
+                                all_type.data(), 0, TB * sizeof(int32_t));
+    }
+
+    if (!sched_graph_compute(ctx->sched, gf, ctx->n_threads)) {
+        fprintf(stderr, "crispembed: batched compute failed\n");
+        return {};
+    }
+
+    // Read output [H, T_max * B]
+    ggml_tensor * out = ggml_graph_get_tensor(gf, "encoder_out");
+    std::vector<float> out_buf(H * TB);
+    ggml_backend_tensor_get(out, out_buf.data(), 0, H * TB * sizeof(float));
+
+    // Pool and normalize each text in batch
+    int dim = hp.n_output > 0 ? hp.n_output : H;
+    int pool_method = ctx->pool_method;
+    std::vector<std::vector<float>> results(B);
+
+    for (int b = 0; b < B; b++) {
+        std::vector<float> pooled(dim, 0.0f);
+        float * data = out_buf.data() + b * T_max * H;
+        auto & mask = attn_masks[b];
+
+        if (pool_method == 1) {
+            for (int h = 0; h < std::min(H, dim); h++) pooled[h] = data[h];
+        } else if (pool_method == 2) {
+            int last_t = 0;
+            for (int t = T_max - 1; t >= 0; t--) { if (mask[t]) { last_t = t; break; } }
+            for (int h = 0; h < std::min(H, dim); h++) pooled[h] = data[h + last_t * H];
+        } else {
+            int n_real = 0;
+            for (int t = 0; t < T_max; t++) if (mask[t]) n_real++;
+            if (n_real > 0) {
+                for (int t = 0; t < T_max; t++) {
+                    if (!mask[t]) continue;
+                    for (int h = 0; h < std::min(H, dim); h++) pooled[h] += data[h + t * H];
+                }
+                for (int h = 0; h < dim; h++) pooled[h] /= n_real;
+            }
+        }
+
+        float norm = 0;
+        for (int h = 0; h < dim; h++) norm += pooled[h] * pooled[h];
+        norm = sqrtf(std::max(norm, 1e-12f));
+        for (int h = 0; h < dim; h++) pooled[h] /= norm;
+        results[b] = std::move(pooled);
+    }
+    return results;
 }
 
 // ---------------------------------------------------------------------------
@@ -653,84 +761,68 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
                                                    int * out_n_dim) {
     if (!ctx || !texts || n_texts <= 0) return nullptr;
 
-    // Pre-tokenize all texts, sort by length for graph cache efficiency
-    struct text_entry { int idx; embed_tokens tokens; };
-    std::vector<text_entry> entries(n_texts);
+    // Tokenize all texts
+    std::vector<embed_tokens> all_tokens(n_texts);
     for (int i = 0; i < n_texts; i++) {
-        entries[i].idx = i;
-        if (ctx->use_bpe) {
-            entries[i].tokens = ctx->bpe_tokenizer.encode(texts[i]);
-        } else if (ctx->use_sentencepiece) {
-            entries[i].tokens = ctx->sp_tokenizer.encode(texts[i]);
-        } else {
-            entries[i].tokens = ctx->wp_tokenizer.encode(texts[i]);
-        }
-    }
-    // Sort by token count (minimizes graph rebuilds)
-    std::sort(entries.begin(), entries.end(), [](const text_entry & a, const text_entry & b) {
-        return a.tokens.ids.size() < b.tokens.ids.size();
-    });
+        if (ctx->use_bpe)
+            all_tokens[i] = ctx->bpe_tokenizer.encode(texts[i]);
+        else if (ctx->use_sentencepiece)
+            all_tokens[i] = ctx->sp_tokenizer.encode(texts[i]);
+        else
+            all_tokens[i] = ctx->wp_tokenizer.encode(texts[i]);
 
-    // Determine output dim from first encoding
-    int dim = 0;
-    {
-        auto & tokens = entries[0].tokens;
         // Trim padding
-        int actual_len = (int)tokens.attn_mask.size();
-        for (int i = actual_len - 1; i >= 0; i--) {
-            if (tokens.attn_mask[i]) { actual_len = i + 1; break; }
+        auto & t = all_tokens[i];
+        int actual_len = (int)t.attn_mask.size();
+        for (int j = actual_len - 1; j >= 0; j--) {
+            if (t.attn_mask[j]) { actual_len = j + 1; break; }
         }
-        if (actual_len > 0 && actual_len < (int)tokens.ids.size()) {
-            tokens.ids.resize(actual_len);
-            tokens.type_ids.resize(actual_len);
-            tokens.attn_mask.resize(actual_len);
-        }
-        if (ctx->is_decoder && ctx->dec) {
-            auto vec = decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads,
-                                              ctx->sched, &ctx->compute_meta);
-            dim = (int)vec.size();
-        } else {
-            auto vec = encode_tokens(ctx, tokens);
-            dim = (int)vec.size();
+        if (actual_len > 0 && actual_len < (int)t.ids.size()) {
+            t.ids.resize(actual_len);
+            t.type_ids.resize(actual_len);
+            t.attn_mask.resize(actual_len);
         }
     }
-    if (dim == 0) return nullptr;
 
-    // Apply Matryoshka
+    // For encoder models: true batched inference (one graph, all texts)
+    const auto & hp = ctx->model.hparams;
+    int dim = hp.n_output > 0 ? hp.n_output : hp.n_embd;
+    std::vector<std::vector<float>> batch_results;
+
+    if (!ctx->is_decoder) {
+        batch_results = encode_tokens_batch(ctx, all_tokens);
+    } else {
+        // Decoder: sequential (batched decoding more complex)
+        for (int i = 0; i < n_texts; i++) {
+            auto vec = decoder_encode_tokens(*ctx->dec, ctx->backend, all_tokens[i],
+                                              ctx->n_threads, ctx->sched, &ctx->compute_meta);
+            batch_results.push_back(std::move(vec));
+        }
+    }
+
+    if (batch_results.empty() || batch_results[0].empty()) return nullptr;
+    dim = (int)batch_results[0].size();
+
+    // Apply Matryoshka and copy results
     int out_dim = (ctx->matryoshka_dim > 0 && ctx->matryoshka_dim < dim) ? ctx->matryoshka_dim : dim;
     ctx->last_output.resize(n_texts * out_dim);
 
-    // Encode all texts (sorted order maximizes graph cache hits)
     for (int i = 0; i < n_texts; i++) {
-        auto & tokens = entries[i].tokens;
-        // Trim padding
-        int actual_len = (int)tokens.attn_mask.size();
-        for (int j = actual_len - 1; j >= 0; j--) {
-            if (tokens.attn_mask[j]) { actual_len = j + 1; break; }
-        }
-        if (actual_len > 0 && actual_len < (int)tokens.ids.size()) {
-            tokens.ids.resize(actual_len);
-            tokens.type_ids.resize(actual_len);
-            tokens.attn_mask.resize(actual_len);
-        }
-
-        std::vector<float> vec;
-        if (ctx->is_decoder && ctx->dec) {
-            vec = decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads,
-                                         ctx->sched, &ctx->compute_meta);
-        } else {
-            vec = encode_tokens(ctx, tokens);
-        }
-
-        // Matryoshka truncation + L2 normalize
+        auto & vec = batch_results[i];
         int d = std::min((int)vec.size(), out_dim);
-        float norm = 0;
-        for (int j = 0; j < d; j++) norm += vec[j] * vec[j];
-        norm = sqrtf(std::max(norm, 1e-12f));
-        float * dst = ctx->last_output.data() + entries[i].idx * out_dim;
-        for (int j = 0; j < d; j++) dst[j] = vec[j] / norm;
+        // Already L2-normalized from encode_tokens_batch / encode_tokens
+        // But may need re-normalize after Matryoshka truncation
+        if (out_dim < dim) {
+            float norm = 0;
+            for (int j = 0; j < d; j++) norm += vec[j] * vec[j];
+            norm = sqrtf(std::max(norm, 1e-12f));
+            float * dst = ctx->last_output.data() + i * out_dim;
+            for (int j = 0; j < d; j++) dst[j] = vec[j] / norm;
+        } else {
+            memcpy(ctx->last_output.data() + i * out_dim, vec.data(), d * sizeof(float));
+        }
     }
-    if (out_n_dim) *out_n_dim = dim;
+    if (out_n_dim) *out_n_dim = out_dim;
     return ctx->last_output.data();
 }
 
