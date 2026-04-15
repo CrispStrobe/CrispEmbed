@@ -205,7 +205,9 @@ def main():
     tokens = [id_to_token.get(i, f"<unk_{i}>") for i in range(config.vocab_size)]
     writer.add_array("tokenizer.ggml.tokens", tokens)
     if ollama_mode:
-        writer.add_string("tokenizer.ggml.model", "gpt2")
+        # Gemma3 uses SentencePiece BPE ("llama"); Qwen3 uses GPT-2 BPE ("gpt2")
+        tok_model = "llama" if is_gemma else "gpt2"
+        writer.add_string("tokenizer.ggml.model", tok_model)
     else:
         writer.add_uint32("tokenizer.ggml.type", 1)  # BPE
 
@@ -261,6 +263,33 @@ def main():
     writer.add_uint32("tokenizer.ggml.is_spm_bpe", int(is_spm_bpe))
     if is_spm_bpe:
         print(f"  tokenizer_style: SentencePiece BPE ({spm_count} ▁-prefixed tokens)")
+        # Gemma3 SentencePiece needs scores for Ollama
+        if ollama_mode:
+            try:
+                from huggingface_hub import hf_hub_download
+                tok_json_path = hf_hub_download(repo_id=args.model, filename="tokenizer.json")
+                with open(tok_json_path) as f:
+                    tok_json = json.load(f)
+                tj_vocab = tok_json.get("model", {}).get("vocab", {})
+                if isinstance(tj_vocab, dict):
+                    # BPE vocab is dict: {token: score}
+                    scores = [0.0] * config.vocab_size
+                    for tok_str, score in tj_vocab.items():
+                        tid = vocab.get(tok_str, -1)
+                        if 0 <= tid < config.vocab_size:
+                            scores[tid] = float(score)
+                    writer.add_array("tokenizer.ggml.scores", scores)
+                    print(f"  scores: loaded from tokenizer.json (dict)")
+                elif isinstance(tj_vocab, list) and tj_vocab and isinstance(tj_vocab[0], list):
+                    # Unigram vocab is list: [[token, score], ...]
+                    scores = [0.0] * config.vocab_size
+                    for i2, (tok_str, score) in enumerate(tj_vocab):
+                        if i2 < config.vocab_size:
+                            scores[i2] = float(score)
+                    writer.add_array("tokenizer.ggml.scores", scores)
+                    print(f"  scores: loaded from tokenizer.json (list)")
+            except Exception as e:
+                print(f"  scores: not loaded ({e})")
     if tokenizer.eos_token_id is not None:
         eos = tokenizer.eos_token_id
         if isinstance(eos, list):
@@ -314,6 +343,16 @@ def main():
                     print(f"  Detected layer prefix: '{layer_prefix}'")
                 break
 
+    # Gemma3 RMSNorm uses (1 + weight). In Ollama mode, pre-bake the +1
+    # since Ollama's RMSNorm doesn't handle the offset.
+    # In CrispEmbed mode, store raw weights (runtime adds +1 via ones tensor).
+    def norm_weight(t):
+        """Convert norm weight tensor: add +1 for Gemma3 in Ollama mode."""
+        data = f32(t)
+        if ollama_mode and is_gemma:
+            data = data + 1.0
+        return data
+
     # Layer prefix for output tensors: "blk" for Ollama, "dec" for CrispEmbed
     LP = "blk" if ollama_mode else "dec"
 
@@ -342,7 +381,7 @@ def main():
         for norm_key in [f"{pfx}.input_layernorm.weight",
                           f"{pfx}.attention.output.LayerNorm.weight"]:
             if norm_key in sd:
-                add_tensor(f"{LP}.{i}.attn_norm.weight", f32(sd[norm_key]))
+                add_tensor(f"{LP}.{i}.attn_norm.weight", norm_weight(sd[norm_key]))
                 break
 
         # Attention Q/K/V/O
@@ -366,24 +405,35 @@ def main():
                                      ("self_attn.k_norm", "k_norm")]:
             nkey = f"{pfx}.{norm_name}.weight"
             if nkey in sd:
-                add_tensor(f"{LP}.{i}.{NORM_MAP[out_name]}.weight", f32(sd[nkey]))
+                add_tensor(f"{LP}.{i}.{NORM_MAP[out_name]}.weight", norm_weight(sd[nkey]))
 
-        # Post-attention norm
-        for norm_key in [f"{pfx}.post_attention_layernorm.weight",
-                          f"{pfx}.output.LayerNorm.weight"]:
-            if norm_key in sd:
-                add_tensor(f"{LP}.{i}.ffn_norm.weight", f32(sd[norm_key]))
-                break
+        # Post-attention / pre-FFN norms
+        # Gemma3 has 4 norms: attn_norm, post_attention_norm, ffn_norm, post_ffw_norm
+        # Qwen3 has 2 norms: attn_norm, ffn_norm (post_attention_layernorm IS the pre-FFN norm)
+        has_pre_ffn = f"{pfx}.pre_feedforward_layernorm.weight" in sd
 
-        # Gemma3 extra norms: pre/post feedforward layernorms
-        pre_ffn_key = f"{pfx}.pre_feedforward_layernorm.weight"
-        if pre_ffn_key in sd:
-            norm_name = "pre_feedforward_norm" if ollama_mode else "pre_ffn_norm"
-            add_tensor(f"{LP}.{i}.{norm_name}.weight", f32(sd[pre_ffn_key]))
-        post_ffn_key = f"{pfx}.post_feedforward_layernorm.weight"
-        if post_ffn_key in sd:
-            norm_name = "post_feedforward_norm" if ollama_mode else "post_ffn_norm"
-            add_tensor(f"{LP}.{i}.{norm_name}.weight", f32(sd[post_ffn_key]))
+        if has_pre_ffn:
+            # Gemma3-style: 4 norms per layer
+            post_attn_key = f"{pfx}.post_attention_layernorm.weight"
+            if post_attn_key in sd:
+                out_name = "post_attention_norm" if ollama_mode else "ffn_norm"
+                add_tensor(f"{LP}.{i}.{out_name}.weight", norm_weight(sd[post_attn_key]))
+
+            pre_ffn_key = f"{pfx}.pre_feedforward_layernorm.weight"
+            out_name = "ffn_norm" if ollama_mode else "pre_ffn_norm"
+            add_tensor(f"{LP}.{i}.{out_name}.weight", norm_weight(sd[pre_ffn_key]))
+
+            post_ffn_key = f"{pfx}.post_feedforward_layernorm.weight"
+            if post_ffn_key in sd:
+                out_name = "post_ffw_norm" if ollama_mode else "post_ffn_norm"
+                add_tensor(f"{LP}.{i}.{out_name}.weight", norm_weight(sd[post_ffn_key]))
+        else:
+            # Qwen3-style: 2 norms per layer
+            for norm_key in [f"{pfx}.post_attention_layernorm.weight",
+                              f"{pfx}.output.LayerNorm.weight"]:
+                if norm_key in sd:
+                    add_tensor(f"{LP}.{i}.ffn_norm.weight", norm_weight(sd[norm_key]))
+                    break
 
         # FFN (SwiGLU: gate + up + down, or standard: fc1 + fc2)
         gate_key = f"{pfx}.mlp.gate_proj.weight"
@@ -404,7 +454,7 @@ def main():
     # Final norm
     for key in ["model.norm.weight", "norm.weight", "encoder.layer_norm.weight"]:
         if key in sd:
-            add_tensor("output_norm.weight", f32(sd[key]))
+            add_tensor("output_norm.weight", norm_weight(sd[key]))
             print(f"  output_norm: ok")
             break
 
