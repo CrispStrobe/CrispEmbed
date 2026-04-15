@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Convert decoder-style embedding models (Qwen3/LLaMA) to GGUF.
+"""Convert decoder-style embedding models (Qwen3/Gemma3) to GGUF.
 
 Supports: Qwen3-Embedding, Octen-Embedding, F2LLM-v2, Jina v5, Harrier.
 These models use causal transformer decoders with last-token pooling.
 
     python convert-decoder-embed-to-gguf.py \
-        --model Alibaba-NLP/gte-Qwen2-1.5B-instruct \
-        --output gte-qwen2-1.5b.gguf
+        --model Qwen/Qwen3-Embedding-0.6B \
+        --output qwen3-embed-0.6b.gguf
+
+Use --ollama (default) for Ollama-compatible output, --crisp for CrispEmbed-native.
 """
 
 import argparse
@@ -55,7 +57,14 @@ def main():
     parser.add_argument("--model", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--dtype", choices=["f16", "f32", "q8_0"], default="f32")
+    fmt_group = parser.add_mutually_exclusive_group()
+    fmt_group.add_argument("--ollama", action="store_true", default=True,
+                           help="Ollama-compatible naming (default)")
+    fmt_group.add_argument("--crisp", action="store_true",
+                           help="CrispEmbed-native naming")
     args = parser.parse_args()
+
+    ollama_mode = not args.crisp
 
     if args.dtype == "q8_0":
         wt = q8_0
@@ -75,14 +84,68 @@ def main():
     print(f"Hidden: {config.hidden_size}, Layers: {config.num_hidden_layers}, "
           f"Heads: {config.num_attention_heads}, Vocab: {config.vocab_size}")
 
-    writer = gguf.GGUFWriter(str(args.output), arch=ARCH)
+    # Detect architecture: qwen3 vs gemma3
+    is_gemma = "gemma" in config.model_type.lower()
+    n_kv_heads = getattr(config, "num_key_value_heads", config.num_attention_heads)
+    head_dim = getattr(config, "head_dim", config.hidden_size // config.num_attention_heads)
+
+    # Rope theta — check multiple locations
+    rope_theta = getattr(config, "rope_theta", None)
+    if rope_theta is None:
+        rp = getattr(config, "rope_parameters", None) or getattr(config, "rope_scaling", None)
+        if isinstance(rp, dict):
+            rope_theta = rp.get("rope_theta", None)
+            if rope_theta is None and "full_attention" in rp:
+                rope_theta = rp["full_attention"].get("rope_theta", 10000.0)
+            if rope_theta is None:
+                rope_theta = 10000.0
+        else:
+            rope_theta = 10000.0
+    print(f"  rope_theta: {rope_theta}")
+
+    # Hidden activation
+    act = getattr(config, "hidden_act", getattr(config, "hidden_activation", "silu"))
+    act_str = str(act).lower()
+    if "gelu_pytorch_tanh" in act_str:
+        act_id = 2
+    elif "gelu" in act_str:
+        act_id = 1
+    else:
+        act_id = 0
+    act_names = {0: "silu", 1: "gelu", 2: "gelu_pytorch_tanh"}
+    print(f"  activation: {act_names[act_id]} (config: {act})")
+
+    # Gemma3-specific features
+    gemma_norm = is_gemma
+    qpas = getattr(config, "query_pre_attn_scalar", 0)
+    embed_scale = 1.0
+    if is_gemma:
+        embed_scale = float(config.hidden_size ** 0.5)
+        try:
+            m = model
+            if hasattr(m, 'model'):
+                m = m.model
+            if hasattr(m, 'embed_tokens') and hasattr(m.embed_tokens, 'embed_scale'):
+                embed_scale = float(m.embed_tokens.embed_scale)
+        except Exception:
+            pass
+
+    # Detect if bidirectional
+    is_bidirectional = "bert" in config.model_type.lower() or "encoder" in str(config.architectures).lower()
+
+    if ollama_mode:
+        # Ollama arch: "qwen3" or "gemma3"
+        arch = "gemma3" if is_gemma else "qwen3"
+        # Ollama pooling: 3 = Last token
+        pool_ollama = 3
+    else:
+        arch = ARCH
+
+    writer = gguf.GGUFWriter(str(args.output), arch=arch)
 
     def add_tensor(name, data):
         """Add tensor, handling Q8_0 quantized data."""
         if isinstance(data, Q8Tensor):
-            # raw_shape must be the byte-level shape, not the logical shape
-            # For Q8_0: each block of 32 f32 = 34 bytes (32 int8 + 2 byte scale)
-            # So row_bytes = (row_width / 32) * 34
             shape = data.shape
             row_width = shape[-1]
             row_bytes = (row_width // 32) * 34
@@ -93,92 +156,58 @@ def main():
         else:
             writer.add_tensor(name, data)
 
-    # Metadata
-    writer.add_uint32("decoder.vocab_size", config.vocab_size)
-    writer.add_uint32("decoder.hidden_size", config.hidden_size)
-    writer.add_uint32("decoder.num_hidden_layers", config.num_hidden_layers)
-    writer.add_uint32("decoder.num_attention_heads", config.num_attention_heads)
-    n_kv_heads = getattr(config, "num_key_value_heads", config.num_attention_heads)
-    writer.add_uint32("decoder.num_key_value_heads", n_kv_heads)
-    writer.add_uint32("decoder.intermediate_size", config.intermediate_size)
-    head_dim = getattr(config, "head_dim", config.hidden_size // config.num_attention_heads)
-    writer.add_uint32("decoder.head_dim", head_dim)
-    writer.add_uint32("decoder.max_position_embeddings",
-                       getattr(config, "max_position_embeddings", 8192))
-    writer.add_float32("decoder.rms_norm_eps",
-                        getattr(config, "rms_norm_eps", 1e-6))
-    # Rope theta — check multiple locations
-    rope_theta = getattr(config, "rope_theta", None)
-    if rope_theta is None:
-        rp = getattr(config, "rope_parameters", None) or getattr(config, "rope_scaling", None)
-        if isinstance(rp, dict):
-            rope_theta = rp.get("rope_theta", None)
-            # Gemma3 has nested rope configs — try full_attention.rope_theta
-            if rope_theta is None and "full_attention" in rp:
-                rope_theta = rp["full_attention"].get("rope_theta", 10000.0)
-            if rope_theta is None:
-                rope_theta = 10000.0
-        else:
-            rope_theta = 10000.0
-    writer.add_float32("decoder.rope_theta", float(rope_theta))
-    print(f"  rope_theta: {rope_theta}")
-    writer.add_uint32("decoder.pooling_method", 2)  # last-token
-
-    # Hidden activation: silu (SwiGLU) vs gelu (GeGLU) vs gelu_pytorch_tanh
-    act = getattr(config, "hidden_act", getattr(config, "hidden_activation", "silu"))
-    act_str = str(act).lower()
-    if "gelu_pytorch_tanh" in act_str:
-        act_id = 2  # gelu_pytorch_tanh (Gemma3)
-    elif "gelu" in act_str:
-        act_id = 1  # gelu (GeGLU)
+    if ollama_mode:
+        # Ollama-compatible metadata: {arch}.key_name
+        writer.add_uint32(f"{arch}.embedding_length", config.hidden_size)
+        writer.add_uint32(f"{arch}.block_count", config.num_hidden_layers)
+        writer.add_uint32(f"{arch}.attention.head_count", config.num_attention_heads)
+        writer.add_uint32(f"{arch}.attention.head_count_kv", n_kv_heads)
+        writer.add_uint32(f"{arch}.attention.key_length", head_dim)
+        writer.add_uint32(f"{arch}.attention.value_length", head_dim)
+        writer.add_uint32(f"{arch}.feed_forward_length", config.intermediate_size)
+        writer.add_float32(f"{arch}.attention.layer_norm_rms_epsilon",
+                           getattr(config, "rms_norm_eps", 1e-6))
+        writer.add_float32(f"{arch}.rope.freq_base", float(rope_theta))
+        writer.add_uint32(f"{arch}.context_length",
+                          getattr(config, "max_position_embeddings", 8192))
+        writer.add_uint32(f"{arch}.pooling_type", pool_ollama)
+        writer.add_bool(f"{arch}.normalize_embeddings", True)
+        if qpas:
+            writer.add_float32(f"{arch}.attention.key_length_scale", float(qpas))
+        print(f"  format: Ollama (arch={arch})")
     else:
-        act_id = 0  # silu (SwiGLU)
-    writer.add_uint32("decoder.activation", act_id)
-    act_names = {0: "silu", 1: "gelu", 2: "gelu_pytorch_tanh"}
-    print(f"  activation: {act_names[act_id]} (config: {act})")
-
-    # Gemma3-specific: query_pre_attn_scalar (attention scale)
-    qpas = getattr(config, "query_pre_attn_scalar", 0)
-    if qpas:
-        writer.add_float32("decoder.attn_scale", float(qpas))
-        print(f"  attn_scale: {qpas}")
-
-    # Embedding scale: Gemma3 multiplies token embeddings by sqrt(hidden_size)
-    # Detect from model class: if it passes embed_scale to the embedding layer
-    embed_scale = 1.0
-    try:
-        m = model
-        if hasattr(m, 'model'):
-            m = m.model
-        if hasattr(m, 'embed_tokens') and hasattr(m.embed_tokens, 'embed_scale'):
-            embed_scale = float(m.embed_tokens.embed_scale)
-        elif "gemma" in config.model_type.lower():
-            embed_scale = float(config.hidden_size ** 0.5)
-    except:
-        pass
-    if embed_scale != 1.0:
-        writer.add_float32("decoder.embed_scale", embed_scale)
-        print(f"  embed_scale: {embed_scale:.4f}")
-
-    # Gemma-style RMSNorm: uses (1 + weight) instead of weight
-    gemma_norm = "gemma" in config.model_type.lower()
-    writer.add_uint32("decoder.gemma_norm", int(gemma_norm))
-    if gemma_norm:
-        print(f"  gemma_norm: true (RMSNorm uses 1+weight)")
-
-    # Detect if bidirectional (encoder) vs causal (decoder)
-    # EuroBERT/ModernBERT are encoder models with decoder-style weights
-    is_bidirectional = "bert" in config.model_type.lower() or "encoder" in str(config.architectures).lower()
-    writer.add_uint32("decoder.is_bidirectional", int(is_bidirectional))
-    if is_bidirectional:
-        print(f"  attention: bidirectional (no causal mask)")
+        # CrispEmbed-native metadata
+        writer.add_uint32("decoder.vocab_size", config.vocab_size)
+        writer.add_uint32("decoder.hidden_size", config.hidden_size)
+        writer.add_uint32("decoder.num_hidden_layers", config.num_hidden_layers)
+        writer.add_uint32("decoder.num_attention_heads", config.num_attention_heads)
+        writer.add_uint32("decoder.num_key_value_heads", n_kv_heads)
+        writer.add_uint32("decoder.intermediate_size", config.intermediate_size)
+        writer.add_uint32("decoder.head_dim", head_dim)
+        writer.add_uint32("decoder.max_position_embeddings",
+                          getattr(config, "max_position_embeddings", 8192))
+        writer.add_float32("decoder.rms_norm_eps",
+                           getattr(config, "rms_norm_eps", 1e-6))
+        writer.add_float32("decoder.rope_theta", float(rope_theta))
+        writer.add_uint32("decoder.pooling_method", 2)  # last-token
+        writer.add_uint32("decoder.activation", act_id)
+        if qpas:
+            writer.add_float32("decoder.attn_scale", float(qpas))
+        if embed_scale != 1.0:
+            writer.add_float32("decoder.embed_scale", embed_scale)
+        writer.add_uint32("decoder.gemma_norm", int(gemma_norm))
+        writer.add_uint32("decoder.is_bidirectional", int(is_bidirectional))
+        print(f"  format: CrispEmbed")
 
     # Tokenizer
     vocab = tokenizer.get_vocab()
     id_to_token = {v: k for k, v in vocab.items()}
     tokens = [id_to_token.get(i, f"<unk_{i}>") for i in range(config.vocab_size)]
     writer.add_array("tokenizer.ggml.tokens", tokens)
-    writer.add_uint32("tokenizer.ggml.type", 1)  # BPE
+    if ollama_mode:
+        writer.add_string("tokenizer.ggml.model", "gpt2")
+    else:
+        writer.add_uint32("tokenizer.ggml.type", 1)  # BPE
 
     # Store BPE merges if available
     try:
@@ -201,6 +230,21 @@ def main():
         print(f"  merges: not found ({e})")
     if tokenizer.bos_token_id is not None:
         writer.add_uint32("tokenizer.ggml.bos_token_id", tokenizer.bos_token_id)
+
+    if ollama_mode:
+        writer.add_bool("tokenizer.ggml.add_bos_token", True)
+        writer.add_bool("tokenizer.ggml.add_eos_token", False)
+        # Token types for Ollama
+        token_types = []
+        for i in range(config.vocab_size):
+            tok = id_to_token.get(i, "")
+            if tok.startswith("<") and tok.endswith(">"):
+                token_types.append(3)  # control
+            elif i == (tokenizer.unk_token_id or 0):
+                token_types.append(2)  # unknown
+            else:
+                token_types.append(1)  # normal
+        writer.add_array("tokenizer.ggml.token_type", token_types)
 
     # Detect SentencePiece-style BPE (Gemma) vs GPT-2-style BPE (Qwen3)
     # SentencePiece BPE uses ▁ as space marker; GPT-2 uses byte-level encoding
@@ -270,21 +314,35 @@ def main():
                     print(f"  Detected layer prefix: '{layer_prefix}'")
                 break
 
+    # Layer prefix for output tensors: "blk" for Ollama, "dec" for CrispEmbed
+    LP = "blk" if ollama_mode else "dec"
+
+    # Tensor name maps for attention projections
+    if ollama_mode:
+        # Ollama: blk.N.attn_q, blk.N.attn_output, blk.N.attn_q_norm
+        ATTN_MAP = {"q": "attn_q", "k": "attn_k", "v": "attn_v", "o": "attn_output"}
+        NORM_MAP = {"q_norm": "attn_q_norm", "k_norm": "attn_k_norm"}
+        FFN_MAP = {"gate": "ffn_gate", "up": "ffn_up", "down": "ffn_down"}
+    else:
+        # CrispEmbed: dec.N.attn.q, dec.N.attn.o, dec.N.attn.q_norm
+        ATTN_MAP = {"q": "attn.q", "k": "attn.k", "v": "attn.v", "o": "attn.o"}
+        NORM_MAP = {"q_norm": "attn.q_norm", "k_norm": "attn.k_norm"}
+        FFN_MAP = {"gate": "ffn.gate", "up": "ffn.up", "down": "ffn.down"}
+
     # Decoder layers
     for i in range(config.num_hidden_layers):
         pfx = f"{layer_prefix}.{i}" if layer_prefix else f"layers.{i}"
 
-        # Check this layer exists
         has_layer = any(k.startswith(pfx + ".") for k in sd)
         if not has_layer:
             print(f"  WARNING: layer {i} not found (prefix: {pfx})")
             continue
 
-        # RMSNorm / LayerNorm
+        # RMSNorm / LayerNorm (pre-attention)
         for norm_key in [f"{pfx}.input_layernorm.weight",
                           f"{pfx}.attention.output.LayerNorm.weight"]:
             if norm_key in sd:
-                add_tensor(f"dec.{i}.attn_norm.weight", f32(sd[norm_key]))
+                add_tensor(f"{LP}.{i}.attn_norm.weight", f32(sd[norm_key]))
                 break
 
         # Attention Q/K/V/O
@@ -297,10 +355,10 @@ def main():
             for n in names:
                 wkey = f"{pfx}.{n}.weight"
                 if wkey in sd:
-                    add_tensor(f"dec.{i}.attn.{proj}.weight", wt(sd[wkey]))
+                    add_tensor(f"{LP}.{i}.{ATTN_MAP[proj]}.weight", wt(sd[wkey]))
                     bkey = f"{pfx}.{n}.bias"
                     if bkey in sd:
-                        add_tensor(f"dec.{i}.attn.{proj}.bias", f32(sd[bkey]))
+                        add_tensor(f"{LP}.{i}.{ATTN_MAP[proj]}.bias", f32(sd[bkey]))
                     break
 
         # QK norm (Qwen3 feature)
@@ -308,38 +366,40 @@ def main():
                                      ("self_attn.k_norm", "k_norm")]:
             nkey = f"{pfx}.{norm_name}.weight"
             if nkey in sd:
-                add_tensor(f"dec.{i}.attn.{out_name}.weight", f32(sd[nkey]))
+                add_tensor(f"{LP}.{i}.{NORM_MAP[out_name]}.weight", f32(sd[nkey]))
 
         # Post-attention norm
         for norm_key in [f"{pfx}.post_attention_layernorm.weight",
                           f"{pfx}.output.LayerNorm.weight"]:
             if norm_key in sd:
-                add_tensor(f"dec.{i}.ffn_norm.weight", f32(sd[norm_key]))
+                add_tensor(f"{LP}.{i}.ffn_norm.weight", f32(sd[norm_key]))
                 break
 
         # Gemma3 extra norms: pre/post feedforward layernorms
         pre_ffn_key = f"{pfx}.pre_feedforward_layernorm.weight"
         if pre_ffn_key in sd:
-            add_tensor(f"dec.{i}.pre_ffn_norm.weight", f32(sd[pre_ffn_key]))
+            norm_name = "pre_feedforward_norm" if ollama_mode else "pre_ffn_norm"
+            add_tensor(f"{LP}.{i}.{norm_name}.weight", f32(sd[pre_ffn_key]))
         post_ffn_key = f"{pfx}.post_feedforward_layernorm.weight"
         if post_ffn_key in sd:
-            add_tensor(f"dec.{i}.post_ffn_norm.weight", f32(sd[post_ffn_key]))
+            norm_name = "post_feedforward_norm" if ollama_mode else "post_ffn_norm"
+            add_tensor(f"{LP}.{i}.{norm_name}.weight", f32(sd[post_ffn_key]))
 
         # FFN (SwiGLU: gate + up + down, or standard: fc1 + fc2)
         gate_key = f"{pfx}.mlp.gate_proj.weight"
         if gate_key in sd:
-            add_tensor(f"dec.{i}.ffn.gate.weight", wt(sd[gate_key]))
-            add_tensor(f"dec.{i}.ffn.up.weight", wt(sd[f"{pfx}.mlp.up_proj.weight"]))
-            add_tensor(f"dec.{i}.ffn.down.weight", wt(sd[f"{pfx}.mlp.down_proj.weight"]))
+            add_tensor(f"{LP}.{i}.{FFN_MAP['gate']}.weight", wt(sd[gate_key]))
+            add_tensor(f"{LP}.{i}.{FFN_MAP['up']}.weight", wt(sd[f"{pfx}.mlp.up_proj.weight"]))
+            add_tensor(f"{LP}.{i}.{FFN_MAP['down']}.weight", wt(sd[f"{pfx}.mlp.down_proj.weight"]))
         else:
             fc1_key = f"{pfx}.intermediate.dense.weight"
             if fc1_key in sd:
-                add_tensor(f"dec.{i}.ffn.fc1.weight", wt(sd[fc1_key]))
-                add_tensor(f"dec.{i}.ffn.fc1.bias", f32(sd[f"{pfx}.intermediate.dense.bias"]))
-                add_tensor(f"dec.{i}.ffn.fc2.weight", wt(sd[f"{pfx}.output.dense.weight"]))
-                add_tensor(f"dec.{i}.ffn.fc2.bias", f32(sd[f"{pfx}.output.dense.bias"]))
+                add_tensor(f"{LP}.{i}.{FFN_MAP.get('fc1', 'ffn.fc1')}.weight", wt(sd[fc1_key]))
+                add_tensor(f"{LP}.{i}.{FFN_MAP.get('fc1', 'ffn.fc1')}.bias", f32(sd[f"{pfx}.intermediate.dense.bias"]))
+                add_tensor(f"{LP}.{i}.{FFN_MAP.get('fc2', 'ffn.fc2')}.weight", wt(sd[f"{pfx}.output.dense.weight"]))
+                add_tensor(f"{LP}.{i}.{FFN_MAP.get('fc2', 'ffn.fc2')}.bias", f32(sd[f"{pfx}.output.dense.bias"]))
 
-        print(f"  dec.{i}: ok")
+        print(f"  {LP}.{i}: ok")
 
     # Final norm
     for key in ["model.norm.weight", "norm.weight", "encoder.layer_norm.weight"]:
