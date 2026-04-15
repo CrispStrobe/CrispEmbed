@@ -127,14 +127,16 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                          sname.find(".w") != std::string::npos ||
                          sname.find("_w") != std::string::npos) &&
                         (sname.find("norm") == std::string::npos);
-        // Embedding tables: only use mild quantization (Q8_0 or F16)
-        if (quantize && is_embd &&
-            qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16) {
-            quantize = false;
-        }
-
         const int64_t ncols = t->ne[0];
         ggml_type qtype_used = qtype;
+
+        // Embedding tables: use Q8_0 for aggressive quants to preserve quality
+        // while still compressing (embedding tables are huge, ~50% of model)
+        if (quantize && is_embd &&
+            qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16) {
+            qtype_used = GGML_TYPE_Q8_0;
+        }
+
         int64_t qk = ggml_blck_size(qtype_used);
 
         // Fallback chain for K-quants: if row width isn't 256-aligned,
