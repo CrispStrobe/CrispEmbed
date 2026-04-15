@@ -22,9 +22,14 @@ Tested on NVIDIA RTX A1000 Laptop GPU (4GB VRAM), via HTTP server.
 |-------|-------|----------|---------|------------|
 | all-MiniLM-L6-v2 | F32 | 7.4 | 135 | 211/s |
 
-GPU inference is **2.1x faster** than our optimized CPU (15.5ms) and
-**4x faster** than fastembed ONNX on CPU (29.5ms). The ggml_backend_sched
-dispatcher automatically offloads matmul, attention, and norm ops to CUDA.
+GPU inference **matches HuggingFace PyTorch** (10.6ms vs 10.8ms) and
+**beats fastembed ONNX** (10.6ms vs 13.4ms). Both HF and CrispEmbed use
+CUDA on this hardware. The ggml_backend_sched dispatcher offloads
+matmul, flash attention, and norm ops to CUDA.
+
+True batched encoding: single graph with 4D flash attention for B texts.
+Batch mode (10 texts): 190-211 texts/s on CUDA. HF gets 347/s via
+PyTorch's native batch parallelism (more mature GPU batching).
 
 ## CPU Batch Mode
 
