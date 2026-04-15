@@ -183,9 +183,13 @@ def make_readme(model_name, files_info):
 
     # File table
     file_rows = ""
+    quant_suffixes = ["-q8_0", "-q5_k", "-q4_k", "-q4_0", "-q5_0", "-q5_1", "-q6_k", "-f16"]
     for fname, size_mb in files_info:
-        qtype = "F32" if not any(q in fname for q in ["-q8_0", "-q4_0", "-f16"]) else \
-                fname.split("-")[-1].replace(".gguf", "").upper()
+        qtype = "F32"
+        for qs in quant_suffixes:
+            if qs in fname:
+                qtype = qs.lstrip("-").upper()
+                break
         file_rows += f"| [{fname}](https://huggingface.co/{repo_name}/resolve/main/{fname}) | {qtype} | {size_mb:.0f} MB |\n"
 
     langs = ", ".join(m["langs"])
@@ -281,10 +285,13 @@ def upload_model(model_name, gguf_dir, dry_run=False):
     api = HfApi()
     repo_id = f"cstr/{model_name}-GGUF"
 
-    # Find all GGUF files for this model
+    # Find all GGUF files for this model (skip Q4_0 — we have Q4_K)
     files = []
+    skip_suffixes = ["-q4_0.gguf", "-q5_0.gguf", "-q5_1.gguf"]
     for f in sorted(os.listdir(gguf_dir)):
         if f.startswith(model_name) and f.endswith(".gguf"):
+            if any(f.endswith(s) for s in skip_suffixes):
+                continue
             path = os.path.join(gguf_dir, f)
             size_mb = os.path.getsize(path) / (1024 * 1024)
             files.append((f, size_mb, path))
