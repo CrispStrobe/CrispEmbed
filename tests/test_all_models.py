@@ -16,13 +16,23 @@ from pathlib import Path
 
 # Model registry: GGUF filename pattern → HF model ID
 MODEL_MAP = {
+    # BERT encoder models
     "all-MiniLM-L6-v2": "sentence-transformers/all-MiniLM-L6-v2",
     "gte-small": "thenlper/gte-small",
     "arctic-embed-xs": "Snowflake/snowflake-arctic-embed-xs",
+    # XLM-R encoder models
     "multilingual-e5-small": "intfloat/multilingual-e5-small",
+    "pixie-rune-v1": "CrispStrobe/PIXIE-Rune-v1.0",
     "arctic-embed-l-v2": "Snowflake/snowflake-arctic-embed-l-v2.0",
+    # Qwen3 decoder models
     "octen-0.6b": "Octen/Octen-Embedding-0.6B",
     "f2llm-v2-0.6b": "codefuse-ai/F2LLM-v2-0.6B",
+    "jina-v5-nano": "jinaai/jina-embeddings-v5-nano",
+    "jina-v5-small": "jinaai/jina-embeddings-v5-small",
+    "harrier-0.6b": "Harrier/Harrier-OSS-v1-0.6B",
+    "qwen3-embed-0.6b": "Qwen/Qwen3-Embedding-0.6B",
+    # Gemma3 decoder models
+    "harrier-270m": "Harrier/Harrier-OSS-v1-270M",
 }
 
 TEST_TEXTS = [

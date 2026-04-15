@@ -114,3 +114,40 @@ Gemma3 (Harrier-270M) differs from Qwen3/LLaMA in several critical ways:
 
 7. **SentencePiece BPE tokenizer**: Uses ▁ space marker (not GPT-2 Ġ),
    needs BOS(2) at start and EOS(1) at end.
+
+## Quantization notes
+
+### Python gguf vs C++ quantizer
+
+The Python `gguf` library (`pip install gguf`) only implements quantization
+for basic types: Q4_0, Q5_0, Q5_1, Q8_0. K-quants (Q4_K, Q5_K, Q6_K) are
+listed in the enum but `quantize_blocks` raises `NotImplementedError`.
+
+Additionally, the Python library's string array handling in GGUFReader/GGUFWriter
+can corrupt metadata when copying GGUF files — we observed Q8_0 models from the
+Python quantizer producing cos=0.78 vs the same model's F32, while the C++ quantizer
+produces cos=0.9997.
+
+**Use the C++ quantizer for all quantization.** It calls ggml's native
+`ggml_quantize_chunk` which supports all types including K-quants.
+
+### Embedding tables and aggressive quantization
+
+Token embedding tables (`token_embd.weight`) are very sensitive to quantization.
+Quantizing them to Q4_K degrades output quality significantly (cos drops from
+0.999 to 0.71 for some models). The CrispEmbed quantizer keeps embedding tables
+at F32 for Q4_K/Q5_K; only Q8_0 and F16 are allowed to touch them.
+
+### K-quant fallback chain
+
+K-quants (Q4_K/Q5_K/Q6_K) require row widths divisible by 256. Many embedding
+model tensors have rows of 384 or 768 which aren't 256-aligned. The quantizer
+falls back: Q4_K→Q4_0, Q5_K→Q5_0, Q6_K→Q8_0. This means small-dim models
+get Q4_0 instead of Q4_K for most tensors.
+
+### ggml_get_rows for quantized embeddings
+
+The BERT encoder must use `ggml_get_rows` (ggml graph op) for embedding table
+lookup, not manual `ggml_backend_tensor_get` with float pointer arithmetic.
+`ggml_get_rows` handles dequantization internally and works with any tensor type.
+Manual CPU-side extraction assumes F32 layout and crashes on quantized models.

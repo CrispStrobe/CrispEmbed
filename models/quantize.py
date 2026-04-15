@@ -27,8 +27,9 @@ except ImportError:
 QUANT_MAP = {
     "f16":  gguf.GGMLQuantizationType.F16,
     "q8_0": gguf.GGMLQuantizationType.Q8_0,
-    "q4_0": gguf.GGMLQuantizationType.Q4_0,
+    "q5_1": gguf.GGMLQuantizationType.Q5_1,
     "q5_0": gguf.GGMLQuantizationType.Q5_0,
+    "q4_0": gguf.GGMLQuantizationType.Q4_0,
 }
 
 KEEP_F32_PATTERNS = ["norm", "bias", "embd_ln", "position_embd",
@@ -254,7 +255,8 @@ def main():
     parser.add_argument("input", nargs="?", help="Input GGUF file")
     parser.add_argument("--types", nargs="+", default=["q8_0"],
                         choices=list(QUANT_MAP.keys()),
-                        help="Quantization types (default: q8_0)")
+                        help="Quantization types (default: q8_0). "
+                             "Available: f16, q8_0, q5_1, q5_0, q4_0")
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--dir", default=".")
     parser.add_argument("--output-dir", default=None)
