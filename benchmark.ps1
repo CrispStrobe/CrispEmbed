@@ -49,15 +49,23 @@ $ErrorActionPreference = "Stop"
 # Auto-detect model and binary
 $BinaryPaths = @(
     "build-cuda\crispembed.exe",
+    "build-cuda\Release\crispembed.exe",
+    "build-cuda\bin\crispembed.exe",
     "build-vulkan\crispembed.exe",
+    "build-vulkan\Release\crispembed.exe",
     "build\crispembed.exe",
-    "build\Release\crispembed.exe"
+    "build\Release\crispembed.exe",
+    "build\bin\crispembed.exe"
 )
 $ServerPaths = @(
     "build-cuda\crispembed-server.exe",
+    "build-cuda\Release\crispembed-server.exe",
+    "build-cuda\bin\crispembed-server.exe",
     "build-vulkan\crispembed-server.exe",
+    "build-vulkan\Release\crispembed-server.exe",
     "build\crispembed-server.exe",
-    "build\Release\crispembed-server.exe"
+    "build\Release\crispembed-server.exe",
+    "build\bin\crispembed-server.exe"
 )
 
 $Binary = $null
@@ -65,8 +73,21 @@ $Server = $null
 foreach ($p in $BinaryPaths) { if (Test-Path $p) { $Binary = $p; break } }
 foreach ($p in $ServerPaths) { if (Test-Path $p) { $Server = $p; break } }
 
+# Fallback: recursive search
 if (-not $Binary) {
-    Write-Host "[ERROR] No crispembed binary found. Build first with build-windows.bat or build-cuda.bat" -ForegroundColor Red
+    $found = Get-ChildItem -Path "." -Filter "crispembed.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($found) { $Binary = $found.FullName }
+}
+if (-not $Server) {
+    $found = Get-ChildItem -Path "." -Filter "crispembed-server.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($found) { $Server = $found.FullName }
+}
+
+if (-not $Binary) {
+    Write-Host "[ERROR] No crispembed.exe found. Build first:" -ForegroundColor Red
+    Write-Host "  build-windows.bat   (CPU)" -ForegroundColor Yellow
+    Write-Host "  build-cuda.bat      (NVIDIA GPU)" -ForegroundColor Yellow
+    Write-Host "  build-vulkan.bat    (Vulkan GPU)" -ForegroundColor Yellow
     exit 1
 }
 
@@ -86,16 +107,16 @@ if (-not $Model) {
     }
 }
 
-# Validate model path exists
+# Validate model path exists or treat as model name
 if (-not (Test-Path $Model)) {
-    # Maybe it's a model name, not a path — search for it
+    # Search for matching .gguf file
     $found = Get-ChildItem -Path "." -Filter "*$Model*.gguf" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
     if ($found) {
         $Model = $found.FullName
     } else {
-        Write-Host "[ERROR] Model not found: $Model" -ForegroundColor Red
-        Write-Host "  Specify a .gguf file path, e.g.: .\benchmark.ps1 -Model .\all-MiniLM-L6-v2.gguf" -ForegroundColor Yellow
-        exit 1
+        # Not a file path — treat as model name (CrispEmbed will auto-download)
+        Write-Host "[INFO] '$Model' is not a local file. CrispEmbed will auto-download from HuggingFace." -ForegroundColor Yellow
+        # Model name is passed directly to crispembed -m (model_mgr handles it)
     }
 }
 
@@ -129,18 +150,26 @@ Write-Host ""
 
 # --- CrispEmbed CLI benchmark ---
 Write-Host "--- CrispEmbed CLI ---" -ForegroundColor Yellow
-$warmup = & $Binary -m $Model $TestText 2>$null
-$dim = ($warmup -split '\s+').Count
-Write-Host "  Dimension: $dim"
 
-$sw = [System.Diagnostics.Stopwatch]::StartNew()
-for ($i = 0; $i -lt $NRuns; $i++) {
-    $null = & $Binary -m $Model $TestText 2>$null
+# Warmup (first call may download the model, so run twice)
+Write-Host "  Loading model (may download on first run)..."
+$null = & $Binary -m $Model "warmup" 2>$null
+$warmup = & $Binary -m $Model $TestText 2>$null
+if (-not $warmup) {
+    Write-Host "  [ERROR] CLI produced no output. Check model path." -ForegroundColor Red
+} else {
+    $dim = ($warmup.Trim() -split '\s+').Count
+    Write-Host "  Dimension: $dim"
+
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    for ($i = 0; $i -lt $NRuns; $i++) {
+        $null = & $Binary -m $Model $TestText 2>$null
+    }
+    $sw.Stop()
+    $cliMs = $sw.ElapsedMilliseconds / $NRuns
+    $cliTps = $NRuns / ($sw.ElapsedMilliseconds / 1000.0)
+    Write-Host ("  CLI:    {0:F1}ms/text  {1:F0} texts/s (includes model load)" -f $cliMs, $cliTps)
 }
-$sw.Stop()
-$cliMs = $sw.ElapsedMilliseconds / $NRuns
-$cliTps = $NRuns / ($sw.ElapsedMilliseconds / 1000.0)
-Write-Host ("  CLI:    {0:F1}ms/text  {1:F0} texts/s (includes model load)" -f $cliMs, $cliTps)
 
 # --- CrispEmbed Server benchmark ---
 if ($Server) {
