@@ -8,9 +8,9 @@ Single-text encoding latency via HTTP server (`/embed` endpoint).
 
 | Model | Quant | Params | Dim | Avg (ms) | Texts/s |
 |-------|-------|--------|-----|----------|---------|
-| all-MiniLM-L6-v2 | F32 | 22M | 384 | 16.8 | 59 |
-| arctic-embed-xs | F32 | 22M | 384 | 18.0 | 56 |
-| gte-small | F32 | 33M | 384 | 35 | 29 |
+| all-MiniLM-L6-v2 | F32 | 22M | 384 | 15.5 | 64 |
+| arctic-embed-xs | F32 | 22M | 384 | 15.5 | 64 |
+| gte-small | F32 | 33M | 384 | 30 | 33 |
 | octen-0.6b | Q8_0 | 600M | 1024 | 308 | 3.2 |
 | octen-0.6b | Q4_K | 600M | 1024 | 294 | 3.4 |
 
@@ -29,13 +29,16 @@ Single-text latency, same hardware (CPU, 4 threads).
 
 | Model | CrispEmbed | HF PyTorch | fastembed ONNX | vs HF | vs ONNX |
 |-------|-----------|------------|----------------|-------|---------|
-| MiniLM-L6-v2 | **16.8ms** | 54ms | 29.5ms | **3.2x faster** | **1.8x faster** |
-| gte-small | **35ms** | 79ms | -- | **2.3x faster** | -- |
-| arctic-embed-xs | **18.0ms** | -- | 4.9ms | -- | 0.27x |
+| MiniLM-L6-v2 | **15.5ms** | 54ms | 29.5ms | **3.5x faster** | **1.9x faster** |
+| gte-small | **30ms** | 79ms | -- | **2.6x faster** | -- |
+| arctic-embed-xs | **15.5ms** | -- | 4.9ms | -- | 0.32x |
 
-CrispEmbed is **1.8-3.2x faster than HF PyTorch** and **1.8x faster than fastembed ONNX**
-for MiniLM on pure CPU. Fastembed ONNX is faster for arctic-embed-xs due to ORT's Level3
-graph optimizations (operator fusion, fused LayerNorm, batched QKV projection).
+Optimizations: graph caching, flash attention, pre-merged QKV weights, buffer reuse.
+
+CrispEmbed is **1.9-3.5x faster than HF PyTorch** and **1.9x faster than fastembed ONNX**
+for MiniLM on pure CPU. Fastembed ONNX is 3x faster for arctic-embed-xs due to ORT's
+Level3 graph JIT compilation (operator fusion, fused LayerNorm, layout optimization).
+We apply QKV weight fusion and flash attention but cannot match ORT's runtime compilation.
 
 Key advantages:
 - No Python runtime overhead (direct C++ inference)
