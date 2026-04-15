@@ -386,7 +386,8 @@ if (-not $SkipFastembed) {
 
     if (-not $feRsBinary -and (Test-Path "$feRsDir\Cargo.toml")) {
         # Check for Rust
-        $rustOk = (Get-Command cargo -ErrorAction SilentlyContinue) -ne $null
+        $rustOk = $false
+        try { $null = cargo --version 2>$null; $rustOk = ($LASTEXITCODE -eq 0) } catch {}
         if ($rustOk) {
             Write-Host "  Building fastembed-rs (cargo build --release)..." -ForegroundColor DarkGray
             Push-Location $feRsDir

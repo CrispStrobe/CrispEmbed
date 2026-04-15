@@ -116,17 +116,34 @@ int main(int argc, char ** argv) {
 
         std::ostringstream js;
         js << "{\"embeddings\": [";
-        for (size_t i = 0; i < texts.size(); i++) {
+
+        if (texts.size() == 1) {
+            // Single text: use single encode
             int d = 0;
-            const float * vec = crispembed_encode(ctx, texts[i].c_str(), &d);
-            if (i > 0) js << ", ";
+            const float * vec = crispembed_encode(ctx, texts[0].c_str(), &d);
             js << "[";
             for (int j = 0; j < d; j++) {
                 if (j > 0) js << ", ";
                 js << vec[j];
             }
             js << "]";
+        } else {
+            // Multiple texts: use batched encode (single graph on GPU)
+            std::vector<const char *> ptrs(texts.size());
+            for (size_t i = 0; i < texts.size(); i++) ptrs[i] = texts[i].c_str();
+            int d = 0;
+            const float * vecs = crispembed_encode_batch(ctx, ptrs.data(), (int)texts.size(), &d);
+            for (size_t i = 0; i < texts.size(); i++) {
+                if (i > 0) js << ", ";
+                js << "[";
+                for (int j = 0; j < d; j++) {
+                    if (j > 0) js << ", ";
+                    js << vecs[i * d + j];
+                }
+                js << "]";
+            }
         }
+
         js << "], \"dim\": " << dim << "}";
 
         auto t1 = std::chrono::steady_clock::now();
@@ -172,15 +189,19 @@ int main(int argc, char ** argv) {
         std::lock_guard<std::mutex> lock(model_mutex);
 
         std::ostringstream js;
+        // Batch encode all texts at once
+        std::vector<const char *> ptrs(texts.size());
+        for (size_t i = 0; i < texts.size(); i++) ptrs[i] = texts[i].c_str();
+        int d = 0;
+        const float * vecs = crispembed_encode_batch(ctx, ptrs.data(), (int)texts.size(), &d);
+
         js << "{\"object\": \"list\", \"data\": [";
         for (size_t i = 0; i < texts.size(); i++) {
-            int d = 0;
-            const float * vec = crispembed_encode(ctx, texts[i].c_str(), &d);
             if (i > 0) js << ", ";
             js << "{\"object\": \"embedding\", \"index\": " << i << ", \"embedding\": [";
             for (int j = 0; j < d; j++) {
                 if (j > 0) js << ", ";
-                js << vec[j];
+                js << vecs[i * d + j];
             }
             js << "]}";
         }
