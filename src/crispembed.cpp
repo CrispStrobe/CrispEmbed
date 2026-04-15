@@ -252,38 +252,33 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
     int graph_size = std::max(2048, hp.n_layer * 30 + 256);
     ggml_cgraph * gf = ggml_new_graph_custom(gctx, graph_size, false);
 
-    // Token embeddings: gather from embedding table
-    // token_embd is [n_embd, n_vocab], we need rows for each token id
-    ggml_tensor * embd = ggml_new_tensor_2d(gctx, GGML_TYPE_F32, H, T);
+    // Token embeddings via ggml_get_rows (supports quantized weights)
+    // Build index tensors for token IDs, position IDs, and type IDs
+    ggml_tensor * tok_ids = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T);
+    ggml_tensor * pos_ids = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T);
     {
-        // Manual embedding lookup (copy rows from the weight matrix)
-        float * dst = (float *)embd->data;
+        int32_t * tok_data = (int32_t *)tok_ids->data;
+        int32_t * pos_data = (int32_t *)pos_ids->data;
         for (int t = 0; t < T; t++) {
-            int tid = tokens.ids[t];
-            // token_embd layout: data[h + vid * H]
-            float tok_buf[4096]; // max H
-            ggml_backend_tensor_get(m.token_embd, tok_buf,
-                                     (size_t)tid * H * sizeof(float),
-                                     H * sizeof(float));
-            float pos_buf[4096];
-            int pos_idx = t + ctx->pos_offset;  // RoBERTa offset
-            ggml_backend_tensor_get(m.pos_embd, pos_buf,
-                                     (size_t)pos_idx * H * sizeof(float),
-                                     H * sizeof(float));
-            for (int h = 0; h < H; h++) {
-                dst[h + t * H] = tok_buf[h] + pos_buf[h];
-            }
-            // Add type embeddings if present
-            if (m.type_embd) {
-                float type_buf[4096];
-                int type_id = tokens.type_ids[t];
-                ggml_backend_tensor_get(m.type_embd, type_buf,
-                                         (size_t)type_id * H * sizeof(float),
-                                         H * sizeof(float));
-                for (int h = 0; h < H; h++)
-                    dst[h + t * H] += type_buf[h];
-            }
+            tok_data[t] = tokens.ids[t];
+            pos_data[t] = t + ctx->pos_offset;  // RoBERTa offset
         }
+    }
+
+    // token_embd is [n_embd, n_vocab] — ggml_get_rows gathers rows by index
+    ggml_tensor * embd = ggml_get_rows(gctx, m.token_embd, tok_ids);
+    ggml_tensor * pos_embd = ggml_get_rows(gctx, m.pos_embd, pos_ids);
+    embd = ggml_add(gctx, embd, pos_embd);
+
+    // Add type embeddings if present
+    if (m.type_embd) {
+        ggml_tensor * type_ids_t = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T);
+        int32_t * type_data = (int32_t *)type_ids_t->data;
+        for (int t = 0; t < T; t++) {
+            type_data[t] = tokens.type_ids[t];
+        }
+        ggml_tensor * type_embd = ggml_get_rows(gctx, m.type_embd, type_ids_t);
+        embd = ggml_add(gctx, embd, type_embd);
     }
 
     // Embedding LayerNorm

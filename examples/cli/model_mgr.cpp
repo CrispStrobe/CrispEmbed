@@ -10,7 +10,12 @@
 
 #ifdef _WIN32
 #include <direct.h>
+#include <io.h>
 #define mkdir(p, m) _mkdir(p)
+#define isatty _isatty
+#define fileno _fileno
+#else
+#include <unistd.h>
 #endif
 
 namespace crispembed_mgr {

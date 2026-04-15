@@ -63,6 +63,17 @@ target_include_directories(crispembed-server PRIVATE
 target_link_libraries(crispembed-server PRIVATE crispembed)
 install(TARGETS crispembed-server RUNTIME)
 
+# Quantize tool
+add_executable(crispembed-quantize
+    tools/quantize.cpp
+)
+target_include_directories(crispembed-quantize PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
+)
+target_link_libraries(crispembed-quantize PRIVATE ggml ggml-base ggml-cpu)
+set_target_properties(crispembed-quantize PROPERTIES OUTPUT_NAME crispembed-quantize)
+install(TARGETS crispembed-quantize RUNTIME)
+
 # Shared library for Python bindings
 add_library(crispembed-shared SHARED
     src/crispembed.cpp
