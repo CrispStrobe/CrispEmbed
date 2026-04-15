@@ -181,10 +181,12 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
     }
 
-    // Create scheduler
-    ctx->sched = ggml_backend_sched_new(
-        ctx->backends.data(), nullptr, (int)ctx->backends.size(),
-        GGML_DEFAULT_GRAPH_SIZE, false, false);
+    // Create scheduler only when GPU is available (CPU-only uses direct compute)
+    if (!ggml_backend_is_cpu(ctx->backend)) {
+        ctx->sched = ggml_backend_sched_new(
+            ctx->backends.data(), nullptr, (int)ctx->backends.size(),
+            GGML_DEFAULT_GRAPH_SIZE, false, false);
+    }
 
     if (!core_gguf::load_weights(path, ctx->backend, "crispembed", ctx->wl)) {
         fprintf(stderr, "crispembed: failed to load weights\n");
