@@ -3,9 +3,11 @@
 // Usage: crispembed --server -m model.gguf [--port 8080]
 //
 // Endpoints:
-//   POST /embed     — {"texts": ["hello", "world"]} → {"embeddings": [[...], [...]]}
-//   POST /v1/embeddings — OpenAI-compatible
-//   GET  /health    — server status
+//   POST /embed           — {"texts": ["hello", "world"]} → {"embeddings": [[...], [...]]}
+//   POST /v1/embeddings   — OpenAI-compatible
+//   POST /api/embed       — Ollama-compatible (batch)
+//   POST /api/embeddings  — Ollama-compatible (single, legacy)
+//   GET  /health          — server status
 
 #include "crispembed.h"
 #include "model_mgr.h"
@@ -67,6 +69,13 @@ int main(int argc, char ** argv) {
     const auto * hp = crispembed_get_hparams(ctx);
     int dim = hp->n_output > 0 ? hp->n_output : hp->n_embd;
     std::mutex model_mutex;
+
+    // Short model name for API responses (strip path and .gguf extension)
+    std::string model_name = model_path;
+    auto slash = model_name.find_last_of("/\\");
+    if (slash != std::string::npos) model_name = model_name.substr(slash + 1);
+    auto dot = model_name.rfind(".gguf");
+    if (dot != std::string::npos) model_name = model_name.substr(0, dot);
 
     httplib::Server svr;
 
@@ -205,7 +214,117 @@ int main(int argc, char ** argv) {
             }
             js << "]}";
         }
-        js << "], \"model\": \"crispembed\", \"usage\": {\"prompt_tokens\": 0, \"total_tokens\": 0}}";
+        js << "], \"model\": \"" << json_escape(model_name) << "\", \"usage\": {\"prompt_tokens\": 0, \"total_tokens\": 0}}";
+        res.set_content(js.str(), "application/json");
+    });
+
+    // POST /api/embed — Ollama-compatible (batch)
+    // Request:  {"model": "...", "input": ["text1", "text2"]} or {"model": "...", "input": "text"}
+    // Response: {"model": "...", "embeddings": [[...], [...]], "total_duration": ns, "load_duration": 0, "prompt_eval_count": n}
+    svr.Post("/api/embed", [&](const httplib::Request & req, httplib::Response & res) {
+        std::vector<std::string> texts;
+        auto body = req.body;
+
+        // Parse "input" — can be array or string
+        auto pos = body.find("\"input\"");
+        if (pos != std::string::npos) {
+            auto arr_start = body.find('[', pos);
+            auto str_start = body.find('"', pos + 7);
+            if (arr_start != std::string::npos &&
+                (str_start == std::string::npos || arr_start < str_start)) {
+                // Array of strings
+                auto arr_end = body.find(']', arr_start);
+                if (arr_end != std::string::npos) {
+                    std::string arr = body.substr(arr_start + 1, arr_end - arr_start - 1);
+                    size_t i = 0;
+                    while (i < arr.size()) {
+                        auto q1 = arr.find('"', i);
+                        if (q1 == std::string::npos) break;
+                        auto q2 = arr.find('"', q1 + 1);
+                        if (q2 == std::string::npos) break;
+                        texts.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
+                        i = q2 + 1;
+                    }
+                }
+            } else if (str_start != std::string::npos) {
+                // Single string
+                auto q2 = body.find('"', str_start + 1);
+                if (q2 != std::string::npos)
+                    texts.push_back(body.substr(str_start + 1, q2 - str_start - 1));
+            }
+        }
+
+        if (texts.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no input provided\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(model_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        std::vector<const char *> ptrs(texts.size());
+        for (size_t i = 0; i < texts.size(); i++) ptrs[i] = texts[i].c_str();
+        int d = 0;
+        const float * vecs = crispembed_encode_batch(ctx, ptrs.data(), (int)texts.size(), &d);
+
+        auto t1 = std::chrono::steady_clock::now();
+        int64_t total_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
+
+        std::ostringstream js;
+        js << "{\"model\": \"" << json_escape(model_name) << "\", \"embeddings\": [";
+        for (size_t i = 0; i < texts.size(); i++) {
+            if (i > 0) js << ", ";
+            js << "[";
+            for (int j = 0; j < d; j++) {
+                if (j > 0) js << ", ";
+                js << vecs[i * d + j];
+            }
+            js << "]";
+        }
+        js << "], \"total_duration\": " << total_ns
+           << ", \"load_duration\": 0"
+           << ", \"prompt_eval_count\": " << texts.size() << "}";
+
+        fprintf(stderr, "crispembed-server: /api/embed %zu text(s) in %.1f ms\n",
+                texts.size(), total_ns / 1e6);
+        res.set_content(js.str(), "application/json");
+    });
+
+    // POST /api/embeddings — Ollama-compatible (single text, legacy)
+    // Request:  {"model": "...", "prompt": "text"}
+    // Response: {"embedding": [...]}
+    svr.Post("/api/embeddings", [&](const httplib::Request & req, httplib::Response & res) {
+        std::string text;
+        auto body = req.body;
+
+        auto pos = body.find("\"prompt\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 8);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                text = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+
+        if (text.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no prompt provided\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(model_mutex);
+
+        int d = 0;
+        const float * vec = crispembed_encode(ctx, text.c_str(), &d);
+
+        std::ostringstream js;
+        js << "{\"embedding\": [";
+        for (int j = 0; j < d; j++) {
+            if (j > 0) js << ", ";
+            js << vec[j];
+        }
+        js << "]}";
+
         res.set_content(js.str(), "application/json");
     });
 
@@ -219,8 +338,10 @@ int main(int argc, char ** argv) {
     });
 
     fprintf(stderr, "\ncrispembed-server: listening on %s:%d\n", host.c_str(), port);
-    fprintf(stderr, "  POST /embed          — {\"texts\": [\"hello\"]}\n");
-    fprintf(stderr, "  POST /v1/embeddings  — OpenAI-compatible\n");
+    fprintf(stderr, "  POST /embed           — {\"texts\": [\"hello\"]}\n");
+    fprintf(stderr, "  POST /v1/embeddings   — OpenAI-compatible\n");
+    fprintf(stderr, "  POST /api/embed       — Ollama-compatible\n");
+    fprintf(stderr, "  POST /api/embeddings  — Ollama-compatible (legacy)\n");
     fprintf(stderr, "  GET  /health\n\n");
 
     svr.listen(host, port);
