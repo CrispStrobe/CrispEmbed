@@ -85,7 +85,11 @@ int main(int argc, char ** argv) {
     }
 
     // Resolve model path (handles auto-download)
-    std::string model_path = crispembed_mgr::resolve_model(model_arg, auto_download);
+    // Auto-download if arg looks like a model name (not a file path)
+    bool is_name = (model_arg.find(".gguf") == std::string::npos &&
+                    model_arg.find('/') == std::string::npos &&
+                    model_arg.find('\\') == std::string::npos);
+    std::string model_path = crispembed_mgr::resolve_model(model_arg, auto_download || is_name);
     if (model_path.empty()) {
         return 1;
     }

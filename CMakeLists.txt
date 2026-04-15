@@ -96,10 +96,12 @@ install(TARGETS crispembed-cli RUNTIME)
 # ---------------------------------------------------------------------------
 add_executable(crispembed-server
     examples/server/server.cpp
+    examples/cli/model_mgr.cpp
 )
 target_include_directories(crispembed-server PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/examples/server
+    ${CMAKE_CURRENT_SOURCE_DIR}/examples/cli
 )
 target_link_libraries(crispembed-server PRIVATE crispembed)
 install(TARGETS crispembed-server RUNTIME)

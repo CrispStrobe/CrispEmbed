@@ -133,26 +133,31 @@ static void mkdirs(const std::string & path) {
 }
 
 static bool download_file(const std::string & url, const std::string & dest) {
-    // Try curl first, then wget
     std::string tmp = dest + ".tmp";
 
-    // curl
-    std::string cmd = "curl -fL --progress-bar -o '" + tmp + "' '" + url + "'";
+    // Use double quotes for Windows compatibility
+#ifdef _WIN32
+    // Try curl.exe (bundled with Windows 10+)
+    std::string cmd = "curl.exe -fL --progress-bar -o \"" + tmp + "\" \"" + url + "\"";
+#else
+    std::string cmd = "curl -fL --progress-bar -o \"" + tmp + "\" \"" + url + "\"";
+#endif
     int ret = system(cmd.c_str());
     if (ret == 0 && file_exists(tmp)) {
         rename(tmp.c_str(), dest.c_str());
         return true;
     }
 
-    // wget fallback
-    cmd = "wget -q --show-progress -O '" + tmp + "' '" + url + "'";
+#ifndef _WIN32
+    // wget fallback (Linux/macOS only)
+    cmd = "wget -q --show-progress -O \"" + tmp + "\" \"" + url + "\"";
     ret = system(cmd.c_str());
     if (ret == 0 && file_exists(tmp)) {
         rename(tmp.c_str(), dest.c_str());
         return true;
     }
+#endif
 
-    // Cleanup
     remove(tmp.c_str());
     return false;
 }

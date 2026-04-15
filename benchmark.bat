@@ -48,10 +48,10 @@ for %%f in (models\*.gguf) do (
     set "MODEL=%%f"
     goto :have_model
 )
-echo [ERROR] No .gguf model found.
-echo   Download a model: huggingface-cli download cstr/all-MiniLM-L6-v2-GGUF all-MiniLM-L6-v2-q8_0.gguf --local-dir .
-echo   Then run: benchmark.bat all-MiniLM-L6-v2-q8_0.gguf
-exit /b 1
+:: No local file found; use auto-download with model name
+set "MODEL=all-MiniLM-L6-v2"
+echo [INFO] No local .gguf found. Using auto-download: !MODEL!
+goto :have_model
 
 :have_model
 echo Binary: !BIN!

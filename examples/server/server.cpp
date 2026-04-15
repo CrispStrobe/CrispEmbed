@@ -8,6 +8,7 @@
 //   GET  /health    — server status
 
 #include "crispembed.h"
+#include "model_mgr.h"
 #include "httplib.h"
 
 #include <atomic>
@@ -43,9 +44,19 @@ int main(int argc, char ** argv) {
     }
 
     if (model_path.empty()) {
-        fprintf(stderr, "Usage: crispembed-server -m model.gguf [--port 8080] [--host 127.0.0.1]\n");
+        fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
+        fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
+        fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
         return 1;
     }
+
+    // Resolve model name to file path (auto-download if needed)
+    std::string resolved = crispembed_mgr::resolve_model(model_path, true);
+    if (resolved.empty()) {
+        fprintf(stderr, "Failed to resolve model '%s'\n", model_path.c_str());
+        return 1;
+    }
+    model_path = resolved;
 
     crispembed_context * ctx = crispembed_init(model_path.c_str(), n_threads);
     if (!ctx) {
