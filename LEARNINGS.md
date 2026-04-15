@@ -178,6 +178,71 @@ references from freed graph contexts. Solution: only create the scheduler when
 a GPU backend is detected (`!ggml_backend_is_cpu(backend)`). For CPU-only,
 direct `ggml_graph_compute` with a persistent work buffer is faster anyway.
 
+## Matmul optimization — what we use, what's available
+
+### Current state (as of April 2026)
+
+Our embedding models have small matrices: 384×384 (MiniLM/GTE) to 1024×4096
+(Qwen3 FFN). For these sizes, overhead per matmul call matters more than
+raw FLOP throughput.
+
+### CPU matmul options (ggml-cpu)
+
+| Option | Default | Effect | Our impact |
+|--------|---------|--------|-----------|
+| `GGML_LLAMAFILE` | OFF | Custom SGEMM kernels optimized for small F32 matmul | **HIGH** for F32 models |
+| `GGML_AVX512` | OFF | 512-bit SIMD (2x wider than AVX2) | **HIGH** if CPU supports |
+| `GGML_AVX512_VNNI` | OFF | Hardware int8 dot products | Medium for Q8_0 models |
+| `GGML_AMX_TILE` | OFF | Intel AMX for int8/BF16 (Sapphire Rapids+) | None (needs new CPU) |
+| `GGML_OPENMP` | ON | Thread parallelism | Already enabled |
+
+**Enable for best CPU performance:**
+```bash
+cmake -S . -B build -DGGML_LLAMAFILE=ON   # custom SGEMM
+cmake -S . -B build -DGGML_AVX512=ON      # if CPU supports (check /proc/cpuinfo)
+```
+
+### CUDA matmul options
+
+| Option | Default | Effect |
+|--------|---------|--------|
+| `GGML_CUDA_FA` | ON | Flash attention CUDA kernel |
+| `GGML_CUDA_GRAPHS` | OFF | Multi-op fusion via CUDA graph capture |
+| `GGML_CUDA_FORCE_MMQ` | OFF | Force quantized matmul kernels (vs cuBLAS) |
+| `GGML_CUDA_FA_ALL_QUANTS` | OFF | Flash attn for all quant types |
+
+CUDA auto-selects between MMQ (quantized matmul) and cuBLAS (F32) based
+on matrix size and GPU compute capability. For our 384×384 Q8_0 matrices,
+MMQ is usually selected (faster than cuBLAS for small quantized matmul).
+
+### Why HF PyTorch is still competitive on CUDA
+
+HF PyTorch uses cuBLAS with operator fusion via torch.compile/TorchScript.
+For a 22M-param model (MiniLM), the GPU is underutilized — compute time
+is dominated by kernel launch overhead and memory transfers, not FLOP
+throughput. Both HF and CrispEmbed run at ~10ms, limited by the GPU's
+minimum latency per kernel launch (~5μs × ~200 kernels = ~1ms overhead).
+
+### Batched matmul on GPU
+
+Single matmul `W[H,H] × X[H, T*B]` is much faster than B separate
+`W[H,H] × X[H, T]` calls because:
+1. One cuBLAS/MMQ launch vs B launches
+2. Better GPU occupancy (more work per SM)
+3. Memory access amortization
+
+Our true batched graph concatenates all texts and uses 4D flash attention
+with batch dimension. The matmuls naturally batch via the flattened T*B dim.
+
+### QKV weight fusion
+
+Pre-merging Q/K/V weight matrices into `[H, 3H]` reduces 3 matmul calls
+to 1 per layer. The merged tensor must live in the same backend buffer as
+the model weights (ggml_backend_alloc_ctx_tensors) so it works on GPU.
+
+On CPU: ~0.5ms savings (15.3ms vs 16.8ms for MiniLM).
+On GPU: minor savings (kernel launch overhead reduction).
+
 ## Windows build
 
 Windows users often forget `--recursive` when cloning. The CMakeLists.txt now

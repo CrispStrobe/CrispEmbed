@@ -16,6 +16,7 @@ option(GGML_BLAS        "Enable BLAS acceleration (OpenBLAS/MKL)" OFF)
 option(GGML_CUDA        "Enable CUDA GPU acceleration" OFF)
 option(GGML_VULKAN      "Enable Vulkan GPU acceleration" OFF)
 option(GGML_METAL       "Enable Metal GPU acceleration (macOS)" OFF)
+option(GGML_LLAMAFILE   "Enable llamafile optimized SGEMM" ON)
 option(CRISPEMBED_BUILD_SHARED "Build shared library for Python" ON)
 
 # BLAS vendor: Generic, OpenBLAS, Intel10_64lp (MKL), Apple, etc.
