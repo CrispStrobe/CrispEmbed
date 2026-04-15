@@ -151,24 +151,35 @@ Write-Host ""
 # --- CrispEmbed CLI benchmark ---
 Write-Host "--- CrispEmbed CLI ---" -ForegroundColor Yellow
 
-# Warmup (first call may download the model)
+# Warmup — use temp files to separate stdout from stderr cleanly
 Write-Host "  Loading model (may download on first run)..."
-$null = & $Binary -m $Model "warmup" 2>&1
-$warmupOut = & $Binary -m $Model $TestText 2>&1
-# Filter: keep only stdout lines (embedding floats), skip stderr (model loading messages)
-$warmup = ($warmupOut | Where-Object { $_ -is [string] -and $_ -match '^\s*-?[0-9]' }) -join "`n"
-if (-not $warmup) {
+$tmpOut = [System.IO.Path]::GetTempFileName()
+$tmpErr = [System.IO.Path]::GetTempFileName()
+
+# First call may trigger download (stderr shows progress)
+$proc = Start-Process -FilePath $Binary -ArgumentList "-m",$Model,"warmup" `
+    -NoNewWindow -Wait -PassThru -RedirectStandardOutput $tmpOut -RedirectStandardError $tmpErr
+# Second call: capture actual embedding output
+$proc = Start-Process -FilePath $Binary -ArgumentList "-m",$Model,$TestText `
+    -NoNewWindow -Wait -PassThru -RedirectStandardOutput $tmpOut -RedirectStandardError $tmpErr
+$warmup = (Get-Content $tmpOut -Raw).Trim()
+Remove-Item $tmpOut, $tmpErr -Force -ErrorAction SilentlyContinue
+
+if (-not $warmup -or $warmup.Length -lt 5) {
     Write-Host "  [ERROR] CLI produced no embedding output. Check model." -ForegroundColor Red
     Write-Host "  Try: $Binary -m $Model `"Hello world`"" -ForegroundColor Yellow
 } else {
-    $dim = ($warmup.Trim() -split '\s+').Count
+    $dim = ($warmup -split '\s+').Count
     Write-Host "  Dimension: $dim"
 
+    # Benchmark loop — use Start-Process for clean stderr handling
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
     for ($i = 0; $i -lt $NRuns; $i++) {
-        $null = & $Binary -m $Model $TestText 2>&1
+        $proc = Start-Process -FilePath $Binary -ArgumentList "-m",$Model,$TestText `
+            -NoNewWindow -Wait -PassThru -RedirectStandardOutput $tmpOut -RedirectStandardError $tmpErr
     }
     $sw.Stop()
+    Remove-Item $tmpOut, $tmpErr -Force -ErrorAction SilentlyContinue
     $cliMs = $sw.ElapsedMilliseconds / $NRuns
     $cliTps = $NRuns / ($sw.ElapsedMilliseconds / 1000.0)
     Write-Host ("  CLI:    {0:F1}ms/text  {1:F0} texts/s (includes model load)" -f $cliMs, $cliTps)

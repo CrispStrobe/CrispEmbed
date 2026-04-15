@@ -179,31 +179,15 @@ static bool load_model(crispembed_context * ctx, const char * path) {
 
     gguf_free(g);
 
-    // Initialize backends: try GPU first, CPU fallback
-    ctx->backend = ggml_backend_init_best();
+    // Initialize CPU backend for encoder (direct compute with cached graph)
+    // GPU acceleration happens via quantized matmul SIMD, not ggml_backend_sched
+    ctx->backend = ggml_backend_cpu_init();
     if (!ctx->backend) {
-        fprintf(stderr, "crispembed: failed to init ggml backend\n");
+        fprintf(stderr, "crispembed: failed to init CPU backend\n");
         return false;
     }
+    ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
     ctx->backends.push_back(ctx->backend);
-
-    // If best backend is not CPU, add CPU as fallback
-    if (!ggml_backend_is_cpu(ctx->backend)) {
-        ggml_backend_t cpu = ggml_backend_cpu_init();
-        ggml_backend_cpu_set_n_threads(cpu, ctx->n_threads);
-        ctx->backends.push_back(cpu);
-        fprintf(stderr, "crispembed: using %s backend with CPU fallback\n",
-                ggml_backend_name(ctx->backend));
-    } else {
-        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
-    }
-
-    // Create scheduler only when GPU is available (CPU-only uses direct compute)
-    if (!ggml_backend_is_cpu(ctx->backend)) {
-        ctx->sched = ggml_backend_sched_new(
-            ctx->backends.data(), nullptr, (int)ctx->backends.size(),
-            GGML_DEFAULT_GRAPH_SIZE, false, false);
-    }
 
     if (!core_gguf::load_weights(path, ctx->backend, "crispembed", ctx->wl)) {
         fprintf(stderr, "crispembed: failed to load weights\n");
@@ -446,14 +430,13 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
         }
     }
 
-    // Compute (reuses pre-computed plan)
-    if (ctx->sched) {
-        ggml_backend_sched_graph_compute(ctx->sched, cache.gf);
-    } else {
-        // Ensure work buffer pointer is current (may have been reallocated)
-        cache.cplan.work_data = ctx->work_buf.data();
-        ggml_graph_compute(cache.gf, &cache.cplan);
-    }
+    // Compute (reuses pre-computed plan — direct CPU compute with cached graph)
+    // Note: ggml_backend_sched is NOT used here because our cached graph has
+    // pre-allocated CPU tensor data (no_alloc=false). The scheduler expects to
+    // allocate its own buffers which conflicts. Direct compute with the cached
+    // plan is faster anyway (avoids scheduler overhead).
+    cache.cplan.work_data = ctx->work_buf.data();
+    ggml_graph_compute(cache.gf, &cache.cplan);
 
     // Read encoder output [H, T]
     ggml_tensor * out = cache.output;
