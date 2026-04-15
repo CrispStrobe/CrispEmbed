@@ -1,4 +1,5 @@
 // decoder_embed.cpp — Qwen3/LLaMA/Gemma3 decoder embedding graph via ggml.
+// Uses ggml_backend_sched for GPU dispatch (same pattern as encoder).
 
 #include "decoder_embed_internal.h"
 #include "crispembed.h"
@@ -15,7 +16,6 @@
 
 bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
                          const char * path, ggml_backend_t backend) {
-    // Read metadata
     gguf_init_params gp = { true, nullptr };
     gguf_context * g = gguf_init_from_file(path, gp);
     if (!g) return false;
@@ -47,7 +47,6 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
 
     gguf_free(g);
 
-    // Load weights
     if (!core_gguf::load_weights(path, backend, "decoder_embed", wl))
         return false;
 
@@ -84,14 +83,14 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
 }
 
 // ---------------------------------------------------------------------------
-// Full-graph decoder inference (all layers in one ggml graph)
+// Full-graph decoder with scheduler support (GPU + CPU)
 // ---------------------------------------------------------------------------
 
 std::vector<float> decoder_encode_tokens(
     const dec_model & m, ggml_backend_t backend,
     const embed_tokens & tokens, int n_threads,
-    std::vector<uint8_t> * graph_buf,
-    std::vector<uint8_t> * work_buf) {
+    ggml_backend_sched_t sched,
+    std::vector<uint8_t> * compute_meta) {
 
     const int T = (int)tokens.ids.size();
     const int H = m.n_embd;
@@ -102,86 +101,80 @@ std::vector<float> decoder_encode_tokens(
     q_dim = n_heads * head_dim;
     const float eps = m.rms_norm_eps;
 
-    // Build full graph for all layers at once
-    // Memory estimate: per-layer intermediate tensors + overhead
+    // Graph context: no_alloc=true when using scheduler, false otherwise
+    bool use_sched = (sched != nullptr && compute_meta != nullptr);
     int graph_size = std::max(4096, m.n_layer * 50 + 256);
-    size_t per_layer = (size_t)H * T * 4 * 30
-                     + (size_t)T * T * n_heads * 4 * 2
-                     + (size_t)m.n_intermediate * T * 4 * 3;
-    size_t mem = per_layer * m.n_layer
-               + (size_t)H * T * 4 * 10  // embeddings + final norm
-               + ggml_tensor_overhead() * (size_t)(m.n_layer * 50 + 200)
-               + ggml_graph_overhead_custom(graph_size, false)
-               + 64 * 1024 * 1024;
 
-    // Use reusable buffer if provided, otherwise local
+    size_t mem;
     std::vector<uint8_t> local_buf;
-    std::vector<uint8_t> & buf = graph_buf ? *graph_buf : local_buf;
-    if (buf.size() < mem) buf.resize(mem);
-    ggml_init_params ip = { mem, buf.data(), false };
+    uint8_t * buf_ptr;
+
+    if (use_sched) {
+        mem = compute_meta->size();
+        buf_ptr = compute_meta->data();
+    } else {
+        size_t per_layer = (size_t)H * T * 4 * 30
+                         + (size_t)T * T * n_heads * 4 * 2
+                         + (size_t)m.n_intermediate * T * 4 * 3;
+        mem = per_layer * m.n_layer
+            + (size_t)H * T * 4 * 10
+            + ggml_tensor_overhead() * (size_t)(m.n_layer * 50 + 200)
+            + ggml_graph_overhead_custom(graph_size, false)
+            + 64 * 1024 * 1024;
+        local_buf.resize(mem);
+        buf_ptr = local_buf.data();
+    }
+
+    ggml_init_params ip = { mem, buf_ptr, use_sched };
     ggml_context * gctx = ggml_init(ip);
     ggml_cgraph * gf = ggml_new_graph_custom(gctx, graph_size, false);
 
-    // --- Token embedding lookup ---
+    // --- Token embedding ---
     ggml_tensor * ids_t = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T);
     ggml_set_name(ids_t, "tok_ids");
     ggml_set_input(ids_t);
-    {
-        int32_t * d = (int32_t *)ids_t->data;
-        for (int t = 0; t < T; t++) d[t] = tokens.ids[t];
-    }
 
     ggml_tensor * cur = ggml_get_rows(gctx, m.token_embd, ids_t);
 
-    // Gemma3: scale embeddings by sqrt(hidden_size)
     if (m.embed_scale != 1.0f) {
         cur = ggml_scale(gctx, cur, m.embed_scale);
     }
 
-    // --- Helper: Gemma-style RMSNorm uses (1 + weight) ---
-    // Pre-compute ones tensor (shared across all layers)
+    // Gemma3 ones tensor for (1 + weight) RMSNorm
     ggml_tensor * ones_h = nullptr;
+    ggml_tensor * ones_hd = nullptr;
     if (m.gemma_norm) {
         ones_h = ggml_new_tensor_1d(gctx, GGML_TYPE_F32, H);
-        float * d = (float *)ones_h->data;
-        for (int i = 0; i < H; i++) d[i] = 1.0f;
-    }
-    // For head_dim-sized norms (q_norm, k_norm)
-    ggml_tensor * ones_hd = nullptr;
-    if (m.gemma_norm && m.layers[0].q_norm_w) {
-        ones_hd = ggml_new_tensor_1d(gctx, GGML_TYPE_F32, head_dim);
-        float * d = (float *)ones_hd->data;
-        for (int i = 0; i < head_dim; i++) d[i] = 1.0f;
+        ggml_set_name(ones_h, "ones_h");
+        ggml_set_input(ones_h);  // will set to 1.0f
+        if (m.layers[0].q_norm_w) {
+            ones_hd = ggml_new_tensor_1d(gctx, GGML_TYPE_F32, head_dim);
+            ggml_set_name(ones_hd, "ones_hd");
+            ggml_set_input(ones_hd);
+        }
     }
 
     auto rms_norm = [&](ggml_tensor * x, ggml_tensor * w) -> ggml_tensor * {
         x = ggml_rms_norm(gctx, x, eps);
         if (m.gemma_norm) {
             ggml_tensor * ones = (w->ne[0] == H) ? ones_h : ones_hd;
-            ggml_tensor * w1 = ggml_add(gctx, w, ones);
-            return ggml_mul(gctx, x, w1);
+            return ggml_mul(gctx, x, ggml_add(gctx, w, ones));
         }
         return ggml_mul(gctx, x, w);
     };
 
-    // --- Position IDs for RoPE (shared across all layers) ---
+    // --- Position IDs for RoPE ---
     ggml_tensor * pos = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T);
-    {
-        int32_t * d = (int32_t *)pos->data;
-        for (int t = 0; t < T; t++) d[t] = t;
-    }
+    ggml_set_name(pos, "pos_ids");
+    ggml_set_input(pos);
 
     // --- Transformer layers ---
     for (int il = 0; il < m.n_layer; il++) {
         const auto & L = m.layers[il];
         ggml_tensor * residual = cur;
 
-        // RMSNorm (pre-attention)
-        if (L.attn_norm_w) {
-            cur = rms_norm(cur, L.attn_norm_w);
-        }
+        if (L.attn_norm_w) cur = rms_norm(cur, L.attn_norm_w);
 
-        // Q/K/V projections
         ggml_tensor * Q = ggml_mul_mat(gctx, L.q_w, cur);
         if (L.q_b) Q = ggml_add(gctx, Q, L.q_b);
         ggml_tensor * K = ggml_mul_mat(gctx, L.k_w, cur);
@@ -189,17 +182,14 @@ std::vector<float> decoder_encode_tokens(
         ggml_tensor * V = ggml_mul_mat(gctx, L.v_w, cur);
         if (L.v_b) V = ggml_add(gctx, V, L.v_b);
 
-        // Reshape for multi-head
         Q = ggml_reshape_3d(gctx, Q, head_dim, n_heads, T);
         K = ggml_reshape_3d(gctx, K, head_dim, n_kv_heads, T);
         V = ggml_reshape_3d(gctx, V, head_dim, n_kv_heads, T);
 
-        // QK norm
         if (L.q_norm_w) Q = rms_norm(Q, L.q_norm_w);
         if (L.k_norm_w) K = rms_norm(K, L.k_norm_w);
 
-        // RoPE on [head_dim, n_heads, T]
-        int rope_mode = 2;  // GGML_ROPE_TYPE_NEOX
+        int rope_mode = 2;
         Q = ggml_rope_ext(gctx, Q, pos, nullptr,
                            head_dim, rope_mode, 0,
                            m.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
@@ -207,44 +197,35 @@ std::vector<float> decoder_encode_tokens(
                            head_dim, rope_mode, 0,
                            m.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-        // Permute: [head_dim, n_heads, T] -> [head_dim, T, n_heads]
+        // Attention: permute → scores → mask → softmax → value
         Q = ggml_cont(gctx, ggml_permute(gctx, Q, 0, 2, 1, 3));
         K = ggml_cont(gctx, ggml_permute(gctx, K, 0, 2, 1, 3));
         V = ggml_cont(gctx, ggml_permute(gctx, V, 0, 2, 1, 3));
 
-        // Attention scores (GQA broadcasting handled by ggml_mul_mat)
         float scale = (m.attn_scale > 0.0f)
                         ? (1.0f / sqrtf(m.attn_scale))
                         : (1.0f / sqrtf((float)head_dim));
         ggml_tensor * scores = ggml_mul_mat(gctx, K, Q);
         scores = ggml_scale(gctx, scores, scale);
-
         if (!m.is_bidirectional) {
             scores = ggml_diag_mask_inf(gctx, scores, 0);
         }
         scores = ggml_soft_max(gctx, scores);
 
-        // V @ scores
         ggml_tensor * V_perm = ggml_cont(gctx, ggml_permute(gctx, V, 1, 0, 2, 3));
         ggml_tensor * attn = ggml_mul_mat(gctx, V_perm, scores);
-
-        // Reshape back to [q_dim, T]
         attn = ggml_cont(gctx, ggml_permute(gctx, attn, 0, 2, 1, 3));
         attn = ggml_reshape_2d(gctx, attn, q_dim, T);
 
-        // Output projection
         attn = ggml_mul_mat(gctx, L.o_w, attn);
         if (L.o_b) attn = ggml_add(gctx, attn, L.o_b);
 
-        // Norm + residual + FFN
         if (L.pre_ffn_norm_w) {
-            // Gemma3: post_attn_norm -> residual -> pre_ffn_norm -> FFN -> post_ffn_norm -> residual
             if (L.ffn_norm_w) attn = rms_norm(attn, L.ffn_norm_w);
             cur = ggml_add(gctx, residual, attn);
             residual = cur;
             cur = rms_norm(cur, L.pre_ffn_norm_w);
         } else {
-            // Qwen3/LLaMA: residual + attn -> norm -> FFN -> residual
             cur = ggml_add(gctx, residual, attn);
             residual = cur;
             if (L.ffn_norm_w) cur = rms_norm(cur, L.ffn_norm_w);
@@ -260,7 +241,6 @@ std::vector<float> decoder_encode_tokens(
             ggml_tensor * up = ggml_mul_mat(gctx, L.up_w, cur);
             ggml_tensor * ffn = ggml_mul(gctx, gate, up);
             ffn = ggml_mul_mat(gctx, L.down_w, ffn);
-
             if (L.post_ffn_norm_w) ffn = rms_norm(ffn, L.post_ffn_norm_w);
             cur = ggml_add(gctx, residual, ffn);
         } else {
@@ -268,28 +248,80 @@ std::vector<float> decoder_encode_tokens(
         }
     }
 
-    // --- Final RMSNorm ---
-    if (m.output_norm) {
-        cur = rms_norm(cur, m.output_norm);
-    }
+    if (m.output_norm) cur = rms_norm(cur, m.output_norm);
 
     ggml_set_name(cur, "decoder_out");
     ggml_set_output(cur);
     ggml_build_forward_expand(gf, cur);
 
-    // --- Compute ---
-    struct ggml_cplan cplan = ggml_graph_plan(gf, n_threads, NULL);
-    std::vector<uint8_t> local_work;
-    std::vector<uint8_t> & wk = work_buf ? *work_buf : local_work;
-    if (cplan.work_size > 0) {
-        if (wk.size() < cplan.work_size) wk.resize(cplan.work_size);
-        cplan.work_data = wk.data();
-    }
-    ggml_graph_compute(gf, &cplan);
+    // --- Set inputs and compute ---
+    if (use_sched) {
+        ggml_backend_sched_reset(sched);
+        if (!ggml_backend_sched_alloc_graph(sched, gf)) {
+            fprintf(stderr, "decoder: failed to allocate graph\n");
+            ggml_free(gctx);
+            return {};
+        }
 
-    // --- Read output and pool ---
+        // Set input data
+        std::vector<int32_t> tok_data(tokens.ids.begin(), tokens.ids.end());
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"),
+                                tok_data.data(), 0, T * sizeof(int32_t));
+
+        std::vector<int32_t> pos_data(T);
+        for (int t = 0; t < T; t++) pos_data[t] = t;
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
+                                pos_data.data(), 0, T * sizeof(int32_t));
+
+        if (m.gemma_norm) {
+            std::vector<float> ones(H, 1.0f);
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_h"),
+                                    ones.data(), 0, H * sizeof(float));
+            if (ones_hd) {
+                std::vector<float> ones_hd_data(head_dim, 1.0f);
+                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_hd"),
+                                        ones_hd_data.data(), 0, head_dim * sizeof(float));
+            }
+        }
+
+        // Compute via scheduler
+        ggml_backend_sched_graph_compute(sched, gf);
+    } else {
+        // CPU fallback (set data directly)
+        int32_t * id = (int32_t *)ids_t->data;
+        for (int t = 0; t < T; t++) id[t] = tokens.ids[t];
+
+        int32_t * pd = (int32_t *)pos->data;
+        for (int t = 0; t < T; t++) pd[t] = t;
+
+        if (ones_h) {
+            float * d = (float *)ones_h->data;
+            for (int i = 0; i < H; i++) d[i] = 1.0f;
+        }
+        if (ones_hd) {
+            float * d = (float *)ones_hd->data;
+            for (int i = 0; i < head_dim; i++) d[i] = 1.0f;
+        }
+
+        struct ggml_cplan cplan = ggml_graph_plan(gf, n_threads, NULL);
+        std::vector<uint8_t> work;
+        if (cplan.work_size > 0) {
+            work.resize(cplan.work_size);
+            cplan.work_data = work.data();
+        }
+        ggml_graph_compute(gf, &cplan);
+    }
+
+    // --- Read output ---
     ggml_tensor * out = ggml_graph_get_tensor(gf, "decoder_out");
-    float * out_data = (float *)out->data;
+    std::vector<float> hidden(H * T);
+    if (use_sched) {
+        ggml_backend_tensor_get(out, hidden.data(), 0, H * T * sizeof(float));
+    } else {
+        memcpy(hidden.data(), out->data, H * T * sizeof(float));
+    }
+
+    ggml_free(gctx);
 
     // Last-token pooling
     int last_t = 0;
@@ -298,7 +330,7 @@ std::vector<float> decoder_encode_tokens(
     }
 
     std::vector<float> pooled(H);
-    memcpy(pooled.data(), out_data + last_t * H, H * sizeof(float));
+    memcpy(pooled.data(), hidden.data() + last_t * H, H * sizeof(float));
 
     // L2 normalize
     float norm = 0;
@@ -306,6 +338,5 @@ std::vector<float> decoder_encode_tokens(
     norm = sqrtf(std::max(norm, 1e-12f));
     for (int i = 0; i < H; i++) pooled[i] /= norm;
 
-    ggml_free(gctx);
     return pooled;
 }
