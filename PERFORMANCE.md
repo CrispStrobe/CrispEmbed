@@ -14,6 +14,42 @@ Single-text encoding latency via HTTP server (`/embed` endpoint).
 | octen-0.6b | Q8_0 | 600M | 1024 | 308 | 3.2 |
 | octen-0.6b | Q4_K | 600M | 1024 | 294 | 3.4 |
 
+## macOS Metal (Apple M1)
+
+Benchmarked with Metal backend + embedded shaders, `./benchmark.sh --multi -n 20`.
+
+### all-MiniLM-L6-v2 (22M params, 384d)
+
+| Engine | Single text | Batch (10 texts) |
+|--------|------------|-------------------|
+| fastembed-rs (Rust, ONNX) | 3.9 ms / 258 t/s | 19 ms / 533 t/s |
+| **CrispEmbed Python** (Metal, ctypes) | 4.0 ms / 248 t/s | 62 ms / 161 t/s |
+| HuggingFace sentence-transformers | 11.4 ms / 88 t/s | 23 ms / 431 t/s |
+| CrispEmbed Server (Metal + HTTP) | 21.9 ms / 45 t/s | 31 ms / 318 t/s |
+| FastEmbed Python (ONNX) | 33.5 ms / 30 t/s | -- |
+
+### gte-small (33M params, 384d)
+
+| Engine | Single text | Batch (10 texts) |
+|--------|------------|-------------------|
+| fastembed-rs (Rust, ONNX) | 4.1 ms / 243 t/s | 21 ms / 479 t/s |
+| **CrispEmbed Python** (Metal, ctypes) | 6.4 ms / 155 t/s | 70 ms / 142 t/s |
+| HuggingFace sentence-transformers | 22.6 ms / 44 t/s | 226 ms / 44 t/s |
+| CrispEmbed Server (Metal + HTTP) | 24.9 ms / 40 t/s | 52 ms / 190 t/s |
+
+### arctic-embed-xs (22M params, 384d)
+
+| Engine | Single text | Batch (10 texts) |
+|--------|------------|-------------------|
+| **CrispEmbed Python** (Metal, ctypes) | 3.7 ms / 267 t/s | 46 ms / 220 t/s |
+| fastembed-rs (Rust, ONNX) | 4.0 ms / 251 t/s | 29 ms / 342 t/s |
+| FastEmbed Python (ONNX) | 4.1 ms / 244 t/s | -- |
+| CrispEmbed Server (Metal + HTTP) | 22.2 ms / 44 t/s | 35 ms / 287 t/s |
+
+CrispEmbed Python wrapper (ctypes, Metal) matches or beats fastembed-rs for
+single-text latency. Batch throughput gap is due to per-text Python loop --
+a C-level batch API would close it.
+
 ## GPU Inference (CUDA)
 
 Tested on NVIDIA RTX A1000 Laptop GPU (4GB VRAM), via HTTP server.
