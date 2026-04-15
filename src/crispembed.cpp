@@ -620,20 +620,82 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
                                                    int * out_n_dim) {
     if (!ctx || !texts || n_texts <= 0) return nullptr;
 
-    // Encode each text via the single-text API (handles all model types + Matryoshka)
-    int dim = 0;
-    const float * first = crispembed_encode(ctx, texts[0], &dim);
-    if (!first || dim == 0) return nullptr;
-
-    ctx->last_output.resize(n_texts * dim);
-    std::memcpy(ctx->last_output.data(), first, dim * sizeof(float));
-
-    for (int i = 1; i < n_texts; i++) {
-        int d = 0;
-        const float * vec = crispembed_encode(ctx, texts[i], &d);
-        if (vec && d == dim) {
-            std::memcpy(ctx->last_output.data() + i * dim, vec, dim * sizeof(float));
+    // Pre-tokenize all texts, sort by length for graph cache efficiency
+    struct text_entry { int idx; embed_tokens tokens; };
+    std::vector<text_entry> entries(n_texts);
+    for (int i = 0; i < n_texts; i++) {
+        entries[i].idx = i;
+        if (ctx->use_bpe) {
+            entries[i].tokens = ctx->bpe_tokenizer.encode(texts[i]);
+        } else if (ctx->use_sentencepiece) {
+            entries[i].tokens = ctx->sp_tokenizer.encode(texts[i]);
+        } else {
+            entries[i].tokens = ctx->wp_tokenizer.encode(texts[i]);
         }
+    }
+    // Sort by token count (minimizes graph rebuilds)
+    std::sort(entries.begin(), entries.end(), [](const text_entry & a, const text_entry & b) {
+        return a.tokens.ids.size() < b.tokens.ids.size();
+    });
+
+    // Determine output dim from first encoding
+    int dim = 0;
+    {
+        auto & tokens = entries[0].tokens;
+        // Trim padding
+        int actual_len = (int)tokens.attn_mask.size();
+        for (int i = actual_len - 1; i >= 0; i--) {
+            if (tokens.attn_mask[i]) { actual_len = i + 1; break; }
+        }
+        if (actual_len > 0 && actual_len < (int)tokens.ids.size()) {
+            tokens.ids.resize(actual_len);
+            tokens.type_ids.resize(actual_len);
+            tokens.attn_mask.resize(actual_len);
+        }
+        if (ctx->is_decoder && ctx->dec) {
+            auto vec = decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads,
+                                              &ctx->graph_buf, &ctx->work_buf);
+            dim = (int)vec.size();
+        } else {
+            auto vec = encode_tokens(ctx, tokens);
+            dim = (int)vec.size();
+        }
+    }
+    if (dim == 0) return nullptr;
+
+    // Apply Matryoshka
+    int out_dim = (ctx->matryoshka_dim > 0 && ctx->matryoshka_dim < dim) ? ctx->matryoshka_dim : dim;
+    ctx->last_output.resize(n_texts * out_dim);
+
+    // Encode all texts (sorted order maximizes graph cache hits)
+    for (int i = 0; i < n_texts; i++) {
+        auto & tokens = entries[i].tokens;
+        // Trim padding
+        int actual_len = (int)tokens.attn_mask.size();
+        for (int j = actual_len - 1; j >= 0; j--) {
+            if (tokens.attn_mask[j]) { actual_len = j + 1; break; }
+        }
+        if (actual_len > 0 && actual_len < (int)tokens.ids.size()) {
+            tokens.ids.resize(actual_len);
+            tokens.type_ids.resize(actual_len);
+            tokens.attn_mask.resize(actual_len);
+        }
+
+        std::vector<float> vec;
+        if (ctx->is_decoder && ctx->dec) {
+            vec = decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads,
+                                         &ctx->graph_buf, &ctx->work_buf);
+        } else {
+            vec = encode_tokens(ctx, tokens);
+        }
+
+        // Matryoshka truncation + L2 normalize
+        int d = std::min((int)vec.size(), out_dim);
+        float norm = 0;
+        for (int j = 0; j < d; j++) norm += vec[j] * vec[j];
+        norm = sqrtf(std::max(norm, 1e-12f));
+        float * dst = ctx->last_output.data() + entries[i].idx * out_dim;
+        for (int j = 0; j < d; j++) dst[j] = vec[j] / norm;
     }
     if (out_n_dim) *out_n_dim = dim;
     return ctx->last_output.data();
