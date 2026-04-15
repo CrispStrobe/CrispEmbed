@@ -78,22 +78,11 @@ struct crispembed_context {
     int pool_method = 0;  // 0=mean, 1=cls, 2=last-token
     int pos_offset = 0;   // position embedding offset (2 for RoBERTa/XLM-R)
     int matryoshka_dim = 0;  // 0 = use model default
-    std::vector<float> last_output;  // reused buffer
-    std::vector<uint8_t> work_buf;   // reused graph compute workspace
-    std::vector<uint8_t> graph_buf;  // reused graph context memory
-    ggml_context * qkv_ctx = nullptr;  // pre-merged QKV weights
-
-    // Cached encoder graph (reused when seq_len matches)
-    struct cached_graph {
-        int seq_len = 0;
-        ggml_context * ctx = nullptr;
-        ggml_cgraph * gf = nullptr;
-        ggml_cplan cplan = {};
-        ggml_tensor * tok_ids = nullptr;
-        ggml_tensor * pos_ids = nullptr;
-        ggml_tensor * type_ids = nullptr;
-        ggml_tensor * output = nullptr;
-    } enc_cache;
+    std::vector<float> last_output;     // reused buffer
+    std::vector<uint8_t> compute_meta;  // graph metadata buffer (no_alloc=true)
+    std::vector<uint8_t> graph_buf;    // decoder graph buffer (TODO: migrate to scheduler)
+    std::vector<uint8_t> work_buf;     // decoder work buffer
+    ggml_context * qkv_ctx = nullptr;   // pre-merged QKV weights
 };
 
 // ---------------------------------------------------------------------------
@@ -179,15 +168,35 @@ static bool load_model(crispembed_context * ctx, const char * path) {
 
     gguf_free(g);
 
-    // Initialize CPU backend for encoder (direct compute with cached graph)
-    // GPU acceleration happens via quantized matmul SIMD, not ggml_backend_sched
-    ctx->backend = ggml_backend_cpu_init();
+    // Initialize backends: try GPU first, CPU always as fallback
+    ctx->backend = ggml_backend_init_best();
     if (!ctx->backend) {
-        fprintf(stderr, "crispembed: failed to init CPU backend\n");
+        fprintf(stderr, "crispembed: failed to init backend\n");
         return false;
     }
-    ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
     ctx->backends.push_back(ctx->backend);
+
+    bool have_gpu = !ggml_backend_is_cpu(ctx->backend);
+    if (have_gpu) {
+        ggml_backend_t cpu = ggml_backend_cpu_init();
+        ggml_backend_cpu_set_n_threads(cpu, ctx->n_threads);
+        ctx->backends.push_back(cpu);
+        fprintf(stderr, "crispembed: using %s backend with CPU fallback\n",
+                ggml_backend_name(ctx->backend));
+    } else {
+        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+        fprintf(stderr, "crispembed: using CPU backend (%d threads)\n", ctx->n_threads);
+    }
+
+    // Create scheduler for graph dispatch (handles GPU/CPU allocation)
+    int graph_nodes = 16384;
+    ctx->sched = ggml_backend_sched_new(
+        ctx->backends.data(), nullptr, (int)ctx->backends.size(),
+        graph_nodes, false, false);
+
+    // Allocate metadata buffer for graph building (no_alloc=true pattern)
+    ctx->compute_meta.resize(ggml_tensor_overhead() * graph_nodes
+                           + ggml_graph_overhead_custom(graph_nodes, false));
 
     if (!core_gguf::load_weights(path, ctx->backend, "crispembed", ctx->wl)) {
         fprintf(stderr, "crispembed: failed to load weights\n");
@@ -269,11 +278,10 @@ static bool load_model(crispembed_context * ctx, const char * path) {
 }
 
 // ---------------------------------------------------------------------------
-// Graph: build once per sequence length, reuse across calls
+// Graph: build fresh each call (no_alloc=true), scheduler handles allocation
 // ---------------------------------------------------------------------------
 
-static void build_encoder_graph(crispembed_context * ctx, int T) {
-    auto & cache = ctx->enc_cache;
+static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T) {
     const auto & m = ctx->model;
     const auto & hp = m.hparams;
     const int H = hp.n_embd;
@@ -281,26 +289,14 @@ static void build_encoder_graph(crispembed_context * ctx, int T) {
     const int head_dim = H / n_heads;
     const float ln_eps = hp.layer_norm_eps;
 
-    // Free previous graph context if it exists
-    if (cache.ctx) { ggml_free(cache.ctx); cache.ctx = nullptr; }
-
     int graph_size = std::max(2048, hp.n_layer * 30 + 256);
-    size_t per_layer = (size_t)H * T * 4 * 20
-                     + (size_t)T * T * n_heads * 4
-                     + (size_t)hp.n_intermediate * T * 4 * 2;
-    size_t mem = per_layer * hp.n_layer
-               + (size_t)H * T * 4 * 10
-               + ggml_tensor_overhead() * (size_t)(hp.n_layer * 30 + 100)
-               + ggml_graph_overhead_custom(graph_size, false)
-               + 64 * 1024 * 1024;
 
-    if (ctx->graph_buf.size() < mem)
-        ctx->graph_buf.resize(mem);
-    ggml_init_params ip = { mem, ctx->graph_buf.data(), false };
+    // Metadata-only context (no_alloc=true — scheduler allocates buffers)
+    ggml_init_params ip = { ctx->compute_meta.size(), ctx->compute_meta.data(), true };
     ggml_context * gctx = ggml_init(ip);
     ggml_cgraph * gf = ggml_new_graph_custom(gctx, graph_size, false);
 
-    // Token embeddings via ggml_get_rows
+    // Input tensors (marked so scheduler keeps them on CPU for easy data set)
     ggml_tensor * tok_ids = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T);
     ggml_set_name(tok_ids, "tok_ids");
     ggml_set_input(tok_ids);
@@ -312,9 +308,8 @@ static void build_encoder_graph(crispembed_context * ctx, int T) {
     ggml_tensor * pos_embd = ggml_get_rows(gctx, m.pos_embd, pos_ids);
     embd = ggml_add(gctx, embd, pos_embd);
 
-    ggml_tensor * type_ids_t = nullptr;
     if (m.type_embd) {
-        type_ids_t = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T);
+        ggml_tensor * type_ids_t = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T);
         ggml_set_name(type_ids_t, "type_ids");
         ggml_set_input(type_ids_t);
         ggml_tensor * type_embd = ggml_get_rows(gctx, m.type_embd, type_ids_t);
@@ -331,11 +326,10 @@ static void build_encoder_graph(crispembed_context * ctx, int T) {
     for (int il = 0; il < hp.n_layer; il++) {
         const auto & L = m.layers[il];
 
-        // QKV projection
+        // QKV projection (fused or separate)
         ggml_tensor * Q, * K, * V;
         if (L.qkv_w) {
-            // Fused: one matmul [3H, T] then split via view+cont
-            ggml_tensor * qkv = ggml_mul_mat(gctx, L.qkv_w, cur);  // [3H, T]
+            ggml_tensor * qkv = ggml_mul_mat(gctx, L.qkv_w, cur);
             if (L.qkv_b) qkv = ggml_add(gctx, qkv, L.qkv_b);
             Q = ggml_cont(gctx, ggml_view_2d(gctx, qkv, H, T, 3 * H * sizeof(float), 0));
             K = ggml_cont(gctx, ggml_view_2d(gctx, qkv, H, T, 3 * H * sizeof(float), H * sizeof(float)));
@@ -346,29 +340,26 @@ static void build_encoder_graph(crispembed_context * ctx, int T) {
             V = ggml_add(gctx, ggml_mul_mat(gctx, L.v_w, cur), L.v_b);
         }
 
-        // Reshape for multi-head: [H, T] -> [head_dim, n_heads, T]
         Q = ggml_reshape_3d(gctx, Q, head_dim, n_heads, T);
         K = ggml_reshape_3d(gctx, K, head_dim, n_heads, T);
         V = ggml_reshape_3d(gctx, V, head_dim, n_heads, T);
 
-        // Flash attention: fused QK^T*scale + softmax + @V
+        // Flash attention
         float scale = 1.0f / sqrtf((float)head_dim);
-        ggml_tensor * Qp = ggml_permute(gctx, Q, 0, 2, 1, 3);
-        ggml_tensor * Kp = ggml_permute(gctx, K, 0, 2, 1, 3);
-        ggml_tensor * Vp = ggml_permute(gctx, V, 0, 2, 1, 3);
-        ggml_tensor * attn = ggml_flash_attn_ext(gctx, Qp, Kp, Vp,
-                                                   nullptr, scale, 0.0f, 0.0f);
+        ggml_tensor * attn = ggml_flash_attn_ext(gctx,
+            ggml_permute(gctx, Q, 0, 2, 1, 3),
+            ggml_permute(gctx, K, 0, 2, 1, 3),
+            ggml_permute(gctx, V, 0, 2, 1, 3),
+            nullptr, scale, 0.0f, 0.0f);
         attn = ggml_reshape_2d(gctx, attn, H, T);
 
         attn = ggml_add(gctx, ggml_mul_mat(gctx, L.o_w, attn), L.o_b);
 
-        // Post-attention: residual + LayerNorm
         cur = ggml_add(gctx, cur, attn);
         cur = ggml_norm(gctx, cur, ln_eps);
         cur = ggml_mul(gctx, cur, L.ln1_w);
         cur = ggml_add(gctx, cur, L.ln1_b);
 
-        // FFN
         ggml_tensor * ffn = ggml_add(gctx, ggml_mul_mat(gctx, L.fc1_w, cur), L.fc1_b);
         ffn = ggml_gelu(gctx, ffn);
         ffn = ggml_add(gctx, ggml_mul_mat(gctx, L.fc2_w, ffn), L.fc2_b);
@@ -383,64 +374,68 @@ static void build_encoder_graph(crispembed_context * ctx, int T) {
     ggml_set_output(cur);
     ggml_build_forward_expand(gf, cur);
 
-    // Pre-compute the execution plan (thread allocation, work size)
-    struct ggml_cplan cplan = ggml_graph_plan(gf, ctx->n_threads, NULL);
-    if (cplan.work_size > 0) {
-        if (ctx->work_buf.size() < cplan.work_size)
-            ctx->work_buf.resize(cplan.work_size);
-        cplan.work_data = ctx->work_buf.data();
-    }
+    return gf;
+}
 
-    // Store in cache
-    cache.seq_len = T;
-    cache.ctx = gctx;
-    cache.gf = gf;
-    cache.cplan = cplan;
-    cache.tok_ids = tok_ids;
-    cache.pos_ids = pos_ids;
-    cache.type_ids = type_ids_t;
-    cache.output = cur;
+// Set thread count on all backends (like CrispASR's cohere_sched_graph_compute)
+static bool sched_graph_compute(ggml_backend_sched_t sched, ggml_cgraph * gf, int n_threads) {
+    for (int i = 0; i < ggml_backend_sched_get_n_backends(sched); i++) {
+        ggml_backend_t be = ggml_backend_sched_get_backend(sched, i);
+        ggml_backend_dev_t dev = ggml_backend_get_device(be);
+        ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
+        if (reg) {
+            auto * fn = (ggml_backend_set_n_threads_t)
+                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            if (fn) fn(be, n_threads);
+        }
+    }
+    return ggml_backend_sched_graph_compute(sched, gf) == GGML_STATUS_SUCCESS;
 }
 
 static std::vector<float> encode_tokens(crispembed_context * ctx,
                                          const embed_tokens & tokens) {
-    const auto & m = ctx->model;
-    const auto & hp = m.hparams;
+    const auto & hp = ctx->model.hparams;
     const int T = (int)tokens.ids.size();
     const int H = hp.n_embd;
 
-    // Build or reuse cached graph
-    if (ctx->enc_cache.seq_len != T) {
-        build_encoder_graph(ctx, T);
-    }
-    auto & cache = ctx->enc_cache;
+    // Build graph (fresh each call, metadata-only — scheduler allocates buffers)
+    ggml_cgraph * gf = build_encoder_graph(ctx, T);
 
-    // Set input data (fast — just memcpy into existing tensors)
-    {
-        int32_t * tok_data = (int32_t *)cache.tok_ids->data;
-        int32_t * pos_data = (int32_t *)cache.pos_ids->data;
-        for (int t = 0; t < T; t++) {
-            tok_data[t] = tokens.ids[t];
-            pos_data[t] = t + ctx->pos_offset;
-        }
-        if (cache.type_ids) {
-            int32_t * type_data = (int32_t *)cache.type_ids->data;
-            for (int t = 0; t < T; t++)
-                type_data[t] = tokens.type_ids[t];
-        }
+    // Allocate graph on backends (GPU + CPU)
+    ggml_backend_sched_reset(ctx->sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
+        fprintf(stderr, "crispembed: failed to allocate encoder graph\n");
+        return {};
     }
 
-    // Compute (reuses pre-computed plan — direct CPU compute with cached graph)
-    // Note: ggml_backend_sched is NOT used here because our cached graph has
-    // pre-allocated CPU tensor data (no_alloc=false). The scheduler expects to
-    // allocate its own buffers which conflicts. Direct compute with the cached
-    // plan is faster anyway (avoids scheduler overhead).
-    cache.cplan.work_data = ctx->work_buf.data();
-    ggml_graph_compute(cache.gf, &cache.cplan);
+    // Set input data via backend API (works for both CPU and GPU tensors)
+    std::vector<int32_t> tok_data(tokens.ids.begin(), tokens.ids.end());
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"),
+                            tok_data.data(), 0, T * sizeof(int32_t));
 
-    // Read encoder output [H, T]
-    ggml_tensor * out = cache.output;
-    float * out_data = (float *)out->data;
+    std::vector<int32_t> pos_data(T);
+    for (int t = 0; t < T; t++) pos_data[t] = t + ctx->pos_offset;
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
+                            pos_data.data(), 0, T * sizeof(int32_t));
+
+    if (ctx->model.type_embd) {
+        std::vector<int32_t> type_data(tokens.type_ids.begin(), tokens.type_ids.end());
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "type_ids"),
+                                type_data.data(), 0, T * sizeof(int32_t));
+    }
+
+    // Compute (scheduler dispatches to GPU or CPU)
+    if (!sched_graph_compute(ctx->sched, gf, ctx->n_threads)) {
+        fprintf(stderr, "crispembed: encoder compute failed\n");
+        return {};
+    }
+
+    // Read output (works whether tensor is on GPU or CPU)
+    // Read encoder output [H, T] via backend API (works for GPU and CPU)
+    ggml_tensor * out = ggml_graph_get_tensor(gf, "encoder_out");
+    std::vector<float> out_buf(H * T);
+    ggml_backend_tensor_get(out, out_buf.data(), 0, H * T * sizeof(float));
+    float * out_data = out_buf.data();
 
     // Pooling — method determined by model metadata or default
     int dim = hp.n_output > 0 ? hp.n_output : H;
@@ -724,7 +719,6 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
 
 extern "C" void crispembed_free(crispembed_context * ctx) {
     if (!ctx) return;
-    if (ctx->enc_cache.ctx) { ggml_free(ctx->enc_cache.ctx); ctx->enc_cache.ctx = nullptr; }
     if (ctx->qkv_ctx) { ggml_free(ctx->qkv_ctx); ctx->qkv_ctx = nullptr; }
     core_gguf::free_weights(ctx->wl);
     if (ctx->sched) {
