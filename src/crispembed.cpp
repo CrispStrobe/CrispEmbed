@@ -77,6 +77,8 @@ struct crispembed_context {
     int pos_offset = 0;   // position embedding offset (2 for RoBERTa/XLM-R)
     int matryoshka_dim = 0;  // 0 = use model default
     std::vector<float> last_output;  // reused buffer
+    std::vector<uint8_t> work_buf;   // reused graph compute workspace
+    std::vector<uint8_t> graph_buf;  // reused graph context memory
 };
 
 // ---------------------------------------------------------------------------
@@ -268,12 +270,9 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
                + ggml_graph_overhead_custom(graph_size, false)
                + 64 * 1024 * 1024;
 
-    std::vector<uint8_t> buf(mem);
-    // Note: we always use no_alloc=false so tensor data is pre-allocated in buf.
-    // The scheduler still works — it sees CPU-allocated tensors and dispatches ops
-    // to the appropriate backend. For full GPU offload, no_alloc=true would be
-    // needed, but that requires restructuring how inputs are set.
-    ggml_init_params ip = { mem, buf.data(), false };
+    if (ctx->graph_buf.size() < mem)
+        ctx->graph_buf.resize(mem);
+    ggml_init_params ip = { mem, ctx->graph_buf.data(), false };
     ggml_context * gctx = ggml_init(ip);
     ggml_cgraph * gf = ggml_new_graph_custom(gctx, graph_size, false);
 
@@ -384,10 +383,10 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
         ggml_backend_sched_graph_compute(ctx->sched, gf);
     } else {
         struct ggml_cplan cplan = ggml_graph_plan(gf, ctx->n_threads, NULL);
-        std::vector<uint8_t> work;
         if (cplan.work_size > 0) {
-            work.resize(cplan.work_size);
-            cplan.work_data = work.data();
+            if (ctx->work_buf.size() < cplan.work_size)
+                ctx->work_buf.resize(cplan.work_size);
+            cplan.work_data = ctx->work_buf.data();
         }
         ggml_graph_compute(gf, &cplan);
     }
