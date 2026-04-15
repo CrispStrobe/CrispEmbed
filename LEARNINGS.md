@@ -184,3 +184,73 @@ Windows users often forget `--recursive` when cloning. The CMakeLists.txt now
 checks for `ggml/CMakeLists.txt` existence and prints a helpful error message.
 Build scripts (`build-windows.bat`, `build-vulkan.bat`, `build-cuda.bat`) auto-
 detect VS2022 and Vulkan/CUDA SDKs.
+
+## ggml operator fusion — what exists, what doesn't
+
+### Existing fused ops (backend-specific)
+
+**CUDA** (automatic when graph patterns match):
+- RMSNorm + Mul (`ggml_cuda_op_rms_norm_fused`)
+- RMSNorm + Mul + Add (`ggml_cuda_op_rms_norm_fused_add`)
+- Multi-Add (up to 8 chained adds → 1 kernel)
+- FFN gate: MUL_MAT + ADD + MUL_MAT + ADD + GLU → 1 kernel
+- RoPE + SetRows fused
+- Unary + Mul (SILU/Sigmoid/Softplus)
+
+**Vulkan**: Add + RMSNorm (controlled by `GGML_VK_DISABLE_FUSION`)
+**Metal**: Generic fusion framework with `use_fusion` flag
+**CPU**: **No fusion at all** — every op executes individually
+
+### What this means for performance
+
+On **CPU**, there's a fundamental ~3x gap vs ONNX Runtime because:
+1. ORT does Level3 graph JIT compilation: constant folding, op fusion, layout
+   optimization, kernel selection — all at graph compile time
+2. ggml has no graph optimization pass; fusion only happens in GPU backends
+   during compute, not at graph construction time
+3. Each ggml CPU op does a separate memory pass (read+write). Fusing
+   LayerNorm (norm+mul+add = 3 passes) into 1 pass saves bandwidth
+
+On **GPU (CUDA)**, the gap should be much smaller because:
+1. CUDA backend automatically fuses RMSNorm+Mul, FFN gates, multi-add
+2. `ggml_flash_attn_ext` runs as a single fused CUDA kernel
+3. Matmul uses cuBLAS (same as PyTorch/ONNX)
+4. Memory bandwidth is 10-20x higher on GPU, so fusion matters less
+
+### What we optimized (practical CPU-side)
+
+1. **Pre-merged QKV weights**: concatenate Q/K/V weight matrices into one
+   [H, 3H] tensor at load time. One matmul instead of three per layer.
+   Saves ~0.5ms for 6-layer 384d model.
+
+2. **Flash attention**: `ggml_flash_attn_ext` replaces 8 separate ops
+   (permute, cont, mul_mat, scale, softmax, mul_mat, permute, reshape)
+
+3. **Graph caching**: build ggml graph once per sequence length, reuse
+   across calls. Eliminates ~3ms of ggml_init + graph construction.
+
+4. **Buffer reuse**: graph_buf and work_buf persist across calls.
+
+### Why not modify ggml for CPU fusion?
+
+Considered but impractical because:
+- ggml's CPU backend is designed for portability (pure C + SIMD intrinsics)
+- Adding a graph optimization pass would affect all ggml users
+- The `ggml_map_custom` API allows custom kernels but doesn't help with
+  matmul (the expensive op) — ggml's SIMD matmul is already well-optimized
+- Fusing norm+mul+add saves < 0.1ms per text (memory-bound, not compute-bound)
+- The 3x gap to ONNX is dominated by ORT's matmul scheduling and cache
+  optimization, not by op fusion per se
+
+### GPU prediction
+
+On CUDA, CrispEmbed should match or beat ONNX because:
+- cuBLAS matmul is the same engine ORT uses
+- ggml's CUDA fusion handles the same patterns ORT fuses
+- Flash attention is implemented as a single CUDA kernel
+- No Python/ONNX overhead in our C++ server
+
+Estimated GPU performance for MiniLM (RTX 3060):
+- CrispEmbed CUDA: ~2-4ms (model fits entirely in GPU memory)
+- fastembed ONNX+CUDA: ~2-4ms (cuBLAS + graph optimization)
+- Likely on par, with CrispEmbed winning on server overhead
