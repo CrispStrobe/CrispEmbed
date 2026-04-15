@@ -245,7 +245,7 @@ try:
     runs = max(10, N // 5)
     t0 = time.perf_counter()
     for _ in range(runs):
-        model.encode(batch)
+        model.encode(batch)  # uses crispembed_encode_batch (single C call)
     elapsed = time.perf_counter() - t0
     print(f'  Batch:  {elapsed/runs*1000:.1f}ms/10texts  {runs*10/elapsed:.0f} texts/s')
 except Exception as e:

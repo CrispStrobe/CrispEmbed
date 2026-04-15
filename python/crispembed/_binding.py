@@ -54,6 +54,14 @@ class CrispEmbed:
         ]
         self._lib.crispembed_encode.restype = ctypes.POINTER(ctypes.c_float)
 
+        self._lib.crispembed_encode_batch.argtypes = [
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.c_char_p),  # const char ** texts
+            ctypes.c_int,                      # int n_texts
+            ctypes.POINTER(ctypes.c_int),      # int * out_n_dim
+        ]
+        self._lib.crispembed_encode_batch.restype = ctypes.POINTER(ctypes.c_float)
+
         self._lib.crispembed_free.argtypes = [ctypes.c_void_p]
         self._lib.crispembed_free.restype = None
 
@@ -85,24 +93,33 @@ class CrispEmbed:
         if single:
             texts = [texts]
 
-        results = []
-        for text in texts:
+        n = len(texts)
+
+        if n == 1:
+            # Single text: use crispembed_encode (avoids batch overhead)
             dim = ctypes.c_int(0)
             ptr = self._lib.crispembed_encode(
-                self._ctx, text.encode("utf-8"), ctypes.byref(dim)
+                self._ctx, texts[0].encode("utf-8"), ctypes.byref(dim)
             )
             if not ptr:
-                raise RuntimeError(f"Encoding failed for: {text[:50]}")
-            vec = np.ctypeslib.as_array(ptr, shape=(dim.value,)).copy()
-            results.append(vec)
+                raise RuntimeError(f"Encoding failed for: {texts[0][:50]}")
+            out = np.ctypeslib.as_array(ptr, shape=(dim.value,)).copy()
+            return out if single else out.reshape(1, -1)
 
-        out = np.stack(results)
-        return out[0] if single else out
+        # Batch: use crispembed_encode_batch (single C call, true batched inference)
+        c_texts = (ctypes.c_char_p * n)(*(t.encode("utf-8") for t in texts))
+        dim = ctypes.c_int(0)
+        ptr = self._lib.crispembed_encode_batch(
+            self._ctx, c_texts, n, ctypes.byref(dim)
+        )
+        if not ptr:
+            raise RuntimeError("Batch encoding failed")
+        out = np.ctypeslib.as_array(ptr, shape=(n * dim.value,)).copy()
+        return out.reshape(n, dim.value)
 
     @property
     def dim(self) -> int:
         """Embedding dimension."""
-        # Read from first encode or hparams
         dim = ctypes.c_int(0)
         ptr = self._lib.crispembed_encode(
             self._ctx, b"test", ctypes.byref(dim)
