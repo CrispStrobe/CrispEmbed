@@ -44,7 +44,7 @@ param(
     [switch]$SkipFastembed
 )
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 
 # Auto-detect model and binary
 $BinaryPaths = @(
@@ -151,19 +151,22 @@ Write-Host ""
 # --- CrispEmbed CLI benchmark ---
 Write-Host "--- CrispEmbed CLI ---" -ForegroundColor Yellow
 
-# Warmup (first call may download the model, so run twice)
+# Warmup (first call may download the model)
 Write-Host "  Loading model (may download on first run)..."
-$null = & $Binary -m $Model "warmup" 2>$null
-$warmup = & $Binary -m $Model $TestText 2>$null
+$null = & $Binary -m $Model "warmup" 2>&1
+$warmupOut = & $Binary -m $Model $TestText 2>&1
+# Filter: keep only stdout lines (embedding floats), skip stderr (model loading messages)
+$warmup = ($warmupOut | Where-Object { $_ -is [string] -and $_ -match '^\s*-?[0-9]' }) -join "`n"
 if (-not $warmup) {
-    Write-Host "  [ERROR] CLI produced no output. Check model path." -ForegroundColor Red
+    Write-Host "  [ERROR] CLI produced no embedding output. Check model." -ForegroundColor Red
+    Write-Host "  Try: $Binary -m $Model `"Hello world`"" -ForegroundColor Yellow
 } else {
     $dim = ($warmup.Trim() -split '\s+').Count
     Write-Host "  Dimension: $dim"
 
     $sw = [System.Diagnostics.Stopwatch]::StartNew()
     for ($i = 0; $i -lt $NRuns; $i++) {
-        $null = & $Binary -m $Model $TestText 2>$null
+        $null = & $Binary -m $Model $TestText 2>&1
     }
     $sw.Stop()
     $cliMs = $sw.ElapsedMilliseconds / $NRuns
