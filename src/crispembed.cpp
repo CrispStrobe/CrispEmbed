@@ -79,6 +79,18 @@ struct crispembed_context {
     std::vector<float> last_output;  // reused buffer
     std::vector<uint8_t> work_buf;   // reused graph compute workspace
     std::vector<uint8_t> graph_buf;  // reused graph context memory
+
+    // Cached encoder graph (reused when seq_len matches)
+    struct cached_graph {
+        int seq_len = 0;
+        ggml_context * ctx = nullptr;
+        ggml_cgraph * gf = nullptr;
+        ggml_cplan cplan = {};
+        ggml_tensor * tok_ids = nullptr;
+        ggml_tensor * pos_ids = nullptr;
+        ggml_tensor * type_ids = nullptr;
+        ggml_tensor * output = nullptr;
+    } enc_cache;
 };
 
 // ---------------------------------------------------------------------------
@@ -245,21 +257,21 @@ static bool load_model(crispembed_context * ctx, const char * path) {
 }
 
 // ---------------------------------------------------------------------------
-// Graph: build + compute one encoding pass
+// Graph: build once per sequence length, reuse across calls
 // ---------------------------------------------------------------------------
 
-static std::vector<float> encode_tokens(crispembed_context * ctx,
-                                         const embed_tokens & tokens) {
+static void build_encoder_graph(crispembed_context * ctx, int T) {
+    auto & cache = ctx->enc_cache;
     const auto & m = ctx->model;
     const auto & hp = m.hparams;
-    const int T = (int)tokens.ids.size();
     const int H = hp.n_embd;
     const int n_heads = hp.n_head;
     const int head_dim = H / n_heads;
     const float ln_eps = hp.layer_norm_eps;
 
-    // Allocate context for one-shot graph
-    bool use_sched = (ctx->sched != nullptr);
+    // Free previous graph context if it exists
+    if (cache.ctx) { ggml_free(cache.ctx); cache.ctx = nullptr; }
+
     int graph_size = std::max(2048, hp.n_layer * 30 + 256);
     size_t per_layer = (size_t)H * T * 4 * 20
                      + (size_t)T * T * n_heads * 4
@@ -276,7 +288,7 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
     ggml_context * gctx = ggml_init(ip);
     ggml_cgraph * gf = ggml_new_graph_custom(gctx, graph_size, false);
 
-    // Token embeddings via ggml_get_rows (supports quantized weights)
+    // Token embeddings via ggml_get_rows
     ggml_tensor * tok_ids = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T);
     ggml_set_name(tok_ids, "tok_ids");
     ggml_set_input(tok_ids);
@@ -288,7 +300,6 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
     ggml_tensor * pos_embd = ggml_get_rows(gctx, m.pos_embd, pos_ids);
     embd = ggml_add(gctx, embd, pos_embd);
 
-    // Add type embeddings if present
     ggml_tensor * type_ids_t = nullptr;
     if (m.type_embd) {
         type_ids_t = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T);
@@ -298,7 +309,6 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
         embd = ggml_add(gctx, embd, type_embd);
     }
 
-    // Embedding LayerNorm
     ggml_tensor * cur = embd;
     if (m.embd_ln_w) {
         cur = ggml_norm(gctx, cur, ln_eps);
@@ -306,52 +316,41 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
         cur = ggml_add(gctx, cur, m.embd_ln_b);
     }
 
-    // Transformer layers (BERT post-LN architecture):
-    //   attn_out = MHA(cur)
-    //   cur = LN1(cur + attn_out)     ← LayerNorm AFTER residual add
-    //   ffn_out = FFN(cur)
-    //   cur = LN2(cur + ffn_out)      ← LayerNorm AFTER residual add
     for (int il = 0; il < hp.n_layer; il++) {
         const auto & L = m.layers[il];
 
-        // Self-attention
         ggml_tensor * Q = ggml_add(gctx, ggml_mul_mat(gctx, L.q_w, cur), L.q_b);
         ggml_tensor * K = ggml_add(gctx, ggml_mul_mat(gctx, L.k_w, cur), L.k_b);
         ggml_tensor * V = ggml_add(gctx, ggml_mul_mat(gctx, L.v_w, cur), L.v_b);
 
-        // Multi-head attention
+        // Reshape for multi-head: [H, T] -> [head_dim, n_heads, T]
         Q = ggml_reshape_3d(gctx, Q, head_dim, n_heads, T);
         K = ggml_reshape_3d(gctx, K, head_dim, n_heads, T);
         V = ggml_reshape_3d(gctx, V, head_dim, n_heads, T);
-        Q = ggml_cont(gctx, ggml_permute(gctx, Q, 0, 2, 1, 3));
-        K = ggml_cont(gctx, ggml_permute(gctx, K, 0, 2, 1, 3));
-        V = ggml_cont(gctx, ggml_permute(gctx, V, 0, 2, 1, 3));
 
+        // Flash attention: fused QK^T*scale + softmax + @V
+        // Input:  q/k/v [head_dim, n_heads, T] -> permuted to [head_dim, T, n_heads]
+        // Output: [head_dim, n_heads, T] (already permuted for us)
         float scale = 1.0f / sqrtf((float)head_dim);
-        ggml_tensor * scores = ggml_mul_mat(gctx, K, Q);
-        scores = ggml_scale(gctx, scores, scale);
-        scores = ggml_soft_max(gctx, scores);
-
-        ggml_tensor * V_perm = ggml_cont(gctx, ggml_permute(gctx, V, 1, 0, 2, 3));
-        ggml_tensor * attn = ggml_mul_mat(gctx, V_perm, scores);
-        attn = ggml_cont(gctx, ggml_permute(gctx, attn, 0, 2, 1, 3));
+        ggml_tensor * Qp = ggml_permute(gctx, Q, 0, 2, 1, 3);  // [hd, T, nh]
+        ggml_tensor * Kp = ggml_permute(gctx, K, 0, 2, 1, 3);
+        ggml_tensor * Vp = ggml_permute(gctx, V, 0, 2, 1, 3);
+        ggml_tensor * attn = ggml_flash_attn_ext(gctx, Qp, Kp, Vp,
+                                                   nullptr, scale, 0.0f, 0.0f);
+        // Result is [head_dim, n_heads, T] -> reshape to [H, T]
         attn = ggml_reshape_2d(gctx, attn, H, T);
 
-        // Output projection
         attn = ggml_add(gctx, ggml_mul_mat(gctx, L.o_w, attn), L.o_b);
 
-        // Post-attention: residual add → LayerNorm (BERT post-LN)
         cur = ggml_add(gctx, cur, attn);
         cur = ggml_norm(gctx, cur, ln_eps);
         cur = ggml_mul(gctx, cur, L.ln1_w);
         cur = ggml_add(gctx, cur, L.ln1_b);
 
-        // FFN
         ggml_tensor * ffn = ggml_add(gctx, ggml_mul_mat(gctx, L.fc1_w, cur), L.fc1_b);
         ffn = ggml_gelu(gctx, ffn);
         ffn = ggml_add(gctx, ggml_mul_mat(gctx, L.fc2_w, ffn), L.fc2_b);
 
-        // Post-FFN: residual add → LayerNorm (BERT post-LN)
         cur = ggml_add(gctx, cur, ffn);
         cur = ggml_norm(gctx, cur, ln_eps);
         cur = ggml_mul(gctx, cur, L.ln2_w);
@@ -362,37 +361,64 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
     ggml_set_output(cur);
     ggml_build_forward_expand(gf, cur);
 
-    // Compute
-    // Set input tensor data (before graph compute)
+    // Pre-compute the execution plan (thread allocation, work size)
+    struct ggml_cplan cplan = ggml_graph_plan(gf, ctx->n_threads, NULL);
+    if (cplan.work_size > 0) {
+        if (ctx->work_buf.size() < cplan.work_size)
+            ctx->work_buf.resize(cplan.work_size);
+        cplan.work_data = ctx->work_buf.data();
+    }
+
+    // Store in cache
+    cache.seq_len = T;
+    cache.ctx = gctx;
+    cache.gf = gf;
+    cache.cplan = cplan;
+    cache.tok_ids = tok_ids;
+    cache.pos_ids = pos_ids;
+    cache.type_ids = type_ids_t;
+    cache.output = cur;
+}
+
+static std::vector<float> encode_tokens(crispembed_context * ctx,
+                                         const embed_tokens & tokens) {
+    const auto & m = ctx->model;
+    const auto & hp = m.hparams;
+    const int T = (int)tokens.ids.size();
+    const int H = hp.n_embd;
+
+    // Build or reuse cached graph
+    if (ctx->enc_cache.seq_len != T) {
+        build_encoder_graph(ctx, T);
+    }
+    auto & cache = ctx->enc_cache;
+
+    // Set input data (fast — just memcpy into existing tensors)
     {
-        int32_t * tok_data = (int32_t *)tok_ids->data;
-        int32_t * pos_data = (int32_t *)pos_ids->data;
+        int32_t * tok_data = (int32_t *)cache.tok_ids->data;
+        int32_t * pos_data = (int32_t *)cache.pos_ids->data;
         for (int t = 0; t < T; t++) {
             tok_data[t] = tokens.ids[t];
             pos_data[t] = t + ctx->pos_offset;
         }
-        if (type_ids_t) {
-            int32_t * type_data = (int32_t *)type_ids_t->data;
+        if (cache.type_ids) {
+            int32_t * type_data = (int32_t *)cache.type_ids->data;
             for (int t = 0; t < T; t++)
                 type_data[t] = tokens.type_ids[t];
         }
     }
 
-    if (use_sched) {
-        // Backend scheduler dispatch (GPU if available)
-        ggml_backend_sched_graph_compute(ctx->sched, gf);
+    // Compute (reuses pre-computed plan)
+    if (ctx->sched) {
+        ggml_backend_sched_graph_compute(ctx->sched, cache.gf);
     } else {
-        struct ggml_cplan cplan = ggml_graph_plan(gf, ctx->n_threads, NULL);
-        if (cplan.work_size > 0) {
-            if (ctx->work_buf.size() < cplan.work_size)
-                ctx->work_buf.resize(cplan.work_size);
-            cplan.work_data = ctx->work_buf.data();
-        }
-        ggml_graph_compute(gf, &cplan);
+        // Ensure work buffer pointer is current (may have been reallocated)
+        cache.cplan.work_data = ctx->work_buf.data();
+        ggml_graph_compute(cache.gf, &cache.cplan);
     }
 
     // Read encoder output [H, T]
-    ggml_tensor * out = ggml_graph_get_tensor(gf, "encoder_out");
+    ggml_tensor * out = cache.output;
     float * out_data = (float *)out->data;
 
     // Pooling — method determined by model metadata or default
@@ -439,7 +465,6 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
     norm = sqrtf(std::max(norm, 1e-12f));
     for (int h = 0; h < dim; h++) pooled[h] /= norm;
 
-    ggml_free(gctx);
     return pooled;
 }
 
@@ -616,6 +641,7 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
 
 extern "C" void crispembed_free(crispembed_context * ctx) {
     if (!ctx) return;
+    if (ctx->enc_cache.ctx) { ggml_free(ctx->enc_cache.ctx); ctx->enc_cache.ctx = nullptr; }
     core_gguf::free_weights(ctx->wl);
     if (ctx->sched) {
         ggml_backend_sched_free(ctx->sched);
