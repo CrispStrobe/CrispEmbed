@@ -26,8 +26,16 @@ Supports BERT, XLM-R, Qwen3, and Gemma3 embedding models with GPU acceleration
 
 Q8_0 = all PASS (cos > 0.99). Q4_K = most PASS; `--` = use Q5_K or Q8_0 for this model.
 
-**Server throughput**: ~28 texts/sec (gte-small Q8_0, 4 threads, CPU).
-See [PERFORMANCE.md](PERFORMANCE.md) for full benchmarks.
+**Performance** (Apple M1, Metal):
+
+| Engine | Single text | Batch (10) |
+|--------|------------|------------|
+| **CrispEmbed Python** (ctypes) | **3.6 ms** / 280 t/s | **12.7 ms** / **787 t/s** |
+| fastembed-rs (Rust ONNX) | 3.8 ms / 263 t/s | 18.9 ms / 528 t/s |
+| HuggingFace (PyTorch) | 12.2 ms / 82 t/s | 29.8 ms / 335 t/s |
+| CrispEmbed Server (HTTP) | 21.3 ms / 46 t/s | 32.9 ms / 303 t/s |
+
+Model: all-MiniLM-L6-v2. See [PERFORMANCE.md](PERFORMANCE.md) for full multi-model benchmarks.
 
 ## Quick start
 
@@ -72,8 +80,10 @@ cmake -S . -B build -DGGML_CUDA=ON && cmake --build build -j
 # With Vulkan (cross-platform GPU)
 cmake -S . -B build -DGGML_VULKAN=ON && cmake --build build -j
 
-# With Metal (macOS GPU)
-cmake -S . -B build -DGGML_METAL=ON && cmake --build build -j
+# macOS with Metal (recommended)
+./build-macos.sh              # Metal + Accelerate + embedded shaders
+./build-macos.sh --cpu        # CPU only, no Metal
+./build-macos.sh --shared     # Also build shared lib for Python
 ```
 
 ### Windows
@@ -135,13 +145,32 @@ Embedding tables quantized to Q8_0 even in Q4_K mode (quality-sensitive).
 
 ## Python
 
+Requires the shared library (`--shared` flag or `-DCRISPEMBED_BUILD_SHARED=ON`).
+
 ```python
 from crispembed import CrispEmbed
 
 model = CrispEmbed("all-MiniLM-L6-v2.gguf")
+
+# Single text
+vec = model.encode("Hello world")      # shape (384,)
+
+# Batch — single C call, true batched Metal/GPU inference
 vectors = model.encode(["Hello world", "Goodbye world"])
 print(vectors.shape)  # (2, 384)
 ```
+
+## Benchmarking
+
+```bash
+./benchmark.sh                          # single model, all engines
+./benchmark.sh --multi                  # 3 models, all engines
+./benchmark.sh -n 100 --skip-fastembed  # CrispEmbed + HF only, 100 runs
+```
+
+Compares CrispEmbed (CLI, Python ctypes, HTTP server) against HuggingFace
+sentence-transformers, FastEmbed (ONNX), and fastembed-rs (Rust ONNX).
+Auto-creates a `.bench-venv` for Python dependencies.
 
 ## Architecture
 
