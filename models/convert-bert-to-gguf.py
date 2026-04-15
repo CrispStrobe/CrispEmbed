@@ -142,10 +142,22 @@ def main():
     vocab = tokenizer.get_vocab()
     id_to_token = {v: k for k, v in vocab.items()}
     tokens = [id_to_token.get(i, f"[UNK_{i}]") for i in range(config.vocab_size)]
-    writer.add_array("tokenizer.ggml.tokens", tokens)
 
     # Detect tokenizer type
     is_sentencepiece = hasattr(tokenizer, 'sp_model') or config.vocab_size > 100000
+
+    # Ollama's WordPiece tokenizer expects phantom-space tokens:
+    # "hello" -> "▁hello", "##ing" -> "ing", "[CLS]" -> "[CLS]"
+    if ollama_mode and not is_sentencepiece:
+        for i, tok in enumerate(tokens):
+            if tok.startswith("[") and tok.endswith("]"):
+                pass
+            elif tok.startswith("##"):
+                tokens[i] = tok[2:]
+            else:
+                tokens[i] = "\u2581" + tok
+
+    writer.add_array("tokenizer.ggml.tokens", tokens)
 
     if is_sentencepiece:
         if ollama_mode:
