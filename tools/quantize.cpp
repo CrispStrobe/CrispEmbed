@@ -119,14 +119,21 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // - Token/position/type embeddings: only Q8_0/F16, skip aggressive quants
         std::string sname(name);
         bool is_embd = sname.find("embd") != std::string::npos ||
-                        sname.find("embed") != std::string::npos;
+                        sname.find("embed") != std::string::npos ||
+                        sname.find("token_types") != std::string::npos;
+        // Skip tiny embedding tables (token_types has only 2 rows)
+        // — quantizing these breaks Ollama's binary ops (f32 + q8_0)
+        bool is_tiny_embd = (t->ne[1] <= 4) &&
+                            (sname.find("token_types") != std::string::npos ||
+                             sname.find("type_embd") != std::string::npos);
         bool quantize = ggml_is_quantized(qtype) &&
                         (type == GGML_TYPE_F32 || type == GGML_TYPE_F16) &&
                         (ggml_n_dims(t) == 2) &&
                         (sname.find("weight") != std::string::npos ||
                          sname.find(".w") != std::string::npos ||
                          sname.find("_w") != std::string::npos) &&
-                        (sname.find("norm") == std::string::npos);
+                        (sname.find("norm") == std::string::npos) &&
+                        !is_tiny_embd;
         const int64_t ncols = t->ne[0];
         ggml_type qtype_used = qtype;
 
