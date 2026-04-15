@@ -55,7 +55,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
 
     // Load with no_alloc=true so we can read tensor data from file directly
     struct ggml_context * ctx_in_ggml = nullptr;
-    struct gguf_init_params params = { .no_alloc = true, .ctx = &ctx_in_ggml };
+    struct gguf_init_params params = { /*no_alloc*/ true, /*ctx*/ &ctx_in_ggml };
     struct gguf_context * ctx_in = gguf_init_from_file(fname_inp.c_str(), params);
     if (!ctx_in || !ctx_in_ggml) {
         fprintf(stderr, "Failed to load model from '%s'\n", fname_inp.c_str());
@@ -161,7 +161,11 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             }
         }
 
-        fseek(fin, offset, SEEK_SET);
+#ifdef _WIN32
+        _fseeki64(fin, (int64_t)offset, SEEK_SET);
+#else
+        fseeko(fin, (off_t)offset, SEEK_SET);
+#endif
 
         if (quantize) {
             printf("quantizing to %s... ", ggml_type_name(qtype_used));

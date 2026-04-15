@@ -564,7 +564,8 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx,
     }
 
     if (ctx->is_decoder && ctx->dec) {
-        ctx->last_output = decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads);
+        ctx->last_output = decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads,
+                                                  &ctx->graph_buf, &ctx->work_buf);
     } else {
         ctx->last_output = encode_tokens(ctx, tokens);
     }

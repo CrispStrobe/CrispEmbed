@@ -89,7 +89,9 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
 
 std::vector<float> decoder_encode_tokens(
     const dec_model & m, ggml_backend_t backend,
-    const embed_tokens & tokens, int n_threads) {
+    const embed_tokens & tokens, int n_threads,
+    std::vector<uint8_t> * graph_buf,
+    std::vector<uint8_t> * work_buf) {
 
     const int T = (int)tokens.ids.size();
     const int H = m.n_embd;
@@ -112,7 +114,10 @@ std::vector<float> decoder_encode_tokens(
                + ggml_graph_overhead_custom(graph_size, false)
                + 64 * 1024 * 1024;
 
-    std::vector<uint8_t> buf(mem);
+    // Use reusable buffer if provided, otherwise local
+    std::vector<uint8_t> local_buf;
+    std::vector<uint8_t> & buf = graph_buf ? *graph_buf : local_buf;
+    if (buf.size() < mem) buf.resize(mem);
     ggml_init_params ip = { mem, buf.data(), false };
     ggml_context * gctx = ggml_init(ip);
     ggml_cgraph * gf = ggml_new_graph_custom(gctx, graph_size, false);
@@ -274,10 +279,11 @@ std::vector<float> decoder_encode_tokens(
 
     // --- Compute ---
     struct ggml_cplan cplan = ggml_graph_plan(gf, n_threads, NULL);
-    std::vector<uint8_t> work;
+    std::vector<uint8_t> local_work;
+    std::vector<uint8_t> & wk = work_buf ? *work_buf : local_work;
     if (cplan.work_size > 0) {
-        work.resize(cplan.work_size);
-        cplan.work_data = work.data();
+        if (wk.size() < cplan.work_size) wk.resize(cplan.work_size);
+        cplan.work_data = wk.data();
     }
     ggml_graph_compute(gf, &cplan);
 

@@ -52,4 +52,6 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
 
 std::vector<float> decoder_encode_tokens(
     const dec_model & m, ggml_backend_t backend,
-    const embed_tokens & tokens, int n_threads);
+    const embed_tokens & tokens, int n_threads,
+    std::vector<uint8_t> * graph_buf = nullptr,
+    std::vector<uint8_t> * work_buf = nullptr);
