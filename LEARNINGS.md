@@ -243,6 +243,46 @@ the model weights (ggml_backend_alloc_ctx_tensors) so it works on GPU.
 On CPU: ~0.5ms savings (15.3ms vs 16.8ms for MiniLM).
 On GPU: minor savings (kernel launch overhead reduction).
 
+## Optimization experiment results (April 2026)
+
+| Optimization | CPU Impact | GPU Impact | Verdict |
+|---|---|---|---|
+| QKV weight fusion (1 matmul vs 3) | 15.3ms vs 17.0ms (**+11%**) | minor | **Keep** — matmul reduction wins |
+| Flash attention (fused QKV attn) | 16.8→15.3ms | significant | **Keep** |
+| Scheduler reservation (bucket T) | no change | may help | Keep (no cost) |
+| GGML_LLAMAFILE | 15.3→14.7ms (**+4%**) | N/A | **Enable by default** |
+| AVX512 (if CPU supports) | 15.3→14.4ms (**+6%**) | N/A | Enable if available |
+| F16 model weights | 15.3→17.7ms (**-14%**) | may help (tensor cores) | **Skip on CPU** |
+| Removing ggml_cont (no QKV fusion) | 15.3→17.0ms (**-10%**) | N/A | Don't remove |
+| True batched graph (4D flash attn) | slower on CPU | should help | GPU only |
+
+### Why we can't easily match HF PyTorch
+
+1. **Graph rebuild cost**: ggml rebuilds the graph from scratch every call (~1ms).
+   PyTorch JIT-compiles and caches the execution plan.
+2. **No CPU operator fusion**: ggml CPU executes each op separately (separate memory pass
+   for norm, mul, add). ORT/PyTorch fuse these into single kernels.
+3. **No persistent CUDA graphs**: PyTorch can capture and replay GPU command streams.
+   ggml has `GGML_CUDA_GRAPHS` but it's designed for llama.cpp's specific graph topology.
+4. **Batch matmul**: PyTorch's cuBLAS wrapper handles batched matmul natively.
+   Our 4D reshape + flash attention adds overhead vs native batch support.
+
+### Practical CPU performance ceiling
+
+For MiniLM (22M params, 6 layers, 384d) on 4-thread CPU:
+- **15.3ms** with all optimizations (QKV fusion + flash attn + llamafile)
+- **~14ms** theoretical minimum (pure matmul compute time)
+- **~1ms** graph rebuild overhead we can't eliminate
+- HF PyTorch on same CPU: **54ms** (CrispEmbed is **3.5x faster on CPU**)
+
+### Practical GPU performance ceiling
+
+For MiniLM on RTX A1000 (budget laptop GPU):
+- **10.6ms** current (with all optimizations)
+- **~5ms** theoretical minimum (kernel launch overhead + small matrix underutilization)
+- HF PyTorch: **9.5ms** (they have better GPU batching)
+- Gap is ~1ms — likely kernel launch overhead from ggml's per-op dispatch
+
 ## Windows build
 
 Windows users often forget `--recursive` when cloning. The CMakeLists.txt now
