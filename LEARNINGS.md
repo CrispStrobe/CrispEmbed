@@ -151,3 +151,36 @@ The BERT encoder must use `ggml_get_rows` (ggml graph op) for embedding table
 lookup, not manual `ggml_backend_tensor_get` with float pointer arithmetic.
 `ggml_get_rows` handles dequantization internally and works with any tensor type.
 Manual CPU-side extraction assumes F32 layout and crashes on quantized models.
+
+## Server performance: buffer reuse
+
+The biggest server-mode optimization is reusing `graph_buf` and `work_buf` across
+encode calls. Without this, every request allocates ~50-200MB (graph context +
+compute workspace), causing 3x overhead from malloc/free.
+
+With buffer reuse: gte-small goes from 8.8 to 27.8 texts/sec (3.2x improvement).
+
+## BLAS/MKL for embedding models
+
+BLAS (OpenBLAS/MKL) provides minimal benefit for embedding inference because:
+- Quantized kernels (Q8_0/Q4_K) use ggml's SIMD paths, not BLAS
+- BERT encoder matrices are moderate-sized (384x384 to 1024x4096)
+- BLAS overhead dominates for small matrices
+
+For CPU speed: use Q8_0 quantization. For GPU: build with `-DGGML_CUDA=ON` or
+`-DGGML_VULKAN=ON` — the `ggml_backend_sched` dispatcher handles offloading.
+
+## ggml_backend_sched with CPU-only
+
+When using `ggml_backend_sched` in CPU-only mode, calling it repeatedly with
+different graphs causes segfaults because the scheduler holds stale tensor
+references from freed graph contexts. Solution: only create the scheduler when
+a GPU backend is detected (`!ggml_backend_is_cpu(backend)`). For CPU-only,
+direct `ggml_graph_compute` with a persistent work buffer is faster anyway.
+
+## Windows build
+
+Windows users often forget `--recursive` when cloning. The CMakeLists.txt now
+checks for `ggml/CMakeLists.txt` existence and prints a helpful error message.
+Build scripts (`build-windows.bat`, `build-vulkan.bat`, `build-cuda.bat`) auto-
+detect VS2022 and Vulkan/CUDA SDKs.

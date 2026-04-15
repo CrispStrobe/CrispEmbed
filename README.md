@@ -1,8 +1,8 @@
 # CrispEmbed
 
 Lightweight text embedding inference via ggml. No Python runtime, no ONNX.
-Supports BERT encoder, XLM-R encoder, AND decoder (Qwen3/Gemma3) embedding models.
-Includes a C++ quantizer for Q4_K/Q5_K/Q8_0.
+Supports BERT, XLM-R, Qwen3, and Gemma3 embedding models with GPU acceleration
+(CUDA/Vulkan/Metal) and BLAS support (OpenBLAS/MKL).
 
 ## Status
 
@@ -16,7 +16,7 @@ Includes a C++ quantizer for Q4_K/Q5_K/Q8_0.
 | multilingual-e5-small | XLM-R | 384 | 1.000000 | 0.9999 | 0.99 |
 | PIXIE-Rune-v1.0 | XLM-R | 1024 | 0.999993 | 0.9991 | 0.95 |
 | arctic-embed-l-v2 | XLM-R | 1024 | 0.999993 | 0.9989 | 0.95 |
-| Octen-Embedding-0.6B | Qwen3 | 1024 | 0.999891 | 0.9995 | 0.96 |
+| Octen-Embedding-0.6B | Qwen3 | 1024 | 0.999891 | 0.9995 | 0.97 |
 | F2LLM-v2-0.6B | Qwen3 | 1024 | 0.999420 | 0.9952 | -- |
 | Jina v5 Nano | Qwen3 | 768 | 0.999020 | 0.9983 | -- |
 | Jina v5 Small | Qwen3 | 1024 | 0.999941 | 0.9997 | 0.97 |
@@ -26,54 +26,112 @@ Includes a C++ quantizer for Q4_K/Q5_K/Q8_0.
 
 Q8_0 = all PASS (cos > 0.99). Q4_K = most PASS; `--` = use Q5_K or Q8_0 for this model.
 
-**Server + Python wrapper** -- working with OpenAI-compatible API.
+**Server throughput**: ~28 texts/sec (gte-small Q8_0, 4 threads, CPU).
+See [PERFORMANCE.md](PERFORMANCE.md) for full benchmarks.
 
 ## Quick start
 
 ```bash
-# Build
+# Clone with submodule
+git clone --recursive https://github.com/CrispStrobe/CrispEmbed
+cd CrispEmbed
+
+# Build (CPU)
 cmake -S . -B build
 cmake --build build -j
-
-# Convert a BERT model
-python models/convert-bert-to-gguf.py \
-    --model sentence-transformers/all-MiniLM-L6-v2 \
-    --output all-MiniLM-L6-v2.gguf
-
-# Convert a decoder model (Qwen3/Gemma3)
-python models/convert-decoder-embed-to-gguf.py \
-    --model Octen/Octen-Embedding-0.6B \
-    --output octen-0.6b.gguf
-
-# Quantize
-./build/crispembed-quantize octen-0.6b.gguf octen-0.6b-q4_k.gguf q4_k
-./build/crispembed-quantize octen-0.6b.gguf octen-0.6b-q8_0.gguf q8_0
 
 # Encode text
 ./build/crispembed -m model.gguf "Hello world"
 
-# JSON output
-./build/crispembed -m model.gguf --json "Hello world" "Goodbye world"
+# Matryoshka truncation (e.g. 128 dims from a 384-dim model)
+./build/crispembed -m model.gguf -d 128 "Hello world"
 
-# Start server
+# Start server (model loaded once, fast repeated queries)
 ./build/crispembed-server -m model.gguf --port 8080
 curl -X POST http://localhost:8080/embed \
     -d '{"texts": ["Hello world"]}'
 ```
 
+## Building
+
+### Linux / macOS
+
+```bash
+# CPU only (default)
+cmake -S . -B build && cmake --build build -j
+
+# With OpenBLAS acceleration
+cmake -S . -B build -DGGML_BLAS=ON && cmake --build build -j
+
+# With Intel MKL
+cmake -S . -B build -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=Intel10_64lp
+
+# With CUDA (NVIDIA GPU)
+cmake -S . -B build -DGGML_CUDA=ON && cmake --build build -j
+
+# With Vulkan (cross-platform GPU)
+cmake -S . -B build -DGGML_VULKAN=ON && cmake --build build -j
+
+# With Metal (macOS GPU)
+cmake -S . -B build -DGGML_METAL=ON && cmake --build build -j
+```
+
+### Windows
+
+Requires Visual Studio 2022 Build Tools + Ninja.
+
+```batch
+:: CPU build
+build-windows.bat
+
+:: Vulkan GPU build (needs Vulkan SDK)
+build-vulkan.bat
+
+:: CUDA GPU build (needs CUDA Toolkit)
+build-cuda.bat
+```
+
+If you get "ggml does not contain a CMakeLists.txt", run:
+```
+git submodule update --init --recursive
+```
+
+### Dependencies
+
+- **Required**: C++17 compiler, CMake 3.14+
+- **Optional**: OpenBLAS (`apt install libopenblas-dev`), Intel MKL, CUDA Toolkit, Vulkan SDK
+
+## Converting models
+
+```bash
+# BERT / XLM-R encoder models
+pip install torch transformers gguf
+python models/convert-bert-to-gguf.py \
+    --model sentence-transformers/all-MiniLM-L6-v2 \
+    --output all-MiniLM-L6-v2.gguf
+
+# Qwen3 / Gemma3 decoder models
+python models/convert-decoder-embed-to-gguf.py \
+    --model Octen/Octen-Embedding-0.6B \
+    --output octen-0.6b.gguf
+
+# Quantize (Q8_0 recommended, Q4_K for max compression)
+./build/crispembed-quantize model.gguf model-q8_0.gguf q8_0
+./build/crispembed-quantize model.gguf model-q4_k.gguf q4_k
+```
+
+Pre-converted models: [HuggingFace cstr/](https://huggingface.co/cstr)
+
 ## Quantization
 
-The C++ quantizer (`crispembed-quantize`) supports all ggml quant types:
+| Type | Compression | Quality (cos vs F32) | Notes |
+|------|-------------|---------------------|-------|
+| Q8_0 | ~3.8x | >0.995 | Recommended default |
+| Q5_K | ~5x | >0.98 | Good balance |
+| Q4_K | ~5.5x | >0.95 | Max compression |
+| Q6_K | ~4.5x | >0.99 | Premium quality |
 
-| Type | Compression | Quality | Notes |
-|------|-------------|---------|-------|
-| Q8_0 | ~3.8x | Excellent (cos>0.995) | Recommended default |
-| Q5_K | ~5x | Very good | Good balance |
-| Q4_K | ~7x | Good (cos>0.95) | Max compression, some models degrade |
-| Q6_K | ~4.5x | Near-lossless | Premium quality |
-
-Embedding tables are preserved at F32 for all quant types (they're precision-sensitive).
-K-quants require 256-aligned row widths; the tool auto-falls back to Q4_0/Q5_0 for smaller tensors.
+Embedding tables quantized to Q8_0 even in Q4_K mode (quality-sensitive).
 
 ## Python
 
@@ -96,18 +154,15 @@ print(vectors.shape)  # (2, 384)
 
 **Qwen3 decoder** (Octen, F2LLM, Jina v5, Harrier-0.6B, Qwen3-Embed):
 - Token embeddings + RoPE -> RMSNorm + GQA with causal mask + SwiGLU -> Last-token pooling
-- GPT-2 BPE tokenizer
 
 **Gemma3 decoder** (Harrier-270M):
 - Token embeddings * sqrt(H) + RoPE -> Gemma3 RMSNorm(1+w) + GQA + GeGLU -> Last-token pooling
-- SentencePiece BPE tokenizer, BOS/EOS tokens
 
-All via ggml graphs. Quantization supported via `crispembed-quantize`.
-See [PLAN.md](PLAN.md) for the full roadmap.
+All via ggml graphs with GPU dispatch (ggml_backend_sched).
+See [PLAN.md](PLAN.md), [LEARNINGS.md](LEARNINGS.md), [PERFORMANCE.md](PERFORMANCE.md).
 
 ## Credits
 
 - [ggml](https://github.com/ggml-org/ggml) -- inference engine
-- [CrispASR](https://github.com/CrispStrobe/CrispASR) -- shared core (gguf_loader, bpe.h, attention patterns)
-- [llama.cpp](https://github.com/ggerganov/llama.cpp) -- SentencePiece tokenizer reference
+- [CrispASR](https://github.com/CrispStrobe/CrispASR) -- shared core (gguf_loader, bpe.h)
 - [sentence-transformers](https://www.sbert.net/) -- ground-truth validation

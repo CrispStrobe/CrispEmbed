@@ -6,13 +6,16 @@ Benchmark results on Intel Xeon Skylake (4 threads), CPU-only, no GPU.
 
 Single-text encoding latency via HTTP server (`/embed` endpoint).
 
-| Model | Quant | Params | Dim | Avg (ms) | P50 (ms) | P95 (ms) | Texts/s |
-|-------|-------|--------|-----|----------|----------|----------|---------|
-| gte-small | F32 | 33M | 384 | 116 | 114 | 145 | 8.8 |
-| gte-small | Q8_0 | 33M | 384 | 116 | 117 | 128 | 8.7 |
-| harrier-270m | Q8_0 | 270M | 640 | 209 | 211 | 231 | 5.1 |
-| octen-0.6b | Q8_0 | 600M | 1024 | 369 | 356 | 458 | 2.7 |
-| octen-0.6b | Q4_K | 600M | 1024 | 346 | 346 | 406 | 2.9 |
+| Model | Quant | Params | Dim | Avg (ms) | P50 (ms) | Texts/s |
+|-------|-------|--------|-----|----------|----------|---------|
+| gte-small | F32 | 33M | 384 | 36 | 35 | 27.8 |
+| gte-small | Q8_0 | 33M | 384 | 36 | 35 | 27.8 |
+| harrier-270m | Q8_0 | 270M | 640 | 209 | 211 | 5.1 |
+| octen-0.6b | Q8_0 | 600M | 1024 | 369 | 356 | 2.7 |
+| octen-0.6b | Q4_K | 600M | 1024 | 346 | 346 | 2.9 |
+
+Note: gte-small throughput improved 3.2x (8.8 -> 27.8 texts/s) after graph buffer
+reuse optimization. Decoder models not yet optimized with buffer reuse.
 
 ## Comparison with HuggingFace sentence-transformers
 
@@ -86,6 +89,24 @@ Approximate runtime memory (RSS) during server mode:
 | octen-0.6b | Q4_K | 397 MB | ~550 MB |
 
 RSS is approximately model size + ~50-150 MB for graph workspace and tokenizer.
+
+## BLAS Acceleration
+
+Tested with OpenBLAS 0.3.26 on Intel Xeon Skylake, 4 threads.
+
+| Model | Quant | no-BLAS (ms) | BLAS (ms) | Speedup |
+|-------|-------|-------------|-----------|---------|
+| gte-small | F32 | 114 | 123 | 0.9x |
+| gte-small | Q8_0 | 116 | 116 | 1.0x |
+| octen-0.6b | Q8_0 | 422 | 410 | 1.0x |
+
+BLAS provides minimal benefit for embedding models because:
+- Quantized (Q8_0/Q4_K) kernels use ggml's SIMD-optimized paths, not BLAS
+- Encoder models have moderate matrix sizes (not large enough for BLAS overhead to pay off)
+- BLAS helps primarily with large F32 matmul (e.g. 4096x4096+)
+
+**Recommendation**: Use Q8_0 quantization for CPU speed, not BLAS. BLAS is only
+useful if you must run F32 models for exact precision.
 
 ## Notes
 

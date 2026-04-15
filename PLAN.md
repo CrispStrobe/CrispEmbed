@@ -97,10 +97,15 @@ float[embed_dim] output vector
 
 ### Phase 4 — Optimisation
 
-- [ ] GPU graph dispatch (reuse CrispASR ggml_backend_sched pattern)
+- [x] GPU graph dispatch via ggml_backend_sched (encoder + decoder)
+- [x] Matryoshka dimension truncation (-d N flag)
+- [x] Graph/work buffer reuse (3.2x server throughput improvement)
+- [x] BLAS/MKL build support (cmake -DGGML_BLAS=ON)
+- [x] Windows build scripts (build-windows.bat, build-vulkan.bat, build-cuda.bat)
+- [x] C++ quantizer with Q4_K/Q5_K/Q6_K (tools/quantize.cpp)
+- [ ] True batched graph (single compute for multiple texts)
 - [ ] KV cache for prefix-shared batches
-- [ ] SIMD-optimised L2 norm + cosine similarity
-- [ ] Matryoshka dimension truncation support
+- [ ] Reranker model support
 
 ## Shared code with CrispASR
 
@@ -178,9 +183,18 @@ CrispEmbed/
 | Qwen3 decoder | GPT-2 BPE | RMSNorm, SwiGLU, RoPE, GQA, causal mask | Octen, F2LLM, Jina, Harrier-0.6B |
 | Gemma3 decoder | SentencePiece BPE | Gemma RMSNorm(1+w), GeGLU, embed*sqrt(H), extra norms | Harrier-270M |
 
-### Optimization next steps
+### Optimizations completed
 
-- Add ggml_backend_sched path for GPU offload
-- Quantize all models (Q4_K/Q8_0) and benchmark vs ONNX fastembed
-- Batch encoding (multi-text parallelism)
-- Matryoshka dimension truncation support
+- ggml_backend_sched GPU dispatch (encoder + decoder full-graph)
+- All 13 models quantized (Q8_0 + Q4_K) and uploaded to HuggingFace
+- Graph/work buffer reuse: 27.8 texts/s server throughput (gte-small)
+- Matryoshka dimension truncation via -d N flag
+- BLAS/MKL/CUDA/Vulkan/Metal build support
+- Windows build scripts
+- C++ quantizer with K-quant fallback chain
+
+### Remaining
+
+- True batched graph (padding + [H, T, B] dimension)
+- KV cache for prefix-shared decoder batches
+- Reranker model support from fastembed-rs list
