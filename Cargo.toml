@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "crispembed-sys",
+    "crispembed",
+]
+resolver = "2"

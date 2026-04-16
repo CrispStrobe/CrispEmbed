@@ -99,3 +99,58 @@ embed_tokens WordPieceTokenizer::encode(const std::string & text) const {
     return result;
 }
 
+embed_tokens WordPieceTokenizer::encode_pair(const std::string & text_a,
+                                              const std::string & text_b) const {
+    // Tokenize a string to raw subword ids (no special tokens, no padding)
+    auto tokenize_raw = [&](const std::string & text) -> std::vector<int32_t> {
+        std::vector<std::string> words;
+        std::string cur;
+        for (size_t i = 0; i < text.size(); i++) {
+            unsigned char c = text[i];
+            if (std::isspace(c)) {
+                if (!cur.empty()) { words.push_back(cur); cur.clear(); }
+            } else if (std::ispunct(c)) {
+                if (!cur.empty()) { words.push_back(cur); cur.clear(); }
+                words.push_back(std::string(1, (char)c));
+            } else {
+                cur += (char)std::tolower(c);
+            }
+        }
+        if (!cur.empty()) words.push_back(cur);
+
+        std::vector<int32_t> ids;
+        for (const auto & w : words)
+            for (int id : wordpiece(w)) ids.push_back(id);
+        return ids;
+    };
+
+    auto ids_a = tokenize_raw(text_a);
+    auto ids_b = tokenize_raw(text_b);
+
+    // Truncate longest-first to fit: [CLS] a [SEP] b [SEP] = n_a + n_b + 3 tokens
+    int budget = max_length_ - 3;
+    while ((int)(ids_a.size() + ids_b.size()) > budget) {
+        if (ids_a.size() >= ids_b.size()) ids_a.pop_back();
+        else ids_b.pop_back();
+    }
+
+    // Build combined sequence with type_ids
+    std::vector<int32_t> ids, types;
+    ids.push_back(cls_id_); types.push_back(0);
+    for (int id : ids_a)  { ids.push_back(id);     types.push_back(0); }
+    ids.push_back(sep_id_); types.push_back(0);
+    for (int id : ids_b)  { ids.push_back(id);     types.push_back(1); }
+    ids.push_back(sep_id_); types.push_back(1);
+
+    embed_tokens result;
+    int seq_len = (int)ids.size();
+    result.ids.resize(max_length_, pad_id_);
+    result.type_ids.resize(max_length_, 0);
+    result.attn_mask.resize(max_length_, 0);
+    for (int i = 0; i < seq_len; i++) {
+        result.ids[i]      = ids[i];
+        result.type_ids[i] = types[i];
+        result.attn_mask[i] = 1;
+    }
+    return result;
+}

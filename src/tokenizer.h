@@ -27,6 +27,11 @@ public:
     // Tokenize a single text: [CLS] + tokens + [SEP], padded to max_length.
     embed_tokens encode(const std::string & text) const;
 
+    // Tokenize a sentence pair for cross-encoders/rerankers:
+    // [CLS] text_a [SEP] text_b [SEP], type_ids 0/1, padded to max_length.
+    embed_tokens encode_pair(const std::string & text_a,
+                              const std::string & text_b) const;
+
     int vocab_size() const { return (int)id_to_token_.size(); }
     int max_length() const { return max_length_; }
 
@@ -53,6 +58,10 @@ public:
               int max_length = 512);
 
     embed_tokens encode(const std::string & text) const;
+
+    // Tokenize a sentence pair: <s> text_a </s> text_b </s>, type_ids all 0.
+    embed_tokens encode_pair(const std::string & text_a,
+                              const std::string & text_b) const;
 
     int vocab_size() const { return (int)id_to_token_.size(); }
     int max_length() const { return max_length_; }

@@ -16,6 +16,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // ---------------------------------------------------------------------------
@@ -57,6 +58,19 @@ struct embed_model {
     // Optional pooler / projection
     ggml_tensor * pooler_w     = nullptr;
     ggml_tensor * pooler_b     = nullptr;
+
+    // Sparse retrieval head (BGE-M3): Linear(n_embd, 1, bias=False)
+    ggml_tensor * sparse_linear_w  = nullptr;  // [H, 1]
+    // ColBERT multi-vector head: Linear(n_embd, colbert_dim)
+    ggml_tensor * colbert_linear_w = nullptr;  // [H, colbert_dim]
+    // Reranker classification head: Linear(n_embd, 1)
+    ggml_tensor * classifier_w     = nullptr;  // [H, 1]
+    ggml_tensor * classifier_b     = nullptr;  // [1]
+
+    bool has_sparse  = false;
+    bool has_colbert = false;
+    bool is_reranker = false;
+    int  colbert_dim = 128;
 };
 
 #include "decoder_embed_internal.h"
@@ -78,11 +92,20 @@ struct crispembed_context {
     int pool_method = 0;  // 0=mean, 1=cls, 2=last-token
     int pos_offset = 0;   // position embedding offset (2 for RoBERTa/XLM-R)
     int matryoshka_dim = 0;  // 0 = use model default
-    std::vector<float> last_output;     // reused buffer
+    std::vector<float> last_output;     // reused buffer (dense encode)
     std::vector<uint8_t> compute_meta;  // graph metadata buffer (no_alloc=true)
     ggml_context * qkv_ctx = nullptr;   // pre-merged QKV tensor metadata
     ggml_backend_buffer_t qkv_buf = nullptr;  // backend buffer for merged QKV
     int reserved_T = 0;                  // scheduler reserved for this seq len
+    // Sparse / colbert / reranker output buffers (valid until next call)
+    std::vector<int32_t> last_sparse_indices;
+    std::vector<float>   last_sparse_values;
+    std::vector<float>   last_multivec;
+    int last_multivec_n_tokens = 0;
+    int last_multivec_dim      = 0;
+    // Per-mode scheduler reservation buckets
+    int reserved_T_sparse  = 0;
+    int reserved_T_colbert = 0;
 };
 
 // ---------------------------------------------------------------------------
@@ -123,6 +146,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     ctx->pool_method   = u32("bert.pooling_method", 0);
     // Position embedding offset: 0 for BERT, 2 for RoBERTa/XLM-R
     ctx->pos_offset    = u32("bert.position_offset", 0);
+    // ColBERT output dimension (BGE-M3 default 128) — read while g is valid
+    m.colbert_dim      = u32("bert.colbert_dim", 128);
     // fprintf(stderr, "crispembed: pool_method=%d pos_offset=%d\n", ctx->pool_method, ctx->pos_offset);
 
     // Load tokenizer vocab from GGUF metadata
@@ -247,6 +272,18 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     m.pooler_w = get("pooler.weight");
     m.pooler_b = get("pooler.bias");
 
+    // Optional sparse / colbert / classifier heads
+    m.sparse_linear_w    = get("sparse_linear.weight");
+    m.colbert_linear_w   = get("colbert_linear.weight");
+    m.classifier_w       = get("classifier.weight");
+    m.classifier_b       = get("classifier.bias");
+    m.has_sparse         = m.sparse_linear_w != nullptr;
+    m.has_colbert        = m.colbert_linear_w != nullptr;
+    m.is_reranker        = m.classifier_w != nullptr;
+    if (m.has_sparse)  fprintf(stderr, "crispembed: sparse head loaded\n");
+    if (m.has_colbert) fprintf(stderr, "crispembed: colbert head loaded (dim=%d)\n", m.colbert_dim);
+    if (m.is_reranker) fprintf(stderr, "crispembed: classifier head loaded (reranker mode)\n");
+
     // Pre-merge QKV weights into backend buffer (works on CPU + GPU)
     {
         const int H = hp.n_embd;
@@ -300,9 +337,10 @@ static bool load_model(crispembed_context * ctx, const char * path) {
 // ---------------------------------------------------------------------------
 
 // Build encoder graph for T tokens × B batch items.
+// mode: 0=dense (encoder_out), 1=sparse (sparse_out [1,T]), 2=colbert (colbert_out [dim,T])
 // When B=1: standard single-text graph.
 // When B>1: batched graph with 4D attention via flash_attn_ext.
-static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B = 1) {
+static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B = 1, int mode = 0) {
     const auto & m = ctx->model;
     const auto & hp = m.hparams;
     const int H = hp.n_embd;
@@ -397,9 +435,25 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         cur = ggml_add(gctx, cur, L.ln2_b);
     }
 
-    ggml_set_name(cur, "encoder_out");
-    ggml_set_output(cur);
-    ggml_build_forward_expand(gf, cur);
+    // Named output depends on requested mode
+    if (mode == 1 && ctx->model.sparse_linear_w) {
+        // Sparse head: Linear(H,1) + ReLU → [1, T*B]
+        ggml_tensor * sw = ggml_mul_mat(gctx, ctx->model.sparse_linear_w, cur);
+        sw = ggml_relu(gctx, sw);
+        ggml_set_name(sw, "sparse_out");
+        ggml_set_output(sw);
+        ggml_build_forward_expand(gf, sw);
+    } else if (mode == 2 && ctx->model.colbert_linear_w) {
+        // ColBERT head: Linear(H, colbert_dim) → [colbert_dim, T*B]
+        ggml_tensor * cv = ggml_mul_mat(gctx, ctx->model.colbert_linear_w, cur);
+        ggml_set_name(cv, "colbert_out");
+        ggml_set_output(cv);
+        ggml_build_forward_expand(gf, cv);
+    } else {
+        ggml_set_name(cur, "encoder_out");
+        ggml_set_output(cur);
+        ggml_build_forward_expand(gf, cur);
+    }
 
     return gf;
 }
@@ -632,6 +686,70 @@ static std::vector<std::vector<float>> encode_tokens_batch(
 }
 
 // ---------------------------------------------------------------------------
+// Sparse / ColBERT / Reranker helpers (single-text, encoder models only)
+// ---------------------------------------------------------------------------
+
+// Run the encoder for a single embed_tokens, returning raw [H * T] output.
+// Handles scheduler reservation using a separate bucket tracking field.
+static std::vector<float> run_encoder_raw(crispembed_context * ctx,
+                                           const embed_tokens & tokens,
+                                           int mode,
+                                           int * out_T) {
+    const auto & hp = ctx->model.hparams;
+    const int H = hp.n_embd;
+    const int T = (int)tokens.ids.size();
+    if (out_T) *out_T = T;
+
+    int T_bucket = bucket_seq_len(T);
+    int & reserved = (mode == 1) ? ctx->reserved_T_sparse
+                   : (mode == 2) ? ctx->reserved_T_colbert
+                   : ctx->reserved_T;
+
+    if (reserved != T_bucket) {
+        ggml_cgraph * measure_gf = build_encoder_graph(ctx, T_bucket, 1, mode);
+        ggml_backend_sched_reserve(ctx->sched, measure_gf);
+        reserved = T_bucket;
+    }
+
+    ggml_cgraph * gf = build_encoder_graph(ctx, T, 1, mode);
+    ggml_backend_sched_reset(ctx->sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
+        fprintf(stderr, "crispembed: failed to allocate graph (mode=%d)\n", mode);
+        return {};
+    }
+
+    std::vector<int32_t> tok_data(tokens.ids.begin(), tokens.ids.end());
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"),
+                            tok_data.data(), 0, T * sizeof(int32_t));
+    std::vector<int32_t> pos_data(T);
+    for (int t = 0; t < T; t++) pos_data[t] = t + ctx->pos_offset;
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
+                            pos_data.data(), 0, T * sizeof(int32_t));
+    if (ctx->model.type_embd) {
+        std::vector<int32_t> type_data(tokens.type_ids.begin(), tokens.type_ids.end());
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "type_ids"),
+                                type_data.data(), 0, T * sizeof(int32_t));
+    }
+
+    if (!sched_graph_compute(ctx->sched, gf, ctx->n_threads)) {
+        fprintf(stderr, "crispembed: compute failed (mode=%d)\n", mode);
+        return {};
+    }
+
+    const char * out_name = (mode == 1) ? "sparse_out"
+                          : (mode == 2) ? "colbert_out"
+                          : "encoder_out";
+    ggml_tensor * out = ggml_graph_get_tensor(gf, out_name);
+    if (!out) return {};
+
+    // Output dims: mode=1 → [1,T], mode=2 → [colbert_dim,T], mode=0 → [H,T]
+    int out_rows = (int)out->ne[0];
+    std::vector<float> buf(out_rows * T);
+    ggml_backend_tensor_get(out, buf.data(), 0, out_rows * T * sizeof(float));
+    return buf;
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -846,6 +964,197 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
     }
     if (out_n_dim) *out_n_dim = out_dim;
     return ctx->last_output.data();
+}
+
+// ---------------------------------------------------------------------------
+// Capability queries
+// ---------------------------------------------------------------------------
+
+extern "C" int crispembed_has_sparse(const crispembed_context * ctx) {
+    return (ctx && ctx->model.has_sparse) ? 1 : 0;
+}
+
+extern "C" int crispembed_has_colbert(const crispembed_context * ctx) {
+    return (ctx && ctx->model.has_colbert) ? 1 : 0;
+}
+
+extern "C" int crispembed_is_reranker(const crispembed_context * ctx) {
+    return (ctx && ctx->model.is_reranker) ? 1 : 0;
+}
+
+// ---------------------------------------------------------------------------
+// Sparse encode (BGE-M3 sparse head)
+// ---------------------------------------------------------------------------
+
+extern "C" int crispembed_encode_sparse(crispembed_context * ctx,
+                                         const char        * text,
+                                         const int32_t    ** out_indices,
+                                         const float      ** out_values) {
+    if (!ctx || !text || !ctx->model.has_sparse || ctx->is_decoder) return 0;
+
+    embed_tokens tokens;
+    if (ctx->use_sentencepiece) tokens = ctx->sp_tokenizer.encode(text);
+    else                        tokens = ctx->wp_tokenizer.encode(text);
+
+    // Trim to actual (non-padded) length
+    int T = 0;
+    for (int i = (int)tokens.attn_mask.size() - 1; i >= 0; i--) {
+        if (tokens.attn_mask[i]) { T = i + 1; break; }
+    }
+    if (T == 0) return 0;
+    tokens.ids.resize(T);
+    tokens.type_ids.resize(T);
+    tokens.attn_mask.resize(T);
+
+    int raw_T = 0;
+    std::vector<float> raw = run_encoder_raw(ctx, tokens, 1, &raw_T);
+    if (raw.empty()) return 0;
+
+    // Detect sparse style from weight output dimension (ne[1] after shape reversal in gguf):
+    //   BGE-M3: sparse_linear is Linear(H, 1)  → weight stored [H,1] in ggml → ne[1]=1
+    //   SPLADE: sparse_linear is Linear(H, V)  → weight stored [H,V] in ggml → ne[1]=V
+    // The graph output is [out_dim, T] → out_dim = sparse_linear_w->ne[1].
+    int out_dim = (int)ctx->model.sparse_linear_w->ne[1];
+
+    ctx->last_sparse_indices.clear();
+    ctx->last_sparse_values.clear();
+
+    if (out_dim == 1) {
+        // BGE-M3 style: raw is [1, T] — one scalar per token.
+        // Scatter to vocab positions via input_ids, take max per vocab id.
+        std::unordered_map<int32_t, float> vocab_weights;
+        for (int t = 0; t < raw_T; t++) {
+            if (!tokens.attn_mask[t]) continue;
+            float weight = raw[t];  // element [0, t]
+            if (weight <= 0.0f) continue;
+            int32_t vid = tokens.ids[t];
+            auto it = vocab_weights.find(vid);
+            if (it == vocab_weights.end() || it->second < weight)
+                vocab_weights[vid] = weight;
+        }
+        for (auto & kv : vocab_weights) {
+            ctx->last_sparse_indices.push_back(kv.first);
+            ctx->last_sparse_values.push_back(kv.second);
+        }
+    } else {
+        // SPLADE style: raw is [V, T] where V = vocab_size.
+        // Max-pool over T → [V], apply log(1+x), filter zeros.
+        // raw layout: element [v, t] at offset v + t * out_dim
+        for (int v = 0; v < out_dim; v++) {
+            float max_w = 0.0f;
+            for (int t = 0; t < raw_T; t++) {
+                if (!tokens.attn_mask[t]) continue;
+                float w = raw[v + t * out_dim];
+                if (w > max_w) max_w = w;
+            }
+            if (max_w <= 0.0f) continue;
+            ctx->last_sparse_indices.push_back((int32_t)v);
+            ctx->last_sparse_values.push_back(logf(1.0f + max_w));  // SPLADE uses log(1+ReLU)
+        }
+    }
+
+    int n = (int)ctx->last_sparse_indices.size();
+    if (out_indices) *out_indices = ctx->last_sparse_indices.data();
+    if (out_values)  *out_values  = ctx->last_sparse_values.data();
+    return n;
+}
+
+// ---------------------------------------------------------------------------
+// Multi-vector encode (ColBERT head)
+// ---------------------------------------------------------------------------
+
+extern "C" const float * crispembed_encode_multivec(crispembed_context * ctx,
+                                                      const char         * text,
+                                                      int                * out_n_tokens,
+                                                      int                * out_dim) {
+    if (!ctx || !text || !ctx->model.has_colbert || ctx->is_decoder) return nullptr;
+
+    embed_tokens tokens;
+    if (ctx->use_sentencepiece) tokens = ctx->sp_tokenizer.encode(text);
+    else                        tokens = ctx->wp_tokenizer.encode(text);
+
+    // Count real tokens (non-padded)
+    int T_real = 0;
+    for (int i = (int)tokens.attn_mask.size() - 1; i >= 0; i--) {
+        if (tokens.attn_mask[i]) { T_real = i + 1; break; }
+    }
+    if (T_real == 0) return nullptr;
+    tokens.ids.resize(T_real);
+    tokens.type_ids.resize(T_real);
+    tokens.attn_mask.resize(T_real);
+
+    int raw_T = 0;
+    std::vector<float> raw = run_encoder_raw(ctx, tokens, 2, &raw_T);
+    if (raw.empty()) return nullptr;
+
+    const int dim = ctx->model.colbert_dim;
+    // raw is [colbert_dim, T_real] — L2 normalize each token vector
+    ctx->last_multivec.resize(dim * raw_T);
+    for (int t = 0; t < raw_T; t++) {
+        float * vec = raw.data() + t * dim;
+        float norm = 0.0f;
+        for (int d = 0; d < dim; d++) norm += vec[d] * vec[d];
+        norm = sqrtf(std::max(norm, 1e-12f));
+        float * out = ctx->last_multivec.data() + t * dim;
+        for (int d = 0; d < dim; d++) out[d] = vec[d] / norm;
+    }
+    ctx->last_multivec_n_tokens = raw_T;
+    ctx->last_multivec_dim      = dim;
+
+    if (out_n_tokens) *out_n_tokens = raw_T;
+    if (out_dim)      *out_dim      = dim;
+    return ctx->last_multivec.data();
+}
+
+// ---------------------------------------------------------------------------
+// Reranker (cross-encoder score)
+// ---------------------------------------------------------------------------
+
+extern "C" float crispembed_rerank(crispembed_context * ctx,
+                                    const char         * query,
+                                    const char         * document) {
+    if (!ctx || !query || !document || !ctx->model.is_reranker || ctx->is_decoder)
+        return 0.0f;
+
+    embed_tokens tokens;
+    if (ctx->use_sentencepiece)
+        tokens = ctx->sp_tokenizer.encode_pair(query, document);
+    else
+        tokens = ctx->wp_tokenizer.encode_pair(query, document);
+
+    // Trim to real tokens
+    int T = 0;
+    for (int i = (int)tokens.attn_mask.size() - 1; i >= 0; i--) {
+        if (tokens.attn_mask[i]) { T = i + 1; break; }
+    }
+    if (T == 0) return 0.0f;
+    tokens.ids.resize(T);
+    tokens.type_ids.resize(T);
+    tokens.attn_mask.resize(T);
+
+    int raw_T = 0;
+    // Run dense encoder (mode=0), we read CLS token ourselves
+    std::vector<float> raw = run_encoder_raw(ctx, tokens, 0, &raw_T);
+    if (raw.empty()) return 0.0f;
+
+    const int H = ctx->model.hparams.n_embd;
+    // CLS token is position 0 in encoder_out [H, T]
+    const float * cls_vec = raw.data();  // first H floats = token 0
+
+    // Apply classifier: score = cls_vec · classifier_w + bias
+    // classifier_w shape [H, 1] stored as [H] in row-major
+    std::vector<float> cw(H);
+    ggml_backend_tensor_get(ctx->model.classifier_w, cw.data(), 0, H * sizeof(float));
+
+    float score = 0.0f;
+    for (int h = 0; h < H; h++) score += cls_vec[h] * cw[h];
+
+    if (ctx->model.classifier_b) {
+        float bias = 0.0f;
+        ggml_backend_tensor_get(ctx->model.classifier_b, &bias, 0, sizeof(float));
+        score += bias;
+    }
+    return score;
 }
 
 extern "C" void crispembed_free(crispembed_context * ctx) {

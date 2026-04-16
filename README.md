@@ -1,8 +1,12 @@
 # CrispEmbed
 
+[![Build](https://github.com/CrispStrobe/CrispEmbed/actions/workflows/build.yml/badge.svg)](https://github.com/CrispStrobe/CrispEmbed/actions/workflows/build.yml)
+
 Lightweight text embedding inference via ggml. No Python runtime, no ONNX.
 Supports BERT, XLM-R, Qwen3, and Gemma3 embedding models with GPU acceleration
 (CUDA/Vulkan/Metal) and BLAS support (OpenBLAS/MKL).
+
+**Multi-vector retrieval**: dense, sparse (SPLADE/BGE-M3), ColBERT multi-vector, and cross-encoder rerankers — all in one binary, all GPU-accelerated.
 
 ## Status
 
@@ -145,6 +149,43 @@ Pre-converted models: [HuggingFace cstr/](https://huggingface.co/cstr)
 
 Embedding tables quantized to Q8_0 even in Q4_K mode (quality-sensitive).
 
+## BGE-M3 / Sparse / ColBERT / Reranker
+
+CrispEmbed supports all three BGE-M3 retrieval modalities plus cross-encoder rerankers.
+
+```bash
+# Convert BGE-M3 (writes sparse_linear.weight + colbert_linear.weight into GGUF)
+pip install torch transformers gguf FlagEmbedding
+python models/convert-bert-to-gguf.py --model BAAI/bge-m3 --output bge-m3.gguf --crisp
+
+# Validate all three heads against FlagEmbedding ground truth
+python tests/test_bgem3.py --gguf bge-m3.gguf --lib build/libcrispembed.so
+```
+
+```python
+from crispembed import CrispEmbed
+
+model = CrispEmbed("bge-m3.gguf")
+
+# Dense (L2-normalised)
+vec = model.encode("Hello world")                   # Vec<f32> len 1024
+
+# Sparse (SPLADE-style term weights)
+if model.has_sparse():
+    sparse = model.encode_sparse("Hello world")     # {token_id: weight}
+
+# ColBERT multi-vector
+if model.has_colbert():
+    multi = model.encode_multivec("Hello world")    # [[f32; 128]; n_tokens]
+```
+
+Cross-encoder rerankers:
+
+```python
+reranker = CrispEmbed("bge-reranker-v2-m3.gguf")
+score = reranker.rerank("query text", "document text")   # raw logit
+```
+
 ## Python
 
 Requires the shared library (`--shared` flag or `-DCRISPEMBED_BUILD_SHARED=ON`).
@@ -162,6 +203,28 @@ vectors = model.encode(["Hello world", "Goodbye world"])
 print(vectors.shape)  # (2, 384)
 ```
 
+## Rust
+
+```toml
+[dependencies]
+crispembed = { git = "https://github.com/CrispStrobe/CrispEmbed" }
+```
+
+```rust
+use crispembed::CrispEmbed;
+
+let mut model = CrispEmbed::new("model.gguf", 0)?;
+let vec = model.encode("Hello world");
+
+// Sparse + ColBERT (BGE-M3)
+if model.has_sparse() {
+    let sparse = model.encode_sparse("query");   // Vec<(i32, f32)>
+}
+if model.has_colbert() {
+    let multi = model.encode_multivec("query");  // Vec<Vec<f32>>
+}
+```
+
 ## Benchmarking
 
 ```bash
@@ -177,17 +240,26 @@ Auto-creates a `.bench-venv` for Python dependencies.
 ## Architecture
 
 **BERT encoder** (all-MiniLM, gte, arctic-embed-xs):
-- Token + Position + Type embeddings -> Post-LN transformer -> Mean/CLS pooling
+- Token + Position + Type embeddings → Post-LN transformer → Mean/CLS pooling
 
 **XLM-R encoder** (PIXIE-Rune, multilingual-e5, arctic-embed-l-v2):
-- Token + Position(+offset) embeddings -> Post-LN transformer -> CLS/Mean pooling
+- Token + Position(+offset) embeddings → Post-LN transformer → CLS/Mean pooling
 - SentencePiece Unigram tokenizer (Viterbi DP)
 
+**BGE-M3 multi-modal** (`BAAI/bge-m3`):
+- Same BERT encoder trunk with three output heads:
+  - **Dense**: mean-pool → L2 normalize → `float[1024]`
+  - **Sparse**: `Linear(H,1)` + ReLU → scatter via input_ids → `{token_id: weight}`
+  - **ColBERT**: `Linear(H,128)` → per-token L2 normalize → `float[n_tokens][128]`
+
+**Cross-encoder reranker** (BGE-reranker-v2-m3, etc.):
+- `[CLS] query [SEP] document [SEP]` pair tokenization → CLS hidden state → `Linear(H,1)` → scalar score
+
 **Qwen3 decoder** (Octen, F2LLM, Jina v5, Harrier-0.6B, Qwen3-Embed):
-- Token embeddings + RoPE -> RMSNorm + GQA with causal mask + SwiGLU -> Last-token pooling
+- Token embeddings + RoPE → RMSNorm + GQA with causal mask + SwiGLU → Last-token pooling
 
 **Gemma3 decoder** (Harrier-270M):
-- Token embeddings * sqrt(H) + RoPE -> Gemma3 RMSNorm(1+w) + GQA + GeGLU -> Last-token pooling
+- Token embeddings * sqrt(H) + RoPE → Gemma3 RMSNorm(1+w) + GQA + GeGLU → Last-token pooling
 
 All via ggml graphs with GPU dispatch (ggml_backend_sched).
 See [PLAN.md](PLAN.md), [LEARNINGS.md](LEARNINGS.md), [PERFORMANCE.md](PERFORMANCE.md).

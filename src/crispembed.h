@@ -56,6 +56,53 @@ const float * crispembed_encode_batch(crispembed_context * ctx,
                                        int n_texts,
                                        int * out_n_dim);
 
+// ---------------------------------------------------------------------------
+// Sparse retrieval (BGE-M3 sparse head, SPLADE-style)
+// ---------------------------------------------------------------------------
+
+// Returns 1 if this model has a sparse projection head.
+int crispembed_has_sparse(const crispembed_context * ctx);
+
+// Encode text to a sparse term-weight vector over the input vocabulary.
+// On success: *out_indices[i] = vocab token id, *out_values[i] = weight (> 0).
+// Buffers are owned by ctx and valid until the next call on this ctx.
+// Returns the number of non-zero entries (0 on failure or no non-zeros).
+int crispembed_encode_sparse(crispembed_context * ctx,
+                              const char        * text,
+                              const int32_t    ** out_indices,
+                              const float      ** out_values);
+
+// ---------------------------------------------------------------------------
+// Multi-vector retrieval (ColBERT-style)
+// ---------------------------------------------------------------------------
+
+// Returns 1 if this model has a ColBERT projection head.
+int crispembed_has_colbert(const crispembed_context * ctx);
+
+// Encode text to per-token L2-normalized embeddings.
+// Returns flat [*out_n_tokens * *out_dim] array. Valid until next call or free().
+const float * crispembed_encode_multivec(crispembed_context * ctx,
+                                          const char         * text,
+                                          int                * out_n_tokens,
+                                          int                * out_dim);
+
+// ---------------------------------------------------------------------------
+// Reranker / cross-encoder
+// ---------------------------------------------------------------------------
+
+// Returns 1 if this model has a classifier head (reranker).
+int crispembed_is_reranker(const crispembed_context * ctx);
+
+// Score a (query, document) pair. Returns raw logit (higher = more relevant).
+// The model must be a cross-encoder (crispembed_is_reranker() == 1).
+float crispembed_rerank(crispembed_context * ctx,
+                         const char         * query,
+                         const char         * document);
+
+// ---------------------------------------------------------------------------
+// Lifecycle
+// ---------------------------------------------------------------------------
+
 // Free all resources.
 void crispembed_free(crispembed_context * ctx);
 

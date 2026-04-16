@@ -77,6 +77,26 @@ def main():
           f"heads={config.num_attention_heads} intermediate={config.intermediate_size} "
           f"vocab={config.vocab_size}")
 
+    # Detect optional retrieval heads (BGE-M3 sparse/colbert, cross-encoder reranker)
+    has_sparse_head  = any(k.startswith("sparse_linear.")  for k in sd)
+    has_colbert_head = any(k.startswith("colbert_linear.") for k in sd)
+    has_classifier   = ("classifier.weight" in sd and
+                        sd["classifier.weight"].shape[0] == 1)  # reranker = 1 output
+    if has_sparse_head:  print("  detected: sparse_linear head")
+    if has_colbert_head: print("  detected: colbert_linear head")
+    if has_classifier:   print("  detected: classifier head (reranker)")
+
+    if has_sparse_head and has_colbert_head:
+        model_type_str = "bgem3"
+    elif has_sparse_head:
+        model_type_str = "sparse"
+    elif has_colbert_head:
+        model_type_str = "colbert"
+    elif has_classifier:
+        model_type_str = "reranker"
+    else:
+        model_type_str = "dense"
+
     # Detect architecture: XLM-R vs BERT
     # True XLM-R: model_type is "roberta" or "xlm-roberta" → needs position offset + xlmr arch
     # SentencePiece BERT: model_type is "bert" but uses SP tokenizer → bert arch, no offset
@@ -139,7 +159,11 @@ def main():
         writer.add_uint32("bert.output_dim", config.hidden_size)
         writer.add_uint32("bert.position_offset", pos_offset)
         writer.add_uint32("bert.pooling_method", pool_method_crisp)
-        print(f"  format: CrispEmbed")
+        writer.add_string("bert.model_type", model_type_str)
+        if has_colbert_head:
+            colbert_out_dim = sd["colbert_linear.weight"].shape[0]
+            writer.add_uint32("bert.colbert_dim", colbert_out_dim)
+        print(f"  format: CrispEmbed (model_type={model_type_str})")
 
     # Tokenizer vocab
     vocab = tokenizer.get_vocab()
@@ -316,6 +340,20 @@ def main():
         writer.add_tensor("pooler.weight", f32(sd["pooler.dense.weight"]))
         writer.add_tensor("pooler.bias", f32(sd["pooler.dense.bias"]))
         print("  pooler: ok")
+
+    # Optional retrieval heads (CrispEmbed-native only — Ollama doesn't use them)
+    if not ollama_mode:
+        if has_sparse_head:
+            writer.add_tensor("sparse_linear.weight", f32(sd["sparse_linear.weight"]))
+            print("  sparse_linear: ok")
+        if has_colbert_head:
+            writer.add_tensor("colbert_linear.weight", f32(sd["colbert_linear.weight"]))
+            print("  colbert_linear: ok")
+        if has_classifier:
+            writer.add_tensor("classifier.weight", f32(sd["classifier.weight"]))
+            if "classifier.bias" in sd:
+                writer.add_tensor("classifier.bias", f32(sd["classifier.bias"]))
+            print("  classifier: ok")
 
     writer.write_header_to_file()
     writer.write_kv_data_to_file()

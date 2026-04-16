@@ -62,8 +62,8 @@ Text → **Tokenizer** (auto-detected from GGUF: WordPiece/SentencePiece/BPE) �
 
 ### Source layout
 
-- **`src/crispembed.h`** — Public C API: `crispembed_init`, `crispembed_encode`, `crispembed_encode_batch`, `crispembed_free`. This is the interface everything else builds on.
-- **`src/crispembed.cpp`** — Core inference engine (~860 lines). Builds ggml computation graphs for encoder models (BERT/XLM-R). Handles backend init (`ggml_backend_init_best()` picks Metal/CUDA/CPU), graph caching, QKV weight fusion, batched encoding.
+- **`src/crispembed.h`** — Public C API: dense (`crispembed_encode`, `crispembed_encode_batch`), sparse (`crispembed_encode_sparse`), multi-vector (`crispembed_encode_multivec`), reranker (`crispembed_rerank`), capability queries (`crispembed_has_sparse`, `crispembed_has_colbert`, `crispembed_is_reranker`), lifecycle (`crispembed_init`, `crispembed_free`).
+- **`src/crispembed.cpp`** — Core inference engine. Builds ggml computation graphs for encoder models (BERT/XLM-R/BGE-M3). `build_encoder_graph(mode)`: mode=0 → dense `encoder_out`, mode=1 → sparse `sparse_out [1,T]`, mode=2 → colbert `colbert_out [dim,T]`. Handles backend init, graph caching per mode, QKV weight fusion, batched encoding. **Critical**: GGUF metadata (u32/f32 lambdas) must be read before `gguf_free(g)` — use-after-free will silently corrupt inference.
 - **`src/decoder_embed.cpp`** — Separate forward pass for decoder-based embedders (Qwen3/Gemma3). Uses RoPE, GQA, causal attention, last-token pooling.
 - **`src/tokenizer.cpp`** — WordPiece tokenizer (BERT-style).
 - **`src/tokenizer_spm.cpp`** — SentencePiece Unigram tokenizer (Viterbi DP, NOT bigram merge — see LEARNINGS.md).
@@ -93,6 +93,17 @@ Auto-detected from GGUF `tokenizer.ggml.type`: 0=WordPiece, 1=BPE, 2=SentencePie
 ### Python wrapper
 
 `python/crispembed/_binding.py` — ctypes binding to `libcrispembed.dylib`. Single-text calls use `crispembed_encode()`, multi-text calls use `crispembed_encode_batch()` (single C call, true GPU-batched inference).
+
+### Rust crates
+
+`crispembed-sys/` — raw `extern "C"` bindings + cmake build.rs (links libcrispembed). `crispembed/` — safe `CrispEmbed` wrapper with all encode/rerank methods. Features: `cuda`, `metal`, `vulkan` pass cmake flags. Build: `cargo build --features cuda`.
+
+### BGE-M3 testing
+
+```bash
+python tests/test_bgem3.py --gguf ~/.cache/crispembed/bge-m3.gguf --lib build/libcrispembed.so
+```
+Validates dense (cosine), sparse (IoU), colbert (per-token cosine) against FlagEmbedding.
 
 ### Model auto-download
 

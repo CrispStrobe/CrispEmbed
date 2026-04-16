@@ -170,3 +170,44 @@ embed_tokens SentencePieceTokenizer::encode(const std::string & text) const {
 
     return result;
 }
+
+embed_tokens SentencePieceTokenizer::encode_pair(const std::string & text_a,
+                                                   const std::string & text_b) const {
+    // XLM-R pair encoding: <s> a </s> b </s>  (type_ids all 0 — XLM-R doesn't use them)
+    auto to_marked = [](const std::string & text) -> std::string {
+        std::string out;
+        for (char c : (" " + text)) {
+            if (c == ' ') out += "\xe2\x96\x81";
+            else          out += c;
+        }
+        return out;
+    };
+
+    auto ids_a = tokenize_text(to_marked(text_a));
+    auto ids_b = tokenize_text(to_marked(text_b));
+
+    // <s> a </s> b </s> = n_a + n_b + 3 tokens
+    int budget = max_length_ - 3;
+    while ((int)(ids_a.size() + ids_b.size()) > budget) {
+        if (ids_a.size() >= ids_b.size()) ids_a.pop_back();
+        else ids_b.pop_back();
+    }
+
+    std::vector<int32_t> ids;
+    ids.push_back(bos_id_);
+    for (int id : ids_a) ids.push_back(id);
+    ids.push_back(eos_id_);
+    for (int id : ids_b) ids.push_back(id);
+    ids.push_back(eos_id_);
+
+    embed_tokens result;
+    int seq_len = (int)ids.size();
+    result.ids.resize(max_length_, pad_id_);
+    result.type_ids.resize(max_length_, 0);
+    result.attn_mask.resize(max_length_, 0);
+    for (int i = 0; i < seq_len; i++) {
+        result.ids[i]       = ids[i];
+        result.attn_mask[i] = 1;
+    }
+    return result;
+}

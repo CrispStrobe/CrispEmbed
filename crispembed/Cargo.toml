@@ -1,0 +1,13 @@
+[package]
+name = "crispembed"
+version = "0.1.0"
+edition = "2021"
+description = "Safe Rust wrapper for crispembed text embedding inference"
+
+[features]
+cuda   = ["crispembed-sys/cuda"]
+metal  = ["crispembed-sys/metal"]
+vulkan = ["crispembed-sys/vulkan"]
+
+[dependencies]
+crispembed-sys = { path = "../crispembed-sys" }

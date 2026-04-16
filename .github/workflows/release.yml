@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-libs:
+    name: Build ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            cmake_args: >-
+              -DGGML_BLAS=OFF
+              -DGGML_LLAMAFILE=ON
+            artifact_name: libcrispembed.so
+            artifact_path: build/libcrispembed.so
+          - os: macos-latest
+            cmake_args: >-
+              -DGGML_METAL=ON
+              -DGGML_METAL_EMBED_LIBRARY=ON
+              -DGGML_BLAS=ON
+              -DGGML_BLAS_VENDOR=Apple
+            artifact_name: libcrispembed.dylib
+            artifact_path: build/libcrispembed.dylib
+          - os: windows-latest
+            cmake_args: >-
+              -DGGML_BLAS=OFF
+            artifact_name: crispembed.dll
+            artifact_path: build/Release/crispembed.dll
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Configure
+        run: >
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=Release
+          -DCRISPEMBED_BUILD_SHARED=ON
+          ${{ matrix.cmake_args }}
+
+      - name: Build
+        run: cmake --build build --config Release -j4
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}
+
+  create-release:
+    name: Create GitHub Release
+    needs: build-libs
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: CrispEmbed ${{ github.ref_name }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: true
+          files: |
+            dist/libcrispembed.so/libcrispembed.so
+            dist/libcrispembed.dylib/libcrispembed.dylib
+            dist/crispembed.dll/crispembed.dll
