@@ -4,6 +4,11 @@ project(crispembed LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Static archives are linked into libcrispembed.so on Linux, so everything
+# needs position-independent code (otherwise ld errors with R_X86_64_PC32
+# relocations against glibc symbols).
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 # Suppress MSVC deprecation warnings for standard C functions
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
