@@ -50,6 +50,34 @@ CrispEmbed Python wrapper (ctypes, Metal) matches or beats fastembed-rs for
 single-text latency. Batch throughput gap is due to per-text Python loop --
 a C-level batch API would close it.
 
+## Ollama Integration (Q8_0, Apple M1)
+
+All CrispEmbed models verified in Ollama fork with Ollama-compatible GGUF export.
+
+### Encoder Models (Q8_0 vs HuggingFace F32)
+
+| Model | Dim | cos vs HF | Quant Ratio |
+|-------|-----|-----------|-------------|
+| all-MiniLM-L6-v2 | 384 | 0.9998 | 3.8x (87→23 MB) |
+| gte-small | 384 | 0.9999 | 3.7x (127→34 MB) |
+| arctic-embed-xs | 384 | 0.9999 | 3.8x (87→24 MB) |
+| multilingual-e5-small | 384 | 0.9999 | 3.8x (455→126 MB) |
+| arctic-embed-l-v2 | 1024 | loads, L2-norm=1.0 | 3.8x (2.1G→581 MB) |
+
+### Decoder Models (Q8_0 in Ollama)
+
+| Model | Arch | Dim | L2-Norm | Diversity | Size |
+|-------|------|-----|---------|-----------|------|
+| qwen3-embed-0.6b | Qwen3 | 1024 | 1.000 | 0.599 | 610 MB |
+| octen-0.6b | Qwen3 | 1024 | 1.000 | 0.649 | 610 MB |
+| f2llm-v2-0.6b | Qwen3 | 1024 | 1.000 | 0.711 | 610 MB |
+| harrier-0.6b | Qwen3 | 1024 | 1.000 | 0.504 | 610 MB |
+| harrier-270m | Gemma3 | 640 | 1.000 | 0.922 | 287 MB |
+| jina-v5-nano | Qwen3 | 768 | 1.000 | 0.237 | 222 MB |
+| jina-v5-small | Qwen3 | 1024 | 1.000 | 0.746 | 610 MB |
+
+Diversity = 1 - avg cosine similarity between 4 different test texts (higher = better discrimination).
+
 ## GPU Inference (CUDA)
 
 Tested on NVIDIA RTX A1000 Laptop GPU (4GB VRAM), via HTTP server.

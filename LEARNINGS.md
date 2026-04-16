@@ -115,6 +115,67 @@ Gemma3 (Harrier-270M) differs from Qwen3/LLaMA in several critical ways:
 7. **SentencePiece BPE tokenizer**: Uses ▁ space marker (not GPT-2 Ġ),
    needs BOS(2) at start and EOS(1) at end.
 
+## Ollama integration learnings
+
+### Architecture: Ollama uses ggml via CGO (same as CrispEmbed)
+
+Both Ollama and CrispEmbed use ggml for tensor computation. Ollama wraps ggml
+ops in Go structs via CGO (`C.ggml_mul_mat`, `C.ggml_rms_norm`). CrispEmbed
+calls ggml directly from C++. The computation graphs are functionally identical.
+
+### Phantom-space token vocabulary (critical for WordPiece)
+
+Ollama's WordPiece tokenizer expects tokens in SentencePiece-style format:
+- `"hello"` → `"▁hello"` (prepend ▁)
+- `"##ing"` → `"ing"` (strip ##)
+- `"[CLS]"` → `"[CLS]"` (keep special tokens)
+
+Without this transformation, cos drops from 1.0 to ~0.19.
+
+### GELU variant matters (exact erf vs tanh approximation)
+
+BERT uses exact GELU (erf-based). Ollama's `.GELU()` uses tanh approximation
+(`ggml_gelu_inplace`). Must use `.GELU_ERF()` for BERT/XLM-R encoder models.
+Difference: cos 0.996 → 1.000.
+
+### SentencePiece Unigram needs Viterbi DP, not pairwise merge
+
+Ollama's existing `SentencePiece` tokenizer uses BPE-style greedy pairwise
+merge (priority queue). This is WRONG for Unigram models (XLM-R, e5-small).
+We added `SentencePieceUnigram` using Viterbi DP (same as CrispEmbed's
+tokenizer_spm.cpp). Must also prepend space before tokenization.
+
+### Gemma3 (1+weight) RMSNorm must be pre-baked for Ollama
+
+Ollama's RMSNorm does `rms_norm(x) * weight`. Gemma3 needs `rms_norm(x) * (1 + weight)`.
+CrispEmbed handles this at runtime with a `ones` tensor. For Ollama export,
+pre-add +1 to all norm weights in the GGUF.
+
+### Quantized token_types breaks Ollama binary ops
+
+Ollama's ggml doesn't support `f32 + q8_0` in elementwise ops. The tiny
+`token_types.weight` tensor (2 rows) must be kept as f32 during quantization.
+Error: `binary_op: unsupported types: dst: f32, src0: f32, src1: q8_0`.
+
+### Nil-guards needed for optional model components
+
+Ollama's Qwen3 model.go unconditionally calls `QueryNorm.Forward()` — panics
+for models without QK-norm (e.g. Jina v5). Gemma3 embed.go unconditionally
+iterates `Dense` projection — panics for models without it (Harrier-270M).
+
+### Jina v5 LoRA adapters need merge before export
+
+Jina v5 models use task-specific LoRA adapters (retrieval, classification,
+clustering, text-matching). Must call `model.set_adapter("retrieval")` then
+`model.merge_and_unload()` before GGUF export. The `encode()` method does
+more than standard forward+pool, so merged output won't exactly match HF.
+
+### SentencePiece BERT models should use bert arch, not xlmr
+
+Models like multilingual-e5-small report `model_type="bert"` with SentencePiece
+tokenizer. These are BERT models (no position offset), not XLM-R. Only true
+`roberta`/`xlm-roberta` types need the `xlmr` arch with position offset.
+
 ## Quantization notes
 
 ### Python gguf vs C++ quantizer
