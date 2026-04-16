@@ -54,28 +54,30 @@ a C-level batch API would close it.
 
 All CrispEmbed models verified in Ollama fork with Ollama-compatible GGUF export.
 
-### Encoder Models (Q8_0 vs HuggingFace F32)
+### Encoder Models (Q8_0 and Q4_K vs HuggingFace F32)
 
-| Model | Dim | cos vs HF | Quant Ratio |
-|-------|-----|-----------|-------------|
-| all-MiniLM-L6-v2 | 384 | 0.9998 | 3.8x (87→23 MB) |
-| gte-small | 384 | 0.9999 | 3.7x (127→34 MB) |
-| arctic-embed-xs | 384 | 0.9999 | 3.8x (87→24 MB) |
-| multilingual-e5-small | 384 | 0.9999 | 3.8x (455→126 MB) |
-| arctic-embed-l-v2 | 1024 | loads, L2-norm=1.0 | 3.8x (2.1G→581 MB) |
+| Model | Dim | Q8_0 cos | Q4_K cos | Q8_0 Size | Q4_K Size |
+|-------|-----|----------|----------|-----------|-----------|
+| all-MiniLM-L6-v2 | 384 | 0.9998 | 0.970 | 24 MB | 18 MB |
+| gte-small | 384 | 0.9999 | 0.991 | 34 MB | 24 MB |
+| arctic-embed-xs | 384 | 0.9999 | 0.995 | 24 MB | 18 MB |
+| multilingual-e5-small | 384 | 0.9999 | 0.990 | 126 MB | 115 MB |
+| pixie-rune-v1 | 1024 | cross-lingual OK | cross-lingual OK | 581 MB | 437 MB |
+| arctic-embed-l-v2 | 1024 | L2-norm=1.0 | L2-norm=1.0 | 581 MB | 437 MB |
 
-### Decoder Models (Q8_0 in Ollama)
+### Decoder Models (Q8_0 and Q4_K in Ollama)
 
-| Model | Arch | Dim | L2-Norm | Diversity | Size |
-|-------|------|-----|---------|-----------|------|
-| qwen3-embed-0.6b | Qwen3 | 1024 | 1.000 | 0.599 | 610 MB |
-| octen-0.6b | Qwen3 | 1024 | 1.000 | 0.649 | 610 MB |
-| f2llm-v2-0.6b | Qwen3 | 1024 | 1.000 | 0.711 | 610 MB |
-| harrier-0.6b | Qwen3 | 1024 | 1.000 | 0.504 | 610 MB |
-| harrier-270m | Gemma3 | 640 | 1.000 | 0.922 | 287 MB |
-| jina-v5-nano | Qwen3 | 768 | 1.000 | 0.237 | 222 MB |
-| jina-v5-small | Qwen3 | 1024 | 1.000 | 0.746 | 610 MB |
+| Model | Arch | Dim | Q8_0 Size | Q4_K Size | L2-Norm | Diversity |
+|-------|------|-----|-----------|-----------|---------|-----------|
+| qwen3-embed-0.6b | Qwen3 | 1024 | 610 MB | 300 MB | 1.000 | 0.599 |
+| octen-0.6b | Qwen3 | 1024 | 610 MB | 400 MB | 1.000 | 0.649 |
+| f2llm-v2-0.6b | Qwen3 | 1024 | 610 MB | 400 MB | 1.000 | 0.711 |
+| harrier-0.6b | Qwen3 | 1024 | 610 MB | 400 MB | 1.000 | 0.504 |
+| harrier-270m | Gemma3 | 640 | 287 MB | 239 MB | 1.000 | 0.922 |
+| jina-v5-nano | Qwen3 | 768 | 222 MB | 168 MB | 1.000 | 0.237 |
+| jina-v5-small | Qwen3 | 1024 | 610 MB | 400 MB | 1.000 | 0.746 |
 
+All 13 Q4_K models verified: L2-normalized, semantically correct embeddings.
 Diversity = 1 - avg cosine similarity between 4 different test texts (higher = better discrimination).
 
 ## GPU Inference (CUDA)
