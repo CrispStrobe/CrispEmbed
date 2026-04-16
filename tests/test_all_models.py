@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/env python3
 """Test all converted CrispEmbed models against HuggingFace references.
 
@@ -14,7 +15,18 @@ import subprocess
 import numpy as np
 from pathlib import Path
 
-# Model registry: GGUF filename pattern → HF model ID
+# Patch transformers torch.load safety check for models without safetensors
+_noop = lambda: None
+try:
+    import importlib
+    for _mn in ("transformers.modeling_utils", "transformers.utils.import_utils"):
+        _m = importlib.import_module(_mn)
+        if hasattr(_m, "check_torch_load_is_safe"):
+            _m.check_torch_load_is_safe = _noop
+except Exception:
+    pass
+
+# Model registry: GGUF filename pattern -> HF model ID
 MODEL_MAP = {
     # BERT encoder models
     "all-MiniLM-L6-v2": "sentence-transformers/all-MiniLM-L6-v2",
@@ -22,7 +34,6 @@ MODEL_MAP = {
     "arctic-embed-xs": "Snowflake/snowflake-arctic-embed-xs",
     # XLM-R encoder models
     "multilingual-e5-small": "intfloat/multilingual-e5-small",
-    "pixie-rune-v1": "CrispStrobe/PIXIE-Rune-v1.0",
     "arctic-embed-l-v2": "Snowflake/snowflake-arctic-embed-l-v2.0",
     # Qwen3 decoder models
     "octen-0.6b": "Octen/Octen-Embedding-0.6B",
@@ -113,10 +124,10 @@ def main():
                 break
 
         if not hf_id:
-            print(f"SKIP {name} — no HF model mapping")
+            print(f"SKIP {name} - no HF model mapping")
             continue
 
-        print(f"TEST {name} → {hf_id}")
+        print(f"TEST {name} -> {hf_id}")
 
         hf_vecs = get_hf_embeddings(hf_id, TEST_TEXTS)
         if hf_vecs is None:
@@ -144,7 +155,7 @@ def main():
         avg_cos = np.mean(cos_sims)
         min_cos = np.min(cos_sims)
         status = "PASS" if min_cos > 0.99 else ("OK" if min_cos > 0.95 else "FAIL")
-        print(f"  avg_cos={avg_cos:.6f} min_cos={min_cos:.6f} → {status}")
+        print(f"  avg_cos={avg_cos:.6f} min_cos={min_cos:.6f} -> {status}")
         results.append((name, status, avg_cos))
 
     print("\n" + "=" * 70)

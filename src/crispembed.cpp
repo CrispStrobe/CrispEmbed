@@ -59,13 +59,21 @@ struct embed_model {
     ggml_tensor * pooler_w     = nullptr;
     ggml_tensor * pooler_b     = nullptr;
 
-    // Sparse retrieval head (BGE-M3): Linear(n_embd, 1, bias=False)
+    // Sparse retrieval head (BGE-M3): Linear(n_embd, 1)
     ggml_tensor * sparse_linear_w  = nullptr;  // [H, 1]
+    ggml_tensor * sparse_linear_b  = nullptr;  // [1], optional
     // ColBERT multi-vector head: Linear(n_embd, colbert_dim)
     ggml_tensor * colbert_linear_w = nullptr;  // [H, colbert_dim]
-    // Reranker classification head: Linear(n_embd, 1)
-    ggml_tensor * classifier_w     = nullptr;  // [H, 1]
-    ggml_tensor * classifier_b     = nullptr;  // [1]
+    ggml_tensor * colbert_linear_b = nullptr;  // [colbert_dim], optional
+    // Reranker: 1-layer head Linear(H, 1)
+    ggml_tensor * classifier_w         = nullptr;  // [1, H]
+    ggml_tensor * classifier_b         = nullptr;  // [1]
+    // Reranker: 2-layer RobertaClassificationHead (bge-reranker-v2-m3)
+    ggml_tensor * classifier_dense_w   = nullptr;  // [H, H]
+    ggml_tensor * classifier_dense_b   = nullptr;  // [H]
+    ggml_tensor * classifier_out_w     = nullptr;  // [1, H]
+    ggml_tensor * classifier_out_b     = nullptr;  // [1]
+    bool classifier_2layer = false;
 
     bool has_sparse  = false;
     bool has_colbert = false;
@@ -274,15 +282,29 @@ static bool load_model(crispembed_context * ctx, const char * path) {
 
     // Optional sparse / colbert / classifier heads
     m.sparse_linear_w    = get("sparse_linear.weight");
+    m.sparse_linear_b    = get("sparse_linear.bias");
     m.colbert_linear_w   = get("colbert_linear.weight");
-    m.classifier_w       = get("classifier.weight");
-    m.classifier_b       = get("classifier.bias");
-    m.has_sparse         = m.sparse_linear_w != nullptr;
-    m.has_colbert        = m.colbert_linear_w != nullptr;
-    m.is_reranker        = m.classifier_w != nullptr;
+    m.colbert_linear_b   = get("colbert_linear.bias");
+    // Try 2-layer RobertaClassificationHead first (bge-reranker-v2-m3)
+    m.classifier_dense_w = get("classifier.dense.weight");
+    m.classifier_dense_b = get("classifier.dense.bias");
+    m.classifier_out_w   = get("classifier.out_proj.weight");
+    m.classifier_out_b   = get("classifier.out_proj.bias");
+    if (m.classifier_dense_w && m.classifier_out_w) {
+        m.classifier_2layer = true;
+        m.is_reranker = true;
+    } else {
+        // Fall back to 1-layer head
+        m.classifier_w   = get("classifier.weight");
+        m.classifier_b   = get("classifier.bias");
+        m.is_reranker    = m.classifier_w != nullptr;
+    }
+    m.has_sparse  = m.sparse_linear_w != nullptr;
+    m.has_colbert = m.colbert_linear_w != nullptr;
     if (m.has_sparse)  fprintf(stderr, "crispembed: sparse head loaded\n");
     if (m.has_colbert) fprintf(stderr, "crispembed: colbert head loaded (dim=%d)\n", m.colbert_dim);
-    if (m.is_reranker) fprintf(stderr, "crispembed: classifier head loaded (reranker mode)\n");
+    if (m.is_reranker) fprintf(stderr, "crispembed: classifier head loaded (reranker=%s)\n",
+                               m.classifier_2layer ? "2-layer" : "1-layer");
 
     // Pre-merge QKV weights into backend buffer (works on CPU + GPU)
     {
@@ -437,15 +459,19 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
 
     // Named output depends on requested mode
     if (mode == 1 && ctx->model.sparse_linear_w) {
-        // Sparse head: Linear(H,1) + ReLU → [1, T*B]
+        // Sparse head: Linear(H,1) [+ bias] + ReLU → [1, T*B]
         ggml_tensor * sw = ggml_mul_mat(gctx, ctx->model.sparse_linear_w, cur);
+        if (ctx->model.sparse_linear_b)
+            sw = ggml_add(gctx, sw, ctx->model.sparse_linear_b);
         sw = ggml_relu(gctx, sw);
         ggml_set_name(sw, "sparse_out");
         ggml_set_output(sw);
         ggml_build_forward_expand(gf, sw);
     } else if (mode == 2 && ctx->model.colbert_linear_w) {
-        // ColBERT head: Linear(H, colbert_dim) → [colbert_dim, T*B]
+        // ColBERT head: Linear(H, colbert_dim) [+ bias] → [colbert_dim, T*B]
         ggml_tensor * cv = ggml_mul_mat(gctx, ctx->model.colbert_linear_w, cur);
+        if (ctx->model.colbert_linear_b)
+            cv = ggml_add(gctx, cv, ctx->model.colbert_linear_b);
         ggml_set_name(cv, "colbert_out");
         ggml_set_output(cv);
         ggml_build_forward_expand(gf, cv);
@@ -1141,18 +1167,35 @@ extern "C" float crispembed_rerank(crispembed_context * ctx,
     // CLS token is position 0 in encoder_out [H, T]
     const float * cls_vec = raw.data();  // first H floats = token 0
 
-    // Apply classifier: score = cls_vec · classifier_w + bias
-    // classifier_w shape [H, 1] stored as [H] in row-major
-    std::vector<float> cw(H);
-    ggml_backend_tensor_get(ctx->model.classifier_w, cw.data(), 0, H * sizeof(float));
-
     float score = 0.0f;
-    for (int h = 0; h < H; h++) score += cls_vec[h] * cw[h];
-
-    if (ctx->model.classifier_b) {
-        float bias = 0.0f;
-        ggml_backend_tensor_get(ctx->model.classifier_b, &bias, 0, sizeof(float));
-        score += bias;
+    if (ctx->model.classifier_2layer) {
+        // 2-layer RobertaClassificationHead: cls → dense[H,H] → tanh → out_proj[1,H]
+        std::vector<float> dw(H * H), db(H), ow(H);
+        ggml_backend_tensor_get(ctx->model.classifier_dense_w, dw.data(), 0, H*H*sizeof(float));
+        ggml_backend_tensor_get(ctx->model.classifier_dense_b, db.data(), 0, H*sizeof(float));
+        ggml_backend_tensor_get(ctx->model.classifier_out_w,   ow.data(), 0, H*sizeof(float));
+        std::vector<float> hidden(H);
+        for (int i = 0; i < H; i++) {
+            float acc = db[i];
+            for (int j = 0; j < H; j++) acc += cls_vec[j] * dw[i * H + j];
+            hidden[i] = std::tanh(acc);
+        }
+        for (int i = 0; i < H; i++) score += hidden[i] * ow[i];
+        if (ctx->model.classifier_out_b) {
+            float bias = 0.0f;
+            ggml_backend_tensor_get(ctx->model.classifier_out_b, &bias, 0, sizeof(float));
+            score += bias;
+        }
+    } else {
+        // 1-layer: score = cls_vec · classifier_w + bias
+        std::vector<float> cw(H);
+        ggml_backend_tensor_get(ctx->model.classifier_w, cw.data(), 0, H * sizeof(float));
+        for (int h = 0; h < H; h++) score += cls_vec[h] * cw[h];
+        if (ctx->model.classifier_b) {
+            float bias = 0.0f;
+            ggml_backend_tensor_get(ctx->model.classifier_b, &bias, 0, sizeof(float));
+            score += bias;
+        }
     }
     return score;
 }

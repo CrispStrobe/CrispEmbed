@@ -117,8 +117,14 @@ std::string cache_dir() {
 }
 
 static bool file_exists(const std::string & path) {
+    // Use _stat64 on Windows: regular stat() has 32-bit st_size which overflows for files > 2 GB
+#ifdef _WIN32
+    struct __stat64 st;
+    return _stat64(path.c_str(), &st) == 0 && st.st_size > 0;
+#else
     struct stat st;
     return stat(path.c_str(), &st) == 0 && st.st_size > 0;
+#endif
 }
 
 static void mkdirs(const std::string & path) {

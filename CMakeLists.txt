@@ -68,6 +68,8 @@ target_include_directories(crispembed PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
 )
+# Avoid name clash with the DLL import lib (both would be crispembed.lib on Windows)
+set_target_properties(crispembed PROPERTIES ARCHIVE_OUTPUT_NAME crispembed-static)
 
 find_package(Threads REQUIRED)
 target_link_libraries(crispembed PUBLIC
@@ -129,6 +131,7 @@ if(CRISPEMBED_BUILD_SHARED)
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
     )
+    target_compile_definitions(crispembed-shared PRIVATE CRISPEMBED_BUILD)
     target_link_libraries(crispembed-shared PUBLIC
         crispembed-core ggml ggml-base ggml-cpu Threads::Threads
     )

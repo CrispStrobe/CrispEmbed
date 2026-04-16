@@ -75,7 +75,11 @@ def main():
 
     print(f"Loading: {args.model}")
     config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
-    model = AutoModel.from_pretrained(args.model, trust_remote_code=True)
+    try:
+        model = AutoModel.from_pretrained(args.model, trust_remote_code=True,
+                                          use_safetensors=True)
+    except Exception:
+        model = AutoModel.from_pretrained(args.model, trust_remote_code=True)
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     model.eval()
 

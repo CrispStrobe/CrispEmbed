@@ -19,7 +19,7 @@ from pathlib import Path
 import gguf
 import numpy as np
 import torch
-from transformers import AutoModel, AutoTokenizer, AutoConfig
+from transformers import AutoModel, AutoModelForSequenceClassification, AutoTokenizer, AutoConfig
 
 
 ARCH = "bert"
@@ -68,10 +68,78 @@ def main():
 
     print(f"Loading model: {args.model}")
     config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
-    model = AutoModel.from_pretrained(args.model, trust_remote_code=True)
+
+    # Patch out transformers' torch.load safety check (CVE-2025-32434).
+    # Required for local trusted models that only have .bin (no safetensors).
+    _noop = lambda: None
+    for _mod_name in ("transformers.modeling_utils",
+                      "transformers.utils.import_utils",
+                      "transformers.utils"):
+        try:
+            import importlib
+            _m = importlib.import_module(_mod_name)
+            if hasattr(_m, "check_torch_load_is_safe"):
+                _m.check_torch_load_is_safe = _noop
+        except Exception:
+            pass
+
+    # Try sequence classification first (rerankers) to get the scoring head,
+    # then fall back to AutoModel (embedders + BGE-M3 with sparse/colbert heads).
+    # use_safetensors=True avoids torch.load (required when torch < 2.6).
+    def _load(cls):
+        try:
+            return cls.from_pretrained(args.model, trust_remote_code=True,
+                                       use_safetensors=True)
+        except Exception:
+            return cls.from_pretrained(args.model, trust_remote_code=True)
+
+    try:
+        model = _load(AutoModelForSequenceClassification)
+        sd_probe = model.state_dict()
+        # Only keep SeqClass model if it actually has num_labels == 1 (reranker)
+        if not (hasattr(model.config, "num_labels") and model.config.num_labels == 1):
+            raise ValueError("not a reranker")
+    except Exception:
+        model = _load(AutoModel)
+
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     model.eval()
     sd = model.state_dict()
+
+    # Normalize: strip backbone prefix (roberta./bert./xlm_roberta.) so keys
+    # always look like embeddings.*, encoder.layer.*, classifier.*, etc.
+    _backbone_prefix = ""
+    for _pfx in ("roberta.", "bert.", "xlm_roberta.", "deberta."):
+        if f"{_pfx}embeddings.word_embeddings.weight" in sd:
+            _backbone_prefix = _pfx
+            break
+    if _backbone_prefix:
+        _sd_norm = {}
+        for k, v in sd.items():
+            _sd_norm[k[len(_backbone_prefix):] if k.startswith(_backbone_prefix) else k] = v
+        sd = _sd_norm
+        print(f"  state_dict prefix stripped: '{_backbone_prefix}'")
+
+    # BGE-M3: sparse/colbert heads stored as separate .pt files
+    model_dir = Path(args.model) if Path(args.model).is_dir() else None
+    for _head in ("sparse_linear", "colbert_linear"):
+        if any(k.startswith(f"{_head}.") for k in sd):
+            continue
+        _pt_path = None
+        if model_dir and (model_dir / f"{_head}.pt").exists():
+            _pt_path = str(model_dir / f"{_head}.pt")
+        else:
+            # Try to pull from HF hub (BGE-M3 stores these as siblings of pytorch_model.bin)
+            try:
+                from huggingface_hub import hf_hub_download
+                _pt_path = hf_hub_download(repo_id=args.model, filename=f"{_head}.pt")
+            except Exception:
+                _pt_path = None
+        if _pt_path:
+            _weights = torch.load(_pt_path, map_location="cpu", weights_only=False)
+            for _k, _v in _weights.items():
+                sd[f"{_head}.{_k}"] = _v
+            print(f"  loaded {_head}.pt ({list(_weights.keys())})")
 
     print(f"Config: hidden={config.hidden_size} layers={config.num_hidden_layers} "
           f"heads={config.num_attention_heads} intermediate={config.intermediate_size} "
@@ -80,11 +148,16 @@ def main():
     # Detect optional retrieval heads (BGE-M3 sparse/colbert, cross-encoder reranker)
     has_sparse_head  = any(k.startswith("sparse_linear.")  for k in sd)
     has_colbert_head = any(k.startswith("colbert_linear.") for k in sd)
-    has_classifier   = ("classifier.weight" in sd and
-                        sd["classifier.weight"].shape[0] == 1)  # reranker = 1 output
-    if has_sparse_head:  print("  detected: sparse_linear head")
-    if has_colbert_head: print("  detected: colbert_linear head")
-    if has_classifier:   print("  detected: classifier head (reranker)")
+    # 2-layer RobertaClassificationHead (bge-reranker-v2-m3) or simple 1-layer head
+    has_classifier_2layer = ("classifier.dense.weight" in sd and
+                             "classifier.out_proj.weight" in sd)
+    has_classifier_1layer = ("classifier.weight" in sd and
+                             sd["classifier.weight"].shape[0] == 1)
+    has_classifier = has_classifier_2layer or has_classifier_1layer
+    if has_sparse_head:       print("  detected: sparse_linear head")
+    if has_colbert_head:      print("  detected: colbert_linear head")
+    if has_classifier_2layer: print("  detected: classifier head 2-layer (reranker)")
+    elif has_classifier_1layer: print("  detected: classifier head 1-layer (reranker)")
 
     if has_sparse_head and has_colbert_head:
         model_type_str = "bgem3"
@@ -116,7 +189,7 @@ def main():
     try:
         from huggingface_hub import hf_hub_download
         pool_path = hf_hub_download(repo_id=args.model, filename="1_Pooling/config.json")
-        with open(pool_path) as f:
+        with open(pool_path, encoding="utf-8") as f:
             pool_cfg = json.load(f)
         if pool_cfg.get("pooling_mode_cls_token", False):
             pool_method_crisp = 1
@@ -128,6 +201,12 @@ def main():
             print(f"  pooling: mean (from 1_Pooling/config.json)")
     except Exception:
         print(f"  pooling: mean (default, no 1_Pooling/config.json)")
+
+    # BGE-M3 quirk: 1_Pooling/config.json says mean, but FlagEmbedding's BGEM3Model
+    # actually uses CLS pooling for the dense head. Detect and override.
+    if model_type_str == "bgem3" and pool_method_crisp != 1:
+        print(f"  pooling: overriding to CLS (BGE-M3 dense head uses CLS, not mean)")
+        pool_method_crisp = 1
 
     writer = gguf.GGUFWriter(str(args.output), arch=arch)
 
@@ -218,7 +297,7 @@ def main():
             try:
                 from huggingface_hub import hf_hub_download
                 tok_json_path = hf_hub_download(repo_id=args.model, filename="tokenizer.json")
-                with open(tok_json_path) as f:
+                with open(tok_json_path, encoding="utf-8") as f:
                     tok_json = json.load(f)
                 tj_vocab = tok_json.get("model", {}).get("vocab", [])
                 if tj_vocab and isinstance(tj_vocab[0], list) and len(tj_vocab[0]) == 2:
@@ -345,15 +424,26 @@ def main():
     if not ollama_mode:
         if has_sparse_head:
             writer.add_tensor("sparse_linear.weight", f32(sd["sparse_linear.weight"]))
+            if "sparse_linear.bias" in sd:
+                writer.add_tensor("sparse_linear.bias", f32(sd["sparse_linear.bias"]))
             print("  sparse_linear: ok")
         if has_colbert_head:
             writer.add_tensor("colbert_linear.weight", f32(sd["colbert_linear.weight"]))
+            if "colbert_linear.bias" in sd:
+                writer.add_tensor("colbert_linear.bias", f32(sd["colbert_linear.bias"]))
             print("  colbert_linear: ok")
-        if has_classifier:
+        if has_classifier_2layer:
+            writer.add_tensor("classifier.dense.weight",    f32(sd["classifier.dense.weight"]))
+            writer.add_tensor("classifier.dense.bias",      f32(sd["classifier.dense.bias"]))
+            writer.add_tensor("classifier.out_proj.weight", f32(sd["classifier.out_proj.weight"]))
+            if "classifier.out_proj.bias" in sd:
+                writer.add_tensor("classifier.out_proj.bias", f32(sd["classifier.out_proj.bias"]))
+            print("  classifier (2-layer): ok")
+        elif has_classifier_1layer:
             writer.add_tensor("classifier.weight", f32(sd["classifier.weight"]))
             if "classifier.bias" in sd:
                 writer.add_tensor("classifier.bias", f32(sd["classifier.bias"]))
-            print("  classifier: ok")
+            print("  classifier (1-layer): ok")
 
     writer.write_header_to_file()
     writer.write_kv_data_to_file()

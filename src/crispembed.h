@@ -10,6 +10,26 @@
 
 #include <stdint.h>
 
+// DLL export/import on Windows.
+// - CRISPEMBED_BUILD:  defined when building the shared library (exports)
+// - CRISPEMBED_SHARED: defined when consuming the shared library (imports)
+// - neither:           static library use (empty, no attribute)
+#if defined(_WIN32) || defined(__CYGWIN__)
+#  if defined(CRISPEMBED_BUILD)
+#    define CRISPEMBED_API __declspec(dllexport)
+#  elif defined(CRISPEMBED_SHARED)
+#    define CRISPEMBED_API __declspec(dllimport)
+#  else
+#    define CRISPEMBED_API
+#  endif
+#else
+#  if defined(CRISPEMBED_BUILD)
+#    define CRISPEMBED_API __attribute__((visibility("default")))
+#  else
+#    define CRISPEMBED_API
+#  endif
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,80 +51,80 @@ struct crispembed_hparams {
 // Initialize: load GGUF model, allocate ggml backends.
 // n_threads: CPU threads for matmul (0 = auto).
 // Returns NULL on failure.
-crispembed_context * crispembed_init(const char * model_path, int n_threads);
+CRISPEMBED_API crispembed_context * crispembed_init(const char * model_path, int n_threads);
 
 // Set Matryoshka output dimension. 0 = use model default.
 // Must be <= model's native dimension. The embedding is truncated
 // and re-normalized to the specified dimension.
-void crispembed_set_dim(crispembed_context * ctx, int dim);
+CRISPEMBED_API void crispembed_set_dim(crispembed_context * ctx, int dim);
 
 // Get model hyperparameters.
-const crispembed_hparams * crispembed_get_hparams(const crispembed_context * ctx);
+CRISPEMBED_API const crispembed_hparams * crispembed_get_hparams(const crispembed_context * ctx);
 
 // Encode a single text string. Returns a pointer to a float array of
 // length *out_n_dim (the model's output embedding dimension). The
 // returned pointer is valid until the next encode() call or free().
 // The embedding is L2-normalized.
-const float * crispembed_encode(crispembed_context * ctx,
-                                 const char * text,
-                                 int * out_n_dim);
+CRISPEMBED_API const float * crispembed_encode(crispembed_context * ctx,
+                                                const char * text,
+                                                int * out_n_dim);
 
 // Encode a batch of texts. Returns embeddings as a flat array
 // [n_texts * dim]. Pointer valid until next call or free().
-const float * crispembed_encode_batch(crispembed_context * ctx,
-                                       const char ** texts,
-                                       int n_texts,
-                                       int * out_n_dim);
+CRISPEMBED_API const float * crispembed_encode_batch(crispembed_context * ctx,
+                                                      const char ** texts,
+                                                      int n_texts,
+                                                      int * out_n_dim);
 
 // ---------------------------------------------------------------------------
 // Sparse retrieval (BGE-M3 sparse head, SPLADE-style)
 // ---------------------------------------------------------------------------
 
 // Returns 1 if this model has a sparse projection head.
-int crispembed_has_sparse(const crispembed_context * ctx);
+CRISPEMBED_API int crispembed_has_sparse(const crispembed_context * ctx);
 
 // Encode text to a sparse term-weight vector over the input vocabulary.
 // On success: *out_indices[i] = vocab token id, *out_values[i] = weight (> 0).
 // Buffers are owned by ctx and valid until the next call on this ctx.
 // Returns the number of non-zero entries (0 on failure or no non-zeros).
-int crispembed_encode_sparse(crispembed_context * ctx,
-                              const char        * text,
-                              const int32_t    ** out_indices,
-                              const float      ** out_values);
+CRISPEMBED_API int crispembed_encode_sparse(crispembed_context * ctx,
+                                             const char        * text,
+                                             const int32_t    ** out_indices,
+                                             const float      ** out_values);
 
 // ---------------------------------------------------------------------------
 // Multi-vector retrieval (ColBERT-style)
 // ---------------------------------------------------------------------------
 
 // Returns 1 if this model has a ColBERT projection head.
-int crispembed_has_colbert(const crispembed_context * ctx);
+CRISPEMBED_API int crispembed_has_colbert(const crispembed_context * ctx);
 
 // Encode text to per-token L2-normalized embeddings.
 // Returns flat [*out_n_tokens * *out_dim] array. Valid until next call or free().
-const float * crispembed_encode_multivec(crispembed_context * ctx,
-                                          const char         * text,
-                                          int                * out_n_tokens,
-                                          int                * out_dim);
+CRISPEMBED_API const float * crispembed_encode_multivec(crispembed_context * ctx,
+                                                         const char         * text,
+                                                         int                * out_n_tokens,
+                                                         int                * out_dim);
 
 // ---------------------------------------------------------------------------
 // Reranker / cross-encoder
 // ---------------------------------------------------------------------------
 
 // Returns 1 if this model has a classifier head (reranker).
-int crispembed_is_reranker(const crispembed_context * ctx);
+CRISPEMBED_API int crispembed_is_reranker(const crispembed_context * ctx);
 
 // Score a (query, document) pair. Returns raw logit (higher = more relevant).
 // The model must be a cross-encoder (crispembed_is_reranker() == 1).
-float crispembed_rerank(crispembed_context * ctx,
-                         const char         * query,
-                         const char         * document);
+CRISPEMBED_API float crispembed_rerank(crispembed_context * ctx,
+                                        const char         * query,
+                                        const char         * document);
 
 // ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
 
 // Free all resources.
-void crispembed_free(crispembed_context * ctx);
+CRISPEMBED_API void crispembed_free(crispembed_context * ctx);
 
 #ifdef __cplusplus
 }
