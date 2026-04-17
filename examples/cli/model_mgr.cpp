@@ -212,6 +212,23 @@ static const ModelEntry k_registry[] = {
      "https://huggingface.co/cstr/splade-pp-en-v1-GGUF/resolve/main/splade-pp-en-v1.gguf",
      "BERT sparse (SPLADE) English (109M)", "418 MB"},
 
+    // --- GTE v1.5 (new BERT) ---
+
+    {"gte-base-en-v1.5",
+     "gte-base-en-v1.5.gguf",
+     "https://huggingface.co/cstr/gte-base-en-v1.5-GGUF/resolve/main/gte-base-en-v1.5.gguf",
+     "GTE 768d English pre-LN+RoPE+GeGLU (109M)", "522 MB"},
+
+    {"gte-large-en-v1.5",
+     "gte-large-en-v1.5.gguf",
+     "https://huggingface.co/cstr/gte-large-en-v1.5-GGUF/resolve/main/gte-large-en-v1.5.gguf",
+     "GTE 1024d English pre-LN+RoPE+GeGLU (335M)", "1.7 GB"},
+
+    {"embeddinggemma-300m",
+     "embeddinggemma-300m.gguf",
+     "https://huggingface.co/cstr/embeddinggemma-300m-GGUF/resolve/main/embeddinggemma-300m.gguf",
+     "Gemma3 768d 24-layer last-token (300M)", "741 MB"},
+
     {nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 
