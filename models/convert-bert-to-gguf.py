@@ -19,7 +19,7 @@ from pathlib import Path
 import gguf
 import numpy as np
 import torch
-from transformers import AutoModel, AutoModelForSequenceClassification, AutoTokenizer, AutoConfig
+from transformers import AutoModel, AutoModelForSequenceClassification, AutoModelForMaskedLM, AutoTokenizer, AutoConfig
 
 
 ARCH = "bert"
@@ -100,7 +100,15 @@ def main():
         if not (hasattr(model.config, "num_labels") and model.config.num_labels == 1):
             raise ValueError("not a reranker")
     except Exception:
-        model = _load(AutoModel)
+        # Try MaskedLM for SPLADE models (has MLM head)
+        try:
+            model = _load(AutoModelForMaskedLM)
+            sd_probe = model.state_dict()
+            if not any("cls.predictions" in k for k in sd_probe.keys()):
+                raise ValueError("no MLM head")
+            print(f"  detected: MLM head (SPLADE)")
+        except Exception:
+            model = _load(AutoModel)
 
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     model.eval()
@@ -589,6 +597,19 @@ def main():
             if "classifier.bias" in sd:
                 writer.add_tensor("classifier.bias", f32(sd["classifier.bias"]))
             print("  classifier (1-layer): ok")
+
+        # SPLADE MLM head (cls.predictions.transform + decoder)
+        has_mlm = "cls.predictions.transform.dense.weight" in sd
+        if has_mlm:
+            writer.add_tensor("mlm_transform.weight", f32(sd["cls.predictions.transform.dense.weight"]))
+            writer.add_tensor("mlm_transform.bias", f32(sd["cls.predictions.transform.dense.bias"]))
+            writer.add_tensor("mlm_ln.weight", f32(sd["cls.predictions.transform.LayerNorm.weight"]))
+            writer.add_tensor("mlm_ln.bias", f32(sd["cls.predictions.transform.LayerNorm.bias"]))
+            # Decoder bias (decoder weight is tied to token_embd)
+            if "cls.predictions.bias" in sd:
+                writer.add_tensor("mlm_bias", f32(sd["cls.predictions.bias"]))
+            writer.add_uint32("bert.has_mlm_head", 1)
+            print("  MLM/SPLADE head: ok")
 
     writer.write_header_to_file()
     writer.write_kv_data_to_file()

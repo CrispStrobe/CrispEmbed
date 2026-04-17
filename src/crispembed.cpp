@@ -110,6 +110,13 @@ struct embed_model {
     // Sparse retrieval head (BGE-M3): Linear(n_embd, 1)
     ggml_tensor * sparse_linear_w  = nullptr;  // [H, 1]
     ggml_tensor * sparse_linear_b  = nullptr;  // [1], optional
+    // SPLADE/MLM head: transform(H→H) + LN + decode(H→V) → sparse
+    ggml_tensor * mlm_transform_w  = nullptr;  // [H, H]
+    ggml_tensor * mlm_transform_b  = nullptr;  // [H]
+    ggml_tensor * mlm_ln_w         = nullptr;  // [H]
+    ggml_tensor * mlm_ln_b         = nullptr;  // [H]
+    ggml_tensor * mlm_bias         = nullptr;  // [V] (decoder bias; weight tied to token_embd)
+    bool has_mlm_head = false;
     // ColBERT multi-vector head: Linear(n_embd, colbert_dim)
     ggml_tensor * colbert_linear_w = nullptr;  // [H, colbert_dim]
     ggml_tensor * colbert_linear_b = nullptr;  // [colbert_dim], optional
@@ -365,7 +372,16 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         m.classifier_b   = get("classifier.bias");
         m.is_reranker    = m.classifier_w != nullptr;
     }
-    m.has_sparse  = m.sparse_linear_w != nullptr;
+    // SPLADE/MLM head
+    m.mlm_transform_w = get("mlm_transform.weight");
+    m.mlm_transform_b = get("mlm_transform.bias");
+    m.mlm_ln_w        = get("mlm_ln.weight");
+    m.mlm_ln_b        = get("mlm_ln.bias");
+    m.mlm_bias        = get("mlm_bias");
+    m.has_mlm_head    = m.mlm_transform_w != nullptr;
+    if (m.has_mlm_head) fprintf(stderr, "crispembed: MLM/SPLADE head loaded\n");
+
+    m.has_sparse  = m.sparse_linear_w != nullptr || m.has_mlm_head;
     m.has_colbert = m.colbert_linear_w != nullptr;
     if (m.has_sparse)  fprintf(stderr, "crispembed: sparse head loaded\n");
     if (m.has_colbert) fprintf(stderr, "crispembed: colbert head loaded (dim=%d)\n", m.colbert_dim);
@@ -1319,14 +1335,85 @@ extern "C" int crispembed_encode_sparse(crispembed_context * ctx,
     tokens.type_ids.resize(T);
     tokens.attn_mask.resize(T);
 
+    // SPLADE via MLM head: compute sparse from per-token encoder hidden states
+    if (ctx->model.has_mlm_head) {
+        const int H = ctx->model.hparams.n_embd;
+        const int V = ctx->model.hparams.n_vocab;
+        const float ln_eps = ctx->model.hparams.layer_norm_eps;
+
+        // Get per-token encoder output [H, T] via mode=0 (dense) graph
+        int raw_T = 0;
+        std::vector<float> raw = run_encoder_raw(ctx, tokens, 0, &raw_T);
+        if (raw.empty() || raw_T == 0) return 0;
+
+        // Read MLM head weights from GPU/CPU backend
+        std::vector<float> tw(H * H), tb(H), lnw(H), lnb(H);
+        ggml_backend_tensor_get(ctx->model.mlm_transform_w, tw.data(), 0, H * H * sizeof(float));
+        ggml_backend_tensor_get(ctx->model.mlm_transform_b, tb.data(), 0, H * sizeof(float));
+        ggml_backend_tensor_get(ctx->model.mlm_ln_w, lnw.data(), 0, H * sizeof(float));
+        ggml_backend_tensor_get(ctx->model.mlm_ln_b, lnb.data(), 0, H * sizeof(float));
+        std::vector<float> emb_w(V * H);
+        ggml_backend_tensor_get(ctx->model.token_embd, emb_w.data(), 0, V * H * sizeof(float));
+        std::vector<float> mlm_b(V, 0.0f);
+        if (ctx->model.mlm_bias)
+            ggml_backend_tensor_get(ctx->model.mlm_bias, mlm_b.data(), 0, V * sizeof(float));
+
+        // SPLADE: for each token, compute MLM logits, apply log(1+ReLU), max-pool
+        std::vector<float> max_logits(V, 0.0f);
+
+        for (int t = 0; t < std::min(raw_T, T); t++) {
+            if (!tokens.attn_mask[t]) continue;
+            const float * ht = raw.data() + t * H;
+
+            // MLM transform: h' = GELU(W*h + b)
+            std::vector<float> h(H);
+            for (int i = 0; i < H; i++) {
+                float v = tb[i];
+                for (int j = 0; j < H; j++) v += tw[i * H + j] * ht[j];
+                v = 0.5f * v * (1.0f + tanhf(0.7978845608f * (v + 0.044715f * v * v * v)));
+                h[i] = v;
+            }
+
+            // LayerNorm
+            float mean = 0, var = 0;
+            for (int i = 0; i < H; i++) mean += h[i];
+            mean /= H;
+            for (int i = 0; i < H; i++) { float d = h[i] - mean; var += d * d; }
+            var = 1.0f / sqrtf(var / H + ln_eps);
+            for (int i = 0; i < H; i++) h[i] = (h[i] - mean) * var * lnw[i] + lnb[i];
+
+            // Decode to vocab logits + SPLADE activation
+            for (int v = 0; v < V; v++) {
+                float logit = mlm_b[v];
+                for (int j = 0; j < H; j++) logit += emb_w[v * H + j] * h[j];
+                if (logit > 0.0f) {
+                    float sv = logf(1.0f + logit);
+                    if (sv > max_logits[v]) max_logits[v] = sv;
+                }
+            }
+        }
+
+        // Collect non-zero entries (skip special tokens)
+        ctx->last_sparse_indices.clear();
+        ctx->last_sparse_values.clear();
+        for (int v = 0; v < V; v++) {
+            if (max_logits[v] > 0.0f && v != 0 && v != 101 && v != 102) {
+                ctx->last_sparse_indices.push_back(v);
+                ctx->last_sparse_values.push_back(max_logits[v]);
+            }
+        }
+
+        if (out_indices) *out_indices = ctx->last_sparse_indices.data();
+        if (out_values) *out_values = ctx->last_sparse_values.data();
+        return (int)ctx->last_sparse_indices.size();
+    }
+
+    // BGE-M3 sparse path (mode=1 graph with sparse_linear head)
     int raw_T = 0;
     std::vector<float> raw = run_encoder_raw(ctx, tokens, 1, &raw_T);
     if (raw.empty()) return 0;
 
-    // Detect sparse style from weight output dimension (ne[1] after shape reversal in gguf):
-    //   BGE-M3: sparse_linear is Linear(H, 1)  → weight stored [H,1] in ggml → ne[1]=1
-    //   SPLADE: sparse_linear is Linear(H, V)  → weight stored [H,V] in ggml → ne[1]=V
-    // The graph output is [out_dim, T] → out_dim = sparse_linear_w->ne[1].
+    if (!ctx->model.sparse_linear_w) return 0;
     int out_dim = (int)ctx->model.sparse_linear_w->ne[1];
 
     ctx->last_sparse_indices.clear();
