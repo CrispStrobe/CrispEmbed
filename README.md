@@ -3,14 +3,18 @@
 [![Build](https://github.com/CrispStrobe/CrispEmbed/actions/workflows/build.yml/badge.svg)](https://github.com/CrispStrobe/CrispEmbed/actions/workflows/build.yml)
 
 Lightweight text embedding inference via ggml. No Python runtime, no ONNX.
-Supports BERT, XLM-R, Qwen3, and Gemma3 embedding models with GPU acceleration
-(CUDA/Vulkan/Metal) and BLAS support (OpenBLAS/MKL).
+10 architectures: BERT, XLM-R, MPNet, NomicBERT, ModernBERT, GTE v1.5, DeBERTa-v2,
+Qwen3, Gemma3, SPLADE. GPU acceleration (CUDA/Vulkan/Metal), BLAS (OpenBLAS/MKL).
 
-**Multi-vector retrieval**: dense, sparse (SPLADE/BGE-M3), ColBERT multi-vector, and cross-encoder rerankers — all in one binary, all GPU-accelerated.
+**Multi-vector retrieval**: dense, sparse (SPLADE/BGE-M3), ColBERT multi-vector,
+cross-encoder rerankers, bi-encoder reranking — all in one binary, all GPU-accelerated.
+
+**9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
+iOS (Metal) + Android (Vulkan) builds. 29 HuggingFace model repos.
 
 ## Status
 
-**21 models verified** bit-identical to HuggingFace (cos>=0.999), 35+ models in registry:
+**22+ models verified** bit-identical to HuggingFace (cos>=0.999), 40+ in registry:
 
 | Model | Type | Dim | F32 CosSim | Q8_0 | Q4_K |
 |-------|------|-----|------------|------|------|
