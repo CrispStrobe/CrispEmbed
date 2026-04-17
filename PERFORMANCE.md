@@ -166,6 +166,13 @@ Cosine similarity between F32 and quantized models (1.0 = identical).
 
 | all-mpnet-base-v2 | 0.9998 | 0.99 |
 | nomic-embed-text-v1.5 | 0.9994 | -- |
+| bge-small-en-v1.5 | 0.9999 | 0.99 |
+| bge-base-en-v1.5 | 0.9999 | 0.99 |
+| bge-large-en-v1.5 | 0.9999 | 0.99 |
+| all-MiniLM-L12-v2 | 0.9999 | 0.99 |
+| mxbai-embed-large-v1 | 1.0000 | 0.99 |
+| snowflake-arctic-embed-m | 0.9999 | 0.99 |
+| snowflake-arctic-embed-l | 0.9999 | 0.99 |
 
 Q8_0: all > 0.995. Q4_K: most > 0.95.
 
@@ -187,9 +194,11 @@ Use Q8_0 for CPU speed, GPU (CUDA/Vulkan) for maximum throughput.
 Retrieval quality on synthetic IR dataset (50 documents, 15 queries, graded relevance).
 Model: all-MiniLM-L6-v2. Hardware: Intel Xeon Skylake, 4 threads, CPU-only.
 
-| Engine | MRR@10 | NDCG@10 | Recall@10 | Recall@100 | Encode Time |
-|--------|--------|---------|-----------|------------|------------|
-| CrispEmbed F32 | 1.0000 | 0.7846 | 0.7556 | 1.0000 | 0.63s |
+| Engine | Model | MRR@10 | NDCG@10 | Recall@10 | Recall@100 | Time |
+|--------|-------|--------|---------|-----------|------------|------|
+| CrispEmbed F32 | all-MiniLM-L6-v2 | 1.0000 | 0.7846 | 0.7556 | 1.0000 | 0.63s |
+| CrispEmbed F32 | bge-small-en-v1.5 | 1.0000 | 0.7470 | 0.6889 | 1.0000 | 3.19s |
+| CrispEmbed Q8_0 | bge-small-en-v1.5 | 1.0000 | 0.7470 | 0.6889 | 1.0000 | 3.00s |
 
 MRR@10 = 1.0: the most relevant document is always ranked first.
 Recall@100 = 1.0: all relevant documents found within top-100.
