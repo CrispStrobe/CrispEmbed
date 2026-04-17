@@ -100,20 +100,23 @@ jobs:
 
       - name: Build
         run: |
+          # Use Unix Makefiles (not Xcode) to avoid MACOSX_BUNDLE issues
           cmake -S . -B build \
-            -G Xcode \
             -DCMAKE_SYSTEM_NAME=iOS \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 \
             -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_SYSROOT=$(xcrun --sdk iphoneos --show-sdk-path) \
+            -DCMAKE_C_COMPILER=$(xcrun --sdk iphoneos -f clang) \
+            -DCMAKE_CXX_COMPILER=$(xcrun --sdk iphoneos -f clang++) \
             -DCMAKE_BUILD_TYPE=Release \
             -DCRISPEMBED_BUILD_SHARED=OFF \
             -DGGML_METAL=ON \
             -DGGML_METAL_EMBED_LIBRARY=ON
-          cmake --build build --config Release
+          cmake --build build -j4
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: ios-arm64
-          path: build/Release-iphoneos/libcrispembed-static.a
+          path: build/libcrispembed-static.a
           if-no-files-found: warn
