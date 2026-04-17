@@ -183,6 +183,28 @@ static const ModelEntry k_registry[] = {
      "https://huggingface.co/cstr/mxbai-rerank-base-v1-GGUF/resolve/main/mxbai-rerank-base-v1.gguf",
      "BERT reranker English (86M)", "330 MB"},
 
+    // --- MTEB top multilingual models ---
+
+    {"multilingual-e5-base",
+     "multilingual-e5-base.gguf",
+     "https://huggingface.co/cstr/multilingual-e5-base-GGUF/resolve/main/multilingual-e5-base.gguf",
+     "XLM-R 768d 100+ languages (278M)", "1.1 GB"},
+
+    {"multilingual-e5-large",
+     "multilingual-e5-large.gguf",
+     "https://huggingface.co/cstr/multilingual-e5-large-GGUF/resolve/main/multilingual-e5-large.gguf",
+     "XLM-R 1024d 100+ languages (560M)", "2.2 GB"},
+
+    {"granite-embedding-278m",
+     "granite-embedding-278m-multilingual.gguf",
+     "https://huggingface.co/cstr/granite-embedding-278m-multilingual-GGUF/resolve/main/granite-embedding-278m-multilingual.gguf",
+     "XLM-R 768d IBM multilingual (278M)", "1.1 GB"},
+
+    {"granite-embedding-107m",
+     "granite-embedding-107m-multilingual.gguf",
+     "https://huggingface.co/cstr/granite-embedding-107m-multilingual-GGUF/resolve/main/granite-embedding-107m-multilingual.gguf",
+     "XLM-R 384d IBM multilingual (107M)", "418 MB"},
+
     {nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 

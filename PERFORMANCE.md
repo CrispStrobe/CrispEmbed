@@ -249,3 +249,19 @@ Correct ranking with clear separation between relevant and irrelevant docs.
 - Server mode eliminates model loading overhead (~100-300ms per cold start)
 - Prompt prefix adds negligible overhead (string concatenation before tokenization)
 - Bi-encoder reranking cost = 1 batch encode + N dot products (O(N*dim) after encode)
+
+## Latency Benchmark (Intel Xeon Skylake, CPU, 4 threads)
+
+Single-text and batch (10 texts) encoding latency via Python ctypes wrapper.
+
+| Model | Dim | Single (ms) | Batch 10 (ms) | Texts/s |
+|-------|-----|------------|---------------|---------|
+| all-MiniLM-L6-v2 | 384 | 12.7 | 48.8 | 205 |
+| bge-small-en-v1.5 | 384 | 34.5 | 537.3 | 19 |
+| all-MiniLM-L12-v2 | 384 | 443.0 | 239.0 | 42 |
+| bge-base-en-v1.5 | 768 | 124.4 | 543.4 | 18 |
+| all-mpnet-base-v2 | 768 | 66.4 | 292.9 | 34 |
+| nomic-embed-text-v1.5 | 768 | 88.9 | 310.2 | 32 |
+
+MiniLM-L6 is fastest (12.7ms single). NomicBERT is efficient for its size
+(768d in 88.9ms). Batch throughput varies due to model size and graph complexity.
