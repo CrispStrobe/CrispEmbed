@@ -369,25 +369,17 @@ def main():
                 # Store BPE merges for BPE tokenizers
                 if is_bpe_tokenizer:
                     merges = tj.get("model", {}).get("merges", [])
-                    # Store merge count — merges themselves are reconstructed from vocab scores
                     writer.add_uint32("tokenizer.ggml.merges_count", len(merges))
-                    # Encode merge ranks as vocab scores (higher score = earlier merge = higher priority)
-                    bpe_vocab = tj.get("model", {}).get("vocab", {})
-                    merge_scores = [0.0] * len(vocab)
-                    for rank, merge in enumerate(merges):
-                        # Each merge is ["tokenA", "tokenB"] or "tokenA tokenB"
-                        if isinstance(merge, list):
-                            merged = "".join(merge)
-                        else:
-                            merged = merge.replace(" ", "")
-                        if merged in bpe_vocab:
-                            tid = bpe_vocab[merged]
-                            if tid < len(merge_scores):
-                                merge_scores[tid] = float(len(merges) - rank)  # higher = merge earlier
-                    scores = merge_scores  # override scores with merge ranks
-                    print(f"  BPE merges: {len(merges)} (stored as vocab scores)")
-            except Exception:
-                pass
+                    # Store merges as a tensor (newline-separated blob)
+                    # This avoids GGUF string array metadata issues
+                    merge_strs = []
+                    for m in merges:
+                        merge_strs.append(" ".join(m) if isinstance(m, list) else m)
+                    blob = "\n".join(merge_strs).encode("utf-8")
+                    writer.add_tensor("tokenizer.merges", np.frombuffer(blob, dtype=np.int8))
+                    print(f"  BPE merges: {len(merges)} ({len(blob)} bytes as tensor)")
+            except Exception as e:
+                print(f"  BPE detection: {e}")
 
             if is_bpe_tokenizer and scores:
                 writer.add_array("tokenizer.ggml.scores", scores)

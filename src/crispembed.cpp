@@ -260,15 +260,12 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             int unk_id = u32("tokenizer.ggml.unknown_token_id", 3);
             int pad_id = u32("tokenizer.ggml.padding_token_id", 1);
 
-            // BPE merges are encoded as vocab scores (higher = merge earlier)
-            // The BPE tokenizer reconstructs merge priority from scores
+            // BPE merges stored as tensor (newline-separated blob)
+            std::vector<std::string> merges;
+            // Merges will be loaded after weight loading (from tensor "tokenizer.merges")
             std::vector<std::string> empty_merges;
             ctx->bpe_tokenizer.load(vocab, empty_merges, sep_id, pad_id, unk_id,
                                      cls_id, false, hp.n_max_tokens);
-            // Override with score-based merge ranks if available
-            if (!scores.empty()) {
-                ctx->bpe_tokenizer.set_scores(scores);
-            }
             ctx->use_bpe = true;
             fprintf(stderr, "crispembed: using BPE tokenizer (%d tokens)\n", n);
         } else {
@@ -450,6 +447,36 @@ static bool load_model(crispembed_context * ctx, const char * path) {
                     ggml_backend_tensor_set(L.qkv_b, tmp.data(), 2 * H * sizeof(float), H * sizeof(float));
                 }
             }
+        }
+    }
+
+    // Load BPE merges from tensor (stored as newline-separated UTF-8 blob)
+    if (ctx->use_bpe) {
+        ggml_tensor * merge_t = get("tokenizer.merges");
+        if (merge_t) {
+            size_t nbytes = ggml_nbytes(merge_t);
+            std::vector<uint8_t> blob(nbytes);
+            ggml_backend_tensor_get(merge_t, blob.data(), 0, nbytes);
+            // Parse newline-separated merges
+            std::vector<std::string> merges;
+            std::string current;
+            for (size_t i = 0; i < nbytes; i++) {
+                if (blob[i] == '\n') {
+                    if (!current.empty()) merges.push_back(current);
+                    current.clear();
+                } else {
+                    current += (char)blob[i];
+                }
+            }
+            if (!current.empty()) merges.push_back(current);
+            // Re-load BPE tokenizer with merges
+            int cls_id = ctx->bpe_tokenizer.bos_id();
+            int sep_id = ctx->bpe_tokenizer.eos_id();
+            int unk_id = 3;
+            int pad_id = ctx->bpe_tokenizer.pad_id();
+            ctx->bpe_tokenizer.load(ctx->bpe_tokenizer.get_vocab(), merges,
+                                     sep_id, pad_id, unk_id, cls_id, false, hp.n_max_tokens);
+            fprintf(stderr, "crispembed: loaded %zu BPE merges from tensor\n", merges.size());
         }
     }
 

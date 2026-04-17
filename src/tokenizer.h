@@ -96,6 +96,10 @@ public:
     embed_tokens encode(const std::string & text) const;
 
     int vocab_size() const { return (int)id_to_token_.size(); }
+    int bos_id() const { return bos_id_; }
+    int eos_id() const { return eos_id_; }
+    int pad_id() const { return pad_id_; }
+    const std::vector<std::string> & get_vocab() const { return id_to_token_; }
 
 private:
     std::unordered_map<std::string, int32_t> token_to_id_;
