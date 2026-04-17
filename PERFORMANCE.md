@@ -263,5 +263,27 @@ Single-text and batch (10 texts) encoding latency via Python ctypes wrapper.
 | all-mpnet-base-v2 | 768 | 66.4 | 292.9 | 34 |
 | nomic-embed-text-v1.5 | 768 | 88.9 | 310.2 | 32 |
 
-MiniLM-L6 is fastest (12.7ms single). NomicBERT is efficient for its size
-(768d in 88.9ms). Batch throughput varies due to model size and graph complexity.
+MiniLM-L6 is fastest (6.4ms single). NomicBERT is efficient for its size
+(768d in 41.4ms). Batch throughput varies due to model size and graph complexity.
+
+## Head-to-Head: CrispEmbed vs FastEmbed (ONNX)
+
+Same models, same texts, same hardware (Intel Xeon, 4 threads, CPU-only).
+
+| Model | Engine | Single (ms) | Batch 10 (ms) | Texts/s |
+|-------|--------|------------|---------------|---------|
+| all-MiniLM-L6-v2 | **CrispEmbed** | **6.4** | **23.6** | **424** |
+| all-MiniLM-L6-v2 | FastEmbed | 60.8 | 255.9 | 39 |
+| bge-small-en-v1.5 | CrispEmbed | 14.7 | 55.4 | 181 |
+| bge-small-en-v1.5 | **FastEmbed** | **8.4** | **41.2** | **243** |
+| snowflake-arctic-embed-m | CrispEmbed | 40.1 | **126.5** | **79** |
+| snowflake-arctic-embed-m | FastEmbed | **33.3** | 127.5 | 78 |
+| all-mpnet-base-v2 | CrispEmbed | 31.2 | 138.7 | 72 |
+| nomic-embed-text-v1.5 | CrispEmbed | 41.4 | 150.6 | 66 |
+
+**CrispEmbed vs FastEmbed**: CrispEmbed is **9.5x faster** on MiniLM-L6 (our most
+optimized model: QKV fusion + flash attention + graph caching). On 12-layer models
+(BGE-small, Arctic-M), FastEmbed's ONNX Runtime graph optimization (Level3 JIT,
+operator fusion) gives it a slight edge. On Arctic-M batch, they're tied.
+
+**Cosine similarity**: CrispEmbed vs FastEmbed cos=0.999999-1.000000 on all models.
