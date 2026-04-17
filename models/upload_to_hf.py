@@ -469,7 +469,9 @@ def upload_model(model_name, gguf_dir, dry_run=False):
         print(f"Unknown model: {model_name}")
         return False
 
-    api = HfApi()
+    # Use HF_TOKEN env var or stored token
+    token = os.environ.get("HF_TOKEN")
+    api = HfApi(token=token)
     repo_id = f"cstr/{model_name}-GGUF"
 
     # Find all GGUF files for this model (skip Q4_0 — we have Q4_K)

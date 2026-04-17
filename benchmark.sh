@@ -99,18 +99,30 @@ map_hf_model() {
     basename=$(echo "$1" | sed 's/\.gguf$//' | sed 's/-q[0-9].*//')
     case "$basename" in
         *all-MiniLM-L6-v2*)       echo "sentence-transformers/all-MiniLM-L6-v2" ;;
+        *all-MiniLM-L12-v2*)      echo "sentence-transformers/all-MiniLM-L12-v2" ;;
+        *all-mpnet-base-v2*)      echo "sentence-transformers/all-mpnet-base-v2" ;;
         *gte-small*)              echo "thenlper/gte-small" ;;
         *arctic-embed-xs*)        echo "Snowflake/snowflake-arctic-embed-xs" ;;
-        *arctic-embed-l-v2*)      echo "Snowflake/snowflake-arctic-embed-l-v2" ;;
+        *arctic-embed-m*)         echo "Snowflake/snowflake-arctic-embed-m" ;;
+        *arctic-embed-l-v2*|*snowflake-arctic-embed-l*) echo "Snowflake/snowflake-arctic-embed-l" ;;
         *multilingual-e5-small*)  echo "intfloat/multilingual-e5-small" ;;
         *PIXIE-Rune*|*pixie-rune*)  echo "CrispStrobe/PIXIE-Rune-v1.0" ;;
+        *bge-small-en-v1.5*)      echo "BAAI/bge-small-en-v1.5" ;;
+        *bge-base-en-v1.5*)       echo "BAAI/bge-base-en-v1.5" ;;
+        *bge-large-en-v1.5*)      echo "BAAI/bge-large-en-v1.5" ;;
+        *bge-m3*)                 echo "BAAI/bge-m3" ;;
+        *nomic-embed-text-v1.5*)  echo "nomic-ai/nomic-embed-text-v1.5" ;;
+        *mxbai-embed-large-v1*)   echo "mixedbread-ai/mxbai-embed-large-v1" ;;
         *octen*0.6*)              echo "Octen/Octen-Embedding-0.6B" ;;
-        *F2LLM*0.6*|*f2llm*0.6*) echo "intfloat/F2LLM-v2-0.6B" ;;
-        *jina*nano*|*jina-v5-nano*)  echo "jinaai/jina-embeddings-v3-nano" ;;
-        *jina*small*|*jina-v5-small*) echo "jinaai/jina-embeddings-v3-small" ;;
-        *harrier*0.6*)            echo "Harrier/Harrier-OSS-v1-0.6B" ;;
-        *harrier*270*)            echo "Harrier/Harrier-OSS-v1-270M" ;;
-        *qwen3*embed*0.6*)        echo "Qwen/Qwen3-Embedding-0.6B" ;;
+        *F2LLM*0.6*|*f2llm*0.6*) echo "F2LLM/F2LLM-Embedding-v2-0.6B" ;;
+        *jina*nano*|*jina-v5-nano*)  echo "jinaai/jina-embeddings-v5-text-nano-retrieval" ;;
+        *jina*small*|*jina-v5-small*) echo "jinaai/jina-embeddings-v5-text-small-retrieval" ;;
+        *harrier*0.6*)            echo "microsoft/harrier-oss-v1-0.6b" ;;
+        *harrier*270*)            echo "microsoft/harrier-oss-v1-270m" ;;
+        *qwen3*embed*0.6*)        echo "Alibaba-NLP/Qwen3-Embedding-0.6B" ;;
+        *ms-marco*L-6*v2*)        echo "cross-encoder/ms-marco-MiniLM-L-6-v2" ;;
+        *ms-marco*L-12*v2*)       echo "cross-encoder/ms-marco-MiniLM-L-12-v2" ;;
+        *bge-reranker-base*)      echo "BAAI/bge-reranker-base" ;;
         *)                        echo "" ;;
     esac
 }
@@ -396,10 +408,13 @@ echo "Shared lib: ${SHARED_LIB:-not found (skip Python wrapper)}"
 echo "Runs:       $N_RUNS"
 
 if [ $MULTI_MODEL -eq 1 ]; then
-    # Small models that benchmark quickly and are broadly supported
+    # Models that benchmark quickly and cover key architectures
     MODELS=(
         "all-MiniLM-L6-v2"
-        "gte-small"
+        "bge-small-en-v1.5"
+        "all-MiniLM-L12-v2"
+        "nomic-embed-text-v1.5"
+        "bge-base-en-v1.5"
         "arctic-embed-xs"
     )
 

@@ -377,27 +377,51 @@ def main():
             "ffn_up": "ffn.fc1", "ffn_down": "ffn.fc2",
         }
 
-    # Embeddings
-    writer.add_tensor("token_embd.weight", f32(sd["embeddings.word_embeddings.weight"]))
-    if "embeddings.position_embeddings.weight" in sd:
-        writer.add_tensor("position_embd.weight", f32(sd["embeddings.position_embeddings.weight"]))
+    # Embeddings — auto-detect prefix (deberta.embeddings vs embeddings)
+    if "deberta.embeddings.word_embeddings.weight" in sd:
+        emb_prefix = "deberta.embeddings"
+    else:
+        emb_prefix = "embeddings"
+    writer.add_tensor("token_embd.weight", f32(sd[f"{emb_prefix}.word_embeddings.weight"]))
+    if f"{emb_prefix}.position_embeddings.weight" in sd:
+        writer.add_tensor("position_embd.weight", f32(sd[f"{emb_prefix}.position_embeddings.weight"]))
     else:
         print("  note: no position embeddings (model uses rotary/relative positions)")
-    if "embeddings.token_type_embeddings.weight" in sd:
-        writer.add_tensor(f"{TN['type_embd']}.weight", f32(sd["embeddings.token_type_embeddings.weight"]))
-    for ln_key in ["embeddings.LayerNorm", "embeddings.norm", "emb_ln"]:
-        if f"{ln_key}.weight" in sd:
-            writer.add_tensor(f"{TN['embd_ln']}.weight", f32(sd[f"{ln_key}.weight"]))
-            writer.add_tensor(f"{TN['embd_ln']}.bias", f32(sd[f"{ln_key}.bias"]))
+    if f"{emb_prefix}.token_type_embeddings.weight" in sd:
+        writer.add_tensor(f"{TN['type_embd']}.weight", f32(sd[f"{emb_prefix}.token_type_embeddings.weight"]))
+    for ln_suffix in ["LayerNorm", "norm"]:
+        k = f"{emb_prefix}.{ln_suffix}"
+        if f"{k}.weight" in sd:
+            writer.add_tensor(f"{TN['embd_ln']}.weight", f32(sd[f"{k}.weight"]))
+            writer.add_tensor(f"{TN['embd_ln']}.bias", f32(sd[f"{k}.bias"]))
+            break
+    else:
+        if "emb_ln.weight" in sd:
+            writer.add_tensor(f"{TN['embd_ln']}.weight", f32(sd["emb_ln.weight"]))
+            writer.add_tensor(f"{TN['embd_ln']}.bias", f32(sd["emb_ln.bias"]))
+    # DeBERTa relative position embeddings (with or without deberta. prefix)
+    for rel_key in ["deberta.encoder.rel_embeddings.weight", "encoder.rel_embeddings.weight"]:
+        if rel_key in sd:
+            writer.add_tensor("rel_embd.weight", f32(sd[rel_key]))
+            print("  relative position embeddings: ok")
+            break
+    # DeBERTa encoder-level LayerNorm
+    for enc_ln in ["deberta.encoder.LayerNorm", "encoder.LayerNorm"]:
+        if f"{enc_ln}.weight" in sd:
+            writer.add_tensor("encoder_ln.weight", f32(sd[f"{enc_ln}.weight"]))
+            writer.add_tensor("encoder_ln.bias", f32(sd[f"{enc_ln}.bias"]))
             break
     print("  embeddings: ok")
 
     # Auto-detect source weight key patterns:
-    # BERT:     encoder.layer.N.attention.self.query, attention.output.LayerNorm
-    # MPNet:    encoder.layer.N.attention.attn.q,     attention.LayerNorm
-    # NomicBERT: encoder.layers.N.attn.Wqkv (fused), norm1/norm2, SwiGLU FFN
+    # BERT:      encoder.layer.N.attention.self.query,      attention.output.LayerNorm
+    # MPNet:     encoder.layer.N.attention.attn.q,          attention.LayerNorm
+    # NomicBERT: encoder.layers.N.attn.Wqkv (fused),       norm1/norm2, SwiGLU FFN
+    # DeBERTa:   deberta.encoder.layer.N.attention.self.query_proj
     is_mpnet = "encoder.layer.0.attention.attn.q.weight" in sd
     is_nomic = "encoder.layers.0.attn.Wqkv.weight" in sd
+    is_deberta = ("encoder.layer.0.attention.self.query_proj.weight" in sd or
+                  "deberta.encoder.layer.0.attention.self.query_proj.weight" in sd)
 
     if is_nomic:
         # NomicBERT: RoPE encoder, fused QKV, SwiGLU FFN, no bias on attn
@@ -433,7 +457,12 @@ def main():
             writer.add_tensor(f"{LP}.{i}.ffn_gate.weight", wt(sd[f"{pfx}.mlp.fc11.weight"]))
 
         else:
-            pfx = f"encoder.layer.{i}"
+            # BERT / DeBERTa / MPNet layer prefix
+            # DeBERTa prefix may be stripped by HF loader — check both
+            if is_deberta and f"deberta.encoder.layer.0.attention.self.query_proj.weight" in sd:
+                pfx = f"deberta.encoder.layer.{i}"
+            else:
+                pfx = f"encoder.layer.{i}"
 
             if is_mpnet:
                 ln1_key = f"{pfx}.attention.LayerNorm"
@@ -450,6 +479,11 @@ def main():
                     writer.add_tensor(f"{LP}.{i}.{TN[proj]}.weight", wt(sd[f"{pfx}.attention.{hf_name}.weight"]))
                     writer.add_tensor(f"{LP}.{i}.{TN[proj]}.bias", f32(sd[f"{pfx}.attention.{hf_name}.bias"]))
                 attn_o_key = f"{pfx}.attention.attn.o"
+            elif is_deberta:
+                for proj, hf_name in [("attn_q", "query_proj"), ("attn_k", "key_proj"), ("attn_v", "value_proj")]:
+                    writer.add_tensor(f"{LP}.{i}.{TN[proj]}.weight", wt(sd[f"{pfx}.attention.self.{hf_name}.weight"]))
+                    writer.add_tensor(f"{LP}.{i}.{TN[proj]}.bias", f32(sd[f"{pfx}.attention.self.{hf_name}.bias"]))
+                attn_o_key = f"{pfx}.attention.output.dense"
             else:
                 for proj, hf_name in [("attn_q", "query"), ("attn_k", "key"), ("attn_v", "value")]:
                     writer.add_tensor(f"{LP}.{i}.{TN[proj]}.weight", wt(sd[f"{pfx}.attention.self.{hf_name}.weight"]))
