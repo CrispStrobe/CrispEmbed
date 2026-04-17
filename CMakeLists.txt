@@ -86,8 +86,10 @@ target_link_libraries(crispembed PUBLIC
 )
 
 # ---------------------------------------------------------------------------
-# CLI binary
+# CLI binaries (skip on iOS — no standalone executables)
 # ---------------------------------------------------------------------------
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
+
 add_executable(crispembed-cli
     examples/cli/main.cpp
     examples/cli/model_mgr.cpp
@@ -99,9 +101,6 @@ target_link_libraries(crispembed-cli PRIVATE crispembed)
 set_target_properties(crispembed-cli PROPERTIES OUTPUT_NAME crispembed)
 install(TARGETS crispembed-cli RUNTIME)
 
-# ---------------------------------------------------------------------------
-# Server binary
-# ---------------------------------------------------------------------------
 add_executable(crispembed-server
     examples/server/server.cpp
     examples/cli/model_mgr.cpp
@@ -114,9 +113,6 @@ target_include_directories(crispembed-server PRIVATE
 target_link_libraries(crispembed-server PRIVATE crispembed)
 install(TARGETS crispembed-server RUNTIME)
 
-# ---------------------------------------------------------------------------
-# Quantize tool
-# ---------------------------------------------------------------------------
 add_executable(crispembed-quantize
     tools/quantize.cpp
 )
@@ -126,6 +122,8 @@ target_include_directories(crispembed-quantize PRIVATE
 target_link_libraries(crispembed-quantize PRIVATE ggml ggml-base ggml-cpu)
 set_target_properties(crispembed-quantize PROPERTIES OUTPUT_NAME crispembed-quantize)
 install(TARGETS crispembed-quantize RUNTIME)
+
+endif() # NOT iOS
 
 # ---------------------------------------------------------------------------
 # Shared library for Python bindings
