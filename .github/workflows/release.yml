@@ -6,32 +6,48 @@ on:
       - 'v*'
 
 jobs:
-  build-libs:
-    name: Build ${{ matrix.os }}
+  build:
+    name: Build ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - name: linux-x86_64
+            os: ubuntu-latest
             cmake_args: >-
               -DGGML_BLAS=OFF
               -DGGML_LLAMAFILE=ON
-            artifact_name: libcrispembed.so
-            artifact_path: build/libcrispembed.so
-          - os: macos-latest
+            binaries: crispembed crispembed-server crispembed-quantize
+            lib: libcrispembed.so
+            archive: crispembed-linux-x86_64.tar.gz
+
+          - name: linux-arm64
+            os: ubuntu-24.04-arm
+            cmake_args: >-
+              -DGGML_BLAS=OFF
+            binaries: crispembed crispembed-server crispembed-quantize
+            lib: libcrispembed.so
+            archive: crispembed-linux-arm64.tar.gz
+
+          - name: macos-arm64
+            os: macos-latest
             cmake_args: >-
               -DGGML_METAL=ON
               -DGGML_METAL_EMBED_LIBRARY=ON
               -DGGML_BLAS=ON
               -DGGML_BLAS_VENDOR=Apple
-            artifact_name: libcrispembed.dylib
-            artifact_path: build/libcrispembed.dylib
-          - os: windows-latest
+            binaries: crispembed crispembed-server crispembed-quantize
+            lib: libcrispembed.dylib
+            archive: crispembed-macos-arm64.tar.gz
+
+          - name: windows-x86_64
+            os: windows-latest
             cmake_args: >-
               -DGGML_BLAS=OFF
-            artifact_name: crispembed.dll
-            artifact_path: build/Release/crispembed.dll
+            binaries: crispembed.exe crispembed-server.exe crispembed-quantize.exe
+            lib: crispembed.dll
+            archive: crispembed-windows-x86_64.zip
 
     steps:
       - uses: actions/checkout@v4
@@ -48,15 +64,38 @@ jobs:
       - name: Build
         run: cmake --build build --config Release -j4
 
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p pkg
+          for bin in ${{ matrix.binaries }}; do
+            cp build/$bin pkg/ 2>/dev/null || true
+          done
+          cp build/${{ matrix.lib }} pkg/ 2>/dev/null || true
+          cp README.md LICENSE pkg/ 2>/dev/null || true
+          tar -czf ${{ matrix.archive }} -C pkg .
+
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path pkg
+          foreach ($bin in "${{ matrix.binaries }}".Split(" ")) {
+            Copy-Item "build/Release/$bin" pkg/ -ErrorAction SilentlyContinue
+          }
+          Copy-Item "build/Release/${{ matrix.lib }}" pkg/ -ErrorAction SilentlyContinue
+          Copy-Item README.md, LICENSE pkg/ -ErrorAction SilentlyContinue
+          Compress-Archive -Path pkg/* -DestinationPath ${{ matrix.archive }}
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.artifact_path }}
+          name: ${{ matrix.name }}
+          path: ${{ matrix.archive }}
 
   create-release:
     name: Create GitHub Release
-    needs: build-libs
+    needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -78,6 +117,7 @@ jobs:
           prerelease: ${{ contains(github.ref_name, '-') }}
           generate_release_notes: true
           files: |
-            dist/libcrispembed.so/libcrispembed.so
-            dist/libcrispembed.dylib/libcrispembed.dylib
-            dist/crispembed.dll/crispembed.dll
+            dist/linux-x86_64/*.tar.gz
+            dist/linux-arm64/*.tar.gz
+            dist/macos-arm64/*.tar.gz
+            dist/windows-x86_64/*.zip
