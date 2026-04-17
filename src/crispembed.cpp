@@ -40,6 +40,7 @@ struct embed_layer {
     // FFN
     ggml_tensor * fc1_w = nullptr, * fc1_b = nullptr;
     ggml_tensor * fc2_w = nullptr, * fc2_b = nullptr;
+    ggml_tensor * ffn_gate_w = nullptr;  // SwiGLU gate (NomicBERT)
 };
 
 struct embed_model {
@@ -99,6 +100,8 @@ struct crispembed_context {
     int n_threads = 4;
     int pool_method = 0;  // 0=mean, 1=cls, 2=last-token
     int pos_offset = 0;   // position embedding offset (2 for RoBERTa/XLM-R)
+    bool use_rope = false;    // encoder uses RoPE instead of absolute position embeddings (NomicBERT)
+    float rope_theta = 10000.0f;
     int matryoshka_dim = 0;  // 0 = use model default
     std::string prefix;  // prepended to text before tokenization (e.g. "query: ")
     std::vector<float> last_output;     // reused buffer (dense encode)
@@ -249,9 +252,15 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     m.embd_ln_w  = get("embd_ln.weight");
     m.embd_ln_b  = get("embd_ln.bias");
 
-    if (!m.token_embd || !m.pos_embd) {
-        fprintf(stderr, "crispembed: missing embedding tensors\n");
+    if (!m.token_embd) {
+        fprintf(stderr, "crispembed: missing token_embd.weight\n");
         return false;
+    }
+    // NomicBERT and other RoPE-based encoders lack position embeddings
+    if (!m.pos_embd) {
+        ctx->use_rope = true;
+        ctx->rope_theta = f32("bert.rope_theta", 10000.0f);
+        fprintf(stderr, "crispembed: no position embeddings, using RoPE (theta=%.0f)\n", ctx->rope_theta);
     }
 
     // Encoder layers
@@ -275,6 +284,7 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         L.fc1_b = get(pfx + "ffn.fc1.bias");
         L.fc2_w = get(pfx + "ffn.fc2.weight");
         L.fc2_b = get(pfx + "ffn.fc2.bias");
+        L.ffn_gate_w = get(pfx + "ffn_gate.weight");  // SwiGLU gate (NomicBERT)
     }
 
     // Pooler (optional)
@@ -388,8 +398,10 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
 
     // Embeddings: [H, T*B]
     ggml_tensor * embd = ggml_get_rows(gctx, m.token_embd, tok_ids);
-    ggml_tensor * pos_embd = ggml_get_rows(gctx, m.pos_embd, pos_ids);
-    embd = ggml_add(gctx, embd, pos_embd);
+    if (m.pos_embd) {
+        ggml_tensor * pos_embd = ggml_get_rows(gctx, m.pos_embd, pos_ids);
+        embd = ggml_add(gctx, embd, pos_embd);
+    }
 
     if (m.type_embd) {
         ggml_tensor * type_ids_t = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, TB);
@@ -398,12 +410,15 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         embd = ggml_add(gctx, embd, ggml_get_rows(gctx, m.type_embd, type_ids_t));
     }
 
+    // For RoPE encoders, reuse pos_ids for position values (0, 1, 2, ...)
+    ggml_tensor * rope_pos = ctx->use_rope ? pos_ids : nullptr;
+
     // cur: [H, T*B] — all matmuls batch naturally
     ggml_tensor * cur = embd;
     if (m.embd_ln_w) {
         cur = ggml_norm(gctx, cur, ln_eps);
         cur = ggml_mul(gctx, cur, m.embd_ln_w);
-        cur = ggml_add(gctx, cur, m.embd_ln_b);
+        if (m.embd_ln_b) cur = ggml_add(gctx, cur, m.embd_ln_b);
     }
 
     for (int il = 0; il < hp.n_layer; il++) {
@@ -429,6 +444,17 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         K = ggml_reshape_4d(gctx, K, head_dim, n_heads, T, B);
         V = ggml_reshape_4d(gctx, V, head_dim, n_heads, T, B);
 
+        // Optional RoPE for encoder models without position embeddings (NomicBERT)
+        // Apply before permute: Q/K shape is [hd, nh, T, B], RoPE uses ne[2]=T
+        if (rope_pos) {
+            Q = ggml_rope_ext(gctx, Q, rope_pos, nullptr,
+                              head_dim, GGML_ROPE_TYPE_NEOX, hp.n_max_tokens,
+                              ctx->rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+            K = ggml_rope_ext(gctx, K, rope_pos, nullptr,
+                              head_dim, GGML_ROPE_TYPE_NEOX, hp.n_max_tokens,
+                              ctx->rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        }
+
         // Permute: [hd, nh, T, B] → [hd, T, nh, B]
         Q = ggml_permute(gctx, Q, 0, 2, 1, 3);
         K = ggml_permute(gctx, K, 0, 2, 1, 3);
@@ -441,21 +467,35 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         // Result: [hd, nh, T, B] → reshape to [H, T*B]
         attn = ggml_reshape_2d(gctx, attn, H, TB);
 
-        attn = ggml_add(gctx, ggml_mul_mat(gctx, L.o_w, attn), L.o_b);
+        attn = ggml_mul_mat(gctx, L.o_w, attn);
+        if (L.o_b) attn = ggml_add(gctx, attn, L.o_b);
 
         cur = ggml_add(gctx, cur, attn);
         cur = ggml_norm(gctx, cur, ln_eps);
         cur = ggml_mul(gctx, cur, L.ln1_w);
-        cur = ggml_add(gctx, cur, L.ln1_b);
+        if (L.ln1_b) cur = ggml_add(gctx, cur, L.ln1_b);
 
-        ggml_tensor * ffn = ggml_add(gctx, ggml_mul_mat(gctx, L.fc1_w, cur), L.fc1_b);
-        ffn = ggml_gelu(gctx, ffn);
-        ffn = ggml_add(gctx, ggml_mul_mat(gctx, L.fc2_w, ffn), L.fc2_b);
+        ggml_tensor * ffn;
+        if (L.ffn_gate_w) {
+            // SwiGLU FFN (NomicBERT): gate * silu(up) → down
+            ggml_tensor * up   = ggml_mul_mat(gctx, L.fc1_w, cur);
+            ggml_tensor * gate = ggml_mul_mat(gctx, L.ffn_gate_w, cur);
+            gate = ggml_silu(gctx, gate);
+            ffn = ggml_mul(gctx, up, gate);
+            ffn = ggml_mul_mat(gctx, L.fc2_w, ffn);
+        } else {
+            // Standard GELU FFN (BERT)
+            ffn = ggml_mul_mat(gctx, L.fc1_w, cur);
+            if (L.fc1_b) ffn = ggml_add(gctx, ffn, L.fc1_b);
+            ffn = ggml_gelu(gctx, ffn);
+            ffn = ggml_mul_mat(gctx, L.fc2_w, ffn);
+            if (L.fc2_b) ffn = ggml_add(gctx, ffn, L.fc2_b);
+        }
 
         cur = ggml_add(gctx, cur, ffn);
         cur = ggml_norm(gctx, cur, ln_eps);
         cur = ggml_mul(gctx, cur, L.ln2_w);
-        cur = ggml_add(gctx, cur, L.ln2_b);
+        if (L.ln2_b) cur = ggml_add(gctx, cur, L.ln2_b);
     }
 
     // Named output depends on requested mode

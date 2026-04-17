@@ -385,61 +385,91 @@ def main():
         print("  note: no position embeddings (model uses rotary/relative positions)")
     if "embeddings.token_type_embeddings.weight" in sd:
         writer.add_tensor(f"{TN['type_embd']}.weight", f32(sd["embeddings.token_type_embeddings.weight"]))
-    if f"embeddings.LayerNorm.weight" in sd:
-        writer.add_tensor(f"{TN['embd_ln']}.weight", f32(sd["embeddings.LayerNorm.weight"]))
-        writer.add_tensor(f"{TN['embd_ln']}.bias", f32(sd["embeddings.LayerNorm.bias"]))
-    elif "embeddings.norm.weight" in sd:
-        writer.add_tensor(f"{TN['embd_ln']}.weight", f32(sd["embeddings.norm.weight"]))
-        writer.add_tensor(f"{TN['embd_ln']}.bias", f32(sd["embeddings.norm.bias"]))
+    for ln_key in ["embeddings.LayerNorm", "embeddings.norm", "emb_ln"]:
+        if f"{ln_key}.weight" in sd:
+            writer.add_tensor(f"{TN['embd_ln']}.weight", f32(sd[f"{ln_key}.weight"]))
+            writer.add_tensor(f"{TN['embd_ln']}.bias", f32(sd[f"{ln_key}.bias"]))
+            break
     print("  embeddings: ok")
 
     # Auto-detect source weight key patterns:
-    # BERT:  attention.self.query, attention.output.LayerNorm, attention.output.dense
-    # MPNet: attention.attn.q,     attention.LayerNorm,        attention.attn.o
-    # XLM-R: (same as BERT, with roberta prefix — handled in pfx)
-    is_mpnet = f"encoder.layer.0.attention.attn.q.weight" in sd
+    # BERT:     encoder.layer.N.attention.self.query, attention.output.LayerNorm
+    # MPNet:    encoder.layer.N.attention.attn.q,     attention.LayerNorm
+    # NomicBERT: encoder.layers.N.attn.Wqkv (fused), norm1/norm2, SwiGLU FFN
+    is_mpnet = "encoder.layer.0.attention.attn.q.weight" in sd
+    is_nomic = "encoder.layers.0.attn.Wqkv.weight" in sd
+
+    if is_nomic:
+        # NomicBERT: RoPE encoder, fused QKV, SwiGLU FFN, no bias on attn
+        # Store rope_theta metadata
+        rope_theta = getattr(config, "rotary_emb_base", 10000.0)
+        writer.add_float32("bert.rope_theta", rope_theta)
+        print(f"  NomicBERT: rope_theta={rope_theta}")
 
     # Encoder layers
     for i in range(config.num_hidden_layers):
-        pfx = f"encoder.layer.{i}"
+        if is_nomic:
+            pfx = f"encoder.layers.{i}"
 
-        if is_mpnet:
-            # MPNet-style keys
-            ln1_key = f"{pfx}.attention.LayerNorm"
-            qkv_map = [("attn_q", "attn.q"), ("attn_k", "attn.k"), ("attn_v", "attn.v")]
-            attn_o_key = f"{pfx}.attention.attn.o"
+            # Layer norms: pre-attention (norm1) and pre-FFN (norm2)
+            writer.add_tensor(f"{LP}.{i}.{TN['ln1']}.weight", f32(sd[f"{pfx}.norm1.weight"]))
+            writer.add_tensor(f"{LP}.{i}.{TN['ln1']}.bias", f32(sd[f"{pfx}.norm1.bias"]))
+            writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.weight", f32(sd[f"{pfx}.norm2.weight"]))
+            writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.bias", f32(sd[f"{pfx}.norm2.bias"]))
+
+            # Fused QKV: [3H, H] → split into Q [H,H], K [H,H], V [H,H]
+            qkv = sd[f"{pfx}.attn.Wqkv.weight"]
+            H = qkv.shape[1]
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.weight", wt(qkv[:H]))
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.weight", wt(qkv[H:2*H]))
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.weight", wt(qkv[2*H:]))
+
+            # Attention output (no bias in NomicBERT)
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attn.out_proj.weight"]))
+
+            # SwiGLU FFN: fc11 (gate), fc12 (up), fc2 (down)
+            writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(sd[f"{pfx}.mlp.fc12.weight"]))
+            writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.fc2.weight"]))
+            writer.add_tensor(f"{LP}.{i}.ffn_gate.weight", wt(sd[f"{pfx}.mlp.fc11.weight"]))
+
         else:
-            # BERT-style keys
-            ln1_key = f"{pfx}.attention.output.LayerNorm"
-            qkv_map = [("attn_q", "attention.self.query"), ("attn_k", "attention.self.key"), ("attn_v", "attention.self.value")]
-            attn_o_key = f"{pfx}.attention.output.dense"
+            pfx = f"encoder.layer.{i}"
 
-        # Post-attention LayerNorm
-        writer.add_tensor(f"{LP}.{i}.{TN['ln1']}.weight", f32(sd[f"{ln1_key}.weight"]))
-        writer.add_tensor(f"{LP}.{i}.{TN['ln1']}.bias", f32(sd[f"{ln1_key}.bias"]))
+            if is_mpnet:
+                ln1_key = f"{pfx}.attention.LayerNorm"
+            else:
+                ln1_key = f"{pfx}.attention.output.LayerNorm"
 
-        # Attention Q/K/V
-        if is_mpnet:
-            for proj, hf_name in qkv_map:
-                writer.add_tensor(f"{LP}.{i}.{TN[proj]}.weight", wt(sd[f"{pfx}.attention.{hf_name}.weight"]))
-                writer.add_tensor(f"{LP}.{i}.{TN[proj]}.bias", f32(sd[f"{pfx}.attention.{hf_name}.bias"]))
-        else:
-            for proj, hf_name in [("attn_q", "query"), ("attn_k", "key"), ("attn_v", "value")]:
-                writer.add_tensor(f"{LP}.{i}.{TN[proj]}.weight", wt(sd[f"{pfx}.attention.self.{hf_name}.weight"]))
-                writer.add_tensor(f"{LP}.{i}.{TN[proj]}.bias", f32(sd[f"{pfx}.attention.self.{hf_name}.bias"]))
-        # Attention output
-        writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{attn_o_key}.weight"]))
-        writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.bias", f32(sd[f"{attn_o_key}.bias"]))
+            # Post-attention LayerNorm
+            writer.add_tensor(f"{LP}.{i}.{TN['ln1']}.weight", f32(sd[f"{ln1_key}.weight"]))
+            writer.add_tensor(f"{LP}.{i}.{TN['ln1']}.bias", f32(sd[f"{ln1_key}.bias"]))
 
-        # Post-FFN LayerNorm
-        writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.weight", f32(sd[f"{pfx}.output.LayerNorm.weight"]))
-        writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.bias", f32(sd[f"{pfx}.output.LayerNorm.bias"]))
+            # Attention Q/K/V
+            if is_mpnet:
+                for proj, hf_name in [("attn_q", "attn.q"), ("attn_k", "attn.k"), ("attn_v", "attn.v")]:
+                    writer.add_tensor(f"{LP}.{i}.{TN[proj]}.weight", wt(sd[f"{pfx}.attention.{hf_name}.weight"]))
+                    writer.add_tensor(f"{LP}.{i}.{TN[proj]}.bias", f32(sd[f"{pfx}.attention.{hf_name}.bias"]))
+                attn_o_key = f"{pfx}.attention.attn.o"
+            else:
+                for proj, hf_name in [("attn_q", "query"), ("attn_k", "key"), ("attn_v", "value")]:
+                    writer.add_tensor(f"{LP}.{i}.{TN[proj]}.weight", wt(sd[f"{pfx}.attention.self.{hf_name}.weight"]))
+                    writer.add_tensor(f"{LP}.{i}.{TN[proj]}.bias", f32(sd[f"{pfx}.attention.self.{hf_name}.bias"]))
+                attn_o_key = f"{pfx}.attention.output.dense"
 
-        # FFN
-        writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(sd[f"{pfx}.intermediate.dense.weight"]))
-        writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.bias", f32(sd[f"{pfx}.intermediate.dense.bias"]))
-        writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.output.dense.weight"]))
-        writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.bias", f32(sd[f"{pfx}.output.dense.bias"]))
+            # Attention output
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{attn_o_key}.weight"]))
+            if f"{attn_o_key}.bias" in sd:
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.bias", f32(sd[f"{attn_o_key}.bias"]))
+
+            # Post-FFN LayerNorm
+            writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.weight", f32(sd[f"{pfx}.output.LayerNorm.weight"]))
+            writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.bias", f32(sd[f"{pfx}.output.LayerNorm.bias"]))
+
+            # FFN
+            writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(sd[f"{pfx}.intermediate.dense.weight"]))
+            writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.bias", f32(sd[f"{pfx}.intermediate.dense.bias"]))
+            writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.output.dense.weight"]))
+            writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.bias", f32(sd[f"{pfx}.output.dense.bias"]))
 
         print(f"  {LP}.{i}: ok")
 
