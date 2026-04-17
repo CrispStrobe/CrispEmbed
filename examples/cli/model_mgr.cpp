@@ -205,6 +205,13 @@ static const ModelEntry k_registry[] = {
      "https://huggingface.co/cstr/granite-embedding-107m-multilingual-GGUF/resolve/main/granite-embedding-107m-multilingual.gguf",
      "XLM-R 384d IBM multilingual (107M)", "418 MB"},
 
+    // --- Sparse models ---
+
+    {"splade-pp-en-v1",
+     "splade-pp-en-v1.gguf",
+     "https://huggingface.co/cstr/splade-pp-en-v1-GGUF/resolve/main/splade-pp-en-v1.gguf",
+     "BERT sparse (SPLADE) English (109M)", "418 MB"},
+
     {nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 
