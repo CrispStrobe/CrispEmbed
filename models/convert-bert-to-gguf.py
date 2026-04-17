@@ -506,10 +506,12 @@ def main():
             if f"{pfx}.mlp_norm.weight" in sd:
                 writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.weight", f32(sd[f"{pfx}.mlp_norm.weight"]))
 
-            # Store fused QKV as single [3H, H] tensor for single matmul
+            # Split QKV into separate Q/K/V for standard encoder path
             qkv = sd[f"{pfx}.attn.Wqkv.weight"]  # [3*768, 768] = [2304, 768]
             H = qkv.shape[1]
-            writer.add_tensor(f"{LP}.{i}.attn.qkv.weight", f32(qkv))
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.weight", f32(qkv[:H]))
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.weight", f32(qkv[H:2*H]))
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.weight", f32(qkv[2*H:]))
 
             # Attention output
             writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attn.Wo.weight"]))
