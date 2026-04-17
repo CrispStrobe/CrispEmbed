@@ -517,3 +517,83 @@ is set based on presence of `classifier.dense.weight` in the GGUF.
 Some rerankers (ms-marco-MiniLM) use `num_labels=1` with no activation,
 while others (bge-reranker) use sigmoid/softmax. CrispEmbed returns the raw
 logit — the caller decides on thresholding.
+
+## ModernBERT architecture (pre-LN)
+
+ModernBERT (gte-modernbert-base, modernbert-embed-large) uses **pre-LayerNorm**
+ordering, which differs from standard BERT's post-LN:
+
+**Post-LN (BERT/XLM-R/MPNet):**
+```
+attn(input) → residual_add(input) → LN → FFN → residual_add → LN
+```
+
+**Pre-LN (ModernBERT):**
+```
+LN(input) → attn → residual_add(input) → LN → FFN → residual_add
+```
+
+Pre-LN has the LayerNorm *before* each sub-layer, with the residual connection
+bypassing the norm. This is the same as GPT-2/LLaMA-style normalization.
+
+Detection: `bert.pre_ln` GGUF metadata flag. Combined with:
+- GeGLU activation (GELU-gated FFN instead of SwiGLU)
+- RoPE (no position embeddings)
+- No biases on attention or FFN
+- Fused QKV weights
+
+ModernBERT is essentially a bidirectional LLaMA with GELU instead of SiLU.
+CrispASR has a reference implementation in `examples/talk-llama/models/modern-bert.cpp`.
+
+## Head-to-head benchmark: CrispEmbed vs FastEmbed
+
+**MiniLM-L6 (6 layers, 384d)**: CrispEmbed is **9.5x faster** on single text
+and **10.8x faster** on batch. This is our best-optimized model: QKV fusion
+reduces 3 matmuls to 1 per layer, flash attention replaces 8 separate ops,
+and graph caching eliminates rebuild overhead.
+
+**BGE-small (12 layers, 384d)**: FastEmbed is **1.7x faster**. ONNX Runtime's
+Level3 graph JIT compilation (operator fusion, layout optimization, cache-aware
+scheduling) gives it an edge on 12-layer models. Our per-op execution on CPU
+has higher overhead per layer.
+
+**Arctic-M (12 layers, 768d)**: Tied on batch (126 vs 127ms). As hidden size
+grows, matmul compute dominates over per-op overhead, equalizing performance.
+
+**Conclusion**: CrispEmbed wins decisively on small models (6 layers) where
+per-op overhead matters most. On larger models, ONNX Runtime's graph optimization
+closes the gap. GPU (CUDA/Metal) should favor CrispEmbed across all sizes due
+to ggml's fused CUDA kernels and flash attention.
+
+## DeBERTa-v2 disentangled attention (partial)
+
+DeBERTa-v2's attention computes three components:
+1. **c2c** (content-to-content): standard Q×K^T — implemented
+2. **c2p** (content-to-position): Q × (W_k × rel_embd)^T — NOT implemented
+3. **p2c** (position-to-content): (W_q × rel_embd) × K^T — NOT implemented
+
+The c2p and p2c components are **input-dependent** (they use Q and K from the
+current input), so they can't be precomputed like MPNet's bucket bias. They
+require per-layer relative position projections in the ggml graph:
+- Look up `rel_embd[relative_position]` for all (i,j) pairs
+- Project through Q/K weights
+- Add to attention scores
+
+This adds ~6 matmuls per layer and complex indexing. For rerankers (the main
+DeBERTa use case), the partial c2c-only implementation may be sufficient for
+ranking (relative ordering preserved even without position signal).
+
+## Rust crate verification
+
+The CrispEmbed Rust crate (`crispembed/`) wraps the C API via `crispembed-sys`
+(cmake build.rs). Verified features:
+- Dense encode (384d, correct values match Python)
+- Batch encode (3 vectors, correct)
+- Prefix set/get
+- Matryoshka truncation (128d from 384d)
+- Bi-encoder reranking (correct ordering)
+- Capability queries (has_sparse, has_colbert, is_reranker)
+
+The crate links dynamically (`dylib=crispembed`). Set `LD_LIBRARY_PATH` to the
+build output directory. Static linking would avoid this but requires listing
+all ggml dependencies in build.rs.

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-CrispEmbed is a C/C++ text embedding inference engine built on ggml. It loads GGUF models and produces embedding vectors with GPU acceleration (Metal/CUDA/Vulkan). No Python runtime, no ONNX dependency. Supports 13 verified embedding models across BERT, XLM-R, Qwen3, and Gemma3 architectures. 30 models in registry (embeddings + rerankers).
+CrispEmbed is a C/C++ text embedding inference engine built on ggml. It loads GGUF models and produces embedding vectors with GPU acceleration (Metal/CUDA/Vulkan). No Python runtime, no ONNX dependency. 8 architectures (BERT, XLM-R, MPNet, NomicBERT, ModernBERT, DeBERTa-v2, Qwen3, Gemma3), 21 verified models (cos>=0.999), 35+ in registry. Python/Rust/Dart APIs, iOS/Android builds.
 
 ## Build commands
 
@@ -108,7 +108,7 @@ Validates dense (cosine), sparse (IoU), colbert (per-token cosine) against FlagE
 
 ### Model auto-download
 
-`examples/cli/model_mgr.cpp` contains a registry of 30 models (13 verified embeddings + 10 RAG-critical embeddings + 7 rerankers) with HuggingFace URLs. Models are cached to `~/.cache/crispembed/`. The CLI and server accept short names (e.g., `-m all-MiniLM-L6-v2`) and resolve + download automatically.
+`examples/cli/model_mgr.cpp` contains a registry of 35+ models (21 verified embeddings + 5 rerankers + multilingual/decoder models) with HuggingFace URLs. Models are cached to `~/.cache/crispembed/`. The CLI and server accept short names (e.g., `-m all-MiniLM-L6-v2`) and resolve + download automatically. Python: `CrispEmbed.list_models()` returns all available models.
 
 ## Key technical details
 

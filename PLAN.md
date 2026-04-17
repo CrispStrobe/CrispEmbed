@@ -186,35 +186,83 @@ CrispEmbed/
 ### Optimizations completed
 
 - ggml_backend_sched GPU dispatch (encoder + decoder full-graph)
-- All 13 models quantized (Q8_0 + Q4_K) and uploaded to HuggingFace
+- All 21+ models quantized (Q8_0 + Q4_K) and uploaded to HuggingFace
 - Graph/work buffer reuse: 27.8 texts/s server throughput (gte-small)
 - Matryoshka dimension truncation via -d N flag
 - BLAS/MKL/CUDA/Vulkan/Metal build support
 - Windows build scripts
 - C++ quantizer with K-quant fallback chain
+- QKV weight fusion (1 matmul vs 3 per layer)
+- Flash attention with optional position bias mask
 
 ### RAG feature parity (April 17, 2026)
 
-- [x] Full Python wrapper: sparse, ColBERT, reranker, set_dim, set_prefix
-- [x] Bi-encoder reranking API (Python + Rust): cosine similarity ranking
-- [x] Prompt prefix system (C API + Python + Rust): auto-prepend query/passage prefixes
-- [x] 10 RAG-critical embedding models added to registry (bge-small/base/large-en-v1.5, nomic-embed-text-v1.5, all-MiniLM-L12-v2, all-mpnet-base-v2, mxbai-embed-large-v1, snowflake-arctic-embed-m/l, bge-m3)
-- [x] 7 reranker models added (bge-reranker-v2-m3, bge-reranker-base, ms-marco-MiniLM-L-6/12-v2, jina-reranker-v2-base-multilingual, mxbai-rerank-xsmall/base-v1)
+- [x] Full Python/Rust/Dart wrapper: sparse, ColBERT, reranker, set_dim, set_prefix
+- [x] Bi-encoder reranking API (Python + Rust + Dart): cosine similarity ranking
+- [x] Prompt prefix system (C/Rust/Python/Dart): auto-prepend query/passage prefixes
+- [x] 21 verified embedding models (cos >= 0.999 vs HuggingFace)
+- [x] 5 reranker models (bge-reranker-base, ms-marco L6/L12, mxbai-rerank xsmall/base)
+- [x] 27 HuggingFace repos with GGUF models + README cards
 - [x] RAG retrieval quality benchmark (tests/bench_rag.py): MRR@10, NDCG@10, Recall@k
 - [x] Reranking benchmark (tests/bench_rerank.py): cross-encoder vs bi-encoder
-- [ ] Convert + upload GGUFs for new models to HuggingFace cstr/ namespace
-- [ ] Validate all new models cos >= 0.999 vs HuggingFace
+- [x] Head-to-head benchmark vs FastEmbed (tests/bench_head2head.py):
+  - MiniLM-L6: CrispEmbed **9.5x faster** single, **10.8x faster** batch
+  - BGE-small: FastEmbed 1.7x faster (ONNX graph JIT optimization)
+  - Arctic-M: tied on batch (126 vs 127ms)
+  - cos = 0.999999–1.000000 cross-engine on all models
+- [x] Demo apps (Python + Rust) for both CrispEmbed and CrispASR
+
+### Architecture support (8 total)
+
+| Architecture | Status | Key features | Example models |
+|---|---|---|---|
+| BERT encoder | Complete | Post-LN, GELU, WordPiece | MiniLM, GTE, BGE, arctic-xs |
+| XLM-R encoder | Complete | Post-LN, GELU, SentencePiece Viterbi, pos_offset=2 | E5, PIXIE-Rune, arctic-l-v2, granite |
+| MPNet encoder | Complete | Post-LN, GELU, relative position bias (T5-style buckets) | all-mpnet-base-v2 |
+| NomicBERT encoder | Complete | Post-LN, SwiGLU, RoPE, no biases | nomic-embed-text-v1.5 |
+| ModernBERT encoder | Runtime ready | Pre-LN, GeGLU, RoPE, no biases | gte-modernbert-base (needs converter) |
+| DeBERTa-v2 encoder | Partial | Post-LN, c2c only (no c2p/p2c disentangled) | mxbai-rerank (converter works) |
+| Qwen3 decoder | Complete | RMSNorm, SwiGLU, RoPE, GQA, causal mask | Octen, F2LLM, Jina v5, Harrier-0.6B |
+| Gemma3 decoder | Complete | Gemma RMSNorm(1+w), GeGLU, embed*sqrt(H) | Harrier-270M |
+
+### Bindings and platforms
+
+| Binding | CrispEmbed | CrispASR |
+|---|---|---|
+| C API | Complete | Complete (whisper.h) |
+| Python (ctypes) | Complete + tested | Complete + tested |
+| Rust (crate) | Complete + tested | Complete + compiled |
+| Dart/Flutter (FFI) | Created | Created |
+| iOS (Metal) | CI green | CI green |
+| Android (NDK) | CI green (arm64/armv7/x86_64) | CI green |
+| Windows | CI green | CI green |
+| macOS (Metal) | CI green | CI green |
+| Linux | CI green | CI green |
 
 ### Remaining feature gaps vs fastembed-rs
 
-- ModernBERT architecture (gte-modernbert-base, modernbert-embed-large)
-- Image embedding (CLIP, ResNet, Unicom, Nomic vision) — new modality
-- MoE models (Nomic embed text v2 MoE) — new architecture
-- Qwen3 4B/8B decoder models — larger versions (existing decoder path should work)
-- SPLADE sparse model (separate from BGE-M3 sparse) — different sparse architecture
-- Custom model loading API — partially works (CLI accepts any path)
+| Gap | Impact | Effort | Notes |
+|---|---|---|---|
+| Image embedding (CLIP) | Medium | High | New modality — vision encoder, image preprocessing |
+| SPLADE sparse model | Medium | Medium | Different sparse architecture from BGE-M3 |
+| DeBERTa full disentangled | Low | High | c2p/p2c need per-layer position projections in ggml graph |
+| Nomic v2 MoE | Low | High | MoE routing layer in encoder |
+| Qwen3-VL multimodal | Low | Very High | Vision encoder + cross-attention |
+| Qwen3 4B/8B | Low | Low | Existing decoder path, just needs memory for larger models |
+
+### CrispEmbed advantages over fastembed-rs
+
+- **ColBERT multi-vector** retrieval (fastembed-rs doesn't have it)
+- **Matryoshka dimension truncation** (fastembed-rs doesn't have it)
+- **GGUF quantization** (Q8_0, Q4_K — smaller than ONNX INT8/INT4)
+- **9.5x faster on MiniLM-L6** (most popular embedding model)
+- **GPU dispatch** via ggml_backend_sched (CUDA/Metal/Vulkan)
+- **Ollama-compatible** server with 4 API dialects
+- **Flutter/Dart** wrapper for mobile apps
+- **iOS/Android** build scripts with full CI
+- **20MB binary** vs ~500MB Python+ONNX environment
 
 ### Original remaining items
 
-- True batched graph (padding + [H, T, B] dimension) — done for encoder, partial for decoder
+- True batched graph for decoder models
 - KV cache for prefix-shared decoder batches
