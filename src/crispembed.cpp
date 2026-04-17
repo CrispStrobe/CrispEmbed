@@ -433,9 +433,12 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             K = ggml_cont(gctx, ggml_view_2d(gctx, qkv, H, TB, 3*H*sizeof(float), H*sizeof(float)));
             V = ggml_cont(gctx, ggml_view_2d(gctx, qkv, H, TB, 3*H*sizeof(float), 2*H*sizeof(float)));
         } else {
-            Q = ggml_add(gctx, ggml_mul_mat(gctx, L.q_w, cur), L.q_b);
-            K = ggml_add(gctx, ggml_mul_mat(gctx, L.k_w, cur), L.k_b);
-            V = ggml_add(gctx, ggml_mul_mat(gctx, L.v_w, cur), L.v_b);
+            Q = ggml_mul_mat(gctx, L.q_w, cur);
+            K = ggml_mul_mat(gctx, L.k_w, cur);
+            V = ggml_mul_mat(gctx, L.v_w, cur);
+            if (L.q_b) Q = ggml_add(gctx, Q, L.q_b);
+            if (L.k_b) K = ggml_add(gctx, K, L.k_b);
+            if (L.v_b) V = ggml_add(gctx, V, L.v_b);
         }
 
         // Reshape for attention: [H, T*B] → [head_dim, T, n_heads, B]
