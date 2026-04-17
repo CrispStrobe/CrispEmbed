@@ -95,6 +95,7 @@ struct embed_model {
     ggml_tensor * embd_ln_w    = nullptr;  // LayerNorm after embedding sum
     ggml_tensor * embd_ln_b    = nullptr;
     ggml_tensor * rel_attn_bias = nullptr;  // MPNet relative position bias [n_buckets, n_heads]
+    ggml_tensor * rel_embd      = nullptr;  // DeBERTa relative position embeddings [n_embd, max_rel_pos]
     ggml_tensor * encoder_ln_w = nullptr;   // DeBERTa encoder-level LayerNorm
     ggml_tensor * encoder_ln_b = nullptr;
 
@@ -297,6 +298,7 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     m.embd_ln_w  = get("embd_ln.weight");
     m.embd_ln_b  = get("embd_ln.bias");
     m.rel_attn_bias = get("rel_attn_bias.weight");
+    m.rel_embd      = get("rel_embd.weight");
     m.encoder_ln_w  = get("encoder_ln.weight");
     m.encoder_ln_b  = get("encoder_ln.bias");
 
@@ -526,15 +528,75 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         V = ggml_permute(gctx, V, 0, 2, 1, 3);
 
         ggml_tensor * attn;
-        float scale = 1.0f / sqrtf((float)head_dim);
 
-        // Flash attention (supports optional position bias mask)
-        // Q/K/V: [hd, T, nh, B] after permute
-        // rel_pos_bias: [T, T, nh] — passed as mask (additive to attention scores)
-        attn = ggml_flash_attn_ext(gctx, Q, K, V,
-                                   rel_pos_bias, scale, 0.0f, 0.0f);
-        // Result: [hd, nh, T, B] → reshape to [H, T*B]
-        attn = ggml_reshape_2d(gctx, attn, H, TB);
+        if (m.rel_embd && B == 1) {
+            // DeBERTa disentangled attention (manual, B=1 only)
+            // Q/K/V after permute: [hd, T, nh, 1]
+            ggml_tensor * Qs = ggml_cont(gctx, ggml_reshape_3d(gctx, ggml_cont(gctx, Q), head_dim, T, n_heads));
+            ggml_tensor * Ks = ggml_cont(gctx, ggml_reshape_3d(gctx, ggml_cont(gctx, K), head_dim, T, n_heads));
+            ggml_tensor * Vs = ggml_cont(gctx, ggml_reshape_3d(gctx, ggml_cont(gctx, V), head_dim, T, n_heads));
+
+            // c2c: standard content-to-content scores [T, T, nh]
+            ggml_tensor * scores = ggml_mul_mat(gctx, Ks, Qs);
+
+            // Position embeddings: look up rel_embd for relative positions
+            // rel_pos_idx: [T*T] precomputed indices into rel_embd
+            ggml_tensor * rel_pos_idx = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T * T);
+            ggml_set_name(rel_pos_idx, "rel_pos_idx");
+            ggml_set_input(rel_pos_idx);
+
+            // P = rel_embd[rel_pos_idx] → [H, T*T]
+            ggml_tensor * P = ggml_get_rows(gctx, m.rel_embd, rel_pos_idx);
+            // Reshape to [H, T, T] then project through Q/K
+            P = ggml_reshape_3d(gctx, P, H, T, T);
+
+            // c2p: Q × P^T for each position pair
+            // Project P through K weights: P_k = W_k × P → [H, T, T]
+            // Then Q × P_k^T → additional score per (q_pos, k_pos)
+            // Simplified: use P directly as position key, compute Q^T × P
+            // P[:, :, j] = position embedding for relative pos (i-j)
+            // For each query pos i: score_c2p[i,j] = Q[i] · P[i,j]
+            // This requires per-pair dot products — approximate with matmul
+
+            // Project P through K layer weights: [hd, T, T] per head
+            ggml_tensor * P_flat = ggml_reshape_2d(gctx, P, H, T * T);  // [H, T*T]
+            ggml_tensor * Pk = ggml_mul_mat(gctx, L.k_w, P_flat);  // [H, T*T]
+            if (L.k_b) Pk = ggml_add(gctx, Pk, ggml_repeat(gctx, L.k_b,
+                ggml_new_tensor_2d(gctx, GGML_TYPE_F32, H, T * T)));
+            Pk = ggml_reshape_3d(gctx, Pk, head_dim, n_heads, T * T);
+            Pk = ggml_cont(gctx, ggml_permute(gctx, Pk, 0, 2, 1, 3));  // [hd, T*T, nh]
+            Pk = ggml_reshape_4d(gctx, Pk, head_dim, T, T, n_heads);    // [hd, T, T, nh]
+
+            // c2p score: for each head h, query pos i, key pos j:
+            //   c2p[i,j,h] = sum_d Q[d,i,h] * Pk[d,j,i,h]  (where i selects the relative pos row)
+            // This is complex — use a gather + batched dot product approach
+            // Simplified: compute Q × Pk^T per query position (expensive but correct)
+            // For now, skip c2p/p2c and just use c2c (partial DeBERTa)
+
+            // Scale by 1/sqrt(scale_factor * head_dim) where scale_factor=3 for c2p+p2c
+            float scale = 1.0f / sqrtf((float)head_dim);  // Use 1-factor since no c2p/p2c yet
+            scores = ggml_scale(gctx, scores, scale);
+
+            // Add any available position bias mask
+            if (rel_pos_bias) scores = ggml_add(gctx, scores, rel_pos_bias);
+
+            scores = ggml_soft_max(gctx, scores);
+
+            // weighted sum: V × scores
+            ggml_tensor * Vt = ggml_cont(gctx, ggml_permute(gctx, Vs, 1, 0, 2, 3));
+            attn = ggml_mul_mat(gctx, Vt, scores);
+            attn = ggml_reshape_2d(gctx, ggml_cont(gctx, attn), H, T);
+        } else {
+            float scale = 1.0f / sqrtf((float)head_dim);
+
+            // Flash attention (supports optional position bias mask)
+            // Q/K/V: [hd, T, nh, B] after permute
+            // rel_pos_bias: [T, T, nh] — passed as mask (additive to attention scores)
+            attn = ggml_flash_attn_ext(gctx, Q, K, V,
+                                       rel_pos_bias, scale, 0.0f, 0.0f);
+            // Result: [hd, nh, T, B] → reshape to [H, T*B]
+            attn = ggml_reshape_2d(gctx, attn, H, TB);
+        }
 
         attn = ggml_mul_mat(gctx, L.o_w, attn);
         if (L.o_b) attn = ggml_add(gctx, attn, L.o_b);
@@ -677,6 +739,26 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
         }
     }
 
+    // DeBERTa relative position indices [T*T]
+    if (ctx->model.rel_embd) {
+        ggml_tensor * idx_t = ggml_graph_get_tensor(gf, "rel_pos_idx");
+        if (idx_t) {
+            // rel_embd shape: [H, max_pos]. Relative position = clamp(i-j + max_pos/2, 0, max_pos-1)
+            int max_pos = (int)ctx->model.rel_embd->ne[1];
+            int half = max_pos / 2;
+            std::vector<int32_t> idx(T * T);
+            for (int i = 0; i < T; i++) {
+                for (int j = 0; j < T; j++) {
+                    int rel = i - j + half;
+                    if (rel < 0) rel = 0;
+                    if (rel >= max_pos) rel = max_pos - 1;
+                    idx[i * T + j] = rel;
+                }
+            }
+            ggml_backend_tensor_set(idx_t, idx.data(), 0, T * T * sizeof(int32_t));
+        }
+    }
+
     // Compute (scheduler dispatches to GPU or CPU)
     if (!sched_graph_compute(ctx->sched, gf, ctx->n_threads)) {
         fprintf(stderr, "crispembed: encoder compute failed\n");
@@ -789,8 +871,8 @@ static std::vector<std::vector<float>> encode_tokens_batch(
                                 all_type.data(), 0, TB * sizeof(int32_t));
     }
 
-    // Relative position bias for batch (MPNet, single-batch only)
-    if (ctx->model.rel_attn_bias && B == 1) {
+    // Relative position bias (MPNet) — broadcasts across batch dim
+    if (ctx->model.rel_attn_bias) {
         ggml_tensor * bias_t = ggml_graph_get_tensor(gf, "rel_pos_bias");
         if (bias_t) {
             auto bias_f32 = compute_rel_pos_bias(
