@@ -458,8 +458,13 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         embd = ggml_add(gctx, embd, ggml_get_rows(gctx, m.type_embd, type_ids_t));
     }
 
-    // For RoPE encoders, reuse pos_ids for position values (0, 1, 2, ...)
-    ggml_tensor * rope_pos = ctx->use_rope ? pos_ids : nullptr;
+    // For RoPE encoders, need a [T]-shaped position tensor (not [T*B]).
+    // RoPE expects ne[0]=T matching the time dimension of Q/K before permute.
+    // Use a view of the first T elements of pos_ids (which are [0,1,...T-1]).
+    ggml_tensor * rope_pos = nullptr;
+    if (ctx->use_rope) {
+        rope_pos = ggml_view_1d(gctx, pos_ids, T, 0);
+    }
 
     // MPNet/DeBERTa relative position bias: precomputed [T, T, n_heads]
     // Flash attention requires F16 mask
@@ -782,6 +787,20 @@ static std::vector<std::vector<float>> encode_tokens_batch(
     if (ctx->model.type_embd) {
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "type_ids"),
                                 all_type.data(), 0, TB * sizeof(int32_t));
+    }
+
+    // Relative position bias for batch (MPNet, single-batch only)
+    if (ctx->model.rel_attn_bias && B == 1) {
+        ggml_tensor * bias_t = ggml_graph_get_tensor(gf, "rel_pos_bias");
+        if (bias_t) {
+            auto bias_f32 = compute_rel_pos_bias(
+                ctx->model.rel_attn_bias, T_max, ctx->model.hparams.n_head);
+            std::vector<ggml_fp16_t> bias_f16(bias_f32.size());
+            for (size_t i = 0; i < bias_f32.size(); i++)
+                bias_f16[i] = ggml_fp32_to_fp16(bias_f32[i]);
+            ggml_backend_tensor_set(bias_t, bias_f16.data(), 0,
+                                    bias_f16.size() * sizeof(ggml_fp16_t));
+        }
     }
 
     if (!sched_graph_compute(ctx->sched, gf, ctx->n_threads)) {
