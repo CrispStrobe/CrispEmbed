@@ -498,7 +498,7 @@ def main():
         if is_modernbert:
             pfx = f"layers.{i}"
 
-            # Pre-attention norm (layer 0 may not have it — uses embedding norm)
+            # Pre-attention norm (layer 0 may not have it)
             if f"{pfx}.attn_norm.weight" in sd:
                 writer.add_tensor(f"{LP}.{i}.{TN['ln1']}.weight", f32(sd[f"{pfx}.attn_norm.weight"]))
 
@@ -506,12 +506,10 @@ def main():
             if f"{pfx}.mlp_norm.weight" in sd:
                 writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.weight", f32(sd[f"{pfx}.mlp_norm.weight"]))
 
-            # Fused QKV: [3H, H] → split into Q [H,H], K [H,H], V [H,H]
-            qkv = sd[f"{pfx}.attn.Wqkv.weight"]
+            # Store fused QKV as single [3H, H] tensor for single matmul
+            qkv = sd[f"{pfx}.attn.Wqkv.weight"]  # [3*768, 768] = [2304, 768]
             H = qkv.shape[1]
-            writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.weight", wt(qkv[:H]))
-            writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.weight", wt(qkv[H:2*H]))
-            writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.weight", wt(qkv[2*H:]))
+            writer.add_tensor(f"{LP}.{i}.attn.qkv.weight", f32(qkv))
 
             # Attention output
             writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attn.Wo.weight"]))
