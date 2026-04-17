@@ -20,4 +20,9 @@ std::string resolve_model(const std::string & arg, bool auto_download = false);
 // List available model names
 void list_models();
 
+// Registry accessors
+int n_models();
+const char * model_name(int i);
+const char * model_desc(int i);
+
 }  // namespace crispembed_mgr

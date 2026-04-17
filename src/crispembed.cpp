@@ -148,6 +148,7 @@ struct crispembed_context {
     int pos_offset = 0;   // position embedding offset (2 for RoBERTa/XLM-R)
     bool use_rope = false;    // encoder uses RoPE instead of absolute position embeddings (NomicBERT)
     float rope_theta = 10000.0f;
+    bool pre_ln = false;      // pre-LN (ModernBERT) vs post-LN (BERT) ordering
     int matryoshka_dim = 0;  // 0 = use model default
     std::string prefix;  // prepended to text before tokenization (e.g. "query: ")
     std::vector<float> last_output;     // reused buffer (dense encode)
@@ -312,6 +313,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         ctx->rope_theta = f32("bert.rope_theta", 10000.0f);
         fprintf(stderr, "crispembed: no position embeddings, using RoPE (theta=%.0f)\n", ctx->rope_theta);
     }
+    // Pre-LN detection: if GGUF flag set, or if model has gate weights + no biases (ModernBERT)
+    ctx->pre_ln = u32("bert.pre_ln", 0) != 0;
 
     // Encoder layers
     m.layers.resize(hp.n_layer);
@@ -487,6 +490,14 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
 
     for (int il = 0; il < hp.n_layer; il++) {
         const auto & L = m.layers[il];
+        ggml_tensor * inp = cur;  // save for residual connection
+
+        // Pre-LN: normalize before attention (ModernBERT)
+        if (ctx->pre_ln && L.ln1_w) {
+            cur = ggml_norm(gctx, cur, ln_eps);
+            cur = ggml_mul(gctx, cur, L.ln1_w);
+            if (L.ln1_b) cur = ggml_add(gctx, cur, L.ln1_b);
+        }
 
         // QKV projection (fused: 1 matmul + 3 view+cont, or 3 separate matmuls)
         ggml_tensor * Q, * K, * V;
@@ -601,17 +612,31 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         attn = ggml_mul_mat(gctx, L.o_w, attn);
         if (L.o_b) attn = ggml_add(gctx, attn, L.o_b);
 
-        cur = ggml_add(gctx, cur, attn);
-        cur = ggml_norm(gctx, cur, ln_eps);
-        cur = ggml_mul(gctx, cur, L.ln1_w);
-        if (L.ln1_b) cur = ggml_add(gctx, cur, L.ln1_b);
+        if (ctx->pre_ln) {
+            // Pre-LN: residual add (LN was applied before attention)
+            cur = ggml_add(gctx, inp, attn);
+            inp = cur;  // save for FFN residual
+            // Pre-FFN norm
+            if (L.ln2_w) {
+                cur = ggml_norm(gctx, cur, ln_eps);
+                cur = ggml_mul(gctx, cur, L.ln2_w);
+                if (L.ln2_b) cur = ggml_add(gctx, cur, L.ln2_b);
+            }
+        } else {
+            // Post-LN: residual add then LN
+            cur = ggml_add(gctx, inp, attn);
+            cur = ggml_norm(gctx, cur, ln_eps);
+            cur = ggml_mul(gctx, cur, L.ln1_w);
+            if (L.ln1_b) cur = ggml_add(gctx, cur, L.ln1_b);
+        }
 
         ggml_tensor * ffn;
         if (L.ffn_gate_w) {
-            // SwiGLU FFN (NomicBERT): gate * silu(up) → down
+            // Gated FFN: gate * activation(up) → down
             ggml_tensor * up   = ggml_mul_mat(gctx, L.fc1_w, cur);
             ggml_tensor * gate = ggml_mul_mat(gctx, L.ffn_gate_w, cur);
-            gate = ggml_silu(gctx, gate);
+            // NomicBERT uses SiLU, ModernBERT uses GELU for gate
+            gate = ctx->pre_ln ? ggml_gelu(gctx, gate) : ggml_silu(gctx, gate);
             ffn = ggml_mul(gctx, up, gate);
             ffn = ggml_mul_mat(gctx, L.fc2_w, ffn);
         } else {
@@ -623,10 +648,16 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             if (L.fc2_b) ffn = ggml_add(gctx, ffn, L.fc2_b);
         }
 
-        cur = ggml_add(gctx, cur, ffn);
-        cur = ggml_norm(gctx, cur, ln_eps);
-        cur = ggml_mul(gctx, cur, L.ln2_w);
-        if (L.ln2_b) cur = ggml_add(gctx, cur, L.ln2_b);
+        if (ctx->pre_ln) {
+            // Pre-LN: just residual add
+            cur = ggml_add(gctx, inp, ffn);
+        } else {
+            // Post-LN: residual add then LN
+            cur = ggml_add(gctx, cur, ffn);
+            cur = ggml_norm(gctx, cur, ln_eps);
+            cur = ggml_mul(gctx, cur, L.ln2_w);
+            if (L.ln2_b) cur = ggml_add(gctx, cur, L.ln2_b);
+        }
     }
 
     // Named output depends on requested mode

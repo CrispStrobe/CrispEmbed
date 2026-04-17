@@ -372,6 +372,37 @@ class CrispEmbed:
         """True if the model is a cross-encoder reranker."""
         return bool(self._lib.crispembed_is_reranker(self._ctx))
 
+    @staticmethod
+    def list_models() -> List[Dict[str, str]]:
+        """List supported models with descriptions.
+
+        Returns a list of dicts with keys: name, dim, arch, description.
+        These can be passed directly to CrispEmbed() for auto-download.
+        """
+        return [
+            {"name": "all-MiniLM-L6-v2", "dim": "384", "arch": "BERT", "desc": "Fast English 22M"},
+            {"name": "all-MiniLM-L12-v2", "dim": "384", "arch": "BERT", "desc": "Quality English 33M"},
+            {"name": "all-mpnet-base-v2", "dim": "768", "arch": "MPNet", "desc": "Best SBERT 109M"},
+            {"name": "bge-small-en-v1.5", "dim": "384", "arch": "BERT", "desc": "BGE English 33M"},
+            {"name": "bge-base-en-v1.5", "dim": "768", "arch": "BERT", "desc": "BGE English 109M"},
+            {"name": "bge-large-en-v1.5", "dim": "1024", "arch": "BERT", "desc": "BGE English 335M"},
+            {"name": "nomic-embed-text-v1.5", "dim": "768", "arch": "NomicBERT", "desc": "8K context Matryoshka 137M"},
+            {"name": "mxbai-embed-large-v1", "dim": "1024", "arch": "BERT", "desc": "Top MTEB 335M"},
+            {"name": "snowflake-arctic-embed-m", "dim": "768", "arch": "BERT", "desc": "Retrieval 109M"},
+            {"name": "snowflake-arctic-embed-l", "dim": "1024", "arch": "XLM-R", "desc": "Retrieval 335M"},
+            {"name": "multilingual-e5-small", "dim": "384", "arch": "XLM-R", "desc": "100+ langs 118M"},
+            {"name": "multilingual-e5-base", "dim": "768", "arch": "XLM-R", "desc": "100+ langs 278M"},
+            {"name": "multilingual-e5-large", "dim": "1024", "arch": "XLM-R", "desc": "100+ langs 560M"},
+            {"name": "bge-m3", "dim": "1024", "arch": "XLM-R", "desc": "Dense+sparse+ColBERT 568M"},
+            {"name": "granite-embedding-278m", "dim": "768", "arch": "XLM-R", "desc": "IBM multilingual 278M"},
+            {"name": "granite-embedding-107m", "dim": "384", "arch": "XLM-R", "desc": "IBM multilingual 107M"},
+            {"name": "pixie-rune-v1", "dim": "1024", "arch": "XLM-R", "desc": "74 langs 560M"},
+            {"name": "octen-0.6b", "dim": "1024", "arch": "Qwen3", "desc": "Multilingual decoder 600M"},
+            {"name": "harrier-0.6b", "dim": "1024", "arch": "Qwen3", "desc": "SOTA decoder 600M"},
+            {"name": "harrier-270m", "dim": "640", "arch": "Gemma3", "desc": "Compact decoder 270M"},
+            {"name": "qwen3-embed-0.6b", "dim": "1024", "arch": "Qwen3", "desc": "Official Qwen3 600M"},
+        ]
+
     def __del__(self):
         if hasattr(self, "_ctx") and self._ctx:
             self._lib.crispembed_free(self._ctx)

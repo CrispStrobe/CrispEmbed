@@ -360,4 +360,24 @@ void list_models() {
     }
 }
 
+int n_models() {
+    int n = 0;
+    for (const ModelEntry * e = k_registry; e->name; e++) n++;
+    return n;
+}
+
+const char * model_name(int i) {
+    int n = 0;
+    for (const ModelEntry * e = k_registry; e->name; e++, n++)
+        if (n == i) return e->name;
+    return nullptr;
+}
+
+const char * model_desc(int i) {
+    int n = 0;
+    for (const ModelEntry * e = k_registry; e->name; e++, n++)
+        if (n == i) return e->desc;
+    return nullptr;
+}
+
 }  // namespace crispembed_mgr
