@@ -465,12 +465,21 @@ def main():
     # BERT:      encoder.layer.N.attention.self.query,      attention.output.LayerNorm
     # MPNet:     encoder.layer.N.attention.attn.q,          attention.LayerNorm
     # NomicBERT: encoder.layers.N.attn.Wqkv (fused),       norm1/norm2, SwiGLU FFN
+    # GTE v1.5:  encoder.layer.N.attention.qkv_proj,        attn_ln/mlp_ln, up_gate_proj
     # DeBERTa:   deberta.encoder.layer.N.attention.self.query_proj
     is_mpnet = "encoder.layer.0.attention.attn.q.weight" in sd
     is_nomic = "encoder.layers.0.attn.Wqkv.weight" in sd
     is_modernbert = "layers.0.attn.Wqkv.weight" in sd and "layers.0.mlp.Wi.weight" in sd
+    is_gte_new = "encoder.layer.0.attention.qkv_proj.weight" in sd  # GTE v1.5 "new" BERT
     is_deberta = ("encoder.layer.0.attention.self.query_proj.weight" in sd or
                   "deberta.encoder.layer.0.attention.self.query_proj.weight" in sd)
+
+    if is_gte_new:
+        # GTE v1.5 "new" BERT: pre-LN, RoPE, GeGLU, fused QKV+bias, CLS pooling
+        rope_theta = getattr(config, "rope_theta", 10000.0)
+        writer.add_float32("bert.rope_theta", rope_theta)
+        writer.add_uint32("bert.pre_ln", 1)
+        print(f"  GTE v1.5: rope_theta={rope_theta}, pre_ln=1")
 
     if is_nomic:
         # NomicBERT: RoPE encoder, fused QKV, SwiGLU FFN, no bias on attn
@@ -495,7 +504,41 @@ def main():
 
     # Encoder layers
     for i in range(config.num_hidden_layers):
-        if is_modernbert:
+        if is_gte_new:
+            pfx = f"encoder.layer.{i}"
+
+            # Pre-attention norm
+            writer.add_tensor(f"{LP}.{i}.{TN['ln1']}.weight", f32(sd[f"{pfx}.attn_ln.weight"]))
+            writer.add_tensor(f"{LP}.{i}.{TN['ln1']}.bias", f32(sd[f"{pfx}.attn_ln.bias"]))
+
+            # Pre-FFN norm
+            writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.weight", f32(sd[f"{pfx}.mlp_ln.weight"]))
+            writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.bias", f32(sd[f"{pfx}.mlp_ln.bias"]))
+
+            # Fused QKV with bias → split Q/K/V
+            qkv_w = sd[f"{pfx}.attention.qkv_proj.weight"]
+            qkv_b = sd[f"{pfx}.attention.qkv_proj.bias"]
+            H = qkv_w.shape[1]
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.weight", wt(qkv_w[:H]))
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.bias", f32(qkv_b[:H]))
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.weight", wt(qkv_w[H:2*H]))
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.bias", f32(qkv_b[H:2*H]))
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.weight", wt(qkv_w[2*H:]))
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.bias", f32(qkv_b[2*H:]))
+
+            # Attention output
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attention.o_proj.weight"]))
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.bias", f32(sd[f"{pfx}.attention.o_proj.bias"]))
+
+            # GeGLU FFN: up_gate_proj [2*inter, H] → split up + gate
+            ug = sd[f"{pfx}.mlp.up_gate_proj.weight"]
+            mid = ug.shape[0] // 2
+            writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(ug[:mid]))
+            writer.add_tensor(f"{LP}.{i}.ffn_gate.weight", wt(ug[mid:]))
+            writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.down_proj.weight"]))
+            writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.bias", f32(sd[f"{pfx}.mlp.down_proj.bias"]))
+
+        elif is_modernbert:
             pfx = f"layers.{i}"
 
             # Pre-attention norm (layer 0 may not have it)
