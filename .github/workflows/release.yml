@@ -93,9 +93,57 @@ jobs:
           name: ${{ matrix.name }}
           path: ${{ matrix.archive }}
 
+  build-android:
+    name: Build android-${{ matrix.abi }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        abi: [arm64-v8a, armeabi-v7a]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build
+        run: |
+          cmake -S . -B build \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=${{ matrix.abi }} -DANDROID_NATIVE_API_LEVEL=24 \
+            -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_BUILD_SHARED=ON -DGGML_LLAMAFILE=OFF
+          cmake --build build -j4
+      - name: Package
+        run: tar -czf crispembed-android-${{ matrix.abi }}.tar.gz -C build libcrispembed.so
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-${{ matrix.abi }}
+          path: crispembed-android-${{ matrix.abi }}.tar.gz
+
+  build-ios:
+    name: Build ios-arm64
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - name: Build
+        run: |
+          cmake -S . -B build -G Xcode \
+            -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_BUILD_TYPE=Release \
+            -DCRISPEMBED_BUILD_SHARED=OFF -DGGML_METAL=ON -DGGML_METAL_EMBED_LIBRARY=ON
+          cmake --build build --config Release
+      - name: Package
+        run: tar -czf crispembed-ios-arm64.tar.gz -C build/Release-iphoneos libcrispembed-static.a
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-arm64
+          path: crispembed-ios-arm64.tar.gz
+
   create-release:
     name: Create GitHub Release
-    needs: build
+    needs: [build, build-android, build-ios]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -121,3 +169,6 @@ jobs:
             dist/linux-arm64/*.tar.gz
             dist/macos-arm64/*.tar.gz
             dist/windows-x86_64/*.zip
+            dist/android-arm64-v8a/*.tar.gz
+            dist/android-armeabi-v7a/*.tar.gz
+            dist/ios-arm64/*.tar.gz
