@@ -420,3 +420,70 @@ Estimated GPU performance for MiniLM (RTX 3060):
 - CrispEmbed CUDA: ~2-4ms (model fits entirely in GPU memory)
 - fastembed ONNX+CUDA: ~2-4ms (cuBLAS + graph optimization)
 - Likely on par, with CrispEmbed winning on server overhead
+
+## Prompt prefix system for RAG models
+
+Many embedding models require query/passage prefixes for optimal retrieval:
+- BGE: `"Represent this sentence for searching relevant passages: "`
+- E5: `"query: "` / `"passage: "`
+- Nomic: `"search_query: "` / `"search_document: "`
+- Jina v5: `"Query: "` / `"Document: "`
+
+Implementation: prefix is stored in `crispembed_context::prefix` and prepended
+to the raw text before tokenization in both `crispembed_encode()` and
+`crispembed_encode_batch()`. This is correct because:
+1. The prefix is part of the semantic input (not a tokenizer-level construct)
+2. All tokenizer types (WordPiece/SentencePiece/BPE) handle it naturally
+3. fastembed-rs does the same (injects prefix before tokenizer.encode)
+
+**Not applied to sparse/colbert/reranker**: These have different input semantics.
+Sparse retrieval operates on raw terms. Rerankers take (query, document) pairs
+where the model handles the joint encoding.
+
+## Bi-encoder vs cross-encoder reranking
+
+Both approaches are valuable for RAG and complement each other:
+
+**Bi-encoder** (embed query + docs independently, cosine similarity):
+- Fast: encode once, compare N documents with dot products
+- Same model used for initial retrieval AND reranking
+- Quality limited by the embedding space
+- CrispEmbed: `rerank_biencoder()` in Python/Rust, uses `encode_batch()` + dot product
+
+**Cross-encoder** (encode query-document pairs jointly):
+- Slow: each (query, doc) pair requires a full forward pass
+- Much higher quality (joint attention between query and document tokens)
+- Typically used as second-stage reranker after bi-encoder retrieval
+- CrispEmbed: `rerank()` in Python/Rust, uses `crispembed_rerank()` C API
+
+**RAG pipeline pattern**: bi-encoder retrieval (top-100) → cross-encoder reranking (top-10)
+
+## Model registry for RAG feature parity
+
+When adding new models to the registry (`model_mgr.cpp`), the key metadata is:
+- **name**: short name for CLI/auto-download
+- **filename**: GGUF filename (may include `-q8_0` suffix for default quant)
+- **url**: HuggingFace direct download URL under `cstr/` namespace
+- **desc**: architecture, dimension, language, parameter count
+
+Models that are encoder-only (BERT/XLM-R) use the existing convert-bert-to-gguf.py.
+Models that are decoder-based (Qwen3/Gemma3) use convert-decoder-embed-to-gguf.py.
+Rerankers are encoder models with a classifier head — use `--crisp` flag to include
+the classifier weights in the GGUF.
+
+## Reranker model conversion notes
+
+Cross-encoder rerankers (bge-reranker, ms-marco-MiniLM, mxbai-rerank) have a
+classifier head on top of the encoder:
+- **1-layer**: `classifier.dense.weight [H,1]` + `classifier.dense.bias [1]`
+  → CLS hidden → Linear → scalar score
+- **2-layer** (RobertaClassificationHead): `classifier.dense.weight [H,H]` +
+  `classifier.out_proj.weight [1,H]` + biases
+  → CLS hidden → Linear → tanh → Linear → scalar score
+
+The converter must include these weights. Detection: `crispembed.is_reranker`
+is set based on presence of `classifier.dense.weight` in the GGUF.
+
+Some rerankers (ms-marco-MiniLM) use `num_labels=1` with no activation,
+while others (bge-reranker) use sigmoid/softmax. CrispEmbed returns the raw
+logit — the caller decides on thresholding.

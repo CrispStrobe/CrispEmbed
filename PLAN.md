@@ -193,8 +193,28 @@ CrispEmbed/
 - Windows build scripts
 - C++ quantizer with K-quant fallback chain
 
-### Remaining
+### RAG feature parity (April 17, 2026)
 
-- True batched graph (padding + [H, T, B] dimension)
+- [x] Full Python wrapper: sparse, ColBERT, reranker, set_dim, set_prefix
+- [x] Bi-encoder reranking API (Python + Rust): cosine similarity ranking
+- [x] Prompt prefix system (C API + Python + Rust): auto-prepend query/passage prefixes
+- [x] 10 RAG-critical embedding models added to registry (bge-small/base/large-en-v1.5, nomic-embed-text-v1.5, all-MiniLM-L12-v2, all-mpnet-base-v2, mxbai-embed-large-v1, snowflake-arctic-embed-m/l, bge-m3)
+- [x] 7 reranker models added (bge-reranker-v2-m3, bge-reranker-base, ms-marco-MiniLM-L-6/12-v2, jina-reranker-v2-base-multilingual, mxbai-rerank-xsmall/base-v1)
+- [x] RAG retrieval quality benchmark (tests/bench_rag.py): MRR@10, NDCG@10, Recall@k
+- [x] Reranking benchmark (tests/bench_rerank.py): cross-encoder vs bi-encoder
+- [ ] Convert + upload GGUFs for new models to HuggingFace cstr/ namespace
+- [ ] Validate all new models cos >= 0.999 vs HuggingFace
+
+### Remaining feature gaps vs fastembed-rs
+
+- ModernBERT architecture (gte-modernbert-base, modernbert-embed-large)
+- Image embedding (CLIP, ResNet, Unicom, Nomic vision) — new modality
+- MoE models (Nomic embed text v2 MoE) — new architecture
+- Qwen3 4B/8B decoder models — larger versions (existing decoder path should work)
+- SPLADE sparse model (separate from BGE-M3 sparse) — different sparse architecture
+- Custom model loading API — partially works (CLI accepts any path)
+
+### Original remaining items
+
+- True batched graph (padding + [H, T, B] dimension) — done for encoder, partial for decoder
 - KV cache for prefix-shared decoder batches
-- Reranker model support from fastembed-rs list

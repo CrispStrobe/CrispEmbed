@@ -58,6 +58,16 @@ CRISPEMBED_API crispembed_context * crispembed_init(const char * model_path, int
 // and re-normalized to the specified dimension.
 CRISPEMBED_API void crispembed_set_dim(crispembed_context * ctx, int dim);
 
+// Set a text prefix prepended to all inputs before tokenization.
+// Pass NULL or "" to clear. Typical values:
+//   "query: "                                   (E5, Jina)
+//   "search_query: " / "search_document: "      (Nomic)
+//   "Represent this sentence for searching relevant passages: "  (BGE)
+CRISPEMBED_API void crispembed_set_prefix(crispembed_context * ctx, const char * prefix);
+
+// Get the current prefix (empty string if none set).
+CRISPEMBED_API const char * crispembed_get_prefix(const crispembed_context * ctx);
+
 // Get model hyperparameters.
 CRISPEMBED_API const crispembed_hparams * crispembed_get_hparams(const crispembed_context * ctx);
 

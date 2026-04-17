@@ -94,6 +94,95 @@ static const ModelEntry k_registry[] = {
      "https://huggingface.co/cstr/qwen3-embed-0.6b-GGUF/resolve/main/qwen3-embed-0.6b-q8_0.gguf",
      "Qwen3 1024d official (600M)", "1.0 GB"},
 
+    // --- RAG-critical models (Phase 3) ---
+
+    {"bge-small-en-v1.5",
+     "bge-small-en-v1.5.gguf",
+     "https://huggingface.co/cstr/bge-small-en-v1.5-GGUF/resolve/main/bge-small-en-v1.5.gguf",
+     "BERT 384d English (33M)", "128 MB"},
+
+    {"bge-base-en-v1.5",
+     "bge-base-en-v1.5.gguf",
+     "https://huggingface.co/cstr/bge-base-en-v1.5-GGUF/resolve/main/bge-base-en-v1.5.gguf",
+     "BERT 768d English (109M)", "418 MB"},
+
+    {"bge-large-en-v1.5",
+     "bge-large-en-v1.5.gguf",
+     "https://huggingface.co/cstr/bge-large-en-v1.5-GGUF/resolve/main/bge-large-en-v1.5.gguf",
+     "BERT 1024d English (335M)", "1.3 GB"},
+
+    {"nomic-embed-text-v1.5",
+     "nomic-embed-text-v1.5.gguf",
+     "https://huggingface.co/cstr/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.gguf",
+     "BERT 768d 8K context Matryoshka (137M)", "523 MB"},
+
+    {"all-MiniLM-L12-v2",
+     "all-MiniLM-L12-v2.gguf",
+     "https://huggingface.co/cstr/all-MiniLM-L12-v2-GGUF/resolve/main/all-MiniLM-L12-v2.gguf",
+     "BERT 384d English (33M)", "128 MB"},
+
+    {"all-mpnet-base-v2",
+     "all-mpnet-base-v2.gguf",
+     "https://huggingface.co/cstr/all-mpnet-base-v2-GGUF/resolve/main/all-mpnet-base-v2.gguf",
+     "BERT 768d English (109M)", "418 MB"},
+
+    {"mxbai-embed-large-v1",
+     "mxbai-embed-large-v1.gguf",
+     "https://huggingface.co/cstr/mxbai-embed-large-v1-GGUF/resolve/main/mxbai-embed-large-v1.gguf",
+     "BERT 1024d English (335M)", "1.3 GB"},
+
+    {"snowflake-arctic-embed-m",
+     "snowflake-arctic-embed-m.gguf",
+     "https://huggingface.co/cstr/snowflake-arctic-embed-m-GGUF/resolve/main/snowflake-arctic-embed-m.gguf",
+     "BERT 768d CLS English (109M)", "418 MB"},
+
+    {"snowflake-arctic-embed-l",
+     "snowflake-arctic-embed-l.gguf",
+     "https://huggingface.co/cstr/snowflake-arctic-embed-l-GGUF/resolve/main/snowflake-arctic-embed-l.gguf",
+     "XLM-R 1024d CLS English (335M)", "1.3 GB"},
+
+    {"bge-m3",
+     "bge-m3.gguf",
+     "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3.gguf",
+     "XLM-R 1024d dense+sparse+ColBERT multilingual (568M)", "2.2 GB"},
+
+    // --- Reranker models (Phase 4) ---
+
+    {"bge-reranker-v2-m3",
+     "bge-reranker-v2-m3.gguf",
+     "https://huggingface.co/cstr/bge-reranker-v2-m3-GGUF/resolve/main/bge-reranker-v2-m3.gguf",
+     "XLM-R reranker multilingual (568M)", "2.2 GB"},
+
+    {"bge-reranker-base",
+     "bge-reranker-base.gguf",
+     "https://huggingface.co/cstr/bge-reranker-base-GGUF/resolve/main/bge-reranker-base.gguf",
+     "BERT reranker EN+ZH (278M)", "1.1 GB"},
+
+    {"ms-marco-MiniLM-L-6-v2",
+     "ms-marco-MiniLM-L-6-v2.gguf",
+     "https://huggingface.co/cstr/ms-marco-MiniLM-L-6-v2-GGUF/resolve/main/ms-marco-MiniLM-L-6-v2.gguf",
+     "BERT reranker English fast (22M)", "87 MB"},
+
+    {"ms-marco-MiniLM-L-12-v2",
+     "ms-marco-MiniLM-L-12-v2.gguf",
+     "https://huggingface.co/cstr/ms-marco-MiniLM-L-12-v2-GGUF/resolve/main/ms-marco-MiniLM-L-12-v2.gguf",
+     "BERT reranker English (33M)", "128 MB"},
+
+    {"jina-reranker-v2-base-multilingual",
+     "jina-reranker-v2-base-multilingual.gguf",
+     "https://huggingface.co/cstr/jina-reranker-v2-base-multilingual-GGUF/resolve/main/jina-reranker-v2-base-multilingual.gguf",
+     "XLM-R reranker multilingual (278M)", "1.1 GB"},
+
+    {"mxbai-rerank-xsmall-v1",
+     "mxbai-rerank-xsmall-v1.gguf",
+     "https://huggingface.co/cstr/mxbai-rerank-xsmall-v1-GGUF/resolve/main/mxbai-rerank-xsmall-v1.gguf",
+     "BERT reranker English fast (33M)", "128 MB"},
+
+    {"mxbai-rerank-base-v1",
+     "mxbai-rerank-base-v1.gguf",
+     "https://huggingface.co/cstr/mxbai-rerank-base-v1-GGUF/resolve/main/mxbai-rerank-base-v1.gguf",
+     "BERT reranker English (86M)", "330 MB"},
+
     {nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 

@@ -67,6 +67,29 @@ impl CrispEmbed {
         unsafe { crispembed_sys::crispembed_set_dim(self.ctx, dim) }
     }
 
+    /// Set a text prefix prepended to all inputs before tokenization.
+    ///
+    /// Typical values:
+    /// - `"query: "` (E5, Jina v5)
+    /// - `"search_query: "` / `"search_document: "` (Nomic)
+    /// - `"Represent this sentence for searching relevant passages: "` (BGE)
+    ///
+    /// Pass an empty string to clear.
+    pub fn set_prefix(&mut self, prefix: &str) {
+        let cp = CString::new(prefix).unwrap_or_default();
+        unsafe { crispembed_sys::crispembed_set_prefix(self.ctx, cp.as_ptr()) }
+    }
+
+    /// Get the current prefix (empty string if none set).
+    pub fn prefix(&self) -> String {
+        let ptr = unsafe { crispembed_sys::crispembed_get_prefix(self.ctx) };
+        if ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned()
+        }
+    }
+
     // ------------------------------------------------------------------
     // Capability queries
     // ------------------------------------------------------------------
@@ -218,6 +241,50 @@ impl CrispEmbed {
         unsafe {
             crispembed_sys::crispembed_rerank(self.ctx, cq.as_ptr(), cd.as_ptr())
         }
+    }
+
+    // ------------------------------------------------------------------
+    // Bi-encoder reranking (cosine similarity of L2-normalised embeddings)
+    // ------------------------------------------------------------------
+
+    /// Rank documents by cosine similarity to the query embedding.
+    ///
+    /// Encodes query and all documents in a single batch, computes dot
+    /// products of L2-normalised embeddings (= cosine similarity), and
+    /// returns `(document_index, score)` pairs sorted by score descending.
+    ///
+    /// If `top_n` is `Some(k)`, only the top-k results are returned.
+    pub fn rerank_biencoder(
+        &mut self,
+        query: &str,
+        documents: &[&str],
+        top_n: Option<usize>,
+    ) -> Vec<(usize, f32)> {
+        let mut all_texts: Vec<&str> = Vec::with_capacity(1 + documents.len());
+        all_texts.push(query);
+        all_texts.extend_from_slice(documents);
+
+        let embeddings = self.encode_batch(&all_texts);
+        if embeddings.is_empty() || embeddings.len() != all_texts.len() {
+            return vec![];
+        }
+
+        let query_vec = &embeddings[0];
+        let mut scored: Vec<(usize, f32)> = embeddings[1..]
+            .iter()
+            .enumerate()
+            .map(|(i, doc_vec)| {
+                let dot: f32 = query_vec.iter().zip(doc_vec.iter()).map(|(a, b)| a * b).sum();
+                (i, dot)
+            })
+            .collect();
+
+        scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+        if let Some(k) = top_n {
+            scored.truncate(k);
+        }
+        scored
     }
 }
 

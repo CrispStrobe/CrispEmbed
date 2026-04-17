@@ -48,6 +48,13 @@ extern "C" {
     /// Truncate output to `dim` dimensions (Matryoshka). 0 = model default.
     pub fn crispembed_set_dim(ctx: *mut CrispembedContext, dim: c_int);
 
+    /// Set a text prefix prepended to all inputs before tokenization.
+    /// Pass NULL or empty string to clear.
+    pub fn crispembed_set_prefix(ctx: *mut CrispembedContext, prefix: *const c_char);
+
+    /// Get the current prefix (empty string if none set).
+    pub fn crispembed_get_prefix(ctx: *const CrispembedContext) -> *const c_char;
+
     // ------------------------------------------------------------------
     // Dense embedding
     // ------------------------------------------------------------------

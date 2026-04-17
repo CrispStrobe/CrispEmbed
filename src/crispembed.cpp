@@ -100,6 +100,7 @@ struct crispembed_context {
     int pool_method = 0;  // 0=mean, 1=cls, 2=last-token
     int pos_offset = 0;   // position embedding offset (2 for RoBERTa/XLM-R)
     int matryoshka_dim = 0;  // 0 = use model default
+    std::string prefix;  // prepended to text before tokenization (e.g. "query: ")
     std::vector<float> last_output;     // reused buffer (dense encode)
     std::vector<uint8_t> compute_meta;  // graph metadata buffer (no_alloc=true)
     ggml_context * qkv_ctx = nullptr;   // pre-merged QKV tensor metadata
@@ -874,13 +875,22 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx,
                                             const char * text,
                                             int * out_n_dim) {
     if (!ctx || !text) return nullptr;
+
+    // Prepend prefix if set (e.g. "query: ", "Represent this sentence: ")
+    std::string prefixed;
+    const char * enc_text = text;
+    if (!ctx->prefix.empty()) {
+        prefixed = ctx->prefix + text;
+        enc_text = prefixed.c_str();
+    }
+
     embed_tokens tokens;
     if (ctx->use_bpe) {
-        tokens = ctx->bpe_tokenizer.encode(text);
+        tokens = ctx->bpe_tokenizer.encode(enc_text);
     } else if (ctx->use_sentencepiece) {
-        tokens = ctx->sp_tokenizer.encode(text);
+        tokens = ctx->sp_tokenizer.encode(enc_text);
     } else {
-        tokens = ctx->wp_tokenizer.encode(text);
+        tokens = ctx->wp_tokenizer.encode(enc_text);
     }
     // Trim padding: only keep tokens where attn_mask == 1
     {
@@ -921,21 +931,35 @@ extern "C" void crispembed_set_dim(crispembed_context * ctx, int dim) {
     if (ctx) ctx->matryoshka_dim = dim;
 }
 
+extern "C" void crispembed_set_prefix(crispembed_context * ctx, const char * prefix) {
+    if (ctx) ctx->prefix = prefix ? prefix : "";
+}
+
+extern "C" const char * crispembed_get_prefix(const crispembed_context * ctx) {
+    return ctx ? ctx->prefix.c_str() : "";
+}
+
 extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
                                                    const char ** texts,
                                                    int n_texts,
                                                    int * out_n_dim) {
     if (!ctx || !texts || n_texts <= 0) return nullptr;
 
-    // Tokenize all texts
+    // Tokenize all texts (with prefix if set)
     std::vector<embed_tokens> all_tokens(n_texts);
     for (int i = 0; i < n_texts; i++) {
+        const char * inp = texts[i];
+        std::string prefixed;
+        if (!ctx->prefix.empty()) {
+            prefixed = ctx->prefix + inp;
+            inp = prefixed.c_str();
+        }
         if (ctx->use_bpe)
-            all_tokens[i] = ctx->bpe_tokenizer.encode(texts[i]);
+            all_tokens[i] = ctx->bpe_tokenizer.encode(inp);
         else if (ctx->use_sentencepiece)
-            all_tokens[i] = ctx->sp_tokenizer.encode(texts[i]);
+            all_tokens[i] = ctx->sp_tokenizer.encode(inp);
         else
-            all_tokens[i] = ctx->wp_tokenizer.encode(texts[i]);
+            all_tokens[i] = ctx->wp_tokenizer.encode(inp);
 
         // Trim padding
         auto & t = all_tokens[i];

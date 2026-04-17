@@ -10,7 +10,7 @@ Supports BERT, XLM-R, Qwen3, and Gemma3 embedding models with GPU acceleration
 
 ## Status
 
-**13 models verified** bit-identical to HuggingFace (cos>=0.999):
+**13 models verified** bit-identical to HuggingFace (cos>=0.999), 30 models in registry:
 
 | Model | Type | Dim | F32 CosSim | Q8_0 | Q4_K |
 |-------|------|-----|------------|------|------|
@@ -201,6 +201,31 @@ vec = model.encode("Hello world")      # shape (384,)
 # Batch — single C call, true batched Metal/GPU inference
 vectors = model.encode(["Hello world", "Goodbye world"])
 print(vectors.shape)  # (2, 384)
+
+# Matryoshka dimension truncation
+model.set_dim(128)
+vec128 = model.encode("Hello world")   # shape (128,)
+
+# Prompt prefix (for models that need it)
+model.set_prefix("query: ")           # auto-prepended before tokenization
+
+# Sparse (BGE-M3)
+model = CrispEmbed("bge-m3.gguf")
+if model.has_sparse:
+    sparse = model.encode_sparse("Hello world")   # {token_id: weight}
+
+# ColBERT multi-vector
+if model.has_colbert:
+    multi = model.encode_multivec("Hello world")   # (n_tokens, 128)
+
+# Cross-encoder reranking
+reranker = CrispEmbed("bge-reranker-v2-m3.gguf")
+score = reranker.rerank("query", "document")       # raw logit
+
+# Bi-encoder reranking (any embedding model, cosine similarity)
+results = model.rerank_biencoder("query", ["doc1", "doc2", "doc3"], top_n=2)
+for r in results:
+    print(f"  [{r['index']}] {r['score']:.4f}: {r['document']}")
 ```
 
 ## Rust
@@ -216,12 +241,21 @@ use crispembed::CrispEmbed;
 let mut model = CrispEmbed::new("model.gguf", 0)?;
 let vec = model.encode("Hello world");
 
+// Prompt prefix
+model.set_prefix("query: ");
+
 // Sparse + ColBERT (BGE-M3)
 if model.has_sparse() {
     let sparse = model.encode_sparse("query");   // Vec<(i32, f32)>
 }
 if model.has_colbert() {
     let multi = model.encode_multivec("query");  // Vec<Vec<f32>>
+}
+
+// Bi-encoder reranking (cosine similarity)
+let ranked = model.rerank_biencoder("query", &["doc1", "doc2"], Some(2));
+for (idx, score) in &ranked {
+    println!("  doc {} score {:.4}", idx, score);
 }
 ```
 
@@ -231,6 +265,13 @@ if model.has_colbert() {
 ./benchmark.sh                          # single model, all engines
 ./benchmark.sh --multi                  # 3 models, all engines
 ./benchmark.sh -n 100 --skip-fastembed  # CrispEmbed + HF only, 100 runs
+
+# RAG retrieval quality benchmark
+python tests/bench_rag.py --lib build/libcrispembed.so --gguf model.gguf
+
+# Reranking benchmark
+python tests/bench_rerank.py --lib build/libcrispembed.so \
+    --embed-gguf model.gguf --reranker-gguf reranker.gguf
 ```
 
 Compares CrispEmbed (CLI, Python ctypes, HTTP server) against HuggingFace
