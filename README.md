@@ -259,11 +259,62 @@ for (idx, score) in &ranked {
 }
 ```
 
+## Dart / Flutter
+
+```yaml
+# pubspec.yaml
+dependencies:
+  crispembed:
+    path: path/to/CrispEmbed/flutter/crispembed
+```
+
+```dart
+import 'package:crispembed/crispembed.dart';
+
+final model = CrispEmbed('model.gguf');
+
+// Dense encoding
+final vec = model.encode('Hello world');           // Float32List(384)
+final batch = model.encodeBatch(['Hello', 'World']); // List<Float32List>
+
+// Matryoshka truncation + prefix
+model.setDim(128);
+model.setPrefix('query: ');
+
+// Bi-encoder reranking
+final ranked = model.rerankBiencoder('query', ['doc1', 'doc2']);
+
+// Sparse / ColBERT / cross-encoder (BGE-M3, rerankers)
+if (model.hasSparse) {
+  final sparse = model.encodeSparse('text');  // Map<int, double>
+}
+
+model.dispose();
+```
+
+Works on iOS (Metal GPU), Android (Vulkan/NEON), macOS, Linux, Windows.
+
+## Mobile (iOS / Android)
+
+```bash
+# iOS — xcframework with Metal GPU acceleration
+./build-ios.sh                    # arm64 device + simulator
+./build-ios.sh --device           # device only
+
+# Android — NDK cross-compilation
+./build-android.sh                # arm64-v8a + armeabi-v7a + x86_64
+./build-android.sh --abi arm64-v8a --vulkan  # single ABI with Vulkan GPU
+```
+
+Output:
+- iOS: `build-ios/CrispEmbed.xcframework/`
+- Android: `build-android/<abi>/libcrispembed.so`
+
 ## Benchmarking
 
 ```bash
 ./benchmark.sh                          # single model, all engines
-./benchmark.sh --multi                  # 3 models, all engines
+./benchmark.sh --multi                  # 6 models, all engines
 ./benchmark.sh -n 100 --skip-fastembed  # CrispEmbed + HF only, 100 runs
 
 # RAG retrieval quality benchmark

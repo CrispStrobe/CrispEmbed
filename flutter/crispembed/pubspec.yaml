@@ -1,0 +1,14 @@
+name: crispembed
+description: Lightweight text embedding inference via ggml. Dense, sparse, ColBERT, and cross-encoder reranking — all on-device with GPU acceleration.
+version: 0.2.0
+homepage: https://github.com/CrispStrobe/CrispEmbed
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  ffi: ^2.0.0
+
+dev_dependencies:
+  test: ^1.24.0
+  ffigen: ^9.0.0
