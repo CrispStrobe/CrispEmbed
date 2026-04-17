@@ -10,7 +10,7 @@ Supports BERT, XLM-R, Qwen3, and Gemma3 embedding models with GPU acceleration
 
 ## Status
 
-**15 models verified** bit-identical to HuggingFace (cos>=0.999), 30+ models in registry:
+**21 models verified** bit-identical to HuggingFace (cos>=0.999), 35+ models in registry:
 
 | Model | Type | Dim | F32 CosSim | Q8_0 | Q4_K |
 |-------|------|-----|------------|------|------|
@@ -29,6 +29,14 @@ Supports BERT, XLM-R, Qwen3, and Gemma3 embedding models with GPU acceleration
 | Harrier-OSS-v1-270M | Gemma3 | 640 | 0.999948 | 0.9998 | 0.99 |
 | all-mpnet-base-v2 | MPNet | 768 | 0.999997 | 0.9998 | 0.99 |
 | nomic-embed-text-v1.5 | NomicBERT | 768 | 0.999441 | 0.9994 | -- |
+| multilingual-e5-base | XLM-R | 768 | 0.999995 | 0.9999 | 0.99 |
+| multilingual-e5-large | XLM-R | 1024 | 0.999997 | 0.9999 | 0.99 |
+| granite-embedding-278m | XLM-R | 768 | 0.999984 | 0.9999 | 0.99 |
+| granite-embedding-107m | XLM-R | 384 | 0.999986 | 0.9999 | 0.99 |
+| bge-small-en-v1.5 | BERT | 384 | 0.999999 | 0.9999 | 0.99 |
+| bge-base-en-v1.5 | BERT | 768 | 0.999994 | 0.9999 | 0.99 |
+| bge-large-en-v1.5 | BERT | 1024 | 0.999992 | 0.9999 | 0.99 |
+| mxbai-embed-large-v1 | BERT | 1024 | 1.000032 | 0.9999 | 0.99 |
 
 Q8_0 = all PASS (cos > 0.99). Q4_K = most PASS; `--` = use Q5_K or Q8_0 for this model.
 
