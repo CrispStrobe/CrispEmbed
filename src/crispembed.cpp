@@ -264,7 +264,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             std::vector<std::string> merges;
             // Merges will be loaded after weight loading (from tensor "tokenizer.merges")
             std::vector<std::string> empty_merges;
-            ctx->bpe_tokenizer.load(vocab, empty_merges, sep_id, pad_id, unk_id,
+            // For encoder BPE: eos=SEP, suffix=-1 (handled by encode), bos=CLS
+            ctx->bpe_tokenizer.load(vocab, empty_merges, sep_id, pad_id, -1,
                                      cls_id, false, hp.n_max_tokens);
             ctx->use_bpe = true;
             fprintf(stderr, "crispembed: using BPE tokenizer (%d tokens)\n", n);

@@ -132,12 +132,19 @@ embed_tokens BPETokenizer::encode(const std::string & text) const {
             ids.push_back(suffix_id_);
         }
     } else {
-        // GPT-2 byte-level BPE (Qwen3)
+        // GPT-2 byte-level BPE (Qwen3, ModernBERT)
         ids = core_bpe::tokenize_simple(token_to_id_, merge_rank_, text);
 
-        // Append suffix token if model uses one
+        // For encoder models: wrap with BOS (CLS) and EOS (SEP)
+        if (bos_id_ >= 0) {
+            ids.insert(ids.begin(), bos_id_);
+        }
+        // Append suffix/EOS token
         if (suffix_id_ >= 0) {
             ids.push_back(suffix_id_);
+        } else if (eos_id_ >= 0 && bos_id_ >= 0) {
+            // Encoder BPE: add SEP at end (eos_id = sep_id)
+            ids.push_back(eos_id_);
         }
     }
 
