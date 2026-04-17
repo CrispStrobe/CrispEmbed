@@ -98,6 +98,7 @@ struct embed_model {
     ggml_tensor * rel_embd      = nullptr;  // DeBERTa relative position embeddings [n_embd, max_rel_pos]
     ggml_tensor * encoder_ln_w = nullptr;   // DeBERTa encoder-level LayerNorm
     ggml_tensor * encoder_ln_b = nullptr;
+    ggml_tensor * final_norm_w = nullptr;  // ModernBERT final norm (pre-LN models)
 
     // Encoder layers
     std::vector<embed_layer> layers;
@@ -207,7 +208,9 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     ctx->pos_offset    = u32("bert.position_offset", 0);
     // ColBERT output dimension (BGE-M3 default 128) — read while g is valid
     m.colbert_dim      = u32("bert.colbert_dim", 128);
-    // fprintf(stderr, "crispembed: pool_method=%d pos_offset=%d\n", ctx->pool_method, ctx->pos_offset);
+    // RoPE and pre-LN flags — MUST be read before gguf_free(g)
+    ctx->rope_theta    = f32("bert.rope_theta", 10000.0f);
+    ctx->pre_ln        = u32("bert.pre_ln", 0) != 0;
 
     // Load tokenizer vocab from GGUF metadata
     int ki = gguf_find_key(g, "tokenizer.ggml.tokens");
@@ -302,19 +305,18 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     m.rel_embd      = get("rel_embd.weight");
     m.encoder_ln_w  = get("encoder_ln.weight");
     m.encoder_ln_b  = get("encoder_ln.bias");
+    m.final_norm_w  = get("final_norm.weight");
 
     if (!m.token_embd) {
         fprintf(stderr, "crispembed: missing token_embd.weight\n");
         return false;
     }
-    // NomicBERT and other RoPE-based encoders lack position embeddings
+    // NomicBERT/ModernBERT: RoPE-based encoders lack position embeddings
     if (!m.pos_embd) {
         ctx->use_rope = true;
-        ctx->rope_theta = f32("bert.rope_theta", 10000.0f);
-        fprintf(stderr, "crispembed: no position embeddings, using RoPE (theta=%.0f)\n", ctx->rope_theta);
+        fprintf(stderr, "crispembed: no position embeddings, using RoPE (theta=%.0f%s)\n",
+                ctx->rope_theta, ctx->pre_ln ? ", pre-LN" : "");
     }
-    // Pre-LN detection: if GGUF flag set, or if model has gate weights + no biases (ModernBERT)
-    ctx->pre_ln = u32("bert.pre_ln", 0) != 0;
 
     // Encoder layers
     m.layers.resize(hp.n_layer);
@@ -435,7 +437,7 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
     const float ln_eps = hp.layer_norm_eps;
     const int TB = T * B;  // total tokens in batch
 
-    int graph_size = std::max(2048, hp.n_layer * 30 + 256);
+    int graph_size = std::max(4096, hp.n_layer * 40 + 512);
 
     ggml_init_params ip = { ctx->compute_meta.size(), ctx->compute_meta.data(), true };
     ggml_context * gctx = ggml_init(ip);
@@ -632,11 +634,16 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
 
         ggml_tensor * ffn;
         if (L.ffn_gate_w) {
-            // Gated FFN: gate * activation(up) → down
+            // Gated FFN: activation(up) * gate → down
             ggml_tensor * up   = ggml_mul_mat(gctx, L.fc1_w, cur);
             ggml_tensor * gate = ggml_mul_mat(gctx, L.ffn_gate_w, cur);
-            // NomicBERT uses SiLU, ModernBERT uses GELU for gate
-            gate = ctx->pre_ln ? ggml_gelu(gctx, gate) : ggml_silu(gctx, gate);
+            // ModernBERT: GELU on input (up), multiply by gate → GeGLU
+            // NomicBERT: SiLU on gate, multiply by up → SwiGLU
+            if (ctx->pre_ln) {
+                up = ggml_gelu(gctx, up);  // GeGLU: act(input) * gate
+            } else {
+                gate = ggml_silu(gctx, gate);  // SwiGLU: up * act(gate)
+            }
             ffn = ggml_mul(gctx, up, gate);
             ffn = ggml_mul_mat(gctx, L.fc2_w, ffn);
         } else {
@@ -679,6 +686,11 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         ggml_set_output(cv);
         ggml_build_forward_expand(gf, cv);
     } else {
+        // Apply final norm for pre-LN models (ModernBERT)
+        if (m.final_norm_w) {
+            cur = ggml_norm(gctx, cur, ln_eps);
+            cur = ggml_mul(gctx, cur, m.final_norm_w);
+        }
         ggml_set_name(cur, "encoder_out");
         ggml_set_output(cur);
         ggml_build_forward_expand(gf, cur);

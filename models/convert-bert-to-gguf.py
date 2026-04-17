@@ -383,7 +383,11 @@ def main():
         emb_prefix = "deberta.embeddings"
     else:
         emb_prefix = "embeddings"
-    writer.add_tensor("token_embd.weight", f32(sd[f"{emb_prefix}.word_embeddings.weight"]))
+    # Token embeddings: word_embeddings (BERT) or tok_embeddings (ModernBERT)
+    tok_key = f"{emb_prefix}.word_embeddings.weight"
+    if tok_key not in sd:
+        tok_key = f"{emb_prefix}.tok_embeddings.weight"  # ModernBERT
+    writer.add_tensor("token_embd.weight", f32(sd[tok_key]))
     if f"{emb_prefix}.position_embeddings.weight" in sd:
         writer.add_tensor("position_embd.weight", f32(sd[f"{emb_prefix}.position_embeddings.weight"]))
     else:
@@ -394,7 +398,8 @@ def main():
         k = f"{emb_prefix}.{ln_suffix}"
         if f"{k}.weight" in sd:
             writer.add_tensor(f"{TN['embd_ln']}.weight", f32(sd[f"{k}.weight"]))
-            writer.add_tensor(f"{TN['embd_ln']}.bias", f32(sd[f"{k}.bias"]))
+            if f"{k}.bias" in sd:
+                writer.add_tensor(f"{TN['embd_ln']}.bias", f32(sd[f"{k}.bias"]))
             break
     else:
         if "emb_ln.weight" in sd:
@@ -427,19 +432,59 @@ def main():
     # DeBERTa:   deberta.encoder.layer.N.attention.self.query_proj
     is_mpnet = "encoder.layer.0.attention.attn.q.weight" in sd
     is_nomic = "encoder.layers.0.attn.Wqkv.weight" in sd
+    is_modernbert = "layers.0.attn.Wqkv.weight" in sd and "layers.0.mlp.Wi.weight" in sd
     is_deberta = ("encoder.layer.0.attention.self.query_proj.weight" in sd or
                   "deberta.encoder.layer.0.attention.self.query_proj.weight" in sd)
 
     if is_nomic:
         # NomicBERT: RoPE encoder, fused QKV, SwiGLU FFN, no bias on attn
-        # Store rope_theta metadata
         rope_theta = getattr(config, "rotary_emb_base", 10000.0)
         writer.add_float32("bert.rope_theta", rope_theta)
         print(f"  NomicBERT: rope_theta={rope_theta}")
 
+    if is_modernbert:
+        # ModernBERT: pre-LN, RoPE, GeGLU, fused QKV, fused gate+up, no biases
+        rope_cfg = getattr(config, "rope_scaling", {})
+        # Use full_attention rope_theta (larger context)
+        rope_theta = rope_cfg.get("full_attention", {}).get("rope_theta", 160000.0)
+        writer.add_float32("bert.rope_theta", rope_theta)
+        writer.add_uint32("bert.pre_ln", 1)
+        print(f"  ModernBERT: rope_theta={rope_theta}, pre_ln=1")
+        # Final norm (applied after all layers in pre-LN models)
+        if "final_norm.weight" in sd:
+            writer.add_tensor("final_norm.weight", f32(sd["final_norm.weight"]))
+
     # Encoder layers
     for i in range(config.num_hidden_layers):
-        if is_nomic:
+        if is_modernbert:
+            pfx = f"layers.{i}"
+
+            # Pre-attention norm (layer 0 may not have it — uses embedding norm)
+            if f"{pfx}.attn_norm.weight" in sd:
+                writer.add_tensor(f"{LP}.{i}.{TN['ln1']}.weight", f32(sd[f"{pfx}.attn_norm.weight"]))
+
+            # Pre-FFN norm
+            if f"{pfx}.mlp_norm.weight" in sd:
+                writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.weight", f32(sd[f"{pfx}.mlp_norm.weight"]))
+
+            # Fused QKV: [3H, H] → split into Q [H,H], K [H,H], V [H,H]
+            qkv = sd[f"{pfx}.attn.Wqkv.weight"]
+            H = qkv.shape[1]
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.weight", wt(qkv[:H]))
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.weight", wt(qkv[H:2*H]))
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.weight", wt(qkv[2*H:]))
+
+            # Attention output
+            writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attn.Wo.weight"]))
+
+            # GeGLU FFN: Wi [2*intermediate, H] → split into up + gate
+            wi = sd[f"{pfx}.mlp.Wi.weight"]
+            mid = wi.shape[0] // 2
+            writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(wi[:mid]))     # input (activation applied)
+            writer.add_tensor(f"{LP}.{i}.ffn_gate.weight", wt(wi[mid:]))            # gate (multiplied)
+            writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.Wo.weight"]))
+
+        elif is_nomic:
             pfx = f"encoder.layers.{i}"
 
             # Layer norms: pre-attention (norm1) and pre-FFN (norm2)
