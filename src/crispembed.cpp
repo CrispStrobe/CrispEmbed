@@ -155,7 +155,9 @@ struct crispembed_context {
     int pool_method = 0;  // 0=mean, 1=cls, 2=last-token
     int pos_offset = 0;   // position embedding offset (2 for RoBERTa/XLM-R)
     bool use_rope = false;    // encoder uses RoPE instead of absolute position embeddings (NomicBERT)
-    float rope_theta = 10000.0f;
+    float rope_theta = 10000.0f;       // default/sliding theta
+    float rope_theta_global = 0.0f;    // global attention theta (ModernBERT, 0 = same as rope_theta)
+    int   global_attn_every_n = 0;     // ModernBERT: every Nth layer uses global attention (0 = all same)
     bool pre_ln = false;      // pre-LN (ModernBERT) vs post-LN (BERT) ordering
     int matryoshka_dim = 0;  // 0 = use model default
     std::string prefix;  // prepended to text before tokenization (e.g. "query: ")
@@ -216,8 +218,10 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     // ColBERT output dimension (BGE-M3 default 128) — read while g is valid
     m.colbert_dim      = u32("bert.colbert_dim", 128);
     // RoPE and pre-LN flags — MUST be read before gguf_free(g)
-    ctx->rope_theta    = f32("bert.rope_theta", 10000.0f);
-    ctx->pre_ln        = u32("bert.pre_ln", 0) != 0;
+    ctx->rope_theta         = f32("bert.rope_theta", 10000.0f);
+    ctx->rope_theta_global  = f32("bert.rope_theta_global", 0.0f);
+    ctx->global_attn_every_n = u32("bert.global_attn_every_n", 0);
+    ctx->pre_ln             = u32("bert.pre_ln", 0) != 0;
 
     // Load tokenizer vocab from GGUF metadata
     int ki = gguf_find_key(g, "tokenizer.ggml.tokens");
@@ -237,9 +241,9 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             std::memcpy(scores.data(), sd, sn * sizeof(float));
         }
 
-        // Detect tokenizer type: SentencePiece for XLM-R (vocab > 100K)
-        int tokenizer_type = u32("tokenizer.ggml.type", 0); // 0=WordPiece, 1=BPE, 2=SentencePiece
-        if (tokenizer_type == 2 || n > 100000) {
+        // Detect tokenizer type: 0=WordPiece, 1=BPE, 2=SentencePiece
+        int tokenizer_type = u32("tokenizer.ggml.type", 0);
+        if (tokenizer_type == 2 || (tokenizer_type == 0 && n > 100000)) {
             // SentencePiece / XLM-RoBERTa
             int bos_id = u32("tokenizer.ggml.bos_token_id", 0);
             int eos_id = u32("tokenizer.ggml.eos_token_id", 2);
@@ -249,6 +253,24 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             ctx->use_sentencepiece = true;
             fprintf(stderr, "crispembed: using SentencePiece tokenizer (%d tokens, %zu scores)\n",
                     n, scores.size());
+        } else if (tokenizer_type == 1) {
+            // BPE (GPT-2 style, ModernBERT, etc.)
+            int cls_id = u32("tokenizer.ggml.cls_token_id", 0);
+            int sep_id = u32("tokenizer.ggml.sep_token_id", 2);
+            int unk_id = u32("tokenizer.ggml.unknown_token_id", 3);
+            int pad_id = u32("tokenizer.ggml.padding_token_id", 1);
+
+            // BPE merges are encoded as vocab scores (higher = merge earlier)
+            // The BPE tokenizer reconstructs merge priority from scores
+            std::vector<std::string> empty_merges;
+            ctx->bpe_tokenizer.load(vocab, empty_merges, sep_id, pad_id, unk_id,
+                                     cls_id, false, hp.n_max_tokens);
+            // Override with score-based merge ranks if available
+            if (!scores.empty()) {
+                ctx->bpe_tokenizer.set_scores(scores);
+            }
+            ctx->use_bpe = true;
+            fprintf(stderr, "crispembed: using BPE tokenizer (%d tokens)\n", n);
         } else {
             // WordPiece / BERT
             int cls_id = u32("tokenizer.ggml.cls_token_id", 101);
@@ -540,15 +562,21 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         K = ggml_reshape_4d(gctx, K, head_dim, n_heads, T, B);
         V = ggml_reshape_4d(gctx, V, head_dim, n_heads, T, B);
 
-        // Optional RoPE for encoder models without position embeddings (NomicBERT)
+        // Optional RoPE for encoder models without position embeddings (NomicBERT/ModernBERT)
         // Apply before permute: Q/K shape is [hd, nh, T, B], RoPE uses ne[2]=T
         if (rope_pos) {
+            // Per-layer theta: ModernBERT alternates sliding/global attention
+            float layer_theta = ctx->rope_theta;
+            if (ctx->global_attn_every_n > 0 && ctx->rope_theta_global > 0.0f) {
+                bool is_global = (il % ctx->global_attn_every_n == 0);
+                layer_theta = is_global ? ctx->rope_theta_global : ctx->rope_theta;
+            }
             Q = ggml_rope_ext(gctx, Q, rope_pos, nullptr,
                               head_dim, GGML_ROPE_TYPE_NEOX, hp.n_max_tokens,
-                              ctx->rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+                              layer_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
             K = ggml_rope_ext(gctx, K, rope_pos, nullptr,
                               head_dim, GGML_ROPE_TYPE_NEOX, hp.n_max_tokens,
-                              ctx->rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+                              layer_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
         }
 
         // Permute: [hd, nh, T, B] → [hd, T, nh, B]

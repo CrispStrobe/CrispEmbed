@@ -357,12 +357,43 @@ def main():
                     token_types.append(1)  # normal
             writer.add_array("tokenizer.ggml.token_type", token_types)
         else:
-            writer.add_uint32("tokenizer.ggml.type", 0)
+            # Detect BPE vs WordPiece from tokenizer.json
+            is_bpe_tokenizer = False
+            try:
+                from huggingface_hub import hf_hub_download
+                tj_path = hf_hub_download(repo_id=args.model, filename="tokenizer.json")
+                with open(tj_path, encoding="utf-8") as f:
+                    tj = json.load(f)
+                is_bpe_tokenizer = tj.get("model", {}).get("type") == "BPE"
+                # Store BPE merges for BPE tokenizers
+                if is_bpe_tokenizer:
+                    merges = tj.get("model", {}).get("merges", [])
+                    # Store merge count — merges themselves are reconstructed from vocab scores
+                    writer.add_uint32("tokenizer.ggml.merges_count", len(merges))
+                    # Encode merge ranks as vocab scores (higher score = earlier merge = higher priority)
+                    bpe_vocab = tj.get("model", {}).get("vocab", {})
+                    merge_scores = [0.0] * len(vocab)
+                    for rank, merge in enumerate(merges):
+                        # Each merge is "tokenA tokenB" — find result token in vocab
+                        merged = merge.replace(" ", "")
+                        if merged in bpe_vocab:
+                            tid = bpe_vocab[merged]
+                            if tid < len(merge_scores):
+                                merge_scores[tid] = float(len(merges) - rank)  # higher = merge earlier
+                    scores = merge_scores  # override scores with merge ranks
+                    print(f"  BPE merges: {len(merges)} (stored as vocab scores)")
+            except Exception:
+                pass
+
+            if is_bpe_tokenizer and scores:
+                writer.add_array("tokenizer.ggml.scores", scores)
+            writer.add_uint32("tokenizer.ggml.type", 1 if is_bpe_tokenizer else 0)
             writer.add_uint32("tokenizer.ggml.cls_token_id", tokenizer.cls_token_id if tokenizer.cls_token_id is not None else 101)
             writer.add_uint32("tokenizer.ggml.sep_token_id", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else 102)
             writer.add_uint32("tokenizer.ggml.unknown_token_id", tokenizer.unk_token_id if tokenizer.unk_token_id is not None else 100)
             writer.add_uint32("tokenizer.ggml.padding_token_id", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else 0)
-        print(f"  tokenizer: WordPiece ({config.vocab_size} tokens)")
+        tok_type_str = "BPE" if (not ollama_mode and is_bpe_tokenizer) else "WordPiece"
+        print(f"  tokenizer: {tok_type_str} ({config.vocab_size} tokens)")
 
     # Tensor naming: Ollama uses blk.N.attn_q, CrispEmbed uses enc.N.attn.q
     if ollama_mode:
@@ -453,11 +484,14 @@ def main():
     if is_modernbert:
         # ModernBERT: pre-LN, RoPE, GeGLU, fused QKV, fused gate+up, no biases
         rope_cfg = getattr(config, "rope_scaling", {})
-        # Use full_attention rope_theta (larger context)
-        rope_theta = rope_cfg.get("full_attention", {}).get("rope_theta", 160000.0)
-        writer.add_float32("bert.rope_theta", rope_theta)
+        sliding_theta = rope_cfg.get("sliding_attention", {}).get("rope_theta", 10000.0)
+        global_theta = rope_cfg.get("full_attention", {}).get("rope_theta", 160000.0)
+        global_every = getattr(config, "global_attn_every_n_layers", 3)
+        writer.add_float32("bert.rope_theta", sliding_theta)
+        writer.add_float32("bert.rope_theta_global", global_theta)
+        writer.add_uint32("bert.global_attn_every_n", global_every)
         writer.add_uint32("bert.pre_ln", 1)
-        print(f"  ModernBERT: rope_theta={rope_theta}, pre_ln=1")
+        print(f"  ModernBERT: sliding_theta={sliding_theta}, global_theta={global_theta}, every={global_every}, pre_ln=1")
         # Final norm (applied after all layers in pre-LN models)
         if "final_norm.weight" in sd:
             writer.add_tensor("final_norm.weight", f32(sd["final_norm.weight"]))
