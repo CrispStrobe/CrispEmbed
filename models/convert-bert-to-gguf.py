@@ -178,11 +178,12 @@ def main():
     is_sentencepiece_model = hasattr(tokenizer, 'sp_model') or config.vocab_size > 100000
     arch = "xlmr" if (is_true_xlmr and ollama_mode) else ARCH
 
-    # Position embedding offset: only true RoBERTa/XLM-R uses padding_idx + 1
+    # Position embedding offset: RoBERTa/XLM-R/MPNet use padding_idx + 1
     pos_offset = 0
-    if is_true_xlmr and hasattr(config, "pad_token_id") and config.pad_token_id is not None:
+    needs_pos_offset = is_true_xlmr or config.model_type == "mpnet"
+    if needs_pos_offset and hasattr(config, "pad_token_id") and config.pad_token_id is not None:
         pos_offset = config.pad_token_id + 1
-        print(f"  position_offset: {pos_offset} (RoBERTa-style)")
+        print(f"  position_offset: {pos_offset} (RoBERTa/MPNet-style)")
 
     # Detect pooling method from sentence-transformers config
     pool_method_crisp = 0  # CrispEmbed: 0=mean, 1=CLS, 2=last
@@ -332,8 +333,8 @@ def main():
     else:
         if ollama_mode:
             writer.add_string("tokenizer.ggml.model", "bert")
-            writer.add_uint32("tokenizer.ggml.cls_token_id", tokenizer.cls_token_id or 101)
-            writer.add_uint32("tokenizer.ggml.separator_token_id", tokenizer.sep_token_id or 102)
+            writer.add_uint32("tokenizer.ggml.cls_token_id", tokenizer.cls_token_id if tokenizer.cls_token_id is not None else 101)
+            writer.add_uint32("tokenizer.ggml.separator_token_id", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else 102)
             writer.add_bool("tokenizer.ggml.add_bos_token", True)
             writer.add_bool("tokenizer.ggml.add_eos_token", True)
             # Token types for WordPiece
@@ -349,10 +350,10 @@ def main():
             writer.add_array("tokenizer.ggml.token_type", token_types)
         else:
             writer.add_uint32("tokenizer.ggml.type", 0)
-            writer.add_uint32("tokenizer.ggml.cls_token_id", tokenizer.cls_token_id or 101)
-            writer.add_uint32("tokenizer.ggml.sep_token_id", tokenizer.sep_token_id or 102)
-            writer.add_uint32("tokenizer.ggml.unknown_token_id", tokenizer.unk_token_id or 100)
-            writer.add_uint32("tokenizer.ggml.padding_token_id", tokenizer.pad_token_id or 0)
+            writer.add_uint32("tokenizer.ggml.cls_token_id", tokenizer.cls_token_id if tokenizer.cls_token_id is not None else 101)
+            writer.add_uint32("tokenizer.ggml.sep_token_id", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else 102)
+            writer.add_uint32("tokenizer.ggml.unknown_token_id", tokenizer.unk_token_id if tokenizer.unk_token_id is not None else 100)
+            writer.add_uint32("tokenizer.ggml.padding_token_id", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else 0)
         print(f"  tokenizer: WordPiece ({config.vocab_size} tokens)")
 
     # Tensor naming: Ollama uses blk.N.attn_q, CrispEmbed uses enc.N.attn.q
