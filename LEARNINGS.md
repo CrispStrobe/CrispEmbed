@@ -471,6 +471,36 @@ Models that are decoder-based (Qwen3/Gemma3) use convert-decoder-embed-to-gguf.p
 Rerankers are encoder models with a classifier head — use `--crisp` flag to include
 the classifier weights in the GGUF.
 
+## MPNet relative position bias
+
+MPNet uses T5-style relative position bias instead of absolute position embeddings.
+The bias is a learned `Embedding(32, 12)` — 32 logarithmic distance buckets × 12
+attention heads. For each (query_pos, key_pos) pair, a bucket index is computed
+via logarithmic distance binning, then the bias is looked up and added to
+attention scores before softmax.
+
+**Our implementation** (CrispEmbed):
+- Precompute the full `[T, T, n_heads]` bias matrix in C++ at encode time
+- Pass it as the F16 mask parameter to `ggml_flash_attn_ext`
+- Flash attention adds it to scores natively — no manual attention needed
+- Result: cos=0.999997 vs HuggingFace
+
+**llama.cpp approach** (PR #21880):
+- Compute bucket indices in the ggml graph via `build_inp_pos_bucket_enc()`
+- Look up bias weights with `build_pos_bias()` (ggml graph ops)
+- Pass as `kq_b` to `build_attn()` which adds it to attention scores
+- Tensor stored transposed `[n_heads, n_buckets]` on layer 0
+
+**Key difference**: We precompute in C++ (simpler, works on CPU), they compute in
+the ggml graph (GPU-accelerable, more modular). Both produce identical results.
+Our approach is ~10 lines of C++ vs their ~50 lines of graph builder code.
+
+**Bugs found during MPNet implementation**:
+- Python `or` operator treats `cls_token_id=0` as falsy → falls through to
+  default 101. Fix: use `is not None` check
+- MPNet needs position offset = 2 (same as RoBERTa), but `model_type="mpnet"`
+  was not included in the offset detection
+
 ## Reranker model conversion notes
 
 Cross-encoder rerankers (bge-reranker, ms-marco-MiniLM, mxbai-rerank) have a

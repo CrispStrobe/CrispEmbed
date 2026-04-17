@@ -164,6 +164,9 @@ Cosine similarity between F32 and quantized models (1.0 = identical).
 | harrier-270m | 0.9998 | 0.99 |
 | qwen3-embed-0.6b | 0.9996 | 0.97 |
 
+| all-mpnet-base-v2 | 0.9998 | 0.99 |
+| nomic-embed-text-v1.5 | 0.9994 | -- |
+
 Q8_0: all > 0.995. Q4_K: most > 0.95.
 
 ## BLAS Acceleration

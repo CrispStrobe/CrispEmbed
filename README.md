@@ -10,7 +10,7 @@ Supports BERT, XLM-R, Qwen3, and Gemma3 embedding models with GPU acceleration
 
 ## Status
 
-**13 models verified** bit-identical to HuggingFace (cos>=0.999), 30 models in registry:
+**15 models verified** bit-identical to HuggingFace (cos>=0.999), 30+ models in registry:
 
 | Model | Type | Dim | F32 CosSim | Q8_0 | Q4_K |
 |-------|------|-----|------------|------|------|
@@ -27,6 +27,8 @@ Supports BERT, XLM-R, Qwen3, and Gemma3 embedding models with GPU acceleration
 | Harrier-OSS-v1-0.6B | Qwen3 | 1024 | 0.999959 | 0.9999 | 0.99 |
 | Qwen3-Embedding-0.6B | Qwen3 | 1024 | 0.999895 | 0.9996 | 0.97 |
 | Harrier-OSS-v1-270M | Gemma3 | 640 | 0.999948 | 0.9998 | 0.99 |
+| all-mpnet-base-v2 | MPNet | 768 | 0.999997 | 0.9998 | 0.99 |
+| nomic-embed-text-v1.5 | NomicBERT | 768 | 0.999441 | 0.9994 | -- |
 
 Q8_0 = all PASS (cos > 0.99). Q4_K = most PASS; `--` = use Q5_K or Q8_0 for this model.
 
@@ -344,7 +346,15 @@ Auto-creates a `.bench-venv` for Python dependencies.
   - **Sparse**: `Linear(H,1)` + ReLU → scatter via input_ids → `{token_id: weight}`
   - **ColBERT**: `Linear(H,128)` → per-token L2 normalize → `float[n_tokens][128]`
 
-**Cross-encoder reranker** (BGE-reranker-v2-m3, etc.):
+**MPNet encoder** (all-mpnet-base-v2):
+- Token + Position(+offset) embeddings → Post-LN transformer with relative position bias → Mean pooling
+- T5-style logarithmic bucket relative attention bias (32 buckets × n_heads)
+
+**NomicBERT encoder** (nomic-embed-text-v1.5):
+- Token embeddings (no position) + RoPE → Post-LN transformer + SwiGLU FFN → Mean pooling
+- Rotary position embeddings (same as decoder path), no absolute position embeddings
+
+**Cross-encoder reranker** (BGE-reranker-v2-m3, ms-marco-MiniLM, mxbai-rerank, etc.):
 - `[CLS] query [SEP] document [SEP]` pair tokenization → CLS hidden state → `Linear(H,1)` → scalar score
 
 **Qwen3 decoder** (Octen, F2LLM, Jina v5, Harrier-0.6B, Qwen3-Embed):

@@ -73,10 +73,11 @@ Text → **Tokenizer** (auto-detected from GGUF: WordPiece/SentencePiece/BPE) �
 ### Model architecture dispatch
 
 The model type is auto-detected from GGUF metadata:
-- **Encoder models** (BERT, XLM-R): `crispembed.cpp` → `encode_tokens()` / `encode_tokens_batch()`
+- **Encoder models** (BERT, XLM-R, MPNet, NomicBERT): `crispembed.cpp` → `encode_tokens()` / `encode_tokens_batch()`
 - **Decoder models** (Qwen3, Gemma3): `decoder_embed.cpp` → `decoder_encode_tokens()`
 
 Detection heuristic: presence of `blk.0.ffn_gate` tensor → decoder path.
+Encoder variants auto-detected: no `pos_embd` → RoPE (NomicBERT), `rel_attn_bias` → relative position bias (MPNet).
 
 ### Tokenizer dispatch
 
