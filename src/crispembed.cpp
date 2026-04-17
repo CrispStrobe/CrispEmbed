@@ -13,6 +13,48 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+
+// MPNet-style relative position bucket (matches HuggingFace implementation).
+static int relative_position_bucket(int rel_pos, int num_buckets = 32, int max_distance = 128) {
+    int ret = 0;
+    int n = -rel_pos;
+    int half = num_buckets / 2;
+    if (n < 0) { ret += half; n = -n; }
+    int max_exact = half / 2;
+    if (n < max_exact) {
+        ret += n;
+    } else {
+        int val = max_exact + (int)(log((double)n / max_exact) / log((double)max_distance / max_exact) * (half - max_exact));
+        if (val > half - 1) val = half - 1;
+        ret += val;
+    }
+    return ret;
+}
+
+// Precompute MPNet relative position bias for sequence length T.
+// rel_attn_bias: [n_buckets, n_heads] tensor
+// Output: [n_heads, T, T] float array (row-major)
+static std::vector<float> compute_rel_pos_bias(
+    ggml_tensor * rel_attn_bias, int T, int n_heads, int n_buckets = 32)
+{
+    // Read bias weights from tensor [n_buckets, n_heads]
+    std::vector<float> bias_weights(n_buckets * n_heads);
+    ggml_backend_tensor_get(rel_attn_bias, bias_weights.data(), 0,
+                            n_buckets * n_heads * sizeof(float));
+
+    // Compute bucket indices for all (i, j) pairs
+    std::vector<float> out(n_heads * T * T, 0.0f);
+    for (int i = 0; i < T; i++) {
+        for (int j = 0; j < T; j++) {
+            int bucket = relative_position_bucket(j - i, n_buckets);
+            for (int h = 0; h < n_heads; h++) {
+                // out[h][i][j] = bias_weights[bucket][h]
+                out[h * T * T + i * T + j] = bias_weights[bucket * n_heads + h];
+            }
+        }
+    }
+    return out;
+}
 #include <map>
 #include <memory>
 #include <string>
@@ -52,6 +94,9 @@ struct embed_model {
     ggml_tensor * type_embd    = nullptr;  // [n_embd, 2] (optional)
     ggml_tensor * embd_ln_w    = nullptr;  // LayerNorm after embedding sum
     ggml_tensor * embd_ln_b    = nullptr;
+    ggml_tensor * rel_attn_bias = nullptr;  // MPNet relative position bias [n_buckets, n_heads]
+    ggml_tensor * encoder_ln_w = nullptr;   // DeBERTa encoder-level LayerNorm
+    ggml_tensor * encoder_ln_b = nullptr;
 
     // Encoder layers
     std::vector<embed_layer> layers;
@@ -251,6 +296,9 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     m.type_embd  = get("token_type_embd.weight");
     m.embd_ln_w  = get("embd_ln.weight");
     m.embd_ln_b  = get("embd_ln.bias");
+    m.rel_attn_bias = get("rel_attn_bias.weight");
+    m.encoder_ln_w  = get("encoder_ln.weight");
+    m.encoder_ln_b  = get("encoder_ln.bias");
 
     if (!m.token_embd) {
         fprintf(stderr, "crispembed: missing token_embd.weight\n");
@@ -413,6 +461,15 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
     // For RoPE encoders, reuse pos_ids for position values (0, 1, 2, ...)
     ggml_tensor * rope_pos = ctx->use_rope ? pos_ids : nullptr;
 
+    // MPNet/DeBERTa relative position bias: precomputed [T, T, n_heads]
+    // Flash attention requires F16 mask
+    ggml_tensor * rel_pos_bias = nullptr;
+    if (m.rel_attn_bias) {
+        rel_pos_bias = ggml_new_tensor_3d(gctx, GGML_TYPE_F16, T, T, n_heads);
+        ggml_set_name(rel_pos_bias, "rel_pos_bias");
+        ggml_set_input(rel_pos_bias);
+    }
+
     // cur: [H, T*B] — all matmuls batch naturally
     ggml_tensor * cur = embd;
     if (m.embd_ln_w) {
@@ -463,10 +520,14 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         K = ggml_permute(gctx, K, 0, 2, 1, 3);
         V = ggml_permute(gctx, V, 0, 2, 1, 3);
 
-        // Flash attention with batch dim (each B item has independent T×T attention)
+        ggml_tensor * attn;
         float scale = 1.0f / sqrtf((float)head_dim);
-        ggml_tensor * attn = ggml_flash_attn_ext(gctx, Q, K, V,
-                                                   nullptr, scale, 0.0f, 0.0f);
+
+        // Flash attention (supports optional position bias mask)
+        // Q/K/V: [hd, T, nh, B] after permute
+        // rel_pos_bias: [T, T, nh] — passed as mask (additive to attention scores)
+        attn = ggml_flash_attn_ext(gctx, Q, K, V,
+                                   rel_pos_bias, scale, 0.0f, 0.0f);
         // Result: [hd, nh, T, B] → reshape to [H, T*B]
         attn = ggml_reshape_2d(gctx, attn, H, TB);
 
@@ -594,6 +655,21 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
         std::vector<int32_t> type_data(tokens.type_ids.begin(), tokens.type_ids.end());
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "type_ids"),
                                 type_data.data(), 0, T * sizeof(int32_t));
+    }
+
+    // MPNet relative position bias (precomputed for this sequence length, F16)
+    if (ctx->model.rel_attn_bias) {
+        ggml_tensor * bias_t = ggml_graph_get_tensor(gf, "rel_pos_bias");
+        if (bias_t) {
+            auto bias_f32 = compute_rel_pos_bias(
+                ctx->model.rel_attn_bias, T, ctx->model.hparams.n_head);
+            // Convert to F16 for flash attention mask
+            std::vector<ggml_fp16_t> bias_f16(bias_f32.size());
+            for (size_t i = 0; i < bias_f32.size(); i++)
+                bias_f16[i] = ggml_fp32_to_fp16(bias_f32[i]);
+            ggml_backend_tensor_set(bias_t, bias_f16.data(), 0,
+                                    bias_f16.size() * sizeof(ggml_fp16_t));
+        }
     }
 
     // Compute (scheduler dispatches to GPU or CPU)

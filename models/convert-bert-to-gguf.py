@@ -406,6 +406,12 @@ def main():
             writer.add_tensor("rel_embd.weight", f32(sd[rel_key]))
             print("  relative position embeddings: ok")
             break
+    # MPNet relative attention bias [n_buckets, n_heads]
+    for rab_key in ["encoder.relative_attention_bias.weight", "relative_attention_bias.weight"]:
+        if rab_key in sd:
+            writer.add_tensor("rel_attn_bias.weight", f32(sd[rab_key]))
+            print(f"  relative attention bias: ok ({list(sd[rab_key].shape)})")
+            break
     # DeBERTa encoder-level LayerNorm
     for enc_ln in ["deberta.encoder.LayerNorm", "encoder.LayerNorm"]:
         if f"{enc_ln}.weight" in sd:
