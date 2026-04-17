@@ -359,6 +359,7 @@ def main():
         else:
             # Detect BPE vs WordPiece from tokenizer.json
             is_bpe_tokenizer = False
+            scores = []
             try:
                 from huggingface_hub import hf_hub_download
                 tj_path = hf_hub_download(repo_id=args.model, filename="tokenizer.json")
@@ -374,8 +375,11 @@ def main():
                     bpe_vocab = tj.get("model", {}).get("vocab", {})
                     merge_scores = [0.0] * len(vocab)
                     for rank, merge in enumerate(merges):
-                        # Each merge is "tokenA tokenB" — find result token in vocab
-                        merged = merge.replace(" ", "")
+                        # Each merge is ["tokenA", "tokenB"] or "tokenA tokenB"
+                        if isinstance(merge, list):
+                            merged = "".join(merge)
+                        else:
+                            merged = merge.replace(" ", "")
                         if merged in bpe_vocab:
                             tid = bpe_vocab[merged]
                             if tid < len(merge_scores):
