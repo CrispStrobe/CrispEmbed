@@ -117,8 +117,8 @@ def main():
     # Normalize: strip backbone prefix (roberta./bert./xlm_roberta.) so keys
     # always look like embeddings.*, encoder.layer.*, classifier.*, etc.
     _backbone_prefix = ""
-    for _pfx in ("roberta.", "bert.", "xlm_roberta.", "deberta."):
-        if f"{_pfx}embeddings.word_embeddings.weight" in sd:
+    for _pfx in ("roberta.", "bert.", "xlm_roberta.", "deberta.", "model."):
+        if any(k.startswith(_pfx + "embeddings.") for k in sd):
             _backbone_prefix = _pfx
             break
     if _backbone_prefix:
@@ -422,6 +422,7 @@ def main():
     tok_key = f"{emb_prefix}.word_embeddings.weight"
     if tok_key not in sd:
         tok_key = f"{emb_prefix}.tok_embeddings.weight"  # ModernBERT
+    # ggml stores embeddings as [H, V] for ggml_get_rows — transpose from PyTorch [V, H]
     writer.add_tensor("token_embd.weight", f32(sd[tok_key]))
     if f"{emb_prefix}.position_embeddings.weight" in sd:
         writer.add_tensor("position_embd.weight", f32(sd[f"{emb_prefix}.position_embeddings.weight"]))
