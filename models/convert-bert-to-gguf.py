@@ -581,7 +581,7 @@ def main():
             # Attention output (no bias in NomicBERT)
             writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attn.out_proj.weight"]))
 
-            # SwiGLU FFN: fc11 (gate), fc12 (up), fc2 (down)
+            # SwiGLU FFN: keep SEPARATE gate + up (NomicBERT uses ggml_silu + ggml_mul)
             writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(sd[f"{pfx}.mlp.fc12.weight"]))
             writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.fc2.weight"]))
             writer.add_tensor(f"{LP}.{i}.ffn_gate.weight", wt(sd[f"{pfx}.mlp.fc11.weight"]))
