@@ -82,7 +82,8 @@ struct embed_layer {
     // FFN
     ggml_tensor * fc1_w = nullptr, * fc1_b = nullptr;
     ggml_tensor * fc2_w = nullptr, * fc2_b = nullptr;
-    ggml_tensor * ffn_gate_w = nullptr;  // SwiGLU gate (NomicBERT)
+    ggml_tensor * ffn_gate_w = nullptr;     // SwiGLU gate (NomicBERT, separate)
+    ggml_tensor * ffn_up_gate_w = nullptr; // Fused gate+up [2*inter, H] for ggml_geglu
 };
 
 struct embed_model {
@@ -366,7 +367,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         L.fc1_b = get(pfx + "ffn.fc1.bias");
         L.fc2_w = get(pfx + "ffn.fc2.weight");
         L.fc2_b = get(pfx + "ffn.fc2.bias");
-        L.ffn_gate_w = get(pfx + "ffn_gate.weight");  // SwiGLU gate (NomicBERT)
+        L.ffn_gate_w    = get(pfx + "ffn_gate.weight");     // SwiGLU gate (NomicBERT)
+        L.ffn_up_gate_w = get(pfx + "ffn_up_gate.weight"); // Fused gate+up (ModernBERT/GTE v1.5)
     }
 
     // Pooler (optional)
@@ -470,18 +472,18 @@ static bool load_model(crispembed_context * ctx, const char * path) {
                 }
             }
             if (!current.empty()) merges.push_back(current);
-            // Re-load BPE tokenizer with merges
+            // Re-load BPE tokenizer with merges (preserve suffix_id=-1 for encoder)
             int cls_id = ctx->bpe_tokenizer.bos_id();
             int sep_id = ctx->bpe_tokenizer.eos_id();
-            int unk_id = 3;
             int pad_id = ctx->bpe_tokenizer.pad_id();
             ctx->bpe_tokenizer.load(ctx->bpe_tokenizer.get_vocab(), merges,
-                                     sep_id, pad_id, unk_id, cls_id, false, hp.n_max_tokens);
+                                     sep_id, pad_id, -1, cls_id, false, hp.n_max_tokens);
             fprintf(stderr, "crispembed: loaded %zu BPE merges from tensor\n", merges.size());
         }
     }
 
     fprintf(stderr, "crispembed: loaded %d layers, %d dims, %d vocab\n",
+    // Temp debug: will be removed
             hp.n_layer, hp.n_embd, hp.n_vocab);
     return true;
 }
@@ -705,17 +707,16 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         }
 
         ggml_tensor * ffn;
-        if (L.ffn_gate_w) {
-            // Gated FFN: activation(up) * gate → down
+        if (L.ffn_up_gate_w) {
+            // Fused GeGLU (ModernBERT/GTE v1.5): single matmul → ggml_geglu → down
+            ggml_tensor * up_gate = ggml_mul_mat(gctx, L.ffn_up_gate_w, cur);  // [2*inter, T]
+            ffn = ggml_geglu(gctx, up_gate);  // fused: gelu(first_half) * second_half → [inter, T]
+            ffn = ggml_mul_mat(gctx, L.fc2_w, ffn);
+        } else if (L.ffn_gate_w) {
+            // Separate SwiGLU (NomicBERT)
             ggml_tensor * up   = ggml_mul_mat(gctx, L.fc1_w, cur);
             ggml_tensor * gate = ggml_mul_mat(gctx, L.ffn_gate_w, cur);
-            // ModernBERT: GELU on input (up), multiply by gate → GeGLU
-            // NomicBERT: SiLU on gate, multiply by up → SwiGLU
-            if (ctx->pre_ln) {
-                up = ggml_gelu(gctx, up);  // GeGLU: act(input) * gate
-            } else {
-                gate = ggml_silu(gctx, gate);  // SwiGLU: up * act(gate)
-            }
+            gate = ggml_silu(gctx, gate);
             ffn = ggml_mul(gctx, up, gate);
             ffn = ggml_mul_mat(gctx, L.fc2_w, ffn);
         } else {

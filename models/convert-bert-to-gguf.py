@@ -530,11 +530,9 @@ def main():
             writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attention.o_proj.weight"]))
             writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.bias", f32(sd[f"{pfx}.attention.o_proj.bias"]))
 
-            # GeGLU FFN: up_gate_proj [2*inter, H] → split up + gate
-            ug = sd[f"{pfx}.mlp.up_gate_proj.weight"]
-            mid = ug.shape[0] // 2
-            writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(ug[:mid]))
-            writer.add_tensor(f"{LP}.{i}.ffn_gate.weight", wt(ug[mid:]))
+            # GeGLU FFN: store FUSED up_gate for ggml_geglu (single matmul + fused op)
+            ug = sd[f"{pfx}.mlp.up_gate_proj.weight"]  # [2*inter, H]
+            writer.add_tensor(f"{LP}.{i}.ffn_up_gate.weight", f32(ug))
             writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.down_proj.weight"]))
             writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.bias", f32(sd[f"{pfx}.mlp.down_proj.bias"]))
 
@@ -549,8 +547,8 @@ def main():
             if f"{pfx}.mlp_norm.weight" in sd:
                 writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.weight", f32(sd[f"{pfx}.mlp_norm.weight"]))
 
-            # Split QKV into separate Q/K/V for standard encoder path
-            qkv = sd[f"{pfx}.attn.Wqkv.weight"]  # [3*768, 768] = [2304, 768]
+            # Split QKV into separate Q/K/V
+            qkv = sd[f"{pfx}.attn.Wqkv.weight"]
             H = qkv.shape[1]
             writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.weight", f32(qkv[:H]))
             writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.weight", f32(qkv[H:2*H]))
@@ -559,11 +557,9 @@ def main():
             # Attention output
             writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attn.Wo.weight"]))
 
-            # GeGLU FFN: Wi [2*intermediate, H] → split into up + gate
-            wi = sd[f"{pfx}.mlp.Wi.weight"]
-            mid = wi.shape[0] // 2
-            writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(wi[:mid]))     # input (activation applied)
-            writer.add_tensor(f"{LP}.{i}.ffn_gate.weight", wt(wi[mid:]))            # gate (multiplied)
+            # GeGLU FFN: store FUSED Wi [2*intermediate, H] for ggml_geglu
+            wi = sd[f"{pfx}.mlp.Wi.weight"]  # [2*inter, H]
+            writer.add_tensor(f"{LP}.{i}.ffn_up_gate.weight", f32(wi))
             writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.Wo.weight"]))
 
         elif is_nomic:
