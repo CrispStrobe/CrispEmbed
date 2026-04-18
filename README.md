@@ -14,7 +14,7 @@ iOS (Metal) + Android (Vulkan) builds. 29 HuggingFace model repos.
 
 ## Status
 
-**22+ models verified** bit-identical to HuggingFace (cos>=0.999), 40+ in registry:
+**23+ models verified** (cos>=0.96), 43+ in registry:
 
 | Model | Type | Dim | F32 CosSim | Q8_0 | Q4_K |
 |-------|------|-----|------------|------|------|

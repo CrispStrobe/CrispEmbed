@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-CrispEmbed is a C/C++ text embedding inference engine built on ggml. It loads GGUF models and produces embedding vectors with GPU acceleration (Metal/CUDA/Vulkan). No Python runtime, no ONNX dependency. 8 architectures (BERT, XLM-R, MPNet, NomicBERT, ModernBERT, DeBERTa-v2, Qwen3, Gemma3), 21 verified models (cos>=0.999), 35+ in registry. Python/Rust/Dart APIs, iOS/Android builds.
+CrispEmbed is a C/C++ text embedding inference engine built on ggml. It loads GGUF models and produces embedding vectors with GPU acceleration (Metal/CUDA/Vulkan). No Python runtime, no ONNX dependency. 10 architectures (BERT, XLM-R, MPNet, NomicBERT, ModernBERT, GTE v1.5, DeBERTa-v2, Qwen3, Gemma3, SPLADE), 23+ verified models, 43+ in registry. Python/Rust/Dart APIs, iOS/Android builds. 9.5x faster than FastEmbed on MiniLM-L6.
 
 ## Build commands
 
@@ -77,7 +77,9 @@ The model type is auto-detected from GGUF metadata:
 - **Decoder models** (Qwen3, Gemma3): `decoder_embed.cpp` → `decoder_encode_tokens()`
 
 Detection heuristic: presence of `blk.0.ffn_gate` tensor → decoder path.
-Encoder variants auto-detected: no `pos_embd` → RoPE (NomicBERT), `rel_attn_bias` → relative position bias (MPNet).
+Encoder variants auto-detected: no `pos_embd` → RoPE (NomicBERT/ModernBERT/GTE v1.5), `rel_attn_bias` → relative position bias (MPNet), `pre_ln` → pre-LayerNorm (ModernBERT/GTE v1.5), `ffn_up_gate` → fused ggml_geglu.
+
+**Critical**: BPE tokenizer re-loading after merge tensor init must preserve `suffix_id=-1` — overwriting with `unk_id` causes wrong SEP token.
 
 ### Tokenizer dispatch
 

@@ -212,15 +212,16 @@ CrispEmbed/
   - cos = 0.999999–1.000000 cross-engine on all models
 - [x] Demo apps (Python + Rust) for both CrispEmbed and CrispASR
 
-### Architecture support (8 total)
+### Architecture support (10 total)
 
 | Architecture | Status | Key features | Example models |
 |---|---|---|---|
-| BERT encoder | Complete | Post-LN, GELU, WordPiece | MiniLM, GTE, BGE, arctic-xs |
-| XLM-R encoder | Complete | Post-LN, GELU, SentencePiece Viterbi, pos_offset=2 | E5, PIXIE-Rune, arctic-l-v2, granite |
-| MPNet encoder | Complete | Post-LN, GELU, relative position bias (T5-style buckets) | all-mpnet-base-v2 |
-| NomicBERT encoder | Complete | Post-LN, SwiGLU, RoPE, no biases | nomic-embed-text-v1.5 |
-| ModernBERT encoder | Runtime ready | Pre-LN, GeGLU, RoPE, no biases | gte-modernbert-base (needs converter) |
+| BERT encoder | Complete (cos≥0.999) | Post-LN, GELU, WordPiece | MiniLM, GTE-small, BGE, arctic-xs |
+| XLM-R encoder | Complete (cos≥0.999) | Post-LN, GELU, SentencePiece Viterbi, pos_offset=2 | E5, PIXIE-Rune, arctic-l-v2, granite |
+| MPNet encoder | Complete (cos≥0.999) | Post-LN, GELU, relative position bias (T5-style buckets) | all-mpnet-base-v2 |
+| NomicBERT encoder | Complete (cos=0.999) | Post-LN, SwiGLU, RoPE, no biases | nomic-embed-text-v1.5 |
+| ModernBERT encoder | Complete (cos=0.97) | Pre-LN, fused ggml_geglu, RoPE, per-layer theta, BPE | gte-modernbert-base |
+| GTE v1.5 encoder | Converter done | Pre-LN, fused ggml_geglu, RoPE, QKV+bias, CLS pooling | gte-base/large-en-v1.5 |
 | DeBERTa-v2 encoder | Partial | Post-LN, c2c only (no c2p/p2c disentangled) | mxbai-rerank (converter works) |
 | Qwen3 decoder | Complete | RMSNorm, SwiGLU, RoPE, GQA, causal mask | Octen, F2LLM, Jina v5, Harrier-0.6B |
 | Gemma3 decoder | Complete | Gemma RMSNorm(1+w), GeGLU, embed*sqrt(H) | Harrier-270M |

@@ -166,6 +166,7 @@ Cosine similarity between F32 and quantized models (1.0 = identical).
 
 | all-mpnet-base-v2 | 0.9998 | 0.99 |
 | nomic-embed-text-v1.5 | 0.9994 | -- |
+| gte-modernbert-base | 0.97 | -- |
 | bge-small-en-v1.5 | 0.9999 | 0.99 |
 | bge-base-en-v1.5 | 0.9999 | 0.99 |
 | bge-large-en-v1.5 | 0.9999 | 0.99 |

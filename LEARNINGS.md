@@ -545,6 +545,53 @@ Detection: `bert.pre_ln` GGUF metadata flag. Combined with:
 ModernBERT is essentially a bidirectional LLaMA with GELU instead of SiLU.
 CrispASR has a reference implementation in `examples/talk-llama/models/modern-bert.cpp`.
 
+### ModernBERT debugging: cos 0.69 → 0.97
+
+Two bugs caused cos=0.69 across 22 layers (1-layer was 0.999):
+
+**Bug 1: Wrong SEP token.** The BPE merge re-loading after tensor init
+was calling `load(vocab, merges, eos_id=sep_id, pad_id, suffix_id=unk_id=3, ...)`
+instead of `suffix_id=-1`. This made the tokenizer append token 3 (unk)
+instead of 50282 (SEP). The wrong token propagated through all 22 layers
+of the transformer, compounding the error.
+
+Lesson: when re-initializing a tokenizer after loading merges, preserve
+ALL original parameters — don't substitute defaults for parameters that
+were carefully set during the first init.
+
+**Bug 2: Separate GELU+MUL vs fused ggml_geglu.** Our code used:
+```cpp
+up = matmul(fc1_w, cur);     // [inter, T]
+gate = matmul(ffn_gate_w, cur); // [inter, T]
+up = gelu(up);
+ffn = mul(up, gate);
+```
+
+llama.cpp uses:
+```cpp
+up_gate = matmul(ffn_up_gate_w, cur); // [2*inter, T]
+ffn = ggml_geglu(up_gate);           // fused: gelu(first_half) * second_half
+```
+
+The fused `ggml_geglu` is a single ggml operation that avoids intermediate
+rounding between the GELU and multiply. With 22 layers × ~1000 intermediate
+dimensions, the accumulated rounding difference is significant for pre-LN
+models (where residual connections pass raw values without normalization reset).
+
+Fix: store the original fused `Wi` / `up_gate_proj` weight in the GGUF
+and use `ggml_geglu` instead of separate ops. Also use `ggml_swiglu` for
+NomicBERT-style SwiGLU.
+
+**Why post-LN models don't have this problem:** In post-LN models (BERT),
+LayerNorm after each residual add normalizes the hidden state to unit
+variance. This effectively "resets" any accumulated floating-point drift.
+In pre-LN models, the raw residual passes directly to the next layer,
+allowing small per-layer errors (~0.001) to compound nonlinearly.
+
+**Per-layer theta:** ModernBERT alternates sliding (theta=10000) and global
+(theta=160000) attention. For encoding (not generation), sliding window
+masking is NOT applied — confirmed by llama.cpp's `build_attn_inp_no_cache()`.
+
 ## Head-to-head benchmark: CrispEmbed vs FastEmbed
 
 **MiniLM-L6 (6 layers, 384d)**: CrispEmbed is **9.5x faster** on single text
