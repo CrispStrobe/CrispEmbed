@@ -9,3 +9,7 @@ __pycache__/
 .bench-venv/
 .fastembed_cache/
 gguf-export
+build-avx/
+build-avx512/
+build-blas/
+build-llamafile/
