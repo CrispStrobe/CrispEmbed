@@ -12,6 +12,15 @@ cross-encoder rerankers, bi-encoder reranking — all in one binary, all GPU-acc
 **9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
 iOS (Metal) + Android (Vulkan) builds. 29 HuggingFace model repos.
 
+### Part of the Crisp ecosystem
+
+| Project | Role |
+|---|---|
+| **CrispEmbed** | This repo — text embedding engine (ggml), dense + sparse + ColBERT + reranking |
+| **[CrispASR](https://github.com/CrispStrobe/CrispASR)** | Speech recognition engine (ggml) — 11 ASR backends, same philosophy for audio |
+| **[CrisperWeaver](https://github.com/CrispStrobe/CrisperWeaver)** | Flutter transcription app powered by CrispASR — desktop + mobile, fully offline |
+| **[Susurrus](https://github.com/CrispStrobe/Susurrus)** | Python ASR GUI with 9 backends (faster-whisper, mlx-whisper, voxtral, ...) |
+
 ## Status
 
 **23+ models verified** (cos>=0.96), 43+ in registry:
