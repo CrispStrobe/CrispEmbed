@@ -24,5 +24,7 @@ void list_models();
 int n_models();
 const char * model_name(int i);
 const char * model_desc(int i);
+const char * model_filename(int i);
+const char * model_size(int i);
 
 }  // namespace crispembed_mgr

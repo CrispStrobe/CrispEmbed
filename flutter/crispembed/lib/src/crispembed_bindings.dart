@@ -4,6 +4,8 @@
 /// Prefer using the high-level [CrispEmbed] class instead.
 import 'dart:ffi';
 
+import 'package:ffi/ffi.dart';
+
 // Opaque handle
 typedef CrispembedContext = Void;
 
@@ -31,6 +33,20 @@ typedef CrispembedGetPrefixNative = Pointer<Utf8> Function(
     Pointer<CrispembedContext> ctx);
 typedef CrispembedGetPrefix = Pointer<Utf8> Function(
     Pointer<CrispembedContext> ctx);
+
+typedef CrispembedCacheDirNative = Pointer<Utf8> Function();
+typedef CrispembedCacheDir = Pointer<Utf8> Function();
+
+typedef CrispembedResolveModelNative = Pointer<Utf8> Function(
+    Pointer<Utf8> arg, Int32 autoDownload);
+typedef CrispembedResolveModel = Pointer<Utf8> Function(
+    Pointer<Utf8> arg, int autoDownload);
+
+typedef CrispembedNModelsNative = Int32 Function();
+typedef CrispembedNModels = int Function();
+
+typedef CrispembedModelStringNative = Pointer<Utf8> Function(Int32 index);
+typedef CrispembedModelString = Pointer<Utf8> Function(int index);
 
 // --- Dense encoding ---
 typedef CrispembedEncodeNative = Pointer<Float> Function(

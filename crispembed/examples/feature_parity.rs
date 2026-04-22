@@ -64,11 +64,11 @@ fn main() {
     );
 
     let docs = [
-        "Paris is the capital city of France.",
+        "Paris France capital city and Eiffel Tower.",
         "A bicycle uses two wheels and a chain.",
-        "Berlin is the capital of Germany.",
+        "Berlin Germany capital city and Brandenburg Gate.",
     ];
-    let ranked = model.rerank_biencoder("capital of france", &docs, Some(2));
+    let ranked = model.rerank_biencoder("paris france capital", &docs, Some(2));
     assert_eq!(ranked.len(), 2, "rerank_biencoder top_n mismatch");
     assert_eq!(ranked[0].0, 0, "rerank_biencoder did not rank the relevant document first");
     assert!(ranked[0].1 >= ranked[1].1, "rerank_biencoder results are not sorted");

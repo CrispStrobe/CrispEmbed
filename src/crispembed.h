@@ -71,6 +71,15 @@ CRISPEMBED_API const char * crispembed_get_prefix(const crispembed_context * ctx
 // Get model hyperparameters.
 CRISPEMBED_API const crispembed_hparams * crispembed_get_hparams(const crispembed_context * ctx);
 
+// Model registry / auto-download helpers shared by the CLI and wrappers.
+CRISPEMBED_API const char * crispembed_cache_dir(void);
+CRISPEMBED_API const char * crispembed_resolve_model(const char * arg, int auto_download);
+CRISPEMBED_API int crispembed_n_models(void);
+CRISPEMBED_API const char * crispembed_model_name(int index);
+CRISPEMBED_API const char * crispembed_model_desc(int index);
+CRISPEMBED_API const char * crispembed_model_filename(int index);
+CRISPEMBED_API const char * crispembed_model_size(int index);
+
 // Encode a single text string. Returns a pointer to a float array of
 // length *out_n_dim (the model's output embedding dimension). The
 // returned pointer is valid until the next encode() call or free().

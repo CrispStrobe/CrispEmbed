@@ -5,6 +5,8 @@ cross-encoder reranking — all via a single shared library.
 """
 
 import ctypes
+import glob
+import os
 import platform
 import numpy as np
 from pathlib import Path
@@ -24,8 +26,12 @@ def _find_lib():
     search = [
         Path(__file__).parent,
         Path(__file__).parent.parent.parent / "build",
+        Path(__file__).parent.parent.parent / "build-cuda",
+        Path(__file__).parent.parent.parent / "build-vulkan",
         Path(__file__).parent.parent.parent / "build" / "lib",
         Path.cwd() / "build",
+        Path.cwd() / "build-cuda",
+        Path.cwd() / "build-vulkan",
     ]
     for d in search:
         p = d / lib_name
@@ -34,6 +40,45 @@ def _find_lib():
 
     # Fall back to system search
     return lib_name
+
+
+def _load_library(lib_path: Optional[str] = None):
+    path = lib_path or _find_lib()
+    if platform.system() == "Windows":
+        dll_dir = Path(path).resolve().parent
+        extra_dirs = [dll_dir, dll_dir / "bin"]
+        for cuda_ver in ("v13.0", "v12.6", "v12.4", "v12.1", "v12.0", "v11.8"):
+            base = Path(f"C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/{cuda_ver}")
+            if base.is_dir():
+                extra_dirs.append(base / "bin")
+                if (base / "bin" / "x64").is_dir():
+                    extra_dirs.append(base / "bin" / "x64")
+                break
+        for driver_store in glob.glob("C:/Windows/System32/DriverStore/FileRepository/nvdm*.inf_amd64_*/"):
+            p = Path(driver_store)
+            if p.is_dir():
+                extra_dirs.append(p)
+        os.environ["PATH"] = os.pathsep.join(str(p) for p in extra_dirs) + os.pathsep + os.environ.get("PATH", "")
+        if hasattr(os, "add_dll_directory"):
+            for entry in extra_dirs:
+                try:
+                    os.add_dll_directory(str(entry))
+                except OSError:
+                    pass
+    return ctypes.CDLL(path)
+
+
+class _CrispEmbedHparams(ctypes.Structure):
+    _fields_ = [
+        ("n_vocab", ctypes.c_int32),
+        ("n_max_tokens", ctypes.c_int32),
+        ("n_embd", ctypes.c_int32),
+        ("n_head", ctypes.c_int32),
+        ("n_layer", ctypes.c_int32),
+        ("n_intermediate", ctypes.c_int32),
+        ("n_output", ctypes.c_int32),
+        ("layer_norm_eps", ctypes.c_float),
+    ]
 
 
 class CrispEmbed:
@@ -64,16 +109,24 @@ class CrispEmbed:
         results = model.rerank_biencoder("query", ["doc1", "doc2"], top_n=5)
     """
 
-    def __init__(self, model_path: str, n_threads: int = 4, lib_path: Optional[str] = None):
-        self._lib = ctypes.CDLL(lib_path or _find_lib())
+    def __init__(
+        self,
+        model_path: str,
+        n_threads: int = 4,
+        lib_path: Optional[str] = None,
+        auto_download: Optional[bool] = None,
+    ):
+        self._lib = _load_library(lib_path)
         self._setup_signatures()
+
+        resolved = self.resolve_model(model_path, auto_download=auto_download)
 
         # Init model
         self._ctx = self._lib.crispembed_init(
-            model_path.encode("utf-8"), n_threads
+            resolved.encode("utf-8"), n_threads
         )
         if not self._ctx:
-            raise RuntimeError(f"Failed to load model: {model_path}")
+            raise RuntimeError(f"Failed to load model: {resolved}")
 
     def _setup_signatures(self):
         """Define ctypes function signatures for all C API functions."""
@@ -91,7 +144,7 @@ class CrispEmbed:
         lib.crispembed_set_dim.restype = None
 
         lib.crispembed_get_hparams.argtypes = [ctypes.c_void_p]
-        lib.crispembed_get_hparams.restype = ctypes.c_void_p
+        lib.crispembed_get_hparams.restype = ctypes.POINTER(_CrispEmbedHparams)
 
         # --- Dense encoding ---
         lib.crispembed_encode.argtypes = [
@@ -147,6 +200,27 @@ class CrispEmbed:
 
         lib.crispembed_get_prefix.argtypes = [ctypes.c_void_p]
         lib.crispembed_get_prefix.restype = ctypes.c_char_p
+
+        lib.crispembed_cache_dir.argtypes = []
+        lib.crispembed_cache_dir.restype = ctypes.c_char_p
+
+        lib.crispembed_resolve_model.argtypes = [ctypes.c_char_p, ctypes.c_int]
+        lib.crispembed_resolve_model.restype = ctypes.c_char_p
+
+        lib.crispembed_n_models.argtypes = []
+        lib.crispembed_n_models.restype = ctypes.c_int
+
+        lib.crispembed_model_name.argtypes = [ctypes.c_int]
+        lib.crispembed_model_name.restype = ctypes.c_char_p
+
+        lib.crispembed_model_desc.argtypes = [ctypes.c_int]
+        lib.crispembed_model_desc.restype = ctypes.c_char_p
+
+        lib.crispembed_model_filename.argtypes = [ctypes.c_int]
+        lib.crispembed_model_filename.restype = ctypes.c_char_p
+
+        lib.crispembed_model_size.argtypes = [ctypes.c_int]
+        lib.crispembed_model_size.restype = ctypes.c_char_p
 
     # ------------------------------------------------------------------
     # Dense embedding
@@ -353,9 +427,10 @@ class CrispEmbed:
     @property
     def dim(self) -> int:
         """Embedding dimension."""
-        dim = ctypes.c_int(0)
-        self._lib.crispembed_encode(self._ctx, b"test", ctypes.byref(dim))
-        return dim.value
+        hp = self._lib.crispembed_get_hparams(self._ctx)
+        if not hp:
+            return 0
+        return int(hp.contents.n_output or hp.contents.n_embd)
 
     @property
     def has_sparse(self) -> bool:
@@ -373,35 +448,59 @@ class CrispEmbed:
         return bool(self._lib.crispembed_is_reranker(self._ctx))
 
     @staticmethod
-    def list_models() -> List[Dict[str, str]]:
+    def cache_dir(lib_path: Optional[str] = None) -> str:
+        lib = _load_library(lib_path)
+        lib.crispembed_cache_dir.argtypes = []
+        lib.crispembed_cache_dir.restype = ctypes.c_char_p
+        raw = lib.crispembed_cache_dir()
+        return raw.decode("utf-8") if raw else ""
+
+    @staticmethod
+    def resolve_model(
+        model_path: str,
+        auto_download: Optional[bool] = None,
+        lib_path: Optional[str] = None,
+    ) -> str:
+        lib = _load_library(lib_path)
+        lib.crispembed_resolve_model.argtypes = [ctypes.c_char_p, ctypes.c_int]
+        lib.crispembed_resolve_model.restype = ctypes.c_char_p
+        if auto_download is None:
+            auto_download = (
+                ".gguf" not in model_path and "/" not in model_path and "\\" not in model_path
+            )
+        raw = lib.crispembed_resolve_model(model_path.encode("utf-8"), int(auto_download))
+        resolved = raw.decode("utf-8") if raw else ""
+        if not resolved:
+            raise RuntimeError(f"Could not resolve model: {model_path}")
+        return resolved
+
+    @staticmethod
+    def list_models(lib_path: Optional[str] = None) -> List[Dict[str, str]]:
         """List supported models with descriptions.
 
-        Returns a list of dicts with keys: name, dim, arch, description.
-        These can be passed directly to CrispEmbed() for auto-download.
+        Returns a list of dicts with keys: name, desc, filename, size.
         """
-        return [
-            {"name": "all-MiniLM-L6-v2", "dim": "384", "arch": "BERT", "desc": "Fast English 22M"},
-            {"name": "all-MiniLM-L12-v2", "dim": "384", "arch": "BERT", "desc": "Quality English 33M"},
-            {"name": "all-mpnet-base-v2", "dim": "768", "arch": "MPNet", "desc": "Best SBERT 109M"},
-            {"name": "bge-small-en-v1.5", "dim": "384", "arch": "BERT", "desc": "BGE English 33M"},
-            {"name": "bge-base-en-v1.5", "dim": "768", "arch": "BERT", "desc": "BGE English 109M"},
-            {"name": "bge-large-en-v1.5", "dim": "1024", "arch": "BERT", "desc": "BGE English 335M"},
-            {"name": "nomic-embed-text-v1.5", "dim": "768", "arch": "NomicBERT", "desc": "8K context Matryoshka 137M"},
-            {"name": "mxbai-embed-large-v1", "dim": "1024", "arch": "BERT", "desc": "Top MTEB 335M"},
-            {"name": "snowflake-arctic-embed-m", "dim": "768", "arch": "BERT", "desc": "Retrieval 109M"},
-            {"name": "snowflake-arctic-embed-l", "dim": "1024", "arch": "XLM-R", "desc": "Retrieval 335M"},
-            {"name": "multilingual-e5-small", "dim": "384", "arch": "XLM-R", "desc": "100+ langs 118M"},
-            {"name": "multilingual-e5-base", "dim": "768", "arch": "XLM-R", "desc": "100+ langs 278M"},
-            {"name": "multilingual-e5-large", "dim": "1024", "arch": "XLM-R", "desc": "100+ langs 560M"},
-            {"name": "bge-m3", "dim": "1024", "arch": "XLM-R", "desc": "Dense+sparse+ColBERT 568M"},
-            {"name": "granite-embedding-278m", "dim": "768", "arch": "XLM-R", "desc": "IBM multilingual 278M"},
-            {"name": "granite-embedding-107m", "dim": "384", "arch": "XLM-R", "desc": "IBM multilingual 107M"},
-            {"name": "pixie-rune-v1", "dim": "1024", "arch": "XLM-R", "desc": "74 langs 560M"},
-            {"name": "octen-0.6b", "dim": "1024", "arch": "Qwen3", "desc": "Multilingual decoder 600M"},
-            {"name": "harrier-0.6b", "dim": "1024", "arch": "Qwen3", "desc": "SOTA decoder 600M"},
-            {"name": "harrier-270m", "dim": "640", "arch": "Gemma3", "desc": "Compact decoder 270M"},
-            {"name": "qwen3-embed-0.6b", "dim": "1024", "arch": "Qwen3", "desc": "Official Qwen3 600M"},
-        ]
+        lib = _load_library(lib_path)
+        lib.crispembed_n_models.argtypes = []
+        lib.crispembed_n_models.restype = ctypes.c_int
+        lib.crispembed_model_name.argtypes = [ctypes.c_int]
+        lib.crispembed_model_name.restype = ctypes.c_char_p
+        lib.crispembed_model_desc.argtypes = [ctypes.c_int]
+        lib.crispembed_model_desc.restype = ctypes.c_char_p
+        lib.crispembed_model_filename.argtypes = [ctypes.c_int]
+        lib.crispembed_model_filename.restype = ctypes.c_char_p
+        lib.crispembed_model_size.argtypes = [ctypes.c_int]
+        lib.crispembed_model_size.restype = ctypes.c_char_p
+
+        models = []
+        for i in range(lib.crispembed_n_models()):
+            models.append({
+                "name": (lib.crispembed_model_name(i) or b"").decode("utf-8"),
+                "desc": (lib.crispembed_model_desc(i) or b"").decode("utf-8"),
+                "filename": (lib.crispembed_model_filename(i) or b"").decode("utf-8"),
+                "size": (lib.crispembed_model_size(i) or b"").decode("utf-8"),
+            })
+        return models
 
     def __del__(self):
         if hasattr(self, "_ctx") and self._ctx:

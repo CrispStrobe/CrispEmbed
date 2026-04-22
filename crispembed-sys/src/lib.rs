@@ -55,6 +55,19 @@ extern "C" {
     /// Get the current prefix (empty string if none set).
     pub fn crispembed_get_prefix(ctx: *const CrispembedContext) -> *const c_char;
 
+    /// Returns the shared model cache directory.
+    pub fn crispembed_cache_dir() -> *const c_char;
+
+    /// Resolve a model argument to a local GGUF path.
+    pub fn crispembed_resolve_model(arg: *const c_char, auto_download: c_int) -> *const c_char;
+
+    /// Registry accessors for wrapper-side model listing.
+    pub fn crispembed_n_models() -> c_int;
+    pub fn crispembed_model_name(index: c_int) -> *const c_char;
+    pub fn crispembed_model_desc(index: c_int) -> *const c_char;
+    pub fn crispembed_model_filename(index: c_int) -> *const c_char;
+    pub fn crispembed_model_size(index: c_int) -> *const c_char;
+
     // ------------------------------------------------------------------
     // Dense embedding
     // ------------------------------------------------------------------

@@ -5,6 +5,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <filesystem>
+#include <cctype>
 #include <string>
 #include <sys/stat.h>
 
@@ -142,9 +144,9 @@ static const ModelEntry k_registry[] = {
      "XLM-R 1024d CLS English (335M)", "1.3 GB"},
 
     {"bge-m3",
-     "bge-m3.gguf",
-     "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3.gguf",
-     "XLM-R 1024d dense+sparse+ColBERT multilingual (568M)", "2.2 GB"},
+     "bge-m3-q4_k.gguf",
+     "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-q4_k.gguf",
+     "XLM-R 1024d dense+sparse+ColBERT multilingual (568M)", "438 MB"},
 
     // --- Reranker models (Phase 4) ---
 
@@ -235,7 +237,19 @@ static const ModelEntry k_registry[] = {
 std::string cache_dir() {
     // Check env override
     const char * env = std::getenv("CRISPEMBED_CACHE_DIR");
-    if (env && env[0]) return env;
+    if (env && env[0]) {
+        std::string value = env;
+        size_t start = 0;
+        while (start < value.size() && std::isspace(static_cast<unsigned char>(value[start]))) {
+            start++;
+        }
+        size_t end = value.size();
+        while (end > start && std::isspace(static_cast<unsigned char>(value[end - 1]))) {
+            end--;
+        }
+        value = value.substr(start, end - start);
+        if (!value.empty()) return value;
+    }
 
     // Default: ~/.cache/crispembed
     std::string home;
@@ -263,14 +277,8 @@ static bool file_exists(const std::string & path) {
 }
 
 static void mkdirs(const std::string & path) {
-    // Simple recursive mkdir
-    for (size_t i = 1; i < path.size(); i++) {
-        if (path[i] == '/' || path[i] == '\\') {
-            std::string sub = path.substr(0, i);
-            mkdir(sub.c_str(), 0755);
-        }
-    }
-    mkdir(path.c_str(), 0755);
+    std::error_code ec;
+    std::filesystem::create_directories(std::filesystem::path(path), ec);
 }
 
 static bool download_file(const std::string & url, const std::string & dest) {
@@ -401,6 +409,20 @@ const char * model_desc(int i) {
     int n = 0;
     for (const ModelEntry * e = k_registry; e->name; e++, n++)
         if (n == i) return e->desc;
+    return nullptr;
+}
+
+const char * model_filename(int i) {
+    int n = 0;
+    for (const ModelEntry * e = k_registry; e->name; e++, n++)
+        if (n == i) return e->filename;
+    return nullptr;
+}
+
+const char * model_size(int i) {
+    int n = 0;
+    for (const ModelEntry * e = k_registry; e->name; e++, n++)
+        if (n == i) return e->approx_size;
     return nullptr;
 }
 

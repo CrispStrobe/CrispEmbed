@@ -66,12 +66,14 @@ set(CRISPEMBED_SOURCES
     src/tokenizer.cpp
     src/tokenizer_spm.cpp
     src/tokenizer_bpe.cpp
+    examples/cli/model_mgr.cpp
 )
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 target_include_directories(crispembed PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/examples/cli
 )
 # Avoid name clash with the DLL import lib (both would be crispembed.lib on Windows)
 set_target_properties(crispembed PROPERTIES ARCHIVE_OUTPUT_NAME crispembed-static)
@@ -92,7 +94,6 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "iOS")
 
 add_executable(crispembed-cli
     examples/cli/main.cpp
-    examples/cli/model_mgr.cpp
 )
 target_include_directories(crispembed-cli PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/examples/cli
@@ -103,7 +104,6 @@ install(TARGETS crispembed-cli RUNTIME)
 
 add_executable(crispembed-server
     examples/server/server.cpp
-    examples/cli/model_mgr.cpp
 )
 target_include_directories(crispembed-server PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -133,6 +133,7 @@ if(CRISPEMBED_BUILD_SHARED)
     target_include_directories(crispembed-shared PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/cli
     )
     target_compile_definitions(crispembed-shared PRIVATE CRISPEMBED_BUILD)
     target_link_libraries(crispembed-shared PUBLIC

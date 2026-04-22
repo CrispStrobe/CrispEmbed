@@ -10,6 +10,3 @@ build = "build.rs"
 cuda   = []
 metal  = []
 vulkan = []
-
-[build-dependencies]
-cmake = "0.1"

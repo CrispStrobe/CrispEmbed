@@ -22,8 +22,17 @@
 //! ```
 
 use std::ffi::{CStr, CString};
+use std::path::Path;
 
 pub use crispembed_sys::CrispembedHparams;
+
+#[derive(Debug, Clone)]
+pub struct ModelInfo {
+    pub name: String,
+    pub desc: String,
+    pub filename: String,
+    pub size: String,
+}
 
 /// A loaded crispembed model.
 ///
@@ -44,6 +53,11 @@ impl CrispEmbed {
     /// - `model_path` — path to the `.gguf` file.
     /// - `n_threads`  — CPU thread count; pass `0` for automatic.
     pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let resolved = Self::resolve_model(model_path, None)?;
+        Self::new_resolved(&resolved, n_threads)
+    }
+
+    fn new_resolved(model_path: &str, n_threads: i32) -> Result<Self, String> {
         let path = CString::new(model_path)
             .map_err(|e| format!("invalid path: {e}"))?;
         let ctx = unsafe {
@@ -57,6 +71,81 @@ impl CrispEmbed {
             if hp.is_null() { 0 } else { (*hp).n_output as usize }
         };
         Ok(Self { ctx, dim })
+    }
+
+    pub fn cache_dir() -> String {
+        let ptr = unsafe { crispembed_sys::crispembed_cache_dir() };
+        if ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned()
+        }
+    }
+
+    pub fn resolve_model(model_path: &str, auto_download: Option<bool>) -> Result<String, String> {
+        let should_download = auto_download.unwrap_or_else(|| {
+            !model_path.contains(".gguf") && !model_path.contains('/') && !model_path.contains('\\')
+        });
+        if Path::new(model_path).is_file() {
+            return Ok(model_path.to_string());
+        }
+
+        // Prefer an existing cache hit before asking the native resolver to
+        // download. This keeps Rust aligned with the shared cache even when
+        // the underlying downloader path is unavailable in the local runtime.
+        let cache_dir = Self::cache_dir();
+        if !cache_dir.is_empty() {
+            let model_key = model_path.to_ascii_lowercase();
+            for model in Self::list_models() {
+                let matches = model.name.eq_ignore_ascii_case(model_path)
+                    || model.filename.eq_ignore_ascii_case(model_path)
+                    || model.name.to_ascii_lowercase().contains(&model_key)
+                    || model.filename.to_ascii_lowercase().contains(&model_key);
+                if matches {
+                    let cached = Path::new(&cache_dir).join(&model.filename);
+                    if cached.is_file() {
+                        return Ok(cached.to_string_lossy().into_owned());
+                    }
+                    break;
+                }
+            }
+        }
+
+        let arg = CString::new(model_path)
+            .map_err(|e| format!("invalid model path: {e}"))?;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_resolve_model(arg.as_ptr(), if should_download { 1 } else { 0 })
+        };
+        if ptr.is_null() {
+            return Err(format!("could not resolve model '{model_path}'"));
+        }
+        let resolved = unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned();
+        if resolved.is_empty() {
+            Err(format!("could not resolve model '{model_path}'"))
+        } else {
+            Ok(resolved)
+        }
+    }
+
+    pub fn list_models() -> Vec<ModelInfo> {
+        let n = unsafe { crispembed_sys::crispembed_n_models() };
+        let mut models = Vec::with_capacity(n.max(0) as usize);
+        for i in 0..n {
+            let read = |ptr: *const i8| {
+                if ptr.is_null() {
+                    String::new()
+                } else {
+                    unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned()
+                }
+            };
+            models.push(ModelInfo {
+                name: read(unsafe { crispembed_sys::crispembed_model_name(i) }),
+                desc: read(unsafe { crispembed_sys::crispembed_model_desc(i) }),
+                filename: read(unsafe { crispembed_sys::crispembed_model_filename(i) }),
+                size: read(unsafe { crispembed_sys::crispembed_model_size(i) }),
+            });
+        }
+        models
     }
 
     /// Output embedding dimension.

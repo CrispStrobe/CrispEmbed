@@ -1,6 +1,7 @@
 // crispembed.cpp — BERT/MiniLM encoder via ggml graph.
 
 #include "crispembed.h"
+#include "model_mgr.h"
 #include "tokenizer.h"
 #include "core/gguf_loader.h"
 
@@ -60,6 +61,19 @@ static std::vector<float> compute_rel_pos_bias(
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+static ggml_backend_t crispembed_init_backend(int n_threads) {
+    const char * force_cpu = std::getenv("CRISPEMBED_FORCE_CPU");
+    if (force_cpu && force_cpu[0] && std::strcmp(force_cpu, "0") != 0) {
+        ggml_backend_t cpu = ggml_backend_cpu_init();
+        if (cpu) {
+            ggml_backend_cpu_set_n_threads(cpu, n_threads);
+            fprintf(stderr, "crispembed: forcing CPU backend via CRISPEMBED_FORCE_CPU\n");
+        }
+        return cpu;
+    }
+    return ggml_backend_init_best();
+}
 
 // ---------------------------------------------------------------------------
 // Model structure
@@ -136,6 +150,36 @@ struct embed_model {
     bool is_reranker = false;
     int  colbert_dim = 128;
 };
+
+static bool validate_encoder_model(const embed_model & m, bool pre_ln) {
+    bool ok = true;
+    for (size_t il = 0; il < m.layers.size(); il++) {
+        const auto & L = m.layers[il];
+        auto require = [&](bool cond, const char * name) {
+            if (!cond) {
+                fprintf(stderr, "crispembed: missing required tensor layer=%zu name=%s\n", il, name);
+                ok = false;
+            }
+        };
+
+        require(L.q_w || L.qkv_w, "attn.q.weight");
+        require(L.k_w || L.qkv_w, "attn.k.weight");
+        require(L.v_w || L.qkv_w, "attn.v.weight");
+        require(L.o_w, "attn.o.weight");
+        require(L.fc2_w, "ffn.fc2.weight");
+        require(L.ffn_up_gate_w || L.fc1_w, "ffn input weights");
+
+        if (pre_ln) {
+            require(L.ln1_w, "ln1.weight");
+            require(L.ln2_w, "ln2.weight");
+        } else {
+            require(L.ln1_w, "ln1.weight");
+            require(L.ln2_w, "ln2.weight");
+            require(L.fc1_w || L.ffn_up_gate_w, "ffn.fc1.weight");
+        }
+    }
+    return ok;
+}
 
 #include "decoder_embed_internal.h"
 
@@ -284,7 +328,7 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     gguf_free(g);
 
     // Initialize backends: try GPU first, CPU always as fallback
-    ctx->backend = ggml_backend_init_best();
+    ctx->backend = crispembed_init_backend(ctx->n_threads);
     if (!ctx->backend) {
         fprintf(stderr, "crispembed: failed to init backend\n");
         return false;
@@ -322,13 +366,21 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         auto it = ctx->wl.tensors.find(n);
         return it != ctx->wl.tensors.end() ? it->second : nullptr;
     };
+    auto get_any = [&](std::initializer_list<std::string> names) -> ggml_tensor * {
+        for (const auto & name : names) {
+            if (ggml_tensor * tensor = get(name)) {
+                return tensor;
+            }
+        }
+        return nullptr;
+    };
 
     // Embeddings
     m.token_embd = get("token_embd.weight");
     m.pos_embd   = get("position_embd.weight");
-    m.type_embd  = get("token_type_embd.weight");
-    m.embd_ln_w  = get("embd_ln.weight");
-    m.embd_ln_b  = get("embd_ln.bias");
+    m.type_embd  = get_any({"token_type_embd.weight", "token_types.weight"});
+    m.embd_ln_w  = get_any({"embd_ln.weight", "token_embd_norm.weight"});
+    m.embd_ln_b  = get_any({"embd_ln.bias", "token_embd_norm.bias"});
     m.rel_attn_bias = get("rel_attn_bias.weight");
     m.rel_embd      = get("rel_embd.weight");
     m.encoder_ln_w  = get("encoder_ln.weight");
@@ -350,23 +402,24 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     m.layers.resize(hp.n_layer);
     for (int il = 0; il < hp.n_layer; il++) {
         auto pfx = "enc." + std::to_string(il) + ".";
+        auto blk = "blk." + std::to_string(il) + ".";
         auto & L = m.layers[il];
-        L.ln1_w = get(pfx + "ln1.weight");
-        L.ln1_b = get(pfx + "ln1.bias");
-        L.q_w   = get(pfx + "attn.q.weight");
-        L.q_b   = get(pfx + "attn.q.bias");
-        L.k_w   = get(pfx + "attn.k.weight");
-        L.k_b   = get(pfx + "attn.k.bias");
-        L.v_w   = get(pfx + "attn.v.weight");
-        L.v_b   = get(pfx + "attn.v.bias");
-        L.o_w   = get(pfx + "attn.o.weight");
-        L.o_b   = get(pfx + "attn.o.bias");
-        L.ln2_w = get(pfx + "ln2.weight");
-        L.ln2_b = get(pfx + "ln2.bias");
-        L.fc1_w = get(pfx + "ffn.fc1.weight");
-        L.fc1_b = get(pfx + "ffn.fc1.bias");
-        L.fc2_w = get(pfx + "ffn.fc2.weight");
-        L.fc2_b = get(pfx + "ffn.fc2.bias");
+        L.ln1_w = get_any({pfx + "ln1.weight", blk + "attn_output_norm.weight"});
+        L.ln1_b = get_any({pfx + "ln1.bias", blk + "attn_output_norm.bias"});
+        L.q_w   = get_any({pfx + "attn.q.weight", blk + "attn_q.weight"});
+        L.q_b   = get_any({pfx + "attn.q.bias", blk + "attn_q.bias"});
+        L.k_w   = get_any({pfx + "attn.k.weight", blk + "attn_k.weight"});
+        L.k_b   = get_any({pfx + "attn.k.bias", blk + "attn_k.bias"});
+        L.v_w   = get_any({pfx + "attn.v.weight", blk + "attn_v.weight"});
+        L.v_b   = get_any({pfx + "attn.v.bias", blk + "attn_v.bias"});
+        L.o_w   = get_any({pfx + "attn.o.weight", blk + "attn_output.weight"});
+        L.o_b   = get_any({pfx + "attn.o.bias", blk + "attn_output.bias"});
+        L.ln2_w = get_any({pfx + "ln2.weight", blk + "layer_output_norm.weight"});
+        L.ln2_b = get_any({pfx + "ln2.bias", blk + "layer_output_norm.bias"});
+        L.fc1_w = get_any({pfx + "ffn.fc1.weight", blk + "ffn_up.weight"});
+        L.fc1_b = get_any({pfx + "ffn.fc1.bias", blk + "ffn_up.bias"});
+        L.fc2_w = get_any({pfx + "ffn.fc2.weight", blk + "ffn_down.weight"});
+        L.fc2_b = get_any({pfx + "ffn.fc2.bias", blk + "ffn_down.bias"});
         L.ffn_gate_w    = get(pfx + "ffn_gate.weight");     // SwiGLU gate (NomicBERT)
         L.ffn_up_gate_w = get(pfx + "ffn_up_gate.weight"); // Fused gate+up (ModernBERT/GTE v1.5)
     }
@@ -485,6 +538,10 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     fprintf(stderr, "crispembed: loaded %d layers, %d dims, %d vocab\n",
     // Temp debug: will be removed
             hp.n_layer, hp.n_embd, hp.n_vocab);
+    if (!validate_encoder_model(m, ctx->pre_ln)) {
+        fprintf(stderr, "crispembed: model validation failed\n");
+        return false;
+    }
     return true;
 }
 
@@ -787,6 +844,25 @@ static bool sched_graph_compute(ggml_backend_sched_t sched, ggml_cgraph * gf, in
     return ggml_backend_sched_graph_compute(sched, gf) == GGML_STATUS_SUCCESS;
 }
 
+static ggml_tensor * graph_tensor_or_log(ggml_cgraph * gf, const char * name) {
+    ggml_tensor * tensor = ggml_graph_get_tensor(gf, name);
+    if (!tensor) {
+        fprintf(stderr, "crispembed: missing graph tensor '%s'\n", name);
+    }
+    return tensor;
+}
+
+static bool crispembed_debug_encode_enabled() {
+    const char * value = std::getenv("CRISPEMBED_DEBUG_ENCODE");
+    return value && value[0] && std::strcmp(value, "0") != 0;
+}
+
+static void debug_encode_stage(const char * stage, int T, int B, int mode) {
+    if (crispembed_debug_encode_enabled()) {
+        fprintf(stderr, "crispembed: encode debug stage=%s T=%d B=%d mode=%d\n", stage, T, B, mode);
+    }
+}
+
 // Bucket sequence length to reduce scheduler re-reserves
 static int bucket_seq_len(int T) {
     if (T <= 8)   return 8;
@@ -807,18 +883,24 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
 
     // Pad T to bucket for scheduler reservation reuse
     int T_bucket = bucket_seq_len(T);
+    debug_encode_stage("encode_tokens:start", T, 1, 0);
 
     // Reserve scheduler for this bucket if not already reserved
     if (ctx->reserved_T != T_bucket) {
+        debug_encode_stage("encode_tokens:reserve-build", T_bucket, 1, 0);
         ggml_cgraph * measure_gf = build_encoder_graph(ctx, T_bucket);
+        debug_encode_stage("encode_tokens:reserve", T_bucket, 1, 0);
         ggml_backend_sched_reserve(ctx->sched, measure_gf);
         ctx->reserved_T = T_bucket;
     }
 
     // Build graph for actual T (metadata only — scheduler already has buffers)
+    debug_encode_stage("encode_tokens:graph-build", T, 1, 0);
     ggml_cgraph * gf = build_encoder_graph(ctx, T);
 
+    debug_encode_stage("encode_tokens:alloc-reset", T, 1, 0);
     ggml_backend_sched_reset(ctx->sched);
+    debug_encode_stage("encode_tokens:alloc", T, 1, 0);
     if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
         fprintf(stderr, "crispembed: failed to allocate encoder graph\n");
         return {};
@@ -826,24 +908,31 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
 
     // Set input data via backend API (works for both CPU and GPU tensors)
     std::vector<int32_t> tok_data(tokens.ids.begin(), tokens.ids.end());
-    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"),
-                            tok_data.data(), 0, T * sizeof(int32_t));
+    ggml_tensor * tok_ids = graph_tensor_or_log(gf, "tok_ids");
+    if (!tok_ids) return {};
+    debug_encode_stage("encode_tokens:set-tok", T, 1, 0);
+    ggml_backend_tensor_set(tok_ids, tok_data.data(), 0, T * sizeof(int32_t));
 
     std::vector<int32_t> pos_data(T);
     for (int t = 0; t < T; t++) pos_data[t] = t + ctx->pos_offset;
-    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
-                            pos_data.data(), 0, T * sizeof(int32_t));
+    ggml_tensor * pos_ids = graph_tensor_or_log(gf, "pos_ids");
+    if (!pos_ids) return {};
+    debug_encode_stage("encode_tokens:set-pos", T, 1, 0);
+    ggml_backend_tensor_set(pos_ids, pos_data.data(), 0, T * sizeof(int32_t));
 
     if (ctx->model.type_embd) {
         std::vector<int32_t> type_data(tokens.type_ids.begin(), tokens.type_ids.end());
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "type_ids"),
-                                type_data.data(), 0, T * sizeof(int32_t));
+        ggml_tensor * type_ids = graph_tensor_or_log(gf, "type_ids");
+        if (!type_ids) return {};
+        debug_encode_stage("encode_tokens:set-type", T, 1, 0);
+        ggml_backend_tensor_set(type_ids, type_data.data(), 0, T * sizeof(int32_t));
     }
 
     // MPNet relative position bias (precomputed for this sequence length, F16)
     if (ctx->model.rel_attn_bias) {
         ggml_tensor * bias_t = ggml_graph_get_tensor(gf, "rel_pos_bias");
         if (bias_t) {
+            debug_encode_stage("encode_tokens:set-rel-bias", T, 1, 0);
             auto bias_f32 = compute_rel_pos_bias(
                 ctx->model.rel_attn_bias, T, ctx->model.hparams.n_head);
             // Convert to F16 for flash attention mask
@@ -859,6 +948,7 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
     if (ctx->model.rel_embd) {
         ggml_tensor * idx_t = ggml_graph_get_tensor(gf, "rel_pos_idx");
         if (idx_t) {
+            debug_encode_stage("encode_tokens:set-rel-idx", T, 1, 0);
             // rel_embd shape: [H, max_pos]. Relative position = clamp(i-j + max_pos/2, 0, max_pos-1)
             int max_pos = (int)ctx->model.rel_embd->ne[1];
             int half = max_pos / 2;
@@ -876,6 +966,7 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
     }
 
     // Compute (scheduler dispatches to GPU or CPU)
+    debug_encode_stage("encode_tokens:compute", T, 1, 0);
     if (!sched_graph_compute(ctx->sched, gf, ctx->n_threads)) {
         fprintf(stderr, "crispembed: encoder compute failed\n");
         return {};
@@ -883,7 +974,9 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
 
     // Read output (works whether tensor is on GPU or CPU)
     // Read encoder output [H, T] via backend API (works for GPU and CPU)
-    ggml_tensor * out = ggml_graph_get_tensor(gf, "encoder_out");
+    ggml_tensor * out = graph_tensor_or_log(gf, "encoder_out");
+    if (!out) return {};
+    debug_encode_stage("encode_tokens:get-output", T, 1, 0);
     std::vector<float> out_buf(H * T);
     ggml_backend_tensor_get(out, out_buf.data(), 0, H * T * sizeof(float));
     float * out_data = out_buf.data();
@@ -939,111 +1032,16 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
 static std::vector<std::vector<float>> encode_tokens_batch(
     crispembed_context * ctx,
     const std::vector<embed_tokens> & batch) {
-
-    const auto & hp = ctx->model.hparams;
-    const int H = hp.n_embd;
     const int B = (int)batch.size();
     if (B == 0) return {};
+    std::vector<std::vector<float>> results;
+    results.reserve(B);
 
-    // Find max token count and pad all texts
-    int T_max = 0;
-    for (auto & t : batch) T_max = std::max(T_max, (int)t.ids.size());
-
-    // Build batched graph [T_max * B tokens]
-    ggml_cgraph * gf = build_encoder_graph(ctx, T_max, B);
-
-    ggml_backend_sched_reset(ctx->sched);
-    if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
-        fprintf(stderr, "crispembed: failed to allocate batched graph\n");
-        return {};
-    }
-
-    // Prepare flattened input arrays [T_max * B]
-    int TB = T_max * B;
-    std::vector<int32_t> all_tok(TB, 0);   // pad token = 0
-    std::vector<int32_t> all_pos(TB, 0);
-    std::vector<int32_t> all_type(TB, 0);
-    std::vector<std::vector<int>> attn_masks(B);
-
-    for (int b = 0; b < B; b++) {
-        const auto & t = batch[b];
-        int len = (int)t.ids.size();
-        attn_masks[b] = std::vector<int>(t.attn_mask.begin(), t.attn_mask.end());
-        attn_masks[b].resize(T_max, 0);  // pad mask with 0s
-        for (int i = 0; i < len; i++) {
-            all_tok[b * T_max + i] = t.ids[i];
-            all_pos[b * T_max + i] = i + ctx->pos_offset;
-            if (i < (int)t.type_ids.size())
-                all_type[b * T_max + i] = t.type_ids[i];
-        }
-    }
-
-    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"),
-                            all_tok.data(), 0, TB * sizeof(int32_t));
-    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
-                            all_pos.data(), 0, TB * sizeof(int32_t));
-    if (ctx->model.type_embd) {
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "type_ids"),
-                                all_type.data(), 0, TB * sizeof(int32_t));
-    }
-
-    // Relative position bias (MPNet) — broadcasts across batch dim
-    if (ctx->model.rel_attn_bias) {
-        ggml_tensor * bias_t = ggml_graph_get_tensor(gf, "rel_pos_bias");
-        if (bias_t) {
-            auto bias_f32 = compute_rel_pos_bias(
-                ctx->model.rel_attn_bias, T_max, ctx->model.hparams.n_head);
-            std::vector<ggml_fp16_t> bias_f16(bias_f32.size());
-            for (size_t i = 0; i < bias_f32.size(); i++)
-                bias_f16[i] = ggml_fp32_to_fp16(bias_f32[i]);
-            ggml_backend_tensor_set(bias_t, bias_f16.data(), 0,
-                                    bias_f16.size() * sizeof(ggml_fp16_t));
-        }
-    }
-
-    if (!sched_graph_compute(ctx->sched, gf, ctx->n_threads)) {
-        fprintf(stderr, "crispembed: batched compute failed\n");
-        return {};
-    }
-
-    // Read output [H, T_max * B]
-    ggml_tensor * out = ggml_graph_get_tensor(gf, "encoder_out");
-    std::vector<float> out_buf(H * TB);
-    ggml_backend_tensor_get(out, out_buf.data(), 0, H * TB * sizeof(float));
-
-    // Pool and normalize each text in batch
-    int dim = hp.n_output > 0 ? hp.n_output : H;
-    int pool_method = ctx->pool_method;
-    std::vector<std::vector<float>> results(B);
-
-    for (int b = 0; b < B; b++) {
-        std::vector<float> pooled(dim, 0.0f);
-        float * data = out_buf.data() + b * T_max * H;
-        auto & mask = attn_masks[b];
-
-        if (pool_method == 1) {
-            for (int h = 0; h < std::min(H, dim); h++) pooled[h] = data[h];
-        } else if (pool_method == 2) {
-            int last_t = 0;
-            for (int t = T_max - 1; t >= 0; t--) { if (mask[t]) { last_t = t; break; } }
-            for (int h = 0; h < std::min(H, dim); h++) pooled[h] = data[h + last_t * H];
-        } else {
-            int n_real = 0;
-            for (int t = 0; t < T_max; t++) if (mask[t]) n_real++;
-            if (n_real > 0) {
-                for (int t = 0; t < T_max; t++) {
-                    if (!mask[t]) continue;
-                    for (int h = 0; h < std::min(H, dim); h++) pooled[h] += data[h + t * H];
-                }
-                for (int h = 0; h < dim; h++) pooled[h] /= n_real;
-            }
-        }
-
-        float norm = 0;
-        for (int h = 0; h < dim; h++) norm += pooled[h] * pooled[h];
-        norm = sqrtf(std::max(norm, 1e-12f));
-        for (int h = 0; h < dim; h++) pooled[h] /= norm;
-        results[b] = std::move(pooled);
+    // The previous fused batch path padded sequences but did not mask padded
+    // tokens inside attention, so shorter items diverged from single-item
+    // encoding. Prefer correctness here until a masked fused path exists.
+    for (const auto & tokens : batch) {
+        results.push_back(encode_tokens(ctx, tokens));
     }
     return results;
 }
@@ -1067,33 +1065,46 @@ static std::vector<float> run_encoder_raw(crispembed_context * ctx,
     int & reserved = (mode == 1) ? ctx->reserved_T_sparse
                    : (mode == 2) ? ctx->reserved_T_colbert
                    : ctx->reserved_T;
+    debug_encode_stage("run_encoder_raw:start", T, 1, mode);
 
     if (reserved != T_bucket) {
+        debug_encode_stage("run_encoder_raw:reserve-build", T_bucket, 1, mode);
         ggml_cgraph * measure_gf = build_encoder_graph(ctx, T_bucket, 1, mode);
+        debug_encode_stage("run_encoder_raw:reserve", T_bucket, 1, mode);
         ggml_backend_sched_reserve(ctx->sched, measure_gf);
         reserved = T_bucket;
     }
 
+    debug_encode_stage("run_encoder_raw:graph-build", T, 1, mode);
     ggml_cgraph * gf = build_encoder_graph(ctx, T, 1, mode);
+    debug_encode_stage("run_encoder_raw:alloc-reset", T, 1, mode);
     ggml_backend_sched_reset(ctx->sched);
+    debug_encode_stage("run_encoder_raw:alloc", T, 1, mode);
     if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
         fprintf(stderr, "crispembed: failed to allocate graph (mode=%d)\n", mode);
         return {};
     }
 
     std::vector<int32_t> tok_data(tokens.ids.begin(), tokens.ids.end());
-    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"),
-                            tok_data.data(), 0, T * sizeof(int32_t));
+    ggml_tensor * tok_ids = graph_tensor_or_log(gf, "tok_ids");
+    if (!tok_ids) return {};
+    debug_encode_stage("run_encoder_raw:set-tok", T, 1, mode);
+    ggml_backend_tensor_set(tok_ids, tok_data.data(), 0, T * sizeof(int32_t));
     std::vector<int32_t> pos_data(T);
     for (int t = 0; t < T; t++) pos_data[t] = t + ctx->pos_offset;
-    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
-                            pos_data.data(), 0, T * sizeof(int32_t));
+    ggml_tensor * pos_ids = graph_tensor_or_log(gf, "pos_ids");
+    if (!pos_ids) return {};
+    debug_encode_stage("run_encoder_raw:set-pos", T, 1, mode);
+    ggml_backend_tensor_set(pos_ids, pos_data.data(), 0, T * sizeof(int32_t));
     if (ctx->model.type_embd) {
         std::vector<int32_t> type_data(tokens.type_ids.begin(), tokens.type_ids.end());
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "type_ids"),
-                                type_data.data(), 0, T * sizeof(int32_t));
+        ggml_tensor * type_ids = graph_tensor_or_log(gf, "type_ids");
+        if (!type_ids) return {};
+        debug_encode_stage("run_encoder_raw:set-type", T, 1, mode);
+        ggml_backend_tensor_set(type_ids, type_data.data(), 0, T * sizeof(int32_t));
     }
 
+    debug_encode_stage("run_encoder_raw:compute", T, 1, mode);
     if (!sched_graph_compute(ctx->sched, gf, ctx->n_threads)) {
         fprintf(stderr, "crispembed: compute failed (mode=%d)\n", mode);
         return {};
@@ -1102,8 +1113,9 @@ static std::vector<float> run_encoder_raw(crispembed_context * ctx,
     const char * out_name = (mode == 1) ? "sparse_out"
                           : (mode == 2) ? "colbert_out"
                           : "encoder_out";
-    ggml_tensor * out = ggml_graph_get_tensor(gf, out_name);
+    ggml_tensor * out = graph_tensor_or_log(gf, out_name);
     if (!out) return {};
+    debug_encode_stage("run_encoder_raw:get-output", T, 1, mode);
 
     // Output dims: mode=1 → [1,T], mode=2 → [colbert_dim,T], mode=0 → [H,T]
     int out_rows = (int)out->ne[0];
@@ -1133,8 +1145,12 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
         ctx->is_decoder = true;
         ctx->dec = std::make_unique<dec_model>();
         // Initialize backends for decoder
-        ctx->backend = ggml_backend_init_best();
+        ctx->backend = crispembed_init_backend(ctx->n_threads);
         ctx->backends.push_back(ctx->backend);
+        if (!ctx->backend) {
+            delete ctx;
+            return nullptr;
+        }
         if (!ggml_backend_is_cpu(ctx->backend)) {
             ggml_backend_t cpu = ggml_backend_cpu_init();
             ggml_backend_cpu_set_n_threads(cpu, ctx->n_threads);
@@ -1205,6 +1221,44 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
 
 extern "C" const crispembed_hparams * crispembed_get_hparams(const crispembed_context * ctx) {
     return ctx ? &ctx->model.hparams : nullptr;
+}
+
+extern "C" const char * crispembed_cache_dir(void) {
+    static std::string value;
+    value = crispembed_mgr::cache_dir();
+    return value.c_str();
+}
+
+extern "C" const char * crispembed_resolve_model(const char * arg, int auto_download) {
+    static std::string value;
+    value.clear();
+    if (!arg) return value.c_str();
+    value = crispembed_mgr::resolve_model(arg, auto_download != 0);
+    return value.c_str();
+}
+
+extern "C" int crispembed_n_models(void) {
+    return crispembed_mgr::n_models();
+}
+
+extern "C" const char * crispembed_model_name(int index) {
+    const char * value = crispembed_mgr::model_name(index);
+    return value ? value : "";
+}
+
+extern "C" const char * crispembed_model_desc(int index) {
+    const char * value = crispembed_mgr::model_desc(index);
+    return value ? value : "";
+}
+
+extern "C" const char * crispembed_model_filename(int index) {
+    const char * value = crispembed_mgr::model_filename(index);
+    return value ? value : "";
+}
+
+extern "C" const char * crispembed_model_size(int index) {
+    const char * value = crispembed_mgr::model_size(index);
+    return value ? value : "";
 }
 
 extern "C" const float * crispembed_encode(crispembed_context * ctx,

@@ -19,6 +19,20 @@ class RerankResult {
   String toString() => 'RerankResult(index=$index, score=${score.toStringAsFixed(4)})';
 }
 
+class ModelInfo {
+  final String name;
+  final String desc;
+  final String filename;
+  final String size;
+
+  const ModelInfo({
+    required this.name,
+    required this.desc,
+    required this.filename,
+    required this.size,
+  });
+}
+
 /// Text embedding model using ggml inference.
 ///
 /// Supports dense embeddings, sparse retrieval (BGE-M3/SPLADE), ColBERT
@@ -61,11 +75,12 @@ class CrispEmbed {
   /// [nThreads] — CPU thread count (0 = auto-detect).
   /// [libPath] — optional path to the shared library. If omitted, searches
   ///   standard platform locations.
-  CrispEmbed(String modelPath, {int nThreads = 0, String? libPath}) {
+  CrispEmbed(String modelPath, {int nThreads = 0, String? libPath, bool? autoDownload}) {
     _lib = DynamicLibrary.open(libPath ?? _findLib());
     _bindFunctions();
 
-    final pathPtr = modelPath.toNativeUtf8();
+    final resolved = resolveModel(modelPath, libPath: libPath, autoDownload: autoDownload);
+    final pathPtr = resolved.toNativeUtf8();
     _ctx = _lib
         .lookupFunction<CrispembedInitNative, CrispembedInit>('crispembed_init')
         .call(pathPtr, nThreads);
@@ -337,5 +352,58 @@ class CrispEmbed {
     if (Platform.isIOS || Platform.isMacOS) return 'crispembed.framework/crispembed';
     if (Platform.isWindows) return 'crispembed.dll';
     return 'libcrispembed.so';
+  }
+
+  static String cacheDir({String? libPath}) {
+    final lib = DynamicLibrary.open(libPath ?? _findLib());
+    final fn = lib.lookupFunction<CrispembedCacheDirNative, CrispembedCacheDir>(
+        'crispembed_cache_dir');
+    final p = fn();
+    return p == nullptr ? '' : p.toDartString();
+  }
+
+  static String resolveModel(String modelPath, {String? libPath, bool? autoDownload}) {
+    final lib = DynamicLibrary.open(libPath ?? _findLib());
+    final fn = lib.lookupFunction<CrispembedResolveModelNative,
+        CrispembedResolveModel>('crispembed_resolve_model');
+    final shouldDownload = autoDownload ??
+        (!modelPath.contains('.gguf') &&
+            !modelPath.contains('/') &&
+            !modelPath.contains('\\'));
+    final arg = modelPath.toNativeUtf8();
+    try {
+      final out = fn(arg, shouldDownload ? 1 : 0);
+      final resolved = out == nullptr ? '' : out.toDartString();
+      if (resolved.isEmpty) {
+        throw Exception('Could not resolve model: $modelPath');
+      }
+      return resolved;
+    } finally {
+      calloc.free(arg);
+    }
+  }
+
+  static List<ModelInfo> listModels({String? libPath}) {
+    final lib = DynamicLibrary.open(libPath ?? _findLib());
+    final nModels = lib.lookupFunction<CrispembedNModelsNative, CrispembedNModels>(
+        'crispembed_n_models');
+    final modelName = lib.lookupFunction<CrispembedModelStringNative,
+        CrispembedModelString>('crispembed_model_name');
+    final modelDesc = lib.lookupFunction<CrispembedModelStringNative,
+        CrispembedModelString>('crispembed_model_desc');
+    final modelFilename = lib.lookupFunction<CrispembedModelStringNative,
+        CrispembedModelString>('crispembed_model_filename');
+    final modelSize = lib.lookupFunction<CrispembedModelStringNative,
+        CrispembedModelString>('crispembed_model_size');
+    final models = <ModelInfo>[];
+    for (var i = 0; i < nModels(); i++) {
+      models.add(ModelInfo(
+        name: modelName(i).toDartString(),
+        desc: modelDesc(i).toDartString(),
+        filename: modelFilename(i).toDartString(),
+        size: modelSize(i).toDartString(),
+      ));
+    }
+    return models;
   }
 }

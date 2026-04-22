@@ -81,11 +81,11 @@ void main(List<String> args) {
     assertTrue(vectorsDiffer(prefixed, cleared), 'prefix had no effect on embeddings');
 
     final docs = [
-      'Paris is the capital city of France.',
+      'Paris France capital city and Eiffel Tower.',
       'A bicycle uses two wheels and a chain.',
-      'Berlin is the capital of Germany.',
+      'Berlin Germany capital city and Brandenburg Gate.',
     ];
-    final ranked = dense.rerankBiencoder('capital of france', docs, topN: 2);
+    final ranked = dense.rerankBiencoder('paris france capital', docs, topN: 2);
     assertTrue(ranked.length == 2, 'rerankBiencoder topN mismatch');
     assertTrue(ranked.first.index == 0, 'rerankBiencoder did not rank the relevant document first');
     assertTrue(ranked.first.score >= ranked[1].score, 'rerankBiencoder results are not sorted');

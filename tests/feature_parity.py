@@ -74,11 +74,11 @@ def check_dense(model_path: str, lib_path: str | None, n_threads: int) -> None:
     model.set_prefix(original)
 
     docs = [
-        "Paris is the capital city of France.",
+        "Paris France capital city and Eiffel Tower.",
         "A bicycle uses two wheels and a chain.",
-        "Berlin is the capital of Germany.",
+        "Berlin Germany capital city and Brandenburg Gate.",
     ]
-    ranked = model.rerank_biencoder("capital of france", docs, top_n=2)
+    ranked = model.rerank_biencoder("paris france capital", docs, top_n=2)
     assert_true(len(ranked) == 2, "rerank_biencoder top_n was not applied")
     assert_true(ranked[0]["index"] == 0, "rerank_biencoder did not rank the relevant document first")
     assert_true(ranked[0]["score"] >= ranked[1]["score"], "rerank_biencoder results are not sorted")

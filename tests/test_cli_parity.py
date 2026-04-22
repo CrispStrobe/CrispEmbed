@@ -105,14 +105,14 @@ def check_dense(cli: str, model_path: str) -> None:
     assert_true(prefixed != cleared, "prefix had no effect on embedding output")
 
     docs = [
-        "Paris is the capital city of France.",
+        "Paris France capital city and Eiffel Tower.",
         "A bicycle uses two wheels and a chain.",
-        "Berlin is the capital of Germany.",
+        "Berlin Germany capital city and Brandenburg Gate.",
     ]
     biencoder = parse_json_output(
         run_cli(
             cli,
-            ["-m", model_path, "--json", "--biencoder", "capital of france", "--top-n", "2", *docs],
+            ["-m", model_path, "--json", "--biencoder", "paris france capital", "--top-n", "2", *docs],
         ),
         "bi-encoder rerank",
     )
