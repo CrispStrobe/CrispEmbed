@@ -83,6 +83,25 @@ cmake --build build -j
 # Matryoshka truncation (e.g. 128 dims from a 384-dim model)
 ./build/crispembed -m model.gguf -d 128 "Hello world"
 
+# Prefix + capability inspection
+./build/crispembed -m model.gguf --prefix "query: " --capabilities
+
+# Sparse / ColBERT retrieval (BGE-M3)
+./build/crispembed -m bge-m3.gguf --sparse "Hello world"
+./build/crispembed -m bge-m3.gguf --colbert "Hello world"
+
+# Cross-encoder and bi-encoder reranking
+./build/crispembed -m bge-reranker-v2-m3.gguf --rerank "capital of france" \
+    "Paris is the capital of France." "Bicycles have two wheels."
+./build/crispembed -m model.gguf --biencoder "capital of france" --top-n 2 \
+    "Paris is the capital of France." "Berlin is the capital of Germany."
+
+# CLI parity test
+python tests/test_cli_parity.py --cli ./build/crispembed \
+    --dense-model /path/to/all-MiniLM-L6-v2.gguf \
+    --retrieval-model /path/to/bge-m3.gguf \
+    --reranker-model /path/to/bge-reranker-v2-m3.gguf
+
 # Start server (model loaded once, fast repeated queries)
 ./build/crispembed-server -m model.gguf --port 8080
 curl -X POST http://localhost:8080/embed \
@@ -251,6 +270,15 @@ for r in results:
     print(f"  [{r['index']}] {r['score']:.4f}: {r['document']}")
 ```
 
+Wrapper parity script:
+
+```bash
+python tests/feature_parity.py \
+  --dense-model /path/to/all-MiniLM-L6-v2.gguf \
+  --retrieval-model /path/to/bge-m3.gguf \
+  --reranker-model /path/to/bge-reranker-v2-m3.gguf
+```
+
 ## Rust
 
 ```toml
@@ -280,6 +308,15 @@ let ranked = model.rerank_biencoder("query", &["doc1", "doc2"], Some(2));
 for (idx, score) in &ranked {
     println!("  doc {} score {:.4}", idx, score);
 }
+```
+
+Wrapper parity script:
+
+```bash
+cargo run -p crispembed --example feature_parity -- \
+  /path/to/all-MiniLM-L6-v2.gguf \
+  /path/to/bge-m3.gguf \
+  /path/to/bge-reranker-v2-m3.gguf
 ```
 
 ## Dart / Flutter
@@ -315,7 +352,31 @@ if (model.hasSparse) {
 model.dispose();
 ```
 
+Wrapper parity script:
+
+```bash
+cd flutter/crispembed
+dart run example/feature_parity.dart \
+  /path/to/all-MiniLM-L6-v2.gguf \
+  /path/to/bge-m3.gguf \
+  /path/to/bge-reranker-v2-m3.gguf \
+  /path/to/libcrispembed.so
+```
+
 Works on iOS (Metal GPU), Android (Vulkan/NEON), macOS, Linux, Windows.
+
+## Feature Parity
+
+Python, Rust, Dart, and the `crispembed` CLI now cover the same core inference features from the
+shared C API: dense encode, batch encode, Matryoshka truncation, prefix control, sparse retrieval,
+ColBERT multi-vector retrieval, cross-encoder reranking, and bi-encoder reranking.
+
+The CLI still keeps some convenience-only UX that the wrappers do not mirror directly:
+
+- CLI-only conveniences: `--list-models`, model-name auto-download, `--cache-dir`, `-f FILE`, `--json`, `--dim`, `--capabilities`.
+- Wrapper-only convenience helpers: prefix getters and in-process ranking helper return types.
+
+Inference capability parity is now aligned across all four entry points.
 
 ## Mobile (iOS / Android)
 
