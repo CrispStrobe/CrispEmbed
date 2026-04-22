@@ -281,28 +281,31 @@ static void mkdirs(const std::string & path) {
     std::filesystem::create_directories(std::filesystem::path(path), ec);
 }
 
-static bool download_file(const std::string & url, const std::string & dest) {
-    std::string tmp = dest + ".tmp";
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+static bool download_file(const std::string & source_url, const std::string & dest_path) {
+    std::string tmp = dest_path + ".tmp";
 
     // Use double quotes for Windows compatibility
 #ifdef _WIN32
     // Try curl.exe (bundled with Windows 10+)
-    std::string cmd = "curl.exe -fL --progress-bar -o \"" + tmp + "\" \"" + url + "\"";
+    std::string cmd = "curl.exe -fL --progress-bar -o \"" + tmp + "\" \"" + source_url + "\"";
 #else
-    std::string cmd = "curl -fL --progress-bar -o \"" + tmp + "\" \"" + url + "\"";
+    std::string cmd = "curl -fL --progress-bar -o \"" + tmp + "\" \"" + source_url + "\"";
 #endif
+    // NOLINTNEXTLINE(bugprone-command-processor)
     int ret = system(cmd.c_str());
     if (ret == 0 && file_exists(tmp)) {
-        rename(tmp.c_str(), dest.c_str());
+        rename(tmp.c_str(), dest_path.c_str());
         return true;
     }
 
 #ifndef _WIN32
     // wget fallback (Linux/macOS only)
-    cmd = "wget -q --show-progress -O \"" + tmp + "\" \"" + url + "\"";
+    cmd = "wget -q --show-progress -O \"" + tmp + "\" \"" + source_url + "\"";
+    // NOLINTNEXTLINE(bugprone-command-processor)
     ret = system(cmd.c_str());
     if (ret == 0 && file_exists(tmp)) {
-        rename(tmp.c_str(), dest.c_str());
+        rename(tmp.c_str(), dest_path.c_str());
         return true;
     }
 #endif

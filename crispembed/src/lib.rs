@@ -91,22 +91,30 @@ impl CrispEmbed {
         }
 
         // Prefer an existing cache hit before asking the native resolver to
-        // download. This keeps Rust aligned with the shared cache even when
-        // the underlying downloader path is unavailable in the local runtime.
+        // download. Mirror native selection semantics: exact match first,
+        // then the first fuzzy substring match.
         let cache_dir = Self::cache_dir();
         if !cache_dir.is_empty() {
             let model_key = model_path.to_ascii_lowercase();
-            for model in Self::list_models() {
-                let matches = model.name.eq_ignore_ascii_case(model_path)
+            let models = Self::list_models();
+
+            if let Some(model) = models.iter().find(|model| {
+                model.name.eq_ignore_ascii_case(model_path)
                     || model.filename.eq_ignore_ascii_case(model_path)
-                    || model.name.to_ascii_lowercase().contains(&model_key)
-                    || model.filename.to_ascii_lowercase().contains(&model_key);
-                if matches {
-                    let cached = Path::new(&cache_dir).join(&model.filename);
-                    if cached.is_file() {
-                        return Ok(cached.to_string_lossy().into_owned());
-                    }
-                    break;
+            }) {
+                let cached = Path::new(&cache_dir).join(&model.filename);
+                if cached.is_file() {
+                    return Ok(cached.to_string_lossy().into_owned());
+                }
+            }
+
+            if let Some(model) = models.iter().find(|model| {
+                model.name.to_ascii_lowercase().contains(&model_key)
+                    || model.filename.to_ascii_lowercase().contains(&model_key)
+            }) {
+                let cached = Path::new(&cache_dir).join(&model.filename);
+                if cached.is_file() {
+                    return Ok(cached.to_string_lossy().into_owned());
                 }
             }
         }
@@ -218,9 +226,10 @@ impl CrispEmbed {
         unsafe { std::slice::from_raw_parts(ptr, n_dim as usize) }.to_vec()
     }
 
-    /// Encode multiple texts in a single GPU graph pass.
+    /// Encode multiple texts and return one embedding per input in the same order.
     ///
-    /// Returns one embedding per input text in the same order.
+    /// The current native dense batch implementation runs items sequentially
+    /// to preserve exact agreement with repeated single-text encodes.
     pub fn encode_batch(&mut self, texts: &[&str]) -> Vec<Vec<f32>> {
         if texts.is_empty() {
             return vec![];

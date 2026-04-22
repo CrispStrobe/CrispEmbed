@@ -16,6 +16,7 @@
 #include <cstring>
 
 // MPNet-style relative position bucket (matches HuggingFace implementation).
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static int relative_position_bucket(int rel_pos, int num_buckets = 32, int max_distance = 128) {
     int ret = 0;
     int n = -rel_pos;
@@ -239,11 +240,11 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     }
 
     auto u32 = [&](const char * key, int def) -> int {
-        int k = gguf_find_key(g, key);
+        const int64_t k = gguf_find_key(g, key);
         return k >= 0 ? (int)gguf_get_val_u32(g, k) : def;
     };
     auto f32 = [&](const char * key, float def) -> float {
-        int k = gguf_find_key(g, key);
+        const int64_t k = gguf_find_key(g, key);
         return k >= 0 ? gguf_get_val_f32(g, k) : def;
     };
 
@@ -269,20 +270,20 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     ctx->pre_ln             = u32("bert.pre_ln", 0) != 0;
 
     // Load tokenizer vocab from GGUF metadata
-    int ki = gguf_find_key(g, "tokenizer.ggml.tokens");
+    const int64_t ki = gguf_find_key(g, "tokenizer.ggml.tokens");
     if (ki >= 0) {
-        int n = gguf_get_arr_n(g, ki);
+        const int n = (int)gguf_get_arr_n(g, ki);
         std::vector<std::string> vocab(n);
         for (int i = 0; i < n; i++)
             vocab[i] = gguf_get_arr_str(g, ki, i);
 
         // Load scores if available (SentencePiece models)
         std::vector<float> scores;
-        int si = gguf_find_key(g, "tokenizer.ggml.scores");
+        const int64_t si = gguf_find_key(g, "tokenizer.ggml.scores");
         if (si >= 0 && gguf_get_arr_type(g, si) == GGUF_TYPE_FLOAT32) {
             int sn = (int)gguf_get_arr_n(g, si);
             scores.resize(sn);
-            const float * sd = (const float *)gguf_get_arr_data(g, si);
+            const float * sd = reinterpret_cast<const float *>(gguf_get_arr_data(g, si));
             std::memcpy(scores.data(), sd, sn * sizeof(float));
         }
 
@@ -302,11 +303,9 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             // BPE (GPT-2 style, ModernBERT, etc.)
             int cls_id = u32("tokenizer.ggml.cls_token_id", 0);
             int sep_id = u32("tokenizer.ggml.sep_token_id", 2);
-            int unk_id = u32("tokenizer.ggml.unknown_token_id", 3);
             int pad_id = u32("tokenizer.ggml.padding_token_id", 1);
 
             // BPE merges stored as tensor (newline-separated blob)
-            std::vector<std::string> merges;
             // Merges will be loaded after weight loading (from tensor "tokenizer.merges")
             std::vector<std::string> empty_merges;
             // For encoder BPE: eos=SEP, suffix=-1 (handled by encode), bos=CLS
@@ -553,6 +552,7 @@ static bool load_model(crispembed_context * ctx, const char * path) {
 // mode: 0=dense (encoder_out), 1=sparse (sparse_out [1,T]), 2=colbert (colbert_out [dim,T])
 // When B=1: standard single-text graph.
 // When B>1: batched graph with 4D attention via flash_attn_ext.
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B = 1, int mode = 0) {
     const auto & m = ctx->model;
     const auto & hp = m.hparams;
@@ -685,7 +685,7 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
 
             // Position embeddings: look up rel_embd for relative positions
             // rel_pos_idx: [T*T] precomputed indices into rel_embd
-            ggml_tensor * rel_pos_idx = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T * T);
+            ggml_tensor * rel_pos_idx = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, (int64_t)T * T);
             ggml_set_name(rel_pos_idx, "rel_pos_idx");
             ggml_set_input(rel_pos_idx);
 
@@ -703,11 +703,11 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             // This requires per-pair dot products — approximate with matmul
 
             // Project P through K layer weights: [hd, T, T] per head
-            ggml_tensor * P_flat = ggml_reshape_2d(gctx, P, H, T * T);  // [H, T*T]
+            ggml_tensor * P_flat = ggml_reshape_2d(gctx, P, H, (int64_t)T * T);  // [H, T*T]
             ggml_tensor * Pk = ggml_mul_mat(gctx, L.k_w, P_flat);  // [H, T*T]
             if (L.k_b) Pk = ggml_add(gctx, Pk, ggml_repeat(gctx, L.k_b,
-                ggml_new_tensor_2d(gctx, GGML_TYPE_F32, H, T * T)));
-            Pk = ggml_reshape_3d(gctx, Pk, head_dim, n_heads, T * T);
+                ggml_new_tensor_2d(gctx, GGML_TYPE_F32, H, (int64_t)T * T)));
+            Pk = ggml_reshape_3d(gctx, Pk, head_dim, n_heads, (int64_t)T * T);
             Pk = ggml_cont(gctx, ggml_permute(gctx, Pk, 0, 2, 1, 3));  // [hd, T*T, nh]
             Pk = ggml_reshape_4d(gctx, Pk, head_dim, T, T, n_heads);    // [hd, T, T, nh]
 
@@ -979,7 +979,7 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
     debug_encode_stage("encode_tokens:get-output", T, 1, 0);
     std::vector<float> out_buf(H * T);
     ggml_backend_tensor_get(out, out_buf.data(), 0, H * T * sizeof(float));
-    float * out_data = out_buf.data();
+    const float * out_data = out_buf.data();
 
     // Pooling — method determined by model metadata or default
     int dim = hp.n_output > 0 ? hp.n_output : H;
@@ -1056,8 +1056,6 @@ static std::vector<float> run_encoder_raw(crispembed_context * ctx,
                                            const embed_tokens & tokens,
                                            int mode,
                                            int * out_T) {
-    const auto & hp = ctx->model.hparams;
-    const int H = hp.n_embd;
     const int T = (int)tokens.ids.size();
     if (out_T) *out_T = T;
 
@@ -1173,8 +1171,8 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
         gguf_init_params gp2 = { true, nullptr };
         gguf_context * g2 = gguf_init_from_file(model_path, gp2);
         if (g2) {
-            int ki2 = gguf_find_key(g2, "tokenizer.ggml.tokens");
-            int mi2 = gguf_find_key(g2, "tokenizer.ggml.merges");
+            const int64_t ki2 = gguf_find_key(g2, "tokenizer.ggml.tokens");
+            const int64_t mi2 = gguf_find_key(g2, "tokenizer.ggml.merges");
             if (ki2 >= 0) {
                 int nv = (int)gguf_get_arr_n(g2, ki2);
                 std::vector<std::string> vocab(nv);
@@ -1190,13 +1188,13 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
                 }
 
                 auto u32g = [&](const char * key, int def) -> int {
-                    int k = gguf_find_key(g2, key);
+                    const int64_t k = gguf_find_key(g2, key);
                     return k >= 0 ? (int)gguf_get_val_u32(g2, k) : def;
                 };
                 int eos_id = u32g("tokenizer.ggml.eos_token_id", 151645);
                 int pad_id = u32g("tokenizer.ggml.padding_token_id", 151643);
                 int bos_id = u32g("tokenizer.ggml.bos_token_id", -1);
-                int ki_sfx = gguf_find_key(g2, "tokenizer.ggml.suffix_token_id");
+                const int64_t ki_sfx = gguf_find_key(g2, "tokenizer.ggml.suffix_token_id");
                 int suffix_id = ki_sfx >= 0 ? (int)gguf_get_val_i32(g2, ki_sfx) : pad_id;
                 bool is_spm_bpe = u32g("tokenizer.ggml.is_spm_bpe", 0) != 0;
 
@@ -1295,6 +1293,7 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx,
         }
     }
 
+    // NOLINTNEXTLINE(bugprone-branch-clone)
     if (ctx->is_decoder && ctx->dec) {
         ctx->last_output = decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads,
                                                   ctx->sched, &ctx->compute_meta);
@@ -1365,8 +1364,6 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
     }
 
     // For encoder models: true batched inference (one graph, all texts)
-    const auto & hp = ctx->model.hparams;
-    int dim = hp.n_output > 0 ? hp.n_output : hp.n_embd;
     std::vector<std::vector<float>> batch_results;
 
     if (!ctx->is_decoder) {
@@ -1381,14 +1378,18 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
     }
 
     if (batch_results.empty() || batch_results[0].empty()) return nullptr;
-    dim = (int)batch_results[0].size();
+    const int dim = (int)batch_results[0].size();
 
     // Apply Matryoshka and copy results
     int out_dim = (ctx->matryoshka_dim > 0 && ctx->matryoshka_dim < dim) ? ctx->matryoshka_dim : dim;
     ctx->last_output.resize(n_texts * out_dim);
 
     for (int i = 0; i < n_texts; i++) {
-        auto & vec = batch_results[i];
+        const auto & vec = batch_results[i];
+        if ((int)vec.size() != dim) {
+            fprintf(stderr, "crispembed: batch encode failed for item %d\n", i);
+            return nullptr;
+        }
         int d = std::min((int)vec.size(), out_dim);
         // Already L2-normalized from encode_tokens_batch / encode_tokens
         // But may need re-normalize after Matryoshka truncation
@@ -1543,7 +1544,7 @@ extern "C" int crispembed_encode_sparse(crispembed_context * ctx,
             if (it == vocab_weights.end() || it->second < weight)
                 vocab_weights[vid] = weight;
         }
-        for (auto & kv : vocab_weights) {
+        for (const auto & kv : vocab_weights) {
             ctx->last_sparse_indices.push_back(kv.first);
             ctx->last_sparse_values.push_back(kv.second);
         }
@@ -1574,6 +1575,7 @@ extern "C" int crispembed_encode_sparse(crispembed_context * ctx,
 // Multi-vector encode (ColBERT head)
 // ---------------------------------------------------------------------------
 
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 extern "C" const float * crispembed_encode_multivec(crispembed_context * ctx,
                                                       const char         * text,
                                                       int                * out_n_tokens,
@@ -1602,7 +1604,7 @@ extern "C" const float * crispembed_encode_multivec(crispembed_context * ctx,
     // raw is [colbert_dim, T_real] — L2 normalize each token vector
     ctx->last_multivec.resize(dim * raw_T);
     for (int t = 0; t < raw_T; t++) {
-        float * vec = raw.data() + t * dim;
+        const float * vec = raw.data() + t * dim;
         float norm = 0.0f;
         for (int d = 0; d < dim; d++) norm += vec[d] * vec[d];
         norm = sqrtf(std::max(norm, 1e-12f));
