@@ -10,6 +10,10 @@
 #include <string>
 #include <sys/stat.h>
 
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
+
 #ifdef _WIN32
 #include <direct.h>
 #include <io.h>
@@ -21,6 +25,18 @@
 #endif
 
 namespace crispembed_mgr {
+
+namespace {
+
+bool download_supported() {
+#if defined(__APPLE__) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+    return false;
+#else
+    return true;
+#endif
+}
+
+}  // namespace
 
 struct ModelEntry {
     const char * name;
@@ -283,6 +299,11 @@ static void mkdirs(const std::string & path) {
 
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static bool download_file(const std::string & source_url, const std::string & dest_path) {
+#if defined(__APPLE__) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+    (void)source_url;
+    (void)dest_path;
+    return false;
+#else
     std::string tmp = dest_path + ".tmp";
 
     // Use double quotes for Windows compatibility
@@ -312,6 +333,7 @@ static bool download_file(const std::string & source_url, const std::string & de
 
     remove(tmp.c_str());
     return false;
+#endif
 }
 
 std::string resolve_model(const std::string & arg, bool auto_download) {
@@ -368,6 +390,13 @@ std::string resolve_model(const std::string & arg, bool auto_download) {
                     entry->name);
             return "";
         }
+    }
+
+    if (!download_supported()) {
+        fprintf(stderr,
+                "Model '%s' is not cached, and auto-download is unavailable on iOS builds.\n",
+                entry->name);
+        return "";
     }
 
     mkdirs(dir);
