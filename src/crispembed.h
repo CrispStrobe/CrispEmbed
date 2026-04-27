@@ -161,6 +161,52 @@ CRISPEMBED_API const float * crispembed_encode_audio(crispembed_context * ctx,
                                                       int                * out_dim);
 
 // ---------------------------------------------------------------------------
+// Image encoding (omnimodal embedding models)
+// ---------------------------------------------------------------------------
+
+// Returns 1 if this context has a vision tower (visual.* tensors in the
+// GGUF). Determined lazily — the first encode_image call confirms.
+CRISPEMBED_API int crispembed_has_vision(const crispembed_context * ctx);
+
+// Encode a flat (n_patches × in_C·T_patch·P²) pixel-patch buffer into a
+// single L2-normalized vector in the model's shared embedding space (mean
+// pooled over merged tokens). Suitable for cross-modal cosine similarity.
+//
+// pixel_patches: float32, shape (n_patches, 1536) row-major — produced
+//   by the Python preprocessor (Qwen2VLImageProcessorFast or equivalent).
+// grid_thw: int32, shape (n_images, 3) — (t, h_patches, w_patches) per image.
+//
+// Returns a buffer of *out_dim floats, owned by ctx and valid until the next
+// call. Returns NULL on failure (no vision tower, malformed input).
+CRISPEMBED_API const float * crispembed_encode_image(crispembed_context * ctx,
+                                                      const float        * pixel_patches,
+                                                      int                  n_patches,
+                                                      const int32_t      * grid_thw,
+                                                      int                  n_images,
+                                                      int                * out_dim);
+
+// Raw (un-pooled, un-normalized) vision tower output. Returns a single
+// concatenated buffer of layout:
+//   [image_embeds (n_merged × dim), deepstack_0, deepstack_1, ..., deepstack_{k-1}]
+// each slab being (n_merged × dim) row-major.
+//
+// out_n_merged, out_dim, out_n_deepstack get the per-slab shape and the
+// number of deepstack slabs. Total floats = (1 + n_deepstack) * n_merged * dim.
+//
+// Used by the parity test in tests/test_bidirlm_vision.py to compare against
+// HF's BidirLMOmniVisionModel(...) tuple output.
+//
+// Buffer owned by ctx and valid until the next call.
+CRISPEMBED_API const float * crispembed_encode_image_raw(crispembed_context * ctx,
+                                                          const float        * pixel_patches,
+                                                          int                  n_patches,
+                                                          const int32_t      * grid_thw,
+                                                          int                  n_images,
+                                                          int                * out_n_merged,
+                                                          int                * out_dim,
+                                                          int                * out_n_deepstack);
+
+// ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
 

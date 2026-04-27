@@ -225,6 +225,14 @@ struct crispembed_context {
     // first crispembed_encode_audio call). Built only when CRISPEMBED_HAS_CRISP_AUDIO.
     void * audio_ctx = nullptr;
     std::string model_path_for_audio;
+    // Vision path — opaque pointer into bidirlm_vision.cpp (lazily inited on
+    // first encode_image call). Always compiled in (no sibling-lib dependency).
+    void * vision_ctx = nullptr;
+    int    vision_load_attempted = 0;  // avoid re-loading after a failed open
+    std::vector<float> last_vision_out;  // owned buffer for the last encode_image* call
+    int last_vision_dim = 0;
+    int last_vision_n_merged = 0;
+    int last_vision_n_deepstack = 0;
 };
 
 // ---------------------------------------------------------------------------
@@ -1742,6 +1750,124 @@ extern "C" const float * crispembed_encode_audio(crispembed_context * ctx,
 #endif
 }
 
+// ---------------------------------------------------------------------------
+// Vision encoding via bidirlm_vision (BidirLM-Omni)
+// ---------------------------------------------------------------------------
+#include "bidirlm_vision.h"
+
+static bidirlm_vision::context * vision_lazy_open(crispembed_context * ctx) {
+    if (!ctx) return nullptr;
+    if (ctx->vision_ctx) return (bidirlm_vision::context *)ctx->vision_ctx;
+    if (ctx->vision_load_attempted) return nullptr;
+    ctx->vision_load_attempted = 1;
+    if (ctx->model_path_for_audio.empty()) return nullptr;
+    auto * v = new bidirlm_vision::context();
+    if (!bidirlm_vision::load(*v, ctx->model_path_for_audio.c_str(),
+                               /*shared_backend=*/ctx->backend,
+                               ctx->n_threads, /*verbosity=*/1)) {
+        delete v;
+        return nullptr;
+    }
+    ctx->vision_ctx = v;
+    return v;
+}
+
+extern "C" int crispembed_has_vision(const crispembed_context * ctx) {
+    if (!ctx) return 0;
+    if (ctx->vision_ctx) return 1;
+    if (ctx->vision_load_attempted) return 0;
+    return 1;  // unknown — caller should attempt encode and check return.
+}
+
+namespace {
+
+// Run the vision tower and stage results into ctx->last_vision_out.
+// Layout: [image_embeds (n_merged*dim), deepstack_0, deepstack_1, ...].
+bool vision_run_and_stage(crispembed_context * ctx,
+                          const float * pixel_patches, int n_patches,
+                          const int32_t * grid_thw, int n_images) {
+    auto * v = vision_lazy_open(ctx);
+    if (!v) return false;
+    bidirlm_vision::encode_result r;
+    if (!bidirlm_vision::encode(*v, pixel_patches, n_patches,
+                                 grid_thw, n_images, r)) {
+        return false;
+    }
+    const size_t per_slab = (size_t)r.n_merged * r.output_dim;
+    const size_t total = per_slab * (1 + r.n_deepstack);
+    ctx->last_vision_out.assign(total, 0.0f);
+    std::memcpy(ctx->last_vision_out.data(), r.image_embeds, per_slab * sizeof(float));
+    if (r.n_deepstack > 0 && r.deepstack) {
+        std::memcpy(ctx->last_vision_out.data() + per_slab,
+                    r.deepstack,
+                    (size_t)r.n_deepstack * per_slab * sizeof(float));
+    }
+    ctx->last_vision_dim = r.output_dim;
+    ctx->last_vision_n_merged = r.n_merged;
+    ctx->last_vision_n_deepstack = r.n_deepstack;
+    bidirlm_vision::encode_result_free(r);
+    return true;
+}
+
+}  // namespace
+
+extern "C" const float * crispembed_encode_image(crispembed_context * ctx,
+                                                  const float * pixel_patches,
+                                                  int n_patches,
+                                                  const int32_t * grid_thw,
+                                                  int n_images,
+                                                  int * out_dim) {
+    if (!vision_run_and_stage(ctx, pixel_patches, n_patches, grid_thw, n_images)) {
+        if (out_dim) *out_dim = 0;
+        return nullptr;
+    }
+    const int dim = ctx->last_vision_dim;
+    const int n_merged = ctx->last_vision_n_merged;
+
+    // Mean-pool image_embeds over the n_merged tokens.
+    std::vector<float> pooled(dim, 0.0f);
+    const float * src = ctx->last_vision_out.data();
+    for (int t = 0; t < n_merged; t++) {
+        const float * row = src + (size_t)t * dim;
+        for (int i = 0; i < dim; i++) pooled[i] += row[i];
+    }
+    if (n_merged > 0) {
+        const float inv = 1.0f / (float)n_merged;
+        for (int i = 0; i < dim; i++) pooled[i] *= inv;
+    }
+    float norm_sq = 0.0f;
+    for (int i = 0; i < dim; i++) norm_sq += pooled[i] * pooled[i];
+    const float norm = std::sqrt(std::max(norm_sq, 1e-12f));
+    for (int i = 0; i < dim; i++) pooled[i] /= norm;
+
+    // Stage the pooled vector at the front of last_vision_out so the returned
+    // pointer remains valid until the next call. We reuse the buffer by
+    // resizing it to dim and copying — the raw layout is gone after this.
+    ctx->last_vision_out.assign(pooled.begin(), pooled.end());
+    if (out_dim) *out_dim = dim;
+    return ctx->last_vision_out.data();
+}
+
+extern "C" const float * crispembed_encode_image_raw(crispembed_context * ctx,
+                                                      const float * pixel_patches,
+                                                      int n_patches,
+                                                      const int32_t * grid_thw,
+                                                      int n_images,
+                                                      int * out_n_merged,
+                                                      int * out_dim,
+                                                      int * out_n_deepstack) {
+    if (!vision_run_and_stage(ctx, pixel_patches, n_patches, grid_thw, n_images)) {
+        if (out_n_merged) *out_n_merged = 0;
+        if (out_dim) *out_dim = 0;
+        if (out_n_deepstack) *out_n_deepstack = 0;
+        return nullptr;
+    }
+    if (out_n_merged) *out_n_merged = ctx->last_vision_n_merged;
+    if (out_dim) *out_dim = ctx->last_vision_dim;
+    if (out_n_deepstack) *out_n_deepstack = ctx->last_vision_n_deepstack;
+    return ctx->last_vision_out.data();
+}
+
 extern "C" void crispembed_free(crispembed_context * ctx) {
     if (!ctx) return;
 #ifdef CRISPEMBED_HAS_CRISP_AUDIO
@@ -1750,6 +1876,12 @@ extern "C" void crispembed_free(crispembed_context * ctx) {
         ctx->audio_ctx = nullptr;
     }
 #endif
+    if (ctx->vision_ctx) {
+        auto * v = (bidirlm_vision::context *)ctx->vision_ctx;
+        bidirlm_vision::free_(*v);
+        delete v;
+        ctx->vision_ctx = nullptr;
+    }
     if (ctx->qkv_buf) { ggml_backend_buffer_free(ctx->qkv_buf); ctx->qkv_buf = nullptr; }
     if (ctx->qkv_ctx) { ggml_free(ctx->qkv_ctx); ctx->qkv_ctx = nullptr; }
     core_gguf::free_weights(ctx->wl);

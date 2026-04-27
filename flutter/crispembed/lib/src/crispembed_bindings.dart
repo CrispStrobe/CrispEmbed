@@ -130,3 +130,41 @@ typedef CrispembedEncodeAudio = Pointer<Float> Function(
     Pointer<Float> pcmSamples,
     int nSamples,
     Pointer<Int32> outDim);
+
+// --- Image encoding (BidirLM-Omni vision tower) ---
+typedef CrispembedHasVisionNative = Int32 Function(Pointer<CrispembedContext> ctx);
+typedef CrispembedHasVision = int Function(Pointer<CrispembedContext> ctx);
+
+typedef CrispembedEncodeImageNative = Pointer<Float> Function(
+    Pointer<CrispembedContext> ctx,
+    Pointer<Float> pixelPatches,
+    Int32 nPatches,
+    Pointer<Int32> gridThw,
+    Int32 nImages,
+    Pointer<Int32> outDim);
+typedef CrispembedEncodeImage = Pointer<Float> Function(
+    Pointer<CrispembedContext> ctx,
+    Pointer<Float> pixelPatches,
+    int nPatches,
+    Pointer<Int32> gridThw,
+    int nImages,
+    Pointer<Int32> outDim);
+
+typedef CrispembedEncodeImageRawNative = Pointer<Float> Function(
+    Pointer<CrispembedContext> ctx,
+    Pointer<Float> pixelPatches,
+    Int32 nPatches,
+    Pointer<Int32> gridThw,
+    Int32 nImages,
+    Pointer<Int32> outNMerged,
+    Pointer<Int32> outDim,
+    Pointer<Int32> outNDeepstack);
+typedef CrispembedEncodeImageRaw = Pointer<Float> Function(
+    Pointer<CrispembedContext> ctx,
+    Pointer<Float> pixelPatches,
+    int nPatches,
+    Pointer<Int32> gridThw,
+    int nImages,
+    Pointer<Int32> outNMerged,
+    Pointer<Int32> outDim,
+    Pointer<Int32> outNDeepstack);

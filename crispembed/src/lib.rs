@@ -357,6 +357,92 @@ impl CrispEmbed {
     }
 
     // ------------------------------------------------------------------
+    // Image encoding (BidirLM-Omni vision tower)
+    // ------------------------------------------------------------------
+
+    /// Whether this build has vision support compiled in. Whether the
+    /// loaded GGUF has a vision tower is only known after the first
+    /// `encode_image` call.
+    pub fn has_vision(&self) -> bool {
+        unsafe { crispembed_sys::crispembed_has_vision(self.ctx) != 0 }
+    }
+
+    /// Encode pre-flattened pixel patches into the model's shared
+    /// embedding space. Mean-pools across merged tokens and L2-normalizes.
+    ///
+    /// `pixel_patches` is row-major `(n_patches, 1536)` float32, produced
+    /// by an HF `Qwen2VLImageProcessorFast`-equivalent pipeline.
+    /// `grid_thw` is `(n_images, 3)` int32.
+    pub fn encode_image(&mut self, pixel_patches: &[f32], grid_thw: &[i32]) -> Vec<f32> {
+        if grid_thw.len() % 3 != 0 { return vec![]; }
+        let n_images = (grid_thw.len() / 3) as i32;
+        // patch_flat_dim = 1536 for the standard 16×16 RGB / temporal=2 config —
+        // could be queried from hparams, but matching the converter contract is
+        // simpler. Caller is expected to have used a compatible preprocessor.
+        let n_patches = if pixel_patches.is_empty() { 0 } else {
+            // Recover from grid_thw: sum of t·h·w across images.
+            grid_thw.chunks(3).map(|c| c[0] * c[1] * c[2]).sum::<i32>()
+        };
+        if n_patches <= 0 { return vec![]; }
+
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_image(
+                self.ctx,
+                pixel_patches.as_ptr(),
+                n_patches,
+                grid_thw.as_ptr(),
+                n_images,
+                &mut out_dim,
+            )
+        };
+        if ptr.is_null() || out_dim <= 0 { return vec![]; }
+        unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
+    }
+
+    /// Raw vision tower output (un-pooled, un-normalized).
+    /// Returns `(image_embeds, deepstack_features)` where each entry is a
+    /// flat row-major buffer of `n_merged * dim` floats.
+    pub fn encode_image_raw(
+        &mut self,
+        pixel_patches: &[f32],
+        grid_thw: &[i32],
+    ) -> (Vec<f32>, Vec<Vec<f32>>) {
+        let empty = (Vec::new(), Vec::new());
+        if grid_thw.len() % 3 != 0 { return empty; }
+        let n_images = (grid_thw.len() / 3) as i32;
+        let n_patches = grid_thw.chunks(3).map(|c| c[0] * c[1] * c[2]).sum::<i32>();
+        if n_patches <= 0 { return empty; }
+
+        let mut n_merged: i32 = 0;
+        let mut out_dim: i32 = 0;
+        let mut n_deepstack: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_image_raw(
+                self.ctx,
+                pixel_patches.as_ptr(),
+                n_patches,
+                grid_thw.as_ptr(),
+                n_images,
+                &mut n_merged,
+                &mut out_dim,
+                &mut n_deepstack,
+            )
+        };
+        if ptr.is_null() || n_merged <= 0 { return empty; }
+        let per_slab = (n_merged * out_dim) as usize;
+        let total = (1 + n_deepstack as usize) * per_slab;
+        let flat = unsafe { std::slice::from_raw_parts(ptr, total) };
+        let img = flat[..per_slab].to_vec();
+        let mut deepstack = Vec::with_capacity(n_deepstack as usize);
+        for k in 0..n_deepstack as usize {
+            let beg = (1 + k) * per_slab;
+            deepstack.push(flat[beg..beg + per_slab].to_vec());
+        }
+        (img, deepstack)
+    }
+
+    // ------------------------------------------------------------------
     // Reranker
     // ------------------------------------------------------------------
 

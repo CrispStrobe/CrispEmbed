@@ -162,4 +162,40 @@ extern "C" {
         n_samples:   c_int,
         out_dim:     *mut c_int,
     ) -> *const c_float;
+
+    // ------------------------------------------------------------------
+    // Image encoding (BidirLM-Omni vision tower)
+    // ------------------------------------------------------------------
+
+    /// Returns 1 if vision support is built in. Whether a *specific* GGUF
+    /// has a vision tower is determined at first `encode_image` call.
+    pub fn crispembed_has_vision(ctx: *const CrispembedContext) -> c_int;
+
+    /// Encode a flat (n_patches × 1536) pixel-patch buffer + grid_thw into
+    /// a single L2-normalized vector. Buffer owned by ctx, valid until the
+    /// next call.
+    pub fn crispembed_encode_image(
+        ctx:           *mut CrispembedContext,
+        pixel_patches: *const c_float,
+        n_patches:     c_int,
+        grid_thw:      *const i32,
+        n_images:      c_int,
+        out_dim:       *mut c_int,
+    ) -> *const c_float;
+
+    /// Raw vision tower output (un-pooled, un-normalized). Layout of the
+    /// returned buffer:
+    ///   `[image_embeds, deepstack_0, deepstack_1, …]`
+    /// each slab being `(n_merged × dim)` row-major. Total floats =
+    /// `(1 + n_deepstack) * n_merged * dim`.
+    pub fn crispembed_encode_image_raw(
+        ctx:             *mut CrispembedContext,
+        pixel_patches:   *const c_float,
+        n_patches:       c_int,
+        grid_thw:        *const i32,
+        n_images:        c_int,
+        out_n_merged:    *mut c_int,
+        out_dim:         *mut c_int,
+        out_n_deepstack: *mut c_int,
+    ) -> *const c_float;
 }

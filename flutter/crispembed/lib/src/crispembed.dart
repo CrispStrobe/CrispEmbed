@@ -71,6 +71,10 @@ class CrispEmbed {
   // Audio (BidirLM-Omni etc.) — optional, missing on builds without crisp_audio.
   CrispembedHasAudio? _hasAudioCheck;
   CrispembedEncodeAudio? _encodeAudioFn;
+  // Vision (BidirLM-Omni etc.) — always present, but the GGUF may lack vision tensors.
+  CrispembedHasVision? _hasVisionCheck;
+  CrispembedEncodeImage? _encodeImageFn;
+  CrispembedEncodeImageRaw? _encodeImageRawFn;
 
   /// Load a GGUF model file.
   ///
@@ -136,6 +140,18 @@ class CrispEmbed {
       _hasAudioCheck = null;
       _encodeAudioFn = null;
     }
+    try {
+      _hasVisionCheck = _lib.lookupFunction<CrispembedHasVisionNative, CrispembedHasVision>(
+          'crispembed_has_vision');
+      _encodeImageFn = _lib.lookupFunction<CrispembedEncodeImageNative, CrispembedEncodeImage>(
+          'crispembed_encode_image');
+      _encodeImageRawFn = _lib.lookupFunction<CrispembedEncodeImageRawNative, CrispembedEncodeImageRaw>(
+          'crispembed_encode_image_raw');
+    } catch (_) {
+      _hasVisionCheck = null;
+      _encodeImageFn = null;
+      _encodeImageRawFn = null;
+    }
   }
 
   // ------------------------------------------------------------------
@@ -161,6 +177,96 @@ class CrispEmbed {
     } finally {
       calloc.free(pcmPtr);
       calloc.free(dimPtr);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Image encoding (BidirLM-Omni vision tower)
+  // ------------------------------------------------------------------
+
+  /// Whether this build has vision support compiled in. The loaded GGUF
+  /// may still lack vision tensors — `encodeImage` returns empty in that
+  /// case.
+  bool get hasVision => _hasVisionCheck != null && _hasVisionCheck!(_ctx) != 0;
+
+  /// Encode pre-flattened pixel patches into the model's shared embedding
+  /// space (mean-pooled, L2-normalized).
+  ///
+  /// [pixelPatches] is `(n_patches, 1536)` row-major float32, produced by
+  /// the Python preprocessor (or a future Dart port of `Qwen2VLImageProcessor`).
+  /// [gridThw] is `(n_images, 3)` int32 with `(t, h, w)` per image.
+  Float32List encodeImage(Float32List pixelPatches, Int32List gridThw) {
+    _checkDisposed();
+    if (_encodeImageFn == null) return Float32List(0);
+    if (gridThw.length % 3 != 0) return Float32List(0);
+    final nImages = gridThw.length ~/ 3;
+    var nPatches = 0;
+    for (var i = 0; i < nImages; i++) {
+      nPatches += gridThw[i * 3] * gridThw[i * 3 + 1] * gridThw[i * 3 + 2];
+    }
+    if (nPatches <= 0) return Float32List(0);
+
+    final pxPtr = calloc<Float>(pixelPatches.length);
+    pxPtr.asTypedList(pixelPatches.length).setAll(0, pixelPatches);
+    final gridPtr = calloc<Int32>(gridThw.length);
+    gridPtr.asTypedList(gridThw.length).setAll(0, gridThw);
+    final dimPtr = calloc<Int32>();
+    try {
+      final ptr = _encodeImageFn!(_ctx, pxPtr, nPatches, gridPtr, nImages, dimPtr);
+      if (ptr == nullptr || dimPtr.value <= 0) return Float32List(0);
+      return Float32List.fromList(ptr.asTypedList(dimPtr.value));
+    } finally {
+      calloc.free(pxPtr);
+      calloc.free(gridPtr);
+      calloc.free(dimPtr);
+    }
+  }
+
+  /// Raw vision tower output (un-pooled, un-normalized). Returns
+  /// `(imageEmbeds, deepstackFeatures)` — each entry is a flat row-major
+  /// `(n_merged * dim)` Float32List.
+  ///
+  /// Used for parity testing against HF's BidirLMOmniVisionModel.
+  (Float32List, List<Float32List>) encodeImageRaw(
+      Float32List pixelPatches, Int32List gridThw) {
+    _checkDisposed();
+    if (_encodeImageRawFn == null) return (Float32List(0), []);
+    if (gridThw.length % 3 != 0) return (Float32List(0), []);
+    final nImages = gridThw.length ~/ 3;
+    var nPatches = 0;
+    for (var i = 0; i < nImages; i++) {
+      nPatches += gridThw[i * 3] * gridThw[i * 3 + 1] * gridThw[i * 3 + 2];
+    }
+    if (nPatches <= 0) return (Float32List(0), []);
+
+    final pxPtr = calloc<Float>(pixelPatches.length);
+    pxPtr.asTypedList(pixelPatches.length).setAll(0, pixelPatches);
+    final gridPtr = calloc<Int32>(gridThw.length);
+    gridPtr.asTypedList(gridThw.length).setAll(0, gridThw);
+    final nMergedPtr = calloc<Int32>();
+    final dimPtr = calloc<Int32>();
+    final nDsPtr = calloc<Int32>();
+    try {
+      final ptr = _encodeImageRawFn!(
+          _ctx, pxPtr, nPatches, gridPtr, nImages, nMergedPtr, dimPtr, nDsPtr);
+      if (ptr == nullptr || nMergedPtr.value <= 0) {
+        return (Float32List(0), []);
+      }
+      final perSlab = nMergedPtr.value * dimPtr.value;
+      final flat = ptr.asTypedList((1 + nDsPtr.value) * perSlab);
+      final img = Float32List.fromList(flat.sublist(0, perSlab));
+      final ds = <Float32List>[];
+      for (var k = 0; k < nDsPtr.value; k++) {
+        final beg = (1 + k) * perSlab;
+        ds.add(Float32List.fromList(flat.sublist(beg, beg + perSlab)));
+      }
+      return (img, ds);
+    } finally {
+      calloc.free(pxPtr);
+      calloc.free(gridPtr);
+      calloc.free(nMergedPtr);
+      calloc.free(dimPtr);
+      calloc.free(nDsPtr);
     }
   }
 

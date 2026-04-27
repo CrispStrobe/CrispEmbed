@@ -573,8 +573,12 @@ def main():
                     return True
                 if name.endswith(".ln_post.weight") or name.endswith("ln_post.weight"):
                     return True
-                # *attn_norm.weight, *ffn_norm.weight, *_norm.weight
+                # *attn_norm.weight, *ffn_norm.weight, *_norm.weight,
+                # plus visual.blk.*.norm{1,2}.weight (vision tower uses
+                # numbered LayerNorms — must stay f32 or ggml_mul corrupts).
                 if name.endswith("_norm.weight") or name.endswith("norm.weight"):
+                    return True
+                if ".norm" in name and name.endswith(".weight"):
                     return True
                 return False
 
@@ -681,8 +685,15 @@ def main():
                 add_tensor(name, f32(sd[hf_key]) if is_f32_only(name) else wt(sd[hf_key]))
                 return True
 
-            # Top-level tensors
-            vw(VPFX + "patch_embed.weight", "visual.patch_embed.proj.weight")
+            # Top-level tensors. patch_embed.proj.weight is a 5D Conv3d kernel
+            # (out, in, T, H, W); GGUF/ggml support up to 4 dims, so we flatten
+            # the kernel side into a single matmul axis: (out, in*T*H*W). The
+            # runtime treats it as (in_flat, out) post-reshape anyway.
+            pe_key = "visual.patch_embed.proj.weight"
+            if pe_key in sd:
+                pe_w = sd[pe_key]
+                pe_w_flat = pe_w.reshape(pe_w.shape[0], -1).contiguous()
+                add_tensor(VPFX + "patch_embed.weight", wt(pe_w_flat))
             vw(VPFX + "patch_embed.bias",   "visual.patch_embed.proj.bias")
             vw(VPFX + "pos_embed.weight",   "visual.pos_embed.weight")
 

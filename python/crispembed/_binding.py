@@ -208,6 +208,33 @@ class CrispEmbed:
             ]
             lib.crispembed_encode_audio.restype = ctypes.POINTER(ctypes.c_float)
 
+        # --- Image encoding (BidirLM-Omni vision tower) ---
+        if hasattr(lib, "crispembed_has_vision"):
+            lib.crispembed_has_vision.argtypes = [ctypes.c_void_p]
+            lib.crispembed_has_vision.restype = ctypes.c_int
+        if hasattr(lib, "crispembed_encode_image"):
+            lib.crispembed_encode_image.argtypes = [
+                ctypes.c_void_p,
+                ctypes.POINTER(ctypes.c_float),
+                ctypes.c_int,
+                ctypes.POINTER(ctypes.c_int32),
+                ctypes.c_int,
+                ctypes.POINTER(ctypes.c_int),
+            ]
+            lib.crispembed_encode_image.restype = ctypes.POINTER(ctypes.c_float)
+        if hasattr(lib, "crispembed_encode_image_raw"):
+            lib.crispembed_encode_image_raw.argtypes = [
+                ctypes.c_void_p,
+                ctypes.POINTER(ctypes.c_float),
+                ctypes.c_int,
+                ctypes.POINTER(ctypes.c_int32),
+                ctypes.c_int,
+                ctypes.POINTER(ctypes.c_int),
+                ctypes.POINTER(ctypes.c_int),
+                ctypes.POINTER(ctypes.c_int),
+            ]
+            lib.crispembed_encode_image_raw.restype = ctypes.POINTER(ctypes.c_float)
+
         # --- Prefix ---
         lib.crispembed_set_prefix.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
         lib.crispembed_set_prefix.restype = None
@@ -380,6 +407,104 @@ class CrispEmbed:
         if not hasattr(self._lib, "crispembed_has_audio"):
             return False
         return bool(self._lib.crispembed_has_audio(self._ctx))
+
+    # ------------------------------------------------------------------
+    # Image encoding (BidirLM-Omni vision tower)
+    # ------------------------------------------------------------------
+
+    def encode_image(self, image, *, processor=None, model_name: Optional[str] = None) -> np.ndarray:
+        """Encode an image into the model's shared embedding space.
+
+        Mean-pools the vision tower output across merged tokens and
+        L2-normalizes — yields a single vector cosine-comparable to
+        ``encode(text)``.
+
+        Args:
+            image: PIL.Image, file path, or numpy array (H,W,3) uint8.
+            processor: Optional pre-loaded HF image processor.
+            model_name: HF repo id of the image processor (defaults to
+              the BidirLM-Omni processor).
+
+        Returns:
+            np.ndarray of shape (output_dim,), L2-normalized. Empty if
+            the model lacks a vision tower.
+        """
+        if not hasattr(self._lib, "crispembed_encode_image"):
+            return np.empty((0,), dtype=np.float32)
+        from .image import preprocess_image  # local import — heavy deps
+        kw = {}
+        if processor is not None:
+            kw["processor"] = processor
+        if model_name is not None:
+            kw["model_name"] = model_name
+        pixel_values, grid_thw = preprocess_image(image, **kw)
+
+        n_patches = int(pixel_values.shape[0])
+        n_images = int(grid_thw.shape[0])
+        out_dim = ctypes.c_int(0)
+        ptr = self._lib.crispembed_encode_image(
+            self._ctx,
+            pixel_values.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+            ctypes.c_int(n_patches),
+            grid_thw.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+            ctypes.c_int(n_images),
+            ctypes.byref(out_dim),
+        )
+        if not ptr or out_dim.value <= 0:
+            return np.empty((0,), dtype=np.float32)
+        return np.ctypeslib.as_array(ptr, shape=(out_dim.value,)).copy()
+
+    def encode_image_raw(self, image, *, processor=None, model_name: Optional[str] = None):
+        """Run the vision tower without pooling — returns (image_embeds, deepstack_features).
+
+        ``image_embeds``: np.ndarray (n_merged, dim).
+        ``deepstack_features``: list of np.ndarrays each (n_merged, dim).
+
+        Used by tests/test_bidirlm_vision.py for parity comparisons against HF.
+        """
+        if not hasattr(self._lib, "crispembed_encode_image_raw"):
+            return np.empty((0, 0), dtype=np.float32), []
+        from .image import preprocess_image
+        kw = {}
+        if processor is not None:
+            kw["processor"] = processor
+        if model_name is not None:
+            kw["model_name"] = model_name
+        pixel_values, grid_thw = preprocess_image(image, **kw)
+
+        n_patches = int(pixel_values.shape[0])
+        n_images = int(grid_thw.shape[0])
+        n_merged = ctypes.c_int(0)
+        out_dim = ctypes.c_int(0)
+        n_deepstack = ctypes.c_int(0)
+        ptr = self._lib.crispembed_encode_image_raw(
+            self._ctx,
+            pixel_values.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+            ctypes.c_int(n_patches),
+            grid_thw.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+            ctypes.c_int(n_images),
+            ctypes.byref(n_merged),
+            ctypes.byref(out_dim),
+            ctypes.byref(n_deepstack),
+        )
+        if not ptr or n_merged.value <= 0:
+            return np.empty((0, 0), dtype=np.float32), []
+        per_slab = n_merged.value * out_dim.value
+        total = (1 + n_deepstack.value) * per_slab
+        flat = np.ctypeslib.as_array(ptr, shape=(total,)).copy()
+        image_embeds = flat[:per_slab].reshape(n_merged.value, out_dim.value)
+        deepstack = []
+        for k in range(n_deepstack.value):
+            beg = (1 + k) * per_slab
+            end = beg + per_slab
+            deepstack.append(flat[beg:end].reshape(n_merged.value, out_dim.value))
+        return image_embeds, deepstack
+
+    @property
+    def has_vision(self) -> bool:
+        if not hasattr(self._lib, "crispembed_has_vision"):
+            return False
+        return bool(self._lib.crispembed_has_vision(self._ctx))
 
     # ------------------------------------------------------------------
     # Cross-encoder reranking
