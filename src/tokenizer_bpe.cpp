@@ -132,8 +132,49 @@ embed_tokens BPETokenizer::encode(const std::string & text) const {
             ids.push_back(suffix_id_);
         }
     } else {
-        // GPT-2 byte-level BPE (Qwen3, ModernBERT)
-        ids = core_bpe::tokenize_simple(token_to_id_, merge_rank_, text);
+        // GPT-2 byte-level BPE (Qwen3, ModernBERT). Pre-split on `<|...|>`
+        // special tokens — Qwen-style vocabs have these as added tokens
+        // (e.g. <|im_start|>, <|image_pad|>, <|vision_start|>) that the
+        // base BPE would otherwise split into individual sub-word tokens.
+        // We scan for the exact string in the vocab; only known special
+        // tokens are split out, unknown <|...|>-shaped substrings fall
+        // through to the BPE byte-level path.
+        size_t pos = 0;
+        while (pos < text.size()) {
+            // Find the next *valid* special token starting at or after pos.
+            size_t scan = pos;
+            size_t special_start = std::string::npos;
+            int    special_id    = -1;
+            size_t special_len   = 0;
+            while (scan < text.size()) {
+                const size_t s = text.find("<|", scan);
+                if (s == std::string::npos) break;
+                const size_t e = text.find("|>", s + 2);
+                if (e == std::string::npos) break;
+                const std::string cand = text.substr(s, e - s + 2);
+                const auto it = token_to_id_.find(cand);
+                if (it != token_to_id_.end()) {
+                    special_start = s;
+                    special_id    = it->second;
+                    special_len   = e - s + 2;
+                    break;
+                }
+                scan = s + 2;  // try the next `<|` occurrence
+            }
+            if (special_start == std::string::npos) {
+                auto sub = core_bpe::tokenize_simple(token_to_id_, merge_rank_,
+                                                     text.substr(pos));
+                ids.insert(ids.end(), sub.begin(), sub.end());
+                break;
+            }
+            if (special_start > pos) {
+                auto sub = core_bpe::tokenize_simple(token_to_id_, merge_rank_,
+                                                     text.substr(pos, special_start - pos));
+                ids.insert(ids.end(), sub.begin(), sub.end());
+            }
+            ids.push_back(special_id);
+            pos = special_start + special_len;
+        }
 
         // For encoder models: wrap with BOS (CLS) and EOS (SEP)
         if (bos_id_ >= 0) {

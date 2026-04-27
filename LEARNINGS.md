@@ -747,6 +747,45 @@ same prompts (modulo image content), the multimodal graph is fine and
 the gap is the quant's intrinsic precision floor. If multimodal is
 lower than text-only, that's a Phase 3 bug.
 
+## BidirLM-Omni: image preprocessor parity is governed by mean/std, not the JPEG decoder
+
+When porting HF Qwen2VLImageProcessorFast to C++ for `image_preprocess.cpp`,
+the initial cosine vs HF was 0.97 — well below the ≥0.99 target. The
+intuition was "stb_image's JPEG decoder differs from PIL/libjpeg-turbo by
+a few LSBs, that propagates through the bicubic resize." That was wrong:
+
+- Adding a PIL-decoded-RGB pass-through (`crispembed_preprocess_image_rgb`,
+  skipping stb's JPEG decode entirely) moved cosine from 0.987 to 0.987.
+- Switching `bicubic_resize_u8_to_f32` to round-clamp to integer (mimicking
+  torchvision's uint8 round-trip on `tvF.resize(uint8, antialias=True)`)
+  also moved cosine from 0.987 to 0.987.
+
+The actual cause was the `image_preproc::config` defaults using OpenAI CLIP
+mean/std `[0.481, 0.458, 0.408]` / `[0.269, 0.261, 0.276]`, while
+**BidirLM-Omni's `preprocessor_config.json` specifies `mean = std = [0.5,
+0.5, 0.5]`** (the SimVL / Qwen2-VL convention that maps `[0,1]` → `[-1,1]`).
+Every normalized pixel value was off by a roughly-constant linear transform,
+which has *high* flat cosine (0.987) but huge max-abs-diff (1.19 in
+normalized space). The numbers had a strong mean-shift, which cosine
+similarity is largely insensitive to until rescaled by std.
+
+After fixing the defaults: pixel_values cosine 0.987 → 0.999989,
+encode_image embedding cosine 0.970 → 0.999984. Sub-1e-5 residual is
+sub-pixel torchvision-uint8 bicubic kernel weight quantization (PyTorch
+uses int16 weights for the uint8 AA path; we use float weights).
+
+`min_pixels` and `max_pixels` were also wrong for BidirLM-Omni (the
+defaults from Qwen2-VL: 56² and 14²·4·1280; BidirLM uses 256² and 1024²
+per the preprocessor config). For our test image these happened to land
+on the same `smart_resize` output, but a different aspect ratio could
+have produced a different grid_thw.
+
+Lesson: when matching a model's preprocessor, read the actual
+`preprocessor_config.json` from the HF repo. Don't assume CLIP defaults.
+The converter (`models/convert-decoder-embed-to-gguf.py`) now writes
+`bidirlm.vision.image_mean / image_std / min_pixels / max_pixels` into
+the GGUF so future model variants can be picked up without guessing.
+
 ## BidirLM-Omni: image-embed splice via mask + add
 
 HF does `inputs_embeds = inputs_embeds.masked_scatter(image_mask, image_embeds)`
