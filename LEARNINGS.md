@@ -644,3 +644,87 @@ The CrispEmbed Rust crate (`crispembed/`) wraps the C API via `crispembed-sys`
 The crate links dynamically (`dylib=crispembed`). Set `LD_LIBRARY_PATH` to the
 build output directory. Static linking would avoid this but requires listing
 all ggml dependencies in build.rs.
+
+## BidirLM-Omni: 3D interleaved MRoPE via ggml IMROPE
+
+HF `BidirLMOmniTextRotaryEmbedding.apply_interleaved_mrope` builds a per-token
+`freqs_t` of length `head_dim/2` from three position channels `(t, h, w)` and
+the configured `mrope_section = [s_t, s_h, s_w]` (default `[24, 20, 20]`):
+
+- Start with `freqs_t = freqs[t]` (channel 0 across the entire vector).
+- Replace indices `slice(1, 3*s_h, 3)` with `freqs[h]` at those indices.
+- Replace indices `slice(2, 3*s_w, 3)` with `freqs[w]` at those indices.
+- Anything beyond `3*s_h` (resp. `3*s_w`) stays in the t-channel.
+
+For `[24, 20, 20]` and `head_dim=128` (so 64 cos/sin pairs), this produces:
+T at positions 0, 3, …, 60, 63; H at 1, 4, …, 58; W at 2, 5, …, 59; T at 61–63
+beyond the H/W slice ends.
+
+ggml's `GGML_ROPE_TYPE_IMROPE` takes 4-channel positions `(t, h, w, e)` and
+sections `[s_t, s_h, s_w, s_e]`. Its sector check is:
+
+- `sector%3==0 && sector < 3*s_t` → `theta_t`
+- `sector%3==1 && sector < 3*s_h` → `theta_h`
+- `sector%3==2 && sector < 3*s_w` → `theta_w`
+- otherwise → `theta_e`
+
+For sections `[24, 20, 20, 0]` ggml routes sectors 61 and 62 to `theta_e`,
+whereas HF leaves them on the T channel. The fix is to **pin `pos_e = pos_t`
+per-token**: with that, `theta_e == theta_t` numerically at every sector and
+the ggml IMROPE output matches HF byte-for-byte. The position tensor passed
+to `ggml_rope_multi` therefore has shape `(4*T,)` laid out as
+`[pos_t, pos_h, pos_w, pos_t]` (the tail mirrors the head).
+
+For text-only inputs the three channels are all equal, so MRoPE collapses to
+plain NEOX RoPE — `decoder_embed.cpp` keeps using `ggml_rope_ext` on the
+text-only path to stay bit-identical with the pre-Phase-3 baseline tests.
+
+## BidirLM-Omni: decoder scheduler init was missing
+
+Before Phase 3 the decoder branch in `crispembed_init` never created a
+`ggml_backend_sched` or sized `compute_meta` — those were only set up by
+`load_model()` on the encoder branch. `decoder_encode_tokens` checks
+`(sched != nullptr && compute_meta != nullptr)` and falls back to direct
+`ggml_graph_compute` when either is null, so BidirLM-Omni text and audio
+were silently running CPU-only on Metal builds.
+
+Fix: in the decoder branch, after `load_decoder_model`, allocate
+
+```cpp
+const int graph_nodes = std::max(4096, ctx->dec->n_layer * 50 + 256);
+ctx->sched = ggml_backend_sched_new(...);
+ctx->compute_meta.resize(ggml_tensor_overhead() * graph_nodes
+                       + ggml_graph_overhead_custom(graph_nodes, false));
+```
+
+The `4096` floor is important: with image-conditioned text the graph adds an
+input mask + patch (2 ops), per-layer DeepStack adds (n_ds ops), and
+`ggml_rope_multi` instead of `ggml_rope_ext` (no node-count delta but extra
+per-tensor metadata). 28 layers × ~50 ops ≈ 1400 still fits, but the floor
+keeps headroom for future architectural growth and avoids surprising
+allocation failures. Verify with `--save-baseline` / `--compare-baseline` in
+`tests/benchmark_bidirlm.py` — text-only cosine should remain ≥ 0.99999
+against the baseline taken before this change.
+
+## BidirLM-Omni: image-embed splice via mask + add
+
+HF does `inputs_embeds = inputs_embeds.masked_scatter(image_mask, image_embeds)`
+to replace token-embed rows at every `image_token_id` placeholder with vision
+tower output. ggml has no native `masked_scatter`, so `decoder_embed.cpp`
+emulates it with two host-prepared inputs:
+
+- `in_keep_mask` shape `(1, T)` — 1.0 at text positions, 0.0 at image positions.
+- `in_patch` shape `(H, T)` — `image_embeds[k]` row at the k-th image position,
+  zeros at text positions.
+
+```
+cur = ggml_get_rows(token_embd, ids_t)
+cur = ggml_mul(cur, in_keep_mask)   // zero out image-position rows
+cur = ggml_add(cur, in_patch)       // splice image_embeds in at those rows
+```
+
+The `(1, T) * (H, T)` mul broadcasts the leading dim over H — same trick the
+vision tower uses for the 4-corner pos-embed gather. DeepStack adds use the
+same `(H, T)` patch shape, one per layer for the first `n_deepstack` layers,
+zero everywhere except at image positions; `cur = ggml_add(cur, ds_patches[il])`
+after each layer's residual+ffn output mirrors HF's `_deepstack_process`.

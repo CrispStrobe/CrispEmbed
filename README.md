@@ -279,6 +279,17 @@ score = reranker.rerank("query", "document")       # raw logit
 results = model.rerank_biencoder("query", ["doc1", "doc2", "doc3"], top_n=2)
 for r in results:
     print(f"  [{r['index']}] {r['score']:.4f}: {r['document']}")
+
+# BidirLM-Omni: text, audio, image, and image-conditioned text in one shared 2048-d space
+omni = CrispEmbed("bidirlm-omni-2.5b")
+text_vec  = omni.encode("a small cat on a chair")
+if omni.has_audio:
+    audio_vec = omni.encode_audio(pcm_f32, sr=16000)             # 1-D float32 PCM
+if omni.has_vision:
+    img_vec   = omni.encode_image("cat.jpg")                     # mean-pooled
+    img_raw, deepstack = omni.encode_image_raw("cat.jpg")        # un-pooled (n_merged, 2048)
+    # Image-conditioned text — text must contain image_token_id placeholders
+    text_with_img = omni.encode_text_with_image(prompt, "cat.jpg")
 ```
 
 Wrapper parity script:
@@ -436,6 +447,20 @@ Auto-creates a `.bench-venv` for Python dependencies.
 
 ## Architecture
 
+The model type is auto-detected from GGUF metadata at load time:
+- **Encoder models** (BERT/XLM-R/MPNet/NomicBERT/ModernBERT/GTE-v1.5/DeBERTa-v2/SPLADE) → `src/crispembed.cpp` → `encode_tokens()` / `encode_tokens_batch()`. Encoder variants auto-detect from tensor names: no `pos_embd` ⇒ RoPE (NomicBERT/ModernBERT/GTE-v1.5), `rel_attn_bias` ⇒ relative position bias (MPNet), `pre_ln` ⇒ pre-LayerNorm (ModernBERT/GTE-v1.5), `ffn_up_gate` ⇒ fused `ggml_geglu`.
+- **Decoder models** (Qwen3/Gemma3/BidirLM-Omni text and image-conditioned text) → `src/decoder_embed.cpp` → `decoder_encode_tokens()`. Detection heuristic: presence of `blk.0.ffn_gate` ⇒ decoder path.
+- **Vision** (BidirLM-Omni) → `src/bidirlm_vision.cpp`, opens lazily on the first `crispembed_encode_image*` call when `visual.*` tensors are present.
+- **Audio** (BidirLM-Omni) → `src/bidirlm_audio.cpp` wrapping the shared `crisp_audio` library, opens lazily on the first `crispembed_encode_audio` call.
+
+Tokenizer dispatch reads `tokenizer.ggml.type`: `0=WordPiece`, `1=BPE`, `2=SentencePiece`. Heuristic fallback: vocab > 100K ⇒ SentencePiece.
+
+Server (`examples/server/server.cpp`) exposes four API dialects on the same model:
+- `POST /embed` — native `{"texts": [...]}`
+- `POST /v1/embeddings` — OpenAI-compatible
+- `POST /api/embed` — Ollama batch
+- `POST /api/embeddings` — Ollama legacy single
+
 **BERT encoder** (all-MiniLM, gte, arctic-embed-xs):
 - Token + Position + Type embeddings → Post-LN transformer → Mean/CLS pooling
 
@@ -466,17 +491,18 @@ Auto-creates a `.bench-venv` for Python dependencies.
 **Gemma3 decoder** (Harrier-270M):
 - Token embeddings * sqrt(H) + RoPE → Gemma3 RMSNorm(1+w) + GQA + GeGLU → Last-token pooling
 
-**BidirLM-Omni** (BidirLM-Omni-2.5B-Embedding):
-- Text: bidirectional Qwen3 body (RoPE, GQA, RMSNorm, q_norm/k_norm, SwiGLU) → Mean pooling → 2048-d
-- Audio (when CrispAudio is available): Whisper-shape encoder (Conv2D stem + 24-layer pre-LN encoder + proj1/GELU/proj2) → Mean pooling → same 2048-d shared space, enabling cross-modal cosine similarity
-- Audio path uses the shared `crisp_audio` library from the configured CrispASR checkout; CMake auto-discovers it and `-DCRISP_AUDIO_DIR=...` can override that lookup.
-- Vision: BidirLM/Qwen2VL-style vision tower in ggml (patch embed, interpolated position embedding, rotary attention, patch merger, DeepStack). The Python binding accepts images through the HF processor. The CLI accepts already-preprocessed float32 patch rows via `--image-raw patches.f32 --grid-thw T,H,W`; direct JPG/PNG preprocessing in C++ is still future work.
-- Decoder text embedding uses `ggml_backend_sched`, matching the encoder/vision execution path while preserving baseline cosine outputs.
-- Standalone image embedding skips DeepStack materialization because pooled image vectors do not use it; raw vision output and text-with-image still compute DeepStack.
-- Local model cache convention: point `CRISPEMBED_CACHE_DIR` at your backing store and keep large GGUF/cache files out of the repo tree.
+**BidirLM-Omni** (BidirLM-Omni-2.5B-Embedding) — text + audio + image, shared 2048-d space:
+- **Text**: bidirectional Qwen3 body (RoPE, GQA, RMSNorm, q_norm/k_norm, SwiGLU) → Mean pooling → 2048-d.
+- **Audio** (when CrispAudio is available): Whisper-shape encoder (Conv2D stem + 24-layer pre-LN encoder + proj1/GELU/proj2) → Mean pooling → same 2048-d shared space. Built on the shared `crisp_audio` library from the configured CrispASR checkout (CMake auto-discovers it; override with `-DCRISP_AUDIO_DIR=…`).
+- **Vision**: BidirLM/Qwen2VL-style vision tower in ggml (patch embed, interpolated position embedding, rotary attention, patch merger, DeepStack hooks at layers 8/16/24). The Python binding accepts images through the HF Qwen2VL processor. The CLI accepts already-preprocessed float32 patch rows via `--image-raw patches.f32 --grid-thw T,H,W`; direct JPG/PNG preprocessing in C++ is still future work.
+- **Image-conditioned text**: `crispembed_encode_text_with_image()` runs the vision tower, splices `image_embeds` into `inputs_embeds` at every `image_token_id` placeholder, adds `deepstack[k]` features at the first 3 decoder layers, and uses 3D interleaved-MRoPE position ids derived from `grid_thw`. A lower-level `crispembed_encode_with_image_ids()` accepts pre-tokenized ids for clean parity with external tokenizers. See `tests/test_bidirlm_image_text.py` for the parity test against HF `BidirLMOmniModel.forward(input_ids, pixel_values, image_grid_thw)` (cosine ≥ 0.99).
+- **Pooled-only image path**: `crispembed_encode_image()` skips DeepStack materialization since the mean-pooled image vector doesn't use it; `encode_image_raw` and `encode_text_with_image` keep DeepStack on.
+- Decoder text/text+image embedding both run through `ggml_backend_sched`, matching the encoder and vision execution paths.
+
+Cache convention: point `CRISPEMBED_CACHE_DIR` at your backing store to keep large GGUF/cache files out of the repo tree (default: `~/.cache/crispembed/`).
 
 All via ggml graphs with GPU dispatch (ggml_backend_sched).
-See [PLAN.md](PLAN.md), [LEARNINGS.md](LEARNINGS.md), [PERFORMANCE.md](PERFORMANCE.md).
+See [PLAN.md](PLAN.md) for status, [LEARNINGS.md](LEARNINGS.md) for technical detail (3D MRoPE workaround, DeepStack splice via mask+add, decoder scheduler init), and [PERFORMANCE.md](PERFORMANCE.md) for benchmarks.
 
 ## Credits
 
