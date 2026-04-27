@@ -282,5 +282,14 @@ CrispEmbed/
 - [x] `crispembed_encode_text_with_image` C ABI + Python `encode_text_with_image()` wrapper
 - [x] CLI `--image-raw patches.f32 --grid-thw T,H,W` for direct patch-buffer encoding
 - [x] Decoder `ggml_backend_sched` initialization (was previously CPU-only fallback)
-- [ ] In-process C++ image preprocessor (currently Python wrapper around HF Qwen2VLImageProcessorFast)
+- [x] In-process C++ image preprocessor (`src/image_preprocess.{h,cpp}`):
+      smart_resize + Catmull-Rom bicubic+antialias + CLIP normalize + Qwen2VL patchify
+      via stb_image. Cosine ≈ 0.97 vs HF Python preprocessor (residual is JPEG decoder
+      differences PIL/libjpeg-turbo vs stb). C ABI: `crispembed_encode_image_file`,
+      `crispembed_encode_text_with_image_file`, `crispembed_preprocess_image`.
+- [x] Stale-GGUF fallbacks (`load_decoder_model`): recover image_token_id /
+      vision_start / vision_end from `tokenizer.ggml.tokens` string match,
+      spatial_merge_size from `bidirlm.vision.*`, mrope_section default to
+      [24, 20, 20] for BidirLM-Omni when decoder.* keys are missing.
+- [ ] JPEG-decoder parity (libjpeg-turbo vs stb_image — close 0.97 → 0.99 cosine)
 - [ ] Image batching in `encode_text_with_image` (HF's `image_grid_thw` already supports it)

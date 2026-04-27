@@ -286,10 +286,15 @@ text_vec  = omni.encode("a small cat on a chair")
 if omni.has_audio:
     audio_vec = omni.encode_audio(pcm_f32, sr=16000)             # 1-D float32 PCM
 if omni.has_vision:
-    img_vec   = omni.encode_image("cat.jpg")                     # mean-pooled
+    # Two preprocessing paths:
+    #   - encode_image(...)      uses HF Qwen2VL processor (tight parity with HF, requires `transformers`)
+    #   - encode_image_file(...) uses the in-process C++ preprocessor (no transformers dep, ~0.97 cos vs HF)
+    img_vec   = omni.encode_image("cat.jpg")
+    img_vec_native = omni.encode_image_file("cat.jpg")
     img_raw, deepstack = omni.encode_image_raw("cat.jpg")        # un-pooled (n_merged, 2048)
     # Image-conditioned text — text must contain image_token_id placeholders
-    text_with_img = omni.encode_text_with_image(prompt, "cat.jpg")
+    text_with_img        = omni.encode_text_with_image(prompt, "cat.jpg")
+    text_with_img_native = omni.encode_text_with_image_file(prompt, "cat.jpg")
 ```
 
 Wrapper parity script:
@@ -494,7 +499,7 @@ Server (`examples/server/server.cpp`) exposes four API dialects on the same mode
 **BidirLM-Omni** (BidirLM-Omni-2.5B-Embedding) — text + audio + image, shared 2048-d space:
 - **Text**: bidirectional Qwen3 body (RoPE, GQA, RMSNorm, q_norm/k_norm, SwiGLU) → Mean pooling → 2048-d.
 - **Audio** (when CrispAudio is available): Whisper-shape encoder (Conv2D stem + 24-layer pre-LN encoder + proj1/GELU/proj2) → Mean pooling → same 2048-d shared space. Built on the shared `crisp_audio` library from the configured CrispASR checkout (CMake auto-discovers it; override with `-DCRISP_AUDIO_DIR=…`).
-- **Vision**: BidirLM/Qwen2VL-style vision tower in ggml (patch embed, interpolated position embedding, rotary attention, patch merger, DeepStack hooks at layers 8/16/24). The Python binding accepts images through the HF Qwen2VL processor. The CLI accepts already-preprocessed float32 patch rows via `--image-raw patches.f32 --grid-thw T,H,W`; direct JPG/PNG preprocessing in C++ is still future work.
+- **Vision**: BidirLM/Qwen2VL-style vision tower in ggml (patch embed, interpolated position embedding, rotary attention, patch merger, DeepStack hooks at layers 8/16/24). Two preprocessing paths: the Python binding's `encode_image(image)` uses HF `Qwen2VLImageProcessorFast` (byte-tight HF parity, requires `transformers`); `crispembed -m … --image FILE` and `model.encode_image_file(path)` use CrispEmbed's in-process C++ preprocessor (smart_resize + Catmull-Rom bicubic with antialias + OpenAI CLIP normalize + Qwen2VL patchify, via `stb_image`) — no `transformers` runtime dep, cosine ≈ 0.97 vs HF on photographs (the gap is JPEG decoder differences PIL/libjpeg-turbo vs stb).
 - **Image-conditioned text**: `crispembed_encode_text_with_image()` runs the vision tower, splices `image_embeds` into `inputs_embeds` at every `image_token_id` placeholder, adds `deepstack[k]` features at the first 3 decoder layers, and uses 3D interleaved-MRoPE position ids derived from `grid_thw`. A lower-level `crispembed_encode_with_image_ids()` accepts pre-tokenized ids for clean parity with external tokenizers. See `tests/test_bidirlm_image_text.py` for the parity test against HF `BidirLMOmniModel.forward(input_ids, pixel_values, image_grid_thw)` (cosine ≥ 0.99).
 - **Pooled-only image path**: `crispembed_encode_image()` skips DeepStack materialization since the mean-pooled image vector doesn't use it; `encode_image_raw` and `encode_text_with_image` keep DeepStack on.
 - Decoder text/text+image embedding both run through `ggml_backend_sched`, matching the encoder and vision execution paths.
