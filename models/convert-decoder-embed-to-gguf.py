@@ -642,6 +642,95 @@ def main():
             writer.add_tensor(ATPFX + "mel_window", win)
             print(f"  audio.mel_window: {win.shape}")
 
+    # ---------------------------------------------------------------------
+    # BidirLM-Omni vision tower export (Phase 3 — bidirlm_vision integration).
+    #
+    # Writes visual.* tensors with crisp_vision's expected names, plus
+    # bidirlm.vision.* hparam metadata. The tensor naming convention
+    # mirrors the audio export: `visual.patch_embed.*`, `visual.pos_embed.*`,
+    # `visual.blk.{i}.*`, `visual.merger.*`, `visual.deepstack.{0,1,2}.*`.
+    # ---------------------------------------------------------------------
+    if is_bidirlm_omni and ollama_mode is False:
+        vc = getattr(config, "vision_config", None)
+        if vc is None:
+            print("  vision: no vision_config — skipping")
+        else:
+            print("  vision: exporting BidirLM vision tower")
+            VPFX = "visual."
+
+            writer.add_uint32("bidirlm.vision.depth",            int(vc.depth))
+            writer.add_uint32("bidirlm.vision.hidden_size",      int(vc.hidden_size))
+            writer.add_uint32("bidirlm.vision.intermediate_size", int(vc.intermediate_size))
+            writer.add_uint32("bidirlm.vision.num_heads",        int(vc.num_heads))
+            writer.add_uint32("bidirlm.vision.in_channels",      int(vc.in_channels))
+            writer.add_uint32("bidirlm.vision.patch_size",       int(vc.patch_size))
+            writer.add_uint32("bidirlm.vision.spatial_merge_size", int(vc.spatial_merge_size))
+            writer.add_uint32("bidirlm.vision.temporal_patch_size", int(vc.temporal_patch_size))
+            writer.add_uint32("bidirlm.vision.out_hidden_size",  int(vc.out_hidden_size))
+            writer.add_uint32("bidirlm.vision.num_position_embeddings", int(vc.num_position_embeddings))
+            ds_idx = list(vc.deepstack_visual_indexes)
+            writer.add_array("bidirlm.vision.deepstack_visual_indexes",
+                              [int(x) for x in ds_idx])
+            print(f"  vision: {vc.depth} layers, {vc.hidden_size}d, "
+                  f"out={vc.out_hidden_size}d, deepstack={ds_idx}")
+
+            def vw(name, hf_key):
+                """Vision-tensor writer: same f32-only-for-norms-and-biases rule."""
+                if hf_key not in sd:
+                    return False
+                add_tensor(name, f32(sd[hf_key]) if is_f32_only(name) else wt(sd[hf_key]))
+                return True
+
+            # Top-level tensors
+            vw(VPFX + "patch_embed.weight", "visual.patch_embed.proj.weight")
+            vw(VPFX + "patch_embed.bias",   "visual.patch_embed.proj.bias")
+            vw(VPFX + "pos_embed.weight",   "visual.pos_embed.weight")
+
+            # ViT blocks
+            for i in range(int(vc.depth)):
+                p = f"visual.blocks.{i}."
+                q = f"{VPFX}blk.{i}."
+                for hf_suf, gg_suf in [
+                    ("norm1.weight", "norm1.weight"),
+                    ("norm1.bias",   "norm1.bias"),
+                    ("norm2.weight", "norm2.weight"),
+                    ("norm2.bias",   "norm2.bias"),
+                    ("attn.qkv.weight",  "attn_qkv.weight"),
+                    ("attn.qkv.bias",    "attn_qkv.bias"),
+                    ("attn.proj.weight", "attn_proj.weight"),
+                    ("attn.proj.bias",   "attn_proj.bias"),
+                    ("mlp.linear_fc1.weight", "ffn_fc1.weight"),
+                    ("mlp.linear_fc1.bias",   "ffn_fc1.bias"),
+                    ("mlp.linear_fc2.weight", "ffn_fc2.weight"),
+                    ("mlp.linear_fc2.bias",   "ffn_fc2.bias"),
+                ]:
+                    vw(q + gg_suf, p + hf_suf)
+
+            # Final patch merger
+            for hf_suf, gg_suf in [
+                ("norm.weight",       "norm.weight"),
+                ("norm.bias",         "norm.bias"),
+                ("linear_fc1.weight", "fc1.weight"),
+                ("linear_fc1.bias",   "fc1.bias"),
+                ("linear_fc2.weight", "fc2.weight"),
+                ("linear_fc2.bias",   "fc2.bias"),
+            ]:
+                vw(VPFX + "merger." + gg_suf, "visual.merger." + hf_suf)
+
+            # DeepStack mergers (use_postshuffle_norm=True; norm is over hidden*4096)
+            for i in range(len(ds_idx)):
+                for hf_suf, gg_suf in [
+                    ("norm.weight",       "norm.weight"),
+                    ("norm.bias",         "norm.bias"),
+                    ("linear_fc1.weight", "fc1.weight"),
+                    ("linear_fc1.bias",   "fc1.bias"),
+                    ("linear_fc2.weight", "fc2.weight"),
+                    ("linear_fc2.bias",   "fc2.bias"),
+                ]:
+                    vw(f"{VPFX}deepstack.{i}.{gg_suf}",
+                       f"visual.deepstack_merger_list.{i}.{hf_suf}")
+            print(f"  vision: {vc.depth} blocks + {len(ds_idx)} deepstack mergers exported")
+
     writer.write_header_to_file()
     writer.write_kv_data_to_file()
     writer.write_tensors_to_file()
