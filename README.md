@@ -445,6 +445,11 @@ Auto-creates a `.bench-venv` for Python dependencies.
 **Gemma3 decoder** (Harrier-270M):
 - Token embeddings * sqrt(H) + RoPE → Gemma3 RMSNorm(1+w) + GQA + GeGLU → Last-token pooling
 
+**BidirLM-Omni** (BidirLM-Omni-2.5B-Embedding):
+- Text: bidirectional Qwen3 body (RoPE, GQA, RMSNorm, q_norm/k_norm, SwiGLU) → Mean pooling → 2048-d
+- Audio (when CrispAudio is available): Whisper-shape encoder (Conv2D stem + 24-layer pre-LN encoder + proj1/GELU/proj2) → Mean pooling → same 2048-d shared space, enabling cross-modal cosine similarity
+- Audio path uses the shared `crisp_audio` library at [`../CrispASR/crisp_audio`](https://github.com/CrispStrobe/CrispASR/tree/main/crisp_audio); auto-discovered by CMake (override with `-DCRISP_AUDIO_DIR=...`).
+
 All via ggml graphs with GPU dispatch (ggml_backend_sched).
 See [PLAN.md](PLAN.md), [LEARNINGS.md](LEARNINGS.md), [PERFORMANCE.md](PERFORMANCE.md).
 
