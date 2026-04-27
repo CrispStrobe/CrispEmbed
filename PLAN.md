@@ -295,6 +295,12 @@ CrispEmbed/
       on `/tmp/cat.jpg`: pixel_values 0.999989, encode_image embedding 0.999984.
       Sub-1e-5 residual is sub-pixel torchvision-uint8 bicubic kernel quantization
       (PyTorch uses int16 weights for the uint8 AA path; we use float weights).
+- [x] **BPE special-token handling** (`src/tokenizer_bpe.cpp`): GPT-2 byte-level
+      BPE now pre-splits on `<|...|>`-shaped vocab entries (Qwen-style added
+      tokens like `<|im_start|>`, `<|image_pad|>`, `<|vision_start|>`). Unblocks
+      the fully-native `encode_text_with_image_file` path (no `transformers`
+      runtime dependency). End-to-end cosine vs HF-tokenized + HF-preproc
+      reference on q4_k: **0.999590**.
 - [x] Stale-GGUF fallbacks (`load_decoder_model`): recover image_token_id /
       vision_start / vision_end from `tokenizer.ggml.tokens` string match,
       spatial_merge_size from `bidirlm.vision.*`, mrope_section default to
