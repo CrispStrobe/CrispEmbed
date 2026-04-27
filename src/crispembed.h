@@ -229,6 +229,24 @@ CRISPEMBED_API const float * crispembed_encode_text_with_image(
         int                  n_images,
         int                * out_dim);
 
+// Lower-level variant that takes pre-tokenized int32 token ids instead of a
+// text string. Use this when you need byte-identical parity with the HF
+// reference path (it shares its tokenizer state) — it skips CrispEmbed's
+// internal BPE tokenizer entirely. `n_tokens` is the length of `token_ids`.
+//
+// Same multimodal semantics as `crispembed_encode_text_with_image` (image
+// splice + DeepStack injection + 3D MRoPE). Returns L2-normalized vector,
+// owned by ctx, valid until the next call.
+CRISPEMBED_API const float * crispembed_encode_with_image_ids(
+        crispembed_context * ctx,
+        const int32_t      * token_ids,
+        int                  n_tokens,
+        const float        * pixel_patches,
+        int                  n_patches,
+        const int32_t      * grid_thw,
+        int                  n_images,
+        int                * out_dim);
+
 // ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------

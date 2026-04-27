@@ -245,6 +245,18 @@ class CrispEmbed:
                 ctypes.POINTER(ctypes.c_int),
             ]
             lib.crispembed_encode_text_with_image.restype = ctypes.POINTER(ctypes.c_float)
+        if hasattr(lib, "crispembed_encode_with_image_ids"):
+            lib.crispembed_encode_with_image_ids.argtypes = [
+                ctypes.c_void_p,
+                ctypes.POINTER(ctypes.c_int32),
+                ctypes.c_int,
+                ctypes.POINTER(ctypes.c_float),
+                ctypes.c_int,
+                ctypes.POINTER(ctypes.c_int32),
+                ctypes.c_int,
+                ctypes.POINTER(ctypes.c_int),
+            ]
+            lib.crispembed_encode_with_image_ids.restype = ctypes.POINTER(ctypes.c_float)
 
         # --- Prefix ---
         lib.crispembed_set_prefix.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
@@ -510,6 +522,49 @@ class CrispEmbed:
             end = beg + per_slab
             deepstack.append(flat[beg:end].reshape(n_merged.value, out_dim.value))
         return image_embeds, deepstack
+
+    def encode_with_image_ids(
+        self,
+        token_ids,
+        pixel_patches: np.ndarray,
+        grid_thw: np.ndarray,
+    ) -> np.ndarray:
+        """Lower-level: image-conditioned embedding from pre-tokenized ids.
+
+        Skips the C++ BPE tokenizer entirely — useful when you need
+        byte-identical parity with an external tokenizer (e.g. HF) and
+        want to remove tokenizer-round-trip risk from a parity test.
+
+        Args:
+            token_ids: 1-D int32 array (or list) of token ids; must contain
+                the right number of image_token_id placeholders.
+            pixel_patches: float32 (n_patches, 1536) — output of
+                ``crispembed.image.preprocess_image``.
+            grid_thw: int32 (n_images, 3) with rows ``(t, h_patches, w_patches)``.
+
+        Returns:
+            np.ndarray of shape (output_dim,), L2-normalized. Empty on
+            placeholder/dim mismatch.
+        """
+        if not hasattr(self._lib, "crispembed_encode_with_image_ids"):
+            return np.empty((0,), dtype=np.float32)
+        ids = np.ascontiguousarray(token_ids, dtype=np.int32).reshape(-1)
+        pv = np.ascontiguousarray(pixel_patches, dtype=np.float32)
+        gt = np.ascontiguousarray(grid_thw, dtype=np.int32)
+        out_dim = ctypes.c_int(0)
+        ptr = self._lib.crispembed_encode_with_image_ids(
+            self._ctx,
+            ids.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+            ctypes.c_int(int(ids.size)),
+            pv.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+            ctypes.c_int(int(pv.shape[0])),
+            gt.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+            ctypes.c_int(int(gt.shape[0])),
+            ctypes.byref(out_dim),
+        )
+        if not ptr or out_dim.value <= 0:
+            return np.empty((0,), dtype=np.float32)
+        return np.ctypeslib.as_array(ptr, shape=(out_dim.value,)).copy()
 
     def encode_text_with_image(
         self,

@@ -86,7 +86,7 @@ def hf_text_with_image(model_id: str, image, prompts: list[str]):
     grid_thw_pt = torch.from_numpy(grid_thw_np).to(torch.long)
 
     out_vecs = []
-    out_input_strs = []
+    out_token_id_seqs = []
     for p in prompts:
         # Build "<vision_start><image_pad>*n_merged<vision_end>{prompt}" — an
         # image-and-caption template the model was pretrained on.
@@ -107,49 +107,34 @@ def hf_text_with_image(model_id: str, image, prompts: list[str]):
         pooled = (h * m[:, None]).sum(0) / m.sum().clamp(min=1)
         v = torch.nn.functional.normalize(pooled, dim=-1).cpu().numpy()
         out_vecs.append(v)
-        # Reconstruct the same template as a string for CrispEmbed input.
-        # The CrispEmbed tokenizer must produce the same token-id sequence.
-        out_input_strs.append(tokenizer.decode(ids, skip_special_tokens=False))
-    return np.stack(out_vecs), pixel_values_np, grid_thw_np, out_input_strs
+        out_token_id_seqs.append(np.asarray(ids, dtype=np.int32))
+    return np.stack(out_vecs), pixel_values_np, grid_thw_np, out_token_id_seqs
 
 
-def crispembed_text_with_image(gguf, lib, pixel_values, grid_thw, prompts_text):
-    """Run CrispEmbed's encode_text_with_image for each prompt template."""
+def crispembed_text_with_image(gguf, lib, pixel_values, grid_thw, token_id_seqs):
+    """Run CrispEmbed's pre-tokenized encode_with_image_ids for each prompt.
+
+    Using the token-id ABI (rather than encode_text_with_image) bypasses
+    CrispEmbed's BPE tokenizer, so the parity test compares the multimodal
+    graph alone — the tokenizer is a separately tested concern.
+    """
     sys.path.insert(0, "python")
     from crispembed._binding import CrispEmbed
-    import ctypes
 
     ce = CrispEmbed(gguf, lib_path=lib) if lib else CrispEmbed(gguf)
-
-    # Hook up the new entry point (not yet wrapped in the high-level class).
-    if not hasattr(ce._lib, "crispembed_encode_text_with_image"):
-        raise RuntimeError("libcrispembed lacks crispembed_encode_text_with_image — "
+    if not hasattr(ce._lib, "crispembed_encode_with_image_ids"):
+        raise RuntimeError("libcrispembed lacks crispembed_encode_with_image_ids — "
                            "rebuild against the latest src/crispembed.h.")
-    ce._lib.crispembed_encode_text_with_image.argtypes = [
-        ctypes.c_void_p, ctypes.c_char_p,
-        ctypes.POINTER(ctypes.c_float), ctypes.c_int,
-        ctypes.POINTER(ctypes.c_int32), ctypes.c_int,
-        ctypes.POINTER(ctypes.c_int),
-    ]
-    ce._lib.crispembed_encode_text_with_image.restype = ctypes.POINTER(ctypes.c_float)
 
     pv = np.ascontiguousarray(pixel_values, dtype=np.float32)
     gt = np.ascontiguousarray(grid_thw, dtype=np.int32)
-    n_patches = int(pv.shape[0])
-    n_images = int(gt.shape[0])
 
     out = []
-    for s in prompts_text:
-        out_dim = ctypes.c_int(0)
-        ptr = ce._lib.crispembed_encode_text_with_image(
-            ce._ctx, s.encode("utf-8"),
-            pv.ctypes.data_as(ctypes.POINTER(ctypes.c_float)), ctypes.c_int(n_patches),
-            gt.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)), ctypes.c_int(n_images),
-            ctypes.byref(out_dim),
-        )
-        if not ptr or out_dim.value <= 0:
-            raise RuntimeError(f"encode_text_with_image returned no data for '{s[:40]}…'")
-        out.append(np.ctypeslib.as_array(ptr, shape=(out_dim.value,)).copy())
+    for ids in token_id_seqs:
+        v = ce.encode_with_image_ids(ids, pv, gt)
+        if v.size == 0:
+            raise RuntimeError(f"encode_with_image_ids returned no data (n_tokens={len(ids)})")
+        out.append(v)
     return np.stack(out)
 
 
@@ -172,11 +157,12 @@ def main():
         return 1
 
     print("HF reference (full BidirLMOmniModel)...")
-    hf, pv, gt, prompt_strs = hf_text_with_image(args.model, args.image, prompts)
+    hf, pv, gt, token_id_seqs = hf_text_with_image(args.model, args.image, prompts)
     print(f"  HF embed shape: {hf.shape}; pixel_values: {pv.shape}; grid_thw: {gt.tolist()}")
+    print(f"  token-id seq lengths: {[len(s) for s in token_id_seqs]}")
 
-    print("CrispEmbed (encode_text_with_image)...")
-    ce = crispembed_text_with_image(args.gguf, args.lib, pv, gt, prompt_strs)
+    print("CrispEmbed (encode_with_image_ids)...")
+    ce = crispembed_text_with_image(args.gguf, args.lib, pv, gt, token_id_seqs)
     print(f"  CE embed shape: {ce.shape}")
 
     if hf.shape != ce.shape:
