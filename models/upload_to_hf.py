@@ -433,8 +433,49 @@ MODELS = {
         "langs": ["multilingual"],
         "desc": "BidirLM-Omni 2.5B — text-only GGUF. Qwen3-derived bidirectional encoder, 2048-d shared embedding space, 90+ languages. The upstream model's audio + vision towers are NOT included in this file (use the bidirlm-omni-2.5b-GGUF variant for cross-modal embedding).",
         "text_only_omni": True,
+        # Cosine similarity vs HF reference on the standard 4-text test set
+        # (q8_0 at 0.9991 was Phase-1 acceptance; the rest are text-only).
+        "parity": {
+            "f16":  0.9998,
+            "q8_0": 0.9991,
+            "q6_k": 0.9939,
+            "q5_k": 0.9831,
+            "q4_k": 0.9374,
+        },
     },
 }
+
+
+def _parity_table(m):
+    """Render a parity-vs-HF-reference table if the model entry declares one."""
+    p = m.get("parity")
+    if not p:
+        return ""
+    rows = "\n".join(
+        f"| {q} | {p[q]:.4f} |" for q in ("f16", "q8_0", "q6_k", "q5_k", "q4_k") if q in p
+    )
+    note = ""
+    # Soft warning if any quant falls below 0.99 (the typical retrieval-quality bar).
+    low = [q for q, c in p.items() if c < 0.99]
+    if low:
+        note = (
+            "\n*Note:* "
+            + ", ".join(f"`{q}` ({p[q]:.3f})" for q in low)
+            + " falls below the 0.99 cosine-vs-reference bar. "
+            + "Embeddings are still functionally usable for retrieval (>0.9 means "
+            + "directionally correct) but small differences in nearest-neighbor "
+            + "rankings vs the upstream f32 reference are expected.\n"
+        )
+    return f"""
+## Parity vs HuggingFace reference
+
+Cosine similarity on a 4-text fixed test set (English, sentence-transformers
+default normalization) for each quant:
+
+| Quant | Cosine |
+|------|-------:|
+{rows}
+{note}"""
 
 
 def make_readme(model_name, files_info):
@@ -535,6 +576,7 @@ GGUF format of [{m["base_model"]}](https://huggingface.co/{m["base_model"]}) for
 | File | Quantization | Size |
 |------|-------------|------|
 {file_rows}
+{_parity_table(m)}
 
 ## Quick Start
 
