@@ -3,9 +3,9 @@
 
 Usage:
   python tests/test_cli_parity.py --cli build-cuda/crispembed.exe \
-      --dense-model /path/to/all-MiniLM-L6-v2.gguf \
-      --retrieval-model /path/to/bge-m3.gguf \
-      --reranker-model /path/to/bge-reranker-v2-m3.gguf
+      --dense-model "$CRISPEMBED_DENSE_MODEL" \
+      --retrieval-model "$CRISPEMBED_RETRIEVAL_MODEL" \
+      --reranker-model "$CRISPEMBED_RERANKER_MODEL"
 """
 
 from __future__ import annotations

@@ -307,7 +307,7 @@ struct graph_outputs {
     std::vector<int> deepstack_layer_index;   // which layer each deepstack out came from
 };
 
-graph_outputs build_graph(context& ctx, int n_patches) {
+graph_outputs build_graph(context& ctx, int n_patches, bool include_deepstack) {
     const auto& hp = ctx.m.hp;
     const int H = (int)hp.hidden_size;
     const int n_heads = (int)hp.num_heads;
@@ -457,7 +457,7 @@ graph_outputs build_graph(context& ctx, int n_patches) {
         x = ggml_add(g, residual, y);
 
         // DeepStack hook — fires when this layer index appears in deepstack_indexes.
-        for (size_t k = 0; k < ctx.m.deepstack.size(); k++) {
+        for (size_t k = 0; include_deepstack && k < ctx.m.deepstack.size(); k++) {
             if ((int)il != hp.deepstack_indexes[k]) continue;
             // PostShuffle merger: reshape first (4 patches → one merged token),
             // then norm over the merged H*4 dim.
@@ -572,7 +572,8 @@ void free_(context& ctx) {
 bool encode(context& ctx,
             const float* pixel_patches, int n_patches,
             const int32_t* grid_thw, int n_images,
-            encode_result& out) {
+            encode_result& out,
+            bool include_deepstack) {
     if (!grid_thw || n_images <= 0 || n_patches <= 0 || !pixel_patches) return false;
 
     const auto& hp = ctx.m.hp;
@@ -602,7 +603,7 @@ bool encode(context& ctx,
     host_prep prep;
     compute_host_inputs(hp, grid_thw, n_images, prep);
 
-    graph_outputs gout = build_graph(ctx, n_patches);
+    graph_outputs gout = build_graph(ctx, n_patches, include_deepstack);
     ggml_cgraph* gf = gout.gf;
 
     ggml_backend_sched_reset(ctx.sched);

@@ -58,6 +58,8 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --sparse         encode sparse term-weight vectors\n");
     fprintf(stderr, "  --colbert        encode ColBERT per-token vectors\n");
     fprintf(stderr, "  --audio FILE     encode raw 16 kHz mono float32 PCM (.raw); cross-modal embedding\n");
+    fprintf(stderr, "  --image-raw FILE encode preprocessed image patches as float32 rows\n");
+    fprintf(stderr, "  --grid-thw T,H,W image patch grid for --image-raw\n");
     fprintf(stderr, "  --rerank QUERY   cross-encoder rerank documents against QUERY\n");
     fprintf(stderr, "  --biencoder QUERY  bi-encoder rerank documents against QUERY\n");
     fprintf(stderr, "  --top-n N        limit rerank output to top N documents\n");
@@ -90,6 +92,8 @@ int main(int argc, char ** argv) {
     bool sparse_mode = false;
     bool colbert_mode = false;
     std::string audio_path;  // .raw float32 16 kHz mono PCM
+    std::string image_raw_path;  // preprocessed float32 patches, n_patches x 1536
+    std::string grid_thw_arg;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-m") == 0 && i + 1 < argc) {
@@ -120,6 +124,10 @@ int main(int argc, char ** argv) {
             top_n = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--audio") == 0 && i + 1 < argc) {
             audio_path = argv[++i];
+        } else if (strcmp(argv[i], "--image-raw") == 0 && i + 1 < argc) {
+            image_raw_path = argv[++i];
+        } else if (strcmp(argv[i], "--grid-thw") == 0 && i + 1 < argc) {
+            grid_thw_arg = argv[++i];
         } else if (strcmp(argv[i], "--auto-download") == 0) {
             auto_download = true;
         } else if (strcmp(argv[i], "--list-models") == 0) {
@@ -150,8 +158,10 @@ int main(int argc, char ** argv) {
     mode_count += colbert_mode ? 1 : 0;
     mode_count += !rerank_query.empty() ? 1 : 0;
     mode_count += !biencoder_query.empty() ? 1 : 0;
+    mode_count += !audio_path.empty() ? 1 : 0;
+    mode_count += !image_raw_path.empty() ? 1 : 0;
     if (mode_count > 1) {
-        fprintf(stderr, "error: choose only one of --sparse, --colbert, --rerank, or --biencoder\n");
+        fprintf(stderr, "error: choose only one of --sparse, --colbert, --rerank, --biencoder, --audio, or --image-raw\n");
         return 1;
     }
 
@@ -216,6 +226,82 @@ int main(int argc, char ** argv) {
                    crispembed_has_sparse(ctx),
                    crispembed_has_colbert(ctx),
                    crispembed_is_reranker(ctx));
+        }
+        crispembed_free(ctx);
+        return 0;
+    }
+
+    // Image encoding from preprocessed BidirLM/Qwen2VL patch buffers.
+    if (!image_raw_path.empty()) {
+        if (grid_thw_arg.empty()) {
+            fprintf(stderr, "error: --image-raw requires --grid-thw T,H,W\n");
+            crispembed_free(ctx);
+            return 1;
+        }
+        int t = 0, h = 0, w = 0;
+        if (std::sscanf(grid_thw_arg.c_str(), "%d,%d,%d", &t, &h, &w) != 3 ||
+            t <= 0 || h <= 0 || w <= 0) {
+            fprintf(stderr, "error: invalid --grid-thw '%s' (expected T,H,W)\n",
+                    grid_thw_arg.c_str());
+            crispembed_free(ctx);
+            return 1;
+        }
+
+        FILE * imf = std::fopen(image_raw_path.c_str(), "rb");
+        if (!imf) {
+            fprintf(stderr, "error: cannot open image patch file '%s'\n", image_raw_path.c_str());
+            crispembed_free(ctx);
+            return 1;
+        }
+        std::fseek(imf, 0, SEEK_END);
+        long sz = std::ftell(imf);
+        std::fseek(imf, 0, SEEK_SET);
+        const int patch_dim = 1536;
+        if (sz <= 0 || sz % (long)(sizeof(float) * patch_dim) != 0) {
+            fprintf(stderr,
+                    "error: '%s' is not float32 patch rows of width %d (size=%ld)\n",
+                    image_raw_path.c_str(), patch_dim, sz);
+            std::fclose(imf);
+            crispembed_free(ctx);
+            return 1;
+        }
+        const int n_patches = (int)(sz / (long)(sizeof(float) * patch_dim));
+        std::vector<float> patches((size_t)n_patches * patch_dim);
+        if (std::fread(patches.data(), sizeof(float), patches.size(), imf) != patches.size()) {
+            fprintf(stderr, "error: short read on '%s'\n", image_raw_path.c_str());
+            std::fclose(imf);
+            crispembed_free(ctx);
+            return 1;
+        }
+        std::fclose(imf);
+        if (n_patches != t * h * w) {
+            fprintf(stderr,
+                    "error: --grid-thw implies %d patches but file has %d rows\n",
+                    t * h * w, n_patches);
+            crispembed_free(ctx);
+            return 1;
+        }
+
+        int32_t grid_thw[3] = { t, h, w };
+        int dim = 0;
+        const float * vec = crispembed_encode_image(ctx, patches.data(), n_patches,
+                                                    grid_thw, 1, &dim);
+        if (!vec || dim <= 0) {
+            fprintf(stderr, "error: image encoding failed (model lacks vision tower?)\n");
+            crispembed_free(ctx);
+            return 1;
+        }
+        if (json_output) {
+            printf("{\"image\": \"%s\", \"grid_thw\": [%d, %d, %d], \"embedding\": [",
+                   json_escape(image_raw_path).c_str(), t, h, w);
+            for (int j = 0; j < dim; ++j) {
+                printf("%.6f%s", vec[j], j + 1 < dim ? ", " : "");
+            }
+            printf("]}\n");
+        } else {
+            for (int j = 0; j < dim; ++j) {
+                printf("%.6f%s", vec[j], j + 1 < dim ? " " : "\n");
+            }
         }
         crispembed_free(ctx);
         return 0;

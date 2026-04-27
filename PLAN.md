@@ -212,7 +212,7 @@ CrispEmbed/
   - cos = 0.999999–1.000000 cross-engine on all models
 - [x] Demo apps (Python + Rust) for both CrispEmbed and CrispASR
 
-### Architecture support (10 total)
+### Architecture support (11 + omnimodal)
 
 | Architecture | Status | Key features | Example models |
 |---|---|---|---|
@@ -225,6 +225,10 @@ CrispEmbed/
 | DeBERTa-v2 encoder | Partial | Post-LN, c2c only (no c2p/p2c disentangled) | mxbai-rerank (converter works) |
 | Qwen3 decoder | Complete | RMSNorm, SwiGLU, RoPE, GQA, causal mask | Octen, F2LLM, Jina v5, Harrier-0.6B |
 | Gemma3 decoder | Complete | Gemma RMSNorm(1+w), GeGLU, embed*sqrt(H) | Harrier-270M |
+| BidirLM-Omni text | Complete (cos≥0.999) | Bidirectional Qwen3 body, mean-pool, MRoPE-aware (text-only collapses to NEOX) | BidirLM-Omni-2.5B-Embedding |
+| BidirLM-Omni audio | Complete (cos=0.995) | crisp_audio Whisper-shape encoder, mean-pool to shared 2048-d | BidirLM-Omni-2.5B-Embedding |
+| BidirLM-Omni vision | Complete (cos=0.999) | Qwen2VL ViT, 4-corner pos-embed gather, 2D rotate-half RoPE, patch merger + DeepStack | BidirLM-Omni-2.5B-Embedding |
+| BidirLM-Omni text+image | Phase 3 (parity test in `tests/test_bidirlm_image_text.py`) | DeepStack injection at first 3 decoder layers, 3D interleaved-MRoPE positions | BidirLM-Omni-2.5B-Embedding |
 
 ### Bindings and platforms
 
@@ -244,11 +248,12 @@ CrispEmbed/
 
 | Gap | Impact | Effort | Notes |
 |---|---|---|---|
-| Image embedding (CLIP) | Medium | High | New modality — vision encoder, image preprocessing |
+| CLIP-style image embedding | Medium | Medium | Pure-vision tower exists for BidirLM-Omni; CLIP would reuse the patch-embed + ViT scaffolding with its own preprocessor and contrastive head |
+| In-process image preprocessing (C++) | Medium | Medium | Currently relies on HF `Qwen2VLImageProcessorFast` in Python; need a C++ port of `smart_resize + normalize + patchify` for the CLI / mobile bindings |
 | SPLADE sparse model | Medium | Medium | Different sparse architecture from BGE-M3 |
 | DeBERTa full disentangled | Low | High | c2p/p2c need per-layer position projections in ggml graph |
 | Nomic v2 MoE | Low | High | MoE routing layer in encoder |
-| Qwen3-VL multimodal | Low | Very High | Vision encoder + cross-attention |
+| Qwen3-VL multimodal | Low | High | Reuse BidirLM-Omni vision tower + DeepStack scaffolding; main delta is vision_config keys + cross-attention layout |
 | Qwen3 4B/8B | Low | Low | Existing decoder path, just needs memory for larger models |
 
 ### CrispEmbed advantages over fastembed-rs
@@ -267,3 +272,15 @@ CrispEmbed/
 
 - True batched graph for decoder models
 - KV cache for prefix-shared decoder batches
+
+### Multimodal status (April 2026)
+
+- [x] BidirLM-Omni text path through `decoder_embed.cpp` (cos ≥ 0.999 vs HF)
+- [x] BidirLM-Omni audio path through `bidirlm_audio.cpp` + crisp_audio (cos = 0.995 vs HF)
+- [x] BidirLM-Omni vision tower in `bidirlm_vision.cpp` (cos ≥ 0.999 vs HF, image_embeds + 3 deepstack slabs)
+- [x] DeepStack injection + 3D interleaved-MRoPE in `decoder_embed.cpp` (Phase 3)
+- [x] `crispembed_encode_text_with_image` C ABI + Python `encode_text_with_image()` wrapper
+- [x] CLI `--image-raw patches.f32 --grid-thw T,H,W` for direct patch-buffer encoding
+- [x] Decoder `ggml_backend_sched` initialization (was previously CPU-only fallback)
+- [ ] In-process C++ image preprocessor (currently Python wrapper around HF Qwen2VLImageProcessorFast)
+- [ ] Image batching in `encode_text_with_image` (HF's `image_grid_thw` already supports it)

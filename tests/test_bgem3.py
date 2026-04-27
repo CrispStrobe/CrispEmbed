@@ -4,11 +4,11 @@
 Usage:
   # 1. Convert the model first:
   python models/convert-bert-to-gguf.py --model BAAI/bge-m3 \
-      --output ~/.cache/crispembed/bge-m3.gguf --crisp
+      --output $CRISPEMBED_CACHE_DIR/bge-m3.gguf --crisp
 
   # 2. Run this test:
   python tests/test_bgem3.py \
-      --gguf ~/.cache/crispembed/bge-m3.gguf \
+      --gguf $CRISPEMBED_CACHE_DIR/bge-m3.gguf \
       --binary ./build/crispembed
 
   pip install FlagEmbedding sentence-transformers

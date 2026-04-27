@@ -4,11 +4,11 @@
 Usage:
   # Convert first:
   python models/convert-bert-to-gguf.py --model BAAI/bge-reranker-v2-m3 \
-      --output ~/.cache/crispembed/bge-reranker-v2-m3.gguf --crisp
+      --output $CRISPEMBED_CACHE_DIR/bge-reranker-v2-m3.gguf --crisp
 
   # Run test:
   python tests/test_reranker.py \
-      --gguf ~/.cache/crispembed/bge-reranker-v2-m3.gguf \
+      --gguf $CRISPEMBED_CACHE_DIR/bge-reranker-v2-m3.gguf \
       --lib build/libcrispembed.so
 
   pip install FlagEmbedding

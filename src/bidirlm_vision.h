@@ -110,7 +110,8 @@ struct encode_result {
 bool encode(context& ctx,
             const float* pixel_patches, int n_patches,
             const int32_t* grid_thw, int n_images,
-            encode_result& out);
+            encode_result& out,
+            bool include_deepstack = true);
 
 void encode_result_free(encode_result& r);
 

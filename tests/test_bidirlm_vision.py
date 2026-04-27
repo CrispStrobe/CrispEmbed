@@ -7,8 +7,8 @@ so weight loading is fast.
 
     python tests/test_bidirlm_vision.py \
         --model BidirLM/BidirLM-Omni-2.5B-Embedding \
-        --gguf  ~/.cache/crispembed/bidirlm-omni-2.5b-f16.gguf \
-        --image samples/cat.jpg
+        --gguf  $CRISPEMBED_CACHE_DIR/bidirlm-omni-2.5b-f16.gguf \
+        --image $CRISPEMBED_BIDIRLM_IMAGE
 
 Reports two numbers:
   * `image_embeds`        — final-merger output, per-token cosine averaged.

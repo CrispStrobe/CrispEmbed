@@ -1,7 +1,7 @@
 // bidirlm_audio.cpp — thin wrapper that adapts crisp_audio for BidirLM-Omni
 // in CrispEmbed.
 //
-// crisp_audio (from ../CrispASR/crisp_audio) does the heavy lifting: log-mel,
+// crisp_audio (from the configured CrispASR checkout) does the heavy lifting: log-mel,
 // conv stem, transformer encoder, projection. This file:
 //
 //   1. Recognizes a BidirLM-Omni audio GGUF at load time.

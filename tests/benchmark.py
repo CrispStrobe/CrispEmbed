@@ -8,7 +8,7 @@ Measures:
 
 Usage:
     python tests/benchmark.py --binary ./build/crispembed \
-        --gguf-dir /path/to/ggufs \
+        --gguf-dir "$CRISPEMBED_GGUF_DIR" \
         --model all-MiniLM-L6-v2
 """
 

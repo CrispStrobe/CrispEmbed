@@ -3,7 +3,7 @@
 """Test all converted CrispEmbed models against HuggingFace references.
 
 Usage:
-    python tests/test_all_models.py --binary ./build/crispembed --gguf-dir /path/to/ggufs
+    python tests/test_all_models.py --binary ./build/crispembed --gguf-dir "$CRISPEMBED_GGUF_DIR"
 
 Automatically discovers .gguf files and maps them to HF model IDs.
 """

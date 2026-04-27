@@ -14,8 +14,8 @@ normalize. Pass criterion: cosine similarity ≥ 0.99 on every prompt.
 Usage:
     python tests/test_bidirlm_image_text.py \
         --model BidirLM/BidirLM-Omni-2.5B-Embedding \
-        --gguf  ~/.cache/crispembed/bidirlm-omni-2.5b-f16.gguf \
-        --image samples/cat.jpg
+        --gguf  $CRISPEMBED_CACHE_DIR/bidirlm-omni-2.5b-f16.gguf \
+        --image $CRISPEMBED_BIDIRLM_IMAGE
 
 Caveat: the HF model is loaded in fp32 to avoid bf16-vs-f32 numerical
 divergence between channels — we want to test our graph, not bf16

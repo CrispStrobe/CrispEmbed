@@ -14,7 +14,7 @@ Usage:
 
     # Or standalone (uses CLI with subprocess, measures per-text):
     python tests/benchmark_server.py --binary ./build/crispembed \
-        --gguf /path/to/model.gguf --model MODEL_ID
+        --gguf "$CRISPEMBED_GGUF" --model MODEL_ID
 """
 
 import argparse

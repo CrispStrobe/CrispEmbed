@@ -38,7 +38,7 @@ def main():
     if not model.has_audio:
         print(
             "ERROR: this CrispEmbed build has no audio support. Rebuild with\n"
-            "  cmake -S . -B build  (auto-discovers ../CrispASR/crisp_audio)",
+            "  cmake -S . -B build  (auto-discovers the configured CrispAudio checkout)",
             file=sys.stderr,
         )
         return 1

@@ -7,7 +7,7 @@ compares against CrispEmbed's GGUF inference.
 
     python tests/test_bidirlm_text.py \
         --model BidirLM/BidirLM-Omni-2.5B-Embedding \
-        --gguf  ~/.cache/crispembed/bidirlm-omni-2.5b-q8_0.gguf \
+        --gguf  $CRISPEMBED_CACHE_DIR/bidirlm-omni-2.5b-q8_0.gguf \
         --binary ./build/crispembed
 """
 

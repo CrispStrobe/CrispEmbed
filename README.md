@@ -66,6 +66,9 @@ Model: all-MiniLM-L6-v2. See [PERFORMANCE.md](PERFORMANCE.md) for full multi-mod
 
 **Ollama-compatible**: All 13 models export as Ollama-compatible GGUFs. Works with our [Ollama fork](https://github.com/CrispStrobe/ollama/tree/feat/xlmr-embedding) (adds XLM-R, Viterbi SentencePiece tokenizer, GELU_ERF, multi-tokenizer BERT support).
 
+**BidirLM-Omni Q4_K verified locally**: text, audio, and raw vision-patch embedding all load and emit 2048-d vectors from `bidirlm-omni-2.5b-q4_k.gguf`. Current CPU smoke benchmark on Apple M1:
+text batch of 4 = 373.2 ms, JFK audio = 618.7 ms, synthetic 2x2 vision patches = 11.0 ms. Regression gate used for graph changes: cosine >= 0.99999 and max abs diff <= 1e-3 against saved baseline vectors.
+
 ## Quick start
 
 ```bash
@@ -86,6 +89,14 @@ cmake --build build -j
 # Prefix + capability inspection
 ./build/crispembed -m model.gguf --prefix "query: " --capabilities
 
+# BidirLM-Omni text/audio/raw-vision patch embedding
+# Put local paths in a gitignored `.env.local`, then source it here.
+source .env.local
+./build/crispembed -m bidirlm-omni-2.5b "Hello world"
+./build/crispembed -m bidirlm-omni-2.5b --audio "$CRISPEMBED_BIDIRLM_AUDIO"
+./build/crispembed -m bidirlm-omni-2.5b \
+    --image-raw "$CRISPEMBED_BIDIRLM_PATCHES" --grid-thw 1,14,14
+
 # Sparse / ColBERT retrieval (BGE-M3)
 ./build/crispembed -m bge-m3.gguf --sparse "Hello world"
 ./build/crispembed -m bge-m3.gguf --colbert "Hello world"
@@ -98,9 +109,9 @@ cmake --build build -j
 
 # CLI parity test
 python tests/test_cli_parity.py --cli ./build/crispembed \
-    --dense-model /path/to/all-MiniLM-L6-v2.gguf \
-    --retrieval-model /path/to/bge-m3.gguf \
-    --reranker-model /path/to/bge-reranker-v2-m3.gguf
+    --dense-model "$CRISPEMBED_DENSE_MODEL" \
+    --retrieval-model "$CRISPEMBED_RETRIEVAL_MODEL" \
+    --reranker-model "$CRISPEMBED_RERANKER_MODEL"
 
 # Start server (model loaded once, fast repeated queries)
 ./build/crispembed-server -m model.gguf --port 8080
@@ -274,9 +285,9 @@ Wrapper parity script:
 
 ```bash
 python tests/feature_parity.py \
-  --dense-model /path/to/all-MiniLM-L6-v2.gguf \
-  --retrieval-model /path/to/bge-m3.gguf \
-  --reranker-model /path/to/bge-reranker-v2-m3.gguf
+  --dense-model "$CRISPEMBED_DENSE_MODEL" \
+  --retrieval-model "$CRISPEMBED_RETRIEVAL_MODEL" \
+  --reranker-model "$CRISPEMBED_RERANKER_MODEL"
 ```
 
 ## Rust
@@ -314,9 +325,9 @@ Wrapper parity script:
 
 ```bash
 cargo run -p crispembed --example feature_parity -- \
-  /path/to/all-MiniLM-L6-v2.gguf \
-  /path/to/bge-m3.gguf \
-  /path/to/bge-reranker-v2-m3.gguf
+  "$CRISPEMBED_DENSE_MODEL" \
+  "$CRISPEMBED_RETRIEVAL_MODEL" \
+  "$CRISPEMBED_RERANKER_MODEL"
 ```
 
 ## Dart / Flutter
@@ -325,7 +336,7 @@ cargo run -p crispembed --example feature_parity -- \
 # pubspec.yaml
 dependencies:
   crispembed:
-    path: path/to/CrispEmbed/flutter/crispembed
+    path: <local Flutter plugin path>
 ```
 
 ```dart
@@ -357,10 +368,10 @@ Wrapper parity script:
 ```bash
 cd flutter/crispembed
 dart run example/feature_parity.dart \
-  /path/to/all-MiniLM-L6-v2.gguf \
-  /path/to/bge-m3.gguf \
-  /path/to/bge-reranker-v2-m3.gguf \
-  /path/to/libcrispembed.so
+  "$CRISPEMBED_DENSE_MODEL" \
+  "$CRISPEMBED_RETRIEVAL_MODEL" \
+  "$CRISPEMBED_RERANKER_MODEL" \
+  "$CRISPEMBED_LIB"
 ```
 
 Works on iOS (Metal GPU), Android (Vulkan/NEON), macOS, Linux, Windows.
@@ -407,6 +418,16 @@ python tests/bench_rag.py --lib build/libcrispembed.so --gguf model.gguf
 # Reranking benchmark
 python tests/bench_rerank.py --lib build/libcrispembed.so \
     --embed-gguf model.gguf --reranker-gguf reranker.gguf
+
+# BidirLM-Omni text/audio/raw-vision benchmark with cosine regression check
+PYTHONPATH=python python tests/benchmark_bidirlm.py \
+    --model "$CRISPEMBED_MODEL" \
+    --lib "$CRISPEMBED_LIB" \
+    --save-baseline "$CRISPEMBED_BIDIRLM_BASELINE"
+PYTHONPATH=python python tests/benchmark_bidirlm.py \
+    --model "$CRISPEMBED_MODEL" \
+    --lib "$CRISPEMBED_LIB" \
+    --compare-baseline "$CRISPEMBED_BIDIRLM_BASELINE"
 ```
 
 Compares CrispEmbed (CLI, Python ctypes, HTTP server) against HuggingFace
@@ -448,7 +469,11 @@ Auto-creates a `.bench-venv` for Python dependencies.
 **BidirLM-Omni** (BidirLM-Omni-2.5B-Embedding):
 - Text: bidirectional Qwen3 body (RoPE, GQA, RMSNorm, q_norm/k_norm, SwiGLU) → Mean pooling → 2048-d
 - Audio (when CrispAudio is available): Whisper-shape encoder (Conv2D stem + 24-layer pre-LN encoder + proj1/GELU/proj2) → Mean pooling → same 2048-d shared space, enabling cross-modal cosine similarity
-- Audio path uses the shared `crisp_audio` library at [`../CrispASR/crisp_audio`](https://github.com/CrispStrobe/CrispASR/tree/main/crisp_audio); auto-discovered by CMake (override with `-DCRISP_AUDIO_DIR=...`).
+- Audio path uses the shared `crisp_audio` library from the configured CrispASR checkout; CMake auto-discovers it and `-DCRISP_AUDIO_DIR=...` can override that lookup.
+- Vision: BidirLM/Qwen2VL-style vision tower in ggml (patch embed, interpolated position embedding, rotary attention, patch merger, DeepStack). The Python binding accepts images through the HF processor. The CLI accepts already-preprocessed float32 patch rows via `--image-raw patches.f32 --grid-thw T,H,W`; direct JPG/PNG preprocessing in C++ is still future work.
+- Decoder text embedding uses `ggml_backend_sched`, matching the encoder/vision execution path while preserving baseline cosine outputs.
+- Standalone image embedding skips DeepStack materialization because pooled image vectors do not use it; raw vision output and text-with-image still compute DeepStack.
+- Local model cache convention: point `CRISPEMBED_CACHE_DIR` at your backing store and keep large GGUF/cache files out of the repo tree.
 
 All via ggml graphs with GPU dispatch (ggml_backend_sched).
 See [PLAN.md](PLAN.md), [LEARNINGS.md](LEARNINGS.md), [PERFORMANCE.md](PERFORMANCE.md).

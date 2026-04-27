@@ -1,7 +1,7 @@
 //! CrispEmbed Rust demo — text embedding, reranking, and RAG search.
 //!
 //! Build: cd examples/demo && cargo build --release
-//! Run:   cargo run --release -- /path/to/model.gguf
+//! Run:   cargo run --release -- "$CRISPEMBED_MODEL"
 
 use crispembed::CrispEmbed;
 
@@ -14,8 +14,8 @@ fn cosine(a: &[f32], b: &[f32]) -> f32 {
 
 fn main() {
     let model_path = std::env::args().nth(1).unwrap_or_else(|| {
-        let home = std::env::var("HOME").unwrap_or_else(|_| "/tmp".into());
-        format!("{home}/.cache/crispembed/all-MiniLM-L6-v2.gguf")
+        std::env::var("CRISPEMBED_MODEL")
+            .expect("set CRISPEMBED_MODEL or pass the GGUF path as argv[1]")
     });
 
     println!("=== CrispEmbed Rust Demo ===\n");

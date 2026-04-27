@@ -7,8 +7,8 @@ against CrispEmbed's crispembed_encode_audio() output.
 
     python tests/test_bidirlm_audio.py \
         --model BidirLM/BidirLM-Omni-2.5B-Embedding \
-        --gguf  ~/.cache/crispembed/bidirlm-omni-2.5b-q8_0.gguf \
-        --pcm   samples/jfk.raw   # f32le 16 kHz mono
+        --gguf  $CRISPEMBED_CACHE_DIR/bidirlm-omni-2.5b-q8_0.gguf \
+        --pcm   $CRISPEMBED_BIDIRLM_AUDIO   # f32le 16 kHz mono
 
 The HF reference path:
   PCM → WhisperFeatureExtractor (128 mel bins, log10 + (x+4)/4 norm)

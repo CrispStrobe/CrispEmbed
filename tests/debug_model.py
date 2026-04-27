@@ -7,14 +7,14 @@ Can also compare quantized GGUF variants against the F32 GGUF.
 Usage:
     # Compare GGUF against HuggingFace ground truth
     python tests/debug_model.py --model sentence-transformers/all-MiniLM-L6-v2 \
-        --gguf /path/to/all-MiniLM-L6-v2.gguf
+        --gguf "$CRISPEMBED_GGUF"
 
     # Auto-detect HF model from GGUF filename
-    python tests/debug_model.py --gguf /path/to/all-MiniLM-L6-v2.gguf
+    python tests/debug_model.py --gguf "$CRISPEMBED_GGUF"
 
     # Compare quantized vs F32 GGUF (no HF needed)
-    python tests/debug_model.py --gguf /path/to/model-q8_0.gguf \
-        --ref-gguf /path/to/model.gguf
+    python tests/debug_model.py --gguf "$CRISPEMBED_Q8_GGUF" \
+        --ref-gguf "$CRISPEMBED_F16_GGUF"
 
     # Just show tokenization details
     python tests/debug_model.py --model intfloat/multilingual-e5-small --tokens-only

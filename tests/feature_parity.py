@@ -2,13 +2,13 @@
 """Exercise the Python wrapper across all CrispEmbed capabilities.
 
 Usage:
-  python tests/feature_parity.py --dense-model /path/to/model.gguf
-  python tests/feature_parity.py --dense-model /path/to/model.gguf \
-      --retrieval-model /path/to/bge-m3.gguf \
-      --reranker-model /path/to/bge-reranker.gguf
+  python tests/feature_parity.py --dense-model "$CRISPEMBED_DENSE_MODEL"
+  python tests/feature_parity.py --dense-model "$CRISPEMBED_DENSE_MODEL" \
+      --retrieval-model "$CRISPEMBED_RETRIEVAL_MODEL" \
+      --reranker-model "$CRISPEMBED_RERANKER_MODEL"
 
 Environment:
-  CRISPEMBED_LIB=/path/to/libcrispembed.so|.dylib|.dll
+  CRISPEMBED_LIB=path to libcrispembed shared library
 """
 
 from __future__ import annotations

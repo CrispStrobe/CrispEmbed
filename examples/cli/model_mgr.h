@@ -8,7 +8,7 @@
 
 namespace crispembed_mgr {
 
-// Cache directory: ~/.cache/crispembed (or $CRISPEMBED_CACHE_DIR)
+// Cache directory: $CRISPEMBED_CACHE_DIR or the per-user default.
 std::string cache_dir();
 
 // Resolve a model argument to a local file path.

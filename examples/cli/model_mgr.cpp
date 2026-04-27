@@ -278,7 +278,7 @@ std::string cache_dir() {
         if (!value.empty()) return value;
     }
 
-    // Default: ~/.cache/crispembed
+    // Default: per-user cache dir unless CRISPEMBED_CACHE_DIR is set.
     std::string home;
 #ifdef _WIN32
     const char * h = std::getenv("USERPROFILE");
@@ -289,7 +289,7 @@ std::string cache_dir() {
     if (h) home = h;
 #endif
     if (home.empty()) home = "/tmp";
-    return home + "/.cache/crispembed";
+    return (std::filesystem::path(home) / ".cache" / "crispembed").string();
 }
 
 static bool file_exists(const std::string & path) {

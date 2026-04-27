@@ -1180,6 +1180,13 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
         ctx->model.hparams.n_vocab = ctx->dec->n_vocab;
         ctx->model.hparams.n_output = ctx->dec->n_embd;
 
+        const int graph_nodes = std::max(4096, ctx->dec->n_layer * 50 + 256);
+        ctx->sched = ggml_backend_sched_new(
+            ctx->backends.data(), nullptr, (int)ctx->backends.size(),
+            graph_nodes, false, false);
+        ctx->compute_meta.resize(ggml_tensor_overhead() * graph_nodes
+                               + ggml_graph_overhead_custom(graph_nodes, false));
+
         // Load BPE tokenizer from GGUF
         gguf_init_params gp2 = { true, nullptr };
         gguf_context * g2 = gguf_init_from_file(model_path, gp2);
@@ -1785,17 +1792,18 @@ namespace {
 // Layout: [image_embeds (n_merged*dim), deepstack_0, deepstack_1, ...].
 bool vision_run_and_stage(crispembed_context * ctx,
                           const float * pixel_patches, int n_patches,
-                          const int32_t * grid_thw, int n_images) {
+                          const int32_t * grid_thw, int n_images,
+                          bool include_deepstack) {
     auto * v = vision_lazy_open(ctx);
     if (!v) return false;
     bidirlm_vision::encode_result r;
     if (!bidirlm_vision::encode(*v, pixel_patches, n_patches,
-                                 grid_thw, n_images, r)) {
+                                 grid_thw, n_images, r, include_deepstack)) {
         return false;
     }
     const size_t per_slab = (size_t)r.n_merged * r.output_dim;
     const size_t total = per_slab * (1 + r.n_deepstack);
-    ctx->last_vision_out.assign(total, 0.0f);
+    ctx->last_vision_out.resize(total);
     std::memcpy(ctx->last_vision_out.data(), r.image_embeds, per_slab * sizeof(float));
     if (r.n_deepstack > 0 && r.deepstack) {
         std::memcpy(ctx->last_vision_out.data() + per_slab,
@@ -1817,7 +1825,8 @@ extern "C" const float * crispembed_encode_image(crispembed_context * ctx,
                                                   const int32_t * grid_thw,
                                                   int n_images,
                                                   int * out_dim) {
-    if (!vision_run_and_stage(ctx, pixel_patches, n_patches, grid_thw, n_images)) {
+    if (!vision_run_and_stage(ctx, pixel_patches, n_patches, grid_thw, n_images,
+                              /*include_deepstack=*/false)) {
         if (out_dim) *out_dim = 0;
         return nullptr;
     }
@@ -1856,7 +1865,8 @@ extern "C" const float * crispembed_encode_image_raw(crispembed_context * ctx,
                                                       int * out_n_merged,
                                                       int * out_dim,
                                                       int * out_n_deepstack) {
-    if (!vision_run_and_stage(ctx, pixel_patches, n_patches, grid_thw, n_images)) {
+    if (!vision_run_and_stage(ctx, pixel_patches, n_patches, grid_thw, n_images,
+                              /*include_deepstack=*/true)) {
         if (out_n_merged) *out_n_merged = 0;
         if (out_dim) *out_dim = 0;
         if (out_n_deepstack) *out_n_deepstack = 0;
@@ -1889,7 +1899,8 @@ extern "C" const float * crispembed_encode_text_with_image(
 
     // 1. Run the vision tower into a local buffer (we can't reuse ctx->last_vision_out
     //    because the decoder will overwrite ctx->last_output via the same bookkeeping).
-    if (!vision_run_and_stage(ctx, pixel_patches, n_patches, grid_thw, n_images)) {
+    if (!vision_run_and_stage(ctx, pixel_patches, n_patches, grid_thw, n_images,
+                              /*include_deepstack=*/true)) {
         return nullptr;
     }
     const int v_dim = ctx->last_vision_dim;

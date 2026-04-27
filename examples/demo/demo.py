@@ -6,7 +6,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'python')
 from crispembed import CrispEmbed
 import numpy as np
 
-MODEL = os.environ.get("CRISPEMBED_MODEL", os.path.expanduser("~/.cache/crispembed/all-MiniLM-L6-v2.gguf"))
+MODEL = os.environ.get("CRISPEMBED_MODEL")
+if not MODEL:
+    raise SystemExit("Set CRISPEMBED_MODEL to a GGUF path before running this demo.")
 LIB = os.environ.get("CRISPEMBED_LIB", None)
 
 print("=== CrispEmbed Python Demo ===\n")

@@ -7,7 +7,7 @@ output space (vision tower mean-pools merged tokens; text encoder
 mean-pools content tokens — both L2-normalize).
 
 Usage:
-    python examples/demo/bidirlm_image_text.py [path/to/image.jpg]
+    python examples/demo/bidirlm_image_text.py --image "$CRISPEMBED_BIDIRLM_IMAGE"
 
 Requires:
     - A vision-enabled GGUF (re-converted with the patch_embed flatten
