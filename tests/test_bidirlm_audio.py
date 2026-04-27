@@ -71,8 +71,14 @@ def hf_audio_embed(model_id: str, pcm: np.ndarray, sr: int = 16000) -> np.ndarra
     # Compute log-mel via the model's preprocessor.
     fe = WhisperFeatureExtractor.from_pretrained(model_id, trust_remote_code=True)
     feats = fe(pcm, sampling_rate=sr, return_tensors="pt", return_attention_mask=True)
-    input_features = feats["input_features"][0]              # (n_mels=128, T)
-    feature_lens = torch.tensor([input_features.shape[-1]], dtype=torch.long)
+    input_features = feats["input_features"][0]              # (n_mels=128, T_padded=3000)
+    # WhisperFeatureExtractor pads to nb_max_frames=3000; the true audio
+    # length is recovered from attention_mask. crisp_audio's compute_mel
+    # returns the unpadded mel of length ~T_mel = ceil(samples / hop), so
+    # we must pass that same length to HF's encoder for fair comparison.
+    feature_lens = feats["attention_mask"][0].sum().unsqueeze(0).to(torch.long)
+    # Trim input_features to match.
+    input_features = input_features[:, : int(feature_lens.item())]
 
     with torch.no_grad():
         # forward expects (input_features, feature_lens=None) — see

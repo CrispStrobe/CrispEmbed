@@ -544,6 +544,13 @@ def main():
             writer.add_uint32("bidirlm.audio.hop_length",  160)
             writer.add_uint32("bidirlm.audio.win_length",  400)
             writer.add_uint32("bidirlm.audio.sample_rate", 16000)
+            # BidirLM uses block-diagonal windowed attention over groups of
+            # (n_window_infer / (n_window*2)) post-cnn chunks; padding-frame
+            # keys are masked off. Without this the encoder would treat
+            # padding tokens and across-window tokens as fully attendable,
+            # which diverges from HF's _prepare_attention_mask. See
+            # crisp_audio/src/audio_tower.cpp for the mask construction.
+            writer.add_uint32("bidirlm.audio.attn_window_mode", 1)
 
             # Tensor name remap (HF safetensors → crisp_audio GGUF suffix).
             audio_remap_static = {
