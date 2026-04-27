@@ -420,6 +420,22 @@ MODELS = {
         "langs": ["multilingual"],
         "desc": "BidirLM-Omni 2.5B — Qwen3-derived bidirectional encoder, 2048-d shared embedding space, 90+ languages. Includes text + audio paths (audio via the shared CrispAudio library); the upstream model's vision tower is not yet supported.",
         "omni_text_audio": True,
+        # Cosine vs HF reference for the audio path (jfk.wav, 11 s mono PCM).
+        # Text-side parity matches the textonly variant.
+        "parity_audio": {
+            "f16":  0.9949,
+            "q8_0": 0.9952,
+            "q6_k": 0.9949,
+            "q5_k": 0.9945,
+            "q4_k": 0.9915,
+        },
+        "parity_text": {
+            "f16":  0.9998,
+            "q8_0": 0.9991,
+            "q6_k": 0.9939,
+            "q5_k": 0.9831,
+            "q4_k": 0.9374,
+        },
     },
     "bidirlm-omni-2.5b-textonly": {
         "base_model": "BidirLM/BidirLM-Omni-2.5B-Embedding",
@@ -447,34 +463,56 @@ MODELS = {
 
 
 def _parity_table(m):
-    """Render a parity-vs-HF-reference table if the model entry declares one."""
-    p = m.get("parity")
-    if not p:
+    """Render parity-vs-HF-reference tables if the model entry declares them.
+
+    Supports either:
+      - "parity" → single column (text)
+      - "parity_text" + "parity_audio" → two columns side by side
+    """
+    p_text  = m.get("parity_text") or m.get("parity")
+    p_audio = m.get("parity_audio")
+    if not p_text and not p_audio:
         return ""
-    rows = "\n".join(
-        f"| {q} | {p[q]:.4f} |" for q in ("f16", "q8_0", "q6_k", "q5_k", "q4_k") if q in p
-    )
+
+    quants = [q for q in ("f16", "q8_0", "q6_k", "q5_k", "q4_k")
+              if (p_text and q in p_text) or (p_audio and q in p_audio)]
+
+    if p_audio:
+        header = "| Quant | Text | Audio |\n|------|-------:|-------:|\n"
+        rows = "\n".join(
+            "| {q} | {t} | {a} |".format(
+                q=q,
+                t=f"{p_text[q]:.4f}" if (p_text and q in p_text) else "—",
+                a=f"{p_audio[q]:.4f}" if q in p_audio else "—",
+            ) for q in quants
+        )
+    else:
+        header = "| Quant | Cosine |\n|------|-------:|\n"
+        rows = "\n".join(f"| {q} | {p_text[q]:.4f} |" for q in quants)
+
     note = ""
-    # Soft warning if any quant falls below 0.99 (the typical retrieval-quality bar).
-    low = [q for q, c in p.items() if c < 0.99]
-    if low:
+    low_text  = [q for q, c in (p_text  or {}).items() if c < 0.99]
+    low_audio = [q for q, c in (p_audio or {}).items() if c < 0.99]
+    if low_text or low_audio:
+        bits = []
+        if low_text:
+            bits.append("text: " + ", ".join(f"`{q}` ({p_text[q]:.3f})" for q in low_text))
+        if low_audio:
+            bits.append("audio: " + ", ".join(f"`{q}` ({p_audio[q]:.3f})" for q in low_audio))
         note = (
-            "\n*Note:* "
-            + ", ".join(f"`{q}` ({p[q]:.3f})" for q in low)
-            + " falls below the 0.99 cosine-vs-reference bar. "
-            + "Embeddings are still functionally usable for retrieval (>0.9 means "
-            + "directionally correct) but small differences in nearest-neighbor "
-            + "rankings vs the upstream f32 reference are expected.\n"
+            "\n*Note:* below the 0.99 retrieval-quality bar — "
+            + "; ".join(bits)
+            + ". Embeddings are still functionally usable (>0.9 = directionally "
+            + "correct for similarity ranking) but expect small differences in "
+            + "nearest-neighbor results vs the upstream f32 reference.\n"
         )
     return f"""
 ## Parity vs HuggingFace reference
 
-Cosine similarity on a 4-text fixed test set (English, sentence-transformers
-default normalization) for each quant:
+Cosine similarity vs the upstream sentence-transformers reference on a fixed
+test set ({"text + audio" if p_audio else "text"}, jfk.wav for audio):
 
-| Quant | Cosine |
-|------|-------:|
-{rows}
+{header}{rows}
 {note}"""
 
 
