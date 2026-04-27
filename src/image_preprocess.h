@@ -18,11 +18,12 @@
 //   7. Patchify into (n_patches, in_C * T_patch * patch_size * patch_size)
 //      flattened rows + (1, 3) grid_thw triplet (t=1, h, w).
 //
-// PARITY: bicubic + antialias matches torchvision v2's default for tensor
-// inputs. The remaining gap vs HF (PIL → torchvision tensor conversion +
-// JPEG decoding tolerances) is sub-pixel; cosine ≥ 0.99 against HF on
-// typical photographs is the goal. The C++ path removes the runtime
-// dependency on `transformers` for CLI / mobile / server use cases.
+// PARITY: bicubic + antialias matches torchvision v2's default for uint8
+// tensor inputs (with rounded uint8 round-trip after resize). With the
+// correct mean/std/min_pixels/max_pixels for the model, cosine vs HF's
+// `Qwen2VLImageProcessorFast` lands at ~0.99998 on typical photographs;
+// the residual is sub-pixel bicubic kernel weight quantization (PyTorch
+// uses int16-quantized weights for uint8 input; we use float weights).
 
 #pragma once
 
@@ -34,18 +35,22 @@
 
 namespace image_preproc {
 
-// Default OpenAI CLIP normalization (per-channel RGB).
+// Default OpenAI CLIP normalization (per-channel RGB) — used by some VL models.
 constexpr float kCLIPMean[3] = { 0.48145466f, 0.4578275f,  0.40821073f };
 constexpr float kCLIPStd[3]  = { 0.26862954f, 0.26130258f, 0.27577711f };
 
+// Defaults for BidirLM-Omni / Qwen2-VL: mean=std=0.5 (maps [0,1] → [-1,1]),
+// min_pixels=256² (`shortest_edge`), max_pixels=1024² (`longest_edge`). Match
+// the values in the model's `preprocessor_config.json`. Other VL models
+// (e.g. CLIP-based) override mean/std via the `config` struct.
 struct config {
     int   patch_size          = 16;
     int   temporal_patch_size = 2;
     int   merge_size          = 2;
-    int   min_pixels          = 56 * 56;
-    int   max_pixels          = 14 * 14 * 4 * 1280;   // ≈ 1003520
-    float mean[3]             = { kCLIPMean[0], kCLIPMean[1], kCLIPMean[2] };
-    float std[3]              = { kCLIPStd[0],  kCLIPStd[1],  kCLIPStd[2]  };
+    int   min_pixels          = 256 * 256;     // 65536
+    int   max_pixels          = 1024 * 1024;   // 1048576
+    float mean[3]             = { 0.5f, 0.5f, 0.5f };
+    float std[3]              = { 0.5f, 0.5f, 0.5f };
 };
 
 struct result {

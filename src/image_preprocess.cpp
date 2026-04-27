@@ -156,7 +156,11 @@ void bicubic_resize_u8_to_f32(const uint8_t * src, int src_h, int src_w,
         }
     }
 
-    // Pass 2: vertical resample → (dst_h, dst_w, C) float32. Clamp to [0, 255].
+    // Pass 2: vertical resample → (dst_h, dst_w, C) float32 in [0, 255].
+    // We round to integer to mimic torchvision's uint8 resize (tvF.resize on
+    // a uint8 tensor casts to uint8 with round+clamp at the end of the AA
+    // bicubic). Skipping the round leaves sub-pixel precision but produces
+    // pixel values that diverge from HF's preprocessor by up to ~1/std.
     for (int yo = 0; yo < dst_h; yo++) {
         const int   * yidx = wy.indices.data() + (size_t)yo * wy.support;
         const float * yw   = wy.weights.data() + (size_t)yo * wy.support;
@@ -171,7 +175,8 @@ void bicubic_resize_u8_to_f32(const uint8_t * src, int src_h, int src_w,
                 }
             }
             for (int c = 0; c < channels; c++) {
-                out[c] = std::min(std::max(out[c], 0.0f), 255.0f);
+                float v = std::min(std::max(out[c], 0.0f), 255.0f);
+                out[c] = std::roundf(v);
             }
         }
     }

@@ -291,6 +291,27 @@ CRISPEMBED_API const float * crispembed_preprocess_image(
         int                * out_row_dim,
         int32_t              out_grid_thw[3]);
 
+// Preprocess an already-decoded interleaved uint8 RGB(A) buffer. Skips the
+// stb_image JPEG/PNG decode step — useful when the caller has already
+// decoded with PIL/libjpeg-turbo (matching HF Qwen2VLImageProcessorFast)
+// and wants byte-tight pixel-value parity through the resize/normalize/
+// patchify pipeline.
+//
+// `rgb` must be (height, width, channels) row-major uint8. `channels`
+// must be 3 or 4 (alpha is dropped).
+//
+// Same output contract as crispembed_preprocess_image. Buffers owned by
+// ctx, valid until the next preprocessor call.
+CRISPEMBED_API const float * crispembed_preprocess_image_rgb(
+        crispembed_context * ctx,
+        const uint8_t      * rgb,
+        int                  height,
+        int                  width,
+        int                  channels,
+        int                * out_n_patches,
+        int                * out_row_dim,
+        int32_t              out_grid_thw[3]);
+
 // ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------

@@ -275,6 +275,15 @@ class CrispEmbed:
                 ctypes.c_int32 * 3,
             ]
             lib.crispembed_preprocess_image.restype = ctypes.POINTER(ctypes.c_float)
+        if hasattr(lib, "crispembed_preprocess_image_rgb"):
+            lib.crispembed_preprocess_image_rgb.argtypes = [
+                ctypes.c_void_p,
+                ctypes.POINTER(ctypes.c_uint8),
+                ctypes.c_int, ctypes.c_int, ctypes.c_int,
+                ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),
+                ctypes.c_int32 * 3,
+            ]
+            lib.crispembed_preprocess_image_rgb.restype = ctypes.POINTER(ctypes.c_float)
 
         # --- Prefix ---
         lib.crispembed_set_prefix.argtypes = [ctypes.c_void_p, ctypes.c_char_p]

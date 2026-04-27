@@ -719,6 +719,34 @@ def main():
             print(f"  vision: {vc.depth} layers, {vc.hidden_size}d, "
                   f"out={vc.out_hidden_size}d, deepstack={ds_idx}")
 
+            # Image preprocessor scalars (Qwen2VLImageProcessorFast). These
+            # come from preprocessor_config.json, not vision_config — but we
+            # store them under bidirlm.vision.* alongside the tower metadata
+            # so the C++ preprocessor (`image_preprocess.cpp`) can read them
+            # without depending on `transformers`.
+            try:
+                from huggingface_hub import hf_hub_download
+                pp_path = hf_hub_download(repo_id=args.model,
+                                            filename="preprocessor_config.json")
+                with open(pp_path) as fp:
+                    pp_cfg = json.load(fp)
+                pp_mean = list(pp_cfg.get("image_mean", [0.5, 0.5, 0.5]))[:3]
+                pp_std  = list(pp_cfg.get("image_std",  [0.5, 0.5, 0.5]))[:3]
+                pp_size = pp_cfg.get("size", {})
+                pp_min  = int(pp_size.get("shortest_edge", 256 * 256))
+                pp_max  = int(pp_size.get("longest_edge",  1024 * 1024))
+                writer.add_array("bidirlm.vision.image_mean",
+                                  [float(x) for x in pp_mean])
+                writer.add_array("bidirlm.vision.image_std",
+                                  [float(x) for x in pp_std])
+                writer.add_uint32("bidirlm.vision.min_pixels", pp_min)
+                writer.add_uint32("bidirlm.vision.max_pixels", pp_max)
+                print(f"  vision: image_mean={pp_mean}, image_std={pp_std}, "
+                      f"min_pixels={pp_min}, max_pixels={pp_max}")
+            except Exception as e:
+                print(f"  vision: preprocessor_config.json unavailable ({e}); "
+                      f"runtime will use BidirLM-Omni defaults (mean=std=0.5).")
+
             def vw(name, hf_key):
                 """Vision-tensor writer: same f32-only-for-norms-and-biases rule."""
                 if hf_key not in sd:

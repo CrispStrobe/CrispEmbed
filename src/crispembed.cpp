@@ -2066,6 +2066,35 @@ extern "C" const float * crispembed_preprocess_image(
     return ctx->last_vision_out.data();
 }
 
+extern "C" const float * crispembed_preprocess_image_rgb(
+        crispembed_context * ctx,
+        const uint8_t * rgb, int height, int width, int channels,
+        int * out_n_patches, int * out_row_dim,
+        int32_t out_grid_thw[3]) {
+    if (out_n_patches) *out_n_patches = 0;
+    if (out_row_dim) *out_row_dim = 0;
+    if (!ctx || !rgb || height <= 0 || width <= 0
+        || (channels != 3 && channels != 4)) return nullptr;
+
+    image_preproc::config cfg;
+    if (ctx->dec && ctx->dec->spatial_merge_size > 0) {
+        cfg.merge_size = ctx->dec->spatial_merge_size;
+    }
+    image_preproc::result r;
+    if (!image_preproc::preprocess_rgb(rgb, height, width, channels, cfg, r)) {
+        return nullptr;
+    }
+    ctx->last_vision_out = std::move(r.patches);
+    if (out_n_patches) *out_n_patches = r.n_patches;
+    if (out_row_dim)   *out_row_dim   = r.row_dim;
+    if (out_grid_thw) {
+        out_grid_thw[0] = r.grid_thw[0];
+        out_grid_thw[1] = r.grid_thw[1];
+        out_grid_thw[2] = r.grid_thw[2];
+    }
+    return ctx->last_vision_out.data();
+}
+
 extern "C" const float * crispembed_encode_image_file(
         crispembed_context * ctx,
         const char * image_path,
