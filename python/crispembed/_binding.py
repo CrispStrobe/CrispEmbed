@@ -234,6 +234,17 @@ class CrispEmbed:
                 ctypes.POINTER(ctypes.c_int),
             ]
             lib.crispembed_encode_image_raw.restype = ctypes.POINTER(ctypes.c_float)
+        if hasattr(lib, "crispembed_encode_text_with_image"):
+            lib.crispembed_encode_text_with_image.argtypes = [
+                ctypes.c_void_p,
+                ctypes.c_char_p,
+                ctypes.POINTER(ctypes.c_float),
+                ctypes.c_int,
+                ctypes.POINTER(ctypes.c_int32),
+                ctypes.c_int,
+                ctypes.POINTER(ctypes.c_int),
+            ]
+            lib.crispembed_encode_text_with_image.restype = ctypes.POINTER(ctypes.c_float)
 
         # --- Prefix ---
         lib.crispembed_set_prefix.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
@@ -499,6 +510,61 @@ class CrispEmbed:
             end = beg + per_slab
             deepstack.append(flat[beg:end].reshape(n_merged.value, out_dim.value))
         return image_embeds, deepstack
+
+    def encode_text_with_image(
+        self,
+        text: str,
+        image,
+        *,
+        processor=None,
+        model_name: Optional[str] = None,
+    ) -> np.ndarray:
+        """Encode text conditioned on an image (BidirLM-Omni DeepStack).
+
+        The decoder runs over `text` with the vision tower's image_embeds
+        spliced into the token embeddings at every image_token_id placeholder
+        and DeepStack features added at the first 3 layers. Result is L2-
+        normalized in the model's shared embedding space.
+
+        `text` must contain the right number of image-pad placeholder tokens
+        (e.g. ``"<|vision_start|><|image_pad|>...<|image_pad|><|vision_end|>...""``)
+        — typically you build it via the HF chat template.
+
+        Args:
+            text: Prompt with image-pad placeholders.
+            image: PIL.Image, file path, or numpy array (H,W,3) uint8.
+            processor: Optional pre-loaded HF image processor.
+            model_name: HF repo id of the image processor (defaults to
+              the BidirLM-Omni processor).
+
+        Returns:
+            np.ndarray of shape (output_dim,), L2-normalized. Empty if
+            the model lacks a vision tower or placeholders don't match.
+        """
+        if not hasattr(self._lib, "crispembed_encode_text_with_image"):
+            return np.empty((0,), dtype=np.float32)
+        from .image import preprocess_image
+        kw = {}
+        if processor is not None:
+            kw["processor"] = processor
+        if model_name is not None:
+            kw["model_name"] = model_name
+        pixel_values, grid_thw = preprocess_image(image, **kw)
+
+        n_patches = int(pixel_values.shape[0])
+        n_images = int(grid_thw.shape[0])
+        out_dim = ctypes.c_int(0)
+        ptr = self._lib.crispembed_encode_text_with_image(
+            self._ctx, text.encode("utf-8"),
+            pixel_values.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+            ctypes.c_int(n_patches),
+            grid_thw.ctypes.data_as(ctypes.POINTER(ctypes.c_int32)),
+            ctypes.c_int(n_images),
+            ctypes.byref(out_dim),
+        )
+        if not ptr or out_dim.value <= 0:
+            return np.empty((0,), dtype=np.float32)
+        return np.ctypeslib.as_array(ptr, shape=(out_dim.value,)).copy()
 
     @property
     def has_vision(self) -> bool:

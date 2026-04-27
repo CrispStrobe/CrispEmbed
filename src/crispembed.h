@@ -206,6 +206,29 @@ CRISPEMBED_API const float * crispembed_encode_image_raw(crispembed_context * ct
                                                           int                * out_dim,
                                                           int                * out_n_deepstack);
 
+// Text-conditioned multimodal embedding. The decoder runs over `text` with
+// the vision tower's `image_embeds` rows spliced into `inputs_embeds` at
+// every `image_token_id` placeholder, and `deepstack_features[k]` added at
+// the same positions after the k-th transformer layer. 3D MRoPE position
+// ids are derived from `grid_thw`. The result is a single L2-normalized
+// vector in the model's shared embedding space.
+//
+// `text` is expected to already contain the right number of `image_token_id`
+// placeholders (`(t * h * w) / spatial_merge_size²` per image). Build it
+// with the HF chat template / Qwen2VL processor, or via `python/crispembed/image.py`
+// helpers — see examples/demo/bidirlm_image_text.py.
+//
+// Returns NULL if the model has no vision tower, no MRoPE metadata, or if
+// the placeholder count does not match the merged-token count.
+CRISPEMBED_API const float * crispembed_encode_text_with_image(
+        crispembed_context * ctx,
+        const char         * text,
+        const float        * pixel_patches,
+        int                  n_patches,
+        const int32_t      * grid_thw,
+        int                  n_images,
+        int                * out_dim);
+
 // ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------

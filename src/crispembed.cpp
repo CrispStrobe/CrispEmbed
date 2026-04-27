@@ -1868,6 +1868,112 @@ extern "C" const float * crispembed_encode_image_raw(crispembed_context * ctx,
     return ctx->last_vision_out.data();
 }
 
+extern "C" const float * crispembed_encode_text_with_image(
+        crispembed_context * ctx,
+        const char * text,
+        const float * pixel_patches, int n_patches,
+        const int32_t * grid_thw, int n_images,
+        int * out_dim) {
+    if (out_dim) *out_dim = 0;
+    if (!ctx || !text || !pixel_patches || !grid_thw || n_images <= 0) return nullptr;
+    if (!ctx->is_decoder || !ctx->dec) {
+        fprintf(stderr, "crispembed_encode_text_with_image: model is not a "
+                        "multimodal decoder.\n");
+        return nullptr;
+    }
+    if (ctx->dec->image_token_id < 0) {
+        fprintf(stderr, "crispembed_encode_text_with_image: model GGUF has no "
+                        "decoder.image_token_id — re-export with vision metadata.\n");
+        return nullptr;
+    }
+
+    // 1. Run the vision tower into a local buffer (we can't reuse ctx->last_vision_out
+    //    because the decoder will overwrite ctx->last_output via the same bookkeeping).
+    if (!vision_run_and_stage(ctx, pixel_patches, n_patches, grid_thw, n_images)) {
+        return nullptr;
+    }
+    const int v_dim = ctx->last_vision_dim;
+    const int v_merged = ctx->last_vision_n_merged;
+    const int v_nds = ctx->last_vision_n_deepstack;
+    if (v_dim != ctx->dec->n_embd) {
+        fprintf(stderr, "crispembed_encode_text_with_image: vision tower output "
+                        "dim %d != decoder hidden_size %d — model mismatch.\n",
+                        v_dim, ctx->dec->n_embd);
+        return nullptr;
+    }
+    std::vector<float> vision_buf;
+    vision_buf.swap(ctx->last_vision_out);
+    const float * image_embeds = vision_buf.data();
+    const float * deepstack    = (v_nds > 0)
+        ? vision_buf.data() + (size_t)v_merged * v_dim
+        : nullptr;
+
+    // 2. Tokenize.
+    std::string prefixed;
+    const char * enc_text = text;
+    if (!ctx->prefix.empty()) {
+        prefixed = ctx->prefix + text;
+        enc_text = prefixed.c_str();
+    }
+    embed_tokens tokens;
+    if (ctx->use_bpe)              tokens = ctx->bpe_tokenizer.encode(enc_text);
+    else if (ctx->use_sentencepiece) tokens = ctx->sp_tokenizer.encode(enc_text);
+    else                            tokens = ctx->wp_tokenizer.encode(enc_text);
+
+    // Trim padding: only keep tokens where attn_mask == 1.
+    {
+        int actual_len = 0;
+        for (int i = (int)tokens.attn_mask.size() - 1; i >= 0; i--) {
+            if (tokens.attn_mask[i]) { actual_len = i + 1; break; }
+        }
+        if (actual_len > 0 && actual_len < (int)tokens.ids.size()) {
+            tokens.ids.resize(actual_len);
+            tokens.type_ids.resize(actual_len);
+            tokens.attn_mask.resize(actual_len);
+        }
+    }
+
+    // 3. Validate placeholder count.
+    int placeholder_count = 0;
+    for (int id : tokens.ids) {
+        if (id == ctx->dec->image_token_id) placeholder_count++;
+    }
+    if (placeholder_count != v_merged) {
+        fprintf(stderr,
+                "crispembed_encode_text_with_image: text has %d image_token_id "
+                "placeholders but vision tower produced %d merged tokens.\n",
+                placeholder_count, v_merged);
+        return nullptr;
+    }
+
+    // 4. Run decoder with image conditioning.
+    dec_image_input dimg;
+    dimg.image_embeds = image_embeds;
+    dimg.deepstack    = deepstack;
+    dimg.n_image_tokens = v_merged;
+    dimg.n_deepstack  = v_nds;
+    dimg.grid_thw    = grid_thw;
+    dimg.n_images    = n_images;
+
+    auto vec = decoder_encode_tokens(*ctx->dec, ctx->backend, tokens,
+                                      ctx->n_threads, ctx->sched,
+                                      &ctx->compute_meta, &dimg);
+    if (vec.empty()) return nullptr;
+
+    // 5. Matryoshka truncation + re-normalize.
+    if (ctx->matryoshka_dim > 0 && ctx->matryoshka_dim < (int)vec.size()) {
+        vec.resize(ctx->matryoshka_dim);
+        float n = 0;
+        for (int i = 0; i < ctx->matryoshka_dim; i++) n += vec[i] * vec[i];
+        n = std::sqrt(std::max(n, 1e-12f));
+        for (int i = 0; i < ctx->matryoshka_dim; i++) vec[i] /= n;
+    }
+
+    ctx->last_output = std::move(vec);
+    if (out_dim) *out_dim = (int)ctx->last_output.size();
+    return ctx->last_output.data();
+}
+
 extern "C" void crispembed_free(crispembed_context * ctx) {
     if (!ctx) return;
 #ifdef CRISPEMBED_HAS_CRISP_AUDIO

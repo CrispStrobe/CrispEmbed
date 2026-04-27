@@ -15,3 +15,5 @@ build-blas/
 build-llamafile/
 .env
 .claude/
+target/
+crispembed.local-backup/

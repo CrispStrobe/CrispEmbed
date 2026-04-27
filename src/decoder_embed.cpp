@@ -1,5 +1,12 @@
 // decoder_embed.cpp — Qwen3/LLaMA/Gemma3 decoder embedding graph via ggml.
 // Uses ggml_backend_sched for GPU dispatch (same pattern as encoder).
+//
+// Multimodal extension (BidirLM-Omni): when `dec_image_input` is supplied,
+// the graph (a) splices `image_embeds` rows into the post-token-embed
+// hidden state at every `image_token_id` position, (b) adds
+// `deepstack[k]` rows at the same positions after the first n_deepstack
+// transformer layers, and (c) uses 3D interleaved-MRoPE position ids
+// derived from `grid_thw`. See HF BidirLMOmniModel.forward + get_rope_index.
 
 #include "decoder_embed_internal.h"
 #include "crispembed.h"
@@ -104,12 +111,107 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
 // Full-graph decoder with scheduler support (GPU + CPU)
 // ---------------------------------------------------------------------------
 
+// Build 3D MRoPE position ids in HF BidirLMOmniModel.get_rope_index style.
+// Output `pos_thw` is laid out as 4 contiguous int32 arrays of length T:
+//   [t..., h..., w..., e...]   with e == t (the "extra" channel ggml IMROPE
+// uses at sectors that fall outside the t/h/w slices when `mrope_section`
+// does not cover the full head_dim/2 — for BidirLM sections=[24,20,20] those
+// are sectors 61, 62 of the 64-pair head; pinning e=t makes ggml IMROPE
+// numerically agree with HF's apply_interleaved_mrope at those sectors).
+static void build_mrope_positions_3d(
+        const dec_model & m,
+        const embed_tokens & tokens,
+        const dec_image_input * img,
+        std::vector<int32_t> & pos_thw) {
+    const int T = (int)tokens.ids.size();
+    pos_thw.assign((size_t)4 * T, 0);
+    int32_t * pos_t = pos_thw.data();
+    int32_t * pos_h = pos_thw.data() + (size_t)T;
+    int32_t * pos_w = pos_thw.data() + (size_t)2 * T;
+    int32_t * pos_e = pos_thw.data() + (size_t)3 * T;
+
+    const int spatial_merge = std::max(1, m.spatial_merge_size);
+    const int img_tok = m.image_token_id;
+    const bool has_image = (img && img->image_embeds && img->n_image_tokens > 0
+                             && img->grid_thw && img->n_images > 0
+                             && img_tok >= 0);
+
+    int last_max = -1;
+    int img_idx = 0;
+    int st = 0;
+    while (st < T) {
+        // Find next image_token_id at or after st (only if we still have
+        // images to consume). Image tokens are assumed contiguous.
+        int ed = T;
+        if (has_image && img_idx < img->n_images) {
+            int p = st;
+            while (p < T && tokens.ids[p] != img_tok) p++;
+            if (p < T) ed = p;
+        }
+
+        // Text segment [st, ed).
+        const int text_len = ed - st;
+        const int st_idx = last_max + 1;
+        for (int i = 0; i < text_len; i++) {
+            pos_t[st + i] = st_idx + i;
+            pos_h[st + i] = st_idx + i;
+            pos_w[st + i] = st_idx + i;
+        }
+        if (text_len > 0) last_max = st_idx + text_len - 1;
+
+        if (!has_image || img_idx >= img->n_images || ed >= T) {
+            st = ed;
+            // Tail text after final image (or no images): we already filled
+            // [st, ed). If ed < T but we have no more images, treat the
+            // remainder as another text segment.
+            if (ed < T) {
+                const int tail = T - ed;
+                const int tail_st = last_max + 1;
+                for (int i = 0; i < tail; i++) {
+                    pos_t[ed + i] = tail_st + i;
+                    pos_h[ed + i] = tail_st + i;
+                    pos_w[ed + i] = tail_st + i;
+                }
+                if (tail > 0) last_max = tail_st + tail - 1;
+            }
+            break;
+        }
+
+        // Image block at [ed, ed + n_img_tok).
+        const int t_grid = img->grid_thw[img_idx * 3 + 0];
+        const int h_grid = img->grid_thw[img_idx * 3 + 1] / spatial_merge;
+        const int w_grid = img->grid_thw[img_idx * 3 + 2] / spatial_merge;
+        const int n_img_tok = t_grid * h_grid * w_grid;
+        const int img_st = last_max + 1;
+        int idx_in = 0;
+        for (int ti = 0; ti < t_grid; ti++) {
+            for (int hi = 0; hi < h_grid; hi++) {
+                for (int wi = 0; wi < w_grid; wi++) {
+                    const int p = ed + idx_in;
+                    if (p < T) {
+                        pos_t[p] = img_st + ti;
+                        pos_h[p] = img_st + hi;
+                        pos_w[p] = img_st + wi;
+                    }
+                    idx_in++;
+                }
+            }
+        }
+        last_max = img_st + std::max({t_grid, h_grid, w_grid}) - 1;
+        img_idx++;
+        st = ed + n_img_tok;
+    }
+
+    // e channel mirrors t.
+    for (int t = 0; t < T; t++) pos_e[t] = pos_t[t];
+}
+
 std::vector<float> decoder_encode_tokens(
     const dec_model & m, ggml_backend_t backend,
     const embed_tokens & tokens, int n_threads,
     ggml_backend_sched_t sched,
     std::vector<uint8_t> * compute_meta,
-    const dec_image_input * /*img*/) {  // TODO: deepstack injection (Phase 3 follow-up)
+    const dec_image_input * img) {
 
     const int T = (int)tokens.ids.size();
     const int H = m.n_embd;
@@ -119,6 +221,17 @@ std::vector<float> decoder_encode_tokens(
     const int head_dim = (m.head_dim > 0) ? m.head_dim : (q_dim / n_heads);
     q_dim = n_heads * head_dim;
     const float eps = m.rms_norm_eps;
+
+    const bool has_image = (img && img->image_embeds && img->n_image_tokens > 0
+                             && m.image_token_id >= 0);
+    // Switch to ggml_rope_multi (3D interleaved MRoPE) only when image input
+    // is present. For text-only inputs the t/h/w channels are all equal, so
+    // standard NEOX rope_ext is mathematically equivalent and keeps the
+    // existing text-only parity tests bit-identical.
+    const bool use_mrope = has_image
+                           && (m.mrope_section[0] + m.mrope_section[1]
+                               + m.mrope_section[2]) > 0;
+    const int n_ds = has_image ? std::min(img->n_deepstack, m.n_layer) : 0;
 
     // Graph context: no_alloc=true when using scheduler, false otherwise
     bool use_sched = (sched != nullptr && compute_meta != nullptr);
@@ -159,6 +272,38 @@ std::vector<float> decoder_encode_tokens(
         cur = ggml_scale(gctx, cur, m.embed_scale);
     }
 
+    // Image-embed splice: replace token-embed rows at every image_token_id
+    // position with the corresponding `image_embeds` row. We do this with a
+    // host-prepared (1, T) keep-mask (0 at image positions, 1 elsewhere) and
+    // an (H, T) patch tensor (image_embeds at image positions, 0 elsewhere).
+    // Equivalent to HF's `inputs_embeds.masked_scatter(image_mask, image_embeds)`.
+    ggml_tensor * input_keep_mask = nullptr;
+    ggml_tensor * input_patch     = nullptr;
+    if (has_image) {
+        input_keep_mask = ggml_new_tensor_2d(gctx, GGML_TYPE_F32, 1, T);
+        ggml_set_name(input_keep_mask, "in_keep_mask");
+        ggml_set_input(input_keep_mask);
+
+        input_patch = ggml_new_tensor_2d(gctx, GGML_TYPE_F32, H, T);
+        ggml_set_name(input_patch, "in_patch");
+        ggml_set_input(input_patch);
+
+        cur = ggml_mul(gctx, cur, input_keep_mask);
+        cur = ggml_add(gctx, cur, input_patch);
+    }
+
+    // DeepStack patches: per-layer (H, T) tensors holding `deepstack[k]`
+    // rows at image positions and 0 elsewhere. Added after the k-th layer's
+    // residual+ffn output. Mirrors HF BidirLMOmniTextModel deepstack hook.
+    std::vector<ggml_tensor *> ds_patches(n_ds, nullptr);
+    for (int k = 0; k < n_ds; k++) {
+        char nm[24];
+        std::snprintf(nm, sizeof(nm), "ds_patch_%d", k);
+        ds_patches[k] = ggml_new_tensor_2d(gctx, GGML_TYPE_F32, H, T);
+        ggml_set_name(ds_patches[k], nm);
+        ggml_set_input(ds_patches[k]);
+    }
+
     // Gemma3 ones tensor for (1 + weight) RMSNorm
     ggml_tensor * ones_h = nullptr;
     ggml_tensor * ones_hd = nullptr;
@@ -183,7 +328,9 @@ std::vector<float> decoder_encode_tokens(
     };
 
     // --- Position IDs for RoPE ---
-    ggml_tensor * pos = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T);
+    // Standard 1D RoPE: (T,). MRoPE / IMROPE: (4*T,) laid out [t,h,w,e].
+    const int pos_size = use_mrope ? 4 * T : T;
+    ggml_tensor * pos = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, pos_size);
     ggml_set_name(pos, "pos_ids");
     ggml_set_input(pos);
 
@@ -208,13 +355,26 @@ std::vector<float> decoder_encode_tokens(
         if (L.q_norm_w) Q = rms_norm(Q, L.q_norm_w);
         if (L.k_norm_w) K = rms_norm(K, L.k_norm_w);
 
-        int rope_mode = 2;
-        Q = ggml_rope_ext(gctx, Q, pos, nullptr,
-                           head_dim, rope_mode, 0,
-                           m.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-        K = ggml_rope_ext(gctx, K, pos, nullptr,
-                           head_dim, rope_mode, 0,
-                           m.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        if (use_mrope) {
+            int sections[GGML_MROPE_SECTIONS] = {
+                m.mrope_section[0], m.mrope_section[1], m.mrope_section[2], 0,
+            };
+            const int rope_mode = GGML_ROPE_TYPE_IMROPE;
+            Q = ggml_rope_multi(gctx, Q, pos, nullptr,
+                                head_dim, sections, rope_mode, 0,
+                                m.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+            K = ggml_rope_multi(gctx, K, pos, nullptr,
+                                head_dim, sections, rope_mode, 0,
+                                m.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        } else {
+            int rope_mode = 2;
+            Q = ggml_rope_ext(gctx, Q, pos, nullptr,
+                               head_dim, rope_mode, 0,
+                               m.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+            K = ggml_rope_ext(gctx, K, pos, nullptr,
+                               head_dim, rope_mode, 0,
+                               m.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        }
 
         // Attention: permute → scores → mask → softmax → value
         Q = ggml_cont(gctx, ggml_permute(gctx, Q, 0, 2, 1, 3));
@@ -265,6 +425,10 @@ std::vector<float> decoder_encode_tokens(
         } else {
             cur = residual;
         }
+
+        if (il < n_ds && ds_patches[il]) {
+            cur = ggml_add(gctx, cur, ds_patches[il]);
+        }
     }
 
     if (m.output_norm) cur = rms_norm(cur, m.output_norm);
@@ -272,6 +436,57 @@ std::vector<float> decoder_encode_tokens(
     ggml_set_name(cur, "decoder_out");
     ggml_set_output(cur);
     ggml_build_forward_expand(gf, cur);
+
+    // --- Build host-side input buffers ---
+    std::vector<int32_t> pos_data;
+    if (use_mrope) {
+        build_mrope_positions_3d(m, tokens, has_image ? img : nullptr, pos_data);
+    } else {
+        pos_data.resize(T);
+        for (int t = 0; t < T; t++) pos_data[t] = t;
+    }
+
+    std::vector<float> in_keep_data;
+    std::vector<float> in_patch_data;
+    std::vector<std::vector<float>> ds_patch_data;
+    if (has_image) {
+        in_keep_data.assign((size_t)T, 1.0f);
+        in_patch_data.assign((size_t)H * T, 0.0f);
+        ds_patch_data.resize(n_ds);
+        for (int k = 0; k < n_ds; k++) {
+            ds_patch_data[k].assign((size_t)H * T, 0.0f);
+        }
+
+        const int img_tok = m.image_token_id;
+        const int n_image_tokens = img->n_image_tokens;
+        const float * src_img = img->image_embeds;             // (n_image, H)
+        const float * src_ds = img->deepstack;                 // (n_ds, n_image, H)
+        int img_idx = 0;
+        for (int t = 0; t < T && img_idx < n_image_tokens; t++) {
+            if (tokens.ids[t] != img_tok) continue;
+            in_keep_data[t] = 0.0f;
+            std::memcpy(in_patch_data.data() + (size_t)t * H,
+                        src_img + (size_t)img_idx * H,
+                        (size_t)H * sizeof(float));
+            for (int k = 0; k < n_ds; k++) {
+                if (!src_ds) break;
+                const float * srow = src_ds
+                    + (size_t)k * n_image_tokens * H
+                    + (size_t)img_idx * H;
+                std::memcpy(ds_patch_data[k].data() + (size_t)t * H,
+                            srow, (size_t)H * sizeof(float));
+            }
+            img_idx++;
+        }
+        if (img_idx != n_image_tokens) {
+            fprintf(stderr,
+                "decoder: image token count mismatch — input has %d "
+                "image_token_id placeholders, vision tower produced %d "
+                "merged tokens (image_token_id=%d). Encoding will likely "
+                "be wrong.\n",
+                img_idx, n_image_tokens, img_tok);
+        }
+    }
 
     // --- Set inputs and compute ---
     if (use_sched) {
@@ -287,10 +502,10 @@ std::vector<float> decoder_encode_tokens(
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"),
                                 tok_data.data(), 0, T * sizeof(int32_t));
 
-        std::vector<int32_t> pos_data(T);
-        for (int t = 0; t < T; t++) pos_data[t] = t;
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
-                                pos_data.data(), 0, T * sizeof(int32_t));
+                                pos_data.data(),
+                                0,
+                                pos_data.size() * sizeof(int32_t));
 
         if (m.gemma_norm) {
             std::vector<float> ones(H, 1.0f);
@@ -303,6 +518,22 @@ std::vector<float> decoder_encode_tokens(
             }
         }
 
+        if (has_image) {
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "in_keep_mask"),
+                                    in_keep_data.data(), 0,
+                                    (size_t)T * sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "in_patch"),
+                                    in_patch_data.data(), 0,
+                                    (size_t)H * T * sizeof(float));
+            for (int k = 0; k < n_ds; k++) {
+                char nm[24];
+                std::snprintf(nm, sizeof(nm), "ds_patch_%d", k);
+                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, nm),
+                                        ds_patch_data[k].data(), 0,
+                                        (size_t)H * T * sizeof(float));
+            }
+        }
+
         // Compute via scheduler
         ggml_backend_sched_graph_compute(sched, gf);
     } else {
@@ -311,7 +542,7 @@ std::vector<float> decoder_encode_tokens(
         for (int t = 0; t < T; t++) id[t] = tokens.ids[t];
 
         int32_t * pd = (int32_t *)pos->data;
-        for (int t = 0; t < T; t++) pd[t] = t;
+        std::memcpy(pd, pos_data.data(), pos_data.size() * sizeof(int32_t));
 
         if (ones_h) {
             float * d = (float *)ones_h->data;
@@ -320,6 +551,17 @@ std::vector<float> decoder_encode_tokens(
         if (ones_hd) {
             float * d = (float *)ones_hd->data;
             for (int i = 0; i < head_dim; i++) d[i] = 1.0f;
+        }
+
+        if (has_image) {
+            std::memcpy(input_keep_mask->data, in_keep_data.data(),
+                        (size_t)T * sizeof(float));
+            std::memcpy(input_patch->data, in_patch_data.data(),
+                        (size_t)H * T * sizeof(float));
+            for (int k = 0; k < n_ds; k++) {
+                std::memcpy(ds_patches[k]->data, ds_patch_data[k].data(),
+                            (size_t)H * T * sizeof(float));
+            }
         }
 
         struct ggml_cplan cplan = ggml_graph_plan(gf, n_threads, NULL);
