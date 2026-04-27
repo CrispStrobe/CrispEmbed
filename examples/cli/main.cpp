@@ -60,6 +60,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --audio FILE     encode raw 16 kHz mono float32 PCM (.raw); cross-modal embedding\n");
     fprintf(stderr, "  --image-raw FILE encode preprocessed image patches as float32 rows\n");
     fprintf(stderr, "  --grid-thw T,H,W image patch grid for --image-raw\n");
+    fprintf(stderr, "  --image FILE     encode JPG/PNG/BMP via in-process preprocessor (cross-modal embedding)\n");
     fprintf(stderr, "  --rerank QUERY   cross-encoder rerank documents against QUERY\n");
     fprintf(stderr, "  --biencoder QUERY  bi-encoder rerank documents against QUERY\n");
     fprintf(stderr, "  --top-n N        limit rerank output to top N documents\n");
@@ -94,6 +95,7 @@ int main(int argc, char ** argv) {
     std::string audio_path;  // .raw float32 16 kHz mono PCM
     std::string image_raw_path;  // preprocessed float32 patches, n_patches x 1536
     std::string grid_thw_arg;
+    std::string image_path;  // JPG/PNG/BMP — in-process preprocessor
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-m") == 0 && i + 1 < argc) {
@@ -128,6 +130,8 @@ int main(int argc, char ** argv) {
             image_raw_path = argv[++i];
         } else if (strcmp(argv[i], "--grid-thw") == 0 && i + 1 < argc) {
             grid_thw_arg = argv[++i];
+        } else if (strcmp(argv[i], "--image") == 0 && i + 1 < argc) {
+            image_path = argv[++i];
         } else if (strcmp(argv[i], "--auto-download") == 0) {
             auto_download = true;
         } else if (strcmp(argv[i], "--list-models") == 0) {
@@ -160,8 +164,9 @@ int main(int argc, char ** argv) {
     mode_count += !biencoder_query.empty() ? 1 : 0;
     mode_count += !audio_path.empty() ? 1 : 0;
     mode_count += !image_raw_path.empty() ? 1 : 0;
+    mode_count += !image_path.empty() ? 1 : 0;
     if (mode_count > 1) {
-        fprintf(stderr, "error: choose only one of --sparse, --colbert, --rerank, --biencoder, --audio, or --image-raw\n");
+        fprintf(stderr, "error: choose only one of --sparse, --colbert, --rerank, --biencoder, --audio, --image, or --image-raw\n");
         return 1;
     }
 
@@ -300,6 +305,32 @@ int main(int argc, char ** argv) {
             printf("]}\n");
         } else {
             for (int j = 0; j < dim; ++j) {
+                printf("%.6f%s", vec[j], j + 1 < dim ? " " : "\n");
+            }
+        }
+        crispembed_free(ctx);
+        return 0;
+    }
+
+    // Image encoding from a JPG/PNG/BMP file via the in-process preprocessor.
+    if (!image_path.empty()) {
+        int dim = 0;
+        const float * vec = crispembed_encode_image_file(ctx, image_path.c_str(), &dim);
+        if (!vec || dim <= 0) {
+            fprintf(stderr,
+                    "error: image encoding failed (model lacks vision tower or "
+                    "preprocessor failed) for '%s'\n", image_path.c_str());
+            crispembed_free(ctx);
+            return 1;
+        }
+        if (json_output) {
+            printf("{\"image\": \"%s\", \"embedding\": [", json_escape(image_path).c_str());
+            for (int j = 0; j < dim; j++) {
+                printf("%.6f%s", vec[j], j + 1 < dim ? ", " : "");
+            }
+            printf("]}\n");
+        } else {
+            for (int j = 0; j < dim; j++) {
                 printf("%.6f%s", vec[j], j + 1 < dim ? " " : "\n");
             }
         }

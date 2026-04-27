@@ -68,6 +68,63 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
     m.image_token_id        = u32("decoder.image_token_id",        -1);
     m.spatial_merge_size    = u32("decoder.spatial_merge_size",     1);
 
+    // ---- Fallbacks for older GGUFs (pre-b277c3d) that lack the decoder.*
+    // multimodal keys but ship a vision tower in `bidirlm.vision.*`. We
+    // (a) read spatial_merge from bidirlm.vision.spatial_merge_size,
+    // (b) recover image/vision_start/vision_end token ids by string match in
+    //     tokenizer.ggml.tokens (the tokens array is always present), and
+    // (c) default mrope_section to the BidirLM-Omni reference [24, 20, 20]
+    //     when vision metadata exists but mrope_section does not.
+    const bool has_vision = gguf_find_key(g, "bidirlm.vision.depth") >= 0;
+    if (m.spatial_merge_size <= 1 && has_vision) {
+        m.spatial_merge_size = u32("bidirlm.vision.spatial_merge_size", 1);
+    }
+    if (has_vision && m.mrope_section[0] == 0
+                   && m.mrope_section[1] == 0
+                   && m.mrope_section[2] == 0) {
+        m.mrope_section[0] = 24;
+        m.mrope_section[1] = 20;
+        m.mrope_section[2] = 20;
+        fprintf(stderr,
+                "decoder_embed: stale GGUF — defaulting mrope_section to [24,20,20] "
+                "(BidirLM-Omni reference). Re-export with the latest converter for "
+                "explicit metadata.\n");
+    }
+    if (has_vision &&
+        (m.image_token_id < 0 || m.vision_start_token_id < 0
+         || m.vision_end_token_id < 0)) {
+        const int tok_key = gguf_find_key(g, "tokenizer.ggml.tokens");
+        if (tok_key >= 0) {
+            const int nv = (int)gguf_get_arr_n(g, tok_key);
+            auto find_token = [&](const char * s) -> int {
+                for (int i = 0; i < nv; i++) {
+                    const char * tok = gguf_get_arr_str(g, tok_key, i);
+                    if (tok && std::strcmp(tok, s) == 0) return i;
+                }
+                return -1;
+            };
+            if (m.image_token_id < 0) {
+                int id = find_token("<|image_pad|>");
+                if (id >= 0) m.image_token_id = id;
+            }
+            if (m.vision_start_token_id < 0) {
+                int id = find_token("<|vision_start|>");
+                if (id >= 0) m.vision_start_token_id = id;
+            }
+            if (m.vision_end_token_id < 0) {
+                int id = find_token("<|vision_end|>");
+                if (id >= 0) m.vision_end_token_id = id;
+            }
+            if (m.image_token_id >= 0) {
+                fprintf(stderr,
+                    "decoder_embed: stale GGUF — recovered image_token_id=%d, "
+                    "vision_start=%d, vision_end=%d by token-string lookup.\n",
+                    m.image_token_id, m.vision_start_token_id,
+                    m.vision_end_token_id);
+            }
+        }
+    }
+
     gguf_free(g);
 
     if (!core_gguf::load_weights(path, backend, "decoder_embed", wl))

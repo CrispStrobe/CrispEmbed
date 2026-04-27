@@ -257,6 +257,24 @@ class CrispEmbed:
                 ctypes.POINTER(ctypes.c_int),
             ]
             lib.crispembed_encode_with_image_ids.restype = ctypes.POINTER(ctypes.c_float)
+        if hasattr(lib, "crispembed_encode_image_file"):
+            lib.crispembed_encode_image_file.argtypes = [
+                ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_int),
+            ]
+            lib.crispembed_encode_image_file.restype = ctypes.POINTER(ctypes.c_float)
+        if hasattr(lib, "crispembed_encode_text_with_image_file"):
+            lib.crispembed_encode_text_with_image_file.argtypes = [
+                ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p,
+                ctypes.POINTER(ctypes.c_int),
+            ]
+            lib.crispembed_encode_text_with_image_file.restype = ctypes.POINTER(ctypes.c_float)
+        if hasattr(lib, "crispembed_preprocess_image"):
+            lib.crispembed_preprocess_image.argtypes = [
+                ctypes.c_void_p, ctypes.c_char_p,
+                ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),
+                ctypes.c_int32 * 3,
+            ]
+            lib.crispembed_preprocess_image.restype = ctypes.POINTER(ctypes.c_float)
 
         # --- Prefix ---
         lib.crispembed_set_prefix.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
@@ -565,6 +583,57 @@ class CrispEmbed:
         if not ptr or out_dim.value <= 0:
             return np.empty((0,), dtype=np.float32)
         return np.ctypeslib.as_array(ptr, shape=(out_dim.value,)).copy()
+
+    def encode_image_file(self, path: str) -> np.ndarray:
+        """In-process image embedding (no `transformers` dependency).
+
+        Loads and preprocesses the image with CrispEmbed's C++ pipeline
+        (smart_resize + Catmull-Rom bicubic + OpenAI CLIP normalize +
+        Qwen2VL patchify), then runs the vision tower. Empirical cosine
+        against the HF processor is ≈ 0.97 on real photographs (the
+        residual gap is sub-pixel resize divergence). For tight HF parity
+        use ``encode_image()`` (which calls the Python preprocessor).
+        """
+        if not hasattr(self._lib, "crispembed_encode_image_file"):
+            return np.empty((0,), dtype=np.float32)
+        out_dim = ctypes.c_int(0)
+        ptr = self._lib.crispembed_encode_image_file(
+            self._ctx, path.encode("utf-8"), ctypes.byref(out_dim))
+        if not ptr or out_dim.value <= 0:
+            return np.empty((0,), dtype=np.float32)
+        return np.ctypeslib.as_array(ptr, shape=(out_dim.value,)).copy()
+
+    def encode_text_with_image_file(self, text: str, path: str) -> np.ndarray:
+        """In-process image-conditioned text embedding (no `transformers`)."""
+        if not hasattr(self._lib, "crispembed_encode_text_with_image_file"):
+            return np.empty((0,), dtype=np.float32)
+        out_dim = ctypes.c_int(0)
+        ptr = self._lib.crispembed_encode_text_with_image_file(
+            self._ctx, text.encode("utf-8"), path.encode("utf-8"),
+            ctypes.byref(out_dim))
+        if not ptr or out_dim.value <= 0:
+            return np.empty((0,), dtype=np.float32)
+        return np.ctypeslib.as_array(ptr, shape=(out_dim.value,)).copy()
+
+    def preprocess_image_file(self, path: str):
+        """Run CrispEmbed's C++ image preprocessor and return (pixel_patches, grid_thw).
+
+        Returns:
+            pixel_patches: float32 (n_patches, 1536)
+            grid_thw:      int32 (1, 3) with row (t, h_patches, w_patches)
+        """
+        if not hasattr(self._lib, "crispembed_preprocess_image"):
+            return np.empty((0, 0), dtype=np.float32), np.empty((0, 3), dtype=np.int32)
+        n_p = ctypes.c_int(0); rd = ctypes.c_int(0)
+        grid = (ctypes.c_int32 * 3)(0, 0, 0)
+        ptr = self._lib.crispembed_preprocess_image(
+            self._ctx, path.encode("utf-8"),
+            ctypes.byref(n_p), ctypes.byref(rd), grid)
+        if not ptr or n_p.value <= 0:
+            return np.empty((0, 0), dtype=np.float32), np.empty((0, 3), dtype=np.int32)
+        pv = np.ctypeslib.as_array(ptr, shape=(n_p.value, rd.value)).copy()
+        gt = np.asarray([[grid[0], grid[1], grid[2]]], dtype=np.int32)
+        return pv, gt
 
     def encode_text_with_image(
         self,

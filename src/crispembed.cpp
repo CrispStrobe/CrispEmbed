@@ -2027,6 +2027,86 @@ extern "C" const float * crispembed_encode_with_image_ids(
         out_dim, "crispembed_encode_with_image_ids");
 }
 
+// ---------------------------------------------------------------------------
+// In-process image preprocessor (file-based)
+// ---------------------------------------------------------------------------
+#include "image_preprocess.h"
+
+extern "C" const float * crispembed_preprocess_image(
+        crispembed_context * ctx,
+        const char * image_path,
+        int * out_n_patches, int * out_row_dim,
+        int32_t out_grid_thw[3]) {
+    if (out_n_patches) *out_n_patches = 0;
+    if (out_row_dim) *out_row_dim = 0;
+    if (!ctx || !image_path) return nullptr;
+
+    image_preproc::config cfg;
+    if (ctx->dec) {
+        // BidirLM-Omni: patch_size=16, merge_size=2 by default. Encoder vision
+        // tower's spatial_merge_size lives on the dec_model side; trust it.
+        if (ctx->dec->spatial_merge_size > 0) {
+            cfg.merge_size = ctx->dec->spatial_merge_size;
+        }
+    }
+    image_preproc::result r;
+    if (!image_preproc::preprocess_file(image_path, cfg, r)) {
+        return nullptr;
+    }
+    // Stash into ctx->last_vision_out so the returned pointer remains valid
+    // until the next preprocessor call (mirrors encode_image's contract).
+    ctx->last_vision_out = std::move(r.patches);
+    if (out_n_patches) *out_n_patches = r.n_patches;
+    if (out_row_dim)   *out_row_dim   = r.row_dim;
+    if (out_grid_thw) {
+        out_grid_thw[0] = r.grid_thw[0];
+        out_grid_thw[1] = r.grid_thw[1];
+        out_grid_thw[2] = r.grid_thw[2];
+    }
+    return ctx->last_vision_out.data();
+}
+
+extern "C" const float * crispembed_encode_image_file(
+        crispembed_context * ctx,
+        const char * image_path,
+        int * out_dim) {
+    if (out_dim) *out_dim = 0;
+    if (!ctx || !image_path) return nullptr;
+
+    image_preproc::config cfg;
+    if (ctx->dec && ctx->dec->spatial_merge_size > 0) {
+        cfg.merge_size = ctx->dec->spatial_merge_size;
+    }
+    image_preproc::result r;
+    if (!image_preproc::preprocess_file(image_path, cfg, r)) return nullptr;
+
+    return crispembed_encode_image(ctx,
+                                    r.patches.data(), r.n_patches,
+                                    r.grid_thw, /*n_images=*/1,
+                                    out_dim);
+}
+
+extern "C" const float * crispembed_encode_text_with_image_file(
+        crispembed_context * ctx,
+        const char * text,
+        const char * image_path,
+        int * out_dim) {
+    if (out_dim) *out_dim = 0;
+    if (!ctx || !text || !image_path) return nullptr;
+
+    image_preproc::config cfg;
+    if (ctx->dec && ctx->dec->spatial_merge_size > 0) {
+        cfg.merge_size = ctx->dec->spatial_merge_size;
+    }
+    image_preproc::result r;
+    if (!image_preproc::preprocess_file(image_path, cfg, r)) return nullptr;
+
+    return crispembed_encode_text_with_image(ctx, text,
+                                              r.patches.data(), r.n_patches,
+                                              r.grid_thw, /*n_images=*/1,
+                                              out_dim);
+}
+
 extern "C" void crispembed_free(crispembed_context * ctx) {
     if (!ctx) return;
 #ifdef CRISPEMBED_HAS_CRISP_AUDIO

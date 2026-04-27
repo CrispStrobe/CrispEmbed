@@ -247,6 +247,50 @@ CRISPEMBED_API const float * crispembed_encode_with_image_ids(
         int                  n_images,
         int                * out_dim);
 
+// In-process file-based image embedding. Loads the image (JPG/PNG/BMP/…)
+// from disk via stb_image, runs CrispEmbed's C++ preprocessor (smart_resize
+// + bilinear + OpenAI CLIP normalize + Qwen2VL patchify), then runs the
+// vision tower. Returns a single L2-normalized cross-modal vector, mean
+// pooled over merged tokens.
+//
+// PARITY CAVEAT: the C++ preprocessor uses bilinear resize (vs torchvision
+// bicubic + antialias used by HF). Expect cosine ≈ 0.95–0.98 on real
+// photographs. Use the Python wrapper (`crispembed.image.preprocess_image`)
+// for byte-tight parity testing against HF. The native path is for runtime
+// use without the `transformers` dependency (CLI, mobile, server hot path).
+//
+// Returns NULL on disk read / decode failure or if the model has no vision
+// tower.
+CRISPEMBED_API const float * crispembed_encode_image_file(
+        crispembed_context * ctx,
+        const char         * image_path,
+        int                * out_dim);
+
+// In-process file-based image-conditioned text embedding. Same parity
+// caveat as crispembed_encode_image_file. `text` must contain the right
+// number of `image_token_id` placeholders for the (resized) grid that
+// smart_resize will produce — easiest is to call crispembed_preprocess_image
+// first to learn `grid_thw`, then build the text template.
+CRISPEMBED_API const float * crispembed_encode_text_with_image_file(
+        crispembed_context * ctx,
+        const char         * text,
+        const char         * image_path,
+        int                * out_dim);
+
+// Standalone preprocessor (no inference): runs the C++ image preprocessor
+// on `image_path` and returns the flat (n_patches, 1536) float buffer plus
+// the (1, 3) grid_thw triplet. Buffers are owned by ctx and valid until the
+// next preprocessor call. Returns NULL on disk read / decode failure.
+//
+// Useful for building text templates before calling
+// crispembed_encode_with_image_ids: count = (h * w) / spatial_merge_size².
+CRISPEMBED_API const float * crispembed_preprocess_image(
+        crispembed_context * ctx,
+        const char         * image_path,
+        int                * out_n_patches,
+        int                * out_row_dim,
+        int32_t              out_grid_thw[3]);
+
 // ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------

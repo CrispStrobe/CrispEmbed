@@ -92,6 +92,7 @@ set(CRISPEMBED_SOURCES
     src/tokenizer.cpp
     src/tokenizer_spm.cpp
     src/tokenizer_bpe.cpp
+    src/image_preprocess.cpp
     examples/cli/model_mgr.cpp
 )
 if(CRISPEMBED_HAS_CRISP_AUDIO)
