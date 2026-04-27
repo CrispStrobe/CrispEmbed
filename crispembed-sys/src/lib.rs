@@ -142,4 +142,24 @@ extern "C" {
         query:    *const c_char,
         document: *const c_char,
     ) -> c_float;
+
+    // ------------------------------------------------------------------
+    // Audio encoding (BidirLM-Omni and similar omnimodal models)
+    // ------------------------------------------------------------------
+
+    /// Returns 1 if this build of CrispEmbed has audio support compiled in.
+    /// Whether a particular *model* has an audio tower is determined at the
+    /// first `crispembed_encode_audio` call.
+    pub fn crispembed_has_audio(ctx: *const CrispembedContext) -> c_int;
+
+    /// Encode raw 16 kHz mono float32 PCM into the model's shared embedding
+    /// space. Returns NULL on failure (no audio tower, malformed input).
+    /// On success returns a buffer of `*out_dim` floats owned by `ctx`,
+    /// valid until the next call on this context.
+    pub fn crispembed_encode_audio(
+        ctx:         *mut CrispembedContext,
+        pcm_samples: *const c_float,
+        n_samples:   c_int,
+        out_dim:     *mut c_int,
+    ) -> *const c_float;
 }

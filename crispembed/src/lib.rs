@@ -325,6 +325,38 @@ impl CrispEmbed {
     }
 
     // ------------------------------------------------------------------
+    // Audio encoding (BidirLM-Omni and similar)
+    // ------------------------------------------------------------------
+
+    /// Whether this build of CrispEmbed has audio support compiled in.
+    /// (Whether *this model* has an audio tower is only known after the
+    /// first `encode_audio` call — failures return an empty vector.)
+    pub fn has_audio(&self) -> bool {
+        unsafe { crispembed_sys::crispembed_has_audio(self.ctx) != 0 }
+    }
+
+    /// Encode raw 16 kHz mono float32 PCM into the model's shared
+    /// embedding space (same dim as `encode(text)` for omnimodal models,
+    /// suitable for cross-modal cosine similarity).
+    ///
+    /// Returns an empty vector if the model lacks an audio tower or
+    /// encoding fails.
+    pub fn encode_audio(&mut self, pcm: &[f32]) -> Vec<f32> {
+        if !self.has_audio() { return vec![]; }
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_audio(
+                self.ctx,
+                pcm.as_ptr(),
+                pcm.len() as i32,
+                &mut out_dim,
+            )
+        };
+        if ptr.is_null() || out_dim <= 0 { return vec![]; }
+        unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
+    }
+
+    // ------------------------------------------------------------------
     // Reranker
     // ------------------------------------------------------------------
 

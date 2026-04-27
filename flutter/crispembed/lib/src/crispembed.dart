@@ -68,6 +68,9 @@ class CrispEmbed {
   late final CrispembedEncodeSparse _encodeSparse;
   late final CrispembedEncodeMultivec _encodeMultivec;
   late final CrispembedRerank _rerankFn;
+  // Audio (BidirLM-Omni etc.) — optional, missing on builds without crisp_audio.
+  CrispembedHasAudio? _hasAudioCheck;
+  CrispembedEncodeAudio? _encodeAudioFn;
 
   /// Load a GGUF model file.
   ///
@@ -123,6 +126,42 @@ class CrispEmbed {
         CrispembedEncodeMultivec>('crispembed_encode_multivec');
     _rerankFn = _lib.lookupFunction<CrispembedRerankNative, CrispembedRerank>(
         'crispembed_rerank');
+    // Audio symbols are absent in builds without crisp_audio — bind lazily.
+    try {
+      _hasAudioCheck = _lib.lookupFunction<CrispembedHasAudioNative, CrispembedHasAudio>(
+          'crispembed_has_audio');
+      _encodeAudioFn = _lib.lookupFunction<CrispembedEncodeAudioNative, CrispembedEncodeAudio>(
+          'crispembed_encode_audio');
+    } catch (_) {
+      _hasAudioCheck = null;
+      _encodeAudioFn = null;
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Audio encoding (BidirLM-Omni and similar)
+  // ------------------------------------------------------------------
+
+  /// Whether this build of CrispEmbed has audio support compiled in.
+  bool get hasAudio => _hasAudioCheck != null && _hasAudioCheck!(_ctx) != 0;
+
+  /// Encode raw 16 kHz mono float32 PCM into the model's shared embedding
+  /// space. Returns an empty list if the build lacks audio support or the
+  /// model has no audio tower.
+  Float32List encodeAudio(Float32List pcm) {
+    _checkDisposed();
+    if (_encodeAudioFn == null) return Float32List(0);
+    final pcmPtr = calloc<Float>(pcm.length);
+    pcmPtr.asTypedList(pcm.length).setAll(0, pcm);
+    final dimPtr = calloc<Int32>();
+    try {
+      final ptr = _encodeAudioFn!(_ctx, pcmPtr, pcm.length, dimPtr);
+      if (ptr == nullptr || dimPtr.value <= 0) return Float32List(0);
+      return Float32List.fromList(ptr.asTypedList(dimPtr.value));
+    } finally {
+      calloc.free(pcmPtr);
+      calloc.free(dimPtr);
+    }
   }
 
   // ------------------------------------------------------------------

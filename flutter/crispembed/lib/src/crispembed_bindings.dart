@@ -115,3 +115,18 @@ typedef CrispembedRerank = double Function(
     Pointer<CrispembedContext> ctx,
     Pointer<Utf8> query,
     Pointer<Utf8> document);
+
+// --- Audio encoding (BidirLM-Omni and similar) ---
+typedef CrispembedHasAudioNative = Int32 Function(Pointer<CrispembedContext> ctx);
+typedef CrispembedHasAudio = int Function(Pointer<CrispembedContext> ctx);
+
+typedef CrispembedEncodeAudioNative = Pointer<Float> Function(
+    Pointer<CrispembedContext> ctx,
+    Pointer<Float> pcmSamples,
+    Int32 nSamples,
+    Pointer<Int32> outDim);
+typedef CrispembedEncodeAudio = Pointer<Float> Function(
+    Pointer<CrispembedContext> ctx,
+    Pointer<Float> pcmSamples,
+    int nSamples,
+    Pointer<Int32> outDim);
