@@ -221,6 +221,10 @@ struct crispembed_context {
     // Per-mode scheduler reservation buckets
     int reserved_T_sparse  = 0;
     int reserved_T_colbert = 0;
+    // Audio path — opaque pointer into bidirlm_audio.cpp (lazily inited on
+    // first crispembed_encode_audio call). Built only when CRISPEMBED_HAS_CRISP_AUDIO.
+    void * audio_ctx = nullptr;
+    std::string model_path_for_audio;
 };
 
 // ---------------------------------------------------------------------------
@@ -1129,6 +1133,7 @@ static std::vector<float> run_encoder_raw(crispembed_context * ctx,
 extern "C" crispembed_context * crispembed_init(const char * model_path, int n_threads) {
     auto * ctx = new crispembed_context;
     ctx->n_threads = n_threads > 0 ? n_threads : 4;
+    if (model_path) ctx->model_path_for_audio = model_path;
 
     // Detect model type from GGUF metadata
     gguf_init_params gp = { true, nullptr };
@@ -1687,8 +1692,64 @@ extern "C" float crispembed_rerank(crispembed_context * ctx,
     return score;
 }
 
+// ---------------------------------------------------------------------------
+// Audio encoding via crisp_audio (BidirLM-Omni and similar)
+// ---------------------------------------------------------------------------
+#ifdef CRISPEMBED_HAS_CRISP_AUDIO
+namespace bidirlm_audio {
+struct context;
+context* open(const char* gguf_path, int n_threads, bool use_gpu);
+const float* encode(context* ctx, const float* pcm, int n_samples, int* out_dim);
+void close(context* ctx);
+}
+
+static bidirlm_audio::context * audio_lazy_open(crispembed_context * ctx) {
+    if (!ctx) return nullptr;
+    if (ctx->audio_ctx) return (bidirlm_audio::context *)ctx->audio_ctx;
+    if (ctx->model_path_for_audio.empty()) return nullptr;
+    bool use_gpu = ctx->backend && !ggml_backend_is_cpu(ctx->backend);
+    auto * a = bidirlm_audio::open(ctx->model_path_for_audio.c_str(),
+                                    ctx->n_threads, use_gpu);
+    ctx->audio_ctx = a;
+    return a;
+}
+#endif
+
+extern "C" int crispembed_has_audio(const crispembed_context * /*ctx*/) {
+#ifdef CRISPEMBED_HAS_CRISP_AUDIO
+    // Only the loader knows for sure (a GGUF either has the audio tower or
+    // doesn't). We could prefetch the metadata here, but doing it lazily
+    // matches the rest of the API: callers check the return of
+    // crispembed_encode_audio() instead.
+    return 1;
+#else
+    return 0;
+#endif
+}
+
+extern "C" const float * crispembed_encode_audio(crispembed_context * ctx,
+                                                  const float * pcm_samples,
+                                                  int n_samples,
+                                                  int * out_dim) {
+#ifdef CRISPEMBED_HAS_CRISP_AUDIO
+    auto * a = audio_lazy_open(ctx);
+    if (!a) return nullptr;
+    return bidirlm_audio::encode(a, pcm_samples, n_samples, out_dim);
+#else
+    (void)ctx; (void)pcm_samples; (void)n_samples;
+    if (out_dim) *out_dim = 0;
+    return nullptr;
+#endif
+}
+
 extern "C" void crispembed_free(crispembed_context * ctx) {
     if (!ctx) return;
+#ifdef CRISPEMBED_HAS_CRISP_AUDIO
+    if (ctx->audio_ctx) {
+        bidirlm_audio::close((bidirlm_audio::context *)ctx->audio_ctx);
+        ctx->audio_ctx = nullptr;
+    }
+#endif
     if (ctx->qkv_buf) { ggml_backend_buffer_free(ctx->qkv_buf); ctx->qkv_buf = nullptr; }
     if (ctx->qkv_ctx) { ggml_free(ctx->qkv_ctx); ctx->qkv_ctx = nullptr; }
     core_gguf::free_weights(ctx->wl);

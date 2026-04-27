@@ -139,6 +139,28 @@ CRISPEMBED_API float crispembed_rerank(crispembed_context * ctx,
                                         const char         * document);
 
 // ---------------------------------------------------------------------------
+// Audio encoding (omnimodal embedding models)
+// ---------------------------------------------------------------------------
+
+// Returns 1 if this context can encode raw audio into the model's shared
+// embedding space (e.g. BidirLM-Omni). Audio support is provided by the
+// crisp_audio sibling library — built only if CRISP_AUDIO_DIR was found
+// at configure time.
+CRISPEMBED_API int crispembed_has_audio(const crispembed_context * ctx);
+
+// Encode raw 16 kHz mono float32 PCM into a single L2-normalized vector
+// in the model's shared embedding space (same dim as crispembed_encode()
+// text output, suitable for cross-modal cosine similarity).
+//
+// On success returns a buffer of *out_dim floats, owned by ctx and valid
+// until the next call on this ctx (or crispembed_free). Returns NULL on
+// failure (no audio tower, malformed input, etc.).
+CRISPEMBED_API const float * crispembed_encode_audio(crispembed_context * ctx,
+                                                      const float        * pcm_samples,
+                                                      int                  n_samples,
+                                                      int                * out_dim);
+
+// ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
 
