@@ -97,6 +97,7 @@ set(CRISPEMBED_SOURCES
 if(CRISPEMBED_HAS_CRISP_AUDIO)
     list(APPEND CRISPEMBED_SOURCES src/bidirlm_audio.cpp)
 endif()
+list(APPEND CRISPEMBED_SOURCES src/bidirlm_vision.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
