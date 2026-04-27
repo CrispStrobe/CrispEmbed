@@ -36,6 +36,7 @@ struct dec_model {
     float rms_norm_eps = 1e-6f;
     float rope_theta = 10000.0f;
     bool is_bidirectional = false;  // true for EuroBERT-style encoder models
+    int pooling_method = 2;  // 1=mean (BidirLM-style), 2=last-token (Qwen3/Gemma3)
     int activation = 0;  // 0=silu (SwiGLU), 1=gelu (GeGLU), 2=gelu_pytorch_tanh
     int head_dim = 0;    // explicit head_dim (Gemma3 uses 256 != hidden/heads)
     float attn_scale = 0.0f;  // query_pre_attn_scalar (0 = use 1/sqrt(head_dim))

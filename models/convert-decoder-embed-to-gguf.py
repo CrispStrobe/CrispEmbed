@@ -101,6 +101,22 @@ def main():
 
     sd = model.state_dict()
 
+    # BidirLM-Omni: text settings live under config.text_config; non-text towers
+    # (audio_tower.*, visual.*) are skipped by Phase 1 — text-only export.
+    is_bidirlm_omni = (getattr(config, "model_type", "") == "bidirlm_omni"
+                       or hasattr(config, "text_config") and getattr(config, "model_type", "").endswith("omni"))
+    if is_bidirlm_omni and hasattr(config, "text_config"):
+        text_config = config.text_config
+        print(f"BidirLM-Omni detected — using config.text_config for text hyperparams")
+        # Promote text fields to top-level access for the rest of the script
+        for attr in ("vocab_size", "hidden_size", "num_hidden_layers",
+                     "num_attention_heads", "num_key_value_heads", "head_dim",
+                     "intermediate_size", "max_position_embeddings",
+                     "rms_norm_eps", "rope_theta", "rope_scaling",
+                     "hidden_act", "tie_word_embeddings", "attention_bias"):
+            if hasattr(text_config, attr):
+                setattr(config, attr, getattr(text_config, attr))
+
     print(f"Architecture: {config.architectures}")
     print(f"Hidden: {config.hidden_size}, Layers: {config.num_hidden_layers}, "
           f"Heads: {config.num_attention_heads}, Vocab: {config.vocab_size}")
@@ -151,14 +167,25 @@ def main():
         except Exception:
             pass
 
-    # Detect if bidirectional
-    is_bidirectional = "bert" in config.model_type.lower() or "encoder" in str(config.architectures).lower()
+    # Detect if bidirectional. BidirLM-Omni is bidirectional by design (Qwen3
+    # body with the causal mask removed — see modeling_bidirlm_omni.py L793,
+    # `self.is_causal = False`).
+    is_bidirectional = (
+        "bert" in config.model_type.lower()
+        or "encoder" in str(config.architectures).lower()
+        or is_bidirlm_omni
+    )
+
+    # Pooling: 1 = mean (BidirLM uses sentence_transformers Pooling, mean by
+    # default), 2 = last-token (Qwen3/Gemma3 default).
+    pool_crisp = 1 if is_bidirlm_omni else 2
+    # Ollama pooling enum: 0=None, 1=Mean, 2=CLS, 3=Last
+    pool_ollama_default = 1 if is_bidirlm_omni else 3
 
     if ollama_mode:
         # Ollama arch: "qwen3" or "gemma3"
         arch = "gemma3" if is_gemma else "qwen3"
-        # Ollama pooling: 3 = Last token
-        pool_ollama = 3
+        pool_ollama = pool_ollama_default
     else:
         arch = ARCH
 
@@ -210,7 +237,7 @@ def main():
         writer.add_float32("decoder.rms_norm_eps",
                            getattr(config, "rms_norm_eps", 1e-6))
         writer.add_float32("decoder.rope_theta", float(rope_theta))
-        writer.add_uint32("decoder.pooling_method", 2)  # last-token
+        writer.add_uint32("decoder.pooling_method", pool_crisp)  # 1=mean, 2=last
         writer.add_uint32("decoder.activation", act_id)
         if qpas:
             writer.add_float32("decoder.attn_scale", float(qpas))
@@ -333,6 +360,7 @@ def main():
 
     # Token embeddings — search multiple naming conventions
     embd_keys = ["model.embed_tokens.weight", "embed_tokens.weight",
+                  "language_model.embed_tokens.weight",  # BidirLM-Omni
                   "embeddings.word_embeddings.weight"]
     for key in embd_keys:
         if key in sd:
@@ -343,8 +371,9 @@ def main():
         print("  WARNING: token_embd not found!")
 
     # Detect layer prefix — models vary: "model.layers.{i}" vs "layers.{i}"
+    # vs "language_model.layers.{i}" (BidirLM-Omni)
     layer_prefix = None
-    for candidate in ["model.layers", "layers", "encoder.layer"]:
+    for candidate in ["model.layers", "language_model.layers", "layers", "encoder.layer"]:
         if f"{candidate}.0.self_attn.q_proj.weight" in sd:
             layer_prefix = candidate
             break
@@ -473,7 +502,8 @@ def main():
         print(f"  {LP}.{i}: ok")
 
     # Final norm
-    for key in ["model.norm.weight", "norm.weight", "encoder.layer_norm.weight"]:
+    for key in ["model.norm.weight", "language_model.norm.weight",
+                 "norm.weight", "encoder.layer_norm.weight"]:
         if key in sd:
             add_tensor("output_norm.weight", norm_weight(sd[key]))
             print(f"  output_norm: ok")

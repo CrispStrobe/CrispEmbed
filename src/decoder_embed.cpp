@@ -39,6 +39,7 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
     m.rms_norm_eps = f32v("decoder.rms_norm_eps", 1e-6f);
     m.rope_theta = f32v("decoder.rope_theta", 10000.0f);
     m.is_bidirectional = u32("decoder.is_bidirectional", 0) != 0;
+    m.pooling_method = u32("decoder.pooling_method", 2);
     m.activation = u32("decoder.activation", 0);
     m.head_dim = u32("decoder.head_dim", 0);
     m.attn_scale = f32v("decoder.attn_scale", 0.0f);
@@ -77,8 +78,10 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
         L.post_ffn_norm_w = get(p + "post_ffn_norm.weight");
     }
 
-    fprintf(stderr, "decoder_embed: loaded %d layers, %d dims, %d vocab, %d heads (%d kv), rope_theta=%.0f\n",
-            m.n_layer, m.n_embd, m.n_vocab, m.n_head, m.n_kv_head, m.rope_theta);
+    const char * pool_str = (m.pooling_method == 1) ? "mean" : "last-token";
+    fprintf(stderr, "decoder_embed: loaded %d layers, %d dims, %d vocab, %d heads (%d kv), rope_theta=%.0f, pool=%s%s\n",
+            m.n_layer, m.n_embd, m.n_vocab, m.n_head, m.n_kv_head, m.rope_theta,
+            pool_str, m.is_bidirectional ? ", bidirectional" : "");
     return true;
 }
 
@@ -323,14 +326,29 @@ std::vector<float> decoder_encode_tokens(
 
     ggml_free(gctx);
 
-    // Last-token pooling
-    int last_t = 0;
-    for (int t = T - 1; t >= 0; t--) {
-        if (tokens.attn_mask[t]) { last_t = t; break; }
-    }
+    std::vector<float> pooled(H, 0.0f);
 
-    std::vector<float> pooled(H);
-    memcpy(pooled.data(), hidden.data() + last_t * H, H * sizeof(float));
+    if (m.pooling_method == 1) {
+        // Mean pooling over non-padding tokens (BidirLM-style)
+        int n_valid = 0;
+        for (int t = 0; t < T; t++) {
+            if (!tokens.attn_mask[t]) continue;
+            const float * row = hidden.data() + (size_t)t * H;
+            for (int i = 0; i < H; i++) pooled[i] += row[i];
+            n_valid++;
+        }
+        if (n_valid > 0) {
+            const float inv = 1.0f / (float)n_valid;
+            for (int i = 0; i < H; i++) pooled[i] *= inv;
+        }
+    } else {
+        // Last-token pooling (Qwen3/Gemma3)
+        int last_t = 0;
+        for (int t = T - 1; t >= 0; t--) {
+            if (tokens.attn_mask[t]) { last_t = t; break; }
+        }
+        memcpy(pooled.data(), hidden.data() + (size_t)last_t * H, H * sizeof(float));
+    }
 
     // L2 normalize
     float norm = 0;

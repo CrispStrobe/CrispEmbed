@@ -13,3 +13,5 @@ build-avx/
 build-avx512/
 build-blas/
 build-llamafile/
+.env
+.claude/
