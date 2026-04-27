@@ -78,6 +78,9 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
     const bool has_vision = gguf_find_key(g, "bidirlm.vision.depth") >= 0;
     if (m.spatial_merge_size <= 1 && has_vision) {
         m.spatial_merge_size = u32("bidirlm.vision.spatial_merge_size", 1);
+        fprintf(stderr,
+                "decoder_embed: stale GGUF — recovered spatial_merge_size=%d "
+                "from bidirlm.vision.spatial_merge_size.\n", m.spatial_merge_size);
     }
     if (has_vision && m.mrope_section[0] == 0
                    && m.mrope_section[1] == 0
@@ -288,7 +291,12 @@ std::vector<float> decoder_encode_tokens(
     const bool use_mrope = has_image
                            && (m.mrope_section[0] + m.mrope_section[1]
                                + m.mrope_section[2]) > 0;
-    const int n_ds = has_image ? std::min(img->n_deepstack, m.n_layer) : 0;
+    // Diagnostic: skip DeepStack injection while keeping the image-embed
+    // splice + 3D MRoPE. If parity improves with DEEPSTACK_OFF=1, the bug is
+    // in the deepstack hook; otherwise look at splice / MRoPE.
+    const bool skip_deepstack = std::getenv("CRISPEMBED_SKIP_DEEPSTACK") != nullptr;
+    const int n_ds = (has_image && !skip_deepstack)
+                     ? std::min(img->n_deepstack, m.n_layer) : 0;
 
     // Graph context: no_alloc=true when using scheduler, false otherwise
     bool use_sched = (sched != nullptr && compute_meta != nullptr);
