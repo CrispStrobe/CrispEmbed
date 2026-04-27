@@ -194,6 +194,20 @@ class CrispEmbed:
         ]
         lib.crispembed_rerank.restype = ctypes.c_float
 
+        # --- Audio encoding (BidirLM-Omni etc.) ---
+        # Symbols may be missing from older builds — guard each lookup.
+        if hasattr(lib, "crispembed_has_audio"):
+            lib.crispembed_has_audio.argtypes = [ctypes.c_void_p]
+            lib.crispembed_has_audio.restype = ctypes.c_int
+        if hasattr(lib, "crispembed_encode_audio"):
+            lib.crispembed_encode_audio.argtypes = [
+                ctypes.c_void_p,
+                ctypes.POINTER(ctypes.c_float),
+                ctypes.c_int,
+                ctypes.POINTER(ctypes.c_int),
+            ]
+            lib.crispembed_encode_audio.restype = ctypes.POINTER(ctypes.c_float)
+
         # --- Prefix ---
         lib.crispembed_set_prefix.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
         lib.crispembed_set_prefix.restype = None
@@ -314,6 +328,58 @@ class CrispEmbed:
             ptr, shape=(n_tokens.value * colbert_dim.value,)
         ).copy()
         return flat.reshape(n_tokens.value, colbert_dim.value)
+
+    # ------------------------------------------------------------------
+    # Audio encoding (BidirLM-Omni etc.)
+    # ------------------------------------------------------------------
+
+    def encode_audio(self, pcm: np.ndarray, sr: int = 16000) -> np.ndarray:
+        """Encode raw audio into the model's shared embedding space.
+
+        For omnimodal models (BidirLM-Omni) the result is in the same 2048-d
+        space as ``encode(text)`` so cosine similarity is meaningful across
+        modalities.
+
+        Args:
+            pcm: 1-D float32 array of mono PCM samples.
+            sr:  Sample rate. Audio is resampled to 16 kHz if needed.
+
+        Returns:
+            np.ndarray of shape (output_dim,), L2-normalized.
+            Empty array (0,) if the model lacks an audio tower.
+        """
+        if not hasattr(self._lib, "crispembed_encode_audio"):
+            return np.empty((0,), dtype=np.float32)
+        a = np.ascontiguousarray(pcm, dtype=np.float32)
+        if a.ndim != 1:
+            raise ValueError("encode_audio expects 1-D mono PCM")
+        if sr != 16000:
+            # Light dependency: only required when caller passes non-16k audio.
+            try:
+                import librosa  # type: ignore
+                a = librosa.resample(a, orig_sr=sr, target_sr=16000).astype(np.float32)
+            except ImportError as e:
+                raise RuntimeError(
+                    f"sr={sr} != 16000 and librosa is unavailable ({e}). "
+                    "Resample upstream or pip install librosa."
+                )
+        out_dim = ctypes.c_int(0)
+        ptr = self._lib.crispembed_encode_audio(
+            self._ctx,
+            a.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+            ctypes.c_int(a.size),
+            ctypes.byref(out_dim),
+        )
+        if not ptr or out_dim.value <= 0:
+            return np.empty((0,), dtype=np.float32)
+        vec = np.ctypeslib.as_array(ptr, shape=(out_dim.value,)).copy()
+        return vec
+
+    @property
+    def has_audio(self) -> bool:
+        if not hasattr(self._lib, "crispembed_has_audio"):
+            return False
+        return bool(self._lib.crispembed_has_audio(self._ctx))
 
     # ------------------------------------------------------------------
     # Cross-encoder reranking

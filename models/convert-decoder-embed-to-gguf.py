@@ -509,6 +509,105 @@ def main():
             print(f"  output_norm: ok")
             break
 
+    # ---------------------------------------------------------------------
+    # BidirLM-Omni audio tower export (Phase 2 — crisp_audio integration).
+    #
+    # Writes audio_tower.* tensors with the names crisp_audio expects, plus
+    # bidirlm.audio.* hparam metadata, plus the WhisperFeatureExtractor mel
+    # filterbank + Hann window so crisp_audio can compute log-mel from raw
+    # PCM at runtime without re-implementing the Slaney filterbank in C++.
+    # ---------------------------------------------------------------------
+    if is_bidirlm_omni and ollama_mode is False:
+        # config.audio_config still present — we only promoted text_config
+        # fields earlier, leaving audio_config untouched.
+        ac = getattr(config, "audio_config", None)
+        if ac is None:
+            print("  audio: no audio_config — skipping")
+        else:
+            print("  audio: exporting BidirLM audio tower")
+            ATPFX = "audio_tower."
+            # Hparams (Phase 2 picks these up via bidirlm.audio.* meta_prefix).
+            writer.add_uint32("bidirlm.audio.n_layers",       int(ac.encoder_layers))
+            writer.add_uint32("bidirlm.audio.d_model",        int(ac.d_model))
+            writer.add_uint32("bidirlm.audio.n_heads",        int(ac.encoder_attention_heads))
+            writer.add_uint32("bidirlm.audio.head_dim",       int(ac.d_model // ac.encoder_attention_heads))
+            writer.add_uint32("bidirlm.audio.ff_dim",         int(ac.encoder_ffn_dim))
+            writer.add_uint32("bidirlm.audio.conv_channels",  int(ac.downsample_hidden_size))
+            writer.add_uint32("bidirlm.audio.output_dim",     int(ac.output_dim))
+            writer.add_uint32("bidirlm.audio.max_source_pos", int(ac.max_source_positions))
+            writer.add_uint32("bidirlm.audio.n_window",       int(ac.n_window))
+            writer.add_uint32("bidirlm.audio.n_window_infer", int(ac.n_window_infer))
+            writer.add_uint32("bidirlm.audio.n_mels",         int(ac.num_mel_bins))
+            # Whisper-v3 mel spec (matches preprocessor_config.json:
+            # n_fft=400, hop_length=160, sampling_rate=16000)
+            writer.add_uint32("bidirlm.audio.n_fft",       400)
+            writer.add_uint32("bidirlm.audio.hop_length",  160)
+            writer.add_uint32("bidirlm.audio.win_length",  400)
+            writer.add_uint32("bidirlm.audio.sample_rate", 16000)
+
+            # Tensor name remap (HF safetensors → crisp_audio GGUF suffix).
+            audio_remap_static = {
+                "audio_tower.conv2d1.weight": ATPFX + "conv.1.weight",
+                "audio_tower.conv2d1.bias":   ATPFX + "conv.1.bias",
+                "audio_tower.conv2d2.weight": ATPFX + "conv.2.weight",
+                "audio_tower.conv2d2.bias":   ATPFX + "conv.2.bias",
+                "audio_tower.conv2d3.weight": ATPFX + "conv.3.weight",
+                "audio_tower.conv2d3.bias":   ATPFX + "conv.3.bias",
+                "audio_tower.conv_out.weight": ATPFX + "conv_out.weight",
+                # conv_out has bias=False in BidirLM — no entry.
+                "audio_tower.ln_post.weight": ATPFX + "ln_post.weight",
+                "audio_tower.ln_post.bias":   ATPFX + "ln_post.bias",
+                "audio_tower.proj1.weight":   ATPFX + "proj1.weight",
+                "audio_tower.proj1.bias":     ATPFX + "proj1.bias",
+                "audio_tower.proj2.weight":   ATPFX + "proj2.weight",
+                "audio_tower.proj2.bias":     ATPFX + "proj2.bias",
+            }
+            for hf, gg in audio_remap_static.items():
+                if hf in sd:
+                    add_tensor(gg, wt(sd[hf]))
+
+            n_audio_layers = int(ac.encoder_layers)
+            for i in range(n_audio_layers):
+                p = f"audio_tower.layers.{i}."
+                q = f"{ATPFX}blk.{i}."
+                for hf_suf, gg_suf in [
+                    ("self_attn_layer_norm.weight", "attn_norm.weight"),
+                    ("self_attn_layer_norm.bias",   "attn_norm.bias"),
+                    ("self_attn.q_proj.weight",     "attn_q.weight"),
+                    ("self_attn.q_proj.bias",       "attn_q.bias"),
+                    ("self_attn.k_proj.weight",     "attn_k.weight"),
+                    ("self_attn.k_proj.bias",       "attn_k.bias"),
+                    ("self_attn.v_proj.weight",     "attn_v.weight"),
+                    ("self_attn.v_proj.bias",       "attn_v.bias"),
+                    ("self_attn.out_proj.weight",   "attn_out.weight"),
+                    ("self_attn.out_proj.bias",     "attn_out.bias"),
+                    ("final_layer_norm.weight",     "ffn_norm.weight"),
+                    ("final_layer_norm.bias",       "ffn_norm.bias"),
+                    ("fc1.weight",                  "ffn_up.weight"),
+                    ("fc1.bias",                    "ffn_up.bias"),
+                    ("fc2.weight",                  "ffn_down.weight"),
+                    ("fc2.bias",                    "ffn_down.bias"),
+                ]:
+                    hf = p + hf_suf
+                    if hf in sd:
+                        add_tensor(q + gg_suf, wt(sd[hf]))
+            print(f"  audio: {n_audio_layers} encoder layers exported")
+
+            # Mel filterbank + Hann window (baked from WhisperFeatureExtractor).
+            try:
+                from transformers import WhisperFeatureExtractor
+                fe = WhisperFeatureExtractor.from_pretrained(args.model,
+                                                             trust_remote_code=True)
+                mel_filters = np.asarray(fe.mel_filters, dtype=np.float32)
+                writer.add_tensor(ATPFX + "mel_filters", mel_filters)
+                print(f"  audio.mel_filters: {mel_filters.shape}")
+            except Exception as e:
+                print(f"  audio.mel_filters: WhisperFeatureExtractor unavailable ({e})")
+            n_fft_w = 400
+            win = (0.5 - 0.5 * np.cos(2.0 * np.pi * np.arange(n_fft_w) / n_fft_w)).astype(np.float32)
+            writer.add_tensor(ATPFX + "mel_window", win)
+            print(f"  audio.mel_window: {win.shape}")
+
     writer.write_header_to_file()
     writer.write_kv_data_to_file()
     writer.write_tensors_to_file()

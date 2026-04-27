@@ -57,6 +57,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --capabilities   print model capability flags and exit\n");
     fprintf(stderr, "  --sparse         encode sparse term-weight vectors\n");
     fprintf(stderr, "  --colbert        encode ColBERT per-token vectors\n");
+    fprintf(stderr, "  --audio FILE     encode raw 16 kHz mono float32 PCM (.raw); cross-modal embedding\n");
     fprintf(stderr, "  --rerank QUERY   cross-encoder rerank documents against QUERY\n");
     fprintf(stderr, "  --biencoder QUERY  bi-encoder rerank documents against QUERY\n");
     fprintf(stderr, "  --top-n N        limit rerank output to top N documents\n");
@@ -88,6 +89,7 @@ int main(int argc, char ** argv) {
     bool auto_download = false;
     bool sparse_mode = false;
     bool colbert_mode = false;
+    std::string audio_path;  // .raw float32 16 kHz mono PCM
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-m") == 0 && i + 1 < argc) {
@@ -116,6 +118,8 @@ int main(int argc, char ** argv) {
             biencoder_query = argv[++i];
         } else if (strcmp(argv[i], "--top-n") == 0 && i + 1 < argc) {
             top_n = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "--audio") == 0 && i + 1 < argc) {
+            audio_path = argv[++i];
         } else if (strcmp(argv[i], "--auto-download") == 0) {
             auto_download = true;
         } else if (strcmp(argv[i], "--list-models") == 0) {
@@ -212,6 +216,57 @@ int main(int argc, char ** argv) {
                    crispembed_has_sparse(ctx),
                    crispembed_has_colbert(ctx),
                    crispembed_is_reranker(ctx));
+        }
+        crispembed_free(ctx);
+        return 0;
+    }
+
+    // Audio encoding (BidirLM-Omni etc.). Mutually exclusive with text modes;
+    // checked here before the texts-required gate.
+    if (!audio_path.empty()) {
+        FILE * af = std::fopen(audio_path.c_str(), "rb");
+        if (!af) {
+            fprintf(stderr, "error: cannot open audio file '%s'\n", audio_path.c_str());
+            crispembed_free(ctx);
+            return 1;
+        }
+        std::fseek(af, 0, SEEK_END);
+        long sz = std::ftell(af);
+        std::fseek(af, 0, SEEK_SET);
+        if (sz <= 0 || sz % sizeof(float) != 0) {
+            fprintf(stderr, "error: '%s' is not f32le PCM (size=%ld)\n",
+                    audio_path.c_str(), sz);
+            std::fclose(af);
+            crispembed_free(ctx);
+            return 1;
+        }
+        std::vector<float> pcm(sz / sizeof(float));
+        if (std::fread(pcm.data(), sizeof(float), pcm.size(), af) != pcm.size()) {
+            fprintf(stderr, "error: short read on '%s'\n", audio_path.c_str());
+            std::fclose(af);
+            crispembed_free(ctx);
+            return 1;
+        }
+        std::fclose(af);
+
+        int dim = 0;
+        const float * vec = crispembed_encode_audio(ctx, pcm.data(),
+                                                    (int)pcm.size(), &dim);
+        if (!vec || dim <= 0) {
+            fprintf(stderr, "error: audio encoding failed (model lacks audio tower?)\n");
+            crispembed_free(ctx);
+            return 1;
+        }
+        if (json_output) {
+            printf("{\"audio\": \"%s\", \"embedding\": [", json_escape(audio_path).c_str());
+            for (int j = 0; j < dim; ++j) {
+                printf("%.6f%s", vec[j], j + 1 < dim ? ", " : "");
+            }
+            printf("]}\n");
+        } else {
+            for (int j = 0; j < dim; ++j) {
+                printf("%.6f%s", vec[j], j + 1 < dim ? " " : "\n");
+            }
         }
         crispembed_free(ctx);
         return 0;
