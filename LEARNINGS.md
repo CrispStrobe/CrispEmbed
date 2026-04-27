@@ -706,6 +706,42 @@ allocation failures. Verify with `--save-baseline` / `--compare-baseline` in
 `tests/benchmark_bidirlm.py` — text-only cosine should remain ≥ 0.99999
 against the baseline taken before this change.
 
+## BidirLM-Omni: parity reference dtype matters
+
+When validating a quantized GGUF against a HuggingFace reference, the
+**reference dtype** is part of the comparison and silently degrades the
+upper bound. BidirLM-Omni-2.5B-Embedding ships its `model.safetensors`
+weights in bf16 — that's the dtype the model was trained in. The
+weights stored on disk *are* bf16; loading them into a torch model and
+calling `.to(torch.float32)` does not reconstruct the pre-bf16 values,
+it just zero-pads the mantissa. So:
+
+| reference dtype | what it tests | typical q4_k cosine |
+|---|---|---|
+| bf16 | q4_k weights vs the bf16 weights on disk | **≥ 0.999** |
+| fp16 | q4_k vs bf16 zero-padded → fp16 (basically bf16) | ≥ 0.999 |
+| fp32 | q4_k vs bf16 zero-padded → fp32 (bf16 + extra fp32 ops) | **≈ 0.93–0.95** |
+
+The fp32 path looks like "more precision is better" but it actually
+introduces an **uncontrolled** discrepancy: the model is now running in
+fp32 even though its trained weights aren't in fp32 — so torch and
+ggml accumulate different numerical paths through the same operations
+without a shared reference point. Worse, the disagreement isn't
+because of the q4_k weights; both `tests/test_bidirlm_text.py`
+(text-only) and `tests/test_bidirlm_image_text.py` (multimodal) show
+the **same** 0.93–0.95 cosine vs HF fp32, with no Phase-3-multimodal
+machinery in between for the text-only case.
+
+The fix in `tests/test_bidirlm_image_text.py`: the reference dtype is
+now a `--ref-dtype` flag, defaulting to bf16, with a per-dtype
+threshold (0.99 for bf16/fp16, 0.93 for fp32). Always reach for bf16
+when validating a BidirLM-Omni quant.
+
+Lesson: when designing a parity test, match the reference's storage
+dtype, not "the highest available precision." `.to(torch.float32)`
+only changes the dtype of the *tensor*, not the *information content*
+of the numbers stored in it.
+
 ## BidirLM-Omni: image-embed splice via mask + add
 
 HF does `inputs_embeds = inputs_embeds.masked_scatter(image_mask, image_embeds)`
