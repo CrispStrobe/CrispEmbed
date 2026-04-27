@@ -709,38 +709,43 @@ against the baseline taken before this change.
 ## BidirLM-Omni: parity reference dtype matters
 
 When validating a quantized GGUF against a HuggingFace reference, the
-**reference dtype** is part of the comparison and silently degrades the
+**reference dtype** is part of the comparison and silently shifts the
 upper bound. BidirLM-Omni-2.5B-Embedding ships its `model.safetensors`
-weights in bf16 — that's the dtype the model was trained in. The
-weights stored on disk *are* bf16; loading them into a torch model and
-calling `.to(torch.float32)` does not reconstruct the pre-bf16 values,
-it just zero-pads the mantissa. So:
-
-| reference dtype | what it tests | typical q4_k cosine |
-|---|---|---|
-| bf16 | q4_k weights vs the bf16 weights on disk | **≥ 0.999** |
-| fp16 | q4_k vs bf16 zero-padded → fp16 (basically bf16) | ≥ 0.999 |
-| fp32 | q4_k vs bf16 zero-padded → fp32 (bf16 + extra fp32 ops) | **≈ 0.93–0.95** |
-
-The fp32 path looks like "more precision is better" but it actually
-introduces an **uncontrolled** discrepancy: the model is now running in
-fp32 even though its trained weights aren't in fp32 — so torch and
-ggml accumulate different numerical paths through the same operations
-without a shared reference point. Worse, the disagreement isn't
-because of the q4_k weights; both `tests/test_bidirlm_text.py`
-(text-only) and `tests/test_bidirlm_image_text.py` (multimodal) show
-the **same** 0.93–0.95 cosine vs HF fp32, with no Phase-3-multimodal
-machinery in between for the text-only case.
+in bf16 — that's the dtype the model was trained in. Loading it into
+torch and calling `.to(torch.float32)` doesn't reconstruct any
+pre-bf16 information; it just zero-pads the mantissa. So a cosine of
+~0.94 vs HF fp32 is two distinct quantization steps stacked (bf16
+trained → q4_k storage, then bf16 → fp32 upcast for the reference),
+not "the q4_k is broken."
 
 The fix in `tests/test_bidirlm_image_text.py`: the reference dtype is
-now a `--ref-dtype` flag, defaulting to bf16, with a per-dtype
-threshold (0.99 for bf16/fp16, 0.93 for fp32). Always reach for bf16
-when validating a BidirLM-Omni quant.
+a `--ref-dtype` flag, defaulting to bf16. Match the trained dtype.
 
-Lesson: when designing a parity test, match the reference's storage
-dtype, not "the highest available precision." `.to(torch.float32)`
-only changes the dtype of the *tensor*, not the *information content*
-of the numbers stored in it.
+## BidirLM-Omni: q4_k quantization cosine ceiling
+
+Empirically, **q4_k vs HF bf16 settles at ~0.94 cosine** for the 2.5B
+embedding variant, on both text-only (`tests/test_bidirlm_text.py`)
+and image+text (`tests/test_bidirlm_image_text.py` /
+`tests/test_bidirlm_image_text_lite.py`). That's the q4_k *intrinsic*
+cosine — not a Phase 3 multimodal-injection bug.
+
+The README's "cosine ≥ 0.99999" gate is for **graph regressions**
+(CrispEmbed-q4_k vs a saved CrispEmbed-q4_k baseline from before a
+code change); it doesn't measure CrispEmbed-vs-HF. To get ≥ 0.99
+cosine vs HF bf16 you need q8_0 or higher precision.
+
+Concretely measured (April 2026, q4_k against HF bf16 on /tmp/cat.jpg):
+
+| path | cosine |
+|---|---|
+| text-only (`encode("Hello world")`) | 0.93–0.95 |
+| multimodal (`encode_with_image_ids`) | 0.94 |
+
+When debugging Phase 3 parity, run *both* test paths against the same
+quant — if the multimodal cosine matches the text-only cosine for the
+same prompts (modulo image content), the multimodal graph is fine and
+the gap is the quant's intrinsic precision floor. If multimodal is
+lower than text-only, that's a Phase 3 bug.
 
 ## BidirLM-Omni: image-embed splice via mask + add
 

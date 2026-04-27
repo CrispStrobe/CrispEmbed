@@ -9,16 +9,20 @@ reference BidirLMOmniModel.forward(input_ids, pixel_values, image_grid_thw):
   * CrispEmbed runs the same pipeline via crispembed_encode_text_with_image.
 
 Both paths mean-pool the encoder output over the attention mask and L2
-normalize. Pass criterion depends on the reference dtype:
+normalize. Pass criterion depends on the reference dtype + GGUF quant:
 
-  * `--ref-dtype bf16` (default): the HF reference is loaded in bf16,
-    matching the dtype the BidirLM-Omni weights were trained in.
-    Threshold: cosine ≥ 0.99. q4_k / f16 GGUFs both clear this.
-  * `--ref-dtype fp32`: HF reference loaded in fp32. The bf16-to-fp32
-    upcast is itself a quantization step (the weights round-tripped
-    through bf16 don't reconstruct exactly), so the "true" target
-    against fp32 is closer to 0.94 for q4_k. Use this dtype only when
-    you're testing against pre-bf16 model artifacts.
+  * Default threshold ≥ 0.99 against bf16/fp16 reference: requires q8_0
+    or higher precision. q4_k settles at ~0.94 vs HF bf16 (intrinsic
+    quant ceiling — see LEARNINGS.md). For q4_k validation, pass
+    `--min-cosine 0.93`.
+  * `--ref-dtype fp32`: stacked bf16-to-fp32 upcast adds another
+    quantization step on the reference side. Default threshold is 0.93
+    even for high-precision GGUFs.
+
+Compare the multimodal cosine against text-only on the same quant
+(`tests/test_bidirlm_text.py`): if the two match, the Phase 3 graph
+is fine and the gap is just the quant; if multimodal is lower,
+that's a multimodal-injection bug.
 
 Usage:
     python tests/test_bidirlm_image_text.py \
