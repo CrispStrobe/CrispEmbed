@@ -112,6 +112,17 @@ static const ModelEntry k_registry[] = {
      "https://huggingface.co/cstr/qwen3-embed-0.6b-GGUF/resolve/main/qwen3-embed-0.6b-q8_0.gguf",
      "Qwen3 1024d official (600M)", "1.0 GB"},
 
+    // BidirLM-Omni — bidirectional Qwen3 (text) + Whisper-shape audio tower (cross-modal).
+    // Two repos: -textonly is the smaller text-only variant; without suffix includes audio.
+    {"bidirlm-omni-2.5b",
+     "bidirlm-omni-2.5b-q8_0.gguf",
+     "https://huggingface.co/cstr/bidirlm-omni-2.5b-GGUF/resolve/main/bidirlm-omni-2.5b-q8_0.gguf",
+     "Qwen3-Bidirectional 2048d 90+langs text+audio (2.5B)", "3.1 GB"},
+    {"bidirlm-omni-2.5b-textonly",
+     "bidirlm-omni-2.5b-textonly-q8_0.gguf",
+     "https://huggingface.co/cstr/bidirlm-omni-2.5b-textonly-GGUF/resolve/main/bidirlm-omni-2.5b-textonly-q8_0.gguf",
+     "Qwen3-Bidirectional 2048d text-only (2.5B)", "2.6 GB"},
+
     // --- RAG-critical models (Phase 3) ---
 
     {"bge-small-en-v1.5",
