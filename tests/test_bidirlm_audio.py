@@ -91,7 +91,7 @@ def crispembed_audio_embed(gguf: str, pcm: np.ndarray, lib_path: str | None = No
     sys.path.insert(0, "python")
     from crispembed._binding import CrispEmbed
 
-    ce = CrispEmbed(model=gguf, lib_path=lib_path) if lib_path else CrispEmbed(model=gguf)
+    ce = CrispEmbed(gguf, lib_path=lib_path) if lib_path else CrispEmbed(gguf)
     if not ce.has_audio:
         raise RuntimeError("Loaded CrispEmbed build has no audio support — "
                            "rebuild with crisp_audio (CRISP_AUDIO_DIR found at configure time).")

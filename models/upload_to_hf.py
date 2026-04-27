@@ -421,6 +421,19 @@ MODELS = {
         "desc": "BidirLM-Omni 2.5B — Qwen3-derived bidirectional encoder, 2048-d shared embedding space, 90+ languages. Includes text + audio paths (audio via the shared CrispAudio library); the upstream model's vision tower is not yet supported.",
         "omni_text_audio": True,
     },
+    "bidirlm-omni-2.5b-textonly": {
+        "base_model": "BidirLM/BidirLM-Omni-2.5B-Embedding",
+        "arch": "Qwen3-Bidirectional",
+        "dim": 2048,
+        "layers": 28,
+        "params": "2.5B (text only)",
+        "pooling": "mean",
+        "tokenizer": "BPE",
+        "license": "apache-2.0",
+        "langs": ["multilingual"],
+        "desc": "BidirLM-Omni 2.5B — text-only GGUF. Qwen3-derived bidirectional encoder, 2048-d shared embedding space, 90+ languages. The upstream model's audio + vision towers are NOT included in this file (use the bidirlm-omni-2.5b-GGUF variant for cross-modal embedding).",
+        "text_only_omni": True,
+    },
 }
 
 
@@ -484,6 +497,24 @@ directory is not present at configure time, `crispembed_has_audio()` returns
 0 and the `--audio` flag fails — text encoding still works.
 """
         text_only_note = text_only_note.replace("{model_name}", model_name)
+    elif m.get("text_only_omni"):
+        text_only_note = """
+## Note: text-only GGUF
+
+The upstream model is omnimodal (text + image + audio). This GGUF contains
+**only the text path** — the bidirectional Qwen3 body with mean pooling,
+producing 2048-d embeddings in the model's shared cross-modal space.
+
+For text → text similarity (semantic search, retrieval, clustering across
+90+ languages), this GGUF is functionally complete and matches the upstream
+reference at cosine ≥ 0.999.
+
+For cross-modal queries (text ↔ image, text ↔ audio), use the
+[bidirlm-omni-2.5b-GGUF](https://huggingface.co/cstr/bidirlm-omni-2.5b-GGUF)
+variant — it includes the audio tower (text + audio cross-modal) and is
+the recommended choice for omnimodal retrieval. The vision tower is not
+yet supported by either GGUF.
+"""
 
     readme = f"""---
 license: {m["license"]}
