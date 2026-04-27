@@ -287,13 +287,21 @@ CrispEmbed/
       loads HF text + vision separately, reproduces `BidirLMOmniModel.forward` manually.
       Skips audio_tower, fits in 16 GB RAM, 4–5 min wall-clock.
 - [x] In-process C++ image preprocessor (`src/image_preprocess.{h,cpp}`):
-      smart_resize + Catmull-Rom bicubic+antialias + CLIP normalize + Qwen2VL patchify
-      via stb_image. Cosine ≈ 0.97 vs HF Python preprocessor (residual is JPEG decoder
-      differences PIL/libjpeg-turbo vs stb). C ABI: `crispembed_encode_image_file`,
-      `crispembed_encode_text_with_image_file`, `crispembed_preprocess_image`.
+      smart_resize + Catmull-Rom bicubic+antialias + per-channel normalize +
+      Qwen2VL patchify via stb_image. C ABI: `crispembed_encode_image_file`,
+      `crispembed_encode_text_with_image_file`, `crispembed_preprocess_image`,
+      `crispembed_preprocess_image_rgb` (caller-supplied RGB bytes for byte-tight
+      JPEG-decoder parity when needed). Empirical cosine vs HF Python preprocessor
+      on `/tmp/cat.jpg`: pixel_values 0.999989, encode_image embedding 0.999984.
+      Sub-1e-5 residual is sub-pixel torchvision-uint8 bicubic kernel quantization
+      (PyTorch uses int16 weights for the uint8 AA path; we use float weights).
 - [x] Stale-GGUF fallbacks (`load_decoder_model`): recover image_token_id /
       vision_start / vision_end from `tokenizer.ggml.tokens` string match,
       spatial_merge_size from `bidirlm.vision.*`, mrope_section default to
       [24, 20, 20] for BidirLM-Omni when decoder.* keys are missing.
-- [ ] JPEG-decoder parity (libjpeg-turbo vs stb_image — close 0.97 → 0.99 cosine)
-- [ ] Image batching in `encode_text_with_image` (HF's `image_grid_thw` already supports it)
+- [x] Converter writes `bidirlm.vision.image_mean / image_std / min_pixels /
+      max_pixels` into the GGUF so the C++ runtime can read preprocessing
+      hyperparameters from the model file (currently consumed via hardcoded
+      defaults; trivial to wire when a non-BidirLM VL model lands).
+- [ ] Image batching in `encode_text_with_image` (HF's `image_grid_thw` already
+      supports it; ABI accepts n_images > 1; need a multi-image parity test)
