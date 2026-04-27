@@ -541,7 +541,33 @@ def main():
     # filterbank + Hann window so crisp_audio can compute log-mel from raw
     # PCM at runtime without re-implementing the Slaney filterbank in C++.
     # ---------------------------------------------------------------------
-    if is_bidirlm_omni and ollama_mode is False:
+    # Audio + vision exports run regardless of ollama_mode. The
+    # bidirlm.{audio,vision}.* metadata + audio_tower.* / visual.* tensor
+    # names don't collide with Ollama's schema, so the same GGUF works in
+    # both runtimes (Ollama just ignores the extras). This is what enables
+    # a single bidirlm-omni-2.5b-{f16,q8_0,...}.gguf to carry text + audio
+    # + vision in one file.
+    #
+    # is_f32_only is defined here once so both the audio block (just below)
+    # and the vision block (further down) can share it. Earlier the audio
+    # block was gated on `not ollama_mode`, leaving is_f32_only undefined
+    # in ollama mode — which broke the vision export when it tried to use
+    # it. Hoisting it out fixes that and makes the rule apply uniformly.
+    def is_f32_only(name):
+        if name.endswith(".bias"):
+            return True
+        if name.endswith(".ln_post.weight") or name.endswith("ln_post.weight"):
+            return True
+        # *attn_norm.weight, *ffn_norm.weight, *_norm.weight,
+        # plus visual.blk.*.norm{1,2}.weight (vision tower uses numbered
+        # LayerNorms — must stay f32 or ggml_mul corrupts).
+        if name.endswith("_norm.weight") or name.endswith("norm.weight"):
+            return True
+        if ".norm" in name and name.endswith(".weight"):
+            return True
+        return False
+
+    if is_bidirlm_omni:
         # config.audio_config still present — we only promoted text_config
         # fields earlier, leaving audio_config untouched.
         ac = getattr(config, "audio_config", None)
@@ -592,19 +618,7 @@ def main():
             # Conv kernels are 4D and go through `wt`; they happen to be
             # f16-or-f32 per --dtype but are only ever multiplied with F32
             # inputs (mel_batched), which Metal's conv2d kernel accepts.
-            def is_f32_only(name):
-                if name.endswith(".bias"):
-                    return True
-                if name.endswith(".ln_post.weight") or name.endswith("ln_post.weight"):
-                    return True
-                # *attn_norm.weight, *ffn_norm.weight, *_norm.weight,
-                # plus visual.blk.*.norm{1,2}.weight (vision tower uses
-                # numbered LayerNorms — must stay f32 or ggml_mul corrupts).
-                if name.endswith("_norm.weight") or name.endswith("norm.weight"):
-                    return True
-                if ".norm" in name and name.endswith(".weight"):
-                    return True
-                return False
+            # is_f32_only is hoisted to the function scope above.
 
             def aw(name, hf_key):
                 if hf_key not in sd:
