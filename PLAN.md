@@ -275,13 +275,17 @@ CrispEmbed/
 
 ### Multimodal status (April 2026)
 
-- [x] BidirLM-Omni text path through `decoder_embed.cpp` (cos ≥ 0.999 vs HF)
+- [x] BidirLM-Omni text path through `decoder_embed.cpp` (cos ≥ 0.999 vs HF bf16)
 - [x] BidirLM-Omni audio path through `bidirlm_audio.cpp` + crisp_audio (cos = 0.995 vs HF)
-- [x] BidirLM-Omni vision tower in `bidirlm_vision.cpp` (cos ≥ 0.999 vs HF, image_embeds + 3 deepstack slabs)
-- [x] DeepStack injection + 3D interleaved-MRoPE in `decoder_embed.cpp` (Phase 3)
+- [x] BidirLM-Omni vision tower in `bidirlm_vision.cpp` (cos ≥ 0.999 vs HF bf16, image_embeds + deepstack slabs)
+- [x] DeepStack injection + 3D interleaved-MRoPE in `decoder_embed.cpp` (Phase 3) — **validated cosine = 0.998903 vs HF bf16** on `bidirlm-omni-2.5b-q8_0.gguf` via `tests/test_bidirlm_image_text_lite.py`. q4_k drops to ~0.94 on the same path, identical to text-only q4_k (intrinsic quant floor — see LEARNINGS.md "q4_k quantization cosine ceiling"), not a multimodal-injection bug.
 - [x] `crispembed_encode_text_with_image` C ABI + Python `encode_text_with_image()` wrapper
-- [x] CLI `--image-raw patches.f32 --grid-thw T,H,W` for direct patch-buffer encoding
+- [x] `crispembed_encode_with_image_ids` (pre-tokenized variant for parity tests)
+- [x] CLI `--image FILE` (in-process preprocessor) + `--image-raw patches.f32 --grid-thw T,H,W`
 - [x] Decoder `ggml_backend_sched` initialization (was previously CPU-only fallback)
+- [x] Memory-efficient lite parity test (`tests/test_bidirlm_image_text_lite.py`):
+      loads HF text + vision separately, reproduces `BidirLMOmniModel.forward` manually.
+      Skips audio_tower, fits in 16 GB RAM, 4–5 min wall-clock.
 - [x] In-process C++ image preprocessor (`src/image_preprocess.{h,cpp}`):
       smart_resize + Catmull-Rom bicubic+antialias + CLIP normalize + Qwen2VL patchify
       via stb_image. Cosine ≈ 0.97 vs HF Python preprocessor (residual is JPEG decoder
