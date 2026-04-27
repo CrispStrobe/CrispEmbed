@@ -43,6 +43,14 @@ struct dec_model {
     float embed_scale = 1.0f; // Gemma3: sqrt(hidden_size)
     bool gemma_norm = false;  // Gemma3: RMSNorm uses (1 + weight) instead of weight
 
+    // Multimodal — BidirLM-Omni. mrope_section sums to head_dim/2 when
+    // present; [0,0,0] (or absent) means standard RoPE (text-only path).
+    int mrope_section[3] = {0, 0, 0};
+    int vision_start_token_id = -1;
+    int vision_end_token_id = -1;
+    int image_token_id = -1;
+    int spatial_merge_size = 1;
+
     ggml_tensor * token_embd = nullptr;
     ggml_tensor * output_norm = nullptr;
     std::vector<dec_layer> layers;
@@ -51,8 +59,24 @@ struct dec_model {
 bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
                          const char * path, ggml_backend_t backend);
 
+// Optional multimodal extension: when `image_embeds` and friends are
+// supplied, the decoder uses 3D MRoPE position ids and replaces token
+// embeddings at `image_token_id` positions with `image_embeds` rows; at
+// each of the first `n_deepstack` layers it adds `deepstack[k]` rows
+// at the same positions. Pass nullptr for text-only.
+struct dec_image_input {
+    const float * image_embeds = nullptr;     // (n_image_tokens, n_embd)
+    const float * deepstack    = nullptr;     // (n_deepstack, n_image_tokens, n_embd) flat
+    int n_image_tokens = 0;                    // total across all images
+    int n_deepstack = 0;
+    // Per-image grid (t, h_patches, w_patches), flattened.
+    const int32_t * grid_thw = nullptr;       // (n_images, 3)
+    int n_images = 0;
+};
+
 std::vector<float> decoder_encode_tokens(
     const dec_model & m, ggml_backend_t backend,
     const embed_tokens & tokens, int n_threads,
     ggml_backend_sched_t sched = nullptr,
-    std::vector<uint8_t> * compute_meta = nullptr);
+    std::vector<uint8_t> * compute_meta = nullptr,
+    const dec_image_input * img = nullptr);

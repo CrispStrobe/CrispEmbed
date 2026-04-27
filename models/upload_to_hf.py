@@ -418,10 +418,12 @@ MODELS = {
         "tokenizer": "BPE",
         "license": "apache-2.0",
         "langs": ["multilingual"],
-        "desc": "BidirLM-Omni 2.5B — Qwen3-derived bidirectional encoder, 2048-d shared embedding space, 90+ languages. Includes text + audio paths (audio via the shared CrispAudio library); the upstream model's vision tower is not yet supported.",
-        "omni_text_audio": True,
-        # Cosine vs HF reference for the audio path (jfk.wav, 11 s mono PCM).
-        # Text-side parity matches the textonly variant.
+        "desc": "BidirLM-Omni 2.5B — Qwen3-derived bidirectional encoder, 2048-d shared embedding space, 90+ languages. Includes text + audio + vision paths (audio via the shared CrispAudio library; vision via the BidirLM ViT + DeepStack hierarchy).",
+        "omni_text_audio_vision": True,
+        # Cosine vs HF reference. Text/audio numbers carry over from the
+        # earlier audio-only build (re-validated below). Vision numbers are
+        # the per-token cosine averaged over image_embeds + each deepstack
+        # slab on the cat.jpg test image.
         "parity_audio": {
             "f16":  0.9949,
             "q8_0": 0.9952,
@@ -435,6 +437,10 @@ MODELS = {
             "q6_k": 0.9939,
             "q5_k": 0.9831,
             "q4_k": 0.9374,
+        },
+        # Filled in by tests/test_bidirlm_vision.py per quant.
+        "parity_vision": {
+            "f16":  0.9999,
         },
     },
     "bidirlm-omni-2.5b-textonly": {
@@ -465,40 +471,54 @@ MODELS = {
 def _parity_table(m):
     """Render parity-vs-HF-reference tables if the model entry declares them.
 
-    Supports either:
-      - "parity" → single column (text)
-      - "parity_text" + "parity_audio" → two columns side by side
+    Supports any combination of:
+      - "parity"          → single column (text only)
+      - "parity_text"     → text column
+      - "parity_audio"    → audio column
+      - "parity_vision"   → vision column (per-token cosine on image_embeds)
     """
-    p_text  = m.get("parity_text") or m.get("parity")
-    p_audio = m.get("parity_audio")
-    if not p_text and not p_audio:
+    p_text   = m.get("parity_text") or m.get("parity")
+    p_audio  = m.get("parity_audio")
+    p_vision = m.get("parity_vision")
+    if not p_text and not p_audio and not p_vision:
         return ""
 
-    quants = [q for q in ("f16", "q8_0", "q6_k", "q5_k", "q4_k")
-              if (p_text and q in p_text) or (p_audio and q in p_audio)]
+    all_quants = ("f16", "q8_0", "q6_k", "q5_k", "q4_k")
+    quants = [q for q in all_quants
+              if (p_text and q in p_text)
+              or (p_audio and q in p_audio)
+              or (p_vision and q in p_vision)]
 
-    if p_audio:
-        header = "| Quant | Text | Audio |\n|------|-------:|-------:|\n"
-        rows = "\n".join(
-            "| {q} | {t} | {a} |".format(
-                q=q,
-                t=f"{p_text[q]:.4f}" if (p_text and q in p_text) else "—",
-                a=f"{p_audio[q]:.4f}" if q in p_audio else "—",
-            ) for q in quants
-        )
-    else:
-        header = "| Quant | Cosine |\n|------|-------:|\n"
-        rows = "\n".join(f"| {q} | {p_text[q]:.4f} |" for q in quants)
+    cols = ["Quant"]
+    if p_text:   cols.append("Text")
+    if p_audio:  cols.append("Audio")
+    if p_vision: cols.append("Vision")
+    header = "| " + " | ".join(cols) + " |\n"
+    header += "|" + "|".join(["------"] + ["-------:"] * (len(cols) - 1)) + "|\n"
+
+    def cell(p, q):
+        return f"{p[q]:.4f}" if (p and q in p) else "—"
+    rows = []
+    for q in quants:
+        bits = [q]
+        if p_text:   bits.append(cell(p_text, q))
+        if p_audio:  bits.append(cell(p_audio, q))
+        if p_vision: bits.append(cell(p_vision, q))
+        rows.append("| " + " | ".join(bits) + " |")
+    body = "\n".join(rows)
 
     note = ""
-    low_text  = [q for q, c in (p_text  or {}).items() if c < 0.99]
-    low_audio = [q for q, c in (p_audio or {}).items() if c < 0.99]
-    if low_text or low_audio:
+    low_text   = [q for q, c in (p_text   or {}).items() if c < 0.99]
+    low_audio  = [q for q, c in (p_audio  or {}).items() if c < 0.99]
+    low_vision = [q for q, c in (p_vision or {}).items() if c < 0.99]
+    if low_text or low_audio or low_vision:
         bits = []
         if low_text:
             bits.append("text: " + ", ".join(f"`{q}` ({p_text[q]:.3f})" for q in low_text))
         if low_audio:
             bits.append("audio: " + ", ".join(f"`{q}` ({p_audio[q]:.3f})" for q in low_audio))
+        if low_vision:
+            bits.append("vision: " + ", ".join(f"`{q}` ({p_vision[q]:.3f})" for q in low_vision))
         note = (
             "\n*Note:* below the 0.99 retrieval-quality bar — "
             + "; ".join(bits)
@@ -506,13 +526,18 @@ def _parity_table(m):
             + "correct for similarity ranking) but expect small differences in "
             + "nearest-neighbor results vs the upstream f32 reference.\n"
         )
+    modalities = " + ".join(filter(None, [
+        "text"   if p_text   else None,
+        "audio (jfk.wav)"  if p_audio  else None,
+        "vision (cat.jpg)" if p_vision else None,
+    ]))
     return f"""
 ## Parity vs HuggingFace reference
 
 Cosine similarity vs the upstream sentence-transformers reference on a fixed
-test set ({"text + audio" if p_audio else "text"}, jfk.wav for audio):
+test set ({modalities}):
 
-{header}{rows}
+{header}{body}
 {note}"""
 
 
@@ -539,7 +564,22 @@ def make_readme(model_name, files_info):
     ])
 
     text_only_note = ""
-    if m.get("omni_text_audio"):
+    if m.get("omni_text_audio") or m.get("omni_text_audio_vision"):
+        has_vision = m.get("omni_text_audio_vision", False)
+        vision_blurb = ("- **Vision** — 24-layer ViT with 4-corner bilinear pos interp, "
+                        "2D rotate-half RoPE, and DeepStack hierarchy (3 hooks at config-listed "
+                        "layers). Encodes preprocessed image patches into the same 2048-d shared "
+                        "space as text, validated at cosine ≥ 0.9999 per-token vs the HF reference.\n")
+        if not has_vision:
+            vision_blurb = ("\nThe 24-layer ViT vision tower with hierarchical (deepstack) "
+                            "projection is **not** yet supported, so text↔image queries "
+                            "cannot be performed with this GGUF alone.\n")
+        cli_extra = ""
+        if has_vision:
+            cli_extra = ("\n# Image (Python — preprocessor needs Pillow + transformers)\n"
+                         "python -c \"from crispembed import CrispEmbed; "
+                         "ce=CrispEmbed('{model_name}'); "
+                         "print(ce.encode_image('photo.jpg').shape)\"\n")
         text_only_note = """
 ## Modalities
 
@@ -550,11 +590,7 @@ The upstream model is omnimodal (text + image + audio). This GGUF includes:
 - **Audio** — Whisper-shape audio tower (Conv2D stem + 24-layer encoder +
   1024→2048 projection). Encodes raw 16 kHz mono PCM to the same 2048-d
   shared embedding space as text, enabling cross-modal cosine similarity.
-
-The 24-layer ViT vision tower with hierarchical (deepstack) projection is
-**not** yet supported, so text↔image queries cannot be performed with this
-GGUF alone.
-
+""" + vision_blurb + """
 ### CLI usage
 
 ```bash
@@ -564,7 +600,7 @@ GGUF alone.
 # Audio (raw f32le 16 kHz mono PCM)
 ffmpeg -i clip.wav -ar 16000 -ac 1 -f f32le clip.raw
 ./crispembed -m {model_name} --audio clip.raw
-```
+""" + cli_extra + """```
 
 ### Build requirements
 
@@ -574,6 +610,10 @@ CrispEmbed's CMake auto-discovers it at the sibling-repo path
 `../CrispASR/crisp_audio` (overridable via `-DCRISP_AUDIO_DIR=...`). If that
 directory is not present at configure time, `crispembed_has_audio()` returns
 0 and the `--audio` flag fails — text encoding still works.
+
+The vision tower is built unconditionally (no sibling-repo dependency).
+Image preprocessing in Python uses HF's `Qwen2VLImageProcessorFast` —
+`pip install transformers torchvision pillow`.
 """
         text_only_note = text_only_note.replace("{model_name}", model_name)
     elif m.get("text_only_omni"):
@@ -590,9 +630,8 @@ reference at cosine ≥ 0.999.
 
 For cross-modal queries (text ↔ image, text ↔ audio), use the
 [bidirlm-omni-2.5b-GGUF](https://huggingface.co/cstr/bidirlm-omni-2.5b-GGUF)
-variant — it includes the audio tower (text + audio cross-modal) and is
-the recommended choice for omnimodal retrieval. The vision tower is not
-yet supported by either GGUF.
+variant — it includes both the audio tower and the vision tower (ViT +
+DeepStack), enabling full omnimodal retrieval.
 """
 
     readme = f"""---

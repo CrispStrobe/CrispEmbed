@@ -245,6 +245,30 @@ def main():
             writer.add_float32("decoder.embed_scale", embed_scale)
         writer.add_uint32("decoder.gemma_norm", int(gemma_norm))
         writer.add_uint32("decoder.is_bidirectional", int(is_bidirectional))
+        # MRoPE / multimodal metadata (BidirLM-Omni). Absent or [0,0,0]
+        # means the runtime falls back to standard RoPE (identical behavior
+        # for text-only inputs since all 3 channels share the same position).
+        rs = getattr(config, "rope_scaling", None) or {}
+        if isinstance(rs, dict) and "mrope_section" in rs:
+            secs = list(rs["mrope_section"])[:3]
+            while len(secs) < 3: secs.append(0)
+            writer.add_array("decoder.mrope_section", [int(x) for x in secs])
+            print(f"  mrope_section: {secs}")
+        # Multimodal token IDs (defaults from BidirLMOmniConfig).
+        for tk in ("vision_start_token_id", "vision_end_token_id",
+                   "image_token_id", "video_token_id",
+                   "audio_token_id", "audio_start_token_id",
+                   "audio_end_token_id"):
+            v = getattr(config, tk, None)
+            if v is not None:
+                writer.add_uint32(f"decoder.{tk}", int(v))
+        # Spatial merge size (mirror of vision_config.spatial_merge_size,
+        # exported here for the decoder so encode_image_text can compute
+        # n_image_tokens from grid_thw without loading vision_config).
+        vc = getattr(config, "vision_config", None)
+        if vc is not None and getattr(vc, "spatial_merge_size", None):
+            writer.add_uint32("decoder.spatial_merge_size",
+                              int(vc.spatial_merge_size))
         print(f"  format: CrispEmbed")
 
     # Tokenizer
@@ -654,7 +678,10 @@ def main():
     # mirrors the audio export: `visual.patch_embed.*`, `visual.pos_embed.*`,
     # `visual.blk.{i}.*`, `visual.merger.*`, `visual.deepstack.{0,1,2}.*`.
     # ---------------------------------------------------------------------
-    if is_bidirlm_omni and ollama_mode is False:
+    # Vision tower export — runs regardless of ollama_mode. The bidirlm.vision.*
+    # metadata + visual.* tensor names don't collide with Ollama's schema, so
+    # the same GGUF works in both runtimes (Ollama just ignores the extras).
+    if is_bidirlm_omni:
         vc = getattr(config, "vision_config", None)
         if vc is None:
             print("  vision: no vision_config — skipping")

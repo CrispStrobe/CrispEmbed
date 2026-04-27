@@ -46,6 +46,21 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
     m.embed_scale = f32v("decoder.embed_scale", 1.0f);
     m.gemma_norm = u32("decoder.gemma_norm", 0) != 0;
 
+    // MRoPE / multimodal metadata (BidirLM-Omni). All optional — absent ⇒
+    // text-only path with standard RoPE.
+    int sec_idx = gguf_find_key(g, "decoder.mrope_section");
+    if (sec_idx >= 0) {
+        const int n = (int)gguf_get_arr_n(g, sec_idx);
+        const uint32_t * arr = (const uint32_t *)gguf_get_arr_data(g, sec_idx);
+        for (int i = 0; i < std::min(n, 3); i++) {
+            m.mrope_section[i] = (int)arr[i];
+        }
+    }
+    m.vision_start_token_id = u32("decoder.vision_start_token_id", -1);
+    m.vision_end_token_id   = u32("decoder.vision_end_token_id",   -1);
+    m.image_token_id        = u32("decoder.image_token_id",        -1);
+    m.spatial_merge_size    = u32("decoder.spatial_merge_size",     1);
+
     gguf_free(g);
 
     if (!core_gguf::load_weights(path, backend, "decoder_embed", wl))
@@ -93,7 +108,8 @@ std::vector<float> decoder_encode_tokens(
     const dec_model & m, ggml_backend_t backend,
     const embed_tokens & tokens, int n_threads,
     ggml_backend_sched_t sched,
-    std::vector<uint8_t> * compute_meta) {
+    std::vector<uint8_t> * compute_meta,
+    const dec_image_input * /*img*/) {  // TODO: deepstack injection (Phase 3 follow-up)
 
     const int T = (int)tokens.ids.size();
     const int H = m.n_embd;
