@@ -438,9 +438,17 @@ MODELS = {
             "q5_k": 0.9831,
             "q4_k": 0.9374,
         },
-        # Filled in by tests/test_bidirlm_vision.py per quant.
+        # tests/test_bidirlm_vision.py vs HF reference on cat.jpg
+        # (per-token cosine on image_embeds; deepstack tracks similar). q5_k
+        # and q4_k drop below the 0.99 retrieval-quality bar — ranking is
+        # still directionally correct (>0.96 on q4_k) but expect small
+        # nearest-neighbor differences vs the f32 reference.
         "parity_vision": {
             "f16":  0.9999,
+            "q8_0": 0.9953,
+            "q6_k": 0.9939,
+            "q5_k": 0.9884,
+            "q4_k": 0.9662,
         },
     },
     "bidirlm-omni-2.5b-textonly": {
