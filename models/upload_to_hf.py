@@ -408,6 +408,19 @@ MODELS = {
         "desc": "MixedBread Rerank Base v1. Cross-encoder reranker for English, good quality/speed balance.",
         "is_reranker": True,
     },
+    "bidirlm-omni-2.5b": {
+        "base_model": "BidirLM/BidirLM-Omni-2.5B-Embedding",
+        "arch": "Qwen3-Bidirectional",
+        "dim": 2048,
+        "layers": 28,
+        "params": "2.5B",
+        "pooling": "mean",
+        "tokenizer": "BPE",
+        "license": "apache-2.0",
+        "langs": ["multilingual"],
+        "desc": "BidirLM-Omni 2.5B — Qwen3-derived bidirectional encoder, 2048-d shared embedding space, 90+ languages. Includes text + audio paths (audio via the shared CrispAudio library); the upstream model's vision tower is not yet supported.",
+        "omni_text_audio": True,
+    },
 }
 
 
@@ -433,6 +446,45 @@ def make_readme(model_name, files_info):
         m["arch"].lower(), "crispembed",
     ])
 
+    text_only_note = ""
+    if m.get("omni_text_audio"):
+        text_only_note = """
+## Modalities
+
+The upstream model is omnimodal (text + image + audio). This GGUF includes:
+
+- **Text** — bidirectional Qwen3 body with mean pooling. Validated against the
+  upstream reference at cosine ≥ 0.999 across the test set.
+- **Audio** — Whisper-shape audio tower (Conv2D stem + 24-layer encoder +
+  1024→2048 projection). Encodes raw 16 kHz mono PCM to the same 2048-d
+  shared embedding space as text, enabling cross-modal cosine similarity.
+
+The 24-layer ViT vision tower with hierarchical (deepstack) projection is
+**not** yet supported, so text↔image queries cannot be performed with this
+GGUF alone.
+
+### CLI usage
+
+```bash
+# Text
+./crispembed -m {model_name} "your query"
+
+# Audio (raw f32le 16 kHz mono PCM)
+ffmpeg -i clip.wav -ar 16000 -ac 1 -f f32le clip.raw
+./crispembed -m {model_name} --audio clip.raw
+```
+
+### Build requirements
+
+The audio path is provided by the shared **CrispAudio** library (lives in
+[CrispASR/crisp_audio](https://github.com/CrispStrobe/CrispASR/tree/main/crisp_audio)).
+CrispEmbed's CMake auto-discovers it at the sibling-repo path
+`../CrispASR/crisp_audio` (overridable via `-DCRISP_AUDIO_DIR=...`). If that
+directory is not present at configure time, `crispembed_has_audio()` returns
+0 and the `--audio` flag fails — text encoding still works.
+"""
+        text_only_note = text_only_note.replace("{model_name}", model_name)
+
     readme = f"""---
 license: {m["license"]}
 language: [{langs}]
@@ -446,7 +498,7 @@ base_model: {m["base_model"]}
 GGUF format of [{m["base_model"]}](https://huggingface.co/{m["base_model"]}) for use with [CrispEmbed](https://github.com/CrispStrobe/CrispEmbed).
 
 {m["desc"]}
-
+{text_only_note}
 ## Files
 
 | File | Quantization | Size |
@@ -506,7 +558,7 @@ curl -X POST http://localhost:8080/v1/embeddings \\
 
 - Original model: [{m["base_model"]}](https://huggingface.co/{m["base_model"]})
 - Inference engine: [CrispEmbed](https://github.com/CrispStrobe/CrispEmbed) (ggml-based)
-- Conversion: `convert-{"decoder" if m["arch"] in ("Qwen3","Gemma3") else "bert"}-embed-to-gguf.py`
+- Conversion: `convert-{"decoder" if any(a in m["arch"] for a in ("Qwen3","Gemma3")) else "bert"}-embed-to-gguf.py`
 """
     return readme
 
