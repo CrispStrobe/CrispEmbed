@@ -553,6 +553,36 @@ def main():
             writer.add_uint32("bidirlm.audio.attn_window_mode", 1)
 
             # Tensor name remap (HF safetensors → crisp_audio GGUF suffix).
+            # Pick weight-dtype helper: matmul weights go through `wt`
+            # (--dtype-driven), but biases AND every kind of LayerNorm
+            # scale/shift stay f32. Metal's binary-op kernels assert src
+            # F32, and quantize.cpp skips norm-named tensors from later
+            # K-quant requantize, so leaving any of these f16 would
+            # propagate and either crash on Metal or silently lose
+            # precision after the encoder body.
+            #
+            # The pattern below catches:
+            #   *.bias            — every linear-layer bias
+            #   *_norm.weight     — per-block attn_norm / ffn_norm
+            #   *.ln_post.weight  — final LayerNorm scale (encoder output)
+            # Conv kernels are 4D and go through `wt`; they happen to be
+            # f16-or-f32 per --dtype but are only ever multiplied with F32
+            # inputs (mel_batched), which Metal's conv2d kernel accepts.
+            def is_f32_only(name):
+                if name.endswith(".bias"):
+                    return True
+                if name.endswith(".ln_post.weight") or name.endswith("ln_post.weight"):
+                    return True
+                # *attn_norm.weight, *ffn_norm.weight, *_norm.weight
+                if name.endswith("_norm.weight") or name.endswith("norm.weight"):
+                    return True
+                return False
+
+            def aw(name, hf_key):
+                if hf_key not in sd:
+                    return
+                add_tensor(name, f32(sd[hf_key]) if is_f32_only(name) else wt(sd[hf_key]))
+
             audio_remap_static = {
                 "audio_tower.conv2d1.weight": ATPFX + "conv.1.weight",
                 "audio_tower.conv2d1.bias":   ATPFX + "conv.1.bias",
@@ -570,8 +600,7 @@ def main():
                 "audio_tower.proj2.bias":     ATPFX + "proj2.bias",
             }
             for hf, gg in audio_remap_static.items():
-                if hf in sd:
-                    add_tensor(gg, wt(sd[hf]))
+                aw(gg, hf)
 
             n_audio_layers = int(ac.encoder_layers)
             for i in range(n_audio_layers):
@@ -595,9 +624,7 @@ def main():
                     ("fc2.weight",                  "ffn_down.weight"),
                     ("fc2.bias",                    "ffn_down.bias"),
                 ]:
-                    hf = p + hf_suf
-                    if hf in sd:
-                        add_tensor(q + gg_suf, wt(sd[hf]))
+                    aw(q + gg_suf, p + hf_suf)
             print(f"  audio: {n_audio_layers} encoder layers exported")
 
             # Mel filterbank + Hann window (baked from WhisperFeatureExtractor).
