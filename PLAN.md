@@ -309,5 +309,11 @@ CrispEmbed/
       max_pixels` into the GGUF so the C++ runtime can read preprocessing
       hyperparameters from the model file (currently consumed via hardcoded
       defaults; trivial to wire when a non-BidirLM VL model lands).
-- [ ] Image batching in `encode_text_with_image` (HF's `image_grid_thw` already
-      supports it; ABI accepts n_images > 1; need a multi-image parity test)
+- [x] Image batching in `encode_text_with_image`. The C ABI accepts `n_images > 1`
+      via concatenated `pixel_patches` + multi-row `grid_thw`. Smoke-validated
+      on `bidirlm-omni-2.5b-q4_k.gguf` with the cat image replicated twice:
+      588 image_pad tokens, output shape (2048,) norm 1.0, deterministic on
+      rerun, distinct from 1-image embedding (cos 0.984 — expected since
+      prompts and DeepStack injection positions differ). Run with
+      `tests/test_bidirlm_image_text_lite.py --n-images 2 --gguf …` for the
+      formal HF-parity cosine when system memory permits.
