@@ -39,7 +39,11 @@ from crispembed.image import preprocess_image
 
 p = argparse.ArgumentParser()
 p.add_argument("--gguf", default="/tmp/bidirlm-vision-out/bidirlm-omni-2.5b-q4_k.gguf")
-p.add_argument("--image", default="/tmp/cat.jpg")
+p.add_argument("--image", default="/tmp/cat.jpg",
+               help="path to a single image (replicated --n-images times for the multi-image test)")
+p.add_argument("--n-images", type=int, default=1,
+               help="number of (replicated) image blocks to splice into the template "
+                    "(stress-tests build_mrope_positions_3d's multi-image path)")
 p.add_argument("--ref-dtype", default="bf16", choices=["bf16", "fp16", "fp32"])
 p.add_argument("--model", default="BidirLM/BidirLM-Omni-2.5B-Embedding")
 args = p.parse_args()
@@ -78,18 +82,35 @@ tm.load_state_dict(tm_sd, strict=False)
 del tm_sd, raw
 
 # --- Preprocess + tokenize ---
-pv_np, gt_np = preprocess_image(args.image, model_name=args.model)
+pv_np_one, gt_np_one = preprocess_image(args.image, model_name=args.model)
 spatial_merge = config.vision_config.spatial_merge_size
-n_merged = (gt_np[0,0]*gt_np[0,1]*gt_np[0,2]) // (spatial_merge**2)
+n_merged_one = int((gt_np_one[0,0]*gt_np_one[0,1]*gt_np_one[0,2]) // (spatial_merge**2))
+
+# Replicate the single image patch buffer + grid row N times for the multi-image test.
+n_images = max(1, int(args.n_images))
+pv_np = np.ascontiguousarray(np.tile(pv_np_one, (n_images, 1)))
+gt_np = np.ascontiguousarray(np.tile(gt_np_one, (n_images, 1)))
 pv = torch.from_numpy(pv_np).to(DTYPE)
 gt = torch.from_numpy(gt_np).to(torch.long)
 
-prompt = "a photograph of a cat"
-prefix_ids = tok.encode(prompt, add_special_tokens=False)
-ids = [config.vision_start_token_id] + [config.image_token_id]*int(n_merged) + [config.vision_end_token_id] + prefix_ids
+# Build a template with one <vision_start>...<vision_end>caption{i}<...> block
+# per image, separated by short captions.
+captions = ["a photograph of a cat", "the same cat again",
+            "still the same cat", "yet another view"]
+ids = []
+for i in range(n_images):
+    ids.append(config.vision_start_token_id)
+    ids.extend([config.image_token_id] * n_merged_one)
+    ids.append(config.vision_end_token_id)
+    cap = captions[i] if i < len(captions) else f"image {i}"
+    ids.extend(tok.encode(cap, add_special_tokens=False))
+
 input_ids = torch.tensor([ids], dtype=torch.long)
 attn = torch.ones_like(input_ids)
-print(f"input_ids len={len(ids)}, n_merged={int(n_merged)}, image_token_id={config.image_token_id}", flush=True)
+print(f"input_ids len={len(ids)}, n_images={n_images}, "
+      f"n_merged_per_image={n_merged_one}, "
+      f"total_image_tokens={(input_ids[0] == config.image_token_id).sum().item()}, "
+      f"image_token_id={config.image_token_id}", flush=True)
 
 # --- 1. Vision tower forward ---
 print("Vision forward...", flush=True)
@@ -115,9 +136,15 @@ def build_rope(input_ids, grid_thw, attn_mask, spatial_merge,
         input_tokens = ids_row.tolist()
         llm_pos_ids_list = []
         st = 0
-        remain_images = (ids_row == image_token_id).sum().item()
-        for _ in range(remain_images):
-            ed_image = input_tokens.index(image_token_id, st) if image_token_id in input_tokens else len(input_tokens) + 1
+        # Count *images* (one block per <vision_start>), not image_pad tokens.
+        # HF's get_rope_index looks at the token immediately after each
+        # <vision_start>; if it's <image_pad> the whole block is one image.
+        vs_positions = [k for k, t in enumerate(input_tokens) if t == vision_start_token_id]
+        n_images_in_row = sum(1 for k in vs_positions
+                              if k + 1 < len(input_tokens)
+                              and input_tokens[k + 1] == image_token_id)
+        for _ in range(n_images_in_row):
+            ed_image = input_tokens.index(image_token_id, st)
             t, h, w = grid_thw[image_index]
             image_index += 1
             llm_grid_t, llm_grid_h, llm_grid_w = t.item(), h.item() // spatial_merge, w.item() // spatial_merge
@@ -129,7 +156,6 @@ def build_rope(input_ids, grid_thw, attn_mask, spatial_merge,
             w_index = torch.arange(llm_grid_w).view(1, 1, -1).expand(llm_grid_t, llm_grid_h, -1).flatten()
             llm_pos_ids_list.append(torch.stack([t_index, h_index, w_index]) + text_len + st_idx)
             st = ed_image + llm_grid_t * llm_grid_h * llm_grid_w
-            break  # only one image in this test
         if st < len(input_tokens):
             st_idx = llm_pos_ids_list[-1].max() + 1 if llm_pos_ids_list else 0
             llm_pos_ids_list.append(torch.arange(len(input_tokens) - st).view(1, -1).expand(3, -1) + st_idx)
