@@ -71,7 +71,19 @@ jobs:
           for bin in ${{ matrix.binaries }}; do
             cp build/$bin pkg/ 2>/dev/null || true
           done
-          cp build/${{ matrix.lib }} pkg/ 2>/dev/null || true
+          cp -P build/${{ matrix.lib }}* pkg/ 2>/dev/null || true
+          # libcrispembed references @rpath/libggml-*.dylib (or .so) for
+          # backend libs that are built shared alongside it. Bundle them
+          # into the same flat tarball so downstream consumers (Rust
+          # crispembed-sys, Tauri/Flutter apps) get a self-contained
+          # deliverable. `-P` preserves SOVERSION symlinks.
+          find build/ggml/src -name 'libggml*' \( -type f -o -type l \) \
+            -exec cp -P {} pkg/ \; 2>/dev/null || true
+          # Headers — let binding authors extend the FFI without
+          # vendoring the whole CrispEmbed repo.
+          mkdir -p pkg/include
+          cp src/crispembed.h pkg/include/ 2>/dev/null || true
+          cp ggml/include/*.h pkg/include/ 2>/dev/null || true
           cp README.md LICENSE pkg/ 2>/dev/null || true
           tar -czf ${{ matrix.archive }} -C pkg .
 
@@ -84,6 +96,15 @@ jobs:
             Copy-Item "build/Release/$bin" pkg/ -ErrorAction SilentlyContinue
           }
           Copy-Item "build/Release/${{ matrix.lib }}" pkg/ -ErrorAction SilentlyContinue
+          # ggml backend DLLs (Windows multi-config layout).
+          Get-ChildItem -Path "build/ggml/src" -Recurse -Filter "ggml*.dll" -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item $_.FullName pkg/
+          }
+          New-Item -ItemType Directory -Force -Path pkg/include
+          Copy-Item "src/crispembed.h" pkg/include/ -ErrorAction SilentlyContinue
+          Get-ChildItem "ggml/include/*.h" -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item $_.FullName pkg/include/
+          }
           Copy-Item README.md, LICENSE pkg/ -ErrorAction SilentlyContinue
           Compress-Archive -Path pkg/* -DestinationPath ${{ matrix.archive }}
 

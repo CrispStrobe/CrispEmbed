@@ -93,4 +93,13 @@ fn main() {
 
     let lib_dir = try_prebuilt(src_root).unwrap_or_else(|| configure_and_build(src_root));
     print_link_info(&lib_dir);
+
+    // Publish the resolved lib dir on Cargo's `links = "crispembed"`
+    // metadata channel so direct dependents (e.g., a downstream Tauri
+    // app's build.rs) see `DEP_CRISPEMBED_LIB_DIR` and can emit
+    // `cargo:rustc-link-arg=-Wl,-rpath,…` against it. Cargo only
+    // forwards links metadata to immediate dependents, which is why
+    // we don't try to emit the rpath args directly from this build
+    // script — they wouldn't propagate.
+    println!("cargo:LIB_DIR={}", lib_dir.display());
 }
