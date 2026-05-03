@@ -100,12 +100,21 @@ jobs:
           # probes for crispembed.lib; without it downstream crates can only
           # LoadLibrary at runtime).
           Copy-Item "build/Release/crispembed.lib" pkg/ -ErrorAction SilentlyContinue
-          # ggml backend DLLs + their import libs (Windows multi-config layout).
-          Get-ChildItem -Path "build/ggml/src" -Recurse -Filter "ggml*.dll" -ErrorAction SilentlyContinue | ForEach-Object {
-            Copy-Item $_.FullName pkg/
+          # ggml backend DLLs land in build/bin/Release/ on Windows MSVC,
+          # NOT build/ggml/src/, because ggml/CMakeLists.txt sets
+          # CMAKE_RUNTIME_OUTPUT_DIRECTORY=${CMAKE_BINARY_DIR}/bin and CMake
+          # classifies .dll as RUNTIME (vs .so/.dylib as LIBRARY on Unix).
+          # Without these DLLs alongside crispembed.dll, crispembed.dll
+          # fails to load at runtime — its imports reference ggml.dll,
+          # ggml-base.dll, ggml-cpu.dll. Search both locations defensively
+          # in case the layout shifts on a future ggml/cmake bump.
+          Get-ChildItem -Path "build" -Recurse -Filter "ggml*.dll" -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item $_.FullName pkg/ -Force
           }
-          Get-ChildItem -Path "build/ggml/src" -Recurse -Filter "ggml*.lib" -ErrorAction SilentlyContinue | ForEach-Object {
-            Copy-Item $_.FullName pkg/
+          # Import libs (.lib) are ARCHIVE outputs and stay next to each
+          # ggml target under build/ggml/src/Release/.
+          Get-ChildItem -Path "build/ggml" -Recurse -Filter "ggml*.lib" -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item $_.FullName pkg/ -Force
           }
           New-Item -ItemType Directory -Force -Path pkg/include
           Copy-Item "src/crispembed.h" pkg/include/ -ErrorAction SilentlyContinue
