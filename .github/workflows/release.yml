@@ -96,8 +96,15 @@ jobs:
             Copy-Item "build/Release/$bin" pkg/ -ErrorAction SilentlyContinue
           }
           Copy-Item "build/Release/${{ matrix.lib }}" pkg/ -ErrorAction SilentlyContinue
-          # ggml backend DLLs (Windows multi-config layout).
+          # Import library for MSVC link-time consumers (Rust crispembed-sys
+          # probes for crispembed.lib; without it downstream crates can only
+          # LoadLibrary at runtime).
+          Copy-Item "build/Release/crispembed.lib" pkg/ -ErrorAction SilentlyContinue
+          # ggml backend DLLs + their import libs (Windows multi-config layout).
           Get-ChildItem -Path "build/ggml/src" -Recurse -Filter "ggml*.dll" -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item $_.FullName pkg/
+          }
+          Get-ChildItem -Path "build/ggml/src" -Recurse -Filter "ggml*.lib" -ErrorAction SilentlyContinue | ForEach-Object {
             Copy-Item $_.FullName pkg/
           }
           New-Item -ItemType Directory -Force -Path pkg/include
