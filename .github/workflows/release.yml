@@ -13,10 +13,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # BLAS posture matches CrispASR's: ggml-blas backend (OpenBLAS
+          # vendor) for the big matmuls of large encoders (bge-m3,
+          # multilingual-e5-large) + LLAMAFILE's tinyBLAS for the small
+          # matmuls of MiniLM-class encoders. Both are enabled; ggml picks
+          # per call at runtime.
           - name: linux-x86_64
             os: ubuntu-latest
             cmake_args: >-
-              -DGGML_BLAS=OFF
+              -DGGML_BLAS=ON
+              -DGGML_BLAS_VENDOR=OpenBLAS
               -DGGML_LLAMAFILE=ON
             binaries: crispembed crispembed-server crispembed-quantize
             lib: libcrispembed.so
@@ -24,8 +30,14 @@ jobs:
 
           - name: linux-arm64
             os: ubuntu-24.04-arm
+            # OpenBLAS has aarch64 builds in Ubuntu apt; faster than the
+            # default NEON path for large matmuls. Keep LLAMAFILE off on
+            # arm64 — its tinyBLAS x86 SIMD paths don't have NEON parity,
+            # and stock ggml-cpu's NEON path is already well-tuned.
             cmake_args: >-
-              -DGGML_BLAS=OFF
+              -DGGML_BLAS=ON
+              -DGGML_BLAS_VENDOR=OpenBLAS
+              -DGGML_LLAMAFILE=OFF
             binaries: crispembed crispembed-server crispembed-quantize
             lib: libcrispembed.so
             archive: crispembed-linux-arm64.tar.gz
@@ -54,6 +66,13 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install build deps (Linux)
+        # OpenBLAS must be installed BEFORE cmake configure so the
+        # GGML_BLAS=ON probe finds it. patchelf is bundled here too
+        # even though it's only used at package time — saves a step.
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y patchelf libopenblas-dev
+
       - name: Configure
         run: >
           cmake -S . -B build
@@ -63,10 +82,6 @@ jobs:
 
       - name: Build
         run: cmake --build build --config Release -j4
-
-      - name: Install patchelf (Linux)
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y patchelf
 
       - name: Package (Unix)
         if: runner.os != 'Windows'
