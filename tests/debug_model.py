@@ -42,14 +42,21 @@ GGUF_TO_HF = {
     "multilingual-e5-small": "intfloat/multilingual-e5-small",
     "paraphrase-multilingual-MiniLM-L12-v2":
         "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-    "pixie-rune-v1": "CrispStrobe/PIXIE-Rune-v1.0",
+    # NB: HF org is `telepix` (not `CrispStrobe` — that's the GitHub user
+    # behind cstr/ on HF). Earlier registries had this wrong; the
+    # tests/check_registry_urls.py harness catches it.
+    "pixie-rune-v1": "telepix/PIXIE-Rune-v1.0",
     "arctic-embed-l-v2": "Snowflake/snowflake-arctic-embed-l-v2.0",
     "octen-0.6b": "Octen/Octen-Embedding-0.6B",
     "f2llm-v2-0.6b": "codefuse-ai/F2LLM-v2-0.6B",
-    "jina-v5-nano": "jinaai/jina-embeddings-v5-nano",
-    "jina-v5-small": "jinaai/jina-embeddings-v5-small",
-    "harrier-0.6b": "Harrier/Harrier-OSS-v1-0.6B",
-    "harrier-270m": "Harrier/Harrier-OSS-v1-270M",
+    # Jina v5 was published with a `text-` infix (`*-text-nano`, `*-text-small`);
+    # the bare `jina-embeddings-v5-nano` / `-small` names never existed.
+    "jina-v5-nano":  "jinaai/jina-embeddings-v5-text-nano",
+    "jina-v5-small": "jinaai/jina-embeddings-v5-text-small",
+    # Harrier upstream is `microsoft/harrier-oss-v1-{0.6b,270m}` (lowercase),
+    # not `Harrier/Harrier-OSS-v1-{0.6B,270M}`.
+    "harrier-0.6b": "microsoft/harrier-oss-v1-0.6b",
+    "harrier-270m": "microsoft/harrier-oss-v1-270m",
     "qwen3-embed-0.6b": "Qwen/Qwen3-Embedding-0.6B",
 }
 

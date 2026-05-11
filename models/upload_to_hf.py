@@ -150,7 +150,7 @@ MODELS = {
         "desc": "Octen Embedding 0.6B. Qwen3-based decoder, 1024-dimensional, last-token pooling.",
     },
     "f2llm-v2-0.6b": {
-        "base_model": "F2LLM/F2LLM-Embedding-v2-0.6B",
+        "base_model": "codefuse-ai/F2LLM-v2-0.6B",
         "arch": "Qwen3",
         "dim": 1024,
         "layers": 28,
@@ -162,7 +162,7 @@ MODELS = {
         "desc": "F2LLM Embedding v2 0.6B. Qwen3-based, strong multilingual performance.",
     },
     "jina-v5-nano": {
-        "base_model": "jinaai/jina-embeddings-v5-nano",
+        "base_model": "jinaai/jina-embeddings-v5-text-nano",
         "arch": "Qwen3",
         "dim": 1024,
         "layers": 14,
@@ -174,7 +174,7 @@ MODELS = {
         "desc": "Jina Embeddings v5 Nano. Compact 210M decoder model, 1024-dimensional.",
     },
     "jina-v5-small": {
-        "base_model": "jinaai/jina-embeddings-v5-small",
+        "base_model": "jinaai/jina-embeddings-v5-text-small",
         "arch": "Qwen3",
         "dim": 1024,
         "layers": 28,
@@ -210,7 +210,7 @@ MODELS = {
         "desc": "Microsoft Harrier OSS v1 270M. Gemma3-based compact model, 640-dimensional.",
     },
     "qwen3-embed-0.6b": {
-        "base_model": "Alibaba-NLP/Qwen3-Embedding-0.6B",
+        "base_model": "Qwen/Qwen3-Embedding-0.6B",
         "arch": "Qwen3",
         "dim": 1024,
         "layers": 28,

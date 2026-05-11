@@ -41,12 +41,13 @@ MODEL_MAP = {
     # Qwen3 decoder models
     "octen-0.6b": "Octen/Octen-Embedding-0.6B",
     "f2llm-v2-0.6b": "codefuse-ai/F2LLM-v2-0.6B",
-    "jina-v5-nano": "jinaai/jina-embeddings-v5-nano",
-    "jina-v5-small": "jinaai/jina-embeddings-v5-small",
-    "harrier-0.6b": "Harrier/Harrier-OSS-v1-0.6B",
+    # Jina v5 was published with a `text-` infix; bare names never existed.
+    "jina-v5-nano":  "jinaai/jina-embeddings-v5-text-nano",
+    "jina-v5-small": "jinaai/jina-embeddings-v5-text-small",
+    "harrier-0.6b": "microsoft/harrier-oss-v1-0.6b",
     "qwen3-embed-0.6b": "Qwen/Qwen3-Embedding-0.6B",
     # Gemma3 decoder models
-    "harrier-270m": "Harrier/Harrier-OSS-v1-270M",
+    "harrier-270m": "microsoft/harrier-oss-v1-270m",
 }
 
 TEST_TEXTS = [

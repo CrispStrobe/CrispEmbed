@@ -48,8 +48,9 @@ MODEL_MAP = {
     "paraphrase-multilingual-MiniLM-L12-v2":
         "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
     "octen-0.6b": "Octen/Octen-Embedding-0.6B",
-    "harrier-0.6b": "Harrier/Harrier-OSS-v1-0.6B",
-    "harrier-270m": "Harrier/Harrier-OSS-v1-270M",
+    # Harrier upstream is microsoft/harrier-oss-v1-* (lowercase, microsoft org).
+    "harrier-0.6b": "microsoft/harrier-oss-v1-0.6b",
+    "harrier-270m": "microsoft/harrier-oss-v1-270m",
     "qwen3-embed-0.6b": "Qwen/Qwen3-Embedding-0.6B",
 }
 
