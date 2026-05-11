@@ -31,6 +31,7 @@ iOS (Metal) + Android (Vulkan) builds. 29 HuggingFace model repos.
 | gte-small | BERT | 384 | 1.000000 | 0.9998 | 0.99 |
 | arctic-embed-xs | BERT | 384 | 1.000000 | 0.9999 | 0.99 |
 | multilingual-e5-small | XLM-R | 384 | 1.000000 | 0.9999 | 0.99 |
+| paraphrase-multilingual-MiniLM-L12-v2 | BERT+SP | 384 | 1.000000 | 0.9999 | 0.99 |
 | PIXIE-Rune-v1.0 | XLM-R | 1024 | 0.999993 | 0.9991 | 0.95 |
 | arctic-embed-l-v2 | XLM-R | 1024 | 0.999993 | 0.9989 | 0.95 |
 | Octen-Embedding-0.6B | Qwen3 | 1024 | 0.999891 | 0.9995 | 0.97 |
@@ -466,12 +467,13 @@ Server (`examples/server/server.cpp`) exposes four API dialects on the same mode
 - `POST /api/embed` — Ollama batch
 - `POST /api/embeddings` — Ollama legacy single
 
-**BERT encoder** (all-MiniLM, gte, arctic-embed-xs):
+**BERT encoder** (all-MiniLM, gte, arctic-embed-xs, paraphrase-multilingual-MiniLM-L12-v2):
 - Token + Position + Type embeddings → Post-LN transformer → Mean/CLS pooling
+- Tokenizer is WordPiece by default; `model_type=bert` with `vocab > 100K` (paraphrase-multilingual, multilingual-e5-small) loads the XLM-R SentencePiece-Unigram vocab via Viterbi DP, still with `pos_offset=0`.
 
-**XLM-R encoder** (PIXIE-Rune, multilingual-e5, arctic-embed-l-v2):
+**XLM-R encoder** (PIXIE-Rune, multilingual-e5-base/large, arctic-embed-l-v2):
 - Token + Position(+offset) embeddings → Post-LN transformer → CLS/Mean pooling
-- SentencePiece Unigram tokenizer (Viterbi DP)
+- SentencePiece Unigram tokenizer (Viterbi DP), `pos_offset=2`, `model_type=xlm-roberta`
 
 **BGE-M3 multi-modal** (`BAAI/bge-m3`):
 - Same BERT encoder trunk with three output heads:

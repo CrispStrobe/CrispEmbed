@@ -282,6 +282,31 @@ MODELS = {
         "langs": ["en"],
         "desc": "All-MiniLM-L12-v2. 12-layer upgrade from L6, higher quality 384-dimensional mean-pooled embeddings.",
     },
+    "paraphrase-multilingual-MiniLM-L12-v2": {
+        "base_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        # Despite the "multilingual" name this is a BERT (not XLM-Roberta)
+        # checkpoint that reuses XLM-R's SentencePiece-Unigram vocab. Verified
+        # bit-exact tensor-for-tensor against the HF state_dict and cos≈1 e2e.
+        "arch": "BERT",
+        "dim": 384,
+        "layers": 12,
+        "params": "118M",
+        "pooling": "mean",
+        "tokenizer": "SentencePiece",
+        "license": "apache-2.0",
+        "langs": ["multilingual"],
+        "desc": "Paraphrase-Multilingual-MiniLM-L12-v2. Sentence-transformers paraphrase model with mean-pooled 384-d embeddings across 50+ languages. Same SentencePiece-Unigram vocab as XLM-R but a BERT (post-LN) body.",
+        # Cosine vs HF sentence-transformers on a 10-text multilingual probe
+        # set (en/fr/de/es/ja/zh/ar). f16 is numerically lossless (1.000000
+        # mean cos); q4_k still clears the 0.99 retrieval-quality bar.
+        "parity": {
+            "f16":  1.0000,
+            "q8_0": 0.9999,
+            "q6_k": 0.9999,
+            "q5_k": 0.9979,
+            "q4_k": 0.9917,
+        },
+    },
     "all-mpnet-base-v2": {
         "base_model": "sentence-transformers/all-mpnet-base-v2",
         "arch": "BERT",

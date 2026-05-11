@@ -176,6 +176,34 @@ Models like multilingual-e5-small report `model_type="bert"` with SentencePiece
 tokenizer. These are BERT models (no position offset), not XLM-R. Only true
 `roberta`/`xlm-roberta` types need the `xlmr` arch with position offset.
 
+`paraphrase-multilingual-MiniLM-L12-v2` is another instance of this pattern —
+BERT (post-LN) body + 250K-token XLM-R SentencePiece-Unigram vocab. The
+converter detects this from `config.model_type == "bert"` and writes
+`bert.position_offset = 0`. End-to-end cosine vs HF: **1.000000** on f16/f32,
+**197/197 encoder tensors bit-exact** (max\|Δ\|=0) — see
+`tests/parity_layers_bert.py`.
+
+### SPLADE detection must look at checkpoint files, not state_dict
+
+`AutoModelForMaskedLM.from_pretrained()` will *silently random-initialise*
+missing `cls.predictions.*` keys instead of failing. Checking
+`any("cls.predictions" in k for k in model.state_dict())` therefore returns
+True for **every** plain encoder checkpoint, baking a random MLM head into
+the GGUF (~600 KB of garbage tensors that load as "MLM/SPLADE head loaded"
+at runtime).
+
+The fix in `models/convert-bert-to-gguf.py` is to peek at the safetensors /
+pytorch_model.bin header directly via `safe_open()` and only call
+`AutoModelForMaskedLM` if `cls.predictions.` or `lm_head.` keys are
+**actually present in the checkpoint**. `output_loading_info=True` looked
+like an obvious alternative but returns inconsistent shapes (single model
+vs 5-tuple) depending on `use_safetensors`, so the header-peek path is the
+robust one.
+
+This bug affected every plain `sentence-transformers/*` and `all-MiniLM-*`
+conversion prior to 2026-05-11. Re-converting those models drops the file
+size by ~1 MB each and removes the misleading "MLM head loaded" log line.
+
 ## Quantization notes
 
 ### Python gguf vs C++ quantizer

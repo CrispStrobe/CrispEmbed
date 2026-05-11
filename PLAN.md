@@ -157,7 +157,7 @@ CrispEmbed/
 
 ## Status (April 2026)
 
-### Verified working — 12 models, cos >= 0.999 vs HF
+### Verified working — 13 models, cos >= 0.999 vs HF
 
 | Model | Type | Dim | Pooling | CosSim |
 |-------|------|-----|---------|--------|
@@ -165,6 +165,7 @@ CrispEmbed/
 | gte-small | BERT | 384 | mean | 1.000000 |
 | arctic-embed-xs | BERT | 384 | CLS | 1.000000 |
 | multilingual-e5-small | XLM-R | 384 | mean | 1.000000 |
+| paraphrase-multilingual-MiniLM-L12-v2 | BERT + SP-Unigram | 384 | mean | 1.000000 |
 | PIXIE-Rune-v1.0 | XLM-R | 1024 | CLS | 0.999993 |
 | arctic-embed-l-v2 | XLM-R | 1024 | CLS | 0.999993 |
 | Octen-Embedding-0.6B | Qwen3 | 1024 | last-token | 0.999891 |
@@ -179,7 +180,8 @@ CrispEmbed/
 | Architecture | Tokenizer | Key features | Models |
 |---|---|---|---|
 | BERT encoder | WordPiece | Post-LN, GELU FFN | MiniLM, GTE, arctic-xs |
-| XLM-R encoder | SentencePiece Unigram (Viterbi) | Post-LN, GELU FFN, pos_offset=2 | PIXIE-Rune, e5, arctic-l-v2 |
+| BERT encoder | SentencePiece Unigram (Viterbi) | Post-LN, GELU FFN, pos_offset=0 (`model_type=bert`) | paraphrase-multilingual-MiniLM-L12-v2, multilingual-e5-small |
+| XLM-R encoder | SentencePiece Unigram (Viterbi) | Post-LN, GELU FFN, pos_offset=2 (`model_type=xlm-roberta`) | PIXIE-Rune, e5-base/large, arctic-l-v2 |
 | Qwen3 decoder | GPT-2 BPE | RMSNorm, SwiGLU, RoPE, GQA, causal mask | Octen, F2LLM, Jina, Harrier-0.6B |
 | Gemma3 decoder | SentencePiece BPE | Gemma RMSNorm(1+w), GeGLU, embed*sqrt(H), extra norms | Harrier-270M |
 

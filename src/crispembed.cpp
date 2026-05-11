@@ -923,6 +923,15 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
     ggml_tensor * tok_ids = graph_tensor_or_log(gf, "tok_ids");
     if (!tok_ids) return {};
     debug_encode_stage("encode_tokens:set-tok", T, 1, 0);
+    // CRISPEMBED_DEBUG_TOKENS=1 prints the final token-id sequence to stderr.
+    // Used by tests/parity_layers_bert.py to diff against an HF tokenizer
+    // without exposing a tokenize-only public API.
+    if (const char * v = std::getenv("CRISPEMBED_DEBUG_TOKENS");
+        v && v[0] && std::strcmp(v, "0") != 0) {
+        fprintf(stderr, "crispembed: token_ids (n=%d):", T);
+        for (int i = 0; i < T; i++) fprintf(stderr, " %d", tok_data[i]);
+        fprintf(stderr, "\n");
+    }
     ggml_backend_tensor_set(tok_ids, tok_data.data(), 0, T * sizeof(int32_t));
 
     std::vector<int32_t> pos_data(T);

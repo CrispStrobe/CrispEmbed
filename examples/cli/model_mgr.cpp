@@ -150,6 +150,11 @@ static const ModelEntry k_registry[] = {
      "https://huggingface.co/cstr/all-MiniLM-L12-v2-GGUF/resolve/main/all-MiniLM-L12-v2.gguf",
      "BERT 384d English (33M)", "128 MB"},
 
+    {"paraphrase-multilingual-MiniLM-L12-v2",
+     "paraphrase-multilingual-MiniLM-L12-v2.gguf",
+     "https://huggingface.co/cstr/paraphrase-multilingual-MiniLM-L12-v2-GGUF/resolve/main/paraphrase-multilingual-MiniLM-L12-v2.gguf",
+     "BERT 384d 50+ langs (118M, SentencePiece, mean-pool)", "454 MB"},
+
     {"all-mpnet-base-v2",
      "all-mpnet-base-v2.gguf",
      "https://huggingface.co/cstr/all-mpnet-base-v2-GGUF/resolve/main/all-mpnet-base-v2.gguf",

@@ -86,12 +86,57 @@ def main():
     # Try sequence classification first (rerankers) to get the scoring head,
     # then fall back to AutoModel (embedders + BGE-M3 with sparse/colbert heads).
     # use_safetensors=True avoids torch.load (required when torch < 2.6).
-    def _load(cls):
+    def _load(cls, want_info=False):
+        kwargs = dict(trust_remote_code=True, output_loading_info=want_info)
         try:
-            return cls.from_pretrained(args.model, trust_remote_code=True,
-                                       use_safetensors=True)
+            return cls.from_pretrained(args.model, use_safetensors=True, **kwargs)
         except Exception:
-            return cls.from_pretrained(args.model, trust_remote_code=True)
+            return cls.from_pretrained(args.model, **kwargs)
+
+    # Peek at the actual checkpoint files (safetensors / pytorch_model.bin
+    # headers) to decide whether an MLM head is *really* present. HF's
+    # from_pretrained() silently random-initialises missing cls.predictions.*
+    # tensors, so just calling AutoModelForMaskedLM and checking state_dict
+    # produces false SPLADE positives for plain encoders like
+    # sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2.
+    def _checkpoint_has_mlm_head(model_id: str) -> bool:
+        try:
+            from huggingface_hub import hf_hub_download
+            from safetensors import safe_open
+        except Exception:
+            return False
+        # If it's a local path, scan it directly; else try the HF cache.
+        candidates = []
+        local = Path(model_id)
+        if local.is_dir():
+            candidates += list(local.glob("*.safetensors"))
+            candidates += list(local.glob("pytorch_model.bin"))
+        else:
+            for fname in ("model.safetensors", "pytorch_model.bin"):
+                try:
+                    candidates.append(Path(hf_hub_download(model_id, fname)))
+                except Exception:
+                    pass
+        mlm_markers = ("cls.predictions.", "lm_head.")
+        for p in candidates:
+            if not p.exists():
+                continue
+            if p.suffix == ".safetensors":
+                try:
+                    with safe_open(str(p), framework="pt") as f:
+                        if any(any(m in k for m in mlm_markers) for k in f.keys()):
+                            return True
+                except Exception:
+                    pass
+            else:  # pytorch_model.bin — fall back to torch.load (small probe)
+                try:
+                    import torch
+                    sd = torch.load(str(p), map_location="cpu", weights_only=False)
+                    if any(any(m in k for m in mlm_markers) for k in sd.keys()):
+                        return True
+                except Exception:
+                    pass
+        return False
 
     try:
         model = _load(AutoModelForSequenceClassification)
@@ -100,14 +145,12 @@ def main():
         if not (hasattr(model.config, "num_labels") and model.config.num_labels == 1):
             raise ValueError("not a reranker")
     except Exception:
-        # Try MaskedLM for SPLADE models (has MLM head)
-        try:
+        # Real SPLADE checkpoints carry cls.predictions.* in the safetensors.
+        # Random-init heads (paraphrase-multilingual, all-MiniLM, etc.) do not.
+        if _checkpoint_has_mlm_head(args.model):
             model = _load(AutoModelForMaskedLM)
-            sd_probe = model.state_dict()
-            if not any("cls.predictions" in k for k in sd_probe.keys()):
-                raise ValueError("no MLM head")
             print(f"  detected: MLM head (SPLADE)")
-        except Exception:
+        else:
             model = _load(AutoModel)
 
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
