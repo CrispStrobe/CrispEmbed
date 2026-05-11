@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "crispembed"
 # Mirrors /VERSION at the repo root. Update both in lockstep.
-version = "0.3.0"
+version = "0.3.1"
 description = "Lightweight ggml-based text embedding inference (BERT, XLM-R, MPNet, NomicBERT, ModernBERT, DeBERTa-v2, Qwen3, Gemma3, BidirLM-Omni). 23+ verified models, 9x faster than FastEmbed."
 readme = "README.md"
 license = { file = "LICENSE" }

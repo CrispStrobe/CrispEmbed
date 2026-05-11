@@ -284,7 +284,11 @@ jobs:
         with:
           cuda: ${{ env.CUDA_VERSION }}
           method: 'network'
-          sub-packages: '["nvcc", "cudart", "cublas", "nvrtc_dev"]'
+          # visual_studio_integration is what installs the .props/.targets
+          # files that CMake's enable_language(CUDA) expects; without it,
+          # configure fails with "No CUDA toolset found" even though nvcc
+          # is on PATH. Required on Windows; harmless elsewhere.
+          sub-packages: '["nvcc", "cudart", "cublas", "nvrtc_dev", "visual_studio_integration"]'
 
       - name: Configure
         run: >
