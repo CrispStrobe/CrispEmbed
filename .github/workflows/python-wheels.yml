@@ -63,13 +63,22 @@ jobs:
       # found" errors, switch to an in-container build via the
       # CIBW_BEFORE_ALL_LINUX hook (Dockerfile path / repo mount).
 
+      - name: Set macOS deployment target
+        if: runner.os == 'macOS'
+        # Must be set BEFORE cmake configure so the dylib's
+        # LC_BUILD_VERSION records macOS 11.0 (Big Sur) — cibuildwheel's
+        # arm64 wheel floor. Without it delocate-wheel rejects the
+        # built dylib with "Library dependencies do not satisfy target
+        # MacOS version 11.0".
+        run: echo "MACOSX_DEPLOYMENT_TARGET=11.0" >> $GITHUB_ENV
+
       - name: Configure (Unix)
         if: runner.os != 'Windows'
         run: >
           cmake -S . -B build
           -DCMAKE_BUILD_TYPE=Release
           -DCRISPEMBED_BUILD_SHARED=ON
-          ${{ runner.os == 'macOS' && '-DGGML_METAL=ON -DGGML_METAL_EMBED_LIBRARY=ON -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=Apple' || '-DGGML_BLAS=OFF -DGGML_LLAMAFILE=ON' }}
+          ${{ runner.os == 'macOS' && '-DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 -DGGML_METAL=ON -DGGML_METAL_EMBED_LIBRARY=ON -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=Apple' || '-DGGML_BLAS=OFF -DGGML_LLAMAFILE=ON' }}
 
       - name: Configure (Windows)
         if: runner.os == 'Windows'
@@ -103,11 +112,11 @@ jobs:
         env:
           CIBW_BUILD: ${{ matrix.cibw-build }}
           CIBW_ARCHS: ${{ matrix.cibw-archs }}
-          # Tell auditwheel/delocate to skip our bundled libs — they're
-          # part of the package, not external system deps to repair.
-          CIBW_REPAIR_WHEEL_COMMAND_LINUX: >-
-            auditwheel repair -w {dest_dir} {wheel}
-            --exclude libcrispembed.so --exclude 'libggml*.so'
+          # Linux: skip auditwheel repair entirely — see pyproject.toml's
+          # [tool.cibuildwheel.linux] repair-wheel-command comment.
+          # macOS: delocate-wheel with --ignore-missing-dependencies so
+          # the bundled libcrispembed + libggml*.dylib (each other's
+          # @rpath deps) don't trip the resolver.
           CIBW_REPAIR_WHEEL_COMMAND_MACOS: >-
             delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel}
             --ignore-missing-dependencies

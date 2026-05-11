@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "crispembed"
 # Mirrors /VERSION at the repo root. Update both in lockstep.
-version = "0.3.1"
+version = "0.3.2"
 description = "Lightweight ggml-based text embedding inference (BERT, XLM-R, MPNet, NomicBERT, ModernBERT, DeBERTa-v2, Qwen3, Gemma3, BidirLM-Omni). 23+ verified models, 9x faster than FastEmbed."
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -79,16 +79,38 @@ skip = ["*-win32", "*-manylinux_i686", "pp*", "*musllinux*"]
 build = ["cp38-*", "cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*"]
 build-verbosity = 1
 test-requires = ["pytest>=7"]
-# Smoke test: import + load native lib + check exposed model count.
-test-command = "python -c 'from crispembed import CrispEmbed; from crispembed._binding import _find_lib; print(_find_lib())'"
+# Smoke test: import + load native lib. TOML single-quote string holds
+# the literal double-quoted python -c argument, so the same line works
+# under both /bin/sh (Linux/macOS) and cmd.exe (Windows). cmd.exe does
+# NOT understand single quotes as delimiters — that was the v0.3.1
+# Windows wheel failure ("SyntaxError: EOL while scanning string
+# literal").
+test-command = 'python -c "from crispembed import CrispEmbed; from crispembed._binding import _find_lib; print(_find_lib())"'
 
 [tool.cibuildwheel.linux]
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
 archs = ["x86_64", "aarch64"]
+# We build libcrispembed.so on the HOST runner (Ubuntu 24.04, glibc 2.39),
+# then stage it into python/crispembed/ for cibuildwheel to package. The
+# default repair (`auditwheel repair`) tries to relabel the wheel as
+# manylinux_2_28 (glibc 2.28) and fails because the binary references
+# 2.38+ symbols. Until we move the build INSIDE the manylinux container
+# (which requires reshuffling pyproject.toml to repo root + CMake in
+# CIBW_BEFORE_ALL_LINUX), accept a `linux_x86_64`/`linux_aarch64`-tagged
+# wheel. Narrower compat but works on Ubuntu 24.04+/Debian 13+/EL 9+.
+repair-wheel-command = "cp {wheel} {dest_dir}/"
 
 [tool.cibuildwheel.macos]
 archs = ["arm64"]
+# Match cibuildwheel's macOS arm64 floor (11.0 Big Sur). Set BEFORE the
+# cmake configure step on the host runner so the dylib's LC_BUILD_VERSION
+# records 11.0; otherwise delocate-wheel rejects with "Library
+# dependencies do not satisfy target MacOS version 11.0".
+environment = { MACOSX_DEPLOYMENT_TARGET = "11.0" }
+# delocate-wheel works on macOS — no override needed. Bundled libcrispembed
+# + libggml*.dylib are inside the package, so --ignore-missing-dependencies
+# in release.yml's CIBW_REPAIR_WHEEL_COMMAND_MACOS handles them.
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]

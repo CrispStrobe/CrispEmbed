@@ -284,11 +284,23 @@ jobs:
         with:
           cuda: ${{ env.CUDA_VERSION }}
           method: 'network'
-          # visual_studio_integration is what installs the .props/.targets
-          # files that CMake's enable_language(CUDA) expects; without it,
-          # configure fails with "No CUDA toolset found" even though nvcc
-          # is on PATH. Required on Windows; harmless elsewhere.
-          sub-packages: '["nvcc", "cudart", "cublas", "nvrtc_dev", "visual_studio_integration"]'
+          # Sub-packages needed for ggml-cuda's full toolchain on Windows:
+          #   visual_studio_integration — .props/.targets so MSBuild can
+          #     find the CUDA toolset (without this, configure fails with
+          #     "No CUDA toolset found")
+          #   cublas + cublas_dev — runtime DLL and import lib; CMake's
+          #     find_package(CUDAToolkit) populates CUDA::cublas from the
+          #     dev pkg (without it, target_link_libraries fails at
+          #     ggml/src/ggml-cuda/CMakeLists.txt:175 with "Target
+          #     'ggml-cuda' links to: CUDA::cublas but the target was
+          #     not found")
+          #   nvrtc + nvrtc_dev — needed by ggml-cuda's runtime kernel
+          #     compilation path
+          #   nvtx + cuda_profiler_api — referenced by ggml-cuda even
+          #     when not actively used; Jimver doesn't install them
+          #     transitively
+          # Mirror of CrispASR's working list.
+          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "nvrtc", "nvrtc_dev", "nvtx", "cuda_profiler_api", "visual_studio_integration"]'
 
       - name: Configure
         run: >
