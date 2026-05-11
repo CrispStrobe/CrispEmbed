@@ -512,6 +512,7 @@ def main():
     # DeBERTa:   deberta.encoder.layer.N.attention.self.query_proj
     is_mpnet = "encoder.layer.0.attention.attn.q.weight" in sd
     is_nomic = "encoder.layers.0.attn.Wqkv.weight" in sd
+    is_jina_v2 = "encoder.layers.0.mixer.Wqkv.weight" in sd  # Jina v2: NomicBERT-like but mixer.Wqkv + GELU FFN
     is_modernbert = "layers.0.attn.Wqkv.weight" in sd and "layers.0.mlp.Wi.weight" in sd
     is_gte_new = "encoder.layer.0.attention.qkv_proj.weight" in sd  # GTE v1.5 "new" BERT
     is_deberta = ("encoder.layer.0.attention.self.query_proj.weight" in sd or
@@ -523,6 +524,13 @@ def main():
         writer.add_float32("bert.rope_theta", rope_theta)
         writer.add_uint32("bert.pre_ln", 1)
         print(f"  GTE v1.5: rope_theta={rope_theta}, pre_ln=1")
+
+    if is_jina_v2:
+        # Jina v2 (jina-reranker-v2-base-multilingual): NomicBERT-like pre-LN,
+        # fused QKV under mixer.Wqkv, standard GELU FFN (fc1/fc2), with biases.
+        # Uses learned position embeddings (not RoPE).
+        writer.add_uint32("bert.pre_ln", 1)
+        print(f"  Jina v2: pre_ln=1, GELU FFN (no gate)")
 
     if is_nomic:
         # NomicBERT: RoPE encoder, fused QKV, SwiGLU FFN, no bias on attn
@@ -605,7 +613,7 @@ def main():
             writer.add_tensor(f"{LP}.{i}.ffn_up_gate.weight", f32(wi))
             writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.Wo.weight"]))
 
-        elif is_nomic:
+        elif is_jina_v2 or is_nomic:
             pfx = f"encoder.layers.{i}"
 
             # Layer norms: pre-attention (norm1) and pre-FFN (norm2)
@@ -614,20 +622,39 @@ def main():
             writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.weight", f32(sd[f"{pfx}.norm2.weight"]))
             writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.bias", f32(sd[f"{pfx}.norm2.bias"]))
 
-            # Fused QKV: [3H, H] → split into Q [H,H], K [H,H], V [H,H]
-            qkv = sd[f"{pfx}.attn.Wqkv.weight"]
-            H = qkv.shape[1]
-            writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.weight", wt(qkv[:H]))
-            writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.weight", wt(qkv[H:2*H]))
-            writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.weight", wt(qkv[2*H:]))
-
-            # Attention output (no bias in NomicBERT)
-            writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attn.out_proj.weight"]))
-
-            # SwiGLU FFN: keep SEPARATE gate + up (NomicBERT uses ggml_silu + ggml_mul)
-            writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(sd[f"{pfx}.mlp.fc12.weight"]))
-            writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.fc2.weight"]))
-            writer.add_tensor(f"{LP}.{i}.ffn_gate.weight", wt(sd[f"{pfx}.mlp.fc11.weight"]))
+            if is_jina_v2:
+                # Jina v2: fused QKV under mixer.Wqkv (with bias), GELU FFN
+                qkv = sd[f"{pfx}.mixer.Wqkv.weight"]
+                H = qkv.shape[1]
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.weight", wt(qkv[:H]))
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.weight", wt(qkv[H:2*H]))
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.weight", wt(qkv[2*H:]))
+                # Jina v2 has bias on QKV
+                qkv_b = sd[f"{pfx}.mixer.Wqkv.bias"]
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.bias", f32(qkv_b[:H]))
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.bias", f32(qkv_b[H:2*H]))
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.bias", f32(qkv_b[2*H:]))
+                # Attention output (with bias)
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.mixer.out_proj.weight"]))
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.bias", f32(sd[f"{pfx}.mixer.out_proj.bias"]))
+                # Standard GELU FFN (fc1/fc2 with biases, no gate)
+                writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(sd[f"{pfx}.mlp.fc1.weight"]))
+                writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.bias", f32(sd[f"{pfx}.mlp.fc1.bias"]))
+                writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.fc2.weight"]))
+                writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.bias", f32(sd[f"{pfx}.mlp.fc2.bias"]))
+            else:
+                # NomicBERT: fused QKV under attn.Wqkv (no bias), SwiGLU FFN
+                qkv = sd[f"{pfx}.attn.Wqkv.weight"]
+                H = qkv.shape[1]
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.weight", wt(qkv[:H]))
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.weight", wt(qkv[H:2*H]))
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.weight", wt(qkv[2*H:]))
+                # Attention output (no bias in NomicBERT)
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attn.out_proj.weight"]))
+                # SwiGLU FFN: keep SEPARATE gate + up (NomicBERT uses ggml_silu + ggml_mul)
+                writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(sd[f"{pfx}.mlp.fc12.weight"]))
+                writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.fc2.weight"]))
+                writer.add_tensor(f"{LP}.{i}.ffn_gate.weight", wt(sd[f"{pfx}.mlp.fc11.weight"]))
 
         else:
             # BERT / DeBERTa / MPNet layer prefix
