@@ -231,7 +231,8 @@ def main():
 
     # Position embedding offset: RoBERTa/XLM-R/MPNet use padding_idx + 1
     pos_offset = 0
-    needs_pos_offset = is_true_xlmr or config.model_type == "mpnet"
+    _has_mixer_qkv = "encoder.layers.0.mixer.Wqkv.weight" in sd  # Jina v2 early detection
+    needs_pos_offset = is_true_xlmr or config.model_type == "mpnet" or _has_mixer_qkv
     if needs_pos_offset and hasattr(config, "pad_token_id") and config.pad_token_id is not None:
         pos_offset = config.pad_token_id + 1
         print(f"  position_offset: {pos_offset} (RoBERTa/MPNet-style)")
@@ -526,11 +527,11 @@ def main():
         print(f"  GTE v1.5: rope_theta={rope_theta}, pre_ln=1")
 
     if is_jina_v2:
-        # Jina v2 (jina-reranker-v2-base-multilingual): NomicBERT-like pre-LN,
-        # fused QKV under mixer.Wqkv, standard GELU FFN (fc1/fc2), with biases.
-        # Uses learned position embeddings (not RoPE).
-        writer.add_uint32("bert.pre_ln", 1)
-        print(f"  Jina v2: pre_ln=1, GELU FFN (no gate)")
+        # Jina v2 (jina-reranker-v2-base-multilingual): NomicBERT-like layout
+        # (norm1/norm2, mixer.Wqkv), but POST-LN (prenorm=False in HF code).
+        # Standard GELU FFN (fc1/fc2), with biases, learned position embeddings.
+        # Do NOT set pre_ln — this is post-LN like standard BERT.
+        print(f"  Jina v2: post-LN, GELU FFN (no gate)")
 
     if is_nomic:
         # NomicBERT: RoPE encoder, fused QKV, SwiGLU FFN, no bias on attn
