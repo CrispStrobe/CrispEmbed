@@ -239,9 +239,11 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         x = ggml_add(g, x, ggml_reshape_3d(g, ctx->patch_embed_b, 1, 1, D));
     }
 
-    // Reshape [grid, grid, D] → [D, T] where T = grid*grid
-    // In ggml: ne[0]=grid, ne[1]=grid, ne[2]=D → cont + reshape to ne[0]=D, ne[1]=T
-    x = ggml_cont(g, ggml_permute(g, x, 2, 0, 1, 3));  // [D, grid, grid]
+    // Reshape [OW, OH, D] → [D, T] where T = OH*OW
+    // ggml ne: ne[0]=OW, ne[1]=OH, ne[2]=D
+    // HF flattens (D, OH, OW) → (D, T) with row-major spatial order (OH then OW)
+    // permute(2,1,0): [OW, OH, D] → [D, OH, OW] — matches HF's (D, H, W) layout
+    x = ggml_cont(g, ggml_permute(g, x, 2, 1, 0, 3));  // [D, OH, OW]
     x = ggml_reshape_2d(g, x, D, T);                     // [D, T]
 
     // Position embeddings: pos_embd stored as [D, T] (from converter)
