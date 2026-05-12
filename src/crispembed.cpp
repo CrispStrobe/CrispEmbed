@@ -431,6 +431,33 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         fprintf(stderr, "crispembed: missing token_embd.weight\n");
         return false;
     }
+    // Infer hparams from tensor shapes when metadata was missing (Ollama format).
+    // token_embd.weight is [n_embd, n_vocab].
+    {
+        int64_t tensor_vocab = m.token_embd->ne[1];
+        int64_t tensor_embd  = m.token_embd->ne[0];
+        if (tensor_vocab > 0 && tensor_vocab != hp.n_vocab) {
+            hp.n_vocab = (int)tensor_vocab;
+        }
+        if (tensor_embd > 0 && tensor_embd != hp.n_embd) {
+            hp.n_embd = (int)tensor_embd;
+            hp.n_output = hp.n_embd;
+        }
+        // Count actual encoder layers from loaded tensors
+        int counted = 0;
+        for (const auto& kv : ctx->wl.tensors) {
+            // Match enc.N. or blk.N. prefix
+            const auto& name = kv.first;
+            int layer_id = -1;
+            if (sscanf(name.c_str(), "enc.%d.", &layer_id) == 1 ||
+                sscanf(name.c_str(), "blk.%d.", &layer_id) == 1) {
+                if (layer_id + 1 > counted) counted = layer_id + 1;
+            }
+        }
+        if (counted > 0 && counted != hp.n_layer) {
+            hp.n_layer = counted;
+        }
+    }
     // NomicBERT/ModernBERT: RoPE-based encoders lack position embeddings
     if (!m.pos_embd) {
         ctx->use_rope = true;
