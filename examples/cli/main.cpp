@@ -8,6 +8,7 @@
 
 #include "crispembed.h"
 #include "model_mgr.h"
+#include "vit_embed.h"
 
 #include <algorithm>
 #include <cmath>
@@ -191,6 +192,48 @@ int main(int argc, char ** argv) {
         while (std::getline(f, line)) {
             if (!line.empty()) texts.push_back(line);
         }
+    }
+
+    // Check if this is a standalone ViT GGUF (SigLIP/CLIP image encoder).
+    // Route to vit_embed for --image-raw, --image, --dim, --list-models.
+    if (!image_path.empty() || !image_raw_path.empty() || print_dim) {
+        // Try loading as ViT first
+        vit_embed::context* vctx = nullptr;
+        if (vit_embed::load(&vctx, model_path.c_str(), n_threads)) {
+            // It's a ViT model — encode image
+            const char* img = !image_path.empty() ? image_path.c_str() : image_raw_path.c_str();
+
+            if (print_dim) {
+                printf("%d\n", vit_embed::dim(vctx));
+                vit_embed::free(vctx);
+                return 0;
+            } else if (!image_raw_path.empty()) {
+                // Raw preprocessed pixels: float32 [3, H, W]
+                int sz = vit_embed::image_size(vctx);
+                size_t expected = 3 * sz * sz;
+                std::ifstream pf(image_raw_path, std::ios::binary);
+                if (!pf) { fprintf(stderr, "error: cannot open %s\n", image_raw_path.c_str()); return 1; }
+                std::vector<float> pixels(expected);
+                pf.read(reinterpret_cast<char*>(pixels.data()), expected * sizeof(float));
+                auto emb = vit_embed::encode(vctx, pixels.data(), sz, sz);
+                if (emb.empty()) { fprintf(stderr, "error: ViT encoding failed\n"); return 1; }
+                if (print_dim) { printf("%d\n", vit_embed::dim(vctx)); vit_embed::free(vctx); return 0; }
+                for (size_t j = 0; j < emb.size(); j++)
+                    printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
+            } else {
+                // Image file (JPG/PNG) — need preprocessing (not yet implemented in C++)
+                // For now, tell user to preprocess externally
+                fprintf(stderr, "error: --image with ViT model requires preprocessed pixels.\n"
+                        "Use --image-raw with a float32 [3,%d,%d] binary file.\n"
+                        "Preprocess with: python -c \"from transformers import SiglipProcessor; ...\"\n",
+                        vit_embed::image_size(vctx), vit_embed::image_size(vctx));
+                vit_embed::free(vctx);
+                return 1;
+            }
+            vit_embed::free(vctx);
+            return 0;
+        }
+        // Not a ViT model — fall through to text model path
     }
 
     // Init model
