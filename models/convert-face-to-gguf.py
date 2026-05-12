@@ -153,8 +153,8 @@ def main():
             if len(conv_node.input) > 2:
                 weights[conv_node.input[2]] = new_bias
             else:
-                # Create new bias name
-                bias_key = conv_w_name.replace(".weight", ".bias")
+                # Create new bias name — append _bias suffix
+                bias_key = conv_w_name + "_bias"
                 weights[bias_key] = new_bias
 
             # Remove BN params from weights (they're folded)
