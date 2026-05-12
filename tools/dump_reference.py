@@ -286,7 +286,7 @@ def dump_reranker(model_id: str, pairs: List[tuple],
             out_dict[name] = arr.astype(np.float32)
 
         # Reranker score
-        score = logits[0].detach().cpu().numpy().astype(np.float32)
+        score = logits[0].detach().cpu().float().numpy().astype(np.float32)
         out_dict[f"reranker_score_{pair_idx}"] = score
 
     return out_dict
