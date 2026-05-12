@@ -11,6 +11,11 @@
 #include "vit_embed.h"
 #include "cnn_embed.h"
 
+// stb_image for --detect image loading
+#define STB_IMAGE_STATIC
+#define STB_IMAGE_IMPLEMENTATION
+#include "../../ggml/examples/stb_image.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -99,6 +104,7 @@ int main(int argc, char ** argv) {
     std::string grid_thw_arg;
     std::string image_path;  // JPG/PNG/BMP — in-process preprocessor
     std::string face_path;   // face image for CNN face recognition
+    std::string detect_path; // image for face detection
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-m") == 0 && i + 1 < argc) {
@@ -137,6 +143,8 @@ int main(int argc, char ** argv) {
             image_path = argv[++i];
         } else if (strcmp(argv[i], "--face") == 0 && i + 1 < argc) {
             face_path = argv[++i];
+        } else if (strcmp(argv[i], "--detect") == 0 && i + 1 < argc) {
+            detect_path = argv[++i];
         } else if (strcmp(argv[i], "--auto-download") == 0) {
             auto_download = true;
         } else if (strcmp(argv[i], "--list-models") == 0) {
@@ -199,11 +207,58 @@ int main(int argc, char ** argv) {
     }
 
     // Check if this is a CNN face model (SFace/AuraFace/SCRFD).
-    if (!face_path.empty() || print_dim) {
+    if (!face_path.empty() || !detect_path.empty() || print_dim) {
         cnn_embed::context* cctx = nullptr;
         if (cnn_embed::load(&cctx, model_path.c_str(), n_threads)) {
             if (print_dim) {
                 printf("%d\n", cnn_embed::dim(cctx));
+                cnn_embed::free(cctx);
+                return 0;
+            }
+            // Face detection mode
+            if (!detect_path.empty()) {
+                // Load + preprocess image
+                int w, h, ch;
+                unsigned char* data = stbi_load(detect_path.c_str(), &w, &h, &ch, 3);
+                if (!data) {
+                    fprintf(stderr, "error: cannot load '%s'\n", detect_path.c_str());
+                    cnn_embed::free(cctx);
+                    return 1;
+                }
+                // Resize to 640x640 and normalize
+                int det_sz = 640;
+                std::vector<float> pixels(3 * det_sz * det_sz);
+                float sx = (float)w / det_sz, sy = (float)h / det_sz;
+                for (int y = 0; y < det_sz; y++) {
+                    for (int x = 0; x < det_sz; x++) {
+                        int src_x = std::min((int)(x * sx), w-1);
+                        int src_y = std::min((int)(y * sy), h-1);
+                        for (int c = 0; c < 3; c++) {
+                            float v = data[(src_y * w + src_x) * 3 + c];
+                            pixels[c * det_sz * det_sz + y * det_sz + x] = (v - 127.5f) / 128.0f;
+                        }
+                    }
+                }
+                stbi_image_free(data);
+
+                auto faces = cnn_embed::detect(cctx, pixels.data(), det_sz, det_sz, 0.5f);
+                if (json_output) {
+                    printf("{\"faces\": [");
+                    for (size_t j = 0; j < faces.size(); j++) {
+                        const auto& f = faces[j];
+                        printf("{\"x\":%.1f,\"y\":%.1f,\"w\":%.1f,\"h\":%.1f,\"conf\":%.3f}",
+                               f.x, f.y, f.w, f.h, f.confidence);
+                        if (j + 1 < faces.size()) printf(",");
+                    }
+                    printf("]}\n");
+                } else {
+                    for (const auto& f : faces) {
+                        printf("%.1f %.1f %.1f %.1f %.3f", f.x, f.y, f.w, f.h, f.confidence);
+                        for (int k = 0; k < 10; k++) printf(" %.1f", f.landmarks[k]);
+                        printf("\n");
+                    }
+                    if (faces.empty()) printf("(no faces detected)\n");
+                }
                 cnn_embed::free(cctx);
                 return 0;
             }
