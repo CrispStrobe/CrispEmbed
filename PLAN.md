@@ -382,30 +382,36 @@ running on the same ggml backend as text embedding (CUDA/Metal/Vulkan).
 - [ ] C API: `crispembed_detect_faces(ctx, pixels, w, h) → face_t[]`
 - [ ] Parity test vs ONNX Runtime SCRFD output
 
-### 8C. Face Recognition — SFace (Apache 2.0)
+### 8C. Face Recognition — AuraFace + SFace (Apache 2.0)
 
-**Goal:** Produce 128-D face embedding vectors for face identification
+**Goal:** Produce face embedding vectors for face identification
 and verification, using commercially permissive models only.
 
-**Model:** SFace (`face_recognition_sface_2021dec.onnx`, Apache 2.0)
-- Architecture: MobileFaceNet (lightweight CNN)
-- Input: aligned face crop 112×112 RGB
-- Output: 128-D L2-normalized embedding
-- From OpenCV Zoo — designed for OpenCV DNN module
+**Models (all Apache 2.0):**
+
+| Model | File | Arch | Dims | Size | Notes |
+|---|---|---|---|---|---|
+| AuraFace-v1 | `glintr100.onnx` | ResNet-100 | 512-D | 250 MB | Drop-in for InsightFace buffalo_l |
+| SFace | `face_recognition_sface_2021dec.onnx` | MobileFaceNet | 128-D | 37 MB | Lightweight, OpenCV Zoo |
+| YuNet | `face_detection_yunet_2023mar.onnx` | lightweight CNN | bbox | 370 KB | Alt detection to SCRFD |
+
+AuraFace-v1 (fal.ai, Apache 2.0) is the priority — produces 512-D
+ArcFace-compatible embeddings. CrispLens v4 already downloads and uses
+it as the commercially-free alternative to InsightFace buffalo_l.
 
 **Work items:**
-- [ ] GGUF converter for MobileFaceNet/SFace (`models/convert-face-to-gguf.py`)
-- [ ] MobileFaceNet forward path (depthwise separable conv, PReLU, BN, GDC pool)
+- [ ] GGUF converter for ResNet-100 (`models/convert-face-to-gguf.py`)
+- [ ] ResNet CNN forward path (conv2d → BN → ReLU → residual blocks → FC)
+- [ ] MobileFaceNet forward path for SFace (depthwise separable conv, PReLU, GDC)
 - [ ] Face crop + alignment pipeline (from SCRFD 5-landmark output)
-- [ ] C API: `crispembed_encode_face(ctx, aligned_face, 112, 112) → float[128]`
-- [ ] L2 distance / cosine similarity for face matching
-- [ ] Parity test vs OpenCV DNN SFace output
-- [ ] Upload to `cstr/sface-GGUF`
+- [ ] C API: `crispembed_encode_face(ctx, aligned_face, 112, 112) → float*`
+- [ ] Parity test vs ONNX Runtime for AuraFace and SFace
+- [ ] Upload to `cstr/auraface-v1-GGUF` and `cstr/sface-GGUF`
 
-**Integration with CrispLens:** Replace the ONNX Runtime face pipeline.
-CrispEmbed handles detection (SCRFD) + recognition (SFace) in one library.
-`crispembed_client.py` gains `detect_faces()` + `encode_face()` methods.
-v4 Node.js can call the CrispEmbed server's HTTP API for server-side inference.
+**Integration with CrispLens:** Replace ONNX Runtime face pipeline.
+CrispEmbed handles detection (SCRFD) + recognition (AuraFace/SFace).
+`crispembed_client.py` gains `detect_faces()` + `encode_face()`.
+v4 Node.js calls the CrispEmbed server HTTP API for server-side inference.
 
 ### Implementation order
 
@@ -421,9 +427,12 @@ v4 Node.js can call the CrispEmbed server's HTTP API for server-side inference.
 The full pipeline uses only Apache 2.0 / MIT models:
 - Text: any CrispEmbed encoder model (BERT/XLM-R/etc.)
 - Image: SigLIP (Apache 2.0) or CLIP (MIT)
-- Face detection: SCRFD (Apache 2.0)
-- Face recognition: SFace (Apache 2.0)
+- Face detection: SCRFD (Apache 2.0) or YuNet (Apache 2.0)
+- Face recognition: AuraFace-v1 512-D (Apache 2.0) or SFace 128-D (Apache 2.0)
+- Face landmarks: MediaPipe FaceLandmarker (Apache 2.0)
 - Audio: CrispASR (our own, Apache 2.0)
 
-This replaces the current CrispLens dependency on InsightFace's
-non-commercial ArcFace model weights for face recognition.
+This replaces ALL non-commercial dependencies in CrispLens.
+AuraFace-v1 is schema-compatible with InsightFace buffalo_l (same 512-D
+ArcFace embedding space) — existing CrispLens databases work without
+re-embedding when switching from buffalo_l to AuraFace.
