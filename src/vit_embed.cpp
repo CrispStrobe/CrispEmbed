@@ -71,7 +71,7 @@ struct context {
 
     // Backend
     ggml_backend_t backend = nullptr;
-    core_gguf::weight_list wl;
+    core_gguf::WeightLoad wl;
     int n_threads = 4;
 };
 
