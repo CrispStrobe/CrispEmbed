@@ -436,3 +436,34 @@ This replaces ALL non-commercial dependencies in CrispLens.
 AuraFace-v1 is schema-compatible with InsightFace buffalo_l (same 512-D
 ArcFace embedding space) — existing CrispLens databases work without
 re-embedding when switching from buffalo_l to AuraFace.
+
+### Testing methodology for Phase 8
+
+Every new model/forward path follows this validation protocol:
+
+1. **Python reference dump** (`tools/dump_reference.py`)
+   - Load HF model, run forward pass with hooks on every layer
+   - Capture: patch_embed output, each enc_layer output, pooling output, final embedding
+   - Write to GGUF reference archive
+
+2. **C++ per-layer diff** (`src/crispembed_diff.h`)
+   - Load reference GGUF
+   - Run CrispEmbed forward path with dump mode (tag intermediates)
+   - Compare each stage: cosine_min, max_abs, rms
+   - First layer where cos < 0.999 = bug location
+
+3. **End-to-end parity** (`tests/test_all_parity.py`)
+   - F32 cos ≥ 0.95 vs HF reference (PASS/FAIL gate)
+   - Q8_0 and Q4_K quant degradation measurement
+   - Cross-input diversity check (detect degenerate outputs)
+
+4. **Live tests on example files**
+   - Vision: test on standard images (cat, dog, cityscape, face)
+   - Face detection: test on multi-face images, verify bounding boxes
+   - Face recognition: test identity matching on LFW or similar dataset
+   - Cross-modal: text "a photo of a cat" vs actual cat image → cos > 0.2
+
+5. **Unit tests** (in `tests/`)
+   - Converter output validation (tensor names, shapes, metadata)
+   - Tokenizer / image preprocessor correctness
+   - Individual op verification (conv2d, batch norm, attention pooling)
