@@ -424,14 +424,20 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
     ggml_set_name(x, "input");
     ggml_set_input(x);
 
-    // Run graph replay — collect all output tensors
+    // Run graph replay — register all intermediate tensors
     std::vector<ggml_tensor*> output_tensors;
     ggml_tensor* last = replay_graph(g, ctx, x, nodes, output_tensors);
     if (!last) { ggml_free(g); return {}; }
 
-    // Mark final tensor as output
+    // Mark the final output tensor
     ggml_set_name(last, "det_out");
     ggml_set_output(last);
+
+    // SCRFD: also mark the 9 detection output tensors so we can read them
+    // Output names: score=448/471/494, bbox=451/474/497, kps=454/477/500
+    // These are the last few tensors in the graph replay's tensor map
+    // Mark the last tensor from each Sigmoid and Reshape as output
+    // (they're all in the graph but only "det_out" is marked)
 
     // Build + allocate + compute
     ggml_cgraph* gf = ggml_new_graph_custom(g, max_nodes, false);
@@ -447,39 +453,35 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
 
     ggml_backend_graph_compute(ctx->backend, gf);
 
-    // ── SCRFD post-processing: decode outputs → face detections ──
-    // 3 strides (8, 16, 32), each with score/bbox/kps outputs
-    const int strides[] = {8, 16, 32};
-    const int num_anchors = 2;  // SCRFD uses 2 anchors per location
+    // ── Read detection outputs from graph replay tensor map ──
+    // The graph replay registered all intermediate tensors by name.
+    // We need the 9 ONNX outputs. After graph compute, read their data.
+    // Note: outputs go through Sigmoid/Reshape/Transpose which are passthrough
+    // in our replayer, so the tensor data is the raw conv output.
 
+    // SCRFD output order: 3 strides × (score[N,1], bbox[N,4], kps[N,10])
+    // Output names are stored as cnn.output.N.name
+    // Scores need sigmoid; bboxes are distance-encoded
+    const int strides[] = {8, 16, 32};
+    const int num_anchors_per_loc = 2;
     std::vector<face_detection> dets;
 
-    // Read 9 output tensor names from metadata (stored at load time)
-    // Order: score_s8, score_s16, score_s32, bbox_s8, ..., kps_s8, ...
-    // We need to find these tensors in the graph by matching output names
+    // Read the SCRFD Mul outputs (scaled bboxes) and Sigmoid outputs (scores)
+    // For each stride, the detection head produces:
+    //   cls Conv → Transpose → Reshape → Sigmoid → score tensor
+    //   reg Conv → Mul(scale) → Transpose → Reshape → bbox tensor
+    //   kps Conv → Transpose → Reshape → kps tensor
+    // After graph replay, these tensors are registered under the Sigmoid/Reshape output names.
 
-    for (int si = 0; si < 3; si++) {
-        int stride = strides[si];
-        int grid_h = H / stride;
-        int grid_w = W / stride;
-        int n_anchors = grid_h * grid_w * num_anchors;
-
-        // For each anchor: check score, decode bbox + kps
-        // Score threshold filtering
-        // Note: actual output reading requires the graph replay to properly
-        // tag output tensors. For now, use the detection function as a placeholder.
-        // The full implementation needs:
-        // 1. Collect the 9 named output tensors from the graph
-        // 2. Apply sigmoid to scores
-        // 3. For each anchor above threshold:
-        //    - Compute anchor center: cx = (col + 0.5) * stride, cy = (row + 0.5) * stride
-        //    - Decode bbox: x1 = cx - dist_left * stride, y1 = cy - dist_top * stride, ...
-        //    - Decode kps: kpx = cx + dx * stride, kpy = cy + dy * stride
-        // 4. Apply NMS
-    }
+    // For now, we detect using the raw last tensor (graph topology ends at the outputs).
+    // Full anchor decode requires reading specific named tensors.
+    // TODO: collect output tensor data and decode anchors properly.
 
     ggml_gallocr_free(alloc);
     ggml_free(g);
+
+    fprintf(stderr, "cnn_embed: SCRFD forward pass complete (%d nodes), post-processing pending\n",
+            (int)nodes.size());
 
     // NMS
     if (dets.size() > 1) {
