@@ -260,18 +260,30 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         return k >= 0 ? gguf_get_val_f32(g, k) : def;
     };
 
-    // Hyperparams — check both CrispEmbed and Ollama key names.
+    // Hyperparams — check CrispEmbed, Ollama bert.*, and Ollama xlmr.* keys.
     // CrispEmbed: bert.hidden_size, bert.num_hidden_layers, ...
-    // Ollama:     bert.embedding_length, bert.block_count, ...
-    hp.n_vocab         = u32("bert.vocab_size", u32("bert.vocab_size", 30522));
-    hp.n_max_tokens    = u32("bert.max_position_embeddings", u32("bert.context_length", 512));
-    hp.n_embd          = u32("bert.hidden_size", u32("bert.embedding_length", 384));
-    hp.n_head          = u32("bert.num_attention_heads", u32("bert.attention.head_count", 12));
-    hp.n_layer         = u32("bert.num_hidden_layers", u32("bert.block_count", 6));
-    hp.n_intermediate  = u32("bert.intermediate_size", u32("bert.feed_forward_length", 1536));
+    // Ollama:     {arch}.embedding_length, {arch}.block_count, ...
+    //             where arch = "bert" or "xlmr"
+    hp.n_vocab         = u32("bert.vocab_size", 30522);
+    hp.n_max_tokens    = u32("bert.max_position_embeddings",
+                         u32("bert.context_length",
+                         u32("xlmr.context_length", 512)));
+    hp.n_embd          = u32("bert.hidden_size",
+                         u32("bert.embedding_length",
+                         u32("xlmr.embedding_length", 384)));
+    hp.n_head          = u32("bert.num_attention_heads",
+                         u32("bert.attention.head_count",
+                         u32("xlmr.attention.head_count", 12)));
+    hp.n_layer         = u32("bert.num_hidden_layers",
+                         u32("bert.block_count",
+                         u32("xlmr.block_count", 6)));
+    hp.n_intermediate  = u32("bert.intermediate_size",
+                         u32("bert.feed_forward_length",
+                         u32("xlmr.feed_forward_length", 1536)));
     hp.n_output        = u32("bert.output_dim", hp.n_embd);
     hp.layer_norm_eps  = f32("bert.layer_norm_eps",
-                             f32("bert.attention.layer_norm_epsilon", 1e-12f));
+                         f32("bert.attention.layer_norm_epsilon",
+                         f32("xlmr.attention.layer_norm_epsilon", 1e-12f)));
 
     // Pooling method: 0=mean (default), 1=cls, 2=last-token
     // CrispEmbed format: bert.pooling_method (0=mean, 1=cls, 2=last)
@@ -289,7 +301,7 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         ctx->pool_method = pm;
     }
     // Position embedding offset: 0 for BERT, 2 for RoBERTa/XLM-R
-    ctx->pos_offset    = u32("bert.position_offset", 0);
+    ctx->pos_offset    = u32("bert.position_offset", u32("xlmr.position_offset", 0));
     // ColBERT output dimension (BGE-M3 default 128) — read while g is valid
     m.colbert_dim      = u32("bert.colbert_dim", 128);
     // RoPE and pre-LN flags — MUST be read before gguf_free(g)
