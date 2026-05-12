@@ -29,6 +29,8 @@
 #include <string>
 #include <vector>
 
+#include "face_align.h"
+
 namespace cnn_embed {
 
 // A conv block: conv weight + optional bias + optional PReLU slope
@@ -511,30 +513,44 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
             { float mn=1e9,mx=-1e9; for(float v:kps_data){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  kps[%d]: min=%.4f max=%.4f\n",stride,mn,mx); }
         }
 
-        // Decode anchors — conv output layout [W, H, C] where C = num_anchors * values
-        // Score: [W, H, 2] → 2 anchors per loc, 1 score each
-        // Bbox:  [W, H, 8] → 2 anchors × 4 distances
-        // Kps:   [W, H, 20] → 2 anchors × 5 points × 2 coords
-        int idx = 0;
+        // Decode anchors — ggml conv output layout [W, H, C]
+        // The Transpose/Reshape in the ONNX graph are passthrough in our
+        // replayer, so data stays in ggml's native [W, H, C] order:
+        //   element(col, row, chan) = col + row * grid_w + chan * grid_w * grid_h
+        //
+        // Score: [grid_w, grid_h, 2] → 2 anchors per loc, 1 score each
+        //   score(col, row, anchor) = col + row * gw + anchor * gw * gh
+        //
+        // Bbox:  [grid_w, grid_h, 8] → channel = anchor * 4 + dist_idx
+        //   bbox(col, row, anchor, d) = col + row * gw + (anchor*4+d) * gw * gh
+        //
+        // Kps:   [grid_w, grid_h, 20] → channel = anchor * 10 + kp_idx
+        //   kps(col, row, anchor, k) = col + row * gw + (anchor*10+k) * gw * gh
+        int plane = grid_w * grid_h;
         for (int row = 0; row < grid_h; row++) {
             for (int col = 0; col < grid_w; col++) {
-                for (int a = 0; a < num_anchors_per_loc; a++, idx++) {
-                    // Score in conv layout: [col, row, anchor]
-                    int si_idx = (row * grid_w + col) * num_anchors_per_loc + a;
+                int spatial = col + row * grid_w;
+                for (int a = 0; a < num_anchors_per_loc; a++) {
+                    int si_idx = spatial + a * plane;
                     if (si_idx >= n_total) break;
                     float score = scores[si_idx];
                     if (score < conf_threshold) continue;
 
-                    float cx = (col + 0.5f) * stride;
-                    float cy = (row + 0.5f) * stride;
+                    // InsightFace uses integer grid positions (no 0.5 offset)
+                    float cx = (float)col * stride;
+                    float cy = (float)row * stride;
 
-                    // Bbox: 4 distances per anchor in conv layout
-                    int bi = (row * grid_w + col) * (num_anchors_per_loc * 4) + a * 4;
-                    if (bi + 3 >= bbox_n) continue;
-                    float x1 = cx - bboxes[bi + 0] * stride;
-                    float y1 = cy - bboxes[bi + 1] * stride;
-                    float x2 = cx + bboxes[bi + 2] * stride;
-                    float y2 = cy + bboxes[bi + 3] * stride;
+                    // Bbox: 4 distances per anchor in ggml channel-last layout
+                    int b_base = spatial + a * 4 * plane;
+                    if (b_base + 3 * plane >= bbox_n) continue;
+                    float d0 = bboxes[b_base + 0 * plane];
+                    float d1 = bboxes[b_base + 1 * plane];
+                    float d2 = bboxes[b_base + 2 * plane];
+                    float d3 = bboxes[b_base + 3 * plane];
+                    float x1 = cx - d0 * stride;
+                    float y1 = cy - d1 * stride;
+                    float x2 = cx + d2 * stride;
+                    float y2 = cy + d3 * stride;
 
                     face_detection det;
                     det.x = x1;
@@ -544,14 +560,16 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
                     det.confidence = score;
                     memset(det.landmarks, 0, sizeof(det.landmarks));
 
-                    // Keypoints: 5 × (dx, dy) relative to anchor center
-                    // kps tensor is in conv output layout [W, H, 20] (ggml ne[0]=W)
-                    // 20 = 2 anchors × 5 points × 2 coords
+                    // Keypoints: 5 × (dx, dy) in ggml channel-last layout
                     if (!kps_data.empty()) {
-                        int ki = (row * grid_w + col) * 20 + a * 10;
-                        for (int k = 0; k < 5 && ki + k*2+1 < (int)kps_data.size(); k++) {
-                            det.landmarks[k*2]   = cx + kps_data[ki + k*2]   * stride;
-                            det.landmarks[k*2+1] = cy + kps_data[ki + k*2+1] * stride;
+                        int k_base = spatial + a * 10 * plane;
+                        for (int k = 0; k < 5; k++) {
+                            int kx_idx = k_base + (k*2)   * plane;
+                            int ky_idx = k_base + (k*2+1) * plane;
+                            if (ky_idx < (int)kps_data.size()) {
+                                det.landmarks[k*2]   = cx + kps_data[kx_idx] * stride;
+                                det.landmarks[k*2+1] = cy + kps_data[ky_idx] * stride;
+                            }
                         }
                     }
                     dets.push_back(det);
@@ -559,7 +577,7 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
             }
         }
         fprintf(stderr, "cnn_embed: stride %d: %d anchors, %zu detections above %.2f\n",
-                stride, idx, dets.size(), conf_threshold);
+                stride, grid_h * grid_w * num_anchors_per_loc, dets.size(), conf_threshold);
     }
 
     ggml_gallocr_free(alloc);
@@ -624,13 +642,186 @@ std::vector<float> encode_file(context* ctx, const char* path) {
                         + data[(y0*w+x1)*3+c] * wx*(1-wy)
                         + data[(y1*w+x0)*3+c] * (1-wx)*wy
                         + data[(y1*w+x1)*3+c] * wx*wy;
-                // SFace normalize: (pixel - 127.5) / 128
                 pixels[c * sz_h * sz_w + y * sz_w + x] = (v - ctx->sub_val) * ctx->mul_val;
             }
         }
     }
     stbi_image_free(data);
     return encode(ctx, pixels.data(), sz_h, sz_w);
+}
+
+// ── Letterbox detection from file ──────────────────────────────────────
+// Resizes to det_size while preserving aspect ratio (padding with gray),
+// runs detection, then scales coordinates back to original image space.
+std::vector<face_detection> detect_file(context* ctx, const char* path,
+                                         float conf_threshold, int det_size) {
+    if (!ctx || !path) return {};
+
+    int img_w, img_h, ch;
+    unsigned char* data = stbi_load(path, &img_w, &img_h, &ch, 3);
+    if (!data) { fprintf(stderr, "cnn_embed: cannot load %s\n", path); return {}; }
+
+    // InsightFace-style resize: scale to fit, paste at top-left, zero-pad rest.
+    // (NOT centered letterbox — InsightFace puts image at (0,0) and pads right/bottom.)
+    float im_ratio = (float)img_h / img_w;
+    float model_ratio = 1.0f;  // det_size x det_size is square
+    int new_w, new_h;
+    if (im_ratio > model_ratio) {
+        new_h = det_size;
+        new_w = (int)(new_h / im_ratio);
+    } else {
+        new_w = det_size;
+        new_h = (int)(new_w * im_ratio);
+    }
+    float det_scale = (float)new_h / img_h;
+
+    // Preprocess: bilinear resize + RGB→BGR swap + normalize.
+    // SCRFD is trained with OpenCV (BGR). stb_image loads RGB, so swap R↔B.
+    // InsightFace uses: cv2.dnn.blobFromImage(img, 1/128, size, (127.5,127.5,127.5), swapRB=True)
+    // Pad region: InsightFace uses np.zeros (uint8=0), normalized to (0-127.5)/128.
+    std::vector<float> pixels(3 * det_size * det_size);
+    float pad_val = (0.0f - 127.5f) / 128.0f;
+    for (int i = 0; i < 3 * det_size * det_size; i++) pixels[i] = pad_val;
+
+    for (int y = 0; y < new_h; y++) {
+        for (int x = 0; x < new_w; x++) {
+            float ox = (x + 0.5f) / det_scale - 0.5f;
+            float oy = (y + 0.5f) / det_scale - 0.5f;
+            int x0 = std::max(0, (int)ox), x1 = std::min(img_w - 1, x0 + 1);
+            int y0 = std::max(0, (int)oy), y1 = std::min(img_h - 1, y0 + 1);
+            float wx = std::max(0.0f, ox - x0), wy = std::max(0.0f, oy - y0);
+            for (int c = 0; c < 3; c++) {
+                // RGB→BGR: channel 0↔2 swap
+                int src_c = (c == 0) ? 2 : (c == 2) ? 0 : 1;
+                float v = data[(y0*img_w+x0)*3+src_c] * (1-wx)*(1-wy)
+                        + data[(y0*img_w+x1)*3+src_c] * wx*(1-wy)
+                        + data[(y1*img_w+x0)*3+src_c] * (1-wx)*wy
+                        + data[(y1*img_w+x1)*3+src_c] * wx*wy;
+                pixels[c * det_size * det_size + y * det_size + x] = (v - 127.5f) / 128.0f;
+            }
+        }
+    }
+    stbi_image_free(data);
+
+    auto dets = detect(ctx, pixels.data(), det_size, det_size, conf_threshold);
+
+    // Scale coordinates back to original image (simple div by det_scale, no offset)
+    for (auto& d : dets) {
+        d.x = d.x / det_scale;
+        d.y = d.y / det_scale;
+        d.w = d.w / det_scale;
+        d.h = d.h / det_scale;
+        for (int k = 0; k < 5; k++) {
+            d.landmarks[k*2]   = d.landmarks[k*2]   / det_scale;
+            d.landmarks[k*2+1] = d.landmarks[k*2+1] / det_scale;
+        }
+    }
+
+    return dets;
+}
+
+// ── Encode aligned face from landmarks ─────────────────────────────────
+// Takes raw uint8 RGB image + 5 landmarks, aligns to 112×112 via
+// similarity transform, normalizes, and encodes.
+
+std::vector<float> encode_aligned(context* ctx,
+                                   const unsigned char* image, int img_w, int img_h,
+                                   const float* landmarks_10) {
+    if (!ctx || !image || !landmarks_10) return {};
+
+    int out_w = ctx->input_w, out_h = ctx->input_h;
+
+    // face_align::align returns CHW float32 normalized (x-127.5)/127.5
+    auto aligned = face_align::align(image, img_w, img_h, landmarks_10, out_w, out_h);
+    if (aligned.empty()) return {};
+
+    // Re-normalize from ArcFace default (x-127.5)/127.5 to model's sub/mul
+    // ArcFace models use sub=127.5, mul=1/127.5; some use sub=127.5, mul=1/128
+    if (std::abs(ctx->mul_val - 1.0f/127.5f) > 0.001f) {
+        for (float& v : aligned) {
+            float pixel = v * 127.5f + 127.5f;  // undo ArcFace norm
+            v = (pixel - ctx->sub_val) * ctx->mul_val;  // apply model norm
+        }
+    }
+
+    return encode(ctx, aligned.data(), out_h, out_w);
+}
+
+std::vector<float> encode_face_file(context* ctx, const char* image_path,
+                                     const float* landmarks_10) {
+    if (!ctx || !image_path || !landmarks_10) return {};
+    int w, h, ch;
+    unsigned char* data = stbi_load(image_path, &w, &h, &ch, 3);
+    if (!data) { fprintf(stderr, "cnn_embed: cannot load %s\n", image_path); return {}; }
+    auto emb = encode_aligned(ctx, data, w, h, landmarks_10);
+    stbi_image_free(data);
+    return emb;
+}
+
+// ── Full pipeline: detect → align → encode ─────────────────────────────
+std::vector<face_result> face_pipeline(context* det_ctx, context* rec_ctx,
+                                        const char* image_path,
+                                        float conf_threshold, int det_size) {
+    if (!det_ctx || !rec_ctx || !image_path) return {};
+
+    // Load image once for both detection and alignment
+    int img_w, img_h, ch;
+    unsigned char* data = stbi_load(image_path, &img_w, &img_h, &ch, 3);
+    if (!data) { fprintf(stderr, "cnn_embed: cannot load %s\n", image_path); return {}; }
+
+    // Step 1: Detect faces using detect_file (handles preprocessing + coord scaling)
+    // We can't reuse detect_file directly since we already have the image loaded,
+    // so replicate the InsightFace-style preprocessing inline.
+    float im_ratio = (float)img_h / img_w;
+    int new_w, new_h;
+    if (im_ratio > 1.0f) { new_h = det_size; new_w = (int)(new_h / im_ratio); }
+    else { new_w = det_size; new_h = (int)(new_w * im_ratio); }
+    float det_scale = (float)new_h / img_h;
+
+    float pad_val = -127.5f / 128.0f;
+    std::vector<float> pixels(3 * det_size * det_size);
+    for (int i = 0; i < 3 * det_size * det_size; i++) pixels[i] = pad_val;
+    for (int y = 0; y < new_h; y++) {
+        for (int x = 0; x < new_w; x++) {
+            float ox = (x + 0.5f) / det_scale - 0.5f;
+            float oy = (y + 0.5f) / det_scale - 0.5f;
+            int x0 = std::max(0, (int)ox), x1 = std::min(img_w - 1, x0 + 1);
+            int y0 = std::max(0, (int)oy), y1 = std::min(img_h - 1, y0 + 1);
+            float wx = std::max(0.0f, ox - x0), wy = std::max(0.0f, oy - y0);
+            for (int c = 0; c < 3; c++) {
+                int src_c = (c == 0) ? 2 : (c == 2) ? 0 : 1; // RGB→BGR
+                float v = data[(y0*img_w+x0)*3+src_c] * (1-wx)*(1-wy)
+                        + data[(y0*img_w+x1)*3+src_c] * wx*(1-wy)
+                        + data[(y1*img_w+x0)*3+src_c] * (1-wx)*wy
+                        + data[(y1*img_w+x1)*3+src_c] * wx*wy;
+                pixels[c * det_size * det_size + y * det_size + x] = (v - 127.5f) / 128.0f;
+            }
+        }
+    }
+
+    auto dets = detect(det_ctx, pixels.data(), det_size, det_size, conf_threshold);
+
+    // Scale coordinates back (no offset, InsightFace-style top-left placement)
+    for (auto& d : dets) {
+        d.x /= det_scale; d.y /= det_scale;
+        d.w /= det_scale; d.h /= det_scale;
+        for (int k = 0; k < 5; k++) {
+            d.landmarks[k*2]   /= det_scale;
+            d.landmarks[k*2+1] /= det_scale;
+        }
+    }
+
+    // Step 2+3: For each detected face, align and encode
+    std::vector<face_result> results;
+    for (const auto& d : dets) {
+        face_result fr;
+        fr.det = d;
+        fr.embedding = encode_aligned(rec_ctx, data, img_w, img_h, d.landmarks);
+        results.push_back(std::move(fr));
+    }
+
+    stbi_image_free(data);
+    return results;
 }
 
 int dim(const context* ctx) { return ctx ? ctx->embed_dim : 0; }

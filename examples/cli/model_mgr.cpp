@@ -46,6 +46,40 @@ struct ModelEntry {
     const char * approx_size;
 };
 
+// Prompt prefixes for models that need them for optimal retrieval.
+// query_prefix() returns the prefix to prepend to queries.
+// passage_prefix() returns the prefix to prepend to passages/documents.
+static const char * query_prefix(const char * model) {
+    if (!model) return nullptr;
+    // BGE models
+    if (strstr(model, "bge-") && !strstr(model, "reranker") && !strstr(model, "m3"))
+        return "Represent this sentence for searching relevant passages: ";
+    // E5 models
+    if (strstr(model, "-e5-"))
+        return "query: ";
+    // Nomic
+    if (strstr(model, "nomic-embed"))
+        return "search_query: ";
+    // Jina v5
+    if (strstr(model, "jina-v5"))
+        return "Query: ";
+    return nullptr;
+}
+
+static const char * passage_prefix(const char * model) {
+    if (!model) return nullptr;
+    // E5 models
+    if (strstr(model, "-e5-"))
+        return "passage: ";
+    // Nomic
+    if (strstr(model, "nomic-embed"))
+        return "search_document: ";
+    // Jina v5
+    if (strstr(model, "jina-v5"))
+        return "Passage: ";
+    return nullptr;
+}
+
 static const ModelEntry k_registry[] = {
     {"all-MiniLM-L6-v2",
      "all-MiniLM-L6-v2.gguf",
@@ -473,5 +507,8 @@ const char * model_size(int i) {
         if (n == i) return e->approx_size;
     return nullptr;
 }
+
+const char * get_query_prefix(const char * model) { return query_prefix(model); }
+const char * get_passage_prefix(const char * model) { return passage_prefix(model); }
 
 }  // namespace crispembed_mgr

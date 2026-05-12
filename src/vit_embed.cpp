@@ -389,14 +389,15 @@ void free(context* ctx) {
     }
 }
 
-// ── Image file loading + preprocessing ──────────────────────────────────
-// Uses stb_image (already linked via image_preprocess.cpp).
+} // namespace vit_embed (close before stb_image to avoid free() clash)
 
-// stb_image — each translation unit gets its own static copy
-// (image_preprocess.cpp also uses STB_IMAGE_STATIC)
+// stb_image — must be outside any namespace so STBI_FREE resolves to ::free
 #define STB_IMAGE_STATIC
 #define STB_IMAGE_IMPLEMENTATION
 #include "../ggml/examples/stb_image.h"
+
+namespace vit_embed {
+// ── Image file loading + preprocessing ──────────────────────────────────
 
 // Bilinear resize from [src_h, src_w, 3] uint8 to [dst_h, dst_w, 3] float [0,1]
 static void bilinear_resize(const unsigned char* src, int src_w, int src_h,

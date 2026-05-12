@@ -79,6 +79,10 @@ CRISPEMBED_API const crispembed_hparams * crispembed_get_hparams(const crispembe
 // Model registry / auto-download helpers shared by the CLI and wrappers.
 CRISPEMBED_API const char * crispembed_cache_dir(void);
 CRISPEMBED_API const char * crispembed_resolve_model(const char * arg, int auto_download);
+// Get recommended prefix for a model. Returns NULL if not needed.
+CRISPEMBED_API const char * crispembed_query_prefix(const char * model_name);
+CRISPEMBED_API const char * crispembed_passage_prefix(const char * model_name);
+
 CRISPEMBED_API int crispembed_n_models(void);
 CRISPEMBED_API const char * crispembed_model_name(int index);
 CRISPEMBED_API const char * crispembed_model_desc(int index);
@@ -316,6 +320,70 @@ CRISPEMBED_API const float * crispembed_preprocess_image_rgb(
         int                * out_n_patches,
         int                * out_row_dim,
         int32_t              out_grid_thw[3]);
+
+// ---------------------------------------------------------------------------
+// Face detection & recognition (CNN models)
+// ---------------------------------------------------------------------------
+
+// Opaque context for CNN face models (SCRFD, ArcFace, SFace, AuraFace).
+typedef struct crispembed_face_context crispembed_face_context;
+
+// Detected face bounding box + landmarks.
+typedef struct crispembed_face_detection {
+    float x, y, w, h;        // bounding box in original image coordinates
+    float confidence;
+    float landmarks[10];     // 5 points × (x, y)
+} crispembed_face_detection;
+
+// Face with embedding.
+typedef struct crispembed_face_result {
+    crispembed_face_detection det;
+    const float * embedding;  // L2-normalized, dim = crispembed_face_dim()
+    int embedding_dim;
+} crispembed_face_result;
+
+// Load a CNN face model (detection or recognition). Returns NULL on failure.
+CRISPEMBED_API crispembed_face_context * crispembed_face_init(
+        const char * model_path, int n_threads);
+
+// Get embedding dimension (recognition models).
+CRISPEMBED_API int crispembed_face_dim(const crispembed_face_context * ctx);
+
+// Get model type: "detection" or "recognition".
+CRISPEMBED_API const char * crispembed_face_type(const crispembed_face_context * ctx);
+
+// Detect faces from an image file. Uses letterbox resize + coordinate
+// scaling to return bounding boxes in original image coordinates.
+// *out_n_faces is set to the number of detected faces.
+// Returns array of detections (owned by ctx, valid until next call).
+CRISPEMBED_API const crispembed_face_detection * crispembed_detect_faces(
+        crispembed_face_context * ctx,
+        const char * image_path,
+        float conf_threshold,
+        int * out_n_faces);
+
+// Encode a face from image + 5-point landmarks (from detection).
+// Performs similarity-transform alignment to 112×112 and encodes.
+// Returns L2-normalized embedding (owned by ctx, valid until next call).
+CRISPEMBED_API const float * crispembed_encode_face(
+        crispembed_face_context * ctx,
+        const char * image_path,
+        const float * landmarks_10,
+        int * out_dim);
+
+// Full pipeline: detect → align → encode. Takes separate detector and
+// recognizer contexts. Returns array of face results with embeddings.
+// *out_n_faces is set to the number of detected faces.
+// Returns array (owned by det_ctx, valid until next call).
+CRISPEMBED_API const crispembed_face_result * crispembed_face_pipeline(
+        crispembed_face_context * det_ctx,
+        crispembed_face_context * rec_ctx,
+        const char * image_path,
+        float conf_threshold,
+        int * out_n_faces);
+
+// Free face context.
+CRISPEMBED_API void crispembed_face_free(crispembed_face_context * ctx);
 
 // ---------------------------------------------------------------------------
 // Lifecycle

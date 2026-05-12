@@ -111,7 +111,7 @@ def get_ce_embeddings(binary, gguf_path, texts):
     """Get embeddings from CrispEmbed CLI."""
     vecs = []
     for t in texts:
-        r = subprocess.run([binary, "-m", gguf_path, t],
+        r = subprocess.run([binary, "-m", gguf_path, "--prefix", "", t],
                            capture_output=True, text=True, timeout=120)
         if r.returncode != 0:
             return None

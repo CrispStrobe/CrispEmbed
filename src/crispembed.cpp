@@ -1208,12 +1208,23 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
     ctx->n_threads = n_threads > 0 ? n_threads : 4;
     if (model_path) ctx->model_path_for_audio = model_path;
 
-    // Detect model type from GGUF metadata
+    // Detect model type from GGUF metadata.
+    // Decoder models have either decoder.hidden_size (CrispEmbed-native) or
+    // general.architecture in {qwen3, gemma3, llama, ...} (Ollama-format).
+    // Encoder models (BERT/XLM-R) have bert.* keys and enc.N.* tensor names.
     gguf_init_params gp = { true, nullptr };
     gguf_context * g = gguf_init_from_file(model_path, gp);
     bool is_dec = false;
     if (g) {
         is_dec = gguf_find_key(g, "decoder.hidden_size") >= 0;
+        if (!is_dec) {
+            int64_t ki = gguf_find_key(g, "general.architecture");
+            if (ki >= 0) {
+                std::string arch = gguf_get_val_str(g, ki);
+                is_dec = (arch == "qwen3" || arch == "gemma3" || arch == "llama"
+                       || arch == "qwen2" || arch == "mistral" || arch == "phi3");
+            }
+        }
         gguf_free(g);
     }
 
@@ -1318,6 +1329,13 @@ extern "C" const char * crispembed_resolve_model(const char * arg, int auto_down
     if (!arg) return value.c_str();
     value = crispembed_mgr::resolve_model(arg, auto_download != 0);
     return value.c_str();
+}
+
+extern "C" const char * crispembed_query_prefix(const char * model_name) {
+    return crispembed_mgr::get_query_prefix(model_name);
+}
+extern "C" const char * crispembed_passage_prefix(const char * model_name) {
+    return crispembed_mgr::get_passage_prefix(model_name);
 }
 
 extern "C" int crispembed_n_models(void) {
@@ -2199,6 +2217,113 @@ extern "C" const float * crispembed_encode_text_with_image_file(
                                               r.patches.data(), r.n_patches,
                                               r.grid_thw, /*n_images=*/1,
                                               out_dim);
+}
+
+// ---------------------------------------------------------------------------
+// Face detection & recognition C API
+// ---------------------------------------------------------------------------
+
+#include "cnn_embed.h"
+
+struct crispembed_face_context {
+    cnn_embed::context * cnn = nullptr;
+    // Scratch buffers for returning results (valid until next call)
+    std::vector<crispembed_face_detection> det_buf;
+    std::vector<crispembed_face_result> result_buf;
+    std::vector<std::vector<float>> emb_buf;  // owns embedding data
+    std::vector<float> single_emb;
+};
+
+extern "C" crispembed_face_context * crispembed_face_init(
+        const char * model_path, int n_threads) {
+    if (!model_path) return nullptr;
+    auto * ctx = new crispembed_face_context();
+    if (!cnn_embed::load(&ctx->cnn, model_path, n_threads)) {
+        delete ctx;
+        return nullptr;
+    }
+    return ctx;
+}
+
+extern "C" int crispembed_face_dim(const crispembed_face_context * ctx) {
+    return ctx ? cnn_embed::dim(ctx->cnn) : 0;
+}
+
+extern "C" const char * crispembed_face_type(const crispembed_face_context * ctx) {
+    return ctx ? cnn_embed::model_type(ctx->cnn) : "";
+}
+
+extern "C" const crispembed_face_detection * crispembed_detect_faces(
+        crispembed_face_context * ctx,
+        const char * image_path,
+        float conf_threshold,
+        int * out_n_faces) {
+    if (!ctx || !image_path || !out_n_faces) { if (out_n_faces) *out_n_faces = 0; return nullptr; }
+
+    auto dets = cnn_embed::detect_file(ctx->cnn, image_path, conf_threshold);
+    ctx->det_buf.resize(dets.size());
+    for (size_t i = 0; i < dets.size(); i++) {
+        auto & d = ctx->det_buf[i];
+        d.x = dets[i].x; d.y = dets[i].y;
+        d.w = dets[i].w; d.h = dets[i].h;
+        d.confidence = dets[i].confidence;
+        memcpy(d.landmarks, dets[i].landmarks, sizeof(d.landmarks));
+    }
+    *out_n_faces = (int)dets.size();
+    return ctx->det_buf.empty() ? nullptr : ctx->det_buf.data();
+}
+
+extern "C" const float * crispembed_encode_face(
+        crispembed_face_context * ctx,
+        const char * image_path,
+        const float * landmarks_10,
+        int * out_dim) {
+    if (!ctx || !image_path || !landmarks_10 || !out_dim) {
+        if (out_dim) *out_dim = 0;
+        return nullptr;
+    }
+
+    ctx->single_emb = cnn_embed::encode_face_file(ctx->cnn, image_path, landmarks_10);
+
+    if (ctx->single_emb.empty()) { *out_dim = 0; return nullptr; }
+    *out_dim = (int)ctx->single_emb.size();
+    return ctx->single_emb.data();
+}
+
+extern "C" const crispembed_face_result * crispembed_face_pipeline(
+        crispembed_face_context * det_ctx,
+        crispembed_face_context * rec_ctx,
+        const char * image_path,
+        float conf_threshold,
+        int * out_n_faces) {
+    if (!det_ctx || !rec_ctx || !image_path || !out_n_faces) {
+        if (out_n_faces) *out_n_faces = 0;
+        return nullptr;
+    }
+
+    auto results = cnn_embed::face_pipeline(det_ctx->cnn, rec_ctx->cnn,
+                                             image_path, conf_threshold);
+    // Store results in det_ctx scratch buffers
+    det_ctx->result_buf.resize(results.size());
+    det_ctx->emb_buf.resize(results.size());
+    for (size_t i = 0; i < results.size(); i++) {
+        auto & r = det_ctx->result_buf[i];
+        r.det.x = results[i].det.x; r.det.y = results[i].det.y;
+        r.det.w = results[i].det.w; r.det.h = results[i].det.h;
+        r.det.confidence = results[i].det.confidence;
+        memcpy(r.det.landmarks, results[i].det.landmarks, sizeof(r.det.landmarks));
+        det_ctx->emb_buf[i] = std::move(results[i].embedding);
+        r.embedding = det_ctx->emb_buf[i].data();
+        r.embedding_dim = (int)det_ctx->emb_buf[i].size();
+    }
+    *out_n_faces = (int)results.size();
+    return det_ctx->result_buf.empty() ? nullptr : det_ctx->result_buf.data();
+}
+
+extern "C" void crispembed_face_free(crispembed_face_context * ctx) {
+    if (!ctx) return;
+    if (ctx->cnn) cnn_embed::free(ctx->cnn);
+    delete ctx;
 }
 
 extern "C" void crispembed_free(crispembed_context * ctx) {

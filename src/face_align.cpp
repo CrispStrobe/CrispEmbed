@@ -27,26 +27,27 @@ void estimate_affine(const float* src, const float* dst, float matrix[6]) {
         double sx = src[i*2], sy = src[i*2+1];
         double dx = dst[i*2], dy = dst[i*2+1];
 
-        // Equation for x: a*sx - b*sy + tx = dx
+        // Design matrix rows: [sx, -sy, 1, 0] (x-eq) and [sy, sx, 0, 1] (y-eq)
+        // Normal equations: A^T A x = A^T b
         A[0][0] += sx*sx + sy*sy;
         A[0][1] += 0;
         A[0][2] += sx;
-        A[0][3] += -sy;
+        A[0][3] += sy;
         B[0] += sx*dx + sy*dy;
 
         A[1][0] += 0;
         A[1][1] += sx*sx + sy*sy;
-        A[1][2] += sy;
+        A[1][2] += -sy;
         A[1][3] += sx;
         B[1] += sx*dy - sy*dx;
 
         A[2][0] += sx;
-        A[2][1] += sy;
+        A[2][1] += -sy;
         A[2][2] += 1;
         A[2][3] += 0;
         B[2] += dx;
 
-        A[3][0] += -sy;
+        A[3][0] += sy;
         A[3][1] += sx;
         A[3][2] += 0;
         A[3][3] += 1;

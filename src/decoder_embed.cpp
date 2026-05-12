@@ -27,31 +27,98 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
     gguf_context * g = gguf_init_from_file(path, gp);
     if (!g) return false;
 
+    // Type-safe GGUF value readers (handle uint32, int32, bool, float)
+    auto u32_safe = [&](int k) -> int {
+        auto type = gguf_get_kv_type(g, k);
+        if (type == GGUF_TYPE_UINT32) return (int)gguf_get_val_u32(g, k);
+        if (type == GGUF_TYPE_INT32) return (int)gguf_get_val_i32(g, k);
+        if (type == GGUF_TYPE_BOOL) return gguf_get_val_bool(g, k) ? 1 : 0;
+        if (type == GGUF_TYPE_UINT16) return (int)gguf_get_val_u16(g, k);
+        if (type == GGUF_TYPE_FLOAT32) return (int)gguf_get_val_f32(g, k);
+        return 0;
+    };
+    auto f32_safe = [&](int k) -> float {
+        auto type = gguf_get_kv_type(g, k);
+        if (type == GGUF_TYPE_FLOAT32) return gguf_get_val_f32(g, k);
+        if (type == GGUF_TYPE_UINT32) return (float)gguf_get_val_u32(g, k);
+        return 0.0f;
+    };
     auto u32 = [&](const char * key, int def) -> int {
         int k = gguf_find_key(g, key);
-        return k >= 0 ? (int)gguf_get_val_u32(g, k) : def;
+        return k >= 0 ? u32_safe(k) : def;
     };
     auto f32v = [&](const char * key, float def) -> float {
         int k = gguf_find_key(g, key);
+        return k >= 0 ? f32_safe(k) : def;
+    };
+
+    // Detect architecture for key prefix fallback.
+    // Converters write {arch}.* keys (gemma3.*, qwen3.*) for Ollama compat.
+    // Older GGUFs use decoder.* keys.
+    std::string arch_pfx = "decoder";
+    {
+        int64_t ki = gguf_find_key(g, "general.architecture");
+        if (ki >= 0) {
+            std::string arch = gguf_get_val_str(g, ki);
+            if (arch == "gemma3" || arch == "qwen3" || arch == "llama")
+                arch_pfx = arch;
+        }
+    }
+    auto a_u32 = [&](const char * suffix, int def) -> int {
+        // Try decoder.suffix, then {arch}.suffix
+        std::string k1 = "decoder." + std::string(suffix);
+        int v = u32(k1.c_str(), -1);
+        if (v >= 0) return v;
+        std::string k2 = arch_pfx + "." + std::string(suffix);
+        return u32(k2.c_str(), def);
+    };
+    auto a_f32 = [&](const char * suffix, float def) -> float {
+        std::string k1 = "decoder." + std::string(suffix);
+        int k = gguf_find_key(g, k1.c_str());
+        if (k >= 0) return gguf_get_val_f32(g, k);
+        std::string k2 = arch_pfx + "." + std::string(suffix);
+        k = gguf_find_key(g, k2.c_str());
         return k >= 0 ? gguf_get_val_f32(g, k) : def;
     };
 
-    m.n_vocab = u32("decoder.vocab_size", 151669);
-    m.n_embd = u32("decoder.hidden_size", 1024);
-    m.n_head = u32("decoder.num_attention_heads", 16);
-    m.n_kv_head = u32("decoder.num_key_value_heads", m.n_head);
-    m.n_layer = u32("decoder.num_hidden_layers", 28);
-    m.n_intermediate = u32("decoder.intermediate_size", 3072);
-    m.n_max_pos = u32("decoder.max_position_embeddings", 8192);
-    m.rms_norm_eps = f32v("decoder.rms_norm_eps", 1e-6f);
-    m.rope_theta = f32v("decoder.rope_theta", 10000.0f);
-    m.is_bidirectional = u32("decoder.is_bidirectional", 0) != 0;
-    m.pooling_method = u32("decoder.pooling_method", 2);
-    m.activation = u32("decoder.activation", 0);
-    m.head_dim = u32("decoder.head_dim", 0);
-    m.attn_scale = f32v("decoder.attn_scale", 0.0f);
-    m.embed_scale = f32v("decoder.embed_scale", 1.0f);
-    m.gemma_norm = u32("decoder.gemma_norm", 0) != 0;
+    m.n_vocab = a_u32("vocab_size", 0);  // inferred from tensor if 0
+    m.n_embd = a_u32("hidden_size",
+               a_u32("embedding_length", 1024));
+    m.n_head = a_u32("num_attention_heads",
+               a_u32("attention.head_count", 16));
+    m.n_kv_head = a_u32("num_key_value_heads",
+                  a_u32("attention.head_count_kv", m.n_head));
+    m.n_layer = a_u32("num_hidden_layers",
+                a_u32("block_count", 28));
+    m.n_intermediate = a_u32("intermediate_size",
+                      a_u32("feed_forward_length", 3072));
+    m.n_max_pos = a_u32("max_position_embeddings",
+                  a_u32("context_length", 8192));
+    m.rms_norm_eps = a_f32("rms_norm_eps",
+                    a_f32("attention.layer_norm_rms_epsilon", 1e-6f));
+    m.rope_theta = a_f32("rope_theta",
+                   a_f32("rope.freq_base", 10000.0f));
+    m.is_bidirectional = a_u32("is_bidirectional", 0) != 0;
+    // Pooling: decoder.pooling_method or {arch}.pooling_type (Ollama: 3=last)
+    m.pooling_method = a_u32("pooling_method", -1);
+    if (m.pooling_method < 0) {
+        int pt = a_u32("pooling_type", 3);  // Ollama default: 3=last
+        // Ollama {1=mean,2=cls,3=last} → internal {1=mean,1=cls(?),2=last}
+        m.pooling_method = (pt == 3) ? 2 : (pt == 1) ? 1 : 2;
+    }
+    m.activation = a_u32("activation", 0);
+    m.head_dim = a_u32("head_dim",
+                 a_u32("attention.key_length", 0));
+    m.attn_scale = a_f32("attn_scale",
+                   a_f32("attention.key_length_scale", 0.0f));
+    m.embed_scale = a_f32("embed_scale", 1.0f);
+    // Detect Gemma3 from architecture
+    m.gemma_norm = a_u32("gemma_norm", 0) != 0;
+    if (!m.gemma_norm && arch_pfx == "gemma3") {
+        m.gemma_norm = true;
+        if (m.embed_scale == 1.0f) m.embed_scale = std::sqrt((float)m.n_embd);
+    }
+    bool normalize_embeddings = a_u32("normalize_embeddings", 1) != 0;
 
     // MRoPE / multimodal metadata (BidirLM-Omni). All optional — absent ⇒
     // text-only path with standard RoPE.
@@ -140,24 +207,67 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
 
     m.token_embd = get("token_embd.weight");
     m.output_norm = get("output_norm.weight");
+    if (!m.output_norm) m.output_norm = get("final_norm.weight");
+
+    // Infer n_vocab and n_embd from token_embd shape if not in metadata
+    if (m.token_embd) {
+        int64_t te_embd = m.token_embd->ne[0];
+        int64_t te_vocab = m.token_embd->ne[1];
+        if (m.n_vocab == 0 || m.n_vocab != (int)te_vocab) {
+            fprintf(stderr, "decoder_embed: n_vocab %d → %d (from token_embd)\n",
+                    m.n_vocab, (int)te_vocab);
+            m.n_vocab = (int)te_vocab;
+        }
+        if (te_embd != m.n_embd) {
+            fprintf(stderr, "decoder_embed: n_embd %d → %d (from token_embd)\n",
+                    m.n_embd, (int)te_embd);
+            m.n_embd = (int)te_embd;
+        }
+    }
+
+    // Count actual layers from loaded tensors
+    {
+        int counted = 0;
+        for (const auto& kv : wl.tensors) {
+            int layer_id = -1;
+            if (sscanf(kv.first.c_str(), "dec.%d.", &layer_id) == 1) {
+                if (layer_id + 1 > counted) counted = layer_id + 1;
+            }
+        }
+        if (counted > 0 && counted != m.n_layer) {
+            fprintf(stderr, "decoder_embed: n_layer %d → %d (from tensors)\n",
+                    m.n_layer, counted);
+            m.n_layer = counted;
+        }
+    }
 
     m.layers.resize(m.n_layer);
     for (int i = 0; i < m.n_layer; i++) {
+        // Try both dec.N.* (CrispEmbed-native) and blk.N.* (Ollama) naming
         auto p = "dec." + std::to_string(i) + ".";
+        auto b = "blk." + std::to_string(i) + ".";
         auto & L = m.layers[i];
-        L.attn_norm_w = get(p + "attn_norm.weight");
-        L.q_w = get(p + "attn.q.weight"); L.q_b = get(p + "attn.q.bias");
-        L.k_w = get(p + "attn.k.weight"); L.k_b = get(p + "attn.k.bias");
-        L.v_w = get(p + "attn.v.weight"); L.v_b = get(p + "attn.v.bias");
-        L.o_w = get(p + "attn.o.weight"); L.o_b = get(p + "attn.o.bias");
-        L.q_norm_w = get(p + "attn.q_norm.weight");
-        L.k_norm_w = get(p + "attn.k_norm.weight");
-        L.ffn_norm_w = get(p + "ffn_norm.weight");
-        L.gate_w = get(p + "ffn.gate.weight");
-        L.up_w = get(p + "ffn.up.weight");
-        L.down_w = get(p + "ffn.down.weight");
-        L.pre_ffn_norm_w = get(p + "pre_ffn_norm.weight");
-        L.post_ffn_norm_w = get(p + "post_ffn_norm.weight");
+        auto get2 = [&](const char* s1, const char* s2) -> ggml_tensor* {
+            auto t = get(p + s1);
+            return t ? t : get(b + s2);
+        };
+        L.attn_norm_w = get2("attn_norm.weight", "attn_norm.weight");
+        L.q_w = get2("attn.q.weight", "attn_q.weight");
+        L.q_b = get2("attn.q.bias", "attn_q.bias");
+        L.k_w = get2("attn.k.weight", "attn_k.weight");
+        L.k_b = get2("attn.k.bias", "attn_k.bias");
+        L.v_w = get2("attn.v.weight", "attn_v.weight");
+        L.v_b = get2("attn.v.bias", "attn_v.bias");
+        L.o_w = get2("attn.o.weight", "attn_output.weight");
+        L.o_b = get2("attn.o.bias", "attn_output.bias");
+        L.q_norm_w = get2("attn.q_norm.weight", "attn_q_norm.weight");
+        L.k_norm_w = get2("attn.k_norm.weight", "attn_k_norm.weight");
+        L.ffn_norm_w = get2("ffn_norm.weight", "ffn_norm.weight");
+        L.gate_w = get2("ffn.gate.weight", "ffn_gate.weight");
+        L.up_w = get2("ffn.up.weight", "ffn_up.weight");
+        L.down_w = get2("ffn.down.weight", "ffn_down.weight");
+        L.pre_ffn_norm_w = get2("pre_ffn_norm.weight", "pre_ffn_norm.weight");
+        L.post_ffn_norm_w = get2("post_ffn_norm.weight", "post_ffn_norm.weight");
     }
 
     const char * pool_str = (m.pooling_method == 1) ? "mean" : "last-token";

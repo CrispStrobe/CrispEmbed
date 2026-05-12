@@ -27,4 +27,9 @@ const char * model_desc(int i);
 const char * model_filename(int i);
 const char * model_size(int i);
 
+// Prompt prefixes for optimal retrieval quality.
+// Returns nullptr if the model doesn't use prefixes.
+const char * get_query_prefix(const char * model_name);
+const char * get_passage_prefix(const char * model_name);
+
 }  // namespace crispembed_mgr
