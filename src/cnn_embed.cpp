@@ -437,30 +437,27 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
     const char* bbox_names[] = {"451", "474", "497"};
     const char* kps_names[] = {"454", "477", "500"};
 
+    // Store output tensor pointers directly (avoid name lookup issues)
+    ggml_tensor* score_tensors[3] = {};
+    ggml_tensor* bbox_tensors[3] = {};
+    ggml_tensor* kps_tensors[3] = {};
+
     for (int i = 0; i < 3; i++) {
-        for (const char* name : {score_names[i], bbox_names[i], kps_names[i]}) {
-            auto it = tensor_map.find(name);
-            if (it != tensor_map.end()) {
-                char buf[32];
-                snprintf(buf, sizeof(buf), "out_%s", name);
-                ggml_set_name(it->second, buf);
-                ggml_set_output(it->second);
-            }
-        }
+        auto it_s = tensor_map.find(score_names[i]);
+        auto it_b = tensor_map.find(bbox_names[i]);
+        auto it_k = tensor_map.find(kps_names[i]);
+        if (it_s != tensor_map.end()) { score_tensors[i] = it_s->second; ggml_set_output(it_s->second); }
+        if (it_b != tensor_map.end()) { bbox_tensors[i] = it_b->second; ggml_set_output(it_b->second); }
+        if (it_k != tensor_map.end()) { kps_tensors[i] = it_k->second; ggml_set_output(it_k->second); }
     }
-    ggml_set_name(last, "det_out");
     ggml_set_output(last);
 
-    // Build graph — expand from ALL output tensors (not just last)
+    // Build graph
     ggml_cgraph* gf = ggml_new_graph_custom(g, max_nodes, false);
-    // Add detection outputs first so they're in the graph
     for (int i = 0; i < 3; i++) {
-        for (const char* name : {score_names[i], bbox_names[i], kps_names[i]}) {
-            auto it = tensor_map.find(name);
-            if (it != tensor_map.end()) {
-                ggml_build_forward_expand(gf, it->second);
-            }
-        }
+        if (score_tensors[i]) ggml_build_forward_expand(gf, score_tensors[i]);
+        if (bbox_tensors[i]) ggml_build_forward_expand(gf, bbox_tensors[i]);
+        if (kps_tensors[i]) ggml_build_forward_expand(gf, kps_tensors[i]);
     }
     ggml_build_forward_expand(gf, last);
 
@@ -484,17 +481,10 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
         int grid_h = H / stride;
         int grid_w = W / stride;
 
-        // Read output tensors by name
-        char score_buf[32], bbox_buf[32], kps_buf[32];
-        snprintf(score_buf, sizeof(score_buf), "out_%s", score_names[si]);
-        snprintf(bbox_buf, sizeof(bbox_buf), "out_%s", bbox_names[si]);
-        snprintf(kps_buf, sizeof(kps_buf), "out_%s", kps_names[si]);
-
-        ggml_tensor* score_t = ggml_graph_get_tensor(gf, score_buf);
-        ggml_tensor* bbox_t = ggml_graph_get_tensor(gf, bbox_buf);
-        ggml_tensor* kps_t = ggml_graph_get_tensor(gf, kps_buf);
-
-        fprintf(stderr, "  stride %d: score=%s bbox=%s kps=%s\n", stride, score_t?"ok":"MISS", bbox_t?"ok":"MISS", kps_t?"ok":"MISS");
+        // Use stored tensor pointers directly
+        ggml_tensor* score_t = score_tensors[si];
+        ggml_tensor* bbox_t = bbox_tensors[si];
+        ggml_tensor* kps_t = kps_tensors[si];
         if (!score_t || !bbox_t) {
             fprintf(stderr, "cnn_embed: stride %d outputs not found\n", stride);
             continue;
@@ -906,7 +896,7 @@ static ggml_tensor* replay_graph(
             if (x) {
                 // SCRFD reshapes are typically [1,C,H,W]→[H*W,C] or similar
                 // Without runtime shape inference, pass through
-                result = ggml_cont(g, x);
+                result = ggml_dup(g, x);
             }
         } else if (n.op == "Sub") {
             ggml_tensor* a = get_t(n.inputs[0]);
