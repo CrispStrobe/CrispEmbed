@@ -406,8 +406,57 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
 
 std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int W,
                                     float conf_threshold) {
-    // TODO: implement SCRFD detection forward path
-    (void)ctx; (void)pixels; (void)H; (void)W; (void)conf_threshold;
+    if (!ctx || !pixels || ctx->graph_topology.empty()) return {};
+
+    // Parse graph
+    auto nodes = parse_graph(ctx->graph_topology);
+    if (nodes.empty()) return {};
+
+    // Large graph for detection
+    int max_nodes = 2000;
+    size_t buf_size = ggml_tensor_overhead() * (max_nodes + 200)
+                    + ggml_graph_overhead_custom(max_nodes, false);
+    std::vector<uint8_t> buf(buf_size);
+    struct ggml_init_params p = { buf_size, buf.data(), true };
+    ggml_context* g = ggml_init(p);
+
+    ggml_tensor* x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, 3);
+    ggml_set_name(x, "input");
+    ggml_set_input(x);
+
+    // Run graph replay — collect all output tensors
+    std::vector<ggml_tensor*> output_tensors;
+    ggml_tensor* last = replay_graph(g, ctx, x, nodes, output_tensors);
+    if (!last) { ggml_free(g); return {}; }
+
+    // Mark final tensor as output
+    ggml_set_name(last, "det_out");
+    ggml_set_output(last);
+
+    // Build + allocate + compute
+    ggml_cgraph* gf = ggml_new_graph_custom(g, max_nodes, false);
+    ggml_build_forward_expand(gf, last);
+
+    ggml_gallocr_t alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+    if (!ggml_gallocr_alloc_graph(alloc, gf)) {
+        ggml_gallocr_free(alloc); ggml_free(g); return {};
+    }
+
+    ggml_tensor* inp = ggml_graph_get_tensor(gf, "input");
+    ggml_backend_tensor_set(inp, pixels, 0, 3 * H * W * sizeof(float));
+
+    ggml_backend_graph_compute(ctx->backend, gf);
+
+    // Read detection outputs
+    // SCRFD outputs 9 tensors: 3 strides × (conf [N,1], bbox [N,4], kps [N,10])
+    // For now, just read the last output and return empty detections
+    // TODO: implement proper anchor decoding + NMS
+
+    ggml_gallocr_free(alloc);
+    ggml_free(g);
+
+    // Post-processing placeholder
+    fprintf(stderr, "cnn_embed: SCRFD forward pass complete, post-processing not yet implemented\n");
     return {};
 }
 
