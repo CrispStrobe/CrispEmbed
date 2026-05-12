@@ -10,11 +10,36 @@
 bool WordPieceTokenizer::load(const std::vector<std::string> & vocab,
                                int cls_id, int sep_id, int unk_id, int pad_id,
                                int max_length) {
-    id_to_token_ = vocab;
+    // Ollama-format GGUFs store WordPiece vocab with SentencePiece-style
+    // "▁" (U+2581, 3 bytes: 0xE2 0x96 0x81) prefix on whole-word tokens
+    // and strip the "##" prefix from subword tokens. Undo this so the
+    // standard WordPiece lookup works: "▁hello" → "hello", "ing" → "##ing".
+    static const std::string SP_PREFIX = "\xe2\x96\x81"; // ▁ (U+2581)
+    bool has_sp_prefix = false;
+    for (size_t i = 0; i < std::min(vocab.size(), (size_t)1000); i++) {
+        if (vocab[i].size() > 3 && vocab[i].compare(0, 3, SP_PREFIX) == 0
+            && vocab[i][3] != '[') {
+            has_sp_prefix = true;
+            break;
+        }
+    }
+
+    id_to_token_.resize(vocab.size());
     token_to_id_.clear();
     token_to_id_.reserve(vocab.size());
     for (int i = 0; i < (int)vocab.size(); i++) {
-        token_to_id_[vocab[i]] = i;
+        std::string tok = vocab[i];
+        if (has_sp_prefix) {
+            if (tok.size() > 3 && tok.compare(0, 3, SP_PREFIX) == 0) {
+                // "▁hello" → "hello" (whole-word token)
+                tok = tok.substr(3);
+            } else if (!tok.empty() && tok[0] != '[' && tok[0] != '<') {
+                // "ing" → "##ing" (subword continuation)
+                tok = "##" + tok;
+            }
+        }
+        id_to_token_[i] = tok;
+        token_to_id_[tok] = i;
     }
     cls_id_ = cls_id;
     sep_id_ = sep_id;

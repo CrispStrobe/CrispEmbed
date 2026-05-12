@@ -270,7 +270,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     hp.layer_norm_eps  = f32("bert.layer_norm_eps", 1e-12f);
 
     // Pooling method: 0=mean (default), 1=cls, 2=last-token
-    ctx->pool_method   = u32("bert.pooling_method", 0);
+    // CrispEmbed format: bert.pooling_method; Ollama format: bert.pooling_type
+    ctx->pool_method   = u32("bert.pooling_method", u32("bert.pooling_type", 0));
     // Position embedding offset: 0 for BERT, 2 for RoBERTa/XLM-R
     ctx->pos_offset    = u32("bert.position_offset", 0);
     // ColBERT output dimension (BGE-M3 default 128) — read while g is valid
