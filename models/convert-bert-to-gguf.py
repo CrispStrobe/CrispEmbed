@@ -543,10 +543,13 @@ def main():
         print(f"  Jina v2: post-LN, GELU FFN (no gate)")
 
     if is_nomic:
-        # NomicBERT: RoPE encoder, fused QKV, SwiGLU FFN, no bias on attn
+        # NomicBERT: pre-LN, RoPE encoder, fused QKV, SwiGLU FFN, no bias on attn
+        # NomicBertBlock uses the flash-attn Block with prenorm=True pattern:
+        # residual + dropout(attn(norm1(residual))) → norm2 → MLP
         rope_theta = getattr(config, "rotary_emb_base", 10000.0)
         writer.add_float32("bert.rope_theta", rope_theta)
-        print(f"  NomicBERT: rope_theta={rope_theta}")
+        writer.add_uint32("bert.pre_ln", 1)
+        print(f"  NomicBERT: rope_theta={rope_theta}, pre_ln=1")
 
     if is_modernbert:
         # ModernBERT: pre-LN, RoPE, GeGLU, fused QKV, fused gate+up, no biases
