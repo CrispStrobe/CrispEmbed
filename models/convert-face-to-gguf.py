@@ -223,7 +223,7 @@ def main():
                 # Replace BN node with Mul+Add in graph description
                 # (the graph replayer handles "BNPrecomputed" as mul(scale)+add(shift))
                 attrs = ""
-                desc = f"BNPrecomputed:{node.input[0]},{sc_name},{sh_name}:{node.output[0]}"
+                desc = f"BNPrecomputed:{node.input[0]};{sc_name};{sh_name}:{node.output[0]}"
                 node_descs_updated.append(desc)
                 bn_folded += 1
                 continue
@@ -243,7 +243,7 @@ def main():
                 if a.name == "strides": stride = list(a.ints)
                 if a.name == "pads": pads = list(a.ints)
             attrs = f"[k{kernel[0]}s{stride[0]}p{pads[0]}]"
-        desc = f"{node.op_type}{attrs}:{','.join(node.input)}:{','.join(node.output)}"
+        desc = f"{node.op_type}{attrs}:{';'.join(node.input)}:{';'.join(node.output)}"
         node_descs_updated.append(desc)
     node_descs = node_descs_updated
 

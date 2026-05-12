@@ -599,7 +599,7 @@ static std::vector<graph_node> parse_graph(const std::string& graph_str) {
         // Split inputs by comma
         std::istringstream iss(inputs_str);
         std::string inp;
-        while (std::getline(iss, inp, ',')) {
+        while (std::getline(iss, inp, ';')) {
             if (!inp.empty()) gn.inputs.push_back(inp);
         }
         nodes.push_back(std::move(gn));
@@ -648,7 +648,12 @@ static ggml_tensor* replay_graph(
         if (n.op == "Conv") {
             ggml_tensor* x = get_t(n.inputs[0]);
             ggml_tensor* w = get_t(n.inputs[1]);
-            if (!x || !w) { fprintf(stderr, "cnn_replay: Conv missing tensor\n"); continue; }
+            if (!x || !w) {
+                fprintf(stderr, "  Conv[%zu] miss: x=%s(%s) w=%s(%s)\n", ni,
+                        n.inputs[0].c_str(), x ? "ok" : "MISS",
+                        n.inputs.size() > 1 ? n.inputs[1].c_str() : "?", w ? "ok" : "MISS");
+                continue;
+            }
             // Cast to F16 for ggml_conv_2d
             if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
             // Conv attributes from graph: stride, pad, group
