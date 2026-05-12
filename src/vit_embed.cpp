@@ -389,4 +389,79 @@ void free(context* ctx) {
     }
 }
 
+// ── Image file loading + preprocessing ──────────────────────────────────
+// Uses stb_image (already linked via image_preprocess.cpp).
+
+// stb_image — each translation unit gets its own static copy
+// (image_preprocess.cpp also uses STB_IMAGE_STATIC)
+#define STB_IMAGE_STATIC
+#define STB_IMAGE_IMPLEMENTATION
+#include "../ggml/examples/stb_image.h"
+
+// Bilinear resize from [src_h, src_w, 3] uint8 to [dst_h, dst_w, 3] float [0,1]
+static void bilinear_resize(const unsigned char* src, int src_w, int src_h,
+                            float* dst, int dst_w, int dst_h) {
+    const float sx = (float)src_w / dst_w;
+    const float sy = (float)src_h / dst_h;
+
+    for (int y = 0; y < dst_h; y++) {
+        float fy = (y + 0.5f) * sy - 0.5f;
+        int y0 = (int)fy; if (y0 < 0) y0 = 0;
+        int y1 = y0 + 1; if (y1 >= src_h) y1 = src_h - 1;
+        float wy = fy - y0; if (wy < 0) wy = 0;
+
+        for (int x = 0; x < dst_w; x++) {
+            float fx = (x + 0.5f) * sx - 0.5f;
+            int x0 = (int)fx; if (x0 < 0) x0 = 0;
+            int x1 = x0 + 1; if (x1 >= src_w) x1 = src_w - 1;
+            float wx = fx - x0; if (wx < 0) wx = 0;
+
+            for (int c = 0; c < 3; c++) {
+                float v00 = src[(y0 * src_w + x0) * 3 + c] / 255.0f;
+                float v01 = src[(y0 * src_w + x1) * 3 + c] / 255.0f;
+                float v10 = src[(y1 * src_w + x0) * 3 + c] / 255.0f;
+                float v11 = src[(y1 * src_w + x1) * 3 + c] / 255.0f;
+                float v = v00 * (1-wx) * (1-wy) + v01 * wx * (1-wy)
+                        + v10 * (1-wx) * wy     + v11 * wx * wy;
+                // Output in CHW order: [c, y, x]
+                dst[c * dst_h * dst_w + y * dst_w + x] = v;
+            }
+        }
+    }
+}
+
+std::vector<float> encode_file(context* ctx, const char* image_path) {
+    if (!ctx || !image_path) return {};
+
+    int w, h, channels;
+    unsigned char* data = stbi_load(image_path, &w, &h, &channels, 3);
+    if (!data) {
+        fprintf(stderr, "vit_embed: cannot load image '%s'\n", image_path);
+        return {};
+    }
+
+    int sz = ctx->img_size;
+    std::vector<float> pixels(3 * sz * sz);
+
+    // Resize to model's image size
+    bilinear_resize(data, w, h, pixels.data(), sz, sz);
+    stbi_image_free(data);
+
+    // Normalize: (pixel - mean) / std
+    // SigLIP: mean=0.5, std=0.5 → (x - 0.5) / 0.5 = 2x - 1
+    // CLIP: different per-channel mean/std
+    // TODO: read from GGUF metadata (vit.image_mean, vit.image_std)
+    // For now, use SigLIP defaults
+    float mean[3] = {0.5f, 0.5f, 0.5f};
+    float std_[3] = {0.5f, 0.5f, 0.5f};
+
+    for (int c = 0; c < 3; c++) {
+        for (int i = 0; i < sz * sz; i++) {
+            pixels[c * sz * sz + i] = (pixels[c * sz * sz + i] - mean[c]) / std_[c];
+        }
+    }
+
+    return encode(ctx, pixels.data(), sz, sz);
+}
+
 } // namespace vit_embed

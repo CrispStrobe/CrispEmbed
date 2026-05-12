@@ -221,14 +221,22 @@ int main(int argc, char ** argv) {
                 for (size_t j = 0; j < emb.size(); j++)
                     printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
             } else {
-                // Image file (JPG/PNG) — need preprocessing (not yet implemented in C++)
-                // For now, tell user to preprocess externally
-                fprintf(stderr, "error: --image with ViT model requires preprocessed pixels.\n"
-                        "Use --image-raw with a float32 [3,%d,%d] binary file.\n"
-                        "Preprocess with: python -c \"from transformers import SiglipProcessor; ...\"\n",
-                        vit_embed::image_size(vctx), vit_embed::image_size(vctx));
-                vit_embed::free(vctx);
-                return 1;
+                // Image file (JPG/PNG/BMP) — native resize + normalize
+                auto emb = vit_embed::encode_file(vctx, image_path.c_str());
+                if (emb.empty()) {
+                    fprintf(stderr, "error: ViT image encoding failed for '%s'\n", image_path.c_str());
+                    vit_embed::free(vctx);
+                    return 1;
+                }
+                if (json_output) {
+                    printf("{\"image\": \"%s\", \"embedding\": [", json_escape(image_path).c_str());
+                    for (size_t j = 0; j < emb.size(); j++)
+                        printf("%.6f%s", emb[j], j + 1 < emb.size() ? ", " : "");
+                    printf("]}\n");
+                } else {
+                    for (size_t j = 0; j < emb.size(); j++)
+                        printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
+                }
             }
             vit_embed::free(vctx);
             return 0;

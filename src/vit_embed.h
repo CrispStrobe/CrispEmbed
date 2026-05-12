@@ -39,6 +39,10 @@ int dim(const context* ctx);
 // Get expected image size.
 int image_size(const context* ctx);
 
+// Encode from an image file (JPG/PNG/BMP). Handles resize + normalize.
+// Returns empty vector on failure.
+std::vector<float> encode_file(context* ctx, const char* image_path);
+
 // Free resources.
 void free(context* ctx);
 
