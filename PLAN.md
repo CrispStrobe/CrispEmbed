@@ -319,3 +319,111 @@ CrispEmbed/
       prompts and DeepStack injection positions differ). Run with
       `tests/test_bidirlm_image_text_lite.py --n-images 2 --gguf …` for the
       formal HF-parity cosine when system memory permits.
+
+---
+
+## Phase 8: Vision — Image Embeddings, Face Detection & Recognition
+
+CrispEmbed already has a ViT vision tower for BidirLM-Omni (text+image+audio
+cross-modal embedding). This phase extends vision support to standalone image
+embedding models and face analysis, using only **commercially permissive**
+(Apache 2.0 / MIT) models.
+
+### 8A. CLIP / SigLIP Image Embedding (cross-modal text↔image search)
+
+**Goal:** Embed images into the same vector space as text, enabling
+cross-modal search ("find photos of dogs") via cosine similarity.
+
+**Models (all Apache 2.0):**
+
+| Model | Arch | Image dim | Text dim | License |
+|---|---|---|---|---|
+| google/siglip-base-patch16-384 | ViT-B/16 | 768 | 768 | Apache 2.0 |
+| google/siglip2-base-patch16-384 | ViT-B/16 | 768 | 768 | Apache 2.0 |
+| openai/clip-vit-base-patch32 | ViT-B/32 | 512 | 512 | MIT |
+| openai/clip-vit-large-patch14 | ViT-L/14 | 768 | 768 | MIT |
+| laion/CLIP-ViT-B-32-laion2B | ViT-B/32 | 512 | 512 | MIT |
+
+**Work items:**
+- [ ] GGUF converter for ViT image encoders (`models/convert-vit-to-gguf.py`)
+- [ ] ViT forward path in C++ (patch embed → transformer layers → pooling)
+      — extend existing `bidirlm_vision.cpp` or create `src/vit_embed.cpp`
+- [ ] Image preprocessing in C++ (resize, normalize, patch extraction)
+      — extend existing `src/image_preprocess.cpp`
+- [ ] CLIP text encoder support (separate from BERT — uses causal mask)
+- [ ] C API: `crispembed_encode_image(ctx, pixels, width, height) → float*`
+- [ ] Python wrapper: `CrispEmbed.encode_image(path_or_array) → np.ndarray`
+- [ ] Parity tests vs HF `transformers` SigLIP/CLIP output
+- [ ] Upload SigLIP/CLIP GGUFs to `cstr/siglip-base-GGUF` etc.
+
+**Integration with CrispLens:** Replace VLM-based scene search with
+direct CLIP/SigLIP embedding — faster, offline, no API keys needed.
+`crispembed_client.py` already handles text; add image encode path.
+
+### 8B. Face Detection — SCRFD (Apache 2.0)
+
+**Goal:** Detect face bounding boxes + 5-point landmarks in images,
+running on the same ggml backend as text embedding (CUDA/Metal/Vulkan).
+
+**Model:** SCRFD (`det_10g.onnx`, Apache 2.0)
+- Architecture: modified ResNet-50 with Sample & Computation Redistribution
+- Input: RGB image (640×640 typical)
+- Output: bounding boxes + confidence + 5 landmarks per face
+- Also: `det_2.5g.onnx` (MobileNet, 2.5 GFLOPS — edge/mobile)
+
+**Work items:**
+- [ ] GGUF converter for SCRFD (`models/convert-scrfd-to-gguf.py`)
+      — ONNX → extract conv/bn/fc weights → GGUF
+- [ ] CNN forward path: Conv2D → BatchNorm → ReLU → pooling (ggml has these ops)
+- [ ] FPN (Feature Pyramid Network) neck for multi-scale detection
+- [ ] Anchor-free detection head (bounding box regression + classification)
+- [ ] NMS (Non-Maximum Suppression) post-processing in C++
+- [ ] Face alignment: 5-landmark affine warp for recognition input
+- [ ] C API: `crispembed_detect_faces(ctx, pixels, w, h) → face_t[]`
+- [ ] Parity test vs ONNX Runtime SCRFD output
+
+### 8C. Face Recognition — SFace (Apache 2.0)
+
+**Goal:** Produce 128-D face embedding vectors for face identification
+and verification, using commercially permissive models only.
+
+**Model:** SFace (`face_recognition_sface_2021dec.onnx`, Apache 2.0)
+- Architecture: MobileFaceNet (lightweight CNN)
+- Input: aligned face crop 112×112 RGB
+- Output: 128-D L2-normalized embedding
+- From OpenCV Zoo — designed for OpenCV DNN module
+
+**Work items:**
+- [ ] GGUF converter for MobileFaceNet/SFace (`models/convert-face-to-gguf.py`)
+- [ ] MobileFaceNet forward path (depthwise separable conv, PReLU, BN, GDC pool)
+- [ ] Face crop + alignment pipeline (from SCRFD 5-landmark output)
+- [ ] C API: `crispembed_encode_face(ctx, aligned_face, 112, 112) → float[128]`
+- [ ] L2 distance / cosine similarity for face matching
+- [ ] Parity test vs OpenCV DNN SFace output
+- [ ] Upload to `cstr/sface-GGUF`
+
+**Integration with CrispLens:** Replace the ONNX Runtime face pipeline.
+CrispEmbed handles detection (SCRFD) + recognition (SFace) in one library.
+`crispembed_client.py` gains `detect_faces()` + `encode_face()` methods.
+v4 Node.js can call the CrispEmbed server's HTTP API for server-side inference.
+
+### Implementation order
+
+1. **SigLIP image embedding** (8A) — highest value, enables cross-modal search
+   in both CrispSorter and CrispLens. ViT infrastructure already exists.
+2. **SCRFD face detection** (8B) — needed before face recognition. CNN path
+   is new but ggml has all required ops.
+3. **SFace face recognition** (8C) — depends on 8B for face alignment input.
+   MobileFaceNet is simpler than SCRFD (no FPN, no NMS).
+
+### Commercially permissive stack (no NC restrictions)
+
+The full pipeline uses only Apache 2.0 / MIT models:
+- Text: any CrispEmbed encoder model (BERT/XLM-R/etc.)
+- Image: SigLIP (Apache 2.0) or CLIP (MIT)
+- Face detection: SCRFD (Apache 2.0)
+- Face recognition: SFace (Apache 2.0)
+- Audio: CrispASR (our own, Apache 2.0)
+
+This replaces the current CrispLens dependency on InsightFace's
+non-commercial ArcFace model weights for face recognition.
