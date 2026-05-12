@@ -44,6 +44,7 @@ struct conv_block {
 struct context {
     std::string type;  // "recognition" or "detection"
     std::string name;
+    std::string graph_topology;  // ONNX graph nodes string
     int embed_dim = 0;
     int input_h = 112, input_w = 112;
 
@@ -88,6 +89,7 @@ bool load(context** out, const char* path, int n_threads) {
 
     ctx->type = str_val("cnn.model_type", "recognition");
     ctx->name = str_val("cnn.model_name", "unknown");
+    ctx->graph_topology = str_val("cnn.graph_nodes", "");
     ctx->embed_dim = u32_val("cnn.embedding_dim", 128);
     ctx->input_h = u32_val("cnn.input_height", 112);
     ctx->input_w = u32_val("cnn.input_width", 112);
@@ -226,14 +228,24 @@ static ggml_tensor* bn_op(ggml_context* g, ggml_tensor* x,
     return x;  // skip BN for now
 }
 
+// Graph replayer types + forward declarations
+struct graph_node {
+    std::string op;
+    std::string attrs;
+    std::vector<std::string> inputs;
+    std::string output;
+};
+static std::vector<graph_node> parse_graph(const std::string& graph_str);
+static ggml_tensor* replay_graph(ggml_context* g, context* ctx, ggml_tensor* input, const std::vector<graph_node>& nodes, std::vector<ggml_tensor*>& output_tensors);
+
 std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     if (!ctx || H != ctx->input_h || W != ctx->input_w) return {};
 
     const int n_blocks = (int)ctx->blocks.size();
+    const bool use_graph_replay = (n_blocks == 0 && !ctx->graph_topology.empty());
 
-    // Graph size estimate — PReLU adds 4 ops per block (relu+sub+mul+add)
-    // plus conv + bias = ~8 ops per block + flatten + FC + overhead
-    int max_nodes = n_blocks * 12 + 200;
+    // Graph size estimate
+    int max_nodes = use_graph_replay ? 2000 : (n_blocks * 12 + 200);
     size_t buf_size = ggml_tensor_overhead() * (max_nodes + 100)
                     + ggml_graph_overhead_custom(max_nodes, false);
     std::vector<uint8_t> buf(buf_size);
@@ -245,7 +257,21 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     ggml_set_name(x, "input");
     ggml_set_input(x);
 
-    // Sequential conv blocks
+    if (use_graph_replay) {
+        // Generic ONNX graph replay for models without hardcoded block structure
+        fprintf(stderr, "cnn_embed: using graph replay (%zu chars topology)\n",
+                ctx->graph_topology.size());
+        auto nodes = parse_graph(ctx->graph_topology);
+        fprintf(stderr, "cnn_embed: parsed %zu graph nodes\n", nodes.size());
+        std::vector<ggml_tensor*> outputs;
+        x = replay_graph(g, ctx, x, nodes, outputs);
+        if (!x) {
+            fprintf(stderr, "cnn_embed: graph replay failed\n");
+            ggml_free(g);
+            return {};
+        }
+    } else {
+    // Sequential conv blocks (SFace MobileNet hardcoded path)
     for (int i = 0; i < n_blocks; i++) {
         const auto& blk = ctx->blocks[i];
         if (!blk.w) continue;
@@ -324,6 +350,8 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         ggml_set_name(sh, "fc_bn_shift"); ggml_set_input(sh);
         x = ggml_add(g, ggml_mul(g, x, sc), sh);
     }
+
+    } // end of if/else (graph_replay vs hardcoded)
 
     ggml_set_name(x, "embedding");
     ggml_set_output(x);
@@ -440,12 +468,6 @@ void free(context* ctx) {
 
 namespace cnn_embed {
 
-struct graph_node {
-    std::string attrs;
-    std::string op;
-    std::vector<std::string> inputs;
-    std::string output;
-};
 
 static std::vector<graph_node> parse_graph(const std::string& graph_str) {
     std::vector<graph_node> nodes;
