@@ -905,3 +905,47 @@ caught by the install verification test — a plain-C consumer of the
 freshly `cmake --install`-ed header. The build directory consumers
 (crispembed-cli, crispembed-server) didn't catch it because they're
 compiled as C++.
+
+## CNN forward path for face models (Phase 8)
+
+### Available ggml ops for CNN
+- `ggml_conv_2d(a, b, s0, s1, p0, p1, d0, d1)` — standard 2D conv
+- `ggml_conv_2d_dw(a, b, ...)` — depthwise 2D conv
+- `ggml_pool_2d(a, op, k0, k1, s0, s1, p0, p1)` — average/max pool
+- `ggml_relu`, `ggml_leaky_relu(a, slope, inplace)` — activations
+- No `ggml_prelu` — implement as: `relu(x) + slope * (x - relu(x))`
+  where slope is a learned [C, 1, 1] tensor per channel
+
+### BatchNorm folding
+At inference time, BN is folded into the preceding Conv:
+```
+w_new = w * gamma / sqrt(var + eps)
+b_new = (b - mean) * gamma / sqrt(var + eps) + beta
+```
+This eliminates all BN tensors from the forward pass.
+
+### Conv2d output layout in ggml
+`ggml_conv_2d` output: `[OW, OH, OC]` — width-first (ne[0]=OW).
+To match HF's `[OC, OH, OW]` (channel-first): `permute(2, 1, 0)`.
+This matters for position embeddings in ViT but NOT for CNNs
+(CNNs are translation-equivariant — spatial order preserved naturally).
+
+### SFace architecture (MobileFaceNet)
+27 Conv layers (14 depthwise separable blocks), PReLU activation,
+final GDC pool → FC(50176→128). 128-D L2-normalized embedding.
+Input: 112×112 aligned face crop.
+
+### SCRFD architecture (ResNet-50 + FPN)
+58 Conv layers, ReLU activation, FPN with 3 scales (stride 8/16/32).
+9 output heads: 3 × (confidence [N,1], bbox [N,4], landmarks [N,10]).
+Dynamic input size (typically 640×640).
+Needs NMS post-processing.
+
+### AuraFace architecture (ResNet-100)
+103 Conv layers, PReLU, 49 residual Add connections.
+512-D ArcFace-compatible embedding. Apache 2.0.
+
+### CrispASR CNN reference
+CrispASR has CNN forward paths for marblenet (depthwise 1D conv),
+wav2vec2 (grouped conv), and others. Same ggml ops, similar patterns.
+Patches at tools/upstream-prs/ may be needed for CUDA conv2d.
