@@ -51,11 +51,11 @@ struct context {
     std::vector<conv_block> blocks;  // sequential conv blocks
 
     // Final layers (recognition)
-    ggml_tensor * bn_gamma = nullptr, * bn_beta = nullptr;
-    ggml_tensor * bn_mean = nullptr, * bn_var = nullptr;
     ggml_tensor * fc_w = nullptr, * fc_b = nullptr;
-    ggml_tensor * fc_bn_gamma = nullptr, * fc_bn_beta = nullptr;
-    ggml_tensor * fc_bn_mean = nullptr, * fc_bn_var = nullptr;
+
+    // Precomputed BN: scale * x + shift (computed at load time)
+    std::vector<float> bn1_scale, bn1_shift;   // before flatten, dim=1024
+    std::vector<float> fc_bn_scale, fc_bn_shift; // after FC, dim=128
 
     // Preprocessing constants
     float sub_val = 127.5f;
@@ -148,23 +148,35 @@ bool load(context** out, const char* path, int n_threads) {
         }
     }
 
-    // Final BN + FC — load tensors
-    ctx->bn_gamma = get("bn1_gamma");
-    ctx->bn_beta = get("bn1_beta");
-    ctx->bn_mean = get("bn1_moving_mean");
-    ctx->bn_var = get("bn1_moving_var");
+    // Final FC weights
     ctx->fc_w = get("pre_fc1_weight");
     ctx->fc_b = get("pre_fc1_bias");
-    ctx->fc_bn_gamma = get("fc1_gamma");
-    ctx->fc_bn_beta = get("fc1_beta");
-    ctx->fc_bn_mean = get("fc1_moving_mean");
-    ctx->fc_bn_var = get("fc1_moving_var");
 
-    // Precompute BN scale + shift tensors so we avoid ggml_add1/ggml_sqrt in graph
-    // BN(x) = gamma * (x - mean) / sqrt(var + eps) + beta
-    //       = (gamma / sqrt(var+eps)) * x + (beta - gamma * mean / sqrt(var+eps))
-    //       = scale * x + shift
-    // This converts BN to a simple mul + add in the graph.
+    // Precompute BN as scale * x + shift (avoids sqrt/div in ggml graph)
+    auto precompute_bn = [&](const char* prefix, std::vector<float>& scale, std::vector<float>& shift) {
+        ggml_tensor* gamma = get(std::string(prefix) + "_gamma");
+        ggml_tensor* beta  = get(std::string(prefix) + "_beta");
+        ggml_tensor* mean  = get(std::string(prefix) + "_moving_mean");
+        ggml_tensor* var   = get(std::string(prefix) + "_moving_var");
+        if (!gamma || !beta || !mean || !var) return;
+        int n = (int)gamma->ne[0];
+        scale.resize(n);
+        shift.resize(n);
+        std::vector<float> g_data(n), b_data(n), m_data(n), v_data(n);
+        ggml_backend_tensor_get(gamma, g_data.data(), 0, n * sizeof(float));
+        ggml_backend_tensor_get(beta, b_data.data(), 0, n * sizeof(float));
+        ggml_backend_tensor_get(mean, m_data.data(), 0, n * sizeof(float));
+        ggml_backend_tensor_get(var, v_data.data(), 0, n * sizeof(float));
+        float eps = 1e-5f;
+        for (int i = 0; i < n; i++) {
+            float inv_std = g_data[i] / std::sqrt(v_data[i] + eps);
+            scale[i] = inv_std;
+            shift[i] = b_data[i] - m_data[i] * inv_std;
+        }
+        fprintf(stderr, "cnn_embed: precomputed BN '%s' (%d channels)\n", prefix, n);
+    };
+    precompute_bn("bn1", ctx->bn1_scale, ctx->bn1_shift);
+    precompute_bn("fc1", ctx->fc_bn_scale, ctx->fc_bn_shift);
 
     // Preprocessing constants (SFace: subtract 127.5, multiply 1/128)
     ctx->sub_val = 127.5f;
@@ -274,8 +286,15 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         x = prelu_op(g, x, blk.prelu);
     }
 
-    // Final BN — skipped for now (minor impact on L2-normalized output)
-    // TODO: precompute scale/shift in converter or at load time
+    // Final BN (bn1): scale * x + shift, applied per-channel [W, H, C]
+    if (!ctx->bn1_scale.empty()) {
+        int C = (int)ctx->bn1_scale.size();
+        ggml_tensor* sc = ggml_new_tensor_3d(g, GGML_TYPE_F32, 1, 1, C);
+        ggml_set_name(sc, "bn1_scale"); ggml_set_input(sc);
+        ggml_tensor* sh = ggml_new_tensor_3d(g, GGML_TYPE_F32, 1, 1, C);
+        ggml_set_name(sh, "bn1_shift"); ggml_set_input(sh);
+        x = ggml_add(g, ggml_mul(g, x, sc), sh);
+    }
 
     // Flatten: [W', H', C] → [W'*H'*C]
     int64_t total = ggml_nelements(x);
@@ -296,8 +315,15 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         }
     }
 
-    // Final BN on embedding — skipped (precompute in converter later)
-    // TODO: fold fc_bn into fc weights at load time
+    // Final BN on FC output: scale * x + shift
+    if (!ctx->fc_bn_scale.empty()) {
+        int D = (int)ctx->fc_bn_scale.size();
+        ggml_tensor* sc = ggml_new_tensor_1d(g, GGML_TYPE_F32, D);
+        ggml_set_name(sc, "fc_bn_scale"); ggml_set_input(sc);
+        ggml_tensor* sh = ggml_new_tensor_1d(g, GGML_TYPE_F32, D);
+        ggml_set_name(sh, "fc_bn_shift"); ggml_set_input(sh);
+        x = ggml_add(g, ggml_mul(g, x, sc), sh);
+    }
 
     ggml_set_name(x, "embedding");
     ggml_set_output(x);
@@ -315,9 +341,20 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         return {};
     }
 
-    // Set input
+    // Set input pixels
     ggml_tensor* inp = ggml_graph_get_tensor(gf, "input");
     ggml_backend_tensor_set(inp, pixels, 0, 3 * H * W * sizeof(float));
+
+    // Set BN scale/shift inputs (precomputed at load time)
+    auto set_bn = [&](const char* name, const std::vector<float>& data) {
+        ggml_tensor* t = ggml_graph_get_tensor(gf, name);
+        if (t && !data.empty())
+            ggml_backend_tensor_set(t, data.data(), 0, data.size() * sizeof(float));
+    };
+    set_bn("bn1_scale", ctx->bn1_scale);
+    set_bn("bn1_shift", ctx->bn1_shift);
+    set_bn("fc_bn_scale", ctx->fc_bn_scale);
+    set_bn("fc_bn_shift", ctx->fc_bn_shift);
 
     // Compute
     ggml_backend_graph_compute(ctx->backend, gf);
