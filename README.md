@@ -10,7 +10,7 @@ Qwen3, Gemma3, SPLADE, DeBERTa-v2). Dense, sparse (SPLADE/BGE-M3), ColBERT
 multi-vector, cross-encoder rerankers, bi-encoder reranking.
 
 **Vision**: SigLIP image embedding, SCRFD face detection, ArcFace/SFace/AuraFace
-face recognition. Full detect-align-encode pipeline matching InsightFace quality.
+face recognition. Full detect-align-encode pipeline.
 
 **9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
 GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
