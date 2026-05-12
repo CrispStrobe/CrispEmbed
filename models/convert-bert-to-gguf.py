@@ -522,9 +522,18 @@ def main():
     if is_gte_new:
         # GTE v1.5 "new" BERT: pre-LN, RoPE, GeGLU, fused QKV+bias, CLS pooling
         rope_theta = getattr(config, "rope_theta", 10000.0)
+        # GTE v1.5 uses NTK-scaled RoPE: effective_theta = theta * factor^(dim/(dim-2))
+        rope_scaling = getattr(config, "rope_scaling", None)
+        if rope_scaling and rope_scaling.get("type") == "ntk":
+            factor = rope_scaling.get("factor", 1.0)
+            head_dim = config.hidden_size // config.num_attention_heads
+            rope_theta = rope_theta * factor ** (head_dim / (head_dim - 2))
+            print(f"  GTE v1.5: NTK scaling factor={factor}, effective rope_theta={rope_theta:.0f}")
         writer.add_float32("bert.rope_theta", rope_theta)
-        writer.add_uint32("bert.pre_ln", 1)
-        print(f"  GTE v1.5: rope_theta={rope_theta}, pre_ln=1")
+        # GTE v1.5 is POST-LN despite attn_ln/mlp_ln naming: the LN comes
+        # AFTER the residual add (attention → add → LN, FFN → add → LN).
+        # Do NOT set pre_ln=1.
+        print(f"  GTE v1.5: rope_theta={rope_theta:.0f}, post-LN (attn_ln/mlp_ln are post-residual)")
 
     if is_jina_v2:
         # Jina v2 (jina-reranker-v2-base-multilingual): NomicBERT-like layout
@@ -582,9 +591,14 @@ def main():
             writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attention.o_proj.weight"]))
             writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.bias", f32(sd[f"{pfx}.attention.o_proj.bias"]))
 
-            # GeGLU FFN: store FUSED up_gate for ggml_geglu (single matmul + fused op)
+            # GeGLU FFN: store FUSED gate_up for ggml_geglu (single matmul + fused op)
+            # HF GatedMLP splits as (up, gate) — first=up, second=gate
+            # ggml_geglu does gelu(first) * second — expects first=gate, second=up
+            # So we swap the halves: [gate; up] for ggml_geglu
             ug = sd[f"{pfx}.mlp.up_gate_proj.weight"]  # [2*inter, H]
-            writer.add_tensor(f"{LP}.{i}.ffn_up_gate.weight", f32(ug))
+            half = ug.shape[0] // 2
+            swapped = torch.cat([ug[half:], ug[:half]], dim=0)  # [gate; up]
+            writer.add_tensor(f"{LP}.{i}.ffn_up_gate.weight", f32(swapped))
             writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.down_proj.weight"]))
             writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.bias", f32(sd[f"{pfx}.mlp.down_proj.bias"]))
 
