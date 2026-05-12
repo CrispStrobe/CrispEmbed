@@ -602,6 +602,20 @@ static ggml_tensor* replay_graph(
                     if (bias) result = ggml_add(g, result, bias);
                 }
             }
+        } else if (n.op == "BNPrecomputed") {
+            // Precomputed BN: scale * x + shift (stored as regular weight tensors)
+            ggml_tensor* x = get_t(n.inputs[0]);
+            ggml_tensor* scale = get_t(n.inputs[1]);
+            ggml_tensor* shift = get_t(n.inputs[2]);
+            if (x && scale && shift) {
+                int ndim = ggml_n_dims(x);
+                if (ndim >= 3) {
+                    int C = (int)scale->ne[0];
+                    scale = ggml_reshape_3d(g, scale, 1, 1, C);
+                    shift = ggml_reshape_3d(g, shift, 1, 1, C);
+                }
+                result = ggml_add(g, ggml_mul(g, x, scale), shift);
+            }
         } else if (n.op == "BatchNormalization") {
             // Precompute scale + shift on the fly
             ggml_tensor* x = get_t(n.inputs[0]);

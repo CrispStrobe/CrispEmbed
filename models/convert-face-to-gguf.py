@@ -190,6 +190,63 @@ def main():
     for i, (name, shape) in enumerate(outputs):
         writer.add_string(f"cnn.output.{i}.name", name)
 
+    # Precompute unfoldable BN as scale+shift weight tensors
+    # BN(x) = gamma * (x - mean) / sqrt(var + eps) + beta
+    #       = scale * x + shift
+    import copy
+    node_descs_updated = []
+    for node in graph.node:
+        if node.op_type == "BatchNormalization":
+            gamma_name = node.input[1]
+            beta_name = node.input[2]
+            mean_name = node.input[3]
+            var_name = node.input[4]
+            if all(n in weights for n in [gamma_name, beta_name, mean_name, var_name]):
+                gamma = weights[gamma_name]
+                beta = weights[beta_name]
+                mean = weights[mean_name]
+                var = weights[var_name]
+                eps = 1e-5
+                for attr in node.attribute:
+                    if attr.name == "epsilon": eps = attr.f
+                inv_std = gamma / np.sqrt(var + eps)
+                scale = inv_std
+                shift = beta - mean * inv_std
+                # Store as new tensors
+                sc_name = f"bn_scale_{node.output[0].replace('/', '_')}"
+                sh_name = f"bn_shift_{node.output[0].replace('/', '_')}"
+                weights[sc_name] = scale.astype(np.float32)
+                weights[sh_name] = shift.astype(np.float32)
+                # Remove original BN params
+                for k in [gamma_name, beta_name, mean_name, var_name]:
+                    weights.pop(k, None)
+                # Replace BN node with Mul+Add in graph description
+                # (the graph replayer handles "BNPrecomputed" as mul(scale)+add(shift))
+                attrs = ""
+                desc = f"BNPrecomputed:{node.input[0]},{sc_name},{sh_name}:{node.output[0]}"
+                node_descs_updated.append(desc)
+                bn_folded += 1
+                continue
+        # Original node
+        attrs = ""
+        if node.op_type == "Conv":
+            stride = [1, 1]; pads = [0, 0, 0, 0]; group = 1
+            for a in node.attribute:
+                if a.name == "strides": stride = list(a.ints)
+                if a.name == "pads": pads = list(a.ints)
+                if a.name == "group": group = a.i
+            attrs = f"[s{stride[0]}p{pads[0]}g{group}]"
+        elif node.op_type in ("AveragePool", "MaxPool"):
+            kernel = [1, 1]; stride = [1, 1]; pads = [0, 0, 0, 0]
+            for a in node.attribute:
+                if a.name == "kernel_shape": kernel = list(a.ints)
+                if a.name == "strides": stride = list(a.ints)
+                if a.name == "pads": pads = list(a.ints)
+            attrs = f"[k{kernel[0]}s{stride[0]}p{pads[0]}]"
+        desc = f"{node.op_type}{attrs}:{','.join(node.input)}:{','.join(node.output)}"
+        node_descs_updated.append(desc)
+    node_descs = node_descs_updated
+
     # Store all weight tensors
     stored = 0
     for name, arr in sorted(weights.items()):
@@ -200,38 +257,7 @@ def main():
 
     print(f"  Stored {stored} tensors in GGUF")
 
-    # Also store the ONNX graph topology as metadata for the runtime
-    # (which nodes connect to which, what ops to execute)
-    # For now, store node list as a simple format
-    node_descs = []
-    for node in graph.node:
-        # Format: "OpType[attrs]:input1,input2,...:output1,output2,..."
-        # Conv attrs: s=stride p=pad g=group
-        attrs = ""
-        if node.op_type == "Conv":
-            stride = [1, 1]
-            pads = [0, 0, 0, 0]
-            group = 1
-            for a in node.attribute:
-                if a.name == "strides": stride = list(a.ints)
-                if a.name == "pads": pads = list(a.ints)
-                if a.name == "group": group = a.i
-            attrs = f"[s{stride[0]}p{pads[0]}g{group}]"
-        elif node.op_type in ("AveragePool", "MaxPool"):
-            kernel = [1, 1]
-            stride = [1, 1]
-            pads = [0, 0, 0, 0]
-            for a in node.attribute:
-                if a.name == "kernel_shape": kernel = list(a.ints)
-                if a.name == "strides": stride = list(a.ints)
-                if a.name == "pads": pads = list(a.ints)
-            attrs = f"[k{kernel[0]}s{stride[0]}p{pads[0]}]"
-        elif node.op_type == "Resize":
-            attrs = "[nearest]"  # default mode
-            for a in node.attribute:
-                if a.name == "mode": attrs = f"[{a.s.decode()}]"
-        desc = f"{node.op_type}{attrs}:{','.join(node.input)}:{','.join(node.output)}"
-        node_descs.append(desc)
+    # Store the ONNX graph topology (already built in node_descs above)
     writer.add_string("cnn.graph_nodes", "|".join(node_descs))
 
     writer.write_header_to_file()
