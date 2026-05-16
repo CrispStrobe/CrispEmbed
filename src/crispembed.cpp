@@ -458,11 +458,14 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             hp.n_layer = counted;
         }
     }
-    // NomicBERT/ModernBERT: RoPE-based encoders lack position embeddings
-    if (!m.pos_embd) {
+    // NomicBERT/ModernBERT: RoPE-based encoders lack absolute position embeddings.
+    // DeBERTa uses rel_embd for relative positions instead — do NOT apply RoPE in that case.
+    if (!m.pos_embd && !m.rel_embd) {
         ctx->use_rope = true;
         fprintf(stderr, "crispembed: no position embeddings, using RoPE (theta=%.0f%s)\n",
                 ctx->rope_theta, ctx->pre_ln ? ", pre-LN" : "");
+    } else if (!m.pos_embd && m.rel_embd) {
+        fprintf(stderr, "crispembed: DeBERTa disentangled relative-position attention\n");
     }
 
     // Encoder layers
@@ -992,10 +995,17 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
 
     std::vector<int32_t> pos_data(T);
     for (int t = 0; t < T; t++) pos_data[t] = t + ctx->pos_offset;
-    ggml_tensor * pos_ids = graph_tensor_or_log(gf, "pos_ids");
-    if (!pos_ids) return {};
-    debug_encode_stage("encode_tokens:set-pos", T, 1, 0);
-    ggml_backend_tensor_set(pos_ids, pos_data.data(), 0, T * sizeof(int32_t));
+    // pos_ids is only connected to the graph when absolute pos_embd or RoPE is used.
+    // DeBERTa models use rel_embd instead and don't wire pos_ids into the graph.
+    ggml_tensor * pos_ids = ggml_graph_get_tensor(gf, "pos_ids");
+    if (!pos_ids && (ctx->model.pos_embd || ctx->use_rope)) {
+        fprintf(stderr, "crispembed: missing graph tensor 'pos_ids'\n");
+        return {};
+    }
+    if (pos_ids) {
+        debug_encode_stage("encode_tokens:set-pos", T, 1, 0);
+        ggml_backend_tensor_set(pos_ids, pos_data.data(), 0, T * sizeof(int32_t));
+    }
 
     if (ctx->model.type_embd) {
         std::vector<int32_t> type_data(tokens.type_ids.begin(), tokens.type_ids.end());
@@ -1167,10 +1177,17 @@ static std::vector<float> run_encoder_raw(crispembed_context * ctx,
     ggml_backend_tensor_set(tok_ids, tok_data.data(), 0, T * sizeof(int32_t));
     std::vector<int32_t> pos_data(T);
     for (int t = 0; t < T; t++) pos_data[t] = t + ctx->pos_offset;
-    ggml_tensor * pos_ids = graph_tensor_or_log(gf, "pos_ids");
-    if (!pos_ids) return {};
-    debug_encode_stage("run_encoder_raw:set-pos", T, 1, mode);
-    ggml_backend_tensor_set(pos_ids, pos_data.data(), 0, T * sizeof(int32_t));
+    // pos_ids is only wired into the graph when pos_embd or RoPE is active.
+    // DeBERTa models use rel_embd instead, so pos_ids won't be in the graph.
+    ggml_tensor * pos_ids = ggml_graph_get_tensor(gf, "pos_ids");
+    if (!pos_ids && (ctx->model.pos_embd || ctx->use_rope)) {
+        fprintf(stderr, "crispembed: missing graph tensor 'pos_ids'\n");
+        return {};
+    }
+    if (pos_ids) {
+        debug_encode_stage("run_encoder_raw:set-pos", T, 1, mode);
+        ggml_backend_tensor_set(pos_ids, pos_data.data(), 0, T * sizeof(int32_t));
+    }
     if (ctx->model.type_embd) {
         std::vector<int32_t> type_data(tokens.type_ids.begin(), tokens.type_ids.end());
         ggml_tensor * type_ids = graph_tensor_or_log(gf, "type_ids");
@@ -1290,6 +1307,19 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
                 int eos_id = u32g("tokenizer.ggml.eos_token_id", 151645);
                 int pad_id = u32g("tokenizer.ggml.padding_token_id", 151643);
                 int bos_id = u32g("tokenizer.ggml.bos_token_id", -1);
+                // Respect add_bos_token=false: if the flag is explicitly false,
+                // don't prepend BOS even when bos_token_id is set.
+                {
+                    const int64_t ki_add_bos = gguf_find_key(g2, "tokenizer.ggml.add_bos_token");
+                    if (ki_add_bos >= 0) {
+                        auto type = gguf_get_kv_type(g2, ki_add_bos);
+                        bool add_bos = true;
+                        if (type == GGUF_TYPE_BOOL)        add_bos = gguf_get_val_bool(g2, ki_add_bos);
+                        else if (type == GGUF_TYPE_UINT32) add_bos = gguf_get_val_u32(g2, ki_add_bos) != 0;
+                        else if (type == GGUF_TYPE_INT32)  add_bos = gguf_get_val_i32(g2, ki_add_bos) != 0;
+                        if (!add_bos) bos_id = -1;
+                    }
+                }
                 const int64_t ki_sfx = gguf_find_key(g2, "tokenizer.ggml.suffix_token_id");
                 int suffix_id = ki_sfx >= 0 ? (int)gguf_get_val_i32(g2, ki_sfx) : pad_id;
                 bool is_spm_bpe = u32g("tokenizer.ggml.is_spm_bpe", 0) != 0;

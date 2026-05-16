@@ -21,6 +21,7 @@ struct dec_layer {
     ggml_tensor * up_w = nullptr;
     ggml_tensor * down_w = nullptr;
     // Gemma3 extra norms
+    ggml_tensor * post_attn_norm_w = nullptr; // post_attention_layernorm (Gemma3: applied to attn out before residual)
     ggml_tensor * pre_ffn_norm_w = nullptr;   // pre_feedforward_layernorm
     ggml_tensor * post_ffn_norm_w = nullptr;  // post_feedforward_layernorm
 };

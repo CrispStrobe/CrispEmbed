@@ -107,11 +107,16 @@ TEXTS = [
 ]
 
 
-def get_ce_embeddings(binary, gguf_path, texts):
-    """Get embeddings from CrispEmbed CLI."""
+def get_ce_embeddings(binary, gguf_path, texts, prefix=""):
+    """Get embeddings from CrispEmbed CLI.
+
+    ``prefix`` is forwarded to ``--prefix`` so the CLI applies the same prompt
+    prefix as the HF reference.  Pass an empty string to suppress the model's
+    built-in auto-prefix.
+    """
     vecs = []
     for t in texts:
-        r = subprocess.run([binary, "-m", gguf_path, "--prefix", "", t],
+        r = subprocess.run([binary, "-m", gguf_path, "--prefix", prefix, t],
                            capture_output=True, text=True, timeout=120)
         if r.returncode != 0:
             return None
@@ -208,8 +213,8 @@ def test_model(binary, model_name, cache_dir, quantize_binary=None):
             print(f"  SKIP: GGUF not found in {cache_dir}", flush=True)
             return model_name, {}, "gguf not found"
 
-    # Step 2: Get CrispEmbed F32 embeddings
-    ce_f32 = get_ce_embeddings(binary, gguf_path, TEXTS)
+    # Step 2: Get CrispEmbed F32 embeddings (pass the model prefix so both sides match)
+    ce_f32 = get_ce_embeddings(binary, gguf_path, TEXTS, prefix=prefix)
     if ce_f32 is None:
         print(f"  SKIP: CrispEmbed CLI failed", flush=True)
         return model_name, {}, "cli failed"
@@ -246,7 +251,7 @@ def test_model(binary, model_name, cache_dir, quantize_binary=None):
                 if r.returncode != 0:
                     print(f"  {qtype.upper()}: quantize failed", flush=True)
                     continue
-            ce_q = get_ce_embeddings(binary, q_path, TEXTS)
+            ce_q = get_ce_embeddings(binary, q_path, TEXTS, prefix=prefix)
             if ce_q is None:
                 print(f"  {qtype.upper()}: CLI failed on quantized model", flush=True)
                 continue

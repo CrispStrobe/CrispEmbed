@@ -169,11 +169,14 @@ def main():
 
     # Detect if bidirectional. BidirLM-Omni is bidirectional by design (Qwen3
     # body with the causal mask removed — see modeling_bidirlm_omni.py L793,
-    # `self.is_causal = False`).
+    # `self.is_causal = False`). Also detect models where the inner base
+    # architecture is explicitly non-causal (is_decoder=False).
+    _inner_is_decoder = getattr(config, "is_decoder", True)  # True=causal, False=bidirectional
     is_bidirectional = (
         "bert" in config.model_type.lower()
         or "encoder" in str(config.architectures).lower()
         or is_bidirlm_omni
+        or (_inner_is_decoder is False)  # explicit is_decoder=False → bidirectional
     )
 
     # Pooling: 1 = mean (BidirLM uses sentence_transformers Pooling, mean by
@@ -305,8 +308,12 @@ def main():
     if tokenizer.bos_token_id is not None:
         writer.add_uint32("tokenizer.ggml.bos_token_id", tokenizer.bos_token_id)
 
+    # Detect whether the tokenizer actually prepends BOS by encoding a test string
+    _test_enc = tokenizer.encode("a", add_special_tokens=True)
+    _adds_bos = (len(_test_enc) > 0 and tokenizer.bos_token_id is not None
+                 and _test_enc[0] == tokenizer.bos_token_id)
+    writer.add_bool("tokenizer.ggml.add_bos_token", _adds_bos)
     if ollama_mode:
-        writer.add_bool("tokenizer.ggml.add_bos_token", True)
         writer.add_bool("tokenizer.ggml.add_eos_token", False)
         # Token types for Ollama
         token_types = []
