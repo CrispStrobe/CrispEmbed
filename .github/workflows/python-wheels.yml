@@ -46,7 +46,7 @@ jobs:
             cibw-archs: "AMD64"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
@@ -105,7 +105,7 @@ jobs:
           Get-ChildItem python/crispembed/
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.21
+        uses: pypa/cibuildwheel@v3.4.1
         with:
           package-dir: python
           output-dir: wheelhouse
@@ -122,7 +122,7 @@ jobs:
             --ignore-missing-dependencies
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheels-${{ matrix.os-name }}-${{ matrix.arch }}
           path: wheelhouse/*.whl
@@ -135,7 +135,7 @@ jobs:
     needs: build-wheels
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: dist
       - name: Show inventory
@@ -143,7 +143,7 @@ jobs:
           find dist -name '*.whl' | sort
           echo "---"
           du -sh dist/*
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wheels-all
           path: dist/**/*.whl

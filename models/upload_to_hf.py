@@ -160,6 +160,12 @@ MODELS = {
         "license": "apache-2.0",
         "langs": ["multilingual"],
         "desc": "F2LLM Embedding v2 0.6B. Qwen3-based, strong multilingual performance.",
+        "parity": {
+            "f32":  1.0000,
+            "q8_0": 0.9941,
+            "q5_k": 0.9031,
+            "q4_k": 0.6999,
+        },
     },
     "jina-v5-nano": {
         "base_model": "jinaai/jina-embeddings-v5-text-nano",
@@ -172,6 +178,12 @@ MODELS = {
         "license": "cc-by-nc-4.0",
         "langs": ["multilingual"],
         "desc": "Jina Embeddings v5 Nano. Compact 210M decoder model, 1024-dimensional.",
+        "parity": {
+            "f32":  1.0000,
+            "q8_0": 0.9990,
+            "q5_k": 0.9876,
+            "q4_k": 0.9643,
+        },
     },
     "jina-v5-small": {
         "base_model": "jinaai/jina-embeddings-v5-text-small",
@@ -208,6 +220,9 @@ MODELS = {
         "license": "mit",
         "langs": ["multilingual"],
         "desc": "Microsoft Harrier OSS v1 270M. Gemma3-based compact model, 640-dimensional.",
+        "parity": {
+            "f32":  0.9998,
+        },
     },
     "qwen3-embed-0.6b": {
         "base_model": "Qwen/Qwen3-Embedding-0.6B",

@@ -112,11 +112,18 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
     m.attn_scale = a_f32("attn_scale",
                    a_f32("attention.key_length_scale", 0.0f));
     m.embed_scale = a_f32("embed_scale", 1.0f);
-    // Detect Gemma3 from architecture
+    // Detect Gemma3 from architecture.
+    // gemma_norm=true  → runtime applies (1+w)*rms_norm(x); use for CrispEmbed-native
+    //                    GGUFs where weights are stored raw (HF convention).
+    // Ollama-format GGUFs (arch_pfx=="gemma3") pre-bake +1 into every norm weight,
+    // so the correct computation is w*rms_norm(x) (gemma_norm stays false).
+    // embed_scale and GELU activation still apply for both formats.
     m.gemma_norm = a_u32("gemma_norm", 0) != 0;
-    if (!m.gemma_norm && arch_pfx == "gemma3") {
-        m.gemma_norm = true;
+    if (arch_pfx == "gemma3") {
         if (m.embed_scale == 1.0f) m.embed_scale = std::sqrt((float)m.n_embd);
+        // Gemma3 uses gelu_pytorch_tanh FFN activation (not SiLU)
+        if (m.activation == 0) m.activation = 2;
+        // gemma_norm intentionally NOT set here: Ollama GGUFs pre-bake the +1 offset.
     }
     bool normalize_embeddings = a_u32("normalize_embeddings", 1) != 0;
 
@@ -266,8 +273,9 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
         L.gate_w = get2("ffn.gate.weight", "ffn_gate.weight");
         L.up_w = get2("ffn.up.weight", "ffn_up.weight");
         L.down_w = get2("ffn.down.weight", "ffn_down.weight");
+        L.post_attn_norm_w = get2("post_attn_norm.weight", "post_attention_norm.weight");
         L.pre_ffn_norm_w = get2("pre_ffn_norm.weight", "pre_ffn_norm.weight");
-        L.post_ffn_norm_w = get2("post_ffn_norm.weight", "post_ffn_norm.weight");
+        L.post_ffn_norm_w = get2("post_ffn_norm.weight", "post_ffw_norm.weight");
     }
 
     const char * pool_str = (m.pooling_method == 1) ? "mean" : "last-token";
@@ -573,6 +581,9 @@ std::vector<float> decoder_encode_tokens(
 
         attn = ggml_mul_mat(gctx, L.o_w, attn);
         if (L.o_b) attn = ggml_add(gctx, attn, L.o_b);
+
+        // Gemma3: post-attention norm applied to attention output before residual add
+        if (L.post_attn_norm_w) attn = rms_norm(attn, L.post_attn_norm_w);
 
         if (L.pre_ffn_norm_w) {
             if (L.ffn_norm_w) attn = rms_norm(attn, L.ffn_norm_w);
