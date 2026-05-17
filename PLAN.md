@@ -424,20 +424,21 @@ Remaining work:
 
 ### Known issues (v0.4.0)
 
-1. **NomicBERT quantization broken**: nomic-embed-text-v1.5 Q8_0/Q4_K produces
-   degenerate embeddings (cos~0.23 vs F32). The SwiGLU gate/value projections
-   (fc11/fc12) are highly sensitive to quantization error. Root cause: the
-   gate projection controls the gating signal via silu(), and even small
-   quantization errors get amplified through the multiplicative gate. Fix
-   options: (a) selective quantization (keep fc11/fc12 in F32/F16), or
-   (b) use Q5_K which may have enough precision. F32 works perfectly.
+1. **NomicBERT quantization**: ~~broken (cos~0.23)~~ — **resolved**. Current
+   parity: Q8_0=0.9994, Q5_K=0.9865, Q4_K=0.9618. All quants uploaded to HF.
+   The SwiGLU gate projections (enc.N.ffn_gate.weight) quantize cleanly at
+   Q8_0/Q5_K; Q4_K shows mild degradation (~3.8%) which is expected for 4-bit.
 
-2. **EmbeddingGemma-300m low parity** (cos~0.03 vs HuggingFace): the model
-   loads and runs through the Gemma3 decoder path, but the output differs
-   significantly. Likely causes: embed_scale (sqrt(hidden_size)=27.7)
-   application order, or GeGLU activation mismatch (gelu_pytorch_tanh vs
-   gelu_exact). The other Gemma3 model (harrier-270m) works fine, so it may
-   be specific to EmbeddingGemma's 3-head / 1-kv-head / 256-head-dim config.
+2. **EmbeddingGemma-300m parity** — **RESOLVED** (cos=1.0000 F32, 0.9998 Q8_0,
+   0.9954 Q5_K). Root causes identified and fixed:
+   - Missing `is_bidirectional=1` GGUF key (model has `use_bidirectional_attention: true`)
+   - Wrong pooling: EmbeddingGemma uses SentenceTransformer mean-pool + Dense(768→3072)
+     + Dense(3072→768) + L2-normalize; was doing last-token pooling with no Dense
+   - BPE merges not loading (converter used `hf_hub_download` with local snapshot path)
+   - Dense layers being quantized (runtime reads them as F32; `dense.*` now excluded)
+   - cmake build target: `crispembed` builds only libcrispembed-static.a; executable
+     needs `crispembed-cli` target
+   All three v5 GGUFs (F32, Q8_0, Q5_K) uploaded to `cstr/embeddinggemma-300m-GGUF`.
 
 3. **DeBERTa-v2 disentangled attention not implemented**: mxbai-rerank-xsmall-v1
    and mxbai-rerank-base-v1 use DeBERTa-v2's content-to-position (c2p) and

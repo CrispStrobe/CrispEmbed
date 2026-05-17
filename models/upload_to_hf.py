@@ -287,6 +287,12 @@ MODELS = {
         "license": "apache-2.0",
         "langs": ["en"],
         "desc": "Nomic Embed Text v1.5. 8K context window, Matryoshka representation learning. Use with prefix: \"search_query: \" / \"search_document: \".",
+        "parity": {
+            "f32":  1.0000,
+            "q8_0": 0.9994,
+            "q5_k": 0.9865,
+            "q4_k": 0.9618,
+        },
     },
     "all-MiniLM-L12-v2": {
         "base_model": "sentence-transformers/all-MiniLM-L12-v2",

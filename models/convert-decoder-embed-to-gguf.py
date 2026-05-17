@@ -83,6 +83,41 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     model.eval()
 
+    # Detect SentenceTransformer pipeline: pooling mode and Dense projection layers.
+    # Checks for modules.json / 1_Pooling/config.json / {N}_Dense/model.safetensors.
+    st_pool_mode = None      # "mean" | "last" | None (= use architecture default)
+    st_dense_weights = []    # list of np.ndarray [out, in] for each Dense layer
+    _model_dir = Path(args.model) if Path(args.model).is_dir() else None
+    if _model_dir is None:
+        # Resolve from transformers cache (name_or_path set after from_pretrained)
+        _nop = getattr(config, "_name_or_path", "")
+        if _nop and Path(_nop).is_dir():
+            _model_dir = Path(_nop)
+    if _model_dir and (_model_dir / "modules.json").exists():
+        import json as _json
+        _modules = _json.load(open(_model_dir / "modules.json"))
+        for _mod in _modules:
+            _mtype = _mod.get("type", "")
+            _mpath = _model_dir / _mod.get("path", "")
+            if _mtype == "sentence_transformers.models.Pooling":
+                _pcfg = _json.load(open(_mpath / "config.json"))
+                if _pcfg.get("pooling_mode_mean_tokens"):
+                    st_pool_mode = "mean"
+                elif _pcfg.get("pooling_mode_lasttoken"):
+                    st_pool_mode = "last"
+            elif _mtype == "sentence_transformers.models.Dense":
+                try:
+                    import safetensors.torch as _sft
+                    _dw = _sft.load_file(str(_mpath / "model.safetensors"))
+                    st_dense_weights.append(_dw["linear.weight"].float().numpy())
+                    print(f"  Dense layer: {_dw['linear.weight'].shape}")
+                except Exception as _e:
+                    print(f"  WARNING: could not load Dense weights from {_mpath}: {_e}")
+        if st_pool_mode:
+            print(f"  SentenceTransformer pooling: {st_pool_mode}")
+        if st_dense_weights:
+            print(f"  SentenceTransformer Dense layers: {len(st_dense_weights)}")
+
     # Detect and merge LoRA adapters (e.g. Jina v5 task-specific adapters)
     has_lora = any("lora_A" in k or "base_layer" in k for k in model.state_dict())
     if has_lora:
@@ -128,12 +163,32 @@ def main():
 
     # Rope theta — check multiple locations
     rope_theta = getattr(config, "rope_theta", None)
+    rope_theta_local = None  # For Gemma3-style sliding-window alternating rope
+    global_attn_every_n = 0  # Period: every Nth layer is global attention (0 = not applicable)
     if rope_theta is None:
         rp = getattr(config, "rope_parameters", None) or getattr(config, "rope_scaling", None)
         if isinstance(rp, dict):
             rope_theta = rp.get("rope_theta", None)
             if rope_theta is None and "full_attention" in rp:
                 rope_theta = rp["full_attention"].get("rope_theta", 10000.0)
+                # Gemma3-style: sliding layers use a different (shorter) rope_theta
+                if "sliding_attention" in rp:
+                    rope_theta_local = rp["sliding_attention"].get("rope_theta", rope_theta)
+                    if rope_theta_local != rope_theta:
+                        # Detect period from model layers
+                        try:
+                            m = model
+                            if hasattr(m, 'model'): m = m.model
+                            layers = m.layers if hasattr(m, 'layers') else []
+                            for idx, layer in enumerate(layers):
+                                attn = layer.self_attn
+                                if not getattr(attn, 'is_sliding', True):
+                                    # First global layer determines period
+                                    global_attn_every_n = idx + 1
+                                    break
+                        except Exception:
+                            pass
+                        print(f"  rope_theta_local (sliding): {rope_theta_local}, period: {global_attn_every_n}")
             if rope_theta is None:
                 rope_theta = 10000.0
         else:
@@ -177,13 +232,24 @@ def main():
         or "encoder" in str(config.architectures).lower()
         or is_bidirlm_omni
         or (_inner_is_decoder is False)  # explicit is_decoder=False → bidirectional
+        or getattr(config, "use_bidirectional_attention", False)  # Gemma3-based embedding models
     )
 
     # Pooling: 1 = mean (BidirLM uses sentence_transformers Pooling, mean by
     # default), 2 = last-token (Qwen3/Gemma3 default).
-    pool_crisp = 1 if is_bidirlm_omni else 2
-    # Ollama pooling enum: 0=None, 1=Mean, 2=CLS, 3=Last
-    pool_ollama_default = 1 if is_bidirlm_omni else 3
+    # SentenceTransformer-detected pooling overrides architecture default.
+    if st_pool_mode == "mean":
+        pool_crisp = 1
+        pool_ollama_default = 1  # Ollama: 1=Mean
+    elif st_pool_mode == "last":
+        pool_crisp = 2
+        pool_ollama_default = 3  # Ollama: 3=Last
+    elif is_bidirlm_omni:
+        pool_crisp = 1
+        pool_ollama_default = 1
+    else:
+        pool_crisp = 2
+        pool_ollama_default = 3  # Ollama: 3=Last
 
     if ollama_mode:
         # Ollama arch: "qwen3" or "gemma3"
@@ -219,12 +285,19 @@ def main():
         writer.add_float32(f"{arch}.attention.layer_norm_rms_epsilon",
                            getattr(config, "rms_norm_eps", 1e-6))
         writer.add_float32(f"{arch}.rope.freq_base", float(rope_theta))
+        if rope_theta_local is not None and rope_theta_local != rope_theta and global_attn_every_n > 0:
+            # Extra keys for CrispEmbed (ignored by Ollama): per-layer rope_theta for sliding attention
+            writer.add_float32(f"{arch}.rope.freq_base_local", float(rope_theta_local))
+            writer.add_uint32(f"{arch}.attention.sliding_window_layer_period", int(global_attn_every_n))
         writer.add_uint32(f"{arch}.context_length",
                           getattr(config, "max_position_embeddings", 8192))
         writer.add_uint32(f"{arch}.pooling_type", pool_ollama)
         writer.add_bool(f"{arch}.normalize_embeddings", True)
         if qpas:
             writer.add_float32(f"{arch}.attention.key_length_scale", float(qpas))
+        if is_bidirectional:
+            # CrispEmbed extension key (ignored by Ollama): removes causal mask
+            writer.add_uint32(f"{arch}.is_bidirectional", 1)
         print(f"  format: Ollama (arch={arch})")
     else:
         # CrispEmbed-native metadata
@@ -240,6 +313,9 @@ def main():
         writer.add_float32("decoder.rms_norm_eps",
                            getattr(config, "rms_norm_eps", 1e-6))
         writer.add_float32("decoder.rope_theta", float(rope_theta))
+        if rope_theta_local is not None and rope_theta_local != rope_theta and global_attn_every_n > 0:
+            writer.add_float32("decoder.rope_theta_local", float(rope_theta_local))
+            writer.add_uint32("decoder.global_attn_every_n_layers", int(global_attn_every_n))
         writer.add_uint32("decoder.pooling_method", pool_crisp)  # 1=mean, 2=last
         writer.add_uint32("decoder.activation", act_id)
         if qpas:
@@ -286,12 +362,25 @@ def main():
     else:
         writer.add_uint32("tokenizer.ggml.type", 1)  # BPE
 
-    # Store BPE merges if available
-    try:
+    # Helper: load tokenizer.json, checking local model dir first before HF hub download.
+    def _load_tokenizer_json():
+        # Try local model directory first (works for snapshot cache paths)
+        if _model_dir and (_model_dir / "tokenizer.json").exists():
+            with open(_model_dir / "tokenizer.json") as f:
+                return json.load(f)
+        _local = Path(args.model) / "tokenizer.json"
+        if _local.exists():
+            with open(_local) as f:
+                return json.load(f)
+        # Fall back to HF hub download (only works for repo IDs, not local paths)
         from huggingface_hub import hf_hub_download
         tok_json_path = hf_hub_download(repo_id=args.model, filename="tokenizer.json")
         with open(tok_json_path) as f:
-            tok_json = json.load(f)
+            return json.load(f)
+
+    # Store BPE merges if available
+    try:
+        tok_json = _load_tokenizer_json()
         raw_merges = tok_json.get("model", {}).get("merges", [])
         if raw_merges:
             # Merges can be list[str] ("a b") or list[list[str]] (["a", "b"])
@@ -345,10 +434,7 @@ def main():
         # Gemma3 SentencePiece needs scores for Ollama
         if ollama_mode:
             try:
-                from huggingface_hub import hf_hub_download
-                tok_json_path = hf_hub_download(repo_id=args.model, filename="tokenizer.json")
-                with open(tok_json_path) as f:
-                    tok_json = json.load(f)
+                tok_json = _load_tokenizer_json()
                 tj_vocab = tok_json.get("model", {}).get("vocab", {})
                 if isinstance(tj_vocab, dict):
                     # BPE vocab is dict: {token: score}
@@ -539,6 +625,13 @@ def main():
             add_tensor("output_norm.weight", norm_weight(sd[key]))
             print(f"  output_norm: ok")
             break
+
+    # SentenceTransformer Dense projection layers (post-pooling, e.g. EmbeddingGemma).
+    # Stored as dense.{i}.weight [out, in] in f32.  The runtime applies these
+    # after pooling but before L2 normalization (no bias, Identity activation).
+    for di, dw in enumerate(st_dense_weights):
+        add_tensor(f"dense.{di}.weight", dw.astype("float32"))
+        print(f"  dense.{di}.weight: {dw.shape}")
 
     # ---------------------------------------------------------------------
     # BidirLM-Omni audio tower export (Phase 2 — crisp_audio integration).

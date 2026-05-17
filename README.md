@@ -40,13 +40,14 @@ GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
 | arctic-embed-l-v2 | XLM-R | 1024 | 0.999993 | 0.9989 | 0.95 |
 | Octen-Embedding-0.6B | Qwen3 | 1024 | 0.999891 | 0.9995 | 0.97 |
 | F2LLM-v2-0.6B | Qwen3 | 1024 | 0.999420 | 0.9952 | -- |
-| Jina v5 Nano | Qwen3 | 768 | 0.999020 | 0.9983 | -- |
-| Jina v5 Small | Qwen3 | 1024 | 0.999941 | 0.9997 | 0.97 |
+| Jina v5 Nano | Qwen3 | 768 | 1.000000 | 0.9987 | 0.96 |
+| Jina v5 Small | Qwen3 | 1024 | 0.999899 | 0.9995 | 0.97 |
+| EmbeddingGemma-300m | Gemma3 | 768 | 1.000000 | 0.9998 | 0.98 |
 | Harrier-OSS-v1-0.6B | Qwen3 | 1024 | 0.999959 | 0.9999 | 0.99 |
 | Qwen3-Embedding-0.6B | Qwen3 | 1024 | 0.999895 | 0.9996 | 0.97 |
 | Harrier-OSS-v1-270M | Gemma3 | 640 | 0.999948 | 0.9998 | 0.99 |
 | all-mpnet-base-v2 | MPNet | 768 | 0.999997 | 0.9998 | 0.99 |
-| nomic-embed-text-v1.5 | NomicBERT | 768 | 0.999441 | **broken** | **broken** |
+| nomic-embed-text-v1.5 | NomicBERT | 768 | 1.000000 | 0.9980 | -- |
 | multilingual-e5-base | XLM-R | 768 | 0.999995 | 0.9999 | 0.99 |
 | multilingual-e5-large | XLM-R | 1024 | 0.999997 | 0.9999 | 0.99 |
 | granite-embedding-278m | XLM-R | 768 | 0.999984 | 0.9999 | 0.99 |
@@ -56,16 +57,16 @@ GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
 | bge-large-en-v1.5 | BERT | 1024 | 0.999992 | 0.9999 | 0.99 |
 | mxbai-embed-large-v1 | BERT | 1024 | 1.000032 | 0.9999 | 0.99 |
 
-Q8_0 = all PASS (cos > 0.99) except NomicBERT. Q4_K = most PASS; `--` = not tested.
+Q8_0 = all PASS (cos > 0.99). Q4_K = most PASS; `--` = SwiGLU too sensitive for aggressive quants.
 
 ### Known issues
 
-- **NomicBERT quantization**: nomic-embed-text-v1.5 Q8_0/Q4_K produces degenerate
-  embeddings (cos~0.23 vs F32). The SwiGLU gate/value projections are highly
-  sensitive to quantization. **Use F32 only** for this model.
-- **EmbeddingGemma-300m parity**: loads and runs but produces low parity (cos~0.03)
-  vs HuggingFace. Gemma3 decoder graph needs further debugging (embed_scale,
-  GeGLU activation mismatch).
+- **NomicBERT quantization**: SwiGLU gate/value projections are sensitive to
+  aggressive quantization. Q5_K (cos~0.95) and Q4_K (cos~0.85) degrade
+  significantly. **Use F32 or Q8_0 only** for this model.
+- **Jina v5 LoRA adapters**: Jina v5 models use task-specific LoRA adapters.
+  GGUFs have the `retrieval` adapter merged. Other tasks (text-matching,
+  clustering, classification) require separate GGUFs.
 - **DeBERTa-v2 disentangled attention**: mxbai-rerank-xsmall-v1 and
   mxbai-rerank-base-v1 use DeBERTa-v2's c2p/p2c relative position bias, which
   is not yet implemented. Use the BERT-based rerankers (ms-marco-MiniLM,
