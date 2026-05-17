@@ -671,13 +671,20 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         rope_pos = ggml_view_1d(gctx, pos_ids, T, 0);
     }
 
-    // MPNet/DeBERTa relative position bias: precomputed [T, T, n_heads]
-    // Flash attention requires F16 mask
+    // MPNet relative position bias: precomputed [T, T, n_heads]
     ggml_tensor * rel_pos_bias = nullptr;
-    if (m.rel_attn_bias || m.rel_embd) {
+    if (m.rel_attn_bias) {
         rel_pos_bias = ggml_new_tensor_3d(gctx, GGML_TYPE_F16, T, T, n_heads);
         ggml_set_name(rel_pos_bias, "rel_pos_bias");
         ggml_set_input(rel_pos_bias);
+    }
+
+    // DeBERTa: pre-expanded position embeddings [H, T*T] (filled on CPU)
+    ggml_tensor * rel_pos_expanded = nullptr;
+    if (m.rel_embd) {
+        rel_pos_expanded = ggml_new_tensor_2d(gctx, GGML_TYPE_F32, H, (int64_t)T * T);
+        ggml_set_name(rel_pos_expanded, "rel_pos_expanded");
+        ggml_set_input(rel_pos_expanded);
     }
 
     // cur: [H, T*B] — all matmuls batch naturally
@@ -747,25 +754,46 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         ggml_tensor * attn;
 
         if (m.rel_embd && B == 1) {
-            // DeBERTa-v2 disentangled attention (B=1 only)
-            // c2p and p2c are computed on CPU and passed as an additive bias.
-            // The bias is pre-computed in encode_tokens and stored in rel_pos_bias.
-            // Q/K/V after permute: [hd, T, nh, 1] → squeeze to [hd, T, nh]
+            // DeBERTa-v2 disentangled attention: c2c + c2p + p2c
             ggml_tensor * Qs = ggml_cont(gctx, ggml_reshape_3d(gctx, ggml_cont(gctx, Q), head_dim, T, n_heads));
             ggml_tensor * Ks = ggml_cont(gctx, ggml_reshape_3d(gctx, ggml_cont(gctx, K), head_dim, T, n_heads));
             ggml_tensor * Vs = ggml_cont(gctx, ggml_reshape_3d(gctx, ggml_cont(gctx, V), head_dim, T, n_heads));
 
-            // c2c: standard content-to-content scores [T, T, nh]
+            // c2c: Q^T @ K → [T, T, nh]
             ggml_tensor * scores = ggml_mul_mat(gctx, Ks, Qs);
 
-            // Scale: 1/sqrt(3*hd) for DeBERTa (three score components)
-            // c2p + p2c scores are added via rel_pos_bias (precomputed on CPU per layer)
+            // Expand position embeddings by bucket indices (shared tensor, zero-initialized)
+            ggml_tensor * P = rel_pos_expanded;  // [H, T*T]
+
+            // c2p: project pos through K weights, dot with Q
+            ggml_tensor * Pk = ggml_mul_mat(gctx, L.k_w, P);  // [H, T*T]
+            Pk = ggml_reshape_4d(gctx, Pk, head_dim, n_heads, T, T);
+            ggml_tensor * Pk_b = ggml_cont(gctx, ggml_permute(gctx, Pk, 0, 3, 1, 2));
+            Pk_b = ggml_reshape_3d(gctx, Pk_b, head_dim, T, (int64_t)n_heads * T);
+            ggml_tensor * Qs_b = ggml_cont(gctx, ggml_permute(gctx, Qs, 0, 2, 1, 3));
+            Qs_b = ggml_reshape_3d(gctx, Qs_b, head_dim, 1, (int64_t)n_heads * T);
+            ggml_tensor * c2p = ggml_mul_mat(gctx, Pk_b, Qs_b);
+            c2p = ggml_reshape_3d(gctx, c2p, T, T, n_heads);
+            c2p = ggml_cont(gctx, ggml_permute(gctx, c2p, 1, 0, 2, 3));
+
+            // p2c: project pos through Q weights, dot with K
+            ggml_tensor * Pq = ggml_mul_mat(gctx, L.q_w, P);
+            Pq = ggml_reshape_4d(gctx, Pq, head_dim, n_heads, T, T);
+            ggml_tensor * Pq_b = ggml_cont(gctx, ggml_permute(gctx, Pq, 0, 2, 1, 3));
+            Pq_b = ggml_reshape_3d(gctx, Pq_b, head_dim, T, (int64_t)n_heads * T);
+            ggml_tensor * Ks_b = ggml_cont(gctx, ggml_permute(gctx, Ks, 0, 2, 1, 3));
+            Ks_b = ggml_reshape_3d(gctx, Ks_b, head_dim, 1, (int64_t)n_heads * T);
+            ggml_tensor * p2c = ggml_mul_mat(gctx, Pq_b, Ks_b);
+            p2c = ggml_reshape_3d(gctx, p2c, T, T, n_heads);
+
+            // Combine: (c2c + c2p + p2c) / sqrt(3 * head_dim)
+            scores = ggml_add(gctx, scores, c2p);
+            scores = ggml_add(gctx, scores, p2c);
             float scale = 1.0f / sqrtf(3.0f * (float)head_dim);
             scores = ggml_scale(gctx, scores, scale);
 
             scores = ggml_soft_max(gctx, scores);
 
-            // weighted sum: V × scores
             ggml_tensor * Vt = ggml_cont(gctx, ggml_permute(gctx, Vs, 1, 0, 2, 3));
             attn = ggml_mul_mat(gctx, Vt, scores);
             attn = ggml_reshape_2d(gctx, ggml_cont(gctx, attn), H, T);
@@ -999,24 +1027,31 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
         }
     }
 
-    // DeBERTa relative position indices [T*T]
+    // DeBERTa: expand position embeddings on CPU using bucket indices
     if (ctx->model.rel_embd) {
-        ggml_tensor * idx_t = ggml_graph_get_tensor(gf, "rel_pos_idx");
-        if (idx_t) {
-            debug_encode_stage("encode_tokens:set-rel-idx", T, 1, 0);
+        ggml_tensor * rpe_t = ggml_graph_get_tensor(gf, "rel_pos_expanded");
+        if (rpe_t) {
+            debug_encode_stage("encode_tokens:set-rel-pos", T, 1, 0);
             int max_pos = (int)ctx->model.rel_embd->ne[1];
+            int H_emb = (int)ctx->model.rel_embd->ne[0];
             int pos_buckets = ctx->position_buckets;
-            std::vector<int32_t> idx(T * T);
 
-            if (pos_buckets > 0) {
-                // DeBERTa-v2 log-bucket encoding
-                int mid = pos_buckets / 2;
-                for (int i = 0; i < T; i++) {
-                    for (int j = 0; j < T; j++) {
+            // Read rel_embd data from backend
+            std::vector<float> embd_data((size_t)H_emb * max_pos);
+            ggml_backend_tensor_get(ctx->model.rel_embd, embd_data.data(), 0,
+                                    embd_data.size() * sizeof(float));
+
+            // Expand: for each (i,j) pair, look up the position embedding
+            std::vector<float> expanded((size_t)H_emb * T * T);
+            for (int i = 0; i < T; i++) {
+                for (int j = 0; j < T; j++) {
+                    int bucket;
+                    if (pos_buckets > 0) {
+                        // Log-bucket encoding
                         int rel = i - j;
                         int sign = (rel >= 0) ? 1 : -1;
                         int abs_rel = std::abs(rel);
-                        int bucket;
+                        int mid = pos_buckets / 2;
                         if (abs_rel < mid) {
                             bucket = abs_rel;
                         } else {
@@ -1025,25 +1060,19 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
                             bucket = mid + (int)std::ceil(log_ratio * (mid - 1));
                             if (bucket > pos_buckets - 1) bucket = pos_buckets - 1;
                         }
-                        // Negative positions map to upper half of embedding table
                         if (sign < 0) bucket = pos_buckets + bucket;
-                        if (bucket >= max_pos) bucket = max_pos - 1;
-                        idx[i * T + j] = bucket;
+                    } else {
+                        bucket = i - j + max_pos / 2;
                     }
-                }
-            } else {
-                // Linear relative positions (fallback)
-                int half = max_pos / 2;
-                for (int i = 0; i < T; i++) {
-                    for (int j = 0; j < T; j++) {
-                        int rel = i - j + half;
-                        if (rel < 0) rel = 0;
-                        if (rel >= max_pos) rel = max_pos - 1;
-                        idx[i * T + j] = rel;
-                    }
+                    if (bucket < 0) bucket = 0;
+                    if (bucket >= max_pos) bucket = max_pos - 1;
+                    // Copy embedding row: embd_data[d + bucket*H_emb] → expanded[d + (i*T+j)*H_emb]
+                    memcpy(&expanded[(size_t)(i * T + j) * H_emb],
+                           &embd_data[(size_t)bucket * H_emb],
+                           H_emb * sizeof(float));
                 }
             }
-            ggml_backend_tensor_set(idx_t, idx.data(), 0, T * T * sizeof(int32_t));
+            ggml_backend_tensor_set(rpe_t, expanded.data(), 0, expanded.size() * sizeof(float));
         }
     }
 
