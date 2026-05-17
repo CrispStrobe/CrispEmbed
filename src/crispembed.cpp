@@ -171,8 +171,8 @@ static bool validate_encoder_model(const embed_model & m, bool pre_ln) {
         require(L.ffn_up_gate_w || L.fc1_w, "ffn input weights");
 
         if (pre_ln) {
-            require(L.ln1_w, "ln1.weight");
-            require(L.ln2_w, "ln2.weight");
+            // ln1 optional for ModernBERT (no pre-attention norm, only pre-FFN ln2)
+            require(L.ln1_w || L.ln2_w, "ln1.weight or ln2.weight");
         } else {
             require(L.ln1_w, "ln1.weight");
             require(L.ln2_w, "ln2.weight");
