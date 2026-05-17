@@ -62,6 +62,8 @@ def main():
                            help="Ollama-compatible naming (default)")
     fmt_group.add_argument("--crisp", action="store_true",
                            help="CrispEmbed-native naming")
+    parser.add_argument("--lora-adapter", default=None,
+                        help="LoRA adapter name to merge (default: retrieval)")
     args = parser.parse_args()
 
     ollama_mode = not args.crisp
@@ -125,7 +127,7 @@ def main():
             # Select retrieval adapter if available (most common use case)
             if hasattr(model, 'active_adapters'):
                 adapters = list(getattr(model, 'peft_config', {}).keys())
-                target = "retrieval" if "retrieval" in adapters else (adapters[0] if adapters else None)
+                target = args.lora_adapter or ("retrieval" if "retrieval" in adapters else (adapters[0] if adapters else None))
                 if target and hasattr(model, 'set_adapter'):
                     model.set_adapter(target)
                     print(f"  LoRA: selected adapter '{target}' from {adapters}")
