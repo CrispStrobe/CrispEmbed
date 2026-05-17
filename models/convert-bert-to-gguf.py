@@ -519,6 +519,11 @@ def main():
     is_deberta = ("encoder.layer.0.attention.self.query_proj.weight" in sd or
                   "deberta.encoder.layer.0.attention.self.query_proj.weight" in sd)
 
+    if is_deberta:
+        pos_buckets = getattr(config, "position_buckets", 256)
+        writer.add_uint32("bert.position_buckets", pos_buckets)
+        print(f"  DeBERTa: position_buckets={pos_buckets}")
+
     if is_gte_new:
         # GTE v1.5 "new" BERT: pre-LN, RoPE, GeGLU, fused QKV+bias, CLS pooling
         rope_theta = getattr(config, "rope_theta", 10000.0)
@@ -735,7 +740,7 @@ def main():
         writer.add_tensor("pooler.bias", f32(sd["pooler.dense.bias"]))
         print("  pooler: ok")
 
-    # Optional retrieval heads (CrispEmbed-native only — Ollama doesn't use them)
+    # Optional retrieval heads (sparse/colbert: CrispEmbed-only; classifier: always)
     if not ollama_mode:
         if has_sparse_head:
             writer.add_tensor("sparse_linear.weight", f32(sd["sparse_linear.weight"]))
@@ -747,6 +752,8 @@ def main():
             if "colbert_linear.bias" in sd:
                 writer.add_tensor("colbert_linear.bias", f32(sd["colbert_linear.bias"]))
             print("  colbert_linear: ok")
+    # Classifier heads always included (reranker needs them in both formats)
+    if True:
         if has_classifier_2layer:
             writer.add_tensor("classifier.dense.weight",    f32(sd["classifier.dense.weight"]))
             writer.add_tensor("classifier.dense.bias",      f32(sd["classifier.dense.bias"]))
