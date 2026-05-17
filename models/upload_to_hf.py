@@ -221,7 +221,10 @@ MODELS = {
         "langs": ["multilingual"],
         "desc": "Microsoft Harrier OSS v1 270M. Gemma3-based compact model, 640-dimensional.",
         "parity": {
-            "f32":  0.9998,
+            "f32":  1.0000,
+            "q8_0": 0.9998,
+            "q5_k": 0.9962,
+            "q4_k": 0.9877,
         },
     },
     "qwen3-embed-0.6b": {
