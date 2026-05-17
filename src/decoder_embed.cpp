@@ -98,6 +98,12 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
                     a_f32("attention.layer_norm_rms_epsilon", 1e-6f));
     m.rope_theta = a_f32("rope_theta",
                    a_f32("rope.freq_base", 10000.0f));
+    // Sliding-window alternating rope_theta (Gemma3-style): local layers use a shorter theta.
+    // Stored as decoder.rope_theta_local (crisp) or {arch}.rope.freq_base_local (Ollama).
+    m.rope_theta_local = a_f32("rope_theta_local",
+                         a_f32("rope.freq_base_local", 0.0f));
+    m.global_attn_every_n = a_u32("global_attn_every_n_layers",
+                            a_u32("attention.sliding_window_layer_period", 0));
     m.is_bidirectional = a_u32("is_bidirectional", 0) != 0;
     // Pooling: decoder.pooling_method or {arch}.pooling_type (Ollama: 3=last)
     m.pooling_method = a_u32("pooling_method", -1);
@@ -278,9 +284,33 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
         L.post_ffn_norm_w = get2("post_ffn_norm.weight", "post_ffw_norm.weight");
     }
 
+    // Load optional post-pooling Dense projection layers (dense.0.weight, dense.1.weight, ...)
+    for (int di = 0; ; di++) {
+        std::string key = "dense." + std::to_string(di) + ".weight";
+        auto it = wl.tensors.find(key);
+        if (it == wl.tensors.end()) break;
+        ggml_tensor * t = it->second;
+        // Shape: [out_features, in_features] in ggml (ne[0]=in, ne[1]=out)
+        int in_dim  = (int)t->ne[0];
+        int out_dim = (int)t->ne[1];
+        size_t n_elem = (size_t)in_dim * out_dim;
+        dec_model::DenseLayer dl;
+        dl.in_dim  = in_dim;
+        dl.out_dim = out_dim;
+        dl.weight.resize(n_elem);
+        // Copy from backend tensor to CPU float vector
+        ggml_backend_tensor_get(t, dl.weight.data(), 0, n_elem * sizeof(float));
+        m.dense_proj.push_back(std::move(dl));
+        fprintf(stderr, "decoder_embed: dense.%d.weight [%d→%d]\n", di, in_dim, out_dim);
+    }
+
     const char * pool_str = (m.pooling_method == 1) ? "mean" : "last-token";
-    fprintf(stderr, "decoder_embed: loaded %d layers, %d dims, %d vocab, %d heads (%d kv), rope_theta=%.0f, pool=%s%s\n",
+    fprintf(stderr, "decoder_embed: loaded %d layers, %d dims, %d vocab, %d heads (%d kv), rope_theta=%.0f%s, pool=%s%s\n",
             m.n_layer, m.n_embd, m.n_vocab, m.n_head, m.n_kv_head, m.rope_theta,
+            (m.rope_theta_local > 0.0f && m.global_attn_every_n > 0)
+                ? (" (local=" + std::to_string((int)m.rope_theta_local)
+                   + " every " + std::to_string(m.global_attn_every_n) + ")").c_str()
+                : "",
             pool_str, m.is_bidirectional ? ", bidirectional" : "");
     return true;
 }
@@ -538,6 +568,13 @@ std::vector<float> decoder_encode_tokens(
         if (L.q_norm_w) Q = rms_norm(Q, L.q_norm_w);
         if (L.k_norm_w) K = rms_norm(K, L.k_norm_w);
 
+        // Per-layer rope_theta: Gemma3 sliding-window layers use a shorter theta
+        float layer_rope_theta = m.rope_theta;
+        if (m.rope_theta_local > 0.0f && m.global_attn_every_n > 0) {
+            bool is_global = ((il + 1) % m.global_attn_every_n == 0);
+            layer_rope_theta = is_global ? m.rope_theta : m.rope_theta_local;
+        }
+
         if (use_mrope) {
             int sections[GGML_MROPE_SECTIONS] = {
                 m.mrope_section[0], m.mrope_section[1], m.mrope_section[2], 0,
@@ -545,18 +582,18 @@ std::vector<float> decoder_encode_tokens(
             const int rope_mode = GGML_ROPE_TYPE_IMROPE;
             Q = ggml_rope_multi(gctx, Q, pos, nullptr,
                                 head_dim, sections, rope_mode, 0,
-                                m.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+                                layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
             K = ggml_rope_multi(gctx, K, pos, nullptr,
                                 head_dim, sections, rope_mode, 0,
-                                m.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+                                layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
         } else {
             int rope_mode = 2;
             Q = ggml_rope_ext(gctx, Q, pos, nullptr,
                                head_dim, rope_mode, 0,
-                               m.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+                               layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
             K = ggml_rope_ext(gctx, K, pos, nullptr,
                                head_dim, rope_mode, 0,
-                               m.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+                               layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
         }
 
         // Attention: permute → scores → mask → softmax → value
@@ -794,11 +831,24 @@ std::vector<float> decoder_encode_tokens(
         memcpy(pooled.data(), hidden.data() + (size_t)last_t * H, H * sizeof(float));
     }
 
+    // Post-pooling Dense projection layers (SentenceTransformer-style, e.g. EmbeddingGemma)
+    for (const auto & dl : m.dense_proj) {
+        std::vector<float> out_vec(dl.out_dim, 0.0f);
+        // weight is [out_dim, in_dim] row-major; compute: out[o] = sum_j(weight[o*in+j]*pooled[j])
+        const float * w = dl.weight.data();
+        for (int o = 0; o < dl.out_dim; o++) {
+            float acc = 0.0f;
+            for (int j = 0; j < dl.in_dim; j++) acc += w[o * dl.in_dim + j] * pooled[j];
+            out_vec[o] = acc;
+        }
+        pooled = std::move(out_vec);
+    }
+
     // L2 normalize
     float norm = 0;
-    for (int i = 0; i < H; i++) norm += pooled[i] * pooled[i];
+    for (int i = 0; i < (int)pooled.size(); i++) norm += pooled[i] * pooled[i];
     norm = sqrtf(std::max(norm, 1e-12f));
-    for (int i = 0; i < H; i++) pooled[i] /= norm;
+    for (int i = 0; i < (int)pooled.size(); i++) pooled[i] /= norm;
 
     return pooled;
 }

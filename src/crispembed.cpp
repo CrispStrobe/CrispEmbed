@@ -490,8 +490,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         L.fc1_b = get_any({pfx + "ffn.fc1.bias", blk + "ffn_up.bias"});
         L.fc2_w = get_any({pfx + "ffn.fc2.weight", blk + "ffn_down.weight"});
         L.fc2_b = get_any({pfx + "ffn.fc2.bias", blk + "ffn_down.bias"});
-        L.ffn_gate_w    = get(pfx + "ffn_gate.weight");     // SwiGLU gate (NomicBERT)
-        L.ffn_up_gate_w = get(pfx + "ffn_up_gate.weight"); // Fused gate+up (ModernBERT/GTE v1.5)
+        L.ffn_gate_w    = get_any({pfx + "ffn_gate.weight", blk + "ffn_gate.weight"});     // SwiGLU gate (NomicBERT)
+        L.ffn_up_gate_w = get_any({pfx + "ffn_up_gate.weight", blk + "ffn_up_gate.weight"}); // Fused gate+up (ModernBERT/GTE v1.5)
     }
 
     // Pooler (optional)
