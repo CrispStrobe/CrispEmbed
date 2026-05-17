@@ -767,24 +767,33 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
 
             // c2p: project pos through K weights, dot with Q
             ggml_tensor * Pk = ggml_mul_mat(gctx, L.k_w, P);  // [H, T*T]
+            // Pk after reshape: [hd, nh, j, i] (j=ne[2] fast, i=ne[3] slow)
             Pk = ggml_reshape_4d(gctx, Pk, head_dim, n_heads, T, T);
-            ggml_tensor * Pk_b = ggml_cont(gctx, ggml_permute(gctx, Pk, 0, 3, 1, 2));
+            // c2p needs batch=(h,i) to match Qs batch=(h,i_q)
+            // permute(0,2,1,3) → [hd, j, nh, i] → cont → batch = h+nh*i ✓
+            ggml_tensor * Pk_b = ggml_cont(gctx, ggml_permute(gctx, Pk, 0, 2, 1, 3));
             Pk_b = ggml_reshape_3d(gctx, Pk_b, head_dim, T, (int64_t)n_heads * T);
             ggml_tensor * Qs_b = ggml_cont(gctx, ggml_permute(gctx, Qs, 0, 2, 1, 3));
             Qs_b = ggml_reshape_3d(gctx, Qs_b, head_dim, 1, (int64_t)n_heads * T);
-            ggml_tensor * c2p = ggml_mul_mat(gctx, Pk_b, Qs_b);
-            c2p = ggml_reshape_3d(gctx, c2p, T, T, n_heads);
-            c2p = ggml_cont(gctx, ggml_permute(gctx, c2p, 1, 0, 2, 3));
+            ggml_tensor * c2p = ggml_mul_mat(gctx, Pk_b, Qs_b);  // [j, 1, nh*i]
+            // [T_j, 1, nh*T_i] → reshape [T_j, nh, T_i] → permute → [T_i, T_j, nh]
+            c2p = ggml_reshape_3d(gctx, c2p, T, n_heads, T);
+            c2p = ggml_cont(gctx, ggml_permute(gctx, c2p, 1, 2, 0, 3));
 
             // p2c: project pos through Q weights, dot with K
             ggml_tensor * Pq = ggml_mul_mat(gctx, L.q_w, P);
+            // Pq after reshape: [hd, nh, j, i]
             Pq = ggml_reshape_4d(gctx, Pq, head_dim, n_heads, T, T);
-            ggml_tensor * Pq_b = ggml_cont(gctx, ggml_permute(gctx, Pq, 0, 2, 1, 3));
+            // p2c needs batch=(h,j) to match Ks batch=(h,j_k)
+            // permute(0,3,1,2) → [hd, i, nh, j] → cont → batch = h+nh*j ✓
+            ggml_tensor * Pq_b = ggml_cont(gctx, ggml_permute(gctx, Pq, 0, 2, 3, 1));
             Pq_b = ggml_reshape_3d(gctx, Pq_b, head_dim, T, (int64_t)n_heads * T);
             ggml_tensor * Ks_b = ggml_cont(gctx, ggml_permute(gctx, Ks, 0, 2, 1, 3));
             Ks_b = ggml_reshape_3d(gctx, Ks_b, head_dim, 1, (int64_t)n_heads * T);
-            ggml_tensor * p2c = ggml_mul_mat(gctx, Pq_b, Ks_b);
-            p2c = ggml_reshape_3d(gctx, p2c, T, T, n_heads);
+            ggml_tensor * p2c = ggml_mul_mat(gctx, Pq_b, Ks_b);  // [i, 1, nh*j]
+            // [T_i, 1, nh*T_j] → reshape [T_i, nh, T_j] → permute → [T_i, T_j, nh]
+            p2c = ggml_reshape_3d(gctx, p2c, T, n_heads, T);
+            p2c = ggml_cont(gctx, ggml_permute(gctx, p2c, 0, 2, 1, 3));
 
             // Combine: (c2c + c2p + p2c) / sqrt(3 * head_dim)
             scores = ggml_add(gctx, scores, c2p);
