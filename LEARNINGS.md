@@ -640,23 +640,51 @@ per-op overhead matters most. On larger models, ONNX Runtime's graph optimizatio
 closes the gap. GPU (CUDA/Metal) should favor CrispEmbed across all sizes due
 to ggml's fused CUDA kernels and flash attention.
 
-## DeBERTa-v2 disentangled attention (partial)
+## DeBERTa-v2 disentangled attention (full parity)
 
-DeBERTa-v2's attention computes three components:
-1. **c2c** (content-to-content): standard Q×K^T — implemented
-2. **c2p** (content-to-position): Q × (W_k × rel_embd)^T — NOT implemented
-3. **p2c** (position-to-content): (W_q × rel_embd) × K^T — NOT implemented
+DeBERTa-v2's attention computes three components, all now implemented:
+1. **c2c** (content-to-content): standard Q×K^T
+2. **c2p** (content-to-position): Q × K_proj(rel_embd)^T
+3. **p2c** (position-to-content): K × Q_proj(rel_embd)^T
 
-The c2p and p2c components are **input-dependent** (they use Q and K from the
-current input), so they can't be precomputed like MPNet's bucket bias. They
-require per-layer relative position projections in the ggml graph:
-- Look up `rel_embd[relative_position]` for all (i,j) pairs
-- Project through Q/K weights
-- Add to attention scores
+### Key implementation details
 
-This adds ~6 matmuls per layer and complex indexing. For rerankers (the main
-DeBERTa use case), the partial c2c-only implementation may be sufficient for
-ranking (relative ordering preserved even without position signal).
+**Pre-expansion approach**: Rather than gather+matmul at runtime, we pre-expand
+the position embeddings on CPU: `P[H, T*T]` where `P[:, i*T+j] = LN(rel_emb[bucket(i-j)+256])`.
+Then project through K/Q weights and use batched matmul to compute all scores.
+
+**Critical: HF uses bucket(query-key) for BOTH c2p AND p2c**. This is
+counter-intuitive — you'd expect p2c to use bucket(key-query). But HF's
+`disentangled_attention_bias` gathers p2c using the same relative position
+index, then transposes the result. To achieve this with pre-expansion, we
+transpose the T×T grid for p2c: `P_p2c = P.reshape(H,T,T).permute(0,2,1)`.
+
+**Encoder LayerNorm on position embeddings**: HF applies `encoder.LayerNorm`
+to `rel_embeddings.weight` BEFORE using them in attention (`get_rel_embedding()`).
+This is separate from the post-encoder LayerNorm. Missing this causes ~15%
+error in position scores.
+
+**Position projection biases**: HF's `key_proj`/`query_proj` are `nn.Linear`
+which include bias. Must add `k_bias` to Pk and `q_bias` to Pq.
+
+**Log-bucket formula** (`make_log_bucket_position`): Uses signed bucket values
+centered at `att_span` (= position_buckets = 256). The log denominator is
+`log((max_relative_positions - 1) / mid)`, NOT `log((max_pos/2 - 1) / mid)`.
+
+**Attention output reshape**: After V-weighted sum `[hd, T_q, nh]`, must permute
+to `[hd, nh, T_q]` BEFORE reshaping to `[H, T]`. Without this permute, head
+dimensions get incorrectly interleaved.
+
+**Score scaling**: `1/sqrt(3 * head_dim)` when both c2p and p2c are present
+(the 3 = 1 + num_position_attention_types).
+
+### ggml_permute semantics (output-position convention)
+
+`ggml_permute(a, ax0, ax1, ax2, ax3)`: `axes[k]` means "source dimension k
+goes to result dimension `axes[k]`". So `permute(a, 0, 2, 1, 3)` on
+`[hd, nh, T, B]` gives `[hd, T, nh, B]` (dims 1 and 2 swap).
+
+This is the OPPOSITE of numpy's `transpose` where you specify source→result.
 
 ## Rust crate verification
 
