@@ -765,8 +765,9 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             // Expand position embeddings by bucket indices (shared tensor, zero-initialized)
             ggml_tensor * P = rel_pos_expanded;  // [H, T*T]
 
-            // c2p: project pos through K weights, dot with Q
+            // c2p: project pos through K weights (with bias), dot with Q
             ggml_tensor * Pk = ggml_mul_mat(gctx, L.k_w, P);  // [H, T*T]
+            if (L.k_b) Pk = ggml_add(gctx, Pk, L.k_b);
             // Pk after reshape: [hd, nh, j, i] (j=ne[2] fast, i=ne[3] slow)
             Pk = ggml_reshape_4d(gctx, Pk, head_dim, n_heads, T, T);
             // c2p needs batch=(h,i) to match Qs batch=(h,i_q)
@@ -776,24 +777,38 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             ggml_tensor * Qs_b = ggml_cont(gctx, ggml_permute(gctx, Qs, 0, 2, 1, 3));
             Qs_b = ggml_reshape_3d(gctx, Qs_b, head_dim, 1, (int64_t)n_heads * T);
             ggml_tensor * c2p = ggml_mul_mat(gctx, Pk_b, Qs_b);  // [j, 1, nh*i]
-            // [T_j, 1, nh*T_i] → reshape [T_j, nh, T_i] → permute → [T_i, T_j, nh]
+            // [T_j, 1, nh*T_i] → reshape [T_j, nh, T_i] → permute → [T_j, T_i, nh]
             c2p = ggml_reshape_3d(gctx, c2p, T, n_heads, T);
-            c2p = ggml_cont(gctx, ggml_permute(gctx, c2p, 1, 2, 0, 3));
+            c2p = ggml_cont(gctx, ggml_permute(gctx, c2p, 0, 2, 1, 3));
 
-            // p2c: project pos through Q weights, dot with K
-            ggml_tensor * Pq = ggml_mul_mat(gctx, L.q_w, P);
-            // Pq after reshape: [hd, nh, j, i]
+            // p2c: project pos through Q weights (with bias), dot with K
+            // HF: p2c[q,k] = K[k] · Q_proj(rel_embd[bucket(q-k) + att_span])
+            // This is the SAME position index as c2p (bucket(q-k)), NOT the mirror bucket(k-q).
+            // Our pre-expanded P has P[:,i*T+j] = rel_embd[bucket(i-j)].
+            // With the current batching (batch=t_key=i, row=j), indexing P gives bucket(i-j)=bucket(k-q).
+            // To get bucket(q-k) instead, we transpose the TxT grid so P_p2c[:,i*T+j]=rel_embd[bucket(j-i)]:
+            //   with batch=t_key=i, row=t_query=j: bucket(j-i) = bucket(t_query - t_key) = bucket(q-k) ✓
+            // Transpose: reshape P→[H,T_j,T_i], permute→[H,T_i,T_j], reshape→[H,T*T]
+            ggml_tensor * P_p2c = ggml_reshape_2d(gctx,
+                ggml_cont(gctx, ggml_permute(gctx,
+                    ggml_reshape_3d(gctx, P, H, T, T),  // [H, T_j, T_i]
+                    0, 2, 1, 3)),                         // → [H, T_i, T_j]
+                H, (int64_t)T * T);
+            ggml_tensor * Pq = ggml_mul_mat(gctx, L.q_w, P_p2c);
+            if (L.q_b) Pq = ggml_add(gctx, Pq, L.q_b);
+            // Pq after reshape: [hd, nh, T_j, T_i]
+            // with batch=(h, t_key=T_i), row=t_query=T_j:
+            //   result[t_q, 0, h*T+t_key] = K[t_key] · Q_proj(rel_embd[bucket(t_q - t_key)]) ✓
             Pq = ggml_reshape_4d(gctx, Pq, head_dim, n_heads, T, T);
-            // p2c needs batch=(h,j) to match Ks batch=(h,j_k)
-            // permute(0,3,1,2) → [hd, i, nh, j] → cont → batch = h+nh*j ✓
-            ggml_tensor * Pq_b = ggml_cont(gctx, ggml_permute(gctx, Pq, 0, 2, 3, 1));
+            // permute(0,2,1,3): [hd,nh,T_j,T_i] → [hd,T_j,nh,T_i]
+            ggml_tensor * Pq_b = ggml_cont(gctx, ggml_permute(gctx, Pq, 0, 2, 1, 3));
             Pq_b = ggml_reshape_3d(gctx, Pq_b, head_dim, T, (int64_t)n_heads * T);
             ggml_tensor * Ks_b = ggml_cont(gctx, ggml_permute(gctx, Ks, 0, 2, 1, 3));
             Ks_b = ggml_reshape_3d(gctx, Ks_b, head_dim, 1, (int64_t)n_heads * T);
-            ggml_tensor * p2c = ggml_mul_mat(gctx, Pq_b, Ks_b);  // [i, 1, nh*j]
-            // [T_i, 1, nh*T_j] → reshape [T_i, nh, T_j] → permute → [T_i, T_j, nh]
+            ggml_tensor * p2c = ggml_mul_mat(gctx, Pq_b, Ks_b);  // [T_q, 1, nh*T_k]
+            // [T_q, 1, nh*T_k] → reshape [T_q, nh, T_k] → permute → [T_k, T_q, nh]
             p2c = ggml_reshape_3d(gctx, p2c, T, n_heads, T);
-            p2c = ggml_cont(gctx, ggml_permute(gctx, p2c, 0, 2, 1, 3));
+            p2c = ggml_cont(gctx, ggml_permute(gctx, p2c, 1, 2, 0, 3));
 
             // Combine: (c2c + c2p + p2c) / sqrt(3 * head_dim)
             scores = ggml_add(gctx, scores, c2p);
@@ -803,8 +818,13 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
 
             scores = ggml_soft_max(gctx, scores);
 
+            // Vt: [T_k, hd, nh] so mul_mat contracts over T_k, giving [hd, T_q, nh]
             ggml_tensor * Vt = ggml_cont(gctx, ggml_permute(gctx, Vs, 1, 0, 2, 3));
             attn = ggml_mul_mat(gctx, Vt, scores);
+            // attn: [hd, T_q, nh] → need [H, T] = [hd*nh, T]
+            // Must permute [hd, T, nh] → [hd, nh, T] so that hd and nh are contiguous,
+            // then reshape to [H, T]. Without this permute, reshape produces wrong values.
+            attn = ggml_cont(gctx, ggml_permute(gctx, attn, 0, 2, 1, 3));  // [hd, nh, T]
             attn = ggml_reshape_2d(gctx, ggml_cont(gctx, attn), H, T);
         } else {
             float scale = 1.0f / sqrtf((float)head_dim);
@@ -1050,26 +1070,58 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
             ggml_backend_tensor_get(ctx->model.rel_embd, embd_data.data(), 0,
                                     embd_data.size() * sizeof(float));
 
+            // Apply encoder LayerNorm to relative embeddings before expansion.
+            // HF DeBERTa-v2: encoder.get_rel_embedding() does
+            //   rel_embd = self.LayerNorm(self.rel_embeddings.weight)
+            // when norm_rel_ebd == "layer_norm" (the default for DeBERTa-v2).
+            // encoder_ln_w/b correspond to encoder.LayerNorm in HF.
+            if (ctx->model.encoder_ln_w && ctx->model.encoder_ln_b) {
+                std::vector<float> ln_w(H_emb), ln_b(H_emb);
+                ggml_backend_tensor_get(ctx->model.encoder_ln_w, ln_w.data(), 0, H_emb * sizeof(float));
+                ggml_backend_tensor_get(ctx->model.encoder_ln_b, ln_b.data(), 0, H_emb * sizeof(float));
+                const float ln_eps = ctx->model.hparams.layer_norm_eps;
+                for (int p = 0; p < max_pos; p++) {
+                    float * row = &embd_data[(size_t)p * H_emb];
+                    // Compute mean and variance
+                    double sum = 0.0, sum2 = 0.0;
+                    for (int d = 0; d < H_emb; d++) { sum += row[d]; sum2 += (double)row[d] * row[d]; }
+                    float mean = (float)(sum / H_emb);
+                    float var  = (float)(sum2 / H_emb) - mean * mean;
+                    float inv_std = 1.0f / std::sqrt(var + ln_eps);
+                    for (int d = 0; d < H_emb; d++) {
+                        row[d] = (row[d] - mean) * inv_std * ln_w[d] + ln_b[d];
+                    }
+                }
+            }
+
             // Expand: for each (i,j) pair, look up the position embedding
             std::vector<float> expanded((size_t)H_emb * T * T);
             for (int i = 0; i < T; i++) {
                 for (int j = 0; j < T; j++) {
                     int bucket;
                     if (pos_buckets > 0) {
-                        // Log-bucket encoding
+                        // Log-bucket encoding matching HF make_log_bucket_position
                         int rel = i - j;
-                        int sign = (rel >= 0) ? 1 : -1;
+                        int sign_val = (rel > 0) ? 1 : ((rel < 0) ? -1 : 0);
                         int abs_rel = std::abs(rel);
                         int mid = pos_buckets / 2;
-                        if (abs_rel < mid) {
-                            bucket = abs_rel;
+
+                        // HF: abs_pos = (|rel| < mid) ? mid-1 : |rel|
+                        int abs_pos = (rel < mid && rel > -mid) ? (mid - 1) : abs_rel;
+
+                        int signed_bucket;
+                        if (abs_pos <= mid) {
+                            // Inner region: use signed relative position directly
+                            signed_bucket = rel;
                         } else {
-                            double log_ratio = std::log((double)abs_rel / mid)
-                                             / std::log((double)(max_pos / 2 - 1) / mid);
-                            bucket = mid + (int)std::ceil(log_ratio * (mid - 1));
-                            if (bucket > pos_buckets - 1) bucket = pos_buckets - 1;
+                            // Outer region: log-scaled bucket
+                            double log_ratio = std::log((double)abs_pos / mid)
+                                             / std::log((double)(max_pos - 1) / mid);
+                            int log_pos = (int)std::ceil(log_ratio * (mid - 1)) + mid;
+                            signed_bucket = log_pos * sign_val;
                         }
-                        if (sign < 0) bucket = pos_buckets + bucket;
+                        // gather_index = signed_bucket + att_span (att_span = pos_buckets)
+                        bucket = signed_bucket + pos_buckets;
                     } else {
                         bucket = i - j + max_pos / 2;
                     }
@@ -1227,6 +1279,74 @@ static std::vector<float> run_encoder_raw(crispembed_context * ctx,
         if (!type_ids) return {};
         debug_encode_stage("run_encoder_raw:set-type", T, 1, mode);
         ggml_backend_tensor_set(type_ids, type_data.data(), 0, T * sizeof(int32_t));
+    }
+
+    // DeBERTa: expand position embeddings on CPU using bucket indices
+    if (ctx->model.rel_embd) {
+        ggml_tensor * rpe_t = ggml_graph_get_tensor(gf, "rel_pos_expanded");
+        if (rpe_t) {
+            int max_pos = (int)ctx->model.rel_embd->ne[1];
+            int H_emb = (int)ctx->model.rel_embd->ne[0];
+            int pos_buckets = ctx->position_buckets;
+
+            std::vector<float> embd_data((size_t)H_emb * max_pos);
+            ggml_backend_tensor_get(ctx->model.rel_embd, embd_data.data(), 0,
+                                    embd_data.size() * sizeof(float));
+
+            // Apply encoder LayerNorm to relative embeddings before expansion.
+            // HF DeBERTa-v2: encoder.get_rel_embedding() does
+            //   rel_embd = self.LayerNorm(self.rel_embeddings.weight)
+            // when norm_rel_ebd == "layer_norm" (the default for DeBERTa-v2).
+            if (ctx->model.encoder_ln_w && ctx->model.encoder_ln_b) {
+                std::vector<float> ln_w(H_emb), ln_b(H_emb);
+                ggml_backend_tensor_get(ctx->model.encoder_ln_w, ln_w.data(), 0, H_emb * sizeof(float));
+                ggml_backend_tensor_get(ctx->model.encoder_ln_b, ln_b.data(), 0, H_emb * sizeof(float));
+                const float ln_eps = ctx->model.hparams.layer_norm_eps;
+                for (int p = 0; p < max_pos; p++) {
+                    float * row = &embd_data[(size_t)p * H_emb];
+                    double sum = 0.0, sum2 = 0.0;
+                    for (int d = 0; d < H_emb; d++) { sum += row[d]; sum2 += (double)row[d] * row[d]; }
+                    float mean = (float)(sum / H_emb);
+                    float var  = (float)(sum2 / H_emb) - mean * mean;
+                    float inv_std = 1.0f / std::sqrt(var + ln_eps);
+                    for (int d = 0; d < H_emb; d++) {
+                        row[d] = (row[d] - mean) * inv_std * ln_w[d] + ln_b[d];
+                    }
+                }
+            }
+
+            std::vector<float> expanded((size_t)H_emb * T * T);
+            for (int i = 0; i < T; i++) {
+                for (int j = 0; j < T; j++) {
+                    int bucket;
+                    if (pos_buckets > 0) {
+                        int rel = i - j;
+                        int sign_val = (rel > 0) ? 1 : ((rel < 0) ? -1 : 0);
+                        int abs_rel = std::abs(rel);
+                        int mid = pos_buckets / 2;
+                        int abs_pos = (rel < mid && rel > -mid) ? (mid - 1) : abs_rel;
+                        int signed_bucket;
+                        if (abs_pos <= mid) {
+                            signed_bucket = rel;
+                        } else {
+                            double log_ratio = std::log((double)abs_pos / mid)
+                                             / std::log((double)(max_pos - 1) / mid);
+                            int log_pos = (int)std::ceil(log_ratio * (mid - 1)) + mid;
+                            signed_bucket = log_pos * sign_val;
+                        }
+                        bucket = signed_bucket + pos_buckets;
+                    } else {
+                        bucket = i - j + max_pos / 2;
+                    }
+                    if (bucket < 0) bucket = 0;
+                    if (bucket >= max_pos) bucket = max_pos - 1;
+                    memcpy(&expanded[(size_t)(i * T + j) * H_emb],
+                           &embd_data[(size_t)bucket * H_emb],
+                           H_emb * sizeof(float));
+                }
+            }
+            ggml_backend_tensor_set(rpe_t, expanded.data(), 0, expanded.size() * sizeof(float));
+        }
     }
 
     debug_encode_stage("run_encoder_raw:compute", T, 1, mode);
@@ -1819,6 +1939,35 @@ extern "C" float crispembed_rerank(crispembed_context * ctx,
     const int H = ctx->model.hparams.n_embd;
     // CLS token is position 0 in encoder_out [H, T]
     const float * cls_vec = raw.data();  // first H floats = token 0
+
+    // Debug: dump CLS vector when CRISPEMBED_DEBUG_CLS=1
+    if (const char * dcls = std::getenv("CRISPEMBED_DEBUG_CLS")) {
+        if (dcls[0] && dcls[0] != '0') {
+            fprintf(stderr, "CLS[0:8]:");
+            for (int i = 0; i < std::min(8, H); i++) fprintf(stderr, " %.4f", cls_vec[i]);
+            fprintf(stderr, "\n");
+        }
+    }
+
+    // Apply ContextPooler if present (DeBERTa-v2 reranker):
+    //   pooled = GELU(dense_w @ cls + dense_b)
+    // The classifier then operates on pooled rather than raw CLS.
+    std::vector<float> pooled_buf;
+    if (ctx->model.pooler_w && ctx->model.pooler_b) {
+        std::vector<float> pw(H * H), pb(H);
+        ggml_backend_tensor_get(ctx->model.pooler_w, pw.data(), 0, H*H*sizeof(float));
+        ggml_backend_tensor_get(ctx->model.pooler_b, pb.data(), 0, H*sizeof(float));
+        pooled_buf.resize(H);
+        for (int i = 0; i < H; i++) {
+            float acc = pb[i];
+            for (int j = 0; j < H; j++) acc += cls_vec[j] * pw[i * H + j];
+            // GELU activation (standard pooler_hidden_act for DeBERTa)
+            // Using the same polynomial approximation as ggml_gelu
+            const float x = acc;
+            pooled_buf[i] = 0.5f * x * (1.0f + std::tanh(0.7978845608f * (x + 0.044715f * x * x * x)));
+        }
+        cls_vec = pooled_buf.data();
+    }
 
     float score = 0.0f;
     if (ctx->model.classifier_2layer) {

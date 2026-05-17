@@ -734,11 +734,15 @@ def main():
 
         print(f"  {LP}.{i}: ok")
 
-    # Pooler (optional, skip in Ollama mode — not used)
-    if not ollama_mode and "pooler.dense.weight" in sd:
+    # Pooler (optional).
+    # Always save for rerankers (ContextPooler is required for correct scoring).
+    # Skip in Ollama mode for non-reranker models (not used in embedding pipelines).
+    if "pooler.dense.weight" in sd and (has_classifier or not ollama_mode):
         writer.add_tensor("pooler.weight", f32(sd["pooler.dense.weight"]))
         writer.add_tensor("pooler.bias", f32(sd["pooler.dense.bias"]))
-        print("  pooler: ok")
+        pooler_act = getattr(config, "pooler_hidden_act", "gelu")
+        writer.add_string("bert.pooler_act", pooler_act)
+        print(f"  pooler: ok (act={pooler_act})")
 
     # Optional retrieval heads (sparse/colbert: CrispEmbed-only; classifier: always)
     if not ollama_mode:
