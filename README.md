@@ -27,7 +27,7 @@ GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
 
 ## Status
 
-**38+ models verified** (cos>=0.96), 47 in registry:
+**34 models regression-tested** (all pass, cos>=0.987), 47 in registry:
 
 | Model | Type | Dim | F32 CosSim | Q8_0 | Q4_K |
 |-------|------|-----|------------|------|------|
@@ -46,7 +46,8 @@ GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
 | Harrier-OSS-v1-0.6B | Qwen3 | 1024 | 0.999959 | 0.9999 | 0.99 |
 | Qwen3-Embedding-0.6B | Qwen3 | 1024 | 0.999895 | 0.9996 | 0.97 |
 | Harrier-OSS-v1-270M | Gemma3 | 640 | 0.999948 | 0.9998 | 0.99 |
-| all-mpnet-base-v2 | MPNet | 768 | 0.999997 | 0.9998 | 0.99 |
+| all-mpnet-base-v2 | MPNet | 768 | 0.9874 | 0.9998 | 0.99 |
+| gte-modernbert-base | ModernBERT | 768 | 0.999991 | 0.9999 | -- |
 | nomic-embed-text-v1.5 | NomicBERT | 768 | 1.000000 | 0.9980 | -- |
 | multilingual-e5-base | XLM-R | 768 | 0.999995 | 0.9999 | 0.99 |
 | multilingual-e5-large | XLM-R | 1024 | 0.999997 | 0.9999 | 0.99 |
