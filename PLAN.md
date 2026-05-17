@@ -424,10 +424,11 @@ Remaining work:
 
 ### Known issues (v0.4.0)
 
-1. **NomicBERT quantization**: ~~broken (cos~0.23)~~ — **resolved**. Current
-   parity: Q8_0=0.9994, Q5_K=0.9865, Q4_K=0.9618. All quants uploaded to HF.
-   The SwiGLU gate projections (enc.N.ffn_gate.weight) quantize cleanly at
-   Q8_0/Q5_K; Q4_K shows mild degradation (~3.8%) which is expected for 4-bit.
+1. **NomicBERT** — **RESOLVED**. Root cause: gate/up weights (fc11↔fc12) were
+   swapped in old GGUF; also needed Ollama tensor name fallback (`blk.N.ffn_gate.weight`).
+   Reconverted to Ollama format. F32 cos=1.0, Q8_0 cos=0.998.
+   SwiGLU is too sensitive for aggressive quants (Q5_K cos~0.95, Q4_K cos~0.85) —
+   only F32 and Q8_0 uploaded to HF.
 
 2. **EmbeddingGemma-300m parity** — **RESOLVED** (cos=1.0000 F32, 0.9998 Q8_0,
    0.9954 Q5_K). Root causes identified and fixed:
@@ -438,9 +439,27 @@ Remaining work:
    - Dense layers being quantized (runtime reads them as F32; `dense.*` now excluded)
    - cmake build target: `crispembed` builds only libcrispembed-static.a; executable
      needs `crispembed-cli` target
-   All three v5 GGUFs (F32, Q8_0, Q5_K) uploaded to `cstr/embeddinggemma-300m-GGUF`.
+   All four v5 GGUFs (F32, Q8_0, Q5_K, Q4_K) uploaded to `cstr/embeddinggemma-300m-GGUF`.
 
-3. **DeBERTa-v2 disentangled attention not implemented**: mxbai-rerank-xsmall-v1
+3. **Jina v5 nano/small** — **RESOLVED**. Root cause: models use task-specific
+   LoRA adapters (retrieval, text-matching, clustering, classification); old GGUFs
+   had base weights only. Fixed: converter now merges `retrieval` adapter via
+   `model.merge_and_unload()`. Nano F32 cos=1.0, Small F32 cos=0.9999.
+
+4. **all-mpnet-base-v2** — **RESOLVED**. Root cause: old GGUF was missing
+   `relative_attention_bias.weight` [32,12]. Reconverted with bias tensor.
+   cos=0.987–0.999 (short sequences slightly sensitive to rel-bias numerics).
+
+5. **gte-modernbert-base** — **RESOLVED**. Validation wrongly required `ln1`
+   for pre-LN models; ModernBERT only has `ln2` (pre-FFN norm). Fixed validation.
+   cos=0.9999.
+
+6. **Full regression sweep (2026-05-17)**: 34 models tested, all pass.
+   8 BERT, 7 XLM-R, 3 special encoders (Nomic/ModernBERT/SPLADE),
+   7 decoder (Qwen3/Gemma3), 3 rerankers, 1 MPNet. 5 models fixed and
+   re-uploaded to HF (EmbeddingGemma, Nomic, Jina v5 nano/small, MPNet).
+
+7. **DeBERTa-v2 disentangled attention not implemented**: mxbai-rerank-xsmall-v1
    and mxbai-rerank-base-v1 use DeBERTa-v2's content-to-position (c2p) and
    position-to-content (p2c) relative attention bias with log-bucket encoding
    (position_buckets=256). This is a fundamentally different attention mechanism
