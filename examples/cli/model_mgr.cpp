@@ -416,6 +416,17 @@ static void mkdirs(const std::string & path) {
     std::filesystem::create_directories(std::filesystem::path(path), ec);
 }
 
+static long long file_size(const std::string & path) {
+#ifdef _WIN32
+    struct __stat64 st;
+    if (_stat64(path.c_str(), &st) != 0) return -1;
+#else
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0) return -1;
+#endif
+    return static_cast<long long>(st.st_size);
+}
+
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static bool download_file(const std::string & source_url, const std::string & dest_path) {
 #if defined(__APPLE__) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
@@ -425,12 +436,27 @@ static bool download_file(const std::string & source_url, const std::string & de
 #else
     std::string tmp = dest_path + ".tmp";
 
-    // Use double quotes for Windows compatibility
+    // Resume-aware: if a previous attempt left a partial .tmp, log the
+    // recovery and pass `-C -` / `-c` to curl / wget so we resume from
+    // there instead of starting over. Hours of bandwidth saved on flaky
+    // links. On success the .tmp is renamed; on failure we deliberately
+    // KEEP the .tmp so the next attempt can resume rather than redo.
+    long long resume_from = file_size(tmp);
+    if (resume_from > 0) {
+        fprintf(stderr, "Resuming download from %.1f MB...\n",
+                resume_from / (1024.0 * 1024.0));
+    }
+
+    // `-C -` (curl) and `-c` (wget) tell the client to ask for HTTP Range
+    // bytes=N- where N is the existing local size. Both handle the
+    // already-complete case (HTTP 416) gracefully.
 #ifdef _WIN32
-    // Try curl.exe (bundled with Windows 10+)
-    std::string cmd = "curl.exe -fL --progress-bar -o \"" + tmp + "\" \"" + source_url + "\"";
+    // Windows 10+ bundles curl.exe — supports -C -.
+    std::string cmd = "curl.exe -fL -C - --progress-bar -o \"" + tmp +
+                      "\" \"" + source_url + "\"";
 #else
-    std::string cmd = "curl -fL --progress-bar -o \"" + tmp + "\" \"" + source_url + "\"";
+    std::string cmd = "curl -fL -C - --progress-bar -o \"" + tmp +
+                      "\" \"" + source_url + "\"";
 #endif
     // NOLINTNEXTLINE(bugprone-command-processor)
     int ret = system(cmd.c_str());
@@ -440,8 +466,8 @@ static bool download_file(const std::string & source_url, const std::string & de
     }
 
 #ifndef _WIN32
-    // wget fallback (Linux/macOS only)
-    cmd = "wget -q --show-progress -O \"" + tmp + "\" \"" + source_url + "\"";
+    // wget fallback (Linux/macOS only). `-c` resumes the partial .tmp.
+    cmd = "wget -c -q --show-progress -O \"" + tmp + "\" \"" + source_url + "\"";
     // NOLINTNEXTLINE(bugprone-command-processor)
     ret = system(cmd.c_str());
     if (ret == 0 && file_exists(tmp)) {
@@ -450,7 +476,16 @@ static bool download_file(const std::string & source_url, const std::string & de
     }
 #endif
 
-    remove(tmp.c_str());
+    // Both attempts failed. Keep the .tmp so the next invocation can
+    // resume from wherever curl/wget reached. If the partial is corrupt
+    // (server changed, mid-byte error) the caller can `rm <cache>/*.tmp`
+    // manually — bandwidth-cheap to lose, expensive to redo from zero.
+    long long partial = file_size(tmp);
+    if (partial > 0) {
+        fprintf(stderr,
+                "Download failed; partial %.1f MB kept at %s — re-run to resume.\n",
+                partial / (1024.0 * 1024.0), tmp.c_str());
+    }
     return false;
 #endif
 }
