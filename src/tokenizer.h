@@ -34,6 +34,15 @@ public:
 
     int vocab_size() const { return (int)id_to_token_.size(); }
     int max_length() const { return max_length_; }
+    // Look up the surface form of a token by id. Returns an empty string
+    // (with a stable address valid for the tokenizer's lifetime) for
+    // out-of-range ids. WordPiece subword continuations are prefixed with
+    // "##" — callers can use that to group subwords back into words.
+    const std::string & token_str(int id) const {
+        static const std::string empty;
+        if (id < 0 || (size_t)id >= id_to_token_.size()) return empty;
+        return id_to_token_[(size_t)id];
+    }
 
 private:
     std::unordered_map<std::string, int> token_to_id_;
@@ -65,6 +74,16 @@ public:
 
     int vocab_size() const { return (int)id_to_token_.size(); }
     int max_length() const { return max_length_; }
+    // Look up the surface form of a token by id. Returns an empty string
+    // (with a stable address valid for the tokenizer's lifetime) for
+    // out-of-range ids. SentencePiece word-start tokens are prefixed with
+    // the U+2581 marker ("▁") — callers can use that to group subwords
+    // back into words.
+    const std::string & token_str(int id) const {
+        static const std::string empty;
+        if (id < 0 || (size_t)id >= id_to_token_.size()) return empty;
+        return id_to_token_[(size_t)id];
+    }
 
 private:
     std::unordered_map<std::string, int> token_to_id_;

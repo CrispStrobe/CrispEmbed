@@ -135,6 +135,39 @@ CRISPEMBED_API const float * crispembed_encode_multivec(crispembed_context * ctx
                                                          int                * out_dim);
 
 // ---------------------------------------------------------------------------
+// Per-token contextual embeddings (any encoder model)
+// ---------------------------------------------------------------------------
+
+// Encode text to per-token L2-normalised final hidden states. Unlike
+// encode_multivec, this works on any encoder model — it skips the ColBERT
+// projection and returns the encoder's raw output directly. Designed for
+// SimAlign-style word aligners that take cosine similarity of contextual
+// token embeddings across two languages.
+//
+// Returns a flat [*out_n_tokens × *out_dim] array valid until the next
+// encode_* call. NULL on decoder models or tokenisation failure.
+CRISPEMBED_API const float * crispembed_encode_tokens(crispembed_context * ctx,
+                                                       const char         * text,
+                                                       int                * out_n_tokens,
+                                                       int                * out_dim);
+
+// After encode_tokens, returns a pointer to the [n_tokens] vocab IDs of the
+// returned embeddings. Valid until the next encode_* call.
+CRISPEMBED_API const int32_t * crispembed_last_token_ids(const crispembed_context * ctx);
+
+// Look up the surface form of a vocab token by id. Returns "" (empty) for
+// out-of-range ids. Pointer is owned by the context.
+CRISPEMBED_API const char * crispembed_token_str(const crispembed_context * ctx,
+                                                  int32_t id);
+
+// Tokenizer family. Callers use this to interpret subword markers:
+//   1 = WordPiece (## prefix continues a word)
+//   2 = SentencePiece (U+2581 ▁ prefix starts a new word)
+//   3 = BPE (no SimAlign support — for decoder models)
+//   0 = unknown
+CRISPEMBED_API int crispembed_tokenizer_kind(const crispembed_context * ctx);
+
+// ---------------------------------------------------------------------------
 // Reranker / cross-encoder
 // ---------------------------------------------------------------------------
 

@@ -325,6 +325,73 @@ impl CrispEmbed {
     }
 
     // ------------------------------------------------------------------
+    // Per-token contextual embeddings (any encoder model)
+    // ------------------------------------------------------------------
+
+    /// Tokenizer family: `1`=WordPiece (`##` continuation), `2`=SentencePiece
+    /// (`▁` word-start marker), `3`=BPE, `0`=unknown. Aligner code uses this
+    /// to interpret subword markers when grouping tokens back into words.
+    pub fn tokenizer_kind(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_tokenizer_kind(self.ctx) as i32 }
+    }
+
+    /// Encode `text` to per-token L2-normalised final hidden states. Works
+    /// on any encoder model — not gated on the ColBERT head. Returns one
+    /// `(token_string, embedding)` tuple per non-padding token, in order.
+    ///
+    /// Designed for SimAlign-style word aligners that take cosine
+    /// similarity over contextual token embeddings between two languages.
+    pub fn encode_tokens(&mut self, text: &str) -> Vec<(String, Vec<f32>)> {
+        let ctext = match CString::new(text) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut n_tokens: i32 = 0;
+        let mut out_dim:  i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_tokens(
+                self.ctx,
+                ctext.as_ptr(),
+                &mut n_tokens,
+                &mut out_dim,
+            )
+        };
+        if ptr.is_null() || n_tokens <= 0 || out_dim <= 0 {
+            return vec![];
+        }
+        let dim = out_dim as usize;
+        let n   = n_tokens as usize;
+        let raw = unsafe { std::slice::from_raw_parts(ptr, n * dim) };
+        let ids_ptr = unsafe { crispembed_sys::crispembed_last_token_ids(self.ctx) };
+        let ids: &[i32] = if ids_ptr.is_null() {
+            &[]
+        } else {
+            unsafe { std::slice::from_raw_parts(ids_ptr, n) }
+        };
+
+        let mut out = Vec::with_capacity(n);
+        for (t, vec) in raw.chunks(dim).enumerate() {
+            let tok_id = ids.get(t).copied().unwrap_or(-1);
+            let tok = if tok_id < 0 {
+                String::new()
+            } else {
+                let cstr = unsafe {
+                    crispembed_sys::crispembed_token_str(self.ctx, tok_id)
+                };
+                if cstr.is_null() {
+                    String::new()
+                } else {
+                    unsafe { std::ffi::CStr::from_ptr(cstr) }
+                        .to_string_lossy()
+                        .into_owned()
+                }
+            };
+            out.push((tok, vec.to_vec()));
+        }
+        out
+    }
+
+    // ------------------------------------------------------------------
     // Audio encoding (BidirLM-Omni and similar)
     // ------------------------------------------------------------------
 

@@ -219,6 +219,14 @@ struct crispembed_context {
     std::vector<float>   last_multivec;
     int last_multivec_n_tokens = 0;
     int last_multivec_dim      = 0;
+    // Per-token encoder embeddings (encode_tokens): raw final-hidden-state
+    // output, L2-normalized, plus the token ids those vectors correspond
+    // to. Valid until the next encode_tokens / encode_multivec / sparse /
+    // dense encode call.
+    std::vector<float>   last_token_embeddings;
+    std::vector<int32_t> last_token_ids;
+    int last_token_n   = 0;
+    int last_token_dim = 0;
     // Per-mode scheduler reservation buckets
     int reserved_T_sparse  = 0;
     int reserved_T_colbert = 0;
@@ -1903,6 +1911,86 @@ extern "C" const float * crispembed_encode_multivec(crispembed_context * ctx,
     if (out_n_tokens) *out_n_tokens = raw_T;
     if (out_dim)      *out_dim      = dim;
     return ctx->last_multivec.data();
+}
+
+// ---------------------------------------------------------------------------
+// Per-token contextual embeddings (any encoder model)
+// ---------------------------------------------------------------------------
+//
+// Unlike encode_multivec, which is gated on the ColBERT projection head,
+// encode_tokens returns the encoder's raw final hidden states for every
+// non-padded token. This is what SimAlign-style word aligners want:
+// pairwise cosine similarity over contextual token embeddings.
+
+// NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
+extern "C" const float * crispembed_encode_tokens(crispembed_context * ctx,
+                                                    const char         * text,
+                                                    int                * out_n_tokens,
+                                                    int                * out_dim) {
+    if (!ctx || !text || ctx->is_decoder) return nullptr;
+
+    // Apply the configured prefix (e.g. "query: ") for consistency with
+    // the dense encode path.
+    std::string enc_text = ctx->prefix.empty() ? std::string(text) : ctx->prefix + text;
+
+    embed_tokens tokens;
+    if (ctx->use_sentencepiece) tokens = ctx->sp_tokenizer.encode(enc_text);
+    else                        tokens = ctx->wp_tokenizer.encode(enc_text);
+
+    int T_real = 0;
+    for (int i = (int)tokens.attn_mask.size() - 1; i >= 0; i--) {
+        if (tokens.attn_mask[i]) { T_real = i + 1; break; }
+    }
+    if (T_real == 0) return nullptr;
+    tokens.ids.resize(T_real);
+    tokens.type_ids.resize(T_real);
+    tokens.attn_mask.resize(T_real);
+
+    // mode=0: dense encoder graph. Returns [n_embd, T_real] raw output.
+    int raw_T = 0;
+    std::vector<float> raw = run_encoder_raw(ctx, tokens, 0, &raw_T);
+    if (raw.empty() || raw_T == 0) return nullptr;
+
+    const int dim = ctx->model.hparams.n_embd;
+    ctx->last_token_embeddings.resize((size_t)dim * (size_t)raw_T);
+    for (int t = 0; t < raw_T; t++) {
+        const float * vec = raw.data() + (size_t)t * (size_t)dim;
+        float norm = 0.0f;
+        for (int d = 0; d < dim; d++) norm += vec[d] * vec[d];
+        norm = std::sqrt(std::max(norm, 1e-12f));
+        float * out = ctx->last_token_embeddings.data() + (size_t)t * (size_t)dim;
+        for (int d = 0; d < dim; d++) out[d] = vec[d] / norm;
+    }
+
+    ctx->last_token_ids.assign(tokens.ids.begin(), tokens.ids.begin() + raw_T);
+    ctx->last_token_n   = raw_T;
+    ctx->last_token_dim = dim;
+
+    if (out_n_tokens) *out_n_tokens = raw_T;
+    if (out_dim)      *out_dim      = dim;
+    return ctx->last_token_embeddings.data();
+}
+
+extern "C" const int32_t * crispembed_last_token_ids(const crispembed_context * ctx) {
+    if (!ctx || ctx->last_token_n == 0) return nullptr;
+    return ctx->last_token_ids.data();
+}
+
+extern "C" const char * crispembed_token_str(const crispembed_context * ctx, int32_t id) {
+    if (!ctx || ctx->is_decoder) return nullptr;
+    const std::string & s = ctx->use_sentencepiece
+        ? ctx->sp_tokenizer.token_str((int)id)
+        : ctx->wp_tokenizer.token_str((int)id);
+    return s.c_str();
+}
+
+extern "C" int crispembed_tokenizer_kind(const crispembed_context * ctx) {
+    // 0 = unknown, 1 = WordPiece (## continuation marker),
+    // 2 = SentencePiece (▁ word-start marker), 3 = BPE.
+    if (!ctx) return 0;
+    if (ctx->use_bpe) return 3;
+    if (ctx->use_sentencepiece) return 2;
+    return 1;
 }
 
 // ---------------------------------------------------------------------------
