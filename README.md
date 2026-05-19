@@ -2,15 +2,19 @@
 
 [![Build](https://github.com/CrispStrobe/CrispEmbed/actions/workflows/build.yml/badge.svg)](https://github.com/CrispStrobe/CrispEmbed/actions/workflows/build.yml)
 
-Lightweight text embedding inference via ggml. No Python runtime, no ONNX.
-10 architectures: BERT, XLM-R, MPNet, NomicBERT, ModernBERT, GTE v1.5, DeBERTa-v2,
-Qwen3, Gemma3, SPLADE. GPU acceleration (CUDA/Vulkan/Metal), BLAS (OpenBLAS/MKL).
+Lightweight embedding inference via ggml. No Python runtime, no ONNX.
+Text, image, and face embeddings in one binary.
 
-**Multi-vector retrieval**: dense, sparse (SPLADE/BGE-M3), ColBERT multi-vector,
-cross-encoder rerankers, bi-encoder reranking — all in one binary, all GPU-accelerated.
+**Text**: 10 architectures (BERT, XLM-R, MPNet, NomicBERT, ModernBERT, GTE v1.5,
+Qwen3, Gemma3, SPLADE, DeBERTa-v2). Dense, sparse (SPLADE/BGE-M3), ColBERT
+multi-vector, cross-encoder rerankers, bi-encoder reranking.
+
+**Vision**: SigLIP image embedding, SCRFD face detection, ArcFace/SFace/AuraFace
+face recognition. Full detect-align-encode pipeline.
 
 **9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
-iOS (Metal) + Android (Vulkan) builds. 29 HuggingFace model repos.
+GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
+47 models in registry, 95+ GGUF variants.
 
 ### Part of the Crisp ecosystem
 
@@ -23,7 +27,7 @@ iOS (Metal) + Android (Vulkan) builds. 29 HuggingFace model repos.
 
 ## Status
 
-**23+ models verified** (cos>=0.96), 43+ in registry:
+**34 models regression-tested** (all pass, cos>=0.987), 47 in registry:
 
 | Model | Type | Dim | F32 CosSim | Q8_0 | Q4_K |
 |-------|------|-----|------------|------|------|
@@ -36,13 +40,15 @@ iOS (Metal) + Android (Vulkan) builds. 29 HuggingFace model repos.
 | arctic-embed-l-v2 | XLM-R | 1024 | 0.999993 | 0.9989 | 0.95 |
 | Octen-Embedding-0.6B | Qwen3 | 1024 | 0.999891 | 0.9995 | 0.97 |
 | F2LLM-v2-0.6B | Qwen3 | 1024 | 0.999420 | 0.9952 | -- |
-| Jina v5 Nano | Qwen3 | 768 | 0.999020 | 0.9983 | -- |
-| Jina v5 Small | Qwen3 | 1024 | 0.999941 | 0.9997 | 0.97 |
+| Jina v5 Nano | Qwen3 | 768 | 1.000000 | 0.9987 | 0.96 |
+| Jina v5 Small | Qwen3 | 1024 | 0.999899 | 0.9995 | 0.97 |
+| EmbeddingGemma-300m | Gemma3 | 768 | 1.000000 | 0.9998 | 0.98 |
 | Harrier-OSS-v1-0.6B | Qwen3 | 1024 | 0.999959 | 0.9999 | 0.99 |
 | Qwen3-Embedding-0.6B | Qwen3 | 1024 | 0.999895 | 0.9996 | 0.97 |
 | Harrier-OSS-v1-270M | Gemma3 | 640 | 0.999948 | 0.9998 | 0.99 |
-| all-mpnet-base-v2 | MPNet | 768 | 0.999997 | 0.9998 | 0.99 |
-| nomic-embed-text-v1.5 | NomicBERT | 768 | 0.999441 | 0.9994 | -- |
+| all-mpnet-base-v2 | MPNet | 768 | 0.9874 | 0.9998 | 0.99 |
+| gte-modernbert-base | ModernBERT | 768 | 0.999991 | 0.9999 | -- |
+| nomic-embed-text-v1.5 | NomicBERT | 768 | 1.000000 | 0.9980 | -- |
 | multilingual-e5-base | XLM-R | 768 | 0.999995 | 0.9999 | 0.99 |
 | multilingual-e5-large | XLM-R | 1024 | 0.999997 | 0.9999 | 0.99 |
 | granite-embedding-278m | XLM-R | 768 | 0.999984 | 0.9999 | 0.99 |
@@ -52,7 +58,20 @@ iOS (Metal) + Android (Vulkan) builds. 29 HuggingFace model repos.
 | bge-large-en-v1.5 | BERT | 1024 | 0.999992 | 0.9999 | 0.99 |
 | mxbai-embed-large-v1 | BERT | 1024 | 1.000032 | 0.9999 | 0.99 |
 
-Q8_0 = all PASS (cos > 0.99). Q4_K = most PASS; `--` = use Q5_K or Q8_0 for this model.
+Q8_0 = all PASS (cos > 0.99). Q4_K = most PASS; `--` = SwiGLU too sensitive for aggressive quants.
+
+### Known issues
+
+- **NomicBERT quantization**: SwiGLU gate/value projections are sensitive to
+  aggressive quantization. Q5_K (cos~0.95) and Q4_K (cos~0.85) degrade
+  significantly. **Use F32 or Q8_0 only** for this model.
+- **Jina v5 LoRA adapters**: Jina v5 models use task-specific LoRA adapters.
+  GGUFs have the `retrieval` adapter merged. Other tasks (text-matching,
+  clustering, classification) require separate GGUFs.
+- **DeBERTa-v2 disentangled attention**: mxbai-rerank-xsmall-v1 and
+  mxbai-rerank-base-v1 use DeBERTa-v2's c2p/p2c relative position bias, which
+  is not yet implemented. Use the BERT-based rerankers (ms-marco-MiniLM,
+  bge-reranker) instead.
 
 **Performance** (Apple M1, Metal):
 

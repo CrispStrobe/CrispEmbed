@@ -8,6 +8,13 @@
 
 #include "crispembed.h"
 #include "model_mgr.h"
+#include "vit_embed.h"
+#include "cnn_embed.h"
+
+// stb_image for --detect image loading
+#define STB_IMAGE_STATIC
+#define STB_IMAGE_IMPLEMENTATION
+#include "../../ggml/examples/stb_image.h"
 
 #include <algorithm>
 #include <cmath>
@@ -64,6 +71,11 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --rerank QUERY   cross-encoder rerank documents against QUERY\n");
     fprintf(stderr, "  --biencoder QUERY  bi-encoder rerank documents against QUERY\n");
     fprintf(stderr, "  --top-n N        limit rerank output to top N documents\n");
+    fprintf(stderr, "  --face FILE      encode face from image (recognition model)\n");
+    fprintf(stderr, "  --detect FILE    detect faces in image (detection model)\n");
+    fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
+    fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
+    fprintf(stderr, "  --conf N         confidence threshold for detection (default: 0.5)\n");
     fprintf(stderr, "  --auto-download  download model automatically if not found\n");
     fprintf(stderr, "  --accept-license SPDX  pre-accept a restricted license (e.g. cc-by-nc-4.0, gemma)\n");
     fprintf(stderr, "                          required for non-commercial / vendor-licensed models in non-TTY mode.\n");
@@ -83,6 +95,7 @@ int main(int argc, char ** argv) {
     std::string model_arg;
     std::string file_path;
     std::string prefix;
+    bool prefix_set = false;  // true if --prefix was explicitly provided
     std::string rerank_query;
     std::string biencoder_query;
     std::vector<std::string> texts;
@@ -100,6 +113,11 @@ int main(int argc, char ** argv) {
     std::string image_raw_path;  // preprocessed float32 patches, n_patches x 1536
     std::string grid_thw_arg;
     std::string image_path;  // JPG/PNG/BMP — in-process preprocessor
+    std::string face_path;   // face image for CNN face recognition
+    std::string detect_path; // image for face detection
+    std::string det_model;   // detection model for --face-pipeline
+    bool face_pipeline_mode = false;
+    float conf_threshold = 0.5f;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-m") == 0 && i + 1 < argc) {
@@ -112,6 +130,7 @@ int main(int argc, char ** argv) {
             output_dim = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--prefix") == 0 && i + 1 < argc) {
             prefix = argv[++i];
+            prefix_set = true;
         } else if (strcmp(argv[i], "--json") == 0) {
             json_output = true;
         } else if (strcmp(argv[i], "--dim") == 0) {
@@ -136,6 +155,16 @@ int main(int argc, char ** argv) {
             grid_thw_arg = argv[++i];
         } else if (strcmp(argv[i], "--image") == 0 && i + 1 < argc) {
             image_path = argv[++i];
+        } else if (strcmp(argv[i], "--face") == 0 && i + 1 < argc) {
+            face_path = argv[++i];
+        } else if (strcmp(argv[i], "--detect") == 0 && i + 1 < argc) {
+            detect_path = argv[++i];
+        } else if (strcmp(argv[i], "--det") == 0 && i + 1 < argc) {
+            det_model = argv[++i];
+        } else if (strcmp(argv[i], "--face-pipeline") == 0) {
+            face_pipeline_mode = true;
+        } else if (strcmp(argv[i], "--conf") == 0 && i + 1 < argc) {
+            conf_threshold = (float)atof(argv[++i]);
         } else if (strcmp(argv[i], "--auto-download") == 0) {
             auto_download = true;
         } else if (strcmp(argv[i], "--accept-license") == 0 && i + 1 < argc) {
@@ -200,6 +229,209 @@ int main(int argc, char ** argv) {
         }
     }
 
+    // Face pipeline mode: detect → align → encode → compare
+    if (face_pipeline_mode) {
+        if (det_model.empty()) {
+            fprintf(stderr, "error: --face-pipeline requires --det <detection_model.gguf>\n");
+            return 1;
+        }
+        if (texts.empty()) {
+            fprintf(stderr, "error: --face-pipeline requires image file arguments\n");
+            return 1;
+        }
+
+        // Load detection model
+        cnn_embed::context* det_ctx = nullptr;
+        if (!cnn_embed::load(&det_ctx, det_model.c_str(), n_threads)) {
+            fprintf(stderr, "error: cannot load detection model '%s'\n", det_model.c_str());
+            return 1;
+        }
+
+        // Load recognition model (-m)
+        cnn_embed::context* rec_ctx = nullptr;
+        if (!cnn_embed::load(&rec_ctx, model_path.c_str(), n_threads)) {
+            fprintf(stderr, "error: cannot load recognition model '%s'\n", model_path.c_str());
+            cnn_embed::free(det_ctx);
+            return 1;
+        }
+
+        // Run pipeline on each image
+        struct image_faces {
+            std::string name;
+            std::vector<cnn_embed::face_result> faces;
+        };
+        std::vector<image_faces> all_images;
+
+        for (const auto& img_path : texts) {
+            auto results = cnn_embed::face_pipeline(det_ctx, rec_ctx, img_path.c_str(),
+                                                     conf_threshold);
+            // Extract filename for display
+            std::string name = img_path;
+            auto sl = name.find_last_of("/\\");
+            if (sl != std::string::npos) name = name.substr(sl + 1);
+
+            if (json_output) {
+                printf("{\"image\": \"%s\", \"faces\": [", json_escape(img_path).c_str());
+                for (size_t j = 0; j < results.size(); j++) {
+                    const auto& r = results[j];
+                    printf("{\"bbox\":[%.1f,%.1f,%.1f,%.1f],\"conf\":%.4f,\"landmarks\":[",
+                           r.det.x, r.det.y, r.det.w, r.det.h, r.det.confidence);
+                    for (int k = 0; k < 10; k++)
+                        printf("%.1f%s", r.det.landmarks[k], k < 9 ? "," : "");
+                    printf("],\"embedding\":[");
+                    for (size_t k = 0; k < r.embedding.size(); k++)
+                        printf("%.6f%s", r.embedding[k], k + 1 < r.embedding.size() ? "," : "");
+                    printf("]}%s", j + 1 < results.size() ? "," : "");
+                }
+                printf("]}\n");
+            } else {
+                fprintf(stderr, "%s: %zu faces detected\n", name.c_str(), results.size());
+                for (size_t j = 0; j < results.size(); j++) {
+                    const auto& r = results[j];
+                    fprintf(stderr, "  face[%zu]: conf=%.4f bbox=[%.0f,%.0f,%.0f,%.0f] dim=%zu\n",
+                            j, r.det.confidence, r.det.x, r.det.y, r.det.w, r.det.h,
+                            r.embedding.size());
+                }
+            }
+
+            all_images.push_back({name, std::move(results)});
+        }
+
+        // Cross-image face matching (if multiple images)
+        if (all_images.size() > 1 && !json_output) {
+            fprintf(stderr, "\n=== Cross-image face matching ===\n");
+            for (size_t i = 0; i < all_images.size(); i++) {
+                for (size_t j = i + 1; j < all_images.size(); j++) {
+                    fprintf(stderr, "\n%s vs %s:\n",
+                            all_images[i].name.c_str(), all_images[j].name.c_str());
+                    for (size_t a = 0; a < std::min((size_t)3, all_images[i].faces.size()); a++) {
+                        for (size_t b = 0; b < std::min((size_t)3, all_images[j].faces.size()); b++) {
+                            const auto& ea = all_images[i].faces[a].embedding;
+                            const auto& eb = all_images[j].faces[b].embedding;
+                            if (ea.size() != eb.size() || ea.empty()) continue;
+                            float cos = 0;
+                            for (size_t k = 0; k < ea.size(); k++) cos += ea[k] * eb[k];
+                            const char* tag = cos > 0.4f ? "MATCH" : "no";
+                            fprintf(stderr, "  [%zu]vs[%zu] cos=%.4f %s\n", a, b, cos, tag);
+                        }
+                    }
+                }
+            }
+        }
+
+        cnn_embed::free(det_ctx);
+        cnn_embed::free(rec_ctx);
+        return 0;
+    }
+
+    // Check if this is a CNN face model (SFace/AuraFace/SCRFD).
+    if (!face_path.empty() || !detect_path.empty() || print_dim) {
+        cnn_embed::context* cctx = nullptr;
+        if (cnn_embed::load(&cctx, model_path.c_str(), n_threads)) {
+            if (print_dim) {
+                printf("%d\n", cnn_embed::dim(cctx));
+                cnn_embed::free(cctx);
+                return 0;
+            }
+            // Face detection mode
+            if (!detect_path.empty()) {
+                auto faces = cnn_embed::detect_file(cctx, detect_path.c_str(),
+                                                     conf_threshold);
+                if (json_output) {
+                    printf("{\"faces\": [");
+                    for (size_t j = 0; j < faces.size(); j++) {
+                        const auto& f = faces[j];
+                        printf("{\"x\":%.1f,\"y\":%.1f,\"w\":%.1f,\"h\":%.1f,\"conf\":%.4f,"
+                               "\"landmarks\":[%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f]}",
+                               f.x, f.y, f.w, f.h, f.confidence,
+                               f.landmarks[0], f.landmarks[1], f.landmarks[2], f.landmarks[3],
+                               f.landmarks[4], f.landmarks[5], f.landmarks[6], f.landmarks[7],
+                               f.landmarks[8], f.landmarks[9]);
+                        if (j + 1 < faces.size()) printf(",");
+                    }
+                    printf("]}\n");
+                } else {
+                    for (const auto& f : faces) {
+                        printf("%.1f %.1f %.1f %.1f %.3f", f.x, f.y, f.w, f.h, f.confidence);
+                        for (int k = 0; k < 10; k++) printf(" %.1f", f.landmarks[k]);
+                        printf("\n");
+                    }
+                    if (faces.empty()) printf("(no faces detected)\n");
+                }
+                cnn_embed::free(cctx);
+                return 0;
+            }
+            auto emb = cnn_embed::encode_file(cctx, face_path.c_str());
+            if (emb.empty()) {
+                fprintf(stderr, "error: face encoding failed for '%s'\n", face_path.c_str());
+                cnn_embed::free(cctx);
+                return 1;
+            }
+            if (json_output) {
+                printf("{\"face\": \"%s\", \"embedding\": [", json_escape(face_path).c_str());
+                for (size_t j = 0; j < emb.size(); j++)
+                    printf("%.6f%s", emb[j], j + 1 < emb.size() ? ", " : "");
+                printf("]}\n");
+            } else {
+                for (size_t j = 0; j < emb.size(); j++)
+                    printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
+            }
+            cnn_embed::free(cctx);
+            return 0;
+        }
+        // Not a CNN model — fall through
+    }
+
+    // Check if this is a standalone ViT GGUF (SigLIP/CLIP image encoder).
+    // Route to vit_embed for --image-raw, --image, --dim, --list-models.
+    if (!image_path.empty() || !image_raw_path.empty() || print_dim) {
+        // Try loading as ViT first
+        vit_embed::context* vctx = nullptr;
+        if (vit_embed::load(&vctx, model_path.c_str(), n_threads)) {
+            // It's a ViT model — encode image
+            const char* img = !image_path.empty() ? image_path.c_str() : image_raw_path.c_str();
+
+            if (print_dim) {
+                printf("%d\n", vit_embed::dim(vctx));
+                vit_embed::free(vctx);
+                return 0;
+            } else if (!image_raw_path.empty()) {
+                // Raw preprocessed pixels: float32 [3, H, W]
+                int sz = vit_embed::image_size(vctx);
+                size_t expected = 3 * sz * sz;
+                std::ifstream pf(image_raw_path, std::ios::binary);
+                if (!pf) { fprintf(stderr, "error: cannot open %s\n", image_raw_path.c_str()); return 1; }
+                std::vector<float> pixels(expected);
+                pf.read(reinterpret_cast<char*>(pixels.data()), expected * sizeof(float));
+                auto emb = vit_embed::encode(vctx, pixels.data(), sz, sz);
+                if (emb.empty()) { fprintf(stderr, "error: ViT encoding failed\n"); return 1; }
+                if (print_dim) { printf("%d\n", vit_embed::dim(vctx)); vit_embed::free(vctx); return 0; }
+                for (size_t j = 0; j < emb.size(); j++)
+                    printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
+            } else {
+                // Image file (JPG/PNG/BMP) — native resize + normalize
+                auto emb = vit_embed::encode_file(vctx, image_path.c_str());
+                if (emb.empty()) {
+                    fprintf(stderr, "error: ViT image encoding failed for '%s'\n", image_path.c_str());
+                    vit_embed::free(vctx);
+                    return 1;
+                }
+                if (json_output) {
+                    printf("{\"image\": \"%s\", \"embedding\": [", json_escape(image_path).c_str());
+                    for (size_t j = 0; j < emb.size(); j++)
+                        printf("%.6f%s", emb[j], j + 1 < emb.size() ? ", " : "");
+                    printf("]}\n");
+                } else {
+                    for (size_t j = 0; j < emb.size(); j++)
+                        printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
+                }
+            }
+            vit_embed::free(vctx);
+            return 0;
+        }
+        // Not a ViT model — fall through to text model path
+    }
+
     // Init model
     crispembed_context * ctx = crispembed_init(model_path.c_str(), n_threads);
     if (!ctx) {
@@ -211,8 +443,17 @@ int main(int argc, char ** argv) {
     if (output_dim > 0) {
         crispembed_set_dim(ctx, output_dim);
     }
-    if (!prefix.empty()) {
-        crispembed_set_prefix(ctx, prefix.c_str());
+    if (prefix_set) {
+        // Explicit --prefix (even empty "" disables auto-prefix)
+        if (!prefix.empty())
+            crispembed_set_prefix(ctx, prefix.c_str());
+    } else {
+        // Auto-apply query prefix if model needs one
+        const char * auto_pfx = crispembed_mgr::get_query_prefix(model_arg.c_str());
+        if (auto_pfx) {
+            crispembed_set_prefix(ctx, auto_pfx);
+            fprintf(stderr, "crispembed: auto-prefix \"%s\" (use --prefix \"\" to disable)\n", auto_pfx);
+        }
     }
 
     const auto * hp = crispembed_get_hparams(ctx);

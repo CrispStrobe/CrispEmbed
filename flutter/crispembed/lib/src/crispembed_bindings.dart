@@ -168,3 +168,31 @@ typedef CrispembedEncodeImageRaw = Pointer<Float> Function(
     Pointer<Int32> outNMerged,
     Pointer<Int32> outDim,
     Pointer<Int32> outNDeepstack);
+
+// --- Face detection & recognition ---
+typedef CrispembedFaceInitNative = Pointer<Void> Function(Pointer<Utf8>, Int32);
+typedef CrispembedFaceInitDart = Pointer<Void> Function(Pointer<Utf8>, int);
+
+typedef CrispembedFaceDimNative = Int32 Function(Pointer<Void>);
+typedef CrispembedFaceDimDart = int Function(Pointer<Void>);
+
+typedef CrispembedFaceTypeNative = Pointer<Utf8> Function(Pointer<Void>);
+typedef CrispembedFaceTypeDart = Pointer<Utf8> Function(Pointer<Void>);
+
+typedef CrispembedDetectFacesNative = Pointer<Void> Function(
+    Pointer<Void>, Pointer<Utf8>, Float, Pointer<Int32>);
+typedef CrispembedDetectFacesDart = Pointer<Void> Function(
+    Pointer<Void>, Pointer<Utf8>, double, Pointer<Int32>);
+
+typedef CrispembedEncodeFaceNative = Pointer<Float> Function(
+    Pointer<Void>, Pointer<Utf8>, Pointer<Float>, Pointer<Int32>);
+typedef CrispembedEncodeFaceDart = Pointer<Float> Function(
+    Pointer<Void>, Pointer<Utf8>, Pointer<Float>, Pointer<Int32>);
+
+typedef CrispembedFacePipelineNative = Pointer<Void> Function(
+    Pointer<Void>, Pointer<Void>, Pointer<Utf8>, Float, Pointer<Int32>);
+typedef CrispembedFacePipelineDart = Pointer<Void> Function(
+    Pointer<Void>, Pointer<Void>, Pointer<Utf8>, double, Pointer<Int32>);
+
+typedef CrispembedFaceFreeNative = Void Function(Pointer<Void>);
+typedef CrispembedFaceFreeDart = void Function(Pointer<Void>);

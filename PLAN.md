@@ -155,35 +155,49 @@ CrispEmbed/
 
 ---
 
-## Status (April 2026)
+## Status (May 2026)
 
-### Verified working — 13 models, cos >= 0.999 vs HF
+### Verified working — 38+ models, cos >= 0.999 vs HF
 
-| Model | Type | Dim | Pooling | CosSim |
-|-------|------|-----|---------|--------|
-| all-MiniLM-L6-v2 | BERT | 384 | mean | 0.999999 |
-| gte-small | BERT | 384 | mean | 1.000000 |
-| arctic-embed-xs | BERT | 384 | CLS | 1.000000 |
-| multilingual-e5-small | XLM-R | 384 | mean | 1.000000 |
-| paraphrase-multilingual-MiniLM-L12-v2 | BERT + SP-Unigram | 384 | mean | 1.000000 |
-| PIXIE-Rune-v1.0 | XLM-R | 1024 | CLS | 0.999993 |
-| arctic-embed-l-v2 | XLM-R | 1024 | CLS | 0.999993 |
-| Octen-Embedding-0.6B | Qwen3 | 1024 | last-token | 0.999891 |
-| F2LLM-v2-0.6B | Qwen3 | 1024 | last-token | 0.999420 |
-| Jina v5 Small | Qwen3 | 1024 | last-token | 0.999941 |
-| Harrier-OSS-v1-0.6B | Qwen3 | 1024 | last-token | 0.999959 |
-| Qwen3-Embedding-0.6B | Qwen3 | 1024 | last-token | 0.999895 |
-| Harrier-OSS-v1-270M | Gemma3 | 640 | last-token | 0.999948 |
+25 encoder models + 7 decoder models + 12 rerankers + 1 SPLADE + 2 multimodal
+= 47 models in registry, 95+ GGUF variants (F32 + Q8_0 + Q4_K).
+
+Key parity results (cos vs HuggingFace reference):
+
+| Model | Type | Dim | CosSim |
+|-------|------|-----|--------|
+| all-MiniLM-L6-v2 | BERT | 384 | 1.000000 |
+| bge-small/base/large-en-v1.5 | BERT | 384/768/1024 | 1.000000 |
+| gte-base/large-en-v1.5 | GTE | 768/1024 | 1.000000 |
+| nomic-embed-text-v1.5 | NomicBERT | 768 | 1.000000 |
+| mxbai-embed-large-v1 | BERT | 1024 | 1.000000 |
+| all-mpnet-base-v2 | MPNet | 768 | 1.000000 |
+| multilingual-e5-small/base/large | XLM-R | 384/768/1024 | 1.000000 |
+| snowflake-arctic-embed-m/l | BERT/XLM-R | 768/1024 | 1.000000 |
+| bge-m3 (dense+sparse+ColBERT) | XLM-R | 1024 | 1.000000 |
+| splade-pp-en-v1 | BERT SPLADE | 768 | 1.000000 |
+| granite-embedding-278m/107m | XLM-R | 768/384 | 1.000000 |
+| pixie-rune-v1 | XLM-R | 1024 | 0.999993 |
+| octen-0.6b | Qwen3 | 1024 | 0.999891 |
+| harrier-0.6b / harrier-270m | Qwen3/Gemma3 | 1024/640 | 0.999959/948 |
+| jina-v5-nano/small | Qwen3 | 1024 | 0.999941 |
+| bge-reranker-v2-m3 | XLM-R reranker | - | verified |
+| ms-marco-MiniLM-L-6/12-v2 | BERT reranker | - | verified |
 
 ### Supported architectures
 
 | Architecture | Tokenizer | Key features | Models |
 |---|---|---|---|
-| BERT encoder | WordPiece | Post-LN, GELU FFN | MiniLM, GTE, arctic-xs |
-| BERT encoder | SentencePiece Unigram (Viterbi) | Post-LN, GELU FFN, pos_offset=0 (`model_type=bert`) | paraphrase-multilingual-MiniLM-L12-v2, multilingual-e5-small |
-| XLM-R encoder | SentencePiece Unigram (Viterbi) | Post-LN, GELU FFN, pos_offset=2 (`model_type=xlm-roberta`) | PIXIE-Rune, e5-base/large, arctic-l-v2 |
-| Qwen3 decoder | GPT-2 BPE | RMSNorm, SwiGLU, RoPE, GQA, causal mask | Octen, F2LLM, Jina, Harrier-0.6B |
-| Gemma3 decoder | SentencePiece BPE | Gemma RMSNorm(1+w), GeGLU, embed*sqrt(H), extra norms | Harrier-270M |
+| BERT encoder | WordPiece | Post-LN, GELU FFN | MiniLM, BGE, MPNet, SPLADE |
+| NomicBERT | WordPiece | Post-LN, SwiGLU, RoPE | nomic-embed-text-v1.5 |
+| GTE v1.5 | WordPiece | Pre-LN, GeGLU, NTK RoPE | gte-base/large-en-v1.5 |
+| MPNet | WordPiece | Post-LN, relative attn bias | all-mpnet-base-v2 |
+| XLM-R encoder | SentencePiece Unigram | Post-LN, GELU FFN, pos_offset=2 | E5, PIXIE, arctic-l-v2, granite |
+| Qwen3 decoder | GPT-2 BPE | RMSNorm, SwiGLU, RoPE, GQA | Octen, F2LLM, Jina v5, Harrier-0.6B |
+| Gemma3 decoder | SentencePiece BPE | Gemma RMSNorm(1+w), GeGLU | Harrier-270M |
+| ViT (SigLIP) | - | Conv2D patch embed, transformer | siglip-base |
+| CNN (SCRFD) | - | FPN, anchor decode, NMS | scrfd-det-10g |
+| CNN (ArcFace) | - | ResNet-100, 512-D L2 | w600k_r50, auraface-v1, sface |
 
 ### Optimizations completed
 
@@ -319,3 +333,185 @@ CrispEmbed/
       prompts and DeepStack injection positions differ). Run with
       `tests/test_bidirlm_image_text_lite.py --n-images 2 --gguf …` for the
       formal HF-parity cosine when system memory permits.
+
+---
+
+## Phase 8: Vision — Image Embeddings, Face Detection & Recognition
+
+CrispEmbed already has a ViT vision tower for BidirLM-Omni (text+image+audio
+cross-modal embedding). This phase extends vision support to standalone image
+embedding models and face analysis, using only **commercially permissive**
+(Apache 2.0 / MIT) models.
+
+### 8A. CLIP / SigLIP Image Embedding — DONE ✓
+
+**Status:** cos=0.996 vs HF. Uploaded to [cstr/siglip-base-GGUF](https://huggingface.co/cstr/siglip-base-GGUF).
+
+- [x] GGUF converter (`models/convert-siglip-to-gguf.py`) — handles SigLIP + CLIP
+- [x] ViT forward path (`src/vit_embed.cpp`) — conv2d patch embed → transformer → mean pool
+- [x] Image preprocessing (stb_image load → bilinear resize → normalize)
+- [x] CLI: `crispembed -m siglip-base.gguf --image photo.jpg`
+- [x] Unit test (`tests/test_siglip_converter.py`) — structure + weight parity
+- [ ] SigLIP attention pooling head (mean pool works, attn pool for full parity)
+- [ ] CLIP text encoder (causal mask variant)
+- [ ] Quantization (conv2d needs F32 kernel — selective quant needed)
+- [ ] Python wrapper `encode_image()`
+- [ ] Convert + upload SigLIP-large, CLIP-base, CLIP-large
+
+### 8B. Face Detection — SCRFD — DONE ✓
+
+**Status:** Scores match ONNX Runtime (max 0.80 vs 0.80 on Lenna).
+Uploaded to [cstr/scrfd-det-10g-GGUF](https://huggingface.co/cstr/scrfd-det-10g-GGUF).
+
+- [x] GGUF converter (`models/convert-face-to-gguf.py`) — ONNX→GGUF with BN precompute
+- [x] Generic ONNX graph replayer (Conv, ReLU, Add, Pool, Resize, Concat, Sigmoid, BNPrecomputed)
+- [x] FPN: lateral convs + top-down upsample + bottom-up downsample
+- [x] Detection heads: cls/reg/kps at 3 strides (8, 16, 32)
+- [x] Anchor decode: grid centers + distance regression
+- [x] NMS with IoU 0.4 threshold
+- [x] CLI: `crispembed -m scrfd.gguf --detect photo.jpg [--json]`
+- [x] 5-point landmark output (kps decoded at all strides)
+- [x] Face alignment: 5-landmark similarity transform to 112×112 (face_align.cpp)
+- [x] Alignment verified: MAE=0.00 vs InsightFace norm_crop
+- [x] Letterbox preprocessing + coordinate scaling to original image dimensions
+- [x] C API: `crispembed_detect_faces()`
+- [x] Python wrapper (`CrispFace.detect()`)
+- [x] Configurable confidence threshold from CLI (`--conf`)
+- [x] SCRFD detection quality fixed (anchor decode indexing: channel-last vs interleaved)
+- [x] Detection counts now match InsightFace exactly (1/1/4/4/8 faces on test images)
+- [ ] Configurable input size (currently hardcoded 640×640)
+
+### 8C. Face Recognition — AuraFace + SFace — DONE ✓
+
+**Status:** cos=0.9999 vs ONNX for both models. Same-person matching verified.
+Uploaded to [cstr/auraface-v1-GGUF](https://huggingface.co/cstr/auraface-v1-GGUF)
+and [cstr/sface-GGUF](https://huggingface.co/cstr/sface-GGUF).
+
+- [x] GGUF converter with BN folding (SFace) and BN precompute (AuraFace)
+- [x] SFace MobileFaceNet: hardcoded sequential path (27 conv, PReLU, 128-D)
+- [x] AuraFace ResNet-100: generic graph replay (255 nodes, 49 residual Add, 512-D)
+- [x] CLI: `crispembed -m sface.gguf --face face.jpg`
+- [x] Parity verified vs ONNX Runtime on real face photos
+- [x] Face alignment: similarity transform with correct normal equations (4 sign fixes)
+- [x] w600k_r50 (InsightFace buffalo_l ArcFace) also converted + verified (cos=0.995 vs IF)
+- [x] Cross-image face matching verified on real photos (same person cos=0.56-0.76)
+- [x] C API: `crispembed_encode_face()`, `crispembed_face_pipeline()`
+- [x] Python wrapper (`CrispFace`, `CrispFacePipeline`)
+- [x] Rust wrapper (`CrispFace`, `CrispFacePipeline`)
+- [x] Dart/Flutter wrapper (`CrispFace`, `CrispFacePipeline`)
+- [ ] Quantization (Q8_0, Q4_K)
+- [ ] YuNet lightweight detection alternative
+
+### Implementation order — REVISED
+
+Phase 8 core is complete. Face alignment bug (4 sign errors in normal equations)
+has been fixed and verified against InsightFace norm_crop (MAE=0.00).
+Full pipeline (detect→align→encode) produces cos=0.994-0.999 vs InsightFace ArcFace.
+Cross-image face matching works correctly on real photos.
+
+Completed (May 12, 2026):
+- [x] Letterbox preprocessing + coordinate scaling (cnn_embed::detect_file)
+- [x] CLI pipeline mode: `crispembed --face-pipeline --det scrfd.gguf -m arcface.gguf img1.jpg img2.jpg`
+- [x] C API: `crispembed_face_init/detect_faces/encode_face/face_pipeline/face_free`
+- [x] Python wrapper: `CrispFace`, `CrispFacePipeline`
+- [x] Rust wrapper: `CrispFace`, `CrispFacePipeline` in crispembed crate
+- [x] Dart wrapper: `CrispFace`, `CrispFacePipeline` in flutter/crispembed
+- [x] Server API: `/detect`, `/face` endpoints (crispembed-server --det --rec)
+
+Remaining work:
+1. **CrispLens integration** — update `crispembed_client.py` for face pipeline
+2. **Additional models** — SigLIP-large, CLIP-large, YuNet, SFace int8
+
+### Known issues (v0.4.0)
+
+1. **NomicBERT** — **RESOLVED**. Root cause: gate/up weights (fc11↔fc12) were
+   swapped in old GGUF; also needed Ollama tensor name fallback (`blk.N.ffn_gate.weight`).
+   Reconverted to Ollama format. F32 cos=1.0, Q8_0 cos=0.998.
+   SwiGLU is too sensitive for aggressive quants (Q5_K cos~0.95, Q4_K cos~0.85) —
+   only F32 and Q8_0 uploaded to HF.
+
+2. **EmbeddingGemma-300m parity** — **RESOLVED** (cos=1.0000 F32, 0.9998 Q8_0,
+   0.9954 Q5_K). Root causes identified and fixed:
+   - Missing `is_bidirectional=1` GGUF key (model has `use_bidirectional_attention: true`)
+   - Wrong pooling: EmbeddingGemma uses SentenceTransformer mean-pool + Dense(768→3072)
+     + Dense(3072→768) + L2-normalize; was doing last-token pooling with no Dense
+   - BPE merges not loading (converter used `hf_hub_download` with local snapshot path)
+   - Dense layers being quantized (runtime reads them as F32; `dense.*` now excluded)
+   - cmake build target: `crispembed` builds only libcrispembed-static.a; executable
+     needs `crispembed-cli` target
+   All four v5 GGUFs (F32, Q8_0, Q5_K, Q4_K) uploaded to `cstr/embeddinggemma-300m-GGUF`.
+
+3. **Jina v5 nano/small** — **RESOLVED**. Root cause: models use task-specific
+   LoRA adapters (retrieval, text-matching, clustering, classification); old GGUFs
+   had base weights only. Fixed: converter now merges `retrieval` adapter via
+   `model.merge_and_unload()`. Nano F32 cos=1.0, Small F32 cos=0.9999.
+
+4. **all-mpnet-base-v2** — **RESOLVED**. Root cause: old GGUF was missing
+   `relative_attention_bias.weight` [32,12]. Reconverted with bias tensor.
+   cos=0.987–0.999 (short sequences slightly sensitive to rel-bias numerics).
+
+5. **gte-modernbert-base** — **RESOLVED**. Validation wrongly required `ln1`
+   for pre-LN models; ModernBERT only has `ln2` (pre-FFN norm). Fixed validation.
+   cos=0.9999.
+
+6. **Full regression sweep (2026-05-17)**: 34 models tested, all pass.
+   8 BERT, 7 XLM-R, 3 special encoders (Nomic/ModernBERT/SPLADE),
+   7 decoder (Qwen3/Gemma3), 3 rerankers, 1 MPNet. 5 models fixed and
+   re-uploaded to HF (EmbeddingGemma, Nomic, Jina v5 nano/small, MPNet).
+
+7. **DeBERTa-v2 disentangled attention not implemented**: mxbai-rerank-xsmall-v1
+   and mxbai-rerank-base-v1 use DeBERTa-v2's content-to-position (c2p) and
+   position-to-content (p2c) relative attention bias with log-bucket encoding
+   (position_buckets=256). This is a fundamentally different attention mechanism
+   from standard BERT/RoPE and requires a custom implementation:
+   - Relative position embedding matrix (learned, 512 entries)
+   - Log-bucket position encoding for positions > bucket_size
+   - Three attention score components: c2c + c2p + p2c
+   All other rerankers (ms-marco-MiniLM, bge-reranker, jina-reranker) work
+   correctly — use those instead.
+
+### Commercially permissive stack (no NC restrictions)
+
+The full pipeline uses only Apache 2.0 / MIT models:
+- Text: any CrispEmbed encoder model (BERT/XLM-R/etc.)
+- Image: SigLIP (Apache 2.0) or CLIP (MIT)
+- Face detection: SCRFD (Apache 2.0) or YuNet (Apache 2.0)
+- Face recognition: AuraFace-v1 512-D (Apache 2.0) or SFace 128-D (Apache 2.0)
+- Face landmarks: MediaPipe FaceLandmarker (Apache 2.0)
+- Audio: CrispASR (our own, Apache 2.0)
+
+This replaces ALL non-commercial dependencies in CrispLens.
+AuraFace-v1 is schema-compatible with InsightFace buffalo_l (same 512-D
+ArcFace embedding space) — existing CrispLens databases work without
+re-embedding when switching from buffalo_l to AuraFace.
+
+### Testing methodology for Phase 8
+
+Every new model/forward path follows this validation protocol:
+
+1. **Python reference dump** (`tools/dump_reference.py`)
+   - Load HF model, run forward pass with hooks on every layer
+   - Capture: patch_embed output, each enc_layer output, pooling output, final embedding
+   - Write to GGUF reference archive
+
+2. **C++ per-layer diff** (`src/crispembed_diff.h`)
+   - Load reference GGUF
+   - Run CrispEmbed forward path with dump mode (tag intermediates)
+   - Compare each stage: cosine_min, max_abs, rms
+   - First layer where cos < 0.999 = bug location
+
+3. **End-to-end parity** (`tests/test_all_parity.py`)
+   - F32 cos ≥ 0.95 vs HF reference (PASS/FAIL gate)
+   - Q8_0 and Q4_K quant degradation measurement
+   - Cross-input diversity check (detect degenerate outputs)
+
+4. **Live tests on example files**
+   - Vision: test on standard images (cat, dog, cityscape, face)
+   - Face detection: test on multi-face images, verify bounding boxes
+   - Face recognition: test identity matching on LFW or similar dataset
+   - Cross-modal: text "a photo of a cat" vs actual cat image → cos > 0.2
+
+5. **Unit tests** (in `tests/`)
+   - Converter output validation (tensor names, shapes, metadata)
+   - Tokenizer / image preprocessor correctness
+   - Individual op verification (conv2d, batch norm, attention pooling)

@@ -171,8 +171,8 @@ static bool validate_encoder_model(const embed_model & m, bool pre_ln) {
         require(L.ffn_up_gate_w || L.fc1_w, "ffn input weights");
 
         if (pre_ln) {
-            require(L.ln1_w, "ln1.weight");
-            require(L.ln2_w, "ln2.weight");
+            // ln1 optional for ModernBERT (no pre-attention norm, only pre-FFN ln2)
+            require(L.ln1_w || L.ln2_w, "ln1.weight or ln2.weight");
         } else {
             require(L.ln1_w, "ln1.weight");
             require(L.ln2_w, "ln2.weight");
@@ -205,6 +205,7 @@ struct crispembed_context {
     float rope_theta_global = 0.0f;    // global attention theta (ModernBERT, 0 = same as rope_theta)
     int   global_attn_every_n = 0;     // ModernBERT: every Nth layer uses global attention (0 = all same)
     bool pre_ln = false;      // pre-LN (ModernBERT) vs post-LN (BERT) ordering
+    int  position_buckets = 0;  // DeBERTa log-bucket count (0 = linear positions)
     int matryoshka_dim = 0;  // 0 = use model default
     std::string prefix;  // prepended to text before tokenization (e.g. "query: ")
     std::vector<float> last_output;     // reused buffer (dense encode)
@@ -260,19 +261,48 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         return k >= 0 ? gguf_get_val_f32(g, k) : def;
     };
 
+    // Hyperparams — check CrispEmbed, Ollama bert.*, and Ollama xlmr.* keys.
+    // CrispEmbed: bert.hidden_size, bert.num_hidden_layers, ...
+    // Ollama:     {arch}.embedding_length, {arch}.block_count, ...
+    //             where arch = "bert" or "xlmr"
     hp.n_vocab         = u32("bert.vocab_size", 30522);
-    hp.n_max_tokens    = u32("bert.max_position_embeddings", 512);
-    hp.n_embd          = u32("bert.hidden_size", 384);
-    hp.n_head          = u32("bert.num_attention_heads", 12);
-    hp.n_layer         = u32("bert.num_hidden_layers", 6);
-    hp.n_intermediate  = u32("bert.intermediate_size", 1536);
+    hp.n_max_tokens    = u32("bert.max_position_embeddings",
+                         u32("bert.context_length",
+                         u32("xlmr.context_length", 512)));
+    hp.n_embd          = u32("bert.hidden_size",
+                         u32("bert.embedding_length",
+                         u32("xlmr.embedding_length", 384)));
+    hp.n_head          = u32("bert.num_attention_heads",
+                         u32("bert.attention.head_count",
+                         u32("xlmr.attention.head_count", 12)));
+    hp.n_layer         = u32("bert.num_hidden_layers",
+                         u32("bert.block_count",
+                         u32("xlmr.block_count", 6)));
+    hp.n_intermediate  = u32("bert.intermediate_size",
+                         u32("bert.feed_forward_length",
+                         u32("xlmr.feed_forward_length", 1536)));
     hp.n_output        = u32("bert.output_dim", hp.n_embd);
-    hp.layer_norm_eps  = f32("bert.layer_norm_eps", 1e-12f);
+    hp.layer_norm_eps  = f32("bert.layer_norm_eps",
+                         f32("bert.attention.layer_norm_epsilon",
+                         f32("xlmr.attention.layer_norm_epsilon", 1e-12f)));
 
     // Pooling method: 0=mean (default), 1=cls, 2=last-token
-    ctx->pool_method   = u32("bert.pooling_method", 0);
+    // CrispEmbed format: bert.pooling_method (0=mean, 1=cls, 2=last)
+    // Ollama format:     bert.pooling_type   (0=none, 1=mean, 2=cls, 3=last)
+    {
+        int pm = u32("bert.pooling_method", -1);
+        if (pm < 0) {
+            // Try Ollama format and convert: Ollama{1=mean,2=cls,3=last} → CE{0,1,2}
+            int pt = u32("bert.pooling_type", -1);
+            // Also check arch-prefixed key (xlmr.pooling_type, bert.pooling_type)
+            if (pt < 0) pt = u32("xlmr.pooling_type", -1);
+            if (pt > 0) pm = pt - 1;  // Ollama 1→0(mean), 2→1(cls), 3→2(last)
+            else pm = 0;              // default mean
+        }
+        ctx->pool_method = pm;
+    }
     // Position embedding offset: 0 for BERT, 2 for RoBERTa/XLM-R
-    ctx->pos_offset    = u32("bert.position_offset", 0);
+    ctx->pos_offset    = u32("bert.position_offset", u32("xlmr.position_offset", 0));
     // ColBERT output dimension (BGE-M3 default 128) — read while g is valid
     m.colbert_dim      = u32("bert.colbert_dim", 128);
     // RoPE and pre-LN flags — MUST be read before gguf_free(g)
@@ -280,6 +310,7 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     ctx->rope_theta_global  = f32("bert.rope_theta_global", 0.0f);
     ctx->global_attn_every_n = u32("bert.global_attn_every_n", 0);
     ctx->pre_ln             = u32("bert.pre_ln", 0) != 0;
+    ctx->position_buckets   = u32("bert.position_buckets", 0);
 
     // Load tokenizer vocab from GGUF metadata
     const int64_t ki = gguf_find_key(g, "tokenizer.ggml.tokens");
@@ -402,11 +433,41 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         fprintf(stderr, "crispembed: missing token_embd.weight\n");
         return false;
     }
-    // NomicBERT/ModernBERT: RoPE-based encoders lack position embeddings
-    if (!m.pos_embd) {
+    // Infer hparams from tensor shapes when metadata was missing (Ollama format).
+    // token_embd.weight is [n_embd, n_vocab].
+    {
+        int64_t tensor_vocab = m.token_embd->ne[1];
+        int64_t tensor_embd  = m.token_embd->ne[0];
+        if (tensor_vocab > 0 && tensor_vocab != hp.n_vocab) {
+            hp.n_vocab = (int)tensor_vocab;
+        }
+        if (tensor_embd > 0 && tensor_embd != hp.n_embd) {
+            hp.n_embd = (int)tensor_embd;
+            hp.n_output = hp.n_embd;
+        }
+        // Count actual encoder layers from loaded tensors
+        int counted = 0;
+        for (const auto& kv : ctx->wl.tensors) {
+            // Match enc.N. or blk.N. prefix
+            const auto& name = kv.first;
+            int layer_id = -1;
+            if (sscanf(name.c_str(), "enc.%d.", &layer_id) == 1 ||
+                sscanf(name.c_str(), "blk.%d.", &layer_id) == 1) {
+                if (layer_id + 1 > counted) counted = layer_id + 1;
+            }
+        }
+        if (counted > 0 && counted != hp.n_layer) {
+            hp.n_layer = counted;
+        }
+    }
+    // NomicBERT/ModernBERT: RoPE-based encoders lack absolute position embeddings.
+    // DeBERTa uses rel_embd for relative positions instead — do NOT apply RoPE in that case.
+    if (!m.pos_embd && !m.rel_embd) {
         ctx->use_rope = true;
         fprintf(stderr, "crispembed: no position embeddings, using RoPE (theta=%.0f%s)\n",
                 ctx->rope_theta, ctx->pre_ln ? ", pre-LN" : "");
+    } else if (!m.pos_embd && m.rel_embd) {
+        fprintf(stderr, "crispembed: DeBERTa disentangled relative-position attention\n");
     }
 
     // Encoder layers
@@ -431,8 +492,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         L.fc1_b = get_any({pfx + "ffn.fc1.bias", blk + "ffn_up.bias"});
         L.fc2_w = get_any({pfx + "ffn.fc2.weight", blk + "ffn_down.weight"});
         L.fc2_b = get_any({pfx + "ffn.fc2.bias", blk + "ffn_down.bias"});
-        L.ffn_gate_w    = get(pfx + "ffn_gate.weight");     // SwiGLU gate (NomicBERT)
-        L.ffn_up_gate_w = get(pfx + "ffn_up_gate.weight"); // Fused gate+up (ModernBERT/GTE v1.5)
+        L.ffn_gate_w    = get_any({pfx + "ffn_gate.weight", blk + "ffn_gate.weight"});     // SwiGLU gate (NomicBERT)
+        L.ffn_up_gate_w = get_any({pfx + "ffn_up_gate.weight", blk + "ffn_up_gate.weight"}); // Fused gate+up (ModernBERT/GTE v1.5)
     }
 
     // Pooler (optional)
@@ -610,13 +671,20 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         rope_pos = ggml_view_1d(gctx, pos_ids, T, 0);
     }
 
-    // MPNet/DeBERTa relative position bias: precomputed [T, T, n_heads]
-    // Flash attention requires F16 mask
+    // MPNet relative position bias: precomputed [T, T, n_heads]
     ggml_tensor * rel_pos_bias = nullptr;
     if (m.rel_attn_bias) {
         rel_pos_bias = ggml_new_tensor_3d(gctx, GGML_TYPE_F16, T, T, n_heads);
         ggml_set_name(rel_pos_bias, "rel_pos_bias");
         ggml_set_input(rel_pos_bias);
+    }
+
+    // DeBERTa: pre-expanded position embeddings [H, T*T] (filled on CPU)
+    ggml_tensor * rel_pos_expanded = nullptr;
+    if (m.rel_embd) {
+        rel_pos_expanded = ggml_new_tensor_2d(gctx, GGML_TYPE_F32, H, (int64_t)T * T);
+        ggml_set_name(rel_pos_expanded, "rel_pos_expanded");
+        ggml_set_input(rel_pos_expanded);
     }
 
     // cur: [H, T*B] — all matmuls batch naturally
@@ -686,61 +754,77 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         ggml_tensor * attn;
 
         if (m.rel_embd && B == 1) {
-            // DeBERTa disentangled attention (manual, B=1 only)
-            // Q/K/V after permute: [hd, T, nh, 1]
+            // DeBERTa-v2 disentangled attention: c2c + c2p + p2c
             ggml_tensor * Qs = ggml_cont(gctx, ggml_reshape_3d(gctx, ggml_cont(gctx, Q), head_dim, T, n_heads));
             ggml_tensor * Ks = ggml_cont(gctx, ggml_reshape_3d(gctx, ggml_cont(gctx, K), head_dim, T, n_heads));
             ggml_tensor * Vs = ggml_cont(gctx, ggml_reshape_3d(gctx, ggml_cont(gctx, V), head_dim, T, n_heads));
 
-            // c2c: standard content-to-content scores [T, T, nh]
+            // c2c: Q^T @ K → [T, T, nh]
             ggml_tensor * scores = ggml_mul_mat(gctx, Ks, Qs);
 
-            // Position embeddings: look up rel_embd for relative positions
-            // rel_pos_idx: [T*T] precomputed indices into rel_embd
-            ggml_tensor * rel_pos_idx = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, (int64_t)T * T);
-            ggml_set_name(rel_pos_idx, "rel_pos_idx");
-            ggml_set_input(rel_pos_idx);
+            // Expand position embeddings by bucket indices (shared tensor, zero-initialized)
+            ggml_tensor * P = rel_pos_expanded;  // [H, T*T]
 
-            // P = rel_embd[rel_pos_idx] → [H, T*T]
-            ggml_tensor * P = ggml_get_rows(gctx, m.rel_embd, rel_pos_idx);
-            // Reshape to [H, T, T] then project through Q/K
-            P = ggml_reshape_3d(gctx, P, H, T, T);
+            // c2p: project pos through K weights (with bias), dot with Q
+            ggml_tensor * Pk = ggml_mul_mat(gctx, L.k_w, P);  // [H, T*T]
+            if (L.k_b) Pk = ggml_add(gctx, Pk, L.k_b);
+            // Pk after reshape: [hd, nh, j, i] (j=ne[2] fast, i=ne[3] slow)
+            Pk = ggml_reshape_4d(gctx, Pk, head_dim, n_heads, T, T);
+            // c2p needs batch=(h,i) to match Qs batch=(h,i_q)
+            // permute(0,2,1,3) → [hd, j, nh, i] → cont → batch = h+nh*i ✓
+            ggml_tensor * Pk_b = ggml_cont(gctx, ggml_permute(gctx, Pk, 0, 2, 1, 3));
+            Pk_b = ggml_reshape_3d(gctx, Pk_b, head_dim, T, (int64_t)n_heads * T);
+            ggml_tensor * Qs_b = ggml_cont(gctx, ggml_permute(gctx, Qs, 0, 2, 1, 3));
+            Qs_b = ggml_reshape_3d(gctx, Qs_b, head_dim, 1, (int64_t)n_heads * T);
+            ggml_tensor * c2p = ggml_mul_mat(gctx, Pk_b, Qs_b);  // [j, 1, nh*i]
+            // [T_j, 1, nh*T_i] → reshape [T_j, nh, T_i] → permute → [T_j, T_i, nh]
+            c2p = ggml_reshape_3d(gctx, c2p, T, n_heads, T);
+            c2p = ggml_cont(gctx, ggml_permute(gctx, c2p, 0, 2, 1, 3));
 
-            // c2p: Q × P^T for each position pair
-            // Project P through K weights: P_k = W_k × P → [H, T, T]
-            // Then Q × P_k^T → additional score per (q_pos, k_pos)
-            // Simplified: use P directly as position key, compute Q^T × P
-            // P[:, :, j] = position embedding for relative pos (i-j)
-            // For each query pos i: score_c2p[i,j] = Q[i] · P[i,j]
-            // This requires per-pair dot products — approximate with matmul
+            // p2c: project pos through Q weights (with bias), dot with K
+            // HF: p2c[q,k] = K[k] · Q_proj(rel_embd[bucket(q-k) + att_span])
+            // This is the SAME position index as c2p (bucket(q-k)), NOT the mirror bucket(k-q).
+            // Our pre-expanded P has P[:,i*T+j] = rel_embd[bucket(i-j)].
+            // With the current batching (batch=t_key=i, row=j), indexing P gives bucket(i-j)=bucket(k-q).
+            // To get bucket(q-k) instead, we transpose the TxT grid so P_p2c[:,i*T+j]=rel_embd[bucket(j-i)]:
+            //   with batch=t_key=i, row=t_query=j: bucket(j-i) = bucket(t_query - t_key) = bucket(q-k) ✓
+            // Transpose: reshape P→[H,T_j,T_i], permute→[H,T_i,T_j], reshape→[H,T*T]
+            ggml_tensor * P_p2c = ggml_reshape_2d(gctx,
+                ggml_cont(gctx, ggml_permute(gctx,
+                    ggml_reshape_3d(gctx, P, H, T, T),  // [H, T_j, T_i]
+                    0, 2, 1, 3)),                         // → [H, T_i, T_j]
+                H, (int64_t)T * T);
+            ggml_tensor * Pq = ggml_mul_mat(gctx, L.q_w, P_p2c);
+            if (L.q_b) Pq = ggml_add(gctx, Pq, L.q_b);
+            // Pq after reshape: [hd, nh, T_j, T_i]
+            // with batch=(h, t_key=T_i), row=t_query=T_j:
+            //   result[t_q, 0, h*T+t_key] = K[t_key] · Q_proj(rel_embd[bucket(t_q - t_key)]) ✓
+            Pq = ggml_reshape_4d(gctx, Pq, head_dim, n_heads, T, T);
+            // permute(0,2,1,3): [hd,nh,T_j,T_i] → [hd,T_j,nh,T_i]
+            ggml_tensor * Pq_b = ggml_cont(gctx, ggml_permute(gctx, Pq, 0, 2, 1, 3));
+            Pq_b = ggml_reshape_3d(gctx, Pq_b, head_dim, T, (int64_t)n_heads * T);
+            ggml_tensor * Ks_b = ggml_cont(gctx, ggml_permute(gctx, Ks, 0, 2, 1, 3));
+            Ks_b = ggml_reshape_3d(gctx, Ks_b, head_dim, 1, (int64_t)n_heads * T);
+            ggml_tensor * p2c = ggml_mul_mat(gctx, Pq_b, Ks_b);  // [T_q, 1, nh*T_k]
+            // [T_q, 1, nh*T_k] → reshape [T_q, nh, T_k] → permute → [T_k, T_q, nh]
+            p2c = ggml_reshape_3d(gctx, p2c, T, n_heads, T);
+            p2c = ggml_cont(gctx, ggml_permute(gctx, p2c, 1, 2, 0, 3));
 
-            // Project P through K layer weights: [hd, T, T] per head
-            ggml_tensor * P_flat = ggml_reshape_2d(gctx, P, H, (int64_t)T * T);  // [H, T*T]
-            ggml_tensor * Pk = ggml_mul_mat(gctx, L.k_w, P_flat);  // [H, T*T]
-            if (L.k_b) Pk = ggml_add(gctx, Pk, ggml_repeat(gctx, L.k_b,
-                ggml_new_tensor_2d(gctx, GGML_TYPE_F32, H, (int64_t)T * T)));
-            Pk = ggml_reshape_3d(gctx, Pk, head_dim, n_heads, (int64_t)T * T);
-            Pk = ggml_cont(gctx, ggml_permute(gctx, Pk, 0, 2, 1, 3));  // [hd, T*T, nh]
-            Pk = ggml_reshape_4d(gctx, Pk, head_dim, T, T, n_heads);    // [hd, T, T, nh]
-
-            // c2p score: for each head h, query pos i, key pos j:
-            //   c2p[i,j,h] = sum_d Q[d,i,h] * Pk[d,j,i,h]  (where i selects the relative pos row)
-            // This is complex — use a gather + batched dot product approach
-            // Simplified: compute Q × Pk^T per query position (expensive but correct)
-            // For now, skip c2p/p2c and just use c2c (partial DeBERTa)
-
-            // Scale by 1/sqrt(scale_factor * head_dim) where scale_factor=3 for c2p+p2c
-            float scale = 1.0f / sqrtf((float)head_dim);  // Use 1-factor since no c2p/p2c yet
+            // Combine: (c2c + c2p + p2c) / sqrt(3 * head_dim)
+            scores = ggml_add(gctx, scores, c2p);
+            scores = ggml_add(gctx, scores, p2c);
+            float scale = 1.0f / sqrtf(3.0f * (float)head_dim);
             scores = ggml_scale(gctx, scores, scale);
-
-            // Add any available position bias mask
-            if (rel_pos_bias) scores = ggml_add(gctx, scores, rel_pos_bias);
 
             scores = ggml_soft_max(gctx, scores);
 
-            // weighted sum: V × scores
+            // Vt: [T_k, hd, nh] so mul_mat contracts over T_k, giving [hd, T_q, nh]
             ggml_tensor * Vt = ggml_cont(gctx, ggml_permute(gctx, Vs, 1, 0, 2, 3));
             attn = ggml_mul_mat(gctx, Vt, scores);
+            // attn: [hd, T_q, nh] → need [H, T] = [hd*nh, T]
+            // Must permute [hd, T, nh] → [hd, nh, T] so that hd and nh are contiguous,
+            // then reshape to [H, T]. Without this permute, reshape produces wrong values.
+            attn = ggml_cont(gctx, ggml_permute(gctx, attn, 0, 2, 1, 3));  // [hd, nh, T]
             attn = ggml_reshape_2d(gctx, ggml_cont(gctx, attn), H, T);
         } else {
             float scale = 1.0f / sqrtf((float)head_dim);
@@ -936,10 +1020,17 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
 
     std::vector<int32_t> pos_data(T);
     for (int t = 0; t < T; t++) pos_data[t] = t + ctx->pos_offset;
-    ggml_tensor * pos_ids = graph_tensor_or_log(gf, "pos_ids");
-    if (!pos_ids) return {};
-    debug_encode_stage("encode_tokens:set-pos", T, 1, 0);
-    ggml_backend_tensor_set(pos_ids, pos_data.data(), 0, T * sizeof(int32_t));
+    // pos_ids is only connected to the graph when absolute pos_embd or RoPE is used.
+    // DeBERTa models use rel_embd instead and don't wire pos_ids into the graph.
+    ggml_tensor * pos_ids = ggml_graph_get_tensor(gf, "pos_ids");
+    if (!pos_ids && (ctx->model.pos_embd || ctx->use_rope)) {
+        fprintf(stderr, "crispembed: missing graph tensor 'pos_ids'\n");
+        return {};
+    }
+    if (pos_ids) {
+        debug_encode_stage("encode_tokens:set-pos", T, 1, 0);
+        ggml_backend_tensor_set(pos_ids, pos_data.data(), 0, T * sizeof(int32_t));
+    }
 
     if (ctx->model.type_embd) {
         std::vector<int32_t> type_data(tokens.type_ids.begin(), tokens.type_ids.end());
@@ -965,24 +1056,84 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
         }
     }
 
-    // DeBERTa relative position indices [T*T]
+    // DeBERTa: expand position embeddings on CPU using bucket indices
     if (ctx->model.rel_embd) {
-        ggml_tensor * idx_t = ggml_graph_get_tensor(gf, "rel_pos_idx");
-        if (idx_t) {
-            debug_encode_stage("encode_tokens:set-rel-idx", T, 1, 0);
-            // rel_embd shape: [H, max_pos]. Relative position = clamp(i-j + max_pos/2, 0, max_pos-1)
+        ggml_tensor * rpe_t = ggml_graph_get_tensor(gf, "rel_pos_expanded");
+        if (rpe_t) {
+            debug_encode_stage("encode_tokens:set-rel-pos", T, 1, 0);
             int max_pos = (int)ctx->model.rel_embd->ne[1];
-            int half = max_pos / 2;
-            std::vector<int32_t> idx(T * T);
-            for (int i = 0; i < T; i++) {
-                for (int j = 0; j < T; j++) {
-                    int rel = i - j + half;
-                    if (rel < 0) rel = 0;
-                    if (rel >= max_pos) rel = max_pos - 1;
-                    idx[i * T + j] = rel;
+            int H_emb = (int)ctx->model.rel_embd->ne[0];
+            int pos_buckets = ctx->position_buckets;
+
+            // Read rel_embd data from backend
+            std::vector<float> embd_data((size_t)H_emb * max_pos);
+            ggml_backend_tensor_get(ctx->model.rel_embd, embd_data.data(), 0,
+                                    embd_data.size() * sizeof(float));
+
+            // Apply encoder LayerNorm to relative embeddings before expansion.
+            // HF DeBERTa-v2: encoder.get_rel_embedding() does
+            //   rel_embd = self.LayerNorm(self.rel_embeddings.weight)
+            // when norm_rel_ebd == "layer_norm" (the default for DeBERTa-v2).
+            // encoder_ln_w/b correspond to encoder.LayerNorm in HF.
+            if (ctx->model.encoder_ln_w && ctx->model.encoder_ln_b) {
+                std::vector<float> ln_w(H_emb), ln_b(H_emb);
+                ggml_backend_tensor_get(ctx->model.encoder_ln_w, ln_w.data(), 0, H_emb * sizeof(float));
+                ggml_backend_tensor_get(ctx->model.encoder_ln_b, ln_b.data(), 0, H_emb * sizeof(float));
+                const float ln_eps = ctx->model.hparams.layer_norm_eps;
+                for (int p = 0; p < max_pos; p++) {
+                    float * row = &embd_data[(size_t)p * H_emb];
+                    // Compute mean and variance
+                    double sum = 0.0, sum2 = 0.0;
+                    for (int d = 0; d < H_emb; d++) { sum += row[d]; sum2 += (double)row[d] * row[d]; }
+                    float mean = (float)(sum / H_emb);
+                    float var  = (float)(sum2 / H_emb) - mean * mean;
+                    float inv_std = 1.0f / std::sqrt(var + ln_eps);
+                    for (int d = 0; d < H_emb; d++) {
+                        row[d] = (row[d] - mean) * inv_std * ln_w[d] + ln_b[d];
+                    }
                 }
             }
-            ggml_backend_tensor_set(idx_t, idx.data(), 0, T * T * sizeof(int32_t));
+
+            // Expand: for each (i,j) pair, look up the position embedding
+            std::vector<float> expanded((size_t)H_emb * T * T);
+            for (int i = 0; i < T; i++) {
+                for (int j = 0; j < T; j++) {
+                    int bucket;
+                    if (pos_buckets > 0) {
+                        // Log-bucket encoding matching HF make_log_bucket_position
+                        int rel = i - j;
+                        int sign_val = (rel > 0) ? 1 : ((rel < 0) ? -1 : 0);
+                        int abs_rel = std::abs(rel);
+                        int mid = pos_buckets / 2;
+
+                        // HF: abs_pos = (|rel| < mid) ? mid-1 : |rel|
+                        int abs_pos = (rel < mid && rel > -mid) ? (mid - 1) : abs_rel;
+
+                        int signed_bucket;
+                        if (abs_pos <= mid) {
+                            // Inner region: use signed relative position directly
+                            signed_bucket = rel;
+                        } else {
+                            // Outer region: log-scaled bucket
+                            double log_ratio = std::log((double)abs_pos / mid)
+                                             / std::log((double)(max_pos - 1) / mid);
+                            int log_pos = (int)std::ceil(log_ratio * (mid - 1)) + mid;
+                            signed_bucket = log_pos * sign_val;
+                        }
+                        // gather_index = signed_bucket + att_span (att_span = pos_buckets)
+                        bucket = signed_bucket + pos_buckets;
+                    } else {
+                        bucket = i - j + max_pos / 2;
+                    }
+                    if (bucket < 0) bucket = 0;
+                    if (bucket >= max_pos) bucket = max_pos - 1;
+                    // Copy embedding row: embd_data[d + bucket*H_emb] → expanded[d + (i*T+j)*H_emb]
+                    memcpy(&expanded[(size_t)(i * T + j) * H_emb],
+                           &embd_data[(size_t)bucket * H_emb],
+                           H_emb * sizeof(float));
+                }
+            }
+            ggml_backend_tensor_set(rpe_t, expanded.data(), 0, expanded.size() * sizeof(float));
         }
     }
 
@@ -1111,16 +1262,91 @@ static std::vector<float> run_encoder_raw(crispembed_context * ctx,
     ggml_backend_tensor_set(tok_ids, tok_data.data(), 0, T * sizeof(int32_t));
     std::vector<int32_t> pos_data(T);
     for (int t = 0; t < T; t++) pos_data[t] = t + ctx->pos_offset;
-    ggml_tensor * pos_ids = graph_tensor_or_log(gf, "pos_ids");
-    if (!pos_ids) return {};
-    debug_encode_stage("run_encoder_raw:set-pos", T, 1, mode);
-    ggml_backend_tensor_set(pos_ids, pos_data.data(), 0, T * sizeof(int32_t));
+    // pos_ids is only wired into the graph when pos_embd or RoPE is active.
+    // DeBERTa models use rel_embd instead, so pos_ids won't be in the graph.
+    ggml_tensor * pos_ids = ggml_graph_get_tensor(gf, "pos_ids");
+    if (!pos_ids && (ctx->model.pos_embd || ctx->use_rope)) {
+        fprintf(stderr, "crispembed: missing graph tensor 'pos_ids'\n");
+        return {};
+    }
+    if (pos_ids) {
+        debug_encode_stage("run_encoder_raw:set-pos", T, 1, mode);
+        ggml_backend_tensor_set(pos_ids, pos_data.data(), 0, T * sizeof(int32_t));
+    }
     if (ctx->model.type_embd) {
         std::vector<int32_t> type_data(tokens.type_ids.begin(), tokens.type_ids.end());
         ggml_tensor * type_ids = graph_tensor_or_log(gf, "type_ids");
         if (!type_ids) return {};
         debug_encode_stage("run_encoder_raw:set-type", T, 1, mode);
         ggml_backend_tensor_set(type_ids, type_data.data(), 0, T * sizeof(int32_t));
+    }
+
+    // DeBERTa: expand position embeddings on CPU using bucket indices
+    if (ctx->model.rel_embd) {
+        ggml_tensor * rpe_t = ggml_graph_get_tensor(gf, "rel_pos_expanded");
+        if (rpe_t) {
+            int max_pos = (int)ctx->model.rel_embd->ne[1];
+            int H_emb = (int)ctx->model.rel_embd->ne[0];
+            int pos_buckets = ctx->position_buckets;
+
+            std::vector<float> embd_data((size_t)H_emb * max_pos);
+            ggml_backend_tensor_get(ctx->model.rel_embd, embd_data.data(), 0,
+                                    embd_data.size() * sizeof(float));
+
+            // Apply encoder LayerNorm to relative embeddings before expansion.
+            // HF DeBERTa-v2: encoder.get_rel_embedding() does
+            //   rel_embd = self.LayerNorm(self.rel_embeddings.weight)
+            // when norm_rel_ebd == "layer_norm" (the default for DeBERTa-v2).
+            if (ctx->model.encoder_ln_w && ctx->model.encoder_ln_b) {
+                std::vector<float> ln_w(H_emb), ln_b(H_emb);
+                ggml_backend_tensor_get(ctx->model.encoder_ln_w, ln_w.data(), 0, H_emb * sizeof(float));
+                ggml_backend_tensor_get(ctx->model.encoder_ln_b, ln_b.data(), 0, H_emb * sizeof(float));
+                const float ln_eps = ctx->model.hparams.layer_norm_eps;
+                for (int p = 0; p < max_pos; p++) {
+                    float * row = &embd_data[(size_t)p * H_emb];
+                    double sum = 0.0, sum2 = 0.0;
+                    for (int d = 0; d < H_emb; d++) { sum += row[d]; sum2 += (double)row[d] * row[d]; }
+                    float mean = (float)(sum / H_emb);
+                    float var  = (float)(sum2 / H_emb) - mean * mean;
+                    float inv_std = 1.0f / std::sqrt(var + ln_eps);
+                    for (int d = 0; d < H_emb; d++) {
+                        row[d] = (row[d] - mean) * inv_std * ln_w[d] + ln_b[d];
+                    }
+                }
+            }
+
+            std::vector<float> expanded((size_t)H_emb * T * T);
+            for (int i = 0; i < T; i++) {
+                for (int j = 0; j < T; j++) {
+                    int bucket;
+                    if (pos_buckets > 0) {
+                        int rel = i - j;
+                        int sign_val = (rel > 0) ? 1 : ((rel < 0) ? -1 : 0);
+                        int abs_rel = std::abs(rel);
+                        int mid = pos_buckets / 2;
+                        int abs_pos = (rel < mid && rel > -mid) ? (mid - 1) : abs_rel;
+                        int signed_bucket;
+                        if (abs_pos <= mid) {
+                            signed_bucket = rel;
+                        } else {
+                            double log_ratio = std::log((double)abs_pos / mid)
+                                             / std::log((double)(max_pos - 1) / mid);
+                            int log_pos = (int)std::ceil(log_ratio * (mid - 1)) + mid;
+                            signed_bucket = log_pos * sign_val;
+                        }
+                        bucket = signed_bucket + pos_buckets;
+                    } else {
+                        bucket = i - j + max_pos / 2;
+                    }
+                    if (bucket < 0) bucket = 0;
+                    if (bucket >= max_pos) bucket = max_pos - 1;
+                    memcpy(&expanded[(size_t)(i * T + j) * H_emb],
+                           &embd_data[(size_t)bucket * H_emb],
+                           H_emb * sizeof(float));
+                }
+            }
+            ggml_backend_tensor_set(rpe_t, expanded.data(), 0, expanded.size() * sizeof(float));
+        }
     }
 
     debug_encode_stage("run_encoder_raw:compute", T, 1, mode);
@@ -1152,12 +1378,23 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
     ctx->n_threads = n_threads > 0 ? n_threads : 4;
     if (model_path) ctx->model_path_for_audio = model_path;
 
-    // Detect model type from GGUF metadata
+    // Detect model type from GGUF metadata.
+    // Decoder models have either decoder.hidden_size (CrispEmbed-native) or
+    // general.architecture in {qwen3, gemma3, llama, ...} (Ollama-format).
+    // Encoder models (BERT/XLM-R) have bert.* keys and enc.N.* tensor names.
     gguf_init_params gp = { true, nullptr };
     gguf_context * g = gguf_init_from_file(model_path, gp);
     bool is_dec = false;
     if (g) {
         is_dec = gguf_find_key(g, "decoder.hidden_size") >= 0;
+        if (!is_dec) {
+            int64_t ki = gguf_find_key(g, "general.architecture");
+            if (ki >= 0) {
+                std::string arch = gguf_get_val_str(g, ki);
+                is_dec = (arch == "qwen3" || arch == "gemma3" || arch == "llama"
+                       || arch == "qwen2" || arch == "mistral" || arch == "phi3");
+            }
+        }
         gguf_free(g);
     }
 
@@ -1223,6 +1460,19 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
                 int eos_id = u32g("tokenizer.ggml.eos_token_id", 151645);
                 int pad_id = u32g("tokenizer.ggml.padding_token_id", 151643);
                 int bos_id = u32g("tokenizer.ggml.bos_token_id", -1);
+                // Respect add_bos_token=false: if the flag is explicitly false,
+                // don't prepend BOS even when bos_token_id is set.
+                {
+                    const int64_t ki_add_bos = gguf_find_key(g2, "tokenizer.ggml.add_bos_token");
+                    if (ki_add_bos >= 0) {
+                        auto type = gguf_get_kv_type(g2, ki_add_bos);
+                        bool add_bos = true;
+                        if (type == GGUF_TYPE_BOOL)        add_bos = gguf_get_val_bool(g2, ki_add_bos);
+                        else if (type == GGUF_TYPE_UINT32) add_bos = gguf_get_val_u32(g2, ki_add_bos) != 0;
+                        else if (type == GGUF_TYPE_INT32)  add_bos = gguf_get_val_i32(g2, ki_add_bos) != 0;
+                        if (!add_bos) bos_id = -1;
+                    }
+                }
                 const int64_t ki_sfx = gguf_find_key(g2, "tokenizer.ggml.suffix_token_id");
                 int suffix_id = ki_sfx >= 0 ? (int)gguf_get_val_i32(g2, ki_sfx) : pad_id;
                 bool is_spm_bpe = u32g("tokenizer.ggml.is_spm_bpe", 0) != 0;
@@ -1262,6 +1512,13 @@ extern "C" const char * crispembed_resolve_model(const char * arg, int auto_down
     if (!arg) return value.c_str();
     value = crispembed_mgr::resolve_model(arg, auto_download != 0);
     return value.c_str();
+}
+
+extern "C" const char * crispembed_query_prefix(const char * model_name) {
+    return crispembed_mgr::get_query_prefix(model_name);
+}
+extern "C" const char * crispembed_passage_prefix(const char * model_name) {
+    return crispembed_mgr::get_passage_prefix(model_name);
 }
 
 extern "C" int crispembed_n_models(void) {
@@ -1682,6 +1939,35 @@ extern "C" float crispembed_rerank(crispembed_context * ctx,
     const int H = ctx->model.hparams.n_embd;
     // CLS token is position 0 in encoder_out [H, T]
     const float * cls_vec = raw.data();  // first H floats = token 0
+
+    // Debug: dump CLS vector when CRISPEMBED_DEBUG_CLS=1
+    if (const char * dcls = std::getenv("CRISPEMBED_DEBUG_CLS")) {
+        if (dcls[0] && dcls[0] != '0') {
+            fprintf(stderr, "CLS[0:8]:");
+            for (int i = 0; i < std::min(8, H); i++) fprintf(stderr, " %.4f", cls_vec[i]);
+            fprintf(stderr, "\n");
+        }
+    }
+
+    // Apply ContextPooler if present (DeBERTa-v2 reranker):
+    //   pooled = GELU(dense_w @ cls + dense_b)
+    // The classifier then operates on pooled rather than raw CLS.
+    std::vector<float> pooled_buf;
+    if (ctx->model.pooler_w && ctx->model.pooler_b) {
+        std::vector<float> pw(H * H), pb(H);
+        ggml_backend_tensor_get(ctx->model.pooler_w, pw.data(), 0, H*H*sizeof(float));
+        ggml_backend_tensor_get(ctx->model.pooler_b, pb.data(), 0, H*sizeof(float));
+        pooled_buf.resize(H);
+        for (int i = 0; i < H; i++) {
+            float acc = pb[i];
+            for (int j = 0; j < H; j++) acc += cls_vec[j] * pw[i * H + j];
+            // GELU activation (standard pooler_hidden_act for DeBERTa)
+            // Using the same polynomial approximation as ggml_gelu
+            const float x = acc;
+            pooled_buf[i] = 0.5f * x * (1.0f + std::tanh(0.7978845608f * (x + 0.044715f * x * x * x)));
+        }
+        cls_vec = pooled_buf.data();
+    }
 
     float score = 0.0f;
     if (ctx->model.classifier_2layer) {
@@ -2143,6 +2429,113 @@ extern "C" const float * crispembed_encode_text_with_image_file(
                                               r.patches.data(), r.n_patches,
                                               r.grid_thw, /*n_images=*/1,
                                               out_dim);
+}
+
+// ---------------------------------------------------------------------------
+// Face detection & recognition C API
+// ---------------------------------------------------------------------------
+
+#include "cnn_embed.h"
+
+struct crispembed_face_context {
+    cnn_embed::context * cnn = nullptr;
+    // Scratch buffers for returning results (valid until next call)
+    std::vector<crispembed_face_detection> det_buf;
+    std::vector<crispembed_face_result> result_buf;
+    std::vector<std::vector<float>> emb_buf;  // owns embedding data
+    std::vector<float> single_emb;
+};
+
+extern "C" crispembed_face_context * crispembed_face_init(
+        const char * model_path, int n_threads) {
+    if (!model_path) return nullptr;
+    auto * ctx = new crispembed_face_context();
+    if (!cnn_embed::load(&ctx->cnn, model_path, n_threads)) {
+        delete ctx;
+        return nullptr;
+    }
+    return ctx;
+}
+
+extern "C" int crispembed_face_dim(const crispembed_face_context * ctx) {
+    return ctx ? cnn_embed::dim(ctx->cnn) : 0;
+}
+
+extern "C" const char * crispembed_face_type(const crispembed_face_context * ctx) {
+    return ctx ? cnn_embed::model_type(ctx->cnn) : "";
+}
+
+extern "C" const crispembed_face_detection * crispembed_detect_faces(
+        crispembed_face_context * ctx,
+        const char * image_path,
+        float conf_threshold,
+        int * out_n_faces) {
+    if (!ctx || !image_path || !out_n_faces) { if (out_n_faces) *out_n_faces = 0; return nullptr; }
+
+    auto dets = cnn_embed::detect_file(ctx->cnn, image_path, conf_threshold);
+    ctx->det_buf.resize(dets.size());
+    for (size_t i = 0; i < dets.size(); i++) {
+        auto & d = ctx->det_buf[i];
+        d.x = dets[i].x; d.y = dets[i].y;
+        d.w = dets[i].w; d.h = dets[i].h;
+        d.confidence = dets[i].confidence;
+        memcpy(d.landmarks, dets[i].landmarks, sizeof(d.landmarks));
+    }
+    *out_n_faces = (int)dets.size();
+    return ctx->det_buf.empty() ? nullptr : ctx->det_buf.data();
+}
+
+extern "C" const float * crispembed_encode_face(
+        crispembed_face_context * ctx,
+        const char * image_path,
+        const float * landmarks_10,
+        int * out_dim) {
+    if (!ctx || !image_path || !landmarks_10 || !out_dim) {
+        if (out_dim) *out_dim = 0;
+        return nullptr;
+    }
+
+    ctx->single_emb = cnn_embed::encode_face_file(ctx->cnn, image_path, landmarks_10);
+
+    if (ctx->single_emb.empty()) { *out_dim = 0; return nullptr; }
+    *out_dim = (int)ctx->single_emb.size();
+    return ctx->single_emb.data();
+}
+
+extern "C" const crispembed_face_result * crispembed_face_pipeline(
+        crispembed_face_context * det_ctx,
+        crispembed_face_context * rec_ctx,
+        const char * image_path,
+        float conf_threshold,
+        int * out_n_faces) {
+    if (!det_ctx || !rec_ctx || !image_path || !out_n_faces) {
+        if (out_n_faces) *out_n_faces = 0;
+        return nullptr;
+    }
+
+    auto results = cnn_embed::face_pipeline(det_ctx->cnn, rec_ctx->cnn,
+                                             image_path, conf_threshold);
+    // Store results in det_ctx scratch buffers
+    det_ctx->result_buf.resize(results.size());
+    det_ctx->emb_buf.resize(results.size());
+    for (size_t i = 0; i < results.size(); i++) {
+        auto & r = det_ctx->result_buf[i];
+        r.det.x = results[i].det.x; r.det.y = results[i].det.y;
+        r.det.w = results[i].det.w; r.det.h = results[i].det.h;
+        r.det.confidence = results[i].det.confidence;
+        memcpy(r.det.landmarks, results[i].det.landmarks, sizeof(r.det.landmarks));
+        det_ctx->emb_buf[i] = std::move(results[i].embedding);
+        r.embedding = det_ctx->emb_buf[i].data();
+        r.embedding_dim = (int)det_ctx->emb_buf[i].size();
+    }
+    *out_n_faces = (int)results.size();
+    return det_ctx->result_buf.empty() ? nullptr : det_ctx->result_buf.data();
+}
+
+extern "C" void crispembed_face_free(crispembed_face_context * ctx) {
+    if (!ctx) return;
+    if (ctx->cnn) cnn_embed::free(ctx->cnn);
+    delete ctx;
 }
 
 extern "C" void crispembed_free(crispembed_context * ctx) {

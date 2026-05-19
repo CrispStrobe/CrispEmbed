@@ -21,6 +21,7 @@ struct dec_layer {
     ggml_tensor * up_w = nullptr;
     ggml_tensor * down_w = nullptr;
     // Gemma3 extra norms
+    ggml_tensor * post_attn_norm_w = nullptr; // post_attention_layernorm (Gemma3: applied to attn out before residual)
     ggml_tensor * pre_ffn_norm_w = nullptr;   // pre_feedforward_layernorm
     ggml_tensor * post_ffn_norm_w = nullptr;  // post_feedforward_layernorm
 };
@@ -35,6 +36,8 @@ struct dec_model {
     int n_max_pos = 8192;
     float rms_norm_eps = 1e-6f;
     float rope_theta = 10000.0f;
+    float rope_theta_local = 0.0f;  // Gemma3: sliding-window layers use shorter theta (0 = same as rope_theta)
+    int global_attn_every_n = 0;    // Gemma3: period between global attention layers (0 = all global)
     bool is_bidirectional = false;  // true for EuroBERT-style encoder models
     int pooling_method = 2;  // 1=mean (BidirLM-style), 2=last-token (Qwen3/Gemma3)
     int activation = 0;  // 0=silu (SwiGLU), 1=gelu (GeGLU), 2=gelu_pytorch_tanh
@@ -54,6 +57,12 @@ struct dec_model {
     ggml_tensor * token_embd = nullptr;
     ggml_tensor * output_norm = nullptr;
     std::vector<dec_layer> layers;
+
+    // Post-pooling Dense projection layers (SentenceTransformer-style).
+    // Each entry is the weight matrix data in row-major layout [out, in].
+    // Applied after pooling but before L2 normalization (no bias, no activation).
+    struct DenseLayer { int in_dim; int out_dim; std::vector<float> weight; };
+    std::vector<DenseLayer> dense_proj;
 };
 
 bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,

@@ -21,6 +21,43 @@ pub struct CrispembedHparams {
     pub layer_norm_eps: f32,
 }
 
+// ------------------------------------------------------------------
+// Face detection & recognition types
+// ------------------------------------------------------------------
+
+/// Opaque handle to a loaded face model (detector or recogniser).
+pub type CrispembedFaceContext = std::ffi::c_void;
+
+/// Bounding box, confidence score and 5-point facial landmarks returned by
+/// the face detector.
+#[repr(C)]
+pub struct CrispembedFaceDetection {
+    /// Left edge of the bounding box (pixels).
+    pub x: f32,
+    /// Top edge of the bounding box (pixels).
+    pub y: f32,
+    /// Width of the bounding box (pixels).
+    pub w: f32,
+    /// Height of the bounding box (pixels).
+    pub h: f32,
+    /// Detection confidence in `[0, 1]`.
+    pub confidence: f32,
+    /// Five facial landmarks as `[x0, y0, x1, y1, …, x4, y4]` (pixels).
+    pub landmarks: [f32; 10],
+}
+
+/// One entry returned by the full face pipeline: detection metadata paired
+/// with the recognition embedding for that face.
+#[repr(C)]
+pub struct CrispembedFaceResult {
+    /// Detection bounding box and landmarks.
+    pub det: CrispembedFaceDetection,
+    /// Pointer to the embedding floats (owned by the context).
+    pub embedding: *const f32,
+    /// Length of the `embedding` buffer.
+    pub embedding_dim: i32,
+}
+
 extern "C" {
     // ------------------------------------------------------------------
     // Lifecycle
@@ -198,4 +235,65 @@ extern "C" {
         out_dim:         *mut c_int,
         out_n_deepstack: *mut c_int,
     ) -> *const c_float;
+
+    // ------------------------------------------------------------------
+    // Face detection & recognition
+    // ------------------------------------------------------------------
+
+    /// Opaque handle to a loaded face model (detector or recogniser).
+    /// The type alias is defined outside the extern block; the raw pointer
+    /// is used throughout this API.
+
+    /// Load a face model from `model_path` and return an opaque context.
+    /// `n_threads` = 0 for auto-detect. Returns NULL on failure.
+    pub fn crispembed_face_init(
+        model_path: *const c_char,
+        n_threads:  c_int,
+    ) -> *mut CrispembedFaceContext;
+
+    /// Returns the embedding dimension produced by a recognition model,
+    /// or 0 for a pure detection model.
+    pub fn crispembed_face_dim(ctx: *const CrispembedFaceContext) -> c_int;
+
+    /// Returns a NUL-terminated string identifying the model type
+    /// (e.g. `"scrfd"`, `"sface"`). Pointer valid for the lifetime of `ctx`.
+    pub fn crispembed_face_type(ctx: *const CrispembedFaceContext) -> *const c_char;
+
+    /// Detect faces in `image_path`.
+    /// Returns a pointer to `*out_n_faces` `CrispembedFaceDetection` structs
+    /// owned by `ctx`, valid until the next call on this context.
+    /// Returns NULL on failure.
+    pub fn crispembed_detect_faces(
+        ctx:            *mut CrispembedFaceContext,
+        image_path:     *const c_char,
+        conf_threshold: f32,
+        out_n_faces:    *mut c_int,
+    ) -> *const CrispembedFaceDetection;
+
+    /// Encode the face described by `landmarks` (10 floats: 5 × [x,y]) from
+    /// `image_path` into a face embedding.
+    /// Returns a pointer to `*out_dim` floats owned by `ctx`, valid until
+    /// the next call on this context. Returns NULL on failure.
+    pub fn crispembed_encode_face(
+        ctx:        *mut CrispembedFaceContext,
+        image_path: *const c_char,
+        landmarks:  *const f32,
+        out_dim:    *mut c_int,
+    ) -> *const f32;
+
+    /// Run the full detect-then-recognise pipeline.
+    /// `det_ctx` must be a detection model; `rec_ctx` must be a recognition model.
+    /// Returns a pointer to `*out_n_faces` `CrispembedFaceResult` structs
+    /// owned by `det_ctx`, valid until the next call on either context.
+    /// Returns NULL on failure.
+    pub fn crispembed_face_pipeline(
+        det_ctx:        *mut CrispembedFaceContext,
+        rec_ctx:        *mut CrispembedFaceContext,
+        image_path:     *const c_char,
+        conf_threshold: f32,
+        out_n_faces:    *mut c_int,
+    ) -> *const CrispembedFaceResult;
+
+    /// Free all resources held by a face context. Safe to call with NULL.
+    pub fn crispembed_face_free(ctx: *mut CrispembedFaceContext);
 }

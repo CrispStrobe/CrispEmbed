@@ -552,3 +552,388 @@ class CrispEmbed {
     return models;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Face detection & recognition
+// ---------------------------------------------------------------------------
+
+/// A single detected face returned by [CrispFace.detect] or
+/// [CrispFacePipeline.run].
+///
+/// [bbox] is `[x, y, w, h]` in pixel coordinates.
+/// [landmarks] is a flat `[x0, y0, x1, y1, …]` array of keypoint coordinates
+/// (5 points × 2 floats = 10 values for SCRFD/RetinaFace).
+/// [score] is the detector confidence in [0, 1].
+/// [embedding] is set by [CrispFacePipeline.run]; null from [CrispFace.detect].
+class FaceResult {
+  final List<double> bbox;
+  final List<double> landmarks;
+  final double score;
+  final Float32List? embedding;
+
+  const FaceResult({
+    required this.bbox,
+    required this.landmarks,
+    required this.score,
+    this.embedding,
+  });
+
+  @override
+  String toString() {
+    final b = bbox.map((v) => v.toStringAsFixed(1)).join(', ');
+    final s = score.toStringAsFixed(3);
+    final dim = embedding?.length ?? 0;
+    return 'FaceResult(bbox=[$b], score=$s, embDim=$dim)';
+  }
+}
+
+/// Wraps a single face model (detector *or* recognizer) loaded via
+/// `crispembed_face_init`.
+///
+/// ```dart
+/// final det = CrispFace('scrfd_10g.onnx');
+/// final faces = det.detect('photo.jpg', conf: 0.6);
+/// print(det.modelType);   // 'scrfd' / 'retinaface' / 'sface' / …
+/// det.dispose();
+/// ```
+class CrispFace {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  // Cached function lookups
+  late final CrispembedFaceDimDart _dimFn;
+  late final CrispembedFaceTypeDart _typeFn;
+  late final CrispembedDetectFacesDart _detectFn;
+  late final CrispembedEncodeFaceDart _encodeFn;
+  late final CrispembedFaceFreeDart _freeFn;
+
+  /// Load a face model (ONNX or GGUF path).
+  ///
+  /// [modelPath] — path to the model file or a short alias (e.g. `'scrfd_10g'`).
+  /// [nThreads] — CPU thread count (0 = auto).
+  /// [libPath] — optional path to `libcrispembed.so` / `crispembed.dll`.
+  CrispFace(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = DynamicLibrary.open(libPath ?? _findLib());
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedFaceInitNative, CrispembedFaceInitDart>(
+            'crispembed_face_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load face model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _dimFn = _lib.lookupFunction<CrispembedFaceDimNative, CrispembedFaceDimDart>(
+        'crispembed_face_dim');
+    _typeFn = _lib
+        .lookupFunction<CrispembedFaceTypeNative, CrispembedFaceTypeDart>(
+            'crispembed_face_type');
+    _detectFn = _lib
+        .lookupFunction<CrispembedDetectFacesNative, CrispembedDetectFacesDart>(
+            'crispembed_detect_faces');
+    _encodeFn = _lib
+        .lookupFunction<CrispembedEncodeFaceNative, CrispembedEncodeFaceDart>(
+            'crispembed_encode_face');
+    _freeFn = _lib
+        .lookupFunction<CrispembedFaceFreeNative, CrispembedFaceFreeDart>(
+            'crispembed_face_free');
+  }
+
+  // ------------------------------------------------------------------
+  // Queries
+  // ------------------------------------------------------------------
+
+  /// Embedding dimension reported by this model (0 for detection-only models).
+  int get dim {
+    _checkDisposed();
+    return _dimFn(_ctx);
+  }
+
+  /// Short model-type string, e.g. `'scrfd'`, `'sface'`, `'arcface'`.
+  String get modelType {
+    _checkDisposed();
+    final p = _typeFn(_ctx);
+    return p == nullptr ? '' : p.toDartString();
+  }
+
+  // ------------------------------------------------------------------
+  // Detection
+  // ------------------------------------------------------------------
+
+  /// Detect faces in an image file.
+  ///
+  /// [imagePath] — path to a JPEG/PNG file readable by the native library.
+  /// [conf] — minimum detector confidence threshold (default 0.5).
+  ///
+  /// Returns a list of detected faces. Each map contains:
+  /// - `'bbox'`: `List<double>` — `[x, y, w, h]`
+  /// - `'landmarks'`: `List<double>` — flat keypoints `[x0, y0, …]`
+  /// - `'score'`: `double` — confidence
+  ///
+  /// The native side returns a packed Void buffer; layout is documented in
+  /// `src/crispembed_face.h`. We decode it here so callers never touch raw
+  /// pointers.
+  List<Map<String, dynamic>> detect(String imagePath, {double conf = 0.5}) {
+    _checkDisposed();
+    final pathPtr = imagePath.toNativeUtf8();
+    final countPtr = calloc<Int32>();
+    try {
+      final buf = _detectFn(_ctx, pathPtr, conf, countPtr);
+      final n = countPtr.value;
+      if (buf == nullptr || n <= 0) return [];
+      return _decodeFaceBuffer(buf, n);
+    } finally {
+      calloc.free(pathPtr);
+      calloc.free(countPtr);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Recognition
+  // ------------------------------------------------------------------
+
+  /// Encode a single face crop to an L2-normalized embedding.
+  ///
+  /// [imagePath] — path to the (already-cropped or full) image.
+  /// [landmarks] — flat 10-element keypoint array `[x0, y0, …, x4, y4]`
+  ///   used to align the face before encoding. Pass an empty list to skip
+  ///   alignment (model-specific behaviour).
+  ///
+  /// Returns a [Float32List] of length [dim], or an empty list on failure.
+  Float32List encodeFace(String imagePath, List<double> landmarks) {
+    _checkDisposed();
+    final pathPtr = imagePath.toNativeUtf8();
+    final dimPtr = calloc<Int32>();
+    Pointer<Float> lmPtr = nullptr;
+    try {
+      if (landmarks.isNotEmpty) {
+        lmPtr = calloc<Float>(landmarks.length);
+        lmPtr.asTypedList(landmarks.length).setAll(0, landmarks);
+      }
+      final out = _encodeFn(_ctx, pathPtr, lmPtr, dimPtr);
+      if (out == nullptr || dimPtr.value <= 0) return Float32List(0);
+      return Float32List.fromList(out.asTypedList(dimPtr.value));
+    } finally {
+      calloc.free(pathPtr);
+      calloc.free(dimPtr);
+      if (lmPtr != nullptr) calloc.free(lmPtr);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Lifecycle
+  // ------------------------------------------------------------------
+
+  /// Release all native resources. Must be called when done.
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispFace has been disposed');
+  }
+
+  static String _findLib() {
+    if (Platform.isAndroid || Platform.isLinux) return 'libcrispembed.so';
+    if (Platform.isIOS || Platform.isMacOS) return 'crispembed.framework/crispembed';
+    if (Platform.isWindows) return 'crispembed.dll';
+    return 'libcrispembed.so';
+  }
+}
+
+/// Combines a detector [CrispFace] and a recognizer [CrispFace] into a
+/// single end-to-end face pipeline.
+///
+/// ```dart
+/// final pipeline = CrispFacePipeline(
+///   detectorPath: 'scrfd_10g.onnx',
+///   recognizerPath: 'sface_sf_lfw.onnx',
+/// );
+///
+/// final faces = pipeline.run('photo.jpg', conf: 0.5);
+/// for (final f in faces) {
+///   print(f);   // FaceResult(bbox=[…], score=0.97, embDim=512)
+/// }
+///
+/// final sim = pipeline.match(faces[0].embedding!, faces[1].embedding!);
+/// print('cosine similarity: $sim');
+///
+/// pipeline.dispose();
+/// ```
+class CrispFacePipeline {
+  final CrispFace detector;
+  final CrispFace recognizer;
+  late final DynamicLibrary _lib;
+  late final CrispembedFacePipelineDart _pipelineFn;
+  late final CrispembedFaceFreeDart _freeFn;
+  bool _disposed = false;
+
+  /// Create a pipeline from pre-constructed [CrispFace] instances.
+  ///
+  /// The pipeline takes *ownership* of [detector] and [recognizer]: calling
+  /// [dispose] on the pipeline also disposes both models.
+  ///
+  /// [libPath] — optional path to the shared library. If omitted, deduced
+  ///   from the platform the same way [CrispFace] does.
+  CrispFacePipeline({
+    required this.detector,
+    required this.recognizer,
+    String? libPath,
+  }) {
+    _lib = DynamicLibrary.open(libPath ?? _findLib());
+    _pipelineFn = _lib.lookupFunction<CrispembedFacePipelineNative,
+        CrispembedFacePipelineDart>('crispembed_face_pipeline');
+    _freeFn = _lib.lookupFunction<CrispembedFaceFreeNative,
+        CrispembedFaceFreeDart>('crispembed_face_free');
+  }
+
+  /// Convenience constructor that loads both models from paths.
+  ///
+  /// [detectorPath] / [recognizerPath] — model paths or aliases.
+  /// [nThreads] — shared thread budget (0 = auto).
+  /// [libPath] — optional shared library path.
+  factory CrispFacePipeline.fromPaths({
+    required String detectorPath,
+    required String recognizerPath,
+    int nThreads = 0,
+    String? libPath,
+  }) {
+    final det = CrispFace(detectorPath, nThreads: nThreads, libPath: libPath);
+    final rec = CrispFace(recognizerPath, nThreads: nThreads, libPath: libPath);
+    return CrispFacePipeline(detector: det, recognizer: rec, libPath: libPath);
+  }
+
+  // ------------------------------------------------------------------
+  // Pipeline inference
+  // ------------------------------------------------------------------
+
+  /// Detect all faces in [imagePath] and return their embeddings.
+  ///
+  /// Internally calls `crispembed_face_pipeline` which runs detection →
+  /// alignment → recognition in one pass, avoiding redundant image decoding.
+  ///
+  /// [conf] — detection confidence threshold (default 0.5).
+  ///
+  /// Returns a [List<FaceResult>] sorted by detection score descending.
+  List<FaceResult> run(String imagePath, {double conf = 0.5}) {
+    _checkDisposed();
+    final pathPtr = imagePath.toNativeUtf8();
+    final countPtr = calloc<Int32>();
+    try {
+      final buf = _pipelineFn(
+          detector._ctx, recognizer._ctx, pathPtr, conf, countPtr);
+      final n = countPtr.value;
+      if (buf == nullptr || n <= 0) return [];
+      return _decodePipelineBuffer(buf, n, recognizer.dim);
+    } finally {
+      calloc.free(pathPtr);
+      calloc.free(countPtr);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Similarity
+  // ------------------------------------------------------------------
+
+  /// Compute cosine similarity between two face embeddings.
+  ///
+  /// Both embeddings must be L2-normalized (which [run] guarantees).
+  /// Returns a value in [-1, 1]; values ≥ 0.3 typically indicate the same
+  /// identity (threshold is model-dependent).
+  double match(Float32List emb1, Float32List emb2) {
+    if (emb1.length != emb2.length || emb1.isEmpty) return 0.0;
+    var dot = 0.0;
+    for (var i = 0; i < emb1.length; i++) {
+      dot += emb1[i] * emb2[i];
+    }
+    return dot;
+  }
+
+  // ------------------------------------------------------------------
+  // Lifecycle
+  // ------------------------------------------------------------------
+
+  /// Release all native resources, including the underlying detector and
+  /// recognizer models.
+  void dispose() {
+    if (!_disposed) {
+      detector.dispose();
+      recognizer.dispose();
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispFacePipeline has been disposed');
+  }
+
+  static String _findLib() {
+    if (Platform.isAndroid || Platform.isLinux) return 'libcrispembed.so';
+    if (Platform.isIOS || Platform.isMacOS) return 'crispembed.framework/crispembed';
+    if (Platform.isWindows) return 'crispembed.dll';
+    return 'libcrispembed.so';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers shared by CrispFace and CrispFacePipeline
+// ---------------------------------------------------------------------------
+
+/// Decode the packed detection-only buffer returned by
+/// `crispembed_detect_faces`.
+///
+/// Layout per face (all float32):
+///   [x, y, w, h, score, lm_x0, lm_y0, …, lm_x4, lm_y4]  = 15 floats
+List<Map<String, dynamic>> _decodeFaceBuffer(Pointer<Void> buf, int n) {
+  const _floatsPerFace = 15; // 4 bbox + 1 score + 10 landmarks
+  final flat = buf.cast<Float>().asTypedList(n * _floatsPerFace);
+  final results = <Map<String, dynamic>>[];
+  for (var i = 0; i < n; i++) {
+    final base = i * _floatsPerFace;
+    results.add({
+      'bbox': flat.sublist(base, base + 4).map((v) => v.toDouble()).toList(),
+      'score': flat[base + 4].toDouble(),
+      'landmarks': flat.sublist(base + 5, base + 15).map((v) => v.toDouble()).toList(),
+    });
+  }
+  return results;
+}
+
+/// Decode the packed pipeline buffer returned by `crispembed_face_pipeline`.
+///
+/// Layout per face (all float32):
+///   [x, y, w, h, score, lm_x0, lm_y0, …, lm_x4, lm_y4, emb_0, …, emb_(dim-1)]
+List<FaceResult> _decodePipelineBuffer(Pointer<Void> buf, int n, int embDim) {
+  final floatsPerFace = 15 + embDim; // 4 bbox + 1 score + 10 landmarks + embedding
+  final flat = buf.cast<Float>().asTypedList(n * floatsPerFace);
+  final results = <FaceResult>[];
+  for (var i = 0; i < n; i++) {
+    final base = i * floatsPerFace;
+    final bbox = flat.sublist(base, base + 4).map((v) => v.toDouble()).toList();
+    final score = flat[base + 4].toDouble();
+    final landmarks =
+        flat.sublist(base + 5, base + 15).map((v) => v.toDouble()).toList();
+    final embedding = embDim > 0
+        ? Float32List.fromList(flat.sublist(base + 15, base + 15 + embDim))
+        : null;
+    results.add(FaceResult(
+      bbox: bbox,
+      landmarks: landmarks,
+      score: score,
+      embedding: embedding,
+    ));
+  }
+  // Sort by confidence descending, matching native detector output convention.
+  results.sort((a, b) => b.score.compareTo(a.score));
+  return results;
+}

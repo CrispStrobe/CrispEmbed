@@ -133,6 +133,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                          sname.find(".w") != std::string::npos ||
                          sname.find("_w") != std::string::npos) &&
                         (sname.find("norm") == std::string::npos) &&
+                        (sname.rfind("dense.", 0) == std::string::npos) && // keep post-pooling Dense proj in F32
                         !is_tiny_embd;
         const int64_t ncols = t->ne[0];
         ggml_type qtype_used = qtype;

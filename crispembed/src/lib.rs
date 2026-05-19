@@ -509,3 +509,270 @@ impl Drop for CrispEmbed {
         unsafe { crispembed_sys::crispembed_free(self.ctx) }
     }
 }
+
+// ======================================================================
+// Face detection & recognition
+// ======================================================================
+
+pub use crispembed_sys::{CrispembedFaceDetection, CrispembedFaceResult};
+
+/// A loaded face model — either a detector (e.g. SCRFD) or a recogniser
+/// (e.g. SFace).
+///
+/// Not `Sync` — do not share between threads. Each thread should hold its
+/// own `CrispFace` instance. `Send`-safe: you can move it across threads.
+pub struct CrispFace {
+    ctx: *mut crispembed_sys::CrispembedFaceContext,
+}
+
+// Safety: same guarantee as CrispEmbed — the C library serialises all
+// mutable access through the opaque context pointer.
+unsafe impl Send for CrispFace {}
+
+impl CrispFace {
+    /// Load a face model from `model_path`.
+    ///
+    /// - `model_path` — path to the model file.
+    /// - `n_threads`  — CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path)
+            .map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe {
+            crispembed_sys::crispembed_face_init(path.as_ptr(), n_threads)
+        };
+        if ctx.is_null() {
+            return Err(format!("crispembed_face_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Embedding dimension produced by a recognition model.
+    /// Returns `0` for a pure detection model.
+    pub fn dim(&self) -> usize {
+        unsafe { crispembed_sys::crispembed_face_dim(self.ctx) }.max(0) as usize
+    }
+
+    /// Model type string (e.g. `"scrfd"`, `"sface"`).
+    pub fn model_type(&self) -> String {
+        let ptr = unsafe { crispembed_sys::crispembed_face_type(self.ctx) };
+        if ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned()
+        }
+    }
+
+    /// Detect faces in the image at `image_path`.
+    ///
+    /// - `conf_threshold` — minimum detection confidence in `[0, 1]`.
+    ///
+    /// Returns a `Vec` of [`CrispembedFaceDetection`] structs (bounding box,
+    /// confidence, 5-point landmarks). Returns an empty vector on failure.
+    pub fn detect(&mut self, image_path: &str, conf_threshold: f32) -> Vec<CrispembedFaceDetection> {
+        let path = match CString::new(image_path) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut n_faces: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_detect_faces(
+                self.ctx,
+                path.as_ptr(),
+                conf_threshold,
+                &mut n_faces,
+            )
+        };
+        if ptr.is_null() || n_faces <= 0 {
+            return vec![];
+        }
+        // Copy structs out of the context-owned buffer so the caller owns them.
+        let slice = unsafe { std::slice::from_raw_parts(ptr, n_faces as usize) };
+        slice
+            .iter()
+            .map(|d| CrispembedFaceDetection {
+                x:          d.x,
+                y:          d.y,
+                w:          d.w,
+                h:          d.h,
+                confidence: d.confidence,
+                landmarks:  d.landmarks,
+            })
+            .collect()
+    }
+
+    /// Encode the face described by `landmarks` (10 floats: 5 × [x, y])
+    /// cropped from `image_path` into a face embedding.
+    ///
+    /// Returns an empty vector on failure.
+    pub fn encode_face(&mut self, image_path: &str, landmarks: &[f32; 10]) -> Vec<f32> {
+        let path = match CString::new(image_path) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_face(
+                self.ctx,
+                path.as_ptr(),
+                landmarks.as_ptr(),
+                &mut out_dim,
+            )
+        };
+        if ptr.is_null() || out_dim <= 0 {
+            return vec![];
+        }
+        unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
+    }
+}
+
+impl Drop for CrispFace {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_face_free(self.ctx) }
+    }
+}
+
+// ----------------------------------------------------------------------
+
+/// Combined detector + recogniser pipeline.
+///
+/// Holds one detection context and one recognition context. Call [`run`]
+/// to detect all faces in an image and return their embeddings in one shot.
+///
+/// Both contexts are freed independently when this struct is dropped.
+///
+/// # Example
+///
+/// ```no_run
+/// use crispembed::CrispFacePipeline;
+///
+/// let mut pipeline = CrispFacePipeline::new(
+///     "/path/to/scrfd.gguf",
+///     "/path/to/sface.gguf",
+///     0,
+/// ).unwrap();
+///
+/// let faces = pipeline.run("/path/to/photo.jpg", 0.5);
+/// for (det, emb) in &faces {
+///     println!("face at ({}, {}) conf={:.2} emb_dim={}", det.x, det.y, det.confidence, emb.len());
+/// }
+/// ```
+pub struct CrispFacePipeline {
+    det_ctx: *mut crispembed_sys::CrispembedFaceContext,
+    rec_ctx: *mut crispembed_sys::CrispembedFaceContext,
+}
+
+// Safety: same guarantee as CrispEmbed.
+unsafe impl Send for CrispFacePipeline {}
+
+impl CrispFacePipeline {
+    /// Load a detection model and a recognition model.
+    ///
+    /// - `det_path`  — path to the face detector model file.
+    /// - `rec_path`  — path to the face recogniser model file.
+    /// - `n_threads` — CPU thread count; pass `0` for automatic.
+    pub fn new(det_path: &str, rec_path: &str, n_threads: i32) -> Result<Self, String> {
+        let det_cpath = CString::new(det_path)
+            .map_err(|e| format!("invalid det_path: {e}"))?;
+        let rec_cpath = CString::new(rec_path)
+            .map_err(|e| format!("invalid rec_path: {e}"))?;
+
+        let det_ctx = unsafe {
+            crispembed_sys::crispembed_face_init(det_cpath.as_ptr(), n_threads)
+        };
+        if det_ctx.is_null() {
+            return Err(format!("crispembed_face_init failed for detector '{det_path}'"));
+        }
+
+        let rec_ctx = unsafe {
+            crispembed_sys::crispembed_face_init(rec_cpath.as_ptr(), n_threads)
+        };
+        if rec_ctx.is_null() {
+            // Free the already-allocated detector context before returning.
+            unsafe { crispembed_sys::crispembed_face_free(det_ctx) };
+            return Err(format!("crispembed_face_init failed for recogniser '{rec_path}'"));
+        }
+
+        Ok(Self { det_ctx, rec_ctx })
+    }
+
+    /// Embedding dimension of the recogniser model.
+    pub fn dim(&self) -> usize {
+        unsafe { crispembed_sys::crispembed_face_dim(self.rec_ctx) }.max(0) as usize
+    }
+
+    /// Model type strings `(detector_type, recogniser_type)`.
+    pub fn model_type(&self) -> (String, String) {
+        let read = |ptr: *const std::ffi::c_char| {
+            if ptr.is_null() {
+                String::new()
+            } else {
+                unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned()
+            }
+        };
+        (
+            read(unsafe { crispembed_sys::crispembed_face_type(self.det_ctx) }),
+            read(unsafe { crispembed_sys::crispembed_face_type(self.rec_ctx) }),
+        )
+    }
+
+    /// Detect all faces in `image_path` and encode each one.
+    ///
+    /// - `conf_threshold` — minimum detection confidence in `[0, 1]`.
+    ///
+    /// Returns a `Vec` of `(detection, embedding)` pairs — one per detected
+    /// face — sorted in the same order as the detector output.
+    /// Returns an empty vector on failure or when no faces are found.
+    pub fn run(
+        &mut self,
+        image_path: &str,
+        conf_threshold: f32,
+    ) -> Vec<(CrispembedFaceDetection, Vec<f32>)> {
+        let path = match CString::new(image_path) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut n_faces: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_face_pipeline(
+                self.det_ctx,
+                self.rec_ctx,
+                path.as_ptr(),
+                conf_threshold,
+                &mut n_faces,
+            )
+        };
+        if ptr.is_null() || n_faces <= 0 {
+            return vec![];
+        }
+        let results = unsafe { std::slice::from_raw_parts(ptr, n_faces as usize) };
+        results
+            .iter()
+            .map(|r| {
+                let det = CrispembedFaceDetection {
+                    x:          r.det.x,
+                    y:          r.det.y,
+                    w:          r.det.w,
+                    h:          r.det.h,
+                    confidence: r.det.confidence,
+                    landmarks:  r.det.landmarks,
+                };
+                let emb = if r.embedding.is_null() || r.embedding_dim <= 0 {
+                    vec![]
+                } else {
+                    unsafe { std::slice::from_raw_parts(r.embedding, r.embedding_dim as usize) }
+                        .to_vec()
+                };
+                (det, emb)
+            })
+            .collect()
+    }
+}
+
+impl Drop for CrispFacePipeline {
+    fn drop(&mut self) {
+        unsafe {
+            crispembed_sys::crispembed_face_free(self.det_ctx);
+            crispembed_sys::crispembed_face_free(self.rec_ctx);
+        }
+    }
+}

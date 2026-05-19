@@ -36,13 +36,22 @@ def get_hf_embeddings(model_id: str, texts: list[str], pooling: str = "mean") ->
     """Get embeddings from HuggingFace sentence-transformers."""
     try:
         from sentence_transformers import SentenceTransformer
-        model = SentenceTransformer(model_id, trust_remote_code=True)
+        model_kwargs = {}
+        # Jina v5 requires a default task — use 'retrieval' to match GGUF (merged adapter)
+        if "jina" in model_id.lower() and "v5" in model_id.lower():
+            model_kwargs["default_task"] = "retrieval"
+        model = SentenceTransformer(model_id, trust_remote_code=True, model_kwargs=model_kwargs)
         # Filter empty strings (HF handles them but may produce zeros)
         valid = [(i, t) for i, t in enumerate(texts) if t.strip()]
         if not valid:
             return np.zeros((len(texts), model.get_sentence_embedding_dimension()))
         indices, valid_texts = zip(*valid)
-        vecs = model.encode(list(valid_texts), normalize_embeddings=True)
+        # Disable automatic prompt prefixes — we test without any prefix to
+        # compare raw model output (CrispEmbed uses --prefix "")
+        encode_kwargs = {"normalize_embeddings": True}
+        if "jina" in model_id.lower() and "v5" in model_id.lower():
+            encode_kwargs["prompt_name"] = None
+        vecs = model.encode(list(valid_texts), **encode_kwargs)
         result = np.zeros((len(texts), vecs.shape[1]))
         for idx, vec in zip(indices, vecs):
             result[idx] = vec
@@ -61,7 +70,7 @@ def get_crispembed_embeddings(binary: str, gguf: str, texts: list[str]) -> np.nd
             continue
         try:
             r = subprocess.run(
-                [binary, "-m", gguf, text],
+                [binary, "-m", gguf, "--prefix", "", text],
                 capture_output=True, text=True, timeout=60
             )
             if r.returncode != 0:
