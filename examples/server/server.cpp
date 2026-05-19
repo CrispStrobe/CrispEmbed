@@ -35,6 +35,8 @@ static std::string json_escape(const std::string & s) {
 int main(int argc, char ** argv) {
     std::string model_path;
     std::string host = "127.0.0.1";
+    std::string det_model_path;  // face detection model
+    std::string rec_model_path;  // face recognition model
     int port = 8080;
     int n_threads = 4;
 
@@ -43,46 +45,57 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--host") == 0 && i + 1 < argc) host = argv[++i];
         else if (strcmp(argv[i], "--port") == 0 && i + 1 < argc) port = atoi(argv[++i]);
         else if (strcmp(argv[i], "-t") == 0 && i + 1 < argc) n_threads = atoi(argv[++i]);
+        else if (strcmp(argv[i], "--det") == 0 && i + 1 < argc) det_model_path = argv[++i];
+        else if (strcmp(argv[i], "--rec") == 0 && i + 1 < argc) rec_model_path = argv[++i];
     }
 
-    if (model_path.empty()) {
+    if (model_path.empty() && det_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
+        fprintf(stderr, "\nFace pipeline:\n");
+        fprintf(stderr, "  --det MODEL   face detection model (SCRFD GGUF)\n");
+        fprintf(stderr, "  --rec MODEL   face recognition model (ArcFace/SFace GGUF)\n");
         return 1;
     }
 
-    // Resolve model name to file path (auto-download if needed)
-    std::string resolved = crispembed_mgr::resolve_model(model_path, true);
-    if (resolved.empty()) {
-        fprintf(stderr, "Failed to resolve model '%s'\n", model_path.c_str());
-        return 1;
-    }
-    model_path = resolved;
-
-    crispembed_context * ctx = crispembed_init(model_path.c_str(), n_threads);
-    if (!ctx) {
-        fprintf(stderr, "Failed to load model '%s'\n", model_path.c_str());
-        return 1;
-    }
-
-    const auto * hp = crispembed_get_hparams(ctx);
-    int dim = hp->n_output > 0 ? hp->n_output : hp->n_embd;
+    // Text embedding model (optional when only face models are loaded)
+    crispembed_context * ctx = nullptr;
+    const crispembed_hparams * hp = nullptr;
+    int dim = 0;
     std::mutex model_mutex;
+    std::string model_name;
 
-    // Short model name for API responses (strip path and .gguf extension)
-    std::string model_name = model_path;
-    auto slash = model_name.find_last_of("/\\");
-    if (slash != std::string::npos) model_name = model_name.substr(slash + 1);
-    auto dot = model_name.rfind(".gguf");
-    if (dot != std::string::npos) model_name = model_name.substr(0, dot);
+    if (!model_path.empty()) {
+        std::string resolved = crispembed_mgr::resolve_model(model_path, true);
+        if (resolved.empty()) {
+            fprintf(stderr, "Failed to resolve model '%s'\n", model_path.c_str());
+            return 1;
+        }
+        model_path = resolved;
+        ctx = crispembed_init(model_path.c_str(), n_threads);
+        if (!ctx) {
+            fprintf(stderr, "Failed to load model '%s'\n", model_path.c_str());
+            return 1;
+        }
+        hp = crispembed_get_hparams(ctx);
+        dim = hp->n_output > 0 ? hp->n_output : hp->n_embd;
+        model_name = model_path;
+        auto slash = model_name.find_last_of("/\\");
+        if (slash != std::string::npos) model_name = model_name.substr(slash + 1);
+        auto dot = model_name.rfind(".gguf");
+        if (dot != std::string::npos) model_name = model_name.substr(0, dot);
+    }
 
     httplib::Server svr;
 
     // POST /embed — simple API
     svr.Post("/embed", [&](const httplib::Request & req, httplib::Response & res) {
-        // Parse JSON manually (minimal, no deps)
-        // Expect: {"texts": ["hello", "world"]} or {"text": "hello"}
+        if (!ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no text model loaded\"}", "application/json");
+            return;
+        }
         std::vector<std::string> texts;
         auto body = req.body;
 
@@ -164,6 +177,11 @@ int main(int argc, char ** argv) {
 
     // POST /v1/embeddings — OpenAI-compatible
     svr.Post("/v1/embeddings", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no text model loaded\"}", "application/json");
+            return;
+        }
         std::vector<std::string> texts;
         auto body = req.body;
         auto pos = body.find("\"input\"");
@@ -222,6 +240,11 @@ int main(int argc, char ** argv) {
     // Request:  {"model": "...", "input": ["text1", "text2"]} or {"model": "...", "input": "text"}
     // Response: {"model": "...", "embeddings": [[...], [...]], "total_duration": ns, "load_duration": 0, "prompt_eval_count": n}
     svr.Post("/api/embed", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no text model loaded\"}", "application/json");
+            return;
+        }
         std::vector<std::string> texts;
         auto body = req.body;
 
@@ -295,6 +318,11 @@ int main(int argc, char ** argv) {
     // Request:  {"model": "...", "prompt": "text"}
     // Response: {"embedding": [...]}
     svr.Post("/api/embeddings", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no text model loaded\"}", "application/json");
+            return;
+        }
         std::string text;
         auto body = req.body;
 
@@ -328,24 +356,172 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // ── Face pipeline endpoints ───────────────────────────────────────
+    crispembed_face_context * face_det = nullptr;
+    crispembed_face_context * face_rec = nullptr;
+    std::mutex face_mutex;
+
+    if (!det_model_path.empty()) {
+        face_det = crispembed_face_init(det_model_path.c_str(), n_threads);
+        if (!face_det)
+            fprintf(stderr, "Warning: failed to load detection model '%s'\n", det_model_path.c_str());
+    }
+    if (!rec_model_path.empty()) {
+        face_rec = crispembed_face_init(rec_model_path.c_str(), n_threads);
+        if (!face_rec)
+            fprintf(stderr, "Warning: failed to load recognition model '%s'\n", rec_model_path.c_str());
+    }
+
+    // POST /detect — face detection
+    // Request:  {"image": "/path/to/image.jpg", "conf": 0.5}
+    // Response: {"faces": [{"bbox":[x,y,w,h], "conf":0.9, "landmarks":[...]}]}
+    svr.Post("/detect", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!face_det) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no detection model loaded (use --det)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        float conf = 0.5f;
+
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        auto cpos = body.find("\"conf\"");
+        if (cpos != std::string::npos) {
+            auto start = body.find_first_of("0123456789.", cpos + 6);
+            if (start != std::string::npos) conf = (float)atof(body.c_str() + start);
+        }
+
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no image path\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(face_mutex);
+        int n = 0;
+        auto * dets = crispembed_detect_faces(face_det, image_path.c_str(), conf, &n);
+
+        std::ostringstream js;
+        js << "{\"faces\": [";
+        for (int i = 0; i < n; i++) {
+            if (i > 0) js << ", ";
+            js << "{\"bbox\":[" << dets[i].x << "," << dets[i].y
+               << "," << dets[i].w << "," << dets[i].h
+               << "], \"conf\":" << dets[i].confidence
+               << ", \"landmarks\":[";
+            for (int k = 0; k < 10; k++) {
+                if (k > 0) js << ",";
+                js << dets[i].landmarks[k];
+            }
+            js << "]}";
+        }
+        js << "]}";
+        res.set_content(js.str(), "application/json");
+    });
+
+    // POST /face — full pipeline: detect + align + encode
+    // Request:  {"image": "/path/to/image.jpg", "conf": 0.5}
+    // Response: {"faces": [{"bbox":[...], "conf":..., "landmarks":[...], "embedding":[...]}]}
+    svr.Post("/face", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!face_det || !face_rec) {
+            res.status = 503;
+            res.set_content("{\"error\": \"need both --det and --rec models\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        float conf = 0.5f;
+
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        auto cpos = body.find("\"conf\"");
+        if (cpos != std::string::npos) {
+            auto start = body.find_first_of("0123456789.", cpos + 6);
+            if (start != std::string::npos) conf = (float)atof(body.c_str() + start);
+        }
+
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no image path\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(face_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+        int n = 0;
+        auto * results = crispembed_face_pipeline(face_det, face_rec, image_path.c_str(), conf, &n);
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        std::ostringstream js;
+        js << "{\"faces\": [";
+        for (int i = 0; i < n; i++) {
+            if (i > 0) js << ", ";
+            js << "{\"bbox\":[" << results[i].det.x << "," << results[i].det.y
+               << "," << results[i].det.w << "," << results[i].det.h
+               << "], \"conf\":" << results[i].det.confidence
+               << ", \"landmarks\":[";
+            for (int k = 0; k < 10; k++) {
+                if (k > 0) js << ",";
+                js << results[i].det.landmarks[k];
+            }
+            js << "], \"embedding\":[";
+            for (int j = 0; j < results[i].embedding_dim; j++) {
+                if (j > 0) js << ",";
+                js << results[i].embedding[j];
+            }
+            js << "]}";
+        }
+        js << "], \"duration_ms\": " << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /face %d faces in %.1f ms\n", n, ms);
+        res.set_content(js.str(), "application/json");
+    });
+
     // GET /health
     svr.Get("/health", [&](const httplib::Request &, httplib::Response & res) {
         std::ostringstream js;
-        js << "{\"status\": \"ok\", \"dim\": " << dim
-           << ", \"layers\": " << hp->n_layer
-           << ", \"vocab\": " << hp->n_vocab << "}";
+        js << "{\"status\": \"ok\"";
+        if (ctx) {
+            js << ", \"dim\": " << dim
+               << ", \"layers\": " << hp->n_layer
+               << ", \"vocab\": " << hp->n_vocab;
+        }
+        if (face_det) js << ", \"face_detection\": true";
+        if (face_rec) js << ", \"face_recognition\": true, \"face_dim\": " << crispembed_face_dim(face_rec);
+        js << "}";
         res.set_content(js.str(), "application/json");
     });
 
     fprintf(stderr, "\ncrispembed-server: listening on %s:%d\n", host.c_str(), port);
-    fprintf(stderr, "  POST /embed           — {\"texts\": [\"hello\"]}\n");
-    fprintf(stderr, "  POST /v1/embeddings   — OpenAI-compatible\n");
-    fprintf(stderr, "  POST /api/embed       — Ollama-compatible\n");
-    fprintf(stderr, "  POST /api/embeddings  — Ollama-compatible (legacy)\n");
+    if (ctx) {
+        fprintf(stderr, "  POST /embed           — {\"texts\": [\"hello\"]}\n");
+        fprintf(stderr, "  POST /v1/embeddings   — OpenAI-compatible\n");
+        fprintf(stderr, "  POST /api/embed       — Ollama-compatible\n");
+        fprintf(stderr, "  POST /api/embeddings  — Ollama-compatible (legacy)\n");
+    }
+    if (face_det) fprintf(stderr, "  POST /detect          — {\"image\": \"path.jpg\"}\n");
+    if (face_det && face_rec) fprintf(stderr, "  POST /face            — {\"image\": \"path.jpg\"} (pipeline)\n");
     fprintf(stderr, "  GET  /health\n\n");
 
     svr.listen(host, port);
 
-    crispembed_free(ctx);
+    if (face_det) crispembed_face_free(face_det);
+    if (face_rec) crispembed_face_free(face_rec);
+    if (ctx) crispembed_free(ctx);
     return 0;
 }

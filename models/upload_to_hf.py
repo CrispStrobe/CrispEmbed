@@ -160,6 +160,12 @@ MODELS = {
         "license": "apache-2.0",
         "langs": ["multilingual"],
         "desc": "F2LLM Embedding v2 0.6B. Qwen3-based, strong multilingual performance.",
+        "parity": {
+            "f32":  1.0000,
+            "q8_0": 0.9941,
+            "q5_k": 0.9031,
+            "q4_k": 0.6999,
+        },
     },
     "jina-v5-nano": {
         "base_model": "jinaai/jina-embeddings-v5-text-nano",
@@ -172,6 +178,12 @@ MODELS = {
         "license": "cc-by-nc-4.0",
         "langs": ["multilingual"],
         "desc": "Jina Embeddings v5 Nano. Compact 210M decoder model, 1024-dimensional.",
+        "parity": {
+            "f32":  1.0000,
+            "q8_0": 0.9990,
+            "q5_k": 0.9876,
+            "q4_k": 0.9643,
+        },
     },
     "jina-v5-small": {
         "base_model": "jinaai/jina-embeddings-v5-text-small",
@@ -208,6 +220,12 @@ MODELS = {
         "license": "mit",
         "langs": ["multilingual"],
         "desc": "Microsoft Harrier OSS v1 270M. Gemma3-based compact model, 640-dimensional.",
+        "parity": {
+            "f32":  1.0000,
+            "q8_0": 0.9998,
+            "q5_k": 0.9962,
+            "q4_k": 0.9877,
+        },
     },
     "qwen3-embed-0.6b": {
         "base_model": "Qwen/Qwen3-Embedding-0.6B",
@@ -269,6 +287,12 @@ MODELS = {
         "license": "apache-2.0",
         "langs": ["en"],
         "desc": "Nomic Embed Text v1.5. 8K context window, Matryoshka representation learning. Use with prefix: \"search_query: \" / \"search_document: \".",
+        "parity": {
+            "f32":  1.0000,
+            "q8_0": 0.9994,
+            "q5_k": 0.9865,
+            "q4_k": 0.9618,
+        },
     },
     "all-MiniLM-L12-v2": {
         "base_model": "sentence-transformers/all-MiniLM-L12-v2",
@@ -488,10 +512,15 @@ MODELS = {
         "langs": ["multilingual"],
         "desc": "BGE Reranker v2 M3. Multilingual cross-encoder reranker (100+ languages). 2-layer classification head. Use with crispembed_rerank().",
         "is_reranker": True,
+        "parity": {
+            "f32":  1.0000,
+            "q8_0": 0.9997,
+            "q4_k": 0.9851,
+        },
     },
     "jina-reranker-v2-base-multilingual": {
         "base_model": "jinaai/jina-reranker-v2-base-multilingual",
-        "arch": "XLM-RoBERTa",
+        "arch": "Jina v2 (XLM-R variant)",
         "dim": 768,
         "layers": 12,
         "params": "278M",
@@ -499,8 +528,13 @@ MODELS = {
         "tokenizer": "SentencePiece",
         "license": "cc-by-nc-4.0",
         "langs": ["multilingual"],
-        "desc": "Jina Reranker v2 Base Multilingual. Cross-encoder reranker for 100+ languages. 1-layer classification head. Use with crispembed_rerank().",
+        "desc": "Jina Reranker v2 Base Multilingual. Cross-encoder reranker for 100+ languages. Post-LN, NomicBERT-like layout (mixer.Wqkv + GELU FFN). Use with crispembed_rerank().",
         "is_reranker": True,
+        "parity": {
+            "f32":  1.0000,
+            "q8_0": 0.9997,
+            "q4_k": 0.9981,
+        },
     },
     "gte-base-en-v1.5": {
         "base_model": "Alibaba-NLP/gte-base-en-v1.5",
@@ -512,7 +546,12 @@ MODELS = {
         "tokenizer": "WordPiece",
         "license": "apache-2.0",
         "langs": ["en"],
-        "desc": "GTE Base EN v1.5. Pre-LN BERT with RoPE and GeGLU. 768-dimensional output, CLS pooling. 8192-token context.",
+        "desc": "GTE Base EN v1.5. Post-LN BERT with NTK-scaled RoPE and GeGLU. 768-dimensional output, CLS pooling. 8192-token context.",
+        "parity": {
+            "f32":  0.9841,
+            "q8_0": 0.9836,
+            "q4_k": 0.9178,
+        },
     },
     "gte-large-en-v1.5": {
         "base_model": "Alibaba-NLP/gte-large-en-v1.5",
@@ -524,7 +563,12 @@ MODELS = {
         "tokenizer": "WordPiece",
         "license": "apache-2.0",
         "langs": ["en"],
-        "desc": "GTE Large EN v1.5. Pre-LN BERT with RoPE and GeGLU. 1024-dimensional output, CLS pooling. 8192-token context.",
+        "desc": "GTE Large EN v1.5. Post-LN BERT with NTK-scaled RoPE and GeGLU. 1024-dimensional output, CLS pooling. 8192-token context.",
+        "parity": {
+            "f32":  0.9660,
+            "q8_0": 0.9663,
+            "q4_k": 0.9407,
+        },
     },
     "bidirlm-omni-2.5b-textonly": {
         "base_model": "BidirLM/BidirLM-Omni-2.5B-Embedding",

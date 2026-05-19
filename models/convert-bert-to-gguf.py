@@ -231,7 +231,8 @@ def main():
 
     # Position embedding offset: RoBERTa/XLM-R/MPNet use padding_idx + 1
     pos_offset = 0
-    needs_pos_offset = is_true_xlmr or config.model_type == "mpnet"
+    _has_mixer_qkv = "encoder.layers.0.mixer.Wqkv.weight" in sd  # Jina v2 early detection
+    needs_pos_offset = is_true_xlmr or config.model_type == "mpnet" or _has_mixer_qkv
     if needs_pos_offset and hasattr(config, "pad_token_id") and config.pad_token_id is not None:
         pos_offset = config.pad_token_id + 1
         print(f"  position_offset: {pos_offset} (RoBERTa/MPNet-style)")
@@ -512,23 +513,48 @@ def main():
     # DeBERTa:   deberta.encoder.layer.N.attention.self.query_proj
     is_mpnet = "encoder.layer.0.attention.attn.q.weight" in sd
     is_nomic = "encoder.layers.0.attn.Wqkv.weight" in sd
+    is_jina_v2 = "encoder.layers.0.mixer.Wqkv.weight" in sd  # Jina v2: NomicBERT-like but mixer.Wqkv + GELU FFN
     is_modernbert = "layers.0.attn.Wqkv.weight" in sd and "layers.0.mlp.Wi.weight" in sd
     is_gte_new = "encoder.layer.0.attention.qkv_proj.weight" in sd  # GTE v1.5 "new" BERT
     is_deberta = ("encoder.layer.0.attention.self.query_proj.weight" in sd or
                   "deberta.encoder.layer.0.attention.self.query_proj.weight" in sd)
 
+    if is_deberta:
+        pos_buckets = getattr(config, "position_buckets", 256)
+        writer.add_uint32("bert.position_buckets", pos_buckets)
+        print(f"  DeBERTa: position_buckets={pos_buckets}")
+
     if is_gte_new:
         # GTE v1.5 "new" BERT: pre-LN, RoPE, GeGLU, fused QKV+bias, CLS pooling
         rope_theta = getattr(config, "rope_theta", 10000.0)
+        # GTE v1.5 uses NTK-scaled RoPE: effective_theta = theta * factor^(dim/(dim-2))
+        rope_scaling = getattr(config, "rope_scaling", None)
+        if rope_scaling and rope_scaling.get("type") == "ntk":
+            factor = rope_scaling.get("factor", 1.0)
+            head_dim = config.hidden_size // config.num_attention_heads
+            rope_theta = rope_theta * factor ** (head_dim / (head_dim - 2))
+            print(f"  GTE v1.5: NTK scaling factor={factor}, effective rope_theta={rope_theta:.0f}")
         writer.add_float32("bert.rope_theta", rope_theta)
-        writer.add_uint32("bert.pre_ln", 1)
-        print(f"  GTE v1.5: rope_theta={rope_theta}, pre_ln=1")
+        # GTE v1.5 is POST-LN despite attn_ln/mlp_ln naming: the LN comes
+        # AFTER the residual add (attention → add → LN, FFN → add → LN).
+        # Do NOT set pre_ln=1.
+        print(f"  GTE v1.5: rope_theta={rope_theta:.0f}, post-LN (attn_ln/mlp_ln are post-residual)")
+
+    if is_jina_v2:
+        # Jina v2 (jina-reranker-v2-base-multilingual): NomicBERT-like layout
+        # (norm1/norm2, mixer.Wqkv), but POST-LN (prenorm=False in HF code).
+        # Standard GELU FFN (fc1/fc2), with biases, learned position embeddings.
+        # Do NOT set pre_ln — this is post-LN like standard BERT.
+        print(f"  Jina v2: post-LN, GELU FFN (no gate)")
 
     if is_nomic:
-        # NomicBERT: RoPE encoder, fused QKV, SwiGLU FFN, no bias on attn
+        # NomicBERT: POST-LN, RoPE encoder, fused QKV, SwiGLU FFN, no bias on attn
+        # NomicBertBlock has prenorm=False: attn → add → LN → MLP → add → LN
+        # (standard post-LN like BERT, despite the flash-attn Block wrapper)
         rope_theta = getattr(config, "rotary_emb_base", 10000.0)
         writer.add_float32("bert.rope_theta", rope_theta)
-        print(f"  NomicBERT: rope_theta={rope_theta}")
+        # Do NOT set pre_ln — this is post-LN
+        print(f"  NomicBERT: rope_theta={rope_theta}, post-LN")
 
     if is_modernbert:
         # ModernBERT: pre-LN, RoPE, GeGLU, fused QKV, fused gate+up, no biases
@@ -573,9 +599,14 @@ def main():
             writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attention.o_proj.weight"]))
             writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.bias", f32(sd[f"{pfx}.attention.o_proj.bias"]))
 
-            # GeGLU FFN: store FUSED up_gate for ggml_geglu (single matmul + fused op)
+            # GeGLU FFN: store FUSED gate_up for ggml_geglu (single matmul + fused op)
+            # HF GatedMLP splits as (up, gate) — first=up, second=gate
+            # ggml_geglu does gelu(first) * second — expects first=gate, second=up
+            # So we swap the halves: [gate; up] for ggml_geglu
             ug = sd[f"{pfx}.mlp.up_gate_proj.weight"]  # [2*inter, H]
-            writer.add_tensor(f"{LP}.{i}.ffn_up_gate.weight", f32(ug))
+            half = ug.shape[0] // 2
+            swapped = torch.cat([ug[half:], ug[:half]], dim=0)  # [gate; up]
+            writer.add_tensor(f"{LP}.{i}.ffn_up_gate.weight", f32(swapped))
             writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.down_proj.weight"]))
             writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.bias", f32(sd[f"{pfx}.mlp.down_proj.bias"]))
 
@@ -605,7 +636,7 @@ def main():
             writer.add_tensor(f"{LP}.{i}.ffn_up_gate.weight", f32(wi))
             writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.Wo.weight"]))
 
-        elif is_nomic:
+        elif is_jina_v2 or is_nomic:
             pfx = f"encoder.layers.{i}"
 
             # Layer norms: pre-attention (norm1) and pre-FFN (norm2)
@@ -614,20 +645,43 @@ def main():
             writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.weight", f32(sd[f"{pfx}.norm2.weight"]))
             writer.add_tensor(f"{LP}.{i}.{TN['ln2']}.bias", f32(sd[f"{pfx}.norm2.bias"]))
 
-            # Fused QKV: [3H, H] → split into Q [H,H], K [H,H], V [H,H]
-            qkv = sd[f"{pfx}.attn.Wqkv.weight"]
-            H = qkv.shape[1]
-            writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.weight", wt(qkv[:H]))
-            writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.weight", wt(qkv[H:2*H]))
-            writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.weight", wt(qkv[2*H:]))
-
-            # Attention output (no bias in NomicBERT)
-            writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attn.out_proj.weight"]))
-
-            # SwiGLU FFN: keep SEPARATE gate + up (NomicBERT uses ggml_silu + ggml_mul)
-            writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(sd[f"{pfx}.mlp.fc12.weight"]))
-            writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.fc2.weight"]))
-            writer.add_tensor(f"{LP}.{i}.ffn_gate.weight", wt(sd[f"{pfx}.mlp.fc11.weight"]))
+            if is_jina_v2:
+                # Jina v2: fused QKV under mixer.Wqkv (with bias), GELU FFN
+                qkv = sd[f"{pfx}.mixer.Wqkv.weight"]
+                H = qkv.shape[1]
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.weight", wt(qkv[:H]))
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.weight", wt(qkv[H:2*H]))
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.weight", wt(qkv[2*H:]))
+                # Jina v2 has bias on QKV
+                qkv_b = sd[f"{pfx}.mixer.Wqkv.bias"]
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.bias", f32(qkv_b[:H]))
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.bias", f32(qkv_b[H:2*H]))
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.bias", f32(qkv_b[2*H:]))
+                # Attention output (with bias)
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.mixer.out_proj.weight"]))
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.bias", f32(sd[f"{pfx}.mixer.out_proj.bias"]))
+                # Standard GELU FFN (fc1/fc2 with biases, no gate)
+                writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(sd[f"{pfx}.mlp.fc1.weight"]))
+                writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.bias", f32(sd[f"{pfx}.mlp.fc1.bias"]))
+                writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.fc2.weight"]))
+                writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.bias", f32(sd[f"{pfx}.mlp.fc2.bias"]))
+            else:
+                # NomicBERT: fused QKV under attn.Wqkv (no bias), SwiGLU FFN
+                qkv = sd[f"{pfx}.attn.Wqkv.weight"]
+                H = qkv.shape[1]
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.weight", wt(qkv[:H]))
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.weight", wt(qkv[H:2*H]))
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.weight", wt(qkv[2*H:]))
+                # Attention output (no bias in NomicBERT)
+                writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attn.out_proj.weight"]))
+                # SwiGLU FFN: keep SEPARATE gate + up (NomicBERT uses ggml_silu + ggml_mul)
+                # HF NomicBERT: y = fc11(x) * activation(fc12(x))
+                #   fc11 = value/up (no activation), fc12 = gate (silu applied)
+                # Runtime: up = fc1_w * x; gate = silu(ffn_gate_w * x); ffn = up * gate
+                #   fc1 (ffn_up) must be fc11 (value), ffn_gate must be fc12 (gate)
+                writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(sd[f"{pfx}.mlp.fc11.weight"]))
+                writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.fc2.weight"]))
+                writer.add_tensor(f"{LP}.{i}.ffn_gate.weight", wt(sd[f"{pfx}.mlp.fc12.weight"]))
 
         else:
             # BERT / DeBERTa / MPNet layer prefix
@@ -680,13 +734,17 @@ def main():
 
         print(f"  {LP}.{i}: ok")
 
-    # Pooler (optional, skip in Ollama mode — not used)
-    if not ollama_mode and "pooler.dense.weight" in sd:
+    # Pooler (optional).
+    # Always save for rerankers (ContextPooler is required for correct scoring).
+    # Skip in Ollama mode for non-reranker models (not used in embedding pipelines).
+    if "pooler.dense.weight" in sd and (has_classifier or not ollama_mode):
         writer.add_tensor("pooler.weight", f32(sd["pooler.dense.weight"]))
         writer.add_tensor("pooler.bias", f32(sd["pooler.dense.bias"]))
-        print("  pooler: ok")
+        pooler_act = getattr(config, "pooler_hidden_act", "gelu")
+        writer.add_string("bert.pooler_act", pooler_act)
+        print(f"  pooler: ok (act={pooler_act})")
 
-    # Optional retrieval heads (CrispEmbed-native only — Ollama doesn't use them)
+    # Optional retrieval heads (sparse/colbert: CrispEmbed-only; classifier: always)
     if not ollama_mode:
         if has_sparse_head:
             writer.add_tensor("sparse_linear.weight", f32(sd["sparse_linear.weight"]))
@@ -698,6 +756,8 @@ def main():
             if "colbert_linear.bias" in sd:
                 writer.add_tensor("colbert_linear.bias", f32(sd["colbert_linear.bias"]))
             print("  colbert_linear: ok")
+    # Classifier heads always included (reranker needs them in both formats)
+    if True:
         if has_classifier_2layer:
             writer.add_tensor("classifier.dense.weight",    f32(sd["classifier.dense.weight"]))
             writer.add_tensor("classifier.dense.bias",      f32(sd["classifier.dense.bias"]))

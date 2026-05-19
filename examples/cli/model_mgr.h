@@ -42,4 +42,9 @@ const char * model_card_url(int i);       // upstream HuggingFace model card
 // Currently: anything matching "cc-by-nc*", "gemma", "llama*", "other".
 bool license_requires_acceptance(const char * spdx);
 
+// Prompt prefixes for optimal retrieval quality.
+// Returns nullptr if the model doesn't use prefixes.
+const char * get_query_prefix(const char * model_name);
+const char * get_passage_prefix(const char * model_name);
+
 }  // namespace crispembed_mgr

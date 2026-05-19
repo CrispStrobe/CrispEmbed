@@ -640,23 +640,51 @@ per-op overhead matters most. On larger models, ONNX Runtime's graph optimizatio
 closes the gap. GPU (CUDA/Metal) should favor CrispEmbed across all sizes due
 to ggml's fused CUDA kernels and flash attention.
 
-## DeBERTa-v2 disentangled attention (partial)
+## DeBERTa-v2 disentangled attention (full parity)
 
-DeBERTa-v2's attention computes three components:
-1. **c2c** (content-to-content): standard Q×K^T — implemented
-2. **c2p** (content-to-position): Q × (W_k × rel_embd)^T — NOT implemented
-3. **p2c** (position-to-content): (W_q × rel_embd) × K^T — NOT implemented
+DeBERTa-v2's attention computes three components, all now implemented:
+1. **c2c** (content-to-content): standard Q×K^T
+2. **c2p** (content-to-position): Q × K_proj(rel_embd)^T
+3. **p2c** (position-to-content): K × Q_proj(rel_embd)^T
 
-The c2p and p2c components are **input-dependent** (they use Q and K from the
-current input), so they can't be precomputed like MPNet's bucket bias. They
-require per-layer relative position projections in the ggml graph:
-- Look up `rel_embd[relative_position]` for all (i,j) pairs
-- Project through Q/K weights
-- Add to attention scores
+### Key implementation details
 
-This adds ~6 matmuls per layer and complex indexing. For rerankers (the main
-DeBERTa use case), the partial c2c-only implementation may be sufficient for
-ranking (relative ordering preserved even without position signal).
+**Pre-expansion approach**: Rather than gather+matmul at runtime, we pre-expand
+the position embeddings on CPU: `P[H, T*T]` where `P[:, i*T+j] = LN(rel_emb[bucket(i-j)+256])`.
+Then project through K/Q weights and use batched matmul to compute all scores.
+
+**Critical: HF uses bucket(query-key) for BOTH c2p AND p2c**. This is
+counter-intuitive — you'd expect p2c to use bucket(key-query). But HF's
+`disentangled_attention_bias` gathers p2c using the same relative position
+index, then transposes the result. To achieve this with pre-expansion, we
+transpose the T×T grid for p2c: `P_p2c = P.reshape(H,T,T).permute(0,2,1)`.
+
+**Encoder LayerNorm on position embeddings**: HF applies `encoder.LayerNorm`
+to `rel_embeddings.weight` BEFORE using them in attention (`get_rel_embedding()`).
+This is separate from the post-encoder LayerNorm. Missing this causes ~15%
+error in position scores.
+
+**Position projection biases**: HF's `key_proj`/`query_proj` are `nn.Linear`
+which include bias. Must add `k_bias` to Pk and `q_bias` to Pq.
+
+**Log-bucket formula** (`make_log_bucket_position`): Uses signed bucket values
+centered at `att_span` (= position_buckets = 256). The log denominator is
+`log((max_relative_positions - 1) / mid)`, NOT `log((max_pos/2 - 1) / mid)`.
+
+**Attention output reshape**: After V-weighted sum `[hd, T_q, nh]`, must permute
+to `[hd, nh, T_q]` BEFORE reshaping to `[H, T]`. Without this permute, head
+dimensions get incorrectly interleaved.
+
+**Score scaling**: `1/sqrt(3 * head_dim)` when both c2p and p2c are present
+(the 3 = 1 + num_position_attention_types).
+
+### ggml_permute semantics (output-position convention)
+
+`ggml_permute(a, ax0, ax1, ax2, ax3)`: `axes[k]` means "source dimension k
+goes to result dimension `axes[k]`". So `permute(a, 0, 2, 1, 3)` on
+`[hd, nh, T, B]` gives `[hd, T, nh, B]` (dims 1 and 2 swap).
+
+This is the OPPOSITE of numpy's `transpose` where you specify source→result.
 
 ## Rust crate verification
 
@@ -905,3 +933,47 @@ caught by the install verification test — a plain-C consumer of the
 freshly `cmake --install`-ed header. The build directory consumers
 (crispembed-cli, crispembed-server) didn't catch it because they're
 compiled as C++.
+
+## CNN forward path for face models (Phase 8)
+
+### Available ggml ops for CNN
+- `ggml_conv_2d(a, b, s0, s1, p0, p1, d0, d1)` — standard 2D conv
+- `ggml_conv_2d_dw(a, b, ...)` — depthwise 2D conv
+- `ggml_pool_2d(a, op, k0, k1, s0, s1, p0, p1)` — average/max pool
+- `ggml_relu`, `ggml_leaky_relu(a, slope, inplace)` — activations
+- No `ggml_prelu` — implement as: `relu(x) + slope * (x - relu(x))`
+  where slope is a learned [C, 1, 1] tensor per channel
+
+### BatchNorm folding
+At inference time, BN is folded into the preceding Conv:
+```
+w_new = w * gamma / sqrt(var + eps)
+b_new = (b - mean) * gamma / sqrt(var + eps) + beta
+```
+This eliminates all BN tensors from the forward pass.
+
+### Conv2d output layout in ggml
+`ggml_conv_2d` output: `[OW, OH, OC]` — width-first (ne[0]=OW).
+To match HF's `[OC, OH, OW]` (channel-first): `permute(2, 1, 0)`.
+This matters for position embeddings in ViT but NOT for CNNs
+(CNNs are translation-equivariant — spatial order preserved naturally).
+
+### SFace architecture (MobileFaceNet)
+27 Conv layers (14 depthwise separable blocks), PReLU activation,
+final GDC pool → FC(50176→128). 128-D L2-normalized embedding.
+Input: 112×112 aligned face crop.
+
+### SCRFD architecture (ResNet-50 + FPN)
+58 Conv layers, ReLU activation, FPN with 3 scales (stride 8/16/32).
+9 output heads: 3 × (confidence [N,1], bbox [N,4], landmarks [N,10]).
+Dynamic input size (typically 640×640).
+Needs NMS post-processing.
+
+### AuraFace architecture (ResNet-100)
+103 Conv layers, PReLU, 49 residual Add connections.
+512-D ArcFace-compatible embedding. Apache 2.0.
+
+### CrispASR CNN reference
+CrispASR has CNN forward paths for marblenet (depthwise 1D conv),
+wav2vec2 (grouped conv), and others. Same ggml ops, similar patterns.
+Patches at tools/upstream-prs/ may be needed for CUDA conv2d.

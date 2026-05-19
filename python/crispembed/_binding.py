@@ -896,3 +896,328 @@ class CrispEmbed:
         if hasattr(self, "_ctx") and self._ctx:
             self._lib.crispembed_free(self._ctx)
             self._ctx = None
+
+
+# ---------------------------------------------------------------------------
+# Face pipeline ctypes structures
+# ---------------------------------------------------------------------------
+
+class _FaceDetection(ctypes.Structure):
+    _fields_ = [
+        ("x", ctypes.c_float),
+        ("y", ctypes.c_float),
+        ("w", ctypes.c_float),
+        ("h", ctypes.c_float),
+        ("confidence", ctypes.c_float),
+        ("landmarks", ctypes.c_float * 10),
+    ]
+
+
+class _FaceResult(ctypes.Structure):
+    _fields_ = [
+        ("det", _FaceDetection),
+        ("embedding", ctypes.POINTER(ctypes.c_float)),
+        ("embedding_dim", ctypes.c_int),
+    ]
+
+
+def _setup_face_signatures(lib):
+    """Register ctypes signatures for all crispembed_face_* functions."""
+    lib.crispembed_face_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_face_init.restype = ctypes.c_void_p
+
+    lib.crispembed_face_dim.argtypes = [ctypes.c_void_p]
+    lib.crispembed_face_dim.restype = ctypes.c_int
+
+    lib.crispembed_face_type.argtypes = [ctypes.c_void_p]
+    lib.crispembed_face_type.restype = ctypes.c_char_p
+
+    lib.crispembed_detect_faces.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_char_p,
+        ctypes.c_float,
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_detect_faces.restype = ctypes.POINTER(_FaceDetection)
+
+    lib.crispembed_encode_face.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_char_p,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_encode_face.restype = ctypes.POINTER(ctypes.c_float)
+
+    lib.crispembed_face_pipeline.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_void_p,
+        ctypes.c_char_p,
+        ctypes.c_float,
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_face_pipeline.restype = ctypes.POINTER(_FaceResult)
+
+    lib.crispembed_face_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_face_free.restype = None
+
+
+def _det_to_dict(det: _FaceDetection) -> dict:
+    """Convert a _FaceDetection struct to a plain Python dict."""
+    return {
+        "x": float(det.x),
+        "y": float(det.y),
+        "w": float(det.w),
+        "h": float(det.h),
+        "confidence": float(det.confidence),
+        "landmarks": [float(det.landmarks[i]) for i in range(10)],
+    }
+
+
+# ---------------------------------------------------------------------------
+# CrispFace — detection + recognition
+# ---------------------------------------------------------------------------
+
+class CrispFace:
+    """Face detection and recognition via the crispembed_face_* C API.
+
+    A single instance can be used for either detection (SCRFD-style models)
+    or recognition (SFace / ArcFace-style models) depending on what
+    ``model_path`` points to.
+
+    Usage::
+
+        # Detection
+        det = CrispFace("scrfd_10g.gguf")
+        faces = det.detect("photo.jpg", conf=0.5)
+        # [{"x": ..., "y": ..., "w": ..., "h": ..., "confidence": ..., "landmarks": [...]}]
+
+        # Recognition
+        rec = CrispFace("sface.gguf")
+        emb = rec.encode("photo.jpg", landmarks=faces[0]["landmarks"])
+        # np.ndarray of shape (rec.dim,)
+    """
+
+    def __init__(
+        self,
+        model_path: str,
+        n_threads: int = 4,
+        lib_path: Optional[str] = None,
+    ):
+        self._lib = _load_library(lib_path)
+        _setup_face_signatures(self._lib)
+        self._ctx = self._lib.crispembed_face_init(
+            model_path.encode("utf-8"), n_threads
+        )
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load face model: {model_path}")
+
+    # ------------------------------------------------------------------
+    # Detection
+    # ------------------------------------------------------------------
+
+    def detect(self, image_path: str, conf: float = 0.5) -> List[dict]:
+        """Detect faces in *image_path*.
+
+        Args:
+            image_path: Path to an image file.
+            conf:       Minimum confidence threshold (0–1).
+
+        Returns:
+            List of dicts with keys ``x, y, w, h, confidence, landmarks``.
+            ``landmarks`` is a flat list of 10 floats
+            (five (x, y) keypoint pairs: left-eye, right-eye, nose,
+            left-mouth, right-mouth).
+        """
+        n_faces = ctypes.c_int(0)
+        ptr = self._lib.crispembed_detect_faces(
+            self._ctx,
+            image_path.encode("utf-8"),
+            ctypes.c_float(conf),
+            ctypes.byref(n_faces),
+        )
+        if not ptr or n_faces.value <= 0:
+            return []
+        return [_det_to_dict(ptr[i]) for i in range(n_faces.value)]
+
+    # ------------------------------------------------------------------
+    # Recognition
+    # ------------------------------------------------------------------
+
+    def encode(self, image_path: str, landmarks) -> np.ndarray:
+        """Encode a face crop into an embedding vector.
+
+        Args:
+            image_path: Path to the image containing the face.
+            landmarks:  10 floats (5 keypoints × 2 coords) used to align
+                        the crop before embedding.  Pass
+                        ``face["landmarks"]`` from :meth:`detect`.
+
+        Returns:
+            np.ndarray of shape ``(dim,)``, L2-normalized.
+        """
+        lm = list(landmarks)
+        if len(lm) != 10:
+            raise ValueError(f"landmarks must have exactly 10 values, got {len(lm)}")
+        c_lm = (ctypes.c_float * 10)(*lm)
+        out_dim = ctypes.c_int(0)
+        ptr = self._lib.crispembed_encode_face(
+            self._ctx,
+            image_path.encode("utf-8"),
+            c_lm,
+            ctypes.byref(out_dim),
+        )
+        if not ptr or out_dim.value <= 0:
+            return np.empty((0,), dtype=np.float32)
+        return np.ctypeslib.as_array(ptr, shape=(out_dim.value,)).copy()
+
+    # ------------------------------------------------------------------
+    # Properties
+    # ------------------------------------------------------------------
+
+    @property
+    def dim(self) -> int:
+        """Embedding dimension of this model (0 for pure detectors)."""
+        return int(self._lib.crispembed_face_dim(self._ctx))
+
+    @property
+    def model_type(self) -> str:
+        """Model type string returned by the C library (e.g. ``"scrfd"`` or ``"sface"``)."""
+        raw = self._lib.crispembed_face_type(self._ctx)
+        return raw.decode("utf-8") if raw else ""
+
+    # ------------------------------------------------------------------
+    # Cleanup
+    # ------------------------------------------------------------------
+
+    def __del__(self):
+        if hasattr(self, "_ctx") and self._ctx:
+            self._lib.crispembed_face_free(self._ctx)
+            self._ctx = None
+
+
+# ---------------------------------------------------------------------------
+# CrispFacePipeline — joint detect + embed in one call
+# ---------------------------------------------------------------------------
+
+class CrispFacePipeline:
+    """End-to-end face pipeline: detect all faces then embed each one.
+
+    Wraps ``crispembed_face_pipeline`` which runs detection and recognition
+    in a single C call, avoiding redundant image decoding.
+
+    Usage::
+
+        pipe = CrispFacePipeline("scrfd_10g.gguf", "sface.gguf")
+        results = pipe.run("photo.jpg", conf=0.5)
+        # [{"det": {...}, "embedding": np.ndarray}, ...]
+
+        sim = pipe.match(results[0]["embedding"], results[1]["embedding"])
+        # float in [-1, 1]
+    """
+
+    def __init__(
+        self,
+        det_model: str,
+        rec_model: str,
+        n_threads: int = 4,
+        lib_path: Optional[str] = None,
+    ):
+        self._lib = _load_library(lib_path)
+        _setup_face_signatures(self._lib)
+
+        self._det_ctx = self._lib.crispembed_face_init(
+            det_model.encode("utf-8"), n_threads
+        )
+        if not self._det_ctx:
+            raise RuntimeError(f"Failed to load face detector: {det_model}")
+
+        self._rec_ctx = self._lib.crispembed_face_init(
+            rec_model.encode("utf-8"), n_threads
+        )
+        if not self._rec_ctx:
+            self._lib.crispembed_face_free(self._det_ctx)
+            self._det_ctx = None
+            raise RuntimeError(f"Failed to load face recognizer: {rec_model}")
+
+    # ------------------------------------------------------------------
+    # Pipeline
+    # ------------------------------------------------------------------
+
+    def run(self, image_path: str, conf: float = 0.5) -> List[dict]:
+        """Detect and embed all faces in *image_path*.
+
+        Args:
+            image_path: Path to an image file.
+            conf:       Minimum detection confidence (0–1).
+
+        Returns:
+            List of dicts with keys:
+
+            * ``"det"`` — detection dict (``x, y, w, h, confidence,
+              landmarks``).
+            * ``"embedding"`` — ``np.ndarray`` of shape ``(rec_dim,)``,
+              L2-normalized face embedding.
+        """
+        n_faces = ctypes.c_int(0)
+        ptr = self._lib.crispembed_face_pipeline(
+            self._det_ctx,
+            self._rec_ctx,
+            image_path.encode("utf-8"),
+            ctypes.c_float(conf),
+            ctypes.byref(n_faces),
+        )
+        if not ptr or n_faces.value <= 0:
+            return []
+
+        results = []
+        for i in range(n_faces.value):
+            fr = ptr[i]
+            det = _det_to_dict(fr.det)
+            if fr.embedding and fr.embedding_dim > 0:
+                emb = np.ctypeslib.as_array(
+                    fr.embedding, shape=(fr.embedding_dim,)
+                ).copy()
+            else:
+                emb = np.empty((0,), dtype=np.float32)
+            results.append({"det": det, "embedding": emb})
+        return results
+
+    # ------------------------------------------------------------------
+    # Matching
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def match(emb1: np.ndarray, emb2: np.ndarray) -> float:
+        """Cosine similarity between two face embeddings.
+
+        Both embeddings are expected to be L2-normalized (as returned by
+        :meth:`run`).  The dot product therefore equals the cosine
+        similarity directly.
+
+        Args:
+            emb1: First face embedding, shape ``(dim,)``.
+            emb2: Second face embedding, shape ``(dim,)``.
+
+        Returns:
+            float in ``[-1, 1]``.  Values above ~0.3 typically indicate
+            the same person (threshold is model-dependent).
+        """
+        a = np.asarray(emb1, dtype=np.float32).ravel()
+        b = np.asarray(emb2, dtype=np.float32).ravel()
+        norm_a = np.linalg.norm(a)
+        norm_b = np.linalg.norm(b)
+        if norm_a == 0.0 or norm_b == 0.0:
+            return 0.0
+        return float(np.dot(a, b) / (norm_a * norm_b))
+
+    # ------------------------------------------------------------------
+    # Cleanup
+    # ------------------------------------------------------------------
+
+    def __del__(self):
+        if hasattr(self, "_det_ctx") and self._det_ctx:
+            self._lib.crispembed_face_free(self._det_ctx)
+            self._det_ctx = None
+        if hasattr(self, "_rec_ctx") and self._rec_ctx:
+            self._lib.crispembed_face_free(self._rec_ctx)
+            self._rec_ctx = None

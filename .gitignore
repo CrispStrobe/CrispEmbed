@@ -20,3 +20,4 @@ crispembed.local-backup/
 # Local Claude Code session notes — agent continuity, not human docs.
 # Project documentation lives in README.md, PLAN.md, LEARNINGS.md.
 CLAUDE.md
+handover-prompts/
