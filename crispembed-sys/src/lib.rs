@@ -169,6 +169,34 @@ extern "C" {
     ) -> *const c_float;
 
     // ------------------------------------------------------------------
+    // Per-token contextual embeddings (any encoder model)
+    // ------------------------------------------------------------------
+
+    /// Encode `text` to per-token L2-normalised final hidden states from
+    /// any encoder model (BERT / XLM-R / etc.). Unlike `encode_multivec`,
+    /// this is NOT gated on the ColBERT head — it returns the raw
+    /// contextual hidden states. Designed for SimAlign-style word aligners.
+    pub fn crispembed_encode_tokens(
+        ctx:          *mut CrispembedContext,
+        text:         *const c_char,
+        out_n_tokens: *mut c_int,
+        out_dim:      *mut c_int,
+    ) -> *const c_float;
+
+    /// Pointer to the token IDs from the most recent `encode_tokens` call.
+    /// `NULL` if `encode_tokens` has not been called or failed.
+    pub fn crispembed_last_token_ids(ctx: *const CrispembedContext) -> *const i32;
+
+    /// Look up the surface form of a vocab token by id. Returns a pointer
+    /// to an empty string on out-of-range ids; the pointer is owned by the
+    /// context and stable for its lifetime.
+    pub fn crispembed_token_str(ctx: *const CrispembedContext, id: i32) -> *const c_char;
+
+    /// Tokenizer family: 1=WordPiece, 2=SentencePiece, 3=BPE, 0=unknown.
+    /// Callers use this to interpret subword markers (`##` vs `▁`).
+    pub fn crispembed_tokenizer_kind(ctx: *const CrispembedContext) -> c_int;
+
+    // ------------------------------------------------------------------
     // Reranker
     // ------------------------------------------------------------------
 
