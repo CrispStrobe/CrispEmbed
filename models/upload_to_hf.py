@@ -484,7 +484,7 @@ MODELS = {
         "params": "568M",
         "pooling": "CLS",
         "tokenizer": "SentencePiece",
-        "license": "mit",
+        "license": "apache-2.0",
         "langs": ["multilingual"],
         "desc": "BGE Reranker v2 M3. Multilingual cross-encoder reranker (100+ languages). 2-layer classification head. Use with crispembed_rerank().",
         "is_reranker": True,
@@ -547,6 +547,30 @@ MODELS = {
             "q5_k": 0.9831,
             "q4_k": 0.9374,
         },
+    },
+    "splade-pp-en-v1": {
+        "base_model": "prithivida/Splade_PP_en_v1",
+        "arch": "BERT",
+        "dim": 30522,  # vocab-sized sparse output
+        "layers": 12,
+        "params": "109M",
+        "pooling": "sparse (SPLADE max-log)",
+        "tokenizer": "WordPiece",
+        "license": "apache-2.0",
+        "langs": ["en"],
+        "desc": "SPLADE++ EN v1. Sparse term-weight retrieval over the BERT vocabulary. Use with crispembed_encode_sparse() for SPLADE-style lexical retrieval.",
+    },
+    "embeddinggemma-300m": {
+        "base_model": "google/embeddinggemma-300m",
+        "arch": "Gemma3",
+        "dim": 768,
+        "layers": 24,
+        "params": "300M",
+        "pooling": "last-token",
+        "tokenizer": "SentencePiece",
+        "license": "gemma",
+        "langs": ["multilingual"],
+        "desc": "Google EmbeddingGemma 300M. Gemma3 decoder embedding model, 768-d last-token pooling, 24 layers. Governed by Google's Gemma Terms of Use & Prohibited Use Policy.",
     },
 }
 
@@ -796,8 +820,37 @@ curl -X POST http://localhost:8080/v1/embeddings \\
     return readme
 
 
-def upload_model(model_name, gguf_dir, dry_run=False):
-    """Upload a model's GGUFs to HuggingFace."""
+def _list_remote_ggufs(api, repo_id):
+    """Return [(filename, size_mb), ...] for the existing GGUFs in the
+    cstr/<name>-GGUF repo on HF. Used by --readme-only to regenerate the
+    README's file table without needing the GGUFs locally."""
+    try:
+        files = api.list_repo_files(repo_id)
+    except Exception as e:
+        print(f"  could not list {repo_id}: {e}")
+        return []
+    ggufs = [f for f in files if f.endswith(".gguf")]
+    if not ggufs:
+        return []
+    out = []
+    try:
+        infos = api.get_paths_info(repo_id, ggufs)
+        size_by_path = {i.path: i.size for i in infos if hasattr(i, "size")}
+    except Exception:
+        size_by_path = {}
+    for f in sorted(ggufs):
+        sz = size_by_path.get(f, 0) or 0
+        out.append((f, sz / (1024 * 1024)))
+    return out
+
+
+def upload_model(model_name, gguf_dir, dry_run=False, readme_only=False):
+    """Upload a model's GGUFs to HuggingFace.
+
+    readme_only=True regenerates and pushes README.md only — used to fix
+    license tags or correct metadata without re-uploading multi-GB weights.
+    The file table is rebuilt from the GGUFs already in the HF repo.
+    """
     if model_name not in MODELS:
         print(f"Unknown model: {model_name}")
         return False
@@ -806,6 +859,30 @@ def upload_model(model_name, gguf_dir, dry_run=False):
     token = os.environ.get("HF_TOKEN")
     api = HfApi(token=token)
     repo_id = f"cstr/{model_name}-GGUF"
+
+    if readme_only:
+        remote_files = _list_remote_ggufs(api, repo_id)
+        if not remote_files:
+            print(f"  {repo_id}: no remote GGUFs found, "
+                  f"skipping (repo may not exist yet)")
+            return False
+        print(f"\n=== {model_name} -> {repo_id}   [README-only re-push] ===")
+        print(f"  license: {MODELS[model_name]['license']}")
+        for f, size in remote_files:
+            print(f"  (remote) {f} ({size:.0f} MB)")
+        if dry_run:
+            print("  (dry run, skipping upload)")
+            return True
+        readme = make_readme(model_name, remote_files)
+        api.upload_file(
+            path_or_fileobj=readme.encode("utf-8"),
+            path_in_repo="README.md",
+            repo_id=repo_id,
+            commit_message=(f"Update model card: license="
+                            f"{MODELS[model_name]['license']}"),
+        )
+        print(f"  README.md re-uploaded")
+        return True
 
     # Find all GGUF files for this model (skip Q4_0 — we have Q4_K)
     files = []
@@ -866,7 +943,9 @@ def upload_model(model_name, gguf_dir, dry_run=False):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", help="Model base name (e.g., octen-0.6b)")
+    parser.add_argument("--model", action="append", default=[],
+                        help="Model base name (e.g., octen-0.6b). "
+                             "Can be passed multiple times.")
     parser.add_argument("--all", action="store_true", help="Upload all models")
     parser.add_argument("--dir", default="/mnt/akademie_storage/test_cohere",
                         help="Directory with GGUF files")
@@ -874,6 +953,10 @@ def main():
                         help="Show what would be uploaded without uploading")
     parser.add_argument("--list", action="store_true",
                         help="List available models")
+    parser.add_argument("--readme-only", action="store_true",
+                        help="Regenerate and push README.md only (no GGUF "
+                             "uploads). Use to fix license tags or other "
+                             "card metadata without re-uploading weights.")
     args = parser.parse_args()
 
     if args.list:
@@ -884,13 +967,14 @@ def main():
     if args.all:
         models = sorted(MODELS.keys())
     elif args.model:
-        models = [args.model]
+        models = list(args.model)
     else:
         parser.print_help()
         return
 
     for m in models:
-        upload_model(m, args.dir, dry_run=args.dry_run)
+        upload_model(m, args.dir, dry_run=args.dry_run,
+                     readme_only=args.readme_only)
 
 
 if __name__ == "__main__":

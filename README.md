@@ -120,6 +120,54 @@ curl -X POST http://localhost:8080/embed \
     -d '{"texts": ["Hello world"]}'
 ```
 
+## Model licenses
+
+The auto-download registry (`-m <name>`) covers models under multiple
+licenses. CrispEmbed itself is permissive, but the model you download is
+governed by its **upstream** license — converting a checkpoint to GGUF
+does not relicense it. Always check `--list-models` (the **License**
+column) or the upstream model card before using a model commercially.
+
+| License class | Models in registry | What you can do |
+|---|---|---|
+| **Permissive** (Apache-2.0 / MIT) | most BERT/XLM-R/MPNet, BGE, E5, Granite, Snowflake, MXBai, Nomic, MS-Marco, Qwen3, Harrier, BidirLM-Omni, GTE-v1.5 | commercial use OK with normal attribution |
+| **CC BY-NC 4.0** (non-commercial) | `jina-v5-nano`, `jina-v5-small`, `jina-reranker-v2-base-multilingual` | research/evaluation only; commercial use requires a paid license from Jina (sales@jina.ai) |
+| **Gemma Terms of Use** | `embeddinggemma-300m` | commercial use permitted **subject to** Google's [Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy) |
+
+Restricted-license entries (NC + Gemma) are marked with `*` in
+`--list-models`. Auto-download for them requires explicit consent:
+
+```bash
+# Interactive (TTY): you'll be shown the license + model card URL and
+# prompted to accept.
+./build/crispembed -m jina-v5-nano "hello"
+
+# Non-interactive (CI, scripts): pass the SPDX tag.
+./build/crispembed -m jina-v5-nano --accept-license cc-by-nc-4.0 "hello"
+
+# Or via env var (useful for shared scripts).
+export CRISPEMBED_ACCEPT_LICENSE=cc-by-nc-4.0
+./build/crispembed -m jina-v5-nano "hello"
+
+# Special value "all" accepts every license tag — intended for trusted
+# environments where you've already vetted the registry.
+export CRISPEMBED_ACCEPT_LICENSE=all
+```
+
+`--accept-license` is an affirmative acknowledgement that the **caller**
+accepts the upstream terms; it does not grant rights you don't otherwise
+have. For commercial use of a CC BY-NC model you still need a separate
+license from the model author.
+
+To audit what the registry actually carries (cross-checks the upstream
+license, the `cstr/*-GGUF` re-host's declared license, and the claim in
+`models/upload_to_hf.py`):
+
+```bash
+python tests/check_registry_licenses.py            # human-readable table
+python tests/check_registry_licenses.py --json     # for CI
+```
+
 ## Building
 
 ### Linux / macOS

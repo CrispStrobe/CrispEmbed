@@ -65,7 +65,10 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --biencoder QUERY  bi-encoder rerank documents against QUERY\n");
     fprintf(stderr, "  --top-n N        limit rerank output to top N documents\n");
     fprintf(stderr, "  --auto-download  download model automatically if not found\n");
-    fprintf(stderr, "  --list-models    list available models\n");
+    fprintf(stderr, "  --accept-license SPDX  pre-accept a restricted license (e.g. cc-by-nc-4.0, gemma)\n");
+    fprintf(stderr, "                          required for non-commercial / vendor-licensed models in non-TTY mode.\n");
+    fprintf(stderr, "                          alternatively set the CRISPEMBED_ACCEPT_LICENSE env var.\n");
+    fprintf(stderr, "  --list-models    list available models (license column marks * for restricted)\n");
     fprintf(stderr, "  --cache-dir DIR  set model cache directory\n");
     fprintf(stderr, "\n");
     fprintf(stderr, "Model names (auto-download from HuggingFace):\n");
@@ -90,6 +93,7 @@ int main(int argc, char ** argv) {
     bool print_dim = false;
     bool print_capabilities = false;
     bool auto_download = false;
+    std::string accepted_license;  // for cc-by-nc-*, gemma, etc.
     bool sparse_mode = false;
     bool colbert_mode = false;
     std::string audio_path;  // .raw float32 16 kHz mono PCM
@@ -134,6 +138,8 @@ int main(int argc, char ** argv) {
             image_path = argv[++i];
         } else if (strcmp(argv[i], "--auto-download") == 0) {
             auto_download = true;
+        } else if (strcmp(argv[i], "--accept-license") == 0 && i + 1 < argc) {
+            accepted_license = argv[++i];
         } else if (strcmp(argv[i], "--list-models") == 0) {
             crispembed_mgr::list_models();
             return 0;
@@ -175,7 +181,8 @@ int main(int argc, char ** argv) {
     bool is_name = (model_arg.find(".gguf") == std::string::npos &&
                     model_arg.find('/') == std::string::npos &&
                     model_arg.find('\\') == std::string::npos);
-    std::string model_path = crispembed_mgr::resolve_model(model_arg, auto_download || is_name);
+    std::string model_path = crispembed_mgr::resolve_model(
+        model_arg, auto_download || is_name, accepted_license);
     if (model_path.empty()) {
         return 1;
     }

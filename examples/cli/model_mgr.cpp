@@ -44,226 +44,271 @@ struct ModelEntry {
     const char * url;
     const char * desc;
     const char * approx_size;
+    const char * license;          // SPDX-style tag from the upstream model
+                                    // card (NOT from the cstr/* re-host).
+                                    // Verified by tests/check_registry_licenses.py.
+    const char * model_card_url;   // upstream HuggingFace model card
 };
 
 static const ModelEntry k_registry[] = {
     {"all-MiniLM-L6-v2",
      "all-MiniLM-L6-v2.gguf",
      "https://huggingface.co/cstr/all-MiniLM-L6-v2-GGUF/resolve/main/all-MiniLM-L6-v2.gguf",
-     "BERT 384d English (22M)", "87 MB"},
+     "BERT 384d English (22M)", "87 MB", "apache-2.0",
+     "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2"},
 
     {"gte-small",
      "gte-small.gguf",
      "https://huggingface.co/cstr/gte-small-GGUF/resolve/main/gte-small.gguf",
-     "BERT 384d English (33M)", "128 MB"},
+     "BERT 384d English (33M)", "128 MB", "mit",
+     "https://huggingface.co/thenlper/gte-small"},
 
     {"arctic-embed-xs",
      "arctic-embed-xs.gguf",
      "https://huggingface.co/cstr/arctic-embed-xs-GGUF/resolve/main/arctic-embed-xs.gguf",
-     "BERT 384d CLS English (22M)", "87 MB"},
+     "BERT 384d CLS English (22M)", "87 MB", "apache-2.0",
+     "https://huggingface.co/Snowflake/snowflake-arctic-embed-xs"},
 
     {"multilingual-e5-small",
      "multilingual-e5-small.gguf",
      "https://huggingface.co/cstr/multilingual-e5-small-GGUF/resolve/main/multilingual-e5-small.gguf",
-     "XLM-R 384d multilingual (118M)", "454 MB"},
+     "XLM-R 384d multilingual (118M)", "454 MB", "mit",
+     "https://huggingface.co/intfloat/multilingual-e5-small"},
 
     {"pixie-rune-v1",
      "pixie-rune-v1.gguf",
      "https://huggingface.co/cstr/pixie-rune-v1-GGUF/resolve/main/pixie-rune-v1.gguf",
-     "XLM-R 1024d 74-lang CLS (560M)", "2.2 GB"},
+     "XLM-R 1024d 74-lang CLS (560M)", "2.2 GB", "apache-2.0",
+     "https://huggingface.co/telepix/PIXIE-Rune-v1.0"},
 
     {"arctic-embed-l-v2",
      "arctic-embed-l-v2.gguf",
      "https://huggingface.co/cstr/arctic-embed-l-v2-GGUF/resolve/main/arctic-embed-l-v2.gguf",
-     "XLM-R 1024d CLS English (560M)", "2.2 GB"},
+     "XLM-R 1024d CLS English (560M)", "2.2 GB", "apache-2.0",
+     "https://huggingface.co/Snowflake/snowflake-arctic-embed-l-v2.0"},
 
     {"octen-0.6b",
      "octen-0.6b-q8_0.gguf",
      "https://huggingface.co/cstr/octen-0.6b-GGUF/resolve/main/octen-0.6b-q8_0.gguf",
-     "Qwen3 1024d multilingual (600M)", "609 MB"},
+     "Qwen3 1024d multilingual (600M)", "609 MB", "apache-2.0",
+     "https://huggingface.co/Octen/Octen-Embedding-0.6B"},
 
     {"f2llm-v2-0.6b",
      "f2llm-v2-0.6b-q8_0.gguf",
      "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-q8_0.gguf",
-     "Qwen3 1024d multilingual (600M)", "609 MB"},
+     "Qwen3 1024d multilingual (600M)", "609 MB", "apache-2.0",
+     "https://huggingface.co/codefuse-ai/F2LLM-v2-0.6B"},
 
     {"jina-v5-nano",
      "jina-v5-nano-q8_0.gguf",
      "https://huggingface.co/cstr/jina-v5-nano-GGUF/resolve/main/jina-v5-nano-q8_0.gguf",
-     "Qwen3 1024d compact (210M)", "222 MB"},
+     "Qwen3 1024d compact (210M)", "222 MB", "cc-by-nc-4.0",
+     "https://huggingface.co/jinaai/jina-embeddings-v5-text-nano"},
 
     {"jina-v5-small",
      "jina-v5-small-q8_0.gguf",
      "https://huggingface.co/cstr/jina-v5-small-GGUF/resolve/main/jina-v5-small-q8_0.gguf",
-     "Qwen3 1024d multilingual (600M)", "609 MB"},
+     "Qwen3 1024d multilingual (600M)", "609 MB", "cc-by-nc-4.0",
+     "https://huggingface.co/jinaai/jina-embeddings-v5-text-small"},
 
     {"harrier-0.6b",
      "harrier-0.6b-q8_0.gguf",
      "https://huggingface.co/cstr/harrier-0.6b-GGUF/resolve/main/harrier-0.6b-q8_0.gguf",
-     "Qwen3 1024d SOTA (600M)", "609 MB"},
+     "Qwen3 1024d SOTA (600M)", "609 MB", "mit",
+     "https://huggingface.co/microsoft/harrier-oss-v1-0.6b"},
 
     {"harrier-270m",
      "harrier-270m-q8_0.gguf",
      "https://huggingface.co/cstr/harrier-270m-GGUF/resolve/main/harrier-270m-q8_0.gguf",
-     "Gemma3 640d compact (270M)", "755 MB"},
+     "Gemma3 640d compact (270M)", "755 MB", "mit",
+     "https://huggingface.co/microsoft/harrier-oss-v1-270m"},
 
     {"qwen3-embed-0.6b",
      "qwen3-embed-0.6b-q8_0.gguf",
      "https://huggingface.co/cstr/qwen3-embed-0.6b-GGUF/resolve/main/qwen3-embed-0.6b-q8_0.gguf",
-     "Qwen3 1024d official (600M)", "1.0 GB"},
+     "Qwen3 1024d official (600M)", "1.0 GB", "apache-2.0",
+     "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B"},
 
     // BidirLM-Omni — bidirectional Qwen3 (text) + Whisper-shape audio tower (cross-modal).
     // Two repos: -textonly is the smaller text-only variant; without suffix includes audio.
     {"bidirlm-omni-2.5b",
      "bidirlm-omni-2.5b-q8_0.gguf",
      "https://huggingface.co/cstr/bidirlm-omni-2.5b-GGUF/resolve/main/bidirlm-omni-2.5b-q8_0.gguf",
-     "Qwen3-Bidirectional 2048d 90+langs text+audio (2.5B)", "3.1 GB"},
+     "Qwen3-Bidirectional 2048d 90+langs text+audio (2.5B)", "3.1 GB", "apache-2.0",
+     "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding"},
     {"bidirlm-omni-2.5b-textonly",
      "bidirlm-omni-2.5b-textonly-q8_0.gguf",
      "https://huggingface.co/cstr/bidirlm-omni-2.5b-textonly-GGUF/resolve/main/bidirlm-omni-2.5b-textonly-q8_0.gguf",
-     "Qwen3-Bidirectional 2048d text-only (2.5B)", "2.6 GB"},
+     "Qwen3-Bidirectional 2048d text-only (2.5B)", "2.6 GB", "apache-2.0",
+     "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding"},
 
     // --- RAG-critical models (Phase 3) ---
 
     {"bge-small-en-v1.5",
      "bge-small-en-v1.5.gguf",
      "https://huggingface.co/cstr/bge-small-en-v1.5-GGUF/resolve/main/bge-small-en-v1.5.gguf",
-     "BERT 384d English (33M)", "128 MB"},
+     "BERT 384d English (33M)", "128 MB", "mit",
+     "https://huggingface.co/BAAI/bge-small-en-v1.5"},
 
     {"bge-base-en-v1.5",
      "bge-base-en-v1.5.gguf",
      "https://huggingface.co/cstr/bge-base-en-v1.5-GGUF/resolve/main/bge-base-en-v1.5.gguf",
-     "BERT 768d English (109M)", "418 MB"},
+     "BERT 768d English (109M)", "418 MB", "mit",
+     "https://huggingface.co/BAAI/bge-base-en-v1.5"},
 
     {"bge-large-en-v1.5",
      "bge-large-en-v1.5.gguf",
      "https://huggingface.co/cstr/bge-large-en-v1.5-GGUF/resolve/main/bge-large-en-v1.5.gguf",
-     "BERT 1024d English (335M)", "1.3 GB"},
+     "BERT 1024d English (335M)", "1.3 GB", "mit",
+     "https://huggingface.co/BAAI/bge-large-en-v1.5"},
 
     {"nomic-embed-text-v1.5",
      "nomic-embed-text-v1.5.gguf",
      "https://huggingface.co/cstr/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.gguf",
-     "BERT 768d 8K context Matryoshka (137M)", "523 MB"},
+     "BERT 768d 8K context Matryoshka (137M)", "523 MB", "apache-2.0",
+     "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5"},
 
     {"all-MiniLM-L12-v2",
      "all-MiniLM-L12-v2.gguf",
      "https://huggingface.co/cstr/all-MiniLM-L12-v2-GGUF/resolve/main/all-MiniLM-L12-v2.gguf",
-     "BERT 384d English (33M)", "128 MB"},
+     "BERT 384d English (33M)", "128 MB", "apache-2.0",
+     "https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2"},
 
     {"paraphrase-multilingual-MiniLM-L12-v2",
      "paraphrase-multilingual-MiniLM-L12-v2.gguf",
      "https://huggingface.co/cstr/paraphrase-multilingual-MiniLM-L12-v2-GGUF/resolve/main/paraphrase-multilingual-MiniLM-L12-v2.gguf",
-     "BERT 384d 50+ langs (118M, SentencePiece, mean-pool)", "454 MB"},
+     "BERT 384d 50+ langs (118M, SentencePiece, mean-pool)", "454 MB", "apache-2.0",
+     "https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"},
 
     {"all-mpnet-base-v2",
      "all-mpnet-base-v2.gguf",
      "https://huggingface.co/cstr/all-mpnet-base-v2-GGUF/resolve/main/all-mpnet-base-v2.gguf",
-     "BERT 768d English (109M)", "418 MB"},
+     "BERT 768d English (109M)", "418 MB", "apache-2.0",
+     "https://huggingface.co/sentence-transformers/all-mpnet-base-v2"},
 
     {"mxbai-embed-large-v1",
      "mxbai-embed-large-v1.gguf",
      "https://huggingface.co/cstr/mxbai-embed-large-v1-GGUF/resolve/main/mxbai-embed-large-v1.gguf",
-     "BERT 1024d English (335M)", "1.3 GB"},
+     "BERT 1024d English (335M)", "1.3 GB", "apache-2.0",
+     "https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1"},
 
     {"snowflake-arctic-embed-m",
      "snowflake-arctic-embed-m.gguf",
      "https://huggingface.co/cstr/snowflake-arctic-embed-m-GGUF/resolve/main/snowflake-arctic-embed-m.gguf",
-     "BERT 768d CLS English (109M)", "418 MB"},
+     "BERT 768d CLS English (109M)", "418 MB", "apache-2.0",
+     "https://huggingface.co/Snowflake/snowflake-arctic-embed-m"},
 
     {"snowflake-arctic-embed-l",
      "snowflake-arctic-embed-l.gguf",
      "https://huggingface.co/cstr/snowflake-arctic-embed-l-GGUF/resolve/main/snowflake-arctic-embed-l.gguf",
-     "XLM-R 1024d CLS English (335M)", "1.3 GB"},
+     "XLM-R 1024d CLS English (335M)", "1.3 GB", "apache-2.0",
+     "https://huggingface.co/Snowflake/snowflake-arctic-embed-l"},
 
     {"bge-m3",
      "bge-m3-q4_k.gguf",
      "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-q4_k.gguf",
-     "XLM-R 1024d dense+sparse+ColBERT multilingual (568M)", "438 MB"},
+     "XLM-R 1024d dense+sparse+ColBERT multilingual (568M)", "438 MB", "mit",
+     "https://huggingface.co/BAAI/bge-m3"},
 
     // --- Reranker models (Phase 4) ---
 
     {"bge-reranker-v2-m3",
      "bge-reranker-v2-m3.gguf",
      "https://huggingface.co/cstr/bge-reranker-v2-m3-GGUF/resolve/main/bge-reranker-v2-m3.gguf",
-     "XLM-R reranker multilingual (568M)", "2.2 GB"},
+     "XLM-R reranker multilingual (568M)", "2.2 GB", "apache-2.0",
+     "https://huggingface.co/BAAI/bge-reranker-v2-m3"},
 
     {"bge-reranker-base",
      "bge-reranker-base.gguf",
      "https://huggingface.co/cstr/bge-reranker-base-GGUF/resolve/main/bge-reranker-base.gguf",
-     "BERT reranker EN+ZH (278M)", "1.1 GB"},
+     "BERT reranker EN+ZH (278M)", "1.1 GB", "mit",
+     "https://huggingface.co/BAAI/bge-reranker-base"},
 
     {"ms-marco-MiniLM-L-6-v2",
      "ms-marco-MiniLM-L-6-v2.gguf",
      "https://huggingface.co/cstr/ms-marco-MiniLM-L-6-v2-GGUF/resolve/main/ms-marco-MiniLM-L-6-v2.gguf",
-     "BERT reranker English fast (22M)", "87 MB"},
+     "BERT reranker English fast (22M)", "87 MB", "apache-2.0",
+     "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2"},
 
     {"ms-marco-MiniLM-L-12-v2",
      "ms-marco-MiniLM-L-12-v2.gguf",
      "https://huggingface.co/cstr/ms-marco-MiniLM-L-12-v2-GGUF/resolve/main/ms-marco-MiniLM-L-12-v2.gguf",
-     "BERT reranker English (33M)", "128 MB"},
+     "BERT reranker English (33M)", "128 MB", "apache-2.0",
+     "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-12-v2"},
 
     {"jina-reranker-v2-base-multilingual",
      "jina-reranker-v2-base-multilingual.gguf",
      "https://huggingface.co/cstr/jina-reranker-v2-base-multilingual-GGUF/resolve/main/jina-reranker-v2-base-multilingual.gguf",
-     "XLM-R reranker multilingual (278M)", "1.1 GB"},
+     "XLM-R reranker multilingual (278M)", "1.1 GB", "cc-by-nc-4.0",
+     "https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual"},
 
     {"mxbai-rerank-xsmall-v1",
      "mxbai-rerank-xsmall-v1.gguf",
      "https://huggingface.co/cstr/mxbai-rerank-xsmall-v1-GGUF/resolve/main/mxbai-rerank-xsmall-v1.gguf",
-     "BERT reranker English fast (33M)", "128 MB"},
+     "BERT reranker English fast (33M)", "128 MB", "apache-2.0",
+     "https://huggingface.co/mixedbread-ai/mxbai-rerank-xsmall-v1"},
 
     {"mxbai-rerank-base-v1",
      "mxbai-rerank-base-v1.gguf",
      "https://huggingface.co/cstr/mxbai-rerank-base-v1-GGUF/resolve/main/mxbai-rerank-base-v1.gguf",
-     "BERT reranker English (86M)", "330 MB"},
+     "BERT reranker English (86M)", "330 MB", "apache-2.0",
+     "https://huggingface.co/mixedbread-ai/mxbai-rerank-base-v1"},
 
     // --- MTEB top multilingual models ---
 
     {"multilingual-e5-base",
      "multilingual-e5-base.gguf",
      "https://huggingface.co/cstr/multilingual-e5-base-GGUF/resolve/main/multilingual-e5-base.gguf",
-     "XLM-R 768d 100+ languages (278M)", "1.1 GB"},
+     "XLM-R 768d 100+ languages (278M)", "1.1 GB", "mit",
+     "https://huggingface.co/intfloat/multilingual-e5-base"},
 
     {"multilingual-e5-large",
      "multilingual-e5-large.gguf",
      "https://huggingface.co/cstr/multilingual-e5-large-GGUF/resolve/main/multilingual-e5-large.gguf",
-     "XLM-R 1024d 100+ languages (560M)", "2.2 GB"},
+     "XLM-R 1024d 100+ languages (560M)", "2.2 GB", "mit",
+     "https://huggingface.co/intfloat/multilingual-e5-large"},
 
     {"granite-embedding-278m",
      "granite-embedding-278m-multilingual.gguf",
      "https://huggingface.co/cstr/granite-embedding-278m-multilingual-GGUF/resolve/main/granite-embedding-278m-multilingual.gguf",
-     "XLM-R 768d IBM multilingual (278M)", "1.1 GB"},
+     "XLM-R 768d IBM multilingual (278M)", "1.1 GB", "apache-2.0",
+     "https://huggingface.co/ibm-granite/granite-embedding-278m-multilingual"},
 
     {"granite-embedding-107m",
      "granite-embedding-107m-multilingual.gguf",
      "https://huggingface.co/cstr/granite-embedding-107m-multilingual-GGUF/resolve/main/granite-embedding-107m-multilingual.gguf",
-     "XLM-R 384d IBM multilingual (107M)", "418 MB"},
+     "XLM-R 384d IBM multilingual (107M)", "418 MB", "apache-2.0",
+     "https://huggingface.co/ibm-granite/granite-embedding-107m-multilingual"},
 
     // --- Sparse models ---
 
     {"splade-pp-en-v1",
      "splade-pp-en-v1.gguf",
      "https://huggingface.co/cstr/splade-pp-en-v1-GGUF/resolve/main/splade-pp-en-v1.gguf",
-     "BERT sparse (SPLADE) English (109M)", "418 MB"},
+     "BERT sparse (SPLADE) English (109M)", "418 MB", "apache-2.0",
+     "https://huggingface.co/prithivida/Splade_PP_en_v1"},
 
     // --- GTE v1.5 (new BERT) ---
 
     {"gte-base-en-v1.5",
      "gte-base-en-v1.5.gguf",
      "https://huggingface.co/cstr/gte-base-en-v1.5-GGUF/resolve/main/gte-base-en-v1.5.gguf",
-     "GTE 768d English pre-LN+RoPE+GeGLU (109M)", "522 MB"},
+     "GTE 768d English pre-LN+RoPE+GeGLU (109M)", "522 MB", "apache-2.0",
+     "https://huggingface.co/Alibaba-NLP/gte-base-en-v1.5"},
 
     {"gte-large-en-v1.5",
      "gte-large-en-v1.5.gguf",
      "https://huggingface.co/cstr/gte-large-en-v1.5-GGUF/resolve/main/gte-large-en-v1.5.gguf",
-     "GTE 1024d English pre-LN+RoPE+GeGLU (335M)", "1.7 GB"},
+     "GTE 1024d English pre-LN+RoPE+GeGLU (335M)", "1.7 GB", "apache-2.0",
+     "https://huggingface.co/Alibaba-NLP/gte-large-en-v1.5"},
 
     {"embeddinggemma-300m",
      "embeddinggemma-300m.gguf",
      "https://huggingface.co/cstr/embeddinggemma-300m-GGUF/resolve/main/embeddinggemma-300m.gguf",
-     "Gemma3 768d 24-layer last-token (300M)", "741 MB"},
+     "Gemma3 768d 24-layer last-token (300M)", "741 MB", "gemma",
+     "https://huggingface.co/google/embeddinggemma-300m"},
 
-    {nullptr, nullptr, nullptr, nullptr, nullptr}
+    {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 
 std::string cache_dir() {
@@ -352,7 +397,36 @@ static bool download_file(const std::string & source_url, const std::string & de
 #endif
 }
 
-std::string resolve_model(const std::string & arg, bool auto_download) {
+bool license_requires_acceptance(const char * spdx) {
+    if (!spdx || !*spdx) return false;
+    // cc-by-nc-* (and friends)
+    if (strncmp(spdx, "cc-by-nc", 8) == 0) return true;
+    // Vendor licenses with use-restriction policies the user must accept.
+    static const char * restricted[] = {
+        "gemma", "llama2", "llama3", "llama3.1", "llama3.2", "llama3.3",
+        "llama4", "qwen-research", "mistral-ai-research", "other", nullptr,
+    };
+    for (const char ** p = restricted; *p; ++p) {
+        if (strcmp(spdx, *p) == 0) return true;
+    }
+    return false;
+}
+
+static bool license_accepted(const char * spdx,
+                              const std::string & accepted_arg) {
+    auto matches = [&](const std::string & accepted) {
+        if (accepted.empty()) return false;
+        if (accepted == "all" || accepted == "*") return true;
+        return accepted == spdx;
+    };
+    if (matches(accepted_arg)) return true;
+    const char * env = std::getenv("CRISPEMBED_ACCEPT_LICENSE");
+    if (env && matches(env)) return true;
+    return false;
+}
+
+std::string resolve_model(const std::string & arg, bool auto_download,
+                          const std::string & accepted_license) {
     // If it's already a file path, use it directly
     if (file_exists(arg)) return arg;
 
@@ -389,12 +463,60 @@ std::string resolve_model(const std::string & arg, bool auto_download) {
         return cached;
     }
 
-    // Download
-    if (!auto_download) {
-        // Check if TTY for interactive prompt
-        bool is_tty = isatty(fileno(stdin));
+    const bool restricted = license_requires_acceptance(entry->license);
+    const bool accepted   = license_accepted(entry->license, accepted_license);
+    const bool is_tty     = isatty(fileno(stdin));
+
+    // Download flow:
+    //   - For permissive licenses: existing behaviour (auto_download or
+    //     interactive [y/N]).
+    //   - For restricted licenses (cc-by-nc-*, gemma, other): require
+    //     explicit acceptance via --accept-license <spdx>,
+    //     CRISPEMBED_ACCEPT_LICENSE=<spdx>, or an interactive prompt that
+    //     shows the license + model card URL. `auto_download` alone is NOT
+    //     sufficient.
+    if (restricted) {
+        if (!accepted) {
+            if (is_tty) {
+                fprintf(stderr,
+                        "Model '%s' is released under a restricted license:\n",
+                        entry->name);
+                fprintf(stderr, "  License:    %s\n", entry->license);
+                fprintf(stderr, "  Model card: %s\n",
+                        entry->model_card_url ? entry->model_card_url : "(unknown)");
+                if (strncmp(entry->license, "cc-by-nc", 8) == 0) {
+                    fprintf(stderr, "  Notice:     non-commercial use only — see upstream model card for terms.\n");
+                } else if (strcmp(entry->license, "gemma") == 0) {
+                    fprintf(stderr, "  Notice:     governed by Google's Gemma Terms of Use & Prohibited Use Policy.\n");
+                } else {
+                    fprintf(stderr, "  Notice:     review the upstream model card for the full license terms.\n");
+                }
+                fprintf(stderr, "Download %s (%s) and accept this license? [y/N] ",
+                        entry->filename, entry->approx_size);
+                char c = 0;
+                if (scanf(" %c", &c) != 1 || (c != 'y' && c != 'Y')) {
+                    return "";
+                }
+            } else {
+                fprintf(stderr,
+                        "error: model '%s' is released under '%s' (restricted).\n",
+                        entry->name, entry->license);
+                fprintf(stderr,
+                        "       Pass --accept-license %s (or set "
+                        "CRISPEMBED_ACCEPT_LICENSE=%s) to acknowledge.\n",
+                        entry->license, entry->license);
+                if (entry->model_card_url) {
+                    fprintf(stderr, "       Model card: %s\n", entry->model_card_url);
+                }
+                return "";
+            }
+        }
+    } else if (!auto_download) {
         if (is_tty) {
             fprintf(stderr, "Model '%s' not found locally.\n", entry->name);
+            fprintf(stderr, "  License: %s   (%s)\n",
+                    entry->license ? entry->license : "?",
+                    entry->model_card_url ? entry->model_card_url : "");
             fprintf(stderr, "Download %s (%s) from HuggingFace? [y/N] ",
                     entry->filename, entry->approx_size);
             char c = 0;
@@ -416,7 +538,9 @@ std::string resolve_model(const std::string & arg, bool auto_download) {
     }
 
     mkdirs(dir);
-    fprintf(stderr, "Downloading %s (%s)...\n", entry->filename, entry->approx_size);
+    fprintf(stderr, "Downloading %s (%s, license: %s)...\n",
+            entry->filename, entry->approx_size,
+            entry->license ? entry->license : "?");
     if (download_file(entry->url, cached)) {
         fprintf(stderr, "Downloaded to %s\n", cached.c_str());
         return cached;
@@ -428,16 +552,21 @@ std::string resolve_model(const std::string & arg, bool auto_download) {
 
 void list_models() {
     fprintf(stderr, "Available models:\n");
-    fprintf(stderr, "  %-25s %-40s %s\n", "Name", "Description", "Size");
-    fprintf(stderr, "  %-25s %-40s %s\n",
-            "----", "-----------", "----");
+    fprintf(stderr, "  %-40s %-14s %-9s %s\n",
+            "Name", "License", "Size", "Description");
+    fprintf(stderr, "  %-40s %-14s %-9s %s\n",
+            "----", "-------", "----", "-----------");
     for (const ModelEntry * e = k_registry; e->name; e++) {
-        // Check if cached
         std::string cached = cache_dir() + "/" + e->filename;
         const char * status = file_exists(cached) ? " [cached]" : "";
-        fprintf(stderr, "  %-25s %-40s %s%s\n",
-                e->name, e->desc, e->approx_size, status);
+        const char * license = e->license ? e->license : "?";
+        const char * marker  = license_requires_acceptance(e->license) ? "*" : " ";
+        fprintf(stderr, " %s%-40s %-14s %-9s %s%s\n",
+                marker, e->name, license, e->approx_size, e->desc, status);
     }
+    fprintf(stderr,
+            "\n  * = restricted license (non-commercial or vendor terms); "
+            "requires --accept-license <spdx> or interactive consent.\n");
 }
 
 int n_models() {
@@ -471,6 +600,20 @@ const char * model_size(int i) {
     int n = 0;
     for (const ModelEntry * e = k_registry; e->name; e++, n++)
         if (n == i) return e->approx_size;
+    return nullptr;
+}
+
+const char * model_license(int i) {
+    int n = 0;
+    for (const ModelEntry * e = k_registry; e->name; e++, n++)
+        if (n == i) return e->license;
+    return nullptr;
+}
+
+const char * model_card_url(int i) {
+    int n = 0;
+    for (const ModelEntry * e = k_registry; e->name; e++, n++)
+        if (n == i) return e->model_card_url;
     return nullptr;
 }
 
