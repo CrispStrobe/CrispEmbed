@@ -58,17 +58,18 @@ impl CrispEmbed {
     }
 
     fn new_resolved(model_path: &str, n_threads: i32) -> Result<Self, String> {
-        let path = CString::new(model_path)
-            .map_err(|e| format!("invalid path: {e}"))?;
-        let ctx = unsafe {
-            crispembed_sys::crispembed_init(path.as_ptr(), n_threads)
-        };
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_init(path.as_ptr(), n_threads) };
         if ctx.is_null() {
             return Err(format!("crispembed_init failed for '{model_path}'"));
         }
         let dim = unsafe {
             let hp = crispembed_sys::crispembed_get_hparams(ctx);
-            if hp.is_null() { 0 } else { (*hp).n_output as usize }
+            if hp.is_null() {
+                0
+            } else {
+                (*hp).n_output as usize
+            }
         };
         Ok(Self { ctx, dim })
     }
@@ -78,7 +79,9 @@ impl CrispEmbed {
         if ptr.is_null() {
             String::new()
         } else {
-            unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned()
+            unsafe { CStr::from_ptr(ptr) }
+                .to_string_lossy()
+                .into_owned()
         }
     }
 
@@ -119,15 +122,19 @@ impl CrispEmbed {
             }
         }
 
-        let arg = CString::new(model_path)
-            .map_err(|e| format!("invalid model path: {e}"))?;
+        let arg = CString::new(model_path).map_err(|e| format!("invalid model path: {e}"))?;
         let ptr = unsafe {
-            crispembed_sys::crispembed_resolve_model(arg.as_ptr(), if should_download { 1 } else { 0 })
+            crispembed_sys::crispembed_resolve_model(
+                arg.as_ptr(),
+                if should_download { 1 } else { 0 },
+            )
         };
         if ptr.is_null() {
             return Err(format!("could not resolve model '{model_path}'"));
         }
-        let resolved = unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned();
+        let resolved = unsafe { CStr::from_ptr(ptr) }
+            .to_string_lossy()
+            .into_owned();
         if resolved.is_empty() {
             Err(format!("could not resolve model '{model_path}'"))
         } else {
@@ -143,7 +150,9 @@ impl CrispEmbed {
                 if ptr.is_null() {
                     String::new()
                 } else {
-                    unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned()
+                    unsafe { CStr::from_ptr(ptr) }
+                        .to_string_lossy()
+                        .into_owned()
                 }
             };
             models.push(ModelInfo {
@@ -157,7 +166,9 @@ impl CrispEmbed {
     }
 
     /// Output embedding dimension.
-    pub fn dim(&self) -> usize { self.dim }
+    pub fn dim(&self) -> usize {
+        self.dim
+    }
 
     /// Set Matryoshka truncation dimension. Pass `0` to use the model default.
     pub fn set_dim(&mut self, dim: i32) {
@@ -183,7 +194,9 @@ impl CrispEmbed {
         if ptr.is_null() {
             String::new()
         } else {
-            unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned()
+            unsafe { CStr::from_ptr(ptr) }
+                .to_string_lossy()
+                .into_owned()
         }
     }
 
@@ -217,9 +230,8 @@ impl CrispEmbed {
             Err(_) => return vec![],
         };
         let mut n_dim: i32 = 0;
-        let ptr = unsafe {
-            crispembed_sys::crispembed_encode(self.ctx, ctext.as_ptr(), &mut n_dim)
-        };
+        let ptr =
+            unsafe { crispembed_sys::crispembed_encode(self.ctx, ctext.as_ptr(), &mut n_dim) };
         if ptr.is_null() || n_dim <= 0 {
             return vec![];
         }
@@ -234,10 +246,7 @@ impl CrispEmbed {
         if texts.is_empty() {
             return vec![];
         }
-        let cstrings: Vec<CString> = texts
-            .iter()
-            .filter_map(|t| CString::new(*t).ok())
-            .collect();
+        let cstrings: Vec<CString> = texts.iter().filter_map(|t| CString::new(*t).ok()).collect();
         if cstrings.len() != texts.len() {
             return vec![];
         }
@@ -269,13 +278,15 @@ impl CrispEmbed {
     /// Returns a list of `(vocab_token_id, weight)` pairs with `weight > 0`.
     /// Returns an empty vector if the model has no sparse head or encoding fails.
     pub fn encode_sparse(&mut self, text: &str) -> Vec<(i32, f32)> {
-        if !self.has_sparse() { return vec![]; }
+        if !self.has_sparse() {
+            return vec![];
+        }
         let ctext = match CString::new(text) {
             Ok(s) => s,
             Err(_) => return vec![],
         };
-        let mut indices_ptr: *const i32  = std::ptr::null();
-        let mut values_ptr:  *const f32  = std::ptr::null();
+        let mut indices_ptr: *const i32 = std::ptr::null();
+        let mut values_ptr: *const f32 = std::ptr::null();
         let n = unsafe {
             crispembed_sys::crispembed_encode_sparse(
                 self.ctx,
@@ -288,8 +299,12 @@ impl CrispEmbed {
             return vec![];
         }
         let indices = unsafe { std::slice::from_raw_parts(indices_ptr, n as usize) };
-        let values  = unsafe { std::slice::from_raw_parts(values_ptr,  n as usize) };
-        indices.iter().zip(values.iter()).map(|(&i, &v)| (i, v)).collect()
+        let values = unsafe { std::slice::from_raw_parts(values_ptr, n as usize) };
+        indices
+            .iter()
+            .zip(values.iter())
+            .map(|(&i, &v)| (i, v))
+            .collect()
     }
 
     // ------------------------------------------------------------------
@@ -301,13 +316,15 @@ impl CrispEmbed {
     /// Returns one `Vec<f32>` per (non-padding) token.
     /// Returns an empty vector if the model has no ColBERT head or encoding fails.
     pub fn encode_multivec(&mut self, text: &str) -> Vec<Vec<f32>> {
-        if !self.has_colbert() { return vec![]; }
+        if !self.has_colbert() {
+            return vec![];
+        }
         let ctext = match CString::new(text) {
             Ok(s) => s,
             Err(_) => return vec![],
         };
         let mut n_tokens: i32 = 0;
-        let mut out_dim:  i32 = 0;
+        let mut out_dim: i32 = 0;
         let ptr = unsafe {
             crispembed_sys::crispembed_encode_multivec(
                 self.ctx,
@@ -319,8 +336,8 @@ impl CrispEmbed {
         if ptr.is_null() || n_tokens <= 0 || out_dim <= 0 {
             return vec![];
         }
-        let dim  = out_dim as usize;
-        let raw  = unsafe { std::slice::from_raw_parts(ptr, (n_tokens * out_dim) as usize) };
+        let dim = out_dim as usize;
+        let raw = unsafe { std::slice::from_raw_parts(ptr, (n_tokens * out_dim) as usize) };
         raw.chunks(dim).map(|c| c.to_vec()).collect()
     }
 
@@ -347,7 +364,7 @@ impl CrispEmbed {
             Err(_) => return vec![],
         };
         let mut n_tokens: i32 = 0;
-        let mut out_dim:  i32 = 0;
+        let mut out_dim: i32 = 0;
         let ptr = unsafe {
             crispembed_sys::crispembed_encode_tokens(
                 self.ctx,
@@ -360,7 +377,7 @@ impl CrispEmbed {
             return vec![];
         }
         let dim = out_dim as usize;
-        let n   = n_tokens as usize;
+        let n = n_tokens as usize;
         let raw = unsafe { std::slice::from_raw_parts(ptr, n * dim) };
         let ids_ptr = unsafe { crispembed_sys::crispembed_last_token_ids(self.ctx) };
         let ids: &[i32] = if ids_ptr.is_null() {
@@ -375,9 +392,7 @@ impl CrispEmbed {
             let tok = if tok_id < 0 {
                 String::new()
             } else {
-                let cstr = unsafe {
-                    crispembed_sys::crispembed_token_str(self.ctx, tok_id)
-                };
+                let cstr = unsafe { crispembed_sys::crispembed_token_str(self.ctx, tok_id) };
                 if cstr.is_null() {
                     String::new()
                 } else {
@@ -409,7 +424,9 @@ impl CrispEmbed {
     /// Returns an empty vector if the model lacks an audio tower or
     /// encoding fails.
     pub fn encode_audio(&mut self, pcm: &[f32]) -> Vec<f32> {
-        if !self.has_audio() { return vec![]; }
+        if !self.has_audio() {
+            return vec![];
+        }
         let mut out_dim: i32 = 0;
         let ptr = unsafe {
             crispembed_sys::crispembed_encode_audio(
@@ -419,7 +436,9 @@ impl CrispEmbed {
                 &mut out_dim,
             )
         };
-        if ptr.is_null() || out_dim <= 0 { return vec![]; }
+        if ptr.is_null() || out_dim <= 0 {
+            return vec![];
+        }
         unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
     }
 
@@ -441,16 +460,22 @@ impl CrispEmbed {
     /// by an HF `Qwen2VLImageProcessorFast`-equivalent pipeline.
     /// `grid_thw` is `(n_images, 3)` int32.
     pub fn encode_image(&mut self, pixel_patches: &[f32], grid_thw: &[i32]) -> Vec<f32> {
-        if grid_thw.len() % 3 != 0 { return vec![]; }
+        if grid_thw.len() % 3 != 0 {
+            return vec![];
+        }
         let n_images = (grid_thw.len() / 3) as i32;
         // patch_flat_dim = 1536 for the standard 16×16 RGB / temporal=2 config —
         // could be queried from hparams, but matching the converter contract is
         // simpler. Caller is expected to have used a compatible preprocessor.
-        let n_patches = if pixel_patches.is_empty() { 0 } else {
+        let n_patches = if pixel_patches.is_empty() {
+            0
+        } else {
             // Recover from grid_thw: sum of t·h·w across images.
             grid_thw.chunks(3).map(|c| c[0] * c[1] * c[2]).sum::<i32>()
         };
-        if n_patches <= 0 { return vec![]; }
+        if n_patches <= 0 {
+            return vec![];
+        }
 
         let mut out_dim: i32 = 0;
         let ptr = unsafe {
@@ -463,7 +488,9 @@ impl CrispEmbed {
                 &mut out_dim,
             )
         };
-        if ptr.is_null() || out_dim <= 0 { return vec![]; }
+        if ptr.is_null() || out_dim <= 0 {
+            return vec![];
+        }
         unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
     }
 
@@ -476,10 +503,14 @@ impl CrispEmbed {
         grid_thw: &[i32],
     ) -> (Vec<f32>, Vec<Vec<f32>>) {
         let empty = (Vec::new(), Vec::new());
-        if grid_thw.len() % 3 != 0 { return empty; }
+        if grid_thw.len() % 3 != 0 {
+            return empty;
+        }
         let n_images = (grid_thw.len() / 3) as i32;
         let n_patches = grid_thw.chunks(3).map(|c| c[0] * c[1] * c[2]).sum::<i32>();
-        if n_patches <= 0 { return empty; }
+        if n_patches <= 0 {
+            return empty;
+        }
 
         let mut n_merged: i32 = 0;
         let mut out_dim: i32 = 0;
@@ -496,7 +527,9 @@ impl CrispEmbed {
                 &mut n_deepstack,
             )
         };
-        if ptr.is_null() || n_merged <= 0 { return empty; }
+        if ptr.is_null() || n_merged <= 0 {
+            return empty;
+        }
         let per_slab = (n_merged * out_dim) as usize;
         let total = (1 + n_deepstack as usize) * per_slab;
         let flat = unsafe { std::slice::from_raw_parts(ptr, total) };
@@ -518,12 +551,18 @@ impl CrispEmbed {
     /// Higher is more relevant. Returns `f32::NAN` if the model is not a
     /// reranker or if encoding fails.
     pub fn rerank(&mut self, query: &str, document: &str) -> f32 {
-        if !self.is_reranker() { return f32::NAN; }
-        let cq = match CString::new(query)    { Ok(s) => s, Err(_) => return f32::NAN };
-        let cd = match CString::new(document) { Ok(s) => s, Err(_) => return f32::NAN };
-        unsafe {
-            crispembed_sys::crispembed_rerank(self.ctx, cq.as_ptr(), cd.as_ptr())
+        if !self.is_reranker() {
+            return f32::NAN;
         }
+        let cq = match CString::new(query) {
+            Ok(s) => s,
+            Err(_) => return f32::NAN,
+        };
+        let cd = match CString::new(document) {
+            Ok(s) => s,
+            Err(_) => return f32::NAN,
+        };
+        unsafe { crispembed_sys::crispembed_rerank(self.ctx, cq.as_ptr(), cd.as_ptr()) }
     }
 
     // ------------------------------------------------------------------
@@ -557,7 +596,11 @@ impl CrispEmbed {
             .iter()
             .enumerate()
             .map(|(i, doc_vec)| {
-                let dot: f32 = query_vec.iter().zip(doc_vec.iter()).map(|(a, b)| a * b).sum();
+                let dot: f32 = query_vec
+                    .iter()
+                    .zip(doc_vec.iter())
+                    .map(|(a, b)| a * b)
+                    .sum();
                 (i, dot)
             })
             .collect();
@@ -602,11 +645,8 @@ impl CrispFace {
     /// - `model_path` — path to the model file.
     /// - `n_threads`  — CPU thread count; pass `0` for automatic.
     pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
-        let path = CString::new(model_path)
-            .map_err(|e| format!("invalid path: {e}"))?;
-        let ctx = unsafe {
-            crispembed_sys::crispembed_face_init(path.as_ptr(), n_threads)
-        };
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_face_init(path.as_ptr(), n_threads) };
         if ctx.is_null() {
             return Err(format!("crispembed_face_init failed for '{model_path}'"));
         }
@@ -625,7 +665,9 @@ impl CrispFace {
         if ptr.is_null() {
             String::new()
         } else {
-            unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned()
+            unsafe { CStr::from_ptr(ptr) }
+                .to_string_lossy()
+                .into_owned()
         }
     }
 
@@ -635,7 +677,11 @@ impl CrispFace {
     ///
     /// Returns a `Vec` of [`CrispembedFaceDetection`] structs (bounding box,
     /// confidence, 5-point landmarks). Returns an empty vector on failure.
-    pub fn detect(&mut self, image_path: &str, conf_threshold: f32) -> Vec<CrispembedFaceDetection> {
+    pub fn detect(
+        &mut self,
+        image_path: &str,
+        conf_threshold: f32,
+    ) -> Vec<CrispembedFaceDetection> {
         let path = match CString::new(image_path) {
             Ok(s) => s,
             Err(_) => return vec![],
@@ -657,12 +703,12 @@ impl CrispFace {
         slice
             .iter()
             .map(|d| CrispembedFaceDetection {
-                x:          d.x,
-                y:          d.y,
-                w:          d.w,
-                h:          d.h,
+                x: d.x,
+                y: d.y,
+                w: d.w,
+                h: d.h,
                 confidence: d.confidence,
-                landmarks:  d.landmarks,
+                landmarks: d.landmarks,
             })
             .collect()
     }
@@ -738,25 +784,25 @@ impl CrispFacePipeline {
     /// - `rec_path`  — path to the face recogniser model file.
     /// - `n_threads` — CPU thread count; pass `0` for automatic.
     pub fn new(det_path: &str, rec_path: &str, n_threads: i32) -> Result<Self, String> {
-        let det_cpath = CString::new(det_path)
-            .map_err(|e| format!("invalid det_path: {e}"))?;
-        let rec_cpath = CString::new(rec_path)
-            .map_err(|e| format!("invalid rec_path: {e}"))?;
+        let det_cpath = CString::new(det_path).map_err(|e| format!("invalid det_path: {e}"))?;
+        let rec_cpath = CString::new(rec_path).map_err(|e| format!("invalid rec_path: {e}"))?;
 
-        let det_ctx = unsafe {
-            crispembed_sys::crispembed_face_init(det_cpath.as_ptr(), n_threads)
-        };
+        let det_ctx =
+            unsafe { crispembed_sys::crispembed_face_init(det_cpath.as_ptr(), n_threads) };
         if det_ctx.is_null() {
-            return Err(format!("crispembed_face_init failed for detector '{det_path}'"));
+            return Err(format!(
+                "crispembed_face_init failed for detector '{det_path}'"
+            ));
         }
 
-        let rec_ctx = unsafe {
-            crispembed_sys::crispembed_face_init(rec_cpath.as_ptr(), n_threads)
-        };
+        let rec_ctx =
+            unsafe { crispembed_sys::crispembed_face_init(rec_cpath.as_ptr(), n_threads) };
         if rec_ctx.is_null() {
             // Free the already-allocated detector context before returning.
             unsafe { crispembed_sys::crispembed_face_free(det_ctx) };
-            return Err(format!("crispembed_face_init failed for recogniser '{rec_path}'"));
+            return Err(format!(
+                "crispembed_face_init failed for recogniser '{rec_path}'"
+            ));
         }
 
         Ok(Self { det_ctx, rec_ctx })
@@ -773,7 +819,9 @@ impl CrispFacePipeline {
             if ptr.is_null() {
                 String::new()
             } else {
-                unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned()
+                unsafe { CStr::from_ptr(ptr) }
+                    .to_string_lossy()
+                    .into_owned()
             }
         };
         (
@@ -816,12 +864,12 @@ impl CrispFacePipeline {
             .iter()
             .map(|r| {
                 let det = CrispembedFaceDetection {
-                    x:          r.det.x,
-                    y:          r.det.y,
-                    w:          r.det.w,
-                    h:          r.det.h,
+                    x: r.det.x,
+                    y: r.det.y,
+                    w: r.det.w,
+                    h: r.det.h,
                     confidence: r.det.confidence,
-                    landmarks:  r.det.landmarks,
+                    landmarks: r.det.landmarks,
                 };
                 let emb = if r.embedding.is_null() || r.embedding_dim <= 0 {
                     vec![]

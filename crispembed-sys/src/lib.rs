@@ -11,13 +11,13 @@ pub struct CrispembedContext(c_void);
 /// Read-only model hyperparameters returned by `crispembed_get_hparams`.
 #[repr(C)]
 pub struct CrispembedHparams {
-    pub n_vocab:        i32,
-    pub n_max_tokens:   i32,
-    pub n_embd:         i32,
-    pub n_head:         i32,
-    pub n_layer:        i32,
+    pub n_vocab: i32,
+    pub n_max_tokens: i32,
+    pub n_embd: i32,
+    pub n_head: i32,
+    pub n_layer: i32,
     pub n_intermediate: i32,
-    pub n_output:       i32,
+    pub n_output: i32,
     pub layer_norm_eps: f32,
 }
 
@@ -65,10 +65,7 @@ extern "C" {
 
     /// Load a GGUF model file and initialise backends.
     /// `n_threads` = 0 for auto-detect. Returns NULL on failure.
-    pub fn crispembed_init(
-        model_path: *const c_char,
-        n_threads:  c_int,
-    ) -> *mut CrispembedContext;
+    pub fn crispembed_init(model_path: *const c_char, n_threads: c_int) -> *mut CrispembedContext;
 
     /// Free all resources. Safe to call with NULL.
     pub fn crispembed_free(ctx: *mut CrispembedContext);
@@ -78,9 +75,7 @@ extern "C" {
     // ------------------------------------------------------------------
 
     /// Get model hyperparameters (valid for the lifetime of `ctx`).
-    pub fn crispembed_get_hparams(
-        ctx: *const CrispembedContext,
-    ) -> *const CrispembedHparams;
+    pub fn crispembed_get_hparams(ctx: *const CrispembedContext) -> *const CrispembedHparams;
 
     /// Truncate output to `dim` dimensions (Matryoshka). 0 = model default.
     pub fn crispembed_set_dim(ctx: *mut CrispembedContext, dim: c_int);
@@ -112,17 +107,17 @@ extern "C" {
     /// Encode a single text. Returns pointer to `*out_n_dim` floats.
     /// Buffer is owned by `ctx` and valid until the next encode call.
     pub fn crispembed_encode(
-        ctx:       *mut CrispembedContext,
-        text:      *const c_char,
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
         out_n_dim: *mut c_int,
     ) -> *const c_float;
 
     /// Encode a batch of `n_texts` strings in one graph pass.
     /// Returns flat `[n_texts * dim]` array. Buffer valid until next call.
     pub fn crispembed_encode_batch(
-        ctx:       *mut CrispembedContext,
-        texts:     *const *const c_char,
-        n_texts:   c_int,
+        ctx: *mut CrispembedContext,
+        texts: *const *const c_char,
+        n_texts: c_int,
         out_n_dim: *mut c_int,
     ) -> *const c_float;
 
@@ -148,10 +143,10 @@ extern "C" {
     /// Both buffers are owned by `ctx` and valid until the next call.
     /// Returns the number of non-zero entries, or 0 on failure.
     pub fn crispembed_encode_sparse(
-        ctx:         *mut CrispembedContext,
-        text:        *const c_char,
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
         out_indices: *mut *const i32,
-        out_values:  *mut *const c_float,
+        out_values: *mut *const c_float,
     ) -> c_int;
 
     // ------------------------------------------------------------------
@@ -162,10 +157,10 @@ extern "C" {
     /// Returns a flat `[*out_n_tokens × *out_dim]` array valid until next call.
     /// Returns NULL on failure or if the model has no ColBERT head.
     pub fn crispembed_encode_multivec(
-        ctx:          *mut CrispembedContext,
-        text:         *const c_char,
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
         out_n_tokens: *mut c_int,
-        out_dim:      *mut c_int,
+        out_dim: *mut c_int,
     ) -> *const c_float;
 
     // ------------------------------------------------------------------
@@ -177,10 +172,10 @@ extern "C" {
     /// this is NOT gated on the ColBERT head — it returns the raw
     /// contextual hidden states. Designed for SimAlign-style word aligners.
     pub fn crispembed_encode_tokens(
-        ctx:          *mut CrispembedContext,
-        text:         *const c_char,
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
         out_n_tokens: *mut c_int,
-        out_dim:      *mut c_int,
+        out_dim: *mut c_int,
     ) -> *const c_float;
 
     /// Pointer to the token IDs from the most recent `encode_tokens` call.
@@ -203,8 +198,8 @@ extern "C" {
     /// Score a (query, document) pair. Returns raw logit (higher = more relevant).
     /// The model must be a reranker (`crispembed_is_reranker` == 1).
     pub fn crispembed_rerank(
-        ctx:      *mut CrispembedContext,
-        query:    *const c_char,
+        ctx: *mut CrispembedContext,
+        query: *const c_char,
         document: *const c_char,
     ) -> c_float;
 
@@ -222,10 +217,10 @@ extern "C" {
     /// On success returns a buffer of `*out_dim` floats owned by `ctx`,
     /// valid until the next call on this context.
     pub fn crispembed_encode_audio(
-        ctx:         *mut CrispembedContext,
+        ctx: *mut CrispembedContext,
         pcm_samples: *const c_float,
-        n_samples:   c_int,
-        out_dim:     *mut c_int,
+        n_samples: c_int,
+        out_dim: *mut c_int,
     ) -> *const c_float;
 
     // ------------------------------------------------------------------
@@ -240,12 +235,12 @@ extern "C" {
     /// a single L2-normalized vector. Buffer owned by ctx, valid until the
     /// next call.
     pub fn crispembed_encode_image(
-        ctx:           *mut CrispembedContext,
+        ctx: *mut CrispembedContext,
         pixel_patches: *const c_float,
-        n_patches:     c_int,
-        grid_thw:      *const i32,
-        n_images:      c_int,
-        out_dim:       *mut c_int,
+        n_patches: c_int,
+        grid_thw: *const i32,
+        n_images: c_int,
+        out_dim: *mut c_int,
     ) -> *const c_float;
 
     /// Raw vision tower output (un-pooled, un-normalized). Layout of the
@@ -254,13 +249,13 @@ extern "C" {
     /// each slab being `(n_merged × dim)` row-major. Total floats =
     /// `(1 + n_deepstack) * n_merged * dim`.
     pub fn crispembed_encode_image_raw(
-        ctx:             *mut CrispembedContext,
-        pixel_patches:   *const c_float,
-        n_patches:       c_int,
-        grid_thw:        *const i32,
-        n_images:        c_int,
-        out_n_merged:    *mut c_int,
-        out_dim:         *mut c_int,
+        ctx: *mut CrispembedContext,
+        pixel_patches: *const c_float,
+        n_patches: c_int,
+        grid_thw: *const i32,
+        n_images: c_int,
+        out_n_merged: *mut c_int,
+        out_dim: *mut c_int,
         out_n_deepstack: *mut c_int,
     ) -> *const c_float;
 
@@ -276,7 +271,7 @@ extern "C" {
     /// `n_threads` = 0 for auto-detect. Returns NULL on failure.
     pub fn crispembed_face_init(
         model_path: *const c_char,
-        n_threads:  c_int,
+        n_threads: c_int,
     ) -> *mut CrispembedFaceContext;
 
     /// Returns the embedding dimension produced by a recognition model,
@@ -292,10 +287,10 @@ extern "C" {
     /// owned by `ctx`, valid until the next call on this context.
     /// Returns NULL on failure.
     pub fn crispembed_detect_faces(
-        ctx:            *mut CrispembedFaceContext,
-        image_path:     *const c_char,
+        ctx: *mut CrispembedFaceContext,
+        image_path: *const c_char,
         conf_threshold: f32,
-        out_n_faces:    *mut c_int,
+        out_n_faces: *mut c_int,
     ) -> *const CrispembedFaceDetection;
 
     /// Encode the face described by `landmarks` (10 floats: 5 × [x,y]) from
@@ -303,10 +298,10 @@ extern "C" {
     /// Returns a pointer to `*out_dim` floats owned by `ctx`, valid until
     /// the next call on this context. Returns NULL on failure.
     pub fn crispembed_encode_face(
-        ctx:        *mut CrispembedFaceContext,
+        ctx: *mut CrispembedFaceContext,
         image_path: *const c_char,
-        landmarks:  *const f32,
-        out_dim:    *mut c_int,
+        landmarks: *const f32,
+        out_dim: *mut c_int,
     ) -> *const f32;
 
     /// Run the full detect-then-recognise pipeline.
@@ -315,11 +310,11 @@ extern "C" {
     /// owned by `det_ctx`, valid until the next call on either context.
     /// Returns NULL on failure.
     pub fn crispembed_face_pipeline(
-        det_ctx:        *mut CrispembedFaceContext,
-        rec_ctx:        *mut CrispembedFaceContext,
-        image_path:     *const c_char,
+        det_ctx: *mut CrispembedFaceContext,
+        rec_ctx: *mut CrispembedFaceContext,
+        image_path: *const c_char,
         conf_threshold: f32,
-        out_n_faces:    *mut c_int,
+        out_n_faces: *mut c_int,
     ) -> *const CrispembedFaceResult;
 
     /// Free all resources held by a face context. Safe to call with NULL.

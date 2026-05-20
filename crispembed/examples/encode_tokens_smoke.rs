@@ -27,7 +27,10 @@ fn main() {
     let mut m = CrispEmbed::new(&path, 4).expect("load model");
 
     println!("dim:            {}", m.dim());
-    println!("tokenizer_kind: {} (1=WordPiece, 2=SentencePiece, 3=BPE)", m.tokenizer_kind());
+    println!(
+        "tokenizer_kind: {} (1=WordPiece, 2=SentencePiece, 3=BPE)",
+        m.tokenizer_kind()
+    );
 
     let pairs = [
         ("Hello world.", "Hallo Welt."),
