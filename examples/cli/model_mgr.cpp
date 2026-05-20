@@ -130,13 +130,13 @@ static const ModelEntry k_registry[] = {
     {"octen-4b",
      "octen-4b-q4_k.gguf",
      "https://huggingface.co/cstr/octen-4b-GGUF/resolve/main/octen-4b-q4_k.gguf",
-     "Qwen3 2560d multilingual (4B)", "2.5 GB", "apache-2.0",
+     "Qwen3 2560d multilingual (4B)", "2.3 GB", "apache-2.0",
      "https://huggingface.co/Octen/Octen-Embedding-4B"},
 
     {"octen-8b",
      "octen-8b-q4_k.gguf",
      "https://huggingface.co/cstr/octen-8b-GGUF/resolve/main/octen-8b-q4_k.gguf",
-     "Qwen3 4096d multilingual (8B)", "5.0 GB", "apache-2.0",
+     "Qwen3 4096d multilingual (8B)", "4.4 GB", "apache-2.0",
      "https://huggingface.co/Octen/Octen-Embedding-8B"},
 
     {"f2llm-v2-0.6b",
@@ -178,13 +178,13 @@ static const ModelEntry k_registry[] = {
     {"qwen3-embed-4b",
      "qwen3-embed-4b-q4_k.gguf",
      "https://huggingface.co/cstr/qwen3-embed-4b-GGUF/resolve/main/qwen3-embed-4b-q4_k.gguf",
-     "Qwen3 2560d official (4B)", "2.5 GB", "apache-2.0",
+     "Qwen3 2560d official (4B)", "2.3 GB", "apache-2.0",
      "https://huggingface.co/Qwen/Qwen3-Embedding-4B"},
 
     {"qwen3-embed-8b",
      "qwen3-embed-8b-q4_k.gguf",
      "https://huggingface.co/cstr/qwen3-embed-8b-GGUF/resolve/main/qwen3-embed-8b-q4_k.gguf",
-     "Qwen3 4096d official (8B)", "5.0 GB", "apache-2.0",
+     "Qwen3 4096d official (8B)", "4.4 GB", "apache-2.0",
      "https://huggingface.co/Qwen/Qwen3-Embedding-8B"},
 
     // BidirLM-Omni — bidirectional Qwen3 (text) + Whisper-shape audio tower (cross-modal).
