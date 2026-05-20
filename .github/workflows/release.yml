@@ -91,6 +91,19 @@ jobs:
             cp build/$bin pkg/ 2>/dev/null || true
           done
           cp -P build/${{ matrix.lib }}* pkg/ 2>/dev/null || true
+          # macOS naming puts the version BEFORE the extension
+          # (libcrispembed.0.dylib, libcrispembed.0.4.0.dylib), so the
+          # glob above — which expects `<basename>.<ext>.<version>` like
+          # Linux's libfoo.so.0.4.0 — only catches the unversioned
+          # symlink. Result before this line: libcrispembed.dylib lands
+          # in the tarball as a DANGLING symlink with no target, breaking
+          # every downstream consumer that links against it (crispembed-sys
+          # try_prebuilt, the CrispSorter macOS bundle, etc.). This
+          # second cp catches the versioned dylibs that cmake emits via
+          # `set_target_properties(... VERSION ... SOVERSION ...)`.
+          if [ "${{ runner.os }}" = "macOS" ]; then
+              cp -P build/libcrispembed.*.dylib pkg/ 2>/dev/null || true
+          fi
           # libcrispembed references @rpath/libggml-*.dylib (or .so) for
           # backend libs that are built shared alongside it. Bundle them
           # into the same flat tarball so downstream consumers (Rust
