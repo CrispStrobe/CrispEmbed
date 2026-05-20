@@ -20,8 +20,10 @@ GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
 
 | Project | Role |
 |---|---|
-| **CrispEmbed** | This repo — text embedding engine (ggml), dense + sparse + ColBERT + reranking |
-| **[CrispASR](https://github.com/CrispStrobe/CrispASR)** | Speech recognition engine (ggml) — 11 ASR backends, same philosophy for audio |
+| **CrispEmbed** | This repo — text embedding engine (ggml), dense + sparse + ColBERT + reranking, plus the per-token `encode_tokens` API used by SimAlign-style word aligners |
+| **[CrispASR](https://github.com/CrispStrobe/CrispASR)** | Speech recognition engine (ggml) — 11 ASR backends, same philosophy for audio. Also ships text-to-text NMT (m2m100 / wmt21 / madlad / gemma4-e2b) |
+| **[crisp-docx](https://github.com/CrispStrobe/crisp-docx)** | OOXML (`.docx`) surgery + LLM/NMT document translation pipeline. Consumes CrispEmbed for transformer-grade word alignment under the `align` feature, and CrispASR as an offline NMT backend under the `nmt` feature |
+| **[CrispSorter](https://github.com/CrispStrobe/CrispSorter)** | Tauri 2 desktop document organiser. Translate tab wires the crisp-docx pipeline; LanceDB indexer uses CrispEmbed for embeddings |
 | **[CrisperWeaver](https://github.com/CrispStrobe/CrisperWeaver)** | Flutter transcription app powered by CrispASR — desktop + mobile, fully offline |
 | **[Susurrus](https://github.com/CrispStrobe/Susurrus)** | Python ASR GUI with 9 backends (faster-whisper, mlx-whisper, voxtral, ...) |
 
