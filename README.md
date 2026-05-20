@@ -14,7 +14,7 @@ face recognition. Full detect-align-encode pipeline.
 
 **9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
 GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
-47 models in registry, 95+ GGUF variants.
+45 models in registry, 151 GGUF variants published on HF.
 
 ### Part of the Crisp ecosystem
 
@@ -27,7 +27,7 @@ GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
 
 ## Status
 
-**34 models regression-tested** (all pass, cos>=0.987), 47 in registry:
+**36 models regression-tested** (all pass, cos>=0.965), 45 in registry:
 
 | Model | Type | Dim | F32 CosSim | Q8_0 | Q4_K |
 |-------|------|-----|------------|------|------|
@@ -57,8 +57,11 @@ GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
 | bge-base-en-v1.5 | BERT | 768 | 0.999994 | 0.9999 | 0.99 |
 | bge-large-en-v1.5 | BERT | 1024 | 0.999992 | 0.9999 | 0.99 |
 | mxbai-embed-large-v1 | BERT | 1024 | 1.000032 | 0.9999 | 0.99 |
+| Qwen3-Embedding-4B | Qwen3 | 2560 | — | — | 0.974 |
+| Octen-Embedding-8B | Qwen3 | 4096 | — | — | 0.965 |
 
 Q8_0 = all PASS (cos > 0.99). Q4_K = most PASS; `--` = SwiGLU too sensitive for aggressive quants.
+Q4_K cosines for the 4B/8B decoder rows are min-cos vs **bf16** HF (the native training precision; full f32 would not fit in 16 GB RAM).
 
 ### Known issues
 

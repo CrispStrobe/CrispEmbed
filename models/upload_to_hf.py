@@ -172,6 +172,11 @@ MODELS = {
         "license": "apache-2.0",
         "langs": ["multilingual"],
         "desc": "Octen Embedding 8B. Qwen3-based decoder, 4096-dimensional, last-token pooling.",
+        # min cosine vs Octen/Octen-Embedding-8B (bf16 HF reference) on the
+        # standard 4-text parity set, measured 2026-05-19.
+        "parity": {
+            "q4_k": 0.9654,
+        },
     },
     "f2llm-v2-0.6b": {
         "base_model": "codefuse-ai/F2LLM-v2-0.6B",
@@ -274,6 +279,12 @@ MODELS = {
         "license": "apache-2.0",
         "langs": ["multilingual"],
         "desc": "Qwen3 Embedding 4B. Official Alibaba embedding model, 2560-dimensional last-token pooling.",
+        # min cosine vs Qwen/Qwen3-Embedding-4B (bf16 HF reference) on the
+        # standard 4-text parity set with the canonical "Instruct/Query"
+        # prefix, measured 2026-05-19.
+        "parity": {
+            "q4_k": 0.9744,
+        },
     },
     "qwen3-embed-8b": {
         "base_model": "Qwen/Qwen3-Embedding-8B",

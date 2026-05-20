@@ -157,10 +157,14 @@ CrispEmbed/
 
 ## Status (May 2026)
 
-### Verified working — 38+ models, cos >= 0.999 vs HF
+### Verified working — 40+ models, cos >= 0.965 vs HF
 
-25 encoder models + 7 decoder models + 12 rerankers + 1 SPLADE + 2 multimodal
-= 47 models in registry, 95+ GGUF variants (F32 + Q8_0 + Q4_K).
+25 encoder models + 11 decoder models + 12 rerankers + 1 SPLADE + 2 multimodal
+= 45 models in registry, 151 GGUF variants published on HF
+(typical per-model: F32 + Q8_0 + Q4_K; about a dozen also have Q5_K /
+Q6_K / F16). The 4B and 8B Qwen3-Embedding / Octen-Embedding variants
+land at Q4_K cos ≥ 0.965 vs **bf16** HF reference (full f32 doesn't
+fit in 16 GB RAM for the 8B path).
 
 Key parity results (cos vs HuggingFace reference):
 
@@ -179,10 +183,15 @@ Key parity results (cos vs HuggingFace reference):
 | granite-embedding-278m/107m | XLM-R | 768/384 | 1.000000 |
 | pixie-rune-v1 | XLM-R | 1024 | 0.999993 |
 | octen-0.6b | Qwen3 | 1024 | 0.999891 |
+| octen-8b | Qwen3 | 4096 | 0.965 (Q4_K vs bf16 HF) |
+| qwen3-embed-4b | Qwen3 | 2560 | 0.974 (Q4_K vs bf16 HF) |
 | harrier-0.6b / harrier-270m | Qwen3/Gemma3 | 1024/640 | 0.999959/948 |
 | jina-v5-nano/small | Qwen3 | 1024 | 0.999941 |
 | bge-reranker-v2-m3 | XLM-R reranker | - | verified |
 | ms-marco-MiniLM-L-6/12-v2 | BERT reranker | - | verified |
+
+Pending HF publication (cpp registry wired, GGUFs being produced via the
+Kaggle qwen3-quantize notebook): `octen-4b`, `qwen3-embed-8b`.
 
 ### Supported architectures
 
