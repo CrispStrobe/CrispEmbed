@@ -3,9 +3,13 @@ name = "crispembed-sys"
 # Tracks the C library version in /VERSION. Bump on every C ABI change.
 version = "0.4.0"
 edition = "2021"
-description = "Raw FFI bindings to the crispembed C library"
+description = "Raw FFI bindings to the crispembed C library (ggml-based multilingual text embeddings). Use the safe `crispembed` crate unless you need direct C ABI access."
 license = "MIT"
 repository = "https://github.com/CrispStrobe/CrispEmbed"
+homepage = "https://github.com/CrispStrobe/CrispEmbed"
+readme = "../README.md"
+keywords = ["embeddings", "ffi", "ggml", "bindings", "bert"]
+categories = ["external-ffi-bindings", "text-processing"]
 links = "crispembed"
 build = "build.rs"
 

@@ -3,9 +3,13 @@ name = "crispembed"
 # Tracks /VERSION (the C library version) — same as crispembed-sys.
 version = "0.4.0"
 edition = "2021"
-description = "Safe Rust wrapper for crispembed text embedding inference"
+description = "Safe Rust wrapper for the crispembed text-embedding engine — multilingual encoders (BERT, XLM-R, MPNet, NomicBERT, ModernBERT, Gemma3, Qwen3) via ggml, dense + sparse + ColBERT + per-token contextual embeddings, optional Metal/CUDA/Vulkan acceleration."
 license = "MIT"
 repository = "https://github.com/CrispStrobe/CrispEmbed"
+homepage = "https://github.com/CrispStrobe/CrispEmbed"
+readme = "../README.md"
+keywords = ["embeddings", "nlp", "bert", "ggml", "multilingual"]
+categories = ["text-processing", "science", "api-bindings"]
 
 [features]
 cuda   = ["crispembed-sys/cuda"]
