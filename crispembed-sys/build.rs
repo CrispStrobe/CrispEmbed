@@ -119,7 +119,11 @@ fn configure_and_build(src_root: &Path) -> PathBuf {
     run(&mut configure, "cmake configure");
 
     let mut build = Command::new("cmake");
-    build.arg("--build").arg(&build_dir).arg("--config").arg("Release");
+    build
+        .arg("--build")
+        .arg(&build_dir)
+        .arg("--config")
+        .arg("Release");
     run(&mut build, "cmake build");
 
     build_dir
