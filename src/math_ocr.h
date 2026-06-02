@@ -25,20 +25,30 @@ extern "C" {
 typedef struct math_ocr_context math_ocr_context;
 
 /// Model hyperparameters (read-only after init).
+/// Architecture: DeiT encoder + TrOCR decoder (VisionEncoderDecoderModel).
 typedef struct math_ocr_hparams {
-    int32_t encoder_layers;
-    int32_t decoder_layers;
-    int32_t dim;
-    int32_t heads;
-    int32_t vocab_size;
-    int32_t max_seq_len;
-    int32_t patch_size;
-    int32_t max_height;
-    int32_t max_width;
-    int32_t channels;
+    // Encoder (DeiT)
+    int32_t enc_layers;        // num_hidden_layers (12 for small, 24 for large)
+    int32_t enc_heads;         // num_attention_heads (6 small, 16 large)
+    int32_t enc_hidden;        // hidden_size (384 small, 1024 large)
+    int32_t enc_intermediate;  // intermediate_size (1536 small, 4096 large)
+    int32_t image_size;        // 384
+    int32_t patch_size;        // 16
+
+    // Decoder (TrOCR)
+    int32_t dec_layers;        // decoder_layers (6 small, 12 large)
+    int32_t dec_heads;         // decoder_attention_heads (8 small, 16 large)
+    int32_t dec_d_model;       // d_model (256 small, 1024 large)
+    int32_t dec_ffn_dim;       // decoder_ffn_dim (1024 small, 4096 large)
+    int32_t vocab_size;        // 1200 (pix2text-mfr) or 50265/64044 (TrOCR)
+    int32_t max_seq_len;       // max_position_embeddings (512)
+    int32_t cross_attn_dim;    // cross_attention_hidden_size = enc_hidden
+
+    // Special tokens
     int32_t bos_token;
     int32_t eos_token;
     int32_t pad_token;
+    int32_t decoder_start_token;
 } math_ocr_hparams;
 
 /// Load a pix2tex GGUF model. Returns NULL on failure.
