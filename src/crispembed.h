@@ -425,6 +425,30 @@ CRISPEMBED_API void crispembed_face_free(crispembed_face_context * ctx);
 // Free all resources.
 CRISPEMBED_API void crispembed_free(crispembed_context * ctx);
 
+// ---------------------------------------------------------------------------
+// Math OCR (pix2tex) — image → LaTeX via ViT encoder + transformer decoder.
+// Requires a pix2tex GGUF model (see models/convert-pix2tex-to-gguf.py).
+// ---------------------------------------------------------------------------
+
+// Initialize a math OCR context. Separate from the main embedding context
+// because the model architecture is different (encoder-decoder vs encoder-only).
+CRISPEMBED_API void * crispembed_math_ocr_init(const char * model_path, int n_threads);
+
+// Free the math OCR context.
+CRISPEMBED_API void crispembed_math_ocr_free(void * ctx);
+
+// Recognize math from raw pixel bytes (RGB or RGBA).
+// Returns a null-terminated LaTeX string owned by the context.
+// Returns NULL on failure.
+CRISPEMBED_API const char * crispembed_math_ocr_recognize(
+    void * ctx,
+    const uint8_t * pixel_bytes,
+    int width,
+    int height,
+    int channels,
+    int * out_len
+);
+
 #ifdef __cplusplus
 }
 #endif
