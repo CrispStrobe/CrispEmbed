@@ -641,28 +641,84 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
     // Encoder (ggml graph — fast)
     run_encoder(ctx, rgb.data(), S, S);
 
-    // Precompute cross-attention K/V (once, reused for all decoder steps)
+    // Precompute cross-attention K/V via ggml graph (SIMD, fast)
     {
         const int n_enc = ctx->n_enc_tokens;
         const int D = ctx->hparams.dec_d_model;
         const int E = ctx->hparams.enc_hidden;
-        ctx->cross_k_cache.resize(ctx->hparams.dec_layers);
-        ctx->cross_v_cache.resize(ctx->hparams.dec_layers);
-        for (int li = 0; li < ctx->hparams.dec_layers; li++) {
+        const int n_dec = ctx->hparams.dec_layers;
+
+        ctx->cross_k_cache.resize(n_dec);
+        ctx->cross_v_cache.resize(n_dec);
+
+        // Build a ggml graph that projects encoder output for all layers
+        size_t meta_sz = 64 * 1024 * 1024;
+        std::vector<uint8_t> meta(meta_sz);
+        ggml_init_params ip = { meta_sz, meta.data(), true };
+        ggml_context* g = ggml_init(ip);
+        ggml_cgraph* gf = ggml_new_graph_custom(g, n_dec * 6 + 16, false);
+
+        // Input: encoder output [E, n_enc]
+        ggml_tensor* enc_inp = ggml_new_tensor_2d(g, GGML_TYPE_F32, E, n_enc);
+        ggml_set_name(enc_inp, "enc_for_cross");
+        ggml_set_input(enc_inp);
+
+        // For each decoder layer, project K and V
+        std::vector<ggml_tensor*> k_outs(n_dec), v_outs(n_dec);
+        for (int li = 0; li < n_dec; li++) {
             const auto& l = ctx->dec_layers[li];
-            ctx->cross_k_cache[li].resize(n_enc * D);
-            ctx->cross_v_cache[li].resize(n_enc * D);
-            for (int t = 0; t < n_enc; t++) {
-                linear_cpu(ctx->enc_out.data() + t * E,
-                           ctx->cross_k_cache[li].data() + t * D,
-                           E, D, l.cross_k_w, l.cross_k_b);
-                linear_cpu(ctx->enc_out.data() + t * E,
-                           ctx->cross_v_cache[li].data() + t * D,
-                           E, D, l.cross_v_w, l.cross_v_b);
-            }
+            char name[64];
+
+            // K = enc @ cross_k_w + cross_k_b
+            ggml_tensor* k = ggml_mul_mat(g, l.cross_k_w, enc_inp);
+            if (l.cross_k_b) k = ggml_add(g, k, ensure_f32(g, l.cross_k_b));
+            snprintf(name, sizeof(name), "cross_k_%d", li);
+            ggml_set_name(k, name);
+            ggml_set_output(k);
+            k_outs[li] = k;
+
+            // V = enc @ cross_v_w + cross_v_b
+            ggml_tensor* v = ggml_mul_mat(g, l.cross_v_w, enc_inp);
+            if (l.cross_v_b) v = ggml_add(g, v, ensure_f32(g, l.cross_v_b));
+            snprintf(name, sizeof(name), "cross_v_%d", li);
+            ggml_set_name(v, name);
+            ggml_set_output(v);
+            v_outs[li] = v;
+
+            ggml_build_forward_expand(gf, k);
+            ggml_build_forward_expand(gf, v);
         }
+
+        // Allocate + compute
+        ggml_backend_sched_reset(ctx->sched);
+        if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
+            fprintf(stderr, "math_ocr: cross K/V alloc failed\n");
+            ggml_free(g);
+        } else {
+            ggml_tensor* inp_t = ggml_graph_get_tensor(gf, "enc_for_cross");
+            if (inp_t) ggml_backend_tensor_set(inp_t, ctx->enc_out.data(), 0,
+                                                 n_enc * E * sizeof(float));
+            ggml_backend_sched_graph_compute(ctx->sched, gf);
+
+            // Read results
+            for (int li = 0; li < n_dec; li++) {
+                ctx->cross_k_cache[li].resize(n_enc * D);
+                ctx->cross_v_cache[li].resize(n_enc * D);
+                char name[64];
+                snprintf(name, sizeof(name), "cross_k_%d", li);
+                ggml_tensor* kt = ggml_graph_get_tensor(gf, name);
+                if (kt) ggml_backend_tensor_get(kt, ctx->cross_k_cache[li].data(),
+                                                  0, n_enc * D * sizeof(float));
+                snprintf(name, sizeof(name), "cross_v_%d", li);
+                ggml_tensor* vt = ggml_graph_get_tensor(gf, name);
+                if (vt) ggml_backend_tensor_get(vt, ctx->cross_v_cache[li].data(),
+                                                  0, n_enc * D * sizeof(float));
+            }
+            ggml_free(g);
+        }
+
         fprintf(stderr, "math_ocr: cross K/V cached (%d enc tokens × %d layers)\n",
-                n_enc, ctx->hparams.dec_layers);
+                n_enc, n_dec);
     }
 
     // Decoder (scalar — fast enough for autoregressive)
