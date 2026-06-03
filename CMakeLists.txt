@@ -114,6 +114,7 @@ list(APPEND CRISPEMBED_SOURCES src/bidirlm_vision.cpp)
 list(APPEND CRISPEMBED_SOURCES src/vit_embed.cpp)
 list(APPEND CRISPEMBED_SOURCES src/cnn_embed.cpp)
 list(APPEND CRISPEMBED_SOURCES src/face_align.cpp)
+list(APPEND CRISPEMBED_SOURCES src/math_ocr.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
