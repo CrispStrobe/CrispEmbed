@@ -14,6 +14,7 @@
 #include <cmath>
 #include <cstring>
 #include <map>
+#include <unordered_map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -173,19 +174,26 @@ static void map_tensors(math_ocr_context* ctx) {
 // ---------------------------------------------------------------------------
 
 // LayerNorm via ggml ops
+// Ensure tensor is F32 for binary ops (quantized models keep biases as F16)
+static ggml_tensor* ensure_f32(ggml_context* g, ggml_tensor* t) {
+    if (!t || t->type == GGML_TYPE_F32) return t;
+    return ggml_cast(g, t, GGML_TYPE_F32);
+}
+
 static ggml_tensor* g_ln(ggml_context* g, ggml_tensor* x, ggml_tensor* w, ggml_tensor* b) {
     if (!w) return x;
     x = ggml_norm(g, x, 1e-6f);
-    x = ggml_mul(g, x, w);
-    if (b) x = ggml_add(g, x, b);
+    x = ggml_mul(g, x, ensure_f32(g, w));
+    if (b) x = ggml_add(g, x, ensure_f32(g, b));
     return x;
 }
 
 // Linear projection: out = W @ x + b  (W is [out, in], x is [in, T])
+// ggml_mul_mat handles mixed-precision natively; only bias add needs F32 cast.
 static ggml_tensor* g_linear(ggml_context* g, ggml_tensor* x, ggml_tensor* w, ggml_tensor* b) {
     if (!w) return x;
     x = ggml_mul_mat(g, w, x);
-    if (b) x = ggml_add(g, x, b);
+    if (b) x = ggml_add(g, x, ensure_f32(g, b));
     return x;
 }
 
@@ -392,12 +400,23 @@ static void run_encoder(math_ocr_context* ctx, const float* pixels_rgb, int img_
 // Decoder (scalar — fast enough for autoregressive single-token steps)
 // ---------------------------------------------------------------------------
 
+// Cached F32 buffers for decoder weights (avoid repeated dequantization)
+static std::unordered_map<const void*, std::vector<float>> _deq_cache;
+
+static const float* cached_f32(const ggml_tensor* t) {
+    if (!t) return nullptr;
+    if (t->type == GGML_TYPE_F32) return (const float*)t->data;
+    auto it = _deq_cache.find(t->data);
+    if (it != _deq_cache.end()) return it->second.data();
+    auto& buf = _deq_cache[t->data];
+    buf = to_f32(t);
+    return buf.data();
+}
+
 static void layernorm_cpu(const float* x, float* y, int D, const ggml_tensor* w, const ggml_tensor* b) {
     if (!w || !b) { if (x != y) memcpy(y, x, D * sizeof(float)); return; }
-    auto W_buf = (w->type != GGML_TYPE_F32) ? to_f32(w) : std::vector<float>();
-    auto B_buf = (b->type != GGML_TYPE_F32) ? to_f32(b) : std::vector<float>();
-    const float* W = W_buf.empty() ? (const float*)w->data : W_buf.data();
-    const float* B = B_buf.empty() ? (const float*)b->data : B_buf.data();
+    const float* W = cached_f32(w);
+    const float* B = cached_f32(b);
     float mean = 0, var = 0;
     for (int i = 0; i < D; i++) mean += x[i];
     mean /= D;
@@ -408,11 +427,8 @@ static void layernorm_cpu(const float* x, float* y, int D, const ggml_tensor* w,
 
 static void linear_cpu(const float* inp, float* out, int in_d, int out_d, const ggml_tensor* w, const ggml_tensor* b) {
     if (!w) { memset(out, 0, out_d * sizeof(float)); return; }
-    // Dequantize weight + bias if not F32 (handles FP16 + quantized GGUF)
-    auto W_buf = (w->type != GGML_TYPE_F32) ? to_f32(w) : std::vector<float>();
-    auto B_buf = (b && b->type != GGML_TYPE_F32) ? to_f32(b) : std::vector<float>();
-    const float* W = W_buf.empty() ? (const float*)w->data : W_buf.data();
-    const float* B = !b ? nullptr : (B_buf.empty() ? (const float*)b->data : B_buf.data());
+    const float* W = cached_f32(w);
+    const float* B = cached_f32(b);
     for (int o = 0; o < out_d; o++) {
         float s = B ? B[o] : 0.0f;
         for (int j = 0; j < in_d; j++) s += inp[j] * W[o * in_d + j];
