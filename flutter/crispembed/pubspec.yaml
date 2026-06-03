@@ -1,14 +1,35 @@
 name: crispembed
-description: Lightweight text embedding inference via ggml. Dense, sparse, ColBERT, and cross-encoder reranking — all on-device with GPU acceleration.
-version: 0.2.0
+description: >
+  Lightweight embedding + math OCR inference via ggml.
+  Dense, sparse, ColBERT, cross-encoder reranking, and
+  DeiT+TrOCR on-device math equation recognition.
+version: 0.3.0
 homepage: https://github.com/CrispStrobe/CrispEmbed
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
+  flutter: ">=3.10.0"
 
 dependencies:
+  flutter:
+    sdk: flutter
   ffi: ^2.0.0
 
 dev_dependencies:
-  test: ^1.24.0
+  flutter_test:
+    sdk: flutter
   ffigen: ^9.0.0
+
+flutter:
+  plugin:
+    platforms:
+      linux:
+        ffiPlugin: true
+      macos:
+        ffiPlugin: true
+      windows:
+        ffiPlugin: true
+      android:
+        ffiPlugin: true
+      ios:
+        ffiPlugin: true
