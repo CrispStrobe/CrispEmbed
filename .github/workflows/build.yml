@@ -120,3 +120,54 @@ jobs:
           name: ios-arm64
           path: build/libcrispembed-static.a
           if-no-files-found: warn
+
+  # -------------------------------------------------------------------------
+  # Bundle all native libraries into the Flutter plugin's platform directories
+  # so that `flutter build` can find them.
+  # -------------------------------------------------------------------------
+  bundle-flutter:
+    name: Bundle Flutter plugin
+    runs-on: ubuntu-latest
+    needs: [build, build-android, build-ios]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Place artifacts in Flutter plugin dirs
+        run: |
+          PLUGIN=flutter/crispembed
+
+          # Linux
+          cp artifacts/linux-x86_64/libcrispembed.so \
+             $PLUGIN/linux/lib/libcrispembed.so
+
+          # macOS
+          cp artifacts/macos-arm64/libcrispembed.dylib \
+             $PLUGIN/macos/Libs/libcrispembed.dylib
+
+          # Windows
+          cp artifacts/windows-x86_64/crispembed.dll \
+             $PLUGIN/windows/lib/crispembed.dll
+
+          # iOS
+          cp artifacts/ios-arm64/libcrispembed-static.a \
+             $PLUGIN/ios/Libs/libcrispembed-static.a
+
+          # Android (per-ABI)
+          for abi in arm64-v8a armeabi-v7a x86_64; do
+            cp artifacts/android-${abi}/libcrispembed.so \
+               $PLUGIN/android/src/main/jniLibs/${abi}/libcrispembed.so
+          done
+
+          echo "=== Flutter plugin native libraries ==="
+          find $PLUGIN -name '*.so' -o -name '*.dylib' -o -name '*.dll' -o -name '*.a' | sort
+
+      - name: Upload bundled plugin
+        uses: actions/upload-artifact@v7
+        with:
+          name: flutter-plugin-bundled
+          path: flutter/crispembed/
