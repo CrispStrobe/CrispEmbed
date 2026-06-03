@@ -210,6 +210,10 @@ static ggml_cgraph* build_encoder_graph(math_ocr_context* ctx, ggml_context* g, 
 
     ggml_tensor* cur = inp;
 
+    // Log input tensor shape
+    fprintf(stderr, "math_ocr: graph input ne=[%lld, %lld]\n",
+            (long long)inp->ne[0], (long long)inp->ne[1]);
+
     // Transformer layers
     for (int il = 0; il < hp.enc_layers; il++) {
         const auto& L = ctx->enc_layers[il];
@@ -221,6 +225,11 @@ static ggml_cgraph* build_encoder_graph(math_ocr_context* ctx, ggml_context* g, 
         cur = g_ln(g, cur, L.ln1_w, L.ln1_b);
 
         // Self-attention
+        if (il == 0 && L.q_w) {
+            fprintf(stderr, "math_ocr: layer 0 q_w ne=[%lld, %lld], cur ne=[%lld, %lld]\n",
+                    (long long)L.q_w->ne[0], (long long)L.q_w->ne[1],
+                    (long long)cur->ne[0], (long long)cur->ne[1]);
+        }
         ggml_tensor* Q = g_linear(g, cur, L.q_w, L.q_b);
         ggml_tensor* K = g_linear(g, cur, L.k_w, L.k_b);
         ggml_tensor* V = g_linear(g, cur, L.v_w, L.v_b);
@@ -616,6 +625,13 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
+}
+
+const float* math_ocr_get_encoder_output(const math_ocr_context* ctx, int* out_n, int* out_h) {
+    if (!ctx || ctx->enc_out.empty()) return nullptr;
+    if (out_n) *out_n = ctx->n_enc_tokens;
+    if (out_h) *out_h = ctx->hparams.enc_hidden;
+    return ctx->enc_out.data();
 }
 
 const char* math_ocr_recognize_file(math_ocr_context*, const char*, int*) { return nullptr; }

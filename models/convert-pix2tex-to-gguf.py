@@ -131,20 +131,31 @@ def main():
     tensor_count = 0
 
     # Encoder tensors (prefix with "enc.")
-    for name, arr in enc_weights.items():
-        gguf_name = "enc." + name.replace("/", "_").replace(":", "_")
+    # ggml_mul_mat(A, B) = A^T @ B, so 2D weights need to be stored
+    # transposed relative to ONNX convention so that A_stored^T = W_onnx.
+    def store_tensor(writer, name, arr, dtype_np, dtype_gguf, transpose_2d=False):
+        nonlocal total_params, tensor_count
         data = arr.astype(dtype_np)
+        # Optionally transpose 2D weight matrices for ggml convention.
+        # ONNX MatMul weights are (in, out) — already correct for ggml.
+        # Named decoder weights from Gemm convention are (out, in) — need transpose.
+        if transpose_2d and data.ndim == 2 and 'position' not in name and 'embed_tokens' not in name:
+            data = np.ascontiguousarray(data.T)
         total_params += data.size
-        writer.add_tensor(gguf_name, data, raw_dtype=dtype_gguf)
+        writer.add_tensor(name, data, raw_dtype=dtype_gguf)
         tensor_count += 1
+
+    # Encoder: ONNX MatMul weights are already (in, out) — NO transpose
+    for name, arr in enc_weights.items():
+        store_tensor(writer, "enc." + name, arr, dtype_np, dtype_gguf, transpose_2d=False)
 
     # Decoder tensors (prefix with "dec.")
     for name, arr in dec_weights.items():
         gguf_name = "dec." + name.replace("/", "_").replace(":", "_")
-        data = arr.astype(dtype_np)
-        total_params += data.size
-        writer.add_tensor(gguf_name, data, raw_dtype=dtype_gguf)
-        tensor_count += 1
+        # Shorten long names for GGUF 64-char limit
+        gguf_name = gguf_name.replace("decoder.model.decoder.", "d.")
+        gguf_name = gguf_name.replace("encoder_attn_layer_norm", "xaln")
+        store_tensor(writer, gguf_name, arr, dtype_np, dtype_gguf)
 
     writer.write_header_to_file()
     writer.write_kv_data_to_file()

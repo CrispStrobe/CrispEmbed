@@ -104,6 +104,14 @@ const char * math_ocr_recognize_raw(
     int * out_len
 );
 
+/// After a successful recognize call, returns the encoder output.
+/// Shape: (*out_n_tokens, *out_hidden). Valid until the next call.
+const float * math_ocr_get_encoder_output(
+    const math_ocr_context * ctx,
+    int * out_n_tokens,
+    int * out_hidden
+);
+
 #ifdef __cplusplus
 }
 #endif
