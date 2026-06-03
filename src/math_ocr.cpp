@@ -434,6 +434,10 @@ static std::vector<float> decoder_step(math_ocr_context* ctx,
             for (int i = 0; i < D; i++) x[i] += pe[pos * D + i];
     }
     layernorm_cpu(x.data(), x.data(), D, ctx->dec_embed_ln_w, ctx->dec_embed_ln_b);
+    if (step == 0) {
+        fprintf(stderr, "math_ocr: dec embed+pos+ln x[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",
+                x[0],x[1],x[2],x[3],x[4]);
+    }
 
     for (int li = 0; li < hp.dec_layers; li++) {
         const auto& l = ctx->dec_layers[li];
@@ -604,6 +608,8 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
     }
 
     // Decoder (scalar — fast enough for autoregressive)
+    fprintf(stderr, "math_ocr: starting decoder (vocab=%d, start_tok=%d)\n",
+            ctx->hparams.vocab_size, ctx->hparams.decoder_start_token);
     const auto& hp = ctx->hparams;
     std::vector<int> tokens = {hp.decoder_start_token};
     std::vector<std::vector<float>> kk(hp.dec_layers), kv(hp.dec_layers);
@@ -613,6 +619,10 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
         int best = 0; float best_s = logits[0];
         for (int v = 1; v < hp.vocab_size; v++)
             if (logits[v] > best_s) { best_s = logits[v]; best = v; }
+        if (step < 5) {
+            fprintf(stderr, "math_ocr: dec step %d: tok=%d logits[0..4]=[%.3f %.3f %.3f %.3f %.3f] best=%d\n",
+                    step, tokens.back(), logits[0], logits[1], logits[2], logits[3], logits[4], best);
+        }
         if (best == hp.eos_token || best == hp.pad_token) break;
         tokens.push_back(best);
     }
