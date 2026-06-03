@@ -27,8 +27,12 @@ int main(int argc, char** argv) {
     printf("\nRunning OCR...\n");
     int out_len = 0;
     const char* result = math_ocr_recognize(ctx, img.data(), S, S, &out_len);
-    if (result) printf("Result (%d chars): \"%s\"\n", out_len, result);
-    else printf("Result: NULL\n");
+    if (result) {
+        int show = out_len < 80 ? out_len : 80;
+        printf("Result (%d chars): \"%.80s%s\"\n", out_len, result, out_len > 80 ? "..." : "");
+    } else {
+        printf("Result: NULL\n");
+    }
 
     math_ocr_free(ctx);
     printf("Done.\n");
