@@ -443,17 +443,13 @@ static std::vector<float> decoder_step(math_ocr_context* ctx,
         const auto& l = ctx->dec_layers[li];
         if (!l.self_q_w) continue;
 
-        // Self-attention with KV cache
-        layernorm_cpu(x.data(), normed.data(), D, l.self_ln_w, l.self_ln_b);
+        // TrOCR/BART uses POST-LN: attn → residual → LN (not pre-LN)
+
+        // Self-attention
         std::vector<float> q(D), k(D), v(D);
-        linear_cpu(normed.data(), q.data(), D, D, l.self_q_w, l.self_q_b);
-        linear_cpu(normed.data(), k.data(), D, D, l.self_k_w, l.self_k_b);
-        linear_cpu(normed.data(), v.data(), D, D, l.self_v_w, l.self_v_b);
-        if (step == 0 && li == 0) {
-            fprintf(stderr, "math_ocr: dec L0 normed[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",normed[0],normed[1],normed[2],normed[3],normed[4]);
-            fprintf(stderr, "math_ocr: dec L0 Q[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",q[0],q[1],q[2],q[3],q[4]);
-            fprintf(stderr, "math_ocr: dec L0 V[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",v[0],v[1],v[2],v[3],v[4]);
-        }
+        linear_cpu(x.data(), q.data(), D, D, l.self_q_w, l.self_q_b);
+        linear_cpu(x.data(), k.data(), D, D, l.self_k_w, l.self_k_b);
+        linear_cpu(x.data(), v.data(), D, D, l.self_v_w, l.self_v_b);
         kv_k[li].insert(kv_k[li].end(), k.begin(), k.end());
         kv_v[li].insert(kv_v[li].end(), v.begin(), v.end());
 
@@ -461,20 +457,15 @@ static std::vector<float> decoder_step(math_ocr_context* ctx,
         mha_1q(q.data(), kv_k[li].data(), kv_v[li].data(), sa.data(), step+1, D, hp.dec_heads);
         std::vector<float> sa_proj(D);
         linear_cpu(sa.data(), sa_proj.data(), D, D, l.self_out_w, l.self_out_b);
-        for (int i = 0; i < D; i++) x[i] += sa_proj[i];
+        for (int i = 0; i < D; i++) x[i] += sa_proj[i];  // residual
+        layernorm_cpu(x.data(), x.data(), D, l.self_ln_w, l.self_ln_b);  // post-LN
 
-        if (step == 0 && li == 0) {
-            fprintf(stderr, "math_ocr: dec L0 after self-attn x[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",x[0],x[1],x[2],x[3],x[4]);
-        }
-
-        // Cross-attention (K/V cached after first call)
+        // Cross-attention
         if (l.cross_q_w && !ctx->enc_out.empty()) {
-            layernorm_cpu(x.data(), normed.data(), D, l.cross_ln_w, l.cross_ln_b);
             std::vector<float> cq(D);
-            linear_cpu(normed.data(), cq.data(), D, D, l.cross_q_w, l.cross_q_b);
+            linear_cpu(x.data(), cq.data(), D, D, l.cross_q_w, l.cross_q_b);
 
             int n_enc = ctx->n_enc_tokens;
-            // Use cached cross K/V (precomputed once after encoding)
             const float* ck = ctx->cross_k_cache[li].data();
             const float* cv = ctx->cross_v_cache[li].data();
 
@@ -482,25 +473,31 @@ static std::vector<float> decoder_step(math_ocr_context* ctx,
             mha_1q(cq.data(), ck, cv, ca.data(), n_enc, D, hp.dec_heads);
             std::vector<float> ca_proj(D);
             linear_cpu(ca.data(), ca_proj.data(), D, D, l.cross_out_w, l.cross_out_b);
-            for (int i = 0; i < D; i++) x[i] += ca_proj[i];
-            if (step == 0 && li == 0) {
-                fprintf(stderr, "math_ocr: dec L0 after cross-attn x[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",x[0],x[1],x[2],x[3],x[4]);
-            }
+            for (int i = 0; i < D; i++) x[i] += ca_proj[i];  // residual
+            layernorm_cpu(x.data(), x.data(), D, l.cross_ln_w, l.cross_ln_b);  // post-LN
         }
 
         // FFN
         if (l.ff_up_w) {
-            layernorm_cpu(x.data(), normed.data(), D, l.ff_ln_w, l.ff_ln_b);
             const int FF = hp.dec_ffn_dim;
             std::vector<float> inter(FF), ffn(D);
-            linear_cpu(normed.data(), inter.data(), D, FF, l.ff_up_w, l.ff_up_b);
+            linear_cpu(x.data(), inter.data(), D, FF, l.ff_up_w, l.ff_up_b);
             for (int i = 0; i < FF; i++) inter[i] = inter[i] > 0 ? inter[i] : 0;
             linear_cpu(inter.data(), ffn.data(), FF, D, l.ff_down_w, l.ff_down_b);
-            for (int i = 0; i < D; i++) x[i] += ffn[i];
+            for (int i = 0; i < D; i++) x[i] += ffn[i];  // residual
+            layernorm_cpu(x.data(), x.data(), D, l.ff_ln_w, l.ff_ln_b);  // post-LN
+        }
+        if (step == 0 && li < 3) {
+            fprintf(stderr, "math_ocr: dec L%d end x[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",
+                    li, x[0],x[1],x[2],x[3],x[4]);
         }
     }
 
     layernorm_cpu(x.data(), x.data(), D, ctx->dec_final_ln_w, ctx->dec_final_ln_b);
+    if (step == 0) {
+        fprintf(stderr, "math_ocr: dec final x[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",
+                x[0],x[1],x[2],x[3],x[4]);
+    }
     std::vector<float> logits(V, 0.0f);
     linear_cpu(x.data(), logits.data(), D, V, ctx->lm_head_w, ctx->lm_head_b);
     return logits;
