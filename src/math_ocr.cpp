@@ -19,6 +19,31 @@
 #include <vector>
 
 // ---------------------------------------------------------------------------
+// FP16/quantized → F32 dequantization for CPU-side tensor access
+// ---------------------------------------------------------------------------
+
+static std::vector<float> to_f32(const ggml_tensor* t) {
+    if (!t) return {};
+    int n = (int)ggml_nelements(t);
+    std::vector<float> out(n);
+    if (t->type == GGML_TYPE_F32) {
+        memcpy(out.data(), t->data, n * sizeof(float));
+    } else if (t->type == GGML_TYPE_F16) {
+        const ggml_fp16_t* src = (const ggml_fp16_t*)t->data;
+        for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(src[i]);
+    } else {
+        // Quantized types — use ggml's dequantize
+        const auto* traits = ggml_get_type_traits(t->type);
+        if (traits && traits->to_float) {
+            traits->to_float(t->data, out.data(), n);
+        } else {
+            memset(out.data(), 0, n * sizeof(float));
+        }
+    }
+    return out;
+}
+
+// ---------------------------------------------------------------------------
 // Structs
 // ---------------------------------------------------------------------------
 
@@ -273,8 +298,10 @@ static void run_encoder(math_ocr_context* ctx, const float* pixels_rgb, int img_
     const int patch_dim = 3 * P * P;
 
     if (ctx->patch_proj_w) {
-        const float* W = (const float*)ctx->patch_proj_w->data;
-        const float* B = ctx->patch_proj_b ? (const float*)ctx->patch_proj_b->data : nullptr;
+        auto W_buf = to_f32(ctx->patch_proj_w);
+        auto B_buf = to_f32(ctx->patch_proj_b);
+        const float* W = W_buf.data();
+        const float* B = B_buf.empty() ? nullptr : B_buf.data();
         for (int py = 0; py < nph; py++) {
             for (int px = 0; px < npw; px++) {
                 // ggml stores in column-major: tensor[H, T] → data[t * H + h]
@@ -294,20 +321,20 @@ static void run_encoder(math_ocr_context* ctx, const float* pixels_rgb, int img_
         }
     }
 
-    // CLS + distillation tokens
+    // CLS + distillation tokens (dequantize for FP16/quantized models)
     if (ctx->cls_token) {
-        const float* d = (const float*)ctx->cls_token->data;
-        for (int h = 0; h < H; h++) embedded[0 * H + h] = d[h];
+        auto d = to_f32(ctx->cls_token);
+        for (int h = 0; h < H && h < (int)d.size(); h++) embedded[0 * H + h] = d[h];
     }
     if (ctx->dist_token) {
-        const float* d = (const float*)ctx->dist_token->data;
-        for (int h = 0; h < H; h++) embedded[1 * H + h] = d[h];
+        auto d = to_f32(ctx->dist_token);
+        for (int h = 0; h < H && h < (int)d.size(); h++) embedded[1 * H + h] = d[h];
     }
 
     // Positional embeddings
     if (ctx->pos_embed) {
-        const float* pe = (const float*)ctx->pos_embed->data;
-        int n = std::min(T * H, (int)ggml_nelements(ctx->pos_embed));
+        auto pe = to_f32(ctx->pos_embed);
+        int n = std::min(T * H, (int)pe.size());
         for (int i = 0; i < n; i++) embedded[i] += pe[i];
     }
 
@@ -367,8 +394,10 @@ static void run_encoder(math_ocr_context* ctx, const float* pixels_rgb, int img_
 
 static void layernorm_cpu(const float* x, float* y, int D, const ggml_tensor* w, const ggml_tensor* b) {
     if (!w || !b) { if (x != y) memcpy(y, x, D * sizeof(float)); return; }
-    const float* W = (const float*)w->data;
-    const float* B = (const float*)b->data;
+    auto W_buf = (w->type != GGML_TYPE_F32) ? to_f32(w) : std::vector<float>();
+    auto B_buf = (b->type != GGML_TYPE_F32) ? to_f32(b) : std::vector<float>();
+    const float* W = W_buf.empty() ? (const float*)w->data : W_buf.data();
+    const float* B = B_buf.empty() ? (const float*)b->data : B_buf.data();
     float mean = 0, var = 0;
     for (int i = 0; i < D; i++) mean += x[i];
     mean /= D;
@@ -379,8 +408,11 @@ static void layernorm_cpu(const float* x, float* y, int D, const ggml_tensor* w,
 
 static void linear_cpu(const float* inp, float* out, int in_d, int out_d, const ggml_tensor* w, const ggml_tensor* b) {
     if (!w) { memset(out, 0, out_d * sizeof(float)); return; }
-    const float* W = (const float*)w->data;
-    const float* B = b ? (const float*)b->data : nullptr;
+    // Dequantize weight + bias if not F32 (handles FP16 + quantized GGUF)
+    auto W_buf = (w->type != GGML_TYPE_F32) ? to_f32(w) : std::vector<float>();
+    auto B_buf = (b && b->type != GGML_TYPE_F32) ? to_f32(b) : std::vector<float>();
+    const float* W = W_buf.empty() ? (const float*)w->data : W_buf.data();
+    const float* B = !b ? nullptr : (B_buf.empty() ? (const float*)b->data : B_buf.data());
     for (int o = 0; o < out_d; o++) {
         float s = B ? B[o] : 0.0f;
         for (int j = 0; j < in_d; j++) s += inp[j] * W[o * in_d + j];
@@ -421,17 +453,18 @@ static std::vector<float> decoder_step(math_ocr_context* ctx,
 
     std::vector<float> x(D, 0.0f), normed(D);
 
-    // Token + positional embedding
+    // Token + positional embedding (dequantize for FP16/quantized)
     if (ctx->tok_embed && tok >= 0 && tok < V) {
-        const float* emb = (const float*)ctx->tok_embed->data;
+        auto emb = to_f32(ctx->tok_embed);
         float sc = sqrtf((float)D);
         for (int i = 0; i < D; i++) x[i] = emb[tok * D + i] * sc;
     }
     if (ctx->pos_embed_dec) {
-        const float* pe = (const float*)ctx->pos_embed_dec->data;
+        auto pe = to_f32(ctx->pos_embed_dec);
         int pos = step + 2;
         if (pos < hp.max_seq_len)
-            for (int i = 0; i < D; i++) x[i] += pe[pos * D + i];
+            for (int i = 0; i < D && pos * D + i < (int)pe.size(); i++)
+                x[i] += pe[pos * D + i];
     }
     layernorm_cpu(x.data(), x.data(), D, ctx->dec_embed_ln_w, ctx->dec_embed_ln_b);
     if (step == 0) {
