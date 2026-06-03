@@ -623,7 +623,10 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
     std::vector<int> tokens = {hp.decoder_start_token};
     std::vector<std::vector<float>> kk(hp.dec_layers), kv(hp.dec_layers);
 
-    for (int step = 0; step < hp.max_seq_len; step++) {
+    // Practical limit: most math expressions are <100 tokens.
+    // The full 512 limit wastes minutes on garbage output.
+    int max_steps = std::min(hp.max_seq_len, 200);
+    for (int step = 0; step < max_steps; step++) {
         auto logits = decoder_step(ctx, tokens.back(), step, kk, kv);
         int best = 0; float best_s = logits[0];
         for (int v = 1; v < hp.vocab_size; v++)
