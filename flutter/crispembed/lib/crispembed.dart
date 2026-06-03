@@ -6,3 +6,4 @@ library crispembed;
 
 export 'src/crispembed_bindings.dart';
 export 'src/crispembed.dart';
+export 'src/math_ocr.dart';
