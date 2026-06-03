@@ -12,29 +12,38 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
+// FFI function types — must be top-level for Dart FFI generic type args.
+typedef _OcrInitC = Pointer<Void> Function(Pointer<Utf8>, Int32);
+typedef _OcrInitDart = Pointer<Void> Function(Pointer<Utf8>, int);
+typedef _OcrFreeC = Void Function(Pointer<Void>);
+typedef _OcrFreeDart = void Function(Pointer<Void>);
+typedef _OcrRecognizeC = Pointer<Utf8> Function(
+    Pointer<Void>, Pointer<Float>, Int32, Int32, Pointer<Int32>);
+typedef _OcrRecognizeDart = Pointer<Utf8> Function(
+    Pointer<Void>, Pointer<Float>, int, int, Pointer<Int32>);
+typedef _OcrRecognizeRawC = Pointer<Utf8> Function(
+    Pointer<Void>, Pointer<Uint8>, Int32, Int32, Int32, Pointer<Int32>);
+typedef _OcrRecognizeRawDart = Pointer<Utf8> Function(
+    Pointer<Void>, Pointer<Uint8>, int, int, int, Pointer<Int32>);
+
+DynamicLibrary _openOcrLib([String? libPath]) {
+  if (libPath != null) return DynamicLibrary.open(libPath);
+  if (Platform.isIOS) return DynamicLibrary.process();
+  if (Platform.isAndroid || Platform.isLinux) return DynamicLibrary.open('libcrispembed.so');
+  if (Platform.isMacOS) return DynamicLibrary.open('libcrispembed.dylib');
+  if (Platform.isWindows) return DynamicLibrary.open('crispembed.dll');
+  return DynamicLibrary.open('libcrispembed.so');
+}
+
 /// On-device math OCR via CrispEmbed's ggml inference.
 class CrispEmbedOcr {
   late final DynamicLibrary _lib;
   late final Pointer<Void> _ctx;
   bool _disposed = false;
 
-  // FFI function types
-  typedef _InitC = Pointer<Void> Function(Pointer<Utf8>, Int32);
-  typedef _InitDart = Pointer<Void> Function(Pointer<Utf8>, int);
-  typedef _FreeC = Void Function(Pointer<Void>);
-  typedef _FreeDart = void Function(Pointer<Void>);
-  typedef _RecognizeC = Pointer<Utf8> Function(
-      Pointer<Void>, Pointer<Float>, Int32, Int32, Pointer<Int32>);
-  typedef _RecognizeDart = Pointer<Utf8> Function(
-      Pointer<Void>, Pointer<Float>, int, int, Pointer<Int32>);
-  typedef _RecognizeRawC = Pointer<Utf8> Function(
-      Pointer<Void>, Pointer<Uint8>, Int32, Int32, Int32, Pointer<Int32>);
-  typedef _RecognizeRawDart = Pointer<Utf8> Function(
-      Pointer<Void>, Pointer<Uint8>, int, int, int, Pointer<Int32>);
-
-  late final _FreeDart _free;
-  late final _RecognizeDart _recognize;
-  late final _RecognizeRawDart _recognizeRaw;
+  late final _OcrFreeDart _free;
+  late final _OcrRecognizeDart _recognize;
+  late final _OcrRecognizeRawDart _recognizeRaw;
 
   /// Load a pix2tex GGUF model for math OCR.
   ///
@@ -42,15 +51,15 @@ class CrispEmbedOcr {
   /// [nThreads] — CPU thread count (default 4).
   /// [libPath] — optional path to the shared library.
   CrispEmbedOcr(String modelPath, {int nThreads = 4, String? libPath}) {
-    _lib = DynamicLibrary.open(libPath ?? _findLib());
+    _lib = _openOcrLib(libPath);
 
-    final init = _lib.lookupFunction<_InitC, _InitDart>(
+    final init = _lib.lookupFunction<_OcrInitC, _OcrInitDart>(
         'crispembed_math_ocr_init');
-    _free = _lib.lookupFunction<_FreeC, _FreeDart>(
+    _free = _lib.lookupFunction<_OcrFreeC, _OcrFreeDart>(
         'crispembed_math_ocr_free');
-    _recognize = _lib.lookupFunction<_RecognizeC, _RecognizeDart>(
+    _recognize = _lib.lookupFunction<_OcrRecognizeC, _OcrRecognizeDart>(
         'math_ocr_recognize');
-    _recognizeRaw = _lib.lookupFunction<_RecognizeRawC, _RecognizeRawDart>(
+    _recognizeRaw = _lib.lookupFunction<_OcrRecognizeRawC, _OcrRecognizeRawDart>(
         'math_ocr_recognize_raw');
 
     final pathPtr = modelPath.toNativeUtf8();
@@ -103,12 +112,5 @@ class CrispEmbedOcr {
       _free(_ctx);
       _disposed = true;
     }
-  }
-
-  static String _findLib() {
-    if (Platform.isAndroid || Platform.isLinux) return 'libcrispembed.so';
-    if (Platform.isIOS || Platform.isMacOS) return 'crispembed.framework/crispembed';
-    if (Platform.isWindows) return 'crispembed.dll';
-    throw UnsupportedError('Unsupported platform');
   }
 }
