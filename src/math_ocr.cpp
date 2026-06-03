@@ -449,6 +449,11 @@ static std::vector<float> decoder_step(math_ocr_context* ctx,
         linear_cpu(normed.data(), q.data(), D, D, l.self_q_w, l.self_q_b);
         linear_cpu(normed.data(), k.data(), D, D, l.self_k_w, l.self_k_b);
         linear_cpu(normed.data(), v.data(), D, D, l.self_v_w, l.self_v_b);
+        if (step == 0 && li == 0) {
+            fprintf(stderr, "math_ocr: dec L0 normed[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",normed[0],normed[1],normed[2],normed[3],normed[4]);
+            fprintf(stderr, "math_ocr: dec L0 Q[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",q[0],q[1],q[2],q[3],q[4]);
+            fprintf(stderr, "math_ocr: dec L0 V[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",v[0],v[1],v[2],v[3],v[4]);
+        }
         kv_k[li].insert(kv_k[li].end(), k.begin(), k.end());
         kv_v[li].insert(kv_v[li].end(), v.begin(), v.end());
 
@@ -457,6 +462,10 @@ static std::vector<float> decoder_step(math_ocr_context* ctx,
         std::vector<float> sa_proj(D);
         linear_cpu(sa.data(), sa_proj.data(), D, D, l.self_out_w, l.self_out_b);
         for (int i = 0; i < D; i++) x[i] += sa_proj[i];
+
+        if (step == 0 && li == 0) {
+            fprintf(stderr, "math_ocr: dec L0 after self-attn x[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",x[0],x[1],x[2],x[3],x[4]);
+        }
 
         // Cross-attention (K/V cached after first call)
         if (l.cross_q_w && !ctx->enc_out.empty()) {
@@ -474,6 +483,9 @@ static std::vector<float> decoder_step(math_ocr_context* ctx,
             std::vector<float> ca_proj(D);
             linear_cpu(ca.data(), ca_proj.data(), D, D, l.cross_out_w, l.cross_out_b);
             for (int i = 0; i < D; i++) x[i] += ca_proj[i];
+            if (step == 0 && li == 0) {
+                fprintf(stderr, "math_ocr: dec L0 after cross-attn x[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",x[0],x[1],x[2],x[3],x[4]);
+            }
         }
 
         // FFN
