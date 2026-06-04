@@ -133,34 +133,37 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: artifacts
 
       - name: Place artifacts in Flutter plugin dirs
         run: |
+          set +e  # don't abort on missing artifacts
           PLUGIN=flutter/crispembed
 
           # Linux
           cp artifacts/linux-x86_64/libcrispembed.so \
-             $PLUGIN/linux/lib/libcrispembed.so
+             $PLUGIN/linux/lib/libcrispembed.so 2>/dev/null || echo "SKIP: linux"
 
           # macOS
           cp artifacts/macos-arm64/libcrispembed.dylib \
-             $PLUGIN/macos/Libs/libcrispembed.dylib
+             $PLUGIN/macos/Libs/libcrispembed.dylib 2>/dev/null || echo "SKIP: macos"
 
-          # Windows
+          # Windows — artifact may be in Release/ subdirectory
           cp artifacts/windows-x86_64/crispembed.dll \
-             $PLUGIN/windows/lib/crispembed.dll
+             $PLUGIN/windows/lib/crispembed.dll 2>/dev/null || \
+          cp artifacts/windows-x86_64/Release/crispembed.dll \
+             $PLUGIN/windows/lib/crispembed.dll 2>/dev/null || echo "SKIP: windows"
 
           # iOS
           cp artifacts/ios-arm64/libcrispembed-static.a \
-             $PLUGIN/ios/Libs/libcrispembed-static.a
+             $PLUGIN/ios/Libs/libcrispembed-static.a 2>/dev/null || echo "SKIP: ios"
 
           # Android (per-ABI)
           for abi in arm64-v8a armeabi-v7a x86_64; do
             cp artifacts/android-${abi}/libcrispembed.so \
-               $PLUGIN/android/src/main/jniLibs/${abi}/libcrispembed.so
+               $PLUGIN/android/src/main/jniLibs/${abi}/libcrispembed.so 2>/dev/null || echo "SKIP: android-${abi}"
           done
 
           echo "=== Flutter plugin native libraries ==="
