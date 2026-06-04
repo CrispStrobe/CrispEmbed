@@ -388,7 +388,7 @@ static void run_encoder(math_ocr_context* ctx, const float* pixels_rgb, int img_
 
     // Step 2: Build and run ggml graph for transformer layers
     fprintf(stderr, "math_ocr: encoder start (T=%d, H=%d, %d layers)\n", T, H, hp.enc_layers);
-    size_t meta_size = 256 * 1024 * 1024; // 256 MB metadata buffer
+    size_t meta_size = 16 * 1024 * 1024; // 16 MB metadata buffer
     std::vector<uint8_t> meta(meta_size);
     ggml_init_params ip = { meta_size, meta.data(), true };
     ggml_context* g = ggml_init(ip);
@@ -616,7 +616,7 @@ static ggml_cgraph* build_decoder_step_graph(math_ocr_context* ctx, ggml_context
     const int n_dec = hp.dec_layers;
 
     // Generous node budget: per layer ~40 ops, plus embeddings + final
-    ggml_cgraph* gf = ggml_new_graph_custom(g, n_dec * 50 + 128, false);
+    ggml_cgraph* gf = ggml_new_graph_custom(g, n_dec * 100 + 512, false);
 
     // Input: pre-computed token embedding (tok + pos + embed_ln), shape [D, 1]
     ggml_tensor* cur = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, 1);
@@ -910,15 +910,15 @@ math_ocr_context* math_ocr_init(const char* model_path, int n_threads) {
 
     // Create scheduler
     fprintf(stderr, "math_ocr: creating scheduler...\n");
-    ctx->sched = ggml_backend_sched_new(&ctx->backend, nullptr, 1, 4096, false, false);
+    ctx->sched = ggml_backend_sched_new(&ctx->backend, nullptr, 1, 8192, false, false);
     fprintf(stderr, "math_ocr: scheduler created\n");
 
     map_tensors(ctx.get());
     fprintf(stderr, "math_ocr: tensors mapped\n");
 
     int me = 0, md = 0;
-    for (auto& l : ctx->enc_layers) if (l.q_w) me++;
-    for (auto& l : ctx->dec_layers) if (l.self_q_w) md++;
+    for (int i = 0; i < hp.enc_layers; i++) if (ctx->enc_layers[i].q_w) me++;
+    for (int i = 0; i < hp.dec_layers; i++) if (ctx->dec_layers[i].self_q_w) md++;
     fprintf(stderr, "math_ocr: mapped %d/%d enc, %d/%d dec\n", me, hp.enc_layers, md, hp.dec_layers);
 
     fprintf(stderr, "math_ocr: init complete, returning context\n");
@@ -942,8 +942,10 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
     if (!ctx || !pixels) return nullptr;
     const int S = ctx->hparams.image_size;
 
+    fprintf(stderr, "math_ocr: image_size S=%d, allocating rgb(%d)\n", S, 3*S*S);
     // Resize + expand gray→3ch CHW + normalize (mean=0.5, std=0.5)
     std::vector<float> rgb(3 * S * S);
+    fprintf(stderr, "math_ocr: rgb allocated\n");
     float sx = (float)width / S, sy_f = (float)height / S;
     for (int y = 0; y < S; y++)
         for (int x = 0; x < S; x++) {
@@ -956,7 +958,9 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
         }
 
     // Encoder (ggml graph — fast)
+    fprintf(stderr, "math_ocr: about to run encoder S=%d\n", S);
     run_encoder(ctx, rgb.data(), S, S);
+    fprintf(stderr, "math_ocr: encoder done, n_enc=%d\n", ctx->n_enc_tokens);
 
     // Precompute cross-attention K/V via ggml graph (SIMD, fast)
     {

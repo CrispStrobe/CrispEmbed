@@ -5,18 +5,9 @@
 #include <cstring>
 #include <vector>
 
-// Minimal: create a simple gray test image (white background, dark text simulation)
-static std::vector<uint8_t> make_test_image(int w, int h) {
-    std::vector<uint8_t> img(w * h, 255); // white
-    // Draw a simple dark cross pattern in the center
-    for (int y = h/3; y < 2*h/3; y++) img[y * w + w/2] = 30;
-    for (int x = w/3; x < 2*w/3; x++) img[h/2 * w + x] = 30;
-    return img;
-}
-
 int main(int argc, char** argv) {
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <model.gguf> [image.png]\n", argv[0]);
+        fprintf(stderr, "Usage: %s <model.gguf>\n", argv[0]);
         return 1;
     }
 
@@ -28,15 +19,20 @@ int main(int argc, char** argv) {
     }
     fprintf(stderr, "Model loaded OK\n");
 
-    // Use a synthetic test image (grayscale)
+    const math_ocr_hparams* hp = math_ocr_get_hparams(ctx);
+    if (hp) {
+        fprintf(stderr, "Hparams: enc=%dL dec=%dL D_enc=%d D_dec=%d vocab=%d\n",
+                hp->enc_layers, hp->dec_layers, hp->enc_hidden, hp->dec_d_model, hp->vocab_size);
+    }
+
+    // Use a synthetic 224x224 grayscale image
     const int W = 224, H = 224;
-    auto img = make_test_image(W, H);
-    fprintf(stderr, "Test image: %dx%d grayscale\n", W, H);
+    std::vector<float> gray(W * H, 0.9f); // mostly white
+    // Draw a simple + sign
+    for (int y = 80; y < 144; y++) gray[y * W + 112] = 0.1f;
+    for (int x = 80; x < 144; x++) gray[112 * W + x] = 0.1f;
 
-    // Convert to float [0..1]
-    std::vector<float> gray(W * H);
-    for (int i = 0; i < W * H; i++) gray[i] = img[i] / 255.0f;
-
+    fprintf(stderr, "Running OCR on %dx%d synthetic image...\n", W, H);
     int out_len = 0;
     const char* result = math_ocr_recognize(ctx, gray.data(), W, H, &out_len);
 
