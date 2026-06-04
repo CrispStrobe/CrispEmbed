@@ -1,0 +1,45 @@
+// CrispEmbed Flutter FFI plugin — Android
+//
+// Bundles pre-built libcrispembed.so for each ABI.
+// CI builds the .so files and places them in:
+//   android/src/main/jniLibs/<abi>/libcrispembed.so
+// See .github/workflows/build.yml (build-android job).
+
+group 'com.crispstrobe.crispembed'
+version '0.3.0'
+
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.1.0'
+    }
+}
+
+rootProject.allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+apply plugin: 'com.android.library'
+
+android {
+    namespace 'com.crispstrobe.crispembed'
+    compileSdk 34
+
+    defaultConfig {
+        minSdk 24
+    }
+
+    // Pre-built .so files live in src/main/jniLibs/<abi>/.
+    // Gradle bundles them automatically — no externalNativeBuild needed.
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
+        }
+    }
+}

@@ -7,6 +7,19 @@ import 'package:ffi/ffi.dart';
 
 import 'crispembed_bindings.dart';
 
+/// Open the CrispEmbed native library for the current platform.
+///
+/// iOS uses static linking (symbols in the main binary), so we return
+/// [DynamicLibrary.process()]. All other platforms load a shared library.
+DynamicLibrary _openNativeLib([String? libPath]) {
+  if (libPath != null) return DynamicLibrary.open(libPath);
+  if (Platform.isIOS) return DynamicLibrary.process();
+  if (Platform.isAndroid || Platform.isLinux) return DynamicLibrary.open('libcrispembed.so');
+  if (Platform.isMacOS) return DynamicLibrary.open('libcrispembed.dylib');
+  if (Platform.isWindows) return DynamicLibrary.open('crispembed.dll');
+  return DynamicLibrary.open('libcrispembed.so');
+}
+
 /// Result from bi-encoder reranking.
 class RerankResult {
   final int index;
@@ -83,7 +96,7 @@ class CrispEmbed {
   /// [libPath] — optional path to the shared library. If omitted, searches
   ///   standard platform locations.
   CrispEmbed(String modelPath, {int nThreads = 0, String? libPath, bool? autoDownload}) {
-    _lib = DynamicLibrary.open(libPath ?? _findLib());
+    _lib = _openNativeLib(libPath);
     _bindFunctions();
 
     final resolved = resolveModel(modelPath, libPath: libPath, autoDownload: autoDownload);
@@ -492,15 +505,8 @@ class CrispEmbed {
     if (_disposed) throw StateError('CrispEmbed has been disposed');
   }
 
-  static String _findLib() {
-    if (Platform.isAndroid || Platform.isLinux) return 'libcrispembed.so';
-    if (Platform.isIOS || Platform.isMacOS) return 'crispembed.framework/crispembed';
-    if (Platform.isWindows) return 'crispembed.dll';
-    return 'libcrispembed.so';
-  }
-
   static String cacheDir({String? libPath}) {
-    final lib = DynamicLibrary.open(libPath ?? _findLib());
+    final lib = _openNativeLib(libPath);
     final fn = lib.lookupFunction<CrispembedCacheDirNative, CrispembedCacheDir>(
         'crispembed_cache_dir');
     final p = fn();
@@ -508,7 +514,7 @@ class CrispEmbed {
   }
 
   static String resolveModel(String modelPath, {String? libPath, bool? autoDownload}) {
-    final lib = DynamicLibrary.open(libPath ?? _findLib());
+    final lib = _openNativeLib(libPath);
     final fn = lib.lookupFunction<CrispembedResolveModelNative,
         CrispembedResolveModel>('crispembed_resolve_model');
     final shouldDownload = autoDownload ??
@@ -529,7 +535,7 @@ class CrispEmbed {
   }
 
   static List<ModelInfo> listModels({String? libPath}) {
-    final lib = DynamicLibrary.open(libPath ?? _findLib());
+    final lib = _openNativeLib(libPath);
     final nModels = lib.lookupFunction<CrispembedNModelsNative, CrispembedNModels>(
         'crispembed_n_models');
     final modelName = lib.lookupFunction<CrispembedModelStringNative,
@@ -614,7 +620,7 @@ class CrispFace {
   /// [nThreads] — CPU thread count (0 = auto).
   /// [libPath] — optional path to `libcrispembed.so` / `crispembed.dll`.
   CrispFace(String modelPath, {int nThreads = 0, String? libPath}) {
-    _lib = DynamicLibrary.open(libPath ?? _findLib());
+    _lib = _openNativeLib(libPath);
     _bindFunctions();
 
     final pathPtr = modelPath.toNativeUtf8();
@@ -743,12 +749,6 @@ class CrispFace {
     if (_disposed) throw StateError('CrispFace has been disposed');
   }
 
-  static String _findLib() {
-    if (Platform.isAndroid || Platform.isLinux) return 'libcrispembed.so';
-    if (Platform.isIOS || Platform.isMacOS) return 'crispembed.framework/crispembed';
-    if (Platform.isWindows) return 'crispembed.dll';
-    return 'libcrispembed.so';
-  }
 }
 
 /// Combines a detector [CrispFace] and a recognizer [CrispFace] into a
@@ -790,7 +790,7 @@ class CrispFacePipeline {
     required this.recognizer,
     String? libPath,
   }) {
-    _lib = DynamicLibrary.open(libPath ?? _findLib());
+    _lib = _openNativeLib(libPath);
     _pipelineFn = _lib.lookupFunction<CrispembedFacePipelineNative,
         CrispembedFacePipelineDart>('crispembed_face_pipeline');
     _freeFn = _lib.lookupFunction<CrispembedFaceFreeNative,
@@ -877,12 +877,6 @@ class CrispFacePipeline {
     if (_disposed) throw StateError('CrispFacePipeline has been disposed');
   }
 
-  static String _findLib() {
-    if (Platform.isAndroid || Platform.isLinux) return 'libcrispembed.so';
-    if (Platform.isIOS || Platform.isMacOS) return 'crispembed.framework/crispembed';
-    if (Platform.isWindows) return 'crispembed.dll';
-    return 'libcrispembed.so';
-  }
 }
 
 // ---------------------------------------------------------------------------
