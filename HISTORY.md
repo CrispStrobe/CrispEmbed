@@ -4,6 +4,53 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — CLIP/SigLIP Vision + Text, YuNet Face Detection
+
+### YuNet lightweight face detection
+- 228 KB GGUF (vs SCRFD 16 MB), ShuffleNetV2 backbone, 640×640 input
+- IoU 0.99 vs OpenCV FaceDetectorYN, score diff < 0.01, landmark diff < 2px
+- Converter unchanged (existing `convert-face-to-gguf.py` handles YuNet's ops)
+- Key gotcha: ggml Transpose op does real 2D transpose for n_dims==2 tensors,
+  requiring different spatial indexing for 1-channel (cls/obj) vs multi-channel
+  (bbox/kps) outputs
+- Uploaded to `cstr/yunet-GGUF`, in auto-download registry
+
+### CLIP text encoder (new module)
+- `clip_text_embed.{h,cpp}`: pre-LN transformer with causal mask, EOS pooling,
+  text_projection, BPE tokenizer embedded in GGUF
+- `convert-clip-text-to-gguf.py`: extracts text tower + tokenizer from HF CLIP
+- C API (`crispembed_clip_text_*`), Python wrapper (`CrispClipText`), server
+  `/clip/text` endpoint
+- Cross-modal text↔image search works end-to-end
+- Uploaded: `cstr/clip-text-base-GGUF` (244 MB), `cstr/clip-text-large-GGUF` (474 MB)
+
+### CLIP / SigLIP vision models
+- Fixed `vit_embed.cpp`: CLS token prepend, CLS pooling for CLIP, quick_gelu
+  via FP32 ggml primitives, attention pooling residual skip connection
+- Converted and uploaded 6 vision GGUFs:
+  - `cstr/clip-vit-base-patch16-GGUF` (329 MB, MIT)
+  - `cstr/clip-vit-large-patch14-GGUF` (1.2 GB)
+  - `cstr/clip-vit-large-patch14-336-GGUF` (1.2 GB)
+  - `cstr/siglip-large-256-GGUF` (1.2 GB, Apache 2.0)
+  - `cstr/siglip-so400m-patch14-384-GGUF` (1.6 GB)
+
+### Model registry expansion
+- 13 new auto-download entries: 2 face detection (yunet, scrfd-det-10g),
+  2 face recognition (auraface-v1, sface), 8 vision/text (CLIP + SigLIP),
+  1 SigLIP-base
+- Total registry: ~58 models
+
+### Vision parity investigation
+- CLIP/SigLIP achieve cos ≈ 0.8 vs HuggingFace (not 0.999+ like text models)
+- Root cause: FP32 matmul accumulation order differences between ggml and
+  PyTorch, compounding through 12 pre-LN layers (~0.001 error/layer)
+- Post-LN models (BERT) don't have this issue (LayerNorm resets drift)
+- Error scales with sequence length: T=3 → cos=0.97, T=197 → cos=0.81
+- Fundamental limitation, not fixable without matching PyTorch's BLAS
+- Models fully usable for retrieval (relative ranking preserved)
+
+---
+
 ## v0.7.0 — May 2026
 
 ### Registry status

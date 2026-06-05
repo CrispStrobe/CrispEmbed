@@ -59,6 +59,7 @@ struct context {
     bool has_cls_token = false;
     bool has_attn_pool = false;
     bool has_visual_proj = false;
+    bool use_quick_gelu = false;  // CLIP uses quick_gelu, SigLIP uses gelu
 
     // Weights
     ggml_tensor * patch_embed_w = nullptr;
@@ -114,6 +115,16 @@ bool load(context** out, const char* path, int n_threads) {
     ctx->has_cls_token   = boolv("vit.has_cls_token", false);
     ctx->has_attn_pool   = boolv("vit.has_attn_pool", false);
     ctx->has_visual_proj = boolv("vit.has_visual_proj", false);
+
+    // Activation: CLIP uses quick_gelu (x * sigmoid(1.702x)), SigLIP uses gelu
+    {
+        auto str_val = [&](const char* k, const char* d) -> std::string {
+            int64_t i = gguf_find_key(g, k);
+            return i >= 0 ? gguf_get_val_str(g, i) : d;
+        };
+        std::string act = str_val("vit.hidden_act", "gelu");
+        ctx->use_quick_gelu = (act == "quick_gelu");
+    }
 
     // Read per-channel image normalization from GGUF (falls back to SigLIP defaults)
     auto read_f32_arr3 = [&](const char* key, float* dst) {
@@ -208,8 +219,11 @@ bool load(context** out, const char* path, int n_threads) {
         ctx->head.fc2_b      = get("head.mlp.fc2.bias");
     }
 
-    fprintf(stderr, "vit_embed: loaded %d layers, %s pooling\n",
-            ctx->n_layers, ctx->has_attn_pool ? "attention" : "mean");
+    fprintf(stderr, "vit_embed: loaded %d layers, %s pooling%s%s\n",
+            ctx->n_layers,
+            ctx->has_attn_pool ? "attention" : (ctx->has_cls_token ? "CLS" : "mean"),
+            ctx->has_visual_proj ? ", visual_proj" : "",
+            ctx->use_quick_gelu ? ", quick_gelu" : "");
     return true;
 }
 
@@ -229,9 +243,11 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     const int grid = ctx->img_size / ps;  // patches per side
 
     // Build ggml graph
-    const int extra = ctx->has_attn_pool ? 60 : 0;
-    size_t buf_size = ggml_tensor_overhead() * (ctx->n_layers * 40 + 100 + extra)
-                    + ggml_graph_overhead_custom(ctx->n_layers * 30 + 100 + extra, false);
+    const int extra = (ctx->has_attn_pool ? 60 : 0) + (ctx->has_cls_token ? 10 : 0);
+    const int ops_per_layer = ctx->use_quick_gelu ? 50 : 40;
+    const int total_nodes = ctx->n_layers * ops_per_layer + 200 + extra;
+    size_t buf_size = ggml_tensor_overhead() * total_nodes
+                    + ggml_graph_overhead_custom(total_nodes, false);
     std::vector<uint8_t> buf(buf_size);
     struct ggml_init_params p = { buf_size, buf.data(), true };
     ggml_context* g = ggml_init(p);
@@ -263,7 +279,15 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     x = ggml_cont(g, ggml_permute(g, x, 2, 1, 0, 3));  // [D, OH, OW]
     x = ggml_reshape_2d(g, x, D, T);                     // [D, T]
 
-    // Position embeddings: pos_embd stored as [D, T] (from converter)
+    // CLS token (CLIP): prepend learned class embedding → [D, T+1]
+    int S = T;  // sequence length
+    if (ctx->has_cls_token && ctx->cls_token) {
+        ggml_tensor* cls = ggml_reshape_2d(g, ctx->cls_token, D, 1);
+        x = ggml_concat(g, cls, x, 1);  // [D, 1] + [D, T] → [D, T+1]
+        S = T + 1;
+    }
+
+    // Position embeddings: pos_embd stored as [D, S] (from converter)
     x = ggml_add(g, x, ctx->pos_embd);
 
     // Pre-LN (CLIP only)
@@ -290,20 +314,19 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         if (L.q_b) Q = ggml_add(g, Q, L.q_b);
         if (L.k_b) K = ggml_add(g, K, L.k_b);
         if (L.v_b) V = ggml_add(g, V, L.v_b);
-
-        // Reshape [D, T] → [hd, nh, T] → permute to [hd, T, nh]
-        Q = ggml_reshape_3d(g, Q, hd, nh, T);
-        K = ggml_reshape_3d(g, K, hd, nh, T);
-        V = ggml_reshape_3d(g, V, hd, nh, T);
-        Q = ggml_permute(g, Q, 0, 2, 1, 3);  // [hd, T, nh]
+        // Reshape [D, S] → [hd, nh, S] → permute to [hd, S, nh]
+        Q = ggml_reshape_3d(g, Q, hd, nh, S);
+        K = ggml_reshape_3d(g, K, hd, nh, S);
+        V = ggml_reshape_3d(g, V, hd, nh, S);
+        Q = ggml_permute(g, Q, 0, 2, 1, 3);  // [hd, S, nh]
         K = ggml_permute(g, K, 0, 2, 1, 3);
         V = ggml_permute(g, V, 0, 2, 1, 3);
 
         // Flash attention (no causal mask for ViT encoder)
         float scale = 1.0f / std::sqrt((float)hd);
         ggml_tensor* attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
-        // Result: [hd, nh, T] → reshape to [D, T]
-        attn = ggml_reshape_2d(g, attn, D, T);
+        // Result: [hd, nh, S] → reshape to [D, S]
+        attn = ggml_reshape_2d(g, attn, D, S);
 
         // Output projection
         attn = ggml_mul_mat(g, L.o_w, attn);
@@ -318,15 +341,21 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         x = ggml_mul(g, x, L.ln2_w);
         if (L.ln2_b) x = ggml_add(g, x, L.ln2_b);
 
-        // MLP: fc1 → GELU → fc2
+        // MLP: fc1 → activation → fc2
         x = ggml_mul_mat(g, L.fc1_w, x);
         if (L.fc1_b) x = ggml_add(g, x, L.fc1_b);
-        x = ggml_gelu(g, x);
+        // CLIP uses quick_gelu = x * sigmoid(1.702x), SigLIP uses gelu (tanh approx)
+        if (ctx->use_quick_gelu) {
+            x = ggml_mul(g, x, ggml_sigmoid(g, ggml_scale(g, ggml_dup(g, x), 1.702f)));
+        } else {
+            x = ggml_gelu(g, x);
+        }
         x = ggml_mul_mat(g, L.fc2_w, x);
         if (L.fc2_b) x = ggml_add(g, x, L.fc2_b);
 
         // Residual add
         x = ggml_add(g, residual, x);
+
     }
 
     // Post-LayerNorm
@@ -353,17 +382,15 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         ggml_tensor* qkv = ggml_mul_mat(g, H.in_proj_w, x_cat);
         if (H.in_proj_b) qkv = ggml_add(g, qkv, H.in_proj_b);
 
-        // Split Q, K, V — each [D, S]
-        // Q from first D rows, K from next D, V from last D
-        ggml_tensor* Qa = ggml_view_2d(g, qkv, D, S, qkv->nb[1], 0);
-        ggml_tensor* Ka = ggml_view_2d(g, qkv, D, S, qkv->nb[1], D * sizeof(float));
-        ggml_tensor* Va = ggml_view_2d(g, qkv, D, S, qkv->nb[1], 2 * D * sizeof(float));
+        // Split Q, K, V — each [D, S]. Views are non-contiguous, need ggml_cont.
+        ggml_tensor* Qa = ggml_cont(g, ggml_view_2d(g, qkv, D, S, qkv->nb[1], 0));
+        ggml_tensor* Ka = ggml_cont(g, ggml_view_2d(g, qkv, D, S, qkv->nb[1], D * sizeof(float)));
+        ggml_tensor* Va = ggml_cont(g, ggml_view_2d(g, qkv, D, S, qkv->nb[1], 2 * D * sizeof(float)));
 
         // Q: take only probe position (token 0) → [D, 1]
         Qa = ggml_view_2d(g, Qa, D, 1, Qa->nb[1], 0);
 
-        // Reshape for multi-head attention:
-        // Q [D, 1] → [hd, nh, 1], K [D, S] → [hd, nh, S], V [D, S] → [hd, nh, S]
+        // Reshape for multi-head attention
         Qa = ggml_reshape_3d(g, Qa, hd, nh, 1);
         Ka = ggml_reshape_3d(g, Ka, hd, nh, S);
         Va = ggml_reshape_3d(g, Va, hd, nh, S);
@@ -376,6 +403,7 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         // Scaled dot-product attention
         float scale = 1.0f / std::sqrt((float)hd);
         ggml_tensor* attn_out = ggml_flash_attn_ext(g, Qa, Ka, Va, nullptr, scale, 0.0f, 0.0f);
+        ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
         // attn_out: [hd, nh, 1] → reshape to [D, 1]
         attn_out = ggml_reshape_2d(g, attn_out, D, 1);
 
@@ -383,32 +411,39 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         attn_out = ggml_mul_mat(g, H.o_w, attn_out);
         if (H.o_b) attn_out = ggml_add(g, attn_out, H.o_b);
 
-        // Residual add with probe
-        attn_out = ggml_add(g, probe, attn_out);
+        // Residual add with probe: residual = probe + attn_output
+        ggml_tensor* residual = ggml_add(g, probe, attn_out);
 
         // LayerNorm
-        attn_out = ggml_norm(g, attn_out, eps);
-        attn_out = ggml_mul(g, attn_out, H.ln_w);
-        if (H.ln_b) attn_out = ggml_add(g, attn_out, H.ln_b);
+        ggml_tensor* ln = ggml_norm(g, residual, eps);
+        ln = ggml_mul(g, ln, H.ln_w);
+        if (H.ln_b) ln = ggml_add(g, ln, H.ln_b);
 
-        // MLP: fc1 → GELU → fc2
-        ggml_tensor* mlp = ggml_mul_mat(g, H.fc1_w, attn_out);
+        // MLP: fc1 → activation → fc2
+        ggml_tensor* mlp = ggml_mul_mat(g, H.fc1_w, ln);
         if (H.fc1_b) mlp = ggml_add(g, mlp, H.fc1_b);
-        mlp = ggml_gelu(g, mlp);
+        if (ctx->use_quick_gelu) {
+            mlp = ggml_mul(g, mlp, ggml_sigmoid(g, ggml_scale(g, ggml_dup(g, mlp), 1.702f)));
+        } else {
+            mlp = ggml_gelu(g, mlp);
+        }
         mlp = ggml_mul_mat(g, H.fc2_w, mlp);
         if (H.fc2_b) mlp = ggml_add(g, mlp, H.fc2_b);
 
-        // Reshape to [D]
-        pooled = ggml_reshape_1d(g, mlp, D);
+        // Pre-LN residual: output = residual + MLP(LN(residual))
+        pooled = ggml_reshape_1d(g, ggml_add(g, residual, mlp), D);
+    } else if (ctx->has_cls_token) {
+        // ── CLS token pooling (CLIP) ──
+        // x is [D, S] where S = T+1. Take token 0 (CLS).
+        pooled = ggml_view_2d(g, x, D, 1, x->nb[1], 0);
+        pooled = ggml_reshape_1d(g, pooled, D);
     } else {
-        // ── Mean pooling ──
-        // x is [D, T].
-        // ggml_sum_rows sums over ne[0] → [1, T].
-        // We need sum over ne[1] (T dim). Transpose first.
-        ggml_tensor* xt = ggml_cont(g, ggml_transpose(g, x));  // [T, D]
+        // ── Mean pooling (SigLIP without attention pool head) ──
+        // x is [D, S].
+        ggml_tensor* xt = ggml_cont(g, ggml_transpose(g, x));  // [S, D]
         ggml_tensor* summed = ggml_sum_rows(g, xt);  // [1, D]
         pooled = ggml_reshape_1d(g, summed, D);
-        pooled = ggml_scale(g, pooled, 1.0f / (float)T);
+        pooled = ggml_scale(g, pooled, 1.0f / (float)S);
     }
 
     // Visual projection (CLIP)
@@ -423,7 +458,7 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     ggml_set_output(pooled);
 
     // Build and compute graph
-    ggml_cgraph* gf = ggml_new_graph_custom(g, ctx->n_layers * 30 + 100 + extra, false);
+    ggml_cgraph* gf = ggml_new_graph_custom(g, total_nodes, false);
     ggml_build_forward_expand(gf, pooled);
 
     // Allocate

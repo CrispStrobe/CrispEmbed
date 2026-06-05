@@ -977,3 +977,72 @@ Needs NMS post-processing.
 CrispASR has CNN forward paths for marblenet (depthwise 1D conv),
 wav2vec2 (grouped conv), and others. Same ggml ops, similar patterns.
 Patches at tools/upstream-prs/ may be needed for CUDA conv2d.
+
+### YuNet ggml Transpose behavior (2D vs 3D tensors)
+The `replay_graph()` Transpose op does a real 2D transpose for tensors
+where `ggml_n_dims == 2` (i.e., last dimension is 1). YuNet's cls/obj
+outputs have 1 channel and thus get physically transposed, while bbox/kps
+with 4/10 channels remain in the original ggml layout. This requires
+different spatial indexing for each:
+- cls/obj (1 channel, transposed): `data[row + col * grid_h]`
+- bbox/kps (multi-channel, passthrough): `data[col + row * grid_w + chan * plane]`
+
+## ViT / CLIP parity: FP32 matmul accumulation order (cos ≈ 0.8)
+
+CLIP and SigLIP vision/text encoders achieve cos ≈ 0.8 vs HuggingFace
+(not the 0.999+ typical for text encoder models). Extensive debugging
+confirmed:
+
+1. **Embeddings match exactly.** Patch embedding, CLS token, position
+   embedding, and pre-LayerNorm all match HF to 6 decimal places.
+
+2. **Q projection matches exactly.** The matmul for Q (and K, V) produces
+   bit-identical results to PyTorch.
+
+3. **Attention output diverges by ~0.001 per layer.** After the full
+   attention computation (Q×K^T → softmax → ×V → output projection),
+   there's a small but consistent difference (~0.001 per element).
+
+4. **Flash attention vs manual attention gives the same result.** Replacing
+   `ggml_flash_attn_ext` with explicit `ggml_mul_mat` + `ggml_soft_max`
+   produces identical values, confirming the CPU flash attention is already
+   FP32 internally.
+
+5. **Error compounds through pre-LN layers.** Pre-LN models (CLIP, SigLIP)
+   don't normalize between layers, so the ~0.001 per-layer error compounds
+   nonlinearly through 12 layers. Post-LN models (BERT) normalize after
+   each layer, resetting accumulated drift to zero.
+
+6. **Error scales with sequence length.** Tested on CLIP text encoder:
+   - T=3 tokens: cos=0.97
+   - T=7 tokens: cos=0.81
+   - T=16 tokens: cos=0.74
+   - T=197 (ViT patches): cos=0.81
+
+**Root cause:** Different matmul accumulation order between ggml and
+PyTorch. For a 768-dim inner product, ggml and PyTorch add the 768
+partial products in different SIMD-lane order, causing FP32 non-
+associativity drift (~1e-7 per element, amplified by the 197×197
+attention matrix to ~1e-3 per attention layer).
+
+**Cannot be fixed** without matching PyTorch's exact BLAS implementation.
+The models are fully usable for retrieval (relative ranking preserved);
+absolute cosine similarity values will differ slightly from HF.
+
+**GELU FP16 lookup tables** (`GGML_GELU_FP16`, `GGML_GELU_QUICK_FP16`):
+ggml uses FP16 lookup tables for both `ggml_gelu` and `ggml_gelu_quick`
+on CPU. This was NOT the dominant error source (switching to FP32
+primitives for quick_gelu didn't improve parity). The matmul accumulation
+order is the bottleneck.
+
+### SigLIP attention pooling head: missing residual
+
+HF's `SiglipMultiheadAttentionPoolingHead` computes:
+```
+residual = probe + attention(probe, x_cat, x_cat)
+output = residual + MLP(LayerNorm(residual))
+```
+
+The final `residual +` was initially missing in our implementation,
+producing cos=0.17 vs HF. After fix: cos=0.74 (same precision ceiling
+as other ViT models).

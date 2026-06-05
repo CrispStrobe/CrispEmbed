@@ -1323,3 +1323,72 @@ class CrispVit:
         if hasattr(self, '_ctx') and self._ctx:
             self._lib.crispembed_vit_free(self._ctx)
             self._ctx = None
+
+
+# ---------------------------------------------------------------------------
+# CrispClipText — CLIP text encoding
+# ---------------------------------------------------------------------------
+
+def _setup_clip_text_signatures(lib):
+    """Register ctypes signatures for crispembed_clip_text_* functions."""
+    lib.crispembed_clip_text_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_clip_text_init.restype = ctypes.c_void_p
+
+    lib.crispembed_clip_text_dim.argtypes = [ctypes.c_void_p]
+    lib.crispembed_clip_text_dim.restype = ctypes.c_int
+
+    lib.crispembed_clip_text_encode.argtypes = [
+        ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_int)]
+    lib.crispembed_clip_text_encode.restype = ctypes.POINTER(ctypes.c_float)
+
+    lib.crispembed_clip_text_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_clip_text_free.restype = None
+
+
+class CrispClipText:
+    """CLIP text encoder for cross-modal text-image retrieval.
+
+    Loads a CLIP text GGUF and encodes text strings to embedding vectors
+    in the same space as CLIP vision embeddings. BPE tokenizer is embedded
+    in the GGUF file.
+
+    Usage::
+
+        enc = CrispClipText("clip-text-base.gguf")
+        emb = enc.encode("a photo of a cat")
+        # np.ndarray of shape (512,), L2-normalized
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 0, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_clip_text_signatures(self._lib)
+        self._ctx = self._lib.crispembed_clip_text_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load CLIP text model: {model_path}")
+
+    @property
+    def dim(self) -> int:
+        """Embedding dimension."""
+        return self._lib.crispembed_clip_text_dim(self._ctx)
+
+    def encode(self, text: str) -> np.ndarray:
+        """Encode text to a CLIP embedding vector.
+
+        Args:
+            text: Input text string.
+
+        Returns:
+            np.ndarray of shape ``(dim,)``, L2-normalized. Empty on failure.
+        """
+        out_dim = ctypes.c_int(0)
+        ptr = self._lib.crispembed_clip_text_encode(
+            self._ctx, text.encode("utf-8"), ctypes.byref(out_dim))
+        if not ptr or out_dim.value <= 0:
+            return np.array([], dtype=np.float32)
+        return np.ctypeslib.as_array(ptr, shape=(out_dim.value,)).copy()
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_clip_text_free(self._ctx)
+            self._ctx = None
