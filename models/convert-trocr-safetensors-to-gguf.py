@@ -115,6 +115,44 @@ def main():
 
     print(f"Loaded {len(tensors)} tensors")
 
+    # ---- Squeeze batch dimensions and reshape conv weights ----
+    for key in list(tensors.keys()):
+        t = tensors[key]
+        # Squeeze leading batch dim: (1, N, D) → (N, D)
+        while t.ndim > 2 and t.shape[0] == 1 and 'projection.weight' not in key:
+            t = t.squeeze(0)
+            tensors[key] = t
+        # Conv weight (out, in, kH, kW) → (out, in*kH*kW) for linear matmul
+        if 'projection.weight' in key and t.ndim == 4:
+            out_c, in_c, kh, kw = t.shape
+            tensors[key] = t.reshape(out_c, in_c * kh * kw)
+            print(f"  Reshaped {key}: (out={out_c}, in={in_c}*{kh}*{kw}={in_c*kh*kw})")
+    # Skip the _float_tensor sentinel (not a real weight)
+    for key in list(tensors.keys()):
+        if key.endswith('._float_tensor'):
+            del tensors[key]
+
+    # Generate sinusoidal position embeddings if missing
+    # TrOCR models sometimes don't store embed_positions.weight in the
+    # checkpoint — they compute it at init time from a sinusoidal pattern.
+    dec_pos_key = None
+    for dp in ["decoder.model.decoder.embed_positions.weight", "decoder.embed_positions.weight"]:
+        if dp in tensors:
+            dec_pos_key = dp
+            break
+    if dec_pos_key is None:
+        print("  Generating sinusoidal decoder position embeddings...")
+        # TrOCR uses offset=2 for position embeddings
+        num_pos = max_seq_len + 2  # extra for offset
+        half_dim = dec_d_model // 2
+        pos_emb = np.zeros((num_pos, dec_d_model), dtype=np.float32)
+        positions = np.arange(num_pos)[:, np.newaxis]
+        dim_t = np.exp(np.arange(half_dim) * -(np.log(10000.0) / half_dim))
+        pos_emb[:, :half_dim] = np.sin(positions * dim_t)
+        pos_emb[:, half_dim:] = np.cos(positions * dim_t)
+        tensors["decoder.model.decoder.embed_positions.weight"] = pos_emb
+        print(f"  Generated ({num_pos}, {dec_d_model}) position embeddings")
+
     # ---- Build name mapping ----
     # HuggingFace keys → CrispEmbed GGUF keys
     gguf_tensors = {}
