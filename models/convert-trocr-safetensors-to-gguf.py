@@ -223,14 +223,15 @@ def main():
 
     print(f"Mapped {len(gguf_tensors)} tensors to GGUF names")
 
-    # ---- Transpose 2D weight matrices ----
-    # ggml convention: ggml_mul_mat(W, x) computes x @ W^T
-    # HuggingFace stores W as [out, in], ggml expects [in, out] for mul_mat
-    # So we transpose all 2D weight matrices.
-    for name in list(gguf_tensors.keys()):
-        w = gguf_tensors[name]
-        if w.ndim == 2 and "weight" in name and "embed" not in name and "position" not in name:
-            gguf_tensors[name] = w.T.copy()
+    # ---- Weight matrix layout ----
+    # ggml_mul_mat(W, x) computes x @ W^T when W is [out_dim, in_dim].
+    # HuggingFace safetensors store weights as [out_dim, in_dim] — same
+    # convention as ggml. NO transpose needed (unlike ONNX models where
+    # the pix2tex converter transposes because ONNX uses [in, out]).
+    #
+    # NOTE: The pix2tex ONNX converter (convert-pix2tex-to-gguf.py)
+    # DOES transpose because ONNX MatMul uses the opposite convention.
+    # This safetensors converter does NOT transpose.
 
     # ---- Write GGUF ----
     print(f"Writing GGUF to {args.output}...")
