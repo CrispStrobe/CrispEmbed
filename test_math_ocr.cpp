@@ -12,7 +12,9 @@ int main(int argc, char** argv) {
     }
 
     fprintf(stderr, "Loading model: %s\n", argv[1]);
-    math_ocr_context* ctx = math_ocr_init(argv[1], 4);
+    int n_threads = argc >= 3 ? atoi(argv[2]) : 4;
+    fprintf(stderr, "Using %d threads\n", n_threads);
+    math_ocr_context* ctx = math_ocr_init(argv[1], n_threads);
     if (!ctx) {
         fprintf(stderr, "Failed to load model\n");
         return 1;

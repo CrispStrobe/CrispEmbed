@@ -11,6 +11,7 @@
 #include "core/gguf_loader.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <map>
@@ -729,6 +730,18 @@ static ggml_cgraph* build_decoder_step_graph(math_ocr_context* ctx, ggml_context
     return gf;
 }
 
+// Cosine similarity between two float vectors
+static float cosine_sim(const float* a, const float* b, int n) {
+    double dot = 0, na = 0, nb = 0;
+    for (int i = 0; i < n; i++) {
+        dot += (double)a[i] * b[i];
+        na  += (double)a[i] * a[i];
+        nb  += (double)b[i] * b[i];
+    }
+    if (na < 1e-30 || nb < 1e-30) return 0.0f;
+    return (float)(dot / (sqrt(na) * sqrt(nb)));
+}
+
 // Run the full decoder loop using graph-based computation.
 // Returns the generated tokens (excluding the start token).
 static std::vector<int> run_decoder_graph(math_ocr_context* ctx) {
@@ -738,9 +751,35 @@ static std::vector<int> run_decoder_graph(math_ocr_context* ctx) {
     const int n_dec = hp.dec_layers;
     const int n_enc = ctx->n_enc_tokens;
 
+    // --- Optimization 1: Pre-cache dequantized embeddings ---
+    // Dequantize once instead of every step (avoids full vocab table dequant per step)
+    std::vector<float> tok_emb_f32;
+    std::vector<float> pos_emb_f32;
+    if (ctx->tok_embed)    tok_emb_f32 = to_f32(ctx->tok_embed);
+    if (ctx->pos_embed_dec) pos_emb_f32 = to_f32(ctx->pos_embed_dec);
+
+    // --- Optimization: Use 1 thread for decoder (small tensors, threading overhead dominates) ---
+    // The decoder operates on [D,1] vectors where D=256, so matrix ops are tiny.
+    // Multi-threading adds massive synchronization overhead for these small ops.
+    ggml_backend_cpu_set_n_threads(ctx->backend, 1);
+
+    // --- Optimization 2: Single metadata buffer (16MB, reused) ---
+    const size_t meta_sz = 16 * 1024 * 1024;
+    std::vector<uint8_t> meta_buf(meta_sz);
+    ggml_init_params ip = { meta_sz, meta_buf.data(), true };
+
     // Self-attention KV cache: per layer, grows by [D] each step
     std::vector<std::vector<float>> self_k_cache(n_dec);
     std::vector<std::vector<float>> self_v_cache(n_dec);
+
+    // --- Validation harness (scalar decoder for comparison) ---
+#ifdef DECODER_VALIDATE
+    std::vector<std::vector<float>> scalar_k_cache(n_dec);
+    std::vector<std::vector<float>> scalar_v_cache(n_dec);
+    std::vector<int> scalar_tokens = {hp.decoder_start_token};
+    float min_cos = 1.0f;
+    fprintf(stderr, "math_ocr: DECODER_VALIDATE enabled — comparing graph vs scalar\n");
+#endif
 
     std::vector<int> tokens = {hp.decoder_start_token};
     int max_steps = std::min(hp.max_seq_len, 200);
@@ -750,18 +789,17 @@ static std::vector<int> run_decoder_graph(math_ocr_context* ctx) {
         int n_kv = step;  // number of previously cached K/V tokens (0 on first step)
 
         // 1. CPU-side: compute token + positional embedding + embed LN
+        //    Uses pre-cached dequantized tables (Optimization 1)
         std::vector<float> emb(D, 0.0f);
-        if (ctx->tok_embed && tok >= 0 && tok < V) {
-            auto tok_emb = to_f32(ctx->tok_embed);
+        if (!tok_emb_f32.empty() && tok >= 0 && tok < V) {
             float sc = sqrtf((float)D);
-            for (int i = 0; i < D; i++) emb[i] = tok_emb[tok * D + i] * sc;
+            for (int i = 0; i < D; i++) emb[i] = tok_emb_f32[tok * D + i] * sc;
         }
-        if (ctx->pos_embed_dec) {
-            auto pe = to_f32(ctx->pos_embed_dec);
+        if (!pos_emb_f32.empty()) {
             int pos = step + 2;
             if (pos < hp.max_seq_len)
-                for (int i = 0; i < D && pos * D + i < (int)pe.size(); i++)
-                    emb[i] += pe[pos * D + i];
+                for (int i = 0; i < D && pos * D + i < (int)pos_emb_f32.size(); i++)
+                    emb[i] += pos_emb_f32[pos * D + i];
         }
         layernorm_cpu(emb.data(), emb.data(), D, ctx->dec_embed_ln_w, ctx->dec_embed_ln_b);
 
@@ -770,10 +808,7 @@ static std::vector<int> run_decoder_graph(math_ocr_context* ctx) {
                     emb[0], emb[1], emb[2], emb[3], emb[4]);
         }
 
-        // 2. Build the graph for this step
-        size_t meta_sz = 256 * 1024 * 1024;
-        std::vector<uint8_t> meta(meta_sz);
-        ggml_init_params ip = { meta_sz, meta.data(), true };
+        // 2. Build the graph for this step (reuse metadata buffer — Optimization 2)
         ggml_context* g = ggml_init(ip);
 
         ggml_cgraph* gf = build_decoder_step_graph(ctx, g, n_kv, n_enc);
@@ -807,7 +842,7 @@ static std::vector<int> run_decoder_graph(math_ocr_context* ctx) {
                                                   n_kv * D * sizeof(float));
             }
 
-            // Cross-attention K/V (fixed, same every step)
+            // Cross-attention K/V (constant, but must re-set after sched realloc)
             snprintf(name, sizeof(name), "cross_k_%d", li);
             ggml_tensor* ck = ggml_graph_get_tensor(gf, name);
             if (ck) ggml_backend_tensor_set(ck, ctx->cross_k_cache[li].data(), 0,
@@ -844,6 +879,26 @@ static std::vector<int> run_decoder_graph(math_ocr_context* ctx) {
 
         ggml_free(g);
 
+        // --- Validation: compare graph logits with scalar decoder ---
+#ifdef DECODER_VALIDATE
+        {
+            int scalar_tok = scalar_tokens.back();
+            auto scalar_logits = decoder_step_scalar(ctx, scalar_tok, step,
+                                                      scalar_k_cache, scalar_v_cache);
+            float cs = cosine_sim(logits.data(), scalar_logits.data(), V);
+            if (cs < min_cos) min_cos = cs;
+            if (step < 10 || cs < 0.99f) {
+                int g_best = 0, s_best = 0;
+                for (int v = 1; v < V; v++) {
+                    if (logits[v] > logits[g_best]) g_best = v;
+                    if (scalar_logits[v] > scalar_logits[s_best]) s_best = v;
+                }
+                fprintf(stderr, "math_ocr: [validate] step %d cosine=%.6f graph_best=%d scalar_best=%d\n",
+                        step, cs, g_best, s_best);
+            }
+        }
+#endif
+
         // 8. Greedy argmax
         int best = 0;
         float best_s = logits[0];
@@ -857,7 +912,20 @@ static std::vector<int> run_decoder_graph(math_ocr_context* ctx) {
 
         if (best == hp.eos_token || best == hp.pad_token) break;
         tokens.push_back(best);
+
+#ifdef DECODER_VALIDATE
+        // Mirror the scalar decoder's token sequence to match graph decoder
+        scalar_tokens.push_back(best);
+#endif
     }
+
+#ifdef DECODER_VALIDATE
+    fprintf(stderr, "math_ocr: [validate] DONE — min cosine similarity across all steps: %.6f %s\n",
+            min_cos, min_cos >= 0.99f ? "PASS" : "FAIL");
+#endif
+
+    // Restore multi-threading for subsequent encoder runs
+    ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
 
     return tokens;
 }
@@ -1047,7 +1115,12 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
             ctx->hparams.vocab_size, ctx->hparams.decoder_start_token);
     const auto& hp = ctx->hparams;
 
+    auto dec_t0 = std::chrono::steady_clock::now();
     std::vector<int> tokens = run_decoder_graph(ctx);
+    auto dec_t1 = std::chrono::steady_clock::now();
+    double dec_ms = std::chrono::duration<double, std::milli>(dec_t1 - dec_t0).count();
+    fprintf(stderr, "math_ocr: decoder done in %.1f ms (%zu tokens)\n",
+            dec_ms, tokens.size());
 
     ctx->result_buf.clear();
     for (size_t i = 1; i < tokens.size(); i++) {
