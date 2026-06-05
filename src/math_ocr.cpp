@@ -275,7 +275,7 @@ static ggml_cgraph* build_encoder_graph(math_ocr_context* ctx, ggml_context* g, 
     const auto& hp = ctx->hparams;
     const int H = hp.enc_hidden;
 
-    ggml_cgraph* gf = ggml_new_graph_custom(g, hp.enc_layers * 30 + 256, false);
+    ggml_cgraph* gf = ggml_new_graph_custom(g, hp.enc_layers * 60 + 512, false);
 
     // Input: pre-embedded patches [H, T] as a float input tensor
     ggml_tensor* inp = ggml_new_tensor_2d(g, GGML_TYPE_F32, H, T);
