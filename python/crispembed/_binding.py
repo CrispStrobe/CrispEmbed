@@ -292,6 +292,14 @@ class CrispEmbed:
         lib.crispembed_get_prefix.argtypes = [ctypes.c_void_p]
         lib.crispembed_get_prefix.restype = ctypes.c_char_p
 
+        # --- Ctx prefix (GGUF metadata) ---
+        if hasattr(lib, "crispembed_ctx_query_prefix"):
+            lib.crispembed_ctx_query_prefix.argtypes = [ctypes.c_void_p]
+            lib.crispembed_ctx_query_prefix.restype = ctypes.c_char_p
+        if hasattr(lib, "crispembed_ctx_passage_prefix"):
+            lib.crispembed_ctx_passage_prefix.argtypes = [ctypes.c_void_p]
+            lib.crispembed_ctx_passage_prefix.restype = ctypes.c_char_p
+
         lib.crispembed_cache_dir.argtypes = []
         lib.crispembed_cache_dir.restype = ctypes.c_char_p
 
@@ -809,6 +817,22 @@ class CrispEmbed:
         """Current text prefix (empty string if none)."""
         raw = self._lib.crispembed_get_prefix(self._ctx)
         return raw.decode("utf-8") if raw else ""
+
+    @property
+    def ctx_query_prefix(self) -> Optional[str]:
+        """Query prefix from GGUF metadata (colbert.query_prefix), or None."""
+        if not hasattr(self._lib, "crispembed_ctx_query_prefix"):
+            return None
+        p = self._lib.crispembed_ctx_query_prefix(self._ctx)
+        return p.decode("utf-8") if p else None
+
+    @property
+    def ctx_passage_prefix(self) -> Optional[str]:
+        """Passage/document prefix from GGUF metadata, or None."""
+        if not hasattr(self._lib, "crispembed_ctx_passage_prefix"):
+            return None
+        p = self._lib.crispembed_ctx_passage_prefix(self._ctx)
+        return p.decode("utf-8") if p else None
 
     # ------------------------------------------------------------------
     # Properties

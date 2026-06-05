@@ -143,6 +143,11 @@ int main(int argc, char ** argv) {
             // Single text: use single encode
             int d = 0;
             const float * vec = crispembed_encode(ctx, texts[0].c_str(), &d);
+            if (!vec || d <= 0) {
+                res.status = 500;
+                res.set_content("{\"error\": \"encoding failed\"}", "application/json");
+                return;
+            }
             js << "[";
             for (int j = 0; j < d; j++) {
                 if (j > 0) js << ", ";
@@ -155,6 +160,11 @@ int main(int argc, char ** argv) {
             for (size_t i = 0; i < texts.size(); i++) ptrs[i] = texts[i].c_str();
             int d = 0;
             const float * vecs = crispembed_encode_batch(ctx, ptrs.data(), (int)texts.size(), &d);
+            if (!vecs || d <= 0) {
+                res.status = 500;
+                res.set_content("{\"error\": \"batch encoding failed\"}", "application/json");
+                return;
+            }
             for (size_t i = 0; i < texts.size(); i++) {
                 if (i > 0) js << ", ";
                 js << "[";
@@ -221,6 +231,11 @@ int main(int argc, char ** argv) {
         for (size_t i = 0; i < texts.size(); i++) ptrs[i] = texts[i].c_str();
         int d = 0;
         const float * vecs = crispembed_encode_batch(ctx, ptrs.data(), (int)texts.size(), &d);
+        if (!vecs || d <= 0) {
+            res.status = 500;
+            res.set_content("{\"error\": {\"message\": \"encoding failed\"}}", "application/json");
+            return;
+        }
 
         js << "{\"object\": \"list\", \"data\": [";
         for (size_t i = 0; i < texts.size(); i++) {
@@ -290,6 +305,11 @@ int main(int argc, char ** argv) {
         for (size_t i = 0; i < texts.size(); i++) ptrs[i] = texts[i].c_str();
         int d = 0;
         const float * vecs = crispembed_encode_batch(ctx, ptrs.data(), (int)texts.size(), &d);
+        if (!vecs || d <= 0) {
+            res.status = 500;
+            res.set_content("{\"error\": \"encoding failed\"}", "application/json");
+            return;
+        }
 
         auto t1 = std::chrono::steady_clock::now();
         int64_t total_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(t1 - t0).count();
@@ -344,6 +364,11 @@ int main(int argc, char ** argv) {
 
         int d = 0;
         const float * vec = crispembed_encode(ctx, text.c_str(), &d);
+        if (!vec || d <= 0) {
+            res.status = 500;
+            res.set_content("{\"error\": \"encoding failed\"}", "application/json");
+            return;
+        }
 
         std::ostringstream js;
         js << "{\"embedding\": [";
@@ -385,6 +410,7 @@ int main(int argc, char ** argv) {
         auto body = req.body;
         std::string image_path;
         float conf = 0.5f;
+        int det_size = 0;
 
         auto pos = body.find("\"image\"");
         if (pos != std::string::npos) {
@@ -398,6 +424,11 @@ int main(int argc, char ** argv) {
             auto start = body.find_first_of("0123456789.", cpos + 6);
             if (start != std::string::npos) conf = (float)atof(body.c_str() + start);
         }
+        auto dspos = body.find("\"det_size\"");
+        if (dspos != std::string::npos) {
+            auto start = body.find_first_of("0123456789", dspos + 10);
+            if (start != std::string::npos) det_size = atoi(body.c_str() + start);
+        }
 
         if (image_path.empty()) {
             res.status = 400;
@@ -407,7 +438,7 @@ int main(int argc, char ** argv) {
 
         std::lock_guard<std::mutex> lock(face_mutex);
         int n = 0;
-        auto * dets = crispembed_detect_faces(face_det, image_path.c_str(), conf, 0, &n);
+        auto * dets = crispembed_detect_faces(face_det, image_path.c_str(), conf, det_size, &n);
 
         std::ostringstream js;
         js << "{\"faces\": [";
@@ -440,6 +471,7 @@ int main(int argc, char ** argv) {
         auto body = req.body;
         std::string image_path;
         float conf = 0.5f;
+        int det_size = 0;
 
         auto pos = body.find("\"image\"");
         if (pos != std::string::npos) {
@@ -453,6 +485,11 @@ int main(int argc, char ** argv) {
             auto start = body.find_first_of("0123456789.", cpos + 6);
             if (start != std::string::npos) conf = (float)atof(body.c_str() + start);
         }
+        auto dspos = body.find("\"det_size\"");
+        if (dspos != std::string::npos) {
+            auto start = body.find_first_of("0123456789", dspos + 10);
+            if (start != std::string::npos) det_size = atoi(body.c_str() + start);
+        }
 
         if (image_path.empty()) {
             res.status = 400;
@@ -463,7 +500,7 @@ int main(int argc, char ** argv) {
         std::lock_guard<std::mutex> lock(face_mutex);
         auto t0 = std::chrono::steady_clock::now();
         int n = 0;
-        auto * results = crispembed_face_pipeline(face_det, face_rec, image_path.c_str(), conf, 0, &n);
+        auto * results = crispembed_face_pipeline(face_det, face_rec, image_path.c_str(), conf, det_size, &n);
         auto t1 = std::chrono::steady_clock::now();
         double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
 

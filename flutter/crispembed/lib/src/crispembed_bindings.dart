@@ -169,6 +169,13 @@ typedef CrispembedEncodeImageRaw = Pointer<Float> Function(
     Pointer<Int32> outDim,
     Pointer<Int32> outNDeepstack);
 
+// --- Ctx prefix (GGUF metadata) ---
+typedef CrispembedCtxQueryPrefixNative = Pointer<Utf8> Function(Pointer<Void>);
+typedef CrispembedCtxQueryPrefixDart = Pointer<Utf8> Function(Pointer<Void>);
+
+typedef CrispembedCtxPassagePrefixNative = Pointer<Utf8> Function(Pointer<Void>);
+typedef CrispembedCtxPassagePrefixDart = Pointer<Utf8> Function(Pointer<Void>);
+
 // --- Face detection & recognition ---
 typedef CrispembedFaceInitNative = Pointer<Void> Function(Pointer<Utf8>, Int32);
 typedef CrispembedFaceInitDart = Pointer<Void> Function(Pointer<Utf8>, int);

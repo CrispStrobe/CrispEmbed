@@ -200,6 +200,26 @@ impl CrispEmbed {
         }
     }
 
+    /// Query prefix from GGUF metadata (`colbert.query_prefix`), or empty string.
+    pub fn ctx_query_prefix(&self) -> String {
+        let ptr = unsafe { crispembed_sys::crispembed_ctx_query_prefix(self.ctx) };
+        if ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned()
+        }
+    }
+
+    /// Passage/document prefix from GGUF metadata, or empty string.
+    pub fn ctx_passage_prefix(&self) -> String {
+        let ptr = unsafe { crispembed_sys::crispembed_ctx_passage_prefix(self.ctx) };
+        if ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned()
+        }
+    }
+
     // ------------------------------------------------------------------
     // Capability queries
     // ------------------------------------------------------------------
