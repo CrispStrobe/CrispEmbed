@@ -37,6 +37,7 @@ int main(int argc, char ** argv) {
     std::string host = "127.0.0.1";
     std::string det_model_path;  // face detection model
     std::string rec_model_path;  // face recognition model
+    std::string vit_model_path;  // standalone ViT model (SigLIP/CLIP)
     int port = 8080;
     int n_threads = 4;
 
@@ -47,15 +48,18 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "-t") == 0 && i + 1 < argc) n_threads = atoi(argv[++i]);
         else if (strcmp(argv[i], "--det") == 0 && i + 1 < argc) det_model_path = argv[++i];
         else if (strcmp(argv[i], "--rec") == 0 && i + 1 < argc) rec_model_path = argv[++i];
+        else if (strcmp(argv[i], "--vit") == 0 && i + 1 < argc) vit_model_path = argv[++i];
     }
 
-    if (model_path.empty() && det_model_path.empty()) {
+    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
         fprintf(stderr, "\nFace pipeline:\n");
         fprintf(stderr, "  --det MODEL   face detection model (SCRFD GGUF)\n");
         fprintf(stderr, "  --rec MODEL   face recognition model (ArcFace/SFace GGUF)\n");
+        fprintf(stderr, "\nStandalone ViT (SigLIP/CLIP):\n");
+        fprintf(stderr, "  --vit MODEL   ViT image embedding model (SigLIP/CLIP GGUF)\n");
         return 1;
     }
 
@@ -529,6 +533,69 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // ── Standalone ViT (SigLIP/CLIP) endpoints ─────────────────────────
+    crispembed_vit_context * vit_ctx = nullptr;
+    std::mutex vit_mutex;
+
+    if (!vit_model_path.empty()) {
+        vit_ctx = crispembed_vit_init(vit_model_path.c_str(), n_threads);
+        if (!vit_ctx)
+            fprintf(stderr, "Warning: failed to load ViT model '%s'\n", vit_model_path.c_str());
+    }
+
+    // POST /vit/encode — standalone ViT image embedding
+    // Request:  {"image": "/path/to/image.jpg"}
+    // Response: {"embedding": [...], "dim": N}
+    svr.Post("/vit/encode", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!vit_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no ViT model loaded (use --vit)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no image path\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(vit_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        int d = 0;
+        const float * vec = crispembed_vit_encode_file(vit_ctx, image_path.c_str(), &d);
+        if (!vec || d <= 0) {
+            res.status = 500;
+            res.set_content("{\"error\": \"ViT encoding failed\"}", "application/json");
+            return;
+        }
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        std::ostringstream js;
+        js << "{\"embedding\": [";
+        for (int j = 0; j < d; j++) {
+            if (j > 0) js << ", ";
+            js << vec[j];
+        }
+        js << "], \"dim\": " << d << "}";
+
+        fprintf(stderr, "crispembed-server: /vit/encode in %.1f ms (dim=%d)\n", ms, d);
+        res.set_content(js.str(), "application/json");
+    });
+
     // GET /health
     svr.Get("/health", [&](const httplib::Request &, httplib::Response & res) {
         std::ostringstream js;
@@ -540,6 +607,7 @@ int main(int argc, char ** argv) {
         }
         if (face_det) js << ", \"face_detection\": true";
         if (face_rec) js << ", \"face_recognition\": true, \"face_dim\": " << crispembed_face_dim(face_rec);
+        if (vit_ctx) js << ", \"vit\": true, \"vit_dim\": " << crispembed_vit_dim(vit_ctx);
         js << "}";
         res.set_content(js.str(), "application/json");
     });
@@ -553,10 +621,12 @@ int main(int argc, char ** argv) {
     }
     if (face_det) fprintf(stderr, "  POST /detect          — {\"image\": \"path.jpg\"}\n");
     if (face_det && face_rec) fprintf(stderr, "  POST /face            — {\"image\": \"path.jpg\"} (pipeline)\n");
+    if (vit_ctx) fprintf(stderr, "  POST /vit/encode      — {\"image\": \"path.jpg\"}\n");
     fprintf(stderr, "  GET  /health\n\n");
 
     svr.listen(host, port);
 
+    if (vit_ctx) crispembed_vit_free(vit_ctx);
     if (face_det) crispembed_face_free(face_det);
     if (face_rec) crispembed_face_free(face_rec);
     if (ctx) crispembed_free(ctx);

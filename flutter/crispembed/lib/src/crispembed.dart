@@ -1127,3 +1127,109 @@ class CrispMathOcr {
     if (_disposed) throw StateError('CrispMathOcr has been disposed');
   }
 }
+
+// ---------------------------------------------------------------------------
+// Standalone ViT image embedding (SigLIP, CLIP)
+// ---------------------------------------------------------------------------
+
+/// Wraps a standalone ViT model loaded via `crispembed_vit_init`.
+///
+/// Encodes images into dense embedding vectors using SigLIP, CLIP, or similar
+/// ViT-based architectures.
+///
+/// ```dart
+/// final vit = CrispVit('siglip-base.gguf');
+/// print('dim = ${vit.dim}');
+/// final emb = vit.encodeFile('photo.jpg');
+/// print('embedding length: ${emb.length}');
+/// vit.dispose();
+/// ```
+class CrispVit {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  // Cached function lookups
+  late final CrispembedVitDimDart _dimFn;
+  late final CrispembedVitEncodeFileDart _encodeFileFn;
+  late final CrispembedVitFreeDart _freeFn;
+
+  /// Load a SigLIP/CLIP GGUF model for image embedding.
+  ///
+  /// [modelPath] — path to the `.gguf` model file.
+  /// [nThreads] — CPU thread count (0 = auto-detect).
+  /// [libPath] — optional path to the shared library. If omitted, searches
+  ///   standard platform locations.
+  CrispVit(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedVitInitNative, CrispembedVitInitDart>(
+            'crispembed_vit_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load ViT model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _dimFn = _lib.lookupFunction<CrispembedVitDimNative, CrispembedVitDimDart>(
+        'crispembed_vit_dim');
+    _encodeFileFn = _lib.lookupFunction<CrispembedVitEncodeFileNative,
+        CrispembedVitEncodeFileDart>('crispembed_vit_encode_file');
+    _freeFn = _lib.lookupFunction<CrispembedVitFreeNative,
+        CrispembedVitFreeDart>('crispembed_vit_free');
+  }
+
+  // ------------------------------------------------------------------
+  // Queries
+  // ------------------------------------------------------------------
+
+  /// Embedding dimension produced by the ViT model.
+  int get dim {
+    _checkDisposed();
+    return _dimFn(_ctx);
+  }
+
+  // ------------------------------------------------------------------
+  // Inference
+  // ------------------------------------------------------------------
+
+  /// Encode an image file to a dense L2-normalized embedding.
+  ///
+  /// Supports JPEG, PNG, BMP, and other formats readable by stb_image.
+  /// Returns an empty list on failure (bad path, unsupported format, etc.).
+  Float32List encodeFile(String imagePath) {
+    _checkDisposed();
+    final pathPtr = imagePath.toNativeUtf8();
+    final dimPtr = calloc<Int32>();
+    try {
+      final ptr = _encodeFileFn(_ctx, pathPtr, dimPtr);
+      if (ptr == nullptr || dimPtr.value <= 0) return Float32List(0);
+      return Float32List.fromList(ptr.asTypedList(dimPtr.value));
+    } finally {
+      calloc.free(pathPtr);
+      calloc.free(dimPtr);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Lifecycle
+  // ------------------------------------------------------------------
+
+  /// Release all native resources. Must be called when done.
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispVit has been disposed');
+  }
+}

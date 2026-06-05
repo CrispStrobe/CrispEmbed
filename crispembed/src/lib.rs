@@ -1087,3 +1087,75 @@ impl Drop for MathOcr {
         unsafe { crispembed_sys::crispembed_math_ocr_free(self.ctx) }
     }
 }
+
+// ======================================================================
+// Standalone ViT image embedding (SigLIP, CLIP)
+// ======================================================================
+
+/// A loaded standalone ViT model for image embedding (SigLIP, CLIP).
+///
+/// Not `Sync` — do not share between threads. Each thread should hold its
+/// own `CrispVit` instance. `Send`-safe: you can move it across threads.
+///
+/// # Example
+///
+/// ```no_run
+/// use crispembed::CrispVit;
+///
+/// let mut vit = CrispVit::new("/path/to/siglip.gguf", 0).unwrap();
+/// println!("dim = {}", vit.dim());
+/// let embedding = vit.encode_file("/path/to/image.jpg");
+/// println!("embedding length = {}", embedding.len());
+/// ```
+pub struct CrispVit {
+    ctx: *mut crispembed_sys::VitContext,
+}
+
+// Safety: the underlying C library serialises all mutable access through
+// the opaque context pointer; we hold the only reference.
+unsafe impl Send for CrispVit {}
+
+impl CrispVit {
+    /// Load a SigLIP/CLIP GGUF model file.
+    ///
+    /// - `model_path` — path to the `.gguf` file.
+    /// - `n_threads`  — CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_vit_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_vit_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Embedding dimension produced by the ViT model.
+    pub fn dim(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_vit_dim(self.ctx) }
+    }
+
+    /// Encode an image file to a dense embedding via the ViT model.
+    ///
+    /// Returns an L2-normalized embedding vector. Returns an empty vector
+    /// on failure (bad path, unsupported image format, etc.).
+    pub fn encode_file(&mut self, image_path: &str) -> Vec<f32> {
+        let cpath = match CString::new(image_path) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_vit_encode_file(self.ctx, cpath.as_ptr(), &mut out_dim)
+        };
+        if ptr.is_null() || out_dim <= 0 {
+            return vec![];
+        }
+        unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
+    }
+}
+
+impl Drop for CrispVit {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_vit_free(self.ctx) }
+    }
+}
