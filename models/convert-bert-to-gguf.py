@@ -25,6 +25,24 @@ from transformers import AutoModel, AutoModelForSequenceClassification, AutoMode
 ARCH = "bert"
 
 
+def _load_st_config(model_id: str) -> dict:
+    """Load config_sentence_transformers.json from a local dir or HF hub."""
+    local = Path(model_id)
+    if local.is_dir():
+        p = local / "config_sentence_transformers.json"
+        if p.exists():
+            with open(p, encoding="utf-8") as f:
+                return json.load(f)
+    try:
+        from huggingface_hub import hf_hub_download
+        p = hf_hub_download(repo_id=model_id, filename="config_sentence_transformers.json")
+        with open(p, encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        pass
+    return {}
+
+
 def f32(t: torch.Tensor) -> np.ndarray:
     return t.detach().float().cpu().numpy().astype(np.float32)
 
@@ -55,6 +73,8 @@ def main():
                            help="Ollama-compatible naming (default)")
     fmt_group.add_argument("--crisp", action="store_true",
                            help="CrispEmbed-native naming")
+    parser.add_argument("--allow-shape-mismatch", action="store_true",
+                        help="Skip projection shape validation (for experimental heads)")
     args = parser.parse_args()
 
     ollama_mode = not args.crisp
@@ -192,6 +212,32 @@ def main():
                 sd[f"{_head}.{_k}"] = _v
             print(f"  loaded {_head}.pt ({list(_weights.keys())})")
 
+    # PyLATE modules.json — loads colbert_linear from a separate module
+    _pylate_dir = Path(args.model) if Path(args.model).is_dir() else None
+    _modules_json = None
+    if _pylate_dir and (_pylate_dir / "modules.json").exists():
+        with open(_pylate_dir / "modules.json", encoding="utf-8") as f:
+            _modules_json = json.load(f)
+    else:
+        try:
+            from huggingface_hub import hf_hub_download
+            _mj = hf_hub_download(repo_id=args.model, filename="modules.json")
+            with open(_mj, encoding="utf-8") as f:
+                _modules_json = json.load(f)
+        except Exception:
+            pass
+    if _modules_json:
+        for _mod in _modules_json:
+            if _mod.get("type", "").endswith("ColBERTLinear"):
+                _mod_path = _mod.get("path", "")
+                _lin_dir = _pylate_dir / _mod_path if _pylate_dir else None
+                if _lin_dir and (_lin_dir / "model.safetensors").exists():
+                    from safetensors import safe_open
+                    with safe_open(str(_lin_dir / "model.safetensors"), framework="pt") as f:
+                        for k in f.keys():
+                            sd[f"colbert_linear.{k}"] = f.get_tensor(k)
+                    print(f"  loaded PyLATE ColBERTLinear from {_mod_path}/model.safetensors")
+
     print(f"Config: hidden={config.hidden_size} layers={config.num_hidden_layers} "
           f"heads={config.num_attention_heads} intermediate={config.intermediate_size} "
           f"vocab={config.vocab_size}")
@@ -296,6 +342,31 @@ def main():
             colbert_out_dim = sd["colbert_linear.weight"].shape[0]
             writer.add_uint32("bert.colbert_dim", colbert_out_dim)
         print(f"  format: CrispEmbed (model_type={model_type_str})")
+
+    # ColBERT self-describing metadata (from config_sentence_transformers.json)
+    _st_cfg = _load_st_config(args.model)
+    if has_colbert_head and _st_cfg:
+        _prompt_cfg = _st_cfg.get("prompts", {})
+        _q_prefix = _prompt_cfg.get("query", "")
+        _d_prefix = _prompt_cfg.get("document", "")
+        _sim_fn   = _st_cfg.get("similarity_fn_name", "")
+        _q_len    = 0
+        # PyLATE stores query_length in the ColBERT module config
+        if _modules_json:
+            for _mod in _modules_json:
+                if _mod.get("type", "").endswith("ColBERTLinear"):
+                    _q_len = _mod.get("query_length", 0)
+        if _q_prefix:
+            writer.add_string("colbert.query_prefix", _q_prefix)
+            print(f"  colbert.query_prefix: {_q_prefix!r}")
+        if _d_prefix:
+            writer.add_string("colbert.document_prefix", _d_prefix)
+            print(f"  colbert.document_prefix: {_d_prefix!r}")
+        if _sim_fn:
+            writer.add_string("colbert.similarity_fn_name", _sim_fn)
+        if _q_len > 0:
+            writer.add_uint32("colbert.query_length", _q_len)
+            print(f"  colbert.query_length: {_q_len}")
 
     # Tokenizer vocab
     vocab = tokenizer.get_vocab()
@@ -747,15 +818,25 @@ def main():
     # Optional retrieval heads (sparse/colbert: CrispEmbed-only; classifier: always)
     if not ollama_mode:
         if has_sparse_head:
-            writer.add_tensor("sparse_linear.weight", f32(sd["sparse_linear.weight"]))
-            if "sparse_linear.bias" in sd:
-                writer.add_tensor("sparse_linear.bias", f32(sd["sparse_linear.bias"]))
-            print("  sparse_linear: ok")
+            _sp_w = sd["sparse_linear.weight"]
+            if _sp_w.shape[1] != config.hidden_size and not args.allow_shape_mismatch:
+                print(f"  WARNING: sparse_linear shape {list(_sp_w.shape)} does not match "
+                      f"hidden_size={config.hidden_size} — skipping (use --allow-shape-mismatch to force)")
+            else:
+                writer.add_tensor("sparse_linear.weight", f32(_sp_w))
+                if "sparse_linear.bias" in sd:
+                    writer.add_tensor("sparse_linear.bias", f32(sd["sparse_linear.bias"]))
+                print("  sparse_linear: ok")
         if has_colbert_head:
-            writer.add_tensor("colbert_linear.weight", f32(sd["colbert_linear.weight"]))
-            if "colbert_linear.bias" in sd:
-                writer.add_tensor("colbert_linear.bias", f32(sd["colbert_linear.bias"]))
-            print("  colbert_linear: ok")
+            _cb_w = sd["colbert_linear.weight"]
+            if _cb_w.shape[1] != config.hidden_size and not args.allow_shape_mismatch:
+                print(f"  WARNING: colbert_linear shape {list(_cb_w.shape)} does not match "
+                      f"hidden_size={config.hidden_size} — skipping (use --allow-shape-mismatch to force)")
+            else:
+                writer.add_tensor("colbert_linear.weight", f32(_cb_w))
+                if "colbert_linear.bias" in sd:
+                    writer.add_tensor("colbert_linear.bias", f32(sd["colbert_linear.bias"]))
+                print("  colbert_linear: ok")
     # Classifier heads always included (reranker needs them in both formats)
     if True:
         if has_classifier_2layer:

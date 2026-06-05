@@ -936,6 +936,7 @@ def _setup_face_signatures(lib):
         ctypes.c_void_p,
         ctypes.c_char_p,
         ctypes.c_float,
+        ctypes.c_int,
         ctypes.POINTER(ctypes.c_int),
     ]
     lib.crispembed_detect_faces.restype = ctypes.POINTER(_FaceDetection)
@@ -953,6 +954,7 @@ def _setup_face_signatures(lib):
         ctypes.c_void_p,
         ctypes.c_char_p,
         ctypes.c_float,
+        ctypes.c_int,
         ctypes.POINTER(ctypes.c_int),
     ]
     lib.crispembed_face_pipeline.restype = ctypes.POINTER(_FaceResult)
@@ -1015,12 +1017,13 @@ class CrispFace:
     # Detection
     # ------------------------------------------------------------------
 
-    def detect(self, image_path: str, conf: float = 0.5) -> List[dict]:
+    def detect(self, image_path: str, conf: float = 0.5, det_size: int = 0) -> List[dict]:
         """Detect faces in *image_path*.
 
         Args:
             image_path: Path to an image file.
             conf:       Minimum confidence threshold (0–1).
+            det_size:   Detection input resolution (0 = default 640).
 
         Returns:
             List of dicts with keys ``x, y, w, h, confidence, landmarks``.
@@ -1033,6 +1036,7 @@ class CrispFace:
             self._ctx,
             image_path.encode("utf-8"),
             ctypes.c_float(conf),
+            ctypes.c_int(det_size),
             ctypes.byref(n_faces),
         )
         if not ptr or n_faces.value <= 0:
@@ -1143,12 +1147,13 @@ class CrispFacePipeline:
     # Pipeline
     # ------------------------------------------------------------------
 
-    def run(self, image_path: str, conf: float = 0.5) -> List[dict]:
+    def run(self, image_path: str, conf: float = 0.5, det_size: int = 0) -> List[dict]:
         """Detect and embed all faces in *image_path*.
 
         Args:
             image_path: Path to an image file.
             conf:       Minimum detection confidence (0–1).
+            det_size:   Detection input resolution (0 = default 640).
 
         Returns:
             List of dicts with keys:
@@ -1164,6 +1169,7 @@ class CrispFacePipeline:
             self._rec_ctx,
             image_path.encode("utf-8"),
             ctypes.c_float(conf),
+            ctypes.c_int(det_size),
             ctypes.byref(n_faces),
         )
         if not ptr or n_faces.value <= 0:

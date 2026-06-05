@@ -290,6 +290,7 @@ extern "C" {
         ctx: *mut CrispembedFaceContext,
         image_path: *const c_char,
         conf_threshold: f32,
+        det_size: c_int,
         out_n_faces: *mut c_int,
     ) -> *const CrispembedFaceDetection;
 
@@ -314,6 +315,7 @@ extern "C" {
         rec_ctx: *mut CrispembedFaceContext,
         image_path: *const c_char,
         conf_threshold: f32,
+        det_size: c_int,
         out_n_faces: *mut c_int,
     ) -> *const CrispembedFaceResult;
 

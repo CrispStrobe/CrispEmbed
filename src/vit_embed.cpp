@@ -54,6 +54,8 @@ struct context {
     int n_patches = 0;
     int n_channels = 3;
     float ln_eps = 1e-6f;
+    float image_mean[3] = {0.5f, 0.5f, 0.5f};
+    float image_std[3]  = {0.5f, 0.5f, 0.5f};
     bool has_cls_token = false;
     bool has_attn_pool = false;
     bool has_visual_proj = false;
@@ -113,11 +115,25 @@ bool load(context** out, const char* path, int n_threads) {
     ctx->has_attn_pool   = boolv("vit.has_attn_pool", false);
     ctx->has_visual_proj = boolv("vit.has_visual_proj", false);
 
+    // Read per-channel image normalization from GGUF (falls back to SigLIP defaults)
+    auto read_f32_arr3 = [&](const char* key, float* dst) {
+        int64_t i = gguf_find_key(g, key);
+        if (i >= 0 && gguf_get_arr_n(g, i) >= 3) {
+            const float* src = (const float*)gguf_get_arr_data(g, i);
+            dst[0] = src[0]; dst[1] = src[1]; dst[2] = src[2];
+        }
+    };
+    read_f32_arr3("vit.image_mean", ctx->image_mean);
+    read_f32_arr3("vit.image_std",  ctx->image_std);
+
     core_gguf::free_metadata(g);
 
-    fprintf(stderr, "vit_embed: hidden=%d layers=%d heads=%d patches=%d img=%d patch=%d\n",
+    fprintf(stderr, "vit_embed: hidden=%d layers=%d heads=%d patches=%d img=%d patch=%d"
+            " mean=[%.3f,%.3f,%.3f] std=[%.3f,%.3f,%.3f]\n",
             ctx->hidden, ctx->n_layers, ctx->n_heads, ctx->n_patches,
-            ctx->img_size, ctx->patch_size);
+            ctx->img_size, ctx->patch_size,
+            ctx->image_mean[0], ctx->image_mean[1], ctx->image_mean[2],
+            ctx->image_std[0], ctx->image_std[1], ctx->image_std[2]);
 
     // Load weights
     ctx->backend = ggml_backend_cpu_init();
@@ -448,17 +464,10 @@ std::vector<float> encode_file(context* ctx, const char* image_path) {
     bilinear_resize(data, w, h, pixels.data(), sz, sz);
     stbi_image_free(data);
 
-    // Normalize: (pixel - mean) / std
-    // SigLIP: mean=0.5, std=0.5 → (x - 0.5) / 0.5 = 2x - 1
-    // CLIP: different per-channel mean/std
-    // TODO: read from GGUF metadata (vit.image_mean, vit.image_std)
-    // For now, use SigLIP defaults
-    float mean[3] = {0.5f, 0.5f, 0.5f};
-    float std_[3] = {0.5f, 0.5f, 0.5f};
-
+    // Normalize: (pixel - mean) / std using per-channel values from GGUF
     for (int c = 0; c < 3; c++) {
         for (int i = 0; i < sz * sz; i++) {
-            pixels[c * sz * sz + i] = (pixels[c * sz * sz + i] - mean[c]) / std_[c];
+            pixels[c * sz * sz + i] = (pixels[c * sz * sz + i] - ctx->image_mean[c]) / ctx->image_std[c];
         }
     }
 

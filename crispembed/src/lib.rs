@@ -682,6 +682,17 @@ impl CrispFace {
         image_path: &str,
         conf_threshold: f32,
     ) -> Vec<CrispembedFaceDetection> {
+        self.detect_with_size(image_path, conf_threshold, 0)
+    }
+
+    /// Like [`detect`] but with a configurable detection input resolution.
+    /// `det_size = 0` uses the default (640).
+    pub fn detect_with_size(
+        &mut self,
+        image_path: &str,
+        conf_threshold: f32,
+        det_size: i32,
+    ) -> Vec<CrispembedFaceDetection> {
         let path = match CString::new(image_path) {
             Ok(s) => s,
             Err(_) => return vec![],
@@ -692,6 +703,7 @@ impl CrispFace {
                 self.ctx,
                 path.as_ptr(),
                 conf_threshold,
+                det_size,
                 &mut n_faces,
             )
         };
@@ -842,6 +854,17 @@ impl CrispFacePipeline {
         image_path: &str,
         conf_threshold: f32,
     ) -> Vec<(CrispembedFaceDetection, Vec<f32>)> {
+        self.run_with_size(image_path, conf_threshold, 0)
+    }
+
+    /// Like [`run`] but with a configurable detection input resolution.
+    /// `det_size = 0` uses the default (640).
+    pub fn run_with_size(
+        &mut self,
+        image_path: &str,
+        conf_threshold: f32,
+        det_size: i32,
+    ) -> Vec<(CrispembedFaceDetection, Vec<f32>)> {
         let path = match CString::new(image_path) {
             Ok(s) => s,
             Err(_) => return vec![],
@@ -853,6 +876,7 @@ impl CrispFacePipeline {
                 self.rec_ctx,
                 path.as_ptr(),
                 conf_threshold,
+                det_size,
                 &mut n_faces,
             )
         };

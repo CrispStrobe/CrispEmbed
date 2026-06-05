@@ -33,7 +33,7 @@ GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
 
 ## Status
 
-**36 models regression-tested** (all pass, cos>=0.965), 45 in registry:
+**28 embedding models** shown below (all pass, cos>=0.965 vs HF), **45 models** total in registry (including rerankers, SPLADE, vision, face):
 
 | Model | Type | Dim | F32 CosSim | Q8_0 | Q4_K |
 |-------|------|-----|------------|------|------|
@@ -66,7 +66,7 @@ GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
 | Qwen3-Embedding-4B | Qwen3 | 2560 | — | — | 0.974 |
 | Octen-Embedding-8B | Qwen3 | 4096 | — | — | 0.965 |
 
-Q8_0 = all PASS (cos > 0.99). Q4_K = most PASS; `--` = SwiGLU too sensitive for aggressive quants.
+Q8_0 = all PASS (cos >= 0.995). Q4_K = most PASS; `--` = SwiGLU/GeGLU too sensitive for aggressive quants.
 Q4_K cosines for the 4B/8B decoder rows are min-cos vs **bf16** HF (the native training precision; full f32 would not fit in 16 GB RAM).
 
 ### Known issues
@@ -77,11 +77,6 @@ Q4_K cosines for the 4B/8B decoder rows are min-cos vs **bf16** HF (the native t
 - **Jina v5 LoRA adapters**: Jina v5 models use task-specific LoRA adapters.
   GGUFs have the `retrieval` adapter merged. Other tasks (text-matching,
   clustering, classification) require separate GGUFs.
-- **DeBERTa-v2 disentangled attention**: mxbai-rerank-xsmall-v1 and
-  mxbai-rerank-base-v1 use DeBERTa-v2's c2p/p2c relative position bias, which
-  is not yet implemented. Use the BERT-based rerankers (ms-marco-MiniLM,
-  bge-reranker) instead.
-
 **Performance** (Apple M1, Metal):
 
 | Engine | Single text | Batch (10) |
@@ -93,7 +88,7 @@ Q4_K cosines for the 4B/8B decoder rows are min-cos vs **bf16** HF (the native t
 
 Model: all-MiniLM-L6-v2. See [PERFORMANCE.md](PERFORMANCE.md) for full multi-model benchmarks.
 
-**Ollama-compatible**: All 13 models export as Ollama-compatible GGUFs. Works with our [Ollama fork](https://github.com/CrispStrobe/ollama/tree/feat/xlmr-embedding) (adds XLM-R, Viterbi SentencePiece tokenizer, GELU_ERF, multi-tokenizer BERT support).
+**Ollama-compatible**: All 45 registry models export as Ollama-compatible GGUFs by default (`--ollama` converter flag). 13 models verified end-to-end in our [Ollama fork](https://github.com/CrispStrobe/ollama/tree/feat/xlmr-embedding) (adds XLM-R, Viterbi SentencePiece tokenizer, GELU_ERF, multi-tokenizer BERT support). See [PERFORMANCE.md](PERFORMANCE.md) for Ollama Q8_0/Q4_K cosine results.
 
 **BidirLM-Omni Q4_K verified locally**: text, audio, and raw vision-patch embedding all load and emit 2048-d vectors from `bidirlm-omni-2.5b-q4_k.gguf`. Current CPU smoke benchmark on Apple M1:
 text batch of 4 = 373.2 ms, JFK audio = 618.7 ms, synthetic 2x2 vision patches = 11.0 ms. Regression gate used for graph changes: cosine >= 0.99999 and max abs diff <= 1e-3 against saved baseline vectors.
@@ -666,7 +661,7 @@ Server (`examples/server/server.cpp`) exposes four API dialects on the same mode
 Cache convention: point `CRISPEMBED_CACHE_DIR` at your backing store to keep large GGUF/cache files out of the repo tree (default: `~/.cache/crispembed/`).
 
 All via ggml graphs with GPU dispatch (ggml_backend_sched).
-See [PLAN.md](PLAN.md) for status, [LEARNINGS.md](LEARNINGS.md) for technical detail (3D MRoPE workaround, DeepStack splice via mask+add, decoder scheduler init), and [PERFORMANCE.md](PERFORMANCE.md) for benchmarks.
+See [PLAN.md](PLAN.md) for architecture and roadmap, [HISTORY.md](HISTORY.md) for completed milestones, [LEARNINGS.md](LEARNINGS.md) for technical detail (3D MRoPE workaround, DeepStack splice via mask+add, decoder scheduler init), and [PERFORMANCE.md](PERFORMANCE.md) for benchmarks.
 
 ## Credits
 

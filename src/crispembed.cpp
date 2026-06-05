@@ -208,6 +208,11 @@ struct crispembed_context {
     int  position_buckets = 0;  // DeBERTa log-bucket count (0 = linear positions)
     int matryoshka_dim = 0;  // 0 = use model default
     std::string prefix;  // prepended to text before tokenization (e.g. "query: ")
+    // ColBERT self-describing metadata (read from GGUF, empty = not set)
+    std::string colbert_query_prefix;
+    std::string colbert_doc_prefix;
+    std::string colbert_similarity_fn;
+    int colbert_query_length = 0;
     std::vector<float> last_output;     // reused buffer (dense encode)
     std::vector<uint8_t> compute_meta;  // graph metadata buffer (no_alloc=true)
     ggml_context * qkv_ctx = nullptr;   // pre-merged QKV tensor metadata
@@ -268,6 +273,10 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         const int64_t k = gguf_find_key(g, key);
         return k >= 0 ? gguf_get_val_f32(g, k) : def;
     };
+    auto strv = [&](const char * key) -> std::string {
+        const int64_t k = gguf_find_key(g, key);
+        return k >= 0 ? std::string(gguf_get_val_str(g, k)) : std::string();
+    };
 
     // Hyperparams — check CrispEmbed, Ollama bert.*, and Ollama xlmr.* keys.
     // CrispEmbed: bert.hidden_size, bert.num_hidden_layers, ...
@@ -313,6 +322,11 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     ctx->pos_offset    = u32("bert.position_offset", u32("xlmr.position_offset", 0));
     // ColBERT output dimension (BGE-M3 default 128) — read while g is valid
     m.colbert_dim      = u32("bert.colbert_dim", 128);
+    // ColBERT self-describing metadata (from config_sentence_transformers.json)
+    ctx->colbert_query_prefix  = strv("colbert.query_prefix");
+    ctx->colbert_doc_prefix    = strv("colbert.document_prefix");
+    ctx->colbert_similarity_fn = strv("colbert.similarity_fn_name");
+    ctx->colbert_query_length  = u32("colbert.query_length", 0);
     // RoPE and pre-LN flags — MUST be read before gguf_free(g)
     ctx->rope_theta         = f32("bert.rope_theta", 10000.0f);
     ctx->rope_theta_global  = f32("bert.rope_theta_global", 0.0f);
@@ -1529,6 +1543,15 @@ extern "C" const char * crispembed_passage_prefix(const char * model_name) {
     return crispembed_mgr::get_passage_prefix(model_name);
 }
 
+extern "C" const char * crispembed_ctx_query_prefix(const crispembed_context * ctx) {
+    if (!ctx) return nullptr;
+    return ctx->colbert_query_prefix.empty() ? nullptr : ctx->colbert_query_prefix.c_str();
+}
+extern "C" const char * crispembed_ctx_passage_prefix(const crispembed_context * ctx) {
+    if (!ctx) return nullptr;
+    return ctx->colbert_doc_prefix.empty() ? nullptr : ctx->colbert_doc_prefix.c_str();
+}
+
 extern "C" int crispembed_n_models(void) {
     return crispembed_mgr::n_models();
 }
@@ -2557,10 +2580,12 @@ extern "C" const crispembed_face_detection * crispembed_detect_faces(
         crispembed_face_context * ctx,
         const char * image_path,
         float conf_threshold,
+        int det_size,
         int * out_n_faces) {
     if (!ctx || !image_path || !out_n_faces) { if (out_n_faces) *out_n_faces = 0; return nullptr; }
 
-    auto dets = cnn_embed::detect_file(ctx->cnn, image_path, conf_threshold);
+    auto dets = cnn_embed::detect_file(ctx->cnn, image_path, conf_threshold,
+                                        det_size > 0 ? det_size : 640);
     ctx->det_buf.resize(dets.size());
     for (size_t i = 0; i < dets.size(); i++) {
         auto & d = ctx->det_buf[i];
@@ -2595,6 +2620,7 @@ extern "C" const crispembed_face_result * crispembed_face_pipeline(
         crispembed_face_context * rec_ctx,
         const char * image_path,
         float conf_threshold,
+        int det_size,
         int * out_n_faces) {
     if (!det_ctx || !rec_ctx || !image_path || !out_n_faces) {
         if (out_n_faces) *out_n_faces = 0;
@@ -2602,7 +2628,8 @@ extern "C" const crispembed_face_result * crispembed_face_pipeline(
     }
 
     auto results = cnn_embed::face_pipeline(det_ctx->cnn, rec_ctx->cnn,
-                                             image_path, conf_threshold);
+                                             image_path, conf_threshold,
+                                             det_size > 0 ? det_size : 640);
     // Store results in det_ctx scratch buffers
     det_ctx->result_buf.resize(results.size());
     det_ctx->emb_buf.resize(results.size());

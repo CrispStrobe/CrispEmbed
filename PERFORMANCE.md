@@ -77,7 +77,7 @@ All CrispEmbed models verified in Ollama fork with Ollama-compatible GGUF export
 | jina-v5-nano | Qwen3 | 768 | 222 MB | 168 MB | 1.000 | 0.237 |
 | jina-v5-small | Qwen3 | 1024 | 610 MB | 400 MB | 1.000 | 0.746 |
 
-All 13 Q4_K models verified: L2-normalized, semantically correct embeddings.
+All 13 Ollama-verified Q4_K models: L2-normalized, semantically correct embeddings.
 Diversity = 1 - avg cosine similarity between 4 different test texts (higher = better discrimination).
 
 ## GPU Inference (CUDA)
@@ -166,7 +166,7 @@ Cosine similarity between F32 and quantized models (1.0 = identical).
 
 | all-mpnet-base-v2 | 0.9998 | 0.99 |
 | nomic-embed-text-v1.5 | 0.9994 | -- |
-| gte-modernbert-base | 0.97 | -- |
+| gte-modernbert-base | 0.9999 | -- |
 | bge-small-en-v1.5 | 0.9999 | 0.99 |
 | bge-base-en-v1.5 | 0.9999 | 0.99 |
 | bge-large-en-v1.5 | 0.9999 | 0.99 |
@@ -232,11 +232,11 @@ Correct ranking with clear separation between relevant and irrelevant docs.
 | Batch throughput (10 texts, M1 Metal) | 787 t/s | 528 t/s | CrispEmbed |
 | Binary size | ~20 MB | ~500 MB (ONNX) | CrispEmbed |
 | Quantization quality (Q8_0) | cos > 0.995 | INT8 varies | CrispEmbed |
-| Model count (embedding) | 23 | 49 | fastembed-rs |
+| Model count (embedding) | 37 | 49 | fastembed-rs |
 | Model count (reranker) | 7 | 20 | fastembed-rs |
-| Sparse retrieval | BGE-M3 | SPLADE + BGE-M3 | fastembed-rs |
+| Sparse retrieval | BGE-M3 + SPLADE | SPLADE + BGE-M3 | Tie |
 | ColBERT multi-vector | Yes | No | CrispEmbed |
-| Image embedding | No | 5 models | fastembed-rs |
+| Image embedding | SigLIP + BidirLM-Omni | 5 models | Tie |
 | Prompt prefix | Yes | Yes | Tie |
 | Bi-encoder reranking | Yes | Yes | Tie |
 | GPU backends | CUDA/Metal/Vulkan | ONNX EP | Tie |

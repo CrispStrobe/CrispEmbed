@@ -686,12 +686,12 @@ class CrispFace {
   /// The native side returns a packed Void buffer; layout is documented in
   /// `src/crispembed_face.h`. We decode it here so callers never touch raw
   /// pointers.
-  List<Map<String, dynamic>> detect(String imagePath, {double conf = 0.5}) {
+  List<Map<String, dynamic>> detect(String imagePath, {double conf = 0.5, int detSize = 0}) {
     _checkDisposed();
     final pathPtr = imagePath.toNativeUtf8();
     final countPtr = calloc<Int32>();
     try {
-      final buf = _detectFn(_ctx, pathPtr, conf, countPtr);
+      final buf = _detectFn(_ctx, pathPtr, conf, detSize, countPtr);
       final n = countPtr.value;
       if (buf == nullptr || n <= 0) return [];
       return _decodeFaceBuffer(buf, n);
@@ -825,13 +825,13 @@ class CrispFacePipeline {
   /// [conf] — detection confidence threshold (default 0.5).
   ///
   /// Returns a [List<FaceResult>] sorted by detection score descending.
-  List<FaceResult> run(String imagePath, {double conf = 0.5}) {
+  List<FaceResult> run(String imagePath, {double conf = 0.5, int detSize = 0}) {
     _checkDisposed();
     final pathPtr = imagePath.toNativeUtf8();
     final countPtr = calloc<Int32>();
     try {
       final buf = _pipelineFn(
-          detector._ctx, recognizer._ctx, pathPtr, conf, countPtr);
+          detector._ctx, recognizer._ctx, pathPtr, conf, detSize, countPtr);
       final n = countPtr.value;
       if (buf == nullptr || n <= 0) return [];
       return _decodePipelineBuffer(buf, n, recognizer.dim);

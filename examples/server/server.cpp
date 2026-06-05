@@ -407,7 +407,7 @@ int main(int argc, char ** argv) {
 
         std::lock_guard<std::mutex> lock(face_mutex);
         int n = 0;
-        auto * dets = crispembed_detect_faces(face_det, image_path.c_str(), conf, &n);
+        auto * dets = crispembed_detect_faces(face_det, image_path.c_str(), conf, 0, &n);
 
         std::ostringstream js;
         js << "{\"faces\": [";
@@ -463,7 +463,7 @@ int main(int argc, char ** argv) {
         std::lock_guard<std::mutex> lock(face_mutex);
         auto t0 = std::chrono::steady_clock::now();
         int n = 0;
-        auto * results = crispembed_face_pipeline(face_det, face_rec, image_path.c_str(), conf, &n);
+        auto * results = crispembed_face_pipeline(face_det, face_rec, image_path.c_str(), conf, 0, &n);
         auto t1 = std::chrono::steady_clock::now();
         double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
 

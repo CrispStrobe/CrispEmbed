@@ -83,6 +83,11 @@ CRISPEMBED_API const char * crispembed_resolve_model(const char * arg, int auto_
 CRISPEMBED_API const char * crispembed_query_prefix(const char * model_name);
 CRISPEMBED_API const char * crispembed_passage_prefix(const char * model_name);
 
+// Context-based lookup — prefers colbert.query_prefix / colbert.document_prefix
+// from GGUF metadata, falls back to the name table.
+CRISPEMBED_API const char * crispembed_ctx_query_prefix(const crispembed_context * ctx);
+CRISPEMBED_API const char * crispembed_ctx_passage_prefix(const crispembed_context * ctx);
+
 CRISPEMBED_API int crispembed_n_models(void);
 CRISPEMBED_API const char * crispembed_model_name(int index);
 CRISPEMBED_API const char * crispembed_model_desc(int index);
@@ -389,10 +394,12 @@ CRISPEMBED_API const char * crispembed_face_type(const crispembed_face_context *
 // scaling to return bounding boxes in original image coordinates.
 // *out_n_faces is set to the number of detected faces.
 // Returns array of detections (owned by ctx, valid until next call).
+// det_size: detection input resolution (0 = default 640).
 CRISPEMBED_API const crispembed_face_detection * crispembed_detect_faces(
         crispembed_face_context * ctx,
         const char * image_path,
         float conf_threshold,
+        int det_size,
         int * out_n_faces);
 
 // Encode a face from image + 5-point landmarks (from detection).
@@ -408,11 +415,13 @@ CRISPEMBED_API const float * crispembed_encode_face(
 // recognizer contexts. Returns array of face results with embeddings.
 // *out_n_faces is set to the number of detected faces.
 // Returns array (owned by det_ctx, valid until next call).
+// det_size: detection input resolution (0 = default 640).
 CRISPEMBED_API const crispembed_face_result * crispembed_face_pipeline(
         crispembed_face_context * det_ctx,
         crispembed_face_context * rec_ctx,
         const char * image_path,
         float conf_threshold,
+        int det_size,
         int * out_n_faces);
 
 // Free face context.
