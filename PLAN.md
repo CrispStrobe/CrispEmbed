@@ -131,20 +131,20 @@ CrispEmbed/
 
 - [ ] True batched graph for decoder models (single compute for N texts)
 - [ ] KV cache for prefix-shared decoder batches
-- [ ] SigLIP attention pooling head (mean pool works; attn pool for full parity)
+- [x] SigLIP attention pooling head (mean pool works; attn pool for full parity)
 
 ### Models
 
 - [ ] CLIP text encoder (causal mask variant)
 - [ ] SigLIP-large, CLIP-large conversion + upload
-- [ ] SigLIP / ViT quantization (conv2d needs F32 kernel — selective quant)
+- [x] SigLIP / ViT quantization (conv2d needs F32 kernel — selective quant)
 - [ ] YuNet lightweight face detection alternative
 - [ ] SFace INT8 quantization
 - [ ] Nomic v2 MoE (MoE routing layer in encoder)
 
 ### Bindings
 
-- [ ] Python wrapper `encode_image()` for standalone SigLIP/CLIP
+- [x] Python wrapper `encode_image()` for standalone SigLIP/CLIP
 - [ ] CrispLens integration — update `crispembed_client.py` for face pipeline
 
 ### Feature gaps vs fastembed-rs

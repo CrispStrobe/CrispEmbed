@@ -32,6 +32,10 @@ pub type CrispembedFaceContext = std::ffi::c_void;
 #[repr(C)]
 pub struct MathOcrContext(c_void);
 
+/// Opaque handle to a standalone ViT image embedding context (SigLIP, CLIP).
+#[repr(C)]
+pub struct VitContext(c_void);
+
 /// Bounding box, confidence score and 5-point facial landmarks returned by
 /// the face detector.
 #[repr(C)]
@@ -450,4 +454,30 @@ extern "C" {
 
     /// Free all resources held by a math OCR context. Safe to call with NULL.
     pub fn crispembed_math_ocr_free(ctx: *mut MathOcrContext);
+
+    // ------------------------------------------------------------------
+    // Standalone ViT image embedding (SigLIP, CLIP)
+    // ------------------------------------------------------------------
+
+    /// Initialize a standalone ViT context from a SigLIP/CLIP GGUF model.
+    /// `n_threads` = 0 for auto-detect. Returns NULL on failure.
+    pub fn crispembed_vit_init(
+        model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut VitContext;
+
+    /// Returns the embedding dimension produced by the ViT model.
+    pub fn crispembed_vit_dim(ctx: *const VitContext) -> c_int;
+
+    /// Encode an image file to a dense embedding via the ViT model.
+    /// Returns a pointer to `*out_dim` floats owned by `ctx`, valid until
+    /// the next call. Returns NULL on failure.
+    pub fn crispembed_vit_encode_file(
+        ctx: *mut VitContext,
+        image_path: *const c_char,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    /// Free all resources held by a ViT context. Safe to call with NULL.
+    pub fn crispembed_vit_free(ctx: *mut VitContext);
 }

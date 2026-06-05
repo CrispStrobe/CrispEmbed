@@ -244,3 +244,20 @@ typedef CrispembedMathOcrRecognizeDart = Pointer<Utf8> Function(
 
 typedef CrispembedMathOcrFreeNative = Void Function(Pointer<Void> ctx);
 typedef CrispembedMathOcrFreeDart = void Function(Pointer<Void> ctx);
+
+// --- Standalone ViT image embedding (SigLIP, CLIP) ---
+typedef CrispembedVitInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedVitInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedVitDimNative = Int32 Function(Pointer<Void> ctx);
+typedef CrispembedVitDimDart = int Function(Pointer<Void> ctx);
+
+typedef CrispembedVitEncodeFileNative = Pointer<Float> Function(
+    Pointer<Void> ctx, Pointer<Utf8> imagePath, Pointer<Int32> outDim);
+typedef CrispembedVitEncodeFileDart = Pointer<Float> Function(
+    Pointer<Void> ctx, Pointer<Utf8> imagePath, Pointer<Int32> outDim);
+
+typedef CrispembedVitFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedVitFreeDart = void Function(Pointer<Void> ctx);
