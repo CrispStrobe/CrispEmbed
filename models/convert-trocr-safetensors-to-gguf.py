@@ -261,9 +261,10 @@ def main():
     writer.add_uint32("decoder.pad_token_id", pad)
     writer.add_uint32("decoder.decoder_start_token_id", dec_start)
 
-    # Tokenizer
+    # Tokenizer — use the same key as pix2tex GGUF ("tokenizer.tokens")
+    # NOT add_token_list() which writes "tokenizer.ggml.tokens"
     if tokens:
-        writer.add_token_list(tokens)
+        writer.add_array("tokenizer.tokens", tokens)
 
     # License
     writer.add_string("general.license", "AFL-3.0")
