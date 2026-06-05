@@ -524,3 +524,286 @@ Every new model/forward path follows this validation protocol:
    - Converter output validation (tensor names, shapes, metadata)
    - Tokenizer / image preprocessor correctness
    - Individual op verification (conv2d, batch norm, attention pooling)
+
+---
+
+## Phase 9: Handwritten Math OCR — HMER (DenseNet-121 + GRU Attention)
+
+Port the Pytorch-HMER model (MIT license, whywhs/Pytorch-Handwritten-Mathematical-Expression-Recognition)
+to CrispEmbed as a GGUF model with C++ inference. This complements the existing
+printed-math DeiT+TrOCR pipeline with a dedicated handwritten-math recognizer.
+
+### Source model
+
+- **Repo:** <https://github.com/whywhs/Pytorch-Handwritten-Mathematical-Expression-Recognition>
+- **License:** MIT
+- **Dataset:** CROHME 2016 (handwritten math expressions)
+- **Checkpoints:** `model/encoder_*.pkl` (21.5 MB) + `model/attn_decoder_*.pkl` (10.3 MB)
+- **Total params:** ~7.9M (encoder ~5.3M + decoder ~2.6M)
+- **Estimated Q4_K size:** 4–5 MB
+
+### Architecture
+
+**Encoder: Modified DenseNet-121 (3 dense blocks, 2 input channels)**
+
+```
+Input: (B, 2, H, W)  — ch0 = grayscale [0,1], ch1 = padding mask (1=valid, 0=pad)
+
+features.conv0_m:      Conv2d(2, 64, 7×7, stride=2, pad=3, bias=False)
+features.norm0:        BatchNorm2d(64)
+features.relu0:        ReLU
+features.pool0:        MaxPool2d(3, stride=2, pad=1)
+                       → (B, 64, H/4, W/4)
+
+features.denseblock1:  6 DenseLayers, growth=32
+  denselayer{1..6}:    BN(in) → ReLU → Conv1×1(in, 128, bias=F) → BN(128) → ReLU → Conv3×3(128, 32, pad=1, bias=F)
+  output channels:     64 + 6×32 = 256
+features.transition1:  BN(256) → ReLU → Conv1×1(256, 128, bias=F) → AvgPool2×2
+                       → (B, 128, H/8, W/8)
+
+features.denseblock2:  12 DenseLayers, growth=32
+  output channels:     128 + 12×32 = 512
+features.transition2:  BN(512) → ReLU → Conv1×1(512, 256, bias=F) → AvgPool2×2
+                       → (B, 256, H/16, W/16)
+
+features.denseblock3:  24 DenseLayers, growth=32
+  output channels:     256 + 24×32 = 1024
+
+features.norm5:        BatchNorm2d(1024)
+ReLU (in forward)
+                       → (B, 1024, H/16, W/16)
+```
+
+Spatial downsampling: 16× in both dimensions.
+
+Each DenseLayer (bottleneck):
+- BN(in_ch) → ReLU → Conv1×1(in_ch → 4×growth=128) → BN(128) → ReLU → Conv3×3(128 → growth=32)
+- Output: concat(input, new_features) along channel dim
+
+**Decoder: AttnDecoderRNN (GRU + Bahdanau attention + coverage)**
+
+Instantiated as `AttnDecoderRNN(hidden_size=256, output_size=112, dropout_p=0.5)`.
+
+Layers (with GGUF tensor names):
+
+| PyTorch name (module.prefix stripped) | Shape | GGUF name |
+|---|---|---|
+| `embedding.weight` | [112, 256] | `dec.embedding.weight` |
+| `gru1.weight_ih` | [768, 256] | `dec.gru1.weight_ih` |
+| `gru1.weight_hh` | [768, 256] | `dec.gru1.weight_hh` |
+| `gru1.bias_ih` | [768] | `dec.gru1.bias_ih` |
+| `gru1.bias_hh` | [768] | `dec.gru1.bias_hh` |
+| `gru.weight_ih` | [768, 1024] | `dec.gru.weight_ih` |
+| `gru.weight_hh` | [768, 256] | `dec.gru.weight_hh` |
+| `gru.bias_ih` | [768] | `dec.gru.bias_ih` |
+| `gru.bias_hh` | [768] | `dec.gru.bias_hh` |
+| `hidden.weight` | [256, 256] | `dec.hidden.weight` |
+| `hidden.bias` | [256] | `dec.hidden.bias` |
+| `hidden2.weight` | [128, 256] | `dec.hidden2.weight` |
+| `hidden2.bias` | [128] | `dec.hidden2.bias` |
+| `emb2.weight` | [128, 256] | `dec.emb2.weight` |
+| `emb2.bias` | [128] | `dec.emb2.bias` |
+| `ua.weight` | [256, 1024] | `dec.ua.weight` |
+| `ua.bias` | [256] | `dec.ua.bias` |
+| `uf.weight` | [256, 1] | `dec.uf.weight` |
+| `uf.bias` | [256] | `dec.uf.bias` |
+| `v.weight` | [1, 256] | `dec.v.weight` |
+| `v.bias` | [1] | `dec.v.bias` |
+| `wc.weight` | [128, 1024] | `dec.wc.weight` |
+| `wc.bias` | [128] | `dec.wc.bias` |
+| `out.weight` | [112, 128] | `dec.out.weight` |
+| `out.bias` | [112] | `dec.out.bias` |
+| `conv1.weight` | [1, 1, 3, 3] | `dec.conv1.weight` |
+| `conv1.bias` | [1] | `dec.conv1.bias` |
+| `conv_tan.weight` | [256, 256, 3, 3] | `dec.conv_tan.weight` |
+| `conv_tan.bias` | [256] | `dec.conv_tan.bias` |
+| `bn1.weight` | [256] | `dec.bn1.weight` |
+| `bn1.bias` | [256] | `dec.bn1.bias` |
+| `bn1.running_mean` | [256] | `dec.bn1.running_mean` |
+| `bn1.running_var` | [256] | `dec.bn1.running_var` |
+
+Unused in forward (skip): `emb`, `conv_et`, `bn`, `relu`.
+
+Decoder forward pass (single step):
+
+```
+1. embedded = Embedding(prev_token)                    → (256,)
+2. st = GRUCell_1(embedded, hidden)                    → (256,)  [query state]
+3. hidden1 = Linear_hidden(st)                         → (256,)  reshaped to (1,1,256)
+4. decoder_attention = Conv2d_1(prev_attention)         → (1, H', W')  [3×3 conv, 1→1 ch]
+5. attention_sum += decoder_attention                   → (1, H', W')  [cumulative coverage]
+6. encoder_out1 = Linear_ua(enc_features)              → (H', W', 256)
+7. attention_sum1 = Linear_uf(attention_sum)            → (H', W', 256)
+8. et = hidden1 + encoder_out1 + attention_sum1         → (H', W', 256)
+9. et = Conv2d_tan(et)                                  → (256, H', W')  [3×3 conv, 256→256]
+10. et = et * mask                                      → mask out padding
+11. et = BatchNorm2d_1(et)
+12. et = tanh(et)
+13. et = Linear_v(et)                                   → (H', W', 1)  → squeeze → (H', W')
+14. alpha = softmax(et) over spatial dims                → (1, H', W')  [attention weights]
+15. ct = sum(alpha * encoder_outputs)                    → (1024,)  [context vector]
+16. hidden_next = GRUCell_2(ct, st)                     → (256,)
+17. hidden2 = Linear_hidden2(hidden_next)               → (128,)
+18. embedded2 = Linear_emb2(embedded)                    → (128,)
+19. ct2 = Linear_wc(ct)                                 → (128,)
+20. output = log_softmax(Linear_out(hidden2 + embedded2 + ct2))  → (112,)
+```
+
+Greedy decoding: start with `<sos>` (token 111), argmax until `<eol>` (token 0) or max 48 steps.
+
+Initial hidden: `tanh(randn(1, 256) * mean(encoder_output))` — for inference we use zeros.
+
+### Vocabulary
+
+112 tokens. Index 0 = `<eol>`, index 111 = `<sos>`, indices 1–110 = LaTeX tokens.
+Stored in GGUF as `tokenizer.tokens` string array (same pattern as pix2tex).
+
+### Image preprocessing
+
+1. Load image as grayscale, values [0, 255] uint8
+2. Convert to float, divide by 255 → [0, 1]
+3. Create mask channel: 1.0 where image exists, 0.0 where padded
+4. Stack as 2-channel input: (2, H, W)
+5. No fixed resolution — variable size, constrained to H×W ≤ 100,000 pixels
+
+### Implementation plan
+
+#### Step 1: GGUF converter (`models/convert-hmer-to-gguf.py`)
+
+Convert the PyTorch state_dict checkpoints to a single GGUF file.
+
+- Load encoder `.pkl` and decoder `.pkl` via `torch.load()`
+- Strip `module.` prefix (DataParallel wrapping)
+- For BatchNorm layers: store weight, bias, running_mean, running_var
+  (fold at inference time in C++ for conv-BN fusion, or precompute in converter)
+- **BN folding strategy:** For Conv+BN pairs (all DenseNet convs are followed by BN),
+  precompute fused weight/bias in the converter:
+  ```
+  scale = gamma / sqrt(running_var + eps)
+  W_fused = W * scale.reshape(-1, 1, 1, 1)
+  B_fused = beta - running_mean * scale    (convs have no bias, so just this)
+  ```
+  This eliminates all BN tensors from the GGUF — cleaner and faster inference.
+  Exception: `dec.bn1` is applied after `conv_tan` in the attention mechanism
+  and cannot be folded (conv_tan output is added to other terms first).
+- Store dictionary as `tokenizer.tokens` array in GGUF metadata
+- Store hyperparameters as GGUF KV:
+  - `hmer.encoder.growth_rate` = 32
+  - `hmer.encoder.block_config` = [6, 12, 24]
+  - `hmer.encoder.num_init_features` = 64
+  - `hmer.decoder.hidden_size` = 256
+  - `hmer.decoder.output_size` = 112
+  - `hmer.decoder.sos_token` = 111
+  - `hmer.decoder.eol_token` = 0
+  - `hmer.decoder.max_seq_len` = 48
+
+Tensor naming convention:
+- Encoder: `enc.features.{layer_path}.weight` / `.bias`
+- Decoder: `dec.{layer_name}.weight` / `.bias`
+
+Expected tensor count: ~280 encoder (42 DenseLayers × ~4 tensors + transitions + stem)
++ ~34 decoder = ~314 tensors before BN folding; fewer after folding.
+
+#### Step 2: C++ inference — DenseNet encoder (`src/hmer_ocr.cpp`)
+
+New file alongside `math_ocr.cpp`. Shares `core/gguf_loader.h`.
+
+DenseNet forward pass in C++:
+- Stem: Conv2d(2→64, 7×7, s=2, p=3) → BN → ReLU → MaxPool(3, s=2, p=1)
+- DenseBlock: for each layer, compute bottleneck and concat to running feature map
+- Transition: BN → ReLU → Conv1×1 → AvgPool2×2
+- Final: BN → ReLU
+
+Key GGML ops needed:
+- `ggml_conv_2d` — already used in CNN embed (SCRFD, SigLIP)
+- `ggml_concat` — for DenseNet feature concatenation (dim=channel)
+- `ggml_pool_2d` — MaxPool and AvgPool
+- `ggml_relu` — already available
+- `ggml_norm` or manual BN — if BN is not folded into conv
+
+For BN-folded convs, it's just `ggml_conv_2d` + `ggml_add` (bias) + `ggml_relu`.
+
+Since the encoder output is spatial (1024, H/16, W/16) and variable-size,
+we need dynamic graph building (not fixed-size like DeiT's 384×384).
+
+#### Step 3: C++ inference — GRU attention decoder (`src/hmer_ocr.cpp`)
+
+GRU cell implementation (standard formulas):
+```
+z = sigmoid(W_iz @ x + b_iz + W_hz @ h + b_hz)
+r = sigmoid(W_ir @ x + b_ir + W_hr @ h + b_hr)
+n = tanh(W_in @ x + b_in + r * (W_hn @ h + b_hn))
+h' = (1 - z) * n + z * h
+```
+
+Where GRU weight_ih = [W_iz; W_ir; W_in] stacked (768 = 3×256).
+
+Attention mechanism: follows the 20-step decoder forward pass above.
+
+State between steps:
+- `hidden`: (256,) — GRU hidden state
+- `attention_sum`: (1, H', W') — cumulative coverage
+- `decoder_attention`: (1, H', W') — previous step's attention weights
+
+#### Step 4: C API (`src/hmer_ocr.h`)
+
+```c
+typedef struct hmer_ocr_context hmer_ocr_context;
+
+hmer_ocr_context * hmer_ocr_init(const char * model_path, int n_threads);
+void               hmer_ocr_free(hmer_ocr_context * ctx);
+
+// Image-based recognition (grayscale float [0,1])
+const char * hmer_ocr_recognize(
+    hmer_ocr_context * ctx,
+    const float * pixels, int width, int height,
+    int * out_len);
+
+// Raw bytes (RGB/grayscale uint8) — converts internally
+const char * hmer_ocr_recognize_raw(
+    hmer_ocr_context * ctx,
+    const uint8_t * pixels, int width, int height, int channels,
+    int * out_len);
+```
+
+Same pattern as `math_ocr_recognize` / `math_ocr_recognize_raw`.
+
+#### Step 5: Validation
+
+1. Python reference: run PyTorch model on CROHME test images, dump encoder output + decoder token sequence
+2. C++ per-step comparison: encoder cosine sim ≥ 0.99, decoder argmax tokens identical
+3. End-to-end: run on 10+ test images, verify LaTeX output matches PyTorch
+
+#### Step 6: Quantization + integration
+
+1. Quantize: F32 → F16 → Q8_0 → Q4_K using existing `crispembed-quantize`
+2. Test each quant level for accuracy degradation on CROHME test set
+3. Add to CrispCalc `ocr_model_manager.dart` as `hmer-hw-q4_k.gguf`
+4. Wire into `ocr_providers_init.dart` FFI bindings
+5. Upload to HuggingFace: `cstr/hmer-handwritten-math-gguf`
+
+### File changes
+
+New files:
+- `models/convert-hmer-to-gguf.py` — PyTorch → GGUF converter
+- `src/hmer_ocr.h` — C API header
+- `src/hmer_ocr.cpp` — DenseNet encoder + GRU attention decoder inference
+- `tests/test_hmer_parity.py` — end-to-end parity test vs PyTorch
+
+Modified files:
+- `CMakeLists.txt` — add hmer_ocr.cpp to build
+- `src/crispembed.cpp` — expose hmer_ocr via unified C API (optional)
+
+### Key differences from existing math_ocr (DeiT+TrOCR)
+
+| | math_ocr (printed) | hmer_ocr (handwritten) |
+|---|---|---|
+| Encoder | DeiT ViT (12 transformer layers) | DenseNet-121 (42 conv layers, 3 dense blocks) |
+| Decoder | TrOCR (6 transformer layers, cross-attn) | 2× GRU cells + Bahdanau attention + coverage |
+| Input | Fixed 384×384, 1ch grayscale | Variable size, 2ch (grayscale + mask) |
+| Vocab | 1200 BPE tokens | 112 LaTeX tokens |
+| Params | 29.3M | 7.9M |
+| Q4_K | 17 MB | ~4-5 MB |
+| KV cache | Transformer KV cache (per-layer K,V) | GRU hidden state + attention/coverage maps |
+| Activation | GELU (encoder), ReLU (decoder) | ReLU (encoder), tanh/sigmoid (decoder GRU) |
+| Norm | LayerNorm throughout | BatchNorm (encoder), BatchNorm (decoder attention) |
