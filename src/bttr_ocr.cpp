@@ -185,7 +185,7 @@ static void avgpool2d_ceil(const float * in, int ch, int ih, int iw,
                             cnt++;
                         }
                     }
-                out[c*oh*ow + y*ow + x] = cnt > 0 ? sum / (k*k) : 0;
+                out[c*oh*ow + y*ow + x] = cnt > 0 ? sum / cnt : 0;
             }
 }
 
@@ -466,28 +466,46 @@ static void run_encoder(bttr_ocr_context * ctx, const float * gray, int W, int H
         layernorm(ctx->encoder_output.data() + i * D, D, ln_w, ln_b);
 
     // 2D positional encoding (DETR-style, computed on-the-fly)
-    // No mask padding in our case — all positions valid
+    // Matches PyTorch ImgPosEnc with normalize=True, scale=2*pi:
+    //   inv_freq[i] = 1 / (10000 ^ (i / half_d))  for i = 0..half_d-1
+    //   pos_x = stack(sin(x * inv_freq[0::2]), cos(x * inv_freq[1::2])).flatten
+    //   pos_y = stack(sin(y * inv_freq[0::2]), cos(y * inv_freq[1::2])).flatten
+    //   pos = cat(pos_x, pos_y)
     {
-        const int half_d = D / 2;
-        const float scale = 2.0f * M_PI;
+        const int half_d = D / 2;           // 128
+        const int quarter_d = half_d / 2;   // 64
+        const float scale = 2.0f * (float)M_PI;
+
+        // Precompute inv_freq: (half_d,) = 1/10000^(i/half_d)
+        std::vector<float> inv_freq(half_d);
+        for (int i = 0; i < half_d; i++)
+            inv_freq[i] = 1.0f / powf(10000.0f, (float)i / (float)half_d);
+
         for (int y = 0; y < cur_h; y++) {
             for (int x = 0; x < cur_w; x++) {
+                // Normalized coordinates (cumsum-based, 1-indexed, then /max * scale)
                 float y_norm = scale * (float)(y + 1) / (float)cur_h;
                 float x_norm = scale * (float)(x + 1) / (float)cur_w;
+
                 int pos_idx = y * cur_w + x;
                 float * enc = ctx->encoder_output.data() + pos_idx * D;
-                for (int d = 0; d < half_d; d++) {
-                    float freq = 1.0f / powf(10000.0f, (float)(d) / (float)half_d);
-                    // x pos: sin/cos interleaved in first half
-                    if (d % 2 == 0)
-                        enc[d] += sinf(x_norm * freq);
-                    else
-                        enc[d] += cosf(x_norm * freq);
-                    // y pos: sin/cos interleaved in second half
-                    if (d % 2 == 0)
-                        enc[half_d + d] += sinf(y_norm * freq);
-                    else
-                        enc[half_d + d] += cosf(y_norm * freq);
+
+                // pos_x occupies enc[0..half_d-1]
+                // pos_x = stack(sin(x*inv_freq[even]), cos(x*inv_freq[odd])).flatten
+                // flatten of stack([A0,A1,...A63], [B0,B1,...B63], dim=-1)
+                // = [A0,B0, A1,B1, ..., A63,B63]
+                for (int i = 0; i < quarter_d; i++) {
+                    float sx = x_norm * inv_freq[2 * i];      // even inv_freq → sin
+                    float cx = x_norm * inv_freq[2 * i + 1];  // odd inv_freq → cos
+                    enc[2 * i]     += sinf(sx);
+                    enc[2 * i + 1] += cosf(cx);
+                }
+                // pos_y occupies enc[half_d..D-1]
+                for (int i = 0; i < quarter_d; i++) {
+                    float sy = y_norm * inv_freq[2 * i];
+                    float cy = y_norm * inv_freq[2 * i + 1];
+                    enc[half_d + 2 * i]     += sinf(sy);
+                    enc[half_d + 2 * i + 1] += cosf(cy);
                 }
             }
         }
@@ -496,6 +514,7 @@ static void run_encoder(bttr_ocr_context * ctx, const float * gray, int W, int H
     ctx->n_enc_pos = n_pos;
     fprintf(stderr, "bttr_ocr: encoder: (%d, %d, %d) → %d positions × %d\n",
             cur_ch, cur_h, cur_w, n_pos, D);
+
 }
 
 // ---------------------------------------------------------------------------
