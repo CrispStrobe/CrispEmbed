@@ -153,7 +153,9 @@ post-LayerNorm/BART convention). Encoder uses ggml graph with SIMD acceleration;
 decoder uses optimized ggml graph with single-thread compute (thread barrier
 overhead exceeds compute for the small [256,1] decoder tensors).
 
-**Models on HuggingFace**: [`cstr/pix2tex-mfr-gguf`](https://huggingface.co/cstr/pix2tex-mfr-gguf)
+**Models on HuggingFace**:
+- [`cstr/pix2tex-mfr-gguf`](https://huggingface.co/cstr/pix2tex-mfr-gguf) — printed math (DeiT-small + TrOCR-small)
+- `fhswf/TrOCR_Math_handwritten` — handwritten math (ViT-Large + TrOCR-Large, AFL-3.0). Converted via torch-free safetensors→GGUF converter.
 
 | Variant | Size | Decoder time | Cosine vs F32 |
 |---------|------|-------------|---------------|
