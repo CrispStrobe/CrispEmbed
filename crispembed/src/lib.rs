@@ -562,6 +562,62 @@ impl CrispEmbed {
         (img, deepstack)
     }
 
+    /// Load an image from disk, preprocess it, and encode it via the vision
+    /// tower. Returns an L2-normalized cross-modal embedding (same dim as
+    /// `encode(text)` for omnimodal models).
+    ///
+    /// The C++ preprocessor uses bilinear resize (vs torchvision bicubic +
+    /// antialias used by HF) — expect cosine ≈ 0.95–0.98 on photographs.
+    ///
+    /// Returns an empty vector on failure (disk error, missing vision tower).
+    pub fn encode_image_file(&mut self, path: &str) -> Vec<f32> {
+        let cpath = match CString::new(path) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_image_file(self.ctx, cpath.as_ptr(), &mut out_dim)
+        };
+        if ptr.is_null() || out_dim <= 0 {
+            return vec![];
+        }
+        unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
+    }
+
+    /// Load an image from disk, preprocess it, and produce a text-conditioned
+    /// multimodal embedding. `text` must contain the correct number of
+    /// `image_token_id` placeholders for the grid that `smart_resize` will
+    /// produce — call `preprocess_image` first to learn `grid_thw`, then
+    /// build the text template.
+    ///
+    /// Same bilinear-resize parity caveat as `encode_image_file`.
+    ///
+    /// Returns an empty vector on failure.
+    pub fn encode_text_with_image_file(&mut self, text: &str, image_path: &str) -> Vec<f32> {
+        let ctext = match CString::new(text) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let cpath = match CString::new(image_path) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_text_with_image_file(
+                self.ctx,
+                ctext.as_ptr(),
+                cpath.as_ptr(),
+                &mut out_dim,
+            )
+        };
+        if ptr.is_null() || out_dim <= 0 {
+            return vec![];
+        }
+        unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
+    }
+
     // ------------------------------------------------------------------
     // Reranker
     // ------------------------------------------------------------------
@@ -933,5 +989,101 @@ impl Drop for CrispFacePipeline {
             crispembed_sys::crispembed_face_free(self.det_ctx);
             crispembed_sys::crispembed_face_free(self.rec_ctx);
         }
+    }
+}
+
+// ======================================================================
+// Math OCR (pix2tex) — image → LaTeX via ViT encoder + transformer decoder.
+// ======================================================================
+
+/// A loaded pix2tex math OCR model (encoder-decoder).
+///
+/// Not `Sync` — do not share between threads. Each thread should hold its
+/// own `MathOcr` instance. `Send`-safe: you can move it across threads.
+///
+/// # Example
+///
+/// ```no_run
+/// use crispembed::MathOcr;
+///
+/// let mut ocr = MathOcr::new("/path/to/pix2tex.gguf", 0).unwrap();
+///
+/// // pixels: (height, width, 3) row-major uint8 RGB
+/// let pixels: Vec<u8> = vec![255u8; 64 * 64 * 3];
+/// if let Some(latex) = ocr.recognize(&pixels, 64, 64) {
+///     println!("LaTeX: {latex}");
+/// }
+/// ```
+pub struct MathOcr {
+    ctx: *mut crispembed_sys::MathOcrContext,
+}
+
+// Safety: the underlying C library serialises all mutable access through
+// the opaque context pointer; we hold the only reference.
+unsafe impl Send for MathOcr {}
+
+impl MathOcr {
+    /// Load a pix2tex GGUF model file.
+    ///
+    /// - `model_path` — path to the `.gguf` file.
+    /// - `n_threads`  — CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_math_ocr_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_math_ocr_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Recognize math in a raw grayscale or RGB(A) pixel buffer.
+    ///
+    /// - `pixel_bytes` — `(height, width, channels)` row-major uint8;
+    ///   `channels` must be 3 (RGB) or 4 (RGBA, alpha is dropped by the C lib).
+    ///   For convenience, a single-channel (grayscale) buffer of length
+    ///   `width * height` may be passed as `channels = 1` — but the C API
+    ///   documents 3 or 4, so prefer converting to RGB first.
+    /// - `width`, `height` — image dimensions in pixels.
+    ///
+    /// Returns `Some(latex_string)` on success, `None` on failure.
+    pub fn recognize(&mut self, pixel_bytes: &[u8], width: i32, height: i32) -> Option<String> {
+        // Infer channel count from buffer length.
+        let total = pixel_bytes.len();
+        let expected_rgb = (width * height * 3) as usize;
+        let expected_rgba = (width * height * 4) as usize;
+        let channels = if total == expected_rgba {
+            4
+        } else if total == expected_rgb {
+            3
+        } else {
+            // Fall back: pass whatever length we have; the C lib will validate.
+            3
+        };
+
+        let mut out_len: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_math_ocr_recognize(
+                self.ctx,
+                pixel_bytes.as_ptr(),
+                width,
+                height,
+                channels,
+                &mut out_len,
+            )
+        };
+        if ptr.is_null() {
+            return None;
+        }
+        Some(
+            unsafe { CStr::from_ptr(ptr) }
+                .to_string_lossy()
+                .into_owned(),
+        )
+    }
+}
+
+impl Drop for MathOcr {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_math_ocr_free(self.ctx) }
     }
 }

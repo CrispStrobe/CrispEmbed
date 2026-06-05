@@ -203,3 +203,44 @@ typedef CrispembedFacePipelineDart = Pointer<Void> Function(
 
 typedef CrispembedFaceFreeNative = Void Function(Pointer<Void>);
 typedef CrispembedFaceFreeDart = void Function(Pointer<Void>);
+
+// --- Vision file-based encoding ---
+typedef CrispembedEncodeImageFileNative = Pointer<Float> Function(
+    Pointer<CrispembedContext> ctx, Pointer<Utf8> imagePath, Pointer<Int32> outDim);
+typedef CrispembedEncodeImageFileDart = Pointer<Float> Function(
+    Pointer<CrispembedContext> ctx, Pointer<Utf8> imagePath, Pointer<Int32> outDim);
+
+typedef CrispembedEncodeTextWithImageFileNative = Pointer<Float> Function(
+    Pointer<CrispembedContext> ctx,
+    Pointer<Utf8> text,
+    Pointer<Utf8> imagePath,
+    Pointer<Int32> outDim);
+typedef CrispembedEncodeTextWithImageFileDart = Pointer<Float> Function(
+    Pointer<CrispembedContext> ctx,
+    Pointer<Utf8> text,
+    Pointer<Utf8> imagePath,
+    Pointer<Int32> outDim);
+
+// --- Math OCR (pix2tex) ---
+typedef CrispembedMathOcrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedMathOcrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedMathOcrRecognizeNative = Pointer<Utf8> Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixelBytes,
+    Int32 width,
+    Int32 height,
+    Int32 channels,
+    Pointer<Int32> outLen);
+typedef CrispembedMathOcrRecognizeDart = Pointer<Utf8> Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixelBytes,
+    int width,
+    int height,
+    int channels,
+    Pointer<Int32> outLen);
+
+typedef CrispembedMathOcrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedMathOcrFreeDart = void Function(Pointer<Void> ctx);

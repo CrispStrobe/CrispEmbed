@@ -1251,3 +1251,75 @@ class CrispFacePipeline:
         if hasattr(self, "_rec_ctx") and self._rec_ctx:
             self._lib.crispembed_face_free(self._rec_ctx)
             self._rec_ctx = None
+
+
+# ---------------------------------------------------------------------------
+# CrispVit — standalone ViT image embedding (SigLIP, CLIP)
+# ---------------------------------------------------------------------------
+
+def _setup_vit_signatures(lib):
+    """Register ctypes signatures for all crispembed_vit_* functions."""
+    lib.crispembed_vit_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_vit_init.restype = ctypes.c_void_p
+
+    lib.crispembed_vit_dim.argtypes = [ctypes.c_void_p]
+    lib.crispembed_vit_dim.restype = ctypes.c_int
+
+    lib.crispembed_vit_encode_file.argtypes = [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_int)]
+    lib.crispembed_vit_encode_file.restype = ctypes.POINTER(ctypes.c_float)
+
+    lib.crispembed_vit_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_vit_free.restype = None
+
+
+class CrispVit:
+    """Standalone ViT image embedding (SigLIP, CLIP).
+
+    Loads a GGUF ViT model and encodes image files to embedding vectors.
+    Handles resize and normalization internally using the model's stored
+    image_mean / image_std metadata.
+
+    Usage::
+
+        vit = CrispVit("siglip-base.gguf")
+        emb = vit.encode_file("photo.jpg")
+        # np.ndarray of shape (vit.dim,)
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 0, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_vit_signatures(self._lib)
+        self._ctx = self._lib.crispembed_vit_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load ViT model: {model_path}")
+
+    @property
+    def dim(self) -> int:
+        """Embedding dimension of this ViT model."""
+        return self._lib.crispembed_vit_dim(self._ctx)
+
+    def encode_file(self, image_path: str) -> np.ndarray:
+        """Encode an image file to an embedding vector.
+
+        Loads the image from disk (JPG/PNG/BMP), resizes it to the model's
+        expected resolution, normalizes with per-channel mean/std, runs the
+        full ViT forward pass, and returns the resulting embedding.
+
+        Args:
+            image_path: Path to the image file.
+
+        Returns:
+            np.ndarray of shape ``(dim,)``.  Empty array on failure.
+        """
+        out_dim = ctypes.c_int(0)
+        ptr = self._lib.crispembed_vit_encode_file(
+            self._ctx, image_path.encode("utf-8"), ctypes.byref(out_dim))
+        if not ptr or out_dim.value <= 0:
+            return np.array([], dtype=np.float32)
+        return np.ctypeslib.as_array(ptr, shape=(out_dim.value,)).copy()
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_vit_free(self._ctx)
+            self._ctx = None

@@ -28,6 +28,10 @@ pub struct CrispembedHparams {
 /// Opaque handle to a loaded face model (detector or recogniser).
 pub type CrispembedFaceContext = std::ffi::c_void;
 
+/// Opaque handle to a pix2tex math OCR context (encoder-decoder model).
+#[repr(C)]
+pub struct MathOcrContext(c_void);
+
 /// Bounding box, confidence score and 5-point facial landmarks returned by
 /// the face detector.
 #[repr(C)]
@@ -275,6 +279,85 @@ extern "C" {
         out_n_deepstack: *mut c_int,
     ) -> *const c_float;
 
+    /// Text-conditioned multimodal embedding. Splices vision tower image
+    /// embeds into the decoder at `image_token_id` placeholders in `text`.
+    /// Returns a single L2-normalized vector owned by `ctx`, valid until
+    /// the next call. Returns NULL if the model has no vision tower or the
+    /// placeholder count does not match the merged-token count.
+    pub fn crispembed_encode_text_with_image(
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
+        pixel_patches: *const c_float,
+        n_patches: c_int,
+        grid_thw: *const i32,
+        n_images: c_int,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    /// Pre-tokenized variant of `crispembed_encode_text_with_image`. Takes
+    /// int32 token ids instead of a text string. Skips CrispEmbed's internal
+    /// BPE tokenizer for byte-identical parity with the HF reference path.
+    /// Returns L2-normalized vector owned by `ctx`, valid until next call.
+    pub fn crispembed_encode_with_image_ids(
+        ctx: *mut CrispembedContext,
+        token_ids: *const i32,
+        n_tokens: c_int,
+        pixel_patches: *const c_float,
+        n_patches: c_int,
+        grid_thw: *const i32,
+        n_images: c_int,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    /// In-process file-based image embedding. Loads the image from disk via
+    /// stb_image, runs the C++ preprocessor, then runs the vision tower.
+    /// Returns a single L2-normalized vector owned by `ctx`, valid until
+    /// the next call. Returns NULL on disk/decode failure or missing tower.
+    pub fn crispembed_encode_image_file(
+        ctx: *mut CrispembedContext,
+        image_path: *const c_char,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    /// In-process file-based image-conditioned text embedding. `text` must
+    /// contain the right number of `image_token_id` placeholders for the
+    /// grid produced by `smart_resize` on `image_path`.
+    /// Same parity caveat as `crispembed_encode_image_file`.
+    pub fn crispembed_encode_text_with_image_file(
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
+        image_path: *const c_char,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    /// Standalone preprocessor (no inference). Runs the C++ image preprocessor
+    /// on `image_path` and returns the flat `(n_patches, 1536)` float buffer.
+    /// `out_grid_thw` receives the `(1, 3)` grid triplet `[t, h, w]`.
+    /// Buffers are owned by `ctx` and valid until the next preprocessor call.
+    /// Returns NULL on disk read / decode failure.
+    pub fn crispembed_preprocess_image(
+        ctx: *mut CrispembedContext,
+        image_path: *const c_char,
+        out_n_patches: *mut c_int,
+        out_row_dim: *mut c_int,
+        out_grid_thw: *mut i32,
+    ) -> *const c_float;
+
+    /// Preprocess an already-decoded interleaved uint8 RGB(A) buffer. Skips
+    /// the stb_image decode step. `channels` must be 3 or 4 (alpha dropped).
+    /// Same output contract as `crispembed_preprocess_image`. Buffers owned
+    /// by `ctx`, valid until the next preprocessor call.
+    pub fn crispembed_preprocess_image_rgb(
+        ctx: *mut CrispembedContext,
+        rgb: *const u8,
+        height: c_int,
+        width: c_int,
+        channels: c_int,
+        out_n_patches: *mut c_int,
+        out_row_dim: *mut c_int,
+        out_grid_thw: *mut i32,
+    ) -> *const c_float;
+
     // ------------------------------------------------------------------
     // Face detection & recognition
     // ------------------------------------------------------------------
@@ -337,4 +420,34 @@ extern "C" {
 
     /// Free all resources held by a face context. Safe to call with NULL.
     pub fn crispembed_face_free(ctx: *mut CrispembedFaceContext);
+
+    // ------------------------------------------------------------------
+    // Math OCR (pix2tex) — image → LaTeX via ViT encoder + transformer decoder.
+    // ------------------------------------------------------------------
+
+    /// Initialize a math OCR context from a pix2tex GGUF model.
+    /// Separate from the main embedding context (encoder-decoder architecture).
+    /// `n_threads` = 0 for auto-detect. Returns NULL on failure.
+    pub fn crispembed_math_ocr_init(
+        model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut MathOcrContext;
+
+    /// Recognize math in raw pixel bytes (RGB or RGBA).
+    /// `pixel_bytes` is `(height, width, channels)` row-major uint8.
+    /// `channels` must be 3 or 4.
+    /// Returns a NUL-terminated LaTeX string owned by the context, valid
+    /// until the next call. `out_len` receives the byte length (may be NULL).
+    /// Returns NULL on failure.
+    pub fn crispembed_math_ocr_recognize(
+        ctx: *mut MathOcrContext,
+        pixel_bytes: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        out_len: *mut c_int,
+    ) -> *const c_char;
+
+    /// Free all resources held by a math OCR context. Safe to call with NULL.
+    pub fn crispembed_math_ocr_free(ctx: *mut MathOcrContext);
 }

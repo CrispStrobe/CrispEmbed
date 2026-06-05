@@ -229,8 +229,9 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     const int grid = ctx->img_size / ps;  // patches per side
 
     // Build ggml graph
-    size_t buf_size = ggml_tensor_overhead() * (ctx->n_layers * 40 + 100)
-                    + ggml_graph_overhead_custom(ctx->n_layers * 30 + 100, false);
+    const int extra = ctx->has_attn_pool ? 60 : 0;
+    size_t buf_size = ggml_tensor_overhead() * (ctx->n_layers * 40 + 100 + extra)
+                    + ggml_graph_overhead_custom(ctx->n_layers * 30 + 100 + extra, false);
     std::vector<uint8_t> buf(buf_size);
     struct ggml_init_params p = { buf_size, buf.data(), true };
     ggml_context* g = ggml_init(p);
@@ -335,14 +336,80 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         if (ctx->post_ln_b) x = ggml_add(g, x, ctx->post_ln_b);
     }
 
-    // Pooling: mean over patches. x is [D, T].
-    // ggml_mean reduces ALL dims to a scalar — not what we want.
-    // ggml_sum_rows sums over ne[0] → [1, T].
-    // We need sum over ne[1] (T dim). Transpose first.
-    ggml_tensor* xt = ggml_cont(g, ggml_transpose(g, x));  // [T, D]
-    ggml_tensor* summed = ggml_sum_rows(g, xt);  // [1, D] — sums T values per D component
-    ggml_tensor* pooled = ggml_reshape_1d(g, summed, D);
-    pooled = ggml_scale(g, pooled, 1.0f / (float)T);
+    ggml_tensor* pooled = nullptr;
+
+    if (ctx->has_attn_pool && ctx->head.probe && ctx->head.in_proj_w) {
+        // ── SigLIP attention pooling head ──
+        // x is [D, T] after post_ln.
+        // probe is [D, 1, 1] or [D, 1] or [D] — reshape to [D, 1]
+        const auto& H = ctx->head;
+        ggml_tensor* probe = ggml_reshape_2d(g, H.probe, D, 1);
+
+        // Concatenate [probe; x] along token dim → [D, T+1]
+        ggml_tensor* x_cat = ggml_concat(g, probe, x, 1);  // dim=1: concat along ne[1]
+        const int S = T + 1;  // total sequence length
+
+        // Fused QKV projection: in_proj_w [3D, D] @ x_cat [D, S] + bias → [3D, S]
+        ggml_tensor* qkv = ggml_mul_mat(g, H.in_proj_w, x_cat);
+        if (H.in_proj_b) qkv = ggml_add(g, qkv, H.in_proj_b);
+
+        // Split Q, K, V — each [D, S]
+        // Q from first D rows, K from next D, V from last D
+        ggml_tensor* Qa = ggml_view_2d(g, qkv, D, S, qkv->nb[1], 0);
+        ggml_tensor* Ka = ggml_view_2d(g, qkv, D, S, qkv->nb[1], D * sizeof(float));
+        ggml_tensor* Va = ggml_view_2d(g, qkv, D, S, qkv->nb[1], 2 * D * sizeof(float));
+
+        // Q: take only probe position (token 0) → [D, 1]
+        Qa = ggml_view_2d(g, Qa, D, 1, Qa->nb[1], 0);
+
+        // Reshape for multi-head attention:
+        // Q [D, 1] → [hd, nh, 1], K [D, S] → [hd, nh, S], V [D, S] → [hd, nh, S]
+        Qa = ggml_reshape_3d(g, Qa, hd, nh, 1);
+        Ka = ggml_reshape_3d(g, Ka, hd, nh, S);
+        Va = ggml_reshape_3d(g, Va, hd, nh, S);
+
+        // Permute to [hd, seq, nh] for ggml_flash_attn_ext
+        Qa = ggml_permute(g, Qa, 0, 2, 1, 3);  // [hd, 1, nh]
+        Ka = ggml_permute(g, Ka, 0, 2, 1, 3);  // [hd, S, nh]
+        Va = ggml_permute(g, Va, 0, 2, 1, 3);  // [hd, S, nh]
+
+        // Scaled dot-product attention
+        float scale = 1.0f / std::sqrt((float)hd);
+        ggml_tensor* attn_out = ggml_flash_attn_ext(g, Qa, Ka, Va, nullptr, scale, 0.0f, 0.0f);
+        // attn_out: [hd, nh, 1] → reshape to [D, 1]
+        attn_out = ggml_reshape_2d(g, attn_out, D, 1);
+
+        // Output projection
+        attn_out = ggml_mul_mat(g, H.o_w, attn_out);
+        if (H.o_b) attn_out = ggml_add(g, attn_out, H.o_b);
+
+        // Residual add with probe
+        attn_out = ggml_add(g, probe, attn_out);
+
+        // LayerNorm
+        attn_out = ggml_norm(g, attn_out, eps);
+        attn_out = ggml_mul(g, attn_out, H.ln_w);
+        if (H.ln_b) attn_out = ggml_add(g, attn_out, H.ln_b);
+
+        // MLP: fc1 → GELU → fc2
+        ggml_tensor* mlp = ggml_mul_mat(g, H.fc1_w, attn_out);
+        if (H.fc1_b) mlp = ggml_add(g, mlp, H.fc1_b);
+        mlp = ggml_gelu(g, mlp);
+        mlp = ggml_mul_mat(g, H.fc2_w, mlp);
+        if (H.fc2_b) mlp = ggml_add(g, mlp, H.fc2_b);
+
+        // Reshape to [D]
+        pooled = ggml_reshape_1d(g, mlp, D);
+    } else {
+        // ── Mean pooling ──
+        // x is [D, T].
+        // ggml_sum_rows sums over ne[0] → [1, T].
+        // We need sum over ne[1] (T dim). Transpose first.
+        ggml_tensor* xt = ggml_cont(g, ggml_transpose(g, x));  // [T, D]
+        ggml_tensor* summed = ggml_sum_rows(g, xt);  // [1, D]
+        pooled = ggml_reshape_1d(g, summed, D);
+        pooled = ggml_scale(g, pooled, 1.0f / (float)T);
+    }
 
     // Visual projection (CLIP)
     if (ctx->has_visual_proj && ctx->visual_proj_w) {
@@ -356,7 +423,7 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     ggml_set_output(pooled);
 
     // Build and compute graph
-    ggml_cgraph* gf = ggml_new_graph_custom(g, ctx->n_layers * 30 + 100, false);
+    ggml_cgraph* gf = ggml_new_graph_custom(g, ctx->n_layers * 30 + 100 + extra, false);
     ggml_build_forward_expand(gf, pooled);
 
     // Allocate

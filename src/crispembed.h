@@ -360,6 +360,29 @@ CRISPEMBED_API const float * crispembed_preprocess_image_rgb(
         int32_t              out_grid_thw[3]);
 
 // ---------------------------------------------------------------------------
+// Standalone ViT image embedding (SigLIP, CLIP)
+// ---------------------------------------------------------------------------
+
+typedef struct crispembed_vit_context crispembed_vit_context;
+
+// Load a ViT model from GGUF. Returns NULL on failure.
+CRISPEMBED_API crispembed_vit_context * crispembed_vit_init(
+        const char * model_path, int n_threads);
+
+// Get embedding dimension.
+CRISPEMBED_API int crispembed_vit_dim(const crispembed_vit_context * ctx);
+
+// Encode an image file. Returns pointer to *out_dim floats,
+// owned by ctx, valid until next call. Returns NULL on failure.
+CRISPEMBED_API const float * crispembed_vit_encode_file(
+        crispembed_vit_context * ctx,
+        const char * image_path,
+        int * out_dim);
+
+// Free ViT context.
+CRISPEMBED_API void crispembed_vit_free(crispembed_vit_context * ctx);
+
+// ---------------------------------------------------------------------------
 // Face detection & recognition (CNN models)
 // ---------------------------------------------------------------------------
 
