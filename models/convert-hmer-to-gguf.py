@@ -175,9 +175,14 @@ def main():
     tensor_count = 0
     skipped = []
 
-    def add_tensor(name, data):
+    def add_tensor(name, data, flatten_conv=False):
         nonlocal total_params, tensor_count
         d = data.astype(dtype_np)
+        # Flatten 4D conv weights to 2D (out_ch, in_ch*kH*kW) for quantization.
+        # The C++ code reads them with the original shape from metadata,
+        # but GGUF quantization needs 2D with ncols divisible by 32.
+        if flatten_conv and d.ndim == 4:
+            d = d.reshape(d.shape[0], -1)
         total_params += d.size
         writer.add_tensor(name, d, raw_dtype=dtype_gguf)
         tensor_count += 1
@@ -216,7 +221,7 @@ def main():
     bn0_m = enc["features.norm0.running_mean"]
     bn0_v = enc["features.norm0.running_var"]
     fused_w, fused_b = fold_bn_into_conv(conv0_w, bn0_w, bn0_b, bn0_m, bn0_v)
-    add_tensor("enc.stem.conv.weight", fused_w)
+    add_tensor("enc.stem.conv.weight", fused_w, flatten_conv=True)
     add_tensor("enc.stem.conv.bias", fused_b)
     print(f"  enc.stem.conv: {list(fused_w.shape)} (conv0_m + norm0 folded)")
 
@@ -239,7 +244,7 @@ def main():
 
             # conv1 (1×1 bottleneck)
             add_tensor(f"{gguf_prefix}.conv1.weight",
-                       enc[f"{layer_prefix}.conv1.weight"])
+                       enc[f"{layer_prefix}.conv1.weight"], flatten_conv=True)
 
             # norm2 (pre-activation BN before conv2) → precompute scale+offset
             n2_w = enc[f"{layer_prefix}.norm2.weight"]
@@ -252,7 +257,7 @@ def main():
 
             # conv2 (3×3)
             add_tensor(f"{gguf_prefix}.conv2.weight",
-                       enc[f"{layer_prefix}.conv2.weight"])
+                       enc[f"{layer_prefix}.conv2.weight"], flatten_conv=True)
 
         print(f"  enc.block{bi + 1}: {n_layers} layers")
 
@@ -272,7 +277,7 @@ def main():
 
             # Transition conv (1×1)
             add_tensor(f"{gguf_trans}.conv.weight",
-                       enc[f"{trans_prefix}.conv.weight"])
+                       enc[f"{trans_prefix}.conv.weight"], flatten_conv=True)
 
             print(f"  enc.trans{bi + 1}: BN+Conv1x1")
 
@@ -306,8 +311,7 @@ def main():
         "v.weight", "v.bias",
         "wc.weight", "wc.bias",
         "out.weight", "out.bias",
-        "conv1.weight", "conv1.bias",
-        "conv_tan.weight", "conv_tan.bias",
+        "conv_tan.bias",
     ]
 
     # Unused in forward: emb, conv_et, bn, relu
@@ -319,6 +323,11 @@ def main():
             print(f"  dec.{name}: {list(dec[name].shape)}")
         else:
             print(f"  WARNING: dec.{name} not found!")
+
+    # Decoder conv weights — flatten for quantization
+    add_tensor("dec.conv1.weight", dec["conv1.weight"], flatten_conv=True)
+    add_tensor("dec.conv1.bias", dec["conv1.bias"])
+    add_tensor("dec.conv_tan.weight", dec["conv_tan.weight"], flatten_conv=True)
 
     # dec.bn1 — used in attention, cannot fold (output is added to other terms)
     # Store as precomputed scale+offset
