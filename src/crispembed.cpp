@@ -2543,6 +2543,52 @@ extern "C" const float * crispembed_encode_text_with_image_file(
 }
 
 // ---------------------------------------------------------------------------
+// Standalone ViT image embedding C API (SigLIP, CLIP)
+// ---------------------------------------------------------------------------
+
+#include "vit_embed.h"
+
+struct crispembed_vit_context {
+    vit_embed::context * vit = nullptr;
+    std::vector<float> last_output;
+};
+
+extern "C" crispembed_vit_context * crispembed_vit_init(
+        const char * model_path, int n_threads) {
+    if (!model_path) return nullptr;
+    auto * ctx = new crispembed_vit_context();
+    if (!vit_embed::load(&ctx->vit, model_path, n_threads)) {
+        delete ctx;
+        return nullptr;
+    }
+    return ctx;
+}
+
+extern "C" int crispembed_vit_dim(const crispembed_vit_context * ctx) {
+    return ctx ? vit_embed::dim(ctx->vit) : 0;
+}
+
+extern "C" const float * crispembed_vit_encode_file(
+        crispembed_vit_context * ctx,
+        const char * image_path,
+        int * out_dim) {
+    if (!ctx || !image_path || !out_dim) {
+        if (out_dim) *out_dim = 0;
+        return nullptr;
+    }
+    ctx->last_output = vit_embed::encode_file(ctx->vit, image_path);
+    if (ctx->last_output.empty()) { *out_dim = 0; return nullptr; }
+    *out_dim = (int)ctx->last_output.size();
+    return ctx->last_output.data();
+}
+
+extern "C" void crispembed_vit_free(crispembed_vit_context * ctx) {
+    if (!ctx) return;
+    if (ctx->vit) vit_embed::free(ctx->vit);
+    delete ctx;
+}
+
+// ---------------------------------------------------------------------------
 // Face detection & recognition C API
 // ---------------------------------------------------------------------------
 

@@ -91,6 +91,9 @@ class CrispEmbed {
   CrispembedHasVision? _hasVisionCheck;
   CrispembedEncodeImage? _encodeImageFn;
   CrispembedEncodeImageRaw? _encodeImageRawFn;
+  // File-based vision helpers — optional, absent on older builds.
+  CrispembedEncodeImageFileDart? _encodeImageFileFn;
+  CrispembedEncodeTextWithImageFileDart? _encodeTextWithImageFileFn;
 
   /// Load a GGUF model file.
   ///
@@ -177,6 +180,16 @@ class CrispEmbed {
       _hasVisionCheck = null;
       _encodeImageFn = null;
       _encodeImageRawFn = null;
+    }
+    try {
+      _encodeImageFileFn = _lib.lookupFunction<CrispembedEncodeImageFileNative,
+          CrispembedEncodeImageFileDart>('crispembed_encode_image_file');
+      _encodeTextWithImageFileFn = _lib.lookupFunction<
+          CrispembedEncodeTextWithImageFileNative,
+          CrispembedEncodeTextWithImageFileDart>('crispembed_encode_text_with_image_file');
+    } catch (_) {
+      _encodeImageFileFn = null;
+      _encodeTextWithImageFileFn = null;
     }
   }
 
@@ -293,6 +306,58 @@ class CrispEmbed {
       calloc.free(nMergedPtr);
       calloc.free(dimPtr);
       calloc.free(nDsPtr);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // File-based vision encoding
+  // ------------------------------------------------------------------
+
+  /// Load an image from disk and encode it into the model's shared embedding
+  /// space (mean-pooled, L2-normalized), without requiring a Python preprocessor.
+  ///
+  /// Supports JPEG, PNG, BMP, and other formats readable by stb_image.
+  /// Returns an empty list if the build lacks vision support, the model has
+  /// no vision tower, or the file cannot be read.
+  ///
+  /// Note: the native preprocessor uses bilinear resize; expect cosine ≈ 0.95–0.98
+  /// compared to the HF reference path (bicubic + antialias).
+  Float32List encodeImageFile(String path) {
+    _checkDisposed();
+    if (_encodeImageFileFn == null) return Float32List(0);
+    final pathPtr = path.toNativeUtf8();
+    final dimPtr = calloc<Int32>();
+    try {
+      final ptr = _encodeImageFileFn!(_ctx, pathPtr, dimPtr);
+      if (ptr == nullptr || dimPtr.value <= 0) return Float32List(0);
+      return Float32List.fromList(ptr.asTypedList(dimPtr.value));
+    } finally {
+      calloc.free(pathPtr);
+      calloc.free(dimPtr);
+    }
+  }
+
+  /// Load an image from disk and produce a text-conditioned multimodal embedding.
+  ///
+  /// [text] must contain the appropriate number of image-token placeholders for
+  /// the grid that the native smart_resize will produce. See the Python helpers
+  /// in `python/crispembed/image.py` for how to build the text template.
+  ///
+  /// Returns an empty list on failure (no vision tower, bad file, etc.).
+  Float32List encodeTextWithImageFile(String text, String imagePath) {
+    _checkDisposed();
+    if (_encodeTextWithImageFileFn == null) return Float32List(0);
+    final textPtr = text.toNativeUtf8();
+    final pathPtr = imagePath.toNativeUtf8();
+    final dimPtr = calloc<Int32>();
+    try {
+      final ptr = _encodeTextWithImageFileFn!(_ctx, textPtr, pathPtr, dimPtr);
+      if (ptr == nullptr || dimPtr.value <= 0) return Float32List(0);
+      return Float32List.fromList(ptr.asTypedList(dimPtr.value));
+    } finally {
+      calloc.free(textPtr);
+      calloc.free(pathPtr);
+      calloc.free(dimPtr);
     }
   }
 
@@ -959,4 +1024,106 @@ List<FaceResult> _decodePipelineBuffer(Pointer<Void> buf, int n, int embDim) {
   // Sort by confidence descending, matching native detector output convention.
   results.sort((a, b) => b.score.compareTo(a.score));
   return results;
+}
+
+// ---------------------------------------------------------------------------
+// Math OCR (pix2tex) — image → LaTeX
+// ---------------------------------------------------------------------------
+
+/// Wraps a pix2tex math OCR model loaded via `crispembed_math_ocr_init`.
+///
+/// Converts grayscale image pixel data into LaTeX strings using a ViT
+/// encoder + transformer decoder architecture.
+///
+/// ```dart
+/// final ocr = CrispMathOcr('pix2tex.gguf');
+/// final latex = ocr.recognize(grayBytes, width: 320, height: 64);
+/// print(latex);  // e.g. '\frac{a}{b} + c^2'
+/// ocr.dispose();
+/// ```
+class CrispMathOcr {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  // Cached function lookups
+  late final CrispembedMathOcrRecognizeDart _recognizeFn;
+  late final CrispembedMathOcrFreeDart _freeFn;
+
+  /// Load a pix2tex GGUF model for math OCR.
+  ///
+  /// [modelPath] — path to the `.gguf` model file.
+  /// [nThreads] — CPU thread count (0 = auto-detect).
+  /// [libPath] — optional path to the shared library. If omitted, searches
+  ///   standard platform locations.
+  CrispMathOcr(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedMathOcrInitNative, CrispembedMathOcrInitDart>(
+            'crispembed_math_ocr_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load math OCR model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _recognizeFn = _lib.lookupFunction<CrispembedMathOcrRecognizeNative,
+        CrispembedMathOcrRecognizeDart>('crispembed_math_ocr_recognize');
+    _freeFn = _lib.lookupFunction<CrispembedMathOcrFreeNative,
+        CrispembedMathOcrFreeDart>('crispembed_math_ocr_free');
+  }
+
+  // ------------------------------------------------------------------
+  // Inference
+  // ------------------------------------------------------------------
+
+  /// Recognize math in a grayscale image and return a LaTeX string.
+  ///
+  /// [grayPixels] — raw single-channel (grayscale) pixel bytes, row-major,
+  ///   length must equal [width] × [height].
+  /// [width] / [height] — image dimensions in pixels.
+  ///
+  /// Returns the recognized LaTeX string, or an empty string on failure.
+  String recognize(Uint8List grayPixels, int width, int height) {
+    _checkDisposed();
+    if (grayPixels.length != width * height) {
+      throw ArgumentError(
+          'grayPixels.length (${grayPixels.length}) must equal width * height (${width * height})');
+    }
+
+    final pixPtr = calloc<Uint8>(grayPixels.length);
+    pixPtr.asTypedList(grayPixels.length).setAll(0, grayPixels);
+    final lenPtr = calloc<Int32>();
+    try {
+      // channels = 1 for grayscale input
+      final result = _recognizeFn(_ctx, pixPtr, width, height, 1, lenPtr);
+      if (result == nullptr) return '';
+      return result.toDartString();
+    } finally {
+      calloc.free(pixPtr);
+      calloc.free(lenPtr);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Lifecycle
+  // ------------------------------------------------------------------
+
+  /// Release all native resources. Must be called when done.
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispMathOcr has been disposed');
+  }
 }

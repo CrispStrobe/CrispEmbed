@@ -69,6 +69,26 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     gguf_set_val_u32(ctx_out, "general.file_type", ftype);
 
     const int n_tensors = gguf_get_n_tensors(ctx_in);
+
+    // CNN/face model detection: scan tensor names for known prefixes
+    {
+        bool is_cnn_model = false;
+        for (int i = 0; i < n_tensors; i++) {
+            const char * name = gguf_get_tensor_name(ctx_in, i);
+            std::string sn(name);
+            if (sn.rfind("cnn.", 0) == 0 ||
+                sn.rfind("scrfd.", 0) == 0 ||
+                sn.rfind("arcface.", 0) == 0 ||
+                sn.rfind("sface.", 0) == 0) {
+                is_cnn_model = true;
+                break;
+            }
+        }
+        if (is_cnn_model) {
+            fprintf(stderr, "Warning: CNN/face model detected — conv2d tensors will be kept at original precision\n");
+        }
+    }
+
     for (int i = 0; i < n_tensors; i++) {
         const char * name = gguf_get_tensor_name(ctx_in, i);
         struct ggml_tensor * t = ggml_get_tensor(ctx_in_ggml, name);
@@ -118,6 +138,58 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // - Must NOT contain "norm" in name
         // - Token/position/type embeddings: only Q8_0/F16, skip aggressive quants
         std::string sname(name);
+
+        // Guard 1: patch_embed tensors — always copy as-is (they are conv2d kernels)
+        if (sname.find("patch_embed") != std::string::npos) {
+            printf("note: patch_embed tensor — copying as-is (F32)\n");
+            size_t sz = ggml_nbytes(t);
+            size_t off = data_offset_in + gguf_get_tensor_offset(ctx_in, i);
+#ifdef _WIN32
+            _fseeki64(fin, (int64_t)off, SEEK_SET);
+#else
+            fseeko(fin, (off_t)off, SEEK_SET);
+#endif
+            std::vector<uint8_t> raw(sz);
+            if (fread(raw.data(), 1, sz, fin) != sz) {
+                fprintf(stderr, "failed to read raw data for patch_embed tensor\n");
+                fclose(fin); fclose(fout);
+                return false;
+            }
+            fwrite(raw.data(), 1, sz, fout);
+            size_t pad = GGML_PAD(sz, GGUF_DEFAULT_ALIGNMENT) - sz;
+            for (size_t j = 0; j < pad; j++) fputc(0, fout);
+            total_orig += sz;
+            total_new += sz;
+            n_kept++;
+            continue;
+        }
+
+        // Guard 2: N-D tensors (conv2d kernels are 4D, etc.) — copy as-is
+        if (ggml_n_dims(t) >= 3) {
+            int ndims = ggml_n_dims(t);
+            printf("note: skipping %d-D tensor (conv2d) — copying as-is\n", ndims);
+            size_t sz = ggml_nbytes(t);
+            size_t off = data_offset_in + gguf_get_tensor_offset(ctx_in, i);
+#ifdef _WIN32
+            _fseeki64(fin, (int64_t)off, SEEK_SET);
+#else
+            fseeko(fin, (off_t)off, SEEK_SET);
+#endif
+            std::vector<uint8_t> raw(sz);
+            if (fread(raw.data(), 1, sz, fin) != sz) {
+                fprintf(stderr, "failed to read raw data for %d-D tensor\n", ndims);
+                fclose(fin); fclose(fout);
+                return false;
+            }
+            fwrite(raw.data(), 1, sz, fout);
+            size_t pad = GGML_PAD(sz, GGUF_DEFAULT_ALIGNMENT) - sz;
+            for (size_t j = 0; j < pad; j++) fputc(0, fout);
+            total_orig += sz;
+            total_new += sz;
+            n_kept++;
+            continue;
+        }
+
         bool is_embd = sname.find("embd") != std::string::npos ||
                         sname.find("embed") != std::string::npos ||
                         sname.find("token_types") != std::string::npos;
