@@ -2626,6 +2626,38 @@ extern "C" void crispembed_face_free(crispembed_face_context * ctx) {
     delete ctx;
 }
 
+// ---------------------------------------------------------------------------
+// HMER handwritten math OCR — delegates to hmer_ocr.h
+// ---------------------------------------------------------------------------
+
+#include "hmer_ocr.h"
+
+extern "C" void * crispembed_hmer_ocr_init(const char * model_path, int n_threads) {
+    return (void *)hmer_ocr_init(model_path, n_threads);
+}
+
+extern "C" void crispembed_hmer_ocr_free(void * ctx) {
+    hmer_ocr_free((hmer_ocr_context *)ctx);
+}
+
+extern "C" const char * crispembed_hmer_ocr_recognize(
+    void * ctx,
+    const uint8_t * pixel_bytes, int width, int height, int channels,
+    int * out_len
+) {
+    return hmer_ocr_recognize_raw((hmer_ocr_context *)ctx,
+                                  pixel_bytes, width, height, channels, out_len);
+}
+
+extern "C" const char * crispembed_hmer_ocr_recognize_gray(
+    void * ctx,
+    const float * pixels, int width, int height,
+    int * out_len
+) {
+    return hmer_ocr_recognize((hmer_ocr_context *)ctx,
+                               pixels, width, height, out_len);
+}
+
 extern "C" void crispembed_free(crispembed_context * ctx) {
     if (!ctx) return;
 #ifdef CRISPEMBED_HAS_CRISP_AUDIO
