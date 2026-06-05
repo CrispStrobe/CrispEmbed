@@ -116,6 +116,7 @@ list(APPEND CRISPEMBED_SOURCES src/cnn_embed.cpp)
 list(APPEND CRISPEMBED_SOURCES src/face_align.cpp)
 list(APPEND CRISPEMBED_SOURCES src/math_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/hmer_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/bttr_ocr.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -199,6 +200,9 @@ install(TARGETS crispembed-quantize RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 add_executable(test-hmer tests/test_hmer.cpp)
 target_link_libraries(test-hmer PRIVATE crispembed)
+
+add_executable(test-bttr tests/test_bttr.cpp)
+target_link_libraries(test-bttr PRIVATE crispembed)
 
 endif() # NOT iOS
 
