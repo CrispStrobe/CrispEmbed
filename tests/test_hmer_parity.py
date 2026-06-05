@@ -198,6 +198,7 @@ def run_pytorch_reference(model_dir, dict_path, test_image=None, dump_path=None)
                 break
             tokens.append(tok)
             decoder_input = topi
+            decoder_attention = alpha_4d  # feed attention to next step's coverage
 
     # Detokenize
     latex_tokens = [worddicts_r.get(t, f'<{t}>') for t in tokens]
