@@ -81,6 +81,9 @@ class CrispEmbed {
   late final CrispembedEncodeSparse _encodeSparse;
   late final CrispembedEncodeMultivec _encodeMultivec;
   late final CrispembedRerank _rerankFn;
+  // Ctx prefix (GGUF metadata) — optional, missing on older builds.
+  CrispembedCtxQueryPrefixDart? _ctxQueryPrefixFn;
+  CrispembedCtxPassagePrefixDart? _ctxPassagePrefixFn;
   // Audio (BidirLM-Omni etc.) — optional, missing on builds without crisp_audio.
   CrispembedHasAudio? _hasAudioCheck;
   CrispembedEncodeAudio? _encodeAudioFn;
@@ -143,6 +146,16 @@ class CrispEmbed {
         CrispembedEncodeMultivec>('crispembed_encode_multivec');
     _rerankFn = _lib.lookupFunction<CrispembedRerankNative, CrispembedRerank>(
         'crispembed_rerank');
+    // Ctx prefix symbols — optional, missing on older builds.
+    try {
+      _ctxQueryPrefixFn = _lib.lookupFunction<CrispembedCtxQueryPrefixNative,
+          CrispembedCtxQueryPrefixDart>('crispembed_ctx_query_prefix');
+      _ctxPassagePrefixFn = _lib.lookupFunction<CrispembedCtxPassagePrefixNative,
+          CrispembedCtxPassagePrefixDart>('crispembed_ctx_passage_prefix');
+    } catch (_) {
+      _ctxQueryPrefixFn = null;
+      _ctxPassagePrefixFn = null;
+    }
     // Audio symbols are absent in builds without crisp_audio — bind lazily.
     try {
       _hasAudioCheck = _lib.lookupFunction<CrispembedHasAudioNative, CrispembedHasAudio>(
@@ -488,6 +501,22 @@ class CrispEmbed {
 
   /// True if the model is a cross-encoder reranker.
   bool get isReranker => _isRerankerCheck(_ctx) != 0;
+
+  /// Query prefix from GGUF metadata (`colbert.query_prefix`), or empty string.
+  String get ctxQueryPrefix {
+    _checkDisposed();
+    if (_ctxQueryPrefixFn == null) return '';
+    final p = _ctxQueryPrefixFn!(_ctx);
+    return p == nullptr ? '' : p.toDartString();
+  }
+
+  /// Passage/document prefix from GGUF metadata, or empty string.
+  String get ctxPassagePrefix {
+    _checkDisposed();
+    if (_ctxPassagePrefixFn == null) return '';
+    final p = _ctxPassagePrefixFn!(_ctx);
+    return p == nullptr ? '' : p.toDartString();
+  }
 
   // ------------------------------------------------------------------
   // Lifecycle

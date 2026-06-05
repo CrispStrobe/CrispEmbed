@@ -448,8 +448,9 @@ int main(int argc, char ** argv) {
         if (!prefix.empty())
             crispembed_set_prefix(ctx, prefix.c_str());
     } else {
-        // Auto-apply query prefix if model needs one
-        const char * auto_pfx = crispembed_mgr::get_query_prefix(model_arg.c_str());
+        // Auto-apply query prefix if model needs one (GGUF metadata first, name-table fallback)
+        const char * auto_pfx = crispembed_ctx_query_prefix(ctx);
+        if (!auto_pfx) auto_pfx = crispembed_mgr::get_query_prefix(model_arg.c_str());
         if (auto_pfx) {
             crispembed_set_prefix(ctx, auto_pfx);
             fprintf(stderr, "crispembed: auto-prefix \"%s\" (use --prefix \"\" to disable)\n", auto_pfx);

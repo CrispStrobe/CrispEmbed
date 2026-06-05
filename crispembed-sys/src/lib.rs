@@ -125,6 +125,22 @@ extern "C" {
     // Capability queries
     // ------------------------------------------------------------------
 
+    // ------------------------------------------------------------------
+    // Prefix lookup (name-table and GGUF metadata)
+    // ------------------------------------------------------------------
+
+    /// Query prefix for the named model from the built-in name table, or NULL.
+    pub fn crispembed_query_prefix(model_name: *const c_char) -> *const c_char;
+
+    /// Passage prefix for the named model from the built-in name table, or NULL.
+    pub fn crispembed_passage_prefix(model_name: *const c_char) -> *const c_char;
+
+    /// Query prefix from GGUF metadata (`colbert.query_prefix`), or NULL.
+    pub fn crispembed_ctx_query_prefix(ctx: *const CrispembedContext) -> *const c_char;
+
+    /// Passage/document prefix from GGUF metadata, or NULL.
+    pub fn crispembed_ctx_passage_prefix(ctx: *const CrispembedContext) -> *const c_char;
+
     /// Returns 1 if the model has a sparse retrieval head (BGE-M3 sparse).
     pub fn crispembed_has_sparse(ctx: *const CrispembedContext) -> c_int;
 
