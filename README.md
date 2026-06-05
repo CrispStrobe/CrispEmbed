@@ -12,6 +12,10 @@ multi-vector, cross-encoder rerankers, bi-encoder reranking.
 **Vision**: SigLIP image embedding, SCRFD face detection, ArcFace/SFace/AuraFace
 face recognition. Full detect-align-encode pipeline.
 
+**Math OCR**: DeiT+TrOCR on-device math equation recognition — printed math
+images → LaTeX. ggml graph encoder + optimized graph decoder. Q4_K model
+is 17 MB, runs in ~3s decoder time. 0.99+ cosine parity with reference.
+
 **9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
 GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
 45 models in registry, 151 GGUF variants published on HF.
@@ -143,6 +147,44 @@ python tests/test_cli_parity.py --cli ./build/crispembed \
 curl -X POST http://localhost:8080/embed \
     -d '{"texts": ["Hello world"]}'
 ```
+
+## Math OCR
+
+On-device math equation recognition using a DeiT encoder + TrOCR decoder,
+running entirely via ggml graph compute. Converts printed math images to LaTeX.
+
+**Architecture**: DeiT-small encoder (12L ViT, 384d) + TrOCR decoder (6L, 256d,
+post-LayerNorm/BART convention). Encoder uses ggml graph with SIMD acceleration;
+decoder uses optimized ggml graph with single-thread compute (thread barrier
+overhead exceeds compute for the small [256,1] decoder tensors).
+
+**Models on HuggingFace**: [`cstr/pix2tex-mfr-gguf`](https://huggingface.co/cstr/pix2tex-mfr-gguf)
+
+| Variant | Size | Decoder time | Cosine vs F32 |
+|---------|------|-------------|---------------|
+| F32 | 261 MB | ~3.3s | 1.000 |
+| F16 | 131 MB | ~3.3s | 0.9999 |
+| Q8_0 | 66 MB | ~3.5s | 0.998 |
+| Q4_K | 17 MB | ~3.0s | 0.992 |
+
+**Graph decoder validation**: cosine similarity >0.99 against scalar reference
+decoder on all test images. All argmax tokens identical.
+
+```bash
+# Build
+cmake -S . -B build -DCRISPEMBED_BUILD_SHARED=OFF
+cmake --build build -j4
+
+# Run OCR (C API)
+# See test_math_ocr.cpp for usage example:
+#   math_ocr_context* ctx = math_ocr_init("pix2tex-mfr-q4_k.gguf", 4);
+#   const char* latex = math_ocr_recognize(ctx, gray_pixels, w, h, &len);
+```
+
+**Flutter integration**: The `flutter/crispembed/` plugin provides `CrispEmbedOcr`
+for Dart FFI access. Used by [CrispCalc](https://github.com/CrispStrobe/CrispCalc)
+for camera-based math input. Platform dirs (Linux/Windows/macOS/iOS/Android) with
+CI-built native libraries.
 
 ## Model licenses
 
