@@ -383,6 +383,29 @@ CRISPEMBED_API const float * crispembed_vit_encode_file(
 CRISPEMBED_API void crispembed_vit_free(crispembed_vit_context * ctx);
 
 // ---------------------------------------------------------------------------
+// Standalone CLIP text encoding
+// ---------------------------------------------------------------------------
+
+typedef struct crispembed_clip_text_context crispembed_clip_text_context;
+
+// Load a CLIP text encoder from GGUF. Returns NULL on failure.
+CRISPEMBED_API crispembed_clip_text_context * crispembed_clip_text_init(
+        const char * model_path, int n_threads);
+
+// Get embedding dimension.
+CRISPEMBED_API int crispembed_clip_text_dim(const crispembed_clip_text_context * ctx);
+
+// Encode text. Returns pointer to *out_dim floats,
+// owned by ctx, valid until next call. Returns NULL on failure.
+CRISPEMBED_API const float * crispembed_clip_text_encode(
+        crispembed_clip_text_context * ctx,
+        const char * text,
+        int * out_dim);
+
+// Free CLIP text context.
+CRISPEMBED_API void crispembed_clip_text_free(crispembed_clip_text_context * ctx);
+
+// ---------------------------------------------------------------------------
 // Face detection & recognition (CNN models)
 // ---------------------------------------------------------------------------
 
@@ -449,37 +472,6 @@ CRISPEMBED_API const crispembed_face_result * crispembed_face_pipeline(
 
 // Free face context.
 CRISPEMBED_API void crispembed_face_free(crispembed_face_context * ctx);
-
-// ---------------------------------------------------------------------------
-// Handwritten Math OCR (HMER — DenseNet-121 + GRU attention decoder)
-// ---------------------------------------------------------------------------
-// Separate from pix2tex/TrOCR math OCR — this model is specifically
-// trained on CROHME handwritten math data.
-// Requires an HMER GGUF model (see models/convert-hmer-to-gguf.py).
-
-// Initialize an HMER handwritten math OCR context.
-CRISPEMBED_API void * crispembed_hmer_ocr_init(const char * model_path, int n_threads);
-
-// Free the HMER OCR context.
-CRISPEMBED_API void crispembed_hmer_ocr_free(void * ctx);
-
-// Recognize handwritten math from raw pixel bytes.
-// Returns a null-terminated LaTeX string owned by the context.
-CRISPEMBED_API const char * crispembed_hmer_ocr_recognize(
-    void * ctx,
-    const uint8_t * pixel_bytes,
-    int width,
-    int height,
-    int channels,
-    int * out_len);
-
-// Recognize handwritten math from grayscale float pixels [0..1].
-CRISPEMBED_API const char * crispembed_hmer_ocr_recognize_gray(
-    void * ctx,
-    const float * pixels,
-    int width,
-    int height,
-    int * out_len);
 
 // ---------------------------------------------------------------------------
 // Lifecycle

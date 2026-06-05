@@ -432,34 +432,58 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
     ggml_tensor* last = replay_graph(g, ctx, x, nodes, output_tensors, &tensor_map);
     if (!last) { ggml_free(g); return {}; }
 
-    // Mark the 9 SCRFD detection output tensors
-    // SCRFD outputs: score/bbox/kps at 3 strides
-    // Output names from ONNX (stored in cnn.output.N.name metadata)
-    const char* score_names[] = {"448", "471", "494"};
-    const char* bbox_names[] = {"451", "474", "497"};
-    const char* kps_names[] = {"454", "477", "500"};
+    // Mark detection output tensors and build forward graph
+    bool is_yunet = ctx->name.find("yunet") != std::string::npos;
 
-    // Store output tensor pointers directly (avoid name lookup issues)
     ggml_tensor* score_tensors[3] = {};
     ggml_tensor* bbox_tensors[3] = {};
     ggml_tensor* kps_tensors[3] = {};
 
-    for (int i = 0; i < 3; i++) {
-        auto it_s = tensor_map.find(score_names[i]);
-        auto it_b = tensor_map.find(bbox_names[i]);
-        auto it_k = tensor_map.find(kps_names[i]);
-        if (it_s != tensor_map.end()) { score_tensors[i] = it_s->second; ggml_set_output(it_s->second); }
-        if (it_b != tensor_map.end()) { bbox_tensors[i] = it_b->second; ggml_set_output(it_b->second); }
-        if (it_k != tensor_map.end()) { kps_tensors[i] = it_k->second; ggml_set_output(it_k->second); }
+    if (is_yunet) {
+        // YuNet: 12 outputs — cls/obj/bbox/kps at 3 strides
+        const char* cls_names[] = {"cls_8", "cls_16", "cls_32"};
+        const char* obj_names[] = {"obj_8", "obj_16", "obj_32"};
+        const char* bbox_names[] = {"bbox_8", "bbox_16", "bbox_32"};
+        const char* kps_names[] = {"kps_8", "kps_16", "kps_32"};
+        for (int i = 0; i < 3; i++) {
+            for (const char* name : {cls_names[i], obj_names[i], bbox_names[i], kps_names[i]}) {
+                auto it = tensor_map.find(name);
+                if (it != tensor_map.end()) ggml_set_output(it->second);
+            }
+        }
+    } else {
+        // SCRFD: 9 outputs — score/bbox/kps at 3 strides
+        const char* score_names[] = {"448", "471", "494"};
+        const char* bbox_names[] = {"451", "474", "497"};
+        const char* kps_names[] = {"454", "477", "500"};
+        for (int i = 0; i < 3; i++) {
+            auto it_s = tensor_map.find(score_names[i]);
+            auto it_b = tensor_map.find(bbox_names[i]);
+            auto it_k = tensor_map.find(kps_names[i]);
+            if (it_s != tensor_map.end()) { score_tensors[i] = it_s->second; ggml_set_output(it_s->second); }
+            if (it_b != tensor_map.end()) { bbox_tensors[i] = it_b->second; ggml_set_output(it_b->second); }
+            if (it_k != tensor_map.end()) { kps_tensors[i] = it_k->second; ggml_set_output(it_k->second); }
+        }
     }
     ggml_set_output(last);
 
-    // Build graph
+    // Build graph — expand all output tensors
     ggml_cgraph* gf = ggml_new_graph_custom(g, max_nodes, false);
-    for (int i = 0; i < 3; i++) {
-        if (score_tensors[i]) ggml_build_forward_expand(gf, score_tensors[i]);
-        if (bbox_tensors[i]) ggml_build_forward_expand(gf, bbox_tensors[i]);
-        if (kps_tensors[i]) ggml_build_forward_expand(gf, kps_tensors[i]);
+    if (is_yunet) {
+        const char* yunet_outs[] = {
+            "cls_8","cls_16","cls_32","obj_8","obj_16","obj_32",
+            "bbox_8","bbox_16","bbox_32","kps_8","kps_16","kps_32"
+        };
+        for (const char* name : yunet_outs) {
+            auto it = tensor_map.find(name);
+            if (it != tensor_map.end()) ggml_build_forward_expand(gf, it->second);
+        }
+    } else {
+        for (int i = 0; i < 3; i++) {
+            if (score_tensors[i]) ggml_build_forward_expand(gf, score_tensors[i]);
+            if (bbox_tensors[i]) ggml_build_forward_expand(gf, bbox_tensors[i]);
+            if (kps_tensors[i]) ggml_build_forward_expand(gf, kps_tensors[i]);
+        }
     }
     ggml_build_forward_expand(gf, last);
 
@@ -473,111 +497,191 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
 
     ggml_backend_graph_compute(ctx->backend, gf);
 
-    // ── SCRFD post-processing: decode anchors ──
+    // ── Post-processing: decode anchors ──
     const int strides[] = {8, 16, 32};
-    const int num_anchors_per_loc = 2;
     std::vector<face_detection> dets;
 
-    for (int si = 0; si < 3; si++) {
-        int stride = strides[si];
-        int grid_h = H / stride;
-        int grid_w = W / stride;
+    if (is_yunet) {
+        // ── YuNet decode ──
+        // YuNet outputs per stride: cls (conf), obj (IoU), bbox (4), kps (10)
+        // 1 anchor per grid cell. Score = sqrt(cls * clamp(obj, 0, 1)).
+        // Bbox: cx = col*stride + loc[0]*stride, w = stride * exp(loc[2])
+        // Landmarks: lm_x = col*stride + kps[2k]*stride
+        // Landmark order: right_eye, left_eye, nose, right_mouth, left_mouth
+        const char* cls_names[] = {"cls_8", "cls_16", "cls_32"};
+        const char* obj_names[] = {"obj_8", "obj_16", "obj_32"};
+        const char* bbox_yunet[] = {"bbox_8", "bbox_16", "bbox_32"};
+        const char* kps_yunet[] = {"kps_8", "kps_16", "kps_32"};
 
-        // Use stored tensor pointers directly
-        ggml_tensor* score_t = score_tensors[si];
-        ggml_tensor* bbox_t = bbox_tensors[si];
-        ggml_tensor* kps_t = kps_tensors[si];
-        if (!score_t || !bbox_t) {
-            fprintf(stderr, "cnn_embed: stride %d outputs not found\n", stride);
-            continue;
-        }
+        for (int si = 0; si < 3; si++) {
+            int stride = strides[si];
+            int grid_h = H / stride;
+            int grid_w = W / stride;
 
-        int n_total = (int)ggml_nelements(score_t);
-        // Debug: print score stats
-        { std::vector<float> all_s(n_total); ggml_backend_tensor_get(score_t, all_s.data(), 0, n_total*4);
-        float mx = -1e9, mn = 1e9, sum = 0; for (float s : all_s) { mx = std::max(mx, s); mn = std::min(mn, s); sum += s; }
-        fprintf(stderr, "  scores: n=%d min=%.4f max=%.4f mean=%.6f\n", n_total, mn, mx, sum/n_total); }
-        std::vector<float> scores(n_total);
-        ggml_backend_tensor_get(score_t, scores.data(), 0, n_total * sizeof(float));
+            auto it_c = tensor_map.find(cls_names[si]);
+            auto it_o = tensor_map.find(obj_names[si]);
+            auto it_b = tensor_map.find(bbox_yunet[si]);
+            auto it_k = tensor_map.find(kps_yunet[si]);
+            if (it_c == tensor_map.end() || it_b == tensor_map.end()) {
+                fprintf(stderr, "cnn_embed: YuNet stride %d outputs not found\n", stride);
+                continue;
+            }
 
-        int bbox_n = (int)ggml_nelements(bbox_t);
-        std::vector<float> bboxes(bbox_n);
-        ggml_backend_tensor_get(bbox_t, bboxes.data(), 0, bbox_n * sizeof(float));
+            ggml_tensor* cls_t = it_c->second;
+            ggml_tensor* obj_t = (it_o != tensor_map.end()) ? it_o->second : nullptr;
+            ggml_tensor* bbox_t = it_b->second;
+            ggml_tensor* kps_t = (it_k != tensor_map.end()) ? it_k->second : nullptr;
 
-        std::vector<float> kps_data;
-        if (kps_t) {
-            int kps_n = (int)ggml_nelements(kps_t);
-            kps_data.resize(kps_n);
-            fprintf(stderr, "  kps stride %d: n=%d min=%.4f max=%.4f\n", stride, kps_n, *std::min_element(kps_data.begin(), kps_data.end()), *std::max_element(kps_data.begin(), kps_data.end()));
-            ggml_backend_tensor_get(kps_t, kps_data.data(), 0, kps_n * sizeof(float));
-            { float mn=1e9,mx=-1e9; for(float v:kps_data){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  kps[%d]: min=%.4f max=%.4f\n",stride,mn,mx); }
-        }
+            int n = grid_h * grid_w;
+            std::vector<float> cls_data(n), obj_data(n, 1.0f), bbox_data(n * 4);
+            ggml_backend_tensor_get(cls_t, cls_data.data(), 0, n * sizeof(float));
+            if (obj_t) ggml_backend_tensor_get(obj_t, obj_data.data(), 0, n * sizeof(float));
+            ggml_backend_tensor_get(bbox_t, bbox_data.data(), 0, n * 4 * sizeof(float));
 
-        // Decode anchors — ggml conv output layout [W, H, C]
-        // The Transpose/Reshape in the ONNX graph are passthrough in our
-        // replayer, so data stays in ggml's native [W, H, C] order:
-        //   element(col, row, chan) = col + row * grid_w + chan * grid_w * grid_h
-        //
-        // Score: [grid_w, grid_h, 2] → 2 anchors per loc, 1 score each
-        //   score(col, row, anchor) = col + row * gw + anchor * gw * gh
-        //
-        // Bbox:  [grid_w, grid_h, 8] → channel = anchor * 4 + dist_idx
-        //   bbox(col, row, anchor, d) = col + row * gw + (anchor*4+d) * gw * gh
-        //
-        // Kps:   [grid_w, grid_h, 20] → channel = anchor * 10 + kp_idx
-        //   kps(col, row, anchor, k) = col + row * gw + (anchor*10+k) * gw * gh
-        int plane = grid_w * grid_h;
-        for (int row = 0; row < grid_h; row++) {
-            for (int col = 0; col < grid_w; col++) {
-                int spatial = col + row * grid_w;
-                for (int a = 0; a < num_anchors_per_loc; a++) {
-                    int si_idx = spatial + a * plane;
-                    if (si_idx >= n_total) break;
-                    float score = scores[si_idx];
+            std::vector<float> kps_data;
+            if (kps_t) {
+                kps_data.resize(n * 10);
+                ggml_backend_tensor_get(kps_t, kps_data.data(), 0, n * 10 * sizeof(float));
+            }
+
+            // ggml data layout:
+            // replay_graph()'s Transpose op does a real 2D transpose for
+            // tensors with ggml_n_dims==2. YuNet's cls/obj have 1 channel
+            // (treated as 2D), so they are physically transposed:
+            //   cls/obj index = row + col * grid_h
+            // bbox/kps have 4/10 channels (3D), so Transpose is passthrough:
+            //   bbox/kps index = col + row * grid_w + chan * plane
+            int plane = grid_w * grid_h;
+
+            for (int row = 0; row < grid_h; row++) {
+                for (int col = 0; col < grid_w; col++) {
+                    // cls/obj: 2D-transposed (ne[0] = row dim)
+                    int cls_idx = row + col * grid_h;
+                    float cls_val = cls_data[cls_idx];
+                    float obj_val = std::max(0.0f, std::min(1.0f, obj_data[cls_idx]));
+                    float score = std::sqrt(cls_val * obj_val);
                     if (score < conf_threshold) continue;
 
-                    // InsightFace uses integer grid positions (no 0.5 offset)
-                    float cx = (float)col * stride;
-                    float cy = (float)row * stride;
+                    float prior_cx = (float)col * stride;
+                    float prior_cy = (float)row * stride;
 
-                    // Bbox: 4 distances per anchor in ggml channel-last layout
-                    int b_base = spatial + a * 4 * plane;
-                    if (b_base + 3 * plane >= bbox_n) continue;
-                    float d0 = bboxes[b_base + 0 * plane];
-                    float d1 = bboxes[b_base + 1 * plane];
-                    float d2 = bboxes[b_base + 2 * plane];
-                    float d3 = bboxes[b_base + 3 * plane];
-                    float x1 = cx - d0 * stride;
-                    float y1 = cy - d1 * stride;
-                    float x2 = cx + d2 * stride;
-                    float y2 = cy + d3 * stride;
+                    // bbox: 3D passthrough (ne[0] = col dim), planar channels
+                    int bbox_sp = col + row * grid_w;
+                    float loc0 = bbox_data[bbox_sp + 0 * plane];
+                    float loc1 = bbox_data[bbox_sp + 1 * plane];
+                    float loc2 = bbox_data[bbox_sp + 2 * plane];
+                    float loc3 = bbox_data[bbox_sp + 3 * plane];
+                    float cx = prior_cx + loc0 * stride;
+                    float cy = prior_cy + loc1 * stride;
+                    float bw = stride * std::exp(loc2);
+                    float bh = stride * std::exp(loc3);
 
                     face_detection det;
-                    det.x = x1;
-                    det.y = y1;
-                    det.w = x2 - x1;
-                    det.h = y2 - y1;
+                    det.x = cx - bw * 0.5f;
+                    det.y = cy - bh * 0.5f;
+                    det.w = bw;
+                    det.h = bh;
                     det.confidence = score;
                     memset(det.landmarks, 0, sizeof(det.landmarks));
 
-                    // Keypoints: 5 × (dx, dy) in ggml channel-last layout
+                    // kps: 3D passthrough, same layout as bbox
                     if (!kps_data.empty()) {
-                        int k_base = spatial + a * 10 * plane;
                         for (int k = 0; k < 5; k++) {
-                            int kx_idx = k_base + (k*2)   * plane;
-                            int ky_idx = k_base + (k*2+1) * plane;
-                            if (ky_idx < (int)kps_data.size()) {
-                                det.landmarks[k*2]   = cx + kps_data[kx_idx] * stride;
-                                det.landmarks[k*2+1] = cy + kps_data[ky_idx] * stride;
-                            }
+                            int kx_idx = bbox_sp + (k * 2)     * plane;
+                            int ky_idx = bbox_sp + (k * 2 + 1) * plane;
+                            det.landmarks[k * 2]     = prior_cx + kps_data[kx_idx] * stride;
+                            det.landmarks[k * 2 + 1] = prior_cy + kps_data[ky_idx] * stride;
                         }
                     }
                     dets.push_back(det);
                 }
             }
+            fprintf(stderr, "cnn_embed: YuNet stride %d: %d cells, %zu dets above %.2f\n",
+                    stride, n, dets.size(), conf_threshold);
         }
-        fprintf(stderr, "cnn_embed: stride %d: %d anchors, %zu detections above %.2f\n",
-                stride, grid_h * grid_w * num_anchors_per_loc, dets.size(), conf_threshold);
+    } else {
+        // ── SCRFD decode ──
+        const int num_anchors_per_loc = 2;
+        for (int si = 0; si < 3; si++) {
+            int stride = strides[si];
+            int grid_h = H / stride;
+            int grid_w = W / stride;
+
+            ggml_tensor* score_t = score_tensors[si];
+            ggml_tensor* bbox_t = bbox_tensors[si];
+            ggml_tensor* kps_t = kps_tensors[si];
+            if (!score_t || !bbox_t) {
+                fprintf(stderr, "cnn_embed: stride %d outputs not found\n", stride);
+                continue;
+            }
+
+            int n_total = (int)ggml_nelements(score_t);
+            std::vector<float> scores(n_total);
+            ggml_backend_tensor_get(score_t, scores.data(), 0, n_total * sizeof(float));
+
+            int bbox_n = (int)ggml_nelements(bbox_t);
+            std::vector<float> bboxes(bbox_n);
+            ggml_backend_tensor_get(bbox_t, bboxes.data(), 0, bbox_n * sizeof(float));
+
+            std::vector<float> kps_data;
+            if (kps_t) {
+                int kps_n = (int)ggml_nelements(kps_t);
+                kps_data.resize(kps_n);
+                ggml_backend_tensor_get(kps_t, kps_data.data(), 0, kps_n * sizeof(float));
+            }
+
+            // ggml conv output layout [W, H, C]:
+            //   element(col, row, chan) = col + row * grid_w + chan * grid_w * grid_h
+            int plane = grid_w * grid_h;
+            for (int row = 0; row < grid_h; row++) {
+                for (int col = 0; col < grid_w; col++) {
+                    int spatial = col + row * grid_w;
+                    for (int a = 0; a < num_anchors_per_loc; a++) {
+                        int si_idx = spatial + a * plane;
+                        if (si_idx >= n_total) break;
+                        float score = scores[si_idx];
+                        if (score < conf_threshold) continue;
+
+                        float cx = (float)col * stride;
+                        float cy = (float)row * stride;
+
+                        int b_base = spatial + a * 4 * plane;
+                        if (b_base + 3 * plane >= bbox_n) continue;
+                        float d0 = bboxes[b_base + 0 * plane];
+                        float d1 = bboxes[b_base + 1 * plane];
+                        float d2 = bboxes[b_base + 2 * plane];
+                        float d3 = bboxes[b_base + 3 * plane];
+                        float x1 = cx - d0 * stride;
+                        float y1 = cy - d1 * stride;
+                        float x2 = cx + d2 * stride;
+                        float y2 = cy + d3 * stride;
+
+                        face_detection det;
+                        det.x = x1;
+                        det.y = y1;
+                        det.w = x2 - x1;
+                        det.h = y2 - y1;
+                        det.confidence = score;
+                        memset(det.landmarks, 0, sizeof(det.landmarks));
+
+                        if (!kps_data.empty()) {
+                            int k_base = spatial + a * 10 * plane;
+                            for (int k = 0; k < 5; k++) {
+                                int kx_idx = k_base + (k*2)   * plane;
+                                int ky_idx = k_base + (k*2+1) * plane;
+                                if (ky_idx < (int)kps_data.size()) {
+                                    det.landmarks[k*2]   = cx + kps_data[kx_idx] * stride;
+                                    det.landmarks[k*2+1] = cy + kps_data[ky_idx] * stride;
+                                }
+                            }
+                        }
+                        dets.push_back(det);
+                    }
+                }
+            }
+            fprintf(stderr, "cnn_embed: SCRFD stride %d: %d anchors, %zu dets above %.2f\n",
+                    stride, grid_h * grid_w * num_anchors_per_loc, dets.size(), conf_threshold);
+        }
     }
 
     ggml_gallocr_free(alloc);
@@ -585,12 +689,10 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
 
     // NMS
     if (dets.size() > 1) {
-        // Sort by confidence descending
         std::sort(dets.begin(), dets.end(),
                   [](const face_detection& a, const face_detection& b) {
                       return a.confidence > b.confidence;
                   });
-        // Greedy NMS with IoU threshold 0.4
         std::vector<bool> suppressed(dets.size(), false);
         std::vector<face_detection> kept;
         for (size_t i = 0; i < dets.size(); i++) {
@@ -598,7 +700,6 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
             kept.push_back(dets[i]);
             for (size_t j = i + 1; j < dets.size(); j++) {
                 if (suppressed[j]) continue;
-                // Compute IoU
                 float x1 = std::max(dets[i].x, dets[j].x);
                 float y1 = std::max(dets[i].y, dets[j].y);
                 float x2 = std::min(dets[i].x + dets[i].w, dets[j].x + dets[j].w);
@@ -613,7 +714,8 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
         dets = kept;
     }
 
-    fprintf(stderr, "cnn_embed: SCRFD detected %zu faces\n", dets.size());
+    fprintf(stderr, "cnn_embed: %s detected %zu faces\n",
+            is_yunet ? "YuNet" : "SCRFD", dets.size());
     return dets;
 }
 
@@ -676,11 +778,13 @@ std::vector<face_detection> detect_file(context* ctx, const char* path,
     float det_scale = (float)new_h / img_h;
 
     // Preprocess: bilinear resize + RGB→BGR swap + normalize.
-    // SCRFD is trained with OpenCV (BGR). stb_image loads RGB, so swap R↔B.
-    // InsightFace uses: cv2.dnn.blobFromImage(img, 1/128, size, (127.5,127.5,127.5), swapRB=True)
-    // Pad region: InsightFace uses np.zeros (uint8=0), normalized to (0-127.5)/128.
+    // stb_image loads RGB; both SCRFD and YuNet are trained with BGR, so swap R↔B.
+    // SCRFD: (v - 127.5) / 128.0
+    // YuNet: raw 0-255 (no normalization)
+    bool is_yunet = ctx->name.find("yunet") != std::string::npos;
+    float pad_val = is_yunet ? 0.0f : (0.0f - 127.5f) / 128.0f;
+
     std::vector<float> pixels(3 * det_size * det_size);
-    float pad_val = (0.0f - 127.5f) / 128.0f;
     for (int i = 0; i < 3 * det_size * det_size; i++) pixels[i] = pad_val;
 
     for (int y = 0; y < new_h; y++) {
@@ -697,7 +801,8 @@ std::vector<face_detection> detect_file(context* ctx, const char* path,
                         + data[(y0*img_w+x1)*3+src_c] * wx*(1-wy)
                         + data[(y1*img_w+x0)*3+src_c] * (1-wx)*wy
                         + data[(y1*img_w+x1)*3+src_c] * wx*wy;
-                pixels[c * det_size * det_size + y * det_size + x] = (v - 127.5f) / 128.0f;
+                pixels[c * det_size * det_size + y * det_size + x] =
+                    is_yunet ? v : (v - 127.5f) / 128.0f;
             }
         }
     }
@@ -778,7 +883,8 @@ std::vector<face_result> face_pipeline(context* det_ctx, context* rec_ctx,
     else { new_w = det_size; new_h = (int)(new_w * im_ratio); }
     float det_scale = (float)new_h / img_h;
 
-    float pad_val = -127.5f / 128.0f;
+    bool is_yunet_p = det_ctx->name.find("yunet") != std::string::npos;
+    float pad_val = is_yunet_p ? 0.0f : -127.5f / 128.0f;
     std::vector<float> pixels(3 * det_size * det_size);
     for (int i = 0; i < 3 * det_size * det_size; i++) pixels[i] = pad_val;
     for (int y = 0; y < new_h; y++) {
@@ -794,7 +900,8 @@ std::vector<face_result> face_pipeline(context* det_ctx, context* rec_ctx,
                         + data[(y0*img_w+x1)*3+src_c] * wx*(1-wy)
                         + data[(y1*img_w+x0)*3+src_c] * (1-wx)*wy
                         + data[(y1*img_w+x1)*3+src_c] * wx*wy;
-                pixels[c * det_size * det_size + y * det_size + x] = (v - 127.5f) / 128.0f;
+                pixels[c * det_size * det_size + y * det_size + x] =
+                    is_yunet_p ? v : (v - 127.5f) / 128.0f;
             }
         }
     }

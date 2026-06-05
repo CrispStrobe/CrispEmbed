@@ -38,6 +38,7 @@ int main(int argc, char ** argv) {
     std::string det_model_path;  // face detection model
     std::string rec_model_path;  // face recognition model
     std::string vit_model_path;  // standalone ViT model (SigLIP/CLIP)
+    std::string clip_text_model_path;  // CLIP text encoder
     int port = 8080;
     int n_threads = 4;
 
@@ -49,6 +50,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--det") == 0 && i + 1 < argc) det_model_path = argv[++i];
         else if (strcmp(argv[i], "--rec") == 0 && i + 1 < argc) rec_model_path = argv[++i];
         else if (strcmp(argv[i], "--vit") == 0 && i + 1 < argc) vit_model_path = argv[++i];
+        else if (strcmp(argv[i], "--clip-text") == 0 && i + 1 < argc) clip_text_model_path = argv[++i];
     }
 
     if (model_path.empty() && det_model_path.empty() && vit_model_path.empty()) {
@@ -60,6 +62,7 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --rec MODEL   face recognition model (ArcFace/SFace GGUF)\n");
         fprintf(stderr, "\nStandalone ViT (SigLIP/CLIP):\n");
         fprintf(stderr, "  --vit MODEL   ViT image embedding model (SigLIP/CLIP GGUF)\n");
+        fprintf(stderr, "  --clip-text MODEL  CLIP text encoder GGUF\n");
         return 1;
     }
 
@@ -596,6 +599,67 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // ── CLIP text encoder ──
+    crispembed_clip_text_context * clip_text_ctx = nullptr;
+    std::mutex clip_text_mutex;
+
+    if (!clip_text_model_path.empty()) {
+        clip_text_ctx = crispembed_clip_text_init(clip_text_model_path.c_str(), n_threads);
+        if (!clip_text_ctx)
+            fprintf(stderr, "Warning: failed to load CLIP text model '%s'\n", clip_text_model_path.c_str());
+    }
+
+    // POST /clip/text — CLIP text encoding
+    // Request:  {"text": "a photo of a cat"}
+    // Response: {"embedding": [...], "dim": N}
+    svr.Post("/clip/text", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!clip_text_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no CLIP text model loaded (use --clip-text)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string text;
+        auto pos = body.find("\"text\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 6);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                text = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (text.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no text\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(clip_text_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        int d = 0;
+        const float * vec = crispembed_clip_text_encode(clip_text_ctx, text.c_str(), &d);
+        if (!vec || d <= 0) {
+            res.status = 500;
+            res.set_content("{\"error\": \"CLIP text encoding failed\"}", "application/json");
+            return;
+        }
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        std::ostringstream js;
+        js << "{\"embedding\": [";
+        for (int j = 0; j < d; j++) {
+            if (j > 0) js << ", ";
+            js << vec[j];
+        }
+        js << "], \"dim\": " << d << "}";
+
+        fprintf(stderr, "crispembed-server: /clip/text in %.1f ms (dim=%d)\n", ms, d);
+        res.set_content(js.str(), "application/json");
+    });
+
     // GET /health
     svr.Get("/health", [&](const httplib::Request &, httplib::Response & res) {
         std::ostringstream js;
@@ -608,6 +672,7 @@ int main(int argc, char ** argv) {
         if (face_det) js << ", \"face_detection\": true";
         if (face_rec) js << ", \"face_recognition\": true, \"face_dim\": " << crispembed_face_dim(face_rec);
         if (vit_ctx) js << ", \"vit\": true, \"vit_dim\": " << crispembed_vit_dim(vit_ctx);
+        if (clip_text_ctx) js << ", \"clip_text\": true, \"clip_text_dim\": " << crispembed_clip_text_dim(clip_text_ctx);
         js << "}";
         res.set_content(js.str(), "application/json");
     });
@@ -622,10 +687,12 @@ int main(int argc, char ** argv) {
     if (face_det) fprintf(stderr, "  POST /detect          — {\"image\": \"path.jpg\"}\n");
     if (face_det && face_rec) fprintf(stderr, "  POST /face            — {\"image\": \"path.jpg\"} (pipeline)\n");
     if (vit_ctx) fprintf(stderr, "  POST /vit/encode      — {\"image\": \"path.jpg\"}\n");
+    if (clip_text_ctx) fprintf(stderr, "  POST /clip/text       — {\"text\": \"query\"}\n");
     fprintf(stderr, "  GET  /health\n\n");
 
     svr.listen(host, port);
 
+    if (clip_text_ctx) crispembed_clip_text_free(clip_text_ctx);
     if (vit_ctx) crispembed_vit_free(vit_ctx);
     if (face_det) crispembed_face_free(face_det);
     if (face_rec) crispembed_face_free(face_rec);

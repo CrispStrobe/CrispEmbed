@@ -2589,6 +2589,49 @@ extern "C" void crispembed_vit_free(crispembed_vit_context * ctx) {
 }
 
 // ---------------------------------------------------------------------------
+// CLIP text encoding C API
+// ---------------------------------------------------------------------------
+
+#include "clip_text_embed.h"
+
+struct crispembed_clip_text_context {
+    clip_text::context * ct = nullptr;
+    std::vector<float> last_output;
+};
+
+extern "C" crispembed_clip_text_context * crispembed_clip_text_init(
+        const char * model_path, int n_threads) {
+    if (!model_path) return nullptr;
+    auto * ctx = new crispembed_clip_text_context();
+    if (!clip_text::load(&ctx->ct, model_path, n_threads)) {
+        delete ctx;
+        return nullptr;
+    }
+    return ctx;
+}
+
+extern "C" int crispembed_clip_text_dim(const crispembed_clip_text_context * ctx) {
+    return ctx && ctx->ct ? clip_text::dim(ctx->ct) : 0;
+}
+
+extern "C" const float * crispembed_clip_text_encode(
+        crispembed_clip_text_context * ctx,
+        const char * text,
+        int * out_dim) {
+    if (!ctx || !ctx->ct || !text || !out_dim) return nullptr;
+    ctx->last_output = clip_text::encode(ctx->ct, text);
+    if (ctx->last_output.empty()) { *out_dim = 0; return nullptr; }
+    *out_dim = (int)ctx->last_output.size();
+    return ctx->last_output.data();
+}
+
+extern "C" void crispembed_clip_text_free(crispembed_clip_text_context * ctx) {
+    if (!ctx) return;
+    if (ctx->ct) clip_text::free(ctx->ct);
+    delete ctx;
+}
+
+// ---------------------------------------------------------------------------
 // Face detection & recognition C API
 // ---------------------------------------------------------------------------
 
@@ -2697,38 +2740,6 @@ extern "C" void crispembed_face_free(crispembed_face_context * ctx) {
     if (!ctx) return;
     if (ctx->cnn) cnn_embed::free(ctx->cnn);
     delete ctx;
-}
-
-// ---------------------------------------------------------------------------
-// HMER handwritten math OCR — delegates to hmer_ocr.h
-// ---------------------------------------------------------------------------
-
-#include "hmer_ocr.h"
-
-extern "C" void * crispembed_hmer_ocr_init(const char * model_path, int n_threads) {
-    return (void *)hmer_ocr_init(model_path, n_threads);
-}
-
-extern "C" void crispembed_hmer_ocr_free(void * ctx) {
-    hmer_ocr_free((hmer_ocr_context *)ctx);
-}
-
-extern "C" const char * crispembed_hmer_ocr_recognize(
-    void * ctx,
-    const uint8_t * pixel_bytes, int width, int height, int channels,
-    int * out_len
-) {
-    return hmer_ocr_recognize_raw((hmer_ocr_context *)ctx,
-                                  pixel_bytes, width, height, channels, out_len);
-}
-
-extern "C" const char * crispembed_hmer_ocr_recognize_gray(
-    void * ctx,
-    const float * pixels, int width, int height,
-    int * out_len
-) {
-    return hmer_ocr_recognize((hmer_ocr_context *)ctx,
-                               pixels, width, height, out_len);
 }
 
 extern "C" void crispembed_free(crispembed_context * ctx) {

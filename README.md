@@ -9,7 +9,8 @@ Text, image, and face embeddings in one binary.
 Qwen3, Gemma3, SPLADE, DeBERTa-v2). Dense, sparse (SPLADE/BGE-M3), ColBERT
 multi-vector, cross-encoder rerankers, bi-encoder reranking.
 
-**Vision**: SigLIP image embedding, SCRFD face detection, ArcFace/SFace/AuraFace
+**Vision**: CLIP and SigLIP text-image cross-modal search (encode text and images
+into the same vector space). YuNet/SCRFD face detection, ArcFace/SFace/AuraFace
 face recognition. Full detect-align-encode pipeline.
 
 **Math OCR**: DeiT+TrOCR on-device math equation recognition — printed math
@@ -18,7 +19,7 @@ is 17 MB, runs in ~3s decoder time. 0.99+ cosine parity with reference.
 
 **9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
 GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
-45 models in registry, 151 GGUF variants published on HF.
+58 models in registry (text, vision, face), 160+ GGUF variants on HF.
 
 ### Part of the Crisp ecosystem
 
@@ -33,7 +34,7 @@ GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
 
 ## Status
 
-**28 embedding models** shown below (all pass, cos>=0.965 vs HF), **45 models** total in registry (including rerankers, SPLADE, vision, face):
+**28 embedding models** shown below (all pass, cos>=0.965 vs HF), **58 models** total in registry (including rerankers, SPLADE, CLIP/SigLIP vision, CLIP text, YuNet/SCRFD face detection, AuraFace/SFace recognition):
 
 | Model | Type | Dim | F32 CosSim | Q8_0 | Q4_K |
 |-------|------|-----|------------|------|------|
@@ -131,16 +132,27 @@ source .env.local
 ./build/crispembed -m model.gguf --biencoder "capital of france" --top-n 2 \
     "Paris is the capital of France." "Berlin is the capital of Germany."
 
+# CLIP text-image search (cross-modal)
+./build/crispembed -m clip-text-base "a photo of a cat"
+./build/crispembed -m clip-vit-base-patch16 --image photo.jpg
+
+# Face detection (YuNet: 0.2 MB, or SCRFD: 16 MB)
+./build/crispembed -m yunet --detect photo.jpg --json
+
 # CLI parity test
 python tests/test_cli_parity.py --cli ./build/crispembed \
     --dense-model "$CRISPEMBED_DENSE_MODEL" \
     --retrieval-model "$CRISPEMBED_RETRIEVAL_MODEL" \
     --reranker-model "$CRISPEMBED_RERANKER_MODEL"
 
-# Start server (model loaded once, fast repeated queries)
-./build/crispembed-server -m model.gguf --port 8080
-curl -X POST http://localhost:8080/embed \
-    -d '{"texts": ["Hello world"]}'
+# Start server (text + vision + face + CLIP)
+./build/crispembed-server -m model.gguf \
+    --vit clip-vit-base-patch16.gguf \
+    --clip-text clip-text-base.gguf \
+    --det yunet.gguf --port 8080
+curl -X POST http://localhost:8080/embed -d '{"texts": ["Hello world"]}'
+curl -X POST http://localhost:8080/clip/text -d '{"text": "a photo of a cat"}'
+curl -X POST http://localhost:8080/vit/encode -d '{"image": "photo.jpg"}'
 ```
 
 ## Math OCR
@@ -153,9 +165,7 @@ post-LayerNorm/BART convention). Encoder uses ggml graph with SIMD acceleration;
 decoder uses optimized ggml graph with single-thread compute (thread barrier
 overhead exceeds compute for the small [256,1] decoder tensors).
 
-**Models on HuggingFace**:
-- [`cstr/pix2tex-mfr-gguf`](https://huggingface.co/cstr/pix2tex-mfr-gguf) — printed math (DeiT-small + TrOCR-small)
-- `fhswf/TrOCR_Math_handwritten` — handwritten math (ViT-Large + TrOCR-Large, AFL-3.0). Converted via torch-free safetensors→GGUF converter.
+**Models on HuggingFace**: [`cstr/pix2tex-mfr-gguf`](https://huggingface.co/cstr/pix2tex-mfr-gguf)
 
 | Variant | Size | Decoder time | Cosine vs F32 |
 |---------|------|-------------|---------------|

@@ -9,7 +9,9 @@
 #include "crispembed.h"
 #include "model_mgr.h"
 #include "vit_embed.h"
+#include "clip_text_embed.h"
 #include "cnn_embed.h"
+#include "hmer_ocr.h"
 
 // stb_image for --detect image loading
 #define STB_IMAGE_STATIC
@@ -73,6 +75,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --top-n N        limit rerank output to top N documents\n");
     fprintf(stderr, "  --face FILE      encode face from image (recognition model)\n");
     fprintf(stderr, "  --detect FILE    detect faces in image (detection model)\n");
+    fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
     fprintf(stderr, "  --conf N         confidence threshold for detection (default: 0.5)\n");
@@ -87,7 +90,8 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  all-MiniLM-L6-v2, gte-small, arctic-embed-xs,\n");
     fprintf(stderr, "  multilingual-e5-small, pixie-rune-v1, arctic-embed-l-v2,\n");
     fprintf(stderr, "  octen-0.6b, f2llm-v2-0.6b, jina-v5-nano, jina-v5-small,\n");
-    fprintf(stderr, "  harrier-0.6b, harrier-270m, qwen3-embed-0.6b\n");
+    fprintf(stderr, "  harrier-0.6b, harrier-270m, qwen3-embed-0.6b,\n");
+    fprintf(stderr, "  yunet (face detection, 0.2 MB)\n");
     fprintf(stderr, "\n");
 }
 
@@ -115,6 +119,7 @@ int main(int argc, char ** argv) {
     std::string image_path;  // JPG/PNG/BMP — in-process preprocessor
     std::string face_path;   // face image for CNN face recognition
     std::string detect_path; // image for face detection
+    std::string hmer_path;   // image for handwritten math OCR
     std::string det_model;   // detection model for --face-pipeline
     bool face_pipeline_mode = false;
     float conf_threshold = 0.5f;
@@ -159,6 +164,8 @@ int main(int argc, char ** argv) {
             face_path = argv[++i];
         } else if (strcmp(argv[i], "--detect") == 0 && i + 1 < argc) {
             detect_path = argv[++i];
+        } else if (strcmp(argv[i], "--hmer") == 0 && i + 1 < argc) {
+            hmer_path = argv[++i];
         } else if (strcmp(argv[i], "--det") == 0 && i + 1 < argc) {
             det_model = argv[++i];
         } else if (strcmp(argv[i], "--face-pipeline") == 0) {
@@ -380,6 +387,53 @@ int main(int argc, char ** argv) {
             return 0;
         }
         // Not a CNN model — fall through
+    }
+
+    // Handwritten math OCR (HMER)
+    if (!hmer_path.empty()) {
+        hmer_ocr_context* hctx = hmer_ocr_init(model_path.c_str(), n_threads);
+        if (!hctx) { fprintf(stderr, "error: failed to load HMER model\n"); return 1; }
+        int w, h, ch;
+        unsigned char* data = stbi_load(hmer_path.c_str(), &w, &h, &ch, 0);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", hmer_path.c_str()); hmer_ocr_free(hctx); return 1; }
+        int out_len = 0;
+        const char* latex = hmer_ocr_recognize_raw(hctx, data, w, h, ch, &out_len);
+        stbi_image_free(data);
+        if (latex && out_len > 0) {
+            if (json_output) {
+                printf("{\"latex\": \"%s\"}\n", latex);
+            } else {
+                printf("%s\n", latex);
+            }
+        } else {
+            fprintf(stderr, "error: HMER recognition failed\n");
+        }
+        hmer_ocr_free(hctx);
+        return 0;
+    }
+
+    // Check if this is a CLIP text encoder GGUF.
+    if (!texts.empty() && detect_path.empty() && face_path.empty() &&
+        image_path.empty() && image_raw_path.empty()) {
+        clip_text::context* cltx = nullptr;
+        if (clip_text::load(&cltx, model_path.c_str(), n_threads)) {
+            for (const auto& t : texts) {
+                auto emb = clip_text::encode(cltx, t.c_str());
+                if (emb.empty()) { fprintf(stderr, "error: CLIP text encode failed\n"); continue; }
+                if (json_output) {
+                    printf("{\"text\": \"%s\", \"embedding\": [", json_escape(t).c_str());
+                    for (size_t j = 0; j < emb.size(); j++)
+                        printf("%.6f%s", emb[j], j + 1 < emb.size() ? ", " : "");
+                    printf("]}\n");
+                } else {
+                    for (size_t j = 0; j < emb.size(); j++)
+                        printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
+                }
+            }
+            clip_text::free(cltx);
+            return 0;
+        }
+        // Not a CLIP text model — fall through
     }
 
     // Check if this is a standalone ViT GGUF (SigLIP/CLIP image encoder).

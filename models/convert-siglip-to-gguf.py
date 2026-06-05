@@ -85,6 +85,7 @@ def main():
     writer.add_uint32("vit.num_channels", vc.num_channels)
     writer.add_string("vit.model_type", "siglip" if is_siglip else "clip")
     writer.add_float32("vit.layer_norm_eps", getattr(vc, "layer_norm_eps", 1e-6))
+    writer.add_string("vit.hidden_act", getattr(vc, "hidden_act", "gelu"))
 
     # Image normalization constants
     # SigLIP: mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]

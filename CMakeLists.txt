@@ -112,6 +112,7 @@ if(CRISPEMBED_HAS_CRISP_AUDIO)
 endif()
 list(APPEND CRISPEMBED_SOURCES src/bidirlm_vision.cpp)
 list(APPEND CRISPEMBED_SOURCES src/vit_embed.cpp)
+list(APPEND CRISPEMBED_SOURCES src/clip_text_embed.cpp)
 list(APPEND CRISPEMBED_SOURCES src/cnn_embed.cpp)
 list(APPEND CRISPEMBED_SOURCES src/face_align.cpp)
 list(APPEND CRISPEMBED_SOURCES src/math_ocr.cpp)
@@ -196,9 +197,6 @@ set_target_properties(crispembed-quantize PROPERTIES
     INSTALL_RPATH "${CRISPEMBED_BIN_INSTALL_RPATH}"
 )
 install(TARGETS crispembed-quantize RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-
-add_executable(test-hmer tests/test_hmer.cpp)
-target_link_libraries(test-hmer PRIVATE crispembed)
 
 endif() # NOT iOS
 

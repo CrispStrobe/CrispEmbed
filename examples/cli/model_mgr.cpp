@@ -366,6 +366,84 @@ static const ModelEntry k_registry[] = {
      "Gemma3 768d 24-layer last-token (300M)", "741 MB", "gemma",
      "https://huggingface.co/google/embeddinggemma-300m"},
 
+    {"yunet",
+     "yunet.gguf",
+     "https://huggingface.co/cstr/yunet-GGUF/resolve/main/yunet.gguf",
+     "YuNet face detection (ShuffleNetV2 640x640, 75K)", "0.2 MB", "apache-2.0",
+     "https://huggingface.co/cstr/yunet-GGUF"},
+
+    {"clip-vit-base-patch16",
+     "clip-vit-base-patch16.gguf",
+     "https://huggingface.co/cstr/clip-vit-base-patch16-GGUF/resolve/main/clip-vit-base-patch16.gguf",
+     "CLIP ViT-B/16 vision encoder (86M)", "329 MB", "mit",
+     "https://huggingface.co/openai/clip-vit-base-patch16"},
+
+    {"clip-vit-large-patch14",
+     "clip-vit-large-patch14.gguf",
+     "https://huggingface.co/cstr/clip-vit-large-patch14-GGUF/resolve/main/clip-vit-large-patch14.gguf",
+     "CLIP ViT-L/14 vision encoder (304M)", "1.2 GB", "mit",
+     "https://huggingface.co/openai/clip-vit-large-patch14"},
+
+    {"clip-text-base",
+     "clip-text-base.gguf",
+     "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/main/clip-text-base.gguf",
+     "CLIP text encoder base (63M, 512d)", "244 MB", "mit",
+     "https://huggingface.co/openai/clip-vit-base-patch16"},
+
+    {"clip-text-large",
+     "clip-text-large.gguf",
+     "https://huggingface.co/cstr/clip-text-large-GGUF/resolve/main/clip-text-large.gguf",
+     "CLIP text encoder large (124M, 768d)", "480 MB", "mit",
+     "https://huggingface.co/openai/clip-vit-large-patch14"},
+
+    {"siglip-large-256",
+     "siglip-large-256.gguf",
+     "https://huggingface.co/cstr/siglip-large-256-GGUF/resolve/main/siglip-large-256.gguf",
+     "SigLIP ViT-L/16 vision encoder 256x256 (304M)", "1.2 GB", "apache-2.0",
+     "https://huggingface.co/google/siglip-large-patch16-256"},
+
+    {"siglip-so400m-patch14-384",
+     "siglip-so400m-patch14-384.gguf",
+     "https://huggingface.co/cstr/siglip-so400m-patch14-384-GGUF/resolve/main/siglip-so400m-patch14-384.gguf",
+     "SigLIP SoViT-400M/14 vision encoder 384x384 (428M)", "1.6 GB", "apache-2.0",
+     "https://huggingface.co/google/siglip-so400m-patch14-384"},
+
+    {"clip-vit-large-patch14-336",
+     "clip-vit-large-patch14-336.gguf",
+     "https://huggingface.co/cstr/clip-vit-large-patch14-336-GGUF/resolve/main/clip-vit-large-patch14-336.gguf",
+     "CLIP ViT-L/14@336px vision encoder (304M)", "1.2 GB", "mit",
+     "https://huggingface.co/openai/clip-vit-large-patch14-336"},
+
+    {"siglip-base",
+     "siglip-base.gguf",
+     "https://huggingface.co/cstr/siglip-base-GGUF/resolve/main/siglip-base.gguf",
+     "SigLIP ViT-B/16 vision encoder 384x384 (93M)", "354 MB", "apache-2.0",
+     "https://huggingface.co/google/siglip-base-patch16-384"},
+
+    {"siglip-text-base",
+     "siglip-text-base.gguf",
+     "https://huggingface.co/cstr/siglip-text-base-GGUF/resolve/main/siglip-text-base.gguf",
+     "SigLIP text encoder base (93M, 768d)", "421 MB", "apache-2.0",
+     "https://huggingface.co/google/siglip-base-patch16-224"},
+
+    {"scrfd-det-10g",
+     "scrfd-det-10g.gguf",
+     "https://huggingface.co/cstr/scrfd-det-10g-GGUF/resolve/main/scrfd-det-10g.gguf",
+     "SCRFD face detection (ResNet-50 FPN, 640x640)", "16 MB", "apache-2.0",
+     "https://huggingface.co/cstr/scrfd-det-10g-GGUF"},
+
+    {"auraface-v1",
+     "auraface-v1.gguf",
+     "https://huggingface.co/cstr/auraface-v1-GGUF/resolve/main/auraface-v1.gguf",
+     "AuraFace face recognition (ResNet-100, 512d)", "249 MB", "apache-2.0",
+     "https://huggingface.co/cstr/auraface-v1-GGUF"},
+
+    {"sface",
+     "sface.gguf",
+     "https://huggingface.co/cstr/sface-GGUF/resolve/main/sface.gguf",
+     "SFace face recognition (MobileFaceNet, 128d)", "37 MB", "apache-2.0",
+     "https://huggingface.co/cstr/sface-GGUF"},
+
     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 
