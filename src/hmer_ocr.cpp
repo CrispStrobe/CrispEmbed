@@ -894,8 +894,25 @@ const char * hmer_ocr_recognize(
 ) {
     if (!ctx || !pixels || width <= 0 || height <= 0) return nullptr;
 
+    // HMER expects white strokes on black background (CROHME convention).
+    // Auto-detect: if mean pixel > 0.5, the image is likely white-background
+    // (black-on-white) and needs inverting.
+    const int n = width * height;
+    float mean = 0;
+    for (int i = 0; i < n; i++) mean += pixels[i];
+    mean /= n;
+
+    std::vector<float> inverted;
+    const float * input = pixels;
+    if (mean > 0.5f) {
+        inverted.resize(n);
+        for (int i = 0; i < n; i++) inverted[i] = 1.0f - pixels[i];
+        input = inverted.data();
+        fprintf(stderr, "hmer_ocr: auto-inverted image (mean=%.2f > 0.5)\n", mean);
+    }
+
     // Run encoder
-    run_encoder(ctx, pixels, width, height);
+    run_encoder(ctx, input, width, height);
 
     // Run decoder
     ctx->result_buf = greedy_decode(ctx);
