@@ -43,14 +43,20 @@ Input text / image / audio
     │               → image_embeds spliced into decoder
     │
     ├─► Image ──► CNN path (cnn_embed.cpp)
-    │               SCRFD face detection (FPN + anchor decode + NMS)
+    │               SCRFD/YuNet face detection (FPN + anchor decode + NMS)
     │               ArcFace/SFace/AuraFace face recognition
     │
     ├─► Audio ──► BidirLM-Omni audio (bidirlm_audio.cpp)
     │               crisp_audio Whisper-shape encoder → mean pool → 2048-d
     │
-    └─► Math  ──► DeiT encoder + TrOCR decoder (math_ocr.cpp)
-                    Image → LaTeX via ggml graph compute
+    ├─► Math  ──► DeiT encoder + TrOCR decoder (math_ocr.cpp)
+    │               Printed math → LaTeX via ggml graph compute
+    │
+    ├─► Math  ──► HMER: DenseNet-121 + GRU attention (hmer_ocr.cpp)
+    │               Handwritten math → LaTeX (CROHME 2016)
+    │
+    └─► Math  ──► BTTR: DenseNet + Transformer decoder (bttr_ocr.cpp)
+                    Handwritten math → LaTeX (CROHME 2014, 53% exact match)
 ```
 
 ## Supported architectures (v0.7.0)
@@ -67,10 +73,13 @@ Input text / image / audio
 | Qwen3 decoder | GPT-2 BPE | RMSNorm, SwiGLU, RoPE, GQA | Octen, F2LLM, Jina v5, Harrier-0.6B |
 | Gemma3 decoder | SentencePiece BPE | Gemma RMSNorm(1+w), GeGLU | Harrier-270M, EmbeddingGemma-300m |
 | BidirLM-Omni | GPT-2 BPE | Bidirectional Qwen3, MRoPE, DeepStack | BidirLM-Omni-2.5B |
-| ViT (SigLIP/CLIP) | — | Conv2D patch embed, mean pool | siglip-base |
+| ViT (SigLIP/CLIP) | — | Conv2D patch embed, CLS/mean/attn pool | siglip-base, clip-vit-base |
+| CLIP text | CLIP BPE | Pre-LN, causal mask, EOS pool | clip-text-base/large |
 | CNN (SCRFD/YuNet) | — | FPN, anchor decode, NMS | scrfd-det-10g, yunet |
 | CNN (ArcFace) | — | ResNet-100, 512-D L2 | w600k_r50, auraface-v1, sface |
 | DeiT+TrOCR | — | ggml graph encoder + decoder | pix2tex-mfr |
+| HMER | — | DenseNet-121 + GRU attention | hmer (handwritten math) |
+| BTTR | — | DenseNet + Transformer decoder | bttr (handwritten math) |
 
 ## Shared code with CrispASR
 
@@ -100,10 +109,13 @@ CrispEmbed/
 │   ├── decoder_embed.{h,cpp}   decoder graph (Qwen3/Gemma3/BidirLM)
 │   ├── bidirlm_vision.cpp      BidirLM-Omni vision tower
 │   ├── bidirlm_audio.cpp       BidirLM-Omni audio tower
-│   ├── vit_embed.{h,cpp}       SigLIP/CLIP ViT
-│   ├── cnn_embed.{h,cpp}       SCRFD/ArcFace/SFace
+│   ├── vit_embed.{h,cpp}       SigLIP/CLIP ViT vision encoder
+│   ├── clip_text_embed.{h,cpp} CLIP/SigLIP text encoder
+│   ├── cnn_embed.{h,cpp}       SCRFD/YuNet/ArcFace/SFace
 │   ├── image_preprocess.{h,cpp} C++ image preprocessor
-│   ├── math_ocr.{h,cpp}        DeiT+TrOCR math OCR
+│   ├── math_ocr.{h,cpp}        DeiT+TrOCR printed math OCR
+│   ├── hmer_ocr.{h,cpp}        HMER handwritten math OCR
+│   ├── bttr_ocr.{h,cpp}        BTTR handwritten math OCR
 │   ├── tokenizer.h             WordPiece + SentencePiece + BPE
 │   ├── tokenizer_bpe.cpp       GPT-2 byte-level BPE
 │   ├── model_mgr.{h,cpp}       registry + auto-download
@@ -115,7 +127,10 @@ CrispEmbed/
 │   ├── convert-bert-to-gguf.py
 │   ├── convert-decoder-embed-to-gguf.py
 │   ├── convert-siglip-to-gguf.py
+│   ├── convert-clip-text-to-gguf.py
 │   ├── convert-face-to-gguf.py
+│   ├── convert-hmer-to-gguf.py
+│   ├── convert-bttr-to-gguf.py
 │   └── upload_to_hf.py
 ├── python/crispembed/          ctypes wrapper
 ├── crispembed-sys/             Rust FFI bindings

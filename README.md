@@ -13,9 +13,10 @@ multi-vector, cross-encoder rerankers, bi-encoder reranking.
 into the same vector space). YuNet/SCRFD face detection, ArcFace/SFace/AuraFace
 face recognition. Full detect-align-encode pipeline.
 
-**Math OCR**: DeiT+TrOCR on-device math equation recognition — printed math
-images → LaTeX. ggml graph encoder + optimized graph decoder. Q4_K model
-is 17 MB, runs in ~3s decoder time. 0.99+ cosine parity with reference.
+**Math OCR**: Three engines for math-image → LaTeX:
+DeiT+TrOCR (printed math, 17 MB Q4_K), BTTR (handwritten, DenseNet+Transformer,
+53% exact match on CROHME), HMER (handwritten, DenseNet+GRU attention).
+All run via ggml graph compute, ~3-5s decoder time.
 
 **9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
 GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
