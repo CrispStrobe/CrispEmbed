@@ -58,9 +58,9 @@ class CrispEmbedOcr {
     _free = _lib.lookupFunction<_OcrFreeC, _OcrFreeDart>(
         'crispembed_math_ocr_free');
     _recognize = _lib.lookupFunction<_OcrRecognizeC, _OcrRecognizeDart>(
-        'math_ocr_recognize');
+        'crispembed_math_ocr_recognize_gray');
     _recognizeRaw = _lib.lookupFunction<_OcrRecognizeRawC, _OcrRecognizeRawDart>(
-        'math_ocr_recognize_raw');
+        'crispembed_math_ocr_recognize');
 
     final pathPtr = modelPath.toNativeUtf8();
     _ctx = init(pathPtr, nThreads);
