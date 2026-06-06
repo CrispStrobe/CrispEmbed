@@ -72,13 +72,15 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 - Total registry: ~58 models
 
 ### Vision parity investigation
-- CLIP/SigLIP achieve cos ≈ 0.8 vs HuggingFace (not 0.999+ like text models)
-- Root cause: FP32 matmul accumulation order differences between ggml and
-  PyTorch, compounding through 12 pre-LN layers (~0.001 error/layer)
-- Post-LN models (BERT) don't have this issue (LayerNorm resets drift)
+- CLIP/SigLIP vision achieve cos ≈ 0.8 vs HuggingFace on CPU
+- SigLIP text achieves cos = 1.000000 (bidirectional, short sequences)
+- Per-layer error ~0.001, compounding through 12 pre-LN layers
 - Error scales with sequence length: T=3 → cos=0.97, T=197 → cos=0.81
-- Fundamental limitation, not fixable without matching PyTorch's BLAS
-- Models fully usable for retrieval (relative ranking preserved)
+- Post-LN models (BERT) don't have this issue (LayerNorm resets drift)
+- Likely improvable: GPU backends may have different matmul accumulation;
+  QKV fusion, graph caching, or alternative attention implementations
+  could reduce the per-layer delta
+- Models usable for retrieval (relative ranking preserved)
 
 ---
 
