@@ -1025,9 +1025,13 @@ partial products in different SIMD-lane order, causing FP32 non-
 associativity drift (~1e-7 per element, amplified by the 197×197
 attention matrix to ~1e-3 per attention layer).
 
-**Cannot be fixed** without matching PyTorch's exact BLAS implementation.
-The models are fully usable for retrieval (relative ranking preserved);
-absolute cosine similarity values will differ slightly from HF.
+**Potential improvements**: The per-layer error (~0.001) could be reduced by:
+- QKV weight fusion (one matmul instead of three — changes accumulation)
+- GPU backends (CUDA/Metal may accumulate differently)
+- Alternative attention implementations (different softmax/matmul order)
+- Graph caching to reduce tensor rebuild overhead
+The cos≈0.8 is the current CPU baseline, not a hard ceiling.
+Models are usable for retrieval (relative ranking preserved).
 
 **GELU FP16 lookup tables** (`GGML_GELU_FP16`, `GGML_GELU_QUICK_FP16`):
 ggml uses FP16 lookup tables for both `ggml_gelu` and `ggml_gelu_quick`
