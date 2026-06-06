@@ -699,6 +699,34 @@ static std::string greedy_decode(bttr_ocr_context * ctx) {
 // Public API
 // ---------------------------------------------------------------------------
 
+// Scale image down to fit within max_pixels, preserving aspect ratio.
+// Uses bilinear interpolation. Returns true if scaling was applied.
+static bool scale_to_fit(const float * src, int sw, int sh,
+                         std::vector<float> & dst, int & dw, int & dh,
+                         int max_pixels = 100000) {
+    if (sw * sh <= max_pixels) return false;
+    float ratio = sqrtf((float)max_pixels / (sw * sh));
+    dw = std::max(1, (int)(sw * ratio));
+    dh = std::max(1, (int)(sh * ratio));
+    dst.resize(dw * dh);
+    for (int y = 0; y < dh; y++) {
+        float sy = (y + 0.5f) * sh / dh - 0.5f;
+        int y0 = std::max(0, std::min((int)sy, sh - 1));
+        int y1 = std::min(y0 + 1, sh - 1);
+        float fy = sy - y0;
+        for (int x = 0; x < dw; x++) {
+            float sx = (x + 0.5f) * sw / dw - 0.5f;
+            int x0 = std::max(0, std::min((int)sx, sw - 1));
+            int x1 = std::min(x0 + 1, sw - 1);
+            float fx = sx - x0;
+            dst[y * dw + x] =
+                src[y0*sw+x0]*(1-fx)*(1-fy) + src[y0*sw+x1]*fx*(1-fy) +
+                src[y1*sw+x0]*(1-fx)*fy     + src[y1*sw+x1]*fx*fy;
+        }
+    }
+    return true;
+}
+
 const char * bttr_ocr_recognize(
     bttr_ocr_context * ctx,
     const float * pixels, int width, int height,
@@ -706,22 +734,30 @@ const char * bttr_ocr_recognize(
 ) {
     if (!ctx || !pixels || width <= 0 || height <= 0) return nullptr;
 
-    // Auto-invert if needed (same as HMER)
+    // Auto-invert if needed
     const int n = width * height;
     float mean = 0;
     for (int i = 0; i < n; i++) mean += pixels[i];
     mean /= n;
 
-    std::vector<float> inverted;
+    std::vector<float> work;
     const float * input = pixels;
     if (mean > 0.5f) {
-        inverted.resize(n);
-        for (int i = 0; i < n; i++) inverted[i] = 1.0f - pixels[i];
-        input = inverted.data();
+        work.resize(n);
+        for (int i = 0; i < n; i++) work[i] = 1.0f - pixels[i];
+        input = work.data();
         fprintf(stderr, "bttr_ocr: auto-inverted (mean=%.2f)\n", mean);
     }
 
-    run_encoder(ctx, input, width, height);
+    // Scale down large images to fit within 100K pixels
+    int w = width, h = height;
+    std::vector<float> scaled;
+    if (scale_to_fit(input, width, height, scaled, w, h)) {
+        input = scaled.data();
+        fprintf(stderr, "bttr_ocr: scaled %dx%d → %dx%d\n", width, height, w, h);
+    }
+
+    run_encoder(ctx, input, w, h);
     ctx->result_buf = greedy_decode(ctx);
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
