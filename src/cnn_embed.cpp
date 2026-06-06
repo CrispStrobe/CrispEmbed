@@ -128,7 +128,9 @@ bool load(context** out, const char* path, int n_threads) {
             dw.w = dw_w;
             dw.bias = get(pfx + "_dw_conv2d_weight_bias");
             dw.prelu = get(pfx + "_dw_relu_gamma");
-            dw.group = (int)dw_w->ne[3];  // OC = group for depthwise
+            // Depthwise: group = OC. For 4D [KW,KH,1,OC], ne[3]=OC.
+            // For 2D-flattened [KH*KW, OC], ne[1]=OC.
+            dw.group = (ggml_n_dims(dw_w) == 2) ? (int)dw_w->ne[1] : (int)dw_w->ne[3];
             dw.pad = 1;  // 3x3 with pad=1
             // Detect stride from layer index (conv_3, conv_5, conv_7, conv_13 have stride 2)
             // This is SFace-specific — a more general approach would read from metadata
@@ -145,7 +147,15 @@ bool load(context** out, const char* path, int n_threads) {
             pw.bias = get(pfx + "_conv2d_weight_bias");
             pw.prelu = get(pfx + "_relu_gamma");
             pw.group = 1;
-            pw.pad = (pw_w->ne[0] > 1) ? 1 : 0;  // 3x3 → pad=1, 1x1 → pad=0
+            // Pad: 3x3 → pad=1, 1x1 → pad=0. For 2D-flattened, check flat dim.
+            if (ggml_n_dims(pw_w) == 2) {
+                // Flattened: [IC*KH*KW, OC]. If flat > OC or flat has factor 9, it's 3x3.
+                int64_t flat = pw_w->ne[0], oc = pw_w->ne[1];
+                // First conv (conv_1): [3*3*3, 32] = [27, 32] → 3x3 conv
+                pw.pad = (flat > oc || flat % 9 == 0) ? 1 : 0;
+            } else {
+                pw.pad = (pw_w->ne[0] > 1) ? 1 : 0;
+            }
             pw.stride = 1;
             if (i == 1) pw.stride = 1;  // first conv is always stride 1
             ctx->blocks.push_back(pw);
@@ -278,8 +288,20 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         const auto& blk = ctx->blocks[i];
         if (!blk.w) continue;
 
-        // ggml_conv_2d requires F16 kernel — cast if needed
+        // Handle 2D-flattened conv weights (from quantized GGUF)
         ggml_tensor* w = blk.w;
+        if (ggml_n_dims(w) == 2) {
+            int64_t OC = w->ne[1], flat = w->ne[0];
+            int64_t IC = (blk.group > 1) ? 1 : (int64_t)x->ne[2];
+            int64_t ka = flat / IC;
+            int64_t KH = (ka == 1) ? 1 : (ka == 9) ? 3 : (ka == 25) ? 5 : (int64_t)std::sqrt((double)ka);
+            // Dequant Q8/Q4 → F32 first, then reshape to 4D, then cast to F16
+            if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16) {
+                w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+            }
+            w = ggml_reshape_4d(g, w, KH, KH, IC, OC);
+        }
+        // ggml_conv_2d requires F16 kernel — cast if needed
         if (w->type != GGML_TYPE_F16) {
             w = ggml_cast(g, w, GGML_TYPE_F16);
         }
@@ -1036,6 +1058,26 @@ static ggml_tensor* replay_graph(
                         n.inputs[0].c_str(), x ? "ok" : "MISS",
                         n.inputs.size() > 1 ? n.inputs[1].c_str() : "?", w ? "ok" : "MISS");
                 continue;
+            }
+            // If conv weight was stored as 2D [OC, IC*KH*KW] for quantization,
+            // reshape back to 4D [KW, KH, IC, OC] (ggml conv2d layout).
+            if (ggml_n_dims(w) == 2) {
+                int64_t OC = w->ne[1];
+                int64_t flat = w->ne[0];  // IC * KH * KW
+                int64_t IC = (int64_t)x->ne[2];  // input channels
+                // Infer kernel size from flat / IC
+                int64_t kernel_area = flat / IC;
+                int64_t KH = 1, KW = 1;
+                if (kernel_area == 9) { KH = 3; KW = 3; }
+                else if (kernel_area == 1) { KH = 1; KW = 1; }
+                else if (kernel_area == 25) { KH = 5; KW = 5; }
+                else if (kernel_area == 49) { KH = 7; KW = 7; }
+                else { KH = (int64_t)std::sqrt((double)kernel_area); KW = KH; }
+                // Cast before reshape (dequant Q8/Q4 → F16)
+                if (w->type != GGML_TYPE_F16 && w->type != GGML_TYPE_F32) {
+                    w = ggml_cast(g, w, GGML_TYPE_F16);
+                }
+                w = ggml_reshape_4d(g, w, KW, KH, IC, OC);
             }
             // Cast to F16 for ggml_conv_2d
             if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
