@@ -444,6 +444,18 @@ static const ModelEntry k_registry[] = {
      "SFace face recognition (MobileFaceNet, 128d)", "37 MB", "apache-2.0",
      "https://huggingface.co/cstr/sface-GGUF"},
 
+    {"hmer-hw",
+     "hmer-hw-q4_k.gguf",
+     "https://huggingface.co/cstr/hmer-handwritten-math-gguf/resolve/main/hmer-hw-q4_k.gguf",
+     "HMER handwritten math OCR (DenseNet-121+GRU, 112 tokens)", "5 MB", "mit",
+     "https://huggingface.co/cstr/hmer-handwritten-math-gguf"},
+
+    {"bttr-hw",
+     "bttr-hw-q4_k.gguf",
+     "https://huggingface.co/cstr/bttr-handwritten-math-gguf/resolve/main/bttr-hw-q4_k.gguf",
+     "BTTR handwritten math OCR (DenseNet+Transformer, 113 tokens)", "5 MB", "mit",
+     "https://huggingface.co/cstr/bttr-handwritten-math-gguf"},
+
     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 

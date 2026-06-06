@@ -12,6 +12,7 @@
 #include "clip_text_embed.h"
 #include "cnn_embed.h"
 #include "hmer_ocr.h"
+#include "bttr_ocr.h"
 
 // stb_image for --detect image loading
 #define STB_IMAGE_STATIC
@@ -76,6 +77,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --face FILE      encode face from image (recognition model)\n");
     fprintf(stderr, "  --detect FILE    detect faces in image (detection model)\n");
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
+    fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
     fprintf(stderr, "  --conf N         confidence threshold for detection (default: 0.5)\n");
@@ -119,7 +121,8 @@ int main(int argc, char ** argv) {
     std::string image_path;  // JPG/PNG/BMP — in-process preprocessor
     std::string face_path;   // face image for CNN face recognition
     std::string detect_path; // image for face detection
-    std::string hmer_path;   // image for handwritten math OCR
+    std::string hmer_path;   // image for handwritten math OCR (HMER)
+    std::string bttr_path;   // image for handwritten math OCR (BTTR)
     std::string det_model;   // detection model for --face-pipeline
     bool face_pipeline_mode = false;
     float conf_threshold = 0.5f;
@@ -166,6 +169,8 @@ int main(int argc, char ** argv) {
             detect_path = argv[++i];
         } else if (strcmp(argv[i], "--hmer") == 0 && i + 1 < argc) {
             hmer_path = argv[++i];
+        } else if (strcmp(argv[i], "--bttr") == 0 && i + 1 < argc) {
+            bttr_path = argv[++i];
         } else if (strcmp(argv[i], "--det") == 0 && i + 1 < argc) {
             det_model = argv[++i];
         } else if (strcmp(argv[i], "--face-pipeline") == 0) {
@@ -409,6 +414,29 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "error: HMER recognition failed\n");
         }
         hmer_ocr_free(hctx);
+        return 0;
+    }
+
+    // Handwritten math OCR (BTTR)
+    if (!bttr_path.empty()) {
+        bttr_ocr_context* bctx = bttr_ocr_init(model_path.c_str(), n_threads);
+        if (!bctx) { fprintf(stderr, "error: failed to load BTTR model\n"); return 1; }
+        int w, h, ch;
+        unsigned char* data = stbi_load(bttr_path.c_str(), &w, &h, &ch, 0);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", bttr_path.c_str()); bttr_ocr_free(bctx); return 1; }
+        int out_len = 0;
+        const char* latex = bttr_ocr_recognize_raw(bctx, data, w, h, ch, &out_len);
+        stbi_image_free(data);
+        if (latex && out_len > 0) {
+            if (json_output) {
+                printf("{\"latex\": \"%s\"}\n", latex);
+            } else {
+                printf("%s\n", latex);
+            }
+        } else {
+            fprintf(stderr, "error: BTTR recognition failed\n");
+        }
+        bttr_ocr_free(bctx);
         return 0;
     }
 
