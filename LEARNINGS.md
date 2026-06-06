@@ -1089,3 +1089,17 @@ reshapes back to the 4D layout expected by `ggml_conv_2d`.
 
 3. **OC=1 weights report ndims=1**: Flattened `[IC*KH*KW, 1]` has
    `ne[1]=1`, so `ggml_n_dims = 1`. Use `ndims <= 2` to catch these.
+
+### YuNet raw tensor cos vs ONNX — layout difference, not a bug
+
+Raw tensor cos between C++ replay_graph and ONNX reference is 0.35-0.85
+for bbox/kps outputs. This is NOT a parity issue — the Transpose and
+Reshape handlers in replay_graph don't rearrange memory for 3D+ tensors
+(passthrough). The result is planar `[C, H, W]` layout in ggml vs
+interleaved `[H*W, C]` in ONNX. The YuNet decode loop uses matching
+indexing: `col + row*grid_w + chan*plane` for the planar layout.
+
+Verified: decoded detection coordinates match OpenCV FaceDetectorYN to
+sub-pixel accuracy (< 0.5px diff) on both single-face and multi-face
+images. The cls tensors (1 channel) show cos=0.985-0.992 because layout
+is irrelevant for single-channel data.
