@@ -158,6 +158,7 @@ CrispEmbed/
 - [x] Face model quantized inference via graph replayer (YuNet F16/Q8_0 working; fixed depthwise IC, ggml_n_dims trailing-1s, Q→F32 dequant path)
 - [x] ViT parity: cos 0.8→1.0 (was patch ordering bug — permute(2,1,0) gave column-major spatial, fixed to permute(1,2,0,3) for row-major matching HF)
 - [ ] Nomic v2 MoE (MoE routing layer in encoder)
+- [ ] LoRA adapter hot-swap (Jina v5 per-task adapters)
 
 ### Bindings
 
@@ -173,7 +174,175 @@ CrispEmbed/
 
 ### Ideas from mayflower
 
-- LoRA adapter hot-swap (Jina v5 has per-task LoRA; currently baked at convert time)
 - Streaming ColBERT late interaction scoring in the server
 - WASM build target for browser-based inference
 - INT4 GGUF for face models (conv2d quantization)
+
+---
+
+## Implementation blueprints
+
+Detailed specs for pending roadmap items. Each blueprint is self-contained
+so a fresh agent can implement it independently.
+
+### Blueprint: LoRA adapter hot-swap
+
+**Goal**: Load multiple LoRA adapters from a single GGUF and switch at
+runtime without re-loading the model. Primary use case: Jina v5 per-task
+LoRA (retrieval, classification, clustering, text-matching).
+
+**Current state**: LoRA is baked at convert time. The converter
+(`models/convert-decoder-embed-to-gguf.py` lines 142-156) calls
+`model.set_adapter("retrieval")` then `model.merge_and_unload()`, producing
+a single merged weight set. Switching tasks requires re-converting.
+
+**LoRA math**: `y = Wx + (a/r) * B(Ax)` where W is the base weight
+`[out, in]`, A is `[r, in]`, B is `[out, r]`, a is scaling, r is rank
+(typically 8-16 for Jina v5).
+
+**Step 1 -- Converter** (`models/convert-decoder-embed-to-gguf.py`):
+- Add `--lora-mode=separate` flag. Instead of merging, store base weights
+  without LoRA and separately store per-adapter tensors:
+  `lora.{adapter}.{layer}.{matrix}.A` `[r, in]` and `.B` `[out, r]`.
+- Write metadata: `decoder.lora_adapters` (comma-separated names),
+  `decoder.lora_rank`, `decoder.lora_alpha`.
+
+**Step 2 -- Loading** (`src/decoder_embed.cpp`):
+- Detect `decoder.lora_adapters` in GGUF metadata.
+- Load A/B tensors into a secondary backend buffer (reuse the QKV fusion
+  allocation pattern from `vit_embed.cpp` lines 224-263).
+- Store as `ctx->lora[adapter_name][layer_idx] = {q_A, q_B, k_A, k_B, ...}`.
+
+**Step 3 -- Graph** (`src/decoder_embed.cpp` forward):
+- When LoRA is active, for each augmented matmul:
+  `y = mul_mat(W, x) + scale(mul_mat(B, mul_mat(A, x)), alpha/r)`
+  Two extra matmuls per LoRA weight (tiny: r x D and D x r).
+- Alternative: pre-compute `W' = W + (a/r)*B@A` on CPU at switch time,
+  then use W' directly. Faster inference, slower switching.
+
+**Step 4 -- API**: `crispembed_set_lora(ctx, "retrieval")`,
+`crispembed_list_lora(ctx, &names, &count)`.
+
+**Testing**: Convert Jina v5 with `--lora-mode=separate`, verify each
+adapter matches the baked version (cos >= 0.9999).
+
+**Files**: `models/convert-decoder-embed-to-gguf.py`, `src/decoder_embed.cpp`,
+`src/crispembed.{h,cpp}`, `examples/cli/main.cpp`
+
+**Effort**: Medium (4-5 days)
+
+---
+
+### Blueprint: Nomic v2 MoE encoder
+
+**Goal**: Support Mixture-of-Experts FFN layers in the BERT encoder so
+nomic-embed-text-v2 (and similar MoE embedding models) can run.
+
+**Current state**: NomicBERT v1.5 (non-MoE) works: Post-LN, SwiGLU, RoPE.
+Standard FFN: `y = FC2(act(FC1(x)))`. See encoder forward in
+`src/crispembed.cpp` line ~700+.
+
+**MoE architecture**: Replace dense FFN with N experts + router:
+`router_logits = matmul(gate_w, x)` -> topk -> weighted expert dispatch.
+
+**ggml support**: `ggml_mul_mat_id(as, b, ids)` (ggml.h:1423) provides
+indirect matmul -- dispatches rows to different weight matrices by ID.
+Supported on CPU/CUDA/Metal/Vulkan.
+
+**Step 1 -- Converter** (`models/convert-bert-to-gguf.py`):
+- Detect MoE: check for `encoder.layer.{i}.mlp.experts.{k}.fc1.weight`
+  or `gate.weight` in state dict.
+- Stack expert weights: `enc.{i}.ffn.expert_fc1.weight` shape
+  `[N_experts, inter, hidden]` for `ggml_mul_mat_id`.
+- Store router: `enc.{i}.ffn.gate.weight` shape `[N_experts, hidden]`.
+- Metadata: `bert.num_experts`, `bert.num_experts_per_tok` (top-K).
+
+**Step 2 -- Encoder forward** (`src/crispembed.cpp`):
+- Per-layer, after LN, check `L.expert_fc1_w`:
+  ```
+  logits = mul_mat(gate_w, x)    // [N, T]
+  ids, weights = topk(softmax(logits), K)
+  up = mul_mat_id(expert_fc1, x, ids)
+  up = act(up)
+  down = mul_mat_id(expert_fc2, up, ids)
+  x = weighted_combine(down, weights)
+  ```
+- Top-K selection: ggml may lack a topk op. Fallback: compute router
+  logits on CPU (extract via `ggml_backend_tensor_get` after a partial
+  graph compute), determine top-K IDs, pass back as input tensor.
+  Alternatively, implement topk via `ggml_argsort` + `ggml_get_rows`.
+
+**Step 3 -- Testing**: Convert nomic-embed-text-v2, compare per-layer
+with `dump_reference.py` + `crispembed_diff.h`. Non-MoE layers should
+match exactly; MoE layers match if routing is identical.
+
+**Files**: `models/convert-bert-to-gguf.py`, `src/crispembed.cpp`,
+`src/crispembed.h` (layer struct needs expert fields)
+
+**Effort**: High (7-10 days). The topk routing is the hardest part.
+
+---
+
+### Blueprint: Batched decoder graph
+
+**Goal**: Run N decoder texts in one graph compute instead of N sequential
+passes. Expected 2-4x speedup for batches of 4-8.
+
+**Current state**: Encoder has true batching (`encode_tokens_batch`,
+crispembed.cpp:1226). Decoder is sequential (crispembed.cpp:1689).
+
+**Approach -- padded batching** (recommended first):
+
+**Step 1 -- New function** `decoder_encode_tokens_batch()` in
+`decoder_embed.cpp`:
+- Pad all B sequences to T_max = max(len(tokens[i])) with pad token.
+- Flatten batch into sequence: `[D, T_max*B]` (same as encoder batching).
+- Build block-diagonal causal attention mask: text i cannot attend to
+  text j, and causal within each text, and padding positions masked.
+  Pre-compute on CPU, pass as `kq_b` to `ggml_flash_attn_ext`.
+- RoPE: independent positions per text (0..len[i]-1, then 0 for padding).
+
+**Step 2 -- Pooling**:
+- For last-token pooling: extract token at `len[i]-1` offset within each
+  text's block. Use `ggml_get_rows` with custom index tensor.
+- L2-normalize per text.
+
+**Step 3 -- Dispatch**: In `crispembed_encode_batch()`, call the new batch
+function for decoder models instead of the sequential loop.
+
+**KV cache**: Low priority for embeddings (each text is independent). Only
+useful if many texts share a prompt prefix. Defer.
+
+**Files**: `src/decoder_embed.cpp` (new batch function),
+`src/crispembed.cpp` (dispatch), `src/decoder_embed.h`
+
+**Effort**: High (6-8 days). Block-diagonal mask construction is the
+tricky part.
+
+---
+
+### Blueprint: CrispLens face pipeline integration
+
+**Goal**: Python API for face detection + recognition so CrispLens can
+call it for face search/verification.
+
+**Current state**: Face C API is complete (`crispembed.h` lines 408-475):
+`crispembed_detect_faces()`, `crispembed_encode_face()`,
+`crispembed_face_pipeline()`. Missing: Python wrapper.
+
+**Step 1 -- Python wrapper** (`python/crispembed/_binding.py`):
+- ctypes bindings for face functions.
+- `CrispFace` class: `detect(image_path)`, `encode(image_path, landmarks)`,
+  `pipeline(image_path)` returning dicts with bbox/confidence/embedding.
+
+**Step 2 -- High-level API** (`python/crispembed/__init__.py`):
+- `from crispembed import CrispFace`
+- `CrispFace.from_registry("yunet", "auraface-v1")` for auto-download.
+
+**Step 3 -- Example** (`examples/face_search.py`):
+- Index faces from a directory, query by image, return top-K matches.
+
+**Files**: `python/crispembed/_binding.py`, `python/crispembed/__init__.py`,
+`examples/face_search.py`
+
+**Effort**: Low (1-2 days). C API is already complete and tested.
