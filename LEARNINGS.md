@@ -1046,3 +1046,52 @@ output = residual + MLP(LayerNorm(residual))
 The final `residual +` was initially missing in our implementation,
 producing cos=0.17 vs HF. After fix: cos=0.74 (same precision ceiling
 as other ViT models).
+
+## Handwritten Math OCR (HMER + BTTR)
+
+### Image polarity auto-detection
+
+Both HMER and BTTR expect white-on-black input (ink = 1.0, background = 0.0).
+Real-world images are typically black-on-white. Both implementations auto-detect
+by checking the mean pixel value: if mean > 0.5, the image is inverted
+(`pixel = 1.0 - pixel`). This avoids requiring the user to preprocess images.
+
+### BTTR architecture (DenseNet + Transformer decoder)
+
+BTTR (Bidirectionally Trained Transformer, ICDAR 2021) uses:
+- DenseNet encoder (growth=24, 16 layers × 3 blocks, 1-channel grayscale)
+- Conv 1×1 projection to d=256
+- 2D sinusoidal position encoding (added to encoder features)
+- Standard nn.TransformerDecoder (3 layers, 8 heads, d=256, FFN=1024)
+- Post-LayerNorm, fused QKV weights preserved from PyTorch
+- 113 LaTeX tokens, 6.5M params
+
+Key implementation details:
+- BN is folded into Conv at convert time (same as face models)
+- Fused QKV weights: kept as-is, split via ggml_view_2d in the decoder
+- Decoder uses causal mask for autoregressive generation
+- Cross-attention: Q from decoder, K/V from encoder features
+
+### HMER architecture (DenseNet-121 + GRU attention)
+
+HMER uses a coverage-based GRU attention decoder (not Transformer):
+- DenseNet-121 encoder (growth=32, 3 blocks of [6, 12, 24] layers)
+- 2-channel input: grayscale + mask (coverage mechanism)
+- GRU decoder with attention (not self-attention — attends to encoder features)
+- Coverage vector prevents the decoder from re-attending to the same regions
+- 112 LaTeX tokens, 6.8M params
+
+### Dequantization for CNN inference
+
+When running quantized HMER/BTTR models (Q4_K/Q8_0), the DenseNet Conv2D
+kernels need dequantization because `ggml_conv_2d` only supports F32/F16
+weights. Both implementations call `ggml_backend_tensor_get` to read
+quantized data into a CPU buffer, then use `ggml_quantize.h` functions
+to dequantize to F32 before building the conv2d graph node.
+
+### Conv weight reshape for GGUF
+
+PyTorch Conv2D stores weights as [out_ch, in_ch, kh, kw] (4D). GGUF
+requires 2D tensors for quantization. The converter flattens to
+[out_ch, in_ch * kh * kw] for storage. At load time, the C++ code
+reshapes back to the 4D layout expected by `ggml_conv_2d`.

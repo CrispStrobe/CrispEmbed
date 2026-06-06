@@ -4,7 +4,7 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
-## June 2026 — CLIP/SigLIP Vision + Text, YuNet Face Detection
+## June 2026 — CLIP/SigLIP Vision + Text, YuNet, HMER/BTTR OCR
 
 ### YuNet lightweight face detection
 - 228 KB GGUF (vs SCRFD 16 MB), ShuffleNetV2 backbone, 640×640 input
@@ -33,6 +33,20 @@ Completed milestones and work log. See PLAN.md for current roadmap.
   - `cstr/clip-vit-large-patch14-336-GGUF` (1.2 GB)
   - `cstr/siglip-large-256-GGUF` (1.2 GB, Apache 2.0)
   - `cstr/siglip-so400m-patch14-384-GGUF` (1.6 GB)
+
+### Handwritten math OCR (HMER + BTTR)
+- HMER: DenseNet-121 encoder + GRU attention decoder (with coverage).
+  Source: whywhs/Pytorch-HMER (MIT), trained on CROHME 2016.
+  112 LaTeX tokens, ~6.8M params, ~4-5 MB Q4_K.
+  `hmer_ocr.{h,cpp}`, `convert-hmer-to-gguf.py`. CLI: `--hmer FILE`.
+  Auto-detect image polarity and invert if needed. Dequant support.
+
+- BTTR: DenseNet encoder (growth=24, 3 blocks) + Transformer decoder
+  (3 layers, 8 heads, d=256). Source: Green-Wood/BTTR (MIT),
+  trained on CROHME 2014. 113 LaTeX tokens, 6.5M params.
+  52.8% exact match on 36 CROHME test images (vs 38.9% for HMER).
+  `bttr_ocr.{h,cpp}`, `convert-bttr-to-gguf.py`.
+  BN folded into conv, fused QKV preserved.
 
 ### Model registry expansion
 - 13 new auto-download entries: 2 face detection (yunet, scrfd-det-10g),
