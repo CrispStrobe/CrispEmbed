@@ -247,13 +247,23 @@ def main():
         node_descs_updated.append(desc)
     node_descs = node_descs_updated
 
-    # Store all weight tensors
+    # Store all weight tensors.
+    # Flatten 4D conv weights to 2D [OC, IC*KH*KW] so the C++ quantizer
+    # can quantize them. The graph replayer reshapes back to 4D at runtime.
     stored = 0
+    n_flattened = 0
     for name, arr in sorted(weights.items()):
-        # Clean up name for GGUF (replace special chars)
         clean_name = name.replace("(", "_").replace(")", "_").replace(",", "_").replace(" ", "")
-        writer.add_tensor(clean_name, arr)
+        if arr.ndim == 4:
+            # Conv weight [OC, IC, KH, KW] → [OC, IC*KH*KW]
+            oc = arr.shape[0]
+            writer.add_tensor(clean_name, arr.reshape(oc, -1).astype(np.float32))
+            n_flattened += 1
+        else:
+            writer.add_tensor(clean_name, arr)
         stored += 1
+    if n_flattened > 0:
+        print(f"  Flattened {n_flattened} conv weights to 2D for quantization")
 
     print(f"  Stored {stored} tensors in GGUF")
 
