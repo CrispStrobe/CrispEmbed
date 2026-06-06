@@ -519,6 +519,41 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
 
     ggml_backend_graph_compute(ctx->backend, gf);
 
+    // Debug: compare output tensors with ONNX reference (CNN_DEBUG=1)
+    if (is_yunet && getenv("CNN_DEBUG")) {
+        const char* ref_dir = getenv("CNN_REF_DIR");
+        if (!ref_dir) ref_dir = "/tmp";
+        const char* det_names[] = {"cls_8","cls_16","cls_32","obj_8","obj_16","obj_32",
+            "bbox_8","bbox_16","bbox_32","kps_8","kps_16","kps_32"};
+        for (const char* name : det_names) {
+            auto it = tensor_map.find(name);
+            if (it == tensor_map.end()) continue;
+            ggml_tensor* t = it->second;
+            int nel = (int)ggml_nelements(t);
+            std::vector<float> cpp(nel);
+            ggml_backend_tensor_get(t, cpp.data(), 0, nel * 4);
+            // Load reference binary
+            char path[512];
+            snprintf(path, sizeof(path), "%s/yunet_ref_%s.bin", ref_dir, name);
+            FILE* f = fopen(path, "rb");
+            if (!f) { fprintf(stderr, "  %s: no ref at %s\n", name, path); continue; }
+            fseek(f, 0, SEEK_END); int ref_n = (int)(ftell(f) / 4); fseek(f, 0, SEEK_SET);
+            std::vector<float> ref(ref_n);
+            if ((int)fread(ref.data(), 4, ref_n, f) != ref_n) { fclose(f); continue; }
+            fclose(f);
+            int n = std::min(nel, ref_n);
+            double dot = 0, na = 0, nb = 0;
+            float md = 0;
+            for (int i = 0; i < n; i++) {
+                dot += cpp[i]*ref[i]; na += cpp[i]*cpp[i]; nb += ref[i]*ref[i];
+                float d = fabsf(cpp[i]-ref[i]); if (d > md) md = d;
+            }
+            float cos = (float)(dot / (sqrt(na)*sqrt(nb) + 1e-12));
+            fprintf(stderr, "  %s: ne=[%lld,%lld] cos=%.6f max_diff=%.6f (n=%d vs %d)\n",
+                    name, (long long)t->ne[0], (long long)t->ne[1], cos, md, nel, ref_n);
+        }
+    }
+
     // ── Post-processing: decode anchors ──
     const int strides[] = {8, 16, 32};
     std::vector<face_detection> dets;
