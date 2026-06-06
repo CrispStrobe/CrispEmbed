@@ -987,57 +987,29 @@ different spatial indexing for each:
 - cls/obj (1 channel, transposed): `data[row + col * grid_h]`
 - bbox/kps (multi-channel, passthrough): `data[col + row * grid_w + chan * plane]`
 
-## ViT / CLIP parity: FP32 matmul accumulation order (cos ≈ 0.8)
+## ViT / CLIP parity: patch ordering bug (FIXED — cos 0.8 → 1.0)
 
-CLIP and SigLIP vision/text encoders achieve cos ≈ 0.8 vs HuggingFace
-(not the 0.999+ typical for text encoder models). Extensive debugging
-confirmed:
+**Previously**: CLIP and SigLIP vision achieved cos ≈ 0.8 vs HuggingFace.
+This was incorrectly attributed to FP32 matmul accumulation order differences.
 
-1. **Embeddings match exactly.** Patch embedding, CLS token, position
-   embedding, and pre-LayerNorm all match HF to 6 decimal places.
+**Actual root cause (fixed 2026-06-06)**: The `ggml_permute(2,1,0)` used to
+reshape `[OW, OH, D]` → `[D, OH, OW]` produced column-major spatial ordering
+when flattened to `[D, T]`: `t = oh + ow*OH`. But HuggingFace's `flatten(2)`
+gives row-major: `t = oh*OW + ow`. Every patch beyond (0,0) got the wrong
+position embedding, causing systematic error at the very first layer that
+compounded through all 12 layers.
 
-2. **Q projection matches exactly.** The matmul for Q (and K, V) produces
-   bit-identical results to PyTorch.
+**Fix**: `ggml_permute(1,2,0,3)` produces `[D, OW, OH]` with `ne[0]=D,
+ne[1]=OW, ne[2]=OH`. When flattened to `[D, T]`, patches follow row-major
+`t = ow + oh*OW = oh*OW + ow`, matching HF.
 
-3. **Attention output diverges by ~0.001 per layer.** After the full
-   attention computation (Q×K^T → softmax → ×V → output projection),
-   there's a small but consistent difference (~0.001 per element).
+**Result**: Per-layer cos = 1.000000 across all 12 layers. Final embedding
+cos = 0.9998 vs HuggingFace (SigLIP-base-384).
 
-4. **Flash attention vs manual attention gives the same result.** Replacing
-   `ggml_flash_attn_ext` with explicit `ggml_mul_mat` + `ggml_soft_max`
-   produces identical values, confirming the CPU flash attention is already
-   FP32 internally.
-
-5. **Error compounds through pre-LN layers.** Pre-LN models (CLIP, SigLIP)
-   don't normalize between layers, so the ~0.001 per-layer error compounds
-   nonlinearly through 12 layers. Post-LN models (BERT) normalize after
-   each layer, resetting accumulated drift to zero.
-
-6. **Error scales with sequence length.** Tested on CLIP text encoder:
-   - T=3 tokens: cos=0.97
-   - T=7 tokens: cos=0.81
-   - T=16 tokens: cos=0.74
-   - T=197 (ViT patches): cos=0.81
-
-**Root cause:** Different matmul accumulation order between ggml and
-PyTorch. For a 768-dim inner product, ggml and PyTorch add the 768
-partial products in different SIMD-lane order, causing FP32 non-
-associativity drift (~1e-7 per element, amplified by the 197×197
-attention matrix to ~1e-3 per attention layer).
-
-**Potential improvements**: The per-layer error (~0.001) could be reduced by:
-- QKV weight fusion (one matmul instead of three — changes accumulation)
-- GPU backends (CUDA/Metal may accumulate differently)
-- Alternative attention implementations (different softmax/matmul order)
-- Graph caching to reduce tensor rebuild overhead
-The cos≈0.8 is the current CPU baseline, not a hard ceiling.
-Models are usable for retrieval (relative ranking preserved).
-
-**GELU FP16 lookup tables** (`GGML_GELU_FP16`, `GGML_GELU_QUICK_FP16`):
-ggml uses FP16 lookup tables for both `ggml_gelu` and `ggml_gelu_quick`
-on CPU. This was NOT the dominant error source (switching to FP32
-primitives for quick_gelu didn't improve parity). The matmul accumulation
-order is the bottleneck.
+**Lesson**: Always verify data layout empirically, especially with
+`ggml_permute` where the axis semantics ("old dim N goes to new position
+axN") differ from numpy/PyTorch conventions. The first few values matched
+(patch 0 is at position 0 in both orderings) which masked the bug.
 
 ### SigLIP attention pooling head: missing residual
 
