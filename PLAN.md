@@ -155,7 +155,7 @@ CrispEmbed/
 - [x] SigLIP / ViT quantization (conv2d needs F32 kernel — selective quant)
 - [x] YuNet lightweight face detection alternative
 - [x] SFace INT8 quantization (Q8_0 cos=0.9999, Q4_K cos=0.974; 37→10→6 MB)
-- [ ] Face model quantized inference via graph replayer (YuNet/SCRFD Q8_0/F16 crash in replay_graph 2D→4D reshape — depthwise conv IC detection needs crispembed-diff debugging)
+- [x] Face model quantized inference via graph replayer (YuNet F16/Q8_0 working; fixed depthwise IC, ggml_n_dims trailing-1s, Q→F32 dequant path)
 - [ ] ViT parity improvement beyond cos≈0.8 (QKV fusion didn't help; try different softmax/matmul order, GPU backend)
 - [ ] Nomic v2 MoE (MoE routing layer in encoder)
 
