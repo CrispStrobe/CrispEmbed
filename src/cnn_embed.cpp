@@ -1059,12 +1059,21 @@ static ggml_tensor* replay_graph(
                         n.inputs.size() > 1 ? n.inputs[1].c_str() : "?", w ? "ok" : "MISS");
                 continue;
             }
+            // Conv attributes from graph: stride, pad, group
+            // Parse BEFORE reshape so group_n is available for IC detection.
+            int stride = 1, pad = 0, group_n = 1;
+            if (!n.attrs.empty()) {
+                sscanf(n.attrs.c_str(), "s%dp%dg%d", &stride, &pad, &group_n);
+            }
+            bool is_dw = (group_n > 1);
             // If conv weight was stored as 2D [OC, IC*KH*KW] for quantization,
             // reshape back to 4D [KW, KH, IC, OC] (ggml conv2d layout).
             if (ggml_n_dims(w) == 2) {
                 int64_t OC = w->ne[1];
                 int64_t flat = w->ne[0];  // IC * KH * KW
-                int64_t IC = (int64_t)x->ne[2];  // input channels
+                // For depthwise convs (group > 1), weight is [OC, 1*KH*KW],
+                // so IC=1. For regular convs, IC = input channels.
+                int64_t IC = is_dw ? 1 : (int64_t)x->ne[2];
                 // Infer kernel size from flat / IC
                 int64_t kernel_area = flat / IC;
                 int64_t KH = 1, KW = 1;
@@ -1081,13 +1090,9 @@ static ggml_tensor* replay_graph(
             }
             // Cast to F16 for ggml_conv_2d
             if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
-            // Conv attributes from graph: stride, pad, group
-            int stride = 1, pad = (w->ne[0] > 1) ? (int)(w->ne[0] / 2) : 0;
-            int group_n = 1;
-            bool is_dw = (w->ne[2] == 1 && w->ne[3] > 1);
-            if (!n.attrs.empty()) {
-                sscanf(n.attrs.c_str(), "s%dp%dg%d", &stride, &pad, &group_n);
-                is_dw = (group_n > 1);
+            // Infer default pad from kernel size if attrs didn't specify
+            if (n.attrs.empty()) {
+                pad = (w->ne[0] > 1) ? (int)(w->ne[0] / 2) : 0;
             }
             if (is_dw) {
                 result = ggml_conv_2d_dw(g, w, x, stride, stride, pad, pad, 1, 1);
