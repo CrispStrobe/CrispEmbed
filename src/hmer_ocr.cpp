@@ -887,6 +887,33 @@ static std::string greedy_decode(hmer_ocr_context * ctx) {
 // Public API
 // ---------------------------------------------------------------------------
 
+// Scale image to fit within max_pixels, preserving aspect ratio (bilinear).
+static bool hmer_scale_to_fit(const float * src, int sw, int sh,
+                              std::vector<float> & dst, int & dw, int & dh,
+                              int max_pixels = 100000) {
+    if (sw * sh <= max_pixels) return false;
+    float ratio = sqrtf((float)max_pixels / (sw * sh));
+    dw = std::max(1, (int)(sw * ratio));
+    dh = std::max(1, (int)(sh * ratio));
+    dst.resize(dw * dh);
+    for (int y = 0; y < dh; y++) {
+        float sy = (y + 0.5f) * sh / dh - 0.5f;
+        int y0 = std::max(0, std::min((int)sy, sh - 1));
+        int y1 = std::min(y0 + 1, sh - 1);
+        float fy = sy - y0;
+        for (int x = 0; x < dw; x++) {
+            float sx = (x + 0.5f) * sw / dw - 0.5f;
+            int x0 = std::max(0, std::min((int)sx, sw - 1));
+            int x1 = std::min(x0 + 1, sw - 1);
+            float fx = sx - x0;
+            dst[y * dw + x] =
+                src[y0*sw+x0]*(1-fx)*(1-fy) + src[y0*sw+x1]*fx*(1-fy) +
+                src[y1*sw+x0]*(1-fx)*fy     + src[y1*sw+x1]*fx*fy;
+        }
+    }
+    return true;
+}
+
 const char * hmer_ocr_recognize(
     hmer_ocr_context * ctx,
     const float * pixels, int width, int height,
@@ -894,25 +921,31 @@ const char * hmer_ocr_recognize(
 ) {
     if (!ctx || !pixels || width <= 0 || height <= 0) return nullptr;
 
-    // HMER expects white strokes on black background (CROHME convention).
-    // Auto-detect: if mean pixel > 0.5, the image is likely white-background
-    // (black-on-white) and needs inverting.
+    // Auto-detect polarity and invert if needed
     const int n = width * height;
     float mean = 0;
     for (int i = 0; i < n; i++) mean += pixels[i];
     mean /= n;
 
-    std::vector<float> inverted;
+    std::vector<float> work;
     const float * input = pixels;
     if (mean > 0.5f) {
-        inverted.resize(n);
-        for (int i = 0; i < n; i++) inverted[i] = 1.0f - pixels[i];
-        input = inverted.data();
-        fprintf(stderr, "hmer_ocr: auto-inverted image (mean=%.2f > 0.5)\n", mean);
+        work.resize(n);
+        for (int i = 0; i < n; i++) work[i] = 1.0f - pixels[i];
+        input = work.data();
+        fprintf(stderr, "hmer_ocr: auto-inverted (mean=%.2f)\n", mean);
+    }
+
+    // Scale down large images (matches PyTorch training constraint)
+    int w = width, h = height;
+    std::vector<float> scaled;
+    if (hmer_scale_to_fit(input, width, height, scaled, w, h)) {
+        input = scaled.data();
+        fprintf(stderr, "hmer_ocr: scaled %dx%d → %dx%d\n", width, height, w, h);
     }
 
     // Run encoder
-    run_encoder(ctx, input, width, height);
+    run_encoder(ctx, input, w, h);
 
     // Run decoder
     ctx->result_buf = greedy_decode(ctx);
