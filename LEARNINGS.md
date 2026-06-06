@@ -1093,9 +1093,27 @@ weights. Both implementations call `ggml_backend_tensor_get` to read
 quantized data into a CPU buffer, then use `ggml_quantize.h` functions
 to dequantize to F32 before building the conv2d graph node.
 
+**Important**: ggml only supports `quantized → F32` cast (in `ggml_compute_forward_dup`).
+Direct `Q8_0 → F16` cast triggers a fatal error. Always dequant to F32 first,
+then cast F32 → F16 as a separate step.
+
 ### Conv weight reshape for GGUF
 
 PyTorch Conv2D stores weights as [out_ch, in_ch, kh, kw] (4D). GGUF
 requires 2D tensors for quantization. The converter flattens to
 [out_ch, in_ch * kh * kw] for storage. At load time, the C++ code
 reshapes back to the 4D layout expected by `ggml_conv_2d`.
+
+**Pitfalls in the 2D→4D reshape** (resolved 2026-06-06):
+
+1. **`ggml_n_dims()` collapses trailing 1s**: A 4D weight `[3,3,1,1]`
+   (OC=1, IC=1) reports `ndims=2`, same as a genuinely flattened 2D weight.
+   Fix: validate `KW*KH*IC*OC == nelements` before applying reshape.
+
+2. **Depthwise conv IC detection**: DW weights are `[OC, 1*KH*KW]` when
+   flattened. Using input channels as IC gives `kernel_area = 9/16 = 0`.
+   Fix: parse the group attr from the graph node `[s1p1g16]` BEFORE
+   the reshape. When `group > 1`, set IC=1.
+
+3. **OC=1 weights report ndims=1**: Flattened `[IC*KH*KW, 1]` has
+   `ne[1]=1`, so `ggml_n_dims = 1`. Use `ndims <= 2` to catch these.

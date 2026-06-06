@@ -60,6 +60,15 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 - SCRFD F16: 17→8 MB (2.0x, lossless)
 - Added F16 support to quantizer (Q8_0/Q4_K need row÷32; F16 has no alignment limit)
 
+### Face model quantized graph replay fixed
+- YuNet F16/Q8_0 inference via graph replayer now works (was crashing)
+- Three fixes: (1) parse Conv group attrs before 2D→4D reshape for
+  correct depthwise IC detection, (2) handle ggml_n_dims returning 2
+  for 4D weights with trailing 1s via element count validation,
+  (3) dequant Q→F32 before F16 cast (ggml only supports Q→F32)
+- Q8_0 detection matches F32 with minor quantization drift (conf 0.731 vs 0.749)
+- Old-style 4D-weight GGUFs and new-style 2D-flattened GGUFs both work
+
 ### SigLIP text encoder verified
 - cos=1.000000 vs HuggingFace on all test texts
 - SentencePiece BPE vocab decoded correctly by Viterbi unigram algorithm
