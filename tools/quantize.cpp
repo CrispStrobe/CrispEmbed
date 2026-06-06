@@ -20,6 +20,7 @@
 #include <map>
 
 static const std::map<std::string, enum ggml_ftype> FTYPE_MAP = {
+    {"f16",  GGML_FTYPE_MOSTLY_F16},
     {"q4_0", GGML_FTYPE_MOSTLY_Q4_0},
     {"q4_1", GGML_FTYPE_MOSTLY_Q4_1},
     {"q5_0", GGML_FTYPE_MOSTLY_Q5_0},
@@ -36,6 +37,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     ggml_type qtype = GGML_TYPE_F32;
 
     switch (ftype) {
+        case GGML_FTYPE_MOSTLY_F16:  qtype = GGML_TYPE_F16;  break;
         case GGML_FTYPE_MOSTLY_Q4_0: qtype = GGML_TYPE_Q4_0; break;
         case GGML_FTYPE_MOSTLY_Q4_1: qtype = GGML_TYPE_Q4_1; break;
         case GGML_FTYPE_MOSTLY_Q5_0: qtype = GGML_TYPE_Q5_0; break;
@@ -198,14 +200,9 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         bool is_tiny_embd = (t->ne[1] <= 4) &&
                             (sname.find("token_types") != std::string::npos ||
                              sname.find("type_embd") != std::string::npos);
-        bool quantize = ggml_is_quantized(qtype) &&
+        bool quantize = (ggml_is_quantized(qtype) || qtype == GGML_TYPE_F16) &&
                         (type == GGML_TYPE_F32 || type == GGML_TYPE_F16) &&
                         (ggml_n_dims(t) == 2) &&
-                        (sname.find("weight") != std::string::npos ||
-                         sname.find(".w") != std::string::npos ||
-                         sname.find("_w") != std::string::npos) &&
-                        (sname.find("norm") == std::string::npos) &&
-                        (sname.rfind("dense.", 0) == std::string::npos) && // keep post-pooling Dense proj in F32
                         !is_tiny_embd;
         const int64_t ncols = t->ne[0];
         ggml_type qtype_used = qtype;

@@ -48,6 +48,23 @@ Completed milestones and work log. See PLAN.md for current roadmap.
   `bttr_ocr.{h,cpp}`, `convert-bttr-to-gguf.py`.
   BN folded into conv, fused QKV preserved.
 
+### SFace quantization (conv2d quant support)
+- Converter flattens 4D conv weights to 2D [OC, IC*KH*KW] for quantization
+- Runtime: dequant Q8/Q4→F32, reshape back to 4D, cast to F16 for ggml_conv_2d
+- SFace results: F32=37MB, Q8_0=10MB (cos=0.9999), Q4_K=6MB (cos=0.974)
+- Uploaded to `cstr/sface-GGUF` (F32 + Q8_0 + Q4_K)
+- Same pattern applies to AuraFace and SCRFD (reconverted with flat conv)
+- AuraFace: 249 MB (Q8_0 only compresses FC → 212 MB; conv rows too small for Q8_0)
+- SCRFD: 17 MB (minimal Q8_0 gain — detection heads are small)
+- AuraFace F16: 249→125 MB (2.0x, lossless — conv2d casts to F16 anyway)
+- SCRFD F16: 17→8 MB (2.0x, lossless)
+- Added F16 support to quantizer (Q8_0/Q4_K need row÷32; F16 has no alignment limit)
+
+### SigLIP text encoder verified
+- cos=1.000000 vs HuggingFace on all test texts
+- SentencePiece BPE vocab decoded correctly by Viterbi unigram algorithm
+- Key finding: SP BPE training doesn't change inference algorithm — Viterbi works
+
 ### Model registry expansion
 - 13 new auto-download entries: 2 face detection (yunet, scrfd-det-10g),
   2 face recognition (auraface-v1, sface), 8 vision/text (CLIP + SigLIP),
