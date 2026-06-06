@@ -28,6 +28,7 @@ struct layer {
     ggml_tensor * q_w = nullptr, * q_b = nullptr;
     ggml_tensor * k_w = nullptr, * k_b = nullptr;
     ggml_tensor * v_w = nullptr, * v_b = nullptr;
+    ggml_tensor * qkv_w = nullptr, * qkv_b = nullptr;  // fused QKV (built at load time)
     ggml_tensor * o_w = nullptr, * o_b = nullptr;
     ggml_tensor * ln2_w = nullptr, * ln2_b = nullptr;
     ggml_tensor * fc1_w = nullptr, * fc1_b = nullptr;
@@ -219,6 +220,48 @@ bool load(context** out, const char* path, int n_threads) {
         ctx->head.fc2_b      = get("head.mlp.fc2.bias");
     }
 
+    // Fuse QKV weights for better matmul parity: [D, D] × 3 → [3D, D]
+    {
+        int D = ctx->hidden;
+        ggml_init_params fp = { ggml_tensor_overhead() * ctx->n_layers * 2 + 1024, nullptr, true };
+        ggml_context* fg = ggml_init(fp);
+
+        // Create tensor descriptors first
+        for (int i = 0; i < ctx->n_layers; i++) {
+            auto& L = ctx->layers[i];
+            if (!L.q_w || !L.k_w || !L.v_w) continue;
+            L.qkv_w = ggml_new_tensor_2d(fg, GGML_TYPE_F32, D, 3 * D);
+            if (L.q_b && L.k_b && L.v_b)
+                L.qkv_b = ggml_new_tensor_1d(fg, GGML_TYPE_F32, 3 * D);
+        }
+
+        // Allocate backend buffer
+        ggml_backend_buffer_t fb = ggml_backend_alloc_ctx_tensors(fg, ctx->backend);
+        if (!fb) { fprintf(stderr, "vit_embed: QKV fusion alloc failed\n"); }
+
+        // Copy data
+        std::vector<float> buf(D * D);
+        for (int i = 0; i < ctx->n_layers; i++) {
+            auto& L = ctx->layers[i];
+            if (!L.qkv_w) continue;
+            ggml_backend_tensor_get(L.q_w, buf.data(), 0, D*D*4);
+            ggml_backend_tensor_set(L.qkv_w, buf.data(), 0, D*D*4);
+            ggml_backend_tensor_get(L.k_w, buf.data(), 0, D*D*4);
+            ggml_backend_tensor_set(L.qkv_w, buf.data(), D*D*4, D*D*4);
+            ggml_backend_tensor_get(L.v_w, buf.data(), 0, D*D*4);
+            ggml_backend_tensor_set(L.qkv_w, buf.data(), 2*D*D*4, D*D*4);
+            if (L.qkv_b) {
+                std::vector<float> bb(D);
+                ggml_backend_tensor_get(L.q_b, bb.data(), 0, D*4);
+                ggml_backend_tensor_set(L.qkv_b, bb.data(), 0, D*4);
+                ggml_backend_tensor_get(L.k_b, bb.data(), 0, D*4);
+                ggml_backend_tensor_set(L.qkv_b, bb.data(), D*4, D*4);
+                ggml_backend_tensor_get(L.v_b, bb.data(), 0, D*4);
+                ggml_backend_tensor_set(L.qkv_b, bb.data(), 2*D*4, D*4);
+            }
+        }
+    }
+
     fprintf(stderr, "vit_embed: loaded %d layers, %s pooling%s%s\n",
             ctx->n_layers,
             ctx->has_attn_pool ? "attention" : (ctx->has_cls_token ? "CLS" : "mean"),
@@ -307,13 +350,22 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         x = ggml_mul(g, x, L.ln1_w);
         if (L.ln1_b) x = ggml_add(g, x, L.ln1_b);
 
-        // Q/K/V projections
-        ggml_tensor* Q = ggml_mul_mat(g, L.q_w, x);
-        ggml_tensor* K = ggml_mul_mat(g, L.k_w, x);
-        ggml_tensor* V = ggml_mul_mat(g, L.v_w, x);
-        if (L.q_b) Q = ggml_add(g, Q, L.q_b);
-        if (L.k_b) K = ggml_add(g, K, L.k_b);
-        if (L.v_b) V = ggml_add(g, V, L.v_b);
+        // Fused QKV projection: one matmul [3D, D] × [D, S] → [3D, S]
+        ggml_tensor* Q, * K, * V;
+        if (L.qkv_w) {
+            ggml_tensor* qkv = ggml_mul_mat(g, L.qkv_w, x);  // [3D, S]
+            if (L.qkv_b) qkv = ggml_add(g, qkv, L.qkv_b);
+            Q = ggml_cont(g, ggml_view_2d(g, qkv, D, S, qkv->nb[1], 0));
+            K = ggml_cont(g, ggml_view_2d(g, qkv, D, S, qkv->nb[1], D * sizeof(float)));
+            V = ggml_cont(g, ggml_view_2d(g, qkv, D, S, qkv->nb[1], 2 * D * sizeof(float)));
+        } else {
+            Q = ggml_mul_mat(g, L.q_w, x);
+            K = ggml_mul_mat(g, L.k_w, x);
+            V = ggml_mul_mat(g, L.v_w, x);
+            if (L.q_b) Q = ggml_add(g, Q, L.q_b);
+            if (L.k_b) K = ggml_add(g, K, L.k_b);
+            if (L.v_b) V = ggml_add(g, V, L.v_b);
+        }
         // Reshape [D, S] → [hd, nh, S] → permute to [hd, S, nh]
         Q = ggml_reshape_3d(g, Q, hd, nh, S);
         K = ggml_reshape_3d(g, K, hd, nh, S);
