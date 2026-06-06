@@ -2743,12 +2743,83 @@ extern "C" void crispembed_face_free(crispembed_face_context * ctx) {
 }
 
 // ---------------------------------------------------------------------------
-// HMER + BTTR handwritten math OCR — delegates to hmer_ocr.h / bttr_ocr.h
+// Unified Math OCR — auto-detects model architecture from GGUF metadata.
+// Supports: pix2tex_mfr (DeiT+TrOCR), hmer (DenseNet+GRU), bttr (DenseNet+Transformer)
 // ---------------------------------------------------------------------------
 
+#include "math_ocr.h"
 #include "hmer_ocr.h"
 #include "bttr_ocr.h"
+#include "core/gguf_loader.h"
 
+enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR };
+
+struct unified_math_ocr {
+    math_ocr_type type;
+    void * ctx;  // math_ocr_context*, hmer_ocr_context*, or bttr_ocr_context*
+};
+
+static math_ocr_type detect_arch(const char * path) {
+    gguf_context * g = core_gguf::open_metadata(path);
+    if (!g) return MATH_OCR_PIX2TEX;
+    std::string arch = core_gguf::kv_str(g, "general.architecture", "pix2tex_mfr");
+    core_gguf::free_metadata(g);
+    if (arch == "hmer") return MATH_OCR_HMER;
+    if (arch == "bttr") return MATH_OCR_BTTR;
+    return MATH_OCR_PIX2TEX;
+}
+
+extern "C" void * crispembed_math_ocr_init(const char * path, int n_threads) {
+    auto type = detect_arch(path);
+    void * inner = nullptr;
+    switch (type) {
+        case MATH_OCR_PIX2TEX: inner = math_ocr_init(path, n_threads); break;
+        case MATH_OCR_HMER:    inner = hmer_ocr_init(path, n_threads); break;
+        case MATH_OCR_BTTR:    inner = bttr_ocr_init(path, n_threads); break;
+    }
+    if (!inner) return nullptr;
+    auto * u = new unified_math_ocr{type, inner};
+    return u;
+}
+
+extern "C" void crispembed_math_ocr_free(void * ctx) {
+    if (!ctx) return;
+    auto * u = (unified_math_ocr *)ctx;
+    switch (u->type) {
+        case MATH_OCR_PIX2TEX: math_ocr_free((math_ocr_context *)u->ctx); break;
+        case MATH_OCR_HMER:    hmer_ocr_free((hmer_ocr_context *)u->ctx); break;
+        case MATH_OCR_BTTR:    bttr_ocr_free((bttr_ocr_context *)u->ctx); break;
+    }
+    delete u;
+}
+
+extern "C" const char * crispembed_math_ocr_recognize(
+    void * ctx, const uint8_t * px, int w, int h, int ch, int * ol
+) {
+    if (!ctx) return nullptr;
+    auto * u = (unified_math_ocr *)ctx;
+    switch (u->type) {
+        case MATH_OCR_PIX2TEX: return math_ocr_recognize_raw((math_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case MATH_OCR_HMER:    return hmer_ocr_recognize_raw((hmer_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case MATH_OCR_BTTR:    return bttr_ocr_recognize_raw((bttr_ocr_context *)u->ctx, px, w, h, ch, ol);
+    }
+    return nullptr;
+}
+
+extern "C" const char * crispembed_math_ocr_recognize_gray(
+    void * ctx, const float * px, int w, int h, int * ol
+) {
+    if (!ctx) return nullptr;
+    auto * u = (unified_math_ocr *)ctx;
+    switch (u->type) {
+        case MATH_OCR_PIX2TEX: return math_ocr_recognize((math_ocr_context *)u->ctx, px, w, h, ol);
+        case MATH_OCR_HMER:    return hmer_ocr_recognize((hmer_ocr_context *)u->ctx, px, w, h, ol);
+        case MATH_OCR_BTTR:    return bttr_ocr_recognize((bttr_ocr_context *)u->ctx, px, w, h, ol);
+    }
+    return nullptr;
+}
+
+// Also expose individual APIs for direct use
 extern "C" void * crispembed_hmer_ocr_init(const char * p, int t) { return hmer_ocr_init(p, t); }
 extern "C" void crispembed_hmer_ocr_free(void * c) { hmer_ocr_free((hmer_ocr_context*)c); }
 extern "C" const char * crispembed_hmer_ocr_recognize(void * c, const uint8_t * px, int w, int h, int ch, int * ol) {
