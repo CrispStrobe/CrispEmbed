@@ -2742,6 +2742,31 @@ extern "C" void crispembed_face_free(crispembed_face_context * ctx) {
     delete ctx;
 }
 
+// ---------------------------------------------------------------------------
+// HMER + BTTR handwritten math OCR — delegates to hmer_ocr.h / bttr_ocr.h
+// ---------------------------------------------------------------------------
+
+#include "hmer_ocr.h"
+#include "bttr_ocr.h"
+
+extern "C" void * crispembed_hmer_ocr_init(const char * p, int t) { return hmer_ocr_init(p, t); }
+extern "C" void crispembed_hmer_ocr_free(void * c) { hmer_ocr_free((hmer_ocr_context*)c); }
+extern "C" const char * crispembed_hmer_ocr_recognize(void * c, const uint8_t * px, int w, int h, int ch, int * ol) {
+    return hmer_ocr_recognize_raw((hmer_ocr_context*)c, px, w, h, ch, ol);
+}
+extern "C" const char * crispembed_hmer_ocr_recognize_gray(void * c, const float * px, int w, int h, int * ol) {
+    return hmer_ocr_recognize((hmer_ocr_context*)c, px, w, h, ol);
+}
+
+extern "C" void * crispembed_bttr_ocr_init(const char * p, int t) { return bttr_ocr_init(p, t); }
+extern "C" void crispembed_bttr_ocr_free(void * c) { bttr_ocr_free((bttr_ocr_context*)c); }
+extern "C" const char * crispembed_bttr_ocr_recognize(void * c, const uint8_t * px, int w, int h, int ch, int * ol) {
+    return bttr_ocr_recognize_raw((bttr_ocr_context*)c, px, w, h, ch, ol);
+}
+extern "C" const char * crispembed_bttr_ocr_recognize_gray(void * c, const float * px, int w, int h, int * ol) {
+    return bttr_ocr_recognize((bttr_ocr_context*)c, px, w, h, ol);
+}
+
 extern "C" void crispembed_free(crispembed_context * ctx) {
     if (!ctx) return;
 #ifdef CRISPEMBED_HAS_CRISP_AUDIO
