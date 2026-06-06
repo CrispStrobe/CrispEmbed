@@ -532,6 +532,27 @@ static std::string greedy_decode(bttr_ocr_context * ctx) {
     std::vector<std::vector<float>> kv_k(hp.num_decoder_layers);
     std::vector<std::vector<float>> kv_v(hp.num_decoder_layers);
 
+    // Precompute cross-attention K/V from encoder output (constant across steps)
+    std::vector<std::vector<float>> ca_ck(hp.num_decoder_layers);
+    std::vector<std::vector<float>> ca_cv(hp.num_decoder_layers);
+    for (int li = 0; li < hp.num_decoder_layers; li++) {
+        const auto & l = ctx->dec_layers[li];
+        const float * ca_W = tf32(ctx, l.ca_qkv_w);
+        const float * ca_B = tf32(ctx, l.ca_qkv_b);
+        const float * Wk = ca_W + D * D;
+        const float * Bk = ca_B + D;
+        const float * Wv = ca_W + 2 * D * D;
+        const float * Bv = ca_B + 2 * D;
+        ca_ck[li].resize(n_enc * D);
+        ca_cv[li].resize(n_enc * D);
+        for (int p = 0; p < n_enc; p++) {
+            linear(ctx->encoder_output.data() + p * D, D,
+                   Wk, Bk, D, ca_ck[li].data() + p * D);
+            linear(ctx->encoder_output.data() + p * D, D,
+                   Wv, Bv, D, ca_cv[li].data() + p * D);
+        }
+    }
+
     std::vector<int> tokens;
     int prev_token = hp.sos_token;
 
@@ -609,24 +630,15 @@ static std::string greedy_decode(bttr_ocr_context * ctx) {
             //   K = enc @ Wk + bk (next D rows)
             //   V = enc @ Wv + bv (last D rows)
             {
+                // Q from decoder state (first D rows of fused QKV)
                 const float * ca_W = tf32(ctx, l.ca_qkv_w);
                 const float * ca_B = tf32(ctx, l.ca_qkv_b);
-                // Q from decoder state
                 std::vector<float> cq(D);
-                linear(x.data(), D, ca_W, ca_B, D, cq.data()); // first D rows
+                linear(x.data(), D, ca_W, ca_B, D, cq.data());
 
-                // K, V from encoder (can cache across steps, but for clarity compute each time)
-                std::vector<float> ck(n_enc * D), cv(n_enc * D);
-                const float * Wk = ca_W + D * D;
-                const float * Bk = ca_B + D;
-                const float * Wv = ca_W + 2 * D * D;
-                const float * Bv = ca_B + 2 * D;
-                for (int p = 0; p < n_enc; p++) {
-                    linear(ctx->encoder_output.data() + p * D, D,
-                           Wk, Bk, D, ck.data() + p * D);
-                    linear(ctx->encoder_output.data() + p * D, D,
-                           Wv, Bv, D, cv.data() + p * D);
-                }
+                // K, V from precomputed cache
+                const float * ck = ca_ck[li].data();
+                const float * cv = ca_cv[li].data();
 
                 // MHA
                 std::vector<float> ca_out(D, 0.0f);
