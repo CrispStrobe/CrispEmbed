@@ -835,6 +835,59 @@ class CrispEmbed:
         return p.decode("utf-8") if p else None
 
     # ------------------------------------------------------------------
+    # LoRA adapter hot-swap
+    # ------------------------------------------------------------------
+
+    def set_lora(self, adapter_name: Optional[str] = None) -> bool:
+        """Switch LoRA adapter at runtime (decoder models with per-task LoRA).
+
+        Args:
+            adapter_name: Adapter name (e.g. ``"retrieval"``, ``"classification"``).
+                          Pass ``None`` or ``""`` to deactivate (restore base weights).
+
+        Returns:
+            True on success, False on failure (no such adapter, not a decoder,
+            model has no LoRA).
+        """
+        if not hasattr(self._lib, "crispembed_set_lora"):
+            return False
+        self._lib.crispembed_set_lora.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+        self._lib.crispembed_set_lora.restype = ctypes.c_int
+        raw = adapter_name.encode("utf-8") if adapter_name else b""
+        return bool(self._lib.crispembed_set_lora(self._ctx, raw))
+
+    @property
+    def lora(self) -> str:
+        """Currently active LoRA adapter name (empty if none)."""
+        if not hasattr(self._lib, "crispembed_get_lora"):
+            return ""
+        self._lib.crispembed_get_lora.argtypes = [ctypes.c_void_p]
+        self._lib.crispembed_get_lora.restype = ctypes.c_char_p
+        raw = self._lib.crispembed_get_lora(self._ctx)
+        return raw.decode("utf-8") if raw else ""
+
+    def list_lora(self) -> List[str]:
+        """List available LoRA adapters in this model.
+
+        Returns:
+            List of adapter name strings. Empty if model has no LoRA.
+        """
+        if not hasattr(self._lib, "crispembed_list_lora"):
+            return []
+        self._lib.crispembed_list_lora.argtypes = [
+            ctypes.c_void_p,
+            ctypes.POINTER(ctypes.POINTER(ctypes.c_char_p)),
+            ctypes.POINTER(ctypes.c_int),
+        ]
+        self._lib.crispembed_list_lora.restype = ctypes.c_int
+        names_ptr = ctypes.POINTER(ctypes.c_char_p)()
+        count = ctypes.c_int(0)
+        ok = self._lib.crispembed_list_lora(self._ctx, ctypes.byref(names_ptr), ctypes.byref(count))
+        if not ok or count.value <= 0:
+            return []
+        return [names_ptr[i].decode("utf-8") for i in range(count.value)]
+
+    # ------------------------------------------------------------------
     # Properties
     # ------------------------------------------------------------------
 
@@ -1099,6 +1152,31 @@ class CrispFace:
         return np.ctypeslib.as_array(ptr, shape=(out_dim.value,)).copy()
 
     # ------------------------------------------------------------------
+    # Factory
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def from_registry(
+        cls,
+        name: str,
+        n_threads: int = 4,
+        lib_path: Optional[str] = None,
+    ) -> "CrispFace":
+        """Create a CrispFace from a registry name (auto-downloads if needed).
+
+        Args:
+            name:      Registry model name (e.g. ``"yunet"``, ``"scrfd-det-10g"``,
+                       ``"auraface-v1"``, ``"sface"``).
+            n_threads: CPU threads for inference.
+            lib_path:  Optional path to the shared library.
+
+        Returns:
+            A :class:`CrispFace` instance backed by the resolved GGUF.
+        """
+        resolved = CrispEmbed.resolve_model(name, auto_download=True, lib_path=lib_path)
+        return cls(resolved, n_threads=n_threads, lib_path=lib_path)
+
+    # ------------------------------------------------------------------
     # Properties
     # ------------------------------------------------------------------
 
@@ -1166,6 +1244,33 @@ class CrispFacePipeline:
             self._lib.crispembed_face_free(self._det_ctx)
             self._det_ctx = None
             raise RuntimeError(f"Failed to load face recognizer: {rec_model}")
+
+    # ------------------------------------------------------------------
+    # Factory
+    # ------------------------------------------------------------------
+
+    @classmethod
+    def from_registry(
+        cls,
+        det_name: str,
+        rec_name: str,
+        n_threads: int = 4,
+        lib_path: Optional[str] = None,
+    ) -> "CrispFacePipeline":
+        """Create a CrispFacePipeline from registry names (auto-downloads).
+
+        Args:
+            det_name:  Detection model registry name (e.g. ``"yunet"``).
+            rec_name:  Recognition model registry name (e.g. ``"auraface-v1"``).
+            n_threads: CPU threads for inference.
+            lib_path:  Optional path to the shared library.
+
+        Returns:
+            A :class:`CrispFacePipeline` instance.
+        """
+        det_path = CrispEmbed.resolve_model(det_name, auto_download=True, lib_path=lib_path)
+        rec_path = CrispEmbed.resolve_model(rec_name, auto_download=True, lib_path=lib_path)
+        return cls(det_path, rec_path, n_threads=n_threads, lib_path=lib_path)
 
     # ------------------------------------------------------------------
     # Pipeline

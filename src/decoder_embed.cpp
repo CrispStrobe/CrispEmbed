@@ -304,14 +304,139 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
         fprintf(stderr, "decoder_embed: dense.%d.weight [%d→%d]\n", di, in_dim, out_dim);
     }
 
+    // Load LoRA adapter tensors if present
+    {
+        // Read adapter list from GGUF metadata
+        int key_id = gguf_find_key(g, "decoder.lora_adapters");
+        if (key_id >= 0 && gguf_get_kv_type(g, key_id) == GGUF_TYPE_ARRAY) {
+            int n_adapters = (int)gguf_get_arr_n(g, key_id);
+            int lora_rank = a_u32("lora_rank", 0);
+            float lora_alpha = a_f32("lora_alpha", 0.0f);
+            std::string lora_default;
+            {
+                int dk = gguf_find_key(g, "decoder.lora_default");
+                if (dk >= 0) lora_default = gguf_get_val_str(g, dk);
+            }
+
+            // Collect adapter names
+            std::vector<std::string> adapter_names;
+            for (int ai = 0; ai < n_adapters; ai++) {
+                adapter_names.push_back(gguf_get_arr_str(g, key_id, ai));
+            }
+
+            // Build projection suffix list that matches the GGUF tensor naming
+            // Detect naming from first adapter's tensors
+            std::string LP_detected = "blk";  // default
+            for (auto & kv : wl.tensors) {
+                if (kv.first.substr(0, 5) == "lora.") {
+                    // e.g. "lora.retrieval.blk.0.attn_q.A.weight" → LP = "blk"
+                    // or   "lora.retrieval.dec.0.attn.q.A.weight" → LP = "dec"
+                    size_t dot2 = kv.first.find('.', 5);  // after "lora.ADAPTER."
+                    if (dot2 != std::string::npos) {
+                        size_t dot3 = kv.first.find('.', dot2 + 1);
+                        if (dot3 != std::string::npos)
+                            LP_detected = kv.first.substr(dot2 + 1, dot3 - dot2 - 1);
+                    }
+                    break;
+                }
+            }
+
+            // Projection suffixes to scan (both Ollama and CrispEmbed naming)
+            struct ProjMap { const char * suffix; lora_pair lora_layer::* field; };
+            std::vector<ProjMap> proj_maps;
+            if (LP_detected == "blk") {
+                proj_maps = {
+                    {"attn_q",      &lora_layer::q},
+                    {"attn_k",      &lora_layer::k},
+                    {"attn_v",      &lora_layer::v},
+                    {"attn_output", &lora_layer::o},
+                    {"ffn_gate",    &lora_layer::gate},
+                    {"ffn_up",      &lora_layer::up},
+                    {"ffn_down",    &lora_layer::down},
+                };
+            } else {
+                proj_maps = {
+                    {"attn.q",   &lora_layer::q},
+                    {"attn.k",   &lora_layer::k},
+                    {"attn.v",   &lora_layer::v},
+                    {"attn.o",   &lora_layer::o},
+                    {"ffn.gate", &lora_layer::gate},
+                    {"ffn.up",   &lora_layer::up},
+                    {"ffn.down", &lora_layer::down},
+                };
+            }
+
+            for (const auto & aname : adapter_names) {
+                lora_adapter adapter;
+                adapter.name  = aname;
+                adapter.rank  = lora_rank;
+                adapter.alpha = lora_alpha;
+                adapter.layers.resize(m.n_layer);
+
+                int loaded = 0;
+                for (int li = 0; li < m.n_layer; li++) {
+                    for (auto & pm : proj_maps) {
+                        std::string a_key = "lora." + aname + "." + LP_detected + "." +
+                                            std::to_string(li) + "." + pm.suffix + ".A.weight";
+                        std::string b_key = "lora." + aname + "." + LP_detected + "." +
+                                            std::to_string(li) + "." + pm.suffix + ".B.weight";
+                        auto it_a = wl.tensors.find(a_key);
+                        auto it_b = wl.tensors.find(b_key);
+                        if (it_a == wl.tensors.end() || it_b == wl.tensors.end()) continue;
+
+                        ggml_tensor * ta = it_a->second;
+                        ggml_tensor * tb = it_b->second;
+                        lora_pair & lp = adapter.layers[li].*pm.field;
+                        lp.rank    = (int)ta->ne[1];  // A is [rank, in_dim] → ne[0]=in_dim, ne[1]=rank
+                        lp.in_dim  = (int)ta->ne[0];
+                        lp.out_dim = (int)tb->ne[1];  // B is [out_dim, rank] → ne[0]=rank, ne[1]=out_dim
+
+                        // Read tensor data → F32
+                        size_t na = (size_t)lp.rank * lp.in_dim;
+                        size_t nb = (size_t)lp.out_dim * lp.rank;
+                        lp.A.resize(na);
+                        lp.B.resize(nb);
+
+                        // Tensors may be F16 — read raw then convert
+                        if (ta->type == GGML_TYPE_F16) {
+                            std::vector<ggml_fp16_t> buf(na);
+                            ggml_backend_tensor_get(ta, buf.data(), 0, na * sizeof(ggml_fp16_t));
+                            for (size_t k = 0; k < na; k++) lp.A[k] = ggml_fp16_to_fp32(buf[k]);
+                        } else {
+                            ggml_backend_tensor_get(ta, lp.A.data(), 0, na * sizeof(float));
+                        }
+                        if (tb->type == GGML_TYPE_F16) {
+                            std::vector<ggml_fp16_t> buf(nb);
+                            ggml_backend_tensor_get(tb, buf.data(), 0, nb * sizeof(ggml_fp16_t));
+                            for (size_t k = 0; k < nb; k++) lp.B[k] = ggml_fp16_to_fp32(buf[k]);
+                        } else {
+                            ggml_backend_tensor_get(tb, lp.B.data(), 0, nb * sizeof(float));
+                        }
+                        loaded++;
+                    }
+                }
+                m.lora_adapters.push_back(std::move(adapter));
+                fprintf(stderr, "decoder_embed: LoRA adapter '%s': %d projections, rank=%d, alpha=%.1f\n",
+                        aname.c_str(), loaded, lora_rank, lora_alpha);
+            }
+
+            // Auto-activate default adapter
+            if (!lora_default.empty() && !m.lora_adapters.empty()) {
+                fprintf(stderr, "decoder_embed: activating default LoRA '%s'\n", lora_default.c_str());
+                decoder_set_lora(m, backend, lora_default);
+            }
+        }
+    }
+
     const char * pool_str = (m.pooling_method == 1) ? "mean" : "last-token";
-    fprintf(stderr, "decoder_embed: loaded %d layers, %d dims, %d vocab, %d heads (%d kv), rope_theta=%.0f%s, pool=%s%s\n",
+    fprintf(stderr, "decoder_embed: loaded %d layers, %d dims, %d vocab, %d heads (%d kv), rope_theta=%.0f%s, pool=%s%s%s\n",
             m.n_layer, m.n_embd, m.n_vocab, m.n_head, m.n_kv_head, m.rope_theta,
             (m.rope_theta_local > 0.0f && m.global_attn_every_n > 0)
                 ? (" (local=" + std::to_string((int)m.rope_theta_local)
                    + " every " + std::to_string(m.global_attn_every_n) + ")").c_str()
                 : "",
-            pool_str, m.is_bidirectional ? ", bidirectional" : "");
+            pool_str, m.is_bidirectional ? ", bidirectional" : "",
+            m.lora_adapters.empty() ? "" : (", " + std::to_string(m.lora_adapters.size()) + " LoRA adapters").c_str());
     return true;
 }
 
@@ -851,4 +976,536 @@ std::vector<float> decoder_encode_tokens(
     for (int i = 0; i < (int)pooled.size(); i++) pooled[i] /= norm;
 
     return pooled;
+}
+
+// ---------------------------------------------------------------------------
+// LoRA adapter hot-swap
+// ---------------------------------------------------------------------------
+
+// Helper: dequantize a ggml tensor to F32 on CPU
+static std::vector<float> dequant_tensor(ggml_tensor * t) {
+    const int64_t n = ggml_nelements(t);
+    std::vector<float> out(n);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, out.data(), 0, n * sizeof(float));
+    } else if (t->type == GGML_TYPE_F16) {
+        std::vector<ggml_fp16_t> buf(n);
+        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(ggml_fp16_t));
+        for (int64_t i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(buf[i]);
+    } else {
+        // Quantized: read raw bytes then dequantize
+        size_t raw_size = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_size);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_size);
+        auto traits = ggml_get_type_traits(t->type);
+        if (traits->to_float) {
+            traits->to_float(raw.data(), out.data(), n);
+        } else {
+            // Fallback: zero-fill (should not happen for supported types)
+            std::fill(out.begin(), out.end(), 0.0f);
+        }
+    }
+    return out;
+}
+
+// Helper: write F32 data to a ggml tensor, requantizing if needed
+static void write_tensor_f32(ggml_tensor * t, const float * data) {
+    const int64_t n = ggml_nelements(t);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_set(t, data, 0, n * sizeof(float));
+    } else if (t->type == GGML_TYPE_F16) {
+        std::vector<ggml_fp16_t> buf(n);
+        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp32_to_fp16(data[i]);
+        ggml_backend_tensor_set(t, buf.data(), 0, n * sizeof(ggml_fp16_t));
+    } else {
+        // Quantized: requantize from F32
+        size_t raw_size = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_size);
+        auto traits = ggml_get_type_traits(t->type);
+        if (traits->from_float_ref) {
+            traits->from_float_ref(data, raw.data(), n);
+        }
+        ggml_backend_tensor_set(t, raw.data(), 0, raw_size);
+    }
+}
+
+// Helper: CPU matmul C = B @ A where B is [M, K] and A is [K, N], result C is [M, N]
+// (row-major convention: C[i,j] = sum_k B[i,k] * A[k,j])
+static void matmul_f32(const float * B, const float * A,
+                        float * C, int M, int K, int N) {
+    for (int i = 0; i < M; i++) {
+        for (int j = 0; j < N; j++) {
+            float acc = 0.0f;
+            for (int k = 0; k < K; k++) {
+                acc += B[i * K + k] * A[k * N + j];
+            }
+            C[i * N + j] = acc;
+        }
+    }
+}
+
+bool decoder_set_lora(dec_model & m, ggml_backend_t backend,
+                      const std::string & adapter_name) {
+    (void)backend;
+
+    // Empty name = unmerge
+    if (adapter_name.empty()) {
+        if (m.active_lora.empty()) return true;  // already base
+        // Restore all base weights
+        struct TensorRef { ggml_tensor ** ptrs[7]; const char * names[7]; };
+        for (int li = 0; li < m.n_layer; li++) {
+            dec_layer & L = m.layers[li];
+            ggml_tensor * tensors[] = { L.q_w, L.k_w, L.v_w, L.o_w, L.gate_w, L.up_w, L.down_w };
+            const char * suffixes[] = { "q", "k", "v", "o", "gate", "up", "down" };
+            for (int pi = 0; pi < 7; pi++) {
+                if (!tensors[pi]) continue;
+                std::string key = "base." + std::to_string(li) + "." + suffixes[pi];
+                auto it = m.base_weights_f32.find(key);
+                if (it != m.base_weights_f32.end()) {
+                    write_tensor_f32(tensors[pi], it->second.data());
+                }
+            }
+        }
+        fprintf(stderr, "decoder_embed: LoRA unmerged (restored base weights)\n");
+        m.active_lora.clear();
+        return true;
+    }
+
+    // Same adapter already active
+    if (adapter_name == m.active_lora) return true;
+
+    // Find adapter
+    const lora_adapter * adapter = nullptr;
+    for (const auto & a : m.lora_adapters) {
+        if (a.name == adapter_name) { adapter = &a; break; }
+    }
+    if (!adapter) {
+        fprintf(stderr, "decoder_embed: LoRA adapter '%s' not found\n", adapter_name.c_str());
+        return false;
+    }
+
+    // If another adapter is active, unmerge first
+    if (!m.active_lora.empty()) {
+        decoder_set_lora(m, backend, "");
+    }
+
+    // Lazy base weight snapshot (first time only)
+    if (m.base_weights_f32.empty()) {
+        for (int li = 0; li < m.n_layer; li++) {
+            dec_layer & L = m.layers[li];
+            ggml_tensor * tensors[] = { L.q_w, L.k_w, L.v_w, L.o_w, L.gate_w, L.up_w, L.down_w };
+            const char * suffixes[] = { "q", "k", "v", "o", "gate", "up", "down" };
+            const lora_layer & ll = adapter->layers[li];
+            const lora_pair * pairs[] = { &ll.q, &ll.k, &ll.v, &ll.o, &ll.gate, &ll.up, &ll.down };
+            for (int pi = 0; pi < 7; pi++) {
+                if (!tensors[pi] || pairs[pi]->empty()) continue;
+                std::string key = "base." + std::to_string(li) + "." + suffixes[pi];
+                m.base_weights_f32[key] = dequant_tensor(tensors[pi]);
+            }
+        }
+        fprintf(stderr, "decoder_embed: base weight snapshot taken (%zu tensors)\n",
+                m.base_weights_f32.size());
+    }
+
+    // Merge: W' = W_base + (alpha/rank) * B @ A
+    float scale = adapter->alpha / (float)adapter->rank;
+    int merged = 0;
+    for (int li = 0; li < m.n_layer; li++) {
+        dec_layer & L = m.layers[li];
+        ggml_tensor * tensors[] = { L.q_w, L.k_w, L.v_w, L.o_w, L.gate_w, L.up_w, L.down_w };
+        const char * suffixes[] = { "q", "k", "v", "o", "gate", "up", "down" };
+        const lora_layer & ll = adapter->layers[li];
+        const lora_pair * pairs[] = { &ll.q, &ll.k, &ll.v, &ll.o, &ll.gate, &ll.up, &ll.down };
+
+        for (int pi = 0; pi < 7; pi++) {
+            if (!tensors[pi] || pairs[pi]->empty()) continue;
+            const lora_pair & lp = *pairs[pi];
+            std::string key = "base." + std::to_string(li) + "." + suffixes[pi];
+
+            auto it = m.base_weights_f32.find(key);
+            if (it == m.base_weights_f32.end()) continue;
+
+            // Start from base weights
+            std::vector<float> merged_w = it->second;
+
+            // Compute delta = B @ A  (B is [out, rank], A is [rank, in])
+            // Result is [out, in] — same shape as the weight
+            std::vector<float> delta(lp.out_dim * lp.in_dim);
+            matmul_f32(lp.B.data(), lp.A.data(), delta.data(),
+                       lp.out_dim, lp.rank, lp.in_dim);
+
+            // W' = W_base + scale * delta
+            for (size_t k = 0; k < merged_w.size(); k++) {
+                merged_w[k] += scale * delta[k];
+            }
+
+            // Write back (requantize if needed)
+            write_tensor_f32(tensors[pi], merged_w.data());
+            merged++;
+        }
+    }
+
+    m.active_lora = adapter_name;
+    fprintf(stderr, "decoder_embed: LoRA '%s' merged (%d projections, scale=%.3f)\n",
+            adapter_name.c_str(), merged, scale);
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// Batched decoder encoding
+// ---------------------------------------------------------------------------
+
+std::vector<std::vector<float>> decoder_encode_tokens_batch(
+    const dec_model & m, ggml_backend_t backend,
+    const std::vector<embed_tokens> & batch, int n_threads,
+    ggml_backend_sched_t sched,
+    std::vector<uint8_t> * compute_meta) {
+
+    const int B = (int)batch.size();
+
+    // For B<=1, use the single-text path (avoid mask overhead)
+    if (B <= 1) {
+        std::vector<std::vector<float>> results;
+        for (const auto & tokens : batch) {
+            results.push_back(decoder_encode_tokens(m, backend, tokens, n_threads,
+                                                     sched, compute_meta));
+        }
+        return results;
+    }
+
+    // Compute T_max and per-text lengths
+    std::vector<int> lens(B);
+    int T_max = 0;
+    for (int b = 0; b < B; b++) {
+        lens[b] = (int)batch[b].ids.size();
+        T_max = std::max(T_max, lens[b]);
+    }
+    const int T_total = T_max * B;
+
+    const int H = m.n_embd;
+    const int n_heads = m.n_head;
+    const int n_kv_heads = m.n_kv_head;
+    int q_dim = m.layers[0].q_w ? (int)m.layers[0].q_w->ne[1] : H;
+    const int head_dim = (m.head_dim > 0) ? m.head_dim : (q_dim / n_heads);
+    q_dim = n_heads * head_dim;
+    const float eps = m.rms_norm_eps;
+
+    // Build padded token ids and position ids
+    std::vector<int32_t> tok_data(T_total, 0);
+    std::vector<int32_t> pos_data(T_total, 0);
+    for (int b = 0; b < B; b++) {
+        for (int t = 0; t < lens[b]; t++) {
+            tok_data[b * T_max + t] = batch[b].ids[t];
+            pos_data[b * T_max + t] = t;
+        }
+    }
+
+    // Build block-diagonal causal mask as F32 [T_total, T_total]
+    // mask[q_pos, k_pos] = 0.0 if same text AND q >= k AND k < len
+    //                    = -INFINITY otherwise
+    // Padding positions get self-attention (mask[pad,pad]=0) to prevent
+    // softmax(all -inf) = NaN. The padding output isn't pooled.
+    std::vector<float> mask_data((size_t)T_total * T_total, -INFINITY);
+    for (int b = 0; b < B; b++) {
+        for (int q = 0; q < lens[b]; q++) {
+            if (m.is_bidirectional) {
+                // Bidirectional: all valid positions within same text can attend
+                for (int k = 0; k < lens[b]; k++) {
+                    mask_data[(size_t)(b * T_max + q) * T_total + (b * T_max + k)] = 0.0f;
+                }
+            } else {
+                // Causal: q can attend to k only if k <= q
+                for (int k = 0; k <= q; k++) {
+                    mask_data[(size_t)(b * T_max + q) * T_total + (b * T_max + k)] = 0.0f;
+                }
+            }
+        }
+        // Padding positions: self-attend to prevent NaN in softmax
+        for (int p = lens[b]; p < T_max; p++) {
+            mask_data[(size_t)(b * T_max + p) * T_total + (b * T_max + p)] = 0.0f;
+        }
+    }
+
+    // --- Build graph ---
+    bool use_sched = (sched != nullptr && compute_meta != nullptr);
+    int graph_size = std::max(4096, m.n_layer * 50 + 256);
+
+    size_t mem;
+    std::vector<uint8_t> local_buf;
+    uint8_t * buf_ptr;
+
+    if (use_sched) {
+        mem = compute_meta->size();
+        buf_ptr = compute_meta->data();
+    } else {
+        size_t per_layer = (size_t)H * T_total * 4 * 30
+                         + (size_t)T_total * T_total * n_heads * 4 * 2
+                         + (size_t)m.n_intermediate * T_total * 4 * 3;
+        mem = per_layer * m.n_layer
+            + (size_t)H * T_total * 4 * 10
+            + ggml_tensor_overhead() * (size_t)(m.n_layer * 50 + 200)
+            + ggml_graph_overhead_custom(graph_size, false)
+            + 64 * 1024 * 1024;
+        local_buf.resize(mem);
+        buf_ptr = local_buf.data();
+    }
+
+    ggml_init_params ip = { mem, buf_ptr, use_sched };
+    ggml_context * gctx = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(gctx, graph_size, false);
+
+    // Token embedding
+    ggml_tensor * ids_t = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T_total);
+    ggml_set_name(ids_t, "tok_ids");
+    ggml_set_input(ids_t);
+
+    ggml_tensor * cur = ggml_get_rows(gctx, m.token_embd, ids_t);
+
+    if (m.embed_scale != 1.0f) {
+        cur = ggml_scale(gctx, cur, m.embed_scale);
+    }
+
+    // Gemma3 ones tensors
+    ggml_tensor * ones_h = nullptr;
+    ggml_tensor * ones_hd = nullptr;
+    if (m.gemma_norm) {
+        ones_h = ggml_new_tensor_1d(gctx, GGML_TYPE_F32, H);
+        ggml_set_name(ones_h, "ones_h");
+        ggml_set_input(ones_h);
+        if (m.layers[0].q_norm_w) {
+            ones_hd = ggml_new_tensor_1d(gctx, GGML_TYPE_F32, head_dim);
+            ggml_set_name(ones_hd, "ones_hd");
+            ggml_set_input(ones_hd);
+        }
+    }
+
+    auto rms_norm_b = [&](ggml_tensor * x, ggml_tensor * w) -> ggml_tensor * {
+        x = ggml_rms_norm(gctx, x, eps);
+        if (m.gemma_norm) {
+            ggml_tensor * ones = (w->ne[0] == H) ? ones_h : ones_hd;
+            return ggml_mul(gctx, x, ggml_add(gctx, w, ones));
+        }
+        return ggml_mul(gctx, x, w);
+    };
+
+    // Position IDs
+    ggml_tensor * pos = ggml_new_tensor_1d(gctx, GGML_TYPE_I32, T_total);
+    ggml_set_name(pos, "pos_ids");
+    ggml_set_input(pos);
+
+    // Attention mask: [T_total, T_total, 1, 1] passed as kq_mask
+    ggml_tensor * attn_mask = ggml_new_tensor_2d(gctx, GGML_TYPE_F32, T_total, T_total);
+    ggml_set_name(attn_mask, "attn_mask");
+    ggml_set_input(attn_mask);
+
+    // --- Transformer layers ---
+    for (int il = 0; il < m.n_layer; il++) {
+        const auto & L = m.layers[il];
+        ggml_tensor * residual = cur;
+
+        if (L.attn_norm_w) cur = rms_norm_b(cur, L.attn_norm_w);
+
+        ggml_tensor * Q = ggml_mul_mat(gctx, L.q_w, cur);
+        if (L.q_b) Q = ggml_add(gctx, Q, L.q_b);
+        ggml_tensor * K = ggml_mul_mat(gctx, L.k_w, cur);
+        if (L.k_b) K = ggml_add(gctx, K, L.k_b);
+        ggml_tensor * V = ggml_mul_mat(gctx, L.v_w, cur);
+        if (L.v_b) V = ggml_add(gctx, V, L.v_b);
+
+        Q = ggml_reshape_3d(gctx, Q, head_dim, n_heads, T_total);
+        K = ggml_reshape_3d(gctx, K, head_dim, n_kv_heads, T_total);
+        V = ggml_reshape_3d(gctx, V, head_dim, n_kv_heads, T_total);
+
+        if (L.q_norm_w) Q = rms_norm_b(Q, L.q_norm_w);
+        if (L.k_norm_w) K = rms_norm_b(K, L.k_norm_w);
+
+        float layer_rope_theta = m.rope_theta;
+        if (m.rope_theta_local > 0.0f && m.global_attn_every_n > 0) {
+            bool is_global = ((il + 1) % m.global_attn_every_n == 0);
+            layer_rope_theta = is_global ? m.rope_theta : m.rope_theta_local;
+        }
+
+        int rope_mode = 2;  // NEOX
+        Q = ggml_rope_ext(gctx, Q, pos, nullptr,
+                           head_dim, rope_mode, 0,
+                           layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        K = ggml_rope_ext(gctx, K, pos, nullptr,
+                           head_dim, rope_mode, 0,
+                           layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+
+        // Manual attention with mask (no ggml_diag_mask_inf — we use explicit mask)
+        Q = ggml_cont(gctx, ggml_permute(gctx, Q, 0, 2, 1, 3));
+        K = ggml_cont(gctx, ggml_permute(gctx, K, 0, 2, 1, 3));
+        V = ggml_cont(gctx, ggml_permute(gctx, V, 0, 2, 1, 3));
+
+        float scale = (m.attn_scale > 0.0f)
+                        ? (1.0f / sqrtf(m.attn_scale))
+                        : (1.0f / sqrtf((float)head_dim));
+        ggml_tensor * scores = ggml_mul_mat(gctx, K, Q);
+        scores = ggml_scale(gctx, scores, scale);
+        // Add block-diagonal mask
+        scores = ggml_add(gctx, scores, attn_mask);
+        scores = ggml_soft_max(gctx, scores);
+
+        ggml_tensor * V_perm = ggml_cont(gctx, ggml_permute(gctx, V, 1, 0, 2, 3));
+        ggml_tensor * attn = ggml_mul_mat(gctx, V_perm, scores);
+        attn = ggml_cont(gctx, ggml_permute(gctx, attn, 0, 2, 1, 3));
+        attn = ggml_reshape_2d(gctx, attn, q_dim, T_total);
+
+        attn = ggml_mul_mat(gctx, L.o_w, attn);
+        if (L.o_b) attn = ggml_add(gctx, attn, L.o_b);
+
+        if (L.post_attn_norm_w) attn = rms_norm_b(attn, L.post_attn_norm_w);
+
+        if (L.pre_ffn_norm_w) {
+            if (L.ffn_norm_w) attn = rms_norm_b(attn, L.ffn_norm_w);
+            cur = ggml_add(gctx, residual, attn);
+            residual = cur;
+            cur = rms_norm_b(cur, L.pre_ffn_norm_w);
+        } else {
+            cur = ggml_add(gctx, residual, attn);
+            residual = cur;
+            if (L.ffn_norm_w) cur = rms_norm_b(cur, L.ffn_norm_w);
+        }
+
+        if (L.gate_w && L.up_w && L.down_w) {
+            ggml_tensor * gate = ggml_mul_mat(gctx, L.gate_w, cur);
+            if (m.activation == 2 || m.activation == 1) {
+                gate = ggml_gelu(gctx, gate);
+            } else {
+                gate = ggml_silu(gctx, gate);
+            }
+            ggml_tensor * up = ggml_mul_mat(gctx, L.up_w, cur);
+            ggml_tensor * ffn = ggml_mul(gctx, gate, up);
+            ffn = ggml_mul_mat(gctx, L.down_w, ffn);
+            if (L.post_ffn_norm_w) ffn = rms_norm_b(ffn, L.post_ffn_norm_w);
+            cur = ggml_add(gctx, residual, ffn);
+        } else {
+            cur = residual;
+        }
+    }
+
+    if (m.output_norm) cur = rms_norm_b(cur, m.output_norm);
+
+    ggml_set_name(cur, "decoder_out");
+    ggml_set_output(cur);
+    ggml_build_forward_expand(gf, cur);
+
+    // --- Set inputs and compute ---
+    if (use_sched) {
+        ggml_backend_sched_reset(sched);
+        if (!ggml_backend_sched_alloc_graph(sched, gf)) {
+            fprintf(stderr, "decoder_batch: failed to allocate graph\n");
+            ggml_free(gctx);
+            // Fall back to sequential
+            std::vector<std::vector<float>> results;
+            for (const auto & tokens : batch) {
+                results.push_back(decoder_encode_tokens(m, backend, tokens, n_threads,
+                                                         sched, compute_meta));
+            }
+            return results;
+        }
+
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"),
+                                tok_data.data(), 0, T_total * sizeof(int32_t));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
+                                pos_data.data(), 0, T_total * sizeof(int32_t));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "attn_mask"),
+                                mask_data.data(), 0,
+                                (size_t)T_total * T_total * sizeof(float));
+        if (m.gemma_norm) {
+            std::vector<float> ones(H, 1.0f);
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_h"),
+                                    ones.data(), 0, H * sizeof(float));
+            if (ones_hd) {
+                std::vector<float> ones_hd_data(head_dim, 1.0f);
+                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_hd"),
+                                        ones_hd_data.data(), 0, head_dim * sizeof(float));
+            }
+        }
+
+        ggml_backend_sched_graph_compute(sched, gf);
+    } else {
+        // CPU fallback
+        memcpy(ids_t->data, tok_data.data(), T_total * sizeof(int32_t));
+        memcpy(pos->data, pos_data.data(), T_total * sizeof(int32_t));
+        memcpy(attn_mask->data, mask_data.data(),
+               (size_t)T_total * T_total * sizeof(float));
+
+        if (ones_h) {
+            float * d = (float *)ones_h->data;
+            for (int i = 0; i < H; i++) d[i] = 1.0f;
+        }
+        if (ones_hd) {
+            float * d = (float *)ones_hd->data;
+            for (int i = 0; i < head_dim; i++) d[i] = 1.0f;
+        }
+
+        struct ggml_cplan cplan = ggml_graph_plan(gf, n_threads, NULL);
+        std::vector<uint8_t> work;
+        if (cplan.work_size > 0) {
+            work.resize(cplan.work_size);
+            cplan.work_data = work.data();
+        }
+        ggml_graph_compute(gf, &cplan);
+    }
+
+    // --- Read output and pool per text ---
+    ggml_tensor * out = ggml_graph_get_tensor(gf, "decoder_out");
+    std::vector<float> hidden(H * T_total);
+    if (use_sched) {
+        ggml_backend_tensor_get(out, hidden.data(), 0, (size_t)H * T_total * sizeof(float));
+    } else {
+        memcpy(hidden.data(), out->data, (size_t)H * T_total * sizeof(float));
+    }
+
+    ggml_free(gctx);
+
+    // Per-text pooling
+    std::vector<std::vector<float>> results(B);
+    for (int b = 0; b < B; b++) {
+        std::vector<float> pooled(H, 0.0f);
+
+        if (m.pooling_method == 1) {
+            // Mean pooling
+            int n_valid = 0;
+            for (int t = 0; t < lens[b]; t++) {
+                const float * row = hidden.data() + (size_t)(b * T_max + t) * H;
+                for (int i = 0; i < H; i++) pooled[i] += row[i];
+                n_valid++;
+            }
+            if (n_valid > 0) {
+                const float inv = 1.0f / (float)n_valid;
+                for (int i = 0; i < H; i++) pooled[i] *= inv;
+            }
+        } else {
+            // Last-token pooling
+            int last_t = lens[b] - 1;
+            if (last_t < 0) last_t = 0;
+            memcpy(pooled.data(), hidden.data() + (size_t)(b * T_max + last_t) * H,
+                   H * sizeof(float));
+        }
+
+        // Dense projection
+        for (const auto & dl : m.dense_proj) {
+            std::vector<float> out_vec(dl.out_dim, 0.0f);
+            const float * w = dl.weight.data();
+            for (int o = 0; o < dl.out_dim; o++) {
+                float acc = 0.0f;
+                for (int j = 0; j < dl.in_dim; j++) acc += w[o * dl.in_dim + j] * pooled[j];
+                out_vec[o] = acc;
+            }
+            pooled = std::move(out_vec);
+        }
+
+        // L2 normalize
+        float norm = 0;
+        for (int i = 0; i < (int)pooled.size(); i++) norm += pooled[i] * pooled[i];
+        norm = sqrtf(std::max(norm, 1e-12f));
+        for (int i = 0; i < (int)pooled.size(); i++) pooled[i] /= norm;
+
+        results[b] = std::move(pooled);
+    }
+
+    return results;
 }

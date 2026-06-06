@@ -126,6 +126,8 @@ int main(int argc, char ** argv) {
     std::string det_model;   // detection model for --face-pipeline
     bool face_pipeline_mode = false;
     float conf_threshold = 0.5f;
+    std::string lora_adapter;   // LoRA adapter name (--lora)
+    bool list_lora = false;     // --list-lora
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-m") == 0 && i + 1 < argc) {
@@ -177,6 +179,10 @@ int main(int argc, char ** argv) {
             face_pipeline_mode = true;
         } else if (strcmp(argv[i], "--conf") == 0 && i + 1 < argc) {
             conf_threshold = (float)atof(argv[++i]);
+        } else if (strcmp(argv[i], "--lora") == 0 && i + 1 < argc) {
+            lora_adapter = argv[++i];
+        } else if (strcmp(argv[i], "--list-lora") == 0) {
+            list_lora = true;
         } else if (strcmp(argv[i], "--auto-download") == 0) {
             auto_download = true;
         } else if (strcmp(argv[i], "--accept-license") == 0 && i + 1 < argc) {
@@ -536,6 +542,29 @@ int main(int argc, char ** argv) {
         if (auto_pfx) {
             crispembed_set_prefix(ctx, auto_pfx);
             fprintf(stderr, "crispembed: auto-prefix \"%s\" (use --prefix \"\" to disable)\n", auto_pfx);
+        }
+    }
+
+    // LoRA adapter activation
+    if (list_lora) {
+        const char ** names = nullptr;
+        int count = 0;
+        if (crispembed_list_lora(ctx, &names, &count) && count > 0) {
+            printf("Available LoRA adapters (%d):\n", count);
+            for (int i = 0; i < count; i++) {
+                printf("  %s\n", names[i]);
+            }
+        } else {
+            printf("No LoRA adapters available in this model.\n");
+        }
+        crispembed_free(ctx);
+        return 0;
+    }
+    if (!lora_adapter.empty()) {
+        if (!crispembed_set_lora(ctx, lora_adapter.c_str())) {
+            fprintf(stderr, "crispembed: failed to set LoRA adapter '%s'\n", lora_adapter.c_str());
+            crispembed_free(ctx);
+            return 1;
         }
     }
 

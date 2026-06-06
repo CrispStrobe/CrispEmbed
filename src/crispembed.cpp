@@ -247,6 +247,9 @@ struct crispembed_context {
     int last_vision_dim = 0;
     int last_vision_n_merged = 0;
     int last_vision_n_deepstack = 0;
+    // LoRA adapter name cache for list_lora API
+    std::vector<std::string> lora_name_strings;
+    std::vector<const char *> lora_name_ptrs;
 };
 
 // ---------------------------------------------------------------------------
@@ -1645,6 +1648,41 @@ extern "C" const char * crispembed_get_prefix(const crispembed_context * ctx) {
     return ctx ? ctx->prefix.c_str() : "";
 }
 
+extern "C" int crispembed_set_lora(crispembed_context * ctx, const char * adapter_name) {
+    if (!ctx || !ctx->is_decoder || !ctx->dec) return 0;
+    if (ctx->dec->lora_adapters.empty()) return 0;
+    std::string name = adapter_name ? adapter_name : "";
+    return decoder_set_lora(*ctx->dec, ctx->backend, name) ? 1 : 0;
+}
+
+extern "C" const char * crispembed_get_lora(const crispembed_context * ctx) {
+    if (!ctx || !ctx->is_decoder || !ctx->dec) return "";
+    return ctx->dec->active_lora.c_str();
+}
+
+extern "C" int crispembed_list_lora(const crispembed_context * ctx,
+                                     const char *** out_names, int * out_count) {
+    if (!ctx || !ctx->is_decoder || !ctx->dec || ctx->dec->lora_adapters.empty()) {
+        if (out_count) *out_count = 0;
+        if (out_names) *out_names = nullptr;
+        return 0;
+    }
+    // Build name pointer cache (const_cast is safe — ctx owns the strings)
+    auto * mctx = const_cast<crispembed_context *>(ctx);
+    mctx->lora_name_strings.clear();
+    mctx->lora_name_ptrs.clear();
+    for (const auto & a : ctx->dec->lora_adapters) {
+        mctx->lora_name_strings.push_back(a.name);
+    }
+    for (const auto & s : mctx->lora_name_strings) {
+        mctx->lora_name_ptrs.push_back(s.c_str());
+    }
+    mctx->lora_name_ptrs.push_back(nullptr);  // null-terminated
+    if (out_names) *out_names = mctx->lora_name_ptrs.data();
+    if (out_count) *out_count = (int)ctx->dec->lora_adapters.size();
+    return 1;
+}
+
 extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
                                                    const char ** texts,
                                                    int n_texts,
@@ -1686,12 +1724,9 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
     if (!ctx->is_decoder) {
         batch_results = encode_tokens_batch(ctx, all_tokens);
     } else {
-        // Decoder: sequential (batched decoding more complex)
-        for (int i = 0; i < n_texts; i++) {
-            auto vec = decoder_encode_tokens(*ctx->dec, ctx->backend, all_tokens[i],
-                                              ctx->n_threads, ctx->sched, &ctx->compute_meta);
-            batch_results.push_back(std::move(vec));
-        }
+        // Decoder: batched graph (falls back to sequential for B=1 or multimodal)
+        batch_results = decoder_encode_tokens_batch(*ctx->dec, ctx->backend, all_tokens,
+                                                     ctx->n_threads, ctx->sched, &ctx->compute_meta);
     }
 
     if (batch_results.empty() || batch_results[0].empty()) return nullptr;

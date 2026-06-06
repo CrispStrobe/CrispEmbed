@@ -5,8 +5,30 @@
 #include "ggml.h"
 #include "ggml-backend.h"
 
+#include <map>
 #include <string>
 #include <vector>
+
+// LoRA adapter data for runtime hot-swap
+struct lora_pair {
+    std::vector<float> A;  // [rank, in_dim] row-major F32
+    std::vector<float> B;  // [out_dim, rank] row-major F32
+    int rank    = 0;
+    int in_dim  = 0;
+    int out_dim = 0;
+    bool empty() const { return A.empty(); }
+};
+
+struct lora_layer {
+    lora_pair q, k, v, o, gate, up, down;
+};
+
+struct lora_adapter {
+    std::string name;
+    float alpha = 0.0f;
+    int rank    = 0;
+    std::vector<lora_layer> layers;
+};
 
 struct dec_layer {
     ggml_tensor * attn_norm_w = nullptr;
@@ -63,6 +85,13 @@ struct dec_model {
     // Applied after pooling but before L2 normalization (no bias, no activation).
     struct DenseLayer { int in_dim; int out_dim; std::vector<float> weight; };
     std::vector<DenseLayer> dense_proj;
+
+    // LoRA adapter state for runtime hot-swap
+    std::vector<lora_adapter> lora_adapters;
+    std::string active_lora;  // "" = base weights only
+    // Lazy F32 snapshot of base weights for LoRA-augmented projections.
+    // Key = GGUF tensor name (e.g. "blk.0.attn_q.weight").
+    std::map<std::string, std::vector<float>> base_weights_f32;
 };
 
 bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
@@ -89,3 +118,18 @@ std::vector<float> decoder_encode_tokens(
     ggml_backend_sched_t sched = nullptr,
     std::vector<uint8_t> * compute_meta = nullptr,
     const dec_image_input * img = nullptr);
+
+// Batched decoder encoding: encode multiple texts in a single graph compute.
+// Returns one embedding vector per input text.
+std::vector<std::vector<float>> decoder_encode_tokens_batch(
+    const dec_model & m, ggml_backend_t backend,
+    const std::vector<embed_tokens> & batch, int n_threads,
+    ggml_backend_sched_t sched = nullptr,
+    std::vector<uint8_t> * compute_meta = nullptr);
+
+// LoRA adapter hot-swap. Merges adapter weights into base weights on CPU
+// and writes the merged result back to the backend buffer. Pass "" or
+// nullptr to unmerge (restore base weights). Returns true on success.
+// NOT thread-safe with respect to decoder_encode_tokens().
+bool decoder_set_lora(dec_model & m, ggml_backend_t backend,
+                      const std::string & adapter_name);
