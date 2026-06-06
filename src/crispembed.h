@@ -504,6 +504,28 @@ CRISPEMBED_API const char * crispembed_math_ocr_recognize(
     int * out_len
 );
 
+// ---------------------------------------------------------------------------
+// Handwritten Math OCR — HMER (DenseNet-121 + GRU attention decoder)
+// ---------------------------------------------------------------------------
+
+CRISPEMBED_API void * crispembed_hmer_ocr_init(const char * model_path, int n_threads);
+CRISPEMBED_API void crispembed_hmer_ocr_free(void * ctx);
+CRISPEMBED_API const char * crispembed_hmer_ocr_recognize(
+    void * ctx, const uint8_t * pixel_bytes, int width, int height, int channels, int * out_len);
+CRISPEMBED_API const char * crispembed_hmer_ocr_recognize_gray(
+    void * ctx, const float * pixels, int width, int height, int * out_len);
+
+// ---------------------------------------------------------------------------
+// Handwritten Math OCR — BTTR (DenseNet + Transformer decoder)
+// ---------------------------------------------------------------------------
+
+CRISPEMBED_API void * crispembed_bttr_ocr_init(const char * model_path, int n_threads);
+CRISPEMBED_API void crispembed_bttr_ocr_free(void * ctx);
+CRISPEMBED_API const char * crispembed_bttr_ocr_recognize(
+    void * ctx, const uint8_t * pixel_bytes, int width, int height, int channels, int * out_len);
+CRISPEMBED_API const char * crispembed_bttr_ocr_recognize_gray(
+    void * ctx, const float * pixels, int width, int height, int * out_len);
+
 #ifdef __cplusplus
 }
 #endif
