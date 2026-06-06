@@ -68,6 +68,10 @@ Completed milestones and work log. See PLAN.md for current roadmap.
   (3) dequant Q→F32 before F16 cast (ggml only supports Q→F32)
 - Q8_0 detection matches F32 with minor quantization drift (conf 0.731 vs 0.749)
 - Old-style 4D-weight GGUFs and new-style 2D-flattened GGUFs both work
+- YuNet parity verified: sub-pixel match vs OpenCV FaceDetectorYN on both
+  single-face and multi-face images (x/y/w/h diff < 0.5px, conf diff < 0.01)
+- Raw tensor cos vs ONNX (0.35-0.85) is a false alarm — planar (ggml) vs
+  interleaved (ONNX) layout of the same correct data; decoded coords match
 
 ### SigLIP text encoder verified
 - cos=1.000000 vs HuggingFace on all test texts
