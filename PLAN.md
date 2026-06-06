@@ -154,7 +154,7 @@ CrispEmbed/
 - [x] SigLIP-large, CLIP-large conversion + upload
 - [x] SigLIP / ViT quantization (conv2d needs F32 kernel — selective quant)
 - [x] YuNet lightweight face detection alternative
-- [ ] SFace INT8 quantization
+- [x] SFace INT8 quantization (Q8_0 cos=0.9999, Q4_K cos=0.974; 37→10→6 MB)
 - [ ] Nomic v2 MoE (MoE routing layer in encoder)
 
 ### Bindings
