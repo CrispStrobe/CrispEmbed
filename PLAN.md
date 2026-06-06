@@ -144,7 +144,7 @@ CrispEmbed/
 
 ### Performance
 
-- [ ] True batched graph for decoder models (single compute for N texts)
+- [x] True batched graph for decoder models (single compute for N texts, block-diagonal causal mask, ~3x speedup)
 - [ ] KV cache for prefix-shared decoder batches
 - [x] SigLIP attention pooling head (mean pool works; attn pool for full parity)
 
@@ -158,11 +158,12 @@ CrispEmbed/
 - [x] Face model quantized inference via graph replayer (YuNet F16/Q8_0 working; fixed depthwise IC, ggml_n_dims trailing-1s, Q→F32 dequant path)
 - [x] ViT parity: cos 0.8→1.0 (was patch ordering bug — permute(2,1,0) gave column-major spatial, fixed to permute(1,2,0,3) for row-major matching HF)
 - [ ] Nomic v2 MoE (MoE routing layer in encoder)
-- [ ] LoRA adapter hot-swap (Jina v5 per-task adapters)
+- [x] LoRA adapter hot-swap (Jina v5 per-task adapters, pre-compute merge on CPU, ~10-50ms switch)
 
 ### Bindings
 
 - [x] Python wrapper `encode_image()` for standalone SigLIP/CLIP
+- [x] CrispFacePipeline export + from_registry() + Python unit tests + face_search example
 - [ ] CrispLens integration — update `crispembed_client.py` for face pipeline
 
 ### Feature gaps vs fastembed-rs
@@ -172,11 +173,32 @@ CrispEmbed/
 | Nomic v2 MoE | Low | High | MoE routing layer in encoder |
 | Qwen3-VL multimodal | Low | High | Reuse BidirLM-Omni scaffolding |
 
-### Ideas from mayflower
+### Ideas (unscoped)
 
-- Streaming ColBERT late interaction scoring in the server
-- WASM build target for browser-based inference
-- INT4 GGUF for face models (conv2d quantization)
+- [ ] **Streaming ColBERT late interaction scoring** — Server-side MaxSim
+  scoring between a query's ColBERT multi-vector and pre-stored document
+  token vectors. Stream partial scores via SSE so the client can show
+  progressive ranking.  Needs: `/colbert/score` endpoint accepting query
+  multi-vec + list of doc multi-vecs, chunked response with cumulative
+  top-K.  Builds on the existing `/embed` endpoint and
+  `crispembed_encode_multivec()` C API.
+
+- [ ] **WASM build target** — Compile CrispEmbed to WebAssembly
+  (Emscripten) for browser-based embedding inference.  Requires: ggml
+  WASM backend (CPU-only, no GPU), JS wrapper exporting `encode()` /
+  `encode_batch()`, a demo page.  ggml already has partial Emscripten
+  support (whisper.cpp ships a WASM build).  Main challenges: SIMD
+  (relaxed-simd flag), memory limits (large models need streaming GGUF
+  loading or smaller quants), and thread support (SharedArrayBuffer +
+  Web Workers for multi-threaded ggml).
+
+- [ ] **INT4 GGUF for face models** — Apply Q4_K quantization to
+  Conv2D weights in SCRFD / AuraFace / SFace.  Currently conv weights
+  are stored F32 or F16 because `ggml_conv_2d` only supports
+  F32/F16 kernels; quantized conv would require dequant→F32 at graph
+  build time (same pattern as HMER/BTTR).  Expected size savings:
+  AuraFace 249 MB → ~65 MB, SCRFD 17 MB → ~5 MB.  Quality gate:
+  cos ≥ 0.99 vs F32 for recognition, IoU ≥ 0.95 for detection.
 
 ---
 

@@ -74,6 +74,10 @@ def main():
                            help="CrispEmbed-native naming")
     parser.add_argument("--lora-adapter", default=None,
                         help="LoRA adapter name to merge (default: retrieval)")
+    parser.add_argument("--lora-mode", choices=["merge", "separate"], default="merge",
+                        help="merge: bake one adapter (current). "
+                             "separate: store base weights + per-adapter A/B tensors "
+                             "for runtime hot-swap.")
     args = parser.parse_args()
 
     ollama_mode = not args.crisp
@@ -139,11 +143,66 @@ def main():
         if st_dense_weights:
             print(f"  SentenceTransformer Dense layers: {len(st_dense_weights)}")
 
-    # Detect and merge LoRA adapters (e.g. Jina v5 task-specific adapters)
+    # Detect and handle LoRA adapters (e.g. Jina v5 task-specific adapters)
     has_lora = any("lora_A" in k or "base_layer" in k for k in model.state_dict())
-    if has_lora:
+    lora_separate_data = None  # populated when --lora-mode=separate
+    if has_lora and args.lora_mode == "separate":
+        # Extract base weights + per-adapter A/B tensors for runtime hot-swap
         try:
-            # Select retrieval adapter if available (most common use case)
+            peft_config = getattr(model, 'peft_config', {})
+            lora_adapter_names = list(peft_config.keys())
+            if not lora_adapter_names:
+                print("  WARNING: LoRA detected but no adapters found in peft_config")
+            else:
+                print(f"  LoRA separate mode: {len(lora_adapter_names)} adapters: {lora_adapter_names}")
+                # Gather per-adapter A/B matrices before unloading
+                lora_separate_data = {
+                    "adapters": {},
+                    "adapter_names": lora_adapter_names,
+                    "rank": 0,
+                    "alpha": 0.0,
+                }
+                for adapter_name in lora_adapter_names:
+                    adapter_tensors = {}
+                    cfg = peft_config[adapter_name]
+                    rank = cfg.r
+                    alpha = float(cfg.lora_alpha)
+                    lora_separate_data["rank"] = rank
+                    lora_separate_data["alpha"] = alpha
+                    # Walk model to find LoRA A/B weights for this adapter
+                    base_model = model.base_model if hasattr(model, 'base_model') else model
+                    for name, module in base_model.named_modules():
+                        if not hasattr(module, 'lora_A'):
+                            continue
+                        if adapter_name not in module.lora_A:
+                            continue
+                        A = module.lora_A[adapter_name].weight.detach().float().cpu()  # [rank, in_dim]
+                        B = module.lora_B[adapter_name].weight.detach().float().cpu()  # [out_dim, rank]
+                        # Map HF module name to our tensor naming
+                        # e.g. "model.layers.0.self_attn.q_proj" → layer 0, proj q
+                        adapter_tensors[name] = {"A": A, "B": B}
+                    lora_separate_data["adapters"][adapter_name] = adapter_tensors
+                    print(f"    adapter '{adapter_name}': {len(adapter_tensors)} LoRA projections, rank={rank}, alpha={alpha}")
+                # Now unload to get clean base weights (without any LoRA merged)
+                # We need to get the base model without merging
+                model = model.base_model.model if hasattr(model, 'base_model') else model
+                # Detach from PEFT wrapper: access underlying model
+                if hasattr(model, 'model'):
+                    model = model.model
+                print(f"  LoRA: base model extracted ({len(model.state_dict())} weights)")
+        except Exception as e:
+            print(f"  WARNING: LoRA separate extraction failed ({e}), falling back to merge")
+            import traceback; traceback.print_exc()
+            lora_separate_data = None
+            has_lora_for_merge = True
+    elif has_lora:
+        has_lora_for_merge = True
+    else:
+        has_lora_for_merge = False
+
+    if has_lora and lora_separate_data is None and has_lora:
+        # Original merge path
+        try:
             if hasattr(model, 'active_adapters'):
                 adapters = list(getattr(model, 'peft_config', {}).keys())
                 target = args.lora_adapter or ("retrieval" if "retrieval" in adapters else (adapters[0] if adapters else None))
@@ -370,6 +429,17 @@ def main():
             writer.add_uint32("decoder.spatial_merge_size",
                               int(vc.spatial_merge_size))
         print(f"  format: CrispEmbed")
+
+    # LoRA adapter metadata (written for both Ollama and CrispEmbed modes)
+    if lora_separate_data is not None:
+        writer.add_array("decoder.lora_adapters", lora_separate_data["adapter_names"])
+        writer.add_uint32("decoder.lora_rank", lora_separate_data["rank"])
+        writer.add_float32("decoder.lora_alpha", lora_separate_data["alpha"])
+        default_lora = "retrieval" if "retrieval" in lora_separate_data["adapter_names"] else lora_separate_data["adapter_names"][0]
+        writer.add_string("decoder.lora_default", default_lora)
+        print(f"  LoRA metadata: {len(lora_separate_data['adapter_names'])} adapters, "
+              f"rank={lora_separate_data['rank']}, alpha={lora_separate_data['alpha']}, "
+              f"default={default_lora}")
 
     # Tokenizer
     vocab = tokenizer.get_vocab()
@@ -653,6 +723,48 @@ def main():
     for di, dw in enumerate(st_dense_weights):
         add_tensor(f"dense.{di}.weight", dw.astype("float32"))
         print(f"  dense.{di}.weight: {dw.shape}")
+
+    # LoRA adapter A/B tensors (--lora-mode=separate)
+    if lora_separate_data is not None:
+        # Map HF module paths to GGUF tensor names
+        proj_map = {
+            "self_attn.q_proj": ATTN_MAP["q"],
+            "self_attn.k_proj": ATTN_MAP["k"],
+            "self_attn.v_proj": ATTN_MAP["v"],
+            "self_attn.o_proj": ATTN_MAP["o"],
+            "mlp.gate_proj":    FFN_MAP["gate"],
+            "mlp.up_proj":      FFN_MAP["up"],
+            "mlp.down_proj":    FFN_MAP["down"],
+        }
+        n_lora_tensors = 0
+        for adapter_name, adapter_tensors in lora_separate_data["adapters"].items():
+            for hf_name, ab in adapter_tensors.items():
+                # Parse layer index and projection from HF name
+                # e.g. "model.layers.3.self_attn.q_proj" or "layers.3.self_attn.q_proj"
+                layer_idx = None
+                proj_suffix = None
+                for proj_hf, proj_gg in proj_map.items():
+                    if hf_name.endswith(proj_hf):
+                        proj_suffix = proj_gg
+                        # Extract layer index
+                        parts = hf_name.split(".")
+                        for pi, p in enumerate(parts):
+                            if p == "layers" and pi + 1 < len(parts):
+                                try:
+                                    layer_idx = int(parts[pi + 1])
+                                except ValueError:
+                                    pass
+                        break
+                if layer_idx is None or proj_suffix is None:
+                    print(f"  WARNING: skipping LoRA tensor {hf_name} (could not parse)")
+                    continue
+                # Store as F16: lora.{adapter}.{LP}.{layer}.{proj}.A/B.weight
+                a_name = f"lora.{adapter_name}.{LP}.{layer_idx}.{proj_suffix}.A.weight"
+                b_name = f"lora.{adapter_name}.{LP}.{layer_idx}.{proj_suffix}.B.weight"
+                add_tensor(a_name, ab["A"].numpy().astype(np.float16))
+                add_tensor(b_name, ab["B"].numpy().astype(np.float16))
+                n_lora_tensors += 2
+        print(f"  LoRA tensors: {n_lora_tensors} tensors stored for {len(lora_separate_data['adapters'])} adapters")
 
     # ---------------------------------------------------------------------
     # BidirLM-Omni audio tower export (Phase 2 — crisp_audio integration).

@@ -73,6 +73,22 @@ CRISPEMBED_API void crispembed_set_prefix(crispembed_context * ctx, const char *
 // Get the current prefix (empty string if none set).
 CRISPEMBED_API const char * crispembed_get_prefix(const crispembed_context * ctx);
 
+// LoRA adapter hot-swap (decoder models with per-task LoRA, e.g. Jina v5).
+// Returns 1 on success, 0 on failure (no such adapter, not a decoder model,
+// model has no LoRA). Pass NULL or "" to deactivate all adapters (base only).
+CRISPEMBED_API int crispembed_set_lora(crispembed_context * ctx, const char * adapter_name);
+
+// Get the currently active LoRA adapter name. Returns "" if none active.
+CRISPEMBED_API const char * crispembed_get_lora(const crispembed_context * ctx);
+
+// List available LoRA adapters. Sets *out_names to a null-terminated array
+// of strings and *out_count to the number of adapters. The pointers are
+// owned by the context and valid until crispembed_free().
+// Returns 0 if no LoRA adapters are available.
+CRISPEMBED_API int crispembed_list_lora(const crispembed_context * ctx,
+                                         const char *** out_names,
+                                         int * out_count);
+
 // Get model hyperparameters.
 CRISPEMBED_API const crispembed_hparams * crispembed_get_hparams(const crispembed_context * ctx);
 
