@@ -288,7 +288,8 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     // Build ggml graph
     const int extra = (ctx->has_attn_pool ? 60 : 0) + (ctx->has_cls_token ? 10 : 0);
     const int ops_per_layer = ctx->use_quick_gelu ? 50 : 40;
-    const int total_nodes = ctx->n_layers * ops_per_layer + 200 + extra;
+    const int debug_extra = (getenv("VIT_DEBUG") ? ctx->n_layers + 5 : 0);
+    const int total_nodes = ctx->n_layers * ops_per_layer + 200 + extra + debug_extra;
     size_t buf_size = ggml_tensor_overhead() * total_nodes
                     + ggml_graph_overhead_custom(total_nodes, false);
     std::vector<uint8_t> buf(buf_size);
@@ -317,9 +318,12 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
 
     // Reshape [OW, OH, D] → [D, T] where T = OH*OW
     // ggml ne: ne[0]=OW, ne[1]=OH, ne[2]=D
-    // HF flattens (D, OH, OW) → (D, T) with row-major spatial order (OH then OW)
-    // permute(2,1,0): [OW, OH, D] → [D, OH, OW] — matches HF's (D, H, W) layout
-    x = ggml_cont(g, ggml_permute(g, x, 2, 1, 0, 3));  // [D, OH, OW]
+    // HF: Conv2d output [B, D, OH, OW] → flatten(2) → [B, D, OH*OW] → transpose → [B, T, D]
+    // HF flatten gives row-major spatial: t = oh*OW + ow
+    // permute(1,2,0,3): old dim0(OW)→new1, old dim1(OH)→new2, old dim2(D)→new0
+    // Result: ne[0]=D, ne[1]=OW, ne[2]=OH
+    // After ggml_cont + reshape_2d: t = ow + oh*OW = oh*OW + ow (row-major ✓)
+    x = ggml_cont(g, ggml_permute(g, x, 1, 2, 0, 3));  // [D, OW, OH]
     x = ggml_reshape_2d(g, x, D, T);                     // [D, T]
 
     // CLS token (CLIP): prepend learned class embedding → [D, T+1]
@@ -338,6 +342,13 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         x = ggml_norm(g, x, eps);
         x = ggml_mul(g, x, ctx->pre_ln_w);
         if (ctx->pre_ln_b) x = ggml_add(g, x, ctx->pre_ln_b);
+    }
+
+    // Debug: mark intermediates for per-layer comparison (VIT_DEBUG=1)
+    bool vit_debug = (getenv("VIT_DEBUG") != nullptr);
+    if (vit_debug) {
+        ggml_set_name(x, "dbg_embed");
+        ggml_set_output(x);
     }
 
     // Encoder layers (pre-LN ViT: LN → Attn → Add → LN → MLP → Add)
@@ -408,6 +419,11 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         // Residual add
         x = ggml_add(g, residual, x);
 
+        if (vit_debug) {
+            char dn[32]; snprintf(dn, sizeof(dn), "dbg_layer_%d", il);
+            ggml_set_name(x, dn);
+            ggml_set_output(x);
+        }
     }
 
     // Post-LayerNorm
@@ -415,6 +431,10 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
         x = ggml_norm(g, x, eps);
         x = ggml_mul(g, x, ctx->post_ln_w);
         if (ctx->post_ln_b) x = ggml_add(g, x, ctx->post_ln_b);
+    }
+    if (vit_debug) {
+        ggml_set_name(x, "dbg_post_ln");
+        ggml_set_output(x);
     }
 
     ggml_tensor* pooled = nullptr;
@@ -523,6 +543,25 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
 
     // Compute
     ggml_backend_graph_compute(ctx->backend, gf);
+
+    // Debug: print per-layer tensor stats (VIT_DEBUG=1)
+    if (vit_debug) {
+        const char* dbg_names[] = {"dbg_embed", "dbg_layer_0", "dbg_layer_1",
+            "dbg_layer_2", "dbg_layer_3", "dbg_layer_4", "dbg_layer_5",
+            "dbg_layer_6", "dbg_layer_7", "dbg_layer_8", "dbg_layer_9",
+            "dbg_layer_10", "dbg_layer_11", "dbg_post_ln", nullptr};
+        for (int di = 0; dbg_names[di]; di++) {
+            ggml_tensor* dt = ggml_graph_get_tensor(gf, dbg_names[di]);
+            if (!dt) continue;
+            int nel = (int)ggml_nelements(dt);
+            std::vector<float> d(nel);
+            ggml_backend_tensor_get(dt, d.data(), 0, nel * 4);
+            float mn = d[0], mx = d[0];
+            for (float v : d) { if (v < mn) mn = v; if (v > mx) mx = v; }
+            fprintf(stderr, "  %s: ne=[%lld,%lld] range=[%.4f, %.4f]\n",
+                    dbg_names[di], (long long)dt->ne[0], (long long)dt->ne[1], mn, mx);
+        }
+    }
 
     // Read output
     ggml_tensor* out = ggml_graph_get_tensor(gf, "embedding");
