@@ -92,6 +92,7 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 - Fix: `ggml_permute(1,2,0,3)` produces [D, OW, OH] which flattens to
   row-major matching HF. Per-layer cos goes from ~0.3 to 1.000000.
 - Final embedding cos = 0.9998 vs HuggingFace (SigLIP-base-384)
+- CLIP ViT also verified: cos=1.000000, max_diff=0.000001 (clip-vit-base-patch16)
 - Was NOT "FP32 non-associativity" as previously hypothesized — it was
   a simple permutation index bug that scrambled patch positions
 
