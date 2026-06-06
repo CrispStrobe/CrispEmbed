@@ -481,28 +481,24 @@ CRISPEMBED_API void crispembed_face_free(crispembed_face_context * ctx);
 CRISPEMBED_API void crispembed_free(crispembed_context * ctx);
 
 // ---------------------------------------------------------------------------
-// Math OCR (pix2tex) — image → LaTeX via ViT encoder + transformer decoder.
-// Requires a pix2tex GGUF model (see models/convert-pix2tex-to-gguf.py).
+// Unified Math OCR — auto-detects model architecture from GGUF metadata.
+// Supports pix2tex (printed), HMER (handwritten), BTTR (handwritten).
 // ---------------------------------------------------------------------------
 
-// Initialize a math OCR context. Separate from the main embedding context
-// because the model architecture is different (encoder-decoder vs encoder-only).
+// Initialize. Reads "general.architecture" from the GGUF to dispatch
+// to the correct inference backend (pix2tex_mfr / hmer / bttr).
 CRISPEMBED_API void * crispembed_math_ocr_init(const char * model_path, int n_threads);
-
-// Free the math OCR context.
 CRISPEMBED_API void crispembed_math_ocr_free(void * ctx);
 
-// Recognize math from raw pixel bytes (RGB or RGBA).
-// Returns a null-terminated LaTeX string owned by the context.
-// Returns NULL on failure.
+// Recognize from raw pixel bytes (RGB/RGBA/grayscale).
 CRISPEMBED_API const char * crispembed_math_ocr_recognize(
-    void * ctx,
-    const uint8_t * pixel_bytes,
-    int width,
-    int height,
-    int channels,
-    int * out_len
-);
+    void * ctx, const uint8_t * pixel_bytes,
+    int width, int height, int channels, int * out_len);
+
+// Recognize from grayscale float pixels [0..1].
+CRISPEMBED_API const char * crispembed_math_ocr_recognize_gray(
+    void * ctx, const float * pixels,
+    int width, int height, int * out_len);
 
 // ---------------------------------------------------------------------------
 // Handwritten Math OCR — HMER (DenseNet-121 + GRU attention decoder)
