@@ -93,8 +93,10 @@ bool load(context** out, const char* path, int n_threads) {
     ctx->name = str_val("cnn.model_name", "unknown");
     ctx->graph_topology = str_val("cnn.graph_nodes", "");
     ctx->embed_dim = u32_val("cnn.embedding_dim", 128);
-    ctx->input_h = u32_val("cnn.input_height", 112);
-    ctx->input_w = u32_val("cnn.input_width", 112);
+    // Detection models default to 640x640, recognition to 112x112
+    int default_sz = (ctx->type == "detection") ? 640 : 112;
+    ctx->input_h = u32_val("cnn.input_height", default_sz);
+    ctx->input_w = u32_val("cnn.input_width", default_sz);
 
     core_gguf::free_metadata(g);
 
