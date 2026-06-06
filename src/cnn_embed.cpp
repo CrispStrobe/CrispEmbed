@@ -1049,7 +1049,6 @@ static ggml_tensor* replay_graph(
     for (size_t ni = 0; ni < nodes.size(); ni++) {
         const auto& n = nodes[ni];
         ggml_tensor* result = nullptr;
-
         if (n.op == "Conv") {
             ggml_tensor* x = get_t(n.inputs[0]);
             ggml_tensor* w = get_t(n.inputs[1]);
@@ -1068,27 +1067,40 @@ static ggml_tensor* replay_graph(
             bool is_dw = (group_n > 1);
             // If conv weight was stored as 2D [OC, IC*KH*KW] for quantization,
             // reshape back to 4D [KW, KH, IC, OC] (ggml conv2d layout).
-            if (ggml_n_dims(w) == 2) {
+            // Note: ggml_n_dims() returns 2 for 4D weights with trailing 1s
+            // (e.g. [3,3,1,1] for OC=1 IC=1), so we validate the reshape
+            // by checking that KW*KH*IC*OC == nelements before applying it.
+            if (ggml_n_dims(w) <= 2) {
                 int64_t OC = w->ne[1];
                 int64_t flat = w->ne[0];  // IC * KH * KW
                 // For depthwise convs (group > 1), weight is [OC, 1*KH*KW],
                 // so IC=1. For regular convs, IC = input channels.
                 int64_t IC = is_dw ? 1 : (int64_t)x->ne[2];
-                // Infer kernel size from flat / IC
-                int64_t kernel_area = flat / IC;
-                int64_t KH = 1, KW = 1;
-                if (kernel_area == 9) { KH = 3; KW = 3; }
-                else if (kernel_area == 1) { KH = 1; KW = 1; }
-                else if (kernel_area == 25) { KH = 5; KW = 5; }
-                else if (kernel_area == 49) { KH = 7; KW = 7; }
-                else { KH = (int64_t)std::sqrt((double)kernel_area); KW = KH; }
-                // Cast before reshape (dequant Q8/Q4 → F16)
-                if (w->type != GGML_TYPE_F16 && w->type != GGML_TYPE_F32) {
-                    w = ggml_cast(g, w, GGML_TYPE_F16);
+                int64_t kernel_area = (IC > 0) ? flat / IC : 0;
+                // Only reshape if flat divides evenly by IC and gives a
+                // recognized kernel area. This avoids misinterpreting 4D
+                // weights like [3,3,1,1] that ggml reports as 2D.
+                if (IC > 0 && kernel_area > 0 && flat == IC * kernel_area) {
+                    int64_t KH = 1, KW = 1;
+                    if (kernel_area == 9) { KH = 3; KW = 3; }
+                    else if (kernel_area == 1) { KH = 1; KW = 1; }
+                    else if (kernel_area == 25) { KH = 5; KW = 5; }
+                    else if (kernel_area == 49) { KH = 7; KW = 7; }
+                    else { KH = (int64_t)std::sqrt((double)kernel_area); KW = KH; }
+                    // Verify element count before reshape
+                    if (KW * KH * IC * OC == ggml_nelements(w)) {
+                        // Dequant quantized types → F32 first (ggml only
+                        // supports Q→F32, not Q→F16 directly), then reshape.
+                        if (ggml_is_quantized(w->type)) {
+                            w = ggml_cast(g, w, GGML_TYPE_F32);
+                        }
+                        w = ggml_reshape_4d(g, w, KW, KH, IC, OC);
+                    }
                 }
-                w = ggml_reshape_4d(g, w, KW, KH, IC, OC);
             }
-            // Cast to F16 for ggml_conv_2d
+            // Cast to F16 for ggml_conv_2d (Q→F32 first since ggml
+            // only supports dequant to F32, not directly to F16)
+            if (ggml_is_quantized(w->type)) w = ggml_cast(g, w, GGML_TYPE_F32);
             if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
             // Infer default pad from kernel size if attrs didn't specify
             if (n.attrs.empty()) {
