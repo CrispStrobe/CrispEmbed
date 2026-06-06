@@ -156,7 +156,7 @@ CrispEmbed/
 - [x] YuNet lightweight face detection alternative
 - [x] SFace INT8 quantization (Q8_0 cos=0.9999, Q4_K cos=0.974; 37→10→6 MB)
 - [x] Face model quantized inference via graph replayer (YuNet F16/Q8_0 working; fixed depthwise IC, ggml_n_dims trailing-1s, Q→F32 dequant path)
-- [ ] ViT parity improvement beyond cos≈0.8 (QKV fusion didn't help; try different softmax/matmul order, GPU backend)
+- [x] ViT parity: cos 0.8→1.0 (was patch ordering bug — permute(2,1,0) gave column-major spatial, fixed to permute(1,2,0,3) for row-major matching HF)
 - [ ] Nomic v2 MoE (MoE routing layer in encoder)
 
 ### Bindings
