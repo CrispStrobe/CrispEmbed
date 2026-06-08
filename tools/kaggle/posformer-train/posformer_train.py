@@ -867,6 +867,24 @@ def train(args, zip_path: Path, dict_path: Path,
     from Pos_Former.datamodule import CROHMEDatamodule, vocab
     from Pos_Former.lit_posformer import LitPosFormer
 
+    # Patch extract_data to skip captions with OOV tokens (e.g. apostrophe)
+    import Pos_Former.datamodule.datamodule as _dm
+    _orig_extract = _dm.extract_data
+    def _filtered_extract(archive, dir_name):
+        data = _orig_extract(archive, dir_name)
+        filtered = []
+        oov = 0
+        for fname, img, formula in data:
+            if all(w in vocab.word2idx for w in formula):
+                filtered.append((fname, img, formula))
+            else:
+                oov += 1
+        if oov:
+            step("data.oov_filtered", split=dir_name, removed=oov,
+                 kept=len(filtered))
+        return filtered
+    _dm.extract_data = _filtered_extract
+
     step("train.vocab_loaded", size=len(vocab))
 
     # Patch label_make_muti for this vocab
