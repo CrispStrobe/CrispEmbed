@@ -1,6 +1,6 @@
 {
-  "id": "chr1str/posformer-mathwriting-train",
-  "title": "PosFormer — Train on MathWriting",
+  "id": "chr1str/posformer-train-on-mathwriting",
+  "title": "PosFormer Train on MathWriting",
   "code_file": "posformer_train.py",
   "language": "python",
   "kernel_type": "script",
