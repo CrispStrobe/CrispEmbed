@@ -1103,3 +1103,49 @@ Verified: decoded detection coordinates match OpenCV FaceDetectorYN to
 sub-pixel accuracy (< 0.5px diff) on both single-face and multi-face
 images. The cls tensors (1 channel) show cos=0.985-0.992 because layout
 is irrelevant for single-channel data.
+
+## NomicBERT v2-moe: hidden biases and GPT2 config
+
+NomicBERT extends `GPT2Config`, so standard attribute names are missing:
+`intermediate_size` → `n_inner`, `hidden_act` → missing (default GELU).
+Patch onto config before accessing.
+
+**Critical**: NomicBERT v1.5 has NO Wqkv/out_proj biases, but v2-moe
+DOES have them (`Wqkv.bias [2304]`, `out_proj.bias [768]`). The original
+converter assumed "no bias" based on v1.5 — this caused cos ≈ 0.955 parity
+(consistent across all texts, easily mistaken for a precision issue rather
+than a missing-data bug). Always check `bias is not None` dynamically
+rather than hardcoding assumptions from one model variant.
+
+Diagnosis approach: tensor diff showed all 148 weights bit-exact (0.0),
+proving the bug was runtime-only. Layer-by-layer dump (`CRISPEMBED_DUMP_LAYERS`)
+showed divergence starting at the attention output (before residual/LN),
+which pointed to QKV projection. Manual `x @ W.T` matched HF weights
+but not `Wqkv(x)` — the missing bias term.
+
+## MoE encoder: ggml_mul_mat_id layout
+
+For `ggml_mul_mat_id(A, B, ids)`:
+- A shape `[ne0, ne1, n_experts]`, B shape `[ne0, K, T]`, ids `[K, T]`
+- Result: `[ne1, K, T]` — transposes A along ne0/ne1 (same as mul_mat)
+- For expert fc2 (down projection): HF stores `w2 [n_exp*inter, hidden]`,
+  used as `act_out @ w2` (NO transpose). For ggml we need ne0=inter,
+  ne1=hidden → numpy `[n_exp, hidden, inter]` → converter does
+  `.permute(0, 2, 1)` on the `[n_exp, inter, hidden]` reshape.
+
+## GELU variants matter for NomicBERT
+
+NomicBERT uses `nn.GELU(approximate='none')` (exact erf-based), not the
+tanh approximation. ggml provides both: `ggml_gelu()` (tanh approx) and
+`ggml_gelu_erf()` (exact). Per-element error is ~1e-4 but compounds over
+12 layers. Use `ggml_gelu_erf` for NomicBERT (both MoE expert and dense
+FFN layers). Standard BERT typically uses `gelu_new` (tanh approx).
+
+## Quantizer skips 3D tensors
+
+`tools/quantize.cpp` line 172 skips tensors with ndims > 2 ("skipping N-D
+tensor (conv2d)"). This was added for face model conv kernels (4D) but
+also catches MoE expert weights (3D: `[n_exp, dim1, dim2]`). For
+nomic-v2-moe, this means expert weights stay F32 in all quants, limiting
+Q8_0 compression to 1.6x instead of potential ~3x. Fix: quantize 3D
+tensors by iterating over the outermost dimension.
