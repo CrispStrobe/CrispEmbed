@@ -851,8 +851,15 @@ def train(args, zip_path: Path, dict_path: Path,
     # Patch label_make_muti for this vocab
     make_dynamic_label_module(vocab)
 
-    # Patch .cuda() → .to(self.device)
+    # Patch .cuda() → .to(self.device) in training/validation steps
     patch_lit_posformer()
+
+    # Global fix: if CUDA not available, make .cuda() a no-op
+    # (catches .cuda() calls buried in model forward/utils that we can't monkey-patch individually)
+    if not torch.cuda.is_available():
+        _orig_cuda = torch.Tensor.cuda
+        torch.Tensor.cuda = lambda self, *a, **kw: self  # type: ignore
+        step("torch.cuda.patched", note=".cuda() is now a no-op (CPU mode)")
 
     # Determine test_year / validation split
     with zipfile.ZipFile(zip_path) as zf:
