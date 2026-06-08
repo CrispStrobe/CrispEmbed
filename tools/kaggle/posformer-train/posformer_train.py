@@ -145,10 +145,16 @@ def _token_from_dataset(filename: str) -> Optional[str]:
     root = Path("/kaggle/input")
     if root.exists():
         for sub in root.iterdir():
-            if "hf-token" in sub.name or "hf_token" in sub.name:
-                p = sub / filename
-                if p not in candidates:
-                    candidates.append(p)
+            # Check all subdirs — Kaggle may mount as 'datasets', 'crispasr-hf-token', etc.
+            p = sub / filename
+            if p not in candidates:
+                candidates.append(p)
+            # Also check one level deeper (e.g. /kaggle/input/datasets/crispasr-hf-token/)
+            if sub.is_dir():
+                for subsub in sub.iterdir():
+                    p2 = subsub / filename if subsub.is_dir() else subsub
+                    if p2.name == filename and p2 not in candidates:
+                        candidates.append(p2)
     for p in candidates:
         try:
             if p.exists():
