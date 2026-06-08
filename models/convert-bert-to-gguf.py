@@ -761,14 +761,24 @@ def main():
                 writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.fc2.weight"]))
                 writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.bias", f32(sd[f"{pfx}.mlp.fc2.bias"]))
             else:
-                # NomicBERT: fused QKV under attn.Wqkv (no bias)
+                # NomicBERT: fused QKV under attn.Wqkv (bias optional, present in v2-moe)
                 qkv = sd[f"{pfx}.attn.Wqkv.weight"]
                 H = qkv.shape[1]
                 writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.weight", wt(qkv[:H]))
                 writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.weight", wt(qkv[H:2*H]))
                 writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.weight", wt(qkv[2*H:]))
-                # Attention output (no bias in NomicBERT)
+                # QKV bias (split like weight)
+                qkv_bias_key = f"{pfx}.attn.Wqkv.bias"
+                if qkv_bias_key in sd:
+                    qkv_b = sd[qkv_bias_key]
+                    writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.bias", f32(qkv_b[:H]))
+                    writer.add_tensor(f"{LP}.{i}.{TN['attn_k']}.bias", f32(qkv_b[H:2*H]))
+                    writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.bias", f32(qkv_b[2*H:]))
+                # Attention output
                 writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attn.out_proj.weight"]))
+                out_proj_bias_key = f"{pfx}.attn.out_proj.bias"
+                if out_proj_bias_key in sd:
+                    writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.bias", f32(sd[out_proj_bias_key]))
 
                 # FFN: detect MoE vs dense per layer
                 router_key = f"{pfx}.mlp.router.layer.weight"
