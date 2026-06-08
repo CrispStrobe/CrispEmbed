@@ -1,6 +1,6 @@
 {
-  "id": "${KAGGLE_ACCOUNT}/posformer-mathwriting-train",
-  "title": "PosFormer — Train on MathWriting",
+  "id": "${KAGGLE_ACCOUNT}/posformer-train-on-mathwriting",
+  "title": "PosFormer Train on MathWriting",
   "code_file": "posformer_train.py",
   "language": "python",
   "kernel_type": "script",
