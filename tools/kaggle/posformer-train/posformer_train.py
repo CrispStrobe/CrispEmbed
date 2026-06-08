@@ -119,21 +119,20 @@ def sh(cmd: str, **kwargs) -> subprocess.CompletedProcess:
 
 # ━━━━━━━━━━━━━━━━━━━━ Auth — CrispASR kaggle_harness ━━━━━━━━━━━━━━━━━━━━━━
 
-# ── Clone CrispASR + import kaggle_harness ───────────────────────────────
-# Same pattern as all CrispASR kernels: clone the repo, import the harness.
+# ── Download kaggle_harness from CrispASR ────────────────────────────────
+# Single-file download instead of cloning the whole repo.
 
-CRISPASR_REPO_URL = "https://github.com/CrispStrobe/CrispASR.git"
+_HARNESS_URL = "https://raw.githubusercontent.com/CrispStrobe/CrispASR/main/tools/kaggle/kaggle_harness.py"
 _WORK = Path("/kaggle/working" if os.path.exists("/kaggle/working")
              else os.environ.get("WORK_DIR", "/mnt/volume1/posformer-training"))
-_CRISPASR = _WORK / "CrispASR"
+_HARNESS_PATH = _WORK / "kaggle_harness.py"
 
-if not _CRISPASR.exists():
-    subprocess.check_call([
-        "git", "clone", "--depth", "1",
-        CRISPASR_REPO_URL, str(_CRISPASR),
-    ])
+if not _HARNESS_PATH.exists():
+    _WORK.mkdir(parents=True, exist_ok=True)
+    import urllib.request
+    urllib.request.urlretrieve(_HARNESS_URL, _HARNESS_PATH)
 
-sys.path.insert(0, str(_CRISPASR / "tools" / "kaggle"))
+sys.path.insert(0, str(_WORK))
 import kaggle_harness as kh          # noqa: E402
 kh.init_progress()                   # line-buffered I/O + JSONL
 
