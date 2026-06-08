@@ -994,7 +994,8 @@ def train(args, zip_path: Path, dict_path: Path,
     )
 
     step("train.start", epochs=args.epochs)
-    trainer.fit(model, dm, ckpt_path=str(resume_ckpt) if resume_ckpt else None)
+    with kh.build_heartbeat("train", interval_s=30.0):
+        trainer.fit(model, dm, ckpt_path=str(resume_ckpt) if resume_ckpt else None)
 
     best_path = ckpt_best.best_model_path
     best_score = ckpt_best.best_model_score
