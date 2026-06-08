@@ -117,81 +117,36 @@ def sh(cmd: str, **kwargs) -> subprocess.CompletedProcess:
     return subprocess.run(cmd, shell=True, check=True, **kwargs)
 
 
-# ━━━━━━━━━━━━━━━━━━━━ Auth (3-tier: env → Kaggle Secret → dataset file) ━━━
+# ━━━━━━━━━━━━━━━━━━━━ Auth — CrispASR kaggle_harness ━━━━━━━━━━━━━━━━━━━━━━
 
-def _kaggle_secret(name: str, retries: int = 3) -> Optional[str]:
-    """Pull Kaggle secret with retry (matches CrispASR harness pattern)."""
-    try:
-        from kaggle_secrets import UserSecretsClient
-    except Exception:
-        return None
-    if not os.environ.get("KAGGLE_USER_SECRETS_TOKEN"):
-        print(f"  kaggle_secret({name}): KAGGLE_USER_SECRETS_TOKEN missing", flush=True)
-        return None
-    for attempt in range(1, retries + 1):
-        try:
-            return UserSecretsClient().get_secret(name)
-        except Exception as e:
-            print(f"  kaggle_secret({name}): attempt {attempt} failed: {e}", flush=True)
-            if attempt < retries:
-                time.sleep(5)
-    return None
-
-
-def _token_from_dataset(filename: str) -> Optional[str]:
-    """Read token from Kaggle dataset mount (matches CrispASR harness pattern).
-    Scans /kaggle/input/ for dirs containing 'hf-token' or 'hf_token'."""
-    candidates = [Path("/kaggle/input/crispasr-hf-token") / filename]
-    root = Path("/kaggle/input")
-    if root.exists():
-        for sub in root.iterdir():
-            # Check all subdirs — Kaggle may mount as 'datasets', 'crispasr-hf-token', etc.
-            p = sub / filename
-            if p not in candidates:
-                candidates.append(p)
-            # Also check one level deeper (e.g. /kaggle/input/datasets/crispasr-hf-token/)
-            if sub.is_dir():
-                for subsub in sub.iterdir():
-                    p2 = subsub / filename if subsub.is_dir() else subsub
-                    if p2.name == filename and p2 not in candidates:
-                        candidates.append(p2)
-    for p in candidates:
-        try:
-            if p.exists():
-                tok = p.read_text().strip()
-                if tok:
-                    print(f"  token from {p}", flush=True)
-                    return tok
-        except Exception:
-            pass
-    # Debug: list what's actually in /kaggle/input/
-    if root.exists():
-        dirs = [d.name for d in root.iterdir()]
-        print(f"  /kaggle/input/ contains: {dirs}", flush=True)
-    return None
+# kaggle_harness.py is bundled alongside this script (copied from CrispASR).
+sys.path.insert(0, str(Path(__file__).parent))
+try:
+    import kaggle_harness as kh
+except ImportError:
+    kh = None  # type: ignore
 
 
 def resolve_tokens() -> dict:
-    """Resolve HF_TOKEN and WANDB_API_KEY: env → Kaggle Secret → dataset file."""
+    """Resolve HF_TOKEN and WANDB_API_KEY via kaggle_harness."""
     tokens = {}
 
-    # HF
-    hf = (os.environ.get("HF_TOKEN")
-          or _kaggle_secret("HF_TOKEN")
-          or _token_from_dataset("hf_token.txt"))
+    if kh is None:
+        print("kaggle_harness not available — no auth", flush=True)
+        return tokens
+
+    # HF token — harness handles env → Secret(retry) → dataset file
+    hf = kh.resolve_hf_token()
     if hf:
-        os.environ["HF_TOKEN"] = hf
-        os.environ["HUGGING_FACE_HUB_TOKEN"] = hf
-        os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
         tokens["hf"] = True
         print("HF auth: OK", flush=True)
     else:
-        print("HF auth: none (public-only downloads)", flush=True)
+        print("HF auth: none", flush=True)
 
-    # W&B
+    # W&B token — same 3-tier pattern
     wb = (os.environ.get("WANDB_API_KEY")
-          or _kaggle_secret("WANDB_API_KEY")
-          or _token_from_dataset("wandb_api_key.txt"))
+          or kh.kaggle_secret("WANDB_API_KEY")
+          or kh.kaggle_token_from_dataset("wandb_api_key.txt"))
     if wb:
         os.environ["WANDB_API_KEY"] = wb
         tokens["wandb"] = True
