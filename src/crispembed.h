@@ -51,6 +51,8 @@ typedef struct crispembed_hparams {
     int32_t n_intermediate;  // FFN intermediate size
     int32_t n_output;        // output embedding dimension (may differ from n_embd)
     float   layer_norm_eps;
+    int32_t n_experts;           // MoE: total number of experts (0 = dense FFN)
+    int32_t n_experts_per_tok;   // MoE: top-K routing (e.g. 2)
 } crispembed_hparams;
 
 // Initialize: load GGUF model, allocate ggml backends.

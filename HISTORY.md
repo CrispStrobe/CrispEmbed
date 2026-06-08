@@ -4,6 +4,24 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — Nomic v2 MoE Encoder
+
+### Mixture-of-Experts encoder support
+- First MoE embedding model: nomic-embed-text-v2-moe (8 experts, top-2, GELU)
+- Fully in-graph MoE routing: ggml_top_k + ggml_get_rows + ggml_mul_mat_id
+- Mixed architecture: odd layers = MoE FFN, even layers = dense GELU FFN
+- Converter handles GPT2-style config (NomicBERT extends GPT2Config),
+  per-layer MoE/dense auto-detection, expert weight stacking [n_exp, dim, dim]
+- Fixed missing Wqkv + out_proj biases (present in v2-moe but not v1.5)
+- Exact erf-GELU activation (NomicBERT uses nn.GELU(approximate='none'))
+- Parity: cos=1.000000 vs HuggingFace on all test texts
+- Quantized variants: F16 (1344 MB), Q8_0 (1122 MB, cos=0.9996), Q4_K (1095 MB, cos=0.966)
+- GGUFs published to cstr/nomic-embed-text-v2-moe-GGUF on HuggingFace
+- Extended parity_layers_bert.py harness with --arch nomic (QKV split, MoE expert tensor diff)
+- Added CRISPEMBED_DUMP_LAYERS env var for per-layer intermediate tensor dumps
+
+---
+
 ## June 2026 — LoRA Hot-Swap, Batched Decoder, Face Pipeline
 
 ### LoRA adapter hot-swap
@@ -155,6 +173,7 @@ Key parity results (cos vs HuggingFace reference):
 | bge-small/base/large-en-v1.5 | BERT | 384/768/1024 | 1.000000 |
 | gte-base/large-en-v1.5 | GTE | 768/1024 | 1.000000 |
 | nomic-embed-text-v1.5 | NomicBERT | 768 | 1.000000 |
+| nomic-embed-text-v2-moe | NomicBERT MoE | 768 | 1.000000 |
 | mxbai-embed-large-v1 | BERT | 1024 | 1.000000 |
 | all-mpnet-base-v2 | MPNet | 768 | 1.000000 |
 | multilingual-e5-small/base/large | XLM-R | 384/768/1024 | 1.000000 |
