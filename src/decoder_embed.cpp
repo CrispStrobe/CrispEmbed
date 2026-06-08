@@ -659,6 +659,10 @@ std::vector<float> decoder_encode_tokens(
     auto rms_norm = [&](ggml_tensor * x, ggml_tensor * w) -> ggml_tensor * {
         x = ggml_rms_norm(gctx, x, eps);
         if (m.gemma_norm) {
+            // Clamp RMSNorm output to prevent NaN from (1+w)*x overflow
+            // when w is large. F16 max is 65504; clamp well below to leave
+            // headroom for the multiply.
+            x = ggml_clamp(gctx, x, -1000.0f, 1000.0f);
             ggml_tensor * ones = (w->ne[0] == H) ? ones_h : ones_hd;
             return ggml_mul(gctx, x, ggml_add(gctx, w, ones));
         }
@@ -1282,6 +1286,7 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
     auto rms_norm_b = [&](ggml_tensor * x, ggml_tensor * w) -> ggml_tensor * {
         x = ggml_rms_norm(gctx, x, eps);
         if (m.gemma_norm) {
+            x = ggml_clamp(gctx, x, -1000.0f, 1000.0f);
             ggml_tensor * ones = (w->ne[0] == H) ? ones_h : ones_hd;
             return ggml_mul(gctx, x, ggml_add(gctx, w, ones));
         }
