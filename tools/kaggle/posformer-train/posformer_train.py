@@ -835,7 +835,9 @@ def train(args, zip_path: Path, dict_path: Path,
         sh("pip install -q torch torchvision pytorch_lightning opencv-python-headless wandb",
            capture_output=True)
     else:
-        sh("pip install -q torch torchvision --index-url https://download.pytorch.org/whl/cpu",
+        # Force-reinstall to avoid conflicts with Kaggle's pre-installed CUDA torchvision
+        sh("pip install -q --force-reinstall torch torchvision "
+           "--index-url https://download.pytorch.org/whl/cpu",
            capture_output=True)
         sh("pip install -q pytorch_lightning opencv-python-headless wandb",
            capture_output=True)
