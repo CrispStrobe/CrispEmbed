@@ -119,37 +119,27 @@ def sh(cmd: str, **kwargs) -> subprocess.CompletedProcess:
 
 # ━━━━━━━━━━━━━━━━━━━━ Auth — CrispASR kaggle_harness ━━━━━━━━━━━━━━━━━━━━━━
 
-# kaggle_harness.py is bundled alongside this script (copied from CrispASR).
-# On Kaggle, scripts run from /kaggle/working/ but the file may be at /kaggle/src/
-for _p in [Path(__file__).parent, Path("/kaggle/src"), Path("/kaggle/working"), Path(".")]:
-    if (_p / "kaggle_harness.py").exists():
-        sys.path.insert(0, str(_p))
-        break
-try:
-    import kaggle_harness as kh
-    print(f"kaggle_harness loaded from {kh.__file__}", flush=True)
-except ImportError as e:
-    print(f"kaggle_harness import failed: {e}", flush=True)
-    kh = None  # type: ignore
+# ── Import kaggle_harness (bundled from CrispASR/tools/kaggle/) ──────────
+# The harness is pure-stdlib at import time, so this always succeeds.
+# On Kaggle the script dir is /kaggle/src/; `kernels push` uploads all
+# files in the push directory, so kaggle_harness.py sits next to us.
+
+_SCRIPT_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(_SCRIPT_DIR))
+import kaggle_harness as kh          # noqa: E402 — must be after sys.path
+kh.init_progress()                   # line-buffered I/O + JSONL
 
 
 def resolve_tokens() -> dict:
-    """Resolve HF_TOKEN and WANDB_API_KEY via kaggle_harness."""
+    """Resolve HF_TOKEN and WANDB_API_KEY via kaggle_harness 3-tier auth."""
     tokens = {}
 
-    if kh is None:
-        print("kaggle_harness not available — no auth", flush=True)
-        return tokens
-
-    # HF token — harness handles env → Secret(retry) → dataset file
+    # HF: env → Kaggle Secret (3 retries) → dataset file
     hf = kh.resolve_hf_token()
     if hf:
         tokens["hf"] = True
-        print("HF auth: OK", flush=True)
-    else:
-        print("HF auth: none", flush=True)
 
-    # W&B token — same 3-tier pattern
+    # W&B: same 3-tier pattern
     wb = (os.environ.get("WANDB_API_KEY")
           or kh.kaggle_secret("WANDB_API_KEY")
           or kh.kaggle_token_from_dataset("wandb_api_key.txt"))
