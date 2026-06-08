@@ -430,27 +430,24 @@ static void run_encoder(posformer_ocr_context * ctx, const float * gray, int W, 
     conv2d(features.data(), cur_ch, cur_h, cur_w,
            tf32(ctx, ctx->feat_proj_w), tf32(ctx, ctx->feat_proj_b),
            D, 1, 1, 1, 0, proj.data(), cur_h, cur_w);
-    relu_ip(proj.data(), D * sp);
+    // No ReLU here — PyTorch's feature_proj is a plain Conv2d
 
     int n_pos = cur_h * cur_w;
     ctx->encoder_output.resize(n_pos * D);
+    // Transpose from [D, h*w] to [h*w, D]
     for (int c = 0; c < D; c++)
         for (int i = 0; i < n_pos; i++)
             ctx->encoder_output[i * D + c] = proj[c * n_pos + i];
 
-    const float * ln_w = tf32(ctx, ctx->enc_ln_w);
-    const float * ln_b = tf32(ctx, ctx->enc_ln_b);
-    for (int i = 0; i < n_pos; i++)
-        layernorm(ctx->encoder_output.data() + i * D, D, ln_w, ln_b);
-
-    // 2D positional encoding (DETR-style)
+    // 2D positional encoding (DETR-style) — applied BEFORE LayerNorm
     {
-        const int half_d = D / 2;
-        const int quarter_d = half_d / 2;
+        const int half_d = D / 2;        // 128
+        const int quarter_d = half_d / 2; // 64
         const float scale = 2.0f * (float)M_PI;
-        std::vector<float> inv_freq(half_d);
-        for (int i = 0; i < half_d; i++)
-            inv_freq[i] = 1.0f / powf(10000.0f, (float)i / (float)half_d);
+        // 64 frequencies matching PyTorch's arange(0, half_d, 2)
+        std::vector<float> inv_freq(quarter_d);
+        for (int i = 0; i < quarter_d; i++)
+            inv_freq[i] = 1.0f / powf(10000.0f, (float)(2 * i) / (float)half_d);
         for (int y = 0; y < cur_h; y++)
             for (int x = 0; x < cur_w; x++) {
                 float y_norm = scale * (float)(y + 1) / (float)cur_h;
@@ -458,15 +455,23 @@ static void run_encoder(posformer_ocr_context * ctx, const float * gray, int W, 
                 int pos_idx = y * cur_w + x;
                 float * enc = ctx->encoder_output.data() + pos_idx * D;
                 for (int i = 0; i < quarter_d; i++) {
-                    enc[2*i]     += sinf(x_norm * inv_freq[2*i]);
-                    enc[2*i + 1] += cosf(x_norm * inv_freq[2*i + 1]);
+                    float freq = inv_freq[i];
+                    enc[2*i]     += sinf(x_norm * freq);
+                    enc[2*i + 1] += cosf(x_norm * freq);
                 }
                 for (int i = 0; i < quarter_d; i++) {
-                    enc[half_d + 2*i]     += sinf(y_norm * inv_freq[2*i]);
-                    enc[half_d + 2*i + 1] += cosf(y_norm * inv_freq[2*i + 1]);
+                    float freq = inv_freq[i];
+                    enc[half_d + 2*i]     += sinf(y_norm * freq);
+                    enc[half_d + 2*i + 1] += cosf(y_norm * freq);
                 }
             }
     }
+
+    // LayerNorm — applied AFTER positional encoding
+    const float * ln_w = tf32(ctx, ctx->enc_ln_w);
+    const float * ln_b = tf32(ctx, ctx->enc_ln_b);
+    for (int i = 0; i < n_pos; i++)
+        layernorm(ctx->encoder_output.data() + i * D, D, ln_w, ln_b);
 
     ctx->n_enc_pos = n_pos;
     ctx->enc_h = cur_h;
