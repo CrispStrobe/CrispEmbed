@@ -16,6 +16,12 @@ decoding. Source: SJTU-DeepVisionLab/PosFormer (BSD-2, academic-only).
 decoder (d=256, 8 heads, FFN=1024) + shared ARM module. ARM applies
 coverage-based attention refinement between decoder layers 0→1 and 1→2.
 
+**CROHME 2014 eval (986 images, greedy L2R)**: 552/986 = **56.0% raw match**
+(vs BTTR 49.2%, HMER 36.1%). Published 62.7% uses bi-directional beam search.
+
+**Quantized**: Q8_0 (12 MB), Q4_K (10 MB) — both lossless on test images.
+Uploaded to HuggingFace: https://huggingface.co/cstr/posformer-hw-GGUF
+
 **Port verified**: per-step logit cosine similarity = 1.000000 vs PyTorch
 reference (max diff < 0.00001). Four encoder/decoder bugs found and fixed:
 1. Spurious ReLU after feature projection Conv1x1

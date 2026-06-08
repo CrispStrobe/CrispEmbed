@@ -8,7 +8,7 @@
   "enable_gpu": true,
   "enable_internet": true,
   "competition_sources": [],
-  "dataset_sources": [],
+  "dataset_sources": ["chr1str/crispasr-hf-token"],
   "kernel_sources": [],
   "docker_image_pinning_type": "original"
 }
