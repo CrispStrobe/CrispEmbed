@@ -683,9 +683,19 @@ def patch_lit_posformer():
         self.log("val_ExpRate", self.exprate_recorder, prog_bar=True,
                  on_step=False, on_epoch=True)
 
+    # Override approximate_joint_search to use greedy (beam_size=1)
+    # instead of full bi-directional beam search (beam_size=10).
+    # Validation with beam=10 on 986 images takes 30-60 min per epoch.
+    def _fast_joint_search(self, img, mask):
+        return self.model.beam_search(
+            img, mask, beam_size=1, max_len=self.hparams.max_len,
+            alpha=1.0, early_stopping=True, temperature=1.0)
+
     lit.LitPosFormer.training_step = _patched_training_step
     lit.LitPosFormer.validation_step = _patched_validation_step
-    step("lit_posformer.patched", note="replaced .cuda() with .to(self.device)")
+    lit.LitPosFormer.approximate_joint_search = _fast_joint_search
+    step("lit_posformer.patched",
+         note="replaced .cuda(), validation uses greedy beam_size=1")
 
 
 # ━━━━━━━━━━━━━━━━━━━━ HF checkpoint upload callback ━━━━━━━━━━━━━━━━━━━━━━━
