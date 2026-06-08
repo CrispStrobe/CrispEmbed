@@ -859,13 +859,17 @@ def train(args, zip_path: Path, dict_path: Path,
             cap = torch.cuda.get_device_capability(0)
             if cap[0] < 7:  # sm_60 (P100) not supported by modern PyTorch
                 step("cuda.incompatible", capability=f"sm_{cap[0]}{cap[1]}",
-                     note="falling back to CPU")
+                     note="disabling CUDA, falling back to CPU")
+                # Actually disable CUDA so Lightning/PosFormer code can't sneak onto it
+                os.environ["CUDA_VISIBLE_DEVICES"] = ""
+                torch.cuda.device_count = lambda: 0  # type: ignore
                 return False
             # Quick smoke test
             torch.zeros(1, device="cuda")
             return True
         except Exception as e:
             step("cuda.failed", error=str(e)[:100])
+            os.environ["CUDA_VISIBLE_DEVICES"] = ""
             return False
 
     if args.device == "auto":
