@@ -59,8 +59,8 @@ Input text / image / audio
     │               Handwritten math → LaTeX (CROHME 2014, 49% exact match)
     │
     └─► Math  ──► PosFormer: DenseNet + Transformer + ARM (posformer_ocr.cpp)
-                    Handwritten math → LaTeX (CROHME 2014, ~60%+ exact match)
-                    NOTE: current weights are academic-only licensed (SJTU)
+                    Handwritten math → LaTeX (CROHME 2014, 56% raw / 61.4% parsed)
+                    NOTE: SJTU weights = academic-only; training NC weights on Kaggle
 ```
 
 ### Math OCR roadmap — next models to evaluate
@@ -74,10 +74,23 @@ Input text / image / audio
 | CAN | 2022 | ~57% | ~10M | Yes (MIT) | Compact, good license |
 | CoMER | 2022 | ~59% | ~10M | Yes | Coverage-enhanced transformer |
 
-**Recommendation**: PosFormer (our port) outperforms all practical candidates
-in greedy l2r mode. Retrain PosFormer weights ourselves on CROHME + HME100K
-(Kaggle T4, ~4-8h, free tier). This gives us both accuracy AND license freedom.
-Use the CrispASR kaggle harness (tools/kaggle/) adapted for training.
+**Status**: PosFormer (our port) outperforms all practical candidates in greedy
+l2r mode: 56.0% raw / 61.4% parsed on CROHME 2014.
+
+**Training pipeline**: `tools/kaggle/posformer-train/posformer_train.py`
+- Kaggle kernel pushed: https://www.kaggle.com/code/chr1str/posformer-train-on-mathwriting
+- CROHME data: https://huggingface.co/datasets/cstr/posformer-training-data
+- Supports CROHME (8.8K) and MathWriting (230K) datasets
+- Hourly checkpoint upload to HF, W&B monitoring, multi-session resume
+
+**License path**: All handwritten math datasets are NC. Current SJTU weights are
+academic-only (stricter). Retraining on CROHME/MathWriting produces NC weights
+(CC BY-NC-SA), which are fine for the app's "download with terms acceptance" model.
+Do NOT wire into CrispCalc until NC (or better) weights are available.
+
+**For non-NC weights** (fully commercial): synthetic handwriting generation
+(render LaTeX with handwriting fonts + augmentation) or train on Im2LaTeX-100K
+(CC0, printed math) + fine-tune on self-created handwritten samples.
 
 ## Supported architectures (v0.7.0)
 
