@@ -403,22 +403,37 @@ def _pack_zip(zip_path: Path, images_dir: Path,
 # ━━━━━━━━━━━━━━━━━━━━ Vocabulary ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 def build_vocab_from_zip(zip_path: Path) -> Tuple[List[str], Path]:
-    """Extract vocabulary from training captions in the data zip.
-    Returns (token_list, dict_file_path)."""
-    counts: Counter = Counter()
-    with zipfile.ZipFile(zip_path) as zf:
-        for name in zf.namelist():
-            if name.endswith("caption.txt") and "/train/" in name:
-                with zf.open(name) as f:
-                    for line in f:
-                        parts = line.decode().strip().split()
-                        if len(parts) >= 2:
-                            counts.update(parts[1:])
+    """Get the canonical PosFormer dictionary.
+    CRITICAL: token indices must match the original PosFormer dictionary
+    exactly (alphabetical order). Using frequency-sorted order scrambles
+    the vocabulary and makes the trained model unusable with the original
+    GGUF converter and C++ inference.
 
-    tokens = [t for t, _ in counts.most_common()]
+    The dictionary is obtained from the cloned PosFormer repo. If not yet
+    cloned, we download just the dictionary file from GitHub."""
     dict_path = WORK / "dictionary.txt"
-    dict_path.write_text("\n".join(tokens) + "\n")
-    step("vocab.built", n_tokens=len(tokens), path=str(dict_path))
+
+    # Try PosFormer clone first (may already be cloned later in the pipeline)
+    posformer_dict = WORK / "PosFormer" / "Pos_Former" / "datamodule" / "dictionary.txt"
+    if posformer_dict.exists():
+        import shutil
+        shutil.copy2(posformer_dict, dict_path)
+    else:
+        # Download canonical dictionary from GitHub
+        import urllib.request
+        url = "https://raw.githubusercontent.com/SJTU-DeepVisionLab/PosFormer/main/Pos_Former/datamodule/dictionary.txt"
+        urllib.request.urlretrieve(url, dict_path)
+
+    tokens = dict_path.read_text().strip().split("\n")
+    # Debug: verify token order matches original PosFormer (alphabetical)
+    # Token 3 should be '!' (not '{'), token 12 should be '1' (not '(')
+    sample = {i: tokens[i] for i in range(min(5, len(tokens)))}
+    step("vocab.built", n_tokens=len(tokens), path=str(dict_path),
+         first_tokens=str(sample),
+         note="canonical PosFormer dictionary (alphabetical order)")
+    if len(tokens) >= 4 and tokens[0] != '!':
+        step("vocab.WARNING", msg="token[0] is not '!' — vocab may be wrong!",
+             got=tokens[0])
     return tokens, dict_path
 
 
