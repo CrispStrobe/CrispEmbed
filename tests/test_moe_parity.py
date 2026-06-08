@@ -161,7 +161,7 @@ class TestMoEParity(unittest.TestCase):
         cos = cosine(e1, e2)
         self.assertLess(cos, 0.95, f"Different texts too similar: cos={cos:.4f}")
 
-    @unittest.skipUnless(LIB and not MOE_GGUF, "Need both LIB and torch for HF parity")
+    @unittest.skipUnless(LIB, "Need CRISPEMBED_LIB for HF parity")
     def test_parity_vs_huggingface(self):
         """CrispEmbed embeddings match HuggingFace within cos >= 0.99."""
         if self.hf_embeds is None:
@@ -178,7 +178,7 @@ class TestMoEParity(unittest.TestCase):
                     f"Parity too low: cos={cos:.6f} for '{text[:40]}'"
                 )
 
-    @unittest.skipUnless(LIB and not MOE_GGUF, "Need both LIB and torch for HF parity")
+    @unittest.skipUnless(LIB, "Need CRISPEMBED_LIB for HF parity")
     def test_parity_ranking_preserved(self):
         """Relative similarity ranking is preserved between HF and CrispEmbed."""
         if self.hf_embeds is None:

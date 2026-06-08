@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 // MPNet-style relative position bucket (matches HuggingFace implementation).
@@ -217,6 +218,7 @@ struct crispembed_context {
     float rope_theta_global = 0.0f;    // global attention theta (ModernBERT, 0 = same as rope_theta)
     int   global_attn_every_n = 0;     // ModernBERT: every Nth layer uses global attention (0 = all same)
     bool pre_ln = false;      // pre-LN (ModernBERT) vs post-LN (BERT) ordering
+    bool dump_layers = false; // dump per-layer intermediates (CRISPEMBED_DUMP_LAYERS=1)
     int  position_buckets = 0;  // DeBERTa log-bucket count (0 = linear positions)
     int matryoshka_dim = 0;  // 0 = use model default
     std::string prefix;  // prepended to text before tokenization (e.g. "query: ")
@@ -746,6 +748,11 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         if (m.embd_ln_b) cur = ggml_add(gctx, cur, m.embd_ln_b);
     }
 
+    if (ctx->dump_layers) {
+        ggml_set_name(cur, "emb_ln_out");
+        ggml_set_output(cur);
+    }
+
     for (int il = 0; il < hp.n_layer; il++) {
         const auto & L = m.layers[il];
         ggml_tensor * inp = cur;  // save for residual connection
@@ -892,6 +899,11 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         attn = ggml_mul_mat(gctx, L.o_w, attn);
         if (L.o_b) attn = ggml_add(gctx, attn, L.o_b);
 
+        if (ctx->dump_layers && il == 0) {
+            ggml_set_name(attn, "attn_out_0");
+            ggml_set_output(attn);
+        }
+
         if (ctx->pre_ln) {
             // Pre-LN: residual add (LN was applied before attention)
             cur = ggml_add(gctx, inp, attn);
@@ -939,8 +951,8 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             // Expert up projection: expert_fc1 [H, inter, n_exp] × [H, K, TB] → [inter, K, TB]
             ggml_tensor * up = ggml_mul_mat_id(gctx, L.expert_fc1_w, cur_exp, ids);
 
-            // Activation (GELU — nomic v2 uses gelu; future: check for swiglu)
-            up = ggml_gelu(gctx, up);
+            // Activation: exact erf-GELU (NomicBERT v2 uses nn.GELU(approximate='none'))
+            up = ggml_gelu_erf(gctx, up);
 
             // Expert down projection: expert_fc2 [inter, H, n_exp] × [inter, K, TB] → [H, K, TB]
             ggml_tensor * down = ggml_mul_mat_id(gctx, L.expert_fc2_w, up, ids);
@@ -968,10 +980,11 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             ffn = ggml_mul(gctx, up, gate);
             ffn = ggml_mul_mat(gctx, L.fc2_w, ffn);
         } else {
-            // Standard GELU FFN (BERT)
+            // Standard GELU FFN (BERT / NomicBERT dense layers)
             ffn = ggml_mul_mat(gctx, L.fc1_w, cur);
             if (L.fc1_b) ffn = ggml_add(gctx, ffn, L.fc1_b);
-            ffn = ggml_gelu(gctx, ffn);
+            // NomicBERT uses exact erf-GELU; classic BERT uses tanh-approx GELU
+            ffn = ctx->use_rope ? ggml_gelu_erf(gctx, ffn) : ggml_gelu(gctx, ffn);
             ffn = ggml_mul_mat(gctx, L.fc2_w, ffn);
             if (L.fc2_b) ffn = ggml_add(gctx, ffn, L.fc2_b);
         }
@@ -985,6 +998,14 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             cur = ggml_norm(gctx, cur, ln_eps);
             cur = ggml_mul(gctx, cur, L.ln2_w);
             if (L.ln2_b) cur = ggml_add(gctx, cur, L.ln2_b);
+        }
+
+        // Per-layer dump for diff harness (activated by env var)
+        if (ctx->dump_layers) {
+            char lname[32];
+            snprintf(lname, sizeof(lname), "layer_%d", il);
+            ggml_set_name(cur, lname);
+            ggml_set_output(cur);
         }
     }
 
@@ -1239,6 +1260,28 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
         return {};
     }
 
+    // Dump per-layer intermediates for diff harness
+    if (ctx->dump_layers) {
+        auto dump_tensor = [&](const char * name) {
+            ggml_tensor * t = ggml_graph_get_tensor(gf, name);
+            if (!t) return;
+            int64_t n = ggml_nelements(t);
+            std::vector<float> buf(n);
+            ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+            fprintf(stderr, "DUMP %s shape=[%lld,%lld] data=", name, (long long)t->ne[0], (long long)t->ne[1]);
+            int show = n < 6 ? (int)n : 6;
+            for (int i = 0; i < show; i++) fprintf(stderr, " %.6f", buf[i]);
+            fprintf(stderr, " ...\n");
+        };
+        dump_tensor("emb_ln_out");
+        dump_tensor("attn_out_0");
+        for (int il = 0; il < hp.n_layer; il++) {
+            char lname[32];
+            snprintf(lname, sizeof(lname), "layer_%d", il);
+            dump_tensor(lname);
+        }
+    }
+
     // Read output (works whether tensor is on GPU or CPU)
     // Read encoder output [H, T] via backend API (works for GPU and CPU)
     ggml_tensor * out = graph_tensor_or_log(gf, "encoder_out");
@@ -1472,6 +1515,7 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
     auto * ctx = new crispembed_context;
     ctx->n_threads = n_threads > 0 ? n_threads : 4;
     if (model_path) ctx->model_path_for_audio = model_path;
+    ctx->dump_layers = (std::getenv("CRISPEMBED_DUMP_LAYERS") != nullptr);
 
     // Detect model type from GGUF metadata.
     // Decoder models have either decoder.hidden_size (CrispEmbed-native) or

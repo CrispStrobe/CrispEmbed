@@ -35,50 +35,77 @@ import numpy as np
 # CrispEmbed-format GGUF tensor name → HF state_dict key. CrispEmbed strips
 # the backbone prefix ("bert."/"roberta.") at convert time, so we match the
 # bare embeddings.* / encoder.layer.*.* keys.
-def _gguf_to_hf_key(name: str, n_layers: int):
+def _gguf_to_hf_key(name: str, n_layers: int, arch: str = "bert"):
     """Map CrispEmbed-native GGUF tensor names to HF state_dict keys.
 
     CrispEmbed `--crisp` format uses `enc.{i}.{block}.{tensor}` (not the
     llama.cpp `blk.{i}.*` convention) and a post-LN BERT layout:
       ln1 = post-attention LN, ln2 = post-FFN LN, ffn.fc1/fc2 = up/down projs.
+    Supports arch="nomic" for NomicBERT (fused QKV, MoE, SwiGLU).
     """
     # Embeddings
     if name == "token_embd.weight":      return "embeddings.word_embeddings.weight"
     if name == "position_embd.weight":   return "embeddings.position_embeddings.weight"
     if name == "token_type_embd.weight": return "embeddings.token_type_embeddings.weight"
-    if name == "embd_ln.weight":         return "embeddings.LayerNorm.weight"
-    if name == "embd_ln.bias":           return "embeddings.LayerNorm.bias"
+    if arch == "nomic":
+        if name == "embd_ln.weight":     return "emb_ln.weight"
+        if name == "embd_ln.bias":       return "emb_ln.bias"
+    else:
+        if name == "embd_ln.weight":     return "embeddings.LayerNorm.weight"
+        if name == "embd_ln.bias":       return "embeddings.LayerNorm.bias"
 
     m = re.match(r"^enc\.(\d+)\.(.+)$", name)
     if not m:
-        # MLM/pooler heads, sparse heads — converter writes these for SPLADE
-        # support but they are random for plain encoder checkpoints.
         return None
     layer = int(m.group(1))
     suffix = m.group(2)
-    base = f"encoder.layer.{layer}"
-    mapping = {
-        # Attention projections
-        "attn.q.weight": f"{base}.attention.self.query.weight",
-        "attn.q.bias":   f"{base}.attention.self.query.bias",
-        "attn.k.weight": f"{base}.attention.self.key.weight",
-        "attn.k.bias":   f"{base}.attention.self.key.bias",
-        "attn.v.weight": f"{base}.attention.self.value.weight",
-        "attn.v.bias":   f"{base}.attention.self.value.bias",
-        "attn.o.weight": f"{base}.attention.output.dense.weight",
-        "attn.o.bias":   f"{base}.attention.output.dense.bias",
-        # post-attention LayerNorm (ln1 in CrispEmbed naming)
-        "ln1.weight": f"{base}.attention.output.LayerNorm.weight",
-        "ln1.bias":   f"{base}.attention.output.LayerNorm.bias",
-        # FFN
-        "ffn.fc1.weight": f"{base}.intermediate.dense.weight",
-        "ffn.fc1.bias":   f"{base}.intermediate.dense.bias",
-        "ffn.fc2.weight": f"{base}.output.dense.weight",
-        "ffn.fc2.bias":   f"{base}.output.dense.bias",
-        # post-FFN LayerNorm
-        "ln2.weight": f"{base}.output.LayerNorm.weight",
-        "ln2.bias":   f"{base}.output.LayerNorm.bias",
-    }
+
+    if arch == "nomic":
+        base = f"encoder.layers.{layer}"
+        mapping = {
+            # Fused QKV — split in GGUF, fused in HF (tuple = special handling)
+            "attn.q.weight": ("_qkv_split", f"{base}.attn.Wqkv.weight", 0),
+            "attn.k.weight": ("_qkv_split", f"{base}.attn.Wqkv.weight", 1),
+            "attn.v.weight": ("_qkv_split", f"{base}.attn.Wqkv.weight", 2),
+            "attn.o.weight": f"{base}.attn.out_proj.weight",
+            # LayerNorms
+            "ln1.weight": f"{base}.norm1.weight",
+            "ln1.bias":   f"{base}.norm1.bias",
+            "ln2.weight": f"{base}.norm2.weight",
+            "ln2.bias":   f"{base}.norm2.bias",
+            # Dense GELU FFN (even layers in v2-moe)
+            "ffn.fc1.weight": f"{base}.mlp.fc1.weight",
+            "ffn.fc1.bias":   f"{base}.mlp.fc1.bias",
+            "ffn.fc2.weight": f"{base}.mlp.fc2.weight",
+            "ffn.fc2.bias":   f"{base}.mlp.fc2.bias",
+            # SwiGLU FFN (NomicBERT v1)
+            "ffn_gate.weight": f"{base}.mlp.fc12.weight",
+            # MoE tensors
+            "ffn.moe_gate.weight": f"{base}.mlp.router.layer.weight",
+            "ffn.expert_fc1.weight": ("_moe_expert", f"{base}.mlp.experts.mlp.w1", "fc1"),
+            "ffn.expert_fc2.weight": ("_moe_expert", f"{base}.mlp.experts.mlp.w2", "fc2"),
+            "ffn.moe_bias": f"{base}.mlp.experts.bias",
+        }
+    else:
+        base = f"encoder.layer.{layer}"
+        mapping = {
+            "attn.q.weight": f"{base}.attention.self.query.weight",
+            "attn.q.bias":   f"{base}.attention.self.query.bias",
+            "attn.k.weight": f"{base}.attention.self.key.weight",
+            "attn.k.bias":   f"{base}.attention.self.key.bias",
+            "attn.v.weight": f"{base}.attention.self.value.weight",
+            "attn.v.bias":   f"{base}.attention.self.value.bias",
+            "attn.o.weight": f"{base}.attention.output.dense.weight",
+            "attn.o.bias":   f"{base}.attention.output.dense.bias",
+            "ln1.weight": f"{base}.attention.output.LayerNorm.weight",
+            "ln1.bias":   f"{base}.attention.output.LayerNorm.bias",
+            "ffn.fc1.weight": f"{base}.intermediate.dense.weight",
+            "ffn.fc1.bias":   f"{base}.intermediate.dense.bias",
+            "ffn.fc2.weight": f"{base}.output.dense.weight",
+            "ffn.fc2.bias":   f"{base}.output.dense.bias",
+            "ln2.weight": f"{base}.output.LayerNorm.weight",
+            "ln2.bias":   f"{base}.output.LayerNorm.bias",
+        }
     return mapping.get(suffix)
 
 
@@ -131,7 +158,7 @@ def _crisp_tokens(binary, gguf, texts):
     out = []
     for text in texts:
         r = subprocess.run([binary, "-m", gguf, text],
-                           capture_output=True, text=True, timeout=60, env=env)
+                           capture_output=True, text=True, timeout=300, env=env)
         m = re.search(r"crispembed: token_ids \(n=(\d+)\):([0-9 \-]+)", r.stderr)
         if not m:
             print(f"  [token-diff] no token line for '{text}':")
@@ -143,16 +170,32 @@ def _crisp_tokens(binary, gguf, texts):
 
 
 def _hf_embeddings(model_id, texts):
-    from sentence_transformers import SentenceTransformer
-    return SentenceTransformer(model_id, trust_remote_code=True).encode(
-        texts, normalize_embeddings=True)
+    try:
+        from sentence_transformers import SentenceTransformer
+        return SentenceTransformer(model_id, trust_remote_code=True).encode(
+            texts, normalize_embeddings=True)
+    except ImportError:
+        pass
+    import torch
+    from transformers import AutoModel, AutoTokenizer
+    tokenizer = AutoTokenizer.from_pretrained(model_id, trust_remote_code=True)
+    model = AutoModel.from_pretrained(model_id, trust_remote_code=True)
+    model.eval()
+    enc = tokenizer(texts, padding=True, truncation=True, return_tensors="pt", max_length=512)
+    with torch.no_grad():
+        out = model(**enc)
+    hidden = out.last_hidden_state
+    mask = enc["attention_mask"].unsqueeze(-1).float()
+    pooled = (hidden * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1e-9)
+    pooled = torch.nn.functional.normalize(pooled, p=2, dim=-1)
+    return pooled.cpu().numpy()
 
 
 def _crisp_embeddings(binary, gguf, texts):
     out = []
     for text in texts:
         r = subprocess.run([binary, "-m", gguf, text],
-                           capture_output=True, text=True, timeout=60)
+                           capture_output=True, text=True, timeout=300)
         vals = r.stdout.strip().split()
         out.append(np.array([float(x) for x in vals]) if vals else None)
     return out
@@ -164,6 +207,8 @@ def main():
     ap.add_argument("--gguf",  required=True)
     ap.add_argument("--binary", default="./build/crispembed")
     ap.add_argument("--n-layers", type=int, default=12)
+    ap.add_argument("--arch", default="bert", choices=["bert", "nomic"],
+                    help="Model architecture for tensor key mapping")
     ap.add_argument("--skip-tensor-diff", action="store_true",
                     help="Skip per-tensor diff (slow for big models; useful "
                          "if you only care about token + e2e parity).")
@@ -214,13 +259,56 @@ def main():
         n_compared = n_skipped = 0
         worst = []
         for gname, garr in gguf_tensors.items():
-            hkey = _gguf_to_hf_key(gname, args.n_layers)
-            if hkey is None or hkey not in sd:
+            mapping = _gguf_to_hf_key(gname, args.n_layers, args.arch)
+            if mapping is None:
+                n_skipped += 1
+                continue
+
+            # Handle special tuple mappings (QKV split, MoE experts)
+            if isinstance(mapping, tuple):
+                kind = mapping[0]
+                if kind == "_qkv_split":
+                    hkey, idx = mapping[1], mapping[2]
+                    if hkey not in sd:
+                        n_skipped += 1
+                        continue
+                    harr_full = sd[hkey].detach().float().cpu().numpy()
+                    H = garr.shape[0]
+                    harr = harr_full[idx * H:(idx + 1) * H]
+                    garr_cmp = garr if garr.shape == harr.shape else garr.T
+                    md = float(np.max(np.abs(garr_cmp - harr)))
+                    worst.append((md, gname, f"{hkey}[{idx}]", garr.shape))
+                    n_compared += 1
+                elif kind == "_moe_expert":
+                    hkey, fc_type = mapping[1], mapping[2]
+                    if hkey not in sd:
+                        n_skipped += 1
+                        continue
+                    harr_flat = sd[hkey].detach().float().cpu().numpy()
+                    n_exp = garr.shape[0]
+                    inter = harr_flat.shape[0] // n_exp
+                    hidden = harr_flat.shape[1]
+                    harr_3d = harr_flat.reshape(n_exp, inter, hidden)
+                    if fc_type == "fc2":
+                        harr_3d = harr_3d.transpose(0, 2, 1)
+                    garr_cmp = garr if garr.shape == harr_3d.shape else garr.T
+                    if garr_cmp.shape != harr_3d.shape:
+                        print(f"  [shape mismatch] {gname}: GGUF {garr.shape} vs HF {harr_3d.shape}")
+                        n_skipped += 1
+                        continue
+                    md = float(np.max(np.abs(garr_cmp - harr_3d)))
+                    worst.append((md, gname, hkey, garr.shape))
+                    n_compared += 1
+                else:
+                    n_skipped += 1
+                continue
+
+            hkey = mapping
+            if hkey not in sd:
                 n_skipped += 1
                 continue
             harr = sd[hkey].detach().float().cpu().numpy()
             if garr.shape != harr.shape:
-                # GGUF stores transposed for some matmul conventions; try transpose.
                 if garr.T.shape == harr.shape:
                     garr_cmp = garr.T
                 else:
