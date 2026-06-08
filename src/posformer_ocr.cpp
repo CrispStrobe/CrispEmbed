@@ -85,6 +85,8 @@ struct posformer_ocr_context {
     struct ggml_tensor * word_embed_w;
     struct ggml_tensor * word_embed_ln_w;
     struct ggml_tensor * word_embed_ln_b;
+    struct ggml_tensor * input_norm_w;
+    struct ggml_tensor * input_norm_b;
     struct ggml_tensor * pos_enc;
     struct ggml_tensor * proj_w;
     struct ggml_tensor * proj_b;
@@ -263,6 +265,8 @@ static bool map_tensors(posformer_ocr_context * ctx) {
     ctx->word_embed_w    = find(m, "dec.word_embed.weight");
     ctx->word_embed_ln_w = find(m, "dec.word_embed_ln.weight");
     ctx->word_embed_ln_b = find(m, "dec.word_embed_ln.bias");
+    ctx->input_norm_w    = find(m, "dec.input_norm.weight");
+    ctx->input_norm_b    = find(m, "dec.input_norm.bias");
     ctx->pos_enc         = find(m, "dec.pos_enc");
     ctx->proj_w          = find(m, "dec.proj.weight");
     ctx->proj_b          = find(m, "dec.proj.bias");
@@ -629,6 +633,13 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
             for (int i = 0; i < D; i++) x[i] += pe[step * D + i];
         }
 
+        // Second LayerNorm after embedding + pos_enc (decoder.norm)
+        if (ctx->input_norm_w) {
+            layernorm(x.data(), D,
+                      tf32(ctx, ctx->input_norm_w),
+                      tf32(ctx, ctx->input_norm_b));
+        }
+
         // Cross-attention weights from previous layer (for ARM)
         std::vector<float> prev_layer_ca_weights(nhead * n_enc);
 
@@ -671,6 +682,18 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
                    tf32(ctx, l.sa_out_b), D, sa_proj.data());
             for (int i = 0; i < D; i++) x[i] += sa_proj[i];
             layernorm(x.data(), D, tf32(ctx, l.ln1_w), tf32(ctx, l.ln1_b));
+
+            // Debug: dump after self-attention + LN
+            {
+                const char * dump_dir = getenv("POSFORMER_DUMP");
+                if (dump_dir) {
+                    char path[256];
+                    snprintf(path, sizeof(path), "%s/cpp_step%03d_layer%d_after_sa.f32",
+                             dump_dir, step, li);
+                    FILE * f = fopen(path, "wb");
+                    if (f) { fwrite(x.data(), sizeof(float), D, f); fclose(f); }
+                }
+            }
 
             // --- Cross-attention (with ARM for layers > 0) ---
             {
@@ -758,6 +781,18 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
                 layernorm(x.data(), D, tf32(ctx, l.ln2_w), tf32(ctx, l.ln2_b));
             }
 
+            // Debug: dump after cross-attention + LN
+            {
+                const char * dump_dir = getenv("POSFORMER_DUMP");
+                if (dump_dir) {
+                    char path[256];
+                    snprintf(path, sizeof(path), "%s/cpp_step%03d_layer%d_after_ca.f32",
+                             dump_dir, step, li);
+                    FILE * f = fopen(path, "wb");
+                    if (f) { fwrite(x.data(), sizeof(float), D, f); fclose(f); }
+                }
+            }
+
             // --- FFN ---
             {
                 const int F = hp.dim_feedforward;
@@ -770,6 +805,27 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
                        tf32(ctx, l.ff_down_b), D, down.data());
                 for (int i = 0; i < D; i++) x[i] += down[i];
                 layernorm(x.data(), D, tf32(ctx, l.ln3_w), tf32(ctx, l.ln3_b));
+            }
+
+            // Debug: dump layer output and cross-attention weights
+            {
+                const char * dump_dir = getenv("POSFORMER_DUMP");
+                if (dump_dir) {
+                    char path[256];
+                    snprintf(path, sizeof(path), "%s/cpp_step%03d_layer%d_output.f32",
+                             dump_dir, step, li);
+                    FILE * f = fopen(path, "wb");
+                    if (f) { fwrite(x.data(), sizeof(float), D, f); fclose(f); }
+
+                    snprintf(path, sizeof(path), "%s/cpp_step%03d_layer%d_ca_weights.f32",
+                             dump_dir, step, li);
+                    f = fopen(path, "wb");
+                    if (f) {
+                        fwrite(prev_layer_ca_weights.data(), sizeof(float),
+                               nhead * n_enc, f);
+                        fclose(f);
+                    }
+                }
             }
         }
 
