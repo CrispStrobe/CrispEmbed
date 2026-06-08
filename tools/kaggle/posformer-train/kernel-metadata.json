@@ -6,6 +6,7 @@
   "kernel_type": "script",
   "is_private": true,
   "enable_gpu": true,
+  "accelerator": "nvidiaTeslaT4",
   "enable_internet": true,
   "competition_sources": [],
   "dataset_sources": ["${KAGGLE_ACCOUNT}/crispasr-hf-token"],
