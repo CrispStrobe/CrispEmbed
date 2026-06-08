@@ -280,8 +280,11 @@ a single merged weight set. Switching tasks requires re-converting.
 **Step 4 -- API**: `crispembed_set_lora(ctx, "retrieval")`,
 `crispembed_list_lora(ctx, &names, &count)`.
 
-**Testing**: Convert Jina v5 with `--lora-mode=separate`, verify each
-adapter matches the baked version (cos >= 0.9999).
+**Testing**: DONE. Jina v5 small converted with `--lora-mode=separate`.
+4 adapters (retrieval, text-matching, clustering, classification) load
+and hot-swap correctly. retrieval vs baked cos=0.999984. Round-trip
+switching produces bit-identical embeddings. Bugs fixed: converter PEFT
+`.base_layer` key stripping, decoder `gguf_free` use-after-free.
 
 **Files**: `models/convert-decoder-embed-to-gguf.py`, `src/decoder_embed.cpp`,
 `src/crispembed.{h,cpp}`, `examples/cli/main.cpp`

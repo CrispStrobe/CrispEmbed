@@ -91,9 +91,26 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         }
     }
 
+    // Pre-scan: flatten 4D conv weights to 2D [OC, IC*KH*KW] in the tensor
+    // metadata so the output header has correct shapes. Data layout in memory
+    // is already [OC rows of IC*KH*KW floats] — no transpose needed.
+    // The graph replayer (cnn_embed.cpp) reshapes 2D back to 4D at runtime.
     for (int i = 0; i < n_tensors; i++) {
         const char * name = gguf_get_tensor_name(ctx_in, i);
         struct ggml_tensor * t = ggml_get_tensor(ctx_in_ggml, name);
+        if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32) {
+            // Flatten [KW, KH, IC, OC] → [IC*KH*KW, OC]
+            int64_t flat_cols = t->ne[0] * t->ne[1] * t->ne[2];
+            int64_t OC = t->ne[3];
+            t->ne[0] = flat_cols;
+            t->ne[1] = OC;
+            t->ne[2] = 1;
+            t->ne[3] = 1;
+            t->nb[0] = sizeof(float);
+            t->nb[1] = flat_cols * sizeof(float);
+            t->nb[2] = t->nb[1] * OC;
+            t->nb[3] = t->nb[2];
+        }
         gguf_add_tensor(ctx_out, t);
     }
 
@@ -166,10 +183,12 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             continue;
         }
 
-        // Guard 2: N-D tensors (conv2d kernels are 4D, etc.) — copy as-is
-        if (ggml_n_dims(t) >= 3) {
+        // Guard 2: 5D+ tensors — copy as-is (no known use case).
+        // 4D tensors were pre-flattened to 2D above, so ggml_n_dims <= 3 here.
+        // 3D tensors (MoE expert weights) are quantized via the standard path.
+        if (ggml_n_dims(t) >= 5) {
             int ndims = ggml_n_dims(t);
-            printf("note: skipping %d-D tensor (conv2d) — copying as-is\n", ndims);
+            printf("note: skipping %d-D tensor — copying as-is\n", ndims);
             size_t sz = ggml_nbytes(t);
             size_t off = data_offset_in + gguf_get_tensor_offset(ctx_in, i);
 #ifdef _WIN32
