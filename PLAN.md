@@ -209,7 +209,7 @@ CrispEmbed/
   clustering, text-matching) matches the baked version (cos >= 0.9999),
   confirm switching works correctly, test with the Python wrapper.
 
-- [ ] **3D tensor quantization for MoE experts** — The quantizer
+- [x] **3D tensor quantization for MoE experts** — The quantizer
   (`tools/quantize.cpp`) skips 3D tensors (expert weights), keeping them
   F32. For nomic-v2-moe this limits Q8_0 compression from 1818→1122 MB
   (only 1.6x vs potential ~2.5x). Need to extend the quantizer to handle
