@@ -120,10 +120,16 @@ def sh(cmd: str, **kwargs) -> subprocess.CompletedProcess:
 # ━━━━━━━━━━━━━━━━━━━━ Auth — CrispASR kaggle_harness ━━━━━━━━━━━━━━━━━━━━━━
 
 # kaggle_harness.py is bundled alongside this script (copied from CrispASR).
-sys.path.insert(0, str(Path(__file__).parent))
+# On Kaggle, scripts run from /kaggle/working/ but the file may be at /kaggle/src/
+for _p in [Path(__file__).parent, Path("/kaggle/src"), Path("/kaggle/working"), Path(".")]:
+    if (_p / "kaggle_harness.py").exists():
+        sys.path.insert(0, str(_p))
+        break
 try:
     import kaggle_harness as kh
-except ImportError:
+    print(f"kaggle_harness loaded from {kh.__file__}", flush=True)
+except ImportError as e:
+    print(f"kaggle_harness import failed: {e}", flush=True)
     kh = None  # type: ignore
 
 
