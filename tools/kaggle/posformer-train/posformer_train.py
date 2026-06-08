@@ -808,6 +808,22 @@ def train(args, zip_path: Path, dict_path: Path,
     """Run PosFormer training. Returns best checkpoint path."""
     step("train.setup")
 
+    # Detect P100 (sm_60) BEFORE importing torch — must hide GPU early
+    try:
+        nvsmi = subprocess.run(["nvidia-smi", "--query-gpu=name,compute_cap",
+                                "--format=csv,noheader"], capture_output=True, text=True)
+        gpu_info = nvsmi.stdout.strip()
+        step("gpu.detect", info=gpu_info)
+        if gpu_info:
+            cap = gpu_info.split(",")[-1].strip()
+            major = int(cap.split(".")[0])
+            if major < 7:
+                step("gpu.incompatible", cap=cap,
+                     note="sm_60 not supported, hiding GPU before torch import")
+                os.environ["CUDA_VISIBLE_DEVICES"] = ""
+    except Exception as e:
+        step("gpu.detect.failed", error=str(e)[:80])
+
     sh("pip install -q torch torchvision pytorch_lightning opencv-python-headless wandb",
        capture_output=True)
 
@@ -851,25 +867,17 @@ def train(args, zip_path: Path, dict_path: Path,
         test_year = sorted(d for d in dirs if d != "train")[0]
     step("train.splits", dirs=sorted(dirs), test_year=test_year)
 
-    # Accelerator — detect P100 (sm_60) incompatibility
+    # Accelerator — CUDA_VISIBLE_DEVICES already set above if P100 detected
     def cuda_usable():
         if not torch.cuda.is_available():
             return False
         try:
-            cap = torch.cuda.get_device_capability(0)
-            if cap[0] < 7:  # sm_60 (P100) not supported by modern PyTorch
-                step("cuda.incompatible", capability=f"sm_{cap[0]}{cap[1]}",
-                     note="disabling CUDA, falling back to CPU")
-                # Actually disable CUDA so Lightning/PosFormer code can't sneak onto it
-                os.environ["CUDA_VISIBLE_DEVICES"] = ""
-                torch.cuda.device_count = lambda: 0  # type: ignore
-                return False
-            # Quick smoke test
             torch.zeros(1, device="cuda")
+            cap = torch.cuda.get_device_capability(0)
+            step("cuda.ok", capability=f"sm_{cap[0]}{cap[1]}")
             return True
         except Exception as e:
             step("cuda.failed", error=str(e)[:100])
-            os.environ["CUDA_VISIBLE_DEVICES"] = ""
             return False
 
     if args.device == "auto":
