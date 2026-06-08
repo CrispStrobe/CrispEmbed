@@ -4,6 +4,47 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — LoRA Hot-Swap, Batched Decoder, Face Pipeline
+
+### LoRA adapter hot-swap
+- Runtime switching between Jina v5 per-task LoRA adapters (retrieval,
+  classification, clustering, text-matching) without re-loading the model
+- Pre-compute approach: `W' = W + (α/r)·B@A` on CPU at switch time (~10-50ms)
+- Converter `--lora-mode=separate` stores base weights + per-adapter A/B
+  tensors (F16) in a single GGUF with metadata
+- Lazy base weight snapshot with dequant→merge→requant for quantized models
+- C API: `crispembed_set_lora/get_lora/list_lora`
+- CLI: `--lora NAME`, `--list-lora`
+- Python: `set_lora()`, `lora` property, `list_lora()` on CrispEmbed
+
+### Batched decoder graph
+- Single ggml graph compute for N decoder texts (was: N sequential passes)
+- Block-diagonal causal mask (text i cannot attend to text j), padding
+  positions get self-attention to prevent softmax NaN
+- Independent RoPE positions per text, pad to T_max
+- Per-text last-token / mean pooling after graph compute
+- **3.3x speedup** on batch of 4 (Jina v5 nano, CPU)
+- Parity: cos >= 0.999 vs sequential encoding on all test texts
+
+### Face pipeline Python completion
+- `CrispFacePipeline` exported in `__init__.py`
+- `from_registry()` class methods on `CrispFace` and `CrispFacePipeline`
+  for auto-download by registry name
+- Unit tests (`tests/test_face_python.py`): 12 tests covering detection,
+  recognition, pipeline, match, edge cases
+- Example script (`examples/face_search.py`): index faces from directory,
+  query by image, top-K cosine matches
+
+### BTTR beam search decoder
+- Beam search with configurable width (default 5) for BTTR handwritten
+  math OCR — improves exact-match accuracy over greedy decoding
+
+### Windows CI fix
+- `M_PI` undefined on MSVC: added `#ifndef M_PI` portable fallback in
+  `bttr_ocr.cpp`
+
+---
+
 ## June 2026 — CLIP/SigLIP Vision + Text, YuNet, HMER/BTTR OCR
 
 ### YuNet lightweight face detection
