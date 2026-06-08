@@ -216,6 +216,20 @@ def main():
 
     sd = model.state_dict()
 
+    # When using --lora-mode=separate, the PEFT-unwrapped state dict has keys like
+    # "layers.0.self_attn.q_proj.base_layer.weight" for LoRA-affected modules.
+    # Strip ".base_layer" so the subsequent layer mapping can find them.
+    # Also drop lora_A/lora_B keys (stored separately in the LoRA section).
+    if lora_separate_data is not None:
+        clean_sd = {}
+        for k, v in sd.items():
+            if ".lora_A." in k or ".lora_B." in k:
+                continue  # stored separately
+            clean_k = k.replace(".base_layer.", ".")
+            clean_sd[clean_k] = v
+        print(f"  LoRA: cleaned state_dict: {len(sd)} → {len(clean_sd)} keys (.base_layer stripped, lora_A/B removed)")
+        sd = clean_sd
+
     # BidirLM-Omni: text settings live under config.text_config; non-text towers
     # (audio_tower.*, visual.*) are skipped by Phase 1 — text-only export.
     is_bidirlm_omni = (getattr(config, "model_type", "") == "bidirlm_omni"

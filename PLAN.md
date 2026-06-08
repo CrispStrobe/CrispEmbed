@@ -183,8 +183,8 @@ CrispEmbed/
 
 - [ ] **Batched decoder improvements** — F16 attention mask (current F32
   mask wastes 2x memory for large T_total; flash_attn_ext supports F16
-  kq_b); Gemma3 NaN fix (some Gemma3 models produce NaN on certain
-  inputs due to the (1+w)*rms_norm scaling — needs clamp or fallback).
+  kq_b). Gemma3 NaN fix is DONE (ggml_clamp before (1+w)*x multiply in
+  both single-text and batch decoder paths).
 
 - [ ] **Streaming ColBERT late interaction scoring** — Server-side MaxSim
   scoring between a query's ColBERT multi-vector and pre-stored document
@@ -198,23 +198,20 @@ CrispEmbed/
   partial Emscripten support (whisper.cpp ships a WASM build). Challenges:
   relaxed-simd, memory limits, SharedArrayBuffer for threading.
 
-- [ ] **INT4 GGUF for face models** — Q4_K quantization for Conv2D
-  weights in SCRFD / AuraFace / SFace. Currently conv weights are F32/F16
-  because ggml_conv_2d only supports those; needs dequant→F32 at graph
-  build time (same pattern as HMER/BTTR). Expected: AuraFace 249→~65 MB.
+- [x] **Quantized GGUF for face models** — Quantizer now flattens 4D conv
+  weights to 2D before quantizing. SFace: Q8_0 cos=0.9996 (37→10 MB),
+  Q6_K cos=0.9966 (37→8 MB). Q4_K cos=0.936 (too low for recognition).
+  SCRFD detection: Q8_0 17→10 MB, Q4_K 17→8.7 MB.
 
-- [ ] **Live-test LoRA with Jina v5** — LoRA hot-swap is implemented but
-  not end-to-end tested with real Jina v5 adapters. Need to: convert with
-  `--lora-mode=separate`, verify each adapter (retrieval, classification,
-  clustering, text-matching) matches the baked version (cos >= 0.9999),
-  confirm switching works correctly, test with the Python wrapper.
+- [x] **Live-test LoRA with Jina v5** — DONE. Fixed converter (PEFT
+  `.base_layer` key stripping), decoder use-after-free bug (gguf_free
+  before LoRA metadata read). 4 adapters hot-swap correctly: retrieval
+  vs baked cos=0.999984, round-trip bit-identical, 196 projections merged.
 
-- [x] **3D tensor quantization for MoE experts** — The quantizer
-  (`tools/quantize.cpp`) skips 3D tensors (expert weights), keeping them
-  F32. For nomic-v2-moe this limits Q8_0 compression from 1818→1122 MB
-  (only 1.6x vs potential ~2.5x). Need to extend the quantizer to handle
-  ndims > 2 by iterating over the outermost dimension and quantizing each
-  2D slice independently.
+- [x] **3D tensor quantization for MoE experts** — DONE. Quantizer now
+  handles 3D tensors by quantizing each 2D slice independently. Results:
+  nomic-v2-moe Q8_0: 1122→487 MB (3.8x), Q4_K: 1095→352 MB (5.2x).
+  Quality: Q8_0 cos=0.9995, Q4_K cos=0.964 vs F32.
 
 ---
 
@@ -227,6 +224,10 @@ so a fresh agent can implement it independently.
 
 Implemented June 2026. See HISTORY.md. C API: `crispembed_set_lora()`,
 `crispembed_list_lora()`. Pre-compute merge `W' = W + (a/r)*B@A` on CPU.
+End-to-end tested with Jina v5 small: 4 adapters (retrieval, text-matching,
+clustering, classification), retrieval vs baked cos=0.999984, round-trip
+bit-identical. Fixed: converter PEFT `.base_layer` key stripping, decoder
+`gguf_free` use-after-free.
 
 ---
 

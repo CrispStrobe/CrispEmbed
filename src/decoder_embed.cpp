@@ -208,7 +208,8 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
         }
     }
 
-    gguf_free(g);
+    // NOTE: do NOT free g here — it is used later for LoRA metadata reads.
+    // g is freed after the LoRA loading block below.
 
     if (!core_gguf::load_weights(path, backend, "decoder_embed", wl))
         return false;
@@ -427,6 +428,8 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
             }
         }
     }
+
+    gguf_free(g);  // Free metadata context (was kept open for LoRA metadata reads)
 
     const char * pool_str = (m.pooling_method == 1) ? "mean" : "last-token";
     fprintf(stderr, "decoder_embed: loaded %d layers, %d dims, %d vocab, %d heads (%d kv), rope_theta=%.0f%s, pool=%s%s%s\n",
