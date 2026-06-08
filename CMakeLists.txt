@@ -215,6 +215,9 @@ target_link_libraries(test-bttr-beam PRIVATE crispembed)
 add_executable(test-posformer tests/test_posformer.cpp)
 target_link_libraries(test-posformer PRIVATE crispembed)
 
+add_executable(test-posformer-batch tests/test_posformer_batch.cpp)
+target_link_libraries(test-posformer-batch PRIVATE crispembed)
+
 endif() # NOT iOS
 
 # ---------------------------------------------------------------------------
