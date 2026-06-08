@@ -238,6 +238,21 @@ def main():
                             sd[f"colbert_linear.{k}"] = f.get_tensor(k)
                     print(f"  loaded PyLATE ColBERTLinear from {_mod_path}/model.safetensors")
 
+    # GPT2-based configs (NomicBERT) use n_embd/n_inner/n_layer/n_head;
+    # standard BERT configs use hidden_size/intermediate_size/num_hidden_layers/num_attention_heads.
+    # Provide uniform access via helper properties.
+    _hidden = getattr(config, "hidden_size", None) or getattr(config, "n_embd", 768)
+    _inter  = getattr(config, "intermediate_size", None) or getattr(config, "n_inner", None) or _hidden * 4
+    _layers = getattr(config, "num_hidden_layers", None) or getattr(config, "n_layer", 12)
+    _heads  = getattr(config, "num_attention_heads", None) or getattr(config, "n_head", 12)
+    _vocab  = getattr(config, "vocab_size", 30522)
+    # Patch onto config so downstream code can use canonical names
+    if not hasattr(config, "hidden_size"):       config.hidden_size = _hidden
+    if not hasattr(config, "intermediate_size"):  config.intermediate_size = _inter
+    if not hasattr(config, "num_hidden_layers"):  config.num_hidden_layers = _layers
+    if not hasattr(config, "num_attention_heads"): config.num_attention_heads = _heads
+    if not hasattr(config, "vocab_size"):          config.vocab_size = _vocab
+
     print(f"Config: hidden={config.hidden_size} layers={config.num_hidden_layers} "
           f"heads={config.num_attention_heads} intermediate={config.intermediate_size} "
           f"vocab={config.vocab_size}")
@@ -627,6 +642,15 @@ def main():
         # Do NOT set pre_ln — this is post-LN
         print(f"  NomicBERT: rope_theta={rope_theta}, post-LN")
 
+        # MoE support (NomicBERT v2 / nomic-embed-text-v2-moe)
+        n_experts = getattr(config, "num_experts", 0)
+        if n_experts > 0:
+            moe_top_k = getattr(config, "moe_top_k", getattr(config, "num_experts_per_tok", 2))
+            writer.add_uint32("bert.num_experts", n_experts)
+            writer.add_uint32("bert.num_experts_per_tok", moe_top_k)
+            moe_every = getattr(config, "moe_every_n_layers", 0)
+            print(f"  NomicBERT MoE: {n_experts} experts, top-{moe_top_k}, every_n={moe_every}")
+
     if is_modernbert:
         # ModernBERT: pre-LN, RoPE, GeGLU, fused QKV, fused gate+up, no biases
         rope_cfg = getattr(config, "rope_scaling", {})
@@ -737,7 +761,7 @@ def main():
                 writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.fc2.weight"]))
                 writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.bias", f32(sd[f"{pfx}.mlp.fc2.bias"]))
             else:
-                # NomicBERT: fused QKV under attn.Wqkv (no bias), SwiGLU FFN
+                # NomicBERT: fused QKV under attn.Wqkv (no bias)
                 qkv = sd[f"{pfx}.attn.Wqkv.weight"]
                 H = qkv.shape[1]
                 writer.add_tensor(f"{LP}.{i}.{TN['attn_q']}.weight", wt(qkv[:H]))
@@ -745,14 +769,56 @@ def main():
                 writer.add_tensor(f"{LP}.{i}.{TN['attn_v']}.weight", wt(qkv[2*H:]))
                 # Attention output (no bias in NomicBERT)
                 writer.add_tensor(f"{LP}.{i}.{TN['attn_o']}.weight", wt(sd[f"{pfx}.attn.out_proj.weight"]))
-                # SwiGLU FFN: keep SEPARATE gate + up (NomicBERT uses ggml_silu + ggml_mul)
-                # HF NomicBERT: y = fc11(x) * activation(fc12(x))
-                #   fc11 = value/up (no activation), fc12 = gate (silu applied)
-                # Runtime: up = fc1_w * x; gate = silu(ffn_gate_w * x); ffn = up * gate
-                #   fc1 (ffn_up) must be fc11 (value), ffn_gate must be fc12 (gate)
-                writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(sd[f"{pfx}.mlp.fc11.weight"]))
-                writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.fc2.weight"]))
-                writer.add_tensor(f"{LP}.{i}.ffn_gate.weight", wt(sd[f"{pfx}.mlp.fc12.weight"]))
+
+                # FFN: detect MoE vs dense per layer
+                router_key = f"{pfx}.mlp.router.layer.weight"
+                if router_key in sd:
+                    # MoE layer: router + stacked expert weights
+                    n_exp = getattr(config, "num_experts", 8)
+                    inter = getattr(config, "n_inner", None) or getattr(config, "intermediate_size", None) or H * 4
+                    hidden = H
+
+                    # Router gate: [n_exp, hidden]
+                    writer.add_tensor(f"{LP}.{i}.ffn.moe_gate.weight", wt(sd[router_key]))
+
+                    # Expert fc1 (up): [n_exp * inter, hidden] → [n_exp, inter, hidden]
+                    w1 = sd[f"{pfx}.mlp.experts.mlp.w1"]
+                    w1 = w1.reshape(n_exp, inter, hidden)
+                    writer.add_tensor(f"{LP}.{i}.ffn.expert_fc1.weight", wt(w1))
+
+                    # Expert fc2 (down): [n_exp * inter, hidden] → transpose to [n_exp, hidden, inter]
+                    # ggml needs [inter, hidden, n_exp] so we store numpy [n_exp, hidden, inter]
+                    w2 = sd[f"{pfx}.mlp.experts.mlp.w2"]
+                    w2 = w2.reshape(n_exp, inter, hidden).permute(0, 2, 1).contiguous()
+                    writer.add_tensor(f"{LP}.{i}.ffn.expert_fc2.weight", wt(w2))
+
+                    # MoE output bias (optional)
+                    bias_key = f"{pfx}.mlp.experts.bias"
+                    if bias_key in sd:
+                        writer.add_tensor(f"{LP}.{i}.ffn.moe_bias", f32(sd[bias_key]))
+
+                    if i == 0 or (hasattr(config, 'moe_every_n_layers') and i == config.moe_every_n_layers - 1):
+                        print(f"    layer {i}: MoE ({n_exp} experts, inter={inter})")
+
+                elif f"{pfx}.mlp.fc11.weight" in sd:
+                    # SwiGLU dense FFN (NomicBERT v1 / v2 gated layers)
+                    # HF NomicBERT: y = fc11(x) * activation(fc12(x))
+                    #   fc11 = value/up (no activation), fc12 = gate (silu applied)
+                    writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(sd[f"{pfx}.mlp.fc11.weight"]))
+                    writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.fc2.weight"]))
+                    writer.add_tensor(f"{LP}.{i}.ffn_gate.weight", wt(sd[f"{pfx}.mlp.fc12.weight"]))
+
+                elif f"{pfx}.mlp.fc1.weight" in sd:
+                    # Standard GELU dense FFN (NomicBERT v2 non-MoE layers)
+                    writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.weight", wt(sd[f"{pfx}.mlp.fc1.weight"]))
+                    if f"{pfx}.mlp.fc1.bias" in sd:
+                        writer.add_tensor(f"{LP}.{i}.{TN['ffn_up']}.bias", f32(sd[f"{pfx}.mlp.fc1.bias"]))
+                    writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.weight", wt(sd[f"{pfx}.mlp.fc2.weight"]))
+                    if f"{pfx}.mlp.fc2.bias" in sd:
+                        writer.add_tensor(f"{LP}.{i}.{TN['ffn_down']}.bias", f32(sd[f"{pfx}.mlp.fc2.bias"]))
+
+                else:
+                    raise ValueError(f"NomicBERT layer {i}: unknown FFN layout (no fc11, fc1, or router found)")
 
         else:
             # BERT / DeBERTa / MPNet layer prefix
