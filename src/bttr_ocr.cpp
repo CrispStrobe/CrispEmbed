@@ -708,6 +708,267 @@ static std::string greedy_decode(bttr_ocr_context * ctx) {
 }
 
 // ---------------------------------------------------------------------------
+// Beam search decoder
+// ---------------------------------------------------------------------------
+
+struct Beam {
+    std::vector<int> tokens;
+    float score;      // log-probability sum
+    int prev_token;
+    bool finished;
+    // Per-layer self-attention KV caches
+    std::vector<std::vector<float>> kv_k;
+    std::vector<std::vector<float>> kv_v;
+};
+
+// Run one decoder step for a single beam, returning logits.
+// Modifies beam's KV caches in place.
+static void decode_step(bttr_ocr_context * ctx,
+                        Beam & beam, int step,
+                        const std::vector<std::vector<float>> & ca_ck,
+                        const std::vector<std::vector<float>> & ca_cv,
+                        std::vector<float> & logits_out) {
+    const auto & hp = ctx->hparams;
+    const int D = hp.d_model;
+    const int V = hp.vocab_size;
+    const int n_enc = ctx->n_enc_pos;
+    const int head_dim = D / hp.nhead;
+    const float scale = 1.0f / sqrtf((float)head_dim);
+
+    // Token embedding + LayerNorm
+    std::vector<float> x(D);
+    if (ctx->word_embed_w && beam.prev_token >= 0 && beam.prev_token < V) {
+        const float * emb = tf32(ctx, ctx->word_embed_w);
+        memcpy(x.data(), emb + beam.prev_token * D, D * sizeof(float));
+    }
+    layernorm(x.data(), D, tf32(ctx, ctx->word_embed_ln_w),
+              tf32(ctx, ctx->word_embed_ln_b));
+
+    if (ctx->pos_enc && step < 500) {
+        const float * pe = tf32(ctx, ctx->pos_enc);
+        for (int i = 0; i < D; i++) x[i] += pe[step * D + i];
+    }
+
+    for (int li = 0; li < hp.num_decoder_layers; li++) {
+        const auto & l = ctx->dec_layers[li];
+
+        // Self-attention
+        std::vector<float> qkv(3 * D);
+        linear(x.data(), D, tf32(ctx, l.sa_qkv_w), tf32(ctx, l.sa_qkv_b),
+               3 * D, qkv.data());
+        float * q = qkv.data(), * k = qkv.data() + D, * v = qkv.data() + 2*D;
+
+        beam.kv_k[li].insert(beam.kv_k[li].end(), k, k + D);
+        beam.kv_v[li].insert(beam.kv_v[li].end(), v, v + D);
+        int n_past = step + 1;
+
+        std::vector<float> attn_out(D, 0.0f);
+        for (int h = 0; h < hp.nhead; h++) {
+            std::vector<float> scores(n_past);
+            float max_s = -1e9f;
+            for (int ki = 0; ki < n_past; ki++) {
+                float dot = 0;
+                for (int d = 0; d < head_dim; d++)
+                    dot += q[h*head_dim+d] * beam.kv_k[li][ki*D+h*head_dim+d];
+                scores[ki] = dot * scale;
+                if (scores[ki] > max_s) max_s = scores[ki];
+            }
+            float sum_exp = 0;
+            for (auto & s : scores) { s = expf(s - max_s); sum_exp += s; }
+            for (auto & s : scores) s /= sum_exp;
+            for (int d = 0; d < head_dim; d++) {
+                float s = 0;
+                for (int ki = 0; ki < n_past; ki++)
+                    s += scores[ki] * beam.kv_v[li][ki*D+h*head_dim+d];
+                attn_out[h*head_dim+d] = s;
+            }
+        }
+        std::vector<float> sa_proj(D);
+        linear(attn_out.data(), D, tf32(ctx, l.sa_out_w),
+               tf32(ctx, l.sa_out_b), D, sa_proj.data());
+        for (int i = 0; i < D; i++) x[i] += sa_proj[i];
+        layernorm(x.data(), D, tf32(ctx, l.ln1_w), tf32(ctx, l.ln1_b));
+
+        // Cross-attention
+        {
+            const float * ca_W = tf32(ctx, l.ca_qkv_w);
+            const float * ca_B = tf32(ctx, l.ca_qkv_b);
+            std::vector<float> cq(D);
+            linear(x.data(), D, ca_W, ca_B, D, cq.data());
+            const float * ck = ca_ck[li].data();
+            const float * cv = ca_cv[li].data();
+            std::vector<float> ca_out(D, 0.0f);
+            for (int h = 0; h < hp.nhead; h++) {
+                std::vector<float> scores(n_enc);
+                float max_s = -1e9f;
+                for (int ki = 0; ki < n_enc; ki++) {
+                    float dot = 0;
+                    for (int d = 0; d < head_dim; d++)
+                        dot += cq[h*head_dim+d] * ck[ki*D+h*head_dim+d];
+                    scores[ki] = dot * scale;
+                    if (scores[ki] > max_s) max_s = scores[ki];
+                }
+                float sum_exp = 0;
+                for (auto & s : scores) { s = expf(s - max_s); sum_exp += s; }
+                for (auto & s : scores) s /= sum_exp;
+                for (int d = 0; d < head_dim; d++) {
+                    float s = 0;
+                    for (int ki = 0; ki < n_enc; ki++)
+                        s += scores[ki] * cv[ki*D+h*head_dim+d];
+                    ca_out[h*head_dim+d] = s;
+                }
+            }
+            std::vector<float> ca_proj(D);
+            linear(ca_out.data(), D, tf32(ctx, l.ca_out_w),
+                   tf32(ctx, l.ca_out_b), D, ca_proj.data());
+            for (int i = 0; i < D; i++) x[i] += ca_proj[i];
+            layernorm(x.data(), D, tf32(ctx, l.ln2_w), tf32(ctx, l.ln2_b));
+        }
+
+        // FFN
+        {
+            const int F = hp.dim_feedforward;
+            std::vector<float> up(F);
+            linear(x.data(), D, tf32(ctx, l.ff_up_w),
+                   tf32(ctx, l.ff_up_b), F, up.data());
+            relu_ip(up.data(), F);
+            std::vector<float> down(D);
+            linear(up.data(), F, tf32(ctx, l.ff_down_w),
+                   tf32(ctx, l.ff_down_b), D, down.data());
+            for (int i = 0; i < D; i++) x[i] += down[i];
+            layernorm(x.data(), D, tf32(ctx, l.ln3_w), tf32(ctx, l.ln3_b));
+        }
+    }
+
+    logits_out.resize(V);
+    linear(x.data(), D, tf32(ctx, ctx->proj_w), tf32(ctx, ctx->proj_b),
+           V, logits_out.data());
+}
+
+static std::string beam_decode(bttr_ocr_context * ctx, int beam_width) {
+    const auto & hp = ctx->hparams;
+    const int D = hp.d_model;
+    const int n_enc = ctx->n_enc_pos;
+
+    // Precompute cross-attention K/V (shared across all beams)
+    std::vector<std::vector<float>> ca_ck(hp.num_decoder_layers);
+    std::vector<std::vector<float>> ca_cv(hp.num_decoder_layers);
+    for (int li = 0; li < hp.num_decoder_layers; li++) {
+        const auto & l = ctx->dec_layers[li];
+        const float * ca_W = tf32(ctx, l.ca_qkv_w);
+        const float * ca_B = tf32(ctx, l.ca_qkv_b);
+        const float * Wk = ca_W + D * D;
+        const float * Bk = ca_B + D;
+        const float * Wv = ca_W + 2 * D * D;
+        const float * Bv = ca_B + 2 * D;
+        ca_ck[li].resize(n_enc * D);
+        ca_cv[li].resize(n_enc * D);
+        for (int p = 0; p < n_enc; p++) {
+            linear(ctx->encoder_output.data() + p * D, D,
+                   Wk, Bk, D, ca_ck[li].data() + p * D);
+            linear(ctx->encoder_output.data() + p * D, D,
+                   Wv, Bv, D, ca_cv[li].data() + p * D);
+        }
+    }
+
+    // Initialize beams
+    std::vector<Beam> beams(1);
+    beams[0].score = 0.0f;
+    beams[0].prev_token = hp.sos_token;
+    beams[0].finished = false;
+    beams[0].kv_k.resize(hp.num_decoder_layers);
+    beams[0].kv_v.resize(hp.num_decoder_layers);
+
+    std::vector<Beam> completed;
+
+    for (int step = 0; step < hp.max_len; step++) {
+        struct Candidate {
+            int beam_idx;
+            int token;
+            float score;
+        };
+        std::vector<Candidate> candidates;
+
+        for (int bi = 0; bi < (int)beams.size(); bi++) {
+            if (beams[bi].finished) continue;
+
+            std::vector<float> logits;
+            decode_step(ctx, beams[bi], step, ca_ck, ca_cv, logits);
+
+            // Log-softmax
+            float max_l = *std::max_element(logits.begin(), logits.end());
+            float sum_exp = 0;
+            for (auto & l : logits) { l = expf(l - max_l); sum_exp += l; }
+            float log_sum = logf(sum_exp) + max_l;
+            for (int v = 0; v < hp.vocab_size; v++) {
+                float log_p = logits[v] > 0 ? logf(logits[v]) + max_l - log_sum : -100.0f;
+                candidates.push_back({bi, v, beams[bi].score + log_p});
+            }
+        }
+
+        if (candidates.empty()) break;
+
+        // Sort by score descending, keep top beam_width
+        std::sort(candidates.begin(), candidates.end(),
+                  [](const Candidate & a, const Candidate & b) {
+                      return a.score > b.score;
+                  });
+
+        int keep = std::min(beam_width, (int)candidates.size());
+        std::vector<Beam> new_beams;
+        new_beams.reserve(keep);
+
+        for (int i = 0; i < keep; i++) {
+            const auto & c = candidates[i];
+            Beam nb;
+            nb.tokens = beams[c.beam_idx].tokens;
+            nb.kv_k = beams[c.beam_idx].kv_k;
+            nb.kv_v = beams[c.beam_idx].kv_v;
+            nb.score = c.score;
+
+            if (c.token == hp.eos_token || c.token == hp.pad_token) {
+                nb.finished = true;
+                nb.prev_token = c.token;
+                // Length-normalize score
+                float len = (float)nb.tokens.size();
+                nb.score = nb.score / (len > 0 ? len : 1.0f);
+                completed.push_back(std::move(nb));
+            } else {
+                nb.tokens.push_back(c.token);
+                nb.prev_token = c.token;
+                nb.finished = false;
+                new_beams.push_back(std::move(nb));
+            }
+        }
+
+        beams = std::move(new_beams);
+        if (beams.empty()) break;
+        if ((int)completed.size() >= beam_width) break;
+    }
+
+    // Add any unfinished beams
+    for (auto & b : beams) {
+        float len = (float)b.tokens.size();
+        b.score = b.score / (len > 0 ? len : 1.0f);
+        completed.push_back(std::move(b));
+    }
+
+    // Pick best completed beam
+    if (completed.empty()) return "";
+    auto best = std::max_element(completed.begin(), completed.end(),
+        [](const Beam & a, const Beam & b) { return a.score < b.score; });
+
+    std::string result;
+    for (int tok : best->tokens) {
+        if (tok >= 0 && tok < (int)ctx->vocab.size()) {
+            if (!result.empty()) result += ' ';
+            result += ctx->vocab[tok];
+        }
+    }
+    return result;
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -771,6 +1032,41 @@ const char * bttr_ocr_recognize(
 
     run_encoder(ctx, input, w, h);
     ctx->result_buf = greedy_decode(ctx);
+
+    if (out_len) *out_len = (int)ctx->result_buf.size();
+    return ctx->result_buf.c_str();
+}
+
+const char * bttr_ocr_recognize_beam(
+    bttr_ocr_context * ctx,
+    const float * pixels, int width, int height,
+    int beam_width,
+    int * out_len
+) {
+    if (!ctx || !pixels || width <= 0 || height <= 0) return nullptr;
+    if (beam_width <= 1) return bttr_ocr_recognize(ctx, pixels, width, height, out_len);
+
+    const int n = width * height;
+    float mean = 0;
+    for (int i = 0; i < n; i++) mean += pixels[i];
+    mean /= n;
+
+    std::vector<float> work;
+    const float * input = pixels;
+    if (mean > 0.5f) {
+        work.resize(n);
+        for (int i = 0; i < n; i++) work[i] = 1.0f - pixels[i];
+        input = work.data();
+    }
+
+    int w = width, h = height;
+    std::vector<float> scaled;
+    if (scale_to_fit(input, width, height, scaled, w, h)) {
+        input = scaled.data();
+    }
+
+    run_encoder(ctx, input, w, h);
+    ctx->result_buf = beam_decode(ctx, beam_width);
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();

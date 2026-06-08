@@ -205,6 +205,12 @@ target_link_libraries(test-hmer PRIVATE crispembed)
 add_executable(test-bttr tests/test_bttr.cpp)
 target_link_libraries(test-bttr PRIVATE crispembed)
 
+add_executable(test-hmer-image tests/test_hmer_image.cpp)
+target_link_libraries(test-hmer-image PRIVATE crispembed)
+
+add_executable(test-bttr-beam tests/test_bttr_beam.cpp)
+target_link_libraries(test-bttr-beam PRIVATE crispembed)
+
 endif() # NOT iOS
 
 # ---------------------------------------------------------------------------

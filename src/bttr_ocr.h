@@ -36,9 +36,17 @@ bttr_ocr_context * bttr_ocr_init(const char * model_path, int n_threads);
 void               bttr_ocr_free(bttr_ocr_context * ctx);
 const bttr_ocr_hparams * bttr_ocr_get_hparams(const bttr_ocr_context * ctx);
 
+/// Recognize with greedy decoding (beam_width=1) or beam search.
+/// beam_width <= 1 uses fast greedy decoding; >1 uses beam search.
 const char * bttr_ocr_recognize(
     bttr_ocr_context * ctx,
     const float * pixels, int width, int height,
+    int * out_len);
+
+const char * bttr_ocr_recognize_beam(
+    bttr_ocr_context * ctx,
+    const float * pixels, int width, int height,
+    int beam_width,
     int * out_len);
 
 const char * bttr_ocr_recognize_raw(
