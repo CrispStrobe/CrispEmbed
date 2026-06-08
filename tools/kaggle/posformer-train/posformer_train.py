@@ -803,22 +803,25 @@ def train(args, zip_path: Path, dict_path: Path,
                 step("gpu.compatible", cap=cap)
             else:
                 step("gpu.incompatible", cap=cap,
-                     note="sm_60: installing CPU-only torch")
-                os.environ["CUDA_VISIBLE_DEVICES"] = ""
+                     note="sm_60: will install torch+cu118 for P100 support")
     except Exception as e:
         step("gpu.detect.failed", error=str(e)[:80])
 
-    # Install deps — CPU-only torch on P100, default (CUDA) torch on T4
+    # Install deps.
+    # Kaggle's pre-installed PyTorch only supports sm_70+.
+    # P100 is sm_60 — install PyTorch with CUDA 11.8 which still supports it.
+    # T4 (sm_75) works with the pre-installed version.
     if gpu_usable:
-        sh("pip install -q torch torchvision pytorch_lightning opencv-python-headless wandb",
+        sh("pip install -q pytorch_lightning opencv-python-headless wandb",
            capture_output=True)
     else:
-        # Force-reinstall to avoid conflicts with Kaggle's pre-installed CUDA torchvision
+        # P100: install torch+cu118 which supports sm_60
         sh("pip install -q --force-reinstall torch torchvision "
-           "--index-url https://download.pytorch.org/whl/cpu",
+           "--index-url https://download.pytorch.org/whl/cu118",
            capture_output=True)
         sh("pip install -q pytorch_lightning opencv-python-headless wandb",
            capture_output=True)
+        gpu_usable = True  # cu118 torch supports P100
 
     import torch
     import pytorch_lightning as pl
