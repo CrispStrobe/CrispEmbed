@@ -227,6 +227,11 @@ def main():
     add_tensor("dec.word_embed_ln.bias", weights["decoder.word_embed.1.bias"])
     print(f"  word_embed: {list(weights['decoder.word_embed.0.weight'].shape)}")
 
+    # Input LayerNorm (applied after embed + pos_enc, before transformer layers)
+    add_tensor("dec.input_norm.weight", weights["decoder.norm.weight"])
+    add_tensor("dec.input_norm.bias", weights["decoder.norm.bias"])
+    print(f"  input_norm: {list(weights['decoder.norm.weight'].shape)}")
+
     # Positional encoding
     add_tensor("dec.pos_enc", weights["decoder.pos_enc.pe"])
     print(f"  pos_enc: {list(weights['decoder.pos_enc.pe'].shape)}")
