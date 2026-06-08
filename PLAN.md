@@ -65,13 +65,19 @@ Input text / image / audio
 
 ### Math OCR roadmap — next models to evaluate
 
-- **Uni-MuMER**: unified multilingual math expression recognizer
-- **SCAN**: sequence-to-sequence with attention for math
-- **WaveMER**: wave-based math expression recognition
-- **NAMER**: neural attention-based math expression recognition
+| Model | Year | CROHME'14 | Params | Code | Verdict |
+|-------|------|-----------|--------|------|---------|
+| Uni-MuMER | 2025 | ~82% | 3B VLM | Yes | Too large for mobile |
+| NAMER | 2024 | 60.5% | ~20M | No | Best arch (non-AR), no code |
+| WaveMER | 2026 | 60.6% | ~20M | Yes | Weak accuracy, complex |
+| SCAN | 2020 | ~55% | ~15M | No | Online-only (stroke input) |
+| CAN | 2022 | ~57% | ~10M | Yes (MIT) | Compact, good license |
+| CoMER | 2022 | ~59% | ~10M | Yes | Coverage-enhanced transformer |
 
-Goal: find a model with permissive license OR retrain PosFormer on CROHME
-with own training code (Kaggle/RunPod, ~$2-3 for full training run).
+**Recommendation**: PosFormer (our port) outperforms all practical candidates
+in greedy l2r mode. Retrain PosFormer weights ourselves on CROHME + HME100K
+(Kaggle T4, ~4-8h, free tier). This gives us both accuracy AND license freedom.
+Use the CrispASR kaggle harness (tools/kaggle/) adapted for training.
 
 ## Supported architectures (v0.7.0)
 
