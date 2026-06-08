@@ -1,0 +1,14 @@
+{
+  "id": "chr1str/posformer-mathwriting-train",
+  "title": "PosFormer — Train on MathWriting",
+  "code_file": "posformer_train.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "competition_sources": [],
+  "dataset_sources": [],
+  "kernel_sources": [],
+  "docker_image_pinning_type": "original"
+}
