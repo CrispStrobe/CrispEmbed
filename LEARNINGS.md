@@ -1178,3 +1178,13 @@ NOT the model.beam_search() which includes the bi-directional scoring.
    both paths.
 5. **Kaggle Secrets API**: intermittently returns ConnectionError. The
    dataset file fallback is the reliable path.
+6. **Validation speed**: PosFormer's `approximate_joint_search` uses
+   bi-directional beam search (beam_size=10) on all 986 test images.
+   This takes 30-60 min per validation step. Override with greedy
+   beam_size=1 for ~10x faster validation during training.
+7. **Heartbeat**: wrap `trainer.fit()` in `kh.build_heartbeat("train")`
+   so Kaggle logs show the run is alive during long operations.
+8. **W&B run resume**: using a fixed `id=` with `resume="allow"` lets
+   multi-session training continue the same W&B run. But if you kill
+   and restart, the charts mix old+new data. Change the run ID for
+   a clean restart.
