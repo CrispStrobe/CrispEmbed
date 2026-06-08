@@ -1188,3 +1188,12 @@ NOT the model.beam_search() which includes the bi-directional scoring.
    multi-session training continue the same W&B run. But if you kill
    and restart, the charts mix old+new data. Change the run ID for
    a clean restart.
+9. **Vocabulary ordering is critical**: PosFormer uses an alphabetical
+   dictionary (!, (, ), +, ...). Building vocab from `Counter.most_common()`
+   sorts by frequency ({, }, 1, 2, ...), scrambling 110/113 token indices.
+   The model trains "successfully" (internal metrics look fine) but the
+   checkpoint is completely unusable with the original dictionary, GGUF
+   converter, or C++ inference. ALWAYS use the canonical dictionary.txt.
+10. **OOV tokens**: 14 CROHME captions contain `'` (apostrophe) which is
+    not in PosFormer's 110-token dictionary. Filter these before training
+    or the DataLoader crashes with KeyError.
