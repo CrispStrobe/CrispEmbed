@@ -99,6 +99,11 @@ struct embed_layer {
     ggml_tensor * fc2_w = nullptr, * fc2_b = nullptr;
     ggml_tensor * ffn_gate_w = nullptr;     // SwiGLU gate (NomicBERT, separate)
     ggml_tensor * ffn_up_gate_w = nullptr; // Fused gate+up [2*inter, H] for ggml_geglu
+    // MoE (Mixture of Experts) FFN — present on MoE layers only
+    ggml_tensor * moe_gate_w    = nullptr; // Router: [H, N_experts]
+    ggml_tensor * expert_fc1_w  = nullptr; // Expert up: [H, inter, N_experts]
+    ggml_tensor * expert_fc2_w  = nullptr; // Expert down: [inter, H, N_experts]
+    ggml_tensor * moe_ffn_bias  = nullptr; // Output bias: [H]
 };
 
 struct embed_model {
@@ -167,8 +172,15 @@ static bool validate_encoder_model(const embed_model & m, bool pre_ln) {
         require(L.k_w || L.qkv_w, "attn.k.weight");
         require(L.v_w || L.qkv_w, "attn.v.weight");
         require(L.o_w, "attn.o.weight");
-        require(L.fc2_w, "ffn.fc2.weight");
-        require(L.ffn_up_gate_w || L.fc1_w, "ffn input weights");
+
+        bool is_moe = L.moe_gate_w != nullptr;
+        if (is_moe) {
+            require(L.expert_fc1_w, "ffn.expert_fc1.weight");
+            require(L.expert_fc2_w, "ffn.expert_fc2.weight");
+        } else {
+            require(L.fc2_w, "ffn.fc2.weight");
+            require(L.ffn_up_gate_w || L.fc1_w, "ffn input weights");
+        }
 
         if (pre_ln) {
             // ln1 optional for ModernBERT (no pre-attention norm, only pre-FFN ln2)
@@ -176,7 +188,7 @@ static bool validate_encoder_model(const embed_model & m, bool pre_ln) {
         } else {
             require(L.ln1_w, "ln1.weight");
             require(L.ln2_w, "ln2.weight");
-            require(L.fc1_w || L.ffn_up_gate_w, "ffn.fc1.weight");
+            if (!is_moe) require(L.fc1_w || L.ffn_up_gate_w, "ffn.fc1.weight");
         }
     }
     return ok;
@@ -336,6 +348,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     ctx->global_attn_every_n = u32("bert.global_attn_every_n", 0);
     ctx->pre_ln             = u32("bert.pre_ln", 0) != 0;
     ctx->position_buckets   = u32("bert.position_buckets", 0);
+    hp.n_experts            = u32("bert.num_experts", 0);
+    hp.n_experts_per_tok    = u32("bert.num_experts_per_tok", 0);
 
     // Load tokenizer vocab from GGUF metadata
     const int64_t ki = gguf_find_key(g, "tokenizer.ggml.tokens");
@@ -519,6 +533,11 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         L.fc2_b = get_any({pfx + "ffn.fc2.bias", blk + "ffn_down.bias"});
         L.ffn_gate_w    = get_any({pfx + "ffn_gate.weight", blk + "ffn_gate.weight"});     // SwiGLU gate (NomicBERT)
         L.ffn_up_gate_w = get_any({pfx + "ffn_up_gate.weight", blk + "ffn_up_gate.weight"}); // Fused gate+up (ModernBERT/GTE v1.5)
+        // MoE expert tensors (present only on MoE layers)
+        L.moe_gate_w    = get(pfx + "ffn.moe_gate.weight");
+        L.expert_fc1_w  = get(pfx + "ffn.expert_fc1.weight");
+        L.expert_fc2_w  = get(pfx + "ffn.expert_fc2.weight");
+        L.moe_ffn_bias  = get(pfx + "ffn.moe_bias");
     }
 
     // Pooler (optional)
@@ -559,6 +578,13 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     if (m.has_colbert) fprintf(stderr, "crispembed: colbert head loaded (dim=%d)\n", m.colbert_dim);
     if (m.is_reranker) fprintf(stderr, "crispembed: classifier head loaded (reranker=%s)\n",
                                m.classifier_2layer ? "2-layer" : "1-layer");
+    if (hp.n_experts > 0) {
+        int moe_count = 0;
+        for (int i = 0; i < hp.n_layer; i++)
+            if (m.layers[i].moe_gate_w) moe_count++;
+        fprintf(stderr, "crispembed: MoE encoder (%d experts, top-%d, %d/%d MoE layers)\n",
+                hp.n_experts, hp.n_experts_per_tok, moe_count, hp.n_layer);
+    }
 
     // Pre-merge QKV weights into backend buffer (works on CPU + GPU)
     {
@@ -885,7 +911,51 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         }
 
         ggml_tensor * ffn;
-        if (L.ffn_up_gate_w) {
+        if (L.moe_gate_w) {
+            // MoE FFN (Nomic v2): router → top-K → expert dispatch → weighted combine
+            const int n_exp = hp.n_experts;
+            const int K     = hp.n_experts_per_tok;
+
+            // Router logits: gate_w [H, n_exp] @ cur [H, TB] → [n_exp, TB]
+            ggml_tensor * logits = ggml_mul_mat(gctx, L.moe_gate_w, cur);
+
+            // Softmax over experts (ne[0] = n_exp) per token
+            ggml_tensor * probs = ggml_soft_max(gctx, logits);
+
+            // Top-K expert selection: [K, TB] I32
+            ggml_tensor * ids = ggml_top_k(gctx, probs, K);
+
+            // Gather top-K weights from softmax probs via get_rows
+            // probs_3d [1, n_exp, TB]: get_rows selects K from n_exp per token
+            ggml_tensor * probs_3d  = ggml_reshape_3d(gctx, probs, 1, n_exp, TB);
+            ggml_tensor * top_w     = ggml_get_rows(gctx, probs_3d, ids);  // [1, K, TB]
+            top_w = ggml_reshape_2d(gctx, top_w, K, TB);                   // [K, TB]
+
+            // Expand input for K expert slots: [H, TB] → [H, K, TB]
+            ggml_tensor * cur_3d  = ggml_reshape_3d(gctx, cur, H, 1, TB);
+            ggml_tensor * rep_tgt = ggml_new_tensor_3d(gctx, cur->type, H, K, TB);
+            ggml_tensor * cur_exp = ggml_repeat(gctx, cur_3d, rep_tgt);
+
+            // Expert up projection: expert_fc1 [H, inter, n_exp] × [H, K, TB] → [inter, K, TB]
+            ggml_tensor * up = ggml_mul_mat_id(gctx, L.expert_fc1_w, cur_exp, ids);
+
+            // Activation (GELU — nomic v2 uses gelu; future: check for swiglu)
+            up = ggml_gelu(gctx, up);
+
+            // Expert down projection: expert_fc2 [inter, H, n_exp] × [inter, K, TB] → [H, K, TB]
+            ggml_tensor * down = ggml_mul_mat_id(gctx, L.expert_fc2_w, up, ids);
+
+            // Weighted combination: sum over K experts per token
+            // down [H, K, TB] → permute to [K, H, TB], mul by weights [K, 1, TB], matmul sums K
+            ggml_tensor * down_p = ggml_cont(gctx, ggml_permute(gctx, down, 1, 0, 2, 3));  // [K, H, TB]
+            ggml_tensor * w_col  = ggml_reshape_3d(gctx, top_w, K, 1, TB);                  // [K, 1, TB]
+            ffn = ggml_mul_mat(gctx, w_col, down_p);  // [1, H, TB]
+            ffn = ggml_reshape_2d(gctx, ffn, H, TB);  // [H, TB]
+
+            // MoE output bias
+            if (L.moe_ffn_bias) ffn = ggml_add(gctx, ffn, L.moe_ffn_bias);
+
+        } else if (L.ffn_up_gate_w) {
             // Fused GeGLU (ModernBERT/GTE v1.5): single matmul → ggml_geglu → down
             ggml_tensor * up_gate = ggml_mul_mat(gctx, L.ffn_up_gate_w, cur);  // [2*inter, T]
             ffn = ggml_geglu(gctx, up_gate);  // fused: gelu(first_half) * second_half → [inter, T]
