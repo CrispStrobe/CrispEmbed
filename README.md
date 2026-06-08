@@ -57,6 +57,7 @@ GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
 | all-mpnet-base-v2 | MPNet | 768 | 0.9874 | 0.9998 | 0.99 |
 | gte-modernbert-base | ModernBERT | 768 | 0.999991 | 0.9999 | -- |
 | nomic-embed-text-v1.5 | NomicBERT | 768 | 1.000000 | 0.9980 | -- |
+| nomic-embed-text-v2-moe | NomicBERT MoE | 768 | 1.000000 | 0.9996 | 0.966 |
 | multilingual-e5-base | XLM-R | 768 | 0.999995 | 0.9999 | 0.99 |
 | multilingual-e5-large | XLM-R | 1024 | 0.999997 | 0.9999 | 0.99 |
 | granite-embedding-278m | XLM-R | 768 | 0.999984 | 0.9999 | 0.99 |
@@ -653,6 +654,11 @@ Server (`examples/server/server.cpp`) exposes four API dialects on the same mode
 **NomicBERT encoder** (nomic-embed-text-v1.5):
 - Token embeddings (no position) + RoPE → Post-LN transformer + SwiGLU FFN → Mean pooling
 - Rotary position embeddings (same as decoder path), no absolute position embeddings
+
+**NomicBERT MoE encoder** (nomic-embed-text-v2-moe):
+- Token + Type embeddings + emb_ln + RoPE → Post-LN transformer with mixed MoE/dense FFN → Mean pooling
+- 8 experts, top-2 routing, GELU activation; MoE on odd layers, dense GELU FFN on even layers
+- Fully in-graph routing: ggml_top_k + ggml_get_rows + ggml_mul_mat_id (no CPU-side partial compute)
 
 **Cross-encoder reranker** (BGE-reranker-v2-m3, ms-marco-MiniLM, mxbai-rerank, etc.):
 - `[CLS] query [SEP] document [SEP]` pair tokenization → CLS hidden state → `Linear(H,1)` → scalar score
