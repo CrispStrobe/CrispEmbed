@@ -229,7 +229,7 @@ static const ModelEntry k_registry[] = {
     {"nomic-embed-text-v2-moe",
      "nomic-v2-moe-q8_0.gguf",
      "https://huggingface.co/cstr/nomic-embed-text-v2-moe-GGUF/resolve/main/nomic-v2-moe-q8_0.gguf",
-     "NomicBERT MoE 768d 8-expert top-2 (475M)", "1122 MB", "apache-2.0",
+     "NomicBERT MoE 768d 8-expert top-2 (475M)", "487 MB", "apache-2.0",
      "https://huggingface.co/nomic-ai/nomic-embed-text-v2-moe"},
 
     {"all-MiniLM-L12-v2",

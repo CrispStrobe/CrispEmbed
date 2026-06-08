@@ -166,8 +166,9 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             continue;
         }
 
-        // Guard 2: N-D tensors (conv2d kernels are 4D, etc.) — copy as-is
-        if (ggml_n_dims(t) >= 3) {
+        // Guard 2: 4D+ tensors (conv2d kernels) — copy as-is
+        // 3D tensors (MoE expert weights) CAN be quantized slice-by-slice
+        if (ggml_n_dims(t) >= 4) {
             int ndims = ggml_n_dims(t);
             printf("note: skipping %d-D tensor (conv2d) — copying as-is\n", ndims);
             size_t sz = ggml_nbytes(t);
@@ -202,7 +203,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                              sname.find("type_embd") != std::string::npos);
         bool quantize = (ggml_is_quantized(qtype) || qtype == GGML_TYPE_F16) &&
                         (type == GGML_TYPE_F32 || type == GGML_TYPE_F16) &&
-                        (ggml_n_dims(t) == 2) &&
+                        (ggml_n_dims(t) >= 2) &&
                         !is_tiny_embd;
         const int64_t ncols = t->ne[0];
         ggml_type qtype_used = qtype;
