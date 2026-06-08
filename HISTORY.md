@@ -40,20 +40,34 @@ at layer 0 self-attention output led to finding the missing LayerNorm.
 `test_posformer.cpp`, `test_posformer_batch.cpp`,
 `tests/parity/posformer_*.py`.
 
-**Training pipeline**: Kaggle kernel at
-https://www.kaggle.com/code/chr1str/posformer-train-on-mathwriting
-trains PosFormer on CROHME (8.8K images) with GPU (P100 via cu118 or T4).
-W&B monitoring at https://wandb.ai/cze-github/posformer-hmer.
-Uses CrispASR kaggle_harness for auth (3-tier: env → Secret → dataset file),
-heartbeat keepalive, and progress logging. P100 GPU via torch+cu118.
-Greedy validation (beam_size=1) for fast epochs. Hourly HF checkpoint
-upload. Multi-session resume. v23+ confirmed working: GPU training +
-W&B + HF auth all active.
+**Training pipeline** (v25, 25 iterations to get right):
+Kaggle kernel at https://www.kaggle.com/code/chr1str/posformer-train-on-mathwriting
+W&B at https://wandb.ai/cze-github/posformer-hmer
 
-**License concern**: SJTU weights are "academic research only". For
-commercial use in CrispCalc, need to retrain from scratch on CROHME data
-(CC BY-NC-SA → NC weights, fine for "buy me a coffee" app with download
-terms acceptance). The C++ inference code is clean-room original.
+Key issues solved during Kaggle kernel development:
+- P100 GPU (sm_60): install torch+cu118 (supports sm_60), not CPU fallback
+- Auth: clone CrispASR at runtime, import kaggle_harness (3-tier auth).
+  Dataset mounts at `/kaggle/input/datasets/chr1str/crispasr-hf-token/`,
+  NOT `/kaggle/input/crispasr-hf-token/`. Harness patched to scan both.
+- **Vocab bug**: `build_vocab_from_zip` sorted by frequency, scrambling
+  110/113 token indices. Model trained 25 epochs was unusable. Fixed:
+  use canonical PosFormer dictionary.txt (alphabetical order).
+- OOV: 14 CROHME captions have `'` not in dictionary. Filtered.
+- Validation speed: override beam_size=10 bidir → beam_size=1 greedy.
+  Full bidir takes 30-60 min per val epoch.
+- Heartbeat: `kh.build_heartbeat("train")` for Kaggle keepalive.
+
+**Epoch 8 eval (correct vocab, fresh training)**:
+- beam=1 greedy: 221/986 = 22.4%
+- beam=10 bidir (partial 300/986): ~24.0%
+- Model needs 100+ more epochs. Published 62.7% at epoch 200.
+- ~40 min/epoch on P100 (19 min train + 21 min val). 200 epochs ≈ 133h
+  ≈ 11 Kaggle sessions with multi-session resume.
+
+**License**: SJTU weights = academic-only. Retrained weights on CROHME
+= CC BY-NC-SA 3.0 (NC). Fine for "buy me a coffee" app: app code is
+commercial, weights downloaded separately with NC terms acceptance.
+All handwritten math datasets are NC. The C++ inference is clean-room.
 
 ---
 
