@@ -1103,3 +1103,62 @@ Verified: decoded detection coordinates match OpenCV FaceDetectorYN to
 sub-pixel accuracy (< 0.5px diff) on both single-face and multi-face
 images. The cls tensors (1 channel) show cos=0.985-0.992 because layout
 is irrelevant for single-channel data.
+
+## PosFormer port — encoder/decoder debugging
+
+### 2D sinusoidal positional encoding: sin/cos MUST share frequency
+
+PyTorch `ImgPosEnc` computes inv_freq with `arange(0, half_d, 2)` → 64 values.
+Each sin/cos pair uses the SAME frequency: `sin(x * f_i), cos(x * f_i)`.
+
+The initial C++ used different freq indices for sin vs cos:
+```cpp
+enc[2*i]     += sinf(x_norm * inv_freq[2*i]);     // freq 2i
+enc[2*i + 1] += cosf(x_norm * inv_freq[2*i + 1]); // freq 2i+1 ← WRONG
+```
+Fix: both must use `inv_freq[i]` (or `inv_freq[2*i]` from a 128-element array).
+Symptom: encoder cosine dropped to 0.58.
+
+### Operation ordering: pos_enc THEN LayerNorm (not reversed)
+
+PyTorch encoder does: `feature_proj → rearrange → pos_enc_2d → LayerNorm`.
+The C++ initially did: `feature_proj → rearrange → LayerNorm → pos_enc_2d`.
+LayerNorm normalizes the combined feature+pos signal; applying it before
+pos encoding means the positional encoding is un-normalized.
+
+### No ReLU after feature projection
+
+PyTorch's `self.feature_proj = nn.Conv2d(...)` has no activation. The C++
+had a spurious `relu_ip()` that clipped half the signal.
+
+### Missing decoder input LayerNorm (the biggest bug)
+
+PyTorch decoder does:
+```python
+tgt = self.word_embed(tgt)  # nn.Sequential(Embedding, LayerNorm)
+tgt = self.pos_enc(tgt)     # sinusoidal pos encoding
+tgt = self.norm(tgt)        # ← SECOND LayerNorm, was missing in C++
+```
+
+This `decoder.norm` was not in the GGUF converter OR the C++ inference.
+Symptom: layer 0 self-attention output had cos=0.868 at step 0 (should
+be 1.0). After adding `dec.input_norm` to converter and C++ decoder:
+cos=1.000000 at every step, max_diff < 0.00001.
+
+**Lesson**: never attribute divergence to "FP accumulation." If cosine is
+below 0.999 at step 0, there is a real bug. Trace layer-by-layer with
+intermediate dumps (after SA, after CA, after FFN) to find it.
+
+### ARM (Attention Refinement Module) incremental mode is correct
+
+The incremental ARM with per-ARM-instance accumulators matches the PyTorch
+batch cumsum exactly, IF the encoder and decoder embedding are correct.
+The ARM was never the bug — the divergence came entirely from the four
+encoder/decoder bugs listed above.
+
+### Bi-directional beam search vs greedy
+
+PosFormer's published 62.7% uses bi-directional beam search (L2R + R2L
+decode, cross-rate, pick best). The C++ implements L2R greedy only. Direct
+comparison must use the PyTorch decoder.forward() in a manual greedy loop,
+NOT the model.beam_search() which includes the bi-directional scoring.

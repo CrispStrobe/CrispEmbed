@@ -55,9 +55,23 @@ Input text / image / audio
     ├─► Math  ──► HMER: DenseNet-121 + GRU attention (hmer_ocr.cpp)
     │               Handwritten math → LaTeX (CROHME 2016)
     │
-    └─► Math  ──► BTTR: DenseNet + Transformer decoder (bttr_ocr.cpp)
-                    Handwritten math → LaTeX (CROHME 2014, 53% exact match)
+    ├─► Math  ──► BTTR: DenseNet + Transformer decoder (bttr_ocr.cpp)
+    │               Handwritten math → LaTeX (CROHME 2014, 49% exact match)
+    │
+    └─► Math  ──► PosFormer: DenseNet + Transformer + ARM (posformer_ocr.cpp)
+                    Handwritten math → LaTeX (CROHME 2014, ~60%+ exact match)
+                    NOTE: current weights are academic-only licensed (SJTU)
 ```
+
+### Math OCR roadmap — next models to evaluate
+
+- **Uni-MuMER**: unified multilingual math expression recognizer
+- **SCAN**: sequence-to-sequence with attention for math
+- **WaveMER**: wave-based math expression recognition
+- **NAMER**: neural attention-based math expression recognition
+
+Goal: find a model with permissive license OR retrain PosFormer on CROHME
+with own training code (Kaggle/RunPod, ~$2-3 for full training run).
 
 ## Supported architectures (v0.7.0)
 

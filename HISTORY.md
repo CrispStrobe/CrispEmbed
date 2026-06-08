@@ -4,6 +4,40 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 (late) — PosFormer handwritten math OCR
+
+### PosFormer port (feat/posformer-port branch)
+
+PosFormer = BTTR + Attention Refinement Module (ARM) for coverage-aware
+decoding. Source: SJTU-DeepVisionLab/PosFormer (BSD-2, academic-only).
+6.4M params, 113 LaTeX tokens, 24.9 MB F32 GGUF.
+
+**Architecture**: DenseNet encoder (same as BTTR) + 3-layer Transformer
+decoder (d=256, 8 heads, FFN=1024) + shared ARM module. ARM applies
+coverage-based attention refinement between decoder layers 0→1 and 1→2.
+
+**Port verified**: per-step logit cosine similarity = 1.000000 vs PyTorch
+reference (max diff < 0.00001). Four encoder/decoder bugs found and fixed:
+1. Spurious ReLU after feature projection Conv1x1
+2. LayerNorm and 2D positional encoding order swapped
+3. Sin/cos frequency indexing error (cos used wrong frequency in each pair)
+4. Missing decoder input LayerNorm (decoder.norm after embed + pos_enc)
+
+**Debugging methodology**: PyTorch-side layer dump scripts
+(tests/parity/posformer_*.py) + C++ POSFORMER_DUMP env-gated intermediate
+dumps. Compare cosine similarity per-layer, per-step. First divergence
+at layer 0 self-attention output led to finding the missing LayerNorm.
+
+**Files**: `posformer_ocr.{h,cpp}`, `convert-posformer-to-gguf.py`,
+`test_posformer.cpp`, `test_posformer_batch.cpp`,
+`tests/parity/posformer_*.py`.
+
+**License concern**: SJTU weights are "academic research only". For
+commercial use in CrispCalc, need to retrain from scratch on CROHME data
+(~$2-3 on RunPod/Kaggle). The C++ inference code is clean-room original.
+
+---
+
 ## June 2026 — CLIP/SigLIP Vision + Text, YuNet, HMER/BTTR OCR
 
 ### YuNet lightweight face detection
