@@ -1162,3 +1162,19 @@ PosFormer's published 62.7% uses bi-directional beam search (L2R + R2L
 decode, cross-rate, pick best). The C++ implements L2R greedy only. Direct
 comparison must use the PyTorch decoder.forward() in a manual greedy loop,
 NOT the model.beam_search() which includes the bi-directional scoring.
+
+### Kaggle kernel patterns — MUST follow established conventions
+
+1. **Always clone CrispASR and import kaggle_harness** — never reimplement
+   token resolution, progress logging, or GPU detection. The harness has
+   been debugged across 15+ kernels.
+2. **kernel-metadata.json uses string "true"** not boolean true.
+3. **P100 (sm_60) + PyTorch**: Kaggle's pre-installed PyTorch (CUDA 12.x)
+   dropped sm_60 support. Fix: `pip install torch --index-url .../cu118`
+   which still supports P100 GPU. Do NOT fall back to CPU.
+4. **Dataset mount path**: Kaggle mounts `chr1str/crispasr-hf-token` at
+   `/kaggle/input/datasets/chr1str/crispasr-hf-token/`, NOT at
+   `/kaggle/input/crispasr-hf-token/`. The harness was patched to scan
+   both paths.
+5. **Kaggle Secrets API**: intermittently returns ConnectionError. The
+   dataset file fallback is the reliable path.

@@ -78,10 +78,12 @@ Input text / image / audio
 l2r mode: 56.0% raw / 61.4% parsed on CROHME 2014.
 
 **Training pipeline**: `tools/kaggle/posformer-train/posformer_train.py`
-- Kaggle kernel pushed: https://www.kaggle.com/code/chr1str/posformer-train-on-mathwriting
+- Kaggle kernel: https://www.kaggle.com/code/chr1str/posformer-train-on-mathwriting
+- W&B dashboard: https://wandb.ai/cze-github/posformer-hmer
 - CROHME data: https://huggingface.co/datasets/cstr/posformer-training-data
 - Supports CROHME (8.8K) and MathWriting (230K) datasets
-- Hourly checkpoint upload to HF, W&B monitoring, multi-session resume
+- GPU training on P100 (cu118) or T4, hourly HF checkpoints, W&B monitoring
+- Uses CrispASR kaggle_harness for auth + progress (clone at runtime)
 
 **License path**: All handwritten math datasets are NC. Current SJTU weights are
 academic-only (stricter). Retraining on CROHME/MathWriting produces NC weights

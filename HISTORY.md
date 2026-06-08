@@ -40,9 +40,17 @@ at layer 0 self-attention output led to finding the missing LayerNorm.
 `test_posformer.cpp`, `test_posformer_batch.cpp`,
 `tests/parity/posformer_*.py`.
 
+**Training pipeline**: Kaggle kernel at
+https://www.kaggle.com/code/chr1str/posformer-train-on-mathwriting
+trains PosFormer on CROHME (8.8K images) with GPU (P100 via cu118 or T4).
+W&B monitoring at https://wandb.ai/cze-github/posformer-hmer.
+Uses CrispASR kaggle_harness for auth (3-tier: env → Secret → dataset file).
+Hourly checkpoint upload to HF. Multi-session resume support.
+
 **License concern**: SJTU weights are "academic research only". For
 commercial use in CrispCalc, need to retrain from scratch on CROHME data
-(~$2-3 on RunPod/Kaggle). The C++ inference code is clean-room original.
+(CC BY-NC-SA → NC weights, fine for "buy me a coffee" app with download
+terms acceptance). The C++ inference code is clean-room original.
 
 ---
 
