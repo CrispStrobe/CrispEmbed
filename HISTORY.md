@@ -44,8 +44,11 @@ at layer 0 self-attention output led to finding the missing LayerNorm.
 https://www.kaggle.com/code/chr1str/posformer-train-on-mathwriting
 trains PosFormer on CROHME (8.8K images) with GPU (P100 via cu118 or T4).
 W&B monitoring at https://wandb.ai/cze-github/posformer-hmer.
-Uses CrispASR kaggle_harness for auth (3-tier: env → Secret → dataset file).
-Hourly checkpoint upload to HF. Multi-session resume support.
+Uses CrispASR kaggle_harness for auth (3-tier: env → Secret → dataset file),
+heartbeat keepalive, and progress logging. P100 GPU via torch+cu118.
+Greedy validation (beam_size=1) for fast epochs. Hourly HF checkpoint
+upload. Multi-session resume. v23+ confirmed working: GPU training +
+W&B + HF auth all active.
 
 **License concern**: SJTU weights are "academic research only". For
 commercial use in CrispCalc, need to retrain from scratch on CROHME data
