@@ -67,6 +67,7 @@ Input text / image / audio
 | XLM-R encoder | SentencePiece Unigram | Post-LN, GELU, pos_offset=2 | E5, PIXIE, arctic-l-v2, granite |
 | MPNet encoder | WordPiece | Post-LN, T5-style rel attn bias | all-mpnet-base-v2 |
 | NomicBERT encoder | WordPiece | Post-LN, SwiGLU, RoPE | nomic-embed-text-v1.5 |
+| NomicBERT MoE encoder | SentencePiece | Post-LN, MoE 8-expert top-2, GELU, RoPE | nomic-embed-text-v2-moe |
 | ModernBERT encoder | BPE | Pre-LN, GeGLU, RoPE, per-layer theta | gte-modernbert-base |
 | GTE v1.5 encoder | WordPiece | Post-LN, GeGLU, NTK RoPE | gte-base/large-en-v1.5 |
 | DeBERTa-v2 encoder | WordPiece | Post-LN, c2p/p2c disentangled attn | mxbai-rerank-xsmall/base-v1 |
@@ -157,7 +158,7 @@ CrispEmbed/
 - [x] SFace INT8 quantization (Q8_0 cos=0.9999, Q4_K cos=0.974; 37→10→6 MB)
 - [x] Face model quantized inference via graph replayer (YuNet F16/Q8_0 working; fixed depthwise IC, ggml_n_dims trailing-1s, Q→F32 dequant path)
 - [x] ViT parity: cos 0.8→1.0 (was patch ordering bug — permute(2,1,0) gave column-major spatial, fixed to permute(1,2,0,3) for row-major matching HF)
-- [ ] Nomic v2 MoE (MoE routing layer in encoder)
+- [x] Nomic v2 MoE (MoE routing layer in encoder) — cos=1.000000 vs HF
 - [x] LoRA adapter hot-swap (Jina v5 per-task adapters, pre-compute merge on CPU, ~10-50ms switch)
 
 ### Bindings
@@ -170,7 +171,7 @@ CrispEmbed/
 
 | Gap | Impact | Effort | Notes |
 |---|---|---|---|
-| Nomic v2 MoE | Low | High | MoE routing layer in encoder |
+| ~~Nomic v2 MoE~~ | ~~Low~~ | ~~High~~ | ~~MoE routing layer in encoder~~ DONE |
 | Qwen3-VL multimodal | Low | High | Reuse BidirLM-Omni scaffolding |
 
 ### Ideas (unscoped)

@@ -226,6 +226,12 @@ static const ModelEntry k_registry[] = {
      "BERT 768d 8K context Matryoshka (137M)", "523 MB", "apache-2.0",
      "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5"},
 
+    {"nomic-embed-text-v2-moe",
+     "nomic-v2-moe-q8_0.gguf",
+     "https://huggingface.co/cstr/nomic-embed-text-v2-moe-GGUF/resolve/main/nomic-v2-moe-q8_0.gguf",
+     "NomicBERT MoE 768d 8-expert top-2 (475M)", "1122 MB", "apache-2.0",
+     "https://huggingface.co/nomic-ai/nomic-embed-text-v2-moe"},
+
     {"all-MiniLM-L12-v2",
      "all-MiniLM-L12-v2.gguf",
      "https://huggingface.co/cstr/all-MiniLM-L12-v2-GGUF/resolve/main/all-MiniLM-L12-v2.gguf",
