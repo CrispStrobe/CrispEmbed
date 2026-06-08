@@ -851,9 +851,25 @@ def train(args, zip_path: Path, dict_path: Path,
         test_year = sorted(d for d in dirs if d != "train")[0]
     step("train.splits", dirs=sorted(dirs), test_year=test_year)
 
-    # Accelerator
+    # Accelerator — detect P100 (sm_60) incompatibility
+    def cuda_usable():
+        if not torch.cuda.is_available():
+            return False
+        try:
+            cap = torch.cuda.get_device_capability(0)
+            if cap[0] < 7:  # sm_60 (P100) not supported by modern PyTorch
+                step("cuda.incompatible", capability=f"sm_{cap[0]}{cap[1]}",
+                     note="falling back to CPU")
+                return False
+            # Quick smoke test
+            torch.zeros(1, device="cuda")
+            return True
+        except Exception as e:
+            step("cuda.failed", error=str(e)[:100])
+            return False
+
     if args.device == "auto":
-        if torch.cuda.is_available():
+        if cuda_usable():
             accelerator, devices = "gpu", 1
         elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
             accelerator, devices = "mps", 1
