@@ -476,6 +476,16 @@ static void run_encoder(posformer_ocr_context * ctx, const float * gray, int W, 
     ctx->n_enc_pos = n_pos;
     ctx->enc_h = cur_h;
     ctx->enc_w = cur_w;
+
+    // Debug: dump encoder output if POSFORMER_DUMP is set
+    const char * dump_dir_enc = getenv("POSFORMER_DUMP");
+    if (dump_dir_enc) {
+        char path[256];
+        snprintf(path, sizeof(path), "%s/cpp_enc_output.f32", dump_dir_enc);
+        FILE * f = fopen(path, "wb");
+        if (f) { fwrite(ctx->encoder_output.data(), sizeof(float), n_pos * D, f); fclose(f); }
+        fprintf(stderr, "posformer_ocr: dumped encoder output to %s\n", path);
+    }
     fprintf(stderr, "posformer_ocr: encoder: (%d, %d, %d) → %d positions × %d\n",
             cur_ch, cur_h, cur_w, n_pos, D);
 }
@@ -772,6 +782,30 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
         float best_score = logits[0];
         for (int v = 1; v < V; v++)
             if (logits[v] > best_score) { best_score = logits[v]; best = v; }
+
+        // Debug: dump per-step logits and top-5 if POSFORMER_DUMP is set
+        {
+            const char * dump_dir = getenv("POSFORMER_DUMP");
+            if (dump_dir) {
+                char path[256];
+                snprintf(path, sizeof(path), "%s/cpp_step%03d_logits.f32", dump_dir, step);
+                FILE * f = fopen(path, "wb");
+                if (f) { fwrite(logits.data(), sizeof(float), V, f); fclose(f); }
+
+                std::vector<std::pair<float,int>> scored(V);
+                for (int v = 0; v < V; v++) scored[v] = {logits[v], v};
+                std::sort(scored.begin(), scored.end(),
+                          [](auto &a, auto &b){ return a.first > b.first; });
+                fprintf(stderr, "  step %d: token=%d '%s' | top5:", step, best,
+                        best < (int)ctx->vocab.size() ? ctx->vocab[best].c_str() : "?");
+                for (int i = 0; i < 5 && i < V; i++)
+                    fprintf(stderr, " %s(%.2f)",
+                            scored[i].second < (int)ctx->vocab.size()
+                                ? ctx->vocab[scored[i].second].c_str() : "?",
+                            scored[i].first);
+                fprintf(stderr, "\n");
+            }
+        }
 
         if (best == hp.eos_token || best == hp.pad_token) break;
         tokens.push_back(best);
