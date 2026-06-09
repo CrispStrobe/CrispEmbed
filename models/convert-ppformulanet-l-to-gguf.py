@@ -36,7 +36,12 @@ def main():
     p.add_argument("--model-dir", required=True, help="Path to HF model directory")
     p.add_argument("--output", required=True, help="Output GGUF path")
     p.add_argument("--fp16", action="store_true", help="Store in FP16")
+    p.add_argument("--q8_0", action="store_true", help="Quantize large tensors to Q8_0, keep critical in F16")
     args = p.parse_args()
+
+    if args.q8_0 and args.fp16:
+        print("Error: --q8_0 and --fp16 are mutually exclusive")
+        sys.exit(1)
 
     model_dir = Path(args.model_dir)
 
@@ -132,17 +137,64 @@ def main():
     # Tokenizer
     writer.add_array("tokenizer.tokens", token_list)
 
-    dtype_np = np.float16 if args.fp16 else np.float32
-    dtype_gguf = gguf.GGMLQuantizationType.F16 if args.fp16 else gguf.GGMLQuantizationType.F32
+    if args.fp16:
+        default_np = np.float16
+        default_gguf = gguf.GGMLQuantizationType.F16
+    elif args.q8_0:
+        default_np = np.float16   # critical tensors in F16
+        default_gguf = gguf.GGMLQuantizationType.F16
+    else:
+        default_np = np.float32
+        default_gguf = gguf.GGMLQuantizationType.F32
+
+    # Tensors to keep in F16 even under Q8_0 (small or critical):
+    # - Embeddings, positional encodings, patch embed
+    # - LayerNorm weights/biases
+    # - Relative position bias tables (tiny, critical for attention geometry)
+    # - LM head (directly determines output tokens)
+    # - Neck + projector weights (bottleneck tensors)
+    _f16_prefixes = {
+        "enc.patch_embed.", "enc.pos_embed",
+        "enc.neck.", "enc.proj.",
+        "dec.embed_tokens.", "dec.embed_positions.",
+        "dec.embed_ln.", "dec.final_ln.", "dec.lm_head.",
+    }
+    _f16_suffixes = {
+        ".ln1.weight", ".ln1.bias", ".ln2.weight", ".ln2.bias",
+        ".rel_pos_h", ".rel_pos_w",
+        "self_attn_ln.weight", "self_attn_ln.bias",
+        "cross_attn_ln.weight", "cross_attn_ln.bias",
+        "ffn_ln.weight", "ffn_ln.bias",
+    }
+
+    def is_critical(name):
+        """Tensors that should stay in F16 under quantization."""
+        for pfx in _f16_prefixes:
+            if name.startswith(pfx):
+                return True
+        for sfx in _f16_suffixes:
+            if name.endswith(sfx):
+                return True
+        return False
 
     total_params = 0
     tensor_count = 0
+    q8_count = 0
 
     def add_tensor(name, data):
-        nonlocal total_params, tensor_count
-        d = data.astype(dtype_np)
-        total_params += d.size
-        writer.add_tensor(name, d, raw_dtype=dtype_gguf)
+        nonlocal total_params, tensor_count, q8_count
+
+        if args.q8_0 and not is_critical(name) and data.ndim == 2 and data.shape[-1] % 32 == 0:
+            # Quantize to Q8_0
+            d = data.astype(np.float32)
+            total_params += d.size
+            qdata = gguf.quantize(d, gguf.GGMLQuantizationType.Q8_0)
+            writer.add_tensor(name, qdata, raw_dtype=gguf.GGMLQuantizationType.Q8_0)
+            q8_count += 1
+        else:
+            d = data.astype(default_np)
+            total_params += d.size
+            writer.add_tensor(name, d, raw_dtype=default_gguf)
         tensor_count += 1
 
     # -------------------------------------------------------------------
@@ -298,7 +350,10 @@ def main():
     print(f"Size: {size_mb:.1f} MB")
     print(f"Tensors: {tensor_count}")
     print(f"Parameters: {total_params:,}")
-    print(f"Dtype: {'FP16' if args.fp16 else 'FP32'}")
+    dtype_str = 'Q8_0 (critical in F16)' if args.q8_0 else ('FP16' if args.fp16 else 'FP32')
+    print(f"Dtype: {dtype_str}")
+    if args.q8_0:
+        print(f"Q8_0 tensors: {q8_count}, F16 tensors: {tensor_count - q8_count}")
 
 
 if __name__ == "__main__":
