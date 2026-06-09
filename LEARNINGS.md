@@ -1141,6 +1141,46 @@ tanh approximation. ggml provides both: `ggml_gelu()` (tanh approx) and
 12 layers. Use `ggml_gelu_erf` for NomicBERT (both MoE expert and dense
 FFN layers). Standard BERT typically uses `gelu_new` (tanh approx).
 
+## General OCR: DBNet + TrOCR
+
+### ConvTranspose2d weight layout differs from Conv2d
+PyTorch Conv2d: `(OC, IC, KH, KW)` → flattened `(OC, IC*KH*KW)`.
+PyTorch ConvTranspose2d: `(IC, OC, KH, KW)` → flattened `(IC, OC*KH*KW)`.
+
+ggml `conv_transpose_2d_p0` expects kernel `[KW, KH, OC, IC]` — note IC
+and OC are swapped vs regular `conv_2d` kernel `[KW, KH, IC, OC]`.
+Needed a separate `prep_deconv_weight()` that reshapes to `(KW, KH, OC, IC)`.
+
+### ODR violations with common struct names
+`struct dec_layer` was defined in both `math_ocr.cpp` (30 pointer fields,
+240 bytes) and `decoder_embed_internal.h` (18 pointer fields, 144 bytes).
+In the test binary (linking only math_ocr), the correct 240-byte version
+was used. In the CLI binary (linking everything), the 144-byte version won,
+causing heap-buffer-overflow when math_ocr tried to write 30 fields into
+18-field-sized allocations.
+
+Fix: namespace-prefix struct names (`math_ocr_dec_layer`). ASAN caught this
+immediately — always test with the full binary, not just individual TU tests.
+
+### XLM-R / SentencePiece fairseq vocab offset
+TrOCR uses XLMRobertaTokenizer which adds a fairseq offset to SentencePiece
+token IDs. Raw `SentencePiece.id_to_piece(43778)` returns the wrong string.
+Must use HF `AutoTokenizer.convert_ids_to_tokens(43778)` to get correct
+mapping. Also: use `convert_ids_to_tokens()` (not `decode()`) to preserve
+the `▁` word boundary markers for proper space reconstruction.
+
+### DBNet FPNC (FPN-Cat) architecture
+MMOCR's FPNC is NOT standard FPN. Standard FPN: lateral (1×1) → top-down →
+smooth (3×3), all at 256ch. FPNC: lateral (1×1, 256ch) → top-down → smooth
+(3×3, **64ch**), then concatenate all 4 levels (4×64=256ch). No output conv.
+The smooth conv reduces channels, not the lateral.
+
+### ggml_interpolate replaces ggml_upscale_ext
+`ggml_upscale_ext` is deprecated. Use `ggml_interpolate(ctx, a, ne0, ne1,
+ne2, ne3, mode)` with `GGML_SCALE_MODE_BILINEAR` for FPN upsampling.
+Nearest-neighbor vs bilinear makes a visible difference in detection parity
+(cos_min drops from 1.0 to 0.0 with nearest on some rows).
+
 ## Quantizer skips 3D tensors
 
 `tools/quantize.cpp` line 172 skips tensors with ndims > 2 ("skipping N-D
