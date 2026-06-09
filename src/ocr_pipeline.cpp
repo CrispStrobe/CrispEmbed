@@ -10,10 +10,12 @@
 #include "ocr_detect.h"
 #include "math_ocr.h"
 
-// stb_image for cropping
-#define STB_IMAGE_STATIC
-#define STB_IMAGE_IMPLEMENTATION
-#include "../ggml/examples/stb_image.h"
+// stb_image declarations (implementation lives in image_preprocess.cpp)
+extern "C" {
+    typedef unsigned char stbi_uc;
+    stbi_uc *stbi_load(char const *filename, int *x, int *y, int *channels_in_file, int desired_channels);
+    void stbi_image_free(void *retval_from_stbi_load);
+}
 
 #include <algorithm>
 #include <cmath>
