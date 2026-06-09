@@ -716,8 +716,11 @@ def patch_lit_posformer():
             momentum=0.9,
             weight_decay=1e-4,
         )
-        scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
-            optimizer, T_0=30, T_mult=2, eta_min=1e-5)
+        # Plain cosine decay over remaining epochs — no restarts.
+        # Warm restarts (T_0=30) caused a 10x LR spike at epoch 94
+        # that crashed val_ExpRate from 57% to 38%.
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=300, eta_min=1e-5)
         return {"optimizer": optimizer,
                 "lr_scheduler": {"scheduler": scheduler, "interval": "epoch"}}
 
