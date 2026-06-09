@@ -717,21 +717,21 @@ def patch_lit_posformer():
             weight_decay=1e-4,
         )
         # Use the ORIGINAL published scheduler: ReduceLROnPlateau.
-        # Custom schedulers (CosineAnnealing, WarmRestarts) caused LR
-        # mismatches on checkpoint resume, crashing val_ExpRate.
-        # This matches the published config.yaml exactly.
+        # Matches published config.yaml exactly, including frequency
+        # aligned to check_val_every_n_epoch so the metric is available.
+        check_val = self.trainer.check_val_every_n_epoch
         reduce_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
             mode="max",
             factor=0.25,
-            patience=self.hparams.patience,
+            patience=self.hparams.patience // check_val,
         )
         return {"optimizer": optimizer,
                 "lr_scheduler": {
                     "scheduler": reduce_scheduler,
                     "monitor": "val_ExpRate",
                     "interval": "epoch",
-                    "frequency": 1,
+                    "frequency": check_val,
                     "strict": True,
                 }}
 
