@@ -227,42 +227,19 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
-    // Resolve model path (handles auto-download)
-    // Auto-download if arg looks like a model name (not a file path)
-    bool is_name = (model_arg.find(".gguf") == std::string::npos &&
-                    model_arg.find('/') == std::string::npos &&
-                    model_arg.find('\\') == std::string::npos);
-    std::string model_path = crispembed_mgr::resolve_model(
-        model_arg, auto_download || is_name, accepted_license);
-    if (model_path.empty()) {
-        return 1;
-    }
-
-    // Load from file if specified
-    if (!file_path.empty()) {
-        std::ifstream f(file_path);
-        if (!f) {
-            fprintf(stderr, "error: cannot open '%s'\n", file_path.c_str());
-            return 1;
-        }
-        std::string line;
-        while (std::getline(f, line)) {
-            if (!line.empty()) texts.push_back(line);
-        }
-    }
-
+    // OCR pipeline early exit — before model resolution which may interfere
     // OCR pipeline mode: detect text → crop → recognize
     if (!ocr_path.empty()) {
         if (det_model.empty()) {
             fprintf(stderr, "error: --ocr requires --det <dbnet_model.gguf>\n");
             return 1;
         }
-        if (model_path.empty()) {
+        if (model_arg.empty()) {
             fprintf(stderr, "error: --ocr requires -m <trocr_model.gguf>\n");
             return 1;
         }
 
-        void* ocr_ctx = crispembed_ocr_init(det_model.c_str(), model_path.c_str(), n_threads);
+        void* ocr_ctx = crispembed_ocr_init(det_model.c_str(), model_arg.c_str(), n_threads);
         if (!ocr_ctx) {
             fprintf(stderr, "error: cannot load OCR models\n");
             return 1;
@@ -294,6 +271,29 @@ int main(int argc, char ** argv) {
 
         crispembed_ocr_free(ocr_ctx);
         return 0;
+    }
+
+    // Resolve model path (handles auto-download) — after OCR early exit
+    bool is_name = (model_arg.find(".gguf") == std::string::npos &&
+                    model_arg.find('/') == std::string::npos &&
+                    model_arg.find('\\') == std::string::npos);
+    std::string model_path = crispembed_mgr::resolve_model(
+        model_arg, auto_download || is_name, accepted_license);
+    if (model_path.empty()) {
+        return 1;
+    }
+
+    // Load from file if specified
+    if (!file_path.empty()) {
+        std::ifstream f(file_path);
+        if (!f) {
+            fprintf(stderr, "error: cannot open '%s'\n", file_path.c_str());
+            return 1;
+        }
+        std::string line;
+        while (std::getline(f, line)) {
+            if (!line.empty()) texts.push_back(line);
+        }
     }
 
     // Face pipeline mode: detect → align → encode → compare

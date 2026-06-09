@@ -10,10 +10,12 @@
 #include "ggml-cpu.h"
 #include "core/gguf_loader.h"
 
-// stb_image for file loading (static per-TU)
-#define STB_IMAGE_STATIC
-#define STB_IMAGE_IMPLEMENTATION
-#include "../ggml/examples/stb_image.h"
+// stb_image declarations (implementation lives in image_preprocess.cpp)
+extern "C" {
+    typedef unsigned char stbi_uc;
+    stbi_uc *stbi_load(char const *filename, int *x, int *y, int *channels_in_file, int desired_channels);
+    void stbi_image_free(void *retval_from_stbi_load);
+}
 
 #include <algorithm>
 #include <chrono>
@@ -54,13 +56,13 @@ static std::vector<float> to_f32(const ggml_tensor* t) {
 // Structs
 // ---------------------------------------------------------------------------
 
-struct enc_layer {
+struct math_ocr_enc_layer {
     ggml_tensor *ln1_w, *ln1_b, *q_w, *q_b, *k_w, *k_b, *v_w, *v_b;
     ggml_tensor *attn_out_w, *attn_out_b, *ln2_w, *ln2_b;
     ggml_tensor *ff_up_w, *ff_up_b, *ff_down_w, *ff_down_b;
 };
 
-struct dec_layer {
+struct math_ocr_dec_layer {
     ggml_tensor *self_ln_w, *self_ln_b;
     ggml_tensor *self_q_w, *self_q_b, *self_k_w, *self_k_b, *self_v_w, *self_v_b;
     ggml_tensor *self_out_w, *self_out_b;
@@ -76,12 +78,12 @@ struct math_ocr_context {
     // Encoder
     ggml_tensor *cls_token, *dist_token, *patch_proj_w, *patch_proj_b, *pos_embed;
     ggml_tensor *enc_ln_w, *enc_ln_b;
-    std::vector<enc_layer> enc_layers;
+    std::vector<math_ocr_enc_layer> enc_layers;
 
     // Decoder
     ggml_tensor *tok_embed, *pos_embed_dec, *dec_embed_ln_w, *dec_embed_ln_b;
     ggml_tensor *dec_final_ln_w, *dec_final_ln_b, *lm_head_w, *lm_head_b;
-    std::vector<dec_layer> dec_layers;
+    std::vector<math_ocr_dec_layer> dec_layers;
 
     // Infrastructure
     std::vector<std::string> vocab;
