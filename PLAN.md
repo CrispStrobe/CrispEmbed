@@ -87,6 +87,90 @@ Input text / image / audio
 | HMER | — | DenseNet-121 + GRU attention | hmer (handwritten math) |
 | BTTR | — | DenseNet + Transformer decoder | bttr (handwritten math) |
 
+## OCR Model Catalog — available models and integration status
+
+### Implemented
+
+| Model | Params | Encoder | Decoder | License | Status |
+|---|---|---|---|---|---|
+| pix2tex-mfr | ~28M | DeiT ViT | TrOCR (6L, 256d) | MIT | math_ocr.cpp, shipped |
+| HMER | ~7M | DenseNet-121 | GRU + coverage attn | MIT | hmer_ocr.cpp, shipped |
+| BTTR | ~6M | DenseNet | Transformer (3L, 256d) | MIT | bttr_ocr.cpp, shipped |
+| PosFormer | ~6M | DenseNet | Transformer+ARM (3L) | CC BY-NC-SA 3.0 | posformer_ocr.cpp, shipped |
+| Texo-distill | 20M | HGNetv2 CNN | MBart PRE-LN (2L, 384d) | **AGPL-3.0** | ppformulanet_ocr.cpp, shipped |
+
+### Available for integration (priority order)
+
+#### Tier 1: PP-FormulaNet-L (safetensors, Apache-2.0, 200M)
+- HF: `PaddlePaddle/PP-FormulaNet-L_safetensors`
+- Encoder: SAM-style ViT (768d, 12L, windowed attn + global attn at [2,5,8,11], rel pos)
+  + post-conv CNN (256→512→1024)
+- Decoder: MBart (8L, 16H, d_model=512, FFN=2048)
+- Image: 768x768, vocab: 50000
+- **New ggml work**: windowed attention with relative position bias (SAM ViT),
+  post-conv CNN neck. Decoder is larger MBart (same architecture as Texo-distill).
+- Native HF `pp_formulanet` model type support in transformers.
+- **Recommended next** — Apache-2.0, safetensors ready, best official accuracy.
+
+#### Tier 2: PP-FormulaNet_plus-L (safetensors, Apache-2.0, 200M)
+- HF: `PaddlePaddle/PP-FormulaNet_plus-L_safetensors`
+- Same encoder architecture as PP-FormulaNet-L
+- Decoder: MBart (8L, 16H, d=512), max_pos=2560 (longer sequences)
+- Plus variant adds parallel decoding (speculative decode)
+- **Same ggml work as Tier 1** — encoder code shared.
+
+#### Tier 3: UniMERNet family (PyTorch .pth, Apache-2.0)
+- HF: `wanderkid/unimernet_tiny` (107M), `unimernet_small` (76M?), `unimernet_base` (145M?)
+- Encoder: **Swin Transformer** (windowed self-attn, shifted windows, rel pos bias)
+  depths=[6,6,6,6] (Swin-based, NOT SAM-style)
+- Decoder: MBart (8L, d=512/768/1024)
+- Image: 192x672 (rectangular!)
+- Vocab: 50000 (UniMERNet tokenizer)
+- **New ggml work**: Swin Transformer (different from SAM ViT — shifted windows,
+  cyclic shifts, window merging). Substantial effort.
+- Best published BLEU scores. Code is Apache-2.0.
+
+#### Tier 4: PP-FormulaNet S/M (Paddle inference only, Apache-2.0)
+- HF: `PaddlePaddle/PP-FormulaNet-S`, `PP-FormulaNet_plus-S`, `PP-FormulaNet_plus-M`
+- Only `.pdiparams` (Paddle PIR inference format), **no safetensors**
+- S: HGNetv2 encoder (same as Texo-distill), 57M total
+- M: intermediate size
+- Would need Paddle PIR→GGUF converter or wait for safetensors release.
+- S encoder already implemented (ppformulanet_ocr.cpp) — only need trained decoder.
+
+#### Tier 5: PP-FormulaNet-L ONNX (Apache-2.0)
+- HF: `ningpp/PP-FormulaNet-L-ONNX`, `ningpp/PP-FormulaNet_plus-L-ONNX`,
+  `PaddlePaddle/PP-FormulaNet_plus-L_onnx`
+- Could extract weights from ONNX → GGUF (like pix2tex converter did).
+
+#### Tier 6: TexTeller 3.0 (Apache-2.0, 300M)
+- HF: `OleehyO/TexTeller`
+- Encoder: ViT (Swin-variant), Decoder: RoBERTa
+- 300M params, trained on 80M image-formula pairs
+- Too large for mobile (300M), desktop-only.
+
+#### Not recommended
+- **MixTeX** — AGPL-3.0, unknown architecture, no safetensors
+- **Texo-transfer** (687 vocab) — AGPL-3.0, smaller vocab than distill
+
+### Architecture reuse matrix
+
+| Encoder type | Models using it | ggml status |
+|---|---|---|
+| HGNetv2 CNN | Texo-distill, PPFormulaNet-S/M | **Done** (ppformulanet_ocr.cpp) |
+| SAM-style ViT (windowed+global+relpos) | PPFormulaNet-L, PPFormulaNet_plus-L | **Not started** |
+| Swin Transformer | UniMERNet (all sizes) | **Not started** |
+| DeiT ViT | pix2tex-mfr | **Done** (math_ocr.cpp) |
+| DenseNet | HMER, BTTR, PosFormer | **Done** (bttr_ocr.cpp) |
+| Standard ViT | TexTeller 3.0 | Partial (vit_embed.cpp) |
+
+| Decoder type | Models using it | ggml status |
+|---|---|---|
+| MBart PRE-LN (2-8 layers) | Texo-distill, PPFormulaNet-L, UniMERNet | **Done** (ppformulanet_ocr.cpp) |
+| TrOCR POST-LN | pix2tex-mfr | **Done** (math_ocr.cpp) |
+| Transformer POST-LN | BTTR, PosFormer | **Done** (bttr_ocr.cpp) |
+| GRU + coverage | HMER | **Done** (hmer_ocr.cpp) |
+
 ## Shared code with CrispASR
 
 | Component | Source | Reuse method |
