@@ -1069,6 +1069,17 @@ def train(args, zip_path: Path, dict_path: Path,
         gradient_clip_val=1.0,
     )
 
+    # Force LR to 0.005 on resume via callback — the checkpoint's LR
+    # (0.0165) is too high, causing val_ExpRate to oscillate 55-60%.
+    if resume_ckpt:
+        class LROverrideCallback(pl.Callback):
+            def on_train_start(self, trainer, pl_module):
+                for pg in trainer.optimizers[0].param_groups:
+                    old_lr = pg['lr']
+                    pg['lr'] = 0.005
+                    step("lr.override", old_lr=old_lr, new_lr=0.005)
+        callbacks.append(LROverrideCallback())
+
     step("train.start", epochs=args.epochs)
     with kh.build_heartbeat("train", interval_s=30.0):
         trainer.fit(model, dm, ckpt_path=str(resume_ckpt) if resume_ckpt else None)
