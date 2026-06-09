@@ -993,7 +993,7 @@ def train(args, zip_path: Path, dict_path: Path,
         try:
             from pytorch_lightning.loggers import WandbLogger
             # Fixed run_id per dataset for cross-session continuity
-            run_id = f"posformer-{args.dataset}"
+            run_id = f"posformer-{args.dataset}-v2"
             logger = WandbLogger(
                 project=WANDB_PROJECT,
                 name=f"posformer-{args.dataset}",
@@ -1022,7 +1022,7 @@ def train(args, zip_path: Path, dict_path: Path,
         logger=logger or True,
         default_root_dir=str(WORK),
         log_every_n_steps=50,
-        val_check_interval=0.5,
+        check_val_every_n_epoch=2,  # matches published config.yaml
         gradient_clip_val=1.0,
     )
 
@@ -1120,7 +1120,7 @@ def main():
 
     # Default epochs per dataset
     if args.epochs is None:
-        args.epochs = {"crohme": 200, "mathwriting": 20, "finetune": 50
+        args.epochs = {"crohme": 300, "mathwriting": 20, "finetune": 50
                        }.get(args.dataset, 200)
 
     # Init
