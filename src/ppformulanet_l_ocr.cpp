@@ -13,6 +13,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <map>
@@ -247,6 +248,7 @@ struct ppformulanet_l_ocr_context {
     std::vector<std::string> vocab;
     core_gguf::WeightLoad wl;
     ggml_backend_t backend = nullptr;
+    ggml_backend_sched_t sched = nullptr;
     int n_threads;
     std::string result_buf;
 
@@ -258,6 +260,10 @@ struct ppformulanet_l_ocr_context {
     // Cross-attention K/V cache
     std::vector<std::vector<float>> cross_k_cache;
     std::vector<std::vector<float>> cross_v_cache;
+
+    // Precomputed rel_pos lookup tables (built once at init).
+    std::vector<std::vector<float>> rp_h_per_layer;
+    std::vector<std::vector<float>> rp_w_per_layer;
 };
 
 // ---------------------------------------------------------------------------
@@ -354,8 +360,66 @@ static void map_tensors(ppformulanet_l_ocr_context* ctx) {
 }
 
 // ---------------------------------------------------------------------------
-// SAM-ViT Encoder
+// Graph helpers (shared with ggml graph encoder)
 // ---------------------------------------------------------------------------
+
+static ggml_tensor* ensure_f32(ggml_context* g, ggml_tensor* t) {
+    if (!t || t->type == GGML_TYPE_F32) return t;
+    return ggml_cast(g, t, GGML_TYPE_F32);
+}
+
+static ggml_tensor* g_ln(ggml_context* g, ggml_tensor* x,
+                          ggml_tensor* w, ggml_tensor* b, float eps = 1e-6f) {
+    if (!w) return x;
+    x = ggml_norm(g, x, eps);
+    x = ggml_mul(g, x, ensure_f32(g, w));
+    if (b) x = ggml_add(g, x, ensure_f32(g, b));
+    return x;
+}
+
+static ggml_tensor* g_linear(ggml_context* g, ggml_tensor* x,
+                              ggml_tensor* w, ggml_tensor* b) {
+    if (!w) return x;
+    x = ggml_mul_mat(g, w, x);
+    if (b) x = ggml_add(g, x, ensure_f32(g, b));
+    return x;
+}
+
+// Multi-head self-attention for SAM-ViT.
+// Q, K, V: [H, N] where N = num_tokens, H = hidden_size
+// rel_pos_bias: [N, N, n_heads] precomputed bias (or nullptr for no bias)
+// Returns: [H, N]
+static ggml_tensor* g_mha_sam(ggml_context* g, ggml_tensor* Q, ggml_tensor* K,
+                               ggml_tensor* V, ggml_tensor* rel_bias,
+                               int n_heads, int N) {
+    int H = (int)Q->ne[0];
+    int hd = H / n_heads;
+    float scale = 1.0f / sqrtf((float)hd);
+
+    // Reshape [H, N] → [hd, nh, N] → permute → [hd, N, nh]
+    Q = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, Q, hd, n_heads, N), 0, 2, 1, 3));
+    K = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, K, hd, n_heads, N), 0, 2, 1, 3));
+    V = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, V, hd, n_heads, N), 0, 2, 1, 3));
+
+    // scores = Q^T @ K / sqrt(hd) → [N, N, nh]
+    ggml_tensor* scores = ggml_mul_mat(g, K, Q);
+    scores = ggml_scale(g, scores, scale);
+
+    // Add relative position bias if provided [N, N, nh]
+    if (rel_bias) {
+        scores = ggml_add(g, scores, rel_bias);
+    }
+
+    scores = ggml_soft_max(g, scores);
+
+    // attn output = scores @ V
+    ggml_tensor* Vt = ggml_cont(g, ggml_transpose(g, V));  // [N, hd, nh]
+    ggml_tensor* attn = ggml_mul_mat(g, Vt, scores);        // [hd, N, nh]
+
+    // → [hd, nh, N] → [H, N]
+    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+    return ggml_reshape_2d(g, attn, H, N);
+}
 
 // Get relative positional embedding via interpolation (matches HF exactly).
 // rel_pos: shape (L, head_dim), L = 2*input_size - 1
@@ -363,42 +427,410 @@ static void map_tensors(ppformulanet_l_ocr_context* ctx) {
 static std::vector<float> get_rel_pos(int q_size, int k_size,
                                        const float* rel_pos, int L, int head_dim) {
     int max_rel_dist = 2 * std::max(q_size, k_size) - 1;
-
-    // Interpolate from L → max_rel_dist via linear interpolation.
-    // HF does F.interpolate on (1, head_dim, L) → (1, head_dim, max_rel_dist).
-    // We do the same: for each head_dim channel, interpolate L → max_rel_dist.
     std::vector<float> resized(head_dim * max_rel_dist);
     for (int c = 0; c < head_dim; c++) {
         for (int i = 0; i < max_rel_dist; i++) {
-            // Map output index to input coordinate
             float src = (float)i * (L - 1) / std::max(max_rel_dist - 1, 1);
             int lo = (int)src;
             int hi = std::min(lo + 1, L - 1);
             float frac = src - lo;
-            // rel_pos layout: (L, head_dim), row-major
             resized[i * head_dim + c] =
                 rel_pos[lo * head_dim + c] * (1.0f - frac) +
                 rel_pos[hi * head_dim + c] * frac;
         }
     }
-
-    // Build index: relative_coords[q, k] = (q*scale - k*scale) + offset
     float q_scale = std::max((float)k_size / q_size, 1.0f);
     float k_scale = std::max((float)q_size / k_size, 1.0f);
     float offset = (float)(k_size - 1) * q_scale;
-
     std::vector<float> result(q_size * k_size * head_dim);
     for (int qi = 0; qi < q_size; qi++) {
         for (int ki = 0; ki < k_size; ki++) {
             int idx = (int)(qi * q_scale - ki * k_scale + offset);
             idx = std::max(0, std::min(idx, max_rel_dist - 1));
-            for (int c = 0; c < head_dim; c++) {
+            for (int c = 0; c < head_dim; c++)
                 result[(qi * k_size + ki) * head_dim + c] = resized[idx * head_dim + c];
-            }
         }
     }
     return result;
 }
+
+// ---------------------------------------------------------------------------
+// SAM-ViT Encoder — hybrid ggml graph + CPU
+// ---------------------------------------------------------------------------
+// Per-layer execution: ggml graph for the expensive linear projections (QKV, MLP),
+// CPU for attention with decomposed relative position bias.
+// This gives SIMD acceleration for ~60% of flops while maintaining full accuracy.
+
+// Build a mini-graph for one layer's linear projections.
+// Phase 1: LN → QKV projection → extract Q,K,V
+// Phase 2: (after CPU attention) output proj → residual → LN → MLP → residual
+// We split into two graphs per layer to avoid graph overhead for the attention.
+
+// Graph for LN + QKV + output_proj + residual + LN + MLP + residual
+// with attention scores + rel_pos computed on CPU and fed back via attn_out input.
+static ggml_cgraph* build_layer_graph(ggml_context* g, ppformulanet_l_ocr_context* ctx,
+                                       int li, int C, int N) {
+    auto& layer = ctx->enc_layers[li];
+
+    ggml_cgraph* gf = ggml_new_graph_custom(g, 64, false);
+
+    // Inputs: hidden state [C, N] and attention output [C, N]
+    ggml_tensor* inp = ggml_new_tensor_2d(g, GGML_TYPE_F32, C, N);
+    ggml_set_name(inp, "layer_input");
+    ggml_set_input(inp);
+
+    ggml_tensor* attn_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, C, N);
+    ggml_set_name(attn_in, "attn_output");
+    ggml_set_input(attn_in);
+
+    // Output projection on attention result
+    ggml_tensor* attn_proj = g_linear(g, attn_in, layer.proj_w, layer.proj_b);
+
+    // Residual: inp + attn_proj (inp is the pre-LN hidden state, i.e. the residual)
+    ggml_tensor* cur = ggml_add(g, inp, attn_proj);
+
+    // Pre-LN + MLP
+    ggml_tensor* residual = cur;
+    cur = g_ln(g, cur, layer.ln2_w, layer.ln2_b, 1e-6f);
+    ggml_tensor* up = g_linear(g, cur, layer.mlp_lin1_w, layer.mlp_lin1_b);
+    up = ggml_gelu(g, up);
+    cur = g_linear(g, up, layer.mlp_lin2_w, layer.mlp_lin2_b);
+    cur = ggml_add(g, residual, cur);
+
+    ggml_set_name(cur, "layer_output");
+    ggml_set_output(cur);
+    ggml_build_forward_expand(gf, cur);
+    return gf;
+}
+
+// Graph for LN + fused QKV projection
+static ggml_cgraph* build_qkv_graph(ggml_context* g, ppformulanet_l_ocr_context* ctx,
+                                      int li, int C, int N) {
+    auto& layer = ctx->enc_layers[li];
+
+    ggml_cgraph* gf = ggml_new_graph_custom(g, 16, false);
+
+    ggml_tensor* inp = ggml_new_tensor_2d(g, GGML_TYPE_F32, C, N);
+    ggml_set_name(inp, "qkv_input");
+    ggml_set_input(inp);
+
+    // Pre-LN
+    ggml_tensor* cur = g_ln(g, inp, layer.ln1_w, layer.ln1_b, 1e-6f);
+
+    // Fused QKV: [C, N] → [3*C, N]
+    cur = g_linear(g, cur, layer.qkv_w, layer.qkv_b);
+
+    ggml_set_name(cur, "qkv_output");
+    ggml_set_output(cur);
+    ggml_build_forward_expand(gf, cur);
+    return gf;
+}
+
+static void run_encoder_graph(ppformulanet_l_ocr_context* ctx,
+                               const float* rgb_chw, int imgH, int imgW) {
+    const auto& hp = ctx->hparams;
+    int C = hp.enc_hidden;       // 768
+    int PS = hp.patch_size;      // 16
+    int nP = hp.n_patches;       // 48
+    int N = nP * nP;             // 2304
+    int n_heads = hp.enc_heads;  // 12
+    int hd = C / n_heads;        // 64
+    int ws = hp.window_size;     // 14
+
+    // ---------------------------------------------------------------
+    // Step 1: Patch embedding on CPU
+    // ---------------------------------------------------------------
+    auto pe_w = to_f32(ctx->patch_embed_w);
+    auto pe_b = to_f32(ctx->patch_embed_b);
+    auto pos = to_f32(ctx->pos_embed);
+
+    // hidden: [N, C] row-major (= [C, N] in ggml column-major)
+    std::vector<float> hidden(N * C);
+
+    int patch_dim = 3 * PS * PS;
+    for (int py = 0; py < nP; py++) {
+        for (int px = 0; px < nP; px++) {
+            int tok = py * nP + px;
+            std::vector<float> patch(patch_dim);
+            for (int c = 0; c < 3; c++)
+                for (int ky = 0; ky < PS; ky++)
+                    for (int kx = 0; kx < PS; kx++)
+                        patch[c * PS * PS + ky * PS + kx] =
+                            rgb_chw[c * imgH * imgW + (py * PS + ky) * imgW + (px * PS + kx)];
+            for (int o = 0; o < C; o++) {
+                float s = pe_b[o];
+                for (int i = 0; i < patch_dim; i++)
+                    s += pe_w[o * patch_dim + i] * patch[i];
+                hidden[tok * C + o] = s + pos[tok * C + o];
+            }
+        }
+    }
+
+    fprintf(stderr, "ppfnl: patch_embed done (graph), shape=(%d, %d)\n", nP, C);
+
+    // ---------------------------------------------------------------
+    // Step 2: Per-layer hybrid execution
+    // ---------------------------------------------------------------
+    auto t_start = std::chrono::steady_clock::now();
+
+    for (int li = 0; li < hp.enc_layers; li++) {
+        auto& layer = ctx->enc_layers[li];
+        bool is_global = layer.is_global;
+        int aH, aW;  // attention spatial dims
+        if (is_global) { aH = nP; aW = nP; }
+        else { aH = ws; aW = ws; }
+
+        // --- Phase 1: QKV projection via ggml graph ---
+        size_t meta1 = 4 * 1024 * 1024;
+        std::vector<uint8_t> buf1(meta1);
+        ggml_init_params ip1 = { meta1, buf1.data(), true };
+        ggml_context* g1 = ggml_init(ip1);
+        ggml_cgraph* gf1 = build_qkv_graph(g1, ctx, li, C, N);
+
+        ggml_backend_sched_reset(ctx->sched);
+        ggml_backend_sched_alloc_graph(ctx->sched, gf1);
+        ggml_tensor* inp1 = ggml_graph_get_tensor(gf1, "qkv_input");
+        ggml_backend_tensor_set(inp1, hidden.data(), 0, N * C * sizeof(float));
+        ggml_backend_sched_graph_compute(ctx->sched, gf1);
+
+        // Extract QKV: [3*C, N]
+        ggml_tensor* qkv_t = ggml_graph_get_tensor(gf1, "qkv_output");
+        std::vector<float> qkv(N * 3 * C);
+        ggml_backend_tensor_get(qkv_t, qkv.data(), 0, N * 3 * C * sizeof(float));
+        ggml_free(g1);
+
+        // --- Phase 2: Attention with rel_pos on CPU ---
+        // QKV layout: [3*C, N] in ggml = for each token, 3*C values (Q|K|V interleaved)
+        // Extract Q[tok*3C .. tok*3C+C], K[tok*3C+C .. tok*3C+2C], V[tok*3C+2C .. tok*3C+3C]
+
+        // Use precomputed rel_pos tables
+        const auto& rp_h = ctx->rp_h_per_layer[li];
+        const auto& rp_w = ctx->rp_w_per_layer[li];
+
+        // Attention output: [N, C]
+        std::vector<float> attn_out(N * C, 0.0f);
+
+        // For windowed layers: partition, attend per window, unpartition
+        // For global layers: attend over all N tokens
+        auto attend_block = [&](const float* q_data, const float* k_data, const float* v_data,
+                                float* out_data, int bN, int bH, int bW) {
+            // bN = bH * bW tokens in this block
+            float scale = 1.0f / sqrtf((float)hd);
+
+            for (int head = 0; head < n_heads; head++) {
+                // Compute scores + rel_pos bias
+                std::vector<float> scores(bN * bN);
+                for (int qi = 0; qi < bN; qi++) {
+                    const float* qp = q_data + qi * 3 * C + head * hd;
+                    for (int ki = 0; ki < bN; ki++) {
+                        const float* kp = k_data + ki * 3 * C + C + head * hd;
+                        float s = 0;
+                        for (int d = 0; d < hd; d++) s += qp[d] * kp[d];
+                        scores[qi * bN + ki] = s * scale;
+                    }
+                }
+
+                // Add decomposed rel_pos bias
+                for (int qy = 0; qy < bH; qy++) {
+                    for (int qx = 0; qx < bW; qx++) {
+                        int qi = qy * bW + qx;
+                        const float* qp = q_data + qi * 3 * C + head * hd;
+                        // Compute q @ rp_h[qy, :, :] → bias_h[ky] for each ky
+                        std::vector<float> bh(bH, 0.0f);
+                        for (int ky = 0; ky < bH; ky++)
+                            for (int d = 0; d < hd; d++)
+                                bh[ky] += qp[d] * rp_h[(qy * bH + ky) * hd + d];
+                        // Compute q @ rp_w[qx, :, :] → bias_w[kx] for each kx
+                        std::vector<float> bw(bW, 0.0f);
+                        for (int kx = 0; kx < bW; kx++)
+                            for (int d = 0; d < hd; d++)
+                                bw[kx] += qp[d] * rp_w[(qx * bW + kx) * hd + d];
+                        // Add combined bias
+                        for (int ky = 0; ky < bH; ky++)
+                            for (int kx = 0; kx < bW; kx++)
+                                scores[qi * bN + ky * bW + kx] += bh[ky] + bw[kx];
+                    }
+                }
+
+                // Softmax
+                for (int qi = 0; qi < bN; qi++) {
+                    float* row = scores.data() + qi * bN;
+                    float maxv = *std::max_element(row, row + bN);
+                    float sum = 0;
+                    for (int ki = 0; ki < bN; ki++) { row[ki] = expf(row[ki] - maxv); sum += row[ki]; }
+                    for (int ki = 0; ki < bN; ki++) row[ki] /= sum;
+                }
+
+                // Weighted sum of V
+                for (int qi = 0; qi < bN; qi++) {
+                    for (int ki = 0; ki < bN; ki++) {
+                        float a = scores[qi * bN + ki];
+                        const float* vp = v_data + ki * 3 * C + 2 * C + head * hd;
+                        for (int d = 0; d < hd; d++)
+                            out_data[qi * C + head * hd + d] += a * vp[d];
+                    }
+                }
+            }
+        };
+
+        if (is_global) {
+            attend_block(qkv.data(), qkv.data(), qkv.data(),
+                         attn_out.data(), N, nP, nP);
+        } else {
+            // Window partition
+            int pad_h = (ws - nP % ws) % ws;
+            int pad_w = (ws - nP % ws) % ws;
+            int pH = nP + pad_h, pW = nP + pad_w;
+            int nWh = pH / ws, nWw = pW / ws;
+            int nWindows = nWh * nWw;
+            int wN = ws * ws;
+
+            // Pad QKV to (pH * pW, 3*C)
+            std::vector<float> padded_qkv(pH * pW * 3 * C, 0.0f);
+            for (int y = 0; y < nP; y++)
+                memcpy(padded_qkv.data() + y * pW * 3 * C,
+                       qkv.data() + y * nP * 3 * C,
+                       nP * 3 * C * sizeof(float));
+
+            // Partition into windows and attend
+            std::vector<float> padded_attn(pH * pW * C, 0.0f);
+            for (int wh = 0; wh < nWh; wh++) {
+                for (int ww = 0; ww < nWw; ww++) {
+                    // Extract window QKV: (wN, 3*C)
+                    std::vector<float> win_qkv(wN * 3 * C, 0.0f);
+                    for (int y = 0; y < ws; y++)
+                        for (int x = 0; x < ws; x++) {
+                            int sy = wh * ws + y, sx = ww * ws + x;
+                            memcpy(win_qkv.data() + (y * ws + x) * 3 * C,
+                                   padded_qkv.data() + (sy * pW + sx) * 3 * C,
+                                   3 * C * sizeof(float));
+                        }
+
+                    // Attend
+                    std::vector<float> win_out(wN * C, 0.0f);
+                    attend_block(win_qkv.data(), win_qkv.data(), win_qkv.data(),
+                                 win_out.data(), wN, ws, ws);
+
+                    // Write back
+                    for (int y = 0; y < ws; y++)
+                        for (int x = 0; x < ws; x++) {
+                            int sy = wh * ws + y, sx = ww * ws + x;
+                            memcpy(padded_attn.data() + (sy * pW + sx) * C,
+                                   win_out.data() + (y * ws + x) * C,
+                                   C * sizeof(float));
+                        }
+                }
+            }
+
+            // Crop to original size
+            for (int y = 0; y < nP; y++)
+                memcpy(attn_out.data() + y * nP * C,
+                       padded_attn.data() + y * pW * C,
+                       nP * C * sizeof(float));
+        }
+
+        // --- Phase 3: Output proj + residual + MLP via ggml graph ---
+        size_t meta2 = 4 * 1024 * 1024;
+        std::vector<uint8_t> buf2(meta2);
+        ggml_init_params ip2 = { meta2, buf2.data(), true };
+        ggml_context* g2 = ggml_init(ip2);
+        ggml_cgraph* gf2 = build_layer_graph(g2, ctx, li, C, N);
+
+        ggml_backend_sched_reset(ctx->sched);
+        ggml_backend_sched_alloc_graph(ctx->sched, gf2);
+
+        ggml_tensor* li_inp = ggml_graph_get_tensor(gf2, "layer_input");
+        ggml_tensor* ai_inp = ggml_graph_get_tensor(gf2, "attn_output");
+        ggml_backend_tensor_set(li_inp, hidden.data(), 0, N * C * sizeof(float));
+        ggml_backend_tensor_set(ai_inp, attn_out.data(), 0, N * C * sizeof(float));
+        ggml_backend_sched_graph_compute(ctx->sched, gf2);
+
+        ggml_tensor* lo = ggml_graph_get_tensor(gf2, "layer_output");
+        ggml_backend_tensor_get(lo, hidden.data(), 0, N * C * sizeof(float));
+        ggml_free(g2);
+
+        if (li < 3 || li == hp.enc_layers - 1) {
+            fprintf(stderr, "ppfnl: enc_layer_%d done (%s)\n",
+                    li, is_global ? "global" : "windowed");
+        }
+    }
+
+    auto t_end = std::chrono::steady_clock::now();
+    float ms = std::chrono::duration<float, std::milli>(t_end - t_start).count();
+    fprintf(stderr, "ppfnl: ViT hybrid compute: %.0f ms (%d layers)\n", ms, hp.enc_layers);
+
+    // ---------------------------------------------------------------
+    // Step 3: Neck + Projector (on CPU — small ops)
+    // ---------------------------------------------------------------
+    int nC = hp.output_channels;
+    std::vector<float> nchw(C * nP * nP);
+    for (int y = 0; y < nP; y++)
+        for (int x = 0; x < nP; x++)
+            for (int c = 0; c < C; c++)
+                nchw[c * nP * nP + y * nP + x] = hidden[(y * nP + x) * C + c];
+
+    auto nc1_w = to_f32(ctx->neck_conv1_w);
+    std::vector<float> neck1(nC * nP * nP);
+    conv2d_cpu(nchw.data(), neck1.data(), nc1_w.data(), nullptr,
+               C, nC, nP, nP, 1, 1, 1, 0, 1);
+    auto nln1_w = to_f32(ctx->neck_ln1_w);
+    auto nln1_b = to_f32(ctx->neck_ln1_b);
+    layernorm2d_cpu(neck1.data(), neck1.data(), nC, nP, nP, nln1_w.data(), nln1_b.data());
+
+    auto nc2_w = to_f32(ctx->neck_conv2_w);
+    std::vector<float> neck2(nC * nP * nP);
+    conv2d_cpu(neck1.data(), neck2.data(), nc2_w.data(), nullptr,
+               nC, nC, nP, nP, 3, 3, 1, 1, 1);
+    auto nln2_w = to_f32(ctx->neck_ln2_w);
+    auto nln2_b = to_f32(ctx->neck_ln2_b);
+    layernorm2d_cpu(neck2.data(), neck2.data(), nC, nP, nP, nln2_w.data(), nln2_b.data());
+
+    fprintf(stderr, "ppfnl: neck done, shape=(%d, %d, %d)\n", nC, nP, nP);
+
+    int mid_ch = 512, out_ch = 1024;
+    int h1 = nP / 2, w1 = nP / 2;
+    auto pc1_w = to_f32(ctx->proj_conv1_w);
+    std::vector<float> pc1(mid_ch * h1 * w1);
+    conv2d_cpu(neck2.data(), pc1.data(), pc1_w.data(), nullptr,
+               nC, mid_ch, nP, nP, 3, 3, 2, 1, 1);
+
+    int h2 = h1 / 2, w2 = w1 / 2;
+    auto pc2_w = to_f32(ctx->proj_conv2_w);
+    std::vector<float> pc2(out_ch * h2 * w2);
+    conv2d_cpu(pc1.data(), pc2.data(), pc2_w.data(), nullptr,
+               mid_ch, out_ch, h1, w1, 3, 3, 2, 1, 1);
+
+    int n_tokens = h2 * w2;
+    std::vector<float> flat(n_tokens * out_ch);
+    for (int y = 0; y < h2; y++)
+        for (int x = 0; x < w2; x++)
+            for (int c = 0; c < out_ch; c++)
+                flat[(y * w2 + x) * out_ch + c] = pc2[c * h2 * w2 + y * w2 + x];
+
+    auto pl1_w = to_f32(ctx->proj_linear1_w);
+    auto pl1_b = to_f32(ctx->proj_linear1_b);
+    auto pl2_w = to_f32(ctx->proj_linear2_w);
+    auto pl2_b = to_f32(ctx->proj_linear2_b);
+
+    int dec_dim = hp.dec_d_model;
+    ctx->proj_out.resize(n_tokens * dec_dim);
+    ctx->n_enc_tokens = n_tokens;
+    ctx->proj_dim = dec_dim;
+
+    for (int n = 0; n < n_tokens; n++) {
+        std::vector<float> l1(out_ch);
+        linear_cpu(flat.data() + n * out_ch, l1.data(), out_ch, out_ch,
+                   pl1_w.data(), pl1_b.data());
+        linear_cpu(l1.data(), ctx->proj_out.data() + n * dec_dim, out_ch, dec_dim,
+                   pl2_w.data(), pl2_b.data());
+    }
+
+    fprintf(stderr, "ppfnl: projector done, shape=(%d, %d)\n", n_tokens, dec_dim);
+}
+
+// ---------------------------------------------------------------------------
+// SAM-ViT Encoder — CPU scalar (fallback, kept for reference/debugging)
+// ---------------------------------------------------------------------------
 
 // Single ViT layer forward pass.
 // hidden: BHWC format (B*nW or B, H, W, C), modifies in-place.
@@ -920,6 +1352,25 @@ static std::vector<int> greedy_decode(ppformulanet_l_ocr_context* ctx) {
     return tokens;
 }
 
+// Detokenize: concatenate vocab strings, replacing GPT-2 BPE Ġ (U+0120) with space
+static void detokenize(ppformulanet_l_ocr_context* ctx, const std::vector<int>& tokens) {
+    ctx->result_buf.clear();
+    for (int tok : tokens) {
+        if (tok < 0 || tok >= (int)ctx->vocab.size()) continue;
+        const auto& s = ctx->vocab[tok];
+        for (size_t i = 0; i < s.size(); ) {
+            if (i + 1 < s.size() &&
+                (unsigned char)s[i] == 0xC4 && (unsigned char)s[i+1] == 0xA0) {
+                ctx->result_buf += ' ';
+                i += 2;
+            } else {
+                ctx->result_buf += s[i];
+                i++;
+            }
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Init / Free / API
 // ---------------------------------------------------------------------------
@@ -979,12 +1430,31 @@ ppformulanet_l_ocr_context* ppformulanet_l_ocr_init(const char* model_path, int 
     }
     fprintf(stderr, "ppfnl: %zu tensors loaded\n", ctx->wl.tensors.size());
 
+    // Create scheduler for graph compute
+    ctx->sched = ggml_backend_sched_new(&ctx->backend, nullptr, 1, 8192, false, false);
+
     map_tensors(ctx.get());
+
+    // Precompute rel_pos lookup tables (once at init, not per-inference)
+    ctx->rp_h_per_layer.resize(hp.enc_layers);
+    ctx->rp_w_per_layer.resize(hp.enc_layers);
+    for (int li = 0; li < hp.enc_layers; li++) {
+        auto& layer = ctx->enc_layers[li];
+        int aH = layer.is_global ? hp.n_patches : hp.window_size;
+        int head_dim = hp.enc_hidden / hp.enc_heads;
+        auto rh = to_f32(layer.rel_pos_h);
+        auto rw = to_f32(layer.rel_pos_w);
+        int rel_L = layer.rel_pos_h ? (int)layer.rel_pos_h->ne[1] : 0;
+        ctx->rp_h_per_layer[li] = get_rel_pos(aH, aH, rh.data(), rel_L, head_dim);
+        ctx->rp_w_per_layer[li] = get_rel_pos(aH, aH, rw.data(), rel_L, head_dim);
+    }
+
     return ctx.release();
 }
 
 void ppformulanet_l_ocr_free(ppformulanet_l_ocr_context* ctx) {
     if (!ctx) return;
+    if (ctx->sched) ggml_backend_sched_free(ctx->sched);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     core_gguf::free_weights(ctx->wl);
     delete ctx;
@@ -1028,15 +1498,10 @@ const char* ppformulanet_l_ocr_recognize(ppformulanet_l_ocr_context* ctx,
         }
     }
 
-    run_encoder(ctx, rgb.data(), S, S);
+    run_encoder_graph(ctx, rgb.data(), S, S);
     precompute_cross_kv(ctx);
     auto tokens = greedy_decode(ctx);
-
-    ctx->result_buf.clear();
-    for (int tok : tokens) {
-        if (tok >= 0 && tok < (int)ctx->vocab.size())
-            ctx->result_buf += ctx->vocab[tok];
-    }
+    detokenize(ctx, tokens);
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
@@ -1070,15 +1535,10 @@ const char* ppformulanet_l_ocr_recognize_chw(ppformulanet_l_ocr_context* ctx,
     if (!ctx || !chw_data) return nullptr;
     const int S = ctx->hparams.image_size;
 
-    run_encoder(ctx, chw_data, S, S);
+    run_encoder_graph(ctx, chw_data, S, S);
     precompute_cross_kv(ctx);
     auto tokens = greedy_decode(ctx);
-
-    ctx->result_buf.clear();
-    for (int tok : tokens) {
-        if (tok >= 0 && tok < (int)ctx->vocab.size())
-            ctx->result_buf += ctx->vocab[tok];
-    }
+    detokenize(ctx, tokens);
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
