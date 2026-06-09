@@ -248,6 +248,13 @@ def main():
         if data.ndim == 4:
             data = data.reshape(data.shape[0], -1)
         total_written += data.size
+        # Shorten names that exceed GGUF 64-char limit
+        if len(name) >= 64:
+            name = name.replace("attention_weights", "attn_wts")
+            name = name.replace("sampling_offsets", "samp_offs")
+            name = name.replace("model.decoder.decoder", "m.dec.dec")
+            name = name.replace("model.backbone.res_layers", "m.bb.rl")
+            name = name.replace("model.encoder", "m.enc")
         writer.add_tensor(name, data, raw_dtype=dtype_gguf)
 
     writer.write_header_to_file()
