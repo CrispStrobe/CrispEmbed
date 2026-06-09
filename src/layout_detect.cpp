@@ -752,8 +752,21 @@ std::vector<region> detect(context* ctx, const float* pixels,
         ggml_free(dg);
     }
 
-    ggml_tensor *c3, *c4, *c5;
-    backbone_forward(g, ctx->backbone, input, &c3, &c4, &c5);
+    // STEM ONLY TEST with manual input kernel
+    {
+        auto* w_inp = ggml_new_tensor_4d(g, GGML_TYPE_F16, 3, 3, 3, 32);
+        ggml_set_name(w_inp, "stem_w_inp");
+        ggml_set_input(w_inp);
+        auto* stem_test = ggml_conv_2d(g, w_inp, input, 2, 2, 1, 1, 1, 1);
+        ggml_set_name(stem_test, "stem_manual");
+        ggml_set_output(stem_test);
+    }
+
+    auto* stem0 = conv_relu(g, input, ctx->backbone.stem[0], 3, 3, 3, 2, 1);
+    ggml_set_name(stem0, "stem0_test");
+    ggml_set_output(stem0);
+
+    ggml_tensor *c3 = stem0, *c4 = stem0, *c5 = stem0;
     fprintf(stderr, "layout_detect: backbone done, c3=[%lld,%lld,%lld] c4=[%lld,%lld,%lld] c5=[%lld,%lld,%lld]\n",
             (long long)c3->ne[0], (long long)c3->ne[1], (long long)c3->ne[2],
             (long long)c4->ne[0], (long long)c4->ne[1], (long long)c4->ne[2],
@@ -773,12 +786,18 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     // Build + compute backbone+encoder graph
     ggml_cgraph* gf = ggml_new_graph_custom(g, max_nodes, false);
-    ggml_build_forward_expand(gf, c3);
-    ggml_build_forward_expand(gf, c4);
-    ggml_build_forward_expand(gf, c5);
-    ggml_build_forward_expand(gf, s3);
-    ggml_build_forward_expand(gf, s4);
-    ggml_build_forward_expand(gf, s5);
+    ggml_build_forward_expand(gf, stem0);
+    // Expand the manual test too
+    {
+        ggml_tensor* sm = nullptr;
+        for (int i = 0; i < ggml_graph_n_nodes(gf); i++) {
+            ggml_tensor* nd = ggml_graph_node(gf, i);
+            if (strcmp(ggml_get_name(nd), "stem_manual") == 0) {
+                sm = nd; break;
+            }
+        }
+        // Just expand stem0 for now
+    }
 
     int n_nodes = ggml_graph_n_nodes(gf);
     fprintf(stderr, "  graph: %d nodes\n", n_nodes);
@@ -821,11 +840,37 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     // Compute backbone + encoder
     fprintf(stderr, "layout_detect: computing backbone + encoder...\n");
-    ggml_backend_graph_compute(ctx->backend, gf);
+    enum ggml_status status = ggml_backend_graph_compute(ctx->backend, gf);
+    fprintf(stderr, "  compute status: %d\n", (int)status);
 
-    // Stem0 output (backbone first conv)
+    // Check if stem0 tensor has allocated buffer
+    fprintf(stderr, "  stem0 buffer: %p, backend: %p\n",
+            (void*)stem0->buffer, (void*)stem0->view_src);
+
+    // Set manual weight
     {
-        ggml_tensor* s0 = ggml_graph_get_tensor(gf, "stem0");
+        ggml_tensor* mw = ggml_graph_get_tensor(gf, "stem_w_inp");
+        if (mw) {
+            // Copy actual stem weight data as F16
+            std::vector<float> f32_data(27 * 32);
+            ggml_backend_tensor_get(ctx->backbone.stem[0].w, f32_data.data(), 0, 27*32*4);
+            std::vector<uint16_t> f16_data(3*3*3*32);
+            for (int i = 0; i < 3*3*3*32; i++) f16_data[i] = ggml_fp32_to_fp16(f32_data[i]);
+            ggml_backend_tensor_set(mw, f16_data.data(), 0, f16_data.size() * 2);
+        }
+        // Read manual conv output
+        ggml_tensor* sm = ggml_graph_get_tensor(gf, "stem_manual");
+        if (sm) {
+            float sv[5];
+            ggml_backend_tensor_get(sm, sv, 0, 5 * sizeof(float));
+            fprintf(stderr, "  stem_manual[%lld,%lld,%lld]: %.4f %.4f %.4f %.4f %.4f\n",
+                    (long long)sm->ne[0], (long long)sm->ne[1], (long long)sm->ne[2],
+                    sv[0], sv[1], sv[2], sv[3], sv[4]);
+        }
+    }
+    // Stem0 via external weight
+    {
+        ggml_tensor* s0 = ggml_graph_get_tensor(gf, "stem0_test");
         if (s0) {
             float sv[5];
             ggml_backend_tensor_get(s0, sv, 0, 5 * sizeof(float));
