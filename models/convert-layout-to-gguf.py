@@ -121,6 +121,40 @@ def main():
     if bn_folded:
         print(f"  BatchNorm folded into Conv: {bn_folded}")
 
+    # Rename val_XXXX weights: trace each MatMul node to find the named bias
+    # it pairs with, then rename the weight accordingly.
+    renamed = 0
+    for node in graph.node:
+        if node.op_type not in ('MatMul', 'Gemm'):
+            continue
+        # Find which input is a val_XXXX initializer
+        val_inputs = [inp for inp in node.input if inp.startswith('val_') and inp in weights]
+        if not val_inputs:
+            continue
+        val_name = val_inputs[0]
+        # Find the Add node that uses this MatMul's output + a named bias
+        matmul_out = node.output[0]
+        for add_node in graph.node:
+            if add_node.op_type != 'Add':
+                continue
+            if matmul_out not in add_node.input:
+                continue
+            # The other input should be a named bias
+            named_inputs = [inp for inp in add_node.input
+                           if inp != matmul_out and inp in weights
+                           and not inp.startswith('val_')]
+            if named_inputs:
+                bias_name = named_inputs[0]
+                # Derive weight name from bias name: replace .bias with .weight
+                weight_name = bias_name.replace('.bias', '.weight')
+                if val_name in weights and weight_name != bias_name:
+                    weights[weight_name] = weights.pop(val_name)
+                    renamed += 1
+            break
+
+    if renamed:
+        print(f"  Renamed {renamed} val_XXXX → named weights")
+
     # Build graph topology string for graph replayer
     node_descs = []
     for node in graph.node:

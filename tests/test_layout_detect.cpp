@@ -19,7 +19,8 @@ int main(int argc, char** argv) {
     printf("Model loaded successfully.\n");
 
     if (argc > 2) {
-        auto regions = layout_detect::detect_file(ctx, argv[2]);
+        float thresh = (argc > 3) ? (float)atof(argv[3]) : 0.3f;
+        auto regions = layout_detect::detect_file(ctx, argv[2], thresh);
         printf("Detected %zu regions:\n", regions.size());
         for (size_t i = 0; i < regions.size(); i++) {
             auto& r = regions[i];
