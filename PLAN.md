@@ -58,10 +58,58 @@ Input text / image / audio
     ├─► Math  ──► BTTR: DenseNet + Transformer decoder (bttr_ocr.cpp)
     │               Handwritten math → LaTeX (CROHME 2014, 53% exact match)
     │
+    ├─► Math  ──► PosFormer: DenseNet + Transformer + ARM (posformer_ocr.cpp)
+    │               Handwritten math → LaTeX (CROHME 2014, 56% raw / 61.4% parsed)
+    │               NOTE: SJTU weights = academic-only; training NC weights on Kaggle
+    │
     └─► Math  ──► PPFormulaNet-S / Texo-Distill (ppformulanet_ocr.cpp)
                     HGNetv2 CNN encoder + MBart decoder (20M params)
                     Printed math → LaTeX (BLEU 0.90 on UniMER SPE)
 ```
+
+### Math OCR roadmap — next models to evaluate
+
+| Model | Year | CROHME'14 | Params | Code | Verdict |
+|-------|------|-----------|--------|------|---------|
+| Uni-MuMER | 2025 | ~82% | 3B VLM | Yes | Too large for mobile |
+| NAMER | 2024 | 60.5% | ~20M | No | Best arch (non-AR), no code |
+| WaveMER | 2026 | 60.6% | ~20M | Yes | Weak accuracy, complex |
+| SCAN | 2020 | ~55% | ~15M | No | Online-only (stroke input) |
+| CAN | 2022 | ~57% | ~10M | Yes (MIT) | Compact, good license |
+| CoMER | 2022 | ~59% | ~10M | Yes | Coverage-enhanced transformer |
+
+**Status**: PosFormer (our port) outperforms all practical candidates in greedy
+l2r mode: 56.0% raw / 61.4% parsed on CROHME 2014.
+
+**Training pipeline**: `tools/kaggle/posformer-train/posformer_train.py`
+- Kaggle kernel: https://www.kaggle.com/code/chr1str/posformer-train-on-mathwriting
+- W&B dashboard: https://wandb.ai/cze-github/posformer-hmer
+- CROHME data: https://huggingface.co/datasets/cstr/posformer-training-data
+- Supports CROHME (8.8K) and MathWriting (230K) datasets
+- GPU training on P100 (cu118) or T4, hourly HF checkpoints, W&B monitoring
+- Uses CrispASR kaggle_harness for auth + progress (clone at runtime)
+
+**Current status**:
+- Retrained CROHME weights (epoch 93, ~57% beam=1) wired into CrispCalc
+  with NC confirmation gate. On HF: cstr/posformer-crohme-GGUF.
+- Training continues to epoch 300 (plain cosine decay, label smoothing).
+- Cosine warm restarts caused crash (57%→38%→60%→reverted to epoch 93).
+
+**Dataset landscape** (verified 2026-06-09):
+
+| Dataset | License | Commercial? | Type | Size |
+|---------|---------|------------|------|------|
+| UniMER ArXiv+Pix2tex | **Apache 2.0** | **Yes** | Printed | 978K |
+| CROHME 2014/16 | CC BY-NC-SA 3.0 | No | Handwritten | 8.8K |
+| MathWriting (Google) | CC BY-NC-SA 4.0 | No | Handwritten | 230K |
+| HME100K / MLHME-38K (TAL) | Proprietary | No | Handwritten | 74K/38K |
+| Im2LaTeX-100K | CC0 | Yes | Printed | 100K |
+| figshare CROHME+HME100K | Claims CC BY 4.0 | **No** — unauthorized re-upload | Mixed | 83K |
+
+**Training strategy**:
+1. Pretrain on UniMER Apache 2.0 (978K printed) → **commercial weights**
+2. Fine-tune on CROHME (8.8K handwritten) → NC weights for handwritten
+3. Ship both: printed model (no gate) + handwritten model (NC gate)
 
 ## Supported architectures (v0.7.0)
 
@@ -71,7 +119,6 @@ Input text / image / audio
 | XLM-R encoder | SentencePiece Unigram | Post-LN, GELU, pos_offset=2 | E5, PIXIE, arctic-l-v2, granite |
 | MPNet encoder | WordPiece | Post-LN, T5-style rel attn bias | all-mpnet-base-v2 |
 | NomicBERT encoder | WordPiece | Post-LN, SwiGLU, RoPE | nomic-embed-text-v1.5 |
-| NomicBERT MoE encoder | SentencePiece | Post-LN, MoE 8-expert top-2, GELU, RoPE | nomic-embed-text-v2-moe |
 | ModernBERT encoder | BPE | Pre-LN, GeGLU, RoPE, per-layer theta | gte-modernbert-base |
 | GTE v1.5 encoder | WordPiece | Post-LN, GeGLU, NTK RoPE | gte-base/large-en-v1.5 |
 | DeBERTa-v2 encoder | WordPiece | Post-LN, c2p/p2c disentangled attn | mxbai-rerank-xsmall/base-v1 |
@@ -247,7 +294,7 @@ CrispEmbed/
 - [x] SFace INT8 quantization (Q8_0 cos=0.9999, Q4_K cos=0.974; 37→10→6 MB)
 - [x] Face model quantized inference via graph replayer (YuNet F16/Q8_0 working; fixed depthwise IC, ggml_n_dims trailing-1s, Q→F32 dequant path)
 - [x] ViT parity: cos 0.8→1.0 (was patch ordering bug — permute(2,1,0) gave column-major spatial, fixed to permute(1,2,0,3) for row-major matching HF)
-- [x] Nomic v2 MoE (MoE routing layer in encoder) — cos=1.000000 vs HF
+- [ ] Nomic v2 MoE (MoE routing layer in encoder)
 - [x] LoRA adapter hot-swap (Jina v5 per-task adapters, pre-compute merge on CPU, ~10-50ms switch)
 
 ### Bindings
@@ -260,47 +307,45 @@ CrispEmbed/
 
 | Gap | Impact | Effort | Notes |
 |---|---|---|---|
-| ~~Nomic v2 MoE~~ | ~~Low~~ | ~~High~~ | ~~MoE routing layer in encoder~~ DONE |
+| Nomic v2 MoE | Low | High | MoE routing layer in encoder |
 | Qwen3-VL multimodal | Low | High | Reuse BidirLM-Omni scaffolding |
 
-### Pending improvements
-
-- [ ] **KV cache for prefix-shared decoder batches** — When multiple texts
-  share a prompt prefix (e.g. Jina v5 instruction prefix), compute KV
-  for the shared prefix once and reuse across the batch. Currently each
-  text in a batch recomputes the full sequence independently.
-
-- [ ] **Batched decoder improvements** — F16 attention mask (current F32
-  mask wastes 2x memory for large T_total; flash_attn_ext supports F16
-  kq_b). Gemma3 NaN fix is DONE (ggml_clamp before (1+w)*x multiply in
-  both single-text and batch decoder paths).
+### Ideas (unscoped)
 
 - [ ] **Streaming ColBERT late interaction scoring** — Server-side MaxSim
   scoring between a query's ColBERT multi-vector and pre-stored document
-  token vectors. Stream partial scores via SSE. Needs: `/colbert/score`
-  endpoint in `server.cpp`, accepting query multi-vec + doc multi-vecs,
-  chunked response with cumulative top-K. Builds on existing
+  token vectors. Stream partial scores via SSE so the client can show
+  progressive ranking.  Needs: `/colbert/score` endpoint accepting query
+  multi-vec + list of doc multi-vecs, chunked response with cumulative
+  top-K.  Builds on the existing `/embed` endpoint and
   `crispembed_encode_multivec()` C API.
 
 - [ ] **WASM build target** — Compile CrispEmbed to WebAssembly
-  (Emscripten) for browser-based embedding inference. ggml already has
-  partial Emscripten support (whisper.cpp ships a WASM build). Challenges:
-  relaxed-simd, memory limits, SharedArrayBuffer for threading.
+  (Emscripten) for browser-based embedding inference.  Requires: ggml
+  WASM backend (CPU-only, no GPU), JS wrapper exporting `encode()` /
+  `encode_batch()`, a demo page.  ggml already has partial Emscripten
+  support (whisper.cpp ships a WASM build).  Main challenges: SIMD
+  (relaxed-simd flag), memory limits (large models need streaming GGUF
+  loading or smaller quants), and thread support (SharedArrayBuffer +
+  Web Workers for multi-threaded ggml).
 
-- [x] **Quantized GGUF for face models** — Quantizer now flattens 4D conv
-  weights to 2D before quantizing. SFace: Q8_0 cos=0.9996 (37→10 MB),
-  Q6_K cos=0.9966 (37→8 MB). Q4_K cos=0.936 (too low for recognition).
-  SCRFD detection: Q8_0 17→10 MB, Q4_K 17→8.7 MB.
+- [ ] **Unified dump harness** — CrispASR already has a unified
+  `tools/dump_reference.py` with a `--backend` flag and a plug-in
+  registry (`tools/reference_backends/<name>.py`). CrispEmbed has 3
+  one-off scripts (`dump_reference.py`, `dump_trocr_intermediates.py`,
+  `dump_math_ocr_reference.py`). Adopt the CrispASR contract: single
+  CLI, backend registry, consistent stage names, shared GGUF writer.
+  Each model family (encoder, decoder, math_ocr, dbnet, trocr) becomes
+  a ~60-line backend module. Reduces duplication, makes adding new
+  models (like DBNet, general TrOCR) trivial.
 
-- [x] **Live-test LoRA with Jina v5** — DONE. Fixed converter (PEFT
-  `.base_layer` key stripping), decoder use-after-free bug (gguf_free
-  before LoRA metadata read). 4 adapters hot-swap correctly: retrieval
-  vs baked cos=0.999984, round-trip bit-identical, 196 projections merged.
-
-- [x] **3D tensor quantization for MoE experts** — DONE. Quantizer now
-  handles 3D tensors by quantizing each 2D slice independently. Results:
-  nomic-v2-moe Q8_0: 1122→487 MB (3.8x), Q4_K: 1095→352 MB (5.2x).
-  Quality: Q8_0 cos=0.9995, Q4_K cos=0.964 vs F32.
+- [ ] **INT4 GGUF for face models** — Apply Q4_K quantization to
+  Conv2D weights in SCRFD / AuraFace / SFace.  Currently conv weights
+  are stored F32 or F16 because `ggml_conv_2d` only supports
+  F32/F16 kernels; quantized conv would require dequant→F32 at graph
+  build time (same pattern as HMER/BTTR).  Expected size savings:
+  AuraFace 249 MB → ~65 MB, SCRFD 17 MB → ~5 MB.  Quality gate:
+  cos ≥ 0.99 vs F32 for recognition, IoU ≥ 0.95 for detection.
 
 ---
 
@@ -309,275 +354,142 @@ CrispEmbed/
 Detailed specs for pending roadmap items. Each blueprint is self-contained
 so a fresh agent can implement it independently.
 
-### Blueprint: LoRA adapter hot-swap — DONE
+### Blueprint: LoRA adapter hot-swap
 
-Implemented June 2026. See HISTORY.md. C API: `crispembed_set_lora()`,
-`crispembed_list_lora()`. Pre-compute merge `W' = W + (a/r)*B@A` on CPU.
-End-to-end tested with Jina v5 small: 4 adapters (retrieval, text-matching,
-clustering, classification), retrieval vs baked cos=0.999984, round-trip
-bit-identical. Fixed: converter PEFT `.base_layer` key stripping, decoder
-`gguf_free` use-after-free.
+**Goal**: Load multiple LoRA adapters from a single GGUF and switch at
+runtime without re-loading the model. Primary use case: Jina v5 per-task
+LoRA (retrieval, classification, clustering, text-matching).
 
----
+**Current state**: LoRA is baked at convert time. The converter
+(`models/convert-decoder-embed-to-gguf.py` lines 142-156) calls
+`model.set_adapter("retrieval")` then `model.merge_and_unload()`, producing
+a single merged weight set. Switching tasks requires re-converting.
 
-### Blueprint: Nomic v2 MoE encoder — DONE
+**LoRA math**: `y = Wx + (a/r) * B(Ax)` where W is the base weight
+`[out, in]`, A is `[r, in]`, B is `[out, r]`, a is scaling, r is rank
+(typically 8-16 for Jina v5).
 
-Implemented June 2026. cos=1.000000 vs HuggingFace. See HISTORY.md.
-Key learning: NomicBERT v2-moe has Wqkv + out_proj biases (v1.5 does not).
-Parity harness extended with `--arch nomic` for QKV split + MoE expert diff.
+**Step 1 -- Converter** (`models/convert-decoder-embed-to-gguf.py`):
+- Add `--lora-mode=separate` flag. Instead of merging, store base weights
+  without LoRA and separately store per-adapter tensors:
+  `lora.{adapter}.{layer}.{matrix}.A` `[r, in]` and `.B` `[out, r]`.
+- Write metadata: `decoder.lora_adapters` (comma-separated names),
+  `decoder.lora_rank`, `decoder.lora_alpha`.
 
----
+**Step 2 -- Loading** (`src/decoder_embed.cpp`):
+- Detect `decoder.lora_adapters` in GGUF metadata.
+- Load A/B tensors into a secondary backend buffer (reuse the QKV fusion
+  allocation pattern from `vit_embed.cpp` lines 224-263).
+- Store as `ctx->lora[adapter_name][layer_idx] = {q_A, q_B, k_A, k_B, ...}`.
 
-### Blueprint: Batched decoder graph — DONE
+**Step 3 -- Graph** (`src/decoder_embed.cpp` forward):
+- When LoRA is active, for each augmented matmul:
+  `y = mul_mat(W, x) + scale(mul_mat(B, mul_mat(A, x)), alpha/r)`
+  Two extra matmuls per LoRA weight (tiny: r x D and D x r).
+- Alternative: pre-compute `W' = W + (a/r)*B@A` on CPU at switch time,
+  then use W' directly. Faster inference, slower switching.
 
-Implemented June 2026. `decoder_encode_tokens_batch()` in decoder_embed.cpp.
-Block-diagonal F32 causal mask, per-text RoPE, last-token pooling. ~3x speedup.
+**Step 4 -- API**: `crispembed_set_lora(ctx, "retrieval")`,
+`crispembed_list_lora(ctx, &names, &count)`.
 
----
+**Testing**: DONE. Jina v5 small converted with `--lora-mode=separate`.
+4 adapters (retrieval, text-matching, clustering, classification) load
+and hot-swap correctly. retrieval vs baked cos=0.999984. Round-trip
+switching produces bit-identical embeddings. Bugs fixed: converter PEFT
+`.base_layer` key stripping, decoder `gguf_free` use-after-free.
 
-### Blueprint: KV cache for prefix-shared decoder batches
+**Files**: `models/convert-decoder-embed-to-gguf.py`, `src/decoder_embed.cpp`,
+`src/crispembed.{h,cpp}`, `examples/cli/main.cpp`
 
-**Goal**: When N texts share a prompt prefix (e.g. Jina v5 instruction
-`"Retrieve semantically similar text.\nQuery: "`), compute KV for the
-prefix once and reuse across the batch, saving ~40% of compute.
-
-**Current state**: `decoder_encode_tokens_batch()` (decoder_embed.cpp:1158)
-pads all sequences to T_max and builds a block-diagonal mask. Each text
-recomputes the full prefix independently.
-
-**Approach**:
-1. Detect common prefix: compare token IDs across batch, find longest
-   shared prefix length `P`. Typical Jina v5 prefix is ~15 tokens.
-2. Compute prefix KV: Run a single forward pass for `[P]` tokens.
-   Extract K/V tensors for each layer → `prefix_kv[layer] = {K, V}`.
-3. Extend graph: For each text's remaining `T-P` tokens, use pre-computed
-   prefix K/V. Modify `ggml_flash_attn_ext` call to pass concatenated
-   K = `[prefix_K ; text_K]`, V = `[prefix_V ; text_V]`.
-4. Mask: Each text attends causally to `[prefix + own_tokens]`, not to
-   other texts' tokens.
-
-**Challenge**: ggml's `flash_attn_ext` takes K/V as single tensors. Need
-either: (a) pre-concatenate K/V on CPU before graph compute, or (b) use
-`ggml_concat` in-graph (adds one concat op per layer, negligible cost).
-
-**Files**: `src/decoder_embed.cpp`, `src/decoder_embed.h`
-
-**Effort**: Medium (3-4 days). Prefix detection is trivial; KV caching
-mechanics are well-understood from LLM inference.
+**Effort**: Medium (4-5 days)
 
 ---
 
-### Blueprint: Batched decoder improvements (F16 mask + Gemma3 NaN fix)
+### Blueprint: Nomic v2 MoE encoder
 
-**Goal**: Two targeted fixes for the batched decoder path.
+**Goal**: Support Mixture-of-Experts FFN layers in the BERT encoder so
+nomic-embed-text-v2 (and similar MoE embedding models) can run.
 
-**F16 attention mask**: Current mask is F32 (`ggml_new_tensor_2d(gctx,
-GGML_TYPE_F32, T_total, T_total)` at decoder_embed.cpp:1297). For
-T_total=512 that's 1 MB; for T_total=2048 it's 16 MB. `ggml_flash_attn_ext`
-supports F16 `kq_b` natively. Change to:
-```cpp
-ggml_tensor * attn_mask = ggml_new_tensor_2d(gctx, GGML_TYPE_F16, T_total, T_total);
-```
-CPU-side mask fill: cast `-INFINITY` and `0.0f` to `ggml_fp16_t` via
-`ggml_fp32_to_fp16()`. Reduces mask memory 2x.
+**Current state**: NomicBERT v1.5 (non-MoE) works: Post-LN, SwiGLU, RoPE.
+Standard FFN: `y = FC2(act(FC1(x)))`. See encoder forward in
+`src/crispembed.cpp` line ~700+.
 
-**Gemma3 NaN fix**: Some Gemma3 GGUFs produce NaN embeddings on certain
-inputs. Root cause: `(1+w)*rms_norm(x)` can overflow when `w` is large
-and `rms_norm(x)` has extreme values. The Ollama-format GGUFs pre-bake
-`1+w` into norm weights (flag `gemma_norm=false`), but CrispEmbed-native
-GGUFs use raw `w` with `gemma_norm=true`. Fix: clamp RMSNorm output to
-`[-65504, 65504]` (F16 max) before the `(1+w)` multiply, or detect NaN
-after the first layer and fall back to F32 compute for that batch.
+**MoE architecture**: Replace dense FFN with N experts + router:
+`router_logits = matmul(gate_w, x)` -> topk -> weighted expert dispatch.
 
-**Files**: `src/decoder_embed.cpp`
+**ggml support**: `ggml_mul_mat_id(as, b, ids)` (ggml.h:1423) provides
+indirect matmul -- dispatches rows to different weight matrices by ID.
+Supported on CPU/CUDA/Metal/Vulkan.
 
-**Effort**: Low (1 day). Both are mechanical changes.
+**Step 1 -- Converter** (`models/convert-bert-to-gguf.py`):
+- Detect MoE: check for `encoder.layer.{i}.mlp.experts.{k}.fc1.weight`
+  or `gate.weight` in state dict.
+- Stack expert weights: `enc.{i}.ffn.expert_fc1.weight` shape
+  `[N_experts, inter, hidden]` for `ggml_mul_mat_id`.
+- Store router: `enc.{i}.ffn.gate.weight` shape `[N_experts, hidden]`.
+- Metadata: `bert.num_experts`, `bert.num_experts_per_tok` (top-K).
 
----
+**Step 2 -- Encoder forward** (`src/crispembed.cpp`):
+- Per-layer, after LN, check `L.expert_fc1_w`:
+  ```
+  logits = mul_mat(gate_w, x)    // [N, T]
+  ids, weights = topk(softmax(logits), K)
+  up = mul_mat_id(expert_fc1, x, ids)
+  up = act(up)
+  down = mul_mat_id(expert_fc2, up, ids)
+  x = weighted_combine(down, weights)
+  ```
+- Top-K selection: ggml may lack a topk op. Fallback: compute router
+  logits on CPU (extract via `ggml_backend_tensor_get` after a partial
+  graph compute), determine top-K IDs, pass back as input tensor.
+  Alternatively, implement topk via `ggml_argsort` + `ggml_get_rows`.
 
-### Blueprint: Streaming ColBERT late interaction scoring
+**Step 3 -- Testing**: Convert nomic-embed-text-v2, compare per-layer
+with `dump_reference.py` + `crispembed_diff.h`. Non-MoE layers should
+match exactly; MoE layers match if routing is identical.
 
-**Goal**: Add `/colbert/score` endpoint to the HTTP server for MaxSim
-scoring between a query's multi-vector embeddings and pre-stored document
-token vectors, with streaming partial results.
+**Files**: `models/convert-bert-to-gguf.py`, `src/crispembed.cpp`,
+`src/crispembed.h` (layer struct needs expert fields)
 
-**Current state**: `crispembed_encode_multivec()` (crispembed.cpp) produces
-per-token ColBERT embeddings for BGE-M3. No server endpoint for scoring.
-No MaxSim implementation.
-
-**MaxSim**: For query tokens Q `[nq, d]` and doc tokens D `[nd, d]`:
-`score = sum_i(max_j(cos(Q[i], D[j])))`. O(nq * nd * d) per document.
-
-**Step 1 -- C API**: Add `crispembed_colbert_score(ctx, query_vecs, n_query,
-doc_vecs, n_doc, dim)` returning a float score. Pure CPU computation (no
-ggml graph needed — it's just a batched dot product + max reduction).
-
-**Step 2 -- Server endpoint** (`examples/server/server.cpp`):
-- `POST /colbert/score`: JSON body with `query_vecs` (or `query_text` to
-  encode on the fly), `documents` (list of pre-computed doc vecs or raw
-  texts). Returns ranked list with scores.
-- SSE streaming: After each document's score is computed, emit a partial
-  result via `text/event-stream`. Client sees progressive ranking.
-
-**Step 3 -- Batched scoring**: For K documents, parallelize MaxSim across
-documents (each document is independent). Use OpenMP.
-
-**Files**: `src/crispembed.cpp` (C API), `src/crispembed.h`,
-`examples/server/server.cpp`
-
-**Effort**: Medium (2-3 days). MaxSim is simple math; SSE streaming is
-the main engineering work.
+**Effort**: High (7-10 days). The topk routing is the hardest part.
 
 ---
 
-### Blueprint: WASM build target
+### Blueprint: Batched decoder graph
 
-**Goal**: Compile CrispEmbed to WebAssembly for browser-based embedding.
+**Goal**: Run N decoder texts in one graph compute instead of N sequential
+passes. Expected 2-4x speedup for batches of 4-8.
 
-**Current state**: ggml has Emscripten support (whisper.cpp WASM demo
-exists). CrispEmbed uses standard ggml APIs. CMakeLists.txt has no WASM
-target.
+**Current state**: Encoder has true batching (`encode_tokens_batch`,
+crispembed.cpp:1226). Decoder is sequential (crispembed.cpp:1689).
 
-**Step 1 -- CMake toolchain**:
-- Add `cmake/wasm.cmake` toolchain file for Emscripten.
-- Build static library + JS wrapper. Disable audio/face/vision paths
-  (browser doesn't need them). Target: `crispembed.js` + `crispembed.wasm`.
-- Flags: `-s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -msimd128` (relaxed SIMD).
-- Threading: `-pthread -s SHARED_MEMORY=1` requires `SharedArrayBuffer`
-  (needs COOP/COEP headers). Start single-threaded, add workers later.
+**Approach -- padded batching** (recommended first):
 
-**Step 2 -- JS API** (`wasm/crispembed.js`):
-- `async function loadModel(url)` — fetch and load GGUF into WASM heap.
-- `function encode(text)` — returns Float32Array of embedding.
-- `async function encodeBatch(texts)` — batch encode.
+**Step 1 -- New function** `decoder_encode_tokens_batch()` in
+`decoder_embed.cpp`:
+- Pad all B sequences to T_max = max(len(tokens[i])) with pad token.
+- Flatten batch into sequence: `[D, T_max*B]` (same as encoder batching).
+- Build block-diagonal causal attention mask: text i cannot attend to
+  text j, and causal within each text, and padding positions masked.
+  Pre-compute on CPU, pass as `kq_b` to `ggml_flash_attn_ext`.
+- RoPE: independent positions per text (0..len[i]-1, then 0 for padding).
 
-**Step 3 -- Demo page** (`wasm/demo.html`):
-- Load a small model (all-MiniLM-L6-v2, 24 MB Q4_K).
-- Text input → encode → show embedding dims + cosine vs reference.
+**Step 2 -- Pooling**:
+- For last-token pooling: extract token at `len[i]-1` offset within each
+  text's block. Use `ggml_get_rows` with custom index tensor.
+- L2-normalize per text.
 
-**Challenges**:
-- Memory: 2 GB WASM limit. MiniLM Q4_K fits (24 MB); larger models need
-  streaming GGUF or won't fit.
-- First load: GGUF download + WASM compilation. Use `caches` API.
-- No GPU: CPU-only, but ggml SIMD kernels should be fast enough for
-  small models.
+**Step 3 -- Dispatch**: In `crispembed_encode_batch()`, call the new batch
+function for decoder models instead of the sequential loop.
 
-**Files**: `cmake/wasm.cmake`, `wasm/crispembed.js`, `wasm/demo.html`,
-`CMakeLists.txt` (add wasm target)
+**KV cache**: Low priority for embeddings (each text is independent). Only
+useful if many texts share a prompt prefix. Defer.
 
-**Effort**: Medium (3-4 days). Main risk is ggml WASM compatibility.
+**Files**: `src/decoder_embed.cpp` (new batch function),
+`src/crispembed.cpp` (dispatch), `src/decoder_embed.h`
 
----
-
-### Blueprint: INT4 GGUF for face models
-
-**Goal**: Quantize Conv2D weights in face models (SCRFD, AuraFace, SFace)
-to Q4_K for 4x size reduction.
-
-**Current state**: `tools/quantize.cpp` skips tensors with ndims > 2
-(line 172: "skipping N-D tensor (conv2d)"). Conv2D weights are stored as
-2D `[OC, IC*KH*KW]` in the GGUF (flattened from 4D for quantization
-compatibility). The graph replayer (`src/cnn_embed.cpp`) reshapes them
-back to 4D and dequants Q→F32 before `ggml_conv_2d`.
-
-**The fix is simple**: The quantizer already handles 2D tensors. The issue
-is that face model conv weights are ALREADY 2D in the GGUF (flattened by
-the converter). The quantizer skips them because of a name-based guard
-(`patch_embed` check) or because certain tensors are small (< 256 elements).
-
-**Step 1 -- Quantizer** (`tools/quantize.cpp`):
-- Remove or relax the `patch_embed` / ndims guard for face models.
-- Add `--include-conv` flag to opt-in to conv weight quantization.
-- Keep bias/norm tensors at F32 (1D tensors, already excluded).
-
-**Step 2 -- Graph replayer** (`src/cnn_embed.cpp`):
-- Already handles Q→F32 dequant (commit 2fcde98). Verify it works for
-  Q4_K (not just Q8_0).
-
-**Step 3 -- Testing**: Quantize YuNet, SCRFD, AuraFace, SFace to Q4_K.
-Compare detection boxes (IoU ≥ 0.95) and recognition embeddings (cos ≥ 0.99).
-
-**Expected sizes**:
-- AuraFace: 249 MB → ~65 MB (Q4_K)
-- SCRFD: 17 MB → ~5 MB
-- SFace: 37 MB → ~6 MB (already have Q8_0 at 10 MB)
-
-**Files**: `tools/quantize.cpp`, `src/cnn_embed.cpp` (verify only)
-
-**Effort**: Low (1 day). The infrastructure exists; this is mostly
-testing.
-
----
-
-### Blueprint: Live-test LoRA with Jina v5
-
-**Goal**: End-to-end verification that LoRA hot-swap works correctly with
-real Jina v5 adapters, not just unit tests.
-
-**Current state**: LoRA infrastructure is implemented (decoder_embed.cpp,
-C API, Python wrapper). Converter supports `--lora-mode=separate`. But no
-end-to-end parity test exists against HuggingFace per-adapter outputs.
-
-**Step 1 -- Convert**: `python models/convert-decoder-embed-to-gguf.py
---model jinaai/jina-embeddings-v5-text-small --lora-mode=separate --output
-jina-v5-small-lora.gguf`
-
-**Step 2 -- Per-adapter parity** (new test `tests/test_lora_parity.py`):
-- For each adapter (retrieval, classification, clustering, text-matching):
-  - HF: `model.set_adapter(name)` → encode test texts
-  - CrispEmbed: `crispembed_set_lora(ctx, name)` → encode same texts
-  - Compare: cos >= 0.999 per text
-- Also test: switching adapters mid-session, listing available adapters,
-  setting invalid adapter name (should fail gracefully).
-
-**Step 3 -- Python wrapper test**: Verify `ctx.set_lora("retrieval")`,
-`ctx.list_lora()`, `ctx.lora` property work end-to-end.
-
-**Files**: `tests/test_lora_parity.py` (new), test data
-
-**Effort**: Low (1 day). Infrastructure exists; this is testing only.
-
----
-
-### Blueprint: 3D tensor quantization for MoE experts
-
-**Goal**: Extend `tools/quantize.cpp` to quantize 3D tensors (MoE expert
-weights) instead of copying them as F32.
-
-**Current state**: Quantizer skips ndims > 2 (line 172). For nomic-v2-moe,
-expert_fc1 `[8, 3072, 768]` and expert_fc2 `[8, 768, 3072]` stay F32,
-limiting Q8_0 to 1122 MB (vs potential ~600 MB if experts were quantized).
-
-**Approach**: Iterate over the outermost dimension (n_experts=8) and
-quantize each 2D slice `[inter, hidden]` independently. The ggml quantize
-functions work on flat arrays with a specified number of elements per row.
-
-**Step 1** (`tools/quantize.cpp`):
-```cpp
-if (ndims == 3) {
-    // Quantize each 2D slice of the 3D tensor
-    int64_t slice_size = ne[0] * ne[1];
-    for (int64_t k = 0; k < ne[2]; k++) {
-        quantize_slice(src + k * slice_size, dst + k * q_slice_size,
-                       ne[0], ne[1], target_type);
-    }
-}
-```
-
-**Step 2** -- Verify: `ggml_mul_mat_id` must support quantized `as` tensor.
-Check ggml source: `ggml_mul_mat_id` calls `ggml_compute_forward_mul_mat`
-per expert, which supports quantized weights. Should work.
-
-**Step 3** -- Test: Quantize nomic-v2-moe with 3D quant, verify cos >= 0.999
-(Q8_0) and cos >= 0.96 (Q4_K).
-
-**Expected sizes** (nomic-v2-moe):
-- F32: 1818 MB → Q8_0: ~600 MB (vs current 1122 MB)
-- Expert weights: 6 layers × 2 × [8, 3072, 768] = ~845 MB F32 → ~225 MB Q8_0
-
-**Files**: `tools/quantize.cpp`
-
-**Effort**: Low (half day). Small code change + testing.
+**Effort**: High (6-8 days). Block-diagonal mask construction is the
+tricky part.
 
 ---
 
@@ -606,3 +518,240 @@ call it for face search/verification.
 `examples/face_search.py`
 
 **Effort**: Low (1-2 days). C API is already complete and tested.
+
+---
+
+### Blueprint: General OCR — Text Detection (DBNet) + General TrOCR
+
+**Goal**: Add a complete open-source OCR pipeline to CrispEmbed: detect text
+regions in any image, then recognize each region into Unicode text. All via
+ggml/GGUF, quantized, cross-platform — a portable, open alternative to
+proprietary engines like WeChat OCR.
+
+**Motivation**: CrispEmbed already has encoder-decoder vision models
+(DeiT+TrOCR for math, PosFormer for handwriting) and CNN detection models
+(YuNet/SCRFD for faces). General OCR combines both patterns: a CNN detector
+to find text regions + a TrOCR-style encoder-decoder to read them. The
+ggml graph-building infrastructure for both patterns already exists.
+
+**Architecture overview**:
+
+```
+Input image
+    │
+    ├─► Text Detection (DBNet/DBNet++)
+    │     ResNet-18 backbone + FPN + differentiable binarization head
+    │     → binary map → contour extraction → oriented bounding boxes
+    │     Model size: ~3 MB (Q4_K), ~12 MB (F16)
+    │
+    └─► Text Recognition (TrOCR-base or TrOCR-small)
+          ViT/DeiT encoder + GPT-2/RoBERTa decoder (autoregressive)
+          Per-crop: resize to 384×384 → encoder features → decode tokens
+          Vocabulary: ~50K BPE tokens (multilingual capable)
+          Model size: ~60 MB (Q4_K small), ~130 MB (Q4_K base)
+```
+
+**Why DBNet**: Lightweight (ResNet-18 backbone), fast, handles arbitrary
+orientations, proven in PaddleOCR/MMOCR. The differentiable binarization
+head is a simple sigmoid+threshold — no anchor boxes, no NMS. Same FPN
+pattern as SCRFD (already implemented in cnn_embed.cpp).
+
+**Why TrOCR**: We already have DeiT+TrOCR for math (math_ocr.cpp). General
+TrOCR uses the same architecture with different training data. Microsoft
+publishes pretrained checkpoints for English, and community fine-tunes
+exist for many languages. Encoder-decoder transformer is our strongest
+ggml pattern.
+
+#### Phase 1 — Text Detection: DBNet
+
+**Step 1 — Converter** (`models/convert-dbnet-to-gguf.py`):
+- Load DBNet from MMOCR or PaddleOCR checkpoint (PyTorch or Paddle format).
+- MMOCR preferred: `mmocr/dbnet_resnet18_fpnc_1200e_icdar2015`.
+- Extract ResNet-18 backbone (conv1 + 4 stages), FPN neck (lateral + smooth
+  convs), DBNet head (probability map + threshold map convs).
+- Store as GGUF with architecture metadata:
+  `ocr_det.arch = "dbnet"`, `ocr_det.backbone = "resnet18"`,
+  `ocr_det.fpn_channels = 256`, `ocr_det.input_size = 640`.
+- Weight naming: `det.backbone.conv1.{weight,bias}`,
+  `det.backbone.stage{i}.block{j}.conv{k}.{weight,bias}`,
+  `det.fpn.lateral{i}.{weight,bias}`, `det.fpn.smooth{i}.{weight,bias}`,
+  `det.head.prob.{weight,bias}`, `det.head.thresh.{weight,bias}`.
+
+**Step 2 — Inference** (`src/ocr_detect.{h,cpp}`):
+- ResNet-18 forward: Conv2D → BN (folded at convert time) → ReLU → MaxPool
+  → 4 stages of BasicBlock (skip connections). Reuse conv2d patterns from
+  cnn_embed.cpp (SCRFD).
+- FPN: lateral 1×1 convs + upsample + add + smooth 3×3 convs. Concatenate
+  multi-scale features. Same pattern as SCRFD FPN.
+- DBNet head: 3×3 conv → BN → ReLU → 1×1 conv → sigmoid → probability map.
+- Post-processing (CPU, not ggml):
+  - Threshold probability map at 0.3 → binary map
+  - Find contours (simple scanline or OpenCV-free implementation)
+  - Fit minimum bounding rectangles (oriented or axis-aligned)
+  - Filter by area (min 100px²) and score (>0.5)
+  - Expand boxes by 1.5× for recognition padding
+  - Return list of `ocr_box { float x[4], y[4]; float score; float angle; }`
+
+**Step 3 — Image preprocessing**:
+- Reuse `image_preprocess.{h,cpp}` for resize, normalize.
+- DBNet expects: resize longest side to 640 (or 960), pad to multiple of 32,
+  normalize with ImageNet mean/std.
+
+#### Phase 2 — Text Recognition: General TrOCR
+
+**Step 4 — Converter** (`models/convert-trocr-to-gguf.py`):
+- Load Microsoft `trocr-small-printed` or `trocr-base-printed` from HF.
+- Encoder: DeiT/BEiT ViT (same as math_ocr converter, lines ~50-120).
+- Decoder: GPT-2 style with cross-attention (same as math_ocr converter).
+- Key difference from math TrOCR: vocabulary is full BPE (~50K tokens)
+  instead of math-only (~500 tokens). Store full vocab in GGUF.
+- Metadata: `ocr_rec.arch = "trocr"`, `ocr_rec.vocab_size`,
+  `ocr_rec.max_length = 128`, `ocr_rec.bos_token_id`, `ocr_rec.eos_token_id`.
+
+**Step 5 — Inference** (`src/ocr_recognize.{h,cpp}`):
+- Heavily based on math_ocr.cpp. Main differences:
+  - Input: arbitrary text crop (not just equation) resized to 384×384.
+  - Vocabulary: BPE with ~50K tokens (reuse tokenizer_bpe.cpp for decoding).
+  - Output: Unicode string (not LaTeX).
+  - Beam search optional (greedy is fine for most text).
+- Forward: DeiT encoder → cross-attention decoder → argmax per step → BPE
+  detokenize.
+
+#### Phase 3 — Pipeline Integration
+
+**Step 6 — Pipeline API** (`src/ocr_pipeline.{h,cpp}`):
+- `crispembed_ocr_detect(ctx, image_path, &boxes, &n_boxes)` — detection only
+- `crispembed_ocr_recognize(ctx, image_path, crop_box, &text)` — recognition only
+- `crispembed_ocr(ctx, image_path, &results, &n_results)` — full pipeline:
+  detect → sort boxes (top-to-bottom, left-to-right) → recognize each →
+  return `ocr_result { ocr_box box; char *text; float confidence; }[]`
+
+**Step 7 — C API** (`src/crispembed.h`):
+```c
+// OCR text detection
+int crispembed_ocr_detect(crispembed_ctx *ctx,
+                          const char *image_path,
+                          crispembed_ocr_box **boxes,
+                          int *n_boxes);
+
+// OCR text recognition (single crop)
+int crispembed_ocr_recognize(crispembed_ctx *ctx,
+                             const char *image_path,
+                             crispembed_ocr_box *box,   // NULL = full image
+                             char **text,
+                             float *confidence);
+
+// Full OCR pipeline (detect + recognize all)
+int crispembed_ocr(crispembed_ctx *ctx,
+                   const char *image_path,
+                   crispembed_ocr_result **results,
+                   int *n_results);
+
+void crispembed_ocr_free(crispembed_ocr_result *results, int n);
+```
+
+**Step 8 — CLI/Server**:
+- CLI: `crispembed --ocr image.png` → prints detected text with bounding boxes.
+- Server: `/ocr` endpoint accepting image upload, returning JSON array of
+  `{ "text": "...", "box": [[x1,y1], ...], "confidence": 0.95 }`.
+
+**Step 9 — Python/Rust/Dart bindings**: Extend wrappers with `ocr()` method.
+
+#### Testing & Quality Gates
+
+- Detection: IoU ≥ 0.80 vs MMOCR on ICDAR 2015 test set (500 images).
+- Recognition: Character accuracy ≥ 95% on printed English (ICDAR 2015 crops).
+- End-to-end: F1 ≥ 0.75 on ICDAR 2015 end-to-end (word-level).
+- Quantization: Q4_K detection cos ≥ 0.99 vs F32; Q4_K recognition
+  accuracy drop < 1%.
+- Total pipeline size target: ~70 MB (Q4_K detection + Q4_K TrOCR-small).
+
+#### Model Registry Entries
+
+```
+| ID             | Arch    | Size (Q4_K) | Notes              |
+|----------------|---------|-------------|--------------------|
+| dbnet-ic15     | DBNet   | ~3 MB       | ICDAR 2015 trained |
+| trocr-small-en | TrOCR   | ~60 MB      | English printed    |
+| trocr-base-en  | TrOCR   | ~130 MB     | English printed    |
+```
+
+#### What We Already Have (reuse map)
+
+| Existing code | Reuse for |
+|---|---|
+| `cnn_embed.cpp` (SCRFD FPN) | DBNet backbone + FPN |
+| `math_ocr.cpp` (DeiT+TrOCR) | TrOCR recognition (nearly identical) |
+| `image_preprocess.cpp` | Image resize/normalize/crop |
+| `tokenizer_bpe.cpp` | BPE detokenization for TrOCR output |
+| `convert-hmer-to-gguf.py` | DenseNet/CNN conversion patterns |
+| `models/convert-bert-to-gguf.py` | GGUF metadata writing patterns |
+
+#### Execution Order
+
+1. DBNet converter + inference (detection standalone)
+2. General TrOCR converter (adapt from math_ocr converter)
+3. General TrOCR inference (adapt from math_ocr.cpp)
+4. Pipeline glue (detect → crop → recognize)
+5. C API + CLI + server endpoint
+6. Python/Rust/Dart bindings
+7. Quality benchmarks on ICDAR 2015
+
+**Effort**: High (10-14 days). Detection is the most new code; recognition
+is largely a vocabulary swap from math_ocr.
+
+---
+
+## CrispASR reuse map — don't reinvent the wheel
+
+CrispASR (sibling repo at `../CrispASR`) already has significant
+infrastructure that overlaps with CrispEmbed's OCR needs. Before writing
+new C++ code, check whether CrispASR already provides it.
+
+**Already in CrispASR — DO NOT REBUILD in CrispEmbed:**
+
+| Capability | CrispASR location | Notes |
+|---|---|---|
+| Translation (MADLAD-400/T5) | `src/t5_translate.{h,cpp}` | Full T5 encoder-decoder, beam search, 200+ languages |
+| Translation (M2M-100) | `src/m2m100.{h,cpp}` | Encoder-decoder, 100 languages |
+| Language identification | (LID model in CrispASR) | Route text to correct translation pair |
+| Cross-attention (enc→dec) | `src/core/cross_attn.h` | KV projection + step helpers |
+| Beam search decoding | `src/core/beam_decode.h` | Replay-from-prefix style |
+| Greedy decoding | `src/core/greedy_decode.h` | Step-by-step token generation |
+| Self-attention + KV cache | `src/core/attention.h` | Multi-variant, quantized KV, CPU offload |
+| FFN (SwiGLU/GeGLU) | `src/core/ffn.h` | Shared with CrispEmbed (copy) |
+| SentencePiece tokenizer | `src/core/sentencepiece.h` | Unigram Viterbi, header-only |
+| BPE tokenizer | `src/core/bpe.h` | GPT-2 byte-level, header-only |
+| WordPiece tokenizer | `src/core/wordpiece.h` | Greedy longest-prefix |
+| GGUF loader | `src/core/gguf_loader.{h,cpp}` | Two-pass metadata+weights |
+
+**Current sharing model**: CrispEmbed copies `gguf_loader`, `attention.h`,
+`ffn.h`, `bpe.h` from CrispASR. BidirLM-Omni audio links against
+`libcrispasr` as a shared library.
+
+**Open question**: Should `core/` become a shared git submodule instead of
+ad-hoc copies? Both repos evolve these files. Current drift is manageable
+but will grow as CrispEmbed adds more encoder-decoder models (OCR, etc.).
+
+**For the OCR blueprint specifically**: The general TrOCR decoder reuses
+the existing `math_ocr.cpp` inline decoder (which was written before the
+CrispASR core/ copy existed). It does NOT need a new decoder from scratch.
+The main new code is DBNet detection (CNN, same pattern as cnn_embed.cpp).
+
+**For the full detect → OCR → translate pipeline**: OCR runs in CrispEmbed,
+then hand off the recognized text to CrispASR's translation API (already
+exposed as a C library). No need to port translation into CrispEmbed.
+
+## Future OCR extensions (unscoped)
+
+- [ ] **Document layout analysis** — YOLOv8 or RT-DETR to classify page
+  regions (text, table, figure, equation) before routing to OCR or math OCR.
+
+- [ ] **PaddleOCR PP-OCRv4 alternative** — SVTR recognizer instead of TrOCR.
+  Smaller (~10 MB) but less accurate. Good for mobile/edge.
+
+- [ ] **Multilingual TrOCR** — Fine-tune or find community checkpoints for
+  CJK, Arabic, Devanagari. The BPE tokenizer already supports Unicode.
+
+- [ ] **Handwriting recognition (general)** — Extend PosFormer/TrOCR
+  training to IAM Handwriting dataset for general handwritten English.

@@ -119,6 +119,8 @@ list(APPEND CRISPEMBED_SOURCES src/math_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/hmer_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/bttr_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppformulanet_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ocr_detect.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ocr_pipeline.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -214,6 +216,18 @@ target_link_libraries(test-bttr-beam PRIVATE crispembed)
 
 add_executable(test-ppformulanet tests/test_ppformulanet.cpp)
 target_link_libraries(test-ppformulanet PRIVATE crispembed)
+
+add_executable(test-ocr-detect tests/test_ocr_detect.cpp)
+target_link_libraries(test-ocr-detect PRIVATE crispembed)
+
+add_executable(test-ocr-detect-diff tests/test_ocr_detect_diff.cpp)
+target_link_libraries(test-ocr-detect-diff PRIVATE crispembed)
+
+add_executable(test-ocr-recognize tests/test_ocr_recognize.cpp)
+target_link_libraries(test-ocr-recognize PRIVATE crispembed)
+
+add_executable(test-ocr-pipeline tests/test_ocr_pipeline.cpp)
+target_link_libraries(test-ocr-pipeline PRIVATE crispembed)
 
 endif() # NOT iOS
 

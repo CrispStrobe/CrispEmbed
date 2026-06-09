@@ -79,8 +79,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --ocr FILE       math OCR → LaTeX (auto-detect: pix2tex/hmer/bttr/ppformulanet)\n");
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
-    fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
+    fprintf(stderr, "  --det MODEL      detection model for --face-pipeline / --ocr\n");
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
+    fprintf(stderr, "  --ocr FILE       full OCR: detect text + recognize (needs -m rec_model --det det_model)\n");
     fprintf(stderr, "  --conf N         confidence threshold for detection (default: 0.5)\n");
     fprintf(stderr, "  --auto-download  download model automatically if not found\n");
     fprintf(stderr, "  --accept-license SPDX  pre-accept a restricted license (e.g. cc-by-nc-4.0, gemma)\n");
@@ -181,6 +182,8 @@ int main(int argc, char ** argv) {
             det_model = argv[++i];
         } else if (strcmp(argv[i], "--face-pipeline") == 0) {
             face_pipeline_mode = true;
+        } else if (strcmp(argv[i], "--ocr") == 0 && i + 1 < argc) {
+            ocr_path = argv[++i];
         } else if (strcmp(argv[i], "--conf") == 0 && i + 1 < argc) {
             conf_threshold = (float)atof(argv[++i]);
         } else if (strcmp(argv[i], "--lora") == 0 && i + 1 < argc) {
@@ -227,8 +230,53 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
-    // Resolve model path (handles auto-download)
-    // Auto-download if arg looks like a model name (not a file path)
+    // OCR pipeline early exit — before model resolution which may interfere
+    // OCR pipeline mode: detect text → crop → recognize
+    if (!ocr_path.empty()) {
+        if (det_model.empty()) {
+            fprintf(stderr, "error: --ocr requires --det <dbnet_model.gguf>\n");
+            return 1;
+        }
+        if (model_arg.empty()) {
+            fprintf(stderr, "error: --ocr requires -m <trocr_model.gguf>\n");
+            return 1;
+        }
+
+        void* ocr_ctx = crispembed_ocr_init(det_model.c_str(), model_arg.c_str(), n_threads);
+        if (!ocr_ctx) {
+            fprintf(stderr, "error: cannot load OCR models\n");
+            return 1;
+        }
+
+        int n_results = 0;
+        const crispembed_ocr_result* results = crispembed_ocr(ocr_ctx, ocr_path.c_str(), &n_results);
+
+        if (json_output) {
+            printf("[");
+            for (int i = 0; i < n_results; i++) {
+                if (i > 0) printf(",");
+                printf("{\"text\":\"%s\",\"bbox\":[%.0f,%.0f,%.0f,%.0f],\"conf\":%.3f}",
+                       json_escape(results[i].text).c_str(),
+                       results[i].x, results[i].y,
+                       results[i].x + results[i].w, results[i].y + results[i].h,
+                       results[i].confidence);
+            }
+            printf("]\n");
+        } else {
+            for (int i = 0; i < n_results; i++) {
+                printf("[%2d] (%.0f,%.0f)-(%.0f,%.0f) conf=%.2f  \"%s\"\n",
+                       i, results[i].x, results[i].y,
+                       results[i].x + results[i].w, results[i].y + results[i].h,
+                       results[i].confidence, results[i].text);
+            }
+            if (n_results == 0) printf("(no text detected)\n");
+        }
+
+        crispembed_ocr_free(ocr_ctx);
+        return 0;
+    }
+
+    // Resolve model path (handles auto-download) — after OCR early exit
     bool is_name = (model_arg.find(".gguf") == std::string::npos &&
                     model_arg.find('/') == std::string::npos &&
                     model_arg.find('\\') == std::string::npos);
