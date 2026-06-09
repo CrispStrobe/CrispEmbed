@@ -83,6 +83,9 @@ std::string kv_str(gguf_context* gctx, const char* key, const char* default_val)
 // vector when the key is missing or has the wrong type.
 std::vector<std::string> kv_str_array(gguf_context* gctx, const char* key);
 
+// Read an int32 array. Returns empty vector when missing.
+std::vector<int> kv_i32_array(gguf_context* gctx, const char* key);
+
 // ---------------------------------------------------------------------------
 // Pass 2: tensor allocation + weight data copy.
 // ---------------------------------------------------------------------------

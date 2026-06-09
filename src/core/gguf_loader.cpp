@@ -137,6 +137,31 @@ std::vector<std::string> kv_str_array(gguf_context* gctx, const char* key) {
     return out;
 }
 
+std::vector<int> kv_i32_array(gguf_context* gctx, const char* key) {
+    std::vector<int> out;
+    const int k = gguf_find_key(gctx, key);
+    if (k < 0)
+        return out;
+    if (gguf_get_kv_type(gctx, k) != GGUF_TYPE_ARRAY)
+        return out;
+    const int n = gguf_get_arr_n(gctx, k);
+    const void* data = gguf_get_arr_data(gctx, k);
+    auto arr_type = gguf_get_arr_type(gctx, k);
+    out.resize(n);
+    if (arr_type == GGUF_TYPE_INT32) {
+        memcpy(out.data(), data, n * sizeof(int32_t));
+    } else if (arr_type == GGUF_TYPE_UINT32) {
+        const uint32_t* p = (const uint32_t*)data;
+        for (int i = 0; i < n; i++) out[i] = (int)p[i];
+    } else if (arr_type == GGUF_TYPE_INT64) {
+        const int64_t* p = (const int64_t*)data;
+        for (int i = 0; i < n; i++) out[i] = (int)p[i];
+    } else {
+        out.clear();
+    }
+    return out;
+}
+
 // ---------------------------------------------------------------------------
 // Pass 2: tensor allocation + weight data copy.
 // ---------------------------------------------------------------------------
