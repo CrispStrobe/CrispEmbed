@@ -540,6 +540,43 @@ CRISPEMBED_API const char * crispembed_bttr_ocr_recognize(
 CRISPEMBED_API const char * crispembed_bttr_ocr_recognize_gray(
     void * ctx, const float * pixels, int width, int height, int * out_len);
 
+// ---------------------------------------------------------------------------
+// General OCR Pipeline — text detection (DBNet) + recognition (TrOCR)
+// ---------------------------------------------------------------------------
+
+/// OCR result for a single detected text region.
+typedef struct crispembed_ocr_result {
+    float x, y, w, h;       // bounding box in original image coordinates
+    float confidence;        // detection confidence
+    const char * text;       // recognized text (owned by pipeline ctx)
+    int text_len;
+} crispembed_ocr_result;
+
+/// Load OCR pipeline (detection + recognition models).
+/// Returns opaque context, or NULL on failure.
+CRISPEMBED_API void * crispembed_ocr_init(
+    const char * det_model_path,
+    const char * rec_model_path,
+    int n_threads);
+
+/// Free OCR pipeline context.
+CRISPEMBED_API void crispembed_ocr_free(void * ctx);
+
+/// Run full OCR on an image file. Returns array of results sorted in
+/// reading order (top-to-bottom, left-to-right). Array is owned by ctx
+/// and valid until the next call to crispembed_ocr or crispembed_ocr_free.
+CRISPEMBED_API const crispembed_ocr_result * crispembed_ocr(
+    void * ctx,
+    const char * image_path,
+    int * out_n_results);
+
+/// Run text recognition only on a single image crop (no detection).
+/// Returns recognized text string (owned by ctx, valid until next call).
+CRISPEMBED_API const char * crispembed_ocr_recognize(
+    void * ctx,
+    const char * image_path,
+    int * out_len);
+
 #ifdef __cplusplus
 }
 #endif

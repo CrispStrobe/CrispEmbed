@@ -114,9 +114,11 @@ def main():
     if len(weights) > 8:
         print(f"    ... ({len(weights) - 8} more)")
 
-    # Load tokenizer
+    # Load tokenizer — try tokenizer.json first, fall back to SentencePiece
     tok_tokens = None
     tok_path = model_dir / "tokenizer.json"
+    spm_path = model_dir / "sentencepiece.bpe.model"
+
     if tok_path.exists():
         with open(tok_path) as f:
             tok_data = json.load(f)
@@ -124,6 +126,35 @@ def main():
         if vocab:
             sorted_vocab = sorted(vocab.items(), key=lambda x: x[1])
             tok_tokens = [t[0] for t in sorted_vocab]
+
+    if tok_tokens is None and spm_path.exists():
+        # XLM-R / TrOCR uses SentencePiece BUT with a fairseq vocab offset.
+        # The HF tokenizer handles this correctly. Always prefer HF tokenizer
+        # to get the right token ID → string mapping.
+        try:
+            from transformers import AutoTokenizer
+            tok = AutoTokenizer.from_pretrained(str(model_dir))
+            n_tokens = dec_cfg.get("vocab_size", tok.vocab_size)
+            tok_tokens = []
+            # Use convert_ids_to_tokens to preserve ▁ space markers
+            for i in range(n_tokens):
+                try:
+                    piece = tok.convert_ids_to_tokens(i)
+                    if piece is None:
+                        piece = f"<unk_{i}>"
+                    tok_tokens.append(piece)
+                except Exception:
+                    tok_tokens.append(f"<unk_{i}>")
+            print(f"Loaded {len(tok_tokens)} tokens via AutoTokenizer (XLM-R/SentencePiece)")
+        except Exception:
+            # Fallback to raw SentencePiece (may have offset issues)
+            try:
+                import sentencepiece as spm
+                sp = spm.SentencePieceProcessor(model_file=str(spm_path))
+                tok_tokens = [sp.id_to_piece(i) for i in range(sp.get_piece_size())]
+                print(f"Loaded {len(tok_tokens)} tokens from sentencepiece.bpe.model (raw)")
+            except Exception as e:
+                print(f"WARNING: cannot load tokenizer: {e}")
 
     # Write GGUF
     model_name = args.name or model_dir.name
@@ -183,10 +214,32 @@ def main():
     dtype_gguf = (gguf.GGMLQuantizationType.F16 if args.fp16
                   else gguf.GGMLQuantizationType.F32)
 
+    # Map HuggingFace PyTorch key names to the convention math_ocr.cpp expects.
+    # The ONNX converter produces: enc.XXX and dec.XXX with dots.
+    # PyTorch safetensors has: encoder.XXX and decoder.model.decoder.XXX
+    def map_tensor_name(name):
+        """Map HF PyTorch tensor name to math_ocr.cpp convention."""
+        # Encoder: encoder.X.Y.Z → enc.X.Y.Z
+        if name.startswith("encoder."):
+            return "enc." + name[len("encoder."):]
+        # Decoder: decoder.model.decoder.X → dec.d.X (matches ONNX convention)
+        if name.startswith("decoder.model.decoder."):
+            return "dec.d." + name[len("decoder.model.decoder."):]
+        # Decoder head: decoder.lm_head.X → dec.lm_head.X
+        if name.startswith("decoder.lm_head."):
+            return "dec." + name[len("decoder."):]
+        # Decoder output_projection: decoder.output_projection.X → dec.lm_head.X
+        if name.startswith("decoder.output_projection."):
+            return "dec.lm_head." + name[len("decoder.output_projection."):]
+        # ONNX-style (already has enc./dec. prefix) — keep dots
+        if name.startswith("enc.") or name.startswith("dec."):
+            return name
+        # Fallback: replace dots with underscores (legacy)
+        return name.replace(".", "_").replace("/", "_").replace(":", "_")
+
     total_params = 0
     for name, arr in weights.items():
-        # Normalize name for ggml (replace dots/slashes)
-        gguf_name = name.replace(".", "_").replace("/", "_").replace(":", "_")
+        gguf_name = map_tensor_name(name)
         data = arr.astype(dtype_np)
         total_params += data.size
         writer.add_tensor(gguf_name, data, raw_dtype=dtype_gguf)
