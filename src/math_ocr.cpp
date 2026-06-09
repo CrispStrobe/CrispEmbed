@@ -1125,8 +1125,29 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
     ctx->result_buf.clear();
     for (size_t i = 1; i < tokens.size(); i++) {
         int tok = tokens[i];
-        if (tok >= 0 && tok < (int)ctx->vocab.size()) ctx->result_buf += ctx->vocab[tok];
+        if (tok >= 0 && tok < (int)ctx->vocab.size()) {
+            const auto& piece = ctx->vocab[tok];
+            // SentencePiece ▁ (U+2581) marks word boundaries → replace with space
+            // ▁ is 3 bytes: 0xE2 0x96 0x81
+            for (size_t j = 0; j < piece.size(); ) {
+                if (j + 2 < piece.size() &&
+                    (uint8_t)piece[j] == 0xE2 &&
+                    (uint8_t)piece[j+1] == 0x96 &&
+                    (uint8_t)piece[j+2] == 0x81) {
+                    ctx->result_buf += ' ';
+                    j += 3;
+                } else {
+                    ctx->result_buf += piece[j];
+                    j++;
+                }
+            }
+        }
     }
+    // Trim leading/trailing whitespace
+    while (!ctx->result_buf.empty() && ctx->result_buf.front() == ' ')
+        ctx->result_buf.erase(ctx->result_buf.begin());
+    while (!ctx->result_buf.empty() && ctx->result_buf.back() == ' ')
+        ctx->result_buf.pop_back();
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
