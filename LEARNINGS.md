@@ -1197,3 +1197,19 @@ NOT the model.beam_search() which includes the bi-directional scoring.
 10. **OOV tokens**: 14 CROHME captions contain `'` (apostrophe) which is
     not in PosFormer's 110-token dictionary. Filter these before training
     or the DataLoader crashes with KeyError.
+11. **Cosine warm restarts are dangerous**: CosineAnnealingWarmRestarts
+    (T_0=30) reset LR from 0.008→0.08 at epoch 94, crashing val_ExpRate
+    from 57% to 38%. The model briefly recovered to 60.1% then fell
+    again. Plain CosineAnnealingLR (no restarts) is safer. The 60.1%
+    peak was lost because the checkpoint was overwritten.
+12. **Never delete HF checkpoints hastily**: HuggingFace has git history
+    — deleted files can be recovered via `hf_hub_download(revision=SHA)`.
+    But always back up to /mnt/storage first before deleting.
+13. **Dataset license verification**: figshare uploads can have wrong
+    licenses (user picks any license, no verification). CROHME+HME100K
+    on figshare claims CC BY 4.0 but the original datasets are NC/
+    proprietary. Always check the original source, not re-uploads.
+14. **UniMER dataset (Apache 2.0)**: wanderkid/UniMER_Dataset on HF has
+    978K printed math images (ArXiv+Pix2tex) under Apache 2.0. The
+    CROHME and HME100K subsets are excluded from this license ("requires
+    manual download for copyright"). Best commercial data source found.
