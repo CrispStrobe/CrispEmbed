@@ -3015,3 +3015,60 @@ extern "C" void crispembed_free(crispembed_context * ctx) {
     ctx->backend = nullptr;
     delete ctx;
 }
+
+// ---------------------------------------------------------------------------
+// General OCR Pipeline C API
+// ---------------------------------------------------------------------------
+
+#include "ocr_pipeline.h"
+
+struct ocr_pipeline_wrapper {
+    ocr_pipeline::context * ctx = nullptr;
+    std::vector<ocr_pipeline::ocr_result> results;
+    std::vector<crispembed_ocr_result> c_results;
+    std::string rec_buf;
+};
+
+extern "C" void * crispembed_ocr_init(const char * det_path, const char * rec_path, int n_threads) {
+    auto * w = new ocr_pipeline_wrapper();
+    if (!ocr_pipeline::load(&w->ctx, det_path, rec_path, n_threads)) {
+        delete w;
+        return nullptr;
+    }
+    return w;
+}
+
+extern "C" void crispembed_ocr_free(void * ctx) {
+    if (!ctx) return;
+    auto * w = (ocr_pipeline_wrapper *)ctx;
+    if (w->ctx) ocr_pipeline::free(w->ctx);
+    delete w;
+}
+
+extern "C" const crispembed_ocr_result * crispembed_ocr(
+        void * ctx, const char * image_path, int * out_n) {
+    if (!ctx || !image_path) { if (out_n) *out_n = 0; return nullptr; }
+    auto * w = (ocr_pipeline_wrapper *)ctx;
+    w->results = ocr_pipeline::run_file(w->ctx, image_path);
+    w->c_results.resize(w->results.size());
+    for (size_t i = 0; i < w->results.size(); i++) {
+        auto & r = w->results[i];
+        auto & c = w->c_results[i];
+        c.x = r.box.x; c.y = r.box.y;
+        c.w = r.box.w; c.h = r.box.h;
+        c.confidence = r.confidence;
+        c.text = r.text.c_str();
+        c.text_len = (int)r.text.size();
+    }
+    if (out_n) *out_n = (int)w->c_results.size();
+    return w->c_results.empty() ? nullptr : w->c_results.data();
+}
+
+extern "C" const char * crispembed_ocr_recognize(
+        void * ctx, const char * image_path, int * out_len) {
+    if (!ctx || !image_path) { if (out_len) *out_len = 0; return nullptr; }
+    auto * w = (ocr_pipeline_wrapper *)ctx;
+    w->rec_buf = ocr_pipeline::recognize_file(w->ctx, image_path);
+    if (out_len) *out_len = (int)w->rec_buf.size();
+    return w->rec_buf.empty() ? nullptr : w->rec_buf.c_str();
+}
