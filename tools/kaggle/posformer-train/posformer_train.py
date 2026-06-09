@@ -706,11 +706,40 @@ def patch_lit_posformer():
             img, mask, beam_size=1, max_len=self.hparams.max_len,
             alpha=1.0, early_stopping=True, temperature=1.0)
 
+    # Override configure_optimizers: cosine annealing with warm restarts
+    # instead of ReduceLROnPlateau (more predictable, avoids noisy plateau detection)
+    def _patched_configure_optimizers(self):
+        import torch.optim as optim
+        optimizer = optim.SGD(
+            self.parameters(),
+            lr=self.hparams.learning_rate,
+            momentum=0.9,
+            weight_decay=1e-4,
+        )
+        scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+            optimizer, T_0=30, T_mult=2, eta_min=1e-5)
+        return {"optimizer": optimizer,
+                "lr_scheduler": {"scheduler": scheduler, "interval": "epoch"}}
+
     lit.LitPosFormer.training_step = _patched_training_step
     lit.LitPosFormer.validation_step = _patched_validation_step
     lit.LitPosFormer.approximate_joint_search = _fast_joint_search
+    lit.LitPosFormer.configure_optimizers = _patched_configure_optimizers
+
+    # Label smoothing: monkey-patch ce_loss to use label_smoothing=0.1
+    import Pos_Former.utils.utils as _utils
+    import torch.nn.functional as F
+    from einops import rearrange as _rearrange
+    _orig_ce = _utils.ce_loss
+    def _smoothed_ce(output_hat, output, ignore_idx=0, reduction="mean"):
+        flat_hat = _rearrange(output_hat, "b l e -> (b l) e")
+        flat = _rearrange(output, "b l -> (b l)")
+        return F.cross_entropy(flat_hat, flat, ignore_index=ignore_idx,
+                               reduction=reduction, label_smoothing=0.1)
+    _utils.ce_loss = _smoothed_ce
+
     step("lit_posformer.patched",
-         note="replaced .cuda(), validation uses greedy beam_size=1")
+         note="greedy val, cosine annealing T_0=30, label_smoothing=0.1")
 
 
 # ━━━━━━━━━━━━━━━━━━━━ HF checkpoint upload callback ━━━━━━━━━━━━━━━━━━━━━━━
