@@ -55,8 +55,12 @@ Input text / image / audio
     ├─► Math  ──► HMER: DenseNet-121 + GRU attention (hmer_ocr.cpp)
     │               Handwritten math → LaTeX (CROHME 2016)
     │
-    └─► Math  ──► BTTR: DenseNet + Transformer decoder (bttr_ocr.cpp)
-                    Handwritten math → LaTeX (CROHME 2014, 53% exact match)
+    ├─► Math  ──► BTTR: DenseNet + Transformer decoder (bttr_ocr.cpp)
+    │               Handwritten math → LaTeX (CROHME 2014, 53% exact match)
+    │
+    └─► Math  ──► PPFormulaNet-S / Texo-Distill (ppformulanet_ocr.cpp)
+                    HGNetv2 CNN encoder + MBart decoder (20M params)
+                    Printed math → LaTeX (BLEU 0.90 on UniMER SPE)
 ```
 
 ## Supported architectures (v0.7.0)
@@ -77,6 +81,7 @@ Input text / image / audio
 | ViT (SigLIP/CLIP) | — | Conv2D patch embed, CLS/mean/attn pool | siglip-base, clip-vit-base |
 | CLIP text | CLIP BPE | Pre-LN, causal mask, EOS pool | clip-text-base/large |
 | CNN (SCRFD/YuNet) | — | FPN, anchor decode, NMS | scrfd-det-10g, yunet |
+| PPFormulaNet (Texo) | BPE | HGNetv2 CNN enc, MBart PRE-LN dec | texo-distill (20M) |
 | CNN (ArcFace) | — | ResNet-100, 512-D L2 | w600k_r50, auraface-v1, sface |
 | DeiT+TrOCR | — | ggml graph encoder + decoder | pix2tex-mfr |
 | HMER | — | DenseNet-121 + GRU attention | hmer (handwritten math) |
