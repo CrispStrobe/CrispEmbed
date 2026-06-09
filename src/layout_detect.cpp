@@ -98,7 +98,7 @@ struct decoder_layer {
     ggml_tensor *self_qkv_w = nullptr, *self_qkv_b = nullptr;
     ggml_tensor *self_out_w = nullptr, *self_out_b = nullptr;
     ggml_tensor *norm1_w = nullptr, *norm1_b = nullptr;
-    // Deformable cross-attention
+    // Deformable cross-attention (value proj + offset/weight projections + output)
     ggml_tensor *cross_value_w = nullptr, *cross_value_b = nullptr;
     ggml_tensor *cross_sampling_offsets_w = nullptr, *cross_sampling_offsets_b = nullptr;
     ggml_tensor *cross_attn_weights_w = nullptr, *cross_attn_weights_b = nullptr;
@@ -258,6 +258,7 @@ bool load(context** out, const char* path, int n_threads) {
     dec.anchors = get("model.decoder.anchors");
     dec.valid_mask = get("model.decoder.valid_mask");
     dec.enc_proj_w = get("model.decoder.enc_output.proj.weight");
+    if (!dec.enc_proj_w) dec.enc_proj_w = get("m.dec.enc_output.proj.weight");
     dec.enc_norm_w = get("model.decoder.enc_output.norm.weight");
     dec.enc_norm_b = get("model.decoder.enc_output.norm.bias");
     dec.enc_score_w = get("model.decoder.enc_score_head.weight");
@@ -289,9 +290,16 @@ bool load(context** out, const char* path, int n_threads) {
         // as bias-only (the weights are in the ONNX graph as Gemm nodes)
         // Try both original and shortened names (GGUF 64-char limit)
         auto short_pfx = std::string("m.dec.dec.layers.") + std::to_string(i);
+        // Sampling offsets and attention weights — both weight and bias
+        l.cross_sampling_offsets_w = get(pfx + ".cross_attn.sampling_offsets.weight");
+        if (!l.cross_sampling_offsets_w)
+            l.cross_sampling_offsets_w = get(short_pfx + ".cross_attn.samp_offs.weight");
         l.cross_sampling_offsets_b = get(pfx + ".cross_attn.sampling_offsets.bias");
         if (!l.cross_sampling_offsets_b)
             l.cross_sampling_offsets_b = get(short_pfx + ".cross_attn.samp_offs.bias");
+        l.cross_attn_weights_w = get(pfx + ".cross_attn.attn_weights.weight");
+        if (!l.cross_attn_weights_w)
+            l.cross_attn_weights_w = get(short_pfx + ".cross_attn.attn_wts.weight");
         l.cross_attn_weights_b = get(pfx + ".cross_attn.attention_weights.bias");
         if (!l.cross_attn_weights_b)
             l.cross_attn_weights_b = get(short_pfx + ".cross_attn.attn_wts.bias");
@@ -358,6 +366,11 @@ static ggml_tensor* conv_relu(ggml_context* g, ggml_tensor* x, const conv_w& c,
 
 static ggml_tensor* linear(ggml_context* g, ggml_tensor* x, ggml_tensor* w, ggml_tensor* b) {
     if (!w) return x;
+    // ggml_mul_mat(a, b): contracts over a->ne[0], result ne[0] = a->ne[1]
+    // If w->ne[0] != x->ne[0], the weight needs transposing
+    if (w->ne[0] != x->ne[0] && w->ne[1] == x->ne[0]) {
+        w = ggml_cont(g, ggml_transpose(g, w));
+    }
     x = ggml_mul_mat(g, w, x);
     if (b) x = ggml_add(g, x, b);
     return x;
@@ -708,10 +721,6 @@ std::vector<region> detect(context* ctx, const float* pixels,
         ggml_backend_tensor_get(ctx->decoder.anchors, anchors.data(), 0, N_queries * 4 * sizeof(float));
 
     // Query embeddings: project encoder output to get initial queries
-    // For RT-DETRv2, initial queries come from top-K encoder scores
-    // Simplified: use anchor-based initialization (zeros + position encoding)
-    std::vector<float> queries(D * N_queries, 0.0f);
-
     // Helper: CPU-side matrix multiply y = W @ x + b
     // W: [out, in], x: [in, N], y: [out, N]
     auto cpu_linear = [](const float* x, float* y, int in_d, int out_d, int N,
@@ -719,11 +728,12 @@ std::vector<region> detect(context* ctx, const float* pixels,
         std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
         if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, out_d * in_d * sizeof(float));
         if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, out_d * sizeof(float));
+        // W layout: ggml stores [ne[0]=out_d, ne[1]=in_d] → memory W[o + i*out_d]
         for (int n = 0; n < N; n++) {
             for (int o = 0; o < out_d; o++) {
                 float sum = b[o];
                 for (int i = 0; i < in_d; i++) {
-                    sum += W[o * in_d + i] * x[i * N + n]; // x is [in, N] col-major
+                    sum += W[o + i * out_d] * x[i * N + n]; // x is [in, N] col-major
                 }
                 y[o * N + n] = sum;
             }
@@ -750,10 +760,78 @@ std::vector<region> detect(context* ctx, const float* pixels,
         }
     };
 
-    fprintf(stderr, "layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
+    // --- Query initialization: select top-K from encoder output ---
+    // 1. Project memory through enc_output: linear + norm
+    std::vector<float> enc_proj(D * total_tokens);
+    cpu_linear(memory.data(), enc_proj.data(), D, D, total_tokens,
+               ctx->decoder.enc_proj_w, nullptr);
+    // Add enc_output.proj.bias if exists
+    {
+        ggml_tensor* proj_b = ctx->wl.tensors.count("model.decoder.enc_output.proj.bias")
+            ? ctx->wl.tensors.at("model.decoder.enc_output.proj.bias") : nullptr;
+        if (proj_b) {
+            std::vector<float> bias(D);
+            ggml_backend_tensor_get(proj_b, bias.data(), 0, D * sizeof(float));
+            for (int n = 0; n < total_tokens; n++)
+                for (int d = 0; d < D; d++)
+                    enc_proj[d * total_tokens + n] += bias[d];
+        }
+    }
+    cpu_layernorm(enc_proj.data(), D, total_tokens,
+                  ctx->decoder.enc_norm_w, ctx->decoder.enc_norm_b);
 
-    // Decoder: 6 layers of (self-attn → deformable cross-attn → FFN)
-    std::vector<float> ref_points = anchors; // [N_queries * 4]
+    // 2. Score each token
+    std::vector<float> enc_scores(ctx->num_classes * total_tokens);
+    cpu_linear(enc_proj.data(), enc_scores.data(), D, ctx->num_classes, total_tokens,
+               ctx->decoder.enc_score_w, ctx->decoder.enc_score_b);
+
+    // 3. Find top-K tokens by max class score
+    std::vector<std::pair<float, int>> token_scores(total_tokens);
+    for (int n = 0; n < total_tokens; n++) {
+        float max_s = -1e9f;
+        for (int c = 0; c < ctx->num_classes; c++)
+            max_s = std::max(max_s, enc_scores[c * total_tokens + n]);
+        token_scores[n] = {max_s, n};
+    }
+    std::partial_sort(token_scores.begin(), token_scores.begin() + N_queries,
+                      token_scores.end(),
+                      [](const auto& a, const auto& b) { return a.first > b.first; });
+
+    // 4. Initialize queries from selected tokens
+    std::vector<float> queries(D * N_queries, 0.0f);
+    for (int q = 0; q < N_queries; q++) {
+        int token_idx = token_scores[q].second;
+        for (int d = 0; d < D; d++)
+            queries[d * N_queries + q] = enc_proj[d * total_tokens + token_idx];
+    }
+
+    // 5. Initialize reference points via enc_bbox_head MLP on selected tokens
+    std::vector<float> ref_points(N_queries * 4);
+    {
+        std::vector<float> tmp(D * N_queries);
+        std::copy(queries.begin(), queries.end(), tmp.begin());
+        for (int j = 0; j < 3; j++) {
+            int out_d = (j < 2) ? D : 4;
+            std::vector<float> out(out_d * N_queries);
+            cpu_linear(tmp.data(), out.data(), (j == 0 ? D : D), out_d, N_queries,
+                       ctx->decoder.enc_bbox_w[j], ctx->decoder.enc_bbox_b[j]);
+            if (j < 2) {
+                for (auto& v : out) v = std::max(0.0f, v); // ReLU
+                tmp = out;
+            } else {
+                // Sigmoid to get reference points in [0, 1]
+                for (auto& v : out) v = 1.0f / (1.0f + expf(-v));
+                // Rearrange: out is [4, N_queries], ref_points is [N_queries * 4]
+                for (int q = 0; q < N_queries; q++)
+                    for (int d = 0; d < 4; d++)
+                        ref_points[q * 4 + d] = out[d * N_queries + q];
+            }
+        }
+    }
+
+    fprintf(stderr, "layout_detect: query init done (top-K score: %.3f..%.3f)\n",
+            token_scores[0].first, token_scores[N_queries-1].first);
+    fprintf(stderr, "layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
 
     for (int li = 0; li < 6; li++) {
         const auto& layer = ctx->decoder.layers[li];
@@ -823,30 +901,18 @@ std::vector<region> detect(context* ctx, const float* pixels,
         cpu_linear(memory.data(), values.data(), D, D, total_tokens,
                    layer.cross_value_w, layer.cross_value_b);
 
-        // Sampling offsets: query → [N_heads * N_levels * N_points * 2, N_queries]
+        // Sampling offsets: (query+pos) → linear → [192, N_queries]
         int n_offsets = N_heads * N_levels * N_points * 2; // 192
         std::vector<float> offsets(n_offsets * N_queries);
-        // Note: sampling_offsets has weight + bias, but the ONNX only stores bias
-        // The weight is an identity-like mapping from the query
-        // For now, just use bias (reference points + learned bias)
-        if (layer.cross_sampling_offsets_b) {
-            std::vector<float> bias(n_offsets);
-            ggml_backend_tensor_get(layer.cross_sampling_offsets_b, bias.data(), 0, n_offsets * sizeof(float));
-            for (int q = 0; q < N_queries; q++)
-                for (int o = 0; o < n_offsets; o++)
-                    offsets[o * N_queries + q] = bias[o]; // broadcast
-        }
+        cpu_linear(queries.data(), offsets.data(), D, n_offsets, N_queries,
+                   layer.cross_sampling_offsets_w, layer.cross_sampling_offsets_b);
 
-        // Attention weights: query → [N_heads * N_levels * N_points, N_queries]
+        // Attention weights: (query+pos) → linear → [96, N_queries]
         int n_weights = N_heads * N_levels * N_points; // 96
         std::vector<float> attn_weights(n_weights * N_queries);
-        if (layer.cross_attn_weights_b) {
-            std::vector<float> bias(n_weights);
-            ggml_backend_tensor_get(layer.cross_attn_weights_b, bias.data(), 0, n_weights * sizeof(float));
-            for (int q = 0; q < N_queries; q++)
-                for (int w = 0; w < n_weights; w++)
-                    attn_weights[w * N_queries + q] = bias[w];
-        }
+        cpu_linear(queries.data(), attn_weights.data(), D, n_weights, N_queries,
+                   layer.cross_attn_weights_w, layer.cross_attn_weights_b);
+
         // Softmax attention weights per head per query (over levels * points)
         for (int q = 0; q < N_queries; q++) {
             for (int h = 0; h < N_heads; h++) {
@@ -1022,6 +1088,12 @@ std::vector<region> detect(context* ctx, const float* pixels,
     std::sort(results.begin(), results.end(),
               [](const region& a, const region& b) { return a.score > b.score; });
 
+    // Debug: print top scores
+    if (results.empty()) {
+        float max_score = 0;
+        for (auto& v : class_scores) max_score = std::max(max_score, v);
+        fprintf(stderr, "layout_detect: max class score after sigmoid: %.6f\n", max_score);
+    }
     fprintf(stderr, "layout_detect: %zu detections (score > %.2f)\n",
             results.size(), score_threshold);
     return results;
