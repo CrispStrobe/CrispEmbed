@@ -1036,7 +1036,7 @@ def train(args, zip_path: Path, dict_path: Path,
         try:
             from pytorch_lightning.loggers import WandbLogger
             # Fixed run_id per dataset for cross-session continuity
-            run_id = f"posformer-{args.dataset}-v3"
+            run_id = f"posformer-{args.dataset}-v4"
             logger = WandbLogger(
                 project=WANDB_PROJECT,
                 name=f"posformer-{args.dataset}",
