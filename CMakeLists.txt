@@ -218,6 +218,9 @@ target_link_libraries(test-ocr-detect PRIVATE crispembed)
 add_executable(test-ocr-detect-diff tests/test_ocr_detect_diff.cpp)
 target_link_libraries(test-ocr-detect-diff PRIVATE crispembed)
 
+add_executable(test-ocr-recognize tests/test_ocr_recognize.cpp)
+target_link_libraries(test-ocr-recognize PRIVATE crispembed)
+
 endif() # NOT iOS
 
 # ---------------------------------------------------------------------------
