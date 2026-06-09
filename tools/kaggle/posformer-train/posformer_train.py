@@ -1036,7 +1036,7 @@ def train(args, zip_path: Path, dict_path: Path,
         try:
             from pytorch_lightning.loggers import WandbLogger
             # Fixed run_id per dataset for cross-session continuity
-            run_id = f"posformer-{args.dataset}-v6"
+            run_id = f"posformer-{args.dataset}-v7"
             logger = WandbLogger(
                 project=WANDB_PROJECT,
                 name=f"posformer-{args.dataset}",
@@ -1071,17 +1071,9 @@ def train(args, zip_path: Path, dict_path: Path,
 
     # Force LR to 0.005 on resume via callback — the checkpoint's LR
     # (0.0165) is too high, causing val_ExpRate to oscillate 55-60%.
-    if resume_ckpt:
-        class LROverrideCallback(pl.Callback):
-            _done = False
-            def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
-                if not self._done:
-                    for pg in trainer.optimizers[0].param_groups:
-                        old_lr = pg['lr']
-                        pg['lr'] = 0.005
-                        step("lr.override", old_lr=old_lr, new_lr=0.005)
-                    self._done = True
-        callbacks.append(LROverrideCallback())
+    # LR override: patched directly in the checkpoint file on HuggingFace.
+    # Lightning callbacks can't reliably override LR because the optimizer
+    # state is restored after on_train_start and the scheduler may reset it.
 
     step("train.start", epochs=args.epochs)
     with kh.build_heartbeat("train", interval_s=30.0):
