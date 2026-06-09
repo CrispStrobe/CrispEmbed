@@ -4,53 +4,25 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
-## June 2026 — General OCR Pipeline (DBNet + TrOCR)
+## June 2026 — PP-FormulaNet-L OCR (181M params)
 
-### Text detection: DBNet (ResNet-18 + FPNC)
-- Converter (`convert-dbnet-to-gguf.py`): loads MMOCR checkpoint, folds all
-  BatchNorm into Conv/ConvTranspose at export time (no runtime BN), exports
-  probability branch only (threshold branch is training-only)
-- C++ inference (`ocr_detect.{h,cpp}`): full ResNet-18 backbone (stem + 4
-  stages × 2 BasicBlocks), FPNC neck (lateral + top-down + smooth + concat),
-  DBHead (conv + 2× ConvTranspose2d + sigmoid), bilinear FPN upsampling
-- Post-processing: threshold → flood-fill connected components → bbox
-  extraction with Vatti-style unclip expansion, reading-order sort
-- Diff harness parity: cos_min=1.000, max_abs=2.4e-3 vs Python reference (F32)
-- Model sizes: 46 MB F32 → 13 MB Q8_0 → 7 MB Q4_K (all produce identical
-  detections)
-- Source: MMOCR `dbnet_resnet18_fpnc_1200e_icdar2015` (Apache 2.0)
-
-### Text recognition: General TrOCR
-- Reuses existing math_ocr engine (DeiT+TrOCR) — no new C++ code needed
-- Converter fixes: HF PyTorch tensor names → math_ocr.cpp convention
-  (`encoder.X` → `enc.X`, `decoder.model.decoder.X` → `dec.d.X`)
-- XLM-R/SentencePiece tokenizer: use HF AutoTokenizer (not raw SentencePiece)
-  to handle fairseq vocab offset correctly; 64044 tokens embedded in GGUF
-- SentencePiece `▁` (U+2581) → space conversion in C++ detokenizer
-- Tested on `microsoft/trocr-small-printed`: exact token match vs HuggingFace
-  on all test images ("HELLO WORLD", "THE QUICK BROWN FOX", "42 IS THE ANSWER")
-
-### Pipeline integration
-- `ocr_pipeline.{h,cpp}`: detect → crop each box → recognize → return results
-  sorted in reading order
-- C API: `crispembed_ocr_init/ocr/ocr_recognize/ocr_free` in crispembed.h
-- CLI: `crispembed --ocr image.png --det dbnet.gguf -m trocr.gguf` (text + JSON)
-- End-to-end on 5-line document: 21/21 regions detected and recognized, ~200ms
-  per region
-
-### Bugs fixed
-- `dec_layer` ODR violation: math_ocr.cpp and decoder_embed_internal.h both
-  defined `struct dec_layer` with different sizes (240 vs 144 bytes), causing
-  heap-buffer-overflow in CLI binary. Fixed: renamed to `math_ocr_dec_layer`.
-- `crispembed_diff.h` GGUF magic constant: was 0x46475547, should be 0x46554747
-- stb_image dedup: removed duplicate `STB_IMAGE_IMPLEMENTATION` from 3 TUs,
-  centralized in image_preprocess.cpp (non-static export)
-- `math_ocr_recognize_file()`: was a stub returning nullptr, now loads via
-  stb_image and delegates to recognize_raw
-- ConvTranspose2d weight layout: PyTorch stores (IC, OC, K, K), ggml expects
-  (KW, KH, OC, IC) — needed separate `prep_deconv_weight` function
-
----
+### Printed math OCR: SAM-ViT encoder + MBart decoder
+- New architecture: SAM-style ViT encoder (12 layers, 768d, 12 heads)
+  with windowed attention (ws=14) + global attention (layers 2,5,8,11)
+  and decomposed relative position bias
+- Neck: Conv1x1 + LayerNorm2d + Conv3x3 + LayerNorm2d (768 → 256)
+- Multi-modal projector: 2× Conv3x3(stride=2) + 2× Linear (256 → 512)
+  Output: (144, 512) sequence for decoder
+- MBart PRE-LN decoder: 8 layers, 16 heads, d_model=512, FFN=2048
+- 768x768 RGB input, UniMERNet preprocessing pipeline
+- Encoder parity: cos=0.999962 vs HuggingFace reference (F32)
+- Quantization: F32 (692 MB), F16 (347 MB), Q8_0 (241 MB, cos=0.999940),
+  Q4_K (122 MB, cos=0.997595) — all produce identical decoded LaTeX
+- Smart Q8_0: critical tensors (embeddings, LN, rel_pos, lm_head) in F16
+- Auto-detected from GGUF metadata (`general.architecture = ppformulanet_l`)
+- Wired into unified `--ocr` CLI, C ABI, model registry, CrispCalc Dart catalog
+- Source: PaddlePaddle/PP-FormulaNet-L_safetensors (Apache-2.0)
+- New GGUF loader helper: `kv_i32_array()` for int32 metadata arrays
 
 ## June 2026 — PPFormulaNet-S / Texo-Distill OCR
 
@@ -70,8 +42,6 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 - Diff regime: encoder cos=1.000000, decoder verified via layer-by-layer debug traces
 - Source: Texo (AGPL-3.0) distilled from PaddleOCR PP-FormulaNet-S (Apache-2.0)
   trained on UniMER-1M (CC-BY-4.0)
-
----
 
 ## June 2026 — Nomic v2 MoE Encoder
 

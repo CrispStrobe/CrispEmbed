@@ -462,6 +462,12 @@ static const ModelEntry k_registry[] = {
      "BTTR handwritten math OCR (DenseNet+Transformer, 113 tokens)", "5 MB", "mit",
      "https://huggingface.co/cstr/bttr-handwritten-math-gguf"},
 
+    {"ppformulanet-l",
+     "ppformulanet-l-q8_0.gguf",
+     "https://huggingface.co/cstr/ppformulanet-l-gguf/resolve/main/ppformulanet-l-q8_0.gguf",
+     "PP-FormulaNet-L printed math OCR (SAM-ViT+MBart, 181M)", "180 MB", "apache-2.0",
+     "https://huggingface.co/cstr/ppformulanet-l-gguf"},
+
     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 
