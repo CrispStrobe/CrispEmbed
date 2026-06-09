@@ -716,13 +716,24 @@ def patch_lit_posformer():
             momentum=0.9,
             weight_decay=1e-4,
         )
-        # Plain cosine decay over remaining epochs — no restarts.
-        # Warm restarts (T_0=30) caused a 10x LR spike at epoch 94
-        # that crashed val_ExpRate from 57% to 38%.
-        scheduler = optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, T_max=300, eta_min=1e-5)
+        # Use the ORIGINAL published scheduler: ReduceLROnPlateau.
+        # Custom schedulers (CosineAnnealing, WarmRestarts) caused LR
+        # mismatches on checkpoint resume, crashing val_ExpRate.
+        # This matches the published config.yaml exactly.
+        reduce_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="max",
+            factor=0.25,
+            patience=self.hparams.patience,
+        )
         return {"optimizer": optimizer,
-                "lr_scheduler": {"scheduler": scheduler, "interval": "epoch"}}
+                "lr_scheduler": {
+                    "scheduler": reduce_scheduler,
+                    "monitor": "val_ExpRate",
+                    "interval": "epoch",
+                    "frequency": 1,
+                    "strict": True,
+                }}
 
     lit.LitPosFormer.training_step = _patched_training_step
     lit.LitPosFormer.validation_step = _patched_validation_step
@@ -1025,7 +1036,7 @@ def train(args, zip_path: Path, dict_path: Path,
         try:
             from pytorch_lightning.loggers import WandbLogger
             # Fixed run_id per dataset for cross-session continuity
-            run_id = f"posformer-{args.dataset}-v2"
+            run_id = f"posformer-{args.dataset}-v3"
             logger = WandbLogger(
                 project=WANDB_PROJECT,
                 name=f"posformer-{args.dataset}",
