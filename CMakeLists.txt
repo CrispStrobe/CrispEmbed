@@ -118,6 +118,8 @@ list(APPEND CRISPEMBED_SOURCES src/face_align.cpp)
 list(APPEND CRISPEMBED_SOURCES src/math_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/hmer_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/bttr_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ppformulanet_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ppformulanet_l_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_pipeline.cpp)
 
@@ -212,6 +214,12 @@ target_link_libraries(test-hmer-image PRIVATE crispembed)
 
 add_executable(test-bttr-beam tests/test_bttr_beam.cpp)
 target_link_libraries(test-bttr-beam PRIVATE crispembed)
+
+add_executable(test-ppformulanet tests/test_ppformulanet.cpp)
+target_link_libraries(test-ppformulanet PRIVATE crispembed)
+
+add_executable(test-ppformulanet-l tests/test_ppformulanet_l.cpp)
+target_link_libraries(test-ppformulanet-l PRIVATE crispembed)
 
 add_executable(test-ocr-detect tests/test_ocr_detect.cpp)
 target_link_libraries(test-ocr-detect PRIVATE crispembed)
