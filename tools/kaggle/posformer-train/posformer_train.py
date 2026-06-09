@@ -71,7 +71,7 @@ CRISPEMBED_REPO = "https://github.com/CrispStrobe/CrispEmbed.git"
 # PosFormer's expected format: data/{train,2014}/caption.txt + img/*.bmp
 CROHME_HF_REPO = "cstr/posformer-training-data"
 CROHME_HF_FILE = "data_crohme.zip"
-MATHWRITING_V2_HF_FILE = "data_mathwriting_v2.zip"
+MATHWRITING_V2_HF_FILE = "data_mathwriting_v2_128h.zip"
 
 # ━━━━━━━━━━━━━━━━━━━━ V2 vocabulary (183 tokens) ━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Embedded to avoid network dependency. Alphabetical order — token indices
@@ -808,69 +808,72 @@ def download_mathwriting_hf(max_samples: int = 0) -> Path:
     v2_vocab = set(DICT_V2.strip().split("\n"))
     step("mathwriting_v2.vocab_loaded", n_tokens=len(v2_vocab))
 
-    # Process each split
-    images_dir = WORK / "mathwriting-v2-images"
-    images_dir.mkdir(parents=True, exist_ok=True)
+    # Write images directly into zip to avoid 221K temp BMP files filling
+    # Kaggle's disk (~20 GB).  Uncompressed BMPs at ~10 KB each = ~2.2 GB
+    # for images alone; with ZIP_DEFLATED the zip is ~1 GB.
+    import io
     split_map = {"train": "train", "val": "valid", "test": "test"}
-    all_captions: Dict[str, List[str]] = {}
 
-    for hf_split, our_split in split_map.items():
-        if hf_split not in ds:
-            step(f"mathwriting_v2.{our_split}.skip", note="split not in dataset")
-            continue
-
-        split_ds = ds[hf_split]
-        split_dir = images_dir / our_split
-        split_dir.mkdir(parents=True, exist_ok=True)
-
-        captions = []
-        skipped = 0
-        t0 = time.time()
-
-        for idx, sample in enumerate(split_ds):
-            # Limit samples for testing
-            if max_samples and len(captions) >= max_samples:
-                break
-
-            latex = sample.get("latex", "")
-            image = sample.get("image")
-            sample_id = sample.get("sample_id", f"{hf_split}_{idx:06d}")
-
-            if not latex or image is None:
-                skipped += 1
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for hf_split, our_split in split_map.items():
+            if hf_split not in ds:
+                step(f"mathwriting_v2.{our_split}.skip",
+                     note="split not in dataset")
                 continue
 
-            # Tokenize with strict v2 vocab
-            toks = tokenize_latex_v2(latex, v2_vocab)
-            if toks is None:
-                skipped += 1
-                continue
+            split_ds = ds[hf_split]
+            captions = []
+            skipped = 0
+            t0 = time.time()
 
-            # Convert RGB JPEG → grayscale BMP
-            gray = image.convert("L")
-            bmp_path = split_dir / f"{sample_id}.bmp"
-            gray.save(bmp_path, format="BMP")
+            for idx, sample in enumerate(split_ds):
+                if max_samples and len(captions) >= max_samples:
+                    break
 
-            # Caption format: "sample_id\ttok1 tok2 tok3 ..."
-            captions.append(f"{sample_id}\t{' '.join(toks)}")
+                latex = sample.get("latex", "")
+                image = sample.get("image")
+                sample_id = sample.get("sample_id", f"{hf_split}_{idx:06d}")
 
-            if (idx + 1) % 10000 == 0:
-                rate = (idx + 1) / max(time.time() - t0, 0.1)
-                step(f"mathwriting_v2.{our_split}.progress",
-                     done=idx + 1, scanned=idx + 1,
-                     rate=f"{rate:.0f}/s")
+                if not latex or image is None:
+                    skipped += 1
+                    continue
 
-        total_scanned = idx + 1 if 'idx' in dir() else 0
-        step(f"mathwriting_v2.{our_split}.done",
-             ok=len(captions), skipped=skipped,
-             scanned=total_scanned,
-             time_s=round(time.time() - t0, 1))
-        if captions:
-            all_captions[our_split] = captions
+                toks = tokenize_latex_v2(latex, v2_vocab)
+                if toks is None:
+                    skipped += 1
+                    continue
 
-    # Pack into PosFormer-compatible zip
-    step("mathwriting_v2.pack_zip")
-    _pack_zip(zip_path, images_dir, all_captions)
+                # Convert RGB JPEG → grayscale BMP in memory, write to zip.
+                # Resize to max height 128px (matches CROHME format) to keep
+                # RAM under control — 221K images at 512px would be ~7 GB.
+                gray = image.convert("L")
+                w, h = gray.size
+                if h > 128:
+                    new_w = max(1, int(w * 128 / h))
+                    gray = gray.resize((new_w, 128), Image.LANCZOS)
+                buf = io.BytesIO()
+                gray.save(buf, format="BMP")
+                zf.writestr(f"data/{our_split}/img/{sample_id}.bmp",
+                            buf.getvalue())
+
+                captions.append(f"{sample_id} {' '.join(toks)}")
+
+                if (idx + 1) % 10000 == 0:
+                    rate = (idx + 1) / max(time.time() - t0, 0.1)
+                    step(f"mathwriting_v2.{our_split}.progress",
+                         done=idx + 1, scanned=idx + 1,
+                         rate=f"{rate:.0f}/s")
+
+            total_scanned = idx + 1 if 'idx' in dir() else 0
+            step(f"mathwriting_v2.{our_split}.done",
+                 ok=len(captions), skipped=skipped,
+                 scanned=total_scanned,
+                 time_s=round(time.time() - t0, 1))
+
+            # Write caption.txt for this split
+            if captions:
+                cap_content = "\n".join(captions) + "\n"
+                zf.writestr(f"data/{our_split}/caption.txt", cap_content)
     step("mathwriting_v2.ready",
          size_mb=round(zip_path.stat().st_size / 1e6))
 
