@@ -10,6 +10,11 @@
 #include "ggml-cpu.h"
 #include "core/gguf_loader.h"
 
+// stb_image for file loading (static per-TU)
+#define STB_IMAGE_STATIC
+#define STB_IMAGE_IMPLEMENTATION
+#include "../ggml/examples/stb_image.h"
+
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -1160,7 +1165,18 @@ const float* math_ocr_get_encoder_output(const math_ocr_context* ctx, int* out_n
     return ctx->enc_out.data();
 }
 
-const char* math_ocr_recognize_file(math_ocr_context*, const char*, int*) { return nullptr; }
+const char* math_ocr_recognize_file(math_ocr_context* ctx, const char* path, int* out_len) {
+    if (!ctx || !path) return nullptr;
+    int w, h, c;
+    unsigned char* img = stbi_load(path, &w, &h, &c, 3);
+    if (!img) {
+        fprintf(stderr, "math_ocr: cannot load image: %s\n", path);
+        return nullptr;
+    }
+    const char* result = math_ocr_recognize_raw(ctx, img, w, h, 3, out_len);
+    stbi_image_free(img);
+    return result;
+}
 
 const char* math_ocr_recognize_raw(math_ocr_context* ctx, const uint8_t* bytes,
                                      int w, int h, int ch, int* out_len) {
