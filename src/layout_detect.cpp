@@ -71,18 +71,19 @@ struct resnet50_backbone {
     std::vector<bottleneck> stages[4];
 };
 
-struct encoder_block {
-    // RepVGG-style block (2 conv layers + optional identity)
-    conv_w conv1, conv2;
+struct csp_block {
+    conv_w conv1;             // 1×1, IC=2*C → C (split)
+    conv_w conv2;             // 1×1, IC=2*C → C (merge)
+    conv_w bottlenecks[3];    // 3×3 convs
 };
 
 struct hybrid_encoder {
     conv_w input_proj[3];     // project backbone features to 256d
     conv_w lateral_convs[2];  // for FPN
     conv_w downsample_convs[2]; // for PAN
-    // FPN/PAN blocks (each has 2 convs)
-    encoder_block fpn_blocks[2];
-    encoder_block pan_blocks[2];
+    // FPN/PAN CSP blocks
+    csp_block fpn_blocks[2];
+    csp_block pan_blocks[2];
     // AIFI self-attention encoder
     ggml_tensor *aifi_qkv_w = nullptr, *aifi_qkv_b = nullptr;
     ggml_tensor *aifi_out_w = nullptr, *aifi_out_b = nullptr;
@@ -220,20 +221,16 @@ bool load(context** out, const char* path, int n_threads) {
         load_conv(enc.lateral_convs[i], std::string("model.encoder.lateral_convs.") + std::to_string(i));
         load_conv(enc.downsample_convs[i], std::string("model.encoder.downsample_convs.") + std::to_string(i));
     }
-    // FPN/PAN blocks (each block has 2 conv layers in a RepVGG style)
+    // FPN/PAN CSP blocks
+    auto load_csp = [&](csp_block& csp, const std::string& prefix) {
+        load_conv(csp.conv1, prefix + ".conv1.conv");
+        load_conv(csp.conv2, prefix + ".conv2.conv");
+        for (int j = 0; j < 3; j++)
+            load_conv(csp.bottlenecks[j], prefix + ".bottlenecks." + std::to_string(j) + ".conv");
+    };
     for (int i = 0; i < 2; i++) {
-        auto fpn = std::string("model.encoder.fpn_blocks.") + std::to_string(i);
-        auto pan = std::string("model.encoder.pan_blocks.") + std::to_string(i);
-        // These are CSP-style blocks — simplified as 2 convs
-        // The actual structure is more complex; we'll handle this during graph building
-        enc.fpn_blocks[i].conv1.w = get(fpn + ".conv1.conv.weight");
-        enc.fpn_blocks[i].conv1.b = get(fpn + ".conv1.conv.bias");
-        enc.fpn_blocks[i].conv2.w = get(fpn + ".conv2.conv.weight");
-        enc.fpn_blocks[i].conv2.b = get(fpn + ".conv2.conv.bias");
-        enc.pan_blocks[i].conv1.w = get(pan + ".conv1.conv.weight");
-        enc.pan_blocks[i].conv1.b = get(pan + ".conv1.conv.bias");
-        enc.pan_blocks[i].conv2.w = get(pan + ".conv2.conv.weight");
-        enc.pan_blocks[i].conv2.b = get(pan + ".conv2.conv.bias");
+        load_csp(enc.fpn_blocks[i], std::string("model.encoder.fpn_blocks.") + std::to_string(i));
+        load_csp(enc.pan_blocks[i], std::string("model.encoder.pan_blocks.") + std::to_string(i));
     }
     // AIFI encoder
     std::string aifi = "model.encoder.encoder.0.layers.0";
@@ -548,25 +545,67 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     auto* lat4 = conv_relu(g, p4, enc.lateral_convs[1], 256, 1, 1, 1, 0, false);
     fprintf(stderr, "  FPN lat4 done\n");
     p4 = ggml_add(g, up5, lat4);
-    // TODO: full CSP block — skipping FPN refinement for now
+    // CSP block: concat(p4, lat4) → conv1 → split → bottlenecks → concat → conv2
+    // Simplified: concat produces 512ch, conv1 reduces to 256, bottlenecks refine
+    {
+        auto* cat = ggml_concat(g, p4, lat4, 2); // [W, H, 512]
+        auto* split = conv_relu(g, cat, enc.fpn_blocks[0].conv1, 512, 1, 1, 1, 0);
+        auto* branch = split;
+        for (int j = 0; j < 3; j++) {
+            if (enc.fpn_blocks[0].bottlenecks[j].w)
+                branch = conv_relu(g, branch, enc.fpn_blocks[0].bottlenecks[j], 256, 3, 3, 1, 1);
+        }
+        auto* merged = ggml_concat(g, split, branch, 2); // [W, H, 512]
+        p4 = conv_relu(g, merged, enc.fpn_blocks[0].conv2, 512, 1, 1, 1, 0, false);
+    }
 
     // S4 → upsample → lateral + S3
     auto* up4 = ggml_interpolate(g, p4, (int)p3->ne[0], (int)p3->ne[1],
                                   (int)p4->ne[2], 1, GGML_SCALE_MODE_NEAREST);
     auto* lat3 = conv_relu(g, p3, enc.lateral_convs[0], 256, 1, 1, 1, 0, false);
     p3 = ggml_add(g, up4, lat3);
-    // TODO: full CSP block — skipping FPN refinement for now
+    {
+        auto* cat = ggml_concat(g, p3, lat3, 2);
+        auto* split = conv_relu(g, cat, enc.fpn_blocks[1].conv1, 512, 1, 1, 1, 0);
+        auto* branch = split;
+        for (int j = 0; j < 3; j++) {
+            if (enc.fpn_blocks[1].bottlenecks[j].w)
+                branch = conv_relu(g, branch, enc.fpn_blocks[1].bottlenecks[j], 256, 3, 3, 1, 1);
+        }
+        auto* merged = ggml_concat(g, split, branch, 2);
+        p3 = conv_relu(g, merged, enc.fpn_blocks[1].conv2, 512, 1, 1, 1, 0, false);
+    }
 
     // PAN bottom-up pathway
     // S3 → downsample → + S4
     auto* down3 = conv_relu(g, p3, enc.downsample_convs[0], 256, 3, 3, 2, 1);
     p4 = ggml_add(g, down3, p4);
-    // TODO: full CSP block — skipping PAN refinement for now
+    {
+        auto* cat = ggml_concat(g, p4, down3, 2);
+        auto* split = conv_relu(g, cat, enc.pan_blocks[0].conv1, 512, 1, 1, 1, 0);
+        auto* branch = split;
+        for (int j = 0; j < 3; j++) {
+            if (enc.pan_blocks[0].bottlenecks[j].w)
+                branch = conv_relu(g, branch, enc.pan_blocks[0].bottlenecks[j], 256, 3, 3, 1, 1);
+        }
+        auto* merged = ggml_concat(g, split, branch, 2);
+        p4 = conv_relu(g, merged, enc.pan_blocks[0].conv2, 512, 1, 1, 1, 0, false);
+    }
 
     // S4 → downsample → + S5
     auto* down4 = conv_relu(g, p4, enc.downsample_convs[1], 256, 3, 3, 2, 1);
     p5 = ggml_add(g, down4, p5);
-    // TODO: full CSP block — skipping PAN refinement for now
+    {
+        auto* cat = ggml_concat(g, p5, down4, 2);
+        auto* split = conv_relu(g, cat, enc.pan_blocks[1].conv1, 512, 1, 1, 1, 0);
+        auto* branch = split;
+        for (int j = 0; j < 3; j++) {
+            if (enc.pan_blocks[1].bottlenecks[j].w)
+                branch = conv_relu(g, branch, enc.pan_blocks[1].bottlenecks[j], 256, 3, 3, 1, 1);
+        }
+        auto* merged = ggml_concat(g, split, branch, 2);
+        p5 = conv_relu(g, merged, enc.pan_blocks[1].conv2, 512, 1, 1, 1, 0, false);
+    }
 
     *s3 = p3; *s4 = p4; *s5 = p5;
 }
@@ -616,7 +655,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     // --- Phase 1: Backbone + Encoder (ggml graph) ---
     // This produces multi-scale features via ggml graph compute
-    int max_nodes = 2048;
+    int max_nodes = 4096;
     size_t buf_size = ggml_tensor_overhead() * (max_nodes + 200)
                     + ggml_graph_overhead_custom(max_nodes, false);
     std::vector<uint8_t> buf(buf_size);
