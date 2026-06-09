@@ -4,6 +4,26 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — PP-FormulaNet-L OCR (181M params)
+
+### Printed math OCR: SAM-ViT encoder + MBart decoder
+- New architecture: SAM-style ViT encoder (12 layers, 768d, 12 heads)
+  with windowed attention (ws=14) + global attention (layers 2,5,8,11)
+  and decomposed relative position bias
+- Neck: Conv1x1 + LayerNorm2d + Conv3x3 + LayerNorm2d (768 → 256)
+- Multi-modal projector: 2× Conv3x3(stride=2) + 2× Linear (256 → 512)
+  Output: (144, 512) sequence for decoder
+- MBart PRE-LN decoder: 8 layers, 16 heads, d_model=512, FFN=2048
+- 768x768 RGB input, UniMERNet preprocessing pipeline
+- Encoder parity: cos=0.999962 vs HuggingFace reference (F32)
+- Quantization: F32 (692 MB), F16 (347 MB), Q8_0 (241 MB, cos=0.999940),
+  Q4_K (122 MB, cos=0.997595) — all produce identical decoded LaTeX
+- Smart Q8_0: critical tensors (embeddings, LN, rel_pos, lm_head) in F16
+- Auto-detected from GGUF metadata (`general.architecture = ppformulanet_l`)
+- Wired into unified `--ocr` CLI, C ABI, model registry, CrispCalc Dart catalog
+- Source: PaddlePaddle/PP-FormulaNet-L_safetensors (Apache-2.0)
+- New GGUF loader helper: `kv_i32_array()` for int32 metadata arrays
+
 ## June 2026 — PPFormulaNet-S / Texo-Distill OCR
 
 ### Printed math OCR: HGNetv2 + MBart decoder (20M params)
