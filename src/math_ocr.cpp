@@ -10,6 +10,13 @@
 #include "ggml-cpu.h"
 #include "core/gguf_loader.h"
 
+// stb_image declarations (implementation lives in image_preprocess.cpp)
+extern "C" {
+    typedef unsigned char stbi_uc;
+    stbi_uc *stbi_load(char const *filename, int *x, int *y, int *channels_in_file, int desired_channels);
+    void stbi_image_free(void *retval_from_stbi_load);
+}
+
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -49,13 +56,13 @@ static std::vector<float> to_f32(const ggml_tensor* t) {
 // Structs
 // ---------------------------------------------------------------------------
 
-struct enc_layer {
+struct math_ocr_enc_layer {
     ggml_tensor *ln1_w, *ln1_b, *q_w, *q_b, *k_w, *k_b, *v_w, *v_b;
     ggml_tensor *attn_out_w, *attn_out_b, *ln2_w, *ln2_b;
     ggml_tensor *ff_up_w, *ff_up_b, *ff_down_w, *ff_down_b;
 };
 
-struct dec_layer {
+struct math_ocr_dec_layer {
     ggml_tensor *self_ln_w, *self_ln_b;
     ggml_tensor *self_q_w, *self_q_b, *self_k_w, *self_k_b, *self_v_w, *self_v_b;
     ggml_tensor *self_out_w, *self_out_b;
@@ -71,12 +78,12 @@ struct math_ocr_context {
     // Encoder
     ggml_tensor *cls_token, *dist_token, *patch_proj_w, *patch_proj_b, *pos_embed;
     ggml_tensor *enc_ln_w, *enc_ln_b;
-    std::vector<enc_layer> enc_layers;
+    std::vector<math_ocr_enc_layer> enc_layers;
 
     // Decoder
     ggml_tensor *tok_embed, *pos_embed_dec, *dec_embed_ln_w, *dec_embed_ln_b;
     ggml_tensor *dec_final_ln_w, *dec_final_ln_b, *lm_head_w, *lm_head_b;
-    std::vector<dec_layer> dec_layers;
+    std::vector<math_ocr_dec_layer> dec_layers;
 
     // Infrastructure
     std::vector<std::string> vocab;
@@ -1125,8 +1132,29 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
     ctx->result_buf.clear();
     for (size_t i = 1; i < tokens.size(); i++) {
         int tok = tokens[i];
-        if (tok >= 0 && tok < (int)ctx->vocab.size()) ctx->result_buf += ctx->vocab[tok];
+        if (tok >= 0 && tok < (int)ctx->vocab.size()) {
+            const auto& piece = ctx->vocab[tok];
+            // SentencePiece ▁ (U+2581) marks word boundaries → replace with space
+            // ▁ is 3 bytes: 0xE2 0x96 0x81
+            for (size_t j = 0; j < piece.size(); ) {
+                if (j + 2 < piece.size() &&
+                    (uint8_t)piece[j] == 0xE2 &&
+                    (uint8_t)piece[j+1] == 0x96 &&
+                    (uint8_t)piece[j+2] == 0x81) {
+                    ctx->result_buf += ' ';
+                    j += 3;
+                } else {
+                    ctx->result_buf += piece[j];
+                    j++;
+                }
+            }
+        }
     }
+    // Trim leading/trailing whitespace
+    while (!ctx->result_buf.empty() && ctx->result_buf.front() == ' ')
+        ctx->result_buf.erase(ctx->result_buf.begin());
+    while (!ctx->result_buf.empty() && ctx->result_buf.back() == ' ')
+        ctx->result_buf.pop_back();
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
@@ -1139,7 +1167,18 @@ const float* math_ocr_get_encoder_output(const math_ocr_context* ctx, int* out_n
     return ctx->enc_out.data();
 }
 
-const char* math_ocr_recognize_file(math_ocr_context*, const char*, int*) { return nullptr; }
+const char* math_ocr_recognize_file(math_ocr_context* ctx, const char* path, int* out_len) {
+    if (!ctx || !path) return nullptr;
+    int w, h, c;
+    unsigned char* img = stbi_load(path, &w, &h, &c, 3);
+    if (!img) {
+        fprintf(stderr, "math_ocr: cannot load image: %s\n", path);
+        return nullptr;
+    }
+    const char* result = math_ocr_recognize_raw(ctx, img, w, h, 3, out_len);
+    stbi_image_free(img);
+    return result;
+}
 
 const char* math_ocr_recognize_raw(math_ocr_context* ctx, const uint8_t* bytes,
                                      int w, int h, int ch, int* out_len) {
