@@ -71,7 +71,7 @@ CRISPEMBED_REPO = "https://github.com/CrispStrobe/CrispEmbed.git"
 # PosFormer's expected format: data/{train,2014}/caption.txt + img/*.bmp
 CROHME_HF_REPO = "cstr/posformer-training-data"
 CROHME_HF_FILE = "data_crohme.zip"
-MATHWRITING_V2_HF_FILE = "data_mathwriting_v2_128h.zip"
+MATHWRITING_V2_HF_FILE = "data_mathwriting_v2_20k.zip"
 
 # ━━━━━━━━━━━━━━━━━━━━ V2 vocabulary (183 tokens) ━━━━━━━━━━━━━━━━━━━━━━━━━━
 # Embedded to avoid network dependency. Alphabetical order — token indices
@@ -806,12 +806,27 @@ def download_mathwriting_hf(max_samples: int = 0) -> Path:
         ds = load_dataset(MATHWRITING_HF_DATASET)
 
     v2_vocab = set(DICT_V2.strip().split("\n"))
-    step("mathwriting_v2.vocab_loaded", n_tokens=len(v2_vocab))
+    v1_vocab = {  # original 110 tokens — everything NOT here is a "rare" v2 token
+        '!','(',')','+',' ,','-','.','/','0','1','2','3','4','5','6','7','8','9',
+        '<','=','>','A','B','C','E','F','G','H','I','L','M','N','P','R','S','T',
+        'V','X','Y','[',']','^','_','a','b','c','d','e','f','g','h','i','j','k',
+        'l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','{','|','}',
+        '\\Delta','\\Pi','\\alpha','\\beta','\\cdot','\\cdots','\\cos','\\div',
+        '\\exists','\\forall','\\frac','\\gamma','\\geq','\\in','\\infty',
+        '\\int','\\lambda','\\ldots','\\leq','\\lim','\\limits','\\log','\\mu',
+        '\\neq','\\partial','\\phi','\\pi','\\pm','\\prime','\\rightarrow',
+        '\\sigma','\\sin','\\sqrt','\\sum','\\tan','\\theta','\\times','\\{','\\}',
+    }
+    rare_tokens = v2_vocab - v1_vocab
+    step("mathwriting_v2.vocab_loaded", n_tokens=len(v2_vocab),
+         n_rare=len(rare_tokens))
 
-    # Write images directly into zip to avoid 221K temp BMP files filling
-    # Kaggle's disk (~20 GB).  Uncompressed BMPs at ~10 KB each = ~2.2 GB
-    # for images alone; with ZIP_DEFLATED the zip is ~1 GB.
-    import io
+    # Budget: ~20K train samples that fit in P100 RAM. Prioritise samples
+    # containing rare v2 tokens (Greek, operators, decorations, matrices)
+    # so the model actually learns the expanded vocabulary.
+    TRAIN_BUDGET = int(os.environ.get("TRAIN_BUDGET", "20000"))
+
+    import io, random
     split_map = {"train": "train", "val": "valid", "test": "test"}
 
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -822,58 +837,117 @@ def download_mathwriting_hf(max_samples: int = 0) -> Path:
                 continue
 
             split_ds = ds[hf_split]
-            captions = []
-            skipped = 0
+            is_train = (our_split == "train")
+            budget = TRAIN_BUDGET if is_train else 5000
             t0 = time.time()
 
-            for idx, sample in enumerate(split_ds):
-                if max_samples and len(captions) >= max_samples:
-                    break
+            if is_train and not max_samples:
+                # Two-pass: tokenize all, then select by rare-token priority
+                step(f"mathwriting_v2.{our_split}.tokenizing")
+                candidates = []  # (rare_count, sample_id, tok_str, hf_idx)
+                skipped = 0
+                for idx, sample in enumerate(split_ds):
+                    latex = sample.get("latex", "")
+                    sample_id = sample.get("sample_id", f"{hf_split}_{idx:06d}")
+                    if not latex:
+                        skipped += 1
+                        continue
+                    toks = tokenize_latex_v2(latex, v2_vocab)
+                    if toks is None:
+                        skipped += 1
+                        continue
+                    n_rare = sum(1 for t in toks if t in rare_tokens)
+                    candidates.append((n_rare, sample_id, ' '.join(toks), idx))
 
-                latex = sample.get("latex", "")
-                image = sample.get("image")
-                sample_id = sample.get("sample_id", f"{hf_split}_{idx:06d}")
+                    if (idx + 1) % 50000 == 0:
+                        step(f"mathwriting_v2.{our_split}.tokenize_progress",
+                             scanned=idx + 1, compat=len(candidates))
 
-                if not latex or image is None:
-                    skipped += 1
-                    continue
+                step(f"mathwriting_v2.{our_split}.tokenized",
+                     compatible=len(candidates), skipped=skipped,
+                     time_s=round(time.time() - t0, 1))
 
-                toks = tokenize_latex_v2(latex, v2_vocab)
-                if toks is None:
-                    skipped += 1
-                    continue
+                # Sort: samples with more rare tokens first, then shuffle
+                # within each tier for diversity
+                candidates.sort(key=lambda x: -x[0])
+                # Take all samples with rare tokens, then fill with common
+                n_with_rare = sum(1 for c in candidates if c[0] > 0)
+                if n_with_rare >= budget:
+                    # More rare samples than budget — take top by count,
+                    # shuffled within same-count tiers
+                    selected = candidates[:budget]
+                else:
+                    # Take all rare, fill rest randomly from common
+                    rare_part = candidates[:n_with_rare]
+                    common_part = candidates[n_with_rare:]
+                    random.shuffle(common_part)
+                    selected = rare_part + common_part[:budget - n_with_rare]
+                random.shuffle(selected)
 
-                # Convert RGB JPEG → grayscale BMP in memory, write to zip.
-                # Resize to max height 128px (matches CROHME format) to keep
-                # RAM under control — 221K images at 512px would be ~7 GB.
-                gray = image.convert("L")
-                w, h = gray.size
-                if h > 128:
-                    new_w = max(1, int(w * 128 / h))
-                    gray = gray.resize((new_w, 128), Image.LANCZOS)
-                buf = io.BytesIO()
-                gray.save(buf, format="BMP")
-                zf.writestr(f"data/{our_split}/img/{sample_id}.bmp",
-                            buf.getvalue())
+                step(f"mathwriting_v2.{our_split}.selected",
+                     total=len(selected), with_rare=n_with_rare,
+                     budget=budget)
 
-                captions.append(f"{sample_id} {' '.join(toks)}")
+                # Second pass: fetch images for selected samples by index
+                sel_indices = {c[3]: (c[1], c[2]) for c in selected}
+                written = 0
+                cap_lines = []
+                for idx, sample in enumerate(split_ds):
+                    if idx not in sel_indices:
+                        continue
+                    sample_id, tok_str = sel_indices[idx]
+                    image = sample.get("image")
+                    if image is None:
+                        continue
+                    gray = image.convert("L")
+                    buf = io.BytesIO()
+                    gray.save(buf, format="BMP")
+                    zf.writestr(f"data/{our_split}/img/{sample_id}.bmp",
+                                buf.getvalue())
+                    cap_lines.append(f"{sample_id} {tok_str}")
+                    written += 1
+                    if written % 5000 == 0:
+                        step(f"mathwriting_v2.{our_split}.writing",
+                             done=written, total=len(selected))
 
-                if (idx + 1) % 10000 == 0:
-                    rate = (idx + 1) / max(time.time() - t0, 0.1)
-                    step(f"mathwriting_v2.{our_split}.progress",
-                         done=idx + 1, scanned=idx + 1,
-                         rate=f"{rate:.0f}/s")
+                step(f"mathwriting_v2.{our_split}.done",
+                     ok=written, budget=budget,
+                     time_s=round(time.time() - t0, 1))
+                if cap_lines:
+                    zf.writestr(f"data/{our_split}/caption.txt",
+                                "\n".join(cap_lines) + "\n")
 
-            total_scanned = idx + 1 if 'idx' in dir() else 0
-            step(f"mathwriting_v2.{our_split}.done",
-                 ok=len(captions), skipped=skipped,
-                 scanned=total_scanned,
-                 time_s=round(time.time() - t0, 1))
+            else:
+                # Val/test or max_samples: simple sequential
+                captions = []
+                skipped = 0
+                lim = max_samples if max_samples else budget
+                for idx, sample in enumerate(split_ds):
+                    if len(captions) >= lim:
+                        break
+                    latex = sample.get("latex", "")
+                    image = sample.get("image")
+                    sample_id = sample.get("sample_id", f"{hf_split}_{idx:06d}")
+                    if not latex or image is None:
+                        skipped += 1
+                        continue
+                    toks = tokenize_latex_v2(latex, v2_vocab)
+                    if toks is None:
+                        skipped += 1
+                        continue
+                    gray = image.convert("L")
+                    buf = io.BytesIO()
+                    gray.save(buf, format="BMP")
+                    zf.writestr(f"data/{our_split}/img/{sample_id}.bmp",
+                                buf.getvalue())
+                    captions.append(f"{sample_id} {' '.join(toks)}")
 
-            # Write caption.txt for this split
-            if captions:
-                cap_content = "\n".join(captions) + "\n"
-                zf.writestr(f"data/{our_split}/caption.txt", cap_content)
+                step(f"mathwriting_v2.{our_split}.done",
+                     ok=len(captions), skipped=skipped,
+                     time_s=round(time.time() - t0, 1))
+                if captions:
+                    zf.writestr(f"data/{our_split}/caption.txt",
+                                "\n".join(captions) + "\n")
     step("mathwriting_v2.ready",
          size_mb=round(zip_path.stat().st_size / 1e6))
 
