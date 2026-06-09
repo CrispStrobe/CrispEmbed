@@ -311,19 +311,29 @@ def sh(cmd: str, **kwargs) -> subprocess.CompletedProcess:
 
 # ━━━━━━━━━━━━━━━━━━━━ Auth — CrispASR kaggle_harness ━━━━━━━━━━━━━━━━━━━━━━
 
-# Clone CrispASR (depth 1) to get kaggle_harness — follows the pattern of
-# every other working Kaggle kernel.  Never download the harness via urllib.
+# kaggle_harness.py is bundled in the push directory (works offline).
+# If CrispASR is available (cloned later for PosFormer source), we prefer
+# that copy to stay in sync.  But the bundled copy is always the fallback.
 CRISPASR_URL = "https://github.com/CrispStrobe/CrispASR.git"
 
+WORK.mkdir(parents=True, exist_ok=True)
+
+# Try cloning CrispASR for the harness (may fail without internet)
 _CRISPASR_DIR = WORK / "CrispASR"
 if not _CRISPASR_DIR.exists():
-    WORK.mkdir(parents=True, exist_ok=True)
-    subprocess.check_call([
-        "git", "clone", "--depth", "1",
-        CRISPASR_URL, str(_CRISPASR_DIR),
-    ])
+    try:
+        subprocess.check_call([
+            "git", "clone", "--depth", "1",
+            CRISPASR_URL, str(_CRISPASR_DIR),
+        ])
+        sys.path.insert(0, str(_CRISPASR_DIR / "tools" / "kaggle"))
+    except Exception:
+        pass  # fall through to bundled copy
 
-sys.path.insert(0, str(_CRISPASR_DIR / "tools" / "kaggle"))
+# Import from cloned repo or bundled copy (same directory as this script)
+if str(_CRISPASR_DIR / "tools" / "kaggle") not in sys.path:
+    # Bundled fallback — kaggle_harness.py is in the push directory
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kaggle_harness as kh          # noqa: E402
 kh.init_progress()                   # line-buffered I/O + JSONL
 
