@@ -103,15 +103,16 @@ All handwritten math datasets are NC. The C++ inference is clean-room.
 
 ### Handwritten math OCR (HMER + BTTR)
 - HMER: DenseNet-121 encoder + GRU attention decoder (with coverage).
-  Source: whywhs/Pytorch-HMER (MIT), trained on CROHME 2016.
+  Source: whywhs/Pytorch-HMER (code: MIT), trained on CROHME 2016
+  (CC BY-NC-SA 3.0). Weights inherit NC.
   112 LaTeX tokens, ~6.8M params, ~4-5 MB Q4_K.
   `hmer_ocr.{h,cpp}`, `convert-hmer-to-gguf.py`. CLI: `--hmer FILE`.
   Auto-detect image polarity and invert if needed. Dequant support.
 
 - BTTR: DenseNet encoder (growth=24, 3 blocks) + Transformer decoder
-  (3 layers, 8 heads, d=256). Source: Green-Wood/BTTR (MIT),
-  trained on CROHME 2014. 113 LaTeX tokens, 6.5M params.
-  52.8% exact match on 36 CROHME test images (vs 38.9% for HMER).
+  (3 layers, 8 heads, d=256). Source: Green-Wood/BTTR (code: MIT),
+  trained on CROHME 2014 (CC BY-NC-SA 3.0). Weights inherit NC.
+  113 LaTeX tokens, 6.5M params. 49.2% raw / 49.8% parsed on CROHME.
   `bttr_ocr.{h,cpp}`, `convert-bttr-to-gguf.py`.
   BN folded into conv, fused QKV preserved.
 
