@@ -941,7 +941,7 @@ def download_mathwriting_hf(max_samples: int = 0) -> Path:
                     written += 1
                     if written % 5000 == 0:
                         step(f"mathwriting_v2.{our_split}.writing",
-                             done=written, total=len(selected))
+                             done=written, total=len(selected_idxs))
 
                 step(f"mathwriting_v2.{our_split}.done",
                      ok=written, budget=budget,
@@ -1592,7 +1592,7 @@ def train(args, zip_path: Path, dict_path: Path,
 
     # Model
     model = LitPosFormer(
-        d_model=256,
+        d_model=384,
         growth_rate=24,
         num_layers=16,
         nhead=8,
@@ -1630,7 +1630,7 @@ def train(args, zip_path: Path, dict_path: Path,
 
     HFCheckpointCallback = _make_hf_checkpoint_callback()
     hf_callback = HFCheckpointCallback(
-        upload_interval_s=1200.0,  # every ~20 min ≈ every 2-3 epochs on P100
+        upload_interval_s=0,  # every epoch (20K dataset = small epochs)
         run_name=args.dataset,
     )
 
