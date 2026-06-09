@@ -13,6 +13,11 @@ multi-vector, cross-encoder rerankers, bi-encoder reranking.
 into the same vector space). YuNet/SCRFD face detection, ArcFace/SFace/AuraFace
 face recognition. Full detect-align-encode pipeline.
 
+**General OCR**: Full text detection + recognition pipeline.
+DBNet (ResNet-18 + FPNC, 7 MB Q4_K) detects text regions, TrOCR-small
+(DeiT + Transformer decoder, 63 MB Q8_0) recognizes each crop.
+~200ms per region, end-to-end via C API or `crispembed --ocr`.
+
 **Math OCR**: Three engines for math-image → LaTeX:
 DeiT+TrOCR (printed math, 17 MB Q4_K), BTTR (handwritten, DenseNet+Transformer,
 53% exact match on CROHME), HMER (handwritten, DenseNet+GRU attention).
@@ -147,6 +152,12 @@ python tests/test_cli_parity.py --cli ./build/crispembed \
     --retrieval-model "$CRISPEMBED_RETRIEVAL_MODEL" \
     --reranker-model "$CRISPEMBED_RERANKER_MODEL"
 
+# General OCR (detect + recognize text in images)
+./build/crispembed --det dbnet-ic15-q4_k.gguf -m trocr-small-printed.gguf \
+    --ocr document.png
+./build/crispembed --det dbnet-ic15-q4_k.gguf -m trocr-small-printed.gguf \
+    --ocr document.png --json
+
 # Start server (text + vision + face + CLIP)
 ./build/crispembed-server -m model.gguf \
     --vit clip-vit-base-patch16.gguf \
@@ -155,6 +166,53 @@ python tests/test_cli_parity.py --cli ./build/crispembed \
 curl -X POST http://localhost:8080/embed -d '{"texts": ["Hello world"]}'
 curl -X POST http://localhost:8080/clip/text -d '{"text": "a photo of a cat"}'
 curl -X POST http://localhost:8080/vit/encode -d '{"image": "photo.jpg"}'
+```
+
+## General OCR
+
+Full text detection + recognition pipeline running entirely via ggml.
+Detects text regions in any image (documents, photos, screenshots), then
+recognizes each region into Unicode text.
+
+**Detection**: DBNet (ResNet-18 backbone + FPNC neck + differentiable
+binarization head). Trained on ICDAR 2015. All BatchNorm folded into Conv
+at export time.
+
+**Recognition**: TrOCR-small (DeiT encoder + Transformer decoder, 64K
+XLM-R vocabulary). Reuses the existing math_ocr inference engine — same
+architecture, different vocabulary.
+
+| Component | F32 | Q8_0 | Q4_K |
+|-----------|-----|------|------|
+| DBNet detection | 46 MB | 13 MB | **7 MB** |
+| TrOCR-small recognition | 235 MB | 63 MB | ~30 MB |
+| **Total pipeline** | 281 MB | 76 MB | **~37 MB** |
+
+**Parity**: Detection probability map cos=1.000 vs PyTorch reference
+(F32). Recognition produces exact same tokens as HuggingFace TrOCR.
+
+```bash
+# Convert models (one-time)
+python models/convert-dbnet-to-gguf.py \
+    --checkpoint dbnet_resnet18_fpnc_1200e_icdar2015.pth \
+    --output dbnet-ic15-f32.gguf
+./build/crispembed-quantize dbnet-ic15-f32.gguf dbnet-ic15-q4_k.gguf q4_k
+
+python models/convert-trocr-to-gguf.py \
+    --model-dir trocr-small-printed/ \
+    --output trocr-small-printed.gguf
+
+# Run OCR
+./build/crispembed --det dbnet-ic15-q4_k.gguf \
+    -m trocr-small-printed.gguf --ocr image.png
+
+# C API
+void *ctx = crispembed_ocr_init("dbnet.gguf", "trocr.gguf", 4);
+int n;
+const crispembed_ocr_result *results = crispembed_ocr(ctx, "image.png", &n);
+for (int i = 0; i < n; i++)
+    printf("(%g,%g): %s\n", results[i].x, results[i].y, results[i].text);
+crispembed_ocr_free(ctx);
 ```
 
 ## Math OCR
