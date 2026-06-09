@@ -1036,7 +1036,7 @@ def train(args, zip_path: Path, dict_path: Path,
         try:
             from pytorch_lightning.loggers import WandbLogger
             # Fixed run_id per dataset for cross-session continuity
-            run_id = f"posformer-{args.dataset}-v5"
+            run_id = f"posformer-{args.dataset}-v6"
             logger = WandbLogger(
                 project=WANDB_PROJECT,
                 name=f"posformer-{args.dataset}",
@@ -1073,11 +1073,14 @@ def train(args, zip_path: Path, dict_path: Path,
     # (0.0165) is too high, causing val_ExpRate to oscillate 55-60%.
     if resume_ckpt:
         class LROverrideCallback(pl.Callback):
-            def on_train_start(self, trainer, pl_module):
-                for pg in trainer.optimizers[0].param_groups:
-                    old_lr = pg['lr']
-                    pg['lr'] = 0.005
-                    step("lr.override", old_lr=old_lr, new_lr=0.005)
+            _done = False
+            def on_train_batch_start(self, trainer, pl_module, batch, batch_idx):
+                if not self._done:
+                    for pg in trainer.optimizers[0].param_groups:
+                        old_lr = pg['lr']
+                        pg['lr'] = 0.005
+                        step("lr.override", old_lr=old_lr, new_lr=0.005)
+                    self._done = True
         callbacks.append(LROverrideCallback())
 
     step("train.start", epochs=args.epochs)
