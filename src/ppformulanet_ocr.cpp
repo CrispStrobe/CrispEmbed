@@ -949,11 +949,21 @@ const char* ppformulanet_ocr_recognize(ppformulanet_ocr_context* ctx,
     // Decode
     auto tokens = greedy_decode(ctx);
 
-    // Detokenize
+    // Detokenize: replace GPT-2 BPE Ġ (U+0120, bytes C4 A0) with space
     ctx->result_buf.clear();
     for (int tok : tokens) {
-        if (tok >= 0 && tok < (int)ctx->vocab.size())
-            ctx->result_buf += ctx->vocab[tok];
+        if (tok < 0 || tok >= (int)ctx->vocab.size()) continue;
+        const auto& s = ctx->vocab[tok];
+        for (size_t i = 0; i < s.size(); ) {
+            if (i + 1 < s.size() &&
+                (unsigned char)s[i] == 0xC4 && (unsigned char)s[i+1] == 0xA0) {
+                ctx->result_buf += ' ';
+                i += 2;
+            } else {
+                ctx->result_buf += s[i];
+                i++;
+            }
+        }
     }
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
@@ -995,10 +1005,21 @@ const char* ppformulanet_ocr_recognize_chw(ppformulanet_ocr_context* ctx,
     precompute_cross_kv(ctx);
     auto tokens = greedy_decode(ctx);
 
+    // Detokenize: replace GPT-2 BPE Ġ (U+0120, bytes C4 A0) with space
     ctx->result_buf.clear();
     for (int tok : tokens) {
-        if (tok >= 0 && tok < (int)ctx->vocab.size())
-            ctx->result_buf += ctx->vocab[tok];
+        if (tok < 0 || tok >= (int)ctx->vocab.size()) continue;
+        const auto& s = ctx->vocab[tok];
+        for (size_t i = 0; i < s.size(); ) {
+            if (i + 1 < s.size() &&
+                (unsigned char)s[i] == 0xC4 && (unsigned char)s[i+1] == 0xA0) {
+                ctx->result_buf += ' ';
+                i += 2;
+            } else {
+                ctx->result_buf += s[i];
+                i++;
+            }
+        }
     }
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
