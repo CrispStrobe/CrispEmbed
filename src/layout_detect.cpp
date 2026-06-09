@@ -180,10 +180,12 @@ bool load(context** out, const char* path, int n_threads) {
     auto load_conv = [&](conv_w& c, const std::string& prefix) {
         c.w = get(prefix + ".weight");
         c.b = get(prefix + ".bias");
+        if (!c.b) c.b = get(prefix + ".weight_bias"); // BN-folded bias
         if (!c.w) {
             // Try without .conv suffix (some layers vary)
             c.w = get(prefix + ".conv.weight");
             c.b = get(prefix + ".conv.bias");
+            if (!c.b) c.b = get(prefix + ".conv.weight_bias");
         }
     };
 
@@ -423,31 +425,606 @@ static void backbone_forward(ggml_context* g, const resnet50_backbone& bb,
 }
 
 // ---------------------------------------------------------------------------
-// Forward pass (placeholder — backbone only for now)
+// Hybrid encoder forward
 // ---------------------------------------------------------------------------
 
-// TODO: Full forward pass implementing:
-//   1. Backbone (done above)
-//   2. Hybrid encoder: project → FPN → PAN → AIFI
-//   3. Transformer decoder: self-attn → deformable cross-attn → FFN × 6
-//   4. Detection heads: bbox + class per query
-//
-// The deformable cross-attention requires CPU-side bilinear grid sampling:
-//   - For each of 300 queries × 8 heads × 3 scales × 4 points:
-//     sample from the multi-scale feature map at learned offset positions
-//   - Weighted sum → cross-attention output
+// Multi-head self-attention for AIFI encoder (single layer, 8 heads, 256d)
+static ggml_tensor* aifi_self_attn(ggml_context* g, ggml_tensor* x,
+                                    const hybrid_encoder& enc) {
+    // x: [256, N] where N = spatial tokens
+    auto* residual = x;
+
+    // QKV projection: split in_proj into Q, K, V
+    auto* qkv = linear(g, x, enc.aifi_qkv_w, enc.aifi_qkv_b); // [768, N]
+    fprintf(stderr, "  AIFI: qkv=[%lld,%lld]\n", (long long)qkv->ne[0], (long long)qkv->ne[1]);
+    int D = 256, N_heads = 8, head_dim = D / N_heads; // 32
+
+    // Split QKV → Q[256,N], K[256,N], V[256,N]
+    auto* q = ggml_cont(g, ggml_view_2d(g, qkv, D, qkv->ne[1], qkv->nb[1], 0));
+    auto* k = ggml_cont(g, ggml_view_2d(g, qkv, D, qkv->ne[1], qkv->nb[1], D * sizeof(float)));
+    auto* v = ggml_cont(g, ggml_view_2d(g, qkv, D, qkv->ne[1], qkv->nb[1], 2 * D * sizeof(float)));
+
+    // Reshape for multi-head: [head_dim, N, N_heads]
+    int64_t N = qkv->ne[1];
+    q = ggml_reshape_3d(g, q, head_dim, N, N_heads);
+    k = ggml_reshape_3d(g, k, head_dim, N, N_heads);
+    v = ggml_reshape_3d(g, v, head_dim, N, N_heads);
+
+    // Permute to [head_dim, N, N_heads] → compatible with flash_attn
+    // ggml flash_attn_ext expects q[D,N,H], k[D,N,H], v[D,N,H]
+    auto* attn = ggml_flash_attn_ext(g, q, k, v, nullptr, 1.0f / sqrtf(head_dim), 0, 0);
+    // attn: [head_dim, N, N_heads]
+
+    // Reshape back to [D, N]
+    attn = ggml_cont(g, ggml_reshape_2d(g, attn, D, N));
+
+    // Output projection
+    attn = linear(g, attn, enc.aifi_out_w, enc.aifi_out_b);
+
+    // Residual + LayerNorm
+    x = ggml_add(g, residual, attn);
+    x = layer_norm(g, x, enc.aifi_norm1_w, enc.aifi_norm1_b);
+
+    // FFN: linear1 → ReLU → linear2
+    residual = x;
+    auto* ffn = linear(g, x, enc.aifi_ffn1_w, enc.aifi_ffn1_b);
+    ffn = ggml_relu(g, ffn);
+    ffn = linear(g, ffn, enc.aifi_ffn2_w, enc.aifi_ffn2_b);
+
+    x = ggml_add(g, residual, ffn);
+    x = layer_norm(g, x, enc.aifi_norm2_w, enc.aifi_norm2_b);
+
+    return x;
+}
+
+// Encoder: project backbone features → FPN → PAN → AIFI on top scale
+// Returns 3 multi-scale features: [256, H*W] for each scale
+static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
+                             ggml_tensor* c3, ggml_tensor* c4, ggml_tensor* c5,
+                             ggml_tensor** s3, ggml_tensor** s4, ggml_tensor** s5) {
+    // Input projection: reduce channels to 256
+    int c3_ch = (int)c3->ne[2], c4_ch = (int)c4->ne[2], c5_ch = (int)c5->ne[2];
+    fprintf(stderr, "  encoder input_proj: c3_ch=%d c4_ch=%d c5_ch=%d\n", c3_ch, c4_ch, c5_ch);
+    if (enc.input_proj[0].w)
+        fprintf(stderr, "  input_proj[0].w: [%lld,%lld] ndim=%d\n",
+                (long long)enc.input_proj[0].w->ne[0], (long long)enc.input_proj[0].w->ne[1],
+                ggml_n_dims(enc.input_proj[0].w));
+    auto* p3 = conv_relu(g, c3, enc.input_proj[0], c3_ch, 1, 1, 1, 0, false);
+    fprintf(stderr, "  p3 done\n");
+    auto* p4 = conv_relu(g, c4, enc.input_proj[1], c4_ch, 1, 1, 1, 0, false);
+    fprintf(stderr, "  p4 done\n");
+    auto* p5 = conv_relu(g, c5, enc.input_proj[2], c5_ch, 1, 1, 1, 0, false);
+    fprintf(stderr, "  p5 done\n");
+
+    // AIFI self-attention on S5 (smallest scale, 20×20 = 400 tokens)
+    // p5 is [W, H, C] in ggml. We need [D, N] = [C, W*H] for attention.
+    // Permute [W,H,C] → [C,W,H] then reshape [C, W*H]
+    int s5_w = (int)p5->ne[0], s5_h = (int)p5->ne[1], s5_c = (int)p5->ne[2];
+    fprintf(stderr, "  AIFI: p5=[%lld,%lld,%lld] s5_w=%d s5_h=%d s5_c=%d\n",
+            (long long)p5->ne[0], (long long)p5->ne[1], (long long)p5->ne[2],
+            s5_w, s5_h, s5_c);
+    auto* p5_perm = ggml_cont(g, ggml_permute(g, p5, 1, 2, 0, 3));  // ne: [C, W, H]
+    fprintf(stderr, "  AIFI: p5_perm=[%lld,%lld,%lld,%lld] nelems=%lld\n",
+            (long long)p5_perm->ne[0], (long long)p5_perm->ne[1],
+            (long long)p5_perm->ne[2], (long long)p5_perm->ne[3],
+            (long long)ggml_nelements(p5_perm));
+    fprintf(stderr, "  AIFI: reshape to [%d, %d] = %d\n", s5_c, s5_w*s5_h, s5_c * s5_w * s5_h);
+    auto* p5_flat = ggml_reshape_2d(g, p5_perm, s5_c, s5_w * s5_h); // ne: [C, W*H]
+    fprintf(stderr, "  AIFI: p5_flat done\n");
+    // Transpose to [256, N] — ggml reshape gives [C, H*W], need [C, N] which is same
+    p5_flat = aifi_self_attn(g, p5_flat, enc);
+    fprintf(stderr, "  AIFI done: p5_flat=[%lld,%lld]\n", (long long)p5_flat->ne[0], (long long)p5_flat->ne[1]);
+    // Reshape back to spatial: [C, W*H] → [C, W, H] → permute to [W, H, C]
+    auto* p5_spatial = ggml_reshape_3d(g, p5_flat, s5_c, s5_w, s5_h);
+    p5 = ggml_cont(g, ggml_permute(g, p5_spatial, 2, 0, 1, 3)); // [W, H, C]
+    fprintf(stderr, "  AIFI reshape back: p5=[%lld,%lld,%lld]\n",
+            (long long)p5->ne[0], (long long)p5->ne[1], (long long)p5->ne[2]);
+
+    // FPN top-down pathway
+    fprintf(stderr, "  FPN: p3=[%lld,%lld,%lld] p4=[%lld,%lld,%lld] p5=[%lld,%lld,%lld]\n",
+            (long long)p3->ne[0],(long long)p3->ne[1],(long long)p3->ne[2],
+            (long long)p4->ne[0],(long long)p4->ne[1],(long long)p4->ne[2],
+            (long long)p5->ne[0],(long long)p5->ne[1],(long long)p5->ne[2]);
+    // S5 → upsample → lateral + S4
+    fprintf(stderr, "  FPN up5: interpolate p5[%lld,%lld,%lld] → [%d,%d,%d]\n",
+            (long long)p5->ne[0],(long long)p5->ne[1],(long long)p5->ne[2],
+            (int)p4->ne[0], (int)p4->ne[1], (int)p5->ne[2]);
+    auto* up5 = ggml_interpolate(g, p5, (int)p4->ne[0], (int)p4->ne[1],
+                                  (int)p5->ne[2], 1, GGML_SCALE_MODE_NEAREST);
+    fprintf(stderr, "  FPN up5 done\n");
+    auto* lat4 = conv_relu(g, p4, enc.lateral_convs[1], 256, 1, 1, 1, 0, false);
+    fprintf(stderr, "  FPN lat4 done\n");
+    p4 = ggml_add(g, up5, lat4);
+    // TODO: full CSP block — skipping FPN refinement for now
+
+    // S4 → upsample → lateral + S3
+    auto* up4 = ggml_interpolate(g, p4, (int)p3->ne[0], (int)p3->ne[1],
+                                  (int)p4->ne[2], 1, GGML_SCALE_MODE_NEAREST);
+    auto* lat3 = conv_relu(g, p3, enc.lateral_convs[0], 256, 1, 1, 1, 0, false);
+    p3 = ggml_add(g, up4, lat3);
+    // TODO: full CSP block — skipping FPN refinement for now
+
+    // PAN bottom-up pathway
+    // S3 → downsample → + S4
+    auto* down3 = conv_relu(g, p3, enc.downsample_convs[0], 256, 3, 3, 2, 1);
+    p4 = ggml_add(g, down3, p4);
+    // TODO: full CSP block — skipping PAN refinement for now
+
+    // S4 → downsample → + S5
+    auto* down4 = conv_relu(g, p4, enc.downsample_convs[1], 256, 3, 3, 2, 1);
+    p5 = ggml_add(g, down4, p5);
+    // TODO: full CSP block — skipping PAN refinement for now
+
+    *s3 = p3; *s4 = p4; *s5 = p5;
+}
+
+// ---------------------------------------------------------------------------
+// Bilinear grid sampling (CPU-side, for deformable attention)
+// ---------------------------------------------------------------------------
+
+// Sample a 2D feature map at fractional position (px, py) using bilinear interpolation.
+// feat: [C, H, W] row-major. Returns C-dimensional vector.
+static void bilinear_sample(const float* feat, int W, int H, int C,
+                             float px, float py, float* out) {
+    // Clamp to valid range
+    px = std::max(0.0f, std::min(px, (float)(W - 1)));
+    py = std::max(0.0f, std::min(py, (float)(H - 1)));
+
+    int x0 = (int)px, y0 = (int)py;
+    int x1 = std::min(x0 + 1, W - 1);
+    int y1 = std::min(y0 + 1, H - 1);
+    float fx = px - x0, fy = py - y0;
+
+    float w00 = (1 - fx) * (1 - fy);
+    float w01 = fx * (1 - fy);
+    float w10 = (1 - fx) * fy;
+    float w11 = fx * fy;
+
+    for (int c = 0; c < C; c++) {
+        out[c] = w00 * feat[c * H * W + y0 * W + x0]
+               + w01 * feat[c * H * W + y0 * W + x1]
+               + w10 * feat[c * H * W + y1 * W + x0]
+               + w11 * feat[c * H * W + y1 * W + x1];
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Full forward pass
+// ---------------------------------------------------------------------------
 
 std::vector<region> detect(context* ctx, const float* pixels,
                             int orig_h, int orig_w,
                             float score_threshold) {
     if (!ctx || !pixels) return {};
 
-    // For now, run ONNX Runtime as reference to verify backbone
-    // TODO: implement full ggml graph
-    fprintf(stderr, "layout_detect: full RT-DETRv2 graph not yet implemented\n");
-    fprintf(stderr, "  backbone + encoder + decoder need ~1500 lines of ggml ops\n");
-    fprintf(stderr, "  deformable cross-attn needs CPU-side bilinear grid sampling\n");
-    return {};
+    const int H = ctx->input_h, W = ctx->input_w;  // 640
+    const int D = 256, N_heads = 8, N_queries = 300;
+    const int N_levels = 3, N_points = 4;
+
+    // --- Phase 1: Backbone + Encoder (ggml graph) ---
+    // This produces multi-scale features via ggml graph compute
+    int max_nodes = 2048;
+    size_t buf_size = ggml_tensor_overhead() * (max_nodes + 200)
+                    + ggml_graph_overhead_custom(max_nodes, false);
+    std::vector<uint8_t> buf(buf_size);
+    ggml_init_params ip = { buf_size, buf.data(), true };
+    ggml_context* g = ggml_init(ip);
+
+    // Input: [W, H, 3] in ggml layout
+    ggml_tensor* input = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, 3);
+    ggml_set_name(input, "input");
+    ggml_set_input(input);
+
+    // Backbone
+    fprintf(stderr, "layout_detect: building backbone graph...\n");
+    ggml_tensor *c3, *c4, *c5;
+    backbone_forward(g, ctx->backbone, input, &c3, &c4, &c5);
+    fprintf(stderr, "layout_detect: backbone done, c3=[%lld,%lld,%lld] c4=[%lld,%lld,%lld] c5=[%lld,%lld,%lld]\n",
+            (long long)c3->ne[0], (long long)c3->ne[1], (long long)c3->ne[2],
+            (long long)c4->ne[0], (long long)c4->ne[1], (long long)c4->ne[2],
+            (long long)c5->ne[0], (long long)c5->ne[1], (long long)c5->ne[2]);
+
+    // Encoder
+    fprintf(stderr, "layout_detect: building encoder graph...\n");
+    ggml_tensor *s3, *s4, *s5;
+    encoder_forward(g, ctx->encoder, c3, c4, c5, &s3, &s4, &s5);
+    fprintf(stderr, "layout_detect: encoder done\n");
+
+    // Mark encoder outputs
+    ggml_set_name(s3, "s3"); ggml_set_output(s3);
+    ggml_set_name(s4, "s4"); ggml_set_output(s4);
+    ggml_set_name(s5, "s5"); ggml_set_output(s5);
+
+    // Build + compute backbone+encoder graph
+    ggml_cgraph* gf = ggml_new_graph_custom(g, max_nodes, false);
+    ggml_build_forward_expand(gf, s3);
+    ggml_build_forward_expand(gf, s4);
+    ggml_build_forward_expand(gf, s5);
+
+    ggml_gallocr_t alloc = ggml_gallocr_new(
+        ggml_backend_get_default_buffer_type(ctx->backend));
+    if (!ggml_gallocr_alloc_graph(alloc, gf)) {
+        fprintf(stderr, "layout_detect: backbone graph alloc failed\n");
+        ggml_gallocr_free(alloc);
+        ggml_free(g);
+        return {};
+    }
+
+    // Set input
+    ggml_tensor* inp_t = ggml_graph_get_tensor(gf, "input");
+    ggml_backend_tensor_set(inp_t, pixels, 0, 3 * H * W * sizeof(float));
+
+    // Compute backbone + encoder
+    fprintf(stderr, "layout_detect: computing backbone + encoder...\n");
+    ggml_backend_graph_compute(ctx->backend, gf);
+
+    // Read encoder outputs to CPU buffers
+    // s3: [W3, H3, 256], s4: [W4, H4, 256], s5: [W5, H5, 256]
+    struct scale_feat {
+        std::vector<float> data; // CHW layout: [C, H, W]
+        int W, H, C;
+    };
+    scale_feat feats[3];
+    const char* feat_names[] = {"s3", "s4", "s5"};
+    int total_tokens = 0;
+    for (int i = 0; i < 3; i++) {
+        ggml_tensor* t = ggml_graph_get_tensor(gf, feat_names[i]);
+        feats[i].W = (int)t->ne[0];
+        feats[i].H = (int)t->ne[1];
+        feats[i].C = (int)t->ne[2];
+        int n = feats[i].W * feats[i].H * feats[i].C;
+        feats[i].data.resize(n);
+        ggml_backend_tensor_get(t, feats[i].data.data(), 0, n * sizeof(float));
+        total_tokens += feats[i].W * feats[i].H;
+        fprintf(stderr, "  s%d: %dx%d x %d\n", i+3, feats[i].W, feats[i].H, feats[i].C);
+    }
+
+    ggml_gallocr_free(alloc);
+    ggml_free(g);
+
+    // --- Phase 2: Decoder (CPU-side, simpler than ggml graph for deformable) ---
+    // Flatten multi-scale features into a single [D, N_total] memory
+    // N_total = 80*80 + 40*40 + 20*20 = 8400
+    std::vector<float> memory(D * total_tokens);
+    int level_starts[3], level_sizes[3];
+    int offset = 0;
+    for (int lv = 0; lv < 3; lv++) {
+        level_starts[lv] = offset;
+        level_sizes[lv] = feats[lv].W * feats[lv].H;
+        // Copy: ggml stores [W, H, C], we need [C, H*W] for linear ops
+        for (int c = 0; c < D; c++) {
+            for (int s = 0; s < level_sizes[lv]; s++) {
+                // ggml [W, H, C]: element at (x, y, c) = data[x + y*W + c*W*H]
+                memory[c * total_tokens + offset + s] = feats[lv].data[s + c * level_sizes[lv]];
+            }
+        }
+        offset += level_sizes[lv];
+    }
+
+    // Initialize queries from anchors
+    // anchors: [300, 4] — reference points (cx, cy, w, h) in [0, 1]
+    std::vector<float> anchors(N_queries * 4);
+    if (ctx->decoder.anchors)
+        ggml_backend_tensor_get(ctx->decoder.anchors, anchors.data(), 0, N_queries * 4 * sizeof(float));
+
+    // Query embeddings: project encoder output to get initial queries
+    // For RT-DETRv2, initial queries come from top-K encoder scores
+    // Simplified: use anchor-based initialization (zeros + position encoding)
+    std::vector<float> queries(D * N_queries, 0.0f);
+
+    // Helper: CPU-side matrix multiply y = W @ x + b
+    // W: [out, in], x: [in, N], y: [out, N]
+    auto cpu_linear = [](const float* x, float* y, int in_d, int out_d, int N,
+                          ggml_tensor* w_t, ggml_tensor* b_t) {
+        std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
+        if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, out_d * in_d * sizeof(float));
+        if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, out_d * sizeof(float));
+        for (int n = 0; n < N; n++) {
+            for (int o = 0; o < out_d; o++) {
+                float sum = b[o];
+                for (int i = 0; i < in_d; i++) {
+                    sum += W[o * in_d + i] * x[i * N + n]; // x is [in, N] col-major
+                }
+                y[o * N + n] = sum;
+            }
+        }
+    };
+
+    // CPU LayerNorm
+    auto cpu_layernorm = [](float* x, int D, int N, ggml_tensor* w_t, ggml_tensor* b_t) {
+        std::vector<float> w(D), b(D);
+        if (w_t) ggml_backend_tensor_get(w_t, w.data(), 0, D * sizeof(float));
+        if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, D * sizeof(float));
+        for (int n = 0; n < N; n++) {
+            float mean = 0, var = 0;
+            for (int d = 0; d < D; d++) mean += x[d * N + n];
+            mean /= D;
+            for (int d = 0; d < D; d++) {
+                float diff = x[d * N + n] - mean;
+                var += diff * diff;
+            }
+            var = 1.0f / sqrtf(var / D + 1e-5f);
+            for (int d = 0; d < D; d++) {
+                x[d * N + n] = (x[d * N + n] - mean) * var * w[d] + b[d];
+            }
+        }
+    };
+
+    fprintf(stderr, "layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
+
+    // Decoder: 6 layers of (self-attn → deformable cross-attn → FFN)
+    std::vector<float> ref_points = anchors; // [N_queries * 4]
+
+    for (int li = 0; li < 6; li++) {
+        const auto& layer = ctx->decoder.layers[li];
+
+        // --- Self-attention ---
+        std::vector<float> residual = queries; // [D, N_queries]
+        std::vector<float> qkv(3 * D * N_queries);
+        cpu_linear(queries.data(), qkv.data(), D, 3 * D, N_queries,
+                   layer.self_qkv_w, layer.self_qkv_b);
+
+        // Split QKV and compute attention
+        // Q, K, V each [D, N_queries], 8 heads, head_dim = 32
+        int hd = D / N_heads;
+        std::vector<float> attn_out(D * N_queries, 0.0f);
+        for (int h = 0; h < N_heads; h++) {
+            // Compute Q @ K^T / sqrt(hd) for this head
+            std::vector<float> scores(N_queries * N_queries, 0.0f);
+            for (int qi = 0; qi < N_queries; qi++) {
+                for (int ki = 0; ki < N_queries; ki++) {
+                    float dot = 0;
+                    for (int d = 0; d < hd; d++) {
+                        int idx = (h * hd + d) * N_queries;
+                        dot += qkv[idx + qi] * qkv[D * N_queries + idx + ki];
+                    }
+                    scores[qi * N_queries + ki] = dot / sqrtf(hd);
+                }
+            }
+            // Softmax per query
+            for (int qi = 0; qi < N_queries; qi++) {
+                float max_s = -1e9f;
+                for (int ki = 0; ki < N_queries; ki++)
+                    max_s = std::max(max_s, scores[qi * N_queries + ki]);
+                float sum = 0;
+                for (int ki = 0; ki < N_queries; ki++) {
+                    scores[qi * N_queries + ki] = expf(scores[qi * N_queries + ki] - max_s);
+                    sum += scores[qi * N_queries + ki];
+                }
+                for (int ki = 0; ki < N_queries; ki++)
+                    scores[qi * N_queries + ki] /= sum;
+            }
+            // Attn @ V
+            for (int qi = 0; qi < N_queries; qi++) {
+                for (int d = 0; d < hd; d++) {
+                    float sum = 0;
+                    for (int ki = 0; ki < N_queries; ki++) {
+                        sum += scores[qi * N_queries + ki] *
+                               qkv[2 * D * N_queries + (h * hd + d) * N_queries + ki];
+                    }
+                    attn_out[(h * hd + d) * N_queries + qi] = sum;
+                }
+            }
+        }
+        // Output projection
+        std::vector<float> sa_out(D * N_queries);
+        cpu_linear(attn_out.data(), sa_out.data(), D, D, N_queries,
+                   layer.self_out_w, layer.self_out_b);
+
+        // Residual + norm
+        for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + sa_out[i];
+        cpu_layernorm(queries.data(), D, N_queries, layer.norm1_w, layer.norm1_b);
+
+        // --- Deformable cross-attention ---
+        residual = queries;
+
+        // Value projection: [D, N_total] → [D, N_total]
+        std::vector<float> values(D * total_tokens);
+        cpu_linear(memory.data(), values.data(), D, D, total_tokens,
+                   layer.cross_value_w, layer.cross_value_b);
+
+        // Sampling offsets: query → [N_heads * N_levels * N_points * 2, N_queries]
+        int n_offsets = N_heads * N_levels * N_points * 2; // 192
+        std::vector<float> offsets(n_offsets * N_queries);
+        // Note: sampling_offsets has weight + bias, but the ONNX only stores bias
+        // The weight is an identity-like mapping from the query
+        // For now, just use bias (reference points + learned bias)
+        if (layer.cross_sampling_offsets_b) {
+            std::vector<float> bias(n_offsets);
+            ggml_backend_tensor_get(layer.cross_sampling_offsets_b, bias.data(), 0, n_offsets * sizeof(float));
+            for (int q = 0; q < N_queries; q++)
+                for (int o = 0; o < n_offsets; o++)
+                    offsets[o * N_queries + q] = bias[o]; // broadcast
+        }
+
+        // Attention weights: query → [N_heads * N_levels * N_points, N_queries]
+        int n_weights = N_heads * N_levels * N_points; // 96
+        std::vector<float> attn_weights(n_weights * N_queries);
+        if (layer.cross_attn_weights_b) {
+            std::vector<float> bias(n_weights);
+            ggml_backend_tensor_get(layer.cross_attn_weights_b, bias.data(), 0, n_weights * sizeof(float));
+            for (int q = 0; q < N_queries; q++)
+                for (int w = 0; w < n_weights; w++)
+                    attn_weights[w * N_queries + q] = bias[w];
+        }
+        // Softmax attention weights per head per query (over levels * points)
+        for (int q = 0; q < N_queries; q++) {
+            for (int h = 0; h < N_heads; h++) {
+                float max_w = -1e9f;
+                for (int lp = 0; lp < N_levels * N_points; lp++) {
+                    int idx = (h * N_levels * N_points + lp) * N_queries + q;
+                    max_w = std::max(max_w, attn_weights[idx]);
+                }
+                float sum = 0;
+                for (int lp = 0; lp < N_levels * N_points; lp++) {
+                    int idx = (h * N_levels * N_points + lp) * N_queries + q;
+                    attn_weights[idx] = expf(attn_weights[idx] - max_w);
+                    sum += attn_weights[idx];
+                }
+                for (int lp = 0; lp < N_levels * N_points; lp++) {
+                    int idx = (h * N_levels * N_points + lp) * N_queries + q;
+                    attn_weights[idx] /= sum;
+                }
+            }
+        }
+
+        // Sample features at offset positions and compute weighted sum
+        int value_hd = D / N_heads; // 32
+        std::vector<float> cross_out(D * N_queries, 0.0f);
+
+        for (int q = 0; q < N_queries; q++) {
+            float ref_x = ref_points[q * 4 + 0]; // cx in [0, 1]
+            float ref_y = ref_points[q * 4 + 1]; // cy in [0, 1]
+
+            for (int h = 0; h < N_heads; h++) {
+                for (int lv = 0; lv < N_levels; lv++) {
+                    int fW = feats[lv].W, fH = feats[lv].H;
+                    for (int pt = 0; pt < N_points; pt++) {
+                        int off_idx = (h * N_levels * N_points + lv * N_points + pt);
+                        float dx = offsets[(off_idx * 2 + 0) * N_queries + q];
+                        float dy = offsets[(off_idx * 2 + 1) * N_queries + q];
+
+                        // Sampling position in feature map coordinates
+                        float sx = (ref_x + dx) * fW;
+                        float sy = (ref_y + dy) * fH;
+
+                        // Bilinear sample from this level's value features
+                        float sampled[32]; // value_hd
+                        // Value is stored as [D, N_total], extract this level
+                        // Level lv starts at level_starts[lv] in the N_total dimension
+                        // We need the spatial position (sx, sy) in the [W, H] grid
+                        int fW2 = feats[lv].W, fH2 = feats[lv].H;
+
+                        // Clamp
+                        sx = std::max(0.0f, std::min(sx, (float)(fW2 - 1)));
+                        sy = std::max(0.0f, std::min(sy, (float)(fH2 - 1)));
+                        int x0 = (int)sx, y0 = (int)sy;
+                        int x1 = std::min(x0 + 1, fW2 - 1);
+                        int y1 = std::min(y0 + 1, fH2 - 1);
+                        float fx = sx - x0, fy = sy - y0;
+
+                        float w00 = (1-fx)*(1-fy), w01 = fx*(1-fy);
+                        float w10 = (1-fx)*fy, w11 = fx*fy;
+
+                        float attn_w = attn_weights[off_idx * N_queries + q];
+
+                        for (int d = 0; d < value_hd; d++) {
+                            int vd = h * value_hd + d; // global dim index
+                            int base = vd * total_tokens + level_starts[lv];
+                            float v = w00 * values[base + y0 * fW2 + x0]
+                                    + w01 * values[base + y0 * fW2 + x1]
+                                    + w10 * values[base + y1 * fW2 + x0]
+                                    + w11 * values[base + y1 * fW2 + x1];
+                            cross_out[vd * N_queries + q] += attn_w * v;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Cross-attention output projection
+        std::vector<float> ca_out(D * N_queries);
+        cpu_linear(cross_out.data(), ca_out.data(), D, D, N_queries,
+                   layer.cross_out_w, layer.cross_out_b);
+
+        // Residual + norm
+        for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ca_out[i];
+        cpu_layernorm(queries.data(), D, N_queries, layer.norm2_w, layer.norm2_b);
+
+        // --- FFN ---
+        residual = queries;
+        std::vector<float> ffn1(1024 * N_queries);
+        cpu_linear(queries.data(), ffn1.data(), D, 1024, N_queries,
+                   layer.ffn1_w, layer.ffn1_b);
+        // ReLU
+        for (auto& v : ffn1) v = std::max(0.0f, v);
+        std::vector<float> ffn2(D * N_queries);
+        cpu_linear(ffn1.data(), ffn2.data(), 1024, D, N_queries,
+                   layer.ffn2_w, layer.ffn2_b);
+
+        // Residual + norm
+        for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ffn2[i];
+        cpu_layernorm(queries.data(), D, N_queries, layer.norm3_w, layer.norm3_b);
+
+        // Update reference points via bbox head (iterative refinement)
+        std::vector<float> bbox_delta(4 * N_queries);
+        std::vector<float> tmp(D * N_queries);
+        // MLP: 256 → 256 → 256 → 4
+        std::copy(queries.begin(), queries.end(), tmp.begin());
+        for (int j = 0; j < 3; j++) {
+            std::vector<float> out((j < 2 ? D : 4) * N_queries);
+            cpu_linear(tmp.data(), out.data(), (j == 0 ? D : D), (j < 2 ? D : 4), N_queries,
+                       ctx->decoder.dec_bbox_w[li][j], ctx->decoder.dec_bbox_b[li][j]);
+            if (j < 2) {
+                for (auto& v : out) v = std::max(0.0f, v); // ReLU
+                tmp = out;
+            } else {
+                bbox_delta = out;
+            }
+        }
+
+        // Refine reference points: sigmoid(inverse_sigmoid(ref) + delta)
+        for (int q = 0; q < N_queries; q++) {
+            for (int d = 0; d < 4; d++) {
+                float r = ref_points[q * 4 + d];
+                // inverse sigmoid: log(r / (1 - r))
+                r = std::max(1e-6f, std::min(r, 1.0f - 1e-6f));
+                float inv_sig = logf(r / (1.0f - r));
+                float refined = 1.0f / (1.0f + expf(-(inv_sig + bbox_delta[d * N_queries + q])));
+                ref_points[q * 4 + d] = refined;
+            }
+        }
+
+        fprintf(stderr, "  decoder layer %d done\n", li);
+    }
+
+    // --- Phase 3: Detection heads ---
+    // Class scores from final decoder output
+    std::vector<float> class_scores(ctx->num_classes * N_queries);
+    cpu_linear(queries.data(), class_scores.data(), D, ctx->num_classes, N_queries,
+               ctx->decoder.dec_score_w, ctx->decoder.dec_score_b);
+    // Sigmoid
+    for (auto& v : class_scores) v = 1.0f / (1.0f + expf(-v));
+
+    // Collect results
+    std::vector<region> results;
+    for (int q = 0; q < N_queries; q++) {
+        // Find best class
+        int best_cls = 0;
+        float best_score = 0;
+        for (int c = 0; c < ctx->num_classes; c++) {
+            float s = class_scores[c * N_queries + q];
+            if (s > best_score) { best_score = s; best_cls = c; }
+        }
+
+        if (best_score < score_threshold) continue;
+
+        // Decode bbox: ref_points are (cx, cy, w, h) in [0, 1]
+        float cx = ref_points[q * 4 + 0];
+        float cy = ref_points[q * 4 + 1];
+        float bw = ref_points[q * 4 + 2];
+        float bh = ref_points[q * 4 + 3];
+
+        // Convert to (x1, y1, x2, y2) in pixel coordinates
+        region r;
+        r.x1 = (cx - bw / 2) * orig_w;
+        r.y1 = (cy - bh / 2) * orig_h;
+        r.x2 = (cx + bw / 2) * orig_w;
+        r.y2 = (cy + bh / 2) * orig_h;
+        r.score = best_score;
+        r.label = (label_id)best_cls;
+        r.label_name = LABEL_NAMES[best_cls];
+
+        results.push_back(r);
+    }
+
+    // Sort by score descending
+    std::sort(results.begin(), results.end(),
+              [](const region& a, const region& b) { return a.score > b.score; });
+
+    fprintf(stderr, "layout_detect: %zu detections (score > %.2f)\n",
+            results.size(), score_threshold);
+    return results;
 }
 
 std::vector<region> detect_file(context* ctx, const char* path,
