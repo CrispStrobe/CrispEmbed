@@ -18,10 +18,14 @@ DBNet (ResNet-18 + FPNC, 7 MB Q4_K) detects text regions, TrOCR-small
 (DeiT + Transformer decoder, 63 MB Q8_0) recognizes each crop.
 ~200ms per region, end-to-end via C API or `crispembed --ocr`.
 
-**Math OCR**: Three engines for math-image → LaTeX:
-DeiT+TrOCR (printed math, 17 MB Q4_K), BTTR (handwritten, DenseNet+Transformer,
-53% exact match on CROHME), HMER (handwritten, DenseNet+GRU attention).
-All run via ggml graph compute, ~3-5s decoder time.
+**Math OCR**: Six engines for math-image → LaTeX:
+PP-FormulaNet-L (printed, SAM-ViT+MBart 181M, Apache-2.0, 122 MB Q4_K),
+Texo-Distill (printed, HGNetv2+MBart 20M, BLEU 0.90),
+DeiT+TrOCR (printed, 17 MB Q4_K),
+PosFormer (handwritten, DenseNet+Transformer+ARM, 57% CROHME),
+BTTR (handwritten, DenseNet+Transformer, 53% CROHME),
+HMER (handwritten, DenseNet+GRU attention).
+All auto-detected from GGUF metadata, ~3-5s decoder time.
 
 **9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
 GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
