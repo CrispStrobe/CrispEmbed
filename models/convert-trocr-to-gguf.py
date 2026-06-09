@@ -156,6 +156,29 @@ def main():
             except Exception as e:
                 print(f"WARNING: cannot load tokenizer: {e}")
 
+    if tok_tokens is None:
+        # Try vocab.json (GPT-2 / RoBERTa style)
+        vocab_json = model_dir / "vocab.json"
+        if vocab_json.exists():
+            with open(vocab_json) as f:
+                vocab = json.load(f)
+            sorted_vocab = sorted(vocab.items(), key=lambda x: x[1])
+            tok_tokens = [t[0] for t in sorted_vocab]
+            # GPT-2 BPE uses byte-level encoding (Ġ = space)
+            print(f"Loaded {len(tok_tokens)} tokens from vocab.json (GPT-2/RoBERTa)")
+
+    if tok_tokens is None:
+        # Last resort: use AutoTokenizer
+        try:
+            from transformers import AutoTokenizer
+            tok = AutoTokenizer.from_pretrained(str(model_dir))
+            n_tokens = dec_cfg.get("vocab_size", tok.vocab_size)
+            tok_tokens = [tok.convert_ids_to_tokens(i) or f"<unk_{i}>"
+                          for i in range(n_tokens)]
+            print(f"Loaded {len(tok_tokens)} tokens via AutoTokenizer (fallback)")
+        except Exception as e:
+            print(f"WARNING: cannot load tokenizer: {e}")
+
     # Write GGUF
     model_name = args.name or model_dir.name
     writer = gguf.GGUFWriter(str(args.output), arch="trocr")
@@ -237,12 +260,27 @@ def main():
         # Fallback: replace dots with underscores (legacy)
         return name.replace(".", "_").replace("/", "_").replace(":", "_")
 
+    # Check for tied embeddings (lm_head shares embed_tokens weight)
+    has_lm_head = any("lm_head" in k or "output_projection" in k for k in weights)
+    embed_tokens_key = None
+    for k in weights:
+        if "embed_tokens.weight" in k:
+            embed_tokens_key = k
+            break
+
     total_params = 0
     for name, arr in weights.items():
         gguf_name = map_tensor_name(name)
         data = arr.astype(dtype_np)
         total_params += data.size
         writer.add_tensor(gguf_name, data, raw_dtype=dtype_gguf)
+
+    # Create lm_head from embed_tokens if tied (TrOCR-base uses tied embeddings)
+    if not has_lm_head and embed_tokens_key:
+        data = weights[embed_tokens_key].astype(dtype_np)
+        total_params += data.size
+        writer.add_tensor("dec.lm_head.weight", data, raw_dtype=dtype_gguf)
+        print(f"Created tied lm_head from {embed_tokens_key} {list(data.shape)}")
 
     writer.write_header_to_file()
     writer.write_kv_data_to_file()
