@@ -63,6 +63,7 @@ HF_PROGRESS_REPO = "cstr/posformer-training-progress"
 WANDB_PROJECT = "posformer-hmer"
 
 MATHWRITING_URL = "https://storage.googleapis.com/mathwriting_data/mathwriting-2024.tgz"
+MATHWRITING_HF_DATASET = "deepcopy/MathWriting-human"
 POSFORMER_REPO = "https://github.com/SJTU-DeepVisionLab/PosFormer.git"
 CRISPEMBED_REPO = "https://github.com/CrispStrobe/CrispEmbed.git"
 
@@ -70,6 +71,197 @@ CRISPEMBED_REPO = "https://github.com/CrispStrobe/CrispEmbed.git"
 # PosFormer's expected format: data/{train,2014}/caption.txt + img/*.bmp
 CROHME_HF_REPO = "cstr/posformer-training-data"
 CROHME_HF_FILE = "data_crohme.zip"
+MATHWRITING_V2_HF_FILE = "data_mathwriting_v2.zip"
+
+# ━━━━━━━━━━━━━━━━━━━━ V2 vocabulary (183 tokens) ━━━━━━━━━━━━━━━━━━━━━━━━━━
+# Embedded to avoid network dependency. Alphabetical order — token indices
+# must match exactly between training, GGUF converter, and C++ inference.
+# Source: /mnt/volume1/dictionary_v2.txt built by build_dict_v2.py
+
+DICT_V2 = """\
+!
+&
+(
+)
+*
++
+,
+-
+.
+/
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+:
+;
+<
+=
+>
+A
+B
+C
+D
+E
+F
+G
+H
+I
+J
+K
+L
+M
+N
+O
+P
+Q
+R
+S
+T
+U
+V
+W
+X
+Y
+Z
+[
+\\Delta
+\\Lambda
+\\Leftrightarrow
+\\Omega
+\\Phi
+\\Pi
+\\Psi
+\\Rightarrow
+\\Sigma
+\\Theta
+\\Upsilon
+\\Xi
+\\\\
+\\alpha
+\\approx
+\\begin
+\\beta
+\\cap
+\\cdot
+\\cdots
+\\chi
+\\cos
+\\cup
+\\dagger
+\\delta
+\\div
+\\dot
+\\emptyset
+\\end
+\\epsilon
+\\equiv
+\\eta
+\\exists
+\\forall
+\\frac
+\\gamma
+\\ge
+\\geq
+\\gg
+\\hat
+\\iint
+\\in
+\\infty
+\\int
+\\kappa
+\\lambda
+\\langle
+\\lceil
+\\ldots
+\\le
+\\leq
+\\lfloor
+\\lim
+\\limits
+\\log
+\\mu
+\\nabla
+\\ne
+\\neq
+\\notin
+\\nu
+\\oint
+\\omega
+\\oplus
+\\otimes
+\\overline
+\\partial
+\\perp
+\\phi
+\\pi
+\\pm
+\\prime
+\\prod
+\\propto
+\\psi
+\\rangle
+\\rceil
+\\rfloor
+\\rho
+\\rightarrow
+\\sigma
+\\sim
+\\sin
+\\sqrt
+\\subseteq
+\\sum
+\\tan
+\\tau
+\\theta
+\\tilde
+\\times
+\\underline
+\\varphi
+\\vec
+\\xi
+\\zeta
+\\{
+\\}
+]
+^
+_
+a
+b
+c
+d
+e
+f
+g
+h
+i
+j
+k
+l
+m
+matrix
+n
+o
+p
+q
+r
+s
+t
+u
+v
+w
+x
+y
+z
+{
+|
+}"""
 
 # ━━━━━━━━━━━━━━━━━━━━ Progress / logging ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -400,33 +592,328 @@ def _pack_zip(zip_path: Path, images_dir: Path,
                     zf.write(bmp, f"data/{split}/img/{fname}.bmp")
 
 
+# ━━━━━━━━━━━━━━━━━━━━ V2 LaTeX tokenizer ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+#
+# Strict tokenizer for the 183-token v2 vocabulary.  Any token not in vocab
+# causes the entire sample to be rejected (returns None).  No lossy mapping.
+
+# Formatting commands — drop command, keep braced content
+_V2_SKIP_COMMANDS = frozenset({
+    '\\left', '\\right', '\\big', '\\Big', '\\bigg', '\\Bigg',
+    '\\mathbb', '\\mathcal', '\\mathrm', '\\mathbf', '\\mathit',
+    '\\mathsf', '\\mathfrak', '\\text', '\\textbf', '\\textrm',
+    '\\operatorname', '\\boldsymbol', '\\displaystyle', '\\textstyle',
+    '\\scriptstyle', '\\scriptscriptstyle',
+})
+
+# Spacing commands — drop silently (no braced content)
+_V2_SKIP_SPACING = frozenset({
+    '\\quad', '\\qquad', '\\hspace', '\\mspace',
+    '\\,', '\\;', '\\:', '\\!',
+})
+
+# Environment names we can tokenize (emit \begin { name } ... \end { name })
+_V2_MATRIX_ENVS = frozenset({
+    'matrix', 'pmatrix', 'bmatrix', 'vmatrix', 'Vmatrix', 'Bmatrix',
+    'cases', 'array',
+})
+
+
+def tokenize_latex_v2(latex: str, vocab: set) -> Optional[List[str]]:
+    """Parse raw LaTeX into v2 PosFormer tokens with strict rejection.
+
+    Returns list of tokens, or None if any token is not in vocab or the
+    result has fewer than 2 tokens.
+    """
+    import re
+    tokens: List[str] = []
+    s = latex.strip()
+    i = 0
+
+    while i < len(s):
+        # Skip whitespace
+        if s[i].isspace():
+            i += 1
+            continue
+
+        # LaTeX command (starts with backslash)
+        if s[i] == '\\':
+            # ── Two-character special sequences ──
+            # \\ (double backslash = newline in matrices)
+            if i + 1 < len(s) and s[i + 1] == '\\':
+                if '\\\\' in vocab:
+                    tokens.append('\\\\')
+                    i += 2
+                else:
+                    return None
+                continue
+
+            # \{ and \} (escaped braces)
+            if i + 1 < len(s) and s[i + 1] == '{':
+                if '\\{' in vocab:
+                    tokens.append('\\{')
+                    i += 2
+                else:
+                    return None
+                continue
+            if i + 1 < len(s) and s[i + 1] == '}':
+                if '\\}' in vocab:
+                    tokens.append('\\}')
+                    i += 2
+                else:
+                    return None
+                continue
+
+            # Spacing: \, \; \: \!
+            if i + 1 < len(s) and s[i + 1] in ',;:!':
+                pair = s[i:i + 2]
+                if pair in _V2_SKIP_SPACING:
+                    i += 2
+                    continue
+
+            # ── \begin{env} ... \end{env} ──
+            begin_m = re.match(r'\\begin\{(\w+)\}', s[i:])
+            if begin_m:
+                env = begin_m.group(1)
+                i += len(begin_m.group(0))
+                end_pat = f'\\end{{{env}}}'
+                end_idx = s.find(end_pat, i)
+                if end_idx < 0:
+                    return None  # unmatched \begin
+
+                # For matrix-like environments, emit structural tokens
+                if env in _V2_MATRIX_ENVS:
+                    if '\\begin' not in vocab or '\\end' not in vocab:
+                        return None
+                    if '{' not in vocab or '}' not in vocab:
+                        return None
+                    # Use 'matrix' token for all matrix variants
+                    env_token = 'matrix' if 'matrix' in vocab else env
+                    if env_token not in vocab:
+                        return None
+                    tokens.extend(['\\begin', '{', env_token, '}'])
+
+                    # Recursively tokenize inner content
+                    inner = s[i:end_idx]
+                    inner_tokens = tokenize_latex_v2(inner, vocab)
+                    if inner_tokens is None:
+                        return None
+                    tokens.extend(inner_tokens)
+
+                    tokens.extend(['\\end', '{', env_token, '}'])
+                    i = end_idx + len(end_pat)
+                else:
+                    # Unknown environment — reject
+                    return None
+                continue
+
+            # Stray \end without matching \begin
+            end_m = re.match(r'\\end\{(\w+)\}', s[i:])
+            if end_m:
+                return None  # malformed LaTeX
+
+            # ── Named LaTeX command: \alpha, \frac, etc. ──
+            m = re.match(r'\\[a-zA-Z]+', s[i:])
+            if m:
+                cmd = m.group(0)
+                i += len(cmd)
+
+                # Skip formatting commands (keep braced content)
+                if cmd in _V2_SKIP_COMMANDS:
+                    continue
+
+                # Skip spacing commands (no content)
+                if cmd in _V2_SKIP_SPACING:
+                    continue
+
+                # Check if command is in vocab
+                if cmd in vocab:
+                    tokens.append(cmd)
+                else:
+                    # Unknown command → reject entire sample
+                    return None
+                continue
+
+            # Unknown \X sequence — skip single char after backslash
+            i += 2 if i + 1 < len(s) else 1
+            continue
+
+        # Single character
+        ch = s[i]
+        i += 1
+
+        if ch in vocab:
+            tokens.append(ch)
+        else:
+            # Unknown character → reject
+            return None
+
+    if len(tokens) < 2:
+        return None
+    return tokens
+
+
+# ━━━━━━━━━━━━━━━━━━━━ MathWriting v2 (HF pre-rasterized) ━━━━━━━━━━━━━━━━━
+
+def download_mathwriting_hf(max_samples: int = 0) -> Path:
+    """Download MathWriting from HF (pre-rasterized), tokenize with v2 vocab,
+    pack into PosFormer-format zip.  max_samples=0 means all."""
+    zip_path = WORK / "data_mathwriting_v2.zip"
+
+    # Check local cache (skip for small test runs)
+    min_size = 1_000_000 if max_samples else 50_000_000
+    if zip_path.exists() and zip_path.stat().st_size > min_size:
+        step("mathwriting_v2.cached",
+             size_mb=round(zip_path.stat().st_size / 1e6))
+        return zip_path
+
+    # Check HF cache
+    step("mathwriting_v2.check_hf_cache")
+    try:
+        from huggingface_hub import hf_hub_download
+        downloaded = hf_hub_download(
+            repo_id=CROHME_HF_REPO, filename=MATHWRITING_V2_HF_FILE,
+            repo_type="dataset", local_dir=str(WORK),
+        )
+        if Path(downloaded).stat().st_size > 50_000_000:
+            if Path(downloaded) != zip_path:
+                shutil.move(downloaded, zip_path)
+            step("mathwriting_v2.from_hf",
+                 size_mb=round(zip_path.stat().st_size / 1e6))
+            return zip_path
+    except Exception:
+        pass
+
+    # Build from HF dataset
+    step("mathwriting_v2.loading_hf_dataset",
+         max_samples=max_samples or "all")
+    from datasets import load_dataset
+    if max_samples:
+        # Streaming avoids downloading the entire dataset for small tests
+        ds = {s: load_dataset(MATHWRITING_HF_DATASET, split=s,
+                              streaming=True)
+              for s in ["train", "val", "test"]}
+    else:
+        ds = load_dataset(MATHWRITING_HF_DATASET)
+
+    v2_vocab = set(DICT_V2.strip().split("\n"))
+    step("mathwriting_v2.vocab_loaded", n_tokens=len(v2_vocab))
+
+    # Process each split
+    images_dir = WORK / "mathwriting-v2-images"
+    images_dir.mkdir(parents=True, exist_ok=True)
+    split_map = {"train": "train", "val": "valid", "test": "test"}
+    all_captions: Dict[str, List[str]] = {}
+
+    for hf_split, our_split in split_map.items():
+        if hf_split not in ds:
+            step(f"mathwriting_v2.{our_split}.skip", note="split not in dataset")
+            continue
+
+        split_ds = ds[hf_split]
+        split_dir = images_dir / our_split
+        split_dir.mkdir(parents=True, exist_ok=True)
+
+        captions = []
+        skipped = 0
+        t0 = time.time()
+
+        for idx, sample in enumerate(split_ds):
+            # Limit samples for testing
+            if max_samples and len(captions) >= max_samples:
+                break
+
+            latex = sample.get("latex", "")
+            image = sample.get("image")
+            sample_id = sample.get("sample_id", f"{hf_split}_{idx:06d}")
+
+            if not latex or image is None:
+                skipped += 1
+                continue
+
+            # Tokenize with strict v2 vocab
+            toks = tokenize_latex_v2(latex, v2_vocab)
+            if toks is None:
+                skipped += 1
+                continue
+
+            # Convert RGB JPEG → grayscale BMP
+            gray = image.convert("L")
+            bmp_path = split_dir / f"{sample_id}.bmp"
+            gray.save(bmp_path, format="BMP")
+
+            # Caption format: "sample_id\ttok1 tok2 tok3 ..."
+            captions.append(f"{sample_id}\t{' '.join(toks)}")
+
+            if (idx + 1) % 10000 == 0:
+                rate = (idx + 1) / max(time.time() - t0, 0.1)
+                step(f"mathwriting_v2.{our_split}.progress",
+                     done=idx + 1, scanned=idx + 1,
+                     rate=f"{rate:.0f}/s")
+
+        total_scanned = idx + 1 if 'idx' in dir() else 0
+        step(f"mathwriting_v2.{our_split}.done",
+             ok=len(captions), skipped=skipped,
+             scanned=total_scanned,
+             time_s=round(time.time() - t0, 1))
+        if captions:
+            all_captions[our_split] = captions
+
+    # Pack into PosFormer-compatible zip
+    step("mathwriting_v2.pack_zip")
+    _pack_zip(zip_path, images_dir, all_captions)
+    step("mathwriting_v2.ready",
+         size_mb=round(zip_path.stat().st_size / 1e6))
+
+    # Upload to HF for future runs
+    if os.environ.get("HF_TOKEN"):
+        step("mathwriting_v2.upload_cache")
+        try:
+            from huggingface_hub import HfApi
+            HfApi(token=os.environ["HF_TOKEN"]).upload_file(
+                path_or_fileobj=str(zip_path),
+                path_in_repo=MATHWRITING_V2_HF_FILE,
+                repo_id=CROHME_HF_REPO, repo_type="dataset",
+                commit_message="Pre-rasterized MathWriting v2 data zip",
+            )
+        except Exception as e:
+            print(f"  HF cache upload failed (non-fatal): {e}", flush=True)
+
+    return zip_path
+
+
 # ━━━━━━━━━━━━━━━━━━━━ Vocabulary ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-def build_vocab_from_zip(zip_path: Path) -> Tuple[List[str], Path]:
+def build_vocab_from_zip(zip_path: Path,
+                         dataset: str = "crohme") -> Tuple[List[str], Path]:
     """Get the canonical PosFormer dictionary.
     CRITICAL: token indices must match the original PosFormer dictionary
     exactly (alphabetical order). Using frequency-sorted order scrambles
     the vocabulary and makes the trained model unusable with the original
     GGUF converter and C++ inference.
 
-    The dictionary is obtained from the cloned PosFormer repo. If not yet
-    cloned, we download just the dictionary file from GitHub."""
+    For v2 datasets (mathwriting_v2), uses the embedded 183-token DICT_V2.
+    For v1 datasets (crohme, mathwriting), downloads original 110-token dict."""
     dict_path = WORK / "dictionary.txt"
 
-    # Try PosFormer clone first (may already be cloned later in the pipeline)
-    posformer_dict = WORK / "PosFormer" / "Pos_Former" / "datamodule" / "dictionary.txt"
-    if posformer_dict.exists():
-        import shutil
-        shutil.copy2(posformer_dict, dict_path)
+    if dataset in ("mathwriting_v2", "combined_v2"):
+        # V2: use embedded 183-token dictionary
+        dict_path.write_text(DICT_V2.strip() + "\n")
+        step("vocab.v2_embedded", n_tokens=183)
     else:
-        # Download canonical dictionary from GitHub
-        import urllib.request
-        url = "https://raw.githubusercontent.com/SJTU-DeepVisionLab/PosFormer/main/Pos_Former/datamodule/dictionary.txt"
-        urllib.request.urlretrieve(url, dict_path)
+        # V1: use original PosFormer dictionary (110 tokens)
+        posformer_dict = (WORK / "PosFormer" / "Pos_Former" /
+                          "datamodule" / "dictionary.txt")
+        if posformer_dict.exists():
+            import shutil
+            shutil.copy2(posformer_dict, dict_path)
+        else:
+            import urllib.request
+            url = ("https://raw.githubusercontent.com/SJTU-DeepVisionLab/"
+                   "PosFormer/main/Pos_Former/datamodule/dictionary.txt")
+            urllib.request.urlretrieve(url, dict_path)
 
     tokens = dict_path.read_text().strip().split("\n")
-    # Debug: verify token order matches original PosFormer (alphabetical)
-    # Token 3 should be '!' (not '{'), token 12 should be '1' (not '(')
     sample = {i: tokens[i] for i in range(min(5, len(tokens)))}
     step("vocab.built", n_tokens=len(tokens), path=str(dict_path),
          first_tokens=str(sample),
@@ -880,14 +1367,14 @@ def train(args, zip_path: Path, dict_path: Path,
     # P100 is sm_60 — install PyTorch with CUDA 11.8 which still supports it.
     # T4 (sm_75) works with the pre-installed version.
     if gpu_usable:
-        sh("pip install -q pytorch_lightning opencv-python-headless wandb",
+        sh("pip install -q pytorch_lightning opencv-python-headless wandb datasets",
            capture_output=True)
     else:
         # P100: install torch+cu118 which supports sm_60
         sh("pip install -q --force-reinstall torch torchvision "
            "--index-url https://download.pytorch.org/whl/cu118",
            capture_output=True)
-        sh("pip install -q pytorch_lightning opencv-python-headless wandb",
+        sh("pip install -q pytorch_lightning opencv-python-headless wandb datasets",
            capture_output=True)
         gpu_usable = True  # cu118 torch supports P100
 
@@ -1024,7 +1511,7 @@ def train(args, zip_path: Path, dict_path: Path,
 
     HFCheckpointCallback = _make_hf_checkpoint_callback()
     hf_callback = HFCheckpointCallback(
-        upload_interval_s=3600.0,  # hourly
+        upload_interval_s=1200.0,  # every ~20 min ≈ every 2-3 epochs on P100
         run_name=args.dataset,
     )
 
@@ -1147,7 +1634,8 @@ def main():
     parser = argparse.ArgumentParser(
         description="PosFormer training — CROHME / MathWriting")
     parser.add_argument("--dataset", default=None,
-                        choices=["crohme", "mathwriting", "finetune"],
+                        choices=["crohme", "mathwriting", "mathwriting_v2",
+                                 "unimer", "finetune"],
                         help="Which dataset to train on (default: from env DATASET)")
     parser.add_argument("--device", default="auto",
                         choices=["auto", "gpu", "cuda", "mps", "cpu"])
@@ -1169,8 +1657,8 @@ def main():
 
     # Default epochs per dataset
     if args.epochs is None:
-        args.epochs = {"crohme": 300, "mathwriting": 20, "finetune": 50
-                       }.get(args.dataset, 200)
+        args.epochs = {"crohme": 300, "mathwriting": 20, "mathwriting_v2": 20,
+                       "unimer": 10, "finetune": 50}.get(args.dataset, 200)
 
     # Init
     os.environ["PYTHONUNBUFFERED"] = "1"
@@ -1193,6 +1681,8 @@ def main():
         zip_path = download_crohme()
     elif args.dataset == "mathwriting":
         zip_path = download_mathwriting()
+    elif args.dataset == "mathwriting_v2":
+        zip_path = download_mathwriting_hf(max_samples=args.max_samples)
     elif args.dataset == "finetune":
         # Finetune: train on CROHME, but resume from MathWriting checkpoint
         zip_path = download_crohme()
@@ -1200,12 +1690,15 @@ def main():
         raise ValueError(f"Unknown dataset: {args.dataset}")
 
     # Vocabulary
-    tokens_list, dict_path = build_vocab_from_zip(zip_path)
+    tokens_list, dict_path = build_vocab_from_zip(zip_path, args.dataset)
 
     # Resume checkpoint
     resume_ckpt = None
     if not args.no_resume:
-        if args.dataset == "finetune":
+        if args.dataset == "mathwriting_v2":
+            # V2 trains from scratch (embedding layer size changed 110→183)
+            step("resume.skip_v2", note="v2 trains from scratch")
+        elif args.dataset == "finetune":
             # Finetune resumes from the MathWriting checkpoint
             resume_ckpt = download_latest_checkpoint("mathwriting")
             if not resume_ckpt:
