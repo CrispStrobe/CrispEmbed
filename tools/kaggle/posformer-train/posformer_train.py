@@ -842,10 +842,19 @@ def download_mathwriting_hf(max_samples: int = 0) -> Path:
             t0 = time.time()
 
             if is_train and not max_samples:
-                # Two-pass: tokenize all, then select by rare-token priority
+                # Two-pass sampling strategy:
+                #   Half 1 (10K): curated — ~137 samples per rare token,
+                #     ensuring every new v2 symbol gets training coverage
+                #   Half 2 (10K): random — natural distribution of common
+                #     math so the model doesn't forget basics
                 step(f"mathwriting_v2.{our_split}.tokenizing")
-                candidates = []  # (rare_count, sample_id, tok_str, hf_idx)
+
+                # Pass 1: tokenize everything, index by rare tokens
+                from collections import defaultdict
+                all_compat = []     # (sample_id, tok_str, hf_idx)
+                by_rare = defaultdict(list)  # rare_token → [index into all_compat]
                 skipped = 0
+
                 for idx, sample in enumerate(split_ds):
                     latex = sample.get("latex", "")
                     sample_id = sample.get("sample_id", f"{hf_split}_{idx:06d}")
@@ -856,46 +865,70 @@ def download_mathwriting_hf(max_samples: int = 0) -> Path:
                     if toks is None:
                         skipped += 1
                         continue
-                    n_rare = sum(1 for t in toks if t in rare_tokens)
-                    candidates.append((n_rare, sample_id, ' '.join(toks), idx))
+                    tok_str = ' '.join(toks)
+                    ci = len(all_compat)
+                    all_compat.append((sample_id, tok_str, idx))
+                    for t in set(toks):
+                        if t in rare_tokens:
+                            by_rare[t].append(ci)
 
                     if (idx + 1) % 50000 == 0:
                         step(f"mathwriting_v2.{our_split}.tokenize_progress",
-                             scanned=idx + 1, compat=len(candidates))
+                             scanned=idx + 1, compat=len(all_compat))
 
                 step(f"mathwriting_v2.{our_split}.tokenized",
-                     compatible=len(candidates), skipped=skipped,
+                     compatible=len(all_compat), skipped=skipped,
                      time_s=round(time.time() - t0, 1))
 
-                # Sort: samples with more rare tokens first, then shuffle
-                # within each tier for diversity
-                candidates.sort(key=lambda x: -x[0])
-                # Take all samples with rare tokens, then fill with common
-                n_with_rare = sum(1 for c in candidates if c[0] > 0)
-                if n_with_rare >= budget:
-                    # More rare samples than budget — take top by count,
-                    # shuffled within same-count tiers
-                    selected = candidates[:budget]
-                else:
-                    # Take all rare, fill rest randomly from common
-                    rare_part = candidates[:n_with_rare]
-                    common_part = candidates[n_with_rare:]
-                    random.shuffle(common_part)
-                    selected = rare_part + common_part[:budget - n_with_rare]
-                random.shuffle(selected)
+                # Curated half: ~137 samples per rare token (10K / 73)
+                curated_budget = budget // 2
+                per_token = max(1, curated_budget // len(rare_tokens))
+                curated_idxs = set()
+                token_counts = {}
+                for tok in sorted(rare_tokens):
+                    pool = by_rare.get(tok, [])
+                    random.shuffle(pool)
+                    added = 0
+                    for ci in pool:
+                        if ci not in curated_idxs:
+                            curated_idxs.add(ci)
+                            added += 1
+                            if added >= per_token:
+                                break
+                    token_counts[tok] = added
 
+                # Log coverage
+                covered = sum(1 for v in token_counts.values() if v > 0)
+                step(f"mathwriting_v2.{our_split}.curated",
+                     n_curated=len(curated_idxs), per_token=per_token,
+                     tokens_covered=f"{covered}/{len(rare_tokens)}",
+                     examples=str({k: v for k, v in sorted(
+                         token_counts.items())[:10]}))
+
+                # Random half: uniform sample from ALL compatible
+                random_budget = budget - len(curated_idxs)
+                remaining = [i for i in range(len(all_compat))
+                             if i not in curated_idxs]
+                random.shuffle(remaining)
+                random_idxs = set(remaining[:random_budget])
+
+                selected_idxs = curated_idxs | random_idxs
                 step(f"mathwriting_v2.{our_split}.selected",
-                     total=len(selected), with_rare=n_with_rare,
-                     budget=budget)
+                     total=len(selected_idxs),
+                     curated=len(curated_idxs),
+                     random=len(random_idxs), budget=budget)
 
                 # Second pass: fetch images for selected samples by index
-                sel_indices = {c[3]: (c[1], c[2]) for c in selected}
+                sel_hf_indices = {}
+                for ci in selected_idxs:
+                    sid, tstr, hf_idx = all_compat[ci]
+                    sel_hf_indices[hf_idx] = (sid, tstr)
                 written = 0
                 cap_lines = []
                 for idx, sample in enumerate(split_ds):
-                    if idx not in sel_indices:
+                    if idx not in sel_hf_indices:
                         continue
-                    sample_id, tok_str = sel_indices[idx]
+                    sample_id, tok_str = sel_hf_indices[idx]
                     image = sample.get("image")
                     if image is None:
                         continue
