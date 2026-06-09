@@ -920,6 +920,25 @@ static std::vector<int> greedy_decode(ppformulanet_l_ocr_context* ctx) {
     return tokens;
 }
 
+// Detokenize: concatenate vocab strings, replacing GPT-2 BPE Ġ (U+0120) with space
+static void detokenize(ppformulanet_l_ocr_context* ctx, const std::vector<int>& tokens) {
+    ctx->result_buf.clear();
+    for (int tok : tokens) {
+        if (tok < 0 || tok >= (int)ctx->vocab.size()) continue;
+        const auto& s = ctx->vocab[tok];
+        for (size_t i = 0; i < s.size(); ) {
+            if (i + 1 < s.size() &&
+                (unsigned char)s[i] == 0xC4 && (unsigned char)s[i+1] == 0xA0) {
+                ctx->result_buf += ' ';
+                i += 2;
+            } else {
+                ctx->result_buf += s[i];
+                i++;
+            }
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Init / Free / API
 // ---------------------------------------------------------------------------
@@ -1031,12 +1050,7 @@ const char* ppformulanet_l_ocr_recognize(ppformulanet_l_ocr_context* ctx,
     run_encoder(ctx, rgb.data(), S, S);
     precompute_cross_kv(ctx);
     auto tokens = greedy_decode(ctx);
-
-    ctx->result_buf.clear();
-    for (int tok : tokens) {
-        if (tok >= 0 && tok < (int)ctx->vocab.size())
-            ctx->result_buf += ctx->vocab[tok];
-    }
+    detokenize(ctx, tokens);
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
@@ -1073,12 +1087,7 @@ const char* ppformulanet_l_ocr_recognize_chw(ppformulanet_l_ocr_context* ctx,
     run_encoder(ctx, chw_data, S, S);
     precompute_cross_kv(ctx);
     auto tokens = greedy_decode(ctx);
-
-    ctx->result_buf.clear();
-    for (int tok : tokens) {
-        if (tok >= 0 && tok < (int)ctx->vocab.size())
-            ctx->result_buf += ctx->vocab[tok];
-    }
+    detokenize(ctx, tokens);
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
