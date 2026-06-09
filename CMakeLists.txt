@@ -118,6 +118,7 @@ list(APPEND CRISPEMBED_SOURCES src/face_align.cpp)
 list(APPEND CRISPEMBED_SOURCES src/math_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/hmer_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/bttr_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ocr_detect.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -210,6 +211,12 @@ target_link_libraries(test-hmer-image PRIVATE crispembed)
 
 add_executable(test-bttr-beam tests/test_bttr_beam.cpp)
 target_link_libraries(test-bttr-beam PRIVATE crispembed)
+
+add_executable(test-ocr-detect tests/test_ocr_detect.cpp)
+target_link_libraries(test-ocr-detect PRIVATE crispembed)
+
+add_executable(test-ocr-detect-diff tests/test_ocr_detect_diff.cpp)
+target_link_libraries(test-ocr-detect-diff PRIVATE crispembed)
 
 endif() # NOT iOS
 
