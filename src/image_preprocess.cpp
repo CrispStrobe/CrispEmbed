@@ -4,7 +4,7 @@
 #include "image_preprocess.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#define STB_IMAGE_STATIC
+// NOT static — export symbols for use by ocr_detect, ocr_pipeline, math_ocr
 #include "../ggml/examples/stb_image.h"
 
 #include <algorithm>
