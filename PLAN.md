@@ -85,14 +85,27 @@ l2r mode: 56.0% raw / 61.4% parsed on CROHME 2014.
 - GPU training on P100 (cu118) or T4, hourly HF checkpoints, W&B monitoring
 - Uses CrispASR kaggle_harness for auth + progress (clone at runtime)
 
-**License path**: All handwritten math datasets are NC. Current SJTU weights are
-academic-only (stricter). Retraining on CROHME/MathWriting produces NC weights
-(CC BY-NC-SA), which are fine for the app's "download with terms acceptance" model.
-Do NOT wire into CrispCalc until NC (or better) weights are available.
+**Current status**:
+- Retrained CROHME weights (epoch 93, ~57% beam=1) wired into CrispCalc
+  with NC confirmation gate. On HF: cstr/posformer-crohme-GGUF.
+- Training continues to epoch 300 (plain cosine decay, label smoothing).
+- Cosine warm restarts caused crash (57%→38%→60%→reverted to epoch 93).
 
-**For non-NC weights** (fully commercial): synthetic handwriting generation
-(render LaTeX with handwriting fonts + augmentation) or train on Im2LaTeX-100K
-(CC0, printed math) + fine-tune on self-created handwritten samples.
+**Dataset landscape** (verified 2026-06-09):
+
+| Dataset | License | Commercial? | Type | Size |
+|---------|---------|------------|------|------|
+| UniMER ArXiv+Pix2tex | **Apache 2.0** | **Yes** | Printed | 978K |
+| CROHME 2014/16 | CC BY-NC-SA 3.0 | No | Handwritten | 8.8K |
+| MathWriting (Google) | CC BY-NC-SA 4.0 | No | Handwritten | 230K |
+| HME100K / MLHME-38K (TAL) | Proprietary | No | Handwritten | 74K/38K |
+| Im2LaTeX-100K | CC0 | Yes | Printed | 100K |
+| figshare CROHME+HME100K | Claims CC BY 4.0 | **No** — unauthorized re-upload | Mixed | 83K |
+
+**Training strategy**:
+1. Pretrain on UniMER Apache 2.0 (978K printed) → **commercial weights**
+2. Fine-tune on CROHME (8.8K handwritten) → NC weights for handwritten
+3. Ship both: printed model (no gate) + handwritten model (NC gate)
 
 ## Supported architectures (v0.7.0)
 
