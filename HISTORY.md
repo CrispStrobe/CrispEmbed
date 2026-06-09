@@ -57,12 +57,12 @@ Key issues solved during Kaggle kernel development:
   Full bidir takes 30-60 min per val epoch.
 - Heartbeat: `kh.build_heartbeat("train")` for Kaggle keepalive.
 
-**Epoch 8 eval (correct vocab, fresh training)**:
-- beam=1 greedy: 221/986 = 22.4%
-- beam=10 bidir (partial 300/986): ~24.0%
-- Model needs 100+ more epochs. Published 62.7% at epoch 200.
-- ~40 min/epoch on P100 (19 min train + 21 min val). 200 epochs ≈ 133h
-  ≈ 11 Kaggle sessions with multi-session resume.
+**Training progress** (correct vocab, label smoothing 0.1):
+- Epoch 8: 22.4% beam=1
+- Epoch 64: 43.4% beam=1
+- Epoch 93: 57.0% beam=1 (surpasses SJTU published 56.0%)
+- **Epoch 97: 58.3% val_ExpRate** (new high, W&B confirmed)
+- Training continues to epoch 300 with ReduceLROnPlateau.
 
 **License**: SJTU weights = academic-only. Retrained weights on CROHME
 = CC BY-NC-SA 3.0 (NC). Fine for "buy me a coffee" app: app code is
