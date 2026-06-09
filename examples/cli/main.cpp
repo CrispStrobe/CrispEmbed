@@ -76,6 +76,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --top-n N        limit rerank output to top N documents\n");
     fprintf(stderr, "  --face FILE      encode face from image (recognition model)\n");
     fprintf(stderr, "  --detect FILE    detect faces in image (detection model)\n");
+    fprintf(stderr, "  --ocr FILE       math OCR → LaTeX (auto-detect: pix2tex/hmer/bttr/ppformulanet)\n");
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
@@ -121,6 +122,7 @@ int main(int argc, char ** argv) {
     std::string image_path;  // JPG/PNG/BMP — in-process preprocessor
     std::string face_path;   // face image for CNN face recognition
     std::string detect_path; // image for face detection
+    std::string ocr_path;    // image for unified math OCR (auto-detect arch)
     std::string hmer_path;   // image for handwritten math OCR (HMER)
     std::string bttr_path;   // image for handwritten math OCR (BTTR)
     std::string det_model;   // detection model for --face-pipeline
@@ -169,6 +171,8 @@ int main(int argc, char ** argv) {
             face_path = argv[++i];
         } else if (strcmp(argv[i], "--detect") == 0 && i + 1 < argc) {
             detect_path = argv[++i];
+        } else if (strcmp(argv[i], "--ocr") == 0 && i + 1 < argc) {
+            ocr_path = argv[++i];
         } else if (strcmp(argv[i], "--hmer") == 0 && i + 1 < argc) {
             hmer_path = argv[++i];
         } else if (strcmp(argv[i], "--bttr") == 0 && i + 1 < argc) {
@@ -398,6 +402,29 @@ int main(int argc, char ** argv) {
             return 0;
         }
         // Not a CNN model — fall through
+    }
+
+    // Unified math OCR (auto-detect architecture from GGUF metadata)
+    if (!ocr_path.empty()) {
+        void* octx = crispembed_math_ocr_init(model_path.c_str(), n_threads);
+        if (!octx) { fprintf(stderr, "error: failed to load OCR model\n"); return 1; }
+        int w, h, ch;
+        unsigned char* data = stbi_load(ocr_path.c_str(), &w, &h, &ch, 0);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", ocr_path.c_str()); crispembed_math_ocr_free(octx); return 1; }
+        int out_len = 0;
+        const char* latex = crispembed_math_ocr_recognize(octx, data, w, h, ch, &out_len);
+        stbi_image_free(data);
+        if (latex && out_len > 0) {
+            if (json_output) {
+                printf("{\"latex\":\"%s\"}\n", latex);
+            } else {
+                printf("%s\n", latex);
+            }
+        } else {
+            fprintf(stderr, "error: OCR recognition failed\n");
+        }
+        crispembed_math_ocr_free(octx);
+        return 0;
     }
 
     // Handwritten math OCR (HMER)

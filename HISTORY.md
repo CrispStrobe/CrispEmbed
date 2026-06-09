@@ -4,6 +4,25 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — PPFormulaNet-S / Texo-Distill OCR
+
+### Printed math OCR: HGNetv2 + MBart decoder (20M params)
+- New architecture: HGNetv2 CNN encoder (StemBlock, 4 HG_Stages, LightConvBNAct)
+  + MBart Transformer decoder (2 layers, 16 heads, 384 d_model)
+- Conv-BN folding in GGUF converter: all BatchNorm absorbed into preceding Conv2d
+- CPU-side CNN forward pass for encoder (all standard ops: conv2d, relu, maxpool, concat)
+- MBart PRE-LN decoder: LayerNorm before attention/FFN, residual skips LN
+- UniMERNet preprocessing: aspect-ratio-preserving resize + black pad + grayscale
+  normalize (mean=0.7931, std=0.1738)
+- ODR fix: renamed internal dec_layer → ppfn_dec_layer to avoid linker collision
+  with decoder_embed_internal.h
+- Added `--ocr` CLI flag for unified auto-detection (pix2tex/hmer/bttr/ppformulanet)
+- Quantized: F16 (39 MB), Q8_0 (22 MB, identical quality), Q4_K (13 MB, degraded)
+- GGUF models published: huggingface.co/cstr/texo-distill-gguf
+- Diff regime: encoder cos=1.000000, decoder verified via layer-by-layer debug traces
+- Source: Texo (AGPL-3.0) distilled from PaddleOCR PP-FormulaNet-S (Apache-2.0)
+  trained on UniMER-1M (CC-BY-4.0)
+
 ## June 2026 — Nomic v2 MoE Encoder
 
 ### Mixture-of-Experts encoder support
