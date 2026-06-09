@@ -76,7 +76,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --top-n N        limit rerank output to top N documents\n");
     fprintf(stderr, "  --face FILE      encode face from image (recognition model)\n");
     fprintf(stderr, "  --detect FILE    detect faces in image (detection model)\n");
-    fprintf(stderr, "  --ocr FILE       math OCR → LaTeX (auto-detect: pix2tex/hmer/bttr/ppformulanet)\n");
+    fprintf(stderr, "  --ocr FILE       math OCR → LaTeX (auto-detect: pix2tex/hmer/bttr/ppformulanet/ppformulanet-l)\n");
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline / --ocr\n");
@@ -231,14 +231,10 @@ int main(int argc, char ** argv) {
     }
 
     // OCR pipeline early exit — before model resolution which may interfere
-    // OCR pipeline mode: detect text → crop → recognize
-    if (!ocr_path.empty()) {
-        if (det_model.empty()) {
-            fprintf(stderr, "error: --ocr requires --det <dbnet_model.gguf>\n");
-            return 1;
-        }
+    // OCR pipeline mode: detect text → crop → recognize (requires --det)
+    if (!ocr_path.empty() && !det_model.empty()) {
         if (model_arg.empty()) {
-            fprintf(stderr, "error: --ocr requires -m <trocr_model.gguf>\n");
+            fprintf(stderr, "error: --ocr with --det requires -m <trocr_model.gguf>\n");
             return 1;
         }
 
