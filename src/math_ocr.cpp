@@ -1134,8 +1134,9 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
         int tok = tokens[i];
         if (tok >= 0 && tok < (int)ctx->vocab.size()) {
             const auto& piece = ctx->vocab[tok];
-            // SentencePiece ▁ (U+2581) marks word boundaries → replace with space
-            // ▁ is 3 bytes: 0xE2 0x96 0x81
+            // Replace word-boundary markers with space:
+            //   SentencePiece ▁ (U+2581) = 3 bytes: 0xE2 0x96 0x81
+            //   GPT-2 BPE Ġ (U+0120) = 2 bytes: 0xC4 0xA0
             for (size_t j = 0; j < piece.size(); ) {
                 if (j + 2 < piece.size() &&
                     (uint8_t)piece[j] == 0xE2 &&
@@ -1143,6 +1144,11 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
                     (uint8_t)piece[j+2] == 0x81) {
                     ctx->result_buf += ' ';
                     j += 3;
+                } else if (j + 1 < piece.size() &&
+                           (uint8_t)piece[j] == 0xC4 &&
+                           (uint8_t)piece[j+1] == 0xA0) {
+                    ctx->result_buf += ' ';
+                    j += 2;
                 } else {
                     ctx->result_buf += piece[j];
                     j++;
