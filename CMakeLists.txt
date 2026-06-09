@@ -122,6 +122,7 @@ list(APPEND CRISPEMBED_SOURCES src/ppformulanet_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppformulanet_l_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_pipeline.cpp)
+list(APPEND CRISPEMBED_SOURCES src/layout_detect.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -229,6 +230,9 @@ target_link_libraries(test-ocr-detect-diff PRIVATE crispembed)
 
 add_executable(test-ocr-recognize tests/test_ocr_recognize.cpp)
 target_link_libraries(test-ocr-recognize PRIVATE crispembed)
+
+add_executable(test-layout-detect tests/test_layout_detect.cpp)
+target_link_libraries(test-layout-detect PRIVATE crispembed)
 
 add_executable(test-ocr-pipeline tests/test_ocr_pipeline.cpp)
 target_link_libraries(test-ocr-pipeline PRIVATE crispembed)
