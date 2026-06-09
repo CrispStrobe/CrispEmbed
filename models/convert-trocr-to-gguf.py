@@ -136,9 +136,13 @@ def main():
             tok = AutoTokenizer.from_pretrained(str(model_dir))
             n_tokens = dec_cfg.get("vocab_size", tok.vocab_size)
             tok_tokens = []
+            # Use convert_ids_to_tokens to preserve ▁ space markers
             for i in range(n_tokens):
                 try:
-                    tok_tokens.append(tok.decode([i]))
+                    piece = tok.convert_ids_to_tokens(i)
+                    if piece is None:
+                        piece = f"<unk_{i}>"
+                    tok_tokens.append(piece)
                 except Exception:
                     tok_tokens.append(f"<unk_{i}>")
             print(f"Loaded {len(tok_tokens)} tokens via AutoTokenizer (XLM-R/SentencePiece)")
