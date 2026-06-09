@@ -207,6 +207,9 @@ CrispEmbed/
 - [x] ViT parity: cos 0.8→1.0 (was patch ordering bug — permute(2,1,0) gave column-major spatial, fixed to permute(1,2,0,3) for row-major matching HF)
 - [ ] Nomic v2 MoE (MoE routing layer in encoder)
 - [x] LoRA adapter hot-swap (Jina v5 per-task adapters, pre-compute merge on CPU, ~10-50ms switch)
+- [x] General OCR: DBNet text detection (ResNet-18+FPNC, 7 MB Q4_K, cos=1.0 parity)
+- [x] General OCR: TrOCR text recognition (reuses math_ocr engine, exact token match vs HF)
+- [x] General OCR: pipeline glue (detect → crop → recognize), C API, CLI --ocr
 
 ### Bindings
 
