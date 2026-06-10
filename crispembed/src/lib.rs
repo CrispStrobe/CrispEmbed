@@ -1006,7 +1006,7 @@ impl Drop for CrispFacePipeline {
 /// ```no_run
 /// use crispembed::MathOcr;
 ///
-/// let mut ocr = MathOcr::new("/path/to/pix2tex.gguf", 0).unwrap();
+/// let mut ocr = MathOcr::new("/path/to/model.gguf", 0).unwrap();
 ///
 /// // pixels: (height, width, 3) row-major uint8 RGB
 /// let pixels: Vec<u8> = vec![255u8; 64 * 64 * 3];
@@ -1023,7 +1023,7 @@ pub struct MathOcr {
 unsafe impl Send for MathOcr {}
 
 impl MathOcr {
-    /// Load a pix2tex GGUF model file.
+    /// Load a math OCR GGUF model file (auto-detects architecture).
     ///
     /// - `model_path` — path to the `.gguf` file.
     /// - `n_threads`  — CPU thread count; pass `0` for automatic.
@@ -1082,9 +1082,115 @@ impl MathOcr {
     }
 }
 
+    /// Recognize math from grayscale float pixels [0..1].
+    ///
+    /// - `pixels` — `(height, width)` row-major float32, values in [0, 1].
+    /// - `width`, `height` — image dimensions.
+    ///
+    /// Returns `Some(latex_string)` on success, `None` on failure.
+    pub fn recognize_gray(&mut self, pixels: &[f32], width: i32, height: i32) -> Option<String> {
+        let mut out_len: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_math_ocr_recognize_gray(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                &mut out_len,
+            )
+        };
+        if ptr.is_null() {
+            return None;
+        }
+        Some(
+            unsafe { CStr::from_ptr(ptr) }
+                .to_string_lossy()
+                .into_owned(),
+        )
+    }
+}
+
 impl Drop for MathOcr {
     fn drop(&mut self) {
         unsafe { crispembed_sys::crispembed_math_ocr_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// General OCR Pipeline — text detection (DBNet) + recognition (TrOCR)
+// ---------------------------------------------------------------------------
+
+/// General OCR pipeline — detects text regions (DBNet) then recognizes each
+/// crop (TrOCR). Wraps `crispembed_ocr_init` / `crispembed_ocr`.
+///
+/// Not `Sync`. Each thread should hold its own instance.
+pub struct OcrPipeline {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for OcrPipeline {}
+
+/// A single detected + recognized text region.
+pub struct OcrResult {
+    pub text: String,
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+    pub confidence: f32,
+}
+
+impl OcrPipeline {
+    /// Load an OCR pipeline from detection + recognition GGUF models.
+    pub fn new(det_model: &str, rec_model: &str, n_threads: i32) -> Result<Self, String> {
+        let det = CString::new(det_model).map_err(|e| format!("invalid det path: {e}"))?;
+        let rec = CString::new(rec_model).map_err(|e| format!("invalid rec path: {e}"))?;
+        let ctx = unsafe {
+            crispembed_sys::crispembed_ocr_init(det.as_ptr(), rec.as_ptr(), n_threads)
+        };
+        if ctx.is_null() {
+            return Err(format!("crispembed_ocr_init failed"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Detect and recognize text in an image file.
+    pub fn run(&mut self, image_path: &str) -> Vec<OcrResult> {
+        let path = match CString::new(image_path) {
+            Ok(p) => p,
+            Err(_) => return Vec::new(),
+        };
+        let mut n: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_ocr(self.ctx, path.as_ptr(), &mut n)
+        };
+        if ptr.is_null() || n <= 0 {
+            return Vec::new();
+        }
+        let mut results = Vec::with_capacity(n as usize);
+        for i in 0..n as isize {
+            let r = unsafe { &*ptr.offset(i) };
+            let text = if r.text.is_null() {
+                String::new()
+            } else {
+                unsafe { CStr::from_ptr(r.text) }.to_string_lossy().into_owned()
+            };
+            results.push(OcrResult {
+                text,
+                x: r.x,
+                y: r.y,
+                w: r.w,
+                h: r.h,
+                confidence: r.confidence,
+            });
+        }
+        results
+    }
+}
+
+impl Drop for OcrPipeline {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_ocr_free(self.ctx) }
     }
 }
 
