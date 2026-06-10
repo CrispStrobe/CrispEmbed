@@ -14,11 +14,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Push to Hugging Face Space
-        uses: JacobLinCool/huggingface-push@v1
         with:
-          token: ${{ secrets.HF_TOKEN }}
-          repo_id: cstr/CrispEmbed
-          repo_type: space
-          local_dir: hf-space
+          fetch-depth: 0
+
+      - name: Push hf-space/ to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          cd hf-space
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add hf "https://cstr:${HF_TOKEN}@huggingface.co/spaces/cstr/CrispEmbed"
+          git add -A
+          git commit -m "deploy from $(git -C .. rev-parse --short HEAD)"
+          git push hf main --force
