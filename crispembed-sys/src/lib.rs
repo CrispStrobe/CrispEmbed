@@ -480,4 +480,27 @@ extern "C" {
 
     /// Free all resources held by a ViT context. Safe to call with NULL.
     pub fn crispembed_vit_free(ctx: *mut VitContext);
+
+    // ── Layout Detection (RT-DETRv2) ──
+
+    pub fn crispembed_layout_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_layout_free(ctx: *mut c_void);
+    pub fn crispembed_layout_detect(
+        ctx: *mut c_void,
+        image_path: *const c_char,
+        score_threshold: c_float,
+        out_n: *mut c_int,
+    ) -> *const LayoutRegion;
+}
+
+/// Layout detection result (matches `crispembed_layout_region` in C).
+#[repr(C)]
+pub struct LayoutRegion {
+    pub x1: c_float,
+    pub y1: c_float,
+    pub x2: c_float,
+    pub y2: c_float,
+    pub score: c_float,
+    pub label: c_int,
+    pub label_name: *const c_char,
 }
