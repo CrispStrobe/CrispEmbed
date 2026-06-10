@@ -578,6 +578,28 @@ CRISPEMBED_API const char * crispembed_ocr_recognize(
     const char * image_path,
     int * out_len);
 
+// ---------------------------------------------------------------------------
+// Layout Detection — RT-DETRv2 document layout analysis (17 classes).
+// Detects: text, title, table, figure, formula, caption, section_header,
+// list_item, footnote, page_header, page_footer, code, document_index,
+// checkbox_selected, checkbox_unselected, form, key_value_region.
+// ---------------------------------------------------------------------------
+
+typedef struct crispembed_layout_region {
+    float x1, y1, x2, y2;   // bbox in original image coordinates
+    float score;             // detection confidence
+    int label;               // class index (0..16)
+    const char * label_name; // static string, do not free
+} crispembed_layout_region;
+
+CRISPEMBED_API void * crispembed_layout_init(const char * model_path, int n_threads);
+CRISPEMBED_API void crispembed_layout_free(void * ctx);
+
+/// Detect layout regions in an image file. Returns array of regions
+/// (owned by ctx, valid until next call). Sets *out_n to count.
+CRISPEMBED_API const crispembed_layout_region * crispembed_layout_detect(
+    void * ctx, const char * image_path, float score_threshold, int * out_n);
+
 #ifdef __cplusplus
 }
 #endif

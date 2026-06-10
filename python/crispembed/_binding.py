@@ -1594,3 +1594,82 @@ class CrispMathOcr:
         if hasattr(self, '_ctx') and self._ctx:
             self._lib.crispembed_math_ocr_free(self._ctx)
             self._ctx = None
+
+
+class _LayoutRegion(ctypes.Structure):
+    _fields_ = [
+        ("x1", ctypes.c_float),
+        ("y1", ctypes.c_float),
+        ("x2", ctypes.c_float),
+        ("y2", ctypes.c_float),
+        ("score", ctypes.c_float),
+        ("label", ctypes.c_int),
+        ("label_name", ctypes.c_char_p),
+    ]
+
+
+def _setup_layout_signatures(lib):
+    lib.crispembed_layout_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_layout_init.restype = ctypes.c_void_p
+
+    lib.crispembed_layout_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_layout_free.restype = None
+
+    lib.crispembed_layout_detect.argtypes = [
+        ctypes.c_void_p, ctypes.c_char_p, ctypes.c_float,
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_layout_detect.restype = ctypes.POINTER(_LayoutRegion)
+
+
+class CrispLayout:
+    """Document layout detection via RT-DETRv2.
+
+    Detects 17 region classes: text, title, table, figure, formula, caption,
+    section_header, list_item, footnote, page_header, page_footer, code,
+    document_index, checkbox_selected, checkbox_unselected, form, key_value_region.
+
+    Usage::
+
+        layout = CrispLayout("rt-detrv2-layout-q8_0.gguf")
+        regions = layout.detect("page.png")
+        for r in regions:
+            print(f"{r['label']} ({r['score']:.2f}): [{r['x1']:.0f},{r['y1']:.0f},{r['x2']:.0f},{r['y2']:.0f}]")
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 4, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_layout_signatures(self._lib)
+        self._ctx = self._lib.crispembed_layout_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load layout model: {model_path}")
+
+    def detect(self, image_path: str, threshold: float = 0.3) -> list:
+        """Detect layout regions in an image file.
+
+        Args:
+            image_path: Path to image file (JPG/PNG).
+            threshold: Minimum confidence score (default 0.3).
+
+        Returns:
+            List of dicts with keys: label, score, x1, y1, x2, y2.
+        """
+        n = ctypes.c_int(0)
+        ptr = self._lib.crispembed_layout_detect(
+            self._ctx, str(image_path).encode("utf-8"),
+            ctypes.c_float(threshold), ctypes.byref(n))
+        results = []
+        for i in range(n.value):
+            r = ptr[i]
+            results.append({
+                "label": r.label_name.decode("utf-8") if r.label_name else "",
+                "score": r.score,
+                "x1": r.x1, "y1": r.y1, "x2": r.x2, "y2": r.y2,
+            })
+        return results
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_layout_free(self._ctx)
+            self._ctx = None
