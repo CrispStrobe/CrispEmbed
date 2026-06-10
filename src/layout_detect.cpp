@@ -869,12 +869,15 @@ std::vector<region> detect(context* ctx, const float* pixels,
         std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
         if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, out_d * in_d * sizeof(float));
         if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, out_d * sizeof(float));
-        // W layout: ggml stores [ne[0]=out_d, ne[1]=in_d] → memory W[o + i*out_d]
+        // ggml stores weight as [ne0, ne1]. For ONNX MatMul(input, weight):
+        // y[o] = sum_i weight[i, o] * x[i]
+        // In GGUF [ne0=out_d, ne1=in_d]: weight[i, o] = data[i * out_d + o]
+        // So: W^T @ x (matching ggml mul_mat convention)
         for (int n = 0; n < N; n++) {
             for (int o = 0; o < out_d; o++) {
                 float sum = b[o];
                 for (int i = 0; i < in_d; i++) {
-                    sum += W[o + i * out_d] * x[i * N + n]; // x is [in, N] col-major
+                    sum += W[i + o * in_d] * x[i * N + n];
                 }
                 y[o * N + n] = sum;
             }
@@ -1055,6 +1058,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
         // Residual + norm
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + sa_out[i];
         cpu_layernorm(queries.data(), D, N_queries, layer.norm1_w, layer.norm1_b);
+        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm1: [%.4f,%.4f]\n",li,mn,mx); }
 
         // --- Deformable cross-attention ---
         residual = queries;
@@ -1164,6 +1168,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ca_out[i];
         cpu_layernorm(queries.data(), D, N_queries, layer.norm2_w, layer.norm2_b);
 
+        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm2: [%.4f,%.4f]\n",li,mn,mx); }
         // --- FFN ---
         residual = queries;
         std::vector<float> ffn1(1024 * N_queries);
@@ -1179,6 +1184,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ffn2[i];
         cpu_layernorm(queries.data(), D, N_queries, layer.norm3_w, layer.norm3_b);
 
+        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm3: [%.4f,%.4f]\n",li,mn,mx); }
         // Update reference points via bbox head (iterative refinement)
         std::vector<float> bbox_delta(4 * N_queries);
         std::vector<float> tmp(D * N_queries);
@@ -1289,7 +1295,7 @@ std::vector<region> detect_file(context* ctx, const char* path,
             for (int x = 0; x < ctx->input_w; x++) {
                 float src_x = x / scale_x;
                 int sx0 = std::min((int)src_x, img_w - 1);
-                // Model expects [0, 1] input (no ImageNet normalization)
+                // Model expects [0, 1] input — normalization is baked into the model weights
                 float val = raw[(sy0 * img_w + sx0) * 3 + c] / 255.0f;
                 pixels[c * ctx->input_h * ctx->input_w + y * ctx->input_w + x] = val;
             }
