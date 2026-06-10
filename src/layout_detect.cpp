@@ -28,9 +28,18 @@ extern "C" {
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
+
+// Debug logging gated on LAYOUT_DEBUG env var
+static bool layout_debug() {
+    static int val = -1;
+    if (val < 0) val = (getenv("LAYOUT_DEBUG") != nullptr) ? 1 : 0;
+    return val != 0;
+}
+#define LDBG(...) do { if (layout_debug()) fprintf(stderr, __VA_ARGS__); } while(0)
 
 namespace layout_detect {
 
@@ -324,10 +333,10 @@ bool load(context** out, const char* path, int n_threads) {
 
     // Verify critical tensors
     int missing = 0;
-    if (!bb.stem[0].w) { fprintf(stderr, "  MISS: stem conv1_1\n"); missing++; }
-    if (!enc.aifi_qkv_w) { fprintf(stderr, "  MISS: AIFI QKV\n"); missing++; }
-    if (!dec.anchors) { fprintf(stderr, "  MISS: decoder anchors\n"); missing++; }
-    if (!dec.layers[0].self_qkv_w) { fprintf(stderr, "  MISS: decoder layer 0 self QKV\n"); missing++; }
+    if (!bb.stem[0].w) { LDBG("  MISS: stem conv1_1\n"); missing++; }
+    if (!enc.aifi_qkv_w) { LDBG("  MISS: AIFI QKV\n"); missing++; }
+    if (!dec.anchors) { LDBG("  MISS: decoder anchors\n"); missing++; }
+    if (!dec.layers[0].self_qkv_w) { LDBG("  MISS: decoder layer 0 self QKV\n"); missing++; }
 
     // Create backend scheduler
     int sched_max = 4096;
@@ -361,19 +370,10 @@ static ggml_tensor* prep_conv(ggml_context* g, ggml_tensor* w, int IC, int KH, i
     return w;
 }
 
-static int conv_count = 0;
 static ggml_tensor* conv_relu(ggml_context* g, ggml_tensor* x, const conv_w& c,
                                int IC, int KH, int KW, int stride, int pad, bool relu = true) {
     if (!c.w) return x;
     auto* w = prep_conv(g, c.w, IC, KH, KW);
-    if (conv_count < 3) {
-        fprintf(stderr, "  conv[%d]: w=[%lld,%lld,%lld,%lld] type=%d, x=[%lld,%lld,%lld] s=%d p=%d\n",
-                conv_count, (long long)w->ne[0], (long long)w->ne[1],
-                (long long)w->ne[2], (long long)w->ne[3], w->type,
-                (long long)x->ne[0], (long long)x->ne[1], (long long)x->ne[2],
-                stride, pad);
-    }
-    conv_count++;
     x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
     if (c.b) {
         int OC = (int)c.b->ne[0];
@@ -414,7 +414,6 @@ static void backbone_forward(ggml_context* g, const resnet50_backbone& bb,
                               ggml_tensor** c3, ggml_tensor** c4, ggml_tensor** c5) {
     // Stem: 3 × (3×3 conv, stride 2 for first, stride 1 for rest) + maxpool
     auto* x = conv_relu(g, input, bb.stem[0], 3, 3, 3, 2, 1);
-    ggml_set_name(x, "stem0"); ggml_set_output(x);
     x = conv_relu(g, x, bb.stem[1], 32, 3, 3, 1, 1);
     x = conv_relu(g, x, bb.stem[2], 32, 3, 3, 1, 1);
     x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 3, 3, 2, 2, 1, 1);
@@ -469,7 +468,7 @@ static ggml_tensor* aifi_self_attn(ggml_context* g, ggml_tensor* x,
 
     // QKV projection: split in_proj into Q, K, V
     auto* qkv = linear(g, x, enc.aifi_qkv_w, enc.aifi_qkv_b); // [768, N]
-    fprintf(stderr, "  AIFI: qkv=[%lld,%lld]\n", (long long)qkv->ne[0], (long long)qkv->ne[1]);
+    LDBG("  AIFI: qkv=[%lld,%lld]\n", (long long)qkv->ne[0], (long long)qkv->ne[1]);
     int D = 256, N_heads = 8, head_dim = D / N_heads; // 32
 
     // Split QKV → Q[256,N], K[256,N], V[256,N]
@@ -517,56 +516,56 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
                              ggml_tensor** s3, ggml_tensor** s4, ggml_tensor** s5) {
     // Input projection: reduce channels to 256
     int c3_ch = (int)c3->ne[2], c4_ch = (int)c4->ne[2], c5_ch = (int)c5->ne[2];
-    fprintf(stderr, "  encoder input_proj: c3_ch=%d c4_ch=%d c5_ch=%d\n", c3_ch, c4_ch, c5_ch);
+    LDBG("  encoder input_proj: c3_ch=%d c4_ch=%d c5_ch=%d\n", c3_ch, c4_ch, c5_ch);
     if (enc.input_proj[0].w)
-        fprintf(stderr, "  input_proj[0].w: [%lld,%lld] ndim=%d\n",
+        LDBG("  input_proj[0].w: [%lld,%lld] ndim=%d\n",
                 (long long)enc.input_proj[0].w->ne[0], (long long)enc.input_proj[0].w->ne[1],
                 ggml_n_dims(enc.input_proj[0].w));
     auto* p3 = conv_relu(g, c3, enc.input_proj[0], c3_ch, 1, 1, 1, 0, false);
-    fprintf(stderr, "  p3 done\n");
+    LDBG("  p3 done\n");
     auto* p4 = conv_relu(g, c4, enc.input_proj[1], c4_ch, 1, 1, 1, 0, false);
-    fprintf(stderr, "  p4 done\n");
+    LDBG("  p4 done\n");
     auto* p5 = conv_relu(g, c5, enc.input_proj[2], c5_ch, 1, 1, 1, 0, false);
-    fprintf(stderr, "  p5 done\n");
+    LDBG("  p5 done\n");
 
     // AIFI self-attention on S5 (smallest scale, 20×20 = 400 tokens)
     // p5 is [W, H, C] in ggml. We need [D, N] = [C, W*H] for attention.
     // Permute [W,H,C] → [C,W,H] then reshape [C, W*H]
     int s5_w = (int)p5->ne[0], s5_h = (int)p5->ne[1], s5_c = (int)p5->ne[2];
-    fprintf(stderr, "  AIFI: p5=[%lld,%lld,%lld] s5_w=%d s5_h=%d s5_c=%d\n",
+    LDBG("  AIFI: p5=[%lld,%lld,%lld] s5_w=%d s5_h=%d s5_c=%d\n",
             (long long)p5->ne[0], (long long)p5->ne[1], (long long)p5->ne[2],
             s5_w, s5_h, s5_c);
     auto* p5_perm = ggml_cont(g, ggml_permute(g, p5, 1, 2, 0, 3));  // ne: [C, W, H]
-    fprintf(stderr, "  AIFI: p5_perm=[%lld,%lld,%lld,%lld] nelems=%lld\n",
+    LDBG("  AIFI: p5_perm=[%lld,%lld,%lld,%lld] nelems=%lld\n",
             (long long)p5_perm->ne[0], (long long)p5_perm->ne[1],
             (long long)p5_perm->ne[2], (long long)p5_perm->ne[3],
             (long long)ggml_nelements(p5_perm));
-    fprintf(stderr, "  AIFI: reshape to [%d, %d] = %d\n", s5_c, s5_w*s5_h, s5_c * s5_w * s5_h);
+    LDBG("  AIFI: reshape to [%d, %d] = %d\n", s5_c, s5_w*s5_h, s5_c * s5_w * s5_h);
     auto* p5_flat = ggml_reshape_2d(g, p5_perm, s5_c, s5_w * s5_h); // ne: [C, W*H]
-    fprintf(stderr, "  AIFI: p5_flat done\n");
+    LDBG("  AIFI: p5_flat done\n");
     // Transpose to [256, N] — ggml reshape gives [C, H*W], need [C, N] which is same
     p5_flat = aifi_self_attn(g, p5_flat, enc);
-    fprintf(stderr, "  AIFI done: p5_flat=[%lld,%lld]\n", (long long)p5_flat->ne[0], (long long)p5_flat->ne[1]);
+    LDBG("  AIFI done: p5_flat=[%lld,%lld]\n", (long long)p5_flat->ne[0], (long long)p5_flat->ne[1]);
     // Reshape back to spatial: [C, W*H] → [C, W, H] → permute to [W, H, C]
     auto* p5_spatial = ggml_reshape_3d(g, p5_flat, s5_c, s5_w, s5_h);
     p5 = ggml_cont(g, ggml_permute(g, p5_spatial, 2, 0, 1, 3)); // [W, H, C]
-    fprintf(stderr, "  AIFI reshape back: p5=[%lld,%lld,%lld]\n",
+    LDBG("  AIFI reshape back: p5=[%lld,%lld,%lld]\n",
             (long long)p5->ne[0], (long long)p5->ne[1], (long long)p5->ne[2]);
 
     // FPN top-down pathway
-    fprintf(stderr, "  FPN: p3=[%lld,%lld,%lld] p4=[%lld,%lld,%lld] p5=[%lld,%lld,%lld]\n",
+    LDBG("  FPN: p3=[%lld,%lld,%lld] p4=[%lld,%lld,%lld] p5=[%lld,%lld,%lld]\n",
             (long long)p3->ne[0],(long long)p3->ne[1],(long long)p3->ne[2],
             (long long)p4->ne[0],(long long)p4->ne[1],(long long)p4->ne[2],
             (long long)p5->ne[0],(long long)p5->ne[1],(long long)p5->ne[2]);
     // S5 → upsample → lateral + S4
-    fprintf(stderr, "  FPN up5: interpolate p5[%lld,%lld,%lld] → [%d,%d,%d]\n",
+    LDBG("  FPN up5: interpolate p5[%lld,%lld,%lld] → [%d,%d,%d]\n",
             (long long)p5->ne[0],(long long)p5->ne[1],(long long)p5->ne[2],
             (int)p4->ne[0], (int)p4->ne[1], (int)p5->ne[2]);
     auto* up5 = ggml_interpolate(g, p5, (int)p4->ne[0], (int)p4->ne[1],
                                   (int)p5->ne[2], 1, GGML_SCALE_MODE_NEAREST);
-    fprintf(stderr, "  FPN up5 done\n");
+    LDBG("  FPN up5 done\n");
     auto* lat4 = conv_relu(g, p4, enc.lateral_convs[1], 256, 1, 1, 1, 0, false);
-    fprintf(stderr, "  FPN lat4 done\n");
+    LDBG("  FPN lat4 done\n");
     p4 = ggml_add(g, up5, lat4);
     // CSP block: concat(p4, lat4) → conv1 → split → bottlenecks → concat → conv2
     // Simplified: concat produces 512ch, conv1 reduces to 256, bottlenecks refine
@@ -692,122 +691,25 @@ std::vector<region> detect(context* ctx, const float* pixels,
     ggml_set_input(input);
 
     // Backbone
-    fprintf(stderr, "layout_detect: building backbone graph...\n");
-    fprintf(stderr, "  stem[0].w: %s, stem[1].w: %s, stem[2].w: %s\n",
-            ctx->backbone.stem[0].w ? "OK" : "NULL",
-            ctx->backbone.stem[1].w ? "OK" : "NULL",
-            ctx->backbone.stem[2].w ? "OK" : "NULL");
-    if (ctx->backbone.stem[0].w) {
-        fprintf(stderr, "  stem[0].w shape: [%lld,%lld] type=%d\n",
-                (long long)ctx->backbone.stem[0].w->ne[0],
-                (long long)ctx->backbone.stem[0].w->ne[1],
-                ctx->backbone.stem[0].w->type);
-        // Verify weight data is non-zero
-        float wv[5];
-        ggml_backend_tensor_get(ctx->backbone.stem[0].w, wv, 0, 5 * sizeof(float));
-        fprintf(stderr, "  stem[0].w data: %.6f %.6f %.6f %.6f %.6f\n",
-                wv[0], wv[1], wv[2], wv[3], wv[4]);
-    }
-    // Quick sanity test: compute stem conv directly and check output
-    {
-        size_t dbg_sz = 1024 * 1024 * 64;
-        std::vector<uint8_t> dbg_buf(dbg_sz);
-        ggml_init_params dp = { dbg_sz, dbg_buf.data(), true };
-        ggml_context* dg = ggml_init(dp);
+    fprintf(stderr, "layout_detect: building backbone + encoder graph...\n");
+    ggml_tensor *c3, *c4, *c5;
+    backbone_forward(g, ctx->backbone, input, &c3, &c4, &c5);
 
-        auto* dx = ggml_new_tensor_3d(dg, GGML_TYPE_F32, 8, 8, 3);
-        ggml_set_name(dx, "dx");
-        ggml_set_input(dx);
+    // Encoder
+    ggml_tensor *s3, *s4, *s5;
+    encoder_forward(g, ctx->encoder, c3, c4, c5, &s3, &s4, &s5);
 
-        auto* dw = ggml_new_tensor_4d(dg, GGML_TYPE_F16, 3, 3, 3, 2);
-        ggml_set_name(dw, "dw");
-        ggml_set_input(dw);
-
-        auto* dy = ggml_conv_2d(dg, dw, dx, 1, 1, 1, 1, 1, 1);
-        ggml_set_name(dy, "dy");
-        ggml_set_output(dy);
-
-        ggml_cgraph* dgf = ggml_new_graph(dg);
-        ggml_build_forward_expand(dgf, dy);
-        ggml_gallocr_t da = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
-        ggml_gallocr_alloc_graph(da, dgf);
-
-        // Set inputs
-        std::vector<float> test_x(8*8*3, 1.0f);
-        ggml_backend_tensor_set(ggml_graph_get_tensor(dgf, "dx"), test_x.data(), 0, test_x.size()*4);
-        // Create F16 weight data
-        std::vector<uint16_t> test_w(3*3*3*2);
-        for (auto& v : test_w) v = ggml_fp32_to_fp16(0.5f);
-        ggml_backend_tensor_set(ggml_graph_get_tensor(dgf, "dw"), test_w.data(), 0, test_w.size()*2);
-
-        ggml_backend_graph_compute(ctx->backend, dgf);
-
-        ggml_tensor* dout = ggml_graph_get_tensor(dgf, "dy");
-        float ov[5];
-        ggml_backend_tensor_get(dout, ov, 0, 5*4);
-        fprintf(stderr, "  SANITY: conv_2d(ones, 0.5) → [%lld,%lld,%lld] first5: %.2f %.2f %.2f %.2f %.2f\n",
-                (long long)dout->ne[0], (long long)dout->ne[1], (long long)dout->ne[2],
-                ov[0], ov[1], ov[2], ov[3], ov[4]);
-        ggml_gallocr_free(da);
-        ggml_free(dg);
-    }
-
-    // STEM ONLY TEST with manual input kernel
-    {
-        auto* w_inp = ggml_new_tensor_4d(g, GGML_TYPE_F16, 3, 3, 3, 32);
-        ggml_set_name(w_inp, "stem_w_inp");
-        ggml_set_input(w_inp);
-        auto* stem_test = ggml_conv_2d(g, w_inp, input, 2, 2, 1, 1, 1, 1);
-        ggml_set_name(stem_test, "stem_manual");
-        ggml_set_output(stem_test);
-    }
-
-    auto* stem0 = conv_relu(g, input, ctx->backbone.stem[0], 3, 3, 3, 2, 1);
-    ggml_set_name(stem0, "stem0_test");
-    ggml_set_output(stem0);
-
-    ggml_tensor *c3 = stem0, *c4 = stem0, *c5 = stem0;
-    fprintf(stderr, "layout_detect: backbone done, c3=[%lld,%lld,%lld] c4=[%lld,%lld,%lld] c5=[%lld,%lld,%lld]\n",
-            (long long)c3->ne[0], (long long)c3->ne[1], (long long)c3->ne[2],
-            (long long)c4->ne[0], (long long)c4->ne[1], (long long)c4->ne[2],
-            (long long)c5->ne[0], (long long)c5->ne[1], (long long)c5->ne[2]);
-
-    // Skip encoder for backbone-only debug
-    ggml_tensor *s3 = c3, *s4 = c4, *s5 = c5;
-    fprintf(stderr, "layout_detect: encoder SKIPPED (debug mode)\n");
-
-    // Mark backbone + encoder outputs for reading
-    ggml_set_name(c3, "c3"); ggml_set_output(c3);
-    ggml_set_name(c4, "c4"); ggml_set_output(c4);
-    ggml_set_name(c5, "c5"); ggml_set_output(c5);
+    // Mark encoder outputs
     ggml_set_name(s3, "s3"); ggml_set_output(s3);
     ggml_set_name(s4, "s4"); ggml_set_output(s4);
     ggml_set_name(s5, "s5"); ggml_set_output(s5);
 
     // Build + compute backbone+encoder graph
     ggml_cgraph* gf = ggml_new_graph_custom(g, max_nodes, false);
-    ggml_build_forward_expand(gf, stem0);
-    // Expand the manual test too
-    {
-        ggml_tensor* sm = nullptr;
-        for (int i = 0; i < ggml_graph_n_nodes(gf); i++) {
-            ggml_tensor* nd = ggml_graph_node(gf, i);
-            if (strcmp(ggml_get_name(nd), "stem_manual") == 0) {
-                sm = nd; break;
-            }
-        }
-        // Just expand stem0 for now
-    }
+    ggml_build_forward_expand(gf, s3);
+    ggml_build_forward_expand(gf, s4);
+    ggml_build_forward_expand(gf, s5);
 
-    int n_nodes = ggml_graph_n_nodes(gf);
-    fprintf(stderr, "  graph: %d nodes\n", n_nodes);
-    // Print first few nodes to verify backbone is included
-    for (int i = 0; i < std::min(5, n_nodes); i++) {
-        ggml_tensor* node = ggml_graph_node(gf, i);
-        fprintf(stderr, "    node[%d]: %s op=%d [%lld,%lld,%lld]\n",
-                i, ggml_get_name(node), node->op,
-                (long long)node->ne[0], (long long)node->ne[1], (long long)node->ne[2]);
-    }
     ggml_gallocr_t alloc = ggml_gallocr_new(
         ggml_backend_get_default_buffer_type(ctx->backend));
     if (!ggml_gallocr_alloc_graph(alloc, gf)) {
@@ -817,130 +719,13 @@ std::vector<region> detect(context* ctx, const float* pixels,
         return {};
     }
 
-    // Set input
-    ggml_tensor* inp_t = ggml_graph_get_tensor(gf, "input");
-    ggml_backend_tensor_set(inp_t, pixels, 0, 3 * H * W * sizeof(float));
-
     // Set input pixels
-    {
-        ggml_tensor* inp_t = ggml_graph_get_tensor(gf, "input");
-        if (inp_t) {
-            ggml_backend_tensor_set(inp_t, pixels, 0, 3 * H * W * sizeof(float));
-            // Verify it was set
-            float verify[3];
-            ggml_backend_tensor_get(inp_t, verify, 0, 3 * sizeof(float));
-            fprintf(stderr, "  input set (%d bytes), verify: %.4f %.4f %.4f, pixels[0..2]: %.4f %.4f %.4f\n",
-                    3 * H * W * (int)sizeof(float),
-                    verify[0], verify[1], verify[2],
-                    pixels[0], pixels[1], pixels[2]);
-        } else {
-            fprintf(stderr, "  ERROR: input tensor not found in graph!\n");
-        }
-    }
+    ggml_tensor* inp_t = ggml_graph_get_tensor(gf, "input");
+    if (inp_t) ggml_backend_tensor_set(inp_t, pixels, 0, 3 * H * W * sizeof(float));
 
-    // Compute backbone + encoder
+    // Compute
     fprintf(stderr, "layout_detect: computing backbone + encoder...\n");
-    enum ggml_status status = ggml_backend_graph_compute(ctx->backend, gf);
-    fprintf(stderr, "  compute status: %d\n", (int)status);
-
-    // Check if stem0 tensor has allocated buffer
-    fprintf(stderr, "  stem0 buffer: %p, backend: %p\n",
-            (void*)stem0->buffer, (void*)stem0->view_src);
-
-    // Set manual weight
-    {
-        ggml_tensor* mw = ggml_graph_get_tensor(gf, "stem_w_inp");
-        if (mw) {
-            // Copy actual stem weight data as F16
-            std::vector<float> f32_data(27 * 32);
-            ggml_backend_tensor_get(ctx->backbone.stem[0].w, f32_data.data(), 0, 27*32*4);
-            std::vector<uint16_t> f16_data(3*3*3*32);
-            for (int i = 0; i < 3*3*3*32; i++) f16_data[i] = ggml_fp32_to_fp16(f32_data[i]);
-            ggml_backend_tensor_set(mw, f16_data.data(), 0, f16_data.size() * 2);
-        }
-        // Read manual conv output
-        ggml_tensor* sm = ggml_graph_get_tensor(gf, "stem_manual");
-        if (sm) {
-            float sv[5];
-            ggml_backend_tensor_get(sm, sv, 0, 5 * sizeof(float));
-            fprintf(stderr, "  stem_manual[%lld,%lld,%lld]: %.4f %.4f %.4f %.4f %.4f\n",
-                    (long long)sm->ne[0], (long long)sm->ne[1], (long long)sm->ne[2],
-                    sv[0], sv[1], sv[2], sv[3], sv[4]);
-        }
-    }
-    // Stem0 via external weight
-    {
-        ggml_tensor* s0 = ggml_graph_get_tensor(gf, "stem0_test");
-        if (s0) {
-            float sv[5];
-            ggml_backend_tensor_get(s0, sv, 0, 5 * sizeof(float));
-            fprintf(stderr, "  stem0[%lld,%lld,%lld]: %.4f %.4f %.4f %.4f %.4f\n",
-                    (long long)s0->ne[0], (long long)s0->ne[1], (long long)s0->ne[2],
-                    sv[0], sv[1], sv[2], sv[3], sv[4]);
-        } else {
-            fprintf(stderr, "  stem0: NOT FOUND in graph\n");
-        }
-    }
-    // c3 via direct pointer
-    {
-        float cv[5];
-        ggml_backend_tensor_get(c3, cv, 0, 5 * sizeof(float));
-        fprintf(stderr, "  c3_direct[%lld,%lld,%lld]: %.4f %.4f %.4f %.4f %.4f\n",
-                (long long)c3->ne[0], (long long)c3->ne[1], (long long)c3->ne[2],
-                cv[0], cv[1], cv[2], cv[3], cv[4]);
-    }
-    // Minimal test result (via graph lookup)
-    {
-        ggml_tensor* tc = ggml_graph_get_tensor(gf, "test_conv");
-        if (tc) {
-            float tv[5];
-            ggml_backend_tensor_get(tc, tv, 0, 5 * sizeof(float));
-            fprintf(stderr, "  TEST_CONV[%lld,%lld,%lld] first5: %.4f %.4f %.4f %.4f %.4f\n",
-                    (long long)tc->ne[0], (long long)tc->ne[1], (long long)tc->ne[2],
-                    tv[0], tv[1], tv[2], tv[3], tv[4]);
-        }
-    }
-    // Debug: check stem weight AFTER compute (was it overwritten?)
-    {
-        float wv[5];
-        ggml_backend_tensor_get(ctx->backbone.stem[0].w, wv, 0, 5 * sizeof(float));
-        fprintf(stderr, "  stem[0].w AFTER compute: %.6f %.6f %.6f\n", wv[0], wv[1], wv[2]);
-    }
-    // Debug: check stem and input
-    {
-        ggml_tensor* inp_dbg = ggml_graph_get_tensor(gf, "input");
-        if (inp_dbg) {
-            float iv[5];
-            ggml_backend_tensor_get(inp_dbg, iv, 0, 5 * sizeof(float));
-            fprintf(stderr, "  input first5: %.4f %.4f %.4f %.4f %.4f\n",
-                    iv[0], iv[1], iv[2], iv[3], iv[4]);
-        }
-        ggml_tensor* s0 = ggml_graph_get_tensor(gf, "stem0_out");
-        if (s0) {
-            float sv[5];
-            ggml_backend_tensor_get(s0, sv, 0, 5 * sizeof(float));
-            fprintf(stderr, "  stem0_out[%lld,%lld,%lld] first5: %.4f %.4f %.4f %.4f %.4f\n",
-                    (long long)s0->ne[0], (long long)s0->ne[1], (long long)s0->ne[2],
-                    sv[0], sv[1], sv[2], sv[3], sv[4]);
-        }
-    }
-
-    // Read backbone outputs for diff comparison
-    {
-        const char* bb_names[] = {"c3", "c4", "c5"};
-        for (int i = 0; i < 3; i++) {
-            ggml_tensor* t = ggml_graph_get_tensor(gf, bb_names[i]);
-            if (t) {
-                // Print first 5 values (channel 0, position 0)
-                float vals[5];
-                ggml_backend_tensor_get(t, vals, 0, 5 * sizeof(float));
-                fprintf(stderr, "  %s[%lld,%lld,%lld] first5: %.4f %.4f %.4f %.4f %.4f\n",
-                        bb_names[i],
-                        (long long)t->ne[0], (long long)t->ne[1], (long long)t->ne[2],
-                        vals[0], vals[1], vals[2], vals[3], vals[4]);
-            }
-        }
-    }
+    ggml_backend_graph_compute(ctx->backend, gf);
 
     // Read encoder outputs to CPU buffers
     // s3: [W3, H3, 256], s4: [W4, H4, 256], s5: [W5, H5, 256]
@@ -960,7 +745,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
         feats[i].data.resize(n);
         ggml_backend_tensor_get(t, feats[i].data.data(), 0, n * sizeof(float));
         total_tokens += feats[i].W * feats[i].H;
-        fprintf(stderr, "  s%d: %dx%d x %d\n", i+3, feats[i].W, feats[i].H, feats[i].C);
+        LDBG("  s%d: %dx%d x %d\n", i+3, feats[i].W, feats[i].H, feats[i].C);
     }
 
     ggml_gallocr_free(alloc);
@@ -1312,7 +1097,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
             }
         }
 
-        fprintf(stderr, "  decoder layer %d done\n", li);
+        LDBG("  decoder layer %d done\n", li);
     }
 
     // --- Phase 3: Detection heads ---
