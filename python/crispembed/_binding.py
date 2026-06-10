@@ -1526,8 +1526,9 @@ def _setup_math_ocr_signatures(lib):
 class CrispMathOcr:
     """Math formula OCR — recognizes LaTeX from images.
 
-    Supports PP-FormulaNet (printed), HMER (handwritten), and BTTR models.
-    Auto-detects architecture from GGUF metadata.
+    Supports pix2tex (printed), PP-FormulaNet (printed), PP-FormulaNet-L (printed),
+    Texo-Distill (printed), HMER (handwritten), BTTR (handwritten), PosFormer
+    (handwritten). Auto-detects architecture from GGUF metadata.
 
     Usage::
 
@@ -1672,4 +1673,104 @@ class CrispLayout:
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:
             self._lib.crispembed_layout_free(self._ctx)
+            self._ctx = None
+
+
+# ---------------------------------------------------------------------------
+# General OCR Pipeline (text detection + recognition)
+# ---------------------------------------------------------------------------
+
+class _CrispOcrResult(ctypes.Structure):
+    _fields_ = [
+        ("x", ctypes.c_float),
+        ("y", ctypes.c_float),
+        ("w", ctypes.c_float),
+        ("h", ctypes.c_float),
+        ("confidence", ctypes.c_float),
+        ("text", ctypes.c_char_p),
+        ("text_len", ctypes.c_int),
+    ]
+
+
+def _setup_ocr_pipeline_signatures(lib):
+    lib.crispembed_ocr_init.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_ocr_init.restype = ctypes.c_void_p
+
+    lib.crispembed_ocr_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_ocr_free.restype = None
+
+    lib.crispembed_ocr.argtypes = [
+        ctypes.c_void_p, ctypes.c_char_p,
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_ocr.restype = ctypes.POINTER(_CrispOcrResult)
+
+    lib.crispembed_ocr_recognize.argtypes = [
+        ctypes.c_void_p, ctypes.c_char_p,
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_ocr_recognize.restype = ctypes.c_char_p
+
+
+class CrispOcrPipeline:
+    """General OCR pipeline — text detection (DBNet) + recognition (TrOCR).
+
+    Detects text regions in a document image, then recognizes each crop.
+
+    Usage::
+
+        ocr = CrispOcrPipeline("dbnet-det", "trocr-printed")
+        results = ocr.run("document.png")
+        for r in results:
+            print(f"[{r['confidence']:.2f}] ({r['x']:.0f},{r['y']:.0f}) \"{r['text']}\"")
+    """
+
+    def __init__(self, det_model: str, rec_model: str, n_threads: int = 4,
+                 lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_ocr_pipeline_signatures(self._lib)
+        self._ctx = self._lib.crispembed_ocr_init(
+            det_model.encode("utf-8"), rec_model.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load OCR pipeline: {det_model} + {rec_model}")
+
+    def run(self, image_path: str) -> list:
+        """Detect and recognize text in an image.
+
+        Args:
+            image_path: Path to image file (JPG/PNG).
+
+        Returns:
+            List of dicts with keys: text, x, y, w, h, confidence.
+        """
+        n = ctypes.c_int(0)
+        ptr = self._lib.crispembed_ocr(
+            self._ctx, str(image_path).encode("utf-8"), ctypes.byref(n))
+        results = []
+        for i in range(n.value):
+            r = ptr[i]
+            results.append({
+                "text": r.text.decode("utf-8") if r.text else "",
+                "x": r.x, "y": r.y, "w": r.w, "h": r.h,
+                "confidence": r.confidence,
+            })
+        return results
+
+    def recognize(self, image_path: str) -> str:
+        """Recognize text from a single image crop (no detection).
+
+        Args:
+            image_path: Path to a cropped text region image.
+
+        Returns:
+            Recognized text string.
+        """
+        out_len = ctypes.c_int(0)
+        result = self._lib.crispembed_ocr_recognize(
+            self._ctx, str(image_path).encode("utf-8"), ctypes.byref(out_len))
+        return result.decode("utf-8") if result else ""
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_ocr_free(self._ctx)
             self._ctx = None

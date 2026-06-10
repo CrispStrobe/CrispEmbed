@@ -2901,9 +2901,10 @@ extern "C" void crispembed_face_free(crispembed_face_context * ctx) {
 #include "bttr_ocr.h"
 #include "ppformulanet_ocr.h"
 #include "ppformulanet_l_ocr.h"
+#include "posformer_ocr.h"
 #include "core/gguf_loader.h"
 
-enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L };
+enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L, MATH_OCR_POSFORMER };
 
 struct unified_math_ocr {
     math_ocr_type type;
@@ -2919,6 +2920,7 @@ static math_ocr_type detect_arch(const char * path) {
     if (arch == "bttr") return MATH_OCR_BTTR;
     if (arch == "ppformulanet") return MATH_OCR_PPFORMULANET;
     if (arch == "ppformulanet_l") return MATH_OCR_PPFORMULANET_L;
+    if (arch == "posformer") return MATH_OCR_POSFORMER;
     return MATH_OCR_PIX2TEX;
 }
 
@@ -2931,6 +2933,7 @@ extern "C" void * crispembed_math_ocr_init(const char * path, int n_threads) {
         case MATH_OCR_BTTR:         inner = bttr_ocr_init(path, n_threads); break;
         case MATH_OCR_PPFORMULANET: inner = ppformulanet_ocr_init(path, n_threads); break;
         case MATH_OCR_PPFORMULANET_L: inner = ppformulanet_l_ocr_init(path, n_threads); break;
+        case MATH_OCR_POSFORMER:      inner = posformer_ocr_init(path, n_threads); break;
     }
     if (!inner) return nullptr;
     auto * u = new unified_math_ocr{type, inner};
@@ -2946,6 +2949,7 @@ extern "C" void crispembed_math_ocr_free(void * ctx) {
         case MATH_OCR_BTTR:         bttr_ocr_free((bttr_ocr_context *)u->ctx); break;
         case MATH_OCR_PPFORMULANET: ppformulanet_ocr_free((ppformulanet_ocr_context *)u->ctx); break;
         case MATH_OCR_PPFORMULANET_L: ppformulanet_l_ocr_free((ppformulanet_l_ocr_context *)u->ctx); break;
+        case MATH_OCR_POSFORMER:      posformer_ocr_free((posformer_ocr_context *)u->ctx); break;
     }
     delete u;
 }
@@ -2961,6 +2965,7 @@ extern "C" const char * crispembed_math_ocr_recognize(
         case MATH_OCR_BTTR:         return bttr_ocr_recognize_raw((bttr_ocr_context *)u->ctx, px, w, h, ch, ol);
         case MATH_OCR_PPFORMULANET: return ppformulanet_ocr_recognize_raw((ppformulanet_ocr_context *)u->ctx, px, w, h, ch, ol);
         case MATH_OCR_PPFORMULANET_L: return ppformulanet_l_ocr_recognize_raw((ppformulanet_l_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case MATH_OCR_POSFORMER:      return posformer_ocr_recognize_raw((posformer_ocr_context *)u->ctx, px, w, h, ch, ol);
     }
     return nullptr;
 }
@@ -2976,6 +2981,7 @@ extern "C" const char * crispembed_math_ocr_recognize_gray(
         case MATH_OCR_BTTR:         return bttr_ocr_recognize((bttr_ocr_context *)u->ctx, px, w, h, ol);
         case MATH_OCR_PPFORMULANET: return ppformulanet_ocr_recognize((ppformulanet_ocr_context *)u->ctx, px, w, h, ol);
         case MATH_OCR_PPFORMULANET_L: return ppformulanet_l_ocr_recognize((ppformulanet_l_ocr_context *)u->ctx, px, w, h, ol);
+        case MATH_OCR_POSFORMER:      return posformer_ocr_recognize((posformer_ocr_context *)u->ctx, px, w, h, ol);
     }
     return nullptr;
 }

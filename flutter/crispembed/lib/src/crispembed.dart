@@ -1050,7 +1050,8 @@ class CrispMathOcr {
   late final CrispembedMathOcrRecognizeDart _recognizeFn;
   late final CrispembedMathOcrFreeDart _freeFn;
 
-  /// Load a pix2tex GGUF model for math OCR.
+  /// Load a math OCR GGUF model (auto-detects architecture: pix2tex,
+  /// PP-FormulaNet, PP-FormulaNet-L, Texo, HMER, BTTR, PosFormer).
   ///
   /// [modelPath] — path to the `.gguf` model file.
   /// [nThreads] — CPU thread count (0 = auto-detect).
@@ -1231,5 +1232,129 @@ class CrispVit {
 
   void _checkDisposed() {
     if (_disposed) throw StateError('CrispVit has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// General OCR Pipeline (text detection + recognition)
+// ---------------------------------------------------------------------------
+
+/// Result from the general OCR pipeline (one detected text region).
+class OcrResult {
+  final String text;
+  final double x, y, w, h;
+  final double confidence;
+
+  const OcrResult({
+    required this.text,
+    required this.x,
+    required this.y,
+    required this.w,
+    required this.h,
+    required this.confidence,
+  });
+
+  @override
+  String toString() => 'OcrResult("$text" @ ($x,$y,$w,$h) conf=$confidence)';
+}
+
+/// General OCR pipeline — detects text regions (DBNet) then recognizes each
+/// crop (TrOCR). Wraps `crispembed_ocr_init` / `crispembed_ocr`.
+class CrispOcrPipeline {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedOcrFreeDart _freeFn;
+  late final CrispembedOcrRunDart _runFn;
+  late final CrispembedOcrRecognizeDart _recognizeFn;
+
+  /// Load detection + recognition models for general OCR.
+  ///
+  /// [detModelPath] — path to the detection GGUF (e.g. DBNet).
+  /// [recModelPath] — path to the recognition GGUF (e.g. TrOCR).
+  /// [nThreads] — CPU thread count (0 = auto-detect).
+  CrispOcrPipeline(String detModelPath, String recModelPath,
+      {int nThreads = 4, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+
+    final init = _lib.lookupFunction<CrispembedOcrInitNative,
+        CrispembedOcrInitDart>('crispembed_ocr_init');
+    _freeFn = _lib.lookupFunction<CrispembedOcrFreeNative,
+        CrispembedOcrFreeDart>('crispembed_ocr_free');
+    _runFn = _lib.lookupFunction<CrispembedOcrRunNative,
+        CrispembedOcrRunDart>('crispembed_ocr');
+    _recognizeFn = _lib.lookupFunction<CrispembedOcrRecognizeNative,
+        CrispembedOcrRecognizeDart>('crispembed_ocr_recognize');
+
+    final detPtr = detModelPath.toNativeUtf8();
+    final recPtr = recModelPath.toNativeUtf8();
+    _ctx = init(detPtr, recPtr, nThreads);
+    calloc.free(detPtr);
+    calloc.free(recPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load OCR pipeline: $detModelPath + $recModelPath');
+    }
+  }
+
+  /// Detect and recognize text in an image file.
+  /// Returns a list of [OcrResult] with bounding boxes and recognized text.
+  List<OcrResult> run(String imagePath) {
+    if (_disposed) return [];
+    final pathPtr = imagePath.toNativeUtf8();
+    final outN = calloc<Int32>();
+
+    final ptr = _runFn(_ctx, pathPtr, outN);
+    final n = outN.value;
+    calloc.free(pathPtr);
+    calloc.free(outN);
+
+    if (ptr == nullptr || n <= 0) return [];
+
+    // The C API returns crispembed_ocr_result structs:
+    //   float x, y, w, h, confidence; const char* text; int text_len;
+    // Total struct size: 5 floats + 1 pointer + 1 int = 28 bytes on 32-bit, 32 on 64-bit
+    final results = <OcrResult>[];
+    final structSize = sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>();
+    for (var i = 0; i < n; i++) {
+      final base = ptr.cast<Uint8>().elementAt(i * structSize);
+      final floats = base.cast<Float>();
+      final x = floats[0];
+      final y = floats[1];
+      final w = floats[2];
+      final h = floats[3];
+      final confidence = floats[4];
+      // text pointer is at offset 5 * sizeof(float)
+      final textPtrAddr = base.elementAt(5 * sizeOf<Float>()).cast<Pointer<Utf8>>();
+      final textPtr = textPtrAddr.value;
+      final text = textPtr != nullptr ? textPtr.toDartString() : '';
+      results.add(OcrResult(
+        text: text,
+        x: x, y: y, w: w, h: h,
+        confidence: confidence,
+      ));
+    }
+    return results;
+  }
+
+  /// Recognize text from a single image crop (no detection).
+  String? recognize(String imagePath) {
+    if (_disposed) return null;
+    final pathPtr = imagePath.toNativeUtf8();
+    final outLen = calloc<Int32>();
+    final result = _recognizeFn(_ctx, pathPtr, outLen);
+    final len = outLen.value;
+    calloc.free(pathPtr);
+    calloc.free(outLen);
+    if (result == nullptr) return null;
+    return result.toDartString(length: len);
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
   }
 }

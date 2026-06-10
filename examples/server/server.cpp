@@ -8,6 +8,8 @@
 //   POST /api/embed       — Ollama-compatible (batch)
 //   POST /api/embeddings  — Ollama-compatible (single, legacy)
 //   POST /math/ocr        — {"image": "formula.png"} → {"latex": "...", "len": N, "ms": M}
+//   POST /ocr             — {"image": "doc.png"} → {"results": [...], "ms": M}  (detect+recognize)
+//   POST /layout/detect   — {"image": "page.png"} → {"regions": [...]}
 //   GET  /health          — server status
 
 #include "crispembed.h"
@@ -46,7 +48,9 @@ int main(int argc, char ** argv) {
     std::string rec_model_path;  // face recognition model
     std::string vit_model_path;  // standalone ViT model (SigLIP/CLIP)
     std::string clip_text_model_path;  // CLIP text encoder
-    std::string math_ocr_model_path;   // math OCR model (PP-FormulaNet, HMER, BTTR)
+    std::string math_ocr_model_path;   // math OCR model (PP-FormulaNet, HMER, BTTR, PosFormer, etc.)
+    std::string ocr_det_model_path;   // general OCR: text detection model (DBNet)
+    std::string ocr_rec_model_path;   // general OCR: text recognition model (TrOCR)
     std::string layout_model_path;    // layout detection model (RT-DETRv2)
     int port = 8080;
     int n_threads = 4;
@@ -61,6 +65,8 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--vit") == 0 && i + 1 < argc) vit_model_path = argv[++i];
         else if (strcmp(argv[i], "--clip-text") == 0 && i + 1 < argc) clip_text_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr") == 0 && i + 1 < argc) math_ocr_model_path = argv[++i];
+        else if (strcmp(argv[i], "--ocr-det") == 0 && i + 1 < argc) ocr_det_model_path = argv[++i];
+        else if (strcmp(argv[i], "--ocr-rec") == 0 && i + 1 < argc) ocr_rec_model_path = argv[++i];
         else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc) layout_model_path = argv[++i];
     }
 
@@ -636,6 +642,21 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "Warning: failed to load math OCR model '%s'\n", math_ocr_model_path.c_str());
     }
 
+    // ── General OCR Pipeline (text detection + recognition) ──
+    void * ocr_pipeline_ctx = nullptr;
+    std::mutex ocr_pipeline_mutex;
+
+    if (!ocr_det_model_path.empty() && !ocr_rec_model_path.empty()) {
+        std::string det_resolved = crispembed_mgr::resolve_model(ocr_det_model_path, true);
+        if (!det_resolved.empty()) ocr_det_model_path = det_resolved;
+        std::string rec_resolved = crispembed_mgr::resolve_model(ocr_rec_model_path, true);
+        if (!rec_resolved.empty()) ocr_rec_model_path = rec_resolved;
+        ocr_pipeline_ctx = crispembed_ocr_init(ocr_det_model_path.c_str(),
+                                                ocr_rec_model_path.c_str(), n_threads);
+        if (!ocr_pipeline_ctx)
+            fprintf(stderr, "Warning: failed to load OCR pipeline models\n");
+    }
+
     // ── Layout Detection ──
     void * layout_ctx = nullptr;
     std::mutex layout_mutex;
@@ -750,6 +771,54 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /ocr — general text detection + recognition pipeline
+    // Request:  {"image": "/path/to/document.png"}
+    // Response: {"results": [{"text": "Hello", "bbox": [x,y,x2,y2], "confidence": 0.99}], "ms": M}
+    svr.Post("/ocr", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!ocr_pipeline_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"OCR pipeline not loaded (use --ocr-det + --ocr-rec)\"}", "application/json");
+            return;
+        }
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+
+        auto t0 = std::chrono::high_resolution_clock::now();
+
+        std::lock_guard<std::mutex> lock(ocr_pipeline_mutex);
+        int n_results = 0;
+        const crispembed_ocr_result* results = crispembed_ocr(ocr_pipeline_ctx, image_path.c_str(), &n_results);
+
+        auto t1 = std::chrono::high_resolution_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        std::ostringstream js;
+        js << "{\"results\": [";
+        for (int i = 0; i < n_results; i++) {
+            if (i > 0) js << ",";
+            js << "{\"text\":\"" << json_escape(results[i].text) << "\""
+               << ",\"bbox\":[" << results[i].x << "," << results[i].y
+               << "," << (results[i].x + results[i].w) << "," << (results[i].y + results[i].h) << "]"
+               << ",\"confidence\":" << results[i].confidence << "}";
+        }
+        js << "],\"n\":" << n_results << ",\"ms\":" << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /ocr in %.1f ms (%d regions)\n", ms, n_results);
+        res.set_content(js.str(), "application/json");
+    });
+
     // POST /layout/detect — document layout analysis
     // Request:  {"image": "/path/to/page.png", "threshold": 0.3}
     // Response: {"regions": [{"label": "text", "score": 0.95, "bbox": [x1, y1, x2, y2]}, ...]}
@@ -824,6 +893,7 @@ int main(int argc, char ** argv) {
         if (vit_ctx) js << ", \"vit\": true, \"vit_dim\": " << crispembed_vit_dim(vit_ctx);
         if (clip_text_ctx) js << ", \"clip_text\": true, \"clip_text_dim\": " << crispembed_clip_text_dim(clip_text_ctx);
         if (math_ocr_ctx) js << ", \"math_ocr\": true";
+        if (ocr_pipeline_ctx) js << ", \"ocr_pipeline\": true";
         if (layout_ctx) js << ", \"layout\": true";
         js << "}";
         res.set_content(js.str(), "application/json");
@@ -841,12 +911,14 @@ int main(int argc, char ** argv) {
     if (vit_ctx) fprintf(stderr, "  POST /vit/encode      — {\"image\": \"path.jpg\"}\n");
     if (clip_text_ctx) fprintf(stderr, "  POST /clip/text       — {\"text\": \"query\"}\n");
     if (math_ocr_ctx) fprintf(stderr, "  POST /math/ocr        — {\"image\": \"formula.png\"}\n");
+    if (ocr_pipeline_ctx) fprintf(stderr, "  POST /ocr             — {\"image\": \"document.png\"} (detect+recognize)\n");
     if (layout_ctx) fprintf(stderr, "  POST /layout/detect   — {\"image\": \"page.png\"}\n");
     fprintf(stderr, "  GET  /health\n\n");
 
     svr.listen(host, port);
 
     if (layout_ctx) crispembed_layout_free(layout_ctx);
+    if (ocr_pipeline_ctx) crispembed_ocr_free(ocr_pipeline_ctx);
     if (math_ocr_ctx) crispembed_math_ocr_free(math_ocr_ctx);
     if (clip_text_ctx) crispembed_clip_text_free(clip_text_ctx);
     if (vit_ctx) crispembed_vit_free(vit_ctx);
