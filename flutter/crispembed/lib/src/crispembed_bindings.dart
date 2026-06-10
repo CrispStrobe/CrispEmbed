@@ -221,7 +221,7 @@ typedef CrispembedEncodeTextWithImageFileDart = Pointer<Float> Function(
     Pointer<Utf8> imagePath,
     Pointer<Int32> outDim);
 
-// --- Math OCR (pix2tex) ---
+// --- Math OCR (unified — auto-detects architecture) ---
 typedef CrispembedMathOcrInitNative = Pointer<Void> Function(
     Pointer<Utf8> modelPath, Int32 nThreads);
 typedef CrispembedMathOcrInitDart = Pointer<Void> Function(
@@ -261,3 +261,22 @@ typedef CrispembedVitEncodeFileDart = Pointer<Float> Function(
 
 typedef CrispembedVitFreeNative = Void Function(Pointer<Void> ctx);
 typedef CrispembedVitFreeDart = void Function(Pointer<Void> ctx);
+
+// --- General OCR Pipeline (text detection + recognition) ---
+typedef CrispembedOcrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> detModelPath, Pointer<Utf8> recModelPath, Int32 nThreads);
+typedef CrispembedOcrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> detModelPath, Pointer<Utf8> recModelPath, int nThreads);
+
+typedef CrispembedOcrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedOcrFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedOcrRunNative = Pointer<Void> Function(
+    Pointer<Void> ctx, Pointer<Utf8> imagePath, Pointer<Int32> outN);
+typedef CrispembedOcrRunDart = Pointer<Void> Function(
+    Pointer<Void> ctx, Pointer<Utf8> imagePath, Pointer<Int32> outN);
+
+typedef CrispembedOcrRecognizeNative = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Utf8> imagePath, Pointer<Int32> outLen);
+typedef CrispembedOcrRecognizeDart = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Utf8> imagePath, Pointer<Int32> outLen);
