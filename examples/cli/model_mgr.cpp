@@ -470,6 +470,42 @@ static const ModelEntry k_registry[] = {
      "PP-FormulaNet-L printed math OCR (SAM-ViT+MBart, 181M)", "180 MB", "apache-2.0",
      "https://huggingface.co/cstr/ppformulanet-l-gguf"},
 
+    {"posformer-crohme",
+     "posformer-crohme-q8_0.gguf",
+     "https://huggingface.co/cstr/posformer-crohme-GGUF/resolve/main/posformer-crohme-q8_0.gguf",
+     "PosFormer handwritten math OCR (DenseNet+Transformer+ARM, 57% CROHME)", "12 MB", "cc-by-nc-sa-3.0",
+     "https://huggingface.co/cstr/posformer-crohme-GGUF"},
+
+    {"pix2tex-mfr",
+     "pix2tex-mfr-q4_k.gguf",
+     "https://huggingface.co/cstr/pix2tex-mfr-gguf/resolve/main/pix2tex-mfr-q4_k.gguf",
+     "pix2tex printed math OCR (DeiT+TrOCR, 28M)", "17 MB", "mit",
+     "https://huggingface.co/cstr/pix2tex-mfr-gguf"},
+
+    {"texo-distill",
+     "texo-distill-q8_0.gguf",
+     "https://huggingface.co/cstr/texo-distill-gguf/resolve/main/texo-distill-q8_0.gguf",
+     "Texo-Distill printed math OCR (HGNetv2+MBart, 20M, BLEU 0.90)", "22 MB", "agpl-3.0",
+     "https://huggingface.co/cstr/texo-distill-gguf"},
+
+    {"dbnet-det",
+     "dbnet-ic15-q4_k.gguf",
+     "https://huggingface.co/cstr/dbnet-ic15-GGUF/resolve/main/dbnet-ic15-q4_k.gguf",
+     "DBNet text detection (ResNet-18+FPNC, PP-OCRv4)", "7 MB", "apache-2.0",
+     "https://huggingface.co/cstr/dbnet-ic15-GGUF"},
+
+    {"trocr-printed",
+     "trocr-small-printed-q8_0.gguf",
+     "https://huggingface.co/cstr/trocr-small-printed-GGUF/resolve/main/trocr-small-printed-q8_0.gguf",
+     "TrOCR text recognition (DeiT+Transformer, printed)", "63 MB", "mit",
+     "https://huggingface.co/cstr/trocr-small-printed-GGUF"},
+
+    {"layout-heron",
+     "layout-heron-f32.gguf",
+     "https://huggingface.co/cstr/layout-heron-gguf/resolve/main/layout-heron-f32.gguf",
+     "RT-DETRv2 document layout detection (ResNet-50+Transformer, 17 classes)", "161 MB", "apache-2.0",
+     "https://huggingface.co/cstr/layout-heron-gguf"},
+
     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 

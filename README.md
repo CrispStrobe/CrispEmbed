@@ -218,6 +218,36 @@ for Dart FFI access. Used by [CrispCalc](https://github.com/CrispStrobe/CrispCal
 for camera-based math input. Platform dirs (Linux/Windows/macOS/iOS/Android) with
 CI-built native libraries.
 
+## Layout Detection
+
+Document layout analysis via RT-DETRv2 (ResNet-50 + HybridEncoder + deformable
+cross-attention decoder). Detects 17 region types: text, title, table, figure,
+formula, caption, section_header, list_item, footnote, page_header, page_footer,
+code, document_index, checkbox_selected, checkbox_unselected, form, key_value_region.
+
+Auto-detected from GGUF metadata (`general.architecture = layout`). Available
+through CLI (`--layout`), HTTP server (`POST /layout/detect`), Python (`CrispLayout`),
+Rust (`CrispLayout`), and Dart/Flutter.
+
+```bash
+# CLI
+./build/crispembed -m layout-heron --layout document.png --json
+
+# Server
+./build/crispembed-server --layout layout-heron-f32.gguf --port 8080
+curl -X POST http://localhost:8080/layout/detect -d '{"image": "page.png"}'
+
+# Python
+from crispembed import CrispLayout
+layout = CrispLayout("layout-heron-f32.gguf")
+regions = layout.detect("page.png")
+for r in regions:
+    print(f"{r['label']} ({r['score']:.2f})")
+```
+
+Encoder parity: all stages cos=1.0 vs HF reference. Detection score 0.93 (HF: 0.95).
+Source: [docling-project/docling-layout-heron](https://huggingface.co/docling-project/docling-layout-heron) (Apache-2.0).
+
 ## Model licenses
 
 The auto-download registry (`-m <name>`) covers models under multiple
