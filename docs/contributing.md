@@ -130,6 +130,23 @@ Add entry to `k_registry[]`:
  "https://huggingface.co/cstr/yourmodel-gguf"},
 ```
 
+### HTTP Server (`examples/server/server.cpp`)
+If adding a new modality (not just a new OCR model variant), wire into the server:
+1. Add `--yourflag MODEL` arg parsing and context init
+2. Add `POST /your/endpoint` handler (parse JSON body, load image, call C API, return JSON)
+3. Add to `/health` response and startup log
+4. Add cleanup in shutdown block
+
+For OCR models: already wired via `--ocr` → `POST /math/ocr`.
+
+### Python Bindings (`python/crispembed/_binding.py`)
+Add a class following the `CrispVit` / `CrispMathOcr` pattern:
+1. Add `_setup_yourmodel_signatures(lib)` function
+2. Add `CrispYourModel` class with `__init__`, inference method, `__del__`
+3. Export from `__init__.py`
+
+For OCR models: already wired via `CrispMathOcr` (auto-dispatches from GGUF arch).
+
 ### CrispCalc Dart Catalog (`lib/engine/ocr_model_manager.dart`)
 Add `OcrModelVariant` entries with Q8_0, Q4_K, and F16 variants.
 
