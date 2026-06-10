@@ -578,17 +578,35 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     auto* p5_flat = ggml_reshape_2d(g, p5_perm, s5_c, s5_w * s5_h); // ne: [C, W*H]
     LDBG("  AIFI: p5_flat done\n");
     // Transpose to [256, N] — ggml reshape gives [C, H*W], need [C, N] which is same
-    // AIFI encoder: pos_embed → self-attn → residual+norm1 → FFN(GELU) → residual+norm2
-    // TODO: self-attention produces wrong results with flash_attn_ext (layout issue)
-    // Using FFN-only for now which gives better encoder features (s5 max=93 matching Python 78)
+    // AIFI: add(pos_embed) → self-attn → residual+norm1 → FFN(GELU_erf) → residual+norm2
     {
+        auto* x_pos = p5_flat;
         if (enc.pos_embed) {
             auto* pe = ggml_reshape_2d(g, enc.pos_embed, s5_c, s5_w * s5_h);
-            p5_flat = ggml_add(g, p5_flat, pe);
+            x_pos = ggml_add(g, p5_flat, pe);
         }
-        // Skip self-attention (TODO: fix flash_attn_ext QKV layout)
+
+        // Self-attention: QKV with correct permute for flash_attn_ext [hd, heads, N]
+        int D_a = 256, N_tok = s5_w * s5_h, heads = 8, hd = D_a / heads;
+        auto* qkv = linear(g, x_pos, enc.aifi_qkv_w, enc.aifi_qkv_b);
+        auto* q = ggml_cont(g, ggml_view_2d(g, qkv, D_a, N_tok, qkv->nb[1], 0));
+        auto* k = ggml_cont(g, ggml_view_2d(g, qkv, D_a, N_tok, qkv->nb[1], D_a*sizeof(float)));
+        auto* v = ggml_cont(g, ggml_view_2d(g, qkv, D_a, N_tok, qkv->nb[1], 2*D_a*sizeof(float)));
+        q = ggml_reshape_3d(g, q, hd, N_tok, heads);
+        k = ggml_reshape_3d(g, k, hd, N_tok, heads);
+        v = ggml_reshape_3d(g, v, hd, N_tok, heads);
+        q = ggml_cont(g, ggml_permute(g, q, 0, 2, 1, 3));
+        k = ggml_cont(g, ggml_permute(g, k, 0, 2, 1, 3));
+        v = ggml_cont(g, ggml_permute(g, v, 0, 2, 1, 3));
+        auto* attn = ggml_flash_attn_ext(g, q, k, v, nullptr, 1.0f/sqrtf(hd), 0, 0);
+        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        attn = ggml_reshape_2d(g, attn, D_a, N_tok);
+        attn = linear(g, attn, enc.aifi_out_w, enc.aifi_out_b);
+        // Residual from original input (before pos_embed) + norm1
+        p5_flat = ggml_add(g, p5_flat, attn);
         p5_flat = layer_norm(g, p5_flat, enc.aifi_norm1_w, enc.aifi_norm1_b);
 
+        // FFN
         auto* residual = p5_flat;
         auto* ffn = linear(g, p5_flat, enc.aifi_ffn1_w, enc.aifi_ffn1_b);
         ffn = ggml_gelu_erf(g, ffn);
