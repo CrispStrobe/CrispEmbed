@@ -122,7 +122,7 @@ inline bool Ref::load(const std::string& path) {
     // Read GGUF magic + version
     uint32_t magic = 0;
     fread(&magic, 4, 1, f);
-    if (magic != 0x46475547) { // "GGUF"
+    if (magic != 0x46554747) { // "GGUF" little-endian
         fprintf(stderr, "crispembed_diff: not a GGUF file: %s\n", path.c_str());
         fclose(f);
         return false;

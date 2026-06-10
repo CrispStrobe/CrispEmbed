@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 
 // MPNet-style relative position bucket (matches HuggingFace implementation).
@@ -99,6 +100,11 @@ struct embed_layer {
     ggml_tensor * fc2_w = nullptr, * fc2_b = nullptr;
     ggml_tensor * ffn_gate_w = nullptr;     // SwiGLU gate (NomicBERT, separate)
     ggml_tensor * ffn_up_gate_w = nullptr; // Fused gate+up [2*inter, H] for ggml_geglu
+    // MoE (Mixture of Experts) FFN — present on MoE layers only
+    ggml_tensor * moe_gate_w    = nullptr; // Router: [H, N_experts]
+    ggml_tensor * expert_fc1_w  = nullptr; // Expert up: [H, inter, N_experts]
+    ggml_tensor * expert_fc2_w  = nullptr; // Expert down: [inter, H, N_experts]
+    ggml_tensor * moe_ffn_bias  = nullptr; // Output bias: [H]
 };
 
 struct embed_model {
@@ -167,8 +173,15 @@ static bool validate_encoder_model(const embed_model & m, bool pre_ln) {
         require(L.k_w || L.qkv_w, "attn.k.weight");
         require(L.v_w || L.qkv_w, "attn.v.weight");
         require(L.o_w, "attn.o.weight");
-        require(L.fc2_w, "ffn.fc2.weight");
-        require(L.ffn_up_gate_w || L.fc1_w, "ffn input weights");
+
+        bool is_moe = L.moe_gate_w != nullptr;
+        if (is_moe) {
+            require(L.expert_fc1_w, "ffn.expert_fc1.weight");
+            require(L.expert_fc2_w, "ffn.expert_fc2.weight");
+        } else {
+            require(L.fc2_w, "ffn.fc2.weight");
+            require(L.ffn_up_gate_w || L.fc1_w, "ffn input weights");
+        }
 
         if (pre_ln) {
             // ln1 optional for ModernBERT (no pre-attention norm, only pre-FFN ln2)
@@ -176,7 +189,7 @@ static bool validate_encoder_model(const embed_model & m, bool pre_ln) {
         } else {
             require(L.ln1_w, "ln1.weight");
             require(L.ln2_w, "ln2.weight");
-            require(L.fc1_w || L.ffn_up_gate_w, "ffn.fc1.weight");
+            if (!is_moe) require(L.fc1_w || L.ffn_up_gate_w, "ffn.fc1.weight");
         }
     }
     return ok;
@@ -205,6 +218,7 @@ struct crispembed_context {
     float rope_theta_global = 0.0f;    // global attention theta (ModernBERT, 0 = same as rope_theta)
     int   global_attn_every_n = 0;     // ModernBERT: every Nth layer uses global attention (0 = all same)
     bool pre_ln = false;      // pre-LN (ModernBERT) vs post-LN (BERT) ordering
+    bool dump_layers = false; // dump per-layer intermediates (CRISPEMBED_DUMP_LAYERS=1)
     int  position_buckets = 0;  // DeBERTa log-bucket count (0 = linear positions)
     int matryoshka_dim = 0;  // 0 = use model default
     std::string prefix;  // prepended to text before tokenization (e.g. "query: ")
@@ -336,6 +350,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     ctx->global_attn_every_n = u32("bert.global_attn_every_n", 0);
     ctx->pre_ln             = u32("bert.pre_ln", 0) != 0;
     ctx->position_buckets   = u32("bert.position_buckets", 0);
+    hp.n_experts            = u32("bert.num_experts", 0);
+    hp.n_experts_per_tok    = u32("bert.num_experts_per_tok", 0);
 
     // Load tokenizer vocab from GGUF metadata
     const int64_t ki = gguf_find_key(g, "tokenizer.ggml.tokens");
@@ -519,6 +535,11 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         L.fc2_b = get_any({pfx + "ffn.fc2.bias", blk + "ffn_down.bias"});
         L.ffn_gate_w    = get_any({pfx + "ffn_gate.weight", blk + "ffn_gate.weight"});     // SwiGLU gate (NomicBERT)
         L.ffn_up_gate_w = get_any({pfx + "ffn_up_gate.weight", blk + "ffn_up_gate.weight"}); // Fused gate+up (ModernBERT/GTE v1.5)
+        // MoE expert tensors (present only on MoE layers)
+        L.moe_gate_w    = get(pfx + "ffn.moe_gate.weight");
+        L.expert_fc1_w  = get(pfx + "ffn.expert_fc1.weight");
+        L.expert_fc2_w  = get(pfx + "ffn.expert_fc2.weight");
+        L.moe_ffn_bias  = get(pfx + "ffn.moe_bias");
     }
 
     // Pooler (optional)
@@ -559,6 +580,13 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     if (m.has_colbert) fprintf(stderr, "crispembed: colbert head loaded (dim=%d)\n", m.colbert_dim);
     if (m.is_reranker) fprintf(stderr, "crispembed: classifier head loaded (reranker=%s)\n",
                                m.classifier_2layer ? "2-layer" : "1-layer");
+    if (hp.n_experts > 0) {
+        int moe_count = 0;
+        for (int i = 0; i < hp.n_layer; i++)
+            if (m.layers[i].moe_gate_w) moe_count++;
+        fprintf(stderr, "crispembed: MoE encoder (%d experts, top-%d, %d/%d MoE layers)\n",
+                hp.n_experts, hp.n_experts_per_tok, moe_count, hp.n_layer);
+    }
 
     // Pre-merge QKV weights into backend buffer (works on CPU + GPU)
     {
@@ -720,6 +748,11 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         if (m.embd_ln_b) cur = ggml_add(gctx, cur, m.embd_ln_b);
     }
 
+    if (ctx->dump_layers) {
+        ggml_set_name(cur, "emb_ln_out");
+        ggml_set_output(cur);
+    }
+
     for (int il = 0; il < hp.n_layer; il++) {
         const auto & L = m.layers[il];
         ggml_tensor * inp = cur;  // save for residual connection
@@ -866,6 +899,11 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         attn = ggml_mul_mat(gctx, L.o_w, attn);
         if (L.o_b) attn = ggml_add(gctx, attn, L.o_b);
 
+        if (ctx->dump_layers && il == 0) {
+            ggml_set_name(attn, "attn_out_0");
+            ggml_set_output(attn);
+        }
+
         if (ctx->pre_ln) {
             // Pre-LN: residual add (LN was applied before attention)
             cur = ggml_add(gctx, inp, attn);
@@ -885,7 +923,51 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         }
 
         ggml_tensor * ffn;
-        if (L.ffn_up_gate_w) {
+        if (L.moe_gate_w) {
+            // MoE FFN (Nomic v2): router → top-K → expert dispatch → weighted combine
+            const int n_exp = hp.n_experts;
+            const int K     = hp.n_experts_per_tok;
+
+            // Router logits: gate_w [H, n_exp] @ cur [H, TB] → [n_exp, TB]
+            ggml_tensor * logits = ggml_mul_mat(gctx, L.moe_gate_w, cur);
+
+            // Softmax over experts (ne[0] = n_exp) per token
+            ggml_tensor * probs = ggml_soft_max(gctx, logits);
+
+            // Top-K expert selection: [K, TB] I32
+            ggml_tensor * ids = ggml_top_k(gctx, probs, K);
+
+            // Gather top-K weights from softmax probs via get_rows
+            // probs_3d [1, n_exp, TB]: get_rows selects K from n_exp per token
+            ggml_tensor * probs_3d  = ggml_reshape_3d(gctx, probs, 1, n_exp, TB);
+            ggml_tensor * top_w     = ggml_get_rows(gctx, probs_3d, ids);  // [1, K, TB]
+            top_w = ggml_reshape_2d(gctx, top_w, K, TB);                   // [K, TB]
+
+            // Expand input for K expert slots: [H, TB] → [H, K, TB]
+            ggml_tensor * cur_3d  = ggml_reshape_3d(gctx, cur, H, 1, TB);
+            ggml_tensor * rep_tgt = ggml_new_tensor_3d(gctx, cur->type, H, K, TB);
+            ggml_tensor * cur_exp = ggml_repeat(gctx, cur_3d, rep_tgt);
+
+            // Expert up projection: expert_fc1 [H, inter, n_exp] × [H, K, TB] → [inter, K, TB]
+            ggml_tensor * up = ggml_mul_mat_id(gctx, L.expert_fc1_w, cur_exp, ids);
+
+            // Activation: exact erf-GELU (NomicBERT v2 uses nn.GELU(approximate='none'))
+            up = ggml_gelu_erf(gctx, up);
+
+            // Expert down projection: expert_fc2 [inter, H, n_exp] × [inter, K, TB] → [H, K, TB]
+            ggml_tensor * down = ggml_mul_mat_id(gctx, L.expert_fc2_w, up, ids);
+
+            // Weighted combination: sum over K experts per token
+            // down [H, K, TB] → permute to [K, H, TB], mul by weights [K, 1, TB], matmul sums K
+            ggml_tensor * down_p = ggml_cont(gctx, ggml_permute(gctx, down, 1, 0, 2, 3));  // [K, H, TB]
+            ggml_tensor * w_col  = ggml_reshape_3d(gctx, top_w, K, 1, TB);                  // [K, 1, TB]
+            ffn = ggml_mul_mat(gctx, w_col, down_p);  // [1, H, TB]
+            ffn = ggml_reshape_2d(gctx, ffn, H, TB);  // [H, TB]
+
+            // MoE output bias
+            if (L.moe_ffn_bias) ffn = ggml_add(gctx, ffn, L.moe_ffn_bias);
+
+        } else if (L.ffn_up_gate_w) {
             // Fused GeGLU (ModernBERT/GTE v1.5): single matmul → ggml_geglu → down
             ggml_tensor * up_gate = ggml_mul_mat(gctx, L.ffn_up_gate_w, cur);  // [2*inter, T]
             ffn = ggml_geglu(gctx, up_gate);  // fused: gelu(first_half) * second_half → [inter, T]
@@ -898,10 +980,11 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             ffn = ggml_mul(gctx, up, gate);
             ffn = ggml_mul_mat(gctx, L.fc2_w, ffn);
         } else {
-            // Standard GELU FFN (BERT)
+            // Standard GELU FFN (BERT / NomicBERT dense layers)
             ffn = ggml_mul_mat(gctx, L.fc1_w, cur);
             if (L.fc1_b) ffn = ggml_add(gctx, ffn, L.fc1_b);
-            ffn = ggml_gelu(gctx, ffn);
+            // NomicBERT uses exact erf-GELU; classic BERT uses tanh-approx GELU
+            ffn = ctx->use_rope ? ggml_gelu_erf(gctx, ffn) : ggml_gelu(gctx, ffn);
             ffn = ggml_mul_mat(gctx, L.fc2_w, ffn);
             if (L.fc2_b) ffn = ggml_add(gctx, ffn, L.fc2_b);
         }
@@ -915,6 +998,14 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             cur = ggml_norm(gctx, cur, ln_eps);
             cur = ggml_mul(gctx, cur, L.ln2_w);
             if (L.ln2_b) cur = ggml_add(gctx, cur, L.ln2_b);
+        }
+
+        // Per-layer dump for diff harness (activated by env var)
+        if (ctx->dump_layers) {
+            char lname[32];
+            snprintf(lname, sizeof(lname), "layer_%d", il);
+            ggml_set_name(cur, lname);
+            ggml_set_output(cur);
         }
     }
 
@@ -1169,6 +1260,28 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
         return {};
     }
 
+    // Dump per-layer intermediates for diff harness
+    if (ctx->dump_layers) {
+        auto dump_tensor = [&](const char * name) {
+            ggml_tensor * t = ggml_graph_get_tensor(gf, name);
+            if (!t) return;
+            int64_t n = ggml_nelements(t);
+            std::vector<float> buf(n);
+            ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+            fprintf(stderr, "DUMP %s shape=[%lld,%lld] data=", name, (long long)t->ne[0], (long long)t->ne[1]);
+            int show = n < 6 ? (int)n : 6;
+            for (int i = 0; i < show; i++) fprintf(stderr, " %.6f", buf[i]);
+            fprintf(stderr, " ...\n");
+        };
+        dump_tensor("emb_ln_out");
+        dump_tensor("attn_out_0");
+        for (int il = 0; il < hp.n_layer; il++) {
+            char lname[32];
+            snprintf(lname, sizeof(lname), "layer_%d", il);
+            dump_tensor(lname);
+        }
+    }
+
     // Read output (works whether tensor is on GPU or CPU)
     // Read encoder output [H, T] via backend API (works for GPU and CPU)
     ggml_tensor * out = graph_tensor_or_log(gf, "encoder_out");
@@ -1402,6 +1515,7 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
     auto * ctx = new crispembed_context;
     ctx->n_threads = n_threads > 0 ? n_threads : 4;
     if (model_path) ctx->model_path_for_audio = model_path;
+    ctx->dump_layers = (std::getenv("CRISPEMBED_DUMP_LAYERS") != nullptr);
 
     // Detect model type from GGUF metadata.
     // Decoder models have either decoder.hidden_size (CrispEmbed-native) or
@@ -2779,21 +2893,22 @@ extern "C" void crispembed_face_free(crispembed_face_context * ctx) {
 
 // ---------------------------------------------------------------------------
 // Unified Math OCR — auto-detects model architecture from GGUF metadata.
-// Supports: pix2tex_mfr (DeiT+TrOCR), hmer (DenseNet+GRU), bttr (DenseNet+Transformer),
-//           posformer (DenseNet+Transformer+ARM)
+// Supports: pix2tex_mfr (DeiT+TrOCR), hmer (DenseNet+GRU), bttr (DenseNet+Transformer)
 // ---------------------------------------------------------------------------
 
 #include "math_ocr.h"
 #include "hmer_ocr.h"
 #include "bttr_ocr.h"
+#include "ppformulanet_ocr.h"
+#include "ppformulanet_l_ocr.h"
 #include "posformer_ocr.h"
 #include "core/gguf_loader.h"
 
-enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_POSFORMER };
+enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L, MATH_OCR_POSFORMER };
 
 struct unified_math_ocr {
     math_ocr_type type;
-    void * ctx;  // math_ocr_context*, hmer_ocr_context*, or bttr_ocr_context*
+    void * ctx;
 };
 
 static math_ocr_type detect_arch(const char * path) {
@@ -2803,6 +2918,8 @@ static math_ocr_type detect_arch(const char * path) {
     core_gguf::free_metadata(g);
     if (arch == "hmer") return MATH_OCR_HMER;
     if (arch == "bttr") return MATH_OCR_BTTR;
+    if (arch == "ppformulanet") return MATH_OCR_PPFORMULANET;
+    if (arch == "ppformulanet_l") return MATH_OCR_PPFORMULANET_L;
     if (arch == "posformer") return MATH_OCR_POSFORMER;
     return MATH_OCR_PIX2TEX;
 }
@@ -2811,10 +2928,12 @@ extern "C" void * crispembed_math_ocr_init(const char * path, int n_threads) {
     auto type = detect_arch(path);
     void * inner = nullptr;
     switch (type) {
-        case MATH_OCR_PIX2TEX:   inner = math_ocr_init(path, n_threads); break;
-        case MATH_OCR_HMER:      inner = hmer_ocr_init(path, n_threads); break;
-        case MATH_OCR_BTTR:      inner = bttr_ocr_init(path, n_threads); break;
-        case MATH_OCR_POSFORMER: inner = posformer_ocr_init(path, n_threads); break;
+        case MATH_OCR_PIX2TEX:      inner = math_ocr_init(path, n_threads); break;
+        case MATH_OCR_HMER:         inner = hmer_ocr_init(path, n_threads); break;
+        case MATH_OCR_BTTR:         inner = bttr_ocr_init(path, n_threads); break;
+        case MATH_OCR_PPFORMULANET: inner = ppformulanet_ocr_init(path, n_threads); break;
+        case MATH_OCR_PPFORMULANET_L: inner = ppformulanet_l_ocr_init(path, n_threads); break;
+        case MATH_OCR_POSFORMER:      inner = posformer_ocr_init(path, n_threads); break;
     }
     if (!inner) return nullptr;
     auto * u = new unified_math_ocr{type, inner};
@@ -2825,10 +2944,12 @@ extern "C" void crispembed_math_ocr_free(void * ctx) {
     if (!ctx) return;
     auto * u = (unified_math_ocr *)ctx;
     switch (u->type) {
-        case MATH_OCR_PIX2TEX:   math_ocr_free((math_ocr_context *)u->ctx); break;
-        case MATH_OCR_HMER:      hmer_ocr_free((hmer_ocr_context *)u->ctx); break;
-        case MATH_OCR_BTTR:      bttr_ocr_free((bttr_ocr_context *)u->ctx); break;
-        case MATH_OCR_POSFORMER: posformer_ocr_free((posformer_ocr_context *)u->ctx); break;
+        case MATH_OCR_PIX2TEX:      math_ocr_free((math_ocr_context *)u->ctx); break;
+        case MATH_OCR_HMER:         hmer_ocr_free((hmer_ocr_context *)u->ctx); break;
+        case MATH_OCR_BTTR:         bttr_ocr_free((bttr_ocr_context *)u->ctx); break;
+        case MATH_OCR_PPFORMULANET: ppformulanet_ocr_free((ppformulanet_ocr_context *)u->ctx); break;
+        case MATH_OCR_PPFORMULANET_L: ppformulanet_l_ocr_free((ppformulanet_l_ocr_context *)u->ctx); break;
+        case MATH_OCR_POSFORMER:      posformer_ocr_free((posformer_ocr_context *)u->ctx); break;
     }
     delete u;
 }
@@ -2839,10 +2960,12 @@ extern "C" const char * crispembed_math_ocr_recognize(
     if (!ctx) return nullptr;
     auto * u = (unified_math_ocr *)ctx;
     switch (u->type) {
-        case MATH_OCR_PIX2TEX:   return math_ocr_recognize_raw((math_ocr_context *)u->ctx, px, w, h, ch, ol);
-        case MATH_OCR_HMER:      return hmer_ocr_recognize_raw((hmer_ocr_context *)u->ctx, px, w, h, ch, ol);
-        case MATH_OCR_BTTR:      return bttr_ocr_recognize_raw((bttr_ocr_context *)u->ctx, px, w, h, ch, ol);
-        case MATH_OCR_POSFORMER: return posformer_ocr_recognize_raw((posformer_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case MATH_OCR_PIX2TEX:      return math_ocr_recognize_raw((math_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case MATH_OCR_HMER:         return hmer_ocr_recognize_raw((hmer_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case MATH_OCR_BTTR:         return bttr_ocr_recognize_raw((bttr_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case MATH_OCR_PPFORMULANET: return ppformulanet_ocr_recognize_raw((ppformulanet_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case MATH_OCR_PPFORMULANET_L: return ppformulanet_l_ocr_recognize_raw((ppformulanet_l_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case MATH_OCR_POSFORMER:      return posformer_ocr_recognize_raw((posformer_ocr_context *)u->ctx, px, w, h, ch, ol);
     }
     return nullptr;
 }
@@ -2853,10 +2976,12 @@ extern "C" const char * crispembed_math_ocr_recognize_gray(
     if (!ctx) return nullptr;
     auto * u = (unified_math_ocr *)ctx;
     switch (u->type) {
-        case MATH_OCR_PIX2TEX:   return math_ocr_recognize((math_ocr_context *)u->ctx, px, w, h, ol);
-        case MATH_OCR_HMER:      return hmer_ocr_recognize((hmer_ocr_context *)u->ctx, px, w, h, ol);
-        case MATH_OCR_BTTR:      return bttr_ocr_recognize((bttr_ocr_context *)u->ctx, px, w, h, ol);
-        case MATH_OCR_POSFORMER: return posformer_ocr_recognize((posformer_ocr_context *)u->ctx, px, w, h, ol);
+        case MATH_OCR_PIX2TEX:      return math_ocr_recognize((math_ocr_context *)u->ctx, px, w, h, ol);
+        case MATH_OCR_HMER:         return hmer_ocr_recognize((hmer_ocr_context *)u->ctx, px, w, h, ol);
+        case MATH_OCR_BTTR:         return bttr_ocr_recognize((bttr_ocr_context *)u->ctx, px, w, h, ol);
+        case MATH_OCR_PPFORMULANET: return ppformulanet_ocr_recognize((ppformulanet_ocr_context *)u->ctx, px, w, h, ol);
+        case MATH_OCR_PPFORMULANET_L: return ppformulanet_l_ocr_recognize((ppformulanet_l_ocr_context *)u->ctx, px, w, h, ol);
+        case MATH_OCR_POSFORMER:      return posformer_ocr_recognize((posformer_ocr_context *)u->ctx, px, w, h, ol);
     }
     return nullptr;
 }
@@ -2907,4 +3032,106 @@ extern "C" void crispembed_free(crispembed_context * ctx) {
     ctx->backends.clear();
     ctx->backend = nullptr;
     delete ctx;
+}
+
+// ---------------------------------------------------------------------------
+// General OCR Pipeline C API
+// ---------------------------------------------------------------------------
+
+#include "ocr_pipeline.h"
+#include "layout_detect.h"
+
+struct ocr_pipeline_wrapper {
+    ocr_pipeline::context * ctx = nullptr;
+    std::vector<ocr_pipeline::ocr_result> results;
+    std::vector<crispembed_ocr_result> c_results;
+    std::string rec_buf;
+};
+
+extern "C" void * crispembed_ocr_init(const char * det_path, const char * rec_path, int n_threads) {
+    auto * w = new ocr_pipeline_wrapper();
+    if (!ocr_pipeline::load(&w->ctx, det_path, rec_path, n_threads)) {
+        delete w;
+        return nullptr;
+    }
+    return w;
+}
+
+extern "C" void crispembed_ocr_free(void * ctx) {
+    if (!ctx) return;
+    auto * w = (ocr_pipeline_wrapper *)ctx;
+    if (w->ctx) ocr_pipeline::free(w->ctx);
+    delete w;
+}
+
+extern "C" const crispembed_ocr_result * crispembed_ocr(
+        void * ctx, const char * image_path, int * out_n) {
+    if (!ctx || !image_path) { if (out_n) *out_n = 0; return nullptr; }
+    auto * w = (ocr_pipeline_wrapper *)ctx;
+    w->results = ocr_pipeline::run_file(w->ctx, image_path);
+    w->c_results.resize(w->results.size());
+    for (size_t i = 0; i < w->results.size(); i++) {
+        auto & r = w->results[i];
+        auto & c = w->c_results[i];
+        c.x = r.box.x; c.y = r.box.y;
+        c.w = r.box.w; c.h = r.box.h;
+        c.confidence = r.confidence;
+        c.text = r.text.c_str();
+        c.text_len = (int)r.text.size();
+    }
+    if (out_n) *out_n = (int)w->c_results.size();
+    return w->c_results.empty() ? nullptr : w->c_results.data();
+}
+
+extern "C" const char * crispembed_ocr_recognize(
+        void * ctx, const char * image_path, int * out_len) {
+    if (!ctx || !image_path) { if (out_len) *out_len = 0; return nullptr; }
+    auto * w = (ocr_pipeline_wrapper *)ctx;
+    w->rec_buf = ocr_pipeline::recognize_file(w->ctx, image_path);
+    if (out_len) *out_len = (int)w->rec_buf.size();
+    return w->rec_buf.empty() ? nullptr : w->rec_buf.c_str();
+}
+
+// ---------------------------------------------------------------------------
+// Layout Detection (RT-DETRv2)
+// ---------------------------------------------------------------------------
+
+struct layout_wrapper {
+    layout_detect::context * ctx = nullptr;
+    std::vector<crispembed_layout_region> c_results;
+};
+
+extern "C" void * crispembed_layout_init(const char * model_path, int n_threads) {
+    auto * w = new layout_wrapper();
+    if (!layout_detect::load(&w->ctx, model_path, n_threads)) {
+        delete w;
+        return nullptr;
+    }
+    return w;
+}
+
+extern "C" void crispembed_layout_free(void * ctx) {
+    if (!ctx) return;
+    auto * w = (layout_wrapper *)ctx;
+    layout_detect::free(w->ctx);
+    delete w;
+}
+
+extern "C" const crispembed_layout_region * crispembed_layout_detect(
+        void * ctx, const char * image_path, float score_threshold, int * out_n) {
+    if (!ctx || !image_path) { if (out_n) *out_n = 0; return nullptr; }
+    auto * w = (layout_wrapper *)ctx;
+    auto regions = layout_detect::detect_file(w->ctx, image_path, score_threshold);
+    w->c_results.resize(regions.size());
+    for (size_t i = 0; i < regions.size(); i++) {
+        w->c_results[i].x1 = regions[i].x1;
+        w->c_results[i].y1 = regions[i].y1;
+        w->c_results[i].x2 = regions[i].x2;
+        w->c_results[i].y2 = regions[i].y2;
+        w->c_results[i].score = regions[i].score;
+        w->c_results[i].label = (int)regions[i].label;
+        w->c_results[i].label_name = regions[i].label_name;
+    }
+    if (out_n) *out_n = (int)regions.size();
+    return w->c_results.empty() ? nullptr : w->c_results.data();
 }
