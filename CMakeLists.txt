@@ -157,6 +157,12 @@ target_link_libraries(crispembed PUBLIC
     ggml-cpu
     Threads::Threads
 )
+if(GGML_BLAS)
+    find_package(BLAS)
+    if(BLAS_FOUND)
+        target_link_libraries(crispembed PUBLIC ${BLAS_LIBRARIES})
+    endif()
+endif()
 if(CRISPEMBED_HAS_CRISP_AUDIO)
     target_link_libraries(crispembed PUBLIC crisp_audio)
 endif()
@@ -394,24 +400,6 @@ if(CRISPEMBED_BUILD_SHARED)
     )
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/crispembed.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
-    )
-endif()
-
-# ---------------------------------------------------------------------------
-# WASM targets (Emscripten only)
-# Built via: ./build-wasm.sh or ./build-embed-wasm.sh
-# ---------------------------------------------------------------------------
-option(CRISPEMBED_WASM "Build WASM math OCR target (Emscripten)" OFF)
-if(CRISPEMBED_WASM AND EMSCRIPTEN)
-    add_executable(crispembed-wasm wasm/ocr_wrapper.c)
-    target_include_directories(crispembed-wasm PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
-    )
-    target_link_libraries(crispembed-wasm PRIVATE crispembed)
-    set_target_properties(crispembed-wasm PROPERTIES
-        OUTPUT_NAME  crispembed_ocr
-        SUFFIX       ".js"
     )
 endif()
 
