@@ -559,6 +559,12 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     auto* p5_flat = ggml_reshape_2d(g, p5_perm, s5_c, s5_w * s5_h); // ne: [C, W*H]
     LDBG("  AIFI: p5_flat done\n");
     // Transpose to [256, N] — ggml reshape gives [C, H*W], need [C, N] which is same
+    // Add 2D positional encoding to p5 before self-attention
+    if (enc.pos_embed) {
+        // pos_embed is [256, 400, 1] → reshape to [256, 400] to match p5_flat
+        auto* pe = ggml_reshape_2d(g, enc.pos_embed, s5_c, s5_w * s5_h);
+        p5_flat = ggml_add(g, p5_flat, pe);
+    }
     p5_flat = aifi_self_attn(g, p5_flat, enc);
     LDBG("  AIFI done: p5_flat=[%lld,%lld]\n", (long long)p5_flat->ne[0], (long long)p5_flat->ne[1]);
     // Reshape back to spatial: [C, W*H] → [C, W, H] → permute to [W, H, C]
