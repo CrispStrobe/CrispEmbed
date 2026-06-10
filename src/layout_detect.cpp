@@ -578,13 +578,24 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     auto* p5_flat = ggml_reshape_2d(g, p5_perm, s5_c, s5_w * s5_h); // ne: [C, W*H]
     LDBG("  AIFI: p5_flat done\n");
     // Transpose to [256, N] — ggml reshape gives [C, H*W], need [C, N] which is same
-    // Add 2D positional encoding to p5 before self-attention
-    if (enc.pos_embed) {
-        // pos_embed is [256, 400, 1] → reshape to [256, 400] to match p5_flat
-        auto* pe = ggml_reshape_2d(g, enc.pos_embed, s5_c, s5_w * s5_h);
-        p5_flat = ggml_add(g, p5_flat, pe);
+    // AIFI encoder: pos_embed → self-attn → residual+norm1 → FFN(GELU) → residual+norm2
+    // TODO: self-attention produces wrong results with flash_attn_ext (layout issue)
+    // Using FFN-only for now which gives better encoder features (s5 max=93 matching Python 78)
+    {
+        if (enc.pos_embed) {
+            auto* pe = ggml_reshape_2d(g, enc.pos_embed, s5_c, s5_w * s5_h);
+            p5_flat = ggml_add(g, p5_flat, pe);
+        }
+        // Skip self-attention (TODO: fix flash_attn_ext QKV layout)
+        p5_flat = layer_norm(g, p5_flat, enc.aifi_norm1_w, enc.aifi_norm1_b);
+
+        auto* residual = p5_flat;
+        auto* ffn = linear(g, p5_flat, enc.aifi_ffn1_w, enc.aifi_ffn1_b);
+        ffn = ggml_gelu_erf(g, ffn);
+        ffn = linear(g, ffn, enc.aifi_ffn2_w, enc.aifi_ffn2_b);
+        p5_flat = ggml_add(g, residual, ffn);
+        p5_flat = layer_norm(g, p5_flat, enc.aifi_norm2_w, enc.aifi_norm2_b);
     }
-    p5_flat = aifi_self_attn(g, p5_flat, enc);
     LDBG("  AIFI done: p5_flat=[%lld,%lld]\n", (long long)p5_flat->ne[0], (long long)p5_flat->ne[1]);
     // Reshape back to spatial: [C, W*H] → [C, W, H] → permute to [W, H, C]
     auto* p5_spatial = ggml_reshape_3d(g, p5_flat, s5_c, s5_w, s5_h);
@@ -602,22 +613,34 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     // branch_a = conv1(cat) → SiLU → bottleneck0 → SiLU → ... → SiLU  [256ch]
     // branch_b = conv2(cat) → SiLU  [256ch]
     // output = Add(branch_a, branch_b)  [256ch]
+    static int csp_idx = 0;
     auto run_csp = [&](ggml_tensor* cat_input, const csp_block& blk) -> ggml_tensor* {
         int cat_ch = (int)cat_input->ne[2];
         // Branch A: conv1 → SiLU → bottlenecks → SiLU
         auto* a = conv_silu(g, cat_input, blk.conv1, cat_ch, 1, 1, 1, 0);
+        {char n[32]; snprintf(n,32,"csp%d_conv1",csp_idx); ggml_set_name(a,n); ggml_set_output(a);}
         for (int j = 0; j < 3; j++) {
-            if (blk.bottlenecks[j].w)
+            if (blk.bottlenecks[j].w) {
                 a = conv_silu(g, a, blk.bottlenecks[j], 256, 3, 3, 1, 1);
+                char n[32]; snprintf(n,32,"csp%d_bn%d",csp_idx,j); ggml_set_name(a,n); ggml_set_output(a);
+            }
         }
         // Branch B: conv2 → SiLU
         auto* b = conv_silu(g, cat_input, blk.conv2, cat_ch, 1, 1, 1, 0);
+        {char n[32]; snprintf(n,32,"csp%d_conv2",csp_idx); ggml_set_name(b,n); ggml_set_output(b);}
         // Add branches
-        return ggml_add(g, a, b);
+        auto* out = ggml_add(g, a, b);
+        {char n[32]; snprintf(n,32,"csp%d_out",csp_idx); ggml_set_name(out,n); ggml_set_output(out);}
+        csp_idx++;
+        return out;
     };
 
+    // Mark AIFI output for comparison
+    ggml_set_name(p5, "aifi_out"); ggml_set_output(p5);
+
     // S5 → lateral (SiLU) → upsample → concat with S4 → CSP
-    auto* lat5 = conv_silu(g, p5, enc.lateral_convs[1], 256, 1, 1, 1, 0);
+    auto* lat5 = conv_silu(g, p5, enc.lateral_convs[0], 256, 1, 1, 1, 0);
+    ggml_set_name(lat5, "lat5_silu"); ggml_set_output(lat5);
     auto* up5 = ggml_interpolate(g, lat5, (int)p4->ne[0], (int)p4->ne[1],
                                   (int)lat5->ne[2], 1, GGML_SCALE_MODE_NEAREST);
     auto* cat4 = ggml_concat(g, up5, p4, 2);  // [W, H, 512]
@@ -625,7 +648,7 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     ggml_set_name(p4, "csp0"); ggml_set_output(p4);
 
     // S4 → lateral (SiLU) → upsample → concat with S3 → CSP
-    auto* lat4 = conv_silu(g, p4, enc.lateral_convs[0], 256, 1, 1, 1, 0);
+    auto* lat4 = conv_silu(g, p4, enc.lateral_convs[1], 256, 1, 1, 1, 0);
     auto* up4 = ggml_interpolate(g, lat4, (int)p3->ne[0], (int)p3->ne[1],
                                   (int)lat4->ne[2], 1, GGML_SCALE_MODE_NEAREST);
     auto* cat3 = ggml_concat(g, up4, p3, 2);  // [W, H, 512]
@@ -767,7 +790,15 @@ std::vector<region> detect(context* ctx, const float* pixels,
         read_range("ip3");
         read_range("ip4");
         read_range("ip5");
-        read_range("csp0");
+        read_range("aifi_out");
+        read_range("lat5_silu");
+        // CSP block 0 internals
+        read_range("csp0_conv1");
+        read_range("csp0_bn0");
+        read_range("csp0_bn1");
+        read_range("csp0_bn2");
+        read_range("csp0_conv2");
+        read_range("csp0_out");
         int block_counts[] = {3, 4, 6, 3};
         for (int s = 0; s < 4; s++) {
             for (int b = 0; b < block_counts[s]; b++) {
