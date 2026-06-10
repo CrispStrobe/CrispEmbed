@@ -1,0 +1,45 @@
+name: Build WASM (text embeddings)
+
+# Builds the CrispEmbed text-embedding WASM module and uploads as artifact.
+# Triggered on changes to the WASM-relevant sources.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'wasm/embed_wrapper.c'
+      - 'build-embed-wasm.sh'
+      - 'src/crispembed.cpp'
+      - 'src/crispembed.h'
+      - 'src/tokenizer*.cpp'
+      - 'src/core/**'
+      - 'ggml/**'
+      - 'CMakeLists.txt'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '3.1.64'
+
+      - name: Build WASM embed module
+        run: ./build-embed-wasm.sh --no-simd
+
+      - name: Upload WASM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: crispembed-embed-wasm
+          path: |
+            build-embed-wasm/crispembed_embed.js
+            build-embed-wasm/crispembed_embed.wasm
+          retention-days: 30
