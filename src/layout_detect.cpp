@@ -556,11 +556,11 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
                 (long long)enc.input_proj[0].w->ne[0], (long long)enc.input_proj[0].w->ne[1],
                 ggml_n_dims(enc.input_proj[0].w));
     auto* p3 = conv_relu(g, c3, enc.input_proj[0], c3_ch, 1, 1, 1, 0, false);
-    LDBG("  p3 done\n");
+    ggml_set_name(p3, "ip3"); ggml_set_output(p3);
     auto* p4 = conv_relu(g, c4, enc.input_proj[1], c4_ch, 1, 1, 1, 0, false);
-    LDBG("  p4 done\n");
+    ggml_set_name(p4, "ip4"); ggml_set_output(p4);
     auto* p5 = conv_relu(g, c5, enc.input_proj[2], c5_ch, 1, 1, 1, 0, false);
-    LDBG("  p5 done\n");
+    ggml_set_name(p5, "ip5"); ggml_set_output(p5);
 
     // AIFI self-attention on S5 (smallest scale, 20×20 = 400 tokens)
     // p5 is [W, H, C] in ggml. We need [D, N] = [C, W*H] for attention.
@@ -622,6 +622,7 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
                                   (int)lat5->ne[2], 1, GGML_SCALE_MODE_NEAREST);
     auto* cat4 = ggml_concat(g, up5, p4, 2);  // [W, H, 512]
     p4 = run_csp(cat4, enc.fpn_blocks[0]);
+    ggml_set_name(p4, "csp0"); ggml_set_output(p4);
 
     // S4 → lateral (SiLU) → upsample → concat with S3 → CSP
     auto* lat4 = conv_silu(g, p4, enc.lateral_convs[0], 256, 1, 1, 1, 0);
@@ -763,6 +764,10 @@ std::vector<region> detect(context* ctx, const float* pixels,
                     name, (long long)t->ne[0], (long long)t->ne[1], (long long)t->ne[2], fmin, fmax);
         };
         read_range("bb_stem");
+        read_range("ip3");
+        read_range("ip4");
+        read_range("ip5");
+        read_range("csp0");
         int block_counts[] = {3, 4, 6, 3};
         for (int s = 0; s < 4; s++) {
             for (int b = 0; b < block_counts[s]; b++) {
