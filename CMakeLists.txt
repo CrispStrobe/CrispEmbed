@@ -385,3 +385,35 @@ if(CRISPEMBED_BUILD_SHARED)
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
     )
 endif()
+
+# ---------------------------------------------------------------------------
+# WASM targets (Emscripten only)
+# Built via: ./build-wasm.sh or ./build-embed-wasm.sh
+# ---------------------------------------------------------------------------
+option(CRISPEMBED_WASM "Build WASM math OCR target (Emscripten)" OFF)
+if(CRISPEMBED_WASM AND EMSCRIPTEN)
+    add_executable(crispembed-wasm wasm/ocr_wrapper.c)
+    target_include_directories(crispembed-wasm PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
+    )
+    target_link_libraries(crispembed-wasm PRIVATE crispembed)
+    set_target_properties(crispembed-wasm PROPERTIES
+        OUTPUT_NAME  crispembed_ocr
+        SUFFIX       ".js"
+    )
+endif()
+
+option(CRISPEMBED_WASM_EMBED "Build WASM text-embedding target (Emscripten)" OFF)
+if(CRISPEMBED_WASM_EMBED AND EMSCRIPTEN)
+    add_executable(crispembed-embed-wasm wasm/embed_wrapper.c)
+    target_include_directories(crispembed-embed-wasm PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
+    )
+    target_link_libraries(crispembed-embed-wasm PRIVATE crispembed)
+    set_target_properties(crispembed-embed-wasm PROPERTIES
+        OUTPUT_NAME  crispembed_embed
+        SUFFIX       ".js"
+    )
+endif()
