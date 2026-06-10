@@ -10,6 +10,7 @@ Architecture follows the CrispASR Space pattern:
 import json
 import os
 import tempfile
+import traceback
 
 import gradio as gr
 import numpy as np
@@ -21,7 +22,7 @@ SERVER_URL = os.environ.get("CRISPEMBED_SERVER_URL", "http://127.0.0.1:8090")
 def _post(endpoint: str, payload: dict) -> dict:
     """POST to the CrispEmbed server and return the JSON response."""
     try:
-        r = requests.post(f"{SERVER_URL}{endpoint}", json=payload, timeout=60)
+        r = requests.post(f"{SERVER_URL}{endpoint}", json=payload, timeout=120)
         r.raise_for_status()
         return r.json()
     except Exception as e:
@@ -68,24 +69,34 @@ def math_ocr(image) -> str:
     if image is None:
         return "Please upload or capture a math equation image."
 
-    # Save the image to a temp file and send the path to the server.
-    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as f:
-        if hasattr(image, "save"):
-            image.save(f.name)
-        else:
-            import PIL.Image
-            PIL.Image.fromarray(image).save(f.name)
-        tmp_path = f.name
+    try:
+        import PIL.Image
+        # Save the image to a temp file accessible by the C++ server.
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False, dir="/tmp") as f:
+            if isinstance(image, np.ndarray):
+                PIL.Image.fromarray(image).save(f.name)
+            elif hasattr(image, "save"):
+                image.save(f.name)
+            else:
+                return f"Error: unexpected image type: {type(image)}"
+            tmp_path = f.name
 
-    result = _post("/math/ocr", {"image": tmp_path})
-    os.unlink(tmp_path)
+        # The C++ server's /math/ocr accepts {"image": "/path/to/file.png"}
+        result = _post("/math/ocr", {"image": tmp_path})
 
-    if "error" in result:
-        return f"Error: {result['error']}"
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
 
-    latex = result.get("latex", "")
-    ms = result.get("ms", 0)
-    return f"LaTeX: {latex}\n\nInference time: {ms} ms"
+        if "error" in result:
+            return f"Error: {result['error']}"
+
+        latex = result.get("latex", "")
+        ms = result.get("ms", 0)
+        return f"LaTeX: {latex}\n\nInference time: {ms} ms"
+    except Exception as e:
+        return f"Error: {traceback.format_exc()}"
 
 
 # ─── Tab 3: Server Health ──────────────────────────────────────────────────
@@ -129,7 +140,7 @@ with gr.Blocks(title="CrispEmbed", theme=gr.themes.Soft()) as demo:
 
     with gr.Tab("Math OCR"):
         gr.Markdown("Upload or capture an image of a math equation. "
-                     "Returns LaTeX via on-device neural OCR (DeiT+TrOCR).")
+                     "Returns LaTeX via on-device neural OCR.")
         image_in = gr.Image(label="Math equation image", type="numpy")
         ocr_btn = gr.Button("Recognize", variant="primary")
         ocr_out = gr.Textbox(label="Result", lines=4)
@@ -143,4 +154,4 @@ with gr.Blocks(title="CrispEmbed", theme=gr.themes.Soft()) as demo:
 
 
 if __name__ == "__main__":
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    demo.launch(server_name="0.0.0.0", server_port=7860, show_error=True)
