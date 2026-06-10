@@ -383,6 +383,21 @@ static ggml_tensor* conv_relu(ggml_context* g, ggml_tensor* x, const conv_w& c,
     return x;
 }
 
+// Conv + optional bias + SiLU activation
+static ggml_tensor* conv_silu(ggml_context* g, ggml_tensor* x, const conv_w& c,
+                                int IC, int KH, int KW, int stride, int pad) {
+    if (!c.w) return x;
+    auto* w = prep_conv(g, c.w, IC, KH, KW);
+    x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
+    if (c.b) {
+        int OC = (int)c.b->ne[0];
+        x = ggml_add(g, x, ggml_reshape_3d(g, c.b, 1, 1, OC));
+    }
+    // SiLU: x * sigmoid(x)
+    x = ggml_mul(g, x, ggml_sigmoid(g, x));
+    return x;
+}
+
 static ggml_tensor* linear(ggml_context* g, ggml_tensor* x, ggml_tensor* w, ggml_tensor* b) {
     if (!w) return x;
     // ggml_mul_mat(a, b): contracts over a->ne[0], result ne[0] = a->ne[1]
@@ -544,6 +559,12 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     auto* p5_flat = ggml_reshape_2d(g, p5_perm, s5_c, s5_w * s5_h); // ne: [C, W*H]
     LDBG("  AIFI: p5_flat done\n");
     // Transpose to [256, N] — ggml reshape gives [C, H*W], need [C, N] which is same
+    // Add 2D positional encoding to p5 before self-attention
+    if (enc.pos_embed) {
+        // pos_embed is [256, 400, 1] → reshape to [256, 400] to match p5_flat
+        auto* pe = ggml_reshape_2d(g, enc.pos_embed, s5_c, s5_w * s5_h);
+        p5_flat = ggml_add(g, p5_flat, pe);
+    }
     p5_flat = aifi_self_attn(g, p5_flat, enc);
     LDBG("  AIFI done: p5_flat=[%lld,%lld]\n", (long long)p5_flat->ne[0], (long long)p5_flat->ne[1]);
     // Reshape back to spatial: [C, W*H] → [C, W, H] → permute to [W, H, C]
@@ -557,77 +578,48 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
             (long long)p3->ne[0],(long long)p3->ne[1],(long long)p3->ne[2],
             (long long)p4->ne[0],(long long)p4->ne[1],(long long)p4->ne[2],
             (long long)p5->ne[0],(long long)p5->ne[1],(long long)p5->ne[2]);
-    // S5 → upsample → lateral + S4
-    LDBG("  FPN up5: interpolate p5[%lld,%lld,%lld] → [%d,%d,%d]\n",
-            (long long)p5->ne[0],(long long)p5->ne[1],(long long)p5->ne[2],
-            (int)p4->ne[0], (int)p4->ne[1], (int)p5->ne[2]);
-    auto* up5 = ggml_interpolate(g, p5, (int)p4->ne[0], (int)p4->ne[1],
-                                  (int)p5->ne[2], 1, GGML_SCALE_MODE_NEAREST);
-    LDBG("  FPN up5 done\n");
-    auto* lat4 = conv_relu(g, p4, enc.lateral_convs[1], 256, 1, 1, 1, 0, false);
-    LDBG("  FPN lat4 done\n");
-    p4 = ggml_add(g, up5, lat4);
-    // CSP block: concat(p4, lat4) → conv1 → split → bottlenecks → concat → conv2
-    // Simplified: concat produces 512ch, conv1 reduces to 256, bottlenecks refine
-    {
-        auto* cat = ggml_concat(g, p4, lat4, 2); // [W, H, 512]
-        auto* split = conv_relu(g, cat, enc.fpn_blocks[0].conv1, 512, 1, 1, 1, 0);
-        auto* branch = split;
+    // FPN CSP block helper:
+    // cat = concat(upsample/downsample, lateral)  [512ch]
+    // branch_a = conv1(cat) → SiLU → bottleneck0 → SiLU → ... → SiLU  [256ch]
+    // branch_b = conv2(cat) → SiLU  [256ch]
+    // output = Add(branch_a, branch_b)  [256ch]
+    auto run_csp = [&](ggml_tensor* cat_input, const csp_block& blk) -> ggml_tensor* {
+        int cat_ch = (int)cat_input->ne[2];
+        // Branch A: conv1 → SiLU → bottlenecks → SiLU
+        auto* a = conv_silu(g, cat_input, blk.conv1, cat_ch, 1, 1, 1, 0);
         for (int j = 0; j < 3; j++) {
-            if (enc.fpn_blocks[0].bottlenecks[j].w)
-                branch = conv_relu(g, branch, enc.fpn_blocks[0].bottlenecks[j], 256, 3, 3, 1, 1);
+            if (blk.bottlenecks[j].w)
+                a = conv_silu(g, a, blk.bottlenecks[j], 256, 3, 3, 1, 1);
         }
-        auto* merged = ggml_concat(g, split, branch, 2); // [W, H, 512]
-        p4 = conv_relu(g, merged, enc.fpn_blocks[0].conv2, 512, 1, 1, 1, 0, false);
-    }
+        // Branch B: conv2 → SiLU
+        auto* b = conv_silu(g, cat_input, blk.conv2, cat_ch, 1, 1, 1, 0);
+        // Add branches
+        return ggml_add(g, a, b);
+    };
 
-    // S4 → upsample → lateral + S3
-    auto* up4 = ggml_interpolate(g, p4, (int)p3->ne[0], (int)p3->ne[1],
-                                  (int)p4->ne[2], 1, GGML_SCALE_MODE_NEAREST);
-    auto* lat3 = conv_relu(g, p3, enc.lateral_convs[0], 256, 1, 1, 1, 0, false);
-    p3 = ggml_add(g, up4, lat3);
-    {
-        auto* cat = ggml_concat(g, p3, lat3, 2);
-        auto* split = conv_relu(g, cat, enc.fpn_blocks[1].conv1, 512, 1, 1, 1, 0);
-        auto* branch = split;
-        for (int j = 0; j < 3; j++) {
-            if (enc.fpn_blocks[1].bottlenecks[j].w)
-                branch = conv_relu(g, branch, enc.fpn_blocks[1].bottlenecks[j], 256, 3, 3, 1, 1);
-        }
-        auto* merged = ggml_concat(g, split, branch, 2);
-        p3 = conv_relu(g, merged, enc.fpn_blocks[1].conv2, 512, 1, 1, 1, 0, false);
-    }
+    // S5 → lateral (SiLU) → upsample → concat with S4 → CSP
+    auto* lat5 = conv_silu(g, p5, enc.lateral_convs[1], 256, 1, 1, 1, 0);
+    auto* up5 = ggml_interpolate(g, lat5, (int)p4->ne[0], (int)p4->ne[1],
+                                  (int)lat5->ne[2], 1, GGML_SCALE_MODE_NEAREST);
+    auto* cat4 = ggml_concat(g, up5, p4, 2);  // [W, H, 512]
+    p4 = run_csp(cat4, enc.fpn_blocks[0]);
 
-    // PAN bottom-up pathway
-    // S3 → downsample → + S4
-    auto* down3 = conv_relu(g, p3, enc.downsample_convs[0], 256, 3, 3, 2, 1);
-    p4 = ggml_add(g, down3, p4);
-    {
-        auto* cat = ggml_concat(g, p4, down3, 2);
-        auto* split = conv_relu(g, cat, enc.pan_blocks[0].conv1, 512, 1, 1, 1, 0);
-        auto* branch = split;
-        for (int j = 0; j < 3; j++) {
-            if (enc.pan_blocks[0].bottlenecks[j].w)
-                branch = conv_relu(g, branch, enc.pan_blocks[0].bottlenecks[j], 256, 3, 3, 1, 1);
-        }
-        auto* merged = ggml_concat(g, split, branch, 2);
-        p4 = conv_relu(g, merged, enc.pan_blocks[0].conv2, 512, 1, 1, 1, 0, false);
-    }
+    // S4 → lateral (SiLU) → upsample → concat with S3 → CSP
+    auto* lat4 = conv_silu(g, p4, enc.lateral_convs[0], 256, 1, 1, 1, 0);
+    auto* up4 = ggml_interpolate(g, lat4, (int)p3->ne[0], (int)p3->ne[1],
+                                  (int)lat4->ne[2], 1, GGML_SCALE_MODE_NEAREST);
+    auto* cat3 = ggml_concat(g, up4, p3, 2);  // [W, H, 512]
+    p3 = run_csp(cat3, enc.fpn_blocks[1]);
 
-    // S4 → downsample → + S5
-    auto* down4 = conv_relu(g, p4, enc.downsample_convs[1], 256, 3, 3, 2, 1);
-    p5 = ggml_add(g, down4, p5);
-    {
-        auto* cat = ggml_concat(g, p5, down4, 2);
-        auto* split = conv_relu(g, cat, enc.pan_blocks[1].conv1, 512, 1, 1, 1, 0);
-        auto* branch = split;
-        for (int j = 0; j < 3; j++) {
-            if (enc.pan_blocks[1].bottlenecks[j].w)
-                branch = conv_relu(g, branch, enc.pan_blocks[1].bottlenecks[j], 256, 3, 3, 1, 1);
-        }
-        auto* merged = ggml_concat(g, split, branch, 2);
-        p5 = conv_relu(g, merged, enc.pan_blocks[1].conv2, 512, 1, 1, 1, 0, false);
-    }
+    // PAN bottom-up: S3 → downsample → concat with S4 → CSP
+    auto* down3 = conv_silu(g, p3, enc.downsample_convs[0], 256, 3, 3, 2, 1);
+    auto* cat4p = ggml_concat(g, down3, p4, 2);  // [W, H, 512]
+    p4 = run_csp(cat4p, enc.pan_blocks[0]);
+
+    // S4 → downsample → concat with S5 → CSP
+    auto* down4 = conv_silu(g, p4, enc.downsample_convs[1], 256, 3, 3, 2, 1);
+    auto* cat5p = ggml_concat(g, down4, p5, 2);  // [W, H, 512]
+    p5 = run_csp(cat5p, enc.pan_blocks[1]);
 
     *s3 = p3; *s4 = p4; *s5 = p5;
 }
@@ -699,13 +691,19 @@ std::vector<region> detect(context* ctx, const float* pixels,
     ggml_tensor *s3, *s4, *s5;
     encoder_forward(g, ctx->encoder, c3, c4, c5, &s3, &s4, &s5);
 
-    // Mark encoder outputs
+    // Mark backbone + encoder outputs
+    ggml_set_name(c3, "c3"); ggml_set_output(c3);
+    ggml_set_name(c4, "c4"); ggml_set_output(c4);
+    ggml_set_name(c5, "c5"); ggml_set_output(c5);
     ggml_set_name(s3, "s3"); ggml_set_output(s3);
     ggml_set_name(s4, "s4"); ggml_set_output(s4);
     ggml_set_name(s5, "s5"); ggml_set_output(s5);
 
     // Build + compute backbone+encoder graph
     ggml_cgraph* gf = ggml_new_graph_custom(g, max_nodes, false);
+    ggml_build_forward_expand(gf, c3);
+    ggml_build_forward_expand(gf, c4);
+    ggml_build_forward_expand(gf, c5);
     ggml_build_forward_expand(gf, s3);
     ggml_build_forward_expand(gf, s4);
     ggml_build_forward_expand(gf, s5);
@@ -727,6 +725,21 @@ std::vector<region> detect(context* ctx, const float* pixels,
     fprintf(stderr, "layout_detect: computing backbone + encoder...\n");
     ggml_backend_graph_compute(ctx->backend, gf);
 
+    // Read backbone outputs for comparison
+    {
+        const char* bb[] = {"c3", "c4", "c5"};
+        for (int i = 0; i < 3; i++) {
+            ggml_tensor* t = ggml_graph_get_tensor(gf, bb[i]);
+            if (!t) continue;
+            int n = ggml_nelements(t);
+            std::vector<float> data(n);
+            ggml_backend_tensor_get(t, data.data(), 0, n * sizeof(float));
+            float fmin = 1e9, fmax = -1e9;
+            for (auto v : data) { fmin = std::min(fmin, v); fmax = std::max(fmax, v); }
+            fprintf(stderr, "  c%d: [%lld,%lld,%lld] range=[%.4f, %.4f]\n",
+                    i+3, (long long)t->ne[0], (long long)t->ne[1], (long long)t->ne[2], fmin, fmax);
+        }
+    }
     // Read encoder outputs to CPU buffers
     // s3: [W3, H3, 256], s4: [W4, H4, 256], s5: [W5, H5, 256]
     struct scale_feat {
@@ -745,7 +758,11 @@ std::vector<region> detect(context* ctx, const float* pixels,
         feats[i].data.resize(n);
         ggml_backend_tensor_get(t, feats[i].data.data(), 0, n * sizeof(float));
         total_tokens += feats[i].W * feats[i].H;
-        LDBG("  s%d: %dx%d x %d\n", i+3, feats[i].W, feats[i].H, feats[i].C);
+        // Print stats for comparison with Python reference
+        float fmin = 1e9, fmax = -1e9;
+        for (auto v : feats[i].data) { fmin = std::min(fmin, v); fmax = std::max(fmax, v); }
+        fprintf(stderr, "  s%d: %dx%d x %d range=[%.4f, %.4f]\n",
+                i+3, feats[i].W, feats[i].H, feats[i].C, fmin, fmax);
     }
 
     ggml_gallocr_free(alloc);
@@ -885,6 +902,28 @@ std::vector<region> detect(context* ctx, const float* pixels,
         }
     }
 
+    // Compute query position encoding from reference points via query_pos_head MLP
+    // ref_points → linear0 → ReLU → linear1 → ReLU → linear2 → pos_enc  [D, N_queries]
+    std::vector<float> pos_enc(D * N_queries, 0.0f);
+    {
+        // Input: ref_points [N_queries * 4] → need [4, N_queries] layout
+        std::vector<float> rp_col(4 * N_queries);
+        for (int q = 0; q < N_queries; q++)
+            for (int d = 0; d < 4; d++)
+                rp_col[d * N_queries + q] = ref_points[q * 4 + d];
+
+        std::vector<float> tmp(D * N_queries);
+        cpu_linear(rp_col.data(), tmp.data(), 4, D, N_queries,
+                   ctx->decoder.qpos_w[0], ctx->decoder.qpos_b[0]);
+        for (auto& v : tmp) v = std::max(0.0f, v); // ReLU
+        std::vector<float> tmp2(D * N_queries);
+        cpu_linear(tmp.data(), tmp2.data(), D, D, N_queries,
+                   ctx->decoder.qpos_w[1], ctx->decoder.qpos_b[1]);
+        for (auto& v : tmp2) v = std::max(0.0f, v); // ReLU
+        cpu_linear(tmp2.data(), pos_enc.data(), D, D, N_queries,
+                   ctx->decoder.qpos_w[2], ctx->decoder.qpos_b[2]);
+    }
+
     fprintf(stderr, "layout_detect: query init done (top-K score: %.3f..%.3f)\n",
             token_scores[0].first, token_scores[N_queries-1].first);
     fprintf(stderr, "layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
@@ -957,16 +996,20 @@ std::vector<region> detect(context* ctx, const float* pixels,
         cpu_linear(memory.data(), values.data(), D, D, total_tokens,
                    layer.cross_value_w, layer.cross_value_b);
 
+        // query + position encoding for cross-attention projections
+        std::vector<float> qp(D * N_queries);
+        for (int i = 0; i < D * N_queries; i++) qp[i] = queries[i] + pos_enc[i];
+
         // Sampling offsets: (query+pos) → linear → [192, N_queries]
         int n_offsets = N_heads * N_levels * N_points * 2; // 192
         std::vector<float> offsets(n_offsets * N_queries);
-        cpu_linear(queries.data(), offsets.data(), D, n_offsets, N_queries,
+        cpu_linear(qp.data(), offsets.data(), D, n_offsets, N_queries,
                    layer.cross_sampling_offsets_w, layer.cross_sampling_offsets_b);
 
         // Attention weights: (query+pos) → linear → [96, N_queries]
         int n_weights = N_heads * N_levels * N_points; // 96
         std::vector<float> attn_weights(n_weights * N_queries);
-        cpu_linear(queries.data(), attn_weights.data(), D, n_weights, N_queries,
+        cpu_linear(qp.data(), attn_weights.data(), D, n_weights, N_queries,
                    layer.cross_attn_weights_w, layer.cross_attn_weights_b);
 
         // Softmax attention weights per head per query (over levels * points)
@@ -1178,8 +1221,8 @@ std::vector<region> detect_file(context* ctx, const char* path,
             for (int x = 0; x < ctx->input_w; x++) {
                 float src_x = x / scale_x;
                 int sx0 = std::min((int)src_x, img_w - 1);
+                // Model expects [0, 1] input (no ImageNet normalization)
                 float val = raw[(sy0 * img_w + sx0) * 3 + c] / 255.0f;
-                val = (val - ctx->img_mean[c]) / ctx->img_std[c];
                 pixels[c * ctx->input_h * ctx->input_w + y * ctx->input_w + x] = val;
             }
         }
