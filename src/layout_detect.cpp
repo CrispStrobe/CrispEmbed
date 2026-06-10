@@ -26,6 +26,7 @@ extern "C" {
 }
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -1263,78 +1264,90 @@ std::vector<region> detect(context* ctx, const float* pixels,
     fprintf(stderr, "layout_detect: query init done (top-K score: %.3f..%.3f)\n",
             token_scores[0].first, token_scores[N_queries-1].first);
     fprintf(stderr, "layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
+    auto dec_start = std::chrono::steady_clock::now();
+    float total_sa_ms = 0, total_ca_ms = 0, total_ffn_ms = 0, total_bbox_ms = 0;
 
     for (int li = 0; li < 6; li++) {
+        auto layer_t0 = std::chrono::steady_clock::now();
         // Recompute pos_enc from current reference points each layer (matches HF)
         compute_pos_enc(ref_points.data(), pos_enc.data());
         const auto& layer = ctx->decoder.layers[li];
 
-        // --- Self-attention (with pos on Q/K only, matching HF DETR pattern) ---
-        std::vector<float> residual = queries; // [D, N_queries]
-        // QKV from (queries + pos_enc) for Q/K, raw queries for V
-        std::vector<float> qp_sa(D * N_queries);
-        for (int i = 0; i < D * N_queries; i++) qp_sa[i] = queries[i] + pos_enc[i];
-        std::vector<float> qkv_pos(3 * D * N_queries), qkv_raw(3 * D * N_queries);
-        cpu_linear(qp_sa.data(), qkv_pos.data(), D, 3 * D, N_queries,
-                   layer.self_qkv_w, layer.self_qkv_b);  // Q, K correct
-        cpu_linear(queries.data(), qkv_raw.data(), D, 3 * D, N_queries,
-                   layer.self_qkv_w, layer.self_qkv_b);  // V correct
-        // Merge: Q/K from qkv_pos, V from qkv_raw
-        std::vector<float> qkv(3 * D * N_queries);
-        memcpy(qkv.data(), qkv_pos.data(), 2 * D * N_queries * sizeof(float)); // Q, K
-        memcpy(qkv.data() + 2 * D * N_queries, qkv_raw.data() + 2 * D * N_queries,
-               D * N_queries * sizeof(float)); // V
+        // --- Self-attention via ggml graph (BLAS-accelerated) ---
+        std::vector<float> residual = queries;
+        {
+            int hd = D / N_heads;
+            size_t sa_buf_size = ggml_tensor_overhead() * 64 + ggml_graph_overhead_custom(64, false) + 16 * 1024 * 1024;
+            std::vector<uint8_t> sa_buf(sa_buf_size);
+            ggml_init_params sa_ip = { sa_buf_size, sa_buf.data(), true };
+            ggml_context* gc = ggml_init(sa_ip);
 
-        // Split QKV and compute attention
-        // Q, K, V each [D, N_queries], 8 heads, head_dim = 32
-        int hd = D / N_heads;
-        std::vector<float> attn_out(D * N_queries, 0.0f);
-        for (int h = 0; h < N_heads; h++) {
-            // Compute Q @ K^T / sqrt(hd) for this head
-            std::vector<float> scores(N_queries * N_queries, 0.0f);
-            for (int qi = 0; qi < N_queries; qi++) {
-                for (int ki = 0; ki < N_queries; ki++) {
-                    float dot = 0;
-                    for (int d = 0; d < hd; d++) {
-                        int idx = (h * hd + d) * N_queries;
-                        dot += qkv[idx + qi] * qkv[D * N_queries + idx + ki];
-                    }
-                    scores[qi * N_queries + ki] = dot / sqrtf(hd);
-                }
-            }
-            // Softmax per query
-            for (int qi = 0; qi < N_queries; qi++) {
-                float max_s = -1e9f;
-                for (int ki = 0; ki < N_queries; ki++)
-                    max_s = std::max(max_s, scores[qi * N_queries + ki]);
-                float sum = 0;
-                for (int ki = 0; ki < N_queries; ki++) {
-                    scores[qi * N_queries + ki] = expf(scores[qi * N_queries + ki] - max_s);
-                    sum += scores[qi * N_queries + ki];
-                }
-                for (int ki = 0; ki < N_queries; ki++)
-                    scores[qi * N_queries + ki] /= sum;
-            }
-            // Attn @ V
-            for (int qi = 0; qi < N_queries; qi++) {
-                for (int d = 0; d < hd; d++) {
-                    float sum = 0;
-                    for (int ki = 0; ki < N_queries; ki++) {
-                        sum += scores[qi * N_queries + ki] *
-                               qkv[2 * D * N_queries + (h * hd + d) * N_queries + ki];
-                    }
-                    attn_out[(h * hd + d) * N_queries + qi] = sum;
-                }
-            }
+            // Inputs
+            auto* inp = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, N_queries);
+            ggml_set_name(inp, "sa_in"); ggml_set_input(inp);
+            auto* pe_in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, N_queries);
+            ggml_set_name(pe_in, "sa_pe"); ggml_set_input(pe_in);
+
+            // Q/K from (inp + pe), V from inp
+            auto* inp_pos = ggml_add(gc, inp, pe_in);
+            auto* qkv_pos = linear(gc, inp_pos, layer.self_qkv_w, layer.self_qkv_b);
+            auto* qkv_raw = linear(gc, inp, layer.self_qkv_w, layer.self_qkv_b);
+
+            auto* Q = ggml_cont(gc, ggml_view_2d(gc, qkv_pos, D, N_queries, qkv_pos->nb[1], 0));
+            auto* K = ggml_cont(gc, ggml_view_2d(gc, qkv_pos, D, N_queries, qkv_pos->nb[1], D*sizeof(float)));
+            auto* V = ggml_cont(gc, ggml_view_2d(gc, qkv_raw, D, N_queries, qkv_raw->nb[1], 2*D*sizeof(float)));
+
+            // Reshape for multi-head: [D, N] → [hd, heads, N] → permute → [hd, N, heads]
+            Q = ggml_reshape_3d(gc, Q, hd, N_heads, N_queries);
+            Q = ggml_cont(gc, ggml_permute(gc, Q, 0, 2, 1, 3));
+            K = ggml_reshape_3d(gc, K, hd, N_heads, N_queries);
+            K = ggml_cont(gc, ggml_permute(gc, K, 0, 2, 1, 3));
+            V = ggml_reshape_3d(gc, V, hd, N_heads, N_queries);
+            V = ggml_cont(gc, ggml_permute(gc, V, 0, 2, 1, 3));
+
+            // Attention: scores = K^T @ Q, softmax, attn = V^T @ scores
+            auto* scores = ggml_mul_mat(gc, K, Q);
+            scores = ggml_soft_max_ext(gc, scores, nullptr, 1.0f/sqrtf((float)hd), 0.0f);
+            auto* Vt = ggml_cont(gc, ggml_permute(gc, V, 1, 0, 2, 3));
+            auto* attn = ggml_mul_mat(gc, Vt, scores);
+
+            // Reshape back: [hd, N, heads] → [hd, heads, N] → [D, N]
+            attn = ggml_cont(gc, ggml_permute(gc, attn, 0, 2, 1, 3));
+            attn = ggml_reshape_2d(gc, attn, D, N_queries);
+
+            // Output projection
+            attn = linear(gc, attn, layer.self_out_w, layer.self_out_b);
+
+            // Residual + LayerNorm (post-LN)
+            auto* res_inp = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, N_queries);
+            ggml_set_name(res_inp, "sa_res"); ggml_set_input(res_inp);
+            auto* out = ggml_add(gc, res_inp, attn);
+            out = layer_norm(gc, out, layer.norm1_w, layer.norm1_b);
+
+            ggml_set_name(out, "sa_out"); ggml_set_output(out);
+            ggml_cgraph* gf = ggml_new_graph_custom(gc, 64, false);
+            ggml_build_forward_expand(gf, out);
+
+            ggml_gallocr_t sa_alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+            ggml_gallocr_alloc_graph(sa_alloc, gf);
+
+            ggml_tensor* t_in = ggml_graph_get_tensor(gf, "sa_in");
+            ggml_backend_tensor_set(t_in, queries.data(), 0, D * N_queries * sizeof(float));
+            ggml_tensor* t_pe = ggml_graph_get_tensor(gf, "sa_pe");
+            ggml_backend_tensor_set(t_pe, pos_enc.data(), 0, D * N_queries * sizeof(float));
+            ggml_tensor* t_res = ggml_graph_get_tensor(gf, "sa_res");
+            ggml_backend_tensor_set(t_res, residual.data(), 0, D * N_queries * sizeof(float));
+
+            ggml_backend_graph_compute(ctx->backend, gf);
+
+            ggml_tensor* t_out = ggml_graph_get_tensor(gf, "sa_out");
+            ggml_backend_tensor_get(t_out, queries.data(), 0, D * N_queries * sizeof(float));
+
+            ggml_gallocr_free(sa_alloc);
+            ggml_free(gc);
         }
-        // Output projection
-        std::vector<float> sa_out(D * N_queries);
-        cpu_linear(attn_out.data(), sa_out.data(), D, D, N_queries,
-                   layer.self_out_w, layer.self_out_b);
-
-        // Residual + norm
-        for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + sa_out[i];
-        cpu_layernorm(queries.data(), D, N_queries, layer.norm1_w, layer.norm1_b);
+        { auto sa_end = std::chrono::steady_clock::now();
+          total_sa_ms += std::chrono::duration<float, std::milli>(sa_end - layer_t0).count(); }
         { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_after_sa: [%.4f,%.4f]\n",li,mn,mx); }
 
         // --- Deformable cross-attention ---
@@ -1487,21 +1500,52 @@ std::vector<region> detect(context* ctx, const float* pixels,
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ca_out[i];
         cpu_layernorm(queries.data(), D, N_queries, layer.norm2_w, layer.norm2_b);
 
+        { auto ca_end = std::chrono::steady_clock::now();
+          total_ca_ms += std::chrono::duration<float, std::milli>(ca_end - layer_t0).count() - total_sa_ms; }
         { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm2: [%.4f,%.4f]\n",li,mn,mx); }
-        // --- FFN ---
+        auto ffn_t0 = std::chrono::steady_clock::now();
+        // --- FFN via ggml graph (BLAS-accelerated) ---
         residual = queries;
-        std::vector<float> ffn1(1024 * N_queries);
-        cpu_linear(queries.data(), ffn1.data(), D, 1024, N_queries,
-                   layer.ffn1_w, layer.ffn1_b);
-        // ReLU
-        for (auto& v : ffn1) v = std::max(0.0f, v);
-        std::vector<float> ffn2(D * N_queries);
-        cpu_linear(ffn1.data(), ffn2.data(), 1024, D, N_queries,
-                   layer.ffn2_w, layer.ffn2_b);
+        {
+            size_t ffn_buf_size = ggml_tensor_overhead() * 32 + ggml_graph_overhead_custom(32, false) + 8 * 1024 * 1024;
+            std::vector<uint8_t> ffn_buf(ffn_buf_size);
+            ggml_init_params ffn_ip = { ffn_buf_size, ffn_buf.data(), true };
+            ggml_context* gc = ggml_init(ffn_ip);
 
-        // Residual + norm
-        for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ffn2[i];
-        cpu_layernorm(queries.data(), D, N_queries, layer.norm3_w, layer.norm3_b);
+            auto* inp = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, N_queries);
+            ggml_set_name(inp, "ffn_in"); ggml_set_input(inp);
+            auto* res_inp = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, N_queries);
+            ggml_set_name(res_inp, "ffn_res"); ggml_set_input(res_inp);
+
+            // FFN: Linear(256→1024) → ReLU → Linear(1024→256)
+            auto* up = linear(gc, inp, layer.ffn1_w, layer.ffn1_b);
+            up = ggml_relu(gc, up);
+            auto* down = linear(gc, up, layer.ffn2_w, layer.ffn2_b);
+
+            // Residual + LayerNorm
+            auto* out = ggml_add(gc, res_inp, down);
+            out = layer_norm(gc, out, layer.norm3_w, layer.norm3_b);
+
+            ggml_set_name(out, "ffn_out"); ggml_set_output(out);
+            ggml_cgraph* gf = ggml_new_graph_custom(gc, 32, false);
+            ggml_build_forward_expand(gf, out);
+
+            ggml_gallocr_t ffn_alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+            ggml_gallocr_alloc_graph(ffn_alloc, gf);
+
+            ggml_tensor* t_in = ggml_graph_get_tensor(gf, "ffn_in");
+            ggml_backend_tensor_set(t_in, queries.data(), 0, D * N_queries * sizeof(float));
+            ggml_tensor* t_res = ggml_graph_get_tensor(gf, "ffn_res");
+            ggml_backend_tensor_set(t_res, residual.data(), 0, D * N_queries * sizeof(float));
+
+            ggml_backend_graph_compute(ctx->backend, gf);
+
+            ggml_tensor* t_out = ggml_graph_get_tensor(gf, "ffn_out");
+            ggml_backend_tensor_get(t_out, queries.data(), 0, D * N_queries * sizeof(float));
+
+            ggml_gallocr_free(ffn_alloc);
+            ggml_free(gc);
+        }
 
         { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm3: [%.4f,%.4f]\n",li,mn,mx); }
 
@@ -1549,6 +1593,8 @@ std::vector<region> detect(context* ctx, const float* pixels,
             }
         }
 
+        { auto ffn_end = std::chrono::steady_clock::now();
+          total_ffn_ms += std::chrono::duration<float, std::milli>(ffn_end - ffn_t0).count(); }
         LDBG("  decoder layer %d done\n", li);
 
         // Debug: dump decoder layer 0 output
@@ -1568,6 +1614,11 @@ std::vector<region> detect(context* ctx, const float* pixels,
             if (fp) { fwrite(q_row.data(), sizeof(float), D * N_queries, fp); fclose(fp); }
         }
     }
+
+    { auto dec_end = std::chrono::steady_clock::now();
+      float dec_ms = std::chrono::duration<float, std::milli>(dec_end - dec_start).count();
+      fprintf(stderr, "layout_detect: decoder %.0f ms (sa=%.0f ca=%.0f ffn=%.0f ms)\n",
+              dec_ms, total_sa_ms, total_ca_ms, total_ffn_ms); }
 
     // --- Phase 3: Detection heads ---
     // Class scores from final decoder output
