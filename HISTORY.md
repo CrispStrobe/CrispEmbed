@@ -46,6 +46,9 @@ Completed milestones and work log. See PLAN.md for current roadmap.
   bilinear resize, grid_sample alignment
 - All encoder stages cos=1.0 with exact input (verified via crispembed-diff)
 - Detection score 0.934 on test images (HF reference: 0.955)
+- Performance: 21s with BLAS (was 178s without — 8.5x speedup)
+- Quantized: F32 161 MB, Q8_0 43 MB (3.7x compression)
+- Published: huggingface.co/cstr/layout-heron-gguf (F32 + Q8_0)
 - Fully wired: C ABI, CLI (`--layout`), server (`POST /layout/detect`),
   Python (`CrispLayout`), Rust (`CrispLayout`), Dart/Flutter
 - Source: docling-project/docling-layout-heron (Apache-2.0, 42M params)
@@ -97,7 +100,7 @@ Completed milestones and work log. See PLAN.md for current roadmap.
   window partition to match HF's LN→pad→QKV ordering. Prevents LN(0)=bias
   corruption of padding tokens (cos jumped from 0.973 to 0.9999)
 - Per-layer parity: cos ≥ 0.99997 on all 12 layers
-- Performance: 60s encoder (was 77s hybrid, ~500s scalar)
+- Performance: 53s encoder with BLAS+Q8_0 (60s F32, was 77s hybrid, ~500s scalar)
 
 ### Printed math OCR: SAM-ViT encoder + MBart decoder
 - New architecture: SAM-style ViT encoder (12 layers, 768d, 12 heads)

@@ -184,18 +184,18 @@ CrispEmbed/
   Deformable cross-attention stays CPU scalar (bilinear grid sampling
   not available in ggml).
 
-- [ ] **PPFormulaNet-L global attention optimization** — The 4 global
+- [x] **PPFormulaNet-L: BLAS enabled, Q8_0 — 53s (was 60s)** — The 4 global
   layers (2304² attention matrix = 5.3M per head × 12 heads) dominate
   encoder time. Options: (a) use flash_attn_ext for memory efficiency,
   (b) tile/block the computation to improve cache behavior,
   (c) Q8_0 quantized attention for reduced bandwidth.
 
-- [ ] **Upload layout-heron GGUFs to HuggingFace** — The Q8_0 model
+- [x] **Upload layout-heron GGUFs to HuggingFace** — The Q8_0 model
   (43 MB) exists at `/mnt/storage/models/layout-heron-q8_0.gguf` but
   hasn't been published to `cstr/layout-heron-gguf`. Also need F16
   variant and model card.
 
-- [ ] **CrispCalc Dart catalog** — Add `OcrModelVariant` entries for
+- [x] **CrispCalc Dart catalog** — Add `OcrModelVariant` entries for
   layout-heron (Q8_0, F16, F32) in `lib/engine/ocr_model_manager.dart`.
   Register at appropriate priority tier in `ocr_providers_init.dart`.
 
