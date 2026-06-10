@@ -678,31 +678,36 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     // Mark AIFI output for comparison
     ggml_set_name(p5, "aifi_out"); ggml_set_output(p5);
 
-    // S5 → lateral (SiLU) → upsample → concat with S4 → CSP
+    // FPN top-down pathway (matching HF RTDetrV2HybridEncoder):
+    // HF stores lateral-conv'd features and reuses them in the PAN.
+    // FPN step 0: lateral(p5) → upsample → cat(ip4) → CSP → fpn_0
     auto* lat5 = conv_silu(g, p5, enc.lateral_convs[0], 256, 1, 1, 1, 0);
     ggml_set_name(lat5, "lat5_silu"); ggml_set_output(lat5);
     auto* up5 = ggml_interpolate(g, lat5, (int)p4->ne[0], (int)p4->ne[1],
                                   (int)lat5->ne[2], 1, GGML_SCALE_MODE_NEAREST);
     auto* cat4 = ggml_concat(g, up5, p4, 2);  // [W, H, 512]
-    p4 = run_csp(cat4, enc.fpn_blocks[0]);
-    ggml_set_name(p4, "csp0"); ggml_set_output(p4);
+    auto* fpn_0 = run_csp(cat4, enc.fpn_blocks[0]);
 
-    // S4 → lateral (SiLU) → upsample → concat with S3 → CSP
-    auto* lat4 = conv_silu(g, p4, enc.lateral_convs[1], 256, 1, 1, 1, 0);
+    // FPN step 1: lateral(fpn_0) → upsample → cat(ip3) → CSP → fpn_1
+    auto* lat4 = conv_silu(g, fpn_0, enc.lateral_convs[1], 256, 1, 1, 1, 0);
     auto* up4 = ggml_interpolate(g, lat4, (int)p3->ne[0], (int)p3->ne[1],
                                   (int)lat4->ne[2], 1, GGML_SCALE_MODE_NEAREST);
     auto* cat3 = ggml_concat(g, up4, p3, 2);  // [W, H, 512]
-    p3 = run_csp(cat3, enc.fpn_blocks[1]);
+    auto* fpn_1 = run_csp(cat3, enc.fpn_blocks[1]);
+    // After FPN: fpn_feature_maps (reversed) = [fpn_1(80x80), lat4(40x40), lat5(20x20)]
 
-    // PAN bottom-up: S3 → downsample → concat with S4 → CSP
-    auto* down3 = conv_silu(g, p3, enc.downsample_convs[0], 256, 3, 3, 2, 1);
-    auto* cat4p = ggml_concat(g, down3, p4, 2);  // [W, H, 512]
-    p4 = run_csp(cat4p, enc.pan_blocks[0]);
+    // PAN bottom-up: uses lateral-conv'd features from FPN, not raw features!
+    // PAN step 0: downsample(fpn_1) → cat(lat4) → CSP → pan_0
+    auto* down3 = conv_silu(g, fpn_1, enc.downsample_convs[0], 256, 3, 3, 2, 1);
+    auto* cat4p = ggml_concat(g, down3, lat4, 2);  // cat with lat_fpn_0, not raw fpn_0
+    auto* pan_0 = run_csp(cat4p, enc.pan_blocks[0]);
 
-    // S4 → downsample → concat with S5 → CSP
-    auto* down4 = conv_silu(g, p4, enc.downsample_convs[1], 256, 3, 3, 2, 1);
-    auto* cat5p = ggml_concat(g, down4, p5, 2);  // [W, H, 512]
-    p5 = run_csp(cat5p, enc.pan_blocks[1]);
+    // PAN step 1: downsample(pan_0) → cat(lat5) → CSP → pan_1
+    auto* down4 = conv_silu(g, pan_0, enc.downsample_convs[1], 256, 3, 3, 2, 1);
+    auto* cat5p = ggml_concat(g, down4, lat5, 2);  // cat with lat_aifi_p5, not raw p5
+    auto* pan_1 = run_csp(cat5p, enc.pan_blocks[1]);
+
+    p3 = fpn_1; p4 = pan_0; p5 = pan_1;
 
     *s3 = p3; *s4 = p4; *s5 = p5;
 }
