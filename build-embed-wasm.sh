@@ -1,28 +1,25 @@
 #!/bin/bash
-# CrispEmbed WASM Build Script — math OCR for browser use.
+# CrispEmbed WASM Build Script — text embeddings for browser use.
 #
 # Usage:
-#   ./build-wasm.sh                    # default build (single-threaded)
-#   ./build-wasm.sh --threads          # multithreaded (requires COOP/COEP headers)
-#   ./build-wasm.sh --clean            # remove build-wasm/ first
-#   ./build-wasm.sh --simd             # enable WASM SIMD128 (default: on)
-#   ./build-wasm.sh --no-simd          # disable WASM SIMD128
-#   ./build-wasm.sh -- -DFOO=BAR      # extra cmake flags
+#   ./build-embed-wasm.sh                # default build
+#   ./build-embed-wasm.sh --clean        # remove build dir first
+#   ./build-embed-wasm.sh --no-simd      # disable WASM SIMD128
+#   ./build-embed-wasm.sh -- -DFOO=BAR   # extra cmake flags
 #
 # Prerequisites:
 #   - Emscripten SDK activated (source emsdk_env.sh)
 #
 # Output:
-#   build-wasm/crispembed_ocr.js       Emscripten JS loader
-#   build-wasm/crispembed_ocr.wasm     WebAssembly binary
+#   build-embed-wasm/crispembed_embed.js       Emscripten JS loader
+#   build-embed-wasm/crispembed_embed.wasm     WebAssembly binary
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-BUILD_DIR="build-wasm"
+BUILD_DIR="build-embed-wasm"
 CLEAN=false
 SIMD=ON
-THREADS=OFF
 CMAKE_EXTRA=()
 
 while [[ $# -gt 0 ]]; do
@@ -30,7 +27,6 @@ while [[ $# -gt 0 ]]; do
         --clean)    CLEAN=true; shift ;;
         --simd)     SIMD=ON; shift ;;
         --no-simd)  SIMD=OFF; shift ;;
-        --threads)  THREADS=ON; shift ;;
         --)         shift; CMAKE_EXTRA=("$@"); break ;;
         *)          CMAKE_EXTRA+=("$1"); shift ;;
     esac
@@ -39,23 +35,12 @@ done
 # Check emcc is available
 if ! command -v emcc &>/dev/null; then
     echo "[ERROR] emcc not found. Activate Emscripten SDK first:"
-    echo "  source <path-to-emsdk>/emsdk_env.sh"
+    echo "  source /path/to/emsdk/emsdk_env.sh"
     exit 1
 fi
 
-THREAD_LABEL="single-threaded"
-THREAD_C_FLAGS=""
-THREAD_LINK_FLAGS=""
-if [ "$THREADS" = "ON" ]; then
-    THREAD_LABEL="multithreaded (requires COOP/COEP headers)"
-    THREAD_C_FLAGS="-pthread"
-    THREAD_LINK_FLAGS="-pthread -sPTHREAD_POOL_SIZE=4"
-    echo "[INFO] Multithreaded build enabled"
-fi
-
 echo "============================================"
-echo "  CrispEmbed - WASM Build (math OCR)"
-echo "  Threading: $THREAD_LABEL"
+echo "  CrispEmbed - WASM Build (text embeddings)"
 echo "============================================"
 
 # Check ggml submodule
@@ -72,11 +57,13 @@ fi
 
 # Exported C functions (with _ prefix per Emscripten convention)
 EXPORTED_FUNCS="[\
-'_wasm_ocr_version',\
-'_wasm_ocr_init',\
-'_wasm_ocr_recognize_gray',\
-'_wasm_ocr_recognize',\
-'_wasm_ocr_free',\
+'_wasm_embed_version',\
+'_wasm_embed_init',\
+'_wasm_embed_dim',\
+'_wasm_embed_set_prefix',\
+'_wasm_embed_encode_copy',\
+'_wasm_embed_encode_batch_copy',\
+'_wasm_embed_free',\
 '_malloc',\
 '_free',\
 '_main'\
@@ -93,18 +80,10 @@ if [ "$SIMD" = "ON" ]; then
     echo "[INFO] WASM SIMD128 enabled"
 fi
 
-# Use ninja if available (faster parallel builds) + ccache
-GENERATOR=""
-if command -v ninja &>/dev/null; then
-    GENERATOR="-G Ninja"
-    echo "[INFO] Using Ninja generator"
-fi
-export CCACHE_DIR="${CCACHE_DIR:-${HOME}/.ccache}"
-
 # Configure
 echo "[INFO] Configuring with emcmake..."
 cd "$SCRIPT_DIR"
-emcmake cmake -S . -B "$BUILD_DIR" $GENERATOR \
+emcmake cmake -S . -B "$BUILD_DIR" \
     -DCMAKE_BUILD_TYPE=Release \
     -DGGML_CUDA=OFF \
     -DGGML_METAL=OFF \
@@ -113,35 +92,35 @@ emcmake cmake -S . -B "$BUILD_DIR" $GENERATOR \
     -DGGML_LLAMAFILE=OFF \
     -DGGML_OPENMP=OFF \
     -DCRISPEMBED_BUILD_SHARED=OFF \
-    -DCRISPEMBED_WASM=ON \
-    -DCRISPEMBED_WASM_THREADS="$THREADS" \
-    -DCMAKE_C_FLAGS="$SIMD_FLAGS $THREAD_C_FLAGS" \
-    -DCMAKE_CXX_FLAGS="$SIMD_FLAGS $THREAD_C_FLAGS" \
+    -DCRISPEMBED_WASM_EMBED=ON \
+    -DCMAKE_C_FLAGS="$SIMD_FLAGS -pthread" \
+    -DCMAKE_CXX_FLAGS="$SIMD_FLAGS -pthread" \
     -DCMAKE_EXE_LINKER_FLAGS="\
 -sEXPORTED_FUNCTIONS=$EXPORTED_FUNCS \
 -sEXPORTED_RUNTIME_METHODS=$EXPORTED_RUNTIME \
 -sALLOW_MEMORY_GROWTH=1 \
--sINITIAL_MEMORY=67108864 \
--sSTACK_SIZE=1048576 \
+-sINITIAL_MEMORY=134217728 \
+-sSTACK_SIZE=2097152 \
 -sMODULARIZE=1 \
--sEXPORT_NAME=CrispEmbedOCR \
+-sEXPORT_NAME=CrispEmbedText \
 -sENVIRONMENT=web \
 -sFILESYSTEM=1 \
 -sWASM_BIGINT=1 \
 -sNO_EXIT_RUNTIME=1 \
-$THREAD_LINK_FLAGS \
+-sPTHREAD_POOL_SIZE=0 \
+-pthread \
 $SIMD_FLAGS \
 " \
     "${CMAKE_EXTRA[@]+"${CMAKE_EXTRA[@]}"}"
 
 # Build
 echo "[INFO] Building..."
-cmake --build "$BUILD_DIR" -j$(nproc 2>/dev/null || echo 4) --target crispembed-wasm
+cmake --build "$BUILD_DIR" -j$(nproc 2>/dev/null || echo 4) --target crispembed-embed-wasm
 
 echo ""
 echo "[SUCCESS] WASM build complete!"
-echo "  JS loader: $BUILD_DIR/crispembed_ocr.js"
-echo "  WASM:      $BUILD_DIR/crispembed_ocr.wasm"
-ls -lh "$BUILD_DIR/crispembed_ocr.js" "$BUILD_DIR/crispembed_ocr.wasm" 2>/dev/null || true
+echo "  JS loader: $BUILD_DIR/crispembed_embed.js"
+echo "  WASM:      $BUILD_DIR/crispembed_embed.wasm"
+ls -lh "$BUILD_DIR/crispembed_embed.js" "$BUILD_DIR/crispembed_embed.wasm" 2>/dev/null || true
 echo ""
-echo "Copy to CrispCalc:  cp $BUILD_DIR/crispembed_ocr.{js,wasm} ../CrispCalc/web/"
+echo "Copy to CrisperWeaver:  cp $BUILD_DIR/crispembed_embed.{js,wasm} ../CrisperWeaver/web/wasm/"

@@ -11,9 +11,10 @@ ARG CRISPEMBED_REPO=https://github.com/CrispStrobe/CrispEmbed
 ARG CRISPEMBED_REF=main
 
 RUN git clone --depth 1 --recurse-submodules "${CRISPEMBED_REPO}" /src/CrispEmbed && \
-  git -C /src/CrispEmbed fetch --depth 1 origin "${CRISPEMBED_REF}" && \
-  git -C /src/CrispEmbed checkout --detach FETCH_HEAD && \
-  git -C /src/CrispEmbed submodule update --init --recursive
+  cd /src/CrispEmbed && \
+  git fetch --depth 1 origin "${CRISPEMBED_REF}" && \
+  git checkout --detach FETCH_HEAD && \
+  git submodule update --init --recursive
 WORKDIR /src/CrispEmbed
 ARG CRISPEMBED_BUILD_JOBS
 RUN jobs="${CRISPEMBED_BUILD_JOBS:-$(nproc)}" && \
@@ -32,11 +33,12 @@ RUN printf 'Acquire::Retries "5";\nAcquire::http::Timeout "30";\nAcquire::https:
   rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
 COPY --from=build /src/CrispEmbed/build /opt/crispembed/build
-COPY hf-space/requirements.txt /space/requirements.txt
+# In HF Space repo, files are at repo root (not hf-space/ subdirectory)
+COPY requirements.txt /space/requirements.txt
 RUN pip3 install --no-cache-dir -r /space/requirements.txt
 RUN find /opt/crispembed/build -type f -name 'lib*.so*' -exec cp -a {} /usr/local/lib/ \; && ldconfig
 
-COPY hf-space/app.py hf-space/start.sh /space/
+COPY app.py start.sh /space/
 RUN chmod +x /space/start.sh && \
   useradd -m -u 1000 app && \
   mkdir -p /models /cache && \
@@ -50,5 +52,4 @@ ENV GRADIO_SERVER_PORT=7860
 
 USER app
 EXPOSE 7860
-EXPOSE 8090
 ENTRYPOINT ["/space/start.sh"]
