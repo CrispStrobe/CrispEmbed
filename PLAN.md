@@ -523,7 +523,11 @@ call it for face search/verification.
 
 ---
 
-### Blueprint: General OCR — Text Detection (DBNet) + General TrOCR
+### Blueprint: General OCR — Text Detection (DBNet) + General TrOCR — DONE
+
+**Status (June 2026)**: Fully wired. C ABI, CLI (`--ocr-det`/`--ocr-rec`),
+server (`POST /ocr`), Python (`CrispOcrPipeline`), Rust (`OcrPipeline`),
+Flutter (`CrispOcrPipeline`). Registry entries: `dbnet-det`, `trocr-printed`.
 
 **Goal**: Add a complete open-source OCR pipeline to CrispEmbed: detect text
 regions in any image, then recognize each region into Unicode text. All via
