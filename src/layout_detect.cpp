@@ -593,41 +593,26 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
         auto* q = ggml_cont(g, ggml_view_2d(g, qkv, D_a, N_tok, qkv->nb[1], 0));
         auto* k = ggml_cont(g, ggml_view_2d(g, qkv, D_a, N_tok, qkv->nb[1], D_a*sizeof(float)));
         auto* v = ggml_cont(g, ggml_view_2d(g, qkv, D_a, N_tok, qkv->nb[1], 2*D_a*sizeof(float)));
-        // Reshape [D, N] → [hd, heads, N] then permute to [hd, N, heads]
-        // D=256 splits as hd=32 × heads=8, with hd varying fastest
+        // Reshape [D=256, N=400] → [hd=32, heads=8, N=400] → permute to [hd, N, heads]
         q = ggml_reshape_3d(g, q, hd, heads, N_tok);
-        q = ggml_cont(g, ggml_permute(g, q, 0, 2, 1, 3)); // [hd, N, heads]
+        q = ggml_cont(g, ggml_permute(g, q, 0, 2, 1, 3));
         k = ggml_reshape_3d(g, k, hd, heads, N_tok);
         k = ggml_cont(g, ggml_permute(g, k, 0, 2, 1, 3));
         v = ggml_reshape_3d(g, v, hd, heads, N_tok);
         v = ggml_cont(g, ggml_permute(g, v, 0, 2, 1, 3));
-        // Manual multi-head attention (ggml ops, not flash_attn_ext)
-        // Q/K/V: [hd=32, N=400, heads=8]
-        // Scale Q by 1/sqrt(hd)
+        // Use manual attention — flash_attn_ext has wrong results for this model
         q = ggml_scale(g, q, 1.0f / sqrtf(hd));
-        // scores = K^T @ Q → ggml_mul_mat(K, Q) contracts over ne[0]=hd
-        // K[hd, N, heads] @ Q[hd, N, heads] → [N, N, heads] (batched over heads)
-        auto* scores = ggml_mul_mat(g, k, q); // [N_k, N_q, heads]
-        // Softmax over ne[0]=N_k dimension (per query, per head)
+        auto* scores = ggml_mul_mat(g, k, q); // [N, N, heads]
         scores = ggml_soft_max(g, scores);
-        ggml_set_name(scores, "aifi_softmax"); ggml_set_output(scores);
-        // Attended values = V @ softmax_scores^T
-        // ggml_mul_mat(V, scores): V[hd, N, heads], scores[N, N, heads]
-        // contracts over ne[0]: V->ne[0]=hd, scores->ne[0]=N → mismatch!
-        // Need: for each head h, out_h = V_h @ attn_h where V_h is [hd, N] and attn_h is [N_k, N_q]
-        // This is out_h = ggml_mul_mat(V_h, attn_h) = [hd, N_q] per head.
-        // With batched tensors: V[hd, N, heads], scores[N, N, heads]
-        // ggml_mul_mat needs ne[0] to match. Transpose scores: [N, N, heads] → hmm.
-        // Actually, we need: out[hd, N_q, heads] where out[:, q, h] = V[:, :, h] @ attn[:, q, h]
-        // ggml_mul_mat(V[hd, N_k, heads], scores[N_k, N_q, heads]) contracts over N_k → [hd, N_q, heads] ✓
-        // V[hd, N, heads] → V_T[N, hd, heads] via permute
         auto* v_t = ggml_cont(g, ggml_permute(g, v, 1, 0, 2, 3)); // [N, hd, heads]
-        // ggml_mul_mat(V_T, scores): V_T[N, hd, heads], scores[N, N, heads]
-        // contracts over ne[0]=N → [hd, N_q, heads] ✓
-        auto* attn_raw = ggml_mul_mat(g, v_t, scores); // [hd, N_q, heads]
+        auto* attn_raw = ggml_mul_mat(g, v_t, scores); // [hd, N, heads]
         ggml_set_name(attn_raw, "aifi_attn_raw"); ggml_set_output(attn_raw);
-        // Reshape [hd, N, heads] → [hd*heads, N] = [D, N]
-        auto* attn = ggml_reshape_2d(g, attn_raw, D_a, N_tok);
+        auto* attn_p = ggml_cont(g, ggml_permute(g, attn_raw, 0, 2, 1, 3)); // [hd, heads, N]
+        auto* attn = ggml_reshape_2d(g, attn_p, D_a, N_tok);
+        // out_proj: Gemm(transB=1) = input @ weight^T.
+        // ggml_mul_mat(W, x) = W^T @ x = sum_k W[k,j]*x[k] where W[k,j]=data[k+j*256].
+        // Gemm wants sum_k weight[j,k]*x[k] where weight[j,k]=data[j*256+k]=data[k+j*256].
+        // These are the same! So mul_mat(W, x) is correct without transpose.
         attn = linear(g, attn, enc.aifi_out_w, enc.aifi_out_b);
         ggml_set_name(attn, "aifi_attn_out"); ggml_set_output(attn);
         // Residual from original input (before pos_embed) + norm1
