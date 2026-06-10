@@ -836,34 +836,8 @@ std::vector<region> detect(context* ctx, const float* pixels,
     ggml_gallocr_free(alloc);
     ggml_free(g);
 
-    // --- Phase 2: Decoder (CPU-side, simpler than ggml graph for deformable) ---
-    // Flatten multi-scale features into a single [D, N_total] memory
-    // N_total = 80*80 + 40*40 + 20*20 = 8400
-    std::vector<float> memory(D * total_tokens);
-    int level_starts[3], level_sizes[3];
-    int offset = 0;
-    for (int lv = 0; lv < 3; lv++) {
-        level_starts[lv] = offset;
-        level_sizes[lv] = feats[lv].W * feats[lv].H;
-        // Copy: ggml stores [W, H, C], we need [C, H*W] for linear ops
-        for (int c = 0; c < D; c++) {
-            for (int s = 0; s < level_sizes[lv]; s++) {
-                // ggml [W, H, C]: element at (x, y, c) = data[x + y*W + c*W*H]
-                memory[c * total_tokens + offset + s] = feats[lv].data[s + c * level_sizes[lv]];
-            }
-        }
-        offset += level_sizes[lv];
-    }
+    // --- Phase 2: Decoder (CPU-side) ---
 
-    // Initialize queries from anchors
-    // anchors: [300, 4] — reference points (cx, cy, w, h) in [0, 1]
-    std::vector<float> anchors(N_queries * 4);
-    if (ctx->decoder.anchors)
-        ggml_backend_tensor_get(ctx->decoder.anchors, anchors.data(), 0, N_queries * 4 * sizeof(float));
-
-    // Query embeddings: project encoder output to get initial queries
-    // Helper: CPU-side matrix multiply y = W @ x + b
-    // W: [out, in], x: [in, N], y: [out, N]
     auto cpu_linear = [](const float* x, float* y, int in_d, int out_d, int N,
                           ggml_tensor* w_t, ggml_tensor* b_t) {
         std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
@@ -884,7 +858,6 @@ std::vector<region> detect(context* ctx, const float* pixels,
         }
     };
 
-    // CPU LayerNorm
     auto cpu_layernorm = [](float* x, int D, int N, ggml_tensor* w_t, ggml_tensor* b_t) {
         std::vector<float> w(D), b(D);
         if (w_t) ggml_backend_tensor_get(w_t, w.data(), 0, D * sizeof(float));
@@ -903,6 +876,54 @@ std::vector<region> detect(context* ctx, const float* pixels,
             }
         }
     };
+
+
+    // Helper lambdas need to be defined before use
+    // (moved memory construction after lambda definitions below)
+    // N_total = 80*80 + 40*40 + 20*20 = 8400
+    std::vector<float> memory(D * total_tokens);
+    int level_starts[3], level_sizes[3];
+    int offset = 0;
+    for (int lv = 0; lv < 3; lv++) {
+        level_starts[lv] = offset;
+        level_sizes[lv] = feats[lv].W * feats[lv].H;
+        int N_lv = level_sizes[lv];
+
+        // Convert ggml [W, H, C] to [C, N] column-major
+        std::vector<float> feat_col(D * N_lv);
+        for (int c = 0; c < D; c++)
+            for (int s = 0; s < N_lv; s++)
+                feat_col[c * N_lv + s] = feats[lv].data[s + c * N_lv];
+
+        // Apply decoder input_proj (1×1 conv = linear projection)
+        if (ctx->decoder.input_proj[lv].w) {
+            std::vector<float> proj(D * N_lv);
+            cpu_linear(feat_col.data(), proj.data(), D, D, N_lv,
+                       ctx->decoder.input_proj[lv].w, ctx->decoder.input_proj[lv].b);
+            // Copy projected features to memory
+            for (int c = 0; c < D; c++)
+                for (int s = 0; s < N_lv; s++)
+                    memory[c * total_tokens + offset + s] = proj[c * N_lv + s];
+        } else {
+            // No projection — use raw features
+            for (int c = 0; c < D; c++)
+                for (int s = 0; s < N_lv; s++)
+                    memory[c * total_tokens + offset + s] = feat_col[c * N_lv + s];
+        }
+        offset += N_lv;
+    }
+
+    // Initialize queries from anchors
+    // anchors: [300, 4] — reference points (cx, cy, w, h) in [0, 1]
+    std::vector<float> anchors(N_queries * 4);
+    if (ctx->decoder.anchors)
+        ggml_backend_tensor_get(ctx->decoder.anchors, anchors.data(), 0, N_queries * 4 * sizeof(float));
+
+    // Query embeddings: project encoder output to get initial queries
+    // Helper: CPU-side matrix multiply y = W @ x + b
+    // W: [out, in], x: [in, N], y: [out, N]
+
+    // CPU LayerNorm
 
     // --- Query initialization: select top-K from encoder output ---
     // 1. Project memory through enc_output: linear + norm
@@ -923,6 +944,51 @@ std::vector<region> detect(context* ctx, const float* pixels,
     }
     cpu_layernorm(enc_proj.data(), D, total_tokens,
                   ctx->decoder.enc_norm_w, ctx->decoder.enc_norm_b);
+
+    // Debug: dump raw memory for parity comparison
+    if (getenv("LAYOUT_DEBUG")) {
+        // Dump memory as [N_total, D] row-major
+        std::vector<float> mem_row(D * total_tokens);
+        for (int n = 0; n < total_tokens; n++)
+            for (int d = 0; d < D; d++)
+                mem_row[n * D + d] = memory[d * total_tokens + n];
+        FILE* mfp = fopen("/tmp/cpp_raw_memory.bin", "wb");
+        if (mfp) { fwrite(mem_row.data(), sizeof(float), D * total_tokens, mfp); fclose(mfp); }
+        // Print per-level ranges
+        for (int lv = 0; lv < 3; lv++) {
+            float lmin=1e9, lmax=-1e9;
+            for (int i = level_starts[lv]; i < level_starts[lv] + level_sizes[lv]; i++)
+                for (int d = 0; d < D; d++) {
+                    float v = memory[d * total_tokens + i];
+                    lmin = std::min(lmin, v); lmax = std::max(lmax, v);
+                }
+            fprintf(stderr, "  memory s%d (%d tokens): range=[%.4f, %.4f]\n",
+                    lv+3, level_sizes[lv], lmin, lmax);
+        }
+        fprintf(stderr, "  memory[s3,0,:8]: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
+                mem_row[0], mem_row[1], mem_row[2], mem_row[3],
+                mem_row[4], mem_row[5], mem_row[6], mem_row[7]);
+        fprintf(stderr, "  memory[s4,0,:8]: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
+                mem_row[6400*D+0], mem_row[6400*D+1], mem_row[6400*D+2], mem_row[6400*D+3],
+                mem_row[6400*D+4], mem_row[6400*D+5], mem_row[6400*D+6], mem_row[6400*D+7]);
+    }
+
+    // Debug: dump enc_proj for parity comparison
+    if (getenv("LAYOUT_DEBUG")) {
+        // Convert from [D, N_total] col-major to [N_total, D] row-major for comparison
+        std::vector<float> enc_proj_row(D * total_tokens);
+        for (int n = 0; n < total_tokens; n++)
+            for (int d = 0; d < D; d++)
+                enc_proj_row[n * D + d] = enc_proj[d * total_tokens + n];
+        FILE* fp = fopen("/tmp/cpp_enc_output.bin", "wb");
+        if (fp) { fwrite(enc_proj_row.data(), sizeof(float), D * total_tokens, fp); fclose(fp); }
+        fprintf(stderr, "  enc_proj: range=[%.4f, %.4f] (dumped to /tmp/cpp_enc_output.bin)\n",
+                *std::min_element(enc_proj.begin(), enc_proj.end()),
+                *std::max_element(enc_proj.begin(), enc_proj.end()));
+        fprintf(stderr, "  enc_proj[0,:8]: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
+                enc_proj_row[0], enc_proj_row[1], enc_proj_row[2], enc_proj_row[3],
+                enc_proj_row[4], enc_proj_row[5], enc_proj_row[6], enc_proj_row[7]);
+    }
 
     // 2. Score each token
     std::vector<float> enc_scores(ctx->num_classes * total_tokens);
@@ -1067,6 +1133,11 @@ std::vector<region> detect(context* ctx, const float* pixels,
         std::vector<float> values(D * total_tokens);
         cpu_linear(memory.data(), values.data(), D, D, total_tokens,
                    layer.cross_value_w, layer.cross_value_b);
+        if (li == 0) {
+            float vmin=1e9,vmax=-1e9;
+            for (auto v:values){vmin=std::min(vmin,v);vmax=std::max(vmax,v);}
+            fprintf(stderr, "  dec0 values: [%.4f, %.4f] (Python: [-66.7, 76.0])\n", vmin, vmax);
+        }
 
         // query + position encoding for cross-attention projections
         std::vector<float> qp(D * N_queries);
@@ -1110,8 +1181,10 @@ std::vector<region> detect(context* ctx, const float* pixels,
         std::vector<float> cross_out(D * N_queries, 0.0f);
 
         for (int q = 0; q < N_queries; q++) {
-            float ref_x = ref_points[q * 4 + 0]; // cx in [0, 1]
-            float ref_y = ref_points[q * 4 + 1]; // cy in [0, 1]
+            float ref_cx = ref_points[q * 4 + 0]; // cx in [0, 1]
+            float ref_cy = ref_points[q * 4 + 1]; // cy in [0, 1]
+            float ref_w  = ref_points[q * 4 + 2]; // w in [0, 1]
+            float ref_h  = ref_points[q * 4 + 3]; // h in [0, 1]
 
             for (int h = 0; h < N_heads; h++) {
                 for (int lv = 0; lv < N_levels; lv++) {
@@ -1121,16 +1194,19 @@ std::vector<region> detect(context* ctx, const float* pixels,
                         float dx = offsets[(off_idx * 2 + 0) * N_queries + q];
                         float dy = offsets[(off_idx * 2 + 1) * N_queries + q];
 
-                        // Sampling position in feature map coordinates
-                        float sx = (ref_x + dx) * fW;
-                        float sy = (ref_y + dy) * fH;
+                        // RT-DETRv2 offset processing:
+                        // offset_scaled = raw_offset * 0.25 * ref_size * 0.5
+                        // position = ref_xy + offset_scaled  (in [0, 1])
+                        // grid = position * 2.0 - 1.0  (to [-1, 1] for GridSample)
+                        // Then convert grid [-1,1] to feature map coordinates [0, fW-1]
+                        float px = ref_cx + dx * 0.25f * ref_w * 0.5f;
+                        float py = ref_cy + dy * 0.25f * ref_h * 0.5f;
 
-                        // Bilinear sample from this level's value features
-                        float sampled[32]; // value_hd
-                        // Value is stored as [D, N_total], extract this level
-                        // Level lv starts at level_starts[lv] in the N_total dimension
-                        // We need the spatial position (sx, sy) in the [W, H] grid
-                        int fW2 = feats[lv].W, fH2 = feats[lv].H;
+                        // Convert from [0,1] normalized to feature map pixel coords
+                        float sx = px * fW;
+                        float sy = py * fH;
+
+                        int fW2 = fW, fH2 = fH;
 
                         // Clamp
                         sx = std::max(0.0f, std::min(sx, (float)(fW2 - 1)));
