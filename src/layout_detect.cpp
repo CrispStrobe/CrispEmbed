@@ -1055,6 +1055,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
         // Residual + norm
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + sa_out[i];
         cpu_layernorm(queries.data(), D, N_queries, layer.norm1_w, layer.norm1_b);
+        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm1: [%.4f,%.4f]\n",li,mn,mx); }
 
         // --- Deformable cross-attention ---
         residual = queries;
@@ -1164,6 +1165,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ca_out[i];
         cpu_layernorm(queries.data(), D, N_queries, layer.norm2_w, layer.norm2_b);
 
+        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm2: [%.4f,%.4f]\n",li,mn,mx); }
         // --- FFN ---
         residual = queries;
         std::vector<float> ffn1(1024 * N_queries);
@@ -1179,6 +1181,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ffn2[i];
         cpu_layernorm(queries.data(), D, N_queries, layer.norm3_w, layer.norm3_b);
 
+        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm3: [%.4f,%.4f]\n",li,mn,mx); }
         // Update reference points via bbox head (iterative refinement)
         std::vector<float> bbox_delta(4 * N_queries);
         std::vector<float> tmp(D * N_queries);

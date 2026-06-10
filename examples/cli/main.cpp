@@ -79,6 +79,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --ocr FILE       math OCR → LaTeX (auto-detect: pix2tex/hmer/bttr/ppformulanet/ppformulanet-l)\n");
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
+    fprintf(stderr, "  --layout FILE    document layout detection (RT-DETRv2, needs -m layout_model.gguf)\n");
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline / --ocr\n");
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
     fprintf(stderr, "  --ocr FILE       full OCR: detect text + recognize (needs -m rec_model --det det_model)\n");
@@ -126,6 +127,7 @@ int main(int argc, char ** argv) {
     std::string ocr_path;    // image for unified math OCR (auto-detect arch)
     std::string hmer_path;   // image for handwritten math OCR (HMER)
     std::string bttr_path;   // image for handwritten math OCR (BTTR)
+    std::string layout_path; // image for layout detection
     std::string det_model;   // detection model for --face-pipeline
     bool face_pipeline_mode = false;
     float conf_threshold = 0.5f;
@@ -178,6 +180,8 @@ int main(int argc, char ** argv) {
             hmer_path = argv[++i];
         } else if (strcmp(argv[i], "--bttr") == 0 && i + 1 < argc) {
             bttr_path = argv[++i];
+        } else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc) {
+            layout_path = argv[++i];
         } else if (strcmp(argv[i], "--det") == 0 && i + 1 < argc) {
             det_model = argv[++i];
         } else if (strcmp(argv[i], "--face-pipeline") == 0) {
@@ -446,6 +450,34 @@ int main(int argc, char ** argv) {
             return 0;
         }
         // Not a CNN model — fall through
+    }
+
+    // Layout detection (RT-DETRv2)
+    if (!layout_path.empty()) {
+        void* lctx = crispembed_layout_init(model_path.c_str(), n_threads);
+        if (!lctx) { fprintf(stderr, "error: failed to load layout model\n"); return 1; }
+        int n_regions = 0;
+        const crispembed_layout_region* regions = crispembed_layout_detect(
+            lctx, layout_path.c_str(), conf_threshold, &n_regions);
+        if (json_output) {
+            printf("{\"regions\": [");
+            for (int i = 0; i < n_regions; i++) {
+                if (i > 0) printf(", ");
+                printf("{\"label\": \"%s\", \"score\": %.4f, \"bbox\": [%.1f, %.1f, %.1f, %.1f]}",
+                       regions[i].label_name, regions[i].score,
+                       regions[i].x1, regions[i].y1, regions[i].x2, regions[i].y2);
+            }
+            printf("]}\n");
+        } else {
+            printf("%d regions detected:\n", n_regions);
+            for (int i = 0; i < n_regions; i++) {
+                printf("  [%d] %s (%.3f) [%.1f, %.1f, %.1f, %.1f]\n",
+                       i, regions[i].label_name, regions[i].score,
+                       regions[i].x1, regions[i].y1, regions[i].x2, regions[i].y2);
+            }
+        }
+        crispembed_layout_free(lctx);
+        return 0;
     }
 
     // Unified math OCR (auto-detect architecture from GGUF metadata)
