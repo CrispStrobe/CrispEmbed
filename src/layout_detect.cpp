@@ -888,13 +888,34 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     // --- Phase 2: Decoder (CPU-side) ---
 
+    // Helper: read tensor to F32 (handles F32, F16, Q8_0, etc.)
+    auto read_f32 = [](ggml_tensor* t) -> std::vector<float> {
+        if (!t) return {};
+        int n = (int)ggml_nelements(t);
+        std::vector<float> out(n);
+        if (t->type == GGML_TYPE_F32) {
+            ggml_backend_tensor_get(t, out.data(), 0, n * sizeof(float));
+        } else {
+            size_t raw_size = ggml_nbytes(t);
+            std::vector<uint8_t> raw(raw_size);
+            ggml_backend_tensor_get(t, raw.data(), 0, raw_size);
+            const auto* traits = ggml_get_type_traits(t->type);
+            if (traits && traits->to_float) {
+                traits->to_float(raw.data(), out.data(), n);
+            } else {
+                memset(out.data(), 0, n * sizeof(float));
+            }
+        }
+        return out;
+    };
+
     // cpu_linear for Gemm(transB=1) convention: y = W @ x + b
     // W stored as [in_d, out_d] in GGUF, accessed as W[i + o * in_d]
-    auto cpu_linear = [](const float* x, float* y, int in_d, int out_d, int N,
+    auto cpu_linear = [&read_f32](const float* x, float* y, int in_d, int out_d, int N,
                           ggml_tensor* w_t, ggml_tensor* b_t) {
-        std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
-        if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, out_d * in_d * sizeof(float));
-        if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, out_d * sizeof(float));
+        auto W = read_f32(w_t);
+        std::vector<float> b(out_d, 0.0f);
+        if (b_t) { auto bv = read_f32(b_t); if (!bv.empty()) b = bv; }
         for (int n = 0; n < N; n++) {
             for (int o = 0; o < out_d; o++) {
                 float sum = b[o];
@@ -907,11 +928,14 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     // cpu_matmul for ONNX MatMul(x, W) convention: y[o] = sum_i x[i] * W[i, o]
     // W stored as [in_d, out_d] in GGUF, accessed as W[i * out_d + o]
-    auto cpu_matmul = [](const float* x, float* y, int in_d, int out_d, int N,
+    auto cpu_matmul = [&read_f32](const float* x, float* y, int in_d, int out_d, int N,
                           ggml_tensor* w_t, ggml_tensor* b_t) {
-        std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
-        if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, out_d * in_d * sizeof(float));
-        if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, out_d * sizeof(float));
+        auto W = read_f32(w_t);
+        std::vector<float> b(out_d, 0.0f);
+        if (b_t) {
+            auto bv = read_f32(b_t);
+            if (!bv.empty()) b = bv;
+        }
         for (int n = 0; n < N; n++) {
             for (int o = 0; o < out_d; o++) {
                 float sum = b[o];
@@ -922,10 +946,11 @@ std::vector<region> detect(context* ctx, const float* pixels,
         }
     };
 
-    auto cpu_layernorm = [](float* x, int D, int N, ggml_tensor* w_t, ggml_tensor* b_t) {
-        std::vector<float> w(D), b(D);
-        if (w_t) ggml_backend_tensor_get(w_t, w.data(), 0, D * sizeof(float));
-        if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, D * sizeof(float));
+    auto cpu_layernorm = [&read_f32](float* x, int D, int N, ggml_tensor* w_t, ggml_tensor* b_t) {
+        auto w = read_f32(w_t);
+        auto b = read_f32(b_t);
+        if (w.empty()) w.resize(D, 1.0f);
+        if (b.empty()) b.resize(D, 0.0f);
         for (int n = 0; n < N; n++) {
             float mean = 0, var = 0;
             for (int d = 0; d < D; d++) mean += x[d * N + n];
@@ -996,11 +1021,9 @@ std::vector<region> detect(context* ctx, const float* pixels,
     {
         std::vector<float> mask(total_tokens, 1.0f);
         if (ctx->decoder.valid_mask) {
-            // valid_mask is [8400] or [8400, 1] in GGUF
-            int mask_n = (int)ggml_nelements(ctx->decoder.valid_mask);
-            if (mask_n >= total_tokens)
-                ggml_backend_tensor_get(ctx->decoder.valid_mask, mask.data(), 0,
-                                         total_tokens * sizeof(float));
+            auto mask_data = read_f32(ctx->decoder.valid_mask);
+            if ((int)mask_data.size() >= total_tokens)
+                memcpy(mask.data(), mask_data.data(), total_tokens * sizeof(float));
         }
         for (int d = 0; d < D; d++)
             for (int n = 0; n < total_tokens; n++)
