@@ -1382,6 +1382,12 @@ std::vector<region> detect(context* ctx, const float* pixels,
         cpu_linear(cross_out.data(), ca_out.data(), D, D, N_queries,
                    layer.cross_out_w, layer.cross_out_b);
 
+        if (li == 0 && getenv("LAYOUT_DEBUG")) {
+            float mn=1e9,mx=-1e9;
+            for (auto v : ca_out) { mn=std::min(mn,v); mx=std::max(mx,v); }
+            fprintf(stderr, "  dec0 ca_out (post-proj): [%.4f, %.4f] (HF: [-2.97, 2.67])\n", mn, mx);
+        }
+
         // Residual + norm
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ca_out[i];
         cpu_layernorm(queries.data(), D, N_queries, layer.norm2_w, layer.norm2_b);
