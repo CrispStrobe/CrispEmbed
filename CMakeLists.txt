@@ -46,16 +46,15 @@ if(NOT DEFINED GGML_BLAS_VENDOR)
 endif()
 
 # ---------------------------------------------------------------------------
-# Emscripten: CMake's FindThreads fails to detect Emscripten's pthread
-# emulation. Force-set the result so ggml's find_package(Threads REQUIRED)
-# succeeds. The actual -pthread flag is passed via CMAKE_C_FLAGS.
+# Emscripten: override FindThreads with a stub that creates a no-op
+# Threads::Threads target. This avoids -pthread leaking into the build,
+# which would require SharedArrayBuffer + COOP/COEP headers for deployment.
+# The math OCR decoder runs single-threaded; ggml's thread pool compiles
+# but degrades gracefully (pthread stubs in Emscripten libc).
 # ---------------------------------------------------------------------------
-if(EMSCRIPTEN)
-    set(CMAKE_THREAD_LIBS_INIT "-pthread")
-    set(CMAKE_HAVE_THREADS_LIBRARY 1)
-    set(CMAKE_USE_WIN32_THREADS_INIT 0)
-    set(CMAKE_USE_PTHREADS_INIT 1)
-    set(THREADS_PREFER_PTHREAD_FLAG OFF)
+option(CRISPEMBED_WASM_THREADS "Use real pthreads in WASM (requires COOP/COEP)" OFF)
+if(EMSCRIPTEN AND NOT CRISPEMBED_WASM_THREADS)
+    list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 endif()
 
 # ---------------------------------------------------------------------------
@@ -132,6 +131,11 @@ list(APPEND CRISPEMBED_SOURCES src/math_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/hmer_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/bttr_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/posformer_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ppformulanet_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ppformulanet_l_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ocr_detect.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ocr_pipeline.cpp)
+list(APPEND CRISPEMBED_SOURCES src/layout_detect.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -231,7 +235,53 @@ target_link_libraries(test-posformer PRIVATE crispembed)
 add_executable(test-posformer-batch tests/test_posformer_batch.cpp)
 target_link_libraries(test-posformer-batch PRIVATE crispembed)
 
+add_executable(test-ppformulanet tests/test_ppformulanet.cpp)
+target_link_libraries(test-ppformulanet PRIVATE crispembed)
+
+add_executable(test-ppformulanet-l tests/test_ppformulanet_l.cpp)
+target_link_libraries(test-ppformulanet-l PRIVATE crispembed)
+
+add_executable(test-ocr-detect tests/test_ocr_detect.cpp)
+target_link_libraries(test-ocr-detect PRIVATE crispembed)
+
+add_executable(test-ocr-detect-diff tests/test_ocr_detect_diff.cpp)
+target_link_libraries(test-ocr-detect-diff PRIVATE crispembed)
+
+add_executable(test-ocr-recognize tests/test_ocr_recognize.cpp)
+target_link_libraries(test-ocr-recognize PRIVATE crispembed)
+
+add_executable(test-layout-detect tests/test_layout_detect.cpp)
+target_link_libraries(test-layout-detect PRIVATE crispembed)
+
+add_executable(test-layout-diff tests/test_layout_diff.cpp)
+target_link_libraries(test-layout-diff PRIVATE crispembed)
+
+add_executable(test-conv-ext tests/test_conv_ext.cpp)
+target_link_libraries(test-conv-ext PRIVATE crispembed)
+
+add_executable(test-ocr-pipeline tests/test_ocr_pipeline.cpp)
+target_link_libraries(test-ocr-pipeline PRIVATE crispembed)
+
 endif() # NOT iOS
+
+# ---------------------------------------------------------------------------
+# WASM target — math OCR for browser use (Emscripten only).
+# Built via: ./build-wasm.sh (which sets CRISPEMBED_WASM=ON)
+# Output: crispembed_ocr.js + crispembed_ocr.wasm
+# ---------------------------------------------------------------------------
+option(CRISPEMBED_WASM "Build WASM math OCR target (Emscripten)" OFF)
+if(CRISPEMBED_WASM AND EMSCRIPTEN)
+    add_executable(crispembed-wasm wasm/ocr_wrapper.c)
+    target_include_directories(crispembed-wasm PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
+    )
+    target_link_libraries(crispembed-wasm PRIVATE crispembed)
+    set_target_properties(crispembed-wasm PROPERTIES
+        OUTPUT_NAME  crispembed_ocr
+        SUFFIX       ".js"
+    )
+endif()
 
 # ---------------------------------------------------------------------------
 # Shared library — the public, distributable face of CrispEmbed.

@@ -76,10 +76,15 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --top-n N        limit rerank output to top N documents\n");
     fprintf(stderr, "  --face FILE      encode face from image (recognition model)\n");
     fprintf(stderr, "  --detect FILE    detect faces in image (detection model)\n");
+    fprintf(stderr, "  --ocr FILE       math OCR → LaTeX (auto-detect: pix2tex/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo)\n");
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
+    fprintf(stderr, "  --layout FILE    document layout detection (RT-DETRv2, needs -m layout_model.gguf)\n");
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
+    fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet, e.g. dbnet-det)\n");
+    fprintf(stderr, "  --ocr-rec MODEL  general OCR: text recognition model (TrOCR, e.g. trocr-printed)\n");
+    fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
     fprintf(stderr, "  --conf N         confidence threshold for detection (default: 0.5)\n");
     fprintf(stderr, "  --auto-download  download model automatically if not found\n");
     fprintf(stderr, "  --accept-license SPDX  pre-accept a restricted license (e.g. cc-by-nc-4.0, gemma)\n");
@@ -121,9 +126,13 @@ int main(int argc, char ** argv) {
     std::string image_path;  // JPG/PNG/BMP — in-process preprocessor
     std::string face_path;   // face image for CNN face recognition
     std::string detect_path; // image for face detection
+    std::string ocr_path;    // image for unified math OCR (auto-detect arch)
     std::string hmer_path;   // image for handwritten math OCR (HMER)
     std::string bttr_path;   // image for handwritten math OCR (BTTR)
+    std::string layout_path; // image for layout detection
     std::string det_model;   // detection model for --face-pipeline
+    std::string ocr_det_path;  // general OCR: text detection model (DBNet)
+    std::string ocr_rec_path;  // general OCR: text recognition model (TrOCR)
     bool face_pipeline_mode = false;
     float conf_threshold = 0.5f;
     std::string lora_adapter;   // LoRA adapter name (--lora)
@@ -169,14 +178,22 @@ int main(int argc, char ** argv) {
             face_path = argv[++i];
         } else if (strcmp(argv[i], "--detect") == 0 && i + 1 < argc) {
             detect_path = argv[++i];
+        } else if (strcmp(argv[i], "--ocr") == 0 && i + 1 < argc) {
+            ocr_path = argv[++i];
         } else if (strcmp(argv[i], "--hmer") == 0 && i + 1 < argc) {
             hmer_path = argv[++i];
         } else if (strcmp(argv[i], "--bttr") == 0 && i + 1 < argc) {
             bttr_path = argv[++i];
+        } else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc) {
+            layout_path = argv[++i];
         } else if (strcmp(argv[i], "--det") == 0 && i + 1 < argc) {
             det_model = argv[++i];
         } else if (strcmp(argv[i], "--face-pipeline") == 0) {
             face_pipeline_mode = true;
+        } else if (strcmp(argv[i], "--ocr-det") == 0 && i + 1 < argc) {
+            ocr_det_path = argv[++i];
+        } else if (strcmp(argv[i], "--ocr-rec") == 0 && i + 1 < argc) {
+            ocr_rec_path = argv[++i];
         } else if (strcmp(argv[i], "--conf") == 0 && i + 1 < argc) {
             conf_threshold = (float)atof(argv[++i]);
         } else if (strcmp(argv[i], "--lora") == 0 && i + 1 < argc) {
@@ -223,8 +240,79 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
-    // Resolve model path (handles auto-download)
-    // Auto-download if arg looks like a model name (not a file path)
+    // General OCR pipeline via --ocr-det/--ocr-rec (preferred new flags)
+    if (!ocr_det_path.empty() && !ocr_rec_path.empty() && !ocr_path.empty()) {
+        void* ocr_ctx = crispembed_ocr_init(ocr_det_path.c_str(), ocr_rec_path.c_str(), n_threads);
+        if (!ocr_ctx) { fprintf(stderr, "error: cannot load OCR models\n"); return 1; }
+        int n_results = 0;
+        const crispembed_ocr_result* results = crispembed_ocr(ocr_ctx, ocr_path.c_str(), &n_results);
+        if (json_output) {
+            printf("[");
+            for (int i = 0; i < n_results; i++) {
+                if (i > 0) printf(",");
+                printf("{\"text\":\"%s\",\"bbox\":[%.0f,%.0f,%.0f,%.0f],\"conf\":%.3f}",
+                       json_escape(results[i].text).c_str(),
+                       results[i].x, results[i].y,
+                       results[i].x + results[i].w, results[i].y + results[i].h,
+                       results[i].confidence);
+            }
+            printf("]\n");
+        } else {
+            for (int i = 0; i < n_results; i++) {
+                printf("[%2d] (%.0f,%.0f)-(%.0f,%.0f) conf=%.2f  \"%s\"\n",
+                       i, results[i].x, results[i].y,
+                       results[i].x + results[i].w, results[i].y + results[i].h,
+                       results[i].confidence, results[i].text);
+            }
+            if (n_results == 0) printf("(no text detected)\n");
+        }
+        crispembed_ocr_free(ocr_ctx);
+        return 0;
+    }
+
+    // OCR pipeline early exit — before model resolution which may interfere
+    // Legacy path: detect text → crop → recognize (requires --det + -m)
+    if (!ocr_path.empty() && !det_model.empty()) {
+        if (model_arg.empty()) {
+            fprintf(stderr, "error: --ocr with --det requires -m <trocr_model.gguf>\n");
+            return 1;
+        }
+
+        void* ocr_ctx = crispembed_ocr_init(det_model.c_str(), model_arg.c_str(), n_threads);
+        if (!ocr_ctx) {
+            fprintf(stderr, "error: cannot load OCR models\n");
+            return 1;
+        }
+
+        int n_results = 0;
+        const crispembed_ocr_result* results = crispembed_ocr(ocr_ctx, ocr_path.c_str(), &n_results);
+
+        if (json_output) {
+            printf("[");
+            for (int i = 0; i < n_results; i++) {
+                if (i > 0) printf(",");
+                printf("{\"text\":\"%s\",\"bbox\":[%.0f,%.0f,%.0f,%.0f],\"conf\":%.3f}",
+                       json_escape(results[i].text).c_str(),
+                       results[i].x, results[i].y,
+                       results[i].x + results[i].w, results[i].y + results[i].h,
+                       results[i].confidence);
+            }
+            printf("]\n");
+        } else {
+            for (int i = 0; i < n_results; i++) {
+                printf("[%2d] (%.0f,%.0f)-(%.0f,%.0f) conf=%.2f  \"%s\"\n",
+                       i, results[i].x, results[i].y,
+                       results[i].x + results[i].w, results[i].y + results[i].h,
+                       results[i].confidence, results[i].text);
+            }
+            if (n_results == 0) printf("(no text detected)\n");
+        }
+
+        crispembed_ocr_free(ocr_ctx);
+        return 0;
+    }
+
+    // Resolve model path (handles auto-download) — after OCR early exit
     bool is_name = (model_arg.find(".gguf") == std::string::npos &&
                     model_arg.find('/') == std::string::npos &&
                     model_arg.find('\\') == std::string::npos);
@@ -398,6 +486,57 @@ int main(int argc, char ** argv) {
             return 0;
         }
         // Not a CNN model — fall through
+    }
+
+    // Layout detection (RT-DETRv2)
+    if (!layout_path.empty()) {
+        void* lctx = crispembed_layout_init(model_path.c_str(), n_threads);
+        if (!lctx) { fprintf(stderr, "error: failed to load layout model\n"); return 1; }
+        int n_regions = 0;
+        const crispembed_layout_region* regions = crispembed_layout_detect(
+            lctx, layout_path.c_str(), conf_threshold, &n_regions);
+        if (json_output) {
+            printf("{\"regions\": [");
+            for (int i = 0; i < n_regions; i++) {
+                if (i > 0) printf(", ");
+                printf("{\"label\": \"%s\", \"score\": %.4f, \"bbox\": [%.1f, %.1f, %.1f, %.1f]}",
+                       regions[i].label_name, regions[i].score,
+                       regions[i].x1, regions[i].y1, regions[i].x2, regions[i].y2);
+            }
+            printf("]}\n");
+        } else {
+            printf("%d regions detected:\n", n_regions);
+            for (int i = 0; i < n_regions; i++) {
+                printf("  [%d] %s (%.3f) [%.1f, %.1f, %.1f, %.1f]\n",
+                       i, regions[i].label_name, regions[i].score,
+                       regions[i].x1, regions[i].y1, regions[i].x2, regions[i].y2);
+            }
+        }
+        crispembed_layout_free(lctx);
+        return 0;
+    }
+
+    // Unified math OCR (auto-detect architecture from GGUF metadata)
+    if (!ocr_path.empty()) {
+        void* octx = crispembed_math_ocr_init(model_path.c_str(), n_threads);
+        if (!octx) { fprintf(stderr, "error: failed to load OCR model\n"); return 1; }
+        int w, h, ch;
+        unsigned char* data = stbi_load(ocr_path.c_str(), &w, &h, &ch, 0);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", ocr_path.c_str()); crispembed_math_ocr_free(octx); return 1; }
+        int out_len = 0;
+        const char* latex = crispembed_math_ocr_recognize(octx, data, w, h, ch, &out_len);
+        stbi_image_free(data);
+        if (latex && out_len > 0) {
+            if (json_output) {
+                printf("{\"latex\":\"%s\"}\n", latex);
+            } else {
+                printf("%s\n", latex);
+            }
+        } else {
+            fprintf(stderr, "error: OCR recognition failed\n");
+        }
+        crispembed_math_ocr_free(octx);
+        return 0;
     }
 
     // Handwritten math OCR (HMER)

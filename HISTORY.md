@@ -76,6 +76,203 @@ All handwritten math datasets are NC. The C++ inference is clean-room.
 
 ---
 
+## June 2026 — OCR feature parity across all surfaces
+
+### PosFormer port merged to main
+- `posformer_ocr.cpp` (961 LOC): DenseNet encoder + Transformer decoder
+  with Attention Refinement Module (ARM), ported from `feat/posformer-port`
+- Wired into unified dispatcher (`MATH_OCR_POSFORMER` enum + all switch blocks)
+- Converter: `models/convert-posformer-to-gguf.py`
+- Registry: `posformer-crohme` at `cstr/posformer-crohme-GGUF` (CC BY-NC-SA 3.0)
+- 57% exact match on CROHME 2014 (best handwritten model)
+
+### General OCR pipeline (detect + recognize) wired everywhere
+- **CLI**: `--ocr-det MODEL --ocr-rec MODEL --ocr IMAGE` (new flags)
+- **Server**: `POST /ocr` endpoint (detect text regions → recognize each crop)
+- **Python**: `CrispOcrPipeline(det_model, rec_model)` — `run()` + `recognize()`
+- **Rust**: `OcrPipeline::new()` / `run()` + `MathOcr::recognize_gray()`
+- **Flutter/Dart**: `CrispOcrPipeline` class + `OcrResult` + FFI typedefs
+
+### Registry expanded
+- Added: pix2tex-mfr, texo-distill, posformer-crohme, dbnet-det,
+  trocr-printed, layout-heron (6 new entries, 8 OCR total)
+
+### Stale worktrees cleaned
+- Merged and removed: feat/posformer-port, feat/layout-detect-fix,
+  feat/layout-parity, feat/ocr-detect
+- CrispASR: removed worktree-feat+tts-watermark-metadata,
+  worktree-fix-piper-roundtrip
+
+---
+
+## June 2026 — RT-DETRv2 Layout Detection
+
+### Document layout analysis: ResNet-50 + HybridEncoder + deformable decoder
+- Architecture: ResNet-50-D backbone + HybridEncoder (AIFI self-attention +
+  FPN/PAN with CSP-RepVGG blocks) + 6-layer transformer decoder with
+  deformable multi-scale cross-attention (300 queries, 17 classes)
+- 14 parity bugs found and fixed via systematic layer-by-layer diff:
+  AIFI pos/LN/residual, PAN lateral features, cpu_linear weight convention,
+  converter weight transposition (Gemm/Split/Transpose patterns),
+  decoder_input_proj Conv convention, valid_mask, query_pos_head architecture,
+  bilinear resize, grid_sample alignment
+- All encoder stages cos=1.0 with exact input (verified via crispembed-diff)
+- Detection score 0.934 on test images (HF reference: 0.955)
+- Fully wired: C ABI, CLI (`--layout`), server (`POST /layout/detect`),
+  Python (`CrispLayout`), Rust (`CrispLayout`), Dart/Flutter
+- Source: docling-project/docling-layout-heron (Apache-2.0, 42M params)
+
+---
+
+## June 2026 — WASM build (math OCR in browser)
+
+### CrispEmbed compiled to WebAssembly via Emscripten
+- `build-wasm.sh`: emcmake cmake, CPU-only, SIMD128, MODULARIZE=1
+- Output: `crispembed_ocr.js` (62K) + `crispembed_ocr.wasm` (999K)
+- `wasm/ocr_wrapper.c`: thin C entry point exposing `wasm_ocr_init`,
+  `wasm_ocr_recognize_gray`, `wasm_ocr_recognize`, `wasm_ocr_free`
+- Emscripten guards: `model_mgr.cpp` (disable curl/wget),
+  `gguf_loader.cpp` (skip mmap, use fread fallback)
+- `cmake/FindThreads.cmake`: stub override creates no-op Threads::Threads
+  target, avoiding -pthread and SharedArrayBuffer/COOP/COEP requirement
+- Integrated into CrispCalc web/PWA: `dart:js_interop` bridge, IndexedDB
+  model caching, conditional import selects WASM provider on web
+- All existing OCR models work: pix2tex, HMER, BTTR, PosFormer, Texo,
+  PP-FormulaNet-L (auto-detected from GGUF architecture tag)
+- Tested end-to-end: model load (16.8 MB, 1.5s) + encoder (578 tokens)
+  + decoder (201 tokens) → LaTeX output in Node.js
+
+### HuggingFace Space
+- `hf-space/`: Docker build (two-stage) + Gradio UI (3 tabs: text
+  embeddings, math OCR, health)
+- Pattern: C++ `crispembed-server` on :8090 + Gradio on :7860
+- Default models: all-MiniLM-L6-v2 (text) + hmer-hw (OCR)
+- Tested: cos=0.785 for similar texts, `x² + 1 = 0` → `x ^ { 2 } + 1 = 0`
+- Live at https://huggingface.co/spaces/cstr/CrispEmbed
+
+### CI
+- `build-wasm.yml`: builds WASM on push/PR, uploads artifacts
+- `deploy-hf-space.yml`: auto-deploys `hf-space/` to HuggingFace on push
+
+---
+
+## June 2026 — PP-FormulaNet-L OCR (181M params)
+
+### Full in-graph ViT encoder with decomposed RPE
+- **Full ggml graph encoder**: all 12 ViT layers run as single ggml graphs
+  with attention + decomposed relative position bias entirely in-graph
+- Window batching: all 16 windows × 12 heads processed as one batch dimension
+  via reshape + permute, enabling efficient batched matmuls
+- Decomposed RPE in-graph: two matmuls (rp_h@Q, rp_w@Q_permuted) with
+  broadcast-add to attention scores (Granite NLE pattern)
+- LN ordering fix: for windowed layers, LayerNorm1 applied on CPU before
+  window partition to match HF's LN→pad→QKV ordering. Prevents LN(0)=bias
+  corruption of padding tokens (cos jumped from 0.973 to 0.9999)
+- Per-layer parity: cos ≥ 0.99997 on all 12 layers
+- Performance: 60s encoder (was 77s hybrid, ~500s scalar)
+
+### Printed math OCR: SAM-ViT encoder + MBart decoder
+- New architecture: SAM-style ViT encoder (12 layers, 768d, 12 heads)
+  with windowed attention (ws=14) + global attention (layers 2,5,8,11)
+  and decomposed relative position bias
+- Neck: Conv1x1 + LayerNorm2d + Conv3x3 + LayerNorm2d (768 → 256)
+- Multi-modal projector: 2× Conv3x3(stride=2) + 2× Linear (256 → 512)
+  Output: (144, 512) sequence for decoder
+- MBart PRE-LN decoder: 8 layers, 16 heads, d_model=512, FFN=2048
+- 768x768 RGB input, UniMERNet preprocessing pipeline
+- Encoder parity: cos=0.999962 vs HuggingFace reference (F32)
+- Quantization: F32 (692 MB), F16 (347 MB), Q8_0 (241 MB, cos=0.999940),
+  Q4_K (122 MB, cos=0.997595) — all produce identical decoded LaTeX
+- Smart Q8_0: critical tensors (embeddings, LN, rel_pos, lm_head) in F16
+- Auto-detected from GGUF metadata (`general.architecture = ppformulanet_l`)
+- Wired into unified `--ocr` CLI, C ABI, model registry, CrispCalc Dart catalog
+- Source: PaddlePaddle/PP-FormulaNet-L_safetensors (Apache-2.0)
+- New GGUF loader helper: `kv_i32_array()` for int32 metadata arrays
+
+### Full-stack wiring
+- HTTP server: `POST /math/ocr` endpoint (`--ocr` flag, stb_image load, JSON response)
+- Python bindings: `CrispMathOcr` class with `recognize()` and `recognize_gray()`
+- Updated contributing.md with server + Python binding steps
+- Updated public C header comments to list all supported architectures
+
+## June 2026 — PPFormulaNet-S / Texo-Distill OCR
+
+### Printed math OCR: HGNetv2 + MBart decoder (20M params)
+- New architecture: HGNetv2 CNN encoder (StemBlock, 4 HG_Stages, LightConvBNAct)
+  + MBart Transformer decoder (2 layers, 16 heads, 384 d_model)
+- Conv-BN folding in GGUF converter: all BatchNorm absorbed into preceding Conv2d
+- CPU-side CNN forward pass for encoder (all standard ops: conv2d, relu, maxpool, concat)
+- MBart PRE-LN decoder: LayerNorm before attention/FFN, residual skips LN
+- UniMERNet preprocessing: aspect-ratio-preserving resize + black pad + grayscale
+  normalize (mean=0.7931, std=0.1738)
+- ODR fix: renamed internal dec_layer → ppfn_dec_layer to avoid linker collision
+  with decoder_embed_internal.h
+- Added `--ocr` CLI flag for unified auto-detection (pix2tex/hmer/bttr/ppformulanet)
+- Quantized: F16 (39 MB), Q8_0 (22 MB, identical quality), Q4_K (13 MB, degraded)
+- GGUF models published: huggingface.co/cstr/texo-distill-gguf
+- Diff regime: encoder cos=1.000000, decoder verified via layer-by-layer debug traces
+- Source: Texo (AGPL-3.0) distilled from PaddleOCR PP-FormulaNet-S (Apache-2.0)
+  trained on UniMER-1M (CC-BY-4.0)
+
+## June 2026 — Nomic v2 MoE Encoder
+
+### Mixture-of-Experts encoder support
+- First MoE embedding model: nomic-embed-text-v2-moe (8 experts, top-2, GELU)
+- Fully in-graph MoE routing: ggml_top_k + ggml_get_rows + ggml_mul_mat_id
+- Mixed architecture: odd layers = MoE FFN, even layers = dense GELU FFN
+- Converter handles GPT2-style config (NomicBERT extends GPT2Config),
+  per-layer MoE/dense auto-detection, expert weight stacking [n_exp, dim, dim]
+- Fixed missing Wqkv + out_proj biases (present in v2-moe but not v1.5)
+- Exact erf-GELU activation (NomicBERT uses nn.GELU(approximate='none'))
+- Parity: cos=1.000000 vs HuggingFace on all test texts
+- Quantized variants: F16 (1344 MB), Q8_0 (1122 MB, cos=0.9996), Q4_K (1095 MB, cos=0.966)
+- GGUFs published to cstr/nomic-embed-text-v2-moe-GGUF on HuggingFace
+- Extended parity_layers_bert.py harness with --arch nomic (QKV split, MoE expert tensor diff)
+- Added CRISPEMBED_DUMP_LAYERS env var for per-layer intermediate tensor dumps
+
+---
+
+## June 2026 — LoRA Hot-Swap, Batched Decoder, Face Pipeline
+
+### LoRA adapter hot-swap
+- Runtime switching between Jina v5 per-task LoRA adapters (retrieval,
+  classification, clustering, text-matching) without re-loading the model
+- Pre-compute approach: `W' = W + (α/r)·B@A` on CPU at switch time (~10-50ms)
+- Converter `--lora-mode=separate` stores base weights + per-adapter A/B
+  tensors (F16) in a single GGUF with metadata
+- Lazy base weight snapshot with dequant→merge→requant for quantized models
+- C API: `crispembed_set_lora/get_lora/list_lora`
+- CLI: `--lora NAME`, `--list-lora`
+- Python: `set_lora()`, `lora` property, `list_lora()` on CrispEmbed
+
+### Batched decoder graph
+- Single ggml graph compute for N decoder texts (was: N sequential passes)
+- Block-diagonal causal mask (text i cannot attend to text j), padding
+  positions get self-attention to prevent softmax NaN
+- Independent RoPE positions per text, pad to T_max
+- Per-text last-token / mean pooling after graph compute
+- **3.3x speedup** on batch of 4 (Jina v5 nano, CPU)
+- Parity: cos >= 0.999 vs sequential encoding on all test texts
+
+### Face pipeline Python completion
+- `CrispFacePipeline` exported in `__init__.py`
+- `from_registry()` class methods on `CrispFace` and `CrispFacePipeline`
+  for auto-download by registry name
+- Unit tests (`tests/test_face_python.py`): 12 tests covering detection,
+  recognition, pipeline, match, edge cases
+- Example script (`examples/face_search.py`): index faces from directory,
+  query by image, top-K cosine matches
+
+### BTTR beam search decoder
+- Beam search with configurable width (default 5) for BTTR handwritten
+  math OCR — improves exact-match accuracy over greedy decoding
+
+### Windows CI fix
+- `M_PI` undefined on MSVC: added `#ifndef M_PI` portable fallback in
+  `bttr_ocr.cpp`
+
+---
+
 ## June 2026 — CLIP/SigLIP Vision + Text, YuNet, HMER/BTTR OCR
 
 ### YuNet lightweight face detection
@@ -187,6 +384,7 @@ Key parity results (cos vs HuggingFace reference):
 | bge-small/base/large-en-v1.5 | BERT | 384/768/1024 | 1.000000 |
 | gte-base/large-en-v1.5 | GTE | 768/1024 | 1.000000 |
 | nomic-embed-text-v1.5 | NomicBERT | 768 | 1.000000 |
+| nomic-embed-text-v2-moe | NomicBERT MoE | 768 | 1.000000 |
 | mxbai-embed-large-v1 | BERT | 1024 | 1.000000 |
 | all-mpnet-base-v2 | MPNet | 768 | 1.000000 |
 | multilingual-e5-small/base/large | XLM-R | 384/768/1024 | 1.000000 |

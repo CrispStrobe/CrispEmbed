@@ -1,0 +1,48 @@
+name: Build WASM
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'ggml/**'
+      - 'wasm/**'
+      - 'CMakeLists.txt'
+      - 'build-wasm.sh'
+      - 'cmake/FindThreads.cmake'
+      - '.github/workflows/build-wasm.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup emsdk
+        uses: mymindstorm/setup-emsdk@v14
+
+      - name: Build WASM
+        run: ./build-wasm.sh --clean
+
+      - name: Verify output
+        run: |
+          ls -lh build-wasm/crispembed_ocr.js build-wasm/crispembed_ocr.wasm
+          echo "JS size: $(wc -c < build-wasm/crispembed_ocr.js) bytes"
+          echo "WASM size: $(wc -c < build-wasm/crispembed_ocr.wasm) bytes"
+          # Sanity: WASM should be < 2 MB, JS < 200 KB
+          [ $(wc -c < build-wasm/crispembed_ocr.wasm) -lt 2097152 ] || (echo "WASM too large" && exit 1)
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: crispembed-wasm
+          path: |
+            build-wasm/crispembed_ocr.js
+            build-wasm/crispembed_ocr.wasm
+          retention-days: 30
