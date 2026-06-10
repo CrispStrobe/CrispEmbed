@@ -1022,6 +1022,35 @@ std::vector<region> detect(context* ctx, const float* pixels,
     cpu_layernorm(enc_proj.data(), D, total_tokens,
                   ctx->decoder.enc_norm_w, ctx->decoder.enc_norm_b);
 
+    // Debug: inject HF reference enc_output for decoder parity testing
+    if (getenv("LAYOUT_INJECT_REF")) {
+        FILE* rfp = fopen(getenv("LAYOUT_INJECT_REF"), "rb");
+        if (rfp) {
+            // Reference is [N_total, D] row-major → convert to [D, N_total] col-major
+            std::vector<float> ref_row(D * total_tokens);
+            fread(ref_row.data(), sizeof(float), D * total_tokens, rfp);
+            fclose(rfp);
+            for (int n = 0; n < total_tokens; n++)
+                for (int d = 0; d < D; d++)
+                    enc_proj[d * total_tokens + n] = ref_row[n * D + d];
+            fprintf(stderr, "  INJECTED HF enc_output from %s\n", getenv("LAYOUT_INJECT_REF"));
+        }
+    }
+    // Debug: also inject HF reference memory (raw encoder features for cross-attn)
+    if (getenv("LAYOUT_INJECT_MEMORY")) {
+        FILE* rfp = fopen(getenv("LAYOUT_INJECT_MEMORY"), "rb");
+        if (rfp) {
+            // Reference stored as [N_total, D] row-major → [D, N_total] col-major
+            std::vector<float> ref_row(D * total_tokens);
+            fread(ref_row.data(), sizeof(float), D * total_tokens, rfp);
+            fclose(rfp);
+            for (int n = 0; n < total_tokens; n++)
+                for (int d = 0; d < D; d++)
+                    memory[d * total_tokens + n] = ref_row[n * D + d];
+            fprintf(stderr, "  INJECTED HF memory from %s\n", getenv("LAYOUT_INJECT_MEMORY"));
+        }
+    }
+
     // Debug: dump raw memory for parity comparison
     if (getenv("LAYOUT_DEBUG")) {
         // Dump memory as [N_total, D] row-major
