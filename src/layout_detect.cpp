@@ -1296,6 +1296,30 @@ std::vector<region> detect(context* ctx, const float* pixels,
             }
         }
 
+        if (li == 0) {
+            float mn=1e9,mx=-1e9;
+            for (auto v : cross_out) { mn=std::min(mn,v); mx=std::max(mx,v); }
+            fprintf(stderr, "  dec0 cross_out (pre-proj): [%.4f, %.4f]\n", mn, mx);
+            // Debug: print sampling stats for query 0
+            float ref_cx0 = ref_points[0], ref_cy0 = ref_points[1];
+            float ref_w0 = ref_points[2], ref_h0 = ref_points[3];
+            fprintf(stderr, "  dec0 q0 ref: cx=%.4f cy=%.4f w=%.4f h=%.4f\n",
+                    ref_cx0, ref_cy0, ref_w0, ref_h0);
+            float dx0 = offsets[0], dy0 = offsets[N_queries];
+            fprintf(stderr, "  dec0 q0 offset[0]: dx=%.4f dy=%.4f → scaled dx=%.6f dy=%.6f\n",
+                    dx0, dy0, dx0 * 0.25f * ref_w0 * 0.5f, dy0 * 0.25f * ref_h0 * 0.5f);
+            float px0 = ref_cx0 + dx0 * 0.25f * ref_w0 * 0.5f;
+            float py0 = ref_cy0 + dy0 * 0.25f * ref_h0 * 0.5f;
+            fprintf(stderr, "  dec0 q0 sample pos: px=%.4f py=%.4f → pixel sx=%.1f sy=%.1f (80x80)\n",
+                    px0, py0, px0*80-0.5f, py0*80-0.5f);
+            // Print attention weights for q0
+            float aw_sum = 0;
+            for (int j = 0; j < N_heads * N_levels * N_points; j++)
+                aw_sum += attn_weights[j * N_queries + 0];
+            fprintf(stderr, "  dec0 q0 attn_weight sum: %.4f (expected ~%d from softmax)\n",
+                    aw_sum, N_heads);
+        }
+
         // Cross-attention output projection
         std::vector<float> ca_out(D * N_queries);
         cpu_linear(cross_out.data(), ca_out.data(), D, D, N_queries,
