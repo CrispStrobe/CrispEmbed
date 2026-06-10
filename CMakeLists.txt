@@ -46,6 +46,19 @@ if(NOT DEFINED GGML_BLAS_VENDOR)
 endif()
 
 # ---------------------------------------------------------------------------
+# Emscripten: CMake's FindThreads fails to detect Emscripten's pthread
+# emulation. Force-set the result so ggml's find_package(Threads REQUIRED)
+# succeeds. The actual -pthread flag is passed via CMAKE_C_FLAGS.
+# ---------------------------------------------------------------------------
+if(EMSCRIPTEN)
+    set(CMAKE_THREAD_LIBS_INIT "-pthread")
+    set(CMAKE_HAVE_THREADS_LIBRARY 1)
+    set(CMAKE_USE_WIN32_THREADS_INIT 0)
+    set(CMAKE_USE_PTHREADS_INIT 1)
+    set(THREADS_PREFER_PTHREAD_FLAG OFF)
+endif()
+
+# ---------------------------------------------------------------------------
 # ggml (submodule)
 # ---------------------------------------------------------------------------
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/ggml/CMakeLists.txt")
@@ -241,6 +254,25 @@ add_executable(test-ocr-pipeline tests/test_ocr_pipeline.cpp)
 target_link_libraries(test-ocr-pipeline PRIVATE crispembed)
 
 endif() # NOT iOS
+
+# ---------------------------------------------------------------------------
+# WASM target — math OCR for browser use (Emscripten only).
+# Built via: ./build-wasm.sh (which sets CRISPEMBED_WASM=ON)
+# Output: crispembed_ocr.js + crispembed_ocr.wasm
+# ---------------------------------------------------------------------------
+option(CRISPEMBED_WASM "Build WASM math OCR target (Emscripten)" OFF)
+if(CRISPEMBED_WASM AND EMSCRIPTEN)
+    add_executable(crispembed-wasm wasm/ocr_wrapper.c)
+    target_include_directories(crispembed-wasm PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
+    )
+    target_link_libraries(crispembed-wasm PRIVATE crispembed)
+    set_target_properties(crispembed-wasm PROPERTIES
+        OUTPUT_NAME  crispembed_ocr
+        SUFFIX       ".js"
+    )
+endif()
 
 # ---------------------------------------------------------------------------
 # Shared library — the public, distributable face of CrispEmbed.
