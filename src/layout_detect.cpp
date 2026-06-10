@@ -973,10 +973,27 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 feat_col[c * N_lv + s] = feats[lv].data[s + c * N_lv];
 
         // Apply decoder input_proj (1×1 conv = linear projection)
+        // Conv weight is in ONNX Conv (out, in) convention — NOT MatMul convention.
+        // y[o] = sum_i W_conv[o, i] * x[i] + b[o]
+        // In ggml flat: W_conv[o, i] = flat[i + o * in_d] (numpy row-major (out, in))
         if (ctx->decoder.input_proj[lv].w) {
             std::vector<float> proj(D * N_lv);
-            cpu_linear(feat_col.data(), proj.data(), D, D, N_lv,
-                       ctx->decoder.input_proj[lv].w, ctx->decoder.input_proj[lv].b);
+            // Use Conv convention: W[i + o * in_d]
+            {
+                auto* w_t = ctx->decoder.input_proj[lv].w;
+                auto* b_t = ctx->decoder.input_proj[lv].b;
+                std::vector<float> W(D * D), b(D, 0.0f);
+                if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, D * D * sizeof(float));
+                if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, D * sizeof(float));
+                for (int n = 0; n < N_lv; n++) {
+                    for (int o = 0; o < D; o++) {
+                        float sum = b[o];
+                        for (int i = 0; i < D; i++)
+                            sum += W[i + o * D] * feat_col[i * N_lv + n];
+                        proj[o * N_lv + n] = sum;
+                    }
+                }
+            }
             // Copy projected features to memory
             for (int c = 0; c < D; c++)
                 for (int s = 0; s < N_lv; s++)
@@ -1001,6 +1018,23 @@ std::vector<region> detect(context* ctx, const float* pixels,
     // W: [out, in], x: [in, N], y: [out, N]
 
     // CPU LayerNorm
+
+    // Apply valid_mask to memory (zeros out padding positions)
+    if (ctx->decoder.valid_mask) {
+        // valid_mask is [1, N_total, 1] — broadcast over channels
+        std::vector<float> mask(total_tokens);
+        ggml_backend_tensor_get(ctx->decoder.valid_mask, mask.data(), 0,
+                                total_tokens * sizeof(float));
+        for (int n = 0; n < total_tokens; n++)
+            if (mask[n] == 0.0f)
+                for (int d = 0; d < D; d++)
+                    memory[d * total_tokens + n] = 0.0f;
+        if (getenv("LAYOUT_DEBUG")) {
+            int n_valid = 0;
+            for (auto v : mask) if (v > 0) n_valid++;
+            fprintf(stderr, "  valid_mask: %d/%d valid tokens\n", n_valid, total_tokens);
+        }
+    }
 
     // --- Query initialization: select top-K from encoder output ---
     // 1. Project memory through enc_output: linear + norm
