@@ -4,6 +4,24 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — WASM build (math OCR in browser)
+
+### CrispEmbed compiled to WebAssembly via Emscripten
+- `build-wasm.sh`: emcmake cmake, CPU-only, SIMD128, MODULARIZE=1
+- Output: `crispembed_ocr.js` (62K) + `crispembed_ocr.wasm` (999K)
+- `wasm/ocr_wrapper.c`: thin C entry point exposing `wasm_ocr_init`,
+  `wasm_ocr_recognize_gray`, `wasm_ocr_recognize`, `wasm_ocr_free`
+- Emscripten guards: `model_mgr.cpp` (disable curl/wget),
+  `gguf_loader.cpp` (skip mmap, use fread fallback)
+- `cmake/FindThreads.cmake`: stub override creates no-op Threads::Threads
+  target, avoiding -pthread and SharedArrayBuffer/COOP/COEP requirement
+- Integrated into CrispCalc web/PWA: `dart:js_interop` bridge, IndexedDB
+  model caching, conditional import selects WASM provider on web
+- All existing OCR models work: pix2tex, HMER, BTTR, PosFormer, Texo,
+  PP-FormulaNet-L (auto-detected from GGUF architecture tag)
+
+---
+
 ## June 2026 — PP-FormulaNet-L OCR (181M params)
 
 ### Full in-graph ViT encoder with decomposed RPE
