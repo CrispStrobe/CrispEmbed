@@ -785,13 +785,12 @@ std::vector<region> detect(context* ctx, const float* pixels,
     ggml_set_input(input);
 
     // Backbone
-    // Verify stem weight is the folded version
-    {
+    if (layout_debug()) {
         float wv[3];
         ggml_backend_tensor_get(ctx->backbone.stem[0].w, wv, 0, 3*sizeof(float));
         fprintf(stderr, "  stem[0].w first3: %.6f %.6f %.6f (expected: 0.002018)\n", wv[0], wv[1], wv[2]);
     }
-    fprintf(stderr, "layout_detect: building backbone + encoder graph...\n");
+    LDBG("layout_detect: building backbone + encoder graph...\n");
     ggml_tensor *c3, *c4, *c5;
     backbone_forward(g, ctx->backbone, input, &c3, &c4, &c5);
 
@@ -828,12 +827,11 @@ std::vector<region> detect(context* ctx, const float* pixels,
     if (inp_t) ggml_backend_tensor_set(inp_t, pixels, 0, 3 * H * W * sizeof(float));
 
     // Compute
-    fprintf(stderr, "layout_detect: computing backbone + encoder...\n");
+    LDBG("layout_detect: computing backbone + encoder...\n");
     ggml_backend_graph_compute(ctx->backend, gf);
 
-    // Per-block backbone comparison
-    {
-        // Read stem
+    // Per-block backbone comparison (debug only)
+    if (layout_debug()) {
         auto read_range = [&](const char* name) {
             ggml_tensor* t = ggml_graph_get_tensor(gf, name);
             if (!t) { fprintf(stderr, "  %s: NOT FOUND\n", name); return; }
@@ -845,33 +843,19 @@ std::vector<region> detect(context* ctx, const float* pixels,
             fprintf(stderr, "  %s: [%lld,%lld,%lld] range=[%.4f, %.4f]\n",
                     name, (long long)t->ne[0], (long long)t->ne[1], (long long)t->ne[2], fmin, fmax);
         };
-        read_range("bb_stem");
-        read_range("ip3");
-        read_range("ip4");
-        read_range("ip5");
-        read_range("aifi_out");
-        read_range("lat5_silu");
-        // CSP block 0 internals
-        read_range("aifi_qkv");
-        read_range("aifi_softmax");
-        read_range("aifi_attn_raw");
-        read_range("aifi_attn_out");
-        read_range("aifi_norm1");
-        read_range("aifi_resid");
-        read_range("csp0_conv1");
-        read_range("csp0_bn0");
-        read_range("csp0_bn1");
-        read_range("csp0_bn2");
-        read_range("csp0_conv2");
-        read_range("csp0_out");
+        read_range("bb_stem"); read_range("ip3"); read_range("ip4"); read_range("ip5");
+        read_range("aifi_out"); read_range("lat5_silu");
+        read_range("aifi_qkv"); read_range("aifi_softmax");
+        read_range("aifi_attn_raw"); read_range("aifi_attn_out");
+        read_range("aifi_norm1"); read_range("aifi_resid");
+        read_range("csp0_conv1"); read_range("csp0_bn0"); read_range("csp0_bn1");
+        read_range("csp0_bn2"); read_range("csp0_conv2"); read_range("csp0_out");
         int block_counts[] = {3, 4, 6, 3};
-        for (int s = 0; s < 4; s++) {
+        for (int s = 0; s < 4; s++)
             for (int b = 0; b < block_counts[s]; b++) {
-                char name[32];
-                snprintf(name, sizeof(name), "bb_s%d_b%d", s, b);
+                char name[32]; snprintf(name, sizeof(name), "bb_s%d_b%d", s, b);
                 read_range(name);
             }
-        }
     }
     // Read encoder outputs to CPU buffers
     // s3: [W3, H3, 256], s4: [W4, H4, 256], s5: [W5, H5, 256]
@@ -891,11 +875,12 @@ std::vector<region> detect(context* ctx, const float* pixels,
         feats[i].data.resize(n);
         ggml_backend_tensor_get(t, feats[i].data.data(), 0, n * sizeof(float));
         total_tokens += feats[i].W * feats[i].H;
-        // Print stats for comparison with Python reference
-        float fmin = 1e9, fmax = -1e9;
-        for (auto v : feats[i].data) { fmin = std::min(fmin, v); fmax = std::max(fmax, v); }
-        fprintf(stderr, "  s%d: %dx%d x %d range=[%.4f, %.4f]\n",
-                i+3, feats[i].W, feats[i].H, feats[i].C, fmin, fmax);
+        if (layout_debug()) {
+            float fmin = 1e9, fmax = -1e9;
+            for (auto v : feats[i].data) { fmin = std::min(fmin, v); fmax = std::max(fmax, v); }
+            fprintf(stderr, "  s%d: %dx%d x %d range=[%.4f, %.4f]\n",
+                    i+3, feats[i].W, feats[i].H, feats[i].C, fmin, fmax);
+        }
     }
 
     ggml_gallocr_free(alloc);
@@ -1169,13 +1154,13 @@ std::vector<region> detect(context* ctx, const float* pixels,
                    ctx->decoder.qpos_w[1], ctx->decoder.qpos_b[1]);
     };
 
-    fprintf(stderr, "layout_detect: query init done (top-K score: %.3f..%.3f)\n",
+    LDBG("layout_detect: query init done (top-K score: %.3f..%.3f)\n",
             token_scores[0].first, token_scores[N_queries-1].first);
-    fprintf(stderr, "layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
+    LDBG("layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
 
-    // Load diff reference if available
+    // Load diff reference if available (only under LAYOUT_DEBUG)
     crispembed_diff::Ref dec_ref;
-    bool has_dec_ref = dec_ref.load("/tmp/dec0-diff-ref.gguf");
+    bool has_dec_ref = layout_debug() && dec_ref.load("/tmp/dec0-diff-ref.gguf");
 
     auto diff_report = [&](const char* label, const char* ref_name,
                            const float* data, size_t n_elem) {
@@ -1190,9 +1175,9 @@ std::vector<region> detect(context* ctx, const float* pixels,
     diff_report("enc_proj", "layer_norm_2", enc_proj.data(), D * total_tokens);
     diff_report("memory", "concat_4", memory.data(), D * total_tokens);
 
-    // Load per-layer ref_points reference
+    // Load per-layer ref_points reference (only under LAYOUT_DEBUG)
     crispembed_diff::Ref rp_ref;
-    bool has_rp_ref = rp_ref.load("/tmp/refpoints-per-layer.gguf");
+    bool has_rp_ref = layout_debug() && rp_ref.load("/tmp/refpoints-per-layer.gguf");
 
     // Per-layer ref_points names: sigmoid, sigmoid_1, ..., sigmoid_6
     // Per-layer pos_enc names: linear_12, linear_27, linear_42, linear_57, linear_72, linear_87
@@ -1370,7 +1355,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
             char label[32]; snprintf(label, 32, "dec%d_norm1", li);
             diff_report(label, ref_name, queries.data(), D * N_queries);
         }
-        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm1: [%.4f,%.4f]\n",li,mn,mx); }
+        if (layout_debug()) { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm1: [%.4f,%.4f]\n",li,mn,mx); }
 
         // --- Deformable cross-attention ---
         residual = queries;
@@ -1408,6 +1393,9 @@ std::vector<region> detect(context* ctx, const float* pixels,
         std::vector<float> attn_weights(n_weights * N_queries);
         cpu_matmul(qp.data(), attn_weights.data(), D, n_weights, N_queries,
                    layer.cross_attn_weights_w, layer.cross_attn_weights_b);
+
+        // Diff check BEFORE softmax (linear_19 is pre-softmax)
+        if (li == 0) diff_report("attn_wts_pre_sm", "linear_19", attn_weights.data(), n_weights * N_queries);
 
         // Softmax attention weights per head per query (over levels * points)
         for (int q = 0; q < N_queries; q++) {
@@ -1498,7 +1486,6 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
         if (li == 0) {
             diff_report("offsets", "linear_18", offsets.data(), n_offsets * N_queries);
-            diff_report("attn_wts", "linear_19", attn_weights.data(), n_weights * N_queries);
             diff_report("ca_out_proj", "linear_20", ca_out.data(), D * N_queries);
         }
 
@@ -1512,7 +1499,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
             diff_report(label, ref_name, queries.data(), D * N_queries);
         }
 
-        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm2: [%.4f,%.4f]\n",li,mn,mx); }
+        if (layout_debug()) { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm2: [%.4f,%.4f]\n",li,mn,mx); }
         // --- FFN ---
         residual = queries;
         std::vector<float> ffn1(1024 * N_queries);
@@ -1533,7 +1520,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
             diff_report(label, ref_name, queries.data(), D * N_queries);
         }
 
-        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm3: [%.4f,%.4f]\n",li,mn,mx); }
+        if (layout_debug()) { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm3: [%.4f,%.4f]\n",li,mn,mx); }
         // Update reference points via bbox head (iterative refinement)
         std::vector<float> bbox_delta(4 * N_queries);
         std::vector<float> tmp(D * N_queries);
@@ -1590,66 +1577,99 @@ std::vector<region> detect(context* ctx, const float* pixels,
     std::vector<float> class_scores(ctx->num_classes * N_queries);
     cpu_matmul(queries.data(), class_scores.data(), D, ctx->num_classes, N_queries,
                ctx->decoder.dec_score_w, ctx->decoder.dec_score_b);
+
+    // Diff check raw logits (pre-sigmoid) against Python val_2974
+    if (layout_debug()) {
+        // Load and compare raw logits
+        auto [py_logits, py_n] = dec_ref.get_f32("val_2974");
+        if (!py_logits) {
+            // Try loading from numpy file
+            FILE* fp = fopen("/tmp/py_logits.npy", "rb");
+            if (fp) {
+                // skip 128-byte npy header
+                fseek(fp, 0, SEEK_END); long sz = ftell(fp);
+                fclose(fp);
+                // Just compare ranges and first few values
+            }
+        }
+        // Print C++ logit stats
+        float lmin=1e9, lmax=-1e9;
+        for (auto v : class_scores) { lmin=std::min(lmin,v); lmax=std::max(lmax,v); }
+        fprintf(stderr, "  logits: [%.4f, %.4f] (Python: [-3.87, 5.13])\n", lmin, lmax);
+        // Print first query's logits
+        fprintf(stderr, "  logits[0,:4]: ");
+        for (int c = 0; c < std::min(4, ctx->num_classes); c++)
+            fprintf(stderr, "%.4f ", class_scores[c * N_queries + 0]);
+        fprintf(stderr, "\n");
+    }
+
     // Sigmoid
     for (auto& v : class_scores) v = 1.0f / (1.0f + expf(-v));
 
-    // Compare per-query max scores with Python reference
-    {
-        // Python scores are [300] — max class score per query (after sigmoid)
-        std::vector<float> max_per_q(N_queries);
+    // Debug: dump per-class scores for top queries
+    if (layout_debug()) {
+        // Print top-10 queries with per-class breakdown
+        std::vector<std::pair<float, int>> qscores(N_queries);
         for (int q = 0; q < N_queries; q++) {
             float mx = 0;
             for (int c = 0; c < ctx->num_classes; c++)
                 mx = std::max(mx, class_scores[c * N_queries + q]);
-            max_per_q[q] = mx;
+            qscores[q] = {mx, q};
         }
-        diff_report("final_scores", "scores", max_per_q.data(), N_queries);
+        std::partial_sort(qscores.begin(), qscores.begin() + 10, qscores.end(),
+                          [](const auto& a, const auto& b) { return a.first > b.first; });
+        for (int i = 0; i < 10; i++) {
+            int q = qscores[i].second;
+            fprintf(stderr, "  query %3d: max=%.4f classes: ", q, qscores[i].first);
+            for (int c = 0; c < ctx->num_classes; c++) {
+                float s = class_scores[c * N_queries + q];
+                if (s > 0.1f) fprintf(stderr, "%s=%.3f ", label_name((label_id)c), s);
+            }
+            fprintf(stderr, "\n");
+        }
     }
 
     // Collect results
     std::vector<region> results;
     for (int q = 0; q < N_queries; q++) {
-        // Find best class
-        int best_cls = 0;
-        float best_score = 0;
-        for (int c = 0; c < ctx->num_classes; c++) {
-            float s = class_scores[c * N_queries + q];
-            if (s > best_score) { best_score = s; best_cls = c; }
-        }
-
-        if (best_score < score_threshold) continue;
-
-        // Decode bbox: ref_points are (cx, cy, w, h) in [0, 1]
         float cx = ref_points[q * 4 + 0];
         float cy = ref_points[q * 4 + 1];
         float bw = ref_points[q * 4 + 2];
         float bh = ref_points[q * 4 + 3];
 
-        // Convert to (x1, y1, x2, y2) in pixel coordinates
-        region r;
-        r.x1 = (cx - bw / 2) * orig_w;
-        r.y1 = (cy - bh / 2) * orig_h;
-        r.x2 = (cx + bw / 2) * orig_w;
-        r.y2 = (cy + bh / 2) * orig_h;
-        r.score = best_score;
-        r.label = (label_id)best_cls;
-        r.label_name = LABEL_NAMES[best_cls];
+        for (int c = 0; c < ctx->num_classes; c++) {
+            float s = class_scores[c * N_queries + q];
+            if (s < score_threshold) continue;
 
-        results.push_back(r);
+            region r;
+            r.x1 = (cx - bw / 2) * orig_w;
+            r.y1 = (cy - bh / 2) * orig_h;
+            r.x2 = (cx + bw / 2) * orig_w;
+            r.y2 = (cy + bh / 2) * orig_h;
+            r.score = s;
+            r.label = (label_id)c;
+            r.label_name = LABEL_NAMES[c];
+            results.push_back(r);
+        }
     }
+    // Sort by score descending
+    std::sort(results.begin(), results.end(),
+              [](const region& a, const region& b) { return a.score > b.score; });
 
     // Sort by score descending
     std::sort(results.begin(), results.end(),
               [](const region& a, const region& b) { return a.score > b.score; });
 
     // Debug: print top scores
-    if (results.empty()) {
-        float max_score = 0;
-        for (auto& v : class_scores) max_score = std::max(max_score, v);
-        fprintf(stderr, "layout_detect: max class score after sigmoid: %.6f\n", max_score);
+    if (layout_debug()) {
+        if (results.empty()) {
+            float max_score = 0;
+            for (auto& v : class_scores) max_score = std::max(max_score, v);
+            fprintf(stderr, "layout_detect: max class score after sigmoid: %.6f\n", max_score);
+        }
+        fprintf(stderr, "layout_detect: %zu detections (score > %.2f)\n",
+                results.size(), score_threshold);
     }
-    fprintf(stderr, "layout_detect: %zu detections (score > %.2f)\n",
-            results.size(), score_threshold);
     return results;
 }
 
