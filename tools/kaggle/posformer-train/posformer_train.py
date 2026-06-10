@@ -70,7 +70,7 @@ CRISPEMBED_REPO = "https://github.com/CrispStrobe/CrispEmbed.git"
 # Where CROHME data zip lives (upload to HF or Kaggle dataset).
 # PosFormer's expected format: data/{train,2014}/caption.txt + img/*.bmp
 CROHME_HF_REPO = "cstr/posformer-training-data"
-CROHME_HF_FILE = "data_crohme.zip"
+CROHME_HF_FILE = "data_crohme_plus_mw1k.zip"
 MATHWRITING_V2_HF_FILE = "data_mathwriting_v2_20k.zip"
 
 # ━━━━━━━━━━━━━━━━━━━━ V2 vocabulary (183 tokens) ━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1590,9 +1590,10 @@ def train(args, zip_path: Path, dict_path: Path,
         scale_aug=True,
     )
 
-    # Model
+    # Model — d_model=256 for v1 (110 tokens), 384 for v2 (183 tokens)
+    _d_model = 384 if args.dataset.startswith("mathwriting_v2") else 256
     model = LitPosFormer(
-        d_model=384,
+        d_model=_d_model,
         growth_rate=24,
         num_layers=16,
         nhead=8,
@@ -1642,7 +1643,7 @@ def train(args, zip_path: Path, dict_path: Path,
         try:
             from pytorch_lightning.loggers import WandbLogger
             # Fixed run_id per dataset for cross-session continuity
-            run_id = f"posformer-{args.dataset}-v15"
+            run_id = f"posformer-{args.dataset}-v16"
             logger = WandbLogger(
                 project=WANDB_PROJECT,
                 name=f"posformer-{args.dataset}",
