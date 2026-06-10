@@ -888,15 +888,14 @@ std::vector<region> detect(context* ctx, const float* pixels,
         std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
         if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, out_d * in_d * sizeof(float));
         if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, out_d * sizeof(float));
-        // ggml stores weight as [ne0, ne1]. For ONNX MatMul(input, weight):
-        // y[o] = sum_i weight[i, o] * x[i]
-        // In GGUF [ne0=out_d, ne1=in_d]: weight[i, o] = data[i * out_d + o]
-        // So: W^T @ x (matching ggml mul_mat convention)
+        // ggml stores weight as [ne0, ne1] col-major.
+        // For linear y = W @ x: element W(o, i) = data[o + i * ne0] = data[o + i * out_d]
+        // This is the ggml mul_mat convention.
         for (int n = 0; n < N; n++) {
             for (int o = 0; o < out_d; o++) {
                 float sum = b[o];
                 for (int i = 0; i < in_d; i++) {
-                    sum += W[i + o * in_d] * x[i * N + n];
+                    sum += W[o + i * out_d] * x[i * N + n];
                 }
                 y[o * N + n] = sum;
             }
