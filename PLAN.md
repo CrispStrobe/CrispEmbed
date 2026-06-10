@@ -323,14 +323,13 @@ CrispEmbed/
   top-K.  Builds on the existing `/embed` endpoint and
   `crispembed_encode_multivec()` C API.
 
-- [ ] **WASM build target** — Compile CrispEmbed to WebAssembly
-  (Emscripten) for browser-based embedding inference.  Requires: ggml
-  WASM backend (CPU-only, no GPU), JS wrapper exporting `encode()` /
-  `encode_batch()`, a demo page.  ggml already has partial Emscripten
-  support (whisper.cpp ships a WASM build).  Main challenges: SIMD
-  (relaxed-simd flag), memory limits (large models need streaming GGUF
-  loading or smaller quants), and thread support (SharedArrayBuffer +
-  Web Workers for multi-threaded ggml).
+- [x] **WASM build target** — Math OCR compiled to WebAssembly
+  (Emscripten) for browser-based inference.  `build-wasm.sh` produces
+  `crispembed_ocr.js` (75K) + `crispembed_ocr.wasm` (1MB).  CPU-only,
+  SIMD128, MODULARIZE pattern.  Emscripten guards in model_mgr.cpp
+  (curl) and gguf_loader.cpp (mmap→fread fallback).  Integrated into
+  CrispCalc web/PWA via dart:js_interop + IndexedDB model caching.
+  Remaining: full embedding engine WASM (not just OCR), WebGPU backend.
 
 - [ ] **Unified dump harness** — CrispASR already has a unified
   `tools/dump_reference.py` with a `--backend` flag and a plug-in
