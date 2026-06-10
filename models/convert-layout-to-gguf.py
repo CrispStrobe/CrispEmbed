@@ -176,6 +176,44 @@ def main():
     if mul_folded:
         print(f"  Conv-Mul-Add (decomposed BN) folded: {mul_folded}")
 
+    # Transpose weights that are stored in PyTorch (out, in) convention.
+    # The C++ cpu_linear uses a single MatMul convention (in, out) for all weights.
+    # Two patterns need transposing:
+    # 1. Gemm(transB=1): weight stored as (out, in), transposed at runtime → transpose here
+    # 2. Split+Transpose+MatMul: weight stored as (out, in), split then transposed → transpose here
+    transposed = 0
+
+    # Collect Gemm(transB=1) weight names (DECODER only — encoder uses ggml graph)
+    gemm_transB_weights = set()
+    for node in graph.node:
+        if node.op_type == 'Gemm':
+            attrs = {a.name: a for a in node.attribute}
+            if attrs.get('transB') and attrs['transB'].i == 1:
+                for inp in node.input:
+                    if inp in weights and weights[inp].ndim == 2:
+                        # Only transpose decoder weights (encoder uses ggml_mul_mat)
+                        if 'decoder' in inp:
+                            gemm_transB_weights.add(inp)
+
+    # Collect Split+Transpose weight names (in_proj_weight patterns, decoder only)
+    split_weights = set()
+    for node in graph.node:
+        if node.op_type == 'Split':
+            for inp in node.input:
+                if inp in weights and 'weight' in inp and weights[inp].ndim == 2:
+                    if 'decoder' in inp:
+                        split_weights.add(inp)
+
+    # Transpose decoder weights from (out, in) → (in, out)
+    for name in gemm_transB_weights | split_weights:
+        if name in weights and weights[name].ndim == 2:
+            old_shape = weights[name].shape
+            weights[name] = weights[name].T.copy()
+            transposed += 1
+
+    if transposed:
+        print(f"  Transposed {transposed} weights to MatMul (in, out) convention")
+
     # Rename val_XXXX weights: trace each MatMul node to find the named bias
     # it pairs with, then rename the weight accordingly.
     renamed = 0
