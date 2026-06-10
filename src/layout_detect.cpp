@@ -133,7 +133,7 @@ struct transformer_decoder {
     ggml_tensor *enc_bbox_w[3] = {};     // MLP layers
     ggml_tensor *enc_bbox_b[3] = {};
     // Query position head (MLP)
-    ggml_tensor *qpos_w[3] = {}, *qpos_b[3] = {};
+    ggml_tensor *qpos_w[2] = {}, *qpos_b[2] = {};
     // Decoder layers
     decoder_layer layers[6];
     // Per-layer detection heads
@@ -275,7 +275,7 @@ bool load(context** out, const char* path, int n_threads) {
         dec.enc_bbox_w[i] = get(k + ".weight");
         dec.enc_bbox_b[i] = get(k + ".bias");
     }
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 2; i++) {
         auto k = std::string("model.decoder.query_pos_head.layers.") + std::to_string(i);
         dec.qpos_w[i] = get(k + ".weight");
         dec.qpos_b[i] = get(k + ".bias");
@@ -853,6 +853,23 @@ std::vector<region> detect(context* ctx, const float* pixels,
             }
         }
     }
+    // Dump encoder intermediates for diff comparison (ggml raw byte order)
+    if (getenv("LAYOUT_DEBUG")) {
+        auto dump_ggml_tensor = [&](const char* name) {
+            ggml_tensor* t = ggml_graph_get_tensor(gf, name);
+            if (!t) return;
+            int n = ggml_nelements(t);
+            std::vector<float> data(n);
+            ggml_backend_tensor_get(t, data.data(), 0, n * sizeof(float));
+            char fname[128];
+            snprintf(fname, sizeof(fname), "/tmp/cpp_%s.bin", name);
+            FILE* fp = fopen(fname, "wb");
+            if (fp) { fwrite(data.data(), sizeof(float), n, fp); fclose(fp); }
+        };
+        dump_ggml_tensor("ip3"); dump_ggml_tensor("ip4"); dump_ggml_tensor("ip5");
+        dump_ggml_tensor("aifi_flat");
+    }
+
     // Read encoder outputs to CPU buffers
     // s3: [W3, H3, 256], s4: [W4, H4, 256], s5: [W5, H5, 256]
     struct scale_feat {
@@ -876,6 +893,19 @@ std::vector<region> detect(context* ctx, const float* pixels,
         for (auto v : feats[i].data) { fmin = std::min(fmin, v); fmax = std::max(fmax, v); }
         fprintf(stderr, "  s%d: %dx%d x %d range=[%.4f, %.4f]\n",
                 i+3, feats[i].W, feats[i].H, feats[i].C, fmin, fmax);
+    }
+
+    // Dump s3/s4/s5 for diff comparison
+    if (getenv("LAYOUT_DEBUG")) {
+        for (int i = 0; i < 3; i++) {
+            char fname[128];
+            snprintf(fname, sizeof(fname), "/tmp/cpp_s%d.bin", i + 3);
+            FILE* fp = fopen(fname, "wb");
+            if (fp) {
+                fwrite(feats[i].data.data(), sizeof(float), feats[i].data.size(), fp);
+                fclose(fp);
+            }
+        }
     }
 
     ggml_gallocr_free(alloc);
@@ -1089,21 +1119,19 @@ std::vector<region> detect(context* ctx, const float* pixels,
     // Compute query position encoding from reference points via query_pos_head MLP
     // ref_points → linear0 → ReLU → linear1 → ReLU → linear2 → pos_enc  [D, N_queries]
     // Helper: compute query position encoding from reference points via MLP
+    // HF: query_pos_head = 2-layer MLP: Linear(4, 2*D) → ReLU → Linear(2*D, D)
+    int qpos_hidden = 2 * D;  // 512
     auto compute_pos_enc = [&](const float* rp, float* pe) {
         std::vector<float> rp_col(4 * N_queries);
         for (int q = 0; q < N_queries; q++)
             for (int d = 0; d < 4; d++)
                 rp_col[d * N_queries + q] = rp[q * 4 + d];
-        std::vector<float> tmp(D * N_queries);
-        cpu_linear(rp_col.data(), tmp.data(), 4, D, N_queries,
+        std::vector<float> tmp(qpos_hidden * N_queries);
+        cpu_linear(rp_col.data(), tmp.data(), 4, qpos_hidden, N_queries,
                    ctx->decoder.qpos_w[0], ctx->decoder.qpos_b[0]);
         for (auto& v : tmp) v = std::max(0.0f, v);
-        std::vector<float> tmp2(D * N_queries);
-        cpu_linear(tmp.data(), tmp2.data(), D, D, N_queries,
+        cpu_linear(tmp.data(), pe, qpos_hidden, D, N_queries,
                    ctx->decoder.qpos_w[1], ctx->decoder.qpos_b[1]);
-        for (auto& v : tmp2) v = std::max(0.0f, v);
-        cpu_linear(tmp2.data(), pe, D, D, N_queries,
-                   ctx->decoder.qpos_w[2], ctx->decoder.qpos_b[2]);
     };
 
     std::vector<float> pos_enc(D * N_queries, 0.0f);
