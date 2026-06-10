@@ -356,6 +356,23 @@ bool load(context** out, const char* path, int n_threads) {
 // Graph helpers
 // ---------------------------------------------------------------------------
 
+static std::vector<float> tensor_to_f32(ggml_tensor* t) {
+    if (!t) return {};
+    int n = (int)ggml_nelements(t);
+    std::vector<float> out(n);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, out.data(), 0, n * sizeof(float));
+    } else {
+        size_t raw_size = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_size);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_size);
+        const auto* traits = ggml_get_type_traits(t->type);
+        if (traits && traits->to_float)
+            traits->to_float(raw.data(), out.data(), n);
+    }
+    return out;
+}
+
 static ggml_tensor* prep_conv(ggml_context* g, ggml_tensor* w, int IC, int KH, int KW) {
     if (!w) return nullptr;
     if (ggml_n_dims(w) == 2) {
@@ -1246,72 +1263,124 @@ std::vector<region> detect(context* ctx, const float* pixels,
         compute_pos_enc(ref_points.data(), pos_enc.data());
         const auto& layer = ctx->decoder.layers[li];
 
-        // --- Self-attention (with pos on Q/K only, matching HF DETR pattern) ---
-        std::vector<float> residual = queries; // [D, N_queries]
-        // QKV from (queries + pos_enc) for Q/K, raw queries for V
-        std::vector<float> qp_sa(D * N_queries);
-        for (int i = 0; i < D * N_queries; i++) qp_sa[i] = queries[i] + pos_enc[i];
-        std::vector<float> qkv_pos(3 * D * N_queries), qkv_raw(3 * D * N_queries);
-        cpu_linear(qp_sa.data(), qkv_pos.data(), D, 3 * D, N_queries,
-                   layer.self_qkv_w, layer.self_qkv_b);  // Q, K correct
-        cpu_linear(queries.data(), qkv_raw.data(), D, 3 * D, N_queries,
-                   layer.self_qkv_w, layer.self_qkv_b);  // V correct
-        // Merge: Q/K from qkv_pos, V from qkv_raw
-        std::vector<float> qkv(3 * D * N_queries);
-        memcpy(qkv.data(), qkv_pos.data(), 2 * D * N_queries * sizeof(float)); // Q, K
-        memcpy(qkv.data() + 2 * D * N_queries, qkv_raw.data() + 2 * D * N_queries,
-               D * N_queries * sizeof(float)); // V
+        // --- Self-attention via ggml graph (BLAS-accelerated) ---
+        std::vector<float> residual = queries;
+        {
+            int hd = D / N_heads;
+            size_t sb = ggml_tensor_overhead() * 64 + ggml_graph_overhead_custom(64, false) + 16*1024*1024;
+            std::vector<uint8_t> sbuf(sb);
+            ggml_init_params sip = { sb, sbuf.data(), true };
+            ggml_context* gc = ggml_init(sip);
 
-        // Split QKV and compute attention
-        // Q, K, V each [D, N_queries], 8 heads, head_dim = 32
-        int hd = D / N_heads;
-        std::vector<float> attn_out(D * N_queries, 0.0f);
-        for (int h = 0; h < N_heads; h++) {
-            // Compute Q @ K^T / sqrt(hd) for this head
-            std::vector<float> scores(N_queries * N_queries, 0.0f);
-            for (int qi = 0; qi < N_queries; qi++) {
-                for (int ki = 0; ki < N_queries; ki++) {
-                    float dot = 0;
-                    for (int d = 0; d < hd; d++) {
-                        int idx = (h * hd + d) * N_queries;
-                        dot += qkv[idx + qi] * qkv[D * N_queries + idx + ki];
-                    }
-                    scores[qi * N_queries + ki] = dot / sqrtf(hd);
+            auto* inp = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, N_queries);
+            ggml_set_name(inp, "sa_in"); ggml_set_input(inp);
+            auto* pe_in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, N_queries);
+            ggml_set_name(pe_in, "sa_pe"); ggml_set_input(pe_in);
+            auto* res_in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, N_queries);
+            ggml_set_name(res_in, "sa_res"); ggml_set_input(res_in);
+
+            // For decoder weights (pre-transposed by converter to Gemm convention):
+            // cpu_linear uses W[i + o*in_d]. To match in ggml_mul_mat, we need a
+            // weight tensor with ne[0]=in_d so it contracts over the input dimension.
+            // The pre-transposed weight has ne=[768, 256] (ne[0]=768=out, ne[1]=256=in).
+            // We need it as [256, 768] for ggml_mul_mat to contract over 256.
+            // But the DATA must be reorganized, not just shape-swapped.
+            // Solution: create a fresh [in_d, out_d] input tensor with transposed data.
+            auto* qkv_w_in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, 3*D);
+            ggml_set_name(qkv_w_in, "sa_qkv_w"); ggml_set_input(qkv_w_in);
+            auto* qkv_b_in = ggml_new_tensor_1d(gc, GGML_TYPE_F32, 3*D);
+            ggml_set_name(qkv_b_in, "sa_qkv_b"); ggml_set_input(qkv_b_in);
+            auto* out_w_in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, D);
+            ggml_set_name(out_w_in, "sa_out_w"); ggml_set_input(out_w_in);
+            auto* out_b_in = ggml_new_tensor_1d(gc, GGML_TYPE_F32, D);
+            ggml_set_name(out_b_in, "sa_out_b"); ggml_set_input(out_b_in);
+
+            // Q/K from (inp + pe), V from inp — using input weight tensors
+            auto* inp_pos = ggml_add(gc, inp, pe_in);
+            // ggml_mul_mat(W[in_d, out_d], x[in_d, N]) → result[out_d, N]
+            auto* qkv_pos = ggml_add(gc, ggml_mul_mat(gc, qkv_w_in, inp_pos), qkv_b_in);
+            auto* qkv_raw = ggml_add(gc, ggml_mul_mat(gc, qkv_w_in, inp), qkv_b_in);
+
+            // Extract Q[D,N], K[D,N] from qkv_pos; V[D,N] from qkv_raw
+            auto* Q = ggml_cont(gc, ggml_view_2d(gc, qkv_pos, D, N_queries, qkv_pos->nb[1], 0));
+            auto* K = ggml_cont(gc, ggml_view_2d(gc, qkv_pos, D, N_queries, qkv_pos->nb[1], D*sizeof(float)));
+            auto* V = ggml_cont(gc, ggml_view_2d(gc, qkv_raw, D, N_queries, qkv_raw->nb[1], 2*D*sizeof(float)));
+
+            // Multi-head: [D, N] → [hd, heads, N] → permute → [hd, N, heads]
+            Q = ggml_reshape_3d(gc, Q, hd, N_heads, N_queries);
+            Q = ggml_cont(gc, ggml_permute(gc, Q, 0, 2, 1, 3));
+            K = ggml_reshape_3d(gc, K, hd, N_heads, N_queries);
+            K = ggml_cont(gc, ggml_permute(gc, K, 0, 2, 1, 3));
+            V = ggml_reshape_3d(gc, V, hd, N_heads, N_queries);
+            V = ggml_cont(gc, ggml_permute(gc, V, 0, 2, 1, 3));
+
+            // Attention
+            auto* scores = ggml_mul_mat(gc, K, Q); // [N, N, heads]
+            scores = ggml_soft_max_ext(gc, scores, nullptr, 1.0f/sqrtf((float)hd), 0.0f);
+            auto* Vt = ggml_cont(gc, ggml_permute(gc, V, 1, 0, 2, 3));
+            auto* attn = ggml_mul_mat(gc, Vt, scores); // [hd, N, heads]
+
+            // Reshape back: [hd, N, heads] → [hd, heads, N] → [D, N]
+            attn = ggml_cont(gc, ggml_permute(gc, attn, 0, 2, 1, 3));
+            attn = ggml_reshape_2d(gc, attn, D, N_queries);
+
+            // Output projection + residual + norm
+            attn = ggml_add(gc, ggml_mul_mat(gc, out_w_in, attn), out_b_in);
+            auto* out = ggml_add(gc, res_in, attn);
+            out = layer_norm(gc, out, layer.norm1_w, layer.norm1_b);
+
+            ggml_set_name(out, "sa_out"); ggml_set_output(out);
+            ggml_cgraph* gf = ggml_new_graph_custom(gc, 64, false);
+            ggml_build_forward_expand(gf, out);
+            ggml_gallocr_t sa = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+            ggml_gallocr_alloc_graph(sa, gf);
+
+            // Transpose CPU [D,N] (d*N+q) → ggml [D,N] (d+q*D) for activations
+            std::vector<float> tq(D*N_queries), tp(D*N_queries), tr(D*N_queries);
+            for (int d = 0; d < D; d++)
+                for (int q = 0; q < N_queries; q++) {
+                    tq[d + q*D] = queries[d*N_queries + q];
+                    tp[d + q*D] = pos_enc[d*N_queries + q];
+                    tr[d + q*D] = residual[d*N_queries + q];
                 }
-            }
-            // Softmax per query
-            for (int qi = 0; qi < N_queries; qi++) {
-                float max_s = -1e9f;
-                for (int ki = 0; ki < N_queries; ki++)
-                    max_s = std::max(max_s, scores[qi * N_queries + ki]);
-                float sum = 0;
-                for (int ki = 0; ki < N_queries; ki++) {
-                    scores[qi * N_queries + ki] = expf(scores[qi * N_queries + ki] - max_s);
-                    sum += scores[qi * N_queries + ki];
-                }
-                for (int ki = 0; ki < N_queries; ki++)
-                    scores[qi * N_queries + ki] /= sum;
-            }
-            // Attn @ V
-            for (int qi = 0; qi < N_queries; qi++) {
-                for (int d = 0; d < hd; d++) {
-                    float sum = 0;
-                    for (int ki = 0; ki < N_queries; ki++) {
-                        sum += scores[qi * N_queries + ki] *
-                               qkv[2 * D * N_queries + (h * hd + d) * N_queries + ki];
-                    }
-                    attn_out[(h * hd + d) * N_queries + qi] = sum;
-                }
-            }
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_in"), tq.data(), 0, D*N_queries*sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_pe"), tp.data(), 0, D*N_queries*sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_res"), tr.data(), 0, D*N_queries*sizeof(float));
+
+            // Transpose weight data from ggml [768, 256] to [256, 768] layout.
+            // Original: flat_old[o + i*768] for o ∈ [0,768), i ∈ [0,256)
+            // Target:   flat_new[i + o*256] = flat_old[o + i*768]
+            auto qkv_w_raw = tensor_to_f32(layer.self_qkv_w);
+            std::vector<float> qkv_w_t(D * 3*D);
+            for (int i = 0; i < D; i++)
+                for (int o = 0; o < 3*D; o++)
+                    qkv_w_t[i + o*D] = qkv_w_raw[o + i * 3*D];
+            auto qkv_b_data = tensor_to_f32(layer.self_qkv_b);
+            // out_proj: ggml [256, 256] → same shape, but data needs transposing
+            auto out_w_raw = tensor_to_f32(layer.self_out_w);
+            std::vector<float> out_w_t(D * D);
+            for (int i = 0; i < D; i++)
+                for (int o = 0; o < D; o++)
+                    out_w_t[i + o*D] = out_w_raw[o + i*D];
+            auto out_b_data = tensor_to_f32(layer.self_out_b);
+
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_qkv_w"), qkv_w_t.data(), 0, D*3*D*sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_qkv_b"), qkv_b_data.data(), 0, 3*D*sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_out_w"), out_w_t.data(), 0, D*D*sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_out_b"), out_b_data.data(), 0, D*sizeof(float));
+
+            ggml_backend_graph_compute(ctx->backend, gf);
+
+            // Transpose ggml → CPU layout
+            std::vector<float> to(D*N_queries);
+            ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "sa_out"), to.data(), 0, D*N_queries*sizeof(float));
+            for (int d = 0; d < D; d++)
+                for (int q = 0; q < N_queries; q++)
+                    queries[d*N_queries + q] = to[d + q*D];
+
+            ggml_gallocr_free(sa);
+            ggml_free(gc);
         }
-        // Output projection
-        std::vector<float> sa_out(D * N_queries);
-        cpu_linear(attn_out.data(), sa_out.data(), D, D, N_queries,
-                   layer.self_out_w, layer.self_out_b);
-
-        // Residual + norm
-        for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + sa_out[i];
-        cpu_layernorm(queries.data(), D, N_queries, layer.norm1_w, layer.norm1_b);
         { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_after_sa: [%.4f,%.4f]\n",li,mn,mx); }
 
         // --- Deformable cross-attention ---
