@@ -19,6 +19,20 @@ Completed milestones and work log. See PLAN.md for current roadmap.
   model caching, conditional import selects WASM provider on web
 - All existing OCR models work: pix2tex, HMER, BTTR, PosFormer, Texo,
   PP-FormulaNet-L (auto-detected from GGUF architecture tag)
+- Tested end-to-end: model load (16.8 MB, 1.5s) + encoder (578 tokens)
+  + decoder (201 tokens) → LaTeX output in Node.js
+
+### HuggingFace Space
+- `hf-space/`: Docker build (two-stage) + Gradio UI (3 tabs: text
+  embeddings, math OCR, health)
+- Pattern: C++ `crispembed-server` on :8090 + Gradio on :7860
+- Default models: all-MiniLM-L6-v2 (text) + hmer-hw (OCR)
+- Tested: cos=0.785 for similar texts, `x² + 1 = 0` → `x ^ { 2 } + 1 = 0`
+- Live at https://huggingface.co/spaces/cstr/CrispEmbed
+
+### CI
+- `build-wasm.yml`: builds WASM on push/PR, uploads artifacts
+- `deploy-hf-space.yml`: auto-deploys `hf-space/` to HuggingFace on push
 
 ---
 

@@ -134,7 +134,7 @@ struct transformer_decoder {
     ggml_tensor *enc_bbox_w[3] = {};     // MLP layers
     ggml_tensor *enc_bbox_b[3] = {};
     // Query position head (MLP)
-    ggml_tensor *qpos_w[3] = {}, *qpos_b[3] = {};
+    ggml_tensor *qpos_w[2] = {}, *qpos_b[2] = {};
     // Decoder layers
     decoder_layer layers[6];
     // Per-layer detection heads
@@ -276,7 +276,7 @@ bool load(context** out, const char* path, int n_threads) {
         dec.enc_bbox_w[i] = get(k + ".weight");
         dec.enc_bbox_b[i] = get(k + ".bias");
     }
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 2; i++) {
         auto k = std::string("model.decoder.query_pos_head.layers.") + std::to_string(i);
         dec.qpos_w[i] = get(k + ".weight");
         dec.qpos_b[i] = get(k + ".bias");
@@ -579,7 +579,9 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     auto* p5_flat = ggml_reshape_2d(g, p5_perm, s5_c, s5_w * s5_h); // ne: [C, W*H]
     LDBG("  AIFI: p5_flat done\n");
     // Transpose to [256, N] — ggml reshape gives [C, H*W], need [C, N] which is same
-    // AIFI: add(pos_embed) → self-attn → residual+norm1 → FFN(GELU_erf) → residual+norm2
+    // AIFI encoder: pos_embed → self-attn → residual+norm1 → FFN(GELU) → residual+norm2
+    // AIFI: self-attn(pos on Q/K only) → residual+norm1 → FFN(GELU_erf) → residual+norm2
+    // HF: normalize_before=False (post-LN), pos added to Q/K only (not V)
     {
         // ONNX applies pos_embed to Q/K only, not V.  Split the in_proj_weight
         // into separate Q_w[256,256], K_w[256,256], V_w[256,256] and project
@@ -587,7 +589,7 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
         auto* x_pos = p5_flat;
         if (enc.pos_embed) {
             auto* pe = ggml_reshape_2d(g, enc.pos_embed, s5_c, s5_w * s5_h);
-            x_pos = ggml_add(g, p5_flat, pe);
+            x_pos = ggml_add(g, p5_flat, pe);  // x + pos (for Q/K projection)
         }
 
         int D_a = 256, N_tok = s5_w * s5_h, heads = 8, hd = D_a / heads;
@@ -653,6 +655,7 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
         p5_flat = ggml_add(g, residual, ffn);
         p5_flat = layer_norm(g, p5_flat, enc.aifi_norm2_w, enc.aifi_norm2_b);
     }
+    ggml_set_name(p5_flat, "aifi_flat"); ggml_set_output(p5_flat);
     LDBG("  AIFI done: p5_flat=[%lld,%lld]\n", (long long)p5_flat->ne[0], (long long)p5_flat->ne[1]);
     // Reshape back to spatial: [C, W*H] → [C, W, H] → permute to [W, H, C]
     auto* p5_spatial = ggml_reshape_3d(g, p5_flat, s5_c, s5_w, s5_h);
@@ -695,21 +698,23 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     // Mark AIFI output for comparison
     ggml_set_name(p5, "aifi_out"); ggml_set_output(p5);
 
-    // S5 → lateral (SiLU) → upsample → concat with S4 → CSP
+    // FPN top-down pathway (matching HF RTDetrV2HybridEncoder):
+    // HF stores lateral-conv'd features and reuses them in the PAN.
+    // FPN step 0: lateral(p5) → upsample → cat(ip4) → CSP → fpn_0
     auto* lat5 = conv_silu(g, p5, enc.lateral_convs[0], 256, 1, 1, 1, 0);
     ggml_set_name(lat5, "lat5_silu"); ggml_set_output(lat5);
     auto* up5 = ggml_interpolate(g, lat5, (int)p4->ne[0], (int)p4->ne[1],
                                   (int)lat5->ne[2], 1, GGML_SCALE_MODE_NEAREST);
     auto* cat4 = ggml_concat(g, up5, p4, 2);  // [W, H, 512]
-    p4 = run_csp(cat4, enc.fpn_blocks[0]);
-    ggml_set_name(p4, "csp0"); ggml_set_output(p4);
+    auto* fpn_0 = run_csp(cat4, enc.fpn_blocks[0]);
 
-    // S4 → lateral (SiLU) → upsample → concat with S3 → CSP
-    auto* lat4 = conv_silu(g, p4, enc.lateral_convs[1], 256, 1, 1, 1, 0);
+    // FPN step 1: lateral(fpn_0) → upsample → cat(ip3) → CSP → fpn_1
+    auto* lat4 = conv_silu(g, fpn_0, enc.lateral_convs[1], 256, 1, 1, 1, 0);
     auto* up4 = ggml_interpolate(g, lat4, (int)p3->ne[0], (int)p3->ne[1],
                                   (int)lat4->ne[2], 1, GGML_SCALE_MODE_NEAREST);
     auto* cat3 = ggml_concat(g, up4, p3, 2);  // [W, H, 512]
-    p3 = run_csp(cat3, enc.fpn_blocks[1]);
+    auto* fpn_1 = run_csp(cat3, enc.fpn_blocks[1]);
+    // After FPN: fpn_feature_maps (reversed) = [fpn_1(80x80), lat4(40x40), lat5(20x20)]
 
     // PAN bottom-up: S3 → downsample → concat with lat4 → CSP
     // RT-DETRv2 CCFM: PAN uses the lateral-processed features (inner_outs),
@@ -857,6 +862,23 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 read_range(name);
             }
     }
+    // Dump encoder intermediates for diff comparison (ggml raw byte order)
+    if (getenv("LAYOUT_DEBUG")) {
+        auto dump_ggml_tensor = [&](const char* name) {
+            ggml_tensor* t = ggml_graph_get_tensor(gf, name);
+            if (!t) return;
+            int n = ggml_nelements(t);
+            std::vector<float> data(n);
+            ggml_backend_tensor_get(t, data.data(), 0, n * sizeof(float));
+            char fname[128];
+            snprintf(fname, sizeof(fname), "/tmp/cpp_%s.bin", name);
+            FILE* fp = fopen(fname, "wb");
+            if (fp) { fwrite(data.data(), sizeof(float), n, fp); fclose(fp); }
+        };
+        dump_ggml_tensor("ip3"); dump_ggml_tensor("ip4"); dump_ggml_tensor("ip5");
+        dump_ggml_tensor("aifi_flat");
+    }
+
     // Read encoder outputs to CPU buffers
     // s3: [W3, H3, 256], s4: [W4, H4, 256], s5: [W5, H5, 256]
     struct scale_feat {
@@ -880,6 +902,19 @@ std::vector<region> detect(context* ctx, const float* pixels,
             for (auto v : feats[i].data) { fmin = std::min(fmin, v); fmax = std::max(fmax, v); }
             fprintf(stderr, "  s%d: %dx%d x %d range=[%.4f, %.4f]\n",
                     i+3, feats[i].W, feats[i].H, feats[i].C, fmin, fmax);
+        }
+    }
+
+    // Dump s3/s4/s5 for diff comparison
+    if (getenv("LAYOUT_DEBUG")) {
+        for (int i = 0; i < 3; i++) {
+            char fname[128];
+            snprintf(fname, sizeof(fname), "/tmp/cpp_s%d.bin", i + 3);
+            FILE* fp = fopen(fname, "wb");
+            if (fp) {
+                fwrite(feats[i].data.data(), sizeof(float), feats[i].data.size(), fp);
+                fclose(fp);
+            }
         }
     }
 
@@ -960,10 +995,27 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 feat_col[c * N_lv + s] = feats[lv].data[s + c * N_lv];
 
         // Apply decoder input_proj (1×1 conv = linear projection)
+        // Conv weight is in ONNX Conv (out, in) convention — NOT MatMul convention.
+        // y[o] = sum_i W_conv[o, i] * x[i] + b[o]
+        // In ggml flat: W_conv[o, i] = flat[i + o * in_d] (numpy row-major (out, in))
         if (ctx->decoder.input_proj[lv].w) {
             std::vector<float> proj(D * N_lv);
-            cpu_linear(feat_col.data(), proj.data(), D, D, N_lv,
-                       ctx->decoder.input_proj[lv].w, ctx->decoder.input_proj[lv].b);
+            // Use Conv convention: W[i + o * in_d]
+            {
+                auto* w_t = ctx->decoder.input_proj[lv].w;
+                auto* b_t = ctx->decoder.input_proj[lv].b;
+                std::vector<float> W(D * D), b(D, 0.0f);
+                if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, D * D * sizeof(float));
+                if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, D * sizeof(float));
+                for (int n = 0; n < N_lv; n++) {
+                    for (int o = 0; o < D; o++) {
+                        float sum = b[o];
+                        for (int i = 0; i < D; i++)
+                            sum += W[i + o * D] * feat_col[i * N_lv + n];
+                        proj[o * N_lv + n] = sum;
+                    }
+                }
+            }
             // Copy projected features to memory
             for (int c = 0; c < D; c++)
                 for (int s = 0; s < N_lv; s++)
@@ -988,6 +1040,23 @@ std::vector<region> detect(context* ctx, const float* pixels,
     // W: [out, in], x: [in, N], y: [out, N]
 
     // CPU LayerNorm
+
+    // Apply valid_mask to memory (zeros out padding positions)
+    if (ctx->decoder.valid_mask) {
+        // valid_mask is [1, N_total, 1] — broadcast over channels
+        std::vector<float> mask(total_tokens);
+        ggml_backend_tensor_get(ctx->decoder.valid_mask, mask.data(), 0,
+                                total_tokens * sizeof(float));
+        for (int n = 0; n < total_tokens; n++)
+            if (mask[n] == 0.0f)
+                for (int d = 0; d < D; d++)
+                    memory[d * total_tokens + n] = 0.0f;
+        if (getenv("LAYOUT_DEBUG")) {
+            int n_valid = 0;
+            for (auto v : mask) if (v > 0) n_valid++;
+            fprintf(stderr, "  valid_mask: %d/%d valid tokens\n", n_valid, total_tokens);
+        }
+    }
 
     // --- Query initialization: select top-K from encoder output ---
     // 1. Project memory through enc_output: mask → linear + norm
@@ -1024,6 +1093,35 @@ std::vector<region> detect(context* ctx, const float* pixels,
     }
     cpu_layernorm(enc_proj.data(), D, total_tokens,
                   ctx->decoder.enc_norm_w, ctx->decoder.enc_norm_b);
+
+    // Debug: inject HF reference enc_output for decoder parity testing
+    if (getenv("LAYOUT_INJECT_REF")) {
+        FILE* rfp = fopen(getenv("LAYOUT_INJECT_REF"), "rb");
+        if (rfp) {
+            // Reference is [N_total, D] row-major → convert to [D, N_total] col-major
+            std::vector<float> ref_row(D * total_tokens);
+            fread(ref_row.data(), sizeof(float), D * total_tokens, rfp);
+            fclose(rfp);
+            for (int n = 0; n < total_tokens; n++)
+                for (int d = 0; d < D; d++)
+                    enc_proj[d * total_tokens + n] = ref_row[n * D + d];
+            fprintf(stderr, "  INJECTED HF enc_output from %s\n", getenv("LAYOUT_INJECT_REF"));
+        }
+    }
+    // Debug: also inject HF reference memory (raw encoder features for cross-attn)
+    if (getenv("LAYOUT_INJECT_MEMORY")) {
+        FILE* rfp = fopen(getenv("LAYOUT_INJECT_MEMORY"), "rb");
+        if (rfp) {
+            // Reference stored as [N_total, D] row-major → [D, N_total] col-major
+            std::vector<float> ref_row(D * total_tokens);
+            fread(ref_row.data(), sizeof(float), D * total_tokens, rfp);
+            fclose(rfp);
+            for (int n = 0; n < total_tokens; n++)
+                for (int d = 0; d < D; d++)
+                    memory[d * total_tokens + n] = ref_row[n * D + d];
+            fprintf(stderr, "  INJECTED HF memory from %s\n", getenv("LAYOUT_INJECT_MEMORY"));
+        }
+    }
 
     // Debug: dump raw memory for parity comparison
     if (getenv("LAYOUT_DEBUG")) {
@@ -1097,6 +1195,22 @@ std::vector<region> detect(context* ctx, const float* pixels,
         int token_idx = token_scores[q].second;
         for (int d = 0; d < D; d++)
             queries[d * N_queries + q] = enc_proj[d * total_tokens + token_idx];
+    }
+
+    // Debug: dump initial queries and top-K indices
+    if (getenv("LAYOUT_DEBUG")) {
+        fprintf(stderr, "  top-K indices first 5: %d %d %d %d %d\n",
+                token_scores[0].second, token_scores[1].second, token_scores[2].second,
+                token_scores[3].second, token_scores[4].second);
+        // Dump queries as [N, D] row-major
+        std::vector<float> q_row(D * N_queries);
+        for (int q = 0; q < N_queries; q++)
+            for (int d = 0; d < D; d++)
+                q_row[q * D + d] = queries[d * N_queries + q];
+        FILE* fp = fopen("/tmp/cpp_queries_init.bin", "wb");
+        if (fp) { fwrite(q_row.data(), sizeof(float), D * N_queries, fp); fclose(fp); }
+        fprintf(stderr, "  query 0 first 4: %.6f %.6f %.6f %.6f\n",
+                q_row[0], q_row[1], q_row[2], q_row[3]);
     }
 
     // 5. Initialize reference points via enc_bbox_head MLP on selected tokens
@@ -1186,6 +1300,8 @@ std::vector<region> detect(context* ctx, const float* pixels,
     };
 
     for (int li = 0; li < 6; li++) {
+        // Recompute pos_enc from current reference points each layer (matches HF)
+        compute_pos_enc(ref_points.data(), pos_enc.data());
         const auto& layer = ctx->decoder.layers[li];
 
         // Compare ref_points before this layer
@@ -1479,6 +1595,30 @@ std::vector<region> detect(context* ctx, const float* pixels,
             }
         }
 
+        if (li == 0) {
+            float mn=1e9,mx=-1e9;
+            for (auto v : cross_out) { mn=std::min(mn,v); mx=std::max(mx,v); }
+            fprintf(stderr, "  dec0 cross_out (pre-proj): [%.4f, %.4f]\n", mn, mx);
+            // Debug: print sampling stats for query 0
+            float ref_cx0 = ref_points[0], ref_cy0 = ref_points[1];
+            float ref_w0 = ref_points[2], ref_h0 = ref_points[3];
+            fprintf(stderr, "  dec0 q0 ref: cx=%.4f cy=%.4f w=%.4f h=%.4f\n",
+                    ref_cx0, ref_cy0, ref_w0, ref_h0);
+            float dx0 = offsets[0], dy0 = offsets[N_queries];
+            fprintf(stderr, "  dec0 q0 offset[0]: dx=%.4f dy=%.4f → scaled dx=%.6f dy=%.6f\n",
+                    dx0, dy0, dx0 * 0.25f * ref_w0 * 0.5f, dy0 * 0.25f * ref_h0 * 0.5f);
+            float px0 = ref_cx0 + dx0 * 0.25f * ref_w0 * 0.5f;
+            float py0 = ref_cy0 + dy0 * 0.25f * ref_h0 * 0.5f;
+            fprintf(stderr, "  dec0 q0 sample pos: px=%.4f py=%.4f → pixel sx=%.1f sy=%.1f (80x80)\n",
+                    px0, py0, px0*80-0.5f, py0*80-0.5f);
+            // Print attention weights for q0
+            float aw_sum = 0;
+            for (int j = 0; j < N_heads * N_levels * N_points; j++)
+                aw_sum += attn_weights[j * N_queries + 0];
+            fprintf(stderr, "  dec0 q0 attn_weight sum: %.4f (expected ~%d from softmax)\n",
+                    aw_sum, N_heads);
+        }
+
         // Cross-attention output projection
         std::vector<float> ca_out(D * N_queries);
         cpu_matmul(cross_out.data(), ca_out.data(), D, D, N_queries,
@@ -1570,6 +1710,23 @@ std::vector<region> detect(context* ctx, const float* pixels,
         }
 
         LDBG("  decoder layer %d done\n", li);
+
+        // Debug: dump decoder layer 0 output
+        if (li == 0 && getenv("LAYOUT_DEBUG")) {
+            float qmin=1e9, qmax=-1e9;
+            std::vector<float> q_row(D * N_queries);
+            for (int q = 0; q < N_queries; q++)
+                for (int d = 0; d < D; d++) {
+                    float v = queries[d * N_queries + q];
+                    q_row[q * D + d] = v;
+                    qmin = std::min(qmin, v); qmax = std::max(qmax, v);
+                }
+            fprintf(stderr, "  dec0_output: range=[%.4f, %.4f]\n", qmin, qmax);
+            fprintf(stderr, "  dec0_output[0,:8]: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
+                    q_row[0], q_row[1], q_row[2], q_row[3], q_row[4], q_row[5], q_row[6], q_row[7]);
+            FILE* fp = fopen("/tmp/cpp_dec0_out.bin", "wb");
+            if (fp) { fwrite(q_row.data(), sizeof(float), D * N_queries, fp); fclose(fp); }
+        }
     }
 
     // --- Phase 3: Detection heads ---
@@ -1684,25 +1841,40 @@ std::vector<region> detect_file(context* ctx, const char* path,
         return {};
     }
 
-    // Resize to 640×640, normalize, CHW
+    // Resize to 640×640 with bilinear interpolation, normalize, CHW
+    // Matches HF RTDetrImageProcessor (resample=PIL.BILINEAR)
     std::vector<float> pixels(3 * ctx->input_h * ctx->input_w, 0.0f);
-    float scale_x = (float)ctx->input_w / img_w;
-    float scale_y = (float)ctx->input_h / img_h;
+    int H = ctx->input_h, W = ctx->input_w;
 
     for (int c = 0; c < 3; c++) {
-        for (int y = 0; y < ctx->input_h; y++) {
-            float src_y = y / scale_y;
-            int sy0 = std::min((int)src_y, img_h - 1);
-            for (int x = 0; x < ctx->input_w; x++) {
-                float src_x = x / scale_x;
-                int sx0 = std::min((int)src_x, img_w - 1);
-                // Model expects [0, 1] input — normalization is baked into the model weights
-                float val = raw[(sy0 * img_w + sx0) * 3 + c] / 255.0f;
-                pixels[c * ctx->input_h * ctx->input_w + y * ctx->input_w + x] = val;
+        for (int y = 0; y < H; y++) {
+            // PIL bilinear: src = (dst + 0.5) * src_size / dst_size - 0.5
+            float src_y = ((float)y + 0.5f) * img_h / H - 0.5f;
+            src_y = std::max(0.0f, std::min(src_y, (float)(img_h - 1)));
+            int sy0 = (int)floorf(src_y);
+            int sy1 = std::min(sy0 + 1, img_h - 1);
+            float fy = src_y - sy0;
+            for (int x = 0; x < W; x++) {
+                float src_x = ((float)x + 0.5f) * img_w / W - 0.5f;
+                src_x = std::max(0.0f, std::min(src_x, (float)(img_w - 1)));
+                int sx0 = (int)floorf(src_x);
+                int sx1 = std::min(sx0 + 1, img_w - 1);
+                float fx = src_x - sx0;
+
+                float v00 = raw[(sy0 * img_w + sx0) * 3 + c] / 255.0f;
+                float v01 = raw[(sy0 * img_w + sx1) * 3 + c] / 255.0f;
+                float v10 = raw[(sy1 * img_w + sx0) * 3 + c] / 255.0f;
+                float v11 = raw[(sy1 * img_w + sx1) * 3 + c] / 255.0f;
+
+                float val = (1-fx)*(1-fy)*v00 + fx*(1-fy)*v01 + (1-fx)*fy*v10 + fx*fy*v11;
+                pixels[c * H * W + y * W + x] = val;
             }
         }
     }
     stbi_image_free(raw);
+
+    float scale_x = (float)W / img_w;
+    float scale_y = (float)H / img_h;
 
     auto results = detect(ctx, pixels.data(), img_h, img_w, score_threshold);
 

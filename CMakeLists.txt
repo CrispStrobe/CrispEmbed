@@ -52,7 +52,8 @@ endif()
 # The math OCR decoder runs single-threaded; ggml's thread pool compiles
 # but degrades gracefully (pthread stubs in Emscripten libc).
 # ---------------------------------------------------------------------------
-if(EMSCRIPTEN)
+option(CRISPEMBED_WASM_THREADS "Use real pthreads in WASM (requires COOP/COEP)" OFF)
+if(EMSCRIPTEN AND NOT CRISPEMBED_WASM_THREADS)
     list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 endif()
 
@@ -245,6 +246,9 @@ target_link_libraries(test-ocr-recognize PRIVATE crispembed)
 add_executable(test-layout-detect tests/test_layout_detect.cpp)
 target_link_libraries(test-layout-detect PRIVATE crispembed)
 
+add_executable(test-layout-diff tests/test_layout_diff.cpp)
+target_link_libraries(test-layout-diff PRIVATE crispembed)
+
 add_executable(test-conv-ext tests/test_conv_ext.cpp)
 target_link_libraries(test-conv-ext PRIVATE crispembed)
 
@@ -379,5 +383,37 @@ if(CRISPEMBED_BUILD_SHARED)
     )
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/crispembed.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+    )
+endif()
+
+# ---------------------------------------------------------------------------
+# WASM targets (Emscripten only)
+# Built via: ./build-wasm.sh or ./build-embed-wasm.sh
+# ---------------------------------------------------------------------------
+option(CRISPEMBED_WASM "Build WASM math OCR target (Emscripten)" OFF)
+if(CRISPEMBED_WASM AND EMSCRIPTEN)
+    add_executable(crispembed-wasm wasm/ocr_wrapper.c)
+    target_include_directories(crispembed-wasm PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
+    )
+    target_link_libraries(crispembed-wasm PRIVATE crispembed)
+    set_target_properties(crispembed-wasm PROPERTIES
+        OUTPUT_NAME  crispembed_ocr
+        SUFFIX       ".js"
+    )
+endif()
+
+option(CRISPEMBED_WASM_EMBED "Build WASM text-embedding target (Emscripten)" OFF)
+if(CRISPEMBED_WASM_EMBED AND EMSCRIPTEN)
+    add_executable(crispembed-embed-wasm wasm/embed_wrapper.c)
+    target_include_directories(crispembed-embed-wasm PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
+    )
+    target_link_libraries(crispembed-embed-wasm PRIVATE crispembed)
+    set_target_properties(crispembed-embed-wasm PROPERTIES
+        OUTPUT_NAME  crispembed_embed
+        SUFFIX       ".js"
     )
 endif()
