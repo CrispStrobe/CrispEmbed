@@ -4,6 +4,25 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — RT-DETRv2 Layout Detection
+
+### Document layout analysis: ResNet-50 + HybridEncoder + deformable decoder
+- Architecture: ResNet-50-D backbone + HybridEncoder (AIFI self-attention +
+  FPN/PAN with CSP-RepVGG blocks) + 6-layer transformer decoder with
+  deformable multi-scale cross-attention (300 queries, 17 classes)
+- 14 parity bugs found and fixed via systematic layer-by-layer diff:
+  AIFI pos/LN/residual, PAN lateral features, cpu_linear weight convention,
+  converter weight transposition (Gemm/Split/Transpose patterns),
+  decoder_input_proj Conv convention, valid_mask, query_pos_head architecture,
+  bilinear resize, grid_sample alignment
+- All encoder stages cos=1.0 with exact input (verified via crispembed-diff)
+- Detection score 0.934 on test images (HF reference: 0.955)
+- Fully wired: C ABI, CLI (`--layout`), server (`POST /layout/detect`),
+  Python (`CrispLayout`), Rust (`CrispLayout`), Dart/Flutter
+- Source: docling-project/docling-layout-heron (Apache-2.0, 42M params)
+
+---
+
 ## June 2026 — WASM build (math OCR in browser)
 
 ### CrispEmbed compiled to WebAssembly via Emscripten

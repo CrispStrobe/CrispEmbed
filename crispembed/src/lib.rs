@@ -1159,3 +1159,69 @@ impl Drop for CrispVit {
         unsafe { crispembed_sys::crispembed_vit_free(self.ctx) }
     }
 }
+
+// ── Layout Detection (RT-DETRv2) ──
+
+/// A detected layout region.
+pub struct DetectedRegion {
+    pub x1: f32,
+    pub y1: f32,
+    pub x2: f32,
+    pub y2: f32,
+    pub score: f32,
+    pub label: i32,
+    pub label_name: String,
+}
+
+/// RT-DETRv2 document layout detection (17 region classes).
+pub struct CrispLayout {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispLayout {}
+
+impl CrispLayout {
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let c_path = std::ffi::CString::new(model_path).map_err(|e| e.to_string())?;
+        let ctx = unsafe { crispembed_sys::crispembed_layout_init(c_path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("Failed to load layout model: {}", model_path));
+        }
+        Ok(Self { ctx })
+    }
+
+    pub fn detect(&self, image_path: &str, threshold: f32) -> Vec<DetectedRegion> {
+        let c_path = std::ffi::CString::new(image_path).unwrap();
+        let mut n: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_layout_detect(
+                self.ctx, c_path.as_ptr(), threshold, &mut n,
+            )
+        };
+        let mut results = Vec::new();
+        if !ptr.is_null() && n > 0 {
+            for i in 0..n as usize {
+                let r = unsafe { &*ptr.add(i) };
+                let name = if r.label_name.is_null() {
+                    String::new()
+                } else {
+                    unsafe { std::ffi::CStr::from_ptr(r.label_name) }
+                        .to_str().unwrap_or("").to_string()
+                };
+                results.push(DetectedRegion {
+                    x1: r.x1, y1: r.y1, x2: r.x2, y2: r.y2,
+                    score: r.score, label: r.label, label_name: name,
+                });
+            }
+        }
+        results
+    }
+}
+
+impl Drop for CrispLayout {
+    fn drop(&mut self) {
+        if !self.ctx.is_null() {
+            unsafe { crispembed_sys::crispembed_layout_free(self.ctx) }
+        }
+    }
+}
