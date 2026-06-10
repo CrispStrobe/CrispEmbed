@@ -92,9 +92,8 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     }
 
     // Pre-scan: flatten 4D conv weights to 2D [OC, IC*KH*KW] in the tensor
-    // metadata so the output header has correct shapes. Data layout in memory
-    // is already [OC rows of IC*KH*KW floats] — no transpose needed.
-    // The graph replayer (cnn_embed.cpp) reshapes 2D back to 4D at runtime.
+    // metadata so the output header has correct shapes. Data is transposed
+    // during the per-tensor write loop below.
     for (int i = 0; i < n_tensors; i++) {
         const char * name = gguf_get_tensor_name(ctx_in, i);
         struct ggml_tensor * t = ggml_get_tensor(ctx_in_ggml, name);
@@ -183,7 +182,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             continue;
         }
 
-        // Guard 2: 5D+ tensors — copy as-is (no known use case).
+        // Guard 2: 5D+ tensors — copy as-is (no known use case)
         // 4D tensors were pre-flattened to 2D above, so ggml_n_dims <= 3 here.
         // 3D tensors (MoE expert weights) are quantized via the standard path.
         if (ggml_n_dims(t) >= 5) {
