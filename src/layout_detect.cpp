@@ -888,9 +888,12 @@ std::vector<region> detect(context* ctx, const float* pixels,
         std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
         if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, out_d * in_d * sizeof(float));
         if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, out_d * sizeof(float));
-        // ggml stores weight as [ne0, ne1] col-major.
-        // For linear y = W @ x: element W(o, i) = data[o + i * ne0] = data[o + i * out_d]
-        // This is the ggml mul_mat convention.
+        // Weight convention: GGUF stores ONNX weights in their native byte order.
+        // Most ONNX ops use MatMul (y = x @ W) or Gemm(transB=1) (y = x @ W^T).
+        // For MatMul weights numpy (in_d, out_d): y[o] = sum_i flat[i*out_d+o] * x[i]
+        // For Gemm(transB=1) weights numpy (out_d, in_d): y[o] = sum_i flat[o*in_d+i] * x[i]
+        // Using MatMul convention uniformly (works for enc_proj, verified cos=0.958).
+        // TODO: handle Gemm(transB=1) for out_proj and non-square Linear weights.
         for (int n = 0; n < N; n++) {
             for (int o = 0; o < out_d; o++) {
                 float sum = b[o];
