@@ -1409,21 +1409,40 @@ def _make_hf_checkpoint_callback():
                 epoch = trainer.current_epoch
                 global_step = trainer.global_step
 
+                # Get val_ExpRate if available
+                val_exprate = None
+                if hasattr(trainer, 'callback_metrics'):
+                    val_exprate = trainer.callback_metrics.get('val_ExpRate')
+                    if val_exprate is not None:
+                        val_exprate = float(val_exprate)
+
+                # Include val_ExpRate in filename for easy identification
+                if val_exprate is not None:
+                    ckpt_name = (f"{self.run_name}/epoch{epoch:04d}"
+                                 f"-step{global_step}"
+                                 f"-exp{val_exprate:.4f}.ckpt")
+                else:
+                    ckpt_name = (f"{self.run_name}/epoch{epoch:04d}"
+                                 f"-step{global_step}.ckpt")
+
                 # Upload as latest (for resume) AND as timestamped (for history)
                 for remote_name in [
                     f"{self.run_name}/latest.ckpt",
-                    f"{self.run_name}/epoch{epoch:04d}-step{global_step}.ckpt",
+                    ckpt_name,
                 ]:
                     api.upload_file(
                         path_or_fileobj=str(self._local_ckpt),
                         path_in_repo=remote_name,
                         repo_id=self.repo_id, repo_type="model",
-                        commit_message=f"{tag} epoch={epoch} step={global_step}",
+                        commit_message=(f"{tag} epoch={epoch} step={global_step}"
+                                        f" exp={val_exprate:.4f}" if val_exprate else
+                                        f"{tag} epoch={epoch} step={global_step}"),
                     )
 
                 self._last_upload = time.time()
                 step(f"hf_checkpoint.{tag}",
                      epoch=epoch, step=global_step,
+                     val_ExpRate=round(val_exprate, 4) if val_exprate else None,
                      size_mb=round(size_mb, 1))
             except Exception as e:
                 print(f"  HF checkpoint upload failed (non-fatal): {e}",
