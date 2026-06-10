@@ -355,6 +355,30 @@ bool load(context** out, const char* path, int n_threads) {
 // Graph helpers
 // ---------------------------------------------------------------------------
 
+// Cast to F32 for ggml_add/ggml_mul with quantized tensors
+static ggml_tensor* ensure_f32(ggml_context* g, ggml_tensor* t) {
+    if (!t || t->type == GGML_TYPE_F32) return t;
+    return ggml_cast(g, t, GGML_TYPE_F32);
+}
+
+// Read tensor to F32 (handles Q8_0, F16, etc. for CPU decoder ops)
+static std::vector<float> tensor_to_f32(ggml_tensor* t) {
+    if (!t) return {};
+    int n = (int)ggml_nelements(t);
+    std::vector<float> out(n);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, out.data(), 0, n * sizeof(float));
+    } else {
+        size_t raw_size = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_size);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_size);
+        const auto* traits = ggml_get_type_traits(t->type);
+        if (traits && traits->to_float)
+            traits->to_float(raw.data(), out.data(), n);
+    }
+    return out;
+}
+
 static ggml_tensor* prep_conv(ggml_context* g, ggml_tensor* w, int IC, int KH, int KW) {
     if (!w) return nullptr;
     if (ggml_n_dims(w) == 2) {
@@ -378,7 +402,7 @@ static ggml_tensor* conv_relu(ggml_context* g, ggml_tensor* x, const conv_w& c,
     x = ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1);
     if (c.b) {
         int OC = (int)c.b->ne[0];
-        x = ggml_add(g, x, ggml_reshape_3d(g, c.b, 1, 1, OC));
+        x = ggml_add(g, x, ggml_reshape_3d(g, ensure_f32(g, c.b), 1, 1, OC));
     }
     if (relu) x = ggml_relu(g, x);
     return x;
@@ -392,7 +416,7 @@ static ggml_tensor* conv_silu(ggml_context* g, ggml_tensor* x, const conv_w& c,
     x = ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1);
     if (c.b) {
         int OC = (int)c.b->ne[0];
-        x = ggml_add(g, x, ggml_reshape_3d(g, c.b, 1, 1, OC));
+        x = ggml_add(g, x, ggml_reshape_3d(g, ensure_f32(g, c.b), 1, 1, OC));
     }
     // SiLU: x * sigmoid(x)
     x = ggml_mul(g, x, ggml_sigmoid(g, x));
@@ -407,7 +431,7 @@ static ggml_tensor* linear(ggml_context* g, ggml_tensor* x, ggml_tensor* w, ggml
         w = ggml_cont(g, ggml_transpose(g, w));
     }
     x = ggml_mul_mat(g, w, x);
-    if (b) x = ggml_add(g, x, b);
+    if (ensure_f32(g, b)) x = ggml_add(g, x, b);
     return x;
 }
 
@@ -415,8 +439,8 @@ static ggml_tensor* layer_norm(ggml_context* g, ggml_tensor* x,
                                 ggml_tensor* w, ggml_tensor* b, float eps = 1e-5f) {
     if (!w) return x;
     x = ggml_norm(g, x, eps);
-    x = ggml_mul(g, x, w);
-    if (b) x = ggml_add(g, x, b);
+    x = ggml_mul(g, x, ensure_f32(g, w));
+    if (ensure_f32(g, b)) x = ggml_add(g, x, b);
     return x;
 }
 
@@ -916,8 +940,8 @@ std::vector<region> detect(context* ctx, const float* pixels,
     auto cpu_linear = [](const float* x, float* y, int in_d, int out_d, int N,
                           ggml_tensor* w_t, ggml_tensor* b_t) {
         std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
-        if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, out_d * in_d * sizeof(float));
-        if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, out_d * sizeof(float));
+        { auto Wv = tensor_to_f32(w_t); if (!Wv.empty()) W = Wv; }
+        { auto bv = tensor_to_f32(b_t); if (!bv.empty()) b = bv; }
         // Weight convention: GGUF stores ONNX weights in their native byte order.
         // Most ONNX ops use MatMul (y = x @ W) or Gemm(transB=1) (y = x @ W^T).
         // For MatMul weights numpy (in_d, out_d): y[o] = sum_i flat[i*out_d+o] * x[i]
@@ -937,8 +961,8 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     auto cpu_layernorm = [](float* x, int D, int N, ggml_tensor* w_t, ggml_tensor* b_t) {
         std::vector<float> w(D), b(D);
-        if (w_t) ggml_backend_tensor_get(w_t, w.data(), 0, D * sizeof(float));
-        if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, D * sizeof(float));
+        { auto wv = tensor_to_f32(w_t); if (!wv.empty()) w = wv; }
+        { auto bv = tensor_to_f32(b_t); if (!bv.empty()) b = bv; }
         for (int n = 0; n < N; n++) {
             float mean = 0, var = 0;
             for (int d = 0; d < D; d++) mean += x[d * N + n];
@@ -983,8 +1007,8 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 auto* w_t = ctx->decoder.input_proj[lv].w;
                 auto* b_t = ctx->decoder.input_proj[lv].b;
                 std::vector<float> W(D * D), b(D, 0.0f);
-                if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, D * D * sizeof(float));
-                if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, D * sizeof(float));
+                { auto Wv = tensor_to_f32(w_t); if (!Wv.empty()) W = Wv; }
+                { auto bv = tensor_to_f32(b_t); if (!bv.empty()) b = bv; }
                 for (int n = 0; n < N_lv; n++) {
                     for (int o = 0; o < D; o++) {
                         float sum = b[o];
