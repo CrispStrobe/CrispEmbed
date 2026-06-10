@@ -28,8 +28,12 @@ HMER (handwritten, DenseNet+GRU attention).
 All auto-detected from GGUF metadata, ~3-5s decoder time.
 
 **9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
-GPU acceleration (CUDA/Vulkan/Metal). iOS + Android builds.
+GPU acceleration (CUDA/Vulkan/Metal). iOS + Android + **WASM** builds.
 58 models in registry (text, vision, face), 160+ GGUF variants on HF.
+
+**Browser**: Math OCR compiles to WebAssembly (1 MB) via `build-wasm.sh`.
+Runs entirely client-side — no server, no API key. GGUF models fetched on
+demand and cached in IndexedDB.
 
 ### Part of the Crisp ecosystem
 
