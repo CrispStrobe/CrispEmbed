@@ -1155,6 +1155,22 @@ std::vector<region> detect(context* ctx, const float* pixels,
             queries[d * N_queries + q] = enc_proj[d * total_tokens + token_idx];
     }
 
+    // Debug: dump initial queries and top-K indices
+    if (getenv("LAYOUT_DEBUG")) {
+        fprintf(stderr, "  top-K indices first 5: %d %d %d %d %d\n",
+                token_scores[0].second, token_scores[1].second, token_scores[2].second,
+                token_scores[3].second, token_scores[4].second);
+        // Dump queries as [N, D] row-major
+        std::vector<float> q_row(D * N_queries);
+        for (int q = 0; q < N_queries; q++)
+            for (int d = 0; d < D; d++)
+                q_row[q * D + d] = queries[d * N_queries + q];
+        FILE* fp = fopen("/tmp/cpp_queries_init.bin", "wb");
+        if (fp) { fwrite(q_row.data(), sizeof(float), D * N_queries, fp); fclose(fp); }
+        fprintf(stderr, "  query 0 first 4: %.6f %.6f %.6f %.6f\n",
+                q_row[0], q_row[1], q_row[2], q_row[3]);
+    }
+
     // 5. Initialize reference points via enc_bbox_head MLP on selected tokens
     std::vector<float> ref_points(N_queries * 4);
     {
@@ -1198,6 +1214,14 @@ std::vector<region> detect(context* ctx, const float* pixels,
     };
 
     std::vector<float> pos_enc(D * N_queries, 0.0f);
+
+    // Debug: dump ref_points
+    if (getenv("LAYOUT_DEBUG")) {
+        FILE* fp = fopen("/tmp/cpp_ref_points.bin", "wb");
+        if (fp) { fwrite(ref_points.data(), sizeof(float), N_queries * 4, fp); fclose(fp); }
+        fprintf(stderr, "  ref_points[0]: cx=%.6f cy=%.6f w=%.6f h=%.6f\n",
+                ref_points[0], ref_points[1], ref_points[2], ref_points[3]);
+    }
 
     fprintf(stderr, "layout_detect: query init done (top-K score: %.3f..%.3f)\n",
             token_scores[0].first, token_scores[N_queries-1].first);
@@ -1443,6 +1467,22 @@ std::vector<region> detect(context* ctx, const float* pixels,
         cpu_layernorm(queries.data(), D, N_queries, layer.norm3_w, layer.norm3_b);
 
         { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm3: [%.4f,%.4f]\n",li,mn,mx); }
+
+        // Dump decoder layer output for diff comparison
+        if (getenv("LAYOUT_DEBUG")) {
+            char fname[128];
+            snprintf(fname, sizeof(fname), "/tmp/cpp_dec_%d.bin", li);
+            // Convert from [D, N] col-major to [N, D] row-major
+            std::vector<float> q_row(D * N_queries);
+            for (int q = 0; q < N_queries; q++)
+                for (int d = 0; d < D; d++)
+                    q_row[q * D + d] = queries[d * N_queries + q];
+            FILE* fp = fopen(fname, "wb");
+            if (fp) { fwrite(q_row.data(), sizeof(float), D * N_queries, fp); fclose(fp); }
+            // Also dump after sa_norm and ca_norm
+            // (already printed ranges above — just dump the full data for the sub-steps)
+        }
+
         // Update reference points via bbox head (iterative refinement)
         std::vector<float> bbox_delta(4 * N_queries);
         std::vector<float> tmp(D * N_queries);
