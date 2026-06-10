@@ -6,6 +6,19 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ## June 2026 — PP-FormulaNet-L OCR (181M params)
 
+### Full in-graph ViT encoder with decomposed RPE
+- **Full ggml graph encoder**: all 12 ViT layers run as single ggml graphs
+  with attention + decomposed relative position bias entirely in-graph
+- Window batching: all 16 windows × 12 heads processed as one batch dimension
+  via reshape + permute, enabling efficient batched matmuls
+- Decomposed RPE in-graph: two matmuls (rp_h@Q, rp_w@Q_permuted) with
+  broadcast-add to attention scores (Granite NLE pattern)
+- LN ordering fix: for windowed layers, LayerNorm1 applied on CPU before
+  window partition to match HF's LN→pad→QKV ordering. Prevents LN(0)=bias
+  corruption of padding tokens (cos jumped from 0.973 to 0.9999)
+- Per-layer parity: cos ≥ 0.99997 on all 12 layers
+- Performance: 60s encoder (was 77s hybrid, ~500s scalar)
+
 ### Printed math OCR: SAM-ViT encoder + MBart decoder
 - New architecture: SAM-style ViT encoder (12 layers, 768d, 12 heads)
   with windowed attention (ws=14) + global attention (layers 2,5,8,11)
@@ -23,6 +36,12 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 - Wired into unified `--ocr` CLI, C ABI, model registry, CrispCalc Dart catalog
 - Source: PaddlePaddle/PP-FormulaNet-L_safetensors (Apache-2.0)
 - New GGUF loader helper: `kv_i32_array()` for int32 metadata arrays
+
+### Full-stack wiring
+- HTTP server: `POST /math/ocr` endpoint (`--ocr` flag, stb_image load, JSON response)
+- Python bindings: `CrispMathOcr` class with `recognize()` and `recognize_gray()`
+- Updated contributing.md with server + Python binding steps
+- Updated public C header comments to list all supported architectures
 
 ## June 2026 — PPFormulaNet-S / Texo-Distill OCR
 
