@@ -1190,12 +1190,40 @@ std::vector<region> detect(context* ctx, const float* pixels,
     diff_report("enc_proj", "layer_norm_2", enc_proj.data(), D * total_tokens);
     diff_report("memory", "concat_4", memory.data(), D * total_tokens);
 
+    // Load per-layer ref_points reference
+    crispembed_diff::Ref rp_ref;
+    bool has_rp_ref = rp_ref.load("/tmp/refpoints-per-layer.gguf");
+
+    // Per-layer ref_points names: sigmoid, sigmoid_1, ..., sigmoid_6
+    // Per-layer pos_enc names: linear_12, linear_27, linear_42, linear_57, linear_72, linear_87
+    static const char* pos_enc_names[] = {
+        "linear_12", "linear_27", "linear_42", "linear_57", "linear_72", "linear_87"
+    };
+
     for (int li = 0; li < 6; li++) {
         const auto& layer = ctx->decoder.layers[li];
+
+        // Compare ref_points before this layer
+        if (has_rp_ref) {
+            char rp_name[32];
+            snprintf(rp_name, 32, "sigmoid%s", li == 0 ? "" : (std::string("_") + std::to_string(li)).c_str());
+            auto rp_r = rp_ref.compare(rp_name, ref_points.data(), N_queries * 4);
+            if (rp_r.found)
+                fprintf(stderr, "    DIFF dec%d_refpts(%s): cos_min=%.6f max_abs=%.2e %s\n",
+                        li, rp_name, rp_r.cos_min, rp_r.max_abs, rp_r.is_pass() ? "PASS" : "FAIL");
+        }
 
         // Recompute pos_enc each layer from current ref_points
         std::vector<float> pos_enc(D * N_queries);
         compute_pos_enc(pos_enc);
+
+        // Compare pos_enc for this layer
+        if (has_rp_ref) {
+            auto pe_r = rp_ref.compare(pos_enc_names[li], pos_enc.data(), D * N_queries);
+            if (pe_r.found)
+                fprintf(stderr, "    DIFF dec%d_posenc: cos_min=%.6f max_abs=%.2e %s\n",
+                        li, pe_r.cos_min, pe_r.max_abs, pe_r.is_pass() ? "PASS" : "FAIL");
+        }
 
         if (li == 0) {
             diff_report("queries_init", "gather_2", queries.data(), D * N_queries);
@@ -1337,7 +1365,11 @@ std::vector<region> detect(context* ctx, const float* pixels,
             diff_report("sa_resid", "add_2545", queries.data(), D * N_queries);
         }
         cpu_layernorm(queries.data(), D, N_queries, layer.norm1_w, layer.norm1_b);
-        if (li == 0) diff_report("norm1", "layer_norm_3", queries.data(), D * N_queries);
+        {
+            char ref_name[32]; snprintf(ref_name, 32, "layer_norm_%d", 3 + li*3);
+            char label[32]; snprintf(label, 32, "dec%d_norm1", li);
+            diff_report(label, ref_name, queries.data(), D * N_queries);
+        }
         { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm1: [%.4f,%.4f]\n",li,mn,mx); }
 
         // --- Deformable cross-attention ---
@@ -1474,7 +1506,11 @@ std::vector<region> detect(context* ctx, const float* pixels,
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ca_out[i];
         if (li == 0) diff_report("ca_resid", "add_2801", queries.data(), D * N_queries);
         cpu_layernorm(queries.data(), D, N_queries, layer.norm2_w, layer.norm2_b);
-        if (li == 0) diff_report("norm2", "layer_norm_4", queries.data(), D * N_queries);
+        {
+            char ref_name[32]; snprintf(ref_name, 32, "layer_norm_%d", 4 + li*3);
+            char label[32]; snprintf(label, 32, "dec%d_norm2", li);
+            diff_report(label, ref_name, queries.data(), D * N_queries);
+        }
 
         { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm2: [%.4f,%.4f]\n",li,mn,mx); }
         // --- FFN ---
@@ -1491,7 +1527,11 @@ std::vector<region> detect(context* ctx, const float* pixels,
         // Residual + norm
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ffn2[i];
         cpu_layernorm(queries.data(), D, N_queries, layer.norm3_w, layer.norm3_b);
-        if (li == 0) diff_report("norm3", "layer_norm_5", queries.data(), D * N_queries);
+        {
+            char ref_name[32]; snprintf(ref_name, 32, "layer_norm_%d", 5 + li*3);
+            char label[32]; snprintf(label, 32, "dec%d_norm3", li);
+            diff_report(label, ref_name, queries.data(), D * N_queries);
+        }
 
         { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm3: [%.4f,%.4f]\n",li,mn,mx); }
         // Update reference points via bbox head (iterative refinement)
@@ -1511,16 +1551,35 @@ std::vector<region> detect(context* ctx, const float* pixels,
             }
         }
 
+        // Debug: print bbox_delta and ref_points before refinement
+        if (li <= 1 && getenv("LAYOUT_DEBUG")) {
+            float dmin=1e9,dmax=-1e9;
+            for (auto v : bbox_delta) { dmin=std::min(dmin,v); dmax=std::max(dmax,v); }
+            fprintf(stderr, "  dec%d bbox_delta: [%.4f, %.4f]\n", li, dmin, dmax);
+            fprintf(stderr, "  dec%d bbox_delta[0,:4]: %.6f %.6f %.6f %.6f\n", li,
+                    bbox_delta[0*N_queries+0], bbox_delta[1*N_queries+0],
+                    bbox_delta[2*N_queries+0], bbox_delta[3*N_queries+0]);
+            fprintf(stderr, "  dec%d ref_points[0] before: %.6f %.6f %.6f %.6f\n", li,
+                    ref_points[0], ref_points[1], ref_points[2], ref_points[3]);
+        }
+
         // Refine reference points: sigmoid(inverse_sigmoid(ref) + delta)
         for (int q = 0; q < N_queries; q++) {
             for (int d = 0; d < 4; d++) {
                 float r = ref_points[q * 4 + d];
-                // inverse sigmoid: log(r / (1 - r))
-                r = std::max(1e-6f, std::min(r, 1.0f - 1e-6f));
-                float inv_sig = logf(r / (1.0f - r));
+                // inverse sigmoid: log(x1/x2) where x1=clamp(r,eps), x2=clamp(1-r,eps)
+                // RT-DETRv2 uses eps=1e-5
+                float x1 = std::max(r, 1e-5f);
+                float x2 = std::max(1.0f - r, 1e-5f);
+                float inv_sig = logf(x1 / x2);
                 float refined = 1.0f / (1.0f + expf(-(inv_sig + bbox_delta[d * N_queries + q])));
                 ref_points[q * 4 + d] = refined;
             }
+        }
+
+        if (li <= 1 && getenv("LAYOUT_DEBUG")) {
+            fprintf(stderr, "  dec%d ref_points[0] after:  %.6f %.6f %.6f %.6f\n", li,
+                    ref_points[0], ref_points[1], ref_points[2], ref_points[3]);
         }
 
         LDBG("  decoder layer %d done\n", li);
@@ -1533,6 +1592,19 @@ std::vector<region> detect(context* ctx, const float* pixels,
                ctx->decoder.dec_score_w, ctx->decoder.dec_score_b);
     // Sigmoid
     for (auto& v : class_scores) v = 1.0f / (1.0f + expf(-v));
+
+    // Compare per-query max scores with Python reference
+    {
+        // Python scores are [300] — max class score per query (after sigmoid)
+        std::vector<float> max_per_q(N_queries);
+        for (int q = 0; q < N_queries; q++) {
+            float mx = 0;
+            for (int c = 0; c < ctx->num_classes; c++)
+                mx = std::max(mx, class_scores[c * N_queries + q]);
+            max_per_q[q] = mx;
+        }
+        diff_report("final_scores", "scores", max_per_q.data(), N_queries);
+    }
 
     // Collect results
     std::vector<region> results;
