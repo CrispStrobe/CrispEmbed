@@ -3033,6 +3033,7 @@ extern "C" void crispembed_free(crispembed_context * ctx) {
 // ---------------------------------------------------------------------------
 
 #include "ocr_pipeline.h"
+#include "layout_detect.h"
 
 struct ocr_pipeline_wrapper {
     ocr_pipeline::context * ctx = nullptr;
@@ -3083,4 +3084,48 @@ extern "C" const char * crispembed_ocr_recognize(
     w->rec_buf = ocr_pipeline::recognize_file(w->ctx, image_path);
     if (out_len) *out_len = (int)w->rec_buf.size();
     return w->rec_buf.empty() ? nullptr : w->rec_buf.c_str();
+}
+
+// ---------------------------------------------------------------------------
+// Layout Detection (RT-DETRv2)
+// ---------------------------------------------------------------------------
+
+struct layout_wrapper {
+    layout_detect::context * ctx = nullptr;
+    std::vector<crispembed_layout_region> c_results;
+};
+
+extern "C" void * crispembed_layout_init(const char * model_path, int n_threads) {
+    auto * w = new layout_wrapper();
+    if (!layout_detect::load(&w->ctx, model_path, n_threads)) {
+        delete w;
+        return nullptr;
+    }
+    return w;
+}
+
+extern "C" void crispembed_layout_free(void * ctx) {
+    if (!ctx) return;
+    auto * w = (layout_wrapper *)ctx;
+    layout_detect::free(w->ctx);
+    delete w;
+}
+
+extern "C" const crispembed_layout_region * crispembed_layout_detect(
+        void * ctx, const char * image_path, float score_threshold, int * out_n) {
+    if (!ctx || !image_path) { if (out_n) *out_n = 0; return nullptr; }
+    auto * w = (layout_wrapper *)ctx;
+    auto regions = layout_detect::detect_file(w->ctx, image_path, score_threshold);
+    w->c_results.resize(regions.size());
+    for (size_t i = 0; i < regions.size(); i++) {
+        w->c_results[i].x1 = regions[i].x1;
+        w->c_results[i].y1 = regions[i].y1;
+        w->c_results[i].x2 = regions[i].x2;
+        w->c_results[i].y2 = regions[i].y2;
+        w->c_results[i].score = regions[i].score;
+        w->c_results[i].label = (int)regions[i].label;
+        w->c_results[i].label_name = regions[i].label_name;
+    }
+    if (out_n) *out_n = (int)regions.size();
+    return w->c_results.empty() ? nullptr : w->c_results.data();
 }
