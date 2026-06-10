@@ -1497,3 +1497,100 @@ class CrispClipText:
         if hasattr(self, '_ctx') and self._ctx:
             self._lib.crispembed_clip_text_free(self._ctx)
             self._ctx = None
+
+
+def _setup_math_ocr_signatures(lib):
+    lib.crispembed_math_ocr_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_math_ocr_init.restype = ctypes.c_void_p
+
+    lib.crispembed_math_ocr_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_math_ocr_free.restype = None
+
+    lib.crispembed_math_ocr_recognize.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint8),
+        ctypes.c_int, ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_math_ocr_recognize.restype = ctypes.c_char_p
+
+    lib.crispembed_math_ocr_recognize_gray.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_float),
+        ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_math_ocr_recognize_gray.restype = ctypes.c_char_p
+
+
+class CrispMathOcr:
+    """Math formula OCR — recognizes LaTeX from images.
+
+    Supports PP-FormulaNet (printed), HMER (handwritten), and BTTR models.
+    Auto-detects architecture from GGUF metadata.
+
+    Usage::
+
+        ocr = CrispMathOcr("ppformulanet-l-q8_0.gguf")
+        latex = ocr.recognize("formula.png")
+        # "\\frac{a}{b}"
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 4, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_math_ocr_signatures(self._lib)
+        self._ctx = self._lib.crispembed_math_ocr_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load math OCR model: {model_path}")
+
+    def recognize(self, image) -> str:
+        """Recognize LaTeX from an image.
+
+        Args:
+            image: File path (str/Path), PIL.Image, or numpy array (H, W, C) uint8.
+
+        Returns:
+            Recognized LaTeX string.
+        """
+        if isinstance(image, (str, Path)):
+            from PIL import Image
+            image = np.array(Image.open(str(image)).convert("RGB"))
+        elif hasattr(image, 'convert'):  # PIL Image
+            image = np.array(image.convert("RGB"))
+        arr = np.ascontiguousarray(image, dtype=np.uint8)
+        h, w = arr.shape[:2]
+        ch = arr.shape[2] if arr.ndim == 3 else 1
+        out_len = ctypes.c_int(0)
+        result = self._lib.crispembed_math_ocr_recognize(
+            self._ctx,
+            arr.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            ctypes.c_int(w), ctypes.c_int(h), ctypes.c_int(ch),
+            ctypes.byref(out_len),
+        )
+        return result.decode("utf-8") if result else ""
+
+    def recognize_gray(self, pixels: np.ndarray) -> str:
+        """Recognize LaTeX from a float32 grayscale image.
+
+        Args:
+            pixels: numpy array (H, W) with values in [0, 1].
+
+        Returns:
+            Recognized LaTeX string.
+        """
+        arr = np.ascontiguousarray(pixels, dtype=np.float32)
+        h, w = arr.shape[:2]
+        out_len = ctypes.c_int(0)
+        result = self._lib.crispembed_math_ocr_recognize_gray(
+            self._ctx,
+            arr.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
+            ctypes.c_int(w), ctypes.c_int(h),
+            ctypes.byref(out_len),
+        )
+        return result.decode("utf-8") if result else ""
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_math_ocr_free(self._ctx)
+            self._ctx = None
