@@ -133,7 +133,7 @@ struct transformer_decoder {
     ggml_tensor *enc_bbox_w[3] = {};     // MLP layers
     ggml_tensor *enc_bbox_b[3] = {};
     // Query position head (MLP)
-    ggml_tensor *qpos_w[3] = {}, *qpos_b[3] = {};
+    ggml_tensor *qpos_w[2] = {}, *qpos_b[2] = {};
     // Decoder layers
     decoder_layer layers[6];
     // Per-layer detection heads
@@ -275,7 +275,7 @@ bool load(context** out, const char* path, int n_threads) {
         dec.enc_bbox_w[i] = get(k + ".weight");
         dec.enc_bbox_b[i] = get(k + ".bias");
     }
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 2; i++) {
         auto k = std::string("model.decoder.query_pos_head.layers.") + std::to_string(i);
         dec.qpos_w[i] = get(k + ".weight");
         dec.qpos_b[i] = get(k + ".bias");
@@ -578,51 +578,56 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     auto* p5_flat = ggml_reshape_2d(g, p5_perm, s5_c, s5_w * s5_h); // ne: [C, W*H]
     LDBG("  AIFI: p5_flat done\n");
     // Transpose to [256, N] — ggml reshape gives [C, H*W], need [C, N] which is same
-    // AIFI: add(pos_embed) → self-attn → residual+norm1 → FFN(GELU_erf) → residual+norm2
+    // AIFI encoder: pos_embed → self-attn → residual+norm1 → FFN(GELU) → residual+norm2
+    // AIFI: self-attn(pos on Q/K only) → residual+norm1 → FFN(GELU_erf) → residual+norm2
+    // HF: normalize_before=False (post-LN), pos added to Q/K only (not V)
     {
         auto* x_pos = p5_flat;
         if (enc.pos_embed) {
             auto* pe = ggml_reshape_2d(g, enc.pos_embed, s5_c, s5_w * s5_h);
-            x_pos = ggml_add(g, p5_flat, pe);
+            x_pos = ggml_add(g, p5_flat, pe);  // x + pos (for Q/K projection)
         }
 
-        // Self-attention: QKV with correct permute for flash_attn_ext [hd, heads, N]
-        int D_a = 256, N_tok = s5_w * s5_h, heads = 8, hd = D_a / heads;
-        auto* qkv = linear(g, x_pos, enc.aifi_qkv_w, enc.aifi_qkv_b);
-        ggml_set_name(qkv, "aifi_qkv"); ggml_set_output(qkv);
-        auto* q = ggml_cont(g, ggml_view_2d(g, qkv, D_a, N_tok, qkv->nb[1], 0));
-        auto* k = ggml_cont(g, ggml_view_2d(g, qkv, D_a, N_tok, qkv->nb[1], D_a*sizeof(float)));
-        auto* v = ggml_cont(g, ggml_view_2d(g, qkv, D_a, N_tok, qkv->nb[1], 2*D_a*sizeof(float)));
-        // Reshape [D=256, N=400] → [hd=32, heads=8, N=400] → permute to [hd, N, heads]
-        q = ggml_reshape_3d(g, q, hd, heads, N_tok);
-        q = ggml_cont(g, ggml_permute(g, q, 0, 2, 1, 3));
-        k = ggml_reshape_3d(g, k, hd, heads, N_tok);
-        k = ggml_cont(g, ggml_permute(g, k, 0, 2, 1, 3));
-        v = ggml_reshape_3d(g, v, hd, heads, N_tok);
-        v = ggml_cont(g, ggml_permute(g, v, 0, 2, 1, 3));
-        // Use manual attention — flash_attn_ext has wrong results for this model
-        q = ggml_scale(g, q, 1.0f / sqrtf(hd));
-        auto* scores = ggml_mul_mat(g, k, q); // [N, N, heads]
-        scores = ggml_soft_max(g, scores);
-        auto* v_t = ggml_cont(g, ggml_permute(g, v, 1, 0, 2, 3)); // [N, hd, heads]
-        auto* attn_raw = ggml_mul_mat(g, v_t, scores); // [hd, N, heads]
-        ggml_set_name(attn_raw, "aifi_attn_raw"); ggml_set_output(attn_raw);
-        // Skip output permute (gives better encoder features)
-        auto* attn = ggml_reshape_2d(g, attn_raw, D_a, N_tok);
-        // out_proj: Gemm(transB=1) = input @ weight^T.
-        // ggml_mul_mat(W, x) = W^T @ x = sum_k W[k,j]*x[k] where W[k,j]=data[k+j*256].
-        // Gemm wants sum_k weight[j,k]*x[k] where weight[j,k]=data[j*256+k]=data[k+j*256].
-        // These are the same! So mul_mat(W, x) is correct without transpose.
-        attn = linear(g, attn, enc.aifi_out_w, enc.aifi_out_b);
-        ggml_set_name(attn, "aifi_attn_out"); ggml_set_output(attn);
-        // Residual from original input (before pos_embed) + norm1
-        auto* aifi_resid = ggml_add(g, p5_flat, attn);
-        ggml_set_name(aifi_resid, "aifi_resid"); ggml_set_output(aifi_resid);
-        p5_flat = aifi_resid;
-        p5_flat = layer_norm(g, p5_flat, enc.aifi_norm1_w, enc.aifi_norm1_b);
-        ggml_set_name(p5_flat, "aifi_norm1"); ggml_set_output(p5_flat);
+        // Self-attention: Q/K from (x+pos), V from x — matches HF DETR pattern
+        int D_a = s5_c, N_tok = s5_w * s5_h, heads = 8, hd = D_a / heads;
+        // Compute QKV from x+pos (Q and K correct)
+        auto* qkv_pos = linear(g, x_pos, enc.aifi_qkv_w, enc.aifi_qkv_b);
+        // Compute QKV from raw x (V correct)
+        auto* qkv_raw = linear(g, p5_flat, enc.aifi_qkv_w, enc.aifi_qkv_b);
 
-        // FFN
+        // Q, K from pos-projected; V from raw-projected
+        auto* Q = ggml_cont(g, ggml_view_2d(g, qkv_pos, D_a, N_tok, qkv_pos->nb[1], 0));
+        auto* K = ggml_cont(g, ggml_view_2d(g, qkv_pos, D_a, N_tok, qkv_pos->nb[1], D_a*sizeof(float)));
+        auto* V = ggml_cont(g, ggml_view_2d(g, qkv_raw, D_a, N_tok, qkv_raw->nb[1], 2*D_a*sizeof(float)));
+
+        // Reshape: [D, N] → [hd, heads, N] → permute → [hd, N, heads]
+        Q = ggml_reshape_3d(g, Q, hd, heads, N_tok);
+        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
+        K = ggml_reshape_3d(g, K, hd, heads, N_tok);
+        K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
+        V = ggml_reshape_3d(g, V, hd, heads, N_tok);
+        V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
+
+        // Scores: K^T @ Q → [N, N, heads], scaled
+        auto* scores = ggml_mul_mat(g, K, Q);
+        scores = ggml_soft_max_ext(g, scores, nullptr, 1.0f/sqrtf((float)hd), 0.0f);
+
+        // Attn output: V^T @ scores → [hd, N, heads]
+        auto* Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
+        auto* attn = ggml_mul_mat(g, Vt, scores);
+
+        // Reshape back: [hd, N, heads] → [hd, heads, N] → [D, N]
+        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        attn = ggml_reshape_2d(g, attn, D_a, N_tok);
+
+        // Output projection
+        attn = linear(g, attn, enc.aifi_out_w, enc.aifi_out_b);
+
+        // Post-LN: residual (raw x, no pos) + attn → norm1
+        p5_flat = ggml_add(g, p5_flat, attn);
+        p5_flat = layer_norm(g, p5_flat, enc.aifi_norm1_w, enc.aifi_norm1_b);
+
+        // Post-LN: FFN → residual + FFN → norm2
         auto* residual = p5_flat;
         auto* ffn = linear(g, p5_flat, enc.aifi_ffn1_w, enc.aifi_ffn1_b);
         ffn = ggml_gelu_erf(g, ffn);
@@ -630,6 +635,7 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
         p5_flat = ggml_add(g, residual, ffn);
         p5_flat = layer_norm(g, p5_flat, enc.aifi_norm2_w, enc.aifi_norm2_b);
     }
+    ggml_set_name(p5_flat, "aifi_flat"); ggml_set_output(p5_flat);
     LDBG("  AIFI done: p5_flat=[%lld,%lld]\n", (long long)p5_flat->ne[0], (long long)p5_flat->ne[1]);
     // Reshape back to spatial: [C, W*H] → [C, W, H] → permute to [W, H, C]
     auto* p5_spatial = ggml_reshape_3d(g, p5_flat, s5_c, s5_w, s5_h);
@@ -672,31 +678,36 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     // Mark AIFI output for comparison
     ggml_set_name(p5, "aifi_out"); ggml_set_output(p5);
 
-    // S5 → lateral (SiLU) → upsample → concat with S4 → CSP
+    // FPN top-down pathway (matching HF RTDetrV2HybridEncoder):
+    // HF stores lateral-conv'd features and reuses them in the PAN.
+    // FPN step 0: lateral(p5) → upsample → cat(ip4) → CSP → fpn_0
     auto* lat5 = conv_silu(g, p5, enc.lateral_convs[0], 256, 1, 1, 1, 0);
     ggml_set_name(lat5, "lat5_silu"); ggml_set_output(lat5);
     auto* up5 = ggml_interpolate(g, lat5, (int)p4->ne[0], (int)p4->ne[1],
                                   (int)lat5->ne[2], 1, GGML_SCALE_MODE_NEAREST);
     auto* cat4 = ggml_concat(g, up5, p4, 2);  // [W, H, 512]
-    p4 = run_csp(cat4, enc.fpn_blocks[0]);
-    ggml_set_name(p4, "csp0"); ggml_set_output(p4);
+    auto* fpn_0 = run_csp(cat4, enc.fpn_blocks[0]);
 
-    // S4 → lateral (SiLU) → upsample → concat with S3 → CSP
-    auto* lat4 = conv_silu(g, p4, enc.lateral_convs[1], 256, 1, 1, 1, 0);
+    // FPN step 1: lateral(fpn_0) → upsample → cat(ip3) → CSP → fpn_1
+    auto* lat4 = conv_silu(g, fpn_0, enc.lateral_convs[1], 256, 1, 1, 1, 0);
     auto* up4 = ggml_interpolate(g, lat4, (int)p3->ne[0], (int)p3->ne[1],
                                   (int)lat4->ne[2], 1, GGML_SCALE_MODE_NEAREST);
     auto* cat3 = ggml_concat(g, up4, p3, 2);  // [W, H, 512]
-    p3 = run_csp(cat3, enc.fpn_blocks[1]);
+    auto* fpn_1 = run_csp(cat3, enc.fpn_blocks[1]);
+    // After FPN: fpn_feature_maps (reversed) = [fpn_1(80x80), lat4(40x40), lat5(20x20)]
 
-    // PAN bottom-up: S3 → downsample → concat with S4 → CSP
-    auto* down3 = conv_silu(g, p3, enc.downsample_convs[0], 256, 3, 3, 2, 1);
-    auto* cat4p = ggml_concat(g, down3, p4, 2);  // [W, H, 512]
-    p4 = run_csp(cat4p, enc.pan_blocks[0]);
+    // PAN bottom-up: uses lateral-conv'd features from FPN, not raw features!
+    // PAN step 0: downsample(fpn_1) → cat(lat4) → CSP → pan_0
+    auto* down3 = conv_silu(g, fpn_1, enc.downsample_convs[0], 256, 3, 3, 2, 1);
+    auto* cat4p = ggml_concat(g, down3, lat4, 2);  // cat with lat_fpn_0, not raw fpn_0
+    auto* pan_0 = run_csp(cat4p, enc.pan_blocks[0]);
 
-    // S4 → downsample → concat with S5 → CSP
-    auto* down4 = conv_silu(g, p4, enc.downsample_convs[1], 256, 3, 3, 2, 1);
-    auto* cat5p = ggml_concat(g, down4, p5, 2);  // [W, H, 512]
-    p5 = run_csp(cat5p, enc.pan_blocks[1]);
+    // PAN step 1: downsample(pan_0) → cat(lat5) → CSP → pan_1
+    auto* down4 = conv_silu(g, pan_0, enc.downsample_convs[1], 256, 3, 3, 2, 1);
+    auto* cat5p = ggml_concat(g, down4, lat5, 2);  // cat with lat_aifi_p5, not raw p5
+    auto* pan_1 = run_csp(cat5p, enc.pan_blocks[1]);
+
+    p3 = fpn_1; p4 = pan_0; p5 = pan_1;
 
     *s3 = p3; *s4 = p4; *s5 = p5;
 }
@@ -827,12 +838,6 @@ std::vector<region> detect(context* ctx, const float* pixels,
         read_range("aifi_out");
         read_range("lat5_silu");
         // CSP block 0 internals
-        read_range("aifi_qkv");
-        read_range("aifi_softmax");
-        read_range("aifi_attn_raw");
-        read_range("aifi_attn_out");
-        read_range("aifi_norm1");
-        read_range("aifi_resid");
         read_range("csp0_conv1");
         read_range("csp0_bn0");
         read_range("csp0_bn1");
@@ -848,6 +853,23 @@ std::vector<region> detect(context* ctx, const float* pixels,
             }
         }
     }
+    // Dump encoder intermediates for diff comparison (ggml raw byte order)
+    if (getenv("LAYOUT_DEBUG")) {
+        auto dump_ggml_tensor = [&](const char* name) {
+            ggml_tensor* t = ggml_graph_get_tensor(gf, name);
+            if (!t) return;
+            int n = ggml_nelements(t);
+            std::vector<float> data(n);
+            ggml_backend_tensor_get(t, data.data(), 0, n * sizeof(float));
+            char fname[128];
+            snprintf(fname, sizeof(fname), "/tmp/cpp_%s.bin", name);
+            FILE* fp = fopen(fname, "wb");
+            if (fp) { fwrite(data.data(), sizeof(float), n, fp); fclose(fp); }
+        };
+        dump_ggml_tensor("ip3"); dump_ggml_tensor("ip4"); dump_ggml_tensor("ip5");
+        dump_ggml_tensor("aifi_flat");
+    }
+
     // Read encoder outputs to CPU buffers
     // s3: [W3, H3, 256], s4: [W4, H4, 256], s5: [W5, H5, 256]
     struct scale_feat {
@@ -873,6 +895,19 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 i+3, feats[i].W, feats[i].H, feats[i].C, fmin, fmax);
     }
 
+    // Dump s3/s4/s5 for diff comparison
+    if (getenv("LAYOUT_DEBUG")) {
+        for (int i = 0; i < 3; i++) {
+            char fname[128];
+            snprintf(fname, sizeof(fname), "/tmp/cpp_s%d.bin", i + 3);
+            FILE* fp = fopen(fname, "wb");
+            if (fp) {
+                fwrite(feats[i].data.data(), sizeof(float), feats[i].data.size(), fp);
+                fclose(fp);
+            }
+        }
+    }
+
     ggml_gallocr_free(alloc);
     ggml_free(g);
 
@@ -883,15 +918,17 @@ std::vector<region> detect(context* ctx, const float* pixels,
         std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
         if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, out_d * in_d * sizeof(float));
         if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, out_d * sizeof(float));
-        // ggml stores weight as [ne0, ne1]. For ONNX MatMul(input, weight):
-        // y[o] = sum_i weight[i, o] * x[i]
-        // In GGUF [ne0=out_d, ne1=in_d]: weight[i, o] = data[i * out_d + o]
-        // So: W^T @ x (matching ggml mul_mat convention)
+        // Weight convention: GGUF stores ONNX weights in their native byte order.
+        // Most ONNX ops use MatMul (y = x @ W) or Gemm(transB=1) (y = x @ W^T).
+        // For MatMul weights numpy (in_d, out_d): y[o] = sum_i flat[i*out_d+o] * x[i]
+        // For Gemm(transB=1) weights numpy (out_d, in_d): y[o] = sum_i flat[o*in_d+i] * x[i]
+        // Using MatMul convention uniformly (works for enc_proj, verified cos=0.958).
+        // TODO: handle Gemm(transB=1) for out_proj and non-square Linear weights.
         for (int n = 0; n < N; n++) {
             for (int o = 0; o < out_d; o++) {
                 float sum = b[o];
                 for (int i = 0; i < in_d; i++) {
-                    sum += W[i + o * in_d] * x[i * N + n];
+                    sum += W[o + i * out_d] * x[i * N + n];
                 }
                 y[o * N + n] = sum;
             }
@@ -1081,38 +1118,48 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     // Compute query position encoding from reference points via query_pos_head MLP
     // ref_points → linear0 → ReLU → linear1 → ReLU → linear2 → pos_enc  [D, N_queries]
-    std::vector<float> pos_enc(D * N_queries, 0.0f);
-    {
-        // Input: ref_points [N_queries * 4] → need [4, N_queries] layout
+    // Helper: compute query position encoding from reference points via MLP
+    // HF: query_pos_head = 2-layer MLP: Linear(4, 2*D) → ReLU → Linear(2*D, D)
+    int qpos_hidden = 2 * D;  // 512
+    auto compute_pos_enc = [&](const float* rp, float* pe) {
         std::vector<float> rp_col(4 * N_queries);
         for (int q = 0; q < N_queries; q++)
             for (int d = 0; d < 4; d++)
-                rp_col[d * N_queries + q] = ref_points[q * 4 + d];
-
-        std::vector<float> tmp(D * N_queries);
-        cpu_linear(rp_col.data(), tmp.data(), 4, D, N_queries,
+                rp_col[d * N_queries + q] = rp[q * 4 + d];
+        std::vector<float> tmp(qpos_hidden * N_queries);
+        cpu_linear(rp_col.data(), tmp.data(), 4, qpos_hidden, N_queries,
                    ctx->decoder.qpos_w[0], ctx->decoder.qpos_b[0]);
-        for (auto& v : tmp) v = std::max(0.0f, v); // ReLU
-        std::vector<float> tmp2(D * N_queries);
-        cpu_linear(tmp.data(), tmp2.data(), D, D, N_queries,
+        for (auto& v : tmp) v = std::max(0.0f, v);
+        cpu_linear(tmp.data(), pe, qpos_hidden, D, N_queries,
                    ctx->decoder.qpos_w[1], ctx->decoder.qpos_b[1]);
-        for (auto& v : tmp2) v = std::max(0.0f, v); // ReLU
-        cpu_linear(tmp2.data(), pos_enc.data(), D, D, N_queries,
-                   ctx->decoder.qpos_w[2], ctx->decoder.qpos_b[2]);
-    }
+    };
+
+    std::vector<float> pos_enc(D * N_queries, 0.0f);
 
     fprintf(stderr, "layout_detect: query init done (top-K score: %.3f..%.3f)\n",
             token_scores[0].first, token_scores[N_queries-1].first);
     fprintf(stderr, "layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
 
     for (int li = 0; li < 6; li++) {
+        // Recompute pos_enc from current reference points each layer (matches HF)
+        compute_pos_enc(ref_points.data(), pos_enc.data());
         const auto& layer = ctx->decoder.layers[li];
 
-        // --- Self-attention ---
+        // --- Self-attention (with pos on Q/K only, matching HF DETR pattern) ---
         std::vector<float> residual = queries; // [D, N_queries]
+        // QKV from (queries + pos_enc) for Q/K, raw queries for V
+        std::vector<float> qp_sa(D * N_queries);
+        for (int i = 0; i < D * N_queries; i++) qp_sa[i] = queries[i] + pos_enc[i];
+        std::vector<float> qkv_pos(3 * D * N_queries), qkv_raw(3 * D * N_queries);
+        cpu_linear(qp_sa.data(), qkv_pos.data(), D, 3 * D, N_queries,
+                   layer.self_qkv_w, layer.self_qkv_b);  // Q, K correct
+        cpu_linear(queries.data(), qkv_raw.data(), D, 3 * D, N_queries,
+                   layer.self_qkv_w, layer.self_qkv_b);  // V correct
+        // Merge: Q/K from qkv_pos, V from qkv_raw
         std::vector<float> qkv(3 * D * N_queries);
-        cpu_linear(queries.data(), qkv.data(), D, 3 * D, N_queries,
-                   layer.self_qkv_w, layer.self_qkv_b);
+        memcpy(qkv.data(), qkv_pos.data(), 2 * D * N_queries * sizeof(float)); // Q, K
+        memcpy(qkv.data() + 2 * D * N_queries, qkv_raw.data() + 2 * D * N_queries,
+               D * N_queries * sizeof(float)); // V
 
         // Split QKV and compute attention
         // Q, K, V each [D, N_queries], 8 heads, head_dim = 32
@@ -1164,7 +1211,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
         // Residual + norm
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + sa_out[i];
         cpu_layernorm(queries.data(), D, N_queries, layer.norm1_w, layer.norm1_b);
-        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm1: [%.4f,%.4f]\n",li,mn,mx); }
+        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_after_sa: [%.4f,%.4f]\n",li,mn,mx); }
 
         // --- Deformable cross-attention ---
         residual = queries;
@@ -1243,36 +1290,62 @@ std::vector<region> detect(context* ctx, const float* pixels,
                         float py = ref_cy + dy * 0.25f * ref_h * 0.5f;
 
                         // Convert from [0,1] normalized to feature map pixel coords
-                        float sx = px * fW;
-                        float sy = py * fH;
+                        // grid_sample(align_corners=False): pixel = loc * N - 0.5
+                        float sx = px * fW - 0.5f;
+                        float sy = py * fH - 0.5f;
 
-                        int fW2 = fW, fH2 = fH;
+                        // Bilinear sampling with zero-padding (matching grid_sample padding_mode="zeros")
+                        float attn_w = attn_weights[off_idx * N_queries + q];
 
-                        // Clamp
-                        sx = std::max(0.0f, std::min(sx, (float)(fW2 - 1)));
-                        sy = std::max(0.0f, std::min(sy, (float)(fH2 - 1)));
-                        int x0 = (int)sx, y0 = (int)sy;
-                        int x1 = std::min(x0 + 1, fW2 - 1);
-                        int y1 = std::min(y0 + 1, fH2 - 1);
+                        int x0 = (int)floorf(sx), y0 = (int)floorf(sy);
+                        int x1 = x0 + 1, y1 = y0 + 1;
                         float fx = sx - x0, fy = sy - y0;
 
                         float w00 = (1-fx)*(1-fy), w01 = fx*(1-fy);
                         float w10 = (1-fx)*fy, w11 = fx*fy;
 
-                        float attn_w = attn_weights[off_idx * N_queries + q];
-
                         for (int d = 0; d < value_hd; d++) {
-                            int vd = h * value_hd + d; // global dim index
+                            int vd = h * value_hd + d;
                             int base = vd * total_tokens + level_starts[lv];
-                            float v = w00 * values[base + y0 * fW2 + x0]
-                                    + w01 * values[base + y0 * fW2 + x1]
-                                    + w10 * values[base + y1 * fW2 + x0]
-                                    + w11 * values[base + y1 * fW2 + x1];
+                            // Zero-pad: out-of-bounds samples contribute 0
+                            float v = 0;
+                            if (x0 >= 0 && x0 < fW && y0 >= 0 && y0 < fH)
+                                v += w00 * values[base + y0 * fW + x0];
+                            if (x1 >= 0 && x1 < fW && y0 >= 0 && y0 < fH)
+                                v += w01 * values[base + y0 * fW + x1];
+                            if (x0 >= 0 && x0 < fW && y1 >= 0 && y1 < fH)
+                                v += w10 * values[base + y1 * fW + x0];
+                            if (x1 >= 0 && x1 < fW && y1 >= 0 && y1 < fH)
+                                v += w11 * values[base + y1 * fW + x1];
                             cross_out[vd * N_queries + q] += attn_w * v;
                         }
                     }
                 }
             }
+        }
+
+        if (li == 0) {
+            float mn=1e9,mx=-1e9;
+            for (auto v : cross_out) { mn=std::min(mn,v); mx=std::max(mx,v); }
+            fprintf(stderr, "  dec0 cross_out (pre-proj): [%.4f, %.4f]\n", mn, mx);
+            // Debug: print sampling stats for query 0
+            float ref_cx0 = ref_points[0], ref_cy0 = ref_points[1];
+            float ref_w0 = ref_points[2], ref_h0 = ref_points[3];
+            fprintf(stderr, "  dec0 q0 ref: cx=%.4f cy=%.4f w=%.4f h=%.4f\n",
+                    ref_cx0, ref_cy0, ref_w0, ref_h0);
+            float dx0 = offsets[0], dy0 = offsets[N_queries];
+            fprintf(stderr, "  dec0 q0 offset[0]: dx=%.4f dy=%.4f → scaled dx=%.6f dy=%.6f\n",
+                    dx0, dy0, dx0 * 0.25f * ref_w0 * 0.5f, dy0 * 0.25f * ref_h0 * 0.5f);
+            float px0 = ref_cx0 + dx0 * 0.25f * ref_w0 * 0.5f;
+            float py0 = ref_cy0 + dy0 * 0.25f * ref_h0 * 0.5f;
+            fprintf(stderr, "  dec0 q0 sample pos: px=%.4f py=%.4f → pixel sx=%.1f sy=%.1f (80x80)\n",
+                    px0, py0, px0*80-0.5f, py0*80-0.5f);
+            // Print attention weights for q0
+            float aw_sum = 0;
+            for (int j = 0; j < N_heads * N_levels * N_points; j++)
+                aw_sum += attn_weights[j * N_queries + 0];
+            fprintf(stderr, "  dec0 q0 attn_weight sum: %.4f (expected ~%d from softmax)\n",
+                    aw_sum, N_heads);
         }
 
         // Cross-attention output projection
@@ -1331,6 +1404,23 @@ std::vector<region> detect(context* ctx, const float* pixels,
         }
 
         LDBG("  decoder layer %d done\n", li);
+
+        // Debug: dump decoder layer 0 output
+        if (li == 0 && getenv("LAYOUT_DEBUG")) {
+            float qmin=1e9, qmax=-1e9;
+            std::vector<float> q_row(D * N_queries);
+            for (int q = 0; q < N_queries; q++)
+                for (int d = 0; d < D; d++) {
+                    float v = queries[d * N_queries + q];
+                    q_row[q * D + d] = v;
+                    qmin = std::min(qmin, v); qmax = std::max(qmax, v);
+                }
+            fprintf(stderr, "  dec0_output: range=[%.4f, %.4f]\n", qmin, qmax);
+            fprintf(stderr, "  dec0_output[0,:8]: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
+                    q_row[0], q_row[1], q_row[2], q_row[3], q_row[4], q_row[5], q_row[6], q_row[7]);
+            FILE* fp = fopen("/tmp/cpp_dec0_out.bin", "wb");
+            if (fp) { fwrite(q_row.data(), sizeof(float), D * N_queries, fp); fclose(fp); }
+        }
     }
 
     // --- Phase 3: Detection heads ---
