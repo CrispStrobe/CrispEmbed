@@ -593,25 +593,41 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
         auto* q = ggml_cont(g, ggml_view_2d(g, qkv, D_a, N_tok, qkv->nb[1], 0));
         auto* k = ggml_cont(g, ggml_view_2d(g, qkv, D_a, N_tok, qkv->nb[1], D_a*sizeof(float)));
         auto* v = ggml_cont(g, ggml_view_2d(g, qkv, D_a, N_tok, qkv->nb[1], 2*D_a*sizeof(float)));
-        q = ggml_reshape_3d(g, q, hd, N_tok, heads);
-        k = ggml_reshape_3d(g, k, hd, N_tok, heads);
-        v = ggml_reshape_3d(g, v, hd, N_tok, heads);
-        // Manual multi-head attention (flash_attn_ext may have numerical differences)
-        // Q: [hd, N, heads], K: [hd, N, heads], V: [hd, N, heads]
-        // For each head: attn = softmax(Q^T @ K / sqrt(hd)) @ V^T → [N, hd]
-        // Permute to [hd, heads, N] for batch matmul
-        q = ggml_cont(g, ggml_permute(g, q, 0, 2, 1, 3)); // [hd, heads, N]
+        // Reshape [D, N] → [hd, heads, N] then permute to [hd, N, heads]
+        // D=256 splits as hd=32 × heads=8, with hd varying fastest
+        q = ggml_reshape_3d(g, q, hd, heads, N_tok);
+        q = ggml_cont(g, ggml_permute(g, q, 0, 2, 1, 3)); // [hd, N, heads]
+        k = ggml_reshape_3d(g, k, hd, heads, N_tok);
         k = ggml_cont(g, ggml_permute(g, k, 0, 2, 1, 3));
+        v = ggml_reshape_3d(g, v, hd, heads, N_tok);
         v = ggml_cont(g, ggml_permute(g, v, 0, 2, 1, 3));
-        // scores = Q^T @ K / sqrt(hd) → [N, N, heads] (batch matmul)
-        auto* kt = ggml_cont(g, ggml_transpose(g, k)); // [heads, N, hd] → transpose last 2 → hmm
-        // Actually: ggml_mul_mat does contraction over ne[0]. With q[hd, heads, N] and k[hd, heads, N]:
-        // We need scores[N, N, heads]. Use ggml_mul_mat(k, q) which contracts over hd → [heads, N, N]... no.
-        // Simpler: use ggml_flash_attn_ext which handles this correctly
-        auto* attn = ggml_flash_attn_ext(g, q, k, v, nullptr, 1.0f/sqrtf(hd), 0, 0);
-        // flash_attn output is [hd, heads, N] — reshape directly to [D, N]
-        // (like CrispASR: reshape(attn, hd*heads, T) without permute)
-        attn = ggml_reshape_2d(g, attn, D_a, N_tok);
+        // Manual multi-head attention (ggml ops, not flash_attn_ext)
+        // Q/K/V: [hd=32, N=400, heads=8]
+        // Scale Q by 1/sqrt(hd)
+        q = ggml_scale(g, q, 1.0f / sqrtf(hd));
+        // scores = K^T @ Q → ggml_mul_mat(K, Q) contracts over ne[0]=hd
+        // K[hd, N, heads] @ Q[hd, N, heads] → [N, N, heads] (batched over heads)
+        auto* scores = ggml_mul_mat(g, k, q); // [N_k, N_q, heads]
+        // Softmax over ne[0]=N_k dimension (per query, per head)
+        scores = ggml_soft_max(g, scores);
+        ggml_set_name(scores, "aifi_softmax"); ggml_set_output(scores);
+        // Attended values = V @ softmax_scores^T
+        // ggml_mul_mat(V, scores): V[hd, N, heads], scores[N, N, heads]
+        // contracts over ne[0]: V->ne[0]=hd, scores->ne[0]=N → mismatch!
+        // Need: for each head h, out_h = V_h @ attn_h where V_h is [hd, N] and attn_h is [N_k, N_q]
+        // This is out_h = ggml_mul_mat(V_h, attn_h) = [hd, N_q] per head.
+        // With batched tensors: V[hd, N, heads], scores[N, N, heads]
+        // ggml_mul_mat needs ne[0] to match. Transpose scores: [N, N, heads] → hmm.
+        // Actually, we need: out[hd, N_q, heads] where out[:, q, h] = V[:, :, h] @ attn[:, q, h]
+        // ggml_mul_mat(V[hd, N_k, heads], scores[N_k, N_q, heads]) contracts over N_k → [hd, N_q, heads] ✓
+        // V[hd, N, heads] → V_T[N, hd, heads] via permute
+        auto* v_t = ggml_cont(g, ggml_permute(g, v, 1, 0, 2, 3)); // [N, hd, heads]
+        // ggml_mul_mat(V_T, scores): V_T[N, hd, heads], scores[N, N, heads]
+        // contracts over ne[0]=N → [hd, N_q, heads] ✓
+        auto* attn_raw = ggml_mul_mat(g, v_t, scores); // [hd, N_q, heads]
+        ggml_set_name(attn_raw, "aifi_attn_raw"); ggml_set_output(attn_raw);
+        // Reshape [hd, N, heads] → [hd*heads, N] = [D, N]
+        auto* attn = ggml_reshape_2d(g, attn_raw, D_a, N_tok);
         attn = linear(g, attn, enc.aifi_out_w, enc.aifi_out_b);
         ggml_set_name(attn, "aifi_attn_out"); ggml_set_output(attn);
         // Residual from original input (before pos_embed) + norm1
@@ -827,6 +843,8 @@ std::vector<region> detect(context* ctx, const float* pixels,
         read_range("lat5_silu");
         // CSP block 0 internals
         read_range("aifi_qkv");
+        read_range("aifi_softmax");
+        read_range("aifi_attn_raw");
         read_range("aifi_attn_out");
         read_range("aifi_norm1");
         read_range("aifi_resid");
