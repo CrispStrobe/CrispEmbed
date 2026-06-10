@@ -59,10 +59,15 @@ Key issues solved during Kaggle kernel development:
 
 **Training progress** (correct vocab, label smoothing 0.1):
 - Epoch 8: 22.4% beam=1
-- Epoch 64: 43.4% beam=1
-- Epoch 93: 57.0% beam=1 (surpasses SJTU published 56.0%)
-- **Epoch 97: 58.3% val_ExpRate** (new high, W&B confirmed)
-- Training continues to epoch 300 with ReduceLROnPlateau.
+- Epoch 64: 43.4% beam=1 (pre-LR-fix)
+- Epoch 93: 57.0% beam=1 (LR=0.005, surpasses SJTU published 56.0%)
+- Epoch 108: **59.3% beam=1 / 59.5% beam=10** (converged, CROHME ceiling)
+- Epoch 130: 59.2% beam=1 / 59.5% beam=10 (confirmed ceiling)
+- W&B peak: 61.2% val_ExpRate at step 194,869 (epoch ~130)
+
+Model has converged at ~59.3% on CROHME 8.8K. Further improvement requires
+more training data (MathWriting 230K) or expanded vocabulary (v2, 183 tokens).
+See PLAN.md for v2 expanded vocab design.
 
 **License**: SJTU weights = academic-only. Retrained weights on CROHME
 = CC BY-NC-SA 3.0 (NC). Fine for "buy me a coffee" app: app code is
