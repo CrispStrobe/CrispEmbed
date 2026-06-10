@@ -358,14 +358,15 @@ bool load(context** out, const char* path, int n_threads) {
 static ggml_tensor* prep_conv(ggml_context* g, ggml_tensor* w, int IC, int KH, int KW) {
     if (!w) return nullptr;
     if (ggml_n_dims(w) == 2) {
-        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16) {
+        if (w->type != GGML_TYPE_F32) {
             w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
         }
         int64_t OC = w->ne[1];
         w = ggml_reshape_4d(g, w, KW, KH, IC, OC);
     }
-    if (w->type != GGML_TYPE_F16) {
-        w = ggml_cast(g, w, GGML_TYPE_F16);
+    // Use F32 weights for ggml_conv_2d_direct (no F16 precision loss)
+    if (w->type != GGML_TYPE_F32) {
+        w = ggml_cast(g, w, GGML_TYPE_F32);
     }
     return w;
 }
@@ -374,7 +375,7 @@ static ggml_tensor* conv_relu(ggml_context* g, ggml_tensor* x, const conv_w& c,
                                int IC, int KH, int KW, int stride, int pad, bool relu = true) {
     if (!c.w) return x;
     auto* w = prep_conv(g, c.w, IC, KH, KW);
-    x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
+    x = ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1);
     if (c.b) {
         int OC = (int)c.b->ne[0];
         x = ggml_add(g, x, ggml_reshape_3d(g, c.b, 1, 1, OC));
@@ -388,7 +389,7 @@ static ggml_tensor* conv_silu(ggml_context* g, ggml_tensor* x, const conv_w& c,
                                 int IC, int KH, int KW, int stride, int pad) {
     if (!c.w) return x;
     auto* w = prep_conv(g, c.w, IC, KH, KW);
-    x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
+    x = ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1);
     if (c.b) {
         int OC = (int)c.b->ne[0];
         x = ggml_add(g, x, ggml_reshape_3d(g, c.b, 1, 1, OC));
@@ -438,15 +439,20 @@ static void backbone_forward(ggml_context* g, const resnet50_backbone& bb,
     auto bottleneck_fwd = [&](ggml_tensor* inp, const bottleneck& blk,
                                int in_ch, int mid_ch, int out_ch, int stride) {
         auto* identity = inp;
-        // branch2a: 1×1, reduce
-        auto* out = conv_relu(g, inp, blk.branch2a, in_ch, 1, 1, stride, 0);
-        // branch2b: 3×3
-        out = conv_relu(g, out, blk.branch2b, mid_ch, 3, 3, 1, 1);
+        // branch2a: 1×1, reduce (NO stride — ResNet-D puts stride on branch2b)
+        auto* out = conv_relu(g, inp, blk.branch2a, in_ch, 1, 1, 1, 0);
+        // branch2b: 3×3 (stride applied HERE in ResNet-D)
+        out = conv_relu(g, out, blk.branch2b, mid_ch, 3, 3, stride, 1);
         // branch2c: 1×1, expand, NO relu
         out = conv_relu(g, out, blk.branch2c, mid_ch, 1, 1, 1, 0, false);
-        // Shortcut
-        if (blk.shortcut.w)
-            identity = conv_relu(g, inp, blk.shortcut, in_ch, 1, 1, stride, 0, false);
+        // Shortcut (ResNet-D: avgpool + 1×1 conv for downsampling)
+        if (blk.shortcut.w) {
+            if (stride > 1) {
+                identity = ggml_pool_2d(g, inp, GGML_OP_POOL_AVG, stride, stride,
+                                         stride, stride, 0, 0);
+            }
+            identity = conv_relu(g, identity, blk.shortcut, in_ch, 1, 1, 1, 0, false);
+        }
         // Residual + ReLU
         return ggml_relu(g, ggml_add(g, out, identity));
     };
@@ -456,6 +462,14 @@ static void backbone_forward(ggml_context* g, const resnet50_backbone& bb,
     int mid_channels[] = {64, 128, 256, 512};
     int strides[] = {1, 2, 2, 2};
 
+    // Mark stem output for debug
+    {
+        char name[32];
+        snprintf(name, sizeof(name), "bb_stem");
+        ggml_set_name(x, name);
+        ggml_set_output(x);
+    }
+
     for (int s = 0; s < 4; s++) {
         int in_ch = (s == 0) ? 64 : channels[s];
         for (int b = 0; b < (int)bb.stages[s].size(); b++) {
@@ -463,6 +477,11 @@ static void backbone_forward(ggml_context* g, const resnet50_backbone& bb,
             int stride = (b == 0) ? strides[s] : 1;
             x = bottleneck_fwd(x, bb.stages[s][b], blk_in, mid_channels[s],
                                channels[s+1], stride);
+            // Mark each block output for diff comparison
+            char name[32];
+            snprintf(name, sizeof(name), "bb_s%d_b%d", s, b);
+            ggml_set_name(x, name);
+            ggml_set_output(x);
         }
         // Save outputs for FPN
         if (s == 1) *c3 = x;  // stride 8, 512 ch
@@ -683,6 +702,12 @@ std::vector<region> detect(context* ctx, const float* pixels,
     ggml_set_input(input);
 
     // Backbone
+    // Verify stem weight is the folded version
+    {
+        float wv[3];
+        ggml_backend_tensor_get(ctx->backbone.stem[0].w, wv, 0, 3*sizeof(float));
+        fprintf(stderr, "  stem[0].w first3: %.6f %.6f %.6f (expected: 0.002018)\n", wv[0], wv[1], wv[2]);
+    }
     fprintf(stderr, "layout_detect: building backbone + encoder graph...\n");
     ggml_tensor *c3, *c4, *c5;
     backbone_forward(g, ctx->backbone, input, &c3, &c4, &c5);
@@ -701,9 +726,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     // Build + compute backbone+encoder graph
     ggml_cgraph* gf = ggml_new_graph_custom(g, max_nodes, false);
-    ggml_build_forward_expand(gf, c3);
-    ggml_build_forward_expand(gf, c4);
-    ggml_build_forward_expand(gf, c5);
+    // Expand all outputs (backbone debug + encoder outputs)
     ggml_build_forward_expand(gf, s3);
     ggml_build_forward_expand(gf, s4);
     ggml_build_forward_expand(gf, s5);
@@ -725,19 +748,28 @@ std::vector<region> detect(context* ctx, const float* pixels,
     fprintf(stderr, "layout_detect: computing backbone + encoder...\n");
     ggml_backend_graph_compute(ctx->backend, gf);
 
-    // Read backbone outputs for comparison
+    // Per-block backbone comparison
     {
-        const char* bb[] = {"c3", "c4", "c5"};
-        for (int i = 0; i < 3; i++) {
-            ggml_tensor* t = ggml_graph_get_tensor(gf, bb[i]);
-            if (!t) continue;
+        // Read stem
+        auto read_range = [&](const char* name) {
+            ggml_tensor* t = ggml_graph_get_tensor(gf, name);
+            if (!t) { fprintf(stderr, "  %s: NOT FOUND\n", name); return; }
             int n = ggml_nelements(t);
             std::vector<float> data(n);
             ggml_backend_tensor_get(t, data.data(), 0, n * sizeof(float));
             float fmin = 1e9, fmax = -1e9;
             for (auto v : data) { fmin = std::min(fmin, v); fmax = std::max(fmax, v); }
-            fprintf(stderr, "  c%d: [%lld,%lld,%lld] range=[%.4f, %.4f]\n",
-                    i+3, (long long)t->ne[0], (long long)t->ne[1], (long long)t->ne[2], fmin, fmax);
+            fprintf(stderr, "  %s: [%lld,%lld,%lld] range=[%.4f, %.4f]\n",
+                    name, (long long)t->ne[0], (long long)t->ne[1], (long long)t->ne[2], fmin, fmax);
+        };
+        read_range("bb_stem");
+        int block_counts[] = {3, 4, 6, 3};
+        for (int s = 0; s < 4; s++) {
+            for (int b = 0; b < block_counts[s]; b++) {
+                char name[32];
+                snprintf(name, sizeof(name), "bb_s%d_b%d", s, b);
+                read_range(name);
+            }
         }
     }
     // Read encoder outputs to CPU buffers
