@@ -52,7 +52,8 @@ endif()
 # The math OCR decoder runs single-threaded; ggml's thread pool compiles
 # but degrades gracefully (pthread stubs in Emscripten libc).
 # ---------------------------------------------------------------------------
-if(EMSCRIPTEN)
+option(CRISPEMBED_WASM_THREADS "Use real pthreads in WASM (requires COOP/COEP)" OFF)
+if(EMSCRIPTEN AND NOT CRISPEMBED_WASM_THREADS)
     list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 endif()
 

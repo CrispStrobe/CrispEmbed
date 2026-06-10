@@ -2,7 +2,8 @@
 # CrispEmbed WASM Build Script — math OCR for browser use.
 #
 # Usage:
-#   ./build-wasm.sh                    # default build
+#   ./build-wasm.sh                    # default build (single-threaded)
+#   ./build-wasm.sh --threads          # multithreaded (requires COOP/COEP headers)
 #   ./build-wasm.sh --clean            # remove build-wasm/ first
 #   ./build-wasm.sh --simd             # enable WASM SIMD128 (default: on)
 #   ./build-wasm.sh --no-simd          # disable WASM SIMD128
@@ -21,6 +22,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="build-wasm"
 CLEAN=false
 SIMD=ON
+THREADS=OFF
 CMAKE_EXTRA=()
 
 while [[ $# -gt 0 ]]; do
@@ -28,6 +30,7 @@ while [[ $# -gt 0 ]]; do
         --clean)    CLEAN=true; shift ;;
         --simd)     SIMD=ON; shift ;;
         --no-simd)  SIMD=OFF; shift ;;
+        --threads)  THREADS=ON; shift ;;
         --)         shift; CMAKE_EXTRA=("$@"); break ;;
         *)          CMAKE_EXTRA+=("$1"); shift ;;
     esac
@@ -40,8 +43,19 @@ if ! command -v emcc &>/dev/null; then
     exit 1
 fi
 
+THREAD_LABEL="single-threaded"
+THREAD_C_FLAGS=""
+THREAD_LINK_FLAGS=""
+if [ "$THREADS" = "ON" ]; then
+    THREAD_LABEL="multithreaded (requires COOP/COEP headers)"
+    THREAD_C_FLAGS="-pthread"
+    THREAD_LINK_FLAGS="-pthread -sPTHREAD_POOL_SIZE=4"
+    echo "[INFO] Multithreaded build enabled"
+fi
+
 echo "============================================"
 echo "  CrispEmbed - WASM Build (math OCR)"
+echo "  Threading: $THREAD_LABEL"
 echo "============================================"
 
 # Check ggml submodule
@@ -100,8 +114,9 @@ emcmake cmake -S . -B "$BUILD_DIR" $GENERATOR \
     -DGGML_OPENMP=OFF \
     -DCRISPEMBED_BUILD_SHARED=OFF \
     -DCRISPEMBED_WASM=ON \
-    -DCMAKE_C_FLAGS="$SIMD_FLAGS" \
-    -DCMAKE_CXX_FLAGS="$SIMD_FLAGS" \
+    -DCRISPEMBED_WASM_THREADS="$THREADS" \
+    -DCMAKE_C_FLAGS="$SIMD_FLAGS $THREAD_C_FLAGS" \
+    -DCMAKE_CXX_FLAGS="$SIMD_FLAGS $THREAD_C_FLAGS" \
     -DCMAKE_EXE_LINKER_FLAGS="\
 -sEXPORTED_FUNCTIONS=$EXPORTED_FUNCS \
 -sEXPORTED_RUNTIME_METHODS=$EXPORTED_RUNTIME \
@@ -114,6 +129,7 @@ emcmake cmake -S . -B "$BUILD_DIR" $GENERATOR \
 -sFILESYSTEM=1 \
 -sWASM_BIGINT=1 \
 -sNO_EXIT_RUNTIME=1 \
+$THREAD_LINK_FLAGS \
 $SIMD_FLAGS \
 " \
     "${CMAKE_EXTRA[@]+"${CMAKE_EXTRA[@]}"}"
