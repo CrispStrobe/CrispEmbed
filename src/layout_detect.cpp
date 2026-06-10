@@ -11,6 +11,7 @@
 
 #include "layout_detect.h"
 #include "core/gguf_loader.h"
+#include "crispembed_diff.h"
 
 #include "ggml.h"
 #include "ggml-alloc.h"
@@ -1159,10 +1160,12 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 rp_col[d * N_queries + q] = ref_points[q * 4 + d];
         int hidden = 2 * D; // 512
         std::vector<float> tmp(hidden * N_queries);
+        // Layer 0: anonymous val_1947 [4,512] — MatMul convention (no Transpose in ONNX)
         cpu_matmul(rp_col.data(), tmp.data(), 4, hidden, N_queries,
                    ctx->decoder.qpos_w[0], ctx->decoder.qpos_b[0]);
         for (auto& v : tmp) v = std::max(0.0f, v);
-        cpu_matmul(tmp.data(), pos_enc_out.data(), hidden, D, N_queries,
+        // Layer 1: named weight [256,512] — Gemm convention (ONNX has Transpose before MatMul)
+        cpu_linear(tmp.data(), pos_enc_out.data(), hidden, D, N_queries,
                    ctx->decoder.qpos_w[1], ctx->decoder.qpos_b[1]);
     };
 
@@ -1170,12 +1173,49 @@ std::vector<region> detect(context* ctx, const float* pixels,
             token_scores[0].first, token_scores[N_queries-1].first);
     fprintf(stderr, "layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
 
+    // Load diff reference if available
+    crispembed_diff::Ref dec_ref;
+    bool has_dec_ref = dec_ref.load("/tmp/dec0-diff-ref.gguf");
+
+    auto diff_report = [&](const char* label, const char* ref_name,
+                           const float* data, size_t n_elem) {
+        if (!has_dec_ref) return;
+        auto r = dec_ref.compare(ref_name, data, n_elem);
+        if (r.found)
+            fprintf(stderr, "    DIFF %s: cos_min=%.6f cos_mean=%.6f max_abs=%.2e %s\n",
+                    label, r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+    };
+
+    // Compare initial encoder projection and memory
+    diff_report("enc_proj", "layer_norm_2", enc_proj.data(), D * total_tokens);
+    diff_report("memory", "concat_4", memory.data(), D * total_tokens);
+
     for (int li = 0; li < 6; li++) {
         const auto& layer = ctx->decoder.layers[li];
 
         // Recompute pos_enc each layer from current ref_points
         std::vector<float> pos_enc(D * N_queries);
         compute_pos_enc(pos_enc);
+
+        if (li == 0) {
+            diff_report("queries_init", "gather_2", queries.data(), D * N_queries);
+            diff_report("pos_enc", "linear_12", pos_enc.data(), D * N_queries);
+            // Also dump ref_points for comparison
+            if (has_dec_ref) {
+                auto [rp_ref, rp_n] = dec_ref.get_f32("sigmoid");
+                if (rp_ref && rp_n >= (size_t)(N_queries * 4)) {
+                    float cos = 0, na = 0, nb = 0;
+                    for (int i = 0; i < N_queries * 4; i++) {
+                        cos += ref_points[i] * rp_ref[i];
+                        na += ref_points[i] * ref_points[i];
+                        nb += rp_ref[i] * rp_ref[i];
+                    }
+                    cos /= (sqrtf(na) * sqrtf(nb) + 1e-10f);
+                    fprintf(stderr, "    DIFF ref_points: cos=%.6f cpp[0]=%.6f py[0]=%.6f\n",
+                            cos, ref_points[0], rp_ref[0]);
+                }
+            }
+        }
 
         // --- Self-attention ---
         // RT-DETRv2: Q = Q_w @ (query + pos), K = K_w @ (query + pos), V = V_w @ query
@@ -1216,31 +1256,32 @@ std::vector<region> detect(context* ctx, const float* pixels,
             std::vector<float> full_b(total_out);
             ggml_backend_tensor_get(layer.self_qkv_b, full_b.data(), 0, full_b.size() * sizeof(float));
 
-            // Q = (query+pos) @ Q_w + Q_b  (MatMul convention)
-            // Q_w is in rows 0..D-1 of in_proj_weight, stored as data[row*D+col]
+            // ONNX: Split(in_proj_weight) → Transpose(perm=[1,0]) → MatMul
+            // The Transpose cancels out the MatMul convention, so net effect is
+            // Gemm convention: Q[o] = sum_i W_split[o, i] * input[i]
+            // W_split[o, i] = data[o * D + i] (Gemm convention)
             for (int n = 0; n < N_queries; n++) {
                 for (int o = 0; o < D; o++) {
                     float sum = full_b[o];
                     for (int i = 0; i < D; i++)
-                        sum += full_w[i * D + o] * qp_sa[i * N_queries + n];
+                        sum += full_w[o * D + i] * qp_sa[i * N_queries + n];
                     q_proj[o * N_queries + n] = sum;
                 }
             }
-            // K = (query+pos) @ K_w + K_b
             for (int n = 0; n < N_queries; n++) {
                 for (int o = 0; o < D; o++) {
                     float sum = full_b[D + o];
                     for (int i = 0; i < D; i++)
-                        sum += full_w[D * D + i * D + o] * qp_sa[i * N_queries + n];
+                        sum += full_w[(D + o) * D + i] * qp_sa[i * N_queries + n];
                     k_proj[o * N_queries + n] = sum;
                 }
             }
-            // V = query @ V_w + V_b (no pos!)
+            // V = W_v @ query (no pos!)
             for (int n = 0; n < N_queries; n++) {
                 for (int o = 0; o < D; o++) {
                     float sum = full_b[2 * D + o];
                     for (int i = 0; i < D; i++)
-                        sum += full_w[2 * D * D + i * D + o] * queries[i * N_queries + n];
+                        sum += full_w[(2 * D + o) * D + i] * queries[i * N_queries + n];
                     v_proj[o * N_queries + n] = sum;
                 }
             }
@@ -1288,7 +1329,15 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
         // Residual + norm
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + sa_out[i];
+        if (li == 0) {
+            diff_report("Q", "linear_13", q_proj.data(), D * N_queries);
+            diff_report("K", "linear_14", k_proj.data(), D * N_queries);
+            diff_report("V", "linear_15", v_proj.data(), D * N_queries);
+            diff_report("sa_out_proj", "linear_16", sa_out.data(), D * N_queries);
+            diff_report("sa_resid", "add_2545", queries.data(), D * N_queries);
+        }
         cpu_layernorm(queries.data(), D, N_queries, layer.norm1_w, layer.norm1_b);
+        if (li == 0) diff_report("norm1", "layer_norm_3", queries.data(), D * N_queries);
         { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm1: [%.4f,%.4f]\n",li,mn,mx); }
 
         // --- Deformable cross-attention ---
@@ -1309,6 +1358,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
                     val_row[n * D + d] = values[d * total_tokens + n];
             FILE* fp = fopen("/tmp/cpp_values.bin", "wb");
             if (fp) { fwrite(val_row.data(), sizeof(float), D * total_tokens, fp); fclose(fp); }
+            diff_report("values", "linear_17", values.data(), D * total_tokens);
         }
 
         // query + position encoding for cross-attention projections
@@ -1414,9 +1464,17 @@ std::vector<region> detect(context* ctx, const float* pixels,
         cpu_matmul(cross_out.data(), ca_out.data(), D, D, N_queries,
                    layer.cross_out_w, layer.cross_out_b);
 
+        if (li == 0) {
+            diff_report("offsets", "linear_18", offsets.data(), n_offsets * N_queries);
+            diff_report("attn_wts", "linear_19", attn_weights.data(), n_weights * N_queries);
+            diff_report("ca_out_proj", "linear_20", ca_out.data(), D * N_queries);
+        }
+
         // Residual + norm
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ca_out[i];
+        if (li == 0) diff_report("ca_resid", "add_2801", queries.data(), D * N_queries);
         cpu_layernorm(queries.data(), D, N_queries, layer.norm2_w, layer.norm2_b);
+        if (li == 0) diff_report("norm2", "layer_norm_4", queries.data(), D * N_queries);
 
         { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm2: [%.4f,%.4f]\n",li,mn,mx); }
         // --- FFN ---
@@ -1433,6 +1491,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
         // Residual + norm
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ffn2[i];
         cpu_layernorm(queries.data(), D, N_queries, layer.norm3_w, layer.norm3_b);
+        if (li == 0) diff_report("norm3", "layer_norm_5", queries.data(), D * N_queries);
 
         { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm3: [%.4f,%.4f]\n",li,mn,mx); }
         // Update reference points via bbox head (iterative refinement)
