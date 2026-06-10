@@ -1215,8 +1215,8 @@ std::vector<region> detect_file(context* ctx, const char* path,
             for (int x = 0; x < ctx->input_w; x++) {
                 float src_x = x / scale_x;
                 int sx0 = std::min((int)src_x, img_w - 1);
+                // Model expects [0, 1] input (no ImageNet normalization)
                 float val = raw[(sy0 * img_w + sx0) * 3 + c] / 255.0f;
-                val = (val - ctx->img_mean[c]) / ctx->img_std[c];
                 pixels[c * ctx->input_h * ctx->input_w + y * ctx->input_w + x] = val;
             }
         }
