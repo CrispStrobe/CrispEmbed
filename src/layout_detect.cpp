@@ -1223,6 +1223,19 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 ref_points[0], ref_points[1], ref_points[2], ref_points[3]);
     }
 
+    // Compute initial pos_enc and dump for comparison
+    compute_pos_enc(ref_points.data(), pos_enc.data());
+    if (getenv("LAYOUT_DEBUG")) {
+        std::vector<float> pe_row(D * N_queries);
+        for (int q = 0; q < N_queries; q++)
+            for (int d = 0; d < D; d++)
+                pe_row[q * D + d] = pos_enc[d * N_queries + q];
+        FILE* fp = fopen("/tmp/cpp_pos_enc_init.bin", "wb");
+        if (fp) { fwrite(pe_row.data(), sizeof(float), D * N_queries, fp); fclose(fp); }
+        fprintf(stderr, "  pos_enc[0] first 4: %.6f %.6f %.6f %.6f\n",
+                pe_row[0], pe_row[1], pe_row[2], pe_row[3]);
+    }
+
     fprintf(stderr, "layout_detect: query init done (top-K score: %.3f..%.3f)\n",
             token_scores[0].first, token_scores[N_queries-1].first);
     fprintf(stderr, "layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
