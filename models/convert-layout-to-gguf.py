@@ -204,19 +204,11 @@ def main():
                     if 'decoder' in inp:
                         split_weights.add(inp)
 
-    # Collect Conv2d(1x1) decoder weights (stored as (out, in, 1, 1))
-    conv_decoder_weights = set()
-    for node in graph.node:
-        if node.op_type == 'Conv':
-            for inp in node.input:
-                if inp in weights and 'decoder' in inp and 'weight' in inp:
-                    w = weights[inp]
-                    if w.ndim == 4 and w.shape[2] == 1 and w.shape[3] == 1:
-                        # Flatten first, then mark for transpose
-                        weights[inp] = w.reshape(w.shape[0], w.shape[1])
-                        conv_decoder_weights.add(inp)
-                    elif w.ndim == 2:
-                        conv_decoder_weights.add(inp)
+    # NOTE: decoder Conv2d(1x1) weights (decoder.input_proj) are NOT transposed.
+    # They are used via cpu_linear which handles the (out, in) convention correctly
+    # when the weight ne[0] matches in_d. The transposition only applies to
+    # Gemm(transB=1) and Split+Transpose patterns.
+    conv_decoder_weights = set()  # empty — no Conv2d transposition
 
     # Transpose decoder weights from (out, in) → (in, out)
     for name in gemm_transB_weights | split_weights | conv_decoder_weights:
