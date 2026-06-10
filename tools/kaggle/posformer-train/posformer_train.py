@@ -63,205 +63,13 @@ HF_PROGRESS_REPO = "cstr/posformer-training-progress"
 WANDB_PROJECT = "posformer-hmer"
 
 MATHWRITING_URL = "https://storage.googleapis.com/mathwriting_data/mathwriting-2024.tgz"
-MATHWRITING_HF_DATASET = "deepcopy/MathWriting-human"
 POSFORMER_REPO = "https://github.com/SJTU-DeepVisionLab/PosFormer.git"
 CRISPEMBED_REPO = "https://github.com/CrispStrobe/CrispEmbed.git"
 
 # Where CROHME data zip lives (upload to HF or Kaggle dataset).
 # PosFormer's expected format: data/{train,2014}/caption.txt + img/*.bmp
 CROHME_HF_REPO = "cstr/posformer-training-data"
-CROHME_HF_FILE = "data_crohme_plus_mw2k.zip"
-MATHWRITING_V2_HF_FILE = "data_mathwriting_v2_20k.zip"
-
-# ━━━━━━━━━━━━━━━━━━━━ V2 vocabulary (183 tokens) ━━━━━━━━━━━━━━━━━━━━━━━━━━
-# Embedded to avoid network dependency. Alphabetical order — token indices
-# must match exactly between training, GGUF converter, and C++ inference.
-# Source: /mnt/volume1/dictionary_v2.txt built by build_dict_v2.py
-
-DICT_V2 = """\
-!
-&
-(
-)
-*
-+
-,
--
-.
-/
-0
-1
-2
-3
-4
-5
-6
-7
-8
-9
-:
-;
-<
-=
->
-A
-B
-C
-D
-E
-F
-G
-H
-I
-J
-K
-L
-M
-N
-O
-P
-Q
-R
-S
-T
-U
-V
-W
-X
-Y
-Z
-[
-\\Delta
-\\Lambda
-\\Leftrightarrow
-\\Omega
-\\Phi
-\\Pi
-\\Psi
-\\Rightarrow
-\\Sigma
-\\Theta
-\\Upsilon
-\\Xi
-\\\\
-\\alpha
-\\approx
-\\begin
-\\beta
-\\cap
-\\cdot
-\\cdots
-\\chi
-\\cos
-\\cup
-\\dagger
-\\delta
-\\div
-\\dot
-\\emptyset
-\\end
-\\epsilon
-\\equiv
-\\eta
-\\exists
-\\forall
-\\frac
-\\gamma
-\\ge
-\\geq
-\\gg
-\\hat
-\\iint
-\\in
-\\infty
-\\int
-\\kappa
-\\lambda
-\\langle
-\\lceil
-\\ldots
-\\le
-\\leq
-\\lfloor
-\\lim
-\\limits
-\\log
-\\mu
-\\nabla
-\\ne
-\\neq
-\\notin
-\\nu
-\\oint
-\\omega
-\\oplus
-\\otimes
-\\overline
-\\partial
-\\perp
-\\phi
-\\pi
-\\pm
-\\prime
-\\prod
-\\propto
-\\psi
-\\rangle
-\\rceil
-\\rfloor
-\\rho
-\\rightarrow
-\\sigma
-\\sim
-\\sin
-\\sqrt
-\\subseteq
-\\sum
-\\tan
-\\tau
-\\theta
-\\tilde
-\\times
-\\underline
-\\varphi
-\\vec
-\\xi
-\\zeta
-\\{
-\\}
-]
-^
-_
-a
-b
-c
-d
-e
-f
-g
-h
-i
-j
-k
-l
-m
-matrix
-n
-o
-p
-q
-r
-s
-t
-u
-v
-w
-x
-y
-z
-{
-|
-}"""
+CROHME_HF_FILE = "data_crohme.zip"
 
 # ━━━━━━━━━━━━━━━━━━━━ Progress / logging ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -311,29 +119,20 @@ def sh(cmd: str, **kwargs) -> subprocess.CompletedProcess:
 
 # ━━━━━━━━━━━━━━━━━━━━ Auth — CrispASR kaggle_harness ━━━━━━━━━━━━━━━━━━━━━━
 
-# kaggle_harness.py is bundled in the push directory (works offline).
-# If CrispASR is available (cloned later for PosFormer source), we prefer
-# that copy to stay in sync.  But the bundled copy is always the fallback.
-CRISPASR_URL = "https://github.com/CrispStrobe/CrispASR.git"
+# ── Download kaggle_harness from CrispASR ────────────────────────────────
+# Single-file download instead of cloning the whole repo.
 
-WORK.mkdir(parents=True, exist_ok=True)
+_HARNESS_URL = "https://raw.githubusercontent.com/CrispStrobe/CrispASR/main/tools/kaggle/kaggle_harness.py"
+_WORK = Path("/kaggle/working" if os.path.exists("/kaggle/working")
+             else os.environ.get("WORK_DIR", "/mnt/volume1/posformer-training"))
+_HARNESS_PATH = _WORK / "kaggle_harness.py"
 
-# Try cloning CrispASR for the harness (may fail without internet)
-_CRISPASR_DIR = WORK / "CrispASR"
-if not _CRISPASR_DIR.exists():
-    try:
-        subprocess.check_call([
-            "git", "clone", "--depth", "1",
-            CRISPASR_URL, str(_CRISPASR_DIR),
-        ])
-        sys.path.insert(0, str(_CRISPASR_DIR / "tools" / "kaggle"))
-    except Exception:
-        pass  # fall through to bundled copy
+if not _HARNESS_PATH.exists():
+    _WORK.mkdir(parents=True, exist_ok=True)
+    import urllib.request
+    urllib.request.urlretrieve(_HARNESS_URL, _HARNESS_PATH)
 
-# Import from cloned repo or bundled copy (same directory as this script)
-if str(_CRISPASR_DIR / "tools" / "kaggle") not in sys.path:
-    # Bundled fallback — kaggle_harness.py is in the push directory
-    sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(_WORK))
 import kaggle_harness as kh          # noqa: E402
 kh.init_progress()                   # line-buffered I/O + JSONL
 
@@ -601,445 +400,33 @@ def _pack_zip(zip_path: Path, images_dir: Path,
                     zf.write(bmp, f"data/{split}/img/{fname}.bmp")
 
 
-# ━━━━━━━━━━━━━━━━━━━━ V2 LaTeX tokenizer ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-#
-# Strict tokenizer for the 183-token v2 vocabulary.  Any token not in vocab
-# causes the entire sample to be rejected (returns None).  No lossy mapping.
-
-# Formatting commands — drop command, keep braced content
-_V2_SKIP_COMMANDS = frozenset({
-    '\\left', '\\right', '\\big', '\\Big', '\\bigg', '\\Bigg',
-    '\\mathbb', '\\mathcal', '\\mathrm', '\\mathbf', '\\mathit',
-    '\\mathsf', '\\mathfrak', '\\text', '\\textbf', '\\textrm',
-    '\\operatorname', '\\boldsymbol', '\\displaystyle', '\\textstyle',
-    '\\scriptstyle', '\\scriptscriptstyle',
-})
-
-# Spacing commands — drop silently (no braced content)
-_V2_SKIP_SPACING = frozenset({
-    '\\quad', '\\qquad', '\\hspace', '\\mspace',
-    '\\,', '\\;', '\\:', '\\!',
-})
-
-# Environment names we can tokenize (emit \begin { name } ... \end { name })
-_V2_MATRIX_ENVS = frozenset({
-    'matrix', 'pmatrix', 'bmatrix', 'vmatrix', 'Vmatrix', 'Bmatrix',
-    'cases', 'array',
-})
-
-
-def tokenize_latex_v2(latex: str, vocab: set) -> Optional[List[str]]:
-    """Parse raw LaTeX into v2 PosFormer tokens with strict rejection.
-
-    Returns list of tokens, or None if any token is not in vocab or the
-    result has fewer than 2 tokens.
-    """
-    import re
-    tokens: List[str] = []
-    s = latex.strip()
-    i = 0
-
-    while i < len(s):
-        # Skip whitespace
-        if s[i].isspace():
-            i += 1
-            continue
-
-        # LaTeX command (starts with backslash)
-        if s[i] == '\\':
-            # ── Two-character special sequences ──
-            # \\ (double backslash = newline in matrices)
-            if i + 1 < len(s) and s[i + 1] == '\\':
-                if '\\\\' in vocab:
-                    tokens.append('\\\\')
-                    i += 2
-                else:
-                    return None
-                continue
-
-            # \{ and \} (escaped braces)
-            if i + 1 < len(s) and s[i + 1] == '{':
-                if '\\{' in vocab:
-                    tokens.append('\\{')
-                    i += 2
-                else:
-                    return None
-                continue
-            if i + 1 < len(s) and s[i + 1] == '}':
-                if '\\}' in vocab:
-                    tokens.append('\\}')
-                    i += 2
-                else:
-                    return None
-                continue
-
-            # Spacing: \, \; \: \!
-            if i + 1 < len(s) and s[i + 1] in ',;:!':
-                pair = s[i:i + 2]
-                if pair in _V2_SKIP_SPACING:
-                    i += 2
-                    continue
-
-            # ── \begin{env} ... \end{env} ──
-            begin_m = re.match(r'\\begin\{(\w+)\}', s[i:])
-            if begin_m:
-                env = begin_m.group(1)
-                i += len(begin_m.group(0))
-                end_pat = f'\\end{{{env}}}'
-                end_idx = s.find(end_pat, i)
-                if end_idx < 0:
-                    return None  # unmatched \begin
-
-                # For matrix-like environments, emit structural tokens
-                if env in _V2_MATRIX_ENVS:
-                    if '\\begin' not in vocab or '\\end' not in vocab:
-                        return None
-                    if '{' not in vocab or '}' not in vocab:
-                        return None
-                    # Use 'matrix' token for all matrix variants
-                    env_token = 'matrix' if 'matrix' in vocab else env
-                    if env_token not in vocab:
-                        return None
-                    tokens.extend(['\\begin', '{', env_token, '}'])
-
-                    # Recursively tokenize inner content
-                    inner = s[i:end_idx]
-                    inner_tokens = tokenize_latex_v2(inner, vocab)
-                    if inner_tokens is None:
-                        return None
-                    tokens.extend(inner_tokens)
-
-                    tokens.extend(['\\end', '{', env_token, '}'])
-                    i = end_idx + len(end_pat)
-                else:
-                    # Unknown environment — reject
-                    return None
-                continue
-
-            # Stray \end without matching \begin
-            end_m = re.match(r'\\end\{(\w+)\}', s[i:])
-            if end_m:
-                return None  # malformed LaTeX
-
-            # ── Named LaTeX command: \alpha, \frac, etc. ──
-            m = re.match(r'\\[a-zA-Z]+', s[i:])
-            if m:
-                cmd = m.group(0)
-                i += len(cmd)
-
-                # Skip formatting commands (keep braced content)
-                if cmd in _V2_SKIP_COMMANDS:
-                    continue
-
-                # Skip spacing commands (no content)
-                if cmd in _V2_SKIP_SPACING:
-                    continue
-
-                # Check if command is in vocab
-                if cmd in vocab:
-                    tokens.append(cmd)
-                else:
-                    # Unknown command → reject entire sample
-                    return None
-                continue
-
-            # Unknown \X sequence — skip single char after backslash
-            i += 2 if i + 1 < len(s) else 1
-            continue
-
-        # Single character
-        ch = s[i]
-        i += 1
-
-        if ch in vocab:
-            tokens.append(ch)
-        else:
-            # Unknown character → reject
-            return None
-
-    if len(tokens) < 2:
-        return None
-    return tokens
-
-
-# ━━━━━━━━━━━━━━━━━━━━ MathWriting v2 (HF pre-rasterized) ━━━━━━━━━━━━━━━━━
-
-def download_mathwriting_hf(max_samples: int = 0) -> Path:
-    """Download MathWriting from HF (pre-rasterized), tokenize with v2 vocab,
-    pack into PosFormer-format zip.  max_samples=0 means all."""
-    zip_path = WORK / "data_mathwriting_v2.zip"
-
-    # Check local cache (skip for small test runs)
-    min_size = 1_000_000 if max_samples else 50_000_000
-    if zip_path.exists() and zip_path.stat().st_size > min_size:
-        step("mathwriting_v2.cached",
-             size_mb=round(zip_path.stat().st_size / 1e6))
-        return zip_path
-
-    # Check HF cache
-    step("mathwriting_v2.check_hf_cache")
-    try:
-        from huggingface_hub import hf_hub_download
-        downloaded = hf_hub_download(
-            repo_id=CROHME_HF_REPO, filename=MATHWRITING_V2_HF_FILE,
-            repo_type="dataset", local_dir=str(WORK),
-        )
-        if Path(downloaded).stat().st_size > 50_000_000:
-            if Path(downloaded) != zip_path:
-                shutil.move(downloaded, zip_path)
-            step("mathwriting_v2.from_hf",
-                 size_mb=round(zip_path.stat().st_size / 1e6))
-            return zip_path
-    except Exception:
-        pass
-
-    # Build from HF dataset
-    step("mathwriting_v2.loading_hf_dataset",
-         max_samples=max_samples or "all")
-    from datasets import load_dataset
-    if max_samples:
-        # Streaming avoids downloading the entire dataset for small tests
-        ds = {s: load_dataset(MATHWRITING_HF_DATASET, split=s,
-                              streaming=True)
-              for s in ["train", "val", "test"]}
-    else:
-        ds = load_dataset(MATHWRITING_HF_DATASET)
-
-    v2_vocab = set(DICT_V2.strip().split("\n"))
-    v1_vocab = {  # original 110 tokens — everything NOT here is a "rare" v2 token
-        '!','(',')','+',' ,','-','.','/','0','1','2','3','4','5','6','7','8','9',
-        '<','=','>','A','B','C','E','F','G','H','I','L','M','N','P','R','S','T',
-        'V','X','Y','[',']','^','_','a','b','c','d','e','f','g','h','i','j','k',
-        'l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','{','|','}',
-        '\\Delta','\\Pi','\\alpha','\\beta','\\cdot','\\cdots','\\cos','\\div',
-        '\\exists','\\forall','\\frac','\\gamma','\\geq','\\in','\\infty',
-        '\\int','\\lambda','\\ldots','\\leq','\\lim','\\limits','\\log','\\mu',
-        '\\neq','\\partial','\\phi','\\pi','\\pm','\\prime','\\rightarrow',
-        '\\sigma','\\sin','\\sqrt','\\sum','\\tan','\\theta','\\times','\\{','\\}',
-    }
-    rare_tokens = v2_vocab - v1_vocab
-    step("mathwriting_v2.vocab_loaded", n_tokens=len(v2_vocab),
-         n_rare=len(rare_tokens))
-
-    # Budget: ~20K train samples that fit in P100 RAM. Prioritise samples
-    # containing rare v2 tokens (Greek, operators, decorations, matrices)
-    # so the model actually learns the expanded vocabulary.
-    TRAIN_BUDGET = int(os.environ.get("TRAIN_BUDGET", "20000"))
-
-    import io, random
-    split_map = {"train": "train", "val": "valid", "test": "test"}
-
-    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        for hf_split, our_split in split_map.items():
-            if hf_split not in ds:
-                step(f"mathwriting_v2.{our_split}.skip",
-                     note="split not in dataset")
-                continue
-
-            split_ds = ds[hf_split]
-            is_train = (our_split == "train")
-            budget = TRAIN_BUDGET if is_train else 5000
-            t0 = time.time()
-
-            if is_train and not max_samples:
-                # Two-pass sampling strategy:
-                #   Half 1 (10K): curated — ~137 samples per rare token,
-                #     ensuring every new v2 symbol gets training coverage
-                #   Half 2 (10K): random — natural distribution of common
-                #     math so the model doesn't forget basics
-                step(f"mathwriting_v2.{our_split}.tokenizing")
-
-                # Pass 1: tokenize everything, index by rare tokens
-                from collections import defaultdict
-                all_compat = []     # (sample_id, tok_str, hf_idx)
-                by_rare = defaultdict(list)  # rare_token → [index into all_compat]
-                skipped = 0
-
-                for idx, sample in enumerate(split_ds):
-                    latex = sample.get("latex", "")
-                    sample_id = sample.get("sample_id", f"{hf_split}_{idx:06d}")
-                    if not latex:
-                        skipped += 1
-                        continue
-                    toks = tokenize_latex_v2(latex, v2_vocab)
-                    if toks is None:
-                        skipped += 1
-                        continue
-                    tok_str = ' '.join(toks)
-                    ci = len(all_compat)
-                    all_compat.append((sample_id, tok_str, idx))
-                    for t in set(toks):
-                        if t in rare_tokens:
-                            by_rare[t].append(ci)
-
-                    if (idx + 1) % 50000 == 0:
-                        step(f"mathwriting_v2.{our_split}.tokenize_progress",
-                             scanned=idx + 1, compat=len(all_compat))
-
-                step(f"mathwriting_v2.{our_split}.tokenized",
-                     compatible=len(all_compat), skipped=skipped,
-                     time_s=round(time.time() - t0, 1))
-
-                # Curated half: ~137 samples per rare token (10K / 73)
-                curated_budget = budget // 2
-                per_token = max(1, curated_budget // len(rare_tokens))
-                curated_idxs = set()
-                token_counts = {}
-                for tok in sorted(rare_tokens):
-                    pool = by_rare.get(tok, [])
-                    random.shuffle(pool)
-                    added = 0
-                    for ci in pool:
-                        if ci not in curated_idxs:
-                            curated_idxs.add(ci)
-                            added += 1
-                            if added >= per_token:
-                                break
-                    token_counts[tok] = added
-
-                # Log coverage
-                covered = sum(1 for v in token_counts.values() if v > 0)
-                step(f"mathwriting_v2.{our_split}.curated",
-                     n_curated=len(curated_idxs), per_token=per_token,
-                     tokens_covered=f"{covered}/{len(rare_tokens)}",
-                     examples=str({k: v for k, v in sorted(
-                         token_counts.items())[:10]}))
-
-                # Random half: uniform sample from ALL compatible
-                random_budget = budget - len(curated_idxs)
-                remaining = [i for i in range(len(all_compat))
-                             if i not in curated_idxs]
-                random.shuffle(remaining)
-                random_idxs = set(remaining[:random_budget])
-
-                selected_idxs = curated_idxs | random_idxs
-                step(f"mathwriting_v2.{our_split}.selected",
-                     total=len(selected_idxs),
-                     curated=len(curated_idxs),
-                     random=len(random_idxs), budget=budget)
-
-                # Second pass: fetch images for selected samples by index
-                sel_hf_indices = {}
-                for ci in selected_idxs:
-                    sid, tstr, hf_idx = all_compat[ci]
-                    sel_hf_indices[hf_idx] = (sid, tstr)
-                written = 0
-                cap_lines = []
-                for idx, sample in enumerate(split_ds):
-                    if idx not in sel_hf_indices:
-                        continue
-                    sample_id, tok_str = sel_hf_indices[idx]
-                    image = sample.get("image")
-                    if image is None:
-                        continue
-                    gray = image.convert("L")
-                    buf = io.BytesIO()
-                    gray.save(buf, format="BMP")
-                    zf.writestr(f"data/{our_split}/img/{sample_id}.bmp",
-                                buf.getvalue())
-                    cap_lines.append(f"{sample_id} {tok_str}")
-                    written += 1
-                    if written % 5000 == 0:
-                        step(f"mathwriting_v2.{our_split}.writing",
-                             done=written, total=len(selected_idxs))
-
-                step(f"mathwriting_v2.{our_split}.done",
-                     ok=written, budget=budget,
-                     time_s=round(time.time() - t0, 1))
-                if cap_lines:
-                    zf.writestr(f"data/{our_split}/caption.txt",
-                                "\n".join(cap_lines) + "\n")
-
-            else:
-                # Val/test or max_samples: simple sequential
-                captions = []
-                skipped = 0
-                lim = max_samples if max_samples else budget
-                for idx, sample in enumerate(split_ds):
-                    if len(captions) >= lim:
-                        break
-                    latex = sample.get("latex", "")
-                    image = sample.get("image")
-                    sample_id = sample.get("sample_id", f"{hf_split}_{idx:06d}")
-                    if not latex or image is None:
-                        skipped += 1
-                        continue
-                    toks = tokenize_latex_v2(latex, v2_vocab)
-                    if toks is None:
-                        skipped += 1
-                        continue
-                    gray = image.convert("L")
-                    buf = io.BytesIO()
-                    gray.save(buf, format="BMP")
-                    zf.writestr(f"data/{our_split}/img/{sample_id}.bmp",
-                                buf.getvalue())
-                    captions.append(f"{sample_id} {' '.join(toks)}")
-
-                step(f"mathwriting_v2.{our_split}.done",
-                     ok=len(captions), skipped=skipped,
-                     time_s=round(time.time() - t0, 1))
-                if captions:
-                    zf.writestr(f"data/{our_split}/caption.txt",
-                                "\n".join(captions) + "\n")
-    step("mathwriting_v2.ready",
-         size_mb=round(zip_path.stat().st_size / 1e6))
-
-    # Upload to HF for future runs
-    if os.environ.get("HF_TOKEN"):
-        step("mathwriting_v2.upload_cache")
-        try:
-            from huggingface_hub import HfApi
-            HfApi(token=os.environ["HF_TOKEN"]).upload_file(
-                path_or_fileobj=str(zip_path),
-                path_in_repo=MATHWRITING_V2_HF_FILE,
-                repo_id=CROHME_HF_REPO, repo_type="dataset",
-                commit_message="Pre-rasterized MathWriting v2 data zip",
-            )
-        except Exception as e:
-            print(f"  HF cache upload failed (non-fatal): {e}", flush=True)
-
-    return zip_path
-
-
 # ━━━━━━━━━━━━━━━━━━━━ Vocabulary ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-def build_vocab_from_zip(zip_path: Path,
-                         dataset: str = "crohme") -> Tuple[List[str], Path]:
+def build_vocab_from_zip(zip_path: Path) -> Tuple[List[str], Path]:
     """Get the canonical PosFormer dictionary.
     CRITICAL: token indices must match the original PosFormer dictionary
     exactly (alphabetical order). Using frequency-sorted order scrambles
     the vocabulary and makes the trained model unusable with the original
     GGUF converter and C++ inference.
 
-    For v2 datasets (mathwriting_v2), uses the embedded 183-token DICT_V2.
-    For v1 datasets (crohme, mathwriting), downloads original 110-token dict."""
+    The dictionary is obtained from the cloned PosFormer repo. If not yet
+    cloned, we download just the dictionary file from GitHub."""
     dict_path = WORK / "dictionary.txt"
 
-    if dataset in ("mathwriting_v2", "combined_v2"):
-        # V2: use embedded 183-token dictionary
-        dict_path.write_text(DICT_V2.strip() + "\n")
-        step("vocab.v2_embedded", n_tokens=183)
+    # Try PosFormer clone first (may already be cloned later in the pipeline)
+    posformer_dict = WORK / "PosFormer" / "Pos_Former" / "datamodule" / "dictionary.txt"
+    if posformer_dict.exists():
+        import shutil
+        shutil.copy2(posformer_dict, dict_path)
     else:
-        # V1: use original PosFormer dictionary (110 tokens)
-        posformer_dict = (WORK / "PosFormer" / "Pos_Former" /
-                          "datamodule" / "dictionary.txt")
-        if posformer_dict.exists():
-            import shutil
-            shutil.copy2(posformer_dict, dict_path)
-        else:
-            import urllib.request
-            url = ("https://raw.githubusercontent.com/SJTU-DeepVisionLab/"
-                   "PosFormer/main/Pos_Former/datamodule/dictionary.txt")
-            urllib.request.urlretrieve(url, dict_path)
+        # Download canonical dictionary from GitHub
+        import urllib.request
+        url = "https://raw.githubusercontent.com/SJTU-DeepVisionLab/PosFormer/main/Pos_Former/datamodule/dictionary.txt"
+        urllib.request.urlretrieve(url, dict_path)
 
     tokens = dict_path.read_text().strip().split("\n")
-    sample = {i: tokens[i] for i in range(min(5, len(tokens)))}
     step("vocab.built", n_tokens=len(tokens), path=str(dict_path),
-         first_tokens=str(sample),
          note="canonical PosFormer dictionary (alphabetical order)")
-    if len(tokens) >= 4 and tokens[0] != '!':
-        step("vocab.WARNING", msg="token[0] is not '!' — vocab may be wrong!",
-             got=tokens[0])
     return tokens, dict_path
 
 
@@ -1312,54 +699,11 @@ def patch_lit_posformer():
             img, mask, beam_size=1, max_len=self.hparams.max_len,
             alpha=1.0, early_stopping=True, temperature=1.0)
 
-    # Override configure_optimizers: cosine annealing with warm restarts
-    # instead of ReduceLROnPlateau (more predictable, avoids noisy plateau detection)
-    def _patched_configure_optimizers(self):
-        import torch.optim as optim
-        optimizer = optim.SGD(
-            self.parameters(),
-            lr=self.hparams.learning_rate,
-            momentum=0.9,
-            weight_decay=1e-4,
-        )
-        # Use the ORIGINAL published scheduler: ReduceLROnPlateau.
-        # Matches published config.yaml exactly, including frequency
-        # aligned to check_val_every_n_epoch so the metric is available.
-        check_val = self.trainer.check_val_every_n_epoch
-        reduce_scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer,
-            mode="max",
-            factor=0.25,
-            patience=self.hparams.patience // check_val,
-        )
-        return {"optimizer": optimizer,
-                "lr_scheduler": {
-                    "scheduler": reduce_scheduler,
-                    "monitor": "val_ExpRate",
-                    "interval": "epoch",
-                    "frequency": check_val,
-                    "strict": True,
-                }}
-
     lit.LitPosFormer.training_step = _patched_training_step
     lit.LitPosFormer.validation_step = _patched_validation_step
     lit.LitPosFormer.approximate_joint_search = _fast_joint_search
-    lit.LitPosFormer.configure_optimizers = _patched_configure_optimizers
-
-    # Label smoothing: monkey-patch ce_loss to use label_smoothing=0.1
-    import Pos_Former.utils.utils as _utils
-    import torch.nn.functional as F
-    from einops import rearrange as _rearrange
-    _orig_ce = _utils.ce_loss
-    def _smoothed_ce(output_hat, output, ignore_idx=0, reduction="mean"):
-        flat_hat = _rearrange(output_hat, "b l e -> (b l) e")
-        flat = _rearrange(output, "b l -> (b l)")
-        return F.cross_entropy(flat_hat, flat, ignore_index=ignore_idx,
-                               reduction=reduction, label_smoothing=0.1)
-    _utils.ce_loss = _smoothed_ce
-
     step("lit_posformer.patched",
-         note="greedy val, cosine annealing T_0=30, label_smoothing=0.1")
+         note="replaced .cuda(), validation uses greedy beam_size=1")
 
 
 # ━━━━━━━━━━━━━━━━━━━━ HF checkpoint upload callback ━━━━━━━━━━━━━━━━━━━━━━━
@@ -1409,40 +753,21 @@ def _make_hf_checkpoint_callback():
                 epoch = trainer.current_epoch
                 global_step = trainer.global_step
 
-                # Get val_ExpRate if available
-                val_exprate = None
-                if hasattr(trainer, 'callback_metrics'):
-                    val_exprate = trainer.callback_metrics.get('val_ExpRate')
-                    if val_exprate is not None:
-                        val_exprate = float(val_exprate)
-
-                # Include val_ExpRate in filename for easy identification
-                if val_exprate is not None:
-                    ckpt_name = (f"{self.run_name}/epoch{epoch:04d}"
-                                 f"-step{global_step}"
-                                 f"-exp{val_exprate:.4f}.ckpt")
-                else:
-                    ckpt_name = (f"{self.run_name}/epoch{epoch:04d}"
-                                 f"-step{global_step}.ckpt")
-
                 # Upload as latest (for resume) AND as timestamped (for history)
                 for remote_name in [
                     f"{self.run_name}/latest.ckpt",
-                    ckpt_name,
+                    f"{self.run_name}/epoch{epoch:04d}-step{global_step}.ckpt",
                 ]:
                     api.upload_file(
                         path_or_fileobj=str(self._local_ckpt),
                         path_in_repo=remote_name,
                         repo_id=self.repo_id, repo_type="model",
-                        commit_message=(f"{tag} epoch={epoch} step={global_step}"
-                                        f" exp={val_exprate:.4f}" if val_exprate else
-                                        f"{tag} epoch={epoch} step={global_step}"),
+                        commit_message=f"{tag} epoch={epoch} step={global_step}",
                     )
 
                 self._last_upload = time.time()
                 step(f"hf_checkpoint.{tag}",
                      epoch=epoch, step=global_step,
-                     val_ExpRate=round(val_exprate, 4) if val_exprate else None,
                      size_mb=round(size_mb, 1))
             except Exception as e:
                 print(f"  HF checkpoint upload failed (non-fatal): {e}",
@@ -1505,14 +830,14 @@ def train(args, zip_path: Path, dict_path: Path,
     # P100 is sm_60 — install PyTorch with CUDA 11.8 which still supports it.
     # T4 (sm_75) works with the pre-installed version.
     if gpu_usable:
-        sh("pip install -q pytorch_lightning opencv-python-headless wandb datasets",
+        sh("pip install -q pytorch_lightning opencv-python-headless wandb",
            capture_output=True)
     else:
         # P100: install torch+cu118 which supports sm_60
         sh("pip install -q --force-reinstall torch torchvision "
            "--index-url https://download.pytorch.org/whl/cu118",
            capture_output=True)
-        sh("pip install -q pytorch_lightning opencv-python-headless wandb datasets",
+        sh("pip install -q pytorch_lightning opencv-python-headless wandb",
            capture_output=True)
         gpu_usable = True  # cu118 torch supports P100
 
@@ -1649,7 +974,7 @@ def train(args, zip_path: Path, dict_path: Path,
 
     HFCheckpointCallback = _make_hf_checkpoint_callback()
     hf_callback = HFCheckpointCallback(
-        upload_interval_s=0,  # every epoch (20K dataset = small epochs)
+        upload_interval_s=3600.0,  # hourly
         run_name=args.dataset,
     )
 
@@ -1661,7 +986,7 @@ def train(args, zip_path: Path, dict_path: Path,
         try:
             from pytorch_lightning.loggers import WandbLogger
             # Fixed run_id per dataset for cross-session continuity
-            run_id = f"posformer-{args.dataset}-v18"
+            run_id = f"posformer-{args.dataset}"
             logger = WandbLogger(
                 project=WANDB_PROJECT,
                 name=f"posformer-{args.dataset}",
@@ -1690,15 +1015,9 @@ def train(args, zip_path: Path, dict_path: Path,
         logger=logger or True,
         default_root_dir=str(WORK),
         log_every_n_steps=50,
-        check_val_every_n_epoch=2,  # matches published config.yaml
+        val_check_interval=0.5,
         gradient_clip_val=1.0,
     )
-
-    # Force LR to 0.005 on resume via callback — the checkpoint's LR
-    # (0.0165) is too high, causing val_ExpRate to oscillate 55-60%.
-    # LR override: patched directly in the checkpoint file on HuggingFace.
-    # Lightning callbacks can't reliably override LR because the optimizer
-    # state is restored after on_train_start and the scheduler may reset it.
 
     step("train.start", epochs=args.epochs)
     with kh.build_heartbeat("train", interval_s=30.0):
@@ -1772,8 +1091,7 @@ def main():
     parser = argparse.ArgumentParser(
         description="PosFormer training — CROHME / MathWriting")
     parser.add_argument("--dataset", default=None,
-                        choices=["crohme", "mathwriting", "mathwriting_v2",
-                                 "unimer", "finetune"],
+                        choices=["crohme", "mathwriting", "finetune"],
                         help="Which dataset to train on (default: from env DATASET)")
     parser.add_argument("--device", default="auto",
                         choices=["auto", "gpu", "cuda", "mps", "cpu"])
@@ -1795,8 +1113,8 @@ def main():
 
     # Default epochs per dataset
     if args.epochs is None:
-        args.epochs = {"crohme": 300, "mathwriting": 20, "mathwriting_v2": 20,
-                       "unimer": 10, "finetune": 50}.get(args.dataset, 200)
+        args.epochs = {"crohme": 200, "mathwriting": 20, "finetune": 50
+                       }.get(args.dataset, 200)
 
     # Init
     os.environ["PYTHONUNBUFFERED"] = "1"
@@ -1819,8 +1137,6 @@ def main():
         zip_path = download_crohme()
     elif args.dataset == "mathwriting":
         zip_path = download_mathwriting()
-    elif args.dataset == "mathwriting_v2":
-        zip_path = download_mathwriting_hf(max_samples=args.max_samples)
     elif args.dataset == "finetune":
         # Finetune: train on CROHME, but resume from MathWriting checkpoint
         zip_path = download_crohme()
@@ -1828,15 +1144,12 @@ def main():
         raise ValueError(f"Unknown dataset: {args.dataset}")
 
     # Vocabulary
-    tokens_list, dict_path = build_vocab_from_zip(zip_path, args.dataset)
+    tokens_list, dict_path = build_vocab_from_zip(zip_path)
 
     # Resume checkpoint
     resume_ckpt = None
     if not args.no_resume:
-        if args.dataset == "mathwriting_v2":
-            # V2 trains from scratch (embedding layer size changed 110→183)
-            step("resume.skip_v2", note="v2 trains from scratch")
-        elif args.dataset == "finetune":
+        if args.dataset == "finetune":
             # Finetune resumes from the MathWriting checkpoint
             resume_ckpt = download_latest_checkpoint("mathwriting")
             if not resume_ckpt:

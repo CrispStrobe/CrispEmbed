@@ -204,6 +204,79 @@ This bug affected every plain `sentence-transformers/*` and `all-MiniLM-*`
 conversion prior to 2026-05-11. Re-converting those models drops the file
 size by ~1 MB each and removes the misleading "MLM head loaded" log line.
 
+## PPFormulaNet-S / Texo-Distill OCR port
+
+### MBart uses PRE-LN, not POST-LN
+
+Despite MBart config saying `layer_norm_eps` and having `*_layer_norm` weights,
+the HuggingFace MBart decoder applies **PRE-LN**: LayerNorm before attention/FFN,
+with the residual connection skipping the LN. The TrOCR decoder (math_ocr.cpp)
+uses POST-LN. Getting this wrong produces completely different logit distributions
+— the first token diverges from logit 16.1 (correct) to 1.7 (wrong).
+
+```
+PRE-LN (MBart):                    POST-LN (TrOCR):
+  residual = x                        Q = linear(x)
+  x = LN(x)                          ...attn...
+  Q = linear(x)                      x = x + attn_out
+  ...attn...                          x = LN(x)
+  x = residual + attn_out
+```
+
+The encoder diff test (cos=1.0) will NOT catch decoder LN ordering bugs —
+you MUST also dump and compare decoder layer outputs from the Python reference.
+
+### ODR violations from shared struct names
+
+Multiple `.cpp` files defining `struct dec_layer` in the anonymous namespace
+causes One Definition Rule violations. The linker may silently use the wrong
+definition (144 bytes from decoder_embed_internal.h instead of 208 bytes from
+ppformulanet_ocr.cpp), causing heap-buffer-overflow in `map_tensors`. ASAN
+catches this immediately. Fix: use unique struct names (`ppfn_dec_layer`).
+
+### UniMERNet preprocessing is NOT ImageNet
+
+PPFormulaNet-S/Texo uses UniMERNet's image processor:
+- Convert to grayscale, replicate to 3ch
+- Resize preserving aspect ratio, pad with **black** (not white)
+- Normalize: **mean=0.7931, std=0.1738** (NOT ImageNet 0.485/0.229)
+- Input is always 384x384
+
+Using ImageNet normalization produces garbage output even though the encoder
+activations look reasonable — the model was trained with different pixel statistics.
+
+### HGNetv2 StemBlock padding
+
+StemBlock uses kernel_size=2 convolutions (stem2a, stem2b) with padding=0.
+Before each, the input must be explicitly padded with `F.pad(x, (0,1,0,1))`.
+Without this, the spatial dimensions mismatch at the concat step (pool output
+vs stem2b output differ by 1 pixel).
+
+### Conv-BN folding for CNN encoders
+
+BatchNorm after Conv2d can be algebraically folded at conversion time:
+```
+fused_w = conv_w * (bn_weight / sqrt(bn_var + eps))
+fused_b = bn_bias - bn_mean * (bn_weight / sqrt(bn_var + eps))
+```
+This eliminates all BN parameters from the GGUF, saving memory and compute.
+The BTTR/HMER ports already did this; PPFormulaNet has ~150 BN layers to fold.
+
+### 20M models are too small for Q4_K
+
+The Texo-distill model (20M params, 384 d_model) produces identical output at
+F32/F16/Q8_0, but Q4_K degrades noticeably — subscripts become wrong, tokens
+repeat. The attention projections (384x384) and embedding table (1264x384) are
+small enough that 4-bit quantization loses critical precision. Ship Q8_0 (22 MB)
+as the smallest reliable variant.
+
+### Debug prints: gate behind env vars, never remove
+
+Decoder debug fprintf traces (`tok_emb+pos`, `after embed_ln`, `logits[91]`)
+were essential for diagnosing the PRE-LN bug. Gate them behind
+`getenv("PPFN_DEBUG")` rather than deleting. The crispembed-diff harness only
+validates the encoder — decoder bugs require manual layer-by-layer tracing.
+
 ## Quantization notes
 
 ### Python gguf vs C++ quantizer
@@ -1213,3 +1286,89 @@ NOT the model.beam_search() which includes the bi-directional scoring.
     978K printed math images (ArXiv+Pix2tex) under Apache 2.0. The
     CROHME and HME100K subsets are excluded from this license ("requires
     manual download for copyright"). Best commercial data source found.
+
+## NomicBERT v2-moe: hidden biases and GPT2 config
+
+NomicBERT extends `GPT2Config`, so standard attribute names are missing:
+`intermediate_size` → `n_inner`, `hidden_act` → missing (default GELU).
+Patch onto config before accessing.
+
+**Critical**: NomicBERT v1.5 has NO Wqkv/out_proj biases, but v2-moe
+DOES have them (`Wqkv.bias [2304]`, `out_proj.bias [768]`). The original
+converter assumed "no bias" based on v1.5 — this caused cos ≈ 0.955 parity
+(consistent across all texts, easily mistaken for a precision issue rather
+than a missing-data bug). Always check `bias is not None` dynamically
+rather than hardcoding assumptions from one model variant.
+
+Diagnosis approach: tensor diff showed all 148 weights bit-exact (0.0),
+proving the bug was runtime-only. Layer-by-layer dump (`CRISPEMBED_DUMP_LAYERS`)
+showed divergence starting at the attention output (before residual/LN),
+which pointed to QKV projection. Manual `x @ W.T` matched HF weights
+but not `Wqkv(x)` — the missing bias term.
+
+## MoE encoder: ggml_mul_mat_id layout
+
+For `ggml_mul_mat_id(A, B, ids)`:
+- A shape `[ne0, ne1, n_experts]`, B shape `[ne0, K, T]`, ids `[K, T]`
+- Result: `[ne1, K, T]` — transposes A along ne0/ne1 (same as mul_mat)
+- For expert fc2 (down projection): HF stores `w2 [n_exp*inter, hidden]`,
+  used as `act_out @ w2` (NO transpose). For ggml we need ne0=inter,
+  ne1=hidden → numpy `[n_exp, hidden, inter]` → converter does
+  `.permute(0, 2, 1)` on the `[n_exp, inter, hidden]` reshape.
+
+## GELU variants matter for NomicBERT
+
+NomicBERT uses `nn.GELU(approximate='none')` (exact erf-based), not the
+tanh approximation. ggml provides both: `ggml_gelu()` (tanh approx) and
+`ggml_gelu_erf()` (exact). Per-element error is ~1e-4 but compounds over
+12 layers. Use `ggml_gelu_erf` for NomicBERT (both MoE expert and dense
+FFN layers). Standard BERT typically uses `gelu_new` (tanh approx).
+
+## General OCR: DBNet + TrOCR
+
+### ConvTranspose2d weight layout differs from Conv2d
+PyTorch Conv2d: `(OC, IC, KH, KW)` → flattened `(OC, IC*KH*KW)`.
+PyTorch ConvTranspose2d: `(IC, OC, KH, KW)` → flattened `(IC, OC*KH*KW)`.
+
+ggml `conv_transpose_2d_p0` expects kernel `[KW, KH, OC, IC]` — note IC
+and OC are swapped vs regular `conv_2d` kernel `[KW, KH, IC, OC]`.
+Needed a separate `prep_deconv_weight()` that reshapes to `(KW, KH, OC, IC)`.
+
+### ODR violations with common struct names
+`struct dec_layer` was defined in both `math_ocr.cpp` (30 pointer fields,
+240 bytes) and `decoder_embed_internal.h` (18 pointer fields, 144 bytes).
+In the test binary (linking only math_ocr), the correct 240-byte version
+was used. In the CLI binary (linking everything), the 144-byte version won,
+causing heap-buffer-overflow when math_ocr tried to write 30 fields into
+18-field-sized allocations.
+
+Fix: namespace-prefix struct names (`math_ocr_dec_layer`). ASAN caught this
+immediately — always test with the full binary, not just individual TU tests.
+
+### XLM-R / SentencePiece fairseq vocab offset
+TrOCR uses XLMRobertaTokenizer which adds a fairseq offset to SentencePiece
+token IDs. Raw `SentencePiece.id_to_piece(43778)` returns the wrong string.
+Must use HF `AutoTokenizer.convert_ids_to_tokens(43778)` to get correct
+mapping. Also: use `convert_ids_to_tokens()` (not `decode()`) to preserve
+the `▁` word boundary markers for proper space reconstruction.
+
+### DBNet FPNC (FPN-Cat) architecture
+MMOCR's FPNC is NOT standard FPN. Standard FPN: lateral (1×1) → top-down →
+smooth (3×3), all at 256ch. FPNC: lateral (1×1, 256ch) → top-down → smooth
+(3×3, **64ch**), then concatenate all 4 levels (4×64=256ch). No output conv.
+The smooth conv reduces channels, not the lateral.
+
+### ggml_interpolate replaces ggml_upscale_ext
+`ggml_upscale_ext` is deprecated. Use `ggml_interpolate(ctx, a, ne0, ne1,
+ne2, ne3, mode)` with `GGML_SCALE_MODE_BILINEAR` for FPN upsampling.
+Nearest-neighbor vs bilinear makes a visible difference in detection parity
+(cos_min drops from 1.0 to 0.0 with nearest on some rows).
+
+## Quantizer skips 3D tensors
+
+`tools/quantize.cpp` line 172 skips tensors with ndims > 2 ("skipping N-D
+tensor (conv2d)"). This was added for face model conv kernels (4D) but
+also catches MoE expert weights (3D: `[n_exp, dim1, dim2]`). For
+nomic-v2-moe, this means expert weights stay F32 in all quants, limiting
+Q8_0 compression to 1.6x instead of potential ~3x. Fix: quantize 3D
+tensors by iterating over the outermost dimension.

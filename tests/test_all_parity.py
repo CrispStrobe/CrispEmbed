@@ -64,9 +64,11 @@ MODELS = {
     "snowflake-arctic-embed-l": ("Snowflake/snowflake-arctic-embed-l", "cls", False, {}),
     "bge-m3": ("BAAI/bge-m3", "cls", False, {}),
 
-    # ── NomicBERT (RoPE + SwiGLU) ──
+    # ── NomicBERT (RoPE + SwiGLU / MoE) ──
     "nomic-embed-text-v1.5": ("nomic-ai/nomic-embed-text-v1.5", "mean", False,
                                {"prefix": "search_query: "}),
+    "nomic-embed-text-v2-moe": ("nomic-ai/nomic-embed-text-v2-moe", "mean", False,
+                                 {"prefix": "search_query: "}),
 
     # ── MPNet ──
     "all-mpnet-base-v2": ("sentence-transformers/all-mpnet-base-v2", "mean", False, {}),

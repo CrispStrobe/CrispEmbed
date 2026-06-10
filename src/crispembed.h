@@ -51,6 +51,8 @@ typedef struct crispembed_hparams {
     int32_t n_intermediate;  // FFN intermediate size
     int32_t n_output;        // output embedding dimension (may differ from n_embd)
     float   layer_norm_eps;
+    int32_t n_experts;           // MoE: total number of experts (0 = dense FFN)
+    int32_t n_experts_per_tok;   // MoE: top-K routing (e.g. 2)
 } crispembed_hparams;
 
 // Initialize: load GGUF model, allocate ggml backends.
@@ -498,11 +500,13 @@ CRISPEMBED_API void crispembed_free(crispembed_context * ctx);
 
 // ---------------------------------------------------------------------------
 // Unified Math OCR — auto-detects model architecture from GGUF metadata.
-// Supports pix2tex (printed), HMER (handwritten), BTTR (handwritten).
+// Supports pix2tex (printed), PP-FormulaNet (printed), PP-FormulaNet-L (printed),
+// Texo-Distill (printed), HMER (handwritten), BTTR (handwritten),
+// PosFormer (handwritten). Auto-detects architecture from GGUF metadata.
 // ---------------------------------------------------------------------------
 
 // Initialize. Reads "general.architecture" from the GGUF to dispatch
-// to the correct inference backend (pix2tex_mfr / hmer / bttr).
+// to the correct inference backend.
 CRISPEMBED_API void * crispembed_math_ocr_init(const char * model_path, int n_threads);
 CRISPEMBED_API void crispembed_math_ocr_free(void * ctx);
 
@@ -537,6 +541,65 @@ CRISPEMBED_API const char * crispembed_bttr_ocr_recognize(
     void * ctx, const uint8_t * pixel_bytes, int width, int height, int channels, int * out_len);
 CRISPEMBED_API const char * crispembed_bttr_ocr_recognize_gray(
     void * ctx, const float * pixels, int width, int height, int * out_len);
+
+// ---------------------------------------------------------------------------
+// General OCR Pipeline — text detection (DBNet) + recognition (TrOCR)
+// ---------------------------------------------------------------------------
+
+/// OCR result for a single detected text region.
+typedef struct crispembed_ocr_result {
+    float x, y, w, h;       // bounding box in original image coordinates
+    float confidence;        // detection confidence
+    const char * text;       // recognized text (owned by pipeline ctx)
+    int text_len;
+} crispembed_ocr_result;
+
+/// Load OCR pipeline (detection + recognition models).
+/// Returns opaque context, or NULL on failure.
+CRISPEMBED_API void * crispembed_ocr_init(
+    const char * det_model_path,
+    const char * rec_model_path,
+    int n_threads);
+
+/// Free OCR pipeline context.
+CRISPEMBED_API void crispembed_ocr_free(void * ctx);
+
+/// Run full OCR on an image file. Returns array of results sorted in
+/// reading order (top-to-bottom, left-to-right). Array is owned by ctx
+/// and valid until the next call to crispembed_ocr or crispembed_ocr_free.
+CRISPEMBED_API const crispembed_ocr_result * crispembed_ocr(
+    void * ctx,
+    const char * image_path,
+    int * out_n_results);
+
+/// Run text recognition only on a single image crop (no detection).
+/// Returns recognized text string (owned by ctx, valid until next call).
+CRISPEMBED_API const char * crispembed_ocr_recognize(
+    void * ctx,
+    const char * image_path,
+    int * out_len);
+
+// ---------------------------------------------------------------------------
+// Layout Detection — RT-DETRv2 document layout analysis (17 classes).
+// Detects: text, title, table, figure, formula, caption, section_header,
+// list_item, footnote, page_header, page_footer, code, document_index,
+// checkbox_selected, checkbox_unselected, form, key_value_region.
+// ---------------------------------------------------------------------------
+
+typedef struct crispembed_layout_region {
+    float x1, y1, x2, y2;   // bbox in original image coordinates
+    float score;             // detection confidence
+    int label;               // class index (0..16)
+    const char * label_name; // static string, do not free
+} crispembed_layout_region;
+
+CRISPEMBED_API void * crispembed_layout_init(const char * model_path, int n_threads);
+CRISPEMBED_API void crispembed_layout_free(void * ctx);
+
+/// Detect layout regions in an image file. Returns array of regions
+/// (owned by ctx, valid until next call). Sets *out_n to count.
+CRISPEMBED_API const crispembed_layout_region * crispembed_layout_detect(
+    void * ctx, const char * image_path, float score_threshold, int * out_n);
 
 #ifdef __cplusplus
 }
