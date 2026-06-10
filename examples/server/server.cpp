@@ -47,6 +47,7 @@ int main(int argc, char ** argv) {
     std::string vit_model_path;  // standalone ViT model (SigLIP/CLIP)
     std::string clip_text_model_path;  // CLIP text encoder
     std::string math_ocr_model_path;   // math OCR model (PP-FormulaNet, HMER, BTTR)
+    std::string layout_model_path;    // layout detection model (RT-DETRv2)
     int port = 8080;
     int n_threads = 4;
 
@@ -60,9 +61,10 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--vit") == 0 && i + 1 < argc) vit_model_path = argv[++i];
         else if (strcmp(argv[i], "--clip-text") == 0 && i + 1 < argc) clip_text_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr") == 0 && i + 1 < argc) math_ocr_model_path = argv[++i];
+        else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc) layout_model_path = argv[++i];
     }
 
-    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty()) {
+    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
@@ -74,6 +76,8 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --clip-text MODEL  CLIP text encoder GGUF\n");
         fprintf(stderr, "\nMath OCR (formula recognition):\n");
         fprintf(stderr, "  --ocr MODEL   math OCR model (PP-FormulaNet, HMER, BTTR GGUF)\n");
+        fprintf(stderr, "\nLayout detection (document structure):\n");
+        fprintf(stderr, "  --layout MODEL   RT-DETRv2 layout detection model GGUF\n");
         return 1;
     }
 
@@ -632,6 +636,18 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "Warning: failed to load math OCR model '%s'\n", math_ocr_model_path.c_str());
     }
 
+    // ── Layout Detection ──
+    void * layout_ctx = nullptr;
+    std::mutex layout_mutex;
+
+    if (!layout_model_path.empty()) {
+        std::string resolved = crispembed_mgr::resolve_model(layout_model_path, true);
+        if (!resolved.empty()) layout_model_path = resolved;
+        layout_ctx = crispembed_layout_init(layout_model_path.c_str(), n_threads);
+        if (!layout_ctx)
+            fprintf(stderr, "Warning: failed to load layout model '%s'\n", layout_model_path.c_str());
+    }
+
     // POST /clip/text — CLIP text encoding
     // Request:  {"text": "a photo of a cat"}
     // Response: {"embedding": [...], "dim": N}
@@ -734,6 +750,66 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /layout/detect — document layout analysis
+    // Request:  {"image": "/path/to/page.png", "threshold": 0.3}
+    // Response: {"regions": [{"label": "text", "score": 0.95, "bbox": [x1, y1, x2, y2]}, ...]}
+    svr.Post("/layout/detect", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!layout_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no layout model loaded (use --layout)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        float threshold = 0.3f;
+
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        auto tpos = body.find("\"threshold\"");
+        if (tpos != std::string::npos) {
+            auto colon = body.find(':', tpos);
+            if (colon != std::string::npos)
+                threshold = (float)atof(body.c_str() + colon + 1);
+        }
+
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no image path\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(layout_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        int n_regions = 0;
+        const crispembed_layout_region * regions = crispembed_layout_detect(
+            layout_ctx, image_path.c_str(), threshold, &n_regions);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        std::ostringstream js;
+        js << "{\"regions\": [";
+        for (int i = 0; i < n_regions; i++) {
+            if (i > 0) js << ", ";
+            js << "{\"label\": \"" << regions[i].label_name
+               << "\", \"score\": " << std::fixed << std::setprecision(4) << regions[i].score
+               << ", \"bbox\": [" << std::setprecision(1)
+               << regions[i].x1 << ", " << regions[i].y1 << ", "
+               << regions[i].x2 << ", " << regions[i].y2 << "]}";
+        }
+        js << "], \"ms\": " << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /layout/detect in %.1f ms (%d regions)\n", ms, n_regions);
+        res.set_content(js.str(), "application/json");
+    });
+
     // GET /health
     svr.Get("/health", [&](const httplib::Request &, httplib::Response & res) {
         std::ostringstream js;
@@ -748,6 +824,7 @@ int main(int argc, char ** argv) {
         if (vit_ctx) js << ", \"vit\": true, \"vit_dim\": " << crispembed_vit_dim(vit_ctx);
         if (clip_text_ctx) js << ", \"clip_text\": true, \"clip_text_dim\": " << crispembed_clip_text_dim(clip_text_ctx);
         if (math_ocr_ctx) js << ", \"math_ocr\": true";
+        if (layout_ctx) js << ", \"layout\": true";
         js << "}";
         res.set_content(js.str(), "application/json");
     });
@@ -764,10 +841,12 @@ int main(int argc, char ** argv) {
     if (vit_ctx) fprintf(stderr, "  POST /vit/encode      — {\"image\": \"path.jpg\"}\n");
     if (clip_text_ctx) fprintf(stderr, "  POST /clip/text       — {\"text\": \"query\"}\n");
     if (math_ocr_ctx) fprintf(stderr, "  POST /math/ocr        — {\"image\": \"formula.png\"}\n");
+    if (layout_ctx) fprintf(stderr, "  POST /layout/detect   — {\"image\": \"page.png\"}\n");
     fprintf(stderr, "  GET  /health\n\n");
 
     svr.listen(host, port);
 
+    if (layout_ctx) crispembed_layout_free(layout_ctx);
     if (math_ocr_ctx) crispembed_math_ocr_free(math_ocr_ctx);
     if (clip_text_ctx) crispembed_clip_text_free(clip_text_ctx);
     if (vit_ctx) crispembed_vit_free(vit_ctx);
