@@ -234,6 +234,9 @@ target_link_libraries(test-ocr-recognize PRIVATE crispembed)
 add_executable(test-layout-detect tests/test_layout_detect.cpp)
 target_link_libraries(test-layout-detect PRIVATE crispembed)
 
+add_executable(test-conv-ext tests/test_conv_ext.cpp)
+target_link_libraries(test-conv-ext PRIVATE crispembed)
+
 add_executable(test-ocr-pipeline tests/test_ocr_pipeline.cpp)
 target_link_libraries(test-ocr-pipeline PRIVATE crispembed)
 
