@@ -1590,10 +1590,9 @@ def train(args, zip_path: Path, dict_path: Path,
         scale_aug=True,
     )
 
-    # Model — d_model=256 for v1 (110 tokens), 384 for v2 (183 tokens)
-    _d_model = 384 if args.dataset.startswith("mathwriting_v2") else 256
+    # Model
     model = LitPosFormer(
-        d_model=_d_model,
+        d_model=256,
         growth_rate=24,
         num_layers=16,
         nhead=8,
@@ -1643,7 +1642,7 @@ def train(args, zip_path: Path, dict_path: Path,
         try:
             from pytorch_lightning.loggers import WandbLogger
             # Fixed run_id per dataset for cross-session continuity
-            run_id = f"posformer-{args.dataset}-v16"
+            run_id = f"posformer-{args.dataset}-v17"
             logger = WandbLogger(
                 project=WANDB_PROJECT,
                 name=f"posformer-{args.dataset}",
@@ -1773,7 +1772,7 @@ def main():
 
     # Dataset from env or arg
     if args.dataset is None:
-        args.dataset = os.environ.get("DATASET", "mathwriting_v2").lower()
+        args.dataset = os.environ.get("DATASET", "crohme").lower()
 
     # Default epochs per dataset
     if args.epochs is None:
