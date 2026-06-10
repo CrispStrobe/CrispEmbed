@@ -19,6 +19,12 @@
 #include "ggml-cpu.h"
 #include "gguf.h"
 
+// Use OpenBLAS for accelerated decoder matmuls when available
+#if __has_include(<cblas.h>)
+#include <cblas.h>
+#define LAYOUT_USE_BLAS 1
+#endif
+
 // stb_image declarations
 extern "C" {
     typedef unsigned char stbi_uc;
@@ -909,13 +915,31 @@ std::vector<region> detect(context* ctx, const float* pixels,
         return out;
     };
 
-    // cpu_linear for Gemm(transB=1) convention: y = W @ x + b
-    // W stored as [in_d, out_d] in GGUF, accessed as W[i + o * in_d]
+    // cpu_linear for Gemm(transB=1) convention: y[o] = sum_i W[o, i] * x[i]
+    // W stored row-major (out_d, in_d): W[o, i] at W[i + o * in_d] (= W[o * in_d + i])
+    // Uses BLAS when available.
     auto cpu_linear = [&read_f32](const float* x, float* y, int in_d, int out_d, int N,
                           ggml_tensor* w_t, ggml_tensor* b_t) {
         auto W = read_f32(w_t);
         std::vector<float> b(out_d, 0.0f);
         if (b_t) { auto bv = read_f32(b_t); if (!bv.empty()) b = bv; }
+
+#if LAYOUT_USE_BLAS
+        // Y(out_d × N) = W(out_d × in_d) @ X(in_d × N)
+        // W row-major (out_d, in_d): W[o, i] at W[o * in_d + i]
+        // X col-major (in_d, N): x[i, n] at x[i * N + n]
+        // Y col-major (out_d, N): y[o, n] at y[o * N + n]
+        cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                    out_d, N, in_d,
+                    1.0f, W.data(), in_d, x, N,
+                    0.0f, y, N);
+        for (int o = 0; o < out_d; o++) {
+            float bv = b[o];
+            if (bv != 0.0f)
+                for (int n = 0; n < N; n++)
+                    y[o * N + n] += bv;
+        }
+#else
         for (int n = 0; n < N; n++) {
             for (int o = 0; o < out_d; o++) {
                 float sum = b[o];
@@ -924,10 +948,12 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 y[o * N + n] = sum;
             }
         }
+#endif
     };
 
     // cpu_matmul for ONNX MatMul(x, W) convention: y[o] = sum_i x[i] * W[i, o]
-    // W stored as [in_d, out_d] in GGUF, accessed as W[i * out_d + o]
+    // W stored as [in_d, out_d] row-major, x as [in_d, N] col-major, y as [out_d, N] col-major
+    // Uses BLAS when available for ~10x speedup on large matrices.
     auto cpu_matmul = [&read_f32](const float* x, float* y, int in_d, int out_d, int N,
                           ggml_tensor* w_t, ggml_tensor* b_t) {
         auto W = read_f32(w_t);
@@ -936,6 +962,24 @@ std::vector<region> detect(context* ctx, const float* pixels,
             auto bv = read_f32(b_t);
             if (!bv.empty()) b = bv;
         }
+
+#if LAYOUT_USE_BLAS
+        // Y(out_d × N) = W^T(out_d × in_d) @ X(in_d × N)
+        // W is row-major (in_d, out_d): W[i, o] at W[i * out_d + o]
+        // X is col-major (in_d, N): X[i, n] at x[i * N + n]
+        // Y is col-major (out_d, N): Y[o, n] at y[o * N + n]
+        cblas_sgemm(CblasRowMajor, CblasTrans, CblasNoTrans,
+                    out_d, N, in_d,
+                    1.0f, W.data(), out_d, x, N,
+                    0.0f, y, N);
+        // Add bias
+        for (int o = 0; o < out_d; o++) {
+            float bv = b[o];
+            if (bv != 0.0f)
+                for (int n = 0; n < N; n++)
+                    y[o * N + n] += bv;
+        }
+#else
         for (int n = 0; n < N; n++) {
             for (int o = 0; o < out_d; o++) {
                 float sum = b[o];
@@ -944,6 +988,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 y[o * N + n] = sum;
             }
         }
+#endif
     };
 
     auto cpu_layernorm = [&read_f32](float* x, int D, int N, ggml_tensor* w_t, ggml_tensor* b_t) {
