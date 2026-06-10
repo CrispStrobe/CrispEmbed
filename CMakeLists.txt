@@ -46,16 +46,14 @@ if(NOT DEFINED GGML_BLAS_VENDOR)
 endif()
 
 # ---------------------------------------------------------------------------
-# Emscripten: CMake's FindThreads fails to detect Emscripten's pthread
-# emulation. Force-set the result so ggml's find_package(Threads REQUIRED)
-# succeeds. The actual -pthread flag is passed via CMAKE_C_FLAGS.
+# Emscripten: override FindThreads with a stub that creates a no-op
+# Threads::Threads target. This avoids -pthread leaking into the build,
+# which would require SharedArrayBuffer + COOP/COEP headers for deployment.
+# The math OCR decoder runs single-threaded; ggml's thread pool compiles
+# but degrades gracefully (pthread stubs in Emscripten libc).
 # ---------------------------------------------------------------------------
 if(EMSCRIPTEN)
-    set(CMAKE_THREAD_LIBS_INIT "-pthread")
-    set(CMAKE_HAVE_THREADS_LIBRARY 1)
-    set(CMAKE_USE_WIN32_THREADS_INIT 0)
-    set(CMAKE_USE_PTHREADS_INIT 1)
-    set(THREADS_PREFER_PTHREAD_FLAG OFF)
+    list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 endif()
 
 # ---------------------------------------------------------------------------
