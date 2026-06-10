@@ -1524,25 +1524,40 @@ std::vector<region> detect_file(context* ctx, const char* path,
         return {};
     }
 
-    // Resize to 640×640, normalize, CHW
+    // Resize to 640×640 with bilinear interpolation, normalize, CHW
+    // Matches HF RTDetrImageProcessor (resample=PIL.BILINEAR)
     std::vector<float> pixels(3 * ctx->input_h * ctx->input_w, 0.0f);
-    float scale_x = (float)ctx->input_w / img_w;
-    float scale_y = (float)ctx->input_h / img_h;
+    int H = ctx->input_h, W = ctx->input_w;
 
     for (int c = 0; c < 3; c++) {
-        for (int y = 0; y < ctx->input_h; y++) {
-            float src_y = y / scale_y;
-            int sy0 = std::min((int)src_y, img_h - 1);
-            for (int x = 0; x < ctx->input_w; x++) {
-                float src_x = x / scale_x;
-                int sx0 = std::min((int)src_x, img_w - 1);
-                // Model expects [0, 1] input — normalization is baked into the model weights
-                float val = raw[(sy0 * img_w + sx0) * 3 + c] / 255.0f;
-                pixels[c * ctx->input_h * ctx->input_w + y * ctx->input_w + x] = val;
+        for (int y = 0; y < H; y++) {
+            // PIL bilinear: src = (dst + 0.5) * src_size / dst_size - 0.5
+            float src_y = ((float)y + 0.5f) * img_h / H - 0.5f;
+            src_y = std::max(0.0f, std::min(src_y, (float)(img_h - 1)));
+            int sy0 = (int)floorf(src_y);
+            int sy1 = std::min(sy0 + 1, img_h - 1);
+            float fy = src_y - sy0;
+            for (int x = 0; x < W; x++) {
+                float src_x = ((float)x + 0.5f) * img_w / W - 0.5f;
+                src_x = std::max(0.0f, std::min(src_x, (float)(img_w - 1)));
+                int sx0 = (int)floorf(src_x);
+                int sx1 = std::min(sx0 + 1, img_w - 1);
+                float fx = src_x - sx0;
+
+                float v00 = raw[(sy0 * img_w + sx0) * 3 + c] / 255.0f;
+                float v01 = raw[(sy0 * img_w + sx1) * 3 + c] / 255.0f;
+                float v10 = raw[(sy1 * img_w + sx0) * 3 + c] / 255.0f;
+                float v11 = raw[(sy1 * img_w + sx1) * 3 + c] / 255.0f;
+
+                float val = (1-fx)*(1-fy)*v00 + fx*(1-fy)*v01 + (1-fx)*fy*v10 + fx*fy*v11;
+                pixels[c * H * W + y * W + x] = val;
             }
         }
     }
     stbi_image_free(raw);
+
+    float scale_x = (float)W / img_w;
+    float scale_y = (float)H / img_h;
 
     auto results = detect(ctx, pixels.data(), img_h, img_w, score_threshold);
 
