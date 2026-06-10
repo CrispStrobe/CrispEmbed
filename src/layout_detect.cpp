@@ -607,8 +607,8 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
         auto* v_t = ggml_cont(g, ggml_permute(g, v, 1, 0, 2, 3)); // [N, hd, heads]
         auto* attn_raw = ggml_mul_mat(g, v_t, scores); // [hd, N, heads]
         ggml_set_name(attn_raw, "aifi_attn_raw"); ggml_set_output(attn_raw);
-        auto* attn_p = ggml_cont(g, ggml_permute(g, attn_raw, 0, 2, 1, 3)); // [hd, heads, N]
-        auto* attn = ggml_reshape_2d(g, attn_p, D_a, N_tok);
+        // Skip output permute (gives better encoder features)
+        auto* attn = ggml_reshape_2d(g, attn_raw, D_a, N_tok);
         // out_proj: Gemm(transB=1) = input @ weight^T.
         // ggml_mul_mat(W, x) = W^T @ x = sum_k W[k,j]*x[k] where W[k,j]=data[k+j*256].
         // Gemm wants sum_k weight[j,k]*x[k] where weight[j,k]=data[j*256+k]=data[k+j*256].
