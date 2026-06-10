@@ -1259,31 +1259,33 @@ std::vector<region> detect(context* ctx, const float* pixels,
                         float py = ref_cy + dy * 0.25f * ref_h * 0.5f;
 
                         // Convert from [0,1] normalized to feature map pixel coords
-                        float sx = px * fW;
-                        float sy = py * fH;
+                        // grid_sample(align_corners=False): pixel = loc * N - 0.5
+                        float sx = px * fW - 0.5f;
+                        float sy = py * fH - 0.5f;
 
-                        int fW2 = fW, fH2 = fH;
+                        // Bilinear sampling with zero-padding (matching grid_sample padding_mode="zeros")
+                        float attn_w = attn_weights[off_idx * N_queries + q];
 
-                        // Clamp
-                        sx = std::max(0.0f, std::min(sx, (float)(fW2 - 1)));
-                        sy = std::max(0.0f, std::min(sy, (float)(fH2 - 1)));
-                        int x0 = (int)sx, y0 = (int)sy;
-                        int x1 = std::min(x0 + 1, fW2 - 1);
-                        int y1 = std::min(y0 + 1, fH2 - 1);
+                        int x0 = (int)floorf(sx), y0 = (int)floorf(sy);
+                        int x1 = x0 + 1, y1 = y0 + 1;
                         float fx = sx - x0, fy = sy - y0;
 
                         float w00 = (1-fx)*(1-fy), w01 = fx*(1-fy);
                         float w10 = (1-fx)*fy, w11 = fx*fy;
 
-                        float attn_w = attn_weights[off_idx * N_queries + q];
-
                         for (int d = 0; d < value_hd; d++) {
-                            int vd = h * value_hd + d; // global dim index
+                            int vd = h * value_hd + d;
                             int base = vd * total_tokens + level_starts[lv];
-                            float v = w00 * values[base + y0 * fW2 + x0]
-                                    + w01 * values[base + y0 * fW2 + x1]
-                                    + w10 * values[base + y1 * fW2 + x0]
-                                    + w11 * values[base + y1 * fW2 + x1];
+                            // Zero-pad: out-of-bounds samples contribute 0
+                            float v = 0;
+                            if (x0 >= 0 && x0 < fW && y0 >= 0 && y0 < fH)
+                                v += w00 * values[base + y0 * fW + x0];
+                            if (x1 >= 0 && x1 < fW && y0 >= 0 && y0 < fH)
+                                v += w01 * values[base + y0 * fW + x1];
+                            if (x0 >= 0 && x0 < fW && y1 >= 0 && y1 < fH)
+                                v += w10 * values[base + y1 * fW + x0];
+                            if (x1 >= 0 && x1 < fW && y1 >= 0 && y1 < fH)
+                                v += w11 * values[base + y1 * fW + x1];
                             cross_out[vd * N_queries + q] += attn_w * v;
                         }
                     }
