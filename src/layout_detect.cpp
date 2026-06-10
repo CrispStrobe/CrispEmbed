@@ -1085,38 +1085,50 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     // Compute query position encoding from reference points via query_pos_head MLP
     // ref_points → linear0 → ReLU → linear1 → ReLU → linear2 → pos_enc  [D, N_queries]
-    std::vector<float> pos_enc(D * N_queries, 0.0f);
-    {
-        // Input: ref_points [N_queries * 4] → need [4, N_queries] layout
+    // Helper: compute query position encoding from reference points via MLP
+    auto compute_pos_enc = [&](const float* rp, float* pe) {
         std::vector<float> rp_col(4 * N_queries);
         for (int q = 0; q < N_queries; q++)
             for (int d = 0; d < 4; d++)
-                rp_col[d * N_queries + q] = ref_points[q * 4 + d];
-
+                rp_col[d * N_queries + q] = rp[q * 4 + d];
         std::vector<float> tmp(D * N_queries);
         cpu_linear(rp_col.data(), tmp.data(), 4, D, N_queries,
                    ctx->decoder.qpos_w[0], ctx->decoder.qpos_b[0]);
-        for (auto& v : tmp) v = std::max(0.0f, v); // ReLU
+        for (auto& v : tmp) v = std::max(0.0f, v);
         std::vector<float> tmp2(D * N_queries);
         cpu_linear(tmp.data(), tmp2.data(), D, D, N_queries,
                    ctx->decoder.qpos_w[1], ctx->decoder.qpos_b[1]);
-        for (auto& v : tmp2) v = std::max(0.0f, v); // ReLU
-        cpu_linear(tmp2.data(), pos_enc.data(), D, D, N_queries,
+        for (auto& v : tmp2) v = std::max(0.0f, v);
+        cpu_linear(tmp2.data(), pe, D, D, N_queries,
                    ctx->decoder.qpos_w[2], ctx->decoder.qpos_b[2]);
-    }
+    };
+
+    std::vector<float> pos_enc(D * N_queries, 0.0f);
 
     fprintf(stderr, "layout_detect: query init done (top-K score: %.3f..%.3f)\n",
             token_scores[0].first, token_scores[N_queries-1].first);
     fprintf(stderr, "layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
 
     for (int li = 0; li < 6; li++) {
+        // Recompute pos_enc from current reference points each layer (matches HF)
+        compute_pos_enc(ref_points.data(), pos_enc.data());
         const auto& layer = ctx->decoder.layers[li];
 
-        // --- Self-attention ---
+        // --- Self-attention (with pos on Q/K only, matching HF DETR pattern) ---
         std::vector<float> residual = queries; // [D, N_queries]
+        // QKV from (queries + pos_enc) for Q/K, raw queries for V
+        std::vector<float> qp_sa(D * N_queries);
+        for (int i = 0; i < D * N_queries; i++) qp_sa[i] = queries[i] + pos_enc[i];
+        std::vector<float> qkv_pos(3 * D * N_queries), qkv_raw(3 * D * N_queries);
+        cpu_linear(qp_sa.data(), qkv_pos.data(), D, 3 * D, N_queries,
+                   layer.self_qkv_w, layer.self_qkv_b);  // Q, K correct
+        cpu_linear(queries.data(), qkv_raw.data(), D, 3 * D, N_queries,
+                   layer.self_qkv_w, layer.self_qkv_b);  // V correct
+        // Merge: Q/K from qkv_pos, V from qkv_raw
         std::vector<float> qkv(3 * D * N_queries);
-        cpu_linear(queries.data(), qkv.data(), D, 3 * D, N_queries,
-                   layer.self_qkv_w, layer.self_qkv_b);
+        memcpy(qkv.data(), qkv_pos.data(), 2 * D * N_queries * sizeof(float)); // Q, K
+        memcpy(qkv.data() + 2 * D * N_queries, qkv_raw.data() + 2 * D * N_queries,
+               D * N_queries * sizeof(float)); // V
 
         // Split QKV and compute attention
         // Q, K, V each [D, N_queries], 8 heads, head_dim = 32
@@ -1168,7 +1180,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
         // Residual + norm
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + sa_out[i];
         cpu_layernorm(queries.data(), D, N_queries, layer.norm1_w, layer.norm1_b);
-        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm1: [%.4f,%.4f]\n",li,mn,mx); }
+        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_after_sa: [%.4f,%.4f]\n",li,mn,mx); }
 
         // --- Deformable cross-attention ---
         residual = queries;
@@ -1335,6 +1347,23 @@ std::vector<region> detect(context* ctx, const float* pixels,
         }
 
         LDBG("  decoder layer %d done\n", li);
+
+        // Debug: dump decoder layer 0 output
+        if (li == 0 && getenv("LAYOUT_DEBUG")) {
+            float qmin=1e9, qmax=-1e9;
+            std::vector<float> q_row(D * N_queries);
+            for (int q = 0; q < N_queries; q++)
+                for (int d = 0; d < D; d++) {
+                    float v = queries[d * N_queries + q];
+                    q_row[q * D + d] = v;
+                    qmin = std::min(qmin, v); qmax = std::max(qmax, v);
+                }
+            fprintf(stderr, "  dec0_output: range=[%.4f, %.4f]\n", qmin, qmax);
+            fprintf(stderr, "  dec0_output[0,:8]: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
+                    q_row[0], q_row[1], q_row[2], q_row[3], q_row[4], q_row[5], q_row[6], q_row[7]);
+            FILE* fp = fopen("/tmp/cpp_dec0_out.bin", "wb");
+            if (fp) { fwrite(q_row.data(), sizeof(float), D * N_queries, fp); fclose(fp); }
+        }
     }
 
     // --- Phase 3: Detection heads ---
