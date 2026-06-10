@@ -156,47 +156,53 @@ python tests/test_cli_parity.py --cli ./build/crispembed \
     --retrieval-model "$CRISPEMBED_RETRIEVAL_MODEL" \
     --reranker-model "$CRISPEMBED_RERANKER_MODEL"
 
-# Start server (text + vision + face + CLIP)
+# Start server (text + vision + face + CLIP + OCR)
 ./build/crispembed-server -m model.gguf \
     --vit clip-vit-base-patch16.gguf \
     --clip-text clip-text-base.gguf \
-    --det yunet.gguf --port 8080
+    --det yunet.gguf \
+    --ocr ppformulanet-l-q8_0.gguf --port 8080
 curl -X POST http://localhost:8080/embed -d '{"texts": ["Hello world"]}'
 curl -X POST http://localhost:8080/clip/text -d '{"text": "a photo of a cat"}'
 curl -X POST http://localhost:8080/vit/encode -d '{"image": "photo.jpg"}'
+curl -X POST http://localhost:8080/math/ocr -d '{"image": "formula.png"}'
 ```
 
 ## Math OCR
 
-On-device math equation recognition using a DeiT encoder + TrOCR decoder,
-running entirely via ggml graph compute. Converts printed math images to LaTeX.
+Six engines for math-image → LaTeX, all auto-detected from GGUF metadata via
+the unified `crispembed_math_ocr_*` C API. Available through CLI (`--ocr`),
+HTTP server (`POST /math/ocr`), Python (`CrispMathOcr`), Rust, and Dart/Flutter.
 
-**Architecture**: DeiT-small encoder (12L ViT, 384d) + TrOCR decoder (6L, 256d,
-post-LayerNorm/BART convention). Encoder uses ggml graph with SIMD acceleration;
-decoder uses optimized ggml graph with single-thread compute (thread barrier
-overhead exceeds compute for the small [256,1] decoder tensors).
+| Model | Architecture | Params | Q8_0 Size | Encoder | License |
+|-------|-------------|--------|-----------|---------|---------|
+| **PP-FormulaNet-L** | SAM-ViT + MBart | 181M | 241 MB | Full ggml graph (60s) | Apache-2.0 |
+| **Texo-Distill** | HGNetv2 + MBart | 20M | 22 MB | CPU CNN | AGPL-3.0 |
+| **DeiT+TrOCR** | DeiT-S + TrOCR | 65M | 66 MB | ggml graph | Apache-2.0 |
+| **PosFormer** | DenseNet + Transformer+ARM | — | 57 MB | CPU | Academic |
+| **BTTR** | DenseNet + Transformer | — | 53 MB | CPU | MIT |
+| **HMER** | DenseNet + GRU attention | — | 30 MB | CPU | MIT |
 
-**Models on HuggingFace**: [`cstr/pix2tex-mfr-gguf`](https://huggingface.co/cstr/pix2tex-mfr-gguf)
-
-| Variant | Size | Decoder time | Cosine vs F32 |
-|---------|------|-------------|---------------|
-| F32 | 261 MB | ~3.3s | 1.000 |
-| F16 | 131 MB | ~3.3s | 0.9999 |
-| Q8_0 | 66 MB | ~3.5s | 0.998 |
-| Q4_K | 17 MB | ~3.0s | 0.992 |
-
-**Graph decoder validation**: cosine similarity >0.99 against scalar reference
-decoder on all test images. All argmax tokens identical.
+**PP-FormulaNet-L** (recommended for printed math): SAM-ViT encoder with
+windowed + global attention and decomposed relative position bias, full ggml
+graph compute. Encoder parity cos=0.999962 vs HuggingFace reference.
 
 ```bash
-# Build
-cmake -S . -B build -DCRISPEMBED_BUILD_SHARED=OFF
-cmake --build build -j4
+# CLI
+./build/crispembed -m ppformulanet-l --ocr formula.png
 
-# Run OCR (C API)
-# See test_math_ocr.cpp for usage example:
-#   math_ocr_context* ctx = math_ocr_init("pix2tex-mfr-q4_k.gguf", 4);
-#   const char* latex = math_ocr_recognize(ctx, gray_pixels, w, h, &len);
+# Server
+./build/crispembed-server --ocr ppformulanet-l-q8_0.gguf --port 8080
+curl -X POST http://localhost:8080/math/ocr -d '{"image": "formula.png"}'
+
+# Python
+from crispembed import CrispMathOcr
+ocr = CrispMathOcr("ppformulanet-l-q8_0.gguf")
+latex = ocr.recognize("formula.png")
+
+# C API
+void *ctx = crispembed_math_ocr_init("ppformulanet-l-q8_0.gguf", 4);
+const char *latex = crispembed_math_ocr_recognize(ctx, pixels, w, h, ch, &len);
 ```
 
 **Flutter integration**: The `flutter/crispembed/` plugin provides `CrispEmbedOcr`
@@ -473,6 +479,18 @@ if omni.has_vision:
     text_with_img_native = omni.encode_text_with_image_file(prompt, "cat.jpg")
 ```
 
+Math OCR:
+
+```python
+from crispembed import CrispMathOcr
+
+ocr = CrispMathOcr("ppformulanet-l-q8_0.gguf")
+latex = ocr.recognize("formula.png")           # file path
+latex = ocr.recognize(pil_image)               # PIL Image
+latex = ocr.recognize(numpy_uint8_array)       # (H, W, C) uint8
+latex = ocr.recognize_gray(float32_array)      # (H, W) float32 [0..1]
+```
+
 Wrapper parity script:
 
 ```bash
@@ -636,11 +654,15 @@ The model type is auto-detected from GGUF metadata at load time:
 
 Tokenizer dispatch reads `tokenizer.ggml.type`: `0=WordPiece`, `1=BPE`, `2=SentencePiece`. Heuristic fallback: vocab > 100K ⇒ SentencePiece.
 
-Server (`examples/server/server.cpp`) exposes four API dialects on the same model:
+Server (`examples/server/server.cpp`) exposes text embedding (4 API dialects),
+face detection/recognition, ViT/CLIP vision, and math OCR:
 - `POST /embed` — native `{"texts": [...]}`
 - `POST /v1/embeddings` — OpenAI-compatible
 - `POST /api/embed` — Ollama batch
 - `POST /api/embeddings` — Ollama legacy single
+- `POST /detect`, `POST /face` — face detection/recognition
+- `POST /vit/encode`, `POST /clip/text` — image/text encoding
+- `POST /math/ocr` — formula recognition `{"image": "path"}` → `{"latex": "..."}`
 
 **BERT encoder** (all-MiniLM, gte, arctic-embed-xs, paraphrase-multilingual-MiniLM-L12-v2):
 - Token + Position + Type embeddings → Post-LN transformer → Mean/CLS pooling
