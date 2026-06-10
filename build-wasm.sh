@@ -36,7 +36,7 @@ done
 # Check emcc is available
 if ! command -v emcc &>/dev/null; then
     echo "[ERROR] emcc not found. Activate Emscripten SDK first:"
-    echo "  source /mnt/volume1/emsdk/emsdk_env.sh"
+    echo "  source <path-to-emsdk>/emsdk_env.sh"
     exit 1
 fi
 
@@ -79,13 +79,13 @@ if [ "$SIMD" = "ON" ]; then
     echo "[INFO] WASM SIMD128 enabled"
 fi
 
-# Use ninja if available (faster parallel builds), ccache from /mnt/volume1
+# Use ninja if available (faster parallel builds) + ccache
 GENERATOR=""
 if command -v ninja &>/dev/null; then
     GENERATOR="-G Ninja"
     echo "[INFO] Using Ninja generator"
 fi
-export CCACHE_DIR="${CCACHE_DIR:-/mnt/volume1/.ccache}"
+export CCACHE_DIR="${CCACHE_DIR:-${HOME}/.ccache}"
 
 # Configure
 echo "[INFO] Configuring with emcmake..."
