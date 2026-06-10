@@ -4,6 +4,35 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — OCR feature parity across all surfaces
+
+### PosFormer port merged to main
+- `posformer_ocr.cpp` (961 LOC): DenseNet encoder + Transformer decoder
+  with Attention Refinement Module (ARM), ported from `feat/posformer-port`
+- Wired into unified dispatcher (`MATH_OCR_POSFORMER` enum + all switch blocks)
+- Converter: `models/convert-posformer-to-gguf.py`
+- Registry: `posformer-crohme` at `cstr/posformer-crohme-GGUF` (CC BY-NC-SA 3.0)
+- 57% exact match on CROHME 2014 (best handwritten model)
+
+### General OCR pipeline (detect + recognize) wired everywhere
+- **CLI**: `--ocr-det MODEL --ocr-rec MODEL --ocr IMAGE` (new flags)
+- **Server**: `POST /ocr` endpoint (detect text regions → recognize each crop)
+- **Python**: `CrispOcrPipeline(det_model, rec_model)` — `run()` + `recognize()`
+- **Rust**: `OcrPipeline::new()` / `run()` + `MathOcr::recognize_gray()`
+- **Flutter/Dart**: `CrispOcrPipeline` class + `OcrResult` + FFI typedefs
+
+### Registry expanded
+- Added: pix2tex-mfr, texo-distill, posformer-crohme, dbnet-det,
+  trocr-printed, layout-heron (6 new entries, 8 OCR total)
+
+### Stale worktrees cleaned
+- Merged and removed: feat/posformer-port, feat/layout-detect-fix,
+  feat/layout-parity, feat/ocr-detect
+- CrispASR: removed worktree-feat+tts-watermark-metadata,
+  worktree-fix-piper-roundtrip
+
+---
+
 ## June 2026 — RT-DETRv2 Layout Detection
 
 ### Document layout analysis: ResNet-50 + HybridEncoder + deformable decoder
