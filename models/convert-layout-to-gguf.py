@@ -121,6 +121,61 @@ def main():
     if bn_folded:
         print(f"  BatchNorm folded into Conv: {bn_folded}")
 
+    # Fold Conv → Mul → Add patterns (decomposed BN from ONNX export)
+    # Pattern: Conv(x, w) → Mul(result, scale) → Add(result, shift)
+    mul_folded = 0
+    for node in graph.node:
+        if node.op_type != 'Mul':
+            continue
+        mul_input = node.input[0]
+        scale_name = node.input[1]
+        if mul_input not in output_to_node or scale_name not in weights:
+            continue
+        conv_node = output_to_node[mul_input]
+        if conv_node.op_type != 'Conv':
+            continue
+
+        # Find the Add after this Mul
+        mul_out = node.output[0]
+        add_node = None
+        for n2 in graph.node:
+            if n2.op_type == 'Add' and mul_out in n2.input:
+                add_node = n2
+                break
+        if not add_node:
+            continue
+
+        # Get scale and shift
+        scale = weights[scale_name].squeeze()  # [OC]
+        shift_name = [n for n in add_node.input if n != mul_out and n in weights]
+        if not shift_name:
+            continue
+        shift = weights[shift_name[0]].squeeze()  # [OC]
+
+        # Fold into conv weight: w_new = w * scale
+        conv_w_name = conv_node.input[1]
+        if conv_w_name not in weights:
+            continue
+        conv_w = weights[conv_w_name]
+        n_oc = conv_w.shape[0]
+        shape = [n_oc] + [1] * (conv_w.ndim - 1)
+        weights[conv_w_name] = conv_w * scale.reshape(shape)
+
+        # Create bias: shift (= beta - mean * gamma/sqrt(var))
+        bias_key = conv_w_name.replace('.weight', '.bias')
+        if conv_w_name.endswith('.weight'):
+            weights[bias_key] = shift.astype(np.float32)
+        else:
+            weights[conv_w_name + '_bias'] = shift.astype(np.float32)
+
+        # Remove scale and shift from weights
+        weights.pop(scale_name, None)
+        weights.pop(shift_name[0], None)
+        mul_folded += 1
+
+    if mul_folded:
+        print(f"  Conv-Mul-Add (decomposed BN) folded: {mul_folded}")
+
     # Rename val_XXXX weights: trace each MatMul node to find the named bias
     # it pairs with, then rename the weight accordingly.
     renamed = 0
