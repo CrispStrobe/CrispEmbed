@@ -176,13 +176,11 @@ CrispEmbed/
 
 ### Pending improvements
 
-- [ ] **Layout decoder → ggml graph** — Replace CPU scalar decoder
-  (300 queries × 6 layers × deformable cross-attention) with ggml
-  mul_mat-based self-attention + FFN. The decoder dominates layout
-  detection time (~80% of total). Self-attention (300×300 per head)
-  and FFN (256→1024→256 per query) benefit from BLAS-accelerated matmul.
-  Deformable cross-attention stays CPU scalar (bilinear grid sampling
-  not available in ggml).
+- [x] **Layout decoder → ggml graph** — Self-attention + FFN now use
+  ggml graph with BLAS-accelerated matmuls. Decoder: 16.4s → 8s (2x).
+  Total: 36s → 19.6s. Key fix: weight data must be transposed when
+  creating ggml input tensors (Gemm convention ↔ ggml mul_mat stride).
+  Cross-attention stays CPU scalar (deformable grid sampling).
 
 - [x] **PPFormulaNet-L: BLAS enabled, Q8_0 — 53s (was 60s)** — The 4 global
   layers (2304² attention matrix = 5.3M per head × 12 heads) dominate
