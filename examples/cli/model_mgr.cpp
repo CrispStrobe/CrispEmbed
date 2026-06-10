@@ -29,7 +29,9 @@ namespace crispembed_mgr {
 namespace {
 
 bool download_supported() {
-#if defined(__APPLE__) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
+#if defined(__EMSCRIPTEN__)
+    return false;
+#elif defined(__APPLE__) && defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
     return false;
 #else
     return true;

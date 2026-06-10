@@ -11,7 +11,7 @@
 #if defined(_WIN32)
 #include <io.h>
 #include <windows.h>
-#else
+#elif !defined(__EMSCRIPTEN__)
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -180,7 +180,11 @@ struct MappedFile {
     bool ok = false;
 
     explicit MappedFile(const char* path) {
-#if defined(_WIN32)
+#if defined(__EMSCRIPTEN__)
+        // Emscripten MEMFS: skip mmap, fall through to fread path.
+        (void)path;
+        return;
+#elif defined(_WIN32)
         HANDLE hFile = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
         if (hFile == INVALID_HANDLE_VALUE)
             return;
@@ -221,7 +225,9 @@ struct MappedFile {
 #endif
     }
     ~MappedFile() {
-#if defined(_WIN32)
+#if defined(__EMSCRIPTEN__)
+        // no-op
+#elif defined(_WIN32)
         if (base)
             UnmapViewOfFile(base);
 #else
