@@ -204,6 +204,14 @@ def main():
                     if 'decoder' in inp:
                         split_weights.add(inp)
 
+    # Collect Transpose weight names (weights transposed before MatMul, decoder only)
+    transpose_weights = set()
+    for node in graph.node:
+        if node.op_type == 'Transpose':
+            for inp in node.input:
+                if inp in weights and 'decoder' in inp and 'weight' in inp and weights[inp].ndim == 2:
+                    transpose_weights.add(inp)
+
     # NOTE: decoder Conv2d(1x1) weights (decoder.input_proj) are NOT transposed.
     # They are used via cpu_linear which handles the (out, in) convention correctly
     # when the weight ne[0] matches in_d. The transposition only applies to
@@ -211,7 +219,7 @@ def main():
     conv_decoder_weights = set()  # empty — no Conv2d transposition
 
     # Transpose decoder weights from (out, in) → (in, out)
-    for name in gemm_transB_weights | split_weights | conv_decoder_weights:
+    for name in gemm_transB_weights | split_weights | transpose_weights | conv_decoder_weights:
         if name in weights and weights[name].ndim == 2:
             old_shape = weights[name].shape
             weights[name] = weights[name].T.copy()
