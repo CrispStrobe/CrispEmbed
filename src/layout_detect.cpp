@@ -579,16 +579,55 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     LDBG("  AIFI: p5_flat done\n");
     // Transpose to [256, N] — ggml reshape gives [C, H*W], need [C, N] which is same
     // AIFI encoder: pos_embed → self-attn → residual+norm1 → FFN(GELU) → residual+norm2
-    // TODO: self-attention produces wrong results with flash_attn_ext (layout issue)
-    // Using FFN-only for now which gives better encoder features (s5 max=93 matching Python 78)
+    // AIFI: self-attn(pos on Q/K only) → residual+norm1 → FFN(GELU_erf) → residual+norm2
+    // HF: normalize_before=False (post-LN), pos added to Q/K only (not V)
     {
+        auto* x_pos = p5_flat;
         if (enc.pos_embed) {
             auto* pe = ggml_reshape_2d(g, enc.pos_embed, s5_c, s5_w * s5_h);
-            p5_flat = ggml_add(g, p5_flat, pe);
+            x_pos = ggml_add(g, p5_flat, pe);  // x + pos (for Q/K projection)
         }
-        // Skip self-attention (TODO: fix flash_attn_ext QKV layout)
+
+        // Self-attention: Q/K from (x+pos), V from x — matches HF DETR pattern
+        int D_a = s5_c, N_tok = s5_w * s5_h, heads = 8, hd = D_a / heads;
+        // Compute QKV from x+pos (Q and K correct)
+        auto* qkv_pos = linear(g, x_pos, enc.aifi_qkv_w, enc.aifi_qkv_b);
+        // Compute QKV from raw x (V correct)
+        auto* qkv_raw = linear(g, p5_flat, enc.aifi_qkv_w, enc.aifi_qkv_b);
+
+        // Q, K from pos-projected; V from raw-projected
+        auto* Q = ggml_cont(g, ggml_view_2d(g, qkv_pos, D_a, N_tok, qkv_pos->nb[1], 0));
+        auto* K = ggml_cont(g, ggml_view_2d(g, qkv_pos, D_a, N_tok, qkv_pos->nb[1], D_a*sizeof(float)));
+        auto* V = ggml_cont(g, ggml_view_2d(g, qkv_raw, D_a, N_tok, qkv_raw->nb[1], 2*D_a*sizeof(float)));
+
+        // Reshape: [D, N] → [hd, heads, N] → permute → [hd, N, heads]
+        Q = ggml_reshape_3d(g, Q, hd, heads, N_tok);
+        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
+        K = ggml_reshape_3d(g, K, hd, heads, N_tok);
+        K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
+        V = ggml_reshape_3d(g, V, hd, heads, N_tok);
+        V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
+
+        // Scores: K^T @ Q → [N, N, heads], scaled
+        auto* scores = ggml_mul_mat(g, K, Q);
+        scores = ggml_soft_max_ext(g, scores, nullptr, 1.0f/sqrtf((float)hd), 0.0f);
+
+        // Attn output: V^T @ scores → [hd, N, heads]
+        auto* Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
+        auto* attn = ggml_mul_mat(g, Vt, scores);
+
+        // Reshape back: [hd, N, heads] → [hd, heads, N] → [D, N]
+        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        attn = ggml_reshape_2d(g, attn, D_a, N_tok);
+
+        // Output projection
+        attn = linear(g, attn, enc.aifi_out_w, enc.aifi_out_b);
+
+        // Post-LN: residual (raw x, no pos) + attn → norm1
+        p5_flat = ggml_add(g, p5_flat, attn);
         p5_flat = layer_norm(g, p5_flat, enc.aifi_norm1_w, enc.aifi_norm1_b);
 
+        // Post-LN: FFN → residual + FFN → norm2
         auto* residual = p5_flat;
         auto* ffn = linear(g, p5_flat, enc.aifi_ffn1_w, enc.aifi_ffn1_b);
         ffn = ggml_gelu_erf(g, ffn);
@@ -596,6 +635,7 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
         p5_flat = ggml_add(g, residual, ffn);
         p5_flat = layer_norm(g, p5_flat, enc.aifi_norm2_w, enc.aifi_norm2_b);
     }
+    ggml_set_name(p5_flat, "aifi_flat"); ggml_set_output(p5_flat);
     LDBG("  AIFI done: p5_flat=[%lld,%lld]\n", (long long)p5_flat->ne[0], (long long)p5_flat->ne[1]);
     // Reshape back to spatial: [C, W*H] → [C, W, H] → permute to [W, H, C]
     auto* p5_spatial = ggml_reshape_3d(g, p5_flat, s5_c, s5_w, s5_h);
