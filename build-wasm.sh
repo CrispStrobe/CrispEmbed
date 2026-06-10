@@ -79,10 +79,18 @@ if [ "$SIMD" = "ON" ]; then
     echo "[INFO] WASM SIMD128 enabled"
 fi
 
+# Use ninja if available (faster parallel builds), ccache from /mnt/volume1
+GENERATOR=""
+if command -v ninja &>/dev/null; then
+    GENERATOR="-G Ninja"
+    echo "[INFO] Using Ninja generator"
+fi
+export CCACHE_DIR="${CCACHE_DIR:-/mnt/volume1/.ccache}"
+
 # Configure
 echo "[INFO] Configuring with emcmake..."
 cd "$SCRIPT_DIR"
-emcmake cmake -S . -B "$BUILD_DIR" \
+emcmake cmake -S . -B "$BUILD_DIR" $GENERATOR \
     -DCMAKE_BUILD_TYPE=Release \
     -DGGML_CUDA=OFF \
     -DGGML_METAL=OFF \
