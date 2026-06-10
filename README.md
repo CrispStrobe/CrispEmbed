@@ -35,6 +35,10 @@ GPU acceleration (CUDA/Vulkan/Metal). iOS + Android + **WASM** builds.
 Runs entirely client-side — no server, no API key. GGUF models fetched on
 demand and cached in IndexedDB.
 
+**Demo**: [HuggingFace Space](https://huggingface.co/spaces/cstr/CrispEmbed) —
+text embeddings (cosine similarity) + math OCR (image → LaTeX), auto-deployed
+from `hf-space/`.
+
 ### Part of the Crisp ecosystem
 
 | Project | Role |

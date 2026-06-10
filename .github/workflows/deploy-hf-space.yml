@@ -1,0 +1,31 @@
+name: Deploy HF Space
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'hf-space/**'
+      - '.github/workflows/deploy-hf-space.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push hf-space/ to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          cd hf-space
+          git init -b main
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add hf "https://cstr:${HF_TOKEN}@huggingface.co/spaces/cstr/CrispEmbed"
+          git add -A
+          git commit -m "deploy from $(git -C .. rev-parse --short HEAD)"
+          git push hf main --force
