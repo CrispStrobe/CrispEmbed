@@ -15,23 +15,27 @@ echo "  OCR model: $OCR_MODEL"
 echo "  Server:    $SERVER_HOST:$SERVER_PORT"
 echo "  Threads:   $N_THREADS"
 
-# Auto-download and start the embedding server
+# Auto-download and start the embedding server.
+# -m accepts a model name (auto-resolves + downloads from HF registry).
 crispembed-server \
-  --model "$MODEL" \
+  -m "$MODEL" \
   --ocr "$OCR_MODEL" \
   --host "$SERVER_HOST" \
   --port "$SERVER_PORT" \
-  --threads "$N_THREADS" \
-  --auto-download &
+  -t "$N_THREADS" &
 
 SERVER_PID=$!
 
-# Wait for the server to come up
+# Wait for the server to come up (up to 120s for first model download)
 echo "Waiting for CrispEmbed server..."
-for i in $(seq 1 60); do
+for i in $(seq 1 120); do
   if curl -sf "http://$SERVER_HOST:$SERVER_PORT/health" >/dev/null 2>&1; then
     echo "Server ready!"
     break
+  fi
+  if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+    echo "ERROR: Server process died"
+    exit 1
   fi
   sleep 1
 done
