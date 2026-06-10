@@ -28,9 +28,22 @@ pub struct CrispembedHparams {
 /// Opaque handle to a loaded face model (detector or recogniser).
 pub type CrispembedFaceContext = std::ffi::c_void;
 
-/// Opaque handle to a pix2tex math OCR context (encoder-decoder model).
+/// Opaque handle to a unified math OCR context (auto-detects architecture:
+/// pix2tex, HMER, BTTR, PosFormer, PPFormulaNet, PPFormulaNet-L, Texo).
 #[repr(C)]
 pub struct MathOcrContext(c_void);
+
+/// OCR result for a single detected text region (from the general OCR pipeline).
+#[repr(C)]
+pub struct CrispembedOcrResult {
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+    pub confidence: f32,
+    pub text: *const c_char,
+    pub text_len: c_int,
+}
 
 /// Opaque handle to a standalone ViT image embedding context (SigLIP, CLIP).
 #[repr(C)]
@@ -426,12 +439,12 @@ extern "C" {
     pub fn crispembed_face_free(ctx: *mut CrispembedFaceContext);
 
     // ------------------------------------------------------------------
-    // Math OCR (pix2tex) — image → LaTeX via ViT encoder + transformer decoder.
+    // Unified Math OCR — image → LaTeX. Auto-detects architecture from GGUF.
     // ------------------------------------------------------------------
 
-    /// Initialize a math OCR context from a pix2tex GGUF model.
-    /// Separate from the main embedding context (encoder-decoder architecture).
-    /// `n_threads` = 0 for auto-detect. Returns NULL on failure.
+    /// Initialize a unified math OCR context. Auto-detects architecture
+    /// (pix2tex, HMER, BTTR, PosFormer, PPFormulaNet, PPFormulaNet-L, Texo)
+    /// from GGUF metadata. `n_threads` = 0 for auto-detect. Returns NULL on failure.
     pub fn crispembed_math_ocr_init(
         model_path: *const c_char,
         n_threads: c_int,
@@ -454,6 +467,48 @@ extern "C" {
 
     /// Free all resources held by a math OCR context. Safe to call with NULL.
     pub fn crispembed_math_ocr_free(ctx: *mut MathOcrContext);
+
+    /// Recognize math from grayscale float pixels [0..1].
+    /// Returns a NUL-terminated LaTeX string owned by the context, valid
+    /// until the next call. Returns NULL on failure.
+    pub fn crispembed_math_ocr_recognize_gray(
+        ctx: *mut MathOcrContext,
+        pixels: *const c_float,
+        width: c_int,
+        height: c_int,
+        out_len: *mut c_int,
+    ) -> *const c_char;
+
+    // ------------------------------------------------------------------
+    // General OCR Pipeline — text detection (DBNet) + recognition (TrOCR)
+    // ------------------------------------------------------------------
+
+    /// Load OCR pipeline (detection + recognition models).
+    /// Returns opaque context, or null on failure.
+    pub fn crispembed_ocr_init(
+        det_model_path: *const c_char,
+        rec_model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut c_void;
+
+    /// Free OCR pipeline context.
+    pub fn crispembed_ocr_free(ctx: *mut c_void);
+
+    /// Run full OCR on an image file. Returns array of results.
+    /// Array owned by ctx, valid until next call.
+    pub fn crispembed_ocr(
+        ctx: *mut c_void,
+        image_path: *const c_char,
+        out_n_results: *mut c_int,
+    ) -> *const CrispembedOcrResult;
+
+    /// Run text recognition only on a single image crop.
+    /// Returns recognized text string owned by ctx.
+    pub fn crispembed_ocr_recognize(
+        ctx: *mut c_void,
+        image_path: *const c_char,
+        out_len: *mut c_int,
+    ) -> *const c_char;
 
     // ------------------------------------------------------------------
     // Standalone ViT image embedding (SigLIP, CLIP)
