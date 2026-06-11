@@ -61,13 +61,20 @@ Key issues solved during Kaggle kernel development:
 - Epoch 8: 22.4% beam=1
 - Epoch 64: 43.4% beam=1 (pre-LR-fix)
 - Epoch 93: 57.0% beam=1 (LR=0.005, surpasses SJTU published 56.0%)
-- Epoch 108: **59.3% beam=1 / 59.5% beam=10** (converged, CROHME ceiling)
-- Epoch 130: 59.2% beam=1 / 59.5% beam=10 (confirmed ceiling)
-- W&B peak: 61.2% val_ExpRate at step 194,869 (epoch ~130)
+- Epoch 108: 59.3% beam=1 (CROHME-only ceiling)
+- Epoch 125: 61.9% val_ExpRate (CROHME + 1000 MathWriting, LR=0.005)
+- **Epoch 182: 60.5% beam=1 / 60.3% beam=10** (CROHME + 2000 MathWriting,
+  LR=0.00125 after ReduceLROnPlateau drop). Best verified full eval.
+- W&B peak: 62.03% val_ExpRate at step 304,204
 
-Model has converged at ~59.3% on CROHME 8.8K. Further improvement requires
-more training data (MathWriting 230K) or expanded vocabulary (v2, 183 tokens).
-See PLAN.md for v2 expanded vocab design.
+Key findings:
+- MathWriting augmentation (2000 samples) broke the 59.3% CROHME-only ceiling
+- ReduceLROnPlateau drop (0.005→0.00125) triggered the 62% peak
+- Beam=10 bi-directional does NOT help (60.3% < 60.5% beam=1)
+- Model is better at greedy than bi-directional decoding
+- deepcopy/MathWriting-human on HF has pre-rasterized images (no InkML parsing)
+
+See PLAN.md for v2 expanded vocab design (183 tokens, 206K samples).
 
 **License**: SJTU weights = academic-only. Retrained weights on CROHME
 = CC BY-NC-SA 3.0 (NC). Fine for "buy me a coffee" app: app code is
