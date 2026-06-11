@@ -176,27 +176,42 @@ CrispEmbed/
 
 ### Pending improvements
 
+- [x] **Layout decoder → ggml graph** — Self-attention + FFN now use
+  ggml graph with BLAS-accelerated matmuls. Decoder: 16.4s → 8s (2x).
+  Total: 36s → 19.6s. Key fix: weight data must be transposed when
+  creating ggml input tensors (Gemm convention ↔ ggml mul_mat stride).
+  Cross-attention stays CPU scalar (deformable grid sampling).
+
+- [x] **PPFormulaNet-L: BLAS enabled, Q8_0 — 53s (was 60s)** — The 4 global
+  layers (2304² attention matrix = 5.3M per head × 12 heads) dominate
+  encoder time. Options: (a) use flash_attn_ext for memory efficiency,
+  (b) tile/block the computation to improve cache behavior,
+  (c) Q8_0 quantized attention for reduced bandwidth.
+
+- [x] **Upload layout-heron GGUFs to HuggingFace** — The Q8_0 model
+  (43 MB) exists at `/mnt/storage/models/layout-heron-q8_0.gguf` but
+  hasn't been published to `cstr/layout-heron-gguf`. Also need F16
+  variant and model card.
+
+- [x] **CrispCalc Dart catalog** — Add `OcrModelVariant` entries for
+  layout-heron (Q8_0, F16, F32) in `lib/engine/ocr_model_manager.dart`.
+  Register at appropriate priority tier in `ocr_providers_init.dart`.
+
+- [ ] **Layout detection score gap** — Current: 0.934 vs HF 0.955.
+  Root cause: bilinear resize pixel differences (PIL vs custom C++)
+  cascading through 50+ backbone Conv layers. Fix: match PIL's exact
+  coordinate mapping or use stb_image_resize2 with matching filter.
+
+- [ ] **Verify Q8_0 layout model works** — The `ensure_f32` +
+  `read_f32` dequantization fixes are committed but untested due to
+  VPS load. Need to confirm no crash and measure Q8_0 vs F32 parity.
+
 - [ ] **KV cache for prefix-shared decoder batches** — When multiple texts
   share a prompt prefix (e.g. Jina v5 instruction prefix), compute KV
-  for the shared prefix once and reuse across the batch. Currently each
-  text in a batch recomputes the full sequence independently.
-
-- [ ] **Batched decoder improvements** — F16 attention mask (current F32
-  mask wastes 2x memory for large T_total; flash_attn_ext supports F16
-  kq_b). Gemma3 NaN fix is DONE (ggml_clamp before (1+w)*x multiply in
-  both single-text and batch decoder paths).
+  for the shared prefix once and reuse across the batch.
 
 - [ ] **Streaming ColBERT late interaction scoring** — Server-side MaxSim
-  scoring between a query's ColBERT multi-vector and pre-stored document
-  token vectors. Stream partial scores via SSE. Needs: `/colbert/score`
-  endpoint in `server.cpp`, accepting query multi-vec + doc multi-vecs,
-  chunked response with cumulative top-K. Builds on existing
-  `crispembed_encode_multivec()` C API.
-
-- [ ] **WASM build target** — Compile CrispEmbed to WebAssembly
-  (Emscripten) for browser-based embedding inference. ggml already has
-  partial Emscripten support (whisper.cpp ships a WASM build). Challenges:
-  relaxed-simd, memory limits, SharedArrayBuffer for threading.
+  scoring via `/colbert/score` endpoint with SSE streaming.
 
 - [x] **Quantized GGUF for face models** — Quantizer now flattens 4D conv
   weights to 2D before quantizing. SFace: Q8_0 cos=0.9996 (37→10 MB),
