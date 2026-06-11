@@ -167,6 +167,20 @@ bool encode_vision(context &ctx,
 
 void vision_result_free(vision_result &r);
 
+// Run LLM decoder forward pass (text-only, no KV cache).
+// For parity testing. Returns final hidden states.
+struct llm_result {
+    float *hidden = nullptr;   // (T, D) final hidden states (malloc'd)
+    float *logits = nullptr;   // (T, V) logits (if lm_head available)
+    int n_tokens = 0;
+    int hidden_dim = 0;
+    int vocab_size = 0;
+};
+
+bool run_llm_forward(context &ctx,
+                     const int32_t *token_ids, int n_tokens,
+                     llm_result &out);
+
 // Generate text from image + prompt.
 // Returns generated token IDs and decoded text.
 struct generate_result {
