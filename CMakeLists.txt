@@ -136,6 +136,7 @@ list(APPEND CRISPEMBED_SOURCES src/ppformulanet_l_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_pipeline.cpp)
 list(APPEND CRISPEMBED_SOURCES src/layout_detect.cpp)
+list(APPEND CRISPEMBED_SOURCES src/qwen2vl_ocr.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
