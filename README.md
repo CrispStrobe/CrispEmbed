@@ -247,7 +247,9 @@ for r in regions:
 ```
 
 Encoder parity: all stages cos=1.0 vs HF reference. Detection score 0.93 (HF: 0.95).
+Performance: 21s with BLAS (F32), Q8_0 model 43 MB.
 Source: [docling-project/docling-layout-heron](https://huggingface.co/docling-project/docling-layout-heron) (Apache-2.0).
+Models: [`cstr/layout-heron-gguf`](https://huggingface.co/cstr/layout-heron-gguf)
 
 ## Model licenses
 

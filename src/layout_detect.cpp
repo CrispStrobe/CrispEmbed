@@ -11,7 +11,6 @@
 
 #include "layout_detect.h"
 #include "core/gguf_loader.h"
-#include "crispembed_diff.h"
 
 #include "ggml.h"
 #include "ggml-alloc.h"
@@ -27,6 +26,7 @@ extern "C" {
 }
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -134,7 +134,7 @@ struct transformer_decoder {
     ggml_tensor *enc_bbox_w[3] = {};     // MLP layers
     ggml_tensor *enc_bbox_b[3] = {};
     // Query position head (MLP)
-    ggml_tensor *qpos_w[3] = {}, *qpos_b[3] = {};
+    ggml_tensor *qpos_w[2] = {}, *qpos_b[2] = {};
     // Decoder layers
     decoder_layer layers[6];
     // Per-layer detection heads
@@ -276,7 +276,7 @@ bool load(context** out, const char* path, int n_threads) {
         dec.enc_bbox_w[i] = get(k + ".weight");
         dec.enc_bbox_b[i] = get(k + ".bias");
     }
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 2; i++) {
         auto k = std::string("model.decoder.query_pos_head.layers.") + std::to_string(i);
         dec.qpos_w[i] = get(k + ".weight");
         dec.qpos_b[i] = get(k + ".bias");
@@ -355,6 +355,23 @@ bool load(context** out, const char* path, int n_threads) {
 // ---------------------------------------------------------------------------
 // Graph helpers
 // ---------------------------------------------------------------------------
+
+static std::vector<float> tensor_to_f32(ggml_tensor* t) {
+    if (!t) return {};
+    int n = (int)ggml_nelements(t);
+    std::vector<float> out(n);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, out.data(), 0, n * sizeof(float));
+    } else {
+        size_t raw_size = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_size);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_size);
+        const auto* traits = ggml_get_type_traits(t->type);
+        if (traits && traits->to_float)
+            traits->to_float(raw.data(), out.data(), n);
+    }
+    return out;
+}
 
 static ggml_tensor* prep_conv(ggml_context* g, ggml_tensor* w, int IC, int KH, int KW) {
     if (!w) return nullptr;
@@ -579,73 +596,56 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     auto* p5_flat = ggml_reshape_2d(g, p5_perm, s5_c, s5_w * s5_h); // ne: [C, W*H]
     LDBG("  AIFI: p5_flat done\n");
     // Transpose to [256, N] — ggml reshape gives [C, H*W], need [C, N] which is same
-    // AIFI: add(pos_embed) → self-attn → residual+norm1 → FFN(GELU_erf) → residual+norm2
+    // AIFI encoder: pos_embed → self-attn → residual+norm1 → FFN(GELU) → residual+norm2
+    // AIFI: self-attn(pos on Q/K only) → residual+norm1 → FFN(GELU_erf) → residual+norm2
+    // HF: normalize_before=False (post-LN), pos added to Q/K only (not V)
     {
-        // ONNX applies pos_embed to Q/K only, not V.  Split the in_proj_weight
-        // into separate Q_w[256,256], K_w[256,256], V_w[256,256] and project
-        // Q,K from (x + pos) and V from x.
         auto* x_pos = p5_flat;
         if (enc.pos_embed) {
             auto* pe = ggml_reshape_2d(g, enc.pos_embed, s5_c, s5_w * s5_h);
-            x_pos = ggml_add(g, p5_flat, pe);
+            x_pos = ggml_add(g, p5_flat, pe);  // x + pos (for Q/K projection)
         }
 
-        int D_a = 256, N_tok = s5_w * s5_h, heads = 8, hd = D_a / heads;
+        // Self-attention: Q/K from (x+pos), V from x — matches HF DETR pattern
+        int D_a = s5_c, N_tok = s5_w * s5_h, heads = 8, hd = D_a / heads;
+        // Compute QKV from x+pos (Q and K correct)
+        auto* qkv_pos = linear(g, x_pos, enc.aifi_qkv_w, enc.aifi_qkv_b);
+        // Compute QKV from raw x (V correct)
+        auto* qkv_raw = linear(g, p5_flat, enc.aifi_qkv_w, enc.aifi_qkv_b);
 
-        // Split in_proj_weight [768, 256] → Q_w, K_w, V_w each [256, 256]
-        // Split in_proj_bias [768] → Q_b, K_b, V_b each [256]
-        auto* qkv_w = enc.aifi_qkv_w;  // ne[0]=256(in), ne[1]=768(out) in ggml
-        auto* qkv_b = enc.aifi_qkv_b;  // ne[0]=768
+        // Q, K from pos-projected; V from raw-projected
+        auto* Q = ggml_cont(g, ggml_view_2d(g, qkv_pos, D_a, N_tok, qkv_pos->nb[1], 0));
+        auto* K = ggml_cont(g, ggml_view_2d(g, qkv_pos, D_a, N_tok, qkv_pos->nb[1], D_a*sizeof(float)));
+        auto* V = ggml_cont(g, ggml_view_2d(g, qkv_raw, D_a, N_tok, qkv_raw->nb[1], 2*D_a*sizeof(float)));
 
-        auto* q_w = ggml_cont(g, ggml_view_2d(g, qkv_w, D_a, D_a, qkv_w->nb[1], 0));
-        auto* k_w = ggml_cont(g, ggml_view_2d(g, qkv_w, D_a, D_a, qkv_w->nb[1], (size_t)D_a * qkv_w->nb[1]));
-        auto* v_w = ggml_cont(g, ggml_view_2d(g, qkv_w, D_a, D_a, qkv_w->nb[1], (size_t)2 * D_a * qkv_w->nb[1]));
+        // Reshape: [D, N] → [hd, heads, N] → permute → [hd, N, heads]
+        Q = ggml_reshape_3d(g, Q, hd, heads, N_tok);
+        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
+        K = ggml_reshape_3d(g, K, hd, heads, N_tok);
+        K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
+        V = ggml_reshape_3d(g, V, hd, heads, N_tok);
+        V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-        auto* q_b = ggml_cont(g, ggml_view_1d(g, qkv_b, D_a, 0));
-        auto* k_b = ggml_cont(g, ggml_view_1d(g, qkv_b, D_a, D_a*sizeof(float)));
-        auto* v_b = ggml_cont(g, ggml_view_1d(g, qkv_b, D_a, 2*D_a*sizeof(float)));
+        // Scores: K^T @ Q → [N, N, heads], scaled
+        auto* scores = ggml_mul_mat(g, K, Q);
+        scores = ggml_soft_max_ext(g, scores, nullptr, 1.0f/sqrtf((float)hd), 0.0f);
 
-        // Q, K from x+pos; V from x (no pos_embed)
-        auto* q = linear(g, x_pos, q_w, q_b);   // [256, N_tok]
-        auto* k = linear(g, x_pos, k_w, k_b);   // [256, N_tok]
-        auto* v = linear(g, p5_flat, v_w, v_b);  // [256, N_tok] — no pos!
-        ggml_set_name(q, "aifi_q"); ggml_set_output(q);
-        ggml_set_name(k, "aifi_k"); ggml_set_output(k);
-        ggml_set_name(v, "aifi_v"); ggml_set_output(v);
+        // Attn output: V^T @ scores → [hd, N, heads]
+        auto* Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
+        auto* attn = ggml_mul_mat(g, Vt, scores);
 
-        // Reshape for multi-head: [D=256, N] → [hd=32, heads=8, N] → permute to [hd, N, heads]
-        q = ggml_reshape_3d(g, q, hd, heads, N_tok);
-        q = ggml_cont(g, ggml_permute(g, q, 0, 2, 1, 3));  // [hd, N, heads]
-        k = ggml_reshape_3d(g, k, hd, heads, N_tok);
-        k = ggml_cont(g, ggml_permute(g, k, 0, 2, 1, 3));
-        v = ggml_reshape_3d(g, v, hd, heads, N_tok);
-        v = ggml_cont(g, ggml_permute(g, v, 0, 2, 1, 3));
-
-        // Manual scaled dot-product attention
-        q = ggml_scale(g, q, 1.0f / sqrtf((float)hd));
-        auto* scores = ggml_mul_mat(g, k, q);  // [N, N, heads]
-        scores = ggml_soft_max(g, scores);
-        ggml_set_name(scores, "aifi_softmax"); ggml_set_output(scores);
-        auto* v_t = ggml_cont(g, ggml_permute(g, v, 1, 0, 2, 3));  // [N, hd, heads]
-        auto* attn_raw = ggml_mul_mat(g, v_t, scores);  // [hd, N, heads]
-        ggml_set_name(attn_raw, "aifi_attn_raw"); ggml_set_output(attn_raw);
-
-        // Correct head interleaving: [hd, N, heads] → [hd, heads, N] → [D, N]
-        auto* attn = ggml_cont(g, ggml_permute(g, attn_raw, 0, 2, 1, 3));  // [hd, heads, N]
-        attn = ggml_reshape_2d(g, attn, D_a, N_tok);  // [256, 400]
+        // Reshape back: [hd, N, heads] → [hd, heads, N] → [D, N]
+        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        attn = ggml_reshape_2d(g, attn, D_a, N_tok);
 
         // Output projection
         attn = linear(g, attn, enc.aifi_out_w, enc.aifi_out_b);
-        ggml_set_name(attn, "aifi_attn_out"); ggml_set_output(attn);
 
-        // Residual from original input (before pos_embed) + norm1
-        auto* aifi_resid = ggml_add(g, p5_flat, attn);
-        ggml_set_name(aifi_resid, "aifi_resid"); ggml_set_output(aifi_resid);
-        p5_flat = aifi_resid;
+        // Post-LN: residual (raw x, no pos) + attn → norm1
+        p5_flat = ggml_add(g, p5_flat, attn);
         p5_flat = layer_norm(g, p5_flat, enc.aifi_norm1_w, enc.aifi_norm1_b);
-        ggml_set_name(p5_flat, "aifi_norm1"); ggml_set_output(p5_flat);
 
-        // FFN: linear1 → GELU → linear2
+        // Post-LN: FFN → residual + FFN → norm2
         auto* residual = p5_flat;
         auto* ffn = linear(g, p5_flat, enc.aifi_ffn1_w, enc.aifi_ffn1_b);
         ffn = ggml_gelu_erf(g, ffn);
@@ -653,6 +653,7 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
         p5_flat = ggml_add(g, residual, ffn);
         p5_flat = layer_norm(g, p5_flat, enc.aifi_norm2_w, enc.aifi_norm2_b);
     }
+    ggml_set_name(p5_flat, "aifi_flat"); ggml_set_output(p5_flat);
     LDBG("  AIFI done: p5_flat=[%lld,%lld]\n", (long long)p5_flat->ne[0], (long long)p5_flat->ne[1]);
     // Reshape back to spatial: [C, W*H] → [C, W, H] → permute to [W, H, C]
     auto* p5_spatial = ggml_reshape_3d(g, p5_flat, s5_c, s5_w, s5_h);
@@ -695,33 +696,36 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     // Mark AIFI output for comparison
     ggml_set_name(p5, "aifi_out"); ggml_set_output(p5);
 
-    // S5 → lateral (SiLU) → upsample → concat with S4 → CSP
+    // FPN top-down pathway (matching HF RTDetrV2HybridEncoder):
+    // HF stores lateral-conv'd features and reuses them in the PAN.
+    // FPN step 0: lateral(p5) → upsample → cat(ip4) → CSP → fpn_0
     auto* lat5 = conv_silu(g, p5, enc.lateral_convs[0], 256, 1, 1, 1, 0);
     ggml_set_name(lat5, "lat5_silu"); ggml_set_output(lat5);
     auto* up5 = ggml_interpolate(g, lat5, (int)p4->ne[0], (int)p4->ne[1],
                                   (int)lat5->ne[2], 1, GGML_SCALE_MODE_NEAREST);
     auto* cat4 = ggml_concat(g, up5, p4, 2);  // [W, H, 512]
-    p4 = run_csp(cat4, enc.fpn_blocks[0]);
-    ggml_set_name(p4, "csp0"); ggml_set_output(p4);
+    auto* fpn_0 = run_csp(cat4, enc.fpn_blocks[0]);
 
-    // S4 → lateral (SiLU) → upsample → concat with S3 → CSP
-    auto* lat4 = conv_silu(g, p4, enc.lateral_convs[1], 256, 1, 1, 1, 0);
+    // FPN step 1: lateral(fpn_0) → upsample → cat(ip3) → CSP → fpn_1
+    auto* lat4 = conv_silu(g, fpn_0, enc.lateral_convs[1], 256, 1, 1, 1, 0);
     auto* up4 = ggml_interpolate(g, lat4, (int)p3->ne[0], (int)p3->ne[1],
                                   (int)lat4->ne[2], 1, GGML_SCALE_MODE_NEAREST);
     auto* cat3 = ggml_concat(g, up4, p3, 2);  // [W, H, 512]
-    p3 = run_csp(cat3, enc.fpn_blocks[1]);
+    auto* fpn_1 = run_csp(cat3, enc.fpn_blocks[1]);
+    // After FPN: fpn_feature_maps (reversed) = [fpn_1(80x80), lat4(40x40), lat5(20x20)]
 
-    // PAN bottom-up: S3 → downsample → concat with lat4 → CSP
-    // RT-DETRv2 CCFM: PAN uses the lateral-processed features (inner_outs),
-    // not the raw FPN outputs.  inner_outs = [fpn_p3, lat4, lat5].
-    auto* down3 = conv_silu(g, p3, enc.downsample_convs[0], 256, 3, 3, 2, 1);
-    auto* cat4p = ggml_concat(g, down3, lat4, 2);  // [W, H, 512]
-    p4 = run_csp(cat4p, enc.pan_blocks[0]);
+    // PAN bottom-up: uses lateral-conv'd features from FPN, not raw features!
+    // PAN step 0: downsample(fpn_1) → cat(lat4) → CSP → pan_0
+    auto* down3 = conv_silu(g, fpn_1, enc.downsample_convs[0], 256, 3, 3, 2, 1);
+    auto* cat4p = ggml_concat(g, down3, lat4, 2);  // cat with lat_fpn_0, not raw fpn_0
+    auto* pan_0 = run_csp(cat4p, enc.pan_blocks[0]);
 
-    // S4 → downsample → concat with lat5 → CSP
-    auto* down4 = conv_silu(g, p4, enc.downsample_convs[1], 256, 3, 3, 2, 1);
-    auto* cat5p = ggml_concat(g, down4, lat5, 2);  // [W, H, 512]
-    p5 = run_csp(cat5p, enc.pan_blocks[1]);
+    // PAN step 1: downsample(pan_0) → cat(lat5) → CSP → pan_1
+    auto* down4 = conv_silu(g, pan_0, enc.downsample_convs[1], 256, 3, 3, 2, 1);
+    auto* cat5p = ggml_concat(g, down4, lat5, 2);  // cat with lat_aifi_p5, not raw p5
+    auto* pan_1 = run_csp(cat5p, enc.pan_blocks[1]);
+
+    p3 = fpn_1; p4 = pan_0; p5 = pan_1;
 
     *s3 = p3; *s4 = p4; *s5 = p5;
 }
@@ -785,12 +789,13 @@ std::vector<region> detect(context* ctx, const float* pixels,
     ggml_set_input(input);
 
     // Backbone
-    if (layout_debug()) {
+    // Verify stem weight is the folded version
+    {
         float wv[3];
         ggml_backend_tensor_get(ctx->backbone.stem[0].w, wv, 0, 3*sizeof(float));
         fprintf(stderr, "  stem[0].w first3: %.6f %.6f %.6f (expected: 0.002018)\n", wv[0], wv[1], wv[2]);
     }
-    LDBG("layout_detect: building backbone + encoder graph...\n");
+    fprintf(stderr, "layout_detect: building backbone + encoder graph...\n");
     ggml_tensor *c3, *c4, *c5;
     backbone_forward(g, ctx->backbone, input, &c3, &c4, &c5);
 
@@ -827,11 +832,12 @@ std::vector<region> detect(context* ctx, const float* pixels,
     if (inp_t) ggml_backend_tensor_set(inp_t, pixels, 0, 3 * H * W * sizeof(float));
 
     // Compute
-    LDBG("layout_detect: computing backbone + encoder...\n");
+    fprintf(stderr, "layout_detect: computing backbone + encoder...\n");
     ggml_backend_graph_compute(ctx->backend, gf);
 
-    // Per-block backbone comparison (debug only)
-    if (layout_debug()) {
+    // Per-block backbone comparison
+    {
+        // Read stem
         auto read_range = [&](const char* name) {
             ggml_tensor* t = ggml_graph_get_tensor(gf, name);
             if (!t) { fprintf(stderr, "  %s: NOT FOUND\n", name); return; }
@@ -843,20 +849,45 @@ std::vector<region> detect(context* ctx, const float* pixels,
             fprintf(stderr, "  %s: [%lld,%lld,%lld] range=[%.4f, %.4f]\n",
                     name, (long long)t->ne[0], (long long)t->ne[1], (long long)t->ne[2], fmin, fmax);
         };
-        read_range("bb_stem"); read_range("ip3"); read_range("ip4"); read_range("ip5");
-        read_range("aifi_out"); read_range("lat5_silu");
-        read_range("aifi_qkv"); read_range("aifi_softmax");
-        read_range("aifi_attn_raw"); read_range("aifi_attn_out");
-        read_range("aifi_norm1"); read_range("aifi_resid");
-        read_range("csp0_conv1"); read_range("csp0_bn0"); read_range("csp0_bn1");
-        read_range("csp0_bn2"); read_range("csp0_conv2"); read_range("csp0_out");
+        read_range("bb_stem");
+        read_range("ip3");
+        read_range("ip4");
+        read_range("ip5");
+        read_range("aifi_out");
+        read_range("lat5_silu");
+        // CSP block 0 internals
+        read_range("csp0_conv1");
+        read_range("csp0_bn0");
+        read_range("csp0_bn1");
+        read_range("csp0_bn2");
+        read_range("csp0_conv2");
+        read_range("csp0_out");
         int block_counts[] = {3, 4, 6, 3};
-        for (int s = 0; s < 4; s++)
+        for (int s = 0; s < 4; s++) {
             for (int b = 0; b < block_counts[s]; b++) {
-                char name[32]; snprintf(name, sizeof(name), "bb_s%d_b%d", s, b);
+                char name[32];
+                snprintf(name, sizeof(name), "bb_s%d_b%d", s, b);
                 read_range(name);
             }
+        }
     }
+    // Dump encoder intermediates for diff comparison (ggml raw byte order)
+    if (getenv("LAYOUT_DEBUG")) {
+        auto dump_ggml_tensor = [&](const char* name) {
+            ggml_tensor* t = ggml_graph_get_tensor(gf, name);
+            if (!t) return;
+            int n = ggml_nelements(t);
+            std::vector<float> data(n);
+            ggml_backend_tensor_get(t, data.data(), 0, n * sizeof(float));
+            char fname[128];
+            snprintf(fname, sizeof(fname), "/tmp/cpp_%s.bin", name);
+            FILE* fp = fopen(fname, "wb");
+            if (fp) { fwrite(data.data(), sizeof(float), n, fp); fclose(fp); }
+        };
+        dump_ggml_tensor("ip3"); dump_ggml_tensor("ip4"); dump_ggml_tensor("ip5");
+        dump_ggml_tensor("aifi_flat");
+    }
+
     // Read encoder outputs to CPU buffers
     // s3: [W3, H3, 256], s4: [W4, H4, 256], s5: [W5, H5, 256]
     struct scale_feat {
@@ -875,11 +906,23 @@ std::vector<region> detect(context* ctx, const float* pixels,
         feats[i].data.resize(n);
         ggml_backend_tensor_get(t, feats[i].data.data(), 0, n * sizeof(float));
         total_tokens += feats[i].W * feats[i].H;
-        if (layout_debug()) {
-            float fmin = 1e9, fmax = -1e9;
-            for (auto v : feats[i].data) { fmin = std::min(fmin, v); fmax = std::max(fmax, v); }
-            fprintf(stderr, "  s%d: %dx%d x %d range=[%.4f, %.4f]\n",
-                    i+3, feats[i].W, feats[i].H, feats[i].C, fmin, fmax);
+        // Print stats for comparison with Python reference
+        float fmin = 1e9, fmax = -1e9;
+        for (auto v : feats[i].data) { fmin = std::min(fmin, v); fmax = std::max(fmax, v); }
+        fprintf(stderr, "  s%d: %dx%d x %d range=[%.4f, %.4f]\n",
+                i+3, feats[i].W, feats[i].H, feats[i].C, fmin, fmax);
+    }
+
+    // Dump s3/s4/s5 for diff comparison
+    if (getenv("LAYOUT_DEBUG")) {
+        for (int i = 0; i < 3; i++) {
+            char fname[128];
+            snprintf(fname, sizeof(fname), "/tmp/cpp_s%d.bin", i + 3);
+            FILE* fp = fopen(fname, "wb");
+            if (fp) {
+                fwrite(feats[i].data.data(), sizeof(float), feats[i].data.size(), fp);
+                fclose(fp);
+            }
         }
     }
 
@@ -888,69 +931,32 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     // --- Phase 2: Decoder (CPU-side) ---
 
-    // Helper: read tensor to F32 (handles F32, F16, Q8_0, etc.)
-    auto read_f32 = [](ggml_tensor* t) -> std::vector<float> {
-        if (!t) return {};
-        int n = (int)ggml_nelements(t);
-        std::vector<float> out(n);
-        if (t->type == GGML_TYPE_F32) {
-            ggml_backend_tensor_get(t, out.data(), 0, n * sizeof(float));
-        } else {
-            size_t raw_size = ggml_nbytes(t);
-            std::vector<uint8_t> raw(raw_size);
-            ggml_backend_tensor_get(t, raw.data(), 0, raw_size);
-            const auto* traits = ggml_get_type_traits(t->type);
-            if (traits && traits->to_float) {
-                traits->to_float(raw.data(), out.data(), n);
-            } else {
-                memset(out.data(), 0, n * sizeof(float));
-            }
-        }
-        return out;
-    };
-
-    // cpu_linear for Gemm(transB=1) convention: y = W @ x + b
-    // W stored as [in_d, out_d] in GGUF, accessed as W[i + o * in_d]
-    auto cpu_linear = [&read_f32](const float* x, float* y, int in_d, int out_d, int N,
+    auto cpu_linear = [](const float* x, float* y, int in_d, int out_d, int N,
                           ggml_tensor* w_t, ggml_tensor* b_t) {
-        auto W = read_f32(w_t);
-        std::vector<float> b(out_d, 0.0f);
-        if (b_t) { auto bv = read_f32(b_t); if (!bv.empty()) b = bv; }
+        std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
+        if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, out_d * in_d * sizeof(float));
+        if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, out_d * sizeof(float));
+        // Weight convention: GGUF stores ONNX weights in their native byte order.
+        // Most ONNX ops use MatMul (y = x @ W) or Gemm(transB=1) (y = x @ W^T).
+        // For MatMul weights numpy (in_d, out_d): y[o] = sum_i flat[i*out_d+o] * x[i]
+        // For Gemm(transB=1) weights numpy (out_d, in_d): y[o] = sum_i flat[o*in_d+i] * x[i]
+        // Using MatMul convention uniformly (works for enc_proj, verified cos=0.958).
+        // TODO: handle Gemm(transB=1) for out_proj and non-square Linear weights.
         for (int n = 0; n < N; n++) {
             for (int o = 0; o < out_d; o++) {
                 float sum = b[o];
-                for (int i = 0; i < in_d; i++)
-                    sum += W[i + o * in_d] * x[i * N + n];
+                for (int i = 0; i < in_d; i++) {
+                    sum += W[o + i * out_d] * x[i * N + n];
+                }
                 y[o * N + n] = sum;
             }
         }
     };
 
-    // cpu_matmul for ONNX MatMul(x, W) convention: y[o] = sum_i x[i] * W[i, o]
-    // W stored as [in_d, out_d] in GGUF, accessed as W[i * out_d + o]
-    auto cpu_matmul = [&read_f32](const float* x, float* y, int in_d, int out_d, int N,
-                          ggml_tensor* w_t, ggml_tensor* b_t) {
-        auto W = read_f32(w_t);
-        std::vector<float> b(out_d, 0.0f);
-        if (b_t) {
-            auto bv = read_f32(b_t);
-            if (!bv.empty()) b = bv;
-        }
-        for (int n = 0; n < N; n++) {
-            for (int o = 0; o < out_d; o++) {
-                float sum = b[o];
-                for (int i = 0; i < in_d; i++)
-                    sum += W[i * out_d + o] * x[i * N + n];
-                y[o * N + n] = sum;
-            }
-        }
-    };
-
-    auto cpu_layernorm = [&read_f32](float* x, int D, int N, ggml_tensor* w_t, ggml_tensor* b_t) {
-        auto w = read_f32(w_t);
-        auto b = read_f32(b_t);
-        if (w.empty()) w.resize(D, 1.0f);
-        if (b.empty()) b.resize(D, 0.0f);
+    auto cpu_layernorm = [](float* x, int D, int N, ggml_tensor* w_t, ggml_tensor* b_t) {
+        std::vector<float> w(D), b(D);
+        if (w_t) ggml_backend_tensor_get(w_t, w.data(), 0, D * sizeof(float));
+        if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, D * sizeof(float));
         for (int n = 0; n < N; n++) {
             float mean = 0, var = 0;
             for (int d = 0; d < D; d++) mean += x[d * N + n];
@@ -985,10 +991,27 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 feat_col[c * N_lv + s] = feats[lv].data[s + c * N_lv];
 
         // Apply decoder input_proj (1×1 conv = linear projection)
+        // Conv weight is in ONNX Conv (out, in) convention — NOT MatMul convention.
+        // y[o] = sum_i W_conv[o, i] * x[i] + b[o]
+        // In ggml flat: W_conv[o, i] = flat[i + o * in_d] (numpy row-major (out, in))
         if (ctx->decoder.input_proj[lv].w) {
             std::vector<float> proj(D * N_lv);
-            cpu_linear(feat_col.data(), proj.data(), D, D, N_lv,
-                       ctx->decoder.input_proj[lv].w, ctx->decoder.input_proj[lv].b);
+            // Use Conv convention: W[i + o * in_d]
+            {
+                auto* w_t = ctx->decoder.input_proj[lv].w;
+                auto* b_t = ctx->decoder.input_proj[lv].b;
+                std::vector<float> W(D * D), b(D, 0.0f);
+                if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, D * D * sizeof(float));
+                if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, D * sizeof(float));
+                for (int n = 0; n < N_lv; n++) {
+                    for (int o = 0; o < D; o++) {
+                        float sum = b[o];
+                        for (int i = 0; i < D; i++)
+                            sum += W[i + o * D] * feat_col[i * N_lv + n];
+                        proj[o * N_lv + n] = sum;
+                    }
+                }
+            }
             // Copy projected features to memory
             for (int c = 0; c < D; c++)
                 for (int s = 0; s < N_lv; s++)
@@ -1014,24 +1037,27 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     // CPU LayerNorm
 
-    // --- Query initialization: select top-K from encoder output ---
-    // 1. Project memory through enc_output: mask → linear + norm
-    // Apply valid_mask to memory before projection (zeros out invalid positions)
-    std::vector<float> masked_memory(D * total_tokens);
-    {
-        std::vector<float> mask(total_tokens, 1.0f);
-        if (ctx->decoder.valid_mask) {
-            auto mask_data = read_f32(ctx->decoder.valid_mask);
-            if ((int)mask_data.size() >= total_tokens)
-                memcpy(mask.data(), mask_data.data(), total_tokens * sizeof(float));
+    // Apply valid_mask to memory (zeros out padding positions)
+    if (ctx->decoder.valid_mask) {
+        // valid_mask is [1, N_total, 1] — broadcast over channels
+        std::vector<float> mask(total_tokens);
+        ggml_backend_tensor_get(ctx->decoder.valid_mask, mask.data(), 0,
+                                total_tokens * sizeof(float));
+        for (int n = 0; n < total_tokens; n++)
+            if (mask[n] == 0.0f)
+                for (int d = 0; d < D; d++)
+                    memory[d * total_tokens + n] = 0.0f;
+        if (getenv("LAYOUT_DEBUG")) {
+            int n_valid = 0;
+            for (auto v : mask) if (v > 0) n_valid++;
+            fprintf(stderr, "  valid_mask: %d/%d valid tokens\n", n_valid, total_tokens);
         }
-        for (int d = 0; d < D; d++)
-            for (int n = 0; n < total_tokens; n++)
-                masked_memory[d * total_tokens + n] = memory[d * total_tokens + n] * mask[n];
     }
 
+    // --- Query initialization: select top-K from encoder output ---
+    // 1. Project memory through enc_output: linear + norm
     std::vector<float> enc_proj(D * total_tokens);
-    cpu_matmul(masked_memory.data(), enc_proj.data(), D, D, total_tokens,
+    cpu_linear(memory.data(), enc_proj.data(), D, D, total_tokens,
                ctx->decoder.enc_proj_w, nullptr);
     // Add enc_output.proj.bias if exists
     {
@@ -1047,6 +1073,35 @@ std::vector<region> detect(context* ctx, const float* pixels,
     }
     cpu_layernorm(enc_proj.data(), D, total_tokens,
                   ctx->decoder.enc_norm_w, ctx->decoder.enc_norm_b);
+
+    // Debug: inject HF reference enc_output for decoder parity testing
+    if (getenv("LAYOUT_INJECT_REF")) {
+        FILE* rfp = fopen(getenv("LAYOUT_INJECT_REF"), "rb");
+        if (rfp) {
+            // Reference is [N_total, D] row-major → convert to [D, N_total] col-major
+            std::vector<float> ref_row(D * total_tokens);
+            fread(ref_row.data(), sizeof(float), D * total_tokens, rfp);
+            fclose(rfp);
+            for (int n = 0; n < total_tokens; n++)
+                for (int d = 0; d < D; d++)
+                    enc_proj[d * total_tokens + n] = ref_row[n * D + d];
+            fprintf(stderr, "  INJECTED HF enc_output from %s\n", getenv("LAYOUT_INJECT_REF"));
+        }
+    }
+    // Debug: also inject HF reference memory (raw encoder features for cross-attn)
+    if (getenv("LAYOUT_INJECT_MEMORY")) {
+        FILE* rfp = fopen(getenv("LAYOUT_INJECT_MEMORY"), "rb");
+        if (rfp) {
+            // Reference stored as [N_total, D] row-major → [D, N_total] col-major
+            std::vector<float> ref_row(D * total_tokens);
+            fread(ref_row.data(), sizeof(float), D * total_tokens, rfp);
+            fclose(rfp);
+            for (int n = 0; n < total_tokens; n++)
+                for (int d = 0; d < D; d++)
+                    memory[d * total_tokens + n] = ref_row[n * D + d];
+            fprintf(stderr, "  INJECTED HF memory from %s\n", getenv("LAYOUT_INJECT_MEMORY"));
+        }
+    }
 
     // Debug: dump raw memory for parity comparison
     if (getenv("LAYOUT_DEBUG")) {
@@ -1076,30 +1131,26 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 mem_row[6400*D+4], mem_row[6400*D+5], mem_row[6400*D+6], mem_row[6400*D+7]);
     }
 
-    // Debug: dump arrays for parity comparison
+    // Debug: dump enc_proj for parity comparison
     if (getenv("LAYOUT_DEBUG")) {
-        // Dump memory [D, total_tokens] col-major → [total_tokens, D] row-major
-        auto dump_col_major = [&](const std::vector<float>& data, int dim, int N, const char* path) {
-            std::vector<float> row(dim * N);
-            for (int n = 0; n < N; n++)
-                for (int d = 0; d < dim; d++)
-                    row[n * dim + d] = data[d * N + n];
-            FILE* fp = fopen(path, "wb");
-            if (fp) { fwrite(row.data(), sizeof(float), dim * N, fp); fclose(fp); }
-        };
-        dump_col_major(memory, D, total_tokens, "/tmp/cpp_memory.bin");
-        dump_col_major(enc_proj, D, total_tokens, "/tmp/cpp_enc_proj.bin");
-        fprintf(stderr, "  enc_proj: range=[%.4f, %.4f]\n",
+        // Convert from [D, N_total] col-major to [N_total, D] row-major for comparison
+        std::vector<float> enc_proj_row(D * total_tokens);
+        for (int n = 0; n < total_tokens; n++)
+            for (int d = 0; d < D; d++)
+                enc_proj_row[n * D + d] = enc_proj[d * total_tokens + n];
+        FILE* fp = fopen("/tmp/cpp_enc_output.bin", "wb");
+        if (fp) { fwrite(enc_proj_row.data(), sizeof(float), D * total_tokens, fp); fclose(fp); }
+        fprintf(stderr, "  enc_proj: range=[%.4f, %.4f] (dumped to /tmp/cpp_enc_output.bin)\n",
                 *std::min_element(enc_proj.begin(), enc_proj.end()),
                 *std::max_element(enc_proj.begin(), enc_proj.end()));
-        fprintf(stderr, "  enc_proj[0,:8]: ");
-        for (int d = 0; d < 8; d++) fprintf(stderr, "%.6f ", enc_proj[d * total_tokens + 0]);
-        fprintf(stderr, "\n");
+        fprintf(stderr, "  enc_proj[0,:8]: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
+                enc_proj_row[0], enc_proj_row[1], enc_proj_row[2], enc_proj_row[3],
+                enc_proj_row[4], enc_proj_row[5], enc_proj_row[6], enc_proj_row[7]);
     }
 
     // 2. Score each token
     std::vector<float> enc_scores(ctx->num_classes * total_tokens);
-    cpu_matmul(enc_proj.data(), enc_scores.data(), D, ctx->num_classes, total_tokens,
+    cpu_linear(enc_proj.data(), enc_scores.data(), D, ctx->num_classes, total_tokens,
                ctx->decoder.enc_score_w, ctx->decoder.enc_score_b);
 
     // 3. Find top-K tokens by max class score
@@ -1122,283 +1173,227 @@ std::vector<region> detect(context* ctx, const float* pixels,
             queries[d * N_queries + q] = enc_proj[d * total_tokens + token_idx];
     }
 
+    // Debug: dump initial queries and top-K indices
+    if (getenv("LAYOUT_DEBUG")) {
+        fprintf(stderr, "  top-K indices first 5: %d %d %d %d %d\n",
+                token_scores[0].second, token_scores[1].second, token_scores[2].second,
+                token_scores[3].second, token_scores[4].second);
+        // Dump queries as [N, D] row-major
+        std::vector<float> q_row(D * N_queries);
+        for (int q = 0; q < N_queries; q++)
+            for (int d = 0; d < D; d++)
+                q_row[q * D + d] = queries[d * N_queries + q];
+        FILE* fp = fopen("/tmp/cpp_queries_init.bin", "wb");
+        if (fp) { fwrite(q_row.data(), sizeof(float), D * N_queries, fp); fclose(fp); }
+        fprintf(stderr, "  query 0 first 4: %.6f %.6f %.6f %.6f\n",
+                q_row[0], q_row[1], q_row[2], q_row[3]);
+    }
+
     // 5. Initialize reference points via enc_bbox_head MLP on selected tokens
-    // Python: ref_points_unact = anchors[selected] + bbox_head(enc_proj[selected])
-    //         ref_points = sigmoid(ref_points_unact)
     std::vector<float> ref_points(N_queries * 4);
     {
-        // Load full anchors [8400, 4] to pick the right ones for selected tokens
-        std::vector<float> all_anchors(total_tokens * 4, 0.0f);
-        if (ctx->decoder.anchors)
-            ggml_backend_tensor_get(ctx->decoder.anchors, all_anchors.data(), 0,
-                                     total_tokens * 4 * sizeof(float));
-
         std::vector<float> tmp(D * N_queries);
         std::copy(queries.begin(), queries.end(), tmp.begin());
         for (int j = 0; j < 3; j++) {
             int out_d = (j < 2) ? D : 4;
             std::vector<float> out(out_d * N_queries);
-            cpu_matmul(tmp.data(), out.data(), (j == 0 ? D : D), out_d, N_queries,
+            cpu_linear(tmp.data(), out.data(), (j == 0 ? D : D), out_d, N_queries,
                        ctx->decoder.enc_bbox_w[j], ctx->decoder.enc_bbox_b[j]);
             if (j < 2) {
                 for (auto& v : out) v = std::max(0.0f, v); // ReLU
                 tmp = out;
             } else {
-                // Add anchors for selected tokens, then sigmoid
-                // out is [4, N_queries], anchors are [total_tokens, 4] row-major
-                for (int q = 0; q < N_queries; q++) {
-                    int token_idx = token_scores[q].second;
-                    for (int d = 0; d < 4; d++) {
-                        float bbox_val = out[d * N_queries + q];
-                        float anchor_val = all_anchors[token_idx * 4 + d];
-                        float unact = bbox_val + anchor_val;
-                        ref_points[q * 4 + d] = 1.0f / (1.0f + expf(-unact));
-                    }
-                }
+                // Sigmoid to get reference points in [0, 1]
+                for (auto& v : out) v = 1.0f / (1.0f + expf(-v));
+                // Rearrange: out is [4, N_queries], ref_points is [N_queries * 4]
+                for (int q = 0; q < N_queries; q++)
+                    for (int d = 0; d < 4; d++)
+                        ref_points[q * 4 + d] = out[d * N_queries + q];
             }
         }
     }
 
-    // Helper: compute query position encoding from reference points via query_pos_head MLP
-    // 2-layer MLP: ref_points [4] → linear0 [512] → ReLU → linear1 [256] → pos_enc
-    auto compute_pos_enc = [&](std::vector<float>& pos_enc_out) {
+    // Compute query position encoding from reference points via query_pos_head MLP
+    // ref_points → linear0 → ReLU → linear1 → ReLU → linear2 → pos_enc  [D, N_queries]
+    // Helper: compute query position encoding from reference points via MLP
+    // HF: query_pos_head = 2-layer MLP: Linear(4, 2*D) → ReLU → Linear(2*D, D)
+    int qpos_hidden = 2 * D;  // 512
+    auto compute_pos_enc = [&](const float* rp, float* pe) {
         std::vector<float> rp_col(4 * N_queries);
         for (int q = 0; q < N_queries; q++)
             for (int d = 0; d < 4; d++)
-                rp_col[d * N_queries + q] = ref_points[q * 4 + d];
-        int hidden = 2 * D; // 512
-        std::vector<float> tmp(hidden * N_queries);
-        // Layer 0: anonymous val_1947 [4,512] — MatMul convention (no Transpose in ONNX)
-        cpu_matmul(rp_col.data(), tmp.data(), 4, hidden, N_queries,
+                rp_col[d * N_queries + q] = rp[q * 4 + d];
+        std::vector<float> tmp(qpos_hidden * N_queries);
+        cpu_linear(rp_col.data(), tmp.data(), 4, qpos_hidden, N_queries,
                    ctx->decoder.qpos_w[0], ctx->decoder.qpos_b[0]);
         for (auto& v : tmp) v = std::max(0.0f, v);
-        // Layer 1: named weight [256,512] — Gemm convention (ONNX has Transpose before MatMul)
-        cpu_linear(tmp.data(), pos_enc_out.data(), hidden, D, N_queries,
+        cpu_linear(tmp.data(), pe, qpos_hidden, D, N_queries,
                    ctx->decoder.qpos_w[1], ctx->decoder.qpos_b[1]);
     };
 
-    LDBG("layout_detect: query init done (top-K score: %.3f..%.3f)\n",
+    std::vector<float> pos_enc(D * N_queries, 0.0f);
+
+    // Debug: dump ref_points
+    if (getenv("LAYOUT_DEBUG")) {
+        FILE* fp = fopen("/tmp/cpp_ref_points.bin", "wb");
+        if (fp) { fwrite(ref_points.data(), sizeof(float), N_queries * 4, fp); fclose(fp); }
+        fprintf(stderr, "  ref_points[0]: cx=%.6f cy=%.6f w=%.6f h=%.6f\n",
+                ref_points[0], ref_points[1], ref_points[2], ref_points[3]);
+    }
+
+    // Compute initial pos_enc and dump for comparison
+    compute_pos_enc(ref_points.data(), pos_enc.data());
+    if (getenv("LAYOUT_DEBUG")) {
+        std::vector<float> pe_row(D * N_queries);
+        for (int q = 0; q < N_queries; q++)
+            for (int d = 0; d < D; d++)
+                pe_row[q * D + d] = pos_enc[d * N_queries + q];
+        FILE* fp = fopen("/tmp/cpp_pos_enc_init.bin", "wb");
+        if (fp) { fwrite(pe_row.data(), sizeof(float), D * N_queries, fp); fclose(fp); }
+        fprintf(stderr, "  pos_enc[0] first 4: %.6f %.6f %.6f %.6f\n",
+                pe_row[0], pe_row[1], pe_row[2], pe_row[3]);
+    }
+
+    fprintf(stderr, "layout_detect: query init done (top-K score: %.3f..%.3f)\n",
             token_scores[0].first, token_scores[N_queries-1].first);
-    LDBG("layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
-
-    // Load diff reference if available (only under LAYOUT_DEBUG)
-    crispembed_diff::Ref dec_ref;
-    bool has_dec_ref = layout_debug() && dec_ref.load("/tmp/dec0-diff-ref.gguf");
-
-    auto diff_report = [&](const char* label, const char* ref_name,
-                           const float* data, size_t n_elem) {
-        if (!has_dec_ref) return;
-        auto r = dec_ref.compare(ref_name, data, n_elem);
-        if (r.found)
-            fprintf(stderr, "    DIFF %s: cos_min=%.6f cos_mean=%.6f max_abs=%.2e %s\n",
-                    label, r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
-    };
-
-    // Compare initial encoder projection and memory
-    diff_report("enc_proj", "layer_norm_2", enc_proj.data(), D * total_tokens);
-    diff_report("memory", "concat_4", memory.data(), D * total_tokens);
-
-    // Load per-layer ref_points reference (only under LAYOUT_DEBUG)
-    crispembed_diff::Ref rp_ref;
-    bool has_rp_ref = layout_debug() && rp_ref.load("/tmp/refpoints-per-layer.gguf");
-
-    // Per-layer ref_points names: sigmoid, sigmoid_1, ..., sigmoid_6
-    // Per-layer pos_enc names: linear_12, linear_27, linear_42, linear_57, linear_72, linear_87
-    static const char* pos_enc_names[] = {
-        "linear_12", "linear_27", "linear_42", "linear_57", "linear_72", "linear_87"
-    };
+    fprintf(stderr, "layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
 
     for (int li = 0; li < 6; li++) {
+        // Recompute pos_enc from current reference points each layer (matches HF)
+        compute_pos_enc(ref_points.data(), pos_enc.data());
         const auto& layer = ctx->decoder.layers[li];
 
-        // Compare ref_points before this layer
-        if (has_rp_ref) {
-            char rp_name[32];
-            snprintf(rp_name, 32, "sigmoid%s", li == 0 ? "" : (std::string("_") + std::to_string(li)).c_str());
-            auto rp_r = rp_ref.compare(rp_name, ref_points.data(), N_queries * 4);
-            if (rp_r.found)
-                fprintf(stderr, "    DIFF dec%d_refpts(%s): cos_min=%.6f max_abs=%.2e %s\n",
-                        li, rp_name, rp_r.cos_min, rp_r.max_abs, rp_r.is_pass() ? "PASS" : "FAIL");
-        }
-
-        // Recompute pos_enc each layer from current ref_points
-        std::vector<float> pos_enc(D * N_queries);
-        compute_pos_enc(pos_enc);
-
-        // Compare pos_enc for this layer
-        if (has_rp_ref) {
-            auto pe_r = rp_ref.compare(pos_enc_names[li], pos_enc.data(), D * N_queries);
-            if (pe_r.found)
-                fprintf(stderr, "    DIFF dec%d_posenc: cos_min=%.6f max_abs=%.2e %s\n",
-                        li, pe_r.cos_min, pe_r.max_abs, pe_r.is_pass() ? "PASS" : "FAIL");
-        }
-
-        if (li == 0) {
-            diff_report("queries_init", "gather_2", queries.data(), D * N_queries);
-            diff_report("pos_enc", "linear_12", pos_enc.data(), D * N_queries);
-            // Also dump ref_points for comparison
-            if (has_dec_ref) {
-                auto [rp_ref, rp_n] = dec_ref.get_f32("sigmoid");
-                if (rp_ref && rp_n >= (size_t)(N_queries * 4)) {
-                    float cos = 0, na = 0, nb = 0;
-                    for (int i = 0; i < N_queries * 4; i++) {
-                        cos += ref_points[i] * rp_ref[i];
-                        na += ref_points[i] * ref_points[i];
-                        nb += rp_ref[i] * rp_ref[i];
-                    }
-                    cos /= (sqrtf(na) * sqrtf(nb) + 1e-10f);
-                    fprintf(stderr, "    DIFF ref_points: cos=%.6f cpp[0]=%.6f py[0]=%.6f\n",
-                            cos, ref_points[0], rp_ref[0]);
-                }
-            }
-        }
-
-        // --- Self-attention ---
-        // RT-DETRv2: Q = Q_w @ (query + pos), K = K_w @ (query + pos), V = V_w @ query
-        std::vector<float> residual = queries; // [D, N_queries]
-        int hd = D / N_heads;
-
-        // (query + pos) for Q and K
-        std::vector<float> qp_sa(D * N_queries);
-        for (int i = 0; i < D * N_queries; i++) qp_sa[i] = queries[i] + pos_enc[i];
-
-        // Split in_proj_weight [3*D, D] into Q_w, K_w, V_w
-        // cpu_linear uses W stored as [ne0=in_d, ne1=out_d], indexing W[i + o*in_d]
-        // Q part: rows 0..D-1, K part: rows D..2D-1, V part: rows 2D..3D-1
-        std::vector<float> q_proj(D * N_queries), k_proj(D * N_queries), v_proj(D * N_queries);
-
-        // Extract weight/bias sub-tensors for Q, K, V
-        // self_qkv_w has shape [ne0=D, ne1=3*D]
-        // self_qkv_b has shape [3*D]
-        auto w_data = [](ggml_tensor* t) -> const float* {
-            // This is a weight tensor, data is in backend
-            static std::vector<float> buf;
-            size_t n = ggml_nelements(t);
-            buf.resize(n);
-            ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
-            return buf.data();
-        };
-
-        // For cpu_linear: y[o] = sum_i W[i + o*in_d] * x[i]
-        // W is read from the ggml tensor with indexing data[i + o*D]
-        // For the Q portion (out rows 0..D-1): same as reading from the full weight
-        // For K portion (out rows D..2D-1): offset by D*D elements
-        // For V portion (out rows 2D..3D-1): offset by 2*D*D elements
+        // --- Self-attention via ggml graph (BLAS-accelerated) ---
+        std::vector<float> residual = queries;
         {
-            // Read the full weight and bias
-            int total_out = 3 * D;
-            std::vector<float> full_w(D * total_out);
-            ggml_backend_tensor_get(layer.self_qkv_w, full_w.data(), 0, full_w.size() * sizeof(float));
-            std::vector<float> full_b(total_out);
-            ggml_backend_tensor_get(layer.self_qkv_b, full_b.data(), 0, full_b.size() * sizeof(float));
+            int hd = D / N_heads;
+            size_t sb = ggml_tensor_overhead() * 64 + ggml_graph_overhead_custom(64, false) + 16*1024*1024;
+            std::vector<uint8_t> sbuf(sb);
+            ggml_init_params sip = { sb, sbuf.data(), true };
+            ggml_context* gc = ggml_init(sip);
 
-            // ONNX: Split(in_proj_weight) → Transpose(perm=[1,0]) → MatMul
-            // The Transpose cancels out the MatMul convention, so net effect is
-            // Gemm convention: Q[o] = sum_i W_split[o, i] * input[i]
-            // W_split[o, i] = data[o * D + i] (Gemm convention)
-            for (int n = 0; n < N_queries; n++) {
-                for (int o = 0; o < D; o++) {
-                    float sum = full_b[o];
-                    for (int i = 0; i < D; i++)
-                        sum += full_w[o * D + i] * qp_sa[i * N_queries + n];
-                    q_proj[o * N_queries + n] = sum;
-                }
-            }
-            for (int n = 0; n < N_queries; n++) {
-                for (int o = 0; o < D; o++) {
-                    float sum = full_b[D + o];
-                    for (int i = 0; i < D; i++)
-                        sum += full_w[(D + o) * D + i] * qp_sa[i * N_queries + n];
-                    k_proj[o * N_queries + n] = sum;
-                }
-            }
-            // V = W_v @ query (no pos!)
-            for (int n = 0; n < N_queries; n++) {
-                for (int o = 0; o < D; o++) {
-                    float sum = full_b[2 * D + o];
-                    for (int i = 0; i < D; i++)
-                        sum += full_w[(2 * D + o) * D + i] * queries[i * N_queries + n];
-                    v_proj[o * N_queries + n] = sum;
-                }
-            }
-        }
+            auto* inp = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, N_queries);
+            ggml_set_name(inp, "sa_in"); ggml_set_input(inp);
+            auto* pe_in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, N_queries);
+            ggml_set_name(pe_in, "sa_pe"); ggml_set_input(pe_in);
+            auto* res_in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, N_queries);
+            ggml_set_name(res_in, "sa_res"); ggml_set_input(res_in);
 
-        // Multi-head self-attention
-        std::vector<float> attn_out(D * N_queries, 0.0f);
-        for (int h = 0; h < N_heads; h++) {
-            std::vector<float> scores(N_queries * N_queries, 0.0f);
-            for (int qi = 0; qi < N_queries; qi++) {
-                for (int ki = 0; ki < N_queries; ki++) {
-                    float dot = 0;
-                    for (int d = 0; d < hd; d++) {
-                        int idx = (h * hd + d) * N_queries;
-                        dot += q_proj[idx + qi] * k_proj[idx + ki];
-                    }
-                    scores[qi * N_queries + ki] = dot / sqrtf((float)hd);
-                }
-            }
-            for (int qi = 0; qi < N_queries; qi++) {
-                float max_s = -1e9f;
-                for (int ki = 0; ki < N_queries; ki++)
-                    max_s = std::max(max_s, scores[qi * N_queries + ki]);
-                float sum = 0;
-                for (int ki = 0; ki < N_queries; ki++) {
-                    scores[qi * N_queries + ki] = expf(scores[qi * N_queries + ki] - max_s);
-                    sum += scores[qi * N_queries + ki];
-                }
-                for (int ki = 0; ki < N_queries; ki++)
-                    scores[qi * N_queries + ki] /= sum;
-            }
-            for (int qi = 0; qi < N_queries; qi++) {
-                for (int d = 0; d < hd; d++) {
-                    float sum = 0;
-                    for (int ki = 0; ki < N_queries; ki++)
-                        sum += scores[qi * N_queries + ki] * v_proj[(h * hd + d) * N_queries + ki];
-                    attn_out[(h * hd + d) * N_queries + qi] = sum;
-                }
-            }
-        }
-        // Output projection
-        std::vector<float> sa_out(D * N_queries);
-        cpu_linear(attn_out.data(), sa_out.data(), D, D, N_queries,
-                   layer.self_out_w, layer.self_out_b);
+            // For decoder weights (pre-transposed by converter to Gemm convention):
+            // cpu_linear uses W[i + o*in_d]. To match in ggml_mul_mat, we need a
+            // weight tensor with ne[0]=in_d so it contracts over the input dimension.
+            // The pre-transposed weight has ne=[768, 256] (ne[0]=768=out, ne[1]=256=in).
+            // We need it as [256, 768] for ggml_mul_mat to contract over 256.
+            // But the DATA must be reorganized, not just shape-swapped.
+            // Solution: create a fresh [in_d, out_d] input tensor with transposed data.
+            auto* qkv_w_in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, 3*D);
+            ggml_set_name(qkv_w_in, "sa_qkv_w"); ggml_set_input(qkv_w_in);
+            auto* qkv_b_in = ggml_new_tensor_1d(gc, GGML_TYPE_F32, 3*D);
+            ggml_set_name(qkv_b_in, "sa_qkv_b"); ggml_set_input(qkv_b_in);
+            auto* out_w_in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, D);
+            ggml_set_name(out_w_in, "sa_out_w"); ggml_set_input(out_w_in);
+            auto* out_b_in = ggml_new_tensor_1d(gc, GGML_TYPE_F32, D);
+            ggml_set_name(out_b_in, "sa_out_b"); ggml_set_input(out_b_in);
 
-        // Residual + norm
-        for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + sa_out[i];
-        if (li == 0) {
-            diff_report("Q", "linear_13", q_proj.data(), D * N_queries);
-            diff_report("K", "linear_14", k_proj.data(), D * N_queries);
-            diff_report("V", "linear_15", v_proj.data(), D * N_queries);
-            diff_report("sa_out_proj", "linear_16", sa_out.data(), D * N_queries);
-            diff_report("sa_resid", "add_2545", queries.data(), D * N_queries);
+            // Q/K from (inp + pe), V from inp — using input weight tensors
+            auto* inp_pos = ggml_add(gc, inp, pe_in);
+            // ggml_mul_mat(W[in_d, out_d], x[in_d, N]) → result[out_d, N]
+            auto* qkv_pos = ggml_add(gc, ggml_mul_mat(gc, qkv_w_in, inp_pos), qkv_b_in);
+            auto* qkv_raw = ggml_add(gc, ggml_mul_mat(gc, qkv_w_in, inp), qkv_b_in);
+
+            // Extract Q[D,N], K[D,N] from qkv_pos; V[D,N] from qkv_raw
+            auto* Q = ggml_cont(gc, ggml_view_2d(gc, qkv_pos, D, N_queries, qkv_pos->nb[1], 0));
+            auto* K = ggml_cont(gc, ggml_view_2d(gc, qkv_pos, D, N_queries, qkv_pos->nb[1], D*sizeof(float)));
+            auto* V = ggml_cont(gc, ggml_view_2d(gc, qkv_raw, D, N_queries, qkv_raw->nb[1], 2*D*sizeof(float)));
+
+            // Multi-head: [D, N] → [hd, heads, N] → permute → [hd, N, heads]
+            Q = ggml_reshape_3d(gc, Q, hd, N_heads, N_queries);
+            Q = ggml_cont(gc, ggml_permute(gc, Q, 0, 2, 1, 3));
+            K = ggml_reshape_3d(gc, K, hd, N_heads, N_queries);
+            K = ggml_cont(gc, ggml_permute(gc, K, 0, 2, 1, 3));
+            V = ggml_reshape_3d(gc, V, hd, N_heads, N_queries);
+            V = ggml_cont(gc, ggml_permute(gc, V, 0, 2, 1, 3));
+
+            // Attention
+            auto* scores = ggml_mul_mat(gc, K, Q); // [N, N, heads]
+            scores = ggml_soft_max_ext(gc, scores, nullptr, 1.0f/sqrtf((float)hd), 0.0f);
+            auto* Vt = ggml_cont(gc, ggml_permute(gc, V, 1, 0, 2, 3));
+            auto* attn = ggml_mul_mat(gc, Vt, scores); // [hd, N, heads]
+
+            // Reshape back: [hd, N, heads] → [hd, heads, N] → [D, N]
+            attn = ggml_cont(gc, ggml_permute(gc, attn, 0, 2, 1, 3));
+            attn = ggml_reshape_2d(gc, attn, D, N_queries);
+
+            // Output projection + residual + norm
+            attn = ggml_add(gc, ggml_mul_mat(gc, out_w_in, attn), out_b_in);
+            auto* out = ggml_add(gc, res_in, attn);
+            out = layer_norm(gc, out, layer.norm1_w, layer.norm1_b);
+
+            ggml_set_name(out, "sa_out"); ggml_set_output(out);
+            ggml_cgraph* gf = ggml_new_graph_custom(gc, 64, false);
+            ggml_build_forward_expand(gf, out);
+            ggml_gallocr_t sa = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+            ggml_gallocr_alloc_graph(sa, gf);
+
+            // Transpose CPU [D,N] (d*N+q) → ggml [D,N] (d+q*D) for activations
+            std::vector<float> tq(D*N_queries), tp(D*N_queries), tr(D*N_queries);
+            for (int d = 0; d < D; d++)
+                for (int q = 0; q < N_queries; q++) {
+                    tq[d + q*D] = queries[d*N_queries + q];
+                    tp[d + q*D] = pos_enc[d*N_queries + q];
+                    tr[d + q*D] = residual[d*N_queries + q];
+                }
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_in"), tq.data(), 0, D*N_queries*sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_pe"), tp.data(), 0, D*N_queries*sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_res"), tr.data(), 0, D*N_queries*sizeof(float));
+
+            // Transpose weight data from ggml [768, 256] to [256, 768] layout.
+            // Original: flat_old[o + i*768] for o ∈ [0,768), i ∈ [0,256)
+            // Target:   flat_new[i + o*256] = flat_old[o + i*768]
+            auto qkv_w_raw = tensor_to_f32(layer.self_qkv_w);
+            std::vector<float> qkv_w_t(D * 3*D);
+            for (int i = 0; i < D; i++)
+                for (int o = 0; o < 3*D; o++)
+                    qkv_w_t[i + o*D] = qkv_w_raw[o + i * 3*D];
+            auto qkv_b_data = tensor_to_f32(layer.self_qkv_b);
+            // out_proj: ggml [256, 256] → same shape, but data needs transposing
+            auto out_w_raw = tensor_to_f32(layer.self_out_w);
+            std::vector<float> out_w_t(D * D);
+            for (int i = 0; i < D; i++)
+                for (int o = 0; o < D; o++)
+                    out_w_t[i + o*D] = out_w_raw[o + i*D];
+            auto out_b_data = tensor_to_f32(layer.self_out_b);
+
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_qkv_w"), qkv_w_t.data(), 0, D*3*D*sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_qkv_b"), qkv_b_data.data(), 0, 3*D*sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_out_w"), out_w_t.data(), 0, D*D*sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_out_b"), out_b_data.data(), 0, D*sizeof(float));
+
+            ggml_backend_graph_compute(ctx->backend, gf);
+
+            // Transpose ggml → CPU layout
+            std::vector<float> to(D*N_queries);
+            ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "sa_out"), to.data(), 0, D*N_queries*sizeof(float));
+            for (int d = 0; d < D; d++)
+                for (int q = 0; q < N_queries; q++)
+                    queries[d*N_queries + q] = to[d + q*D];
+
+            ggml_gallocr_free(sa);
+            ggml_free(gc);
         }
-        cpu_layernorm(queries.data(), D, N_queries, layer.norm1_w, layer.norm1_b);
-        {
-            char ref_name[32]; snprintf(ref_name, 32, "layer_norm_%d", 3 + li*3);
-            char label[32]; snprintf(label, 32, "dec%d_norm1", li);
-            diff_report(label, ref_name, queries.data(), D * N_queries);
-        }
-        if (layout_debug()) { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm1: [%.4f,%.4f]\n",li,mn,mx); }
+        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_after_sa: [%.4f,%.4f]\n",li,mn,mx); }
 
         // --- Deformable cross-attention ---
         residual = queries;
 
         // Value projection: [D, N_total] → [D, N_total]
         std::vector<float> values(D * total_tokens);
-        cpu_matmul(memory.data(), values.data(), D, D, total_tokens,
+        cpu_linear(memory.data(), values.data(), D, D, total_tokens,
                    layer.cross_value_w, layer.cross_value_b);
-        if (li == 0 && getenv("LAYOUT_DEBUG")) {
+        if (li == 0) {
             float vmin=1e9,vmax=-1e9;
             for (auto v:values){vmin=std::min(vmin,v);vmax=std::max(vmax,v);}
             fprintf(stderr, "  dec0 values: [%.4f, %.4f] (Python: [-66.7, 76.0])\n", vmin, vmax);
-            // Dump values for comparison
-            std::vector<float> val_row(D * total_tokens);
-            for (int n = 0; n < total_tokens; n++)
-                for (int d = 0; d < D; d++)
-                    val_row[n * D + d] = values[d * total_tokens + n];
-            FILE* fp = fopen("/tmp/cpp_values.bin", "wb");
-            if (fp) { fwrite(val_row.data(), sizeof(float), D * total_tokens, fp); fclose(fp); }
-            diff_report("values", "linear_17", values.data(), D * total_tokens);
         }
 
         // query + position encoding for cross-attention projections
@@ -1408,17 +1403,14 @@ std::vector<region> detect(context* ctx, const float* pixels,
         // Sampling offsets: (query+pos) → linear → [192, N_queries]
         int n_offsets = N_heads * N_levels * N_points * 2; // 192
         std::vector<float> offsets(n_offsets * N_queries);
-        cpu_matmul(qp.data(), offsets.data(), D, n_offsets, N_queries,
+        cpu_linear(qp.data(), offsets.data(), D, n_offsets, N_queries,
                    layer.cross_sampling_offsets_w, layer.cross_sampling_offsets_b);
 
         // Attention weights: (query+pos) → linear → [96, N_queries]
         int n_weights = N_heads * N_levels * N_points; // 96
         std::vector<float> attn_weights(n_weights * N_queries);
-        cpu_matmul(qp.data(), attn_weights.data(), D, n_weights, N_queries,
+        cpu_linear(qp.data(), attn_weights.data(), D, n_weights, N_queries,
                    layer.cross_attn_weights_w, layer.cross_attn_weights_b);
-
-        // Diff check BEFORE softmax (linear_19 is pre-softmax)
-        if (li == 0) diff_report("attn_wts_pre_sm", "linear_19", attn_weights.data(), n_weights * N_queries);
 
         // Softmax attention weights per head per query (over levels * points)
         for (int q = 0; q < N_queries; q++) {
@@ -1460,18 +1452,21 @@ std::vector<region> detect(context* ctx, const float* pixels,
                         float dy = offsets[(off_idx * 2 + 1) * N_queries + q];
 
                         // RT-DETRv2 offset processing:
-                        // loc = ref_xy + offset / n_points * ref_wh * 0.5
-                        // grid = loc * 2.0 - 1.0
-                        // pixel = (grid + 1) * size / 2 - 0.5 = loc * size - 0.5
-                        // (align_corners=False, padding_mode=zeros)
-                        float loc_x = ref_cx + dx * 0.25f * ref_w * 0.5f;
-                        float loc_y = ref_cy + dy * 0.25f * ref_h * 0.5f;
+                        // offset_scaled = raw_offset * 0.25 * ref_size * 0.5
+                        // position = ref_xy + offset_scaled  (in [0, 1])
+                        // grid = position * 2.0 - 1.0  (to [-1, 1] for GridSample)
+                        // Then convert grid [-1,1] to feature map coordinates [0, fW-1]
+                        float px = ref_cx + dx * 0.25f * ref_w * 0.5f;
+                        float py = ref_cy + dy * 0.25f * ref_h * 0.5f;
 
-                        // align_corners=False: pixel = loc * size - 0.5
-                        float sx = loc_x * fW - 0.5f;
-                        float sy = loc_y * fH - 0.5f;
+                        // Convert from [0,1] normalized to feature map pixel coords
+                        // grid_sample(align_corners=False): pixel = loc * N - 0.5
+                        float sx = px * fW - 0.5f;
+                        float sy = py * fH - 0.5f;
 
-                        // Bilinear with zero padding (padding_mode='zeros')
+                        // Bilinear sampling with zero-padding (matching grid_sample padding_mode="zeros")
+                        float attn_w = attn_weights[off_idx * N_queries + q];
+
                         int x0 = (int)floorf(sx), y0 = (int)floorf(sy);
                         int x1 = x0 + 1, y1 = y0 + 1;
                         float fx = sx - x0, fy = sy - y0;
@@ -1479,22 +1474,19 @@ std::vector<region> detect(context* ctx, const float* pixels,
                         float w00 = (1-fx)*(1-fy), w01 = fx*(1-fy);
                         float w10 = (1-fx)*fy, w11 = fx*fy;
 
-                        // Zero out weights for out-of-bounds pixels
-                        bool v00 = (x0 >= 0 && x0 < fW && y0 >= 0 && y0 < fH);
-                        bool v01 = (x1 >= 0 && x1 < fW && y0 >= 0 && y0 < fH);
-                        bool v10 = (x0 >= 0 && x0 < fW && y1 >= 0 && y1 < fH);
-                        bool v11 = (x1 >= 0 && x1 < fW && y1 >= 0 && y1 < fH);
-
-                        float attn_w = attn_weights[off_idx * N_queries + q];
-
                         for (int d = 0; d < value_hd; d++) {
                             int vd = h * value_hd + d;
                             int base = vd * total_tokens + level_starts[lv];
+                            // Zero-pad: out-of-bounds samples contribute 0
                             float v = 0;
-                            if (v00) v += w00 * values[base + y0 * fW + x0];
-                            if (v01) v += w01 * values[base + y0 * fW + x1];
-                            if (v10) v += w10 * values[base + y1 * fW + x0];
-                            if (v11) v += w11 * values[base + y1 * fW + x1];
+                            if (x0 >= 0 && x0 < fW && y0 >= 0 && y0 < fH)
+                                v += w00 * values[base + y0 * fW + x0];
+                            if (x1 >= 0 && x1 < fW && y0 >= 0 && y0 < fH)
+                                v += w01 * values[base + y0 * fW + x1];
+                            if (x0 >= 0 && x0 < fW && y1 >= 0 && y1 < fH)
+                                v += w10 * values[base + y1 * fW + x0];
+                            if (x1 >= 0 && x1 < fW && y1 >= 0 && y1 < fH)
+                                v += w11 * values[base + y1 * fW + x1];
                             cross_out[vd * N_queries + q] += attn_w * v;
                         }
                     }
@@ -1502,48 +1494,112 @@ std::vector<region> detect(context* ctx, const float* pixels,
             }
         }
 
+        if (li == 0) {
+            float mn=1e9,mx=-1e9;
+            for (auto v : cross_out) { mn=std::min(mn,v); mx=std::max(mx,v); }
+            fprintf(stderr, "  dec0 cross_out (pre-proj): [%.4f, %.4f]\n", mn, mx);
+            // Debug: print sampling stats for query 0
+            float ref_cx0 = ref_points[0], ref_cy0 = ref_points[1];
+            float ref_w0 = ref_points[2], ref_h0 = ref_points[3];
+            fprintf(stderr, "  dec0 q0 ref: cx=%.4f cy=%.4f w=%.4f h=%.4f\n",
+                    ref_cx0, ref_cy0, ref_w0, ref_h0);
+            float dx0 = offsets[0], dy0 = offsets[N_queries];
+            fprintf(stderr, "  dec0 q0 offset[0]: dx=%.4f dy=%.4f → scaled dx=%.6f dy=%.6f\n",
+                    dx0, dy0, dx0 * 0.25f * ref_w0 * 0.5f, dy0 * 0.25f * ref_h0 * 0.5f);
+            float px0 = ref_cx0 + dx0 * 0.25f * ref_w0 * 0.5f;
+            float py0 = ref_cy0 + dy0 * 0.25f * ref_h0 * 0.5f;
+            fprintf(stderr, "  dec0 q0 sample pos: px=%.4f py=%.4f → pixel sx=%.1f sy=%.1f (80x80)\n",
+                    px0, py0, px0*80-0.5f, py0*80-0.5f);
+            // Print attention weights for q0
+            float aw_sum = 0;
+            for (int j = 0; j < N_heads * N_levels * N_points; j++)
+                aw_sum += attn_weights[j * N_queries + 0];
+            fprintf(stderr, "  dec0 q0 attn_weight sum: %.4f (expected ~%d from softmax)\n",
+                    aw_sum, N_heads);
+        }
+
         // Cross-attention output projection
         std::vector<float> ca_out(D * N_queries);
-        cpu_matmul(cross_out.data(), ca_out.data(), D, D, N_queries,
+        cpu_linear(cross_out.data(), ca_out.data(), D, D, N_queries,
                    layer.cross_out_w, layer.cross_out_b);
 
-        if (li == 0) {
-            diff_report("offsets", "linear_18", offsets.data(), n_offsets * N_queries);
-            diff_report("ca_out_proj", "linear_20", ca_out.data(), D * N_queries);
+        if (li == 0 && getenv("LAYOUT_DEBUG")) {
+            float mn=1e9,mx=-1e9;
+            for (auto v : ca_out) { mn=std::min(mn,v); mx=std::max(mx,v); }
+            fprintf(stderr, "  dec0 ca_out (post-proj): [%.4f, %.4f] (HF: [-2.97, 2.67])\n", mn, mx);
         }
 
         // Residual + norm
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ca_out[i];
-        if (li == 0) diff_report("ca_resid", "add_2801", queries.data(), D * N_queries);
         cpu_layernorm(queries.data(), D, N_queries, layer.norm2_w, layer.norm2_b);
-        {
-            char ref_name[32]; snprintf(ref_name, 32, "layer_norm_%d", 4 + li*3);
-            char label[32]; snprintf(label, 32, "dec%d_norm2", li);
-            diff_report(label, ref_name, queries.data(), D * N_queries);
-        }
 
-        if (layout_debug()) { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm2: [%.4f,%.4f]\n",li,mn,mx); }
-        // --- FFN ---
+        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm2: [%.4f,%.4f]\n",li,mn,mx); }
+        // --- FFN via ggml graph (BLAS-accelerated) ---
         residual = queries;
-        std::vector<float> ffn1(1024 * N_queries);
-        cpu_matmul(queries.data(), ffn1.data(), D, 1024, N_queries,
-                   layer.ffn1_w, layer.ffn1_b);
-        // ReLU
-        for (auto& v : ffn1) v = std::max(0.0f, v);
-        std::vector<float> ffn2(D * N_queries);
-        cpu_matmul(ffn1.data(), ffn2.data(), 1024, D, N_queries,
-                   layer.ffn2_w, layer.ffn2_b);
-
-        // Residual + norm
-        for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ffn2[i];
-        cpu_layernorm(queries.data(), D, N_queries, layer.norm3_w, layer.norm3_b);
         {
-            char ref_name[32]; snprintf(ref_name, 32, "layer_norm_%d", 5 + li*3);
-            char label[32]; snprintf(label, 32, "dec%d_norm3", li);
-            diff_report(label, ref_name, queries.data(), D * N_queries);
+            size_t fb = ggml_tensor_overhead() * 32 + ggml_graph_overhead_custom(32, false) + 8*1024*1024;
+            std::vector<uint8_t> fbuf(fb);
+            ggml_init_params fip = { fb, fbuf.data(), true };
+            ggml_context* gc = ggml_init(fip);
+
+            // Input: [N, D] in ggml (ne[0]=D varies fastest = ggml col-major)
+            auto* inp = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, N_queries);
+            ggml_set_name(inp, "ffn_in"); ggml_set_input(inp);
+            auto* res = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, N_queries);
+            ggml_set_name(res, "ffn_res"); ggml_set_input(res);
+
+            auto* up = linear(gc, inp, layer.ffn1_w, layer.ffn1_b);
+            up = ggml_relu(gc, up);
+            auto* dn = linear(gc, up, layer.ffn2_w, layer.ffn2_b);
+            auto* out = ggml_add(gc, res, dn);
+            out = layer_norm(gc, out, layer.norm3_w, layer.norm3_b);
+            ggml_set_name(out, "ffn_out"); ggml_set_output(out);
+
+            ggml_cgraph* gf = ggml_new_graph_custom(gc, 32, false);
+            ggml_build_forward_expand(gf, out);
+            ggml_gallocr_t fa = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+            ggml_gallocr_alloc_graph(fa, gf);
+
+            // Transpose CPU [D, N] (d*N+q) → ggml [D, N] (d+q*D)
+            std::vector<float> tq(D * N_queries), tr(D * N_queries);
+            for (int d = 0; d < D; d++)
+                for (int q = 0; q < N_queries; q++) {
+                    tq[d + q*D] = queries[d * N_queries + q];
+                    tr[d + q*D] = residual[d * N_queries + q];
+                }
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ffn_in"), tq.data(), 0, D*N_queries*sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ffn_res"), tr.data(), 0, D*N_queries*sizeof(float));
+
+            ggml_backend_graph_compute(ctx->backend, gf);
+
+            // Transpose back
+            std::vector<float> to(D * N_queries);
+            ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "ffn_out"), to.data(), 0, D*N_queries*sizeof(float));
+            for (int d = 0; d < D; d++)
+                for (int q = 0; q < N_queries; q++)
+                    queries[d * N_queries + q] = to[d + q*D];
+
+            ggml_gallocr_free(fa);
+            ggml_free(gc);
         }
 
-        if (layout_debug()) { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm3: [%.4f,%.4f]\n",li,mn,mx); }
+        { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_norm3: [%.4f,%.4f]\n",li,mn,mx); }
+
+        // Dump decoder layer output for diff comparison
+        if (getenv("LAYOUT_DEBUG")) {
+            char fname[128];
+            snprintf(fname, sizeof(fname), "/tmp/cpp_dec_%d.bin", li);
+            // Convert from [D, N] col-major to [N, D] row-major
+            std::vector<float> q_row(D * N_queries);
+            for (int q = 0; q < N_queries; q++)
+                for (int d = 0; d < D; d++)
+                    q_row[q * D + d] = queries[d * N_queries + q];
+            FILE* fp = fopen(fname, "wb");
+            if (fp) { fwrite(q_row.data(), sizeof(float), D * N_queries, fp); fclose(fp); }
+            // Also dump after sa_norm and ca_norm
+            // (already printed ranges above — just dump the full data for the sub-steps)
+        }
+
         // Update reference points via bbox head (iterative refinement)
         std::vector<float> bbox_delta(4 * N_queries);
         std::vector<float> tmp(D * N_queries);
@@ -1551,7 +1607,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
         std::copy(queries.begin(), queries.end(), tmp.begin());
         for (int j = 0; j < 3; j++) {
             std::vector<float> out((j < 2 ? D : 4) * N_queries);
-            cpu_matmul(tmp.data(), out.data(), (j == 0 ? D : D), (j < 2 ? D : 4), N_queries,
+            cpu_linear(tmp.data(), out.data(), (j == 0 ? D : D), (j < 2 ? D : 4), N_queries,
                        ctx->decoder.dec_bbox_w[li][j], ctx->decoder.dec_bbox_b[li][j]);
             if (j < 2) {
                 for (auto& v : out) v = std::max(0.0f, v); // ReLU
@@ -1561,138 +1617,90 @@ std::vector<region> detect(context* ctx, const float* pixels,
             }
         }
 
-        // Debug: print bbox_delta and ref_points before refinement
-        if (li <= 1 && getenv("LAYOUT_DEBUG")) {
-            float dmin=1e9,dmax=-1e9;
-            for (auto v : bbox_delta) { dmin=std::min(dmin,v); dmax=std::max(dmax,v); }
-            fprintf(stderr, "  dec%d bbox_delta: [%.4f, %.4f]\n", li, dmin, dmax);
-            fprintf(stderr, "  dec%d bbox_delta[0,:4]: %.6f %.6f %.6f %.6f\n", li,
-                    bbox_delta[0*N_queries+0], bbox_delta[1*N_queries+0],
-                    bbox_delta[2*N_queries+0], bbox_delta[3*N_queries+0]);
-            fprintf(stderr, "  dec%d ref_points[0] before: %.6f %.6f %.6f %.6f\n", li,
-                    ref_points[0], ref_points[1], ref_points[2], ref_points[3]);
-        }
-
         // Refine reference points: sigmoid(inverse_sigmoid(ref) + delta)
         for (int q = 0; q < N_queries; q++) {
             for (int d = 0; d < 4; d++) {
                 float r = ref_points[q * 4 + d];
-                // inverse sigmoid: log(x1/x2) where x1=clamp(r,eps), x2=clamp(1-r,eps)
-                // RT-DETRv2 uses eps=1e-5
-                float x1 = std::max(r, 1e-5f);
-                float x2 = std::max(1.0f - r, 1e-5f);
-                float inv_sig = logf(x1 / x2);
+                // inverse sigmoid: log(r / (1 - r))
+                r = std::max(1e-6f, std::min(r, 1.0f - 1e-6f));
+                float inv_sig = logf(r / (1.0f - r));
                 float refined = 1.0f / (1.0f + expf(-(inv_sig + bbox_delta[d * N_queries + q])));
                 ref_points[q * 4 + d] = refined;
             }
         }
 
-        if (li <= 1 && getenv("LAYOUT_DEBUG")) {
-            fprintf(stderr, "  dec%d ref_points[0] after:  %.6f %.6f %.6f %.6f\n", li,
-                    ref_points[0], ref_points[1], ref_points[2], ref_points[3]);
-        }
-
         LDBG("  decoder layer %d done\n", li);
+
+        // Debug: dump decoder layer 0 output
+        if (li == 0 && getenv("LAYOUT_DEBUG")) {
+            float qmin=1e9, qmax=-1e9;
+            std::vector<float> q_row(D * N_queries);
+            for (int q = 0; q < N_queries; q++)
+                for (int d = 0; d < D; d++) {
+                    float v = queries[d * N_queries + q];
+                    q_row[q * D + d] = v;
+                    qmin = std::min(qmin, v); qmax = std::max(qmax, v);
+                }
+            fprintf(stderr, "  dec0_output: range=[%.4f, %.4f]\n", qmin, qmax);
+            fprintf(stderr, "  dec0_output[0,:8]: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
+                    q_row[0], q_row[1], q_row[2], q_row[3], q_row[4], q_row[5], q_row[6], q_row[7]);
+            FILE* fp = fopen("/tmp/cpp_dec0_out.bin", "wb");
+            if (fp) { fwrite(q_row.data(), sizeof(float), D * N_queries, fp); fclose(fp); }
+        }
     }
 
     // --- Phase 3: Detection heads ---
     // Class scores from final decoder output
     std::vector<float> class_scores(ctx->num_classes * N_queries);
-    cpu_matmul(queries.data(), class_scores.data(), D, ctx->num_classes, N_queries,
+    cpu_linear(queries.data(), class_scores.data(), D, ctx->num_classes, N_queries,
                ctx->decoder.dec_score_w, ctx->decoder.dec_score_b);
-
-    // Diff check raw logits (pre-sigmoid) against Python val_2974
-    if (layout_debug()) {
-        // Load and compare raw logits
-        auto [py_logits, py_n] = dec_ref.get_f32("val_2974");
-        if (!py_logits) {
-            // Try loading from numpy file
-            FILE* fp = fopen("/tmp/py_logits.npy", "rb");
-            if (fp) {
-                // skip 128-byte npy header
-                fseek(fp, 0, SEEK_END); long sz = ftell(fp);
-                fclose(fp);
-                // Just compare ranges and first few values
-            }
-        }
-        // Print C++ logit stats
-        float lmin=1e9, lmax=-1e9;
-        for (auto v : class_scores) { lmin=std::min(lmin,v); lmax=std::max(lmax,v); }
-        fprintf(stderr, "  logits: [%.4f, %.4f] (Python: [-3.87, 5.13])\n", lmin, lmax);
-        // Print first query's logits
-        fprintf(stderr, "  logits[0,:4]: ");
-        for (int c = 0; c < std::min(4, ctx->num_classes); c++)
-            fprintf(stderr, "%.4f ", class_scores[c * N_queries + 0]);
-        fprintf(stderr, "\n");
-    }
-
     // Sigmoid
     for (auto& v : class_scores) v = 1.0f / (1.0f + expf(-v));
-
-    // Debug: dump per-class scores for top queries
-    if (layout_debug()) {
-        // Print top-10 queries with per-class breakdown
-        std::vector<std::pair<float, int>> qscores(N_queries);
-        for (int q = 0; q < N_queries; q++) {
-            float mx = 0;
-            for (int c = 0; c < ctx->num_classes; c++)
-                mx = std::max(mx, class_scores[c * N_queries + q]);
-            qscores[q] = {mx, q};
-        }
-        std::partial_sort(qscores.begin(), qscores.begin() + 10, qscores.end(),
-                          [](const auto& a, const auto& b) { return a.first > b.first; });
-        for (int i = 0; i < 10; i++) {
-            int q = qscores[i].second;
-            fprintf(stderr, "  query %3d: max=%.4f classes: ", q, qscores[i].first);
-            for (int c = 0; c < ctx->num_classes; c++) {
-                float s = class_scores[c * N_queries + q];
-                if (s > 0.1f) fprintf(stderr, "%s=%.3f ", label_name((label_id)c), s);
-            }
-            fprintf(stderr, "\n");
-        }
-    }
 
     // Collect results
     std::vector<region> results;
     for (int q = 0; q < N_queries; q++) {
+        // Find best class
+        int best_cls = 0;
+        float best_score = 0;
+        for (int c = 0; c < ctx->num_classes; c++) {
+            float s = class_scores[c * N_queries + q];
+            if (s > best_score) { best_score = s; best_cls = c; }
+        }
+
+        if (best_score < score_threshold) continue;
+
+        // Decode bbox: ref_points are (cx, cy, w, h) in [0, 1]
         float cx = ref_points[q * 4 + 0];
         float cy = ref_points[q * 4 + 1];
         float bw = ref_points[q * 4 + 2];
         float bh = ref_points[q * 4 + 3];
 
-        for (int c = 0; c < ctx->num_classes; c++) {
-            float s = class_scores[c * N_queries + q];
-            if (s < score_threshold) continue;
+        // Convert to (x1, y1, x2, y2) in pixel coordinates
+        region r;
+        r.x1 = (cx - bw / 2) * orig_w;
+        r.y1 = (cy - bh / 2) * orig_h;
+        r.x2 = (cx + bw / 2) * orig_w;
+        r.y2 = (cy + bh / 2) * orig_h;
+        r.score = best_score;
+        r.label = (label_id)best_cls;
+        r.label_name = LABEL_NAMES[best_cls];
 
-            region r;
-            r.x1 = (cx - bw / 2) * orig_w;
-            r.y1 = (cy - bh / 2) * orig_h;
-            r.x2 = (cx + bw / 2) * orig_w;
-            r.y2 = (cy + bh / 2) * orig_h;
-            r.score = s;
-            r.label = (label_id)c;
-            r.label_name = LABEL_NAMES[c];
-            results.push_back(r);
-        }
+        results.push_back(r);
     }
-    // Sort by score descending
-    std::sort(results.begin(), results.end(),
-              [](const region& a, const region& b) { return a.score > b.score; });
 
     // Sort by score descending
     std::sort(results.begin(), results.end(),
               [](const region& a, const region& b) { return a.score > b.score; });
 
     // Debug: print top scores
-    if (layout_debug()) {
-        if (results.empty()) {
-            float max_score = 0;
-            for (auto& v : class_scores) max_score = std::max(max_score, v);
-            fprintf(stderr, "layout_detect: max class score after sigmoid: %.6f\n", max_score);
-        }
-        fprintf(stderr, "layout_detect: %zu detections (score > %.2f)\n",
-                results.size(), score_threshold);
+    if (results.empty()) {
+        float max_score = 0;
+        for (auto& v : class_scores) max_score = std::max(max_score, v);
+        fprintf(stderr, "layout_detect: max class score after sigmoid: %.6f\n", max_score);
     }
+    fprintf(stderr, "layout_detect: %zu detections (score > %.2f)\n",
+            results.size(), score_threshold);
     return results;
 }
 
@@ -1707,25 +1715,40 @@ std::vector<region> detect_file(context* ctx, const char* path,
         return {};
     }
 
-    // Resize to 640×640, normalize, CHW
+    // Resize to 640×640 with bilinear interpolation, normalize, CHW
+    // Matches HF RTDetrImageProcessor (resample=PIL.BILINEAR)
     std::vector<float> pixels(3 * ctx->input_h * ctx->input_w, 0.0f);
-    float scale_x = (float)ctx->input_w / img_w;
-    float scale_y = (float)ctx->input_h / img_h;
+    int H = ctx->input_h, W = ctx->input_w;
 
     for (int c = 0; c < 3; c++) {
-        for (int y = 0; y < ctx->input_h; y++) {
-            float src_y = y / scale_y;
-            int sy0 = std::min((int)src_y, img_h - 1);
-            for (int x = 0; x < ctx->input_w; x++) {
-                float src_x = x / scale_x;
-                int sx0 = std::min((int)src_x, img_w - 1);
-                // Model expects [0, 1] input — normalization is baked into the model weights
-                float val = raw[(sy0 * img_w + sx0) * 3 + c] / 255.0f;
-                pixels[c * ctx->input_h * ctx->input_w + y * ctx->input_w + x] = val;
+        for (int y = 0; y < H; y++) {
+            // PIL bilinear: src = (dst + 0.5) * src_size / dst_size - 0.5
+            float src_y = ((float)y + 0.5f) * img_h / H - 0.5f;
+            src_y = std::max(0.0f, std::min(src_y, (float)(img_h - 1)));
+            int sy0 = (int)floorf(src_y);
+            int sy1 = std::min(sy0 + 1, img_h - 1);
+            float fy = src_y - sy0;
+            for (int x = 0; x < W; x++) {
+                float src_x = ((float)x + 0.5f) * img_w / W - 0.5f;
+                src_x = std::max(0.0f, std::min(src_x, (float)(img_w - 1)));
+                int sx0 = (int)floorf(src_x);
+                int sx1 = std::min(sx0 + 1, img_w - 1);
+                float fx = src_x - sx0;
+
+                float v00 = raw[(sy0 * img_w + sx0) * 3 + c] / 255.0f;
+                float v01 = raw[(sy0 * img_w + sx1) * 3 + c] / 255.0f;
+                float v10 = raw[(sy1 * img_w + sx0) * 3 + c] / 255.0f;
+                float v11 = raw[(sy1 * img_w + sx1) * 3 + c] / 255.0f;
+
+                float val = (1-fx)*(1-fy)*v00 + fx*(1-fy)*v01 + (1-fx)*fy*v10 + fx*fy*v11;
+                pixels[c * H * W + y * W + x] = val;
             }
         }
     }
     stbi_image_free(raw);
+
+    float scale_x = (float)W / img_w;
+    float scale_y = (float)H / img_h;
 
     auto results = detect(ctx, pixels.data(), img_h, img_w, score_threshold);
 

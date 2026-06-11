@@ -157,6 +157,12 @@ target_link_libraries(crispembed PUBLIC
     ggml-cpu
     Threads::Threads
 )
+if(GGML_BLAS)
+    find_package(BLAS)
+    if(BLAS_FOUND)
+        target_link_libraries(crispembed PUBLIC ${BLAS_LIBRARIES})
+    endif()
+endif()
 if(CRISPEMBED_HAS_CRISP_AUDIO)
     target_link_libraries(crispembed PUBLIC crisp_audio)
 endif()
@@ -232,8 +238,10 @@ target_link_libraries(test-bttr-beam PRIVATE crispembed)
 add_executable(test-posformer tests/test_posformer.cpp)
 target_link_libraries(test-posformer PRIVATE crispembed)
 
-add_executable(test-posformer-batch tests/test_posformer_batch.cpp)
-target_link_libraries(test-posformer-batch PRIVATE crispembed)
+if(NOT WIN32)
+    add_executable(test-posformer-batch tests/test_posformer_batch.cpp)
+    target_link_libraries(test-posformer-batch PRIVATE crispembed)
+endif()
 
 add_executable(test-ppformulanet tests/test_ppformulanet.cpp)
 target_link_libraries(test-ppformulanet PRIVATE crispembed)
@@ -253,8 +261,10 @@ target_link_libraries(test-ocr-recognize PRIVATE crispembed)
 add_executable(test-layout-detect tests/test_layout_detect.cpp)
 target_link_libraries(test-layout-detect PRIVATE crispembed)
 
-add_executable(test-layout-diff tests/test_layout_diff.cpp)
-target_link_libraries(test-layout-diff PRIVATE crispembed)
+if(NOT WIN32)
+    add_executable(test-layout-diff tests/test_layout_diff.cpp)
+    target_link_libraries(test-layout-diff PRIVATE crispembed)
+endif()
 
 add_executable(test-conv-ext tests/test_conv_ext.cpp)
 target_link_libraries(test-conv-ext PRIVATE crispembed)
@@ -390,24 +400,6 @@ if(CRISPEMBED_BUILD_SHARED)
     )
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/crispembed.pc
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
-    )
-endif()
-
-# ---------------------------------------------------------------------------
-# WASM targets (Emscripten only)
-# Built via: ./build-wasm.sh or ./build-embed-wasm.sh
-# ---------------------------------------------------------------------------
-option(CRISPEMBED_WASM "Build WASM math OCR target (Emscripten)" OFF)
-if(CRISPEMBED_WASM AND EMSCRIPTEN)
-    add_executable(crispembed-wasm wasm/ocr_wrapper.c)
-    target_include_directories(crispembed-wasm PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
-    )
-    target_link_libraries(crispembed-wasm PRIVATE crispembed)
-    set_target_properties(crispembed-wasm PROPERTIES
-        OUTPUT_NAME  crispembed_ocr
-        SUFFIX       ".js"
     )
 endif()
 
