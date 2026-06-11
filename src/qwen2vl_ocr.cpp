@@ -281,9 +281,9 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
     ggml_set_name(pixel_in, "pixel_in");
     ggml_set_input(pixel_in);
 
-    // RoPE cos/sin
-    ggml_tensor *cos_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, head_dim, n_patches);
-    ggml_tensor *sin_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, head_dim, n_patches);
+    // RoPE cos/sin: (head_dim, 1, n_patches) — broadcasts over n_heads
+    ggml_tensor *cos_in = ggml_new_tensor_3d(g, GGML_TYPE_F32, head_dim, 1, n_patches);
+    ggml_tensor *sin_in = ggml_new_tensor_3d(g, GGML_TYPE_F32, head_dim, 1, n_patches);
     ggml_set_name(cos_in, "cos_in"); ggml_set_input(cos_in);
     ggml_set_name(sin_in, "sin_in"); ggml_set_input(sin_in);
 
@@ -302,37 +302,23 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         return ggml_mul(g, y, w);
     };
 
-    // ── Rotate-half RoPE helper ──
-    // Apply 2D rotary embedding: split into halves, rotate, recombine
-    auto rotate_half_rope = [&](ggml_tensor *qk, ggml_tensor *cos,
-                                ggml_tensor *sin) -> ggml_tensor * {
-        // qk: (head_dim, n_heads, n_patches)
-        // cos/sin: (head_dim, n_patches)
+    // ── Rotate-half RoPE (matches bidirlm_vision.cpp) ──
+    // Standard neghalf: result = x * cos + rotate_half(x) * sin
+    // where rotate_half(x) = [-x[half:], x[:half]]
+    auto apply_rope = [&](ggml_tensor *t) -> ggml_tensor * {
+        // t: (head_dim, n_heads, n_patches), contiguous
+        // cos_in/sin_in: (head_dim, n_patches)
         int half = head_dim / 2;
-        ggml_tensor *x1 = ggml_view_3d(g, qk, half, n_heads, n_patches,
-                                         qk->nb[1], qk->nb[2], 0);
-        ggml_tensor *x2 = ggml_view_3d(g, qk, half, n_heads, n_patches,
-                                         qk->nb[1], qk->nb[2],
-                                         half * sizeof(float));
-        // cos/sin broadcast: (half, 1, n_patches)
-        ggml_tensor *c1 = ggml_view_3d(g, cos, half, 1, n_patches,
-                                         cos->nb[1], cos->nb[1] * half, 0);
-        ggml_tensor *c2 = ggml_view_3d(g, cos, half, 1, n_patches,
-                                         cos->nb[1], cos->nb[1] * half,
-                                         half * sizeof(float));
-        ggml_tensor *s1 = ggml_view_3d(g, sin, half, 1, n_patches,
-                                         sin->nb[1], sin->nb[1] * half, 0);
-        ggml_tensor *s2 = ggml_view_3d(g, sin, half, 1, n_patches,
-                                         sin->nb[1], sin->nb[1] * half,
-                                         half * sizeof(float));
-
-        // out1 = x1 * c1 - x2 * s1
-        // out2 = x2 * c2 + x1 * s2
-        ggml_tensor *out1 = ggml_sub(g, ggml_mul(g, x1, c1),
-                                          ggml_mul(g, x2, s1));
-        ggml_tensor *out2 = ggml_add(g, ggml_mul(g, x2, c2),
-                                          ggml_mul(g, x1, s2));
-        return ggml_concat(g, out1, out2, 0);  // concat on dim 0 (head_dim)
+        ggml_tensor *h1 = ggml_view_3d(g, t, half, n_heads, n_patches,
+                                         t->nb[1], t->nb[2], 0);
+        ggml_tensor *h2 = ggml_view_3d(g, t, half, n_heads, n_patches,
+                                         t->nb[1], t->nb[2],
+                                         (size_t)half * t->nb[0]);
+        ggml_tensor *h2_neg = ggml_scale(g, ggml_cont(g, h2), -1.0f);
+        ggml_tensor *rot = ggml_concat(g, h2_neg, ggml_cont(g, h1), 0);
+        return ggml_add(g,
+            ggml_mul(g, t, cos_in),
+            ggml_mul(g, rot, sin_in));
     };
 
     // ── ViT blocks ──
@@ -345,43 +331,39 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         // Pre-attn RMSNorm
         ggml_tensor *y = rmsnorm(x, blk.norm1_w);
 
-        // Fused QKV
+        // Fused QKV (matching bidirlm_vision.cpp pattern)
         ggml_tensor *qkv = ggml_mul_mat(g, blk.qkv_w, y);
         if (blk.qkv_b) qkv = ggml_add(g, qkv, blk.qkv_b);
+        // qkv ne=(3*H, n_patches); reshape to (head_dim, n_heads, 3, n_patches)
+        qkv = ggml_reshape_4d(g, qkv, head_dim, n_heads, 3, n_patches);
 
-        // Split Q, K, V from fused QKV (3*H, n_patches)
-        // qkv layout: ne=(3*H, n_patches), contiguous.
-        // View + cont for each component:
-        ggml_tensor *Q = ggml_view_2d(g, qkv, H, n_patches,
-                                       qkv->nb[1], 0);
-        ggml_tensor *K = ggml_view_2d(g, qkv, H, n_patches,
-                                       qkv->nb[1], H * ggml_type_size(qkv->type));
-        ggml_tensor *V = ggml_view_2d(g, qkv, H, n_patches,
-                                       qkv->nb[1], 2 * H * ggml_type_size(qkv->type));
-
-        // Make contiguous before reshape (views into fused QKV aren't)
+        // View q/k/v slices
+        ggml_tensor *Q = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches,
+                                       qkv->nb[1], qkv->nb[3], 0 * qkv->nb[2]);
+        ggml_tensor *K = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches,
+                                       qkv->nb[1], qkv->nb[3], 1 * qkv->nb[2]);
+        ggml_tensor *V = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches,
+                                       qkv->nb[1], qkv->nb[3], 2 * qkv->nb[2]);
         Q = ggml_cont(g, Q);
         K = ggml_cont(g, K);
         V = ggml_cont(g, V);
 
-        Q = ggml_reshape_3d(g, Q, head_dim, n_heads, n_patches);
-        K = ggml_reshape_3d(g, K, head_dim, n_heads, n_patches);
-        V = ggml_reshape_3d(g, V, head_dim, n_heads, n_patches);
-
         // Apply 2D RoPE
-        Q = rotate_half_rope(Q, cos_in, sin_in);
-        K = rotate_half_rope(K, cos_in, sin_in);
+        Q = apply_rope(Q);
+        K = apply_rope(K);
 
-        // Attention via ggml_flash_attn_ext
-        // Q: (head_dim, n_heads, n_patches), K/V: same layout
-        // flash_attn_ext expects: Q(hd, T, nh), K(hd, S, nh_kv), V(hd, S, nh_kv)
-        Q = ggml_permute(g, Q, 0, 2, 1, 3);  // (hd, n_patches, n_heads)
-        K = ggml_permute(g, K, 0, 2, 1, 3);
-        V = ggml_permute(g, V, 0, 2, 1, 3);
+        // Permute to (head_dim, n_patches, n_heads) for attention
+        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
+        K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
+        V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-        ggml_tensor *attn_out = ggml_flash_attn_ext(g, Q, K, V,
-                                                     nullptr, attn_scale, 0.0f, 0.0f);
-        // attn_out: (hd, n_patches, n_heads) → reshape to (H, n_patches)
+        // Attention (following bidirlm_vision pattern)
+        ggml_tensor *scores = ggml_mul_mat(g, K, Q);  // (n_patches, n_patches, n_heads)
+        scores = ggml_soft_max_ext(g, scores, nullptr, attn_scale, 0.0f);
+
+        ggml_tensor *V_perm = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
+        ggml_tensor *attn_out = ggml_mul_mat(g, V_perm, scores);  // (head_dim, n_patches, n_heads)
+        attn_out = ggml_cont(g, ggml_permute(g, attn_out, 0, 2, 1, 3));  // (head_dim, n_heads, n_patches)
         attn_out = ggml_reshape_2d(g, attn_out, H, n_patches);
 
         // Output projection
