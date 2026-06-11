@@ -100,6 +100,8 @@ def main():
                         help="Export only vision encoder (for mmproj-style GGUF)")
     parser.add_argument("--llm-only", action="store_true",
                         help="Export only LLM decoder (vision encoder excluded)")
+    parser.add_argument("--max-llm-layers", type=int, default=None,
+                        help="Export only first N LLM layers (for testing)")
     args = parser.parse_args()
 
     if args.dtype == "q8_0":
@@ -349,6 +351,10 @@ def main():
 
         # Decoder layers
         n_llm_layers = int(tc.num_hidden_layers)
+        if args.max_llm_layers is not None:
+            n_llm_layers = min(n_llm_layers, args.max_llm_layers)
+            writer.add_uint32("qwen2vl.num_hidden_layers", n_llm_layers)
+            print(f"  LLM: exporting first {n_llm_layers} of {tc.num_hidden_layers} layers")
         for i in range(n_llm_layers):
             p = f"model.layers.{i}."
             q = f"{LPFX}blk.{i}."

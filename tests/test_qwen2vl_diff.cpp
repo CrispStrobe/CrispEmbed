@@ -159,6 +159,27 @@ int main(int argc, char **argv) {
     }
 
     qwen2vl_ocr::vision_result_free(result);
+
+    // ── LLM decoder parity test ─────────────────────────────────
+    if (ref.has("llm_embed") && ctx.m.embed_tokens) {
+        printf("\n=== LLM decoder test ===\n");
+
+        // Use token IDs [0,1,2,3,4] matching the Python reference
+        int32_t test_ids[] = {0, 1, 2, 3, 4};
+        int n_test = 5;
+
+        qwen2vl_ocr::llm_result llm_out;
+        if (qwen2vl_ocr::run_llm_forward(ctx, test_ids, n_test, llm_out)) {
+            printf("  LLM forward: %d tokens, %d dim\n",
+                   llm_out.n_tokens, llm_out.hidden_dim);
+            if (llm_out.hidden) {
+                free(llm_out.hidden);
+            }
+        } else {
+            printf("  LLM forward failed\n");
+        }
+    }
+
     qwen2vl_ocr::free_(ctx);
 
     printf("\nDone.\n");

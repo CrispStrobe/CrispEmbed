@@ -738,6 +738,214 @@ void vision_result_free(vision_result &r) {
     }
 }
 
+// ── LLM decoder forward pass (text-only, no KV cache) ───────────────
+
+bool run_llm_forward(context &ctx,
+                     const int32_t *token_ids, int n_tokens,
+                     llm_result &out) {
+    const auto &lhp = ctx.m.lhp;
+    const int D = (int)lhp.hidden_size;
+    const int n_heads = (int)lhp.num_attention_heads;
+    const int n_kv_heads = (int)lhp.num_key_value_heads;
+    const int head_dim = D / n_heads;
+    const int n_layers = (int)lhp.num_hidden_layers;
+    const float rms_eps = lhp.rms_norm_eps;
+    const float attn_scale = 1.0f / std::sqrt((float)head_dim);
+    const int kv_repeat = n_heads / n_kv_heads;
+
+    ggml_init_params ip{
+        ctx.compute_meta.size(),
+        ctx.compute_meta.data(),
+        true,
+    };
+    ggml_context *g = ggml_init(ip);
+    ggml_cgraph *gf = ggml_new_graph_custom(g, 16384, false);
+
+    // Token IDs input
+    ggml_tensor *ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, n_tokens);
+    ggml_set_name(ids, "token_ids");
+    ggml_set_input(ids);
+
+    // Token embedding lookup
+    ggml_tensor *x = ggml_get_rows(g, ctx.m.embed_tokens, ids);
+    // x: ne=(D, n_tokens)
+    ggml_set_name(x, "llm_embed");
+    ggml_set_output(x);
+
+    // Causal mask: (n_tokens, n_tokens) with -inf for future positions
+    ggml_tensor *causal_mask = ggml_new_tensor_2d(g, GGML_TYPE_F32,
+                                                    n_tokens, n_tokens);
+    ggml_set_name(causal_mask, "causal_mask");
+    ggml_set_input(causal_mask);
+
+    auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor * {
+        ggml_tensor *y = ggml_rms_norm(g, t, rms_eps);
+        return ggml_mul(g, y, w);
+    };
+
+    // Decoder layers
+    for (int il = 0; il < n_layers; il++) {
+        const auto &ly = ctx.m.llm_layers[il];
+        ggml_tensor *residual = x;
+
+        // Pre-attn RMSNorm
+        ggml_tensor *normed = rmsnorm(x, ly.attn_norm_w);
+
+        // Q/K/V projections (separate, not fused)
+        ggml_tensor *Q = ggml_mul_mat(g, ly.q_w, normed);
+        if (ly.q_b) Q = ggml_add(g, Q, ly.q_b);
+        ggml_tensor *K = ggml_mul_mat(g, ly.k_w, normed);
+        if (ly.k_b) K = ggml_add(g, K, ly.k_b);
+        ggml_tensor *V = ggml_mul_mat(g, ly.v_w, normed);
+        if (ly.v_b) V = ggml_add(g, V, ly.v_b);
+
+        // Reshape for multi-head: Q (head_dim, n_heads, T), K/V (head_dim, n_kv, T)
+        Q = ggml_reshape_3d(g, Q, head_dim, n_heads, n_tokens);
+        K = ggml_reshape_3d(g, K, head_dim, n_kv_heads, n_tokens);
+        V = ggml_reshape_3d(g, V, head_dim, n_kv_heads, n_tokens);
+
+        // TODO: apply mRoPE here (skipped for initial parity test with
+        // simple token IDs — mRoPE positions are all 0 for text-only)
+
+        // GQA: repeat KV heads
+        if (kv_repeat > 1) {
+            // K: (head_dim, n_kv, T) → repeat to (head_dim, n_heads, T)
+            // Use ggml_repeat to broadcast along dim 1
+            ggml_tensor *K_rep = ggml_new_tensor_3d(g, K->type, head_dim, n_heads, n_tokens);
+            K = ggml_repeat(g, K, K_rep);
+            ggml_tensor *V_rep = ggml_new_tensor_3d(g, V->type, head_dim, n_heads, n_tokens);
+            V = ggml_repeat(g, V, V_rep);
+        }
+
+        // Attention (same pattern as vision encoder)
+        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));  // (hd, T, nh)
+        K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
+        V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
+
+        ggml_tensor *scores = ggml_mul_mat(g, K, Q);  // (T, T, nh)
+        scores = ggml_add(g, scores, causal_mask);
+        scores = ggml_soft_max_ext(g, scores, nullptr, attn_scale, 0.0f);
+
+        ggml_tensor *V_perm = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
+        ggml_tensor *attn_out = ggml_mul_mat(g, V_perm, scores);
+        attn_out = ggml_cont(g, ggml_permute(g, attn_out, 0, 2, 1, 3));
+        attn_out = ggml_reshape_2d(g, attn_out, D, n_tokens);
+
+        // Output projection
+        attn_out = ggml_mul_mat(g, ly.o_w, attn_out);
+        x = ggml_add(g, residual, attn_out);
+
+        // Pre-FFN RMSNorm
+        residual = x;
+        normed = rmsnorm(x, ly.ffn_norm_w);
+
+        // SwiGLU FFN
+        ggml_tensor *gate = ggml_mul_mat(g, ly.ffn_gate_w, normed);
+        gate = ggml_silu(g, gate);
+        ggml_tensor *up = ggml_mul_mat(g, ly.ffn_up_w, normed);
+        ggml_tensor *ffn = ggml_mul(g, gate, up);
+        ffn = ggml_mul_mat(g, ly.ffn_down_w, ffn);
+        x = ggml_add(g, residual, ffn);
+
+        char name[64];
+        std::snprintf(name, sizeof(name), "llm_layer_%d", il);
+        ggml_set_name(x, name);
+        ggml_set_output(x);
+    }
+
+    // Final RMSNorm
+    if (ctx.m.output_norm_w) {
+        x = rmsnorm(x, ctx.m.output_norm_w);
+        ggml_set_name(x, "llm_final_norm");
+        ggml_set_output(x);
+    }
+
+    ggml_build_forward_expand(gf, x);
+
+    // Allocate and compute
+    ggml_backend_sched_reset(ctx.sched);
+    if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
+        fprintf(stderr, "qwen2vl_ocr: LLM graph allocation failed\n");
+        ggml_free(g);
+        return false;
+    }
+
+    // Set inputs
+    ggml_tensor *ids_t = ggml_graph_get_tensor(gf, "token_ids");
+    ggml_backend_tensor_set(ids_t, token_ids, 0, n_tokens * sizeof(int32_t));
+
+    // Build causal mask on CPU
+    std::vector<float> mask_data((size_t)n_tokens * n_tokens, -INFINITY);
+    for (int i = 0; i < n_tokens; i++) {
+        for (int j = 0; j <= i; j++) {
+            mask_data[(size_t)i * n_tokens + j] = 0.0f;
+        }
+    }
+    ggml_tensor *mask_t = ggml_graph_get_tensor(gf, "causal_mask");
+    ggml_backend_tensor_set(mask_t, mask_data.data(), 0,
+                            mask_data.size() * sizeof(float));
+
+    if (ggml_backend_sched_graph_compute(ctx.sched, gf) != GGML_STATUS_SUCCESS) {
+        fprintf(stderr, "qwen2vl_ocr: LLM graph compute failed\n");
+        ggml_free(g);
+        return false;
+    }
+
+    // Read outputs
+    out.n_tokens = n_tokens;
+    out.hidden_dim = D;
+    out.hidden = (float *)malloc((size_t)n_tokens * D * sizeof(float));
+
+    ggml_tensor *final_out = ggml_graph_get_tensor(gf, "llm_final_norm");
+    if (!final_out) final_out = ggml_graph_get_tensor(gf, x->name);
+    if (final_out) {
+        ggml_backend_tensor_get(final_out, out.hidden, 0,
+                                (size_t)n_tokens * D * sizeof(float));
+    }
+
+    // Diff comparison
+    if (!ctx.diff_ref_path.empty()) {
+        crispembed_diff::Ref ref;
+        if (ref.load(ctx.diff_ref_path)) {
+            // Compare embed
+            ggml_tensor *emb = ggml_graph_get_tensor(gf, "llm_embed");
+            if (emb && ref.has("llm_embed")) {
+                std::vector<float> emb_data((size_t)n_tokens * D);
+                ggml_backend_tensor_get(emb, emb_data.data(), 0,
+                                        emb_data.size() * sizeof(float));
+                auto r = ref.compare("llm_embed", emb_data.data(), emb_data.size());
+                fprintf(stderr, "  diff llm_embed: cos_min=%.6f max_abs=%.2e %s\n",
+                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
+
+            // Compare per-layer
+            for (int il = 0; il < n_layers; il++) {
+                char name[64];
+                std::snprintf(name, sizeof(name), "llm_layer_%d", il);
+                ggml_tensor *lt = ggml_graph_get_tensor(gf, name);
+                if (lt && ref.has(name)) {
+                    std::vector<float> ld((size_t)n_tokens * D);
+                    ggml_backend_tensor_get(lt, ld.data(), 0, ld.size() * sizeof(float));
+                    auto r = ref.compare(name, ld.data(), ld.size());
+                    fprintf(stderr, "  diff %s: cos_min=%.6f max_abs=%.2e %s\n",
+                            name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                }
+            }
+
+            // Compare final norm
+            if (ref.has("llm_final_norm") && out.hidden) {
+                auto r = ref.compare("llm_final_norm", out.hidden,
+                                     (size_t)n_tokens * D);
+                fprintf(stderr, "  diff llm_final_norm: cos_min=%.6f max_abs=%.2e %s\n",
+                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
+        }
+    }
+
+    ggml_free(g);
+    return true;
+}
+
 bool generate(context &ctx,
               const float *image_embeds, int n_image_tokens, int embed_dim,
               const int32_t *prompt_token_ids, int n_prompt_tokens,
