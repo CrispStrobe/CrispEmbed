@@ -1286,6 +1286,20 @@ NOT the model.beam_search() which includes the bi-directional scoring.
     978K printed math images (ArXiv+Pix2tex) under Apache 2.0. The
     CROHME and HME100K subsets are excluded from this license ("requires
     manual download for copyright"). Best commercial data source found.
+15. **MathWriting augmentation works**: Adding 2000 MathWriting samples
+    (filtered to v1 110-token vocab from deepcopy/MathWriting-human on HF)
+    to CROHME training broke the 59.3% ceiling → 60.5% verified.
+    47% of MathWriting is compatible with v1 vocab (~109K out of 230K).
+16. **Beam=10 bi-directional doesn't help our model**: 60.3% beam=10 vs
+    60.5% beam=1 — beam search actually hurts by 0.2%. The R2L path
+    sometimes picks worse hypotheses that beat correct L2R in cross-scoring.
+    This differs from SJTU's published model where beam=10 added ~6 points.
+17. **ReduceLROnPlateau is the key to peaks**: The best val_ExpRate always
+    came right after an LR drop (0.08→0.005 gave 57%, 0.005→0.00125 gave
+    62%). Manual LR patching in checkpoint files works when callbacks fail.
+18. **Use deepcopy/MathWriting-human for MathWriting data**: Pre-rasterized
+    JPG images + LaTeX strings on HuggingFace. Much faster than downloading
+    and parsing 230K InkML files from Google Storage.
 
 ## NomicBERT v2-moe: hidden biases and GPT2 config
 
