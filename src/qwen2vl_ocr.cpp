@@ -288,13 +288,13 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
     ggml_set_name(sin_in, "sin_in"); ggml_set_input(sin_in);
 
     // ── Patch embedding ──
-    ggml_tensor *W_pe = ggml_reshape_2d(g, ctx.m.patch_embed_w,
-                                         patch_flat_dim, H);
-    ggml_tensor *x = ggml_mul_mat(g, W_pe, pixel_in);
+    // Use model tensor directly — no reshape (already ne=(patch_flat_dim, H))
+    ggml_tensor *x = ggml_mul_mat(g, ctx.m.patch_embed_w, pixel_in);
     if (ctx.m.patch_embed_b) {
         x = ggml_add(g, x, ctx.m.patch_embed_b);
     }
     ggml_set_name(x, "patch_embed_out");
+    ggml_set_output(x);  // prevent memory reuse — needed for diff comparison
 
     // ── RMSNorm helper ──
     auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor * {
@@ -349,12 +349,20 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         ggml_tensor *qkv = ggml_mul_mat(g, blk.qkv_w, y);
         if (blk.qkv_b) qkv = ggml_add(g, qkv, blk.qkv_b);
 
-        // Split Q, K, V: each (H, n_patches) → reshape to (hd, nh, np)
-        ggml_tensor *Q = ggml_view_2d(g, qkv, H, n_patches, qkv->nb[1], 0);
-        ggml_tensor *K = ggml_view_2d(g, qkv, H, n_patches, qkv->nb[1],
-                                       H * sizeof(float));
-        ggml_tensor *V = ggml_view_2d(g, qkv, H, n_patches, qkv->nb[1],
-                                       2 * H * sizeof(float));
+        // Split Q, K, V from fused QKV (3*H, n_patches)
+        // qkv layout: ne=(3*H, n_patches), contiguous.
+        // View + cont for each component:
+        ggml_tensor *Q = ggml_view_2d(g, qkv, H, n_patches,
+                                       qkv->nb[1], 0);
+        ggml_tensor *K = ggml_view_2d(g, qkv, H, n_patches,
+                                       qkv->nb[1], H * ggml_type_size(qkv->type));
+        ggml_tensor *V = ggml_view_2d(g, qkv, H, n_patches,
+                                       qkv->nb[1], 2 * H * ggml_type_size(qkv->type));
+
+        // Make contiguous before reshape (views into fused QKV aren't)
+        Q = ggml_cont(g, Q);
+        K = ggml_cont(g, K);
+        V = ggml_cont(g, V);
 
         Q = ggml_reshape_3d(g, Q, head_dim, n_heads, n_patches);
         K = ggml_reshape_3d(g, K, head_dim, n_heads, n_patches);
@@ -403,6 +411,7 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         char name[64];
         std::snprintf(name, sizeof(name), "vis_layer_%u", il);
         ggml_set_name(x, name);
+        ggml_set_output(x);  // prevent memory reuse for diff comparison
     }
 
     // ── Merger ──
@@ -482,8 +491,21 @@ bool load(context &ctx, const char *gguf_path, int n_threads, int verbosity) {
     ctx.backend_cpu = ctx.backend;
     ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
 
-    // Allocate compute meta buffer
-    ctx.compute_meta.resize(256 * 1024 * 1024);  // 256 MB
+    // Compute-meta scratch: 32 layers × ~30 ops + merger.
+    constexpr int kGraphCapacity = 32768;
+    ctx.compute_meta.resize(
+        ggml_tensor_overhead() * kGraphCapacity +
+        ggml_graph_overhead_custom(kGraphCapacity, false));
+
+    // Create scheduler
+    std::vector<ggml_backend_t> backends;
+    backends.push_back(ctx.backend);
+    if (ctx.backend_cpu && ctx.backend_cpu != ctx.backend) {
+        backends.push_back(ctx.backend_cpu);
+    }
+    ctx.sched = ggml_backend_sched_new(backends.data(), nullptr,
+                                       (int)backends.size(),
+                                       kGraphCapacity, false, false);
 
     if (!load_tensors(ctx, gguf_path)) {
         fprintf(stderr, "qwen2vl_ocr: failed to load tensors\n");
@@ -498,6 +520,10 @@ bool load(context &ctx, const char *gguf_path, int n_threads, int verbosity) {
 }
 
 void free_(context &ctx) {
+    if (ctx.sched) {
+        ggml_backend_sched_free(ctx.sched);
+        ctx.sched = nullptr;
+    }
     if (ctx.model_buf) {
         ggml_backend_buffer_free(ctx.model_buf);
         ctx.model_buf = nullptr;
@@ -517,6 +543,18 @@ bool encode_vision(context &ctx,
                    const float *patches, int n_patches,
                    const int32_t *grid_thw,
                    vision_result &out) {
+    // Debug: verify weight tensor is loaded correctly
+    if (ctx.verbosity >= 2 && ctx.m.patch_embed_w) {
+        float w5[5];
+        ggml_backend_tensor_get(ctx.m.patch_embed_w, w5, 0, 5 * sizeof(float));
+        fprintf(stderr, "  patch_embed_w ne=[%lld,%lld] buffer=%p data=%p first5=[%.6f, %.6f, %.6f, %.6f, %.6f]\n",
+                (long long)ctx.m.patch_embed_w->ne[0],
+                (long long)ctx.m.patch_embed_w->ne[1],
+                (void*)ctx.m.patch_embed_w->buffer,
+                ctx.m.patch_embed_w->data,
+                w5[0], w5[1], w5[2], w5[3], w5[4]);
+    }
+
     // Compute 2D RoPE tables
     const int head_dim = (int)ctx.m.vhp.hidden_size / (int)ctx.m.vhp.num_heads;
     host_rope rope;
@@ -526,11 +564,10 @@ bool encode_vision(context &ctx,
     auto gr = build_vision_graph(ctx, n_patches, grid_thw);
     if (!gr.gf) return false;
 
-    // Allocate and set inputs
-    ggml_gallocr_t alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx.backend));
-    if (!ggml_gallocr_alloc_graph(alloc, gr.gf)) {
+    // Allocate via scheduler (handles model weights + compute buffers)
+    ggml_backend_sched_reset(ctx.sched);
+    if (!ggml_backend_sched_alloc_graph(ctx.sched, gr.gf)) {
         fprintf(stderr, "qwen2vl_ocr: graph allocation failed\n");
-        ggml_gallocr_free(alloc);
         return false;
     }
 
@@ -540,21 +577,29 @@ bool encode_vision(context &ctx,
                                (int)ctx.m.vhp.spatial_patch_size *
                                (int)ctx.m.vhp.spatial_patch_size;
 
-    ggml_tensor *pixel_in = ggml_graph_get_tensor(gr.gf, "pixel_in");
-    ggml_backend_tensor_set(pixel_in, patches, 0,
-                            (size_t)n_patches * patch_flat_dim * sizeof(float));
+    auto set_in = [&](const char *name, const void *data, size_t bytes) -> bool {
+        ggml_tensor *t = ggml_graph_get_tensor(gr.gf, name);
+        if (!t) {
+            fprintf(stderr, "qwen2vl_ocr: input tensor '%s' not found\n", name);
+            return false;
+        }
+        ggml_backend_tensor_set(t, data, 0, bytes);
+        return true;
+    };
 
-    ggml_tensor *cos_t = ggml_graph_get_tensor(gr.gf, "cos_in");
-    ggml_tensor *sin_t = ggml_graph_get_tensor(gr.gf, "sin_in");
-    ggml_backend_tensor_set(cos_t, rope.cos_buf.data(), 0,
-                            rope.cos_buf.size() * sizeof(float));
-    ggml_backend_tensor_set(sin_t, rope.sin_buf.data(), 0,
-                            rope.sin_buf.size() * sizeof(float));
+    if (!set_in("pixel_in", patches,
+                (size_t)n_patches * patch_flat_dim * sizeof(float)))
+        return false;
+    if (!set_in("cos_in", rope.cos_buf.data(),
+                rope.cos_buf.size() * sizeof(float)))
+        return false;
+    if (!set_in("sin_in", rope.sin_buf.data(),
+                rope.sin_buf.size() * sizeof(float)))
+        return false;
 
     // Compute
-    if (ggml_backend_graph_compute(ctx.backend, gr.gf) != GGML_STATUS_SUCCESS) {
+    if (ggml_backend_sched_graph_compute(ctx.sched, gr.gf) != GGML_STATUS_SUCCESS) {
         fprintf(stderr, "qwen2vl_ocr: graph compute failed\n");
-        ggml_gallocr_free(alloc);
         return false;
     }
 
@@ -562,7 +607,6 @@ bool encode_vision(context &ctx,
     ggml_tensor *pre_merger = ggml_graph_get_tensor(gr.gf, "vis_pre_merger");
     if (!pre_merger) {
         fprintf(stderr, "qwen2vl_ocr: vis_pre_merger not found\n");
-        ggml_gallocr_free(alloc);
         return false;
     }
 
@@ -593,13 +637,33 @@ bool encode_vision(context &ctx,
     if (!ctx.diff_ref_path.empty()) {
         crispembed_diff::Ref ref;
         if (ref.load(ctx.diff_ref_path)) {
+            // Compare patch embedding first
+            ggml_tensor *pe_out = ggml_graph_get_tensor(gr.gf, "patch_embed_out");
+            if (pe_out && ref.has("vis_patch_embed")) {
+                std::vector<float> pe_data((size_t)n_patches * H);
+                ggml_backend_tensor_get(pe_out, pe_data.data(), 0,
+                                        pe_data.size() * sizeof(float));
+                auto r = ref.compare("vis_patch_embed", pe_data.data(),
+                                     pe_data.size());
+                fprintf(stderr, "  diff vis_patch_embed: cos_min=%.6f max_abs=%.2e %s\n",
+                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                // Print first 5 values from C++ and reference
+                fprintf(stderr, "    C++: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                        pe_data[0], pe_data[1], pe_data[2], pe_data[3], pe_data[4]);
+                auto [ref_pe, ref_n] = ref.get_f32("vis_patch_embed");
+                if (ref_pe) {
+                    fprintf(stderr, "    Ref: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                            ref_pe[0], ref_pe[1], ref_pe[2], ref_pe[3], ref_pe[4]);
+                }
+            }
+
             // Compare per-layer
             for (uint32_t il = 0; il < ctx.m.vhp.depth; il++) {
                 char name[64];
                 std::snprintf(name, sizeof(name), "vis_layer_%u", il);
                 ggml_tensor *layer_out = ggml_graph_get_tensor(gr.gf, name);
                 if (layer_out && ref.has(name)) {
-                    std::vector<float> layer_data(n_patches * H);
+                    std::vector<float> layer_data((size_t)n_patches * H);
                     ggml_backend_tensor_get(layer_out, layer_data.data(), 0,
                                             layer_data.size() * sizeof(float));
                     auto r = ref.compare(name, layer_data.data(),
@@ -612,7 +676,6 @@ bool encode_vision(context &ctx,
         }
     }
 
-    ggml_gallocr_free(alloc);
     return true;
 }
 
