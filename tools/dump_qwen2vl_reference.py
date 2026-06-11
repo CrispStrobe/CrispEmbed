@@ -387,7 +387,17 @@ def run_vision_encoder(shard_files, patches, grid_thw, config,
 
     # FC1 → GELU → FC2
     merged_out = linear(x_merged, merger_fc1_w, merger_fc1_b)
-    merged_out = gelu_pytorch_tanh(merged_out)
+    # Qwen2.5-VL merger uses nn.GELU() = exact GELU (erf), not tanh approx
+    try:
+        from scipy.special import erf as scipy_erf
+        merged_out = 0.5 * merged_out * (1.0 + scipy_erf(merged_out / np.sqrt(2.0)))
+    except ImportError:
+        # Fallback: use math.erf element-wise (slow but correct)
+        from math import erf as _erf_s
+        flat = merged_out.flatten()
+        for i in range(len(flat)):
+            flat[i] = 0.5 * flat[i] * (1.0 + _erf_s(float(flat[i]) / math.sqrt(2.0)))
+        merged_out = flat.reshape(merged_out.shape)
     merged_out = linear(merged_out, merger_fc2_w, merger_fc2_b)
 
     intermediates["vis_merger_output"] = merged_out.copy()
