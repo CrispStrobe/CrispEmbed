@@ -807,14 +807,25 @@ bool run_llm_forward(context &ctx,
         // TODO: apply mRoPE here (skipped for initial parity test with
         // simple token IDs — mRoPE positions are all 0 for text-only)
 
-        // GQA: repeat KV heads
+        // GQA: interleave KV heads to match Q heads
+        // K: (head_dim, n_kv, T) → (head_dim, n_heads, T)
+        // Each KV head serves kv_repeat Q heads (interleave, not tile)
+        // ggml_repeat tiles [0,1,0,1,...] but we need [0,0,...,1,1,...]
+        // Use reshape + repeat on the right axis:
+        // K(hd, n_kv, T) → K(hd, 1, n_kv, T) → repeat → K(hd, kv_repeat, n_kv, T)
+        // → reshape → K(hd, n_heads, T)
         if (kv_repeat > 1) {
-            // K: (head_dim, n_kv, T) → repeat to (head_dim, n_heads, T)
-            // Use ggml_repeat to broadcast along dim 1
-            ggml_tensor *K_rep = ggml_new_tensor_3d(g, K->type, head_dim, n_heads, n_tokens);
-            K = ggml_repeat(g, K, K_rep);
-            ggml_tensor *V_rep = ggml_new_tensor_3d(g, V->type, head_dim, n_heads, n_tokens);
-            V = ggml_repeat(g, V, V_rep);
+            // Reshape to add repeat dimension
+            K = ggml_reshape_4d(g, K, head_dim, 1, n_kv_heads, n_tokens);
+            V = ggml_reshape_4d(g, V, head_dim, 1, n_kv_heads, n_tokens);
+            // Create target shape for repeat
+            ggml_tensor *K_tgt = ggml_new_tensor_4d(g, K->type, head_dim, kv_repeat, n_kv_heads, n_tokens);
+            ggml_tensor *V_tgt = ggml_new_tensor_4d(g, V->type, head_dim, kv_repeat, n_kv_heads, n_tokens);
+            K = ggml_repeat(g, K, K_tgt);
+            V = ggml_repeat(g, V, V_tgt);
+            // Reshape back to (head_dim, n_heads, T)
+            K = ggml_reshape_3d(g, K, head_dim, n_heads, n_tokens);
+            V = ggml_reshape_3d(g, V, head_dim, n_heads, n_tokens);
         }
 
         // Attention (same pattern as vision encoder)
@@ -929,6 +940,13 @@ bool run_llm_forward(context &ctx,
                     auto r = ref.compare(name, ld.data(), ld.size());
                     fprintf(stderr, "  diff %s: cos_min=%.6f max_abs=%.2e %s\n",
                             name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                    if (!r.is_pass()) {
+                        auto [rd, rn] = ref.get_f32(name);
+                        fprintf(stderr, "    C++: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                                ld[0], ld[1], ld[2], ld[3], ld[4]);
+                        fprintf(stderr, "    Ref: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                                rd[0], rd[1], rd[2], rd[3], rd[4]);
+                    }
                 }
             }
 
