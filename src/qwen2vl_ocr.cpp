@@ -246,7 +246,9 @@ void compute_vision_rope(host_rope &out, const int32_t *grid_thw,
 
 struct vision_graph_result {
     ggml_cgraph *gf = nullptr;
-    ggml_tensor *output = nullptr;  // merged output tensor
+    ggml_tensor *output = nullptr;
+    int h_patches = 0;
+    int w_patches = 0;
 };
 
 vision_graph_result build_vision_graph(context &ctx, int n_patches,
@@ -396,46 +398,38 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         ggml_set_output(x);  // prevent memory reuse for diff comparison
     }
 
-    // ── Merger ──
-    // LayerNorm → spatial reshape → FC1 → GELU → FC2
+    // ── Merger (LayerNorm → spatial merge on CPU → FC1 → GELU → FC2) ──
+    // The spatial merge permutation (2×2 patch grouping) is hard to express
+    // in ggml's 4D tensor ops, so we:
+    //   1. Compute LayerNorm in-graph
+    //   2. Mark as output, compute graph
+    //   3. Do spatial rearrangement on CPU
+    //   4. Build a second graph for FC1→GELU→FC2
     {
         ggml_tensor *normed = x;
         if (ctx.m.merger.norm_w) {
-            normed = ggml_norm(g, x, 1e-6f);
-            normed = ggml_mul(g, normed, ctx.m.merger.norm_w);
-            if (ctx.m.merger.norm_b)
+            if (ctx.m.merger.norm_b) {
+                // LayerNorm (has bias)
+                normed = ggml_norm(g, x, 1e-6f);
+                normed = ggml_mul(g, normed, ctx.m.merger.norm_w);
                 normed = ggml_add(g, normed, ctx.m.merger.norm_b);
+            } else {
+                // RMSNorm (no bias) — Qwen2.5-VL uses this
+                normed = ggml_rms_norm(g, x, 1e-6f);
+                normed = ggml_mul(g, normed, ctx.m.merger.norm_w);
+            }
         }
 
-        // Spatial merge: reshape (h_p, w_p, H) → (n_merged, merge²*H)
-        // We do this by reshaping (h_p*w_p, H) to (merged_h, merge, merged_w, merge, H)
-        // → (merged_h*merged_w, merge*merge*H)
-        // In ggml: use view + permute to achieve the spatial grouping
-        // For simplicity: reshape to (w_p, h_p, H), then view as
-        // (merge, merged_w, merge, merged_h, H), permute to group merges
-
-        // Simpler: (n_patches, H) → (h_p, w_p, H) → perm → (n_merged, merge²*H)
-        ggml_tensor *x3d = ggml_reshape_3d(g, normed, H, w_patches, h_patches);
-        // x3d: (H, w_patches, h_patches)
-
-        // We need to group patches in 2x2 spatial blocks.
-        // Reshape: (H, merge, merged_w, merge, merged_h)
-        int merged_w = w_patches / merge;
-        int merged_h = h_patches / merge;
-        ggml_tensor *x5d = ggml_reshape_4d(g, x3d, H, merge, merged_w,
-                                            merge * merged_h);
-        // Actually this reshape needs more careful handling.
-        // Let's do the merger on CPU for now (copy out, reshape, copy back)
-        // TODO: implement proper ggml spatial merge
-
-        // For now, mark the pre-merger tensor as output and do merger on CPU
         ggml_set_name(normed, "vis_pre_merger");
+        ggml_set_output(normed);
         ggml_build_forward_expand(gf, normed);
     }
 
     vision_graph_result out;
     out.gf = gf;
-    out.output = x;  // pre-merger output for now
+    out.output = x;
+    out.h_patches = h_patches;
+    out.w_patches = w_patches;
     return out;
 }
 
@@ -585,35 +579,111 @@ bool encode_vision(context &ctx,
         return false;
     }
 
-    // Read output (pre-merger for now)
+    // Read pre-merger output (normed ViT features)
     ggml_tensor *pre_merger = ggml_graph_get_tensor(gr.gf, "vis_pre_merger");
     if (!pre_merger) {
         fprintf(stderr, "qwen2vl_ocr: vis_pre_merger not found\n");
         return false;
     }
 
-    // TODO: implement spatial merger in ggml graph
-    // For now, copy pre-merger output and do merger on CPU
-    size_t n_elem = (size_t)n_patches * ctx.m.vhp.hidden_size;
-    std::vector<float> pre_merger_data(n_elem);
-    ggml_backend_tensor_get(pre_merger, pre_merger_data.data(), 0,
-                            n_elem * sizeof(float));
-
-    // CPU merger
     const int H = (int)ctx.m.vhp.hidden_size;
     const int merge = (int)ctx.m.vhp.spatial_merge_size;
-    const int h_p = grid_thw[1];
-    const int w_p = grid_thw[2];
+    const int h_p = gr.h_patches;
+    const int w_p = gr.w_patches;
     const int merged_h = h_p / merge;
     const int merged_w = w_p / merge;
     const int n_merged = merged_h * merged_w;
+    const int merger_in_dim = H * merge * merge;
 
-    out.n_merged = n_merged;
-    out.embed_dim = (int)ctx.m.vhp.out_hidden_size;
-    out.image_embeds = (float *)malloc((size_t)n_merged * out.embed_dim * sizeof(float));
+    // Read normed features: ne=(H, n_patches) in column-major
+    // Flat layout: [dim0_patch0, dim1_patch0, ..., dimH_patch0, dim0_patch1, ...]
+    std::vector<float> normed_data((size_t)n_patches * H);
+    ggml_backend_tensor_get(pre_merger, normed_data.data(), 0,
+                            normed_data.size() * sizeof(float));
 
-    // TODO: implement full merger (norm + reshape + FC1 + GELU + FC2)
-    // This is a placeholder
+    // CPU spatial merge: group 2×2 patches, concatenate features
+    // normed_data layout: patch_idx * H + dim_idx (column-major ggml)
+    // Patch index = row * w_p + col
+    std::vector<float> merged_data((size_t)n_merged * merger_in_dim);
+
+    int midx = 0;
+    for (int mh = 0; mh < merged_h; mh++) {
+        for (int mw = 0; mw < merged_w; mw++) {
+            float *dst = merged_data.data() + (size_t)midx * merger_in_dim;
+            int off = 0;
+            for (int ir = 0; ir < merge; ir++) {
+                for (int ic = 0; ic < merge; ic++) {
+                    int row = mh * merge + ir;
+                    int col = mw * merge + ic;
+                    int patch_idx = row * w_p + col;
+                    const float *src = normed_data.data() + (size_t)patch_idx * H;
+                    std::memcpy(dst + off, src, H * sizeof(float));
+                    off += H;
+                }
+            }
+            midx++;
+        }
+    }
+
+    if (ctx.verbosity >= 2) {
+        fprintf(stderr, "  merger: %d merged tokens, in_dim=%d, first5=[%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                n_merged, merger_in_dim,
+                merged_data[0], merged_data[1], merged_data[2],
+                merged_data[3], merged_data[4]);
+    }
+
+    // FC1 → GELU → FC2 via a second ggml graph
+    {
+        ggml_init_params ip2{
+            ctx.compute_meta.size(),
+            ctx.compute_meta.data(),
+            true,
+        };
+        ggml_context *g2 = ggml_init(ip2);
+        ggml_cgraph *gf2 = ggml_new_graph(g2);
+
+        ggml_tensor *merged_in = ggml_new_tensor_2d(g2, GGML_TYPE_F32,
+                                                      merger_in_dim, n_merged);
+        ggml_set_name(merged_in, "merged_in");
+        ggml_set_input(merged_in);
+
+        ggml_tensor *m = ggml_mul_mat(g2, ctx.m.merger.fc1_w, merged_in);
+        if (ctx.m.merger.fc1_b) m = ggml_add(g2, m, ctx.m.merger.fc1_b);
+        m = ggml_gelu_erf(g2, m);  // Qwen2.5-VL merger uses exact GELU (nn.GELU())
+        m = ggml_mul_mat(g2, ctx.m.merger.fc2_w, m);
+        if (ctx.m.merger.fc2_b) m = ggml_add(g2, m, ctx.m.merger.fc2_b);
+
+        ggml_set_name(m, "merger_output");
+        ggml_set_output(m);
+        ggml_build_forward_expand(gf2, m);
+
+        ggml_backend_sched_reset(ctx.sched);
+        if (!ggml_backend_sched_alloc_graph(ctx.sched, gf2)) {
+            fprintf(stderr, "qwen2vl_ocr: merger graph allocation failed\n");
+            ggml_free(g2);
+            return false;
+        }
+
+        ggml_tensor *min_t = ggml_graph_get_tensor(gf2, "merged_in");
+        ggml_backend_tensor_set(min_t, merged_data.data(), 0,
+                                merged_data.size() * sizeof(float));
+
+        if (ggml_backend_sched_graph_compute(ctx.sched, gf2) != GGML_STATUS_SUCCESS) {
+            fprintf(stderr, "qwen2vl_ocr: merger graph compute failed\n");
+            ggml_free(g2);
+            return false;
+        }
+
+        ggml_tensor *mout = ggml_graph_get_tensor(gf2, "merger_output");
+        int out_dim = (int)ctx.m.vhp.out_hidden_size;
+        out.n_merged = n_merged;
+        out.embed_dim = out_dim;
+        out.image_embeds = (float *)malloc((size_t)n_merged * out_dim * sizeof(float));
+        ggml_backend_tensor_get(mout, out.image_embeds, 0,
+                                (size_t)n_merged * out_dim * sizeof(float));
+
+        ggml_free(g2);
+    }
 
     // Diff comparison if enabled
     if (!ctx.diff_ref_path.empty()) {
