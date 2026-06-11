@@ -1,0 +1,636 @@
+// qwen2vl_ocr.cpp — Qwen2.5-VL OCR inference engine.
+//
+// Architecture (Qwen2.5-VL-3B-Instruct):
+//
+// Vision encoder:
+//   patches → Conv3D (flattened matmul) → + 2D RoPE pos embed
+//   32 × pre-RMSNorm ViT block:
+//     RMSNorm → fused QKV + RoPE → attention (windowed or full) → residual
+//     RMSNorm → SwiGLU FFN (gate + up + down) → residual
+//   LayerNorm → spatial merge (4:1) → FC1 → GELU → FC2 → (n_merged, 2048)
+//
+// LLM decoder:
+//   embed_tokens → splice image_embeds at image_token positions
+//   36 × pre-RMSNorm Qwen2 block:
+//     RMSNorm → Q/K/V + bias (GQA 16/2) + mRoPE → attention → residual
+//     RMSNorm → SwiGLU FFN → residual
+//   RMSNorm → lm_head → logits → greedy decode
+//
+// Per-layer diff comparison via crispembed_diff.h when ctx.diff_ref_path is set.
+
+#include "qwen2vl_ocr.h"
+#include "crispembed_diff.h"
+#include "core/gguf_loader.h"
+
+#include "ggml.h"
+#include "ggml-alloc.h"
+#include "ggml-backend.h"
+#include "ggml-cpu.h"
+#include "gguf.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <map>
+#include <string>
+#include <vector>
+
+namespace qwen2vl_ocr {
+
+namespace {
+
+// ── Hparams loading ──────────────────────────────────────────────────
+
+bool load_hparams(context &ctx, const char *path) {
+    gguf_context *g = core_gguf::open_metadata(path);
+    if (!g) return false;
+
+    auto u32 = [&](const char *k, uint32_t d) {
+        return core_gguf::kv_u32(g, k, d);
+    };
+    auto f32v = [&](const char *k, float d) {
+        return core_gguf::kv_f32(g, k, d);
+    };
+
+    auto &vhp = ctx.m.vhp;
+    auto &lhp = ctx.m.lhp;
+
+    // Vision
+    vhp.depth               = u32("qwen2vl.vision.depth", vhp.depth);
+    vhp.hidden_size         = u32("qwen2vl.vision.hidden_size", vhp.hidden_size);
+    vhp.intermediate_size   = u32("qwen2vl.vision.intermediate_size", vhp.intermediate_size);
+    vhp.num_heads           = u32("qwen2vl.vision.num_heads", vhp.num_heads);
+    vhp.in_channels         = u32("qwen2vl.vision.in_channels", vhp.in_channels);
+    vhp.spatial_patch_size  = u32("qwen2vl.vision.spatial_patch_size", vhp.spatial_patch_size);
+    vhp.spatial_merge_size  = u32("qwen2vl.vision.spatial_merge_size", vhp.spatial_merge_size);
+    vhp.temporal_patch_size = u32("qwen2vl.vision.temporal_patch_size", vhp.temporal_patch_size);
+    vhp.out_hidden_size     = u32("qwen2vl.vision.out_hidden_size", vhp.out_hidden_size);
+    vhp.window_size         = u32("qwen2vl.vision.window_size", vhp.window_size);
+    vhp.min_pixels          = u32("qwen2vl.vision.min_pixels", vhp.min_pixels);
+    vhp.max_pixels          = u32("qwen2vl.vision.max_pixels", vhp.max_pixels);
+
+    // Fullatt block indexes
+    int idx = gguf_find_key(g, "qwen2vl.vision.fullatt_block_indexes");
+    if (idx >= 0) {
+        int n = gguf_get_arr_n(g, idx);
+        vhp.fullatt_block_indexes.resize(n);
+        for (int i = 0; i < n; i++) {
+            vhp.fullatt_block_indexes[i] =
+                (int)((const uint32_t *)gguf_get_arr_data(g, idx))[i];
+        }
+    }
+
+    // Image preprocessor arrays
+    idx = gguf_find_key(g, "qwen2vl.vision.image_mean");
+    if (idx >= 0 && gguf_get_arr_n(g, idx) >= 3) {
+        auto *data = (const float *)gguf_get_arr_data(g, idx);
+        for (int i = 0; i < 3; i++) vhp.image_mean[i] = data[i];
+    }
+    idx = gguf_find_key(g, "qwen2vl.vision.image_std");
+    if (idx >= 0 && gguf_get_arr_n(g, idx) >= 3) {
+        auto *data = (const float *)gguf_get_arr_data(g, idx);
+        for (int i = 0; i < 3; i++) vhp.image_std[i] = data[i];
+    }
+
+    // LLM
+    lhp.vocab_size              = u32("qwen2vl.vocab_size", lhp.vocab_size);
+    lhp.hidden_size             = u32("qwen2vl.hidden_size", lhp.hidden_size);
+    lhp.intermediate_size       = u32("qwen2vl.intermediate_size", lhp.intermediate_size);
+    lhp.num_hidden_layers       = u32("qwen2vl.num_hidden_layers", lhp.num_hidden_layers);
+    lhp.num_attention_heads     = u32("qwen2vl.num_attention_heads", lhp.num_attention_heads);
+    lhp.num_key_value_heads     = u32("qwen2vl.num_key_value_heads", lhp.num_key_value_heads);
+    lhp.max_position_embeddings = u32("qwen2vl.max_position_embeddings", lhp.max_position_embeddings);
+    lhp.rms_norm_eps            = f32v("qwen2vl.rms_norm_eps", lhp.rms_norm_eps);
+    lhp.rope_theta              = f32v("qwen2vl.rope_theta", lhp.rope_theta);
+    lhp.image_token_id          = u32("qwen2vl.image_token_id", lhp.image_token_id);
+    lhp.video_token_id          = u32("qwen2vl.video_token_id", lhp.video_token_id);
+    lhp.vision_start_token_id   = u32("qwen2vl.vision_start_token_id", lhp.vision_start_token_id);
+    lhp.vision_end_token_id     = u32("qwen2vl.vision_end_token_id", lhp.vision_end_token_id);
+
+    // mRoPE sections
+    idx = gguf_find_key(g, "qwen2vl.rope_sections");
+    if (idx >= 0) {
+        int n = std::min(4, (int)gguf_get_arr_n(g, idx));
+        auto *data = (const uint32_t *)gguf_get_arr_data(g, idx);
+        for (int i = 0; i < n; i++) lhp.rope_sections[i] = (int)data[i];
+    }
+
+    // Tie embeddings
+    int tie_idx = gguf_find_key(g, "qwen2vl.tie_word_embeddings");
+    if (tie_idx >= 0) {
+        lhp.tie_word_embeddings = gguf_get_val_bool(g, tie_idx);
+    }
+
+    core_gguf::free_metadata(g);
+    return true;
+}
+
+// ── Tensor loading ───────────────────────────────────────────────────
+
+bool load_tensors(context &ctx, const char *path) {
+    core_gguf::WeightLoad wl;
+    if (!core_gguf::load_weights(path, ctx.backend, "qwen2vl_ocr", wl)) {
+        return false;
+    }
+    ctx.model_ctx = wl.ctx;
+    ctx.model_buf = wl.buf;
+
+    auto &m = ctx.m;
+    auto get = [&](const std::string &name) -> ggml_tensor * {
+        auto it = wl.tensors.find(name);
+        return it != wl.tensors.end() ? it->second : nullptr;
+    };
+
+    // Vision encoder
+    m.patch_embed_w = get("v.patch_embed.weight");
+    m.patch_embed_b = get("v.patch_embed.bias");
+
+    m.vis_blocks.resize(m.vhp.depth);
+    for (uint32_t i = 0; i < m.vhp.depth; i++) {
+        auto &blk = m.vis_blocks[i];
+        std::string p = "v.blk." + std::to_string(i) + ".";
+        blk.norm1_w    = get(p + "norm1.weight");
+        blk.norm2_w    = get(p + "norm2.weight");
+        blk.qkv_w      = get(p + "attn_qkv.weight");
+        blk.qkv_b      = get(p + "attn_qkv.bias");
+        blk.proj_w     = get(p + "attn_proj.weight");
+        blk.proj_b     = get(p + "attn_proj.bias");
+        blk.ffn_gate_w = get(p + "ffn_gate.weight");
+        blk.ffn_gate_b = get(p + "ffn_gate.bias");
+        blk.ffn_up_w   = get(p + "ffn_up.weight");
+        blk.ffn_up_b   = get(p + "ffn_up.bias");
+        blk.ffn_down_w = get(p + "ffn_down.weight");
+        blk.ffn_down_b = get(p + "ffn_down.bias");
+    }
+
+    m.merger.norm_w = get("v.merger.norm.weight");
+    m.merger.norm_b = get("v.merger.norm.bias");
+    m.merger.fc1_w  = get("v.merger.fc1.weight");
+    m.merger.fc1_b  = get("v.merger.fc1.bias");
+    m.merger.fc2_w  = get("v.merger.fc2.weight");
+    m.merger.fc2_b  = get("v.merger.fc2.bias");
+
+    // LLM decoder
+    m.embed_tokens = get("l.embed_tokens.weight");
+
+    m.llm_layers.resize(m.lhp.num_hidden_layers);
+    for (uint32_t i = 0; i < m.lhp.num_hidden_layers; i++) {
+        auto &ly = m.llm_layers[i];
+        std::string p = "l.blk." + std::to_string(i) + ".";
+        ly.attn_norm_w = get(p + "attn_norm.weight");
+        ly.ffn_norm_w  = get(p + "ffn_norm.weight");
+        ly.q_w         = get(p + "attn_q.weight");
+        ly.q_b         = get(p + "attn_q.bias");
+        ly.k_w         = get(p + "attn_k.weight");
+        ly.k_b         = get(p + "attn_k.bias");
+        ly.v_w         = get(p + "attn_v.weight");
+        ly.v_b         = get(p + "attn_v.bias");
+        ly.o_w         = get(p + "attn_o.weight");
+        ly.ffn_gate_w  = get(p + "ffn_gate.weight");
+        ly.ffn_up_w    = get(p + "ffn_up.weight");
+        ly.ffn_down_w  = get(p + "ffn_down.weight");
+    }
+
+    m.output_norm_w = get("l.output_norm.weight");
+    m.lm_head_w     = get("l.lm_head.weight");
+
+    return true;
+}
+
+// ── 2D RoPE computation (host-side) ──────────────────────────────────
+
+struct host_rope {
+    std::vector<float> cos_buf;  // (n_patches, head_dim)
+    std::vector<float> sin_buf;  // (n_patches, head_dim)
+};
+
+void compute_vision_rope(host_rope &out, const int32_t *grid_thw,
+                         int n_patches, int head_dim, float theta = 10000.0f) {
+    out.cos_buf.resize((size_t)n_patches * head_dim);
+    out.sin_buf.resize((size_t)n_patches * head_dim);
+
+    const int quart = head_dim / 4;
+    std::vector<float> inv_freq(quart);
+    for (int j = 0; j < quart; j++) {
+        inv_freq[j] = 1.0f / std::pow(theta, (float)(2 * j) / (float)head_dim);
+    }
+
+    int t = grid_thw[0], h = grid_thw[1], w = grid_thw[2];
+    int tok = 0;
+    for (int f = 0; f < t; f++) {
+        for (int row = 0; row < h; row++) {
+            for (int col = 0; col < w; col++) {
+                float *cr = out.cos_buf.data() + (size_t)tok * head_dim;
+                float *sr = out.sin_buf.data() + (size_t)tok * head_dim;
+                for (int j = 0; j < quart; j++) {
+                    float vr = (float)row * inv_freq[j];
+                    float vc = (float)col * inv_freq[j];
+                    cr[j]                = std::cos(vr);
+                    sr[j]                = std::sin(vr);
+                    cr[j + quart]        = std::cos(vc);
+                    sr[j + quart]        = std::sin(vc);
+                    cr[j + 2 * quart]    = std::cos(vr);
+                    sr[j + 2 * quart]    = std::sin(vr);
+                    cr[j + 3 * quart]    = std::cos(vc);
+                    sr[j + 3 * quart]    = std::sin(vc);
+                }
+                tok++;
+            }
+        }
+    }
+}
+
+// ── Vision encoder graph ─────────────────────────────────────────────
+
+struct vision_graph_result {
+    ggml_cgraph *gf = nullptr;
+    ggml_tensor *output = nullptr;  // merged output tensor
+};
+
+vision_graph_result build_vision_graph(context &ctx, int n_patches,
+                                        const int32_t *grid_thw) {
+    const auto &vhp = ctx.m.vhp;
+    const int H = (int)vhp.hidden_size;
+    const int n_heads = (int)vhp.num_heads;
+    const int head_dim = H / n_heads;
+    const int merge = (int)vhp.spatial_merge_size;
+    const int merge_unit = merge * merge;
+    const int merger_in_dim = H * merge_unit;
+    const int patch_flat_dim = (int)vhp.in_channels *
+                               (int)vhp.temporal_patch_size *
+                               (int)vhp.spatial_patch_size *
+                               (int)vhp.spatial_patch_size;
+
+    const int h_patches = grid_thw[1];
+    const int w_patches = grid_thw[2];
+    const int n_merged = (h_patches / merge) * (w_patches / merge);
+
+    ggml_init_params ip{
+        ctx.compute_meta.size(),
+        ctx.compute_meta.data(),
+        /*no_alloc=*/true,
+    };
+    ggml_context *g = ggml_init(ip);
+    ggml_cgraph *gf = ggml_new_graph_custom(g, 16384, false);
+
+    // ── Inputs ──
+    ggml_tensor *pixel_in = ggml_new_tensor_2d(g, GGML_TYPE_F32,
+                                                patch_flat_dim, n_patches);
+    ggml_set_name(pixel_in, "pixel_in");
+    ggml_set_input(pixel_in);
+
+    // RoPE cos/sin
+    ggml_tensor *cos_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, head_dim, n_patches);
+    ggml_tensor *sin_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, head_dim, n_patches);
+    ggml_set_name(cos_in, "cos_in"); ggml_set_input(cos_in);
+    ggml_set_name(sin_in, "sin_in"); ggml_set_input(sin_in);
+
+    // ── Patch embedding ──
+    ggml_tensor *W_pe = ggml_reshape_2d(g, ctx.m.patch_embed_w,
+                                         patch_flat_dim, H);
+    ggml_tensor *x = ggml_mul_mat(g, W_pe, pixel_in);
+    if (ctx.m.patch_embed_b) {
+        x = ggml_add(g, x, ctx.m.patch_embed_b);
+    }
+    ggml_set_name(x, "patch_embed_out");
+
+    // ── RMSNorm helper ──
+    auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor * {
+        ggml_tensor *y = ggml_rms_norm(g, t, 1e-6f);
+        return ggml_mul(g, y, w);
+    };
+
+    // ── Rotate-half RoPE helper ──
+    // Apply 2D rotary embedding: split into halves, rotate, recombine
+    auto rotate_half_rope = [&](ggml_tensor *qk, ggml_tensor *cos,
+                                ggml_tensor *sin) -> ggml_tensor * {
+        // qk: (head_dim, n_heads, n_patches)
+        // cos/sin: (head_dim, n_patches)
+        int half = head_dim / 2;
+        ggml_tensor *x1 = ggml_view_3d(g, qk, half, n_heads, n_patches,
+                                         qk->nb[1], qk->nb[2], 0);
+        ggml_tensor *x2 = ggml_view_3d(g, qk, half, n_heads, n_patches,
+                                         qk->nb[1], qk->nb[2],
+                                         half * sizeof(float));
+        // cos/sin broadcast: (half, 1, n_patches)
+        ggml_tensor *c1 = ggml_view_3d(g, cos, half, 1, n_patches,
+                                         cos->nb[1], cos->nb[1] * half, 0);
+        ggml_tensor *c2 = ggml_view_3d(g, cos, half, 1, n_patches,
+                                         cos->nb[1], cos->nb[1] * half,
+                                         half * sizeof(float));
+        ggml_tensor *s1 = ggml_view_3d(g, sin, half, 1, n_patches,
+                                         sin->nb[1], sin->nb[1] * half, 0);
+        ggml_tensor *s2 = ggml_view_3d(g, sin, half, 1, n_patches,
+                                         sin->nb[1], sin->nb[1] * half,
+                                         half * sizeof(float));
+
+        // out1 = x1 * c1 - x2 * s1
+        // out2 = x2 * c2 + x1 * s2
+        ggml_tensor *out1 = ggml_sub(g, ggml_mul(g, x1, c1),
+                                          ggml_mul(g, x2, s1));
+        ggml_tensor *out2 = ggml_add(g, ggml_mul(g, x2, c2),
+                                          ggml_mul(g, x1, s2));
+        return ggml_concat(g, out1, out2, 0);  // concat on dim 0 (head_dim)
+    };
+
+    // ── ViT blocks ──
+    const float attn_scale = 1.0f / std::sqrt((float)head_dim);
+
+    for (uint32_t il = 0; il < vhp.depth; il++) {
+        const auto &blk = ctx.m.vis_blocks[il];
+        ggml_tensor *residual = x;
+
+        // Pre-attn RMSNorm
+        ggml_tensor *y = rmsnorm(x, blk.norm1_w);
+
+        // Fused QKV
+        ggml_tensor *qkv = ggml_mul_mat(g, blk.qkv_w, y);
+        if (blk.qkv_b) qkv = ggml_add(g, qkv, blk.qkv_b);
+
+        // Split Q, K, V: each (H, n_patches) → reshape to (hd, nh, np)
+        ggml_tensor *Q = ggml_view_2d(g, qkv, H, n_patches, qkv->nb[1], 0);
+        ggml_tensor *K = ggml_view_2d(g, qkv, H, n_patches, qkv->nb[1],
+                                       H * sizeof(float));
+        ggml_tensor *V = ggml_view_2d(g, qkv, H, n_patches, qkv->nb[1],
+                                       2 * H * sizeof(float));
+
+        Q = ggml_reshape_3d(g, Q, head_dim, n_heads, n_patches);
+        K = ggml_reshape_3d(g, K, head_dim, n_heads, n_patches);
+        V = ggml_reshape_3d(g, V, head_dim, n_heads, n_patches);
+
+        // Apply 2D RoPE
+        Q = rotate_half_rope(Q, cos_in, sin_in);
+        K = rotate_half_rope(K, cos_in, sin_in);
+
+        // Attention via ggml_flash_attn_ext
+        // Q: (head_dim, n_heads, n_patches), K/V: same layout
+        // flash_attn_ext expects: Q(hd, T, nh), K(hd, S, nh_kv), V(hd, S, nh_kv)
+        Q = ggml_permute(g, Q, 0, 2, 1, 3);  // (hd, n_patches, n_heads)
+        K = ggml_permute(g, K, 0, 2, 1, 3);
+        V = ggml_permute(g, V, 0, 2, 1, 3);
+
+        ggml_tensor *attn_out = ggml_flash_attn_ext(g, Q, K, V,
+                                                     nullptr, attn_scale, 0.0f, 0.0f);
+        // attn_out: (hd, n_patches, n_heads) → reshape to (H, n_patches)
+        attn_out = ggml_reshape_2d(g, attn_out, H, n_patches);
+
+        // Output projection
+        attn_out = ggml_mul_mat(g, blk.proj_w, attn_out);
+        if (blk.proj_b) attn_out = ggml_add(g, attn_out, blk.proj_b);
+
+        x = ggml_add(g, residual, attn_out);
+
+        // Pre-FFN RMSNorm
+        residual = x;
+        y = rmsnorm(x, blk.norm2_w);
+
+        // SwiGLU FFN: silu(gate) * up → down
+        ggml_tensor *gate = ggml_mul_mat(g, blk.ffn_gate_w, y);
+        if (blk.ffn_gate_b) gate = ggml_add(g, gate, blk.ffn_gate_b);
+        gate = ggml_silu(g, gate);
+
+        ggml_tensor *up = ggml_mul_mat(g, blk.ffn_up_w, y);
+        if (blk.ffn_up_b) up = ggml_add(g, up, blk.ffn_up_b);
+
+        ggml_tensor *ffn = ggml_mul(g, gate, up);
+        ffn = ggml_mul_mat(g, blk.ffn_down_w, ffn);
+        if (blk.ffn_down_b) ffn = ggml_add(g, ffn, blk.ffn_down_b);
+
+        x = ggml_add(g, residual, ffn);
+
+        char name[64];
+        std::snprintf(name, sizeof(name), "vis_layer_%u", il);
+        ggml_set_name(x, name);
+    }
+
+    // ── Merger ──
+    // LayerNorm → spatial reshape → FC1 → GELU → FC2
+    {
+        ggml_tensor *normed = x;
+        if (ctx.m.merger.norm_w) {
+            normed = ggml_norm(g, x, 1e-6f);
+            normed = ggml_mul(g, normed, ctx.m.merger.norm_w);
+            if (ctx.m.merger.norm_b)
+                normed = ggml_add(g, normed, ctx.m.merger.norm_b);
+        }
+
+        // Spatial merge: reshape (h_p, w_p, H) → (n_merged, merge²*H)
+        // We do this by reshaping (h_p*w_p, H) to (merged_h, merge, merged_w, merge, H)
+        // → (merged_h*merged_w, merge*merge*H)
+        // In ggml: use view + permute to achieve the spatial grouping
+        // For simplicity: reshape to (w_p, h_p, H), then view as
+        // (merge, merged_w, merge, merged_h, H), permute to group merges
+
+        // Simpler: (n_patches, H) → (h_p, w_p, H) → perm → (n_merged, merge²*H)
+        ggml_tensor *x3d = ggml_reshape_3d(g, normed, H, w_patches, h_patches);
+        // x3d: (H, w_patches, h_patches)
+
+        // We need to group patches in 2x2 spatial blocks.
+        // Reshape: (H, merge, merged_w, merge, merged_h)
+        int merged_w = w_patches / merge;
+        int merged_h = h_patches / merge;
+        ggml_tensor *x5d = ggml_reshape_4d(g, x3d, H, merge, merged_w,
+                                            merge * merged_h);
+        // Actually this reshape needs more careful handling.
+        // Let's do the merger on CPU for now (copy out, reshape, copy back)
+        // TODO: implement proper ggml spatial merge
+
+        // For now, mark the pre-merger tensor as output and do merger on CPU
+        ggml_set_name(normed, "vis_pre_merger");
+        ggml_build_forward_expand(gf, normed);
+    }
+
+    vision_graph_result out;
+    out.gf = gf;
+    out.output = x;  // pre-merger output for now
+    return out;
+}
+
+}  // anonymous namespace
+
+// ── Public API ───────────────────────────────────────────────────────
+
+bool load(context &ctx, const char *gguf_path, int n_threads, int verbosity) {
+    ctx.n_threads = n_threads;
+    ctx.verbosity = verbosity;
+
+    if (verbosity >= 1) {
+        fprintf(stderr, "qwen2vl_ocr: loading %s\n", gguf_path);
+    }
+
+    if (!load_hparams(ctx, gguf_path)) {
+        fprintf(stderr, "qwen2vl_ocr: failed to load hparams\n");
+        return false;
+    }
+
+    if (verbosity >= 1) {
+        const auto &vhp = ctx.m.vhp;
+        const auto &lhp = ctx.m.lhp;
+        fprintf(stderr, "  vision: %u layers, %ud, %u heads, patch=%u, merge=%u\n",
+                vhp.depth, vhp.hidden_size, vhp.num_heads,
+                vhp.spatial_patch_size, vhp.spatial_merge_size);
+        fprintf(stderr, "  llm: %u layers, %ud, %u/%u heads, inter=%u\n",
+                lhp.num_hidden_layers, lhp.hidden_size,
+                lhp.num_attention_heads, lhp.num_key_value_heads,
+                lhp.intermediate_size);
+    }
+
+    // Init backend
+    ctx.backend = ggml_backend_cpu_init();
+    ctx.backend_cpu = ctx.backend;
+    ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
+
+    // Allocate compute meta buffer
+    ctx.compute_meta.resize(256 * 1024 * 1024);  // 256 MB
+
+    if (!load_tensors(ctx, gguf_path)) {
+        fprintf(stderr, "qwen2vl_ocr: failed to load tensors\n");
+        return false;
+    }
+
+    if (verbosity >= 1) {
+        fprintf(stderr, "qwen2vl_ocr: loaded successfully\n");
+    }
+
+    return true;
+}
+
+void free_(context &ctx) {
+    if (ctx.model_buf) {
+        ggml_backend_buffer_free(ctx.model_buf);
+        ctx.model_buf = nullptr;
+    }
+    if (ctx.model_ctx) {
+        ggml_free(ctx.model_ctx);
+        ctx.model_ctx = nullptr;
+    }
+    if (ctx.backend) {
+        ggml_backend_free(ctx.backend);
+        ctx.backend = nullptr;
+        ctx.backend_cpu = nullptr;
+    }
+}
+
+bool encode_vision(context &ctx,
+                   const float *patches, int n_patches,
+                   const int32_t *grid_thw,
+                   vision_result &out) {
+    // Compute 2D RoPE tables
+    const int head_dim = (int)ctx.m.vhp.hidden_size / (int)ctx.m.vhp.num_heads;
+    host_rope rope;
+    compute_vision_rope(rope, grid_thw, n_patches, head_dim);
+
+    // Build graph
+    auto gr = build_vision_graph(ctx, n_patches, grid_thw);
+    if (!gr.gf) return false;
+
+    // Allocate and set inputs
+    ggml_gallocr_t alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx.backend));
+    if (!ggml_gallocr_alloc_graph(alloc, gr.gf)) {
+        fprintf(stderr, "qwen2vl_ocr: graph allocation failed\n");
+        ggml_gallocr_free(alloc);
+        return false;
+    }
+
+    // Set input tensors
+    const int patch_flat_dim = (int)ctx.m.vhp.in_channels *
+                               (int)ctx.m.vhp.temporal_patch_size *
+                               (int)ctx.m.vhp.spatial_patch_size *
+                               (int)ctx.m.vhp.spatial_patch_size;
+
+    ggml_tensor *pixel_in = ggml_graph_get_tensor(gr.gf, "pixel_in");
+    ggml_backend_tensor_set(pixel_in, patches, 0,
+                            (size_t)n_patches * patch_flat_dim * sizeof(float));
+
+    ggml_tensor *cos_t = ggml_graph_get_tensor(gr.gf, "cos_in");
+    ggml_tensor *sin_t = ggml_graph_get_tensor(gr.gf, "sin_in");
+    ggml_backend_tensor_set(cos_t, rope.cos_buf.data(), 0,
+                            rope.cos_buf.size() * sizeof(float));
+    ggml_backend_tensor_set(sin_t, rope.sin_buf.data(), 0,
+                            rope.sin_buf.size() * sizeof(float));
+
+    // Compute
+    if (ggml_backend_graph_compute(ctx.backend, gr.gf) != GGML_STATUS_SUCCESS) {
+        fprintf(stderr, "qwen2vl_ocr: graph compute failed\n");
+        ggml_gallocr_free(alloc);
+        return false;
+    }
+
+    // Read output (pre-merger for now)
+    ggml_tensor *pre_merger = ggml_graph_get_tensor(gr.gf, "vis_pre_merger");
+    if (!pre_merger) {
+        fprintf(stderr, "qwen2vl_ocr: vis_pre_merger not found\n");
+        ggml_gallocr_free(alloc);
+        return false;
+    }
+
+    // TODO: implement spatial merger in ggml graph
+    // For now, copy pre-merger output and do merger on CPU
+    size_t n_elem = (size_t)n_patches * ctx.m.vhp.hidden_size;
+    std::vector<float> pre_merger_data(n_elem);
+    ggml_backend_tensor_get(pre_merger, pre_merger_data.data(), 0,
+                            n_elem * sizeof(float));
+
+    // CPU merger
+    const int H = (int)ctx.m.vhp.hidden_size;
+    const int merge = (int)ctx.m.vhp.spatial_merge_size;
+    const int h_p = grid_thw[1];
+    const int w_p = grid_thw[2];
+    const int merged_h = h_p / merge;
+    const int merged_w = w_p / merge;
+    const int n_merged = merged_h * merged_w;
+
+    out.n_merged = n_merged;
+    out.embed_dim = (int)ctx.m.vhp.out_hidden_size;
+    out.image_embeds = (float *)malloc((size_t)n_merged * out.embed_dim * sizeof(float));
+
+    // TODO: implement full merger (norm + reshape + FC1 + GELU + FC2)
+    // This is a placeholder
+
+    // Diff comparison if enabled
+    if (!ctx.diff_ref_path.empty()) {
+        crispembed_diff::Ref ref;
+        if (ref.load(ctx.diff_ref_path)) {
+            // Compare per-layer
+            for (uint32_t il = 0; il < ctx.m.vhp.depth; il++) {
+                char name[64];
+                std::snprintf(name, sizeof(name), "vis_layer_%u", il);
+                ggml_tensor *layer_out = ggml_graph_get_tensor(gr.gf, name);
+                if (layer_out && ref.has(name)) {
+                    std::vector<float> layer_data(n_patches * H);
+                    ggml_backend_tensor_get(layer_out, layer_data.data(), 0,
+                                            layer_data.size() * sizeof(float));
+                    auto r = ref.compare(name, layer_data.data(),
+                                         layer_data.size());
+                    fprintf(stderr, "  diff %s: cos_min=%.6f max_abs=%.2e %s\n",
+                            name, r.cos_min, r.max_abs,
+                            r.is_pass() ? "PASS" : "FAIL");
+                }
+            }
+        }
+    }
+
+    ggml_gallocr_free(alloc);
+    return true;
+}
+
+void vision_result_free(vision_result &r) {
+    if (r.image_embeds) {
+        free(r.image_embeds);
+        r.image_embeds = nullptr;
+    }
+}
+
+bool generate(context &ctx,
+              const float *image_embeds, int n_image_tokens, int embed_dim,
+              const int32_t *prompt_token_ids, int n_prompt_tokens,
+              int max_new_tokens,
+              generate_result &out) {
+    // TODO: implement LLM decoder generation
+    fprintf(stderr, "qwen2vl_ocr: generate() not yet implemented\n");
+    return false;
+}
+
+}  // namespace qwen2vl_ocr
