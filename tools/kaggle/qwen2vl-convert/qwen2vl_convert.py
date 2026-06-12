@@ -98,8 +98,23 @@ try:
     # ── Step 5: Convert to F16 GGUF ──────────────────────────────
     step("5. Converting to F16 GGUF")
     converter = REPO / "models" / "convert-qwen2vl-to-gguf.py"
+    # List files in snapshot dir for debugging
+    step(f"5. Snapshot dir: {src}")
+    for f in sorted(os.listdir(src))[:20]:
+        step(f"   {f} ({os.path.getsize(os.path.join(src, f)) if os.path.isfile(os.path.join(src, f)) else 'dir'})")
     t0 = time.time()
-    run(f"{sys.executable} {converter} --model {src} --output {OUT_F16} --dtype f16 --load-dtype bfloat16")
+    # Capture stderr from converter so we can see the actual error
+    result = subprocess.run(
+        [sys.executable, str(converter), "--model", src, "--output", str(OUT_F16),
+         "--dtype", "f16", "--load-dtype", "bfloat16"],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        step(f"5. Converter failed (exit {result.returncode})")
+        step(f"   stdout: {result.stdout[-500:] if result.stdout else '(empty)'}")
+        step(f"   stderr: {result.stderr[-500:] if result.stderr else '(empty)'}")
+        raise RuntimeError(f"Converter failed with exit code {result.returncode}")
+    print(result.stdout, flush=True)
     dt = time.time() - t0
     size_gb = OUT_F16.stat().st_size / (1024**3)
     step(f"5. F16 done: {size_gb:.2f} GiB ({dt:.0f}s)")
