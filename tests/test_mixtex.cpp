@@ -1,13 +1,21 @@
 // tests/test_mixtex.cpp — basic MixTex load + recognize test
+// Usage: ./test-mixtex <mixtex.gguf> [image.png|jpg|bmp]
 #include "mixtex_ocr.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <vector>
 
+// stb_image (implementation in image_preprocess.cpp)
+extern "C" {
+    typedef unsigned char stbi_uc;
+    stbi_uc *stbi_load(char const *filename, int *x, int *y, int *ch, int desired_ch);
+    void stbi_image_free(void *p);
+}
+
 int main(int argc, char** argv) {
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <mixtex.gguf> [image.png]\n", argv[0]);
+        fprintf(stderr, "Usage: %s <mixtex.gguf> [image.png|jpg|bmp]\n", argv[0]);
         return 1;
     }
 
@@ -18,21 +26,35 @@ int main(int argc, char** argv) {
     printf("Loaded: %dx%d, vocab=%d, dec_layers=%d\n",
            hp->image_w, hp->image_h, hp->vocab_size, hp->dec_layers);
 
-    // Create synthetic formula image (white bg, black cross shape)
-    int w = 200, h = 100;
-    std::vector<uint8_t> img(w * h * 3, 255);
-    // Horizontal line
-    for (int x = 30; x < 170; x++)
-        for (int dy = -1; dy <= 1; dy++)
-            for (int c = 0; c < 3; c++)
-                img[((50 + dy) * w + x) * 3 + c] = 0;
-    // Vertical line
-    for (int y = 20; y < 80; y++)
-        for (int dx = -1; dx <= 1; dx++)
-            for (int c = 0; c < 3; c++)
-                img[(y * w + (100 + dx)) * 3 + c] = 0;
+    int w, h;
+    std::vector<uint8_t> img;
 
-    printf("Running OCR on synthetic %dx%d...\n", w, h);
+    if (argc >= 3) {
+        int ch;
+        stbi_uc* px = stbi_load(argv[2], &w, &h, &ch, 3);
+        if (!px) {
+            fprintf(stderr, "Failed to load image: %s\n", argv[2]);
+            mixtex_ocr_free(ctx); return 1;
+        }
+        img.assign(px, px + w * h * 3);
+        stbi_image_free(px);
+        printf("Loaded image: %s (%dx%d)\n", argv[2], w, h);
+    } else {
+        // Synthetic formula (white bg, black cross)
+        w = 200; h = 100;
+        img.resize(w * h * 3, 255);
+        for (int x = 30; x < 170; x++)
+            for (int dy = -1; dy <= 1; dy++)
+                for (int c = 0; c < 3; c++)
+                    img[((50 + dy) * w + x) * 3 + c] = 0;
+        for (int y = 20; y < 80; y++)
+            for (int dx = -1; dx <= 1; dx++)
+                for (int c = 0; c < 3; c++)
+                    img[(y * w + (100 + dx)) * 3 + c] = 0;
+        printf("Using synthetic %dx%d image\n", w, h);
+    }
+
+    printf("Running OCR on %dx%d...\n", w, h);
     int out_len = 0;
     const char* result = mixtex_ocr_recognize(ctx, img.data(), w, h, 3, &out_len);
     printf("Result: \"%s\" (len=%d)\n", result ? result : "(null)", out_len);
