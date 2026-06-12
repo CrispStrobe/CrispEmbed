@@ -297,6 +297,9 @@ target_link_libraries(test-qwen2vl-e2e PRIVATE crispembed)
 add_executable(test-internvl2-diff tests/test_internvl2_diff.cpp)
 target_link_libraries(test-internvl2-diff PRIVATE crispembed)
 
+add_executable(test-internvl2-e2e tests/test_internvl2_e2e.cpp)
+target_link_libraries(test-internvl2-e2e PRIVATE crispembed)
+
 endif() # NOT iOS
 
 # ---------------------------------------------------------------------------
