@@ -58,6 +58,9 @@ Input text / image / audio
     ├─► Math  ──► BTTR: DenseNet + Transformer decoder (bttr_ocr.cpp)
     │                 Handwritten math → LaTeX (CROHME 2014, 53% exact match)
     │
+    ├─► OCR   ──► InternVL2.5: InternViT-300M + InternLM2.5-1.8B (internvl2_ocr.cpp)
+    │               2.1B VLM OCR, EN+DE, KV cache, dynamic tiling, OCRBench ~830
+    │
     └─► Text  ──► GLiNER NER: LFM2.5-bi + span matching (gliner_ner.cpp)
                     Zero-shot NER: BPE → LFM2 backbone → layer fusion
                     → BiLSTM → span-label dot-product scorer
@@ -86,6 +89,7 @@ Input text / image / audio
 | DeiT+TrOCR | — | ggml graph encoder + decoder | pix2tex-mfr |
 | HMER | — | DenseNet-121 + GRU attention | hmer (handwritten math) |
 | BTTR | — | DenseNet + Transformer decoder | bttr (handwritten math) |
+| InternVL2.5 | SentencePiece BPE | InternViT-300M + pixel unshuffle + InternLM2.5-1.8B (GQA 16/8, SwiGLU, KV cache) | internvl2.5-2b (VLM OCR) |
 
 ## Shared code with CrispASR
 
@@ -122,6 +126,7 @@ CrispEmbed/
 │   ├── math_ocr.{h,cpp}        DeiT+TrOCR printed math OCR
 │   ├── hmer_ocr.{h,cpp}        HMER handwritten math OCR
 │   ├── bttr_ocr.{h,cpp}        BTTR handwritten math OCR
+│   ├── internvl2_ocr.{h,cpp}   InternVL2.5-2B VLM OCR (KV cache)
 │   ├── tokenizer.h             WordPiece + SentencePiece + BPE
 │   ├── tokenizer_bpe.cpp       GPT-2 byte-level BPE
 │   ├── model_mgr.{h,cpp}       registry + auto-download
@@ -169,12 +174,16 @@ CrispEmbed/
 ### OCR — next-gen models to port
 
 - [~] surya-ocr-2 (0.7B, OpenRail-M free <$5M) — detector ported, FULL PARITY VERIFIED (heatmap max+mean exact match)
+- [x] **InternVL2.5-2B (2.1B, MIT) — DONE** — InternViT-300M + InternLM2.5-1.8B, KV cache, dynamic tiling, vision-text splice, C++ tokenizer decode. Parity cos=1.000. GGUFs: `cstr/internvl2.5-2b-crispembed-GGUF` (F16/Q8_0/Q4_K). German invoice E2E verified.
 - [ ] GLM-OCR (0.9B, MIT) — CogViT + GLM-0.5B, 8 languages, GGUF already exists at ggml-org/GLM-OCR-GGUF
 - [ ] GOT-OCR2_0 (0.7B, Apache-2.0) — SAM-ViT + Qwen-0.5B, end-to-end doc OCR (math+tables+text), trust_remote_code
 - [ ] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL fine-tune, 12+ languages incl. German, GGUF exists
 - [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics
 - [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL, German business docs → structured JSON
 - [x] **Keyven/german-ocr-3 — Qwen2.5-VL base engine DONE** (see blueprint below)
+- [ ] InternVL2-1B (0.9B, MIT) — same arch as 2.5-2B but Qwen2-0.5B LLM, edge/WASM target
+- [ ] PARSeq (24M, MIT) — lightweight text-line recognizer for DBNet pipeline
+- [ ] Granite Vision 3.3-2B (3B, Apache-2.0) — OCRBench 852, English-only
 
 ### Bindings
 
