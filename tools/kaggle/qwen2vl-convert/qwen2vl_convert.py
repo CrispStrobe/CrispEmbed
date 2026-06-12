@@ -40,7 +40,8 @@ try:
 
     # ── Step 2: Install deps ──────────────────────────────────────
     step("2. Installing dependencies")
-    run(f"{sys.executable} -m pip install --quiet safetensors gguf huggingface_hub transformers torch --no-cache-dir")
+    # torch is pre-installed on Kaggle — only install small deps
+    run(f"{sys.executable} -m pip install --quiet safetensors gguf huggingface_hub transformers hf_transfer")
     step("2. Deps installed")
 
     # ── Step 3: Resolve HF token ──────────────────────────────────
