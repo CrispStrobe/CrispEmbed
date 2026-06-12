@@ -742,7 +742,8 @@ void vision_result_free(vision_result &r) {
 
 bool run_llm_forward(context &ctx,
                      const int32_t *token_ids, int n_tokens,
-                     llm_result &out) {
+                     llm_result &out,
+                     const image_input *img) {
     const auto &lhp = ctx.m.lhp;
     const int D = (int)lhp.hidden_size;
     const int n_heads = (int)lhp.num_attention_heads;
@@ -769,6 +770,25 @@ bool run_llm_forward(context &ctx,
     // Token embedding lookup
     ggml_tensor *x = ggml_get_rows(g, ctx.m.embed_tokens, ids);
     // x: ne=(D, n_tokens)
+
+    // Vision-text splicing: replace image_pad token embeddings with
+    // image embeddings from the vision encoder
+    bool has_image = (img && img->image_embeds && img->n_image_tokens > 0);
+    if (has_image) {
+        // keep_mask: (1, n_tokens) — 1.0 for text, 0.0 for image positions
+        ggml_tensor *keep_mask = ggml_new_tensor_2d(g, GGML_TYPE_F32, 1, n_tokens);
+        ggml_set_name(keep_mask, "keep_mask");
+        ggml_set_input(keep_mask);
+
+        // image_patches: (D, n_tokens) — image embeds at image positions, 0 elsewhere
+        ggml_tensor *image_patches = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_tokens);
+        ggml_set_name(image_patches, "image_patches");
+        ggml_set_input(image_patches);
+
+        // x = x * keep_mask + image_patches
+        x = ggml_add(g, ggml_mul(g, x, keep_mask), image_patches);
+    }
+
     ggml_set_name(x, "llm_embed");
     ggml_set_output(x);
 
@@ -925,18 +945,99 @@ bool run_llm_forward(context &ctx,
     ggml_backend_tensor_set(mask_t, mask_data.data(), 0,
                             mask_data.size() * sizeof(float));
 
-    // Build mRoPE position IDs
-    // For text-only: all 3 dims = sequential position, 4th = 0
-    // Layout: [t0..t_{n-1}, h0..h_{n-1}, w0..w_{n-1}, 0..0]
+    // Build mRoPE position IDs and image splicing data
     std::vector<int32_t> pos_data(n_tokens * 4, 0);
-    for (int i = 0; i < n_tokens; i++) {
-        pos_data[i]                = i;  // temporal
-        pos_data[n_tokens + i]     = i;  // height
-        pos_data[2 * n_tokens + i] = i;  // width
-        pos_data[3 * n_tokens + i] = 0;  // padding
+    const int img_tok_id = (int)lhp.image_token_id;
+    const int spatial_merge = (int)ctx.m.vhp.spatial_merge_size;
+
+    if (has_image) {
+        // Build keep_mask and image_patches
+        std::vector<float> keep_data(n_tokens, 1.0f);
+        std::vector<float> patch_data((size_t)n_tokens * D, 0.0f);
+
+        int img_idx = 0;
+        for (int t = 0; t < n_tokens && img_idx < img->n_image_tokens; t++) {
+            if (token_ids[t] != img_tok_id) continue;
+            keep_data[t] = 0.0f;
+            std::memcpy(patch_data.data() + (size_t)t * D,
+                        img->image_embeds + (size_t)img_idx * D,
+                        (size_t)D * sizeof(float));
+            img_idx++;
+        }
+
+        ggml_tensor *km = ggml_graph_get_tensor(gf, "keep_mask");
+        ggml_backend_tensor_set(km, keep_data.data(), 0,
+                                keep_data.size() * sizeof(float));
+        ggml_tensor *ip = ggml_graph_get_tensor(gf, "image_patches");
+        ggml_backend_tensor_set(ip, patch_data.data(), 0,
+                                patch_data.size() * sizeof(float));
+
+        // Build mRoPE positions with image awareness
+        // Text tokens: pos_t = pos_h = pos_w = sequential
+        // Image tokens: pos_t = 0, pos_h = row, pos_w = col (within merged grid)
+        int last_max = -1;
+        int img_consumed = 0;
+        int st = 0;
+        while (st < n_tokens) {
+            // Find next image_pad token
+            int ed = n_tokens;
+            if (img_consumed < img->n_images) {
+                for (int p = st; p < n_tokens; p++) {
+                    if (token_ids[p] == img_tok_id) { ed = p; break; }
+                }
+            }
+
+            // Text segment [st, ed)
+            int text_len = ed - st;
+            int st_idx = last_max + 1;
+            for (int i = 0; i < text_len; i++) {
+                pos_data[st + i]                = st_idx + i;
+                pos_data[n_tokens + st + i]     = st_idx + i;
+                pos_data[2 * n_tokens + st + i] = st_idx + i;
+            }
+            if (text_len > 0) last_max = st_idx + text_len - 1;
+
+            if (ed >= n_tokens) break;
+
+            // Image segment: count consecutive image_pad tokens
+            int img_start = ed;
+            while (ed < n_tokens && token_ids[ed] == img_tok_id) ed++;
+            int n_img_tokens = ed - img_start;
+
+            // Get grid for this image
+            int grid_t = img->grid_thw[img_consumed * 3 + 0];
+            int grid_h = img->grid_thw[img_consumed * 3 + 1] / spatial_merge;
+            int grid_w = img->grid_thw[img_consumed * 3 + 2] / spatial_merge;
+            int t_idx = last_max + 1;
+
+            int tok = 0;
+            for (int ft = 0; ft < grid_t && tok < n_img_tokens; ft++) {
+                for (int fh = 0; fh < grid_h && tok < n_img_tokens; fh++) {
+                    for (int fw = 0; fw < grid_w && tok < n_img_tokens; fw++) {
+                        int pos = img_start + tok;
+                        pos_data[pos]                = t_idx;
+                        pos_data[n_tokens + pos]     = fh;
+                        pos_data[2 * n_tokens + pos] = fw;
+                        tok++;
+                    }
+                }
+            }
+
+            last_max = t_idx + std::max(grid_h, grid_w) - 1;
+            img_consumed++;
+            st = ed;
+        }
+    } else {
+        // Text-only: all 3 dims = sequential position
+        for (int i = 0; i < n_tokens; i++) {
+            pos_data[i]                = i;
+            pos_data[n_tokens + i]     = i;
+            pos_data[2 * n_tokens + i] = i;
+        }
     }
-    ggml_tensor *pos_t = ggml_graph_get_tensor(gf, "pos_ids");
-    ggml_backend_tensor_set(pos_t, pos_data.data(), 0,
+
+    ggml_tensor *pos_t_tensor = ggml_graph_get_tensor(gf, "pos_ids");
+    ggml_backend_tensor_set(pos_t_tensor, pos_data.data(), 0,
                             pos_data.size() * sizeof(int32_t));
 
     if (ggml_backend_sched_graph_compute(ctx.sched, gf) != GGML_STATUS_SUCCESS) {
