@@ -1331,3 +1331,124 @@ impl Drop for CrispLayout {
         }
     }
 }
+
+// ── Named Entity Recognition (GLiNER) ──
+
+/// A single extracted named entity.
+pub struct NerEntity {
+    pub text: String,
+    pub label: String,
+    pub start: i32,
+    pub end: i32,
+    pub score: f32,
+}
+
+/// GLiNER zero-shot named entity recognition.
+///
+/// Not `Sync` -- do not share between threads. Each thread should hold its
+/// own `CrispNER` instance. `Send`-safe: you can move it across threads.
+///
+/// # Example
+///
+/// ```no_run
+/// use crispembed::CrispNER;
+///
+/// let mut ner = CrispNER::new("/path/to/gliner.gguf", 0).unwrap();
+/// let entities = ner.extract(
+///     "John works at Google in New York.",
+///     &["person", "organization", "location"],
+///     0.5,
+/// );
+/// for e in &entities {
+///     println!("{} ({}) [{}, {}) score={:.3}", e.text, e.label, e.start, e.end, e.score);
+/// }
+/// ```
+pub struct CrispNER {
+    ctx: *mut crispembed_sys::NerContext,
+}
+
+unsafe impl Send for CrispNER {}
+
+impl CrispNER {
+    /// Load a NER GGUF model file (auto-detects architecture).
+    ///
+    /// - `model_path` -- path to the `.gguf` file.
+    /// - `n_threads`  -- CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_ner_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_ner_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Extract named entities from `text` using zero-shot `labels`.
+    ///
+    /// - `labels`    -- entity types to detect (e.g. `["person", "organization"]`).
+    /// - `threshold` -- confidence threshold in `[0, 1]` (recommended 0.5).
+    ///
+    /// Returns a `Vec<NerEntity>` sorted by position in the input text.
+    /// Returns an empty vector on failure.
+    pub fn extract(&mut self, text: &str, labels: &[&str], threshold: f32) -> Vec<NerEntity> {
+        let ctext = match CString::new(text) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let clabels: Vec<CString> = labels
+            .iter()
+            .filter_map(|l| CString::new(*l).ok())
+            .collect();
+        if clabels.len() != labels.len() {
+            return vec![];
+        }
+        let label_ptrs: Vec<*const i8> = clabels.iter().map(|s| s.as_ptr()).collect();
+
+        let mut out_entities: *mut crispembed_sys::NerEntity = std::ptr::null_mut();
+        let n = unsafe {
+            crispembed_sys::crispembed_ner_extract(
+                self.ctx,
+                ctext.as_ptr(),
+                label_ptrs.as_ptr(),
+                label_ptrs.len() as i32,
+                threshold,
+                &mut out_entities,
+            )
+        };
+        if n <= 0 || out_entities.is_null() {
+            return vec![];
+        }
+        let raw = unsafe { std::slice::from_raw_parts(out_entities, n as usize) };
+        raw.iter()
+            .map(|e| {
+                let text = if e.text.is_null() {
+                    String::new()
+                } else {
+                    unsafe { CStr::from_ptr(e.text) }
+                        .to_string_lossy()
+                        .into_owned()
+                };
+                let label = if e.label.is_null() {
+                    String::new()
+                } else {
+                    unsafe { CStr::from_ptr(e.label) }
+                        .to_string_lossy()
+                        .into_owned()
+                };
+                NerEntity {
+                    text,
+                    label,
+                    start: e.start_char,
+                    end: e.end_char,
+                    score: e.score,
+                }
+            })
+            .collect()
+    }
+}
+
+impl Drop for CrispNER {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_ner_free(self.ctx) }
+    }
+}

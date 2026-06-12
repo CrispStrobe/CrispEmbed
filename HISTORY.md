@@ -4,6 +4,34 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — GLiNER zero-shot NER (LFM2.5 backbone)
+
+Added zero-shot Named Entity Recognition via SauerkrautLM-LFM2.5-GLiNER.
+First non-embedding, non-OCR NLP task in CrispEmbed.
+
+**Architecture:** LFM2.5-350M bidirectional backbone (ported from CrispASR's
+LFM2-Audio implementation) with:
+- 16 layers (10 ShortConv + 6 GQA attention), SwiGLU FFN
+- Bidirectional attention (no causal mask) + symmetric conv padding
+- Layer fusion (squeeze-and-excitation with sigmoid gates)
+- BiLSTM (1-layer bidirectional, word-level)
+- GLiNER head: SpanMarkerV1 span representation + dot-product scorer
+
+**Parity (all vs Python reference via diff harness):**
+- All 16 backbone layers: cos=1.000000
+- Layer fusion: cos=1.000000
+- BiLSTM: cos=1.000000
+- End-to-end: 17/17 entities match across 5 test texts, mean score Δ=0.030
+
+**New files:** `src/gliner_ner.{h,cpp}` (C++ runtime), `models/convert-gliner-lfm-to-gguf.py`
+(converter), `tools/dump_gliner_reference.py` (reference dumper), C API
+(`crispembed_ner_*`), server `POST /ner/extract`, Python `CrispNER`, Rust `CrispNER`,
+Dart `CrispNER`.
+
+**License:** LFM Open License v1.0 (free under $10M revenue).
+
+---
+
 ## June 2026 (late) — surya text detector + MixTex LaTeX OCR
 
 ### surya-ocr-2 text detector port

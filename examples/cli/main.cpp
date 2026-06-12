@@ -80,6 +80,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
     fprintf(stderr, "  --layout FILE    document layout detection (RT-DETRv2, needs -m layout_model.gguf)\n");
+    fprintf(stderr, "  --ner TEXT       named entity recognition (GLiNER, needs -m ner_model.gguf)\n");
+    fprintf(stderr, "  --ner-labels L   comma-separated entity types (default: person,organization,location)\n");
+    fprintf(stderr, "  --ner-threshold F  confidence threshold for NER (default: 0.5)\n");
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
     fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
@@ -130,6 +133,9 @@ int main(int argc, char ** argv) {
     std::string hmer_path;   // image for handwritten math OCR (HMER)
     std::string bttr_path;   // image for handwritten math OCR (BTTR)
     std::string layout_path; // image for layout detection
+    std::string ner_text;    // text for NER extraction
+    std::string ner_labels = "person,organization,location"; // comma-separated entity types
+    float ner_threshold = 0.5f;
     std::string det_model;   // detection model for --face-pipeline
     std::string ocr_det_path;  // general OCR: text detection model (DBNet)
     std::string ocr_rec_path;  // general OCR: text recognition model (TrOCR)
@@ -186,6 +192,12 @@ int main(int argc, char ** argv) {
             bttr_path = argv[++i];
         } else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc) {
             layout_path = argv[++i];
+        } else if (strcmp(argv[i], "--ner") == 0 && i + 1 < argc) {
+            ner_text = argv[++i];
+        } else if (strcmp(argv[i], "--ner-labels") == 0 && i + 1 < argc) {
+            ner_labels = argv[++i];
+        } else if (strcmp(argv[i], "--ner-threshold") == 0 && i + 1 < argc) {
+            ner_threshold = (float)atof(argv[++i]);
         } else if (strcmp(argv[i], "--det") == 0 && i + 1 < argc) {
             det_model = argv[++i];
         } else if (strcmp(argv[i], "--face-pipeline") == 0) {
@@ -513,6 +525,55 @@ int main(int argc, char ** argv) {
             }
         }
         crispembed_layout_free(lctx);
+        return 0;
+    }
+
+    // Named Entity Recognition (GLiNER)
+    if (!ner_text.empty()) {
+        void* nctx = crispembed_ner_init(model_path.c_str(), n_threads);
+        if (!nctx) { fprintf(stderr, "error: failed to load NER model\n"); return 1; }
+
+        // Parse comma-separated labels
+        std::vector<std::string> label_strs;
+        std::istringstream lss(ner_labels);
+        std::string lbl;
+        while (std::getline(lss, lbl, ',')) {
+            // trim whitespace
+            size_t start = lbl.find_first_not_of(" \t");
+            size_t end = lbl.find_last_not_of(" \t");
+            if (start != std::string::npos)
+                label_strs.push_back(lbl.substr(start, end - start + 1));
+        }
+        std::vector<const char*> label_ptrs;
+        for (const auto& s : label_strs) label_ptrs.push_back(s.c_str());
+
+        crispembed_ner_entity* entities = nullptr;
+        int n_entities = crispembed_ner_extract(
+            nctx, ner_text.c_str(),
+            label_ptrs.data(), (int)label_ptrs.size(),
+            ner_threshold, &entities);
+
+        if (json_output) {
+            printf("{\"entities\": [");
+            for (int i = 0; i < n_entities; i++) {
+                if (i > 0) printf(", ");
+                printf("{\"text\": \"%s\", \"label\": \"%s\", \"start\": %d, \"end\": %d, \"score\": %.4f}",
+                       json_escape(entities[i].text).c_str(),
+                       json_escape(entities[i].label).c_str(),
+                       entities[i].start_char, entities[i].end_char,
+                       entities[i].score);
+            }
+            printf("]}\n");
+        } else {
+            printf("%d entities found:\n", n_entities);
+            for (int i = 0; i < n_entities; i++) {
+                printf("  [%d] %s (%s) [%d, %d) score=%.4f\n",
+                       i, entities[i].text, entities[i].label,
+                       entities[i].start_char, entities[i].end_char,
+                       entities[i].score);
+            }
+        }
+        crispembed_ner_free(nctx);
         return 0;
     }
 
