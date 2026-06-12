@@ -38,6 +38,13 @@ static bool load_bmp_gray(const char * path, std::vector<float> & gray,
     return true;
 }
 
+// stb_image (implementation in image_preprocess.cpp)
+extern "C" {
+    typedef unsigned char stbi_uc;
+    stbi_uc *stbi_load(char const *filename, int *x, int *y, int *ch, int desired_ch);
+    void stbi_image_free(void *p);
+}
+
 static bool ends_with(const char* s, const char* suffix) {
     int sl = strlen(s), sufl = strlen(suffix);
     return sl >= sufl && strcmp(s + sl - sufl, suffix) == 0;
@@ -61,6 +68,16 @@ int main(int argc, char** argv) {
             hmer_ocr_free(ctx); return 1;
         }
         fprintf(stderr, "Loaded BMP: %dx%d\n", w, h);
+    } else if (ends_with(argv[2], ".png") || ends_with(argv[2], ".jpg") ||
+               ends_with(argv[2], ".PNG") || ends_with(argv[2], ".JPG") ||
+               ends_with(argv[2], ".jpeg")) {
+        int ch;
+        stbi_uc* px = stbi_load(argv[2], &w, &h, &ch, 1);
+        if (!px) { fprintf(stderr, "Failed to load: %s\n", argv[2]); hmer_ocr_free(ctx); return 1; }
+        pixels.resize(w * h);
+        for (int i = 0; i < w * h; i++) pixels[i] = px[i] / 255.0f;
+        stbi_image_free(px);
+        fprintf(stderr, "Loaded image: %dx%d\n", w, h);
     } else if (argc >= 4) {
         if (sscanf(argv[3], "%dx%d", &w, &h) != 2) {
             fprintf(stderr, "Bad dimensions: %s\n", argv[3]);

@@ -55,8 +55,12 @@ Input text / image / audio
     ├─► Math  ──► HMER: DenseNet-121 + GRU attention (hmer_ocr.cpp)
     │               Handwritten math → LaTeX (CROHME 2016)
     │
-    └─► Math  ──► BTTR: DenseNet + Transformer decoder (bttr_ocr.cpp)
-                    Handwritten math → LaTeX (CROHME 2014, 53% exact match)
+    ├─► Math  ──► BTTR: DenseNet + Transformer decoder (bttr_ocr.cpp)
+    │                 Handwritten math → LaTeX (CROHME 2014, 53% exact match)
+    │
+    └─► Text  ──► GLiNER NER: LFM2.5-bi + span matching (gliner_ner.cpp)
+                    Zero-shot NER: BPE → LFM2 backbone → layer fusion
+                    → BiLSTM → span-label dot-product scorer
 ```
 
 ## Supported architectures (v0.7.0)
@@ -77,6 +81,7 @@ Input text / image / audio
 | ViT (SigLIP/CLIP) | — | Conv2D patch embed, CLS/mean/attn pool | siglip-base, clip-vit-base |
 | CLIP text | CLIP BPE | Pre-LN, causal mask, EOS pool | clip-text-base/large |
 | CNN (SCRFD/YuNet) | — | FPN, anchor decode, NMS | scrfd-det-10g, yunet |
+| LFM2.5 bidirectional | GPT-2 BPE | ShortConv+GQA, RoPE, SwiGLU, BiLSTM, GLiNER head | gliner-lfm (NER) |
 | CNN (ArcFace) | — | ResNet-100, 512-D L2 | w600k_r50, auraface-v1, sface |
 | DeiT+TrOCR | — | ggml graph encoder + decoder | pix2tex-mfr |
 | HMER | — | DenseNet-121 + GRU attention | hmer (handwritten math) |

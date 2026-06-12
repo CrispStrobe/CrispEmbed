@@ -280,3 +280,27 @@ typedef CrispembedOcrRecognizeNative = Pointer<Utf8> Function(
     Pointer<Void> ctx, Pointer<Utf8> imagePath, Pointer<Int32> outLen);
 typedef CrispembedOcrRecognizeDart = Pointer<Utf8> Function(
     Pointer<Void> ctx, Pointer<Utf8> imagePath, Pointer<Int32> outLen);
+
+// --- Named Entity Recognition (GLiNER) ---
+typedef CrispembedNerInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedNerInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedNerFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedNerFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedNerExtractNative = Int32 Function(
+    Pointer<Void> ctx,
+    Pointer<Utf8> text,
+    Pointer<Pointer<Utf8>> labels,
+    Int32 nLabels,
+    Float threshold,
+    Pointer<Pointer<Void>> outEntities);
+typedef CrispembedNerExtractDart = int Function(
+    Pointer<Void> ctx,
+    Pointer<Utf8> text,
+    Pointer<Pointer<Utf8>> labels,
+    int nLabels,
+    double threshold,
+    Pointer<Pointer<Void>> outEntities);

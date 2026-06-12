@@ -546,6 +546,43 @@ extern "C" {
         score_threshold: c_float,
         out_n: *mut c_int,
     ) -> *const LayoutRegion;
+
+    // ── Named Entity Recognition (GLiNER) ──
+
+    /// Load a NER model from GGUF. Auto-detects architecture.
+    /// Returns NULL on failure.
+    pub fn crispembed_ner_init(
+        model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut NerContext;
+
+    /// Free NER context. Safe to call with NULL.
+    pub fn crispembed_ner_free(ctx: *mut NerContext);
+
+    /// Extract named entities with zero-shot labels.
+    /// Returns entity count; sets `*out_entities` to result array (owned by ctx).
+    pub fn crispembed_ner_extract(
+        ctx: *mut NerContext,
+        text: *const c_char,
+        labels: *const *const c_char,
+        n_labels: c_int,
+        threshold: c_float,
+        out_entities: *mut *mut NerEntity,
+    ) -> c_int;
+}
+
+/// Opaque handle to a NER context (GLiNER zero-shot NER).
+#[repr(C)]
+pub struct NerContext(c_void);
+
+/// A single named entity extracted by GLiNER (matches `crispembed_ner_entity` in C).
+#[repr(C)]
+pub struct NerEntity {
+    pub start_char: c_int,
+    pub end_char: c_int,
+    pub text: *const c_char,
+    pub label: *const c_char,
+    pub score: c_float,
 }
 
 /// Layout detection result (matches `crispembed_layout_region` in C).

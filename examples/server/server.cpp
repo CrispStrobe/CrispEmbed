@@ -10,6 +10,7 @@
 //   POST /math/ocr        — {"image": "formula.png"} → {"latex": "...", "len": N, "ms": M}
 //   POST /ocr             — {"image": "doc.png"} → {"results": [...], "ms": M}  (detect+recognize)
 //   POST /layout/detect   — {"image": "page.png"} → {"regions": [...]}
+//   POST /ner/extract     — {"text": "...", "labels": [...]} → {"entities": [...]}
 //   GET  /health          — server status
 
 #include "crispembed.h"
@@ -53,6 +54,7 @@ int main(int argc, char ** argv) {
     std::string ocr_rec_model_path;   // general OCR: text recognition model (TrOCR)
     std::string layout_model_path;    // layout detection model (RT-DETRv2)
     std::string text_det_model_path;  // surya text detection model
+    std::string ner_model_path;       // NER model (GLiNER)
     int port = 8080;
     int n_threads = 4;
 
@@ -70,9 +72,10 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--ocr-rec") == 0 && i + 1 < argc) ocr_rec_model_path = argv[++i];
         else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc) layout_model_path = argv[++i];
         else if (strcmp(argv[i], "--text-det") == 0 && i + 1 < argc) text_det_model_path = argv[++i];
+        else if (strcmp(argv[i], "--ner") == 0 && i + 1 < argc) ner_model_path = argv[++i];
     }
 
-    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty()) {
+    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
@@ -86,6 +89,8 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --ocr MODEL   math OCR model (PP-FormulaNet, HMER, BTTR GGUF)\n");
         fprintf(stderr, "\nLayout detection (document structure):\n");
         fprintf(stderr, "  --layout MODEL   RT-DETRv2 layout detection model GGUF\n");
+        fprintf(stderr, "\nNamed Entity Recognition:\n");
+        fprintf(stderr, "  --ner MODEL      GLiNER zero-shot NER model GGUF\n");
         return 1;
     }
 
@@ -683,6 +688,18 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "Warning: failed to load text detection model '%s'\n", text_det_model_path.c_str());
     }
 
+    // NER (GLiNER)
+    void * ner_ctx = nullptr;
+    std::mutex ner_mutex;
+
+    if (!ner_model_path.empty()) {
+        std::string resolved = crispembed_mgr::resolve_model(ner_model_path, true);
+        if (!resolved.empty()) ner_model_path = resolved;
+        ner_ctx = crispembed_ner_init(ner_model_path.c_str(), n_threads);
+        if (!ner_ctx)
+            fprintf(stderr, "Warning: failed to load NER model '%s'\n", ner_model_path.c_str());
+    }
+
     // POST /clip/text — CLIP text encoding
     // Request:  {"text": "a photo of a cat"}
     // Response: {"embedding": [...], "dim": N}
@@ -962,6 +979,101 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /ner/extract — zero-shot named entity recognition
+    // Request:  {"text": "Barack Obama was born in Hawaii", "labels": ["person", "location"], "threshold": 0.5}
+    // Response: {"entities": [{"text": "Barack Obama", "label": "person", "start": 0, "end": 12, "score": 0.56}]}
+    svr.Post("/ner/extract", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!ner_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no NER model loaded (use --ner)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+
+        // Parse "text"
+        std::string text;
+        {
+            auto pos = body.find("\"text\"");
+            if (pos != std::string::npos) {
+                auto q1 = body.find('"', pos + 6);
+                auto q2 = body.find('"', q1 + 1);
+                if (q1 != std::string::npos && q2 != std::string::npos)
+                    text = body.substr(q1 + 1, q2 - q1 - 1);
+            }
+        }
+
+        // Parse "labels" array
+        std::vector<std::string> labels;
+        {
+            auto pos = body.find("\"labels\"");
+            if (pos != std::string::npos) {
+                auto arr_start = body.find('[', pos);
+                auto arr_end = body.find(']', arr_start);
+                if (arr_start != std::string::npos && arr_end != std::string::npos) {
+                    std::string arr = body.substr(arr_start + 1, arr_end - arr_start - 1);
+                    size_t i = 0;
+                    while (i < arr.size()) {
+                        auto q1 = arr.find('"', i);
+                        if (q1 == std::string::npos) break;
+                        auto q2 = arr.find('"', q1 + 1);
+                        if (q2 == std::string::npos) break;
+                        labels.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
+                        i = q2 + 1;
+                    }
+                }
+            }
+        }
+
+        // Parse "threshold"
+        float threshold = 0.5f;
+        {
+            auto pos = body.find("\"threshold\"");
+            if (pos != std::string::npos) {
+                auto colon = body.find(':', pos);
+                if (colon != std::string::npos)
+                    threshold = (float)atof(body.c_str() + colon + 1);
+            }
+        }
+
+        if (text.empty() || labels.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"provide \\\"text\\\" and \\\"labels\\\" fields\"}", "application/json");
+            return;
+        }
+
+        std::vector<const char *> label_ptrs(labels.size());
+        for (size_t i = 0; i < labels.size(); i++)
+            label_ptrs[i] = labels[i].c_str();
+
+        std::lock_guard<std::mutex> lock(ner_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        crispembed_ner_entity * entities = nullptr;
+        int n = crispembed_ner_extract(ner_ctx, text.c_str(),
+                                       label_ptrs.data(), (int)labels.size(),
+                                       threshold, &entities);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        std::ostringstream js;
+        js << "{\"entities\": [";
+        for (int i = 0; i < n; i++) {
+            if (i > 0) js << ", ";
+            js << "{\"text\": \"" << json_escape(entities[i].text ? entities[i].text : "")
+               << "\", \"label\": \"" << json_escape(entities[i].label ? entities[i].label : "")
+               << "\", \"start\": " << entities[i].start_char
+               << ", \"end\": " << entities[i].end_char
+               << ", \"score\": " << std::fixed << std::setprecision(4) << entities[i].score
+               << "}";
+        }
+        js << "], \"ms\": " << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /ner/extract in %.1f ms (%d entities)\n", ms, n);
+        res.set_content(js.str(), "application/json");
+    });
+
     // GET /health
     svr.Get("/health", [&](const httplib::Request &, httplib::Response & res) {
         std::ostringstream js;
@@ -979,6 +1091,7 @@ int main(int argc, char ** argv) {
         if (ocr_pipeline_ctx) js << ", \"ocr_pipeline\": true";
         if (layout_ctx) js << ", \"layout\": true";
         if (text_det_ctx) js << ", \"text_detection\": true";
+        if (ner_ctx) js << ", \"ner\": true";
         js << "}";
         res.set_content(js.str(), "application/json");
     });
@@ -998,10 +1111,12 @@ int main(int argc, char ** argv) {
     if (ocr_pipeline_ctx) fprintf(stderr, "  POST /ocr             — {\"image\": \"document.png\"} (detect+recognize)\n");
     if (layout_ctx) fprintf(stderr, "  POST /layout/detect   — {\"image\": \"page.png\"}\n");
     if (text_det_ctx) fprintf(stderr, "  POST /text/detect     — {\"image\": \"page.png\"}\n");
+    if (ner_ctx) fprintf(stderr, "  POST /ner/extract     — {\"text\": \"...\", \"labels\": [\"person\", ...]}\n");
     fprintf(stderr, "  GET  /health\n\n");
 
     svr.listen(host, port);
 
+    if (ner_ctx) crispembed_ner_free(ner_ctx);
     if (layout_ctx) crispembed_layout_free(layout_ctx);
     if (text_det_ctx) crispembed_text_det_free(text_det_ctx);
     if (ocr_pipeline_ctx) crispembed_ocr_free(ocr_pipeline_ctx);

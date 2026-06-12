@@ -1874,3 +1874,101 @@ class CrispTextDetect:
         if hasattr(self, '_ctx') and self._ctx:
             self._lib.crispembed_text_det_free(self._ctx)
             self._ctx = None
+
+
+# ---------------------------------------------------------------------------
+# Named Entity Recognition (GLiNER zero-shot NER)
+# ---------------------------------------------------------------------------
+
+class _NEREntity(ctypes.Structure):
+    _fields_ = [
+        ("start_char", ctypes.c_int),
+        ("end_char", ctypes.c_int),
+        ("text", ctypes.c_char_p),
+        ("label", ctypes.c_char_p),
+        ("score", ctypes.c_float),
+    ]
+
+
+def _setup_ner_signatures(lib):
+    lib.crispembed_ner_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_ner_init.restype = ctypes.c_void_p
+
+    lib.crispembed_ner_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_ner_free.restype = None
+
+    lib.crispembed_ner_extract.argtypes = [
+        ctypes.c_void_p, ctypes.c_char_p,
+        ctypes.POINTER(ctypes.c_char_p), ctypes.c_int,
+        ctypes.c_float,
+        ctypes.POINTER(ctypes.POINTER(_NEREntity)),
+    ]
+    lib.crispembed_ner_extract.restype = ctypes.c_int
+
+
+class CrispNER:
+    """Zero-shot Named Entity Recognition via GLiNER.
+
+    Detects arbitrary entity types specified at inference time — no
+    retraining needed. Uses an LFM2.5 bidirectional backbone with a
+    GLiNER span-matching head.
+
+    Usage::
+
+        ner = CrispNER("gliner-lfm-f32.gguf")
+        entities = ner.extract(
+            "Maria Schmidt arbeitet bei Siemens in München",
+            labels=["person", "organization", "location"],
+        )
+        for e in entities:
+            print(f"{e['text']} => {e['label']} ({e['score']:.2f})")
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 4, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_ner_signatures(self._lib)
+        self._ctx = self._lib.crispembed_ner_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load NER model: {model_path}")
+
+    def extract(self, text: str, labels: list, threshold: float = 0.5) -> list:
+        """Extract named entities from text.
+
+        Args:
+            text: Input text string.
+            labels: List of entity type strings (e.g. ["person", "org"]).
+            threshold: Minimum confidence (0.0-1.0, default 0.5).
+
+        Returns:
+            List of dicts: [{"text", "label", "start", "end", "score"}, ...]
+        """
+        # Build C array of label strings
+        label_bytes = [l.encode("utf-8") for l in labels]
+        label_arr = (ctypes.c_char_p * len(labels))(*label_bytes)
+
+        entities_ptr = ctypes.POINTER(_NEREntity)()
+        n = self._lib.crispembed_ner_extract(
+            self._ctx,
+            text.encode("utf-8"),
+            label_arr, len(labels),
+            ctypes.c_float(threshold),
+            ctypes.byref(entities_ptr),
+        )
+
+        results = []
+        for i in range(n):
+            e = entities_ptr[i]
+            results.append({
+                "text": e.text.decode("utf-8") if e.text else "",
+                "label": e.label.decode("utf-8") if e.label else "",
+                "start": e.start_char,
+                "end": e.end_char,
+                "score": float(e.score),
+            })
+        return results
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_ner_free(self._ctx)
+            self._ctx = None

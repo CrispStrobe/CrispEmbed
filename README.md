@@ -9,6 +9,10 @@ Text, image, and face embeddings in one binary.
 Qwen3, Gemma3, SPLADE, DeBERTa-v2). Dense, sparse (SPLADE/BGE-M3), ColBERT
 multi-vector, cross-encoder rerankers, bi-encoder reranking.
 
+**NER**: Zero-shot Named Entity Recognition via GLiNER (LFM2.5-350M bidirectional
+backbone). Detect arbitrary entity types at inference time — no retraining needed.
+CLI (`--ner`), server (`POST /ner/extract`), Python (`CrispNER`), Rust, Dart.
+
 **Vision**: CLIP and SigLIP text-image cross-modal search (encode text and images
 into the same vector space). YuNet/SCRFD face detection, ArcFace/SFace/AuraFace
 face recognition. Full detect-align-encode pipeline.
@@ -165,16 +169,19 @@ python tests/test_cli_parity.py --cli ./build/crispembed \
     --retrieval-model "$CRISPEMBED_RETRIEVAL_MODEL" \
     --reranker-model "$CRISPEMBED_RERANKER_MODEL"
 
-# Start server (text + vision + face + CLIP + OCR)
+# Start server (text + vision + face + CLIP + OCR + NER)
 ./build/crispembed-server -m model.gguf \
     --vit clip-vit-base-patch16.gguf \
     --clip-text clip-text-base.gguf \
     --det yunet.gguf \
-    --ocr ppformulanet-l-q8_0.gguf --port 8080
+    --ocr ppformulanet-l-q8_0.gguf \
+    --ner gliner-lfm-f32.gguf --port 8080
 curl -X POST http://localhost:8080/embed -d '{"texts": ["Hello world"]}'
 curl -X POST http://localhost:8080/clip/text -d '{"text": "a photo of a cat"}'
 curl -X POST http://localhost:8080/vit/encode -d '{"image": "photo.jpg"}'
 curl -X POST http://localhost:8080/math/ocr -d '{"image": "formula.png"}'
+curl -X POST http://localhost:8080/ner/extract \
+  -d '{"text": "Tim Cook at Apple", "labels": ["person", "organization"]}'
 ```
 
 ## OCR
@@ -253,6 +260,38 @@ Performance: 21s with BLAS (F32), Q8_0 model 43 MB.
 Source: [docling-project/docling-layout-heron](https://huggingface.co/docling-project/docling-layout-heron) (Apache-2.0).
 Models: [`cstr/layout-heron-gguf`](https://huggingface.co/cstr/layout-heron-gguf)
 
+## Named Entity Recognition
+
+Zero-shot NER via GLiNER with an LFM2.5-350M bidirectional backbone (16 layers:
+10 ShortConv + 6 GQA attention, SwiGLU FFN). Detects arbitrary entity types
+specified at inference time — no retraining needed. Ported from CrispASR's LFM2
+backbone with bidirectional attention and symmetric convolutions.
+
+Architecture: BPE tokenize → LFM2.5-bi backbone → layer fusion (squeeze-and-excitation)
+→ BiLSTM → GLiNER span-label matching head (SpanMarkerV1 + dot-product scorer).
+
+```bash
+# CLI
+./build/crispembed -m gliner-lfm-f32.gguf --ner "Maria Schmidt arbeitet bei Siemens in München"
+
+# Server
+./build/crispembed-server --ner gliner-lfm-f32.gguf --port 8080
+curl -X POST http://localhost:8080/ner/extract \
+  -d '{"text": "Maria Schmidt arbeitet bei Siemens", "labels": ["person", "organization"], "threshold": 0.5}'
+
+# Python
+from crispembed import CrispNER
+ner = CrispNER("gliner-lfm-f32.gguf")
+entities = ner.extract("Maria Schmidt arbeitet bei Siemens in München",
+                       labels=["person", "organization", "location"])
+for e in entities:
+    print(f"{e['text']} => {e['label']} ({e['score']:.2f})")
+```
+
+Parity: all 16 backbone layers cos=1.000000 vs HF reference. Layer fusion and
+BiLSTM cos=1.000000. 17/17 entities match across 5 test texts.
+Source: [VAGOsolutions/SauerkrautLM-LFM2.5-GLiNER](https://huggingface.co/VAGOsolutions/SauerkrautLM-LFM2.5-GLiNER) (LFM Open License v1.0).
+
 ## Model licenses
 
 The auto-download registry (`-m <name>`) covers models under multiple
@@ -265,6 +304,7 @@ column) or the upstream model card before using a model commercially.
 |---|---|---|
 | **Permissive** (Apache-2.0 / MIT) | most BERT/XLM-R/MPNet, BGE, E5, Granite, Snowflake, MXBai, Nomic, MS-Marco, Qwen3, Harrier, BidirLM-Omni, GTE-v1.5 | commercial use OK with normal attribution |
 | **CC BY-NC 4.0** (non-commercial) | `jina-v5-nano`, `jina-v5-small`, `jina-reranker-v2-base-multilingual` | research/evaluation only; commercial use requires a paid license from Jina (sales@jina.ai) |
+| **LFM Open License v1.0** | `gliner-lfm` (NER) | free under $10M annual revenue; above that requires commercial license from Liquid AI |
 | **Gemma Terms of Use** | `embeddinggemma-300m` | commercial use permitted **subject to** Google's [Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy) |
 
 Restricted-license entries (NC + Gemma) are marked with `*` in
@@ -698,7 +738,7 @@ The model type is auto-detected from GGUF metadata at load time:
 Tokenizer dispatch reads `tokenizer.ggml.type`: `0=WordPiece`, `1=BPE`, `2=SentencePiece`. Heuristic fallback: vocab > 100K ⇒ SentencePiece.
 
 Server (`examples/server/server.cpp`) exposes text embedding (4 API dialects),
-face detection/recognition, ViT/CLIP vision, and math OCR:
+face detection/recognition, ViT/CLIP vision, math OCR, and NER:
 - `POST /embed` — native `{"texts": [...]}`
 - `POST /v1/embeddings` — OpenAI-compatible
 - `POST /api/embed` — Ollama batch
@@ -706,6 +746,7 @@ face detection/recognition, ViT/CLIP vision, and math OCR:
 - `POST /detect`, `POST /face` — face detection/recognition
 - `POST /vit/encode`, `POST /clip/text` — image/text encoding
 - `POST /math/ocr` — formula recognition `{"image": "path"}` → `{"latex": "..."}`
+- `POST /ner/extract` — NER `{"text": "...", "labels": [...]}` → `{"entities": [...]}`
 
 **BERT encoder** (all-MiniLM, gte, arctic-embed-xs, paraphrase-multilingual-MiniLM-L12-v2):
 - Token + Position + Type embeddings → Post-LN transformer → Mean/CLS pooling

@@ -139,6 +139,7 @@ list(APPEND CRISPEMBED_SOURCES src/layout_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/surya_det.cpp)
 list(APPEND CRISPEMBED_SOURCES src/mixtex_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/qwen2vl_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/gliner_ner.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -277,6 +278,12 @@ if(NOT WIN32)
     add_executable(test-layout-diff tests/test_layout_diff.cpp)
     target_link_libraries(test-layout-diff PRIVATE crispembed)
 endif()
+
+add_executable(test-gliner-ner tests/test_gliner_ner.cpp)
+target_link_libraries(test-gliner-ner PRIVATE crispembed)
+
+add_executable(test-gliner-diff tests/test_gliner_diff.cpp)
+target_link_libraries(test-gliner-diff PRIVATE crispembed)
 
 add_executable(test-conv-ext tests/test_conv_ext.cpp)
 target_link_libraries(test-conv-ext PRIVATE crispembed)
