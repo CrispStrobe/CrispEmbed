@@ -284,6 +284,9 @@ target_link_libraries(test-conv-ext PRIVATE crispembed)
 add_executable(test-ocr-pipeline tests/test_ocr_pipeline.cpp)
 target_link_libraries(test-ocr-pipeline PRIVATE crispembed)
 
+add_executable(test-qwen2vl tests/test_qwen2vl.cpp)
+target_link_libraries(test-qwen2vl PRIVATE crispembed)
+
 add_executable(test-qwen2vl-diff tests/test_qwen2vl_diff.cpp)
 target_link_libraries(test-qwen2vl-diff PRIVATE crispembed)
 
