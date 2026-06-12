@@ -174,6 +174,12 @@ bool load_tensors(context &ctx, const char *path) {
         // Attention: fused QKV or separate Q/K/V (mmproj uses separate)
         blk.qkv_w      = get(p + "attn_qkv.weight");
         blk.qkv_b      = get(p + "attn_qkv.bias");
+        blk.q_w        = get(p + "attn_q.weight");
+        blk.q_b        = get(p + "attn_q.bias");
+        blk.k_w        = get(p + "attn_k.weight");
+        blk.k_b        = get(p + "attn_k.bias");
+        blk.v_w        = get(p + "attn_v.weight");
+        blk.v_b        = get(p + "attn_v.bias");
         blk.proj_w     = get2(p + "attn_proj.weight", p + "attn_out.weight");
         blk.proj_b     = get2(p + "attn_proj.bias",   p + "attn_out.bias");
         // SwiGLU FFN (Qwen2.5-VL)
@@ -391,17 +397,30 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         // Pre-attn norm (LayerNorm or RMSNorm)
         ggml_tensor *y = vnorm(x, blk.norm1_w, blk.norm1_b);
 
-        // Fused QKV (both variants use fused QKV)
-        ggml_tensor *qkv = ggml_mul_mat(g, blk.qkv_w, y);
-        if (blk.qkv_b) qkv = ggml_add(g, qkv, blk.qkv_b);
-        qkv = ggml_reshape_4d(g, qkv, head_dim, n_heads, 3, n_patches);
-
-        ggml_tensor *Q = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches,
-                                       qkv->nb[1], qkv->nb[3], 0 * qkv->nb[2]);
-        ggml_tensor *K = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches,
-                                       qkv->nb[1], qkv->nb[3], 1 * qkv->nb[2]);
-        ggml_tensor *V = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches,
-                                       qkv->nb[1], qkv->nb[3], 2 * qkv->nb[2]);
+        // QKV: fused (CrispEmbed/Qwen2.5-VL) or separate (llama.cpp mmproj)
+        ggml_tensor *Q, *K, *V;
+        if (blk.qkv_w) {
+            ggml_tensor *qkv = ggml_mul_mat(g, blk.qkv_w, y);
+            if (blk.qkv_b) qkv = ggml_add(g, qkv, blk.qkv_b);
+            qkv = ggml_reshape_4d(g, qkv, head_dim, n_heads, 3, n_patches);
+            Q = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches,
+                             qkv->nb[1], qkv->nb[3], 0 * qkv->nb[2]);
+            K = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches,
+                             qkv->nb[1], qkv->nb[3], 1 * qkv->nb[2]);
+            V = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches,
+                             qkv->nb[1], qkv->nb[3], 2 * qkv->nb[2]);
+        } else {
+            // Separate Q/K/V (llama.cpp mmproj)
+            Q = ggml_mul_mat(g, blk.q_w, y);
+            if (blk.q_b) Q = ggml_add(g, Q, blk.q_b);
+            K = ggml_mul_mat(g, blk.k_w, y);
+            if (blk.k_b) K = ggml_add(g, K, blk.k_b);
+            V = ggml_mul_mat(g, blk.v_w, y);
+            if (blk.v_b) V = ggml_add(g, V, blk.v_b);
+            Q = ggml_reshape_3d(g, Q, head_dim, n_heads, n_patches);
+            K = ggml_reshape_3d(g, K, head_dim, n_heads, n_patches);
+            V = ggml_reshape_3d(g, V, head_dim, n_heads, n_patches);
+        }
         Q = ggml_cont(g, Q);
         K = ggml_cont(g, K);
         V = ggml_cont(g, V);

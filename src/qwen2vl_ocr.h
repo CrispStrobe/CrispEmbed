@@ -85,8 +85,11 @@ struct vision_block {
     // Norms: RMSNorm (Qwen2.5-VL, no bias) or LayerNorm (Qwen2-VL, with bias)
     ggml_tensor *norm1_w = nullptr, *norm1_b = nullptr;
     ggml_tensor *norm2_w = nullptr, *norm2_b = nullptr;
-    // Attention: fused QKV (both variants)
-    ggml_tensor *qkv_w = nullptr, *qkv_b = nullptr;
+    // Attention: fused QKV (CrispEmbed) or separate Q/K/V (llama.cpp mmproj)
+    ggml_tensor *qkv_w = nullptr, *qkv_b = nullptr;     // fused
+    ggml_tensor *q_w = nullptr, *q_b = nullptr;          // separate (mmproj)
+    ggml_tensor *k_w = nullptr, *k_b = nullptr;
+    ggml_tensor *v_w = nullptr, *v_b = nullptr;
     ggml_tensor *proj_w = nullptr, *proj_b = nullptr;
     // FFN: SwiGLU (Qwen2.5-VL: gate+up+down) or GELU (Qwen2-VL: fc1+fc2)
     // SwiGLU fields:
