@@ -1,11 +1,23 @@
 // test_posformer.cpp — Smoke test for PosFormer handwritten math OCR.
-// Usage: ./test-posformer model.gguf [image.bmp]
+// Usage: ./test-posformer model.gguf [image.bmp|png|jpg]
 
 #include "posformer_ocr.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+
+// stb_image (implementation in image_preprocess.cpp)
+extern "C" {
+    typedef unsigned char stbi_uc;
+    stbi_uc *stbi_load(char const *filename, int *x, int *y, int *ch, int desired_ch);
+    void stbi_image_free(void *p);
+}
+
+static bool ends_with(const char* s, const char* suffix) {
+    int sl = strlen(s), sufl = strlen(suffix);
+    return sl >= sufl && strcmp(s + sl - sufl, suffix) == 0;
+}
 
 // Minimal BMP loader (uncompressed, 24-bit or 8-bit)
 static bool load_bmp_gray(const char * path, std::vector<float> & gray,
@@ -74,13 +86,21 @@ int main(int argc, char ** argv) {
     int W, H;
     std::vector<float> img;
 
-    if (argc >= 3) {
+    if (argc >= 3 && (ends_with(argv[2], ".bmp") || ends_with(argv[2], ".BMP"))) {
         if (!load_bmp_gray(argv[2], img, W, H)) {
             fprintf(stderr, "Can't load BMP: %s\n", argv[2]);
-            posformer_ocr_free(ctx);
-            return 1;
+            posformer_ocr_free(ctx); return 1;
         }
         fprintf(stderr, "Loaded BMP: %dx%d\n", W, H);
+    } else if (argc >= 3) {
+        // PNG/JPG/etc via stb_image
+        int ch;
+        stbi_uc* px = stbi_load(argv[2], &W, &H, &ch, 1);
+        if (!px) { fprintf(stderr, "Can't load: %s\n", argv[2]); posformer_ocr_free(ctx); return 1; }
+        img.resize(W * H);
+        for (int i = 0; i < W * H; i++) img[i] = px[i] / 255.0f;
+        stbi_image_free(px);
+        fprintf(stderr, "Loaded image: %dx%d\n", W, H);
     } else {
         W = 76; H = 56;
         img = create_test_image(W, H);
