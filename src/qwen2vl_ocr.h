@@ -175,6 +175,9 @@ struct llm_result {
     int n_tokens = 0;
     int hidden_dim = 0;
     int vocab_size = 0;
+    // Graph pointer for KV cache extraction (valid until next call)
+    struct ggml_cgraph *kv_graph = nullptr;
+    struct ggml_context *kv_graph_ctx = nullptr;  // owns the graph memory
 };
 
 // image_input: optional, for vision-text splicing
