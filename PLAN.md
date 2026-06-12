@@ -584,7 +584,9 @@ GitHub: https://github.com/VikParuchuri/surya
 - [x] Parity verification — heatmap max=0.9649 exact, mean=0.0113 exact
 - [x] Heatmap → polygon post-processing (connected components + bbox)
 - [x] Move encoder to ggml graph — 13min→1min (13x). Stages 0-2 + block0: 17s via graph. LiteMLA + decode scalar.
-- [x] Upload GGUF to HuggingFace — https://huggingface.co/cstr/surya-det-GGUF
+- [x] Upload GGUF to HuggingFace — https://huggingface.co/cstr/surya-det-GGUF (F32, F16, Q8_0, Q4_K)
+- [ ] CUDA/GPU testing via Kaggle kernel (P100/T4)
+- [ ] Image format support: test binaries need PNG/JPG via stb_image
 
 **GGUFs**: `/mnt/storage/gguf-models/surya-det-{f32,f16}.gguf`
 

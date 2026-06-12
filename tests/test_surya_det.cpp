@@ -1,4 +1,5 @@
 // tests/test_surya_det.cpp — basic load + forward pass test for surya detector
+// Supports PNG/JPG/BMP via stb_image, or uses synthetic if no image given.
 #include "surya_det.h"
 #include <cmath>
 #include <cstdio>
@@ -6,13 +7,20 @@
 #include <cstring>
 #include <vector>
 
+// stb_image (implementation in image_preprocess.cpp)
+extern "C" {
+    typedef unsigned char stbi_uc;
+    stbi_uc *stbi_load(char const *filename, int *x, int *y, int *ch, int desired_ch);
+    void stbi_image_free(void *p);
+}
+
 int main(int argc, char** argv) {
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <surya-det.gguf> [test_image.bmp]\n", argv[0]);
+        fprintf(stderr, "Usage: %s <surya-det.gguf> [image.png|jpg|bmp]\n", argv[0]);
         return 1;
     }
 
-    surya_det_context* ctx = surya_det_init(argv[0 + 1], 4);
+    surya_det_context* ctx = surya_det_init(argv[1], 4);
     if (!ctx) {
         fprintf(stderr, "Failed to load model\n");
         return 1;
@@ -22,9 +30,25 @@ int main(int argc, char** argv) {
     printf("Model loaded: input=%dx%d, classes=%d\n",
            hp->input_w, hp->input_h, hp->num_classes);
 
-    // Create a synthetic test image (white with dark horizontal lines)
-    int w = 800, h = 600;
-    std::vector<uint8_t> img(w * h * 3, 240);
+    int w, h;
+    std::vector<uint8_t> img;
+
+    if (argc >= 3) {
+        // Load image via stb_image
+        int ch;
+        stbi_uc* px = stbi_load(argv[2], &w, &h, &ch, 3);
+        if (!px) {
+            fprintf(stderr, "Failed to load image: %s\n", argv[2]);
+            surya_det_free(ctx);
+            return 1;
+        }
+        img.assign(px, px + w * h * 3);
+        stbi_image_free(px);
+        printf("Loaded image: %s (%dx%d)\n", argv[2], w, h);
+    } else {
+        // Create a synthetic test image (white with dark horizontal lines)
+        w = 800; h = 600;
+        img.resize(w * h * 3, 240);
     for (int y = 100; y < h - 100; y += 80) {
         for (int x = 50; x < w - 50; x++) {
             for (int c = 0; c < 3; c++) {
@@ -38,8 +62,9 @@ int main(int argc, char** argv) {
             }
         }
     }
+    }
 
-    printf("Running detection on synthetic %dx%d image...\n", w, h);
+    printf("Running detection on %dx%d image...\n", w, h);
     int out_h = 0, out_w = 0;
     const float* heatmap = surya_det_detect(ctx, img.data(), w, h, 3, &out_h, &out_w);
     if (!heatmap) {
