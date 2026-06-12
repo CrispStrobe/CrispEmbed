@@ -490,6 +490,40 @@ static ggml_tensor * gliner_build_layer(ggml_context * ctx, ggml_tensor * x,
 }
 
 // ============================================================================
+// Tensor dequantization helper — reads any ggml tensor (F32/F16/Q8_0/Q4_K/...)
+// from a backend buffer and returns F32 data on CPU.
+// ============================================================================
+
+static std::vector<float> tensor_to_f32_backend(ggml_tensor * t, ggml_backend_t backend) {
+    if (!t) return {};
+    int64_t n = ggml_nelements(t);
+    size_t raw_size = ggml_nbytes(t);
+    std::vector<float> out(n);
+
+    if (t->type == GGML_TYPE_F32) {
+        // Direct copy
+        ggml_backend_tensor_get(t, out.data(), 0, raw_size);
+    } else {
+        // Read raw quantized bytes, then dequantize
+        std::vector<uint8_t> raw(raw_size);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_size);
+        const auto * traits = ggml_get_type_traits(t->type);
+        if (traits && traits->to_float) {
+            traits->to_float(raw.data(), out.data(), n);
+        } else if (t->type == GGML_TYPE_F16) {
+            const ggml_fp16_t * src = (const ggml_fp16_t *)raw.data();
+            for (int64_t i = 0; i < n; i++)
+                out[i] = ggml_fp16_to_fp32(src[i]);
+        } else {
+            fprintf(stderr, "[gliner] WARNING: unsupported tensor type %d for %s, zeroing\n",
+                    (int)t->type, t->name);
+            memset(out.data(), 0, n * sizeof(float));
+        }
+    }
+    return out;
+}
+
+// ============================================================================
 // BiLSTM (CPU-side, not in ggml graph — simpler for 1-layer)
 // ============================================================================
 
@@ -548,21 +582,15 @@ static void bilstm_forward(
     int T, int input_size, int lstm_hidden,
     const gliner_model & model, ggml_backend_t backend)
 {
-    // Read LSTM weights from backend
-    auto read_tensor = [&](ggml_tensor * t) -> std::vector<float> {
-        std::vector<float> v(ggml_nelements(t));
-        ggml_backend_tensor_get(t, v.data(), 0, v.size() * sizeof(float));
-        return v;
-    };
-
-    auto W_ih_fwd = read_tensor(model.lstm_weight_ih_l0);
-    auto b_ih_fwd = read_tensor(model.lstm_bias_ih_l0);
-    auto W_hh_fwd = read_tensor(model.lstm_weight_hh_l0);
-    auto b_hh_fwd = read_tensor(model.lstm_bias_hh_l0);
-    auto W_ih_rev = read_tensor(model.lstm_weight_ih_l0_rev);
-    auto b_ih_rev = read_tensor(model.lstm_bias_ih_l0_rev);
-    auto W_hh_rev = read_tensor(model.lstm_weight_hh_l0_rev);
-    auto b_hh_rev = read_tensor(model.lstm_bias_hh_l0_rev);
+    // Read LSTM weights from backend (handles quantized tensors)
+    auto W_ih_fwd = tensor_to_f32_backend(model.lstm_weight_ih_l0, backend);
+    auto b_ih_fwd = tensor_to_f32_backend(model.lstm_bias_ih_l0, backend);
+    auto W_hh_fwd = tensor_to_f32_backend(model.lstm_weight_hh_l0, backend);
+    auto b_hh_fwd = tensor_to_f32_backend(model.lstm_bias_hh_l0, backend);
+    auto W_ih_rev = tensor_to_f32_backend(model.lstm_weight_ih_l0_rev, backend);
+    auto b_ih_rev = tensor_to_f32_backend(model.lstm_bias_ih_l0_rev, backend);
+    auto W_hh_rev = tensor_to_f32_backend(model.lstm_weight_hh_l0_rev, backend);
+    auto b_hh_rev = tensor_to_f32_backend(model.lstm_bias_hh_l0_rev, backend);
 
     // Forward direction → first half of output
     std::vector<float> fwd_out(T * lstm_hidden);
@@ -953,20 +981,14 @@ int gliner_ner_extract(void * ptr,
     // -----------------------------------------------------------------------
 
     // Read fuser weights
-    auto read_tensor = [&](ggml_tensor * t) -> std::vector<float> {
-        std::vector<float> v(ggml_nelements(t));
-        ggml_backend_tensor_get(t, v.data(), 0, v.size() * sizeof(float));
-        return v;
-    };
-
-    auto squeeze_w = read_tensor(model.fuser_squeeze_w);   // (1, hidden)
-    auto squeeze_b = read_tensor(model.fuser_squeeze_b);   // (1)
-    auto W1_w = read_tensor(model.fuser_W1_w);             // (8, n_layers)
-    auto W1_b = read_tensor(model.fuser_W1_b);             // (8)
-    auto W2_w = read_tensor(model.fuser_W2_w);             // (n_layers, 8)
-    auto W2_b = read_tensor(model.fuser_W2_b);             // (n_layers)
-    auto out_proj_w = read_tensor(model.fuser_output_proj_w);  // (hidden, hidden)
-    auto out_proj_b = read_tensor(model.fuser_output_proj_b);  // (hidden)
+    auto squeeze_w = tensor_to_f32_backend(model.fuser_squeeze_w, ctx->backend);
+    auto squeeze_b = tensor_to_f32_backend(model.fuser_squeeze_b, ctx->backend);
+    auto W1_w = tensor_to_f32_backend(model.fuser_W1_w, ctx->backend);
+    auto W1_b = tensor_to_f32_backend(model.fuser_W1_b, ctx->backend);
+    auto W2_w = tensor_to_f32_backend(model.fuser_W2_w, ctx->backend);
+    auto W2_b = tensor_to_f32_backend(model.fuser_W2_b, ctx->backend);
+    auto out_proj_w = tensor_to_f32_backend(model.fuser_output_proj_w, ctx->backend);
+    auto out_proj_b = tensor_to_f32_backend(model.fuser_output_proj_b, ctx->backend);
 
     int NL = (int)hp.n_layers;
 
@@ -1099,10 +1121,10 @@ int gliner_ner_extract(void * ptr,
 
     // 5a. Entity type representations: from fused output at <<ENT>> positions → prompt_rep MLP
     //     (entity reps come from fused token embeddings, NOT BiLSTM output)
-    auto prompt_rep_0_w = read_tensor(model.prompt_rep_0_w);
-    auto prompt_rep_0_b = read_tensor(model.prompt_rep_0_b);
-    auto prompt_rep_3_w = read_tensor(model.prompt_rep_3_w);
-    auto prompt_rep_3_b = read_tensor(model.prompt_rep_3_b);
+    auto prompt_rep_0_w = tensor_to_f32_backend(model.prompt_rep_0_w, ctx->backend);
+    auto prompt_rep_0_b = tensor_to_f32_backend(model.prompt_rep_0_b, ctx->backend);
+    auto prompt_rep_3_w = tensor_to_f32_backend(model.prompt_rep_3_w, ctx->backend);
+    auto prompt_rep_3_b = tensor_to_f32_backend(model.prompt_rep_3_b, ctx->backend);
 
     std::vector<float> ent_reps(n_labels * hidden);
     mlp_2layer(ent_hidden_from_fused.data(), ent_reps.data(),
@@ -1116,22 +1138,22 @@ int gliner_ner_extract(void * ptr,
     // where proj_* are 2-layer MLPs on the lstm_out hidden states
 
     // Read span projection weights
-    auto sp_start_0_w = read_tensor(model.span_proj_start_0_w);
-    auto sp_start_0_b = read_tensor(model.span_proj_start_0_b);
-    auto sp_start_3_w = read_tensor(model.span_proj_start_3_w);
-    auto sp_start_3_b = read_tensor(model.span_proj_start_3_b);
-    auto sp_end_0_w   = read_tensor(model.span_proj_end_0_w);
-    auto sp_end_0_b   = read_tensor(model.span_proj_end_0_b);
-    auto sp_end_3_w   = read_tensor(model.span_proj_end_3_w);
-    auto sp_end_3_b   = read_tensor(model.span_proj_end_3_b);
-    auto sp_first_0_w = read_tensor(model.span_proj_first_0_w);
-    auto sp_first_0_b = read_tensor(model.span_proj_first_0_b);
-    auto sp_first_3_w = read_tensor(model.span_proj_first_3_w);
-    auto sp_first_3_b = read_tensor(model.span_proj_first_3_b);
-    auto sp_out_0_w   = read_tensor(model.span_out_proj_0_w);
-    auto sp_out_0_b   = read_tensor(model.span_out_proj_0_b);
-    auto sp_out_3_w   = read_tensor(model.span_out_proj_3_w);
-    auto sp_out_3_b   = read_tensor(model.span_out_proj_3_b);
+    auto sp_start_0_w = tensor_to_f32_backend(model.span_proj_start_0_w, ctx->backend);
+    auto sp_start_0_b = tensor_to_f32_backend(model.span_proj_start_0_b, ctx->backend);
+    auto sp_start_3_w = tensor_to_f32_backend(model.span_proj_start_3_w, ctx->backend);
+    auto sp_start_3_b = tensor_to_f32_backend(model.span_proj_start_3_b, ctx->backend);
+    auto sp_end_0_w   = tensor_to_f32_backend(model.span_proj_end_0_w, ctx->backend);
+    auto sp_end_0_b   = tensor_to_f32_backend(model.span_proj_end_0_b, ctx->backend);
+    auto sp_end_3_w   = tensor_to_f32_backend(model.span_proj_end_3_w, ctx->backend);
+    auto sp_end_3_b   = tensor_to_f32_backend(model.span_proj_end_3_b, ctx->backend);
+    auto sp_first_0_w = tensor_to_f32_backend(model.span_proj_first_0_w, ctx->backend);
+    auto sp_first_0_b = tensor_to_f32_backend(model.span_proj_first_0_b, ctx->backend);
+    auto sp_first_3_w = tensor_to_f32_backend(model.span_proj_first_3_w, ctx->backend);
+    auto sp_first_3_b = tensor_to_f32_backend(model.span_proj_first_3_b, ctx->backend);
+    auto sp_out_0_w   = tensor_to_f32_backend(model.span_out_proj_0_w, ctx->backend);
+    auto sp_out_0_b   = tensor_to_f32_backend(model.span_out_proj_0_b, ctx->backend);
+    auto sp_out_3_w   = tensor_to_f32_backend(model.span_out_proj_3_w, ctx->backend);
+    auto sp_out_3_b   = tensor_to_f32_backend(model.span_out_proj_3_b, ctx->backend);
 
     // Project all WORD-LEVEL representations through start, end, and first projections
     // (using BiLSTM output, which is word-level)
@@ -1167,8 +1189,8 @@ int gliner_ner_extract(void * ptr,
     // -----------------------------------------------------------------------
 
     // Read scorer temperature (applied during sigmoid scoring)
-    float log_temp;
-    ggml_backend_tensor_get(model.scorer_log_temp, &log_temp, 0, sizeof(float));
+    auto log_temp_v = tensor_to_f32_backend(model.scorer_log_temp, ctx->backend);
+    float log_temp = log_temp_v.empty() ? 0.0f : log_temp_v[0];
     float temperature = expf(log_temp);
     GDBG("scorer temperature: exp(%f) = %f", log_temp, temperature);
 
