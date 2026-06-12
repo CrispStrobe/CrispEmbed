@@ -115,11 +115,24 @@ def main():
     config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
 
     from safetensors import safe_open
-    from huggingface_hub import hf_hub_download
+
+    # Resolve model files — support both HF repo IDs and local directories
+    model_path = Path(args.model)
+    is_local = model_path.is_dir()
+
+    def resolve_file(filename):
+        """Resolve a model file — local path or HF download."""
+        if is_local:
+            p = model_path / filename
+            if p.exists():
+                return str(p)
+            raise FileNotFoundError(f"{p} not found")
+        from huggingface_hub import hf_hub_download
+        return hf_hub_download(args.model, filename)
 
     # Build tensor → shard mapping (memory-efficient: don't load all at once)
     try:
-        idx_path = hf_hub_download(args.model, "model.safetensors.index.json")
+        idx_path = resolve_file("model.safetensors.index.json")
         with open(idx_path) as f:
             idx = json.load(f)
         shard_files = sorted(set(idx["weight_map"].values()))
@@ -128,11 +141,11 @@ def main():
         shard_files = ["model.safetensors"]
         tensor_to_shard = None  # will scan
 
-    # Download all shards and build path map
+    # Resolve all shards and build path map
     shard_paths = {}
     all_tensor_names = set()
     for shard in shard_files:
-        path = hf_hub_download(args.model, shard)
+        path = resolve_file(shard)
         shard_paths[shard] = path
         with safe_open(path, framework="pt", device="cpu") as f:
             for key in f.keys():
@@ -215,7 +228,7 @@ def main():
 
     # Image preprocessor config
     try:
-        pp_path = hf_hub_download(args.model, "preprocessor_config.json")
+        pp_path = resolve_file("preprocessor_config.json")
         with open(pp_path) as fp:
             pp_cfg = json.load(fp)
         pp_mean = list(pp_cfg.get("image_mean", [0.5, 0.5, 0.5]))[:3]
