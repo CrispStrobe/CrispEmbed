@@ -1386,3 +1386,85 @@ also catches MoE expert weights (3D: `[n_exp, dim1, dim2]`). For
 nomic-v2-moe, this means expert weights stay F32 in all quants, limiting
 Q8_0 compression to 1.6x instead of potential ~3x. Fix: quantize 3D
 tensors by iterating over the outermost dimension.
+
+## Qwen2.5-VL: KV cache for VLM generation
+
+### Prefill K/V extraction pattern
+
+The prefill forward pass computes all prompt tokens at once. To extract
+per-layer K/V for caching, add output tensors **after mRoPE but before
+GQA repeat**: the K/V at shape (head_dim, n_kv_heads, n_tokens) is what
+goes into the cache. GQA repeat is reapplied in each decode step.
+
+```cpp
+// In prefill graph, after RoPE:
+K_flat = ggml_reshape_2d(g, ggml_cont(g, K), kv_dim, n_tokens);
+ggml_set_name(K_flat, "k_out_0");
+ggml_set_output(K_flat);
+```
+
+### Decode step graph: single token + cache concat
+
+The decode step takes one token embedding + cached K/V as inputs.
+K/V cache tensors are 2D (kv_dim, n_kv) passed as graph inputs,
+reshaped to 3D, concatenated with the new single-token K/V on dim 2,
+then GQA-repeated for attention.
+
+No causal mask needed — a single query token always attends to all
+cached KV tokens (it's always the latest position).
+
+### Token embedding lookup for quantized models
+
+During decode, embed_tokens may be quantized (Q8_0/Q4_K). Can't just
+index into the data directly. Solution: build a mini ggml graph with
+`ggml_get_rows(embed_tokens, [token_id])` to handle dequantization.
+
+### KV cache memory budget
+
+36 layers × 2 (K+V) × kv_dim(256) × n_tokens × 4 bytes.
+For 500 prompt tokens: 36 × 2 × 256 × 500 × 4 = 36 MB.
+For 2000 tokens: 144 MB. Well within budget.
+
+## Qwen2.5-VL: BPE tokenizer from GGUF
+
+### Standard ggml tokenizer keys
+
+Write to GGUF: `tokenizer.ggml.tokens` (string array), 
+`tokenizer.ggml.merges` (string array), `tokenizer.ggml.model` = "gpt2",
+`tokenizer.ggml.type` = 1 (BPE).
+
+Load in C++: read arrays from GGUF metadata, pass to `BPETokenizer.load()`.
+
+### GPT-2 byte-level decode
+
+BPE tokens are unicode codepoints, not raw bytes. Decode: concatenate
+token strings, then reverse the `bytes_to_unicode()` mapping. The table
+maps printable ASCII + Latin-1 to themselves, and remaining bytes to
+codepoints 256+. Build the inverse table once at init.
+
+### Chat template in C++
+
+Hardcode special token IDs (im_start=151644, system=8948, user=872,
+assistant=77091, etc.) and use the BPE tokenizer for the user prompt
+text only. This avoids needing a Jinja template engine in C++.
+
+## Qwen2.5-VL: ggml_set_output memory impact
+
+Marking N intermediate tensors as output prevents ggml's graph allocator
+from reusing their memory. For 32 ViT + 36 LLM layers, this adds ~500 MB
+of pinned memory — enough to OOM on 8 GB machines.
+
+Fix: only set_output when diff comparison is active (`ctx.diff_ref_path`
+is non-empty). Logits tensor always needs set_output.
+
+## Kaggle: always use the full harness
+
+Never simplify or inline the CrispASR kaggle_harness.py. It has:
+- `kh.build_heartbeat()` — prevents Kaggle killing long ops (uploads)
+- `kh.resolve_hf_token()` — 3-tier auth (env → Secret → dataset file)
+- `kh.step()` — JSONL progress to /kaggle/working + HF mirror
+- `kh.install_build_toolchain()` — ninja + ccache + mold
+
+Bundle `kaggle_harness.py` in the push directory as fallback.
+Use `chr1s4/crispasr-hf-token` dataset (chr1s4's own, not chr1str's).
+Don't `pip install torch` (pre-installed, 2 GB download wastes time/OOMs).
