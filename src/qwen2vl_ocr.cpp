@@ -96,16 +96,24 @@ bool load_hparams(context &ctx, const char *path) {
         for (int i = 0; i < 3; i++) vhp.image_std[i] = data[i];
     }
 
-    // LLM
+    // LLM — CrispEmbed keys, then llama.cpp keys as fallback
     lhp.vocab_size              = u32("qwen2vl.vocab_size", lhp.vocab_size);
-    lhp.hidden_size             = u32("qwen2vl.hidden_size", lhp.hidden_size);
-    lhp.intermediate_size       = u32("qwen2vl.intermediate_size", lhp.intermediate_size);
-    lhp.num_hidden_layers       = u32("qwen2vl.num_hidden_layers", lhp.num_hidden_layers);
-    lhp.num_attention_heads     = u32("qwen2vl.num_attention_heads", lhp.num_attention_heads);
-    lhp.num_key_value_heads     = u32("qwen2vl.num_key_value_heads", lhp.num_key_value_heads);
-    lhp.max_position_embeddings = u32("qwen2vl.max_position_embeddings", lhp.max_position_embeddings);
-    lhp.rms_norm_eps            = f32v("qwen2vl.rms_norm_eps", lhp.rms_norm_eps);
-    lhp.rope_theta              = f32v("qwen2vl.rope_theta", lhp.rope_theta);
+    lhp.hidden_size             = u32("qwen2vl.hidden_size",
+                                      u32("qwen2vl.embedding_length", lhp.hidden_size));
+    lhp.intermediate_size       = u32("qwen2vl.intermediate_size",
+                                      u32("qwen2vl.feed_forward_length", lhp.intermediate_size));
+    lhp.num_hidden_layers       = u32("qwen2vl.num_hidden_layers",
+                                      u32("qwen2vl.block_count", lhp.num_hidden_layers));
+    lhp.num_attention_heads     = u32("qwen2vl.num_attention_heads",
+                                      u32("qwen2vl.attention.head_count", lhp.num_attention_heads));
+    lhp.num_key_value_heads     = u32("qwen2vl.num_key_value_heads",
+                                      u32("qwen2vl.attention.head_count_kv", lhp.num_key_value_heads));
+    lhp.max_position_embeddings = u32("qwen2vl.max_position_embeddings",
+                                      u32("qwen2vl.context_length", lhp.max_position_embeddings));
+    lhp.rms_norm_eps            = f32v("qwen2vl.rms_norm_eps",
+                                       f32v("qwen2vl.attention.layer_norm_rms_epsilon", lhp.rms_norm_eps));
+    lhp.rope_theta              = f32v("qwen2vl.rope_theta",
+                                       f32v("qwen2vl.rope.freq_base", lhp.rope_theta));
     lhp.image_token_id          = u32("qwen2vl.image_token_id", lhp.image_token_id);
     lhp.video_token_id          = u32("qwen2vl.video_token_id", lhp.video_token_id);
     lhp.vision_start_token_id   = u32("qwen2vl.vision_start_token_id", lhp.vision_start_token_id);
@@ -144,25 +152,30 @@ bool load_tensors(context &ctx, const char *path) {
         auto it = wl.tensors.find(name);
         return it != wl.tensors.end() ? it->second : nullptr;
     };
+    // Try first name, fall back to alternative (for llama.cpp GGUF compat)
+    auto get2 = [&](const std::string &a, const std::string &b) -> ggml_tensor * {
+        auto *t = get(a);
+        return t ? t : get(b);
+    };
 
-    // Vision encoder
-    m.patch_embed_w = get("v.patch_embed.weight");
+    // Vision encoder (CrispEmbed names; mmproj names as fallback)
+    m.patch_embed_w = get2("v.patch_embed.weight", "v.patch_embd.weight");
     m.patch_embed_b = get("v.patch_embed.bias");
 
     m.vis_blocks.resize(m.vhp.depth);
     for (uint32_t i = 0; i < m.vhp.depth; i++) {
         auto &blk = m.vis_blocks[i];
         std::string p = "v.blk." + std::to_string(i) + ".";
-        // Norms (weight always present; bias only for LayerNorm / Qwen2-VL)
-        blk.norm1_w    = get(p + "norm1.weight");
-        blk.norm1_b    = get(p + "norm1.bias");
-        blk.norm2_w    = get(p + "norm2.weight");
-        blk.norm2_b    = get(p + "norm2.bias");
-        // Attention (fused QKV in both variants)
+        // Norms: CrispEmbed "norm1" vs llama.cpp mmproj "ln1"
+        blk.norm1_w    = get2(p + "norm1.weight", p + "ln1.weight");
+        blk.norm1_b    = get2(p + "norm1.bias",   p + "ln1.bias");
+        blk.norm2_w    = get2(p + "norm2.weight", p + "ln2.weight");
+        blk.norm2_b    = get2(p + "norm2.bias",   p + "ln2.bias");
+        // Attention: fused QKV or separate Q/K/V (mmproj uses separate)
         blk.qkv_w      = get(p + "attn_qkv.weight");
         blk.qkv_b      = get(p + "attn_qkv.bias");
-        blk.proj_w     = get(p + "attn_proj.weight");
-        blk.proj_b     = get(p + "attn_proj.bias");
+        blk.proj_w     = get2(p + "attn_proj.weight", p + "attn_out.weight");
+        blk.proj_b     = get2(p + "attn_proj.bias",   p + "attn_out.bias");
         // SwiGLU FFN (Qwen2.5-VL)
         blk.ffn_gate_w = get(p + "ffn_gate.weight");
         blk.ffn_gate_b = get(p + "ffn_gate.bias");
@@ -175,6 +188,11 @@ bool load_tensors(context &ctx, const char *path) {
         blk.ffn_fc1_b  = get(p + "ffn_fc1.bias");
         blk.ffn_fc2_w  = get(p + "ffn_fc2.weight");
         blk.ffn_fc2_b  = get(p + "ffn_fc2.bias");
+        // mmproj uses ffn_up/ffn_down for GELU too — map to fc1/fc2 if needed
+        if (!blk.ffn_fc1_w && !blk.ffn_gate_w && blk.ffn_up_w) {
+            blk.ffn_fc1_w = blk.ffn_up_w;   blk.ffn_fc1_b = blk.ffn_up_b;
+            blk.ffn_fc2_w = blk.ffn_down_w;  blk.ffn_fc2_b = blk.ffn_down_b;
+        }
     }
 
     // Auto-detect Qwen2-VL vs Qwen2.5-VL from loaded weights:
@@ -192,34 +210,35 @@ bool load_tensors(context &ctx, const char *path) {
 
     m.merger.norm_w = get("v.merger.norm.weight");
     m.merger.norm_b = get("v.merger.norm.bias");
-    m.merger.fc1_w  = get("v.merger.fc1.weight");
-    m.merger.fc1_b  = get("v.merger.fc1.bias");
-    m.merger.fc2_w  = get("v.merger.fc2.weight");
-    m.merger.fc2_b  = get("v.merger.fc2.bias");
+    m.merger.fc1_w  = get2("v.merger.fc1.weight", "mm.0.weight");
+    m.merger.fc1_b  = get2("v.merger.fc1.bias",   "mm.0.bias");
+    m.merger.fc2_w  = get2("v.merger.fc2.weight", "mm.2.weight");
+    m.merger.fc2_b  = get2("v.merger.fc2.bias",   "mm.2.bias");
 
-    // LLM decoder
-    m.embed_tokens = get("l.embed_tokens.weight");
+    // LLM decoder (CrispEmbed "l.blk.*" or llama.cpp "blk.*")
+    m.embed_tokens = get2("l.embed_tokens.weight", "token_embd.weight");
 
     m.llm_layers.resize(m.lhp.num_hidden_layers);
     for (uint32_t i = 0; i < m.lhp.num_hidden_layers; i++) {
         auto &ly = m.llm_layers[i];
-        std::string p = "l.blk." + std::to_string(i) + ".";
-        ly.attn_norm_w = get(p + "attn_norm.weight");
-        ly.ffn_norm_w  = get(p + "ffn_norm.weight");
-        ly.q_w         = get(p + "attn_q.weight");
-        ly.q_b         = get(p + "attn_q.bias");
-        ly.k_w         = get(p + "attn_k.weight");
-        ly.k_b         = get(p + "attn_k.bias");
-        ly.v_w         = get(p + "attn_v.weight");
-        ly.v_b         = get(p + "attn_v.bias");
-        ly.o_w         = get(p + "attn_o.weight");
-        ly.ffn_gate_w  = get(p + "ffn_gate.weight");
-        ly.ffn_up_w    = get(p + "ffn_up.weight");
-        ly.ffn_down_w  = get(p + "ffn_down.weight");
+        std::string p1 = "l.blk." + std::to_string(i) + ".";  // CrispEmbed
+        std::string p2 = "blk." + std::to_string(i) + ".";    // llama.cpp
+        ly.attn_norm_w = get2(p1 + "attn_norm.weight", p2 + "attn_norm.weight");
+        ly.ffn_norm_w  = get2(p1 + "ffn_norm.weight",  p2 + "ffn_norm.weight");
+        ly.q_w         = get2(p1 + "attn_q.weight",    p2 + "attn_q.weight");
+        ly.q_b         = get2(p1 + "attn_q.bias",      p2 + "attn_q.bias");
+        ly.k_w         = get2(p1 + "attn_k.weight",    p2 + "attn_k.weight");
+        ly.k_b         = get2(p1 + "attn_k.bias",      p2 + "attn_k.bias");
+        ly.v_w         = get2(p1 + "attn_v.weight",    p2 + "attn_v.weight");
+        ly.v_b         = get2(p1 + "attn_v.bias",      p2 + "attn_v.bias");
+        ly.o_w         = get2(p1 + "attn_o.weight",    p2 + "attn_output.weight");
+        ly.ffn_gate_w  = get2(p1 + "ffn_gate.weight",  p2 + "ffn_gate.weight");
+        ly.ffn_up_w    = get2(p1 + "ffn_up.weight",    p2 + "ffn_up.weight");
+        ly.ffn_down_w  = get2(p1 + "ffn_down.weight",  p2 + "ffn_down.weight");
     }
 
-    m.output_norm_w = get("l.output_norm.weight");
-    m.lm_head_w     = get("l.lm_head.weight");
+    m.output_norm_w = get2("l.output_norm.weight", "output_norm.weight");
+    m.lm_head_w     = get2("l.lm_head.weight", "output.weight");
 
     return true;
 }
