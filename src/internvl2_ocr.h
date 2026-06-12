@@ -153,6 +153,20 @@ struct model {
 
 // ── Context ──────────────────────────────────────────────────────────
 
+// ── KV cache ─────────────────────────────────────────────────────────
+
+struct kv_cache {
+    // Persistent KV cache: (hd, max_seq, n_kv_heads, n_layers) F16
+    ggml_tensor *k = nullptr;  // all layers K
+    ggml_tensor *v = nullptr;  // all layers V
+    ggml_context *ctx = nullptr;
+    ggml_backend_buffer_t buf = nullptr;
+
+    int max_seq = 0;      // allocated capacity
+    int n_past = 0;       // tokens already in cache
+    bool allocated = false;
+};
+
 struct context {
     model m;
     ggml_context *model_ctx = nullptr;
@@ -162,6 +176,9 @@ struct context {
     ggml_backend_t backend_cpu = nullptr;
     ggml_backend_sched_t sched = nullptr;
     std::vector<uint8_t> compute_meta;
+
+    // KV cache for autoregressive generation
+    kv_cache kvc;
 
     int n_threads = 4;
     int verbosity = 1;
