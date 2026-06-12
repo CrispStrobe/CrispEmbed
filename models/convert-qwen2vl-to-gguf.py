@@ -176,11 +176,12 @@ def main():
 
     # ── Global metadata ──────────────────────────────────────────────
 
-    writer.add_string("general.name", args.model.split("/")[-1])
+    model_name = args.model.split("/")[-1] if "/" in args.model else Path(args.model).name
+    writer.add_string("general.name", model_name)
     writer.add_string("general.architecture", ARCH)
 
-    # LLM config
-    tc = config  # text config is the top-level config for Qwen2.5-VL
+    # LLM config — Qwen2_5_VLConfig nests text params in text_config
+    tc = getattr(config, "text_config", config)
     writer.add_uint32("qwen2vl.vocab_size", int(tc.vocab_size))
     writer.add_uint32("qwen2vl.hidden_size", int(tc.hidden_size))
     writer.add_uint32("qwen2vl.intermediate_size", int(tc.intermediate_size))
@@ -190,10 +191,11 @@ def main():
     writer.add_uint32("qwen2vl.max_position_embeddings", int(tc.max_position_embeddings))
     writer.add_float32("qwen2vl.rms_norm_eps", float(tc.rms_norm_eps))
     writer.add_float32("qwen2vl.rope_theta", float(tc.rope_theta))
-    writer.add_bool("qwen2vl.tie_word_embeddings", bool(tc.tie_word_embeddings))
+    tie = getattr(tc, "tie_word_embeddings", getattr(config, "tie_word_embeddings", True))
+    writer.add_bool("qwen2vl.tie_word_embeddings", bool(tie))
 
     # mRoPE sections
-    rope_scaling = getattr(tc, "rope_scaling", None)
+    rope_scaling = getattr(tc, "rope_scaling", getattr(config, "rope_scaling", None))
     if rope_scaling and "mrope_section" in rope_scaling:
         sections = rope_scaling["mrope_section"]
         writer.add_array("qwen2vl.rope_sections", [int(x) for x in sections])
