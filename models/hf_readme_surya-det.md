@@ -32,6 +32,8 @@ EfficientViT-Large segformer (38M params):
 |---|---|---|---|
 | `surya-det-f32.gguf` | F32 | 147 MB | Full precision |
 | `surya-det-f16.gguf` | F16 | 74 MB | Recommended |
+| `surya-det-q8_0.gguf` | Q8_0 | 41 MB | 3.6x compression |
+| `surya-det-q4_k.gguf` | Q4_K | 23 MB | 6.5x compression |
 
 All BatchNorm layers are folded into preceding Conv2d weights.
 

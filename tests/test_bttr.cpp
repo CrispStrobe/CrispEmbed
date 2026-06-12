@@ -46,6 +46,13 @@ static bool load_bmp_gray(const char * path, std::vector<float> & gray,
     return true;
 }
 
+// stb_image (implementation in image_preprocess.cpp)
+extern "C" {
+    typedef unsigned char stbi_uc;
+    stbi_uc *stbi_load(char const *filename, int *x, int *y, int *ch, int desired_ch);
+    void stbi_image_free(void *p);
+}
+
 static bool ends_with(const char* s, const char* suffix) {
     int sl = strlen(s), sufl = strlen(suffix);
     if (sl < sufl) return false;
@@ -80,13 +87,21 @@ int main(int argc, char ** argv) {
     std::vector<float> img;
 
     if (argc >= 3 && (ends_with(argv[2], ".bmp") || ends_with(argv[2], ".BMP"))) {
-        // Load BMP image
         if (!load_bmp_gray(argv[2], img, W, H)) {
             fprintf(stderr, "Failed to load BMP: %s\n", argv[2]);
-            bttr_ocr_free(ctx);
-            return 1;
+            bttr_ocr_free(ctx); return 1;
         }
         fprintf(stderr, "Loaded BMP: %dx%d\n", W, H);
+    } else if (argc >= 3 && (ends_with(argv[2], ".png") || ends_with(argv[2], ".jpg") ||
+               ends_with(argv[2], ".PNG") || ends_with(argv[2], ".JPG") ||
+               ends_with(argv[2], ".jpeg") || ends_with(argv[2], ".JPEG"))) {
+        int ch;
+        stbi_uc* px = stbi_load(argv[2], &W, &H, &ch, 1); // load as grayscale
+        if (!px) { fprintf(stderr, "Failed to load: %s\n", argv[2]); bttr_ocr_free(ctx); return 1; }
+        img.resize(W * H);
+        for (int i = 0; i < W * H; i++) img[i] = px[i] / 255.0f;
+        stbi_image_free(px);
+        fprintf(stderr, "Loaded image: %dx%d\n", W, H);
     } else if (argc >= 4) {
         // Raw float32 file
         sscanf(argv[3], "%dx%d", &W, &H);
