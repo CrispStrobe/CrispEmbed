@@ -232,6 +232,18 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             qtype_used = GGML_TYPE_Q8_0;
         }
 
+        // Vision encoder weights (v.blk.*): keep at Q8_0 minimum for OCR quality.
+        // The vision encoder directly determines text recognition accuracy —
+        // aggressive quantization (Q4_K, Q3_K, Q2_K) degrades OCR performance.
+        // Merger weights (v.merger.*) are also critical for vision→LLM projection.
+        bool is_vision_weight = sname.rfind("v.", 0) == 0;
+        if (quantize && is_vision_weight &&
+            qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 &&
+            qtype != GGML_TYPE_Q6_K && qtype != GGML_TYPE_Q5_K) {
+            qtype_used = GGML_TYPE_Q8_0;
+            printf("(vision→Q8_0) ");
+        }
+
         int64_t qk = ggml_blck_size(qtype_used);
 
         // Fallback chain for K-quants: if row width isn't 256-aligned,
