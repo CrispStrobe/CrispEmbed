@@ -601,6 +601,30 @@ CRISPEMBED_API void crispembed_layout_free(void * ctx);
 CRISPEMBED_API const crispembed_layout_region * crispembed_layout_detect(
     void * ctx, const char * image_path, float score_threshold, int * out_n);
 
+// ---------------------------------------------------------------------------
+// Surya Text Detection — EfficientViT segformer (91 languages).
+// Segmentation-based text line detection. Returns bounding boxes with
+// confidence scores.
+// ---------------------------------------------------------------------------
+
+typedef struct crispembed_text_det_result {
+    float x0, y0, x1, y1;   // bbox in original image coordinates
+    float confidence;
+} crispembed_text_det_result;
+
+CRISPEMBED_API void * crispembed_text_det_init(const char * model_path, int n_threads);
+CRISPEMBED_API void crispembed_text_det_free(void * ctx);
+
+/// Detect text lines in an image (from raw pixel bytes).
+/// Returns array of text regions (owned by ctx, valid until next call).
+CRISPEMBED_API const crispembed_text_det_result * crispembed_text_det(
+    void * ctx, const uint8_t * pixels, int width, int height, int channels,
+    float text_threshold, float low_threshold, int * out_n);
+
+/// Get raw heatmap from last detection. Returns [2, out_h, out_w] float array.
+CRISPEMBED_API const float * crispembed_text_det_heatmap(
+    void * ctx, int * out_h, int * out_w);
+
 #ifdef __cplusplus
 }
 #endif

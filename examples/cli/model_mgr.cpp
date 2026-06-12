@@ -494,6 +494,18 @@ static const ModelEntry k_registry[] = {
      "DBNet text detection (ResNet-18+FPNC, PP-OCRv4)", "7 MB", "apache-2.0",
      "https://huggingface.co/cstr/dbnet-ic15-GGUF"},
 
+    {"surya-det",
+     "surya-det-f16.gguf",
+     "https://huggingface.co/cstr/surya-det-GGUF/resolve/main/surya-det-f16.gguf",
+     "surya-ocr-2 text detection (EfficientViT segformer, 38M, 91 langs)", "73 MB", "openrail-m",
+     "https://huggingface.co/cstr/surya-det-GGUF"},
+
+    {"mixtex-zhen",
+     "mixtex-zhen-f16.gguf",
+     "",
+     "MixTex Chinese+English LaTeX OCR (Swin-Tiny+RoBERTa, 86M)", "165 MB", "apache-2.0",
+     ""},
+
     {"trocr-printed",
      "trocr-small-printed-q8_0.gguf",
      "https://huggingface.co/cstr/trocr-small-printed-GGUF/resolve/main/trocr-small-printed-q8_0.gguf",
