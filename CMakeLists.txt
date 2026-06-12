@@ -139,6 +139,7 @@ list(APPEND CRISPEMBED_SOURCES src/layout_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/surya_det.cpp)
 list(APPEND CRISPEMBED_SOURCES src/mixtex_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/qwen2vl_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/internvl2_ocr.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -292,6 +293,9 @@ target_link_libraries(test-qwen2vl-diff PRIVATE crispembed)
 
 add_executable(test-qwen2vl-e2e tests/test_qwen2vl_e2e.cpp)
 target_link_libraries(test-qwen2vl-e2e PRIVATE crispembed)
+
+add_executable(test-internvl2-diff tests/test_internvl2_diff.cpp)
+target_link_libraries(test-internvl2-diff PRIVATE crispembed)
 
 endif() # NOT iOS
 
