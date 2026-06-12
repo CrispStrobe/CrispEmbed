@@ -20,6 +20,7 @@
 
 #include "qwen2vl_ocr.h"
 #include "crispembed_diff.h"
+#include "image_preprocess.h"
 #include "core/gguf_loader.h"
 
 #include "ggml.h"
@@ -1257,6 +1258,58 @@ void qwen2vl_ocr_set_max_tokens(qwen2vl_ocr_context * ctx, int max_tokens) {
     if (ctx) ctx->max_tokens = max_tokens;
 }
 
+// Internal: run full pipeline (preprocess → vision → tokenize → generate)
+static const char * run_pipeline(qwen2vl_ocr_context * ctx,
+                                  const image_preproc::result & pp,
+                                  int * out_len) {
+    // 1. Run vision encoder
+    qwen2vl_ocr::vision_result vis = {};
+    if (!qwen2vl_ocr::encode_vision(ctx->inner,
+                                     pp.patches.data(), pp.n_patches,
+                                     pp.grid_thw, vis)) {
+        fprintf(stderr, "qwen2vl_ocr: vision encoder failed\n");
+        return nullptr;
+    }
+
+    // 2. Build token IDs with image_pad placeholders
+    auto token_ids = ctx->build_token_ids(vis.n_merged);
+
+    // 3. Generate text
+    qwen2vl_ocr::generate_result gen = {};
+    // Pass grid_thw for mRoPE position computation
+    qwen2vl_ocr::image_input img_in = {};
+    img_in.image_embeds = vis.image_embeds;
+    img_in.n_image_tokens = vis.n_merged;
+    img_in.grid_thw = pp.grid_thw;
+    img_in.n_images = 1;
+
+    bool ok = qwen2vl_ocr::generate(ctx->inner,
+                                     vis.image_embeds, vis.n_merged,
+                                     vis.embed_dim,
+                                     token_ids.data(), (int)token_ids.size(),
+                                     ctx->max_tokens, gen);
+
+    qwen2vl_ocr::vision_result_free(vis);
+
+    if (!ok) {
+        fprintf(stderr, "qwen2vl_ocr: generation failed\n");
+        return nullptr;
+    }
+
+    // 4. Decode token IDs to text
+    // TODO: proper BPE decode — for now just store raw token IDs as text
+    // Quick decode: look up each token from the GGUF vocab (not yet loaded)
+    // Placeholder: output token IDs as comma-separated string
+    ctx->last_result.clear();
+    for (size_t i = 0; i < gen.token_ids.size(); i++) {
+        if (i > 0) ctx->last_result += ",";
+        ctx->last_result += std::to_string(gen.token_ids[i]);
+    }
+
+    if (out_len) *out_len = (int)ctx->last_result.size();
+    return ctx->last_result.c_str();
+}
+
 const char * qwen2vl_ocr_recognize_raw(
         qwen2vl_ocr_context * ctx,
         const uint8_t * pixel_bytes,
@@ -1264,27 +1317,30 @@ const char * qwen2vl_ocr_recognize_raw(
         int * out_len) {
     if (!ctx || !pixel_bytes) return nullptr;
 
-    // Convert to float RGB and preprocess
-    // TODO: use image_preprocess.cpp for proper Qwen2VL preprocessing
-    // For now: normalize to [0,1], basic resize
-    const int n_pixels = width * height;
-    std::vector<float> rgb(n_pixels * 3);
-    for (int i = 0; i < n_pixels; i++) {
-        if (channels == 1) {
-            float v = pixel_bytes[i] / 255.0f;
-            rgb[i*3+0] = rgb[i*3+1] = rgb[i*3+2] = v;
-        } else if (channels == 3) {
-            rgb[i*3+0] = pixel_bytes[i*3+0] / 255.0f;
-            rgb[i*3+1] = pixel_bytes[i*3+1] / 255.0f;
-            rgb[i*3+2] = pixel_bytes[i*3+2] / 255.0f;
-        } else if (channels == 4) {
-            rgb[i*3+0] = pixel_bytes[i*4+0] / 255.0f;
-            rgb[i*3+1] = pixel_bytes[i*4+1] / 255.0f;
-            rgb[i*3+2] = pixel_bytes[i*4+2] / 255.0f;
-        }
+    // Preprocess image via image_preprocess.cpp
+    const auto & vhp = ctx->inner.m.vhp;
+    image_preproc::config cfg;
+    cfg.patch_size          = (int)vhp.spatial_patch_size;  // 14
+    cfg.temporal_patch_size = (int)vhp.temporal_patch_size;  // 2
+    cfg.merge_size          = (int)vhp.spatial_merge_size;   // 2
+    cfg.min_pixels          = (int)vhp.min_pixels;
+    cfg.max_pixels          = (int)vhp.max_pixels;
+    for (int i = 0; i < 3; i++) {
+        cfg.mean[i] = vhp.image_mean[i];
+        cfg.std[i]  = vhp.image_std[i];
     }
 
-    return qwen2vl_ocr_recognize(ctx, rgb.data(), width, height, out_len);
+    image_preproc::result pp;
+    if (!image_preproc::preprocess_rgb(pixel_bytes, height, width, channels, cfg, pp)) {
+        fprintf(stderr, "qwen2vl_ocr: image preprocessing failed\n");
+        return nullptr;
+    }
+
+    fprintf(stderr, "qwen2vl_ocr: %dx%d → %dx%d, %d patches (%dx%d)\n",
+            width, height, pp.resized_w, pp.resized_h,
+            pp.n_patches, pp.grid_thw[1], pp.grid_thw[2]);
+
+    return run_pipeline(ctx, pp, out_len);
 }
 
 const char * qwen2vl_ocr_recognize(
@@ -1294,14 +1350,13 @@ const char * qwen2vl_ocr_recognize(
         int * out_len) {
     if (!ctx || !pixels) return nullptr;
 
-    // TODO: proper Qwen2VL image preprocessing (smart_resize, patchify)
-    // For now this is a stub that requires pre-processed patches
-    // The full pipeline needs image_preprocess.cpp integration
-    fprintf(stderr, "qwen2vl_ocr_recognize: image preprocessing not yet integrated\n");
-    fprintf(stderr, "  Use test-qwen2vl-e2e with pre-processed patches instead\n");
+    // Convert grayscale float [0,1] to uint8 RGB for preprocess_rgb
+    std::vector<uint8_t> rgb(width * height * 3);
+    for (int i = 0; i < width * height; i++) {
+        uint8_t v = (uint8_t)(pixels[i] * 255.0f + 0.5f);
+        rgb[i*3+0] = rgb[i*3+1] = rgb[i*3+2] = v;
+    }
 
-    ctx->last_result = "";
-    if (out_len) *out_len = 0;
-    return ctx->last_result.c_str();
+    return qwen2vl_ocr_recognize_raw(ctx, rgb.data(), width, height, 3, out_len);
 }
 
