@@ -276,6 +276,9 @@ target_link_libraries(test-ocr-pipeline PRIVATE crispembed)
 add_executable(test-qwen2vl-diff tests/test_qwen2vl_diff.cpp)
 target_link_libraries(test-qwen2vl-diff PRIVATE crispembed)
 
+add_executable(test-qwen2vl-e2e tests/test_qwen2vl_e2e.cpp)
+target_link_libraries(test-qwen2vl-e2e PRIVATE crispembed)
+
 endif() # NOT iOS
 
 # ---------------------------------------------------------------------------
