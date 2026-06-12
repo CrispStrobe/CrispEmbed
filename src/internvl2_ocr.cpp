@@ -265,8 +265,11 @@ bool load_tensors(context &ctx, const char *path) {
         ly.attn_norm_w = get(p + "attn_norm.weight");
         ly.ffn_norm_w  = get(p + "ffn_norm.weight");
         ly.q_w         = get(p + "attn_q.weight");
+        ly.q_b         = get(p + "attn_q.bias");
         ly.k_w         = get(p + "attn_k.weight");
+        ly.k_b         = get(p + "attn_k.bias");
         ly.v_w         = get(p + "attn_v.weight");
+        ly.v_b         = get(p + "attn_v.bias");
         ly.o_w         = get(p + "attn_o.weight");
         ly.ffn_gate_w  = get(p + "ffn_gate.weight");
         ly.ffn_up_w    = get(p + "ffn_up.weight");
@@ -685,8 +688,7 @@ llm_graph build_llm_graph(context &ctx, int n_tokens, int n_past,
     ggml_set_input(mask);
 
     auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor * {
-        ggml_tensor *y = ggml_rms_norm(g, t, rms_eps);
-        return ggml_mul(g, y, w);
+        return ggml_mul(g, ggml_rms_norm(g, t, rms_eps), w);
     };
 
     for (int i = 0; i < n_layers; i++) {
@@ -695,10 +697,13 @@ llm_graph build_llm_graph(context &ctx, int n_tokens, int n_past,
         // ── Self-attention ──
         ggml_tensor *h = rmsnorm(x, ly.attn_norm_w);
 
-        // Q/K/V projections
+        // Q/K/V projections (optional bias for Qwen2)
         ggml_tensor *Q = ggml_mul_mat(g, ly.q_w, h);
+        if (ly.q_b) Q = ggml_add(g, Q, ly.q_b);
         ggml_tensor *K_new = ggml_mul_mat(g, ly.k_w, h);
+        if (ly.k_b) K_new = ggml_add(g, K_new, ly.k_b);
         ggml_tensor *V_new = ggml_mul_mat(g, ly.v_w, h);
+        if (ly.v_b) V_new = ggml_add(g, V_new, ly.v_b);
 
         Q = ggml_reshape_3d(g, Q, hd, nh, T);
         K_new = ggml_reshape_3d(g, K_new, hd, nkv, T);
@@ -789,6 +794,7 @@ llm_graph build_llm_graph(context &ctx, int n_tokens, int n_past,
 
         // Output projection
         attn_out = ggml_mul_mat(g, ly.o_w, attn_out);
+
         x = ggml_add(g, x, attn_out);
 
         // ── SwiGLU FFN ──
@@ -1103,6 +1109,18 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
                                 T * T * sizeof(ggml_fp16_t));
     }
 
+    // Set splice inputs to identity (no image tokens in parity test)
+    ggml_tensor *splice_m = ggml_graph_get_tensor(lg.gf, "splice_mask");
+    ggml_tensor *img_e = ggml_graph_get_tensor(lg.gf, "image_embeds");
+    if (splice_m) {
+        std::vector<float> ones((size_t)D * T, 1.0f);
+        ggml_backend_tensor_set(splice_m, ones.data(), 0, D * T * sizeof(float));
+    }
+    if (img_e) {
+        std::vector<float> zeros((size_t)D * T, 0.0f);
+        ggml_backend_tensor_set(img_e, zeros.data(), 0, D * T * sizeof(float));
+    }
+
     // Compute
     ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
 
@@ -1135,6 +1153,8 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
                 }
                 free(buf);
             }
+            // Compare debug intermediates (if present in ref)
+            // Dump raw rms_norm output for debugging
             // Compare layer outputs
             for (size_t i = 0; i < lg.layer_outputs.size(); i++) {
                 char name[64];
