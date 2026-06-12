@@ -55,10 +55,21 @@ int main(int argc, char **argv) {
     }
 
     // Smoke test: load actual model
-    printf("\n=== Smoke tests (model: %s) ===\n\n", argv[1]);
+    // Usage: test-qwen2vl <model.gguf> [image.png] [--mmproj mmproj.gguf]
+    const char *mmproj = nullptr;
+    const char *image = (argc >= 3 && argv[2][0] != '-') ? argv[2] : nullptr;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--mmproj") == 0 && i + 1 < argc) {
+            mmproj = argv[++i];
+        }
+    }
+
+    printf("\n=== Smoke tests (model: %s%s%s) ===\n\n", argv[1],
+           mmproj ? ", mmproj: " : "", mmproj ? mmproj : "");
 
     printf("[5] Load model\n");
-    ctx = qwen2vl_ocr_init(argv[1], 4);
+    ctx = mmproj ? qwen2vl_ocr_init_split(argv[1], mmproj, 4)
+                 : qwen2vl_ocr_init(argv[1], 4);
     CHECK(ctx != nullptr, "model loaded successfully");
     if (!ctx) {
         printf("\n=== Tests: %d pass, %d fail ===\n", n_pass, n_fail);
