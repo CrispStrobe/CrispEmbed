@@ -495,13 +495,13 @@ llm_graph build_llm_graph(context &ctx, int n_tokens,
     const float rms_eps = lhp.rms_norm_eps;
     const int kv_repeat = nh / nkv;
 
-    size_t meta_size = (size_t)(n_layers * 30 + 100) * ggml_tensor_overhead()
-                       + ggml_graph_overhead_custom(16384, false);
+    size_t meta_size = (size_t)(n_layers * 50 + 200) * ggml_tensor_overhead()
+                       + ggml_graph_overhead_custom(32768, false);
     ctx.compute_meta.resize(meta_size);
     ggml_init_params ip{meta_size, ctx.compute_meta.data(), true};
     ggml_context *g = ggml_init(ip);
 
-    ggml_cgraph *gf = ggml_new_graph_custom(g, 16384, false);
+    ggml_cgraph *gf = ggml_new_graph_custom(g, 32768, false);
 
     // Input token IDs
     ggml_tensor *token_in = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
