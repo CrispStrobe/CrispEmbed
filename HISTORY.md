@@ -4,6 +4,85 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 (late) — PosFormer handwritten math OCR
+
+### PosFormer port (feat/posformer-port branch)
+
+PosFormer = BTTR + Attention Refinement Module (ARM) for coverage-aware
+decoding. Source: SJTU-DeepVisionLab/PosFormer (BSD-2, academic-only).
+6.4M params, 113 LaTeX tokens, 24.9 MB F32 GGUF.
+
+**Architecture**: DenseNet encoder (same as BTTR) + 3-layer Transformer
+decoder (d=256, 8 heads, FFN=1024) + shared ARM module. ARM applies
+coverage-based attention refinement between decoder layers 0→1 and 1→2.
+
+**CROHME 2014 eval (986 images, greedy L2R)**:
+- Raw match:    552/986 = **56.0%** (vs BTTR 49.2%, HMER 36.1%)
+- Parsed match: 605/986 = **61.4%** (vs BTTR 49.8%, HMER 36.3%)
+- Published 62.7% uses bi-directional beam search; ~6pp gap is expected.
+
+**Quantized**: Q8_0 (12 MB), Q4_K (10 MB) — both lossless on test images.
+Uploaded to HuggingFace: https://huggingface.co/cstr/posformer-hw-GGUF
+
+**Port verified**: per-step logit cosine similarity = 1.000000 vs PyTorch
+reference (max diff < 0.00001). Four encoder/decoder bugs found and fixed:
+1. Spurious ReLU after feature projection Conv1x1
+2. LayerNorm and 2D positional encoding order swapped
+3. Sin/cos frequency indexing error (cos used wrong frequency in each pair)
+4. Missing decoder input LayerNorm (decoder.norm after embed + pos_enc)
+
+**Debugging methodology**: PyTorch-side layer dump scripts
+(tests/parity/posformer_*.py) + C++ POSFORMER_DUMP env-gated intermediate
+dumps. Compare cosine similarity per-layer, per-step. First divergence
+at layer 0 self-attention output led to finding the missing LayerNorm.
+
+**Files**: `posformer_ocr.{h,cpp}`, `convert-posformer-to-gguf.py`,
+`test_posformer.cpp`, `test_posformer_batch.cpp`,
+`tests/parity/posformer_*.py`.
+
+**Training pipeline** (v25, 25 iterations to get right):
+Kaggle kernel at https://www.kaggle.com/code/chr1str/posformer-train-on-mathwriting
+W&B at https://wandb.ai/cze-github/posformer-hmer
+
+Key issues solved during Kaggle kernel development:
+- P100 GPU (sm_60): install torch+cu118 (supports sm_60), not CPU fallback
+- Auth: clone CrispASR at runtime, import kaggle_harness (3-tier auth).
+  Dataset mounts at `/kaggle/input/datasets/chr1str/crispasr-hf-token/`,
+  NOT `/kaggle/input/crispasr-hf-token/`. Harness patched to scan both.
+- **Vocab bug**: `build_vocab_from_zip` sorted by frequency, scrambling
+  110/113 token indices. Model trained 25 epochs was unusable. Fixed:
+  use canonical PosFormer dictionary.txt (alphabetical order).
+- OOV: 14 CROHME captions have `'` not in dictionary. Filtered.
+- Validation speed: override beam_size=10 bidir → beam_size=1 greedy.
+  Full bidir takes 30-60 min per val epoch.
+- Heartbeat: `kh.build_heartbeat("train")` for Kaggle keepalive.
+
+**Training progress** (correct vocab, label smoothing 0.1):
+- Epoch 8: 22.4% beam=1
+- Epoch 64: 43.4% beam=1 (pre-LR-fix)
+- Epoch 93: 57.0% beam=1 (LR=0.005, surpasses SJTU published 56.0%)
+- Epoch 108: 59.3% beam=1 (CROHME-only ceiling)
+- Epoch 125: 61.9% val_ExpRate (CROHME + 1000 MathWriting, LR=0.005)
+- **Epoch 182: 60.5% beam=1 / 60.3% beam=10** (CROHME + 2000 MathWriting,
+  LR=0.00125 after ReduceLROnPlateau drop). Best verified full eval.
+- W&B peak: 62.03% val_ExpRate at step 304,204
+
+Key findings:
+- MathWriting augmentation (2000 samples) broke the 59.3% CROHME-only ceiling
+- ReduceLROnPlateau drop (0.005→0.00125) triggered the 62% peak
+- Beam=10 bi-directional does NOT help (60.3% < 60.5% beam=1)
+- Model is better at greedy than bi-directional decoding
+- deepcopy/MathWriting-human on HF has pre-rasterized images (no InkML parsing)
+
+See PLAN.md for v2 expanded vocab design (183 tokens, 206K samples).
+
+**License**: SJTU weights = academic-only. Retrained weights on CROHME
+= CC BY-NC-SA 3.0 (NC). Fine for "buy me a coffee" app: app code is
+commercial, weights downloaded separately with NC terms acceptance.
+All handwritten math datasets are NC. The C++ inference is clean-room.
+
+---
+
 ## June 2026 — OCR feature parity across all surfaces
 
 ### PosFormer port merged to main
@@ -236,15 +315,16 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ### Handwritten math OCR (HMER + BTTR)
 - HMER: DenseNet-121 encoder + GRU attention decoder (with coverage).
-  Source: whywhs/Pytorch-HMER (MIT), trained on CROHME 2016.
+  Source: whywhs/Pytorch-HMER (code: MIT), trained on CROHME 2016
+  (CC BY-NC-SA 3.0). Weights inherit NC.
   112 LaTeX tokens, ~6.8M params, ~4-5 MB Q4_K.
   `hmer_ocr.{h,cpp}`, `convert-hmer-to-gguf.py`. CLI: `--hmer FILE`.
   Auto-detect image polarity and invert if needed. Dequant support.
 
 - BTTR: DenseNet encoder (growth=24, 3 blocks) + Transformer decoder
-  (3 layers, 8 heads, d=256). Source: Green-Wood/BTTR (MIT),
-  trained on CROHME 2014. 113 LaTeX tokens, 6.5M params.
-  52.8% exact match on 36 CROHME test images (vs 38.9% for HMER).
+  (3 layers, 8 heads, d=256). Source: Green-Wood/BTTR (code: MIT),
+  trained on CROHME 2014 (CC BY-NC-SA 3.0). Weights inherit NC.
+  113 LaTeX tokens, 6.5M params. 49.2% raw / 49.8% parsed on CROHME.
   `bttr_ocr.{h,cpp}`, `convert-bttr-to-gguf.py`.
   BN folded into conv, fused QKV preserved.
 

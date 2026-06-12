@@ -2902,9 +2902,10 @@ extern "C" void crispembed_face_free(crispembed_face_context * ctx) {
 #include "ppformulanet_ocr.h"
 #include "ppformulanet_l_ocr.h"
 #include "posformer_ocr.h"
+#include "mixtex_ocr.h"
 #include "core/gguf_loader.h"
 
-enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L, MATH_OCR_POSFORMER };
+enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L, MATH_OCR_POSFORMER, MATH_OCR_MIXTEX };
 
 struct unified_math_ocr {
     math_ocr_type type;
@@ -2921,6 +2922,7 @@ static math_ocr_type detect_arch(const char * path) {
     if (arch == "ppformulanet") return MATH_OCR_PPFORMULANET;
     if (arch == "ppformulanet_l") return MATH_OCR_PPFORMULANET_L;
     if (arch == "posformer") return MATH_OCR_POSFORMER;
+    if (arch == "mixtex") return MATH_OCR_MIXTEX;
     return MATH_OCR_PIX2TEX;
 }
 
@@ -2934,6 +2936,7 @@ extern "C" void * crispembed_math_ocr_init(const char * path, int n_threads) {
         case MATH_OCR_PPFORMULANET: inner = ppformulanet_ocr_init(path, n_threads); break;
         case MATH_OCR_PPFORMULANET_L: inner = ppformulanet_l_ocr_init(path, n_threads); break;
         case MATH_OCR_POSFORMER:      inner = posformer_ocr_init(path, n_threads); break;
+        case MATH_OCR_MIXTEX:         inner = mixtex_ocr_init(path, n_threads); break;
     }
     if (!inner) return nullptr;
     auto * u = new unified_math_ocr{type, inner};
@@ -2950,6 +2953,7 @@ extern "C" void crispembed_math_ocr_free(void * ctx) {
         case MATH_OCR_PPFORMULANET: ppformulanet_ocr_free((ppformulanet_ocr_context *)u->ctx); break;
         case MATH_OCR_PPFORMULANET_L: ppformulanet_l_ocr_free((ppformulanet_l_ocr_context *)u->ctx); break;
         case MATH_OCR_POSFORMER:      posformer_ocr_free((posformer_ocr_context *)u->ctx); break;
+        case MATH_OCR_MIXTEX:         mixtex_ocr_free((mixtex_ocr_context *)u->ctx); break;
     }
     delete u;
 }
@@ -2966,6 +2970,7 @@ extern "C" const char * crispembed_math_ocr_recognize(
         case MATH_OCR_PPFORMULANET: return ppformulanet_ocr_recognize_raw((ppformulanet_ocr_context *)u->ctx, px, w, h, ch, ol);
         case MATH_OCR_PPFORMULANET_L: return ppformulanet_l_ocr_recognize_raw((ppformulanet_l_ocr_context *)u->ctx, px, w, h, ch, ol);
         case MATH_OCR_POSFORMER:      return posformer_ocr_recognize_raw((posformer_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case MATH_OCR_MIXTEX:         return mixtex_ocr_recognize((mixtex_ocr_context *)u->ctx, px, w, h, ch, ol);
     }
     return nullptr;
 }
@@ -2982,6 +2987,7 @@ extern "C" const char * crispembed_math_ocr_recognize_gray(
         case MATH_OCR_PPFORMULANET: return ppformulanet_ocr_recognize((ppformulanet_ocr_context *)u->ctx, px, w, h, ol);
         case MATH_OCR_PPFORMULANET_L: return ppformulanet_l_ocr_recognize((ppformulanet_l_ocr_context *)u->ctx, px, w, h, ol);
         case MATH_OCR_POSFORMER:      return posformer_ocr_recognize((posformer_ocr_context *)u->ctx, px, w, h, ol);
+        case MATH_OCR_MIXTEX:         return mixtex_ocr_recognize_gray((mixtex_ocr_context *)u->ctx, px, w, h, ol);
     }
     return nullptr;
 }
@@ -3134,4 +3140,62 @@ extern "C" const crispembed_layout_region * crispembed_layout_detect(
     }
     if (out_n) *out_n = (int)regions.size();
     return w->c_results.empty() ? nullptr : w->c_results.data();
+}
+
+// ---------------------------------------------------------------------------
+// Surya Text Detection (EfficientViT segformer)
+// ---------------------------------------------------------------------------
+
+#include "surya_det.h"
+
+struct surya_det_wrapper {
+    surya_det_context * ctx = nullptr;
+    std::vector<crispembed_text_det_result> c_results;
+};
+
+extern "C" void * crispembed_text_det_init(const char * model_path, int n_threads) {
+    auto * w = new surya_det_wrapper();
+    w->ctx = surya_det_init(model_path, n_threads);
+    if (!w->ctx) { delete w; return nullptr; }
+    return w;
+}
+
+extern "C" void crispembed_text_det_free(void * ctx) {
+    if (!ctx) return;
+    auto * w = (surya_det_wrapper *)ctx;
+    surya_det_free(w->ctx);
+    delete w;
+}
+
+extern "C" const crispembed_text_det_result * crispembed_text_det(
+        void * ctx, const uint8_t * pixels, int width, int height, int channels,
+        float text_threshold, float low_threshold, int * out_n) {
+    if (!ctx || !pixels) { if (out_n) *out_n = 0; return nullptr; }
+    auto * w = (surya_det_wrapper *)ctx;
+
+    // Run detection
+    int hm_h = 0, hm_w = 0;
+    surya_det_detect(w->ctx, pixels, width, height, channels, &hm_h, &hm_w);
+
+    // Extract boxes
+    int n_boxes = 0;
+    const surya_det_bbox * boxes = surya_det_get_boxes(w->ctx, width, height,
+                                                        text_threshold, low_threshold,
+                                                        &n_boxes);
+    w->c_results.resize(n_boxes);
+    for (int i = 0; i < n_boxes; i++) {
+        w->c_results[i].x0 = boxes[i].x0;
+        w->c_results[i].y0 = boxes[i].y0;
+        w->c_results[i].x1 = boxes[i].x1;
+        w->c_results[i].y1 = boxes[i].y1;
+        w->c_results[i].confidence = boxes[i].confidence;
+    }
+    if (out_n) *out_n = n_boxes;
+    return w->c_results.empty() ? nullptr : w->c_results.data();
+}
+
+extern "C" const float * crispembed_text_det_heatmap(void * ctx, int * out_h, int * out_w) {
+    if (!ctx) return nullptr;
+    auto * w = (surya_det_wrapper *)ctx;
+    return surya_det_get_heatmap(w->ctx, out_h, out_w);
 }

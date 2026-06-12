@@ -52,6 +52,7 @@ int main(int argc, char ** argv) {
     std::string ocr_det_model_path;   // general OCR: text detection model (DBNet)
     std::string ocr_rec_model_path;   // general OCR: text recognition model (TrOCR)
     std::string layout_model_path;    // layout detection model (RT-DETRv2)
+    std::string text_det_model_path;  // surya text detection model
     int port = 8080;
     int n_threads = 4;
 
@@ -68,6 +69,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--ocr-det") == 0 && i + 1 < argc) ocr_det_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr-rec") == 0 && i + 1 < argc) ocr_rec_model_path = argv[++i];
         else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc) layout_model_path = argv[++i];
+        else if (strcmp(argv[i], "--text-det") == 0 && i + 1 < argc) text_det_model_path = argv[++i];
     }
 
     if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty()) {
@@ -669,6 +671,18 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "Warning: failed to load layout model '%s'\n", layout_model_path.c_str());
     }
 
+    // Surya text detection
+    void * text_det_ctx = nullptr;
+    std::mutex text_det_mutex;
+
+    if (!text_det_model_path.empty()) {
+        std::string resolved = crispembed_mgr::resolve_model(text_det_model_path, true);
+        if (!resolved.empty()) text_det_model_path = resolved;
+        text_det_ctx = crispembed_text_det_init(text_det_model_path.c_str(), n_threads);
+        if (!text_det_ctx)
+            fprintf(stderr, "Warning: failed to load text detection model '%s'\n", text_det_model_path.c_str());
+    }
+
     // POST /clip/text — CLIP text encoding
     // Request:  {"text": "a photo of a cat"}
     // Response: {"embedding": [...], "dim": N}
@@ -879,6 +893,75 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /text/detect — surya text line detection
+    // Request:  {"image": "/path/to/page.png", "threshold": 0.6}
+    // Response: {"boxes": [{"bbox": [x0, y0, x1, y1], "confidence": 0.95}, ...]}
+    svr.Post("/text/detect", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!text_det_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no text detection model loaded (use --text-det)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        float threshold = 0.6f;
+
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        auto tpos = body.find("\"threshold\"");
+        if (tpos != std::string::npos) {
+            auto colon = body.find(':', tpos);
+            if (colon != std::string::npos)
+                threshold = (float)atof(body.c_str() + colon + 1);
+        }
+
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no image path\"}", "application/json");
+            return;
+        }
+
+        // Load image via stb_image
+        int w, h, ch;
+        unsigned char * px = stbi_load(image_path.c_str(), &w, &h, &ch, 3);
+        if (!px) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(text_det_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        int n_boxes = 0;
+        const crispembed_text_det_result * boxes = crispembed_text_det(
+            text_det_ctx, px, w, h, 3, threshold, 0.35f, &n_boxes);
+        stbi_image_free(px);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        std::ostringstream js;
+        js << "{\"boxes\": [";
+        for (int i = 0; i < n_boxes; i++) {
+            if (i > 0) js << ", ";
+            js << "{\"bbox\": [" << std::fixed << std::setprecision(1)
+               << boxes[i].x0 << ", " << boxes[i].y0 << ", "
+               << boxes[i].x1 << ", " << boxes[i].y1
+               << "], \"confidence\": " << std::setprecision(4) << boxes[i].confidence << "}";
+        }
+        js << "], \"ms\": " << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /text/detect in %.1f ms (%d boxes)\n", ms, n_boxes);
+        res.set_content(js.str(), "application/json");
+    });
+
     // GET /health
     svr.Get("/health", [&](const httplib::Request &, httplib::Response & res) {
         std::ostringstream js;
@@ -895,6 +978,7 @@ int main(int argc, char ** argv) {
         if (math_ocr_ctx) js << ", \"math_ocr\": true";
         if (ocr_pipeline_ctx) js << ", \"ocr_pipeline\": true";
         if (layout_ctx) js << ", \"layout\": true";
+        if (text_det_ctx) js << ", \"text_detection\": true";
         js << "}";
         res.set_content(js.str(), "application/json");
     });
@@ -913,11 +997,13 @@ int main(int argc, char ** argv) {
     if (math_ocr_ctx) fprintf(stderr, "  POST /math/ocr        — {\"image\": \"formula.png\"}\n");
     if (ocr_pipeline_ctx) fprintf(stderr, "  POST /ocr             — {\"image\": \"document.png\"} (detect+recognize)\n");
     if (layout_ctx) fprintf(stderr, "  POST /layout/detect   — {\"image\": \"page.png\"}\n");
+    if (text_det_ctx) fprintf(stderr, "  POST /text/detect     — {\"image\": \"page.png\"}\n");
     fprintf(stderr, "  GET  /health\n\n");
 
     svr.listen(host, port);
 
     if (layout_ctx) crispembed_layout_free(layout_ctx);
+    if (text_det_ctx) crispembed_text_det_free(text_det_ctx);
     if (ocr_pipeline_ctx) crispembed_ocr_free(ocr_pipeline_ctx);
     if (math_ocr_ctx) crispembed_math_ocr_free(math_ocr_ctx);
     if (clip_text_ctx) crispembed_clip_text_free(clip_text_ctx);

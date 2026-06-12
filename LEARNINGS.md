@@ -1177,6 +1177,130 @@ sub-pixel accuracy (< 0.5px diff) on both single-face and multi-face
 images. The cls tensors (1 channel) show cos=0.985-0.992 because layout
 is irrelevant for single-channel data.
 
+## PosFormer port — encoder/decoder debugging
+
+### 2D sinusoidal positional encoding: sin/cos MUST share frequency
+
+PyTorch `ImgPosEnc` computes inv_freq with `arange(0, half_d, 2)` → 64 values.
+Each sin/cos pair uses the SAME frequency: `sin(x * f_i), cos(x * f_i)`.
+
+The initial C++ used different freq indices for sin vs cos:
+```cpp
+enc[2*i]     += sinf(x_norm * inv_freq[2*i]);     // freq 2i
+enc[2*i + 1] += cosf(x_norm * inv_freq[2*i + 1]); // freq 2i+1 ← WRONG
+```
+Fix: both must use `inv_freq[i]` (or `inv_freq[2*i]` from a 128-element array).
+Symptom: encoder cosine dropped to 0.58.
+
+### Operation ordering: pos_enc THEN LayerNorm (not reversed)
+
+PyTorch encoder does: `feature_proj → rearrange → pos_enc_2d → LayerNorm`.
+The C++ initially did: `feature_proj → rearrange → LayerNorm → pos_enc_2d`.
+LayerNorm normalizes the combined feature+pos signal; applying it before
+pos encoding means the positional encoding is un-normalized.
+
+### No ReLU after feature projection
+
+PyTorch's `self.feature_proj = nn.Conv2d(...)` has no activation. The C++
+had a spurious `relu_ip()` that clipped half the signal.
+
+### Missing decoder input LayerNorm (the biggest bug)
+
+PyTorch decoder does:
+```python
+tgt = self.word_embed(tgt)  # nn.Sequential(Embedding, LayerNorm)
+tgt = self.pos_enc(tgt)     # sinusoidal pos encoding
+tgt = self.norm(tgt)        # ← SECOND LayerNorm, was missing in C++
+```
+
+This `decoder.norm` was not in the GGUF converter OR the C++ inference.
+Symptom: layer 0 self-attention output had cos=0.868 at step 0 (should
+be 1.0). After adding `dec.input_norm` to converter and C++ decoder:
+cos=1.000000 at every step, max_diff < 0.00001.
+
+**Lesson**: never attribute divergence to "FP accumulation." If cosine is
+below 0.999 at step 0, there is a real bug. Trace layer-by-layer with
+intermediate dumps (after SA, after CA, after FFN) to find it.
+
+### ARM (Attention Refinement Module) incremental mode is correct
+
+The incremental ARM with per-ARM-instance accumulators matches the PyTorch
+batch cumsum exactly, IF the encoder and decoder embedding are correct.
+The ARM was never the bug — the divergence came entirely from the four
+encoder/decoder bugs listed above.
+
+### Bi-directional beam search vs greedy
+
+PosFormer's published 62.7% uses bi-directional beam search (L2R + R2L
+decode, cross-rate, pick best). The C++ implements L2R greedy only. Direct
+comparison must use the PyTorch decoder.forward() in a manual greedy loop,
+NOT the model.beam_search() which includes the bi-directional scoring.
+
+### Kaggle kernel patterns — MUST follow established conventions
+
+1. **Always clone CrispASR and import kaggle_harness** — never reimplement
+   token resolution, progress logging, or GPU detection. The harness has
+   been debugged across 15+ kernels.
+2. **kernel-metadata.json uses string "true"** not boolean true.
+3. **P100 (sm_60) + PyTorch**: Kaggle's pre-installed PyTorch (CUDA 12.x)
+   dropped sm_60 support. Fix: `pip install torch --index-url .../cu118`
+   which still supports P100 GPU. Do NOT fall back to CPU.
+4. **Dataset mount path**: Kaggle mounts `chr1str/crispasr-hf-token` at
+   `/kaggle/input/datasets/chr1str/crispasr-hf-token/`, NOT at
+   `/kaggle/input/crispasr-hf-token/`. The harness was patched to scan
+   both paths.
+5. **Kaggle Secrets API**: intermittently returns ConnectionError. The
+   dataset file fallback is the reliable path.
+6. **Validation speed**: PosFormer's `approximate_joint_search` uses
+   bi-directional beam search (beam_size=10) on all 986 test images.
+   This takes 30-60 min per validation step. Override with greedy
+   beam_size=1 for ~10x faster validation during training.
+7. **Heartbeat**: wrap `trainer.fit()` in `kh.build_heartbeat("train")`
+   so Kaggle logs show the run is alive during long operations.
+8. **W&B run resume**: using a fixed `id=` with `resume="allow"` lets
+   multi-session training continue the same W&B run. But if you kill
+   and restart, the charts mix old+new data. Change the run ID for
+   a clean restart.
+9. **Vocabulary ordering is critical**: PosFormer uses an alphabetical
+   dictionary (!, (, ), +, ...). Building vocab from `Counter.most_common()`
+   sorts by frequency ({, }, 1, 2, ...), scrambling 110/113 token indices.
+   The model trains "successfully" (internal metrics look fine) but the
+   checkpoint is completely unusable with the original dictionary, GGUF
+   converter, or C++ inference. ALWAYS use the canonical dictionary.txt.
+10. **OOV tokens**: 14 CROHME captions contain `'` (apostrophe) which is
+    not in PosFormer's 110-token dictionary. Filter these before training
+    or the DataLoader crashes with KeyError.
+11. **Cosine warm restarts are dangerous**: CosineAnnealingWarmRestarts
+    (T_0=30) reset LR from 0.008→0.08 at epoch 94, crashing val_ExpRate
+    from 57% to 38%. The model briefly recovered to 60.1% then fell
+    again. Plain CosineAnnealingLR (no restarts) is safer. The 60.1%
+    peak was lost because the checkpoint was overwritten.
+12. **Never delete HF checkpoints hastily**: HuggingFace has git history
+    — deleted files can be recovered via `hf_hub_download(revision=SHA)`.
+    But always back up to /mnt/storage first before deleting.
+13. **Dataset license verification**: figshare uploads can have wrong
+    licenses (user picks any license, no verification). CROHME+HME100K
+    on figshare claims CC BY 4.0 but the original datasets are NC/
+    proprietary. Always check the original source, not re-uploads.
+14. **UniMER dataset (Apache 2.0)**: wanderkid/UniMER_Dataset on HF has
+    978K printed math images (ArXiv+Pix2tex) under Apache 2.0. The
+    CROHME and HME100K subsets are excluded from this license ("requires
+    manual download for copyright"). Best commercial data source found.
+15. **MathWriting augmentation works**: Adding 2000 MathWriting samples
+    (filtered to v1 110-token vocab from deepcopy/MathWriting-human on HF)
+    to CROHME training broke the 59.3% ceiling → 60.5% verified.
+    47% of MathWriting is compatible with v1 vocab (~109K out of 230K).
+16. **Beam=10 bi-directional doesn't help our model**: 60.3% beam=10 vs
+    60.5% beam=1 — beam search actually hurts by 0.2%. The R2L path
+    sometimes picks worse hypotheses that beat correct L2R in cross-scoring.
+    This differs from SJTU's published model where beam=10 added ~6 points.
+17. **ReduceLROnPlateau is the key to peaks**: The best val_ExpRate always
+    came right after an LR drop (0.08→0.005 gave 57%, 0.005→0.00125 gave
+    62%). Manual LR patching in checkpoint files works when callbacks fail.
+18. **Use deepcopy/MathWriting-human for MathWriting data**: Pre-rasterized
+    JPG images + LaTeX strings on HuggingFace. Much faster than downloading
+    and parsing 230K InkML files from Google Storage.
+
 ## NomicBERT v2-moe: hidden biases and GPT2 config
 
 NomicBERT extends `GPT2Config`, so standard attribute names are missing:
