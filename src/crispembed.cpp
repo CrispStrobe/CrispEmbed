@@ -3205,3 +3205,29 @@ extern "C" const float * crispembed_text_det_heatmap(void * ctx, int * out_h, in
     auto * w = (surya_det_wrapper *)ctx;
     return surya_det_get_heatmap(w->ctx, out_h, out_w);
 }
+
+// ===========================================================================
+// Named Entity Recognition (GLiNER)
+// ===========================================================================
+
+#include "gliner_ner.h"
+
+extern "C" void * crispembed_ner_init(const char * model_path, int n_threads) {
+    return gliner_ner_init(model_path, n_threads);
+}
+
+extern "C" void crispembed_ner_free(void * ctx) {
+    gliner_ner_free(ctx);
+}
+
+extern "C" int crispembed_ner_extract(void * ctx, const char * text,
+                                      const char ** labels, int n_labels,
+                                      float threshold,
+                                      crispembed_ner_entity ** out_entities) {
+    gliner_ner_entity * ents = nullptr;
+    int n = gliner_ner_extract(ctx, text, labels, n_labels, threshold, &ents);
+    // gliner_ner_entity and crispembed_ner_entity have identical layout
+    if (out_entities)
+        *out_entities = (crispembed_ner_entity *)ents;
+    return n;
+}
