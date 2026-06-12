@@ -620,8 +620,8 @@ Swin encoder as new building block.
 - [x] Reference dumper: `tools/dump_mixtex_reference.py`
 - [x] GGUF converter: `models/convert-mixtex-to-gguf.py` (345 tensors)
 - [x] GGUF files: F32=329MB, F16=165MB at `/mnt/storage/gguf-models/`
-- [ ] C++ engine: `src/mixtex_ocr.{h,cpp}` (Swin encoder is new)
-- [ ] Parity test
+- [x] C++ engine: `src/mixtex_ocr.{h,cpp}` — runs end-to-end, Swin+RoBERTa
+- [ ] Parity test (encoder parity vs Python reference)
 
 **Key new op**: Swin shifted-window attention with relative position bias.
 Window partition → local MHSA + RPB lookup → window reverse → shift.
