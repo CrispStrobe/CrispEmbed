@@ -22,6 +22,7 @@
 #include "internvl2_ocr.h"
 #include "crispembed_diff.h"
 #include "core/gguf_loader.h"
+#include "core/bpe.h"
 
 #include "ggml.h"
 #include "ggml-alloc.h"
@@ -49,42 +50,102 @@ static int hex_val(char c) {
     return -1;
 }
 
+// GPT-2 byte_decoder: inverse of bytes_to_unicode().
+// Maps each Unicode codepoint used in GPT-2 BPE tokens back to the
+// original byte value. Built lazily on first call.
+static const std::vector<int> &gpt2_byte_decoder() {
+    static std::vector<int> table;
+    if (!table.empty()) return table;
+    table.assign(65536, -1);
+    // Build forward map (byte → unicode) then invert
+    auto fwd = core_bpe::byte_encoder();
+    for (int b = 0; b < 256; b++) {
+        int cp = fwd[b];
+        if (cp >= 0 && cp < (int)table.size()) {
+            table[cp] = b;
+        }
+    }
+    return table;
+}
+
+// Decode a GPT-2 BPE token string to raw bytes.
+// Each character in the token is a Unicode codepoint that maps to a byte.
+static std::string gpt2_token_to_bytes(const std::string &token) {
+    const auto &dec = gpt2_byte_decoder();
+    std::string result;
+    // Parse UTF-8 codepoints from the token string
+    const uint8_t *p = (const uint8_t *)token.data();
+    const uint8_t *end = p + token.size();
+    while (p < end) {
+        uint32_t cp;
+        if (*p < 0x80) {
+            cp = *p++;
+        } else if (*p < 0xE0) {
+            cp = (*p++ & 0x1F) << 6;
+            if (p < end) cp |= (*p++ & 0x3F);
+        } else if (*p < 0xF0) {
+            cp = (*p++ & 0x0F) << 12;
+            if (p < end) cp |= (*p++ & 0x3F) << 6;
+            if (p < end) cp |= (*p++ & 0x3F);
+        } else {
+            cp = (*p++ & 0x07) << 18;
+            if (p < end) cp |= (*p++ & 0x3F) << 12;
+            if (p < end) cp |= (*p++ & 0x3F) << 6;
+            if (p < end) cp |= (*p++ & 0x3F);
+        }
+        if (cp < dec.size() && dec[cp] >= 0) {
+            result += (char)dec[cp];
+        }
+    }
+    return result;
+}
+
 std::string tokenizer::decode(const int32_t *ids, int n) const {
+    // Detect tokenizer type: SentencePiece (InternLM2, vocab ~92K)
+    // vs GPT-2 BPE (Qwen2, vocab ~151K)
+    bool is_gpt2_bpe = vocab_size > 100000;
+
     std::string result;
     for (int i = 0; i < n; i++) {
         int id = ids[i];
         if (id < 0 || id >= vocab_size) continue;
-        if (id == bos_id || id == eos_id) continue;  // skip special tokens
-        if (id == im_end_id) break;  // stop at <|im_end|>
+        if (id == bos_id || id == eos_id) continue;
+        if (id == im_end_id) break;
 
         const std::string &piece = id_to_piece[id];
         if (piece.empty()) continue;
 
-        // Byte fallback: <0xNN> → raw byte
-        if (piece.size() == 6 && piece[0] == '<' && piece[1] == '0' &&
-            piece[2] == 'x' && piece[5] == '>') {
-            int h = hex_val(piece[3]);
-            int l = hex_val(piece[4]);
-            if (h >= 0 && l >= 0) {
-                result += (char)(h * 16 + l);
-                continue;
+        // Skip special/control tokens
+        if (piece[0] == '[' && piece.back() == ']') continue;  // [UNUSED_*]
+        if (piece == "<s>" || piece == "</s>") continue;
+        if (piece.size() > 3 && piece[0] == '<' && piece[1] == '|' &&
+            piece.back() == '>' && piece[piece.size()-2] == '|') continue;  // <|...|>
+
+        if (is_gpt2_bpe) {
+            // GPT-2 BPE: each char is a byte-mapped codepoint
+            result += gpt2_token_to_bytes(piece);
+        } else {
+            // SentencePiece: <0xNN> = byte fallback, ▁ = space
+            if (piece.size() == 6 && piece[0] == '<' && piece[1] == '0' &&
+                piece[2] == 'x' && piece[5] == '>') {
+                int h = hex_val(piece[3]);
+                int l = hex_val(piece[4]);
+                if (h >= 0 && l >= 0) {
+                    result += (char)(h * 16 + l);
+                    continue;
+                }
             }
+            std::string text = piece;
+            size_t pos = 0;
+            while ((pos = text.find("\xe2\x96\x81", pos)) != std::string::npos) {
+                text.replace(pos, 3, " ");
+                pos += 1;
+            }
+            result += text;
         }
-
-        // Skip control/special tokens like [UNUSED_TOKEN_*]
-        if (piece[0] == '[' && piece.back() == ']') continue;
-
-        // SentencePiece: ▁ (U+2581, 3 bytes: e2 96 81) → space
-        std::string text = piece;
-        size_t pos = 0;
-        while ((pos = text.find("\xe2\x96\x81", pos)) != std::string::npos) {
-            text.replace(pos, 3, " ");
-            pos += 1;
-        }
-        result += text;
     }
 
-    // Trim leading space (SentencePiece adds ▁ before first real token)
+    // Trim leading space
     if (!result.empty() && result[0] == ' ') {
         result = result.substr(1);
     }
