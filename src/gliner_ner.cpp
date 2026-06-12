@@ -36,6 +36,7 @@
 #include <map>
 #include <numeric>
 #include <string>
+#include <chrono>
 #include <vector>
 
 #ifndef M_PI
@@ -166,6 +167,16 @@ struct gliner_context {
 
     // Reusable compute buffer
     std::vector<uint8_t> compute_meta;
+
+    // Cached F32 weights for CPU-side operations (avoids per-call dequant)
+    // BiLSTM weights (8 tensors)
+    std::vector<float> lstm_W_ih_fwd, lstm_b_ih_fwd, lstm_W_hh_fwd, lstm_b_hh_fwd;
+    std::vector<float> lstm_W_ih_rev, lstm_b_ih_rev, lstm_W_hh_rev, lstm_b_hh_rev;
+    // Layer fuser weights (8 tensors)
+    std::vector<float> fuser_squeeze_w, fuser_squeeze_b;
+    std::vector<float> fuser_W1_w, fuser_W1_b, fuser_W2_w, fuser_W2_b;
+    std::vector<float> fuser_out_proj_w, fuser_out_proj_b;
+    bool weights_cached = false;
 
     // Output storage (valid until next call)
     std::vector<gliner_ner_entity> result_entities;
@@ -577,32 +588,30 @@ static void lstm_forward_one_dir(
 }
 
 // Run BiLSTM on CPU. Input: (T, input_size), Output: (T, 2*hidden_size)
-static void bilstm_forward(
+// Uses pre-cached F32 weights from gliner_context.
+static void bilstm_forward_cached(
     const float * input, float * output,
     int T, int input_size, int lstm_hidden,
-    const gliner_model & model, ggml_backend_t backend)
+    const gliner_context * ctx)
 {
-    // Read LSTM weights from backend (handles quantized tensors)
-    auto W_ih_fwd = tensor_to_f32_backend(model.lstm_weight_ih_l0, backend);
-    auto b_ih_fwd = tensor_to_f32_backend(model.lstm_bias_ih_l0, backend);
-    auto W_hh_fwd = tensor_to_f32_backend(model.lstm_weight_hh_l0, backend);
-    auto b_hh_fwd = tensor_to_f32_backend(model.lstm_bias_hh_l0, backend);
-    auto W_ih_rev = tensor_to_f32_backend(model.lstm_weight_ih_l0_rev, backend);
-    auto b_ih_rev = tensor_to_f32_backend(model.lstm_bias_ih_l0_rev, backend);
-    auto W_hh_rev = tensor_to_f32_backend(model.lstm_weight_hh_l0_rev, backend);
-    auto b_hh_rev = tensor_to_f32_backend(model.lstm_bias_hh_l0_rev, backend);
+    const float * W_ih_fwd_p = ctx->lstm_W_ih_fwd.data();
+    const float * b_ih_fwd_p = ctx->lstm_b_ih_fwd.data();
+    const float * W_hh_fwd_p = ctx->lstm_W_hh_fwd.data();
+    const float * b_hh_fwd_p = ctx->lstm_b_hh_fwd.data();
+    const float * W_ih_rev_p = ctx->lstm_W_ih_rev.data();
+    const float * b_ih_rev_p = ctx->lstm_b_ih_rev.data();
+    const float * W_hh_rev_p = ctx->lstm_W_hh_rev.data();
+    const float * b_hh_rev_p = ctx->lstm_b_hh_rev.data();
 
     // Forward direction → first half of output
     std::vector<float> fwd_out(T * lstm_hidden);
     lstm_forward_one_dir(input, fwd_out.data(), T, input_size, lstm_hidden,
-                         W_ih_fwd.data(), b_ih_fwd.data(),
-                         W_hh_fwd.data(), b_hh_fwd.data(), false);
+                         W_ih_fwd_p, b_ih_fwd_p, W_hh_fwd_p, b_hh_fwd_p, false);
 
     // Reverse direction → second half of output
     std::vector<float> rev_out(T * lstm_hidden);
     lstm_forward_one_dir(input, rev_out.data(), T, input_size, lstm_hidden,
-                         W_ih_rev.data(), b_ih_rev.data(),
-                         W_hh_rev.data(), b_hh_rev.data(), true);
+                         W_ih_rev_p, b_ih_rev_p, W_hh_rev_p, b_hh_rev_p, true);
 
     // Concatenate: output[t] = [fwd[t], rev[t]]
     for (int t = 0; t < T; t++) {
@@ -682,6 +691,29 @@ void * gliner_ner_init(const char * model_path, int n_threads) {
         delete ctx;
         return nullptr;
     }
+
+    // Cache dequantized weights for CPU-side operations (BiLSTM + layer fusion)
+    auto & m = ctx->model;
+    ctx->lstm_W_ih_fwd = tensor_to_f32_backend(m.lstm_weight_ih_l0, ctx->backend);
+    ctx->lstm_b_ih_fwd = tensor_to_f32_backend(m.lstm_bias_ih_l0, ctx->backend);
+    ctx->lstm_W_hh_fwd = tensor_to_f32_backend(m.lstm_weight_hh_l0, ctx->backend);
+    ctx->lstm_b_hh_fwd = tensor_to_f32_backend(m.lstm_bias_hh_l0, ctx->backend);
+    ctx->lstm_W_ih_rev = tensor_to_f32_backend(m.lstm_weight_ih_l0_rev, ctx->backend);
+    ctx->lstm_b_ih_rev = tensor_to_f32_backend(m.lstm_bias_ih_l0_rev, ctx->backend);
+    ctx->lstm_W_hh_rev = tensor_to_f32_backend(m.lstm_weight_hh_l0_rev, ctx->backend);
+    ctx->lstm_b_hh_rev = tensor_to_f32_backend(m.lstm_bias_hh_l0_rev, ctx->backend);
+    ctx->fuser_squeeze_w  = tensor_to_f32_backend(m.fuser_squeeze_w, ctx->backend);
+    ctx->fuser_squeeze_b  = tensor_to_f32_backend(m.fuser_squeeze_b, ctx->backend);
+    ctx->fuser_W1_w       = tensor_to_f32_backend(m.fuser_W1_w, ctx->backend);
+    ctx->fuser_W1_b       = tensor_to_f32_backend(m.fuser_W1_b, ctx->backend);
+    ctx->fuser_W2_w       = tensor_to_f32_backend(m.fuser_W2_w, ctx->backend);
+    ctx->fuser_W2_b       = tensor_to_f32_backend(m.fuser_W2_b, ctx->backend);
+    ctx->fuser_out_proj_w = tensor_to_f32_backend(m.fuser_output_proj_w, ctx->backend);
+    ctx->fuser_out_proj_b = tensor_to_f32_backend(m.fuser_output_proj_b, ctx->backend);
+    ctx->weights_cached = true;
+    GDBG("cached %zu bytes of CPU weights",
+         (ctx->lstm_W_ih_fwd.size() + ctx->lstm_W_hh_fwd.size()) * 2 * sizeof(float) * 2 +
+         ctx->fuser_out_proj_w.size() * sizeof(float));
 
     return ctx;
 }
@@ -830,6 +862,15 @@ int gliner_ner_extract(void * ptr,
 
     GDBG("input: %d tokens (%d label prefix + %d text + BOS/EOS), %d words, %d entity types",
          T, text_token_start, n_text_tokens, (int)words.size(), n_labels);
+
+    auto t_start = std::chrono::steady_clock::now();
+    auto t_prev = t_start;
+    auto elapsed = [&]() -> double {
+        auto now = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(now - t_prev).count();
+        t_prev = now;
+        return ms;
+    };
     if (g_debug) {
         fprintf(stderr, "[gliner] token IDs:");
         for (int i = 0; i < T && i < 30; i++)
@@ -913,7 +954,9 @@ int gliner_ner_extract(void * ptr,
     }
 
     // Compute
+    elapsed(); // reset
     ggml_backend_graph_compute(ctx->backend, gf);
+    GDBG("backbone graph: %.1f ms", elapsed());
 
     // --- Parity comparison against Python reference (if GLINER_DIFF_REF set) ---
     const char * diff_ref_path = std::getenv("GLINER_DIFF_REF");
@@ -962,6 +1005,7 @@ int gliner_ner_extract(void * ptr,
         }
     }
 
+    elapsed(); // reset before readback
     // Read layer outputs for fusion
     std::vector<std::vector<float>> all_layer_outs(hp.n_layers);
     for (uint32_t i = 0; i < hp.n_layers; i++) {
@@ -977,18 +1021,19 @@ int gliner_ner_extract(void * ptr,
     ggml_free(g);
 
     // -----------------------------------------------------------------------
+    GDBG("readback: %.1f ms", elapsed());
     // 3. Layer fusion (CPU) — attention-weighted sum of all layer outputs
     // -----------------------------------------------------------------------
 
     // Read fuser weights
-    auto squeeze_w = tensor_to_f32_backend(model.fuser_squeeze_w, ctx->backend);
-    auto squeeze_b = tensor_to_f32_backend(model.fuser_squeeze_b, ctx->backend);
-    auto W1_w = tensor_to_f32_backend(model.fuser_W1_w, ctx->backend);
-    auto W1_b = tensor_to_f32_backend(model.fuser_W1_b, ctx->backend);
-    auto W2_w = tensor_to_f32_backend(model.fuser_W2_w, ctx->backend);
-    auto W2_b = tensor_to_f32_backend(model.fuser_W2_b, ctx->backend);
-    auto out_proj_w = tensor_to_f32_backend(model.fuser_output_proj_w, ctx->backend);
-    auto out_proj_b = tensor_to_f32_backend(model.fuser_output_proj_b, ctx->backend);
+    const auto & squeeze_w = ctx->fuser_squeeze_w;
+    const auto & squeeze_b = ctx->fuser_squeeze_b;
+    const auto & W1_w = ctx->fuser_W1_w;
+    const auto & W1_b = ctx->fuser_W1_b;
+    const auto & W2_w = ctx->fuser_W2_w;
+    const auto & W2_b = ctx->fuser_W2_b;
+    const auto & out_proj_w = ctx->fuser_out_proj_w;
+    const auto & out_proj_b = ctx->fuser_out_proj_b;
 
     int NL = (int)hp.n_layers;
 
@@ -1058,7 +1103,7 @@ int gliner_ner_extract(void * ptr,
         }
     }
 
-    GDBG("layer fusion done, running BiLSTM...");
+    GDBG("layer fusion: %.1f ms", elapsed());
 
     // -----------------------------------------------------------------------
     // 4. Extract entity reps + first-subtoken pooling + BiLSTM (word-level)
@@ -1099,8 +1144,8 @@ int gliner_ner_extract(void * ptr,
     // 4c. BiLSTM on word-level representations only
     const int lstm_hidden = 512;
     std::vector<float> lstm_out(n_words * 2 * lstm_hidden);
-    bilstm_forward(word_reps.data(), lstm_out.data(),
-                   n_words, hidden, lstm_hidden, model, ctx->backend);
+    bilstm_forward_cached(word_reps.data(), lstm_out.data(),
+                          n_words, hidden, lstm_hidden, ctx);
 
     // lstm_out: (n_words, 1024) — word-level bidirectional hidden states
     // Compare lstm output against reference (now word-level, should match)
@@ -1113,7 +1158,7 @@ int gliner_ner_extract(void * ptr,
         }
     }
 
-    GDBG("BiLSTM done, computing GLiNER head...");
+    GDBG("BiLSTM: %.1f ms", elapsed());
 
     // -----------------------------------------------------------------------
     // 5. GLiNER head — ggml graph for batched MLPs + scoring
@@ -1219,7 +1264,9 @@ int gliner_ner_extract(void * ptr,
             mean_vec[d] /= n_words;
         ggml_backend_tensor_set(inp_mean, mean_vec.data(), 0, hidden * sizeof(float));
 
+        elapsed();
         ggml_backend_graph_compute(ctx->backend, gf1);
+        GDBG("head pass1 compute: %.1f ms", elapsed());
 
         // Read pass 1 outputs
         std::vector<float> ps_data(n_words * hidden), pe_data(n_words * hidden);
@@ -1275,7 +1322,9 @@ int gliner_ner_extract(void * ptr,
         ggml_backend_tensor_set(inp_sp, span_cat.data(), 0, span_cat.size() * sizeof(float));
         ggml_backend_tensor_set(inp_er, er_data.data(), 0, er_data.size() * sizeof(float));
 
+        GDBG("head pass2 setup: %.1f ms", elapsed());
         ggml_backend_graph_compute(ctx->backend, gf2);
+        GDBG("head pass2 compute: %.1f ms", elapsed());
 
         // Read scores
         std::vector<float> scores_raw(n_labels * n_spans);
@@ -1367,6 +1416,10 @@ int gliner_ner_extract(void * ptr,
     if (out_entities)
         *out_entities = ctx->result_entities.data();
 
-    GDBG("extracted %zu entities", ctx->result_entities.size());
+    {
+        auto t_end = std::chrono::steady_clock::now();
+        double total_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
+        GDBG("total: %.1f ms, extracted %zu entities", total_ms, ctx->result_entities.size());
+    }
     return (int)ctx->result_entities.size();
 }
