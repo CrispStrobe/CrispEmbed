@@ -359,4 +359,162 @@ bool preprocess_file(const char * path, const config & cfg, result & out) {
     return ok;
 }
 
+// ── InternVL2 dynamic tiling ────────────────────────────────────────
+
+// Find the closest aspect ratio from a set of possible (rows, cols) grids.
+// Returns (best_rows, best_cols).
+static void find_closest_aspect_ratio(int img_h, int img_w,
+                                       int min_tiles, int max_tiles,
+                                       int tile_size,
+                                       int &out_rows, int &out_cols) {
+    float target_aspect = (float)img_w / (float)img_h;
+    float best_diff = 1e9f;
+    out_rows = 1;
+    out_cols = 1;
+
+    for (int n = min_tiles; n <= max_tiles; n++) {
+        // Try all factorizations of n
+        for (int r = 1; r <= n; r++) {
+            if (n % r != 0) continue;
+            int c = n / r;
+            float aspect = (float)c / (float)r;
+            float diff = std::abs(aspect - target_aspect);
+            if (diff < best_diff || (diff == best_diff && n < out_rows * out_cols)) {
+                best_diff = diff;
+                out_rows = r;
+                out_cols = c;
+            }
+        }
+    }
+}
+
+// Bilinear resize of uint8 RGB into a float tile, with normalization.
+// dst: (3, tile_h, tile_w) planar float, normalized.
+static void resize_and_normalize_tile(const uint8_t *src, int src_w, int src_h,
+                                       int src_stride, int channels,
+                                       float *dst, int tile_w, int tile_h,
+                                       const float mean[3], const float std_v[3]) {
+    for (int c = 0; c < 3; c++) {
+        for (int y = 0; y < tile_h; y++) {
+            float sy = (float)y * src_h / tile_h;
+            int iy0 = (int)sy;
+            int iy1 = std::min(iy0 + 1, src_h - 1);
+            float fy = sy - iy0;
+            for (int x = 0; x < tile_w; x++) {
+                float sx = (float)x * src_w / tile_w;
+                int ix0 = (int)sx;
+                int ix1 = std::min(ix0 + 1, src_w - 1);
+                float fx = sx - ix0;
+
+                int ch = std::min(c, channels - 1);
+                float v00 = (float)src[iy0 * src_stride + ix0 * channels + ch];
+                float v01 = (float)src[iy0 * src_stride + ix1 * channels + ch];
+                float v10 = (float)src[iy1 * src_stride + ix0 * channels + ch];
+                float v11 = (float)src[iy1 * src_stride + ix1 * channels + ch];
+
+                float val = (1-fy) * ((1-fx)*v00 + fx*v01) +
+                            fy * ((1-fx)*v10 + fx*v11);
+                val /= 255.0f;
+                dst[c * tile_h * tile_w + y * tile_w + x] =
+                    (val - mean[c]) / std_v[c];
+            }
+        }
+    }
+}
+
+bool preprocess_internvl_rgb(const uint8_t *rgb, int height, int width, int channels,
+                              const internvl_config &cfg, internvl_result &out) {
+    const int S = cfg.image_size;  // 448
+
+    // Find best tiling grid
+    int grid_r, grid_c;
+    find_closest_aspect_ratio(height, width,
+                               cfg.min_dynamic_patch, cfg.max_dynamic_patch,
+                               S, grid_r, grid_c);
+    int n_tiles = grid_r * grid_c;
+    if (cfg.use_thumbnail) n_tiles += 1;
+
+    out.n_tiles = n_tiles;
+    out.tile_size = S;
+    out.grid_rows = grid_r;
+    out.grid_cols = grid_c;
+    out.tiles.resize((size_t)n_tiles * 3 * S * S);
+
+    // Resize image to fit the grid: (grid_r * S) x (grid_c * S)
+    int target_h = grid_r * S;
+    int target_w = grid_c * S;
+
+    // Allocate resized image as uint8
+    std::vector<uint8_t> resized(target_h * target_w * 3);
+    int dst_stride = target_w * 3;
+    for (int y = 0; y < target_h; y++) {
+        float sy = (float)y * height / target_h;
+        int iy0 = (int)sy;
+        int iy1 = std::min(iy0 + 1, height - 1);
+        float fy = sy - iy0;
+        for (int x = 0; x < target_w; x++) {
+            float sx = (float)x * width / target_w;
+            int ix0 = (int)sx;
+            int ix1 = std::min(ix0 + 1, width - 1);
+            float fx = sx - ix0;
+            for (int c = 0; c < 3; c++) {
+                int ch = std::min(c, channels - 1);
+                float v00 = (float)rgb[iy0 * width * channels + ix0 * channels + ch];
+                float v01 = (float)rgb[iy0 * width * channels + ix1 * channels + ch];
+                float v10 = (float)rgb[iy1 * width * channels + ix0 * channels + ch];
+                float v11 = (float)rgb[iy1 * width * channels + ix1 * channels + ch];
+                float val = (1-fy) * ((1-fx)*v00 + fx*v01) + fy * ((1-fx)*v10 + fx*v11);
+                resized[y * dst_stride + x * 3 + c] = (uint8_t)std::min(255.0f, std::max(0.0f, val));
+            }
+        }
+    }
+
+    // Split into tiles and normalize
+    int tile_idx = 0;
+    for (int tr = 0; tr < grid_r; tr++) {
+        for (int tc = 0; tc < grid_c; tc++) {
+            // Extract tile region from resized image
+            int y0 = tr * S;
+            int x0 = tc * S;
+            // Point to the start of this tile in the resized buffer
+            // We need to resize_and_normalize from the sub-region
+            // Since resized is already the right size, just copy the tile
+            float *dst = out.tiles.data() + (size_t)tile_idx * 3 * S * S;
+            for (int c = 0; c < 3; c++) {
+                for (int y = 0; y < S; y++) {
+                    for (int x = 0; x < S; x++) {
+                        float val = (float)resized[(y0 + y) * dst_stride + (x0 + x) * 3 + c] / 255.0f;
+                        dst[c * S * S + y * S + x] = (val - cfg.mean[c]) / cfg.std[c];
+                    }
+                }
+            }
+            tile_idx++;
+        }
+    }
+
+    // Thumbnail: resize full image to S×S
+    if (cfg.use_thumbnail) {
+        float *dst = out.tiles.data() + (size_t)tile_idx * 3 * S * S;
+        resize_and_normalize_tile(rgb, width, height, width * channels, channels,
+                                   dst, S, S, cfg.mean, cfg.std);
+        tile_idx++;
+    }
+
+    return true;
+}
+
+bool preprocess_internvl_file(const char *path, const internvl_config &cfg,
+                               internvl_result &out) {
+    int W, H, C;
+    uint8_t *rgb = stbi_load(path, &W, &H, &C, 3);
+    if (!rgb) {
+        std::fprintf(stderr, "image_preproc: stbi_load failed for '%s': %s\n",
+                     path, stbi_failure_reason());
+        return false;
+    }
+    bool ok = preprocess_internvl_rgb(rgb, H, W, 3, cfg, out);
+    stbi_image_free(rgb);
+    return ok;
+}
+
 }  // namespace image_preproc

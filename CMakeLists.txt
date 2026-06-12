@@ -139,6 +139,7 @@ list(APPEND CRISPEMBED_SOURCES src/layout_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/surya_det.cpp)
 list(APPEND CRISPEMBED_SOURCES src/mixtex_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/qwen2vl_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/internvl2_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/gliner_ner.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
@@ -299,6 +300,15 @@ target_link_libraries(test-qwen2vl-diff PRIVATE crispembed)
 
 add_executable(test-qwen2vl-e2e tests/test_qwen2vl_e2e.cpp)
 target_link_libraries(test-qwen2vl-e2e PRIVATE crispembed)
+
+add_executable(test-internvl2-diff tests/test_internvl2_diff.cpp)
+target_link_libraries(test-internvl2-diff PRIVATE crispembed)
+
+add_executable(test-internvl2-e2e tests/test_internvl2_e2e.cpp)
+target_link_libraries(test-internvl2-e2e PRIVATE crispembed)
+
+add_executable(test-internvl2-image tests/test_internvl2_image.cpp)
+target_link_libraries(test-internvl2-image PRIVATE crispembed)
 
 endif() # NOT iOS
 
