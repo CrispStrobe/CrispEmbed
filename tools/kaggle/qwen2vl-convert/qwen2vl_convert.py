@@ -1,149 +1,113 @@
-import os, subprocess, sys, shutil, time, traceback
+# %% [markdown]
+# # CrispEmbed — Qwen2.5-VL-3B GGUF conversion
+#
+# Convert `Qwen/Qwen2.5-VL-3B-Instruct` to F16 GGUF, upload to HF.
+#
+# Kaggle setup:
+#   - Accelerator: None (CPU only)
+#   - Internet: ON
+#   - Attach dataset: chr1str/crispasr-hf-token
+
+# %% [code]
+import os, subprocess, sys, shutil, time
 from pathlib import Path
 
-# Earliest possible breadcrumb — if we see this file, the script started
-_WORK = "/kaggle/working" if os.path.exists("/kaggle/working") else "/tmp/qwen2vl-convert"
-os.makedirs(_WORK, exist_ok=True)
-with open(os.path.join(_WORK, "progress.txt"), "w") as _f:
-    _f.write(f"script_started at {time.time()}\n")
-    _f.write(f"python={sys.version}\n")
-    _f.write(f"cwd={os.getcwd()}\n")
-
-os.environ["PYTHONUNBUFFERED"] = "1"
-try:
-    sys.stdout.reconfigure(line_buffering=True)
-    sys.stderr.reconfigure(line_buffering=True)
-except Exception:
-    pass
-
-WORK = Path(_WORK)
-
+WORK = Path("/kaggle/working")
+CRISPASR = WORK / "CrispASR"
 REPO = WORK / "CrispEmbed"
 BRANCH = "feat/keyven-german-ocr"
+
+# Clone CrispASR first — we need kaggle_harness.py
+print("[0] cloning CrispASR for harness", flush=True)
+if CRISPASR.exists():
+    shutil.rmtree(CRISPASR)
+subprocess.check_call([
+    "git", "clone", "--depth", "1",
+    "https://github.com/CrispStrobe/CrispASR.git", str(CRISPASR),
+])
+
+sys.path.insert(0, str(CRISPASR / "tools" / "kaggle"))
+import kaggle_harness as kh
+kh.init_progress()
+hf_token = kh.resolve_hf_token()
+kh.step("harness_ready", hf_token_ok=bool(hf_token))
+
+# %% [code]
+print("[1] cloning CrispEmbed", flush=True)
+if REPO.exists():
+    shutil.rmtree(REPO)
+subprocess.check_call([
+    "git", "clone", "--depth", "1", "--branch", BRANCH,
+    "https://github.com/CrispStrobe/CrispEmbed.git", str(REPO),
+])
+kh.step("cloned", branch=BRANCH)
+
+# %% [code]
+# torch is pre-installed on Kaggle — only install small deps
+subprocess.check_call([
+    sys.executable, "-m", "pip", "install", "--quiet",
+    "safetensors", "gguf", "huggingface_hub", "transformers", "hf_transfer",
+])
+kh.step("deps_installed")
+
+# %% [code]
+from huggingface_hub import snapshot_download
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
+
+for candidate in ("/kaggle/temp", "/tmp"):
+    if os.path.isdir(candidate):
+        scratch = Path(candidate) / "qwen25vl-cache"
+        break
+scratch.mkdir(parents=True, exist_ok=True)
+free_gb = shutil.disk_usage(scratch).free / (1024**3)
+print(f"[3] scratch: {scratch} (free: {free_gb:.1f} GiB)", flush=True)
+
 HF_MODEL = "Qwen/Qwen2.5-VL-3B-Instruct"
-HF_REPO = "cstr/qwen2.5-vl-3b-crispembed-GGUF"
-OUT_F16 = WORK / "qwen2.5-vl-3b-f16.gguf"
-
-def run(cmd):
-    print(f"$ {cmd}", flush=True)
-    subprocess.check_call(cmd, shell=True)
-
-LOG = WORK / "progress.txt"
-
-def step(msg):
-    line = f"[{time.time():.0f}] {msg}"
-    print(line, flush=True)
-    try:
-        with open(LOG, "a") as f:
-            f.write(line + "\n")
-    except Exception:
-        pass
-
-try:
-    # ── Step 1: Clone CrispEmbed ──────────────────────────────────
-    step("1. Cloning CrispEmbed")
-    if REPO.exists():
-        shutil.rmtree(REPO)
-    run(f"git clone --depth 1 --branch {BRANCH} https://github.com/CrispStrobe/CrispEmbed.git {REPO}")
-    step("1. Clone done")
-
-    # ── Step 2: Install deps ──────────────────────────────────────
-    step("2. Installing dependencies")
-    # torch is pre-installed on Kaggle — only install small deps
-    run(f"{sys.executable} -m pip install --quiet safetensors gguf huggingface_hub transformers hf_transfer")
-    step("2. Deps installed")
-
-    # ── Step 3: Resolve HF token ──────────────────────────────────
-    step("3. Resolving HF token")
-    hf_token = os.environ.get("HF_TOKEN")
-    if not hf_token:
-        # Try Kaggle Secrets
-        try:
-            from kaggle_secrets import UserSecretsClient
-            client = UserSecretsClient()
-            hf_token = client.get_secret("HF_TOKEN")
-        except Exception as e:
-            print(f"   Kaggle secret failed: {e}", flush=True)
-    if not hf_token:
-        # Try dataset file
-        for p in ["/kaggle/input/crispasr-hf-token/hf_token.txt",
-                   "/kaggle/input/crispasr-hf-token/token.txt"]:
-            if os.path.exists(p):
-                hf_token = open(p).read().strip()
-                break
-    if hf_token:
-        os.environ["HF_TOKEN"] = hf_token
-        os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
-        step(f"3. HF token resolved ({len(hf_token)} chars)")
-    else:
-        step("3. No HF token — will skip upload")
-
-    # ── Step 4: Download model ────────────────────────────────────
-    step("4. Downloading model")
-    # Use scratch dir for large downloads
-    for candidate in ["/kaggle/temp", "/tmp"]:
-        if os.path.isdir(candidate):
-            scratch = Path(candidate) / "qwen25vl-cache"
-            break
-    scratch.mkdir(parents=True, exist_ok=True)
-    free_gb = shutil.disk_usage(scratch).free / (1024**3)
-    print(f"   Scratch: {scratch} (free: {free_gb:.1f} GiB)", flush=True)
-
-    from huggingface_hub import snapshot_download
-    t0 = time.time()
+print(f"[3] downloading {HF_MODEL}", flush=True)
+with kh.build_heartbeat("model.download"):
     src = snapshot_download(repo_id=HF_MODEL, cache_dir=str(scratch))
-    dt = time.time() - t0
-    step(f"4. Downloaded to {src} ({dt:.0f}s)")
+kh.step("model_downloaded", src=src)
 
-    # ── Step 5: Convert to F16 GGUF ──────────────────────────────
-    step("5. Converting to F16 GGUF")
-    converter = REPO / "models" / "convert-qwen2vl-to-gguf.py"
-    # List files in snapshot dir for debugging
-    step(f"5. Snapshot dir: {src}")
-    for f in sorted(os.listdir(src))[:20]:
-        step(f"   {f} ({os.path.getsize(os.path.join(src, f)) if os.path.isfile(os.path.join(src, f)) else 'dir'})")
-    t0 = time.time()
-    # Capture stderr from converter so we can see the actual error
-    result = subprocess.run(
-        [sys.executable, str(converter), "--model", src, "--output", str(OUT_F16),
-         "--dtype", "f16", "--load-dtype", "bfloat16"],
-        capture_output=True, text=True
-    )
-    if result.returncode != 0:
-        step(f"5. Converter failed (exit {result.returncode})")
-        step(f"   stdout: {result.stdout[-500:] if result.stdout else '(empty)'}")
-        step(f"   stderr: {result.stderr[-500:] if result.stderr else '(empty)'}")
-        raise RuntimeError(f"Converter failed with exit code {result.returncode}")
-    print(result.stdout, flush=True)
-    dt = time.time() - t0
-    size_gb = OUT_F16.stat().st_size / (1024**3)
-    step(f"5. F16 done: {size_gb:.2f} GiB ({dt:.0f}s)")
+# %% [code]
+OUT_F16 = WORK / "qwen2.5-vl-3b-f16.gguf"
+converter = REPO / "models" / "convert-qwen2vl-to-gguf.py"
 
-    # ── Step 6: Upload to HuggingFace ─────────────────────────────
-    if hf_token and OUT_F16.exists():
-        step("6. Uploading to HuggingFace")
-        from huggingface_hub import HfApi
-        api = HfApi(token=hf_token)
-        try:
-            api.create_repo(HF_REPO, repo_type="model", exist_ok=True)
-        except Exception as e:
-            print(f"   Repo create: {e}", flush=True)
+print("[4] converting to F16 GGUF", flush=True)
+with kh.build_heartbeat("convert.f16"):
+    subprocess.check_call([
+        sys.executable, str(converter),
+        "--model", src,
+        "--output", str(OUT_F16),
+        "--dtype", "f16",
+        "--load-dtype", "bfloat16",
+    ])
+size_gb = OUT_F16.stat().st_size / (1024**3)
+print(f"[4] F16: {size_gb:.2f} GiB", flush=True)
+kh.step("f16_done", size_gb=round(size_gb, 2))
 
-        print(f"   Uploading {OUT_F16.name} ({size_gb:.1f} GiB)...", flush=True)
+# %% [code]
+HF_REPO = "cstr/qwen2.5-vl-3b-crispembed-GGUF"
+hf_token = os.environ.get("HF_TOKEN")
+if hf_token:
+    from huggingface_hub import HfApi
+    api = HfApi(token=hf_token)
+    try:
+        api.create_repo(HF_REPO, repo_type="model", exist_ok=True)
+    except Exception as e:
+        print(f"[5] repo: {e}", flush=True)
+
+    print(f"[5] uploading F16 ({size_gb:.1f} GiB)", flush=True)
+    with kh.build_heartbeat("upload.f16"):
         api.upload_file(
             path_or_fileobj=str(OUT_F16),
             path_in_repo="qwen2.5-vl-3b-f16.gguf",
             repo_id=HF_REPO, repo_type="model",
             commit_message="Add F16 GGUF (vision + 36-layer LLM)",
         )
-        step("6. Upload complete")
-    else:
-        step("6. Skipped upload (no token or no output)")
+    print("[5] uploaded F16", flush=True)
+    kh.step("uploaded")
+else:
+    print("[5] no HF_TOKEN — skipping upload", flush=True)
+    kh.step("upload_skipped")
 
-    step("DONE")
-
-except Exception:
-    tb = traceback.format_exc()
-    print(tb, flush=True)
-    step(f"FAILED: {tb}")
-    sys.exit(1)
+kh.step("done")
