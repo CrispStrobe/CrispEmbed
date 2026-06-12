@@ -4,6 +4,71 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — Qwen2.5-VL OCR engine (German document OCR)
+
+### Qwen2.5-VL-3B port (feat/keyven-german-ocr branch → merged to main)
+
+Full vision-language model port: Qwen2.5-VL-3B-Instruct as the base
+for Keyven/german-ocr-3 (German business document OCR fine-tune).
+First VLM in CrispEmbed — all prior OCR models were encoder-decoder
+without a language model backbone.
+
+**Architecture**: 32-layer ViT (1280d, 16 heads, 14×14 patches, 2D RoPE,
+windowed attention) → spatial merger (2×2 merge, RMSNorm, FC-GELU_erf-FC,
+5120→2048d) → 36-layer Qwen2.5 LLM decoder (2048d, GQA 16Q/2KV heads,
+SwiGLU FFN 11008d, mRoPE sections=[16,24,24], rope_theta=1M).
+
+**Parity**: cos=1.000000 across all checkpoints:
+- Vision encoder: 32/32 ViT layers + spatial merger
+- LLM decoder: 2/2 tested layers with mRoPE
+- Patch embedding, token embedding: exact match
+
+**End-to-end generation**: Q4_K (2.6 GB) produces coherent German text
+from test invoice image. Prompt: "Extrahiere die Rechnung im Bild als JSON"
+→ Output: "Um die Rechnung im Bild als" (8 tokens, greedy).
+
+**GGUFs uploaded** to `cstr/qwen2.5-vl-3b-crispembed-GGUF`:
+- F16: 7.57 GiB (converted on Kaggle, 73s)
+- Q8_0: 3.93 GiB (2x compression)
+- Q4_K: 2.61 GiB (3x, vision weights kept at Q8_0 floor)
+
+**Key technical challenges solved**:
+1. **Memory-efficient reference dumper** — numpy-based layer-by-layer
+   forward pass via safetensors (600 MB peak vs 7.5 GB for PyTorch load).
+2. **ggml_set_output()** — without it, graph allocator reuses intermediate
+   tensor memory; reading post-compute gives garbage. Gate behind diff mode.
+3. **GQA interleave** — `ggml_repeat` tiles [0,1,0,1,...] but GQA needs
+   [0,0,...,1,1,...]. Fix: reshape to 4D, repeat on inner dim, reshape back.
+4. **mRoPE neghalf** — `GGML_ROPE_TYPE_MROPE` uses neghalf rotation with
+   dim pairs (j, j+half), not adjacent (j, j+1). Position tensor layout:
+   [t0..tn, h0..hn, w0..wn, 0..0] (4 × n_tokens).
+5. **Vision-text splicing** — `x = embed * keep_mask + image_patches`
+   (keep_mask=0 at image_pad positions).
+6. **Quantizer vision floor** — Q4_K degrades OCR; vision encoder weights
+   forced to Q8_0 minimum in `tools/quantize.cpp`.
+7. **AutoConfig version hell** — Kaggle's older transformers nests LLM
+   params in text_config differently. Fixed: read raw config.json directly.
+8. **WASM build fix** — `-sENVIRONMENT=web,worker` required when `-pthread`
+   is enabled (pre-existing CI failure, fixed as part of this work).
+
+**Files added**:
+- `src/qwen2vl_ocr.{h,cpp}` — C++ engine + C ABI (1300 lines)
+- `models/convert-qwen2vl-to-gguf.py` — GGUF converter (lazy tensor loading)
+- `tools/dump_qwen2vl_reference.py` — parity reference dumper
+- `tools/qwen2vl_tokenize.py` — chat template tokenizer helper
+- `tools/kaggle/qwen2vl-convert/` — Kaggle conversion kernel
+- `tests/test_qwen2vl.cpp` — unit + smoke tests (14/14 pass)
+- `tests/test_qwen2vl_diff.cpp` — per-layer parity diff test
+- `tests/test_qwen2vl_e2e.cpp` — end-to-end generation test
+
+**Remaining** (see PLAN.md blueprint):
+- C++ image preprocessor integration into recognize()
+- BPE tokenizer loading from GGUF for C++ prompt construction
+- KV cache for practical generation speed
+- Load Keyven/german-ocr-3 fine-tuned weights
+
+---
+
 ## June 2026 (late) — PosFormer handwritten math OCR
 
 ### PosFormer port (feat/posformer-port branch)
