@@ -53,7 +53,7 @@ print("=" * 60)
 
 EMBED_DIR = WORK / "CrispEmbed"
 if not EMBED_DIR.exists():
-    run(f"git clone --depth 1 -b {BRANCH} {REPO_URL} {EMBED_DIR}")
+    run(f"git clone --depth 1 --recursive -b {BRANCH} {REPO_URL} {EMBED_DIR}")
 
 BUILD_DIR = EMBED_DIR / "build"
 BUILD_DIR.mkdir(exist_ok=True)
@@ -62,17 +62,18 @@ BUILD_DIR.mkdir(exist_ok=True)
 gpu_info = subprocess.run("nvidia-smi --query-gpu=name,compute_cap --format=csv,noheader",
                           shell=True, capture_output=True, text=True)
 gpu_name = gpu_info.stdout.strip() if gpu_info.returncode == 0 else "unknown"
+has_gpu = gpu_info.returncode == 0 and "GPU" not in gpu_name.lower() or len(gpu_name) > 3
 print(f"GPU: {gpu_name}")
 
-# Install gguf for converter
+# Install deps
 run("pip install -q gguf safetensors")
 
-# Build with CUDA
+# Build — with CUDA if GPU available, otherwise CPU-only
 os.chdir(str(BUILD_DIR))
+cuda_flag = "-DGGML_CUDA=ON" if has_gpu else ""
 cmake_cmd = (
     f"cmake {EMBED_DIR} -G 'Unix Makefiles' "
-    f"-DCMAKE_BUILD_TYPE=Release "
-    f"-DGGML_CUDA=ON"
+    f"-DCMAKE_BUILD_TYPE=Release {cuda_flag}"
 )
 run(cmake_cmd)
 run(f"make -j$(nproc)")
