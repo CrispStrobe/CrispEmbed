@@ -103,7 +103,7 @@ emcmake cmake -S . -B "$BUILD_DIR" \
 -sSTACK_SIZE=2097152 \
 -sMODULARIZE=1 \
 -sEXPORT_NAME=CrispEmbedText \
--sENVIRONMENT=web \
+-sENVIRONMENT=web,worker \
 -sFILESYSTEM=1 \
 -sWASM_BIGINT=1 \
 -sNO_EXIT_RUNTIME=1 \
