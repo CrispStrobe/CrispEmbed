@@ -53,7 +53,7 @@ from `hf-space/`.
 
 ## Status
 
-**28 embedding models** shown below (all pass, cos>=0.965 vs HF), **58 models** total in registry (including rerankers, SPLADE, CLIP/SigLIP vision, CLIP text, YuNet/SCRFD face detection, AuraFace/SFace recognition):
+**28 embedding models** shown below (all pass, cos>=0.965 vs HF), **59 models** total in registry (including rerankers, SPLADE, CLIP/SigLIP vision, CLIP text, YuNet/SCRFD face detection, AuraFace/SFace recognition):
 
 | Model | Type | Dim | F32 CosSim | Q8_0 | Q4_K |
 |-------|------|-----|------------|------|------|
@@ -177,20 +177,22 @@ curl -X POST http://localhost:8080/vit/encode -d '{"image": "photo.jpg"}'
 curl -X POST http://localhost:8080/math/ocr -d '{"image": "formula.png"}'
 ```
 
-## Math OCR
+## OCR
 
-Six engines for math-image → LaTeX, all auto-detected from GGUF metadata via
+Eight engines for image → text, all auto-detected from GGUF metadata via
 the unified `crispembed_math_ocr_*` C API. Available through CLI (`--ocr`),
 HTTP server (`POST /math/ocr`), Python (`CrispMathOcr`), Rust, and Dart/Flutter.
 
-| Model | Architecture | Params | Q8_0 Size | Encoder | License |
-|-------|-------------|--------|-----------|---------|---------|
-| **PP-FormulaNet-L** | SAM-ViT + MBart | 181M | 241 MB | Full ggml graph (60s) | Apache-2.0 |
-| **Texo-Distill** | HGNetv2 + MBart | 20M | 22 MB | CPU CNN | AGPL-3.0 |
-| **DeiT+TrOCR** | DeiT-S + TrOCR | 65M | 66 MB | ggml graph | Apache-2.0 |
-| **PosFormer** | DenseNet + Transformer+ARM | — | 57 MB | CPU | Academic |
-| **BTTR** | DenseNet + Transformer | — | 53 MB | CPU | MIT |
-| **HMER** | DenseNet + GRU attention | — | 30 MB | CPU | MIT |
+| Model | Architecture | Params | Q4_K Size | Use case | License |
+|-------|-------------|--------|-----------|----------|---------|
+| **BTTR** | DenseNet + Transformer | 6.5M | — | Handwritten math | MIT |
+| **DeiT+TrOCR** | DeiT-S + TrOCR | 65M | — | Printed math | Apache-2.0 |
+| **HMER** | DenseNet + GRU attention | 6M | — | Handwritten math | MIT |
+| **MixTeX** | Swin-Tiny + RoBERTa | 86M | — | Chinese+English LaTeX | Apache-2.0 |
+| **PosFormer** | DenseNet + Transformer+ARM | 6.5M | 10 MB | Handwritten math (60.5%) | Academic |
+| **PP-FormulaNet-L** | SAM-ViT + MBart | 181M | 100 MB | Printed math (best) | Apache-2.0 |
+| **Qwen2.5-VL-3B** | 32L ViT + 36L Qwen2.5 LLM | 3.6B | 2.6 GB | German/multilingual VLM OCR | Apache-2.0 |
+| **Texo-Distill** | HGNetv2 + MBart | 20M | 14 MB | Printed math (small) | AGPL-3.0 |
 
 **PP-FormulaNet-L** (recommended for printed math): SAM-ViT encoder with
 windowed + global attention and decomposed relative position bias, full ggml
