@@ -1774,3 +1774,103 @@ class CrispOcrPipeline:
         if hasattr(self, '_ctx') and self._ctx:
             self._lib.crispembed_ocr_free(self._ctx)
             self._ctx = None
+
+
+# ---------------------------------------------------------------------------
+# Surya Text Detection (EfficientViT segformer, 91 languages)
+# ---------------------------------------------------------------------------
+
+class _TextDetResult(ctypes.Structure):
+    _fields_ = [
+        ("x0", ctypes.c_float),
+        ("y0", ctypes.c_float),
+        ("x1", ctypes.c_float),
+        ("y1", ctypes.c_float),
+        ("confidence", ctypes.c_float),
+    ]
+
+
+def _setup_text_det_signatures(lib):
+    lib.crispembed_text_det_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_text_det_init.restype = ctypes.c_void_p
+
+    lib.crispembed_text_det_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_text_det_free.restype = None
+
+    lib.crispembed_text_det.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int, ctypes.c_int,
+        ctypes.c_float, ctypes.c_float,
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_text_det.restype = ctypes.POINTER(_TextDetResult)
+
+    lib.crispembed_text_det_heatmap.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_text_det_heatmap.restype = ctypes.POINTER(ctypes.c_float)
+
+
+class CrispTextDetect:
+    """Surya text line detection (EfficientViT segformer, 91 languages).
+
+    Segmentation-based text line detection. Returns bounding boxes with
+    confidence scores.
+
+    Usage::
+
+        det = CrispTextDetect("surya-det-f16.gguf")
+        boxes = det.detect("page.png")
+        for b in boxes:
+            print(f"({b['x0']:.0f},{b['y0']:.0f})-({b['x1']:.0f},{b['y1']:.0f}) conf={b['confidence']:.3f}")
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 4, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_text_det_signatures(self._lib)
+        self._ctx = self._lib.crispembed_text_det_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load text detection model: {model_path}")
+
+    def detect(self, image, text_threshold: float = 0.6,
+               low_threshold: float = 0.35) -> list:
+        """Detect text lines in an image.
+
+        Args:
+            image: File path (str/Path), PIL.Image, or numpy array (H, W, C) uint8.
+            text_threshold: Confidence threshold for text regions (default 0.6).
+            low_threshold: Binary threshold for connected components (default 0.35).
+
+        Returns:
+            List of dicts with keys: x0, y0, x1, y1, confidence.
+        """
+        if isinstance(image, (str, Path)):
+            from PIL import Image
+            image = np.array(Image.open(str(image)).convert("RGB"))
+        elif hasattr(image, 'convert'):
+            image = np.array(image.convert("RGB"))
+        arr = np.ascontiguousarray(image, dtype=np.uint8)
+        h, w = arr.shape[:2]
+        ch = arr.shape[2] if arr.ndim == 3 else 1
+        n = ctypes.c_int(0)
+        ptr = self._lib.crispembed_text_det(
+            self._ctx,
+            arr.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            ctypes.c_int(w), ctypes.c_int(h), ctypes.c_int(ch),
+            ctypes.c_float(text_threshold), ctypes.c_float(low_threshold),
+            ctypes.byref(n))
+        results = []
+        for i in range(n.value):
+            r = ptr[i]
+            results.append({
+                "x0": r.x0, "y0": r.y0, "x1": r.x1, "y1": r.y1,
+                "confidence": r.confidence,
+            })
+        return results
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_text_det_free(self._ctx)
+            self._ctx = None

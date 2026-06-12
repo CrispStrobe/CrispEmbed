@@ -3135,3 +3135,61 @@ extern "C" const crispembed_layout_region * crispembed_layout_detect(
     if (out_n) *out_n = (int)regions.size();
     return w->c_results.empty() ? nullptr : w->c_results.data();
 }
+
+// ---------------------------------------------------------------------------
+// Surya Text Detection (EfficientViT segformer)
+// ---------------------------------------------------------------------------
+
+#include "surya_det.h"
+
+struct surya_det_wrapper {
+    surya_det_context * ctx = nullptr;
+    std::vector<crispembed_text_det_result> c_results;
+};
+
+extern "C" void * crispembed_text_det_init(const char * model_path, int n_threads) {
+    auto * w = new surya_det_wrapper();
+    w->ctx = surya_det_init(model_path, n_threads);
+    if (!w->ctx) { delete w; return nullptr; }
+    return w;
+}
+
+extern "C" void crispembed_text_det_free(void * ctx) {
+    if (!ctx) return;
+    auto * w = (surya_det_wrapper *)ctx;
+    surya_det_free(w->ctx);
+    delete w;
+}
+
+extern "C" const crispembed_text_det_result * crispembed_text_det(
+        void * ctx, const uint8_t * pixels, int width, int height, int channels,
+        float text_threshold, float low_threshold, int * out_n) {
+    if (!ctx || !pixels) { if (out_n) *out_n = 0; return nullptr; }
+    auto * w = (surya_det_wrapper *)ctx;
+
+    // Run detection
+    int hm_h = 0, hm_w = 0;
+    surya_det_detect(w->ctx, pixels, width, height, channels, &hm_h, &hm_w);
+
+    // Extract boxes
+    int n_boxes = 0;
+    const surya_det_bbox * boxes = surya_det_get_boxes(w->ctx, width, height,
+                                                        text_threshold, low_threshold,
+                                                        &n_boxes);
+    w->c_results.resize(n_boxes);
+    for (int i = 0; i < n_boxes; i++) {
+        w->c_results[i].x0 = boxes[i].x0;
+        w->c_results[i].y0 = boxes[i].y0;
+        w->c_results[i].x1 = boxes[i].x1;
+        w->c_results[i].y1 = boxes[i].y1;
+        w->c_results[i].confidence = boxes[i].confidence;
+    }
+    if (out_n) *out_n = n_boxes;
+    return w->c_results.empty() ? nullptr : w->c_results.data();
+}
+
+extern "C" const float * crispembed_text_det_heatmap(void * ctx, int * out_h, int * out_w) {
+    if (!ctx) return nullptr;
+    auto * w = (surya_det_wrapper *)ctx;
+    return surya_det_get_heatmap(w->ctx, out_h, out_w);
+}
