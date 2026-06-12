@@ -617,9 +617,19 @@ bool load(context &ctx, const char *gguf_path, int n_threads, int verbosity,
             ctx.m.patch_embed_w->nb[1] = flat * ggml_type_size(ctx.m.patch_embed_w->type);
             ctx.m.patch_embed_w->nb[2] = ctx.m.patch_embed_w->nb[1] * out_ch;
             ctx.m.patch_embed_w->nb[3] = ctx.m.patch_embed_w->nb[2];
+            // Detect temporal_patch_size from flat dim:
+            // Qwen2-VL: 14*14*3 = 588 (T=1, Conv2D)
+            // Qwen2.5-VL: 14*14*3*2 = 1176 (T=2, Conv3D)
+            int P = (int)ctx.m.vhp.spatial_patch_size;
+            int C = 3;
+            int expected_t1 = P * P * C;
+            if ((int)flat == expected_t1) {
+                ctx.m.vhp.temporal_patch_size = 1;
+            }
             if (verbosity >= 1) {
-                fprintf(stderr, "  mmproj: flattened patch_embed %lldx%lld\n",
-                        (long long)flat, (long long)out_ch);
+                fprintf(stderr, "  mmproj: flattened patch_embed %lldx%lld (T=%u)\n",
+                        (long long)flat, (long long)out_ch,
+                        ctx.m.vhp.temporal_patch_size);
             }
         }
 
