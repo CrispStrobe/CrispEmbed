@@ -87,4 +87,37 @@ bool preprocess_rgb(const uint8_t * rgb,
                     const config & cfg,
                     result & out);
 
+// ── InternVL2 dynamic tiling ────────────────────────────────────────
+
+struct internvl_config {
+    int   image_size        = 448;     // tile size
+    int   min_dynamic_patch = 1;
+    int   max_dynamic_patch = 12;
+    bool  use_thumbnail     = true;
+    float mean[3]           = { 0.485f, 0.456f, 0.406f };
+    float std[3]            = { 0.229f, 0.224f, 0.225f };
+};
+
+struct internvl_result {
+    // (n_tiles, 3, image_size, image_size) planar float32, normalized.
+    // If use_thumbnail=true, the last tile is the full-image thumbnail.
+    std::vector<float> tiles;
+    int n_tiles = 0;
+    int tile_size = 0;   // = image_size (448)
+    int grid_rows = 0;
+    int grid_cols = 0;
+};
+
+// Dynamic tiling: split image into 1-12 tiles of 448x448.
+// Finds optimal (rows, cols) grid that best matches the image aspect ratio.
+// Optionally appends a thumbnail (whole image resized to 448x448).
+bool preprocess_internvl_file(const char * path,
+                              const internvl_config & cfg,
+                              internvl_result & out);
+
+bool preprocess_internvl_rgb(const uint8_t * rgb,
+                             int height, int width, int channels,
+                             const internvl_config & cfg,
+                             internvl_result & out);
+
 }  // namespace image_preproc
