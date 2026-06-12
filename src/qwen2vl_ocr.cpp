@@ -778,6 +778,20 @@ bool run_llm_forward(context &ctx,
     ggml_set_name(causal_mask, "causal_mask");
     ggml_set_input(causal_mask);
 
+    // mRoPE position IDs: (n_tokens * 4) I32
+    // Layout: [t0..t_{n-1}, h0..h_{n-1}, w0..w_{n-1}, 0..0]
+    ggml_tensor *pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, n_tokens * 4);
+    ggml_set_name(pos_ids, "pos_ids");
+    ggml_set_input(pos_ids);
+
+    // mRoPE sections
+    int sections[4] = {
+        lhp.rope_sections[0],  // 16 (temporal)
+        lhp.rope_sections[1],  // 24 (height)
+        lhp.rope_sections[2],  // 24 (width)
+        lhp.rope_sections[3],  // 0
+    };
+
     auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor * {
         ggml_tensor *y = ggml_rms_norm(g, t, rms_eps);
         return ggml_mul(g, y, w);
@@ -804,8 +818,23 @@ bool run_llm_forward(context &ctx,
         K = ggml_reshape_3d(g, K, head_dim, n_kv_heads, n_tokens);
         V = ggml_reshape_3d(g, V, head_dim, n_kv_heads, n_tokens);
 
-        // TODO: apply mRoPE here (skipped for initial parity test with
-        // simple token IDs — mRoPE positions are all 0 for text-only)
+        // Apply mRoPE (multi-dimensional rotary position embedding)
+        Q = ggml_rope_multi(g, Q, pos_ids, nullptr,
+                            head_dim, sections,
+                            GGML_ROPE_TYPE_MROPE,
+                            0,  // n_ctx_orig
+                            lhp.rope_theta,
+                            1.0f,  // freq_scale
+                            0.0f,  // ext_factor
+                            1.0f,  // attn_factor
+                            0.0f,  // beta_fast
+                            0.0f); // beta_slow
+        K = ggml_rope_multi(g, K, pos_ids, nullptr,
+                            head_dim, sections,
+                            GGML_ROPE_TYPE_MROPE,
+                            0,
+                            lhp.rope_theta,
+                            1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
         // GQA: interleave KV heads to match Q heads
         // K: (head_dim, n_kv, T) → (head_dim, n_heads, T)
@@ -895,6 +924,20 @@ bool run_llm_forward(context &ctx,
     ggml_tensor *mask_t = ggml_graph_get_tensor(gf, "causal_mask");
     ggml_backend_tensor_set(mask_t, mask_data.data(), 0,
                             mask_data.size() * sizeof(float));
+
+    // Build mRoPE position IDs
+    // For text-only: all 3 dims = sequential position, 4th = 0
+    // Layout: [t0..t_{n-1}, h0..h_{n-1}, w0..w_{n-1}, 0..0]
+    std::vector<int32_t> pos_data(n_tokens * 4, 0);
+    for (int i = 0; i < n_tokens; i++) {
+        pos_data[i]                = i;  // temporal
+        pos_data[n_tokens + i]     = i;  // height
+        pos_data[2 * n_tokens + i] = i;  // width
+        pos_data[3 * n_tokens + i] = 0;  // padding
+    }
+    ggml_tensor *pos_t = ggml_graph_get_tensor(gf, "pos_ids");
+    ggml_backend_tensor_set(pos_t, pos_data.data(), 0,
+                            pos_data.size() * sizeof(int32_t));
 
     if (ggml_backend_sched_graph_compute(ctx.sched, gf) != GGML_STATUS_SUCCESS) {
         fprintf(stderr, "qwen2vl_ocr: LLM graph compute failed\n");

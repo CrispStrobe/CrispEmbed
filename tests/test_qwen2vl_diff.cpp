@@ -96,9 +96,9 @@ int main(int argc, char **argv) {
         }
     }
 
-    if (grid_thw[1] == 0 || grid_thw[2] == 0) {
-        fprintf(stderr, "ERROR: could not determine grid_thw from reference shapes\n");
-        return 1;
+    bool has_vision = (grid_thw[1] > 0 && grid_thw[2] > 0);
+    if (!has_vision) {
+        printf("No vision tensors in reference — LLM-only test mode\n");
     }
 
     int n_patches = grid_thw[0] * grid_thw[1] * grid_thw[2];
@@ -133,21 +133,25 @@ int main(int argc, char **argv) {
     ctx.diff_ref_path = ref_path;
 
     // ── Run vision encoder using reference patches ──────────────
-    printf("\nRunning vision encoder (%d patches)...\n", n_patches);
-    qwen2vl_ocr::vision_result result;
-    bool ok = qwen2vl_ocr::encode_vision(ctx, ref_patches, n_patches,
-                                          grid_thw, result);
-    if (!ok) {
-        fprintf(stderr, "Vision encoder failed\n");
-        qwen2vl_ocr::free_(ctx);
-        return 1;
+    qwen2vl_ocr::vision_result result = {};
+    if (has_vision) {
+        printf("\nRunning vision encoder (%d patches)...\n", n_patches);
+        bool ok = qwen2vl_ocr::encode_vision(ctx, ref_patches, n_patches,
+                                              grid_thw, result);
+        if (!ok) {
+            fprintf(stderr, "Vision encoder failed\n");
+            qwen2vl_ocr::free_(ctx);
+            return 1;
+        }
     }
 
-    printf("\n=== Vision encoder output: %d merged tokens, %d dim ===\n",
-           result.n_merged, result.embed_dim);
+    if (has_vision) {
+        printf("\n=== Vision encoder output: %d merged tokens, %d dim ===\n",
+               result.n_merged, result.embed_dim);
+    }
 
     // Compare merger output
-    if (ref.has("vis_merger_output")) {
+    if (has_vision && ref.has("vis_merger_output")) {
         auto [ref_merger, n_merger] = ref.get_f32("vis_merger_output");
         if (result.image_embeds && ref_merger) {
             auto r = ref.compare("vis_merger_output",

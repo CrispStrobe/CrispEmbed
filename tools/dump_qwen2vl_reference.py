@@ -406,6 +406,76 @@ def run_vision_encoder(shard_files, patches, grid_thw, config,
     return intermediates
 
 
+# ── mRoPE (multi-dimensional rotary position embedding) ──────────────
+
+def apply_mrope(x, positions, sections, theta, head_dim):
+    """Apply multi-dimensional RoPE to Q or K tensor.
+
+    x: (n_heads, T, head_dim) — Q or K after reshape+transpose
+    positions: (T, 3) — [temporal, height, width] positions per token
+    sections: [s0, s1, s2] — how head_dim is split (e.g. [16, 24, 24])
+    theta: rope base frequency (1000000.0 for Qwen2.5-VL)
+
+    Matches ggml's GGML_ROPE_TYPE_MROPE: dimensions are processed in pairs
+    (i0=0,2,4,...), using a global theta that accumulates across sections.
+    Section boundaries just switch which position dimension to use.
+    Rotation pattern: neghalf (x0*cos - x1*sin, x1*cos + x0*sin) where
+    pairs are (i0, i0+1) — adjacent dims, not split-half.
+    """
+    nh, T, hd = x.shape
+    out = x.copy()
+
+    # theta_scale = base^(-2/ne0) — global frequency scaling per dim pair
+    theta_scale = theta ** (-2.0 / hd)
+
+    # Build section boundaries
+    sect_dims = sum(sections)  # 64 for [16,24,24]
+    sec_boundaries = [0]
+    for s in sections:
+        sec_boundaries.append(sec_boundaries[-1] + s)
+    # sec_boundaries = [0, 16, 40, 64]
+
+    n_dims = sect_dims * 2  # 128 for [16,24,24] (each section pair = 2 dims)
+    half = n_dims // 2  # 64 — neghalf split point
+
+    for t in range(T):
+        theta_vals = [float(positions[t, i]) for i in range(len(sections))]
+
+        for i0 in range(0, n_dims, 2):
+            # i0 iterates over cache pairs 0,2,4,...,126
+            # Actual dim pair in neghalf layout: (j, j+half) where j=i0/2
+            j = i0 // 2
+            sector = j % sect_dims
+
+            # Determine which position dimension to use
+            if sector < sec_boundaries[1]:
+                pos_val = theta_vals[0]  # temporal
+            elif sector < sec_boundaries[2]:
+                pos_val = theta_vals[1]  # height
+            elif sector < sec_boundaries[3]:
+                pos_val = theta_vals[2]  # width
+            else:
+                pos_val = 0.0  # extra/padding
+
+            # Frequency: theta^(-2*i0/hd) = theta^(-i0/half)
+            freq = 1.0 / (theta ** (float(i0) / hd))
+            angle = pos_val * freq
+            cos_a = math.cos(angle)
+            sin_a = math.sin(angle)
+
+            # Neghalf rotation: pair (j, j+half)
+            d0 = j
+            d1 = j + half
+            if d1 < hd:
+                for h in range(nh):
+                    x0 = out[h, t, d0]
+                    x1 = out[h, t, d1]
+                    out[h, t, d0] = x0 * cos_a - x1 * sin_a
+                    out[h, t, d1] = x0 * sin_a + x1 * cos_a
+
+    return out
+
+
 # ── LLM decoder forward pass (first N layers) ────────────────────────
 
 def run_llm_decoder(shard_files, input_embeds, config, max_layers=None):
@@ -456,6 +526,13 @@ def run_llm_decoder(shard_files, input_embeds, config, max_layers=None):
         for j in range(i + 1):
             causal_mask[i, j] = 0.0
 
+    # mRoPE positions: for text-only, all 3 dims = sequential
+    positions = np.zeros((T, 3), dtype=np.float32)
+    for i in range(T):
+        positions[i, 0] = float(i)  # temporal
+        positions[i, 1] = float(i)  # height
+        positions[i, 2] = float(i)  # width
+
     for li in range(n_layers):
         prefix = f"model.layers.{li}."
 
@@ -485,9 +562,16 @@ def run_llm_decoder(shard_files, input_embeds, config, max_layers=None):
         K = K.transpose(1, 0, 2)
         V = V.transpose(1, 0, 2)
 
-        # Note: mRoPE should be applied here for full parity, but for
-        # initial testing we skip it (text-only positions are sequential
-        # so standard RoPE would suffice). TODO: add mRoPE.
+        # mRoPE: multi-dimensional rotary position embedding
+        # sections = [16, 24, 24, 0] — how head_dim (128) is split
+        # For text tokens: all 3 dims = sequential position
+        rope_sections = config.get("rope_scaling", {}).get("mrope_section", [16, 24, 24])
+        rope_theta = config.get("rope_theta", 1000000.0)
+        Q = apply_mrope(Q, positions, rope_sections, rope_theta, head_dim)
+        K = apply_mrope(K, positions, rope_sections, rope_theta, head_dim)
+        if li == 0:
+            print(f"  mRoPE applied: sections={rope_sections}, theta={rope_theta}")
+            print(f"    Q[0,1,:5] after mRoPE: {Q[0,1,:5]}")
 
         scores = (Q @ K.transpose(0, 2, 1)) / math.sqrt(head_dim)
         scores = scores + causal_mask[np.newaxis, :, :]
