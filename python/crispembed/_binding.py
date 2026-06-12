@@ -1524,7 +1524,7 @@ def _setup_math_ocr_signatures(lib):
 
 
 class CrispMathOcr:
-    """OCR — recognizes text/LaTeX/documents from images.
+    """Math/document OCR — recognizes LaTeX or text from images.
 
     Supports pix2tex (printed math), PP-FormulaNet (printed math),
     PP-FormulaNet-L (printed math, best), Texo-Distill (printed math, small),
@@ -1535,6 +1535,12 @@ class CrispMathOcr:
 
     Usage::
 
+        # Math formula OCR
+        ocr = CrispMathOcr("ppformulanet-l-q8_0.gguf")
+        latex = ocr.recognize("formula.png")
+        # "\\frac{a}{b}"
+
+        # Document OCR (VLM)
         ocr = CrispMathOcr("internvl2.5-2b-q4_k.gguf")
         text = ocr.recognize("document.png")
     """
