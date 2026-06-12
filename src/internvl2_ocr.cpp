@@ -573,6 +573,29 @@ llm_graph build_llm_graph(context &ctx, int n_tokens, int n_past,
     ggml_set_name(x, "llm_embed");
     ggml_set_output(x);
 
+    // Vision-text splicing: replace embeddings at image_token positions
+    // with vision encoder output. Uses mask-based splicing:
+    //   x = embed * keep_mask + image_patches
+    // where keep_mask is 1.0 for text tokens, 0.0 for image positions,
+    // and image_patches has vision embeds at image positions, 0 elsewhere.
+    ggml_tensor *image_embeds_in = nullptr;
+    ggml_tensor *splice_mask = nullptr;
+    if (n_past == 0) {
+        // Only splice during prefill (n_past == 0)
+        image_embeds_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+        ggml_set_name(image_embeds_in, "image_embeds");
+        ggml_set_input(image_embeds_in);
+
+        splice_mask = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+        ggml_set_name(splice_mask, "splice_mask");
+        ggml_set_input(splice_mask);
+
+        // x = x * mask + image_embeds * (1 - mask)
+        // Simplify: x = x * mask + image_embeds_in
+        // where image_embeds_in is already zeroed at text positions
+        x = ggml_add(g, ggml_mul(g, x, splice_mask), image_embeds_in);
+    }
+
     // RoPE position IDs
     ggml_tensor *rope_pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
     ggml_set_name(rope_pos, "rope_pos");
@@ -1056,8 +1079,18 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
 
 // Helper: run a single LLM forward step with KV cache.
 // Returns logits for the last token only (V floats).
+// Splice data for vision-text interleaving during prefill.
+struct splice_data {
+    const float *image_embeds = nullptr;  // (D, n_image_tokens)
+    int n_image_tokens = 0;
+    // Map: for each token position, if it's an image token, the index
+    // into image_embeds; else -1.
+    const int *token_to_image = nullptr;  // (n_tokens,)
+};
+
 static bool run_cached_step(context &ctx, const int32_t *token_ids, int n_tokens,
-                            int n_past, std::vector<float> &last_logits_out) {
+                            int n_past, std::vector<float> &last_logits_out,
+                            const splice_data *splice = nullptr) {
     const auto &lhp = ctx.m.lhp;
     const int D = (int)lhp.hidden_size;
     const int V = (int)lhp.vocab_size;
@@ -1100,6 +1133,56 @@ static bool run_cached_step(context &ctx, const int32_t *token_ids, int n_tokens
                                 (size_t)Lk * T * sizeof(ggml_fp16_t));
     }
 
+    // Set vision splice inputs (only during prefill, n_past == 0)
+    if (splice && n_past == 0) {
+        const int D = (int)ctx.m.lhp.hidden_size;
+
+        // Build image_embeds tensor: (D, T) with vision embeds at image positions
+        std::vector<float> img_data((size_t)D * T, 0.0f);
+        // Build keep_mask: (D, T) with 1.0 for text, 0.0 for image
+        std::vector<float> mask_f((size_t)D * T, 1.0f);
+
+        if (splice->token_to_image) {
+            for (int t = 0; t < T; t++) {
+                int img_idx = splice->token_to_image[t];
+                if (img_idx >= 0 && img_idx < splice->n_image_tokens) {
+                    // This position is an image token
+                    for (int d = 0; d < D; d++) {
+                        img_data[(size_t)t * D + d] =
+                            splice->image_embeds[(size_t)img_idx * D + d];
+                        mask_f[(size_t)t * D + d] = 0.0f;
+                    }
+                }
+            }
+        }
+
+        ggml_tensor *img_t = ggml_graph_get_tensor(lg.gf, "image_embeds");
+        ggml_tensor *mask_t = ggml_graph_get_tensor(lg.gf, "splice_mask");
+        if (img_t) {
+            ggml_backend_tensor_set(img_t, img_data.data(), 0,
+                                    (size_t)D * T * sizeof(float));
+        }
+        if (mask_t) {
+            ggml_backend_tensor_set(mask_t, mask_f.data(), 0,
+                                    (size_t)D * T * sizeof(float));
+        }
+    } else if (n_past == 0) {
+        // No splice data, but graph has splice inputs — fill with identity
+        const int D = (int)ctx.m.lhp.hidden_size;
+        ggml_tensor *img_t = ggml_graph_get_tensor(lg.gf, "image_embeds");
+        ggml_tensor *mask_t = ggml_graph_get_tensor(lg.gf, "splice_mask");
+        if (img_t) {
+            std::vector<float> zeros((size_t)D * T, 0.0f);
+            ggml_backend_tensor_set(img_t, zeros.data(), 0,
+                                    (size_t)D * T * sizeof(float));
+        }
+        if (mask_t) {
+            std::vector<float> ones((size_t)D * T, 1.0f);
+            ggml_backend_tensor_set(mask_t, ones.data(), 0,
+                                    (size_t)D * T * sizeof(float));
+        }
+    }
+
     // Compute
     ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
 
@@ -1136,9 +1219,32 @@ bool generate(context &ctx,
     }
     ctx.kvc.n_past = 0;  // reset for new generation
 
+    // Build splice mapping if we have image embeddings
+    splice_data sd = {};
+    std::vector<int> token_to_image;
+    if (image_embeds && n_image_tokens > 0) {
+        sd.image_embeds = image_embeds;
+        sd.n_image_tokens = n_image_tokens;
+        // Build token→image mapping: find image_token_id positions in prompt
+        int img_idx = 0;
+        token_to_image.resize(n_prompt_tokens, -1);
+        int img_token_id = (int)lhp.image_token_id;
+        for (int t = 0; t < n_prompt_tokens && img_idx < n_image_tokens; t++) {
+            if (prompt_token_ids[t] == img_token_id) {
+                token_to_image[t] = img_idx++;
+            }
+        }
+        sd.token_to_image = token_to_image.data();
+        if (ctx.verbosity >= 1) {
+            fprintf(stderr, "  Spliced %d image tokens into %d prompt tokens\n",
+                    img_idx, n_prompt_tokens);
+        }
+    }
+
     // ── Prefill: process all prompt tokens at once ──
     std::vector<float> logits;
-    if (!run_cached_step(ctx, prompt_token_ids, n_prompt_tokens, 0, logits)) {
+    const splice_data *sd_ptr = (image_embeds && n_image_tokens > 0) ? &sd : nullptr;
+    if (!run_cached_step(ctx, prompt_token_ids, n_prompt_tokens, 0, logits, sd_ptr)) {
         fprintf(stderr, "internvl2_ocr: prefill failed\n");
         return false;
     }
