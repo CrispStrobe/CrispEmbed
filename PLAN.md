@@ -169,7 +169,7 @@ CrispEmbed/
 - [ ] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL fine-tune, 12+ languages incl. German, GGUF exists
 - [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics
 - [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL, German business docs → structured JSON
-- [ ] Keyven/german-ocr-3 (0.8B, Apache-2.0) — smaller German variant
+- [x] **Keyven/german-ocr-3 — Qwen2.5-VL base engine DONE** (see blueprint below)
 
 ### Bindings
 
@@ -722,22 +722,49 @@ infrastructure.
 
 ---
 
-### Blueprint: Keyven/german-ocr (German docs, Apache-2.0)
+### Blueprint: Keyven/german-ocr (German docs, Apache-2.0) — IN PROGRESS
 
 **Goal**: German business document OCR with structured JSON output.
 
-**Source**: Two variants:
-- Keyven/german-ocr-3.1 (2B) — Qwen2.5-VL fine-tune, invoices/letters/forms
-- Keyven/german-ocr-3 (0.8B) — smaller variant
+**Base model**: Qwen2.5-VL-3B-Instruct (Keyven/german-ocr-3 is a
+fine-tune of this). Architecture: 32-layer ViT (1280d) + spatial merger
+(2×2→2048d) + 36-layer Qwen2.5 LLM (2048d, GQA 16/2, mRoPE).
 
-**Architecture**: Both are Qwen2.5-VL fine-tunes. The 0.8B variant is
-more practical for CPU inference. GGUF already exists
-(Keyven/german-ocr-2b-gguf).
+**Status (2026-06-12):**
 
-**Approach**: Same Qwen-VL integration path. The 0.8B model is the
-better target for CrispEmbed (fits in memory, fast enough on CPU).
+| Step | Status | Notes |
+|------|--------|-------|
+| C++ inference engine | DONE | `src/qwen2vl_ocr.{h,cpp}` — vision + LLM + generation |
+| GGUF converter | DONE | `models/convert-qwen2vl-to-gguf.py` (lazy tensor loading) |
+| Reference dumper | DONE | `tools/dump_qwen2vl_reference.py` (safetensors, ~600MB peak) |
+| Parity: vision encoder | DONE | 32/32 layers cos=1.000 |
+| Parity: spatial merger | DONE | cos=1.000, max_abs=6e-4 |
+| Parity: LLM decoder | DONE | 2/2 layers cos=1.000 with mRoPE |
+| E2E generation (Q4_K) | DONE | "Um die Rechnung im Bild als" — coherent German |
+| Quantization | DONE | F16 (7.6GB), Q8_0 (3.9GB), Q4_K (2.6GB, vision Q8_0 floor) |
+| HuggingFace upload | DONE | `cstr/qwen2.5-vl-3b-crispembed-GGUF` (F16 + Q8_0 + Q4_K) |
+| Wire into C ABI | TODO | Add to `crispembed.cpp` dispatch |
+| CLI + model registry | TODO | Add to `model_mgr.cpp`, `--ocr` dispatch |
+| Python bindings | TODO | Wire via `CrispMathOcr` auto-dispatch |
+| CrispCalc catalog | TODO | `OcrModelVariant` entries |
+| KV cache | TODO | O(n²)→O(n) per generated token |
+| C++ image preprocessor | TODO | Currently uses Python-generated patches |
+| Load Keyven fine-tune | TODO | Same architecture, just different weights |
 
-**Files**: Share VLM OCR infrastructure with GOT/Nanonets/Qari
+**GGUFs**: `cstr/qwen2.5-vl-3b-crispembed-GGUF` on HuggingFace:
+- `qwen2.5-vl-3b-f16.gguf` — 7.57 GiB
+- `qwen2.5-vl-3b-q8_0.gguf` — 3.93 GiB (2x compression)
+- `qwen2.5-vl-3b-q4_k.gguf` — 2.61 GiB (3x, vision Q8_0 preserved)
 
-**Effort**: Low (1-2 days) if Qwen-VL OCR infrastructure exists from
-earlier ports. These are all fine-tunes of the same base family.
+**Key learnings:**
+- Vision weights need Q8_0 floor in quantizer (Q4_K degrades OCR)
+- `ggml_set_output()` required on intermediates to prevent memory reuse
+- GQA interleave via 4D reshape+repeat (not `ggml_repeat` which tiles)
+- mRoPE uses neghalf rotation with `GGML_ROPE_TYPE_MROPE`
+- Token splicing: `x = embed * keep_mask + image_patches`
+- `AutoConfig` varies by transformers version — read config.json directly
+
+**Files**: `src/qwen2vl_ocr.{h,cpp}`, `models/convert-qwen2vl-to-gguf.py`,
+`tools/dump_qwen2vl_reference.py`, `tools/qwen2vl_tokenize.py`,
+`tests/test_qwen2vl_diff.cpp`, `tests/test_qwen2vl_e2e.cpp`,
+`tools/kaggle/qwen2vl-convert/`

@@ -518,6 +518,12 @@ static const ModelEntry k_registry[] = {
      "RT-DETRv2 document layout detection (ResNet-50+Transformer, 17 classes)", "161 MB", "apache-2.0",
      "https://huggingface.co/cstr/layout-heron-gguf"},
 
+    {"qwen2vl-3b",
+     "qwen2.5-vl-3b-q4_k.gguf",
+     "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF/resolve/main/qwen2.5-vl-3b-q4_k.gguf",
+     "Qwen2.5-VL-3B VLM OCR (32-layer ViT + 36-layer Qwen2.5, German docs)", "2610 MB", "apache-2.0",
+     "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF"},
+
     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 
