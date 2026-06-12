@@ -19,7 +19,7 @@ language:
   - es
 ---
 
-# GLiNER-LFM GGUF
+# SauerkrautLM-LFM2.5-GLiNER GGUF
 
 GGUF conversions of [VAGOsolutions/SauerkrautLM-LFM2.5-GLiNER](https://huggingface.co/VAGOsolutions/SauerkrautLM-LFM2.5-GLiNER) for [CrispEmbed](https://github.com/CrispStrobe/CrispEmbed) inference.
 
