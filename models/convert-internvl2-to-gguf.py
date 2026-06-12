@@ -474,9 +474,17 @@ def main():
             n_exported += 1
             return True
 
-        # Token embeddings
-        lw(LPFX + "embed_tokens.weight",
-           "language_model.model.tok_embeddings.weight", force_f32=True)
+        # Auto-detect LLM type: InternLM2 (fused wqkv) vs Qwen2 (separate Q/K/V)
+        llm_model_type = lc.get("model_type", "internlm2")
+        is_qwen2 = llm_model_type == "qwen2"
+        writer.add_string(f"{ARCH}.llm_model_type", llm_model_type)
+        print(f"  LLM type: {llm_model_type} ({'separate Q/K/V + bias' if is_qwen2 else 'fused wqkv'})")
+
+        # Token embeddings — try both naming conventions
+        if not lw(LPFX + "embed_tokens.weight",
+                   "language_model.model.tok_embeddings.weight", force_f32=True):
+            lw(LPFX + "embed_tokens.weight",
+               "language_model.model.embed_tokens.weight", force_f32=True)
 
         # Decoder layers
         if n_llm_export < llm_layers:
@@ -486,38 +494,56 @@ def main():
             p = f"language_model.model.layers.{i}."
             q = f"{LPFX}blk.{i}."
 
-            # RMSNorm (no bias in InternLM2.5)
-            lw(q + "attn_norm.weight", p + "attention_norm.weight")
-            lw(q + "ffn_norm.weight", p + "ffn_norm.weight")
+            # RMSNorm — try both naming conventions
+            if not lw(q + "attn_norm.weight", p + "attention_norm.weight"):
+                lw(q + "attn_norm.weight", p + "input_layernorm.weight")
+            if not lw(q + "ffn_norm.weight", p + "ffn_norm.weight"):
+                lw(q + "ffn_norm.weight", p + "post_attention_layernorm.weight")
 
-            # Split fused wqkv into Q/K/V
-            wqkv_key = p + "attention.wqkv.weight"
-            if wqkv_key in sd:
-                wqkv = get_tensor(wqkv_key)
-                q_w, k_w, v_w = split_wqkv(wqkv, llm_heads, llm_kv_heads, llm_head_dim)
-                del wqkv
-                data_q = wt(q_w) if not is_norm_or_bias("q") else f32(q_w)
-                data_k = wt(k_w) if not is_norm_or_bias("k") else f32(k_w)
-                data_v = wt(v_w) if not is_norm_or_bias("v") else f32(v_w)
-                del q_w, k_w, v_w
-                add_tensor(writer, q + "attn_q.weight", data_q, wt)
-                add_tensor(writer, q + "attn_k.weight", data_k, wt)
-                add_tensor(writer, q + "attn_v.weight", data_v, wt)
-                n_exported += 3
+            if is_qwen2:
+                # Qwen2: separate Q/K/V with biases
+                lw(q + "attn_q.weight", p + "self_attn.q_proj.weight")
+                lw(q + "attn_q.bias", p + "self_attn.q_proj.bias")
+                lw(q + "attn_k.weight", p + "self_attn.k_proj.weight")
+                lw(q + "attn_k.bias", p + "self_attn.k_proj.bias")
+                lw(q + "attn_v.weight", p + "self_attn.v_proj.weight")
+                lw(q + "attn_v.bias", p + "self_attn.v_proj.bias")
+                lw(q + "attn_o.weight", p + "self_attn.o_proj.weight")
+                # SwiGLU FFN (no bias in Qwen2)
+                lw(q + "ffn_gate.weight", p + "mlp.gate_proj.weight")
+                lw(q + "ffn_up.weight", p + "mlp.up_proj.weight")
+                lw(q + "ffn_down.weight", p + "mlp.down_proj.weight")
+            else:
+                # InternLM2: fused wqkv, split into separate Q/K/V
+                wqkv_key = p + "attention.wqkv.weight"
+                if wqkv_key in sd:
+                    wqkv = get_tensor(wqkv_key)
+                    q_w, k_w, v_w = split_wqkv(wqkv, llm_heads, llm_kv_heads, llm_head_dim)
+                    del wqkv
+                    data_q = wt(q_w) if not is_norm_or_bias("q") else f32(q_w)
+                    data_k = wt(k_w) if not is_norm_or_bias("k") else f32(k_w)
+                    data_v = wt(v_w) if not is_norm_or_bias("v") else f32(v_w)
+                    del q_w, k_w, v_w
+                    add_tensor(writer, q + "attn_q.weight", data_q, wt)
+                    add_tensor(writer, q + "attn_k.weight", data_k, wt)
+                    add_tensor(writer, q + "attn_v.weight", data_v, wt)
+                    n_exported += 3
+                # Output projection (no bias)
+                lw(q + "attn_o.weight", p + "attention.wo.weight")
+                # SwiGLU FFN (no bias): w1=gate, w3=up, w2=down
+                lw(q + "ffn_gate.weight", p + "feed_forward.w1.weight")
+                lw(q + "ffn_up.weight", p + "feed_forward.w3.weight")
+                lw(q + "ffn_down.weight", p + "feed_forward.w2.weight")
 
-            # Output projection (no bias)
-            lw(q + "attn_o.weight", p + "attention.wo.weight")
-
-            # SwiGLU FFN (no bias): w1=gate, w3=up, w2=down
-            lw(q + "ffn_gate.weight", p + "feed_forward.w1.weight")
-            lw(q + "ffn_up.weight", p + "feed_forward.w3.weight")
-            lw(q + "ffn_down.weight", p + "feed_forward.w2.weight")
-
-        # Final norm + LM head
-        lw(LPFX + "output_norm.weight",
-           "language_model.model.norm.weight")
-        lw(LPFX + "lm_head.weight",
-           "language_model.output.weight", force_f32=True)
+        # Final norm + LM head — try both naming conventions
+        if not lw(LPFX + "output_norm.weight",
+                   "language_model.model.norm.weight"):
+            lw(LPFX + "output_norm.weight",
+               "language_model.model.norm.weight")
+        if not lw(LPFX + "lm_head.weight",
+                   "language_model.output.weight", force_f32=True):
+            lw(LPFX + "lm_head.weight",
+               "language_model.lm_head.weight", force_f32=True)
 
         print(f"  LLM: {n_llm_export} layers exported")
 
