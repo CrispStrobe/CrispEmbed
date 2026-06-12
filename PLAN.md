@@ -182,6 +182,7 @@ CrispEmbed/
 | Gap | Impact | Effort | Notes |
 |---|---|---|---|
 | ~~Nomic v2 MoE~~ | ~~Low~~ | ~~High~~ | ~~MoE routing layer in encoder~~ DONE |
+| ~~Qwen2.5-VL OCR~~ | ~~High~~ | ~~High~~ | ~~Qwen2.5-VL-3B engine~~ DONE, merged to main |
 | Qwen3-VL multimodal | Low | High | Reuse BidirLM-Omni scaffolding |
 
 ### Pending improvements
@@ -722,7 +723,7 @@ infrastructure.
 
 ---
 
-### Blueprint: Keyven/german-ocr (German docs, Apache-2.0) — IN PROGRESS
+### Blueprint: Keyven/german-ocr (German docs, Apache-2.0) — MERGED TO MAIN
 
 **Goal**: German business document OCR with structured JSON output.
 
@@ -730,7 +731,7 @@ infrastructure.
 fine-tune of this). Architecture: 32-layer ViT (1280d) + spatial merger
 (2×2→2048d) + 36-layer Qwen2.5 LLM (2048d, GQA 16/2, mRoPE).
 
-**Status (2026-06-12):**
+**Status (2026-06-12): Core engine merged. Standalone CLI pending.**
 
 | Step | Status | Notes |
 |------|--------|-------|
@@ -743,13 +744,23 @@ fine-tune of this). Architecture: 32-layer ViT (1280d) + spatial merger
 | E2E generation (Q4_K) | DONE | "Um die Rechnung im Bild als" — coherent German |
 | Quantization | DONE | F16 (7.6GB), Q8_0 (3.9GB), Q4_K (2.6GB, vision Q8_0 floor) |
 | HuggingFace upload | DONE | `cstr/qwen2.5-vl-3b-crispembed-GGUF` (F16 + Q8_0 + Q4_K) |
-| Wire into C ABI | TODO | Add to `crispembed.cpp` dispatch |
-| CLI + model registry | TODO | Add to `model_mgr.cpp`, `--ocr` dispatch |
+| Wire into C ABI | DONE | `crispembed.cpp` dispatch, arch="qwen2vl" auto-detect |
+| CLI + model registry | DONE | `model_mgr.cpp` entry, `--ocr` auto-dispatch |
+| Unit + smoke tests | DONE | `test_qwen2vl.cpp` 14/14 pass (unit + Q4K smoke) |
+| C++ image preprocessor | TODO | `image_preprocess.cpp` exists but not wired into recognize() |
+| BPE tokenizer in C++ | TODO | `BPETokenizer` + `core/bpe.h` exist, need GGUF vocab loading |
+| KV cache | TODO | O(n²)→O(n) per token — ~2 min/token → ~2 sec/token |
+| Load Keyven fine-tune | TODO | Same architecture, just different weights |
+| Windowed ViT attention | TODO | Currently full attention all layers (correct but slower) |
 | Python bindings | TODO | Wire via `CrispMathOcr` auto-dispatch |
 | CrispCalc catalog | TODO | `OcrModelVariant` entries |
-| KV cache | TODO | O(n²)→O(n) per generated token |
-| C++ image preprocessor | TODO | Currently uses Python-generated patches |
-| Load Keyven fine-tune | TODO | Same architecture, just different weights |
+
+**Next priority (makes `crispembed --ocr qwen2vl-3b image.png` work):**
+1. Wire `image_preprocess.cpp` into `qwen2vl_ocr_recognize()` — smart
+   resize, bicubic, normalize, patchify (already Qwen2VL-compatible)
+2. Load BPE vocab from GGUF, tokenize prompts in C++ — `BPETokenizer`
+   already handles GPT-2 byte-level BPE (Qwen family)
+3. Then: KV cache for practical generation speed
 
 **GGUFs**: `cstr/qwen2.5-vl-3b-crispembed-GGUF` on HuggingFace:
 - `qwen2.5-vl-3b-f16.gguf` — 7.57 GiB
@@ -763,8 +774,8 @@ fine-tune of this). Architecture: 32-layer ViT (1280d) + spatial merger
 - mRoPE uses neghalf rotation with `GGML_ROPE_TYPE_MROPE`
 - Token splicing: `x = embed * keep_mask + image_patches`
 - `AutoConfig` varies by transformers version — read config.json directly
+- Kaggle: always use CrispASR kaggle_harness.py, don't pip install torch
 
 **Files**: `src/qwen2vl_ocr.{h,cpp}`, `models/convert-qwen2vl-to-gguf.py`,
 `tools/dump_qwen2vl_reference.py`, `tools/qwen2vl_tokenize.py`,
-`tests/test_qwen2vl_diff.cpp`, `tests/test_qwen2vl_e2e.cpp`,
-`tools/kaggle/qwen2vl-convert/`
+`tests/test_qwen2vl{,_diff,_e2e}.cpp`, `tools/kaggle/qwen2vl-convert/`
