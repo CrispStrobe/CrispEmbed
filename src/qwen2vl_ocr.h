@@ -204,3 +204,39 @@ bool generate(context &ctx,
               generate_result &out);
 
 }  // namespace qwen2vl_ocr
+
+// ── C ABI (for crispembed.cpp dispatch) ──────────────────────────────
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct qwen2vl_ocr_context qwen2vl_ocr_context;
+
+qwen2vl_ocr_context * qwen2vl_ocr_init(const char * model_path, int n_threads);
+void qwen2vl_ocr_free(qwen2vl_ocr_context * ctx);
+
+// Set the text prompt for generation (default: "Describe this image.")
+void qwen2vl_ocr_set_prompt(qwen2vl_ocr_context * ctx, const char * prompt);
+
+// Set max generation tokens (default: 512)
+void qwen2vl_ocr_set_max_tokens(qwen2vl_ocr_context * ctx, int max_tokens);
+
+// Run OCR on raw pixel bytes (RGB/RGBA/grayscale).
+// Returns generated text (owned by ctx, valid until next call or free).
+const char * qwen2vl_ocr_recognize_raw(
+    qwen2vl_ocr_context * ctx,
+    const uint8_t * pixel_bytes,
+    int width, int height, int channels,
+    int * out_len);
+
+// Run OCR on grayscale float pixels [0..1].
+const char * qwen2vl_ocr_recognize(
+    qwen2vl_ocr_context * ctx,
+    const float * pixels,
+    int width, int height,
+    int * out_len);
+
+#ifdef __cplusplus
+}
+#endif
