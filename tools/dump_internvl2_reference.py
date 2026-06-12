@@ -494,8 +494,15 @@ def main():
         test_tokens = np.array([1, 100, 200, 300, 400], dtype=np.int32)
         T = len(test_tokens)
 
+        # Detect LLM type: InternLM2 (fused wqkv) vs Qwen2 (separate Q/K/V)
+        is_qwen2 = "language_model.model.embed_tokens.weight" in all_names
+        llm_type = "qwen2" if is_qwen2 else "internlm2"
+        print(f"  LLM type: {llm_type}")
+
         # Token embeddings
-        embed_w = require("language_model.model.tok_embeddings.weight")
+        embed_key = ("language_model.model.embed_tokens.weight" if is_qwen2
+                     else "language_model.model.tok_embeddings.weight")
+        embed_w = require(embed_key)
         x_llm = embed_w[test_tokens]  # (T, D)
         ref.add("llm_embed", x_llm)
 
@@ -508,7 +515,7 @@ def main():
 
         del embed_w
 
-        # Split fused wqkv helper
+        # Split fused wqkv helper (InternLM2 only)
         def split_wqkv(wqkv, n_heads, n_kv_heads, head_dim):
             n_groups = n_kv_heads
             q_per_group = n_heads // n_kv_heads
@@ -522,22 +529,60 @@ def main():
 
         for i in range(n_llm_dump):
             p = f"language_model.model.layers.{i}."
-            attn_norm_w = require(p + "attention_norm.weight")
-            ffn_norm_w = require(p + "ffn_norm.weight")
-            wqkv = require(p + "attention.wqkv.weight")
-            wo = require(p + "attention.wo.weight")
-            w1 = require(p + "feed_forward.w1.weight")
-            w2 = require(p + "feed_forward.w2.weight")
-            w3 = require(p + "feed_forward.w3.weight")
 
-            q_w, k_w, v_w = split_wqkv(wqkv, llm_heads, llm_kv_heads, llm_head_dim)
-            del wqkv
+            if is_qwen2:
+                attn_norm_w = require(p + "input_layernorm.weight")
+                ffn_norm_w = require(p + "post_attention_layernorm.weight")
+                q_w = require(p + "self_attn.q_proj.weight")
+                q_b = get_tensor(p + "self_attn.q_proj.bias")
+                k_w = require(p + "self_attn.k_proj.weight")
+                k_b = get_tensor(p + "self_attn.k_proj.bias")
+                v_w = require(p + "self_attn.v_proj.weight")
+                v_b = get_tensor(p + "self_attn.v_proj.bias")
+                wo = require(p + "self_attn.o_proj.weight")
+                w1 = require(p + "mlp.gate_proj.weight")
+                w2 = require(p + "mlp.down_proj.weight")
+                w3 = require(p + "mlp.up_proj.weight")
+            else:
+                attn_norm_w = require(p + "attention_norm.weight")
+                ffn_norm_w = require(p + "ffn_norm.weight")
+                wqkv = require(p + "attention.wqkv.weight")
+                q_w, k_w, v_w = split_wqkv(wqkv, llm_heads, llm_kv_heads, llm_head_dim)
+                q_b = k_b = v_b = None
+                del wqkv
+                wo = require(p + "attention.wo.weight")
+                w1 = require(p + "feed_forward.w1.weight")
+                w2 = require(p + "feed_forward.w2.weight")
+                w3 = require(p + "feed_forward.w3.weight")
 
-            # Pre-norm attention
+            # Pre-norm attention (with optional Q/K/V bias for Qwen2)
             h = rms_norm(x_llm, attn_norm_w, eps=llm_rms_eps)
-            h = gqa_attention(h, q_w, k_w, v_w, wo,
-                             llm_heads, llm_kv_heads, cos, sin, mask)
-            x_llm = x_llm + h
+            # Apply bias before GQA attention
+            q_proj = linear(h, q_w, q_b)
+            k_proj = linear(h, k_w, k_b)
+            v_proj = linear(h, v_w, v_b)
+
+            # Manual GQA attention with pre-projected Q/K/V
+            hd = llm_head_dim
+            kv_repeat = llm_heads // llm_kv_heads
+            Q = q_proj.reshape(T, llm_heads, hd).transpose(1, 0, 2)
+            K = k_proj.reshape(T, llm_kv_heads, hd).transpose(1, 0, 2)
+            V = v_proj.reshape(T, llm_kv_heads, hd).transpose(1, 0, 2)
+
+            cos_b = cos[np.newaxis, :, :]
+            sin_b = sin[np.newaxis, :, :]
+            Q = apply_rotary(Q, cos_b, sin_b)
+            K = apply_rotary(K, cos_b, sin_b)
+
+            K = np.repeat(K, kv_repeat, axis=0)
+            V = np.repeat(V, kv_repeat, axis=0)
+
+            scores = (Q @ K.transpose(0, 2, 1)) / math.sqrt(hd)
+            scores = scores + mask[np.newaxis, :, :]
+            attn = softmax(scores)
+            h_attn = (attn @ V).transpose(1, 0, 2).reshape(T, llm_hidden)
+            h_attn = linear(h_attn, wo)
+            x_llm = x_llm + h_attn
 
             # Pre-norm SwiGLU FFN
             h = rms_norm(x_llm, ffn_norm_w, eps=llm_rms_eps)

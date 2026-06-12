@@ -119,10 +119,10 @@ struct vision_projector {
 struct llm_layer {
     ggml_tensor *attn_norm_w = nullptr;  // RMSNorm (no bias)
     ggml_tensor *ffn_norm_w = nullptr;
-    // Separate Q/K/V (split from fused wqkv, no bias)
-    ggml_tensor *q_w = nullptr;
-    ggml_tensor *k_w = nullptr;
-    ggml_tensor *v_w = nullptr;
+    // Separate Q/K/V (InternLM2: no bias; Qwen2: with bias)
+    ggml_tensor *q_w = nullptr, *q_b = nullptr;
+    ggml_tensor *k_w = nullptr, *k_b = nullptr;
+    ggml_tensor *v_w = nullptr, *v_b = nullptr;
     ggml_tensor *o_w = nullptr;
     // SwiGLU FFN (no bias)
     ggml_tensor *ffn_gate_w = nullptr;
