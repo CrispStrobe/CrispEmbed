@@ -51,21 +51,31 @@ from test invoice image. Prompt: "Extrahiere die Rechnung im Bild als JSON"
 8. **WASM build fix** — `-sENVIRONMENT=web,worker` required when `-pthread`
    is enabled (pre-existing CI failure, fixed as part of this work).
 
+**Standalone CLI pipeline** (completed 2026-06-12):
+- C++ image preprocessor wired into `recognize_raw()` — smart_resize,
+  bicubic, normalize, patchify via `image_preprocess.cpp`
+- BPE tokenizer loaded from GGUF at init — `set_prompt()` tokenizes
+  any text, chat template built in C++ with proper token IDs
+- GPT-2 byte decoder for UTF-8 output text
+- KV cache: prefill extracts per-layer K/V, decode steps reuse cache
+  (O(1) per token instead of O(n) full recompute)
+- GGUFs v2 on HuggingFace: all three (F16, Q8_0, Q4_K) include BPE
+  tokenizer data (vocab + merges)
+
 **Files added**:
-- `src/qwen2vl_ocr.{h,cpp}` — C++ engine + C ABI (1300 lines)
-- `models/convert-qwen2vl-to-gguf.py` — GGUF converter (lazy tensor loading)
+- `src/qwen2vl_ocr.{h,cpp}` — C++ engine + C ABI (~1500 lines)
+- `models/convert-qwen2vl-to-gguf.py` — GGUF converter (lazy tensor, with tokenizer)
 - `tools/dump_qwen2vl_reference.py` — parity reference dumper
 - `tools/qwen2vl_tokenize.py` — chat template tokenizer helper
-- `tools/kaggle/qwen2vl-convert/` — Kaggle conversion kernel
+- `tools/kaggle/qwen2vl-convert/` — Kaggle conversion + quantization kernel
 - `tests/test_qwen2vl.cpp` — unit + smoke tests (14/14 pass)
 - `tests/test_qwen2vl_diff.cpp` — per-layer parity diff test
 - `tests/test_qwen2vl_e2e.cpp` — end-to-end generation test
 
 **Remaining** (see PLAN.md blueprint):
-- C++ image preprocessor integration into recognize()
-- BPE tokenizer loading from GGUF for C++ prompt construction
-- KV cache for practical generation speed
-- Load Keyven/german-ocr-3 fine-tuned weights
+- Load Keyven/german-ocr-3 fine-tuned weights (same arch, different weights)
+- Windowed ViT attention (correct but slower without it)
+- Python bindings, CrispCalc Dart catalog
 
 ---
 
