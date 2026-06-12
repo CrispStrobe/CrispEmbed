@@ -177,9 +177,18 @@ struct llm_result {
     int vocab_size = 0;
 };
 
+// image_input: optional, for vision-text splicing
+struct image_input {
+    const float *image_embeds = nullptr;  // (n_image_tokens, D)
+    int n_image_tokens = 0;
+    const int32_t *grid_thw = nullptr;    // (3,) per image
+    int n_images = 0;
+};
+
 bool run_llm_forward(context &ctx,
                      const int32_t *token_ids, int n_tokens,
-                     llm_result &out);
+                     llm_result &out,
+                     const image_input *img = nullptr);
 
 // Generate text from image + prompt.
 // Returns generated token IDs and decoded text.
