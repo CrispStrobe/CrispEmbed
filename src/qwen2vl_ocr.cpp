@@ -858,6 +858,22 @@ bool run_llm_forward(context &ctx,
                             lhp.rope_theta,
                             1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
+        // Output post-RoPE K/V for KV cache extraction
+        // Shape: (head_dim, n_kv_heads, n_tokens) → flatten to (kv_dim, n_tokens)
+        {
+            char kname[64], vname[64];
+            std::snprintf(kname, sizeof(kname), "k_out_%d", il);
+            std::snprintf(vname, sizeof(vname), "v_out_%d", il);
+            ggml_tensor *K_flat = ggml_reshape_2d(g, ggml_cont(g, K),
+                                                    head_dim * n_kv_heads, n_tokens);
+            ggml_tensor *V_flat = ggml_reshape_2d(g, ggml_cont(g, V),
+                                                    head_dim * n_kv_heads, n_tokens);
+            ggml_set_name(K_flat, kname);
+            ggml_set_name(V_flat, vname);
+            ggml_set_output(K_flat);
+            ggml_set_output(V_flat);
+        }
+
         // GQA: interleave KV heads to match Q heads
         // K: (head_dim, n_kv, T) → (head_dim, n_heads, T)
         // Each KV head serves kv_repeat Q heads (interleave, not tile)
@@ -1128,7 +1144,11 @@ bool run_llm_forward(context &ctx,
         }
     }
 
-    ggml_free(g);
+    // Keep graph alive for KV cache extraction by generate()
+    out.kv_graph = gf;
+    out.kv_graph_ctx = g;
+    // Caller must ggml_free(out.kv_graph_ctx) after extracting KV
+
     return true;
 }
 
@@ -1312,7 +1332,7 @@ bool generate(context &ctx,
         img_in.n_images = 1;
     }
 
-    // Run full prefill (no KV cache yet — compute all tokens)
+    // ── Prefill: full forward pass, extract KV cache ──
     llm_result prefill = {};
     bool ok = run_llm_forward(ctx, prompt_token_ids, n_prompt_tokens,
                                prefill, (img_in.image_embeds) ? &img_in : nullptr);
@@ -1323,14 +1343,35 @@ bool generate(context &ctx,
         return false;
     }
 
-    // Extract KV cache from prefill hidden states
-    // NOTE: The current prefill doesn't output per-layer K/V — it only
-    // outputs logits and final hidden. To properly extract KV, we'd need
-    // to modify run_llm_forward to also output K/V per layer.
-    //
-    // For now: fall back to the non-cached path (recompute each step).
-    // The KV cache decode graph is ready — just need prefill K/V extraction.
-    // TODO: add K/V output to prefill graph
+    // Extract per-layer KV cache from prefill graph outputs
+    // k_out_N / v_out_N tensors: (kv_dim, n_prompt_tokens) each
+    std::vector<std::vector<float>> k_cache(n_layers);
+    std::vector<std::vector<float>> v_cache(n_layers);
+    bool kv_ok = (prefill.kv_graph != nullptr);
+
+    if (kv_ok) {
+        for (int il = 0; il < n_layers; il++) {
+            char name[64];
+            std::snprintf(name, sizeof(name), "k_out_%d", il);
+            ggml_tensor *kt = ggml_graph_get_tensor(prefill.kv_graph, name);
+            std::snprintf(name, sizeof(name), "v_out_%d", il);
+            ggml_tensor *vt = ggml_graph_get_tensor(prefill.kv_graph, name);
+
+            if (!kt || !vt) { kv_ok = false; break; }
+
+            size_t sz = (size_t)kv_dim * n_prompt_tokens;
+            k_cache[il].resize(sz);
+            v_cache[il].resize(sz);
+            ggml_backend_tensor_get(kt, k_cache[il].data(), 0, sz * sizeof(float));
+            ggml_backend_tensor_get(vt, v_cache[il].data(), 0, sz * sizeof(float));
+        }
+    }
+
+    if (kv_ok && ctx.verbosity >= 1) {
+        fprintf(stderr, "  KV cache: %d layers × %d tokens × %d dim = %.1f MB\n",
+                n_layers, n_prompt_tokens, kv_dim,
+                (float)n_layers * n_prompt_tokens * kv_dim * 2 * sizeof(float) / (1024*1024));
+    }
 
     // Greedy: argmax prefill logits at last position
     const float *last_logits = prefill.logits + (size_t)(n_prompt_tokens - 1) * V;
@@ -1344,6 +1385,8 @@ bool generate(context &ctx,
     }
     if (prefill.hidden) free(prefill.hidden);
     free(prefill.logits);
+    // Free prefill graph context (KV already extracted to k_cache/v_cache)
+    if (prefill.kv_graph_ctx) ggml_free(prefill.kv_graph_ctx);
 
     out.token_ids.push_back(best_id);
     if (ctx.verbosity >= 1) {
@@ -1353,42 +1396,143 @@ bool generate(context &ctx,
     int eos_id = 151645;
     if (best_id == eos_id || max_new_tokens <= 1) return true;
 
-    // ── Step 2: Decode — single-token steps (no KV cache yet) ──
-    // TODO: use build_decode_step_graph with KV cache once prefill
-    // exports per-layer K/V. For now, fall back to full recompute.
-    std::vector<int32_t> all_tokens(prompt_token_ids,
-                                     prompt_token_ids + n_prompt_tokens);
-    all_tokens.push_back(best_id);
+    // ── Decode: single-token steps with KV cache ──
+    int n_kv = n_prompt_tokens;  // KV cache size grows each step
 
     for (int gen = 1; gen < max_new_tokens; gen++) {
-        llm_result fwd = {};
-        ok = run_llm_forward(ctx, all_tokens.data(), (int)all_tokens.size(), fwd);
-        if (!ok || !fwd.logits) {
-            if (fwd.hidden) free(fwd.hidden);
-            if (fwd.logits) free(fwd.logits);
-            fprintf(stderr, "qwen2vl_ocr: decode step %d failed\n", gen);
-            return false;
-        }
+        if (!kv_ok) {
+            // Fallback: recompute full sequence (no KV cache)
+            std::vector<int32_t> all_tokens(prompt_token_ids,
+                                             prompt_token_ids + n_prompt_tokens);
+            for (auto id : out.token_ids) all_tokens.push_back(id);
 
-        const int n = (int)all_tokens.size();
-        last_logits = fwd.logits + (size_t)(n - 1) * V;
-        best_id = 0;
-        best_score = -INFINITY;
-        for (int v = 0; v < V; v++) {
-            if (last_logits[v] > best_score) {
-                best_score = last_logits[v];
-                best_id = v;
+            llm_result fwd = {};
+            ok = run_llm_forward(ctx, all_tokens.data(), (int)all_tokens.size(), fwd);
+            if (!ok || !fwd.logits) {
+                if (fwd.hidden) free(fwd.hidden);
+                if (fwd.logits) free(fwd.logits);
+                return false;
             }
+            last_logits = fwd.logits + (size_t)((int)all_tokens.size() - 1) * V;
+            best_id = 0; best_score = -INFINITY;
+            for (int v = 0; v < V; v++) {
+                if (last_logits[v] > best_score) { best_score = last_logits[v]; best_id = v; }
+            }
+            if (fwd.hidden) free(fwd.hidden);
+            free(fwd.logits);
+        } else {
+            // KV-cached decode step
+            int pos = n_kv;  // position of the new token
+
+            ggml_init_params ip{
+                ctx.compute_meta.size(),
+                ctx.compute_meta.data(),
+                true,
+            };
+            ggml_context *g = ggml_init(ip);
+            ggml_cgraph *gf = build_decode_step_graph(ctx, g, n_kv, pos);
+
+            ggml_backend_sched_reset(ctx.sched);
+            if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
+                fprintf(stderr, "qwen2vl_ocr: decode step alloc failed\n");
+                ggml_free(g);
+                return false;
+            }
+
+            // Set token embedding input
+            // Look up the embedding for best_id from embed_tokens
+            std::vector<float> tok_emb(D);
+            {
+                // Read one row from embed_tokens (may be quantized)
+                // Use a tiny ggml graph: get_rows(embed_tokens, [best_id])
+                ggml_init_params eip{4096, nullptr, true};
+                ggml_context *eg = ggml_init(eip);
+                ggml_tensor *idx = ggml_new_tensor_1d(eg, GGML_TYPE_I32, 1);
+                ggml_set_input(idx);
+                ggml_tensor *emb = ggml_get_rows(eg, ctx.m.embed_tokens, idx);
+                ggml_set_output(emb);
+                ggml_cgraph *egf = ggml_new_graph(eg);
+                ggml_build_forward_expand(egf, emb);
+                ggml_backend_sched_reset(ctx.sched);
+                ggml_backend_sched_alloc_graph(ctx.sched, egf);
+                ggml_backend_tensor_set(ggml_graph_get_tensor(egf, idx->name),
+                                        &best_id, 0, sizeof(int32_t));
+                ggml_backend_sched_graph_compute(ctx.sched, egf);
+                ggml_backend_tensor_get(emb, tok_emb.data(), 0, D * sizeof(float));
+                ggml_free(eg);
+            }
+
+            // Re-alloc decode graph (sched was reset by embed lookup)
+            ggml_backend_sched_reset(ctx.sched);
+            if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
+                ggml_free(g);
+                return false;
+            }
+
+            ggml_tensor *te = ggml_graph_get_tensor(gf, "tok_emb");
+            ggml_backend_tensor_set(te, tok_emb.data(), 0, D * sizeof(float));
+
+            // Set mRoPE position (all 3 dims = pos for text tokens)
+            int32_t pos_data[4] = {pos, pos, pos, 0};
+            ggml_tensor *pi = ggml_graph_get_tensor(gf, "pos_ids");
+            ggml_backend_tensor_set(pi, pos_data, 0, 4 * sizeof(int32_t));
+
+            // Set KV cache inputs
+            char name[64];
+            for (int il = 0; il < n_layers; il++) {
+                if (n_kv > 0) {
+                    std::snprintf(name, sizeof(name), "k_in_%d", il);
+                    ggml_tensor *ki = ggml_graph_get_tensor(gf, name);
+                    if (ki) ggml_backend_tensor_set(ki, k_cache[il].data(), 0,
+                                                    k_cache[il].size() * sizeof(float));
+                    std::snprintf(name, sizeof(name), "v_in_%d", il);
+                    ggml_tensor *vi = ggml_graph_get_tensor(gf, name);
+                    if (vi) ggml_backend_tensor_set(vi, v_cache[il].data(), 0,
+                                                    v_cache[il].size() * sizeof(float));
+                }
+            }
+
+            // Compute
+            if (ggml_backend_sched_graph_compute(ctx.sched, gf) != GGML_STATUS_SUCCESS) {
+                fprintf(stderr, "qwen2vl_ocr: decode step compute failed\n");
+                ggml_free(g);
+                return false;
+            }
+
+            // Read logits
+            ggml_tensor *logits_t = ggml_graph_get_tensor(gf, "logits");
+            std::vector<float> logits_data(V);
+            ggml_backend_tensor_get(logits_t, logits_data.data(), 0, V * sizeof(float));
+
+            best_id = 0; best_score = -INFINITY;
+            for (int v = 0; v < V; v++) {
+                if (logits_data[v] > best_score) { best_score = logits_data[v]; best_id = v; }
+            }
+
+            // Append new K/V to cache
+            for (int il = 0; il < n_layers; il++) {
+                std::vector<float> k_new(kv_dim), v_new(kv_dim);
+                std::snprintf(name, sizeof(name), "k_out_%d", il);
+                ggml_tensor *ko = ggml_graph_get_tensor(gf, name);
+                if (ko) ggml_backend_tensor_get(ko, k_new.data(), 0, kv_dim * sizeof(float));
+                std::snprintf(name, sizeof(name), "v_out_%d", il);
+                ggml_tensor *vo = ggml_graph_get_tensor(gf, name);
+                if (vo) ggml_backend_tensor_get(vo, v_new.data(), 0, kv_dim * sizeof(float));
+
+                k_cache[il].insert(k_cache[il].end(), k_new.begin(), k_new.end());
+                v_cache[il].insert(v_cache[il].end(), v_new.begin(), v_new.end());
+            }
+            n_kv++;
+
+            ggml_free(g);
         }
-        if (fwd.hidden) free(fwd.hidden);
-        free(fwd.logits);
 
         out.token_ids.push_back(best_id);
         if (ctx.verbosity >= 1) {
-            fprintf(stderr, "  gen[%d]: token=%d score=%.2f\n", gen, best_id, best_score);
+            fprintf(stderr, "  gen[%d]: token=%d score=%.2f%s\n",
+                    gen, best_id, best_score, kv_ok ? " (cached)" : "");
         }
         if (best_id == eos_id) break;
-        all_tokens.push_back(best_id);
     }
 
     return true;
