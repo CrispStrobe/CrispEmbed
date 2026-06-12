@@ -1468,3 +1468,99 @@ Never simplify or inline the CrispASR kaggle_harness.py. It has:
 Bundle `kaggle_harness.py` in the push directory as fallback.
 Use `chr1s4/crispasr-hf-token` dataset (chr1s4's own, not chr1str's).
 Don't `pip install torch` (pre-installed, 2 GB download wastes time/OOMs).
+## LFM2 backbone: causal → bidirectional (GLiNER NER port)
+
+Porting the LFM2.5 backbone from CrispASR (causal audio model) to
+CrispEmbed (bidirectional NER encoder) required exactly two changes:
+
+1. **Attention mask**: causal `(j <= i) ? 0 : -inf` → pass `nullptr`
+   to `ggml_flash_attn_ext` for full bidirectional attention.
+2. **Conv padding**: left-pad `pad=K-1` → center-pad `pad=(K-1)/2`
+   for symmetric (bidirectional) convolutions.
+
+Everything else (RMSNorm, SwiGLU FFN, RoPE, GQA, ShortConv gating)
+is identical. The layer_types string `"ccaccaccacacacac"` is the same
+pattern for both the 1.5B audio and 350M NER models.
+
+## GLiNER layer fusion: sigmoid not softmax
+
+GLiNER's `LayersFuser` uses **sigmoid** gates (independent per-layer),
+NOT softmax (competing across layers). The squeeze-and-excitation
+pattern is: squeeze(hidden→1) per layer → mean over tokens → W1→ReLU→W2
+→ **sigmoid** → element-wise multiply each layer → sum → output_projection.
+
+Using softmax instead produced cos=0.65 vs reference. Sigmoid gives
+cos=1.000000.
+
+## GLiNER pipeline: word-level pooling before BiLSTM
+
+GLiNER's `subtoken_pooling="first"` means: after the backbone + layer
+fusion, take the first BPE subtoken of each word to get word-level
+representations, THEN run the BiLSTM on word-level only. The entity
+type reps (at `<<ENT>>` positions) are extracted from the fused
+token-level output BEFORE the BiLSTM.
+
+Running the BiLSTM on the full token sequence (including label prefix
+tokens) produces cos=-0.96 vs reference. Word-level gives cos=1.000000.
+
+## GLiNER tokenization: regex word splitter
+
+GLiNER's `WhitespaceTokenSplitter` uses regex `r"\w+(?:[-_]\w+)*|\S"`,
+NOT simple whitespace splitting. This separates punctuation from words:
+"Cupertino," → ["Cupertino", ","]. Simple whitespace splitting glues
+punctuation to the word, causing entity span mismatches.
+
+## GLiNER input format
+
+The input sequence is: `BOS <<ENT>> label1 <<ENT>> label2 ... <<SEP>> text EOS`.
+Note: `<<ENT>>` before each label (not `<<SEP>>` between), single
+`<<SEP>>` after all labels, BOS at start, EOS at end.
+
+## ggml_conv_1d_dw requires F16 kernel weights
+
+`ggml_conv_1d_dw` internally uses `ggml_im2col` which asserts
+`src0->type == GGML_TYPE_F16`. When model weights are F32, cast
+the conv kernel to F16 before passing to `ggml_conv_1d_dw`:
+`ggml_cast(ctx, w.conv_conv_w, GGML_TYPE_F16)`.
+
+## ggml_gallocr works with model weight tensors
+
+Model weight tensors that already have a backend buffer are skipped
+by `ggml_gallocr_alloc_graph` — it only allocates compute tensors.
+So model weights can be used directly as operands in graphs allocated
+with gallocr. No need for `ggml_backend_sched` for this use case.
+
+However: `ggml_add` with a 1D bias tensor (ne[0]=D) broadcasts
+correctly over a 2D tensor (D, N) — no `ggml_repeat` needed.
+Using `ggml_repeat` with a reshaped view of a weight tensor can
+cause subtle issues.
+
+## Dequantizing backend tensors to CPU
+
+Model weight tensors in Q8_0/Q4_K backend buffers can't be read
+with `ggml_backend_tensor_get(t, dst, 0, nelements*sizeof(float))`
+— that reads raw quantized bytes. Use:
+```cpp
+std::vector<uint8_t> raw(ggml_nbytes(t));
+ggml_backend_tensor_get(t, raw.data(), 0, raw.size());
+ggml_get_type_traits(t->type)->to_float(raw.data(), out, nelements);
+```
+
+## Cache dequantized weights for CPU-side ops
+
+When CPU-side operations (BiLSTM, layer fusion) read quantized model
+weights every call, the dequant overhead adds ~50-100ms per call.
+Cache the F32 versions in the context struct at init time — they're
+small (~52 MB for BiLSTM + fuser weights) and eliminate per-call cost.
+
+## Batched span MLP via ggml graph: 2-3x speedup
+
+GLiNER's span scoring evaluates hundreds of spans, each through a
+2-layer MLP (3072→4096→1024). The naive approach runs each span as a
+separate CPU scalar matmul. Batching all spans into a single ggml
+`mul_mat` (3072, n_spans) × (3072, 4096) leverages BLAS and gives
+2-3.5x speedup on the GLiNER head.
+
+Two-pass approach works well: pass 1 computes proj_start/end/first +
+prompt_rep (independent of spans), then CPU assembles span
+concatenations, pass 2 computes batched out_project + scoring.
