@@ -300,6 +300,9 @@ target_link_libraries(test-internvl2-diff PRIVATE crispembed)
 add_executable(test-internvl2-e2e tests/test_internvl2_e2e.cpp)
 target_link_libraries(test-internvl2-e2e PRIVATE crispembed)
 
+add_executable(test-internvl2-image tests/test_internvl2_image.cpp)
+target_link_libraries(test-internvl2-image PRIVATE crispembed)
+
 endif() # NOT iOS
 
 # ---------------------------------------------------------------------------
