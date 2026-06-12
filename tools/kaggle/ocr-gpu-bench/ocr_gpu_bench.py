@@ -71,11 +71,26 @@ run("pip install -q gguf safetensors")
 # Build — with CUDA if GPU available, otherwise CPU-only
 os.chdir(str(BUILD_DIR))
 cuda_flag = "-DGGML_CUDA=ON" if has_gpu else ""
+# P100 needs cuda_driver stub — Kaggle's CUDA 12.8 sometimes misses it
+if has_gpu:
+    # Find libcuda.so stub for cmake
+    import glob
+    stubs = glob.glob("/usr/local/cuda/targets/*/lib/stubs/libcuda.so")
+    if stubs:
+        stub_dir = os.path.dirname(stubs[0])
+        cuda_flag += f" -DCMAKE_LIBRARY_PATH={stub_dir}"
+
 cmake_cmd = (
     f"cmake {EMBED_DIR} -G 'Unix Makefiles' "
     f"-DCMAKE_BUILD_TYPE=Release {cuda_flag}"
 )
-run(cmake_cmd)
+try:
+    run(cmake_cmd)
+except subprocess.CalledProcessError:
+    # CUDA cmake failed — fall back to CPU-only
+    print("CUDA cmake failed, falling back to CPU-only build")
+    run(f"cmake {EMBED_DIR} -G 'Unix Makefiles' -DCMAKE_BUILD_TYPE=Release")
+
 run(f"make -j$(nproc)")
 
 # --- Step 2: Download models ---
