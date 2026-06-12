@@ -88,8 +88,6 @@ struct posformer_ocr_context {
     struct ggml_tensor * word_embed_w;
     struct ggml_tensor * word_embed_ln_w;
     struct ggml_tensor * word_embed_ln_b;
-    struct ggml_tensor * input_norm_w;
-    struct ggml_tensor * input_norm_b;
     struct ggml_tensor * pos_enc;
     struct ggml_tensor * proj_w;
     struct ggml_tensor * proj_b;
@@ -268,8 +266,6 @@ static bool map_tensors(posformer_ocr_context * ctx) {
     ctx->word_embed_w    = find(m, "dec.word_embed.weight");
     ctx->word_embed_ln_w = find(m, "dec.word_embed_ln.weight");
     ctx->word_embed_ln_b = find(m, "dec.word_embed_ln.bias");
-    ctx->input_norm_w    = find(m, "dec.input_norm.weight");
-    ctx->input_norm_b    = find(m, "dec.input_norm.bias");
     ctx->pos_enc         = find(m, "dec.pos_enc");
     ctx->proj_w          = find(m, "dec.proj.weight");
     ctx->proj_b          = find(m, "dec.proj.bias");
@@ -464,12 +460,12 @@ static void run_encoder(posformer_ocr_context * ctx, const float * gray, int W, 
                 for (int i = 0; i < quarter_d; i++) {
                     float freq = inv_freq[i];
                     enc[2*i]     += sinf(x_norm * freq);
-                    enc[2*i + 1] += cosf(x_norm * freq);
+                    enc[2*i + 1] += cosf(x_norm * freq);  // same freq for sin/cos pair
                 }
                 for (int i = 0; i < quarter_d; i++) {
                     float freq = inv_freq[i];
                     enc[half_d + 2*i]     += sinf(y_norm * freq);
-                    enc[half_d + 2*i + 1] += cosf(y_norm * freq);
+                    enc[half_d + 2*i + 1] += cosf(y_norm * freq);  // same freq
                 }
             }
     }
@@ -483,18 +479,18 @@ static void run_encoder(posformer_ocr_context * ctx, const float * gray, int W, 
     ctx->n_enc_pos = n_pos;
     ctx->enc_h = cur_h;
     ctx->enc_w = cur_w;
+    fprintf(stderr, "posformer_ocr: encoder: (%d, %d, %d) → %d positions × %d\n",
+            cur_ch, cur_h, cur_w, n_pos, D);
 
-    // Debug: dump encoder output if POSFORMER_DUMP is set
-    const char * dump_dir_enc = getenv("POSFORMER_DUMP");
-    if (dump_dir_enc) {
+    // Dump encoder output if requested
+    const char * dump_dir = getenv("POSFORMER_DUMP");
+    if (dump_dir) {
         char path[256];
-        snprintf(path, sizeof(path), "%s/cpp_enc_output.f32", dump_dir_enc);
+        snprintf(path, sizeof(path), "%s/cpp_enc_output.f32", dump_dir);
         FILE * f = fopen(path, "wb");
         if (f) { fwrite(ctx->encoder_output.data(), sizeof(float), n_pos * D, f); fclose(f); }
         fprintf(stderr, "posformer_ocr: dumped encoder output to %s\n", path);
     }
-    fprintf(stderr, "posformer_ocr: encoder: (%d, %d, %d) → %d positions × %d\n",
-            cur_ch, cur_h, cur_w, n_pos, D);
 }
 
 // ---------------------------------------------------------------------------
@@ -636,13 +632,6 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
             for (int i = 0; i < D; i++) x[i] += pe[step * D + i];
         }
 
-        // Second LayerNorm after embedding + pos_enc (decoder.norm)
-        if (ctx->input_norm_w) {
-            layernorm(x.data(), D,
-                      tf32(ctx, ctx->input_norm_w),
-                      tf32(ctx, ctx->input_norm_b));
-        }
-
         // Cross-attention weights from previous layer (for ARM)
         std::vector<float> prev_layer_ca_weights(nhead * n_enc);
 
@@ -685,18 +674,6 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
                    tf32(ctx, l.sa_out_b), D, sa_proj.data());
             for (int i = 0; i < D; i++) x[i] += sa_proj[i];
             layernorm(x.data(), D, tf32(ctx, l.ln1_w), tf32(ctx, l.ln1_b));
-
-            // Debug: dump after self-attention + LN
-            {
-                const char * dump_dir = getenv("POSFORMER_DUMP");
-                if (dump_dir) {
-                    char path[256];
-                    snprintf(path, sizeof(path), "%s/cpp_step%03d_layer%d_after_sa.f32",
-                             dump_dir, step, li);
-                    FILE * f = fopen(path, "wb");
-                    if (f) { fwrite(x.data(), sizeof(float), D, f); fclose(f); }
-                }
-            }
 
             // --- Cross-attention (with ARM for layers > 0) ---
             {
@@ -784,18 +761,6 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
                 layernorm(x.data(), D, tf32(ctx, l.ln2_w), tf32(ctx, l.ln2_b));
             }
 
-            // Debug: dump after cross-attention + LN
-            {
-                const char * dump_dir = getenv("POSFORMER_DUMP");
-                if (dump_dir) {
-                    char path[256];
-                    snprintf(path, sizeof(path), "%s/cpp_step%03d_layer%d_after_ca.f32",
-                             dump_dir, step, li);
-                    FILE * f = fopen(path, "wb");
-                    if (f) { fwrite(x.data(), sizeof(float), D, f); fclose(f); }
-                }
-            }
-
             // --- FFN ---
             {
                 const int F = hp.dim_feedforward;
@@ -809,27 +774,6 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
                 for (int i = 0; i < D; i++) x[i] += down[i];
                 layernorm(x.data(), D, tf32(ctx, l.ln3_w), tf32(ctx, l.ln3_b));
             }
-
-            // Debug: dump layer output and cross-attention weights
-            {
-                const char * dump_dir = getenv("POSFORMER_DUMP");
-                if (dump_dir) {
-                    char path[256];
-                    snprintf(path, sizeof(path), "%s/cpp_step%03d_layer%d_output.f32",
-                             dump_dir, step, li);
-                    FILE * f = fopen(path, "wb");
-                    if (f) { fwrite(x.data(), sizeof(float), D, f); fclose(f); }
-
-                    snprintf(path, sizeof(path), "%s/cpp_step%03d_layer%d_ca_weights.f32",
-                             dump_dir, step, li);
-                    f = fopen(path, "wb");
-                    if (f) {
-                        fwrite(prev_layer_ca_weights.data(), sizeof(float),
-                               nhead * n_enc, f);
-                        fclose(f);
-                    }
-                }
-            }
         }
 
         // Output projection
@@ -842,27 +786,26 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
         for (int v = 1; v < V; v++)
             if (logits[v] > best_score) { best_score = logits[v]; best = v; }
 
-        // Debug: dump per-step logits and top-5 if POSFORMER_DUMP is set
+        // Debug: dump top-5 logits
         {
+            std::vector<std::pair<float,int>> scored(V);
+            for (int v = 0; v < V; v++) scored[v] = {logits[v], v};
+            std::sort(scored.begin(), scored.end(), [](auto &a, auto &b){ return a.first > b.first; });
+            fprintf(stderr, "  step %d: token=%d '%s' | top5:", step, best,
+                    best < (int)ctx->vocab.size() ? ctx->vocab[best].c_str() : "?");
+            for (int i = 0; i < 5 && i < V; i++)
+                fprintf(stderr, " %s(%.2f)",
+                        scored[i].second < (int)ctx->vocab.size() ? ctx->vocab[scored[i].second].c_str() : "?",
+                        scored[i].first);
+            fprintf(stderr, "\n");
+
+            // Dump logits to file if env POSFORMER_DUMP is set
             const char * dump_dir = getenv("POSFORMER_DUMP");
             if (dump_dir) {
                 char path[256];
                 snprintf(path, sizeof(path), "%s/cpp_step%03d_logits.f32", dump_dir, step);
                 FILE * f = fopen(path, "wb");
                 if (f) { fwrite(logits.data(), sizeof(float), V, f); fclose(f); }
-
-                std::vector<std::pair<float,int>> scored(V);
-                for (int v = 0; v < V; v++) scored[v] = {logits[v], v};
-                std::sort(scored.begin(), scored.end(),
-                          [](auto &a, auto &b){ return a.first > b.first; });
-                fprintf(stderr, "  step %d: token=%d '%s' | top5:", step, best,
-                        best < (int)ctx->vocab.size() ? ctx->vocab[best].c_str() : "?");
-                for (int i = 0; i < 5 && i < V; i++)
-                    fprintf(stderr, " %s(%.2f)",
-                            scored[i].second < (int)ctx->vocab.size()
-                                ? ctx->vocab[scored[i].second].c_str() : "?",
-                            scored[i].first);
-                fprintf(stderr, "\n");
             }
         }
 

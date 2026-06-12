@@ -76,13 +76,13 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --top-n N        limit rerank output to top N documents\n");
     fprintf(stderr, "  --face FILE      encode face from image (recognition model)\n");
     fprintf(stderr, "  --detect FILE    detect faces in image (detection model)\n");
-    fprintf(stderr, "  --ocr FILE       math OCR → LaTeX (auto-detect: pix2tex/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo)\n");
+    fprintf(stderr, "  --ocr FILE       math OCR → LaTeX (auto-detect: pix2tex/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex)\n");
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
     fprintf(stderr, "  --layout FILE    document layout detection (RT-DETRv2, needs -m layout_model.gguf)\n");
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
-    fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet, e.g. dbnet-det)\n");
+    fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
     fprintf(stderr, "  --ocr-rec MODEL  general OCR: text recognition model (TrOCR, e.g. trocr-printed)\n");
     fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
     fprintf(stderr, "  --conf N         confidence threshold for detection (default: 0.5)\n");
