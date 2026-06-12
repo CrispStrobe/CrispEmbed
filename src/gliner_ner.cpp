@@ -730,7 +730,10 @@ int gliner_ner_extract(void * ptr,
     std::vector<int> word_char_end;    // character end of each word
     std::vector<std::string> words;
 
-    // Simple whitespace tokenization
+    // Word splitting: matches GLiNER's WhitespaceTokenSplitter regex:
+    //   r"\w+(?:[-_]\w+)*|\S"
+    // This splits "Cupertino," into ["Cupertino", ","] — punctuation is
+    // a separate word, not glued to the preceding word.
     {
         int pos = 0;
         int len = (int)input_text.size();
@@ -742,9 +745,30 @@ int gliner_ner_extract(void * ptr,
             if (pos >= len) break;
 
             int start = pos;
-            while (pos < len && input_text[pos] != ' ' && input_text[pos] != '\t'
-                   && input_text[pos] != '\n' && input_text[pos] != '\r')
+            unsigned char c = (unsigned char)input_text[pos];
+
+            // Check if this is a word character (alphanumeric or underscore)
+            auto is_word_char = [](unsigned char ch) -> bool {
+                return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+                       (ch >= '0' && ch <= '9') || ch == '_' || ch >= 0x80;
+            };
+
+            if (is_word_char(c)) {
+                // Match \w+(?:[-_]\w+)* — word chars, possibly with hyphens/underscores
                 pos++;
+                while (pos < len && is_word_char((unsigned char)input_text[pos]))
+                    pos++;
+                // Check for hyphen/underscore continuation
+                while (pos < len && (input_text[pos] == '-' || input_text[pos] == '_') &&
+                       pos + 1 < len && is_word_char((unsigned char)input_text[pos + 1])) {
+                    pos++; // skip hyphen/underscore
+                    while (pos < len && is_word_char((unsigned char)input_text[pos]))
+                        pos++;
+                }
+            } else {
+                // Match \S — single non-whitespace character (punctuation etc.)
+                pos++;
+            }
 
             std::string word = input_text.substr(start, pos - start);
             int word_idx = (int)words.size();
