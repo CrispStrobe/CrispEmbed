@@ -173,17 +173,37 @@ CrispEmbed/
 
 ### OCR — next-gen models to port
 
-- [~] surya-ocr-2 (0.7B, OpenRail-M free <$5M) — detector ported, FULL PARITY VERIFIED (heatmap max+mean exact match)
-- [x] **InternVL2.5-2B (2.1B, MIT) — DONE** — InternViT-300M + InternLM2.5-1.8B, KV cache, dynamic tiling, vision-text splice, C++ tokenizer decode. Parity cos=1.000. GGUFs: `cstr/internvl2.5-2b-crispembed-GGUF` (F16/Q8_0/Q4_K). German invoice E2E verified.
-- [ ] GLM-OCR (0.9B, MIT) — CogViT + GLM-0.5B, 8 languages, GGUF already exists at ggml-org/GLM-OCR-GGUF
-- [ ] GOT-OCR2_0 (0.7B, Apache-2.0) — SAM-ViT + Qwen-0.5B, end-to-end doc OCR (math+tables+text), trust_remote_code
-- [ ] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL fine-tune, 12+ languages incl. German, GGUF exists
-- [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics
-- [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL, German business docs → structured JSON
+#### Done
+
 - [x] **Keyven/german-ocr-3 — Qwen2.5-VL base engine DONE** (see blueprint below)
-- [ ] InternVL2-1B (0.9B, MIT) — same arch as 2.5-2B but Qwen2-0.5B LLM, edge/WASM target
-- [ ] PARSeq (24M, MIT) — lightweight text-line recognizer for DBNet pipeline
+- [x] **InternVL2.5-2B (2.1B, MIT) — DONE** — InternViT-300M + InternLM2.5-1.8B, KV cache, dynamic tiling, vision-text splice, C++ tokenizer decode. Parity cos=1.000. GGUFs: `cstr/internvl2.5-2b-crispembed-GGUF` (F16/Q8_0/Q4_K). German invoice E2E verified.
+- [~] surya-ocr-2 (0.7B, OpenRail-M free <$5M) — detector ported, FULL PARITY VERIFIED (heatmap max+mean exact match). Remaining: CUDA/GPU testing, PNG/JPG stb_image support in test binaries.
+
+#### InternVL2 polish (nice-to-have)
+
+- [ ] InternVL2: C++ tokenizer encode (currently hardcoded chat template token IDs)
+- [ ] InternVL2: CrispCalc Dart catalog entries (`OcrModelVariant`)
+- [ ] InternVL2: full 24-layer F32 parity test (4+2 proved exact; remaining identical code)
+
+#### High priority — next to port
+
+- [ ] InternVL2-1B (0.9B, MIT) — same arch as 2.5-2B but Qwen2-0.5B LLM, edge/WASM (~1-2 days, reuses internvl2_ocr.cpp)
+- [ ] PARSeq (24M, MIT) — lightweight text-line recognizer for DBNet pipeline, best accuracy/size ratio (~3-4 days)
+- [ ] GLM-OCR (0.9B, MIT) — CogViT + GLM-0.5B, 8 languages, GGUF already exists at ggml-org/GLM-OCR-GGUF (~3-4 days)
+- [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL, German business docs → structured JSON (~1 day, same base as Qwen2VL engine)
+
+#### Lower priority
+
+- [ ] GOT-OCR2_0 (0.7B, Apache-2.0) — SAM-ViT + Qwen-0.5B, end-to-end doc OCR (math+tables+text)
+- [ ] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL fine-tune, 12+ languages incl. German
+- [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics
 - [ ] Granite Vision 3.3-2B (3B, Apache-2.0) — OCRBench 852, English-only
+
+#### MixTex / Surya remaining
+
+- [ ] MixTex: encoder parity test vs Python reference
+- [ ] Surya detector: CUDA/GPU testing via Kaggle kernel (P100/T4)
+- [ ] Surya detector: PNG/JPG support in test binaries via stb_image
 
 ### Bindings
 
@@ -191,12 +211,21 @@ CrispEmbed/
 - [x] CrispFacePipeline export + from_registry() + Python unit tests + face_search example
 - [ ] CrispLens integration — update `crispembed_client.py` for face pipeline
 
+### Non-OCR pending
+
+- [ ] KV cache for prefix-shared decoder batches (embedding model optimization)
+- [ ] Streaming ColBERT late interaction scoring (MaxSim + SSE)
+- [ ] Live-test LoRA with Jina v5 (end-to-end parity per adapter)
+- [ ] Layout detection score gap (0.934 vs HF 0.955, bilinear resize delta)
+- [ ] Verify Q8_0 layout model works (dequant path untested)
+
 ### Feature gaps vs fastembed-rs
 
 | Gap | Impact | Effort | Notes |
 |---|---|---|---|
 | ~~Nomic v2 MoE~~ | ~~Low~~ | ~~High~~ | ~~MoE routing layer in encoder~~ DONE |
 | ~~Qwen2.5-VL OCR~~ | ~~High~~ | ~~High~~ | ~~Qwen2.5-VL-3B engine~~ DONE, merged to main |
+| ~~InternVL2.5-2B~~ | ~~High~~ | ~~High~~ | ~~InternVL2.5-2B VLM OCR~~ DONE, merged to main |
 | Qwen3-VL multimodal | Low | High | Reuse BidirLM-Omni scaffolding |
 
 ### Pending improvements
