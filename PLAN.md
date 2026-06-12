@@ -731,41 +731,46 @@ infrastructure.
 fine-tune of this). Architecture: 32-layer ViT (1280d) + spatial merger
 (2×2→2048d) + 36-layer Qwen2.5 LLM (2048d, GQA 16/2, mRoPE).
 
-**Status (2026-06-12): Core engine merged. Standalone CLI pending.**
+**Status (2026-06-12): Standalone CLI pipeline complete. Needs 16+ GB RAM.**
 
 | Step | Status | Notes |
 |------|--------|-------|
 | C++ inference engine | DONE | `src/qwen2vl_ocr.{h,cpp}` — vision + LLM + generation |
-| GGUF converter | DONE | `models/convert-qwen2vl-to-gguf.py` (lazy tensor loading) |
+| GGUF converter | DONE | `models/convert-qwen2vl-to-gguf.py` (lazy tensor, with tokenizer) |
 | Reference dumper | DONE | `tools/dump_qwen2vl_reference.py` (safetensors, ~600MB peak) |
 | Parity: vision encoder | DONE | 32/32 layers cos=1.000 |
 | Parity: spatial merger | DONE | cos=1.000, max_abs=6e-4 |
 | Parity: LLM decoder | DONE | 2/2 layers cos=1.000 with mRoPE |
 | E2E generation (Q4_K) | DONE | "Um die Rechnung im Bild als" — coherent German |
-| Quantization | DONE | F16 (7.6GB), Q8_0 (3.9GB), Q4_K (2.6GB, vision Q8_0 floor) |
+| Quantization | DONE | Q8_0 (3.9GB), Q4_K (2.6GB, vision Q8_0 floor) |
 | HuggingFace upload | DONE | `cstr/qwen2.5-vl-3b-crispembed-GGUF` (F16 + Q8_0 + Q4_K) |
 | Wire into C ABI | DONE | `crispembed.cpp` dispatch, arch="qwen2vl" auto-detect |
 | CLI + model registry | DONE | `model_mgr.cpp` entry, `--ocr` auto-dispatch |
 | Unit + smoke tests | DONE | `test_qwen2vl.cpp` 14/14 pass (unit + Q4K smoke) |
-| C++ image preprocessor | TODO | `image_preprocess.cpp` exists but not wired into recognize() |
-| BPE tokenizer in C++ | TODO | `BPETokenizer` + `core/bpe.h` exist, need GGUF vocab loading |
+| C++ image preprocessor | DONE | `image_preprocess.cpp` wired into recognize_raw() |
+| BPE tokenizer in C++ | DONE | Vocab+merges in GGUF, loaded at init, set_prompt() tokenizes |
+| GPT-2 byte decoder | DONE | Output is decoded UTF-8 text, not raw token IDs |
 | KV cache | TODO | O(n²)→O(n) per token — ~2 min/token → ~2 sec/token |
 | Load Keyven fine-tune | TODO | Same architecture, just different weights |
 | Windowed ViT attention | TODO | Currently full attention all layers (correct but slower) |
 | Python bindings | TODO | Wire via `CrispMathOcr` auto-dispatch |
 | CrispCalc catalog | TODO | `OcrModelVariant` entries |
 
-**Next priority (makes `crispembed --ocr qwen2vl-3b image.png` work):**
-1. Wire `image_preprocess.cpp` into `qwen2vl_ocr_recognize()` — smart
-   resize, bicubic, normalize, patchify (already Qwen2VL-compatible)
-2. Load BPE vocab from GGUF, tokenize prompts in C++ — `BPETokenizer`
-   already handles GPT-2 byte-level BPE (Qwen family)
-3. Then: KV cache for practical generation speed
+**Standalone CLI now works** (on machines with 16+ GB RAM):
+```
+crispembed --ocr qwen2vl-3b image.png
+# or with custom prompt:
+qwen2vl_ocr_set_prompt(ctx, "Extrahiere die Rechnung als JSON.");
+```
+The Q4_K model (2.6 GB) + ggml compute graph needs ~5 GB peak RAM.
+OOMs on 8 GB machines — use Kaggle (16 GB) or desktop for inference.
+
+**Next priority:** KV cache (makes generation ~60x faster).
 
 **GGUFs**: `cstr/qwen2.5-vl-3b-crispembed-GGUF` on HuggingFace:
-- `qwen2.5-vl-3b-f16.gguf` — 7.57 GiB
-- `qwen2.5-vl-3b-q8_0.gguf` — 3.93 GiB (2x compression)
-- `qwen2.5-vl-3b-q4_k.gguf` — 2.61 GiB (3x, vision Q8_0 preserved)
+- `qwen2.5-vl-3b-f16.gguf` — 7.57 GiB (no tokenizer — needs re-convert)
+- `qwen2.5-vl-3b-q8_0.gguf` — 3.93 GiB (v2: with BPE tokenizer)
+- `qwen2.5-vl-3b-q4_k.gguf` — 2.61 GiB (v2: with BPE tokenizer)
 
 **Key learnings:**
 - Vision weights need Q8_0 floor in quantizer (Q4_K degrades OCR)
