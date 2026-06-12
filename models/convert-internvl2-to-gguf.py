@@ -345,7 +345,34 @@ def main():
                 print(f"  image_token: '{name_candidate}' = {vocab[name_candidate]}")
                 break
 
-        print(f"  Tokenizer: {n_vocab} tokens")
+        # Store full vocab for C++ decode (id→string lookup).
+        # Uses SentencePiece convention: ▁ = space, <0xNN> = byte fallback.
+        # Store as standard GGUF tokenizer keys for compatibility.
+        tokens_list = [""] * n_vocab
+        for token_str, token_id in vocab.items():
+            if 0 <= token_id < n_vocab:
+                tokens_list[token_id] = token_str
+        writer.add_token_list(tokens_list)
+
+        # Store SentencePiece scores if available
+        if hasattr(tok, "sp_model"):
+            sp_size = tok.sp_model.GetPieceSize()
+            scores = []
+            for i in range(n_vocab):
+                scores.append(tok.sp_model.GetScore(i) if i < sp_size else 0.0)
+            writer.add_token_scores(scores)
+            writer.add_token_types([0] * n_vocab)
+            print(f"  Tokenizer: {n_vocab} tokens + scores (SentencePiece BPE, sp_size={sp_size})")
+        else:
+            print(f"  Tokenizer: {n_vocab} tokens (no scores)")
+
+        # <|im_end|> is the generation stop token for InternLM2 chat
+        im_end_candidates = ["<|im_end|>", "[UNUSED_TOKEN_145]"]
+        for c in im_end_candidates:
+            if c in vocab:
+                writer.add_uint32(f"{ARCH}.tokenizer.im_end_id", vocab[c])
+                print(f"  im_end_token: '{c}' = {vocab[c]}")
+                break
     except Exception as e:
         print(f"  Tokenizer export failed: {e}")
 

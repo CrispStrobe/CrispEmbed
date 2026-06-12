@@ -153,6 +153,22 @@ struct model {
 
 // ── Context ──────────────────────────────────────────────────────────
 
+// ── Tokenizer (decode only) ──────────────────────────────────────────
+
+struct tokenizer {
+    std::vector<std::string> id_to_piece;  // vocab: id → string
+    int vocab_size = 0;
+    int bos_id = 1;
+    int eos_id = 2;
+    int im_end_id = -1;  // <|im_end|> for chat stop
+    int image_token_id = 0;
+
+    // Decode token IDs to UTF-8 text.
+    // SentencePiece convention: ▁ → space, <0xNN> → raw byte.
+    std::string decode(const std::vector<int32_t> &ids) const;
+    std::string decode(const int32_t *ids, int n) const;
+};
+
 // ── KV cache ─────────────────────────────────────────────────────────
 
 struct kv_cache {
@@ -176,6 +192,9 @@ struct context {
     ggml_backend_t backend_cpu = nullptr;
     ggml_backend_sched_t sched = nullptr;
     std::vector<uint8_t> compute_meta;
+
+    // Tokenizer for decode
+    tokenizer tok;
 
     // KV cache for autoregressive generation
     kv_cache kvc;
