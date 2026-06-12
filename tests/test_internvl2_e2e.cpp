@@ -99,6 +99,9 @@ int main(int argc, char **argv) {
         printf(" %d", id);
     }
     printf("\n");
+    if (!gen.text.empty()) {
+        printf("\nDecoded text:\n  %s\n", gen.text.c_str());
+    }
 
     free(vpr.image_embeds);
     internvl2_ocr::free_(ctx);

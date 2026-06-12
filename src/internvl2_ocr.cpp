@@ -40,6 +40,61 @@
 
 namespace internvl2_ocr {
 
+// ── Tokenizer decode ─────────────────────────────────────────────────
+
+static int hex_val(char c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    return -1;
+}
+
+std::string tokenizer::decode(const int32_t *ids, int n) const {
+    std::string result;
+    for (int i = 0; i < n; i++) {
+        int id = ids[i];
+        if (id < 0 || id >= vocab_size) continue;
+        if (id == bos_id || id == eos_id) continue;  // skip special tokens
+        if (id == im_end_id) break;  // stop at <|im_end|>
+
+        const std::string &piece = id_to_piece[id];
+        if (piece.empty()) continue;
+
+        // Byte fallback: <0xNN> → raw byte
+        if (piece.size() == 6 && piece[0] == '<' && piece[1] == '0' &&
+            piece[2] == 'x' && piece[5] == '>') {
+            int h = hex_val(piece[3]);
+            int l = hex_val(piece[4]);
+            if (h >= 0 && l >= 0) {
+                result += (char)(h * 16 + l);
+                continue;
+            }
+        }
+
+        // Skip control/special tokens like [UNUSED_TOKEN_*]
+        if (piece[0] == '[' && piece.back() == ']') continue;
+
+        // SentencePiece: ▁ (U+2581, 3 bytes: e2 96 81) → space
+        std::string text = piece;
+        size_t pos = 0;
+        while ((pos = text.find("\xe2\x96\x81", pos)) != std::string::npos) {
+            text.replace(pos, 3, " ");
+            pos += 1;
+        }
+        result += text;
+    }
+
+    // Trim leading space (SentencePiece adds ▁ before first real token)
+    if (!result.empty() && result[0] == ' ') {
+        result = result.substr(1);
+    }
+    return result;
+}
+
+std::string tokenizer::decode(const std::vector<int32_t> &ids) const {
+    return decode(ids.data(), (int)ids.size());
+}
+
 namespace {
 
 // ── Hparams loading ──────────────────────────────────────────────────
@@ -123,6 +178,28 @@ bool load_hparams(context &ctx, const char *path) {
     lhp.eos_token_id = u32("internvl2.tokenizer.eos_id", lhp.eos_token_id);
 
     php.output_dim = lhp.hidden_size;  // projector output = LLM hidden
+
+    // Tokenizer: load vocab for decode
+    auto &tok = ctx.tok;
+    tok.bos_id = (int)lhp.bos_token_id;
+    tok.eos_id = (int)lhp.eos_token_id;
+    tok.image_token_id = (int)lhp.image_token_id;
+
+    int im_end_idx = gguf_find_key(g, "internvl2.tokenizer.im_end_id");
+    if (im_end_idx >= 0) {
+        tok.im_end_id = (int)gguf_get_val_u32(g, im_end_idx);
+    }
+
+    // Load vocab from standard GGUF tokenizer keys
+    int vocab_idx = gguf_find_key(g, "tokenizer.ggml.tokens");
+    if (vocab_idx >= 0) {
+        int n = gguf_get_arr_n(g, vocab_idx);
+        tok.id_to_piece.resize(n);
+        for (int i = 0; i < n; i++) {
+            tok.id_to_piece[i] = gguf_get_arr_str(g, vocab_idx, i);
+        }
+        tok.vocab_size = n;
+    }
 
     core_gguf::free_metadata(g);
     return true;
@@ -1207,6 +1284,7 @@ bool generate(context &ctx,
     const auto &lhp = ctx.m.lhp;
     const int V = (int)lhp.vocab_size;
     const int eos_id = (int)lhp.eos_token_id;
+    const int im_end_id = ctx.tok.im_end_id;
     const int max_seq = n_prompt_tokens + max_new_tokens + 16;
 
     // Allocate KV cache if needed
@@ -1264,7 +1342,10 @@ bool generate(context &ctx,
         fprintf(stderr, "  gen[0]: token=%d score=%.2f (prefill %d tokens)\n",
                 best_id, best_score, n_prompt_tokens);
     }
-    if (best_id == eos_id) return true;
+    if (best_id == eos_id || best_id == im_end_id) {
+        out.text = ctx.tok.decode(out.token_ids);
+        return true;
+    }
 
     // ── Decode: one token at a time with KV cache ──
     for (int gen = 1; gen < max_new_tokens; gen++) {
@@ -1289,9 +1370,11 @@ bool generate(context &ctx,
         if (ctx.verbosity >= 1) {
             fprintf(stderr, "  gen[%d]: token=%d score=%.2f\n", gen, best_id, best_score);
         }
-        if (best_id == eos_id) break;
+        if (best_id == eos_id || best_id == im_end_id) break;
     }
 
+    // Decode generated tokens to text
+    out.text = ctx.tok.decode(out.token_ids);
     return true;
 }
 
