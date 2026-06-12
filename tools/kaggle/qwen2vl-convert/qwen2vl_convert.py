@@ -27,8 +27,16 @@ def run(cmd):
     print(f"$ {cmd}", flush=True)
     subprocess.check_call(cmd, shell=True)
 
+LOG = WORK / "progress.txt"
+
 def step(msg):
-    print(f"[{time.time():.0f}] {msg}", flush=True)
+    line = f"[{time.time():.0f}] {msg}"
+    print(line, flush=True)
+    try:
+        with open(LOG, "a") as f:
+            f.write(line + "\n")
+    except Exception:
+        pass
 
 try:
     # ── Step 1: Clone CrispEmbed ──────────────────────────────────
@@ -119,6 +127,7 @@ try:
     step("DONE")
 
 except Exception:
-    traceback.print_exc()
-    step("FAILED")
+    tb = traceback.format_exc()
+    print(tb, flush=True)
+    step(f"FAILED: {tb}")
     sys.exit(1)
