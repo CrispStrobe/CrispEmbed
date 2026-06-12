@@ -958,11 +958,60 @@ bool generate(context &ctx,
               const int32_t *prompt_token_ids, int n_prompt_tokens,
               int max_new_tokens,
               generate_result &out) {
-    // TODO: implement autoregressive generation with KV cache
-    // For now, this is a placeholder that runs a single forward pass
-    fprintf(stderr, "internvl2_ocr: generate() not yet implemented "
-            "(use run_llm_forward for parity testing)\n");
-    return false;
+    const auto &lhp = ctx.m.lhp;
+    const int D = (int)lhp.hidden_size;
+    const int V = (int)lhp.vocab_size;
+    const int eos_id = (int)lhp.eos_token_id;
+
+    // Build full token sequence (no splicing for now — text-only generation)
+    std::vector<int32_t> all_tokens(prompt_token_ids,
+                                     prompt_token_ids + n_prompt_tokens);
+
+    for (int gen = 0; gen < max_new_tokens; gen++) {
+        // Run full forward pass (no KV cache — O(n^2) per step)
+        llm_result fwd = {};
+        if (!run_llm_forward(ctx, all_tokens.data(), (int)all_tokens.size(), fwd)) {
+            if (fwd.hidden) free(fwd.hidden);
+            if (fwd.logits) free(fwd.logits);
+            fprintf(stderr, "internvl2_ocr: forward failed at gen step %d\n", gen);
+            return false;
+        }
+
+        if (!fwd.logits) {
+            if (fwd.hidden) free(fwd.hidden);
+            fprintf(stderr, "internvl2_ocr: no logits at gen step %d\n", gen);
+            return false;
+        }
+
+        // Greedy: argmax logits at last position
+        // logits layout: (V, n_tokens) in ggml = V is fast axis
+        const int n = (int)all_tokens.size();
+        const float *last_logits = fwd.logits + (size_t)(n - 1) * V;
+
+        int best_id = 0;
+        float best_score = -INFINITY;
+        for (int v = 0; v < V; v++) {
+            if (last_logits[v] > best_score) {
+                best_score = last_logits[v];
+                best_id = v;
+            }
+        }
+
+        free(fwd.hidden);
+        free(fwd.logits);
+
+        out.token_ids.push_back(best_id);
+
+        if (ctx.verbosity >= 1) {
+            fprintf(stderr, "  gen[%d]: token=%d score=%.2f\n", gen, best_id, best_score);
+        }
+
+        if (best_id == eos_id) break;
+
+        all_tokens.push_back(best_id);
+    }
+
+    return true;
 }
 
 }  // namespace internvl2_ocr
@@ -1005,9 +1054,70 @@ const char * internvl2_ocr_recognize_raw(
     const uint8_t *pixel_bytes,
     int width, int height, int channels,
     int *out_len) {
-    // TODO: implement full pipeline (preprocess → encode → generate)
-    if (out_len) *out_len = 0;
-    return "";
+    if (!ctx || !pixel_bytes) {
+        if (out_len) *out_len = 0;
+        return "";
+    }
+
+    // Convert uint8 RGB to normalized float (single tile, resize to 448x448)
+    const int img_size = (int)ctx->ctx.m.vhp.image_size;
+    std::vector<float> pixels(3 * img_size * img_size);
+
+    // Simple bilinear resize + normalize
+    const float *mean = ctx->ctx.m.vhp.image_mean;
+    const float *std_v = ctx->ctx.m.vhp.image_std;
+    for (int c = 0; c < 3; c++) {
+        for (int y = 0; y < img_size; y++) {
+            for (int x = 0; x < img_size; x++) {
+                float sy = (float)y * height / img_size;
+                float sx = (float)x * width / img_size;
+                int iy = std::min((int)sy, height - 1);
+                int ix = std::min((int)sx, width - 1);
+                int ch = std::min(c, channels - 1);
+                float val = (float)pixel_bytes[(iy * width + ix) * channels + ch] / 255.0f;
+                pixels[c * img_size * img_size + y * img_size + x] =
+                    (val - mean[c]) / std_v[c];
+            }
+        }
+    }
+
+    // Encode vision (single tile)
+    internvl2_ocr::vision_pipeline_result vpr;
+    if (!internvl2_ocr::encode_vision(ctx->ctx, pixels.data(), 1, vpr)) {
+        if (out_len) *out_len = 0;
+        return "";
+    }
+
+    // Build prompt tokens: <|im_start|>user\n<IMG_CONTEXT>*256\n{prompt}<|im_end|>\n<|im_start|>assistant\n
+    // For now, use a simple fixed prompt without tokenizer
+    // TODO: use proper tokenizer from GGUF metadata
+    std::vector<int32_t> prompt_tokens;
+    // Placeholder: just use BOS + a few tokens
+    prompt_tokens.push_back((int32_t)ctx->ctx.m.lhp.bos_token_id);
+
+    // Generate
+    internvl2_ocr::generate_result gen;
+    bool ok = internvl2_ocr::generate(ctx->ctx,
+        vpr.image_embeds, vpr.n_image_tokens, vpr.embed_dim,
+        prompt_tokens.data(), (int)prompt_tokens.size(),
+        ctx->max_tokens, gen);
+
+    free(vpr.image_embeds);
+
+    if (!ok) {
+        if (out_len) *out_len = 0;
+        return "";
+    }
+
+    // For now, return token IDs as comma-separated string (no detokenizer yet)
+    ctx->last_text.clear();
+    for (size_t i = 0; i < gen.token_ids.size(); i++) {
+        if (i > 0) ctx->last_text += ",";
+        ctx->last_text += std::to_string(gen.token_ids[i]);
+    }
+
+    if (out_len) *out_len = (int)ctx->last_text.size();
+    return ctx->last_text.c_str();
 }
 
 const char * internvl2_ocr_recognize(
@@ -1015,7 +1125,17 @@ const char * internvl2_ocr_recognize(
     const float *pixels,
     int width, int height,
     int *out_len) {
-    // TODO: implement full pipeline
-    if (out_len) *out_len = 0;
-    return "";
+    // Convert grayscale float to RGB uint8 and delegate
+    if (!ctx || !pixels) {
+        if (out_len) *out_len = 0;
+        return "";
+    }
+    std::vector<uint8_t> rgb(width * height * 3);
+    for (int i = 0; i < width * height; i++) {
+        uint8_t v = (uint8_t)std::min(255.0f, std::max(0.0f, pixels[i] * 255.0f));
+        rgb[i * 3 + 0] = v;
+        rgb[i * 3 + 1] = v;
+        rgb[i * 3 + 2] = v;
+    }
+    return internvl2_ocr_recognize_raw(ctx, rgb.data(), width, height, 3, out_len);
 }
