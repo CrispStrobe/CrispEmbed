@@ -4,6 +4,57 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 (late) — surya text detector + MixTex LaTeX OCR
+
+### surya-ocr-2 text detector port
+
+EfficientViT-Large segformer (38M params, 91 languages incl. German).
+Segmentation-based text line detection. OpenRail-M license (free <$5M).
+
+**Architecture**: Stem + 4 CNN stages (FusedMBConv, MBConv) + 6
+EfficientVitBlock (LiteMLA linear attention) + SegFormer FPN decode head.
+Input 1200×1200, output 300×300 heatmap → polygon bounding boxes.
+
+**Parity**: Verified exact match vs Python reference (heatmap max=0.9649,
+mean=0.0113, both exact). Per-stage activation means match to 4dp through
+all 10 encoder stages + decode head.
+
+**Performance**: ggml graph acceleration for stages 0-2 + block0
+(17s graph vs ~10min scalar = 35x). Total: ~1 min (was ~13 min).
+
+**Quantized**: F32=147MB, F16=74MB, Q8_0=41MB (3.6x), Q4_K=23MB (6.5x).
+All uploaded to https://huggingface.co/cstr/surya-det-GGUF
+
+**Fully wired**: C ABI (`crispembed_text_det_*`), HTTP server
+(`POST /text/detect`), Python bindings (`CrispTextDetect`), model
+registry with auto-download, test binaries.
+
+**Bugs found and fixed**:
+1. `H /= 2` gives wrong result for odd H (75→37 instead of 38)
+2. Stage 2+3 MBConv used ReLU6 instead of Hardswish
+3. F16 GGUF: bias tensors need F32 cast before ggml_add
+
+### MixTex Chinese+English LaTeX OCR port
+
+Swin-Tiny encoder + 4-layer RoBERTa decoder (86M params, Apache-2.0).
+First Swin (shifted-window attention) encoder in CrispEmbed.
+
+**Architecture**: Patch embed (Conv2d 4×4) → 4 Swin stages
+(depths=[2,2,6,2], window_size=7, shifted windows, relative position
+bias) → patch merging → final LayerNorm → 4-layer RoBERTa decoder
+with cross-attention → BPE tokenizer (25681 tokens, LaTeX + CJK).
+
+**Status**: Runs end-to-end. Encoder produces 208 tokens × 768 dim
+(matches Python). Decoder generates LaTeX via greedy decode with KV cache.
+
+**Bug found**: Swin PatchMerging must pad odd dims before halving
+(125→126→63 not 125→62).
+
+**GGUFs**: F32=329MB, F16=165MB.
+Wired into unified math OCR dispatch (auto-detect from GGUF arch).
+
+---
+
 ## June 2026 (late) — PosFormer handwritten math OCR
 
 ### PosFormer port (feat/posformer-port branch)
