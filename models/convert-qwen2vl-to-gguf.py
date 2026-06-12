@@ -276,17 +276,41 @@ def main():
         for token_str, token_id in vocab.items():
             if token_id < n_vocab:
                 tokens[token_id] = token_str
+
+        # Write vocab as standard ggml tokenizer arrays
+        writer.add_array("tokenizer.ggml.tokens", tokens)
+        writer.add_string("tokenizer.ggml.model", "gpt2")  # GPT-2 byte-level BPE
+        writer.add_uint32("tokenizer.ggml.type", 1)  # 1 = BPE
+
+        # Write BPE merges
+        try:
+            merges_file = resolve_file("merges.txt")
+            with open(merges_file) as mf:
+                raw_merges = []
+                for line in mf:
+                    line = line.strip()
+                    if line and not line.startswith("#"):
+                        raw_merges.append(line)
+            writer.add_array("tokenizer.ggml.merges", raw_merges)
+            print(f"  Merges: {len(raw_merges)}")
+        except Exception as e:
+            print(f"  Merges not found ({e}) — tokenizer will use vocab-only mode")
+
+        # Special token IDs (standard ggml keys)
+        eos_id = getattr(tok, "eos_token_id", None)
+        if eos_id is not None:
+            writer.add_uint32("tokenizer.ggml.eos_token_id", int(eos_id))
+        pad_id = getattr(tok, "pad_token_id", None)
+        if pad_id is not None:
+            writer.add_uint32("tokenizer.ggml.padding_token_id", int(pad_id))
+        bos_id = getattr(tok, "bos_token_id", None)
+        if bos_id is not None:
+            writer.add_uint32("tokenizer.ggml.bos_token_id", int(bos_id))
+
+        # Also store under qwen2vl.* for backward compat
         writer.add_uint32("qwen2vl.tokenizer.vocab_size", n_vocab)
 
-        # Store special token IDs
-        if hasattr(tok, "bos_token_id") and tok.bos_token_id is not None:
-            writer.add_uint32("qwen2vl.tokenizer.bos_id", int(tok.bos_token_id))
-        if hasattr(tok, "eos_token_id") and tok.eos_token_id is not None:
-            writer.add_uint32("qwen2vl.tokenizer.eos_id", int(tok.eos_token_id))
-        if hasattr(tok, "pad_token_id") and tok.pad_token_id is not None:
-            writer.add_uint32("qwen2vl.tokenizer.pad_id", int(tok.pad_token_id))
-
-        # Vision special tokens
+        # Vision special tokens (on top-level config, not text_config)
         for special_name in ["image_token_id", "video_token_id",
                              "vision_start_token_id", "vision_end_token_id"]:
             val = getattr(config, special_name, None)
@@ -294,7 +318,7 @@ def main():
                 writer.add_uint32(f"qwen2vl.{special_name}", int(val))
                 print(f"  {special_name}: {val}")
 
-        print(f"  Tokenizer: {n_vocab} tokens")
+        print(f"  Tokenizer: {n_vocab} tokens (GPT-2 BPE)")
     except Exception as e:
         print(f"  Tokenizer export failed: {e}")
 

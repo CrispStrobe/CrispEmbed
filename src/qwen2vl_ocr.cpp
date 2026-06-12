@@ -21,6 +21,7 @@
 #include "qwen2vl_ocr.h"
 #include "crispembed_diff.h"
 #include "image_preprocess.h"
+#include "tokenizer.h"
 #include "core/gguf_loader.h"
 
 #include "ggml.h"
@@ -1200,46 +1201,227 @@ bool generate(context &ctx,
 
 }  // namespace qwen2vl_ocr
 
+// ── GPT-2 BPE byte decoder ───────────────────────────────────────────
+
+namespace {
+
+// Build the inverse of GPT-2's bytes_to_unicode() table.
+// Maps unicode codepoints back to byte values [0..255].
+std::unordered_map<int, uint8_t> build_byte_decoder() {
+    std::unordered_map<int, uint8_t> dec;
+    // The standard GPT-2 byte_encoder: printable ASCII + Latin-1 supplement
+    // map to themselves; other bytes map to 256+ codepoints.
+    int n = 0;
+    for (int b = 0; b < 256; b++) {
+        if ((b >= 33 && b <= 126) || (b >= 161 && b <= 172) || (b >= 174 && b <= 255)) {
+            dec[b] = (uint8_t)b;
+        }
+    }
+    n = 0;
+    for (int b = 0; b < 256; b++) {
+        if (dec.find(b) == dec.end()) {
+            dec[256 + n] = (uint8_t)b;
+            n++;
+        }
+    }
+    return dec;
+}
+
+// Decode a sequence of GPT-2 BPE token IDs to UTF-8 text.
+std::string gpt2_bpe_decode(const std::vector<int32_t> & ids,
+                             const std::vector<std::string> & vocab) {
+    static auto byte_dec = build_byte_decoder();
+
+    std::string merged;
+    for (int32_t id : ids) {
+        if (id >= 0 && id < (int32_t)vocab.size()) {
+            merged += vocab[id];
+        }
+    }
+
+    // Convert GPT-2 unicode codepoints back to bytes
+    std::string result;
+    size_t i = 0;
+    while (i < merged.size()) {
+        // Decode one UTF-8 codepoint
+        uint32_t cp = 0;
+        int len = 1;
+        uint8_t c = (uint8_t)merged[i];
+        if (c < 0x80) {
+            cp = c; len = 1;
+        } else if (c < 0xE0) {
+            cp = c & 0x1F; len = 2;
+        } else if (c < 0xF0) {
+            cp = c & 0x0F; len = 3;
+        } else {
+            cp = c & 0x07; len = 4;
+        }
+        for (int j = 1; j < len && i + j < merged.size(); j++) {
+            cp = (cp << 6) | ((uint8_t)merged[i + j] & 0x3F);
+        }
+        i += len;
+
+        auto it = byte_dec.find((int)cp);
+        if (it != byte_dec.end()) {
+            result += (char)it->second;
+        } else {
+            // Unknown codepoint — pass through as UTF-8
+            for (int j = 0; j < len && i - len + j < merged.size(); j++) {
+                result += merged[i - len + j];
+            }
+        }
+    }
+    return result;
+}
+
+}  // namespace
+
 // ── C ABI wrapper ────────────────────────────────────────────────────
 
 struct qwen2vl_ocr_context {
     qwen2vl_ocr::context inner;
+    BPETokenizer tokenizer;
+    bool has_tokenizer = false;
     std::string prompt = "Describe this image.";
+    std::vector<int32_t> prompt_ids;  // cached tokenized prompt
     int max_tokens = 512;
     std::string last_result;
 
-    // Hardcoded chat template token IDs for Qwen2.5-VL
-    // <|im_start|>=151644, <|im_end|>=151645, system=8948, \n=198,
-    // user=872, assistant=77091, <|vision_start|>=151652,
-    // <|image_pad|>=151655, <|vision_end|>=151653
-    // "You are a helpful assistant." = [2610, 525, 264, 10950, 17847, 13]
+    // Special token IDs (from GGUF metadata)
+    int32_t im_start_id = 151644;
+    int32_t im_end_id   = 151645;
+    int32_t system_id   = 8948;    // "system" token
+    int32_t user_id     = 872;     // "user" token
+    int32_t assistant_id = 77091;  // "assistant" token
+    int32_t newline_id  = 198;     // "\n" token
+    int32_t vision_start_id = 151652;
+    int32_t image_pad_id    = 151655;
+    int32_t vision_end_id   = 151653;
+
+    // Tokenize a text string via BPE. Falls back to hardcoded IDs if no tokenizer.
+    std::vector<int32_t> tokenize(const std::string & text) {
+        if (has_tokenizer) {
+            auto enc = tokenizer.encode(text);
+            // BPETokenizer.encode() adds BOS/EOS — strip them for raw text
+            // We just want the raw token IDs without special tokens
+            return enc.ids;
+        }
+        // Fallback: return empty (caller uses hardcoded defaults)
+        return {};
+    }
+
+    // Build full chat-format token sequence with image placeholders
     std::vector<int32_t> build_token_ids(int n_image_tokens) {
         std::vector<int32_t> ids;
+
         // <|im_start|>system\nYou are a helpful assistant.<|im_end|>\n
-        ids.insert(ids.end(), {151644, 8948, 198, 2610, 525, 264, 10950, 17847, 13, 151645, 198});
+        ids.push_back(im_start_id);
+        ids.push_back(system_id);
+        ids.push_back(newline_id);
+        // "You are a helpful assistant."
+        auto sys_tokens = tokenize("You are a helpful assistant.");
+        if (sys_tokens.empty()) {
+            ids.insert(ids.end(), {2610, 525, 264, 10950, 17847, 13});
+        } else {
+            ids.insert(ids.end(), sys_tokens.begin(), sys_tokens.end());
+        }
+        ids.push_back(im_end_id);
+        ids.push_back(newline_id);
+
         // <|im_start|>user\n<|vision_start|>
-        ids.insert(ids.end(), {151644, 872, 198, 151652});
+        ids.push_back(im_start_id);
+        ids.push_back(user_id);
+        ids.push_back(newline_id);
+        ids.push_back(vision_start_id);
+
         // <|image_pad|> × n_image_tokens
-        for (int i = 0; i < n_image_tokens; i++) ids.push_back(151655);
+        for (int i = 0; i < n_image_tokens; i++) ids.push_back(image_pad_id);
+
         // <|vision_end|>
-        ids.push_back(151653);
-        // TODO: tokenize prompt text properly — for now hardcode simple prompts
-        // "Describe this image." = [41215, 419, 2168, 13]
-        // We'll append the prompt bytes as-is for now
-        // This is a placeholder — proper BPE tokenization needed
-        ids.insert(ids.end(), {41215, 419, 2168, 13});
+        ids.push_back(vision_end_id);
+
+        // User prompt text
+        if (!prompt_ids.empty()) {
+            ids.insert(ids.end(), prompt_ids.begin(), prompt_ids.end());
+        } else {
+            auto toks = tokenize(prompt);
+            if (toks.empty()) {
+                // Fallback: "Describe this image."
+                ids.insert(ids.end(), {41215, 419, 2168, 13});
+            } else {
+                ids.insert(ids.end(), toks.begin(), toks.end());
+            }
+        }
+
         // <|im_end|>\n<|im_start|>assistant\n
-        ids.insert(ids.end(), {151645, 198, 151644, 77091, 198});
+        ids.push_back(im_end_id);
+        ids.push_back(newline_id);
+        ids.push_back(im_start_id);
+        ids.push_back(assistant_id);
+        ids.push_back(newline_id);
+
         return ids;
     }
 };
 
 qwen2vl_ocr_context * qwen2vl_ocr_init(const char * model_path, int n_threads) {
+    if (!model_path) return nullptr;
     auto * ctx = new qwen2vl_ocr_context();
     if (!qwen2vl_ocr::load(ctx->inner, model_path, n_threads, 1)) {
         delete ctx;
         return nullptr;
     }
+
+    // Load BPE tokenizer from GGUF metadata
+    gguf_context * g = core_gguf::open_metadata(model_path);
+    if (g) {
+        int tok_idx = gguf_find_key(g, "tokenizer.ggml.tokens");
+        if (tok_idx >= 0) {
+            int n = gguf_get_arr_n(g, tok_idx);
+            std::vector<std::string> vocab(n);
+            for (int i = 0; i < n; i++) {
+                vocab[i] = gguf_get_arr_str(g, tok_idx, i);
+            }
+
+            // Load merges
+            std::vector<std::string> merges;
+            int merge_idx = gguf_find_key(g, "tokenizer.ggml.merges");
+            if (merge_idx >= 0) {
+                int nm = gguf_get_arr_n(g, merge_idx);
+                merges.resize(nm);
+                for (int i = 0; i < nm; i++) {
+                    merges[i] = gguf_get_arr_str(g, merge_idx, i);
+                }
+            }
+
+            int eos_id = (int)core_gguf::kv_u32(g, "tokenizer.ggml.eos_token_id",
+                                                  ctx->im_end_id);
+            int pad_id = (int)core_gguf::kv_u32(g, "tokenizer.ggml.padding_token_id",
+                                                  ctx->im_end_id);
+
+            // GPT-2 BPE: no BOS, no suffix, not SPM style
+            ctx->tokenizer.load(vocab, merges, eos_id, pad_id, -1, -1, false, 8192);
+            ctx->has_tokenizer = true;
+            fprintf(stderr, "qwen2vl_ocr: loaded BPE tokenizer (%d tokens, %zu merges)\n",
+                    n, merges.size());
+        }
+
+        // Read special token IDs
+        ctx->vision_start_id = (int32_t)core_gguf::kv_u32(g, "qwen2vl.vision_start_token_id",
+                                                            ctx->vision_start_id);
+        ctx->image_pad_id    = (int32_t)core_gguf::kv_u32(g, "qwen2vl.image_token_id",
+                                                            ctx->image_pad_id);
+        ctx->vision_end_id   = (int32_t)core_gguf::kv_u32(g, "qwen2vl.vision_end_token_id",
+                                                            ctx->vision_end_id);
+
+        core_gguf::free_metadata(g);
+    }
+
+    // Pre-tokenize default prompt
+    if (ctx->has_tokenizer) {
+        ctx->prompt_ids = ctx->tokenize(ctx->prompt);
+    }
+
     return ctx;
 }
 
@@ -1251,7 +1433,16 @@ void qwen2vl_ocr_free(qwen2vl_ocr_context * ctx) {
 }
 
 void qwen2vl_ocr_set_prompt(qwen2vl_ocr_context * ctx, const char * prompt) {
-    if (ctx && prompt) ctx->prompt = prompt;
+    if (ctx && prompt) {
+        ctx->prompt = prompt;
+        if (ctx->has_tokenizer) {
+            ctx->prompt_ids = ctx->tokenize(prompt);
+            fprintf(stderr, "qwen2vl_ocr: prompt tokenized to %zu tokens\n",
+                    ctx->prompt_ids.size());
+        } else {
+            ctx->prompt_ids.clear();
+        }
+    }
 }
 
 void qwen2vl_ocr_set_max_tokens(qwen2vl_ocr_context * ctx, int max_tokens) {
@@ -1297,13 +1488,15 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx,
     }
 
     // 4. Decode token IDs to text
-    // TODO: proper BPE decode — for now just store raw token IDs as text
-    // Quick decode: look up each token from the GGUF vocab (not yet loaded)
-    // Placeholder: output token IDs as comma-separated string
-    ctx->last_result.clear();
-    for (size_t i = 0; i < gen.token_ids.size(); i++) {
-        if (i > 0) ctx->last_result += ",";
-        ctx->last_result += std::to_string(gen.token_ids[i]);
+    if (ctx->has_tokenizer) {
+        ctx->last_result = gpt2_bpe_decode(gen.token_ids, ctx->tokenizer.get_vocab());
+    } else {
+        // Fallback: raw token IDs as comma-separated string
+        ctx->last_result.clear();
+        for (size_t i = 0; i < gen.token_ids.size(); i++) {
+            if (i > 0) ctx->last_result += ",";
+            ctx->last_result += std::to_string(gen.token_ids[i]);
+        }
     }
 
     if (out_len) *out_len = (int)ctx->last_result.size();
