@@ -161,6 +161,16 @@ CrispEmbed/
 - [x] Nomic v2 MoE (MoE routing layer in encoder) — cos=1.000000 vs HF
 - [x] LoRA adapter hot-swap (Jina v5 per-task adapters, pre-compute merge on CPU, ~10-50ms switch)
 
+### OCR — next-gen models to port
+
+- [~] surya-ocr-2 (0.7B, OpenRail-M free <$5M) — detector ported, FULL PARITY VERIFIED (heatmap max+mean exact match)
+- [ ] GLM-OCR (0.9B, MIT) — CogViT + GLM-0.5B, 8 languages, GGUF already exists at ggml-org/GLM-OCR-GGUF
+- [ ] GOT-OCR2_0 (0.7B, Apache-2.0) — SAM-ViT + Qwen-0.5B, end-to-end doc OCR (math+tables+text), trust_remote_code
+- [ ] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL fine-tune, 12+ languages incl. German, GGUF exists
+- [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics
+- [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL, German business docs → structured JSON
+- [ ] Keyven/german-ocr-3 (0.8B, Apache-2.0) — smaller German variant
+
 ### Bindings
 
 - [x] Python wrapper `encode_image()` for standalone SigLIP/CLIP
@@ -529,3 +539,203 @@ call it for face search/verification.
 `examples/face_search.py`
 
 **Effort**: Low (1-2 days). C API is already complete and tested.
+
+---
+
+### Blueprint: surya-ocr-2 (full-page OCR, 91 languages) — IN PROGRESS
+
+**Goal**: Port surya-ocr-2 for multilingual full-page OCR with text
+detection, recognition, and layout analysis.
+
+**Source**: datalab-to/surya-ocr-2 (0.7B, OpenRail-M — free for <$5M)
+GitHub: https://github.com/VikParuchuri/surya
+
+**Architecture**: Two separate models:
+1. **Detector** (38M params, 147 MB F32, 73 MB F16):
+   EfficientViT-Large segformer. Input [3,1200,1200] → 2-channel
+   heatmap [2,300,300] (text line, separator) → polygon bounding boxes.
+   - Stem: Conv3x3(s2)+BN+Hardswish + ConvBlock residual → [32,600,600]
+   - Stage 0: 2× FusedMBConv (expand 16x/4x) → [64,300,300]
+   - Stage 1: 2× FusedMBConv (expand 16x/4x) → [128,150,150]
+   - Stage 2: 7× MBConv (expand 16x/4x, ReLU6) → [256,75,75]
+   - Stage 3: 1× MBConv (expand 24x) + 6× EfficientVitBlock → [512,38,38]
+     (each VitBlock = LiteMLA linear attention + MBConv, with residuals)
+   - DecodeHead: 4× Linear proj → bilinear upsample → cat(reversed) →
+     Conv1x1+BN+ReLU → Conv1x1 classifier → sigmoid
+
+2. **Recognizer** (0.7B): Qwen3.5-VL fine-tune. GGUF already exists at
+   datalab-to/surya-ocr-2-gguf. Runs via llama-server with OpenAI API.
+   Prompts: "OCR this block image to HTML." / "OCR this image to HTML.
+   Each block is a div with data-label and data-bbox (x0 y0 x1 y1,
+   normalized 0-1000)."
+
+**Key op — LiteMLA** (O(N) linear attention):
+  Q,K = ReLU(qkv_split), V_pad = pad(V,1)
+  KTV = K^T @ V_pad  (head_dim × (head_dim+1), spatial aggregation)
+  out = Q @ KTV / (Q @ K^T @ ones + eps)  (per-position normalization)
+  Multi-scale: DW-Conv5x5 + grouped-Conv1x1 aggregation, cat with original
+
+**Status** (2026-06-11):
+- [x] Reference dumper: `tools/dump_surya_det_reference.py` (52 activations)
+- [x] GGUF converter: `models/convert-surya-det-to-gguf.py` (148 tensors, BN folded)
+- [x] C++ engine: `src/surya_det.{h,cpp}` (CPU-scalar, compiles+runs)
+- [x] Test binaries: `test-surya-det`, `test-surya-det-diff`
+- [x] Model registry entry: `surya-det`
+- [x] Parity verification — heatmap max=0.9649 exact, mean=0.0113 exact
+- [x] Heatmap → polygon post-processing (connected components + bbox)
+- [x] Move encoder to ggml graph — 13min→1min (13x). Stages 0-2 + block0: 17s via graph. LiteMLA + decode scalar.
+- [x] Upload GGUF to HuggingFace — https://huggingface.co/cstr/surya-det-GGUF
+
+**GGUFs**: `/mnt/storage/gguf-models/surya-det-{f32,f16}.gguf`
+
+**Files**: `src/surya_det.{h,cpp}`, `models/convert-surya-det-to-gguf.py`,
+`tools/dump_surya_det_reference.py`, `tests/test_surya_det{,_diff}.cpp`
+
+**Effort**: Medium remaining (3-4 days for parity + ggml graph + postproc).
+
+---
+
+### Blueprint: MixTex ZhEn-Latex-OCR (86M, Apache-2.0) — IN PROGRESS
+
+**Goal**: Chinese+English math LaTeX OCR. Smallest new model, introduces
+Swin encoder as new building block.
+
+**Source**: MixTex/ZhEn-Latex-OCR (85.9M, Apache-2.0)
+
+**Architecture**: VisionEncoderDecoderModel
+1. **Encoder**: Swin-Tiny (28M params)
+   - Patch embed: Conv2d [96, 3, 4, 4] stride 4
+   - 4 stages: depths=[2,2,6,2], heads=[3,6,12,24], dims=[96,192,384,768]
+   - Window size=7, shifted window attention, relative position bias
+   - Patch merging (2×2 concat + Linear) between stages
+   - Output: [N, 768] where N=H/32×W/32 (180 for 400×500 input)
+
+2. **Decoder**: RoBERTa 4-layer with cross-attention (57M params)
+   - hidden=768, 12 heads, FFN=3072, GELU
+   - Post-LN: self-attn → LN → cross-attn → LN → FFN → LN
+   - BPE tokenizer, 25681 tokens (LaTeX + CJK)
+   - max_position=300, greedy decode
+
+**Status** (2026-06-11):
+- [x] Reference dumper: `tools/dump_mixtex_reference.py`
+- [x] GGUF converter: `models/convert-mixtex-to-gguf.py` (345 tensors)
+- [x] GGUF files: F32=329MB, F16=165MB at `/mnt/storage/gguf-models/`
+- [ ] C++ engine: `src/mixtex_ocr.{h,cpp}` (Swin encoder is new)
+- [ ] Parity test
+
+**Key new op**: Swin shifted-window attention with relative position bias.
+Window partition → local MHSA + RPB lookup → window reverse → shift.
+
+**Files**: `tools/dump_mixtex_reference.py`, `models/convert-mixtex-to-gguf.py`
+
+**Effort**: Medium (3-4 days). Swin encoder is new; decoder is same as TrOCR.
+
+---
+
+### Blueprint: GLM-OCR (0.9B, MIT, GGUF exists)
+
+**Goal**: Integrate GLM-OCR for general document OCR. GGUF already
+converted by ggml-org — may only need inference integration, not
+conversion.
+
+**Source**: zai-org/GLM-OCR (0.9B, MIT)
+GGUF: ggml-org/GLM-OCR-GGUF (Q8_0: 950 MB, F16: 1.79 GB)
+
+**Architecture**: CogViT vision encoder + GLM-0.5B language decoder.
+Lightweight cross-modal connector with token downsampling. 8 languages.
+
+**Approach**: Since GGUF already exists and runs via llama-server, the
+fastest path may be to study the GGUF tensor layout and write a native
+CrispEmbed inference engine that loads it directly, rather than
+re-converting.
+
+**Files**: `src/glm_ocr.{h,cpp}`, possibly no converter needed
+
+**Effort**: Medium (3-4 days). GGUF exists; main work is C++ inference.
+
+---
+
+### Blueprint: GOT-OCR2_0 (0.7B, Apache-2.0)
+
+**Goal**: End-to-end document OCR that handles plain text, LaTeX math,
+tables, and formatted output in a single model.
+
+**Source**: stepfun-ai/GOT-OCR2_0 (0.7B, Apache-2.0)
+
+**Architecture**: SAM-style ViT-B vision encoder (12 layers, 768-dim,
+16x16 patches, custom "Vary" backbone) + Qwen-0.5B causal LM decoder
+(24 layers, 1024-dim). tiktoken tokenizer. Requires `trust_remote_code`.
+
+**Reuse**: Qwen decoder path already in CrispEmbed. SAM-ViT encoder is
+similar to PPFormulaNet-L's encoder (already ported). Main new work is
+the vision-language connector and GOT-specific prompt templates.
+
+**Step 1 — Converter**: `models/convert-got-ocr-to-gguf.py`
+- Export vision encoder + connector + LM decoder.
+- Handle custom modeling code (GOTQwenForCausalLM).
+
+**Step 2 — C inference**: `src/got_ocr.{h,cpp}`
+
+**Files**: `src/got_ocr.{h,cpp}`, `models/convert-got-ocr-to-gguf.py`
+
+**Effort**: Medium (4-5 days). Custom vision backbone needs careful
+mapping; decoder side reuses existing Qwen3 path.
+
+---
+
+### Blueprint: Nanonets-OCR2-1.5B (Apache-2.0)
+
+**Goal**: Multilingual document OCR (12+ languages incl. German).
+
+**Source**: nanonets/Nanonets-OCR2-1.5B-exp (1.5B, Apache-2.0)
+Fine-tune of Qwen2-VL-2B-Instruct.
+
+**Architecture**: Qwen2-VL vision encoder + Qwen2-VL language decoder.
+Standard Qwen2-VL architecture — well-supported in llama.cpp, GGUF
+already exists.
+
+**Approach**: Since this is a standard Qwen2-VL fine-tune with existing
+GGUF, integration may follow the same pattern as GLM-OCR — load
+existing GGUF and write native inference.
+
+**Files**: `src/nanonets_ocr.{h,cpp}` or reuse VLM dispatch
+
+**Effort**: Medium (3-4 days). Standard Qwen2-VL, well-documented.
+
+---
+
+### Blueprint: Qari-OCR (Arabic, 2B, Apache-2.0)
+
+**Goal**: Arabic OCR with diacritics support.
+
+**Source**: NAMAA-Space/Qari-OCR-0.2.2.1-VL-2B-Instruct (Apache-2.0)
+Fine-tune of Qwen2-VL-2B-Instruct for Arabic text.
+
+**Note**: The published fine-tune was trained from a 4-bit quantized
+base (unsloth/bnb). For GGUF porting, may need to source fp16 weights
+or re-fine-tune from the full-precision Qwen2-VL base.
+
+**Effort**: Medium (3-4 days). Same Qwen2-VL base as Nanonets — share
+infrastructure.
+
+---
+
+### Blueprint: Keyven/german-ocr (German docs, Apache-2.0)
+
+**Goal**: German business document OCR with structured JSON output.
+
+**Source**: Two variants:
+- Keyven/german-ocr-3.1 (2B) — Qwen2.5-VL fine-tune, invoices/letters/forms
+- Keyven/german-ocr-3 (0.8B) — smaller variant
+
+**Architecture**: Both are Qwen2.5-VL fine-tunes. The 0.8B variant is
+more practical for CPU inference. GGUF already exists
+(Keyven/german-ocr-2b-gguf).
+
+**Approach**: Same Qwen-VL integration path. The 0.8B model is the
+better target for CrispEmbed (fits in memory, fast enough on CPU).
+
+**Files**: Share VLM OCR infrastructure with GOT/Nanonets/Qari
+
+**Effort**: Low (1-2 days) if Qwen-VL OCR infrastructure exists from
+earlier ports. These are all fine-tunes of the same base family.
