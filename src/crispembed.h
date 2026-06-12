@@ -500,9 +500,10 @@ CRISPEMBED_API void crispembed_free(crispembed_context * ctx);
 
 // ---------------------------------------------------------------------------
 // Unified Math OCR — auto-detects model architecture from GGUF metadata.
-// Supports pix2tex (printed), PP-FormulaNet (printed), PP-FormulaNet-L (printed),
-// Texo-Distill (printed), HMER (handwritten), BTTR (handwritten),
-// PosFormer (handwritten). Auto-detects architecture from GGUF metadata.
+// Supports pix2tex (printed), PP-FormulaNet (printed/small), PP-FormulaNet-L
+// (printed/best), Texo-Distill (printed/tiny), HMER (handwritten), BTTR
+// (handwritten), PosFormer (handwritten), MixTex (Chinese+English LaTeX),
+// Qwen2.5-VL (VLM, German docs), InternVL2.5 (VLM, EN+DE, OCRBench ~830).
 // ---------------------------------------------------------------------------
 
 // Initialize. Reads "general.architecture" from the GGUF to dispatch

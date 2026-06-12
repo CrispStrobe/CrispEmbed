@@ -1524,17 +1524,19 @@ def _setup_math_ocr_signatures(lib):
 
 
 class CrispMathOcr:
-    """Math formula OCR — recognizes LaTeX from images.
+    """OCR — recognizes text/LaTeX/documents from images.
 
-    Supports pix2tex (printed), PP-FormulaNet (printed), PP-FormulaNet-L (printed),
-    Texo-Distill (printed), HMER (handwritten), BTTR (handwritten), PosFormer
-    (handwritten). Auto-detects architecture from GGUF metadata.
+    Supports pix2tex (printed math), PP-FormulaNet (printed math),
+    PP-FormulaNet-L (printed math, best), Texo-Distill (printed math, small),
+    HMER (handwritten math), BTTR (handwritten math), PosFormer (handwritten),
+    MixTex (Chinese+English LaTeX), Qwen2.5-VL (VLM, German docs),
+    InternVL2.5 (VLM, EN+DE, OCRBench ~830).
+    Auto-detects architecture from GGUF metadata.
 
     Usage::
 
-        ocr = CrispMathOcr("ppformulanet-l-q8_0.gguf")
-        latex = ocr.recognize("formula.png")
-        # "\\frac{a}{b}"
+        ocr = CrispMathOcr("internvl2.5-2b-q4_k.gguf")
+        text = ocr.recognize("document.png")
     """
 
     def __init__(self, model_path: str, n_threads: int = 4, lib_path: Optional[str] = None):

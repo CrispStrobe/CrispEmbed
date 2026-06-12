@@ -4,6 +4,44 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — InternVL2.5-2B OCR engine (VLM, MIT)
+
+Full vision-language model port: InternVL2.5-2B (2.1B params, MIT license)
+for multilingual document OCR. Second VLM in CrispEmbed after Qwen2.5-VL,
+with KV cache for efficient autoregressive generation.
+
+**Architecture**: InternViT-300M (24L, 1024d, 16 heads, LayerNorm + GELU +
+LayerScale, 448×448 per tile) → pixel unshuffle (4:1, 1024→4096 dim) →
+MLP projector (LN-Linear-GELU-Linear, 4096→2048) → InternLM2.5-1.8B
+decoder (24L, 2048d, GQA 16/8, SwiGLU, RMSNorm, RoPE θ=1M).
+
+**Key features**:
+- Dynamic tiling: 1-12 tiles of 448×448 + optional thumbnail
+- KV cache: F16 persistent cache, prefill+decode verified identical
+- Vision-text splice: mask-based embedding replacement at `<IMG_CONTEXT>`
+- C++ tokenizer decode: SentencePiece BPE from GGUF vocab (▁→space, byte fallback)
+- OCRBench ~830 (top tier for models under 3B)
+
+**Parity (F32, all vs Python reference via diff harness):**
+- Vision encoder: 4/4 layers cos=1.000000
+- Pixel unshuffle + MLP projector: cos=1.000000
+- LLM decoder: 2/2 layers cos=1.000000
+
+**E2E verification**: German invoice (600×400, 7 tiles) correctly extracts
+invoice number, date, recipient, address, all line items with prices, and
+net total.
+
+**New files**: `src/internvl2_ocr.{h,cpp}`, `models/convert-internvl2-to-gguf.py`,
+`tools/dump_internvl2_reference.py`, `tests/test_internvl2_{diff,e2e,image}.cpp`,
+`tests/test_internvl2_ocr.py`, `hf_readmes/internvl2.5-2b-crispembed-GGUF.md`.
+
+**GGUFs**: `cstr/internvl2.5-2b-crispembed-GGUF` — F16 (4.9 GB), Q8_0 (2.2 GB),
+Q4_K (1.4 GB). Vision weights kept at Q8_0 floor in quantizer.
+
+**License**: MIT (OpenGVLab/InternVL2_5-2B).
+
+---
+
 ## June 2026 — GLiNER zero-shot NER (LFM2.5 backbone)
 
 Added zero-shot Named Entity Recognition via SauerkrautLM-LFM2.5-GLiNER.

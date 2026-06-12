@@ -186,7 +186,7 @@ curl -X POST http://localhost:8080/ner/extract \
 
 ## OCR
 
-Eight engines for image → text, all auto-detected from GGUF metadata via
+Nine engines for image → text, all auto-detected from GGUF metadata via
 the unified `crispembed_math_ocr_*` C API. Available through CLI (`--ocr`),
 HTTP server (`POST /math/ocr`), Python (`CrispMathOcr`), Rust, and Dart/Flutter.
 
@@ -195,6 +195,7 @@ HTTP server (`POST /math/ocr`), Python (`CrispMathOcr`), Rust, and Dart/Flutter.
 | **BTTR** | DenseNet + Transformer | 6.5M | — | Handwritten math | MIT |
 | **DeiT+TrOCR** | DeiT-S + TrOCR | 65M | — | Printed math | Apache-2.0 |
 | **HMER** | DenseNet + GRU attention | 6M | — | Handwritten math | MIT |
+| **InternVL2.5-2B** | InternViT-300M + InternLM2.5-1.8B | 2.1B | 1.4 GB | EN+DE VLM OCR (OCRBench ~830) | MIT |
 | **MixTeX** | Swin-Tiny + RoBERTa | 86M | — | Chinese+English LaTeX | Apache-2.0 |
 | **PosFormer** | DenseNet + Transformer+ARM | 6.5M | 10 MB | Handwritten math (60.5%) | Academic |
 | **PP-FormulaNet-L** | SAM-ViT + MBart | 181M | 100 MB | Printed math (best) | Apache-2.0 |
