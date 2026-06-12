@@ -625,6 +625,37 @@ CRISPEMBED_API const crispembed_text_det_result * crispembed_text_det(
 CRISPEMBED_API const float * crispembed_text_det_heatmap(
     void * ctx, int * out_h, int * out_w);
 
+// ---------------------------------------------------------------------------
+// Named Entity Recognition — GLiNER zero-shot NER.
+// Detects arbitrary entity types specified at inference time.
+// Currently supports GLiNER-LFM (LFM2.5 bidirectional backbone).
+// ---------------------------------------------------------------------------
+
+typedef struct crispembed_ner_entity {
+    int start_char;      // character offset in input text
+    int end_char;        // character offset (exclusive)
+    const char * text;   // extracted span (owned by ctx, valid until next call)
+    const char * label;  // entity label (owned by ctx, valid until next call)
+    float score;         // confidence [0, 1]
+} crispembed_ner_entity;
+
+/// Load NER model from GGUF. Auto-detects architecture.
+CRISPEMBED_API void * crispembed_ner_init(const char * model_path, int n_threads);
+
+/// Free NER context.
+CRISPEMBED_API void crispembed_ner_free(void * ctx);
+
+/// Extract named entities with zero-shot labels.
+/// labels: array of entity type strings (e.g. "person", "organization")
+/// n_labels: number of entity types
+/// threshold: confidence threshold (0.0-1.0, recommended 0.5)
+/// Returns entity count; sets *out_entities to result array (owned by ctx).
+CRISPEMBED_API int crispembed_ner_extract(
+    void * ctx, const char * text,
+    const char ** labels, int n_labels,
+    float threshold,
+    crispembed_ner_entity ** out_entities);
+
 #ifdef __cplusplus
 }
 #endif

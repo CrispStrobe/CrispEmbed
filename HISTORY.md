@@ -4,6 +4,34 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — GLiNER zero-shot NER (LFM2.5 backbone)
+
+Added zero-shot Named Entity Recognition via SauerkrautLM-LFM2.5-GLiNER.
+First non-embedding, non-OCR NLP task in CrispEmbed.
+
+**Architecture:** LFM2.5-350M bidirectional backbone (ported from CrispASR's
+LFM2-Audio implementation) with:
+- 16 layers (10 ShortConv + 6 GQA attention), SwiGLU FFN
+- Bidirectional attention (no causal mask) + symmetric conv padding
+- Layer fusion (squeeze-and-excitation with sigmoid gates)
+- BiLSTM (1-layer bidirectional, word-level)
+- GLiNER head: SpanMarkerV1 span representation + dot-product scorer
+
+**Parity (all vs Python reference via diff harness):**
+- All 16 backbone layers: cos=1.000000
+- Layer fusion: cos=1.000000
+- BiLSTM: cos=1.000000
+- End-to-end: 17/17 entities match across 5 test texts, mean score Δ=0.030
+
+**New files:** `src/gliner_ner.{h,cpp}` (C++ runtime), `models/convert-gliner-lfm-to-gguf.py`
+(converter), `tools/dump_gliner_reference.py` (reference dumper), C API
+(`crispembed_ner_*`), server `POST /ner/extract`, Python `CrispNER`, Rust `CrispNER`,
+Dart `CrispNER`.
+
+**License:** LFM Open License v1.0 (free under $10M revenue).
+
+---
+
 ## June 2026 — Qwen2.5-VL OCR engine (German document OCR)
 
 ### Qwen2.5-VL-3B port (feat/keyven-german-ocr branch → merged to main)
@@ -76,6 +104,57 @@ from test invoice image. Prompt: "Extrahiere die Rechnung im Bild als JSON"
 - Load Keyven/german-ocr-3 fine-tuned weights (same arch, different weights)
 - Windowed ViT attention (correct but slower without it)
 - Python bindings, CrispCalc Dart catalog
+
+---
+
+## June 2026 (late) — surya text detector + MixTex LaTeX OCR
+
+### surya-ocr-2 text detector port
+
+EfficientViT-Large segformer (38M params, 91 languages incl. German).
+Segmentation-based text line detection. OpenRail-M license (free <$5M).
+
+**Architecture**: Stem + 4 CNN stages (FusedMBConv, MBConv) + 6
+EfficientVitBlock (LiteMLA linear attention) + SegFormer FPN decode head.
+Input 1200×1200, output 300×300 heatmap → polygon bounding boxes.
+
+**Parity**: Verified exact match vs Python reference (heatmap max=0.9649,
+mean=0.0113, both exact). Per-stage activation means match to 4dp through
+all 10 encoder stages + decode head.
+
+**Performance**: ggml graph acceleration for stages 0-2 + block0
+(17s graph vs ~10min scalar = 35x). Total: ~1 min (was ~13 min).
+
+**Quantized**: F32=147MB, F16=74MB, Q8_0=41MB (3.6x), Q4_K=23MB (6.5x).
+All uploaded to https://huggingface.co/cstr/surya-det-GGUF
+
+**Fully wired**: C ABI (`crispembed_text_det_*`), HTTP server
+(`POST /text/detect`), Python bindings (`CrispTextDetect`), model
+registry with auto-download, test binaries.
+
+**Bugs found and fixed**:
+1. `H /= 2` gives wrong result for odd H (75→37 instead of 38)
+2. Stage 2+3 MBConv used ReLU6 instead of Hardswish
+3. F16 GGUF: bias tensors need F32 cast before ggml_add
+
+### MixTex Chinese+English LaTeX OCR port
+
+Swin-Tiny encoder + 4-layer RoBERTa decoder (86M params, Apache-2.0).
+First Swin (shifted-window attention) encoder in CrispEmbed.
+
+**Architecture**: Patch embed (Conv2d 4×4) → 4 Swin stages
+(depths=[2,2,6,2], window_size=7, shifted windows, relative position
+bias) → patch merging → final LayerNorm → 4-layer RoBERTa decoder
+with cross-attention → BPE tokenizer (25681 tokens, LaTeX + CJK).
+
+**Status**: Runs end-to-end. Encoder produces 208 tokens × 768 dim
+(matches Python). Decoder generates LaTeX via greedy decode with KV cache.
+
+**Bug found**: Swin PatchMerging must pad odd dims before halving
+(125→126→63 not 125→62).
+
+**GGUFs**: F32=329MB, F16=165MB.
+Wired into unified math OCR dispatch (auto-detect from GGUF arch).
 
 ---
 
