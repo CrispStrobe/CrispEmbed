@@ -6,33 +6,36 @@
 # Kaggle setup:
 #   - Accelerator: None (CPU only)
 #   - Internet: ON
-#   - Attach dataset: chr1str/crispasr-hf-token
+#   - Attach dataset: chr1s4/crispasr-hf-token
 
 # %% [code]
 import os, subprocess, sys, shutil, time
 from pathlib import Path
 
 WORK = Path("/kaggle/working")
-CRISPASR = WORK / "CrispASR"
-REPO = WORK / "CrispEmbed"
-BRANCH = "feat/keyven-german-ocr"
+CRISPASR_URL = "https://github.com/CrispStrobe/CrispASR.git"
+_CRISPASR_DIR = WORK / "CrispASR"
 
-# Clone CrispASR first — we need kaggle_harness.py
-print("[0] cloning CrispASR for harness", flush=True)
-if CRISPASR.exists():
-    shutil.rmtree(CRISPASR)
-subprocess.check_call([
-    "git", "clone", "--depth", "1",
-    "https://github.com/CrispStrobe/CrispASR.git", str(CRISPASR),
-])
+# Clone CrispASR for kaggle_harness; fall back to bundled copy
+if not _CRISPASR_DIR.exists():
+    try:
+        subprocess.check_call(["git", "clone", "--depth", "1",
+            CRISPASR_URL, str(_CRISPASR_DIR)])
+        sys.path.insert(0, str(_CRISPASR_DIR / "tools" / "kaggle"))
+    except Exception:
+        pass  # fall through to bundled copy
 
-sys.path.insert(0, str(CRISPASR / "tools" / "kaggle"))
+if str(_CRISPASR_DIR / "tools" / "kaggle") not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kaggle_harness as kh
 kh.init_progress()
 hf_token = kh.resolve_hf_token()
 kh.step("harness_ready", hf_token_ok=bool(hf_token))
 
 # %% [code]
+REPO = WORK / "CrispEmbed"
+BRANCH = "feat/keyven-german-ocr"
+
 print("[1] cloning CrispEmbed", flush=True)
 if REPO.exists():
     shutil.rmtree(REPO)
