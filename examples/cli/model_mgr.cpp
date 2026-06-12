@@ -524,6 +524,18 @@ static const ModelEntry k_registry[] = {
      "Qwen2.5-VL-3B VLM OCR (32-layer ViT + 36-layer Qwen2.5, German docs)", "2610 MB", "apache-2.0",
      "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF"},
 
+    {"gliner-lfm",
+     "gliner-lfm-q8_0.gguf",
+     "https://huggingface.co/cstr/gliner-lfm-GGUF/resolve/main/gliner-lfm-q8_0.gguf",
+     "GLiNER zero-shot NER (LFM2.5-350M bidirectional, 5 languages)", "419 MB", "lfm1.0*",
+     "https://huggingface.co/cstr/gliner-lfm-GGUF"},
+
+    {"gliner-lfm-q4k",
+     "gliner-lfm-q4_k.gguf",
+     "https://huggingface.co/cstr/gliner-lfm-GGUF/resolve/main/gliner-lfm-q4_k.gguf",
+     "GLiNER zero-shot NER (LFM2.5-350M, Q4_K compact)", "254 MB", "lfm1.0*",
+     "https://huggingface.co/cstr/gliner-lfm-GGUF"},
+
     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 
