@@ -1,11 +1,13 @@
-# %% [markdown]
-# # CrispEmbed — Qwen2.5-VL-3B GGUF conversion
-#
-# Convert `Qwen/Qwen2.5-VL-3B-Instruct` to F16 GGUF, upload to HuggingFace.
-
-# %% [code]
 import os, subprocess, sys, shutil, time, traceback
 from pathlib import Path
+
+# Earliest possible breadcrumb — if we see this file, the script started
+_WORK = "/kaggle/working" if os.path.exists("/kaggle/working") else "/tmp/qwen2vl-convert"
+os.makedirs(_WORK, exist_ok=True)
+with open(os.path.join(_WORK, "progress.txt"), "w") as _f:
+    _f.write(f"script_started at {time.time()}\n")
+    _f.write(f"python={sys.version}\n")
+    _f.write(f"cwd={os.getcwd()}\n")
 
 os.environ["PYTHONUNBUFFERED"] = "1"
 try:
@@ -14,8 +16,7 @@ try:
 except Exception:
     pass
 
-WORK = Path("/kaggle/working") if os.path.exists("/kaggle/working") else Path("/tmp/qwen2vl-convert")
-WORK.mkdir(parents=True, exist_ok=True)
+WORK = Path(_WORK)
 
 REPO = WORK / "CrispEmbed"
 BRANCH = "feat/keyven-german-ocr"
