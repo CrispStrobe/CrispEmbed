@@ -808,8 +808,10 @@ static ggml_tensor* g_conv(ggml_context* g, ggml_tensor* x,
 
     // Bias
     if (cl.bias) {
-        int64_t OC = cl.bias->ne[0];
-        ggml_tensor* b = ggml_reshape_3d(g, cl.bias, 1, 1, OC);
+        ggml_tensor* b = cl.bias;
+        if (b->type != GGML_TYPE_F32) b = ggml_cast(g, b, GGML_TYPE_F32);
+        int64_t OC = b->ne[0];
+        b = ggml_reshape_3d(g, b, 1, 1, OC);
         x = ggml_add(g, x, b);
     }
 
