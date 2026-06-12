@@ -750,7 +750,7 @@ fine-tune of this). Architecture: 32-layer ViT (1280d) + spatial merger
 | C++ image preprocessor | DONE | `image_preprocess.cpp` wired into recognize_raw() |
 | BPE tokenizer in C++ | DONE | Vocab+merges in GGUF, loaded at init, set_prompt() tokenizes |
 | GPT-2 byte decoder | DONE | Output is decoded UTF-8 text, not raw token IDs |
-| KV cache | TODO | O(n²)→O(n) per token — ~2 min/token → ~2 sec/token |
+| KV cache | DONE | Prefill extracts K/V, decode uses cache (O(1)/token) |
 | Load Keyven fine-tune | TODO | Same architecture, just different weights |
 | Windowed ViT attention | TODO | Currently full attention all layers (correct but slower) |
 | Python bindings | TODO | Wire via `CrispMathOcr` auto-dispatch |
@@ -765,7 +765,7 @@ qwen2vl_ocr_set_prompt(ctx, "Extrahiere die Rechnung als JSON.");
 The Q4_K model (2.6 GB) + ggml compute graph needs ~5 GB peak RAM.
 OOMs on 8 GB machines — use Kaggle (16 GB) or desktop for inference.
 
-**Next priority:** KV cache (makes generation ~60x faster).
+**Next priority:** Load Keyven fine-tune weights + test on real invoices.
 
 **GGUFs**: `cstr/qwen2.5-vl-3b-crispembed-GGUF` on HuggingFace:
 - `qwen2.5-vl-3b-f16.gguf` — 7.57 GiB (no tokenizer — needs re-convert)
