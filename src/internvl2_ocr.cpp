@@ -688,8 +688,7 @@ llm_graph build_llm_graph(context &ctx, int n_tokens, int n_past,
     ggml_set_input(mask);
 
     auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor * {
-        ggml_tensor *y = ggml_rms_norm(g, t, rms_eps);
-        return ggml_mul(g, y, w);
+        return ggml_mul(g, ggml_rms_norm(g, t, rms_eps), w);
     };
 
     for (int i = 0; i < n_layers; i++) {
@@ -795,6 +794,7 @@ llm_graph build_llm_graph(context &ctx, int n_tokens, int n_past,
 
         // Output projection
         attn_out = ggml_mul_mat(g, ly.o_w, attn_out);
+
         x = ggml_add(g, x, attn_out);
 
         // ── SwiGLU FFN ──
@@ -1109,6 +1109,18 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
                                 T * T * sizeof(ggml_fp16_t));
     }
 
+    // Set splice inputs to identity (no image tokens in parity test)
+    ggml_tensor *splice_m = ggml_graph_get_tensor(lg.gf, "splice_mask");
+    ggml_tensor *img_e = ggml_graph_get_tensor(lg.gf, "image_embeds");
+    if (splice_m) {
+        std::vector<float> ones((size_t)D * T, 1.0f);
+        ggml_backend_tensor_set(splice_m, ones.data(), 0, D * T * sizeof(float));
+    }
+    if (img_e) {
+        std::vector<float> zeros((size_t)D * T, 0.0f);
+        ggml_backend_tensor_set(img_e, zeros.data(), 0, D * T * sizeof(float));
+    }
+
     // Compute
     ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
 
@@ -1141,6 +1153,8 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
                 }
                 free(buf);
             }
+            // Compare debug intermediates (if present in ref)
+            // Dump raw rms_norm output for debugging
             // Compare layer outputs
             for (size_t i = 0; i < lg.layer_outputs.size(); i++) {
                 char name[64];
