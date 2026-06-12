@@ -1,6 +1,6 @@
 {
-  "id": "chr1str/crispembed-qwen2vl-convert",
-  "title": "CrispEmbed — Qwen2.5-VL-3B GGUF conversion",
+  "id": "chr1s4/crispembed-qwen2-5-vl-3b-gguf-conversion",
+  "title": "CrispEmbed Qwen2.5-VL-3B GGUF conversion",
   "code_file": "qwen2vl_convert.py",
   "language": "python",
   "kernel_type": "script",
@@ -8,7 +8,7 @@
   "enable_gpu": false,
   "enable_tpu": false,
   "enable_internet": true,
-  "dataset_sources": ["chr1str/crispasr-hf-token"],
+  "dataset_sources": [],
   "competition_sources": [],
   "kernel_sources": [],
   "model_sources": []
