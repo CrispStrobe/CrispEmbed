@@ -51,36 +51,38 @@ int main(int argc, char **argv) {
     }
     printf("Vision: %d tokens, %d dim\n", vpr.n_image_tokens, vpr.embed_dim);
 
-    // Build InternVL2.5 chat prompt with image placeholders.
-    // Template: <|im_start|>system\n...<|im_end|>\n<|im_start|>user\n<IMG_CONTEXT>*256\n{prompt}<|im_end|>\n<|im_start|>assistant\n
-    // Token IDs from InternLM2 tokenizer (verified via Python):
-    //   <|im_start|> = 92543, <|im_end|> = 92542, <IMG_CONTEXT> = 92546
-    //   "system" = 9081, "user" = 1404, "assistant" = 525 + 11353
-    //   "\n" = 364
+    // Build chat prompt with image placeholders.
+    // Detect tokenizer: InternLM2 (vocab ~92K) vs Qwen2 (vocab ~151K)
     printf("\nGenerating (max %d tokens)...\n", max_tokens);
     int32_t img_token_id = (int32_t)ctx.m.lhp.image_token_id;
     std::vector<int32_t> prompt;
 
-    // <|im_start|>system\nYou are a helpful assistant.<|im_end|>\n
-    int32_t sys_tokens[] = {92543, 9081, 364, 2770, 657, 395, 11100, 17993, 281, 92542, 364};
-    prompt.insert(prompt.end(), sys_tokens, sys_tokens + 11);
-
-    // <|im_start|>user\n
-    int32_t user_start[] = {92543, 1404, 364};
-    prompt.insert(prompt.end(), user_start, user_start + 3);
-
-    // <IMG_CONTEXT> * n_image_tokens
-    for (int i = 0; i < vpr.n_image_tokens; i++) {
-        prompt.push_back(img_token_id);
+    bool is_qwen2 = ctx.m.lhp.vocab_size > 100000;
+    if (is_qwen2) {
+        // Qwen2 tokenizer (InternVL2-1B):
+        //   <|im_start|>=151644 <|im_end|>=151645 <IMG_CONTEXT>=151648 \n=198
+        int32_t sys[] = {151644, 8948, 198, 2610, 525, 264, 10950, 17847, 13, 151645, 198};
+        prompt.insert(prompt.end(), sys, sys + 11);
+        int32_t usr[] = {151644, 872, 198};
+        prompt.insert(prompt.end(), usr, usr + 3);
+        for (int i = 0; i < vpr.n_image_tokens; i++) prompt.push_back(img_token_id);
+        int32_t txt[] = {198, 74785, 419, 2168, 304, 7716, 13, 151645, 198};
+        prompt.insert(prompt.end(), txt, txt + 9);
+        int32_t ast[] = {151644, 77091, 198};
+        prompt.insert(prompt.end(), ast, ast + 3);
+    } else {
+        // InternLM2 tokenizer (InternVL2.5-2B):
+        //   <|im_start|>=92543 <|im_end|>=92542 <IMG_CONTEXT>=92546 \n=364
+        int32_t sys[] = {92543, 9081, 364, 2770, 657, 395, 11100, 17993, 281, 92542, 364};
+        prompt.insert(prompt.end(), sys, sys + 11);
+        int32_t usr[] = {92543, 1404, 364};
+        prompt.insert(prompt.end(), usr, usr + 3);
+        for (int i = 0; i < vpr.n_image_tokens; i++) prompt.push_back(img_token_id);
+        int32_t txt[] = {364, 3471, 2321, 435, 7856, 281, 92542, 364};
+        prompt.insert(prompt.end(), txt, txt + 8);
+        int32_t ast[] = {92543, 525, 11353, 364};
+        prompt.insert(prompt.end(), ast, ast + 4);
     }
-
-    // \nDescribe this image in detail.<|im_end|>\n
-    int32_t user_text[] = {364, 3471, 2321, 435, 7856, 281, 92542, 364};
-    prompt.insert(prompt.end(), user_text, user_text + 8);
-
-    // <|im_start|>assistant\n
-    int32_t asst_start[] = {92543, 525, 11353, 364};
-    prompt.insert(prompt.end(), asst_start, asst_start + 4);
 
     printf("Prompt: %zu tokens (%d image)\n", prompt.size(), vpr.n_image_tokens);
 
