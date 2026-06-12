@@ -1015,28 +1015,54 @@ int gliner_ner_extract(void * ptr,
     GDBG("layer fusion done, running BiLSTM...");
 
     // -----------------------------------------------------------------------
-    // 4. BiLSTM
+    // 4. Extract entity reps + first-subtoken pooling + BiLSTM (word-level)
     // -----------------------------------------------------------------------
 
-    const int lstm_hidden = 512;
-    std::vector<float> lstm_out(T * 2 * lstm_hidden);
-    bilstm_forward(fused_proj.data(), lstm_out.data(),
-                   T, hidden, lstm_hidden, model, ctx->backend);
+    // 4a. Extract entity type representations from fused output at <<ENT>> positions
+    //     This happens BEFORE the BiLSTM — the entity reps come from the fused token embeddings.
+    std::vector<float> ent_hidden_from_fused(n_labels * hidden);
+    for (int i = 0; i < n_labels; i++) {
+        int pos = ent_positions[i];
+        memcpy(ent_hidden_from_fused.data() + i * hidden,
+               fused_proj.data() + pos * hidden,
+               hidden * sizeof(float));
+    }
 
-    // lstm_out: (T, 1024) — same dim as hidden
-    // Compare lstm output against reference
-    // NOTE: Python lstm_out is (n_words, 1024) — only text portion, word-level pooled.
-    // Our lstm_out is (T, 1024) — full sequence. Compare the text-portion subrange.
+    // 4b. First-subtoken pooling: for each word, take the first subtoken's representation
+    //     This converts from token-level to word-level before the BiLSTM.
+    std::vector<int> word_first_token;  // index into text portion tokens
+    {
+        int prev_word = -1;
+        for (int i = 0; i < n_text_tokens; i++) {
+            if (token_to_word[i] != prev_word) {
+                word_first_token.push_back(i);
+                prev_word = token_to_word[i];
+            }
+        }
+    }
+    int n_words = (int)word_first_token.size();
+
+    std::vector<float> word_reps(n_words * hidden);
+    for (int w = 0; w < n_words; w++) {
+        int tok_idx = text_token_start + word_first_token[w];
+        memcpy(word_reps.data() + w * hidden,
+               fused_proj.data() + tok_idx * hidden,
+               hidden * sizeof(float));
+    }
+
+    // 4c. BiLSTM on word-level representations only
+    const int lstm_hidden = 512;
+    std::vector<float> lstm_out(n_words * 2 * lstm_hidden);
+    bilstm_forward(word_reps.data(), lstm_out.data(),
+                   n_words, hidden, lstm_hidden, model, ctx->backend);
+
+    // lstm_out: (n_words, 1024) — word-level bidirectional hidden states
+    // Compare lstm output against reference (now word-level, should match)
     if (diff_ref_path) {
         crispembed_diff::Ref ref;
         if (ref.load(diff_ref_path)) {
-            // The Python reference lstm_out has shape (n_words, 1024) = word-level.
-            // Our lstm_out has shape (T, 2*lstm_hidden) = (T, 1024) = token-level full seq.
-            // For now, compare the full-sequence lstm output.
-            // The mismatch tells us: Python does word-level pooling BEFORE the LSTM.
-            auto r = ref.compare("lstm_out", lstm_out.data() + text_token_start * 2 * lstm_hidden,
-                                 n_text_tokens * 2 * lstm_hidden);
-            fprintf(stderr, "[gliner-diff] lstm_out (text portion): cos=%.6f max_abs=%.2e %s\n",
+            auto r = ref.compare("lstm_out", lstm_out.data(), n_words * 2 * lstm_hidden);
+            fprintf(stderr, "[gliner-diff] lstm_out: cos=%.6f max_abs=%.2e %s\n",
                     r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
         }
     }
@@ -1047,22 +1073,15 @@ int gliner_ner_extract(void * ptr,
     // 5. GLiNER head (CPU)
     // -----------------------------------------------------------------------
 
-    // 5a. Entity type representations: extract <<ENT>> positions → prompt_rep MLP
+    // 5a. Entity type representations: from fused output at <<ENT>> positions → prompt_rep MLP
+    //     (entity reps come from fused token embeddings, NOT BiLSTM output)
     auto prompt_rep_0_w = read_tensor(model.prompt_rep_0_w);
     auto prompt_rep_0_b = read_tensor(model.prompt_rep_0_b);
     auto prompt_rep_3_w = read_tensor(model.prompt_rep_3_w);
     auto prompt_rep_3_b = read_tensor(model.prompt_rep_3_b);
 
-    std::vector<float> ent_hidden(n_labels * hidden);
-    for (int i = 0; i < n_labels; i++) {
-        int pos = ent_positions[i];
-        memcpy(ent_hidden.data() + i * hidden,
-               lstm_out.data() + pos * hidden,
-               hidden * sizeof(float));
-    }
-
     std::vector<float> ent_reps(n_labels * hidden);
-    mlp_2layer(ent_hidden.data(), ent_reps.data(),
+    mlp_2layer(ent_hidden_from_fused.data(), ent_reps.data(),
                n_labels, hidden, 4096, hidden,
                prompt_rep_0_w.data(), prompt_rep_0_b.data(),
                prompt_rep_3_w.data(), prompt_rep_3_b.data());
@@ -1090,32 +1109,26 @@ int gliner_ner_extract(void * ptr,
     auto sp_out_3_w   = read_tensor(model.span_out_proj_3_w);
     auto sp_out_3_b   = read_tensor(model.span_out_proj_3_b);
 
-    // Project all text tokens through start, end, and first projections
-    std::vector<float> text_hidden(n_text_tokens * hidden);
-    for (int i = 0; i < n_text_tokens; i++) {
-        memcpy(text_hidden.data() + i * hidden,
-               lstm_out.data() + (text_token_start + i) * hidden,
-               hidden * sizeof(float));
-    }
-
-    std::vector<float> proj_start_all(n_text_tokens * hidden);
-    std::vector<float> proj_end_all(n_text_tokens * hidden);
-    mlp_2layer(text_hidden.data(), proj_start_all.data(),
-               n_text_tokens, hidden, 4096, hidden,
+    // Project all WORD-LEVEL representations through start, end, and first projections
+    // (using BiLSTM output, which is word-level)
+    std::vector<float> proj_start_all(n_words * hidden);
+    std::vector<float> proj_end_all(n_words * hidden);
+    mlp_2layer(lstm_out.data(), proj_start_all.data(),
+               n_words, hidden, 4096, hidden,
                sp_start_0_w.data(), sp_start_0_b.data(),
                sp_start_3_w.data(), sp_start_3_b.data());
-    mlp_2layer(text_hidden.data(), proj_end_all.data(),
-               n_text_tokens, hidden, 4096, hidden,
+    mlp_2layer(lstm_out.data(), proj_end_all.data(),
+               n_words, hidden, 4096, hidden,
                sp_end_0_w.data(), sp_end_0_b.data(),
                sp_end_3_w.data(), sp_end_3_b.data());
 
-    // Project first token (CLS-like) — use mean of all text tokens
+    // Project first token (CLS-like) — mean of all word representations
     std::vector<float> first_token(hidden, 0.0f);
-    for (int i = 0; i < n_text_tokens; i++)
+    for (int w = 0; w < n_words; w++)
         for (int d = 0; d < hidden; d++)
-            first_token[d] += text_hidden[i * hidden + d];
+            first_token[d] += lstm_out[w * hidden + d];
     for (int d = 0; d < hidden; d++)
-        first_token[d] /= n_text_tokens;
+        first_token[d] /= n_words;
 
     std::vector<float> proj_first(hidden);
     mlp_2layer(first_token.data(), proj_first.data(),
@@ -1123,29 +1136,17 @@ int gliner_ner_extract(void * ptr,
                sp_first_0_w.data(), sp_first_0_b.data(),
                sp_first_3_w.data(), sp_first_3_b.data());
 
-    // Read scorer temperature
+    // -----------------------------------------------------------------------
+    // 5c. Score all spans against all entity types
+    //     Score = einsum("BLKD,BCD->BLKC") = dot product of span_rep and ent_rep
+    //     No temperature scaling in forward — that's applied during decoding.
+    // -----------------------------------------------------------------------
+
+    // Read scorer temperature (applied during sigmoid scoring)
     float log_temp;
     ggml_backend_tensor_get(model.scorer_log_temp, &log_temp, 0, sizeof(float));
     float temperature = expf(log_temp);
     GDBG("scorer temperature: exp(%f) = %f", log_temp, temperature);
-
-    // -----------------------------------------------------------------------
-    // 5c. Score all spans against all entity types
-    // -----------------------------------------------------------------------
-
-    // Map text token indices to word indices for span enumeration
-    // We enumerate spans at the word level (using first subtoken of each word)
-    std::vector<int> word_first_token;  // first token index (in text portion) for each word
-    {
-        int prev_word = -1;
-        for (int i = 0; i < n_text_tokens; i++) {
-            if (token_to_word[i] != prev_word) {
-                word_first_token.push_back(i);
-                prev_word = token_to_word[i];
-            }
-        }
-    }
-    int n_words = (int)word_first_token.size();
 
     struct ScoredSpan {
         int word_start, word_end;  // word-level indices (inclusive)
@@ -1157,17 +1158,11 @@ int gliner_ner_extract(void * ptr,
     int max_w = (int)hp.max_width;
     for (int ws = 0; ws < n_words; ws++) {
         for (int we = ws; we < std::min(ws + max_w, n_words); we++) {
-            // Start token = first subtoken of word ws
-            int start_tok = word_first_token[ws];
-            // End token = last subtoken of word we
-            int end_tok = (we + 1 < n_words) ? word_first_token[we + 1] - 1
-                                             : n_text_tokens - 1;
-
-            // Compute span representation: concat(proj_start[start], proj_end[end], proj_first)
+            // Span representation: concat(proj_start[ws], proj_end[we], proj_first)
             std::vector<float> span_input(3 * hidden);
-            memcpy(span_input.data(), proj_start_all.data() + start_tok * hidden,
+            memcpy(span_input.data(), proj_start_all.data() + ws * hidden,
                    hidden * sizeof(float));
-            memcpy(span_input.data() + hidden, proj_end_all.data() + end_tok * hidden,
+            memcpy(span_input.data() + hidden, proj_end_all.data() + we * hidden,
                    hidden * sizeof(float));
             memcpy(span_input.data() + 2 * hidden, proj_first.data(),
                    hidden * sizeof(float));
@@ -1179,12 +1174,14 @@ int gliner_ner_extract(void * ptr,
                        sp_out_0_w.data(), sp_out_0_b.data(),
                        sp_out_3_w.data(), sp_out_3_b.data());
 
-            // Score against each entity type: dot(span_rep, ent_rep) * temperature
+            // Score against each entity type: sigmoid(dot(span_rep, ent_rep))
+            // Note: log_score_temperature exists in weights but is NOT used by
+            // GLiNER's inference code — raw dot product → sigmoid.
             for (int e = 0; e < n_labels; e++) {
                 float dot = 0.0f;
                 for (int d = 0; d < hidden; d++)
                     dot += span_rep[d] * ent_reps[e * hidden + d];
-                float score = 1.0f / (1.0f + expf(-(dot * temperature)));
+                float score = 1.0f / (1.0f + expf(-dot));
 
                 // Debug: show top scores
                 if (g_debug && score > 0.01f) {
