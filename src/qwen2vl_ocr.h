@@ -140,6 +140,9 @@ struct context {
     model m;
     ggml_context *model_ctx = nullptr;
     ggml_backend_buffer_t model_buf = nullptr;
+    // Second buffer for mmproj (split GGUF loading)
+    ggml_context *mmproj_ctx = nullptr;
+    ggml_backend_buffer_t mmproj_buf = nullptr;
 
     ggml_backend_t backend = nullptr;
     ggml_backend_t backend_cpu = nullptr;
@@ -155,8 +158,10 @@ struct context {
 
 // ── API ──────────────────────────────────────────────────────────────
 
-// Load model from GGUF file.
-bool load(context &ctx, const char *gguf_path, int n_threads = 4, int verbosity = 1);
+// Load model from GGUF file. For llama.cpp split format (Keyven etc.),
+// pass the vision encoder mmproj GGUF as the second path.
+bool load(context &ctx, const char *gguf_path, int n_threads = 4, int verbosity = 1,
+          const char *mmproj_path = nullptr);
 
 // Free model resources.
 void free_(context &ctx);
@@ -228,6 +233,8 @@ extern "C" {
 typedef struct qwen2vl_ocr_context qwen2vl_ocr_context;
 
 qwen2vl_ocr_context * qwen2vl_ocr_init(const char * model_path, int n_threads);
+qwen2vl_ocr_context * qwen2vl_ocr_init_split(
+    const char * llm_path, const char * mmproj_path, int n_threads);
 void qwen2vl_ocr_free(qwen2vl_ocr_context * ctx);
 
 // Set the text prompt for generation (default: "Describe this image.")
