@@ -1358,3 +1358,163 @@ class CrispOcrPipeline {
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Named Entity Recognition (GLiNER)
+// ---------------------------------------------------------------------------
+
+/// A single named entity extracted by CrispNER.
+class NerEntity {
+  final String text;
+  final String label;
+  final int start;
+  final int end;
+  final double score;
+
+  const NerEntity({
+    required this.text,
+    required this.label,
+    required this.start,
+    required this.end,
+    required this.score,
+  });
+
+  @override
+  String toString() =>
+      'NerEntity("$text", label=$label, [$start, $end), score=${score.toStringAsFixed(4)})';
+}
+
+/// GLiNER zero-shot named entity recognition.
+///
+/// ```dart
+/// final ner = CrispNER('gliner-lfm.gguf');
+/// final entities = ner.extract(
+///   'John works at Google in New York.',
+///   labels: ['person', 'organization', 'location'],
+/// );
+/// for (final e in entities) {
+///   print(e);
+/// }
+/// ner.dispose();
+/// ```
+class CrispNER {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedNerFreeDart _freeFn;
+  late final CrispembedNerExtractDart _extractFn;
+
+  /// Load a NER GGUF model (auto-detects architecture).
+  ///
+  /// [modelPath] -- path to the `.gguf` model file.
+  /// [nThreads] -- CPU thread count (0 = auto-detect).
+  /// [libPath] -- optional path to the shared library.
+  CrispNER(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+
+    final init = _lib.lookupFunction<CrispembedNerInitNative,
+        CrispembedNerInitDart>('crispembed_ner_init');
+    _freeFn = _lib.lookupFunction<CrispembedNerFreeNative,
+        CrispembedNerFreeDart>('crispembed_ner_free');
+    _extractFn = _lib.lookupFunction<CrispembedNerExtractNative,
+        CrispembedNerExtractDart>('crispembed_ner_extract');
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = init(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load NER model: $modelPath');
+    }
+  }
+
+  /// Extract named entities from [text] using zero-shot [labels].
+  ///
+  /// [labels] -- entity types to detect (e.g. `['person', 'organization']`).
+  /// [threshold] -- confidence threshold in [0, 1] (default 0.5).
+  ///
+  /// Returns a list of [NerEntity] results.
+  List<NerEntity> extract(String text, {
+    List<String> labels = const ['person', 'organization', 'location'],
+    double threshold = 0.5,
+  }) {
+    _checkDisposed();
+
+    final textPtr = text.toNativeUtf8();
+    final nLabels = labels.length;
+    final labelPtrs = calloc<Pointer<Utf8>>(nLabels);
+    final nativeLabelPtrs = <Pointer<Utf8>>[];
+    for (var i = 0; i < nLabels; i++) {
+      final p = labels[i].toNativeUtf8();
+      nativeLabelPtrs.add(p);
+      labelPtrs[i] = p;
+    }
+    final outEntitiesPtr = calloc<Pointer<Void>>();
+
+    try {
+      final n = _extractFn(
+          _ctx, textPtr, labelPtrs, nLabels, threshold, outEntitiesPtr);
+      if (n <= 0) return [];
+
+      final entPtr = outEntitiesPtr.value;
+      if (entPtr == nullptr) return [];
+
+      // crispembed_ner_entity layout:
+      //   int start_char, int end_char, const char* text, const char* label, float score
+      final structSize = 2 * sizeOf<Int32>() + 2 * sizeOf<Pointer>() + sizeOf<Float>();
+      final results = <NerEntity>[];
+      for (var i = 0; i < n; i++) {
+        final base = entPtr.cast<Uint8>().elementAt(i * structSize);
+        final ints = base.cast<Int32>();
+        final startChar = ints[0];
+        final endChar = ints[1];
+        // text pointer at offset 2 * sizeof(int32)
+        final textPtrAddr = base.elementAt(2 * sizeOf<Int32>()).cast<Pointer<Utf8>>();
+        final entityText = textPtrAddr.value != nullptr
+            ? textPtrAddr.value.toDartString()
+            : '';
+        // label pointer at offset 2 * sizeof(int32) + sizeof(pointer)
+        final labelPtrAddr = base
+            .elementAt(2 * sizeOf<Int32>() + sizeOf<Pointer>())
+            .cast<Pointer<Utf8>>();
+        final entityLabel = labelPtrAddr.value != nullptr
+            ? labelPtrAddr.value.toDartString()
+            : '';
+        // score at offset 2 * sizeof(int32) + 2 * sizeof(pointer)
+        final scorePtr = base
+            .elementAt(2 * sizeOf<Int32>() + 2 * sizeOf<Pointer>())
+            .cast<Float>();
+        final score = scorePtr.value;
+
+        results.add(NerEntity(
+          text: entityText,
+          label: entityLabel,
+          start: startChar,
+          end: endChar,
+          score: score,
+        ));
+      }
+      return results;
+    } finally {
+      calloc.free(textPtr);
+      for (final p in nativeLabelPtrs) {
+        calloc.free(p);
+      }
+      calloc.free(labelPtrs);
+      calloc.free(outEntitiesPtr);
+    }
+  }
+
+  /// Release all native resources. Must be called when done.
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispNER has been disposed');
+  }
+}
