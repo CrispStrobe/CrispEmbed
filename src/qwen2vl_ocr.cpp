@@ -920,6 +920,18 @@ bool run_llm_forward(context &ctx,
         ggml_set_output(x);
     }
 
+    // LM head (logits) — compute in graph to handle quantized weights
+    ggml_tensor *lm_head = ctx.m.lm_head_w;
+    if (!lm_head && lhp.tie_word_embeddings && ctx.m.embed_tokens) {
+        lm_head = ctx.m.embed_tokens;
+    }
+    if (lm_head) {
+        ggml_tensor *logits = ggml_mul_mat(g, lm_head, x);
+        ggml_set_name(logits, "logits");
+        ggml_set_output(logits);
+        x = logits;
+    }
+
     ggml_build_forward_expand(gf, x);
 
     // Allocate and compute
@@ -1049,10 +1061,20 @@ bool run_llm_forward(context &ctx,
     // Read outputs
     out.n_tokens = n_tokens;
     out.hidden_dim = D;
-    out.hidden = (float *)malloc((size_t)n_tokens * D * sizeof(float));
 
+    // Read logits if available (for generation)
+    ggml_tensor *logits_t = ggml_graph_get_tensor(gf, "logits");
+    if (logits_t) {
+        int V = (int)logits_t->ne[0];
+        out.vocab_size = V;
+        out.logits = (float *)malloc((size_t)n_tokens * V * sizeof(float));
+        ggml_backend_tensor_get(logits_t, out.logits, 0,
+                                (size_t)n_tokens * V * sizeof(float));
+    }
+
+    // Read hidden states
+    out.hidden = (float *)malloc((size_t)n_tokens * D * sizeof(float));
     ggml_tensor *final_out = ggml_graph_get_tensor(gf, "llm_final_norm");
-    if (!final_out) final_out = ggml_graph_get_tensor(gf, x->name);
     if (final_out) {
         ggml_backend_tensor_get(final_out, out.hidden, 0,
                                 (size_t)n_tokens * D * sizeof(float));
@@ -1115,16 +1137,7 @@ bool generate(context &ctx,
               generate_result &out) {
     const auto &lhp = ctx.m.lhp;
     const int D = (int)lhp.hidden_size;
-
-    // Need lm_head for logits
-    ggml_tensor *lm_head = ctx.m.lm_head_w;
-    if (!lm_head && lhp.tie_word_embeddings && ctx.m.embed_tokens) {
-        lm_head = ctx.m.embed_tokens;
-    }
-    if (!lm_head) {
-        fprintf(stderr, "qwen2vl_ocr: no lm_head weights for generation\n");
-        return false;
-    }
+    const int V = (int)lhp.vocab_size;
 
     // Build image input struct
     image_input img_in = {};
@@ -1132,69 +1145,52 @@ bool generate(context &ctx,
     if (image_embeds && n_image_tokens > 0) {
         img_in.image_embeds = image_embeds;
         img_in.n_image_tokens = n_image_tokens;
-        // Compute grid from n_image_tokens (square-ish)
-        // For now, pass through — caller should provide grid
         img_in.grid_thw = grid_thw_dummy;
         img_in.n_images = 1;
     }
 
-    // Start with prompt tokens
     std::vector<int32_t> all_tokens(prompt_token_ids,
                                      prompt_token_ids + n_prompt_tokens);
 
-    int eos_id = -1;
-    // Try common EOS IDs
-    if (lhp.vocab_size > 151645) eos_id = 151645;  // Qwen <|im_end|>
+    int eos_id = 151645;  // Qwen <|im_end|>
 
     for (int gen = 0; gen < max_new_tokens; gen++) {
-        // Run forward pass on full sequence
         llm_result fwd = {};
         bool ok = run_llm_forward(ctx, all_tokens.data(), (int)all_tokens.size(),
                                    fwd, (gen == 0 && img_in.image_embeds) ? &img_in : nullptr);
-        if (!ok || !fwd.hidden) {
+        if (!ok || !fwd.logits) {
             if (fwd.hidden) free(fwd.hidden);
+            if (fwd.logits) free(fwd.logits);
+            fprintf(stderr, "qwen2vl_ocr: forward pass failed at gen step %d\n", gen);
             return false;
         }
 
-        // Get logits at last position via lm_head matmul on CPU
-        // hidden: ne=(D, n_tokens) — last token's hidden is at offset (n-1)*D
-        const float *last_hidden = fwd.hidden + ((int)all_tokens.size() - 1) * D;
+        // Greedy: argmax logits at last position
+        // logits layout: (V, n_tokens) in ggml column-major
+        // last token's logits: offset (n-1)*V
+        const int n = (int)all_tokens.size();
+        const float *last_logits = fwd.logits + (size_t)(n - 1) * V;
 
-        // lm_head matmul: logits = last_hidden @ lm_head.T
-        // lm_head ne=(D, V), last_hidden is (D,)
-        // We need to compute on CPU since lm_head is in the model buffer
-        int V = (int)lhp.vocab_size;
-        std::vector<float> lm_head_data((size_t)V * D);
-        ggml_backend_tensor_get(lm_head, lm_head_data.data(), 0,
-                                lm_head_data.size() * sizeof(float));
-
-        // Compute logits via dot product
         int best_id = 0;
         float best_score = -INFINITY;
         for (int v = 0; v < V; v++) {
-            float score = 0;
-            const float *w = lm_head_data.data() + (size_t)v * D;
-            for (int d = 0; d < D; d++) {
-                score += last_hidden[d] * w[d];
-            }
-            if (score > best_score) {
-                best_score = score;
+            if (last_logits[v] > best_score) {
+                best_score = last_logits[v];
                 best_id = v;
             }
         }
 
-        free(fwd.hidden);
+        if (fwd.hidden) free(fwd.hidden);
+        free(fwd.logits);
 
         out.token_ids.push_back(best_id);
 
-        if (ctx.verbosity >= 2) {
+        if (ctx.verbosity >= 1) {
             fprintf(stderr, "  gen[%d]: token=%d score=%.2f\n", gen, best_id, best_score);
         }
 
-        // Check EOS
         if (best_id == eos_id) break;
 
-        // Append for next iteration
         all_tokens.push_back(best_id);
     }
 
