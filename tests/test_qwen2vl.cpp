@@ -9,6 +9,7 @@
 //   ./test-qwen2vl <model.gguf> <ref.gguf>   # smoke + parity diff
 
 #include "qwen2vl_ocr.h"
+#include "../ggml/examples/stb_image.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -77,11 +78,34 @@ int main(int argc, char **argv) {
     const char *result = qwen2vl_ocr_recognize_raw(ctx, nullptr, 100, 100, 3, &out_len);
     CHECK(result == nullptr, "recognize_raw(NULL pixels) returns NULL");
 
-    // Parity test if reference provided
+    // Live test: run full pipeline on a test image
     if (argc >= 3) {
-        printf("\n[8] Parity test (ref: %s)\n", argv[2]);
-        // Delegate to test-qwen2vl-diff which has full diff harness
-        printf("  (run test-qwen2vl-diff for full parity)\n");
+        const char *image_path = argv[2];
+        printf("\n[8] Live OCR test (image: %s)\n", image_path);
+
+        // Load image via stb_image
+        FILE *fp = fopen(image_path, "rb");
+        if (fp) {
+            fclose(fp);
+            int w = 0, h = 0, ch = 0;
+            unsigned char *img = stbi_load(image_path, &w, &h, &ch, 3);
+            if (img) {
+                printf("  Image: %dx%d (%d ch)\n", w, h, ch);
+                qwen2vl_ocr_set_max_tokens(ctx, 8);  // short for testing
+                int out_len = 0;
+                const char *result = qwen2vl_ocr_recognize_raw(ctx, img, w, h, 3, &out_len);
+                stbi_image_free(img);
+                CHECK(result != nullptr, "recognize_raw returned non-NULL");
+                if (result) {
+                    printf("  Output (%d chars): %s\n", out_len, result);
+                    CHECK(out_len > 0, "output has content");
+                }
+            } else {
+                printf("  Failed to load image\n");
+            }
+        } else {
+            printf("  Image file not found: %s\n", image_path);
+        }
     }
 
     qwen2vl_ocr_free(ctx);
