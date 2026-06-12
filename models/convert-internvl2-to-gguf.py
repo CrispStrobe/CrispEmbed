@@ -258,10 +258,17 @@ def main():
 
     model_name = args.model.split("/")[-1] if "/" in args.model else Path(args.model).name
     writer.add_string("general.name", model_name)
-    writer.add_string("general.architecture", ARCH)
+
+    # Apply layer limits early so metadata is written once
+    n_vis_export = vis_layers
+    if args.max_vis_layers is not None:
+        n_vis_export = min(n_vis_export, args.max_vis_layers)
+    n_llm_export = llm_layers
+    if args.max_llm_layers is not None:
+        n_llm_export = min(n_llm_export, args.max_llm_layers)
 
     # Vision metadata
-    writer.add_uint32(f"{ARCH}.vision.num_hidden_layers", vis_layers)
+    writer.add_uint32(f"{ARCH}.vision.num_hidden_layers", n_vis_export)
     writer.add_uint32(f"{ARCH}.vision.hidden_size", vis_hidden)
     writer.add_uint32(f"{ARCH}.vision.intermediate_size", vis_inter)
     writer.add_uint32(f"{ARCH}.vision.num_attention_heads", vis_heads)
@@ -285,7 +292,7 @@ def main():
     writer.add_uint32(f"{ARCH}.vocab_size", llm_vocab)
     writer.add_uint32(f"{ARCH}.hidden_size", llm_hidden)
     writer.add_uint32(f"{ARCH}.intermediate_size", llm_inter)
-    writer.add_uint32(f"{ARCH}.num_hidden_layers", llm_layers)
+    writer.add_uint32(f"{ARCH}.num_hidden_layers", n_llm_export)
     writer.add_uint32(f"{ARCH}.num_attention_heads", llm_heads)
     writer.add_uint32(f"{ARCH}.num_key_value_heads", llm_kv_heads)
     writer.add_uint32(f"{ARCH}.max_position_embeddings", llm_max_pos)
@@ -377,10 +384,7 @@ def main():
            "vision_model.embeddings.position_embedding", force_f32=True)
 
         # Vision transformer layers
-        n_vis_export = vis_layers
-        if args.max_vis_layers is not None:
-            n_vis_export = min(n_vis_export, args.max_vis_layers)
-            writer.add_uint32(f"{ARCH}.vision.num_hidden_layers", n_vis_export)
+        if n_vis_export < vis_layers:
             print(f"  Vision: exporting first {n_vis_export} of {vis_layers} layers")
 
         for i in range(n_vis_export):
@@ -447,10 +451,7 @@ def main():
            "language_model.model.tok_embeddings.weight", force_f32=True)
 
         # Decoder layers
-        n_llm_export = llm_layers
-        if args.max_llm_layers is not None:
-            n_llm_export = min(n_llm_export, args.max_llm_layers)
-            writer.add_uint32(f"{ARCH}.num_hidden_layers", n_llm_export)
+        if n_llm_export < llm_layers:
             print(f"  LLM: exporting first {n_llm_export} of {llm_layers} layers")
 
         for i in range(n_llm_export):
