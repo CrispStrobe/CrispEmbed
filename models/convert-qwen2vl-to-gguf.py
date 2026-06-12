@@ -112,13 +112,24 @@ def main():
         wt = f32
 
     print(f"Loading config: {args.model}")
-    config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
 
     from safetensors import safe_open
 
     # Resolve model files — support both HF repo IDs and local directories
     model_path = Path(args.model)
     is_local = model_path.is_dir()
+
+    # Load config.json directly for robustness (AutoConfig varies by transformers version)
+    if is_local:
+        config_json_path = model_path / "config.json"
+    else:
+        from huggingface_hub import hf_hub_download
+        config_json_path = Path(hf_hub_download(args.model, "config.json"))
+    with open(config_json_path) as f:
+        raw_config = json.load(f)
+
+    # Also load AutoConfig for vision_config object (but don't rely on it for text params)
+    config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
 
     def resolve_file(filename):
         """Resolve a model file — local path or HF download."""
@@ -180,34 +191,27 @@ def main():
     writer.add_string("general.name", model_name)
     writer.add_string("general.architecture", ARCH)
 
-    # LLM config — Qwen2_5_VLConfig nests text params in text_config.
-    # Some transformers versions don't propagate all attrs to text_config,
-    # so we fall back to the top-level config for any missing attr.
-    _tc = getattr(config, "text_config", config)
-    class _FallbackConfig:
-        """Proxy that tries text_config first, then top-level config."""
-        def __getattr__(self, name):
-            val = getattr(_tc, name, None)
-            if val is None:
-                val = getattr(config, name, None)
-            if val is None:
-                raise AttributeError(f"Neither text_config nor config has '{name}'")
-            return val
-    tc = _FallbackConfig()
-    writer.add_uint32("qwen2vl.vocab_size", int(tc.vocab_size))
-    writer.add_uint32("qwen2vl.hidden_size", int(tc.hidden_size))
-    writer.add_uint32("qwen2vl.intermediate_size", int(tc.intermediate_size))
-    writer.add_uint32("qwen2vl.num_hidden_layers", int(tc.num_hidden_layers))
-    writer.add_uint32("qwen2vl.num_attention_heads", int(tc.num_attention_heads))
-    writer.add_uint32("qwen2vl.num_key_value_heads", int(tc.num_key_value_heads))
-    writer.add_uint32("qwen2vl.max_position_embeddings", int(tc.max_position_embeddings))
-    writer.add_float32("qwen2vl.rms_norm_eps", float(tc.rms_norm_eps))
-    writer.add_float32("qwen2vl.rope_theta", float(tc.rope_theta))
-    tie = getattr(tc, "tie_word_embeddings", getattr(config, "tie_word_embeddings", True))
-    writer.add_bool("qwen2vl.tie_word_embeddings", bool(tie))
+    # LLM config — read from raw JSON for robustness across transformers versions.
+    # Qwen2_5_VLConfig nests text params variously depending on version.
+    rc = raw_config  # raw config.json dict
+    tc_json = rc.get("text_config", rc)  # text config section or top-level
+    def tcv(key, default=None):
+        """Get text config value from JSON, falling back to top-level."""
+        return tc_json.get(key, rc.get(key, default))
+
+    writer.add_uint32("qwen2vl.vocab_size", int(tcv("vocab_size", 151936)))
+    writer.add_uint32("qwen2vl.hidden_size", int(tcv("hidden_size", 2048)))
+    writer.add_uint32("qwen2vl.intermediate_size", int(tcv("intermediate_size", 11008)))
+    writer.add_uint32("qwen2vl.num_hidden_layers", int(tcv("num_hidden_layers", 36)))
+    writer.add_uint32("qwen2vl.num_attention_heads", int(tcv("num_attention_heads", 16)))
+    writer.add_uint32("qwen2vl.num_key_value_heads", int(tcv("num_key_value_heads", 2)))
+    writer.add_uint32("qwen2vl.max_position_embeddings", int(tcv("max_position_embeddings", 128000)))
+    writer.add_float32("qwen2vl.rms_norm_eps", float(tcv("rms_norm_eps", 1e-6)))
+    writer.add_float32("qwen2vl.rope_theta", float(tcv("rope_theta", 1000000.0)))
+    writer.add_bool("qwen2vl.tie_word_embeddings", bool(tcv("tie_word_embeddings", True)))
 
     # mRoPE sections
-    rope_scaling = getattr(tc, "rope_scaling", getattr(config, "rope_scaling", None))
+    rope_scaling = tcv("rope_scaling")
     if rope_scaling and "mrope_section" in rope_scaling:
         sections = rope_scaling["mrope_section"]
         writer.add_array("qwen2vl.rope_sections", [int(x) for x in sections])
@@ -233,9 +237,9 @@ def main():
                          [int(x) for x in vc.fullatt_block_indexes])
         print(f"  Vision fullatt blocks: {list(vc.fullatt_block_indexes)}")
 
-    print(f"  LLM: {tc.num_hidden_layers}L, {tc.hidden_size}d, "
-          f"{tc.num_attention_heads}H/{tc.num_key_value_heads}KV, "
-          f"inter={tc.intermediate_size}")
+    print(f"  LLM: {tcv('num_hidden_layers')}L, {tcv('hidden_size')}d, "
+          f"{tcv('num_attention_heads')}H/{tcv('num_key_value_heads')}KV, "
+          f"inter={tcv('intermediate_size')}")
     print(f"  Vision: {vc.depth}L, {vc.hidden_size}d, {vc.num_heads}H, "
           f"patch={vc.spatial_patch_size}, merge={vc.spatial_merge_size}, "
           f"out={vc.out_hidden_size}")
@@ -377,11 +381,11 @@ def main():
         lw(LPFX + "embed_tokens.weight", "model.embed_tokens.weight")
 
         # Decoder layers
-        n_llm_layers = int(tc.num_hidden_layers)
+        n_llm_layers = int(tcv("num_hidden_layers", 36))
         if args.max_llm_layers is not None:
             n_llm_layers = min(n_llm_layers, args.max_llm_layers)
             writer.add_uint32("qwen2vl.num_hidden_layers", n_llm_layers)
-            print(f"  LLM: exporting first {n_llm_layers} of {tc.num_hidden_layers} layers")
+            print(f"  LLM: exporting first {n_llm_layers} of {tcv('num_hidden_layers')} layers")
         for i in range(n_llm_layers):
             p = f"model.layers.{i}."
             q = f"{LPFX}blk.{i}."
@@ -411,7 +415,7 @@ def main():
         # LM head (may be tied to embed_tokens)
         if "lm_head.weight" in all_tensor_names:
             lw(LPFX + "lm_head.weight", "lm_head.weight")
-        elif tc.tie_word_embeddings:
+        elif tcv("tie_word_embeddings", True):
             writer.add_bool("qwen2vl.tie_word_embeddings", True)
             print("  lm_head: tied to embed_tokens")
         else:
