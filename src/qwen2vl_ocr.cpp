@@ -297,7 +297,7 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         x = ggml_add(g, x, ctx.m.patch_embed_b);
     }
     ggml_set_name(x, "patch_embed_out");
-    ggml_set_output(x);  // prevent memory reuse — needed for diff comparison
+    if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
 
     // ── RMSNorm helper ──
     auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor * {
@@ -396,7 +396,7 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         char name[64];
         std::snprintf(name, sizeof(name), "vis_layer_%u", il);
         ggml_set_name(x, name);
-        ggml_set_output(x);  // prevent memory reuse for diff comparison
+        if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
     }
 
     // ── Merger (LayerNorm → spatial merge on CPU → FC1 → GELU → FC2) ──
@@ -791,7 +791,7 @@ bool run_llm_forward(context &ctx,
     }
 
     ggml_set_name(x, "llm_embed");
-    ggml_set_output(x);
+    if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
 
     // Causal mask: (n_tokens, n_tokens) with -inf for future positions
     ggml_tensor *causal_mask = ggml_new_tensor_2d(g, GGML_TYPE_F32,
@@ -911,14 +911,14 @@ bool run_llm_forward(context &ctx,
         char name[64];
         std::snprintf(name, sizeof(name), "llm_layer_%d", il);
         ggml_set_name(x, name);
-        ggml_set_output(x);
+        if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
     }
 
     // Final RMSNorm
     if (ctx.m.output_norm_w) {
         x = rmsnorm(x, ctx.m.output_norm_w);
         ggml_set_name(x, "llm_final_norm");
-        ggml_set_output(x);
+        if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
     }
 
     // LM head (logits) — compute in graph to handle quantized weights
