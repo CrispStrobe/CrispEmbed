@@ -124,6 +124,9 @@ test_code = f"""
 #include "qwen2vl_ocr.h"
 #include <cstdio>
 
+extern "C" unsigned char *stbi_load(const char *, int *, int *, int *, int);
+extern "C" void stbi_image_free(void *);
+
 int main() {{
     printf("Loading split model...\\n");
     qwen2vl_ocr_context *ctx = qwen2vl_ocr_init_split(
@@ -145,14 +148,9 @@ int main() {{
         ctx, NULL, 0, 0, 0, &out_len);  // NULL test
     printf("NULL test: %s\\n", result ? "non-null" : "null (correct)");
 
-    // Load actual image
-    FILE *fp = fopen("{test_img}", "rb");
-    if (fp) {{
-        fclose(fp);
-        // Use stb_image
-        #define STB_IMAGE_IMPLEMENTATION
-        #include "../ggml/examples/stb_image.h"
-        int w, h, ch;
+    // Load actual image via stb_image (symbol from libcrispembed)
+    {{
+        int w = 0, h = 0, ch = 0;
         unsigned char *pixels = stbi_load("{test_img}", &w, &h, &ch, 3);
         if (pixels) {{
             printf("Image: %dx%d\\n", w, h);
@@ -160,9 +158,11 @@ int main() {{
             if (result && out_len > 0) {{
                 printf("PASS: OCR output (%d chars): %s\\n", out_len, result);
             }} else {{
-                printf("Output: empty or null (pipeline may need patches)\\n");
+                printf("Output: empty or null (preprocessor may not support split model yet)\\n");
             }}
             stbi_image_free(pixels);
+        }} else {{
+            printf("WARN: stbi_load failed\\n");
         }}
     }}
 

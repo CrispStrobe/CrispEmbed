@@ -1,7 +1,7 @@
 {
   "id": "chr1s4/crispembed-qwen2-5-vl-3b-gguf-conversion",
   "title": "CrispEmbed Qwen2.5-VL-3B GGUF conversion",
-  "code_file": "keyven_e2e_test.py",
+  "code_file": "qwen2vl_convert.py",
   "language": "python",
   "kernel_type": "script",
   "is_private": "true",
