@@ -51,20 +51,38 @@ int main(int argc, char **argv) {
     }
     printf("Vision: %d tokens, %d dim\n", vpr.n_image_tokens, vpr.embed_dim);
 
-    // Build prompt with image placeholders:
-    // BOS + <IMG_CONTEXT> * n_image_tokens + extra tokens
+    // Build InternVL2.5 chat prompt with image placeholders.
+    // Template: <|im_start|>system\n...<|im_end|>\n<|im_start|>user\n<IMG_CONTEXT>*256\n{prompt}<|im_end|>\n<|im_start|>assistant\n
+    // Token IDs from InternLM2 tokenizer (verified via Python):
+    //   <|im_start|> = 92543, <|im_end|> = 92542, <IMG_CONTEXT> = 92546
+    //   "system" = 9081, "user" = 1404, "assistant" = 525 + 11353
+    //   "\n" = 364
     printf("\nGenerating (max %d tokens)...\n", max_tokens);
     int32_t img_token_id = (int32_t)ctx.m.lhp.image_token_id;
-    int32_t bos_id = (int32_t)ctx.m.lhp.bos_token_id;
     std::vector<int32_t> prompt;
-    prompt.push_back(bos_id);
+
+    // <|im_start|>system\nYou are a helpful assistant.<|im_end|>\n
+    int32_t sys_tokens[] = {92543, 9081, 364, 2770, 657, 395, 11100, 17993, 281, 92542, 364};
+    prompt.insert(prompt.end(), sys_tokens, sys_tokens + 11);
+
+    // <|im_start|>user\n
+    int32_t user_start[] = {92543, 1404, 364};
+    prompt.insert(prompt.end(), user_start, user_start + 3);
+
+    // <IMG_CONTEXT> * n_image_tokens
     for (int i = 0; i < vpr.n_image_tokens; i++) {
         prompt.push_back(img_token_id);
     }
-    // Add a newline-ish token after image (token 364 is common for '\n' in InternLM)
-    prompt.push_back(364);
-    printf("Prompt: %zu tokens (1 BOS + %d image + 1 text)\n",
-           prompt.size(), vpr.n_image_tokens);
+
+    // \nDescribe this image in detail.<|im_end|>\n
+    int32_t user_text[] = {364, 3471, 2321, 435, 7856, 281, 92542, 364};
+    prompt.insert(prompt.end(), user_text, user_text + 8);
+
+    // <|im_start|>assistant\n
+    int32_t asst_start[] = {92543, 525, 11353, 364};
+    prompt.insert(prompt.end(), asst_start, asst_start + 4);
+
+    printf("Prompt: %zu tokens (%d image)\n", prompt.size(), vpr.n_image_tokens);
 
     internvl2_ocr::generate_result gen;
     if (!internvl2_ocr::generate(ctx,
