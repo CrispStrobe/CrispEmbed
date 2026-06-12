@@ -679,7 +679,19 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             auto red_w = to_f32(ds.reduction_w); // [2*D, 4*D]
             int new_D = D * 2;
 
-            int newH = H / 2, newW = W / 2;
+            // Pad H/W to even if odd (Swin PatchMerging pads before merge)
+            int padH = H + (H % 2);
+            int padW = W + (W % 2);
+            std::vector<float> padded;
+            const float* merge_src = x.data();
+            if (padH != H || padW != W) {
+                padded.resize(padH * padW * D, 0.0f);
+                for (int y = 0; y < H; y++)
+                    memcpy(padded.data() + y * padW * D, x.data() + y * W * D, W * D * sizeof(float));
+                merge_src = padded.data();
+            }
+
+            int newH = padH / 2, newW = padW / 2;
             int newN = newH * newW;
 
             // Concat 2×2 patches → [newN, 4*D]
@@ -687,15 +699,14 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             for (int y = 0; y < newH; y++) {
                 for (int xi = 0; xi < newW; xi++) {
                     int dst = y * newW + xi;
-                    // 4 source patches
-                    int s0 = (2*y) * W + (2*xi);
-                    int s1 = (2*y) * W + (2*xi+1);
-                    int s2 = (2*y+1) * W + (2*xi);
-                    int s3 = (2*y+1) * W + (2*xi+1);
-                    memcpy(merged.data() + dst * 4 * D + 0 * D, x.data() + s0 * D, D * sizeof(float));
-                    memcpy(merged.data() + dst * 4 * D + 1 * D, x.data() + s1 * D, D * sizeof(float));
-                    memcpy(merged.data() + dst * 4 * D + 2 * D, x.data() + s2 * D, D * sizeof(float));
-                    memcpy(merged.data() + dst * 4 * D + 3 * D, x.data() + s3 * D, D * sizeof(float));
+                    int s0 = (2*y) * padW + (2*xi);
+                    int s1 = (2*y) * padW + (2*xi+1);
+                    int s2 = (2*y+1) * padW + (2*xi);
+                    int s3 = (2*y+1) * padW + (2*xi+1);
+                    memcpy(merged.data() + dst * 4 * D + 0 * D, merge_src + s0 * D, D * sizeof(float));
+                    memcpy(merged.data() + dst * 4 * D + 1 * D, merge_src + s1 * D, D * sizeof(float));
+                    memcpy(merged.data() + dst * 4 * D + 2 * D, merge_src + s2 * D, D * sizeof(float));
+                    memcpy(merged.data() + dst * 4 * D + 3 * D, merge_src + s3 * D, D * sizeof(float));
                 }
             }
 
