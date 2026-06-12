@@ -4,6 +4,29 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — InternVL2-1B OCR engine (0.9B, Qwen2 LLM, MIT)
+
+Extended InternVL2 engine for the 1B variant: InternViT-300M (shared) +
+Qwen2-0.5B-Instruct (24L, 896d, GQA 14/2, separate Q/K/V with bias).
+
+**Key changes vs 2.5-2B**: Qwen2 uses separate Q/K/V weight tensors with
+biases (not fused wqkv), different tensor naming (input_layernorm,
+self_attn.q_proj), and a larger vocab (151655 vs 92553). Converter
+auto-detects LLM type from `model_type` in config.json.
+
+**Bug fixed**: Uninitialized vision-text splice tensors in `run_llm_forward`
+caused garbage data to corrupt embeddings before RMSNorm. Root cause:
+`splice_mask` and `image_embeds` graph inputs were created but never
+filled. Fix: set mask=1.0 and embeds=0.0 when no image tokens present.
+This fix also applies to the 2.5-2B parity test path.
+
+**Parity**: 9/9 cos=1.000000 (vision 6/6, Qwen2 LLM 2/2, projector 1/1).
+
+**GGUFs**: `cstr/internvl2-1b-crispembed-GGUF` — F16 (2.3 GB), Q8_0 (955 MB),
+Q4_K (724 MB). Smallest competitive VLM for edge/WASM deployment.
+
+---
+
 ## June 2026 — InternVL2.5-2B OCR engine (VLM, MIT)
 
 Full vision-language model port: InternVL2.5-2B (2.1B params, MIT license)
