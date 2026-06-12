@@ -354,21 +354,28 @@ def main():
             q = f"{VPFX}blk.{i}."
 
             for hf_suf, gg_suf in [
-                # RMSNorm (no bias in Qwen2.5-VL vision)
+                # Norms (LayerNorm with bias for Qwen2-VL, RMSNorm for 2.5)
                 ("norm1.weight",         "norm1.weight"),
+                ("norm1.bias",           "norm1.bias"),
                 ("norm2.weight",         "norm2.weight"),
-                # Fused QKV attention
+                ("norm2.bias",           "norm2.bias"),
+                # Fused QKV attention (both variants)
                 ("attn.qkv.weight",      "attn_qkv.weight"),
                 ("attn.qkv.bias",        "attn_qkv.bias"),
                 ("attn.proj.weight",     "attn_proj.weight"),
                 ("attn.proj.bias",       "attn_proj.bias"),
-                # SwiGLU MLP (gate + up + down)
+                # SwiGLU MLP — Qwen2.5-VL (gate + up + down)
                 ("mlp.gate_proj.weight", "ffn_gate.weight"),
                 ("mlp.gate_proj.bias",   "ffn_gate.bias"),
                 ("mlp.up_proj.weight",   "ffn_up.weight"),
                 ("mlp.up_proj.bias",     "ffn_up.bias"),
                 ("mlp.down_proj.weight", "ffn_down.weight"),
                 ("mlp.down_proj.bias",   "ffn_down.bias"),
+                # GELU fc1/fc2 MLP — Qwen2-VL
+                ("mlp.fc1.weight",       "ffn_fc1.weight"),
+                ("mlp.fc1.bias",         "ffn_fc1.bias"),
+                ("mlp.fc2.weight",       "ffn_fc2.weight"),
+                ("mlp.fc2.bias",         "ffn_fc2.bias"),
             ]:
                 vw(q + gg_suf, p + hf_suf)
 

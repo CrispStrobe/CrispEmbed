@@ -153,18 +153,41 @@ bool load_tensors(context &ctx, const char *path) {
     for (uint32_t i = 0; i < m.vhp.depth; i++) {
         auto &blk = m.vis_blocks[i];
         std::string p = "v.blk." + std::to_string(i) + ".";
+        // Norms (weight always present; bias only for LayerNorm / Qwen2-VL)
         blk.norm1_w    = get(p + "norm1.weight");
+        blk.norm1_b    = get(p + "norm1.bias");
         blk.norm2_w    = get(p + "norm2.weight");
+        blk.norm2_b    = get(p + "norm2.bias");
+        // Attention (fused QKV in both variants)
         blk.qkv_w      = get(p + "attn_qkv.weight");
         blk.qkv_b      = get(p + "attn_qkv.bias");
         blk.proj_w     = get(p + "attn_proj.weight");
         blk.proj_b     = get(p + "attn_proj.bias");
+        // SwiGLU FFN (Qwen2.5-VL)
         blk.ffn_gate_w = get(p + "ffn_gate.weight");
         blk.ffn_gate_b = get(p + "ffn_gate.bias");
         blk.ffn_up_w   = get(p + "ffn_up.weight");
         blk.ffn_up_b   = get(p + "ffn_up.bias");
         blk.ffn_down_w = get(p + "ffn_down.weight");
         blk.ffn_down_b = get(p + "ffn_down.bias");
+        // GELU fc1/fc2 FFN (Qwen2-VL)
+        blk.ffn_fc1_w  = get(p + "ffn_fc1.weight");
+        blk.ffn_fc1_b  = get(p + "ffn_fc1.bias");
+        blk.ffn_fc2_w  = get(p + "ffn_fc2.weight");
+        blk.ffn_fc2_b  = get(p + "ffn_fc2.bias");
+    }
+
+    // Auto-detect Qwen2-VL vs Qwen2.5-VL from loaded weights:
+    // Qwen2-VL has norm bias + fc1/fc2; Qwen2.5-VL has no norm bias + gate/up/down
+    if (m.vhp.depth > 0 && m.vis_blocks[0].norm1_b != nullptr) {
+        m.vhp.is_qwen2_vl = true;
+        if (ctx.verbosity >= 1) {
+            fprintf(stderr, "  vision variant: Qwen2-VL (LayerNorm, GELU fc1/fc2)\n");
+        }
+    } else {
+        if (ctx.verbosity >= 1) {
+            fprintf(stderr, "  vision variant: Qwen2.5-VL (RMSNorm, SwiGLU)\n");
+        }
     }
 
     m.merger.norm_w = get("v.merger.norm.weight");
@@ -325,6 +348,20 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
             ggml_mul(g, rot, sin_in));
     };
 
+    // ── Norm helper (variant-aware) ──
+    const bool is_qwen2 = vhp.is_qwen2_vl;
+    auto vnorm = [&](ggml_tensor *t, ggml_tensor *w, ggml_tensor *b) -> ggml_tensor * {
+        if (b) {
+            // LayerNorm (Qwen2-VL)
+            ggml_tensor *y = ggml_norm(g, t, 1e-6f);
+            y = ggml_mul(g, y, w);
+            return ggml_add(g, y, b);
+        } else {
+            // RMSNorm (Qwen2.5-VL)
+            return rmsnorm(t, w);
+        }
+    };
+
     // ── ViT blocks ──
     const float attn_scale = 1.0f / std::sqrt((float)head_dim);
 
@@ -332,16 +369,14 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         const auto &blk = ctx.m.vis_blocks[il];
         ggml_tensor *residual = x;
 
-        // Pre-attn RMSNorm
-        ggml_tensor *y = rmsnorm(x, blk.norm1_w);
+        // Pre-attn norm (LayerNorm or RMSNorm)
+        ggml_tensor *y = vnorm(x, blk.norm1_w, blk.norm1_b);
 
-        // Fused QKV (matching bidirlm_vision.cpp pattern)
+        // Fused QKV (both variants use fused QKV)
         ggml_tensor *qkv = ggml_mul_mat(g, blk.qkv_w, y);
         if (blk.qkv_b) qkv = ggml_add(g, qkv, blk.qkv_b);
-        // qkv ne=(3*H, n_patches); reshape to (head_dim, n_heads, 3, n_patches)
         qkv = ggml_reshape_4d(g, qkv, head_dim, n_heads, 3, n_patches);
 
-        // View q/k/v slices
         ggml_tensor *Q = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches,
                                        qkv->nb[1], qkv->nb[3], 0 * qkv->nb[2]);
         ggml_tensor *K = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches,
@@ -361,36 +396,44 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
         V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-        // Attention (following bidirlm_vision pattern)
-        ggml_tensor *scores = ggml_mul_mat(g, K, Q);  // (n_patches, n_patches, n_heads)
+        // Attention
+        ggml_tensor *scores = ggml_mul_mat(g, K, Q);
         scores = ggml_soft_max_ext(g, scores, nullptr, attn_scale, 0.0f);
 
         ggml_tensor *V_perm = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
-        ggml_tensor *attn_out = ggml_mul_mat(g, V_perm, scores);  // (head_dim, n_patches, n_heads)
-        attn_out = ggml_cont(g, ggml_permute(g, attn_out, 0, 2, 1, 3));  // (head_dim, n_heads, n_patches)
+        ggml_tensor *attn_out = ggml_mul_mat(g, V_perm, scores);
+        attn_out = ggml_cont(g, ggml_permute(g, attn_out, 0, 2, 1, 3));
         attn_out = ggml_reshape_2d(g, attn_out, H, n_patches);
 
-        // Output projection
         attn_out = ggml_mul_mat(g, blk.proj_w, attn_out);
         if (blk.proj_b) attn_out = ggml_add(g, attn_out, blk.proj_b);
 
         x = ggml_add(g, residual, attn_out);
 
-        // Pre-FFN RMSNorm
+        // Pre-FFN norm (LayerNorm or RMSNorm)
         residual = x;
-        y = rmsnorm(x, blk.norm2_w);
+        y = vnorm(x, blk.norm2_w, blk.norm2_b);
 
-        // SwiGLU FFN: silu(gate) * up → down
-        ggml_tensor *gate = ggml_mul_mat(g, blk.ffn_gate_w, y);
-        if (blk.ffn_gate_b) gate = ggml_add(g, gate, blk.ffn_gate_b);
-        gate = ggml_silu(g, gate);
-
-        ggml_tensor *up = ggml_mul_mat(g, blk.ffn_up_w, y);
-        if (blk.ffn_up_b) up = ggml_add(g, up, blk.ffn_up_b);
-
-        ggml_tensor *ffn = ggml_mul(g, gate, up);
-        ffn = ggml_mul_mat(g, blk.ffn_down_w, ffn);
-        if (blk.ffn_down_b) ffn = ggml_add(g, ffn, blk.ffn_down_b);
+        // FFN: variant-aware
+        ggml_tensor *ffn;
+        if (is_qwen2 && blk.ffn_fc1_w) {
+            // Qwen2-VL: GELU fc1 → fc2
+            ffn = ggml_mul_mat(g, blk.ffn_fc1_w, y);
+            if (blk.ffn_fc1_b) ffn = ggml_add(g, ffn, blk.ffn_fc1_b);
+            ffn = ggml_gelu(g, ffn);
+            ffn = ggml_mul_mat(g, blk.ffn_fc2_w, ffn);
+            if (blk.ffn_fc2_b) ffn = ggml_add(g, ffn, blk.ffn_fc2_b);
+        } else {
+            // Qwen2.5-VL: SwiGLU gate * silu(up) → down
+            ggml_tensor *gate = ggml_mul_mat(g, blk.ffn_gate_w, y);
+            if (blk.ffn_gate_b) gate = ggml_add(g, gate, blk.ffn_gate_b);
+            gate = ggml_silu(g, gate);
+            ggml_tensor *up = ggml_mul_mat(g, blk.ffn_up_w, y);
+            if (blk.ffn_up_b) up = ggml_add(g, up, blk.ffn_up_b);
+            ffn = ggml_mul(g, gate, up);
+            ffn = ggml_mul_mat(g, blk.ffn_down_w, ffn);
+            if (blk.ffn_down_b) ffn = ggml_add(g, ffn, blk.ffn_down_b);
+        }
 
         x = ggml_add(g, residual, ffn);
 

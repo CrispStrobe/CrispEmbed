@@ -52,6 +52,11 @@ struct vision_hparams {
     float image_std[3]  = {0.2686f, 0.2613f, 0.2758f};
     uint32_t min_pixels = 3136;
     uint32_t max_pixels = 12845056;
+
+    // Vision variant detection (auto-detected from weights):
+    //   false = Qwen2.5-VL (RMSNorm, fused QKV, SwiGLU FFN)
+    //   true  = Qwen2-VL   (LayerNorm with bias, fused QKV, GELU fc1/fc2 FFN)
+    bool is_qwen2_vl = false;
 };
 
 struct llm_hparams {
@@ -77,14 +82,20 @@ struct llm_hparams {
 // ── Weight structures ────────────────────────────────────────────────
 
 struct vision_block {
-    ggml_tensor *norm1_w = nullptr;      // RMSNorm (no bias)
-    ggml_tensor *norm2_w = nullptr;
+    // Norms: RMSNorm (Qwen2.5-VL, no bias) or LayerNorm (Qwen2-VL, with bias)
+    ggml_tensor *norm1_w = nullptr, *norm1_b = nullptr;
+    ggml_tensor *norm2_w = nullptr, *norm2_b = nullptr;
+    // Attention: fused QKV (both variants)
     ggml_tensor *qkv_w = nullptr, *qkv_b = nullptr;
     ggml_tensor *proj_w = nullptr, *proj_b = nullptr;
-    // SwiGLU FFN
+    // FFN: SwiGLU (Qwen2.5-VL: gate+up+down) or GELU (Qwen2-VL: fc1+fc2)
+    // SwiGLU fields:
     ggml_tensor *ffn_gate_w = nullptr, *ffn_gate_b = nullptr;
     ggml_tensor *ffn_up_w = nullptr, *ffn_up_b = nullptr;
     ggml_tensor *ffn_down_w = nullptr, *ffn_down_b = nullptr;
+    // GELU fc1/fc2 fields (Qwen2-VL):
+    ggml_tensor *ffn_fc1_w = nullptr, *ffn_fc1_b = nullptr;
+    ggml_tensor *ffn_fc2_w = nullptr, *ffn_fc2_b = nullptr;
 };
 
 struct vision_merger {
