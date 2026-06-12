@@ -469,6 +469,57 @@ proj_graph build_proj_graph(context &ctx, int n_merged) {
     return pg;
 }
 
+// ── KV cache allocation ──────────────────────────────────────────────
+
+bool alloc_kv_cache(context &ctx, int max_seq) {
+    const auto &lhp = ctx.m.lhp;
+    const int hd = (int)lhp.head_dim;
+    const int nkv = (int)lhp.num_key_value_heads;
+    const int n_layers = (int)lhp.num_hidden_layers;
+
+    // KV cache: (hd, max_seq, n_kv_heads, n_layers) F16
+    size_t n_tensors = 2;  // k + v
+    size_t ctx_size = n_tensors * ggml_tensor_overhead() + 256;
+    ggml_init_params ip{ctx_size, nullptr, /*no_alloc=*/true};
+    ctx.kvc.ctx = ggml_init(ip);
+
+    ctx.kvc.k = ggml_new_tensor_4d(ctx.kvc.ctx, GGML_TYPE_F16,
+                                     hd, max_seq, nkv, n_layers);
+    ctx.kvc.v = ggml_new_tensor_4d(ctx.kvc.ctx, GGML_TYPE_F16,
+                                     hd, max_seq, nkv, n_layers);
+    ggml_set_name(ctx.kvc.k, "kv_k");
+    ggml_set_name(ctx.kvc.v, "kv_v");
+
+    ctx.kvc.buf = ggml_backend_alloc_ctx_tensors(ctx.kvc.ctx, ctx.backend);
+    if (!ctx.kvc.buf) {
+        fprintf(stderr, "internvl2_ocr: KV cache alloc failed (max_seq=%d)\n", max_seq);
+        ggml_free(ctx.kvc.ctx);
+        ctx.kvc.ctx = nullptr;
+        return false;
+    }
+
+    // Zero-fill the cache
+    ggml_backend_buffer_clear(ctx.kvc.buf, 0);
+
+    ctx.kvc.max_seq = max_seq;
+    ctx.kvc.n_past = 0;
+    ctx.kvc.allocated = true;
+
+    size_t kv_bytes = ggml_backend_buffer_get_size(ctx.kvc.buf);
+    if (ctx.verbosity >= 1) {
+        printf("  KV cache: %d layers, max_seq=%d, %.1f MB\n",
+               n_layers, max_seq, (float)kv_bytes / 1024 / 1024);
+    }
+    return true;
+}
+
+void free_kv_cache(context &ctx) {
+    if (ctx.kvc.buf) { ggml_backend_buffer_free(ctx.kvc.buf); ctx.kvc.buf = nullptr; }
+    if (ctx.kvc.ctx) { ggml_free(ctx.kvc.ctx); ctx.kvc.ctx = nullptr; }
+    ctx.kvc.allocated = false;
+    ctx.kvc.n_past = 0;
+}
+
 // ── LLM decoder graph ───────────────────────────────────────────────
 
 struct llm_graph {
@@ -480,8 +531,11 @@ struct llm_graph {
     std::vector<ggml_tensor *> layer_outputs;
 };
 
-llm_graph build_llm_graph(context &ctx, int n_tokens,
-                          const image_input *img = nullptr) {
+// Build LLM graph with optional KV cache.
+// If kvc is null or unallocated, builds the old uncached graph (for parity testing).
+// If kvc is allocated, writes new K/V at n_past, reads [0..n_past+T].
+llm_graph build_llm_graph(context &ctx, int n_tokens, int n_past,
+                          bool use_kv_cache = false) {
     llm_graph lg;
     const auto &lhp = ctx.m.lhp;
     const int D = (int)lhp.hidden_size;
@@ -494,8 +548,12 @@ llm_graph build_llm_graph(context &ctx, int n_tokens,
     const int n_layers = (int)lhp.num_hidden_layers;
     const float rms_eps = lhp.rms_norm_eps;
     const int kv_repeat = nh / nkv;
+    const int Lk = use_kv_cache ? (n_past + T) : T;  // total KV length
 
-    size_t meta_size = (size_t)(n_layers * 50 + 200) * ggml_tensor_overhead()
+    // KV cache path needs ~80 tensors/layer (projections, views, cpy, cont,
+    // reshape, repeat for GQA, permute, flash_attn, ffn). Uncached ~50.
+    int tensors_per_layer = use_kv_cache ? 80 : 50;
+    size_t meta_size = (size_t)(n_layers * tensors_per_layer + 300) * ggml_tensor_overhead()
                        + ggml_graph_overhead_custom(32768, false);
     ctx.compute_meta.resize(meta_size);
     ggml_init_params ip{meta_size, ctx.compute_meta.data(), true};
@@ -511,21 +569,18 @@ llm_graph build_llm_graph(context &ctx, int n_tokens,
 
     // Token embedding lookup
     ggml_tensor *x = ggml_get_rows(g, ctx.m.embed_tokens, token_in);
-    // x: (D, T)
 
     ggml_set_name(x, "llm_embed");
     ggml_set_output(x);
 
-    // Vision-text splicing would happen here (splice image_embeds at
-    // image_token_id positions). For now, parity testing only.
-
-    // RoPE: precompute cos/sin on host, pass as input tensors
+    // RoPE position IDs
     ggml_tensor *rope_pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
     ggml_set_name(rope_pos, "rope_pos");
     ggml_set_input(rope_pos);
 
-    // Causal mask: (T, T) F16 — flash_attn_ext requires F16 mask
-    ggml_tensor *mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, T, T);
+    // Causal mask: (Lk, T) F16 — flash_attn_ext mask shape is (kv_len, q_len)
+    // For uncached: (T, T). For cached: (n_past+T, T).
+    ggml_tensor *mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, Lk, T);
     ggml_set_name(mask, "causal_mask");
     ggml_set_input(mask);
 
@@ -540,54 +595,100 @@ llm_graph build_llm_graph(context &ctx, int n_tokens,
         // ── Self-attention ──
         ggml_tensor *h = rmsnorm(x, ly.attn_norm_w);
 
-        // Q/K/V projections (separate weights, already split from wqkv)
-        ggml_tensor *Q = ggml_mul_mat(g, ly.q_w, h);  // (nh*hd, T) = (D, T)
-        ggml_tensor *K = ggml_mul_mat(g, ly.k_w, h);  // (nkv*hd, T)
-        ggml_tensor *Vt = ggml_mul_mat(g, ly.v_w, h);  // (nkv*hd, T)
+        // Q/K/V projections
+        ggml_tensor *Q = ggml_mul_mat(g, ly.q_w, h);
+        ggml_tensor *K_new = ggml_mul_mat(g, ly.k_w, h);
+        ggml_tensor *V_new = ggml_mul_mat(g, ly.v_w, h);
 
-        // Reshape for RoPE + attention: (hd, nh, T) and (hd, nkv, T)
         Q = ggml_reshape_3d(g, Q, hd, nh, T);
-        K = ggml_reshape_3d(g, K, hd, nkv, T);
-        Vt = ggml_reshape_3d(g, Vt, hd, nkv, T);
+        K_new = ggml_reshape_3d(g, K_new, hd, nkv, T);
+        V_new = ggml_reshape_3d(g, V_new, hd, nkv, T);
 
-        // Apply RoPE via ggml_rope_ext (standard 1D RoPE)
+        // Apply RoPE
         Q = ggml_rope_ext(g, Q, rope_pos, nullptr,
                           hd, GGML_ROPE_TYPE_NEOX, 0,
                           lhp.rope_theta,
                           1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-        K = ggml_rope_ext(g, K, rope_pos, nullptr,
-                          hd, GGML_ROPE_TYPE_NEOX, 0,
-                          lhp.rope_theta,
-                          1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        K_new = ggml_rope_ext(g, K_new, rope_pos, nullptr,
+                              hd, GGML_ROPE_TYPE_NEOX, 0,
+                              lhp.rope_theta,
+                              1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-        // GQA: expand K/V from nkv to nh heads
-        // K: (hd, nkv, T) → (hd, 1, nkv, T) → repeat → (hd, kv_repeat, nkv, T) → (hd, nh, T)
-        if (kv_repeat > 1) {
-            K = ggml_reshape_4d(g, K, hd, 1, nkv, T);
-            ggml_tensor *K_tgt = ggml_new_tensor_4d(g, K->type, hd, kv_repeat, nkv, T);
-            K = ggml_repeat(g, K, K_tgt);
-            K = ggml_reshape_3d(g, K, hd, nh, T);
+        ggml_tensor *Kfull, *Vfull;
 
-            Vt = ggml_reshape_4d(g, Vt, hd, 1, nkv, T);
-            ggml_tensor *V_tgt = ggml_new_tensor_4d(g, Vt->type, hd, kv_repeat, nkv, T);
-            Vt = ggml_repeat(g, Vt, V_tgt);
-            Vt = ggml_reshape_3d(g, Vt, hd, nh, T);
+        if (use_kv_cache && ctx.kvc.allocated) {
+            // ── Write new K/V into cache at [n_past..n_past+T) ──
+            ggml_tensor *K_new_perm = ggml_permute(g, K_new, 0, 2, 1, 3); // (hd, T, nkv)
+            ggml_tensor *V_new_perm = ggml_permute(g, V_new, 0, 2, 1, 3);
+
+            // View into cache for this layer at n_past offset
+            ggml_tensor *k_view = ggml_view_4d(g, ctx.kvc.k,
+                hd, T, nkv, 1,
+                ctx.kvc.k->nb[1], ctx.kvc.k->nb[2], ctx.kvc.k->nb[3],
+                (size_t)i * ctx.kvc.k->nb[3] + (size_t)n_past * ctx.kvc.k->nb[1]);
+            ggml_tensor *v_view = ggml_view_4d(g, ctx.kvc.v,
+                hd, T, nkv, 1,
+                ctx.kvc.v->nb[1], ctx.kvc.v->nb[2], ctx.kvc.v->nb[3],
+                (size_t)i * ctx.kvc.v->nb[3] + (size_t)n_past * ctx.kvc.v->nb[1]);
+
+            ggml_build_forward_expand(gf, ggml_cpy(g, K_new_perm, k_view));
+            ggml_build_forward_expand(gf, ggml_cpy(g, V_new_perm, v_view));
+
+            // ── Read full K/V history [0..n_past+T) ──
+            ggml_tensor *k_layer = ggml_view_3d(g, ctx.kvc.k,
+                hd, Lk, nkv,
+                ctx.kvc.k->nb[1], ctx.kvc.k->nb[2],
+                (size_t)i * ctx.kvc.k->nb[3]);
+            ggml_tensor *v_layer = ggml_view_3d(g, ctx.kvc.v,
+                hd, Lk, nkv,
+                ctx.kvc.v->nb[1], ctx.kvc.v->nb[2],
+                (size_t)i * ctx.kvc.v->nb[3]);
+
+            // Cont to make contiguous (F16→F16 copy)
+            Kfull = ggml_cont(g, k_layer);  // (hd, Lk, nkv)
+            Vfull = ggml_cont(g, v_layer);
+
+            // GQA expansion: (hd, Lk, nkv) → (hd, Lk, nh)
+            if (kv_repeat > 1) {
+                Kfull = ggml_reshape_4d(g, Kfull, hd, Lk, 1, nkv);
+                ggml_tensor *K_tgt = ggml_new_tensor_4d(g, Kfull->type, hd, Lk, kv_repeat, nkv);
+                Kfull = ggml_repeat(g, Kfull, K_tgt);
+                Kfull = ggml_reshape_3d(g, Kfull, hd, Lk, nh);
+
+                Vfull = ggml_reshape_4d(g, Vfull, hd, Lk, 1, nkv);
+                ggml_tensor *V_tgt = ggml_new_tensor_4d(g, Vfull->type, hd, Lk, kv_repeat, nkv);
+                Vfull = ggml_repeat(g, Vfull, V_tgt);
+                Vfull = ggml_reshape_3d(g, Vfull, hd, Lk, nh);
+            }
+        } else {
+            // ── No KV cache: use current K/V directly ──
+            if (kv_repeat > 1) {
+                K_new = ggml_reshape_4d(g, K_new, hd, 1, nkv, T);
+                ggml_tensor *K_tgt = ggml_new_tensor_4d(g, K_new->type, hd, kv_repeat, nkv, T);
+                K_new = ggml_repeat(g, K_new, K_tgt);
+                K_new = ggml_reshape_3d(g, K_new, hd, nh, T);
+
+                V_new = ggml_reshape_4d(g, V_new, hd, 1, nkv, T);
+                ggml_tensor *V_tgt = ggml_new_tensor_4d(g, V_new->type, hd, kv_repeat, nkv, T);
+                V_new = ggml_repeat(g, V_new, V_tgt);
+                V_new = ggml_reshape_3d(g, V_new, hd, nh, T);
+            }
+            // Permute to (hd, T, nh) for flash_attn
+            Kfull = ggml_cont(g, ggml_permute(g, K_new, 0, 2, 1, 3));
+            Vfull = ggml_cont(g, ggml_permute(g, V_new, 0, 2, 1, 3));
         }
 
-        // flash_attn_ext: Q(hd, T, nh), K(hd, T, nh), V(hd, T, nh)
-        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));   // (hd, T, nh)
-        K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
-        Vt = ggml_cont(g, ggml_permute(g, Vt, 0, 2, 1, 3));
+        // ── Flash attention ──
+        // Q: (hd, nh, T) → permute to (hd, T, nh)
+        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
 
         float scale = 1.0f / std::sqrt((float)hd);
-        ggml_tensor *attn_out = ggml_flash_attn_ext(g, Q, K, Vt,
+        ggml_tensor *attn_out = ggml_flash_attn_ext(g, Q, Kfull, Vfull,
                                                       mask, scale, 0.0f, 0.0f);
-        // (hd, T, nh) → (D, T)
         attn_out = ggml_reshape_2d(g, attn_out, D, T);
 
         // Output projection
         attn_out = ggml_mul_mat(g, ly.o_w, attn_out);
-
         x = ggml_add(g, x, attn_out);
 
         // ── SwiGLU FFN ──
@@ -597,7 +698,6 @@ llm_graph build_llm_graph(context &ctx, int n_tokens,
         ggml_tensor *up = ggml_mul_mat(g, ly.ffn_up_w, h);
         ggml_tensor *ffn = ggml_mul(g, gate, up);
         ffn = ggml_mul_mat(g, ly.ffn_down_w, ffn);
-
         x = ggml_add(g, x, ffn);
 
         char name[64];
@@ -683,6 +783,7 @@ bool load(context &ctx, const char *gguf_path, int n_threads, int verbosity) {
 }
 
 void free_(context &ctx) {
+    free_kv_cache(ctx);
     if (ctx.sched) { ggml_backend_sched_free(ctx.sched); ctx.sched = nullptr; }
     if (ctx.model_buf) { ggml_backend_buffer_free(ctx.model_buf); ctx.model_buf = nullptr; }
     if (ctx.model_ctx) { ggml_free(ctx.model_ctx); ctx.model_ctx = nullptr; }
@@ -869,7 +970,7 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
     const int V = (int)lhp.vocab_size;
     const int T = n_tokens;
 
-    llm_graph lg = build_llm_graph(ctx, T, img);
+    llm_graph lg = build_llm_graph(ctx, T, /*n_past=*/0, /*use_kv_cache=*/false);
 
     ggml_backend_sched_reset(ctx.sched);
     if (!ggml_backend_sched_alloc_graph(ctx.sched, lg.gf)) {
@@ -953,62 +1054,136 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
     return true;
 }
 
+// Helper: run a single LLM forward step with KV cache.
+// Returns logits for the last token only (V floats).
+static bool run_cached_step(context &ctx, const int32_t *token_ids, int n_tokens,
+                            int n_past, std::vector<float> &last_logits_out) {
+    const auto &lhp = ctx.m.lhp;
+    const int D = (int)lhp.hidden_size;
+    const int V = (int)lhp.vocab_size;
+    const int T = n_tokens;
+    const int Lk = n_past + T;
+
+    llm_graph lg = build_llm_graph(ctx, T, n_past, /*use_kv_cache=*/true);
+
+    ggml_backend_sched_reset(ctx.sched);
+    if (!ggml_backend_sched_alloc_graph(ctx.sched, lg.gf)) {
+        fprintf(stderr, "internvl2_ocr: cached step graph alloc failed\n");
+        ggml_free(lg.gctx);
+        return false;
+    }
+
+    // Set token IDs
+    ggml_backend_tensor_set(lg.token_in, token_ids, 0, T * sizeof(int32_t));
+
+    // Set position IDs: [n_past, n_past+1, ..., n_past+T-1]
+    std::vector<int32_t> pos_ids(T);
+    for (int i = 0; i < T; i++) pos_ids[i] = n_past + i;
+    ggml_tensor *rope_pos = ggml_graph_get_tensor(lg.gf, "rope_pos");
+    if (rope_pos) {
+        ggml_backend_tensor_set(rope_pos, pos_ids.data(), 0, T * sizeof(int32_t));
+    }
+
+    // Set causal mask: (Lk, T) — each new token attends to all past + self
+    // Row i (query at position n_past+i) can attend to positions [0..n_past+i]
+    std::vector<ggml_fp16_t> mask_data((size_t)Lk * T);
+    for (int qi = 0; qi < T; qi++) {
+        int q_pos = n_past + qi;
+        for (int ki = 0; ki < Lk; ki++) {
+            mask_data[(size_t)qi * Lk + ki] =
+                ggml_fp32_to_fp16((ki > q_pos) ? -INFINITY : 0.0f);
+        }
+    }
+    ggml_tensor *mask = ggml_graph_get_tensor(lg.gf, "causal_mask");
+    if (mask) {
+        ggml_backend_tensor_set(mask, mask_data.data(), 0,
+                                (size_t)Lk * T * sizeof(ggml_fp16_t));
+    }
+
+    // Compute
+    ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
+
+    // Read logits for the last token only
+    if (lg.logits_out) {
+        last_logits_out.resize(V);
+        // logits: (V, T) — last token at offset (T-1)*V
+        ggml_backend_tensor_get(lg.logits_out, last_logits_out.data(),
+                                (size_t)(T - 1) * V * sizeof(float),
+                                V * sizeof(float));
+    }
+
+    ggml_free(lg.gctx);
+    return true;
+}
+
 bool generate(context &ctx,
               const float *image_embeds, int n_image_tokens, int embed_dim,
               const int32_t *prompt_token_ids, int n_prompt_tokens,
               int max_new_tokens,
               generate_result &out) {
     const auto &lhp = ctx.m.lhp;
-    const int D = (int)lhp.hidden_size;
     const int V = (int)lhp.vocab_size;
     const int eos_id = (int)lhp.eos_token_id;
+    const int max_seq = n_prompt_tokens + max_new_tokens + 16;
 
-    // Build full token sequence (no splicing for now — text-only generation)
-    std::vector<int32_t> all_tokens(prompt_token_ids,
-                                     prompt_token_ids + n_prompt_tokens);
-
-    for (int gen = 0; gen < max_new_tokens; gen++) {
-        // Run full forward pass (no KV cache — O(n^2) per step)
-        llm_result fwd = {};
-        if (!run_llm_forward(ctx, all_tokens.data(), (int)all_tokens.size(), fwd)) {
-            if (fwd.hidden) free(fwd.hidden);
-            if (fwd.logits) free(fwd.logits);
-            fprintf(stderr, "internvl2_ocr: forward failed at gen step %d\n", gen);
+    // Allocate KV cache if needed
+    if (!ctx.kvc.allocated || ctx.kvc.max_seq < max_seq) {
+        free_kv_cache(ctx);
+        if (!alloc_kv_cache(ctx, max_seq)) {
+            fprintf(stderr, "internvl2_ocr: KV cache alloc failed\n");
             return false;
         }
+    }
+    ctx.kvc.n_past = 0;  // reset for new generation
 
-        if (!fwd.logits) {
-            if (fwd.hidden) free(fwd.hidden);
-            fprintf(stderr, "internvl2_ocr: no logits at gen step %d\n", gen);
+    // ── Prefill: process all prompt tokens at once ──
+    std::vector<float> logits;
+    if (!run_cached_step(ctx, prompt_token_ids, n_prompt_tokens, 0, logits)) {
+        fprintf(stderr, "internvl2_ocr: prefill failed\n");
+        return false;
+    }
+    ctx.kvc.n_past = n_prompt_tokens;
+
+    // Greedy argmax on prefill logits (last token)
+    int best_id = 0;
+    float best_score = -INFINITY;
+    for (int v = 0; v < V; v++) {
+        if (logits[v] > best_score) {
+            best_score = logits[v];
+            best_id = v;
+        }
+    }
+    out.token_ids.push_back(best_id);
+    if (ctx.verbosity >= 1) {
+        fprintf(stderr, "  gen[0]: token=%d score=%.2f (prefill %d tokens)\n",
+                best_id, best_score, n_prompt_tokens);
+    }
+    if (best_id == eos_id) return true;
+
+    // ── Decode: one token at a time with KV cache ──
+    for (int gen = 1; gen < max_new_tokens; gen++) {
+        int32_t next_token = best_id;
+
+        if (!run_cached_step(ctx, &next_token, 1, ctx.kvc.n_past, logits)) {
+            fprintf(stderr, "internvl2_ocr: decode step %d failed\n", gen);
             return false;
         }
+        ctx.kvc.n_past += 1;
 
-        // Greedy: argmax logits at last position
-        // logits layout: (V, n_tokens) in ggml = V is fast axis
-        const int n = (int)all_tokens.size();
-        const float *last_logits = fwd.logits + (size_t)(n - 1) * V;
-
-        int best_id = 0;
-        float best_score = -INFINITY;
+        best_id = 0;
+        best_score = -INFINITY;
         for (int v = 0; v < V; v++) {
-            if (last_logits[v] > best_score) {
-                best_score = last_logits[v];
+            if (logits[v] > best_score) {
+                best_score = logits[v];
                 best_id = v;
             }
         }
 
-        free(fwd.hidden);
-        free(fwd.logits);
-
         out.token_ids.push_back(best_id);
-
         if (ctx.verbosity >= 1) {
             fprintf(stderr, "  gen[%d]: token=%d score=%.2f\n", gen, best_id, best_score);
         }
-
         if (best_id == eos_id) break;
-
-        all_tokens.push_back(best_id);
     }
 
     return true;
