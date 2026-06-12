@@ -10,3 +10,4 @@ export 'src/math_ocr.dart';
 export 'src/hmer_ocr.dart';
 export 'src/bttr_ocr.dart';
 export 'src/text_detect.dart';
+export 'src/layout.dart';
