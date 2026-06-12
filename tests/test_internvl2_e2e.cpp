@@ -51,14 +51,25 @@ int main(int argc, char **argv) {
     }
     printf("Vision: %d tokens, %d dim\n", vpr.n_image_tokens, vpr.embed_dim);
 
-    // Build a simple prompt: BOS token + generate
+    // Build prompt with image placeholders:
+    // BOS + <IMG_CONTEXT> * n_image_tokens + extra tokens
     printf("\nGenerating (max %d tokens)...\n", max_tokens);
-    int32_t prompt[] = {1};  // BOS
+    int32_t img_token_id = (int32_t)ctx.m.lhp.image_token_id;
+    int32_t bos_id = (int32_t)ctx.m.lhp.bos_token_id;
+    std::vector<int32_t> prompt;
+    prompt.push_back(bos_id);
+    for (int i = 0; i < vpr.n_image_tokens; i++) {
+        prompt.push_back(img_token_id);
+    }
+    // Add a newline-ish token after image (token 364 is common for '\n' in InternLM)
+    prompt.push_back(364);
+    printf("Prompt: %zu tokens (1 BOS + %d image + 1 text)\n",
+           prompt.size(), vpr.n_image_tokens);
 
     internvl2_ocr::generate_result gen;
     if (!internvl2_ocr::generate(ctx,
             vpr.image_embeds, vpr.n_image_tokens, vpr.embed_dim,
-            prompt, 1, max_tokens, gen)) {
+            prompt.data(), (int)prompt.size(), max_tokens, gen)) {
         fprintf(stderr, "Generation failed\n");
         free(vpr.image_embeds);
         internvl2_ocr::free_(ctx);
