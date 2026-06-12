@@ -180,8 +180,20 @@ def main():
     writer.add_string("general.name", model_name)
     writer.add_string("general.architecture", ARCH)
 
-    # LLM config — Qwen2_5_VLConfig nests text params in text_config
-    tc = getattr(config, "text_config", config)
+    # LLM config — Qwen2_5_VLConfig nests text params in text_config.
+    # Some transformers versions don't propagate all attrs to text_config,
+    # so we fall back to the top-level config for any missing attr.
+    _tc = getattr(config, "text_config", config)
+    class _FallbackConfig:
+        """Proxy that tries text_config first, then top-level config."""
+        def __getattr__(self, name):
+            val = getattr(_tc, name, None)
+            if val is None:
+                val = getattr(config, name, None)
+            if val is None:
+                raise AttributeError(f"Neither text_config nor config has '{name}'")
+            return val
+    tc = _FallbackConfig()
     writer.add_uint32("qwen2vl.vocab_size", int(tc.vocab_size))
     writer.add_uint32("qwen2vl.hidden_size", int(tc.hidden_size))
     writer.add_uint32("qwen2vl.intermediate_size", int(tc.intermediate_size))
