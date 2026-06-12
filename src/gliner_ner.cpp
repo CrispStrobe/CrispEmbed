@@ -1116,131 +1116,190 @@ int gliner_ner_extract(void * ptr,
     GDBG("BiLSTM done, computing GLiNER head...");
 
     // -----------------------------------------------------------------------
-    // 5. GLiNER head (CPU)
+    // 5. GLiNER head — ggml graph for batched MLPs + scoring
+    //
+    // Two-pass approach:
+    //   Pass 1: proj_start/end/first MLPs + prompt_rep MLP (all independent of spans)
+    //   (CPU: assemble span concatenations from pass 1 outputs)
+    //   Pass 2: batched out_project MLP + scoring on all spans at once
     // -----------------------------------------------------------------------
 
-    // 5a. Entity type representations: from fused output at <<ENT>> positions → prompt_rep MLP
-    //     (entity reps come from fused token embeddings, NOT BiLSTM output)
-    auto prompt_rep_0_w = tensor_to_f32_backend(model.prompt_rep_0_w, ctx->backend);
-    auto prompt_rep_0_b = tensor_to_f32_backend(model.prompt_rep_0_b, ctx->backend);
-    auto prompt_rep_3_w = tensor_to_f32_backend(model.prompt_rep_3_w, ctx->backend);
-    auto prompt_rep_3_b = tensor_to_f32_backend(model.prompt_rep_3_b, ctx->backend);
+    // Helper: build 2-layer MLP in ggml: Linear(in,mid)+ReLU+Linear(mid,out)
+    // ggml_add broadcasts ne[0]-matching bias (mid,) over (mid, N) automatically.
+    auto build_mlp2 = [](ggml_context * gc, ggml_tensor * x,
+                         ggml_tensor * w0, ggml_tensor * b0,
+                         ggml_tensor * w3, ggml_tensor * b3) -> ggml_tensor * {
+        // Cast weights to F32 if quantized (ggml_mul_mat handles quant natively,
+        // but bias add needs F32)
+        ggml_tensor * h = ggml_mul_mat(gc, w0, x);           // (mid, N)
+        h = ggml_add(gc, h, b0);                             // broadcast (mid,) over (mid, N)
+        h = ggml_relu(gc, h);
+        h = ggml_mul_mat(gc, w3, h);                         // (out, N)
+        h = ggml_add(gc, h, b3);                             // broadcast (out,) over (out, N)
+        return h;
+    };
 
-    std::vector<float> ent_reps(n_labels * hidden);
-    mlp_2layer(ent_hidden_from_fused.data(), ent_reps.data(),
-               n_labels, hidden, 4096, hidden,
-               prompt_rep_0_w.data(), prompt_rep_0_b.data(),
-               prompt_rep_3_w.data(), prompt_rep_3_b.data());
-
-    // 5b. Span representations (markerV1)
-    // For each valid span (start, end) in the text portion:
-    //   span_rep = out_project(concat(proj_start[start], proj_end[end], proj_first[0]))
-    // where proj_* are 2-layer MLPs on the lstm_out hidden states
-
-    // Read span projection weights
-    auto sp_start_0_w = tensor_to_f32_backend(model.span_proj_start_0_w, ctx->backend);
-    auto sp_start_0_b = tensor_to_f32_backend(model.span_proj_start_0_b, ctx->backend);
-    auto sp_start_3_w = tensor_to_f32_backend(model.span_proj_start_3_w, ctx->backend);
-    auto sp_start_3_b = tensor_to_f32_backend(model.span_proj_start_3_b, ctx->backend);
-    auto sp_end_0_w   = tensor_to_f32_backend(model.span_proj_end_0_w, ctx->backend);
-    auto sp_end_0_b   = tensor_to_f32_backend(model.span_proj_end_0_b, ctx->backend);
-    auto sp_end_3_w   = tensor_to_f32_backend(model.span_proj_end_3_w, ctx->backend);
-    auto sp_end_3_b   = tensor_to_f32_backend(model.span_proj_end_3_b, ctx->backend);
-    auto sp_first_0_w = tensor_to_f32_backend(model.span_proj_first_0_w, ctx->backend);
-    auto sp_first_0_b = tensor_to_f32_backend(model.span_proj_first_0_b, ctx->backend);
-    auto sp_first_3_w = tensor_to_f32_backend(model.span_proj_first_3_w, ctx->backend);
-    auto sp_first_3_b = tensor_to_f32_backend(model.span_proj_first_3_b, ctx->backend);
-    auto sp_out_0_w   = tensor_to_f32_backend(model.span_out_proj_0_w, ctx->backend);
-    auto sp_out_0_b   = tensor_to_f32_backend(model.span_out_proj_0_b, ctx->backend);
-    auto sp_out_3_w   = tensor_to_f32_backend(model.span_out_proj_3_w, ctx->backend);
-    auto sp_out_3_b   = tensor_to_f32_backend(model.span_out_proj_3_b, ctx->backend);
-
-    // Project all WORD-LEVEL representations through start, end, and first projections
-    // (using BiLSTM output, which is word-level)
-    std::vector<float> proj_start_all(n_words * hidden);
-    std::vector<float> proj_end_all(n_words * hidden);
-    mlp_2layer(lstm_out.data(), proj_start_all.data(),
-               n_words, hidden, 4096, hidden,
-               sp_start_0_w.data(), sp_start_0_b.data(),
-               sp_start_3_w.data(), sp_start_3_b.data());
-    mlp_2layer(lstm_out.data(), proj_end_all.data(),
-               n_words, hidden, 4096, hidden,
-               sp_end_0_w.data(), sp_end_0_b.data(),
-               sp_end_3_w.data(), sp_end_3_b.data());
-
-    // Project first token (CLS-like) — mean of all word representations
-    std::vector<float> first_token(hidden, 0.0f);
-    for (int w = 0; w < n_words; w++)
-        for (int d = 0; d < hidden; d++)
-            first_token[d] += lstm_out[w * hidden + d];
-    for (int d = 0; d < hidden; d++)
-        first_token[d] /= n_words;
-
-    std::vector<float> proj_first(hidden);
-    mlp_2layer(first_token.data(), proj_first.data(),
-               1, hidden, 4096, hidden,
-               sp_first_0_w.data(), sp_first_0_b.data(),
-               sp_first_3_w.data(), sp_first_3_b.data());
-
-    // -----------------------------------------------------------------------
-    // 5c. Score all spans against all entity types
-    //     Score = einsum("BLKD,BCD->BLKC") = dot product of span_rep and ent_rep
-    //     No temperature scaling in forward — that's applied during decoding.
-    // -----------------------------------------------------------------------
-
-    // Read scorer temperature (applied during sigmoid scoring)
-    auto log_temp_v = tensor_to_f32_backend(model.scorer_log_temp, ctx->backend);
-    float log_temp = log_temp_v.empty() ? 0.0f : log_temp_v[0];
-    float temperature = expf(log_temp);
-    GDBG("scorer temperature: exp(%f) = %f", log_temp, temperature);
+    // Enumerate all spans
+    int max_w = (int)hp.max_width;
+    struct SpanIdx { int ws, we; };
+    std::vector<SpanIdx> all_spans;
+    for (int ws = 0; ws < n_words; ws++)
+        for (int we = ws; we < std::min(ws + max_w, n_words); we++)
+            all_spans.push_back({ws, we});
+    int n_spans = (int)all_spans.size();
+    GDBG("  %d spans x %d labels = %d scores", n_spans, n_labels, n_spans * n_labels);
 
     struct ScoredSpan {
-        int word_start, word_end;  // word-level indices (inclusive)
+        int word_start, word_end;
         int label_idx;
         float score;
     };
     std::vector<ScoredSpan> candidates;
 
-    int max_w = (int)hp.max_width;
-    for (int ws = 0; ws < n_words; ws++) {
-        for (int we = ws; we < std::min(ws + max_w, n_words); we++) {
-            // Span representation: concat(proj_start[ws], proj_end[we], proj_first)
-            std::vector<float> span_input(3 * hidden);
-            memcpy(span_input.data(), proj_start_all.data() + ws * hidden,
-                   hidden * sizeof(float));
-            memcpy(span_input.data() + hidden, proj_end_all.data() + we * hidden,
-                   hidden * sizeof(float));
-            memcpy(span_input.data() + 2 * hidden, proj_first.data(),
-                   hidden * sizeof(float));
+    // ---- Pass 1 graph: proj_start/end/first + prompt_rep ----
+    {
+        size_t hbuf = ggml_tensor_overhead() * 256 + ggml_graph_overhead_custom(2048, false);
+        ggml_init_params hip = { hbuf, nullptr, true };
+        ggml_context * hg = ggml_init(hip);
 
-            // out_project: (3*hidden) → 4096 → hidden
-            std::vector<float> span_rep(hidden);
-            mlp_2layer(span_input.data(), span_rep.data(),
-                       1, 3 * hidden, 4096, hidden,
-                       sp_out_0_w.data(), sp_out_0_b.data(),
-                       sp_out_3_w.data(), sp_out_3_b.data());
+        ggml_tensor * inp_w = ggml_new_tensor_2d(hg, GGML_TYPE_F32, hidden, n_words);
+        ggml_set_name(inp_w, "inp_words"); ggml_set_input(inp_w);
 
-            // Score against each entity type: sigmoid(dot(span_rep, ent_rep))
-            // Note: log_score_temperature exists in weights but is NOT used by
-            // GLiNER's inference code — raw dot product → sigmoid.
+        ggml_tensor * inp_e = ggml_new_tensor_2d(hg, GGML_TYPE_F32, hidden, n_labels);
+        ggml_set_name(inp_e, "inp_ent"); ggml_set_input(inp_e);
+
+        // Mean of words for proj_first: computed as input (CPU-side)
+        ggml_tensor * inp_mean = ggml_new_tensor_2d(hg, GGML_TYPE_F32, hidden, 1);
+        ggml_set_name(inp_mean, "inp_mean"); ggml_set_input(inp_mean);
+
+        ggml_tensor * ps = build_mlp2(hg, inp_w,
+            model.span_proj_start_0_w, model.span_proj_start_0_b,
+            model.span_proj_start_3_w, model.span_proj_start_3_b);
+        ggml_set_name(ps, "proj_start"); ggml_set_output(ps);
+
+        ggml_tensor * pe = build_mlp2(hg, inp_w,
+            model.span_proj_end_0_w, model.span_proj_end_0_b,
+            model.span_proj_end_3_w, model.span_proj_end_3_b);
+        ggml_set_name(pe, "proj_end"); ggml_set_output(pe);
+
+        ggml_tensor * pf = build_mlp2(hg, inp_mean,
+            model.span_proj_first_0_w, model.span_proj_first_0_b,
+            model.span_proj_first_3_w, model.span_proj_first_3_b);
+        ggml_set_name(pf, "proj_first"); ggml_set_output(pf);
+
+        ggml_tensor * er = build_mlp2(hg, inp_e,
+            model.prompt_rep_0_w, model.prompt_rep_0_b,
+            model.prompt_rep_3_w, model.prompt_rep_3_b);
+        ggml_set_name(er, "ent_reps"); ggml_set_output(er);
+
+        ggml_cgraph * gf1 = ggml_new_graph_custom(hg, 2048, false);
+        ggml_build_forward_expand(gf1, ps);
+        ggml_build_forward_expand(gf1, pe);
+        ggml_build_forward_expand(gf1, pf);
+        ggml_build_forward_expand(gf1, er);
+
+        ggml_gallocr_t ga1 = ggml_gallocr_new(
+            ggml_backend_get_default_buffer_type(ctx->backend));
+        if (!ggml_gallocr_alloc_graph(ga1, gf1)) {
+            fprintf(stderr, "[gliner] pass1 graph alloc failed\n");
+            ggml_gallocr_free(ga1); ggml_free(hg);
+            return 0;
+        }
+
+        // Set inputs
+        ggml_backend_tensor_set(inp_w, lstm_out.data(), 0, n_words * hidden * sizeof(float));
+        ggml_backend_tensor_set(inp_e, ent_hidden_from_fused.data(), 0, n_labels * hidden * sizeof(float));
+
+        // Compute mean of words on CPU
+        std::vector<float> mean_vec(hidden, 0.0f);
+        for (int w = 0; w < n_words; w++)
+            for (int d = 0; d < hidden; d++)
+                mean_vec[d] += lstm_out[w * hidden + d];
+        for (int d = 0; d < hidden; d++)
+            mean_vec[d] /= n_words;
+        ggml_backend_tensor_set(inp_mean, mean_vec.data(), 0, hidden * sizeof(float));
+
+        ggml_backend_graph_compute(ctx->backend, gf1);
+
+        // Read pass 1 outputs
+        std::vector<float> ps_data(n_words * hidden), pe_data(n_words * hidden);
+        std::vector<float> pf_data(hidden), er_data(n_labels * hidden);
+        ggml_backend_tensor_get(ps, ps_data.data(), 0, ps_data.size() * sizeof(float));
+        ggml_backend_tensor_get(pe, pe_data.data(), 0, pe_data.size() * sizeof(float));
+        ggml_backend_tensor_get(pf, pf_data.data(), 0, pf_data.size() * sizeof(float));
+        ggml_backend_tensor_get(er, er_data.data(), 0, er_data.size() * sizeof(float));
+
+        ggml_gallocr_free(ga1);
+        ggml_free(hg);
+
+        // Assemble span concatenations: (3*hidden, n_spans)
+        std::vector<float> span_cat(n_spans * 3 * hidden);
+        for (int s = 0; s < n_spans; s++) {
+            float * dst = span_cat.data() + s * 3 * hidden;
+            memcpy(dst,              ps_data.data() + all_spans[s].ws * hidden, hidden * sizeof(float));
+            memcpy(dst + hidden,     pe_data.data() + all_spans[s].we * hidden, hidden * sizeof(float));
+            memcpy(dst + 2 * hidden, pf_data.data(),                            hidden * sizeof(float));
+        }
+
+        // ---- Pass 2 graph: batched out_project + scoring ----
+        size_t hbuf2 = ggml_tensor_overhead() * 128 + ggml_graph_overhead_custom(1024, false);
+        ggml_init_params hip2 = { hbuf2, nullptr, true };
+        ggml_context * hg2 = ggml_init(hip2);
+
+        ggml_tensor * inp_sp = ggml_new_tensor_2d(hg2, GGML_TYPE_F32, 3 * hidden, n_spans);
+        ggml_set_name(inp_sp, "inp_spans"); ggml_set_input(inp_sp);
+
+        ggml_tensor * inp_er = ggml_new_tensor_2d(hg2, GGML_TYPE_F32, hidden, n_labels);
+        ggml_set_name(inp_er, "inp_ent_reps"); ggml_set_input(inp_er);
+
+        // out_project MLP: (3*hidden, n_spans) → (hidden, n_spans)
+        ggml_tensor * sr = build_mlp2(hg2, inp_sp,
+            model.span_out_proj_0_w, model.span_out_proj_0_b,
+            model.span_out_proj_3_w, model.span_out_proj_3_b);
+
+        // scores = ent_reps^T × span_reps → (n_labels, n_spans)
+        ggml_tensor * scores = ggml_mul_mat(hg2, inp_er, sr);
+        ggml_set_name(scores, "scores"); ggml_set_output(scores);
+
+        ggml_cgraph * gf2 = ggml_new_graph_custom(hg2, 1024, false);
+        ggml_build_forward_expand(gf2, scores);
+
+        ggml_gallocr_t ga2 = ggml_gallocr_new(
+            ggml_backend_get_default_buffer_type(ctx->backend));
+        if (!ggml_gallocr_alloc_graph(ga2, gf2)) {
+            fprintf(stderr, "[gliner] pass2 graph alloc failed\n");
+            ggml_gallocr_free(ga2); ggml_free(hg2);
+            return 0;
+        }
+
+        ggml_backend_tensor_set(inp_sp, span_cat.data(), 0, span_cat.size() * sizeof(float));
+        ggml_backend_tensor_set(inp_er, er_data.data(), 0, er_data.size() * sizeof(float));
+
+        ggml_backend_graph_compute(ctx->backend, gf2);
+
+        // Read scores
+        std::vector<float> scores_raw(n_labels * n_spans);
+        ggml_backend_tensor_get(scores, scores_raw.data(), 0, scores_raw.size() * sizeof(float));
+
+        ggml_gallocr_free(ga2);
+        ggml_free(hg2);
+
+        // ---- Threshold + collect candidates ----
+        for (int s = 0; s < n_spans; s++) {
             for (int e = 0; e < n_labels; e++) {
-                float dot = 0.0f;
-                for (int d = 0; d < hidden; d++)
-                    dot += span_rep[d] * ent_reps[e * hidden + d];
-                float score = 1.0f / (1.0f + expf(-dot));
+                float dot = scores_raw[s * n_labels + e];
+                float sc = 1.0f / (1.0f + expf(-dot));
 
-                // Debug: show top scores
-                if (g_debug && score > 0.01f) {
+                if (g_debug && sc > 0.01f) {
                     GDBG("  span [%d-%d] '%s..%s' vs '%s': dot=%.4f score=%.4f",
-                         ws, we,
-                         ws < (int)words.size() ? words[ws].c_str() : "?",
-                         we < (int)words.size() ? words[we].c_str() : "?",
-                         ent_labels[e].c_str(), dot, score);
+                         all_spans[s].ws, all_spans[s].we,
+                         all_spans[s].ws < (int)words.size() ? words[all_spans[s].ws].c_str() : "?",
+                         all_spans[s].we < (int)words.size() ? words[all_spans[s].we].c_str() : "?",
+                         ent_labels[e].c_str(), dot, sc);
                 }
 
-                if (score >= threshold) {
-                    candidates.push_back({ws, we, e, score});
-                }
+                if (sc >= threshold)
+                    candidates.push_back({all_spans[s].ws, all_spans[s].we, e, sc});
             }
         }
     }
