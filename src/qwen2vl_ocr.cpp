@@ -1198,3 +1198,110 @@ bool generate(context &ctx,
 }
 
 }  // namespace qwen2vl_ocr
+
+// ── C ABI wrapper ────────────────────────────────────────────────────
+
+struct qwen2vl_ocr_context {
+    qwen2vl_ocr::context inner;
+    std::string prompt = "Describe this image.";
+    int max_tokens = 512;
+    std::string last_result;
+
+    // Hardcoded chat template token IDs for Qwen2.5-VL
+    // <|im_start|>=151644, <|im_end|>=151645, system=8948, \n=198,
+    // user=872, assistant=77091, <|vision_start|>=151652,
+    // <|image_pad|>=151655, <|vision_end|>=151653
+    // "You are a helpful assistant." = [2610, 525, 264, 10950, 17847, 13]
+    std::vector<int32_t> build_token_ids(int n_image_tokens) {
+        std::vector<int32_t> ids;
+        // <|im_start|>system\nYou are a helpful assistant.<|im_end|>\n
+        ids.insert(ids.end(), {151644, 8948, 198, 2610, 525, 264, 10950, 17847, 13, 151645, 198});
+        // <|im_start|>user\n<|vision_start|>
+        ids.insert(ids.end(), {151644, 872, 198, 151652});
+        // <|image_pad|> × n_image_tokens
+        for (int i = 0; i < n_image_tokens; i++) ids.push_back(151655);
+        // <|vision_end|>
+        ids.push_back(151653);
+        // TODO: tokenize prompt text properly — for now hardcode simple prompts
+        // "Describe this image." = [41215, 419, 2168, 13]
+        // We'll append the prompt bytes as-is for now
+        // This is a placeholder — proper BPE tokenization needed
+        ids.insert(ids.end(), {41215, 419, 2168, 13});
+        // <|im_end|>\n<|im_start|>assistant\n
+        ids.insert(ids.end(), {151645, 198, 151644, 77091, 198});
+        return ids;
+    }
+};
+
+qwen2vl_ocr_context * qwen2vl_ocr_init(const char * model_path, int n_threads) {
+    auto * ctx = new qwen2vl_ocr_context();
+    if (!qwen2vl_ocr::load(ctx->inner, model_path, n_threads, 1)) {
+        delete ctx;
+        return nullptr;
+    }
+    return ctx;
+}
+
+void qwen2vl_ocr_free(qwen2vl_ocr_context * ctx) {
+    if (ctx) {
+        qwen2vl_ocr::free_(ctx->inner);
+        delete ctx;
+    }
+}
+
+void qwen2vl_ocr_set_prompt(qwen2vl_ocr_context * ctx, const char * prompt) {
+    if (ctx && prompt) ctx->prompt = prompt;
+}
+
+void qwen2vl_ocr_set_max_tokens(qwen2vl_ocr_context * ctx, int max_tokens) {
+    if (ctx) ctx->max_tokens = max_tokens;
+}
+
+const char * qwen2vl_ocr_recognize_raw(
+        qwen2vl_ocr_context * ctx,
+        const uint8_t * pixel_bytes,
+        int width, int height, int channels,
+        int * out_len) {
+    if (!ctx || !pixel_bytes) return nullptr;
+
+    // Convert to float RGB and preprocess
+    // TODO: use image_preprocess.cpp for proper Qwen2VL preprocessing
+    // For now: normalize to [0,1], basic resize
+    const int n_pixels = width * height;
+    std::vector<float> rgb(n_pixels * 3);
+    for (int i = 0; i < n_pixels; i++) {
+        if (channels == 1) {
+            float v = pixel_bytes[i] / 255.0f;
+            rgb[i*3+0] = rgb[i*3+1] = rgb[i*3+2] = v;
+        } else if (channels == 3) {
+            rgb[i*3+0] = pixel_bytes[i*3+0] / 255.0f;
+            rgb[i*3+1] = pixel_bytes[i*3+1] / 255.0f;
+            rgb[i*3+2] = pixel_bytes[i*3+2] / 255.0f;
+        } else if (channels == 4) {
+            rgb[i*3+0] = pixel_bytes[i*4+0] / 255.0f;
+            rgb[i*3+1] = pixel_bytes[i*4+1] / 255.0f;
+            rgb[i*3+2] = pixel_bytes[i*4+2] / 255.0f;
+        }
+    }
+
+    return qwen2vl_ocr_recognize(ctx, rgb.data(), width, height, out_len);
+}
+
+const char * qwen2vl_ocr_recognize(
+        qwen2vl_ocr_context * ctx,
+        const float * pixels,
+        int width, int height,
+        int * out_len) {
+    if (!ctx || !pixels) return nullptr;
+
+    // TODO: proper Qwen2VL image preprocessing (smart_resize, patchify)
+    // For now this is a stub that requires pre-processed patches
+    // The full pipeline needs image_preprocess.cpp integration
+    fprintf(stderr, "qwen2vl_ocr_recognize: image preprocessing not yet integrated\n");
+    fprintf(stderr, "  Use test-qwen2vl-e2e with pre-processed patches instead\n");
+
+    ctx->last_result = "";
+    if (out_len) *out_len = 0;
+    return ctx->last_result.c_str();
+}
+
