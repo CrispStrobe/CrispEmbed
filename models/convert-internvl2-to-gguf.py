@@ -65,10 +65,11 @@ def q8_0(t):
 
 
 def is_norm_or_bias(name):
-    """Tensors that must stay F32 (norms, biases, embeddings, heads)."""
+    """Tensors that must stay F32 (norms, biases, embeddings, layerscale)."""
     return any(k in name for k in [
         "norm", "bias", "embed_tokens", "lm_head",
         "class_embedding", "position_embedding",
+        ".ls1", ".ls2",  # LayerScale — used in ggml_mul which requires F32
     ])
 
 
