@@ -1681,3 +1681,26 @@ clue where the error originated. Adding per-step diff checkpoints
 immediately showed that LN1 was perfect (cos=1.0) but shifted data
 was cos=0.0 — pinpointing the cyclic shift function as the culprit.
 Always instrument fine-grained checkpoints for shifted/masked operations.
+
+## Swin PatchMerging: sub-patch concat order matters
+
+HF Swin PatchMerging concatenates 2×2 sub-patches in the order
+`[TL, BL, TR, BR]` (top-left, bottom-left, top-right, bottom-right):
+```python
+x0 = x[:, 0::2, 0::2, :]  # top-left
+x1 = x[:, 1::2, 0::2, :]  # bottom-left
+x2 = x[:, 0::2, 1::2, :]  # top-right
+x3 = x[:, 1::2, 1::2, :]  # bottom-right
+```
+The natural C loop `(2y, 2x), (2y, 2x+1), (2y+1, 2x), (2y+1, 2x+1)`
+gives `[TL, TR, BL, BR]` — positions 1 and 2 swapped. This feeds the
+wrong channels into the LayerNorm+Linear reduction, corrupting ALL
+subsequent stages (cos=-0.37 at encoder output).
+
+## RoBERTa position embedding offset (+2)
+
+RoBERTa position embeddings have `padding_idx=1`. Content positions
+start at index `padding_idx + 1 = 2`. So decode step 0 uses
+`pos_embed[2]`, step 1 uses `pos_embed[3]`, etc. Using index 0
+(random values, norm=0.57) and index 1 (all zeros, padding) produces
+wrong embeddings that cascade through the decoder.
