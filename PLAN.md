@@ -173,8 +173,10 @@ CrispEmbed/
 - [x] **Streaming ColBERT SSE** — DONE. `POST /colbert/score` with
   `Accept: text/event-stream` streams `data: {"index":i,"score":s}` per
   document, then `event: done`. Non-streaming JSON still default.
-- [~] **Surya detector CUDA/GPU testing** — Kaggle kernel pushed
-  (`chr1s4/crispembed-surya-detector-gpu-test`, v2). P100 GPU. Awaiting results.
+- [~] **Surya detector CUDA/GPU testing** — Kaggle kernel ran on P100 (CPU-only,
+  CUDA cmake fails: `CUDA::cuda_driver` ggml upstream issue). F16: 195s, 17 regions
+  detected correctly. Q8_0: crashes (segfault in dequant path — needs investigation).
+  Next: fix Q8_0 crash, investigate ggml CUDA cmake on Kaggle.
 
 #### OCR models — in progress (other agents)
 
