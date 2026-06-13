@@ -162,24 +162,23 @@ CrispEmbed/
 
 ### Active bugs
 
-- [ ] **Layout detection decoder gap** — AIFI + ref_points fixed (score 0.047→0.069),
-  encoder features exact match, but decoder deformable cross-attention still broken
-  (cos=0.345 vs Python). Final score 0.069 vs Python 0.65. Root cause: multi-scale
-  grid sampling or per-layer bbox refinement loop has an indexing/convention error.
+- [ ] **Layout detection decoder weight convention** — Encoder exact match, ref_points
+  exact match, score 0.047→0.114 (Python: 0.65). Three bugs fixed (AIFI head interleave,
+  ref_points init, enc_bbox+anchors). Remaining: `cpu_linear` uses MatMul `(in,out)`
+  convention uniformly but some decoder MatMul weights (`query_pos_head.layers.1`,
+  cross-attn projections) are stored as PyTorch `(out,in)`. Need per-weight convention
+  detection or selective transpose in converter for non-square decoder MatMul weights.
   Branch: `feat/layout-fix`.
 
-- [ ] **BGE-M3 SentencePiece crash** — `crispembed.cpp` loads vocab_size=49408 from
-  clip_text metadata but BGE-M3 has 250002 SPM tokens. Crash in reshape assertion.
-  Blocks ColBERT MaxSim testing with BGE-M3. Pre-existing, not caused by recent changes.
+- [x] **BGE-M3 SentencePiece crash** — FIXED. `clip_text::load()` now checks for
+  `clip_text.hidden_size` metadata key before proceeding. Non-CLIP models fall through
+  to the correct BERT encoder path.
 
 ### Infrastructure gaps
 
 - [ ] **Jina v5 LoRA GGUF adapters** — LoRA API fully implemented (`crispembed_set_lora`,
   etc.) but no HF→GGUF adapter conversion done yet. Need to run converter with
   `--lora-mode=separate` and test per-adapter parity (retrieval/classification/clustering).
-
-- [ ] **Push to remote main** — Local `feat/posformer-port` is 7+ commits ahead of
-  remote `main` with GLiNER DeBERTa, PARSeq, layout fixes, face Q4_K. Needs push.
 
 ### Performance
 
@@ -246,9 +245,9 @@ CrispEmbed/
 - [x] KV cache for prefix-shared decoder batches (deduplicate shared prefix tokens)
 - [x] ColBERT MaxSim scoring — C API + server endpoint (POST /colbert/score)
 - [ ] Live-test LoRA with Jina v5 (end-to-end parity per adapter — needs GGUF adapter conversion first)
-- [~] Layout detection score gap — AIFI head interleave + ref_points fixed (0.047→0.069), decoder cross-attn gap remains
+- [~] Layout detection score gap — 3 bugs fixed (0.047→0.114), decoder weight convention remains
 - [ ] Verify Q8_0 layout model works (dequant path untested)
-- [ ] Fix BGE-M3 SentencePiece vocab mismatch crash
+- [x] Fix BGE-M3 SentencePiece vocab mismatch crash — clip_text guard added
 
 ### Feature gaps vs fastembed-rs
 
