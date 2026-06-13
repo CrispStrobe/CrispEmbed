@@ -173,8 +173,8 @@ CrispEmbed/
 - [x] **Streaming ColBERT SSE** — DONE. `POST /colbert/score` with
   `Accept: text/event-stream` streams `data: {"index":i,"score":s}` per
   document, then `event: done`. Non-streaming JSON still default.
-- [~] **Surya detector CUDA/GPU testing** — Kaggle kernel written
-  (`tools/kaggle/surya-gpu-test/`). Needs to be pushed + run on Kaggle.
+- [~] **Surya detector CUDA/GPU testing** — Kaggle kernel pushed
+  (`chr1s4/crispembed-surya-detector-gpu-test`, v2). P100 GPU. Awaiting results.
 
 #### OCR models — in progress (other agents)
 
