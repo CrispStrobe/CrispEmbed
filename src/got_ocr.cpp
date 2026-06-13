@@ -1,0 +1,1449 @@
+// got_ocr.cpp — GOT-OCR2 engine: SAM ViT-B + Qwen2-0.5B via ggml.
+//
+// Vision: per-layer ggml graph with CPU window partition (SAM ViT-B pattern).
+// LLM: ggml graph with KV cache (standard Qwen2 pattern).
+
+#include "got_ocr.h"
+#include "crispembed_diff.h"
+#include "core/gguf_loader.h"
+#include "ggml.h"
+#include "ggml-alloc.h"
+#include "ggml-backend.h"
+#include "ggml-cpu.h"
+
+#include <algorithm>
+#include <cassert>
+#include <chrono>
+#include <cmath>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
+// ---------------------------------------------------------------------------
+// CPU helpers
+// ---------------------------------------------------------------------------
+
+static std::vector<float> to_f32(const ggml_tensor* t) {
+    if (!t) return {};
+    int n = (int)ggml_nelements(t);
+    std::vector<float> out(n);
+    if (t->type == GGML_TYPE_F32) {
+        memcpy(out.data(), t->data, n * sizeof(float));
+    } else if (t->type == GGML_TYPE_F16) {
+        const ggml_fp16_t* src = (const ggml_fp16_t*)t->data;
+        for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(src[i]);
+    } else {
+        const auto* traits = ggml_get_type_traits(t->type);
+        if (traits && traits->to_float) {
+            traits->to_float(t->data, out.data(), n);
+        } else {
+            memset(out.data(), 0, n * sizeof(float));
+        }
+    }
+    return out;
+}
+
+static void layernorm_cpu(const float* in, float* out, int D,
+                          const float* w, const float* b, float eps = 1e-6f) {
+    double mean = 0;
+    for (int i = 0; i < D; i++) mean += in[i];
+    mean /= D;
+    double var = 0;
+    for (int i = 0; i < D; i++) { double d = in[i] - mean; var += d * d; }
+    var /= D;
+    float s = 1.0f / sqrtf((float)var + eps);
+    for (int i = 0; i < D; i++)
+        out[i] = ((in[i] - (float)mean) * s) * (w ? w[i] : 1.0f) + (b ? b[i] : 0.0f);
+}
+
+static void layernorm2d_cpu(const float* in, float* out,
+                            int C, int H, int W,
+                            const float* w, const float* b, float eps = 1e-6f) {
+    for (int y = 0; y < H; y++) {
+        for (int x = 0; x < W; x++) {
+            double mean = 0;
+            for (int c = 0; c < C; c++)
+                mean += in[c * H * W + y * W + x];
+            mean /= C;
+            double var = 0;
+            for (int c = 0; c < C; c++) {
+                double d = in[c * H * W + y * W + x] - mean;
+                var += d * d;
+            }
+            var /= C;
+            float s = 1.0f / sqrtf((float)var + eps);
+            for (int c = 0; c < C; c++) {
+                float v = (in[c * H * W + y * W + x] - (float)mean) * s;
+                out[c * H * W + y * W + x] = v * (w ? w[c] : 1.0f) + (b ? b[c] : 0.0f);
+            }
+        }
+    }
+}
+
+static void linear_cpu(const float* in, float* out, int in_dim, int out_dim,
+                        const float* w, const float* b) {
+    for (int o = 0; o < out_dim; o++) {
+        float s = b ? b[o] : 0.0f;
+        for (int i = 0; i < in_dim; i++)
+            s += in[i] * w[o * in_dim + i];
+        out[o] = s;
+    }
+}
+
+static void conv2d_cpu(const float* in, float* out,
+                        const float* weight, const float* bias,
+                        int in_ch, int out_ch, int H, int W,
+                        int kh, int kw, int stride, int pad) {
+    int out_H = (H + 2 * pad - kh) / stride + 1;
+    int out_W = (W + 2 * pad - kw) / stride + 1;
+    for (int oc = 0; oc < out_ch; oc++) {
+        float b = bias ? bias[oc] : 0.0f;
+        for (int oy = 0; oy < out_H; oy++) {
+            for (int ox = 0; ox < out_W; ox++) {
+                float sum = b;
+                for (int ic = 0; ic < in_ch; ic++) {
+                    for (int ky2 = 0; ky2 < kh; ky2++) {
+                        for (int kx2 = 0; kx2 < kw; kx2++) {
+                            int iy = oy * stride - pad + ky2;
+                            int ix = ox * stride - pad + kx2;
+                            if (iy >= 0 && iy < H && ix >= 0 && ix < W) {
+                                float pixel = in[ic * H * W + iy * W + ix];
+                                int w_idx = oc * (in_ch * kh * kw)
+                                            + ic * kh * kw + ky2 * kw + kx2;
+                                sum += pixel * weight[w_idx];
+                            }
+                        }
+                    }
+                }
+                out[oc * out_H * out_W + oy * out_W + ox] = sum;
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Window partition / unpartition (SAM ViT pattern)
+// ---------------------------------------------------------------------------
+
+static void window_partition(const float* hidden, float* win_out,
+                              int nP, int ws, int C) {
+    int pad_h = (ws - nP % ws) % ws;
+    int pad_w = (ws - nP % ws) % ws;
+    int pH = nP + pad_h, pW = nP + pad_w;
+    int nWh = pH / ws, nWw = pW / ws;
+    int wN = ws * ws;
+
+    memset(win_out, 0, (size_t)nWh * nWw * wN * C * sizeof(float));
+
+    for (int wh = 0; wh < nWh; wh++) {
+        for (int ww = 0; ww < nWw; ww++) {
+            int win_idx = wh * nWw + ww;
+            for (int y = 0; y < ws; y++) {
+                int sy = wh * ws + y;
+                if (sy >= nP) continue;
+                for (int x = 0; x < ws; x++) {
+                    int sx = ww * ws + x;
+                    if (sx >= nP) continue;
+                    int src_tok = sy * nP + sx;
+                    int dst_tok = win_idx * wN + y * ws + x;
+                    memcpy(win_out + dst_tok * C, hidden + src_tok * C, C * sizeof(float));
+                }
+            }
+        }
+    }
+}
+
+static void window_unpartition(const float* win_in, float* hidden,
+                                int nP, int ws, int C) {
+    int pad_h = (ws - nP % ws) % ws;
+    int pad_w = (ws - nP % ws) % ws;
+    int pH = nP + pad_h, pW = nP + pad_w;
+    int nWh = pH / ws, nWw = pW / ws;
+    int wN = ws * ws;
+
+    for (int wh = 0; wh < nWh; wh++) {
+        for (int ww = 0; ww < nWw; ww++) {
+            int win_idx = wh * nWw + ww;
+            for (int y = 0; y < ws; y++) {
+                int sy = wh * ws + y;
+                if (sy >= nP) continue;
+                for (int x = 0; x < ws; x++) {
+                    int sx = ww * ws + x;
+                    if (sx >= nP) continue;
+                    int dst_tok = sy * nP + sx;
+                    int src_tok = win_idx * wN + y * ws + x;
+                    memcpy(hidden + dst_tok * C, win_in + src_tok * C, C * sizeof(float));
+                }
+            }
+        }
+    }
+}
+
+// Decomposed RPE: get rel_pos table for given q_size, k_size.
+// rel_pos: (L, head_dim), L = 2*input_size - 1
+// Returns: (q_size * k_size * head_dim) in row-major [qi][ki][d]
+static std::vector<float> get_rel_pos(int q_size, int k_size,
+                                       const float* rel_pos, int L, int head_dim) {
+    int max_rel_dist = 2 * std::max(q_size, k_size) - 1;
+    std::vector<float> resized(head_dim * max_rel_dist);
+    for (int c = 0; c < head_dim; c++) {
+        for (int i = 0; i < max_rel_dist; i++) {
+            float src = (float)i * (L - 1) / std::max(max_rel_dist - 1, 1);
+            int lo = (int)src;
+            int hi = std::min(lo + 1, L - 1);
+            float frac = src - lo;
+            resized[i * head_dim + c] =
+                rel_pos[lo * head_dim + c] * (1.0f - frac) +
+                rel_pos[hi * head_dim + c] * frac;
+        }
+    }
+    float q_scale = std::max((float)k_size / q_size, 1.0f);
+    float k_scale = std::max((float)q_size / k_size, 1.0f);
+    float offset = (float)(k_size - 1) * q_scale;
+    std::vector<float> result(q_size * k_size * head_dim);
+    for (int qi = 0; qi < q_size; qi++) {
+        for (int ki = 0; ki < k_size; ki++) {
+            int idx = (int)(qi * q_scale - ki * k_scale + offset);
+            idx = std::max(0, std::min(idx, max_rel_dist - 1));
+            for (int c = 0; c < head_dim; c++)
+                result[(qi * k_size + ki) * head_dim + c] = resized[idx * head_dim + c];
+        }
+    }
+    return result;
+}
+
+// Reformat RPE table from row-major [(q*aH+k)*hd+d] to ggml col-major [hd, aH, aH].
+static void reformat_rp_table(const float* rp_in, float* rp_out, int aH, int hd) {
+    for (int q = 0; q < aH; q++)
+        for (int k = 0; k < aH; k++)
+            for (int d = 0; d < hd; d++)
+                rp_out[d + k * hd + q * aH * hd] = rp_in[(q * aH + k) * hd + d];
+}
+
+// ---------------------------------------------------------------------------
+// ggml graph helpers
+// ---------------------------------------------------------------------------
+
+static ggml_tensor* ensure_f32(ggml_context* g, ggml_tensor* t) {
+    if (!t || t->type == GGML_TYPE_F32) return t;
+    return ggml_cast(g, t, GGML_TYPE_F32);
+}
+
+static ggml_tensor* g_ln(ggml_context* g, ggml_tensor* x,
+                          ggml_tensor* w, ggml_tensor* b, float eps = 1e-6f) {
+    if (!w) return x;
+    x = ggml_norm(g, x, eps);
+    x = ggml_mul(g, x, ensure_f32(g, w));
+    if (b) x = ggml_add(g, x, ensure_f32(g, b));
+    return x;
+}
+
+static ggml_tensor* g_linear(ggml_context* g, ggml_tensor* x,
+                              ggml_tensor* w, ggml_tensor* b) {
+    if (!w) return x;
+    x = ggml_mul_mat(g, w, x);
+    if (b) x = ggml_add(g, x, ensure_f32(g, b));
+    return x;
+}
+
+// ---------------------------------------------------------------------------
+// Load model
+// ---------------------------------------------------------------------------
+
+static bool load_hparams(got_ocr::context &ctx, const char *path) {
+    gguf_context *g = core_gguf::open_metadata(path);
+    if (!g) return false;
+
+    auto u32 = [&](const char *key, uint32_t def) -> uint32_t {
+        return core_gguf::kv_u32(g, key, def);
+    };
+    auto f32v = [&](const char *key, float def) -> float {
+        return core_gguf::kv_f32(g, key, def);
+    };
+
+    auto &v = ctx.m.vhp;
+    v.depth = u32("got_ocr.vision.depth", v.depth);
+    v.hidden_size = u32("got_ocr.vision.hidden_size", v.hidden_size);
+    v.intermediate_size = u32("got_ocr.vision.intermediate_size", v.intermediate_size);
+    v.num_heads = u32("got_ocr.vision.num_heads", v.num_heads);
+    v.head_dim = v.hidden_size / v.num_heads;
+    v.patch_size = u32("got_ocr.vision.patch_size", v.patch_size);
+    v.image_size = u32("got_ocr.vision.image_size", v.image_size);
+    v.window_size = u32("got_ocr.vision.window_size", v.window_size);
+    v.neck_out_channels = u32("got_ocr.vision.neck_out_channels", v.neck_out_channels);
+
+    // Global attention indexes
+    {
+        int key_id = gguf_find_key(g, "got_ocr.vision.global_attn_indexes");
+        if (key_id >= 0) {
+            int n = (int)gguf_get_arr_n(g, key_id);
+            v.global_attn_indexes.resize(n);
+            const void *data = gguf_get_arr_data(g, key_id);
+            memcpy(v.global_attn_indexes.data(), data, n * sizeof(int32_t));
+        } else {
+            v.global_attn_indexes = {2, 5, 8, 11};
+        }
+    }
+
+    // Image mean/std
+    {
+        int key_id = gguf_find_key(g, "got_ocr.vision.image_mean");
+        if (key_id >= 0 && gguf_get_arr_n(g, key_id) >= 3) {
+            const void *data = gguf_get_arr_data(g, key_id);
+            memcpy(v.image_mean, data, 3 * sizeof(float));
+        }
+    }
+    {
+        int key_id = gguf_find_key(g, "got_ocr.vision.image_std");
+        if (key_id >= 0 && gguf_get_arr_n(g, key_id) >= 3) {
+            const void *data = gguf_get_arr_data(g, key_id);
+            memcpy(v.image_std, data, 3 * sizeof(float));
+        }
+    }
+
+    auto &l = ctx.m.lhp;
+    l.vocab_size = u32("got_ocr.vocab_size", l.vocab_size);
+    l.hidden_size = u32("got_ocr.hidden_size", l.hidden_size);
+    l.intermediate_size = u32("got_ocr.intermediate_size", l.intermediate_size);
+    l.num_hidden_layers = u32("got_ocr.num_hidden_layers", l.num_hidden_layers);
+    l.num_attention_heads = u32("got_ocr.num_attention_heads", l.num_attention_heads);
+    l.num_key_value_heads = u32("got_ocr.num_key_value_heads", l.num_key_value_heads);
+    l.head_dim = u32("got_ocr.head_dim", l.head_dim);
+    l.max_position_embeddings = u32("got_ocr.max_position_embeddings", l.max_position_embeddings);
+    l.rms_norm_eps = f32v("got_ocr.rms_norm_eps", l.rms_norm_eps);
+    l.rope_theta = f32v("got_ocr.rope_theta", l.rope_theta);
+    l.image_token_id = u32("got_ocr.image_token_id", l.image_token_id);
+    l.image_start_token_id = u32("got_ocr.image_start_token_id", l.image_start_token_id);
+    l.image_end_token_id = u32("got_ocr.image_end_token_id", l.image_end_token_id);
+    l.image_token_len = u32("got_ocr.image_token_len", l.image_token_len);
+    l.eos_token_id = u32("got_ocr.tokenizer.eos_id", l.eos_token_id);
+
+    // Tokenizer
+    {
+        int vocab_idx = gguf_find_key(g, "tokenizer.ggml.tokens");
+        if (vocab_idx >= 0) {
+            int n = (int)gguf_get_arr_n(g, vocab_idx);
+            ctx.tok.id_to_piece.resize(n);
+            for (int i = 0; i < n; i++)
+                ctx.tok.id_to_piece[i] = gguf_get_arr_str(g, vocab_idx, i);
+            ctx.tok.vocab_size = n;
+            ctx.tok.eos_id = (int)l.eos_token_id;
+        }
+    }
+
+    core_gguf::free_metadata(g);
+    return true;
+}
+
+static bool load_tensors(got_ocr::context &ctx, const char *path) {
+    core_gguf::WeightLoad wl;
+    if (!core_gguf::load_weights(path, ctx.backend, "got_ocr", wl)) return false;
+
+    ctx.model_ctx = wl.ctx;
+    ctx.model_buf = wl.buf;
+    auto &t = wl.tensors;
+    auto F = [&](const char *n) -> ggml_tensor* {
+        auto it = t.find(n);
+        return it != t.end() ? it->second : nullptr;
+    };
+
+    auto &m = ctx.m;
+    auto &v = m.vhp;
+    auto &l = m.lhp;
+
+    // Vision
+    m.patch_embed_w = F("v.patch_embed.weight");
+    m.patch_embed_b = F("v.patch_embed.bias");
+    m.pos_embed = F("v.pos_embed");
+
+    m.vis_blocks.resize(v.depth);
+    for (uint32_t i = 0; i < v.depth; i++) {
+        char buf[128];
+        auto &blk = m.vis_blocks[i];
+        blk.is_global = false;
+        for (int g : v.global_attn_indexes)
+            if (g == (int)i) { blk.is_global = true; break; }
+
+        auto BF = [&](const char *s) -> ggml_tensor* {
+            snprintf(buf, sizeof(buf), "v.blk.%d.%s", i, s);
+            return F(buf);
+        };
+        blk.ln1_w = BF("ln1.weight");     blk.ln1_b = BF("ln1.bias");
+        blk.ln2_w = BF("ln2.weight");     blk.ln2_b = BF("ln2.bias");
+        blk.qkv_w = BF("attn_qkv.weight"); blk.qkv_b = BF("attn_qkv.bias");
+        blk.proj_w = BF("attn_proj.weight"); blk.proj_b = BF("attn_proj.bias");
+        blk.rel_pos_h = BF("attn_rel_pos_h");
+        blk.rel_pos_w = BF("attn_rel_pos_w");
+        blk.ffn_up_w = BF("ffn_up.weight");   blk.ffn_up_b = BF("ffn_up.bias");
+        blk.ffn_down_w = BF("ffn_down.weight"); blk.ffn_down_b = BF("ffn_down.bias");
+    }
+
+    // Neck
+    m.neck_conv1_w = F("v.neck_conv1.weight");
+    m.neck_ln1_w = F("v.neck_ln1.weight"); m.neck_ln1_b = F("v.neck_ln1.bias");
+    m.neck_conv2_w = F("v.neck_conv2.weight");
+    m.neck_ln2_w = F("v.neck_ln2.weight"); m.neck_ln2_b = F("v.neck_ln2.bias");
+    m.net_2_w = F("v.net_2.weight");
+    m.net_3_w = F("v.net_3.weight");
+    m.projector_w = F("v.projector.weight");
+    m.projector_b = F("v.projector.bias");
+
+    // LLM
+    m.embed_tokens = F("l.embed_tokens.weight");
+    m.llm_layers.resize(l.num_hidden_layers);
+    for (uint32_t i = 0; i < l.num_hidden_layers; i++) {
+        char buf[128];
+        auto &ly = m.llm_layers[i];
+        auto LF = [&](const char *s) -> ggml_tensor* {
+            snprintf(buf, sizeof(buf), "l.blk.%d.%s", i, s);
+            return F(buf);
+        };
+        ly.input_layernorm_w = LF("input_layernorm.weight");
+        ly.post_attention_layernorm_w = LF("post_attention_layernorm.weight");
+        ly.q_w = LF("attn_q.weight"); ly.q_b = LF("attn_q.bias");
+        ly.k_w = LF("attn_k.weight"); ly.k_b = LF("attn_k.bias");
+        ly.v_w = LF("attn_v.weight"); ly.v_b = LF("attn_v.bias");
+        ly.o_w = LF("attn_o.weight");
+        ly.ffn_gate_w = LF("ffn_gate.weight");
+        ly.ffn_up_w = LF("ffn_up.weight");
+        ly.ffn_down_w = LF("ffn_down.weight");
+    }
+    m.output_norm_w = F("l.output_norm.weight");
+    m.lm_head_w = F("l.lm_head.weight");  // nullptr if tied
+
+    return true;
+}
+
+// Precompute RPE tables for each layer (called once at load)
+static void precompute_rpe_tables(got_ocr::context &ctx) {
+    auto &v = ctx.m.vhp;
+    int n_layers = (int)v.depth;
+    int hd = (int)v.head_dim;
+    int nP = (int)(v.image_size / v.patch_size);
+    int ws = (int)v.window_size;
+
+    ctx.rp_h_per_layer.resize(n_layers);
+    ctx.rp_w_per_layer.resize(n_layers);
+
+    for (int li = 0; li < n_layers; li++) {
+        auto &blk = ctx.m.vis_blocks[li];
+        if (!blk.rel_pos_h || !blk.rel_pos_w) continue;
+
+        auto rph_raw = to_f32(blk.rel_pos_h);
+        auto rpw_raw = to_f32(blk.rel_pos_w);
+        int L_h = (int)blk.rel_pos_h->ne[1]; // (L, hd) in ggml = ne[0]=hd, ne[1]=L
+        int L_w = (int)blk.rel_pos_w->ne[1];
+
+        int aH, aW;
+        if (blk.is_global) { aH = nP; aW = nP; }
+        else { aH = ws; aW = ws; }
+
+        auto rph = get_rel_pos(aH, aH, rph_raw.data(), L_h, hd);
+        auto rpw = get_rel_pos(aW, aW, rpw_raw.data(), L_w, hd);
+        ctx.rp_h_per_layer[li] = std::move(rph);
+        ctx.rp_w_per_layer[li] = std::move(rpw);
+    }
+}
+
+bool got_ocr::load(context &ctx, const char *gguf_path, int n_threads, int verbosity) {
+    ctx.n_threads = n_threads;
+    ctx.verbosity = verbosity;
+
+    if (!load_hparams(ctx, gguf_path)) {
+        fprintf(stderr, "got_ocr: failed to load hparams\n");
+        return false;
+    }
+
+    ctx.backend = ggml_backend_init_best();
+    if (!ctx.backend) {
+        ctx.backend = ggml_backend_cpu_init();
+        if (ctx.backend) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
+    }
+    if (!ctx.backend) return false;
+
+    // Scheduler
+    ggml_backend_t backends[] = { ctx.backend };
+    ctx.sched = ggml_backend_sched_new(backends, nullptr, 1, 32768, false, false);
+    ctx.compute_meta.resize(16 * 1024 * 1024);
+
+    if (!load_tensors(ctx, gguf_path)) {
+        fprintf(stderr, "got_ocr: failed to load tensors\n");
+        return false;
+    }
+
+    precompute_rpe_tables(ctx);
+
+    if (verbosity >= 1) {
+        auto &v = ctx.m.vhp;
+        auto &l = ctx.m.lhp;
+        fprintf(stderr, "got_ocr: loaded %s\n", gguf_path);
+        fprintf(stderr, "  vision: %dL %dd %dH patch=%d img=%d ws=%d\n",
+                v.depth, v.hidden_size, v.num_heads, v.patch_size, v.image_size, v.window_size);
+        fprintf(stderr, "  llm: %dL %dd %dH/%dKV inter=%d vocab=%d\n",
+                l.num_hidden_layers, l.hidden_size, l.num_attention_heads,
+                l.num_key_value_heads, l.intermediate_size, l.vocab_size);
+        fprintf(stderr, "  rope_theta=%.0f rms_eps=%g\n", l.rope_theta, l.rms_norm_eps);
+        fprintf(stderr, "  tokenizer: %d tokens\n", ctx.tok.vocab_size);
+    }
+    return true;
+}
+
+void got_ocr::free_(context &ctx) {
+    if (ctx.kvc.buf) ggml_backend_buffer_free(ctx.kvc.buf);
+    if (ctx.kvc.ctx) ggml_free(ctx.kvc.ctx);
+    if (ctx.sched) ggml_backend_sched_free(ctx.sched);
+    if (ctx.model_buf) ggml_backend_buffer_free(ctx.model_buf);
+    if (ctx.model_ctx) ggml_free(ctx.model_ctx);
+    if (ctx.backend) ggml_backend_free(ctx.backend);
+    ctx = {};
+}
+
+// ---------------------------------------------------------------------------
+// Vision encoder: per-layer ggml graph (SAM ViT-B)
+// ---------------------------------------------------------------------------
+
+static ggml_cgraph* build_vis_layer_graph(ggml_context* g,
+                                           got_ocr::context* ctx,
+                                           int li, int C, int T,
+                                           int aH, int aW, int nW, int n_heads,
+                                           bool skip_ln1 = false) {
+    auto& layer = ctx->m.vis_blocks[li];
+    int hd = C / n_heads;
+    int wN = aH * aW;
+    int batch = n_heads * nW;
+    float attn_scale = 1.0f / sqrtf((float)hd);
+
+    ggml_cgraph* gf = ggml_new_graph_custom(g, 512, false);
+
+    // Input
+    ggml_tensor* inp = ggml_new_tensor_2d(g, GGML_TYPE_F32, C, T);
+    ggml_set_name(inp, "layer_input");
+    ggml_set_input(inp);
+
+    ggml_tensor* res_inp = nullptr;
+    if (skip_ln1) {
+        res_inp = ggml_new_tensor_2d(g, GGML_TYPE_F32, C, T);
+        ggml_set_name(res_inp, "residual_input");
+        ggml_set_input(res_inp);
+    }
+
+    ggml_tensor* rp_h_in = ggml_new_tensor_3d(g, GGML_TYPE_F32, hd, aH, aH);
+    ggml_set_name(rp_h_in, "rp_h");
+    ggml_set_input(rp_h_in);
+
+    ggml_tensor* rp_w_in = ggml_new_tensor_3d(g, GGML_TYPE_F32, hd, aW, aW);
+    ggml_set_name(rp_w_in, "rp_w");
+    ggml_set_input(rp_w_in);
+
+    // Pre-LN (LayerNorm, not RMSNorm)
+    ggml_tensor* cur = skip_ln1 ? inp : g_ln(g, inp, layer.ln1_w, layer.ln1_b, 1e-6f);
+
+    // Fused QKV
+    ggml_tensor* qkv = g_linear(g, cur, layer.qkv_w, layer.qkv_b);
+
+    // Split Q, K, V
+    ggml_tensor* Q = ggml_cont(g, ggml_view_2d(g, qkv, C, T, qkv->nb[1], 0));
+    ggml_tensor* K = ggml_cont(g, ggml_view_2d(g, qkv, C, T, qkv->nb[1],
+                                                (size_t)C * sizeof(float)));
+    ggml_tensor* V = ggml_cont(g, ggml_view_2d(g, qkv, C, T, qkv->nb[1],
+                                                (size_t)2 * C * sizeof(float)));
+
+    // Reshape: [C, T] → [hd, n_heads, wN, nW] → permute to [hd, wN, n_heads, nW]
+    Q = ggml_reshape_4d(g, Q, hd, n_heads, wN, nW);
+    Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
+    Q = ggml_reshape_3d(g, Q, hd, wN, batch);
+
+    K = ggml_reshape_4d(g, K, hd, n_heads, wN, nW);
+    K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
+    K = ggml_reshape_3d(g, K, hd, wN, batch);
+
+    V = ggml_reshape_4d(g, V, hd, n_heads, wN, nW);
+    V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
+    V = ggml_reshape_3d(g, V, hd, wN, batch);
+
+    // Attention scores
+    ggml_tensor* scores = ggml_mul_mat(g, K, Q);
+    scores = ggml_scale(g, scores, attn_scale);
+
+    // Decomposed RPE
+    ggml_tensor* Q_4d = ggml_reshape_4d(g, Q, hd, aW, aH, batch);
+    ggml_tensor* rp_h_4d = ggml_reshape_4d(g, rp_h_in, hd, aH, aH, 1);
+    ggml_tensor* rel_h = ggml_mul_mat(g, rp_h_4d, Q_4d);
+    rel_h = ggml_reshape_3d(g, rel_h, aH, wN, batch);
+    rel_h = ggml_reshape_4d(g, rel_h, 1, aH, wN, batch);
+
+    ggml_tensor* Q_w = ggml_cont(g, ggml_permute(g, Q_4d, 0, 2, 1, 3));
+    ggml_tensor* rp_w_4d = ggml_reshape_4d(g, rp_w_in, hd, aW, aW, 1);
+    ggml_tensor* rel_w = ggml_mul_mat(g, rp_w_4d, Q_w);
+    rel_w = ggml_cont(g, ggml_permute(g, rel_w, 0, 2, 1, 3));
+    rel_w = ggml_reshape_3d(g, rel_w, aW, wN, batch);
+    rel_w = ggml_reshape_4d(g, rel_w, aW, 1, wN, batch);
+
+    scores = ggml_reshape_4d(g, scores, aW, aH, wN, batch);
+    scores = ggml_add(g, scores, rel_h);
+    scores = ggml_add(g, scores, rel_w);
+    scores = ggml_reshape_3d(g, scores, wN, wN, batch);
+
+    // Softmax
+    scores = ggml_soft_max_ext(g, scores, nullptr, 1.0f, 0.0f);
+
+    // Attention output
+    ggml_tensor* Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
+    ggml_tensor* attn = ggml_mul_mat(g, Vt, scores);
+
+    attn = ggml_reshape_4d(g, attn, hd, wN, n_heads, nW);
+    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+    attn = ggml_reshape_2d(g, attn, C, T);
+
+    // Output projection
+    attn = g_linear(g, attn, layer.proj_w, layer.proj_b);
+
+    // Residual
+    ggml_tensor* res_base = skip_ln1 ? res_inp : inp;
+    cur = ggml_add(g, res_base, attn);
+
+    // Pre-LN + GELU MLP
+    ggml_tensor* residual = cur;
+    cur = g_ln(g, cur, layer.ln2_w, layer.ln2_b, 1e-6f);
+    ggml_tensor* up = g_linear(g, cur, layer.ffn_up_w, layer.ffn_up_b);
+    up = ggml_gelu(g, up);
+    cur = g_linear(g, up, layer.ffn_down_w, layer.ffn_down_b);
+    cur = ggml_add(g, residual, cur);
+
+    ggml_set_name(cur, "layer_output");
+    ggml_set_output(cur);
+    ggml_build_forward_expand(gf, cur);
+    return gf;
+}
+
+bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &out) {
+    auto &v = ctx.m.vhp;
+    int C = (int)v.hidden_size;
+    int PS = (int)v.patch_size;
+    int nP = (int)(v.image_size / v.patch_size);
+    int N = nP * nP;
+    int n_heads = (int)v.num_heads;
+    int hd = C / n_heads;
+    int ws = (int)v.window_size;
+    int imgS = (int)v.image_size;
+
+    // Patch embedding on CPU
+    auto pe_w = to_f32(ctx.m.patch_embed_w);
+    auto pe_b = to_f32(ctx.m.patch_embed_b);
+    auto pos = to_f32(ctx.m.pos_embed);
+
+    int patch_dim = 3 * PS * PS;
+    std::vector<float> hidden(N * C);
+
+    for (int py = 0; py < nP; py++) {
+        for (int px = 0; px < nP; px++) {
+            int tok = py * nP + px;
+            std::vector<float> patch(patch_dim);
+            for (int c = 0; c < 3; c++)
+                for (int ky = 0; ky < PS; ky++)
+                    for (int kx = 0; kx < PS; kx++)
+                        patch[c * PS * PS + ky * PS + kx] =
+                            pixels[c * imgS * imgS + (py * PS + ky) * imgS + (px * PS + kx)];
+            for (int o = 0; o < C; o++) {
+                float s = pe_b.empty() ? 0.0f : pe_b[o];
+                for (int i = 0; i < patch_dim; i++)
+                    s += pe_w[o * patch_dim + i] * patch[i];
+                hidden[tok * C + o] = s + (pos.empty() ? 0.0f : pos[tok * C + o]);
+            }
+        }
+    }
+
+    if (ctx.verbosity >= 2)
+        fprintf(stderr, "got_ocr: patch_embed done (%d, %d)\n", N, C);
+
+    // Dequant LN weights for windowed layers
+    auto ln1_ws = std::vector<std::vector<float>>(v.depth);
+    auto ln1_bs = std::vector<std::vector<float>>(v.depth);
+    for (uint32_t li = 0; li < v.depth; li++) {
+        if (!ctx.m.vis_blocks[li].is_global) {
+            ln1_ws[li] = to_f32(ctx.m.vis_blocks[li].ln1_w);
+            ln1_bs[li] = to_f32(ctx.m.vis_blocks[li].ln1_b);
+        }
+    }
+
+    auto t_start = std::chrono::steady_clock::now();
+
+    // Per-layer ggml graph
+    for (uint32_t li = 0; li < v.depth; li++) {
+        auto &layer = ctx.m.vis_blocks[li];
+        bool is_global = layer.is_global;
+        int aH, aW;
+        if (is_global) { aH = nP; aW = nP; }
+        else { aH = ws; aW = ws; }
+        int wN = aH * aW;
+
+        int nW, T;
+        if (is_global) {
+            nW = 1;
+            T = N;
+        } else {
+            int pad_h = (ws - nP % ws) % ws;
+            int pad_w = (ws - nP % ws) % ws;
+            int pH = nP + pad_h, pW = nP + pad_w;
+            nW = (pH / ws) * (pW / ws);
+            T = wN * nW;
+        }
+
+        // For windowed: LN1 on CPU before partition
+        bool skip_ln1 = !is_global;
+        std::vector<float> ln1_hidden;
+        if (skip_ln1) {
+            ln1_hidden.resize(N * C);
+            for (int n = 0; n < N; n++)
+                layernorm_cpu(hidden.data() + n * C, ln1_hidden.data() + n * C, C,
+                              ln1_ws[li].data(), ln1_bs[li].data(), 1e-6f);
+        }
+
+        std::vector<float> graph_input;
+        std::vector<float> residual_input;
+        if (is_global) {
+            graph_input.assign(hidden.begin(), hidden.end());
+        } else {
+            graph_input.resize(T * C, 0.0f);
+            window_partition(ln1_hidden.data(), graph_input.data(), nP, ws, C);
+            residual_input.resize(T * C, 0.0f);
+            window_partition(hidden.data(), residual_input.data(), nP, ws, C);
+        }
+
+        // RPE tables
+        std::vector<float> rp_h_ggml(aH * aH * hd);
+        std::vector<float> rp_w_ggml(aW * aW * hd);
+        reformat_rp_table(ctx.rp_h_per_layer[li].data(), rp_h_ggml.data(), aH, hd);
+        reformat_rp_table(ctx.rp_w_per_layer[li].data(), rp_w_ggml.data(), aW, hd);
+
+        // Build graph
+        size_t meta_size = 8 * 1024 * 1024;
+        std::vector<uint8_t> meta_buf(meta_size);
+        ggml_init_params ip = { meta_size, meta_buf.data(), true };
+        ggml_context* gc = ggml_init(ip);
+
+        ggml_cgraph* gf = build_vis_layer_graph(gc, &ctx, li, C, T, aH, aW, nW, n_heads,
+                                                 skip_ln1);
+
+        ggml_backend_sched_reset(ctx.sched);
+        ggml_backend_sched_alloc_graph(ctx.sched, gf);
+
+        ggml_tensor* inp_t = ggml_graph_get_tensor(gf, "layer_input");
+        ggml_backend_tensor_set(inp_t, graph_input.data(), 0, (size_t)T * C * sizeof(float));
+
+        if (skip_ln1) {
+            ggml_tensor* res_t = ggml_graph_get_tensor(gf, "residual_input");
+            ggml_backend_tensor_set(res_t, residual_input.data(), 0, (size_t)T * C * sizeof(float));
+        }
+
+        ggml_tensor* rph_t = ggml_graph_get_tensor(gf, "rp_h");
+        ggml_backend_tensor_set(rph_t, rp_h_ggml.data(), 0, (size_t)aH * aH * hd * sizeof(float));
+
+        ggml_tensor* rpw_t = ggml_graph_get_tensor(gf, "rp_w");
+        ggml_backend_tensor_set(rpw_t, rp_w_ggml.data(), 0, (size_t)aW * aW * hd * sizeof(float));
+
+        ggml_backend_sched_graph_compute(ctx.sched, gf);
+
+        ggml_tensor* out_t = ggml_graph_get_tensor(gf, "layer_output");
+        std::vector<float> graph_output(T * C);
+        ggml_backend_tensor_get(out_t, graph_output.data(), 0, (size_t)T * C * sizeof(float));
+        ggml_free(gc);
+
+        // Unpartition
+        if (is_global) {
+            memcpy(hidden.data(), graph_output.data(), N * C * sizeof(float));
+        } else {
+            window_unpartition(graph_output.data(), hidden.data(), nP, ws, C);
+        }
+
+        // Per-layer diff comparison (must happen here, before hidden is overwritten)
+        if (!ctx.diff_ref_path.empty()) {
+            char name[64];
+            snprintf(name, sizeof(name), "vis_layer_%d", li);
+            crispembed_diff::Ref ref;
+            if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(name)) {
+                auto r = ref.compare(name, hidden.data(), N * C);
+                fprintf(stderr, "  %s: cos_min=%.6f max_abs=%.6f %s\n",
+                        name, r.cos_min, r.max_abs,
+                        r.cos_min >= 0.999 ? "PASS" : "FAIL");
+            }
+        }
+
+        if (ctx.verbosity >= 2)
+            fprintf(stderr, "got_ocr: vis_layer_%d done (%s, T=%d)\n",
+                    li, is_global ? "global" : "window", T);
+    }
+
+    auto t_end = std::chrono::steady_clock::now();
+    float ms = std::chrono::duration<float, std::milli>(t_end - t_start).count();
+    if (ctx.verbosity >= 1)
+        fprintf(stderr, "got_ocr: ViT done %.0f ms (%d layers)\n", ms, v.depth);
+
+    // ── Neck (CPU) ──────────────────────────────────────────────
+    int nC = (int)v.neck_out_channels;
+
+    // Permute to NCHW: [N, C] = [nP*nP, 768] → [768, nP, nP]
+    std::vector<float> chw(C * nP * nP);
+    for (int tok = 0; tok < N; tok++) {
+        int y = tok / nP, x = tok % nP;
+        for (int c = 0; c < C; c++)
+            chw[c * nP * nP + y * nP + x] = hidden[tok * C + c];
+    }
+
+    // Conv1 (768→256, 1×1)
+    auto nc1_w = to_f32(ctx.m.neck_conv1_w);
+    std::vector<float> neck1(nC * nP * nP);
+    conv2d_cpu(chw.data(), neck1.data(), nc1_w.data(), nullptr,
+               C, nC, nP, nP, 1, 1, 1, 0);
+
+    // LN2d 1
+    auto nln1_w = to_f32(ctx.m.neck_ln1_w);
+    auto nln1_b = to_f32(ctx.m.neck_ln1_b);
+    std::vector<float> neck1_ln(nC * nP * nP);
+    layernorm2d_cpu(neck1.data(), neck1_ln.data(), nC, nP, nP,
+                    nln1_w.data(), nln1_b.data());
+
+    // Conv2 (256→256, 3×3, pad=1)
+    auto nc2_w = to_f32(ctx.m.neck_conv2_w);
+    std::vector<float> neck2(nC * nP * nP);
+    conv2d_cpu(neck1_ln.data(), neck2.data(), nc2_w.data(), nullptr,
+               nC, nC, nP, nP, 3, 3, 1, 1);
+
+    // LN2d 2
+    auto nln2_w = to_f32(ctx.m.neck_ln2_w);
+    auto nln2_b = to_f32(ctx.m.neck_ln2_b);
+    std::vector<float> neck2_ln(nC * nP * nP);
+    layernorm2d_cpu(neck2.data(), neck2_ln.data(), nC, nP, nP,
+                    nln2_w.data(), nln2_b.data());
+
+    // ── Downsample (CPU): Conv(256→512, 3×3, s2, p1) → Conv(512→1024, 3×3, s2, p1) ──
+    int ds1_out_ch = 512;
+    int ds1_H = (nP + 2 * 1 - 3) / 2 + 1;  // (64+2-3)/2+1 = 32
+    int ds1_W = ds1_H;
+    auto n2_w = to_f32(ctx.m.net_2_w);
+    std::vector<float> ds1(ds1_out_ch * ds1_H * ds1_W);
+    conv2d_cpu(neck2_ln.data(), ds1.data(), n2_w.data(), nullptr,
+               nC, ds1_out_ch, nP, nP, 3, 3, 2, 1);
+
+    int ds2_out_ch = 1024;
+    int ds2_H = (ds1_H + 2 * 1 - 3) / 2 + 1;  // (32+2-3)/2+1 = 16
+    int ds2_W = ds2_H;
+    auto n3_w = to_f32(ctx.m.net_3_w);
+    std::vector<float> ds2(ds2_out_ch * ds2_H * ds2_W);
+    conv2d_cpu(ds1.data(), ds2.data(), n3_w.data(), nullptr,
+               ds1_out_ch, ds2_out_ch, ds1_H, ds1_W, 3, 3, 2, 1);
+
+    // flatten(2).permute(0,2,1) → [256, 1024] (16*16=256 tokens, 1024 dim)
+    int n_vis_tokens = ds2_H * ds2_W;
+    int vis_D = ds2_out_ch;
+    std::vector<float> vis_flat(n_vis_tokens * vis_D);
+    for (int tok = 0; tok < n_vis_tokens; tok++) {
+        int y = tok / ds2_W, x = tok % ds2_W;
+        for (int c = 0; c < vis_D; c++)
+            vis_flat[tok * vis_D + c] = ds2[c * ds2_H * ds2_W + y * ds2_W + x];
+    }
+
+    // ── Projector (CPU): Linear(1024, 1024) ──
+    auto proj_w = to_f32(ctx.m.projector_w);
+    auto proj_b = to_f32(ctx.m.projector_b);
+    std::vector<float> proj_out(n_vis_tokens * vis_D);
+    for (int tok = 0; tok < n_vis_tokens; tok++) {
+        linear_cpu(vis_flat.data() + tok * vis_D,
+                   proj_out.data() + tok * vis_D,
+                   vis_D, vis_D, proj_w.data(),
+                   proj_b.empty() ? nullptr : proj_b.data());
+    }
+
+    // Diff: projector output
+    if (!ctx.diff_ref_path.empty()) {
+        crispembed_diff::Ref ref;
+        if (ref.load(ctx.diff_ref_path.c_str())) {
+            if (ref.has("vis_proj_output")) {
+                auto r = ref.compare("vis_proj_output", proj_out.data(), n_vis_tokens * vis_D);
+                fprintf(stderr, "  vis_proj_output: cos_min=%.6f max_abs=%.6f %s\n",
+                        r.cos_min, r.max_abs,
+                        r.cos_min >= 0.999 ? "PASS" : "FAIL");
+            }
+            if (ref.has("vis_neck_output")) {
+                // Compare neck output (before downsample)
+                std::vector<float> neck_hwc(N * nC);
+                for (int tok = 0; tok < N; tok++) {
+                    int y = tok / nP, x = tok % nP;
+                    for (int c = 0; c < nC; c++)
+                        neck_hwc[tok * nC + c] = neck2_ln[c * nP * nP + y * nP + x];
+                }
+                auto r = ref.compare("vis_neck_output", neck_hwc.data(), N * nC);
+                fprintf(stderr, "  vis_neck_output: cos_min=%.6f max_abs=%.6f %s\n",
+                        r.cos_min, r.max_abs,
+                        r.cos_min >= 0.999 ? "PASS" : "FAIL");
+            }
+            if (ref.has("vis_downsample_output")) {
+                auto r = ref.compare("vis_downsample_output", vis_flat.data(), n_vis_tokens * vis_D);
+                fprintf(stderr, "  vis_downsample_output: cos_min=%.6f max_abs=%.6f %s\n",
+                        r.cos_min, r.max_abs,
+                        r.cos_min >= 0.999 ? "PASS" : "FAIL");
+            }
+        }
+    }
+
+    // Output
+    out.hidden = (float *)malloc(n_vis_tokens * vis_D * sizeof(float));
+    memcpy(out.hidden, proj_out.data(), n_vis_tokens * vis_D * sizeof(float));
+    out.n_tokens = n_vis_tokens;
+    out.hidden_dim = vis_D;
+
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// Tokenizer
+// ---------------------------------------------------------------------------
+
+std::string got_ocr::tokenizer::decode(const int32_t *ids, int n) const {
+    std::string result;
+    for (int i = 0; i < n; i++) {
+        int id = ids[i];
+        if (id == eos_id) continue;
+        if (id < 0 || id >= vocab_size) continue;
+        const auto &piece = id_to_piece[id];
+        // Skip special tokens
+        if (!piece.empty() && piece[0] == '<' && piece.back() == '>') continue;
+        result += piece;
+    }
+    return result;
+}
+
+// ---------------------------------------------------------------------------
+// KV cache
+// ---------------------------------------------------------------------------
+
+static bool alloc_kv_cache(got_ocr::context &ctx, int max_seq) {
+    auto &l = ctx.m.lhp;
+    if (ctx.kvc.allocated && ctx.kvc.max_seq >= max_seq) {
+        ctx.kvc.n_past = 0;
+        // Clear
+        ggml_backend_buffer_clear(ctx.kvc.buf, 0);
+        return true;
+    }
+    if (ctx.kvc.buf) ggml_backend_buffer_free(ctx.kvc.buf);
+    if (ctx.kvc.ctx) ggml_free(ctx.kvc.ctx);
+
+    size_t ctx_size = 2 * ggml_tensor_overhead() + 1024;
+    ggml_init_params ip = { ctx_size, nullptr, true };
+    ctx.kvc.ctx = ggml_init(ip);
+
+    int hd = (int)l.head_dim;
+    int nkv = (int)l.num_key_value_heads;
+    int nl = (int)l.num_hidden_layers;
+    ctx.kvc.k = ggml_new_tensor_4d(ctx.kvc.ctx, GGML_TYPE_F16, hd, max_seq, nkv, nl);
+    ctx.kvc.v = ggml_new_tensor_4d(ctx.kvc.ctx, GGML_TYPE_F16, hd, max_seq, nkv, nl);
+
+    ctx.kvc.buf = ggml_backend_alloc_ctx_tensors(ctx.kvc.ctx, ctx.backend);
+    if (!ctx.kvc.buf) return false;
+    ggml_backend_buffer_clear(ctx.kvc.buf, 0);
+
+    ctx.kvc.max_seq = max_seq;
+    ctx.kvc.n_past = 0;
+    ctx.kvc.allocated = true;
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// LLM graph
+// ---------------------------------------------------------------------------
+
+struct llm_graph {
+    ggml_cgraph *gf = nullptr;
+    ggml_context *gctx = nullptr;
+    ggml_tensor *token_in = nullptr;
+    ggml_tensor *pos_in = nullptr;
+    ggml_tensor *mask_in = nullptr;
+    ggml_tensor *img_embeds = nullptr;
+    ggml_tensor *splice_mask = nullptr;
+    ggml_tensor *output = nullptr;
+    ggml_tensor *logits_out = nullptr;
+    std::vector<ggml_tensor *> layer_outputs;
+};
+
+static llm_graph build_llm_graph(got_ocr::context &ctx, int n_tokens, int n_past,
+                                  bool use_kv_cache) {
+    auto &m = ctx.m;
+    auto &l = m.lhp;
+    int D = (int)l.hidden_size;
+    int T = n_tokens;
+    int Lk = use_kv_cache ? (n_past + T) : T;
+    int n_layers = (int)l.num_hidden_layers;
+    int nh = (int)l.num_attention_heads;
+    int nkv = (int)l.num_key_value_heads;
+    int hd = (int)l.head_dim;
+    float eps = l.rms_norm_eps;
+
+    int tpl = use_kv_cache ? 80 : 60;
+    size_t meta_size = ((size_t)n_layers * tpl + 300) * ggml_tensor_overhead()
+                       + ggml_graph_overhead_custom(32768, false);
+
+    llm_graph lg;
+    ggml_init_params ip = { meta_size, ctx.compute_meta.data(), true };
+    lg.gctx = ggml_init(ip);
+    auto *g = lg.gctx;
+
+    lg.gf = ggml_new_graph_custom(g, 32768, false);
+
+    // Token input
+    lg.token_in = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+    ggml_set_name(lg.token_in, "token_ids");
+    ggml_set_input(lg.token_in);
+
+    // Embedding
+    ggml_tensor *x = ggml_get_rows(g, m.embed_tokens, lg.token_in);
+
+    // Splice (prefill only)
+    if (n_past == 0) {
+        lg.img_embeds = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+        ggml_set_name(lg.img_embeds, "img_embeds");
+        ggml_set_input(lg.img_embeds);
+
+        lg.splice_mask = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+        ggml_set_name(lg.splice_mask, "splice_mask");
+        ggml_set_input(lg.splice_mask);
+
+        x = ggml_add(g, ggml_mul(g, x, lg.splice_mask), lg.img_embeds);
+    }
+
+    // Position IDs (standard 1D RoPE)
+    lg.pos_in = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+    ggml_set_name(lg.pos_in, "pos_ids");
+    ggml_set_input(lg.pos_in);
+
+    // Causal mask
+    lg.mask_in = ggml_new_tensor_2d(g, GGML_TYPE_F16, Lk, T);
+    ggml_set_name(lg.mask_in, "mask");
+    ggml_set_input(lg.mask_in);
+
+    // Transformer layers
+    auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor * {
+        return ggml_mul(g, ggml_rms_norm(g, t, eps), w);
+    };
+
+    for (int i = 0; i < n_layers; i++) {
+        auto &ly = m.llm_layers[i];
+
+        // Pre-norm
+        ggml_tensor *h = rmsnorm(x, ly.input_layernorm_w);
+
+        // Q/K/V projections
+        ggml_tensor *Q = g_linear(g, h, ly.q_w, ly.q_b);
+        ggml_tensor *K = g_linear(g, h, ly.k_w, ly.k_b);
+        ggml_tensor *V = g_linear(g, h, ly.v_w, ly.v_b);
+
+        // Reshape for RoPE: [D, T] → [hd, nh, T]
+        Q = ggml_reshape_3d(g, Q, hd, nh, T);
+        K = ggml_reshape_3d(g, K, hd, nkv, T);
+        V = ggml_reshape_3d(g, V, hd, nkv, T);
+
+        // Standard RoPE
+        Q = ggml_rope_ext(g, Q, lg.pos_in, nullptr,
+                          hd, GGML_ROPE_TYPE_NEOX, 0, l.rope_theta,
+                          1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        K = ggml_rope_ext(g, K, lg.pos_in, nullptr,
+                          hd, GGML_ROPE_TYPE_NEOX, 0, l.rope_theta,
+                          1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+
+        ggml_tensor *Kfull, *Vfull;
+
+        if (use_kv_cache) {
+            // Permute for cache: [hd, nh, T] → [hd, T, nh, 1]
+            ggml_tensor *K_perm = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
+            K_perm = ggml_reshape_4d(g, K_perm, hd, T, nkv, 1);
+            ggml_tensor *V_perm = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
+            V_perm = ggml_reshape_4d(g, V_perm, hd, T, nkv, 1);
+
+            // Write to cache
+            size_t k_nb1 = ctx.kvc.k->nb[1];
+            size_t k_nb3 = ctx.kvc.k->nb[3];
+            ggml_tensor *k_view = ggml_view_4d(g, ctx.kvc.k,
+                hd, T, nkv, 1,
+                ctx.kvc.k->nb[1], ctx.kvc.k->nb[2], ctx.kvc.k->nb[3],
+                (size_t)i * k_nb3 + (size_t)n_past * k_nb1);
+            ggml_build_forward_expand(lg.gf, ggml_cpy(g, K_perm, k_view));
+
+            size_t v_nb1 = ctx.kvc.v->nb[1];
+            size_t v_nb3 = ctx.kvc.v->nb[3];
+            ggml_tensor *v_view = ggml_view_4d(g, ctx.kvc.v,
+                hd, T, nkv, 1,
+                ctx.kvc.v->nb[1], ctx.kvc.v->nb[2], ctx.kvc.v->nb[3],
+                (size_t)i * v_nb3 + (size_t)n_past * v_nb1);
+            ggml_build_forward_expand(lg.gf, ggml_cpy(g, V_perm, v_view));
+
+            // Read full cache
+            Kfull = ggml_view_3d(g, ctx.kvc.k,
+                hd, Lk, nkv,
+                ctx.kvc.k->nb[1], ctx.kvc.k->nb[2],
+                (size_t)i * k_nb3);
+            Vfull = ggml_view_3d(g, ctx.kvc.v,
+                hd, Lk, nkv,
+                ctx.kvc.v->nb[1], ctx.kvc.v->nb[2],
+                (size_t)i * v_nb3);
+        } else {
+            // No cache: just permute
+            Kfull = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
+            Vfull = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
+        }
+
+        // GQA broadcast (MHA: nh==nkv, so this is a no-op)
+        int kv_repeat = nh / nkv;
+        if (kv_repeat > 1) {
+            Kfull = ggml_reshape_4d(g, Kfull, hd, Lk, 1, nkv);
+            ggml_tensor *K_tgt = ggml_new_tensor_4d(g, Kfull->type, hd, Lk, kv_repeat, nkv);
+            Kfull = ggml_repeat(g, Kfull, K_tgt);
+            Kfull = ggml_reshape_3d(g, Kfull, hd, Lk, nh);
+
+            Vfull = ggml_reshape_4d(g, Vfull, hd, Lk, 1, nkv);
+            ggml_tensor *V_tgt = ggml_new_tensor_4d(g, Vfull->type, hd, Lk, kv_repeat, nkv);
+            Vfull = ggml_repeat(g, Vfull, V_tgt);
+            Vfull = ggml_reshape_3d(g, Vfull, hd, Lk, nh);
+        }
+
+        // Flash attention
+        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
+        ggml_tensor *attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, lg.mask_in,
+                                                 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
+        attn = ggml_reshape_2d(g, attn, D, T);
+
+        // Output projection
+        attn = ggml_mul_mat(g, ly.o_w, attn);
+
+        // Residual
+        x = ggml_add(g, x, attn);
+
+        // FFN
+        h = rmsnorm(x, ly.post_attention_layernorm_w);
+        ggml_tensor *gate = ggml_silu(g, ggml_mul_mat(g, ly.ffn_gate_w, h));
+        ggml_tensor *up = ggml_mul_mat(g, ly.ffn_up_w, h);
+        ggml_tensor *ffn = ggml_mul_mat(g, ly.ffn_down_w, ggml_mul(g, gate, up));
+        x = ggml_add(g, x, ffn);
+
+        ggml_set_name(x, "layer_out");
+        ggml_set_output(x);
+        lg.layer_outputs.push_back(x);
+    }
+
+    // Final norm
+    x = rmsnorm(x, m.output_norm_w);
+    ggml_set_name(x, "final_norm");
+    ggml_set_output(x);
+    lg.output = x;
+
+    // LM head: tied to embed_tokens if lm_head_w is null
+    ggml_tensor *head_w = m.lm_head_w ? m.lm_head_w : m.embed_tokens;
+    ggml_tensor *logits = ggml_mul_mat(g, head_w, x);
+    ggml_set_name(logits, "logits");
+    ggml_set_output(logits);
+    lg.logits_out = logits;
+
+    ggml_build_forward_expand(lg.gf, logits);
+    return lg;
+}
+
+// ---------------------------------------------------------------------------
+// LLM forward (parity test — uncached, no splice)
+// ---------------------------------------------------------------------------
+
+bool got_ocr::run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
+                               llm_result &out) {
+    int T = n_tokens;
+    auto &l = ctx.m.lhp;
+    int D = (int)l.hidden_size;
+
+    llm_graph lg = build_llm_graph(ctx, T, 0, false);
+
+    ggml_backend_sched_reset(ctx.sched);
+    if (!ggml_backend_sched_alloc_graph(ctx.sched, lg.gf)) {
+        fprintf(stderr, "got_ocr: llm graph alloc failed\n");
+        ggml_free(lg.gctx);
+        return false;
+    }
+
+    // Token IDs
+    ggml_backend_tensor_set(lg.token_in, token_ids, 0, T * sizeof(int32_t));
+
+    // Position IDs (sequential)
+    std::vector<int32_t> pos_data(T);
+    for (int j = 0; j < T; j++) pos_data[j] = j;
+    ggml_backend_tensor_set(lg.pos_in, pos_data.data(), 0, T * sizeof(int32_t));
+
+    // Causal mask
+    std::vector<ggml_fp16_t> mask_data(T * T);
+    for (int qi = 0; qi < T; qi++)
+        for (int ki = 0; ki < T; ki++)
+            mask_data[qi * T + ki] = ggml_fp32_to_fp16(ki > qi ? -INFINITY : 0.0f);
+    ggml_backend_tensor_set(lg.mask_in, mask_data.data(), 0, T * T * sizeof(ggml_fp16_t));
+
+    // Splice disabled: mask=1.0 (keep text), embeds=0.0
+    {
+        std::vector<float> ones(D * T, 1.0f);
+        ggml_backend_tensor_set(lg.splice_mask, ones.data(), 0, D * T * sizeof(float));
+        std::vector<float> zeros(D * T, 0.0f);
+        ggml_backend_tensor_set(lg.img_embeds, zeros.data(), 0, D * T * sizeof(float));
+    }
+
+    ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
+
+    // Read output
+    out.hidden = (float *)malloc(D * T * sizeof(float));
+    ggml_backend_tensor_get(lg.output, out.hidden, 0, D * T * sizeof(float));
+    out.n_tokens = T;
+    out.hidden_dim = D;
+    out.vocab_size = (int)l.vocab_size;
+
+    int V = (int)l.vocab_size;
+    out.logits = (float *)malloc(V * T * sizeof(float));
+    ggml_backend_tensor_get(lg.logits_out, out.logits, 0, V * T * sizeof(float));
+
+    // Diff
+    if (!ctx.diff_ref_path.empty()) {
+        crispembed_diff::Ref ref;
+        if (ref.load(ctx.diff_ref_path.c_str())) {
+            if (ref.has("llm_embed")) {
+                // Can't easily compare embed since we read final norm output
+            }
+            for (int i = 0; i < (int)lg.layer_outputs.size(); i++) {
+                char name[64];
+                snprintf(name, sizeof(name), "llm_layer_%d", i);
+                if (ref.has(name)) {
+                    std::vector<float> layer_out(D * T);
+                    ggml_backend_tensor_get(lg.layer_outputs[i], layer_out.data(),
+                                            0, D * T * sizeof(float));
+                    auto r = ref.compare(name, layer_out.data(), D * T);
+                    fprintf(stderr, "  %s: cos_min=%.6f max_abs=%.6f %s\n",
+                            name, r.cos_min, r.max_abs,
+                            r.cos_min >= 0.999 ? "PASS" : "FAIL");
+                }
+            }
+        }
+    }
+
+    ggml_free(lg.gctx);
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// Cached step helper
+// ---------------------------------------------------------------------------
+
+struct splice_data {
+    std::map<int, int> token_to_image;
+};
+
+static bool run_cached_step(got_ocr::context &ctx,
+                             const int32_t *token_ids, int n_tokens, int n_past,
+                             std::vector<float> &last_logits_out,
+                             const splice_data *sd = nullptr) {
+    auto &l = ctx.m.lhp;
+    int T = n_tokens;
+    int D = (int)l.hidden_size;
+    int V = (int)l.vocab_size;
+
+    llm_graph lg = build_llm_graph(ctx, T, n_past, true);
+
+    ggml_backend_sched_reset(ctx.sched);
+    if (!ggml_backend_sched_alloc_graph(ctx.sched, lg.gf)) return false;
+
+    // Token IDs
+    ggml_backend_tensor_set(lg.token_in, token_ids, 0, T * sizeof(int32_t));
+
+    // Position IDs
+    std::vector<int32_t> pos_data(T);
+    for (int j = 0; j < T; j++) pos_data[j] = n_past + j;
+    ggml_backend_tensor_set(lg.pos_in, pos_data.data(), 0, T * sizeof(int32_t));
+
+    // Causal mask
+    int Lk = n_past + T;
+    std::vector<ggml_fp16_t> mask_data(Lk * T);
+    for (int qi = 0; qi < T; qi++)
+        for (int ki = 0; ki < Lk; ki++)
+            mask_data[qi * Lk + ki] =
+                ggml_fp32_to_fp16(ki > n_past + qi ? -INFINITY : 0.0f);
+    ggml_backend_tensor_set(lg.mask_in, mask_data.data(), 0, Lk * T * sizeof(ggml_fp16_t));
+
+    // Splice
+    if (n_past == 0 && lg.img_embeds && lg.splice_mask) {
+        std::vector<float> img_data(D * T, 0.0f);
+        std::vector<float> mask_f(D * T, 1.0f);
+
+        if (sd) {
+            for (auto &[tok_pos, img_idx] : sd->token_to_image) {
+                if (tok_pos < T) {
+                    for (int d = 0; d < D; d++) {
+                        mask_f[tok_pos * D + d] = 0.0f;
+                        // img_data filled separately
+                    }
+                }
+            }
+        }
+
+        ggml_backend_tensor_set(lg.splice_mask, mask_f.data(), 0, D * T * sizeof(float));
+        ggml_backend_tensor_set(lg.img_embeds, img_data.data(), 0, D * T * sizeof(float));
+    }
+
+    ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
+
+    // Read last token's logits
+    last_logits_out.resize(V);
+    size_t offset = (size_t)(T - 1) * V * sizeof(float);
+    ggml_backend_tensor_get(lg.logits_out, last_logits_out.data(), offset, V * sizeof(float));
+
+    ggml_free(lg.gctx);
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// Generate
+// ---------------------------------------------------------------------------
+
+bool got_ocr::generate(context &ctx,
+                       const float *image_embeds, int n_image_tokens, int embed_dim,
+                       const int32_t *prompt_ids, int n_prompt,
+                       int max_new_tokens,
+                       generate_result &out) {
+    auto &l = ctx.m.lhp;
+    int D = (int)l.hidden_size;
+
+    // KV cache
+    int total_seq = n_prompt + max_new_tokens + 16;
+    if (!alloc_kv_cache(ctx, total_seq)) return false;
+
+    // Build splice mapping
+    splice_data sd;
+    for (int i = 0; i < n_prompt; i++) {
+        if (prompt_ids[i] == (int32_t)l.image_token_id) {
+            int img_idx = (int)sd.token_to_image.size();
+            if (img_idx < n_image_tokens)
+                sd.token_to_image[i] = img_idx;
+        }
+    }
+
+    // Build image embed + splice mask for prefill
+    // We need to set the img_embeds tensor data after the graph is allocated.
+    // For simplicity, do host-side splice into prompt embeddings.
+    // Actually — the splice happens in the graph. We need to pass image_embeds
+    // via the img_embeds input tensor. Build the full img_data array.
+    std::vector<float> img_data(D * n_prompt, 0.0f);
+    std::vector<float> mask_f(D * n_prompt, 1.0f);
+    for (auto &[tok_pos, img_idx] : sd.token_to_image) {
+        for (int d = 0; d < D; d++) {
+            mask_f[tok_pos * D + d] = 0.0f;
+            img_data[tok_pos * D + d] = image_embeds[img_idx * embed_dim + d];
+        }
+    }
+
+    // Prefill
+    int T = n_prompt;
+    auto lg = build_llm_graph(ctx, T, 0, true);
+
+    ggml_backend_sched_reset(ctx.sched);
+    if (!ggml_backend_sched_alloc_graph(ctx.sched, lg.gf)) {
+        ggml_free(lg.gctx);
+        return false;
+    }
+
+    ggml_backend_tensor_set(lg.token_in, prompt_ids, 0, T * sizeof(int32_t));
+
+    std::vector<int32_t> pos_data(T);
+    for (int j = 0; j < T; j++) pos_data[j] = j;
+    ggml_backend_tensor_set(lg.pos_in, pos_data.data(), 0, T * sizeof(int32_t));
+
+    int Lk = T;
+    std::vector<ggml_fp16_t> mask_data(Lk * T);
+    for (int qi = 0; qi < T; qi++)
+        for (int ki = 0; ki < Lk; ki++)
+            mask_data[qi * Lk + ki] =
+                ggml_fp32_to_fp16(ki > qi ? -INFINITY : 0.0f);
+    ggml_backend_tensor_set(lg.mask_in, mask_data.data(), 0, Lk * T * sizeof(ggml_fp16_t));
+
+    ggml_backend_tensor_set(lg.splice_mask, mask_f.data(), 0, D * T * sizeof(float));
+    ggml_backend_tensor_set(lg.img_embeds, img_data.data(), 0, D * T * sizeof(float));
+
+    ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
+
+    int V = (int)l.vocab_size;
+    std::vector<float> last_logits(V);
+    size_t offset = (size_t)(T - 1) * V * sizeof(float);
+    ggml_backend_tensor_get(lg.logits_out, last_logits.data(), offset, V * sizeof(float));
+    ggml_free(lg.gctx);
+
+    // Argmax
+    int next_token = (int)(std::max_element(last_logits.begin(), last_logits.end()) - last_logits.begin());
+    out.token_ids.push_back(next_token);
+    ctx.kvc.n_past = T;
+
+    if (next_token == (int)l.eos_token_id) {
+        out.text = ctx.tok.decode(out.token_ids.data(), (int)out.token_ids.size());
+        return true;
+    }
+
+    // Autoregressive decode
+    for (int step = 0; step < max_new_tokens - 1; step++) {
+        int32_t tok = (int32_t)next_token;
+        std::vector<float> logits;
+        if (!run_cached_step(ctx, &tok, 1, ctx.kvc.n_past, logits))
+            break;
+        ctx.kvc.n_past += 1;
+
+        next_token = (int)(std::max_element(logits.begin(), logits.end()) - logits.begin());
+        out.token_ids.push_back(next_token);
+
+        if (next_token == (int)l.eos_token_id) break;
+    }
+
+    out.text = ctx.tok.decode(out.token_ids.data(), (int)out.token_ids.size());
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// C ABI wrappers
+// ---------------------------------------------------------------------------
+
+struct got_ocr_context {
+    got_ocr::context inner;
+    std::string result;
+};
+
+got_ocr_context * got_ocr_init(const char * model_path, int n_threads) {
+    auto *c = new got_ocr_context;
+    if (!got_ocr::load(c->inner, model_path, n_threads, 1)) {
+        delete c;
+        return nullptr;
+    }
+    return c;
+}
+
+void got_ocr_free(got_ocr_context * ctx) {
+    if (!ctx) return;
+    got_ocr::free_(ctx->inner);
+    delete ctx;
+}
+
+const char * got_ocr_recognize_raw(got_ocr_context * ctx,
+    const uint8_t * px, int w, int h, int ch, int * out_len) {
+    if (!ctx) return nullptr;
+    // TODO: implement full pipeline (resize + normalize + vision + generate)
+    (void)px; (void)w; (void)h; (void)ch;
+    ctx->result = "";
+    if (out_len) *out_len = 0;
+    return ctx->result.c_str();
+}
+
+const char * got_ocr_recognize(got_ocr_context * ctx,
+    const float * px, int w, int h, int * out_len) {
+    if (!ctx) return nullptr;
+    // TODO: implement full pipeline
+    (void)px; (void)w; (void)h;
+    ctx->result = "";
+    if (out_len) *out_len = 0;
+    return ctx->result.c_str();
+}
