@@ -751,6 +751,130 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /colbert/score — ColBERT late interaction scoring
+    // Request:  {"query": "search text", "documents": ["doc1", "doc2", ...]}
+    // Response: {"scores": [{"index": 0, "score": 12.5, "text": "doc1"}, ...], "ms": 5.2}
+    svr.Post("/colbert/score", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no embedding model loaded\"}", "application/json");
+            return;
+        }
+        if (!crispembed_has_colbert(ctx)) {
+            res.status = 400;
+            res.set_content("{\"error\": \"loaded model does not support ColBERT\"}", "application/json");
+            return;
+        }
+
+        // Parse query text
+        std::string query_text;
+        {
+            auto qp = req.body.find("\"query\"");
+            if (qp != std::string::npos) {
+                auto q1 = req.body.find('"', qp + 7);
+                auto q2 = req.body.find('"', q1 + 1);
+                if (q1 != std::string::npos && q2 != std::string::npos)
+                    query_text = req.body.substr(q1 + 1, q2 - q1 - 1);
+            }
+        }
+        if (query_text.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing query field\"}", "application/json");
+            return;
+        }
+
+        // Parse documents array
+        std::vector<std::string> doc_texts;
+        {
+            auto dp = req.body.find("\"documents\"");
+            if (dp != std::string::npos) {
+                auto arr_start = req.body.find('[', dp);
+                if (arr_start != std::string::npos) {
+                    auto arr_end = req.body.find(']', arr_start);
+                    std::string arr = req.body.substr(arr_start + 1, arr_end - arr_start - 1);
+                    size_t i = 0;
+                    while (i < arr.size()) {
+                        auto q1 = arr.find('"', i);
+                        if (q1 == std::string::npos) break;
+                        auto q2 = arr.find('"', q1 + 1);
+                        if (q2 == std::string::npos) break;
+                        doc_texts.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
+                        i = q2 + 1;
+                    }
+                }
+            }
+        }
+        if (doc_texts.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no documents provided\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(model_mutex);
+        auto t0 = std::chrono::high_resolution_clock::now();
+
+        // Encode query
+        int n_query = 0, qdim = 0;
+        const float * query_vecs = crispembed_encode_multivec(ctx, query_text.c_str(), &n_query, &qdim);
+        if (!query_vecs || n_query == 0) {
+            res.status = 500;
+            res.set_content("{\"error\": \"failed to encode query\"}", "application/json");
+            return;
+        }
+
+        // Copy query vecs (encode_multivec invalidates previous pointer)
+        std::vector<float> query_copy(query_vecs, query_vecs + n_query * qdim);
+
+        // Score each document
+        struct scored_doc { int index; float score; };
+        std::vector<scored_doc> results;
+        results.reserve(doc_texts.size());
+
+        for (int i = 0; i < (int)doc_texts.size(); i++) {
+            int n_doc = 0, ddim = 0;
+            const float * doc_vecs = crispembed_encode_multivec(
+                ctx, doc_texts[i].c_str(), &n_doc, &ddim);
+            if (!doc_vecs || n_doc == 0 || ddim != qdim) {
+                results.push_back({i, 0.0f});
+                continue;
+            }
+            float score = crispembed_colbert_score(
+                query_copy.data(), n_query, doc_vecs, n_doc, qdim);
+            results.push_back({i, score});
+        }
+
+        // Sort by score descending
+        std::sort(results.begin(), results.end(),
+                  [](const scored_doc & a, const scored_doc & b) { return a.score > b.score; });
+
+        auto t1 = std::chrono::high_resolution_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        // Build response
+        std::ostringstream js;
+        js << "{\"scores\": [";
+        for (size_t i = 0; i < results.size(); i++) {
+            if (i > 0) js << ", ";
+            // Escape text for JSON
+            std::string escaped;
+            for (char c : doc_texts[results[i].index]) {
+                if (c == '"') escaped += "\\\"";
+                else if (c == '\\') escaped += "\\\\";
+                else if (c == '\n') escaped += "\\n";
+                else escaped += c;
+            }
+            js << "{\"index\": " << results[i].index
+               << ", \"score\": " << results[i].score
+               << ", \"text\": \"" << escaped << "\""
+               << "}";
+        }
+        js << "], \"ms\": " << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /colbert/score %d docs in %.1f ms\n",
+                (int)doc_texts.size(), ms);
+        res.set_content(js.str(), "application/json");
+    });
+
     // POST /math/ocr — formula recognition
     // Request:  {"image": "/path/to/formula.png"}
     // Response: {"latex": "\\frac{a}{b}", "len": 12, "ms": 450.2}
@@ -1112,6 +1236,7 @@ int main(int argc, char ** argv) {
     if (layout_ctx) fprintf(stderr, "  POST /layout/detect   — {\"image\": \"page.png\"}\n");
     if (text_det_ctx) fprintf(stderr, "  POST /text/detect     — {\"image\": \"page.png\"}\n");
     if (ner_ctx) fprintf(stderr, "  POST /ner/extract     — {\"text\": \"...\", \"labels\": [\"person\", ...]}\n");
+    if (ctx && crispembed_has_colbert(ctx)) fprintf(stderr, "  POST /colbert/score   — {\"query\": \"...\", \"documents\": [...]}\n");
     fprintf(stderr, "  GET  /health\n\n");
 
     svr.listen(host, port);
