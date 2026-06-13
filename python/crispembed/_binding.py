@@ -1529,8 +1529,9 @@ class CrispMathOcr:
     Supports pix2tex (printed math), PP-FormulaNet (printed math),
     PP-FormulaNet-L (printed math, best), Texo-Distill (printed math, small),
     HMER (handwritten math), BTTR (handwritten math), PosFormer (handwritten),
-    MixTex (Chinese+English LaTeX), Qwen2.5-VL (VLM, German docs),
-    InternVL2.5 (VLM, EN+DE, OCRBench ~830).
+    MixTex (Chinese+English LaTeX), PARSeq (scene text),
+    Qwen2.5-VL (VLM, German docs), InternVL2.5/2-1B (VLM, EN+DE),
+    GLM-OCR (VLM, 8 langs, OmniDocBench #1).
     Auto-detects architecture from GGUF metadata.
 
     Usage::
