@@ -62,6 +62,25 @@ int main(int argc, char **argv) {
     printf("Vision output: %d tokens, %d dim\n", vr.n_tokens, vr.hidden_dim);
 
     free(vr.hidden);
+
+    // Run LLM forward (if reference has LLM layers)
+    {
+        crispembed_diff::Ref ref2;
+        ref2.load(argv[2]);
+        if (ref2.has("llm_embed")) {
+            printf("\nRunning LLM decoder...\n");
+            int32_t test_tokens[] = {1, 100, 200, 300, 400};
+            glm_ocr::llm_result lr;
+            if (glm_ocr::run_llm_forward(ctx, test_tokens, 5, lr)) {
+                printf("LLM output: %d tokens, %d dim\n", lr.n_tokens, lr.hidden_dim);
+                free(lr.hidden);
+                if (lr.logits) free(lr.logits);
+            } else {
+                fprintf(stderr, "LLM forward failed\n");
+            }
+        }
+    }
+
     glm_ocr::free_(ctx);
     printf("\nDone.\n");
     return 0;
