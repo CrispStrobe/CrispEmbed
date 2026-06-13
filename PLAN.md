@@ -228,7 +228,7 @@ CrispEmbed/
 
 - [x] **InternVL2-1B (0.9B, MIT) — DONE** — InternViT-300M + Qwen2-0.5B, reuses internvl2_ocr.cpp. GGUFs: `cstr/internvl2-1b-crispembed-GGUF` (F16/Q8_0/Q4_K).
 - [x] PARSeq (24M, Apache-2.0) — DONE. ViT encoder + 1-layer two-stream decoder, 94-char ASCII scene text. Base (91MB F32, 24MB Q8_0, 13MB Q4_K) + Tiny (12MB F16, 6MB Q8_0). All verified.
-- [x] **GLM-OCR (0.9B, MIT) — DONE** — CogViT (24L, RMSNorm+SwiGLU, Q/K norm) + Conv2D downsample + Merger + GLM-0.5B (16L, post-norm, mRoPE, Q upscale). Parity 11/11 cos=1.000. GGUFs: `cstr/glm-ocr-crispembed-GGUF` (F16 2.5GB / Q8_0 1.1GB / Q4_K 849MB). OmniDocBench #1.
+- [x] **GLM-OCR (0.9B, MIT) — DONE** — CogViT (24L, RMSNorm+SwiGLU, Q/K norm) + Conv2D downsample + Merger + GLM-0.5B (16L, post-norm, mRoPE, Q upscale). KV cache + generation + tokenizer decode. Parity 11/11 cos=1.000. GGUFs: `cstr/glm-ocr-crispembed-GGUF` (F16 2.5GB / Q8_0 1.1GB / Q4_K 849MB). OmniDocBench #1.
 - [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune (NOT 3B), GGUF-only release with separate mmproj sidecar. German business docs → structured JSON. Requires verifying exact base model (Qwen2-VL-2B vs Qwen2.5-VL-2B) from GGUF metadata. Author labels arch as "qwen2vl". (~2-3 days, may reuse Qwen2VL engine but 2B LLM config differs from our 3B port)
 
 #### Lower priority
