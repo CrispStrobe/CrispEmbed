@@ -167,8 +167,10 @@ CrispEmbed/
 - [~] **Layout detection decoder** — cpu_linear auto-detect for non-square weights.
   Now detects 3/7 regions (max score 0.671 vs Python 0.65). Top 2 detections match.
   Remaining: cross_out cos=0.058 — deformable attention sampling or indexing.
-- [~] **Surya detector CUDA/GPU** — CPU works (F16: 195s, Q8_0/Q4_K working).
-  CUDA cmake fails on Kaggle (`CUDA::cuda_driver` ggml upstream issue).
+- [~] **Surya detector GPU acceleration** — CUDA build works (GGML_CUDA_NO_VMM=ON).
+  Kaggle P100: Q8_0+F16 both detect 17 regions correctly. No speedup yet because
+  `surya_det.cpp` hardcodes `ggml_backend_cpu_init()` — needs `ggml_backend_init_best()`
+  to auto-select CUDA backend for actual GPU acceleration.
 
 #### OCR models — remaining
 
