@@ -4,6 +4,27 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — GLiNER DeBERTa-v3 NER (Apache-2.0)
+
+Added DeBERTa-v3-base backbone to GLiNER NER — `urchade/gliner_medium-v2.1`,
+the most popular GLiNER model (25k+ downloads), fully Apache-2.0 licensed.
+
+**Architecture:** DeBERTa-v3-base (12L, 768h, disentangled c2c+c2p+p2c attention
+with log-bucketed relative positions) + 768→512 projection + BiLSTM (hidden=256)
++ GLiNER markerV0 head (start+end only, no first-token projection).
+
+**Implementation:** Unified `src/gliner_ner.cpp` with dual-backbone support.
+Backbone auto-detected from `gliner.backbone` GGUF metadata. SentencePiece
+tokenizer (128K vocab) via existing `tokenizer_spm.cpp`.
+
+**Quantization:** F32 (747 MB), Q8_0 (198 MB, identical output), Q4_K (152 MB,
+minor span merging at edges).
+
+**New files:** `models/convert-gliner-deberta-to-gguf.py`, HF repo at
+`cstr/gliner-deberta-GGUF`.
+
+---
+
 ## June 2026 — GLiNER zero-shot NER (LFM2.5 backbone)
 
 Added zero-shot Named Entity Recognition via SauerkrautLM-LFM2.5-GLiNER.
