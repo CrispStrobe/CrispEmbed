@@ -156,6 +156,95 @@ std::string tokenizer::decode(const std::vector<int32_t> &ids) const {
     return decode(ids.data(), (int)ids.size());
 }
 
+void tokenizer::build_reverse_map() {
+    piece_to_id.clear();
+    for (int i = 0; i < (int)id_to_piece.size(); i++)
+        piece_to_id[id_to_piece[i]] = i;
+    // Find special tokens
+    auto find = [&](const char *s) -> int {
+        auto it = piece_to_id.find(s);
+        return it != piece_to_id.end() ? it->second : -1;
+    };
+    if (im_start_id < 0) im_start_id = find("<|im_start|>");
+    if (im_end_id < 0) im_end_id = find("<|im_end|>");
+    newline_id = find("\n");
+    if (newline_id < 0) newline_id = find("Ċ");  // GPT-2 BPE '\n'
+}
+
+std::vector<int32_t> tokenizer::encode(const std::string &text) const {
+    // Greedy longest-match encoding using vocab.
+    // Not full BPE but sufficient for short prompts.
+    std::vector<int32_t> ids;
+    size_t pos = 0;
+    while (pos < text.size()) {
+        int best_len = 0;
+        int32_t best_id = -1;
+        // Try longest match first (up to 16 bytes)
+        for (int len = std::min((int)(text.size() - pos), 16); len >= 1; len--) {
+            std::string piece = text.substr(pos, len);
+            auto it = piece_to_id.find(piece);
+            if (it != piece_to_id.end()) {
+                best_len = len;
+                best_id = it->second;
+                break;
+            }
+        }
+        if (best_id >= 0) {
+            ids.push_back(best_id);
+            pos += best_len;
+        } else {
+            // Byte fallback: <0xNN>
+            char hex[8];
+            snprintf(hex, sizeof(hex), "<0x%02X>", (unsigned char)text[pos]);
+            auto it = piece_to_id.find(hex);
+            ids.push_back(it != piece_to_id.end() ? it->second : 0);
+            pos++;
+        }
+    }
+    return ids;
+}
+
+std::vector<int32_t> tokenizer::build_prompt(const std::string &user_text,
+                                              int n_image_tokens) const {
+    // InternVL2 chat template:
+    // <|im_start|>system\nYou are a helpful assistant.<|im_end|>\n
+    // <|im_start|>user\n<IMG_CONTEXT>*N\n{text}<|im_end|>\n
+    // <|im_start|>assistant\n
+    std::vector<int32_t> ids;
+
+    auto add_special = [&](int id) { if (id >= 0) ids.push_back(id); };
+    auto add_text = [&](const std::string &s) {
+        auto toks = encode(s);
+        ids.insert(ids.end(), toks.begin(), toks.end());
+    };
+
+    // System
+    add_special(im_start_id);
+    add_text("system");
+    add_special(newline_id);
+    add_text("You are a helpful assistant.");
+    add_special(im_end_id);
+    add_special(newline_id);
+
+    // User with image
+    add_special(im_start_id);
+    add_text("user");
+    add_special(newline_id);
+    for (int i = 0; i < n_image_tokens; i++)
+        ids.push_back(image_token_id);
+    add_special(newline_id);
+    add_text(user_text);
+    add_special(im_end_id);
+    add_special(newline_id);
+
+    // Assistant
+    add_special(im_start_id);
+    add_text("assistant");
+    add_special(newline_id);
+
+    return ids;
+}
+
 namespace {
 
 // ── Hparams loading ──────────────────────────────────────────────────
@@ -260,6 +349,7 @@ bool load_hparams(context &ctx, const char *path) {
             tok.id_to_piece[i] = gguf_get_arr_str(g, vocab_idx, i);
         }
         tok.vocab_size = n;
+        tok.build_reverse_map();
     }
 
     core_gguf::free_metadata(g);
@@ -1533,12 +1623,10 @@ const char * internvl2_ocr_recognize_raw(
         return "";
     }
 
-    // Build prompt tokens: <|im_start|>user\n<IMG_CONTEXT>*256\n{prompt}<|im_end|>\n<|im_start|>assistant\n
-    // For now, use a simple fixed prompt without tokenizer
-    // TODO: use proper tokenizer from GGUF metadata
-    std::vector<int32_t> prompt_tokens;
-    // Placeholder: just use BOS + a few tokens
-    prompt_tokens.push_back((int32_t)ctx->ctx.m.lhp.bos_token_id);
+    // Build prompt tokens using proper tokenizer
+    int n_img_tokens = vpr.n_image_tokens;
+    std::vector<int32_t> prompt_tokens = ctx->ctx.tok.build_prompt(
+        ctx->prompt, n_img_tokens);
 
     // Generate
     internvl2_ocr::generate_result gen;
@@ -1554,12 +1642,7 @@ const char * internvl2_ocr_recognize_raw(
         return "";
     }
 
-    // For now, return token IDs as comma-separated string (no detokenizer yet)
-    ctx->last_text.clear();
-    for (size_t i = 0; i < gen.token_ids.size(); i++) {
-        if (i > 0) ctx->last_text += ",";
-        ctx->last_text += std::to_string(gen.token_ids[i]);
-    }
+    ctx->last_text = ctx->ctx.tok.decode(gen.token_ids);
 
     if (out_len) *out_len = (int)ctx->last_text.size();
     return ctx->last_text.c_str();
