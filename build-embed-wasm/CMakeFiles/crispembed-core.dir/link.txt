@@ -1,0 +1,2 @@
+/mnt/volume1/emsdk/upstream/emscripten/emar qc libcrispembed-core.a "CMakeFiles/crispembed-core.dir/src/core/gguf_loader.cpp.o" "CMakeFiles/crispembed-core.dir/src/core/mel.cpp.o"
+/mnt/volume1/emsdk/upstream/emscripten/emranlib libcrispembed-core.a

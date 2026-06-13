@@ -1,5 +1,53 @@
 # CrispEmbed — Technical Learnings
 
+## DeBERTa rel_embd must be dequantized for CPU-side expansion
+
+DeBERTa's relative position embeddings are expanded on CPU (log-bucket
+indexing → [H, T*T] tensor) before the ggml graph runs. With quantized
+models (Q8_0/Q4_K), the `rel_embd.weight` tensor is no longer F32 —
+reading it via `ggml_backend_tensor_get` gives raw quantized bytes.
+Must use `tensor_to_f32_backend()` which reads raw bytes then calls
+`ggml_get_type_traits(type)->to_float()` to dequantize. Same applies
+to `encoder_ln_w/b` used in the LayerNorm applied to rel_embd.
+
+## Dual-backbone GLiNER: parameterize span mode and hidden dim
+
+GLiNER models differ in span representation mode:
+- markerV1 (LFM2): concat(proj_start, proj_end, proj_first) → 3*hidden
+- markerV0 (DeBERTa): concat(proj_start, proj_end) → 2*hidden
+
+The out_project MLP input dimension changes accordingly. Parameterize
+`span_cat_dim` based on span_mode rather than hardcoding `3*hidden`.
+Also parameterize `head_dim_gl` (GLiNER head dimension) separately from
+`enc_hidden` (encoder output dimension) to handle the 768→512 projection.
+
+## PARSeq two-stream decoder (XLNet-style attention)
+
+PARSeq's decoder uses a two-stream design from XLNet where both position
+queries and content tokens are maintained separately. Key details:
+
+1. **Token ordering is non-standard**: `[EOS=0, chars=1..94, BOS=95, PAD=96]`.
+   The head output excludes BOS and PAD, so it has 95 classes (0=EOS + 94 chars).
+   This is because `BaseTokenizer` puts `specials_first=(EOS,)` before charset
+   and `specials_last=(BOS,PAD)` after.
+
+2. **Context construction**: The content stream at decode position k is NOT just
+   the token embedding. It's `pos_queries[k-1] + embed(token_k)` for k>=1, and
+   just `embed(BOS)` for k=0 (no position query for BOS — it's "null context").
+
+3. **norm_c is essential**: Context K/V in self-attention are normalized by
+   `norm_c` (LayerNorm), while queries are normalized by `norm_q`. Skipping
+   norm_c produces garbage.
+
+4. **Efficient AR decode**: At step i, only one query position is used
+   (`pos_queries[i]`), with context tokens 0..i. No causal mask needed since
+   T=i+1 and all positions are visible. The paper's `query_mask` only matters
+   for the full N-step forward (training/refinement).
+
+5. **Non-square patch kernel**: Patch embedding uses Conv2d with kernel [4,8]
+   (height 4, width 8). ggml_conv_2d doesn't support non-square kernels, so
+   patch embedding runs CPU-side as a manual extract+matmul.
+
 ## ggml GQA broadcasting (critical for decoder models)
 
 `ggml_mul_mat` natively broadcasts ne[2] when `b->ne[2] % a->ne[2] == 0`.
@@ -1564,71 +1612,3 @@ separate CPU scalar matmul. Batching all spans into a single ggml
 Two-pass approach works well: pass 1 computes proj_start/end/first +
 prompt_rep (independent of spans), then CPU assembles span
 concatenations, pass 2 computes batched out_project + scoring.
-
-## InternVL2: uninitialized graph input tensors cause silent corruption
-
-**Bug**: Vision-text splice tensors (`splice_mask`, `image_embeds`) were
-created as `ggml_set_input()` in the LLM graph but never filled with data
-in `run_llm_forward()`. The backend buffer contained garbage, which
-multiplied with the token embeddings before RMSNorm. Result: cos=-0.978
-(nearly inverted output) — looked like a RoPE or GQA bug.
-
-**Root cause**: The splice code ran on every prefill (n_past==0), but
-only `generate()` and `run_cached_step()` set the mask/embeds. The
-parity-test path (`run_llm_forward`) skipped the setup.
-
-**Fix**: Always set `splice_mask = 1.0` and `image_embeds = 0.0` when
-no image tokens are present. This is the identity transform for the
-splice equation `x = x * mask + image_embeds`.
-
-**Detection pattern**: The diff harness showed cos=1.0 for `llm_embed`
-(before splice) but cos=-0.978 for `llm_layer_0` (after splice+norm).
-Manual RMS computation on the embed matched Python, proving the
-weights and ggml ops were correct. Bisecting between embed and norm
-revealed the splice as the culprit.
-
-**Lesson**: Every `ggml_set_input()` tensor MUST be filled before
-`graph_compute()`. The backend buffer is NOT zero-initialized. Always
-set identity/zero values for optional graph inputs.
-
-## InternVL2: supporting multiple LLM backends in one engine
-
-InternVL2.5-2B uses InternLM2.5 (fused wqkv, no Q/K/V bias), while
-InternVL2-1B uses Qwen2 (separate Q/K/V with bias). Same C++ engine
-(`internvl2_ocr.cpp`) handles both by:
-
-1. Converter auto-detects `model_type` from config.json and uses the
-   appropriate tensor naming (attention.wqkv vs self_attn.q_proj)
-2. C++ loads biases as optional (`get()` returns nullptr if absent)
-3. Graph builder applies bias only when tensor is non-null:
-   `if (ly.q_b) Q = ggml_add(g, Q, ly.q_b);`
-
-**Tokenizer difference**: InternLM2 uses SentencePiece BPE (▁ prefix),
-Qwen2 uses GPT-2 byte-level BPE. C++ decode detects by vocab_size
-(>100K = GPT-2) and applies the correct decode path. GPT-2 path uses
-`core_bpe::byte_encoder()` inverse table.
-
-## InternVL2: pixel unshuffle vs learned downsample
-
-InternVL2 uses **pixel unshuffle** (ps_version='v2'): pure reshape, no
-learned parameters. 1024 tokens of dim 1024 → 256 tokens of dim 4096.
-Done on CPU host-side (not in ggml graph) because it's just a reshape.
-
-GLM-OCR uses a **learned Conv2D downsample** [1536, 1024, 2, 2] instead.
-This requires a ggml conv2d op in the graph.
-
-## InternVL2: flash_attn_ext mask must be F16
-
-`ggml_flash_attn_ext` asserts `mask->type == GGML_TYPE_F16`. Using F32
-mask causes an immediate abort. Fill with `ggml_fp32_to_fp16(-INFINITY)`
-for masked positions and `ggml_fp32_to_fp16(0.0f)` for visible positions.
-
-For vision encoder (bidirectional): pass `mask = nullptr`.
-
-## Quantizer: tensors used in ggml binary ops must match types
-
-`ggml_add(F32, Q8_0)` and `ggml_mul(F32, F16)` both fail with
-"unsupported types" on the CPU backend. Tensors that participate in
-element-wise binary ops (position_embedding, class_embedding, LayerScale
-ls1/ls2) must stay F32 in the quantizer. Added guards to
-`tools/quantize.cpp` for these patterns.

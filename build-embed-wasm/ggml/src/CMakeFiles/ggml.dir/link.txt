@@ -1,0 +1,2 @@
+/mnt/volume1/emsdk/upstream/emscripten/emar qc libggml.a "CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o" "CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o"
+/mnt/volume1/emsdk/upstream/emscripten/emranlib libggml.a
