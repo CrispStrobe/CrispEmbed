@@ -160,103 +160,72 @@ CrispEmbed/
 
 ## Pending roadmap
 
-### Active bugs
+### Remaining work (prioritised)
 
-- [~] **Layout detection decoder** — Square weight convention fixed (PyTorch
-  `(out,in)` default for 256×256 weights). Detection count 4→14, cross_out
-  range [-1.3,1.6]→[-7.8,7.6]. Remaining gap: coordinates overshoot image
-  bounds, top score 0.589 vs Python 0.65. May need PIL-exact bilinear
-  resize or remaining deformable attention indexing fix.
+#### Bugs / polish
 
-- [x] **BGE-M3 SentencePiece crash** — FIXED. `clip_text::load()` now checks for
-  `clip_text.hidden_size` metadata key before proceeding. Non-CLIP models fall through
-  to the correct BERT encoder path.
+- [~] **Layout detection decoder** — Square weight fix improved detection 4→14.
+  Remaining: coordinates overshoot image bounds, top score 0.589 vs Python 0.65.
+  May need PIL-exact bilinear resize or deformable attention indexing fix.
+  Model uses `do_normalize=False` (pixels [0,1] only).
+- [~] **MixTex Swin shifted-window attention** — enc_embed cos=1.000 PASS but
+  Swin stage 0 cos=-0.065. Window partition or relative position bias bug.
+- [ ] **Streaming ColBERT SSE** — Add `text/event-stream` mode to existing
+  `POST /colbert/score` endpoint for progressive ranking.
+- [ ] **Surya detector CUDA/GPU testing** — Kaggle kernel (P100/T4).
 
-### Infrastructure gaps
+#### OCR models — in progress (other agents)
 
-- [x] **Jina v5 LoRA GGUF adapters** — DONE. Converted with `--lora-mode=separate`,
-  4 adapters verified cos >= 0.998 vs HF F32. Quantizer fixed to preserve LoRA A/B at F16.
-
-### Performance
-
-- [x] True batched graph for decoder models (single compute for N texts, block-diagonal causal mask, ~3x speedup)
-- [x] KV cache for prefix-shared decoder batches (deduplicate shared prefix tokens in batch layout)
-- [x] SigLIP attention pooling head (mean pool works; attn pool for full parity)
-
-### Models
-
-- [x] CLIP text encoder (causal mask variant)
-- [x] SigLIP-large, CLIP-large conversion + upload
-- [x] SigLIP / ViT quantization (conv2d needs F32 kernel — selective quant)
-- [x] YuNet lightweight face detection alternative
-- [x] SFace INT8 quantization (Q8_0 cos=0.9999, Q4_K cos=0.974; 37→10→6 MB)
-- [x] Face model quantized inference via graph replayer (YuNet F16/Q8_0 working; fixed depthwise IC, ggml_n_dims trailing-1s, Q→F32 dequant path)
-- [x] AuraFace Q4_K quantization (124→35 MB, cos=0.961 vs F16, 3.5x compression)
-- [x] ViT parity: cos 0.8→1.0 (was patch ordering bug — permute(2,1,0) gave column-major spatial, fixed to permute(1,2,0,3) for row-major matching HF)
-- [x] Nomic v2 MoE (MoE routing layer in encoder) — cos=1.000000 vs HF
-- [x] LoRA adapter hot-swap (Jina v5 per-task adapters, pre-compute merge on CPU, ~10-50ms switch)
-- [x] GLiNER DeBERTa-v3 NER (209M, Apache-2.0, dual-backbone with LFM2.5) — Q8_0/Q4_K, HF uploaded
-
-### OCR — next-gen models to port
-
-#### Done
-
-- [x] **Keyven/german-ocr-3 — Qwen2.5-VL base engine DONE** (see blueprint below)
-- [x] **InternVL2.5-2B (2.1B, MIT) — DONE** — InternViT-300M + InternLM2.5-1.8B, KV cache, dynamic tiling, vision-text splice, C++ tokenizer decode. Parity cos=1.000. GGUFs: `cstr/internvl2.5-2b-crispembed-GGUF` (F16/Q8_0/Q4_K). German invoice E2E verified.
-- [x] surya-ocr-2 (0.7B, OpenRail-M free <$5M) — detector ported, FULL PARITY VERIFIED. PNG/JPG via stb_image done. Remaining: CUDA/GPU testing via Kaggle.
+- [~] **GOT-OCR2_0** (0.7B, Apache-2.0) — SAM-ViT + Qwen-0.5B. Converter,
+  engine, reference dumper, diff test written (uncommitted on `feat/got-ocr2`).
+- [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune
+- [ ] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL, 12+ languages
+- [ ] Qari-OCR (2B, Apache-2.0) — Arabic with diacritics
+- [ ] Granite Vision 3.3-2B (3B, Apache-2.0) — OCRBench 852
 
 #### InternVL2 polish (nice-to-have)
 
-- [ ] InternVL2: C++ tokenizer encode (currently hardcoded chat template token IDs)
-- [ ] InternVL2: CrispCalc Dart catalog entries (`OcrModelVariant`)
-- [ ] InternVL2: full 24-layer F32 parity test (4+2 proved exact; remaining identical code)
+- [ ] C++ tokenizer encode (currently hardcoded chat template token IDs)
+- [ ] CrispCalc Dart catalog entries (`OcrModelVariant`)
 
-#### High priority — next to port
+### Completed (v0.8.0)
 
-- [x] InternVL2-1B (0.9B, MIT) — DONE. Qwen2-0.5B LLM backend, full parity, HF uploaded, registry wired.
-- [x] PARSeq (24M, Apache-2.0) — DONE. ViT encoder + 1-layer two-stream decoder, 94-char ASCII scene text.
-- [x] GLM-OCR (0.9B, MIT) — DONE. CogViT + GLM-0.5B, vision-text splice, E2E image pipeline, KV cache.
-- [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune, German business docs. Needs verifying exact base model config (~2-3 days)
+#### Performance
+- [x] Batched decoder graph (~3x speedup)
+- [x] KV prefix sharing for batched decoder
+- [x] SigLIP attention pooling head
 
-#### Lower priority
+#### Models
+- [x] CLIP text + SigLIP-large + CLIP-large
+- [x] ViT quantization, YuNet, SFace/AuraFace quantization
+- [x] Face model quantized graph replay
+- [x] ViT parity fix (patch permute bug)
+- [x] Nomic v2 MoE encoder (cos=1.000)
+- [x] LoRA hot-swap + Jina v5 live-test (4 adapters cos >= 0.998)
+- [x] GLiNER DeBERTa-v3 NER (Apache-2.0)
+- [x] ColBERT MaxSim scoring (C API + server endpoint)
+- [x] BGE-M3 crash fix (clip_text guard)
+- [x] LoRA quantizer fix (preserve A/B at F16)
+- [x] Face pipeline Python wrapper
+- [x] Q8_0 layout model verified
 
-- [ ] GOT-OCR2_0 (0.7B, Apache-2.0) — SAM-ViT + Qwen-0.5B, end-to-end doc OCR (math+tables+text)
-- [ ] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL fine-tune, 12+ languages incl. German
-- [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics
-- [ ] Granite Vision 3.3-2B (3B, Apache-2.0) — OCRBench 852, English-only
+#### OCR — ported
+- [x] Qwen2.5-VL-3B (Keyven/german-ocr-3 base)
+- [x] InternVL2.5-2B (2.1B, MIT, cos=1.000)
+- [x] InternVL2-1B (0.9B, MIT)
+- [x] PARSeq (24M, Apache-2.0, scene text)
+- [x] GLM-OCR (0.9B, MIT, OmniDocBench #1)
+- [x] MixTex encoder parity (embed PASS)
+- [x] Surya detector (parity verified, stb_image done)
 
-#### MixTex / Surya remaining
-
-- [x] MixTex: encoder parity test — DONE. enc_embed cos=1.000 PASS. Swin stage 0 diverges (pre-existing shifted-window bug).
-- [~] MixTex: Swin attention fix needed (window partition/RPB bug causes stage 0 cos=-0.065)
-- [ ] Surya detector: CUDA/GPU testing via Kaggle kernel (P100/T4)
-- [x] Surya detector: PNG/JPG support in test binaries — already done (stb_image in test_surya_det.cpp)
-
-### Bindings
-
-- [x] Python wrapper `encode_image()` for standalone SigLIP/CLIP
-- [x] CrispFacePipeline export + from_registry() + Python unit tests + face_search example
-- [x] Face pipeline Python wrapper — CrispFace + CrispFacePipeline with from_registry() defaults
-
-### Non-OCR pending
-
-- [x] KV cache for prefix-shared decoder batches — DONE
-- [x] ColBERT MaxSim scoring — DONE (C API + server POST /colbert/score, no SSE yet)
-- [x] BGE-M3 SentencePiece crash — FIXED (clip_text guard)
-- [x] Verify Q8_0 layout model works — VERIFIED (loads 414 tensors, no crash)
-- [x] Jina v5 LoRA: convert adapters + live-test — DONE (4 adapters cos >= 0.998)
-- [ ] Streaming ColBERT SSE (partial results via text/event-stream)
-- [~] Layout detection: decoder weight convention gap (0.047→0.114, encoder matches)
-- [x] Face pipeline Python wrapper — DONE (CrispFace + CrispFacePipeline)
-
-### Feature gaps vs fastembed-rs
-
-| Gap | Impact | Effort | Notes |
-|---|---|---|---|
-| ~~Nomic v2 MoE~~ | ~~Low~~ | ~~High~~ | ~~MoE routing layer in encoder~~ DONE |
-| ~~Qwen2.5-VL OCR~~ | ~~High~~ | ~~High~~ | ~~Qwen2.5-VL-3B engine~~ DONE, merged to main |
-| ~~InternVL2.5-2B~~ | ~~High~~ | ~~High~~ | ~~InternVL2.5-2B VLM OCR~~ DONE, merged to main |
-| Qwen3-VL multimodal | Low | High | Reuse BidirLM-Omni scaffolding |
+#### Feature gaps vs fastembed-rs
+| Gap | Status |
+|---|---|
+| ~~Nomic v2 MoE~~ | DONE |
+| ~~Qwen2.5-VL OCR~~ | DONE |
+| ~~InternVL2.5-2B~~ | DONE |
+| ~~InternVL2-1B~~ | DONE |
+| Qwen3-VL multimodal | Low priority |
 
 ### Pending improvements
 
@@ -280,35 +249,6 @@ CrispEmbed/
 - [x] **CrispCalc Dart catalog** — Add `OcrModelVariant` entries for
   layout-heron (Q8_0, F16, F32) in `lib/engine/ocr_model_manager.dart`.
   Register at appropriate priority tier in `ocr_providers_init.dart`.
-
-- [~] **Layout detection score gap** — Investigated. Model uses `do_normalize=False`
-  (pixels [0,1] only, NOT ImageNet-normalized). ImageNet normalization was incorrectly
-  applied then reverted. Remaining gap is in decoder deformable cross-attention
-  (cpu_linear weight convention). Encoder features match.
-
-- [x] **Verify Q8_0 layout model works** — VERIFIED. Loads 414 tensors,
-  runs detection without crash. Both F32 and Q8_0 models function correctly.
-
-- [x] **KV cache for prefix-shared decoder batches** — DONE. Deduplicate
-  shared prefix tokens in batch layout. Saves `(B-1)*P` tokens of compute.
-
-- [ ] **Streaming ColBERT late interaction scoring** — Server-side MaxSim
-  scoring via `/colbert/score` endpoint with SSE streaming.
-
-- [x] **Quantized GGUF for face models** — Quantizer now flattens 4D conv
-  weights to 2D before quantizing. SFace: Q8_0 cos=0.9996 (37→10 MB),
-  Q6_K cos=0.9966 (37→8 MB). Q4_K cos=0.936 (too low for recognition).
-  SCRFD detection: Q8_0 17→10 MB, Q4_K 17→8.7 MB.
-
-- [x] **Live-test LoRA with Jina v5** — DONE. Converted with
-  `--lora-mode=separate`, all 4 adapters (retrieval, text-matching,
-  clustering, classification) cos >= 0.998 vs HF F32. Quantizer bug fixed:
-  LoRA A/B tensors preserved at F16.
-
-- [x] **3D tensor quantization for MoE experts** — DONE. Quantizer now
-  handles 3D tensors by quantizing each 2D slice independently. Results:
-  nomic-v2-moe Q8_0: 1122→487 MB (3.8x), Q4_K: 1095→352 MB (5.2x).
-  Quality: Q8_0 cos=0.9995, Q4_K cos=0.964 vs F32.
 
 ---
 
