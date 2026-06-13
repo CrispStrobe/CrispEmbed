@@ -212,14 +212,20 @@ def main():
                 if inp in weights and 'decoder' in inp and 'weight' in inp and weights[inp].ndim == 2:
                     transpose_weights.add(inp)
 
+    # NOTE: Decoder MatMul weights have mixed conventions:
+    # - Square (256x256): stored as (in, out) — no transpose needed
+    # - Non-square: SOME are (in, out), SOME are (out, in) — can't determine
+    #   from shape alone without tracing input dimensions through the graph
+    # Solution: leave all MatMul weights as-is in the converter.
+    # The C++ cpu_linear auto-detects convention at runtime for non-square
+    # weights using ggml ne[0] (fast dim).
+
     # NOTE: decoder Conv2d(1x1) weights (decoder.input_proj) are NOT transposed.
-    # They are used via cpu_linear which handles the (out, in) convention correctly
-    # when the weight ne[0] matches in_d. The transposition only applies to
-    # Gemm(transB=1) and Split+Transpose patterns.
-    conv_decoder_weights = set()  # empty — no Conv2d transposition
+    # They are named weights (not val_XXXX) and use Conv convention W[i + o*in_d].
+    conv_decoder_weights = set()
 
     # Transpose decoder weights from (out, in) → (in, out)
-    for name in gemm_transB_weights | split_weights | transpose_weights | conv_decoder_weights:
+    for name in gemm_transB_weights | split_weights | transpose_weights | conv_decoder_weights | matmul_decoder_weights:
         if name in weights and weights[name].ndim == 2:
             old_shape = weights[name].shape
             weights[name] = weights[name].T.copy()
