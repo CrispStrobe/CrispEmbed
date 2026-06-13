@@ -6,11 +6,22 @@
 
 cmake_minimum_required(VERSION 3.14)
 
-set(CRISPEMBED_LIB "${CMAKE_CURRENT_SOURCE_DIR}/lib/libcrispembed.so")
+set(CRISPEMBED_LIBS "")
+set(SEARCH_DIR "${CMAKE_CURRENT_SOURCE_DIR}/lib")
 
-if(NOT EXISTS "${CRISPEMBED_LIB}")
+if(EXISTS "${SEARCH_DIR}/libcrispembed.so")
+  file(GLOB CRISPEMBED_LIBS "${SEARCH_DIR}/libcrispembed.so*")
+else()
+  # Fallback to local build dir (as per README iterative dev pattern)
+  set(LOCAL_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../../build")
+  if(EXISTS "${LOCAL_BUILD_DIR}/libcrispembed.so")
+    file(GLOB CRISPEMBED_LIBS "${LOCAL_BUILD_DIR}/libcrispembed.so*")
+  endif()
+endif()
+
+if(NOT CRISPEMBED_LIBS)
   message(WARNING
-    "crispembed: pre-built libcrispembed.so not found at ${CRISPEMBED_LIB}. "
+    "crispembed: pre-built libcrispembed.so not found. "
     "The plugin will not bundle the native library. "
     "Run the CI build or build manually:\n"
     "  cd <CrispEmbed> && cmake -B build -DCRISPEMBED_BUILD_SHARED=ON && cmake --build build\n"
@@ -19,5 +30,5 @@ if(NOT EXISTS "${CRISPEMBED_LIB}")
   return()
 endif()
 
-# Tell Flutter to bundle the shared library with the application.
-set(crispembed_bundled_libraries "${CRISPEMBED_LIB}" PARENT_SCOPE)
+# Tell Flutter to bundle the shared libraries with the application.
+set(crispembed_bundled_libraries "${CRISPEMBED_LIBS}" PARENT_SCOPE)
