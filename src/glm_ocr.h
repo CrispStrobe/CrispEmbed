@@ -111,6 +111,22 @@ struct model {
     ggml_tensor *lm_head_w = nullptr;
 };
 
+struct kv_cache {
+    ggml_tensor *k = nullptr, *v = nullptr;
+    ggml_context *ctx = nullptr;
+    ggml_backend_buffer_t buf = nullptr;
+    int max_seq = 0;
+    int n_past = 0;
+    bool allocated = false;
+};
+
+struct tokenizer {
+    std::vector<std::string> id_to_piece;
+    int vocab_size = 0;
+    int eos_id = 59246;
+    std::string decode(const int32_t *ids, int n) const;
+};
+
 struct context {
     model m;
     ggml_context *model_ctx = nullptr;
@@ -118,6 +134,8 @@ struct context {
     ggml_backend_t backend = nullptr;
     ggml_backend_sched_t sched = nullptr;
     std::vector<uint8_t> compute_meta;
+    kv_cache kvc;
+    tokenizer tok;
     int n_threads = 4;
     int verbosity = 1;
     std::string diff_ref_path;
@@ -144,6 +162,16 @@ struct llm_result {
 
 bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
                      llm_result &out);
+
+struct generate_result {
+    std::vector<int32_t> token_ids;
+    std::string text;
+};
+
+bool generate(context &ctx,
+              const int32_t *prompt_ids, int n_prompt,
+              int max_new_tokens,
+              generate_result &out);
 
 }  // namespace glm_ocr
 
