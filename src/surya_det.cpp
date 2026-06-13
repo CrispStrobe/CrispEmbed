@@ -27,6 +27,7 @@
 static std::vector<float> to_f32(const ggml_tensor* t) {
     if (!t) return {};
     int n = (int)ggml_nelements(t);
+    size_t nbytes = ggml_nbytes(t);
     std::vector<float> out(n);
     // Pull raw bytes via the backend so this works whether the weight lives
     // in a CPU buffer or a GPU (Metal/CUDA) buffer where t->data isn't a
