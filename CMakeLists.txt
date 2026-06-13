@@ -141,6 +141,7 @@ list(APPEND CRISPEMBED_SOURCES src/mixtex_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/qwen2vl_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/internvl2_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/gliner_ner.cpp)
+list(APPEND CRISPEMBED_SOURCES src/parseq_ocr.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -242,6 +243,9 @@ target_link_libraries(test-bttr-beam PRIVATE crispembed)
 
 add_executable(test-posformer tests/test_posformer.cpp)
 target_link_libraries(test-posformer PRIVATE crispembed)
+
+add_executable(test-parseq tests/test_parseq.cpp)
+target_link_libraries(test-parseq PRIVATE crispembed)
 
 if(NOT WIN32)
     add_executable(test-posformer-batch tests/test_posformer_batch.cpp)

@@ -23,6 +23,11 @@ DBNet (ResNet-18 + FPNC, 7 MB Q4_K) detects text regions, TrOCR-small
 ~200ms per region. CLI (`--ocr-det`/`--ocr-rec`), server (`POST /ocr`),
 Python (`CrispOcrPipeline`), Rust (`OcrPipeline`), Flutter (`CrispOcrPipeline`).
 
+**Scene Text OCR**: PARSeq (ViT encoder + Transformer decoder, 24M params,
+94-char ASCII, Apache-2.0). Base 91 MB F32 / 24 MB Q8_0, Tiny 12 MB F16 / 6 MB Q8_0.
+State-of-the-art accuracy for scene text recognition (ECCV 2022).
+CLI (`--ocr`), server (`POST /math/ocr`), Python (`CrispMathOcr`), auto-detected.
+
 **Math OCR**: Seven engines for math-image → LaTeX:
 PP-FormulaNet-L (printed, SAM-ViT+MBart 181M, Apache-2.0, 122 MB Q4_K),
 Texo-Distill (printed, HGNetv2+MBart 20M, BLEU 0.90),
