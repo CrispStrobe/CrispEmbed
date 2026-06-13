@@ -949,7 +949,10 @@ std::vector<region> detect(context* ctx, const float* pixels,
         // If ne[0] == out_d: W stored as (in_d, out_d) → row=i, col=o → flat[i*out_d + o] ✓
         // If ne[0] == in_d:  W stored as (out_d, in_d) → row=o, col=i → flat[o*in_d + i]
         int ne0 = w_t ? (int)w_t->ne[0] : out_d;
-        bool transposed = (ne0 != out_d && ne0 == in_d);
+        // For non-square weights: ne0 disambiguates convention.
+        // For square weights (in_d == out_d): default to PyTorch (out, in)
+        // since all RT-DETR decoder weights come from nn.Linear.
+        bool transposed = (in_d == out_d) || (ne0 != out_d && ne0 == in_d);
         for (int n = 0; n < N; n++) {
             for (int o = 0; o < out_d; o++) {
                 float sum = b[o];
