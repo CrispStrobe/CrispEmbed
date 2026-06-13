@@ -1564,3 +1564,71 @@ separate CPU scalar matmul. Batching all spans into a single ggml
 Two-pass approach works well: pass 1 computes proj_start/end/first +
 prompt_rep (independent of spans), then CPU assembles span
 concatenations, pass 2 computes batched out_project + scoring.
+
+## InternVL2: uninitialized graph input tensors cause silent corruption
+
+**Bug**: Vision-text splice tensors (`splice_mask`, `image_embeds`) were
+created as `ggml_set_input()` in the LLM graph but never filled with data
+in `run_llm_forward()`. The backend buffer contained garbage, which
+multiplied with the token embeddings before RMSNorm. Result: cos=-0.978
+(nearly inverted output) — looked like a RoPE or GQA bug.
+
+**Root cause**: The splice code ran on every prefill (n_past==0), but
+only `generate()` and `run_cached_step()` set the mask/embeds. The
+parity-test path (`run_llm_forward`) skipped the setup.
+
+**Fix**: Always set `splice_mask = 1.0` and `image_embeds = 0.0` when
+no image tokens are present. This is the identity transform for the
+splice equation `x = x * mask + image_embeds`.
+
+**Detection pattern**: The diff harness showed cos=1.0 for `llm_embed`
+(before splice) but cos=-0.978 for `llm_layer_0` (after splice+norm).
+Manual RMS computation on the embed matched Python, proving the
+weights and ggml ops were correct. Bisecting between embed and norm
+revealed the splice as the culprit.
+
+**Lesson**: Every `ggml_set_input()` tensor MUST be filled before
+`graph_compute()`. The backend buffer is NOT zero-initialized. Always
+set identity/zero values for optional graph inputs.
+
+## InternVL2: supporting multiple LLM backends in one engine
+
+InternVL2.5-2B uses InternLM2.5 (fused wqkv, no Q/K/V bias), while
+InternVL2-1B uses Qwen2 (separate Q/K/V with bias). Same C++ engine
+(`internvl2_ocr.cpp`) handles both by:
+
+1. Converter auto-detects `model_type` from config.json and uses the
+   appropriate tensor naming (attention.wqkv vs self_attn.q_proj)
+2. C++ loads biases as optional (`get()` returns nullptr if absent)
+3. Graph builder applies bias only when tensor is non-null:
+   `if (ly.q_b) Q = ggml_add(g, Q, ly.q_b);`
+
+**Tokenizer difference**: InternLM2 uses SentencePiece BPE (▁ prefix),
+Qwen2 uses GPT-2 byte-level BPE. C++ decode detects by vocab_size
+(>100K = GPT-2) and applies the correct decode path. GPT-2 path uses
+`core_bpe::byte_encoder()` inverse table.
+
+## InternVL2: pixel unshuffle vs learned downsample
+
+InternVL2 uses **pixel unshuffle** (ps_version='v2'): pure reshape, no
+learned parameters. 1024 tokens of dim 1024 → 256 tokens of dim 4096.
+Done on CPU host-side (not in ggml graph) because it's just a reshape.
+
+GLM-OCR uses a **learned Conv2D downsample** [1536, 1024, 2, 2] instead.
+This requires a ggml conv2d op in the graph.
+
+## InternVL2: flash_attn_ext mask must be F16
+
+`ggml_flash_attn_ext` asserts `mask->type == GGML_TYPE_F16`. Using F32
+mask causes an immediate abort. Fill with `ggml_fp32_to_fp16(-INFINITY)`
+for masked positions and `ggml_fp32_to_fp16(0.0f)` for visible positions.
+
+For vision encoder (bidirectional): pass `mask = nullptr`.
+
+## Quantizer: tensors used in ggml binary ops must match types
+
+`ggml_add(F32, Q8_0)` and `ggml_mul(F32, F16)` both fail with
+"unsupported types" on the CPU backend. Tensors that participate in
+element-wise binary ops (position_embedding, class_embedding, LayerScale
+ls1/ls2) must stay F32 in the quantizer. Added guards to
+`tools/quantize.cpp` for these patterns.
