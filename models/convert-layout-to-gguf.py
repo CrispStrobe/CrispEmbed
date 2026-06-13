@@ -213,10 +213,7 @@ def main():
                     transpose_weights.add(inp)
 
     # NOTE: decoder Conv2d(1x1) weights (decoder.input_proj) are NOT transposed.
-    # They are used via cpu_linear which handles the (out, in) convention correctly
-    # when the weight ne[0] matches in_d. The transposition only applies to
-    # Gemm(transB=1) and Split+Transpose patterns.
-    conv_decoder_weights = set()  # empty — no Conv2d transposition
+    conv_decoder_weights = set()
 
     # Transpose decoder weights from (out, in) → (in, out)
     for name in gemm_transB_weights | split_weights | transpose_weights | conv_decoder_weights:
