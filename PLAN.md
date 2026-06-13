@@ -177,8 +177,7 @@ CrispEmbed/
 
 #### OCR models — in progress (other agents)
 
-- [~] **GOT-OCR2_0** (0.7B, Apache-2.0) — SAM-ViT + Qwen-0.5B. Converter,
-  engine, reference dumper, diff test written (uncommitted on `feat/got-ocr2`).
+- [x] **GOT-OCR2** (0.7B, Apache-2.0) — DONE. SAM-ViT-B + Qwen2-0.5B, full parity.
 - [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune
 - [x] Nanonets-OCR-s (3B, Apache-2.0) — DONE. Qwen2.5-VL-3B fine-tune, 12+ languages. Same engine, Kaggle conversion, HF uploaded
 - [ ] Qari-OCR (2B, Apache-2.0) — Arabic with diacritics
@@ -216,6 +215,7 @@ CrispEmbed/
 - [x] InternVL2-1B (0.9B, MIT)
 - [x] PARSeq (24M, Apache-2.0, scene text)
 - [x] GLM-OCR (0.9B, MIT, OmniDocBench #1)
+- [x] GOT-OCR2 (0.7B, Apache-2.0, full parity, windowed+global attn with decomposed RPE)
 - [x] MixTex encoder parity (embed PASS)
 - [x] Surya detector (parity verified, stb_image done)
 
@@ -651,31 +651,24 @@ re-converting.
 
 ---
 
-### Blueprint: GOT-OCR2_0 (0.7B, Apache-2.0)
+### Blueprint: GOT-OCR2 (0.7B, Apache-2.0) — DONE
 
-**Goal**: End-to-end document OCR that handles plain text, LaTeX math,
-tables, and formatted output in a single model.
+Implemented June 2026. Full parity on vision encoder (SAM ViT-B with
+windowed + global attention, decomposed RPE) + neck + downsample +
+projector + Qwen2-0.5B LLM decoder. All checkpoints cos ≥ 0.999.
 
-**Source**: stepfun-ai/GOT-OCR2_0 (0.7B, Apache-2.0)
+**Architecture**: SAM ViT-B (12L, 768d, window_size=14, global at
+[2,5,8,11]) → neck (Conv→LN2d→Conv→LN2d) → downsample (Conv 256→512→1024,
+stride 2) → Linear(1024,1024) projector → Qwen2-0.5B (24L, 1024d, MHA
+16/16, standard RoPE, SiLU SwiGLU) → autoregressive generation.
 
-**Architecture**: SAM-style ViT-B vision encoder (12 layers, 768-dim,
-16x16 patches, custom "Vary" backbone) + Qwen-0.5B causal LM decoder
-(24 layers, 1024-dim). tiktoken tokenizer. Requires `trust_remote_code`.
+**Key learnings**: Per-layer diff comparison must happen inside the layer
+loop (not after), since `hidden` is overwritten by each subsequent layer.
+Vision uses LayerNorm+GELU (not RMSNorm+SiLU). Windowed layers need CPU
+LN1 before partition, then pass both LN'd and original data into graph.
 
-**Reuse**: Qwen decoder path already in CrispEmbed. SAM-ViT encoder is
-similar to PPFormulaNet-L's encoder (already ported). Main new work is
-the vision-language connector and GOT-specific prompt templates.
-
-**Step 1 — Converter**: `models/convert-got-ocr-to-gguf.py`
-- Export vision encoder + connector + LM decoder.
-- Handle custom modeling code (GOTQwenForCausalLM).
-
-**Step 2 — C inference**: `src/got_ocr.{h,cpp}`
-
-**Files**: `src/got_ocr.{h,cpp}`, `models/convert-got-ocr-to-gguf.py`
-
-**Effort**: Medium (4-5 days). Custom vision backbone needs careful
-mapping; decoder side reuses existing Qwen3 path.
+**Files**: `src/got_ocr.{h,cpp}`, `models/convert-got-ocr-to-gguf.py`,
+`tools/dump_got_ocr_reference.py`, `tests/test_got_ocr_diff.cpp`
 
 ---
 

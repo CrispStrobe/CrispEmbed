@@ -2951,9 +2951,10 @@ extern "C" int crispembed_colbert_score_batch(
 #include "internvl2_ocr.h"
 #include "parseq_ocr.h"
 #include "glm_ocr.h"
+#include "got_ocr.h"
 #include "core/gguf_loader.h"
 
-enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L, MATH_OCR_POSFORMER, MATH_OCR_MIXTEX, MATH_OCR_QWEN2VL, MATH_OCR_INTERNVL2, MATH_OCR_PARSEQ, MATH_OCR_GLM_OCR };
+enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L, MATH_OCR_POSFORMER, MATH_OCR_MIXTEX, MATH_OCR_QWEN2VL, MATH_OCR_INTERNVL2, MATH_OCR_PARSEQ, MATH_OCR_GLM_OCR, MATH_OCR_GOT_OCR };
 
 struct unified_math_ocr {
     math_ocr_type type;
@@ -2975,6 +2976,7 @@ static math_ocr_type detect_arch(const char * path) {
     if (arch == "internvl2") return MATH_OCR_INTERNVL2;
 if (arch == "parseq") return MATH_OCR_PARSEQ;
 if (arch == "glm_ocr") return MATH_OCR_GLM_OCR;
+if (arch == "got_ocr") return MATH_OCR_GOT_OCR;
     return MATH_OCR_PIX2TEX;
 }
 
@@ -2993,6 +2995,7 @@ extern "C" void * crispembed_math_ocr_init(const char * path, int n_threads) {
         case MATH_OCR_INTERNVL2:      inner = internvl2_ocr_init(path, n_threads); break;
 case MATH_OCR_PARSEQ:         inner = parseq_ocr_init(path, n_threads); break;
 case MATH_OCR_GLM_OCR:        inner = glm_ocr_init(path, n_threads); break;
+case MATH_OCR_GOT_OCR:        inner = got_ocr_init(path, n_threads); break;
     }
     if (!inner) return nullptr;
     auto * u = new unified_math_ocr{type, inner};
@@ -3014,6 +3017,7 @@ extern "C" void crispembed_math_ocr_free(void * ctx) {
         case MATH_OCR_INTERNVL2:      internvl2_ocr_free((internvl2_ocr_context *)u->ctx); break;
 case MATH_OCR_PARSEQ:         parseq_ocr_free((parseq_ocr_context *)u->ctx); break;
 case MATH_OCR_GLM_OCR:        glm_ocr_free((glm_ocr_context *)u->ctx); break;
+case MATH_OCR_GOT_OCR:        got_ocr_free((got_ocr_context *)u->ctx); break;
     }
     delete u;
 }
@@ -3035,6 +3039,7 @@ extern "C" const char * crispembed_math_ocr_recognize(
         case MATH_OCR_INTERNVL2:      return internvl2_ocr_recognize_raw((internvl2_ocr_context *)u->ctx, px, w, h, ch, ol);
 case MATH_OCR_PARSEQ:         return parseq_ocr_recognize_raw((parseq_ocr_context *)u->ctx, px, w, h, ch, ol);
 case MATH_OCR_GLM_OCR:        return glm_ocr_recognize_raw((glm_ocr_context *)u->ctx, px, w, h, ch, ol);
+case MATH_OCR_GOT_OCR:        return got_ocr_recognize_raw((got_ocr_context *)u->ctx, px, w, h, ch, ol);
     }
     return nullptr;
 }
@@ -3056,6 +3061,7 @@ extern "C" const char * crispembed_math_ocr_recognize_gray(
         case MATH_OCR_INTERNVL2:      return internvl2_ocr_recognize((internvl2_ocr_context *)u->ctx, px, w, h, ol);
 case MATH_OCR_PARSEQ:         return parseq_ocr_recognize((parseq_ocr_context *)u->ctx, px, w, h, ol);
 case MATH_OCR_GLM_OCR:        return glm_ocr_recognize((glm_ocr_context *)u->ctx, px, w, h, ol);
+case MATH_OCR_GOT_OCR:        return got_ocr_recognize((got_ocr_context *)u->ctx, px, w, h, ol);
     }
     return nullptr;
 }
