@@ -22,3 +22,4 @@ crispembed.local-backup/
 CLAUDE.md
 handover-prompts/
 hf-cache/
+.claude/handover-*.md

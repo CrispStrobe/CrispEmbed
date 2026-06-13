@@ -11,8 +11,8 @@ Pod::Spec.new do |s|
   s.osx.deployment_target = '10.15'
 
   # Pre-built shared library produced by CI (build-macos.sh / build.yml).
-  # Place libcrispembed.dylib in macos/Libs/ before pod install.
-  s.vendored_libraries = 'Libs/libcrispembed.dylib'
+  # Place libcrispembed.dylib (and any versioned symlinks) in macos/Libs/ before pod install.
+  s.vendored_libraries = 'Libs/libcrispembed*.dylib'
 
   # Ensure the dylib is code-signed and embedded in the app bundle.
   s.pod_target_xcconfig = {
