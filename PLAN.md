@@ -176,9 +176,8 @@ CrispEmbed/
 
 ### Infrastructure gaps
 
-- [ ] **Jina v5 LoRA GGUF adapters** — LoRA API fully implemented (`crispembed_set_lora`,
-  etc.) but no HF→GGUF adapter conversion done yet. Need to run converter with
-  `--lora-mode=separate` and test per-adapter parity (retrieval/classification/clustering).
+- [x] **Jina v5 LoRA GGUF adapters** — DONE. Converted with `--lora-mode=separate`,
+  4 adapters verified cos >= 0.998 vs HF F32. Quantizer fixed to preserve LoRA A/B at F16.
 
 ### Performance
 
@@ -247,8 +246,8 @@ CrispEmbed/
 - [x] ColBERT MaxSim scoring — DONE (C API + server POST /colbert/score, no SSE yet)
 - [x] BGE-M3 SentencePiece crash — FIXED (clip_text guard)
 - [x] Verify Q8_0 layout model works — VERIFIED (loads 414 tensors, no crash)
-- [ ] Jina v5 LoRA: convert adapters + live-test
-- [ ] Streaming ColBERT SSE
+- [x] Jina v5 LoRA: convert adapters + live-test — DONE (4 adapters cos >= 0.998)
+- [ ] Streaming ColBERT SSE (partial results via text/event-stream)
 - [~] Layout detection: decoder weight convention gap (0.047→0.114, encoder matches)
 - [x] Face pipeline Python wrapper — DONE (CrispFace + CrispFacePipeline)
 
@@ -284,10 +283,10 @@ CrispEmbed/
   layout-heron (Q8_0, F16, F32) in `lib/engine/ocr_model_manager.dart`.
   Register at appropriate priority tier in `ocr_providers_init.dart`.
 
-- [x] **Layout detection score gap** — FIXED. Root cause: missing ImageNet
-  normalization in `detect_file`. Pixel values were [0,1] but model expects
-  `(val - mean) / std`. The `img_mean`/`img_std` fields existed in the
-  context struct but were never applied. Needs re-test to confirm score improvement.
+- [~] **Layout detection score gap** — Investigated. Model uses `do_normalize=False`
+  (pixels [0,1] only, NOT ImageNet-normalized). ImageNet normalization was incorrectly
+  applied then reverted. Remaining gap is in decoder deformable cross-attention
+  (cpu_linear weight convention). Encoder features match.
 
 - [x] **Verify Q8_0 layout model works** — VERIFIED. Loads 414 tensors,
   runs detection without crash. Both F32 and Q8_0 models function correctly.
@@ -303,11 +302,10 @@ CrispEmbed/
   Q6_K cos=0.9966 (37→8 MB). Q4_K cos=0.936 (too low for recognition).
   SCRFD detection: Q8_0 17→10 MB, Q4_K 17→8.7 MB.
 
-- [ ] **Live-test LoRA with Jina v5** — LoRA hot-swap is implemented but
-  not end-to-end tested with real Jina v5 adapters. Need to: convert with
-  `--lora-mode=separate`, verify each adapter (retrieval, classification,
-  clustering, text-matching) matches the baked version (cos >= 0.9999),
-  confirm switching works correctly, test with the Python wrapper.
+- [x] **Live-test LoRA with Jina v5** — DONE. Converted with
+  `--lora-mode=separate`, all 4 adapters (retrieval, text-matching,
+  clustering, classification) cos >= 0.998 vs HF F32. Quantizer bug fixed:
+  LoRA A/B tensors preserved at F16.
 
 - [x] **3D tensor quantization for MoE experts** — DONE. Quantizer now
   handles 3D tensors by quantizing each 2D slice independently. Results:
