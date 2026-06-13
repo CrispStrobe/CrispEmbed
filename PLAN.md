@@ -164,9 +164,10 @@ CrispEmbed/
 
 #### Bugs / polish
 
-- [~] **Layout detection decoder** — cpu_linear auto-detect for non-square weights.
-  Now detects 3/7 regions (max score 0.671 vs Python 0.65). Top 2 detections match.
-  Remaining: cross_out cos=0.058 — deformable attention sampling or indexing.
+- [~] **Layout detection decoder** — ImageNet normalization removed (model uses
+  do_normalize=False). Encoder parity: ip3 cos=0.76→0.98 after fix. Remaining:
+  (1) bilinear resize interpolation vs PIL (ip3 cos=0.76, enc_output cos=0.98),
+  (2) decoder cross_out cos=0.01 — deformable attention sampling bug.
 - [x] **Surya detector GPU** — `surya_det.cpp` now uses `ggml_backend_init_best()`
   (`SURYA_DET_FORCE_CPU=1` pins CPU for parity debugging). Metal verified on M1:
   F16/Q8_0 run on the GPU, heatmap parity vs CPU to ~3 decimals (sub-pixel box
