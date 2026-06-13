@@ -1741,7 +1741,8 @@ std::vector<region> detect_file(context* ctx, const char* path,
                 float v11 = raw[(sy1 * img_w + sx1) * 3 + c] / 255.0f;
 
                 float val = (1-fx)*(1-fy)*v00 + fx*(1-fy)*v01 + (1-fx)*fy*v10 + fx*fy*v11;
-                pixels[c * H * W + y * W + x] = val;
+                // ImageNet normalization: (val - mean) / std
+                pixels[c * H * W + y * W + x] = (val - ctx->img_mean[c]) / ctx->img_std[c];
             }
         }
     }
