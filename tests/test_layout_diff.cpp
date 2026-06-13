@@ -39,14 +39,23 @@ int main(int argc, char** argv) {
     setenv("LAYOUT_DEBUG", "1", 1);
 #endif
 
-    // Load model and run
+    // Load model
     layout_detect::context* ctx = nullptr;
     if (!layout_detect::load(&ctx, argv[1], 4)) {
         fprintf(stderr, "Failed to load model\n");
         return 1;
     }
 
-    auto regions = layout_detect::detect_file(ctx, image_path, 0.1f);
+    // Try to load preprocessed pixels from reference GGUF (bypass resize for exact parity)
+    std::vector<layout_detect::region> regions;
+    auto [ref_pixels, ref_px_n] = ref.get_f32("input_image");
+    if (ref_pixels && ref_px_n == 3 * 640 * 640) {
+        printf("Using preprocessed pixels from reference GGUF (3x640x640)\n");
+        regions = layout_detect::detect(ctx, ref_pixels, 640, 640, 0.1f);
+    } else {
+        printf("Using image file with C++ resize: %s\n", image_path);
+        regions = layout_detect::detect_file(ctx, image_path, 0.1f);
+    }
 
     printf("\n=== Parity Report ===\n");
     printf("%-15s %10s %10s %10s %6s\n", "Stage", "cos_min", "cos_mean", "max_abs", "");
@@ -61,6 +70,7 @@ int main(int argc, char** argv) {
         {"s4",  "/tmp/cpp_s4.bin"},
         {"s5",  "/tmp/cpp_s5.bin"},
         {"enc_output", "/tmp/cpp_enc_output.bin"},
+        {"dec_0_cross_out", "/tmp/cpp_cross_out.bin"},
     };
 
     for (auto& st : stages) {
