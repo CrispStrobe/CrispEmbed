@@ -18,7 +18,6 @@
 // Debug: set env MIXTEX_DUMP=1 for per-layer stats.
 
 #include "mixtex_ocr.h"
-#include "crispembed_diff.h"
 #include "core/gguf_loader.h"
 #include "crispembed_diff.h"
 #include "ggml-cpu.h"
@@ -188,7 +187,8 @@ static void window_mhsa(const float* tokens, float* out,
                          const float* v_w, const float* v_b,
                          const float* out_w, const float* out_b,
                          const float* rpb_table, const float* rpb_index,
-                         int rpb_table_len) {
+                         int rpb_table_len,
+                         const float* attn_mask = nullptr) {
     int hd = D / n_heads;
     float scale = 1.0f / sqrtf((float)hd);
 
@@ -199,6 +199,18 @@ static void window_mhsa(const float* tokens, float* out,
         linear_cpu(tokens + t * D, K.data() + t * D, D, D, k_w, k_b);
         linear_cpu(tokens + t * D, V.data() + t * D, D, D, v_w, v_b);
     }
+
+    // Debug: dump Q[0] for first call (window 0)
+    static int mhsa_call = 0;
+    if (mhsa_call == 0 && std::getenv("MIXTEX_DIFF_REF")) {
+        fprintf(stderr, "[mixtex-diff] Q[0,:4]: %.6f %.6f %.6f %.6f\n",
+                Q[0], Q[1], Q[2], Q[3]);
+        fprintf(stderr, "[mixtex-diff] input[0,:4]: %.6f %.6f %.6f %.6f\n",
+                tokens[0], tokens[1], tokens[2], tokens[3]);
+        fprintf(stderr, "[mixtex-diff] q_w[0,:4]: %.6f %.6f %.6f %.6f\n",
+                q_w[0], q_w[1], q_w[2], q_w[3]);
+    }
+    mhsa_call++;
 
     // Attention per head
     std::vector<float> attn_out(n_tokens * D);
@@ -220,6 +232,23 @@ static void window_mhsa(const float* tokens, float* out,
                     if (idx >= 0 && idx < rpb_table_len)
                         scores[i * n_tokens + j] += rpb_table[idx * n_heads + h];
                 }
+                // Add attention mask (shifted window: -100 for cross-region)
+                if (attn_mask)
+                    scores[i * n_tokens + j] += attn_mask[i * n_tokens + j];
+            }
+        }
+
+        // Debug: dump scores for first window, first head
+        if (mhsa_call == 1 && h == 0 && std::getenv("MIXTEX_DIFF_REF")) {
+            fprintf(stderr, "[mixtex-diff] scores[0,0..3] (h0, after RPB): %.4f %.4f %.4f %.4f\n",
+                    scores[0], scores[1], scores[2], scores[3]);
+            fprintf(stderr, "[mixtex-diff] rpb_table=%p rpb_index=%p rpb_len=%d\n",
+                    (void*)rpb_table, (void*)rpb_index, rpb_table_len);
+            if (rpb_table && rpb_index) {
+                int idx00 = (int)rpb_index[0];
+                fprintf(stderr, "[mixtex-diff] rpb_index[0,0]=%d rpb_table[%d*%d+0]=%.4f\n",
+                        idx00, idx00, n_heads,
+                        (idx00 >= 0 && idx00 < rpb_table_len) ? rpb_table[idx00 * n_heads] : -999.0f);
             }
         }
 
@@ -327,17 +356,6 @@ struct mixtex_ocr_context {
     std::vector<std::vector<float>> kv_cache_k; // [layer][step * D]
     std::vector<std::vector<float>> kv_cache_v;
 };
-
-// Diff comparison against Python reference
-crispembed_diff::Ref* g_diff_ref = nullptr;
-
-static void diff_compare(const char* name, const float* data, int n) {
-    if (!g_diff_ref) return;
-    if (!g_diff_ref->has(name)) return;
-    auto r = g_diff_ref->compare(name, data, n);
-    printf("  %s: cos=%.6f max_abs=%.6f %s\n",
-           name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
-}
 
 // Debug helper
 static void dump_stats(const char* name, const float* data, int n) {
@@ -562,7 +580,6 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                       D, pn_w.data(), pn_b.data());
 
     if (ctx->dump) dump_stats("enc_embed", patches.data(), N * D);
-    diff_compare("enc_embed", patches.data(), N * D);
 
     // Diff harness: compare with Python reference
     const char * diff_ref = std::getenv("MIXTEX_DIFF_REF");
@@ -628,6 +645,45 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                 shifted_x = std::move(padded);
             }
 
+            // Compute attention mask for shifted windows
+            std::vector<float> attn_mask_all;
+            if (shifted) {
+                // Create region labels: [pH2, pW2] with 9 regions (3x3 slices)
+                std::vector<float> img_mask(pH2 * pW2, 0.0f);
+                // height slices: [0, -ws), [-ws, -shift), [-shift, end)
+                // width slices: same
+                int h_cuts[4] = {0, pH2 - ws, pH2 - shift, pH2};
+                int w_cuts[4] = {0, pW2 - ws, pW2 - shift, pW2};
+                int region = 0;
+                for (int hi = 0; hi < 3; hi++)
+                    for (int wi = 0; wi < 3; wi++) {
+                        for (int y = h_cuts[hi]; y < h_cuts[hi+1]; y++)
+                            for (int x = w_cuts[wi]; x < w_cuts[wi+1]; x++)
+                                img_mask[y * pW2 + x] = (float)region;
+                        region++;
+                    }
+                // Window partition the mask → [nW, ws*ws]
+                int nH_m = pH2 / ws, nW_m = pW2 / ws, n_win = nH_m * nW_m;
+                std::vector<float> mask_windows(n_win * ws * ws);
+                for (int wh = 0; wh < nH_m; wh++)
+                    for (int ww = 0; ww < nW_m; ww++) {
+                        int win = wh * nW_m + ww;
+                        for (int y = 0; y < ws; y++)
+                            for (int x = 0; x < ws; x++)
+                                mask_windows[win * ws * ws + y * ws + x] =
+                                    img_mask[(wh * ws + y) * pW2 + ww * ws + x];
+                    }
+                // Build mask: [nW, ws*ws, ws*ws]
+                // mask[w, i, j] = -100 if region[i] != region[j], else 0
+                int tpw = ws * ws;
+                attn_mask_all.resize(n_win * tpw * tpw, 0.0f);
+                for (int w = 0; w < n_win; w++)
+                    for (int i = 0; i < tpw; i++)
+                        for (int j = 0; j < tpw; j++)
+                            if (mask_windows[w * tpw + i] != mask_windows[w * tpw + j])
+                                attn_mask_all[w * tpw * tpw + i * tpw + j] = -100.0f;
+            }
+
             // Window partition
             int nH = pH2 / ws, nW = pW2 / ws;
             int n_windows = nH * nW;
@@ -642,11 +698,14 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             auto out_w = to_f32(blk.out_w), out_b = to_f32(blk.out_b);
             auto rpb_t = to_f32(blk.rpb_table);
             auto rpb_i = to_f32(blk.rpb_index);
-            // rpb_table ggml shape: ne[0]=n_heads, ne[1]=num_entries (169 for ws=7)
+            // rpb_table ggml: ne[0]=n_heads, ne[1]=num_entries (169 for ws=7)
             int rpb_len = blk.rpb_table ? (int)blk.rpb_table->ne[1] : 0;
 
             std::vector<float> attn_out(n_windows * tokens_per_win * D);
             for (int w = 0; w < n_windows; w++) {
+                const float* win_mask = (!attn_mask_all.empty())
+                    ? attn_mask_all.data() + w * tokens_per_win * tokens_per_win
+                    : nullptr;
                 window_mhsa(
                     windows.data() + w * tokens_per_win * D,
                     attn_out.data() + w * tokens_per_win * D,
@@ -657,7 +716,8 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                     out_w.data(), out_b.data(),
                     rpb_t.empty() ? nullptr : rpb_t.data(),
                     rpb_i.empty() ? nullptr : rpb_i.data(),
-                    rpb_len);
+                    rpb_len,
+                    win_mask);
             }
 
             // Diff: compare windowed attention output BEFORE window_reverse
@@ -724,11 +784,10 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             }
         }
 
-        {
+        if (ctx->dump) {
             char name[64];
             snprintf(name, sizeof(name), "enc_stage_%d", stage);
-            if (ctx->dump) dump_stats(name, x.data(), H * W * D);
-            diff_compare(name, x.data(), H * W * D);
+            dump_stats(name, x.data(), H * W * D);
         }
 
         // Downsample (patch merging) between stages
@@ -795,7 +854,6 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
     }
 
     if (ctx->dump) dump_stats("enc_output", x.data(), H * W * D);
-    diff_compare("enc_output", x.data(), H * W * D);
 
     return x; // [N, D] where N = H*W, D = 768
 }
