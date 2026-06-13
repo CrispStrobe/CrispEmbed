@@ -182,7 +182,34 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             continue;
         }
 
-        // Guard 2: 5D+ tensors — copy as-is (no known use case)
+        // Guard 2: LoRA adapter tensors — keep at source precision (F16/F32)
+        // LoRA A/B matrices are low-rank (rank=32 typical) and quantizing
+        // them destroys the decomposition quality. They're small anyway.
+        if (sname.find("lora.") != std::string::npos) {
+            printf("note: LoRA tensor — keeping as %s\n", ggml_type_name(type));
+            size_t sz = ggml_nbytes(t);
+            size_t off = data_offset_in + gguf_get_tensor_offset(ctx_in, i);
+#ifdef _WIN32
+            _fseeki64(fin, (int64_t)off, SEEK_SET);
+#else
+            fseeko(fin, (off_t)off, SEEK_SET);
+#endif
+            std::vector<uint8_t> raw(sz);
+            if (fread(raw.data(), 1, sz, fin) != sz) {
+                fprintf(stderr, "failed to read LoRA tensor data\n");
+                fclose(fin); fclose(fout);
+                return false;
+            }
+            fwrite(raw.data(), 1, sz, fout);
+            size_t pad = GGML_PAD(sz, GGUF_DEFAULT_ALIGNMENT) - sz;
+            for (size_t j = 0; j < pad; j++) fputc(0, fout);
+            total_orig += sz;
+            total_new += sz;
+            n_kept++;
+            continue;
+        }
+
+        // Guard 3: 5D+ tensors — copy as-is (no known use case)
         // 4D tensors were pre-flattened to 2D above, so ggml_n_dims <= 3 here.
         // 3D tensors (MoE expert weights) are quantized via the standard path.
         if (ggml_n_dims(t) >= 5) {
