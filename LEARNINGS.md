@@ -15,6 +15,24 @@ Also: ggml only supports Q→F32 dequantization (`ggml_cast`), not Q→F16.
 Attempting `ggml_cast(Q8_0, F16)` hits `GGML_ABORT("fatal error")` in
 `ggml_compute_forward_dup`. Always go Q→F32→F16 (two casts).
 
+## GPU backends: read weights via ggml_backend_tensor_get, not t->data
+
+Models that mix a ggml graph (GPU) with CPU-scalar fallback code — like
+`surya_det.cpp`, whose LiteMLA + decode head stay scalar — must not read
+weight bytes through `tensor->data`. On a CPU backend `t->data` is the host
+buffer, but on a GPU backend (Metal/CUDA) it is not a valid host pointer, so a
+direct `memcpy(out, t->data, …)` or `traits->to_float(t->data, …)` reads
+garbage (or crashes). Route every host-side weight read through
+`ggml_backend_tensor_get(t, dst, 0, ggml_nbytes(t))`, which copies out of the
+tensor's own buffer regardless of backend, then dequantise from that staging
+buffer. (Apple Silicon's unified memory happens to make `t->data` work for
+Metal in many cases, but relying on that is non-portable and breaks on CUDA.)
+
+Companion lesson: switch the backend with `ggml_backend_init_best()` (not a
+hardcoded `ggml_backend_cpu_init()`) and gate `ggml_backend_cpu_set_n_threads`
+behind `ggml_backend_is_cpu()` — it is a CPU-only call. Provide an env override
+(e.g. `SURYA_DET_FORCE_CPU=1`) so parity debugging can pin the CPU path.
+
 ## Per-layer parity comparison must happen inside the layer loop
 
 When comparing C++ per-layer outputs against a reference GGUF, the

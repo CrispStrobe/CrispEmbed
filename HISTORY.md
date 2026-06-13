@@ -4,6 +4,29 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — Surya detector GPU backend (Metal on M1)
+
+`surya_det.cpp` hardcoded `ggml_backend_cpu_init()`, so even after the CUDA
+build was fixed on Kaggle (GGML_CUDA_NO_VMM=ON) the detector still ran CPU-only.
+Switched to `ggml_backend_init_best()` so the stage 0-2 and stage-3-block0
+graphs run on the best available backend — Metal on Apple Silicon, CUDA
+elsewhere — with `SURYA_DET_FORCE_CPU=1` to pin CPU for parity debugging and a
+CPU fallback if no GPU backend initialises.
+
+One gotcha: the scalar LiteMLA and decode-head paths dequantised weights via
+`to_f32()`, which read `t->data` directly. That is fine for a CPU buffer but
+`t->data` is not a valid host pointer on a GPU buffer, so the reads were routed
+through `ggml_backend_tensor_get()` instead.
+
+Verified on an M1 (Apple7, MTL0): F16 and Q8_0 both run on Metal, heatmap
+parity vs CPU to ~3 decimals (sub-pixel bounding-box drift from F16 matmul
+accumulation order). Stage 0-2 graph ~4.4 s GPU vs ~5.9 s CPU, stage-3 block0
+~0.75 s vs ~0.94 s; the speedup is modest because LiteMLA + decode head stay
+CPU-scalar. CUDA build separately confirmed on Kaggle P100 (Q8_0+F16 → 17
+regions). Surya GPU is now marked done in PLAN.md.
+
+---
+
 ## June 2026 — Surya detector Q8_0/Q4_K crash fix
 
 The surya text detector (`surya_det.cpp`) crashed on quantized models (Q8_0, Q4_K)
