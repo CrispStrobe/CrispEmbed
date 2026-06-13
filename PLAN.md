@@ -167,29 +167,19 @@ CrispEmbed/
 - [~] **Layout detection decoder** — cpu_linear auto-detect for non-square weights.
   Now detects 3/7 regions (max score 0.671 vs Python 0.65). Top 2 detections match.
   Remaining: cross_out cos=0.058 — deformable attention sampling or indexing.
-- [x] **MixTex full E2E parity** — DONE. Encoder cos=1.000000 all stages,
-  decoder cos=1.000000 all layers. Six bugs fixed total: cyclic shift sign,
-  pad-then-shift order, GELU variant, PatchMerging concat order, position offset.
-- [x] **Streaming ColBERT SSE** — DONE. `POST /colbert/score` with
-  `Accept: text/event-stream` streams `data: {"index":i,"score":s}` per
-  document, then `event: done`. Non-streaming JSON still default.
-- [~] **Surya detector CUDA/GPU testing** — Kaggle kernel ran on P100 (CPU-only,
-  CUDA cmake fails: `CUDA::cuda_driver` ggml upstream issue). F16: 195s, 17 regions.
-  Q8_0 crash fixed (must dequant Q→F32 before reshape — ggml blocks need ne[0] alignment).
-  Q4_K also works. Next: fix ggml CUDA cmake on Kaggle for actual GPU benchmark.
+- [~] **Surya detector CUDA/GPU** — CPU works (F16: 195s, Q8_0/Q4_K working).
+  CUDA cmake fails on Kaggle (`CUDA::cuda_driver` ggml upstream issue).
 
-#### OCR models — in progress (other agents)
+#### OCR models — remaining
 
-- [x] **GOT-OCR2** (0.7B, Apache-2.0) — DONE. SAM-ViT-B + Qwen2-0.5B, full parity.
 - [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune
-- [x] Nanonets-OCR-s (3B, Apache-2.0) — DONE. Qwen2.5-VL-3B fine-tune, 12+ languages. Same engine, Kaggle conversion, HF uploaded
 - [ ] Qari-OCR (2B, Apache-2.0) — Arabic with diacritics
 - [ ] Granite Vision 3.3-2B (3B, Apache-2.0) — OCRBench 852
 
-#### InternVL2 polish (nice-to-have)
+#### Nice-to-have
 
-- [x] C++ tokenizer encode — DONE. Greedy longest-match + byte fallback + chat template prompt builder
-- [ ] CrispCalc Dart catalog entries (`OcrModelVariant`) — in separate CrispCalc repo
+- [ ] CrispCalc Dart catalog entries for InternVL2 (`OcrModelVariant`)
+- [ ] Qwen3-VL multimodal (low priority, reuse BidirLM-Omni scaffolding)
 
 ### Completed (v0.8.0)
 
@@ -197,6 +187,9 @@ CrispEmbed/
 - [x] Batched decoder graph (~3x speedup)
 - [x] KV prefix sharing for batched decoder
 - [x] SigLIP attention pooling head
+- [x] Layout decoder → ggml graph (2x speedup)
+- [x] PPFormulaNet-L BLAS + Q8_0 (53s)
+- [x] Streaming ColBERT SSE (`POST /colbert/score`)
 
 #### Models
 - [x] CLIP text + SigLIP-large + CLIP-large
@@ -211,49 +204,19 @@ CrispEmbed/
 - [x] LoRA quantizer fix (preserve A/B at F16)
 - [x] Face pipeline Python wrapper
 - [x] Q8_0 layout model verified
+- [x] Layout-heron GGUFs uploaded to HuggingFace
+- [x] CrispCalc Dart catalog (layout-heron)
 
 #### OCR — ported
 - [x] Qwen2.5-VL-3B (Keyven/german-ocr-3 base)
 - [x] InternVL2.5-2B (2.1B, MIT, cos=1.000)
-- [x] InternVL2-1B (0.9B, MIT)
+- [x] InternVL2-1B (0.9B, MIT) + C++ tokenizer encode
 - [x] PARSeq (24M, Apache-2.0, scene text)
 - [x] GLM-OCR (0.9B, MIT, OmniDocBench #1)
-- [x] GOT-OCR2 (0.7B, Apache-2.0, full parity, windowed+global attn with decomposed RPE)
-- [x] MixTex encoder parity — **cos=1.000000** on all blocks (non-shifted + shifted)
-- [x] Surya detector (parity verified, stb_image done)
-
-#### Feature gaps vs fastembed-rs
-| Gap | Status |
-|---|---|
-| ~~Nomic v2 MoE~~ | DONE |
-| ~~Qwen2.5-VL OCR~~ | DONE |
-| ~~InternVL2.5-2B~~ | DONE |
-| ~~InternVL2-1B~~ | DONE |
-| ~~Nanonets-OCR-s~~ | DONE (Qwen2.5-VL-3B fine-tune, same engine) |
-| Qwen3-VL multimodal | Low priority |
-
-### Pending improvements
-
-- [x] **Layout decoder → ggml graph** — Self-attention + FFN now use
-  ggml graph with BLAS-accelerated matmuls. Decoder: 16.4s → 8s (2x).
-  Total: 36s → 19.6s. Key fix: weight data must be transposed when
-  creating ggml input tensors (Gemm convention ↔ ggml mul_mat stride).
-  Cross-attention stays CPU scalar (deformable grid sampling).
-
-- [x] **PPFormulaNet-L: BLAS enabled, Q8_0 — 53s (was 60s)** — The 4 global
-  layers (2304² attention matrix = 5.3M per head × 12 heads) dominate
-  encoder time. Options: (a) use flash_attn_ext for memory efficiency,
-  (b) tile/block the computation to improve cache behavior,
-  (c) Q8_0 quantized attention for reduced bandwidth.
-
-- [x] **Upload layout-heron GGUFs to HuggingFace** — The Q8_0 model
-  (43 MB) exists at `/mnt/storage/models/layout-heron-q8_0.gguf` but
-  hasn't been published to `cstr/layout-heron-gguf`. Also need F16
-  variant and model card.
-
-- [x] **CrispCalc Dart catalog** — Add `OcrModelVariant` entries for
-  layout-heron (Q8_0, F16, F32) in `lib/engine/ocr_model_manager.dart`.
-  Register at appropriate priority tier in `ocr_providers_init.dart`.
+- [x] GOT-OCR2 (0.7B, Apache-2.0, full parity)
+- [x] MixTex full E2E parity — cos=1.000000 encoder + decoder (6 bugs fixed)
+- [x] Nanonets-OCR-s (3B, Apache-2.0, Qwen2.5-VL fine-tune)
+- [x] Surya detector (parity verified, stb_image, Q8_0/Q4_K working)
 
 ---
 
