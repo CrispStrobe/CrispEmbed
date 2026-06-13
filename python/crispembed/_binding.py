@@ -1252,16 +1252,16 @@ class CrispFacePipeline:
     @classmethod
     def from_registry(
         cls,
-        det_name: str,
-        rec_name: str,
+        det_name: str = "yunet",
+        rec_name: str = "auraface-v1",
         n_threads: int = 4,
         lib_path: Optional[str] = None,
     ) -> "CrispFacePipeline":
         """Create a CrispFacePipeline from registry names (auto-downloads).
 
         Args:
-            det_name:  Detection model registry name (e.g. ``"yunet"``).
-            rec_name:  Recognition model registry name (e.g. ``"auraface-v1"``).
+            det_name:  Detection model registry name (default ``"yunet"``).
+            rec_name:  Recognition model registry name (default ``"auraface-v1"``).
             n_threads: CPU threads for inference.
             lib_path:  Optional path to the shared library.
 
