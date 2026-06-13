@@ -1,5 +1,32 @@
 # CrispEmbed — Technical Learnings
 
+## PARSeq two-stream decoder (XLNet-style attention)
+
+PARSeq's decoder uses a two-stream design from XLNet where both position
+queries and content tokens are maintained separately. Key details:
+
+1. **Token ordering is non-standard**: `[EOS=0, chars=1..94, BOS=95, PAD=96]`.
+   The head output excludes BOS and PAD, so it has 95 classes (0=EOS + 94 chars).
+   This is because `BaseTokenizer` puts `specials_first=(EOS,)` before charset
+   and `specials_last=(BOS,PAD)` after.
+
+2. **Context construction**: The content stream at decode position k is NOT just
+   the token embedding. It's `pos_queries[k-1] + embed(token_k)` for k>=1, and
+   just `embed(BOS)` for k=0 (no position query for BOS — it's "null context").
+
+3. **norm_c is essential**: Context K/V in self-attention are normalized by
+   `norm_c` (LayerNorm), while queries are normalized by `norm_q`. Skipping
+   norm_c produces garbage.
+
+4. **Efficient AR decode**: At step i, only one query position is used
+   (`pos_queries[i]`), with context tokens 0..i. No causal mask needed since
+   T=i+1 and all positions are visible. The paper's `query_mask` only matters
+   for the full N-step forward (training/refinement).
+
+5. **Non-square patch kernel**: Patch embedding uses Conv2d with kernel [4,8]
+   (height 4, width 8). ggml_conv_2d doesn't support non-square kernels, so
+   patch embedding runs CPU-side as a manual extract+matmul.
+
 ## ggml GQA broadcasting (critical for decoder models)
 
 `ggml_mul_mat` natively broadcasts ne[2] when `b->ne[2] % a->ne[2] == 0`.
