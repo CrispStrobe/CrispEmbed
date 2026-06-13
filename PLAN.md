@@ -61,12 +61,6 @@ Input text / image / audio
     ├─► OCR   ──► InternVL2.5: InternViT-300M + InternLM2.5-1.8B (internvl2_ocr.cpp)
     │               2.1B VLM OCR, EN+DE, KV cache, dynamic tiling, OCRBench ~830
     │
-    ├─► OCR   ──► InternVL2-1B: InternViT-300M + Qwen2-0.5B (internvl2_ocr.cpp)
-    │               0.9B VLM OCR, edge/WASM, OCRBench 779
-    │
-    ├─► OCR   ──► GLM-OCR: CogViT + GLM-0.5B (glm_ocr.cpp)
-    │               0.9B doc OCR, 8 langs, post-norm, mRoPE, OmniDocBench #1
-    │
     ├─► Scene ──► PARSeq: ViT + 1-layer two-stream decoder (parseq_ocr.cpp)
     │               Scene text recognition, 94-char ASCII, 24M (base) / 6M (tiny)
     │
@@ -100,9 +94,7 @@ Input text / image / audio
 | DeiT+TrOCR | — | ggml graph encoder + decoder | pix2tex-mfr |
 | HMER | — | DenseNet-121 + GRU attention | hmer (handwritten math) |
 | BTTR | — | DenseNet + Transformer decoder | bttr (handwritten math) |
-| InternVL2.5-2B | SentencePiece BPE | InternViT-300M + pixel unshuffle + InternLM2.5-1.8B (GQA 16/8, SwiGLU, KV cache) | internvl2.5-2b (VLM OCR) |
-| InternVL2-1B | Qwen2 BPE | InternViT-300M + pixel unshuffle + Qwen2-0.5B (GQA 14/2, Q/K/V bias, KV cache) | internvl2-1b (edge VLM OCR) |
-| GLM-OCR | GPT-2 BPE | CogViT-24L + Conv2D downsample + GLM-0.5B (post-norm, mRoPE, Q upscale, GQA 16/8) | glm-ocr (doc OCR, 8 langs) |
+| InternVL2.5 | SentencePiece BPE | InternViT-300M + pixel unshuffle + InternLM2.5-1.8B (GQA 16/8, SwiGLU, KV cache) | internvl2.5-2b (VLM OCR) |
 | PARSeq | — (char-level) | ViT-12L encoder + 1-layer two-stream decoder, GELU, 94-char ASCII | parseq (scene text) |
 
 ## Shared code with CrispASR
@@ -140,8 +132,7 @@ CrispEmbed/
 │   ├── math_ocr.{h,cpp}        DeiT+TrOCR printed math OCR
 │   ├── hmer_ocr.{h,cpp}        HMER handwritten math OCR
 │   ├── bttr_ocr.{h,cpp}        BTTR handwritten math OCR
-│   ├── internvl2_ocr.{h,cpp}   InternVL2 VLM OCR (2.5-2B + 1B, KV cache)
-│   ├── glm_ocr.{h,cpp}        GLM-OCR (CogViT + GLM-0.5B, post-norm, mRoPE)
+│   ├── internvl2_ocr.{h,cpp}   InternVL2.5-2B VLM OCR (KV cache)
 │   ├── parseq_ocr.{h,cpp}     PARSeq scene text OCR (ViT + 2-stream decoder)
 │   ├── tokenizer.h             WordPiece + SentencePiece + BPE
 │   ├── tokenizer_bpe.cpp       GPT-2 byte-level BPE
@@ -171,23 +162,23 @@ CrispEmbed/
 
 ### Active bugs
 
-- [ ] **Layout detection decoder gap** — AIFI + ref_points fixed (score 0.047→0.069),
-  encoder features exact match, but decoder deformable cross-attention still broken
-  (cos=0.345 vs Python). Final score 0.069 vs Python 0.65. Root cause: multi-scale
-  grid sampling or per-layer bbox refinement loop has an indexing/convention error.
+- [ ] **Layout detection decoder weight convention** — Encoder exact match, ref_points
+  exact match, score 0.047→0.114 (Python: 0.65). Three bugs fixed (AIFI head interleave,
+  ref_points init, enc_bbox+anchors). Remaining: `cpu_linear` uses MatMul `(in,out)`
+  convention uniformly but some decoder MatMul weights (`query_pos_head.layers.1`,
+  cross-attn projections) are stored as PyTorch `(out,in)`. Need per-weight convention
+  detection or selective transpose in converter for non-square decoder MatMul weights.
   Branch: `feat/layout-fix`.
 
-- [ ] **BGE-M3 SentencePiece crash** — `crispembed.cpp` loads vocab_size=49408 from
-  clip_text metadata but BGE-M3 has 250002 SPM tokens. Crash in reshape assertion.
-  Blocks ColBERT MaxSim testing with BGE-M3. Pre-existing, not caused by recent changes.
+- [x] **BGE-M3 SentencePiece crash** — FIXED. `clip_text::load()` now checks for
+  `clip_text.hidden_size` metadata key before proceeding. Non-CLIP models fall through
+  to the correct BERT encoder path.
 
 ### Infrastructure gaps
 
-- [x] **Jina v5 LoRA GGUF adapters** — DONE. Converted with `--lora-mode=separate`,
-  all 4 adapters verified (cos >= 0.998 vs HF F32). Quantizer bug fixed: LoRA A/B
-  tensors preserved at F16, not quantized.
-
-- [ ] **Push to remote main** — Local main has many commits ahead of remote.
+- [ ] **Jina v5 LoRA GGUF adapters** — LoRA API fully implemented (`crispembed_set_lora`,
+  etc.) but no HF→GGUF adapter conversion done yet. Need to run converter with
+  `--lora-mode=separate` and test per-adapter parity (retrieval/classification/clustering).
 
 ### Performance
 
@@ -225,9 +216,9 @@ CrispEmbed/
 
 #### High priority — next to port
 
-- [x] **InternVL2-1B (0.9B, MIT) — DONE** — InternViT-300M + Qwen2-0.5B, reuses internvl2_ocr.cpp. GGUFs: `cstr/internvl2-1b-crispembed-GGUF` (F16/Q8_0/Q4_K).
+- [ ] InternVL2-1B (0.9B, MIT) — same arch as 2.5-2B but Qwen2-0.5B LLM, edge/WASM (~1-2 days, reuses internvl2_ocr.cpp)
 - [x] PARSeq (24M, Apache-2.0) — DONE. ViT encoder + 1-layer two-stream decoder, 94-char ASCII scene text. Base (91MB F32, 24MB Q8_0, 13MB Q4_K) + Tiny (12MB F16, 6MB Q8_0). All verified.
-- [x] **GLM-OCR (0.9B, MIT) — DONE** — CogViT (24L, RMSNorm+SwiGLU, Q/K norm) + Conv2D downsample + Merger + GLM-0.5B (16L, post-norm, mRoPE, Q upscale). KV cache + generation + tokenizer decode. Parity 11/11 cos=1.000. GGUFs: `cstr/glm-ocr-crispembed-GGUF` (F16 2.5GB / Q8_0 1.1GB / Q4_K 849MB). OmniDocBench #1.
+- [ ] GLM-OCR (0.9B, MIT) — CogViT + GLM-0.5B, 8 languages, GGUF already exists at ggml-org/GLM-OCR-GGUF (~3-4 days)
 - [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune (NOT 3B), GGUF-only release with separate mmproj sidecar. German business docs → structured JSON. Requires verifying exact base model (Qwen2-VL-2B vs Qwen2.5-VL-2B) from GGUF metadata. Author labels arch as "qwen2vl". (~2-3 days, may reuse Qwen2VL engine but 2B LLM config differs from our 3B port)
 
 #### Lower priority
@@ -253,10 +244,10 @@ CrispEmbed/
 
 - [x] KV cache for prefix-shared decoder batches (deduplicate shared prefix tokens)
 - [x] ColBERT MaxSim scoring — C API + server endpoint (POST /colbert/score)
-- [x] Live-test LoRA with Jina v5 — all 4 adapters cos >= 0.998 vs HuggingFace F32
-- [x] Layout detection score gap — fixed missing ImageNet normalization + AIFI head interleave + ref_points
+- [ ] Live-test LoRA with Jina v5 (end-to-end parity per adapter — needs GGUF adapter conversion first)
+- [~] Layout detection score gap — 3 bugs fixed (0.047→0.114), decoder weight convention remains
 - [ ] Verify Q8_0 layout model works (dequant path untested)
-- [ ] Fix BGE-M3 SentencePiece vocab mismatch crash
+- [x] Fix BGE-M3 SentencePiece vocab mismatch crash — clip_text guard added
 
 ### Feature gaps vs fastembed-rs
 
@@ -265,8 +256,6 @@ CrispEmbed/
 | ~~Nomic v2 MoE~~ | ~~Low~~ | ~~High~~ | ~~MoE routing layer in encoder~~ DONE |
 | ~~Qwen2.5-VL OCR~~ | ~~High~~ | ~~High~~ | ~~Qwen2.5-VL-3B engine~~ DONE, merged to main |
 | ~~InternVL2.5-2B~~ | ~~High~~ | ~~High~~ | ~~InternVL2.5-2B VLM OCR~~ DONE, merged to main |
-| ~~InternVL2-1B~~ | ~~High~~ | ~~Low~~ | ~~InternVL2-1B (Qwen2 LLM)~~ DONE, merged to main |
-| ~~GLM-OCR~~ | ~~High~~ | ~~Medium~~ | ~~GLM-OCR 0.9B (CogViT + GLM)~~ DONE, merged to main |
 | Qwen3-VL multimodal | Low | High | Reuse BidirLM-Omni scaffolding |
 
 ### Pending improvements
@@ -301,24 +290,23 @@ CrispEmbed/
   `read_f32` dequantization fixes are committed but untested due to
   VPS load. Need to confirm no crash and measure Q8_0 vs F32 parity.
 
-- [x] **KV cache for prefix-shared decoder batches** — DONE. Token layout
-  deduplicates shared prefix: `[prefix | suffix_0 | suffix_1 | ...]`.
-  Saves `(B-1)*P` tokens of compute. Activates for P >= 4 (causal only).
+- [ ] **KV cache for prefix-shared decoder batches** — When multiple texts
+  share a prompt prefix (e.g. Jina v5 instruction prefix), compute KV
+  for the shared prefix once and reuse across the batch.
 
-- [x] **ColBERT MaxSim scoring** — DONE. C API (`crispembed_colbert_score`,
-  `_batch` with OpenMP), server `POST /colbert/score` endpoint. No SSE
-  streaming yet (scores returned as ranked JSON array).
+- [ ] **Streaming ColBERT late interaction scoring** — Server-side MaxSim
+  scoring via `/colbert/score` endpoint with SSE streaming.
 
 - [x] **Quantized GGUF for face models** — Quantizer now flattens 4D conv
   weights to 2D before quantizing. SFace: Q8_0 cos=0.9996 (37→10 MB),
   Q6_K cos=0.9966 (37→8 MB). Q4_K cos=0.936 (too low for recognition).
   SCRFD detection: Q8_0 17→10 MB, Q4_K 17→8.7 MB.
 
-- [x] **Live-test LoRA with Jina v5** — DONE. Converted with
-  `--lora-mode=separate`, verified all 4 adapters (retrieval, text-matching,
-  clustering, classification) match HuggingFace F32 (Q8_0 cos >= 0.998).
-  Found and fixed quantizer bug: LoRA A/B tensors must be preserved at
-  source precision (F16), not quantized to Q8_0/Q4_K.
+- [ ] **Live-test LoRA with Jina v5** — LoRA hot-swap is implemented but
+  not end-to-end tested with real Jina v5 adapters. Need to: convert with
+  `--lora-mode=separate`, verify each adapter (retrieval, classification,
+  clustering, text-matching) matches the baked version (cos >= 0.9999),
+  confirm switching works correctly, test with the Python wrapper.
 
 - [x] **3D tensor quantization for MoE experts** — DONE. Quantizer now
   handles 3D tensors by quantizing each 2D slice independently. Results:
