@@ -254,8 +254,8 @@ CrispEmbed/
 
 - [x] KV cache for prefix-shared decoder batches (deduplicate shared prefix tokens)
 - [x] ColBERT MaxSim scoring — C API + server endpoint (POST /colbert/score)
-- [ ] Live-test LoRA with Jina v5 (end-to-end parity per adapter — needs GGUF adapter conversion first)
-- [~] Layout detection score gap — AIFI head interleave + ref_points fixed (0.047→0.069), decoder cross-attn gap remains
+- [x] Live-test LoRA with Jina v5 — all 4 adapters cos >= 0.998 vs HuggingFace F32
+- [x] Layout detection score gap — fixed missing ImageNet normalization + AIFI head interleave + ref_points
 - [ ] Verify Q8_0 layout model works (dequant path untested)
 - [ ] Fix BGE-M3 SentencePiece vocab mismatch crash
 
@@ -314,11 +314,11 @@ CrispEmbed/
   Q6_K cos=0.9966 (37→8 MB). Q4_K cos=0.936 (too low for recognition).
   SCRFD detection: Q8_0 17→10 MB, Q4_K 17→8.7 MB.
 
-- [ ] **Live-test LoRA with Jina v5** — LoRA hot-swap is implemented but
-  not end-to-end tested with real Jina v5 adapters. Need to: convert with
-  `--lora-mode=separate`, verify each adapter (retrieval, classification,
-  clustering, text-matching) matches the baked version (cos >= 0.9999),
-  confirm switching works correctly, test with the Python wrapper.
+- [x] **Live-test LoRA with Jina v5** — DONE. Converted with
+  `--lora-mode=separate`, verified all 4 adapters (retrieval, text-matching,
+  clustering, classification) match HuggingFace F32 (Q8_0 cos >= 0.998).
+  Found and fixed quantizer bug: LoRA A/B tensors must be preserved at
+  source precision (F16), not quantized to Q8_0/Q4_K.
 
 - [x] **3D tensor quantization for MoE experts** — DONE. Quantizer now
   handles 3D tensors by quantizing each 2D slice independently. Results:
