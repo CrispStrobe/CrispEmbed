@@ -167,9 +167,8 @@ CrispEmbed/
 - [~] **Layout detection decoder** — cpu_linear auto-detect for non-square weights.
   Now detects 3/7 regions (max score 0.671 vs Python 0.65). Top 2 detections match.
   Remaining: cross_out cos=0.058 — deformable attention sampling or indexing.
-- [~] **MixTex Swin attention** — RPB table length fixed + diff harness added.
-  Per-block parity: enc_embed cos=1.000 PASS, s0_b0_out cos=0.956 FAIL.
-  Bug is in block 0 window attention or FFN (not window partition/shift).
+- [x] **MixTex Swin attention** — DONE. Full parity cos=1.000000 on all blocks.
+  Three bugs fixed: cyclic shift sign convention, pad-then-shift order, GELU variant.
 - [x] **Streaming ColBERT SSE** — DONE. `POST /colbert/score` with
   `Accept: text/event-stream` streams `data: {"index":i,"score":s}` per
   document, then `event: done`. Non-streaming JSON still default.
