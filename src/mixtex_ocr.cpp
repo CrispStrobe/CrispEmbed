@@ -187,7 +187,8 @@ static void window_mhsa(const float* tokens, float* out,
                          const float* v_w, const float* v_b,
                          const float* out_w, const float* out_b,
                          const float* rpb_table, const float* rpb_index,
-                         int rpb_table_len) {
+                         int rpb_table_len,
+                         const float* attn_mask = nullptr) {
     int hd = D / n_heads;
     float scale = 1.0f / sqrtf((float)hd);
 
@@ -231,6 +232,9 @@ static void window_mhsa(const float* tokens, float* out,
                     if (idx >= 0 && idx < rpb_table_len)
                         scores[i * n_tokens + j] += rpb_table[idx * n_heads + h];
                 }
+                // Add attention mask (shifted window: -100 for cross-region)
+                if (attn_mask)
+                    scores[i * n_tokens + j] += attn_mask[i * n_tokens + j];
             }
         }
 
@@ -641,6 +645,45 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                 shifted_x = std::move(padded);
             }
 
+            // Compute attention mask for shifted windows
+            std::vector<float> attn_mask_all;
+            if (shifted) {
+                // Create region labels: [pH2, pW2] with 9 regions (3x3 slices)
+                std::vector<float> img_mask(pH2 * pW2, 0.0f);
+                // height slices: [0, -ws), [-ws, -shift), [-shift, end)
+                // width slices: same
+                int h_cuts[4] = {0, pH2 - ws, pH2 - shift, pH2};
+                int w_cuts[4] = {0, pW2 - ws, pW2 - shift, pW2};
+                int region = 0;
+                for (int hi = 0; hi < 3; hi++)
+                    for (int wi = 0; wi < 3; wi++) {
+                        for (int y = h_cuts[hi]; y < h_cuts[hi+1]; y++)
+                            for (int x = w_cuts[wi]; x < w_cuts[wi+1]; x++)
+                                img_mask[y * pW2 + x] = (float)region;
+                        region++;
+                    }
+                // Window partition the mask → [nW, ws*ws]
+                int nH_m = pH2 / ws, nW_m = pW2 / ws, n_win = nH_m * nW_m;
+                std::vector<float> mask_windows(n_win * ws * ws);
+                for (int wh = 0; wh < nH_m; wh++)
+                    for (int ww = 0; ww < nW_m; ww++) {
+                        int win = wh * nW_m + ww;
+                        for (int y = 0; y < ws; y++)
+                            for (int x = 0; x < ws; x++)
+                                mask_windows[win * ws * ws + y * ws + x] =
+                                    img_mask[(wh * ws + y) * pW2 + ww * ws + x];
+                    }
+                // Build mask: [nW, ws*ws, ws*ws]
+                // mask[w, i, j] = -100 if region[i] != region[j], else 0
+                int tpw = ws * ws;
+                attn_mask_all.resize(n_win * tpw * tpw, 0.0f);
+                for (int w = 0; w < n_win; w++)
+                    for (int i = 0; i < tpw; i++)
+                        for (int j = 0; j < tpw; j++)
+                            if (mask_windows[w * tpw + i] != mask_windows[w * tpw + j])
+                                attn_mask_all[w * tpw * tpw + i * tpw + j] = -100.0f;
+            }
+
             // Window partition
             int nH = pH2 / ws, nW = pW2 / ws;
             int n_windows = nH * nW;
@@ -660,6 +703,9 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
 
             std::vector<float> attn_out(n_windows * tokens_per_win * D);
             for (int w = 0; w < n_windows; w++) {
+                const float* win_mask = (!attn_mask_all.empty())
+                    ? attn_mask_all.data() + w * tokens_per_win * tokens_per_win
+                    : nullptr;
                 window_mhsa(
                     windows.data() + w * tokens_per_win * D,
                     attn_out.data() + w * tokens_per_win * D,
@@ -670,7 +716,8 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                     out_w.data(), out_b.data(),
                     rpb_t.empty() ? nullptr : rpb_t.data(),
                     rpb_i.empty() ? nullptr : rpb_i.data(),
-                    rpb_len);
+                    rpb_len,
+                    win_mask);
             }
 
             // Diff: compare windowed attention output BEFORE window_reverse
