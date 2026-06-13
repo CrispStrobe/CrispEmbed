@@ -157,6 +157,23 @@ CRISPEMBED_API const float * crispembed_encode_multivec(crispembed_context * ctx
                                                          int                * out_n_tokens,
                                                          int                * out_dim);
 
+// ColBERT MaxSim scoring: score = sum_i(max_j(dot(Q[i], D[j])))
+// Q and D must be L2-normalized per-token embeddings.
+// Returns the late interaction score (higher = more relevant).
+CRISPEMBED_API float crispembed_colbert_score(
+    const float * query_vecs,  int n_query,
+    const float * doc_vecs,    int n_doc,
+    int dim);
+
+// Batch ColBERT scoring: score K documents against one query.
+// doc_vecs_list[k] points to [doc_n_tokens[k] * dim] float arrays.
+// Writes K scores to out_scores. Returns 0 on success.
+CRISPEMBED_API int crispembed_colbert_score_batch(
+    const float * query_vecs,  int n_query,
+    const float ** doc_vecs_list, const int * doc_n_tokens,
+    int n_docs, int dim,
+    float * out_scores);
+
 // ---------------------------------------------------------------------------
 // Per-token contextual embeddings (any encoder model)
 // ---------------------------------------------------------------------------

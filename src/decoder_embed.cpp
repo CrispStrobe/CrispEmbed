@@ -1159,6 +1159,29 @@ bool decoder_set_lora(dec_model & m, ggml_backend_t backend,
 }
 
 // ---------------------------------------------------------------------------
+// Prefix detection for KV cache sharing
+// ---------------------------------------------------------------------------
+
+static int detect_common_prefix(const std::vector<embed_tokens> & batch) {
+    if (batch.size() < 2) return 0;
+    int min_len = (int)batch[0].ids.size();
+    for (size_t i = 1; i < batch.size(); i++)
+        min_len = std::min(min_len, (int)batch[i].ids.size());
+
+    int prefix_len = 0;
+    for (int t = 0; t < min_len; t++) {
+        int32_t ref = batch[0].ids[t];
+        bool match = true;
+        for (size_t i = 1; i < batch.size(); i++) {
+            if (batch[i].ids[t] != ref) { match = false; break; }
+        }
+        if (!match) break;
+        prefix_len++;
+    }
+    return prefix_len;
+}
+
+// ---------------------------------------------------------------------------
 // Batched decoder encoding
 // ---------------------------------------------------------------------------
 
@@ -1180,14 +1203,37 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
         return results;
     }
 
-    // Compute T_max and per-text lengths
+    // --- Prefix sharing optimization ---
+    // When all texts share a common prefix (e.g. Jina v5 instruction prefix),
+    // lay out tokens as: [prefix | suffix_0_pad | suffix_1_pad | ... ]
+    // instead of: [text_0_pad | text_1_pad | ...].
+    // The prefix tokens appear only once; each text's suffix block attends
+    // causally to the shared prefix + its own suffix.
+    // This saves ~(B-1)*P tokens of redundant compute.
+    const int P = detect_common_prefix(batch);
+    const int MIN_PREFIX = 4;  // not worth the mask complexity for tiny prefixes
+
+    // Compute per-text suffix lengths and S_max
     std::vector<int> lens(B);
+    std::vector<int> suffix_lens(B);
+    int S_max = 0;
     int T_max = 0;
     for (int b = 0; b < B; b++) {
         lens[b] = (int)batch[b].ids.size();
+        suffix_lens[b] = lens[b] - (P >= MIN_PREFIX ? P : 0);
+        S_max = std::max(S_max, suffix_lens[b]);
         T_max = std::max(T_max, lens[b]);
     }
-    const int T_total = T_max * B;
+
+    const bool use_prefix = (P >= MIN_PREFIX && !m.is_bidirectional);
+    // Total sequence length: either P + B*S_max (prefix-shared) or B*T_max (original)
+    const int T_total = use_prefix ? (P + S_max * B) : (T_max * B);
+
+    if (use_prefix) {
+        fprintf(stderr, "decoder_batch: prefix sharing — P=%d, B=%d, S_max=%d, "
+                "T_total=%d (was %d, saved %d tokens)\n",
+                P, B, S_max, T_total, T_max * B, T_max * B - T_total);
+    }
 
     const int H = m.n_embd;
     const int n_heads = m.n_head;
@@ -1200,36 +1246,71 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
     // Build padded token ids and position ids
     std::vector<int32_t> tok_data(T_total, 0);
     std::vector<int32_t> pos_data(T_total, 0);
-    for (int b = 0; b < B; b++) {
-        for (int t = 0; t < lens[b]; t++) {
-            tok_data[b * T_max + t] = batch[b].ids[t];
-            pos_data[b * T_max + t] = t;
+
+    if (use_prefix) {
+        // Layout: [prefix_0..P-1 | suf0_0..suf0_S-1_pad | suf1_0..suf1_S-1_pad | ...]
+        // Prefix tokens
+        for (int t = 0; t < P; t++) {
+            tok_data[t] = batch[0].ids[t];
+            pos_data[t] = t;
+        }
+        // Suffix blocks
+        for (int b = 0; b < B; b++) {
+            for (int s = 0; s < suffix_lens[b]; s++) {
+                int idx = P + b * S_max + s;
+                tok_data[idx] = batch[b].ids[P + s];
+                pos_data[idx] = P + s;  // absolute position continues from prefix
+            }
+        }
+    } else {
+        for (int b = 0; b < B; b++) {
+            for (int t = 0; t < lens[b]; t++) {
+                tok_data[b * T_max + t] = batch[b].ids[t];
+                pos_data[b * T_max + t] = t;
+            }
         }
     }
 
-    // Build block-diagonal causal mask as F32 [T_total, T_total]
-    // mask[q_pos, k_pos] = 0.0 if same text AND q >= k AND k < len
-    //                    = -INFINITY otherwise
-    // Padding positions get self-attention (mask[pad,pad]=0) to prevent
-    // softmax(all -inf) = NaN. The padding output isn't pooled.
+    // Build attention mask [T_total, T_total]
     std::vector<float> mask_data((size_t)T_total * T_total, -INFINITY);
-    for (int b = 0; b < B; b++) {
-        for (int q = 0; q < lens[b]; q++) {
-            if (m.is_bidirectional) {
-                // Bidirectional: all valid positions within same text can attend
-                for (int k = 0; k < lens[b]; k++) {
-                    mask_data[(size_t)(b * T_max + q) * T_total + (b * T_max + k)] = 0.0f;
-                }
-            } else {
-                // Causal: q can attend to k only if k <= q
-                for (int k = 0; k <= q; k++) {
-                    mask_data[(size_t)(b * T_max + q) * T_total + (b * T_max + k)] = 0.0f;
-                }
+
+    if (use_prefix) {
+        // Prefix tokens: causal within prefix
+        for (int q = 0; q < P; q++)
+            for (int k = 0; k <= q; k++)
+                mask_data[(size_t)q * T_total + k] = 0.0f;
+
+        // Suffix blocks: each text attends to prefix + own suffix (causal)
+        for (int b = 0; b < B; b++) {
+            int base = P + b * S_max;
+            for (int sq = 0; sq < suffix_lens[b]; sq++) {
+                int q_idx = base + sq;
+                // Attend to all prefix tokens
+                for (int k = 0; k < P; k++)
+                    mask_data[(size_t)q_idx * T_total + k] = 0.0f;
+                // Attend to own suffix tokens up to current position (causal)
+                for (int sk = 0; sk <= sq; sk++)
+                    mask_data[(size_t)q_idx * T_total + (base + sk)] = 0.0f;
+            }
+            // Padding positions: self-attend
+            for (int sp = suffix_lens[b]; sp < S_max; sp++) {
+                int p_idx = base + sp;
+                mask_data[(size_t)p_idx * T_total + p_idx] = 0.0f;
             }
         }
-        // Padding positions: self-attend to prevent NaN in softmax
-        for (int p = lens[b]; p < T_max; p++) {
-            mask_data[(size_t)(b * T_max + p) * T_total + (b * T_max + p)] = 0.0f;
+    } else {
+        for (int b = 0; b < B; b++) {
+            for (int q = 0; q < lens[b]; q++) {
+                if (m.is_bidirectional) {
+                    for (int k = 0; k < lens[b]; k++)
+                        mask_data[(size_t)(b * T_max + q) * T_total + (b * T_max + k)] = 0.0f;
+                } else {
+                    for (int k = 0; k <= q; k++)
+                        mask_data[(size_t)(b * T_max + q) * T_total + (b * T_max + k)] = 0.0f;
+                }
+            }
+            for (int p = lens[b]; p < T_max; p++)
+                mask_data[(size_t)(b * T_max + p) * T_total + (b * T_max + p)] = 0.0f;
         }
     }
 
@@ -1470,28 +1551,59 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
     ggml_free(gctx);
 
     // Per-text pooling
+    // With prefix sharing, layout is [prefix | suf0 | suf1 | ...].
+    // Without, layout is [text0_pad | text1_pad | ...].
     std::vector<std::vector<float>> results(B);
     for (int b = 0; b < B; b++) {
         std::vector<float> pooled(H, 0.0f);
 
         if (m.pooling_method == 1) {
-            // Mean pooling
+            // Mean pooling over all valid positions (prefix + suffix)
             int n_valid = 0;
-            for (int t = 0; t < lens[b]; t++) {
-                const float * row = hidden.data() + (size_t)(b * T_max + t) * H;
-                for (int i = 0; i < H; i++) pooled[i] += row[i];
-                n_valid++;
+            if (use_prefix) {
+                // Prefix tokens (shared but valid for all texts)
+                for (int t = 0; t < P; t++) {
+                    const float * row = hidden.data() + (size_t)t * H;
+                    for (int i = 0; i < H; i++) pooled[i] += row[i];
+                    n_valid++;
+                }
+                // Suffix tokens for this text
+                int base = P + b * S_max;
+                for (int s = 0; s < suffix_lens[b]; s++) {
+                    const float * row = hidden.data() + (size_t)(base + s) * H;
+                    for (int i = 0; i < H; i++) pooled[i] += row[i];
+                    n_valid++;
+                }
+            } else {
+                for (int t = 0; t < lens[b]; t++) {
+                    const float * row = hidden.data() + (size_t)(b * T_max + t) * H;
+                    for (int i = 0; i < H; i++) pooled[i] += row[i];
+                    n_valid++;
+                }
             }
             if (n_valid > 0) {
                 const float inv = 1.0f / (float)n_valid;
                 for (int i = 0; i < H; i++) pooled[i] *= inv;
             }
         } else {
-            // Last-token pooling
-            int last_t = lens[b] - 1;
-            if (last_t < 0) last_t = 0;
-            memcpy(pooled.data(), hidden.data() + (size_t)(b * T_max + last_t) * H,
-                   H * sizeof(float));
+            // Last-token pooling — take last valid suffix token
+            if (use_prefix) {
+                int base = P + b * S_max;
+                int last_s = suffix_lens[b] - 1;
+                if (last_s < 0) {
+                    // Text is entirely prefix — take last prefix token
+                    memcpy(pooled.data(), hidden.data() + (size_t)(P - 1) * H,
+                           H * sizeof(float));
+                } else {
+                    memcpy(pooled.data(), hidden.data() + (size_t)(base + last_s) * H,
+                           H * sizeof(float));
+                }
+            } else {
+                int last_t = lens[b] - 1;
+                if (last_t < 0) last_t = 0;
+                memcpy(pooled.data(), hidden.data() + (size_t)(b * T_max + last_t) * H,
+                       H * sizeof(float));
+            }
         }
 
         // Dense projection

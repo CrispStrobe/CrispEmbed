@@ -2892,6 +2892,50 @@ extern "C" void crispembed_face_free(crispembed_face_context * ctx) {
 }
 
 // ---------------------------------------------------------------------------
+// ColBERT MaxSim scoring
+// ---------------------------------------------------------------------------
+
+extern "C" float crispembed_colbert_score(
+    const float * query_vecs,  int n_query,
+    const float * doc_vecs,    int n_doc,
+    int dim
+) {
+    // MaxSim: score = sum_i(max_j(dot(Q[i], D[j])))
+    // Q and D are already L2-normalized, so dot = cosine.
+    float score = 0.0f;
+    for (int qi = 0; qi < n_query; qi++) {
+        const float * q = query_vecs + qi * dim;
+        float max_sim = -1e30f;
+        for (int di = 0; di < n_doc; di++) {
+            const float * d = doc_vecs + di * dim;
+            float dot = 0.0f;
+            for (int k = 0; k < dim; k++) dot += q[k] * d[k];
+            if (dot > max_sim) max_sim = dot;
+        }
+        score += max_sim;
+    }
+    return score;
+}
+
+extern "C" int crispembed_colbert_score_batch(
+    const float * query_vecs,  int n_query,
+    const float ** doc_vecs_list, const int * doc_n_tokens,
+    int n_docs, int dim,
+    float * out_scores
+) {
+    if (!query_vecs || !doc_vecs_list || !doc_n_tokens || !out_scores) return -1;
+
+    #pragma omp parallel for schedule(dynamic)
+    for (int d = 0; d < n_docs; d++) {
+        out_scores[d] = crispembed_colbert_score(
+            query_vecs, n_query,
+            doc_vecs_list[d], doc_n_tokens[d],
+            dim);
+    }
+    return 0;
+}
+
+// ---------------------------------------------------------------------------
 // Unified Math OCR — auto-detects model architecture from GGUF metadata.
 // Supports: pix2tex_mfr (DeiT+TrOCR), hmer (DenseNet+GRU), bttr (DenseNet+Transformer)
 // ---------------------------------------------------------------------------
