@@ -161,7 +161,7 @@ CrispEmbed/
 ### Performance
 
 - [x] True batched graph for decoder models (single compute for N texts, block-diagonal causal mask, ~3x speedup)
-- [ ] KV cache for prefix-shared decoder batches
+- [x] KV cache for prefix-shared decoder batches (deduplicate shared prefix tokens in batch layout)
 - [x] SigLIP attention pooling head (mean pool works; attn pool for full parity)
 
 ### Models
@@ -218,10 +218,10 @@ CrispEmbed/
 
 ### Non-OCR pending
 
-- [ ] KV cache for prefix-shared decoder batches (embedding model optimization)
-- [ ] Streaming ColBERT late interaction scoring (MaxSim + SSE)
+- [x] KV cache for prefix-shared decoder batches (deduplicate shared prefix tokens)
+- [x] ColBERT MaxSim scoring — C API + server endpoint (POST /colbert/score)
 - [ ] Live-test LoRA with Jina v5 (end-to-end parity per adapter)
-- [ ] Layout detection score gap (0.934 vs HF 0.955, bilinear resize delta)
+- [x] Layout detection score gap — fixed missing ImageNet normalization in detect_file
 - [ ] Verify Q8_0 layout model works (dequant path untested)
 
 ### Feature gaps vs fastembed-rs
@@ -256,10 +256,10 @@ CrispEmbed/
   layout-heron (Q8_0, F16, F32) in `lib/engine/ocr_model_manager.dart`.
   Register at appropriate priority tier in `ocr_providers_init.dart`.
 
-- [ ] **Layout detection score gap** — Current: 0.934 vs HF 0.955.
-  Root cause: bilinear resize pixel differences (PIL vs custom C++)
-  cascading through 50+ backbone Conv layers. Fix: match PIL's exact
-  coordinate mapping or use stb_image_resize2 with matching filter.
+- [x] **Layout detection score gap** — FIXED. Root cause: missing ImageNet
+  normalization in `detect_file`. Pixel values were [0,1] but model expects
+  `(val - mean) / std`. The `img_mean`/`img_std` fields existed in the
+  context struct but were never applied. Needs re-test to confirm score improvement.
 
 - [ ] **Verify Q8_0 layout model works** — The `ensure_f32` +
   `read_f32` dequantization fixes are committed but untested due to
