@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
     printf("\nGenerating (max %d tokens)...\n", max_tokens);
     int32_t prompt[] = {1, 100, 200};
     glm_ocr::generate_result gen;
-    if (!glm_ocr::generate(ctx, prompt, 3, max_tokens, gen)) {
+    if (!glm_ocr::generate(ctx, nullptr, 0, 0, prompt, 3, max_tokens, gen)) {
         fprintf(stderr, "Generation failed\n");
         glm_ocr::free_(ctx);
         return 1;
