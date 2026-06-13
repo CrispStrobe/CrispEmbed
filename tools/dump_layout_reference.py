@@ -175,6 +175,42 @@ def main():
     # Hook enc_output (linear + layernorm)
     hooks.append(inner.enc_output.register_forward_hook(make_hook("enc_output")))
 
+    # Hook decoder layers — cross-attention intermediates
+    for i, layer in enumerate(inner.decoder.layers):
+        # Cross-attention (encoder_attn) — captures the full output (cross_out, attn_weights)
+        def make_cross_hook(layer_idx):
+            def hook_fn(module, inp, output):
+                # output = (cross_out, attention_weights)
+                if isinstance(output, tuple) and len(output) >= 1:
+                    cross_out = output[0].detach().float().cpu().numpy()
+                    captures[f"dec_{layer_idx}_cross_out"] = cross_out
+                    print(f"    Hook [dec_{layer_idx}_cross_out]: shape={cross_out.shape}, "
+                          f"range=[{cross_out.min():.4f}, {cross_out.max():.4f}]")
+                    if len(output) >= 2 and isinstance(output[1], torch.Tensor):
+                        attn_w = output[1].detach().float().cpu().numpy()
+                        captures[f"dec_{layer_idx}_cross_attn_w"] = attn_w
+                        print(f"    Hook [dec_{layer_idx}_cross_attn_w]: shape={attn_w.shape}")
+                # Also capture the sampling_offsets and value inputs for debugging
+                if len(inp) > 0 and isinstance(inp[0], torch.Tensor):
+                    hidden = inp[0].detach().float().cpu().numpy()
+                    captures[f"dec_{layer_idx}_cross_hidden_in"] = hidden
+                    print(f"    Hook [dec_{layer_idx}_cross_hidden_in]: shape={hidden.shape}")
+            return hook_fn
+        hooks.append(layer.encoder_attn.register_forward_hook(make_cross_hook(i)))
+
+        # Also hook the value_proj to capture projected values
+        def make_vproj_hook(layer_idx):
+            def hook_fn(module, inp, output):
+                arr = output.detach().float().cpu().numpy()
+                captures[f"dec_{layer_idx}_value_proj"] = arr
+                print(f"    Hook [dec_{layer_idx}_value_proj]: shape={arr.shape}, "
+                      f"range=[{arr.min():.4f}, {arr.max():.4f}]")
+            return hook_fn
+        hooks.append(layer.encoder_attn.value_proj.register_forward_hook(make_vproj_hook(i)))
+
+        # Hook the full decoder layer output
+        hooks.append(layer.register_forward_hook(make_hook(f"dec_{i}")))
+
     # Run inference
     print("\nRunning inference...")
     with torch.no_grad():
