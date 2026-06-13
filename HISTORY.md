@@ -25,8 +25,13 @@ Q/K RMSNorm per head, Conv3D patches with temporal_patch_size=2) → RMSNorm
 **GGUFs**: `cstr/glm-ocr-crispembed-GGUF` — F16 (2.5 GB), Q8_0 (1.1 GB),
 Q4_K (849 MB). Vision weights at Q8_0 floor.
 
+**KV cache + generation**: F16 persistent KV cache with prefill+decode.
+Autoregressive generation verified with Q8_0 model. Tokenizer decode
+from GGUF vocab (GPT-2 BPE). LLM graph refactored into reusable
+`build_llm_graph()` supporting both uncached (parity) and cached (generation) modes.
+
 **New files**: `src/glm_ocr.{h,cpp}`, `models/convert-glm-ocr-to-gguf.py`,
-`tools/dump_glm_ocr_reference.py`, `tests/test_glm_ocr_diff.cpp`.
+`tools/dump_glm_ocr_reference.py`, `tests/test_glm_ocr_{diff,e2e}.cpp`.
 
 ---
 
