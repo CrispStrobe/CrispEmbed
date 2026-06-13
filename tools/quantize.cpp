@@ -158,8 +158,12 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         std::string sname(name);
 
         // Guard 1: patch_embed tensors — always copy as-is (they are conv2d kernels)
-        if (sname.find("patch_embed") != std::string::npos) {
-            printf("note: patch_embed tensor — copying as-is (F32)\n");
+        // patch_embed, downsample, merger — used in host-side computation,
+        // must stay F32 (ggml_backend_tensor_get reads as float).
+        if (sname.find("patch_embed") != std::string::npos ||
+            sname.find("downsample") != std::string::npos ||
+            sname.find("merger") != std::string::npos) {
+            printf("note: %s — copying as-is (host-side computation)\n", name);
             size_t sz = ggml_nbytes(t);
             size_t off = data_offset_in + gguf_get_tensor_offset(ctx_in, i);
 #ifdef _WIN32
