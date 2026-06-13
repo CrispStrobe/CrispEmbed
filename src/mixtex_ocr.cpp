@@ -580,6 +580,13 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                 layernorm_cpu(x.data() + i * D, normed.data() + i * D,
                               D, ln1_w.data(), ln1_b.data());
 
+            // Diff: compare LN1 output
+            if (has_diff && stage == 0 && bi == 0) {
+                auto r = diff.compare("s0_b0_ln1", normed.data(), HW * D);
+                fprintf(stderr, "[mixtex-diff] s0_b0_ln1: cos=%.6f max_abs=%.2e %s\n",
+                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
+
             // Shifted window attention
             bool shifted = (bi % 2 == 1);
             int shift = shifted ? ws / 2 : 0;
@@ -637,6 +644,14 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                     rpb_t.empty() ? nullptr : rpb_t.data(),
                     rpb_i.empty() ? nullptr : rpb_i.data(),
                     rpb_len);
+            }
+
+            // Diff: compare windowed attention output BEFORE window_reverse
+            if (has_diff && stage == 0 && bi == 0) {
+                char name[32] = "s0_b0_attn";
+                auto r = diff.compare(name, attn_out.data(), n_windows * tokens_per_win * D);
+                fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n",
+                        name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
             }
 
             // Window reverse
