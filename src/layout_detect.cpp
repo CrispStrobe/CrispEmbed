@@ -1196,36 +1196,42 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 q_row[0], q_row[1], q_row[2], q_row[3]);
     }
 
-    // 5. Initialize reference points via dec_bbox_head[0] MLP on selected tokens.
-    //    RT-DETRv2 uses the decoder's layer-0 bbox head (NOT enc_bbox_head) for
-    //    initial reference point generation. enc_bbox_head is only for scoring.
+    // 5. Initialize reference points via enc_bbox_head MLP on ALL encoder tokens,
+    //    then gather top-K, then add anchors, then sigmoid.
+    //    HF: enc_outputs_coord_logits = enc_bbox_head(output_memory) + anchors
+    //        reference_points = sigmoid(gather(enc_outputs_coord_logits, topk_ind))
     std::vector<float> ref_points(N_queries * 4);
     {
-        std::vector<float> tmp(D * N_queries);
-        std::copy(queries.begin(), queries.end(), tmp.begin());
+        // Run enc_bbox_head on ALL enc_output tokens (not just top-K queries)
+        // enc_bbox_head is a 3-layer MLP: Linear(256,256) → ReLU → Linear(256,256) → ReLU → Linear(256,4)
+        int N_total = total_tokens;
+        std::vector<float> tmp(D * N_total);
+        // enc_output is in [D, N_total] col-major layout = same as 'memory' before value_proj
+        // but we need the raw enc_output, not the memory (which has been through layer norms)
+        // enc_output is enc_proj[D, N_total] computed at step 1 (linear + layernorm)
+        std::copy(enc_proj.begin(), enc_proj.end(), tmp.begin());
+
         for (int j = 0; j < 3; j++) {
             int out_d = (j < 2) ? D : 4;
-            std::vector<float> out(out_d * N_queries);
-            cpu_linear(tmp.data(), out.data(), D, out_d, N_queries,
-                       ctx->decoder.dec_bbox_w[0][j], ctx->decoder.dec_bbox_b[0][j]);
+            std::vector<float> out(out_d * N_total);
+            cpu_linear(tmp.data(), out.data(), D, out_d, N_total,
+                       ctx->decoder.enc_bbox_w[j], ctx->decoder.enc_bbox_b[j]);
             if (j < 2) {
                 for (auto& v : out) v = std::max(0.0f, v); // ReLU
                 tmp = out;
             } else {
-                // RT-DETRv2: ref_points = sigmoid(bbox_delta + anchors)
-                // Anchors are stored as logit values in GGUF (inverse sigmoid).
-                // Selected anchor = anchors[top_k_idx].
+                // Add anchors and gather top-K, then sigmoid
+                // out is [4, N_total] col-major: out[d * N_total + token]
                 for (int q = 0; q < N_queries; q++) {
                     int token_idx = token_scores[q].second;
                     for (int d = 0; d < 4; d++) {
-                        float delta = out[d * N_queries + q];
-                        // Read logit-encoded anchor for the selected token
+                        float bbox_logit = out[d * N_total + token_idx];
                         float logit_anchor;
                         ggml_backend_tensor_get(ctx->decoder.anchors,
                             &logit_anchor,
                             (size_t)(token_idx * 4 + d) * sizeof(float),
                             sizeof(float));
-                        ref_points[q * 4 + d] = 1.0f / (1.0f + expf(-(delta + logit_anchor)));
+                        ref_points[q * 4 + d] = 1.0f / (1.0f + expf(-(bbox_logit + logit_anchor)));
                     }
                 }
             }
@@ -1583,6 +1589,13 @@ std::vector<region> detect(context* ctx, const float* pixels,
             float mn=1e9,mx=-1e9;
             for (auto v : ca_out) { mn=std::min(mn,v); mx=std::max(mx,v); }
             fprintf(stderr, "  dec0 ca_out (post-proj): [%.4f, %.4f] (HF: [-2.97, 2.67])\n", mn, mx);
+            // Dump post-projection cross_out for parity (matches Python dec_0_cross_out)
+            std::vector<float> ca_row(D * N_queries);
+            for (int d = 0; d < D; d++)
+                for (int q = 0; q < N_queries; q++)
+                    ca_row[q * D + d] = ca_out[d * N_queries + q];
+            FILE* fp2 = fopen("/tmp/cpp_cross_out.bin", "wb");
+            if (fp2) { fwrite(ca_row.data(), sizeof(float), D * N_queries, fp2); fclose(fp2); }
         }
 
         // Residual + norm
