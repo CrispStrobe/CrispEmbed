@@ -58,11 +58,11 @@ Input text / image / audio
     ├─► Math  ──► BTTR: DenseNet + Transformer decoder (bttr_ocr.cpp)
     │                 Handwritten math → LaTeX (CROHME 2014, 53% exact match)
     │
-    ├─► OCR   ──► InternVL2.5-2B: InternViT-300M + InternLM2.5-1.8B (internvl2_ocr.cpp)
+    ├─► OCR   ──► InternVL2.5: InternViT-300M + InternLM2.5-1.8B (internvl2_ocr.cpp)
     │               2.1B VLM OCR, EN+DE, KV cache, dynamic tiling, OCRBench ~830
     │
-    ├─► OCR   ──► InternVL2-1B: InternViT-300M + Qwen2-0.5B (internvl2_ocr.cpp)
-    │               0.9B VLM OCR, edge/WASM, OCRBench 779
+    ├─► Scene ──► PARSeq: ViT + 1-layer two-stream decoder (parseq_ocr.cpp)
+    │               Scene text recognition, 94-char ASCII, 24M (base) / 6M (tiny)
     │
     └─► Text  ──► GLiNER NER: LFM2.5-bi + span matching (gliner_ner.cpp)
                     Zero-shot NER: BPE → LFM2 backbone → layer fusion
@@ -92,8 +92,8 @@ Input text / image / audio
 | DeiT+TrOCR | — | ggml graph encoder + decoder | pix2tex-mfr |
 | HMER | — | DenseNet-121 + GRU attention | hmer (handwritten math) |
 | BTTR | — | DenseNet + Transformer decoder | bttr (handwritten math) |
-| InternVL2.5-2B | SentencePiece BPE | InternViT-300M + pixel unshuffle + InternLM2.5-1.8B (GQA 16/8, SwiGLU, KV cache) | internvl2.5-2b (VLM OCR) |
-| InternVL2-1B | Qwen2 BPE | InternViT-300M + pixel unshuffle + Qwen2-0.5B (GQA 14/2, Q/K/V bias, KV cache) | internvl2-1b (edge VLM OCR) |
+| InternVL2.5 | SentencePiece BPE | InternViT-300M + pixel unshuffle + InternLM2.5-1.8B (GQA 16/8, SwiGLU, KV cache) | internvl2.5-2b (VLM OCR) |
+| PARSeq | — (char-level) | ViT-12L encoder + 1-layer two-stream decoder, GELU, 94-char ASCII | parseq (scene text) |
 
 ## Shared code with CrispASR
 
@@ -130,7 +130,8 @@ CrispEmbed/
 │   ├── math_ocr.{h,cpp}        DeiT+TrOCR printed math OCR
 │   ├── hmer_ocr.{h,cpp}        HMER handwritten math OCR
 │   ├── bttr_ocr.{h,cpp}        BTTR handwritten math OCR
-│   ├── internvl2_ocr.{h,cpp}   InternVL2 VLM OCR (2.5-2B + 1B, KV cache)
+│   ├── internvl2_ocr.{h,cpp}   InternVL2.5-2B VLM OCR (KV cache)
+│   ├── parseq_ocr.{h,cpp}     PARSeq scene text OCR (ViT + 2-stream decoder)
 │   ├── tokenizer.h             WordPiece + SentencePiece + BPE
 │   ├── tokenizer_bpe.cpp       GPT-2 byte-level BPE
 │   ├── model_mgr.{h,cpp}       registry + auto-download
@@ -181,7 +182,6 @@ CrispEmbed/
 
 - [x] **Keyven/german-ocr-3 — Qwen2.5-VL base engine DONE** (see blueprint below)
 - [x] **InternVL2.5-2B (2.1B, MIT) — DONE** — InternViT-300M + InternLM2.5-1.8B, KV cache, dynamic tiling, vision-text splice, C++ tokenizer decode. Parity cos=1.000. GGUFs: `cstr/internvl2.5-2b-crispembed-GGUF` (F16/Q8_0/Q4_K). German invoice E2E verified.
-- [x] **InternVL2-1B (0.9B, MIT) — DONE** — InternViT-300M + Qwen2-0.5B (separate Q/K/V + bias). Reuses internvl2_ocr.cpp with auto-detected Qwen2 backend. Parity cos=1.000. GGUFs: `cstr/internvl2-1b-crispembed-GGUF` (F16 2.3GB / Q8_0 955MB / Q4_K 724MB). Edge/WASM target.
 - [~] surya-ocr-2 (0.7B, OpenRail-M free <$5M) — detector ported, FULL PARITY VERIFIED (heatmap max+mean exact match). Remaining: CUDA/GPU testing, PNG/JPG stb_image support in test binaries.
 
 #### InternVL2 polish (nice-to-have)
@@ -191,9 +191,11 @@ CrispEmbed/
 - [ ] InternVL2: full 24-layer F32 parity test (4+2 proved exact; remaining identical code)
 
 #### High priority — next to port
-- [ ] PARSeq (24M, MIT) — lightweight text-line recognizer for DBNet pipeline, best accuracy/size ratio (~3-4 days)
+
+- [ ] InternVL2-1B (0.9B, MIT) — same arch as 2.5-2B but Qwen2-0.5B LLM, edge/WASM (~1-2 days, reuses internvl2_ocr.cpp)
+- [x] PARSeq (24M, Apache-2.0) — DONE. ViT encoder + 1-layer two-stream decoder, 94-char ASCII scene text. Base (91MB F32, 24MB Q8_0, 13MB Q4_K) + Tiny (12MB F16, 6MB Q8_0). All verified.
 - [ ] GLM-OCR (0.9B, MIT) — CogViT + GLM-0.5B, 8 languages, GGUF already exists at ggml-org/GLM-OCR-GGUF (~3-4 days)
-- [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL, German business docs → structured JSON (~1 day, same base as Qwen2VL engine)
+- [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune (NOT 3B), GGUF-only release with separate mmproj sidecar. German business docs → structured JSON. Requires verifying exact base model (Qwen2-VL-2B vs Qwen2.5-VL-2B) from GGUF metadata. Author labels arch as "qwen2vl". (~2-3 days, may reuse Qwen2VL engine but 2B LLM config differs from our 3B port)
 
 #### Lower priority
 
@@ -229,7 +231,6 @@ CrispEmbed/
 | ~~Nomic v2 MoE~~ | ~~Low~~ | ~~High~~ | ~~MoE routing layer in encoder~~ DONE |
 | ~~Qwen2.5-VL OCR~~ | ~~High~~ | ~~High~~ | ~~Qwen2.5-VL-3B engine~~ DONE, merged to main |
 | ~~InternVL2.5-2B~~ | ~~High~~ | ~~High~~ | ~~InternVL2.5-2B VLM OCR~~ DONE, merged to main |
-| ~~InternVL2-1B~~ | ~~High~~ | ~~Low~~ | ~~InternVL2-1B (Qwen2-0.5B)~~ DONE, merged to main |
 | Qwen3-VL multimodal | Low | High | Reuse BidirLM-Omni scaffolding |
 
 ### Pending improvements
@@ -798,7 +799,7 @@ fine-tune of this). Architecture: 32-layer ViT (1280d) + spatial merger
 | BPE tokenizer in C++ | DONE | Vocab+merges in GGUF, loaded at init, set_prompt() tokenizes |
 | GPT-2 byte decoder | DONE | Output is decoded UTF-8 text, not raw token IDs |
 | KV cache | DONE | Prefill extracts K/V, decode uses cache (O(1)/token) |
-| Load Keyven fine-tune | TODO | Same architecture, just different weights |
+| Load Keyven fine-tune | REVISED | german-ocr-3.1 is 2B (not 3B) — different LLM config, needs investigation |
 | Windowed ViT attention | TODO | Currently full attention all layers (correct but slower) |
 | Python bindings | TODO | Wire via `CrispMathOcr` auto-dispatch |
 | CrispCalc catalog | TODO | `OcrModelVariant` entries |

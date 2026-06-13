@@ -488,6 +488,18 @@ static const ModelEntry k_registry[] = {
      "Texo-Distill printed math OCR (HGNetv2+MBart, 20M, BLEU 0.90)", "22 MB", "agpl-3.0",
      "https://huggingface.co/cstr/texo-distill-gguf"},
 
+    {"parseq",
+     "parseq-q8_0.gguf",
+     "https://huggingface.co/cstr/parseq-GGUF/resolve/main/parseq-q8_0.gguf",
+     "PARSeq scene text OCR (ViT+Transformer, 24M, ECCV 2022)", "24 MB", "apache-2.0",
+     "https://huggingface.co/cstr/parseq-GGUF"},
+
+    {"parseq-tiny",
+     "parseq-tiny-q8_0.gguf",
+     "https://huggingface.co/cstr/parseq-GGUF/resolve/main/parseq-tiny-q8_0.gguf",
+     "PARSeq-tiny scene text OCR (ViT+Transformer, 6M, ECCV 2022)", "6 MB", "apache-2.0",
+     "https://huggingface.co/cstr/parseq-GGUF"},
+
     {"dbnet-det",
      "dbnet-ic15-q4_k.gguf",
      "https://huggingface.co/cstr/dbnet-ic15-GGUF/resolve/main/dbnet-ic15-q4_k.gguf",
@@ -547,6 +559,18 @@ static const ModelEntry k_registry[] = {
      "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF/resolve/main/gliner-lfm-q4_k.gguf",
      "GLiNER zero-shot NER (LFM2.5-350M, Q4_K compact)", "254 MB", "lfm1.0*",
      "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF"},
+
+    {"gliner-deberta",
+     "gliner-deberta-q8_0.gguf",
+     "https://huggingface.co/cstr/gliner-deberta-GGUF/resolve/main/gliner-deberta-q8_0.gguf",
+     "GLiNER zero-shot NER (DeBERTa-v3-base, 209M, Apache-2.0)", "198 MB", "apache-2.0",
+     "https://huggingface.co/cstr/gliner-deberta-GGUF"},
+
+    {"gliner-deberta-q4k",
+     "gliner-deberta-q4_k.gguf",
+     "https://huggingface.co/cstr/gliner-deberta-GGUF/resolve/main/gliner-deberta-q4_k.gguf",
+     "GLiNER zero-shot NER (DeBERTa-v3-base, Q4_K compact)", "152 MB", "apache-2.0",
+     "https://huggingface.co/cstr/gliner-deberta-GGUF"},
 
     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
 };

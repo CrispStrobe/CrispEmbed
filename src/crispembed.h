@@ -503,6 +503,7 @@ CRISPEMBED_API void crispembed_free(crispembed_context * ctx);
 // Supports pix2tex (printed), PP-FormulaNet (printed/small), PP-FormulaNet-L
 // (printed/best), Texo-Distill (printed/tiny), HMER (handwritten), BTTR
 // (handwritten), PosFormer (handwritten), MixTex (Chinese+English LaTeX),
+// PARSeq (scene text, ViT+Transformer, 94-char ASCII, Apache-2.0),
 // Qwen2.5-VL (VLM, German docs), InternVL2.5 (VLM, EN+DE, OCRBench ~830).
 // ---------------------------------------------------------------------------
 
