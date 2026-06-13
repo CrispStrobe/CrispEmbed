@@ -199,6 +199,18 @@ static void window_mhsa(const float* tokens, float* out,
         linear_cpu(tokens + t * D, V.data() + t * D, D, D, v_w, v_b);
     }
 
+    // Debug: dump Q[0] for first call (window 0)
+    static int mhsa_call = 0;
+    if (mhsa_call == 0 && std::getenv("MIXTEX_DIFF_REF")) {
+        fprintf(stderr, "[mixtex-diff] Q[0,:4]: %.6f %.6f %.6f %.6f\n",
+                Q[0], Q[1], Q[2], Q[3]);
+        fprintf(stderr, "[mixtex-diff] input[0,:4]: %.6f %.6f %.6f %.6f\n",
+                tokens[0], tokens[1], tokens[2], tokens[3]);
+        fprintf(stderr, "[mixtex-diff] q_w[0,:4]: %.6f %.6f %.6f %.6f\n",
+                q_w[0], q_w[1], q_w[2], q_w[3]);
+    }
+    mhsa_call++;
+
     // Attention per head
     std::vector<float> attn_out(n_tokens * D);
     for (int h = 0; h < n_heads; h++) {
@@ -219,6 +231,20 @@ static void window_mhsa(const float* tokens, float* out,
                     if (idx >= 0 && idx < rpb_table_len)
                         scores[i * n_tokens + j] += rpb_table[idx * n_heads + h];
                 }
+            }
+        }
+
+        // Debug: dump scores for first window, first head
+        if (mhsa_call == 1 && h == 0 && std::getenv("MIXTEX_DIFF_REF")) {
+            fprintf(stderr, "[mixtex-diff] scores[0,0..3] (h0, after RPB): %.4f %.4f %.4f %.4f\n",
+                    scores[0], scores[1], scores[2], scores[3]);
+            fprintf(stderr, "[mixtex-diff] rpb_table=%p rpb_index=%p rpb_len=%d\n",
+                    (void*)rpb_table, (void*)rpb_index, rpb_table_len);
+            if (rpb_table && rpb_index) {
+                int idx00 = (int)rpb_index[0];
+                fprintf(stderr, "[mixtex-diff] rpb_index[0,0]=%d rpb_table[%d*%d+0]=%.4f\n",
+                        idx00, idx00, n_heads,
+                        (idx00 >= 0 && idx00 < rpb_table_len) ? rpb_table[idx00 * n_heads] : -999.0f);
             }
         }
 
@@ -629,7 +655,8 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             auto out_w = to_f32(blk.out_w), out_b = to_f32(blk.out_b);
             auto rpb_t = to_f32(blk.rpb_table);
             auto rpb_i = to_f32(blk.rpb_index);
-            int rpb_len = blk.rpb_table ? (int)blk.rpb_table->ne[0] : 0;
+            // rpb_table ggml: ne[0]=n_heads, ne[1]=num_entries (169 for ws=7)
+            int rpb_len = blk.rpb_table ? (int)blk.rpb_table->ne[1] : 0;
 
             std::vector<float> attn_out(n_windows * tokens_per_win * D);
             for (int w = 0; w < n_windows; w++) {
