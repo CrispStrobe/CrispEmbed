@@ -80,8 +80,9 @@ static void linear_cpu(const float* in, float* out, int in_dim, int out_dim,
     }
 }
 
+// Exact GELU (erf-based, matching nn.GELU() in HF Swin)
 static float gelu(float x) {
-    return 0.5f * x * (1.0f + tanhf(0.7978845608f * (x + 0.044715f * x * x * x)));
+    return 0.5f * x * (1.0f + erff(x / sqrtf(2.0f)));
 }
 
 static void softmax(float* data, int n) {
@@ -200,18 +201,6 @@ static void window_mhsa(const float* tokens, float* out,
         linear_cpu(tokens + t * D, V.data() + t * D, D, D, v_w, v_b);
     }
 
-    // Debug: dump Q[0] for first call (window 0)
-    static int mhsa_call = 0;
-    if (mhsa_call == 0 && std::getenv("MIXTEX_DIFF_REF")) {
-        fprintf(stderr, "[mixtex-diff] Q[0,:4]: %.6f %.6f %.6f %.6f\n",
-                Q[0], Q[1], Q[2], Q[3]);
-        fprintf(stderr, "[mixtex-diff] input[0,:4]: %.6f %.6f %.6f %.6f\n",
-                tokens[0], tokens[1], tokens[2], tokens[3]);
-        fprintf(stderr, "[mixtex-diff] q_w[0,:4]: %.6f %.6f %.6f %.6f\n",
-                q_w[0], q_w[1], q_w[2], q_w[3]);
-    }
-    mhsa_call++;
-
     // Attention per head
     std::vector<float> attn_out(n_tokens * D);
     for (int h = 0; h < n_heads; h++) {
@@ -235,20 +224,6 @@ static void window_mhsa(const float* tokens, float* out,
                 // Add attention mask (shifted window: -100 for cross-region)
                 if (attn_mask)
                     scores[i * n_tokens + j] += attn_mask[i * n_tokens + j];
-            }
-        }
-
-        // Debug: dump scores for first window, first head
-        if (mhsa_call == 1 && h == 0 && std::getenv("MIXTEX_DIFF_REF")) {
-            fprintf(stderr, "[mixtex-diff] scores[0,0..3] (h0, after RPB): %.4f %.4f %.4f %.4f\n",
-                    scores[0], scores[1], scores[2], scores[3]);
-            fprintf(stderr, "[mixtex-diff] rpb_table=%p rpb_index=%p rpb_len=%d\n",
-                    (void*)rpb_table, (void*)rpb_index, rpb_table_len);
-            if (rpb_table && rpb_index) {
-                int idx00 = (int)rpb_index[0];
-                fprintf(stderr, "[mixtex-diff] rpb_index[0,0]=%d rpb_table[%d*%d+0]=%.4f\n",
-                        idx00, idx00, n_heads,
-                        (idx00 >= 0 && idx00 < rpb_table_len) ? rpb_table[idx00 * n_heads] : -999.0f);
             }
         }
 
@@ -611,10 +586,12 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                               D, ln1_w.data(), ln1_b.data());
 
             // Diff: compare LN1 output
-            if (has_diff && stage == 0 && bi == 0) {
-                auto r = diff.compare("s0_b0_ln1", normed.data(), HW * D);
-                fprintf(stderr, "[mixtex-diff] s0_b0_ln1: cos=%.6f max_abs=%.2e %s\n",
-                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            if (has_diff && stage == 0) {
+                char name[32];
+                snprintf(name, sizeof(name), "s0_b%d_ln1", bi);
+                auto r = diff.compare(name, normed.data(), HW * D);
+                fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n",
+                        name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
             }
 
             // Shifted window attention
@@ -624,25 +601,34 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             // Reshape to [H, W, D] for window operations
             // (already in this layout: x[pos * D + d] where pos = y * W + x_pos)
 
-            // Cyclic shift
-            std::vector<float> shifted_x(HW * D);
-            if (shifted) {
-                cyclic_shift(normed.data(), shifted_x.data(), H, W, D, -shift, -shift);
-            } else {
-                shifted_x = normed;
-            }
-
-            // Pad H and W to multiples of window_size
+            // Pad H and W to multiples of window_size (BEFORE shift, matching HF Swin)
             int pad_h = (ws - H % ws) % ws;
             int pad_w = (ws - W % ws) % ws;
             int pH2 = H + pad_h, pW2 = W + pad_w;
 
-            std::vector<float> padded;
+            std::vector<float> shifted_x;
             if (pad_h > 0 || pad_w > 0) {
-                padded.resize(pH2 * pW2 * D, 0);
+                shifted_x.resize(pH2 * pW2 * D, 0);
                 for (int y = 0; y < H; y++)
-                    memcpy(padded.data() + y * pW2 * D, shifted_x.data() + y * W * D, W * D * sizeof(float));
-                shifted_x = std::move(padded);
+                    memcpy(shifted_x.data() + y * pW2 * D, normed.data() + y * W * D, W * D * sizeof(float));
+            } else {
+                shifted_x = normed;
+            }
+
+            // Cyclic shift on padded grid (matching HF torch.roll(shifts=-shift) after padding)
+            // Note: cyclic_shift(s) does out[y]=in[(y+s)%H], torch.roll(s) does out[y]=in[(y-s)%H]
+            // So torch.roll(shifts=-shift) = cyclic_shift(+shift)
+            if (shifted) {
+                std::vector<float> tmp(pH2 * pW2 * D);
+                cyclic_shift(shifted_x.data(), tmp.data(), pH2, pW2, D, shift, shift);
+                shifted_x = std::move(tmp);
+            }
+
+            // Diff: compare shifted data
+            if (has_diff && stage == 0 && bi == 1) {
+                auto r = diff.compare("s0_b1_shifted", shifted_x.data(), pH2 * pW2 * D);
+                fprintf(stderr, "[mixtex-diff] s0_b1_shifted: cos=%.6f max_abs=%.2e %s\n",
+                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
             }
 
             // Compute attention mask for shifted windows
@@ -721,16 +707,32 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             }
 
             // Diff: compare windowed attention output BEFORE window_reverse
-            if (has_diff && stage == 0 && bi == 0) {
-                char name[32] = "s0_b0_attn";
+            if (has_diff && stage == 0) {
+                char name[64];
+                snprintf(name, sizeof(name), "s0_b%d_attn_out_windowed", bi);
                 auto r = diff.compare(name, attn_out.data(), n_windows * tokens_per_win * D);
                 fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n",
                         name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
             }
 
+            // Diff: compare window-partitioned input
+            if (has_diff && stage == 0 && bi == 1) {
+                auto r = diff.compare("s0_b1_windows", windows.data(), n_windows * tokens_per_win * D);
+                fprintf(stderr, "[mixtex-diff] s0_b1_windows: cos=%.6f max_abs=%.2e %s\n",
+                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
+
             // Window reverse
             std::vector<float> merged(pH2 * pW2 * D);
             window_reverse(attn_out.data(), merged.data(), pH2, pW2, D, ws);
+
+            // Reverse cyclic shift on padded grid (BEFORE removing padding, matching HF)
+            // torch.roll(shifts=+shift) = cyclic_shift(-shift)
+            if (shifted) {
+                std::vector<float> unshifted(pH2 * pW2 * D);
+                cyclic_shift(merged.data(), unshifted.data(), pH2, pW2, D, -shift, -shift);
+                merged = std::move(unshifted);
+            }
 
             // Remove padding
             if (pad_h > 0 || pad_w > 0) {
@@ -740,11 +742,11 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                 merged = std::move(unpadded);
             }
 
-            // Reverse cyclic shift
-            if (shifted) {
-                std::vector<float> unshifted(HW * D);
-                cyclic_shift(merged.data(), unshifted.data(), H, W, D, shift, shift);
-                merged = std::move(unshifted);
+            // Diff: compare attention output after reverse (before residual)
+            if (has_diff && stage == 0 && bi == 1) {
+                auto r = diff.compare("s0_b1_attn_merged", merged.data(), HW * D);
+                fprintf(stderr, "[mixtex-diff] s0_b1_attn_merged: cos=%.6f max_abs=%.2e %s\n",
+                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
             }
 
             // Residual
