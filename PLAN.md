@@ -578,7 +578,7 @@ GitHub: https://github.com/VikParuchuri/surya
 - [x] Move encoder to ggml graph — 13min→1min (13x). Stages 0-2 + block0: 17s via graph. LiteMLA + decode scalar.
 - [x] Upload GGUF to HuggingFace — https://huggingface.co/cstr/surya-det-GGUF (F32, F16, Q8_0, Q4_K)
 - [ ] CUDA/GPU testing via Kaggle kernel (P100/T4)
-- [ ] Image format support: test binaries need PNG/JPG via stb_image
+- [x] Image format support: PNG/JPG via stb_image done
 
 **GGUFs**: `/mnt/storage/gguf-models/surya-det-{f32,f16}.gguf`
 
@@ -615,7 +615,7 @@ Swin encoder as new building block.
 - [x] GGUF converter: `models/convert-mixtex-to-gguf.py` (345 tensors)
 - [x] GGUF files: F32=329MB, F16=165MB at `/mnt/storage/gguf-models/`
 - [x] C++ engine: `src/mixtex_ocr.{h,cpp}` — runs end-to-end, Swin+RoBERTa
-- [ ] Parity test (encoder parity vs Python reference)
+- [x] Parity test — enc_embed cos=1.000 PASS. Swin stage 0 cos=-0.065 (window bug)
 
 **Key new op**: Swin shifted-window attention with relative position bias.
 Window partition → local MHSA + RPB lookup → window reverse → shift.
