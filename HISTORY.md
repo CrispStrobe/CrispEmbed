@@ -345,7 +345,7 @@ Per-block diff harness verified: enc_embed, s0_b0_out, s0_b1_ln1,
 s0_b1_attn_out_windowed, s0_b1_attn_merged, s0_b1_attn_res, s0_b1_out
 all pass with max_abs < 2e-5. Quantized (Q8_0) produces identical output.
 
-**Bugs found and fixed** (4 total):
+**Bugs found and fixed** (6 total):
 1. Swin PatchMerging must pad odd dims before halving (125→126→63 not 125→62)
 2. Cyclic shift sign convention — `cyclic_shift(shift_h=s)` computes
    `out[y]=in[(y+s)%H]` but `torch.roll(shifts=s)` computes
@@ -355,13 +355,21 @@ all pass with max_abs < 2e-5. Quantized (Q8_0) produces identical output.
    padding. This changes where boundary tokens end up in windows.
 4. GELU variant — C++ used tanh approximation, HF Swin uses `nn.GELU()`
    (exact erf). Changed to `0.5 * x * (1 + erff(x / sqrt(2)))`.
+5. PatchMerging 2×2 concat order — HF concatenates [TL, BL, TR, BR] but
+   C++ had [TL, TR, BL, BR]. All 4 encoder stages diverged.
+6. RoBERTa position embedding offset — positions start at index 2
+   (padding_idx=1), not 0. Using index 0 reads wrong embeddings.
+
+**Decoder parity** (step 0, all vs HF reference):
+All checkpoints cos=1.000000 — embedding, self-attention, cross-attention
+Q/K/V, all 4 decoder layers, and step-0 logits. Real math formula
+`x^2 + y^2 = r^2` produces correct LaTeX matching HF for ~15 tokens.
 
 **Debugging methodology**: Systematic per-step diff comparison with
-named Python reference tensors. Block 0 (non-shifted) had cos=1.000
-early. Block 1 (shifted) showed cos=0.995 — narrowed by adding
-intermediate checkpoints: LN1 matched (cos=1.0), shifted data was
-garbage (cos=0.0 after sign fix attempt), leading to discovery of the
-sign convention mismatch as the root cause.
+named Python reference tensors. The per-step approach was critical:
+encoder blocks all passed but stage output failed → PatchMerging bug.
+Decoder embedding + self-attention passed but cross-attention failed
+→ pre-computed K/V from wrong encoder output → traced back to PatchMerging.
 
 **GGUFs**: F32=329MB, F16=165MB, Q8_0, Q4_K.
 Wired into unified math OCR dispatch (auto-detect from GGUF arch).
