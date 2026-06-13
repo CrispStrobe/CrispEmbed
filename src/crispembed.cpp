@@ -2905,9 +2905,10 @@ extern "C" void crispembed_face_free(crispembed_face_context * ctx) {
 #include "mixtex_ocr.h"
 #include "qwen2vl_ocr.h"
 #include "internvl2_ocr.h"
+#include "parseq_ocr.h"
 #include "core/gguf_loader.h"
 
-enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L, MATH_OCR_POSFORMER, MATH_OCR_MIXTEX, MATH_OCR_QWEN2VL, MATH_OCR_INTERNVL2 };
+enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L, MATH_OCR_POSFORMER, MATH_OCR_MIXTEX, MATH_OCR_QWEN2VL, MATH_OCR_INTERNVL2, MATH_OCR_PARSEQ };
 
 struct unified_math_ocr {
     math_ocr_type type;
@@ -2927,6 +2928,7 @@ static math_ocr_type detect_arch(const char * path) {
     if (arch == "mixtex") return MATH_OCR_MIXTEX;
     if (arch == "qwen2vl") return MATH_OCR_QWEN2VL;
     if (arch == "internvl2") return MATH_OCR_INTERNVL2;
+    if (arch == "parseq") return MATH_OCR_PARSEQ;
     return MATH_OCR_PIX2TEX;
 }
 
@@ -2943,6 +2945,7 @@ extern "C" void * crispembed_math_ocr_init(const char * path, int n_threads) {
         case MATH_OCR_MIXTEX:         inner = mixtex_ocr_init(path, n_threads); break;
         case MATH_OCR_QWEN2VL:        inner = qwen2vl_ocr_init(path, n_threads); break;
         case MATH_OCR_INTERNVL2:      inner = internvl2_ocr_init(path, n_threads); break;
+        case MATH_OCR_PARSEQ:         inner = parseq_ocr_init(path, n_threads); break;
     }
     if (!inner) return nullptr;
     auto * u = new unified_math_ocr{type, inner};
@@ -2962,6 +2965,7 @@ extern "C" void crispembed_math_ocr_free(void * ctx) {
         case MATH_OCR_MIXTEX:         mixtex_ocr_free((mixtex_ocr_context *)u->ctx); break;
         case MATH_OCR_QWEN2VL:        qwen2vl_ocr_free((qwen2vl_ocr_context *)u->ctx); break;
         case MATH_OCR_INTERNVL2:      internvl2_ocr_free((internvl2_ocr_context *)u->ctx); break;
+        case MATH_OCR_PARSEQ:         parseq_ocr_free((parseq_ocr_context *)u->ctx); break;
     }
     delete u;
 }
@@ -2981,6 +2985,7 @@ extern "C" const char * crispembed_math_ocr_recognize(
         case MATH_OCR_MIXTEX:         return mixtex_ocr_recognize((mixtex_ocr_context *)u->ctx, px, w, h, ch, ol);
         case MATH_OCR_QWEN2VL:        return qwen2vl_ocr_recognize_raw((qwen2vl_ocr_context *)u->ctx, px, w, h, ch, ol);
         case MATH_OCR_INTERNVL2:      return internvl2_ocr_recognize_raw((internvl2_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case MATH_OCR_PARSEQ:         return parseq_ocr_recognize_raw((parseq_ocr_context *)u->ctx, px, w, h, ch, ol);
     }
     return nullptr;
 }
@@ -3000,6 +3005,7 @@ extern "C" const char * crispembed_math_ocr_recognize_gray(
         case MATH_OCR_MIXTEX:         return mixtex_ocr_recognize_gray((mixtex_ocr_context *)u->ctx, px, w, h, ol);
         case MATH_OCR_QWEN2VL:        return qwen2vl_ocr_recognize((qwen2vl_ocr_context *)u->ctx, px, w, h, ol);
         case MATH_OCR_INTERNVL2:      return internvl2_ocr_recognize((internvl2_ocr_context *)u->ctx, px, w, h, ol);
+        case MATH_OCR_PARSEQ:         return parseq_ocr_recognize((parseq_ocr_context *)u->ctx, px, w, h, ol);
     }
     return nullptr;
 }

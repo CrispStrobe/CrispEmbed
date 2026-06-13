@@ -488,6 +488,18 @@ static const ModelEntry k_registry[] = {
      "Texo-Distill printed math OCR (HGNetv2+MBart, 20M, BLEU 0.90)", "22 MB", "agpl-3.0",
      "https://huggingface.co/cstr/texo-distill-gguf"},
 
+    {"parseq",
+     "parseq-f32.gguf",
+     "",
+     "PARSeq scene text OCR (ViT+Transformer, 24M, ECCV 2022)", "91 MB", "apache-2.0",
+     ""},
+
+    {"parseq-tiny",
+     "parseq-tiny-f16.gguf",
+     "",
+     "PARSeq-tiny scene text OCR (ViT+Transformer, 6M, ECCV 2022)", "12 MB", "apache-2.0",
+     ""},
+
     {"dbnet-det",
      "dbnet-ic15-q4_k.gguf",
      "https://huggingface.co/cstr/dbnet-ic15-GGUF/resolve/main/dbnet-ic15-q4_k.gguf",
