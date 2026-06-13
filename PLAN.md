@@ -502,7 +502,7 @@ Feature parity with CLI (`--face`, `--detect`, `--face-pipeline`) and server
 
 ---
 
-### Blueprint: surya-ocr-2 (full-page OCR, 91 languages) — IN PROGRESS
+### Blueprint: surya-ocr-2 (full-page OCR, 91 languages) — DONE (GPU blocked by ggml upstream)
 
 **Goal**: Port surya-ocr-2 for multilingual full-page OCR with text
 detection, recognition, and layout analysis.
@@ -556,7 +556,7 @@ GitHub: https://github.com/VikParuchuri/surya
 
 ---
 
-### Blueprint: MixTex ZhEn-Latex-OCR (86M, Apache-2.0) — IN PROGRESS
+### Blueprint: MixTex ZhEn-Latex-OCR (86M, Apache-2.0) — DONE
 
 **Goal**: Chinese+English math LaTeX OCR. Smallest new model, introduces
 Swin encoder as new building block.
