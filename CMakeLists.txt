@@ -141,6 +141,7 @@ list(APPEND CRISPEMBED_SOURCES src/mixtex_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/qwen2vl_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/internvl2_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/gliner_ner.cpp)
+list(APPEND CRISPEMBED_SOURCES src/glm_ocr.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -309,6 +310,9 @@ target_link_libraries(test-internvl2-e2e PRIVATE crispembed)
 
 add_executable(test-internvl2-image tests/test_internvl2_image.cpp)
 target_link_libraries(test-internvl2-image PRIVATE crispembed)
+
+add_executable(test-glm-ocr-diff tests/test_glm_ocr_diff.cpp)
+target_link_libraries(test-glm-ocr-diff PRIVATE crispembed)
 
 endif() # NOT iOS
 
