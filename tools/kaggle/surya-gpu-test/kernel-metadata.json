@@ -1,5 +1,5 @@
 {
-  "id": "chr1s4/crispembed-surya-gpu-test",
+  "id": "chr1s4/crispembed-surya-detector-gpu-test",
   "title": "CrispEmbed Surya Detector GPU Test",
   "code_file": "surya_gpu_test.py",
   "language": "python",
