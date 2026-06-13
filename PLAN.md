@@ -581,15 +581,14 @@ GitHub: https://github.com/VikParuchuri/surya
 - [x] Heatmap → polygon post-processing (connected components + bbox)
 - [x] Move encoder to ggml graph — 13min→1min (13x). Stages 0-2 + block0: 17s via graph. LiteMLA + decode scalar.
 - [x] Upload GGUF to HuggingFace — https://huggingface.co/cstr/surya-det-GGUF (F32, F16, Q8_0, Q4_K)
-- [ ] CUDA/GPU testing via Kaggle kernel (P100/T4)
+- [x] Q8_0/Q4_K crash fix — dequant Q→F32 before reshape in g_conv (ne[0] block alignment)
+- [~] CUDA/GPU testing — Kaggle P100 ran CPU-only (ggml CUDA::cuda_driver cmake issue). F16: 195s, 17 regions. Q8_0/Q4_K: working after fix.
 - [x] Image format support: PNG/JPG via stb_image done
 
-**GGUFs**: `/mnt/storage/gguf-models/surya-det-{f32,f16}.gguf`
+**GGUFs**: `cstr/surya-det-GGUF` — F32 (147 MB), F16 (73 MB), Q8_0 (41 MB), Q4_K (30 MB)
 
 **Files**: `src/surya_det.{h,cpp}`, `models/convert-surya-det-to-gguf.py`,
 `tools/dump_surya_det_reference.py`, `tests/test_surya_det{,_diff}.cpp`
-
-**Effort**: Medium remaining (3-4 days for parity + ggml graph + postproc).
 
 ---
 

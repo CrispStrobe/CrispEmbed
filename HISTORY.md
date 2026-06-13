@@ -4,6 +4,54 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — Surya detector Q8_0/Q4_K crash fix
+
+The surya text detector (`surya_det.cpp`) crashed on quantized models (Q8_0, Q4_K)
+with a segfault in `ggml_compute_forward_dup`. Root cause: two issues in `g_conv()`:
+
+1. **Reshape before dequant**: `ggml_reshape_4d` on Q8_0 tensors created `ne[0]=3`
+   (for 3×3 conv kernels), violating Q8_0's block alignment requirement (32 elements
+   per block). The subsequent cast operation read invalid block data.
+
+2. **Q→F16 cast unsupported**: ggml only implements quantized→F32 dequantization,
+   not quantized→F16. The direct `ggml_cast(Q8_0, F16)` hit `GGML_ABORT`.
+
+**Fix**: Dequant Q→F32 first, then reshape to 4D, then cast F32→F16 for `ggml_conv_2d`.
+All four variants (F32, F16, Q8_0, Q4_K) now detect identically on synthetic test images.
+
+Kaggle P100 testing confirmed F16 works (195s, 17 regions detected). CUDA cmake
+still fails due to upstream ggml `CUDA::cuda_driver` target issue on Kaggle.
+
+---
+
+## June 2026 — GOT-OCR2 engine (0.7B, SAM ViT-B + Qwen2-0.5B, Apache-2.0)
+
+Port of stepfun-ai/GOT-OCR2_0 — end-to-end document OCR handling plain text,
+LaTeX math, tables, and formatted output. Fourth VLM in CrispEmbed.
+
+**Architecture**: SAM ViT-B (12L, 768d, 12 heads, LayerNorm+GELU, windowed
+attention ws=14 with global at [2,5,8,11], decomposed relative position encoding)
+→ Neck (Conv 768→256, 1×1 → LN2d → Conv 256→256, 3×3 → LN2d) → Downsample
+(Conv 256→512→1024, stride 2, 4096→256 tokens) → Linear(1024,1024) projector
+→ Qwen2-0.5B (24L, 1024d, MHA 16/16, SiLU SwiGLU, standard RoPE θ=1M)
+→ autoregressive generation with KV cache.
+
+**Key differences from GLM-OCR**: Vision uses LayerNorm+GELU (not RMSNorm+SiLU),
+no Q/K norm, SAM-style windowed+global attention with decomposed RPE (not CogViT).
+LLM is standard pre-norm Qwen2 (2 norms/layer, not post-norm 4 norms/layer),
+MHA (not GQA), standard RoPE (not mRoPE), tied word embeddings.
+
+**Parity**: All checkpoints cos ≥ 0.999 (vision layers, neck, downsample,
+projector, LLM layers).
+
+**GGUFs**: `cstr/got-ocr2-crispembed-GGUF` — F16 (1.34 GB), Q8_0 (569 MB),
+Q4_K (422 MB).
+
+**New files**: `src/got_ocr.{h,cpp}`, `models/convert-got-ocr-to-gguf.py`,
+`tools/dump_got_ocr_reference.py`, `tests/test_got_ocr_diff.cpp`.
+
+---
+
 ## June 2026 — GLM-OCR engine (0.9B, CogViT + GLM-0.5B, MIT)
 
 Port of zai-org/GLM-OCR — #1 on OmniDocBench V1.5, 8 languages, MIT license.

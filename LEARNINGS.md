@@ -1,5 +1,43 @@
 # CrispEmbed — Technical Learnings
 
+## ggml quantized reshape: dequant BEFORE reshape
+
+ggml quantized types (Q8_0, Q4_K, etc.) store data in fixed-size blocks
+(e.g. Q8_0 = 32 elements/block). `ggml_reshape_4d` changes shape metadata
+without moving data. If the reshape creates `ne[0]` smaller than the block
+size (e.g. ne[0]=3 for a 3×3 conv kernel), subsequent operations that
+read the quantized data will access invalid block boundaries → crash.
+
+**Rule**: Always dequant quantized tensors to F32 BEFORE reshaping to
+arbitrary dimensions. Then reshape, then cast to F16 if needed.
+
+Also: ggml only supports Q→F32 dequantization (`ggml_cast`), not Q→F16.
+Attempting `ggml_cast(Q8_0, F16)` hits `GGML_ABORT("fatal error")` in
+`ggml_compute_forward_dup`. Always go Q→F32→F16 (two casts).
+
+## Per-layer parity comparison must happen inside the layer loop
+
+When comparing C++ per-layer outputs against a reference GGUF, the
+comparison must happen immediately after each layer completes — NOT
+in a separate loop after all layers finish. The hidden state buffer
+is overwritten by each subsequent layer, so a post-loop comparison
+would compare every layer's reference against only the final layer's
+output (producing spurious failures on early layers and a spurious
+pass on the last layer).
+
+## SAM ViT windowed attention: LN before partition
+
+SAM ViT-B applies LayerNorm BEFORE window partitioning. For windowed
+layers in a ggml per-layer graph:
+1. Apply LN1 on CPU to the full (unpartitioned) hidden state
+2. Window-partition BOTH the LN'd state (graph input) and the original
+   state (residual input)
+3. The graph uses `skip_ln1=true` to avoid double-normalization
+4. The residual connection uses the original (pre-LN) partitioned data
+
+Getting this wrong (LN after partition) introduces zeros from padding
+tokens into the LayerNorm statistics, corrupting edge windows.
+
 ## DeBERTa rel_embd must be dequantized for CPU-side expansion
 
 DeBERTa's relative position embeddings are expanded on CPU (log-bucket
