@@ -91,31 +91,48 @@ if not cuda_path:
         cuda_path = os.path.dirname(os.path.dirname(r.stdout.strip()))
         print(f"  CUDA toolkit (from nvcc): {cuda_path}")
 
-# Try CUDA first, fall back to CPU if it fails
+# Try CUDA build strategies in order of preference
 import shutil
 cuda_ok = False
-for use_cuda in [True, False]:
+cuda_strategies = []
+if cuda_path:
+    # Strategy 1: CUDA with NO_VMM (avoids CUDA::cuda_driver link issue on Kaggle)
+    cuda_strategies.append({"label": "CUDA+NO_VMM", "flags": [
+        "-DGGML_CUDA=ON", f"-DCUDAToolkit_ROOT={cuda_path}",
+        "-DGGML_CUDA_NO_VMM=ON"]})
+    # Strategy 2: CUDA with driver stub symlink
+    stub = os.path.join(cuda_path, "lib64/stubs/libcuda.so")
+    if os.path.exists(stub):
+        real_lib = os.path.join(cuda_path, "lib64/libcuda.so")
+        if not os.path.exists(real_lib):
+            os.symlink(stub, real_lib)
+            print(f"  Created symlink: {real_lib} -> {stub}")
+        cuda_strategies.append({"label": "CUDA+stub", "flags": [
+            "-DGGML_CUDA=ON", f"-DCUDAToolkit_ROOT={cuda_path}"]})
+# Fallback: CPU only
+cuda_strategies.append({"label": "CPU-only", "flags": []})
+
+for strat in cuda_strategies:
     cmake_cmd = ["cmake", "-B", "build", "-DCMAKE_BUILD_TYPE=Release"]
-    if use_cuda and cuda_path:
-        cmake_cmd += ["-DGGML_CUDA=ON", f"-DCUDAToolkit_ROOT={cuda_path}"]
+    cmake_cmd += strat["flags"]
     if has_ccache:
         cmake_cmd += ["-DCMAKE_C_COMPILER_LAUNCHER=ccache", "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"]
     if has_ninja:
         cmake_cmd += ["-G", "Ninja"]
 
-    print(f"  Trying: {' '.join(cmake_cmd)}")
+    print(f"  [{strat['label']}] {' '.join(cmake_cmd)}")
     r = subprocess.run(cmake_cmd, capture_output=True, text=True)
     if r.returncode == 0:
-        cuda_ok = use_cuda
-        print(f"  CMake OK (CUDA={'yes' if cuda_ok else 'no'})")
+        cuda_ok = "CUDA" in strat["label"]
+        print(f"  CMake OK ({strat['label']})")
         break
     else:
-        print(f"  CMake failed: {r.stderr[-500:]}")
+        print(f"  Failed: {r.stderr[-300:]}")
         if os.path.exists("build"):
             shutil.rmtree("build")
 
 if r.returncode != 0:
-    print("FATAL: cmake failed with both CUDA and CPU-only")
+    print("FATAL: all cmake strategies failed")
     sys.exit(1)
 
 # Build test binary + CLI
