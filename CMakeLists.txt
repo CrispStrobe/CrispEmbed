@@ -143,6 +143,7 @@ list(APPEND CRISPEMBED_SOURCES src/internvl2_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/gliner_ner.cpp)
 list(APPEND CRISPEMBED_SOURCES src/parseq_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/glm_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/got_ocr.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -326,6 +327,9 @@ target_link_libraries(test-glm-ocr-e2e PRIVATE crispembed)
 
 add_executable(test-glm-ocr-image tests/test_glm_ocr_image.cpp)
 target_link_libraries(test-glm-ocr-image PRIVATE crispembed)
+
+add_executable(test-got-ocr-diff tests/test_got_ocr_diff.cpp)
+target_link_libraries(test-got-ocr-diff PRIVATE crispembed)
 
 endif() # NOT iOS
 
