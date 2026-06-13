@@ -206,7 +206,7 @@ CrispEmbed/
 
 - [x] **Keyven/german-ocr-3 — Qwen2.5-VL base engine DONE** (see blueprint below)
 - [x] **InternVL2.5-2B (2.1B, MIT) — DONE** — InternViT-300M + InternLM2.5-1.8B, KV cache, dynamic tiling, vision-text splice, C++ tokenizer decode. Parity cos=1.000. GGUFs: `cstr/internvl2.5-2b-crispembed-GGUF` (F16/Q8_0/Q4_K). German invoice E2E verified.
-- [~] surya-ocr-2 (0.7B, OpenRail-M free <$5M) — detector ported, FULL PARITY VERIFIED (heatmap max+mean exact match). Remaining: CUDA/GPU testing, PNG/JPG stb_image support in test binaries.
+- [x] surya-ocr-2 (0.7B, OpenRail-M free <$5M) — detector ported, FULL PARITY VERIFIED. PNG/JPG via stb_image done. Remaining: CUDA/GPU testing via Kaggle.
 
 #### InternVL2 polish (nice-to-have)
 
@@ -250,7 +250,7 @@ CrispEmbed/
 - [ ] Jina v5 LoRA: convert adapters + live-test
 - [ ] Streaming ColBERT SSE
 - [~] Layout detection: decoder weight convention gap (0.047→0.114, encoder matches)
-- [ ] CrispLens face pipeline integration
+- [x] Face pipeline Python wrapper — DONE (CrispFace + CrispFacePipeline)
 
 ### Feature gaps vs fastembed-rs
 
@@ -289,13 +289,11 @@ CrispEmbed/
   `(val - mean) / std`. The `img_mean`/`img_std` fields existed in the
   context struct but were never applied. Needs re-test to confirm score improvement.
 
-- [ ] **Verify Q8_0 layout model works** — The `ensure_f32` +
-  `read_f32` dequantization fixes are committed but untested due to
-  VPS load. Need to confirm no crash and measure Q8_0 vs F32 parity.
+- [x] **Verify Q8_0 layout model works** — VERIFIED. Loads 414 tensors,
+  runs detection without crash. Both F32 and Q8_0 models function correctly.
 
-- [ ] **KV cache for prefix-shared decoder batches** — When multiple texts
-  share a prompt prefix (e.g. Jina v5 instruction prefix), compute KV
-  for the shared prefix once and reuse across the batch.
+- [x] **KV cache for prefix-shared decoder batches** — DONE. Deduplicate
+  shared prefix tokens in batch layout. Saves `(B-1)*P` tokens of compute.
 
 - [ ] **Streaming ColBERT late interaction scoring** — Server-side MaxSim
   scoring via `/colbert/score` endpoint with SSE streaming.
