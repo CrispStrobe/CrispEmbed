@@ -185,8 +185,8 @@ CrispEmbed/
 
 #### InternVL2 polish (nice-to-have)
 
-- [ ] C++ tokenizer encode (currently hardcoded chat template token IDs)
-- [ ] CrispCalc Dart catalog entries (`OcrModelVariant`)
+- [x] C++ tokenizer encode — DONE. Greedy longest-match + byte fallback + chat template prompt builder
+- [ ] CrispCalc Dart catalog entries (`OcrModelVariant`) — in separate CrispCalc repo
 
 ### Completed (v0.8.0)
 
