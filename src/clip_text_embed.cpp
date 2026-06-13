@@ -79,6 +79,14 @@ bool load(context** out, const char* path, int n_threads) {
     gguf_context* g = core_gguf::open_metadata(path);
     if (!g) { fprintf(stderr, "clip_text: cannot open %s\n", path); return false; }
 
+    // Check that this is actually a CLIP/SigLIP text model, not a BERT/XLM-R model
+    if (gguf_find_key(g, "clip_text.hidden_size") < 0) {
+        core_gguf::free_metadata(g);
+        delete *out;
+        *out = nullptr;
+        return false;
+    }
+
     auto u32 = [&](const char* k, int d) -> int {
         int64_t i = gguf_find_key(g, k); return i >= 0 ? (int)gguf_get_val_u32(g, i) : d;
     };
