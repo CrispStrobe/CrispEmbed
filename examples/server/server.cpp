@@ -810,6 +810,10 @@ int main(int argc, char ** argv) {
             return;
         }
 
+        // Check if client wants SSE streaming
+        bool stream = req.has_header("Accept") &&
+                      req.get_header_value("Accept").find("text/event-stream") != std::string::npos;
+
         std::lock_guard<std::mutex> lock(model_mutex);
         auto t0 = std::chrono::high_resolution_clock::now();
 
@@ -825,54 +829,100 @@ int main(int argc, char ** argv) {
         // Copy query vecs (encode_multivec invalidates previous pointer)
         std::vector<float> query_copy(query_vecs, query_vecs + n_query * qdim);
 
-        // Score each document
-        struct scored_doc { int index; float score; };
-        std::vector<scored_doc> results;
-        results.reserve(doc_texts.size());
+        if (stream) {
+            // SSE streaming: emit each document score as it's computed
+            auto shared_docs = std::make_shared<std::vector<std::string>>(std::move(doc_texts));
+            auto shared_query = std::make_shared<std::vector<float>>(std::move(query_copy));
+            auto shared_n_query = n_query;
+            auto shared_qdim = qdim;
+            auto shared_t0 = t0;
 
-        for (int i = 0; i < (int)doc_texts.size(); i++) {
-            int n_doc = 0, ddim = 0;
-            const float * doc_vecs = crispembed_encode_multivec(
-                ctx, doc_texts[i].c_str(), &n_doc, &ddim);
-            if (!doc_vecs || n_doc == 0 || ddim != qdim) {
-                results.push_back({i, 0.0f});
-                continue;
+            res.set_chunked_content_provider("text/event-stream",
+                [shared_docs, shared_query, shared_n_query, shared_qdim, shared_t0, &ctx, &model_mutex]
+                (size_t /*offset*/, httplib::DataSink & sink) -> bool {
+                    for (int i = 0; i < (int)shared_docs->size(); i++) {
+                        int n_doc = 0, ddim = 0;
+                        const float * doc_vecs = crispembed_encode_multivec(
+                            ctx, (*shared_docs)[i].c_str(), &n_doc, &ddim);
+                        float score = 0;
+                        if (doc_vecs && n_doc > 0 && ddim == shared_qdim)
+                            score = crispembed_colbert_score(
+                                shared_query->data(), shared_n_query, doc_vecs, n_doc, shared_qdim);
+
+                        // Escape text
+                        std::string escaped;
+                        for (char c : (*shared_docs)[i]) {
+                            if (c == '"') escaped += "\\\"";
+                            else if (c == '\\') escaped += "\\\\";
+                            else if (c == '\n') escaped += "\\n";
+                            else escaped += c;
+                        }
+
+                        std::ostringstream ev;
+                        ev << "data: {\"index\": " << i
+                           << ", \"score\": " << score
+                           << ", \"text\": \"" << escaped << "\"}\n\n";
+                        sink.write(ev.str().c_str(), ev.str().size());
+                    }
+
+                    auto t1 = std::chrono::high_resolution_clock::now();
+                    double ms = std::chrono::duration<double, std::milli>(t1 - shared_t0).count();
+                    std::ostringstream ev;
+                    ev << "event: done\ndata: {\"ms\": " << ms << "}\n\n";
+                    sink.write(ev.str().c_str(), ev.str().size());
+                    sink.done();
+                    return true;
+                });
+
+            fprintf(stderr, "crispembed-server: /colbert/score SSE %d docs\n",
+                    (int)shared_docs->size());
+        } else {
+            // Non-streaming: score all, sort, return JSON
+            struct scored_doc { int index; float score; };
+            std::vector<scored_doc> results;
+            results.reserve(doc_texts.size());
+
+            for (int i = 0; i < (int)doc_texts.size(); i++) {
+                int n_doc = 0, ddim = 0;
+                const float * doc_vecs = crispembed_encode_multivec(
+                    ctx, doc_texts[i].c_str(), &n_doc, &ddim);
+                if (!doc_vecs || n_doc == 0 || ddim != qdim) {
+                    results.push_back({i, 0.0f});
+                    continue;
+                }
+                float score = crispembed_colbert_score(
+                    query_copy.data(), n_query, doc_vecs, n_doc, qdim);
+                results.push_back({i, score});
             }
-            float score = crispembed_colbert_score(
-                query_copy.data(), n_query, doc_vecs, n_doc, qdim);
-            results.push_back({i, score});
-        }
 
-        // Sort by score descending
-        std::sort(results.begin(), results.end(),
-                  [](const scored_doc & a, const scored_doc & b) { return a.score > b.score; });
+            std::sort(results.begin(), results.end(),
+                      [](const scored_doc & a, const scored_doc & b) { return a.score > b.score; });
 
-        auto t1 = std::chrono::high_resolution_clock::now();
-        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+            auto t1 = std::chrono::high_resolution_clock::now();
+            double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
 
-        // Build response
-        std::ostringstream js;
-        js << "{\"scores\": [";
-        for (size_t i = 0; i < results.size(); i++) {
-            if (i > 0) js << ", ";
-            // Escape text for JSON
-            std::string escaped;
-            for (char c : doc_texts[results[i].index]) {
-                if (c == '"') escaped += "\\\"";
-                else if (c == '\\') escaped += "\\\\";
-                else if (c == '\n') escaped += "\\n";
-                else escaped += c;
+            std::ostringstream js;
+            js << "{\"scores\": [";
+            for (size_t i = 0; i < results.size(); i++) {
+                if (i > 0) js << ", ";
+                std::string escaped;
+                for (char c : doc_texts[results[i].index]) {
+                    if (c == '"') escaped += "\\\"";
+                    else if (c == '\\') escaped += "\\\\";
+                    else if (c == '\n') escaped += "\\n";
+                    else escaped += c;
+                }
+                js << "{\"index\": " << results[i].index
+                   << ", \"score\": " << results[i].score
+                   << ", \"text\": \"" << escaped << "\""
+                   << "}";
             }
-            js << "{\"index\": " << results[i].index
-               << ", \"score\": " << results[i].score
-               << ", \"text\": \"" << escaped << "\""
-               << "}";
-        }
-        js << "], \"ms\": " << ms << "}";
+            js << "], \"ms\": " << ms << "}";
 
-        fprintf(stderr, "crispembed-server: /colbert/score %d docs in %.1f ms\n",
-                (int)doc_texts.size(), ms);
-        res.set_content(js.str(), "application/json");
+            fprintf(stderr, "crispembed-server: /colbert/score %d docs in %.1f ms\n",
+                    (int)doc_texts.size(), ms);
+            res.set_content(js.str(), "application/json");
+        }
     });
 
     // POST /math/ocr — formula recognition

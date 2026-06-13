@@ -170,8 +170,9 @@ CrispEmbed/
   Model uses `do_normalize=False` (pixels [0,1] only).
 - [~] **MixTex Swin shifted-window attention** — enc_embed cos=1.000 PASS but
   Swin stage 0 cos=-0.065. Window partition or relative position bias bug.
-- [ ] **Streaming ColBERT SSE** — Add `text/event-stream` mode to existing
-  `POST /colbert/score` endpoint for progressive ranking.
+- [x] **Streaming ColBERT SSE** — DONE. `POST /colbert/score` with
+  `Accept: text/event-stream` streams `data: {"index":i,"score":s}` per
+  document, then `event: done`. Non-streaming JSON still default.
 - [ ] **Surya detector CUDA/GPU testing** — Kaggle kernel (P100/T4).
 
 #### OCR models — in progress (other agents)
