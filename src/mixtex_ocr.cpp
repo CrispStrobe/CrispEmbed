@@ -624,7 +624,8 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             auto out_w = to_f32(blk.out_w), out_b = to_f32(blk.out_b);
             auto rpb_t = to_f32(blk.rpb_table);
             auto rpb_i = to_f32(blk.rpb_index);
-            int rpb_len = blk.rpb_table ? (int)blk.rpb_table->ne[0] : 0;
+            // rpb_table ggml shape: ne[0]=n_heads, ne[1]=num_entries (169 for ws=7)
+            int rpb_len = blk.rpb_table ? (int)blk.rpb_table->ne[1] : 0;
 
             std::vector<float> attn_out(n_windows * tokens_per_win * D);
             for (int w = 0; w < n_windows; w++) {
