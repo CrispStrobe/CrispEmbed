@@ -174,9 +174,9 @@ CrispEmbed/
   `Accept: text/event-stream` streams `data: {"index":i,"score":s}` per
   document, then `event: done`. Non-streaming JSON still default.
 - [~] **Surya detector CUDA/GPU testing** — Kaggle kernel ran on P100 (CPU-only,
-  CUDA cmake fails: `CUDA::cuda_driver` ggml upstream issue). F16: 195s, 17 regions
-  detected correctly. Q8_0: crashes (segfault in dequant path — needs investigation).
-  Next: fix Q8_0 crash, investigate ggml CUDA cmake on Kaggle.
+  CUDA cmake fails: `CUDA::cuda_driver` ggml upstream issue). F16: 195s, 17 regions.
+  Q8_0 crash fixed (must dequant Q→F32 before reshape — ggml blocks need ne[0] alignment).
+  Q4_K also works. Next: fix ggml CUDA cmake on Kaggle for actual GPU benchmark.
 
 #### OCR models — in progress (other agents)
 
