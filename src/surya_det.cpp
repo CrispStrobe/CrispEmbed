@@ -788,13 +788,19 @@ static ggml_tensor* g_conv(ggml_context* g, ggml_tensor* x,
     ggml_tensor* w = cl.weight;
     if (!w) return x;
 
+    // Dequant quantized weights before reshape (quantized types have block
+    // alignment on ne[0] that reshape can violate). ggml only supports
+    // Q→F32 cast, not Q→F16, so go via F32 then to F16.
+    if (ggml_is_quantized(w->type)) {
+        w = ggml_cast(g, w, GGML_TYPE_F32);
+    }
     // Ensure weight is 4D [KW, KH, IC/groups, OC]
     if (ggml_n_dims(w) == 2) {
         int64_t OC = w->ne[1];
         int64_t IC_g = IC / groups;
         w = ggml_reshape_4d(g, w, KW, KH, IC_g, OC);
     }
-    // Cast to F16 (required by ggml_conv_2d)
+    // ggml_conv_2d requires F16 weights
     if (w->type != GGML_TYPE_F16) {
         w = ggml_cast(g, w, GGML_TYPE_F16);
     }
