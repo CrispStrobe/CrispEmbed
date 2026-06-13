@@ -176,9 +176,10 @@ CrispEmbed/
 
 ### Infrastructure gaps
 
-- [ ] **Jina v5 LoRA GGUF adapters** — LoRA API fully implemented (`crispembed_set_lora`,
-  etc.) but no HF→GGUF adapter conversion done yet. Need to run converter with
-  `--lora-mode=separate` and test per-adapter parity (retrieval/classification/clustering).
+- [ ] **Jina v5 LoRA GGUF adapters** — LoRA hot-swap API done (`crispembed_set_lora`),
+  but HF→GGUF adapter conversion + per-adapter parity test not done yet.
+  Need `--lora-mode=separate` conversion + verify 4 adapters (retrieval/classification/
+  clustering/text-matching) match baked versions (cos >= 0.999).
 
 ### Performance
 
@@ -242,12 +243,14 @@ CrispEmbed/
 
 ### Non-OCR pending
 
-- [x] KV cache for prefix-shared decoder batches (deduplicate shared prefix tokens)
-- [x] ColBERT MaxSim scoring — C API + server endpoint (POST /colbert/score)
-- [ ] Live-test LoRA with Jina v5 (end-to-end parity per adapter — needs GGUF adapter conversion first)
-- [~] Layout detection score gap — 3 bugs fixed (0.047→0.114), decoder weight convention remains
+- [x] KV cache for prefix-shared decoder batches — DONE (deduplicate shared prefix tokens)
+- [x] ColBERT MaxSim scoring — DONE (C API + server POST /colbert/score, no SSE streaming yet)
+- [x] BGE-M3 SentencePiece crash — FIXED (clip_text guard added)
+- [ ] Jina v5 LoRA: convert adapters + live-test (see Infrastructure gaps above)
+- [ ] Streaming ColBERT SSE (server-side streaming partial results)
+- [~] Layout detection: decoder weight convention gap (encoder matches, 3 bugs fixed 0.047→0.114)
 - [ ] Verify Q8_0 layout model works (dequant path untested)
-- [x] Fix BGE-M3 SentencePiece vocab mismatch crash — clip_text guard added
+- [ ] CrispLens face pipeline integration
 
 ### Feature gaps vs fastembed-rs
 
@@ -290,23 +293,17 @@ CrispEmbed/
   `read_f32` dequantization fixes are committed but untested due to
   VPS load. Need to confirm no crash and measure Q8_0 vs F32 parity.
 
-- [ ] **KV cache for prefix-shared decoder batches** — When multiple texts
-  share a prompt prefix (e.g. Jina v5 instruction prefix), compute KV
-  for the shared prefix once and reuse across the batch.
+- [x] **KV cache for prefix-shared decoder batches** — DONE. Deduplicate
+  shared prefix tokens in batch layout. Saves `(B-1)*P` tokens of compute.
 
-- [ ] **Streaming ColBERT late interaction scoring** — Server-side MaxSim
-  scoring via `/colbert/score` endpoint with SSE streaming.
+- [x] **ColBERT MaxSim scoring** — DONE. C API + POST /colbert/score.
+  SSE streaming not yet implemented.
 
-- [x] **Quantized GGUF for face models** — Quantizer now flattens 4D conv
-  weights to 2D before quantizing. SFace: Q8_0 cos=0.9996 (37→10 MB),
-  Q6_K cos=0.9966 (37→8 MB). Q4_K cos=0.936 (too low for recognition).
-  SCRFD detection: Q8_0 17→10 MB, Q4_K 17→8.7 MB.
+- [x] **Quantized GGUF for face models** — DONE. SFace Q8_0 cos=0.9996,
+  AuraFace Q4_K 124→35 MB cos=0.961.
 
-- [ ] **Live-test LoRA with Jina v5** — LoRA hot-swap is implemented but
-  not end-to-end tested with real Jina v5 adapters. Need to: convert with
-  `--lora-mode=separate`, verify each adapter (retrieval, classification,
-  clustering, text-matching) matches the baked version (cos >= 0.9999),
-  confirm switching works correctly, test with the Python wrapper.
+- [ ] **Jina v5 LoRA live-test** — LoRA hot-swap API done, adapter
+  conversion + per-adapter parity test not done (see Infrastructure gaps).
 
 - [x] **3D tensor quantization for MoE experts** — DONE. Quantizer now
   handles 3D tensors by quantizing each 2D slice independently. Results:
