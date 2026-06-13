@@ -938,13 +938,24 @@ std::vector<region> detect(context* ctx, const float* pixels,
         std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
         if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, out_d * in_d * sizeof(float));
         if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, out_d * sizeof(float));
-        // MatMul convention: W stored as numpy (in_d, out_d) row-major.
-        // y[o] = sum_i flat[i*out_d + o] * x[i] = sum_i W_numpy[i, o] * x[i]
+        // Weight is stored as numpy row-major. ggml ne[0] = numpy cols (fast dim).
+        // For ONNX MatMul y = x @ W: W has shape (in_d, out_d) → ne[0]=out_d.
+        // For PyTorch nn.Linear stored as (out_d, in_d) → ne[0]=in_d.
+        // In both cases, y[o] = sum_i W_flat[row*cols + col] * x[i].
+        // The question is which axis is 'row' and which is 'col'.
+        //
+        // ggml ne[0] gives the numpy column count (fast stride).
+        // Access: W_flat[row * ne0 + col]. We need y[o] = sum_i W(i, o) * x[i].
+        // If ne[0] == out_d: W stored as (in_d, out_d) → row=i, col=o → flat[i*out_d + o] ✓
+        // If ne[0] == in_d:  W stored as (out_d, in_d) → row=o, col=i → flat[o*in_d + i]
+        int ne0 = w_t ? (int)w_t->ne[0] : out_d;
+        bool transposed = (ne0 != out_d && ne0 == in_d);
         for (int n = 0; n < N; n++) {
             for (int o = 0; o < out_d; o++) {
                 float sum = b[o];
                 for (int i = 0; i < in_d; i++) {
-                    sum += W[o + i * out_d] * x[i * N + n];
+                    float w = transposed ? W[o * in_d + i] : W[i * out_d + o];
+                    sum += w * x[i * N + n];
                 }
                 y[o * N + n] = sum;
             }
