@@ -4,6 +4,31 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — GLM-OCR engine (0.9B, CogViT + GLM-0.5B, MIT)
+
+Port of zai-org/GLM-OCR — #1 on OmniDocBench V1.5, 8 languages, MIT license.
+Third VLM in CrispEmbed, with three architectural firsts:
+
+**Architecture**: CogViT (24L, 1024d, RMSNorm+SwiGLU, Q/K RMSNorm, Conv3D
+patches) → RMSNorm → Conv2D downsample (stride 2, 576→144 tokens) → Merger
+(proj + SwiGLU + LayerNorm) → GLM-0.5B (16L, 1536d, GQA 16/8).
+
+**Unique features**: post-norm (4 norms/layer), Q upscale (1536→2048),
+learned Conv2D downsample, mRoPE sections [16,24,24].
+
+**Full pipeline**: KV cache (F16, prefill+decode), vision-text splice
+(144 image tokens), tokenizer decode, E2E image→text verified.
+
+**Parity**: 11/11 cos=1.000000 (8 vision + 3 LLM).
+
+**GGUFs**: `cstr/glm-ocr-crispembed-GGUF` — F16 (2.5 GB), Q8_0 (1.1 GB),
+Q4_K (849 MB).
+
+**New files**: `src/glm_ocr.{h,cpp}`, `models/convert-glm-ocr-to-gguf.py`,
+`tools/dump_glm_ocr_reference.py`, `tests/test_glm_ocr_{diff,e2e,image}.cpp`.
+
+---
+
 ## June 2026 — Layout detection fixes + BGE-M3 crash fix
 
 **Layout detection (RT-DETRv2):** Three bugs fixed, score 0.047 → 0.114:
