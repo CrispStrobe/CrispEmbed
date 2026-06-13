@@ -548,6 +548,12 @@ static const ModelEntry k_registry[] = {
      "InternVL2-1B VLM OCR (InternViT-300M + Qwen2-0.5B, 0.9B, edge/WASM, OCRBench 779)", "600 MB", "mit",
      "https://huggingface.co/cstr/internvl2-1b-crispembed-GGUF"},
 
+    {"glm-ocr",
+     "glm-ocr-q8_0.gguf",
+     "https://huggingface.co/cstr/glm-ocr-crispembed-GGUF/resolve/main/glm-ocr-q8_0.gguf",
+     "GLM-OCR document OCR (CogViT + GLM-0.5B, 0.9B, 8 languages, OmniDocBench #1)", "950 MB", "mit",
+     "https://huggingface.co/cstr/glm-ocr-crispembed-GGUF"},
+
     {"gliner-lfm",
      "gliner-lfm-q8_0.gguf",
      "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF/resolve/main/gliner-lfm-q8_0.gguf",
