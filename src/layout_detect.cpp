@@ -938,26 +938,21 @@ std::vector<region> detect(context* ctx, const float* pixels,
         std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
         if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, out_d * in_d * sizeof(float));
         if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, out_d * sizeof(float));
-        // Weight is stored as numpy row-major. ggml ne[0] = numpy cols (fast dim).
-        // For ONNX MatMul y = x @ W: W has shape (in_d, out_d) → ne[0]=out_d.
-        // For PyTorch nn.Linear stored as (out_d, in_d) → ne[0]=in_d.
-        // In both cases, y[o] = sum_i W_flat[row*cols + col] * x[i].
-        // The question is which axis is 'row' and which is 'col'.
-        //
-        // ggml ne[0] gives the numpy column count (fast stride).
-        // Access: W_flat[row * ne0 + col]. We need y[o] = sum_i W(i, o) * x[i].
-        // If ne[0] == out_d: W stored as (in_d, out_d) → row=i, col=o → flat[i*out_d + o] ✓
-        // If ne[0] == in_d:  W stored as (out_d, in_d) → row=o, col=i → flat[o*in_d + i]
-        int ne0 = w_t ? (int)w_t->ne[0] : out_d;
-        // For non-square weights: ne0 disambiguates convention.
-        // For square weights (in_d == out_d): default to PyTorch (out, in)
-        // since all RT-DETR decoder weights come from nn.Linear.
-        bool transposed = (in_d == out_d) || (ne0 != out_d && ne0 == in_d);
+        // Auto-detect weight convention for non-square weights from ggml ne[0].
+        // Square weights (in_d==out_d): always MatMul (in, out) convention.
+        // Non-square: ne[0] reveals numpy col count. If ne[0]==out_d → (in,out).
+        //   If ne[0]==in_d and ne[0]!=out_d → (out,in), use transposed access.
+        // Gemm(transB=1) weights are pre-transposed by converter to (in,out).
+        bool transposed = false;
+        if (w_t && in_d != out_d) {
+            int ne0 = (int)w_t->ne[0];
+            transposed = (ne0 != out_d && ne0 == in_d);
+        }
         for (int n = 0; n < N; n++) {
             for (int o = 0; o < out_d; o++) {
                 float sum = b[o];
                 for (int i = 0; i < in_d; i++) {
-                    float w = transposed ? W[o * in_d + i] : W[i * out_d + o];
+                    float w = transposed ? W[o * in_d + i] : W[o + i * out_d];
                     sum += w * x[i * N + n];
                 }
                 y[o * N + n] = sum;
@@ -1201,30 +1196,30 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 q_row[0], q_row[1], q_row[2], q_row[3]);
     }
 
-    // 5. Initialize reference points.
-    //    RT-DETRv2: ref_points = sigmoid(gather(enc_bbox_head(ALL_enc_proj) + ALL_anchors, top_k))
-    //    The bbox delta + anchor is computed for ALL 8400 tokens first, THEN gathered.
+    // 5. Initialize reference points via dec_bbox_head[0] MLP on selected tokens.
+    //    RT-DETRv2 uses the decoder's layer-0 bbox head (NOT enc_bbox_head) for
+    //    initial reference point generation. enc_bbox_head is only for scoring.
     std::vector<float> ref_points(N_queries * 4);
     {
-        // Compute enc_bbox_head on ALL enc_proj tokens (not just top-K)
-        std::vector<float> tmp(D * total_tokens);
-        std::copy(enc_proj.begin(), enc_proj.end(), tmp.begin());
+        std::vector<float> tmp(D * N_queries);
+        std::copy(queries.begin(), queries.end(), tmp.begin());
         for (int j = 0; j < 3; j++) {
             int out_d = (j < 2) ? D : 4;
-            std::vector<float> out(out_d * total_tokens);
-            cpu_linear(tmp.data(), out.data(), D, out_d, total_tokens,
-                       ctx->decoder.enc_bbox_w[j], ctx->decoder.enc_bbox_b[j]);
+            std::vector<float> out(out_d * N_queries);
+            cpu_linear(tmp.data(), out.data(), D, out_d, N_queries,
+                       ctx->decoder.dec_bbox_w[0][j], ctx->decoder.dec_bbox_b[0][j]);
             if (j < 2) {
                 for (auto& v : out) v = std::max(0.0f, v); // ReLU
                 tmp = out;
             } else {
-                // Add anchors (logit values) and apply sigmoid for all tokens
-                // Then gather by top-K indices
-                // anchors: [4, 8400] in ggml (ne[0]=4, ne[1]=8400)
+                // RT-DETRv2: ref_points = sigmoid(bbox_delta + anchors)
+                // Anchors are stored as logit values in GGUF (inverse sigmoid).
+                // Selected anchor = anchors[top_k_idx].
                 for (int q = 0; q < N_queries; q++) {
                     int token_idx = token_scores[q].second;
                     for (int d = 0; d < 4; d++) {
-                        float delta = out[d * total_tokens + token_idx];
+                        float delta = out[d * N_queries + q];
+                        // Read logit-encoded anchor for the selected token
                         float logit_anchor;
                         ggml_backend_tensor_get(ctx->decoder.anchors,
                             &logit_anchor,
@@ -1482,10 +1477,6 @@ std::vector<region> detect(context* ctx, const float* pixels,
                         // Then convert grid [-1,1] to feature map coordinates [0, fW-1]
                         float px = ref_cx + dx * 0.25f * ref_w * 0.5f;
                         float py = ref_cy + dy * 0.25f * ref_h * 0.5f;
-
-                        if (li == 0 && q == 0 && h == 0 && lv == 0 && pt < 4 && getenv("LAYOUT_DEBUG"))
-                            fprintf(stderr, "  q0/h0/lv0/pt%d: px=%.4f py=%.4f (dx=%.4f dy=%.4f)\n",
-                                    pt, px, py, dx, dy);
 
                         // Convert from [0,1] normalized to feature map pixel coords
                         // grid_sample(align_corners=False): pixel = loc * N - 0.5
@@ -1806,8 +1797,8 @@ std::vector<region> detect_file(context* ctx, const char* path,
                 float v11 = raw[(sy1 * img_w + sx1) * 3 + c] / 255.0f;
 
                 float val = (1-fx)*(1-fy)*v00 + fx*(1-fy)*v01 + (1-fx)*fy*v10 + fx*fy*v11;
-                // docling-layout-heron uses do_normalize=False — [0,1] range only
-                pixels[c * H * W + y * W + x] = val;
+                // ImageNet normalization: (val - mean) / std
+                pixels[c * H * W + y * W + x] = (val - ctx->img_mean[c]) / ctx->img_std[c];
             }
         }
     }
