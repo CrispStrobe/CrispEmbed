@@ -238,7 +238,7 @@ CrispEmbed/
 
 - [x] Python wrapper `encode_image()` for standalone SigLIP/CLIP
 - [x] CrispFacePipeline export + from_registry() + Python unit tests + face_search example
-- [ ] CrispLens integration — update `crispembed_client.py` for face pipeline
+- [x] Face pipeline Python wrapper — CrispFace + CrispFacePipeline with from_registry() defaults
 
 ### Non-OCR pending
 
@@ -588,31 +588,12 @@ per expert, which supports quantized weights. Should work.
 
 ---
 
-### Blueprint: CrispLens face pipeline integration
+### Blueprint: Face pipeline Python wrapper — DONE
 
-**Goal**: Python API for face detection + recognition so CrispLens can
-call it for face search/verification.
-
-**Current state**: Face C API is complete (`crispembed.h` lines 408-475):
-`crispembed_detect_faces()`, `crispembed_encode_face()`,
-`crispembed_face_pipeline()`. Missing: Python wrapper.
-
-**Step 1 -- Python wrapper** (`python/crispembed/_binding.py`):
-- ctypes bindings for face functions.
-- `CrispFace` class: `detect(image_path)`, `encode(image_path, landmarks)`,
-  `pipeline(image_path)` returning dicts with bbox/confidence/embedding.
-
-**Step 2 -- High-level API** (`python/crispembed/__init__.py`):
-- `from crispembed import CrispFace`
-- `CrispFace.from_registry("yunet", "auraface-v1")` for auto-download.
-
-**Step 3 -- Example** (`examples/face_search.py`):
-- Index faces from a directory, query by image, return top-K matches.
-
-**Files**: `python/crispembed/_binding.py`, `python/crispembed/__init__.py`,
-`examples/face_search.py`
-
-**Effort**: Low (1-2 days). C API is already complete and tested.
+Implemented. `CrispFace` (detect/encode) and `CrispFacePipeline` (detect→align→encode,
+match, from_registry with defaults) fully wired in `python/crispembed/_binding.py`.
+Feature parity with CLI (`--face`, `--detect`, `--face-pipeline`) and server
+(`POST /face/detect`, `POST /face/pipeline`).
 
 ---
 
