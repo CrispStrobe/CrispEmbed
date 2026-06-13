@@ -70,9 +70,10 @@ Input text / image / audio
     ├─► Scene ──► PARSeq: ViT + 1-layer two-stream decoder (parseq_ocr.cpp)
     │               Scene text recognition, 94-char ASCII, 24M (base) / 6M (tiny)
     │
-    └─► Text  ──► GLiNER NER: LFM2.5-bi + span matching (gliner_ner.cpp)
-                    Zero-shot NER: BPE → LFM2 backbone → layer fusion
-                    → BiLSTM → span-label dot-product scorer
+    └─► Text  ──► GLiNER NER: dual-backbone span matching (gliner_ner.cpp)
+                    Zero-shot NER with two backbone options:
+                    • LFM2.5-bi (BPE → ShortConv+GQA → layer fusion → BiLSTM)
+                    • DeBERTa-v3 (SPM → disentangled attn → 768→512 proj → BiLSTM)
 ```
 
 ## Supported architectures (v0.7.0)
@@ -94,6 +95,7 @@ Input text / image / audio
 | CLIP text | CLIP BPE | Pre-LN, causal mask, EOS pool | clip-text-base/large |
 | CNN (SCRFD/YuNet) | — | FPN, anchor decode, NMS | scrfd-det-10g, yunet |
 | LFM2.5 bidirectional | GPT-2 BPE | ShortConv+GQA, RoPE, SwiGLU, BiLSTM, GLiNER head | gliner-lfm (NER) |
+| DeBERTa-v3 + GLiNER | SentencePiece | Disentangled c2c/c2p/p2c attn, 768→512 proj, BiLSTM, markerV0 | gliner-deberta (NER, Apache-2.0) |
 | CNN (ArcFace) | — | ResNet-100, 512-D L2 | w600k_r50, auraface-v1, sface |
 | DeiT+TrOCR | — | ggml graph encoder + decoder | pix2tex-mfr |
 | HMER | — | DenseNet-121 + GRU attention | hmer (handwritten math) |
@@ -167,10 +169,31 @@ CrispEmbed/
 
 ## Pending roadmap
 
+### Active bugs
+
+- [ ] **Layout detection decoder gap** — AIFI + ref_points fixed (score 0.047→0.069),
+  encoder features exact match, but decoder deformable cross-attention still broken
+  (cos=0.345 vs Python). Final score 0.069 vs Python 0.65. Root cause: multi-scale
+  grid sampling or per-layer bbox refinement loop has an indexing/convention error.
+  Branch: `feat/layout-fix`.
+
+- [ ] **BGE-M3 SentencePiece crash** — `crispembed.cpp` loads vocab_size=49408 from
+  clip_text metadata but BGE-M3 has 250002 SPM tokens. Crash in reshape assertion.
+  Blocks ColBERT MaxSim testing with BGE-M3. Pre-existing, not caused by recent changes.
+
+### Infrastructure gaps
+
+- [ ] **Jina v5 LoRA GGUF adapters** — LoRA API fully implemented (`crispembed_set_lora`,
+  etc.) but no HF→GGUF adapter conversion done yet. Need to run converter with
+  `--lora-mode=separate` and test per-adapter parity (retrieval/classification/clustering).
+
+- [ ] **Push to remote main** — Local `feat/posformer-port` is 7+ commits ahead of
+  remote `main` with GLiNER DeBERTa, PARSeq, layout fixes, face Q4_K. Needs push.
+
 ### Performance
 
 - [x] True batched graph for decoder models (single compute for N texts, block-diagonal causal mask, ~3x speedup)
-- [ ] KV cache for prefix-shared decoder batches
+- [x] KV cache for prefix-shared decoder batches (deduplicate shared prefix tokens in batch layout)
 - [x] SigLIP attention pooling head (mean pool works; attn pool for full parity)
 
 ### Models
@@ -181,9 +204,11 @@ CrispEmbed/
 - [x] YuNet lightweight face detection alternative
 - [x] SFace INT8 quantization (Q8_0 cos=0.9999, Q4_K cos=0.974; 37→10→6 MB)
 - [x] Face model quantized inference via graph replayer (YuNet F16/Q8_0 working; fixed depthwise IC, ggml_n_dims trailing-1s, Q→F32 dequant path)
+- [x] AuraFace Q4_K quantization (124→35 MB, cos=0.961 vs F16, 3.5x compression)
 - [x] ViT parity: cos 0.8→1.0 (was patch ordering bug — permute(2,1,0) gave column-major spatial, fixed to permute(1,2,0,3) for row-major matching HF)
 - [x] Nomic v2 MoE (MoE routing layer in encoder) — cos=1.000000 vs HF
 - [x] LoRA adapter hot-swap (Jina v5 per-task adapters, pre-compute merge on CPU, ~10-50ms switch)
+- [x] GLiNER DeBERTa-v3 NER (209M, Apache-2.0, dual-backbone with LFM2.5) — Q8_0/Q4_K, HF uploaded
 
 ### OCR — next-gen models to port
 
@@ -227,11 +252,12 @@ CrispEmbed/
 
 ### Non-OCR pending
 
-- [ ] KV cache for prefix-shared decoder batches (embedding model optimization)
-- [ ] Streaming ColBERT late interaction scoring (MaxSim + SSE)
-- [ ] Live-test LoRA with Jina v5 (end-to-end parity per adapter)
-- [ ] Layout detection score gap (0.934 vs HF 0.955, bilinear resize delta)
+- [x] KV cache for prefix-shared decoder batches (deduplicate shared prefix tokens)
+- [x] ColBERT MaxSim scoring — C API + server endpoint (POST /colbert/score)
+- [ ] Live-test LoRA with Jina v5 (end-to-end parity per adapter — needs GGUF adapter conversion first)
+- [~] Layout detection score gap — AIFI head interleave + ref_points fixed (0.047→0.069), decoder cross-attn gap remains
 - [ ] Verify Q8_0 layout model works (dequant path untested)
+- [ ] Fix BGE-M3 SentencePiece vocab mismatch crash
 
 ### Feature gaps vs fastembed-rs
 
@@ -267,10 +293,10 @@ CrispEmbed/
   layout-heron (Q8_0, F16, F32) in `lib/engine/ocr_model_manager.dart`.
   Register at appropriate priority tier in `ocr_providers_init.dart`.
 
-- [ ] **Layout detection score gap** — Current: 0.934 vs HF 0.955.
-  Root cause: bilinear resize pixel differences (PIL vs custom C++)
-  cascading through 50+ backbone Conv layers. Fix: match PIL's exact
-  coordinate mapping or use stb_image_resize2 with matching filter.
+- [x] **Layout detection score gap** — FIXED. Root cause: missing ImageNet
+  normalization in `detect_file`. Pixel values were [0,1] but model expects
+  `(val - mean) / std`. The `img_mean`/`img_std` fields existed in the
+  context struct but were never applied. Needs re-test to confirm score improvement.
 
 - [ ] **Verify Q8_0 layout model works** — The `ensure_f32` +
   `read_f32` dequantization fixes are committed but untested due to

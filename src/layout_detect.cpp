@@ -539,8 +539,10 @@ static ggml_tensor* aifi_self_attn(ggml_context* g, ggml_tensor* x,
     auto* attn = ggml_flash_attn_ext(g, q, k, v, nullptr, 1.0f / sqrtf(head_dim), 0, 0);
     // attn: [head_dim, N, N_heads]
 
-    // Reshape back to [D, N]
-    attn = ggml_cont(g, ggml_reshape_2d(g, attn, D, N));
+    // Permute heads to be contiguous: [hd, N, nh] → [hd, nh, N] → reshape [D, N]
+    // Without this permute, the head features are interleaved with spatial positions.
+    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));  // [hd, nh, N]
+    attn = ggml_reshape_2d(g, attn, D, N);                    // [D=hd*nh, N]
 
     // Output projection
     attn = linear(g, attn, enc.aifi_out_w, enc.aifi_out_b);
@@ -1189,7 +1191,9 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 q_row[0], q_row[1], q_row[2], q_row[3]);
     }
 
-    // 5. Initialize reference points via enc_bbox_head MLP on selected tokens
+    // 5. Initialize reference points via dec_bbox_head[0] MLP on selected tokens.
+    //    RT-DETRv2 uses the decoder's layer-0 bbox head (NOT enc_bbox_head) for
+    //    initial reference point generation. enc_bbox_head is only for scoring.
     std::vector<float> ref_points(N_queries * 4);
     {
         std::vector<float> tmp(D * N_queries);
@@ -1197,18 +1201,28 @@ std::vector<region> detect(context* ctx, const float* pixels,
         for (int j = 0; j < 3; j++) {
             int out_d = (j < 2) ? D : 4;
             std::vector<float> out(out_d * N_queries);
-            cpu_linear(tmp.data(), out.data(), (j == 0 ? D : D), out_d, N_queries,
-                       ctx->decoder.enc_bbox_w[j], ctx->decoder.enc_bbox_b[j]);
+            cpu_linear(tmp.data(), out.data(), D, out_d, N_queries,
+                       ctx->decoder.dec_bbox_w[0][j], ctx->decoder.dec_bbox_b[0][j]);
             if (j < 2) {
                 for (auto& v : out) v = std::max(0.0f, v); // ReLU
                 tmp = out;
             } else {
-                // Sigmoid to get reference points in [0, 1]
-                for (auto& v : out) v = 1.0f / (1.0f + expf(-v));
-                // Rearrange: out is [4, N_queries], ref_points is [N_queries * 4]
-                for (int q = 0; q < N_queries; q++)
-                    for (int d = 0; d < 4; d++)
-                        ref_points[q * 4 + d] = out[d * N_queries + q];
+                // RT-DETRv2: ref_points = sigmoid(bbox_delta + anchors)
+                // Anchors are stored as logit values in GGUF (inverse sigmoid).
+                // Selected anchor = anchors[top_k_idx].
+                for (int q = 0; q < N_queries; q++) {
+                    int token_idx = token_scores[q].second;
+                    for (int d = 0; d < 4; d++) {
+                        float delta = out[d * N_queries + q];
+                        // Read logit-encoded anchor for the selected token
+                        float logit_anchor;
+                        ggml_backend_tensor_get(ctx->decoder.anchors,
+                            &logit_anchor,
+                            (size_t)(token_idx * 4 + d) * sizeof(float),
+                            sizeof(float));
+                        ref_points[q * 4 + d] = 1.0f / (1.0f + expf(-(delta + logit_anchor)));
+                    }
+                }
             }
         }
     }
@@ -1498,6 +1512,17 @@ std::vector<region> detect(context* ctx, const float* pixels,
             float mn=1e9,mx=-1e9;
             for (auto v : cross_out) { mn=std::min(mn,v); mx=std::max(mx,v); }
             fprintf(stderr, "  dec0 cross_out (pre-proj): [%.4f, %.4f]\n", mn, mx);
+            // query 0, first 8 dims: cross_out stored [D, N] col-major
+            fprintf(stderr, "  dec0 cross_out[0,:8]:");
+            for (int d = 0; d < 8; d++)
+                fprintf(stderr, " %.6f", cross_out[d * N_queries + 0]);
+            fprintf(stderr, "\n");
+            float norm0 = 0;
+            for (int d = 0; d < D; d++) {
+                float v = cross_out[d * N_queries + 0];
+                norm0 += v * v;
+            }
+            fprintf(stderr, "  dec0 cross_out[0] norm: %.4f\n", sqrtf(norm0));
             // Debug: print sampling stats for query 0
             float ref_cx0 = ref_points[0], ref_cy0 = ref_points[1];
             float ref_w0 = ref_points[2], ref_h0 = ref_points[3];
@@ -1516,6 +1541,32 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 aw_sum += attn_weights[j * N_queries + 0];
             fprintf(stderr, "  dec0 q0 attn_weight sum: %.4f (expected ~%d from softmax)\n",
                     aw_sum, N_heads);
+        }
+
+        // Debug: dump cross_out for parity comparison
+        if (li == 0 && getenv("LAYOUT_DEBUG")) {
+            std::vector<float> cross_row(D * N_queries);
+            for (int d = 0; d < D; d++)
+                for (int q = 0; q < N_queries; q++)
+                    cross_row[q * D + d] = cross_out[d * N_queries + q];
+            FILE* fp = fopen("/tmp/cpp_cross_out.bin", "wb");
+            if (fp) { fwrite(cross_row.data(), sizeof(float), D * N_queries, fp); fclose(fp); }
+
+            // Compare with Python reference if available
+            FILE* rfp = fopen("/tmp/py_cross_out.bin", "rb");
+            if (rfp) {
+                std::vector<float> py_ref(D * N_queries);
+                fread(py_ref.data(), sizeof(float), D * N_queries, rfp);
+                fclose(rfp);
+                double dot = 0, na = 0, nb = 0;
+                for (int i = 0; i < D * N_queries; i++) {
+                    dot += cross_row[i] * py_ref[i];
+                    na += cross_row[i] * cross_row[i];
+                    nb += py_ref[i] * py_ref[i];
+                }
+                double cos = dot / (sqrt(na) * sqrt(nb) + 1e-12);
+                fprintf(stderr, "  dec0 cross_out vs Python: cos=%.6f\n", cos);
+            }
         }
 
         // Cross-attention output projection
@@ -1741,7 +1792,8 @@ std::vector<region> detect_file(context* ctx, const char* path,
                 float v11 = raw[(sy1 * img_w + sx1) * 3 + c] / 255.0f;
 
                 float val = (1-fx)*(1-fy)*v00 + fx*(1-fy)*v01 + (1-fx)*fy*v10 + fx*fy*v11;
-                pixels[c * H * W + y * W + x] = val;
+                // ImageNet normalization: (val - mean) / std
+                pixels[c * H * W + y * W + x] = (val - ctx->img_mean[c]) / ctx->img_std[c];
             }
         }
     }
