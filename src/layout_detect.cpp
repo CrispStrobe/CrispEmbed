@@ -938,17 +938,22 @@ std::vector<region> detect(context* ctx, const float* pixels,
         std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
         if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, out_d * in_d * sizeof(float));
         if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, out_d * sizeof(float));
-        // Weight convention: GGUF stores ONNX weights in their native byte order.
-        // Most ONNX ops use MatMul (y = x @ W) or Gemm(transB=1) (y = x @ W^T).
-        // For MatMul weights numpy (in_d, out_d): y[o] = sum_i flat[i*out_d+o] * x[i]
-        // For Gemm(transB=1) weights numpy (out_d, in_d): y[o] = sum_i flat[o*in_d+i] * x[i]
-        // Using MatMul convention uniformly (works for enc_proj, verified cos=0.958).
-        // TODO: handle Gemm(transB=1) for out_proj and non-square Linear weights.
+        // Auto-detect weight convention for non-square weights from ggml ne[0].
+        // Square weights (in_d==out_d): always MatMul (in, out) convention.
+        // Non-square: ne[0] reveals numpy col count. If ne[0]==out_d → (in,out).
+        //   If ne[0]==in_d and ne[0]!=out_d → (out,in), use transposed access.
+        // Gemm(transB=1) weights are pre-transposed by converter to (in,out).
+        bool transposed = false;
+        if (w_t && in_d != out_d) {
+            int ne0 = (int)w_t->ne[0];
+            transposed = (ne0 != out_d && ne0 == in_d);
+        }
         for (int n = 0; n < N; n++) {
             for (int o = 0; o < out_d; o++) {
                 float sum = b[o];
                 for (int i = 0; i < in_d; i++) {
-                    sum += W[o + i * out_d] * x[i * N + n];
+                    float w = transposed ? W[o * in_d + i] : W[o + i * out_d];
+                    sum += w * x[i * N + n];
                 }
                 y[o * N + n] = sum;
             }
