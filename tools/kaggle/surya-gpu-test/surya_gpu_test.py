@@ -17,16 +17,26 @@ import sys
 import time
 
 # --- Kaggle harness setup ---
+os.chdir("/kaggle/working")
 if not os.path.exists("CrispASR"):
     subprocess.run(["git", "clone", "--depth=1",
                     "https://github.com/CrispStrobe/CrispASR.git"], check=True)
-sys.path.insert(0, "CrispASR")
+sys.path.insert(0, "/kaggle/working/CrispASR")
 try:
     import kaggle_harness as kh
     kh.setup_hf_auth()
     print("Kaggle harness loaded + HF auth set up")
 except Exception as e:
     print(f"Kaggle harness setup: {e} (continuing without)")
+    # Manual HF auth fallback
+    for mount in ["/kaggle/input/crispasr-hf-token",
+                  "/kaggle/input/datasets/chr1s4/crispasr-hf-token"]:
+        hf_file = os.path.join(mount, "hf_token.txt")
+        if os.path.exists(hf_file):
+            token = open(hf_file).read().strip()
+            os.environ["HF_TOKEN"] = token
+            print(f"  HF token loaded from {hf_file}")
+            break
 
 # --- Clone and build CrispEmbed with CUDA ---
 if not os.path.exists("CrispEmbed"):
@@ -40,32 +50,51 @@ gpu_info = subprocess.run(["nvidia-smi", "--query-gpu=name,memory.total",
                            "--format=csv,noheader"], capture_output=True, text=True)
 print(f"GPU: {gpu_info.stdout.strip()}")
 
+# Install build deps
+subprocess.run("pip install -q ninja", shell=True, capture_output=True)
+subprocess.run("apt-get update -qq && apt-get install -y -qq ccache >/dev/null 2>&1",
+               shell=True, capture_output=True)
+
 # Warm ccache if available
-ccache_dir = "/kaggle/working/CrispEmbed/.ccache"
+ccache_dir = "/kaggle/working/.ccache"
 os.makedirs(ccache_dir, exist_ok=True)
 os.environ["CCACHE_DIR"] = ccache_dir
 for mount in ["/kaggle/input/crispasr-ccache", "/kaggle/input/datasets/chr1s4/crispasr-ccache"]:
     tar_path = os.path.join(mount, "ccache.tar")
     if os.path.exists(tar_path):
         print(f"Warming ccache from {tar_path}")
-        subprocess.run(f"tar xf {tar_path} -C /kaggle/working/CrispEmbed/", shell=True)
+        subprocess.run(f"tar xf {tar_path} -C /kaggle/working/", shell=True)
         break
+
+# Check for ccache
+has_ccache = subprocess.run("which ccache", shell=True, capture_output=True).returncode == 0
+has_ninja = subprocess.run("which ninja", shell=True, capture_output=True).returncode == 0
+print(f"  ccache: {'yes' if has_ccache else 'no'}, ninja: {'yes' if has_ninja else 'no'}")
 
 # Build with CUDA
 print("\n=== Building CrispEmbed with CUDA ===")
 os.makedirs("build", exist_ok=True)
 t0 = time.time()
-subprocess.run([
-    "cmake", "-B", "build", "-DCMAKE_BUILD_TYPE=Release",
-    "-DGGML_CUDA=ON",
-    "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
-    "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache",
-    "-G", "Ninja",
-], check=True, capture_output=True)
+
+cmake_cmd = ["cmake", "-B", "build", "-DCMAKE_BUILD_TYPE=Release", "-DGGML_CUDA=ON"]
+if has_ccache:
+    cmake_cmd += ["-DCMAKE_C_COMPILER_LAUNCHER=ccache", "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"]
+if has_ninja:
+    cmake_cmd += ["-G", "Ninja"]
+
+r = subprocess.run(cmake_cmd, capture_output=True, text=True)
+if r.returncode != 0:
+    print(f"CMake stdout: {r.stdout[-500:]}")
+    print(f"CMake stderr: {r.stderr[-500:]}")
+    r.check_returncode()
 
 # Build test binary + CLI
-subprocess.run(["ninja", "-C", "build", "-j4",
-                "test-surya-det", "crispembed-cli"], check=True)
+if has_ninja:
+    subprocess.run(["ninja", "-C", "build", "-j4",
+                    "test-surya-det", "crispembed-cli"], check=True)
+else:
+    subprocess.run(["make", "-C", "build", "-j4",
+                    "test-surya-det", "crispembed-cli"], check=True)
 build_time = time.time() - t0
 print(f"Build time: {build_time:.0f}s")
 
