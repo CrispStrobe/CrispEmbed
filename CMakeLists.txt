@@ -318,6 +318,9 @@ target_link_libraries(test-internvl2-image PRIVATE crispembed)
 add_executable(test-glm-ocr-diff tests/test_glm_ocr_diff.cpp)
 target_link_libraries(test-glm-ocr-diff PRIVATE crispembed)
 
+add_executable(test-glm-ocr-e2e tests/test_glm_ocr_e2e.cpp)
+target_link_libraries(test-glm-ocr-e2e PRIVATE crispembed)
+
 endif() # NOT iOS
 
 # ---------------------------------------------------------------------------
