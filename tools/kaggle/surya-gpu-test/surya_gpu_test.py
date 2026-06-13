@@ -39,11 +39,13 @@ except Exception as e:
             break
 
 # --- Clone and build CrispEmbed with CUDA ---
-if not os.path.exists("CrispEmbed"):
+ce_dir = "/kaggle/working/CrispEmbed"
+if not os.path.exists(ce_dir):
     subprocess.run(["git", "clone", "--recursive",
-                    "https://github.com/CrispStrobe/CrispEmbed.git"], check=True)
+                    "https://github.com/CrispStrobe/CrispEmbed.git",
+                    ce_dir], check=True)
 
-os.chdir("CrispEmbed")
+os.chdir(ce_dir)
 
 # Check GPU
 gpu_info = subprocess.run(["nvidia-smi", "--query-gpu=name,memory.total",
@@ -76,17 +78,33 @@ print("\n=== Building CrispEmbed with CUDA ===")
 os.makedirs("build", exist_ok=True)
 t0 = time.time()
 
-cmake_cmd = ["cmake", "-B", "build", "-DCMAKE_BUILD_TYPE=Release", "-DGGML_CUDA=ON"]
-if has_ccache:
-    cmake_cmd += ["-DCMAKE_C_COMPILER_LAUNCHER=ccache", "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"]
-if has_ninja:
-    cmake_cmd += ["-G", "Ninja"]
+# Try CUDA first, fall back to CPU if it fails
+cuda_ok = False
+for cuda_flag in ["-DGGML_CUDA=ON", ""]:
+    cmake_cmd = ["cmake", "-B", "build", "-DCMAKE_BUILD_TYPE=Release"]
+    if cuda_flag:
+        cmake_cmd.append(cuda_flag)
+    if has_ccache:
+        cmake_cmd += ["-DCMAKE_C_COMPILER_LAUNCHER=ccache", "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"]
+    if has_ninja:
+        cmake_cmd += ["-G", "Ninja"]
 
-r = subprocess.run(cmake_cmd, capture_output=True, text=True)
+    print(f"  Trying: {' '.join(cmake_cmd)}")
+    r = subprocess.run(cmake_cmd, capture_output=True, text=True)
+    if r.returncode == 0:
+        cuda_ok = bool(cuda_flag)
+        print(f"  CMake OK (CUDA={'yes' if cuda_ok else 'no'})")
+        break
+    else:
+        print(f"  CMake failed: {r.stderr[-300:]}")
+        # Clean build dir for retry
+        import shutil
+        if os.path.exists("build"):
+            shutil.rmtree("build")
+
 if r.returncode != 0:
-    print(f"CMake stdout: {r.stdout[-500:]}")
-    print(f"CMake stderr: {r.stderr[-500:]}")
-    r.check_returncode()
+    print("FATAL: cmake failed with both CUDA and CPU-only")
+    sys.exit(1)
 
 # Build test binary + CLI
 if has_ninja:
@@ -138,7 +156,7 @@ for r in range(4):
         draw.rectangle([x, y, x + 290, y + 35], outline=(0, 0, 0))
         draw.text((x + 10, y + 8), f"Cell {r},{c}", fill=(0, 0, 0), font=font)
 
-test_img = "/kaggle/working/surya_test.png"
+test_img = os.path.join(ce_dir, "surya_test.png")
 img.save(test_img)
 print(f"  Test image: 1200x1200, {len(texts)} text lines + table")
 
