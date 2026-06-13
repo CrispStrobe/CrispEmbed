@@ -815,14 +815,15 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             int newN = newH * newW;
 
             // Concat 2×2 patches → [newN, 4*D]
+            // HF order: [TL, BL, TR, BR] = [x0::2,0::2], [x1::2,0::2], [x0::2,1::2], [x1::2,1::2]
             std::vector<float> merged(newN * 4 * D);
             for (int y = 0; y < newH; y++) {
                 for (int xi = 0; xi < newW; xi++) {
                     int dst = y * newW + xi;
-                    int s0 = (2*y) * padW + (2*xi);
-                    int s1 = (2*y) * padW + (2*xi+1);
-                    int s2 = (2*y+1) * padW + (2*xi);
-                    int s3 = (2*y+1) * padW + (2*xi+1);
+                    int s0 = (2*y)   * padW + (2*xi);     // top-left
+                    int s1 = (2*y+1) * padW + (2*xi);     // bottom-left
+                    int s2 = (2*y)   * padW + (2*xi+1);   // top-right
+                    int s3 = (2*y+1) * padW + (2*xi+1);   // bottom-right
                     memcpy(merged.data() + dst * 4 * D + 0 * D, merge_src + s0 * D, D * sizeof(float));
                     memcpy(merged.data() + dst * 4 * D + 1 * D, merge_src + s1 * D, D * sizeof(float));
                     memcpy(merged.data() + dst * 4 * D + 2 * D, merge_src + s2 * D, D * sizeof(float));
@@ -844,6 +845,15 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             x = std::move(reduced);
             H = newH; W = newW; D = new_D;
         }
+
+        // Diff: per-stage output (AFTER downsample, matching HF SwinStage hook)
+        if (has_diff) {
+            char sname[64];
+            snprintf(sname, sizeof(sname), "enc_stage_%d", stage);
+            auto r = diff.compare(sname, x.data(), H * W * D);
+            fprintf(stderr, "[mixtex-diff] %s (%dx%dx%d=%d): cos=%.6f max_abs=%.2e %s\n",
+                    sname, H, W, D, H*W, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+        }
     }
 
     // Final LayerNorm
@@ -853,6 +863,17 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
         int N_out = H * W;
         for (int i = 0; i < N_out; i++)
             layernorm_cpu(x.data() + i * D, x.data() + i * D, D, fn_w.data(), fn_b.data());
+    }
+
+    // Diff: per-stage encoder output
+    const char* enc_stage_ref = std::getenv("MIXTEX_ENC_STAGE_REF");
+    if (enc_stage_ref) {
+        crispembed_diff::Ref sr;
+        if (sr.load(enc_stage_ref)) {
+            auto r = sr.compare("enc_output", x.data(), H * W * D);
+            fprintf(stderr, "[mixtex-diff] enc_output (full): cos=%.6f max_abs=%.2e %s\n",
+                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+        }
     }
 
     if (ctx->dump) dump_stats("enc_output", x.data(), H * W * D);
@@ -868,6 +889,21 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
     auto& hp = ctx->hp;
     int D = hp.dec_hidden;
     int n_layers = hp.dec_layers;
+
+    // Decoder diff harness
+    const char* dec_ref_path = std::getenv("MIXTEX_DEC_REF");
+    crispembed_diff::Ref dec_diff;
+    bool has_dec_diff = false;
+    if (dec_ref_path) {
+        has_dec_diff = dec_diff.load(dec_ref_path);
+        if (has_dec_diff) {
+            fprintf(stderr, "[mixtex-diff] loaded decoder ref: %s\n", dec_ref_path);
+            // Verify encoder output matches
+            auto r = dec_diff.compare("enc_output", enc_output, enc_len * enc_dim);
+            fprintf(stderr, "[mixtex-diff] enc_output: cos=%.6f max_abs=%.2e %s\n",
+                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+        }
+    }
 
     auto word_w = to_f32(ctx->word_embed_w);   // [vocab, D]
     auto pos_w = to_f32(ctx->pos_embed_w);     // [max_pos, D]
@@ -886,6 +922,18 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
         auto cv_w = to_f32(l.cross_v_w), cv_b = to_f32(l.cross_v_b);
         cross_kvs[li].K.resize(enc_len * D);
         cross_kvs[li].V.resize(enc_len * D);
+
+        if (has_dec_diff && li == 0) {
+            fprintf(stderr, "[mixtex-diff] cross_k_w ne: [%lld, %lld] type=%d\n",
+                    (long long)l.cross_k_w->ne[0], (long long)l.cross_k_w->ne[1],
+                    l.cross_k_w->type);
+            fprintf(stderr, "[mixtex-diff] enc_dim=%d D=%d enc_len=%d\n", enc_dim, D, enc_len);
+            fprintf(stderr, "[mixtex-diff] ck_w[0..3]: %.6f %.6f %.6f %.6f\n",
+                    ck_w[0], ck_w[1], ck_w[2], ck_w[3]);
+            fprintf(stderr, "[mixtex-diff] enc[0..3]: %.6f %.6f %.6f %.6f\n",
+                    enc_output[0], enc_output[1], enc_output[2], enc_output[3]);
+        }
+
         for (int t = 0; t < enc_len; t++) {
             linear_cpu(enc_output + t * enc_dim, cross_kvs[li].K.data() + t * D,
                        enc_dim, D, ck_w.data(), ck_b.data());
@@ -915,7 +963,7 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
 
     for (int step = 0; step < max_len; step++) {
         int token_id = tokens.back();
-        int pos = step;
+        int pos = step + 2; // RoBERTa position offset: padding_idx=1, positions start at 2
 
         // Token embedding: word + position + type + LN
         std::vector<float> hidden(D);
@@ -927,6 +975,19 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
         std::vector<float> ln_out(D);
         layernorm_cpu(hidden.data(), ln_out.data(), D, eln_w.data(), eln_b.data(), 1e-12f);
         hidden = std::move(ln_out);
+
+        // Diff: compare embedding output (step 0 only)
+        if (has_dec_diff && step == 0) {
+            fprintf(stderr, "[mixtex-diff] embed: tok=%d pos=%d hidden[0..3]=%.4f %.4f %.4f %.4f\n",
+                    token_id, pos, hidden[0], hidden[1], hidden[2], hidden[3]);
+            fprintf(stderr, "[mixtex-diff] word[0..3]=%.4f %.4f  pos[0..3]=%.4f %.4f  type[0..3]=%.4f %.4f\n",
+                    word_w[token_id * D], word_w[token_id * D + 1],
+                    pos_w[pos * D], pos_w[pos * D + 1],
+                    type_w[0], type_w[1]);
+            auto r = dec_diff.compare("dec_embed", hidden.data(), D);
+            fprintf(stderr, "[mixtex-diff] dec_embed: cos=%.6f max_abs=%.2e %s\n",
+                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+        }
 
         // Decoder layers
         for (int li = 0; li < n_layers; li++) {
@@ -962,6 +1023,13 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
             layernorm_cpu(hidden.data(), ln.data(), D, sln_w.data(), sln_b.data(), 1e-12f);
             hidden = std::move(ln);
 
+            // Diff: after self-attention (step 0, layer 0)
+            if (has_dec_diff && step == 0 && li == 0) {
+                auto r = dec_diff.compare("L0_after_self_attn", hidden.data(), D);
+                fprintf(stderr, "[mixtex-diff] L0_after_self_attn: cos=%.6f max_abs=%.2e %s\n",
+                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
+
             // Cross-attention
             auto cq_w = to_f32(l.cross_q_w), cq_b = to_f32(l.cross_q_b);
             auto co_w = to_f32(l.cross_out_w), co_b = to_f32(l.cross_out_b);
@@ -970,15 +1038,44 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
             std::vector<float> cq(D);
             linear_cpu(hidden.data(), cq.data(), D, D, cq_w.data(), cq_b.data());
 
+            // Diff: cross-attention Q, K, V (step 0, layer 0)
+            if (has_dec_diff && step == 0 && li == 0) {
+                auto rq = dec_diff.compare("L0_cross_Q", cq.data(), D);
+                fprintf(stderr, "[mixtex-diff] L0_cross_Q: cos=%.6f max_abs=%.2e %s\n",
+                        rq.cos_min, rq.max_abs, rq.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[mixtex-diff] cross_K[0,:4]: %.6f %.6f %.6f %.6f\n",
+                        cross_kvs[li].K[0], cross_kvs[li].K[1], cross_kvs[li].K[2], cross_kvs[li].K[3]);
+                auto rk = dec_diff.compare("L0_cross_K", cross_kvs[li].K.data(), enc_len * D);
+                fprintf(stderr, "[mixtex-diff] L0_cross_K: cos=%.6f max_abs=%.2e %s\n",
+                        rk.cos_min, rk.max_abs, rk.is_pass() ? "PASS" : "FAIL");
+                auto rv = dec_diff.compare("L0_cross_V", cross_kvs[li].V.data(), enc_len * D);
+                fprintf(stderr, "[mixtex-diff] L0_cross_V: cos=%.6f max_abs=%.2e %s\n",
+                        rv.cos_min, rv.max_abs, rv.is_pass() ? "PASS" : "FAIL");
+            }
+
             std::vector<float> cross_out(D);
             mha_1q_cpu(cq.data(), cross_kvs[li].K.data(),
                        cross_kvs[li].V.data(), cross_out.data(),
                        enc_len, D, hp.dec_heads);
 
+            // Diff: cross-attention self output (before output proj)
+            if (has_dec_diff && step == 0 && li == 0) {
+                auto r = dec_diff.compare("L0_cross_self_out", cross_out.data(), D);
+                fprintf(stderr, "[mixtex-diff] L0_cross_self_out: cos=%.6f max_abs=%.2e %s\n",
+                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
+
             std::vector<float> cproj(D);
             linear_cpu(cross_out.data(), cproj.data(), D, D, co_w.data(), co_b.data());
             for (int d = 0; d < D; d++) hidden[d] += cproj[d];
             layernorm_cpu(hidden.data(), hidden.data(), D, cln_w.data(), cln_b.data(), 1e-12f);
+
+            // Diff: after cross-attention (step 0, layer 0)
+            if (has_dec_diff && step == 0 && li == 0) {
+                auto r = dec_diff.compare("L0_after_cross_attn", hidden.data(), D);
+                fprintf(stderr, "[mixtex-diff] L0_after_cross_attn: cos=%.6f max_abs=%.2e %s\n",
+                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
 
             // FFN
             auto fu_w = to_f32(l.ffn_up_w), fu_b = to_f32(l.ffn_up_b);
@@ -991,6 +1088,15 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
             linear_cpu(up.data(), down.data(), hp.dec_ffn, D, fd_w.data(), fd_b.data());
             for (int d = 0; d < D; d++) hidden[d] += down[d];
             layernorm_cpu(hidden.data(), hidden.data(), D, fln_w.data(), fln_b.data(), 1e-12f);
+
+            // Diff: compare layer output (step 0 only)
+            if (has_dec_diff && step == 0) {
+                char name[32];
+                snprintf(name, sizeof(name), "dec_layer_%d", li);
+                auto r = dec_diff.compare(name, hidden.data(), D);
+                fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n",
+                        name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
         }
 
         // LM head: Dense → GELU → LN → project to vocab
@@ -1006,6 +1112,24 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
             for (int d = 0; d < D; d++)
                 sum += lm_h[d] * word_w[v * D + d];
             logits[v] = sum;
+        }
+
+        // Diff: compare logits (step 0 only)
+        if (has_dec_diff && step == 0) {
+            auto r = dec_diff.compare("dec_step0_logits", logits.data(), vocab);
+            fprintf(stderr, "[mixtex-diff] dec_step0_logits: cos=%.6f max_abs=%.2e %s\n",
+                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            // Print top-5
+            int top[5] = {0};
+            for (int v = 1; v < vocab; v++)
+                for (int t = 0; t < 5; t++)
+                    if (logits[v] > logits[top[t]]) {
+                        for (int s = 4; s > t; s--) top[s] = top[s-1];
+                        top[t] = v; break;
+                    }
+            fprintf(stderr, "[mixtex-diff] top5: %d(%.2f) %d(%.2f) %d(%.2f) %d(%.2f) %d(%.2f)\n",
+                    top[0], logits[top[0]], top[1], logits[top[1]],
+                    top[2], logits[top[2]], top[3], logits[top[3]], top[4], logits[top[4]]);
         }
 
         // Greedy: argmax
