@@ -219,7 +219,7 @@ CrispEmbed/
 - [x] PARSeq (24M, Apache-2.0, scene text)
 - [x] GLM-OCR (0.9B, MIT, OmniDocBench #1)
 - [x] GOT-OCR2 (0.7B, Apache-2.0, full parity, windowed+global attn with decomposed RPE)
-- [x] MixTex encoder parity (embed PASS)
+- [x] MixTex encoder parity — **cos=1.000000** on all blocks (non-shifted + shifted)
 - [x] Surya detector (parity verified, stb_image done)
 
 #### Feature gaps vs fastembed-rs
@@ -615,15 +615,20 @@ Swin encoder as new building block.
    - BPE tokenizer, 25681 tokens (LaTeX + CJK)
    - max_position=300, greedy decode
 
-**Status** (2026-06-11):
+**Status** (2026-06-13):
 - [x] Reference dumper: `tools/dump_mixtex_reference.py`
 - [x] GGUF converter: `models/convert-mixtex-to-gguf.py` (345 tensors)
-- [x] GGUF files: F32=329MB, F16=165MB at `/mnt/storage/gguf-models/`
+- [x] GGUF files: F32=329MB, F16=165MB, Q8_0, Q4_K at `/mnt/storage/gguf-models/`
 - [x] C++ engine: `src/mixtex_ocr.{h,cpp}` — runs end-to-end, Swin+RoBERTa
-- [x] Parity test — enc_embed cos=1.000 PASS. Swin stage 0 cos=-0.065 (window bug)
+- [x] Parity test — cos=1.000000 on all encoder blocks (non-shifted + shifted)
 
 **Key new op**: Swin shifted-window attention with relative position bias.
-Window partition → local MHSA + RPB lookup → window reverse → shift.
+Pad → cyclic shift → window partition → local MHSA + RPB lookup → window reverse → reverse shift → unpad.
+
+**Bugs found and fixed** (3 bugs in shifted-window attention):
+1. Cyclic shift sign convention — `cyclic_shift(+s)` ≠ `torch.roll(-s)`, signs inverted
+2. Pad-then-shift order — HF pads FIRST then shifts; C++ was reversed
+3. GELU variant — tanh approximation → exact erf matching `nn.GELU()`
 
 **Files**: `tools/dump_mixtex_reference.py`, `models/convert-mixtex-to-gguf.py`
 

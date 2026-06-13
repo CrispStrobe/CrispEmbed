@@ -1612,3 +1612,34 @@ separate CPU scalar matmul. Batching all spans into a single ggml
 Two-pass approach works well: pass 1 computes proj_start/end/first +
 prompt_rep (independent of spans), then CPU assembles span
 concatenations, pass 2 computes batched out_project + scoring.
+
+## Swin shifted-window attention: cyclic_shift vs torch.roll
+
+When implementing `torch.roll(x, shifts=-s, dims)` as a C++ cyclic shift
+function, the sign convention is inverted:
+- `torch.roll(shifts=s)`: `out[y] = in[(y - s) % H]`
+- `cyclic_shift(shift_h=s)`: `out[y] = in[(y + s) % H]`
+
+So `torch.roll(shifts=-3)` = `cyclic_shift(shift_h=+3)`. Getting this
+wrong produces cos=0.0 on the shifted data — completely scrambled.
+
+Also: HF Swin pads to window-size multiples BEFORE the cyclic shift.
+The mask is built on the padded dimensions. If you shift first then pad,
+the data layout differs in the boundary/padding zone.
+
+## Swin GELU: tanh approx vs exact erf
+
+HF Swin uses `nn.GELU()` which is exact erf-based GELU:
+`0.5 * x * (1 + erf(x / sqrt(2)))`. The commonly-used tanh
+approximation `0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715*x^3)))`
+introduces small systematic errors that compound through multiple
+layers. Always check which variant the upstream model uses.
+
+## Per-step diff isolates bugs faster than E2E comparison
+
+When block 1 had cos=0.995, comparing only the block output gave no
+clue where the error originated. Adding per-step diff checkpoints
+(LN1 → shift → windows → attention → merge → residual → FFN → output)
+immediately showed that LN1 was perfect (cos=1.0) but shifted data
+was cos=0.0 — pinpointing the cyclic shift function as the culprit.
+Always instrument fine-grained checkpoints for shifted/masked operations.
