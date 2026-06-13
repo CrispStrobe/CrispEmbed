@@ -230,9 +230,10 @@ CrispEmbed/
 
 #### MixTex / Surya remaining
 
-- [ ] MixTex: encoder parity test vs Python reference
+- [x] MixTex: encoder parity test — DONE. enc_embed cos=1.000 PASS. Swin stage 0 diverges (pre-existing shifted-window bug).
+- [~] MixTex: Swin attention fix needed (window partition/RPB bug causes stage 0 cos=-0.065)
 - [ ] Surya detector: CUDA/GPU testing via Kaggle kernel (P100/T4)
-- [ ] Surya detector: PNG/JPG support in test binaries via stb_image
+- [x] Surya detector: PNG/JPG support in test binaries — already done (stb_image in test_surya_det.cpp)
 
 ### Bindings
 
@@ -242,12 +243,14 @@ CrispEmbed/
 
 ### Non-OCR pending
 
-- [x] KV cache for prefix-shared decoder batches (deduplicate shared prefix tokens)
-- [x] ColBERT MaxSim scoring — C API + server endpoint (POST /colbert/score)
-- [ ] Live-test LoRA with Jina v5 (end-to-end parity per adapter — needs GGUF adapter conversion first)
-- [~] Layout detection score gap — 3 bugs fixed (0.047→0.114), decoder weight convention remains
-- [ ] Verify Q8_0 layout model works (dequant path untested)
-- [x] Fix BGE-M3 SentencePiece vocab mismatch crash — clip_text guard added
+- [x] KV cache for prefix-shared decoder batches — DONE
+- [x] ColBERT MaxSim scoring — DONE (C API + server POST /colbert/score, no SSE yet)
+- [x] BGE-M3 SentencePiece crash — FIXED (clip_text guard)
+- [x] Verify Q8_0 layout model works — VERIFIED (loads 414 tensors, no crash)
+- [ ] Jina v5 LoRA: convert adapters + live-test
+- [ ] Streaming ColBERT SSE
+- [~] Layout detection: decoder weight convention gap (0.047→0.114, encoder matches)
+- [ ] CrispLens face pipeline integration
 
 ### Feature gaps vs fastembed-rs
 

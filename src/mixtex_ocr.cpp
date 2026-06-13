@@ -18,6 +18,7 @@
 // Debug: set env MIXTEX_DUMP=1 for per-layer stats.
 
 #include "mixtex_ocr.h"
+#include "crispembed_diff.h"
 #include "core/gguf_loader.h"
 #include "ggml-cpu.h"
 
@@ -326,6 +327,17 @@ struct mixtex_ocr_context {
     std::vector<std::vector<float>> kv_cache_v;
 };
 
+// Diff comparison against Python reference
+crispembed_diff::Ref* g_diff_ref = nullptr;
+
+static void diff_compare(const char* name, const float* data, int n) {
+    if (!g_diff_ref) return;
+    if (!g_diff_ref->has(name)) return;
+    auto r = g_diff_ref->compare(name, data, n);
+    printf("  %s: cos=%.6f max_abs=%.6f %s\n",
+           name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+}
+
 // Debug helper
 static void dump_stats(const char* name, const float* data, int n) {
     float mn = data[0], mx = data[0];
@@ -549,6 +561,7 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                       D, pn_w.data(), pn_b.data());
 
     if (ctx->dump) dump_stats("enc_embed", patches.data(), N * D);
+    diff_compare("enc_embed", patches.data(), N * D);
 
     // Process each stage
     int H = pH, W = pW;
@@ -666,10 +679,11 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             }
         }
 
-        if (ctx->dump) {
+        {
             char name[64];
             snprintf(name, sizeof(name), "enc_stage_%d", stage);
-            dump_stats(name, x.data(), H * W * D);
+            if (ctx->dump) dump_stats(name, x.data(), H * W * D);
+            diff_compare(name, x.data(), H * W * D);
         }
 
         // Downsample (patch merging) between stages
@@ -736,6 +750,7 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
     }
 
     if (ctx->dump) dump_stats("enc_output", x.data(), H * W * D);
+    diff_compare("enc_output", x.data(), H * W * D);
 
     return x; // [N, D] where N = H*W, D = 768
 }
