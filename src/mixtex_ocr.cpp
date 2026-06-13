@@ -19,6 +19,7 @@
 
 #include "mixtex_ocr.h"
 #include "core/gguf_loader.h"
+#include "crispembed_diff.h"
 #include "ggml-cpu.h"
 
 #include <chrono>
@@ -550,6 +551,16 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
 
     if (ctx->dump) dump_stats("enc_embed", patches.data(), N * D);
 
+    // Diff harness: compare with Python reference
+    const char * diff_ref = std::getenv("MIXTEX_DIFF_REF");
+    crispembed_diff::Ref diff;
+    bool has_diff = diff_ref && diff.load(diff_ref);
+    if (has_diff) {
+        auto r = diff.compare("enc_embed", patches.data(), N * D);
+        fprintf(stderr, "[mixtex-diff] enc_embed: cos=%.6f max_abs=%.2e %s\n",
+                r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+    }
+
     // Process each stage
     int H = pH, W = pW;
     std::vector<float> x = std::move(patches);
@@ -650,6 +661,15 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             // Residual
             for (int i = 0; i < HW * D; i++) x[i] += merged[i];
 
+            // Diff after attention residual (before FFN)
+            if (has_diff && stage == 0) {
+                char name[32];
+                snprintf(name, sizeof(name), "s0_b%d_attn_res", bi);
+                auto r = diff.compare(name, x.data(), HW * D);
+                fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n",
+                        name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
+
             // FFN: LN → up → GELU → down → residual
             auto ln2_w = to_f32(blk.ln2_w), ln2_b = to_f32(blk.ln2_b);
             auto up_w = to_f32(blk.ffn_up_w), up_b = to_f32(blk.ffn_up_b);
@@ -663,6 +683,15 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                 for (int j = 0; j < ffn_dim; j++) up[j] = gelu(up[j]);
                 linear_cpu(up.data(), down.data(), ffn_dim, D, down_w.data(), down_b.data());
                 for (int d = 0; d < D; d++) x[i * D + d] += down[d];
+            }
+
+            // Diff after full block (attention + FFN)
+            if (has_diff && stage == 0) {
+                char name[32];
+                snprintf(name, sizeof(name), "s0_b%d_out", bi);
+                auto r = diff.compare(name, x.data(), HW * D);
+                fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n",
+                        name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
             }
         }
 
