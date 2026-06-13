@@ -181,7 +181,7 @@ CrispEmbed/
 - [~] **GOT-OCR2_0** (0.7B, Apache-2.0) — SAM-ViT + Qwen-0.5B. Converter,
   engine, reference dumper, diff test written (uncommitted on `feat/got-ocr2`).
 - [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune
-- [ ] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL, 12+ languages
+- [x] Nanonets-OCR-s (3B, Apache-2.0) — DONE. Qwen2.5-VL-3B fine-tune, 12+ languages. Same engine, Kaggle conversion, HF uploaded
 - [ ] Qari-OCR (2B, Apache-2.0) — Arabic with diacritics
 - [ ] Granite Vision 3.3-2B (3B, Apache-2.0) — OCRBench 852
 
@@ -227,6 +227,7 @@ CrispEmbed/
 | ~~Qwen2.5-VL OCR~~ | DONE |
 | ~~InternVL2.5-2B~~ | DONE |
 | ~~InternVL2-1B~~ | DONE |
+| ~~Nanonets-OCR-s~~ | DONE (Qwen2.5-VL-3B fine-tune, same engine) |
 | Qwen3-VL multimodal | Low priority |
 
 ### Pending improvements
@@ -679,24 +680,13 @@ mapping; decoder side reuses existing Qwen3 path.
 
 ---
 
-### Blueprint: Nanonets-OCR2-1.5B (Apache-2.0)
+### Blueprint: Nanonets-OCR-s — DONE
 
-**Goal**: Multilingual document OCR (12+ languages incl. German).
-
-**Source**: nanonets/Nanonets-OCR2-1.5B-exp (1.5B, Apache-2.0)
-Fine-tune of Qwen2-VL-2B-Instruct.
-
-**Architecture**: Qwen2-VL vision encoder + Qwen2-VL language decoder.
-Standard Qwen2-VL architecture — well-supported in llama.cpp, GGUF
-already exists.
-
-**Approach**: Since this is a standard Qwen2-VL fine-tune with existing
-GGUF, integration may follow the same pattern as GLM-OCR — load
-existing GGUF and write native inference.
-
-**Files**: `src/nanonets_ocr.{h,cpp}` or reuse VLM dispatch
-
-**Effort**: Medium (3-4 days). Standard Qwen2-VL, well-documented.
+Actual model: `nanonets/Nanonets-OCR-s` (Qwen2.5-VL-3B fine-tune, Apache-2.0,
+71K downloads). Same architecture as existing qwen2vl engine — no new code.
+Converted via Kaggle kernel (VPS too tight for 3B model).
+GGUFs at `cstr/nanonets-ocr-s-crispembed-GGUF` (F16/Q8_0/Q4_K).
+Registry entry: `nanonets-ocr-s`.
 
 ---
 
