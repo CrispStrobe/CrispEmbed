@@ -536,6 +536,12 @@ static const ModelEntry k_registry[] = {
      "Qwen2.5-VL-3B VLM OCR (32-layer ViT + 36-layer Qwen2.5, German docs)", "2610 MB", "apache-2.0",
      "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF"},
 
+    {"nanonets-ocr-s",
+     "nanonets-ocr-s-q4_k.gguf",
+     "https://huggingface.co/cstr/nanonets-ocr-s-crispembed-GGUF/resolve/main/nanonets-ocr-s-q4_k.gguf",
+     "Nanonets-OCR-s VLM OCR (Qwen2.5-VL-3B fine-tune, 12+ languages)", "2610 MB", "apache-2.0",
+     "https://huggingface.co/cstr/nanonets-ocr-s-crispembed-GGUF"},
+
     {"internvl2-2b",
      "internvl2.5-2b-q4_k.gguf",
      "https://huggingface.co/cstr/internvl2.5-2b-crispembed-GGUF/resolve/main/internvl2.5-2b-q4_k.gguf",
