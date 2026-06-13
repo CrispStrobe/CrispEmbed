@@ -61,6 +61,12 @@ Input text / image / audio
     ├─► OCR   ──► InternVL2.5: InternViT-300M + InternLM2.5-1.8B (internvl2_ocr.cpp)
     │               2.1B VLM OCR, EN+DE, KV cache, dynamic tiling, OCRBench ~830
     │
+    ├─► OCR   ──► InternVL2-1B: InternViT-300M + Qwen2-0.5B (internvl2_ocr.cpp)
+    │               0.9B VLM OCR, edge/WASM, OCRBench 779
+    │
+    ├─► OCR   ──► GLM-OCR: CogViT + GLM-0.5B (glm_ocr.cpp)
+    │               0.9B doc OCR, 8 langs, post-norm, mRoPE, OmniDocBench #1
+    │
     ├─► Scene ──► PARSeq: ViT + 1-layer two-stream decoder (parseq_ocr.cpp)
     │               Scene text recognition, 94-char ASCII, 24M (base) / 6M (tiny)
     │
@@ -92,7 +98,9 @@ Input text / image / audio
 | DeiT+TrOCR | — | ggml graph encoder + decoder | pix2tex-mfr |
 | HMER | — | DenseNet-121 + GRU attention | hmer (handwritten math) |
 | BTTR | — | DenseNet + Transformer decoder | bttr (handwritten math) |
-| InternVL2.5 | SentencePiece BPE | InternViT-300M + pixel unshuffle + InternLM2.5-1.8B (GQA 16/8, SwiGLU, KV cache) | internvl2.5-2b (VLM OCR) |
+| InternVL2.5-2B | SentencePiece BPE | InternViT-300M + pixel unshuffle + InternLM2.5-1.8B (GQA 16/8, SwiGLU, KV cache) | internvl2.5-2b (VLM OCR) |
+| InternVL2-1B | Qwen2 BPE | InternViT-300M + pixel unshuffle + Qwen2-0.5B (GQA 14/2, Q/K/V bias, KV cache) | internvl2-1b (edge VLM OCR) |
+| GLM-OCR | GPT-2 BPE | CogViT-24L + Conv2D downsample + GLM-0.5B (post-norm, mRoPE, Q upscale, GQA 16/8) | glm-ocr (doc OCR, 8 langs) |
 | PARSeq | — (char-level) | ViT-12L encoder + 1-layer two-stream decoder, GELU, 94-char ASCII | parseq (scene text) |
 
 ## Shared code with CrispASR
@@ -130,7 +138,8 @@ CrispEmbed/
 │   ├── math_ocr.{h,cpp}        DeiT+TrOCR printed math OCR
 │   ├── hmer_ocr.{h,cpp}        HMER handwritten math OCR
 │   ├── bttr_ocr.{h,cpp}        BTTR handwritten math OCR
-│   ├── internvl2_ocr.{h,cpp}   InternVL2.5-2B VLM OCR (KV cache)
+│   ├── internvl2_ocr.{h,cpp}   InternVL2 VLM OCR (2.5-2B + 1B, KV cache)
+│   ├── glm_ocr.{h,cpp}        GLM-OCR (CogViT + GLM-0.5B, post-norm, mRoPE)
 │   ├── parseq_ocr.{h,cpp}     PARSeq scene text OCR (ViT + 2-stream decoder)
 │   ├── tokenizer.h             WordPiece + SentencePiece + BPE
 │   ├── tokenizer_bpe.cpp       GPT-2 byte-level BPE
@@ -192,9 +201,9 @@ CrispEmbed/
 
 #### High priority — next to port
 
-- [ ] InternVL2-1B (0.9B, MIT) — same arch as 2.5-2B but Qwen2-0.5B LLM, edge/WASM (~1-2 days, reuses internvl2_ocr.cpp)
+- [x] **InternVL2-1B (0.9B, MIT) — DONE** — InternViT-300M + Qwen2-0.5B, reuses internvl2_ocr.cpp. GGUFs: `cstr/internvl2-1b-crispembed-GGUF` (F16/Q8_0/Q4_K).
 - [x] PARSeq (24M, Apache-2.0) — DONE. ViT encoder + 1-layer two-stream decoder, 94-char ASCII scene text. Base (91MB F32, 24MB Q8_0, 13MB Q4_K) + Tiny (12MB F16, 6MB Q8_0). All verified.
-- [ ] GLM-OCR (0.9B, MIT) — CogViT + GLM-0.5B, 8 languages, GGUF already exists at ggml-org/GLM-OCR-GGUF (~3-4 days)
+- [x] **GLM-OCR (0.9B, MIT) — DONE** — CogViT (24L, RMSNorm+SwiGLU, Q/K norm) + Conv2D downsample + Merger + GLM-0.5B (16L, post-norm, mRoPE, Q upscale). Parity 11/11 cos=1.000. GGUFs: `cstr/glm-ocr-crispembed-GGUF` (F16 2.5GB / Q8_0 1.1GB / Q4_K 849MB). OmniDocBench #1.
 - [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune (NOT 3B), GGUF-only release with separate mmproj sidecar. German business docs → structured JSON. Requires verifying exact base model (Qwen2-VL-2B vs Qwen2.5-VL-2B) from GGUF metadata. Author labels arch as "qwen2vl". (~2-3 days, may reuse Qwen2VL engine but 2B LLM config differs from our 3B port)
 
 #### Lower priority
@@ -231,6 +240,8 @@ CrispEmbed/
 | ~~Nomic v2 MoE~~ | ~~Low~~ | ~~High~~ | ~~MoE routing layer in encoder~~ DONE |
 | ~~Qwen2.5-VL OCR~~ | ~~High~~ | ~~High~~ | ~~Qwen2.5-VL-3B engine~~ DONE, merged to main |
 | ~~InternVL2.5-2B~~ | ~~High~~ | ~~High~~ | ~~InternVL2.5-2B VLM OCR~~ DONE, merged to main |
+| ~~InternVL2-1B~~ | ~~High~~ | ~~Low~~ | ~~InternVL2-1B (Qwen2 LLM)~~ DONE, merged to main |
+| ~~GLM-OCR~~ | ~~High~~ | ~~Medium~~ | ~~GLM-OCR 0.9B (CogViT + GLM)~~ DONE, merged to main |
 | Qwen3-VL multimodal | Low | High | Reuse BidirLM-Omni scaffolding |
 
 ### Pending improvements

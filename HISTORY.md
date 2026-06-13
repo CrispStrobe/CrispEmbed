@@ -4,6 +4,32 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — GLM-OCR engine (0.9B, CogViT + GLM-0.5B, MIT)
+
+Port of zai-org/GLM-OCR — #1 on OmniDocBench V1.5, 8 languages, MIT license.
+Third VLM in CrispEmbed, with three architectural firsts:
+
+**Architecture**: CogViT vision encoder (24L, 1024d, 16 heads, RMSNorm + SwiGLU +
+Q/K RMSNorm per head, Conv3D patches with temporal_patch_size=2) → RMSNorm
+→ learned Conv2D spatial downsample (stride 2, 576→144 tokens) → Merger
+(proj + SwiGLU + LayerNorm) → GLM-0.5B decoder (16L, 1536d, GQA 16/8).
+
+**Unique features** (new to CrispEmbed):
+1. **Post-norm** (4 RMSNorms per layer): input_ln → attn → post_self_attn_ln
+   → +residual, post_attn_ln → FFN → post_mlp_ln → +residual
+2. **Q upscale**: q_proj projects 1536→2048 (16 heads × 128 head_dim > hidden)
+3. **Learned spatial downsample**: Conv2D [1536, 1024, 2, 2] replaces pixel unshuffle
+
+**Parity**: 11/11 cos=1.000000 (8 vision stages + 3 LLM stages).
+
+**GGUFs**: `cstr/glm-ocr-crispembed-GGUF` — F16 (2.5 GB), Q8_0 (1.1 GB),
+Q4_K (849 MB). Vision weights at Q8_0 floor.
+
+**New files**: `src/glm_ocr.{h,cpp}`, `models/convert-glm-ocr-to-gguf.py`,
+`tools/dump_glm_ocr_reference.py`, `tests/test_glm_ocr_diff.cpp`.
+
+---
+
 ## June 2026 — GLiNER DeBERTa-v3 NER (Apache-2.0)
 
 Added DeBERTa-v3-base backbone to GLiNER NER — `urchade/gliner_medium-v2.1`,
