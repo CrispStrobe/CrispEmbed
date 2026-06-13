@@ -78,12 +78,26 @@ print("\n=== Building CrispEmbed with CUDA ===")
 os.makedirs("build", exist_ok=True)
 t0 = time.time()
 
+# Find CUDA toolkit path for cmake
+cuda_path = None
+for p in ["/usr/local/cuda", "/usr/local/cuda-12", "/usr/local/cuda-11"]:
+    if os.path.exists(p):
+        cuda_path = p
+        print(f"  CUDA toolkit: {cuda_path}")
+        break
+if not cuda_path:
+    r = subprocess.run("which nvcc", shell=True, capture_output=True, text=True)
+    if r.returncode == 0:
+        cuda_path = os.path.dirname(os.path.dirname(r.stdout.strip()))
+        print(f"  CUDA toolkit (from nvcc): {cuda_path}")
+
 # Try CUDA first, fall back to CPU if it fails
+import shutil
 cuda_ok = False
-for cuda_flag in ["-DGGML_CUDA=ON", ""]:
+for use_cuda in [True, False]:
     cmake_cmd = ["cmake", "-B", "build", "-DCMAKE_BUILD_TYPE=Release"]
-    if cuda_flag:
-        cmake_cmd.append(cuda_flag)
+    if use_cuda and cuda_path:
+        cmake_cmd += ["-DGGML_CUDA=ON", f"-DCUDAToolkit_ROOT={cuda_path}"]
     if has_ccache:
         cmake_cmd += ["-DCMAKE_C_COMPILER_LAUNCHER=ccache", "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"]
     if has_ninja:
@@ -92,13 +106,11 @@ for cuda_flag in ["-DGGML_CUDA=ON", ""]:
     print(f"  Trying: {' '.join(cmake_cmd)}")
     r = subprocess.run(cmake_cmd, capture_output=True, text=True)
     if r.returncode == 0:
-        cuda_ok = bool(cuda_flag)
+        cuda_ok = use_cuda
         print(f"  CMake OK (CUDA={'yes' if cuda_ok else 'no'})")
         break
     else:
-        print(f"  CMake failed: {r.stderr[-300:]}")
-        # Clean build dir for retry
-        import shutil
+        print(f"  CMake failed: {r.stderr[-500:]}")
         if os.path.exists("build"):
             shutil.rmtree("build")
 
