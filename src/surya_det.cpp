@@ -32,8 +32,8 @@ static std::vector<float> to_f32(const ggml_tensor* t) {
     // Pull raw bytes via the backend so this works whether the weight lives
     // in a CPU buffer or a GPU (Metal/CUDA) buffer where t->data isn't a
     // valid host pointer.
-    std::vector<uint8_t> raw(ggml_nbytes(t));
-    ggml_backend_tensor_get(t, raw.data(), 0, raw.size());
+    std::vector<uint8_t> raw(nbytes);
+    ggml_backend_tensor_get(t, raw.data(), 0, nbytes);
     const void* src = raw.data();
     if (t->type == GGML_TYPE_F32) {
         memcpy(out.data(), src, n * sizeof(float));
