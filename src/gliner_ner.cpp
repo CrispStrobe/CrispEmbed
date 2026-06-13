@@ -617,6 +617,9 @@ static ggml_tensor * gliner_build_layer(ggml_context * ctx, ggml_tensor * x,
     return x;
 }
 
+// Forward declaration (defined below, after BiLSTM)
+static std::vector<float> tensor_to_f32_backend(ggml_tensor * t, ggml_backend_t backend);
+
 // ============================================================================
 // DeBERTa encoder graph builder
 // ============================================================================
@@ -757,16 +760,13 @@ static void fill_deberta_rel_pos(
     const int max_pos = (int)model.rel_embd_w->ne[1];
     const int pos_buckets = (int)model.hparams.position_buckets;
 
-    // Read rel_embd from backend
-    std::vector<float> embd_data((size_t)H * max_pos);
-    ggml_backend_tensor_get(model.rel_embd_w, embd_data.data(), 0,
-                            embd_data.size() * sizeof(float));
+    // Read rel_embd from backend (handles quantized types via dequant)
+    std::vector<float> embd_data = tensor_to_f32_backend(model.rel_embd_w, backend);
 
     // Apply encoder LayerNorm to relative embeddings
     if (model.encoder_ln_w && model.encoder_ln_b) {
-        std::vector<float> ln_w(H), ln_b(H);
-        ggml_backend_tensor_get(model.encoder_ln_w, ln_w.data(), 0, H * sizeof(float));
-        ggml_backend_tensor_get(model.encoder_ln_b, ln_b.data(), 0, H * sizeof(float));
+        std::vector<float> ln_w = tensor_to_f32_backend(model.encoder_ln_w, backend);
+        std::vector<float> ln_b = tensor_to_f32_backend(model.encoder_ln_b, backend);
         const float ln_eps = model.hparams.layer_norm_eps;
         for (int p = 0; p < max_pos; p++) {
             float * row = &embd_data[(size_t)p * H];
