@@ -4,6 +4,23 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — Layout detection fixes + BGE-M3 crash fix
+
+**Layout detection (RT-DETRv2):** Three bugs fixed, score 0.047 → 0.114:
+1. AIFI self-attention head interleaving — permute `[hd, N, nh] → [hd, nh, N]`
+   before reshape. Encoder features now exact-match Python.
+2. Initial reference points — RT-DETRv2 uses `sigmoid(gather(enc_bbox_head(ALL) +
+   logit_anchors, top_k))`, not `enc_bbox_head(gathered_queries)`.
+3. Identified decoder `cpu_linear` weight convention mismatch (remaining gap).
+
+**BGE-M3 crash:** `clip_text::load()` accepted any model with a tokenizer, loading
+BGE-M3 (250K vocab XLM-R) as a 49K-vocab CLIP model → crash. Fixed by checking for
+`clip_text.hidden_size` metadata key. BGE-M3 now loads correctly with sparse + ColBERT heads.
+
+**AuraFace Q4_K:** 124 MB → 35 MB (3.5x compression), cos=0.961 vs F16.
+
+---
+
 ## June 2026 — GLiNER DeBERTa-v3 NER (Apache-2.0)
 
 Added DeBERTa-v3-base backbone to GLiNER NER — `urchade/gliner_medium-v2.1`,
