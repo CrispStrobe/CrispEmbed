@@ -281,10 +281,10 @@ CrispEmbed/
   layout-heron (Q8_0, F16, F32) in `lib/engine/ocr_model_manager.dart`.
   Register at appropriate priority tier in `ocr_providers_init.dart`.
 
-- [x] **Layout detection score gap** — FIXED. Root cause: missing ImageNet
-  normalization in `detect_file`. Pixel values were [0,1] but model expects
-  `(val - mean) / std`. The `img_mean`/`img_std` fields existed in the
-  context struct but were never applied. Needs re-test to confirm score improvement.
+- [x] **Layout detection input normalization** — Investigated. This model
+  uses `do_normalize=False` in HF RTDetrImageProcessor — pixels are [0,1]
+  only, NOT ImageNet-normalized. The incorrect normalization was reverted.
+  The score gap is in the decoder deformable cross-attention (see above).
 
 - [ ] **Verify Q8_0 layout model works** — The `ensure_f32` +
   `read_f32` dequantization fixes are committed but untested due to
