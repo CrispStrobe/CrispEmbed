@@ -169,6 +169,7 @@ struct generate_result {
 };
 
 bool generate(context &ctx,
+              const float *image_embeds, int n_image_tokens, int embed_dim,
               const int32_t *prompt_ids, int n_prompt,
               int max_new_tokens,
               generate_result &out);
