@@ -403,16 +403,28 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
     const int n_merged = out_h * out_w;  // 144
 
     // Read downsample weights
-    std::vector<float> ds_w_buf, ds_b_buf;
-    if (ctx.m.downsample_w) {
-        size_t dsn = ggml_nelements(ctx.m.downsample_w);
-        ds_w_buf.resize(dsn);
-        ggml_backend_tensor_get(ctx.m.downsample_w, ds_w_buf.data(), 0, dsn * sizeof(float));
-    }
-    if (ctx.m.downsample_b) {
-        ds_b_buf.resize(out_D);
-        ggml_backend_tensor_get(ctx.m.downsample_b, ds_b_buf.data(), 0, out_D * sizeof(float));
-    }
+    // Read downsample weights (may be F16 or Q8_0)
+    auto read_model_w = [&](ggml_tensor *t) -> std::vector<float> {
+        if (!t) return {};
+        size_t n = ggml_nelements(t);
+        size_t nb = ggml_nbytes(t);
+        std::vector<float> buf(n);
+        if (t->type == GGML_TYPE_F32) {
+            ggml_backend_tensor_get(t, buf.data(), 0, nb);
+        } else if (t->type == GGML_TYPE_F16) {
+            std::vector<uint8_t> raw(nb);
+            ggml_backend_tensor_get(t, raw.data(), 0, nb);
+            const ggml_fp16_t *fp16 = (const ggml_fp16_t *)raw.data();
+            for (size_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(fp16[i]);
+        } else {
+            std::vector<uint8_t> raw(nb);
+            ggml_backend_tensor_get(t, raw.data(), 0, nb);
+            ggml_get_type_traits(t->type)->to_float(raw.data(), buf.data(), n);
+        }
+        return buf;
+    };
+    std::vector<float> ds_w_buf = read_model_w(ctx.m.downsample_w);
+    std::vector<float> ds_b_buf = read_model_w(ctx.m.downsample_b);
 
     // Conv2D stride 2: for each output position, gather 2x2 patch from input
     // ds_w: (out_D, D, 2, 2) stored as (D*2*2, out_D) in ggml col-major
@@ -450,20 +462,12 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
 
     // ── Merger: proj → SwiGLU → LayerNorm ──
     // Read merger weights
-    auto read_w = [&](ggml_tensor *t) -> std::vector<float> {
-        if (!t) return {};
-        size_t n = ggml_nelements(t);
-        std::vector<float> buf(n);
-        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
-        return buf;
-    };
-
-    auto proj_w = read_w(ctx.m.merger.proj_w);
-    auto gate_w = read_w(ctx.m.merger.gate_w);
-    auto up_w   = read_w(ctx.m.merger.up_w);
-    auto down_w = read_w(ctx.m.merger.down_w);
-    auto norm_w = read_w(ctx.m.merger.norm_w);
-    auto norm_b = read_w(ctx.m.merger.norm_b);
+    auto proj_w = read_model_w(ctx.m.merger.proj_w);
+    auto gate_w = read_model_w(ctx.m.merger.gate_w);
+    auto up_w   = read_model_w(ctx.m.merger.up_w);
+    auto down_w = read_model_w(ctx.m.merger.down_w);
+    auto norm_w = read_model_w(ctx.m.merger.norm_w);
+    auto norm_b = read_model_w(ctx.m.merger.norm_b);
     int inter = (int)vhp.out_hidden_size * 3;  // 4608 — check from config
     // Actually merger inter = 4608 from the weight shapes
     if (ctx.m.merger.gate_w) inter = (int)ctx.m.merger.gate_w->ne[0];
@@ -691,6 +695,15 @@ static llm_graph build_llm_graph(context &ctx, int n_tokens, int n_past,
     ggml_tensor *x = ggml_get_rows(g, ctx.m.embed_tokens, tok_in);
     ggml_set_name(x, "llm_embed"); ggml_set_output(x);
 
+    // Vision-text splice (during prefill only)
+    if (n_past == 0) {
+        ggml_tensor *img_embeds = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+        ggml_set_name(img_embeds, "image_embeds"); ggml_set_input(img_embeds);
+        ggml_tensor *splice_mask = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+        ggml_set_name(splice_mask, "splice_mask"); ggml_set_input(splice_mask);
+        x = ggml_add(g, ggml_mul(g, x, splice_mask), img_embeds);
+    }
+
     ggml_tensor *pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, T * 4);
     ggml_set_name(pos_ids, "pos_ids"); ggml_set_input(pos_ids);
 
@@ -815,8 +828,15 @@ static llm_graph build_llm_graph(context &ctx, int n_tokens, int n_past,
 
 // ── Cached step helper ──────────────────────────────────────────────
 
+struct splice_data {
+    const float *image_embeds = nullptr;  // (D, n_image_tokens)
+    int n_image_tokens = 0;
+    const int *token_to_image = nullptr;  // (n_tokens,): image index or -1
+};
+
 static bool run_cached_step(context &ctx, const int32_t *token_ids, int n_tokens,
-                            int n_past, std::vector<float> &last_logits_out) {
+                            int n_past, std::vector<float> &last_logits_out,
+                            const splice_data *splice = nullptr) {
     const auto &lhp = ctx.m.lhp;
     const int D = (int)lhp.hidden_size;
     const int V = (int)lhp.vocab_size;
@@ -853,6 +873,31 @@ static bool run_cached_step(context &ctx, const int32_t *token_ids, int n_tokens
     ggml_backend_tensor_set(ggml_graph_get_tensor(lg.gf, "causal_mask"),
                             mask_data.data(), 0, (size_t)Lk * T * sizeof(ggml_fp16_t));
 
+    // Set splice inputs
+    if (n_past == 0) {
+        const int D = (int)ctx.m.lhp.hidden_size;
+        ggml_tensor *sm = ggml_graph_get_tensor(lg.gf, "splice_mask");
+        ggml_tensor *ie = ggml_graph_get_tensor(lg.gf, "image_embeds");
+        if (splice && splice->token_to_image) {
+            std::vector<float> img_data((size_t)D * T, 0.0f);
+            std::vector<float> mask_f((size_t)D * T, 1.0f);
+            for (int t = 0; t < T; t++) {
+                int idx = splice->token_to_image[t];
+                if (idx >= 0 && idx < splice->n_image_tokens) {
+                    for (int d = 0; d < D; d++) {
+                        img_data[(size_t)t * D + d] = splice->image_embeds[(size_t)idx * D + d];
+                        mask_f[(size_t)t * D + d] = 0.0f;
+                    }
+                }
+            }
+            if (ie) ggml_backend_tensor_set(ie, img_data.data(), 0, (size_t)D * T * sizeof(float));
+            if (sm) ggml_backend_tensor_set(sm, mask_f.data(), 0, (size_t)D * T * sizeof(float));
+        } else {
+            if (ie) { std::vector<float> z((size_t)D * T, 0.0f); ggml_backend_tensor_set(ie, z.data(), 0, z.size() * sizeof(float)); }
+            if (sm) { std::vector<float> o((size_t)D * T, 1.0f); ggml_backend_tensor_set(sm, o.data(), 0, o.size() * sizeof(float)); }
+        }
+    }
+
     ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
 
     if (lg.logits_out) {
@@ -867,12 +912,15 @@ static bool run_cached_step(context &ctx, const int32_t *token_ids, int n_tokens
 
 // ── generate ────────────────────────────────────────────────────────
 
-bool generate(context &ctx, const int32_t *prompt_ids, int n_prompt,
+bool generate(context &ctx,
+              const float *image_embeds, int n_image_tokens, int embed_dim,
+              const int32_t *prompt_ids, int n_prompt,
               int max_new_tokens, generate_result &out) {
     const auto &lhp = ctx.m.lhp;
     const int V = (int)lhp.vocab_size;
     const int eos_id = (int)lhp.eos_token_id;
     const int max_seq = n_prompt + max_new_tokens + 16;
+    const int img_token_id = (int)lhp.image_token_id;
 
     if (!ctx.kvc.allocated || ctx.kvc.max_seq < max_seq) {
         free_kv_cache(ctx);
@@ -880,9 +928,28 @@ bool generate(context &ctx, const int32_t *prompt_ids, int n_prompt,
     }
     ctx.kvc.n_past = 0;
 
+    // Build splice mapping
+    splice_data sd = {};
+    std::vector<int> token_to_image;
+    if (image_embeds && n_image_tokens > 0) {
+        sd.image_embeds = image_embeds;
+        sd.n_image_tokens = n_image_tokens;
+        token_to_image.resize(n_prompt, -1);
+        int img_idx = 0;
+        for (int t = 0; t < n_prompt && img_idx < n_image_tokens; t++) {
+            if (prompt_ids[t] == img_token_id)
+                token_to_image[t] = img_idx++;
+        }
+        sd.token_to_image = token_to_image.data();
+        if (ctx.verbosity >= 1)
+            fprintf(stderr, "  Spliced %d image tokens into %d prompt tokens\n",
+                    img_idx, n_prompt);
+    }
+
     // Prefill
     std::vector<float> logits;
-    if (!run_cached_step(ctx, prompt_ids, n_prompt, 0, logits)) return false;
+    const splice_data *sd_ptr = (image_embeds && n_image_tokens > 0) ? &sd : nullptr;
+    if (!run_cached_step(ctx, prompt_ids, n_prompt, 0, logits, sd_ptr)) return false;
     ctx.kvc.n_past = n_prompt;
 
     int best_id = 0;
@@ -949,6 +1016,12 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
             mask_data[qi * T + ki] = ggml_fp32_to_fp16((ki > qi) ? -INFINITY : 0.0f);
     ggml_backend_tensor_set(ggml_graph_get_tensor(lg.gf, "causal_mask"),
                             mask_data.data(), 0, T * T * sizeof(ggml_fp16_t));
+
+    // Set splice to identity (no image in parity test)
+    ggml_tensor *sm = ggml_graph_get_tensor(lg.gf, "splice_mask");
+    ggml_tensor *ie = ggml_graph_get_tensor(lg.gf, "image_embeds");
+    if (sm) { std::vector<float> o((size_t)D * T, 1.0f); ggml_backend_tensor_set(sm, o.data(), 0, o.size() * sizeof(float)); }
+    if (ie) { std::vector<float> z((size_t)D * T, 0.0f); ggml_backend_tensor_set(ie, z.data(), 0, z.size() * sizeof(float)); }
 
     ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
 
