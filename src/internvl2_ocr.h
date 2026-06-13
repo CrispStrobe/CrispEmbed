@@ -31,6 +31,8 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string>
+#include <unordered_map>
+#include <vector>
 #include <vector>
 
 namespace internvl2_ocr {
@@ -157,14 +159,26 @@ struct model {
 
 struct tokenizer {
     std::vector<std::string> id_to_piece;  // vocab: id → string
+    std::unordered_map<std::string, int32_t> piece_to_id;  // reverse map
     int vocab_size = 0;
     int bos_id = 1;
     int eos_id = 2;
-    int im_end_id = -1;  // <|im_end|> for chat stop
+    int im_start_id = -1;  // <|im_start|>
+    int im_end_id = -1;    // <|im_end|>
     int image_token_id = 0;
+    int newline_id = -1;   // '\n' token
+
+    // Build reverse map (call after loading vocab)
+    void build_reverse_map();
+
+    // Encode text to token IDs (greedy longest-match, not full BPE)
+    std::vector<int32_t> encode(const std::string &text) const;
+
+    // Build InternVL2 chat prompt: system + user(image + text) + assistant
+    std::vector<int32_t> build_prompt(const std::string &user_text,
+                                       int n_image_tokens) const;
 
     // Decode token IDs to UTF-8 text.
-    // SentencePiece convention: ▁ → space, <0xNN> → raw byte.
     std::string decode(const std::vector<int32_t> &ids) const;
     std::string decode(const int32_t *ids, int n) const;
 };
