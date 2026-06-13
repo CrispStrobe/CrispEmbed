@@ -1,5 +1,26 @@
 # CrispEmbed — Technical Learnings
 
+## DeBERTa rel_embd must be dequantized for CPU-side expansion
+
+DeBERTa's relative position embeddings are expanded on CPU (log-bucket
+indexing → [H, T*T] tensor) before the ggml graph runs. With quantized
+models (Q8_0/Q4_K), the `rel_embd.weight` tensor is no longer F32 —
+reading it via `ggml_backend_tensor_get` gives raw quantized bytes.
+Must use `tensor_to_f32_backend()` which reads raw bytes then calls
+`ggml_get_type_traits(type)->to_float()` to dequantize. Same applies
+to `encoder_ln_w/b` used in the LayerNorm applied to rel_embd.
+
+## Dual-backbone GLiNER: parameterize span mode and hidden dim
+
+GLiNER models differ in span representation mode:
+- markerV1 (LFM2): concat(proj_start, proj_end, proj_first) → 3*hidden
+- markerV0 (DeBERTa): concat(proj_start, proj_end) → 2*hidden
+
+The out_project MLP input dimension changes accordingly. Parameterize
+`span_cat_dim` based on span_mode rather than hardcoding `3*hidden`.
+Also parameterize `head_dim_gl` (GLiNER head dimension) separately from
+`enc_hidden` (encoder output dimension) to handle the 768→512 projection.
+
 ## ggml GQA broadcasting (critical for decoder models)
 
 `ggml_mul_mat` natively broadcasts ne[2] when `b->ne[2] % a->ne[2] == 0`.
