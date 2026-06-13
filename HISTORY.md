@@ -4,6 +4,50 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — PARSeq scene text recognition (Apache-2.0)
+
+Scene text recognition port: PARSeq (ECCV 2022, baudm/parseq, Apache-2.0).
+First dedicated scene text (non-math, non-document) OCR model in CrispEmbed.
+Two variants: base (24M params) and tiny (6M params).
+
+**Architecture**: 12-layer pre-LN ViT encoder (patch [4,8], img 32×128,
+128 tokens, GELU FFN, fused QKV) → 1-layer two-stream Transformer decoder
+(XLNet-style: position queries attend to context via norm_q/norm_c, then
+cross-attend to encoder memory) → Linear head (95 classes: 94 printable
+ASCII chars + EOS).
+
+**Key design**: Two-stream attention where context tokens combine position
+queries + character embeddings. Token ordering: EOS=0, chars=1..94, BOS=95,
+PAD=96 (not the typical BOS-first). Single query per AR step for efficiency.
+
+**Variants**:
+- Base: embed_dim=384, 6 enc heads, 12 dec heads (head_dim=32)
+  F32=91MB, Q8_0=24MB, Q4_K=13MB
+- Tiny: embed_dim=192, 3 enc heads, 6 dec heads
+  F16=12MB, Q8_0=6MB
+
+**Encoder**: runs as ggml graph (flash_attn_ext, BLAS-backed matmuls).
+Patch embedding done CPU-side (non-square kernel [4,8] not supported by
+ggml_conv_2d). **Decoder**: CPU-scalar (1 layer, graph overhead not worth it).
+
+**Parity**: Verified identical output to PyTorch on multiple test images.
+All quantization levels (F32/Q8_0/Q4_K) produce identical decoded text.
+
+**New files**: `src/parseq_ocr.{h,cpp}`, `models/convert-parseq-to-gguf.py`,
+`tools/dump_parseq_reference.py`, `tests/test_parseq.cpp`.
+
+**Bugs found during port**:
+1. Token ordering: PARSeq uses `[EOS, chars, BOS, PAD]` not `[BOS, chars, EOS, PAD]`
+   — BOS=95, EOS=0 in both head output and embedding space.
+2. Context construction: `ctx[0] = embed(BOS)`, `ctx[k] = pos_queries[k-1] + embed(pred)`
+   — position queries are added to character embeddings, except BOS which has none.
+3. norm_c: context K/V in self-attention must be LayerNorm'd via norm_c (not raw).
+4. Head excludes BOS and PAD: 95 output classes = EOS(0) + 94 chars(1..94).
+
+**License**: Apache-2.0 (baudm/parseq). Fully commercial.
+
+---
+
 ## June 2026 — InternVL2.5-2B OCR engine (VLM, MIT)
 
 Full vision-language model port: InternVL2.5-2B (2.1B params, MIT license)
