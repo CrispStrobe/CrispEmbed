@@ -32,8 +32,12 @@ int main(int argc, char** argv) {
         printf("]\n");
     }
 
-    // Enable debug dumps
+    // Enable debug dumps (portable: MSVC has no setenv)
+#ifdef _WIN32
+    _putenv_s("LAYOUT_DEBUG", "1");
+#else
     setenv("LAYOUT_DEBUG", "1", 1);
+#endif
 
     // Load model and run
     layout_detect::context* ctx = nullptr;

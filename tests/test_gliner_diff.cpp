@@ -24,8 +24,12 @@ int main(int argc, char ** argv) {
     const char * text = argc > 2 ? argv[2]
         : "Barack Obama was born in Hawaii";
 
-    // Enable debug output
+    // Enable debug output (portable: MSVC has no setenv)
+#ifdef _WIN32
+    _putenv_s("GLINER_DEBUG", "1");
+#else
     setenv("GLINER_DEBUG", "1", 0);
+#endif
 
     printf("Loading model: %s\n", model_path);
     void * ctx = gliner_ner_init(model_path, 4);
