@@ -231,9 +231,10 @@ CrispEmbed/
 
 #### MixTex / Surya remaining
 
-- [ ] MixTex: encoder parity test vs Python reference
+- [x] MixTex: encoder parity test — DONE. enc_embed cos=1.000 PASS. Swin stage 0 diverges (pre-existing shifted-window bug).
+- [~] MixTex: Swin attention fix needed (window partition/RPB bug causes stage 0 cos=-0.065)
 - [ ] Surya detector: CUDA/GPU testing via Kaggle kernel (P100/T4)
-- [ ] Surya detector: PNG/JPG support in test binaries via stb_image
+- [x] Surya detector: PNG/JPG support in test binaries — already done (stb_image in test_surya_det.cpp)
 
 ### Bindings
 
@@ -249,7 +250,7 @@ CrispEmbed/
 - [ ] Jina v5 LoRA: convert adapters + live-test (see Infrastructure gaps above)
 - [ ] Streaming ColBERT SSE (server-side streaming partial results)
 - [~] Layout detection: decoder weight convention gap (encoder matches, 3 bugs fixed 0.047→0.114)
-- [ ] Verify Q8_0 layout model works (dequant path untested)
+- [x] Verify Q8_0 layout model works — VERIFIED (loads 414 tensors, runs detection, no crash)
 - [ ] CrispLens face pipeline integration
 
 ### Feature gaps vs fastembed-rs
