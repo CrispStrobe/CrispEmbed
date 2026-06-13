@@ -183,12 +183,11 @@ CrispEmbed/
 
 ### Infrastructure gaps
 
-- [ ] **Jina v5 LoRA GGUF adapters** — LoRA API fully implemented (`crispembed_set_lora`,
-  etc.) but no HF→GGUF adapter conversion done yet. Need to run converter with
-  `--lora-mode=separate` and test per-adapter parity (retrieval/classification/clustering).
+- [x] **Jina v5 LoRA GGUF adapters** — DONE. Converted with `--lora-mode=separate`,
+  all 4 adapters verified (cos >= 0.998 vs HF F32). Quantizer bug fixed: LoRA A/B
+  tensors preserved at F16, not quantized.
 
-- [ ] **Push to remote main** — Local `feat/posformer-port` is 7+ commits ahead of
-  remote `main` with GLiNER DeBERTa, PARSeq, layout fixes, face Q4_K. Needs push.
+- [ ] **Push to remote main** — Local main has many commits ahead of remote.
 
 ### Performance
 
@@ -302,12 +301,13 @@ CrispEmbed/
   `read_f32` dequantization fixes are committed but untested due to
   VPS load. Need to confirm no crash and measure Q8_0 vs F32 parity.
 
-- [ ] **KV cache for prefix-shared decoder batches** — When multiple texts
-  share a prompt prefix (e.g. Jina v5 instruction prefix), compute KV
-  for the shared prefix once and reuse across the batch.
+- [x] **KV cache for prefix-shared decoder batches** — DONE. Token layout
+  deduplicates shared prefix: `[prefix | suffix_0 | suffix_1 | ...]`.
+  Saves `(B-1)*P` tokens of compute. Activates for P >= 4 (causal only).
 
-- [ ] **Streaming ColBERT late interaction scoring** — Server-side MaxSim
-  scoring via `/colbert/score` endpoint with SSE streaming.
+- [x] **ColBERT MaxSim scoring** — DONE. C API (`crispembed_colbert_score`,
+  `_batch` with OpenMP), server `POST /colbert/score` endpoint. No SSE
+  streaming yet (scores returned as ranked JSON array).
 
 - [x] **Quantized GGUF for face models** — Quantizer now flattens 4D conv
   weights to 2D before quantizing. SFace: Q8_0 cos=0.9996 (37→10 MB),
