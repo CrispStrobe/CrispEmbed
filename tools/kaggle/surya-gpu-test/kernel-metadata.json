@@ -1,5 +1,5 @@
 {
-  "id": "${KAGGLE_ACCOUNT}/crispembed-surya-gpu-test",
+  "id": "${KAGGLE_ACCOUNT}/crispembed-surya-detector-gpu-test",
   "title": "CrispEmbed Surya Detector GPU Test",
   "code_file": "surya_gpu_test.py",
   "language": "python",
