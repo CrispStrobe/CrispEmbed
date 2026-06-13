@@ -262,6 +262,9 @@ target_link_libraries(test-ppformulanet-l PRIVATE crispembed)
 add_executable(test-mixtex tests/test_mixtex.cpp)
 target_link_libraries(test-mixtex PRIVATE crispembed)
 
+add_executable(test-mixtex-diff tests/test_mixtex_diff.cpp)
+target_link_libraries(test-mixtex-diff PRIVATE crispembed)
+
 add_executable(test-surya-det tests/test_surya_det.cpp)
 target_link_libraries(test-surya-det PRIVATE crispembed)
 
