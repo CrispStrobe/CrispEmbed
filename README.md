@@ -9,8 +9,9 @@ Text, image, and face embeddings in one binary.
 Qwen3, Gemma3, SPLADE, DeBERTa-v2). Dense, sparse (SPLADE/BGE-M3), ColBERT
 multi-vector, cross-encoder rerankers, bi-encoder reranking.
 
-**NER**: Zero-shot Named Entity Recognition via GLiNER (LFM2.5-350M bidirectional
-backbone). Detect arbitrary entity types at inference time — no retraining needed.
+**NER**: Zero-shot Named Entity Recognition via GLiNER. Two backbone options:
+DeBERTa-v3-base (209M, Apache-2.0, recommended) and LFM2.5-350M (LFM-1.0).
+Detect arbitrary entity types at inference time — no retraining needed.
 CLI (`--ner`), server (`POST /ner/extract`), Python (`CrispNER`), Rust, Dart.
 
 **Vision**: CLIP and SigLIP text-image cross-modal search (encode text and images
@@ -300,7 +301,7 @@ column) or the upstream model card before using a model commercially.
 
 | License class | Models in registry | What you can do |
 |---|---|---|
-| **Permissive** (Apache-2.0 / MIT) | most BERT/XLM-R/MPNet, BGE, E5, Granite, Snowflake, MXBai, Nomic, MS-Marco, Qwen3, Harrier, BidirLM-Omni, GTE-v1.5 | commercial use OK with normal attribution |
+| **Permissive** (Apache-2.0 / MIT) | most BERT/XLM-R/MPNet, BGE, E5, Granite, Snowflake, MXBai, Nomic, MS-Marco, Qwen3, Harrier, BidirLM-Omni, GTE-v1.5, `gliner-deberta` (NER) | commercial use OK with normal attribution |
 | **CC BY-NC 4.0** (non-commercial) | `jina-v5-nano`, `jina-v5-small`, `jina-reranker-v2-base-multilingual` | research/evaluation only; commercial use requires a paid license from Jina (sales@jina.ai) |
 | **LFM Open License v1.0** | `gliner-lfm` (NER) | free under $10M annual revenue; above that requires commercial license from Liquid AI |
 | **Gemma Terms of Use** | `embeddinggemma-300m` | commercial use permitted **subject to** Google's [Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy) |
