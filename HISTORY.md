@@ -267,13 +267,30 @@ First Swin (shifted-window attention) encoder in CrispEmbed.
 bias) → patch merging → final LayerNorm → 4-layer RoBERTa decoder
 with cross-attention → BPE tokenizer (25681 tokens, LaTeX + CJK).
 
-**Status**: Runs end-to-end. Encoder produces 208 tokens × 768 dim
-(matches Python). Decoder generates LaTeX via greedy decode with KV cache.
+**Parity**: cos=1.000000 on all encoder blocks (non-shifted and shifted).
+Per-block diff harness verified: enc_embed, s0_b0_out, s0_b1_ln1,
+s0_b1_attn_out_windowed, s0_b1_attn_merged, s0_b1_attn_res, s0_b1_out
+all pass with max_abs < 2e-5. Quantized (Q8_0) produces identical output.
 
-**Bug found**: Swin PatchMerging must pad odd dims before halving
-(125→126→63 not 125→62).
+**Bugs found and fixed** (4 total):
+1. Swin PatchMerging must pad odd dims before halving (125→126→63 not 125→62)
+2. Cyclic shift sign convention — `cyclic_shift(shift_h=s)` computes
+   `out[y]=in[(y+s)%H]` but `torch.roll(shifts=s)` computes
+   `out[y]=in[(y-s)%H]`. Signs were inverted for both forward and reverse.
+3. Pad-then-shift order — HF Swin pads to window-size multiples FIRST,
+   then applies torch.roll. C++ was shifting on the unpadded grid then
+   padding. This changes where boundary tokens end up in windows.
+4. GELU variant — C++ used tanh approximation, HF Swin uses `nn.GELU()`
+   (exact erf). Changed to `0.5 * x * (1 + erff(x / sqrt(2)))`.
 
-**GGUFs**: F32=329MB, F16=165MB.
+**Debugging methodology**: Systematic per-step diff comparison with
+named Python reference tensors. Block 0 (non-shifted) had cos=1.000
+early. Block 1 (shifted) showed cos=0.995 — narrowed by adding
+intermediate checkpoints: LN1 matched (cos=1.0), shifted data was
+garbage (cos=0.0 after sign fix attempt), leading to discovery of the
+sign convention mismatch as the root cause.
+
+**GGUFs**: F32=329MB, F16=165MB, Q8_0, Q4_K.
 Wired into unified math OCR dispatch (auto-detect from GGUF arch).
 
 ---

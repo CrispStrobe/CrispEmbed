@@ -230,7 +230,7 @@ CrispEmbed/
 
 #### MixTex / Surya remaining
 
-- [ ] MixTex: encoder parity test vs Python reference
+- [x] MixTex: encoder parity test vs Python reference — **DONE**, cos=1.000000 on all blocks
 - [ ] Surya detector: CUDA/GPU testing via Kaggle kernel (P100/T4)
 - [ ] Surya detector: PNG/JPG support in test binaries via stb_image
 
@@ -692,15 +692,20 @@ Swin encoder as new building block.
    - BPE tokenizer, 25681 tokens (LaTeX + CJK)
    - max_position=300, greedy decode
 
-**Status** (2026-06-11):
+**Status** (2026-06-13):
 - [x] Reference dumper: `tools/dump_mixtex_reference.py`
 - [x] GGUF converter: `models/convert-mixtex-to-gguf.py` (345 tensors)
-- [x] GGUF files: F32=329MB, F16=165MB at `/mnt/storage/gguf-models/`
+- [x] GGUF files: F32=329MB, F16=165MB, Q8_0, Q4_K at `/mnt/storage/gguf-models/`
 - [x] C++ engine: `src/mixtex_ocr.{h,cpp}` — runs end-to-end, Swin+RoBERTa
-- [ ] Parity test (encoder parity vs Python reference)
+- [x] Parity test — cos=1.000000 on all encoder blocks (non-shifted + shifted)
 
 **Key new op**: Swin shifted-window attention with relative position bias.
-Window partition → local MHSA + RPB lookup → window reverse → shift.
+Pad → cyclic shift → window partition → local MHSA + RPB lookup → window reverse → reverse shift → unpad.
+
+**Bugs found and fixed** (3 bugs in shifted-window attention):
+1. Cyclic shift sign convention — `cyclic_shift(+s)` ≠ `torch.roll(-s)`, signs inverted
+2. Pad-then-shift order — HF pads FIRST then shifts; C++ was reversed
+3. GELU variant — tanh approximation → exact erf matching `nn.GELU()`
 
 **Files**: `tools/dump_mixtex_reference.py`, `models/convert-mixtex-to-gguf.py`
 
