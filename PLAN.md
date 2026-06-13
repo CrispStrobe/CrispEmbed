@@ -164,10 +164,11 @@ CrispEmbed/
 
 #### Bugs / polish
 
-- [~] **Layout detection decoder** — ImageNet normalization removed (model uses
-  do_normalize=False). Encoder parity: ip3 cos=0.76→0.98 after fix. Remaining:
-  (1) bilinear resize interpolation vs PIL (ip3 cos=0.76, enc_output cos=0.98),
-  (2) decoder cross_out cos=0.01 — deformable attention sampling bug.
+- [~] **Layout detection decoder** — 3 bugs fixed: (1) ImageNet normalization removed
+  (do_normalize=False), (2) ref_points used enc_bbox_head not dec_bbox_head[0],
+  (3) cross_out dump was pre/post-proj mismatch. With Python pixels: encoder all
+  cos=1.000, decoder cross_out cos_min=0.957 cos_mean=0.999. Detects table (0.92),
+  section_header (0.79), text (0.78). Remaining: small self-attn gap (cos=0.957).
 - [x] **Surya detector GPU** — `surya_det.cpp` now uses `ggml_backend_init_best()`
   (`SURYA_DET_FORCE_CPU=1` pins CPU for parity debugging). Metal verified on M1:
   F16/Q8_0 run on the GPU, heatmap parity vs CPU to ~3 decimals (sub-pixel box
