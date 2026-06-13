@@ -160,79 +160,94 @@ CrispEmbed/
 
 ## Pending roadmap
 
-### Current sprint — actionable tasks (in order)
+### Active bugs
 
-1. [ ] **MixTex encoder parity test** — Engine runs E2E but encoder output
-   never verified vs Python reference. Write `tests/test_mixtex_diff.cpp`
-   that loads `tools/dump_mixtex_reference.py` output and compares per-stage.
-   Live test: verify LaTeX output on sample images.
+- [ ] **Layout detection decoder weight convention** — Encoder exact match, ref_points
+  exact match, score 0.047→0.114 (Python: 0.65). Three bugs fixed (AIFI head interleave,
+  ref_points init, enc_bbox+anchors). Remaining: `cpu_linear` uses MatMul `(in,out)`
+  convention uniformly but some decoder MatMul weights (`query_pos_head.layers.1`,
+  cross-attn projections) are stored as PyTorch `(out,in)`. Need per-weight convention
+  detection or selective transpose in converter for non-square decoder MatMul weights.
+  Branch: `feat/layout-fix`.
 
-2. [ ] **Surya detector stb_image** — Test binaries (`test-surya-det`,
-   `test-surya-det-diff`) need PNG/JPG loading via stb_image. Currently
-   only accept raw float input. Add `stbi_load` + preprocess path.
+- [x] **BGE-M3 SentencePiece crash** — FIXED. `clip_text::load()` now checks for
+  `clip_text.hidden_size` metadata key before proceeding. Non-CLIP models fall through
+  to the correct BERT encoder path.
 
-3. [ ] **Q8_0 layout model verification** — The `ensure_f32` + `read_f32`
-   dequantization path is committed but never tested. Load
-   `layout-heron-q8_0-v3.gguf`, run detection, compare box count + scores
-   vs F32 model. Write `tests/test_layout_q8.cpp`.
+### Infrastructure gaps
 
-4. [ ] **Layout decoder deformable cross-attention** — Score 0.114 vs
-   Python 0.65. Encoder features match. Three bugs fixed (AIFI head
-   interleave, ref_points init, enc_bbox+anchors). Remaining: `cpu_linear`
-   weight convention mismatch — some decoder weights stored as PyTorch
-   `(out,in)` but `cpu_linear` assumes `(in,out)` uniformly. Need
-   per-weight convention detection or selective transpose.
-   Model uses `do_normalize=False` — pixels are [0,1] only.
+- [ ] **Jina v5 LoRA GGUF adapters** — LoRA API fully implemented (`crispembed_set_lora`,
+  etc.) but no HF→GGUF adapter conversion done yet. Need to run converter with
+  `--lora-mode=separate` and test per-adapter parity (retrieval/classification/clustering).
 
-5. [ ] **Streaming ColBERT SSE** — Add `text/event-stream` response mode
-   to `POST /colbert/score`. Emit `data: {"index": i, "score": s}\n\n`
-   after each document is scored. Client sees progressive ranking.
+### Performance
 
-### Completed
+- [x] True batched graph for decoder models (single compute for N texts, block-diagonal causal mask, ~3x speedup)
+- [x] KV cache for prefix-shared decoder batches (deduplicate shared prefix tokens in batch layout)
+- [x] SigLIP attention pooling head (mean pool works; attn pool for full parity)
 
-- [x] True batched graph for decoder models (~3x speedup)
-- [x] KV cache for prefix-shared decoder batches
-- [x] SigLIP attention pooling head
-- [x] CLIP text encoder + SigLIP-large + CLIP-large
-- [x] SigLIP/ViT quantization, YuNet, SFace/AuraFace quantization
-- [x] Face model quantized graph replay
-- [x] ViT parity fix (patch permute bug)
-- [x] Nomic v2 MoE encoder
-- [x] LoRA adapter hot-swap + Jina v5 live-test (4 adapters cos >= 0.998)
-- [x] GLiNER DeBERTa-v3 NER
-- [x] ColBERT MaxSim scoring (C API + server endpoint)
-- [x] BGE-M3 SentencePiece crash (clip_text guard)
-- [x] LoRA quantizer fix (preserve A/B tensors at F16)
-- [x] Python CrispFacePipeline + face_search example
+### Models
 
-### OCR — next-gen models
+- [x] CLIP text encoder (causal mask variant)
+- [x] SigLIP-large, CLIP-large conversion + upload
+- [x] SigLIP / ViT quantization (conv2d needs F32 kernel — selective quant)
+- [x] YuNet lightweight face detection alternative
+- [x] SFace INT8 quantization (Q8_0 cos=0.9999, Q4_K cos=0.974; 37→10→6 MB)
+- [x] Face model quantized inference via graph replayer (YuNet F16/Q8_0 working; fixed depthwise IC, ggml_n_dims trailing-1s, Q→F32 dequant path)
+- [x] AuraFace Q4_K quantization (124→35 MB, cos=0.961 vs F16, 3.5x compression)
+- [x] ViT parity: cos 0.8→1.0 (was patch ordering bug — permute(2,1,0) gave column-major spatial, fixed to permute(1,2,0,3) for row-major matching HF)
+- [x] Nomic v2 MoE (MoE routing layer in encoder) — cos=1.000000 vs HF
+- [x] LoRA adapter hot-swap (Jina v5 per-task adapters, pre-compute merge on CPU, ~10-50ms switch)
+- [x] GLiNER DeBERTa-v3 NER (209M, Apache-2.0, dual-backbone with LFM2.5) — Q8_0/Q4_K, HF uploaded
+
+### OCR — next-gen models to port
 
 #### Done
 
-- [x] Qwen2.5-VL-3B (Keyven/german-ocr-3 base engine)
-- [x] InternVL2.5-2B (2.1B, MIT) — KV cache, dynamic tiling, cos=1.000
-- [x] InternVL2-1B (0.9B, MIT) — Qwen2-0.5B LLM, reuses internvl2_ocr.cpp
-- [x] PARSeq (24M, Apache-2.0) — scene text, ViT + two-stream decoder
-- [x] GLM-OCR (0.9B, MIT) — CogViT + GLM-0.5B, OmniDocBench #1
-- [~] surya-ocr-2 — detector ported + parity verified; GPU + stb_image pending
+- [x] **Keyven/german-ocr-3 — Qwen2.5-VL base engine DONE** (see blueprint below)
+- [x] **InternVL2.5-2B (2.1B, MIT) — DONE** — InternViT-300M + InternLM2.5-1.8B, KV cache, dynamic tiling, vision-text splice, C++ tokenizer decode. Parity cos=1.000. GGUFs: `cstr/internvl2.5-2b-crispembed-GGUF` (F16/Q8_0/Q4_K). German invoice E2E verified.
+- [~] surya-ocr-2 (0.7B, OpenRail-M free <$5M) — detector ported, FULL PARITY VERIFIED (heatmap max+mean exact match). Remaining: CUDA/GPU testing, PNG/JPG stb_image support in test binaries.
 
 #### InternVL2 polish (nice-to-have)
 
 - [ ] InternVL2: C++ tokenizer encode (currently hardcoded chat template token IDs)
 - [ ] InternVL2: CrispCalc Dart catalog entries (`OcrModelVariant`)
+- [ ] InternVL2: full 24-layer F32 parity test (4+2 proved exact; remaining identical code)
 
-#### To port (lower priority)
+#### High priority — next to port
 
-- [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune (NOT 3B)
-- [ ] GOT-OCR2_0 (0.7B, Apache-2.0) — SAM-ViT + Qwen-0.5B
-- [ ] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL, 12+ languages
-- [ ] Qari-OCR (2B, Apache-2.0) — Arabic with diacritics
-- [ ] Granite Vision 3.3-2B (3B, Apache-2.0) — OCRBench 852
+- [x] InternVL2-1B (0.9B, MIT) — DONE. Qwen2-0.5B LLM backend, full parity, HF uploaded, registry wired.
+- [x] PARSeq (24M, Apache-2.0) — DONE. ViT encoder + 1-layer two-stream decoder, 94-char ASCII scene text.
+- [x] GLM-OCR (0.9B, MIT) — DONE. CogViT + GLM-0.5B, vision-text splice, E2E image pipeline, KV cache.
+- [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune, German business docs. Needs verifying exact base model config (~2-3 days)
+
+#### Lower priority
+
+- [ ] GOT-OCR2_0 (0.7B, Apache-2.0) — SAM-ViT + Qwen-0.5B, end-to-end doc OCR (math+tables+text)
+- [ ] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL fine-tune, 12+ languages incl. German
+- [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics
+- [ ] Granite Vision 3.3-2B (3B, Apache-2.0) — OCRBench 852, English-only
+
+#### MixTex / Surya remaining
+
+- [ ] MixTex: encoder parity test vs Python reference
+- [ ] Surya detector: CUDA/GPU testing via Kaggle kernel (P100/T4)
+- [ ] Surya detector: PNG/JPG support in test binaries via stb_image
 
 ### Bindings
 
-- [x] Python `encode_image()`, CrispFacePipeline, face_search example
-- [ ] CrispLens integration — update `crispembed_client.py` for face pipeline
+- [x] Python wrapper `encode_image()` for standalone SigLIP/CLIP
+- [x] CrispFacePipeline export + from_registry() + Python unit tests + face_search example
+- [x] Face pipeline Python wrapper — CrispFace + CrispFacePipeline with from_registry() defaults
+
+### Non-OCR pending
+
+- [x] KV cache for prefix-shared decoder batches (deduplicate shared prefix tokens)
+- [x] ColBERT MaxSim scoring — C API + server endpoint (POST /colbert/score)
+- [ ] Live-test LoRA with Jina v5 (end-to-end parity per adapter — needs GGUF adapter conversion first)
+- [~] Layout detection score gap — 3 bugs fixed (0.047→0.114), decoder weight convention remains
+- [ ] Verify Q8_0 layout model works (dequant path untested)
+- [x] Fix BGE-M3 SentencePiece vocab mismatch crash — clip_text guard added
 
 ### Feature gaps vs fastembed-rs
 
@@ -266,26 +281,32 @@ CrispEmbed/
   layout-heron (Q8_0, F16, F32) in `lib/engine/ocr_model_manager.dart`.
   Register at appropriate priority tier in `ocr_providers_init.dart`.
 
-- [x] **Layout detection input normalization** — Investigated. This model
-  uses `do_normalize=False` in HF RTDetrImageProcessor — pixels are [0,1]
-  only, NOT ImageNet-normalized. The incorrect normalization was reverted.
-  The score gap is in the decoder deformable cross-attention (see above).
+- [x] **Layout detection score gap** — FIXED. Root cause: missing ImageNet
+  normalization in `detect_file`. Pixel values were [0,1] but model expects
+  `(val - mean) / std`. The `img_mean`/`img_std` fields existed in the
+  context struct but were never applied. Needs re-test to confirm score improvement.
 
 - [ ] **Verify Q8_0 layout model works** — The `ensure_f32` +
   `read_f32` dequantization fixes are committed but untested due to
   VPS load. Need to confirm no crash and measure Q8_0 vs F32 parity.
 
-- [x] **KV cache for prefix-shared decoder batches** — DONE. Deduplicate
-  shared prefix tokens in batch layout. Saves `(B-1)*P` tokens of compute.
+- [ ] **KV cache for prefix-shared decoder batches** — When multiple texts
+  share a prompt prefix (e.g. Jina v5 instruction prefix), compute KV
+  for the shared prefix once and reuse across the batch.
 
-- [x] **ColBERT MaxSim scoring** — DONE. C API + POST /colbert/score.
-  SSE streaming not yet implemented.
+- [ ] **Streaming ColBERT late interaction scoring** — Server-side MaxSim
+  scoring via `/colbert/score` endpoint with SSE streaming.
 
-- [x] **Quantized GGUF for face models** — DONE. SFace Q8_0 cos=0.9996,
-  AuraFace Q4_K 124→35 MB cos=0.961.
+- [x] **Quantized GGUF for face models** — Quantizer now flattens 4D conv
+  weights to 2D before quantizing. SFace: Q8_0 cos=0.9996 (37→10 MB),
+  Q6_K cos=0.9966 (37→8 MB). Q4_K cos=0.936 (too low for recognition).
+  SCRFD detection: Q8_0 17→10 MB, Q4_K 17→8.7 MB.
 
-- [ ] **Jina v5 LoRA live-test** — LoRA hot-swap API done, adapter
-  conversion + per-adapter parity test not done (see Infrastructure gaps).
+- [ ] **Live-test LoRA with Jina v5** — LoRA hot-swap is implemented but
+  not end-to-end tested with real Jina v5 adapters. Need to: convert with
+  `--lora-mode=separate`, verify each adapter (retrieval, classification,
+  clustering, text-matching) matches the baked version (cos >= 0.9999),
+  confirm switching works correctly, test with the Python wrapper.
 
 - [x] **3D tensor quantization for MoE experts** — DONE. Quantizer now
   handles 3D tensors by quantizing each 2D slice independently. Results:
@@ -567,31 +588,12 @@ per expert, which supports quantized weights. Should work.
 
 ---
 
-### Blueprint: CrispLens face pipeline integration
+### Blueprint: Face pipeline Python wrapper — DONE
 
-**Goal**: Python API for face detection + recognition so CrispLens can
-call it for face search/verification.
-
-**Current state**: Face C API is complete (`crispembed.h` lines 408-475):
-`crispembed_detect_faces()`, `crispembed_encode_face()`,
-`crispembed_face_pipeline()`. Missing: Python wrapper.
-
-**Step 1 -- Python wrapper** (`python/crispembed/_binding.py`):
-- ctypes bindings for face functions.
-- `CrispFace` class: `detect(image_path)`, `encode(image_path, landmarks)`,
-  `pipeline(image_path)` returning dicts with bbox/confidence/embedding.
-
-**Step 2 -- High-level API** (`python/crispembed/__init__.py`):
-- `from crispembed import CrispFace`
-- `CrispFace.from_registry("yunet", "auraface-v1")` for auto-download.
-
-**Step 3 -- Example** (`examples/face_search.py`):
-- Index faces from a directory, query by image, return top-K matches.
-
-**Files**: `python/crispembed/_binding.py`, `python/crispembed/__init__.py`,
-`examples/face_search.py`
-
-**Effort**: Low (1-2 days). C API is already complete and tested.
+Implemented. `CrispFace` (detect/encode) and `CrispFacePipeline` (detect→align→encode,
+match, from_registry with defaults) fully wired in `python/crispembed/_binding.py`.
+Feature parity with CLI (`--face`, `--detect`, `--face-pipeline`) and server
+(`POST /face/detect`, `POST /face/pipeline`).
 
 ---
 
