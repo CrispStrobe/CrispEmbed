@@ -938,12 +938,8 @@ std::vector<region> detect(context* ctx, const float* pixels,
         std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
         if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, out_d * in_d * sizeof(float));
         if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, out_d * sizeof(float));
-        // Weight convention: GGUF stores ONNX weights in their native byte order.
-        // Most ONNX ops use MatMul (y = x @ W) or Gemm(transB=1) (y = x @ W^T).
-        // For MatMul weights numpy (in_d, out_d): y[o] = sum_i flat[i*out_d+o] * x[i]
-        // For Gemm(transB=1) weights numpy (out_d, in_d): y[o] = sum_i flat[o*in_d+i] * x[i]
-        // Using MatMul convention uniformly (works for enc_proj, verified cos=0.958).
-        // TODO: handle Gemm(transB=1) for out_proj and non-square Linear weights.
+        // MatMul convention: W stored as numpy (in_d, out_d) row-major.
+        // y[o] = sum_i flat[i*out_d + o] * x[i] = sum_i W_numpy[i, o] * x[i]
         for (int n = 0; n < N; n++) {
             for (int o = 0; o < out_d; o++) {
                 float sum = b[o];
@@ -1191,30 +1187,30 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 q_row[0], q_row[1], q_row[2], q_row[3]);
     }
 
-    // 5. Initialize reference points via dec_bbox_head[0] MLP on selected tokens.
-    //    RT-DETRv2 uses the decoder's layer-0 bbox head (NOT enc_bbox_head) for
-    //    initial reference point generation. enc_bbox_head is only for scoring.
+    // 5. Initialize reference points.
+    //    RT-DETRv2: ref_points = sigmoid(gather(enc_bbox_head(ALL_enc_proj) + ALL_anchors, top_k))
+    //    The bbox delta + anchor is computed for ALL 8400 tokens first, THEN gathered.
     std::vector<float> ref_points(N_queries * 4);
     {
-        std::vector<float> tmp(D * N_queries);
-        std::copy(queries.begin(), queries.end(), tmp.begin());
+        // Compute enc_bbox_head on ALL enc_proj tokens (not just top-K)
+        std::vector<float> tmp(D * total_tokens);
+        std::copy(enc_proj.begin(), enc_proj.end(), tmp.begin());
         for (int j = 0; j < 3; j++) {
             int out_d = (j < 2) ? D : 4;
-            std::vector<float> out(out_d * N_queries);
-            cpu_linear(tmp.data(), out.data(), D, out_d, N_queries,
-                       ctx->decoder.dec_bbox_w[0][j], ctx->decoder.dec_bbox_b[0][j]);
+            std::vector<float> out(out_d * total_tokens);
+            cpu_linear(tmp.data(), out.data(), D, out_d, total_tokens,
+                       ctx->decoder.enc_bbox_w[j], ctx->decoder.enc_bbox_b[j]);
             if (j < 2) {
                 for (auto& v : out) v = std::max(0.0f, v); // ReLU
                 tmp = out;
             } else {
-                // RT-DETRv2: ref_points = sigmoid(bbox_delta + anchors)
-                // Anchors are stored as logit values in GGUF (inverse sigmoid).
-                // Selected anchor = anchors[top_k_idx].
+                // Add anchors (logit values) and apply sigmoid for all tokens
+                // Then gather by top-K indices
+                // anchors: [4, 8400] in ggml (ne[0]=4, ne[1]=8400)
                 for (int q = 0; q < N_queries; q++) {
                     int token_idx = token_scores[q].second;
                     for (int d = 0; d < 4; d++) {
-                        float delta = out[d * N_queries + q];
-                        // Read logit-encoded anchor for the selected token
+                        float delta = out[d * total_tokens + token_idx];
                         float logit_anchor;
                         ggml_backend_tensor_get(ctx->decoder.anchors,
                             &logit_anchor,
@@ -1472,6 +1468,10 @@ std::vector<region> detect(context* ctx, const float* pixels,
                         // Then convert grid [-1,1] to feature map coordinates [0, fW-1]
                         float px = ref_cx + dx * 0.25f * ref_w * 0.5f;
                         float py = ref_cy + dy * 0.25f * ref_h * 0.5f;
+
+                        if (li == 0 && q == 0 && h == 0 && lv == 0 && pt < 4 && getenv("LAYOUT_DEBUG"))
+                            fprintf(stderr, "  q0/h0/lv0/pt%d: px=%.4f py=%.4f (dx=%.4f dy=%.4f)\n",
+                                    pt, px, py, dx, dy);
 
                         // Convert from [0,1] normalized to feature map pixel coords
                         // grid_sample(align_corners=False): pixel = loc * N - 0.5
