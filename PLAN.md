@@ -164,12 +164,11 @@ CrispEmbed/
 
 #### Bugs / polish
 
-- [~] **Layout detection decoder** — Square weight fix improved detection 4→14.
-  Remaining: coordinates overshoot image bounds, top score 0.589 vs Python 0.65.
-  May need PIL-exact bilinear resize or deformable attention indexing fix.
-  Model uses `do_normalize=False` (pixels [0,1] only).
-- [~] **MixTex Swin shifted-window attention** — enc_embed cos=1.000 PASS but
-  Swin stage 0 cos=-0.065. Window partition or relative position bias bug.
+- [~] **Layout detection decoder** — cpu_linear auto-detect for non-square weights.
+  Now detects 3/7 regions (max score 0.671 vs Python 0.65). Top 2 detections match.
+  Remaining: cross_out cos=0.058 — deformable attention sampling or indexing.
+- [~] **MixTex Swin attention** — RPB table length fixed (ne[1] not ne[0]).
+  enc_output closer to Python. Stage 0 still diverges — deeper window attention bug.
 - [x] **Streaming ColBERT SSE** — DONE. `POST /colbert/score` with
   `Accept: text/event-stream` streams `data: {"index":i,"score":s}` per
   document, then `event: done`. Non-streaming JSON still default.
