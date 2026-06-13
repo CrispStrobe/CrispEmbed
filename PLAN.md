@@ -162,13 +162,11 @@ CrispEmbed/
 
 ### Active bugs
 
-- [ ] **Layout detection decoder weight convention** — Encoder exact match, ref_points
-  exact match, score 0.047→0.114 (Python: 0.65). Three bugs fixed (AIFI head interleave,
-  ref_points init, enc_bbox+anchors). Remaining: `cpu_linear` uses MatMul `(in,out)`
-  convention uniformly but some decoder MatMul weights (`query_pos_head.layers.1`,
-  cross-attn projections) are stored as PyTorch `(out,in)`. Need per-weight convention
-  detection or selective transpose in converter for non-square decoder MatMul weights.
-  Branch: `feat/layout-fix`.
+- [~] **Layout detection decoder** — Square weight convention fixed (PyTorch
+  `(out,in)` default for 256×256 weights). Detection count 4→14, cross_out
+  range [-1.3,1.6]→[-7.8,7.6]. Remaining gap: coordinates overshoot image
+  bounds, top score 0.589 vs Python 0.65. May need PIL-exact bilinear
+  resize or remaining deformable attention indexing fix.
 
 - [x] **BGE-M3 SentencePiece crash** — FIXED. `clip_text::load()` now checks for
   `clip_text.hidden_size` metadata key before proceeding. Non-CLIP models fall through
