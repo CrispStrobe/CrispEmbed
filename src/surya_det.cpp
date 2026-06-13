@@ -28,15 +28,21 @@ static std::vector<float> to_f32(const ggml_tensor* t) {
     if (!t) return {};
     int n = (int)ggml_nelements(t);
     std::vector<float> out(n);
+    // Pull raw bytes via the backend so this works whether the weight lives
+    // in a CPU buffer or a GPU (Metal/CUDA) buffer where t->data isn't a
+    // valid host pointer.
+    std::vector<uint8_t> raw(ggml_nbytes(t));
+    ggml_backend_tensor_get(t, raw.data(), 0, raw.size());
+    const void* src = raw.data();
     if (t->type == GGML_TYPE_F32) {
-        memcpy(out.data(), t->data, n * sizeof(float));
+        memcpy(out.data(), src, n * sizeof(float));
     } else if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t* src = (const ggml_fp16_t*)t->data;
-        for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(src[i]);
+        const ggml_fp16_t* s = (const ggml_fp16_t*)src;
+        for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(s[i]);
     } else {
         const auto* traits = ggml_get_type_traits(t->type);
         if (traits && traits->to_float) {
-            traits->to_float(t->data, out.data(), n);
+            traits->to_float(src, out.data(), n);
         } else {
             memset(out.data(), 0, n * sizeof(float));
         }
@@ -284,14 +290,27 @@ surya_det_context * surya_det_init(const char * model_path, int n_threads) {
     // Could read hparams from GGUF keys here, but we hardcode for now
     core_gguf::free_metadata(gctx);
 
-    // Pass 2: load weights
-    ctx->backend = ggml_backend_cpu_init();
+    // Pass 2: load weights. Use the best available backend (Metal on Apple
+    // Silicon, CUDA elsewhere) so the stage 0-2 / decode-head graph runs on
+    // GPU; set SURYA_DET_FORCE_CPU=1 to pin to CPU for parity debugging.
+    const char* force_cpu = std::getenv("SURYA_DET_FORCE_CPU");
+    bool want_cpu = force_cpu && force_cpu[0] && std::strcmp(force_cpu, "0") != 0;
+    ctx->backend = want_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, ctx->backend, "surya_det", ctx->wl)) {
         ggml_backend_free(ctx->backend);
         delete ctx;
         return nullptr;
     }
-    ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    // n_threads only affects the CPU backend; on GPU backends this is a no-op.
+    if (ggml_backend_is_cpu(ctx->backend)) {
+        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    }
+    {
+        ggml_backend_dev_t dev = ggml_backend_get_device(ctx->backend);
+        fprintf(stderr, "surya_det: backend = %s\n",
+                dev ? ggml_backend_dev_name(dev) : ggml_backend_name(ctx->backend));
+    }
 
     // Hyperparams
     auto& hp = ctx->hp;
