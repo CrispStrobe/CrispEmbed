@@ -231,6 +231,22 @@ CrispEmbed/
   drift from F16 matmul accumulation). CUDA build works on Kaggle P100
   (GGML_CUDA_NO_VMM=ON): Q8_0+F16 both detect 17 regions correctly.
 
+#### Scan cleanup / document preprocessing
+
+- [ ] **Tier 1 — Classical (no model needed)**
+  - [ ] Deskew via surya heatmap line angles or Hough transform on binarized image
+  - [ ] Otsu global + Sauvola adaptive binarization
+  - [ ] Border crop via row/column energy projection (flood fill from edges)
+  - [ ] Background whitening via morphological open (dilate→erode estimate, subtract)
+- [ ] **Tier 2 — Learned denoising CNN (small GGUF model)**
+  - [ ] Port NAFNet-tiny or SCUNet (1-2M params, ~2-8 MB GGUF)
+  - [ ] Handles denoise + background removal + contrast in one forward pass
+  - [ ] Same converter/GGUF/C++ pattern as other engines
+- [ ] Wire into OCR pipeline as preprocessing step: `scan_cleanup → surya_det → ocr_recognize`
+- [ ] C API: `crispembed_scan_cleanup_init/process/free`
+- [ ] CLI: `--cleanup` flag before `--ocr` / `--text-detect`
+- [ ] Server: `POST /scan/cleanup` endpoint (returns cleaned image)
+
 #### OCR models — remaining
 
 - [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune
@@ -799,3 +815,165 @@ OOMs on 8 GB machines — use Kaggle (16 GB) or desktop for inference.
 **Files**: `src/qwen2vl_ocr.{h,cpp}`, `models/convert-qwen2vl-to-gguf.py`,
 `tools/dump_qwen2vl_reference.py`, `tools/qwen2vl_tokenize.py`,
 `tests/test_qwen2vl{,_diff,_e2e}.cpp`, `tools/kaggle/qwen2vl-convert/`
+
+---
+
+### Blueprint: Scan cleanup / document preprocessing
+
+**Goal**: Pre-process scanned document images to improve OCR quality.
+Replaces the ocrmypdf/unpaper pipeline with a pure C++ implementation
+inside CrispEmbed, optionally GPU-accelerated via ggml backends.
+
+**Two tiers**: classical image processing (no model, works immediately)
+and a learned denoising CNN (small GGUF, handles complex degradation).
+
+#### Tier 1 — Classical (no model needed, ~500 LOC)
+
+**1a. Deskew**
+
+Detect dominant text line angle, rotate image to horizontal.
+
+Two detection methods:
+- **Surya-based** (preferred when surya_det is loaded): extract text line
+  bounding boxes from the heatmap, compute median angle from box orientations.
+  Already have the heatmap → polygon pipeline in `surya_det.cpp`.
+- **Hough-based** (standalone, no model): binarize → edge detect (Sobel) →
+  Hough line accumulator → peak angle. Pure C++, ~100 LOC.
+
+Rotation: bilinear or bicubic affine transform. Can use ggml for GPU:
+```cpp
+// Build affine grid, sample via ggml_conv_2d or manual interpolation
+// Or: ggml doesn't have grid_sample yet — do CPU-side bilinear for now,
+// move to ggml when grid_sample lands
+void deskew(const float * src, float * dst, int w, int h, float angle_deg);
+```
+
+**1b. Binarization**
+
+Convert grayscale scan to clean black-on-white for traditional OCR.
+
+Two methods:
+- **Otsu** (global threshold): histogram → between-class variance
+  maximization. ~30 LOC. Good for clean scans with uniform lighting.
+- **Sauvola** (adaptive threshold): per-pixel threshold from local
+  mean + stddev in a sliding window (typically 15×15 to 31×31).
+  `T(x,y) = mean(x,y) * (1 + k * (stddev(x,y)/R - 1))`, k=0.2, R=128.
+  The sliding window mean/variance can be computed efficiently via
+  integral images (summed area table) — O(1) per pixel after O(N)
+  precompute. ~80 LOC.
+
+ggml opportunity: the local mean is a box blur (depthwise conv2d with
+uniform kernel). Could run as ggml graph for GPU acceleration on large
+images, but integral image approach is already O(N) on CPU.
+
+**1c. Border crop**
+
+Remove black scanner borders and bleed-through edges.
+
+Approach: project row and column pixel intensities (mean or sum per
+row/col). Find the content rectangle where intensity transitions from
+border (dark) to content (light). Threshold: mean intensity > 0.8 * global
+mean. ~50 LOC.
+
+Alternative: flood fill from the 4 corners with a tolerance, mark
+connected dark region as border, crop to bounding box of non-border.
+
+**1d. Background whitening**
+
+Flatten uneven lighting and yellowed/gray paper.
+
+Approach: morphological open (erode then dilate with large kernel, e.g.
+51×51) to estimate the background surface. Then:
+`cleaned = clip(src / background * 255, 0, 255)`
+
+ggml opportunity: erode = min-pool, dilate = max-pool. `ggml_pool_2d`
+supports max-pool, and min-pool can be done as `-max_pool(-x)`. This
+is a natural fit for GPU acceleration on large scans (e.g. 4000×6000).
+
+```cpp
+// Pseudo-code for ggml-based morphological open
+ggml_tensor * neg = ggml_scale(ctx, src, -1.0f);
+ggml_tensor * eroded = ggml_pool_2d(ctx, neg, GGML_OP_POOL_MAX, k, k, k, k, 0, 0);
+eroded = ggml_scale(ctx, eroded, -1.0f);  // min-pool result
+ggml_tensor * background = ggml_pool_2d(ctx, eroded, GGML_OP_POOL_MAX, k, k, k, k, 0, 0);
+ggml_tensor * cleaned = ggml_div(ctx, src, ggml_add(ctx, background, eps));
+```
+
+#### Tier 2 — Learned denoising CNN (~1-2M params, GGUF model)
+
+**Goal**: Handle complex scan degradation (uneven lighting, stains,
+bleed-through, compression artifacts, faded ink) in a single forward pass.
+Replaces separate denoise + background + contrast steps.
+
+**Model candidates** (all BSD/MIT/Apache):
+- **NAFNet-tiny** (megvii-research/NAFNet, MIT): Non-linear Activation
+  Free Network. Pure conv + channel attention + SimpleGate, no GELU/ReLU.
+  All ops map cleanly to ggml: conv2d, element-wise mul, channel avg pool.
+  ~1M params, ~4 MB F16 GGUF.
+- **SCUNet-tiny** (cszn/SCUNet, Apache-2.0): Swin-Conv-UNet hybrid.
+  Uses Swin transformer blocks — we already have Swin from MixTex.
+  ~2M params, ~8 MB GGUF.
+- **Custom lightweight**: 5-layer residual CNN (Conv3x3-ReLU-Conv3x3
+  + skip, ×5, final Conv1x1). Train on paired clean/dirty document data.
+  ~500K params, ~2 MB GGUF. Simplest to implement.
+
+**Training data**: Pair clean digital documents with synthetically
+degraded versions (add noise, uneven lighting, blur, JPEG artifacts,
+simulated bleed-through). DocUNet or similar benchmark datasets.
+Or: render clean PDFs, apply degradation transforms, train on pairs.
+
+**Implementation** — follows standard CrispEmbed engine pattern:
+```
+src/scan_cleanup.{h,cpp}          — C++ inference engine
+models/convert-scan-cleanup-to-gguf.py — GGUF converter
+tools/dump_scan_cleanup_reference.py   — parity reference dumper
+tests/test_scan_cleanup.cpp       — parity + visual quality test
+```
+
+All conv layers run as a single ggml graph → GPU-accelerated on
+Metal/CUDA/Vulkan. Expected speed: <100ms for a 2000×3000 scan
+on GPU, ~500ms on CPU.
+
+#### Pipeline integration
+
+The cleanup module slots in before detection and recognition:
+
+```
+raw scan → scan_cleanup (tier 1 and/or tier 2)
+         → surya_det (text line detection)
+         → crop regions
+         → ocr_recognize (any OCR engine)
+```
+
+**C API:**
+```c
+scan_cleanup_ctx * scan_cleanup_init(const char * model_path, int n_threads);
+// model_path = NULL for tier-1-only (no learned model)
+void scan_cleanup_free(scan_cleanup_ctx * ctx);
+
+typedef struct scan_cleanup_params {
+    bool deskew;           // default: true
+    bool binarize;         // default: false (most OCR prefers grayscale)
+    bool crop_borders;     // default: true
+    bool whiten_background;// default: true
+    bool denoise_model;    // default: true (if model loaded)
+    float sauvola_k;       // default: 0.2
+    int   sauvola_window;  // default: 25
+    int   morph_kernel;    // default: 51
+} scan_cleanup_params;
+
+// Process in-place or to new buffer
+int scan_cleanup_process(scan_cleanup_ctx * ctx,
+                         const uint8_t * src, int w, int h, int ch,
+                         uint8_t * dst, scan_cleanup_params params);
+```
+
+**CLI:** `crispembed --cleanup [--cleanup-model model.gguf] --ocr image.png`
+**Server:** `POST /scan/cleanup` — accepts image, returns cleaned PNG/JPEG
+**Python:** `CrispScanCleanup(model_path=None)` with `.process(image)` method
+
+**Files**: `src/scan_cleanup.{h,cpp}`, `models/convert-scan-cleanup-to-gguf.py`,
+`tests/test_scan_cleanup.cpp`
+
+**Effort**: Tier 1 = Low (1-2 days, pure C++, no model). Tier 2 = Medium
+(3-4 days: pick model, convert, implement, train/fine-tune if custom).
