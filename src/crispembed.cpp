@@ -3299,3 +3299,57 @@ extern "C" int crispembed_ner_extract(void * ctx, const char * text,
         *out_entities = (crispembed_ner_entity *)ents;
     return n;
 }
+
+// ===========================================================================
+// Scan Cleanup
+// ===========================================================================
+
+#include "scan_cleanup.h"
+
+extern "C" crispembed_scan_cleanup_params crispembed_scan_cleanup_defaults(void) {
+    scan_cleanup_params p = scan_cleanup_defaults();
+    crispembed_scan_cleanup_params cp;
+    cp.deskew            = p.deskew;
+    cp.crop_borders      = p.crop_borders;
+    cp.whiten_background = p.whiten_background;
+    cp.binarize          = p.binarize;
+    cp.binarize_method   = p.binarize_method;
+    cp.sauvola_k         = p.sauvola_k;
+    cp.sauvola_window    = p.sauvola_window;
+    cp.morph_kernel      = p.morph_kernel;
+    cp.border_threshold  = p.border_threshold;
+    cp.deskew_max_angle  = p.deskew_max_angle;
+    return cp;
+}
+
+extern "C" void * crispembed_scan_cleanup_init(const char * model_path, int n_threads) {
+    return scan_cleanup_init(model_path, n_threads);
+}
+
+extern "C" void crispembed_scan_cleanup_free(void * ctx) {
+    scan_cleanup_free((scan_cleanup_ctx *)ctx);
+}
+
+extern "C" int crispembed_scan_cleanup_process(
+        void * ctx,
+        const uint8_t * pixels, int width, int height, int channels,
+        crispembed_scan_cleanup_params params,
+        uint8_t ** out_pixels, int * out_width, int * out_height) {
+    scan_cleanup_params p;
+    p.deskew            = params.deskew;
+    p.crop_borders      = params.crop_borders;
+    p.whiten_background = params.whiten_background;
+    p.binarize          = params.binarize;
+    p.binarize_method   = params.binarize_method;
+    p.sauvola_k         = params.sauvola_k;
+    p.sauvola_window    = params.sauvola_window;
+    p.morph_kernel      = params.morph_kernel;
+    p.border_threshold  = params.border_threshold;
+    p.deskew_max_angle  = params.deskew_max_angle;
+    return scan_cleanup_process((scan_cleanup_ctx *)ctx, pixels, width, height, channels,
+                                p, out_pixels, out_width, out_height);
+}
+
+extern "C" void crispembed_scan_cleanup_free_image(uint8_t * pixels) {
+    scan_cleanup_free_image(pixels);
+}

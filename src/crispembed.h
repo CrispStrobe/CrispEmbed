@@ -676,6 +676,42 @@ CRISPEMBED_API int crispembed_ner_extract(
     float threshold,
     crispembed_ner_entity ** out_entities);
 
+// ---------------------------------------------------------------------------
+// Scan cleanup — document scan preprocessing (deskew, denoise, crop, whiten).
+// Tier 1: classical image processing, no model needed (model_path=NULL).
+// Tier 2: learned denoising CNN via GGUF model (not yet implemented).
+// ---------------------------------------------------------------------------
+
+typedef struct {
+    int   deskew;
+    int   crop_borders;
+    int   whiten_background;
+    int   binarize;
+    int   binarize_method;     // 0 = Otsu, 1 = Sauvola
+    float sauvola_k;
+    int   sauvola_window;
+    int   morph_kernel;
+    float border_threshold;
+    float deskew_max_angle;
+} crispembed_scan_cleanup_params;
+
+CRISPEMBED_API crispembed_scan_cleanup_params crispembed_scan_cleanup_defaults(void);
+
+CRISPEMBED_API void * crispembed_scan_cleanup_init(const char * model_path, int n_threads);
+CRISPEMBED_API void   crispembed_scan_cleanup_free(void * ctx);
+
+/// Process a scan image. Input: uint8 RGB or grayscale.
+/// Allocates output buffer (*out_pixels, RGB uint8). Caller frees via
+/// crispembed_scan_cleanup_free_image().
+/// Returns 0 on success, -1 on error.
+CRISPEMBED_API int crispembed_scan_cleanup_process(
+    void * ctx,
+    const uint8_t * pixels, int width, int height, int channels,
+    crispembed_scan_cleanup_params params,
+    uint8_t ** out_pixels, int * out_width, int * out_height);
+
+CRISPEMBED_API void crispembed_scan_cleanup_free_image(uint8_t * pixels);
+
 #ifdef __cplusplus
 }
 #endif
