@@ -5,6 +5,7 @@
 // no external dependencies beyond stdlib + math.
 
 #include "scan_cleanup.h"
+#include "nafnet_denoise.h"
 
 #include <cmath>
 #include <cstdlib>
@@ -21,7 +22,7 @@
 
 struct scan_cleanup_ctx {
     int n_threads;
-    // Tier 2: model context would go here
+    nafnet_context * nafnet = nullptr;  // Tier 2: learned denoising (optional)
 };
 
 scan_cleanup_params scan_cleanup_defaults(void) {
@@ -39,14 +40,23 @@ scan_cleanup_params scan_cleanup_defaults(void) {
     return p;
 }
 
-scan_cleanup_ctx * scan_cleanup_init(const char * /*model_path*/, int n_threads) {
+scan_cleanup_ctx * scan_cleanup_init(const char * model_path, int n_threads) {
     auto * ctx = new scan_cleanup_ctx;
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
+    if (model_path) {
+        ctx->nafnet = nafnet_init(model_path, n_threads);
+        if (!ctx->nafnet) {
+            fprintf(stderr, "scan_cleanup: warning: failed to load denoising model, tier 2 disabled\n");
+        }
+    }
     return ctx;
 }
 
 void scan_cleanup_free(scan_cleanup_ctx * ctx) {
-    delete ctx;
+    if (ctx) {
+        if (ctx->nafnet) nafnet_free(ctx->nafnet);
+        delete ctx;
+    }
 }
 
 void scan_cleanup_free_image(uint8_t * pixels) {
@@ -515,7 +525,26 @@ int scan_cleanup_process(scan_cleanup_ctx * ctx,
         gray = std::move(whitened);
     }
 
-    // 4. Binarization (optional, last step)
+    // 4. Learned denoising (tier 2, if model loaded)
+    if (ctx->nafnet) {
+        // Convert gray to RGB uint8 for NAFNet
+        uint8_t * rgb_in = gray_to_rgb_u8(gray.data(), w, h);
+        if (rgb_in) {
+            std::vector<uint8_t> rgb_out(w * h * 3);
+            if (nafnet_process(ctx->nafnet, rgb_in, w, h, rgb_out.data()) == 0) {
+                // Convert back to grayscale float
+                for (int i = 0; i < w * h; i++) {
+                    float r = rgb_out[i * 3 + 0];
+                    float g = rgb_out[i * 3 + 1];
+                    float b = rgb_out[i * 3 + 2];
+                    gray[i] = (0.299f * r + 0.587f * g + 0.114f * b) / 255.0f;
+                }
+            }
+            free(rgb_in);
+        }
+    }
+
+    // 5. Binarization (optional, last step)
     if (params.binarize) {
         if (params.binarize_method == 1) {
             // Sauvola adaptive
