@@ -34,7 +34,13 @@ static const float * to_f32(const ggml_tensor * t, std::vector<float> & buf) {
         const ggml_fp16_t * src = (const ggml_fp16_t *)t->data;
         for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(src[i]);
     } else {
-        memset(buf.data(), 0, n * sizeof(float));
+        // Q8_0, Q4_K, etc. — use ggml dequantization
+        const auto * traits = ggml_get_type_traits(t->type);
+        if (traits && traits->to_float) {
+            traits->to_float(t->data, buf.data(), n);
+        } else {
+            memset(buf.data(), 0, n * sizeof(float));
+        }
     }
     return buf.data();
 }
