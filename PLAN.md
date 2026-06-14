@@ -238,10 +238,11 @@ CrispEmbed/
   - [x] Otsu global + Sauvola adaptive binarization (integral image)
   - [x] Border crop via row/column energy projection
   - [x] Background whitening via morphological open (min-pool→max-pool, divide)
-- [ ] **Tier 2 — Learned denoising CNN (small GGUF model)**
-  - [ ] Port NAFNet-tiny or SCUNet (1-2M params, ~2-8 MB GGUF)
-  - [ ] Handles denoise + background removal + contrast in one forward pass
-  - [ ] Same converter/GGUF/C++ pattern as other engines
+- [x] **Tier 2 — Learned denoising CNN (NAFNet, MIT)**
+  - [x] NAFNet-SIDD-width32 (29M params, 56 MB F16 GGUF) — pre-trained on SIDD
+  - [x] Converter: `models/convert-nafnet-to-gguf.py` (F16/F32)
+  - [x] Engine: `src/nafnet_denoise.{h,cpp}` — CPU-scalar U-Net forward pass
+  - [x] Integrated into scan_cleanup pipeline (loads when model_path provided)
 - [x] Wire into OCR pipeline as preprocessing step (`--cleanup` before `--ocr`)
 - [x] C API: `crispembed_scan_cleanup_init/process/free`
 - [x] CLI: `--cleanup` flag before `--ocr`, `--cleanup-only FILE` standalone
