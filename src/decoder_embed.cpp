@@ -1382,8 +1382,8 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
     ggml_set_name(pos, "pos_ids");
     ggml_set_input(pos);
 
-    // Attention mask: [T_total, T_total, 1, 1] passed as kq_mask
-    ggml_tensor * attn_mask = ggml_new_tensor_2d(gctx, GGML_TYPE_F32, T_total, T_total);
+    // Attention mask: [T_total, T_total, 1, 1] passed as kq_mask (F16 = 2x less memory)
+    ggml_tensor * attn_mask = ggml_new_tensor_2d(gctx, GGML_TYPE_F16, T_total, T_total);
     ggml_set_name(attn_mask, "attn_mask");
     ggml_set_input(attn_mask);
 
@@ -1431,10 +1431,8 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
                         ? (1.0f / sqrtf(m.attn_scale))
                         : (1.0f / sqrtf((float)head_dim));
         ggml_tensor * scores = ggml_mul_mat(gctx, K, Q);
-        scores = ggml_scale(gctx, scores, scale);
-        // Add block-diagonal mask
-        scores = ggml_add(gctx, scores, attn_mask);
-        scores = ggml_soft_max(gctx, scores);
+        // Fused scale + mask + softmax (mask is F16, halves memory)
+        scores = ggml_soft_max_ext(gctx, scores, attn_mask, scale, 0.0f);
 
         ggml_tensor * V_perm = ggml_cont(gctx, ggml_permute(gctx, V, 1, 0, 2, 3));
         ggml_tensor * attn = ggml_mul_mat(gctx, V_perm, scores);
@@ -1499,9 +1497,14 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
                                 tok_data.data(), 0, T_total * sizeof(int32_t));
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
                                 pos_data.data(), 0, T_total * sizeof(int32_t));
+        // Convert F32 mask to F16 for upload
+        size_t mask_n = (size_t)T_total * T_total;
+        std::vector<ggml_fp16_t> mask_f16(mask_n);
+        for (size_t j = 0; j < mask_n; j++)
+            mask_f16[j] = ggml_fp32_to_fp16(mask_data[j]);
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "attn_mask"),
-                                mask_data.data(), 0,
-                                (size_t)T_total * T_total * sizeof(float));
+                                mask_f16.data(), 0,
+                                mask_n * sizeof(ggml_fp16_t));
         if (m.gemma_norm) {
             std::vector<float> ones(H, 1.0f);
             ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_h"),
@@ -1518,8 +1521,12 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
         // CPU fallback
         memcpy(ids_t->data, tok_data.data(), T_total * sizeof(int32_t));
         memcpy(pos->data, pos_data.data(), T_total * sizeof(int32_t));
-        memcpy(attn_mask->data, mask_data.data(),
-               (size_t)T_total * T_total * sizeof(float));
+        {
+            size_t mask_n = (size_t)T_total * T_total;
+            ggml_fp16_t * dst = (ggml_fp16_t *)attn_mask->data;
+            for (size_t j = 0; j < mask_n; j++)
+                dst[j] = ggml_fp32_to_fp16(mask_data[j]);
+        }
 
         if (ones_h) {
             float * d = (float *)ones_h->data;
