@@ -1,6 +1,6 @@
 {
-  "id": "${KAGGLE_ACCOUNT}/qari-ocr-gguf-convert",
-  "title": "Qari-OCR GGUF Conversion (LoRA merge + convert)",
+  "id": "${KAGGLE_ACCOUNT}/qari-ocr-gguf-conversion-lora-merge-convert",
+  "title": "qari-ocr-gguf-conversion-lora-merge-convert",
   "code_file": "kernel.py",
   "language": "python",
   "kernel_type": "script",
