@@ -368,7 +368,7 @@ mechanics are well-understood from LLM inference.
 
 ---
 
-### Blueprint: Batched decoder improvements (F16 mask + Gemma3 NaN fix) — F16 DONE
+### Blueprint: Batched decoder improvements (F16 mask + Gemma3 NaN fix) — DONE
 
 **Goal**: Two targeted fixes for the batched decoder path.
 
