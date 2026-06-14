@@ -336,7 +336,7 @@ Block-diagonal F32 causal mask, per-text RoPE, last-token pooling. ~3x speedup.
 
 ---
 
-### Blueprint: KV cache for prefix-shared decoder batches
+### Blueprint: KV cache for prefix-shared decoder batches — DONE
 
 **Goal**: When N texts share a prompt prefix (e.g. Jina v5 instruction
 `"Retrieve semantically similar text.\nQuery: "`), compute KV for the
@@ -396,7 +396,7 @@ after the first layer and fall back to F32 compute for that batch.
 
 ---
 
-### Blueprint: Streaming ColBERT late interaction scoring
+### Blueprint: Streaming ColBERT late interaction scoring — DONE
 
 **Goal**: Add `/colbert/score` endpoint to the HTTP server for MaxSim
 scoring between a query's multi-vector embeddings and pre-stored document
@@ -431,7 +431,7 @@ the main engineering work.
 
 ---
 
-### Blueprint: WASM build target
+### Blueprint: WASM build target — DONE
 
 **Goal**: Compile CrispEmbed to WebAssembly for browser-based embedding.
 
@@ -510,7 +510,7 @@ testing.
 
 ---
 
-### Blueprint: Live-test LoRA with Jina v5
+### Blueprint: Live-test LoRA with Jina v5 — DONE
 
 **Goal**: End-to-end verification that LoRA hot-swap works correctly with
 real Jina v5 adapters, not just unit tests.
@@ -540,7 +540,7 @@ jina-v5-small-lora.gguf`
 
 ---
 
-### Blueprint: 3D tensor quantization for MoE experts
+### Blueprint: 3D tensor quantization for MoE experts — DONE
 
 **Goal**: Extend `tools/quantize.cpp` to quantize 3D tensors (MoE expert
 weights) instead of copying them as F32.
