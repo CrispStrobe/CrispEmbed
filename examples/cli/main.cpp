@@ -242,7 +242,7 @@ int main(int argc, char ** argv) {
         }
     }
 
-    if (model_arg.empty()) {
+    if (model_arg.empty() && cleanup_only_path.empty()) {
         fprintf(stderr, "error: no model specified (-m)\n");
         print_usage(argv[0]);
         return 1;
