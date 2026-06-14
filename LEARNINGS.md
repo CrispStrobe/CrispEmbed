@@ -1,5 +1,43 @@
 # CrispEmbed — Technical Learnings
 
+## NAFNet dequant: always use ggml_get_type_traits for quantized tensors
+
+When loading quantized GGUF weights for CPU-scalar inference, the `to_f32()`
+helper must handle all quantized types — not just F32 and F16. The pattern:
+
+```cpp
+const auto * traits = ggml_get_type_traits(t->type);
+if (traits && traits->to_float) {
+    traits->to_float(t->data, buf.data(), n);
+}
+```
+
+Failing to do this (e.g. `memset(buf, 0, ...)` for unknown types) silently
+produces zero weights → the model runs but outputs garbage. The cosine drops
+from 0.998 to 0.932 — high enough to look "plausible" but clearly wrong.
+This was caught because Q8_0 and Q4_K produced *identical* cosines (both
+were reading zeros), which shouldn't happen if real dequantization is working.
+
+## NAFNet quantizer: per-channel scale factors are add operands
+
+NAFNet's `beta` and `gamma` tensors `[1, C, 1, 1]` are used as element-wise
+multiply operands in residual connections (`x = input + block_output * beta`).
+Despite being 4D, they have only C elements and are extremely sensitive to
+quantization. The quantizer's `is_add_operand` guard must include them:
+`.beta` and `.gamma` patterns alongside `.ls1`/`.ls2` (LayerScale).
+
+NAFNet conv weights (1x1 and 3x3 DW) all have ne[0] < 32 (the Q8_0 block
+size), so the quantizer's existing `ncols % qk != 0` guard already skips
+them. The beta/gamma guard is defense-in-depth.
+
+## Hough deskew: run Sobel on grayscale, not binarized image
+
+For document deskew via Hough transform, running Sobel edge detection on
+the raw grayscale image works much better than binarizing first then running
+Sobel. Binarization destroys gradient information at text boundaries,
+especially for thin lines and anti-aliased edges at small angles. The top-5%
+edge threshold (not top-10%) gives enough votes for reliable angle detection.
+
 ## ggml quantized reshape: dequant BEFORE reshape
 
 ggml quantized types (Q8_0, Q4_K, etc.) store data in fixed-size blocks

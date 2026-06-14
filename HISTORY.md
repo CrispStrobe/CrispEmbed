@@ -4,6 +4,84 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — Scan cleanup (document preprocessing pipeline)
+
+Two-tier document scan preprocessing module replacing the
+ocrmypdf/unpaper pipeline with pure C++.
+
+### Tier 1 — Classical (no model needed)
+
+Four operations, ~500 LOC in `src/scan_cleanup.{h,cpp}`:
+
+1. **Deskew**: Sobel edge detection → Hough line accumulator → median angle
+   → bilinear affine rotation. Detects 3-degree skew exactly on synthetic tests.
+2. **Binarization**: Otsu global (histogram between-class variance) and
+   Sauvola adaptive (integral image for O(1) per-pixel local mean/stddev).
+3. **Border crop**: row/column intensity projection → content rectangle detection.
+4. **Background whitening**: morphological open (min-pool → max-pool) estimates
+   background surface, then divide to normalize. Reduces background variance
+   to near zero.
+
+### Tier 2 — Learned denoising (NAFNet, MIT license)
+
+Port of megvii-research/NAFNet (ECCV 2022) for image restoration.
+Non-linear Activation Free Network — uses SimpleGate (channel split ×
+element-wise multiply) instead of ReLU/GELU.
+
+**Architecture**: U-Net with NAFBlocks.
+- Intro: Conv3x3 (3→32)
+- Encoder: [2,2,4,8] NAFBlocks at [32,64,128,256] channels
+- Downsampling: Conv2x2 stride 2
+- Middle: 12 NAFBlocks at 512 channels
+- Decoder: [2,2,2,2] NAFBlocks with PixelShuffle(2) upsampling + skip connections
+- Ending: Conv3x3 (32→3) + input residual
+- 29.2M params, pre-trained on SIDD (smartphone denoising)
+
+**NAFBlock**: LayerNorm2d → Conv1x1(c→2c) → DepthwiseConv3x3(2c) →
+SimpleGate(2c→c) → SCA(AvgPool→Conv1x1) → Conv1x1(c→c) → residual×beta
+→ LayerNorm2d → Conv1x1(c→2c) → SimpleGate → Conv1x1(c→c) → residual×gamma
+
+**Implementation**: CPU-scalar forward pass in `src/nafnet_denoise.{h,cpp}`.
+All standard ops: conv2d (1x1, 3x3, depthwise), LayerNorm2d, element-wise
+multiply, global average pool, PixelShuffle.
+
+**Parity** (64x64, all vs PyTorch reference):
+- F32:  cos=0.9980, max_diff=48 px
+- F16:  cos=0.9980, max_diff=48 px
+- Q8_0: cos=0.9980, max_diff=47 px
+- Q4_K: cos=0.9977, max_diff=48 px
+
+Residual gap from 1.0 is uint8 quantization at input/output boundaries
+(PyTorch processes float32 end-to-end; C++ goes u8→f32→model→f32→u8).
+
+**Bug found**: `to_f32()` dequant function returned zeros for Q8_0/Q4_K
+types instead of using `ggml_get_type_traits()->to_float`. Fixed.
+
+**Quantizer fix**: added `.beta`/`.gamma` to the `is_add_operand` guard
+in `tools/quantize.cpp` so NAFNet's per-channel residual scale factors
+are never quantized (they're tiny [1,C,1,1] tensors used in element-wise
+multiply — quantizing them corrupts the residual connections).
+
+**GGUFs**: `cstr/nafnet-sidd-GGUF` — F16 (56 MB), Q8_0 (30 MB), Q4_K (16 MB).
+Registry entry: `nafnet-denoise`.
+
+### Wiring
+
+All surfaces wired:
+- **C API**: `crispembed_scan_cleanup_{init,process,free,defaults}` +
+  `crispembed_scan_cleanup_process_simple` (for FFI without struct-by-value)
+- **CLI**: `--cleanup` (preprocess before OCR), `--cleanup-only FILE` (standalone)
+- **Server**: `POST /scan/cleanup` (always available, no model needed)
+- **Python**: `CrispScanCleanup` class with `.process()` (file/PIL/numpy)
+- **Rust**: `CrispScanCleanup` safe wrapper
+- **Dart/Flutter**: `CrispScanCleanup` via `process_simple` FFI
+
+**New files**: `src/scan_cleanup.{h,cpp}`, `src/nafnet_denoise.{h,cpp}`,
+`models/convert-nafnet-to-gguf.py`, `tools/dump_nafnet_reference.py`,
+`tests/test_scan_cleanup.cpp`.
+
+---
+
 ## June 2026 — Surya detector GPU backend (Metal on M1)
 
 `surya_det.cpp` hardcoded `ggml_backend_cpu_init()`, so even after the CUDA

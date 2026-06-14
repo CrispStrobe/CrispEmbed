@@ -91,6 +91,9 @@ Input text / image / audio
     ├─► TextDet─► Surya: EfficientViT segformer (surya_det.cpp)
     │               Text line detection, 91 languages (38M, OpenRail-M)
     │
+    ├─► Cleanup─► Scan cleanup: classical + NAFNet U-Net (scan_cleanup.cpp)
+    │               Deskew, crop, whiten (tier 1) + learned denoise (tier 2)
+    │
     └─► Text  ──► GLiNER NER: dual-backbone span matching (gliner_ner.cpp)
                     Zero-shot NER with two backbone options:
                     • LFM2.5-bi (BPE → ShortConv+GQA → layer fusion → BiLSTM)
@@ -132,6 +135,7 @@ Input text / image / audio
 | RT-DETRv2 | — | ResNet-50 + HybridEncoder (AIFI+FPN) + 6-layer deformable decoder, 300 queries | layout-heron (layout detection) |
 | Surya detector | — | EfficientViT-Large segformer, LiteMLA linear attention, SegFormer decode head | surya-det (text detection) |
 | PARSeq | — (char-level) | ViT-12L encoder + 1-layer two-stream decoder, GELU, 94-char ASCII | parseq (scene text) |
+| NAFNet | — | U-Net with NAFBlocks (SimpleGate + SCA), enc=[2,2,4,8], mid=12, dec=[2,2,2,2] | nafnet-denoise (scan cleanup) |
 
 ## Shared code with CrispASR
 
@@ -180,6 +184,8 @@ CrispEmbed/
 │   ├── layout_detect.{h,cpp}   RT-DETRv2 document layout detection
 │   ├── surya_det.{h,cpp}       Surya text line detection (EfficientViT)
 │   ├── gliner_ner.{h,cpp}      GLiNER zero-shot NER (LFM2.5/DeBERTa-v3)
+│   ├── scan_cleanup.{h,cpp}   document scan preprocessing (tier 1 + 2)
+│   ├── nafnet_denoise.{h,cpp}  NAFNet U-Net denoising CNN (tier 2)
 │   ├── tokenizer.h             WordPiece + SentencePiece + BPE
 │   ├── tokenizer_bpe.cpp       GPT-2 byte-level BPE
 │   ├── model_mgr.{h,cpp}       registry + auto-download
@@ -207,6 +213,7 @@ CrispEmbed/
 │   ├── convert-surya-det-to-gguf.py
 │   ├── convert-gliner-lfm-to-gguf.py
 │   ├── convert-gliner-deberta-to-gguf.py
+│   ├── convert-nafnet-to-gguf.py
 │   └── upload_to_hf.py
 ├── python/crispembed/          ctypes wrapper
 ├── crispembed-sys/             Rust FFI bindings
