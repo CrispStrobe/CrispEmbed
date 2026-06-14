@@ -596,3 +596,47 @@ pub struct LayoutRegion {
     pub label: c_int,
     pub label_name: *const c_char,
 }
+
+// ---------------------------------------------------------------------------
+// Scan Cleanup — document scan preprocessing.
+// ---------------------------------------------------------------------------
+
+/// Scan cleanup parameters (matches `crispembed_scan_cleanup_params` in C).
+#[repr(C)]
+pub struct ScanCleanupParams {
+    pub deskew: c_int,
+    pub crop_borders: c_int,
+    pub whiten_background: c_int,
+    pub binarize: c_int,
+    pub binarize_method: c_int,
+    pub sauvola_k: c_float,
+    pub sauvola_window: c_int,
+    pub morph_kernel: c_int,
+    pub border_threshold: c_float,
+    pub deskew_max_angle: c_float,
+}
+
+extern "C" {
+    pub fn crispembed_scan_cleanup_defaults() -> ScanCleanupParams;
+
+    pub fn crispembed_scan_cleanup_init(
+        model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut c_void;
+
+    pub fn crispembed_scan_cleanup_free(ctx: *mut c_void);
+
+    pub fn crispembed_scan_cleanup_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        params: ScanCleanupParams,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+
+    pub fn crispembed_scan_cleanup_free_image(pixels: *mut u8);
+}

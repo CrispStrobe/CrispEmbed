@@ -3353,3 +3353,17 @@ extern "C" int crispembed_scan_cleanup_process(
 extern "C" void crispembed_scan_cleanup_free_image(uint8_t * pixels) {
     scan_cleanup_free_image(pixels);
 }
+
+extern "C" int crispembed_scan_cleanup_process_simple(
+        void * ctx,
+        const uint8_t * pixels, int width, int height, int channels,
+        int deskew, int crop_borders, int whiten_background, int binarize,
+        uint8_t ** out_pixels, int * out_width, int * out_height) {
+    scan_cleanup_params p = scan_cleanup_defaults();
+    p.deskew = deskew;
+    p.crop_borders = crop_borders;
+    p.whiten_background = whiten_background;
+    p.binarize = binarize;
+    return scan_cleanup_process((scan_cleanup_ctx *)ctx, pixels, width, height, channels,
+                                p, out_pixels, out_width, out_height);
+}

@@ -1451,3 +1451,87 @@ impl Drop for CrispNER {
         unsafe { crispembed_sys::crispembed_ner_free(self.ctx) }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Scan Cleanup
+// ---------------------------------------------------------------------------
+
+/// Document scan preprocessing (deskew, crop, whiten, denoise).
+///
+/// Tier 1 (classical): no model needed — pass `None` for model_path.
+/// Tier 2 (learned): pass a NAFNet GGUF model path for CNN denoising.
+///
+/// ```no_run
+/// let cleanup = CrispScanCleanup::new(None, 4).unwrap();
+/// let cleaned = cleanup.process(&pixels, width, height, 3);
+/// ```
+pub struct CrispScanCleanup {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispScanCleanup {}
+
+impl CrispScanCleanup {
+    /// Create a scan cleanup context.
+    /// model_path: None for tier-1 only, Some("nafnet.gguf") for tier 2.
+    pub fn new(model_path: Option<&str>, n_threads: i32) -> Result<Self, String> {
+        let c_path = model_path.map(|p| std::ffi::CString::new(p).unwrap());
+        let ptr = c_path.as_ref().map_or(std::ptr::null(), |p| p.as_ptr());
+        let ctx = unsafe { crispembed_sys::crispembed_scan_cleanup_init(ptr, n_threads) };
+        if ctx.is_null() {
+            return Err("Failed to init scan cleanup".into());
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Process a scan image. Input: RGB uint8 pixels (h * w * channels).
+    /// Returns cleaned RGB pixels and (width, height).
+    pub fn process(&self, pixels: &[u8], width: i32, height: i32, channels: i32) -> Result<(Vec<u8>, i32, i32), String> {
+        let params = unsafe { crispembed_sys::crispembed_scan_cleanup_defaults() };
+        self.process_with_params(pixels, width, height, channels, params)
+    }
+
+    /// Process with custom parameters.
+    pub fn process_with_params(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        channels: i32,
+        params: crispembed_sys::ScanCleanupParams,
+    ) -> Result<(Vec<u8>, i32, i32), String> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut ow: i32 = 0;
+        let mut oh: i32 = 0;
+
+        let rc = unsafe {
+            crispembed_sys::crispembed_scan_cleanup_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                channels,
+                params,
+                &mut out_ptr,
+                &mut ow,
+                &mut oh,
+            )
+        };
+
+        if rc != 0 || out_ptr.is_null() {
+            return Err("Scan cleanup failed".into());
+        }
+
+        let len = (ow * oh * 3) as usize;
+        let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_scan_cleanup_free_image(out_ptr) };
+
+        Ok((result, ow, oh))
+    }
+}
+
+impl Drop for CrispScanCleanup {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_scan_cleanup_free(self.ctx) }
+    }
+}
