@@ -233,19 +233,20 @@ CrispEmbed/
 
 #### Scan cleanup / document preprocessing
 
-- [ ] **Tier 1 — Classical (no model needed)**
-  - [ ] Deskew via surya heatmap line angles or Hough transform on binarized image
-  - [ ] Otsu global + Sauvola adaptive binarization
-  - [ ] Border crop via row/column energy projection (flood fill from edges)
-  - [ ] Background whitening via morphological open (dilate→erode estimate, subtract)
+- [x] **Tier 1 — Classical (no model needed)**
+  - [x] Deskew via Hough transform on Sobel edges + bilinear rotation
+  - [x] Otsu global + Sauvola adaptive binarization (integral image)
+  - [x] Border crop via row/column energy projection
+  - [x] Background whitening via morphological open (min-pool→max-pool, divide)
 - [ ] **Tier 2 — Learned denoising CNN (small GGUF model)**
   - [ ] Port NAFNet-tiny or SCUNet (1-2M params, ~2-8 MB GGUF)
   - [ ] Handles denoise + background removal + contrast in one forward pass
   - [ ] Same converter/GGUF/C++ pattern as other engines
-- [ ] Wire into OCR pipeline as preprocessing step: `scan_cleanup → surya_det → ocr_recognize`
-- [ ] C API: `crispembed_scan_cleanup_init/process/free`
-- [ ] CLI: `--cleanup` flag before `--ocr` / `--text-detect`
-- [ ] Server: `POST /scan/cleanup` endpoint (returns cleaned image)
+- [x] Wire into OCR pipeline as preprocessing step (`--cleanup` before `--ocr`)
+- [x] C API: `crispembed_scan_cleanup_init/process/free`
+- [x] CLI: `--cleanup` flag before `--ocr`, `--cleanup-only FILE` standalone
+- [x] Server: `POST /scan/cleanup` endpoint (always available, no model)
+- [x] Python: `CrispScanCleanup` class with `.process()` (file/PIL/numpy)
 
 #### OCR models — remaining
 
