@@ -55,6 +55,8 @@ const char * yourmodel_recognize_raw(yourmodel_context * ctx, const uint8_t * px
 - `hmer_ocr.cpp` — DenseNet + GRU attention decoder
 - `layout_detect.cpp` — RT-DETRv2 object detection (deformable cross-attention)
 - `surya_det.cpp` — EfficientViT segformer (LiteMLA linear attention, GPU backend)
+- `nafnet_denoise.cpp` — NAFNet U-Net denoising CNN (SimpleGate + SCA, CPU-scalar)
+- `scan_cleanup.cpp` — document preprocessing pipeline (classical + learned denoise)
 
 ## Step 2: GGUF Converter
 
