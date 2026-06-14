@@ -15,16 +15,36 @@ Steps:
 
 import gc, json, os, shutil, subprocess, sys
 
-# --- Kaggle harness setup ---
+# --- Install deps first ---
+subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q', 'gguf', 'safetensors', 'huggingface_hub'])
+
+# --- Kaggle harness setup (for HF auth token) ---
+# Clone CrispASR to get kaggle_harness.py
+if not os.path.exists('/kaggle/working/CrispASR'):
+    subprocess.run(['git', 'clone', '--depth=1',
+                    'https://github.com/CrispStrobe/CrispASR.git',
+                    '/kaggle/working/CrispASR'], check=False)
+
 sys.path.insert(0, '/kaggle/working/CrispASR')
 try:
     import kaggle_harness as kh
     kh.setup()
-except:
-    print("Warning: no kaggle_harness, running standalone")
-
-# --- Install deps ---
-subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q', 'gguf', 'safetensors'])
+    print("Kaggle harness loaded, HF auth configured")
+except Exception as e:
+    print(f"Warning: kaggle_harness failed ({e}), trying manual HF auth")
+    # Try reading token from Kaggle dataset
+    for token_path in [
+        '/kaggle/input/crispasr-hf-token/hf_token.txt',
+        '/kaggle/input/datasets/chr1s4/crispasr-hf-token/hf_token.txt',
+        '/kaggle/input/datasets/chr1str/crispasr-hf-token/hf_token.txt',
+    ]:
+        if os.path.exists(token_path):
+            token = open(token_path).read().strip()
+            os.environ['HF_TOKEN'] = token
+            print(f"HF token loaded from {token_path}")
+            break
+    else:
+        print("No HF token found — public models only")
 
 import numpy as np
 import torch
@@ -114,17 +134,16 @@ print(f"\nMerged {merged_count}/{len(lora_lookup)} LoRA tensors")
 # --- Convert to GGUF ---
 print("\n--- Converting to GGUF ---")
 
-# Clone CrispEmbed for the converter
-if not os.path.exists('/kaggle/working/CrispEmbed'):
-    subprocess.check_call(['git', 'clone', '--depth=1',
+# Clone CrispEmbed for the converter (already cloned above for harness, but ensure it's there)
+crispembed_dir = '/kaggle/working/CrispEmbed'
+if not os.path.exists(crispembed_dir):
+    subprocess.check_call(['git', 'clone', '--depth=1', '--recursive',
                            'https://github.com/CrispStrobe/CrispEmbed.git',
-                           '/kaggle/working/CrispEmbed'])
-
-sys.path.insert(0, '/kaggle/working/CrispEmbed/models')
+                           crispembed_dir])
 
 # Run converter
 cmd = [
-    sys.executable, '/kaggle/working/CrispEmbed/models/convert-qwen2vl-to-gguf.py',
+    sys.executable, os.path.join(crispembed_dir, 'models/convert-qwen2vl-to-gguf.py'),
     '--model', MERGED_DIR,
     '--output', GGUF_OUTPUT,
     '--dtype', 'f16',
@@ -135,10 +154,12 @@ subprocess.check_call(cmd)
 print(f"\nGGUF: {GGUF_OUTPUT} ({os.path.getsize(GGUF_OUTPUT) / 1e9:.2f} GB)")
 
 # --- Quantize ---
-# Build crispembed-quantize
+# Build crispembed-quantize (needs ggml submodule)
 print("\n--- Building quantizer ---")
+subprocess.run(['git', 'submodule', 'update', '--init', '--recursive'],
+               cwd=crispembed_dir, check=False)
 os.makedirs('/kaggle/working/build', exist_ok=True)
-subprocess.check_call(['cmake', '-S', '/kaggle/working/CrispEmbed',
+subprocess.check_call(['cmake', '-S', crispembed_dir,
                         '-B', '/kaggle/working/build',
                         '-DCMAKE_BUILD_TYPE=Release'])
 subprocess.check_call(['cmake', '--build', '/kaggle/working/build',
