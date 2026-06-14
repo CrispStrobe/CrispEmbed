@@ -1080,7 +1080,6 @@ impl MathOcr {
                 .into_owned(),
         )
     }
-}
 
     /// Recognize math from grayscale float pixels [0..1].
     ///
