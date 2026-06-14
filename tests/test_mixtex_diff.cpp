@@ -1,9 +1,8 @@
-// test_mixtex_diff.cpp — MixTex encoder parity test.
+// test_mixtex_diff.cpp — MixTex encoder/decoder parity test.
 // Usage: test-mixtex-diff <model.gguf> <ref.gguf>
 //
-// Sets g_diff_ref so the engine's inline diff_compare calls fire.
-// The engine compares enc_embed, enc_stage_0..3, enc_output at each
-// stage during the forward pass.
+// Sets MIXTEX_DIFF_REF (and MIXTEX_ENC_STAGE_REF / MIXTEX_DEC_REF) so the
+// engine's inline diff_compare calls fire during the forward pass.
 
 #include "mixtex_ocr.h"
 #include "crispembed_diff.h"
@@ -11,19 +10,18 @@
 #include <cstdio>
 #include <cstdlib>
 
-// Defined in mixtex_ocr.cpp
-extern crispembed_diff::Ref* g_diff_ref;
-
 int main(int argc, char **argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <model.gguf> <ref.gguf>\n", argv[0]);
         return 1;
     }
 
-    // Load reference
-    printf("Loading reference: %s\n", argv[2]);
+    const char *ref_path = argv[2];
+
+    // Verify the reference file loads
+    printf("Loading reference: %s\n", ref_path);
     crispembed_diff::Ref ref;
-    if (!ref.load(argv[2])) {
+    if (!ref.load(ref_path)) {
         fprintf(stderr, "Failed to load reference\n");
         return 1;
     }
@@ -36,8 +34,17 @@ int main(int argc, char **argv) {
         printf("]\n");
     }
 
-    // Set global diff ref so engine compares inline
-    g_diff_ref = &ref;
+    // Set env vars so the engine compares inline during forward pass
+    // (portable: MSVC has no setenv)
+#ifdef _WIN32
+    _putenv_s("MIXTEX_DIFF_REF", ref_path);
+    _putenv_s("MIXTEX_ENC_STAGE_REF", ref_path);
+    _putenv_s("MIXTEX_DEC_REF", ref_path);
+#else
+    setenv("MIXTEX_DIFF_REF", ref_path, 1);
+    setenv("MIXTEX_ENC_STAGE_REF", ref_path, 1);
+    setenv("MIXTEX_DEC_REF", ref_path, 1);
+#endif
 
     // Load model
     printf("\nLoading model: %s\n", argv[1]);
@@ -73,8 +80,19 @@ int main(int argc, char **argv) {
     const char *result = mixtex_ocr_recognize(ctx, img.data(), w, h, 3, &out_len);
     printf("Result (%d chars): %s\n", out_len, result ? result : "(null)");
 
-    g_diff_ref = nullptr;
     mixtex_ocr_free(ctx);
+
+    // Clean up env vars
+#ifdef _WIN32
+    _putenv_s("MIXTEX_DIFF_REF", "");
+    _putenv_s("MIXTEX_ENC_STAGE_REF", "");
+    _putenv_s("MIXTEX_DEC_REF", "");
+#else
+    unsetenv("MIXTEX_DIFF_REF");
+    unsetenv("MIXTEX_ENC_STAGE_REF");
+    unsetenv("MIXTEX_DEC_REF");
+#endif
+
     printf("\nDone.\n");
     return 0;
 }
