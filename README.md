@@ -44,7 +44,7 @@ Heatmap → polygon bounding boxes. Pairs with any OCR recognizer for full-page 
 
 **9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
 GPU acceleration (CUDA/Vulkan/Metal). iOS + Android + **WASM** builds.
-60+ models in registry (text, vision, face, OCR, NER), 160+ GGUF variants on HF.
+78 models in registry (text, vision, face, OCR, NER, scan cleanup), 170+ GGUF variants on HF.
 
 **Browser**: Math OCR compiles to WebAssembly (1 MB) via `build-wasm.sh`.
 Runs entirely client-side — no server, no API key. GGUF models fetched on
@@ -67,7 +67,7 @@ from `hf-space/`.
 
 ## Status
 
-**28 embedding models** shown below (all pass, cos>=0.965 vs HF), **59 models** total in registry (including rerankers, SPLADE, CLIP/SigLIP vision, CLIP text, YuNet/SCRFD face detection, AuraFace/SFace recognition):
+**28 embedding models** shown below (all pass, cos>=0.965 vs HF), **78 models** total in registry (including rerankers, SPLADE, CLIP/SigLIP vision, CLIP text, YuNet/SCRFD face detection, AuraFace/SFace recognition):
 
 | Model | Type | Dim | F32 CosSim | Q8_0 | Q4_K |
 |-------|------|-----|------------|------|------|
