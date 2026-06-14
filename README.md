@@ -196,7 +196,7 @@ curl -X POST http://localhost:8080/ner/extract \
 
 ## OCR
 
-Twelve engines for image → text, all auto-detected from GGUF metadata via
+Thirteen engines for image → text, all auto-detected from GGUF metadata via
 the unified `crispembed_math_ocr_*` C API. Available through CLI (`--ocr`),
 HTTP server (`POST /math/ocr`), Python (`CrispMathOcr`), Rust, and Dart/Flutter.
 
@@ -211,6 +211,7 @@ HTTP server (`POST /math/ocr`), Python (`CrispMathOcr`), Rust, and Dart/Flutter.
 | **InternVL2.5-2B** | InternViT-300M + InternLM2.5-1.8B | 2.1B | 1.4 GB | EN+DE VLM OCR (OCRBench ~830) | MIT |
 | **MixTeX** | Swin-Tiny + RoBERTa | 86M | — | Chinese+English LaTeX | Apache-2.0 |
 | **PosFormer** | DenseNet + Transformer+ARM | 6.5M | 10 MB | Handwritten math (60.5%) | Academic |
+| **Qari-OCR** | Qwen2-VL-2B + LoRA | 2B | ~1.3 GB | Arabic OCR with diacritics | Apache-2.0 |
 | **PP-FormulaNet-L** | SAM-ViT + MBart | 181M | 100 MB | Printed math (best) | Apache-2.0 |
 | **Qwen2.5-VL-3B** | 32L ViT + 36L Qwen2.5 LLM | 3.6B | 2.6 GB | German/multilingual VLM OCR | Apache-2.0 |
 | **Texo-Distill** | HGNetv2 + MBart | 20M | 14 MB | Printed math (small) | AGPL-3.0 |
