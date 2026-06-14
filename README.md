@@ -31,6 +31,7 @@ CLI (`--ocr`), server (`POST /math/ocr`), Python (`CrispMathOcr`), auto-detected
 
 **Math OCR**: Seven engines for math-image → LaTeX:
 PP-FormulaNet-L (printed, SAM-ViT+MBart 181M, Apache-2.0, 122 MB Q4_K),
+MixTex (CN+EN, Swin-Tiny+RoBERTa 86M, Apache-2.0),
 Texo-Distill (printed, HGNetv2+MBart 20M, BLEU 0.90),
 DeiT+TrOCR (printed, 17 MB Q4_K),
 PosFormer (handwritten, DenseNet+Transformer+ARM, 57% CROHME),
@@ -38,9 +39,12 @@ BTTR (handwritten, DenseNet+Transformer, 53% CROHME),
 HMER (handwritten, DenseNet+GRU attention).
 All auto-detected from GGUF metadata, ~3-5s decoder time.
 
+**Text Detection**: Surya EfficientViT segformer (38M, 91 languages, GPU-accelerated).
+Heatmap → polygon bounding boxes. Pairs with any OCR recognizer for full-page OCR.
+
 **9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
 GPU acceleration (CUDA/Vulkan/Metal). iOS + Android + **WASM** builds.
-58 models in registry (text, vision, face), 160+ GGUF variants on HF.
+60+ models in registry (text, vision, face, OCR, NER), 160+ GGUF variants on HF.
 
 **Browser**: Math OCR compiles to WebAssembly (1 MB) via `build-wasm.sh`.
 Runs entirely client-side — no server, no API key. GGUF models fetched on
@@ -192,7 +196,7 @@ curl -X POST http://localhost:8080/ner/extract \
 
 ## OCR
 
-Eleven engines for image → text, all auto-detected from GGUF metadata via
+Twelve engines for image → text, all auto-detected from GGUF metadata via
 the unified `crispembed_math_ocr_*` C API. Available through CLI (`--ocr`),
 HTTP server (`POST /math/ocr`), Python (`CrispMathOcr`), Rust, and Dart/Flutter.
 
@@ -201,6 +205,7 @@ HTTP server (`POST /math/ocr`), Python (`CrispMathOcr`), Rust, and Dart/Flutter.
 | **BTTR** | DenseNet + Transformer | 6.5M | — | Handwritten math | MIT |
 | **DeiT+TrOCR** | DeiT-S + TrOCR | 65M | — | Printed math | Apache-2.0 |
 | **GLM-OCR** | CogViT + GLM-0.5B | 0.9B | 849 MB | Document OCR (OmniDocBench #1, 8 langs) | MIT |
+| **GOT-OCR2** | SAM ViT-B + Qwen2-0.5B | 0.7B | 422 MB | Document OCR (text+LaTeX+tables) | Apache-2.0 |
 | **HMER** | DenseNet + GRU attention | 6M | — | Handwritten math | MIT |
 | **InternVL2-1B** | InternViT-300M + Qwen2-0.5B | 0.9B | 724 MB | Edge/WASM VLM OCR (OCRBench 779) | MIT |
 | **InternVL2.5-2B** | InternViT-300M + InternLM2.5-1.8B | 2.1B | 1.4 GB | EN+DE VLM OCR (OCRBench ~830) | MIT |
@@ -268,6 +273,30 @@ Encoder parity: all stages cos=1.0 vs HF reference. Detection score 0.93 (HF: 0.
 Performance: 21s with BLAS (F32), Q8_0 model 43 MB.
 Source: [docling-project/docling-layout-heron](https://huggingface.co/docling-project/docling-layout-heron) (Apache-2.0).
 Models: [`cstr/layout-heron-gguf`](https://huggingface.co/cstr/layout-heron-gguf)
+
+## Text Detection
+
+Text line detection via surya-ocr-2's EfficientViT-Large segformer (38M params,
+91 languages). Segmentation-based: input 1200×1200 → 2-channel heatmap → polygon
+bounding boxes. GPU-accelerated via `ggml_backend_init_best()` (Metal/CUDA).
+
+```bash
+# CLI
+./build/crispembed -m surya-det --text-detect document.png --json
+
+# Server
+./build/crispembed-server --text-det surya-det-q8_0.gguf --port 8080
+curl -X POST http://localhost:8080/text/detect -d '{"image": "page.png"}'
+
+# Python
+from crispembed import CrispTextDetect
+det = CrispTextDetect("surya-det-q8_0.gguf")
+regions = det.detect("page.png")
+```
+
+Heatmap parity: exact match vs Python reference. ggml graph acceleration (35x).
+Source: [datalab-to/surya-ocr-2](https://github.com/VikParuchuri/surya) (OpenRail-M, free <$5M).
+Models: [`cstr/surya-det-GGUF`](https://huggingface.co/cstr/surya-det-GGUF) — F32 (147 MB), F16 (73 MB), Q8_0 (41 MB), Q4_K (30 MB).
 
 ## Named Entity Recognition
 
