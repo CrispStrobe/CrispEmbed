@@ -141,6 +141,7 @@ list(APPEND CRISPEMBED_SOURCES src/mixtex_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/qwen2vl_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/internvl2_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/gliner_ner.cpp)
+list(APPEND CRISPEMBED_SOURCES src/scan_cleanup.cpp)
 list(APPEND CRISPEMBED_SOURCES src/parseq_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/glm_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/got_ocr.cpp)
@@ -294,6 +295,9 @@ target_link_libraries(test-gliner-ner PRIVATE crispembed)
 
 add_executable(test-gliner-diff tests/test_gliner_diff.cpp)
 target_link_libraries(test-gliner-diff PRIVATE crispembed)
+
+add_executable(test-scan-cleanup tests/test_scan_cleanup.cpp)
+target_link_libraries(test-scan-cleanup PRIVATE crispembed)
 
 add_executable(test-conv-ext tests/test_conv_ext.cpp)
 target_link_libraries(test-conv-ext PRIVATE crispembed)
