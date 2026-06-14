@@ -530,6 +530,12 @@ static const ModelEntry k_registry[] = {
      "RT-DETRv2 document layout detection (ResNet-50+Transformer, 17 classes)", "161 MB", "apache-2.0",
      "https://huggingface.co/cstr/layout-heron-gguf"},
 
+    {"nafnet-denoise",
+     "nafnet-sidd-w32-q8_0.gguf",
+     "https://huggingface.co/cstr/nafnet-sidd-GGUF/resolve/main/nafnet-sidd-w32-q8_0.gguf",
+     "NAFNet image denoising (U-Net, 29M params, SIDD-trained)", "30 MB", "mit",
+     "https://huggingface.co/cstr/nafnet-sidd-GGUF"},
+
     {"qwen2vl-3b",
      "qwen2.5-vl-3b-q4_k.gguf",
      "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF/resolve/main/qwen2.5-vl-3b-q4_k.gguf",
