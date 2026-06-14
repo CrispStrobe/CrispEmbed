@@ -693,7 +693,7 @@ Pad → cyclic shift → window partition → local MHSA + RPB lookup → window
 
 ---
 
-### Blueprint: GLM-OCR (0.9B, MIT, GGUF exists)
+### Blueprint: GLM-OCR (0.9B, MIT, GGUF exists) — DONE
 
 **Goal**: Integrate GLM-OCR for general document OCR. GGUF already
 converted by ggml-org — may only need inference integration, not
@@ -827,7 +827,7 @@ OOMs on 8 GB machines — use Kaggle (16 GB) or desktop for inference.
 
 ---
 
-### Blueprint: Scan cleanup / document preprocessing
+### Blueprint: Scan cleanup / document preprocessing — DONE
 
 **Goal**: Pre-process scanned document images to improve OCR quality.
 Replaces the ocrmypdf/unpaper pipeline with a pure C++ implementation
