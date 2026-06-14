@@ -470,7 +470,7 @@ target.
 
 ---
 
-### Blueprint: INT4 GGUF for face models
+### Blueprint: INT4 GGUF for face models — DONE
 
 **Goal**: Quantize Conv2D weights in face models (SCRFD, AuraFace, SFace)
 to Q4_K for 4x size reduction.
