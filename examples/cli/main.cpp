@@ -13,6 +13,7 @@
 #include "cnn_embed.h"
 #include "hmer_ocr.h"
 #include "bttr_ocr.h"
+#include "scan_cleanup.h"
 
 // stb_image for --detect image loading
 #define STB_IMAGE_STATIC
@@ -85,6 +86,8 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --ner-threshold F  confidence threshold for NER (default: 0.5)\n");
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
+    fprintf(stderr, "  --cleanup        preprocess scan before OCR (deskew, crop borders, whiten background)\n");
+    fprintf(stderr, "  --cleanup-only F process scan and write cleaned image to stdout (no OCR)\n");
     fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
     fprintf(stderr, "  --ocr-rec MODEL  general OCR: text recognition model (TrOCR, e.g. trocr-printed)\n");
     fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
@@ -139,6 +142,8 @@ int main(int argc, char ** argv) {
     std::string det_model;   // detection model for --face-pipeline
     std::string ocr_det_path;  // general OCR: text detection model (DBNet)
     std::string ocr_rec_path;  // general OCR: text recognition model (TrOCR)
+    bool cleanup_mode = false;          // --cleanup: preprocess before OCR
+    std::string cleanup_only_path;      // --cleanup-only FILE: standalone cleanup
     bool face_pipeline_mode = false;
     float conf_threshold = 0.5f;
     std::string lora_adapter;   // LoRA adapter name (--lora)
@@ -202,6 +207,10 @@ int main(int argc, char ** argv) {
             det_model = argv[++i];
         } else if (strcmp(argv[i], "--face-pipeline") == 0) {
             face_pipeline_mode = true;
+        } else if (strcmp(argv[i], "--cleanup") == 0) {
+            cleanup_mode = true;
+        } else if (strcmp(argv[i], "--cleanup-only") == 0 && i + 1 < argc) {
+            cleanup_only_path = argv[++i];
         } else if (strcmp(argv[i], "--ocr-det") == 0 && i + 1 < argc) {
             ocr_det_path = argv[++i];
         } else if (strcmp(argv[i], "--ocr-rec") == 0 && i + 1 < argc) {
@@ -250,6 +259,28 @@ int main(int argc, char ** argv) {
     if (mode_count > 1) {
         fprintf(stderr, "error: choose only one of --sparse, --colbert, --rerank, --biencoder, --audio, --image, or --image-raw\n");
         return 1;
+    }
+
+    // Standalone scan cleanup (--cleanup-only FILE)
+    if (!cleanup_only_path.empty()) {
+        int w, h, ch;
+        unsigned char * data = stbi_load(cleanup_only_path.c_str(), &w, &h, &ch, 0);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", cleanup_only_path.c_str()); return 1; }
+        auto * sctx = scan_cleanup_init(nullptr, n_threads);
+        auto params = scan_cleanup_defaults();
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = scan_cleanup_process(sctx, data, w, h, ch, params, &out, &ow, &oh);
+        stbi_image_free(data);
+        scan_cleanup_free(sctx);
+        if (rc != 0 || !out) { fprintf(stderr, "error: scan cleanup failed\n"); return 1; }
+        if (json_output) {
+            printf("{\"width\":%d,\"height\":%d,\"original_width\":%d,\"original_height\":%d}\n", ow, oh, w, h);
+        } else {
+            printf("cleaned: %dx%d -> %dx%d\n", w, h, ow, oh);
+        }
+        scan_cleanup_free_image(out);
+        return 0;
     }
 
     // General OCR pipeline via --ocr-det/--ocr-rec (preferred new flags)
@@ -584,9 +615,24 @@ int main(int argc, char ** argv) {
         int w, h, ch;
         unsigned char* data = stbi_load(ocr_path.c_str(), &w, &h, &ch, 0);
         if (!data) { fprintf(stderr, "error: cannot load %s\n", ocr_path.c_str()); crispembed_math_ocr_free(octx); return 1; }
+
+        // Optional scan cleanup before OCR
+        uint8_t * cleaned = nullptr;
+        if (cleanup_mode) {
+            auto * sctx = scan_cleanup_init(nullptr, n_threads);
+            auto sp = scan_cleanup_defaults();
+            int cw = 0, ch2 = 0;
+            if (scan_cleanup_process(sctx, data, w, h, ch, sp, &cleaned, &cw, &ch2) == 0 && cleaned) {
+                stbi_image_free(data);
+                data = cleaned;
+                w = cw; h = ch2; ch = 3;  // cleanup outputs RGB
+            }
+            scan_cleanup_free(sctx);
+        }
+
         int out_len = 0;
         const char* latex = crispembed_math_ocr_recognize(octx, data, w, h, ch, &out_len);
-        stbi_image_free(data);
+        if (cleaned) scan_cleanup_free_image(cleaned); else stbi_image_free(data);
         if (latex && out_len > 0) {
             if (json_output) {
                 printf("{\"latex\":\"%s\"}\n", latex);

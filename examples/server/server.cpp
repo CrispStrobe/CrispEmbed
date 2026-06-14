@@ -14,6 +14,7 @@
 //   GET  /health          — server status
 
 #include "crispembed.h"
+#include "scan_cleanup.h"
 #include "model_mgr.h"
 #include "httplib.h"
 
@@ -1248,6 +1249,81 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /scan/cleanup — document scan preprocessing (no model needed)
+    // Request:  {"image": "/path/to/scan.png", "deskew": true, "binarize": false}
+    // Response: {"width": W, "height": H, "original_width": OW, "original_height": OH, "ms": T}
+    svr.Post("/scan/cleanup", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+        std::string image_path;
+
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 0);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+
+        auto t0 = std::chrono::steady_clock::now();
+
+        auto params = scan_cleanup_defaults();
+        // Parse optional params from JSON
+        auto parse_bool = [&](const char * key) -> int {
+            auto p = body.find(key);
+            if (p == std::string::npos) return -1;
+            auto c = body.find(':', p);
+            if (c == std::string::npos) return -1;
+            auto v = body.find_first_not_of(" \t\n", c + 1);
+            if (v == std::string::npos) return -1;
+            return (body[v] == 't' || body[v] == '1') ? 1 : 0;
+        };
+        int v;
+        if ((v = parse_bool("\"deskew\"")) >= 0) params.deskew = v;
+        if ((v = parse_bool("\"crop_borders\"")) >= 0) params.crop_borders = v;
+        if ((v = parse_bool("\"whiten_background\"")) >= 0) params.whiten_background = v;
+        if ((v = parse_bool("\"binarize\"")) >= 0) params.binarize = v;
+
+        auto * sctx = scan_cleanup_init(nullptr, 4);
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = scan_cleanup_process(sctx, data, w, h, ch, params, &out, &ow, &oh);
+        scan_cleanup_free(sctx);
+        stbi_image_free(data);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        if (rc != 0 || !out) {
+            res.status = 500;
+            res.set_content("{\"error\": \"scan cleanup failed\"}", "application/json");
+            return;
+        }
+
+        scan_cleanup_free_image(out);
+
+        std::ostringstream js;
+        js << "{\"width\": " << ow << ", \"height\": " << oh
+           << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"ms\": " << std::setprecision(1) << std::fixed << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /scan/cleanup in %.1f ms (%dx%d -> %dx%d)\n", ms, w, h, ow, oh);
+        res.set_content(js.str(), "application/json");
+    });
+
     // GET /health
     svr.Get("/health", [&](const httplib::Request &, httplib::Response & res) {
         std::ostringstream js;
@@ -1266,6 +1342,7 @@ int main(int argc, char ** argv) {
         if (layout_ctx) js << ", \"layout\": true";
         if (text_det_ctx) js << ", \"text_detection\": true";
         if (ner_ctx) js << ", \"ner\": true";
+        js << ", \"scan_cleanup\": true";  // always available (no model needed)
         js << "}";
         res.set_content(js.str(), "application/json");
     });
@@ -1286,6 +1363,7 @@ int main(int argc, char ** argv) {
     if (layout_ctx) fprintf(stderr, "  POST /layout/detect   — {\"image\": \"page.png\"}\n");
     if (text_det_ctx) fprintf(stderr, "  POST /text/detect     — {\"image\": \"page.png\"}\n");
     if (ner_ctx) fprintf(stderr, "  POST /ner/extract     — {\"text\": \"...\", \"labels\": [\"person\", ...]}\n");
+    fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
     if (ctx && crispembed_has_colbert(ctx)) fprintf(stderr, "  POST /colbert/score   — {\"query\": \"...\", \"documents\": [...]}\n");
     fprintf(stderr, "  GET  /health\n\n");
 

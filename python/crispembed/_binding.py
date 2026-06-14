@@ -1981,3 +1981,138 @@ class CrispNER:
         if hasattr(self, '_ctx') and self._ctx:
             self._lib.crispembed_ner_free(self._ctx)
             self._ctx = None
+
+
+# ── Scan cleanup ─────────────────────────────────────────────────────
+
+class _ScanCleanupParams(ctypes.Structure):
+    _fields_ = [
+        ("deskew", ctypes.c_int),
+        ("crop_borders", ctypes.c_int),
+        ("whiten_background", ctypes.c_int),
+        ("binarize", ctypes.c_int),
+        ("binarize_method", ctypes.c_int),
+        ("sauvola_k", ctypes.c_float),
+        ("sauvola_window", ctypes.c_int),
+        ("morph_kernel", ctypes.c_int),
+        ("border_threshold", ctypes.c_float),
+        ("deskew_max_angle", ctypes.c_float),
+    ]
+
+
+def _setup_scan_cleanup_signatures(lib):
+    lib.crispembed_scan_cleanup_defaults.argtypes = []
+    lib.crispembed_scan_cleanup_defaults.restype = _ScanCleanupParams
+
+    lib.crispembed_scan_cleanup_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_scan_cleanup_init.restype = ctypes.c_void_p
+
+    lib.crispembed_scan_cleanup_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_scan_cleanup_free.restype = None
+
+    lib.crispembed_scan_cleanup_process.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int, ctypes.c_int,
+        _ScanCleanupParams,
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_uint8)),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_scan_cleanup_process.restype = ctypes.c_int
+
+    lib.crispembed_scan_cleanup_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_scan_cleanup_free_image.restype = None
+
+
+class CrispScanCleanup:
+    """Document scan preprocessing (deskew, crop, whiten, binarize).
+
+    No model needed — pure classical image processing.
+
+    Usage::
+
+        cleanup = CrispScanCleanup()
+        cleaned = cleanup.process("scan.png")  # returns numpy uint8 RGB array
+        # Or with PIL:
+        cleaned = cleanup.process(pil_image)
+    """
+
+    def __init__(self, model_path: str = None, n_threads: int = 4,
+                 lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_scan_cleanup_signatures(self._lib)
+        mp = model_path.encode("utf-8") if model_path else None
+        self._ctx = self._lib.crispembed_scan_cleanup_init(mp, n_threads)
+        if not self._ctx:
+            raise RuntimeError("Failed to init scan cleanup")
+
+    def process(self, image, deskew=True, crop_borders=True,
+                whiten_background=True, binarize=False,
+                binarize_method=0, sauvola_k=0.2, sauvola_window=25,
+                morph_kernel=51, border_threshold=0.15,
+                deskew_max_angle=15.0):
+        """Process a scan image.
+
+        Args:
+            image: file path (str), PIL Image, or numpy uint8 array (H, W, C).
+            deskew: correct skew angle (default True).
+            crop_borders: remove dark scanner borders (default True).
+            whiten_background: flatten uneven lighting (default True).
+            binarize: adaptive thresholding (default False).
+            binarize_method: 0 = Otsu, 1 = Sauvola.
+
+        Returns:
+            numpy uint8 array (H, W, 3) — cleaned RGB image.
+        """
+        import numpy as np
+
+        # Load image from various sources
+        if isinstance(image, str):
+            from PIL import Image
+            img = np.array(Image.open(image).convert("RGB"))
+        elif hasattr(image, "convert"):
+            img = np.array(image.convert("RGB"))
+        else:
+            img = np.asarray(image)
+
+        if img.ndim == 2:
+            h, w = img.shape
+            ch = 1
+        else:
+            h, w, ch = img.shape
+
+        pixels = img.flatten().astype(np.uint8)
+        px_ptr = pixels.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+
+        params = self._lib.crispembed_scan_cleanup_defaults()
+        params.deskew = int(deskew)
+        params.crop_borders = int(crop_borders)
+        params.whiten_background = int(whiten_background)
+        params.binarize = int(binarize)
+        params.binarize_method = binarize_method
+        params.sauvola_k = sauvola_k
+        params.sauvola_window = sauvola_window
+        params.morph_kernel = morph_kernel
+        params.border_threshold = border_threshold
+        params.deskew_max_angle = deskew_max_angle
+
+        out_ptr = ctypes.POINTER(ctypes.c_uint8)()
+        out_w = ctypes.c_int(0)
+        out_h = ctypes.c_int(0)
+
+        rc = self._lib.crispembed_scan_cleanup_process(
+            self._ctx, px_ptr, w, h, ch, params,
+            ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
+        )
+        if rc != 0 or not out_ptr:
+            raise RuntimeError("Scan cleanup failed")
+
+        ow, oh = out_w.value, out_h.value
+        buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
+        self._lib.crispembed_scan_cleanup_free_image(out_ptr)
+        return buf.reshape(oh, ow, 3)
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_scan_cleanup_free(self._ctx)
+            self._ctx = None
