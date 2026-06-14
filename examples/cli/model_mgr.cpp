@@ -530,6 +530,12 @@ static const ModelEntry k_registry[] = {
      "RT-DETRv2 document layout detection (ResNet-50+Transformer, 17 classes)", "161 MB", "apache-2.0",
      "https://huggingface.co/cstr/layout-heron-gguf"},
 
+    {"qari-ocr",
+     "qari-ocr-2b-q4_k.gguf",
+     "https://huggingface.co/cstr/qari-ocr-crispembed-GGUF/resolve/main/qari-ocr-2b-q4_k.gguf",
+     "Qari Arabic OCR with diacritics (Qwen2-VL-2B fine-tune)", "1300 MB", "apache-2.0",
+     "https://huggingface.co/cstr/qari-ocr-crispembed-GGUF"},
+
     {"nafnet-denoise",
      "nafnet-sidd-w32-q8_0.gguf",
      "https://huggingface.co/cstr/nafnet-sidd-GGUF/resolve/main/nafnet-sidd-w32-q8_0.gguf",

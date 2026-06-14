@@ -259,8 +259,11 @@ CrispEmbed/
 #### OCR models — remaining
 
 - [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune
-- [ ] Qari-OCR (2B, Apache-2.0) — Arabic with diacritics
+- [ ] Qari-OCR (2B, Apache-2.0) — Arabic with diacritics, LoRA on Qwen2-VL-2B
 - [ ] Granite Vision 3.3-2B (3B, Apache-2.0) — OCRBench 852
+- [ ] Granite-Docling-258M (258M, Apache-2.0) — SigLIP2 + Granite-165M, document
+  conversion (layout + OCR + tables + equations), DocTags output → Markdown/HTML.
+  Smallest VLM, GGUF available via llama.cpp. ibm-granite/granite-docling-258M
 
 #### Nice-to-have
 
@@ -747,19 +750,33 @@ Registry entry: `nanonets-ocr-s`.
 
 ---
 
-### Blueprint: Qari-OCR (Arabic, 2B, Apache-2.0)
+### Blueprint: Qari-OCR (Arabic, 2B, Apache-2.0) — IN PROGRESS
 
-**Goal**: Arabic OCR with diacritics support.
+**Goal**: Arabic OCR with diacritics support (tashkeel).
 
 **Source**: NAMAA-Space/Qari-OCR-0.2.2.1-VL-2B-Instruct (Apache-2.0)
-Fine-tune of Qwen2-VL-2B-Instruct for Arabic text.
+LoRA fine-tune of Qwen2-VL-2B-Instruct on 50K Arabic OCR samples.
+WER=0.221, CER=0.059, BLEU=0.597.
 
-**Note**: The published fine-tune was trained from a 4-bit quantized
-base (unsloth/bnb). For GGUF porting, may need to source fp16 weights
-or re-fine-tune from the full-precision Qwen2-VL base.
+**Architecture**: Same as existing `qwen2vl_ocr.cpp` — Qwen2-VL family.
+- LLM: 1536d, 28L, 12H/2KV, FFN=8960 (vs 3B's 2048d/36L/16H)
+- Vision: 1536d, 32L, 16H (vs 3B's 1280d)
+- Engine reads all dims from GGUF metadata — no code changes needed.
 
-**Effort**: Medium (3-4 days). Same Qwen2-VL base as Nanonets — share
-infrastructure.
+**Conversion**: LoRA adapter (r=16, α=16, 324 pairs, 116 MB) merged into
+full-precision Qwen2-VL-2B-Instruct base. Merge is tensor-by-tensor
+(W' = W + scale * B @ A). Needs 16 GB RAM → Kaggle kernel.
+
+**Status**:
+- [x] Architecture compatibility verified (qwen2vl_ocr engine is parameterized)
+- [x] Kaggle conversion kernel written (`tools/kaggle/qari-ocr-convert/`)
+- [x] Registry entry added (`qari-ocr`)
+- [ ] Run Kaggle kernel (merge + convert + quantize + upload)
+- [ ] Test on Arabic document images
+
+**Files**: `tools/kaggle/qari-ocr-convert/{kernel.py,kernel-metadata.json}`
+
+**Effort**: Low (1 day). No new C++ code — reuses qwen2vl_ocr engine.
 
 ---
 
