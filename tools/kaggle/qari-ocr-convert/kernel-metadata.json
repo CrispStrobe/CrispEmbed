@@ -1,6 +1,6 @@
 {
-  "id": "chr1str/qari-ocr-gguf-convert",
-  "title": "Qari-OCR GGUF Conversion (LoRA merge + convert)",
+  "id": "chr1s4/qari-ocr-gguf-conversion-lora-merge-convert",
+  "title": "qari-ocr-gguf-conversion-lora-merge-convert",
   "code_file": "kernel.py",
   "language": "python",
   "kernel_type": "script",
