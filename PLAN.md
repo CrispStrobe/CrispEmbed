@@ -16,7 +16,7 @@ with a single `crispembed` binary + C library that:
 5. Supports Q4_K / Q5_K / Q6_K / Q8_0 / F16 / F32 quantisation
 6. Exposes a C API, CLI, HTTP server, Python, Rust, and Dart wrappers
 
-## Architecture (v0.7.0)
+## Architecture (v0.8.0)
 
 ```
 Input text / image / audio
@@ -56,13 +56,40 @@ Input text / image / audio
     │               Handwritten math → LaTeX (CROHME 2016)
     │
     ├─► Math  ──► BTTR: DenseNet + Transformer decoder (bttr_ocr.cpp)
-    │                 Handwritten math → LaTeX (CROHME 2014, 53% exact match)
+    │               Handwritten math → LaTeX (CROHME 2014, 53% exact match)
+    │
+    ├─► Math  ──► PosFormer: DenseNet + Transformer + ARM (posformer_ocr.cpp)
+    │               Handwritten math → LaTeX (CROHME 2014, 57% exact match)
+    │
+    ├─► Math  ──► MixTex: Swin-Tiny + RoBERTa decoder (mixtex_ocr.cpp)
+    │               Chinese+English math → LaTeX (86M, Apache-2.0)
+    │
+    ├─► Math  ──► PP-FormulaNet-S: HGNetv2 + MBart (ppformulanet_ocr.cpp)
+    │               Printed math → LaTeX (20M, AGPL-3.0 distill)
+    │
+    ├─► Math  ──► PP-FormulaNet-L: SAM-ViT + MBart (ppformulanet_l_ocr.cpp)
+    │               Printed math → LaTeX (181M, Apache-2.0)
     │
     ├─► OCR   ──► InternVL2.5: InternViT-300M + InternLM2.5-1.8B (internvl2_ocr.cpp)
     │               2.1B VLM OCR, EN+DE, KV cache, dynamic tiling, OCRBench ~830
     │
+    ├─► OCR   ──► GOT-OCR2: SAM ViT-B + Qwen2-0.5B (got_ocr.cpp)
+    │               Document OCR (0.7B, Apache-2.0, text+LaTeX+tables)
+    │
+    ├─► OCR   ──► GLM-OCR: CogViT + GLM-0.5B (glm_ocr.cpp)
+    │               Document OCR (0.9B, MIT, OmniDocBench #1, 8 langs)
+    │
+    ├─► OCR   ──► Qwen2.5-VL: 32L ViT + Qwen2.5 LLM (qwen2vl_ocr.cpp)
+    │               German/multilingual VLM OCR (3.6B, Apache-2.0)
+    │
     ├─► Scene ──► PARSeq: ViT + 1-layer two-stream decoder (parseq_ocr.cpp)
     │               Scene text recognition, 94-char ASCII, 24M (base) / 6M (tiny)
+    │
+    ├─► Layout──► RT-DETRv2: ResNet-50 + deformable decoder (layout_detect.cpp)
+    │               Document layout analysis, 17 classes (42M, Apache-2.0)
+    │
+    ├─► TextDet─► Surya: EfficientViT segformer (surya_det.cpp)
+    │               Text line detection, 91 languages (38M, OpenRail-M)
     │
     └─► Text  ──► GLiNER NER: dual-backbone span matching (gliner_ner.cpp)
                     Zero-shot NER with two backbone options:
@@ -70,7 +97,7 @@ Input text / image / audio
                     • DeBERTa-v3 (SPM → disentangled attn → 768→512 proj → BiLSTM)
 ```
 
-## Supported architectures (v0.7.0)
+## Supported architectures (v0.8.0)
 
 | Architecture | Tokenizer | Key features | Example models |
 |---|---|---|---|
@@ -95,6 +122,15 @@ Input text / image / audio
 | HMER | — | DenseNet-121 + GRU attention | hmer (handwritten math) |
 | BTTR | — | DenseNet + Transformer decoder | bttr (handwritten math) |
 | InternVL2.5 | SentencePiece BPE | InternViT-300M + pixel unshuffle + InternLM2.5-1.8B (GQA 16/8, SwiGLU, KV cache) | internvl2.5-2b (VLM OCR) |
+| PosFormer | — | DenseNet encoder + 3-layer Transformer decoder + ARM coverage attention | posformer (handwritten math) |
+| MixTex (Swin+RoBERTa) | BPE | Swin-Tiny encoder (shifted windows, RPB) + 4-layer RoBERTa decoder with cross-attn | mixtex-zhen (CN+EN LaTeX) |
+| PP-FormulaNet-S | — | HGNetv2 CNN encoder + 2-layer MBart decoder, Conv-BN folded | texo-distill (printed math) |
+| PP-FormulaNet-L | — | SAM-ViT encoder (windowed+global, decomposed RPE) + 8-layer MBart decoder | ppformulanet-l (printed math) |
+| GOT-OCR2 | GPT-2 BPE | SAM ViT-B (windowed+global, decomposed RPE) + Qwen2-0.5B (24L, MHA) | got-ocr2 (document OCR) |
+| GLM-OCR | SentencePiece BPE | CogViT-24L + Conv2D downsample + merger + GLM-0.5B (16L, GQA 16/8) | glm-ocr (document OCR) |
+| Qwen2.5-VL | GPT-2 BPE | 32L ViT (1280d) + spatial merger + 36L Qwen2.5 (2048d, GQA 16/2, mRoPE) | qwen2.5-vl-3b (VLM OCR) |
+| RT-DETRv2 | — | ResNet-50 + HybridEncoder (AIFI+FPN) + 6-layer deformable decoder, 300 queries | layout-heron (layout detection) |
+| Surya detector | — | EfficientViT-Large segformer, LiteMLA linear attention, SegFormer decode head | surya-det (text detection) |
 | PARSeq | — (char-level) | ViT-12L encoder + 1-layer two-stream decoder, GELU, 94-char ASCII | parseq (scene text) |
 
 ## Shared code with CrispASR
@@ -132,8 +168,18 @@ CrispEmbed/
 │   ├── math_ocr.{h,cpp}        DeiT+TrOCR printed math OCR
 │   ├── hmer_ocr.{h,cpp}        HMER handwritten math OCR
 │   ├── bttr_ocr.{h,cpp}        BTTR handwritten math OCR
+│   ├── posformer_ocr.{h,cpp}   PosFormer handwritten math OCR (ARM)
+│   ├── mixtex_ocr.{h,cpp}      MixTex CN+EN LaTeX OCR (Swin+RoBERTa)
+│   ├── ppformulanet_ocr.{h,cpp}  PP-FormulaNet-S printed math OCR
+│   ├── ppformulanet_l_ocr.{h,cpp} PP-FormulaNet-L printed math OCR
 │   ├── internvl2_ocr.{h,cpp}   InternVL2.5-2B VLM OCR (KV cache)
-│   ├── parseq_ocr.{h,cpp}     PARSeq scene text OCR (ViT + 2-stream decoder)
+│   ├── got_ocr.{h,cpp}         GOT-OCR2 document OCR (SAM+Qwen2)
+│   ├── glm_ocr.{h,cpp}         GLM-OCR document OCR (CogViT+GLM)
+│   ├── qwen2vl_ocr.{h,cpp}     Qwen2.5-VL VLM OCR (ViT+Qwen2.5)
+│   ├── parseq_ocr.{h,cpp}      PARSeq scene text OCR (ViT + 2-stream decoder)
+│   ├── layout_detect.{h,cpp}   RT-DETRv2 document layout detection
+│   ├── surya_det.{h,cpp}       Surya text line detection (EfficientViT)
+│   ├── gliner_ner.{h,cpp}      GLiNER zero-shot NER (LFM2.5/DeBERTa-v3)
 │   ├── tokenizer.h             WordPiece + SentencePiece + BPE
 │   ├── tokenizer_bpe.cpp       GPT-2 byte-level BPE
 │   ├── model_mgr.{h,cpp}       registry + auto-download
@@ -149,6 +195,18 @@ CrispEmbed/
 │   ├── convert-face-to-gguf.py
 │   ├── convert-hmer-to-gguf.py
 │   ├── convert-bttr-to-gguf.py
+│   ├── convert-posformer-to-gguf.py
+│   ├── convert-mixtex-to-gguf.py
+│   ├── convert-ppformulanet-to-gguf.py
+│   ├── convert-ppformulanet-l-to-gguf.py
+│   ├── convert-internvl2-to-gguf.py
+│   ├── convert-got-ocr-to-gguf.py
+│   ├── convert-glm-ocr-to-gguf.py
+│   ├── convert-qwen2vl-to-gguf.py
+│   ├── convert-parseq-to-gguf.py
+│   ├── convert-surya-det-to-gguf.py
+│   ├── convert-gliner-lfm-to-gguf.py
+│   ├── convert-gliner-deberta-to-gguf.py
 │   └── upload_to_hf.py
 ├── python/crispembed/          ctypes wrapper
 ├── crispembed-sys/             Rust FFI bindings
@@ -164,11 +222,9 @@ CrispEmbed/
 
 #### Bugs / polish
 
-- [~] **Layout detection decoder** — 3 bugs fixed: (1) ImageNet normalization removed
-  (do_normalize=False), (2) ref_points used enc_bbox_head not dec_bbox_head[0],
-  (3) cross_out dump was pre/post-proj mismatch. With Python pixels: encoder all
-  cos=1.000, decoder cross_out cos_min=0.957 cos_mean=0.999. Detects table (0.92),
-  section_header (0.79), text (0.78). Remaining: small self-attn gap (cos=0.957).
+- [x] **Layout detection decoder** — full parity achieved (7/7 detections match
+  Python ONNX reference to 3 decimal places, all 6 decoder layers cos_min=1.0).
+  14 bugs found and fixed total. Q8_0 model uploaded to HuggingFace.
 - [x] **Surya detector GPU** — `surya_det.cpp` now uses `ggml_backend_init_best()`
   (`SURYA_DET_FORCE_CPU=1` pins CPU for parity debugging). Metal verified on M1:
   F16/Q8_0 run on the GPU, heatmap parity vs CPU to ~3 decimals (sub-pixel box
@@ -221,6 +277,9 @@ CrispEmbed/
 - [x] GOT-OCR2 (0.7B, Apache-2.0, full parity)
 - [x] MixTex full E2E parity — cos=1.000000 encoder + decoder (6 bugs fixed)
 - [x] Nanonets-OCR-s (3B, Apache-2.0, Qwen2.5-VL fine-tune)
+- [x] PosFormer (handwritten math, DenseNet+Transformer+ARM, 57% CROHME, BSD-2)
+- [x] PP-FormulaNet-S/Texo-Distill (printed, HGNetv2+MBart 20M, AGPL-3.0 distill)
+- [x] PP-FormulaNet-L (printed, SAM-ViT+MBart 181M, Apache-2.0)
 - [x] Surya detector (parity verified, stb_image, Q8_0/Q4_K working)
 
 ---

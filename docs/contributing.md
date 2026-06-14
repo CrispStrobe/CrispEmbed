@@ -47,8 +47,14 @@ const char * yourmodel_recognize_raw(yourmodel_context * ctx, const uint8_t * px
 **Existing examples to follow:**
 - `ppformulanet_ocr.cpp` — HGNetv2 CNN encoder + MBart decoder (simplest)
 - `ppformulanet_l_ocr.cpp` — SAM-ViT encoder + MBart decoder (windowed attention)
+- `posformer_ocr.cpp` — DenseNet encoder + Transformer decoder + ARM (coverage attention)
+- `mixtex_ocr.cpp` — Swin-Tiny encoder + RoBERTa decoder (shifted-window attention)
+- `got_ocr.cpp` — SAM ViT-B + Qwen2-0.5B VLM (windowed+global attention, KV cache)
+- `internvl2_ocr.cpp` — InternViT + InternLM2.5 VLM (dynamic tiling, KV cache)
 - `math_ocr.cpp` — DeiT encoder + TrOCR decoder (standard ViT)
 - `hmer_ocr.cpp` — DenseNet + GRU attention decoder
+- `layout_detect.cpp` — RT-DETRv2 object detection (deformable cross-attention)
+- `surya_det.cpp` — EfficientViT segformer (LiteMLA linear attention, GPU backend)
 
 ## Step 2: GGUF Converter
 
