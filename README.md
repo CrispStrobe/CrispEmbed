@@ -298,6 +298,35 @@ Heatmap parity: exact match vs Python reference. ggml graph acceleration (35x).
 Source: [datalab-to/surya-ocr-2](https://github.com/VikParuchuri/surya) (OpenRail-M, free <$5M).
 Models: [`cstr/surya-det-GGUF`](https://huggingface.co/cstr/surya-det-GGUF) — F32 (147 MB), F16 (73 MB), Q8_0 (41 MB), Q4_K (30 MB).
 
+## Scan Cleanup
+
+Document scan preprocessing — replaces the ocrmypdf/unpaper pipeline with
+pure C++. Two tiers: classical image processing (no model) and learned
+denoising via NAFNet CNN (GGUF model, MIT license).
+
+**Tier 1 (classical, no model):** deskew (Hough transform), Otsu/Sauvola
+binarization, border crop, background whitening (morphological open).
+
+**Tier 2 (learned, NAFNet):** NAFNet-SIDD-width32 U-Net denoising CNN
+(29M params, 30 MB Q8_0). Pre-trained on SIDD smartphone image denoising.
+
+```bash
+# CLI — classical only
+./build/crispembed --cleanup-only scan.png
+
+# CLI — with NAFNet denoising before OCR
+./build/crispembed --cleanup -m ocr_model.gguf --ocr scan.png
+
+# Server (always available, no model needed for tier 1)
+curl -X POST http://localhost:8080/scan/cleanup -d '{"image": "scan.png"}'
+
+# Python
+from crispembed import CrispScanCleanup
+cleanup = CrispScanCleanup()                          # tier 1 only
+cleanup = CrispScanCleanup("nafnet-sidd-w32-q8_0.gguf")  # tier 1 + 2
+cleaned = cleanup.process("scan.png")                 # numpy RGB array
+```
+
 ## Named Entity Recognition
 
 Zero-shot NER via GLiNER with an LFM2.5-350M bidirectional backbone (16 layers:
