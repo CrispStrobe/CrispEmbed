@@ -249,12 +249,15 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         bool is_tiny_embd = (t->ne[1] <= 4) &&
                             (sname.find("token_types") != std::string::npos ||
                              sname.find("type_embd") != std::string::npos);
-        // Position/class embeddings and LayerScale used in ggml_add/ggml_mul
-        // must stay F32 (binary ops don't support F32 + Q8_0/F16 operands)
+        // Position/class embeddings, LayerScale, and NAFNet beta/gamma
+        // used in ggml_add/ggml_mul — must stay F32 (binary ops don't
+        // support F32 + Q8_0/F16 operands, and these are tiny scale factors)
         bool is_add_operand = sname.find("position_embedding") != std::string::npos ||
                               sname.find("class_embedding") != std::string::npos ||
                               sname.find(".ls1") != std::string::npos ||
-                              sname.find(".ls2") != std::string::npos;
+                              sname.find(".ls2") != std::string::npos ||
+                              sname.find(".beta") != std::string::npos ||
+                              sname.find(".gamma") != std::string::npos;
         if (is_add_operand) {
             is_tiny_embd = true;  // force copy-as-is
         }
