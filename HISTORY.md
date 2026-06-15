@@ -52,7 +52,19 @@ GOT-OCR2 GPU scheduler fix. CC detect as model-free detector option.
 
 All new capabilities: C API + Rust FFI + safe Rust + Python bindings.
 docs/contributing.md updated with utility library checklist + integration matrix.
-56 new tests (48 unit + 8 parity), all passing.
+### Additional improvements (June 15)
+
+- **Searchable PDF with image**: JPEG XObject embedding + glyph-width-aware
+  text positioning (Tm matrix, font scaled to match bbox width).
+- **PDF/A-2b metadata**: XMP metadata stream + sRGB OutputIntent.
+- **Refined DBNet postprocessing**: Moore contour tracing + convex hull +
+  min-area rotated rectangle (rotating calipers) + polygon-interior scoring.
+- **Text angle classification**: heuristic 0°/180° detection via
+  ascender/descender asymmetry.
+- **Image downsampling calculator**: DPI + max_pixels aware.
+- **OCR quality scoring**: dictionary-based word matching.
+
+63 new tests total, all passing.
 
 ---
 
