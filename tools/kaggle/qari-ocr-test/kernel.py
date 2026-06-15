@@ -4,7 +4,7 @@ import gc, json, os, subprocess, sys, glob, time
 
 subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q',
                        'gguf', 'safetensors', 'huggingface_hub', 'Pillow',
-                       'peft', 'accelerate'])
+                       'peft', 'accelerate', 'qwen-vl-utils'])
 
 for p in ['/kaggle/input/crispasr-hf-token/hf_token.txt',
           '/kaggle/input/datasets/chr1s4/crispasr-hf-token/hf_token.txt']:
