@@ -1618,7 +1618,8 @@ pub struct OcrStageSpec {
 /// ```no_run
 /// use crispembed::CrispOcrPipeline;
 /// let mut p = CrispOcrPipeline::new("dbnet.gguf", "trocr.gguf", Some("nafnet.gguf"),
-///                                   true, true, 8, 0.5, 0).unwrap();
+///                                   true, true, 8, 0.5,
+///                                   None, 0, None, 4).unwrap();
 /// let res = p.run("scan.png").unwrap();
 /// println!("{}", res.full_text);
 /// ```
@@ -1630,8 +1631,9 @@ unsafe impl Send for CrispOcrPipeline {}
 
 impl CrispOcrPipeline {
     /// Build a pipeline. `nafnet_model = None` (or "") runs classical cleanup
-    /// only (no learned tier-2 denoise).
-    #[allow(clippy::too_many_arguments)]
+    /// only (no learned tier-2 denoise). `vlm_model = None` disables VLM
+    /// escalation; when set, `vlm_engine` selects the backend
+    /// (0=GOT, 1=GLM, 2=Qwen2-VL, 3=InternVL2).
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         det_model: &str,
@@ -1641,6 +1643,8 @@ impl CrispOcrPipeline {
         cleanup_enabled: bool,
         min_chars: i32,
         min_confidence: f32,
+        vlm_model: Option<&str>,
+        vlm_engine: i32,
         punct_model: Option<&str>,
         n_threads: i32,
     ) -> Result<Self, String> {
@@ -1648,6 +1652,10 @@ impl CrispOcrPipeline {
         let rec = CString::new(rec_model).map_err(|e| format!("rec path: {e}"))?;
         let naf = match nafnet_model {
             Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("nafnet path: {e}"))?),
+            _ => None,
+        };
+        let vlm = match vlm_model {
+            Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("vlm path: {e}"))?),
             _ => None,
         };
         let punct = match punct_model {
@@ -1662,10 +1670,8 @@ impl CrispOcrPipeline {
             det_model: det.as_ptr(),
             rec_model: rec.as_ptr(),
             nafnet_model: naf.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
-            // VLM escalation stage is configured via the per-stage builder path;
-            // the flat constructor defaults it off.
-            vlm_model: std::ptr::null(),
-            vlm_engine: 0,
+            vlm_model: vlm.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+            vlm_engine: vlm_engine as std::os::raw::c_int,
             punct_model: punct.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
         };
         let ctx = unsafe { crispembed_sys::crispembed_ocr_pipeline_init(&params, n_threads) };

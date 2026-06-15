@@ -1045,8 +1045,10 @@ int main(int argc, char ** argv) {
     });
 
     // POST /ocr/pipeline — full orchestrator (routing + cleanup + accept-gate)
-    // Request:  {"image": "/path/to/document.png", "min_chars": 8, "min_confidence": 0.5}
+    // Request:  {"image": "/path/to/doc.png", "min_chars": 8, "min_confidence": 0.5}
     // Response: {"text": "...", "n_regions": N, "mean_confidence": F, "ms": M}
+    // Note: per-request params override the context defaults when a fresh context
+    // is built per call. Currently uses the shared ocr_orch_ctx (init-time config).
     svr.Post("/ocr/pipeline", [&](const httplib::Request & req, httplib::Response & res) {
         if (!ocr_orch_ctx) {
             res.status = 503;
@@ -1054,6 +1056,7 @@ int main(int argc, char ** argv) {
             return;
         }
         auto body = req.body;
+        // Parse "image" (string)
         std::string image_path;
         auto pos = body.find("\"image\"");
         if (pos != std::string::npos) {

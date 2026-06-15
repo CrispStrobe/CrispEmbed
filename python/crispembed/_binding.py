@@ -2133,6 +2133,7 @@ class _CrispOcrPipelineParams(ctypes.Structure):
         ("nafnet_model", ctypes.c_char_p),
         ("vlm_model", ctypes.c_char_p),
         ("vlm_engine", ctypes.c_int),
+        ("punct_model", ctypes.c_char_p),
     ]
 
 
@@ -2176,6 +2177,7 @@ class CrispOcrOrchestrator:
                  min_chars: int = 8, min_confidence: float = 0.5,
                  nafnet_model: Optional[str] = None,
                  vlm_model: Optional[str] = None, vlm_engine: int = 0,
+                 punct_model: Optional[str] = None,
                  n_threads: int = 4, lib_path: Optional[str] = None):
         self._lib = _load_library(lib_path)
         _setup_ocr_orchestrator_signatures(self._lib)
@@ -2193,6 +2195,8 @@ class CrispOcrOrchestrator:
         if vlm_model:
             params.vlm_model = vlm_model.encode("utf-8")
             params.vlm_engine = vlm_engine
+        if punct_model:
+            params.punct_model = punct_model.encode("utf-8")
 
         self._ctx = self._lib.crispembed_ocr_pipeline_init(
             ctypes.byref(params), n_threads)
