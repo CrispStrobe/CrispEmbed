@@ -217,6 +217,7 @@ Utility libraries (not model backends) follow a lighter pattern.
 | TPS dewarp (learned) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | PDF DPI profiling | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | SAFMN super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Real-ESRGAN super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ### Implementation patterns
 
