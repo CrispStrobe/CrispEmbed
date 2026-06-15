@@ -550,17 +550,17 @@ static const ModelEntry k_registry[] = {
 
     // --- Text super-resolution ---
 
-    {"pan-sr-x4",
-     "pan-x4-f16.gguf",
-     "https://huggingface.co/cstr/crispembed-gguf/resolve/main/pan-x4-f16.gguf",
-     "PAN 4× whole-image super-resolution (272K params)", "0.5 MB", "apache-2.0",
-     "https://huggingface.co/cstr/crispembed-gguf"},
-
-    {"tbsrn-sr",
+    {"tbsrn-telescope",
      "tbsrn-telescope-f16.gguf",
-     "https://huggingface.co/cstr/crispembed-gguf/resolve/main/tbsrn-telescope-f16.gguf",
-     "TBSRN 2× text-line super-resolution (1.1M params)", "2 MB", "apache-2.0",
-     "https://huggingface.co/cstr/crispembed-gguf"},
+     "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/tbsrn-telescope-f16.gguf",
+     "TBSRN text-line SR (1.1M params, PaddleOCR Telescope)", "2.2 MB", "Apache-2.0",
+     "https://huggingface.co/cstr/text-super-resolution-gguf"},
+
+    {"pan-x4",
+     "pan-x4-f16.gguf",
+     "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/pan-x4-f16.gguf",
+     "PAN 4x image SR (272K params, PaddleGAN)", "0.5 MB", "Apache-2.0",
+     "https://huggingface.co/cstr/text-super-resolution-gguf"},
 
     // text-sr: NAFNet-SR engine — no default model; supply a custom trained GGUF.
     {"text-sr",

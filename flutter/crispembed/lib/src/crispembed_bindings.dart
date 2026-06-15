@@ -493,6 +493,35 @@ typedef CrispembedTextSrProcessDart = int Function(
 typedef CrispembedTextSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedTextSrFreeImageDart = void Function(Pointer<Uint8> pixels);
 
+// --- TBSRN text-line Super-Resolution (tbsrn_sr) ---
+typedef CrispembedTbsrnSrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedTbsrnSrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedTbsrnSrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedTbsrnSrFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedTbsrnSrProcessNative = Int32 Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    Int32 width,
+    Int32 height,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+typedef CrispembedTbsrnSrProcessDart = int Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    int width,
+    int height,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+
+typedef CrispembedTbsrnSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
+typedef CrispembedTbsrnSrFreeImageDart = void Function(Pointer<Uint8> pixels);
+
 // --- PAN Super-Resolution (pan_sr) ---
 typedef CrispembedPanSrInitNative = Pointer<Void> Function(
     Pointer<Utf8> modelPath, Int32 nThreads);

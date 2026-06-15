@@ -725,6 +725,20 @@ extern "C" {
     ) -> c_int;
     pub fn crispembed_text_sr_free_image(pixels: *mut u8);
 
+    // ── TBSRN text-line super-resolution ──
+    pub fn crispembed_tbsrn_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_tbsrn_sr_free(ctx: *mut c_void);
+    pub fn crispembed_tbsrn_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_tbsrn_sr_free_image(pixels: *mut u8);
+
     // ── PAN super-resolution ──
     pub fn crispembed_pan_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
     pub fn crispembed_pan_sr_free(ctx: *mut c_void);
@@ -741,20 +755,6 @@ extern "C" {
         out_height: *mut c_int,
     ) -> c_int;
     pub fn crispembed_pan_sr_free_image(pixels: *mut u8);
-
-    // ── TBSRN super-resolution (always 2×, 16×64 → 32×128) ──
-    pub fn crispembed_tbsrn_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
-    pub fn crispembed_tbsrn_sr_free(ctx: *mut c_void);
-    pub fn crispembed_tbsrn_sr_process(
-        ctx: *mut c_void,
-        input: *const u8,
-        width: c_int,
-        height: c_int,
-        output: *mut *mut u8,
-        out_width: *mut c_int,
-        out_height: *mut c_int,
-    ) -> c_int;
-    pub fn crispembed_tbsrn_sr_free_image(pixels: *mut u8);
 
     // ── OCR result rendering ──
     pub fn crispembed_ocr_render(
