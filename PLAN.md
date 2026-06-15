@@ -742,9 +742,9 @@ Listed in priority order:
   finger occlusion). Reference: aster.pytorch (MIT). ~300 LOC.
   Complements classical dewarp as a learned alternative.
 
-- [ ] **Text angle classification** — determine if text line is rotated
-  0° or 180° (upside-down detection). Lightweight classifier before
-  recognition. Useful for mixed-orientation document batches. ~100 LOC.
+- [x] **Text angle classification** — `detect_text_angle()`: heuristic
+  0°/180° detection via ascender/descender asymmetry + page-level ink
+  distribution. No model needed. Returns 0 or 180 + confidence. DONE.
 
 - [ ] **Table structure recognition** — extract HTML table structure from
   images (TableMaster / attention-based table heads). Converts table images
