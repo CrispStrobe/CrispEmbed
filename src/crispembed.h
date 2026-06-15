@@ -715,6 +715,49 @@ CRISPEMBED_API int crispembed_ner_extract(
     crispembed_ner_entity ** out_entities);
 
 // ---------------------------------------------------------------------------
+// Key Information Extraction (KIE) — OCR + NER pipeline.
+// Chains OCR (text detection + recognition) with GLiNER zero-shot NER to
+// extract structured key-value fields from document images (receipts,
+// invoices, forms, business cards).
+// ---------------------------------------------------------------------------
+
+typedef struct crispembed_kie_field {
+    const char * label;   // field name (e.g. "total", "date") — owned by ctx
+    const char * value;   // extracted text — owned by ctx
+    float score;          // NER confidence [0, 1]
+    float x, y, w, h;    // bounding box in original image coordinates
+} crispembed_kie_field;
+
+typedef struct crispembed_kie_result {
+    const crispembed_kie_field * fields; // array of extracted fields — owned by ctx
+    int n_fields;                        // number of fields
+    const char * ocr_text;               // raw OCR text — owned by ctx
+    float ocr_confidence;                // mean OCR confidence
+    int n_ocr_regions;                   // number of OCR text regions
+} crispembed_kie_result;
+
+/// Initialize KIE pipeline. Requires OCR models (det + rec) and a NER model.
+/// Returns opaque context, or NULL on failure.
+CRISPEMBED_API void * crispembed_kie_init(
+    const char * ocr_det_model,   // text detection GGUF (DBNet)
+    const char * ocr_rec_model,   // text recognition GGUF (TrOCR/VLM)
+    const char * ner_model,       // GLiNER NER GGUF
+    int n_threads);
+
+/// Extract structured fields from a document image.
+/// labels: array of field names to extract (e.g. "total", "date", "vendor")
+/// n_labels: number of labels
+/// threshold: NER confidence threshold (0.0-1.0, recommended 0.5)
+/// Returns result struct (owned by ctx, valid until next call or free).
+CRISPEMBED_API crispembed_kie_result crispembed_kie_extract(
+    void * ctx, const char * image_path,
+    const char ** labels, int n_labels,
+    float threshold);
+
+/// Free KIE pipeline context.
+CRISPEMBED_API void crispembed_kie_free(void * ctx);
+
+// ---------------------------------------------------------------------------
 // Scan cleanup — document scan preprocessing (deskew, denoise, crop, whiten).
 // Tier 1: classical image processing, no model needed (model_path=NULL).
 // Tier 2: learned denoising CNN via GGUF model (not yet implemented).

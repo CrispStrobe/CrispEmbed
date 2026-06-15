@@ -155,6 +155,7 @@ list(APPEND CRISPEMBED_SOURCES src/cc_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/classical_preproc.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_render.cpp)
 list(APPEND CRISPEMBED_SOURCES src/dewarp.cpp)
+list(APPEND CRISPEMBED_SOURCES src/kie_pipeline.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -302,6 +303,9 @@ endif()
 
 add_executable(test-gliner-ner tests/test_gliner_ner.cpp)
 target_link_libraries(test-gliner-ner PRIVATE crispembed)
+
+add_executable(test-kie-pipeline tests/test_kie_pipeline.cpp)
+target_link_libraries(test-kie-pipeline PRIVATE crispembed)
 
 add_executable(test-gliner-diff tests/test_gliner_diff.cpp)
 target_link_libraries(test-gliner-diff PRIVATE crispembed)
