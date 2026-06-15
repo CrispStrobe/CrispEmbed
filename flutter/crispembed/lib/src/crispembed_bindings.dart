@@ -557,3 +557,26 @@ typedef CrispembedTbsrnSrProcessDart = int Function(
 
 typedef CrispembedTbsrnSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedTbsrnSrFreeImageDart = void Function(Pointer<Uint8> pixels);
+
+// --- Table Structure Recognition (table_parse) ---
+typedef CrispembedTableParseInitNative = Pointer<Void> Function(
+    Pointer<Utf8> ocrModelPath, Int32 nThreads);
+typedef CrispembedTableParseInitDart = Pointer<Void> Function(
+    Pointer<Utf8> ocrModelPath, int nThreads);
+
+typedef CrispembedTableParseFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedTableParseFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedTableParseToHtmlNative = Pointer<Utf8> Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> gray,
+    Int32 width,
+    Int32 height);
+typedef CrispembedTableParseToHtmlDart = Pointer<Utf8> Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> gray,
+    int width,
+    int height);
+
+typedef CrispembedTableParseFreeStringNative = Void Function(Pointer<Utf8> str);
+typedef CrispembedTableParseFreeStringDart = void Function(Pointer<Utf8> str);
