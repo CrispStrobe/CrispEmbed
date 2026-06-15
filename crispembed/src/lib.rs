@@ -1535,3 +1535,131 @@ impl Drop for CrispScanCleanup {
         unsafe { crispembed_sys::crispembed_scan_cleanup_free(self.ctx) }
     }
 }
+
+// ---------------------------------------------------------------------------
+// OCR Pipeline (orchestrator)
+// ---------------------------------------------------------------------------
+
+/// One recognized text region from the OCR pipeline.
+pub struct OcrPipelineRegion {
+    pub text: String,
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+    pub confidence: f32,
+}
+
+/// Result of a full OCR pipeline run.
+pub struct OcrPipelineResult {
+    pub regions: Vec<OcrPipelineRegion>,
+    /// Regions joined in reading order.
+    pub full_text: String,
+    pub mean_confidence: f32,
+}
+
+/// Configurable OCR pipeline: source-type routing + per-stage image cleanup
+/// (classical + NAFNet) + engine + text-yield/confidence accept-gate escalation.
+/// Wraps the C++ `ocr_orchestrator`. `Send` (own your own instance per thread).
+///
+/// ```no_run
+/// use crispembed::CrispOcrPipeline;
+/// let mut p = CrispOcrPipeline::new("dbnet.gguf", "trocr.gguf", Some("nafnet.gguf"),
+///                                   true, true, 8, 0.5, 0).unwrap();
+/// let res = p.run("scan.png").unwrap();
+/// println!("{}", res.full_text);
+/// ```
+pub struct CrispOcrPipeline {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispOcrPipeline {}
+
+impl CrispOcrPipeline {
+    /// Build a pipeline. `nafnet_model = None` (or "") runs classical cleanup
+    /// only (no learned tier-2 denoise).
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        det_model: &str,
+        rec_model: &str,
+        nafnet_model: Option<&str>,
+        router: bool,
+        cleanup_enabled: bool,
+        min_chars: i32,
+        min_confidence: f32,
+        n_threads: i32,
+    ) -> Result<Self, String> {
+        let det = CString::new(det_model).map_err(|e| format!("det path: {e}"))?;
+        let rec = CString::new(rec_model).map_err(|e| format!("rec path: {e}"))?;
+        let naf = match nafnet_model {
+            Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("nafnet path: {e}"))?),
+            _ => None,
+        };
+        let params = crispembed_sys::CrispembedOcrPipelineParams {
+            router: router as std::os::raw::c_int,
+            cleanup_enabled: cleanup_enabled as std::os::raw::c_int,
+            min_chars: min_chars as std::os::raw::c_int,
+            min_confidence,
+            det_model: det.as_ptr(),
+            rec_model: rec.as_ptr(),
+            nafnet_model: naf.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+            // VLM escalation stage is configured via the CLI/JSON path for now;
+            // CrispSorter's binding defaults it off (slice D wires it through).
+            vlm_model: std::ptr::null(),
+            vlm_engine: 0,
+        };
+        let ctx = unsafe { crispembed_sys::crispembed_ocr_pipeline_init(&params, n_threads) };
+        if ctx.is_null() {
+            return Err("crispembed_ocr_pipeline_init failed".into());
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Run the full pipeline on an image file.
+    pub fn run(&mut self, image_path: &str) -> Result<OcrPipelineResult, String> {
+        let path = CString::new(image_path).map_err(|e| format!("path: {e}"))?;
+        let mut n: std::os::raw::c_int = 0;
+        let mut full_text_ptr: *const std::os::raw::c_char = std::ptr::null();
+        let mut mean_conf: f32 = 0.0;
+        let arr = unsafe {
+            crispembed_sys::crispembed_ocr_pipeline_run(
+                self.ctx,
+                path.as_ptr(),
+                &mut n,
+                &mut full_text_ptr,
+                &mut mean_conf,
+            )
+        };
+        let full_text = if full_text_ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(full_text_ptr) }.to_string_lossy().into_owned()
+        };
+        let mut regions = Vec::new();
+        if !arr.is_null() && n > 0 {
+            let slice = unsafe { std::slice::from_raw_parts(arr, n as usize) };
+            for r in slice {
+                let text = if r.text.is_null() {
+                    String::new()
+                } else {
+                    unsafe { CStr::from_ptr(r.text) }.to_string_lossy().into_owned()
+                };
+                regions.push(OcrPipelineRegion {
+                    text,
+                    x: r.x,
+                    y: r.y,
+                    w: r.w,
+                    h: r.h,
+                    confidence: r.confidence,
+                });
+            }
+        }
+        Ok(OcrPipelineResult { regions, full_text, mean_confidence: mean_conf })
+    }
+}
+
+impl Drop for CrispOcrPipeline {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_ocr_pipeline_free(self.ctx) }
+    }
+}
