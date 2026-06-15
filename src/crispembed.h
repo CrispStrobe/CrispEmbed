@@ -881,6 +881,21 @@ CRISPEMBED_API int crispembed_dewarp(
     const uint8_t * gray, int w, int h,
     uint8_t * out, int * out_w, int * out_h);
 
+/// TPS-based dewarp with explicit control points.
+/// [out] must be pre-allocated (w*h bytes). Returns 0 on success.
+CRISPEMBED_API int crispembed_tps_dewarp(
+    const uint8_t * gray, int w, int h,
+    const float * src_x, const float * src_y,
+    const float * dst_x, const float * dst_y, int n,
+    uint8_t * out);
+
+/// TPS auto-dewarp using a learned localizer model (GGUF).
+/// [out] must be pre-allocated (w*h bytes). Returns 0 on success.
+CRISPEMBED_API int crispembed_tps_auto_dewarp(
+    const uint8_t * gray, int w, int h,
+    const char * model_path,
+    uint8_t * out);
+
 /// Detect text line regions using connected components (model-free).
 /// Returns array of {x,y,w,h} regions, caller frees with free().
 CRISPEMBED_API crispembed_ocr_result * crispembed_cc_detect(

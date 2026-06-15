@@ -257,19 +257,11 @@ int tps_locnet_predict(tps_locnet * net,
         const float * wptr = to_f32(net->conv[i].w, dq_w);
         const float * bptr = to_f32(net->conv[i].b, dq_b);
 
-        // ggml stores conv weights as [kw, kh, ic, oc] — we need [oc, ic, kh, kw]
-        // Transpose: permute dimensions for our conv2d() which expects [oc, ic, kh, kw]
-        std::vector<float> w_transposed(oc * ic * 3 * 3);
-        for (int o = 0; o < oc; o++)
-            for (int c = 0; c < ic; c++)
-                for (int ky = 0; ky < 3; ky++)
-                    for (int kx = 0; kx < 3; kx++)
-                        w_transposed[o * ic * 9 + c * 9 + ky * 3 + kx] =
-                            wptr[kx * 3 * ic * oc + ky * ic * oc + c * oc + o];
-
+        // GGUF data is in numpy row-major order: [OC, IC, KH, KW].
+        // Our conv2d() expects the same layout — use directly.
         buf_b.resize(oc * oh * ow);
         conv2d(buf_a.data(), ic, cur_h, cur_w,
-               w_transposed.data(), bptr, oc, 3, 3, 1,
+               wptr, bptr, oc, 3, 3, 1,
                buf_b.data());
 
         // ReLU

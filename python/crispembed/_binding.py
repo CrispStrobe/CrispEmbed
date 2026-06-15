@@ -2366,6 +2366,11 @@ def _setup_preproc_signatures(lib):
         ctypes.POINTER(ctypes.c_int)]
     lib.crispembed_dewarp.restype = ctypes.c_int
 
+    lib.crispembed_tps_auto_dewarp.argtypes = [
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.c_char_p, ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_tps_auto_dewarp.restype = ctypes.c_int
+
     lib.crispembed_find_skew.argtypes = [
         ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
         ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
@@ -2421,6 +2426,18 @@ class CrispPreprocess:
         if ret != 0:
             return gray.copy()
         return out.reshape(oh.value, ow.value)
+
+    def tps_dewarp(self, gray: np.ndarray, w: int, h: int, model_path: str) -> np.ndarray:
+        """TPS auto-dewarp using a learned localizer model (GGUF). Returns dewarped uint8 array."""
+        out = np.zeros(w * h, dtype=np.uint8)
+        ret = self._lib.crispembed_tps_auto_dewarp(
+            gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            w, h,
+            model_path.encode('utf-8'),
+            out.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)))
+        if ret != 0:
+            return gray.copy()
+        return out.reshape(h, w)
 
     def find_skew(self, gray: np.ndarray, w: int, h: int) -> tuple:
         """Find skew angle in degrees. Returns (angle, confidence)."""

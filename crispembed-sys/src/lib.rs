@@ -721,6 +721,17 @@ extern "C" {
         out: *mut u8, out_w: *mut c_int, out_h: *mut c_int,
     ) -> c_int;
 
+    pub fn crispembed_tps_dewarp(
+        gray: *const u8, w: c_int, h: c_int,
+        src_x: *const f32, src_y: *const f32,
+        dst_x: *const f32, dst_y: *const f32, n: c_int,
+        out: *mut u8,
+    ) -> c_int;
+    pub fn crispembed_tps_auto_dewarp(
+        gray: *const u8, w: c_int, h: c_int,
+        model_path: *const c_char, out: *mut u8,
+    ) -> c_int;
+
     pub fn crispembed_cc_detect(
         gray: *const u8, w: c_int, h: c_int,
         out_n: *mut c_int,

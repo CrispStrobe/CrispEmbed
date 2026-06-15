@@ -3810,6 +3810,7 @@ extern "C" char * crispembed_ocr_render(
 // ---------------------------------------------------------------------------
 
 #include "dewarp.h"
+#include "tps_warp.h"
 #include "cc_detect.h"
 #include "classical_preproc.h"
 
@@ -3818,6 +3819,23 @@ extern "C" int crispembed_dewarp(
     uint8_t * out, int * out_w, int * out_h)
 {
     return dewarp_page(gray, w, h, out, out_w, out_h);
+}
+
+extern "C" int crispembed_tps_dewarp(
+    const uint8_t * gray, int w, int h,
+    const float * src_x, const float * src_y,
+    const float * dst_x, const float * dst_y, int n,
+    uint8_t * out)
+{
+    return tps_dewarp(gray, w, h, src_x, src_y, dst_x, dst_y, n, out);
+}
+
+extern "C" int crispembed_tps_auto_dewarp(
+    const uint8_t * gray, int w, int h,
+    const char * model_path,
+    uint8_t * out)
+{
+    return tps_auto_dewarp(gray, w, h, model_path, out);
 }
 
 extern "C" crispembed_ocr_result * crispembed_cc_detect(

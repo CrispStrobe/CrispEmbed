@@ -94,6 +94,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --output-format F  OCR output format: text (default), hocr, alto\n");
     fprintf(stderr, "  --find-skew FILE   detect skew angle (degrees) of a document image\n");
     fprintf(stderr, "  --dewarp FILE      dewarp a curved document page (straighten text lines)\n");
+    fprintf(stderr, "  --tps-dewarp MODEL FILE  TPS-based dewarp (learned, needs model GGUF)\n");
     fprintf(stderr, "  --cc-detect FILE   detect text lines via connected components (model-free)\n");
     fprintf(stderr, "  --cleanup        preprocess scan before OCR (deskew, crop borders, whiten background)\n");
     fprintf(stderr, "  --cleanup-only F process scan and write cleaned image to stdout (no OCR)\n");
@@ -170,6 +171,8 @@ int main(int argc, char ** argv) {
     std::string pipeline_engine; // --ocr-engine NAME
     std::string find_skew_path;  // --find-skew FILE
     std::string dewarp_path;     // --dewarp FILE
+    std::string tps_dewarp_model; // --tps-dewarp MODEL FILE
+    std::string tps_dewarp_path;
     std::string cc_detect_path;  // --cc-detect FILE
     bool face_pipeline_mode = false;
     float conf_threshold = 0.5f;
@@ -244,6 +247,9 @@ int main(int argc, char ** argv) {
             find_skew_path = argv[++i];
         } else if (strcmp(argv[i], "--dewarp") == 0 && i + 1 < argc) {
             dewarp_path = argv[++i];
+        } else if (strcmp(argv[i], "--tps-dewarp") == 0 && i + 2 < argc) {
+            tps_dewarp_model = argv[++i];
+            tps_dewarp_path  = argv[++i];
         } else if (strcmp(argv[i], "--cc-detect") == 0 && i + 1 < argc) {
             cc_detect_path = argv[++i];
         } else if (strcmp(argv[i], "--cleanup") == 0) {
@@ -323,6 +329,18 @@ int main(int argc, char ** argv) {
         // Write result as PGM to stdout
         printf("P5\n%d %d\n255\n", ow, oh);
         fwrite(out.data(), 1, ow * oh, stdout);
+        return 0;
+    }
+    if (!tps_dewarp_path.empty()) {
+        int w, h, ch;
+        unsigned char * data = stbi_load(tps_dewarp_path.c_str(), &w, &h, &ch, 1);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", tps_dewarp_path.c_str()); return 1; }
+        std::vector<uint8_t> out(w * h);
+        int ret = crispembed_tps_auto_dewarp(data, w, h, tps_dewarp_model.c_str(), out.data());
+        stbi_image_free(data);
+        if (ret != 0) { fprintf(stderr, "tps-dewarp failed\n"); return 1; }
+        printf("P5\n%d %d\n255\n", w, h);
+        fwrite(out.data(), 1, w * h, stdout);
         return 0;
     }
     if (!cc_detect_path.empty()) {

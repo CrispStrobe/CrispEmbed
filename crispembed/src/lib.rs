@@ -1826,6 +1826,20 @@ pub fn dewarp(gray: &[u8], width: i32, height: i32) -> Result<(Vec<u8>, i32, i32
     Ok((out, ow, oh))
 }
 
+/// TPS auto-dewarp using a learned localizer model (GGUF).
+/// Returns the dewarped image as a Vec<u8>, or Err if dewarping failed.
+pub fn tps_auto_dewarp(gray: &[u8], width: i32, height: i32, model_path: &str) -> Result<Vec<u8>, String> {
+    let c_path = std::ffi::CString::new(model_path).map_err(|e| e.to_string())?;
+    let mut out = vec![0u8; (width * height) as usize];
+    let ret = unsafe {
+        crispembed_sys::crispembed_tps_auto_dewarp(
+            gray.as_ptr(), width, height,
+            c_path.as_ptr(), out.as_mut_ptr())
+    };
+    if ret != 0 { return Err("TPS auto-dewarp failed".into()); }
+    Ok(out)
+}
+
 /// Detect text line regions using connected components (model-free, GPU-free).
 pub fn cc_detect(gray: &[u8], width: i32, height: i32) -> Vec<OcrRegion> {
     let mut n: i32 = 0;
