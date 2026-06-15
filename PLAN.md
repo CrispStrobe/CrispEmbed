@@ -699,6 +699,48 @@ Window partition → local MHSA + RPB lookup → window reverse → shift.
 
 ---
 
+### PDF + document processing improvements (inspired by OCRmyPDF)
+
+OCRmyPDF (MPL-2.0) has capabilities we lack. We CANNOT port its code
+(MPL-2.0 is file-level copyleft; our repo is MIT). We implement from
+first principles using the PDF specification (ISO 32000, public) and
+MIT/Apache-2.0 reference implementations (libharu zlib, qpdf Apache-2.0,
+pdfcpu Apache-2.0). Listed in priority order:
+
+- [ ] **PDF text layer with rotation-aware CTM** — our current PDF renderer
+  positions text with simple `Td` commands, which breaks on rotated pages.
+  Implement proper Coordinate Transform Matrix (rotation, scaling, user unit)
+  per the PDF spec §8.3.3. Reference: PDF spec + qpdf (Apache-2.0).
+  Pure matrix math, no external deps. ~100 LOC.
+
+- [ ] **Glyph-width-aware text positioning** — scale each word's font size
+  so rendered text width matches OCR bounding box width. Makes text selection
+  in the PDF accurate. Requires: Helvetica glyph width table (public domain,
+  from the PDF spec Appendix D) + per-word `Tj` with computed `Tf`. ~150 LOC.
+
+- [ ] **Searchable PDF with embedded page image** — embed the original page
+  image as a JPEG XObject, draw it as full-page background, then overlay
+  invisible text. Per PDF spec §8.9 (Image XObjects). Needs JPEG encoding
+  (use stb_image_write.h, public domain). ~200 LOC.
+
+- [ ] **Image downsampling calculator** — before OCR, check if image
+  resolution is excessive and downsample to target DPI. Respects
+  max_size/max_pixels/max_bytes constraints. Pure math, ~50 LOC.
+
+- [ ] **PDF page DPI profiling** — analyze images in a PDF page to determine
+  effective DPI (weighted harmonic mean for mixed-resolution pages).
+  Helps auto-select OCR resolution. ~100 LOC.
+
+- [ ] **OCR quality scoring** — dictionary-based word matching for
+  confidence assessment. Load a wordlist, check what fraction of OCR output
+  consists of known words. ~50 LOC.
+
+- [ ] **PDF/A metadata** — XMP metadata packet + ICC sRGB profile embedding
+  per the PDF/A spec (ISO 19005). Portable subset that doesn't need
+  Ghostscript. Reference: pdfcpu (Apache-2.0) XMP handling. ~200 LOC.
+
+---
+
 ### Blueprint: GLM-OCR (0.9B, MIT, GGUF exists)
 
 **Goal**: Integrate GLM-OCR for general document OCR. GGUF already
