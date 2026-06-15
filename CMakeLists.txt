@@ -316,6 +316,9 @@ target_link_libraries(test-kie-pipeline PRIVATE crispembed)
 add_executable(test-lilt-kie tests/test_lilt_kie.cpp)
 target_link_libraries(test-lilt-kie PRIVATE crispembed)
 
+add_executable(test-lilt-diff tests/test_lilt_diff.cpp)
+target_link_libraries(test-lilt-diff PRIVATE crispembed)
+
 add_executable(test-gliner-diff tests/test_gliner_diff.cpp)
 target_link_libraries(test-gliner-diff PRIVATE crispembed)
 

@@ -44,6 +44,17 @@ std::vector<token_result> classify(context* ctx,
                                     const int32_t* bbox,  // flat [n_tokens * 4]
                                     int n_tokens);
 
+// Run with dump mode: returns named per-layer intermediates for parity testing.
+struct dump_tensor {
+    std::string name;
+    std::vector<float> data;
+    int n_elem;
+};
+std::vector<dump_tensor> classify_dump(context* ctx,
+                                        const int32_t* input_ids,
+                                        const int32_t* bbox,
+                                        int n_tokens);
+
 // Get label name by id.
 const char* label_name(context* ctx, int label_id);
 
