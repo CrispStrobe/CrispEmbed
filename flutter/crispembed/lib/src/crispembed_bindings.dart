@@ -304,3 +304,24 @@ typedef CrispembedNerExtractDart = int Function(
     int nLabels,
     double threshold,
     Pointer<Pointer<Void>> outEntities);
+
+// --- OCR Orchestrator (source-type routing + cleanup + accept-gate) ---
+// Uses the simple init path: crispembed_ocr_pipeline_init(params*, n_threads)
+// The params struct is built in Dart and passed as a pointer.
+typedef CrispembedOcrPipelineInitNative = Pointer<Void> Function(
+    Pointer<Void> params, Int32 nThreads);
+typedef CrispembedOcrPipelineInitDart = Pointer<Void> Function(
+    Pointer<Void> params, int nThreads);
+
+typedef CrispembedOcrPipelineRunNative = Pointer<Void> Function(
+    Pointer<Void> ctx, Pointer<Utf8> imagePath,
+    Pointer<Int32> outN, Pointer<Pointer<Utf8>> outText, Pointer<Float> outConf);
+typedef CrispembedOcrPipelineRunDart = Pointer<Void> Function(
+    Pointer<Void> ctx, Pointer<Utf8> imagePath,
+    Pointer<Int32> outN, Pointer<Pointer<Utf8>> outText, Pointer<Float> outConf);
+
+typedef CrispembedOcrPipelineFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedOcrPipelineFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedOcrPipelineDefaultsNative = Void Function(Pointer<Void> outParams);
+typedef CrispembedOcrPipelineDefaultsDart = void Function(Pointer<Void> outParams);

@@ -1518,3 +1518,100 @@ class CrispNER {
     if (_disposed) throw StateError('CrispNER has been disposed');
   }
 }
+
+// ---------------------------------------------------------------------------
+// OCR Orchestrator (source-type routing + cleanup + accept-gate)
+// ---------------------------------------------------------------------------
+
+/// Full OCR orchestrator with source-type routing, scan cleanup,
+/// multi-engine cascading, and accept-gate fallback.
+///
+/// Wraps `crispembed_ocr_pipeline_init` / `crispembed_ocr_pipeline_run`.
+class CrispOcrOrchestrator {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedOcrPipelineFreeDart _freeFn;
+  late final CrispembedOcrPipelineRunDart _runFn;
+
+  /// Load the orchestrator with detection + recognition models.
+  ///
+  /// [detModelPath] — text detection GGUF (DBNet / Surya).
+  /// [recModelPath] — text recognition GGUF (TrOCR / VLM).
+  /// [minChars] — accept-gate minimum text yield.
+  /// [minConfidence] — accept-gate confidence floor.
+  CrispOcrOrchestrator(String detModelPath, String recModelPath,
+      {int nThreads = 4,
+      int minChars = 8,
+      double minConfidence = 0.5,
+      String? libPath}) {
+    _lib = _openNativeLib(libPath);
+
+    final initFn = _lib.lookupFunction<CrispembedOcrPipelineInitNative,
+        CrispembedOcrPipelineInitDart>('crispembed_ocr_pipeline_init');
+    _freeFn = _lib.lookupFunction<CrispembedOcrPipelineFreeNative,
+        CrispembedOcrPipelineFreeDart>('crispembed_ocr_pipeline_free');
+    _runFn = _lib.lookupFunction<CrispembedOcrPipelineRunNative,
+        CrispembedOcrPipelineRunDart>('crispembed_ocr_pipeline_run');
+
+    // Build params struct: 4 ints + 1 float + 4 pointers + 1 int = 72 bytes on 64-bit
+    // Match the C struct layout of crispembed_ocr_pipeline_params
+    final paramsSize = 4 * 4 + 4 + 5 * sizeOf<Pointer>(); // approximate
+    final params = calloc<Uint8>(paramsSize);
+    final ints = params.cast<Int32>();
+    ints[0] = 1; // router
+    ints[1] = 1; // cleanup_enabled
+    ints[2] = minChars; // min_chars
+    final floats = params.cast<Uint8>().elementAt(12).cast<Float>();
+    floats[0] = minConfidence;
+    // Model pointers at offset 16
+    final ptrs = params.cast<Uint8>().elementAt(16).cast<Pointer<Utf8>>();
+    final detPtr = detModelPath.toNativeUtf8();
+    final recPtr = recModelPath.toNativeUtf8();
+    ptrs[0] = detPtr;
+    ptrs[1] = recPtr;
+    // nafnet, vlm: null (already zeroed by calloc)
+
+    _ctx = initFn(params.cast<Void>(), nThreads);
+
+    calloc.free(detPtr);
+    calloc.free(recPtr);
+    calloc.free(params);
+
+    if (_ctx == nullptr) {
+      throw Exception(
+          'Failed to init OCR orchestrator: $detModelPath + $recModelPath');
+    }
+  }
+
+  /// Run the full pipeline on an image. Returns text + metadata.
+  ({String text, int nRegions, double meanConfidence}) run(String imagePath) {
+    if (_disposed) return (text: '', nRegions: 0, meanConfidence: 0.0);
+    final pathPtr = imagePath.toNativeUtf8();
+    final outN = calloc<Int32>();
+    final outText = calloc<Pointer<Utf8>>();
+    final outConf = calloc<Float>();
+
+    _runFn(_ctx, pathPtr, outN, outText, outConf);
+
+    final n = outN.value;
+    final text =
+        outText.value != nullptr ? outText.value.toDartString() : '';
+    final conf = outConf.value;
+
+    calloc.free(pathPtr);
+    calloc.free(outN);
+    calloc.free(outText);
+    calloc.free(outConf);
+
+    return (text: text, nRegions: n, meanConfidence: conf);
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+}
