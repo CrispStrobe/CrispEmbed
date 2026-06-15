@@ -342,29 +342,44 @@ CrispEmbed/
 
 #### Classical image processing — cherry-picked from Leptonica
 
-Leptonica (180K+ LOC, BSD-2) has algorithms that beat our current
-implementations in speed, quality, or memory. We cherry-pick the
-algorithms (not the library) into self-contained C files. No Leptonica
-dependency; no Leptonica I/O or Pix types. Evaluated on three axes:
-speed, quality, resource usage (CPU/memory/GPU-friendliness).
+Our current pipeline is GPU/learned-heavy (NAFNet, DBNet/Surya, RT-DETRv2).
+Leptonica (180K+ LOC, BSD-2) gives us a **CPU-only, model-free, fast,
+low-resource tier** for the same pipeline steps, plus one capability we
+entirely lack (dewarping). We cherry-pick the algorithms (not the library)
+into self-contained C++ in `src/`. No Leptonica dependency, no Pix types.
+BSD-attributed. Surface as per-stage cleanup-method options (classical-fast
+vs NAFNet-quality) + CC-based detector tier, tunable through the per-stage
+builder we already shipped.
 
-- [ ] **DWA morphology + 1-bit images** (PORT — high priority)
-  Current: float separable morph in scan_cleanup.cpp (~50 Mpix/s).
-  Leptonica DWA on packed 1-bit: ~300 Mpix/s (5-6x faster, 8x less memory).
-  Port `pixDilateBrick`/`pixErodeBrick` DWA variants + 1-bit image repr.
-  ~500 LOC. Directly benefits scan_cleanup background whitening.
-- [ ] **Adaptive Otsu binarization (tiled + smoothed)**
-  Current: single-pass Otsu. Fails on uneven lighting (fax, phone scans).
-  Leptonica: per-tile Otsu + convolution smoothing of tile thresholds.
-  ~100 LOC. Quality win on degraded scans.
-- [ ] **Connected component analysis (seedfill)**
-  Current: none. Enables classical text-line fallback when neural
-  detection fails, character bounding boxes, blob statistics.
-  Stack-based Heckbert seedfill, 4/8-connectivity. ~200 LOC.
-- [ ] **Skew detection (multi-scale + binary search)**
-  Current: full-res Hough. Leptonica: 4x reduce → coarse sweep → binary
-  search refinement + differential square-sum scoring (more robust
-  than Sobel edges on noisy backgrounds). 1.5-2x faster. ~150 LOC.
+Priority order (by impact across speed × quality × resources):
+
+- [x] **1-bit DWA morphology** — DONE (morph_fast.{h,cpp}). 21x speedup,
+  32x less memory vs float separable morph. Bench: 80ms vs 1691ms on
+  2000×3000 image with K=51.
+
+- [ ] **Page dewarping** (`dewarp*`) — highest-value gap. We have nothing.
+  Leptonica: disparity-model dewarping via textline baseline spline fitting.
+  Big quality win on book scans, phone captures, curved pages. ~3000 LOC
+  for model building + rendering. Largest effort but largest payoff.
+
+- [ ] **CC-based region/line segmentation** — model-free detector tier.
+  `pixGetRegionsBinary`, projection-based line-finding, `conncomp` seedfill.
+  Enables zero-download, GPU-free OCR pipeline: CC detect → Tesseract LSTM
+  recognize. Huge for low-end machines and the CLI. ~500 LOC.
+
+- [ ] **Adaptive (tiled) Otsu + optimized Sauvola + background norm**
+  `pixOtsuAdaptiveThreshold` (per-tile Otsu + convolution smoothing),
+  `pixBackgroundNormSimple` (gradient/shadow-robust background estimation).
+  Quality+speed upgrades, drop-in replacement for scan_cleanup binarize/whiten.
+  Current global Otsu fails on uneven lighting (fax, phone scans). ~200 LOC.
+
+- [ ] **Deskew** (`pixFindSkew`) — differential square-count projection.
+  More robust than our Hough-on-Sobel (works on sparse text, no edge noise),
+  faster (no Hough accumulator). ~150 LOC.
+
+- [ ] **CC despeckle** — CPU/no-model denoise alternative to NAFNet.
+  `pixSelectBySize` (remove small connected components) + median filter.
+  The "light tier" for clean-ish scans where NAFNet is overkill. ~100 LOC.
 
 #### Nice-to-have
 
