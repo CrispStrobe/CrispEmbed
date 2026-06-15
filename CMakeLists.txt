@@ -158,6 +158,7 @@ list(APPEND CRISPEMBED_SOURCES src/classical_preproc.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_render.cpp)
 list(APPEND CRISPEMBED_SOURCES src/dewarp.cpp)
 list(APPEND CRISPEMBED_SOURCES src/kie_pipeline.cpp)
+list(APPEND CRISPEMBED_SOURCES src/lilt_kie.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tps_warp.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tps_locnet.cpp)
 
@@ -310,6 +311,9 @@ target_link_libraries(test-gliner-ner PRIVATE crispembed)
 
 add_executable(test-kie-pipeline tests/test_kie_pipeline.cpp)
 target_link_libraries(test-kie-pipeline PRIVATE crispembed)
+
+add_executable(test-lilt-kie tests/test_lilt_kie.cpp)
+target_link_libraries(test-lilt-kie PRIVATE crispembed)
 
 add_executable(test-gliner-diff tests/test_gliner_diff.cpp)
 target_link_libraries(test-gliner-diff PRIVATE crispembed)

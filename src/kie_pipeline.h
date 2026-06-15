@@ -45,7 +45,8 @@ struct result {
 
 struct config {
     ocr_orchestrator::config ocr;       // OCR pipeline configuration
-    std::string              ner_model; // GLiNER GGUF model path
+    std::string              ner_model; // GLiNER GGUF model path (Phase 1)
+    std::string              lilt_model; // LiLT GGUF model path (Phase 2, optional)
     float                    threshold; // NER confidence threshold (default 0.5)
 };
 
