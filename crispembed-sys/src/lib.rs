@@ -705,4 +705,39 @@ extern "C" {
     ) -> c_int;
 
     pub fn crispembed_scan_cleanup_free_image(pixels: *mut u8);
+
+    // ── OCR result rendering ──
+    pub fn crispembed_ocr_render(
+        results: *const CrispembedOcrResult,
+        n_results: c_int,
+        page_width: c_int,
+        page_height: c_int,
+        format: *const c_char,
+    ) -> *mut c_char;
+
+    // ── Classical preprocessing ──
+    pub fn crispembed_dewarp(
+        gray: *const u8, w: c_int, h: c_int,
+        out: *mut u8, out_w: *mut c_int, out_h: *mut c_int,
+    ) -> c_int;
+
+    pub fn crispembed_cc_detect(
+        gray: *const u8, w: c_int, h: c_int,
+        out_n: *mut c_int,
+    ) -> *mut CrispembedOcrResult;
+
+    pub fn crispembed_find_skew(
+        gray: *const u8, w: c_int, h: c_int,
+        angle: *mut f32, confidence: *mut f32,
+    ) -> c_int;
+
+    pub fn crispembed_adaptive_binarize(
+        gray: *const u8, w: c_int, h: c_int, out: *mut u8);
+
+    pub fn crispembed_background_norm(
+        gray: *const u8, w: c_int, h: c_int, out: *mut u8);
+
+    pub fn crispembed_despeckle(
+        gray: *const u8, w: c_int, h: c_int,
+        max_w: c_int, max_h: c_int, out: *mut u8);
 }
