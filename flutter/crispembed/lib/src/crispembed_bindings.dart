@@ -640,3 +640,38 @@ typedef CrispembedTableParseToHtmlDart = Pointer<Utf8> Function(
 
 typedef CrispembedTableParseFreeStringNative = Void Function(Pointer<Utf8> str);
 typedef CrispembedTableParseFreeStringDart = void Function(Pointer<Utf8> str);
+// --- Real-ESRGAN Super-Resolution (esrgan_sr) ---
+typedef CrispembedEsrganSrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedEsrganSrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedEsrganSrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedEsrganSrFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedEsrganSrScaleNative = Int32 Function(Pointer<Void> ctx);
+typedef CrispembedEsrganSrScaleDart = int Function(Pointer<Void> ctx);
+
+typedef CrispembedEsrganSrProcessNative = Int32 Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    Int32 width,
+    Int32 height,
+    Int32 tileSize,
+    Int32 tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+typedef CrispembedEsrganSrProcessDart = int Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    int width,
+    int height,
+    int tileSize,
+    int tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+
+typedef CrispembedEsrganSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
+typedef CrispembedEsrganSrFreeImageDart = void Function(Pointer<Uint8> pixels);

@@ -548,6 +548,12 @@ static const ModelEntry k_registry[] = {
      "SAFMN 4x super-resolution (228K params, ICCV 2023)", "0.9 MB", "apache-2.0",
      "https://huggingface.co/cstr/safmn-sr-GGUF"},
 
+    {"esrgan-x4",
+     "esrgan-x4-f32.gguf",
+     "https://huggingface.co/cstr/esrgan-sr-GGUF/resolve/main/esrgan-x4-f32.gguf",
+     "Real-ESRGAN 4x SR (SRVGGNetCompact, 620K params, BSD-3)", "2.4 MB", "bsd-3-clause",
+     "https://huggingface.co/cstr/esrgan-sr-GGUF"},
+
     {"tps-loc",
      "tps-loc-f32.gguf",
      "https://huggingface.co/cstr/tps-loc-GGUF/resolve/main/tps-loc-f32.gguf",

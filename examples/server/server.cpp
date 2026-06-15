@@ -81,6 +81,7 @@ int main(int argc, char ** argv) {
     std::string tbsrn_model_path;     // TBSRN text-line SR model (--tbsrn-model)
     std::string safmn_model_path;     // SAFMN super-resolution model (--safmn-model)
     std::string table_ocr_model_path; // table cell OCR model (--table-ocr-model)
+    std::string esrgan_model_path;    // Real-ESRGAN super-resolution model (--esrgan-model)
     int port = 8080;
     int n_threads = 4;
 
@@ -111,9 +112,10 @@ int main(int argc, char ** argv) {
 
     if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && tbsrn_model_path.empty()) {
         else if (strcmp(argv[i], "--safmn-model") == 0 && i + 1 < argc) safmn_model_path = argv[++i];
+        else if (strcmp(argv[i], "--esrgan-model") == 0 && i + 1 < argc) esrgan_model_path = argv[++i];
     }
 
-    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && safmn_model_path.empty()) {
+    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
@@ -149,6 +151,8 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "\nTable structure recognition:\n");
         fprintf(stderr, "  --table-ocr-model MODEL  Tesseract LSTM GGUF for cell OCR; enables POST /table/parse\n");
         fprintf(stderr, "                           (omit to run without cell OCR — structure only)\n");
+        fprintf(stderr, "\nReal-ESRGAN super-resolution (SRVGGNetCompact whole-image upscaling):\n");
+        fprintf(stderr, "  --esrgan-model MODEL Real-ESRGAN SR GGUF (SRVGGNetCompact, 620K params, 4x); enables POST /esrgan/sr\n");
         return 1;
     }
 
@@ -839,6 +843,8 @@ int main(int argc, char ** argv) {
         tbsrn_sr_ctx = crispembed_tbsrn_sr_init(tbsrn_model_path.c_str(), n_threads);
         if (!tbsrn_sr_ctx)
             fprintf(stderr, "Warning: failed to load TBSRN SR model '%s'\n", tbsrn_model_path.c_str());
+    }
+
     // ── SAFMN Super-Resolution ──
     void * safmn_sr_ctx = nullptr;
     std::mutex safmn_sr_mutex;
@@ -860,6 +866,14 @@ int main(int argc, char ** argv) {
         table_parse_ctx = crispembed_table_parse_init(ocr_path, n_threads);
         if (!table_parse_ctx)
             fprintf(stderr, "Warning: failed to init table parser\n");
+    // ── Real-ESRGAN Super-Resolution ──
+    void * esrgan_sr_ctx = nullptr;
+    std::mutex esrgan_sr_mutex;
+
+    if (!esrgan_model_path.empty()) {
+        esrgan_sr_ctx = crispembed_esrgan_sr_init(esrgan_model_path.c_str(), n_threads);
+        if (!esrgan_sr_ctx)
+            fprintf(stderr, "Warning: failed to load Real-ESRGAN SR model '%s'\n", esrgan_model_path.c_str());
     }
 
     // POST /clip/text — CLIP text encoding
@@ -2238,6 +2252,11 @@ int main(int argc, char ** argv) {
         if (!table_parse_ctx) {
             res.status = 503;
             res.set_content("{\"error\": \"table parser not available\"}", "application/json");
+    // POST /esrgan/sr — Real-ESRGAN whole-image super-resolution (SRVGGNetCompact)
+    svr.Post("/esrgan/sr", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!esrgan_sr_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no Real-ESRGAN SR model loaded (use --esrgan-model)\"}", "application/json");
             return;
         }
 
@@ -2258,6 +2277,7 @@ int main(int argc, char ** argv) {
 
         int w, h, ch;
         unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 1);
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 3);
         if (!data) {
             res.status = 400;
             res.set_content("{\"error\": \"cannot load image\"}", "application/json");
@@ -2268,6 +2288,15 @@ int main(int argc, char ** argv) {
         auto t0 = std::chrono::steady_clock::now();
 
         char * html = crispembed_table_parse_to_html(table_parse_ctx, data, w, h);
+        std::lock_guard<std::mutex> lock(esrgan_sr_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_esrgan_sr_process(
+            esrgan_sr_ctx, data, w, h,
+            /*tile_size=*/0, /*tile_overlap=*/0,
+            &out, &ow, &oh);
         stbi_image_free(data);
 
         auto t1 = std::chrono::steady_clock::now();
@@ -2313,6 +2342,40 @@ int main(int argc, char ** argv) {
 
         fprintf(stderr, "crispembed-server: /table/parse in %.1f ms (%dx%d, %d rows, %d cols)\n",
                 ms, w, h, n_rows, n_cols);
+        if (rc != 0 || !out) {
+            res.status = 500;
+            res.set_content("{\"error\": \"Real-ESRGAN SR processing failed\"}", "application/json");
+            return;
+        }
+
+        // Base64-encode the raw RGB output
+        static const char b64chars[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        const size_t n_bytes = (size_t)ow * oh * 3;
+        std::string b64;
+        b64.reserve(((n_bytes + 2) / 3) * 4);
+        for (size_t i = 0; i < n_bytes; i += 3) {
+            uint32_t v = (uint32_t)out[i] << 16;
+            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
+            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
+            b64 += b64chars[(v >> 18) & 0x3f];
+            b64 += b64chars[(v >> 12) & 0x3f];
+            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
+            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
+        }
+        crispembed_esrgan_sr_free_image(out);
+
+        const int scale = crispembed_esrgan_sr_scale(esrgan_sr_ctx);
+
+        std::ostringstream js;
+        js << "{\"image\": \"" << b64 << "\""
+           << ", \"width\": " << ow << ", \"height\": " << oh
+           << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": " << scale
+           << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /esrgan/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n",
+                ms, w, h, ow, oh, scale);
         res.set_content(js.str(), "application/json");
     });
 
@@ -2531,6 +2594,7 @@ int main(int argc, char ** argv) {
         if (tbsrn_sr_ctx) js << ", \"tbsrn_sr\": true, \"tbsrn_sr_upscale\": 4";
         if (safmn_sr_ctx) js << ", \"safmn_sr\": true, \"safmn_sr_upscale\": " << crispembed_safmn_sr_scale(safmn_sr_ctx);
         if (table_parse_ctx) js << ", \"table_parse\": true";
+        if (esrgan_sr_ctx) js << ", \"esrgan_sr\": true, \"esrgan_sr_upscale\": " << crispembed_esrgan_sr_scale(esrgan_sr_ctx);
         js << ", \"scan_cleanup\": true";  // always available (no model needed)
         js << "}";
         res.set_content(js.str(), "application/json");
@@ -2560,6 +2624,7 @@ int main(int argc, char ** argv) {
     if (safmn_sr_ctx) fprintf(stderr, "  POST /safmn/sr        — {\"image\": \"photo.png\"} (upscale %dx)\n", crispembed_safmn_sr_scale(safmn_sr_ctx));
     if (table_parse_ctx) fprintf(stderr, "  POST /table/parse     — {\"image\": \"table.png\"}%s\n",
         table_ocr_model_path.empty() ? " (structure only, no cell OCR)" : " (structure + cell OCR)");
+    if (esrgan_sr_ctx) fprintf(stderr, "  POST /esrgan/sr       — {\"image\": \"photo.png\"} (upscale %dx)\n", crispembed_esrgan_sr_scale(esrgan_sr_ctx));
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
     fprintf(stderr, "  POST /pdf/dpi              — {\"file\": \"...\"} (PDF DPI profiling)\n");
     fprintf(stderr, "  POST /preprocess/skew      — {\"image\": \"...\"} (find skew angle)\n");
@@ -2579,6 +2644,7 @@ int main(int argc, char ** argv) {
     if (tbsrn_sr_ctx) crispembed_tbsrn_sr_free(tbsrn_sr_ctx);
     if (safmn_sr_ctx) crispembed_safmn_sr_free(safmn_sr_ctx);
     if (table_parse_ctx) crispembed_table_parse_free(table_parse_ctx);
+    if (esrgan_sr_ctx) crispembed_esrgan_sr_free(esrgan_sr_ctx);
     if (ner_ctx) crispembed_ner_free(ner_ctx);
     if (layout_ctx) crispembed_layout_free(layout_ctx);
     if (text_det_ctx) crispembed_text_det_free(text_det_ctx);
