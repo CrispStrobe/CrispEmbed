@@ -1899,9 +1899,11 @@ pub struct OcrRenderPageInput<'a> {
 ///   - **multi-page** — emits a single document spanning all pages.
 ///
 /// `format`: `"text"` | `"hocr"` | `"alto"` | `"pdf"`. Each region becomes a
-/// one-word line (the orchestrator emits region-level boxes). Returns `None` on
+/// one-word line (the orchestrator emits region-level boxes). `pdfa` enables
+/// PDF/A-2b archival compliance (XMP metadata + sRGB OutputIntent) — only
+/// affects the `"pdf"` format; ignored otherwise. Returns `None` on
 /// allocation/render failure.
-pub fn ocr_render_pages(pages: &[OcrRenderPageInput], format: &str) -> Option<Vec<u8>> {
+pub fn ocr_render_pages(pages: &[OcrRenderPageInput], format: &str, pdfa: bool) -> Option<Vec<u8>> {
     use crispembed_sys::{OcrRenderLine, OcrRenderPage, OcrRenderWord};
     let fmt = match format {
         "hocr" => 1,
@@ -1912,6 +1914,10 @@ pub fn ocr_render_pages(pages: &[OcrRenderPageInput], format: &str) -> Option<Ve
     let r = unsafe { crispembed_sys::ocr_render_create(fmt) };
     if r.is_null() {
         return None;
+    }
+    // PDF/A-2b must be set before begin(); no-op for non-PDF formats.
+    if pdfa {
+        unsafe { crispembed_sys::ocr_render_set_pdfa(r, 1) };
     }
     unsafe { crispembed_sys::ocr_render_begin(r) };
 

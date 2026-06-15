@@ -788,6 +788,9 @@ extern "C" {
     /// format: 0=text, 1=hocr, 2=alto, 3=pdf (matches `ocr_render_format`).
     pub fn ocr_render_create(format: c_int) -> *mut c_void;
     pub fn ocr_render_set_separator(r: *mut c_void, sep: *const c_char);
+    /// Enable PDF/A-2b compliance (XMP metadata + sRGB OutputIntent). Must be
+    /// called before `ocr_render_begin`; only affects the PDF format.
+    pub fn ocr_render_set_pdfa(r: *mut c_void, enabled: c_int);
     pub fn ocr_render_begin(r: *mut c_void);
     pub fn ocr_render_add_page(r: *mut c_void, page: *const OcrRenderPage);
     pub fn ocr_render_end(r: *mut c_void);
