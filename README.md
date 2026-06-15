@@ -364,6 +364,58 @@ cleanup = CrispScanCleanup("nafnet-sidd-w32-q8_0.gguf")  # tier 1 + 2
 cleaned = cleanup.process("scan.png")                 # numpy RGB array
 ```
 
+## Text Super-Resolution
+
+Upscale low-resolution text images before OCR — two production engines plus an
+NAFNet-SR scaffolding for custom trained models. Both models are Apache-2.0 and
+auto-downloaded via the model registry.
+
+| Model | Architecture | Params | Size | Use case | License |
+|-------|-------------|--------|------|----------|---------|
+| **PAN** (`pan-sr-x4`) | SC-PA blocks + PixelShuffle(4) | 272K | 0.5 MB | Full-page 4× upscale | Apache-2.0 |
+| **TBSRN** (`tbsrn-sr`) | TSA residual groups + PixelShuffle(2) | 1.1M | 2 MB | Per-line 2× upscale | Apache-2.0 |
+| **NAFNet-SR** (`text-sr`) | NAFNet U-Net + configurable upsample tail | custom | — | Custom trained model | Apache-2.0 |
+
+**PAN** (Pixel Attention Network): whole-page 4× super-resolution via
+depthwise-separable convolutions + pixel attention gates. 0.5 MB GGUF.
+Parity cos=0.999654 vs PyTorch reference.
+
+**TBSRN** (Text Before Super-Resolution Network): per-line 2× super-resolution
+with transformer-style spatial token attention (telescope training scheme).
+2 MB GGUF. Parity cos=0.999985 vs PyTorch reference.
+
+```bash
+# CLI — PAN 4× whole-page super-resolution
+./build/crispembed --pan-sr document.png --output upscaled.png
+
+# CLI — TBSRN 2× per-line super-resolution (text-line crop)
+./build/crispembed --tbsrn-sr line_crop.png --output upscaled_line.png
+
+# CLI — NAFNet-SR with custom trained model
+./build/crispembed --sr-model my-nafnet-sr.gguf input.png --output upscaled.png
+
+# Server
+./build/crispembed-server --pan-sr pan-x4-f16.gguf \
+    --tbsrn-sr tbsrn-telescope-f16.gguf --port 8080
+curl -X POST http://localhost:8080/pan/sr -d '{"image": "scan.png"}'
+curl -X POST http://localhost:8080/tbsrn/sr -d '{"image": "line_crop.png"}'
+
+# Python — PAN
+from crispembed import CrispPanSr
+sr = CrispPanSr("pan-x4-f16.gguf")
+upscaled = sr.upscale("scan.png")          # PIL Image or numpy array in → numpy out
+upscaled = sr.upscale(pil_image)
+upscaled = sr.upscale(numpy_uint8_array)   # (H, W, 3) uint8 → (4H, 4W, 3) uint8
+
+# Python — TBSRN
+from crispembed import CrispTbsrnSr
+sr = CrispTbsrnSr("tbsrn-telescope-f16.gguf")
+upscaled = sr.upscale("line_crop.png")     # (H, W, 3) uint8 → (2H, 2W, 3) uint8
+```
+
+Models: [`cstr/crispembed-gguf`](https://huggingface.co/cstr/crispembed-gguf) —
+`pan-x4-f16.gguf` (0.5 MB), `tbsrn-telescope-f16.gguf` (2 MB).
+
 ## Named Entity Recognition
 
 Zero-shot NER via GLiNER with an LFM2.5-350M bidirectional backbone (16 layers:

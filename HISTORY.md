@@ -4,6 +4,59 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — Text Super-Resolution (PAN, TBSRN, NAFNet-SR)
+
+Three engines for upscaling low-resolution text images before OCR, integrated
+into the document preprocessing pipeline.
+
+### PAN 4× whole-image super-resolution
+
+Pixel Attention Network (PAN) for 4× upscaling of full document pages.
+
+- **Architecture**: shallow feature extraction (Conv3×3) → 6 SC-PA blocks
+  (depthwise-separable conv + pixel attention gates) → PixelShuffle(4) upsampler.
+  272K parameters, C++ forward pass.
+- **GGUF**: `pan-x4-f16.gguf` — 0.5 MB F16.
+- **Converter**: `models/convert-pan-to-gguf.py`.
+- **Parity**: cos=0.999654 vs PyTorch reference (F16, full-page input).
+- **License**: Apache-2.0.
+
+### TBSRN 2× per-line super-resolution
+
+Text Before Super-Resolution Network (TBSRN) for 2× upscaling of individual
+OCR text-line crops (telescope training scheme).
+
+- **Architecture**: shallow feature extraction → 3 residual groups (6 TSA blocks
+  each, transformer-style self-attention on spatial tokens) → PixelShuffle(2)
+  upsampler. 1.1M parameters, C++ forward pass.
+- **GGUF**: `tbsrn-telescope-f16.gguf` — 2 MB F16.
+- **Converter**: `models/convert-tbsrn-to-gguf.py`.
+- **Parity**: cos=0.999985 vs PyTorch reference (F16, 32×128 text-line crop).
+- **License**: Apache-2.0.
+
+### NAFNet-SR engine (no model yet)
+
+Engine scaffolding for NAFNet-SR custom super-resolution models. Reuses the
+existing `nafnet_denoise.cpp` architecture with a configurable upsampling tail.
+No pre-trained GGUF included — supply a custom trained checkpoint via `--sr-model`.
+
+### Integration matrix
+
+| Surface | PAN (`--pan-sr`) | TBSRN (`--tbsrn-sr`) | NAFNet-SR (`--sr-model`) |
+|---------|-----------------|----------------------|--------------------------|
+| C API | `crispembed_pan_sr_*` | `crispembed_tbsrn_sr_*` | `crispembed_nafnet_sr_*` |
+| CLI | `--pan-sr` | `--tbsrn-sr` | `--sr-model` |
+| Server | `POST /pan/sr` | `POST /tbsrn/sr` | — |
+| Python | `CrispPanSr` | `CrispTbsrnSr` | — |
+| Rust | `CrispPanSr` | `CrispTbsrnSr` | — |
+
+New files: `src/pan_sr.{h,cpp}`, `src/tbsrn_sr.{h,cpp}`,
+`models/convert-pan-to-gguf.py`, `models/convert-tbsrn-to-gguf.py`,
+`tools/dump_pan_reference.py`, `tools/dump_tbsrn_reference.py`,
+`tests/test_pan_sr.cpp`, `tests/test_tbsrn_sr.cpp`.
+
+---
+
 ## June 2026 — Tesseract LSTM OCR + classical preprocessing + renderers
 
 ### Tesseract LSTM line-recognition engine
