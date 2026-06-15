@@ -281,29 +281,59 @@ CrispEmbed/
   FullyConnected + LSTM + Softmax) + CTC greedy decode
 - [x] C API: `tesseract_lstm_init/recognize/free`
 - [x] Python reference dumper (`tools/dump_tesseract_reference.py`) for parity testing
-- [x] Validated against `tesseract --oem 1` — core text matches, no spaces (by
-  design, spaces come from DAWG language model not LSTM)
+- [x] Validated against `tesseract --oem 1` — core text matches.
+- [x] **Fix: height-normalize the line to `input_height` (36) in `recognize()`**
+  (2026-06-15). The conv+maxpool+SummLSTM stack assumes H=36 (H2=H/3); feeding
+  the raw line height produced garbled output. Now bilinear-resizes
+  (aspect-preserving) before normalization.
+- [x] **Fix: restore the space token** (2026-06-15). The earlier "no spaces, by
+  design" was wrong — the LSTM *does* emit a space class (unichar id 0 =
+  UNICHAR_SPACE), but the converter's `line.split()[0]` dropped the
+  leading-space char, storing `""`. Restored `tokens[0]=" "` at load (fixes
+  shipped GGUFs) + in the converter. Verified: `tesseract-eng` now reads
+  "The quick brown Fox jumps over the lazy Dog. 2026!" — correct chars +
+  **spaces + punctuation + truecasing**, all emitted directly by the LSTM (no
+  DAWG/dictionary port needed).
 
 #### Punctuation restoration for CTC output
 
-- [ ] Copy FireRedPunc + PCS from CrispASR (`src/fireredpunc.{h,cpp}`,
-  `src/pcs.{h,cpp}`). Same deps as CrispEmbed (ggml + core/gguf_loader).
-  ~1666 lines. Refactor into shared `crisp_punc/` library later.
-- [ ] Wire into Tesseract LSTM post-processing: `--punct-model` flag,
-  inserts spaces, punctuation, capitalization into raw CTC output
-- [ ] Wire into unified OCR API + orchestrator as optional post-processing step
-- [ ] Register FireRedPunc + PCS GGUFs in model_mgr.cpp for auto-download
+- [x] Copy FireRedPunc + PCS from CrispASR (`src/fireredpunc.{h,cpp}`,
+  `src/pcs.{h,cpp}`). C API `crispembed_punct_init/process/free` (auto-detects
+  FireRedPunc vs PCS). CLI `--punct-model`. *(Note: with the space-token fix
+  above, Tesseract LSTM already emits spaces/punctuation/case directly; the
+  restorer is an optional cleanup for harder text / other engines.)*
+- [x] Wire into the orchestrator as an optional post-process: `punct_model` on
+  `crispembed_ocr_pipeline_params` + `..._init_stages`; applied to the joined
+  text in the C-API wrapper (orchestrator core unchanged). Rust binding:
+  `CrispOcrPipeline::new`/`from_stages` take `punct_model`.
+- [ ] **Refactor into a shared `crisp_punc/` library** to avoid drift with
+  CrispASR (currently copied). Debug PCS tensor-bounds assert on quantized models.
+- [ ] **Register FireRedPunc + PCS GGUFs in model_mgr.cpp** for auto-download
+  (today a name/path must be supplied; not yet in the registry).
 
-#### Orchestrator integration gaps
+#### Orchestrator integration
 
-- [ ] Wire orchestrator into HTTP server (`POST /ocr/pipeline`)
-- [ ] Wire orchestrator into Python wrapper (`CrispOcrOrchestrator` class)
-- [ ] Wire orchestrator into Dart wrapper
-- [ ] Expose VLM params in Rust wrapper (currently hardcoded off)
-- [ ] Per-stage cleanup params in C API (currently flat/broadcast)
-- [ ] Tunable source-type classifier thresholds (saturation, white fraction)
-- [ ] Runtime config updates without context reload
-- [ ] Verbose logging for silent degradation (cleanup init failure, etc.)
+- [x] Orchestrator `ocr_orchestrator.{h,cpp}` — source-type classify →
+  per-stage cleanup → engine → text-yield/confidence accept-gate + chain
+  escalation. Engines: DBNet+TrOCR, Surya, **Tesseract LSTM** (DBNet detect +
+  per-line tesseract recognise), GOT/GLM/Qwen2-VL/InternVL2.
+- [x] C API `crispembed_ocr_pipeline_*` (flat + `init_stages` per-stage builder)
+  + Rust binding `CrispOcrPipeline` (`new` / `from_stages`).
+- [x] Per-stage cleanup + engine params + VLM params in the builder C API
+  (`crispembed_ocr_stage`).
+- [x] Wire orchestrator into HTTP server / Python / Dart (commit 73d7b96).
+- [x] **got_ocr GPU scheduler abort fixed** — append CPU fallback backend
+  (`ggml_backend_sched_new` asserts last backend == CPU).
+- [ ] **Gap — CLI completeness:** `--ocr-pipeline` lacks `--ocr-engine <name>`
+  (primary engine incl. tesseract), `--punct-model` (post-processor), and a
+  way to drive the full per-stage builder. Add so the CLI can run *primary +
+  any pre-processors + any post-processors*.
+- [ ] **Gap — tests:** no orchestrator unit test (classify / accept-gate /
+  escalation / per-stage), no regression test for the tesseract resize+space
+  fixes, no punct-post-process test. Add them.
+- [ ] Tunable source-type classifier thresholds (saturation, white fraction).
+- [ ] Runtime config updates without context reload.
+- [ ] Verbose logging for silent degradation (cleanup/engine init failure).
 
 #### Nice-to-have
 
