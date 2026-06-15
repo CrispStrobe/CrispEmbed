@@ -22,7 +22,7 @@ public:
     // Special tokens: [CLS]=cls_id, [SEP]=sep_id, [UNK]=unk_id, [PAD]=pad_id.
     bool load(const std::vector<std::string> & vocab,
               int cls_id, int sep_id, int unk_id, int pad_id,
-              int max_length = 512);
+              int max_length = 512, bool do_lower_case = true);
 
     // Tokenize a single text: [CLS] + tokens + [SEP], padded to max_length.
     embed_tokens encode(const std::string & text) const;
@@ -52,6 +52,7 @@ private:
     int unk_id_ = 100;
     int pad_id_ = 0;
     int max_length_ = 512;
+    bool do_lower_case_ = true;
 
     // WordPiece: split a single word into subword tokens.
     std::vector<int> wordpiece(const std::string & word) const;
