@@ -44,6 +44,7 @@ enum class engine {
     parseq,        // parseq_ocr.cpp
     glm,           // glm_ocr.cpp
     internvl2,     // internvl2_ocr.cpp
+    tesseract,     // DBNet detection + Tesseract-LSTM line recognition
 };
 
 // Image category used to pick a chain. `auto_detect` runs the classifier.

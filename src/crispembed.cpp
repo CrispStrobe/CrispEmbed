@@ -3306,6 +3306,7 @@ static ocr_orchestrator::engine map_engine(int e) {
         case 3:  return E::glm;
         case 4:  return E::qwen2vl;
         case 5:  return E::internvl2;
+        case 6:  return E::tesseract;
         default: return E::dbnet_trocr;
     }
 }
