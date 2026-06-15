@@ -836,19 +836,41 @@ existing GGUF and write native inference.
 
 ---
 
-### Blueprint: Qari-OCR (Arabic, 2B, Apache-2.0)
+### Blueprint: Qari-OCR (Arabic, 2B, Apache-2.0) — CONVERTED, PARITY BUG OPEN
 
-**Goal**: Arabic OCR with diacritics support.
+**Goal**: Arabic OCR with diacritics support (tashkeel).
 
 **Source**: NAMAA-Space/Qari-OCR-0.2.2.1-VL-2B-Instruct (Apache-2.0)
-Fine-tune of Qwen2-VL-2B-Instruct for Arabic text.
+LoRA fine-tune (r=16, 324 pairs) of Qwen2-VL-2B-Instruct on 50K Arabic samples.
 
-**Note**: The published fine-tune was trained from a 4-bit quantized
-base (unsloth/bnb). For GGUF porting, may need to source fp16 weights
-or re-fine-tune from the full-precision Qwen2-VL base.
+**Architecture**: Qwen2-VL-2B — same family as existing qwen2vl_ocr.cpp:
+- Vision: 32L ViT (embed_dim=1280, hidden_size=1536), merger 5120→1536
+- LLM: 28L Qwen2 (1536d, GQA 12Q/2KV, FFN=8960)
 
-**Effort**: Medium (3-4 days). Same Qwen2-VL base as Nanonets — share
-infrastructure.
+**Status**:
+- [x] LoRA merge (324/324 pairs) via Kaggle kernel
+- [x] GGUF conversion (F16 4.7GB, Q8_0 2.3GB, Q4_K 1.6GB)
+- [x] Converter fixed for Qwen2-VL config (embed_dim/mlp_ratio/in_chans)
+- [x] HuggingFace upload: `cstr/qari-ocr-crispembed-GGUF`
+- [x] Registry entry: `qari-ocr`
+- [x] mRoPE grid_thw fix (was using dummy [1,1,1])
+- [x] Reference GGUF captured (11 tensors: vis layers, merger, LLM layers, logits)
+- [ ] **PARITY BUG**: CrispEmbed generates hallucinated prompt text instead of OCR
+
+**Diagnostic findings** (Kaggle diff harness):
+- PyTorch output: `'This image contains the text "Hello World 2024".'`
+- CrispEmbed output: `'Below is the plain text representation...'` (prompt echo)
+- PyTorch top-1 at last position: `This` (18.13)
+- CrispEmbed top-1: `Below` (14.19) — different token, lower score
+- Vision activations: shapes correct (132×1280, merger 33×1536)
+- Token IDs: 58 tokens, 33 image_pad, grid [1,6,22] — all match
+- **Divergence is in prefill logits** — vision embeds reach LLM but
+  produce different attention patterns. Likely cause: Qwen2-VL uses
+  GELU vision FFN (fc1/fc2) vs Qwen2.5-VL's SwiGLU (gate/up/down),
+  and the C++ forward pass may have a subtle difference in activation
+  or normalization order for the Qwen2-VL variant.
+- Reference GGUF at `cstr/qari-ocr-crispembed-GGUF/qari-ocr-ref.gguf`
+  for offline per-layer cos comparison via test-qwen2vl-diff.
 
 ---
 
