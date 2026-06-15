@@ -271,7 +271,7 @@ CrispEmbed/
 #### OCR models — remaining
 
 - [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune
-- [ ] Qari-OCR (2B, Apache-2.0) — Arabic with diacritics, LoRA on Qwen2-VL-2B
+- [x] Qari-OCR (2B, Apache-2.0) — Arabic with diacritics, LoRA on Qwen2-VL-2B
 - [ ] Granite Vision 3.3-2B (3B, Apache-2.0) — OCRBench 852
 - [ ] Granite-Docling-258M (258M, Apache-2.0) — SigLIP2 + Granite-165M, document
   conversion (layout + OCR + tables + equations), DocTags output → Markdown/HTML.
@@ -866,7 +866,7 @@ Registry entry: `nanonets-ocr-s`.
 
 ---
 
-### Blueprint: Qari-OCR (Arabic, 2B, Apache-2.0) — IN PROGRESS
+### Blueprint: Qari-OCR (Arabic, 2B, Apache-2.0) — DONE
 
 **Goal**: Arabic OCR with diacritics support (tashkeel).
 
@@ -887,7 +887,9 @@ full-precision Qwen2-VL-2B-Instruct base. Merge is tensor-by-tensor
 - [x] Architecture compatibility verified (qwen2vl_ocr engine is parameterized)
 - [x] Kaggle conversion kernel written (`tools/kaggle/qari-ocr-convert/`)
 - [x] Registry entry added (`qari-ocr`)
-- [ ] Run Kaggle kernel (merge + convert + quantize + upload)
+- [x] Run Kaggle kernel (merge + convert + quantize + upload)
+  - Fixed qwen2vl converter: Qwen2-VL uses embed_dim/mlp_ratio/in_chans (not intermediate_size/in_channels)
+  - GGUFs: F16 (4.7 GB), Q8_0 (2.3 GB), Q4_K (1.6 GB) at cstr/qari-ocr-crispembed-GGUF
 - [ ] Test on Arabic document images
 
 **Files**: `tools/kaggle/qari-ocr-convert/{kernel.py,kernel-metadata.json}`
