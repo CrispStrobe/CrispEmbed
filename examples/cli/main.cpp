@@ -104,6 +104,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "       --ocr-engine N  primary engine (dbnet_trocr|surya|tesseract|got|glm|qwen2vl|internvl2)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --sr-model PATH text super-resolution GGUF for low-DPI upscaling (NAFNet+PixelShuffle)\n");
+    fprintf(stderr, "  --pan-sr FILE    standalone PAN super-resolution: upscale image, write PGM to stdout\n");
+    fprintf(stderr, "                   (needs --pan-model PATH: PAN GGUF, Pixel Attention Network, 2x or 4x)\n");
+    fprintf(stderr, "  --pan-model PATH PAN super-resolution GGUF (used with --pan-sr)\n");
     fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
     fprintf(stderr, "  --ocr-rec MODEL  general OCR: text recognition model (TrOCR, e.g. trocr-printed)\n");
     fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
@@ -166,6 +169,8 @@ int main(int argc, char ** argv) {
     std::string ocr_pipeline_path;      // --ocr-pipeline FILE: full orchestrator
     bool pipeline_denoise = false;      // --denoise: NAFNet tier-2 in the pipeline
     std::string sr_model;              // --sr-model: text super-resolution GGUF
+    std::string pan_model;             // --pan-model: PAN super-resolution GGUF
+    std::string pan_sr_path;           // --pan-sr FILE: standalone PAN upscaling
     std::string pipeline_vlm_model;     // --vlm-model NAME: VLM escalation engine GGUF
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
@@ -275,6 +280,10 @@ int main(int argc, char ** argv) {
             pipeline_denoise = true;
         } else if (strcmp(argv[i], "--sr-model") == 0 && i + 1 < argc) {
             sr_model = argv[++i];
+        } else if (strcmp(argv[i], "--pan-model") == 0 && i + 1 < argc) {
+            pan_model = argv[++i];
+        } else if (strcmp(argv[i], "--pan-sr") == 0 && i + 1 < argc) {
+            pan_sr_path = argv[++i];
         } else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) {
             pipeline_vlm_model = argv[++i];
         } else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) {
@@ -393,6 +402,28 @@ int main(int argc, char ** argv) {
                        regions[i].x, regions[i].y, regions[i].w, regions[i].h);
         }
         if (regions) free(regions);
+        return 0;
+    }
+    if (!pan_sr_path.empty()) {
+        if (pan_model.empty()) {
+            fprintf(stderr, "error: --pan-sr requires --pan-model <path>\n");
+            return 1;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(pan_sr_path.c_str(), &w, &h, &ch, 3);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", pan_sr_path.c_str()); return 1; }
+        void * pctx = crispembed_pan_sr_init(pan_model.c_str(), n_threads);
+        if (!pctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load PAN model '%s'\n", pan_model.c_str()); return 1; }
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_pan_sr_process(pctx, data, w, h, 0, 0, &out, &ow, &oh);
+        stbi_image_free(data);
+        crispembed_pan_sr_free(pctx);
+        if (rc != 0 || !out) { fprintf(stderr, "error: PAN SR processing failed\n"); return 1; }
+        // Write result as PPM (RGB) to stdout
+        printf("P6\n%d %d\n255\n", ow, oh);
+        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+        crispembed_pan_sr_free_image(out);
         return 0;
     }
 
