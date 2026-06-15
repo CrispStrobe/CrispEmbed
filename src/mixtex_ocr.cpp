@@ -20,6 +20,7 @@
 #include "mixtex_ocr.h"
 #include "core/gguf_loader.h"
 #include "crispembed_diff.h"
+#include "ggml-backend.h"
 #include "ggml-cpu.h"
 
 #include <chrono>
@@ -36,19 +37,24 @@
 // ---------------------------------------------------------------------------
 // FP16/quantized → F32 dequantization
 // ---------------------------------------------------------------------------
+// GPU-safe: uses ggml_backend_tensor_get instead of direct tensor->data access
 static std::vector<float> to_f32(const ggml_tensor* t) {
     if (!t) return {};
     int n = (int)ggml_nelements(t);
     std::vector<float> out(n);
     if (t->type == GGML_TYPE_F32) {
-        memcpy(out.data(), t->data, n * sizeof(float));
+        ggml_backend_tensor_get(t, out.data(), 0, n * sizeof(float));
     } else if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t* src = (const ggml_fp16_t*)t->data;
-        for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(src[i]);
+        std::vector<ggml_fp16_t> tmp(n);
+        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
+        for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(tmp[i]);
     } else {
+        size_t raw_sz = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_sz);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
         const auto* traits = ggml_get_type_traits(t->type);
         if (traits && traits->to_float) {
-            traits->to_float(t->data, out.data(), n);
+            traits->to_float(raw.data(), out.data(), n);
         }
     }
     return out;
@@ -389,11 +395,12 @@ mixtex_ocr_context * mixtex_ocr_init(const char * model_path, int n_threads) {
             hp.patch_size, hp.window_size, hp.embed_dim, hp.enc_hidden,
             hp.vocab_size, ctx->vocab.size());
 
-    // Pass 2: weights
-    // NOTE: CPU-only — forward pass is scalar C++ (Swin+RoBERTa with direct
-    // tensor->data access). GPU enablement requires rewriting as ggml graph.
-    ctx->backend = ggml_backend_cpu_init();
-    ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    // Pass 2: weights — prefer GPU backend (weights read via ggml_backend_tensor_get)
+    bool force_cpu = (getenv("MIXTEX_OCR_FORCE_CPU") && atoi(getenv("MIXTEX_OCR_FORCE_CPU")));
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
     if (!core_gguf::load_weights(model_path, ctx->backend, "mixtex_ocr", ctx->wl)) {
         ggml_backend_free(ctx->backend);
         delete ctx;

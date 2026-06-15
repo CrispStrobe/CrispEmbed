@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -266,10 +267,10 @@ hmer_ocr_context * hmer_ocr_init(const char * model_path, int n_threads) {
             hp.block_config[0], hp.block_config[1], hp.block_config[2],
             hp.hidden_size, hp.output_size, ctx->vocab.size());
 
-    // Phase 2: load weights
-    // NOTE: CPU-only — forward pass is scalar C++ (DenseNet+GRU with direct
-    // tensor->data access). GPU enablement requires rewriting as ggml graph.
-    ggml_backend_t backend = ggml_backend_cpu_init();
+    // Phase 2: load weights — prefer GPU backend (weights read via ggml_backend_tensor_get)
+    bool force_cpu = (getenv("HMER_OCR_FORCE_CPU") && atoi(getenv("HMER_OCR_FORCE_CPU")));
+    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!backend) backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, backend, "hmer_ocr", ctx->wl)) {
         ggml_backend_free(backend);
         fprintf(stderr, "hmer_ocr: failed to load weights from %s\n", model_path);
@@ -302,25 +303,27 @@ const hmer_ocr_hparams * hmer_ocr_get_hparams(const hmer_ocr_context * ctx) {
 // Helper: get float data from tensor (dequantizes Q4/Q8/F16 → F32)
 // ---------------------------------------------------------------------------
 
+// GPU-safe: uses ggml_backend_tensor_get instead of direct tensor->data access
 static const float * tensor_f32(hmer_ocr_context * ctx, struct ggml_tensor * t) {
-    if (t->type == GGML_TYPE_F32) {
-        return (const float *)t->data;
-    }
-    // Check cache
+    // Cache key: t->data is unique per tensor (valid even as GPU device pointer)
     auto it = ctx->dequant_cache.find(t->data);
-    if (it != ctx->dequant_cache.end()) {
-        return it->second.data();
-    }
-    // Dequantize
+    if (it != ctx->dequant_cache.end()) return it->second.data();
     const int64_t n = ggml_nelements(t);
     auto & buf = ctx->dequant_cache[t->data];
     buf.resize(n);
-    const auto * traits = ggml_get_type_traits(t->type);
-    if (traits->to_float) {
-        traits->to_float(t->data, buf.data(), n);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
     } else {
-        fprintf(stderr, "hmer_ocr: no dequant for type %s\n", ggml_type_name(t->type));
-        std::fill(buf.begin(), buf.end(), 0.0f);
+        size_t raw_sz = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_sz);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
+        const auto * traits = ggml_get_type_traits(t->type);
+        if (traits->to_float) {
+            traits->to_float(raw.data(), buf.data(), n);
+        } else {
+            fprintf(stderr, "hmer_ocr: no dequant for type %s\n", ggml_type_name(t->type));
+            std::fill(buf.begin(), buf.end(), 0.0f);
+        }
     }
     return buf.data();
 }

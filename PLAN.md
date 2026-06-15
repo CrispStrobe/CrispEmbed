@@ -218,12 +218,15 @@ pointer arithmetic. Changing backend to GPU would crash (`tensor->data` is
 a device pointer, not CPU-accessible). GPU enablement requires rewriting
 the forward pass as ggml graphs, then switching to `ggml_backend_init_best()`.
 
-- [ ] **hmer_ocr** — scalar DenseNet+GRU, `HMER_OCR_FORCE_CPU=1`
-- [ ] **bttr_ocr** — scalar DenseNet+Transformer, `BTTR_OCR_FORCE_CPU=1`
-- [ ] **posformer_ocr** — scalar DenseNet+Transformer+ARM, `POSFORMER_OCR_FORCE_CPU=1`
-- [ ] **nafnet_denoise** — scalar U-Net, `NAFNET_FORCE_CPU=1`
-- [ ] **mixtex_ocr** — scalar Swin+RoBERTa, `MIXTEX_OCR_FORCE_CPU=1`
-- [ ] **ppformulanet_ocr** — scalar HGNetv2+MBart, `PPFN_OCR_FORCE_CPU=1`
+- [x] **hmer_ocr** — GPU-safe weight reads via `ggml_backend_tensor_get`, `HMER_OCR_FORCE_CPU=1`
+- [x] **bttr_ocr** — GPU-safe weight reads, `BTTR_OCR_FORCE_CPU=1`
+- [x] **posformer_ocr** — GPU-safe weight reads, `POSFORMER_OCR_FORCE_CPU=1`
+- [x] **nafnet_denoise** — GPU-safe weight reads, backend kept alive, `NAFNET_FORCE_CPU=1`
+- [x] **mixtex_ocr** — GPU-safe weight reads, `MIXTEX_OCR_FORCE_CPU=1`
+- [x] **ppformulanet_ocr** — GPU-safe weight reads, `PPFN_OCR_FORCE_CPU=1`
+  All 6: `to_f32`/`tf32`/`tensor_f32` helpers rewritten to use `ggml_backend_tensor_get`,
+  backends switched to `ggml_backend_init_best()`. Scalar forward pass remains CPU —
+  full GPU compute needs ggml graph rewrite (future: depthwise conv, PixelShuffle, etc.).
 
 ### Models
 
