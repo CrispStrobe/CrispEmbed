@@ -1732,12 +1732,17 @@ impl CrispOcrPipeline {
     pub fn from_stages(
         router: bool,
         nafnet_model: Option<&str>,
+        sr_model: Option<&str>,
         punct_model: Option<&str>,
         stages: &[OcrStageSpec],
         n_threads: i32,
     ) -> Result<Self, String> {
         let naf = match nafnet_model {
             Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("nafnet: {e}"))?),
+            _ => None,
+        };
+        let sr = match sr_model {
+            Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("sr: {e}"))?),
             _ => None,
         };
         let punct = match punct_model {
@@ -1789,6 +1794,7 @@ impl CrispOcrPipeline {
             crispembed_sys::crispembed_ocr_pipeline_init_stages(
                 router as std::os::raw::c_int,
                 naf.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+                sr.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
                 punct.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
                 c_stages.as_ptr(),
                 c_stages.len() as std::os::raw::c_int,

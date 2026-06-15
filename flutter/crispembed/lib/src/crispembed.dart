@@ -1563,15 +1563,6 @@ class KieResult {
 
 /// Key Information Extraction — chains OCR + NER to extract structured
 /// key-value fields from document images (receipts, invoices, forms).
-///
-/// ```dart
-/// final kie = CrispKIE('det.gguf', 'rec.gguf', 'ner.gguf');
-/// final result = kie.extract('receipt.png', labels: ['total', 'date']);
-/// for (final f in result.fields) {
-///   print('${f.label} = ${f.value}');
-/// }
-/// kie.dispose();
-/// ```
 class CrispKIE {
   late final DynamicLibrary _lib;
   late final Pointer<Void> _ctx;
@@ -1580,12 +1571,6 @@ class CrispKIE {
   late final CrispembedKieFreeDart _freeFn;
   late final CrispembedKieExtractDart _extractFn;
 
-  /// Load KIE pipeline with OCR detection, recognition, and NER models.
-  ///
-  /// [ocrDetModel] — text detection GGUF (DBNet).
-  /// [ocrRecModel] — text recognition GGUF (TrOCR/VLM).
-  /// [nerModel] — GLiNER NER GGUF.
-  /// [nThreads] — CPU thread count (0 = auto-detect).
   CrispKIE(String ocrDetModel, String ocrRecModel, String nerModel,
       {int nThreads = 0, String? libPath}) {
     _lib = _openNativeLib(libPath);
@@ -1610,11 +1595,6 @@ class CrispKIE {
     }
   }
 
-  /// Extract structured fields from a document image.
-  ///
-  /// [imagePath] — path to document image (JPG/PNG/BMP).
-  /// [labels] — field names to extract (e.g. `['total', 'date', 'vendor']`).
-  /// [threshold] — NER confidence threshold in [0, 1] (default 0.5).
   KieResult extract(String imagePath, {
     required List<String> labels,
     double threshold = 0.5,
@@ -1636,8 +1616,6 @@ class CrispKIE {
 
       final fields = <KieField>[];
       if (res.nFields > 0 && res.fields != nullptr) {
-        // crispembed_kie_field layout:
-        //   char* label, char* value, float score, float x, float y, float w, float h
         final fieldSize = 2 * sizeOf<Pointer>() + 5 * sizeOf<Float>();
         for (var i = 0; i < res.nFields; i++) {
           final base = res.fields.cast<Uint8>().elementAt(i * fieldSize);
@@ -1672,7 +1650,6 @@ class CrispKIE {
     }
   }
 
-  /// Release all native resources.
   void dispose() {
     if (!_disposed) {
       _freeFn(_ctx);
@@ -1682,6 +1659,122 @@ class CrispKIE {
 
   void _checkDisposed() {
     if (_disposed) throw StateError('CrispKIE has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Text Super-Resolution
+// ---------------------------------------------------------------------------
+
+/// Result from text super-resolution upscaling.
+class TextSrResult {
+  final Uint8List pixels;
+  final int width;
+  final int height;
+
+  const TextSrResult({
+    required this.pixels,
+    required this.width,
+    required this.height,
+  });
+}
+
+/// Text super-resolution model — upscales low-DPI document images.
+class CrispTextSr {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedTextSrFreeDart _freeFn;
+  late final CrispembedTextSrUpscaleFactorDart _upscaleFactorFn;
+  late final CrispembedTextSrProcessDart _processFn;
+  late final CrispembedTextSrFreeImageDart _freeImageFn;
+
+  CrispTextSr(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedTextSrInitNative, CrispembedTextSrInitDart>(
+            'crispembed_text_sr_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load text SR model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _freeFn = _lib.lookupFunction<CrispembedTextSrFreeNative,
+        CrispembedTextSrFreeDart>('crispembed_text_sr_free');
+    _upscaleFactorFn = _lib.lookupFunction<CrispembedTextSrUpscaleFactorNative,
+        CrispembedTextSrUpscaleFactorDart>('crispembed_text_sr_upscale_factor');
+    _processFn = _lib.lookupFunction<CrispembedTextSrProcessNative,
+        CrispembedTextSrProcessDart>('crispembed_text_sr_process');
+    _freeImageFn = _lib.lookupFunction<CrispembedTextSrFreeImageNative,
+        CrispembedTextSrFreeImageDart>('crispembed_text_sr_free_image');
+  }
+
+  int get upscaleFactor {
+    _checkDisposed();
+    return _upscaleFactorFn(_ctx);
+  }
+
+  TextSrResult process(
+    Uint8List pixels,
+    int width,
+    int height, {
+    int tileSize = 0,
+    int tileOverlap = 0,
+  }) {
+    _checkDisposed();
+    if (pixels.length != width * height * 3) {
+      throw ArgumentError(
+          'pixels.length (${pixels.length}) must equal width * height * 3 (${width * height * 3})');
+    }
+
+    final pxNative = calloc<Uint8>(pixels.length);
+    pxNative.asTypedList(pixels.length).setAll(0, pixels);
+
+    final outPxPtr = calloc<Pointer<Uint8>>();
+    final outW = calloc<Int32>();
+    final outH = calloc<Int32>();
+
+    try {
+      final rc = _processFn(
+          _ctx, pxNative, width, height, tileSize, tileOverlap,
+          outPxPtr, outW, outH);
+
+      if (rc != 0 || outPxPtr.value.address == 0) {
+        throw Exception('Text SR process failed (rc=$rc)');
+      }
+
+      final ow = outW.value;
+      final oh = outH.value;
+      final resultPixels =
+          Uint8List.fromList(outPxPtr.value.asTypedList(ow * oh * 3));
+      _freeImageFn(outPxPtr.value);
+
+      return TextSrResult(pixels: resultPixels, width: ow, height: oh);
+    } finally {
+      calloc.free(pxNative);
+      calloc.free(outPxPtr);
+      calloc.free(outW);
+      calloc.free(outH);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispTextSr has been disposed');
   }
 }
 
@@ -1710,6 +1803,7 @@ class CrispOcrOrchestrator {
   /// [minChars] — accept-gate minimum text yield.
   /// [minConfidence] — accept-gate confidence floor.
   /// [nafnetModel] — optional NAFNet GGUF for tier-2 learned denoise.
+  /// [srModel] — optional text super-resolution GGUF for low-DPI upscaling.
   /// [vlmModel] — optional VLM GGUF for escalation fallback.
   /// [vlmEngine] — VLM engine: 0=GOT, 1=GLM, 2=Qwen2-VL, 3=InternVL2.
   /// [punctModel] — optional punctuation restoration model GGUF.
@@ -1720,6 +1814,7 @@ class CrispOcrOrchestrator {
       int minChars = 8,
       double minConfidence = 0.5,
       String? nafnetModel,
+      String? srModel,
       String? vlmModel,
       int vlmEngine = 0,
       String? punctModel,
@@ -1734,14 +1829,14 @@ class CrispOcrOrchestrator {
         CrispembedOcrPipelineRunDart>('crispembed_ocr_pipeline_run');
 
     // Build crispembed_ocr_pipeline_params struct.
-    // Layout (64-bit): 3×int32 + 1×float + 5×pointer + 1×int32 + 1×pointer
+    // Layout (64-bit): 3×int32 + 1×float + 6×pointer + 1×int32 + 1×pointer
     //   router(4) + cleanup_enabled(4) + min_chars(4) + min_confidence(4)
-    //   + det_model(8) + rec_model(8) + nafnet_model(8) + vlm_model(8)
-    //   + vlm_engine(4) + pad(4) + punct_model(8)
-    // Total: 64 bytes on 64-bit (with alignment padding)
+    //   + det_model(8) + rec_model(8) + nafnet_model(8) + sr_model(8)
+    //   + vlm_model(8) + vlm_engine(4) + pad(4) + punct_model(8)
+    // Total: 72 bytes on 64-bit (with alignment padding)
     final ptrSize = sizeOf<Pointer>();
     // Use a generous allocation and write at known offsets
-    final paramsSize = 16 + 4 * ptrSize + 4 + (ptrSize - 4) + ptrSize;
+    final paramsSize = 16 + 6 * ptrSize + 4 + (ptrSize - 4) + ptrSize;
     final params = calloc<Uint8>(paramsSize);
 
     // Ints at byte 0, 4, 8
@@ -1755,13 +1850,15 @@ class CrispOcrOrchestrator {
     final detPtr = detModelPath.toNativeUtf8();
     final recPtr = recModelPath.toNativeUtf8();
     final nafPtr = nafnetModel != null ? nafnetModel.toNativeUtf8() : nullptr.cast<Utf8>();
+    final srPtr = srModel != null ? srModel.toNativeUtf8() : nullptr.cast<Utf8>();
     final vlmPtr = vlmModel != null ? vlmModel.toNativeUtf8() : nullptr.cast<Utf8>();
     ptrBase[0] = detPtr;      // det_model
     ptrBase[1] = recPtr;      // rec_model
     ptrBase[2] = nafPtr;      // nafnet_model
-    ptrBase[3] = vlmPtr;      // vlm_model
-    // vlm_engine at byte 16 + 4*ptrSize
-    final vlmEngOff = 16 + 4 * ptrSize;
+    ptrBase[3] = srPtr;       // sr_model
+    ptrBase[4] = vlmPtr;      // vlm_model
+    // vlm_engine at byte 16 + 5*ptrSize
+    final vlmEngOff = 16 + 5 * ptrSize;
     params.elementAt(vlmEngOff).cast<Int32>()[0] = vlmEngine;
     // punct_model pointer at next aligned offset
     final punctOff = vlmEngOff + ptrSize; // aligned to pointer size
@@ -1773,6 +1870,7 @@ class CrispOcrOrchestrator {
     calloc.free(detPtr);
     calloc.free(recPtr);
     if (nafnetModel != null) calloc.free(nafPtr);
+    if (srModel != null) calloc.free(srPtr);
     if (vlmModel != null) calloc.free(vlmPtr);
     if (punctModel != null) calloc.free(punctPtr);
     calloc.free(params);

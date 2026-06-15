@@ -2237,6 +2237,99 @@ class CrispScanCleanup:
 
 
 # ---------------------------------------------------------------------------
+# Text Super-Resolution (NAFNet / ESRGAN-style upscaler)
+# ---------------------------------------------------------------------------
+
+def _setup_text_sr_signatures(lib):
+    lib.crispembed_text_sr_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_text_sr_init.restype = ctypes.c_void_p
+
+    lib.crispembed_text_sr_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_text_sr_free.restype = None
+
+    lib.crispembed_text_sr_upscale_factor.argtypes = [ctypes.c_void_p]
+    lib.crispembed_text_sr_upscale_factor.restype = ctypes.c_int
+
+    lib.crispembed_text_sr_process.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_uint8)),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_text_sr_process.restype = ctypes.c_int
+
+    lib.crispembed_text_sr_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_text_sr_free_image.restype = None
+
+
+class CrispTextSr:
+    """Text super-resolution — upscale low-resolution document images.
+
+    Usage::
+
+        sr = CrispTextSr("text-sr.gguf")
+        print(sr.upscale_factor)  # e.g. 4
+        out = sr.process(pixels, width, height)  # returns (ndarray, out_w, out_h)
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 4,
+                 lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_text_sr_signatures(self._lib)
+        self._ctx = self._lib.crispembed_text_sr_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load text SR model: {model_path}")
+
+    @property
+    def upscale_factor(self) -> int:
+        """Return the upscale factor (e.g. 2, 4) reported by the model."""
+        return self._lib.crispembed_text_sr_upscale_factor(self._ctx)
+
+    def process(self, pixels: np.ndarray, width: int, height: int,
+                tile_size: int = 0, tile_overlap: int = 0
+                ) -> Tuple[np.ndarray, int, int]:
+        """Upscale an image.
+
+        Args:
+            pixels: uint8 numpy array, flattened or shaped (H, W, C).
+            width: source image width in pixels.
+            height: source image height in pixels.
+            tile_size: tile size for tiled inference (0 = full image).
+            tile_overlap: overlap between tiles in pixels.
+
+        Returns:
+            Tuple of (output_ndarray uint8 shape (out_h, out_w, 3), out_w, out_h).
+        """
+        flat = np.asarray(pixels, dtype=np.uint8).flatten()
+        px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+
+        out_ptr = ctypes.POINTER(ctypes.c_uint8)()
+        out_w = ctypes.c_int(0)
+        out_h = ctypes.c_int(0)
+
+        rc = self._lib.crispembed_text_sr_process(
+            self._ctx, px_ptr, width, height,
+            tile_size, tile_overlap,
+            ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
+        )
+        if rc != 0 or not out_ptr:
+            raise RuntimeError("Text SR processing failed")
+
+        ow, oh = out_w.value, out_h.value
+        buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
+        self._lib.crispembed_text_sr_free_image(out_ptr)
+        return buf.reshape(oh, ow, 3), ow, oh
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_text_sr_free(self._ctx)
+            self._ctx = None
+
+
+# ---------------------------------------------------------------------------
 # OCR Orchestrator (source-type routing + cleanup + accept-gate)
 # ---------------------------------------------------------------------------
 
@@ -2249,6 +2342,7 @@ class _CrispOcrPipelineParams(ctypes.Structure):
         ("det_model", ctypes.c_char_p),
         ("rec_model", ctypes.c_char_p),
         ("nafnet_model", ctypes.c_char_p),
+        ("sr_model", ctypes.c_char_p),
         ("vlm_model", ctypes.c_char_p),
         ("vlm_engine", ctypes.c_int),
         ("punct_model", ctypes.c_char_p),
@@ -2294,6 +2388,7 @@ class CrispOcrOrchestrator:
                  router: bool = True, cleanup: bool = True,
                  min_chars: int = 8, min_confidence: float = 0.5,
                  nafnet_model: Optional[str] = None,
+                 sr_model: Optional[str] = None,
                  vlm_model: Optional[str] = None, vlm_engine: int = 0,
                  punct_model: Optional[str] = None,
                  n_threads: int = 4, lib_path: Optional[str] = None):
@@ -2310,6 +2405,8 @@ class CrispOcrOrchestrator:
         params.rec_model = rec_model.encode("utf-8")
         if nafnet_model:
             params.nafnet_model = nafnet_model.encode("utf-8")
+        if sr_model:
+            params.sr_model = sr_model.encode("utf-8")
         if vlm_model:
             params.vlm_model = vlm_model.encode("utf-8")
             params.vlm_engine = vlm_engine
