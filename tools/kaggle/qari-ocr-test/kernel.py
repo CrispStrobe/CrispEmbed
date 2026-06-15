@@ -91,13 +91,16 @@ def make_hook(name):
 
 # Register hooks on first 4 vision layers + merger + first 2 LLM layers
 hooks = []
-for i in range(min(4, len(model.model.visual.blocks))):
-    h = model.model.visual.blocks[i].register_forward_hook(make_hook(f"vis_layer_{i}"))
+vis = model.model.visual
+for i in range(min(4, len(vis.blocks))):
+    h = vis.blocks[i].register_forward_hook(make_hook(f"vis_layer_{i}"))
     hooks.append(h)
-h = model.model.visual.merger.register_forward_hook(make_hook("vis_merger"))
+h = vis.merger.register_forward_hook(make_hook("vis_merger"))
 hooks.append(h)
-for i in range(min(2, len(model.model.layers))):
-    h = model.model.layers[i].register_forward_hook(make_hook(f"llm_layer_{i}"))
+# Qwen2-VL: model.model.language_model.layers; Qwen2.5-VL: model.model.layers
+llm_layers = getattr(model.model, 'layers', None) or model.model.language_model.model.layers
+for i in range(min(2, len(llm_layers))):
+    h = llm_layers[i].register_forward_hook(make_hook(f"llm_layer_{i}"))
     hooks.append(h)
 
 # Run forward to capture activations
