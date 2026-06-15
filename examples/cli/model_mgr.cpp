@@ -675,6 +675,25 @@ static const ModelEntry k_registry[] = {
      "Tesseract LSTM Korean line OCR (1.5M, CTC, Hangul)", "1.5 MB", "apache-2.0",
      "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
 
+    // Punctuation restoration models
+    {"fireredpunc",
+     "fireredpunc-q4_k.gguf",
+     "https://huggingface.co/cstr/fireredpunc-GGUF/resolve/main/fireredpunc-q4_k.gguf",
+     "FireRedPunc punctuation restoration (BERT chinese-bert-wwm-ext, 5 classes)", "84 MB", "apache-2.0",
+     "https://huggingface.co/cstr/fireredpunc-GGUF"},
+
+    {"fullstop-punc",
+     "fullstop-punc-q4_k.gguf",
+     "https://huggingface.co/cstr/fullstop-punc-multilang-GGUF/resolve/main/fullstop-punc-q4_k.gguf",
+     "Fullstop punctuation restoration (XLM-R, multilingual)", "180 MB", "mit",
+     "https://huggingface.co/cstr/fullstop-punc-multilang-GGUF"},
+
+    {"pcs",
+     "pcs-xlmr-base-q4_k.gguf",
+     "https://huggingface.co/cstr/pcs-xlmr-base-GGUF/resolve/main/pcs-xlmr-base-q4_k.gguf",
+     "PCS punct+caps+segmentation (XLM-R-base, multilingual)", "170 MB", "mit",
+     "https://huggingface.co/cstr/pcs-xlmr-base-GGUF"},
+
     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 

@@ -3661,3 +3661,54 @@ extern "C" const char * crispembed_punct_process(void * ctx, const char * text) 
     free(result);
     return w->result_buf.c_str();
 }
+
+// ---------------------------------------------------------------------------
+// OCR Result Renderers
+// ---------------------------------------------------------------------------
+
+#include "ocr_render.h"
+
+extern "C" char * crispembed_ocr_render(
+    const crispembed_ocr_result * results, int n_results,
+    int page_width, int page_height,
+    const char * format)
+{
+    if (!results || n_results <= 0 || !format) return nullptr;
+
+    // Determine format
+    ocr_render_format fmt = OCR_RENDER_TEXT;
+    if (strcmp(format, "hocr") == 0) fmt = OCR_RENDER_HOCR;
+    else if (strcmp(format, "alto") == 0) fmt = OCR_RENDER_ALTO;
+    else if (strcmp(format, "pdf") == 0) fmt = OCR_RENDER_PDF;
+
+    // Convert crispembed_ocr_result to ocr_render structures.
+    // Each result becomes a single-word line (since we don't have
+    // line-level grouping from the pipeline results).
+    std::vector<ocr_render_word> words(n_results);
+    std::vector<ocr_render_line> lines(n_results);
+    for (int i = 0; i < n_results; i++) {
+        words[i] = {results[i].text,
+                    (int)results[i].x, (int)results[i].y,
+                    (int)results[i].w, (int)results[i].h,
+                    results[i].confidence};
+        lines[i] = {&words[i], 1,
+                    (int)results[i].x, (int)results[i].y,
+                    (int)results[i].w, (int)results[i].h};
+    }
+    ocr_render_page page = {lines.data(), n_results,
+                            page_width, page_height, nullptr};
+
+    ocr_renderer * r = ocr_render_create(fmt);
+    ocr_render_begin(r);
+    ocr_render_add_page(r, &page);
+    ocr_render_end(r);
+
+    int size = ocr_render_output_size(r);
+    char * out = (char *)malloc(size + 1);
+    if (out) {
+        memcpy(out, ocr_render_output(r), size);
+        out[size] = '\0';
+    }
+    ocr_render_free(r);
+    return out;
+}
