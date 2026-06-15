@@ -542,6 +542,12 @@ static const ModelEntry k_registry[] = {
      "NAFNet image denoising (U-Net, 29M params, SIDD-trained)", "30 MB", "mit",
      "https://huggingface.co/cstr/nafnet-sidd-GGUF"},
 
+    {"tps-loc",
+     "tps-loc-f32.gguf",
+     "https://huggingface.co/cstr/tps-loc-GGUF/resolve/main/tps-loc-f32.gguf",
+     "TPS localization CNN for document dewarping (108K params, 20 control points)", "0.4 MB", "apache-2.0",
+     "https://huggingface.co/cstr/tps-loc-GGUF"},
+
     {"qwen2vl-3b",
      "qwen2.5-vl-3b-q4_k.gguf",
      "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF/resolve/main/qwen2.5-vl-3b-q4_k.gguf",
