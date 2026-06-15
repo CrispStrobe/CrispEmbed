@@ -39,12 +39,17 @@ BTTR (handwritten, DenseNet+Transformer, 53% CROHME),
 HMER (handwritten, DenseNet+GRU attention).
 All auto-detected from GGUF metadata, ~3-5s decoder time.
 
+**Tesseract LSTM OCR**: 12 languages (eng, deu, fra, spa, ita, por, nld, rus, ara,
+chi_sim, jpn, kor) in tiny GGUF models (435 KB–1.7 MB Q8_0). Converted from
+tessdata_best via custom binary parser. VGSL forward pass (Conv+LSTM stack+CTC).
+Emit spaces and punctuation natively. Auto-detected via `--ocr`.
+
 **Text Detection**: Surya EfficientViT segformer (38M, 91 languages, GPU-accelerated).
 Heatmap → polygon bounding boxes. Pairs with any OCR recognizer for full-page OCR.
 
 **9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
 GPU acceleration (CUDA/Vulkan/Metal). iOS + Android + **WASM** builds.
-78 models in registry (text, vision, face, OCR, NER, scan cleanup), 170+ GGUF variants on HF.
+90 models in registry (text, vision, face, OCR, NER, scan cleanup), 200+ GGUF variants on HF.
 
 **Browser**: Math OCR compiles to WebAssembly (1 MB) via `build-wasm.sh`.
 Runs entirely client-side — no server, no API key. GGUF models fetched on
