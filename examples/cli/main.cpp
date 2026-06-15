@@ -77,7 +77,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --top-n N        limit rerank output to top N documents\n");
     fprintf(stderr, "  --face FILE      encode face from image (recognition model)\n");
     fprintf(stderr, "  --detect FILE    detect faces in image (detection model)\n");
-    fprintf(stderr, "  --ocr FILE       OCR → text (auto-detect: pix2tex/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/parseq/qwen2vl/internvl2/glm-ocr)\n");
+    fprintf(stderr, "  --ocr FILE       OCR → text (auto-detect: pix2tex/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/parseq/qwen2vl/internvl2/glm-ocr/tesseract-lstm)\n");
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
     fprintf(stderr, "  --layout FILE    document layout detection (RT-DETRv2, needs -m layout_model.gguf)\n");

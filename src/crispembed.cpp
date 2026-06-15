@@ -2952,9 +2952,10 @@ extern "C" int crispembed_colbert_score_batch(
 #include "parseq_ocr.h"
 #include "glm_ocr.h"
 #include "got_ocr.h"
+#include "tesseract_lstm.h"
 #include "core/gguf_loader.h"
 
-enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L, MATH_OCR_POSFORMER, MATH_OCR_MIXTEX, MATH_OCR_QWEN2VL, MATH_OCR_INTERNVL2, MATH_OCR_PARSEQ, MATH_OCR_GLM_OCR, MATH_OCR_GOT_OCR };
+enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L, MATH_OCR_POSFORMER, MATH_OCR_MIXTEX, MATH_OCR_QWEN2VL, MATH_OCR_INTERNVL2, MATH_OCR_PARSEQ, MATH_OCR_GLM_OCR, MATH_OCR_GOT_OCR, MATH_OCR_TESSERACT_LSTM };
 
 struct unified_math_ocr {
     math_ocr_type type;
@@ -2977,6 +2978,7 @@ static math_ocr_type detect_arch(const char * path) {
 if (arch == "parseq") return MATH_OCR_PARSEQ;
 if (arch == "glm_ocr") return MATH_OCR_GLM_OCR;
 if (arch == "got_ocr") return MATH_OCR_GOT_OCR;
+if (arch == "tesseract_lstm") return MATH_OCR_TESSERACT_LSTM;
     return MATH_OCR_PIX2TEX;
 }
 
@@ -2996,6 +2998,7 @@ extern "C" void * crispembed_math_ocr_init(const char * path, int n_threads) {
 case MATH_OCR_PARSEQ:         inner = parseq_ocr_init(path, n_threads); break;
 case MATH_OCR_GLM_OCR:        inner = glm_ocr_init(path, n_threads); break;
 case MATH_OCR_GOT_OCR:        inner = got_ocr_init(path, n_threads); break;
+case MATH_OCR_TESSERACT_LSTM: inner = tesseract_lstm_init(path, n_threads); break;
     }
     if (!inner) return nullptr;
     auto * u = new unified_math_ocr{type, inner};
@@ -3018,6 +3021,7 @@ extern "C" void crispembed_math_ocr_free(void * ctx) {
 case MATH_OCR_PARSEQ:         parseq_ocr_free((parseq_ocr_context *)u->ctx); break;
 case MATH_OCR_GLM_OCR:        glm_ocr_free((glm_ocr_context *)u->ctx); break;
 case MATH_OCR_GOT_OCR:        got_ocr_free((got_ocr_context *)u->ctx); break;
+case MATH_OCR_TESSERACT_LSTM: tesseract_lstm_free((tesseract_lstm_context *)u->ctx); break;
     }
     delete u;
 }
@@ -3040,6 +3044,18 @@ extern "C" const char * crispembed_math_ocr_recognize(
 case MATH_OCR_PARSEQ:         return parseq_ocr_recognize_raw((parseq_ocr_context *)u->ctx, px, w, h, ch, ol);
 case MATH_OCR_GLM_OCR:        return glm_ocr_recognize_raw((glm_ocr_context *)u->ctx, px, w, h, ch, ol);
 case MATH_OCR_GOT_OCR:        return got_ocr_recognize_raw((got_ocr_context *)u->ctx, px, w, h, ch, ol);
+case MATH_OCR_TESSERACT_LSTM: {
+            // tesseract_lstm_recognize takes grayscale uint8 — convert if needed
+            if (ch == 1) {
+                return tesseract_lstm_recognize((tesseract_lstm_context *)u->ctx, px, w, h, ol);
+            }
+            std::vector<uint8_t> gray(w * h);
+            for (int i = 0; i < w * h; i++) {
+                int r = px[i * ch], g = px[i * ch + 1], b = px[i * ch + 2];
+                gray[i] = (uint8_t)((r * 77 + g * 150 + b * 29) >> 8);
+            }
+            return tesseract_lstm_recognize((tesseract_lstm_context *)u->ctx, gray.data(), w, h, ol);
+        }
     }
     return nullptr;
 }
@@ -3062,6 +3078,13 @@ extern "C" const char * crispembed_math_ocr_recognize_gray(
 case MATH_OCR_PARSEQ:         return parseq_ocr_recognize((parseq_ocr_context *)u->ctx, px, w, h, ol);
 case MATH_OCR_GLM_OCR:        return glm_ocr_recognize((glm_ocr_context *)u->ctx, px, w, h, ol);
 case MATH_OCR_GOT_OCR:        return got_ocr_recognize((got_ocr_context *)u->ctx, px, w, h, ol);
+case MATH_OCR_TESSERACT_LSTM: {
+            // Convert float [0,1] grayscale → uint8
+            std::vector<uint8_t> gray(w * h);
+            for (int i = 0; i < w * h; i++)
+                gray[i] = (uint8_t)(px[i] * 255.0f + 0.5f);
+            return tesseract_lstm_recognize((tesseract_lstm_context *)u->ctx, gray.data(), w, h, ol);
+        }
     }
     return nullptr;
 }
