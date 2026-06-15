@@ -3275,6 +3275,94 @@ extern "C" const crispembed_ocr_result * crispembed_ocr_pipeline_run(
     return w->c_results.empty() ? nullptr : w->c_results.data();
 }
 
+static ocr_orchestrator::engine map_engine(int e) {
+    using E = ocr_orchestrator::engine;
+    switch (e) {
+        case 1:  return E::surya;
+        case 2:  return E::got;
+        case 3:  return E::glm;
+        case 4:  return E::qwen2vl;
+        case 5:  return E::internvl2;
+        default: return E::dbnet_trocr;
+    }
+}
+
+static ocr_orchestrator::source_type map_source(int s) {
+    using S = ocr_orchestrator::source_type;
+    switch (s) {
+        case 1:  return S::screenshot;
+        case 2:  return S::scanned_doc;
+        case 3:  return S::photo;
+        default: return S::auto_detect;
+    }
+}
+
+// crispembed_scan_cleanup_params (C API) and scan_cleanup_params (internal)
+// share the same field layout; copy field-by-field across the type boundary.
+static scan_cleanup_params to_cleanup(const crispembed_scan_cleanup_params & p) {
+    scan_cleanup_params o;
+    o.deskew            = p.deskew;
+    o.crop_borders      = p.crop_borders;
+    o.whiten_background  = p.whiten_background;
+    o.binarize          = p.binarize;
+    o.binarize_method   = p.binarize_method;
+    o.sauvola_k         = p.sauvola_k;
+    o.sauvola_window    = p.sauvola_window;
+    o.morph_kernel      = p.morph_kernel;
+    o.border_threshold  = p.border_threshold;
+    o.deskew_max_angle  = p.deskew_max_angle;
+    return o;
+}
+
+extern "C" void * crispembed_ocr_pipeline_init_stages(
+        int router, const char * nafnet_model,
+        const crispembed_ocr_stage * stages, int n_stages, int n_threads) {
+    if (!stages || n_stages <= 0) return nullptr;
+    ocr_orchestrator::config cfg;
+    cfg.router = router != 0;
+    if (nafnet_model && *nafnet_model) cfg.nafnet_model = nafnet_model;
+
+    // Group stages into per-source-type chains, preserving array order.
+    for (int i = 0; i < n_stages; i++) {
+        const crispembed_ocr_stage & s = stages[i];
+        ocr_orchestrator::stage st;
+        st.eng     = map_engine(s.engine);
+        st.enabled = true;
+        if (s.model_a) st.model_a = s.model_a;
+        if (s.model_b) st.model_b = s.model_b;
+        st.cleanup.enabled = s.cleanup_enabled != 0;
+        st.cleanup.params  = to_cleanup(s.cleanup);
+        st.cleanup.denoise = s.denoise != 0;
+        st.params.det_prob_threshold = s.det_prob_threshold;
+        st.params.det_box_threshold  = s.det_box_threshold;
+        st.params.det_target_short   = s.det_target_short > 0 ? s.det_target_short : 736;
+        st.params.vlm_max_tokens     = s.vlm_max_tokens;
+        if (s.vlm_prompt && *s.vlm_prompt) st.params.vlm_prompt = s.vlm_prompt;
+        st.accept.min_chars      = s.min_chars;
+        st.accept.min_confidence = s.min_confidence;
+
+        const ocr_orchestrator::source_type type = map_source(s.source_type);
+        ocr_orchestrator::chain * chain = nullptr;
+        for (auto & c : cfg.chains) {
+            if (c.type == type) { chain = &c; break; }
+        }
+        if (!chain) {
+            ocr_orchestrator::chain c;
+            c.type = type;
+            cfg.chains.push_back(c);
+            chain = &cfg.chains.back();
+        }
+        chain->stages.push_back(st);
+    }
+
+    auto * w = new ocr_pipeline_orch_wrapper();
+    if (!ocr_orchestrator::load(&w->ctx, cfg, n_threads)) {
+        delete w;
+        return nullptr;
+    }
+    return w;
+}
+
 extern "C" void crispembed_ocr_pipeline_free(void * ctx) {
     if (!ctx) return;
     auto * w = (ocr_pipeline_orch_wrapper *)ctx;

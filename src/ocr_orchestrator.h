@@ -68,12 +68,25 @@ struct accept_gate {
     float min_confidence = 0.5f;  // mean region confidence floor (0 = ignore)
 };
 
+// Tunable engine parameters (per stage). Only the fields relevant to the
+// stage's engine are used; the rest keep their defaults.
+struct engine_params {
+    // Detection (DBNet / Surya), used by ocr_pipeline::run_file.
+    float det_prob_threshold = 0.3f;
+    float det_box_threshold  = 0.5f;
+    int   det_target_short   = 736;
+    // VLM generation (GOT / GLM / Qwen2.5-VL / InternVL2).
+    int         vlm_max_tokens = 0;   // 0 = engine default
+    std::string vlm_prompt;           // empty = engine default prompt
+};
+
 // One engine stage with its own cleanup + acceptance criteria + model paths.
 struct stage {
     engine          eng     = engine::dbnet_trocr;
     bool            enabled = true;
     cleanup_profile cleanup;
     accept_gate     accept;
+    engine_params   params;
     std::string     model_a; // det / single model GGUF (resolved by caller)
     std::string     model_b; // rec model GGUF (engines that need a pair)
 };
