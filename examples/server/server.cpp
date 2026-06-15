@@ -20,8 +20,9 @@
 //   POST /ner/extract     — {"text": "...", "labels": [...]} → NER entities
 //   POST /scan/cleanup    — {"image": "scan.png"} → cleaned image
 //   POST /preprocess/skew      — {"image": "..."} → {"angle": F, "confidence": F}
-//   POST /preprocess/dewarp    — {"image": "..."} → {"dewarped": bool}
+//   POST /preprocess/dewarp    — {"image": "...", "output": "..."} → PGM image or JSON
 //   POST /preprocess/cc-detect — {"image": "..."} → {"regions": [...]}
+//   POST /render/ocr           — {"results": [...], "format": "hocr"} → rendered document
 //   GET  /health          — server status + loaded capabilities
 
 #include "crispembed.h"
@@ -1589,15 +1590,27 @@ int main(int argc, char ** argv) {
     });
 
     // POST /preprocess/dewarp — straighten curved text (no model needed)
+    // Request:  {"image": "/path/to/scan.png", "output": "/path/to/out.pgm"}
+    //   - "output" is optional; if present, writes dewarped PGM to that path
+    // Response: JSON metadata + optionally raw PGM image bytes
+    //   - If Accept: image/* → returns PGM binary directly
+    //   - Otherwise → JSON {"dewarped":bool, "width":W, "height":H}
     svr.Post("/preprocess/dewarp", [&](const httplib::Request & req, httplib::Response & res) {
         auto body = req.body;
-        std::string image_path;
+        std::string image_path, output_path;
         auto pos = body.find("\"image\"");
         if (pos != std::string::npos) {
             auto q1 = body.find('"', pos + 7);
             auto q2 = body.find('"', q1 + 1);
             if (q1 != std::string::npos && q2 != std::string::npos)
                 image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        auto opos = body.find("\"output\"");
+        if (opos != std::string::npos) {
+            auto q1 = body.find('"', opos + 8);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                output_path = body.substr(q1 + 1, q2 - q1 - 1);
         }
         if (image_path.empty()) {
             res.status = 400;
@@ -1619,9 +1632,36 @@ int main(int argc, char ** argv) {
             res.set_content("{\"dewarped\":false,\"reason\":\"too few textlines\"}", "application/json");
             return;
         }
-        char buf[128];
-        snprintf(buf, sizeof(buf), "{\"dewarped\":true,\"width\":%d,\"height\":%d}", ow, oh);
-        res.set_content(buf, "application/json");
+        // Write to output file if requested
+        if (!output_path.empty()) {
+            FILE * f = fopen(output_path.c_str(), "wb");
+            if (f) {
+                fprintf(f, "P5\n%d %d\n255\n", ow, oh);
+                fwrite(out.data(), 1, ow * oh, f);
+                fclose(f);
+            }
+        }
+        // Return image or JSON based on Accept header
+        bool want_image = false;
+        if (req.has_header("Accept")) {
+            auto accept = req.get_header_value("Accept");
+            want_image = accept.find("image/") != std::string::npos;
+        }
+        if (want_image) {
+            // PGM format: P5 header + raw bytes
+            std::string pgm;
+            char hdr[64];
+            snprintf(hdr, sizeof(hdr), "P5\n%d %d\n255\n", ow, oh);
+            pgm = hdr;
+            pgm.append((const char *)out.data(), ow * oh);
+            res.set_content(pgm, "image/x-portable-graymap");
+        } else {
+            char buf[256];
+            snprintf(buf, sizeof(buf),
+                "{\"dewarped\":true,\"width\":%d,\"height\":%d,\"output\":\"%s\"}",
+                ow, oh, output_path.empty() ? "" : output_path.c_str());
+            res.set_content(buf, "application/json");
+        }
     });
 
     // POST /preprocess/cc-detect — model-free text line detection
@@ -1660,6 +1700,108 @@ int main(int argc, char ** argv) {
         js << "]}";
         if (regions) free(regions);
         res.set_content(js.str(), "application/json");
+    });
+
+    // POST /render/ocr — render OCR results to hOCR/ALTO/PDF
+    // Request: {"results": [{"text":"Hello","x":10,"y":20,"w":50,"h":15,"confidence":0.99},...],
+    //           "page_width": 800, "page_height": 600, "format": "hocr"}
+    // Response: rendered document (hOCR XHTML, ALTO XML, or PDF binary)
+    svr.Post("/render/ocr", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+
+        // Parse format
+        std::string format = "text";
+        auto fpos = body.find("\"format\"");
+        if (fpos != std::string::npos) {
+            auto q1 = body.find('"', fpos + 8);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                format = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+
+        // Parse page dimensions
+        int page_w = 800, page_h = 600;
+        auto pw_pos = body.find("\"page_width\"");
+        if (pw_pos != std::string::npos) {
+            auto colon = body.find(':', pw_pos);
+            if (colon != std::string::npos) page_w = atoi(body.c_str() + colon + 1);
+        }
+        auto ph_pos = body.find("\"page_height\"");
+        if (ph_pos != std::string::npos) {
+            auto colon = body.find(':', ph_pos);
+            if (colon != std::string::npos) page_h = atoi(body.c_str() + colon + 1);
+        }
+
+        // Parse results array (minimal JSON — extract text + bbox per entry)
+        // Each result: {"text":"...","x":N,"y":N,"w":N,"h":N,"confidence":F}
+        std::vector<crispembed_ocr_result> results;
+        std::vector<std::string> texts; // keep text alive
+        auto rpos = body.find("\"results\"");
+        if (rpos != std::string::npos) {
+            auto arr_start = body.find('[', rpos);
+            auto arr_end = body.rfind(']');
+            if (arr_start != std::string::npos && arr_end != std::string::npos) {
+                std::string arr = body.substr(arr_start, arr_end - arr_start + 1);
+                // Parse each {...} object
+                size_t p = 0;
+                while ((p = arr.find('{', p)) != std::string::npos) {
+                    auto e = arr.find('}', p);
+                    if (e == std::string::npos) break;
+                    std::string obj = arr.substr(p, e - p + 1);
+                    p = e + 1;
+
+                    crispembed_ocr_result r = {};
+                    // Extract text
+                    auto tp = obj.find("\"text\"");
+                    if (tp != std::string::npos) {
+                        auto tq1 = obj.find('"', tp + 6);
+                        auto tq2 = obj.find('"', tq1 + 1);
+                        if (tq1 != std::string::npos && tq2 != std::string::npos)
+                            texts.push_back(obj.substr(tq1 + 1, tq2 - tq1 - 1));
+                        else texts.push_back("");
+                    } else texts.push_back("");
+                    r.text = texts.back().c_str();
+                    r.text_len = (int)texts.back().size();
+                    // Extract numbers
+                    auto parse_num = [&](const char * key) -> float {
+                        auto kp = obj.find(key);
+                        if (kp == std::string::npos) return 0;
+                        auto cp = obj.find(':', kp);
+                        return cp != std::string::npos ? (float)atof(obj.c_str() + cp + 1) : 0;
+                    };
+                    r.x = parse_num("\"x\"");
+                    r.y = parse_num("\"y\"");
+                    r.w = parse_num("\"w\"");
+                    r.h = parse_num("\"h\"");
+                    r.confidence = parse_num("\"confidence\"");
+                    if (r.confidence == 0) r.confidence = 1.0f;
+                    results.push_back(r);
+                }
+            }
+        }
+
+        if (results.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no results to render\"}", "application/json");
+            return;
+        }
+
+        char * rendered = crispembed_ocr_render(
+            results.data(), (int)results.size(), page_w, page_h, format.c_str());
+        if (!rendered) {
+            res.status = 500;
+            res.set_content("{\"error\": \"rendering failed\"}", "application/json");
+            return;
+        }
+
+        // Set content type based on format
+        const char * content_type = "text/plain";
+        if (format == "hocr") content_type = "text/html; charset=utf-8";
+        else if (format == "alto") content_type = "application/xml; charset=utf-8";
+        else if (format == "pdf") content_type = "application/pdf";
+
+        res.set_content(rendered, content_type);
+        free(rendered);
     });
 
     // GET /health
@@ -1708,6 +1850,7 @@ int main(int argc, char ** argv) {
     fprintf(stderr, "  POST /preprocess/skew      — {\"image\": \"...\"} (find skew angle)\n");
     fprintf(stderr, "  POST /preprocess/dewarp    — {\"image\": \"...\"} (straighten curved text)\n");
     fprintf(stderr, "  POST /preprocess/cc-detect — {\"image\": \"...\"} (model-free line detection)\n");
+    fprintf(stderr, "  POST /render/ocr           — {\"results\": [...], \"format\": \"hocr|alto|pdf\"}\n");
     if (ctx && crispembed_has_colbert(ctx)) fprintf(stderr, "  POST /colbert/score   — {\"query\": \"...\", \"documents\": [...]}\n");
     fprintf(stderr, "  GET  /health\n\n");
 
