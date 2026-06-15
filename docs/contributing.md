@@ -191,29 +191,37 @@ If parity is bad, use the reference GGUF to narrow down the bug:
 
 ## Adding Utility Libraries (preprocessors, renderers, detectors)
 
-Utility libraries (not model backends) follow a lighter pattern:
+Utility libraries (not model backends) follow a lighter pattern.
+**Wiring checklist** (same layers as model backends):
 
-### Classical preprocessing (`src/classical_preproc.{h,cpp}`, `src/morph_fast.{h,cpp}`)
-- Self-contained C++ with no external deps (may use `morph_fast.h` for 1-bit ops)
-- BSD-2-attributed if cherry-picked from Leptonica
-- Exposed via C API in `crispembed.h` or directly via their own headers
-- Unit tests in `tests/test_*.cpp` with synthetic images
+1. **C++ implementation** — self-contained in `src/`, own header
+2. **C API wrapper** — add to `crispembed.h` + implement in `crispembed.cpp`
+3. **CMakeLists.txt** — add source + test binary
+4. **Rust FFI** — add to `crispembed-sys/src/lib.rs` (raw) + `crispembed/src/lib.rs` (safe)
+5. **Python** — add to `python/crispembed/_binding.py` (ctypes signatures + class)
+6. **Dart** — add to `flutter/crispembed/lib/src/crispembed.dart` (FFI)
+7. **CLI** — add flags to `examples/cli/main.cpp`
+8. **Server** — add endpoints to `examples/server/server.cpp` if appropriate
+9. **Unit tests** — `tests/test_*.cpp` with synthetic images
 
-### CC-based detection (`src/cc_detect.{h,cpp}`)
-- Model-free, GPU-free text line detector
-- Alternative to DBNet/Surya for zero-download, low-resource tier
-- Wire as a detector choice in the orchestrator's per-stage builder
+### Currently implemented utility libraries
 
-### OCR result renderers (`src/ocr_render.{h,cpp}`)
-- Plain text, hOCR, ALTO, searchable PDF output
-- Accumulator pattern: `begin → add_page → end → output`
-- Wire via `--output-format` CLI flag and `crispembed_ocr_render` C API
-- Unit tests verify XML structure, escaping, multi-page accumulation
+| Library | C API | CLI | Rust | Python | Dart | Server |
+|---------|-------|-----|------|--------|------|--------|
+| Classical preproc (Otsu, deskew, bg norm, despeckle) | ✓ | partial | ✓ | ✓ | - | - |
+| 1-bit DWA morphology | own header | - | - | - | - | - |
+| CC text line detection | ✓ | - | ✓ | - | - | - |
+| Page dewarping | ✓ | - | ✓ | ✓ | - | - |
+| OCR renderers (text, hOCR, ALTO, PDF) | ✓ | ✓ | ✓ | - | - | - |
+| Punctuation restoration | ✓ | ✓ | ✓ | ✓ | - | - |
 
-### Punctuation restoration (`src/fireredpunc.{h,cpp}`, `src/pcs.{h,cpp}`)
-- Copied from CrispASR (will be refactored into shared `crisp_punc/` library)
-- Auto-detected from GGUF architecture
-- Wire via `--punct-model` CLI flag and `crispembed_punct_*` C API
+### Implementation patterns
+
+- **Self-contained C++** — no external deps, may use `morph_fast.h` for 1-bit ops
+- **BSD-2-attributed** if cherry-picked from Leptonica
+- **Unit tests** with synthetic images (gradients, speckles, curves)
+- **Orchestrator integration** — new detector/cleanup methods surface as
+  per-stage options via the `crispembed_ocr_stage` builder
 
 ---
 
