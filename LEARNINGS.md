@@ -1,5 +1,24 @@
 # CrispEmbed — Technical Learnings
 
+## Qwen2-VL vs Qwen2.5-VL config field names
+
+The vision config schema differs between Qwen2-VL and Qwen2.5-VL:
+
+| Field | Qwen2-VL | Qwen2.5-VL |
+|-------|----------|------------|
+| ViT block dim | `embed_dim` (1280) | `hidden_size` (1280) |
+| Merger output | `hidden_size` (1536) | `out_hidden_size` (2048) |
+| FFN size | `mlp_ratio` (4) → computed | `intermediate_size` (3420) |
+| Input channels | `in_chans` (3) | `in_channels` (3) |
+
+Critically, Qwen2-VL's `hidden_size` is the **merger output** (= LLM input dim),
+not the ViT block dim. The GGUF `vision.hidden_size` must be set to `embed_dim`
+(the ViT block dim), not `hidden_size`. Getting this wrong means every attention
+head_dim computation in the engine is wrong → garbage output, no obvious crash.
+
+Fix: use `getattr(vc, 'embed_dim', vc.hidden_size)` for the block dim,
+`getattr(vc, 'intermediate_size', None) or embed_dim * mlp_ratio` for FFN.
+
 ## NAFNet dequant: always use ggml_get_type_traits for quantized tensors
 
 When loading quantized GGUF weights for CPU-scalar inference, the `to_f32()`
