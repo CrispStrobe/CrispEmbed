@@ -78,7 +78,7 @@ int main(int argc, char ** argv) {
     std::string punct_model_path;     // punct restoration model for orchestrator
     std::string sr_model_path;        // text super-resolution model (--sr-model)
     std::string pan_model_path;       // PAN super-resolution model (--pan-model)
-    std::string tbsrn_model_path;     // TBSRN super-resolution model (--tbsrn-model)
+    std::string tbsrn_model_path;     // TBSRN text-line SR model (--tbsrn-model)
     int port = 8080;
     int n_threads = 4;
 
@@ -135,8 +135,8 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --sr-model MODEL  text SR GGUF (NAFNet+PixelShuffle, 2x or 4x); enables POST /text/sr\n");
         fprintf(stderr, "\nPAN super-resolution (whole-image upscaling):\n");
         fprintf(stderr, "  --pan-model MODEL PAN SR GGUF (Pixel Attention Network, 2x or 4x); enables POST /pan/sr\n");
-        fprintf(stderr, "\nTBSRN super-resolution (text-crop upscaling, always 2x):\n");
-        fprintf(stderr, "  --tbsrn-model MODEL TBSRN SR GGUF (16x64->32x128); enables POST /tbsrn/sr\n");
+        fprintf(stderr, "\nTBSRN text-line super-resolution:\n");
+        fprintf(stderr, "  --tbsrn-model MODEL TBSRN GGUF (Telescope, 1.1M params, fixed 4x); enables POST /tbsrn/sr\n");
         return 1;
     }
 
@@ -819,7 +819,7 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "Warning: failed to load PAN SR model '%s'\n", pan_model_path.c_str());
     }
 
-    // ── TBSRN Super-Resolution ──
+    // ── TBSRN text-line Super-Resolution ──
     void * tbsrn_sr_ctx = nullptr;
     std::mutex tbsrn_sr_mutex;
 
@@ -2100,7 +2100,7 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
-    // POST /tbsrn/sr — TBSRN text-crop super-resolution (always 2×)
+    // POST /tbsrn/sr — TBSRN text-line super-resolution (Telescope)
     svr.Post("/tbsrn/sr", [&](const httplib::Request & req, httplib::Response & res) {
         if (!tbsrn_sr_ctx) {
             res.status = 503;
@@ -2171,10 +2171,10 @@ int main(int argc, char ** argv) {
         js << "{\"image\": \"" << b64 << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh
            << ", \"original_width\": " << w << ", \"original_height\": " << h
-           << ", \"upscale_factor\": 2"
+           << ", \"upscale_factor\": 4"
            << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
 
-        fprintf(stderr, "crispembed-server: /tbsrn/sr in %.1f ms (%dx%d -> %dx%d, 2x)\n",
+        fprintf(stderr, "crispembed-server: /tbsrn/sr in %.1f ms (%dx%d -> %dx%d, 4x)\n",
                 ms, w, h, ow, oh);
         res.set_content(js.str(), "application/json");
     });
@@ -2391,7 +2391,7 @@ int main(int argc, char ** argv) {
         if (ocr_orch_ctx) js << ", \"ocr_orchestrator\": true";
         if (text_sr_ctx) js << ", \"text_sr\": true, \"text_sr_upscale\": " << crispembed_text_sr_upscale_factor(text_sr_ctx);
         if (pan_sr_ctx) js << ", \"pan_sr\": true, \"pan_sr_upscale\": " << crispembed_pan_sr_scale(pan_sr_ctx);
-        if (tbsrn_sr_ctx) js << ", \"tbsrn_sr\": true, \"tbsrn_sr_upscale\": 2";
+        if (tbsrn_sr_ctx) js << ", \"tbsrn_sr\": true, \"tbsrn_sr_upscale\": 4";
         js << ", \"scan_cleanup\": true";  // always available (no model needed)
         js << "}";
         res.set_content(js.str(), "application/json");
@@ -2417,7 +2417,7 @@ int main(int argc, char ** argv) {
     if (ocr_orch_ctx) fprintf(stderr, "  POST /ocr/pipeline    — {\"image\": \"doc.png\"} (routing + cleanup + accept-gate)\n");
     if (text_sr_ctx) fprintf(stderr, "  POST /text/sr         — {\"image\": \"low_dpi.png\"} (upscale %dx)\n", crispembed_text_sr_upscale_factor(text_sr_ctx));
     if (pan_sr_ctx) fprintf(stderr, "  POST /pan/sr          — {\"image\": \"photo.png\"} (upscale %dx)\n", crispembed_pan_sr_scale(pan_sr_ctx));
-    if (tbsrn_sr_ctx) fprintf(stderr, "  POST /tbsrn/sr        — {\"image\": \"text_crop.png\"} (upscale 2x)\n");
+    if (tbsrn_sr_ctx) fprintf(stderr, "  POST /tbsrn/sr        — {\"image\": \"text_line.png\"} (upscale 4x)\n");
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
     fprintf(stderr, "  POST /pdf/dpi              — {\"file\": \"...\"} (PDF DPI profiling)\n");
     fprintf(stderr, "  POST /preprocess/skew      — {\"image\": \"...\"} (find skew angle)\n");

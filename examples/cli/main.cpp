@@ -109,9 +109,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --pan-sr FILE    standalone PAN super-resolution: upscale image, write PGM to stdout\n");
     fprintf(stderr, "                   (needs --pan-model PATH: PAN GGUF, Pixel Attention Network, 2x or 4x)\n");
     fprintf(stderr, "  --pan-model PATH PAN super-resolution GGUF (used with --pan-sr)\n");
-    fprintf(stderr, "  --tbsrn-sr FILE  standalone TBSRN super-resolution: upscale text crop, write PPM to stdout\n");
-    fprintf(stderr, "                   (needs --tbsrn-model PATH: TBSRN GGUF, always 2x, 16x64->32x128)\n");
-    fprintf(stderr, "  --tbsrn-model PATH TBSRN super-resolution GGUF (used with --tbsrn-sr)\n");
+    fprintf(stderr, "  --tbsrn-sr FILE  standalone TBSRN text-line SR: upscale text crop, write PPM to stdout\n");
+    fprintf(stderr, "                   (needs --tbsrn-model PATH: TBSRN GGUF, Telescope, fixed 4x)\n");
+    fprintf(stderr, "  --tbsrn-model PATH TBSRN text-line super-resolution GGUF (used with --tbsrn-sr)\n");
     fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
     fprintf(stderr, "  --ocr-rec MODEL  general OCR: text recognition model (TrOCR, e.g. trocr-printed)\n");
     fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
@@ -177,7 +177,7 @@ int main(int argc, char ** argv) {
     std::string sr_model;              // --sr-model: text super-resolution GGUF
     std::string pan_model;             // --pan-model: PAN super-resolution GGUF
     std::string pan_sr_path;           // --pan-sr FILE: standalone PAN upscaling
-    std::string tbsrn_model;           // --tbsrn-model: TBSRN super-resolution GGUF
+    std::string tbsrn_model;           // --tbsrn-model: TBSRN text-line SR GGUF
     std::string tbsrn_sr_path;         // --tbsrn-sr FILE: standalone TBSRN upscaling
     std::string pipeline_vlm_model;     // --vlm-model NAME: VLM escalation engine GGUF
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
