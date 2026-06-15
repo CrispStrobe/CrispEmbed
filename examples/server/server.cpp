@@ -56,6 +56,7 @@ int main(int argc, char ** argv) {
     std::string layout_model_path;    // layout detection model (RT-DETRv2)
     std::string text_det_model_path;  // surya text detection model
     std::string ner_model_path;       // NER model (GLiNER)
+    bool enable_ocr_orch = false;     // --ocr-pipeline: enable orchestrator endpoint
     int port = 8080;
     int n_threads = 4;
 
@@ -74,6 +75,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc) layout_model_path = argv[++i];
         else if (strcmp(argv[i], "--text-det") == 0 && i + 1 < argc) text_det_model_path = argv[++i];
         else if (strcmp(argv[i], "--ner") == 0 && i + 1 < argc) ner_model_path = argv[++i];
+        else if (strcmp(argv[i], "--ocr-pipeline") == 0) enable_ocr_orch = true;
     }
 
     if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty()) {
@@ -654,6 +656,23 @@ int main(int argc, char ** argv) {
     void * ocr_pipeline_ctx = nullptr;
     std::mutex ocr_pipeline_mutex;
 
+    // ── OCR Orchestrator (source-type routing + cleanup + accept-gate) ──
+    void * ocr_orch_ctx = nullptr;
+    std::mutex ocr_orch_mutex;
+
+    if (enable_ocr_orch && !ocr_det_model_path.empty()) {
+        crispembed_ocr_pipeline_params pp = crispembed_ocr_pipeline_defaults();
+        std::string det_r = crispembed_mgr::resolve_model(ocr_det_model_path, true);
+        if (!det_r.empty()) ocr_det_model_path = det_r;
+        std::string rec_r = crispembed_mgr::resolve_model(ocr_rec_model_path, true);
+        if (!rec_r.empty()) ocr_rec_model_path = rec_r;
+        pp.det_model = ocr_det_model_path.c_str();
+        pp.rec_model = ocr_rec_model_path.c_str();
+        ocr_orch_ctx = crispembed_ocr_pipeline_init(&pp, n_threads);
+        if (!ocr_orch_ctx)
+            fprintf(stderr, "Warning: failed to init OCR orchestrator\n");
+    }
+
     if (!ocr_det_model_path.empty() && !ocr_rec_model_path.empty()) {
         std::string det_resolved = crispembed_mgr::resolve_model(ocr_det_model_path, true);
         if (!det_resolved.empty()) ocr_det_model_path = det_resolved;
@@ -1025,6 +1044,62 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /ocr/pipeline — full orchestrator (routing + cleanup + accept-gate)
+    // Request:  {"image": "/path/to/document.png", "min_chars": 8, "min_confidence": 0.5}
+    // Response: {"text": "...", "n_regions": N, "mean_confidence": F, "ms": M}
+    svr.Post("/ocr/pipeline", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!ocr_orch_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"OCR orchestrator not loaded (use --ocr-pipeline --ocr-det MODEL --ocr-rec MODEL)\"}", "application/json");
+            return;
+        }
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+
+        auto t0 = std::chrono::high_resolution_clock::now();
+
+        std::lock_guard<std::mutex> lock(ocr_orch_mutex);
+        int n_results = 0;
+        const char * full_text = nullptr;
+        float mean_conf = 0.0f;
+        const crispembed_ocr_result * results =
+            crispembed_ocr_pipeline_run(ocr_orch_ctx, image_path.c_str(),
+                                        &n_results, &full_text, &mean_conf);
+
+        auto t1 = std::chrono::high_resolution_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        std::ostringstream js;
+        js << "{\"text\":\"" << json_escape(full_text ? full_text : "") << "\""
+           << ",\"n_regions\":" << n_results
+           << ",\"mean_confidence\":" << std::fixed << std::setprecision(4) << mean_conf
+           << ",\"results\":[";
+        for (int i = 0; i < n_results; i++) {
+            if (i > 0) js << ",";
+            js << "{\"text\":\"" << json_escape(results[i].text) << "\""
+               << ",\"bbox\":[" << results[i].x << "," << results[i].y
+               << "," << (results[i].x + results[i].w) << "," << (results[i].y + results[i].h) << "]"
+               << ",\"confidence\":" << results[i].confidence << "}";
+        }
+        js << "],\"ms\":" << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /ocr/pipeline in %.1f ms (%d regions, conf=%.2f)\n",
+                ms, n_results, mean_conf);
+        res.set_content(js.str(), "application/json");
+    });
+
     // POST /layout/detect — document layout analysis
     // Request:  {"image": "/path/to/page.png", "threshold": 0.3}
     // Response: {"regions": [{"label": "text", "score": 0.95, "bbox": [x1, y1, x2, y2]}, ...]}
@@ -1342,6 +1417,7 @@ int main(int argc, char ** argv) {
         if (layout_ctx) js << ", \"layout\": true";
         if (text_det_ctx) js << ", \"text_detection\": true";
         if (ner_ctx) js << ", \"ner\": true";
+        if (ocr_orch_ctx) js << ", \"ocr_orchestrator\": true";
         js << ", \"scan_cleanup\": true";  // always available (no model needed)
         js << "}";
         res.set_content(js.str(), "application/json");
@@ -1363,6 +1439,7 @@ int main(int argc, char ** argv) {
     if (layout_ctx) fprintf(stderr, "  POST /layout/detect   — {\"image\": \"page.png\"}\n");
     if (text_det_ctx) fprintf(stderr, "  POST /text/detect     — {\"image\": \"page.png\"}\n");
     if (ner_ctx) fprintf(stderr, "  POST /ner/extract     — {\"text\": \"...\", \"labels\": [\"person\", ...]}\n");
+    if (ocr_orch_ctx) fprintf(stderr, "  POST /ocr/pipeline    — {\"image\": \"doc.png\"} (routing + cleanup + accept-gate)\n");
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
     if (ctx && crispembed_has_colbert(ctx)) fprintf(stderr, "  POST /colbert/score   — {\"query\": \"...\", \"documents\": [...]}\n");
     fprintf(stderr, "  GET  /health\n\n");
@@ -1372,6 +1449,7 @@ int main(int argc, char ** argv) {
     if (ner_ctx) crispembed_ner_free(ner_ctx);
     if (layout_ctx) crispembed_layout_free(layout_ctx);
     if (text_det_ctx) crispembed_text_det_free(text_det_ctx);
+    if (ocr_orch_ctx) crispembed_ocr_pipeline_free(ocr_orch_ctx);
     if (ocr_pipeline_ctx) crispembed_ocr_free(ocr_pipeline_ctx);
     if (math_ocr_ctx) crispembed_math_ocr_free(math_ocr_ctx);
     if (clip_text_ctx) crispembed_clip_text_free(clip_text_ctx);
