@@ -1541,6 +1541,260 @@ impl Drop for CrispScanCleanup {
 }
 
 // ---------------------------------------------------------------------------
+// Text Super-Resolution (NAFNet-SR)
+// ---------------------------------------------------------------------------
+
+/// NAFNet text super-resolution — upscales low-DPI document images.
+///
+/// ```no_run
+/// let sr = CrispTextSr::new("nafnet-sr.gguf", 4).unwrap();
+/// println!("upscale factor: {}", sr.upscale_factor());
+/// let (pixels, out_w, out_h) = sr.process(&rgb_bytes, 320, 80, 0, 0).unwrap();
+/// ```
+pub struct CrispTextSr {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispTextSr {}
+
+impl CrispTextSr {
+    /// Load a NAFNet-SR GGUF model.
+    ///
+    /// - `model_path` -- path to the `.gguf` file.
+    /// - `n_threads`  -- CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_text_sr_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_text_sr_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Return the upscale factor reported by the model (e.g. 2 or 4).
+    pub fn upscale_factor(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_text_sr_upscale_factor(self.ctx) }
+    }
+
+    /// Upscale an RGB image.
+    ///
+    /// - `pixels`       -- RGB uint8 bytes (h * w * 3).
+    /// - `width`/`height` -- input image dimensions.
+    /// - `tile_size`    -- tile size for tiled inference (0 = full image).
+    /// - `tile_overlap` -- overlap between tiles in pixels.
+    ///
+    /// Returns `(output_rgb_bytes, out_width, out_height)`.
+    pub fn process(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        tile_size: i32,
+        tile_overlap: i32,
+    ) -> Result<(Vec<u8>, i32, i32), String> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut ow: i32 = 0;
+        let mut oh: i32 = 0;
+
+        let rc = unsafe {
+            crispembed_sys::crispembed_text_sr_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                tile_size,
+                tile_overlap,
+                &mut out_ptr,
+                &mut ow,
+                &mut oh,
+            )
+        };
+
+        if rc != 0 || out_ptr.is_null() {
+            return Err("Text SR processing failed".into());
+        }
+
+        let len = (ow * oh * 3) as usize;
+        let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_text_sr_free_image(out_ptr) };
+
+        Ok((result, ow, oh))
+    }
+}
+
+impl Drop for CrispTextSr {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_text_sr_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// TBSRN text-line super-resolution (Telescope)
+// ---------------------------------------------------------------------------
+
+/// TBSRN text-line super-resolution (PaddleOCR Telescope, 1.1M params).
+///
+/// Designed for text-line crops rather than whole images.
+///
+/// ```no_run
+/// let sr = CrispTbsrnSr::new("tbsrn-telescope.gguf", 4).unwrap();
+/// let (pixels, out_w, out_h) = sr.process(&rgb_bytes, 320, 32).unwrap();
+/// ```
+pub struct CrispTbsrnSr {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispTbsrnSr {}
+
+impl CrispTbsrnSr {
+    /// Load a TBSRN GGUF model.
+    ///
+    /// - `model_path` -- path to the `.gguf` file.
+    /// - `n_threads`  -- CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_tbsrn_sr_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_tbsrn_sr_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Upscale a text-line crop (RGB, 32-pixel height typical).
+    ///
+    /// - `pixels`       -- RGB uint8 bytes (h * w * 3).
+    /// - `width`/`height` -- input image dimensions.
+    ///
+    /// Returns `(output_rgb_bytes, out_width, out_height)`.
+    pub fn process(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+    ) -> Result<(Vec<u8>, i32, i32), String> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut ow: i32 = 0;
+        let mut oh: i32 = 0;
+
+        let rc = unsafe {
+            crispembed_sys::crispembed_tbsrn_sr_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                &mut out_ptr,
+                &mut ow,
+                &mut oh,
+            )
+        };
+
+        if rc != 0 || out_ptr.is_null() {
+            return Err("TBSRN SR processing failed".into());
+        }
+
+        let len = (ow * oh * 3) as usize;
+        let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_tbsrn_sr_free_image(out_ptr) };
+
+        Ok((result, ow, oh))
+    }
+}
+
+impl Drop for CrispTbsrnSr {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_tbsrn_sr_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// PAN super-resolution (Pixel Attention Network)
+// ---------------------------------------------------------------------------
+
+/// PAN whole-image super-resolution (Pixel Attention Network, 272K params).
+///
+/// ```no_run
+/// let sr = CrispPanSr::new("pan-x4.gguf", 4).unwrap();
+/// println!("scale: {}", sr.scale());
+/// let (pixels, out_w, out_h) = sr.process(&rgb_bytes, 320, 240, 0, 0).unwrap();
+/// ```
+pub struct CrispPanSr {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispPanSr {}
+
+impl CrispPanSr {
+    /// Load a PAN GGUF model.
+    ///
+    /// - `model_path` -- path to the `.gguf` file.
+    /// - `n_threads`  -- CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_pan_sr_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_pan_sr_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Return the scale factor reported by the model (e.g. 2 or 4).
+    pub fn scale(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_pan_sr_scale(self.ctx) }
+    }
+
+    /// Upscale an RGB image.
+    ///
+    /// - `pixels`       -- RGB uint8 bytes (h * w * 3).
+    /// - `width`/`height` -- input image dimensions.
+    /// - `tile_size`    -- tile size for tiled inference (0 = full image).
+    /// - `tile_overlap` -- overlap between tiles in pixels.
+    ///
+    /// Returns `(output_rgb_bytes, out_width, out_height)`.
+    pub fn process(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        tile_size: i32,
+        tile_overlap: i32,
+    ) -> Result<(Vec<u8>, i32, i32), String> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut ow: i32 = 0;
+        let mut oh: i32 = 0;
+
+        let rc = unsafe {
+            crispembed_sys::crispembed_pan_sr_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                tile_size,
+                tile_overlap,
+                &mut out_ptr,
+                &mut ow,
+                &mut oh,
+            )
+        };
+
+        if rc != 0 || out_ptr.is_null() {
+            return Err("PAN SR processing failed".into());
+        }
+
+        let len = (ow * oh * 3) as usize;
+        let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_pan_sr_free_image(out_ptr) };
+
+        Ok((result, ow, oh))
+    }
+}
+
+impl Drop for CrispPanSr {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_pan_sr_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // OCR Pipeline (orchestrator)
 // ---------------------------------------------------------------------------
 
@@ -1677,6 +1931,7 @@ impl CrispOcrPipeline {
             vlm_model: vlm.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
             vlm_engine: vlm_engine as std::os::raw::c_int,
             punct_model: punct.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+            sr_model: std::ptr::null(),
         };
         let ctx = unsafe { crispembed_sys::crispembed_ocr_pipeline_init(&params, n_threads) };
         if ctx.is_null() {
