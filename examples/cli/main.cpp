@@ -86,6 +86,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --ner-threshold F  confidence threshold for NER (default: 0.5)\n");
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
+    fprintf(stderr, "  --punct-model M  post-process OCR text with punctuation model (FireRedPunc/PCS)\n");
     fprintf(stderr, "  --cleanup        preprocess scan before OCR (deskew, crop borders, whiten background)\n");
     fprintf(stderr, "  --cleanup-only F process scan and write cleaned image to stdout (no OCR)\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate (add --denoise for NAFNet)\n");
@@ -151,6 +152,7 @@ int main(int argc, char ** argv) {
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
     float pipeline_min_conf = -1.0f;    // --ocr-min-conf: accept-gate override (-1 = default)
+    std::string punct_model;    // --punct-model: post-process OCR with punctuation
     bool face_pipeline_mode = false;
     float conf_threshold = 0.5f;
     std::string lora_adapter;   // LoRA adapter name (--lora)
@@ -216,6 +218,8 @@ int main(int argc, char ** argv) {
             face_pipeline_mode = true;
         } else if (strcmp(argv[i], "--cleanup") == 0) {
             cleanup_mode = true;
+        } else if (strcmp(argv[i], "--punct-model") == 0 && i + 1 < argc) {
+            punct_model = argv[++i];
         } else if (strcmp(argv[i], "--cleanup-only") == 0 && i + 1 < argc) {
             cleanup_only_path = argv[++i];
         } else if (strcmp(argv[i], "--ocr-pipeline") == 0 && i + 1 < argc) {
@@ -696,11 +700,23 @@ int main(int argc, char ** argv) {
         const char* latex = crispembed_math_ocr_recognize(octx, data, w, h, ch, &out_len);
         if (cleaned) scan_cleanup_free_image(cleaned); else stbi_image_free(data);
         if (latex && out_len > 0) {
-            if (json_output) {
-                printf("{\"latex\":\"%s\"}\n", latex);
-            } else {
-                printf("%s\n", latex);
+            // Apply punctuation restoration if --punct-model is set
+            std::string output_text = latex;
+            void * pctx = nullptr;
+            if (!punct_model.empty()) {
+                std::string pm = crispembed_mgr::resolve_model(punct_model, auto_download, accepted_license);
+                pctx = crispembed_punct_init(pm.c_str(), n_threads);
+                if (pctx) {
+                    const char * punctuated = crispembed_punct_process(pctx, latex);
+                    if (punctuated) output_text = punctuated;
+                }
             }
+            if (json_output) {
+                printf("{\"text\":\"%s\"}\n", output_text.c_str());
+            } else {
+                printf("%s\n", output_text.c_str());
+            }
+            if (pctx) crispembed_punct_free(pctx);
         } else {
             fprintf(stderr, "error: OCR recognition failed\n");
         }
