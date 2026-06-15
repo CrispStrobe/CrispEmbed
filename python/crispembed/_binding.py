@@ -1983,6 +1983,112 @@ class CrispNER:
             self._ctx = None
 
 
+# ── LiLT — Language-independent Layout Transformer ──────────────────
+
+class _LiLTToken(ctypes.Structure):
+    _fields_ = [
+        ("token_id", ctypes.c_int),
+        ("label_id", ctypes.c_int),
+        ("label", ctypes.c_char_p),
+        ("score", ctypes.c_float),
+    ]
+
+
+def _setup_lilt_signatures(lib):
+    lib.crispembed_lilt_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_lilt_init.restype = ctypes.c_void_p
+
+    lib.crispembed_lilt_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_lilt_free.restype = None
+
+    lib.crispembed_lilt_classify.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.c_int,
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_lilt_classify.restype = ctypes.POINTER(_LiLTToken)
+
+    lib.crispembed_lilt_num_labels.argtypes = [ctypes.c_void_p]
+    lib.crispembed_lilt_num_labels.restype = ctypes.c_int
+
+    lib.crispembed_lilt_label_name.argtypes = [ctypes.c_void_p, ctypes.c_int]
+    lib.crispembed_lilt_label_name.restype = ctypes.c_char_p
+
+
+class CrispLiLT:
+    """LiLT — Language-independent Layout Transformer for document understanding.
+
+    Dual-stream encoder (RoBERTa text + layout transformer with BiACM)
+    for token classification. Supports form understanding (FUNSD) with
+    question/answer/header labeling.
+
+    Usage::
+
+        lilt = CrispLiLT("lilt-funsd-f32.gguf")
+        tokens = lilt.classify(
+            input_ids=[0, 10566, 35, 2],
+            bbox=[[0,0,0,0], [10,50,90,80], [90,50,110,80], [0,0,0,0]],
+        )
+        for t in tokens:
+            print(f"token={t['token_id']} label={t['label']} score={t['score']:.2f}")
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 4, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_lilt_signatures(self._lib)
+        self._ctx = self._lib.crispembed_lilt_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load LiLT model: {model_path}")
+
+    @property
+    def num_labels(self) -> int:
+        return self._lib.crispembed_lilt_num_labels(self._ctx)
+
+    def label_name(self, label_id: int) -> str:
+        r = self._lib.crispembed_lilt_label_name(self._ctx, label_id)
+        return r.decode("utf-8") if r else ""
+
+    def classify(self, input_ids: list, bbox: list) -> list:
+        """Run token classification.
+
+        Args:
+            input_ids: List of int token IDs (including BOS/EOS).
+            bbox: List of [x0, y0, x1, y1] per token (in [0, 1000] range).
+
+        Returns:
+            List of dicts: [{"token_id", "label_id", "label", "score"}, ...]
+        """
+        T = len(input_ids)
+        ids_arr = (ctypes.c_int32 * T)(*input_ids)
+        bbox_flat = []
+        for b in bbox:
+            bbox_flat.extend(b[:4] if len(b) >= 4 else b + [0] * (4 - len(b)))
+        bbox_arr = (ctypes.c_int32 * (T * 4))(*bbox_flat)
+
+        out_n = ctypes.c_int(0)
+        result_ptr = self._lib.crispembed_lilt_classify(
+            self._ctx, ids_arr, bbox_arr, T, ctypes.byref(out_n))
+
+        results = []
+        for i in range(out_n.value):
+            t = result_ptr[i]
+            results.append({
+                "token_id": t.token_id,
+                "label_id": t.label_id,
+                "label": t.label.decode("utf-8") if t.label else "",
+                "score": float(t.score),
+            })
+        return results
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_lilt_free(self._ctx)
+            self._ctx = None
+
+
 # ── Key Information Extraction (KIE) ─────────────────────────────────
 
 class _KIEField(ctypes.Structure):
