@@ -373,18 +373,40 @@ Priority order (by impact across speed × quality × resources):
   Quality+speed upgrades, drop-in replacement for scan_cleanup binarize/whiten.
   Current global Otsu fails on uneven lighting (fax, phone scans). ~200 LOC.
 
-- [ ] **Deskew** (`pixFindSkew`) — differential square-count projection.
-  More robust than our Hough-on-Sobel (works on sparse text, no edge noise),
-  faster (no Hough accumulator). ~150 LOC.
+- [x] **Deskew** (`find_skew_angle`) — differential square-sum scoring on
+  4x-reduced 1-bit image + binary search. ~3ms per page. 12/12 tests pass.
 
-- [ ] **CC despeckle** — CPU/no-model denoise alternative to NAFNet.
-  `pixSelectBySize` (remove small connected components) + median filter.
-  The "light tier" for clean-ish scans where NAFNet is overkill. ~100 LOC.
+- [x] **CC despeckle** (`despeckle_cc`/`despeckle_gray`) — flood-fill CC
+  labeling, remove components below size threshold. ~100 LOC.
+
+- [x] **Background normalization** (`background_norm`) — tile-based 90th
+  percentile sampling + smooth interpolation. Std dev 41→1.6 on gradient test.
+
+#### OCR result renderers
+
+Output formats for multi-page OCR results, following Tesseract's
+begin/add_page/end pattern. All in `src/ocr_render.{h,cpp}`, no deps.
+
+- [x] **Plain text** — concatenates pages with configurable separator
+  (default `\f`). Simplest interchange format.
+- [x] **hOCR** — XHTML with `ocr_page`/`ocr_line`/`ocrx_word` elements,
+  bounding boxes in `title` attributes, word confidence as `x_wconf`.
+  Standard OCR interchange format (Google, Tesseract, ABBYY).
+- [x] **ALTO 3.1** — XML following Library of Congress ALTO schema.
+  `Page`/`TextBlock`/`TextLine`/`String`/`SP` elements with HPOS/VPOS/
+  WIDTH/HEIGHT/WC attributes. Used by digital libraries (BNF, BSB, LOC).
+- [x] **Searchable PDF** — minimal PDF 1.4 structure (Catalog, Pages,
+  Helvetica font). Currently text-only; TODO: embed original image as
+  full-page background XObject for true searchable-PDF output.
+- [x] 36/36 unit tests (text, hOCR, ALTO, PDF, XML escaping).
 
 #### Nice-to-have
 
 - [ ] CrispCalc Dart catalog entries for InternVL2 (`OcrModelVariant`)
 - [ ] Qwen3-VL multimodal (low priority, reuse BidirLM-Omni scaffolding)
+- [ ] **Page dewarping** — highest-value remaining gap. Leptonica `dewarp*`
+  disparity-model page dewarping (spline baseline fitting). ~3000 LOC.
+- [ ] **Searchable PDF with image** — embed original page image as XObject
 
 ### Completed (v0.8.0)
 
