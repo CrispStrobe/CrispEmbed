@@ -1139,6 +1139,10 @@ pub struct OcrResult {
     pub confidence: f32,
 }
 
+/// Alias used by the model-free detector (`cc_detect`) and the result
+/// renderers (`ocr_render`): same box+text+confidence shape as [`OcrResult`].
+pub type OcrRegion = OcrResult;
+
 impl OcrPipeline {
     /// Load an OCR pipeline from detection + recognition GGUF models.
     pub fn new(det_model: &str, rec_model: &str, n_threads: i32) -> Result<Self, String> {
