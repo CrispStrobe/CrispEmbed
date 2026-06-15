@@ -89,6 +89,8 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "                   needs -m ner_model.gguf --ocr-det det.gguf --ocr-rec rec.gguf\n");
     fprintf(stderr, "  --kie-labels L   comma-separated field names (default: uses --ner-labels)\n");
     fprintf(stderr, "  --kie-threshold F  confidence threshold for KIE (default: 0.5)\n");
+    fprintf(stderr, "  --lilt FILE      LiLT token classification from JSON input\n");
+    fprintf(stderr, "                   JSON: {\"input_ids\": [...], \"bbox\": [[x0,y0,x1,y1], ...]}\n");
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
     fprintf(stderr, "  --punct-model M  post-process OCR text with punctuation model (FireRedPunc/PCS)\n");
@@ -161,6 +163,7 @@ int main(int argc, char ** argv) {
     std::string kie_path;    // image for KIE extraction
     std::string kie_labels;  // comma-separated field names (defaults to ner_labels)
     float kie_threshold = 0.5f;
+    std::string lilt_path;   // JSON file for LiLT token classification
     std::string det_model;   // detection model for --face-pipeline
     std::string ocr_det_path;  // general OCR: text detection model (DBNet)
     std::string ocr_rec_path;  // general OCR: text recognition model (TrOCR)
@@ -249,6 +252,8 @@ int main(int argc, char ** argv) {
             kie_labels = argv[++i];
         } else if (strcmp(argv[i], "--kie-threshold") == 0 && i + 1 < argc) {
             kie_threshold = (float)atof(argv[++i]);
+        } else if (strcmp(argv[i], "--lilt") == 0 && i + 1 < argc) {
+            lilt_path = argv[++i];
         } else if (strcmp(argv[i], "--det") == 0 && i + 1 < argc) {
             det_model = argv[++i];
         } else if (strcmp(argv[i], "--face-pipeline") == 0) {
@@ -960,6 +965,86 @@ int main(int argc, char ** argv) {
             }
         }
         crispembed_kie_free(kctx);
+        return 0;
+    }
+
+    // LiLT token classification from JSON input
+    if (!lilt_path.empty()) {
+        void* lctx = crispembed_lilt_init(model_path.c_str(), n_threads);
+        if (!lctx) { fprintf(stderr, "error: failed to load LiLT model\n"); return 1; }
+
+        // Read JSON file: {"input_ids": [...], "bbox": [[x0,y0,x1,y1], ...]}
+        std::ifstream jf(lilt_path);
+        if (!jf.is_open()) { fprintf(stderr, "error: cannot open %s\n", lilt_path.c_str()); crispembed_lilt_free(lctx); return 1; }
+        std::string jstr((std::istreambuf_iterator<char>(jf)), std::istreambuf_iterator<char>());
+
+        // Minimal JSON parsing for input_ids and bbox arrays
+        std::vector<int32_t> ids, bbox_flat;
+        {
+            auto parse_int_array = [](const std::string& s, size_t start) -> std::vector<int32_t> {
+                std::vector<int32_t> result;
+                auto pos = s.find('[', start);
+                if (pos == std::string::npos) return result;
+                auto end = s.find(']', pos);
+                if (end == std::string::npos) return result;
+                std::string arr = s.substr(pos + 1, end - pos - 1);
+                std::istringstream iss(arr);
+                std::string tok;
+                while (std::getline(iss, tok, ',')) {
+                    try { result.push_back(std::stoi(tok)); } catch (...) {}
+                }
+                return result;
+            };
+            auto id_pos = jstr.find("\"input_ids\"");
+            if (id_pos != std::string::npos) ids = parse_int_array(jstr, id_pos);
+            auto bb_pos = jstr.find("\"bbox\"");
+            if (bb_pos != std::string::npos) {
+                // bbox is [[x0,y0,x1,y1], ...] — flatten all nested arrays
+                auto outer_start = jstr.find('[', bb_pos);
+                auto outer_end = jstr.rfind(']');
+                if (outer_start != std::string::npos && outer_end != std::string::npos) {
+                    std::string flat = jstr.substr(outer_start, outer_end - outer_start + 1);
+                    // Remove all [ and ]
+                    for (char& c : flat) if (c == '[' || c == ']') c = ' ';
+                    std::istringstream iss(flat);
+                    std::string tok;
+                    while (std::getline(iss, tok, ',')) {
+                        try { bbox_flat.push_back(std::stoi(tok)); } catch (...) {}
+                    }
+                }
+            }
+        }
+
+        int T = (int)ids.size();
+        if (T == 0 || (int)bbox_flat.size() < T * 4) {
+            fprintf(stderr, "error: invalid JSON (need input_ids + bbox)\n");
+            crispembed_lilt_free(lctx); return 1;
+        }
+
+        int out_n = 0;
+        const crispembed_lilt_token* toks = crispembed_lilt_classify(
+            lctx, ids.data(), bbox_flat.data(), T, &out_n);
+
+        if (json_output) {
+            printf("{\"tokens\":[");
+            for (int i = 0; i < out_n; i++) {
+                if (i > 0) printf(",");
+                printf("{\"token_id\":%d,\"label\":\"%s\",\"score\":%.4f}",
+                       toks[i].token_id,
+                       json_escape(toks[i].label ? toks[i].label : "").c_str(),
+                       toks[i].score);
+            }
+            printf("]}\n");
+        } else {
+            printf("%d tokens classified:\n", out_n);
+            for (int i = 0; i < out_n; i++) {
+                printf("  token=%5d  label=%-15s  score=%.3f\n",
+                       toks[i].token_id,
+                       toks[i].label ? toks[i].label : "",
+                       toks[i].score);
+            }
+        }
+        crispembed_lilt_free(lctx);
         return 0;
     }
 
