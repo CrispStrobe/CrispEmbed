@@ -340,6 +340,32 @@ CrispEmbed/
 - [ ] Runtime config updates without context reload.
 - [ ] Verbose logging for silent degradation (cleanup/engine init failure).
 
+#### Classical image processing — cherry-picked from Leptonica
+
+Leptonica (180K+ LOC, BSD-2) has algorithms that beat our current
+implementations in speed, quality, or memory. We cherry-pick the
+algorithms (not the library) into self-contained C files. No Leptonica
+dependency; no Leptonica I/O or Pix types. Evaluated on three axes:
+speed, quality, resource usage (CPU/memory/GPU-friendliness).
+
+- [ ] **DWA morphology + 1-bit images** (PORT — high priority)
+  Current: float separable morph in scan_cleanup.cpp (~50 Mpix/s).
+  Leptonica DWA on packed 1-bit: ~300 Mpix/s (5-6x faster, 8x less memory).
+  Port `pixDilateBrick`/`pixErodeBrick` DWA variants + 1-bit image repr.
+  ~500 LOC. Directly benefits scan_cleanup background whitening.
+- [ ] **Adaptive Otsu binarization (tiled + smoothed)**
+  Current: single-pass Otsu. Fails on uneven lighting (fax, phone scans).
+  Leptonica: per-tile Otsu + convolution smoothing of tile thresholds.
+  ~100 LOC. Quality win on degraded scans.
+- [ ] **Connected component analysis (seedfill)**
+  Current: none. Enables classical text-line fallback when neural
+  detection fails, character bounding boxes, blob statistics.
+  Stack-based Heckbert seedfill, 4/8-connectivity. ~200 LOC.
+- [ ] **Skew detection (multi-scale + binary search)**
+  Current: full-res Hough. Leptonica: 4x reduce → coarse sweep → binary
+  search refinement + differential square-sum scoring (more robust
+  than Sobel edges on noisy backgrounds). 1.5-2x faster. ~150 LOC.
+
 #### Nice-to-have
 
 - [ ] CrispCalc Dart catalog entries for InternVL2 (`OcrModelVariant`)
