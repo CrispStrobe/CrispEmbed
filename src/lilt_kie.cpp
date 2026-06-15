@@ -236,7 +236,7 @@ static ggml_tensor* layer_norm(ggml_context* g, ggml_tensor* x,
 // Graph builder
 // ---------------------------------------------------------------------------
 
-static ggml_cgraph* build_graph(context* ctx, int T) {
+static ggml_cgraph* build_graph(context* ctx, int T, bool dump = false) {
     auto& m = ctx->model;
     const int H    = m.n_embd;
     const int LD   = m.layout_dim;
@@ -277,6 +277,11 @@ static ggml_cgraph* build_graph(context* ctx, int T) {
     }
     cur = layer_norm(g, cur, m.embd_ln_w, m.embd_ln_b, eps);
 
+    if (dump) {
+        ggml_set_name(cur, "text_embed");
+        ggml_set_output(cur);
+    }
+
     // --- Layout embeddings ---
     // bbox_ids layout: [x0_0..x0_T, y0_0..y0_T, x1_0..x1_T, y1_0..y1_T, w_0..w_T, h_0..h_T]
     auto bbox_slice = [&](int offset) -> ggml_tensor* {
@@ -292,11 +297,12 @@ static ggml_cgraph* build_graph(context* ctx, int T) {
     ggml_tensor* h_e  = ggml_get_rows(g, m.h_embd, bbox_slice(5));
 
     // Concatenate: [T, 128] × 6 → [T, 768]  (along dim 0 which is the fast axis)
+    // Order must match Python: left(x0), upper(y0), right(x1), lower(y1), h, w
     ggml_tensor* layout_cat = ggml_concat(g, x0_e, y0_e, 0);
     layout_cat = ggml_concat(g, layout_cat, x1_e, 0);
     layout_cat = ggml_concat(g, layout_cat, y1_e, 0);
-    layout_cat = ggml_concat(g, layout_cat, w_e, 0);
     layout_cat = ggml_concat(g, layout_cat, h_e, 0);
+    layout_cat = ggml_concat(g, layout_cat, w_e, 0);
     // layout_cat: [768, T]
 
     // Project 768 → layout_dim (192)
@@ -307,6 +313,11 @@ static ggml_cgraph* build_graph(context* ctx, int T) {
     ggml_tensor* lpos = ggml_get_rows(g, m.box_pos_embd, pos_ids);
     lcur = ggml_add(g, lcur, lpos);
     lcur = layer_norm(g, lcur, m.layout_ln_w, m.layout_ln_b, eps);
+
+    if (dump) {
+        ggml_set_name(lcur, "layout_embed");
+        ggml_set_output(lcur);
+    }
 
     // --- Encoder layers ---
     for (int il = 0; il < m.n_layer; il++) {
@@ -410,6 +421,16 @@ static ggml_cgraph* build_graph(context* ctx, int T) {
         if (L.lfc2_b) lffn = ggml_add(g, lffn, L.lfc2_b);
         lcur = ggml_add(g, layout_ffn_inp, lffn);
         lcur = layer_norm(g, lcur, L.lffn_ln_w, L.lffn_ln_b, eps);
+
+        if (dump) {
+            char name[32];
+            snprintf(name, sizeof(name), "layer_%d_text", il);
+            ggml_set_name(cur, name);
+            ggml_set_output(cur);
+            snprintf(name, sizeof(name), "layer_%d_layout", il);
+            ggml_set_name(lcur, name);
+            ggml_set_output(lcur);
+        }
     }
 
     // --- Classifier head ---
@@ -531,6 +552,91 @@ std::vector<token_result> classify(context* ctx,
     }
 
     return results;
+}
+
+std::vector<dump_tensor> classify_dump(context* ctx,
+                                        const int32_t* input_ids,
+                                        const int32_t* bbox,
+                                        int T) {
+    std::vector<dump_tensor> dumps;
+    if (!ctx || !input_ids || !bbox || T <= 0) return dumps;
+
+    auto& m = ctx->model;
+
+    // Build graph with dump=true
+    ggml_cgraph* gf = build_graph(ctx, T, /*dump=*/true);
+    if (!gf) return dumps;
+
+    ggml_backend_sched_reset(ctx->sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) return dumps;
+
+    // Set inputs (same as classify)
+    ggml_tensor* t_tok = ggml_graph_get_tensor(gf, "tok_ids");
+    ggml_backend_tensor_set(t_tok, input_ids, 0, T * sizeof(int32_t));
+
+    std::vector<int32_t> pos_ids(T);
+    for (int i = 0; i < T; i++) pos_ids[i] = i + 2;
+    ggml_tensor* t_pos = ggml_graph_get_tensor(gf, "pos_ids");
+    ggml_backend_tensor_set(t_pos, pos_ids.data(), 0, T * sizeof(int32_t));
+
+    if (m.type_embd) {
+        std::vector<int32_t> type_ids(T, 0);
+        ggml_tensor* t_type = ggml_graph_get_tensor(gf, "type_ids");
+        ggml_backend_tensor_set(t_type, type_ids.data(), 0, T * sizeof(int32_t));
+    }
+
+    std::vector<int32_t> bbox_flat(T * 6);
+    for (int i = 0; i < T; i++) {
+        int x0 = std::clamp(bbox[i*4+0], 0, m.max_2d_pos-1);
+        int y0 = std::clamp(bbox[i*4+1], 0, m.max_2d_pos-1);
+        int x1 = std::clamp(bbox[i*4+2], 0, m.max_2d_pos-1);
+        int y1 = std::clamp(bbox[i*4+3], 0, m.max_2d_pos-1);
+        bbox_flat[0*T+i] = x0; bbox_flat[1*T+i] = y0;
+        bbox_flat[2*T+i] = x1; bbox_flat[3*T+i] = y1;
+        bbox_flat[4*T+i] = std::clamp(x1-x0, 0, m.max_2d_pos-1);
+        bbox_flat[5*T+i] = std::clamp(y1-y0, 0, m.max_2d_pos-1);
+    }
+    ggml_tensor* t_bbox = ggml_graph_get_tensor(gf, "bbox_ids");
+    ggml_backend_tensor_set(t_bbox, bbox_flat.data(), 0, T * 6 * sizeof(int32_t));
+
+    ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    if (ggml_backend_sched_graph_compute(ctx->sched, gf) != GGML_STATUS_SUCCESS) {
+        return dumps;
+    }
+
+    // Read all named dump tensors
+    const char* dump_names[] = {
+        "text_embed", "layout_embed", "output",
+    };
+    for (auto name : dump_names) {
+        ggml_tensor* t = ggml_graph_get_tensor(gf, name);
+        if (!t) continue;
+        int n = (int)ggml_nelements(t);
+        dump_tensor dt;
+        dt.name = name;
+        dt.n_elem = n;
+        dt.data.resize(n);
+        ggml_backend_tensor_get(t, dt.data.data(), 0, n * sizeof(float));
+        dumps.push_back(std::move(dt));
+    }
+    // Per-layer dumps
+    for (int il = 0; il < m.n_layer; il++) {
+        char name[32];
+        for (const char* suffix : {"text", "layout"}) {
+            snprintf(name, sizeof(name), "layer_%d_%s", il, suffix);
+            ggml_tensor* t = ggml_graph_get_tensor(gf, name);
+            if (!t) continue;
+            int n = (int)ggml_nelements(t);
+            dump_tensor dt;
+            dt.name = name;
+            dt.n_elem = n;
+            dt.data.resize(n);
+            ggml_backend_tensor_get(t, dt.data.data(), 0, n * sizeof(float));
+            dumps.push_back(std::move(dt));
+        }
+    }
+
+    return dumps;
 }
 
 const char* label_name(context* ctx, int label_id) {
