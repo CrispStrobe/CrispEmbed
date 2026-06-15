@@ -18,6 +18,10 @@ CLI (`--ner`), server (`POST /ner/extract`), Python (`CrispNER`), Rust, Dart.
 key-value fields from document images (receipts, invoices, forms). No new model
 needed. CLI (`--kie`), server (`POST /kie/extract`), Python (`CrispKIE`), Dart.
 
+**LiLT**: Layout-aware document understanding via dual-stream encoder (RoBERTa +
+layout transformer with BiACM). Token classification for form understanding
+(FUNSD: question/answer/header). 130M params, MIT. Python (`CrispLiLT`), Dart.
+
 **Vision**: CLIP and SigLIP text-image cross-modal search (encode text and images
 into the same vector space). YuNet/SCRFD face detection, ArcFace/SFace/AuraFace
 face recognition. Full detect-align-encode pipeline.
@@ -418,6 +422,48 @@ Output (JSON mode):
 ]}
 ```
 
+### LiLT — Layout-Aware Document Understanding (KIE Phase 2)
+
+LiLT (Language-independent Layout Transformer) is a dual-stream encoder
+that combines RoBERTa (768d text) with a parallel layout transformer (192d)
+via BiACM (bidirectional attention complementation). It takes OCR text +
+bounding boxes as input and performs token classification — identifying
+questions, answers, and headers in forms and documents.
+
+Architecture: 130.7M params, 12 layers, 12 heads. MIT license
+([SCUT-DLVCLab/lilt-roberta-en-base](https://huggingface.co/SCUT-DLVCLab/lilt-roberta-en-base)).
+
+```bash
+# Python — direct LiLT token classification
+from crispembed import CrispLiLT
+lilt = CrispLiLT("lilt-funsd-q8_0.gguf")
+tokens = lilt.classify(
+    input_ids=[0, 10566, 35, 291, 5480, 35, 68, 3818, 4, 2466, 2],
+    bbox=[[0,0,0,0], [10,50,90,80], [90,50,110,80], [120,50,200,80],
+          [250,50,330,80], [330,50,350,80], [360,50,390,80],
+          [390,50,430,80], [430,50,440,80], [440,50,470,80], [0,0,0,0]],
+)
+for t in tokens:
+    print(f"{t['label']:15s} score={t['score']:.2f}")
+# B-QUESTION      score=1.00   (Date)
+# I-QUESTION      score=0.95   (:)
+# B-ANSWER        score=0.72   (2026...)
+# B-QUESTION      score=1.00   (Total)
+# I-QUESTION      score=1.00   (:)
+# B-ANSWER        score=0.56   ($)
+# I-ANSWER        score=0.95   (48.60)
+```
+
+Parity: 25/25 layers cos=1.000000 vs HF reference. 16/16 token labels match.
+
+| Variant | Size | Format |
+|---------|------|--------|
+| `lilt-funsd` | 498 MB / 134 MB / 90 MB | F32 / Q8_0 / Q4_K |
+| `lilt-base` | 498 MB / 134 MB / 90 MB | F32 / Q8_0 / Q4_K |
+
+FUNSD labels: O, B-HEADER, I-HEADER, B-QUESTION, I-QUESTION, B-ANSWER, I-ANSWER.
+See [docs/kie.md](docs/kie.md) for architecture details and the BiACM mechanism.
+
 ## Model licenses
 
 The auto-download registry (`-m <name>`) covers models under multiple
@@ -428,7 +474,7 @@ column) or the upstream model card before using a model commercially.
 
 | License class | Models in registry | What you can do |
 |---|---|---|
-| **Permissive** (Apache-2.0 / MIT) | most BERT/XLM-R/MPNet, BGE, E5, Granite, Snowflake, MXBai, Nomic, MS-Marco, Qwen3, Harrier, BidirLM-Omni, GTE-v1.5, `gliner-deberta` (NER) | commercial use OK with normal attribution |
+| **Permissive** (Apache-2.0 / MIT) | most BERT/XLM-R/MPNet, BGE, E5, Granite, Snowflake, MXBai, Nomic, MS-Marco, Qwen3, Harrier, BidirLM-Omni, GTE-v1.5, `gliner-deberta` (NER), `lilt-funsd`, `lilt-base` (KIE) | commercial use OK with normal attribution |
 | **CC BY-NC 4.0** (non-commercial) | `jina-v5-nano`, `jina-v5-small`, `jina-reranker-v2-base-multilingual` | research/evaluation only; commercial use requires a paid license from Jina (sales@jina.ai) |
 | **LFM Open License v1.0** | `gliner-lfm` (NER) | free under $10M annual revenue; above that requires commercial license from Liquid AI |
 | **Gemma Terms of Use** | `embeddinggemma-300m` | commercial use permitted **subject to** Google's [Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy) |
