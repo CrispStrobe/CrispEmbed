@@ -89,7 +89,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --punct-model M  post-process OCR text with punctuation model (FireRedPunc/PCS)\n");
     fprintf(stderr, "  --cleanup        preprocess scan before OCR (deskew, crop borders, whiten background)\n");
     fprintf(stderr, "  --cleanup-only F process scan and write cleaned image to stdout (no OCR)\n");
-    fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate (add --denoise for NAFNet)\n");
+    fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
+    fprintf(stderr, "       --ocr-engine N  primary engine (dbnet_trocr|surya|tesseract|got|glm|qwen2vl|internvl2)\n");
+    fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
     fprintf(stderr, "  --ocr-rec MODEL  general OCR: text recognition model (TrOCR, e.g. trocr-printed)\n");
     fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
@@ -153,6 +155,7 @@ int main(int argc, char ** argv) {
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
     float pipeline_min_conf = -1.0f;    // --ocr-min-conf: accept-gate override (-1 = default)
     std::string punct_model;    // --punct-model: post-process OCR with punctuation
+    std::string pipeline_engine; // --ocr-engine NAME: primary pipeline engine (dbnet_trocr/surya/tesseract/got/glm/qwen2vl/internvl2)
     bool face_pipeline_mode = false;
     float conf_threshold = 0.5f;
     std::string lora_adapter;   // LoRA adapter name (--lora)
@@ -224,6 +227,8 @@ int main(int argc, char ** argv) {
             cleanup_only_path = argv[++i];
         } else if (strcmp(argv[i], "--ocr-pipeline") == 0 && i + 1 < argc) {
             ocr_pipeline_path = argv[++i];
+        } else if (strcmp(argv[i], "--ocr-engine") == 0 && i + 1 < argc) {
+            pipeline_engine = argv[++i];
         } else if (strcmp(argv[i], "--denoise") == 0) {
             pipeline_denoise = true;
         } else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) {
@@ -310,27 +315,78 @@ int main(int argc, char ** argv) {
     // routing + per-stage cleanup (classical + optional NAFNet denoise) +
     // accept-gate escalation. Models default to surya-det + qwen2vl-ocr.
     if (!ocr_pipeline_path.empty()) {
-        std::string det = crispembed_mgr::resolve_model(
-            ocr_det_path.empty() ? "surya-det" : ocr_det_path, true, accepted_license);
-        std::string rec = crispembed_mgr::resolve_model(
-            ocr_rec_path.empty() ? "qwen2vl-ocr" : ocr_rec_path, true, accepted_license);
-        std::string nafnet;
-        if (pipeline_denoise) {
-            nafnet = crispembed_mgr::resolve_model("nafnet-denoise", true, accepted_license);
+        auto resolve = [&](const std::string & n) {
+            return crispembed_mgr::resolve_model(n, true, accepted_license);
+        };
+        auto eng_id = [](const std::string & n) -> int {
+            if (n == "surya")     return 1;
+            if (n == "got")       return 2;
+            if (n == "glm")       return 3;
+            if (n == "qwen2vl")   return 4;
+            if (n == "internvl2") return 5;
+            if (n == "tesseract") return 6;
+            return 0; // dbnet_trocr
+        };
+        std::string nafnet, vlm, punct;
+        if (pipeline_denoise)            nafnet = resolve("nafnet-denoise");
+        if (!pipeline_vlm_model.empty()) vlm    = resolve(pipeline_vlm_model);
+        if (!punct_model.empty())        punct  = resolve(punct_model);
+        const int   min_chars = pipeline_min_chars >= 0 ? pipeline_min_chars : 8;
+        const float min_conf  = pipeline_min_conf  >= 0 ? pipeline_min_conf  : 0.5f;
+
+        void * pctx = nullptr;
+        // Keep model strings alive until the init call returns (it copies them).
+        std::string ma, mb, det, rec;
+        if (!pipeline_engine.empty()) {
+            // Explicit primary engine → single-stage pipeline via the builder.
+            const int eid = eng_id(pipeline_engine);
+            const bool is_vlm = (eid >= 2 && eid <= 5);
+            if (is_vlm) {
+                const char * dflt = (eid == 2) ? "got-ocr2"
+                                  : (eid == 3) ? "glm-ocr"
+                                  : (eid == 5) ? "internvl2-ocr" : "qwen2vl-ocr";
+                ma = resolve(!ocr_rec_path.empty() ? ocr_rec_path : dflt);
+            } else {
+                ma = resolve(ocr_det_path.empty() ? "dbnet-det" : ocr_det_path);
+                const char * rdflt = (eid == 6) ? "tesseract-eng" : "qwen2vl-ocr";
+                mb = resolve(ocr_rec_path.empty() ? rdflt : ocr_rec_path);
+            }
+            crispembed_ocr_stage st;
+            std::memset(&st, 0, sizeof(st));
+            st.source_type        = 0;          // auto
+            st.engine             = eid;
+            st.model_a            = ma.c_str();
+            st.model_b            = mb.empty() ? nullptr : mb.c_str();
+            st.cleanup_enabled    = 1;
+            st.denoise            = pipeline_denoise ? 1 : 0;
+            st.cleanup            = crispembed_scan_cleanup_defaults();
+            st.det_prob_threshold = 0.3f;
+            st.det_box_threshold  = 0.5f;
+            st.det_target_short   = 736;
+            st.vlm_max_tokens     = 0;
+            st.vlm_prompt         = nullptr;
+            st.min_chars          = min_chars;
+            st.min_confidence     = min_conf;
+            pctx = crispembed_ocr_pipeline_init_stages(
+                /*router=*/0,
+                nafnet.empty() ? nullptr : nafnet.c_str(),
+                punct.empty()  ? nullptr : punct.c_str(),
+                &st, 1, n_threads);
+        } else {
+            // Default flat path (DBNet+TrOCR + source-type routing).
+            det = resolve(ocr_det_path.empty() ? "dbnet-det" : ocr_det_path);
+            rec = resolve(ocr_rec_path.empty() ? "qwen2vl-ocr" : ocr_rec_path);
+            crispembed_ocr_pipeline_params pp = crispembed_ocr_pipeline_defaults();
+            pp.det_model    = det.c_str();
+            pp.rec_model    = rec.c_str();
+            pp.nafnet_model = nafnet.empty() ? nullptr : nafnet.c_str();
+            pp.vlm_model    = vlm.empty()    ? nullptr : vlm.c_str();
+            pp.vlm_engine   = pipeline_vlm_engine;
+            pp.punct_model  = punct.empty()  ? nullptr : punct.c_str();
+            pp.min_chars     = min_chars;
+            pp.min_confidence = min_conf;
+            pctx = crispembed_ocr_pipeline_init(&pp, n_threads);
         }
-        std::string vlm;
-        if (!pipeline_vlm_model.empty()) {
-            vlm = crispembed_mgr::resolve_model(pipeline_vlm_model, true, accepted_license);
-        }
-        crispembed_ocr_pipeline_params pp = crispembed_ocr_pipeline_defaults();
-        pp.det_model    = det.c_str();
-        pp.rec_model    = rec.c_str();
-        pp.nafnet_model = nafnet.empty() ? nullptr : nafnet.c_str();
-        pp.vlm_model    = vlm.empty() ? nullptr : vlm.c_str();
-        pp.vlm_engine   = pipeline_vlm_engine;
-        if (pipeline_min_chars >= 0) pp.min_chars     = pipeline_min_chars;
-        if (pipeline_min_conf  >= 0) pp.min_confidence = pipeline_min_conf;
-        void* pctx = crispembed_ocr_pipeline_init(&pp, n_threads);
         if (!pctx) { fprintf(stderr, "error: cannot init OCR pipeline\n"); return 1; }
         int n_res = 0;
         const char* full_text = nullptr;
