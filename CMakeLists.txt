@@ -152,6 +152,7 @@ list(APPEND CRISPEMBED_SOURCES src/fireredpunc.cpp)
 list(APPEND CRISPEMBED_SOURCES src/pcs.cpp)
 list(APPEND CRISPEMBED_SOURCES src/morph_fast.cpp)
 list(APPEND CRISPEMBED_SOURCES src/cc_detect.cpp)
+list(APPEND CRISPEMBED_SOURCES src/classical_preproc.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -354,6 +355,10 @@ target_link_libraries(test-morph-fast PRIVATE crispembed)
 add_executable(test-cc-detect tests/test_cc_detect.cpp)
 target_include_directories(test-cc-detect PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-cc-detect PRIVATE crispembed)
+
+add_executable(test-classical-preproc tests/test_classical_preproc.cpp)
+target_include_directories(test-classical-preproc PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-classical-preproc PRIVATE crispembed)
 
 endif() # NOT iOS
 
