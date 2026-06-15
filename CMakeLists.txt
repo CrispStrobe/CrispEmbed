@@ -147,6 +147,7 @@ list(APPEND CRISPEMBED_SOURCES src/nafnet_denoise.cpp)
 list(APPEND CRISPEMBED_SOURCES src/parseq_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/glm_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/got_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/tesseract_lstm.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -336,6 +337,10 @@ target_link_libraries(test-glm-ocr-image PRIVATE crispembed)
 
 add_executable(test-got-ocr-diff tests/test_got_ocr_diff.cpp)
 target_link_libraries(test-got-ocr-diff PRIVATE crispembed)
+
+add_executable(test-tesseract-lstm-diff tests/test_tesseract_lstm_diff.cpp)
+target_include_directories(test-tesseract-lstm-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-tesseract-lstm-diff PRIVATE crispembed)
 
 endif() # NOT iOS
 

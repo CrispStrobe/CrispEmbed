@@ -94,6 +94,10 @@ Input text / image / audio
     ├─► Cleanup─► Scan cleanup: classical + NAFNet U-Net (scan_cleanup.cpp)
     │               Deskew, crop, whiten (tier 1) + learned denoise (tier 2)
     │
+    ├─► OCR   ──► Tesseract LSTM: VGSL line recognizer (tesseract_lstm.cpp)
+    │               Conv stacking + LSTM stack + CTC decode, 126 languages
+    │               ~3 MB Q4_K per language, from .traineddata via converter
+    │
     └─► Text  ──► GLiNER NER: dual-backbone span matching (gliner_ner.cpp)
                     Zero-shot NER with two backbone options:
                     • LFM2.5-bi (BPE → ShortConv+GQA → layer fusion → BiLSTM)
@@ -136,6 +140,7 @@ Input text / image / audio
 | Surya detector | — | EfficientViT-Large segformer, LiteMLA linear attention, SegFormer decode head | surya-det (text detection) |
 | PARSeq | — (char-level) | ViT-12L encoder + 1-layer two-stream decoder, GELU, 94-char ASCII | parseq (scene text) |
 | NAFNet | — | U-Net with NAFBlocks (SimpleGate + SCA), enc=[2,2,4,8], mid=12, dec=[2,2,2,2] | nafnet-denoise (scan cleanup) |
+| Tesseract LSTM | — (unicharset) | VGSL: Conv stacking + FC+tanh + MaxPool + SummLSTM + LSTMs + Softmax + CTC | tesseract-eng (line OCR, 126 langs) |
 
 ## Shared code with CrispASR
 
@@ -186,6 +191,7 @@ CrispEmbed/
 │   ├── gliner_ner.{h,cpp}      GLiNER zero-shot NER (LFM2.5/DeBERTa-v3)
 │   ├── scan_cleanup.{h,cpp}   document scan preprocessing (tier 1 + 2)
 │   ├── nafnet_denoise.{h,cpp}  NAFNet U-Net denoising CNN (tier 2)
+│   ├── tesseract_lstm.{h,cpp}  Tesseract LSTM line OCR (VGSL + CTC)
 │   ├── tokenizer.h             WordPiece + SentencePiece + BPE
 │   ├── tokenizer_bpe.cpp       GPT-2 byte-level BPE
 │   ├── model_mgr.{h,cpp}       registry + auto-download
@@ -214,6 +220,7 @@ CrispEmbed/
 │   ├── convert-gliner-lfm-to-gguf.py
 │   ├── convert-gliner-deberta-to-gguf.py
 │   ├── convert-nafnet-to-gguf.py
+│   ├── convert-tesseract-to-gguf.py
 │   └── upload_to_hf.py
 ├── python/crispembed/          ctypes wrapper
 ├── crispembed-sys/             Rust FFI bindings
@@ -264,6 +271,18 @@ CrispEmbed/
 - [ ] Granite-Docling-258M (258M, Apache-2.0) — SigLIP2 + Granite-165M, document
   conversion (layout + OCR + tables + equations), DocTags output → Markdown/HTML.
   Smallest VLM, GGUF available via llama.cpp. ibm-granite/granite-docling-258M
+
+#### Tesseract LSTM OCR engine (lightweight multilingual)
+
+- [x] `models/convert-tesseract-to-gguf.py` — parse `.traineddata`, extract LSTM
+  weights + unicharset + recoder, emit GGUF (supports both tessdata_fast int8
+  and tessdata_best float64 sources)
+- [x] `src/tesseract_lstm.{h,cpp}` — VGSL network forward pass (Conv stacking +
+  FullyConnected + LSTM + Softmax) + CTC greedy decode
+- [x] C API: `tesseract_lstm_init/recognize/free`
+- [x] Python reference dumper (`tools/dump_tesseract_reference.py`) for parity testing
+- [x] Validated against `tesseract --oem 1` — core text matches, no spaces (by
+  design, spaces come from DAWG language model not LSTM)
 
 #### Nice-to-have
 
@@ -1003,3 +1022,251 @@ int scan_cleanup_process(scan_cleanup_ctx * ctx,
 
 **Effort**: Tier 1 = Low (1-2 days, pure C++, no model). Tier 2 = Medium
 (3-4 days: pick model, convert, implement, train/fine-tune if custom).
+
+---
+
+### Blueprint: Tesseract LSTM OCR engine
+
+**Goal**: Port Tesseract's LSTM line-recognition engine to CrispEmbed via GGML.
+This gives 126 languages of OCR in tiny (~2-4 MB Q4_K) GGUF models, running on
+the existing DBNet/Surya text detection pipeline. Not a full Tesseract port —
+only the neural recognizer (stage 3) and CTC decoder (stage 4). Page layout
+analysis, Leptonica preprocessing, and DAWG language models are out of scope
+(CrispEmbed already has superior neural alternatives for detection/layout).
+
+**Why**: TrOCR is more accurate on clean printed text but covers few languages
+and costs ~300 MB per model. Tesseract LSTM covers 126 languages at ~5 MB each
+(~3 MB Q4_K), runs in microseconds per line on CPU, and provides character-level
+confidence scores. The two engines are complementary: TrOCR for quality,
+Tesseract LSTM for breadth and speed.
+
+#### Tesseract LSTM architecture
+
+The LSTM engine (--oem 1, default since Tesseract 4.0) uses a custom C++ neural
+network framework with a DSL called VGSL (Variable-size Graph Specification
+Language). A typical English line recognizer has this topology:
+
+```
+VGSL spec: [1,36,0,1 Ct3,3,16 Mp3,3 Lfys48 Lfx96 Lrx96 Lfx256 O1c111]
+
+Input          1x36x(variable)x1 — height-normalized grayscale line image
+Convolve 3x3   im2col stacking (no learned weights, just neighborhood concat)
+FullyConnected tanh activation, 16 outputs — this IS the "conv" layer
+Maxpool 3x3    max-pool, reduces height by 3x
+XYTranspose    swap x/y axes
+SummLSTM       y-summarizing forward LSTM (48 units) — collapses height to 1
+XYTranspose    swap back
+LSTM forward   forward LSTM (96 units) over x-axis (time)
+Reversed LSTM  reverse LSTM (96 units) over x-axis
+LSTM forward   forward LSTM (256 units) over x-axis
+Softmax        FullyConnected → 111 classes (unicharset size)
+```
+
+Key insight: Tesseract's `Convolve` layer is NOT a learned convolution. It just
+stacks (im2col) the 3x3 neighborhood of each pixel, then a `FullyConnected`
+layer with tanh activation acts as the actual "convolution". This simplifies the
+port: no `ggml_conv_2d` needed, just matmul.
+
+#### Binary format (.traineddata)
+
+The `.traineddata` file is a custom archive with these components:
+- `lstm` (component 17): serialized network tree + LSTMRecognizer metadata
+- `lstm-unicharset` (21): character set mapping (ID → UTF-8)
+- `lstm-recoder` (22): maps unicharset IDs to network output classes
+- `lstm-*-dawg` (18-20): language model DAWGs (optional, not used here)
+
+Archive header: `int32 n_entries`, then `n_entries × int64` offsets (-1 = absent).
+
+LSTM component binary format (recursive, little-endian):
+```
+LSTMRecognizer:
+  Network tree (recursive)
+  STRING network_str       — VGSL spec
+  int32  training_flags
+  int32  training_iteration
+  int32  sample_iteration
+  int32  null_char          — CTC blank class index
+  f64    adam_beta, learning_rate, momentum
+
+Network base class:
+  int8   type_enum          — if 0 (NT_NONE): followed by STRING type_name
+  int8   training_state
+  int8   needs_to_backprop
+  int32  network_flags
+  int32  ni                 — input size
+  int32  no                 — output size
+  int32  num_weights
+  STRING name               — VGSL layer name
+
+Plumbing (Series/Parallel):
+  uint32 count              — number of sub-networks
+  count × Network           — recursive children
+  [if NF_LAYER_SPECIFIC_LR]: vector<float> learning_rates
+
+WeightMatrix:
+  uint8 mode                — bit 0: int8, bit 1: double, bit 2: adam
+  if int8:
+    GENERIC_2D_ARRAY<int8>  — (no, ni+1) including bias column
+    uint32 n_scales
+    n_scales × f64 scales   — per-output-row scale (stored as scale * 127)
+  if float:
+    GENERIC_2D_ARRAY<double> — (no, ni+1) including bias column
+
+GENERIC_2D_ARRAY<T>:
+  int32 dim1, int32 dim2    — (rows, cols)
+  T     empty               — default value
+  dim1 × dim2 × T           — row-major data
+
+STRING:
+  uint32 length             — byte count (no null terminator)
+  length × char
+```
+
+Weight matrices are (no, ni+1) — the last column is the bias vector.
+
+Gate order for LSTM: CI (cell input), GI (input gate), GF1 (forget gate),
+GO (output gate). Each is a WeightMatrix of shape (ns, na+1) where ns = hidden
+size and na = ni + ns (input + recurrent). 4 gates per LSTM layer.
+
+#### Existing CrispEmbed code to reuse
+
+- **BiLSTM cell**: `src/gliner_ner.cpp:855-939` — `lstm_forward_one_dir()` and
+  `bilstm_forward_cached()`. Handles forward/reverse, PyTorch gate order
+  (i,f,g,o). Needs minor adaptation: Tesseract gate order is CI,GI,GF1,GO
+  (same as i,g,f,o — note g and f are swapped vs PyTorch).
+- **GRU cell**: `src/hmer_ocr.cpp:594-631` — precedent for CPU-side recurrent
+  cells with GGUF-loaded weights.
+- **Weight dequantization**: `crispembed_diff.h` and existing model loaders
+  handle quantized tensor reads via `ggml_get_type_traits()`.
+
+#### Converter: `models/convert-tesseract-to-gguf.py`
+
+**Input**: `.traineddata` file (tessdata_fast int8 or tessdata_best float32).
+**Output**: GGUF file with architecture `"tesseract_lstm"`.
+
+Steps:
+1. Parse traineddata archive, extract lstm/unicharset/recoder components.
+2. Recursively parse the network tree, extracting all WeightMatrix tensors.
+3. For int8 weights: dequantize using per-row scales → float32, then let
+   `crispembed-quantize` re-quantize to ggml Q4_K/Q8_0 (better quality than
+   keeping Tesseract's custom int8 scheme).
+4. For float64 weights (tessdata_best): cast to float32.
+5. Weight matrix layout: strip the bias column (last col of ni+1 dim) into a
+   separate bias tensor. Store weight as (no, ni) and bias as (no,).
+6. Write GGUF metadata: VGSL spec, unicharset tokens, recoder mapping,
+   null_char, input height, network topology.
+
+Tensor naming convention:
+```
+conv.weight         — (16, 9) from ConvSeries FullyConnected
+conv.bias           — (16,)
+lstm.0.CI.weight    — (48, 48+16) = (ns, ns+ni) y-summarizing
+lstm.0.CI.bias      — (48,)
+lstm.0.GI.weight    — etc.
+lstm.1.CI.weight    — forward x LSTM (96 units)
+lstm.2.CI.weight    — reverse x LSTM (96 units)
+lstm.3.CI.weight    — forward x LSTM (256 units)
+output.weight       — (111, 257) softmax
+output.bias         — (111,)
+```
+
+**Parity testing**: The converter also dumps intermediate activations in a
+reference GGUF when `--dump-ref` is passed. For each LSTM layer, captures
+the gate pre-activations and hidden states at timestep 0 and T//2. The C++
+engine compares against these via `crispembed_diff`.
+
+Since Tesseract is installed on this machine (`libtesseract5` 5.3.4), we can
+generate ground-truth text output via `tesseract --oem 1 image.png stdout`
+and compare character error rate (CER) against CrispEmbed's output.
+
+#### Engine: `src/tesseract_lstm.{h,cpp}`
+
+**C API**:
+```c
+typedef struct tesseract_lstm_context tesseract_lstm_context;
+
+tesseract_lstm_context * crispembed_tess_ocr_init(
+    const char * model_path, int n_threads);
+
+// Recognize a single pre-cropped text line image.
+// Returns UTF-8 text. Caller must free with crispembed_tess_ocr_free_text().
+char * crispembed_tess_ocr_recognize_line(
+    tesseract_lstm_context * ctx,
+    const uint8_t * gray_pixels,  // height-normalized grayscale
+    int width, int height);
+
+// Confidence per character (optional).
+float * crispembed_tess_ocr_char_confidences(
+    tesseract_lstm_context * ctx, int * n_chars);
+
+void crispembed_tess_ocr_free_text(char * text);
+void crispembed_tess_ocr_free(tesseract_lstm_context * ctx);
+```
+
+**Forward pass** (all CPU-side, no ggml graph — models are tiny):
+1. Load GGUF, dequantize all weights to F32 (cached, ~1-5 MB total).
+2. Input: grayscale line image, height-normalized to model's `ni` (e.g. 36px).
+3. Convolve stacking: for each pixel (x,y), stack 3x3 neighborhood → 9 values.
+4. FullyConnected + tanh: matmul (9→16) + bias + tanh activation.
+5. MaxPool 3x3: reduce spatial dims by 3x.
+6. XYTranspose: swap axes so LSTM runs over y (height).
+7. SummLSTM: forward LSTM over y, keep only final hidden state → collapses
+   height to 1. Output: (width', 48).
+8. XYTranspose back.
+9. Forward LSTM (96): over x-axis.
+10. Reverse LSTM (96): over x-axis, reversed.
+11. Concatenate forward + reverse → (width', 192)? No — Tesseract doesn't
+    concatenate; each LSTM output replaces the input for the next layer.
+    The forward and reverse are separate layers in the Series, not a BiLSTM.
+12. Forward LSTM (256): over x-axis.
+13. Softmax output: matmul (256→111) + softmax.
+14. CTC decode: greedy (collapse repeats, remove blanks) or beam search.
+
+**CTC greedy decode** (~30 lines):
+```
+prev = -1
+for t in range(T):
+    best = argmax(logits[t])
+    if best != blank_id and best != prev:
+        output.append(recoder_to_unichar[best])
+    prev = best
+```
+
+**Implementation note**: Unlike GLiNER's BiLSTM which uses `lstm_forward_one_dir`
+with separate fwd/rev calls, here each LSTM layer in the Series is independent.
+The "reverse" layer is wrapped in a `Reversed` container that just feeds the
+input sequence backwards. We reuse the same `lstm_forward_one_dir` function.
+
+Gate order mapping: Tesseract stores gates as CI (cell input = g in PyTorch),
+GI (input gate = i), GF1 (forget gate = f), GO (output gate = o). Our existing
+`lstm_forward_one_dir` expects PyTorch order (i,f,g,o). Either reorder during
+conversion or adjust the cell code. Reorder during conversion is cleaner.
+
+#### File layout
+
+```
+models/convert-tesseract-to-gguf.py   — converter (~400 lines)
+src/tesseract_lstm.h                   — header + C API
+src/tesseract_lstm.cpp                 — engine (~350 lines)
+tools/dump_tesseract_reference.py      — parity reference dumper
+```
+
+**Effort**: Medium (3-4 days). Converter parsing is the hardest part (reverse-
+engineering the binary format is already done above). The LSTM forward pass
+reuses existing code. CTC decode is trivial.
+
+#### Parity testing strategy
+
+1. **Text output parity**: Run `tesseract --oem 1 image.png stdout` and compare
+   against `crispembed --tess-ocr image.png`. Measure CER (character error rate).
+   Target: CER = 0 for tessdata_best (float) source; CER < 0.5% for
+   tessdata_fast (int8 dequantized → re-quantized).
+
+2. **Intermediate activation parity**: The converter's `--dump-ref` mode captures
+   per-layer outputs. The C++ engine compares via `crispembed_diff`. Target:
+   cos_min >= 0.999 for float source, >= 0.99 for int8 source.
+
+3. **End-to-end with detection**: Feed DBNet-detected text lines through the
+   Tesseract LSTM recognizer. Compare against `tesseract --oem 1` on the same
+   full-page image (which uses its own layout analysis). This tests the
+   integration but not exact parity (different detection → different line crops).
