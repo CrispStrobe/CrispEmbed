@@ -338,7 +338,9 @@ CrispEmbed/
   fixes, no punct-post-process test. Add them.
 - [ ] Tunable source-type classifier thresholds (saturation, white fraction).
 - [ ] Runtime config updates without context reload.
-- [ ] Verbose logging for silent degradation (cleanup/engine init failure).
+- [x] Verbose logging — `CRISPEMBED_VERBOSE_OCR=1` env var. Logs source-type
+  classification, per-stage engine selection, text yield, confidence, gate
+  pass/fail decisions.
 
 #### Classical image processing — cherry-picked from Leptonica
 
