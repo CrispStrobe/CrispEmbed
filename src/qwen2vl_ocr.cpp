@@ -455,10 +455,10 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         // FFN: variant-aware
         ggml_tensor *ffn;
         if (is_qwen2 && blk.ffn_fc1_w) {
-            // Qwen2-VL: GELU fc1 → fc2
+            // Qwen2-VL: exact erf GELU fc1 → fc2 (nn.GELU(), not tanh approx)
             ffn = ggml_mul_mat(g, blk.ffn_fc1_w, y);
             if (blk.ffn_fc1_b) ffn = ggml_add(g, ffn, blk.ffn_fc1_b);
-            ffn = ggml_gelu(g, ffn);
+            ffn = ggml_gelu_erf(g, ffn);
             ffn = ggml_mul_mat(g, blk.ffn_fc2_w, ffn);
             if (blk.ffn_fc2_b) ffn = ggml_add(g, ffn, blk.ffn_fc2_b);
         } else {
