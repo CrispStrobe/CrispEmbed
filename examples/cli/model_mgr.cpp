@@ -602,6 +602,79 @@ static const ModelEntry k_registry[] = {
      "GLiNER zero-shot NER (DeBERTa-v3-base, Q4_K compact)", "152 MB", "apache-2.0",
      "https://huggingface.co/cstr/gliner-deberta-GGUF"},
 
+    // Tesseract LSTM line OCR — lightweight multilingual (from tessdata_best)
+    {"tesseract-eng",
+     "tesseract-eng-q8_0.gguf",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-eng-q8_0.gguf",
+     "Tesseract LSTM English line OCR (1.5M, CTC, 126-lang family)", "1.5 MB", "apache-2.0",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+
+    {"tesseract-deu",
+     "tesseract-deu-q8_0.gguf",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-deu-q8_0.gguf",
+     "Tesseract LSTM German line OCR (940K, CTC)", "976 KB", "apache-2.0",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+
+    {"tesseract-fra",
+     "tesseract-fra-q8_0.gguf",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-fra-q8_0.gguf",
+     "Tesseract LSTM French line OCR (391K, CTC)", "435 KB", "apache-2.0",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+
+    {"tesseract-spa",
+     "tesseract-spa-q8_0.gguf",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-spa-q8_0.gguf",
+     "Tesseract LSTM Spanish line OCR (1.5M, CTC)", "1.5 MB", "apache-2.0",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+
+    {"tesseract-ita",
+     "tesseract-ita-q8_0.gguf",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-ita-q8_0.gguf",
+     "Tesseract LSTM Italian line OCR (822K, CTC)", "860 KB", "apache-2.0",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+
+    {"tesseract-por",
+     "tesseract-por-q8_0.gguf",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-por-q8_0.gguf",
+     "Tesseract LSTM Portuguese line OCR (822K, CTC)", "860 KB", "apache-2.0",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+
+    {"tesseract-nld",
+     "tesseract-nld-q8_0.gguf",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-nld-q8_0.gguf",
+     "Tesseract LSTM Dutch line OCR (408K, CTC)", "449 KB", "apache-2.0",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+
+    {"tesseract-rus",
+     "tesseract-rus-q8_0.gguf",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-rus-q8_0.gguf",
+     "Tesseract LSTM Russian line OCR (1.5M, CTC, Cyrillic)", "1.5 MB", "apache-2.0",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+
+    {"tesseract-ara",
+     "tesseract-ara-q8_0.gguf",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-ara-q8_0.gguf",
+     "Tesseract LSTM Arabic line OCR (1.4M, CTC, RTL)", "1.5 MB", "apache-2.0",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+
+    {"tesseract-chi-sim",
+     "tesseract-chi_sim-q8_0.gguf",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-chi_sim-q8_0.gguf",
+     "Tesseract LSTM Chinese Simplified line OCR (1.5M, CTC, CJK)", "1.6 MB", "apache-2.0",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+
+    {"tesseract-jpn",
+     "tesseract-jpn-q8_0.gguf",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-jpn-q8_0.gguf",
+     "Tesseract LSTM Japanese line OCR (1.6M, CTC, CJK+Kana)", "1.7 MB", "apache-2.0",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+
+    {"tesseract-kor",
+     "tesseract-kor-q8_0.gguf",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-kor-q8_0.gguf",
+     "Tesseract LSTM Korean line OCR (1.5M, CTC, Hangul)", "1.5 MB", "apache-2.0",
+     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+
     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 
