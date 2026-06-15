@@ -59,6 +59,26 @@ pub struct CrispembedOcrPipelineParams {
     pub vlm_engine: c_int,
 }
 
+/// One fully-specified OCR pipeline stage (full per-stage builder). Field order
+/// must match `crispembed_ocr_stage` in crispembed.h exactly.
+#[repr(C)]
+pub struct CrispembedOcrStage {
+    pub source_type: c_int,   // 0=auto 1=screenshot 2=scanned_doc 3=photo
+    pub engine: c_int,        // 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl 5=internvl2
+    pub model_a: *const c_char,
+    pub model_b: *const c_char,
+    pub cleanup_enabled: c_int,
+    pub denoise: c_int,
+    pub cleanup: ScanCleanupParams,
+    pub det_prob_threshold: c_float,
+    pub det_box_threshold: c_float,
+    pub det_target_short: c_int,
+    pub vlm_max_tokens: c_int,
+    pub vlm_prompt: *const c_char,
+    pub min_chars: c_int,
+    pub min_confidence: c_float,
+}
+
 /// Opaque handle to a standalone ViT image embedding context (SigLIP, CLIP).
 #[repr(C)]
 pub struct VitContext(c_void);
@@ -543,6 +563,16 @@ extern "C" {
     ) -> *const CrispembedOcrResult;
 
     pub fn crispembed_ocr_pipeline_free(ctx: *mut c_void);
+
+    /// Full per-stage builder: a flat array of stages grouped into per-source-
+    /// type chains in array order.
+    pub fn crispembed_ocr_pipeline_init_stages(
+        router: c_int,
+        nafnet_model: *const c_char,
+        stages: *const CrispembedOcrStage,
+        n_stages: c_int,
+        n_threads: c_int,
+    ) -> *mut c_void;
 
     // ------------------------------------------------------------------
     // Standalone ViT image embedding (SigLIP, CLIP)

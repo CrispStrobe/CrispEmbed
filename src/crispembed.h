@@ -632,6 +632,8 @@ CRISPEMBED_API const crispembed_ocr_result * crispembed_ocr_pipeline_run(
     const char ** out_full_text, float * out_mean_confidence);
 
 CRISPEMBED_API void crispembed_ocr_pipeline_free(void * ctx);
+// (Full per-stage builder API declared after the scan-cleanup section below,
+//  since crispembed_ocr_stage embeds crispembed_scan_cleanup_params.)
 
 // ---------------------------------------------------------------------------
 // Layout Detection — RT-DETRv2 document layout analysis (17 classes).
@@ -752,6 +754,42 @@ CRISPEMBED_API int crispembed_scan_cleanup_process_simple(
     const uint8_t * pixels, int width, int height, int channels,
     int deskew, int crop_borders, int whiten_background, int binarize,
     uint8_t ** out_pixels, int * out_width, int * out_height);
+
+// ── OCR pipeline: full per-stage builder ────────────────────────────────────
+// For complete user control: a flat array of stages (grouped into per-source-
+// type chains in reading order). The caller (Rust/Dart) owns the rich config
+// and marshals it into this array — no JSON dependency in C++. Declared here
+// (not by the other crispembed_ocr_pipeline_* decls) because crispembed_ocr_stage
+// embeds crispembed_scan_cleanup_params, defined just above.
+
+/// One pipeline stage: engine + models + cleanup + engine params + accept-gate.
+typedef struct crispembed_ocr_stage {
+    int   source_type;   // 0=auto 1=screenshot 2=scanned_doc 3=photo
+    int   engine;        // 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl 5=internvl2
+    const char * model_a; // det / single-model GGUF
+    const char * model_b; // rec GGUF (dbnet_trocr / surya)
+    int   cleanup_enabled;
+    int   denoise;        // NAFNet tier-2 for this stage
+    crispembed_scan_cleanup_params cleanup;  // the 10 classical knobs
+    // Engine params (only the relevant ones are used per engine):
+    float det_prob_threshold;
+    float det_box_threshold;
+    int   det_target_short;
+    int   vlm_max_tokens;     // 0 = engine default
+    const char * vlm_prompt;  // NULL/"" = engine default
+    // Accept-gate:
+    int   min_chars;
+    float min_confidence;
+} crispembed_ocr_stage;
+
+/// Build a pipeline from an explicit ordered stage array (full tweakability).
+/// Stages with the same `source_type` form that type's chain, in array order.
+CRISPEMBED_API void * crispembed_ocr_pipeline_init_stages(
+    int router,
+    const char * nafnet_model,
+    const crispembed_ocr_stage * stages,
+    int n_stages,
+    int n_threads);
 
 #ifdef __cplusplus
 }
