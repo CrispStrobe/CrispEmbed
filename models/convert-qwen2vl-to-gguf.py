@@ -220,14 +220,28 @@ def main():
     # Vision config
     vc = config.vision_config
     writer.add_uint32("qwen2vl.vision.depth", int(vc.depth))
-    writer.add_uint32("qwen2vl.vision.hidden_size", int(vc.hidden_size))
-    writer.add_uint32("qwen2vl.vision.intermediate_size", int(vc.intermediate_size))
+    # Qwen2-VL has embed_dim (ViT block dim) != hidden_size (merger output dim).
+    # Qwen2.5-VL has only hidden_size (= ViT block dim, merger output is out_hidden_size).
+    # The engine uses vision.hidden_size for ViT blocks, so write the block dim.
+    vis_block_dim = getattr(vc, 'embed_dim', vc.hidden_size)
+    writer.add_uint32("qwen2vl.vision.hidden_size", int(vis_block_dim))
+    # Qwen2-VL uses mlp_ratio instead of intermediate_size; Qwen2.5-VL has intermediate_size
+    vis_inter = getattr(vc, 'intermediate_size', None)
+    if vis_inter is None:
+        mlp_ratio = getattr(vc, 'mlp_ratio', 4)
+        vis_inter = int(vis_block_dim) * int(mlp_ratio)
+    writer.add_uint32("qwen2vl.vision.intermediate_size", int(vis_inter))
     writer.add_uint32("qwen2vl.vision.num_heads", int(vc.num_heads))
-    writer.add_uint32("qwen2vl.vision.in_channels", int(vc.in_channels))
+    # Qwen2-VL uses in_chans; Qwen2.5-VL uses in_channels
+    in_ch = getattr(vc, 'in_channels', getattr(vc, 'in_chans', 3))
+    writer.add_uint32("qwen2vl.vision.in_channels", int(in_ch))
     writer.add_uint32("qwen2vl.vision.spatial_patch_size", int(vc.spatial_patch_size))
     writer.add_uint32("qwen2vl.vision.spatial_merge_size", int(vc.spatial_merge_size))
     writer.add_uint32("qwen2vl.vision.temporal_patch_size", int(vc.temporal_patch_size))
-    writer.add_uint32("qwen2vl.vision.out_hidden_size", int(vc.out_hidden_size))
+    # Qwen2-VL: merger outputs hidden_size (1536 = LLM dim, not embed_dim 1280).
+    # Qwen2.5-VL: has explicit out_hidden_size (2048).
+    out_hidden = getattr(vc, 'out_hidden_size', vc.hidden_size)  # vc.hidden_size = merger output
+    writer.add_uint32("qwen2vl.vision.out_hidden_size", int(out_hidden))
 
     # Windowed attention config
     if hasattr(vc, "window_size"):
