@@ -157,6 +157,7 @@ list(APPEND CRISPEMBED_SOURCES src/ocr_render.cpp)
 list(APPEND CRISPEMBED_SOURCES src/dewarp.cpp)
 list(APPEND CRISPEMBED_SOURCES src/kie_pipeline.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tps_warp.cpp)
+list(APPEND CRISPEMBED_SOURCES src/tps_locnet.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -376,6 +377,9 @@ target_link_libraries(test-dewarp PRIVATE crispembed)
 
 add_executable(test-tps-warp tests/test_tps_warp.cpp)
 target_link_libraries(test-tps-warp PRIVATE crispembed)
+
+add_executable(test-tps-locnet tests/test_tps_locnet.cpp)
+target_link_libraries(test-tps-locnet PRIVATE crispembed)
 
 endif() # NOT iOS
 
