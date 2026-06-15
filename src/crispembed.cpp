@@ -3541,6 +3541,94 @@ extern "C" int crispembed_ner_extract(void * ctx, const char * text,
 }
 
 // ===========================================================================
+// Key Information Extraction (KIE)
+// ===========================================================================
+
+#include "kie_pipeline.h"
+
+// Internal state for the C API — holds the pipeline context plus the last
+// result's strings/fields so they stay alive for the caller.
+struct crispembed_kie_ctx {
+    kie_pipeline::context* pipe = nullptr;
+
+    // Last result storage (valid until next extract call or free).
+    kie_pipeline::result last_result;
+    std::vector<crispembed_kie_field> last_fields;
+    std::string last_ocr_text;
+};
+
+extern "C" void * crispembed_kie_init(
+        const char * ocr_det_model, const char * ocr_rec_model,
+        const char * ner_model, int n_threads) {
+    if (!ocr_det_model || !ocr_rec_model || !ner_model) return nullptr;
+
+    kie_pipeline::config cfg;
+    cfg.ocr = ocr_orchestrator::default_config();
+
+    // Wire in the provided OCR models to the first stage of the default chain.
+    for (auto& chain : cfg.ocr.chains) {
+        for (auto& stage : chain.stages) {
+            if (stage.eng == ocr_orchestrator::engine::dbnet_trocr) {
+                stage.model_a = ocr_det_model;
+                stage.model_b = ocr_rec_model;
+            }
+        }
+    }
+    cfg.ner_model = ner_model;
+    cfg.threshold = 0.5f;
+
+    auto* kctx = new crispembed_kie_ctx;
+    if (!kie_pipeline::load(&kctx->pipe, cfg, n_threads)) {
+        delete kctx;
+        return nullptr;
+    }
+    return kctx;
+}
+
+extern "C" crispembed_kie_result crispembed_kie_extract(
+        void * ptr, const char * image_path,
+        const char ** labels, int n_labels,
+        float threshold) {
+    crispembed_kie_result out;
+    std::memset(&out, 0, sizeof(out));
+    if (!ptr || !image_path) return out;
+
+    auto* kctx = (crispembed_kie_ctx*)ptr;
+
+    kctx->last_result = kie_pipeline::extract(kctx->pipe, image_path, labels, n_labels, threshold);
+    kctx->last_ocr_text = kctx->last_result.ocr_full_text;
+
+    // Build flat C field array.
+    kctx->last_fields.clear();
+    kctx->last_fields.reserve(kctx->last_result.fields.size());
+    for (const auto& f : kctx->last_result.fields) {
+        crispembed_kie_field cf;
+        cf.label = f.label.c_str();
+        cf.value = f.value.c_str();
+        cf.score = f.score;
+        cf.x = f.x;
+        cf.y = f.y;
+        cf.w = f.w;
+        cf.h = f.h;
+        kctx->last_fields.push_back(cf);
+    }
+
+    out.fields         = kctx->last_fields.data();
+    out.n_fields       = (int)kctx->last_fields.size();
+    out.ocr_text       = kctx->last_ocr_text.c_str();
+    out.ocr_confidence = kctx->last_result.ocr_confidence;
+    out.n_ocr_regions  = kctx->last_result.n_ocr_regions;
+    return out;
+}
+
+extern "C" void crispembed_kie_free(void * ptr) {
+    if (!ptr) return;
+    auto* kctx = (crispembed_kie_ctx*)ptr;
+    if (kctx->pipe) kie_pipeline::free(kctx->pipe);
+    delete kctx;
+}
+
+// ===========================================================================
 // Scan Cleanup
 // ===========================================================================
 

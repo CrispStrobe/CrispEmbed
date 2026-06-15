@@ -305,6 +305,44 @@ typedef CrispembedNerExtractDart = int Function(
     double threshold,
     Pointer<Pointer<Void>> outEntities);
 
+// --- Key Information Extraction (KIE) — OCR + NER pipeline ---
+typedef CrispembedKieInitNative = Pointer<Void> Function(
+    Pointer<Utf8> ocrDetModel, Pointer<Utf8> ocrRecModel,
+    Pointer<Utf8> nerModel, Int32 nThreads);
+typedef CrispembedKieInitDart = Pointer<Void> Function(
+    Pointer<Utf8> ocrDetModel, Pointer<Utf8> ocrRecModel,
+    Pointer<Utf8> nerModel, int nThreads);
+
+typedef CrispembedKieFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedKieFreeDart = void Function(Pointer<Void> ctx);
+
+// crispembed_kie_extract returns crispembed_kie_result by value.
+// Layout: Pointer fields, int n_fields, char* ocr_text, float ocr_confidence, int n_ocr_regions
+typedef CrispembedKieExtractNative = CrispembedKieResultFFI Function(
+    Pointer<Void> ctx, Pointer<Utf8> imagePath,
+    Pointer<Pointer<Utf8>> labels, Int32 nLabels,
+    Float threshold);
+typedef CrispembedKieExtractDart = CrispembedKieResultFFI Function(
+    Pointer<Void> ctx, Pointer<Utf8> imagePath,
+    Pointer<Pointer<Utf8>> labels, int nLabels,
+    double threshold);
+
+/// FFI struct matching crispembed_kie_result (returned by value).
+final class CrispembedKieResultFFI extends Struct {
+  external Pointer<Void> fields;
+
+  @Int32()
+  external int nFields;
+
+  external Pointer<Utf8> ocrText;
+
+  @Float()
+  external double ocrConfidence;
+
+  @Int32()
+  external int nOcrRegions;
+}
+
 // --- OCR Orchestrator (source-type routing + cleanup + accept-gate) ---
 // Uses the simple init path: crispembed_ocr_pipeline_init(params*, n_threads)
 // The params struct is built in Dart and passed as a pointer.
