@@ -672,3 +672,19 @@ int detect_text_angle(const uint8_t * gray, int w, int h,
 
     return score_normal >= score_flipped ? 0 : 180;
 }
+
+// =========================================================================
+// 8. TPS spatial transformer (learned dewarping)
+// =========================================================================
+
+#include "tps_warp.h"
+
+int tps_dewarp(const uint8_t * gray, int w, int h,
+               const float * src_x, const float * src_y,
+               const float * dst_x, const float * dst_y, int n,
+               uint8_t * out) {
+    if (!gray || !out || w <= 0 || h <= 0) return 1;
+    return tps_warp_points(gray, w, h,
+                           src_x, src_y, dst_x, dst_y, n,
+                           out, w, h, 255);
+}

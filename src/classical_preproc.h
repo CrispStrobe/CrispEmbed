@@ -120,6 +120,27 @@ float ocr_quality_score(const char * text,
 int detect_text_angle(const uint8_t * gray, int w, int h,
                        float * confidence);
 
+// ---------------------------------------------------------------------------
+// 8. TPS spatial transformer (learned dewarping)
+// ---------------------------------------------------------------------------
+
+/// Dewarp a grayscale page image using Thin-Plate Spline control points.
+///
+/// Given N source/target control point pairs, solves the TPS interpolation
+/// system and applies the inverse warp with bilinear sampling.
+///
+/// [gray]    — row-major uint8 grayscale input (w * h).
+/// [src_x/y] — source control point coordinates (length n).
+/// [dst_x/y] — target (straightened) control point coordinates (length n).
+/// [n]       — number of control points (>= 3).
+/// [out]     — output: dewarped uint8 grayscale. Caller allocates w * h.
+///
+/// Returns 0 on success, 1 on failure (too few points, singular system).
+int tps_dewarp(const uint8_t * gray, int w, int h,
+               const float * src_x, const float * src_y,
+               const float * dst_x, const float * dst_y, int n,
+               uint8_t * out);
+
 #ifdef __cplusplus
 }
 #endif
