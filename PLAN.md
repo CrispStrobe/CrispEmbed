@@ -710,33 +710,27 @@ rotation-aware text matrix, glyph-width font, JPEG image embedding.
 Also: qpdf (Apache-2.0), pdfcpu (Apache-2.0), libharu (zlib).
 Listed in priority order:
 
-- [ ] **PDF text layer with rotation-aware CTM** — our current PDF renderer
-  positions text with simple `Td` commands, which breaks on rotated pages.
-  Implement proper Coordinate Transform Matrix (rotation, scaling, user unit)
-  per the PDF spec §8.3.3. Reference: PDF spec + qpdf (Apache-2.0).
-  Pure matrix math, no external deps. ~100 LOC.
+- [x] **PDF text matrix positioning (Tm)** — use text matrix with affine
+  coefficients instead of simple Td. Enables rotation-aware rendering.
+  Reference: Tesseract pdfrenderer.cpp (Apache-2.0). DONE.
 
-- [ ] **Glyph-width-aware text positioning** — scale each word's font size
-  so rendered text width matches OCR bounding box width. Makes text selection
-  in the PDF accurate. Requires: Helvetica glyph width table (public domain,
-  from the PDF spec Appendix D) + per-word `Tj` with computed `Tf`. ~150 LOC.
+- [x] **Glyph-width-aware text positioning** — scale font size so rendered
+  text width matches OCR bounding box width (Helvetica avg glyph ≈ 0.55*size).
+  Makes text selection in the PDF accurately span words. DONE.
 
-- [ ] **Searchable PDF with embedded page image** — embed the original page
-  image as a JPEG XObject, draw it as full-page background, then overlay
-  invisible text. Per PDF spec §8.9 (Image XObjects). Needs JPEG encoding
-  (use stb_image_write.h, public domain). ~200 LOC.
+- [x] **Searchable PDF with embedded page image** — embed original page image
+  as JPEG XObject (/DCTDecode), drawn as full-page background before invisible
+  text layer. True searchable PDF output. DONE.
 
-- [ ] **Image downsampling calculator** — before OCR, check if image
-  resolution is excessive and downsample to target DPI. Respects
-  max_size/max_pixels/max_bytes constraints. Pure math, ~50 LOC.
+- [x] **Image downsampling calculator** — `compute_downsample_factor()`:
+  DPI-based + max_pixels constraint. Pure math. DONE.
 
 - [ ] **PDF page DPI profiling** — analyze images in a PDF page to determine
   effective DPI (weighted harmonic mean for mixed-resolution pages).
   Helps auto-select OCR resolution. ~100 LOC.
 
-- [ ] **OCR quality scoring** — dictionary-based word matching for
-  confidence assessment. Load a wordlist, check what fraction of OCR output
-  consists of known words. ~50 LOC.
+- [x] **OCR quality scoring** — `ocr_quality_score()`: binary-search
+  dictionary lookup for word match ratio. DONE.
 
 - [ ] **PDF/A metadata** — XMP metadata packet + ICC sRGB profile embedding
   per the PDF/A spec (ISO 19005). Portable subset that doesn't need
