@@ -108,6 +108,18 @@ float compute_downsample_factor(int w, int h, int current_dpi,
 float ocr_quality_score(const char * text,
                          const char ** dict, int n_dict);
 
+// ---------------------------------------------------------------------------
+// 7. Text angle classification (0° vs 180°)
+// ---------------------------------------------------------------------------
+
+/// Detect if text in an image is upside-down (rotated 180°).
+/// Uses ascender/descender asymmetry + differential scoring at 0° and 180°.
+///
+/// Returns: 0 if correctly oriented, 180 if upside-down.
+/// [confidence] receives a score in [0,1] — higher = more certain.
+int detect_text_angle(const uint8_t * gray, int w, int h,
+                       float * confidence);
+
 #ifdef __cplusplus
 }
 #endif
