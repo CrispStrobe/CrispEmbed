@@ -1558,6 +1558,59 @@ pub struct OcrPipelineResult {
     pub mean_confidence: f32,
 }
 
+/// Per-stage cleanup recipe (the 10 classical knobs + NAFNet denoise toggle).
+#[derive(Clone)]
+pub struct OcrCleanupSpec {
+    pub enabled: bool,
+    pub deskew: bool,
+    pub crop_borders: bool,
+    pub whiten_background: bool,
+    pub binarize: bool,
+    pub binarize_method: i32, // 0=Otsu 1=Sauvola
+    pub sauvola_k: f32,
+    pub sauvola_window: i32,
+    pub morph_kernel: i32,
+    pub border_threshold: f32,
+    pub deskew_max_angle: f32,
+    pub denoise: bool, // NAFNet tier-2
+}
+
+impl Default for OcrCleanupSpec {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            deskew: true,
+            crop_borders: true,
+            whiten_background: true,
+            binarize: false,
+            binarize_method: 0,
+            sauvola_k: 0.2,
+            sauvola_window: 25,
+            morph_kernel: 51,
+            border_threshold: 0.15,
+            deskew_max_angle: 15.0,
+            denoise: false,
+        }
+    }
+}
+
+/// One fully-specified pipeline stage for [`CrispOcrPipeline::from_stages`].
+#[derive(Clone)]
+pub struct OcrStageSpec {
+    pub source_type: i32, // 0=auto 1=screenshot 2=scanned_doc 3=photo
+    pub engine: i32,      // 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl 5=internvl2
+    pub model_a: String,
+    pub model_b: String,
+    pub cleanup: OcrCleanupSpec,
+    pub det_prob_threshold: f32,
+    pub det_box_threshold: f32,
+    pub det_target_short: i32,
+    pub vlm_max_tokens: i32,
+    pub vlm_prompt: String,
+    pub min_chars: i32,
+    pub min_confidence: f32,
+}
+
 /// Configurable OCR pipeline: source-type routing + per-stage image cleanup
 /// (classical + NAFNet) + engine + text-yield/confidence accept-gate escalation.
 /// Wraps the C++ `ocr_orchestrator`. `Send` (own your own instance per thread).
@@ -1655,6 +1708,75 @@ impl CrispOcrPipeline {
             }
         }
         Ok(OcrPipelineResult { regions, full_text, mean_confidence: mean_conf })
+    }
+
+    /// Full per-stage builder: compose arbitrary per-source-type chains. Each
+    /// stage picks an engine + models + cleanup recipe + engine params + gate.
+    pub fn from_stages(
+        router: bool,
+        nafnet_model: Option<&str>,
+        stages: &[OcrStageSpec],
+        n_threads: i32,
+    ) -> Result<Self, String> {
+        let naf = match nafnet_model {
+            Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("nafnet: {e}"))?),
+            _ => None,
+        };
+        // Keep the per-stage CStrings alive until after the init call (C++
+        // copies them into std::string).
+        let mut keep: Vec<CString> = Vec::with_capacity(stages.len() * 3);
+        let mut c_stages: Vec<crispembed_sys::CrispembedOcrStage> = Vec::with_capacity(stages.len());
+        for s in stages {
+            let a = CString::new(s.model_a.as_str()).map_err(|e| format!("model_a: {e}"))?;
+            let b = CString::new(s.model_b.as_str()).map_err(|e| format!("model_b: {e}"))?;
+            let p = CString::new(s.vlm_prompt.as_str()).map_err(|e| format!("vlm_prompt: {e}"))?;
+            let (a_ptr, b_ptr) = (a.as_ptr(), b.as_ptr());
+            let p_ptr = if s.vlm_prompt.is_empty() { std::ptr::null() } else { p.as_ptr() };
+            keep.push(a);
+            keep.push(b);
+            keep.push(p);
+            c_stages.push(crispembed_sys::CrispembedOcrStage {
+                source_type: s.source_type,
+                engine: s.engine,
+                model_a: a_ptr,
+                model_b: b_ptr,
+                cleanup_enabled: s.cleanup.enabled as std::os::raw::c_int,
+                denoise: s.cleanup.denoise as std::os::raw::c_int,
+                cleanup: crispembed_sys::ScanCleanupParams {
+                    deskew: s.cleanup.deskew as std::os::raw::c_int,
+                    crop_borders: s.cleanup.crop_borders as std::os::raw::c_int,
+                    whiten_background: s.cleanup.whiten_background as std::os::raw::c_int,
+                    binarize: s.cleanup.binarize as std::os::raw::c_int,
+                    binarize_method: s.cleanup.binarize_method,
+                    sauvola_k: s.cleanup.sauvola_k,
+                    sauvola_window: s.cleanup.sauvola_window,
+                    morph_kernel: s.cleanup.morph_kernel,
+                    border_threshold: s.cleanup.border_threshold,
+                    deskew_max_angle: s.cleanup.deskew_max_angle,
+                },
+                det_prob_threshold: s.det_prob_threshold,
+                det_box_threshold: s.det_box_threshold,
+                det_target_short: s.det_target_short,
+                vlm_max_tokens: s.vlm_max_tokens,
+                vlm_prompt: p_ptr,
+                min_chars: s.min_chars,
+                min_confidence: s.min_confidence,
+            });
+        }
+        let ctx = unsafe {
+            crispembed_sys::crispembed_ocr_pipeline_init_stages(
+                router as std::os::raw::c_int,
+                naf.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+                c_stages.as_ptr(),
+                c_stages.len() as std::os::raw::c_int,
+                n_threads,
+            )
+        };
+        drop(keep);
+        if ctx.is_null() {
+            return Err("crispembed_ocr_pipeline_init_stages failed".into());
+        }
+        Ok(Self { ctx })
     }
 }
 

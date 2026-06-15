@@ -233,7 +233,10 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
                     return {};
                 }
             }
-            return ocr_pipeline::run_file(ctx->dbnet, path);
+            return ocr_pipeline::run_file(ctx->dbnet, path,
+                                          st.params.det_prob_threshold,
+                                          st.params.det_box_threshold,
+                                          st.params.det_target_short);
         }
         case engine::got: {
             if (!ctx->got) {
@@ -271,6 +274,8 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
                 ctx->qwen = qwen2vl_ocr_init(st.model_a.c_str(), ctx->n_threads);
                 if (!ctx->qwen) { fprintf(stderr, "ocr_orchestrator: qwen2vl load failed\n"); return {}; }
             }
+            if (st.params.vlm_max_tokens > 0) qwen2vl_ocr_set_max_tokens(ctx->qwen, st.params.vlm_max_tokens);
+            if (!st.params.vlm_prompt.empty()) qwen2vl_ocr_set_prompt(ctx->qwen, st.params.vlm_prompt.c_str());
             int w = 0, h = 0, c = 0;
             unsigned char* px = stbi_load(path, &w, &h, &c, 3);
             if (!px) return {};
@@ -286,6 +291,8 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
                 ctx->intern = internvl2_ocr_init(st.model_a.c_str(), ctx->n_threads);
                 if (!ctx->intern) { fprintf(stderr, "ocr_orchestrator: internvl2 load failed\n"); return {}; }
             }
+            if (st.params.vlm_max_tokens > 0) internvl2_ocr_set_max_tokens(ctx->intern, st.params.vlm_max_tokens);
+            if (!st.params.vlm_prompt.empty()) internvl2_ocr_set_prompt(ctx->intern, st.params.vlm_prompt.c_str());
             int w = 0, h = 0, c = 0;
             unsigned char* px = stbi_load(path, &w, &h, &c, 3);
             if (!px) return {};
