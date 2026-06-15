@@ -23,9 +23,11 @@
 //   POST /preprocess/dewarp    — {"image": "...", "output": "..."} → PGM image or JSON
 //   POST /preprocess/cc-detect — {"image": "..."} → {"regions": [...]}
 //   POST /render/ocr           — {"results": [...], "format": "hocr"} → rendered document
+//   POST /ocr/document         — multi-page OCR: images → searchable PDF / hOCR / text
 //   GET  /health          — server status + loaded capabilities
 
 #include "crispembed.h"
+#include "ocr_render.h"
 #include "scan_cleanup.h"
 #include "model_mgr.h"
 #include "httplib.h"
@@ -1945,6 +1947,197 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /ocr/document — end-to-end multi-page OCR
+    // Accepts:
+    //   multipart/form-data: files named "page" (or "page0","page1",...) → image bytes
+    //   OR application/json: {"images": ["/path/page1.png", "/path/page2.png"],
+    //                         "format": "text|hocr|alto|pdf",
+    //                         "cleanup": true, "dewarp": false}
+    // Returns: rendered document in the requested format
+    svr.Post("/ocr/document", [&](const httplib::Request & req, httplib::Response & res) {
+        std::string format = "text";
+        bool do_cleanup = true;
+        bool do_dewarp = false;
+        std::vector<std::string> temp_files; // track files to clean up
+
+        // Collect page images (either from multipart or JSON paths)
+        std::vector<std::string> page_paths;
+
+        if (req.is_multipart_form_data()) {
+            // Multipart upload: save each file to temp, collect paths
+            auto files = req.files;
+            int page_idx = 0;
+            for (auto & [name, file] : files) {
+                if (name == "format") { format = file.content; continue; }
+                if (name == "cleanup") { do_cleanup = file.content != "false" && file.content != "0"; continue; }
+                if (name == "dewarp") { do_dewarp = file.content == "true" || file.content == "1"; continue; }
+                // Must be a page image
+                char tmp_path[256];
+                snprintf(tmp_path, sizeof(tmp_path), "/tmp/crispembed_doc_%d_%d.img",
+                         (int)getpid(), page_idx++);
+                FILE * f = fopen(tmp_path, "wb");
+                if (f) {
+                    fwrite(file.content.data(), 1, file.content.size(), f);
+                    fclose(f);
+                    page_paths.push_back(tmp_path);
+                    temp_files.push_back(tmp_path);
+                }
+            }
+        } else {
+            // JSON mode: parse image paths
+            auto body = req.body;
+            auto fpos = body.find("\"format\"");
+            if (fpos != std::string::npos) {
+                auto q1 = body.find('"', fpos + 8);
+                auto q2 = body.find('"', q1 + 1);
+                if (q1 != std::string::npos && q2 != std::string::npos)
+                    format = body.substr(q1 + 1, q2 - q1 - 1);
+            }
+            // Parse "images" array
+            auto apos = body.find("\"images\"");
+            if (apos != std::string::npos) {
+                auto arr_start = body.find('[', apos);
+                auto arr_end = body.find(']', arr_start);
+                if (arr_start != std::string::npos && arr_end != std::string::npos) {
+                    size_t p = arr_start;
+                    while ((p = body.find('"', p + 1)) < arr_end) {
+                        auto q2 = body.find('"', p + 1);
+                        if (q2 < arr_end) {
+                            page_paths.push_back(body.substr(p + 1, q2 - p - 1));
+                            p = q2;
+                        } else break;
+                    }
+                }
+            }
+            // Single image shortcut
+            if (page_paths.empty()) {
+                auto ipos = body.find("\"image\"");
+                if (ipos != std::string::npos) {
+                    auto q1 = body.find('"', ipos + 7);
+                    auto q2 = body.find('"', q1 + 1);
+                    if (q1 != std::string::npos && q2 != std::string::npos)
+                        page_paths.push_back(body.substr(q1 + 1, q2 - q1 - 1));
+                }
+            }
+        }
+
+        if (page_paths.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no page images provided\"}", "application/json");
+            return;
+        }
+
+        auto t0 = std::chrono::high_resolution_clock::now();
+
+        // Process each page
+        ocr_renderer * renderer = ocr_render_create(
+            format == "hocr" ? OCR_RENDER_HOCR :
+            format == "alto" ? OCR_RENDER_ALTO :
+            format == "pdf"  ? OCR_RENDER_PDF : OCR_RENDER_TEXT);
+        if (format == "pdf") ocr_render_set_pdfa(renderer, 1);
+        ocr_render_begin(renderer);
+
+        int total_regions = 0;
+        for (size_t pi = 0; pi < page_paths.size(); pi++) {
+            int w = 0, h = 0, ch = 0;
+            unsigned char * img = stbi_load(page_paths[pi].c_str(), &w, &h, &ch, 0);
+            if (!img) continue;
+
+            // Optional dewarp (grayscale)
+            std::vector<uint8_t> gray_buf;
+            if (do_dewarp && ch >= 1) {
+                // Convert to gray if needed
+                std::vector<uint8_t> gray(w * h);
+                if (ch == 1) {
+                    memcpy(gray.data(), img, w * h);
+                } else {
+                    for (int i = 0; i < w * h; i++)
+                        gray[i] = (uint8_t)((img[i*ch]*77 + img[i*ch+1]*150 + img[i*ch+2]*29) >> 8);
+                }
+                std::vector<uint8_t> dewarped(w * h);
+                int dw = 0, dh = 0;
+                if (crispembed_dewarp(gray.data(), w, h, dewarped.data(), &dw, &dh) == 0) {
+                    gray_buf = std::move(dewarped);
+                    // Can't easily feed gray back to color OCR, so skip dewarp for color pipelines
+                }
+            }
+
+            // OCR: use orchestrator if available, else single-shot math_ocr
+            int n_results = 0;
+            const char * full_text = nullptr;
+            float mean_conf = 0;
+            const crispembed_ocr_result * results = nullptr;
+
+            if (ocr_orch_ctx) {
+                std::lock_guard<std::mutex> lock(ocr_orch_mutex);
+                results = crispembed_ocr_pipeline_run(
+                    ocr_orch_ctx, page_paths[pi].c_str(),
+                    &n_results, &full_text, &mean_conf);
+            } else if (math_ocr_ctx) {
+                std::lock_guard<std::mutex> lock(math_ocr_mutex);
+                int out_len = 0;
+                const char * text = crispembed_math_ocr_recognize(
+                    math_ocr_ctx, img, w, h, ch, &out_len);
+                // Wrap single result
+                static crispembed_ocr_result single_result;
+                if (text && out_len > 0) {
+                    single_result = {0, 0, (float)w, (float)h, 1.0f, text, out_len};
+                    results = &single_result;
+                    n_results = 1;
+                    full_text = text;
+                }
+            }
+
+            stbi_image_free(img);
+
+            // Build render page from results
+            if (n_results > 0 && results) {
+                total_regions += n_results;
+                std::vector<ocr_render_word> words(n_results);
+                std::vector<ocr_render_line> lines(n_results);
+                for (int i = 0; i < n_results; i++) {
+                    words[i] = {results[i].text,
+                                (int)results[i].x, (int)results[i].y,
+                                (int)results[i].w, (int)results[i].h,
+                                results[i].confidence};
+                    lines[i] = {&words[i], 1,
+                                (int)results[i].x, (int)results[i].y,
+                                (int)results[i].w, (int)results[i].h};
+                }
+                ocr_render_page page = {lines.data(), n_results,
+                                        w, h, page_paths[pi].c_str()};
+                ocr_render_add_page(renderer, &page);
+            } else {
+                // Empty page
+                ocr_render_page page = {nullptr, 0, w, h, page_paths[pi].c_str()};
+                ocr_render_add_page(renderer, &page);
+            }
+        }
+
+        ocr_render_end(renderer);
+
+        auto t1 = std::chrono::high_resolution_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        // Clean up temp files
+        for (auto & tf : temp_files) std::remove(tf.c_str());
+
+        // Return rendered document
+        int out_size = ocr_render_output_size(renderer);
+        const char * out_data = ocr_render_output(renderer);
+
+        const char * content_type = "text/plain";
+        if (format == "hocr") content_type = "text/html; charset=utf-8";
+        else if (format == "alto") content_type = "application/xml; charset=utf-8";
+        else if (format == "pdf") content_type = "application/pdf";
+
+        res.set_content(std::string(out_data, out_size), content_type);
+        ocr_render_free(renderer);
+
+        fprintf(stderr, "crispembed-server: /ocr/document %zu pages, %d regions, format=%s, %.1f ms\n",
+                page_paths.size(), total_regions, format.c_str(), ms);
+    });
+
     // GET /health
     svr.Get("/health", [&](const httplib::Request &, httplib::Response & res) {
         std::ostringstream js;
@@ -1995,6 +2188,7 @@ int main(int argc, char ** argv) {
     fprintf(stderr, "  POST /preprocess/tps-dewarp — {\"image\": \"...\", \"model\": \"tps-loc.gguf\"}\n");
     fprintf(stderr, "  POST /preprocess/cc-detect — {\"image\": \"...\"} (model-free line detection)\n");
     fprintf(stderr, "  POST /render/ocr           — {\"results\": [...], \"format\": \"hocr|alto|pdf\"}\n");
+    fprintf(stderr, "  POST /ocr/document         — multi-page OCR → searchable PDF/hOCR/text (upload or paths)\n");
     if (ctx && crispembed_has_colbert(ctx)) fprintf(stderr, "  POST /colbert/score   — {\"query\": \"...\", \"documents\": [...]}\n");
     fprintf(stderr, "  GET  /health\n\n");
 
