@@ -1520,6 +1520,122 @@ class CrispNER {
 }
 
 // ---------------------------------------------------------------------------
+// LiLT — Language-independent Layout Transformer
+// ---------------------------------------------------------------------------
+
+/// Token classification result from LiLT.
+class LiltToken {
+  final int tokenId;
+  final int labelId;
+  final String label;
+  final double score;
+
+  const LiltToken({
+    required this.tokenId,
+    required this.labelId,
+    required this.label,
+    required this.score,
+  });
+
+  @override
+  String toString() => 'LiltToken($tokenId → $label, score=${score.toStringAsFixed(3)})';
+}
+
+/// LiLT dual-stream encoder for layout-aware document understanding.
+///
+/// ```dart
+/// final lilt = CrispLiLT('lilt-funsd-f32.gguf');
+/// final tokens = lilt.classify([0, 10566, 35, 2],
+///     bbox: [[0,0,0,0], [10,50,90,80], [90,50,110,80], [0,0,0,0]]);
+/// for (final t in tokens) print(t);
+/// lilt.dispose();
+/// ```
+class CrispLiLT {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedLiltFreeDart _freeFn;
+  late final CrispembedLiltClassifyDart _classifyFn;
+  late final CrispembedLiltNumLabelsDart _numLabelsFn;
+
+  CrispLiLT(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+
+    final init = _lib.lookupFunction<CrispembedLiltInitNative,
+        CrispembedLiltInitDart>('crispembed_lilt_init');
+    _freeFn = _lib.lookupFunction<CrispembedLiltFreeNative,
+        CrispembedLiltFreeDart>('crispembed_lilt_free');
+    _classifyFn = _lib.lookupFunction<CrispembedLiltClassifyNative,
+        CrispembedLiltClassifyDart>('crispembed_lilt_classify');
+    _numLabelsFn = _lib.lookupFunction<CrispembedLiltNumLabelsNative,
+        CrispembedLiltNumLabelsDart>('crispembed_lilt_num_labels');
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = init(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load LiLT model: $modelPath');
+    }
+  }
+
+  int get numLabels => _numLabelsFn(_ctx);
+
+  List<LiltToken> classify(List<int> inputIds, {required List<List<int>> bbox}) {
+    _checkDisposed();
+    final T = inputIds.length;
+    final idsPtr = calloc<Int32>(T);
+    for (var i = 0; i < T; i++) idsPtr[i] = inputIds[i];
+    final bboxPtr = calloc<Int32>(T * 4);
+    for (var i = 0; i < T; i++) {
+      for (var j = 0; j < 4; j++) {
+        bboxPtr[i * 4 + j] = (i < bbox.length && j < bbox[i].length) ? bbox[i][j] : 0;
+      }
+    }
+    final outN = calloc<Int32>();
+
+    try {
+      final resultPtr = _classifyFn(_ctx, idsPtr, bboxPtr, T, outN);
+      if (resultPtr == nullptr || outN.value <= 0) return [];
+
+      // crispembed_lilt_token: int token_id, int label_id, char* label, float score
+      final structSize = 2 * sizeOf<Int32>() + sizeOf<Pointer>() + sizeOf<Float>();
+      final results = <LiltToken>[];
+      for (var i = 0; i < outN.value; i++) {
+        final base = resultPtr.cast<Uint8>().elementAt(i * structSize);
+        final ints = base.cast<Int32>();
+        final tokenId = ints[0];
+        final labelId = ints[1];
+        final labelPtr = base.elementAt(2 * sizeOf<Int32>()).cast<Pointer<Utf8>>();
+        final label = labelPtr.value != nullptr ? labelPtr.value.toDartString() : '';
+        final scorePtr = base.elementAt(2 * sizeOf<Int32>() + sizeOf<Pointer>()).cast<Float>();
+        results.add(LiltToken(
+          tokenId: tokenId, labelId: labelId,
+          label: label, score: scorePtr.value,
+        ));
+      }
+      return results;
+    } finally {
+      calloc.free(idsPtr);
+      calloc.free(bboxPtr);
+      calloc.free(outN);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispLiLT has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Key Information Extraction (KIE) — OCR + NER pipeline
 // ---------------------------------------------------------------------------
 

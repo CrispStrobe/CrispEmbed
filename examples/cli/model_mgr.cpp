@@ -602,6 +602,18 @@ static const ModelEntry k_registry[] = {
      "GLiNER zero-shot NER (DeBERTa-v3-base, Q4_K compact)", "152 MB", "apache-2.0",
      "https://huggingface.co/cstr/gliner-deberta-GGUF"},
 
+    {"lilt-funsd",
+     "lilt-funsd-f32.gguf",
+     "https://huggingface.co/cstr/lilt-funsd-GGUF/resolve/main/lilt-funsd-f32.gguf",
+     "LiLT FUNSD form understanding (130M params, MIT)", "497 MB", "mit",
+     "https://huggingface.co/cstr/lilt-funsd-GGUF"},
+
+    {"lilt-base",
+     "lilt-base-f32.gguf",
+     "https://huggingface.co/cstr/lilt-base-GGUF/resolve/main/lilt-base-f32.gguf",
+     "LiLT base encoder (130M params, MIT)", "497 MB", "mit",
+     "https://huggingface.co/cstr/lilt-base-GGUF"},
+
     // Tesseract LSTM line OCR — lightweight multilingual (from tessdata_best)
     {"tesseract-eng",
      "tesseract-eng-q8_0.gguf",

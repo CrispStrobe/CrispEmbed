@@ -305,6 +305,25 @@ typedef CrispembedNerExtractDart = int Function(
     double threshold,
     Pointer<Pointer<Void>> outEntities);
 
+// --- LiLT — Language-independent Layout Transformer ---
+typedef CrispembedLiltInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedLiltInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedLiltFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedLiltFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedLiltClassifyNative = Pointer<Void> Function(
+    Pointer<Void> ctx, Pointer<Int32> inputIds, Pointer<Int32> bbox,
+    Int32 nTokens, Pointer<Int32> outN);
+typedef CrispembedLiltClassifyDart = Pointer<Void> Function(
+    Pointer<Void> ctx, Pointer<Int32> inputIds, Pointer<Int32> bbox,
+    int nTokens, Pointer<Int32> outN);
+
+typedef CrispembedLiltNumLabelsNative = Int32 Function(Pointer<Void> ctx);
+typedef CrispembedLiltNumLabelsDart = int Function(Pointer<Void> ctx);
+
 // --- Key Information Extraction (KIE) — OCR + NER pipeline ---
 typedef CrispembedKieInitNative = Pointer<Void> Function(
     Pointer<Utf8> ocrDetModel, Pointer<Utf8> ocrRecModel,
