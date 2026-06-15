@@ -337,6 +337,8 @@ bttr_ocr_context * bttr_ocr_init(const char * model_path, int n_threads) {
             hp.growth_rate, hp.num_layers, hp.d_model, hp.nhead,
             hp.num_decoder_layers, hp.vocab_size, ctx->vocab.size());
 
+    // NOTE: CPU-only — forward pass is scalar C++ (DenseNet+Transformer with
+    // direct tensor->data access). GPU enablement requires rewriting as ggml graph.
     ggml_backend_t backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, backend, "bttr_ocr", ctx->wl)) {
         ggml_backend_free(backend);

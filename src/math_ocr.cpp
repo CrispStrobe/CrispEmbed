@@ -20,6 +20,7 @@ extern "C" {
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <map>
 #include <unordered_map>
@@ -89,6 +90,7 @@ struct math_ocr_context {
     std::vector<std::string> vocab;
     core_gguf::WeightLoad wl;
     ggml_backend_t backend = nullptr;
+    ggml_backend_t backend_cpu = nullptr;
     ggml_backend_sched_t sched = nullptr;
     int n_threads;
     std::string result_buf;
@@ -768,7 +770,8 @@ static std::vector<int> run_decoder_graph(math_ocr_context* ctx) {
     // --- Optimization: Use 1 thread for decoder (small tensors, threading overhead dominates) ---
     // The decoder operates on [D,1] vectors where D=256, so matrix ops are tiny.
     // Multi-threading adds massive synchronization overhead for these small ops.
-    ggml_backend_cpu_set_n_threads(ctx->backend, 1);
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, 1);
 
     // --- Optimization 2: Single metadata buffer (16MB, reused) ---
     const size_t meta_sz = 16 * 1024 * 1024;
@@ -932,7 +935,8 @@ static std::vector<int> run_decoder_graph(math_ocr_context* ctx) {
 #endif
 
     // Restore multi-threading for subsequent encoder runs
-    ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
 
     return tokens;
 }
@@ -973,9 +977,15 @@ math_ocr_context* math_ocr_init(const char* model_path, int n_threads) {
             hp.enc_layers, hp.enc_heads, hp.enc_hidden,
             hp.dec_layers, hp.dec_heads, hp.dec_d_model, hp.vocab_size, ctx->vocab.size());
 
+    // Init backend — prefer GPU when available
     fprintf(stderr, "math_ocr: init backend...\n");
-    ctx->backend = ggml_backend_cpu_init();
-    ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    bool force_cpu = (getenv("MATH_OCR_FORCE_CPU") && atoi(getenv("MATH_OCR_FORCE_CPU")));
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    ctx->backend_cpu = ggml_backend_is_cpu(ctx->backend) ? nullptr : ggml_backend_cpu_init();
+    if (ctx->backend_cpu) ggml_backend_cpu_set_n_threads(ctx->backend_cpu, ctx->n_threads);
     fprintf(stderr, "math_ocr: loading weights...\n");
     if (!core_gguf::load_weights(model_path, ctx->backend, "math_ocr", ctx->wl)) {
         ggml_backend_free(ctx->backend);
@@ -983,9 +993,13 @@ math_ocr_context* math_ocr_init(const char* model_path, int n_threads) {
     }
     fprintf(stderr, "math_ocr: weights loaded (%zu tensors)\n", ctx->wl.tensors.size());
 
-    // Create scheduler
+    // Create scheduler — GPU + CPU fallback
     fprintf(stderr, "math_ocr: creating scheduler...\n");
-    ctx->sched = ggml_backend_sched_new(&ctx->backend, nullptr, 1, 8192, false, false);
+    std::vector<ggml_backend_t> backends;
+    backends.push_back(ctx->backend);
+    if (ctx->backend_cpu) backends.push_back(ctx->backend_cpu);
+    ctx->sched = ggml_backend_sched_new(backends.data(), nullptr,
+                                        (int)backends.size(), 8192, false, false);
     fprintf(stderr, "math_ocr: scheduler created\n");
 
     map_tensors(ctx.get());
@@ -1003,6 +1017,7 @@ math_ocr_context* math_ocr_init(const char* model_path, int n_threads) {
 void math_ocr_free(math_ocr_context* ctx) {
     if (!ctx) return;
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
+    if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     core_gguf::free_weights(ctx->wl);
     delete ctx;

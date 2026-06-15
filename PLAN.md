@@ -239,6 +239,79 @@ CrispEmbed/
 
 ### Remaining work (prioritised)
 
+#### GPU enablement — all remaining CPU-only engines
+
+All models run on ggml. 8 engines already have GPU via `ggml_backend_init_best()`.
+15 engines are hardcoded `ggml_backend_cpu_init()`. Two groups:
+
+**Group A — Graph-based engines (mechanical backend init change):**
+These use `ggml_gallocr` or `ggml_backend_sched` + `ggml_backend_graph_compute`.
+Change: swap `ggml_backend_cpu_init()` → `ggml_backend_init_best()`, add CPU
+fallback backend for scheduler, add `<ENGINE>_FORCE_CPU=1` env var override.
+Verify: build, crispembed-diff parity (where harness exists), A/B CPU timing.
+
+- [x] **vit_embed** — gallocr, `VIT_EMBED_FORCE_CPU=1`
+- [x] **clip_text_embed** — gallocr, `CLIP_TEXT_FORCE_CPU=1`
+- [x] **cnn_embed** — gallocr, `CNN_EMBED_FORCE_CPU=1`
+- [x] **ocr_detect** — gallocr, `OCR_DETECT_FORCE_CPU=1`
+- [x] **parseq_ocr** — gallocr, `PARSEQ_OCR_FORCE_CPU=1`
+- [x] **layout_detect** — sched+gallocr, `LAYOUT_DETECT_FORCE_CPU=1`
+- [x] **internvl2_ocr** — sched, `INTERNVL2_OCR_FORCE_CPU=1`
+- [x] **qwen2vl_ocr** — sched, `QWEN2VL_OCR_FORCE_CPU=1`
+- [x] **glm_ocr** — sched, `GLM_OCR_FORCE_CPU=1`
+- [x] **math_ocr** — sched, `MATH_OCR_FORCE_CPU=1`
+- [x] **ppformulanet_l_ocr** — sched+scalar hybrid, `PPFNL_OCR_FORCE_CPU=1`
+  (fixed `to_f32` helper to use `ggml_backend_tensor_get` for GPU-safe weight reads)
+
+**Group B — CPU-scalar engines (need ggml graph rewrite for GPU):**
+These load weights via ggml backend but do forward pass with raw `float*`
+pointer arithmetic. Changing backend to GPU would crash (`tensor->data` is
+a device pointer, not CPU-accessible). Real GPU enablement requires rewriting
+the forward pass as ggml graphs. For now: add env var pattern, keep CPU.
+
+- [ ] **hmer_ocr** — scalar DenseNet+GRU, needs ggml graph rewrite
+- [ ] **bttr_ocr** — scalar DenseNet+Transformer, needs ggml graph rewrite
+- [ ] **posformer_ocr** — scalar DenseNet+Transformer+ARM, needs ggml graph rewrite
+- [ ] **nafnet_denoise** — scalar U-Net, needs ggml graph rewrite
+- [ ] **mixtex_ocr** — scalar Swin+RoBERTa, needs ggml graph rewrite
+- [ ] **ppformulanet_ocr** — scalar HGNetv2+MBart, needs ggml graph rewrite
+
+**Pattern (from got_ocr.cpp, the reference GPU-enabled engine):**
+```cpp
+// Try best backend (GPU if available), fall back to CPU
+ctx.backend = ggml_backend_init_best();
+if (!ctx.backend) {
+    ctx.backend = ggml_backend_cpu_init();
+    if (ctx.backend) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
+}
+// For scheduler: append CPU fallback (sched asserts last backend is CPU)
+ctx.backend_cpu = ggml_backend_is_cpu(ctx.backend) ? nullptr : ggml_backend_cpu_init();
+if (ctx.backend_cpu) ggml_backend_cpu_set_n_threads(ctx.backend_cpu, n_threads);
+std::vector<ggml_backend_t> backends;
+backends.push_back(ctx.backend);
+if (ctx.backend_cpu) backends.push_back(ctx.backend_cpu);
+ctx.sched = ggml_backend_sched_new(backends.data(), nullptr,
+                                   (int)backends.size(), graph_nodes, false, false);
+```
+
+**For gallocr-based engines (no scheduler):**
+```cpp
+ctx->backend = ggml_backend_init_best();
+if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
+if (ggml_backend_is_cpu(ctx->backend))
+    ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
+// gallocr auto-picks buffer type from backend
+ggml_gallocr_t alloc = ggml_gallocr_new(
+    ggml_backend_get_default_buffer_type(ctx->backend));
+```
+
+**Verification per engine:**
+1. Build compiles clean (`ninja -j2`)
+2. crispembed-diff parity vs Python reference (where harness exists)
+3. A/B CPU timing: run with `<ENGINE>_FORCE_CPU=1` vs default (should be
+   identical on this CPU-only VPS; confirms no regression)
+4. GPU testing on Kaggle T4/P100 (separate kernel, post-merge)
+
 #### Bugs / polish
 
 - [x] **Layout detection decoder** — full parity achieved (7/7 detections match

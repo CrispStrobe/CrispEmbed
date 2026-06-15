@@ -17,6 +17,7 @@
 
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -147,9 +148,12 @@ bool load(context** out, const char* path, int n_threads) {
             ctx->image_mean[0], ctx->image_mean[1], ctx->image_mean[2],
             ctx->image_std[0], ctx->image_std[1], ctx->image_std[2]);
 
-    // Load weights
-    ctx->backend = ggml_backend_cpu_init();
-    ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
+    // Load weights — prefer GPU backend when available
+    bool force_cpu = (getenv("VIT_EMBED_FORCE_CPU") && atoi(getenv("VIT_EMBED_FORCE_CPU")));
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
 
     if (!core_gguf::load_weights(path, ctx->backend, "vit", ctx->wl)) {
         fprintf(stderr, "vit_embed: failed to load weights\n");
