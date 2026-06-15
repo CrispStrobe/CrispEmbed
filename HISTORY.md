@@ -94,8 +94,8 @@ path with different dimensions. Test kernel prepared but not yet run.
 
 ## June 2026 — Scan cleanup (document preprocessing pipeline)
 
-Two-tier document scan preprocessing module replacing the
-ocrmypdf/unpaper pipeline with pure C++.
+Two-tier document scan preprocessing module — pure C++, no external
+tool dependencies.
 
 ### Tier 1 — Classical (no model needed)
 
@@ -782,7 +782,7 @@ All handwritten math datasets are NC. The C++ inference is clean-room.
 - Quantized: F16 (39 MB), Q8_0 (22 MB, identical quality), Q4_K (13 MB, degraded)
 - GGUF models published: huggingface.co/cstr/texo-distill-gguf
 - Diff regime: encoder cos=1.000000, decoder verified via layer-by-layer debug traces
-- Source: Texo (AGPL-3.0) distilled from PaddleOCR PP-FormulaNet-S (Apache-2.0)
+- Source: Texo (AGPL-3.0) distilled from PP-FormulaNet-S (Apache-2.0)
   trained on UniMER-1M (CC-BY-4.0)
 
 ## June 2026 — Nomic v2 MoE Encoder

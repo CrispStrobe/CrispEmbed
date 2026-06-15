@@ -699,15 +699,12 @@ Window partition → local MHSA + RPB lookup → window reverse → shift.
 
 ---
 
-### PDF + document processing improvements (inspired by OCRmyPDF)
+### PDF + document processing improvements
 
-OCRmyPDF (MPL-2.0) has capabilities we lack. We CANNOT port its code
-(MPL-2.0 is file-level copyleft; our repo is MIT). We implement from
-first principles using the PDF specification (ISO 32000, public) and
-Apache-2.0 reference implementations. Primary reference:
-**Tesseract's pdfrenderer.cpp** (Apache-2.0, 976 LOC) — already has
-rotation-aware text matrix, glyph-width font, JPEG image embedding.
-Also: qpdf (Apache-2.0), pdfcpu (Apache-2.0), libharu (zlib).
+Implement from first principles using the PDF specification
+(ISO 32000, public) and Apache-2.0 reference implementations.
+Primary reference: **Tesseract's pdfrenderer.cpp** (Apache-2.0,
+976 LOC). Also: qpdf (Apache-2.0), pdfcpu (Apache-2.0), libharu (zlib).
 Listed in priority order:
 
 - [x] **PDF text matrix positioning (Tm)** — use text matrix with affine
@@ -738,39 +735,32 @@ Listed in priority order:
 
 ---
 
-### PaddleOCR-inspired capabilities (Apache-2.0, portable)
-
-PaddleOCR (Apache-2.0) has capabilities we can freely reference/port.
-Listed in priority order:
+### Advanced OCR capabilities (Apache-2.0 references available)
 
 - [ ] **TPS Spatial Transformer** — learnable thin-plate-spline dewarping.
-  Better than our cubic baseline fitting for irregular distortion
-  (perspective, finger occlusion). Reference: PaddleOCR's
-  `tps_spatial_transformer.py` (from aster.pytorch). ~300 LOC.
-  Complements our classical dewarp as a learned alternative.
+  Better than cubic baseline fitting for irregular distortion (perspective,
+  finger occlusion). Reference: aster.pytorch (MIT). ~300 LOC.
+  Complements classical dewarp as a learned alternative.
 
 - [ ] **Text angle classification** — determine if text line is rotated
-  0° or 180° (upside-down detection). PaddleOCR's PP-OCRv4 pipeline uses
-  a lightweight classifier before recognition. Useful for mixed-orientation
-  document batches. ~100 LOC inference.
+  0° or 180° (upside-down detection). Lightweight classifier before
+  recognition. Useful for mixed-orientation document batches. ~100 LOC.
 
 - [ ] **Table structure recognition** — extract HTML table structure from
-  images. PaddleOCR has TableMaster and attention-based table heads.
-  Converts table images to HTML `<table><tr><td>` structure. Would pair
-  with RT-DETRv2 layout detection (which already finds table regions).
+  images (TableMaster / attention-based table heads). Converts table images
+  to `<table><tr><td>`. Pairs with RT-DETRv2 layout detection.
 
 - [ ] **Key Information Extraction (KIE)** — LayoutLM-style document
   understanding. Extract structured fields from forms, receipts, invoices.
-  Combines OCR text with spatial layout features. PaddleOCR has
-  SDMGR head + LayoutLM backbone. Larger effort.
+  Combines OCR text with spatial layout features. Larger effort.
 
 - [ ] **Text super-resolution** — upscale low-resolution text images
-  before OCR to improve recognition accuracy. PaddleOCR has dedicated
-  SR models. Could run as a preprocessing step in the orchestrator.
+  before OCR to improve recognition accuracy. Dedicated SR models as
+  preprocessing step in the orchestrator.
 
-- [ ] **Refined DBNet postprocessing** — PaddleOCR's DB postprocess
-  (289 LOC) includes Unclip polygon expansion, Vatti clipping, and
-  box scoring refinements we may lack. Review and adopt improvements.
+- [ ] **Refined DBNet postprocessing** — Unclip polygon expansion, Vatti
+  clipping, box scoring refinements. Review and adopt improvements
+  from Apache-2.0 references. ~200 LOC.
 
 ---
 
