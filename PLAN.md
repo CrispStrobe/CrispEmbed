@@ -738,6 +738,42 @@ Listed in priority order:
 
 ---
 
+### PaddleOCR-inspired capabilities (Apache-2.0, portable)
+
+PaddleOCR (Apache-2.0) has capabilities we can freely reference/port.
+Listed in priority order:
+
+- [ ] **TPS Spatial Transformer** — learnable thin-plate-spline dewarping.
+  Better than our cubic baseline fitting for irregular distortion
+  (perspective, finger occlusion). Reference: PaddleOCR's
+  `tps_spatial_transformer.py` (from aster.pytorch). ~300 LOC.
+  Complements our classical dewarp as a learned alternative.
+
+- [ ] **Text angle classification** — determine if text line is rotated
+  0° or 180° (upside-down detection). PaddleOCR's PP-OCRv4 pipeline uses
+  a lightweight classifier before recognition. Useful for mixed-orientation
+  document batches. ~100 LOC inference.
+
+- [ ] **Table structure recognition** — extract HTML table structure from
+  images. PaddleOCR has TableMaster and attention-based table heads.
+  Converts table images to HTML `<table><tr><td>` structure. Would pair
+  with RT-DETRv2 layout detection (which already finds table regions).
+
+- [ ] **Key Information Extraction (KIE)** — LayoutLM-style document
+  understanding. Extract structured fields from forms, receipts, invoices.
+  Combines OCR text with spatial layout features. PaddleOCR has
+  SDMGR head + LayoutLM backbone. Larger effort.
+
+- [ ] **Text super-resolution** — upscale low-resolution text images
+  before OCR to improve recognition accuracy. PaddleOCR has dedicated
+  SR models. Could run as a preprocessing step in the orchestrator.
+
+- [ ] **Refined DBNet postprocessing** — PaddleOCR's DB postprocess
+  (289 LOC) includes Unclip polygon expansion, Vatti clipping, and
+  box scoring refinements we may lack. Review and adopt improvements.
+
+---
+
 ### Blueprint: GLM-OCR (0.9B, MIT, GGUF exists)
 
 **Goal**: Integrate GLM-OCR for general document OCR. GGUF already
