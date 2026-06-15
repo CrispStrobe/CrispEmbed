@@ -15,6 +15,10 @@
 #include "glm_ocr.h"
 #include "qwen2vl_ocr.h"
 #include "internvl2_ocr.h"
+// Tesseract-LSTM line recognizer + DBNet detection (the tesseract engine pairs
+// detection with per-line tesseract recognition).
+#include "tesseract_lstm.h"
+#include "ocr_detect.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../ggml/examples/stb_image_write.h"
@@ -51,6 +55,8 @@ struct context {
     glm_ocr_context*         glm    = nullptr;   // GLM-OCR (single-shot VLM)
     qwen2vl_ocr_context*     qwen   = nullptr;   // Qwen2.5-VL (single-shot VLM)
     internvl2_ocr_context*   intern = nullptr;   // InternVL2 (single-shot VLM)
+    ocr_detect::context*     tess_det = nullptr; // DBNet detection for the tesseract engine
+    tesseract_lstm_context*  tess   = nullptr;   // Tesseract-LSTM line recognizer
     scan_cleanup_ctx*        clean1 = nullptr;   // tier-1 classical (model = NULL)
     scan_cleanup_ctx*        clean2 = nullptr;   // tier-2 NAFNet (model = nafnet_model)
 };
@@ -302,6 +308,69 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             stbi_image_free(px);
             return out;
         }
+        case engine::tesseract: {
+            // DBNet detection (model_a) + per-line Tesseract-LSTM recognition
+            // (model_b). Tesseract-LSTM recognizes a single text line, so each
+            // detected region is cropped (grayscale) and recognized in turn.
+            if (!ctx->tess_det) {
+                if (st.model_a.empty() || st.model_b.empty()) {
+                    fprintf(stderr, "ocr_orchestrator: tesseract stage missing models "
+                            "(model_a=det, model_b=tesseract)\n");
+                    return {};
+                }
+                if (!ocr_detect::load(&ctx->tess_det, st.model_a.c_str(), ctx->n_threads)) {
+                    fprintf(stderr, "ocr_orchestrator: tesseract detection load failed\n");
+                    ctx->tess_det = nullptr;
+                    return {};
+                }
+            }
+            if (!ctx->tess) {
+                ctx->tess = tesseract_lstm_init(st.model_b.c_str(), ctx->n_threads);
+                if (!ctx->tess) { fprintf(stderr, "ocr_orchestrator: tesseract load failed\n"); return {}; }
+            }
+            auto boxes = ocr_detect::detect_file(ctx->tess_det, path,
+                                                 st.params.det_prob_threshold,
+                                                 st.params.det_box_threshold,
+                                                 1.5f, st.params.det_target_short);
+            if (boxes.empty()) return {};
+            int w = 0, h = 0, c = 0;
+            unsigned char* gray = stbi_load(path, &w, &h, &c, 1); // force 1-channel
+            if (!gray) return {};
+            std::vector<ocr_pipeline::ocr_result> results;
+            results.reserve(boxes.size());
+            const int pad = 2;
+            for (auto& b : boxes) {
+                int cx = std::max(0, (int)b.x - pad);
+                int cy = std::max(0, (int)b.y - pad);
+                int cw = std::min((int)b.w + 2 * pad, w - cx);
+                int chh = std::min((int)b.h + 2 * pad, h - cy);
+                if (cw <= 0 || chh <= 0) continue;
+                std::vector<uint8_t> crop((size_t)cw * chh);
+                for (int y = 0; y < chh; y++) {
+                    std::memcpy(crop.data() + (size_t)y * cw,
+                                gray + (size_t)(cy + y) * w + cx, (size_t)cw);
+                }
+                int len = 0;
+                const char* t = tesseract_lstm_recognize(ctx->tess, crop.data(), cw, chh, &len);
+                if (!t || len <= 0) continue;
+                ocr_pipeline::ocr_result r;
+                r.box = b;
+                // Mean per-character confidence from the last recognition.
+                int n_conf = 0;
+                const float* conf = tesseract_lstm_confidences(ctx->tess, &n_conf);
+                float mean = b.score;
+                if (conf && n_conf > 0) {
+                    double s = 0.0;
+                    for (int k = 0; k < n_conf; k++) s += conf[k];
+                    mean = (float)(s / n_conf);
+                }
+                r.confidence = mean;
+                r.text = std::string(t, len);
+                if (!r.text.empty()) results.push_back(std::move(r));
+            }
+            stbi_image_free(gray);
+            return results;
+        }
         case engine::parseq:
         default:
             // ParSeq is a scene-text recognizer (needs detection); not a
@@ -395,6 +464,8 @@ void free(context* ctx) {
     if (ctx->glm)    glm_ocr_free(ctx->glm);
     if (ctx->qwen)   qwen2vl_ocr_free(ctx->qwen);
     if (ctx->intern) internvl2_ocr_free(ctx->intern);
+    if (ctx->tess_det) ocr_detect::free(ctx->tess_det);
+    if (ctx->tess)   tesseract_lstm_free(ctx->tess);
     if (ctx->clean1) scan_cleanup_free(ctx->clean1);
     if (ctx->clean2) scan_cleanup_free(ctx->clean2);
     delete ctx;
