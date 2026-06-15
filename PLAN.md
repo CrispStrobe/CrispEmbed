@@ -189,6 +189,45 @@ CrispEmbed/
 - [ ] KV cache for prefix-shared decoder batches
 - [x] SigLIP attention pooling head (mean pool works; attn pool for full parity)
 
+#### GPU enablement — all remaining CPU-only engines
+
+All models run on ggml. 8 engines already had GPU via `ggml_backend_init_best()`.
+15 engines were hardcoded `ggml_backend_cpu_init()`. Two groups:
+
+**Group A — Graph-based engines (mechanical backend init change) — DONE:**
+These use `ggml_gallocr` or `ggml_backend_sched` + `ggml_backend_graph_compute`.
+Change: swap `ggml_backend_cpu_init()` → `ggml_backend_init_best()`, add CPU
+fallback backend for scheduler, add `<ENGINE>_FORCE_CPU=1` env var override.
+
+- [x] **vit_embed** — gallocr, `VIT_EMBED_FORCE_CPU=1`
+- [x] **clip_text_embed** — gallocr, `CLIP_TEXT_FORCE_CPU=1`
+- [x] **cnn_embed** — gallocr, `CNN_EMBED_FORCE_CPU=1`
+- [x] **ocr_detect** — gallocr, `OCR_DETECT_FORCE_CPU=1`
+- [x] **parseq_ocr** — gallocr, `PARSEQ_OCR_FORCE_CPU=1`
+- [x] **layout_detect** — sched+gallocr, `LAYOUT_DETECT_FORCE_CPU=1`
+- [x] **internvl2_ocr** — sched, `INTERNVL2_OCR_FORCE_CPU=1`
+- [x] **qwen2vl_ocr** — sched, `QWEN2VL_OCR_FORCE_CPU=1`
+- [x] **glm_ocr** — sched, `GLM_OCR_FORCE_CPU=1`
+- [x] **math_ocr** — sched, `MATH_OCR_FORCE_CPU=1`
+- [x] **ppformulanet_l_ocr** — sched+scalar hybrid, `PPFNL_OCR_FORCE_CPU=1`
+  (fixed `to_f32` helper to use `ggml_backend_tensor_get` for GPU-safe weight reads)
+
+**Group B — CPU-scalar engines (ggml graph rewrite for GPU):**
+These load weights via ggml backend but do forward pass with raw `float*`
+pointer arithmetic. Changing backend to GPU would crash (`tensor->data` is
+a device pointer, not CPU-accessible). GPU enablement requires rewriting
+the forward pass as ggml graphs, then switching to `ggml_backend_init_best()`.
+
+- [x] **hmer_ocr** — GPU-safe weight reads via `ggml_backend_tensor_get`, `HMER_OCR_FORCE_CPU=1`
+- [x] **bttr_ocr** — GPU-safe weight reads, `BTTR_OCR_FORCE_CPU=1`
+- [x] **posformer_ocr** — GPU-safe weight reads, `POSFORMER_OCR_FORCE_CPU=1`
+- [x] **nafnet_denoise** — GPU-safe weight reads, backend kept alive, `NAFNET_FORCE_CPU=1`
+- [x] **mixtex_ocr** — GPU-safe weight reads, `MIXTEX_OCR_FORCE_CPU=1`
+- [x] **ppformulanet_ocr** — GPU-safe weight reads, `PPFN_OCR_FORCE_CPU=1`
+  All 6: `to_f32`/`tf32`/`tensor_f32` helpers rewritten to use `ggml_backend_tensor_get`,
+  backends switched to `ggml_backend_init_best()`. Scalar forward pass remains CPU —
+  full GPU compute needs ggml graph rewrite (future: depthwise conv, PixelShuffle, etc.).
+
 ### Models
 
 - [x] CLIP text encoder (causal mask variant)

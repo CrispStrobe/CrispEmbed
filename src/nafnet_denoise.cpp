@@ -11,6 +11,7 @@
 
 #include "nafnet_denoise.h"
 #include "core/gguf_loader.h"
+#include "ggml-backend.h"
 #include "ggml-cpu.h"
 
 #include <cmath>
@@ -23,21 +24,24 @@
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
-// Dequant any ggml tensor to float
+// Dequant any ggml tensor to float — GPU-safe (uses ggml_backend_tensor_get)
 static const float * to_f32(const ggml_tensor * t, std::vector<float> & buf) {
-    if (t->type == GGML_TYPE_F32) {
-        return (const float *)t->data;
-    }
     int64_t n = ggml_nelements(t);
     buf.resize(n);
-    if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t * src = (const ggml_fp16_t *)t->data;
-        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(src[i]);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+    } else if (t->type == GGML_TYPE_F16) {
+        std::vector<ggml_fp16_t> tmp(n);
+        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
+        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(tmp[i]);
     } else {
-        // Q8_0, Q4_K, etc. — use ggml dequantization
+        // Q8_0, Q4_K, etc. — read raw bytes then dequantize
+        size_t raw_sz = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_sz);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
         const auto * traits = ggml_get_type_traits(t->type);
         if (traits && traits->to_float) {
-            traits->to_float(t->data, buf.data(), n);
+            traits->to_float(raw.data(), buf.data(), n);
         } else {
             memset(buf.data(), 0, n * sizeof(float));
         }
@@ -275,6 +279,9 @@ struct nafnet_context {
     int middle_blk_num;
     int n_threads;
 
+    // Backend (kept alive for GPU-resident weight access)
+    ggml_backend_t backend = nullptr;
+
     // Weight data
     core_gguf::WeightLoad wl;
     std::string model_path;
@@ -313,15 +320,20 @@ nafnet_context * nafnet_init(const char * model_path, int n_threads) {
     ctx->dec_blk_nums = core_gguf::kv_i32_array(meta, "nafnet.dec_blk_nums");
     core_gguf::free_metadata(meta);
 
-    // Pass 2: load weights (CPU backend)
-    ggml_backend_t backend = ggml_backend_cpu_init();
-    if (!core_gguf::load_weights(model_path, backend, "nafnet", ctx->wl)) {
+    // Pass 2: load weights — prefer GPU backend when available
+    // Forward pass is scalar CPU but weights can reside on GPU (read via
+    // ggml_backend_tensor_get). Backend kept alive for tensor access.
+    bool force_cpu = (getenv("NAFNET_FORCE_CPU") && atoi(getenv("NAFNET_FORCE_CPU")));
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    if (!core_gguf::load_weights(model_path, ctx->backend, "nafnet", ctx->wl)) {
         fprintf(stderr, "nafnet: failed to load weights\n");
-        ggml_backend_free(backend);
+        ggml_backend_free(ctx->backend);
         delete ctx;
         return nullptr;
     }
-    ggml_backend_free(backend);
 
     fprintf(stderr, "nafnet: width=%d, enc=[", ctx->width);
     for (int i = 0; i < (int)ctx->enc_blk_nums.size(); i++)
@@ -337,6 +349,7 @@ nafnet_context * nafnet_init(const char * model_path, int n_threads) {
 void nafnet_free(nafnet_context * ctx) {
     if (ctx) {
         core_gguf::free_weights(ctx->wl);
+        if (ctx->backend) ggml_backend_free(ctx->backend);
         delete ctx;
     }
 }

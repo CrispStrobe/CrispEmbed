@@ -15,6 +15,7 @@
 #include <cassert>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <map>
 #include <memory>
@@ -30,14 +31,20 @@ static std::vector<float> to_f32(const ggml_tensor* t) {
     int n = (int)ggml_nelements(t);
     std::vector<float> out(n);
     if (t->type == GGML_TYPE_F32) {
-        memcpy(out.data(), t->data, n * sizeof(float));
+        // Use backend API to support GPU-resident tensors
+        ggml_backend_tensor_get(t, out.data(), 0, n * sizeof(float));
     } else if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t* src = (const ggml_fp16_t*)t->data;
-        for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(src[i]);
+        std::vector<ggml_fp16_t> tmp(n);
+        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
+        for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(tmp[i]);
     } else {
+        // Quantized: read raw bytes then dequantize
+        size_t raw_sz = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_sz);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
         const auto* traits = ggml_get_type_traits(t->type);
         if (traits && traits->to_float) {
-            traits->to_float(t->data, out.data(), n);
+            traits->to_float(raw.data(), out.data(), n);
         } else {
             memset(out.data(), 0, n * sizeof(float));
         }
@@ -248,6 +255,7 @@ struct ppformulanet_l_ocr_context {
     std::vector<std::string> vocab;
     core_gguf::WeightLoad wl;
     ggml_backend_t backend = nullptr;
+    ggml_backend_t backend_cpu = nullptr;
     ggml_backend_sched_t sched = nullptr;
     int n_threads;
     std::string result_buf;
@@ -1456,8 +1464,14 @@ ppformulanet_l_ocr_context* ppformulanet_l_ocr_init(const char* model_path, int 
             hp.dec_layers, hp.dec_heads, hp.dec_d_model,
             hp.vocab_size, ctx->vocab.size());
 
-    ctx->backend = ggml_backend_cpu_init();
-    ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    // Prefer GPU backend when available
+    bool force_cpu = (getenv("PPFNL_OCR_FORCE_CPU") && atoi(getenv("PPFNL_OCR_FORCE_CPU")));
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    ctx->backend_cpu = ggml_backend_is_cpu(ctx->backend) ? nullptr : ggml_backend_cpu_init();
+    if (ctx->backend_cpu) ggml_backend_cpu_set_n_threads(ctx->backend_cpu, ctx->n_threads);
 
     if (!core_gguf::load_weights(model_path, ctx->backend, "ppfnl", ctx->wl)) {
         ggml_backend_free(ctx->backend);
@@ -1465,8 +1479,12 @@ ppformulanet_l_ocr_context* ppformulanet_l_ocr_init(const char* model_path, int 
     }
     fprintf(stderr, "ppfnl: %zu tensors loaded\n", ctx->wl.tensors.size());
 
-    // Create scheduler for graph compute
-    ctx->sched = ggml_backend_sched_new(&ctx->backend, nullptr, 1, 8192, false, false);
+    // Create scheduler — GPU + CPU fallback
+    std::vector<ggml_backend_t> backends;
+    backends.push_back(ctx->backend);
+    if (ctx->backend_cpu) backends.push_back(ctx->backend_cpu);
+    ctx->sched = ggml_backend_sched_new(backends.data(), nullptr,
+                                        (int)backends.size(), 8192, false, false);
 
     map_tensors(ctx.get());
 
@@ -1490,6 +1508,7 @@ ppformulanet_l_ocr_context* ppformulanet_l_ocr_init(const char* model_path, int 
 void ppformulanet_l_ocr_free(ppformulanet_l_ocr_context* ctx) {
     if (!ctx) return;
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
+    if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     core_gguf::free_weights(ctx->wl);
     delete ctx;

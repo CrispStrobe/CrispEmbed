@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <string>
@@ -104,9 +105,12 @@ bool load(context** out, const char* path, int n_threads) {
             ctx->name.c_str(), ctx->type.c_str(), ctx->embed_dim,
             ctx->input_h, ctx->input_w);
 
-    // Load weights
-    ctx->backend = ggml_backend_cpu_init();
-    ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
+    // Load weights — prefer GPU backend when available
+    bool force_cpu = (getenv("CNN_EMBED_FORCE_CPU") && atoi(getenv("CNN_EMBED_FORCE_CPU")));
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
 
     if (!core_gguf::load_weights(path, ctx->backend, "cnn", ctx->wl)) {
         fprintf(stderr, "cnn_embed: failed to load weights\n");
