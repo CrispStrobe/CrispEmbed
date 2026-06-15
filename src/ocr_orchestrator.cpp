@@ -21,6 +21,8 @@
 #include "ocr_detect.h"
 // Text super-resolution (low-DPI upscale before OCR).
 #include "text_sr.h"
+#include "pan_sr.h"
+#include "core/gguf_loader.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../ggml/examples/stb_image_write.h"
@@ -61,7 +63,9 @@ struct context {
     tesseract_lstm_context*  tess   = nullptr;   // Tesseract-LSTM line recognizer
     scan_cleanup_ctx*        clean1 = nullptr;   // tier-1 classical (model = NULL)
     scan_cleanup_ctx*        clean2 = nullptr;   // tier-2 NAFNet (model = nafnet_model)
-    text_sr_context*         sr     = nullptr;   // text super-resolution (low-DPI upscale)
+    text_sr_context*         sr     = nullptr;   // NAFNet-SR (low-DPI upscale)
+    pan_sr_context*          pan    = nullptr;   // PAN 4x SR (alternative upscaler)
+    enum { SR_NONE, SR_NAFNET, SR_PAN } sr_kind = SR_NONE;
 };
 
 // ── defaults ────────────────────────────────────────────────────────────────
@@ -419,6 +423,7 @@ static int estimate_dpi(int w, int h) {
 
 // Run text SR on the image if estimated DPI is below the threshold.
 // Returns path to upscaled temp PNG (empty if SR was skipped or failed).
+// Auto-detects PAN vs NAFNet-SR from GGUF architecture metadata.
 static std::string maybe_sr(context* ctx, const char* src) {
     if (ctx->cfg.sr_model.empty()) return "";
 
@@ -432,11 +437,27 @@ static std::string maybe_sr(context* ctx, const char* src) {
         return "";
     }
 
-    // Lazy-load SR model
-    if (!ctx->sr) {
-        ctx->sr = text_sr_init(ctx->cfg.sr_model.c_str(), ctx->n_threads);
-        if (!ctx->sr) {
-            fprintf(stderr, "ocr_orchestrator: text_sr load failed\n");
+    // Lazy-load SR model (auto-detect engine from GGUF architecture)
+    if (ctx->sr_kind == context::SR_NONE) {
+        // Detect architecture
+        gguf_context* meta = core_gguf::open_metadata(ctx->cfg.sr_model.c_str());
+        std::string arch;
+        if (meta) {
+            arch = core_gguf::kv_str(meta, "general.architecture", "text_sr");
+            core_gguf::free_metadata(meta);
+        }
+
+        if (arch == "pan") {
+            ctx->pan = pan_sr_init(ctx->cfg.sr_model.c_str(), ctx->n_threads);
+            if (ctx->pan) ctx->sr_kind = context::SR_PAN;
+            else fprintf(stderr, "ocr_orchestrator: pan_sr load failed\n");
+        } else {
+            ctx->sr = text_sr_init(ctx->cfg.sr_model.c_str(), ctx->n_threads);
+            if (ctx->sr) ctx->sr_kind = context::SR_NAFNET;
+            else fprintf(stderr, "ocr_orchestrator: text_sr load failed\n");
+        }
+
+        if (ctx->sr_kind == context::SR_NONE) {
             stbi_image_free(d);
             return "";
         }
@@ -444,7 +465,13 @@ static std::string maybe_sr(context* ctx, const char* src) {
 
     uint8_t* out = nullptr;
     int ow = 0, oh = 0;
-    if (text_sr_process(ctx->sr, d, w, h, 0, 0, &out, &ow, &oh) != 0 || !out) {
+    int rc = -1;
+    if (ctx->sr_kind == context::SR_PAN) {
+        rc = pan_sr_process(ctx->pan, d, w, h, 0, 0, &out, &ow, &oh);
+    } else {
+        rc = text_sr_process(ctx->sr, d, w, h, 0, 0, &out, &ow, &oh);
+    }
+    if (rc != 0 || !out) {
         stbi_image_free(d);
         return "";
     }
@@ -452,13 +479,16 @@ static std::string maybe_sr(context* ctx, const char* src) {
 
     std::string out_path = temp_png_path();
     if (stbi_write_png(out_path.c_str(), ow, oh, 3, out, ow * 3) == 0) {
-        text_sr_free_image(out);
+        if (ctx->sr_kind == context::SR_PAN) pan_sr_free_image(out);
+        else text_sr_free_image(out);
         return "";
     }
-    text_sr_free_image(out);
+    if (ctx->sr_kind == context::SR_PAN) pan_sr_free_image(out);
+    else text_sr_free_image(out);
 
     if (ctx->cfg.verbose)
-        fprintf(stderr, "ocr_orchestrator: SR %dx%d (%d DPI) -> %dx%d\n",
+        fprintf(stderr, "ocr_orchestrator: SR(%s) %dx%d (%d DPI) -> %dx%d\n",
+                ctx->sr_kind == context::SR_PAN ? "PAN" : "NAFNet",
                 w, h, dpi, ow, oh);
     return out_path;
 }
@@ -582,6 +612,7 @@ void free(context* ctx) {
     if (ctx->clean1) scan_cleanup_free(ctx->clean1);
     if (ctx->clean2) scan_cleanup_free(ctx->clean2);
     if (ctx->sr)     text_sr_free(ctx->sr);
+    if (ctx->pan)    pan_sr_free(ctx->pan);
     delete ctx;
 }
 
