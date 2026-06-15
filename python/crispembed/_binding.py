@@ -1983,6 +1983,124 @@ class CrispNER:
             self._ctx = None
 
 
+# ── Key Information Extraction (KIE) ─────────────────────────────────
+
+class _KIEField(ctypes.Structure):
+    _fields_ = [
+        ("label", ctypes.c_char_p),
+        ("value", ctypes.c_char_p),
+        ("score", ctypes.c_float),
+        ("x", ctypes.c_float),
+        ("y", ctypes.c_float),
+        ("w", ctypes.c_float),
+        ("h", ctypes.c_float),
+    ]
+
+
+class _KIEResult(ctypes.Structure):
+    _fields_ = [
+        ("fields", ctypes.POINTER(_KIEField)),
+        ("n_fields", ctypes.c_int),
+        ("ocr_text", ctypes.c_char_p),
+        ("ocr_confidence", ctypes.c_float),
+        ("n_ocr_regions", ctypes.c_int),
+    ]
+
+
+def _setup_kie_signatures(lib):
+    lib.crispembed_kie_init.argtypes = [
+        ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int
+    ]
+    lib.crispembed_kie_init.restype = ctypes.c_void_p
+
+    lib.crispembed_kie_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_kie_free.restype = None
+
+    lib.crispembed_kie_extract.argtypes = [
+        ctypes.c_void_p, ctypes.c_char_p,
+        ctypes.POINTER(ctypes.c_char_p), ctypes.c_int,
+        ctypes.c_float,
+    ]
+    lib.crispembed_kie_extract.restype = _KIEResult
+
+
+class CrispKIE:
+    """Key Information Extraction — OCR + NER pipeline.
+
+    Chains text detection + recognition with GLiNER zero-shot NER to
+    extract structured key-value fields from document images (receipts,
+    invoices, forms, business cards).
+
+    Usage::
+
+        kie = CrispKIE(
+            ocr_det_model="dbnet-det-f16.gguf",
+            ocr_rec_model="trocr-printed-f16.gguf",
+            ner_model="gliner-lfm-f32.gguf",
+        )
+        result = kie.extract("receipt.png", labels=["total", "date", "vendor"])
+        for f in result["fields"]:
+            print(f"{f['label']} = {f['value']} ({f['score']:.2f})")
+    """
+
+    def __init__(self, ocr_det_model: str, ocr_rec_model: str, ner_model: str,
+                 n_threads: int = 4, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_kie_signatures(self._lib)
+        self._ctx = self._lib.crispembed_kie_init(
+            ocr_det_model.encode("utf-8"),
+            ocr_rec_model.encode("utf-8"),
+            ner_model.encode("utf-8"),
+            n_threads)
+        if not self._ctx:
+            raise RuntimeError("Failed to init KIE pipeline")
+
+    def extract(self, image_path: str, labels: list,
+                threshold: float = 0.5) -> dict:
+        """Extract structured fields from a document image.
+
+        Args:
+            image_path: Path to document image (JPG/PNG/BMP).
+            labels: List of field names (e.g. ["total", "date", "vendor"]).
+            threshold: Minimum NER confidence (0.0-1.0, default 0.5).
+
+        Returns:
+            Dict with keys: "fields" (list of dicts), "ocr_text",
+            "ocr_confidence", "n_ocr_regions".
+        """
+        label_bytes = [l.encode("utf-8") for l in labels]
+        label_arr = (ctypes.c_char_p * len(labels))(*label_bytes)
+
+        res = self._lib.crispembed_kie_extract(
+            self._ctx,
+            image_path.encode("utf-8"),
+            label_arr, len(labels),
+            ctypes.c_float(threshold),
+        )
+
+        fields = []
+        for i in range(res.n_fields):
+            f = res.fields[i]
+            fields.append({
+                "label": f.label.decode("utf-8") if f.label else "",
+                "value": f.value.decode("utf-8") if f.value else "",
+                "score": float(f.score),
+                "bbox": [float(f.x), float(f.y), float(f.w), float(f.h)],
+            })
+
+        return {
+            "fields": fields,
+            "ocr_text": res.ocr_text.decode("utf-8") if res.ocr_text else "",
+            "ocr_confidence": float(res.ocr_confidence),
+            "n_ocr_regions": res.n_ocr_regions,
+        }
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_kie_free(self._ctx)
+            self._ctx = None
+
+
 # ── Scan cleanup ─────────────────────────────────────────────────────
 
 class _ScanCleanupParams(ctypes.Structure):

@@ -84,6 +84,10 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --ner TEXT       named entity recognition (GLiNER, needs -m ner_model.gguf)\n");
     fprintf(stderr, "  --ner-labels L   comma-separated entity types (default: person,organization,location)\n");
     fprintf(stderr, "  --ner-threshold F  confidence threshold for NER (default: 0.5)\n");
+    fprintf(stderr, "  --kie FILE       key information extraction: OCR + NER on a document image\n");
+    fprintf(stderr, "                   needs -m ner_model.gguf --ocr-det det.gguf --ocr-rec rec.gguf\n");
+    fprintf(stderr, "  --kie-labels L   comma-separated field names (default: uses --ner-labels)\n");
+    fprintf(stderr, "  --kie-threshold F  confidence threshold for KIE (default: 0.5)\n");
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
     fprintf(stderr, "  --punct-model M  post-process OCR text with punctuation model (FireRedPunc/PCS)\n");
@@ -147,6 +151,9 @@ int main(int argc, char ** argv) {
     std::string ner_text;    // text for NER extraction
     std::string ner_labels = "person,organization,location"; // comma-separated entity types
     float ner_threshold = 0.5f;
+    std::string kie_path;    // image for KIE extraction
+    std::string kie_labels;  // comma-separated field names (defaults to ner_labels)
+    float kie_threshold = 0.5f;
     std::string det_model;   // detection model for --face-pipeline
     std::string ocr_det_path;  // general OCR: text detection model (DBNet)
     std::string ocr_rec_path;  // general OCR: text recognition model (TrOCR)
@@ -223,6 +230,12 @@ int main(int argc, char ** argv) {
             ner_labels = argv[++i];
         } else if (strcmp(argv[i], "--ner-threshold") == 0 && i + 1 < argc) {
             ner_threshold = (float)atof(argv[++i]);
+        } else if (strcmp(argv[i], "--kie") == 0 && i + 1 < argc) {
+            kie_path = argv[++i];
+        } else if (strcmp(argv[i], "--kie-labels") == 0 && i + 1 < argc) {
+            kie_labels = argv[++i];
+        } else if (strcmp(argv[i], "--kie-threshold") == 0 && i + 1 < argc) {
+            kie_threshold = (float)atof(argv[++i]);
         } else if (strcmp(argv[i], "--det") == 0 && i + 1 < argc) {
             det_model = argv[++i];
         } else if (strcmp(argv[i], "--face-pipeline") == 0) {
@@ -809,6 +822,66 @@ int main(int argc, char ** argv) {
             }
         }
         crispembed_ner_free(nctx);
+        return 0;
+    }
+
+    // Key Information Extraction (OCR + NER pipeline)
+    if (!kie_path.empty()) {
+        auto resolve = [&](const std::string & n) {
+            return crispembed_mgr::resolve_model(n, auto_download, accepted_license);
+        };
+        std::string det = resolve(ocr_det_path.empty() ? "dbnet-det" : ocr_det_path);
+        std::string rec = resolve(ocr_rec_path.empty() ? "qwen2vl-ocr" : ocr_rec_path);
+
+        void* kctx = crispembed_kie_init(det.c_str(), rec.c_str(),
+                                          model_path.c_str(), n_threads);
+        if (!kctx) { fprintf(stderr, "error: failed to init KIE pipeline\n"); return 1; }
+
+        // Parse comma-separated labels (use --kie-labels, fall back to --ner-labels).
+        const std::string& labels_str = kie_labels.empty() ? ner_labels : kie_labels;
+        std::vector<std::string> label_strs;
+        std::istringstream lss(labels_str);
+        std::string lbl;
+        while (std::getline(lss, lbl, ',')) {
+            size_t start = lbl.find_first_not_of(" \t");
+            size_t end = lbl.find_last_not_of(" \t");
+            if (start != std::string::npos)
+                label_strs.push_back(lbl.substr(start, end - start + 1));
+        }
+        std::vector<const char*> label_ptrs;
+        for (const auto& s : label_strs) label_ptrs.push_back(s.c_str());
+
+        crispembed_kie_result res = crispembed_kie_extract(
+            kctx, kie_path.c_str(),
+            label_ptrs.data(), (int)label_ptrs.size(),
+            kie_threshold);
+
+        if (json_output) {
+            printf("{\"n_ocr_regions\":%d,\"ocr_confidence\":%.3f,\"fields\":[",
+                   res.n_ocr_regions, res.ocr_confidence);
+            for (int i = 0; i < res.n_fields; i++) {
+                if (i > 0) printf(",");
+                printf("{\"label\":\"%s\",\"value\":\"%s\",\"score\":%.4f,"
+                       "\"bbox\":[%.1f,%.1f,%.1f,%.1f]}",
+                       json_escape(res.fields[i].label).c_str(),
+                       json_escape(res.fields[i].value).c_str(),
+                       res.fields[i].score,
+                       res.fields[i].x, res.fields[i].y,
+                       res.fields[i].w, res.fields[i].h);
+            }
+            printf("]}\n");
+        } else {
+            printf("OCR: %d regions, confidence=%.2f\n", res.n_ocr_regions, res.ocr_confidence);
+            printf("%d fields extracted:\n", res.n_fields);
+            for (int i = 0; i < res.n_fields; i++) {
+                printf("  %s = \"%s\"  (score=%.3f, bbox=[%.0f,%.0f,%.0f,%.0f])\n",
+                       res.fields[i].label, res.fields[i].value,
+                       res.fields[i].score,
+                       res.fields[i].x, res.fields[i].y,
+                       res.fields[i].w, res.fields[i].h);
+            }
+        }
+        crispembed_kie_free(kctx);
         return 0;
     }
 
