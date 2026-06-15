@@ -135,6 +135,7 @@ int main(int argc, char **argv) {
     qwen2vl_ocr::generate_result gen_result;
     if (!qwen2vl_ocr::generate(ctx, vis_result.image_embeds,
                                 vis_result.n_merged, vis_result.embed_dim,
+                                grid_thw,  // actual image grid for mRoPE
                                 token_ids.data(), (int)n_tokens,
                                 max_tokens, gen_result)) {
         fprintf(stderr, "Generation failed\n");
