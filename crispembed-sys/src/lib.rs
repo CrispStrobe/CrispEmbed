@@ -57,6 +57,7 @@ pub struct CrispembedOcrPipelineParams {
     pub nafnet_model: *const c_char,
     pub vlm_model: *const c_char,
     pub vlm_engine: c_int,
+    pub punct_model: *const c_char,
 }
 
 /// One fully-specified OCR pipeline stage (full per-stage builder). Field order
@@ -569,6 +570,7 @@ extern "C" {
     pub fn crispembed_ocr_pipeline_init_stages(
         router: c_int,
         nafnet_model: *const c_char,
+        punct_model: *const c_char,
         stages: *const CrispembedOcrStage,
         n_stages: c_int,
         n_threads: c_int,
