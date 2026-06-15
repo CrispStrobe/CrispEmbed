@@ -14,6 +14,14 @@ DeBERTa-v3-base (209M, Apache-2.0, recommended) and LFM2.5-350M (LFM-1.0).
 Detect arbitrary entity types at inference time — no retraining needed.
 CLI (`--ner`), server (`POST /ner/extract`), Python (`CrispNER`), Rust, Dart.
 
+**KIE**: Key Information Extraction — chains OCR + NER to extract structured
+key-value fields from document images (receipts, invoices, forms). No new model
+needed. CLI (`--kie`), server (`POST /kie/extract`), Python (`CrispKIE`), Dart.
+
+**LiLT**: Layout-aware document understanding via dual-stream encoder (RoBERTa +
+layout transformer with BiACM). Token classification for form understanding
+(FUNSD: question/answer/header). 130M params, MIT. Python (`CrispLiLT`), Dart.
+
 **Vision**: CLIP and SigLIP text-image cross-modal search (encode text and images
 into the same vector space). YuNet/SCRFD face detection, ArcFace/SFace/AuraFace
 face recognition. Full detect-align-encode pipeline.
@@ -46,10 +54,33 @@ Emit spaces and punctuation natively. Auto-detected via `--ocr`.
 
 **Text Detection**: Surya EfficientViT segformer (38M, 91 languages, GPU-accelerated).
 Heatmap → polygon bounding boxes. Pairs with any OCR recognizer for full-page OCR.
+CC-based model-free fallback (zero downloads, CPU-only, 4ms/page).
+
+**Document Preprocessing**: Two tiers — classical (CPU, model-free, instant) and
+learned (GPU, model-based, higher quality). Classical: adaptive Otsu binarization,
+differential-square-sum deskew, CC despeckle, background normalization, page
+dewarping (cubic baseline fitting + disparity warp), 1-bit DWA morphology (21x
+faster than float). Learned: NAFNet denoise, TPS spatial transformer (learned
+dewarping with 20-point control prediction, 108K params, Apache-2.0), text
+super-resolution (NAFNet-SR + TBSRN). All cherry-picked from Leptonica (BSD-2),
+reimplemented as self-contained C++ with no dependencies.
+
+**PDF DPI Profiling**: Zero-dependency PDF parser that extracts image metadata
+to compute effective page DPI. Auto-selects OCR resolution: downsample high-DPI
+scans or trigger super-resolution on low-DPI images. Parses xref tables, page
+geometry, image XObjects, and content stream CTMs. CLI (`--pdf-dpi`), server
+(`POST /pdf/dpi`), Python, Rust, Dart.
+
+**OCR Output Formats**: Plain text, hOCR (XHTML), ALTO 3.1 (XML), searchable PDF.
+Multi-page accumulation, XML escaping, configurable page separators.
+
+**OCR Pipeline Orchestrator**: Source-type routing (screenshot/scan/photo),
+per-stage cleanup + engine selection, accept-gate cascading with VLM fallback.
+Configurable via C API, CLI, Python, Rust, Dart, HTTP server.
 
 **9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
 GPU acceleration (CUDA/Vulkan/Metal). iOS + Android + **WASM** builds.
-90 models in registry (text, vision, face, OCR, NER, scan cleanup), 200+ GGUF variants on HF.
+102 models in registry (text, vision, face, OCR, NER, scan cleanup), 200+ GGUF variants on HF.
 
 **Browser**: Math OCR compiles to WebAssembly (1 MB) via `build-wasm.sh`.
 Runs entirely client-side — no server, no API key. GGUF models fetched on
@@ -306,9 +337,9 @@ Models: [`cstr/surya-det-GGUF`](https://huggingface.co/cstr/surya-det-GGUF) — 
 
 ## Scan Cleanup
 
-Document scan preprocessing — replaces the ocrmypdf/unpaper pipeline with
-pure C++. Two tiers: classical image processing (no model) and learned
-denoising via NAFNet CNN (GGUF model, MIT license).
+Document scan preprocessing — pure C++, no external tool dependencies.
+Two tiers: classical image processing (no model) and learned denoising
+via NAFNet CNN (GGUF model, MIT license).
 
 **Tier 1 (classical, no model):** deskew (Hough transform), Otsu/Sauvola
 binarization, border crop, background whitening (morphological open).
@@ -332,6 +363,58 @@ cleanup = CrispScanCleanup()                          # tier 1 only
 cleanup = CrispScanCleanup("nafnet-sidd-w32-q8_0.gguf")  # tier 1 + 2
 cleaned = cleanup.process("scan.png")                 # numpy RGB array
 ```
+
+## Text Super-Resolution
+
+Upscale low-resolution text images before OCR — two production engines plus an
+NAFNet-SR scaffolding for custom trained models. Both models are Apache-2.0 and
+auto-downloaded via the model registry.
+
+| Model | Architecture | Params | Size | Use case | License |
+|-------|-------------|--------|------|----------|---------|
+| **PAN** (`pan-sr-x4`) | SC-PA blocks + PixelShuffle(4) | 272K | 0.5 MB | Full-page 4× upscale | Apache-2.0 |
+| **TBSRN** (`tbsrn-sr`) | TSA residual groups + PixelShuffle(2) | 1.1M | 2 MB | Per-line 2× upscale | Apache-2.0 |
+| **NAFNet-SR** (`text-sr`) | NAFNet U-Net + configurable upsample tail | custom | — | Custom trained model | Apache-2.0 |
+
+**PAN** (Pixel Attention Network): whole-page 4× super-resolution via
+depthwise-separable convolutions + pixel attention gates. 0.5 MB GGUF.
+Parity cos=0.999654 vs PyTorch reference.
+
+**TBSRN** (Text Before Super-Resolution Network): per-line 2× super-resolution
+with transformer-style spatial token attention (telescope training scheme).
+2 MB GGUF. Parity cos=0.999985 vs PyTorch reference.
+
+```bash
+# CLI — PAN 4× whole-page super-resolution
+./build/crispembed --pan-sr document.png --output upscaled.png
+
+# CLI — TBSRN 2× per-line super-resolution (text-line crop)
+./build/crispembed --tbsrn-sr line_crop.png --output upscaled_line.png
+
+# CLI — NAFNet-SR with custom trained model
+./build/crispembed --sr-model my-nafnet-sr.gguf input.png --output upscaled.png
+
+# Server
+./build/crispembed-server --pan-sr pan-x4-f16.gguf \
+    --tbsrn-sr tbsrn-telescope-f16.gguf --port 8080
+curl -X POST http://localhost:8080/pan/sr -d '{"image": "scan.png"}'
+curl -X POST http://localhost:8080/tbsrn/sr -d '{"image": "line_crop.png"}'
+
+# Python — PAN
+from crispembed import CrispPanSr
+sr = CrispPanSr("pan-x4-f16.gguf")
+upscaled = sr.upscale("scan.png")          # PIL Image or numpy array in → numpy out
+upscaled = sr.upscale(pil_image)
+upscaled = sr.upscale(numpy_uint8_array)   # (H, W, 3) uint8 → (4H, 4W, 3) uint8
+
+# Python — TBSRN
+from crispembed import CrispTbsrnSr
+sr = CrispTbsrnSr("tbsrn-telescope-f16.gguf")
+upscaled = sr.upscale("line_crop.png")     # (H, W, 3) uint8 → (2H, 2W, 3) uint8
+```
+
+Models: [`cstr/crispembed-gguf`](https://huggingface.co/cstr/crispembed-gguf) —
+`pan-x4-f16.gguf` (0.5 MB), `tbsrn-telescope-f16.gguf` (2 MB).
 
 ## Named Entity Recognition
 
@@ -365,6 +448,82 @@ Parity: all 16 backbone layers cos=1.000000 vs HF reference. Layer fusion and
 BiLSTM cos=1.000000. 17/17 entities match across 5 test texts.
 Source: [VAGOsolutions/SauerkrautLM-LFM2.5-GLiNER](https://huggingface.co/VAGOsolutions/SauerkrautLM-LFM2.5-GLiNER) (LFM Open License v1.0).
 
+## Key Information Extraction (KIE)
+
+Chains the OCR pipeline (text detection + recognition) with GLiNER zero-shot NER
+to extract structured key-value fields from document images — receipts, invoices,
+forms, business cards. No new model needed: uses existing OCR + NER models.
+
+```bash
+# CLI — extract fields from a receipt image
+./build/crispembed -m gliner-lfm-f32.gguf \
+    --ocr-det dbnet-det-f16.gguf --ocr-rec trocr-printed-q8_0.gguf \
+    --kie receipt.png --kie-labels "total,date,vendor" --json
+
+# Server — auto-enabled when NER + OCR det/rec are loaded
+./build/crispembed-server --ner gliner-lfm-f32.gguf \
+    --ocr-det dbnet-det-f16.gguf --ocr-rec trocr-printed-q8_0.gguf --port 8080
+curl -X POST http://localhost:8080/kie/extract \
+  -d '{"image": "receipt.png", "labels": ["total", "date", "vendor"], "threshold": 0.5}'
+
+# Python
+from crispembed import CrispKIE
+kie = CrispKIE("dbnet-det-f16.gguf", "trocr-printed-q8_0.gguf", "gliner-lfm-f32.gguf")
+result = kie.extract("receipt.png", labels=["total", "date", "vendor"])
+for f in result["fields"]:
+    print(f"{f['label']} = {f['value']} (score={f['score']:.2f}, bbox={f['bbox']})")
+```
+
+Output (JSON mode):
+```json
+{"n_ocr_regions": 12, "ocr_confidence": 0.85, "fields": [
+  {"label": "total", "value": "$42.50", "score": 0.92, "bbox": [120.0, 340.0, 200.0, 30.0]},
+  {"label": "date", "value": "2026-06-15", "score": 0.88, "bbox": [50.0, 20.0, 150.0, 25.0]}
+]}
+```
+
+### LiLT — Layout-Aware Document Understanding (KIE Phase 2)
+
+LiLT (Language-independent Layout Transformer) is a dual-stream encoder
+that combines RoBERTa (768d text) with a parallel layout transformer (192d)
+via BiACM (bidirectional attention complementation). It takes OCR text +
+bounding boxes as input and performs token classification — identifying
+questions, answers, and headers in forms and documents.
+
+Architecture: 130.7M params, 12 layers, 12 heads. MIT license
+([SCUT-DLVCLab/lilt-roberta-en-base](https://huggingface.co/SCUT-DLVCLab/lilt-roberta-en-base)).
+
+```bash
+# Python — direct LiLT token classification
+from crispembed import CrispLiLT
+lilt = CrispLiLT("lilt-funsd-q8_0.gguf")
+tokens = lilt.classify(
+    input_ids=[0, 10566, 35, 291, 5480, 35, 68, 3818, 4, 2466, 2],
+    bbox=[[0,0,0,0], [10,50,90,80], [90,50,110,80], [120,50,200,80],
+          [250,50,330,80], [330,50,350,80], [360,50,390,80],
+          [390,50,430,80], [430,50,440,80], [440,50,470,80], [0,0,0,0]],
+)
+for t in tokens:
+    print(f"{t['label']:15s} score={t['score']:.2f}")
+# B-QUESTION      score=1.00   (Date)
+# I-QUESTION      score=0.95   (:)
+# B-ANSWER        score=0.72   (2026...)
+# B-QUESTION      score=1.00   (Total)
+# I-QUESTION      score=1.00   (:)
+# B-ANSWER        score=0.56   ($)
+# I-ANSWER        score=0.95   (48.60)
+```
+
+Parity: 25/25 layers cos=1.000000 vs HF reference. 16/16 token labels match.
+
+| Variant | Size | Format |
+|---------|------|--------|
+| `lilt-funsd` | 498 MB / 134 MB / 90 MB | F32 / Q8_0 / Q4_K |
+| `lilt-base` | 498 MB / 134 MB / 90 MB | F32 / Q8_0 / Q4_K |
+
+FUNSD labels: O, B-HEADER, I-HEADER, B-QUESTION, I-QUESTION, B-ANSWER, I-ANSWER.
+See [docs/kie.md](docs/kie.md) for architecture details and the BiACM mechanism.
+
 ## Model licenses
 
 The auto-download registry (`-m <name>`) covers models under multiple
@@ -375,7 +534,7 @@ column) or the upstream model card before using a model commercially.
 
 | License class | Models in registry | What you can do |
 |---|---|---|
-| **Permissive** (Apache-2.0 / MIT) | most BERT/XLM-R/MPNet, BGE, E5, Granite, Snowflake, MXBai, Nomic, MS-Marco, Qwen3, Harrier, BidirLM-Omni, GTE-v1.5, `gliner-deberta` (NER) | commercial use OK with normal attribution |
+| **Permissive** (Apache-2.0 / MIT) | most BERT/XLM-R/MPNet, BGE, E5, Granite, Snowflake, MXBai, Nomic, MS-Marco, Qwen3, Harrier, BidirLM-Omni, GTE-v1.5, `gliner-deberta` (NER), `lilt-funsd`, `lilt-base` (KIE) | commercial use OK with normal attribution |
 | **CC BY-NC 4.0** (non-commercial) | `jina-v5-nano`, `jina-v5-small`, `jina-reranker-v2-base-multilingual` | research/evaluation only; commercial use requires a paid license from Jina (sales@jina.ai) |
 | **LFM Open License v1.0** | `gliner-lfm` (NER) | free under $10M annual revenue; above that requires commercial license from Liquid AI |
 | **Gemma Terms of Use** | `embeddinggemma-300m` | commercial use permitted **subject to** Google's [Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy) |
@@ -820,6 +979,7 @@ face detection/recognition, ViT/CLIP vision, math OCR, and NER:
 - `POST /vit/encode`, `POST /clip/text` — image/text encoding
 - `POST /math/ocr` — formula recognition `{"image": "path"}` → `{"latex": "..."}`
 - `POST /ner/extract` — NER `{"text": "...", "labels": [...]}` → `{"entities": [...]}`
+- `POST /kie/extract` — KIE `{"image": "doc.png", "labels": ["total", ...]}` → `{"fields": [...]}`
 
 **BERT encoder** (all-MiniLM, gte, arctic-embed-xs, paraphrase-multilingual-MiniLM-L12-v2):
 - Token + Position + Type embeddings → Post-LN transformer → Mean/CLS pooling

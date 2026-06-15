@@ -18,3 +18,5 @@ vulkan = ["crispembed-sys/vulkan"]
 
 [dependencies]
 crispembed-sys = { path = "../crispembed-sys", version = "0.4.0" }
+# `free()` the C-allocated string returned by crispembed_ocr_render.
+libc = "0.2"

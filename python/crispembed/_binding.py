@@ -1983,6 +1983,230 @@ class CrispNER:
             self._ctx = None
 
 
+# ── LiLT — Language-independent Layout Transformer ──────────────────
+
+class _LiLTToken(ctypes.Structure):
+    _fields_ = [
+        ("token_id", ctypes.c_int),
+        ("label_id", ctypes.c_int),
+        ("label", ctypes.c_char_p),
+        ("score", ctypes.c_float),
+    ]
+
+
+def _setup_lilt_signatures(lib):
+    lib.crispembed_lilt_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_lilt_init.restype = ctypes.c_void_p
+
+    lib.crispembed_lilt_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_lilt_free.restype = None
+
+    lib.crispembed_lilt_classify.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.c_int,
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_lilt_classify.restype = ctypes.POINTER(_LiLTToken)
+
+    lib.crispembed_lilt_num_labels.argtypes = [ctypes.c_void_p]
+    lib.crispembed_lilt_num_labels.restype = ctypes.c_int
+
+    lib.crispembed_lilt_label_name.argtypes = [ctypes.c_void_p, ctypes.c_int]
+    lib.crispembed_lilt_label_name.restype = ctypes.c_char_p
+
+
+class CrispLiLT:
+    """LiLT — Language-independent Layout Transformer for document understanding.
+
+    Dual-stream encoder (RoBERTa text + layout transformer with BiACM)
+    for token classification. Supports form understanding (FUNSD) with
+    question/answer/header labeling.
+
+    Usage::
+
+        lilt = CrispLiLT("lilt-funsd-f32.gguf")
+        tokens = lilt.classify(
+            input_ids=[0, 10566, 35, 2],
+            bbox=[[0,0,0,0], [10,50,90,80], [90,50,110,80], [0,0,0,0]],
+        )
+        for t in tokens:
+            print(f"token={t['token_id']} label={t['label']} score={t['score']:.2f}")
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 4, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_lilt_signatures(self._lib)
+        self._ctx = self._lib.crispembed_lilt_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load LiLT model: {model_path}")
+
+    @property
+    def num_labels(self) -> int:
+        return self._lib.crispembed_lilt_num_labels(self._ctx)
+
+    def label_name(self, label_id: int) -> str:
+        r = self._lib.crispembed_lilt_label_name(self._ctx, label_id)
+        return r.decode("utf-8") if r else ""
+
+    def classify(self, input_ids: list, bbox: list) -> list:
+        """Run token classification.
+
+        Args:
+            input_ids: List of int token IDs (including BOS/EOS).
+            bbox: List of [x0, y0, x1, y1] per token (in [0, 1000] range).
+
+        Returns:
+            List of dicts: [{"token_id", "label_id", "label", "score"}, ...]
+        """
+        T = len(input_ids)
+        ids_arr = (ctypes.c_int32 * T)(*input_ids)
+        bbox_flat = []
+        for b in bbox:
+            bbox_flat.extend(b[:4] if len(b) >= 4 else b + [0] * (4 - len(b)))
+        bbox_arr = (ctypes.c_int32 * (T * 4))(*bbox_flat)
+
+        out_n = ctypes.c_int(0)
+        result_ptr = self._lib.crispembed_lilt_classify(
+            self._ctx, ids_arr, bbox_arr, T, ctypes.byref(out_n))
+
+        results = []
+        for i in range(out_n.value):
+            t = result_ptr[i]
+            results.append({
+                "token_id": t.token_id,
+                "label_id": t.label_id,
+                "label": t.label.decode("utf-8") if t.label else "",
+                "score": float(t.score),
+            })
+        return results
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_lilt_free(self._ctx)
+            self._ctx = None
+
+
+# ── Key Information Extraction (KIE) ─────────────────────────────────
+
+class _KIEField(ctypes.Structure):
+    _fields_ = [
+        ("label", ctypes.c_char_p),
+        ("value", ctypes.c_char_p),
+        ("score", ctypes.c_float),
+        ("x", ctypes.c_float),
+        ("y", ctypes.c_float),
+        ("w", ctypes.c_float),
+        ("h", ctypes.c_float),
+    ]
+
+
+class _KIEResult(ctypes.Structure):
+    _fields_ = [
+        ("fields", ctypes.POINTER(_KIEField)),
+        ("n_fields", ctypes.c_int),
+        ("ocr_text", ctypes.c_char_p),
+        ("ocr_confidence", ctypes.c_float),
+        ("n_ocr_regions", ctypes.c_int),
+    ]
+
+
+def _setup_kie_signatures(lib):
+    lib.crispembed_kie_init.argtypes = [
+        ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_int
+    ]
+    lib.crispembed_kie_init.restype = ctypes.c_void_p
+
+    lib.crispembed_kie_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_kie_free.restype = None
+
+    lib.crispembed_kie_extract.argtypes = [
+        ctypes.c_void_p, ctypes.c_char_p,
+        ctypes.POINTER(ctypes.c_char_p), ctypes.c_int,
+        ctypes.c_float,
+    ]
+    lib.crispembed_kie_extract.restype = _KIEResult
+
+
+class CrispKIE:
+    """Key Information Extraction — OCR + NER pipeline.
+
+    Chains text detection + recognition with GLiNER zero-shot NER to
+    extract structured key-value fields from document images (receipts,
+    invoices, forms, business cards).
+
+    Usage::
+
+        kie = CrispKIE(
+            ocr_det_model="dbnet-det-f16.gguf",
+            ocr_rec_model="trocr-printed-f16.gguf",
+            ner_model="gliner-lfm-f32.gguf",
+        )
+        result = kie.extract("receipt.png", labels=["total", "date", "vendor"])
+        for f in result["fields"]:
+            print(f"{f['label']} = {f['value']} ({f['score']:.2f})")
+    """
+
+    def __init__(self, ocr_det_model: str, ocr_rec_model: str, ner_model: str,
+                 n_threads: int = 4, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_kie_signatures(self._lib)
+        self._ctx = self._lib.crispembed_kie_init(
+            ocr_det_model.encode("utf-8"),
+            ocr_rec_model.encode("utf-8"),
+            ner_model.encode("utf-8"),
+            n_threads)
+        if not self._ctx:
+            raise RuntimeError("Failed to init KIE pipeline")
+
+    def extract(self, image_path: str, labels: list,
+                threshold: float = 0.5) -> dict:
+        """Extract structured fields from a document image.
+
+        Args:
+            image_path: Path to document image (JPG/PNG/BMP).
+            labels: List of field names (e.g. ["total", "date", "vendor"]).
+            threshold: Minimum NER confidence (0.0-1.0, default 0.5).
+
+        Returns:
+            Dict with keys: "fields" (list of dicts), "ocr_text",
+            "ocr_confidence", "n_ocr_regions".
+        """
+        label_bytes = [l.encode("utf-8") for l in labels]
+        label_arr = (ctypes.c_char_p * len(labels))(*label_bytes)
+
+        res = self._lib.crispembed_kie_extract(
+            self._ctx,
+            image_path.encode("utf-8"),
+            label_arr, len(labels),
+            ctypes.c_float(threshold),
+        )
+
+        fields = []
+        for i in range(res.n_fields):
+            f = res.fields[i]
+            fields.append({
+                "label": f.label.decode("utf-8") if f.label else "",
+                "value": f.value.decode("utf-8") if f.value else "",
+                "score": float(f.score),
+                "bbox": [float(f.x), float(f.y), float(f.w), float(f.h)],
+            })
+
+        return {
+            "fields": fields,
+            "ocr_text": res.ocr_text.decode("utf-8") if res.ocr_text else "",
+            "ocr_confidence": float(res.ocr_confidence),
+            "n_ocr_regions": res.n_ocr_regions,
+        }
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_kie_free(self._ctx)
+            self._ctx = None
+
+
 # ── Scan cleanup ─────────────────────────────────────────────────────
 
 class _ScanCleanupParams(ctypes.Structure):
@@ -2119,6 +2343,273 @@ class CrispScanCleanup:
 
 
 # ---------------------------------------------------------------------------
+# Text Super-Resolution (NAFNet / ESRGAN-style upscaler)
+# ---------------------------------------------------------------------------
+
+def _setup_text_sr_signatures(lib):
+    lib.crispembed_text_sr_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_text_sr_init.restype = ctypes.c_void_p
+
+    lib.crispembed_text_sr_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_text_sr_free.restype = None
+
+    lib.crispembed_text_sr_upscale_factor.argtypes = [ctypes.c_void_p]
+    lib.crispembed_text_sr_upscale_factor.restype = ctypes.c_int
+
+    lib.crispembed_text_sr_process.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_uint8)),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_text_sr_process.restype = ctypes.c_int
+
+    lib.crispembed_text_sr_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_text_sr_free_image.restype = None
+
+
+class CrispTextSr:
+    """Text super-resolution — upscale low-resolution document images.
+
+    Usage::
+
+        sr = CrispTextSr("text-sr.gguf")
+        print(sr.upscale_factor)  # e.g. 4
+        out = sr.process(pixels, width, height)  # returns (ndarray, out_w, out_h)
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 4,
+                 lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_text_sr_signatures(self._lib)
+        self._ctx = self._lib.crispembed_text_sr_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load text SR model: {model_path}")
+
+    @property
+    def upscale_factor(self) -> int:
+        """Return the upscale factor (e.g. 2, 4) reported by the model."""
+        return self._lib.crispembed_text_sr_upscale_factor(self._ctx)
+
+    def process(self, pixels: np.ndarray, width: int, height: int,
+                tile_size: int = 0, tile_overlap: int = 0
+                ) -> Tuple[np.ndarray, int, int]:
+        """Upscale an image.
+
+        Args:
+            pixels: uint8 numpy array, flattened or shaped (H, W, C).
+            width: source image width in pixels.
+            height: source image height in pixels.
+            tile_size: tile size for tiled inference (0 = full image).
+            tile_overlap: overlap between tiles in pixels.
+
+        Returns:
+            Tuple of (output_ndarray uint8 shape (out_h, out_w, 3), out_w, out_h).
+        """
+        flat = np.asarray(pixels, dtype=np.uint8).flatten()
+        px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+
+        out_ptr = ctypes.POINTER(ctypes.c_uint8)()
+        out_w = ctypes.c_int(0)
+        out_h = ctypes.c_int(0)
+
+        rc = self._lib.crispembed_text_sr_process(
+            self._ctx, px_ptr, width, height,
+            tile_size, tile_overlap,
+            ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
+        )
+        if rc != 0 or not out_ptr:
+            raise RuntimeError("Text SR processing failed")
+
+        ow, oh = out_w.value, out_h.value
+        buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
+        self._lib.crispembed_text_sr_free_image(out_ptr)
+        return buf.reshape(oh, ow, 3), ow, oh
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_text_sr_free(self._ctx)
+            self._ctx = None
+
+
+# ---------------------------------------------------------------------------
+# PAN Super-Resolution
+# ---------------------------------------------------------------------------
+
+def _setup_pan_sr_signatures(lib):
+    lib.crispembed_pan_sr_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_pan_sr_init.restype = ctypes.c_void_p
+
+    lib.crispembed_pan_sr_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_pan_sr_free.restype = None
+
+    lib.crispembed_pan_sr_scale.argtypes = [ctypes.c_void_p]
+    lib.crispembed_pan_sr_scale.restype = ctypes.c_int
+
+    lib.crispembed_pan_sr_process.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_uint8)),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_pan_sr_process.restype = ctypes.c_int
+
+    lib.crispembed_pan_sr_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_pan_sr_free_image.restype = None
+
+
+class CrispPanSr:
+    """PAN super-resolution — upscale low-resolution document images.
+
+    Usage::
+
+        sr = CrispPanSr("pan-sr.gguf")
+        print(sr.scale)  # e.g. 4
+        out = sr.process(pixels, width, height)  # returns (ndarray, out_w, out_h)
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 4,
+                 lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_pan_sr_signatures(self._lib)
+        self._ctx = self._lib.crispembed_pan_sr_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load PAN SR model: {model_path}")
+
+    @property
+    def scale(self) -> int:
+        """Return the scale factor (e.g. 2, 4) reported by the model."""
+        return self._lib.crispembed_pan_sr_scale(self._ctx)
+
+    def process(self, pixels: np.ndarray, width: int, height: int,
+                tile_size: int = 0, tile_overlap: int = 0
+                ) -> Tuple[np.ndarray, int, int]:
+        """Upscale an image.
+
+        Args:
+            pixels: uint8 numpy array, flattened or shaped (H, W, C).
+            width: source image width in pixels.
+            height: source image height in pixels.
+            tile_size: tile size for tiled inference (0 = full image).
+            tile_overlap: overlap between tiles in pixels.
+
+        Returns:
+            Tuple of (output_ndarray uint8 shape (out_h, out_w, 3), out_w, out_h).
+        """
+        flat = np.asarray(pixels, dtype=np.uint8).flatten()
+        px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+
+        out_ptr = ctypes.POINTER(ctypes.c_uint8)()
+        out_w = ctypes.c_int(0)
+        out_h = ctypes.c_int(0)
+
+        rc = self._lib.crispembed_pan_sr_process(
+            self._ctx, px_ptr, width, height,
+            tile_size, tile_overlap,
+            ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
+        )
+        if rc != 0 or not out_ptr:
+            raise RuntimeError("PAN SR processing failed")
+
+        ow, oh = out_w.value, out_h.value
+        buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
+        self._lib.crispembed_pan_sr_free_image(out_ptr)
+        return buf.reshape(oh, ow, 3), ow, oh
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_pan_sr_free(self._ctx)
+            self._ctx = None
+
+
+# ---------------------------------------------------------------------------
+# TBSRN Super-Resolution (always 2×, 16×64 → 32×128)
+# ---------------------------------------------------------------------------
+
+def _setup_tbsrn_sr_signatures(lib):
+    lib.crispembed_tbsrn_sr_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_tbsrn_sr_init.restype = ctypes.c_void_p
+
+    lib.crispembed_tbsrn_sr_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_tbsrn_sr_free.restype = None
+
+    lib.crispembed_tbsrn_sr_process.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_uint8)),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_tbsrn_sr_process.restype = ctypes.c_int
+
+    lib.crispembed_tbsrn_sr_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_tbsrn_sr_free_image.restype = None
+
+
+class CrispTbsrnSr:
+    """TBSRN super-resolution — upscale text-image crops (always 2×, 16×64 → 32×128).
+
+    Usage::
+
+        sr = CrispTbsrnSr("tbsrn-sr.gguf")
+        out = sr.process(pixels, width, height)  # returns (ndarray, out_w, out_h)
+    """
+
+    scale: int = 2  # TBSRN is always 2×
+
+    def __init__(self, model_path: str, n_threads: int = 4,
+                 lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_tbsrn_sr_signatures(self._lib)
+        self._ctx = self._lib.crispembed_tbsrn_sr_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load TBSRN SR model: {model_path}")
+
+    def process(self, pixels: np.ndarray, width: int, height: int,
+                ) -> Tuple[np.ndarray, int, int]:
+        """Upscale a text-image crop (always 2×).
+
+        Args:
+            pixels: uint8 numpy array, flattened or shaped (H, W, C).
+            width: source image width in pixels.
+            height: source image height in pixels.
+
+        Returns:
+            Tuple of (output_ndarray uint8 shape (out_h, out_w, 3), out_w, out_h).
+        """
+        flat = np.asarray(pixels, dtype=np.uint8).flatten()
+        px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+
+        out_ptr = ctypes.POINTER(ctypes.c_uint8)()
+        out_w = ctypes.c_int(0)
+        out_h = ctypes.c_int(0)
+
+        rc = self._lib.crispembed_tbsrn_sr_process(
+            self._ctx, px_ptr, width, height,
+            ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
+        )
+        if rc != 0 or not out_ptr:
+            raise RuntimeError("TBSRN SR processing failed")
+
+        ow, oh = out_w.value, out_h.value
+        buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
+        self._lib.crispembed_tbsrn_sr_free_image(out_ptr)
+        return buf.reshape(oh, ow, 3), ow, oh
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_tbsrn_sr_free(self._ctx)
+            self._ctx = None
+
+
+# ---------------------------------------------------------------------------
 # OCR Orchestrator (source-type routing + cleanup + accept-gate)
 # ---------------------------------------------------------------------------
 
@@ -2131,6 +2622,7 @@ class _CrispOcrPipelineParams(ctypes.Structure):
         ("det_model", ctypes.c_char_p),
         ("rec_model", ctypes.c_char_p),
         ("nafnet_model", ctypes.c_char_p),
+        ("sr_model", ctypes.c_char_p),
         ("vlm_model", ctypes.c_char_p),
         ("vlm_engine", ctypes.c_int),
         ("punct_model", ctypes.c_char_p),
@@ -2176,6 +2668,7 @@ class CrispOcrOrchestrator:
                  router: bool = True, cleanup: bool = True,
                  min_chars: int = 8, min_confidence: float = 0.5,
                  nafnet_model: Optional[str] = None,
+                 sr_model: Optional[str] = None,
                  vlm_model: Optional[str] = None, vlm_engine: int = 0,
                  punct_model: Optional[str] = None,
                  n_threads: int = 4, lib_path: Optional[str] = None):
@@ -2192,6 +2685,8 @@ class CrispOcrOrchestrator:
         params.rec_model = rec_model.encode("utf-8")
         if nafnet_model:
             params.nafnet_model = nafnet_model.encode("utf-8")
+        if sr_model:
+            params.sr_model = sr_model.encode("utf-8")
         if vlm_model:
             params.vlm_model = vlm_model.encode("utf-8")
             params.vlm_engine = vlm_engine
@@ -2235,3 +2730,217 @@ class CrispOcrOrchestrator:
         if hasattr(self, '_ctx') and self._ctx:
             self._lib.crispembed_ocr_pipeline_free(self._ctx)
             self._ctx = None
+
+
+# ---------------------------------------------------------------------------
+# Classical Preprocessing (model-free, CPU-only)
+# ---------------------------------------------------------------------------
+
+def _setup_preproc_signatures(lib):
+    lib.crispembed_pdf_page_dpi.argtypes = [
+        ctypes.c_char_p, ctypes.c_int,
+        ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_int)]
+    lib.crispembed_pdf_page_dpi.restype = ctypes.c_int
+
+    lib.crispembed_dewarp.argtypes = [
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int)]
+    lib.crispembed_dewarp.restype = ctypes.c_int
+
+    lib.crispembed_tps_auto_dewarp.argtypes = [
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.c_char_p, ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_tps_auto_dewarp.restype = ctypes.c_int
+
+    lib.crispembed_find_skew.argtypes = [
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float)]
+    lib.crispembed_find_skew.restype = ctypes.c_int
+
+    lib.crispembed_adaptive_binarize.argtypes = [
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_adaptive_binarize.restype = None
+
+    lib.crispembed_background_norm.argtypes = [
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_background_norm.restype = None
+
+    lib.crispembed_despeckle.argtypes = [
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.c_int, ctypes.c_int, ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_despeckle.restype = None
+
+    lib.crispembed_ocr_render.argtypes = [
+        ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+        ctypes.c_char_p]
+    lib.crispembed_ocr_render.restype = ctypes.c_void_p
+
+
+class CrispPreprocess:
+    """Classical document preprocessing — model-free, CPU-only.
+
+    Provides dewarp, deskew, adaptive binarization, background normalization,
+    and despeckle on grayscale uint8 images.
+
+    Usage::
+
+        pp = CrispPreprocess()
+        angle, conf = pp.find_skew(gray_image, w, h)
+        dewarped = pp.dewarp(gray_image, w, h)
+    """
+
+    def __init__(self, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_preproc_signatures(self._lib)
+
+    def pdf_page_dpi(self, path: str, page: int = 0) -> Tuple[float, int]:
+        """Get the DPI and image count for a PDF page.
+
+        Args:
+            path: path to the PDF file.
+            page: zero-based page index (default 0).
+
+        Returns:
+            (dpi, n_images) tuple. dpi is the mean DPI across embedded
+            raster images on that page; n_images is the image count.
+        """
+        dpi = ctypes.c_float(0)
+        n_images = ctypes.c_int(0)
+        ret = self._lib.crispembed_pdf_page_dpi(
+            path.encode('utf-8'), page,
+            ctypes.byref(dpi), ctypes.byref(n_images))
+        if ret != 0:
+            return (0.0, 0)
+        return (dpi.value, n_images.value)
+
+    def dewarp(self, gray: np.ndarray, w: int, h: int) -> np.ndarray:
+        """Dewarp a grayscale page image. Returns dewarped uint8 array."""
+        out = np.zeros(w * h, dtype=np.uint8)
+        ow, oh = ctypes.c_int(0), ctypes.c_int(0)
+        ret = self._lib.crispembed_dewarp(
+            gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            w, h,
+            out.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            ctypes.byref(ow), ctypes.byref(oh))
+        if ret != 0:
+            return gray.copy()
+        return out.reshape(oh.value, ow.value)
+
+    def tps_dewarp(self, gray: np.ndarray, w: int, h: int, model_path: str) -> np.ndarray:
+        """TPS auto-dewarp using a learned localizer model (GGUF). Returns dewarped uint8 array."""
+        out = np.zeros(w * h, dtype=np.uint8)
+        ret = self._lib.crispembed_tps_auto_dewarp(
+            gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            w, h,
+            model_path.encode('utf-8'),
+            out.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)))
+        if ret != 0:
+            return gray.copy()
+        return out.reshape(h, w)
+
+    def find_skew(self, gray: np.ndarray, w: int, h: int) -> tuple:
+        """Find skew angle in degrees. Returns (angle, confidence)."""
+        angle, conf = ctypes.c_float(0), ctypes.c_float(0)
+        self._lib.crispembed_find_skew(
+            gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            w, h, ctypes.byref(angle), ctypes.byref(conf))
+        return angle.value, conf.value
+
+    def adaptive_binarize(self, gray: np.ndarray, w: int, h: int) -> np.ndarray:
+        """Adaptive Otsu binarization. Returns uint8 array (0/255)."""
+        out = np.zeros(w * h, dtype=np.uint8)
+        self._lib.crispembed_adaptive_binarize(
+            gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            w, h, out.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)))
+        return out.reshape(h, w)
+
+    def background_norm(self, gray: np.ndarray, w: int, h: int) -> np.ndarray:
+        """Normalize background (handle gradients/shadows). Returns uint8."""
+        out = np.zeros(w * h, dtype=np.uint8)
+        self._lib.crispembed_background_norm(
+            gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            w, h, out.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)))
+        return out.reshape(h, w)
+
+    def despeckle(self, gray: np.ndarray, w: int, h: int,
+                  max_w: int = 5, max_h: int = 5) -> np.ndarray:
+        """Remove small noise components. Returns uint8 (0/255)."""
+        out = np.zeros(w * h, dtype=np.uint8)
+        self._lib.crispembed_despeckle(
+            gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            w, h, max_w, max_h,
+            out.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)))
+        return out.reshape(h, w)
+
+    def cc_detect(self, gray: np.ndarray, w: int, h: int) -> list:
+        """Detect text lines using connected components (model-free).
+        Returns list of dicts with x, y, w, h keys."""
+        self._lib.crispembed_cc_detect.argtypes = [
+            ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+            ctypes.POINTER(ctypes.c_int)]
+        self._lib.crispembed_cc_detect.restype = ctypes.POINTER(_CrispOcrResult)
+        n = ctypes.c_int(0)
+        ptr = self._lib.crispembed_cc_detect(
+            gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            w, h, ctypes.byref(n))
+        results = []
+        for i in range(n.value):
+            r = ptr[i]
+            results.append({"x": r.x, "y": r.y, "w": r.w, "h": r.h})
+        if ptr and n.value > 0:
+            ctypes.cdll.LoadLibrary("libc.so.6").free(ptr)
+        return results
+
+
+def _setup_ocr_render_signatures(lib):
+    lib.crispembed_ocr_render.argtypes = [
+        ctypes.POINTER(_CrispOcrResult), ctypes.c_int,
+        ctypes.c_int, ctypes.c_int, ctypes.c_char_p]
+    lib.crispembed_ocr_render.restype = ctypes.c_void_p
+
+
+def ocr_render(results: list, page_w: int, page_h: int, format: str = "text",
+               lib_path: Optional[str] = None) -> str:
+    """Render OCR results to text/hOCR/ALTO/PDF format.
+
+    Args:
+        results: list of dicts with keys: text, x, y, w, h, confidence.
+        page_w: page width in pixels.
+        page_h: page height in pixels.
+        format: "text", "hocr", "alto", or "pdf".
+
+    Returns:
+        Rendered string (or PDF bytes as string for "pdf" format).
+    """
+    lib = _load_library(lib_path)
+    _setup_ocr_render_signatures(lib)
+    _setup_ocr_pipeline_signatures(lib)  # for _CrispOcrResult
+
+    n = len(results)
+    if n == 0:
+        return ""
+
+    # Build C-compatible result array
+    arr = (_CrispOcrResult * n)()
+    text_bufs = []  # keep alive
+    for i, r in enumerate(results):
+        arr[i].x = r.get("x", 0)
+        arr[i].y = r.get("y", 0)
+        arr[i].w = r.get("w", 0)
+        arr[i].h = r.get("h", 0)
+        arr[i].confidence = r.get("confidence", 1.0)
+        text_bytes = r.get("text", "").encode("utf-8")
+        text_bufs.append(ctypes.c_char_p(text_bytes))
+        arr[i].text = text_bufs[-1]
+        arr[i].text_len = len(text_bytes)
+
+    fmt = format.encode("utf-8")
+    ptr = lib.crispembed_ocr_render(arr, n, page_w, page_h, fmt)
+    if not ptr:
+        return ""
+    result = ctypes.cast(ptr, ctypes.c_char_p).value.decode("utf-8", errors="replace")
+    ctypes.cdll.LoadLibrary("libc.so.6").free(ptr)
+    return result

@@ -189,6 +189,44 @@ If parity is bad, use the reference GGUF to narrow down the bug:
 
 ---
 
+## Adding Utility Libraries (preprocessors, renderers, detectors)
+
+Utility libraries (not model backends) follow a lighter pattern.
+**Wiring checklist** (same layers as model backends):
+
+1. **C++ implementation** — self-contained in `src/`, own header
+2. **C API wrapper** — add to `crispembed.h` + implement in `crispembed.cpp`
+3. **CMakeLists.txt** — add source + test binary
+4. **Rust FFI** — add to `crispembed-sys/src/lib.rs` (raw) + `crispembed/src/lib.rs` (safe)
+5. **Python** — add to `python/crispembed/_binding.py` (ctypes signatures + class)
+6. **Dart** — add to `flutter/crispembed/lib/src/crispembed.dart` (FFI)
+7. **CLI** — add flags to `examples/cli/main.cpp`
+8. **Server** — add endpoints to `examples/server/server.cpp` if appropriate
+9. **Unit tests** — `tests/test_*.cpp` with synthetic images
+
+### Currently implemented utility libraries
+
+| Library | C API | CLI | Rust | Python | Dart | Server |
+|---------|-------|-----|------|--------|------|--------|
+| Classical preproc (skew, bg norm, despeckle) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 1-bit DWA morphology | header | — | — | — | — | — |
+| CC text line detection | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Page dewarping | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| OCR renderers (text, hOCR, ALTO, PDF) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Punctuation restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| TPS dewarp (learned) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| PDF DPI profiling | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+
+### Implementation patterns
+
+- **Self-contained C++** — no external deps, may use `morph_fast.h` for 1-bit ops
+- **BSD-2-attributed** if cherry-picked from Leptonica
+- **Unit tests** with synthetic images (gradients, speckles, curves)
+- **Orchestrator integration** — new detector/cleanup methods surface as
+  per-stage options via the `crispembed_ocr_stage` builder
+
+---
+
 ## Development Workflow
 
 - **Always use `git worktree`** for feature branches — never checkout in-place

@@ -55,6 +55,7 @@ pub struct CrispembedOcrPipelineParams {
     pub det_model: *const c_char,
     pub rec_model: *const c_char,
     pub nafnet_model: *const c_char,
+    pub sr_model: *const c_char,
     pub vlm_model: *const c_char,
     pub vlm_engine: c_int,
     pub punct_model: *const c_char,
@@ -570,6 +571,7 @@ extern "C" {
     pub fn crispembed_ocr_pipeline_init_stages(
         router: c_int,
         nafnet_model: *const c_char,
+        sr_model: *const c_char,
         punct_model: *const c_char,
         stages: *const CrispembedOcrStage,
         n_stages: c_int,
@@ -705,4 +707,163 @@ extern "C" {
     ) -> c_int;
 
     pub fn crispembed_scan_cleanup_free_image(pixels: *mut u8);
+
+    // ── Text super-resolution ──
+    pub fn crispembed_text_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_text_sr_free(ctx: *mut c_void);
+    pub fn crispembed_text_sr_upscale_factor(ctx: *const c_void) -> c_int;
+    pub fn crispembed_text_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        tile_size: c_int,
+        tile_overlap: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_text_sr_free_image(pixels: *mut u8);
+
+    // ── PAN super-resolution ──
+    pub fn crispembed_pan_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_pan_sr_free(ctx: *mut c_void);
+    pub fn crispembed_pan_sr_scale(ctx: *const c_void) -> c_int;
+    pub fn crispembed_pan_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        tile_size: c_int,
+        tile_overlap: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_pan_sr_free_image(pixels: *mut u8);
+
+    // ── TBSRN super-resolution (always 2×, 16×64 → 32×128) ──
+    pub fn crispembed_tbsrn_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_tbsrn_sr_free(ctx: *mut c_void);
+    pub fn crispembed_tbsrn_sr_process(
+        ctx: *mut c_void,
+        input: *const u8,
+        width: c_int,
+        height: c_int,
+        output: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_tbsrn_sr_free_image(pixels: *mut u8);
+
+    // ── OCR result rendering ──
+    pub fn crispembed_ocr_render(
+        results: *const CrispembedOcrResult,
+        n_results: c_int,
+        page_width: c_int,
+        page_height: c_int,
+        format: *const c_char,
+    ) -> *mut c_char;
+
+    // ── Classical preprocessing ──
+    /// PDF DPI profiling — analyse embedded images in a PDF page.
+    /// Returns 0 on success, -1 on error.
+    pub fn crispembed_pdf_page_dpi(
+        pdf_path: *const c_char, page: c_int,
+        out_dpi: *mut f32, out_n_images: *mut c_int,
+    ) -> c_int;
+
+    pub fn crispembed_dewarp(
+        gray: *const u8, w: c_int, h: c_int,
+        out: *mut u8, out_w: *mut c_int, out_h: *mut c_int,
+    ) -> c_int;
+
+    pub fn crispembed_tps_dewarp(
+        gray: *const u8, w: c_int, h: c_int,
+        src_x: *const f32, src_y: *const f32,
+        dst_x: *const f32, dst_y: *const f32, n: c_int,
+        out: *mut u8,
+    ) -> c_int;
+    pub fn crispembed_tps_auto_dewarp(
+        gray: *const u8, w: c_int, h: c_int,
+        model_path: *const c_char, out: *mut u8,
+    ) -> c_int;
+
+    pub fn crispembed_cc_detect(
+        gray: *const u8, w: c_int, h: c_int,
+        out_n: *mut c_int,
+    ) -> *mut CrispembedOcrResult;
+
+    pub fn crispembed_find_skew(
+        gray: *const u8, w: c_int, h: c_int,
+        angle: *mut f32, confidence: *mut f32,
+    ) -> c_int;
+
+    pub fn crispembed_adaptive_binarize(
+        gray: *const u8, w: c_int, h: c_int, out: *mut u8);
+
+    pub fn crispembed_background_norm(
+        gray: *const u8, w: c_int, h: c_int, out: *mut u8);
+
+    pub fn crispembed_despeckle(
+        gray: *const u8, w: c_int, h: c_int,
+        max_w: c_int, max_h: c_int, out: *mut u8);
+}
+
+// ---------------------------------------------------------------------------
+// OCR result renderers — lower-level ocr_render.h API.
+//
+// Multi-page + binary-safe (output_size) rendering: create → begin → add_page*
+// → end → output/output_size → free. The one-shot `crispembed_ocr_render`
+// above is text-only (NUL-terminated char*); this API is needed for searchable
+// PDF (binary) and single-document multi-page hOCR/ALTO. The renderer copies
+// page data on add_page, so the input arrays only need to live for that call.
+// ---------------------------------------------------------------------------
+
+/// `ocr_render_word` — a recognized word/region with a pixel box.
+#[repr(C)]
+pub struct OcrRenderWord {
+    pub text: *const c_char,
+    pub x: c_int,
+    pub y: c_int,
+    pub w: c_int,
+    pub h: c_int,
+    pub confidence: c_float,
+}
+
+/// `ocr_render_line` — a group of words on one baseline.
+#[repr(C)]
+pub struct OcrRenderLine {
+    pub words: *const OcrRenderWord,
+    pub n_words: c_int,
+    pub x: c_int,
+    pub y: c_int,
+    pub w: c_int,
+    pub h: c_int,
+}
+
+/// `ocr_render_page` — one page of lines + image dimensions.
+#[repr(C)]
+pub struct OcrRenderPage {
+    pub lines: *const OcrRenderLine,
+    pub n_lines: c_int,
+    pub page_width: c_int,
+    pub page_height: c_int,
+    pub image_path: *const c_char,
+}
+
+extern "C" {
+    /// format: 0=text, 1=hocr, 2=alto, 3=pdf (matches `ocr_render_format`).
+    pub fn ocr_render_create(format: c_int) -> *mut c_void;
+    pub fn ocr_render_set_separator(r: *mut c_void, sep: *const c_char);
+    /// Enable PDF/A-2b compliance (XMP metadata + sRGB OutputIntent). Must be
+    /// called before `ocr_render_begin`; only affects the PDF format.
+    pub fn ocr_render_set_pdfa(r: *mut c_void, enabled: c_int);
+    pub fn ocr_render_begin(r: *mut c_void);
+    pub fn ocr_render_add_page(r: *mut c_void, page: *const OcrRenderPage);
+    pub fn ocr_render_end(r: *mut c_void);
+    /// Rendered output. For PDF this is binary — use `ocr_render_output_size`.
+    pub fn ocr_render_output(r: *const c_void) -> *const c_char;
+    pub fn ocr_render_output_size(r: *const c_void) -> c_int;
+    pub fn ocr_render_free(r: *mut c_void);
 }

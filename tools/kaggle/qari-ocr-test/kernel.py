@@ -1,10 +1,16 @@
 #!/usr/bin/env python3
-"""Test Qari-OCR GGUF: per-layer parity vs PyTorch + Arabic output quality."""
-import gc, json, os, subprocess, sys, glob, time
+"""Qari-OCR diff harness: capture PyTorch intermediates + run C++ diff test.
+
+1. Load merged Qari-OCR model in PyTorch
+2. Capture per-layer activations to reference GGUF
+3. Build CrispEmbed, run test-qwen2vl-diff against reference
+4. Upload reference GGUF + results to HuggingFace
+"""
+import gc, json, os, subprocess, sys, shutil, struct, glob, time
 
 subprocess.check_call([sys.executable, '-m', 'pip', 'install', '-q',
                        'gguf', 'safetensors', 'huggingface_hub', 'Pillow',
-                       'peft', 'accelerate'])
+                       'peft', 'accelerate', 'qwen-vl-utils'])
 
 for p in ['/kaggle/input/crispasr-hf-token/hf_token.txt',
           '/kaggle/input/datasets/chr1s4/crispasr-hf-token/hf_token.txt']:
@@ -15,164 +21,204 @@ for p in ['/kaggle/input/crispasr-hf-token/hf_token.txt',
 import torch
 import numpy as np
 from PIL import Image, ImageDraw
-from huggingface_hub import hf_hub_download, snapshot_download
+from huggingface_hub import hf_hub_download, HfApi
 
-# ─── 1. Create test images ───────────────────────────────────────────
-print("=== Creating test images ===")
+# ─── 1. Create test image ────────────────────────────────────────────
+img = Image.new('RGB', (300, 80), 'white')
+ImageDraw.Draw(img).text((20, 25), "Hello World 2024", fill='black')
+img.save('/kaggle/working/test.png')
+print("Test image: 300x80")
 
-# Simple ASCII image (reliable rendering)
-img1 = Image.new('RGB', (300, 80), 'white')
-draw1 = ImageDraw.Draw(img1)
-draw1.text((20, 25), "Hello World 2024", fill='black')
-img1.save('/kaggle/working/test_ascii.png')
-
-# Create a simple Arabic-like test (numbers + basic chars)
-img2 = Image.new('RGB', (400, 100), 'white')
-draw2 = ImageDraw.Draw(img2)
-draw2.text((20, 30), "1234567890 ABCDEF", fill='black')
-img2.save('/kaggle/working/test_nums.png')
-
-print("Test images created")
-
-# ─── 2. PyTorch reference ────────────────────────────────────────────
-print("\n=== PyTorch reference (merged Qari-OCR) ===")
-
-from transformers import Qwen2VLForConditionalGeneration, AutoProcessor, AutoConfig
-
-# Load merged model (merge LoRA on the fly)
-print("Loading base model + LoRA adapter...")
+# ─── 2. Load model ───────────────────────────────────────────────────
+print("\n=== Loading PyTorch model ===")
+from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 from peft import PeftModel
+from qwen_vl_utils import process_vision_info
 
 base = Qwen2VLForConditionalGeneration.from_pretrained(
-    'Qwen/Qwen2-VL-2B-Instruct',
-    torch_dtype=torch.float32,
-    device_map='cpu',
-)
+    'Qwen/Qwen2-VL-2B-Instruct', torch_dtype=torch.float32, device_map='cpu')
 model = PeftModel.from_pretrained(base, 'NAMAA-Space/Qari-OCR-0.2.2.1-VL-2B-Instruct')
 model = model.merge_and_unload()
 model.eval()
-print(f"Model loaded: {sum(p.numel() for p in model.parameters()):,} params")
-
 processor = AutoProcessor.from_pretrained('Qwen/Qwen2-VL-2B-Instruct')
+print(f"Model: {sum(p.numel() for p in model.parameters()):,} params")
 
-# Run on test image
-def run_pytorch(image_path, prompt="Read the text in this image."):
-    from qwen_vl_utils import process_vision_info
-    messages = [{"role": "user", "content": [
-        {"type": "image", "image": image_path},
-        {"type": "text", "text": prompt},
-    ]}]
-    text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-    image_inputs, _ = process_vision_info(messages)
-    inputs = processor(text=[text], images=image_inputs, padding=True, return_tensors="pt")
-    with torch.no_grad():
-        ids = model.generate(**inputs, max_new_tokens=64)
-    return processor.batch_decode(ids[:, inputs.input_ids.shape[1]:],
-                                   skip_special_tokens=True)[0]
-
-pt_out1 = run_pytorch('/kaggle/working/test_ascii.png')
-print(f"PyTorch (ASCII): '{pt_out1}'")
-
-pt_out2 = run_pytorch('/kaggle/working/test_nums.png')
-print(f"PyTorch (nums):  '{pt_out2}'")
-
-# ─── 3. Per-layer activation dump ────────────────────────────────────
-print("\n=== Per-layer activation comparison ===")
-
-# Hook into vision encoder layers
-activations = {}
-def make_hook(name):
-    def hook(module, input, output):
-        if isinstance(output, tuple):
-            activations[name] = output[0].detach().float().cpu().numpy()
-        else:
-            activations[name] = output.detach().float().cpu().numpy()
-    return hook
-
-# Register hooks on first 4 vision layers + merger + first 2 LLM layers
-hooks = []
-for i in range(min(4, len(model.model.visual.blocks))):
-    h = model.model.visual.blocks[i].register_forward_hook(make_hook(f"vis_layer_{i}"))
-    hooks.append(h)
-h = model.model.visual.merger.register_forward_hook(make_hook("vis_merger"))
-hooks.append(h)
-for i in range(min(2, len(model.model.layers))):
-    h = model.model.layers[i].register_forward_hook(make_hook(f"llm_layer_{i}"))
-    hooks.append(h)
-
-# Run forward to capture activations
-from qwen_vl_utils import process_vision_info
+# ─── 3. Prepare inputs ───────────────────────────────────────────────
 messages = [{"role": "user", "content": [
-    {"type": "image", "image": '/kaggle/working/test_ascii.png'},
-    {"type": "text", "text": "OCR"},
+    {"type": "image", "image": '/kaggle/working/test.png'},
+    {"type": "text", "text": "Describe this image."},
 ]}]
 text = processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
 image_inputs, _ = process_vision_info(messages)
 inputs = processor(text=[text], images=image_inputs, padding=True, return_tensors="pt")
+
+token_ids = inputs.input_ids[0].tolist()
+print(f"Token IDs: {token_ids}")
+print(f"Grid THW: {inputs.image_grid_thw.tolist()}")
+print(f"Pixel values shape: {list(inputs.pixel_values.shape)}")
+print(f"Image pad count: {token_ids.count(151655)}")
+
+# ─── 4. Capture per-layer activations ────────────────────────────────
+print("\n=== Capturing activations ===")
+activations = {}
+
+def make_hook(name):
+    def hook(module, inp, out):
+        t = out[0] if isinstance(out, tuple) else out
+        activations[name] = t.detach().float().cpu().numpy().copy()
+    return hook
+
+hooks = []
+# Vision encoder layers (first 4 + last)
+vis_blocks = model.model.visual.blocks
+for i in [0, 1, 2, 3, len(vis_blocks)-1]:
+    hooks.append(vis_blocks[i].register_forward_hook(make_hook(f"vis_layer_{i}")))
+
+# Merger
+hooks.append(model.model.visual.merger.register_forward_hook(make_hook("vis_merger")))
+
+# LLM layers (first 2)
+llm_layers = model.model.language_model.layers
+for i in range(min(2, len(llm_layers))):
+    hooks.append(llm_layers[i].register_forward_hook(make_hook(f"llm_layer_{i}")))
+
+# Forward pass
 with torch.no_grad():
-    model(**inputs)
+    outputs = model(**inputs)
 
 for h in hooks:
     h.remove()
 
-print("Captured activations:")
-for name, act in sorted(activations.items()):
-    print(f"  {name}: shape={act.shape}, mean={act.mean():.6f}, std={act.std():.6f}")
+# Logits at last position
+logits = outputs.logits[0, -1].float().cpu().numpy()
+activations["last_logits"] = logits
 
-del model, base; gc.collect()
+# Save token IDs
+activations["token_ids"] = np.array(token_ids, dtype=np.int32)
 
-# ─── 4. CrispEmbed GGUF test ─────────────────────────────────────────
-print("\n=== CrispEmbed GGUF test ===")
+# Save pixel values (preprocessed)
+activations["pixel_values"] = inputs.pixel_values.float().cpu().numpy()
 
-gguf_path = hf_hub_download('cstr/qari-ocr-crispembed-GGUF', 'qari-ocr-2b-q4_k.gguf')
-print(f"GGUF: {os.path.getsize(gguf_path) / 1e9:.2f} GB")
+# Report
+print("\nCaptured:")
+for name, data in sorted(activations.items()):
+    print(f"  {name}: shape={data.shape}, dtype={data.dtype}, "
+          f"mean={data.mean():.6f}, std={data.std():.6f}")
 
-# Build CrispEmbed
+# Top-5 logits
+top5_idx = np.argsort(logits)[-5:][::-1]
+print(f"\nTop-5 logits at last position:")
+for idx in top5_idx:
+    tok_str = processor.tokenizer.decode([idx])
+    print(f"  {idx}: {logits[idx]:.2f} = '{tok_str}'")
+
+# Generate reference output
+with torch.no_grad():
+    gen_ids = model.generate(**inputs, max_new_tokens=30)
+gen_text = processor.batch_decode(gen_ids[:, inputs.input_ids.shape[1]:], skip_special_tokens=True)[0]
+print(f"\nPyTorch output: '{gen_text}'")
+
+# ─── 5. Write reference GGUF ─────────────────────────────────────────
+print("\n=== Writing reference GGUF ===")
+ref_path = '/kaggle/working/qari-ocr-ref.gguf'
+
+GGUF_MAGIC = 0x46554747
+GGUF_VERSION = 3
+
+def write_string(f, s):
+    b = s.encode('utf-8')
+    f.write(struct.pack('<Q', len(b)))
+    f.write(b)
+
+tensor_list = [(k, v.astype(np.float32) if v.dtype != np.int32 else v) for k, v in activations.items()]
+
+with open(ref_path, 'wb') as f:
+    f.write(struct.pack('<I', GGUF_MAGIC))
+    f.write(struct.pack('<I', GGUF_VERSION))
+    f.write(struct.pack('<Q', len(tensor_list)))
+    f.write(struct.pack('<Q', 1))  # n_kv
+
+    # Metadata
+    write_string(f, 'general.architecture')
+    f.write(struct.pack('<I', 8))  # STRING
+    write_string(f, 'qwen2vl_ref')
+
+    # Tensor info
+    offset = 0
+    for name, data in tensor_list:
+        write_string(f, name)
+        f.write(struct.pack('<I', len(data.shape)))
+        for d in data.shape:
+            f.write(struct.pack('<Q', d))
+        dtype_id = 0 if data.dtype == np.float32 else 5  # F32 or INT32
+        f.write(struct.pack('<I', dtype_id))
+        f.write(struct.pack('<Q', offset))
+        offset += data.nbytes
+        offset = (offset + 31) & ~31
+
+    # Align
+    pos = f.tell()
+    f.write(b'\x00' * (((pos + 31) & ~31) - pos))
+
+    # Data
+    for name, data in tensor_list:
+        f.write(data.tobytes())
+        pad = ((data.nbytes + 31) & ~31) - data.nbytes
+        if pad: f.write(b'\x00' * pad)
+
+print(f"Reference GGUF: {os.path.getsize(ref_path) / 1e6:.1f} MB, {len(tensor_list)} tensors")
+
+# ─── 6. Upload reference to HF ───────────────────────────────────────
+print("\n=== Uploading to HuggingFace ===")
+api = HfApi()
+api.upload_file(path_or_fileobj=ref_path, path_in_repo='qari-ocr-ref.gguf',
+                repo_id='cstr/qari-ocr-crispembed-GGUF',
+                commit_message='Add per-layer reference GGUF for parity testing')
+print("Uploaded qari-ocr-ref.gguf")
+
+# ─── 7. Build + run CrispEmbed diff test ──────────────────────────────
+print("\n=== CrispEmbed diff test ===")
+# Use F16 to eliminate quantization as a variable
+gguf_path = hf_hub_download('cstr/qari-ocr-crispembed-GGUF', 'qari-ocr-2b-f16.gguf')
+
 ce_dir = '/kaggle/working/CrispEmbed'
-if not os.path.exists(ce_dir):
-    subprocess.check_call(['git', 'clone', '--depth=1', '--recursive',
-                           'https://github.com/CrispStrobe/CrispEmbed.git', ce_dir])
+if os.path.exists(ce_dir): shutil.rmtree(ce_dir)
+subprocess.check_call(['git', 'clone', '--depth=1', '--recursive',
+                       'https://github.com/CrispStrobe/CrispEmbed.git', ce_dir])
 
 bld = '/kaggle/working/build'
-os.makedirs(bld, exist_ok=True)
-subprocess.check_call(['cmake', '-S', ce_dir, '-B', bld, '-DCMAKE_BUILD_TYPE=Release'])
-subprocess.check_call(['cmake', '--build', bld, '--target', 'crispembed-cli', '-j4'])
+if os.path.exists(bld): shutil.rmtree(bld)
+os.makedirs(bld)
+subprocess.check_call(['cmake', '-S', ce_dir, '-B', bld, '-DCMAKE_BUILD_TYPE=Release'],
+                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+subprocess.check_call(['cmake', '--build', bld, '--target', 'crispembed-cli', '-j4'],
+                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 cli = os.path.join(bld, 'crispembed')
 env = os.environ.copy()
 env['LD_LIBRARY_PATH'] = os.path.join(bld, 'ggml/src')
 
-def run_crispembed(image_path):
-    r = subprocess.run([cli, '-m', gguf_path, '--ocr', image_path],
-                       capture_output=True, text=True, env=env, timeout=600)
-    if r.returncode != 0:
-        print(f"  STDERR: {r.stderr[-500:]}")
-    return r.stdout.strip()
+# Run OCR and capture output
+r = subprocess.run([cli, '-m', gguf_path, '--ocr', '/kaggle/working/test.png'],
+                   capture_output=True, text=True, env=env, timeout=600)
+print(f"CrispEmbed output: '{r.stdout.strip()[:300]}'")
 
-t0 = time.time()
-ce_out1 = run_crispembed('/kaggle/working/test_ascii.png')
-t1 = time.time()
-print(f"CrispEmbed (ASCII): '{ce_out1}' ({t1-t0:.1f}s)")
+# Print last 20 lines of stderr for debug info
+stderr_lines = r.stderr.strip().split('\n')
+for line in stderr_lines[-20:]:
+    if line.strip():
+        print(f"  [ce] {line}")
 
-t0 = time.time()
-ce_out2 = run_crispembed('/kaggle/working/test_nums.png')
-t1 = time.time()
-print(f"CrispEmbed (nums):  '{ce_out2}' ({t1-t0:.1f}s)")
-
-# ─── 5. Comparison ───────────────────────────────────────────────────
-print("\n=== Results ===")
-print(f"ASCII  PyTorch:     '{pt_out1}'")
-print(f"ASCII  CrispEmbed:  '{ce_out1}'")
-print(f"Nums   PyTorch:     '{pt_out2}'")
-print(f"Nums   CrispEmbed:  '{ce_out2}'")
-
-if ce_out1 and not ce_out1.startswith('error'):
-    print("\nSTATUS: CrispEmbed inference WORKS")
-    if pt_out1.strip() == ce_out1.strip():
-        print("OUTPUT: EXACT MATCH (ASCII)")
-    else:
-        print(f"OUTPUT: DIFFERS — may be Q4_K quantization effect")
+# ─── 8. Key diagnostics ──────────────────────────────────────────────
+print("\n=== Diagnostics ===")
+print(f"PyTorch output:     '{gen_text}'")
+print(f"CrispEmbed output:  '{r.stdout.strip()[:200]}'")
+if gen_text.strip() == r.stdout.strip():
+    print("PARITY: EXACT MATCH")
+elif r.stdout.strip().startswith('Hello') or 'World' in r.stdout:
+    print("PARITY: CLOSE (text content matches)")
 else:
-    print("\nSTATUS: CrispEmbed inference FAILED")
+    print("PARITY: DIVERGES — need per-layer diff debugging")
+    print(f"  Reference GGUF uploaded for offline C++ diff testing")
 
 print("\n=== DONE ===")

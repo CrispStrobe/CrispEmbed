@@ -542,6 +542,33 @@ static const ModelEntry k_registry[] = {
      "NAFNet image denoising (U-Net, 29M params, SIDD-trained)", "30 MB", "mit",
      "https://huggingface.co/cstr/nafnet-sidd-GGUF"},
 
+    {"tps-loc",
+     "tps-loc-f32.gguf",
+     "https://huggingface.co/cstr/tps-loc-GGUF/resolve/main/tps-loc-f32.gguf",
+     "TPS localization CNN for document dewarping (108K params, 20 control points)", "0.4 MB", "apache-2.0",
+     "https://huggingface.co/cstr/tps-loc-GGUF"},
+
+    // --- Text super-resolution ---
+
+    {"pan-sr-x4",
+     "pan-x4-f16.gguf",
+     "https://huggingface.co/cstr/crispembed-gguf/resolve/main/pan-x4-f16.gguf",
+     "PAN 4× whole-image super-resolution (272K params)", "0.5 MB", "apache-2.0",
+     "https://huggingface.co/cstr/crispembed-gguf"},
+
+    {"tbsrn-sr",
+     "tbsrn-telescope-f16.gguf",
+     "https://huggingface.co/cstr/crispembed-gguf/resolve/main/tbsrn-telescope-f16.gguf",
+     "TBSRN 2× text-line super-resolution (1.1M params)", "2 MB", "apache-2.0",
+     "https://huggingface.co/cstr/crispembed-gguf"},
+
+    // text-sr: NAFNet-SR engine — no default model; supply a custom trained GGUF.
+    {"text-sr",
+     "text-sr-nafnet.gguf",
+     "",
+     "NAFNet-SR text super-resolution engine (custom trained model required)", "", "apache-2.0",
+     ""},
+
     {"qwen2vl-3b",
      "qwen2.5-vl-3b-q4_k.gguf",
      "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF/resolve/main/qwen2.5-vl-3b-q4_k.gguf",
@@ -601,6 +628,18 @@ static const ModelEntry k_registry[] = {
      "https://huggingface.co/cstr/gliner-deberta-GGUF/resolve/main/gliner-deberta-q4_k.gguf",
      "GLiNER zero-shot NER (DeBERTa-v3-base, Q4_K compact)", "152 MB", "apache-2.0",
      "https://huggingface.co/cstr/gliner-deberta-GGUF"},
+
+    {"lilt-funsd",
+     "lilt-funsd-f32.gguf",
+     "https://huggingface.co/cstr/lilt-funsd-GGUF/resolve/main/lilt-funsd-f32.gguf",
+     "LiLT FUNSD form understanding (130M params, MIT)", "497 MB", "mit",
+     "https://huggingface.co/cstr/lilt-funsd-GGUF"},
+
+    {"lilt-base",
+     "lilt-base-f32.gguf",
+     "https://huggingface.co/cstr/lilt-base-GGUF/resolve/main/lilt-base-f32.gguf",
+     "LiLT base encoder (130M params, MIT)", "497 MB", "mit",
+     "https://huggingface.co/cstr/lilt-base-GGUF"},
 
     // Tesseract LSTM line OCR — lightweight multilingual (from tessdata_best)
     {"tesseract-eng",
@@ -674,6 +713,25 @@ static const ModelEntry k_registry[] = {
      "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-kor-q8_0.gguf",
      "Tesseract LSTM Korean line OCR (1.5M, CTC, Hangul)", "1.5 MB", "apache-2.0",
      "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+
+    // Punctuation restoration models
+    {"fireredpunc",
+     "fireredpunc-q4_k.gguf",
+     "https://huggingface.co/cstr/fireredpunc-GGUF/resolve/main/fireredpunc-q4_k.gguf",
+     "FireRedPunc punctuation restoration (BERT chinese-bert-wwm-ext, 5 classes)", "84 MB", "apache-2.0",
+     "https://huggingface.co/cstr/fireredpunc-GGUF"},
+
+    {"fullstop-punc",
+     "fullstop-punc-q4_k.gguf",
+     "https://huggingface.co/cstr/fullstop-punc-multilang-GGUF/resolve/main/fullstop-punc-q4_k.gguf",
+     "Fullstop punctuation restoration (XLM-R, multilingual)", "180 MB", "mit",
+     "https://huggingface.co/cstr/fullstop-punc-multilang-GGUF"},
+
+    {"pcs",
+     "pcs-xlmr-base-q4_k.gguf",
+     "https://huggingface.co/cstr/pcs-xlmr-base-GGUF/resolve/main/pcs-xlmr-base-q4_k.gguf",
+     "PCS punct+caps+segmentation (XLM-R-base, multilingual)", "170 MB", "mit",
+     "https://huggingface.co/cstr/pcs-xlmr-base-GGUF"},
 
     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
 };

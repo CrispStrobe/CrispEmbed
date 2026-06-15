@@ -615,6 +615,7 @@ typedef struct crispembed_ocr_pipeline_params {
     const char * det_model;     // DBNet detection GGUF
     const char * rec_model;     // TrOCR recognition GGUF
     const char * nafnet_model;  // NAFNet denoise GGUF for tier-2 (NULL/"" = classical only)
+    const char * sr_model;      // text SR GGUF for low-DPI upscaling (NULL/"" = off)
     const char * vlm_model;     // optional single-shot VLM escalation GGUF (NULL/"" = none)
     int          vlm_engine;    // VLM engine when vlm_model set: 0=GOT 1=GLM 2=Qwen2-VL 3=InternVL2
     const char * punct_model;   // optional post-OCR punctuation/spacing restorer (FireRedPunc/PCS); NULL/"" = off
@@ -715,6 +716,82 @@ CRISPEMBED_API int crispembed_ner_extract(
     crispembed_ner_entity ** out_entities);
 
 // ---------------------------------------------------------------------------
+// LiLT — Language-independent Layout Transformer for document understanding.
+// Dual-stream encoder (RoBERTa + layout transformer with BiACM) for token
+// classification. Used for form understanding (FUNSD: question/answer/header).
+// ---------------------------------------------------------------------------
+
+typedef struct crispembed_lilt_token {
+    int token_id;
+    int label_id;
+    const char * label;   // label string — owned by ctx
+    float score;          // softmax confidence
+} crispembed_lilt_token;
+
+/// Load LiLT model from GGUF. Returns opaque context or NULL.
+CRISPEMBED_API void * crispembed_lilt_init(const char * model_path, int n_threads);
+
+/// Free LiLT context.
+CRISPEMBED_API void crispembed_lilt_free(void * ctx);
+
+/// Run token classification.
+/// input_ids: [n_tokens] token ids (including BOS/EOS).
+/// bbox: [n_tokens * 4] bounding boxes (x0, y0, x1, y1) in [0, 1000].
+/// Returns array of token results (owned by ctx, valid until next call).
+CRISPEMBED_API const crispembed_lilt_token * crispembed_lilt_classify(
+    void * ctx, const int32_t * input_ids, const int32_t * bbox,
+    int n_tokens, int * out_n);
+
+/// Get number of labels.
+CRISPEMBED_API int crispembed_lilt_num_labels(void * ctx);
+
+/// Get label name by id.
+CRISPEMBED_API const char * crispembed_lilt_label_name(void * ctx, int label_id);
+
+// ---------------------------------------------------------------------------
+// Key Information Extraction (KIE) — OCR + NER pipeline.
+// Chains OCR (text detection + recognition) with GLiNER zero-shot NER to
+// extract structured key-value fields from document images (receipts,
+// invoices, forms, business cards).
+// ---------------------------------------------------------------------------
+
+typedef struct crispembed_kie_field {
+    const char * label;   // field name (e.g. "total", "date") — owned by ctx
+    const char * value;   // extracted text — owned by ctx
+    float score;          // NER confidence [0, 1]
+    float x, y, w, h;    // bounding box in original image coordinates
+} crispembed_kie_field;
+
+typedef struct crispembed_kie_result {
+    const crispembed_kie_field * fields; // array of extracted fields — owned by ctx
+    int n_fields;                        // number of fields
+    const char * ocr_text;               // raw OCR text — owned by ctx
+    float ocr_confidence;                // mean OCR confidence
+    int n_ocr_regions;                   // number of OCR text regions
+} crispembed_kie_result;
+
+/// Initialize KIE pipeline. Requires OCR models (det + rec) and a NER model.
+/// Returns opaque context, or NULL on failure.
+CRISPEMBED_API void * crispembed_kie_init(
+    const char * ocr_det_model,   // text detection GGUF (DBNet)
+    const char * ocr_rec_model,   // text recognition GGUF (TrOCR/VLM)
+    const char * ner_model,       // GLiNER NER GGUF
+    int n_threads);
+
+/// Extract structured fields from a document image.
+/// labels: array of field names to extract (e.g. "total", "date", "vendor")
+/// n_labels: number of labels
+/// threshold: NER confidence threshold (0.0-1.0, recommended 0.5)
+/// Returns result struct (owned by ctx, valid until next call or free).
+CRISPEMBED_API crispembed_kie_result crispembed_kie_extract(
+    void * ctx, const char * image_path,
+    const char ** labels, int n_labels,
+    float threshold);
+
+/// Free KIE pipeline context.
+CRISPEMBED_API void crispembed_kie_free(void * ctx);
+
+// ---------------------------------------------------------------------------
 // Scan cleanup — document scan preprocessing (deskew, denoise, crop, whiten).
 // Tier 1: classical image processing, no model needed (model_path=NULL).
 // Tier 2: learned denoising CNN via GGUF model (not yet implemented).
@@ -749,6 +826,63 @@ CRISPEMBED_API int crispembed_scan_cleanup_process(
     uint8_t ** out_pixels, int * out_width, int * out_height);
 
 CRISPEMBED_API void crispembed_scan_cleanup_free_image(uint8_t * pixels);
+
+// ---------------------------------------------------------------------------
+// Text Super-Resolution — upscale low-DPI text images before OCR.
+// NAFNet U-Net + PixelShuffle ending, processes in overlapping tiles.
+// ---------------------------------------------------------------------------
+
+/// Initialize text SR from a GGUF model. Returns opaque context (NULL on error).
+CRISPEMBED_API void * crispembed_text_sr_init(const char * model_path, int n_threads);
+CRISPEMBED_API void   crispembed_text_sr_free(void * ctx);
+
+/// Query upscale factor (2 or 4) from the loaded model.
+CRISPEMBED_API int crispembed_text_sr_upscale_factor(const void * ctx);
+
+/// Upscale an RGB image. Allocates output buffer (*out_pixels, RGB uint8).
+/// tile_size/tile_overlap: 0 = auto. Caller frees with crispembed_text_sr_free_image().
+/// Returns 0 on success, -1 on error.
+CRISPEMBED_API int crispembed_text_sr_process(
+    void * ctx,
+    const uint8_t * pixels, int width, int height,
+    int tile_size, int tile_overlap,
+    uint8_t ** out_pixels, int * out_width, int * out_height);
+
+CRISPEMBED_API void crispembed_text_sr_free_image(uint8_t * pixels);
+
+// ---------------------------------------------------------------------------
+// TBSRN Text-Line Super-Resolution — PaddleOCR Telescope (Apache-2.0).
+// Upscales text-line crops (any size → 32×128) for improved recognition.
+// Designed to run between detection and recognition in the OCR pipeline.
+// ---------------------------------------------------------------------------
+
+CRISPEMBED_API void * crispembed_tbsrn_sr_init(const char * model_path, int n_threads);
+CRISPEMBED_API void   crispembed_tbsrn_sr_free(void * ctx);
+
+/// Upscale a text-line crop. Input resized to 16×64, output is 32×128.
+/// Caller frees with crispembed_tbsrn_sr_free_image().
+CRISPEMBED_API int crispembed_tbsrn_sr_process(
+    void * ctx,
+    const uint8_t * pixels, int width, int height,
+    uint8_t ** out_pixels, int * out_width, int * out_height);
+
+CRISPEMBED_API void crispembed_tbsrn_sr_free_image(uint8_t * pixels);
+
+// ---------------------------------------------------------------------------
+// PAN Whole-Image Super-Resolution — PaddleGAN PAN (Apache-2.0).
+// 4× (or 2×) upscale with SCPA blocks + pixel attention. ~272K params.
+// ---------------------------------------------------------------------------
+
+CRISPEMBED_API void * crispembed_pan_sr_init(const char * model_path, int n_threads);
+CRISPEMBED_API void   crispembed_pan_sr_free(void * ctx);
+CRISPEMBED_API int    crispembed_pan_sr_scale(const void * ctx);
+
+CRISPEMBED_API int crispembed_pan_sr_process(
+    void * ctx, const uint8_t * pixels, int width, int height,
+    int tile_size, int tile_overlap,
+    uint8_t ** out_pixels, int * out_width, int * out_height);
+
+CRISPEMBED_API void crispembed_pan_sr_free_image(uint8_t * pixels);
 
 /// Variant with individual params (for FFI bindings that can't pass structs by value).
 CRISPEMBED_API int crispembed_scan_cleanup_process_simple(
@@ -789,6 +923,7 @@ typedef struct crispembed_ocr_stage {
 CRISPEMBED_API void * crispembed_ocr_pipeline_init_stages(
     int router,
     const char * nafnet_model,
+    const char * sr_model,      // optional text SR GGUF for low-DPI upscaling (NULL/"" = off)
     const char * punct_model,   // optional post-OCR punctuation/spacing restorer (NULL/"" = off)
     const crispembed_ocr_stage * stages,
     int n_stages,
@@ -810,6 +945,82 @@ CRISPEMBED_API void   crispembed_punct_free(void * ctx);
 /// Add punctuation/spaces to text. Returns string owned by context,
 /// valid until next call or free.
 CRISPEMBED_API const char * crispembed_punct_process(void * ctx, const char * text);
+
+// ---------------------------------------------------------------------------
+// OCR Result Renderers — text, hOCR, ALTO, PDF
+// ---------------------------------------------------------------------------
+// Re-exported from ocr_render.h for convenience. See that header for the
+// full struct definitions (ocr_render_word, ocr_render_line, ocr_render_page,
+// ocr_renderer). The C API here provides a simpler one-shot interface.
+
+/// Render OCR results (from crispembed_ocr_pipeline_run) to a format string.
+/// format: "text" | "hocr" | "alto" | "pdf"
+/// Returns newly allocated string (caller frees with free()).
+/// For multi-page: call repeatedly and concatenate, or use ocr_render.h directly.
+CRISPEMBED_API char * crispembed_ocr_render(
+    const crispembed_ocr_result * results, int n_results,
+    int page_width, int page_height,
+    const char * format);
+
+// ---------------------------------------------------------------------------
+// Classical Preprocessing — dewarp, CC detect, deskew, adaptive binarize
+// ---------------------------------------------------------------------------
+// CPU-only, model-free, fast tier. No GGUF models needed.
+
+/// PDF DPI profiling — analyse embedded images in a PDF page.
+/// Returns 0 on success, -1 on error. Sets *out_dpi to the mean DPI
+/// across all raster images on the page, and *out_n_images to the count.
+CRISPEMBED_API int crispembed_pdf_page_dpi(
+    const char * pdf_path, int page,
+    float * out_dpi, int * out_n_images);
+
+/// Dewarp a grayscale page (straighten curved text lines).
+/// [out] must be pre-allocated (w*h bytes). Returns 0 on success.
+CRISPEMBED_API int crispembed_dewarp(
+    const uint8_t * gray, int w, int h,
+    uint8_t * out, int * out_w, int * out_h);
+
+/// TPS-based dewarp with explicit control points.
+/// [out] must be pre-allocated (w*h bytes). Returns 0 on success.
+CRISPEMBED_API int crispembed_tps_dewarp(
+    const uint8_t * gray, int w, int h,
+    const float * src_x, const float * src_y,
+    const float * dst_x, const float * dst_y, int n,
+    uint8_t * out);
+
+/// TPS auto-dewarp using a learned localizer model (GGUF).
+/// [out] must be pre-allocated (w*h bytes). Returns 0 on success.
+CRISPEMBED_API int crispembed_tps_auto_dewarp(
+    const uint8_t * gray, int w, int h,
+    const char * model_path,
+    uint8_t * out);
+
+/// Detect text line regions using connected components (model-free).
+/// Returns array of {x,y,w,h} regions, caller frees with free().
+CRISPEMBED_API crispembed_ocr_result * crispembed_cc_detect(
+    const uint8_t * gray, int w, int h, int * out_n);
+
+/// Find skew angle (degrees) of a document image.
+/// Returns 0 on success; *angle is the rotation needed to deskew.
+CRISPEMBED_API int crispembed_find_skew(
+    const uint8_t * gray, int w, int h,
+    float * angle, float * confidence);
+
+/// Adaptive Otsu binarization (handles uneven lighting).
+/// [out] must be pre-allocated (w*h bytes), receives 0/255 values.
+CRISPEMBED_API void crispembed_adaptive_binarize(
+    const uint8_t * gray, int w, int h, uint8_t * out);
+
+/// Background normalization (handles gradients/shadows).
+/// [out] must be pre-allocated (w*h bytes).
+CRISPEMBED_API void crispembed_background_norm(
+    const uint8_t * gray, int w, int h, uint8_t * out);
+
+/// Despeckle: remove small noise components from a binary image.
+/// [out] must be pre-allocated (w*h bytes), receives 0/255 values.
+CRISPEMBED_API void crispembed_despeckle(
+    const uint8_t * gray, int w, int h,
+    int max_speckle_w, int max_speckle_h, uint8_t * out);
 
 #ifdef __cplusplus
 }
