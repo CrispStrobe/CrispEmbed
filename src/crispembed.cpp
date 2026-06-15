@@ -3716,3 +3716,70 @@ extern "C" char * crispembed_ocr_render(
     ocr_render_free(r);
     return out;
 }
+
+// ---------------------------------------------------------------------------
+// Classical Preprocessing — C API wrappers
+// ---------------------------------------------------------------------------
+
+#include "dewarp.h"
+#include "cc_detect.h"
+#include "classical_preproc.h"
+
+extern "C" int crispembed_dewarp(
+    const uint8_t * gray, int w, int h,
+    uint8_t * out, int * out_w, int * out_h)
+{
+    return dewarp_page(gray, w, h, out, out_w, out_h);
+}
+
+extern "C" crispembed_ocr_result * crispembed_cc_detect(
+    const uint8_t * gray, int w, int h, int * out_n)
+{
+    int n = 0;
+    cc_text_region * regions = cc_detect_lines(gray, w, h, &n);
+    if (!regions || n <= 0) {
+        if (out_n) *out_n = 0;
+        cc_detect_free(regions);
+        return nullptr;
+    }
+    // Convert to crispembed_ocr_result
+    auto * results = (crispembed_ocr_result *)malloc(n * sizeof(crispembed_ocr_result));
+    for (int i = 0; i < n; i++) {
+        results[i].x = (float)regions[i].x;
+        results[i].y = (float)regions[i].y;
+        results[i].w = (float)regions[i].w;
+        results[i].h = (float)regions[i].h;
+        results[i].confidence = 1.0f;
+        results[i].text = nullptr;
+        results[i].text_len = 0;
+    }
+    cc_detect_free(regions);
+    if (out_n) *out_n = n;
+    return results;
+}
+
+extern "C" int crispembed_find_skew(
+    const uint8_t * gray, int w, int h,
+    float * angle, float * confidence)
+{
+    return find_skew_angle(gray, w, h, angle, confidence);
+}
+
+extern "C" void crispembed_adaptive_binarize(
+    const uint8_t * gray, int w, int h, uint8_t * out)
+{
+    adaptive_otsu(gray, w, h, 0, 0, 0, out);
+}
+
+extern "C" void crispembed_background_norm(
+    const uint8_t * gray, int w, int h, uint8_t * out)
+{
+    background_norm(gray, w, h, 0, 0, out);
+}
+
+extern "C" void crispembed_despeckle(
+    const uint8_t * gray, int w, int h,
+    int max_w, int max_h, uint8_t * out)
+{
+    despeckle_gray(gray, w, h, max_w, max_h, out);
+}

@@ -1804,3 +1804,77 @@ impl Drop for CrispOcrPipeline {
         unsafe { crispembed_sys::crispembed_ocr_pipeline_free(self.ctx) }
     }
 }
+
+// ── Classical Preprocessing ────────────────────────────────────────
+
+/// Dewarp a grayscale page image (straighten curved text lines).
+/// Returns the dewarped image as a Vec<u8>, or Err if dewarping failed.
+pub fn dewarp(gray: &[u8], width: i32, height: i32) -> Result<(Vec<u8>, i32, i32), String> {
+    let mut out = vec![0u8; (width * height) as usize];
+    let mut ow: i32 = 0;
+    let mut oh: i32 = 0;
+    let ret = unsafe {
+        crispembed_sys::crispembed_dewarp(
+            gray.as_ptr(), width, height,
+            out.as_mut_ptr(), &mut ow, &mut oh)
+    };
+    if ret != 0 { return Err("dewarping failed (too few textlines?)".into()); }
+    Ok((out, ow, oh))
+}
+
+/// Detect text line regions using connected components (model-free, GPU-free).
+pub fn cc_detect(gray: &[u8], width: i32, height: i32) -> Vec<OcrRegion> {
+    let mut n: i32 = 0;
+    let ptr = unsafe { crispembed_sys::crispembed_cc_detect(gray.as_ptr(), width, height, &mut n) };
+    if ptr.is_null() || n <= 0 { return vec![]; }
+    let mut regions = Vec::with_capacity(n as usize);
+    for i in 0..n as usize {
+        let r = unsafe { &*ptr.add(i) };
+        regions.push(OcrRegion {
+            text: String::new(),
+            x: r.x, y: r.y, w: r.w, h: r.h,
+            confidence: r.confidence,
+        });
+    }
+    unsafe { libc::free(ptr as *mut std::ffi::c_void) };
+    regions
+}
+
+/// Find the skew angle of a document image (degrees).
+pub fn find_skew(gray: &[u8], width: i32, height: i32) -> Result<(f32, f32), String> {
+    let mut angle: f32 = 0.0;
+    let mut conf: f32 = 0.0;
+    let ret = unsafe {
+        crispembed_sys::crispembed_find_skew(gray.as_ptr(), width, height, &mut angle, &mut conf)
+    };
+    if ret != 0 { return Err("skew detection failed".into()); }
+    Ok((angle, conf))
+}
+
+/// Render OCR results to a format string ("text", "hocr", "alto", "pdf").
+pub fn ocr_render(results: &[OcrRegion], page_w: i32, page_h: i32, format: &str) -> Option<String> {
+    if results.is_empty() { return None; }
+    let fmt = std::ffi::CString::new(format).ok()?;
+    // Build C-compatible result array
+    let texts: Vec<std::ffi::CString> = results.iter()
+        .map(|r| std::ffi::CString::new(r.text.as_str()).unwrap_or_default())
+        .collect();
+    let c_results: Vec<crispembed_sys::CrispembedOcrResult> = results.iter()
+        .enumerate()
+        .map(|(i, r)| crispembed_sys::CrispembedOcrResult {
+            x: r.x, y: r.y, w: r.w, h: r.h,
+            confidence: r.confidence,
+            text: texts[i].as_ptr(),
+            text_len: texts[i].as_bytes().len() as i32,
+        })
+        .collect();
+    let ptr = unsafe {
+        crispembed_sys::crispembed_ocr_render(
+            c_results.as_ptr(), c_results.len() as i32,
+            page_w, page_h, fmt.as_ptr())
+    };
+    if ptr.is_null() { return None; }
+    let s = unsafe { std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned() };
+    unsafe { libc::free(ptr as *mut std::ffi::c_void) };
+    Some(s)
+}

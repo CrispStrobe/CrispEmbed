@@ -827,6 +827,44 @@ CRISPEMBED_API char * crispembed_ocr_render(
     int page_width, int page_height,
     const char * format);
 
+// ---------------------------------------------------------------------------
+// Classical Preprocessing — dewarp, CC detect, deskew, adaptive binarize
+// ---------------------------------------------------------------------------
+// CPU-only, model-free, fast tier. No GGUF models needed.
+
+/// Dewarp a grayscale page (straighten curved text lines).
+/// [out] must be pre-allocated (w*h bytes). Returns 0 on success.
+CRISPEMBED_API int crispembed_dewarp(
+    const uint8_t * gray, int w, int h,
+    uint8_t * out, int * out_w, int * out_h);
+
+/// Detect text line regions using connected components (model-free).
+/// Returns array of {x,y,w,h} regions, caller frees with free().
+CRISPEMBED_API crispembed_ocr_result * crispembed_cc_detect(
+    const uint8_t * gray, int w, int h, int * out_n);
+
+/// Find skew angle (degrees) of a document image.
+/// Returns 0 on success; *angle is the rotation needed to deskew.
+CRISPEMBED_API int crispembed_find_skew(
+    const uint8_t * gray, int w, int h,
+    float * angle, float * confidence);
+
+/// Adaptive Otsu binarization (handles uneven lighting).
+/// [out] must be pre-allocated (w*h bytes), receives 0/255 values.
+CRISPEMBED_API void crispembed_adaptive_binarize(
+    const uint8_t * gray, int w, int h, uint8_t * out);
+
+/// Background normalization (handles gradients/shadows).
+/// [out] must be pre-allocated (w*h bytes).
+CRISPEMBED_API void crispembed_background_norm(
+    const uint8_t * gray, int w, int h, uint8_t * out);
+
+/// Despeckle: remove small noise components from a binary image.
+/// [out] must be pre-allocated (w*h bytes), receives 0/255 values.
+CRISPEMBED_API void crispembed_despeckle(
+    const uint8_t * gray, int w, int h,
+    int max_speckle_w, int max_speckle_h, uint8_t * out);
+
 #ifdef __cplusplus
 }
 #endif
