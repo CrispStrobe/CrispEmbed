@@ -148,6 +148,8 @@ Input text / image / audio
 |-----------|--------|-------------|
 | ggml | submodule | identical |
 | GGUF loader | src/core/gguf_loader.{h,cpp} | copy |
+| FireRedPunc | src/fireredpunc.{h,cpp} | copy (TODO: crisp_punc/ shared lib) |
+| PCS | src/pcs.{h,cpp} | copy (TODO: crisp_punc/ shared lib) |
 | Attention helper | src/core/attention.h | copy (header-only) |
 | FFN helper | src/core/ffn.h | copy (header-only) |
 | httplib.h | examples/server/ | copy |
@@ -192,6 +194,9 @@ CrispEmbed/
 │   ├── scan_cleanup.{h,cpp}   document scan preprocessing (tier 1 + 2)
 │   ├── nafnet_denoise.{h,cpp}  NAFNet U-Net denoising CNN (tier 2)
 │   ├── tesseract_lstm.{h,cpp}  Tesseract LSTM line OCR (VGSL + CTC)
+│   ├── fireredpunc.{h,cpp}    FireRedPunc punctuation restoration (BERT)
+│   ├── pcs.{h,cpp}            PCS punct+caps+segmentation (XLM-R)
+│   ├── ocr_orchestrator.{h,cpp} Multi-stage OCR pipeline orchestrator
 │   ├── tokenizer.h             WordPiece + SentencePiece + BPE
 │   ├── tokenizer_bpe.cpp       GPT-2 byte-level BPE
 │   ├── model_mgr.{h,cpp}       registry + auto-download
@@ -324,10 +329,10 @@ CrispEmbed/
 - [x] Wire orchestrator into HTTP server / Python / Dart (commit 73d7b96).
 - [x] **got_ocr GPU scheduler abort fixed** — append CPU fallback backend
   (`ggml_backend_sched_new` asserts last backend == CPU).
-- [ ] **Gap — CLI completeness:** `--ocr-pipeline` lacks `--ocr-engine <name>`
-  (primary engine incl. tesseract), `--punct-model` (post-processor), and a
-  way to drive the full per-stage builder. Add so the CLI can run *primary +
-  any pre-processors + any post-processors*.
+- [x] **CLI completeness:** `--ocr-engine`, `--punct-model`, `--vlm-model`,
+  `--vlm-engine` wired into CLI. Server: full orchestrator config flags
+  (`--ocr-pipeline --ocr-det --ocr-rec --vlm-model --vlm-engine --punct-model`),
+  CORS headers, complete help. All wrapper params exposed in Python/Dart/Rust.
 - [ ] **Gap — tests:** no orchestrator unit test (classify / accept-gate /
   escalation / per-stage), no regression test for the tesseract resize+space
   fixes, no punct-post-process test. Add them.
