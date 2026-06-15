@@ -492,3 +492,39 @@ typedef CrispembedTextSrProcessDart = int Function(
 
 typedef CrispembedTextSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedTextSrFreeImageDart = void Function(Pointer<Uint8> pixels);
+
+// --- PAN Super-Resolution (pan_sr) ---
+typedef CrispembedPanSrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedPanSrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedPanSrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedPanSrFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedPanSrScaleNative = Int32 Function(Pointer<Void> ctx);
+typedef CrispembedPanSrScaleDart = int Function(Pointer<Void> ctx);
+
+typedef CrispembedPanSrProcessNative = Int32 Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    Int32 width,
+    Int32 height,
+    Int32 tileSize,
+    Int32 tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+typedef CrispembedPanSrProcessDart = int Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    int width,
+    int height,
+    int tileSize,
+    int tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+
+typedef CrispembedPanSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
+typedef CrispembedPanSrFreeImageDart = void Function(Pointer<Uint8> pixels);
