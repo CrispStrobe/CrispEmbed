@@ -741,3 +741,58 @@ extern "C" {
         gray: *const u8, w: c_int, h: c_int,
         max_w: c_int, max_h: c_int, out: *mut u8);
 }
+
+// ---------------------------------------------------------------------------
+// OCR result renderers — lower-level ocr_render.h API.
+//
+// Multi-page + binary-safe (output_size) rendering: create → begin → add_page*
+// → end → output/output_size → free. The one-shot `crispembed_ocr_render`
+// above is text-only (NUL-terminated char*); this API is needed for searchable
+// PDF (binary) and single-document multi-page hOCR/ALTO. The renderer copies
+// page data on add_page, so the input arrays only need to live for that call.
+// ---------------------------------------------------------------------------
+
+/// `ocr_render_word` — a recognized word/region with a pixel box.
+#[repr(C)]
+pub struct OcrRenderWord {
+    pub text: *const c_char,
+    pub x: c_int,
+    pub y: c_int,
+    pub w: c_int,
+    pub h: c_int,
+    pub confidence: c_float,
+}
+
+/// `ocr_render_line` — a group of words on one baseline.
+#[repr(C)]
+pub struct OcrRenderLine {
+    pub words: *const OcrRenderWord,
+    pub n_words: c_int,
+    pub x: c_int,
+    pub y: c_int,
+    pub w: c_int,
+    pub h: c_int,
+}
+
+/// `ocr_render_page` — one page of lines + image dimensions.
+#[repr(C)]
+pub struct OcrRenderPage {
+    pub lines: *const OcrRenderLine,
+    pub n_lines: c_int,
+    pub page_width: c_int,
+    pub page_height: c_int,
+    pub image_path: *const c_char,
+}
+
+extern "C" {
+    /// format: 0=text, 1=hocr, 2=alto, 3=pdf (matches `ocr_render_format`).
+    pub fn ocr_render_create(format: c_int) -> *mut c_void;
+    pub fn ocr_render_set_separator(r: *mut c_void, sep: *const c_char);
+    pub fn ocr_render_begin(r: *mut c_void);
+    pub fn ocr_render_add_page(r: *mut c_void, page: *const OcrRenderPage);
+    pub fn ocr_render_end(r: *mut c_void);
+    /// Rendered output. For PDF this is binary — use `ocr_render_output_size`.
+    pub fn ocr_render_output(r: *const c_void) -> *const c_char;
+    pub fn ocr_render_output_size(r: *const c_void) -> c_int;
+    pub fn ocr_render_free(r: *mut c_void);
+}
