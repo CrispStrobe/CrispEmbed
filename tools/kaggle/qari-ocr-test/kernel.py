@@ -143,13 +143,24 @@ print("\n=== CrispEmbed GGUF test ===")
 gguf_path = hf_hub_download('cstr/qari-ocr-crispembed-GGUF', 'qari-ocr-2b-q4_k.gguf')
 print(f"GGUF: {os.path.getsize(gguf_path) / 1e9:.2f} GB")
 
-# Build CrispEmbed
+# Build CrispEmbed (force fresh clone to pick up latest fixes)
 ce_dir = '/kaggle/working/CrispEmbed'
-if not os.path.exists(ce_dir):
-    subprocess.check_call(['git', 'clone', '--depth=1', '--recursive',
-                           'https://github.com/CrispStrobe/CrispEmbed.git', ce_dir])
+import shutil
+if os.path.exists(ce_dir):
+    shutil.rmtree(ce_dir)
+subprocess.check_call(['git', 'clone', '--depth=1', '--recursive',
+                       'https://github.com/CrispStrobe/CrispEmbed.git', ce_dir])
+# Verify the mRoPE fix is present
+with open(os.path.join(ce_dir, 'src/qwen2vl_ocr.cpp')) as f:
+    src = f.read()
+    if 'grid_thw_dummy' in src:
+        print("WARNING: mRoPE fix NOT present in cloned code!")
+    else:
+        print("mRoPE fix confirmed in cloned code")
 
 bld = '/kaggle/working/build'
+if os.path.exists(bld):
+    shutil.rmtree(bld)
 os.makedirs(bld, exist_ok=True)
 subprocess.check_call(['cmake', '-S', ce_dir, '-B', bld, '-DCMAKE_BUILD_TYPE=Release'])
 subprocess.check_call(['cmake', '--build', bld, '--target', 'crispembed-cli', '-j4'])
