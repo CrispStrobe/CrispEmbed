@@ -916,6 +916,21 @@ CRISPEMBED_API int crispembed_esrgan_sr_process(
 
 CRISPEMBED_API void crispembed_esrgan_sr_free_image(uint8_t * pixels);
 
+// ---------------------------------------------------------------------------
+// Restormer — Multi-task image restoration (denoise/deblur/SR). CVPR 2022.
+// U-Net with MDTA (transposed attention) + GDFN. ~26M params, Apache-2.0.
+// ---------------------------------------------------------------------------
+
+CRISPEMBED_API void * crispembed_restormer_init(const char * model_path, int n_threads);
+CRISPEMBED_API void   crispembed_restormer_free(void * ctx);
+
+CRISPEMBED_API int crispembed_restormer_process(
+    void * ctx, const uint8_t * pixels, int width, int height,
+    int tile_size, int tile_overlap,
+    uint8_t ** out_pixels);
+
+CRISPEMBED_API void crispembed_restormer_free_image(uint8_t * pixels);
+
 /// Variant with individual params (for FFI bindings that can't pass structs by value).
 CRISPEMBED_API int crispembed_scan_cleanup_process_simple(
     void * ctx,
