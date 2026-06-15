@@ -4,6 +4,42 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — Qari-OCR (Arabic with diacritics, 2B, Apache-2.0)
+
+Port of NAMAA-Space/Qari-OCR-0.2.2.1-VL-2B-Instruct — Arabic OCR with
+full tashkeel (diacritics) support. Fine-tuned from Qwen2-VL-2B-Instruct
+via LoRA (r=16, α=16, 324 adapter pairs) on 50K Arabic OCR samples.
+
+**Architecture**: Same Qwen2-VL family as existing `qwen2vl_ocr.cpp`:
+- Vision: 32L ViT (embed_dim=1280, hidden_size=1536, 16 heads)
+- Spatial merger: 2×2, mlp 5120→1536
+- LLM: 28L Qwen2 (1536d, GQA 12Q/2KV, FFN=8960)
+- Total: ~2B params
+
+**No new C++ code** — the existing qwen2vl_ocr engine reads all dimensions
+from GGUF metadata and handles both Qwen2-VL-2B and Qwen2.5-VL-3B.
+
+**Converter fix**: Qwen2-VL config uses `embed_dim`/`mlp_ratio`/`in_chans`
+instead of Qwen2.5-VL's `intermediate_size`/`in_channels`/`out_hidden_size`.
+Added `getattr` fallbacks in `convert-qwen2vl-to-gguf.py`. Key insight:
+vision `hidden_size` (1536) ≠ ViT block dim (`embed_dim`=1280) — must
+write `embed_dim` as the GGUF vision.hidden_size for correct block computation.
+
+**Conversion**: Kaggle kernel (16 GB RAM needed) merges 324 LoRA pairs
+tensor-by-tensor into fp16 base, then converts to GGUF + quantizes.
+Took 4 kernel iterations to get right (config field name mismatches).
+
+**GGUFs**: `cstr/qari-ocr-crispembed-GGUF` — F16 (4.7 GB), Q8_0 (2.3 GB),
+Q4_K (1.6 GB). Registry entry: `qari-ocr`.
+
+**Parity**: Not yet verified per-layer (needs Kaggle). The qwen2vl engine
+has cos=1.000 parity on Qwen2.5-VL-3B; the 2B variant uses the same code
+path with different dimensions. Test kernel prepared but not yet run.
+
+**Performance** (published): WER=0.221, CER=0.059, BLEU=0.597.
+
+---
+
 ## June 2026 — Scan cleanup (document preprocessing pipeline)
 
 Two-tier document scan preprocessing module replacing the
