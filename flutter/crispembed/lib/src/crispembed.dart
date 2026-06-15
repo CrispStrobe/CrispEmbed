@@ -1895,6 +1895,122 @@ class CrispTextSr {
 }
 
 // ---------------------------------------------------------------------------
+// PAN Super-Resolution
+// ---------------------------------------------------------------------------
+
+/// Result from PAN super-resolution upscaling.
+class PanSrResult {
+  final Uint8List pixels;
+  final int width;
+  final int height;
+
+  const PanSrResult({
+    required this.pixels,
+    required this.width,
+    required this.height,
+  });
+}
+
+/// PAN super-resolution model — upscales low-DPI document images.
+class CrispPanSr {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedPanSrFreeDart _freeFn;
+  late final CrispembedPanSrScaleDart _scaleFn;
+  late final CrispembedPanSrProcessDart _processFn;
+  late final CrispembedPanSrFreeImageDart _freeImageFn;
+
+  CrispPanSr(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedPanSrInitNative, CrispembedPanSrInitDart>(
+            'crispembed_pan_sr_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load PAN SR model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _freeFn = _lib.lookupFunction<CrispembedPanSrFreeNative,
+        CrispembedPanSrFreeDart>('crispembed_pan_sr_free');
+    _scaleFn = _lib.lookupFunction<CrispembedPanSrScaleNative,
+        CrispembedPanSrScaleDart>('crispembed_pan_sr_scale');
+    _processFn = _lib.lookupFunction<CrispembedPanSrProcessNative,
+        CrispembedPanSrProcessDart>('crispembed_pan_sr_process');
+    _freeImageFn = _lib.lookupFunction<CrispembedPanSrFreeImageNative,
+        CrispembedPanSrFreeImageDart>('crispembed_pan_sr_free_image');
+  }
+
+  int get scale {
+    _checkDisposed();
+    return _scaleFn(_ctx);
+  }
+
+  PanSrResult process(
+    Uint8List pixels,
+    int width,
+    int height, {
+    int tileSize = 0,
+    int tileOverlap = 0,
+  }) {
+    _checkDisposed();
+    if (pixels.length != width * height * 3) {
+      throw ArgumentError(
+          'pixels.length (${pixels.length}) must equal width * height * 3 (${width * height * 3})');
+    }
+
+    final pxNative = calloc<Uint8>(pixels.length);
+    pxNative.asTypedList(pixels.length).setAll(0, pixels);
+
+    final outPxPtr = calloc<Pointer<Uint8>>();
+    final outW = calloc<Int32>();
+    final outH = calloc<Int32>();
+
+    try {
+      final rc = _processFn(
+          _ctx, pxNative, width, height, tileSize, tileOverlap,
+          outPxPtr, outW, outH);
+
+      if (rc != 0 || outPxPtr.value.address == 0) {
+        throw Exception('PAN SR process failed (rc=$rc)');
+      }
+
+      final ow = outW.value;
+      final oh = outH.value;
+      final resultPixels =
+          Uint8List.fromList(outPxPtr.value.asTypedList(ow * oh * 3));
+      _freeImageFn(outPxPtr.value);
+
+      return PanSrResult(pixels: resultPixels, width: ow, height: oh);
+    } finally {
+      calloc.free(pxNative);
+      calloc.free(outPxPtr);
+      calloc.free(outW);
+      calloc.free(outH);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispPanSr has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // OCR Orchestrator (source-type routing + cleanup + accept-gate)
 // ---------------------------------------------------------------------------
 
