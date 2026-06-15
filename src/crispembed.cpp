@@ -403,8 +403,17 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             int sep_id = u32("tokenizer.ggml.sep_token_id", 102);
             int unk_id = u32("tokenizer.ggml.unknown_token_id", 100);
             int pad_id = u32("tokenizer.ggml.padding_token_id", 0);
-            ctx->wp_tokenizer.load(vocab, cls_id, sep_id, unk_id, pad_id, hp.n_max_tokens);
-            fprintf(stderr, "crispembed: using WordPiece tokenizer (%d tokens)\n", n);
+            // Detect casing: if vocab contains uppercase letters like "A", it's cased
+            bool do_lower_case = true;
+            for (const auto& t : vocab) {
+                if (t.size() == 1 && t[0] >= 'A' && t[0] <= 'Z') {
+                    do_lower_case = false;
+                    break;
+                }
+            }
+            ctx->wp_tokenizer.load(vocab, cls_id, sep_id, unk_id, pad_id, hp.n_max_tokens, do_lower_case);
+            fprintf(stderr, "crispembed: using WordPiece tokenizer (%d tokens, %s)\n",
+                    n, do_lower_case ? "uncased" : "cased");
         }
     }
 
@@ -2143,6 +2152,46 @@ extern "C" const float * crispembed_encode_tokens(crispembed_context * ctx,
     return ctx->last_token_embeddings.data();
 }
 
+extern "C" const float * crispembed_encode_tokens_raw(crispembed_context * ctx,
+                                                        const char         * text,
+                                                        int                * out_n_tokens,
+                                                        int                * out_dim) {
+    if (!ctx || !text || ctx->is_decoder) return nullptr;
+
+    std::string enc_text = ctx->prefix.empty() ? std::string(text) : ctx->prefix + text;
+
+    embed_tokens tokens;
+    if (ctx->use_sentencepiece) tokens = ctx->sp_tokenizer.encode(enc_text);
+    else                        tokens = ctx->wp_tokenizer.encode(enc_text);
+
+    int T_real = 0;
+    for (int i = (int)tokens.attn_mask.size() - 1; i >= 0; i--) {
+        if (tokens.attn_mask[i]) { T_real = i + 1; break; }
+    }
+    if (T_real == 0) return nullptr;
+    tokens.ids.resize(T_real);
+    tokens.type_ids.resize(T_real);
+    tokens.attn_mask.resize(T_real);
+
+    int raw_T = 0;
+    std::vector<float> raw = run_encoder_raw(ctx, tokens, 0, &raw_T);
+    if (raw.empty() || raw_T == 0) return nullptr;
+
+    const int dim = ctx->model.hparams.n_embd;
+    // Store raw (unnormalized) hidden states
+    ctx->last_token_embeddings.resize((size_t)dim * (size_t)raw_T);
+    std::memcpy(ctx->last_token_embeddings.data(), raw.data(),
+                (size_t)dim * (size_t)raw_T * sizeof(float));
+
+    ctx->last_token_ids.assign(tokens.ids.begin(), tokens.ids.begin() + raw_T);
+    ctx->last_token_n   = raw_T;
+    ctx->last_token_dim = dim;
+
+    if (out_n_tokens) *out_n_tokens = raw_T;
+    if (out_dim)      *out_dim      = dim;
+    return ctx->last_token_embeddings.data();
+}
+
 extern "C" const int32_t * crispembed_last_token_ids(const crispembed_context * ctx) {
     if (!ctx || ctx->last_token_n == 0) return nullptr;
     return ctx->last_token_ids.data();
@@ -3521,29 +3570,111 @@ extern "C" const float * crispembed_text_det_heatmap(void * ctx, int * out_h, in
 }
 
 // ===========================================================================
-// Named Entity Recognition (GLiNER)
+// Named Entity Recognition (GLiNER + BERT NER auto-detect)
 // ===========================================================================
 
 #include "gliner_ner.h"
+#include "bert_ner.h"
+
+// Dispatch wrapper: holds either a GLiNER or BERT NER context.
+struct ner_dispatch {
+    enum { GLINER, BERT_NER } backend;
+    void * gliner_ctx = nullptr;
+    bert_ner::context * bert_ctx = nullptr;
+
+    // BERT NER: last result storage for C API lifetime
+    std::vector<bert_ner::entity> last_entities;
+    std::vector<crispembed_ner_entity> last_c_entities;
+    std::vector<std::string> last_texts;   // keep strings alive
+    std::vector<std::string> last_labels;
+};
 
 extern "C" void * crispembed_ner_init(const char * model_path, int n_threads) {
-    return gliner_ner_init(model_path, n_threads);
+    if (!model_path) return nullptr;
+
+    // Peek at GGUF metadata to decide backend.
+    gguf_context * gctx = core_gguf::open_metadata(model_path);
+    if (!gctx) return nullptr;
+
+    uint32_t ner_labels = core_gguf::kv_u32(gctx, "ner.num_labels", 0);
+    core_gguf::free_metadata(gctx);
+
+    auto * d = new ner_dispatch;
+
+    if (ner_labels > 0) {
+        // BERT NER path (fixed-label token classification)
+        d->backend = ner_dispatch::BERT_NER;
+        if (!bert_ner::load(&d->bert_ctx, model_path, n_threads)) {
+            delete d;
+            return nullptr;
+        }
+        fprintf(stderr, "crispembed_ner: using BERT NER backend (%d labels)\n", ner_labels);
+    } else {
+        // GLiNER path (zero-shot)
+        d->backend = ner_dispatch::GLINER;
+        d->gliner_ctx = gliner_ner_init(model_path, n_threads);
+        if (!d->gliner_ctx) {
+            delete d;
+            return nullptr;
+        }
+    }
+
+    return d;
 }
 
 extern "C" void crispembed_ner_free(void * ctx) {
-    gliner_ner_free(ctx);
+    if (!ctx) return;
+    auto * d = (ner_dispatch *)ctx;
+    if (d->backend == ner_dispatch::GLINER && d->gliner_ctx)
+        gliner_ner_free(d->gliner_ctx);
+    if (d->backend == ner_dispatch::BERT_NER && d->bert_ctx)
+        bert_ner::free(d->bert_ctx);
+    delete d;
 }
 
 extern "C" int crispembed_ner_extract(void * ctx, const char * text,
                                       const char ** labels, int n_labels,
                                       float threshold,
                                       crispembed_ner_entity ** out_entities) {
-    gliner_ner_entity * ents = nullptr;
-    int n = gliner_ner_extract(ctx, text, labels, n_labels, threshold, &ents);
-    // gliner_ner_entity and crispembed_ner_entity have identical layout
+    if (!ctx || !text) return 0;
+    auto * d = (ner_dispatch *)ctx;
+
+    if (d->backend == ner_dispatch::GLINER) {
+        gliner_ner_entity * ents = nullptr;
+        int n = gliner_ner_extract(d->gliner_ctx, text, labels, n_labels, threshold, &ents);
+        if (out_entities)
+            *out_entities = (crispembed_ner_entity *)ents;
+        return n;
+    }
+
+    // BERT NER: fixed labels (ignore user-supplied labels/threshold)
+    d->last_entities = bert_ner::extract(d->bert_ctx, text);
+
+    // Convert to C API structs
+    d->last_texts.clear();
+    d->last_labels.clear();
+    d->last_c_entities.clear();
+    d->last_texts.reserve(d->last_entities.size());
+    d->last_labels.reserve(d->last_entities.size());
+    d->last_c_entities.reserve(d->last_entities.size());
+
+    for (const auto & e : d->last_entities) {
+        d->last_texts.push_back(e.text);
+        d->last_labels.push_back(e.label);
+    }
+    for (size_t i = 0; i < d->last_entities.size(); i++) {
+        crispembed_ner_entity ce;
+        ce.start_char = d->last_entities[i].start_char;
+        ce.end_char   = d->last_entities[i].end_char;
+        ce.text       = d->last_texts[i].c_str();
+        ce.label      = d->last_labels[i].c_str();
+        ce.score      = d->last_entities[i].score;
+        d->last_c_entities.push_back(ce);
+    }
+
     if (out_entities)
-        *out_entities = (crispembed_ner_entity *)ents;
-    return n;
+        *out_entities = d->last_c_entities.data();
+    return (int)d->last_c_entities.size();
 }
 
 // ===========================================================================
