@@ -303,6 +303,8 @@ target_link_libraries(test-gliner-diff PRIVATE crispembed)
 
 add_executable(test-scan-cleanup tests/test_scan_cleanup.cpp)
 target_link_libraries(test-scan-cleanup PRIVATE crispembed)
+add_executable(test-ocr-orchestrator tests/test_ocr_orchestrator.cpp)
+target_link_libraries(test-ocr-orchestrator PRIVATE crispembed)
 
 add_executable(test-conv-ext tests/test_conv_ext.cpp)
 target_link_libraries(test-conv-ext PRIVATE crispembed)
