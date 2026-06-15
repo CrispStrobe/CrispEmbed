@@ -56,8 +56,16 @@ CC-based model-free fallback (zero downloads, CPU-only, 4ms/page).
 learned (GPU, model-based, higher quality). Classical: adaptive Otsu binarization,
 differential-square-sum deskew, CC despeckle, background normalization, page
 dewarping (cubic baseline fitting + disparity warp), 1-bit DWA morphology (21x
-faster than float). Learned: NAFNet denoise (GGUF). All cherry-picked from
-Leptonica (BSD-2), reimplemented as self-contained C++ with no dependencies.
+faster than float). Learned: NAFNet denoise, TPS spatial transformer (learned
+dewarping with 20-point control prediction, 108K params, Apache-2.0), text
+super-resolution (NAFNet-SR + TBSRN). All cherry-picked from Leptonica (BSD-2),
+reimplemented as self-contained C++ with no dependencies.
+
+**PDF DPI Profiling**: Zero-dependency PDF parser that extracts image metadata
+to compute effective page DPI. Auto-selects OCR resolution: downsample high-DPI
+scans or trigger super-resolution on low-DPI images. Parses xref tables, page
+geometry, image XObjects, and content stream CTMs. CLI (`--pdf-dpi`), server
+(`POST /pdf/dpi`), Python, Rust, Dart.
 
 **OCR Output Formats**: Plain text, hOCR (XHTML), ALTO 3.1 (XML), searchable PDF.
 Multi-page accumulation, XML escaping, configurable page separators.
@@ -68,7 +76,7 @@ Configurable via C API, CLI, Python, Rust, Dart, HTTP server.
 
 **9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
 GPU acceleration (CUDA/Vulkan/Metal). iOS + Android + **WASM** builds.
-93 models in registry (text, vision, face, OCR, NER, scan cleanup), 200+ GGUF variants on HF.
+102 models in registry (text, vision, face, OCR, NER, scan cleanup), 200+ GGUF variants on HF.
 
 **Browser**: Math OCR compiles to WebAssembly (1 MB) via `build-wasm.sh`.
 Runs entirely client-side — no server, no API key. GGUF models fetched on
