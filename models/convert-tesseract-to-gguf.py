@@ -423,6 +423,12 @@ def main():
     tokens = []
     if "lstm-unicharset" in components:
         tokens = parse_unicharset(components["lstm-unicharset"])
+        # Tesseract reserves unichar id 0 for the space character
+        # (UNICHAR_SPACE). The unicharset writes it as a leading space, which
+        # `line.split()[0]` cannot capture, so it comes back empty — restore it
+        # or word spaces never appear in the decoded output.
+        if tokens and not tokens[0]:
+            tokens[0] = " "
         print(f"Unicharset: {len(tokens)} tokens")
     else:
         print("WARNING: no lstm-unicharset — tokens will be missing")

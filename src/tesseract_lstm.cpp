@@ -123,6 +123,12 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
 
     // Tokens
     ctx->tokens = core_gguf::kv_str_array(meta, "tokenizer.tokens");
+    // Tesseract reserves unichar id 0 for the space character (UNICHAR_SPACE).
+    // The GGUF converter dropped it (stored ""), which is why word spaces never
+    // appeared in the output — restore it so the LSTM's space class emits ' '.
+    if (!ctx->tokens.empty() && ctx->tokens[0].empty()) {
+        ctx->tokens[0] = " ";
+    }
 
     // Reverse recoder
     std::vector<int> rev = core_gguf::kv_i32_array(meta, "tesseract_lstm.output_to_unichar");
@@ -559,12 +565,51 @@ const char * tesseract_lstm_recognize(
         return "";
     }
 
+    // Tesseract's LSTM is trained on lines normalized to a fixed height
+    // (input_height, typically 36); the conv/maxpool + SummLSTM stack assumes
+    // it (H2 = H/3). Resize the input line to input_height (bilinear,
+    // aspect-preserving) before normalization — otherwise a differently-sized
+    // line produces garbage. (recognize() is documented to do this.)
+    const uint8_t * src = pixels;
+    int W = width, H = height;
+    std::vector<uint8_t> resized;
+    if (ctx->input_height > 0 && height != ctx->input_height) {
+        const int dh = ctx->input_height;
+        int dw = (int)std::lround((double)width * dh / (double)height);
+        if (dw < 1) dw = 1;
+        resized.resize((size_t)dw * dh);
+        for (int y = 0; y < dh; y++) {
+            float sy = ((y + 0.5f) * height / dh) - 0.5f;
+            int y0 = (int)std::floor(sy);
+            float fy = sy - y0;
+            int y0c = std::min(std::max(y0, 0), height - 1);
+            int y1c = std::min(std::max(y0 + 1, 0), height - 1);
+            for (int x = 0; x < dw; x++) {
+                float sx = ((x + 0.5f) * width / dw) - 0.5f;
+                int x0 = (int)std::floor(sx);
+                float fx = sx - x0;
+                int x0c = std::min(std::max(x0, 0), width - 1);
+                int x1c = std::min(std::max(x0 + 1, 0), width - 1);
+                float p00 = pixels[y0c * width + x0c];
+                float p01 = pixels[y0c * width + x1c];
+                float p10 = pixels[y1c * width + x0c];
+                float p11 = pixels[y1c * width + x1c];
+                float top = p00 + (p01 - p00) * fx;
+                float bot = p10 + (p11 - p10) * fx;
+                resized[(size_t)y * dw + x] = (uint8_t)std::lround(top + (bot - top) * fy);
+            }
+        }
+        src = resized.data();
+        W = dw;
+        H = dh;
+    }
+
     // Normalize image (Tesseract-style ComputeBlackWhite + SetPixel)
-    std::vector<float> normalized(width * height);
-    normalize_image(pixels, width, height, normalized.data());
+    std::vector<float> normalized((size_t)W * H);
+    normalize_image(src, W, H, normalized.data());
 
     // Run forward pass
-    forward(ctx, normalized.data(), height, width);
+    forward(ctx, normalized.data(), H, W);
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
