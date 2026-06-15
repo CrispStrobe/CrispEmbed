@@ -112,15 +112,6 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --tbsrn-sr FILE  standalone TBSRN text-line SR: upscale text crop, write PPM to stdout\n");
     fprintf(stderr, "                   (needs --tbsrn-model PATH: TBSRN GGUF, Telescope, fixed 4x)\n");
     fprintf(stderr, "  --tbsrn-model PATH TBSRN text-line super-resolution GGUF (used with --tbsrn-sr)\n");
-    fprintf(stderr, "  --safmn-sr FILE  standalone SAFMN super-resolution: upscale image, write PPM to stdout\n");
-    fprintf(stderr, "                   (needs --safmn-model PATH: SAFMN GGUF, SAFM+CCM AttBlocks, 2x or 4x)\n");
-    fprintf(stderr, "  --safmn-model PATH SAFMN super-resolution GGUF (used with --safmn-sr)\n");
-    fprintf(stderr, "  --table-parse FILE  parse a grayscale table image, print HTML to stdout\n");
-    fprintf(stderr, "                      (optional --table-ocr-model PATH: Tesseract LSTM GGUF for cell OCR)\n");
-    fprintf(stderr, "  --table-ocr-model PATH  Tesseract LSTM GGUF for built-in cell OCR (used with --table-parse)\n");
-    fprintf(stderr, "  --esrgan-sr FILE standalone Real-ESRGAN super-resolution: upscale image, write PPM to stdout\n");
-    fprintf(stderr, "                   (needs --esrgan-model PATH: Real-ESRGAN GGUF, SRVGGNetCompact, 4x)\n");
-    fprintf(stderr, "  --esrgan-model PATH Real-ESRGAN super-resolution GGUF (used with --esrgan-sr)\n");
     fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
     fprintf(stderr, "  --ocr-rec MODEL  general OCR: text recognition model (TrOCR, e.g. trocr-printed)\n");
     fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
@@ -188,12 +179,8 @@ int main(int argc, char ** argv) {
     std::string pan_sr_path;           // --pan-sr FILE: standalone PAN upscaling
     std::string tbsrn_model;           // --tbsrn-model: TBSRN text-line SR GGUF
     std::string tbsrn_sr_path;         // --tbsrn-sr FILE: standalone TBSRN upscaling
-    std::string safmn_model;           // --safmn-model: SAFMN super-resolution GGUF
-    std::string safmn_sr_path;         // --safmn-sr FILE: standalone SAFMN upscaling
-    std::string table_parse_path;      // --table-parse FILE: table structure recognition
-    std::string table_ocr_model;       // --table-ocr-model: Tesseract LSTM GGUF for cell OCR
-    std::string esrgan_model;          // --esrgan-model: Real-ESRGAN super-resolution GGUF
-    std::string esrgan_sr_path;        // --esrgan-sr FILE: standalone Real-ESRGAN upscaling
+    std::string restormer_model;        // --restormer MODEL: Restormer image restoration GGUF
+    std::string restormer_path;         // --restormer FILE: standalone Restormer processing
     std::string pipeline_vlm_model;     // --vlm-model NAME: VLM escalation engine GGUF
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
@@ -313,18 +300,10 @@ int main(int argc, char ** argv) {
             tbsrn_model = argv[++i];
         } else if (strcmp(argv[i], "--tbsrn-sr") == 0 && i + 1 < argc) {
             tbsrn_sr_path = argv[++i];
-        } else if (strcmp(argv[i], "--safmn-model") == 0 && i + 1 < argc) {
-            safmn_model = argv[++i];
-        } else if (strcmp(argv[i], "--safmn-sr") == 0 && i + 1 < argc) {
-            safmn_sr_path = argv[++i];
-        } else if (strcmp(argv[i], "--table-parse") == 0 && i + 1 < argc) {
-            table_parse_path = argv[++i];
-        } else if (strcmp(argv[i], "--table-ocr-model") == 0 && i + 1 < argc) {
-            table_ocr_model = argv[++i];
-        } else if (strcmp(argv[i], "--esrgan-model") == 0 && i + 1 < argc) {
-            esrgan_model = argv[++i];
-        } else if (strcmp(argv[i], "--esrgan-sr") == 0 && i + 1 < argc) {
-            esrgan_sr_path = argv[++i];
+        } else if (strcmp(argv[i], "--restormer") == 0 && i + 1 < argc) {
+            restormer_model = argv[++i];
+        } else if (strcmp(argv[i], "--restormer-input") == 0 && i + 1 < argc) {
+            restormer_path = argv[++i];
         } else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) {
             pipeline_vlm_model = argv[++i];
         } else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) {
@@ -489,64 +468,25 @@ int main(int argc, char ** argv) {
         crispembed_tbsrn_sr_free_image(out);
         return 0;
     }
-    if (!safmn_sr_path.empty()) {
-        if (safmn_model.empty()) {
-            fprintf(stderr, "error: --safmn-sr requires --safmn-model <path>\n");
+    if (!restormer_path.empty()) {
+        if (restormer_model.empty()) {
+            fprintf(stderr, "error: --restormer-input requires --restormer <model>\n");
             return 1;
         }
         int w, h, ch;
-        unsigned char * data = stbi_load(safmn_sr_path.c_str(), &w, &h, &ch, 3);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", safmn_sr_path.c_str()); return 1; }
-        void * sctx = crispembed_safmn_sr_init(safmn_model.c_str(), n_threads);
-        if (!sctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load SAFMN model '%s'\n", safmn_model.c_str()); return 1; }
+        unsigned char * data = stbi_load(restormer_path.c_str(), &w, &h, &ch, 3);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", restormer_path.c_str()); return 1; }
+        void * rctx = crispembed_restormer_init(restormer_model.c_str(), n_threads);
+        if (!rctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load Restormer model '%s'\n", restormer_model.c_str()); return 1; }
         uint8_t * out = nullptr;
-        int ow = 0, oh = 0;
-        int rc = crispembed_safmn_sr_process(sctx, data, w, h, 0, 0, &out, &ow, &oh);
+        int rc = crispembed_restormer_process(rctx, data, w, h, 0, 0, &out);
         stbi_image_free(data);
-        crispembed_safmn_sr_free(sctx);
-        if (rc != 0 || !out) { fprintf(stderr, "error: SAFMN SR processing failed\n"); return 1; }
+        crispembed_restormer_free(rctx);
+        if (rc != 0 || !out) { fprintf(stderr, "error: Restormer processing failed\n"); return 1; }
         // Write result as PPM (RGB) to stdout
-        printf("P6\n%d %d\n255\n", ow, oh);
-        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
-        crispembed_safmn_sr_free_image(out);
-        return 0;
-    }
-    if (!table_parse_path.empty()) {
-        int w, h, ch;
-        unsigned char * data = stbi_load(table_parse_path.c_str(), &w, &h, &ch, 1);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", table_parse_path.c_str()); return 1; }
-        const char * ocr_path = table_ocr_model.empty() ? nullptr : table_ocr_model.c_str();
-        void * tpctx = crispembed_table_parse_init(ocr_path, n_threads);
-        if (!tpctx) { stbi_image_free(data); fprintf(stderr, "error: cannot init table parser\n"); return 1; }
-        char * html = crispembed_table_parse_to_html(tpctx, data, w, h);
-        stbi_image_free(data);
-        crispembed_table_parse_free(tpctx);
-        if (!html) { fprintf(stderr, "error: table parsing failed\n"); return 1; }
-        fputs(html, stdout);
-        crispembed_table_parse_free_string(html);
-        return 0;
-    }
-
-    if (!esrgan_sr_path.empty()) {
-        if (esrgan_model.empty()) {
-            fprintf(stderr, "error: --esrgan-sr requires --esrgan-model <path>\n");
-            return 1;
-        }
-        int w, h, ch;
-        unsigned char * data = stbi_load(esrgan_sr_path.c_str(), &w, &h, &ch, 3);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", esrgan_sr_path.c_str()); return 1; }
-        void * sctx = crispembed_esrgan_sr_init(esrgan_model.c_str(), n_threads);
-        if (!sctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load Real-ESRGAN model '%s'\n", esrgan_model.c_str()); return 1; }
-        uint8_t * out = nullptr;
-        int ow = 0, oh = 0;
-        int rc = crispembed_esrgan_sr_process(sctx, data, w, h, 0, 0, &out, &ow, &oh);
-        stbi_image_free(data);
-        crispembed_esrgan_sr_free(sctx);
-        if (rc != 0 || !out) { fprintf(stderr, "error: Real-ESRGAN SR processing failed\n"); return 1; }
-        // Write result as PPM (RGB) to stdout
-        printf("P6\n%d %d\n255\n", ow, oh);
-        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
-        crispembed_esrgan_sr_free_image(out);
+        printf("P6\n%d %d\n255\n", w, h);
+        fwrite(out, 1, (size_t)w * h * 3, stdout);
+        crispembed_restormer_free_image(out);
         return 0;
     }
 

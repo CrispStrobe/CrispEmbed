@@ -574,6 +574,12 @@ static const ModelEntry k_registry[] = {
      "PAN 4x image SR (272K params, PaddleGAN)", "0.5 MB", "Apache-2.0",
      "https://huggingface.co/cstr/text-super-resolution-gguf"},
 
+    {"restormer-denoise",
+     "restormer-denoise-f16.gguf",
+     "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/restormer-denoise-f16.gguf",
+     "Restormer image restoration (26M params, CVPR 2022)", "50 MB", "Apache-2.0",
+     "https://huggingface.co/cstr/text-super-resolution-gguf"},
+
     // text-sr: NAFNet-SR engine — no default model; supply a custom trained GGUF.
     {"text-sr",
      "text-sr-nafnet.gguf",

@@ -2610,6 +2610,85 @@ class CrispPanSr:
 
 
 # ---------------------------------------------------------------------------
+# Restormer image restoration (CVPR 2022)
+# ---------------------------------------------------------------------------
+
+def _setup_restormer_signatures(lib):
+    lib.crispembed_restormer_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_restormer_init.restype = ctypes.c_void_p
+
+    lib.crispembed_restormer_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_restormer_free.restype = None
+
+    lib.crispembed_restormer_process.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_uint8)),
+    ]
+    lib.crispembed_restormer_process.restype = ctypes.c_int
+
+    lib.crispembed_restormer_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_restormer_free_image.restype = None
+
+
+class CrispRestormer:
+    """Restormer image restoration — denoise, deblur, or derain document images.
+
+    Usage::
+
+        r = CrispRestormer("restormer-denoise.gguf")
+        out = r.process(pixels, width, height)  # returns ndarray same size as input
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 4,
+                 lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_restormer_signatures(self._lib)
+        self._ctx = self._lib.crispembed_restormer_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load Restormer model: {model_path}")
+
+    def process(self, pixels: np.ndarray, width: int, height: int,
+                tile_size: int = 0, tile_overlap: int = 0
+                ) -> np.ndarray:
+        """Restore an image (denoise / deblur / derain).
+
+        Args:
+            pixels: uint8 numpy array, flattened or shaped (H, W, C).
+            width: source image width in pixels.
+            height: source image height in pixels.
+            tile_size: tile size for tiled inference (0 = full image).
+            tile_overlap: overlap between tiles in pixels.
+
+        Returns:
+            Restored image as uint8 numpy array shaped (H, W, 3).
+        """
+        flat = np.asarray(pixels, dtype=np.uint8).flatten()
+        px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+
+        out_ptr = ctypes.POINTER(ctypes.c_uint8)()
+
+        rc = self._lib.crispembed_restormer_process(
+            self._ctx, px_ptr, width, height,
+            tile_size, tile_overlap,
+            ctypes.byref(out_ptr),
+        )
+        if rc != 0 or not out_ptr:
+            raise RuntimeError("Restormer processing failed")
+
+        buf = np.ctypeslib.as_array(out_ptr, shape=(height * width * 3,)).copy()
+        self._lib.crispembed_restormer_free_image(out_ptr)
+        return buf.reshape(height, width, 3)
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_restormer_free(self._ctx)
+            self._ctx = None
+
+
+# ---------------------------------------------------------------------------
 # TBSRN Super-Resolution (always 2×, 16×64 → 32×128)
 # ---------------------------------------------------------------------------
 
