@@ -716,6 +716,39 @@ CRISPEMBED_API int crispembed_ner_extract(
     crispembed_ner_entity ** out_entities);
 
 // ---------------------------------------------------------------------------
+// LiLT — Language-independent Layout Transformer for document understanding.
+// Dual-stream encoder (RoBERTa + layout transformer with BiACM) for token
+// classification. Used for form understanding (FUNSD: question/answer/header).
+// ---------------------------------------------------------------------------
+
+typedef struct crispembed_lilt_token {
+    int token_id;
+    int label_id;
+    const char * label;   // label string — owned by ctx
+    float score;          // softmax confidence
+} crispembed_lilt_token;
+
+/// Load LiLT model from GGUF. Returns opaque context or NULL.
+CRISPEMBED_API void * crispembed_lilt_init(const char * model_path, int n_threads);
+
+/// Free LiLT context.
+CRISPEMBED_API void crispembed_lilt_free(void * ctx);
+
+/// Run token classification.
+/// input_ids: [n_tokens] token ids (including BOS/EOS).
+/// bbox: [n_tokens * 4] bounding boxes (x0, y0, x1, y1) in [0, 1000].
+/// Returns array of token results (owned by ctx, valid until next call).
+CRISPEMBED_API const crispembed_lilt_token * crispembed_lilt_classify(
+    void * ctx, const int32_t * input_ids, const int32_t * bbox,
+    int n_tokens, int * out_n);
+
+/// Get number of labels.
+CRISPEMBED_API int crispembed_lilt_num_labels(void * ctx);
+
+/// Get label name by id.
+CRISPEMBED_API const char * crispembed_lilt_label_name(void * ctx, int label_id);
+
+// ---------------------------------------------------------------------------
 // Key Information Extraction (KIE) — OCR + NER pipeline.
 // Chains OCR (text detection + recognition) with GLiNER zero-shot NER to
 // extract structured key-value fields from document images (receipts,
