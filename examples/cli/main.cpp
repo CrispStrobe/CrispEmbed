@@ -469,6 +469,8 @@ int main(int argc, char ** argv) {
         printf("P6\n%d %d\n255\n", ow, oh);
         fwrite(out, 1, (size_t)ow * oh * 3, stdout);
         crispembed_tbsrn_sr_free_image(out);
+        return 0;
+    }
     if (!safmn_sr_path.empty()) {
         if (safmn_model.empty()) {
             fprintf(stderr, "error: --safmn-sr requires --safmn-model <path>\n");
