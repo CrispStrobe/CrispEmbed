@@ -33,6 +33,7 @@ extern "C" {
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -137,9 +138,12 @@ bool load(context** out, const char* path, int n_threads) {
     fprintf(stderr, "  prob_thresh=%.2f box_thresh=%.2f unclip=%.2f\n",
             ctx->prob_thresh, ctx->box_thresh, ctx->unclip_ratio);
 
-    // Load weights
-    ctx->backend = ggml_backend_cpu_init();
-    ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
+    // Load weights — prefer GPU backend when available
+    bool force_cpu = (getenv("OCR_DETECT_FORCE_CPU") && atoi(getenv("OCR_DETECT_FORCE_CPU")));
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
 
     if (!core_gguf::load_weights(path, ctx->backend, "det", ctx->wl)) {
         fprintf(stderr, "ocr_detect: failed to load weights\n");

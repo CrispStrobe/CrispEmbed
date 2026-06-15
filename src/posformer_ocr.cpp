@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstdlib>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -111,17 +112,24 @@ struct posformer_ocr_context {
 // Helpers
 // ---------------------------------------------------------------------------
 
+// GPU-safe: uses ggml_backend_tensor_get instead of direct tensor->data access
 static const float * tf32(posformer_ocr_context * ctx, struct ggml_tensor * t) {
     if (!t) return nullptr;
-    if (t->type == GGML_TYPE_F32) return (const float *)t->data;
     auto it = ctx->dequant_cache.find(t->data);
     if (it != ctx->dequant_cache.end()) return it->second.data();
     const int64_t n = ggml_nelements(t);
     auto & buf = ctx->dequant_cache[t->data];
     buf.resize(n);
-    const auto * traits = ggml_get_type_traits(t->type);
-    if (traits->to_float) traits->to_float(t->data, buf.data(), n);
-    else std::fill(buf.begin(), buf.end(), 0.0f);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+    } else {
+        size_t raw_sz = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_sz);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
+        const auto * traits = ggml_get_type_traits(t->type);
+        if (traits->to_float) traits->to_float(raw.data(), buf.data(), n);
+        else std::fill(buf.begin(), buf.end(), 0.0f);
+    }
     return buf.data();
 }
 
@@ -338,7 +346,10 @@ posformer_ocr_context * posformer_ocr_init(const char * model_path, int n_thread
             hp.growth_rate, hp.num_layers, hp.d_model, hp.nhead,
             hp.num_decoder_layers, hp.vocab_size, ctx->vocab.size(), hp.arm_dc);
 
-    ggml_backend_t backend = ggml_backend_cpu_init();
+    // Prefer GPU backend — weights read via ggml_backend_tensor_get (GPU-safe).
+    bool force_cpu = (getenv("POSFORMER_OCR_FORCE_CPU") && atoi(getenv("POSFORMER_OCR_FORCE_CPU")));
+    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!backend) backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, backend, "posformer_ocr", ctx->wl)) {
         ggml_backend_free(backend);
         return nullptr;
