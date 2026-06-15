@@ -46,10 +46,25 @@ Emit spaces and punctuation natively. Auto-detected via `--ocr`.
 
 **Text Detection**: Surya EfficientViT segformer (38M, 91 languages, GPU-accelerated).
 Heatmap → polygon bounding boxes. Pairs with any OCR recognizer for full-page OCR.
+CC-based model-free fallback (zero downloads, CPU-only, 4ms/page).
+
+**Document Preprocessing**: Two tiers — classical (CPU, model-free, instant) and
+learned (GPU, model-based, higher quality). Classical: adaptive Otsu binarization,
+differential-square-sum deskew, CC despeckle, background normalization, page
+dewarping (cubic baseline fitting + disparity warp), 1-bit DWA morphology (21x
+faster than float). Learned: NAFNet denoise (GGUF). All cherry-picked from
+Leptonica (BSD-2), reimplemented as self-contained C++ with no dependencies.
+
+**OCR Output Formats**: Plain text, hOCR (XHTML), ALTO 3.1 (XML), searchable PDF.
+Multi-page accumulation, XML escaping, configurable page separators.
+
+**OCR Pipeline Orchestrator**: Source-type routing (screenshot/scan/photo),
+per-stage cleanup + engine selection, accept-gate cascading with VLM fallback.
+Configurable via C API, CLI, Python, Rust, Dart, HTTP server.
 
 **9.5x faster** than FastEmbed (ONNX) on MiniLM-L6. Python/Rust/Dart APIs.
 GPU acceleration (CUDA/Vulkan/Metal). iOS + Android + **WASM** builds.
-90 models in registry (text, vision, face, OCR, NER, scan cleanup), 200+ GGUF variants on HF.
+93 models in registry (text, vision, face, OCR, NER, scan cleanup), 200+ GGUF variants on HF.
 
 **Browser**: Math OCR compiles to WebAssembly (1 MB) via `build-wasm.sh`.
 Runs entirely client-side — no server, no API key. GGUF models fetched on
