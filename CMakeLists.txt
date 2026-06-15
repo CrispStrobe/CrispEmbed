@@ -144,6 +144,8 @@ list(APPEND CRISPEMBED_SOURCES src/internvl2_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/gliner_ner.cpp)
 list(APPEND CRISPEMBED_SOURCES src/scan_cleanup.cpp)
 list(APPEND CRISPEMBED_SOURCES src/nafnet_denoise.cpp)
+list(APPEND CRISPEMBED_SOURCES src/text_sr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/tbsrn_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/parseq_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/glm_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/got_ocr.cpp)
@@ -383,6 +385,12 @@ target_link_libraries(test-tps-locnet PRIVATE crispembed)
 
 add_executable(test-tps-parity tests/test_tps_parity.cpp)
 target_link_libraries(test-tps-parity PRIVATE crispembed)
+
+add_executable(test-text-sr tests/test_text_sr.cpp)
+target_link_libraries(test-text-sr PRIVATE crispembed)
+
+add_executable(test-tbsrn-diff tests/test_tbsrn_diff.cpp)
+target_link_libraries(test-tbsrn-diff PRIVATE crispembed)
 
 endif() # NOT iOS
 

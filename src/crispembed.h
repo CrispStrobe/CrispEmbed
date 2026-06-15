@@ -615,6 +615,7 @@ typedef struct crispembed_ocr_pipeline_params {
     const char * det_model;     // DBNet detection GGUF
     const char * rec_model;     // TrOCR recognition GGUF
     const char * nafnet_model;  // NAFNet denoise GGUF for tier-2 (NULL/"" = classical only)
+    const char * sr_model;      // text SR GGUF for low-DPI upscaling (NULL/"" = off)
     const char * vlm_model;     // optional single-shot VLM escalation GGUF (NULL/"" = none)
     int          vlm_engine;    // VLM engine when vlm_model set: 0=GOT 1=GLM 2=Qwen2-VL 3=InternVL2
     const char * punct_model;   // optional post-OCR punctuation/spacing restorer (FireRedPunc/PCS); NULL/"" = off
@@ -793,6 +794,47 @@ CRISPEMBED_API int crispembed_scan_cleanup_process(
 
 CRISPEMBED_API void crispembed_scan_cleanup_free_image(uint8_t * pixels);
 
+// ---------------------------------------------------------------------------
+// Text Super-Resolution — upscale low-DPI text images before OCR.
+// NAFNet U-Net + PixelShuffle ending, processes in overlapping tiles.
+// ---------------------------------------------------------------------------
+
+/// Initialize text SR from a GGUF model. Returns opaque context (NULL on error).
+CRISPEMBED_API void * crispembed_text_sr_init(const char * model_path, int n_threads);
+CRISPEMBED_API void   crispembed_text_sr_free(void * ctx);
+
+/// Query upscale factor (2 or 4) from the loaded model.
+CRISPEMBED_API int crispembed_text_sr_upscale_factor(const void * ctx);
+
+/// Upscale an RGB image. Allocates output buffer (*out_pixels, RGB uint8).
+/// tile_size/tile_overlap: 0 = auto. Caller frees with crispembed_text_sr_free_image().
+/// Returns 0 on success, -1 on error.
+CRISPEMBED_API int crispembed_text_sr_process(
+    void * ctx,
+    const uint8_t * pixels, int width, int height,
+    int tile_size, int tile_overlap,
+    uint8_t ** out_pixels, int * out_width, int * out_height);
+
+CRISPEMBED_API void crispembed_text_sr_free_image(uint8_t * pixels);
+
+// ---------------------------------------------------------------------------
+// TBSRN Text-Line Super-Resolution — PaddleOCR Telescope (Apache-2.0).
+// Upscales text-line crops (any size → 32×128) for improved recognition.
+// Designed to run between detection and recognition in the OCR pipeline.
+// ---------------------------------------------------------------------------
+
+CRISPEMBED_API void * crispembed_tbsrn_sr_init(const char * model_path, int n_threads);
+CRISPEMBED_API void   crispembed_tbsrn_sr_free(void * ctx);
+
+/// Upscale a text-line crop. Input resized to 16×64, output is 32×128.
+/// Caller frees with crispembed_tbsrn_sr_free_image().
+CRISPEMBED_API int crispembed_tbsrn_sr_process(
+    void * ctx,
+    const uint8_t * pixels, int width, int height,
+    uint8_t ** out_pixels, int * out_width, int * out_height);
+
+CRISPEMBED_API void crispembed_tbsrn_sr_free_image(uint8_t * pixels);
+
 /// Variant with individual params (for FFI bindings that can't pass structs by value).
 CRISPEMBED_API int crispembed_scan_cleanup_process_simple(
     void * ctx,
@@ -832,6 +874,7 @@ typedef struct crispembed_ocr_stage {
 CRISPEMBED_API void * crispembed_ocr_pipeline_init_stages(
     int router,
     const char * nafnet_model,
+    const char * sr_model,      // optional text SR GGUF for low-DPI upscaling (NULL/"" = off)
     const char * punct_model,   // optional post-OCR punctuation/spacing restorer (NULL/"" = off)
     const crispembed_ocr_stage * stages,
     int n_stages,

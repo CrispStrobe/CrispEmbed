@@ -429,3 +429,39 @@ typedef CrispembedPunctProcessNative = Pointer<Utf8> Function(
     Pointer<Void> ctx, Pointer<Utf8> text);
 typedef CrispembedPunctProcessDart = Pointer<Utf8> Function(
     Pointer<Void> ctx, Pointer<Utf8> text);
+
+// --- Text Super-Resolution (text_sr) ---
+typedef CrispembedTextSrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedTextSrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedTextSrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedTextSrFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedTextSrUpscaleFactorNative = Int32 Function(Pointer<Void> ctx);
+typedef CrispembedTextSrUpscaleFactorDart = int Function(Pointer<Void> ctx);
+
+typedef CrispembedTextSrProcessNative = Int32 Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    Int32 width,
+    Int32 height,
+    Int32 tileSize,
+    Int32 tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+typedef CrispembedTextSrProcessDart = int Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    int width,
+    int height,
+    int tileSize,
+    int tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+
+typedef CrispembedTextSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
+typedef CrispembedTextSrFreeImageDart = void Function(Pointer<Uint8> pixels);

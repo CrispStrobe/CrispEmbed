@@ -55,6 +55,7 @@ pub struct CrispembedOcrPipelineParams {
     pub det_model: *const c_char,
     pub rec_model: *const c_char,
     pub nafnet_model: *const c_char,
+    pub sr_model: *const c_char,
     pub vlm_model: *const c_char,
     pub vlm_engine: c_int,
     pub punct_model: *const c_char,
@@ -570,6 +571,7 @@ extern "C" {
     pub fn crispembed_ocr_pipeline_init_stages(
         router: c_int,
         nafnet_model: *const c_char,
+        sr_model: *const c_char,
         punct_model: *const c_char,
         stages: *const CrispembedOcrStage,
         n_stages: c_int,
@@ -705,6 +707,23 @@ extern "C" {
     ) -> c_int;
 
     pub fn crispembed_scan_cleanup_free_image(pixels: *mut u8);
+
+    // ── Text super-resolution ──
+    pub fn crispembed_text_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_text_sr_free(ctx: *mut c_void);
+    pub fn crispembed_text_sr_upscale_factor(ctx: *const c_void) -> c_int;
+    pub fn crispembed_text_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        tile_size: c_int,
+        tile_overlap: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_text_sr_free_image(pixels: *mut u8);
 
     // ── OCR result rendering ──
     pub fn crispembed_ocr_render(
