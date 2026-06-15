@@ -136,6 +136,7 @@ struct context {
     ggml_context *model_ctx = nullptr;
     ggml_backend_buffer_t model_buf = nullptr;
     ggml_backend_t backend = nullptr;
+    ggml_backend_t backend_cpu = nullptr;  // CPU fallback (sched requires CPU last)
     ggml_backend_sched_t sched = nullptr;
     std::vector<uint8_t> compute_meta;
     kv_cache kvc;
