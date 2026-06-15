@@ -208,9 +208,12 @@ cc_text_region * cc_detect_lines_params(
     if (out_n) *out_n = 0;
     if (!gray || width <= 0 || height <= 0) return nullptr;
 
-    // 1. Binarize
+    // 1. Binarize (Otsu + 1 so pixels AT the threshold are foreground)
     uint8_t thresh = params.binarize_threshold;
-    if (thresh == 0) thresh = otsu_threshold(gray, width, height);
+    if (thresh == 0) {
+        thresh = otsu_threshold(gray, width, height);
+        if (thresh < 255) thresh++;
+    }
 
     int wpl = 0;
     uint32_t * bits = morph_u8_to_1bit(gray, width, height, thresh, &wpl);
