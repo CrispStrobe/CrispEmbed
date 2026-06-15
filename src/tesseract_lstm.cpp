@@ -71,6 +71,10 @@ struct tesseract_lstm_context {
     std::string result_buf;
     std::vector<float> char_confs;
 
+    // Diff mode: capture per-stage intermediates
+    bool dump_mode = false;
+    std::map<std::string, std::vector<float>> captures;
+
     // GGUF loader state
     core_gguf::WeightLoad wl;
     // Dequantized weight cache
@@ -352,11 +356,21 @@ static void normalize_image(
 // Forward pass
 // ---------------------------------------------------------------------------
 
+// Helper: capture a buffer for diff comparison
+static void capture(tesseract_lstm_context * ctx, const char * name,
+                    const float * data, size_t n) {
+    if (ctx->dump_mode)
+        ctx->captures[name].assign(data, data + n);
+}
+
 static void forward(tesseract_lstm_context * ctx,
                     const float * image,  // (H, W) normalized
                     int H, int W)
 {
+    ctx->captures.clear();
     const int conv_out = ctx->conv_out;  // 16
+
+    capture(ctx, "input_image", image, H * W);
 
     // 1. Convolve 3×3 stacking (no learned weights) + FC+tanh
     // For each pixel (y,x): stack 3×3 neighborhood → 9 features
@@ -387,6 +401,8 @@ static void forward(tesseract_lstm_context * ctx,
         }
     }
 
+    capture(ctx, "after_conv_fc", fc_out.data(), fc_out.size());
+
     // 2. MaxPool 3×3
     int H2 = H / 3, W2 = W / 3;
     std::vector<float> mp_out(H2 * W2 * conv_out, -1e30f);
@@ -405,6 +421,8 @@ static void forward(tesseract_lstm_context * ctx,
             }
         }
     }
+
+    capture(ctx, "after_maxpool", mp_out.data(), mp_out.size());
 
     // 3. XYTranspose + SummLSTM
     // Transpose: (H2, W2, C) → (W2, H2, C)
@@ -426,6 +444,7 @@ static void forward(tesseract_lstm_context * ctx,
                       W2, H2, conv_out, ns0,
                       lw0.W_ih.data(), lw0.W_hh.data(), lw0.bias.data());
     lstm_idx++;
+    capture(ctx, "after_lstm_0", summ_out.data(), summ_out.size());
 
     // 4. Remaining LSTM layers (1-D over the time axis = W2)
     int T = W2;
@@ -444,6 +463,11 @@ static void forward(tesseract_lstm_context * ctx,
 
         cur_seq = std::move(next_seq);
         cur_dim = lw.ns;
+        {
+            char buf[32];
+            snprintf(buf, sizeof(buf), "after_lstm_%d", lstm_idx);
+            capture(ctx, buf, cur_seq.data(), cur_seq.size());
+        }
         lstm_idx++;
     }
 
@@ -471,6 +495,8 @@ static void forward(tesseract_lstm_context * ctx,
         for (int c = 0; c < n_classes; c++)
             dst[c] /= sum;
     }
+
+    capture(ctx, "logits", logits.data(), logits.size());
 
     // 6. CTC greedy decode
     ctx->result_buf.clear();
@@ -566,4 +592,26 @@ int tesseract_lstm_num_classes(const tesseract_lstm_context * ctx) {
 
 const char * tesseract_lstm_vgsl_spec(const tesseract_lstm_context * ctx) {
     return ctx ? ctx->vgsl_spec.c_str() : "";
+}
+
+void tesseract_lstm_set_dump(tesseract_lstm_context * ctx, int enabled) {
+    if (ctx) ctx->dump_mode = (enabled != 0);
+}
+
+const float * tesseract_lstm_get_capture(
+    const tesseract_lstm_context * ctx,
+    const char * name,
+    int * n_elem)
+{
+    if (!ctx || !name) {
+        if (n_elem) *n_elem = 0;
+        return nullptr;
+    }
+    auto it = ctx->captures.find(name);
+    if (it == ctx->captures.end()) {
+        if (n_elem) *n_elem = 0;
+        return nullptr;
+    }
+    if (n_elem) *n_elem = (int)it->second.size();
+    return it->second.data();
 }
