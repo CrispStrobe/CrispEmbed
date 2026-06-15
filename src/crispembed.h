@@ -526,7 +526,8 @@ CRISPEMBED_API void crispembed_free(crispembed_context * ctx);
 // ---------------------------------------------------------------------------
 
 // Initialize. Reads "general.architecture" from the GGUF to dispatch
-// to the correct inference backend.
+// to the correct inference backend (pix2tex, hmer, bttr, ppformulanet,
+// mixtex, parseq, qwen2vl, internvl2, glm-ocr, got-ocr, tesseract_lstm).
 CRISPEMBED_API void * crispembed_math_ocr_init(const char * model_path, int n_threads);
 CRISPEMBED_API void crispembed_math_ocr_free(void * ctx);
 
