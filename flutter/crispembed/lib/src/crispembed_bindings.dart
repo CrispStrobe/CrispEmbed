@@ -372,6 +372,13 @@ typedef CrispembedDewarpDart = int Function(
     Pointer<Uint8> gray, int w, int h,
     Pointer<Uint8> out, Pointer<Int32> outW, Pointer<Int32> outH);
 
+typedef CrispembedTpsAutoDewarpNative = Int32 Function(
+    Pointer<Uint8> gray, Int32 w, Int32 h,
+    Pointer<Utf8> modelPath, Pointer<Uint8> out);
+typedef CrispembedTpsAutoDewarpDart = int Function(
+    Pointer<Uint8> gray, int w, int h,
+    Pointer<Utf8> modelPath, Pointer<Uint8> out);
+
 typedef CrispembedFindSkewNative = Int32 Function(
     Pointer<Uint8> gray, Int32 w, Int32 h,
     Pointer<Float> angle, Pointer<Float> confidence);

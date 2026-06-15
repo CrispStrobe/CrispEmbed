@@ -1823,6 +1823,7 @@ class CrispOcrOrchestrator {
 class CrispPreprocess {
   late final DynamicLibrary _lib;
   late final CrispembedDewarpDart _dewarpFn;
+  late final CrispembedTpsAutoDewarpDart _tpsAutoDewarpFn;
   late final CrispembedFindSkewDart _findSkewFn;
   late final CrispembedAdaptiveBinarizeDart _binarizeFn;
   late final CrispembedBackgroundNormDart _bgNormFn;
@@ -1833,6 +1834,8 @@ class CrispPreprocess {
     _lib = _openNativeLib(libPath);
     _dewarpFn = _lib.lookupFunction<CrispembedDewarpNative,
         CrispembedDewarpDart>('crispembed_dewarp');
+    _tpsAutoDewarpFn = _lib.lookupFunction<CrispembedTpsAutoDewarpNative,
+        CrispembedTpsAutoDewarpDart>('crispembed_tps_auto_dewarp');
     _findSkewFn = _lib.lookupFunction<CrispembedFindSkewNative,
         CrispembedFindSkewDart>('crispembed_find_skew');
     _binarizeFn = _lib.lookupFunction<CrispembedAdaptiveBinarizeNative,
@@ -1862,6 +1865,24 @@ class CrispPreprocess {
     calloc.free(out);
     calloc.free(ow);
     calloc.free(oh);
+    return result;
+  }
+
+  /// TPS auto-dewarp using a learned localizer model (GGUF).
+  /// Returns dewarped image bytes, or null on failure.
+  Uint8List? tpsDewarp(Uint8List gray, int w, int h, String modelPath) {
+    final inp = calloc<Uint8>(w * h);
+    inp.asTypedList(w * h).setAll(0, gray);
+    final out = calloc<Uint8>(w * h);
+    final cPath = modelPath.toNativeUtf8();
+    final ret = _tpsAutoDewarpFn(inp, w, h, cPath.cast<Utf8>(), out);
+    Uint8List? result;
+    if (ret == 0) {
+      result = Uint8List.fromList(out.asTypedList(w * h));
+    }
+    calloc.free(inp);
+    calloc.free(out);
+    calloc.free(cPath);
     return result;
   }
 
