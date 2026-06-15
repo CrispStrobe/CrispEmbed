@@ -764,6 +764,18 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "Warning: failed to load NER model '%s'\n", ner_model_path.c_str());
     }
 
+    // KIE (OCR + NER pipeline) — auto-enabled when NER + OCR det/rec are all loaded.
+    void * kie_ctx = nullptr;
+    std::mutex kie_mutex;
+
+    if (ner_ctx && !ocr_det_model_path.empty() && !ocr_rec_model_path.empty()) {
+        kie_ctx = crispembed_kie_init(
+            ocr_det_model_path.c_str(), ocr_rec_model_path.c_str(),
+            ner_model_path.c_str(), n_threads);
+        if (!kie_ctx)
+            fprintf(stderr, "Warning: failed to init KIE pipeline\n");
+    }
+
     // POST /clip/text — CLIP text encoding
     // Request:  {"text": "a photo of a cat"}
     // Response: {"embedding": [...], "dim": N}
@@ -1371,6 +1383,102 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /kie/extract — key information extraction (OCR + NER)
+    // Request:  {"image": "/path/to/doc.png", "labels": ["total", "date", "vendor"], "threshold": 0.5}
+    // Response: {"fields": [{label, value, score, bbox}], "ocr_text": "...", "ocr_confidence": 0.85, "n_ocr_regions": 12}
+    svr.Post("/kie/extract", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!kie_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"KIE not available (need --ner + --ocr-det + --ocr-rec)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+
+        // Parse "image"
+        std::string image_path;
+        {
+            auto pos = body.find("\"image\"");
+            if (pos != std::string::npos) {
+                auto q1 = body.find('"', pos + 7);
+                auto q2 = body.find('"', q1 + 1);
+                if (q1 != std::string::npos && q2 != std::string::npos)
+                    image_path = body.substr(q1 + 1, q2 - q1 - 1);
+            }
+        }
+
+        // Parse "labels" array
+        std::vector<std::string> labels;
+        {
+            auto pos = body.find("\"labels\"");
+            if (pos != std::string::npos) {
+                auto arr_start = body.find('[', pos);
+                auto arr_end = body.find(']', arr_start);
+                if (arr_start != std::string::npos && arr_end != std::string::npos) {
+                    std::string arr = body.substr(arr_start + 1, arr_end - arr_start - 1);
+                    size_t i = 0;
+                    while (i < arr.size()) {
+                        auto q1 = arr.find('"', i);
+                        if (q1 == std::string::npos) break;
+                        auto q2 = arr.find('"', q1 + 1);
+                        if (q2 == std::string::npos) break;
+                        labels.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
+                        i = q2 + 1;
+                    }
+                }
+            }
+        }
+
+        // Parse "threshold"
+        float threshold = 0.5f;
+        {
+            auto pos = body.find("\"threshold\"");
+            if (pos != std::string::npos) {
+                auto colon = body.find(':', pos);
+                if (colon != std::string::npos)
+                    threshold = (float)atof(body.c_str() + colon + 1);
+            }
+        }
+
+        if (image_path.empty() || labels.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"provide \\\"image\\\" and \\\"labels\\\" fields\"}", "application/json");
+            return;
+        }
+
+        std::vector<const char *> label_ptrs(labels.size());
+        for (size_t i = 0; i < labels.size(); i++)
+            label_ptrs[i] = labels[i].c_str();
+
+        std::lock_guard<std::mutex> lock(kie_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        crispembed_kie_result kr = crispembed_kie_extract(
+            kie_ctx, image_path.c_str(),
+            label_ptrs.data(), (int)labels.size(), threshold);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        std::ostringstream js;
+        js << "{\"fields\": [";
+        for (int i = 0; i < kr.n_fields; i++) {
+            if (i > 0) js << ", ";
+            js << "{\"label\": \"" << json_escape(kr.fields[i].label ? kr.fields[i].label : "")
+               << "\", \"value\": \"" << json_escape(kr.fields[i].value ? kr.fields[i].value : "")
+               << "\", \"score\": " << std::fixed << std::setprecision(4) << kr.fields[i].score
+               << ", \"bbox\": [" << std::setprecision(1) << kr.fields[i].x << ", "
+               << kr.fields[i].y << ", " << kr.fields[i].w << ", " << kr.fields[i].h << "]}";
+        }
+        js << "], \"ocr_text\": \"" << json_escape(kr.ocr_text ? kr.ocr_text : "")
+           << "\", \"ocr_confidence\": " << std::setprecision(3) << kr.ocr_confidence
+           << ", \"n_ocr_regions\": " << kr.n_ocr_regions
+           << ", \"ms\": " << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /kie/extract in %.1f ms (%d fields)\n", ms, kr.n_fields);
+        res.set_content(js.str(), "application/json");
+    });
+
     // POST /scan/cleanup — document scan preprocessing (no model needed)
     // Request:  {"image": "/path/to/scan.png", "deskew": true, "binarize": false}
     // Response: {"width": W, "height": H, "original_width": OW, "original_height": OH, "ms": T}
@@ -1486,6 +1594,7 @@ int main(int argc, char ** argv) {
     if (layout_ctx) fprintf(stderr, "  POST /layout/detect   — {\"image\": \"page.png\"}\n");
     if (text_det_ctx) fprintf(stderr, "  POST /text/detect     — {\"image\": \"page.png\"}\n");
     if (ner_ctx) fprintf(stderr, "  POST /ner/extract     — {\"text\": \"...\", \"labels\": [\"person\", ...]}\n");
+    if (kie_ctx) fprintf(stderr, "  POST /kie/extract     — {\"image\": \"doc.png\", \"labels\": [\"total\", ...]} (OCR+NER)\n");
     if (ocr_orch_ctx) fprintf(stderr, "  POST /ocr/pipeline    — {\"image\": \"doc.png\"} (routing + cleanup + accept-gate)\n");
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
     if (ctx && crispembed_has_colbert(ctx)) fprintf(stderr, "  POST /colbert/score   — {\"query\": \"...\", \"documents\": [...]}\n");
@@ -1493,6 +1602,7 @@ int main(int argc, char ** argv) {
 
     svr.listen(host, port);
 
+    if (kie_ctx) crispembed_kie_free(kie_ctx);
     if (ner_ctx) crispembed_ner_free(ner_ctx);
     if (layout_ctx) crispembed_layout_free(layout_ctx);
     if (text_det_ctx) crispembed_text_det_free(text_det_ctx);

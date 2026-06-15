@@ -1520,6 +1520,172 @@ class CrispNER {
 }
 
 // ---------------------------------------------------------------------------
+// Key Information Extraction (KIE) — OCR + NER pipeline
+// ---------------------------------------------------------------------------
+
+/// A single extracted key-value field with spatial position.
+class KieField {
+  final String label;
+  final String value;
+  final double score;
+  final double x, y, w, h;
+
+  const KieField({
+    required this.label,
+    required this.value,
+    required this.score,
+    required this.x,
+    required this.y,
+    required this.w,
+    required this.h,
+  });
+
+  @override
+  String toString() =>
+      'KieField($label="$value", score=${score.toStringAsFixed(3)}, '
+      'bbox=[$x,$y,$w,$h])';
+}
+
+/// Result of KIE extraction.
+class KieResult {
+  final List<KieField> fields;
+  final String ocrText;
+  final double ocrConfidence;
+  final int nOcrRegions;
+
+  const KieResult({
+    required this.fields,
+    required this.ocrText,
+    required this.ocrConfidence,
+    required this.nOcrRegions,
+  });
+}
+
+/// Key Information Extraction — chains OCR + NER to extract structured
+/// key-value fields from document images (receipts, invoices, forms).
+///
+/// ```dart
+/// final kie = CrispKIE('det.gguf', 'rec.gguf', 'ner.gguf');
+/// final result = kie.extract('receipt.png', labels: ['total', 'date']);
+/// for (final f in result.fields) {
+///   print('${f.label} = ${f.value}');
+/// }
+/// kie.dispose();
+/// ```
+class CrispKIE {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedKieFreeDart _freeFn;
+  late final CrispembedKieExtractDart _extractFn;
+
+  /// Load KIE pipeline with OCR detection, recognition, and NER models.
+  ///
+  /// [ocrDetModel] — text detection GGUF (DBNet).
+  /// [ocrRecModel] — text recognition GGUF (TrOCR/VLM).
+  /// [nerModel] — GLiNER NER GGUF.
+  /// [nThreads] — CPU thread count (0 = auto-detect).
+  CrispKIE(String ocrDetModel, String ocrRecModel, String nerModel,
+      {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+
+    final init = _lib.lookupFunction<CrispembedKieInitNative,
+        CrispembedKieInitDart>('crispembed_kie_init');
+    _freeFn = _lib.lookupFunction<CrispembedKieFreeNative,
+        CrispembedKieFreeDart>('crispembed_kie_free');
+    _extractFn = _lib.lookupFunction<CrispembedKieExtractNative,
+        CrispembedKieExtractDart>('crispembed_kie_extract');
+
+    final detPtr = ocrDetModel.toNativeUtf8();
+    final recPtr = ocrRecModel.toNativeUtf8();
+    final nerPtr = nerModel.toNativeUtf8();
+    _ctx = init(detPtr, recPtr, nerPtr, nThreads);
+    calloc.free(detPtr);
+    calloc.free(recPtr);
+    calloc.free(nerPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to init KIE pipeline');
+    }
+  }
+
+  /// Extract structured fields from a document image.
+  ///
+  /// [imagePath] — path to document image (JPG/PNG/BMP).
+  /// [labels] — field names to extract (e.g. `['total', 'date', 'vendor']`).
+  /// [threshold] — NER confidence threshold in [0, 1] (default 0.5).
+  KieResult extract(String imagePath, {
+    required List<String> labels,
+    double threshold = 0.5,
+  }) {
+    _checkDisposed();
+
+    final imgPtr = imagePath.toNativeUtf8();
+    final nLabels = labels.length;
+    final labelPtrs = calloc<Pointer<Utf8>>(nLabels);
+    final nativeLabelPtrs = <Pointer<Utf8>>[];
+    for (var i = 0; i < nLabels; i++) {
+      final p = labels[i].toNativeUtf8();
+      nativeLabelPtrs.add(p);
+      labelPtrs[i] = p;
+    }
+
+    try {
+      final res = _extractFn(_ctx, imgPtr, labelPtrs, nLabels, threshold);
+
+      final fields = <KieField>[];
+      if (res.nFields > 0 && res.fields != nullptr) {
+        // crispembed_kie_field layout:
+        //   char* label, char* value, float score, float x, float y, float w, float h
+        final fieldSize = 2 * sizeOf<Pointer>() + 5 * sizeOf<Float>();
+        for (var i = 0; i < res.nFields; i++) {
+          final base = res.fields.cast<Uint8>().elementAt(i * fieldSize);
+          final labelPtr = base.cast<Pointer<Utf8>>().value;
+          final valuePtr = base.elementAt(sizeOf<Pointer>()).cast<Pointer<Utf8>>().value;
+          final floats = base.elementAt(2 * sizeOf<Pointer>()).cast<Float>();
+
+          fields.add(KieField(
+            label: labelPtr != nullptr ? labelPtr.toDartString() : '',
+            value: valuePtr != nullptr ? valuePtr.toDartString() : '',
+            score: floats[0],
+            x: floats[1],
+            y: floats[2],
+            w: floats[3],
+            h: floats[4],
+          ));
+        }
+      }
+
+      return KieResult(
+        fields: fields,
+        ocrText: res.ocrText != nullptr ? res.ocrText.toDartString() : '',
+        ocrConfidence: res.ocrConfidence,
+        nOcrRegions: res.nOcrRegions,
+      );
+    } finally {
+      calloc.free(imgPtr);
+      for (final p in nativeLabelPtrs) {
+        calloc.free(p);
+      }
+      calloc.free(labelPtrs);
+    }
+  }
+
+  /// Release all native resources.
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispKIE has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // OCR Orchestrator (source-type routing + cleanup + accept-gate)
 // ---------------------------------------------------------------------------
 
