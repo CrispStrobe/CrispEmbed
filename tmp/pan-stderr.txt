@@ -1,3 +1,0 @@
-pan_sr: nf=40 unf=24 nb=16 scale=4x, 146 tensors
-pan_sr: 500x200 → 2000x800 (4x), tiles=5x2
-pan_sr: done 2000x800
