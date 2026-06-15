@@ -4088,3 +4088,32 @@ extern "C" void crispembed_despeckle(
 {
     despeckle_gray(gray, w, h, max_w, max_h, out);
 }
+
+// ---------------------------------------------------------------------------
+// Table structure recognition
+// ---------------------------------------------------------------------------
+
+#include "table_parse.h"
+
+extern "C" void * crispembed_table_parse_init(const char * ocr_model_path, int n_threads) {
+    return table_parse_init(ocr_model_path, n_threads);
+}
+
+extern "C" void crispembed_table_parse_free(void * ctx) {
+    table_parse_free((table_parse_context *)ctx);
+}
+
+extern "C" char * crispembed_table_parse_to_html(
+        void * ctx, const uint8_t * gray, int width, int height) {
+    return table_parse_to_html((table_parse_context *)ctx, gray, width, height);
+}
+
+extern "C" void crispembed_table_parse_free_string(char * str) {
+    table_parse_free_string(str);
+}
+
+extern "C" int crispembed_table_parse_detect_grid(
+        const uint8_t * gray, int width, int height,
+        int * out_n_rows, int * out_n_cols) {
+    return table_parse_detect_grid(gray, width, height, out_n_rows, out_n_cols);
+}

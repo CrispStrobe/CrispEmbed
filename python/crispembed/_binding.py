@@ -2756,6 +2756,85 @@ class CrispSafmnSr:
 
 
 # ---------------------------------------------------------------------------
+# Table Structure Recognition
+# ---------------------------------------------------------------------------
+
+def _setup_table_parse_signatures(lib):
+    lib.crispembed_table_parse_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_table_parse_init.restype = ctypes.c_void_p
+
+    lib.crispembed_table_parse_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_table_parse_free.restype = None
+
+    lib.crispembed_table_parse_to_html.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+    ]
+    lib.crispembed_table_parse_to_html.restype = ctypes.c_void_p
+
+    lib.crispembed_table_parse_free_string.argtypes = [ctypes.c_void_p]
+    lib.crispembed_table_parse_free_string.restype = None
+
+
+class CrispTableParse:
+    """Table structure recognition — extracts HTML from a table image.
+
+    Uses morphological line detection and grid intersection analysis to
+    produce an HTML ``<table>`` element. Optional built-in cell OCR via
+    a Tesseract LSTM GGUF model.
+
+    Usage::
+
+        tp = CrispTableParse()                        # no OCR
+        tp = CrispTableParse("tesseract.gguf")        # with OCR
+        html = tp.to_html(gray_pixels, width, height) # returns str
+    """
+
+    def __init__(self, ocr_model_path: Optional[str] = None, n_threads: int = 4,
+                 lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_table_parse_signatures(self._lib)
+        path_bytes = ocr_model_path.encode("utf-8") if ocr_model_path else None
+        self._ctx = self._lib.crispembed_table_parse_init(path_bytes, n_threads)
+        if not self._ctx:
+            raise RuntimeError(
+                f"Failed to init table parser"
+                + (f" with OCR model: {ocr_model_path}" if ocr_model_path else "")
+            )
+
+    def to_html(self, gray_pixels: np.ndarray, width: int, height: int) -> str:
+        """Parse a grayscale table image and return an HTML string.
+
+        Args:
+            gray_pixels: uint8 numpy array of grayscale pixel values,
+                         flattened or shaped (height, width).
+            width: image width in pixels.
+            height: image height in pixels.
+
+        Returns:
+            HTML string containing a ``<table>`` element.
+
+        Raises:
+            RuntimeError: if parsing fails.
+        """
+        flat = np.asarray(gray_pixels, dtype=np.uint8).flatten()
+        px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+
+        raw = self._lib.crispembed_table_parse_to_html(self._ctx, px_ptr, width, height)
+        if not raw:
+            raise RuntimeError("Table parsing failed")
+
+        html = ctypes.cast(raw, ctypes.c_char_p).value.decode("utf-8")
+        self._lib.crispembed_table_parse_free_string(raw)
+        return html
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_table_parse_free(self._ctx)
+            self._ctx = None
+
+
+# ---------------------------------------------------------------------------
 # OCR Orchestrator (source-type routing + cleanup + accept-gate)
 # ---------------------------------------------------------------------------
 
