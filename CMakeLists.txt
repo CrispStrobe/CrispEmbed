@@ -156,6 +156,7 @@ list(APPEND CRISPEMBED_SOURCES src/classical_preproc.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_render.cpp)
 list(APPEND CRISPEMBED_SOURCES src/dewarp.cpp)
 list(APPEND CRISPEMBED_SOURCES src/kie_pipeline.cpp)
+list(APPEND CRISPEMBED_SOURCES src/tps_warp.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -372,6 +373,9 @@ target_link_libraries(test-ocr-render PRIVATE crispembed)
 add_executable(test-dewarp tests/test_dewarp.cpp)
 target_include_directories(test-dewarp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-dewarp PRIVATE crispembed)
+
+add_executable(test-tps-warp tests/test_tps_warp.cpp)
+target_link_libraries(test-tps-warp PRIVATE crispembed)
 
 endif() # NOT iOS
 
