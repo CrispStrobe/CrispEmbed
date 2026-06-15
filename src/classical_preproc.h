@@ -84,6 +84,30 @@ void despeckle_gray(const uint8_t * gray, int w, int h,
 void background_norm(const uint8_t * gray, int w, int h,
                      int tile_w, int tile_h, uint8_t * out);
 
+// ---------------------------------------------------------------------------
+// 5. Image downsampling calculator
+// ---------------------------------------------------------------------------
+
+/// Compute the optimal scale factor for downsampling before OCR.
+/// Returns a factor in (0, 1] — multiply image dimensions by this factor.
+/// target_dpi: desired OCR resolution (300 is typical for printed text).
+/// current_dpi: source image DPI (0 = estimate from dimensions).
+/// max_pixels: maximum total pixels after downsampling (0 = no limit).
+float compute_downsample_factor(int w, int h, int current_dpi,
+                                 int target_dpi, int max_pixels);
+
+// ---------------------------------------------------------------------------
+// 6. OCR quality scoring
+// ---------------------------------------------------------------------------
+
+/// Score OCR output quality by matching words against a dictionary.
+/// Returns fraction of words found in the dictionary [0, 1].
+/// [text] — OCR output text (UTF-8, space-separated words).
+/// [dict] — array of dictionary words (must be sorted).
+/// [n_dict] — number of words in dictionary.
+float ocr_quality_score(const char * text,
+                         const char ** dict, int n_dict);
+
 #ifdef __cplusplus
 }
 #endif

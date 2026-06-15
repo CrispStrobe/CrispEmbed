@@ -7,9 +7,11 @@
 #include "morph_fast.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <vector>
 
 // =========================================================================
@@ -501,4 +503,76 @@ void background_norm(const uint8_t * gray, int w, int h,
             out[y * w + x] = (uint8_t)std::max(0.0f, std::min(255.0f, v));
         }
     }
+}
+
+// =========================================================================
+// 5. Image downsampling calculator
+// =========================================================================
+
+float compute_downsample_factor(int w, int h, int current_dpi,
+                                 int target_dpi, int max_pixels) {
+    float factor = 1.0f;
+
+    // DPI-based downsampling
+    if (current_dpi > 0 && target_dpi > 0 && current_dpi > target_dpi) {
+        factor = (float)target_dpi / current_dpi;
+    }
+
+    // Pixel-count limit
+    if (max_pixels > 0) {
+        int pixels = w * h;
+        if (pixels > max_pixels) {
+            float px_factor = sqrtf((float)max_pixels / pixels);
+            if (px_factor < factor) factor = px_factor;
+        }
+    }
+
+    // Clamp to (0, 1]
+    if (factor > 1.0f) factor = 1.0f;
+    if (factor < 0.01f) factor = 0.01f;
+    return factor;
+}
+
+// =========================================================================
+// 6. OCR quality scoring
+// =========================================================================
+
+float ocr_quality_score(const char * text,
+                         const char ** dict, int n_dict) {
+    if (!text || !dict || n_dict <= 0) return 0.0f;
+
+    int total_words = 0;
+    int matched = 0;
+
+    // Split text into words (space/newline/tab separated)
+    const char * p = text;
+    while (*p) {
+        // Skip whitespace
+        while (*p && (*p == ' ' || *p == '\n' || *p == '\t' || *p == '\r')) p++;
+        if (!*p) break;
+
+        // Extract word
+        const char * start = p;
+        while (*p && *p != ' ' && *p != '\n' && *p != '\t' && *p != '\r') p++;
+        int len = (int)(p - start);
+        if (len < 2) continue; // skip single chars
+
+        total_words++;
+
+        // Binary search in sorted dictionary
+        std::string word(start, len);
+        // Lowercase for comparison
+        for (auto & c : word) c = (char)tolower((unsigned char)c);
+
+        int lo = 0, hi = n_dict - 1;
+        while (lo <= hi) {
+            int mid = (lo + hi) / 2;
+            int cmp = word.compare(dict[mid]);
+            if (cmp == 0) { matched++; break; }
+            if (cmp < 0) hi = mid - 1;
+            else lo = mid + 1;
+        }
+    }
+
+    return total_words > 0 ? (float)matched / total_words : 0.0f;
 }
