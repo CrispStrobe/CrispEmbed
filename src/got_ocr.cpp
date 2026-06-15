@@ -465,9 +465,16 @@ bool got_ocr::load(context &ctx, const char *gguf_path, int n_threads, int verbo
     }
     if (!ctx.backend) return false;
 
-    // Scheduler
-    ggml_backend_t backends[] = { ctx.backend };
-    ctx.sched = ggml_backend_sched_new(backends, nullptr, 1, 32768, false, false);
+    // Scheduler. ggml_backend_sched_new asserts the LAST backend is CPU, so
+    // when the best backend is a GPU (Metal/CUDA/Vulkan) append a CPU backend
+    // as the fallback — otherwise this aborts on every GPU machine.
+    ctx.backend_cpu = ggml_backend_is_cpu(ctx.backend) ? nullptr : ggml_backend_cpu_init();
+    if (ctx.backend_cpu) ggml_backend_cpu_set_n_threads(ctx.backend_cpu, n_threads);
+    std::vector<ggml_backend_t> backends;
+    backends.push_back(ctx.backend);
+    if (ctx.backend_cpu) backends.push_back(ctx.backend_cpu);
+    ctx.sched = ggml_backend_sched_new(backends.data(), nullptr,
+                                       (int)backends.size(), 32768, false, false);
     ctx.compute_meta.resize(16 * 1024 * 1024);
 
     if (!load_tensors(ctx, gguf_path)) {
@@ -499,6 +506,7 @@ void got_ocr::free_(context &ctx) {
     if (ctx.model_buf) ggml_backend_buffer_free(ctx.model_buf);
     if (ctx.model_ctx) ggml_free(ctx.model_ctx);
     if (ctx.backend) ggml_backend_free(ctx.backend);
+    if (ctx.backend_cpu) ggml_backend_free(ctx.backend_cpu);
     ctx = {};
 }
 
