@@ -3217,6 +3217,7 @@ extern "C" crispembed_ocr_pipeline_params crispembed_ocr_pipeline_defaults(void)
     p.det_model       = nullptr;
     p.rec_model       = nullptr;
     p.nafnet_model    = nullptr;
+    p.sr_model        = nullptr;
     p.vlm_model       = nullptr;
     p.vlm_engine      = 0;
     p.punct_model     = nullptr;
@@ -3230,6 +3231,9 @@ extern "C" void * crispembed_ocr_pipeline_init(
     cfg.router = params->router != 0;
     if (params->nafnet_model && *params->nafnet_model) {
         cfg.nafnet_model = params->nafnet_model;
+    }
+    if (params->sr_model && *params->sr_model) {
+        cfg.sr_model = params->sr_model;
     }
     // Apply the flat models / accept-gate / cleanup toggle to every stage of
     // every chain (per-stage config lands in a later slice via JSON).
@@ -3353,12 +3357,14 @@ static scan_cleanup_params to_cleanup(const crispembed_scan_cleanup_params & p) 
 }
 
 extern "C" void * crispembed_ocr_pipeline_init_stages(
-        int router, const char * nafnet_model, const char * punct_model,
+        int router, const char * nafnet_model, const char * sr_model,
+        const char * punct_model,
         const crispembed_ocr_stage * stages, int n_stages, int n_threads) {
     if (!stages || n_stages <= 0) return nullptr;
     ocr_orchestrator::config cfg;
     cfg.router = router != 0;
     if (nafnet_model && *nafnet_model) cfg.nafnet_model = nafnet_model;
+    if (sr_model && *sr_model) cfg.sr_model = sr_model;
 
     // Group stages into per-source-type chains, preserving array order.
     for (int i = 0; i < n_stages; i++) {
@@ -3694,6 +3700,63 @@ extern "C" int crispembed_scan_cleanup_process_simple(
     p.binarize = binarize;
     return scan_cleanup_process((scan_cleanup_ctx *)ctx, pixels, width, height, channels,
                                 p, out_pixels, out_width, out_height);
+}
+
+// ---------------------------------------------------------------------------
+// Text super-resolution
+// ---------------------------------------------------------------------------
+
+#include "text_sr.h"
+
+extern "C" void * crispembed_text_sr_init(const char * model_path, int n_threads) {
+    return text_sr_init(model_path, n_threads);
+}
+
+extern "C" void crispembed_text_sr_free(void * ctx) {
+    text_sr_free((text_sr_context *)ctx);
+}
+
+extern "C" int crispembed_text_sr_upscale_factor(const void * ctx) {
+    return text_sr_upscale_factor((const text_sr_context *)ctx);
+}
+
+extern "C" int crispembed_text_sr_process(
+        void * ctx,
+        const uint8_t * pixels, int width, int height,
+        int tile_size, int tile_overlap,
+        uint8_t ** out_pixels, int * out_width, int * out_height) {
+    return text_sr_process((text_sr_context *)ctx, pixels, width, height,
+                           tile_size, tile_overlap, out_pixels, out_width, out_height);
+}
+
+extern "C" void crispembed_text_sr_free_image(uint8_t * pixels) {
+    text_sr_free_image(pixels);
+}
+
+// ---------------------------------------------------------------------------
+// TBSRN text-line super-resolution
+// ---------------------------------------------------------------------------
+
+#include "tbsrn_sr.h"
+
+extern "C" void * crispembed_tbsrn_sr_init(const char * model_path, int n_threads) {
+    return tbsrn_sr_init(model_path, n_threads);
+}
+
+extern "C" void crispembed_tbsrn_sr_free(void * ctx) {
+    tbsrn_sr_free((tbsrn_sr_context *)ctx);
+}
+
+extern "C" int crispembed_tbsrn_sr_process(
+        void * ctx,
+        const uint8_t * pixels, int width, int height,
+        uint8_t ** out_pixels, int * out_width, int * out_height) {
+    return tbsrn_sr_process((tbsrn_sr_context *)ctx, pixels, width, height,
+                            out_pixels, out_width, out_height);
+}
+
+extern "C" void crispembed_tbsrn_sr_free_image(uint8_t * pixels) {
+    tbsrn_sr_free_image(pixels);
 }
 
 // ---------------------------------------------------------------------------

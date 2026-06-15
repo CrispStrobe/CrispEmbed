@@ -19,6 +19,8 @@
 // detection with per-line tesseract recognition).
 #include "tesseract_lstm.h"
 #include "ocr_detect.h"
+// Text super-resolution (low-DPI upscale before OCR).
+#include "text_sr.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../ggml/examples/stb_image_write.h"
@@ -59,6 +61,7 @@ struct context {
     tesseract_lstm_context*  tess   = nullptr;   // Tesseract-LSTM line recognizer
     scan_cleanup_ctx*        clean1 = nullptr;   // tier-1 classical (model = NULL)
     scan_cleanup_ctx*        clean2 = nullptr;   // tier-2 NAFNet (model = nafnet_model)
+    text_sr_context*         sr     = nullptr;   // text super-resolution (low-DPI upscale)
 };
 
 // ── defaults ────────────────────────────────────────────────────────────────
@@ -405,6 +408,61 @@ static bool passes_gate(const result& r, const accept_gate& g) {
     return true;
 }
 
+// Estimate effective DPI from image dimensions. Documents are typically
+// letter/A4 (~8.5x11 in). If the image is small enough to suggest low DPI,
+// apply text super-resolution before OCR.
+static int estimate_dpi(int w, int h) {
+    // Assume the longer dimension corresponds to ~11 inches (letter/A4 long edge)
+    int longer = std::max(w, h);
+    return (int)(longer / 11.0f + 0.5f);
+}
+
+// Run text SR on the image if estimated DPI is below the threshold.
+// Returns path to upscaled temp PNG (empty if SR was skipped or failed).
+static std::string maybe_sr(context* ctx, const char* src) {
+    if (ctx->cfg.sr_model.empty()) return "";
+
+    int w = 0, h = 0, c = 0;
+    unsigned char* d = stbi_load(src, &w, &h, &c, 3);
+    if (!d) return "";
+
+    int dpi = estimate_dpi(w, h);
+    if (dpi >= ctx->cfg.sr_target_dpi) {
+        stbi_image_free(d);
+        return "";
+    }
+
+    // Lazy-load SR model
+    if (!ctx->sr) {
+        ctx->sr = text_sr_init(ctx->cfg.sr_model.c_str(), ctx->n_threads);
+        if (!ctx->sr) {
+            fprintf(stderr, "ocr_orchestrator: text_sr load failed\n");
+            stbi_image_free(d);
+            return "";
+        }
+    }
+
+    uint8_t* out = nullptr;
+    int ow = 0, oh = 0;
+    if (text_sr_process(ctx->sr, d, w, h, 0, 0, &out, &ow, &oh) != 0 || !out) {
+        stbi_image_free(d);
+        return "";
+    }
+    stbi_image_free(d);
+
+    std::string out_path = temp_png_path();
+    if (stbi_write_png(out_path.c_str(), ow, oh, 3, out, ow * 3) == 0) {
+        text_sr_free_image(out);
+        return "";
+    }
+    text_sr_free_image(out);
+
+    if (ctx->cfg.verbose)
+        fprintf(stderr, "ocr_orchestrator: SR %dx%d (%d DPI) -> %dx%d\n",
+                w, h, dpi, ow, oh);
+    return out_path;
+}
+
 static const chain* pick_chain(const config& cfg, source_type st) {
     const chain* fallback = nullptr;
     for (auto& c : cfg.chains) {
@@ -467,6 +525,10 @@ result run_file(context* ctx, const char* image_path) {
         return best;
     }
 
+    // Text super-resolution: upscale low-DPI images before OCR
+    std::string sr_path = maybe_sr(ctx, image_path);
+    const char* effective_path = sr_path.empty() ? image_path : sr_path.c_str();
+
     int tried = 0;
     for (const stage& s : ch->stages) {
         if (!s.enabled) continue;
@@ -477,8 +539,8 @@ result run_file(context* ctx, const char* image_path) {
                     tried, engine_name(s.eng),
                     s.cleanup.enabled ? "on" : "off");
 
-        std::string tmp = clean_to_temp(ctx, s.cleanup, image_path);
-        const char* ocr_path = tmp.empty() ? image_path : tmp.c_str();
+        std::string tmp = clean_to_temp(ctx, s.cleanup, effective_path);
+        const char* ocr_path = tmp.empty() ? effective_path : tmp.c_str();
 
         result r = assemble(run_engine(ctx, s, ocr_path), s.eng, st);
         r.used_type    = st;
@@ -492,9 +554,14 @@ result run_file(context* ctx, const char* image_path) {
                     tried, (int)r.full_text.size(), r.mean_confidence,
                     passed ? "PASS" : "FAIL");
 
-        if (passed) return r;
+        if (passed) {
+            if (!sr_path.empty()) std::remove(sr_path.c_str());
+            return r;
+        }
         if (r.full_text.size() > best.full_text.size()) best = std::move(r);
     }
+    if (!sr_path.empty()) std::remove(sr_path.c_str());
+
     if (verbose)
         fprintf(stderr, "ocr_orchestrator: all %d stages failed gate, returning best (%d chars)\n",
                 tried, (int)best.full_text.size());
@@ -514,6 +581,7 @@ void free(context* ctx) {
     if (ctx->tess)   tesseract_lstm_free(ctx->tess);
     if (ctx->clean1) scan_cleanup_free(ctx->clean1);
     if (ctx->clean2) scan_cleanup_free(ctx->clean2);
+    if (ctx->sr)     text_sr_free(ctx->sr);
     delete ctx;
 }
 

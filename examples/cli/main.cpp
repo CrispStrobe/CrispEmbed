@@ -101,6 +101,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
     fprintf(stderr, "       --ocr-engine N  primary engine (dbnet_trocr|surya|tesseract|got|glm|qwen2vl|internvl2)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
+    fprintf(stderr, "       --sr-model PATH text super-resolution GGUF for low-DPI upscaling (NAFNet+PixelShuffle)\n");
     fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
     fprintf(stderr, "  --ocr-rec MODEL  general OCR: text recognition model (TrOCR, e.g. trocr-printed)\n");
     fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
@@ -162,6 +163,7 @@ int main(int argc, char ** argv) {
     std::string cleanup_only_path;      // --cleanup-only FILE: standalone cleanup
     std::string ocr_pipeline_path;      // --ocr-pipeline FILE: full orchestrator
     bool pipeline_denoise = false;      // --denoise: NAFNet tier-2 in the pipeline
+    std::string sr_model;              // --sr-model: text super-resolution GGUF
     std::string pipeline_vlm_model;     // --vlm-model NAME: VLM escalation engine GGUF
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
@@ -266,6 +268,8 @@ int main(int argc, char ** argv) {
             pipeline_engine = argv[++i];
         } else if (strcmp(argv[i], "--denoise") == 0) {
             pipeline_denoise = true;
+        } else if (strcmp(argv[i], "--sr-model") == 0 && i + 1 < argc) {
+            sr_model = argv[++i];
         } else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) {
             pipeline_vlm_model = argv[++i];
         } else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) {
@@ -467,8 +471,9 @@ int main(int argc, char ** argv) {
             st.min_confidence     = min_conf;
             pctx = crispembed_ocr_pipeline_init_stages(
                 /*router=*/0,
-                nafnet.empty() ? nullptr : nafnet.c_str(),
-                punct.empty()  ? nullptr : punct.c_str(),
+                nafnet.empty()    ? nullptr : nafnet.c_str(),
+                sr_model.empty()  ? nullptr : sr_model.c_str(),
+                punct.empty()     ? nullptr : punct.c_str(),
                 &st, 1, n_threads);
         } else {
             // Default flat path (DBNet+TrOCR + source-type routing).

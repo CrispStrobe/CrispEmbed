@@ -72,6 +72,7 @@ int main(int argc, char ** argv) {
     std::string vlm_model_path;       // VLM escalation model for orchestrator
     int vlm_engine = 0;               // 0=GOT, 1=GLM, 2=Qwen2-VL, 3=InternVL2
     std::string punct_model_path;     // punct restoration model for orchestrator
+    std::string sr_model_path;        // text super-resolution model (--sr-model)
     int port = 8080;
     int n_threads = 4;
 
@@ -94,6 +95,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) vlm_model_path = argv[++i];
         else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) vlm_engine = atoi(argv[++i]);
         else if (strcmp(argv[i], "--punct-model") == 0 && i + 1 < argc) punct_model_path = argv[++i];
+        else if (strcmp(argv[i], "--sr-model") == 0 && i + 1 < argc) sr_model_path = argv[++i];
     }
 
     if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty()) {
@@ -121,6 +123,8 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --vlm-model MODEL VLM escalation fallback GGUF (optional)\n");
         fprintf(stderr, "  --vlm-engine N    VLM backend: 0=GOT 1=GLM 2=Qwen2-VL 3=InternVL2\n");
         fprintf(stderr, "  --punct-model M   post-OCR punctuation/spacing GGUF (optional)\n");
+        fprintf(stderr, "\nText super-resolution (low-DPI upscaling before OCR):\n");
+        fprintf(stderr, "  --sr-model MODEL  text SR GGUF (NAFNet+PixelShuffle, 2x or 4x); enables POST /text/sr\n");
         return 1;
     }
 
@@ -716,6 +720,9 @@ int main(int argc, char ** argv) {
             if (!punct_r.empty()) punct_model_path = punct_r;
             pp.punct_model = punct_model_path.c_str();
         }
+        if (!sr_model_path.empty()) {
+            pp.sr_model = sr_model_path.c_str();
+        }
         ocr_orch_ctx = crispembed_ocr_pipeline_init(&pp, n_threads);
         if (!ocr_orch_ctx)
             fprintf(stderr, "Warning: failed to init OCR orchestrator\n");
@@ -778,6 +785,16 @@ int main(int argc, char ** argv) {
             ner_model_path.c_str(), n_threads);
         if (!kie_ctx)
             fprintf(stderr, "Warning: failed to init KIE pipeline\n");
+    }
+
+    // ── Text Super-Resolution ──
+    void * text_sr_ctx = nullptr;
+    std::mutex text_sr_mutex;
+
+    if (!sr_model_path.empty()) {
+        text_sr_ctx = crispembed_text_sr_init(sr_model_path.c_str(), n_threads);
+        if (!text_sr_ctx)
+            fprintf(stderr, "Warning: failed to load text SR model '%s'\n", sr_model_path.c_str());
     }
 
     // POST /clip/text — CLIP text encoding
@@ -1846,6 +1863,88 @@ int main(int argc, char ** argv) {
         free(rendered);
     });
 
+    // POST /text/sr — text image super-resolution (upscale low-DPI text before OCR)
+    svr.Post("/text/sr", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!text_sr_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no text SR model loaded (use --sr-model)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 3);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(text_sr_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_text_sr_process(
+            text_sr_ctx, data, w, h,
+            /*tile_size=*/0, /*tile_overlap=*/0,
+            &out, &ow, &oh);
+        stbi_image_free(data);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        if (rc != 0 || !out) {
+            res.status = 500;
+            res.set_content("{\"error\": \"text SR processing failed\"}", "application/json");
+            return;
+        }
+
+        // Base64-encode the raw RGB output
+        static const char b64chars[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        const size_t n_bytes = (size_t)ow * oh * 3;
+        std::string b64;
+        b64.reserve(((n_bytes + 2) / 3) * 4);
+        for (size_t i = 0; i < n_bytes; i += 3) {
+            uint32_t v = (uint32_t)out[i] << 16;
+            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
+            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
+            b64 += b64chars[(v >> 18) & 0x3f];
+            b64 += b64chars[(v >> 12) & 0x3f];
+            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
+            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
+        }
+        crispembed_text_sr_free_image(out);
+
+        const int scale = crispembed_text_sr_upscale_factor(text_sr_ctx);
+
+        std::ostringstream js;
+        js << "{\"image\": \"" << b64 << "\""
+           << ", \"width\": " << ow << ", \"height\": " << oh
+           << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": " << scale
+           << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /text/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n",
+                ms, w, h, ow, oh, scale);
+        res.set_content(js.str(), "application/json");
+    });
+
     // GET /health
     svr.Get("/health", [&](const httplib::Request &, httplib::Response & res) {
         std::ostringstream js;
@@ -1865,6 +1964,7 @@ int main(int argc, char ** argv) {
         if (text_det_ctx) js << ", \"text_detection\": true";
         if (ner_ctx) js << ", \"ner\": true";
         if (ocr_orch_ctx) js << ", \"ocr_orchestrator\": true";
+        if (text_sr_ctx) js << ", \"text_sr\": true, \"text_sr_upscale\": " << crispembed_text_sr_upscale_factor(text_sr_ctx);
         js << ", \"scan_cleanup\": true";  // always available (no model needed)
         js << "}";
         res.set_content(js.str(), "application/json");
@@ -1888,6 +1988,7 @@ int main(int argc, char ** argv) {
     if (ner_ctx) fprintf(stderr, "  POST /ner/extract     — {\"text\": \"...\", \"labels\": [\"person\", ...]}\n");
     if (kie_ctx) fprintf(stderr, "  POST /kie/extract     — {\"image\": \"doc.png\", \"labels\": [\"total\", ...]} (OCR+NER)\n");
     if (ocr_orch_ctx) fprintf(stderr, "  POST /ocr/pipeline    — {\"image\": \"doc.png\"} (routing + cleanup + accept-gate)\n");
+    if (text_sr_ctx) fprintf(stderr, "  POST /text/sr         — {\"image\": \"low_dpi.png\"} (upscale %dx)\n", crispembed_text_sr_upscale_factor(text_sr_ctx));
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
     fprintf(stderr, "  POST /preprocess/skew      — {\"image\": \"...\"} (find skew angle)\n");
     fprintf(stderr, "  POST /preprocess/dewarp    — {\"image\": \"...\"} (straighten curved text)\n");
@@ -1900,6 +2001,7 @@ int main(int argc, char ** argv) {
     svr.listen(host, port);
 
     if (kie_ctx) crispembed_kie_free(kie_ctx);
+    if (text_sr_ctx) crispembed_text_sr_free(text_sr_ctx);
     if (ner_ctx) crispembed_ner_free(ner_ctx);
     if (layout_ctx) crispembed_layout_free(layout_ctx);
     if (text_det_ctx) crispembed_text_det_free(text_det_ctx);
