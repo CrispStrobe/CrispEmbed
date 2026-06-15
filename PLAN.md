@@ -313,8 +313,8 @@ CrispEmbed/
   `CrispOcrPipeline::new`/`from_stages` take `punct_model`.
 - [ ] **Refactor into a shared `crisp_punc/` library** to avoid drift with
   CrispASR (currently copied). Debug PCS tensor-bounds assert on quantized models.
-- [ ] **Register FireRedPunc + PCS GGUFs in model_mgr.cpp** for auto-download
-  (today a name/path must be supplied; not yet in the registry).
+- [x] **Register FireRedPunc + PCS GGUFs in model_mgr.cpp** for auto-download.
+  `fireredpunc`, `fullstop-punc`, `pcs` registered with HF URLs.
 
 #### Orchestrator integration
 
