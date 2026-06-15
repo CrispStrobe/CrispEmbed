@@ -55,6 +55,18 @@ int tesseract_lstm_input_height(const tesseract_lstm_context * ctx);
 int tesseract_lstm_num_classes(const tesseract_lstm_context * ctx);
 const char * tesseract_lstm_vgsl_spec(const tesseract_lstm_context * ctx);
 
+/// Enable/disable capture of per-stage intermediates for parity testing.
+void tesseract_lstm_set_dump(tesseract_lstm_context * ctx, int enabled);
+
+/// Get a captured intermediate buffer by name (e.g. "after_conv_fc").
+/// Returns NULL if dump mode is off or the name is unknown.
+/// Valid until the next call to tesseract_lstm_recognize.
+const float * tesseract_lstm_get_capture(
+    const tesseract_lstm_context * ctx,
+    const char * name,
+    int * n_elem
+);
+
 #ifdef __cplusplus
 }
 #endif
