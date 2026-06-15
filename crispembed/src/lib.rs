@@ -1882,3 +1882,96 @@ pub fn ocr_render(results: &[OcrRegion], page_w: i32, page_h: i32, format: &str)
     unsafe { libc::free(ptr as *mut std::ffi::c_void) };
     Some(s)
 }
+
+/// One page of OCR regions for [`ocr_render_pages`].
+pub struct OcrRenderPageInput<'a> {
+    pub regions: &'a [OcrRegion],
+    pub page_width: i32,
+    pub page_height: i32,
+    /// Original image path (used by the searchable-PDF image layer).
+    pub image_path: Option<&'a str>,
+}
+
+/// Render one or more pages to **bytes** via the lower-level `ocr_render.h` API
+/// (`create → begin → add_page* → end → output_size`). Unlike [`ocr_render`]
+/// (one-shot, `String`, single-page, NUL-truncated), this is:
+///   - **binary-safe** — uses `output_size`, so searchable **PDF** works;
+///   - **multi-page** — emits a single document spanning all pages.
+///
+/// `format`: `"text"` | `"hocr"` | `"alto"` | `"pdf"`. Each region becomes a
+/// one-word line (the orchestrator emits region-level boxes). Returns `None` on
+/// allocation/render failure.
+pub fn ocr_render_pages(pages: &[OcrRenderPageInput], format: &str) -> Option<Vec<u8>> {
+    use crispembed_sys::{OcrRenderLine, OcrRenderPage, OcrRenderWord};
+    let fmt = match format {
+        "hocr" => 1,
+        "alto" => 2,
+        "pdf" => 3,
+        _ => 0,
+    };
+    let r = unsafe { crispembed_sys::ocr_render_create(fmt) };
+    if r.is_null() {
+        return None;
+    }
+    unsafe { crispembed_sys::ocr_render_begin(r) };
+
+    for page in pages {
+        // Build per-page C structs. The renderer copies the data during
+        // add_page, so these buffers only need to live for that call.
+        let texts: Vec<std::ffi::CString> = page
+            .regions
+            .iter()
+            .map(|reg| std::ffi::CString::new(reg.text.as_str()).unwrap_or_default())
+            .collect();
+        let words: Vec<OcrRenderWord> = page
+            .regions
+            .iter()
+            .enumerate()
+            .map(|(i, reg)| OcrRenderWord {
+                text: texts[i].as_ptr(),
+                x: reg.x as i32,
+                y: reg.y as i32,
+                w: reg.w as i32,
+                h: reg.h as i32,
+                confidence: reg.confidence,
+            })
+            .collect();
+        // One word per line (region-level granularity).
+        let lines: Vec<OcrRenderLine> = page
+            .regions
+            .iter()
+            .enumerate()
+            .map(|(i, reg)| OcrRenderLine {
+                words: &words[i],
+                n_words: 1,
+                x: reg.x as i32,
+                y: reg.y as i32,
+                w: reg.w as i32,
+                h: reg.h as i32,
+            })
+            .collect();
+        let img = page
+            .image_path
+            .and_then(|p| std::ffi::CString::new(p).ok());
+        let c_page = OcrRenderPage {
+            lines: lines.as_ptr(),
+            n_lines: lines.len() as i32,
+            page_width: page.page_width,
+            page_height: page.page_height,
+            image_path: img.as_ref().map_or(std::ptr::null(), |c| c.as_ptr()),
+        };
+        unsafe { crispembed_sys::ocr_render_add_page(r, &c_page) };
+        // texts/words/lines/img dropped here — safe (add_page copied).
+    }
+
+    unsafe { crispembed_sys::ocr_render_end(r) };
+    let size = unsafe { crispembed_sys::ocr_render_output_size(r) };
+    let ptr = unsafe { crispembed_sys::ocr_render_output(r) } as *const u8;
+    let bytes = if ptr.is_null() || size <= 0 {
+        Vec::new()
+    } else {
+        unsafe { std::slice::from_raw_parts(ptr, size as usize) }.to_vec()
+    };
+    unsafe { crispembed_sys::ocr_render_free(r) };
+    Some(bytes)
+}
