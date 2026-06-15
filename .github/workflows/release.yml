@@ -315,6 +315,31 @@ jobs:
           # Mirror of CrispASR's working list.
           sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "nvrtc", "nvrtc_dev", "nvtx", "cuda_profiler_api", "visual_studio_integration"]'
 
+      # Jimver's network install drops the CUDA MSBuild integration
+      # (.props/.targets) into CUDA\extras\visual_studio_integration\
+      # MSBuildExtensions but does NOT copy it into Visual Studio's
+      # BuildCustomizations dir, so CMake's VS generator fails
+      # `enable_language(CUDA)` with "No CUDA toolset found". Copy it in.
+      - name: Add CUDA MSBuild integration (fix "No CUDA toolset found")
+        shell: pwsh
+        run: |
+          $ext = "$env:CUDA_PATH\extras\visual_studio_integration\MSBuildExtensions"
+          if (-not (Test-Path $ext)) {
+            Write-Error "CUDA VS integration files not found at $ext"
+            exit 1
+          }
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -latest -products * -property installationPath
+          $bc = Join-Path $vs "MSBuild\Microsoft\VC\v170\BuildCustomizations"
+          if (-not (Test-Path $bc)) {
+            # Fall back to whatever VC toolset version is installed.
+            $bc = (Get-ChildItem "$vs\MSBuild\Microsoft\VC\*\BuildCustomizations" -Directory |
+                   Select-Object -First 1).FullName
+          }
+          Write-Host "Copying CUDA integration -> $bc"
+          Copy-Item "$ext\*" $bc -Force -Verbose
+          Get-ChildItem $bc -Filter "CUDA*"
+
       - name: Configure
         run: >
           cmake -S . -B build
