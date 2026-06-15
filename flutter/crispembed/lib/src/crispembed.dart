@@ -1647,3 +1647,181 @@ class CrispOcrOrchestrator {
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Classical Preprocessing (model-free, CPU-only)
+// ---------------------------------------------------------------------------
+
+/// Classical document preprocessing — dewarp, deskew, binarize, despeckle.
+/// No model downloads needed. All operations are CPU-only.
+class CrispPreprocess {
+  late final DynamicLibrary _lib;
+  late final CrispembedDewarpDart _dewarpFn;
+  late final CrispembedFindSkewDart _findSkewFn;
+  late final CrispembedAdaptiveBinarizeDart _binarizeFn;
+  late final CrispembedBackgroundNormDart _bgNormFn;
+  late final CrispembedDespeckleDart _despeckleFn;
+  late final CrispembedCcDetectDart _ccDetectFn;
+
+  CrispPreprocess({String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _dewarpFn = _lib.lookupFunction<CrispembedDewarpNative,
+        CrispembedDewarpDart>('crispembed_dewarp');
+    _findSkewFn = _lib.lookupFunction<CrispembedFindSkewNative,
+        CrispembedFindSkewDart>('crispembed_find_skew');
+    _binarizeFn = _lib.lookupFunction<CrispembedAdaptiveBinarizeNative,
+        CrispembedAdaptiveBinarizeDart>('crispembed_adaptive_binarize');
+    _bgNormFn = _lib.lookupFunction<CrispembedBackgroundNormNative,
+        CrispembedBackgroundNormDart>('crispembed_background_norm');
+    _despeckleFn = _lib.lookupFunction<CrispembedDespeckleNative,
+        CrispembedDespeckleDart>('crispembed_despeckle');
+    _ccDetectFn = _lib.lookupFunction<CrispembedCcDetectNative,
+        CrispembedCcDetectDart>('crispembed_cc_detect');
+  }
+
+  /// Dewarp a grayscale page image (straighten curved text lines).
+  /// Returns dewarped image bytes, or null on failure.
+  Uint8List? dewarp(Uint8List gray, int w, int h) {
+    final inp = calloc<Uint8>(w * h);
+    inp.asTypedList(w * h).setAll(0, gray);
+    final out = calloc<Uint8>(w * h);
+    final ow = calloc<Int32>();
+    final oh = calloc<Int32>();
+    final ret = _dewarpFn(inp, w, h, out, ow, oh);
+    Uint8List? result;
+    if (ret == 0) {
+      result = Uint8List.fromList(out.asTypedList(ow.value * oh.value));
+    }
+    calloc.free(inp);
+    calloc.free(out);
+    calloc.free(ow);
+    calloc.free(oh);
+    return result;
+  }
+
+  /// Find skew angle in degrees. Returns (angle, confidence).
+  ({double angle, double confidence}) findSkew(Uint8List gray, int w, int h) {
+    final inp = calloc<Uint8>(w * h);
+    inp.asTypedList(w * h).setAll(0, gray);
+    final angle = calloc<Float>();
+    final conf = calloc<Float>();
+    _findSkewFn(inp, w, h, angle, conf);
+    final result = (angle: angle.value.toDouble(), confidence: conf.value.toDouble());
+    calloc.free(inp);
+    calloc.free(angle);
+    calloc.free(conf);
+    return result;
+  }
+
+  /// Adaptive Otsu binarization (handles uneven lighting).
+  Uint8List adaptiveBinarize(Uint8List gray, int w, int h) {
+    final inp = calloc<Uint8>(w * h);
+    inp.asTypedList(w * h).setAll(0, gray);
+    final out = calloc<Uint8>(w * h);
+    _binarizeFn(inp, w, h, out);
+    final result = Uint8List.fromList(out.asTypedList(w * h));
+    calloc.free(inp);
+    calloc.free(out);
+    return result;
+  }
+
+  /// Normalize background (handle gradients/shadows).
+  Uint8List backgroundNorm(Uint8List gray, int w, int h) {
+    final inp = calloc<Uint8>(w * h);
+    inp.asTypedList(w * h).setAll(0, gray);
+    final out = calloc<Uint8>(w * h);
+    _bgNormFn(inp, w, h, out);
+    final result = Uint8List.fromList(out.asTypedList(w * h));
+    calloc.free(inp);
+    calloc.free(out);
+    return result;
+  }
+
+  /// Remove small noise components from a binary image.
+  Uint8List despeckle(Uint8List gray, int w, int h,
+      {int maxW = 5, int maxH = 5}) {
+    final inp = calloc<Uint8>(w * h);
+    inp.asTypedList(w * h).setAll(0, gray);
+    final out = calloc<Uint8>(w * h);
+    _despeckleFn(inp, w, h, maxW, maxH, out);
+    final result = Uint8List.fromList(out.asTypedList(w * h));
+    calloc.free(inp);
+    calloc.free(out);
+    return result;
+  }
+
+  /// Detect text line regions using connected components (model-free).
+  /// Returns list of bounding boxes {x, y, w, h}.
+  List<({int x, int y, int w, int h})> ccDetect(Uint8List gray, int width, int height) {
+    final inp = calloc<Uint8>(width * height);
+    inp.asTypedList(width * height).setAll(0, gray);
+    final outN = calloc<Int32>();
+    final ptr = _ccDetectFn(inp, width, height, outN);
+    final n = outN.value;
+    calloc.free(inp);
+    calloc.free(outN);
+    if (ptr == nullptr || n <= 0) return [];
+    // Parse crispembed_ocr_result structs (same layout as OcrResult)
+    final structSize = sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>();
+    final results = <({int x, int y, int w, int h})>[];
+    for (var i = 0; i < n; i++) {
+      final base = ptr.cast<Uint8>().elementAt(i * structSize);
+      final floats = base.cast<Float>();
+      results.add((
+        x: floats[0].toInt(),
+        y: floats[1].toInt(),
+        w: floats[2].toInt(),
+        h: floats[3].toInt(),
+      ));
+    }
+    calloc.free(ptr);
+    return results;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Punctuation Restoration
+// ---------------------------------------------------------------------------
+
+/// Post-process OCR text with punctuation/spacing restoration.
+/// Loads a FireRedPunc or PCS model from a GGUF file.
+class CrispPunct {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  late final CrispembedPunctFreeDart _freeFn;
+  late final CrispembedPunctProcessDart _processFn;
+  bool _disposed = false;
+
+  CrispPunct(String modelPath, {int nThreads = 4, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    final initFn = _lib.lookupFunction<CrispembedPunctInitNative,
+        CrispembedPunctInitDart>('crispembed_punct_init');
+    _freeFn = _lib.lookupFunction<CrispembedPunctFreeNative,
+        CrispembedPunctFreeDart>('crispembed_punct_free');
+    _processFn = _lib.lookupFunction<CrispembedPunctProcessNative,
+        CrispembedPunctProcessDart>('crispembed_punct_process');
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = initFn(pathPtr, nThreads);
+    calloc.free(pathPtr);
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load punct model: $modelPath');
+    }
+  }
+
+  /// Add punctuation/spacing to text. Returns processed text.
+  String process(String text) {
+    if (_disposed) return text;
+    final textPtr = text.toNativeUtf8();
+    final result = _processFn(_ctx, textPtr);
+    calloc.free(textPtr);
+    return result != nullptr ? result.toDartString() : text;
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+}
