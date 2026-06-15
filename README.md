@@ -980,6 +980,11 @@ face detection/recognition, ViT/CLIP vision, math OCR, and NER:
 - `POST /math/ocr` — formula recognition `{"image": "path"}` → `{"latex": "..."}`
 - `POST /ner/extract` — NER `{"text": "...", "labels": [...]}` → `{"entities": [...]}`
 - `POST /kie/extract` — KIE `{"image": "doc.png", "labels": ["total", ...]}` → `{"fields": [...]}`
+- `POST /ocr/document` — multi-page OCR: upload images → searchable PDF / hOCR / ALTO / text
+- `POST /preprocess/skew` — find skew angle `{"image": "..."}` → `{"angle": F}`
+- `POST /preprocess/dewarp` — straighten curved text `{"image": "..."}` → PGM or JSON
+- `POST /preprocess/cc-detect` — model-free line detection `{"image": "..."}` → `{"regions": [...]}`
+- `POST /render/ocr` — render OCR results `{"results": [...], "format": "hocr"}` → document
 
 **BERT encoder** (all-MiniLM, gte, arctic-embed-xs, paraphrase-multilingual-MiniLM-L12-v2):
 - Token + Position + Type embeddings → Post-LN transformer → Mean/CLS pooling

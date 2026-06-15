@@ -55,6 +55,17 @@ New files: `src/pan_sr.{h,cpp}`, `src/tbsrn_sr.{h,cpp}`,
 `tools/dump_pan_reference.py`, `tools/dump_tbsrn_reference.py`,
 `tests/test_pan_sr.cpp`, `tests/test_tbsrn_sr.cpp`.
 
+### Auto-SR in orchestrator
+
+The orchestrator's `--sr-model` now auto-detects PAN vs NAFNet-SR from
+the GGUF architecture metadata. Tested on 75 DPI single-line text:
+- 75 DPI raw → OCR: `C Melbe Wesld1` (garbage)
+- 75 DPI + PAN 4x → OCR: `Hello Werdd 123` (1 char error, readable)
+- 150 DPI raw → OCR: `Hello World 123` (perfect, no SR needed)
+
+Finding: do NOT apply classical cleanup (binarize/deskew) to low-DPI
+images — it destroys sub-10px text. PAN alone is sufficient.
+
 ---
 
 ## June 2026 — Tesseract LSTM OCR + classical preprocessing + renderers
