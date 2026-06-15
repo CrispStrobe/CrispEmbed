@@ -97,11 +97,24 @@ for i in range(min(4, len(vis.blocks))):
     hooks.append(h)
 h = vis.merger.register_forward_hook(make_hook("vis_merger"))
 hooks.append(h)
-# Qwen2-VL: model.model.language_model.layers; Qwen2.5-VL: model.model.layers
-llm_layers = getattr(model.model, 'layers', None) or model.model.language_model.model.layers
-for i in range(min(2, len(llm_layers))):
-    h = llm_layers[i].register_forward_hook(make_hook(f"llm_layer_{i}"))
-    hooks.append(h)
+# Find LLM layers (path varies: model.model.layers or model.model.language_model.layers)
+llm_layers = None
+for path in ['model.layers', 'model.language_model.layers', 'model.language_model.model.layers']:
+    obj = model
+    try:
+        for attr in path.split('.'):
+            obj = getattr(obj, attr)
+        llm_layers = obj
+        print(f"  LLM layers found at: {path} ({len(llm_layers)} layers)")
+        break
+    except AttributeError:
+        continue
+if llm_layers is None:
+    print("  WARNING: could not find LLM layers, skipping LLM hooks")
+if llm_layers is not None:
+    for i in range(min(2, len(llm_layers))):
+        h = llm_layers[i].register_forward_hook(make_hook(f"llm_layer_{i}"))
+        hooks.append(h)
 
 # Run forward to capture activations
 from qwen_vl_utils import process_vision_info
