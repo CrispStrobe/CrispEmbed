@@ -208,12 +208,12 @@ Utility libraries (not model backends) follow a lighter pattern.
 
 | Library | C API | CLI | Rust | Python | Dart | Server |
 |---------|-------|-----|------|--------|------|--------|
-| Classical preproc (Otsu, deskew, bg norm, despeckle) | ✓ | ✓ | ✓ | ✓ | ✓ | - |
-| 1-bit DWA morphology | own header | - | - | - | - | - |
-| CC text line detection | ✓ | ✓ | ✓ | ✓ | ✓ | - |
-| Page dewarping | ✓ | ✓ | ✓ | ✓ | ✓ | - |
-| OCR renderers (text, hOCR, ALTO, PDF) | ✓ | ✓ | ✓ | ✓ | ✓ | - |
-| Punctuation restoration | ✓ | ✓ | ✓ | ✓ | ✓ | - |
+| Classical preproc (skew, bg norm, despeckle) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 1-bit DWA morphology | header | — | — | — | — | — |
+| CC text line detection | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Page dewarping | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| OCR renderers (text, hOCR, ALTO, PDF) | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Punctuation restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ### Implementation patterns
 

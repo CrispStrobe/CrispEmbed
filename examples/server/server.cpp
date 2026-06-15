@@ -19,6 +19,9 @@
 //   POST /colbert/score   — {"query": "...", "documents": [...]} → ColBERT scoring
 //   POST /ner/extract     — {"text": "...", "labels": [...]} → NER entities
 //   POST /scan/cleanup    — {"image": "scan.png"} → cleaned image
+//   POST /preprocess/skew      — {"image": "..."} → {"angle": F, "confidence": F}
+//   POST /preprocess/dewarp    — {"image": "..."} → {"dewarped": bool}
+//   POST /preprocess/cc-detect — {"image": "..."} → {"regions": [...]}
 //   GET  /health          — server status + loaded capabilities
 
 #include "crispembed.h"
@@ -1446,6 +1449,111 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /preprocess/skew — find skew angle (no model needed)
+    svr.Post("/preprocess/skew", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 1);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+        float angle = 0, conf = 0;
+        crispembed_find_skew(data, w, h, &angle, &conf);
+        stbi_image_free(data);
+        char buf[128];
+        snprintf(buf, sizeof(buf), "{\"angle\":%.3f,\"confidence\":%.3f}", angle, conf);
+        res.set_content(buf, "application/json");
+    });
+
+    // POST /preprocess/dewarp — straighten curved text (no model needed)
+    svr.Post("/preprocess/dewarp", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 1);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+        std::vector<uint8_t> out(w * h);
+        int ow = 0, oh = 0;
+        int ret = crispembed_dewarp(data, w, h, out.data(), &ow, &oh);
+        stbi_image_free(data);
+        if (ret != 0) {
+            res.set_content("{\"dewarped\":false,\"reason\":\"too few textlines\"}", "application/json");
+            return;
+        }
+        char buf[128];
+        snprintf(buf, sizeof(buf), "{\"dewarped\":true,\"width\":%d,\"height\":%d}", ow, oh);
+        res.set_content(buf, "application/json");
+    });
+
+    // POST /preprocess/cc-detect — model-free text line detection
+    svr.Post("/preprocess/cc-detect", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 1);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+        int n = 0;
+        crispembed_ocr_result * regions = crispembed_cc_detect(data, w, h, &n);
+        stbi_image_free(data);
+        std::ostringstream js;
+        js << "{\"n\":" << n << ",\"regions\":[";
+        for (int i = 0; i < n; i++) {
+            if (i > 0) js << ",";
+            js << "{\"x\":" << regions[i].x << ",\"y\":" << regions[i].y
+               << ",\"w\":" << regions[i].w << ",\"h\":" << regions[i].h << "}";
+        }
+        js << "]}";
+        if (regions) free(regions);
+        res.set_content(js.str(), "application/json");
+    });
+
     // GET /health
     svr.Get("/health", [&](const httplib::Request &, httplib::Response & res) {
         std::ostringstream js;
@@ -1488,6 +1596,9 @@ int main(int argc, char ** argv) {
     if (ner_ctx) fprintf(stderr, "  POST /ner/extract     — {\"text\": \"...\", \"labels\": [\"person\", ...]}\n");
     if (ocr_orch_ctx) fprintf(stderr, "  POST /ocr/pipeline    — {\"image\": \"doc.png\"} (routing + cleanup + accept-gate)\n");
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
+    fprintf(stderr, "  POST /preprocess/skew      — {\"image\": \"...\"} (find skew angle)\n");
+    fprintf(stderr, "  POST /preprocess/dewarp    — {\"image\": \"...\"} (straighten curved text)\n");
+    fprintf(stderr, "  POST /preprocess/cc-detect — {\"image\": \"...\"} (model-free line detection)\n");
     if (ctx && crispembed_has_colbert(ctx)) fprintf(stderr, "  POST /colbert/score   — {\"query\": \"...\", \"documents\": [...]}\n");
     fprintf(stderr, "  GET  /health\n\n");
 
