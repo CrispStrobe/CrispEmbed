@@ -284,6 +284,27 @@ CrispEmbed/
 - [x] Validated against `tesseract --oem 1` — core text matches, no spaces (by
   design, spaces come from DAWG language model not LSTM)
 
+#### Punctuation restoration for CTC output
+
+- [ ] Copy FireRedPunc + PCS from CrispASR (`src/fireredpunc.{h,cpp}`,
+  `src/pcs.{h,cpp}`). Same deps as CrispEmbed (ggml + core/gguf_loader).
+  ~1666 lines. Refactor into shared `crisp_punc/` library later.
+- [ ] Wire into Tesseract LSTM post-processing: `--punct-model` flag,
+  inserts spaces, punctuation, capitalization into raw CTC output
+- [ ] Wire into unified OCR API + orchestrator as optional post-processing step
+- [ ] Register FireRedPunc + PCS GGUFs in model_mgr.cpp for auto-download
+
+#### Orchestrator integration gaps
+
+- [ ] Wire orchestrator into HTTP server (`POST /ocr/pipeline`)
+- [ ] Wire orchestrator into Python wrapper (`CrispOcrOrchestrator` class)
+- [ ] Wire orchestrator into Dart wrapper
+- [ ] Expose VLM params in Rust wrapper (currently hardcoded off)
+- [ ] Per-stage cleanup params in C API (currently flat/broadcast)
+- [ ] Tunable source-type classifier thresholds (saturation, white fraction)
+- [ ] Runtime config updates without context reload
+- [ ] Verbose logging for silent degradation (cleanup init failure, etc.)
+
 #### Nice-to-have
 
 - [ ] CrispCalc Dart catalog entries for InternVL2 (`OcrModelVariant`)
