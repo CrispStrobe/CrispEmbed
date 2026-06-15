@@ -2297,6 +2297,7 @@ int main(int argc, char ** argv) {
         if (ner_ctx) js << ", \"ner\": true";
         if (ocr_orch_ctx) js << ", \"ocr_orchestrator\": true";
         if (text_sr_ctx) js << ", \"text_sr\": true, \"text_sr_upscale\": " << crispembed_text_sr_upscale_factor(text_sr_ctx);
+        if (pan_sr_ctx) js << ", \"pan_sr\": true, \"pan_sr_upscale\": " << crispembed_pan_sr_scale(pan_sr_ctx);
         js << ", \"scan_cleanup\": true";  // always available (no model needed)
         js << "}";
         res.set_content(js.str(), "application/json");
@@ -2321,6 +2322,7 @@ int main(int argc, char ** argv) {
     if (kie_ctx) fprintf(stderr, "  POST /kie/extract     — {\"image\": \"doc.png\", \"labels\": [\"total\", ...]} (OCR+NER)\n");
     if (ocr_orch_ctx) fprintf(stderr, "  POST /ocr/pipeline    — {\"image\": \"doc.png\"} (routing + cleanup + accept-gate)\n");
     if (text_sr_ctx) fprintf(stderr, "  POST /text/sr         — {\"image\": \"low_dpi.png\"} (upscale %dx)\n", crispembed_text_sr_upscale_factor(text_sr_ctx));
+    if (pan_sr_ctx) fprintf(stderr, "  POST /pan/sr          — {\"image\": \"photo.png\"} (upscale %dx)\n", crispembed_pan_sr_scale(pan_sr_ctx));
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
     fprintf(stderr, "  POST /pdf/dpi              — {\"file\": \"...\"} (PDF DPI profiling)\n");
     fprintf(stderr, "  POST /preprocess/skew      — {\"image\": \"...\"} (find skew angle)\n");
@@ -2336,6 +2338,7 @@ int main(int argc, char ** argv) {
 
     if (kie_ctx) crispembed_kie_free(kie_ctx);
     if (text_sr_ctx) crispembed_text_sr_free(text_sr_ctx);
+    if (pan_sr_ctx) crispembed_pan_sr_free(pan_sr_ctx);
     if (ner_ctx) crispembed_ner_free(ner_ctx);
     if (layout_ctx) crispembed_layout_free(layout_ctx);
     if (text_det_ctx) crispembed_text_det_free(text_det_ctx);
