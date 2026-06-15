@@ -45,6 +45,20 @@ pub struct CrispembedOcrResult {
     pub text_len: c_int,
 }
 
+/// Flat config for the OCR pipeline orchestrator (slice A: DBNet+TrOCR).
+#[repr(C)]
+pub struct CrispembedOcrPipelineParams {
+    pub router: c_int,
+    pub cleanup_enabled: c_int,
+    pub min_chars: c_int,
+    pub min_confidence: c_float,
+    pub det_model: *const c_char,
+    pub rec_model: *const c_char,
+    pub nafnet_model: *const c_char,
+    pub vlm_model: *const c_char,
+    pub vlm_engine: c_int,
+}
+
 /// Opaque handle to a standalone ViT image embedding context (SigLIP, CLIP).
 #[repr(C)]
 pub struct VitContext(c_void);
@@ -509,6 +523,26 @@ extern "C" {
         image_path: *const c_char,
         out_len: *mut c_int,
     ) -> *const c_char;
+
+    // ── OCR pipeline orchestrator (cleanup + engine + accept-gate + routing) ──
+    pub fn crispembed_ocr_pipeline_defaults() -> CrispembedOcrPipelineParams;
+
+    pub fn crispembed_ocr_pipeline_init(
+        params: *const CrispembedOcrPipelineParams,
+        n_threads: c_int,
+    ) -> *mut c_void;
+
+    /// Run the pipeline. Returns the regions array (owned by ctx) and fills
+    /// `out_full_text` (owned by ctx) + `out_mean_confidence`.
+    pub fn crispembed_ocr_pipeline_run(
+        ctx: *mut c_void,
+        image_path: *const c_char,
+        out_n_results: *mut c_int,
+        out_full_text: *mut *const c_char,
+        out_mean_confidence: *mut c_float,
+    ) -> *const CrispembedOcrResult;
+
+    pub fn crispembed_ocr_pipeline_free(ctx: *mut c_void);
 
     // ------------------------------------------------------------------
     // Standalone ViT image embedding (SigLIP, CLIP)

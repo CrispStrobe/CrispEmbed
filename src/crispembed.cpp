@@ -3119,6 +3119,7 @@ extern "C" void crispembed_free(crispembed_context * ctx) {
 // ---------------------------------------------------------------------------
 
 #include "ocr_pipeline.h"
+#include "ocr_orchestrator.h"
 #include "layout_detect.h"
 
 struct ocr_pipeline_wrapper {
@@ -3170,6 +3171,115 @@ extern "C" const char * crispembed_ocr_recognize(
     w->rec_buf = ocr_pipeline::recognize_file(w->ctx, image_path);
     if (out_len) *out_len = (int)w->rec_buf.size();
     return w->rec_buf.empty() ? nullptr : w->rec_buf.c_str();
+}
+
+// ---------------------------------------------------------------------------
+// OCR Pipeline (orchestrator) — see ocr_orchestrator.{h,cpp}
+// ---------------------------------------------------------------------------
+
+struct ocr_pipeline_orch_wrapper {
+    ocr_orchestrator::context * ctx = nullptr;
+    ocr_orchestrator::result    last;
+    std::vector<crispembed_ocr_result> c_results;
+    std::string full_text;
+};
+
+extern "C" crispembed_ocr_pipeline_params crispembed_ocr_pipeline_defaults(void) {
+    crispembed_ocr_pipeline_params p;
+    p.router          = 1;
+    p.cleanup_enabled = 1;
+    p.min_chars       = 8;
+    p.min_confidence  = 0.5f;
+    p.det_model       = nullptr;
+    p.rec_model       = nullptr;
+    p.nafnet_model    = nullptr;
+    p.vlm_model       = nullptr;
+    p.vlm_engine      = 0;
+    return p;
+}
+
+extern "C" void * crispembed_ocr_pipeline_init(
+        const crispembed_ocr_pipeline_params * params, int n_threads) {
+    if (!params) return nullptr;
+    ocr_orchestrator::config cfg = ocr_orchestrator::default_config();
+    cfg.router = params->router != 0;
+    if (params->nafnet_model && *params->nafnet_model) {
+        cfg.nafnet_model = params->nafnet_model;
+    }
+    // Apply the flat models / accept-gate / cleanup toggle to every stage of
+    // every chain (per-stage config lands in a later slice via JSON).
+    // Map the optional VLM escalation engine id.
+    ocr_orchestrator::engine vlm_eng = ocr_orchestrator::engine::got;
+    switch (params->vlm_engine) {
+        case 1: vlm_eng = ocr_orchestrator::engine::glm;       break;
+        case 2: vlm_eng = ocr_orchestrator::engine::qwen2vl;   break;
+        case 3: vlm_eng = ocr_orchestrator::engine::internvl2; break;
+        default: vlm_eng = ocr_orchestrator::engine::got;      break;
+    }
+    const bool has_vlm = params->vlm_model && *params->vlm_model;
+    for (auto & ch : cfg.chains) {
+        for (auto & st : ch.stages) {
+            if (params->det_model) st.model_a = params->det_model;
+            if (params->rec_model) st.model_b = params->rec_model;
+            st.accept.min_chars      = params->min_chars;
+            st.accept.min_confidence = params->min_confidence;
+            if (!params->cleanup_enabled) st.cleanup.enabled = false;
+        }
+        // Append a single-shot VLM escalation stage: the chain tries the fast
+        // DBNet+TrOCR first and falls back to the VLM when the accept-gate fails.
+        if (has_vlm) {
+            ocr_orchestrator::stage vs;
+            vs.eng             = vlm_eng;
+            vs.enabled         = true;
+            vs.model_a         = params->vlm_model;
+            vs.accept.min_chars      = params->min_chars;
+            vs.accept.min_confidence = 0.0f;  // VLM has no per-region confidence
+            vs.cleanup.enabled = params->cleanup_enabled != 0;
+            vs.cleanup.params  = scan_cleanup_defaults();
+            vs.cleanup.params.binarize = 0;   // never binarize for a VLM
+            vs.cleanup.denoise = false;
+            ch.stages.push_back(vs);
+        }
+    }
+    auto * w = new ocr_pipeline_orch_wrapper();
+    if (!ocr_orchestrator::load(&w->ctx, cfg, n_threads)) {
+        delete w;
+        return nullptr;
+    }
+    return w;
+}
+
+extern "C" const crispembed_ocr_result * crispembed_ocr_pipeline_run(
+        void * ctx, const char * image_path, int * out_n,
+        const char ** out_full_text, float * out_mean_conf) {
+    if (out_n)         *out_n         = 0;
+    if (out_full_text) *out_full_text = nullptr;
+    if (out_mean_conf) *out_mean_conf = 0.0f;
+    if (!ctx || !image_path) return nullptr;
+    auto * w  = (ocr_pipeline_orch_wrapper *)ctx;
+    w->last      = ocr_orchestrator::run_file(w->ctx, image_path);
+    w->full_text = w->last.full_text;
+    w->c_results.resize(w->last.regions.size());
+    for (size_t i = 0; i < w->last.regions.size(); i++) {
+        auto & r = w->last.regions[i];
+        auto & c = w->c_results[i];
+        c.x = r.box.x; c.y = r.box.y;
+        c.w = r.box.w; c.h = r.box.h;
+        c.confidence = r.confidence;
+        c.text       = r.text.c_str();
+        c.text_len   = (int)r.text.size();
+    }
+    if (out_n)         *out_n         = (int)w->c_results.size();
+    if (out_full_text) *out_full_text = w->full_text.c_str();
+    if (out_mean_conf) *out_mean_conf = w->last.mean_confidence;
+    return w->c_results.empty() ? nullptr : w->c_results.data();
+}
+
+extern "C" void crispembed_ocr_pipeline_free(void * ctx) {
+    if (!ctx) return;
+    auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    if (w->ctx) ocr_orchestrator::free(w->ctx);
+    delete w;
 }
 
 // ---------------------------------------------------------------------------

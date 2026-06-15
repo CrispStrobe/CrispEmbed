@@ -600,6 +600,40 @@ CRISPEMBED_API const char * crispembed_ocr_recognize(
     int * out_len);
 
 // ---------------------------------------------------------------------------
+// OCR Pipeline (orchestrator) — source-type routing + per-stage image cleanup
+// (classical + NAFNet) + engine + text-yield/confidence accept-gate escalation.
+// Composes scan_cleanup + the ggml OCR engines; see ocr_orchestrator.h.
+// ---------------------------------------------------------------------------
+
+/// Flat configuration for the OCR pipeline (slice A: single DBNet+TrOCR engine).
+typedef struct crispembed_ocr_pipeline_params {
+    int   router;            // 1 = classify source-type (screenshot/scan/photo) and route
+    int   cleanup_enabled;   // 1 = run per-stage scan cleanup before OCR
+    int   min_chars;         // accept-gate: minimum recognized characters
+    float min_confidence;    // accept-gate: minimum mean region confidence (0 = ignore)
+    const char * det_model;     // DBNet detection GGUF
+    const char * rec_model;     // TrOCR recognition GGUF
+    const char * nafnet_model;  // NAFNet denoise GGUF for tier-2 (NULL/"" = classical only)
+    const char * vlm_model;     // optional single-shot VLM escalation GGUF (NULL/"" = none)
+    int          vlm_engine;    // VLM engine when vlm_model set: 0=GOT 1=GLM 2=Qwen2-VL 3=InternVL2
+} crispembed_ocr_pipeline_params;
+
+CRISPEMBED_API crispembed_ocr_pipeline_params crispembed_ocr_pipeline_defaults(void);
+
+/// Build a pipeline context from `params`. Returns opaque context or NULL.
+CRISPEMBED_API void * crispembed_ocr_pipeline_init(
+    const crispembed_ocr_pipeline_params * params, int n_threads);
+
+/// Run the full pipeline on an image. Returns the per-region results array
+/// (owned by ctx, valid until the next run/free) and, via out-params, the
+/// joined reading-order `full_text` (owned by ctx) and mean confidence.
+CRISPEMBED_API const crispembed_ocr_result * crispembed_ocr_pipeline_run(
+    void * ctx, const char * image_path, int * out_n_results,
+    const char ** out_full_text, float * out_mean_confidence);
+
+CRISPEMBED_API void crispembed_ocr_pipeline_free(void * ctx);
+
+// ---------------------------------------------------------------------------
 // Layout Detection — RT-DETRv2 document layout analysis (17 classes).
 // Detects: text, title, table, figure, formula, caption, section_header,
 // list_item, footnote, page_header, page_footer, code, document_index,
