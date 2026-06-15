@@ -362,16 +362,13 @@ Priority order (by impact across speed × quality × resources):
   Big quality win on book scans, phone captures, curved pages. ~3000 LOC
   for model building + rendering. Largest effort but largest payoff.
 
-- [ ] **CC-based region/line segmentation** — model-free detector tier.
-  `pixGetRegionsBinary`, projection-based line-finding, `conncomp` seedfill.
-  Enables zero-download, GPU-free OCR pipeline: CC detect → Tesseract LSTM
-  recognize. Huge for low-end machines and the CLI. ~500 LOC.
+- [x] **CC-based region/line segmentation** — DONE (`cc_detect.{h,cpp}`).
+  Model-free, GPU-free text line detector. Morph close + CC labeling.
+  5 lines in 4.3ms. Zero model downloads.
 
-- [ ] **Adaptive (tiled) Otsu + optimized Sauvola + background norm**
-  `pixOtsuAdaptiveThreshold` (per-tile Otsu + convolution smoothing),
-  `pixBackgroundNormSimple` (gradient/shadow-robust background estimation).
-  Quality+speed upgrades, drop-in replacement for scan_cleanup binarize/whiten.
-  Current global Otsu fails on uneven lighting (fax, phone scans). ~200 LOC.
+- [x] **Adaptive (tiled) Otsu + background norm** — DONE
+  (`classical_preproc.{h,cpp}`). Per-tile Otsu + bilinear interpolation +
+  tile-based 90th-percentile background estimation. 48/48 tests pass.
 
 - [x] **Deskew** (`find_skew_angle`) — differential square-sum scoring on
   4x-reduced 1-bit image + binary search. ~3ms per page. 12/12 tests pass.
