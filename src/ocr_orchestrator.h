@@ -103,6 +103,7 @@ struct config {
     bool               router = true;   // classify + route; false → first chain
     std::string        nafnet_model;    // shared NAFNet GGUF path ("" = no tier-2)
     std::vector<chain> chains;          // one per source_type, or a single chain
+    bool               verbose = false; // log stage transitions, gate decisions, failures
 };
 
 // Sensible defaults: router on; per-source chains with binarize for classical

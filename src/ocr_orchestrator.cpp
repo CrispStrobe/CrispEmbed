@@ -426,19 +426,56 @@ bool load(context** out, const config& cfg, int n_threads) {
     return true;
 }
 
+static const char * engine_name(engine e) {
+    switch (e) {
+        case engine::dbnet_trocr: return "dbnet_trocr";
+        case engine::surya:       return "surya";
+        case engine::got:         return "got";
+        case engine::glm:         return "glm";
+        case engine::qwen2vl:     return "qwen2vl";
+        case engine::internvl2:   return "internvl2";
+        case engine::tesseract:   return "tesseract";
+        default: return "unknown";
+    }
+}
+
+static const char * source_type_name(source_type t) {
+    switch (t) {
+        case source_type::auto_detect: return "auto";
+        case source_type::screenshot:  return "screenshot";
+        case source_type::scanned_doc: return "scanned_doc";
+        case source_type::photo:       return "photo";
+        default: return "unknown";
+    }
+}
+
 result run_file(context* ctx, const char* image_path) {
     result best;
     if (!ctx || !image_path) return best;
+    bool verbose = ctx->cfg.verbose;
 
     const source_type st =
         ctx->cfg.router ? classify_file(image_path) : source_type::auto_detect;
+    if (verbose)
+        fprintf(stderr, "ocr_orchestrator: source_type=%s for %s\n",
+                source_type_name(st), image_path);
+
     const chain* ch = pick_chain(ctx->cfg, st);
-    if (!ch) return best;
+    if (!ch) {
+        if (verbose) fprintf(stderr, "ocr_orchestrator: no chain for source_type=%s\n",
+                             source_type_name(st));
+        return best;
+    }
 
     int tried = 0;
     for (const stage& s : ch->stages) {
         if (!s.enabled) continue;
         tried++;
+
+        if (verbose)
+            fprintf(stderr, "ocr_orchestrator: stage %d engine=%s cleanup=%s\n",
+                    tried, engine_name(s.eng),
+                    s.cleanup.enabled ? "on" : "off");
 
         std::string tmp = clean_to_temp(ctx, s.cleanup, image_path);
         const char* ocr_path = tmp.empty() ? image_path : tmp.c_str();
@@ -449,9 +486,18 @@ result run_file(context* ctx, const char* image_path) {
 
         if (!tmp.empty()) std::remove(tmp.c_str());
 
-        if (passes_gate(r, s.accept)) return r;
+        bool passed = passes_gate(r, s.accept);
+        if (verbose)
+            fprintf(stderr, "ocr_orchestrator: stage %d → %d chars, conf=%.2f, gate=%s\n",
+                    tried, (int)r.full_text.size(), r.mean_confidence,
+                    passed ? "PASS" : "FAIL");
+
+        if (passed) return r;
         if (r.full_text.size() > best.full_text.size()) best = std::move(r);
     }
+    if (verbose)
+        fprintf(stderr, "ocr_orchestrator: all %d stages failed gate, returning best (%d chars)\n",
+                tried, (int)best.full_text.size());
     best.used_type    = st;
     best.stages_tried = tried;
     return best;

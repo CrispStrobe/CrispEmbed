@@ -15,11 +15,27 @@
 // Renderer state
 // ---------------------------------------------------------------------------
 
+// Stored page data (for PDF which needs all pages at end)
+struct stored_word {
+    std::string text;
+    int x, y, w, h;
+    float confidence;
+};
+struct stored_line {
+    std::vector<stored_word> words;
+    int x, y, w, h;
+};
+struct stored_page {
+    std::vector<stored_line> lines;
+    int width, height;
+};
+
 struct ocr_renderer {
     ocr_render_format format;
     std::string separator;     // page separator for text mode
     std::string output;        // accumulated output
     int page_count;
+    std::vector<stored_page> pages;  // for PDF deferred rendering
 
     ocr_renderer() : format(OCR_RENDER_TEXT), separator("\f"), page_count(0) {}
 };
@@ -219,33 +235,53 @@ struct pdf_object {
 };
 
 static void pdf_begin(ocr_renderer * r) {
-    r->output = "%PDF-1.4\n";
-    // Binary comment to signal binary PDF
-    r->output += "%\xe2\xe3\xcf\xd3\n";
+    r->pages.clear();
 }
 
 static void pdf_add_page(ocr_renderer * r, const ocr_render_page * page) {
-    // For now, emit text-only PDF (no image embedding — that requires
-    // reading the image file and encoding as JPEG/Flate XObject).
-    // A full image+text PDF needs ~200 more LOC for image I/O.
-    // TODO: embed the original image as a full-page background.
-
-    // This simplified version creates a PDF with visible text positioned
-    // at the OCR bounding box coordinates, which is useful for text
-    // extraction and search even without the background image.
-    (void)page;
+    // Store page data for deferred rendering in pdf_end
+    stored_page sp;
+    sp.width = page->page_width;
+    sp.height = page->page_height;
+    for (int i = 0; i < page->n_lines; i++) {
+        const ocr_render_line * line = &page->lines[i];
+        stored_line sl;
+        sl.x = line->x; sl.y = line->y; sl.w = line->w; sl.h = line->h;
+        for (int j = 0; j < line->n_words; j++) {
+            const ocr_render_word * w = &line->words[j];
+            sl.words.push_back({w->text ? w->text : "", w->x, w->y, w->w, w->h, w->confidence});
+        }
+        sp.lines.push_back(sl);
+    }
+    r->pages.push_back(std::move(sp));
     r->page_count++;
 }
 
+// PDF string escaping: escape parens and backslashes
+static std::string pdf_escape(const std::string & s) {
+    std::string out;
+    for (char c : s) {
+        if (c == '(' || c == ')' || c == '\\') out += '\\';
+        out += c;
+    }
+    return out;
+}
+
 static void pdf_end(ocr_renderer * r) {
-    // Build a minimal valid PDF with text content
+    // Build a complete PDF with invisible text layer per page.
+    // Text rendering mode 3 = invisible (for searchable PDF).
+    // Font: Helvetica (built-in, no embedding needed).
+    // Coordinate system: PDF y-axis is bottom-up; OCR y-axis is top-down.
+
     std::string & out = r->output;
+    out = "%PDF-1.4\n%\xe2\xe3\xcf\xd3\n";
+
     std::vector<pdf_object> objects;
     int next_id = 1;
+    char buf[1024];
 
     auto obj_start = [&](int id) {
         objects.push_back({id, (int)out.size()});
-        char buf[64];
         snprintf(buf, sizeof(buf), "%d 0 obj\n", id);
         out += buf;
     };
@@ -253,29 +289,88 @@ static void pdf_end(ocr_renderer * r) {
     // Object 1: Catalog
     int cat_id = next_id++;
     obj_start(cat_id);
-    int pages_id = next_id;
-    char buf[512];
-    snprintf(buf, sizeof(buf), "<< /Type /Catalog /Pages %d 0 R >>\nendobj\n", pages_id);
+    snprintf(buf, sizeof(buf), "<< /Type /Catalog /Pages %d 0 R >>\nendobj\n", next_id);
     out += buf;
 
-    // Object 2: Pages
-    int pages_obj_id = next_id++;
-    obj_start(pages_obj_id);
-    // We'll fill in Kids later
-    int kids_start = (int)out.size();
-    // Placeholder — we'll write the actual pages after
-    out += "<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n";
+    // Object 2: Pages (placeholder — we'll patch Kids/Count below)
+    int pages_id = next_id++;
+    obj_start(pages_id);
+    int pages_body_offset = (int)out.size();
+    // Reserve space — will be overwritten
+    out += std::string(256, ' ');
+    out += "\nendobj\n";
 
     // Object 3: Font
     int font_id = next_id++;
     obj_start(font_id);
-    out += "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n";
+    out += "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n";
 
-    // For each page, create page object + content stream
-    // (Using stored page data would require saving pages; for now this
-    // creates an empty PDF structure that's valid but has no content)
+    // Per-page objects: each page needs a Page dict + content stream
+    std::vector<int> page_ids;
+    for (auto & sp : r->pages) {
+        // Build content stream: invisible text at OCR positions
+        std::string content;
+        content += "BT\n";
+        content += "3 Tr\n"; // Rendering mode 3 = invisible
 
-    // Xref
+        for (auto & sl : sp.lines) {
+            for (auto & sw : sl.words) {
+                if (sw.text.empty()) continue;
+                // PDF coordinates: y is bottom-up
+                int pdf_x = sw.x;
+                int pdf_y = sp.height - sw.y - sw.h;
+                // Font size: approximate from word height
+                int font_size = std::max(4, sw.h);
+
+                snprintf(buf, sizeof(buf), "/F1 %d Tf\n", font_size);
+                content += buf;
+                snprintf(buf, sizeof(buf), "%d %d Td\n", pdf_x, pdf_y);
+                content += buf;
+                content += "(" + pdf_escape(sw.text) + ") Tj\n";
+            }
+        }
+        content += "ET\n";
+
+        // Content stream object
+        int stream_id = next_id++;
+        obj_start(stream_id);
+        snprintf(buf, sizeof(buf), "<< /Length %d >>\nstream\n", (int)content.size());
+        out += buf;
+        out += content;
+        out += "endstream\nendobj\n";
+
+        // Page object
+        int page_id = next_id++;
+        page_ids.push_back(page_id);
+        obj_start(page_id);
+        snprintf(buf, sizeof(buf),
+            "<< /Type /Page /Parent %d 0 R "
+            "/MediaBox [0 0 %d %d] "
+            "/Contents %d 0 R "
+            "/Resources << /Font << /F1 %d 0 R >> >> "
+            ">>\nendobj\n",
+            pages_id, sp.width, sp.height, stream_id, font_id);
+        out += buf;
+    }
+
+    // Patch the Pages object with actual Kids and Count
+    {
+        std::string pages_body = "<< /Type /Pages /Kids [";
+        for (size_t i = 0; i < page_ids.size(); i++) {
+            if (i > 0) pages_body += " ";
+            snprintf(buf, sizeof(buf), "%d 0 R", page_ids[i]);
+            pages_body += buf;
+        }
+        snprintf(buf, sizeof(buf), "] /Count %d >>", (int)page_ids.size());
+        pages_body += buf;
+        // Overwrite the placeholder
+        if ((int)pages_body.size() <= 256) {
+            pages_body.resize(256, ' ');
+            memcpy(&out[pages_body_offset], pages_body.data(), 256);
+        }
+    }
+
+    // Xref table
     int xref_offset = (int)out.size();
     out += "xref\n";
     snprintf(buf, sizeof(buf), "0 %d\n", next_id);
