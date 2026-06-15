@@ -1664,6 +1664,48 @@ int main(int argc, char ** argv) {
         }
     });
 
+    // POST /preprocess/tps-dewarp — TPS-based dewarp (learned localizer model)
+    svr.Post("/preprocess/tps-dewarp", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+        std::string image_path, model_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        pos = body.find("\"model\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                model_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty() || model_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' or 'model' field\"}", "application/json");
+            return;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 1);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+        std::vector<uint8_t> out(w * h);
+        int ret = crispembed_tps_auto_dewarp(data, w, h, model_path.c_str(), out.data());
+        stbi_image_free(data);
+        if (ret != 0) {
+            res.set_content("{\"dewarped\":false,\"reason\":\"tps-dewarp failed\"}", "application/json");
+            return;
+        }
+        char buf[128];
+        snprintf(buf, sizeof(buf), "{\"dewarped\":true,\"width\":%d,\"height\":%d}", w, h);
+        res.set_content(buf, "application/json");
+    });
+
     // POST /preprocess/cc-detect — model-free text line detection
     svr.Post("/preprocess/cc-detect", [&](const httplib::Request & req, httplib::Response & res) {
         auto body = req.body;
@@ -1849,6 +1891,7 @@ int main(int argc, char ** argv) {
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
     fprintf(stderr, "  POST /preprocess/skew      — {\"image\": \"...\"} (find skew angle)\n");
     fprintf(stderr, "  POST /preprocess/dewarp    — {\"image\": \"...\"} (straighten curved text)\n");
+    fprintf(stderr, "  POST /preprocess/tps-dewarp — {\"image\": \"...\", \"model\": \"tps-loc.gguf\"}\n");
     fprintf(stderr, "  POST /preprocess/cc-detect — {\"image\": \"...\"} (model-free line detection)\n");
     fprintf(stderr, "  POST /render/ocr           — {\"results\": [...], \"format\": \"hocr|alto|pdf\"}\n");
     if (ctx && crispembed_has_colbert(ctx)) fprintf(stderr, "  POST /colbert/score   — {\"query\": \"...\", \"documents\": [...]}\n");

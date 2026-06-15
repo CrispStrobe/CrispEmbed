@@ -381,6 +381,9 @@ target_link_libraries(test-tps-warp PRIVATE crispembed)
 add_executable(test-tps-locnet tests/test_tps_locnet.cpp)
 target_link_libraries(test-tps-locnet PRIVATE crispembed)
 
+add_executable(test-tps-parity tests/test_tps_parity.cpp)
+target_link_libraries(test-tps-parity PRIVATE crispembed)
+
 endif() # NOT iOS
 
 # ---------------------------------------------------------------------------
