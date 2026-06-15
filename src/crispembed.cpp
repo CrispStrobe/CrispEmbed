@@ -3266,6 +3266,10 @@ extern "C" void * crispembed_ocr_pipeline_init(
             ch.stages.push_back(vs);
         }
     }
+    // Enable verbose logging via environment variable
+    if (const char * v = std::getenv("CRISPEMBED_VERBOSE_OCR"))
+        cfg.verbose = (v[0] == '1' || v[0] == 'y' || v[0] == 'Y');
+
     auto * w = new ocr_pipeline_orch_wrapper();
     if (!ocr_orchestrator::load(&w->ctx, cfg, n_threads)) {
         delete w;
