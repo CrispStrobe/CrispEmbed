@@ -9,7 +9,8 @@
 
 bool WordPieceTokenizer::load(const std::vector<std::string> & vocab,
                                int cls_id, int sep_id, int unk_id, int pad_id,
-                               int max_length) {
+                               int max_length, bool do_lower_case) {
+    do_lower_case_ = do_lower_case;
     // Ollama-format GGUFs store WordPiece vocab with SentencePiece-style
     // "▁" (U+2581, 3 bytes: 0xE2 0x96 0x81) prefix on whole-word tokens
     // and strip the "##" prefix from subword tokens. Undo this so the
@@ -90,7 +91,7 @@ embed_tokens WordPieceTokenizer::encode(const std::string & text) const {
             if (!current.empty()) { words.push_back(current); current.clear(); }
             words.push_back(std::string(1, (char)c));
         } else {
-            current += (char)std::tolower(c);
+            current += do_lower_case_ ? (char)std::tolower(c) : (char)c;
         }
     }
     if (!current.empty()) words.push_back(current);
@@ -138,7 +139,7 @@ embed_tokens WordPieceTokenizer::encode_pair(const std::string & text_a,
                 if (!cur.empty()) { words.push_back(cur); cur.clear(); }
                 words.push_back(std::string(1, (char)c));
             } else {
-                cur += (char)std::tolower(c);
+                cur += do_lower_case_ ? (char)std::tolower(c) : (char)c;
             }
         }
         if (!cur.empty()) words.push_back(cur);

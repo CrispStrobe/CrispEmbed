@@ -191,6 +191,14 @@ CRISPEMBED_API const float * crispembed_encode_tokens(crispembed_context * ctx,
                                                        int                * out_n_tokens,
                                                        int                * out_dim);
 
+// Same as encode_tokens but returns RAW (unnormalized) hidden states.
+// Required for token classification (NER) where the classifier head was
+// trained on unnormalized encoder output.
+CRISPEMBED_API const float * crispembed_encode_tokens_raw(crispembed_context * ctx,
+                                                           const char         * text,
+                                                           int                * out_n_tokens,
+                                                           int                * out_dim);
+
 // After encode_tokens, returns a pointer to the [n_tokens] vocab IDs of the
 // returned embeddings. Valid until the next encode_* call.
 CRISPEMBED_API const int32_t * crispembed_last_token_ids(const crispembed_context * ctx);

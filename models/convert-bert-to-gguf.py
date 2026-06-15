@@ -165,13 +165,24 @@ def main():
         if not (hasattr(model.config, "num_labels") and model.config.num_labels == 1):
             raise ValueError("not a reranker")
     except Exception:
-        # Real SPLADE checkpoints carry cls.predictions.* in the safetensors.
-        # Random-init heads (paraphrase-multilingual, all-MiniLM, etc.) do not.
-        if _checkpoint_has_mlm_head(args.model):
-            model = _load(AutoModelForMaskedLM)
-            print(f"  detected: MLM head (SPLADE)")
-        else:
-            model = _load(AutoModel)
+        # Try token classification (NER models: dslim/bert-base-NER, etc.)
+        try:
+            from transformers import AutoModelForTokenClassification
+            tc_model = _load(AutoModelForTokenClassification)
+            tc_sd = tc_model.state_dict()
+            if "classifier.weight" in tc_sd and tc_model.config.num_labels > 1:
+                model = tc_model
+                print(f"  detected: token classification ({tc_model.config.num_labels} labels)")
+            else:
+                raise ValueError("not a token classifier")
+        except Exception:
+            # Real SPLADE checkpoints carry cls.predictions.* in the safetensors.
+            # Random-init heads (paraphrase-multilingual, all-MiniLM, etc.) do not.
+            if _checkpoint_has_mlm_head(args.model):
+                model = _load(AutoModelForMaskedLM)
+                print(f"  detected: MLM head (SPLADE)")
+            else:
+                model = _load(AutoModel)
 
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     model.eval()
@@ -265,9 +276,13 @@ def main():
                              "classifier.out_proj.weight" in sd)
     has_classifier_1layer = ("classifier.weight" in sd and
                              sd["classifier.weight"].shape[0] == 1)
+    has_ner_classifier = ("classifier.weight" in sd and
+                          sd["classifier.weight"].shape[0] > 1 and
+                          hasattr(config, 'id2label') and len(config.id2label) > 1)
     has_classifier = has_classifier_2layer or has_classifier_1layer
     if has_sparse_head:       print("  detected: sparse_linear head")
     if has_colbert_head:      print("  detected: colbert_linear head")
+    if has_ner_classifier:    print(f"  detected: NER token classifier ({sd['classifier.weight'].shape[0]} labels)")
     if has_classifier_2layer: print("  detected: classifier head 2-layer (reranker)")
     elif has_classifier_1layer: print("  detected: classifier head 1-layer (reranker)")
 
@@ -279,6 +294,8 @@ def main():
         model_type_str = "colbert"
     elif has_classifier:
         model_type_str = "reranker"
+    elif has_ner_classifier:
+        model_type_str = "ner"
     else:
         model_type_str = "dense"
 
@@ -927,6 +944,21 @@ def main():
             if "classifier.bias" in sd:
                 writer.add_tensor("classifier.bias", f32(sd["classifier.bias"]))
             print("  classifier (1-layer): ok")
+
+        # NER token classification head
+        if has_ner_classifier:
+            num_labels = sd["classifier.weight"].shape[0]
+            writer.add_tensor("ner.classifier.weight", f32(sd["classifier.weight"]))
+            if "classifier.bias" in sd:
+                writer.add_tensor("ner.classifier.bias", f32(sd["classifier.bias"]))
+            writer.add_uint32("ner.num_labels", num_labels)
+            # Write label names from config.id2label
+            labels = []
+            for i in range(num_labels):
+                label = config.id2label.get(i, config.id2label.get(str(i), f"LABEL_{i}"))
+                labels.append(str(label))
+            writer.add_array("ner.labels", labels)
+            print(f"  NER classifier: {num_labels} labels {labels}")
 
         # SPLADE MLM head (cls.predictions.transform + decoder)
         has_mlm = "cls.predictions.transform.dense.weight" in sd
