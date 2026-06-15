@@ -271,142 +271,42 @@ CrispEmbed/
 #### OCR models — remaining
 
 - [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune
-- [x] Qari-OCR (2B, Apache-2.0) — Arabic with diacritics, LoRA on Qwen2-VL-2B
 - [ ] Granite Vision 3.3-2B (3B, Apache-2.0) — OCRBench 852
 - [ ] Granite-Docling-258M (258M, Apache-2.0) — SigLIP2 + Granite-165M, document
   conversion (layout + OCR + tables + equations), DocTags output → Markdown/HTML.
   Smallest VLM, GGUF available via llama.cpp. ibm-granite/granite-docling-258M
 
-#### Tesseract LSTM OCR engine (lightweight multilingual)
+#### Tesseract LSTM — DONE (see HISTORY.md)
 
-- [x] `models/convert-tesseract-to-gguf.py` — parse `.traineddata`, extract LSTM
-  weights + unicharset + recoder, emit GGUF (supports both tessdata_fast int8
-  and tessdata_best float64 sources)
-- [x] `src/tesseract_lstm.{h,cpp}` — VGSL network forward pass (Conv stacking +
-  FullyConnected + LSTM + Softmax) + CTC greedy decode
-- [x] C API: `tesseract_lstm_init/recognize/free`
-- [x] Python reference dumper (`tools/dump_tesseract_reference.py`) for parity testing
-- [x] Validated against `tesseract --oem 1` — core text matches.
-- [x] **Fix: height-normalize the line to `input_height` (36) in `recognize()`**
-  (2026-06-15). The conv+maxpool+SummLSTM stack assumes H=36 (H2=H/3); feeding
-  the raw line height produced garbled output. Now bilinear-resizes
-  (aspect-preserving) before normalization.
-- [x] **Fix: restore the space token** (2026-06-15). The earlier "no spaces, by
-  design" was wrong — the LSTM *does* emit a space class (unichar id 0 =
-  UNICHAR_SPACE), but the converter's `line.split()[0]` dropped the
-  leading-space char, storing `""`. Restored `tokens[0]=" "` at load (fixes
-  shipped GGUFs) + in the converter. Verified: `tesseract-eng` now reads
-  "The quick brown Fox jumps over the lazy Dog. 2026!" — correct chars +
-  **spaces + punctuation + truecasing**, all emitted directly by the LSTM (no
-  DAWG/dictionary port needed).
+Converter, C++ engine, Python reference, 12 language GGUFs, parity tests.
 
-#### Punctuation restoration for CTC output
+#### Punctuation restoration — DONE (see HISTORY.md)
 
-- [x] Copy FireRedPunc + PCS from CrispASR (`src/fireredpunc.{h,cpp}`,
-  `src/pcs.{h,cpp}`). C API `crispembed_punct_init/process/free` (auto-detects
-  FireRedPunc vs PCS). CLI `--punct-model`. *(Note: with the space-token fix
-  above, Tesseract LSTM already emits spaces/punctuation/case directly; the
-  restorer is an optional cleanup for harder text / other engines.)*
-- [x] Wire into the orchestrator as an optional post-process: `punct_model` on
-  `crispembed_ocr_pipeline_params` + `..._init_stages`; applied to the joined
-  text in the C-API wrapper (orchestrator core unchanged). Rust binding:
-  `CrispOcrPipeline::new`/`from_stages` take `punct_model`.
-- [ ] **Refactor into a shared `crisp_punc/` library** to avoid drift with
-  CrispASR (currently copied). Debug PCS tensor-bounds assert on quantized models.
-- [x] **Register FireRedPunc + PCS GGUFs in model_mgr.cpp** for auto-download.
-  `fireredpunc`, `fullstop-punc`, `pcs` registered with HF URLs.
+FireRedPunc + PCS from CrispASR, CLI + C API + orchestrator.
+- [ ] **Refactor into shared `crisp_punc/` library** (avoid drift with CrispASR).
+- [ ] Debug PCS tensor-bounds assert on quantized models.
 
-#### Orchestrator integration
+#### Orchestrator — DONE (see HISTORY.md)
 
-- [x] Orchestrator `ocr_orchestrator.{h,cpp}` — source-type classify →
-  per-stage cleanup → engine → text-yield/confidence accept-gate + chain
-  escalation. Engines: DBNet+TrOCR, Surya, **Tesseract LSTM** (DBNet detect +
-  per-line tesseract recognise), GOT/GLM/Qwen2-VL/InternVL2.
-- [x] C API `crispembed_ocr_pipeline_*` (flat + `init_stages` per-stage builder)
-  + Rust binding `CrispOcrPipeline` (`new` / `from_stages`).
-- [x] Per-stage cleanup + engine params + VLM params in the builder C API
-  (`crispembed_ocr_stage`).
-- [x] Wire orchestrator into HTTP server / Python / Dart (commit 73d7b96).
-- [x] **got_ocr GPU scheduler abort fixed** — append CPU fallback backend
-  (`ggml_backend_sched_new` asserts last backend == CPU).
-- [x] **CLI completeness:** `--ocr-engine`, `--punct-model`, `--vlm-model`,
-  `--vlm-engine` wired into CLI. Server: full orchestrator config flags
-  (`--ocr-pipeline --ocr-det --ocr-rec --vlm-model --vlm-engine --punct-model`),
-  CORS headers, complete help. All wrapper params exposed in Python/Dart/Rust.
-- [ ] **Gap — tests:** no orchestrator unit test (classify / accept-gate /
-  escalation / per-stage), no regression test for the tesseract resize+space
-  fixes, no punct-post-process test. Add them.
+Full wiring: server, Python, Dart, Rust. Verbose logging. GOT-OCR2 GPU fix.
+- [ ] Orchestrator unit tests (classify / accept-gate / escalation).
 - [ ] Tunable source-type classifier thresholds (saturation, white fraction).
 - [ ] Runtime config updates without context reload.
-- [x] Verbose logging — `CRISPEMBED_VERBOSE_OCR=1` env var. Logs source-type
-  classification, per-stage engine selection, text yield, confidence, gate
-  pass/fail decisions.
 
-#### Classical image processing — cherry-picked from Leptonica
+#### Classical preprocessing — DONE (see HISTORY.md)
 
-Our current pipeline is GPU/learned-heavy (NAFNet, DBNet/Surya, RT-DETRv2).
-Leptonica (180K+ LOC, BSD-2) gives us a **CPU-only, model-free, fast,
-low-resource tier** for the same pipeline steps, plus one capability we
-entirely lack (dewarping). We cherry-pick the algorithms (not the library)
-into self-contained C++ in `src/`. No Leptonica dependency, no Pix types.
-BSD-attributed. Surface as per-stage cleanup-method options (classical-fast
-vs NAFNet-quality) + CC-based detector tier, tunable through the per-stage
-builder we already shipped.
+Leptonica cherry-picks: DWA morph (21x), CC detect (4ms), adaptive Otsu,
+deskew (3ms), despeckle, bg norm, page dewarp (10ms). 56 tests, all pass.
 
-Priority order (by impact across speed × quality × resources):
+#### OCR renderers — DONE (see HISTORY.md)
 
-- [x] **1-bit DWA morphology** — DONE (morph_fast.{h,cpp}). 21x speedup,
-  32x less memory vs float separable morph. Bench: 80ms vs 1691ms on
-  2000×3000 image with K=51.
-
-- [x] **Page dewarping** (`dewarp.{h,cpp}`) — DONE. Textline baseline
-  extraction via CC detection, cubic polynomial fitting per baseline,
-  2D vertical disparity map with inter-baseline interpolation, bilinear
-  warp. Reduces line spread from 15px to 7px (>50%) on synthetic curved
-  doc, 10ms. Handles book spine warping and phone captures.
-
-- [x] **CC-based region/line segmentation** — DONE (`cc_detect.{h,cpp}`).
-  Model-free, GPU-free text line detector. Morph close + CC labeling.
-  5 lines in 4.3ms. Zero model downloads.
-
-- [x] **Adaptive (tiled) Otsu + background norm** — DONE
-  (`classical_preproc.{h,cpp}`). Per-tile Otsu + bilinear interpolation +
-  tile-based 90th-percentile background estimation. 48/48 tests pass.
-
-- [x] **Deskew** (`find_skew_angle`) — differential square-sum scoring on
-  4x-reduced 1-bit image + binary search. ~3ms per page. 12/12 tests pass.
-
-- [x] **CC despeckle** (`despeckle_cc`/`despeckle_gray`) — flood-fill CC
-  labeling, remove components below size threshold. ~100 LOC.
-
-- [x] **Background normalization** (`background_norm`) — tile-based 90th
-  percentile sampling + smooth interpolation. Std dev 41→1.6 on gradient test.
-
-#### OCR result renderers
-
-Output formats for multi-page OCR results, following Tesseract's
-begin/add_page/end pattern. All in `src/ocr_render.{h,cpp}`, no deps.
-
-- [x] **Plain text** — concatenates pages with configurable separator
-  (default `\f`). Simplest interchange format.
-- [x] **hOCR** — XHTML with `ocr_page`/`ocr_line`/`ocrx_word` elements,
-  bounding boxes in `title` attributes, word confidence as `x_wconf`.
-  Standard OCR interchange format (Google, Tesseract, ABBYY).
-- [x] **ALTO 3.1** — XML following Library of Congress ALTO schema.
-  `Page`/`TextBlock`/`TextLine`/`String`/`SP` elements with HPOS/VPOS/
-  WIDTH/HEIGHT/WC attributes. Used by digital libraries (BNF, BSB, LOC).
-- [x] **Searchable PDF** — minimal PDF 1.4 structure (Catalog, Pages,
-  Helvetica font). Currently text-only; TODO: embed original image as
-  full-page background XObject for true searchable-PDF output.
-- [x] 36/36 unit tests (text, hOCR, ALTO, PDF, XML escaping).
+Plain text, hOCR, ALTO 3.1, searchable PDF. 36 tests. CLI `--output-format`.
+- [ ] Searchable PDF with embedded page image (XObject).
 
 #### Nice-to-have
 
 - [ ] CrispCalc Dart catalog entries for InternVL2 (`OcrModelVariant`)
 - [ ] Qwen3-VL multimodal (low priority, reuse BidirLM-Omni scaffolding)
-- [x] **Page dewarping** — DONE (dewarp.{h,cpp}).
-- [x] **Searchable PDF with text positioning** — DONE (ocr_render.cpp,
-  invisible text layer with PDF rendering mode 3).
 
 ### Completed (v0.8.0)
 

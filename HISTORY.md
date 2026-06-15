@@ -4,6 +4,58 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — Tesseract LSTM OCR + classical preprocessing + renderers
+
+### Tesseract LSTM line-recognition engine
+
+Ported Tesseract's LSTM line-recognition engine to CrispEmbed via GGML.
+126 languages from `.traineddata` files (435 KB–1.7 MB Q8_0 per language).
+
+- Converter (`convert-tesseract-to-gguf.py`): recursive binary tree parser,
+  int8 dequant, gate reorder, GGUF emit. Supports tessdata_best + tessdata_fast.
+- C++ engine (`tesseract_lstm.{h,cpp}`): Conv stacking → FC+tanh → MaxPool →
+  SummLSTM → LSTMs → Softmax → CTC decode. Pure CPU, no ggml graph.
+- Python reference (`dump_tesseract_reference.py`): pure-numpy forward pass.
+- Parity: 8/8 stages cos_min=1.000000. Spaces + punctuation emitted natively.
+- 12 language GGUFs on HuggingFace (`cstr/tesseract-lstm-GGUF`).
+
+### Classical preprocessing (from Leptonica, BSD-2)
+
+CPU-only, model-free, fast tier. Self-contained C++, no Leptonica dependency.
+
+- 1-bit DWA morphology (`morph_fast`): 21x speedup, 32x less memory.
+- CC text line detection (`cc_detect`): model-free, 4.3ms/page, zero downloads.
+- Adaptive Otsu (`classical_preproc`): per-tile + bilinear interpolation.
+- Differential-square-sum deskew: 3ms/page, binary search on 4x-reduced image.
+- CC despeckle: flood-fill + size filter.
+- Background normalization: tile-based 90th-percentile + smoothing.
+- Page dewarping (`dewarp`): cubic baseline fitting + disparity warp. 10ms.
+
+### OCR result renderers (`ocr_render`)
+
+Plain text (configurable separator), hOCR (XHTML), ALTO 3.1 (XML),
+searchable PDF (invisible text layer, rendering mode 3). 36/36 tests.
+Wired into CLI (`--output-format`), C API, Rust, Python.
+
+### Punctuation restoration
+
+FireRedPunc + PCS copied from CrispASR. Auto-detect from GGUF arch.
+CLI `--punct-model`, C API, orchestrator integration. Registered in model_mgr.
+
+### OCR pipeline orchestrator
+
+Wired into HTTP server, Python, Dart, Rust. Full params in all layers.
+CORS headers. VLM escalation in Rust. Verbose logging (`CRISPEMBED_VERBOSE_OCR`).
+GOT-OCR2 GPU scheduler fix. CC detect as model-free detector option.
+
+### Wiring
+
+All new capabilities: C API + Rust FFI + safe Rust + Python bindings.
+docs/contributing.md updated with utility library checklist + integration matrix.
+56 new tests (48 unit + 8 parity), all passing.
+
+---
+
 ## June 2026 — Qari-OCR (Arabic with diacritics, 2B, Apache-2.0)
 
 Port of NAMAA-Space/Qari-OCR-0.2.2.1-VL-2B-Instruct — Arabic OCR with
