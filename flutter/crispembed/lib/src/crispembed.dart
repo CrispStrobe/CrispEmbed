@@ -1825,3 +1825,50 @@ class CrispPunct {
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// OCR Rendering (text, hOCR, ALTO, PDF)
+// ---------------------------------------------------------------------------
+
+/// Render OCR results to structured format (hOCR, ALTO, or plain text).
+/// This is a one-shot function — no persistent state needed.
+String? ocrRender(DynamicLibrary lib, List<OcrResult> results,
+    int pageWidth, int pageHeight, String format) {
+  if (results.isEmpty) return null;
+  final renderFn = lib.lookupFunction<CrispembedOcrRenderNative,
+      CrispembedOcrRenderDart>('crispembed_ocr_render');
+
+  // Build the C result array. crispembed_ocr_result layout:
+  // 5 floats (x,y,w,h,conf) + pointer (text) + int32 (text_len)
+  final structSize = sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>();
+  final arr = calloc<Uint8>(results.length * structSize);
+  final textPtrs = <Pointer<Utf8>>[];
+
+  for (var i = 0; i < results.length; i++) {
+    final r = results[i];
+    final base = arr.elementAt(i * structSize);
+    final floats = base.cast<Float>();
+    floats[0] = r.x.toDouble();
+    floats[1] = r.y.toDouble();
+    floats[2] = r.w.toDouble();
+    floats[3] = r.h.toDouble();
+    floats[4] = r.confidence.toDouble();
+    final textPtr = r.text.toNativeUtf8();
+    textPtrs.add(textPtr);
+    base.elementAt(sizeOf<Float>() * 5).cast<Pointer<Utf8>>()[0] = textPtr;
+    base.elementAt(sizeOf<Float>() * 5 + sizeOf<Pointer>()).cast<Int32>()[0] =
+        r.text.length;
+  }
+
+  final fmtPtr = format.toNativeUtf8();
+  final ptr = renderFn(
+      arr.cast<Void>(), results.length, pageWidth, pageHeight, fmtPtr);
+  calloc.free(fmtPtr);
+  for (final tp in textPtrs) calloc.free(tp);
+  calloc.free(arr);
+
+  if (ptr == nullptr) return null;
+  final result = ptr.toDartString();
+  calloc.free(ptr);
+  return result;
+}
