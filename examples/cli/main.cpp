@@ -87,6 +87,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
     fprintf(stderr, "  --punct-model M  post-process OCR text with punctuation model (FireRedPunc/PCS)\n");
+    fprintf(stderr, "  --output-format F  OCR output format: text (default), hocr, alto\n");
     fprintf(stderr, "  --cleanup        preprocess scan before OCR (deskew, crop borders, whiten background)\n");
     fprintf(stderr, "  --cleanup-only F process scan and write cleaned image to stdout (no OCR)\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
@@ -155,6 +156,7 @@ int main(int argc, char ** argv) {
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
     float pipeline_min_conf = -1.0f;    // --ocr-min-conf: accept-gate override (-1 = default)
     std::string punct_model;    // --punct-model: post-process OCR with punctuation
+    std::string output_format;  // --output-format: text/hocr/alto
     std::string pipeline_engine; // --ocr-engine NAME: primary pipeline engine (dbnet_trocr/surya/tesseract/got/glm/qwen2vl/internvl2)
     bool face_pipeline_mode = false;
     float conf_threshold = 0.5f;
@@ -223,6 +225,8 @@ int main(int argc, char ** argv) {
             cleanup_mode = true;
         } else if (strcmp(argv[i], "--punct-model") == 0 && i + 1 < argc) {
             punct_model = argv[++i];
+        } else if (strcmp(argv[i], "--output-format") == 0 && i + 1 < argc) {
+            output_format = argv[++i];
         } else if (strcmp(argv[i], "--cleanup-only") == 0 && i + 1 < argc) {
             cleanup_only_path = argv[++i];
         } else if (strcmp(argv[i], "--ocr-pipeline") == 0 && i + 1 < argc) {
@@ -393,14 +397,29 @@ int main(int argc, char ** argv) {
         float mean_conf = 0.0f;
         const crispembed_ocr_result* res = crispembed_ocr_pipeline_run(
             pctx, ocr_pipeline_path.c_str(), &n_res, &full_text, &mean_conf);
-        if (json_output) {
+
+        // Output in requested format
+        if (!output_format.empty() && output_format != "text") {
+            // Structured output (hOCR, ALTO, PDF)
+            // Need page dimensions — load image to get them
+            int pw = 0, ph = 0, pc = 0;
+            unsigned char * pimg = stbi_load(ocr_pipeline_path.c_str(), &pw, &ph, &pc, 0);
+            if (pimg) stbi_image_free(pimg);
+            if (pw == 0) { pw = 2480; ph = 3508; } // A4 fallback
+
+            char * rendered = crispembed_ocr_render(res, n_res, pw, ph,
+                                                     output_format.c_str());
+            if (rendered) {
+                printf("%s", rendered);
+                free(rendered);
+            }
+        } else if (json_output) {
             printf("{\"n_regions\":%d,\"mean_confidence\":%.3f,\"full_text\":\"%s\"}\n",
                    n_res, mean_conf, json_escape(full_text ? full_text : "").c_str());
         } else {
             printf("regions=%d  mean_conf=%.2f\n%s\n",
                    n_res, mean_conf, full_text ? full_text : "");
         }
-        (void)res;
         crispembed_ocr_pipeline_free(pctx);
         return 0;
     }
