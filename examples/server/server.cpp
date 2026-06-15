@@ -19,11 +19,19 @@
 //   POST /colbert/score   — {"query": "...", "documents": [...]} → ColBERT scoring
 //   POST /ner/extract     — {"text": "...", "labels": [...]} → NER entities
 //   POST /scan/cleanup    — {"image": "scan.png"} → cleaned image
+//   POST /pdf/dpi              — {"file": "path.pdf"} → per-page DPI info
+//   POST /preprocess/skew      — {"image": "..."} → {"angle": F, "confidence": F}
+//   POST /preprocess/dewarp    — {"image": "...", "output": "..."} → PGM image or JSON
+//   POST /preprocess/cc-detect — {"image": "..."} → {"regions": [...]}
+//   POST /render/ocr           — {"results": [...], "format": "hocr"} → rendered document
+//   POST /ocr/document         — multi-page OCR: images → searchable PDF / hOCR / text
 //   GET  /health          — server status + loaded capabilities
 
 #include "crispembed.h"
+#include "ocr_render.h"
 #include "scan_cleanup.h"
 #include "model_mgr.h"
+#include "pdf_info.h"
 #include "httplib.h"
 
 // stb_image for /math/ocr image loading
@@ -68,6 +76,9 @@ int main(int argc, char ** argv) {
     std::string vlm_model_path;       // VLM escalation model for orchestrator
     int vlm_engine = 0;               // 0=GOT, 1=GLM, 2=Qwen2-VL, 3=InternVL2
     std::string punct_model_path;     // punct restoration model for orchestrator
+    std::string sr_model_path;        // text super-resolution model (--sr-model)
+    std::string pan_model_path;       // PAN super-resolution model (--pan-model)
+    std::string tbsrn_model_path;     // TBSRN super-resolution model (--tbsrn-model)
     int port = 8080;
     int n_threads = 4;
 
@@ -90,9 +101,12 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) vlm_model_path = argv[++i];
         else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) vlm_engine = atoi(argv[++i]);
         else if (strcmp(argv[i], "--punct-model") == 0 && i + 1 < argc) punct_model_path = argv[++i];
+        else if (strcmp(argv[i], "--sr-model") == 0 && i + 1 < argc) sr_model_path = argv[++i];
+        else if (strcmp(argv[i], "--pan-model") == 0 && i + 1 < argc) pan_model_path = argv[++i];
+        else if (strcmp(argv[i], "--tbsrn-model") == 0 && i + 1 < argc) tbsrn_model_path = argv[++i];
     }
 
-    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty()) {
+    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && tbsrn_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
@@ -117,6 +131,12 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --vlm-model MODEL VLM escalation fallback GGUF (optional)\n");
         fprintf(stderr, "  --vlm-engine N    VLM backend: 0=GOT 1=GLM 2=Qwen2-VL 3=InternVL2\n");
         fprintf(stderr, "  --punct-model M   post-OCR punctuation/spacing GGUF (optional)\n");
+        fprintf(stderr, "\nText super-resolution (low-DPI upscaling before OCR):\n");
+        fprintf(stderr, "  --sr-model MODEL  text SR GGUF (NAFNet+PixelShuffle, 2x or 4x); enables POST /text/sr\n");
+        fprintf(stderr, "\nPAN super-resolution (whole-image upscaling):\n");
+        fprintf(stderr, "  --pan-model MODEL PAN SR GGUF (Pixel Attention Network, 2x or 4x); enables POST /pan/sr\n");
+        fprintf(stderr, "\nTBSRN super-resolution (text-crop upscaling, always 2x):\n");
+        fprintf(stderr, "  --tbsrn-model MODEL TBSRN SR GGUF (16x64->32x128); enables POST /tbsrn/sr\n");
         return 1;
     }
 
@@ -712,6 +732,9 @@ int main(int argc, char ** argv) {
             if (!punct_r.empty()) punct_model_path = punct_r;
             pp.punct_model = punct_model_path.c_str();
         }
+        if (!sr_model_path.empty()) {
+            pp.sr_model = sr_model_path.c_str();
+        }
         ocr_orch_ctx = crispembed_ocr_pipeline_init(&pp, n_threads);
         if (!ocr_orch_ctx)
             fprintf(stderr, "Warning: failed to init OCR orchestrator\n");
@@ -762,6 +785,48 @@ int main(int argc, char ** argv) {
         ner_ctx = crispembed_ner_init(ner_model_path.c_str(), n_threads);
         if (!ner_ctx)
             fprintf(stderr, "Warning: failed to load NER model '%s'\n", ner_model_path.c_str());
+    }
+
+    // KIE (OCR + NER pipeline) — auto-enabled when NER + OCR det/rec are all loaded.
+    void * kie_ctx = nullptr;
+    std::mutex kie_mutex;
+
+    if (ner_ctx && !ocr_det_model_path.empty() && !ocr_rec_model_path.empty()) {
+        kie_ctx = crispembed_kie_init(
+            ocr_det_model_path.c_str(), ocr_rec_model_path.c_str(),
+            ner_model_path.c_str(), n_threads);
+        if (!kie_ctx)
+            fprintf(stderr, "Warning: failed to init KIE pipeline\n");
+    }
+
+    // ── Text Super-Resolution ──
+    void * text_sr_ctx = nullptr;
+    std::mutex text_sr_mutex;
+
+    if (!sr_model_path.empty()) {
+        text_sr_ctx = crispembed_text_sr_init(sr_model_path.c_str(), n_threads);
+        if (!text_sr_ctx)
+            fprintf(stderr, "Warning: failed to load text SR model '%s'\n", sr_model_path.c_str());
+    }
+
+    // ── PAN Super-Resolution ──
+    void * pan_sr_ctx = nullptr;
+    std::mutex pan_sr_mutex;
+
+    if (!pan_model_path.empty()) {
+        pan_sr_ctx = crispembed_pan_sr_init(pan_model_path.c_str(), n_threads);
+        if (!pan_sr_ctx)
+            fprintf(stderr, "Warning: failed to load PAN SR model '%s'\n", pan_model_path.c_str());
+    }
+
+    // ── TBSRN Super-Resolution ──
+    void * tbsrn_sr_ctx = nullptr;
+    std::mutex tbsrn_sr_mutex;
+
+    if (!tbsrn_model_path.empty()) {
+        tbsrn_sr_ctx = crispembed_tbsrn_sr_init(tbsrn_model_path.c_str(), n_threads);
+        if (!tbsrn_sr_ctx)
+            fprintf(stderr, "Warning: failed to load TBSRN SR model '%s'\n", tbsrn_model_path.c_str());
     }
 
     // POST /clip/text — CLIP text encoding
@@ -1371,6 +1436,102 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /kie/extract — key information extraction (OCR + NER)
+    // Request:  {"image": "/path/to/doc.png", "labels": ["total", "date", "vendor"], "threshold": 0.5}
+    // Response: {"fields": [{label, value, score, bbox}], "ocr_text": "...", "ocr_confidence": 0.85, "n_ocr_regions": 12}
+    svr.Post("/kie/extract", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!kie_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"KIE not available (need --ner + --ocr-det + --ocr-rec)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+
+        // Parse "image"
+        std::string image_path;
+        {
+            auto pos = body.find("\"image\"");
+            if (pos != std::string::npos) {
+                auto q1 = body.find('"', pos + 7);
+                auto q2 = body.find('"', q1 + 1);
+                if (q1 != std::string::npos && q2 != std::string::npos)
+                    image_path = body.substr(q1 + 1, q2 - q1 - 1);
+            }
+        }
+
+        // Parse "labels" array
+        std::vector<std::string> labels;
+        {
+            auto pos = body.find("\"labels\"");
+            if (pos != std::string::npos) {
+                auto arr_start = body.find('[', pos);
+                auto arr_end = body.find(']', arr_start);
+                if (arr_start != std::string::npos && arr_end != std::string::npos) {
+                    std::string arr = body.substr(arr_start + 1, arr_end - arr_start - 1);
+                    size_t i = 0;
+                    while (i < arr.size()) {
+                        auto q1 = arr.find('"', i);
+                        if (q1 == std::string::npos) break;
+                        auto q2 = arr.find('"', q1 + 1);
+                        if (q2 == std::string::npos) break;
+                        labels.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
+                        i = q2 + 1;
+                    }
+                }
+            }
+        }
+
+        // Parse "threshold"
+        float threshold = 0.5f;
+        {
+            auto pos = body.find("\"threshold\"");
+            if (pos != std::string::npos) {
+                auto colon = body.find(':', pos);
+                if (colon != std::string::npos)
+                    threshold = (float)atof(body.c_str() + colon + 1);
+            }
+        }
+
+        if (image_path.empty() || labels.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"provide \\\"image\\\" and \\\"labels\\\" fields\"}", "application/json");
+            return;
+        }
+
+        std::vector<const char *> label_ptrs(labels.size());
+        for (size_t i = 0; i < labels.size(); i++)
+            label_ptrs[i] = labels[i].c_str();
+
+        std::lock_guard<std::mutex> lock(kie_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        crispembed_kie_result kr = crispembed_kie_extract(
+            kie_ctx, image_path.c_str(),
+            label_ptrs.data(), (int)labels.size(), threshold);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        std::ostringstream js;
+        js << "{\"fields\": [";
+        for (int i = 0; i < kr.n_fields; i++) {
+            if (i > 0) js << ", ";
+            js << "{\"label\": \"" << json_escape(kr.fields[i].label ? kr.fields[i].label : "")
+               << "\", \"value\": \"" << json_escape(kr.fields[i].value ? kr.fields[i].value : "")
+               << "\", \"score\": " << std::fixed << std::setprecision(4) << kr.fields[i].score
+               << ", \"bbox\": [" << std::setprecision(1) << kr.fields[i].x << ", "
+               << kr.fields[i].y << ", " << kr.fields[i].w << ", " << kr.fields[i].h << "]}";
+        }
+        js << "], \"ocr_text\": \"" << json_escape(kr.ocr_text ? kr.ocr_text : "")
+           << "\", \"ocr_confidence\": " << std::setprecision(3) << kr.ocr_confidence
+           << ", \"n_ocr_regions\": " << kr.n_ocr_regions
+           << ", \"ms\": " << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /kie/extract in %.1f ms (%d fields)\n", ms, kr.n_fields);
+        res.set_content(js.str(), "application/json");
+    });
+
     // POST /scan/cleanup — document scan preprocessing (no model needed)
     // Request:  {"image": "/path/to/scan.png", "deskew": true, "binarize": false}
     // Response: {"width": W, "height": H, "original_width": OW, "original_height": OH, "ms": T}
@@ -1446,6 +1607,769 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /pdf/dpi — PDF DPI profiling (no model needed)
+    svr.Post("/pdf/dpi", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+        std::string file_path;
+        auto pos = body.find("\"file\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 6);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                file_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (file_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'file' field\"}", "application/json");
+            return;
+        }
+        int n_pages = 0;
+        pdf_page_dpi_result * results = pdf_all_pages_dpi(file_path.c_str(), &n_pages);
+        if (!results || n_pages <= 0) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot read PDF\"}", "application/json");
+            return;
+        }
+        std::ostringstream js;
+        js << "{\"pages\":[";
+        for (int i = 0; i < n_pages; i++) {
+            if (i > 0) js << ",";
+            js << "{\"page\":" << i
+               << ",\"dpi\":" << results[i].dpi
+               << ",\"dpi_min\":" << results[i].dpi_min
+               << ",\"dpi_max\":" << results[i].dpi_max
+               << ",\"n_images\":" << results[i].n_images
+               << ",\"page_width_pt\":" << results[i].page_width_pt
+               << ",\"page_height_pt\":" << results[i].page_height_pt
+               << "}";
+        }
+        js << "]}";
+        pdf_dpi_free(results);
+        res.set_content(js.str(), "application/json");
+    });
+
+    // POST /preprocess/skew — find skew angle (no model needed)
+    svr.Post("/preprocess/skew", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 1);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+        float angle = 0, conf = 0;
+        crispembed_find_skew(data, w, h, &angle, &conf);
+        stbi_image_free(data);
+        char buf[128];
+        snprintf(buf, sizeof(buf), "{\"angle\":%.3f,\"confidence\":%.3f}", angle, conf);
+        res.set_content(buf, "application/json");
+    });
+
+    // POST /preprocess/dewarp — straighten curved text (no model needed)
+    // Request:  {"image": "/path/to/scan.png", "output": "/path/to/out.pgm"}
+    //   - "output" is optional; if present, writes dewarped PGM to that path
+    // Response: JSON metadata + optionally raw PGM image bytes
+    //   - If Accept: image/* → returns PGM binary directly
+    //   - Otherwise → JSON {"dewarped":bool, "width":W, "height":H}
+    svr.Post("/preprocess/dewarp", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+        std::string image_path, output_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        auto opos = body.find("\"output\"");
+        if (opos != std::string::npos) {
+            auto q1 = body.find('"', opos + 8);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                output_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 1);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+        std::vector<uint8_t> out(w * h);
+        int ow = 0, oh = 0;
+        int ret = crispembed_dewarp(data, w, h, out.data(), &ow, &oh);
+        stbi_image_free(data);
+        if (ret != 0) {
+            res.set_content("{\"dewarped\":false,\"reason\":\"too few textlines\"}", "application/json");
+            return;
+        }
+        // Write to output file if requested
+        if (!output_path.empty()) {
+            FILE * f = fopen(output_path.c_str(), "wb");
+            if (f) {
+                fprintf(f, "P5\n%d %d\n255\n", ow, oh);
+                fwrite(out.data(), 1, ow * oh, f);
+                fclose(f);
+            }
+        }
+        // Return image or JSON based on Accept header
+        bool want_image = false;
+        if (req.has_header("Accept")) {
+            auto accept = req.get_header_value("Accept");
+            want_image = accept.find("image/") != std::string::npos;
+        }
+        if (want_image) {
+            // PGM format: P5 header + raw bytes
+            std::string pgm;
+            char hdr[64];
+            snprintf(hdr, sizeof(hdr), "P5\n%d %d\n255\n", ow, oh);
+            pgm = hdr;
+            pgm.append((const char *)out.data(), ow * oh);
+            res.set_content(pgm, "image/x-portable-graymap");
+        } else {
+            char buf[256];
+            snprintf(buf, sizeof(buf),
+                "{\"dewarped\":true,\"width\":%d,\"height\":%d,\"output\":\"%s\"}",
+                ow, oh, output_path.empty() ? "" : output_path.c_str());
+            res.set_content(buf, "application/json");
+        }
+    });
+
+    // POST /preprocess/tps-dewarp — TPS-based dewarp (learned localizer model)
+    svr.Post("/preprocess/tps-dewarp", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+        std::string image_path, model_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        pos = body.find("\"model\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                model_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty() || model_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' or 'model' field\"}", "application/json");
+            return;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 1);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+        std::vector<uint8_t> out(w * h);
+        int ret = crispembed_tps_auto_dewarp(data, w, h, model_path.c_str(), out.data());
+        stbi_image_free(data);
+        if (ret != 0) {
+            res.set_content("{\"dewarped\":false,\"reason\":\"tps-dewarp failed\"}", "application/json");
+            return;
+        }
+        char buf[128];
+        snprintf(buf, sizeof(buf), "{\"dewarped\":true,\"width\":%d,\"height\":%d}", w, h);
+        res.set_content(buf, "application/json");
+    });
+
+    // POST /preprocess/cc-detect — model-free text line detection
+    svr.Post("/preprocess/cc-detect", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 1);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+        int n = 0;
+        crispembed_ocr_result * regions = crispembed_cc_detect(data, w, h, &n);
+        stbi_image_free(data);
+        std::ostringstream js;
+        js << "{\"n\":" << n << ",\"regions\":[";
+        for (int i = 0; i < n; i++) {
+            if (i > 0) js << ",";
+            js << "{\"x\":" << regions[i].x << ",\"y\":" << regions[i].y
+               << ",\"w\":" << regions[i].w << ",\"h\":" << regions[i].h << "}";
+        }
+        js << "]}";
+        if (regions) free(regions);
+        res.set_content(js.str(), "application/json");
+    });
+
+    // POST /render/ocr — render OCR results to hOCR/ALTO/PDF
+    // Request: {"results": [{"text":"Hello","x":10,"y":20,"w":50,"h":15,"confidence":0.99},...],
+    //           "page_width": 800, "page_height": 600, "format": "hocr"}
+    // Response: rendered document (hOCR XHTML, ALTO XML, or PDF binary)
+    svr.Post("/render/ocr", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+
+        // Parse format
+        std::string format = "text";
+        auto fpos = body.find("\"format\"");
+        if (fpos != std::string::npos) {
+            auto q1 = body.find('"', fpos + 8);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                format = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+
+        // Parse page dimensions
+        int page_w = 800, page_h = 600;
+        auto pw_pos = body.find("\"page_width\"");
+        if (pw_pos != std::string::npos) {
+            auto colon = body.find(':', pw_pos);
+            if (colon != std::string::npos) page_w = atoi(body.c_str() + colon + 1);
+        }
+        auto ph_pos = body.find("\"page_height\"");
+        if (ph_pos != std::string::npos) {
+            auto colon = body.find(':', ph_pos);
+            if (colon != std::string::npos) page_h = atoi(body.c_str() + colon + 1);
+        }
+
+        // Parse results array (minimal JSON — extract text + bbox per entry)
+        // Each result: {"text":"...","x":N,"y":N,"w":N,"h":N,"confidence":F}
+        std::vector<crispembed_ocr_result> results;
+        std::vector<std::string> texts; // keep text alive
+        auto rpos = body.find("\"results\"");
+        if (rpos != std::string::npos) {
+            auto arr_start = body.find('[', rpos);
+            auto arr_end = body.rfind(']');
+            if (arr_start != std::string::npos && arr_end != std::string::npos) {
+                std::string arr = body.substr(arr_start, arr_end - arr_start + 1);
+                // Parse each {...} object
+                size_t p = 0;
+                while ((p = arr.find('{', p)) != std::string::npos) {
+                    auto e = arr.find('}', p);
+                    if (e == std::string::npos) break;
+                    std::string obj = arr.substr(p, e - p + 1);
+                    p = e + 1;
+
+                    crispembed_ocr_result r = {};
+                    // Extract text
+                    auto tp = obj.find("\"text\"");
+                    if (tp != std::string::npos) {
+                        auto tq1 = obj.find('"', tp + 6);
+                        auto tq2 = obj.find('"', tq1 + 1);
+                        if (tq1 != std::string::npos && tq2 != std::string::npos)
+                            texts.push_back(obj.substr(tq1 + 1, tq2 - tq1 - 1));
+                        else texts.push_back("");
+                    } else texts.push_back("");
+                    r.text = texts.back().c_str();
+                    r.text_len = (int)texts.back().size();
+                    // Extract numbers
+                    auto parse_num = [&](const char * key) -> float {
+                        auto kp = obj.find(key);
+                        if (kp == std::string::npos) return 0;
+                        auto cp = obj.find(':', kp);
+                        return cp != std::string::npos ? (float)atof(obj.c_str() + cp + 1) : 0;
+                    };
+                    r.x = parse_num("\"x\"");
+                    r.y = parse_num("\"y\"");
+                    r.w = parse_num("\"w\"");
+                    r.h = parse_num("\"h\"");
+                    r.confidence = parse_num("\"confidence\"");
+                    if (r.confidence == 0) r.confidence = 1.0f;
+                    results.push_back(r);
+                }
+            }
+        }
+
+        if (results.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no results to render\"}", "application/json");
+            return;
+        }
+
+        char * rendered = crispembed_ocr_render(
+            results.data(), (int)results.size(), page_w, page_h, format.c_str());
+        if (!rendered) {
+            res.status = 500;
+            res.set_content("{\"error\": \"rendering failed\"}", "application/json");
+            return;
+        }
+
+        // Set content type based on format
+        const char * content_type = "text/plain";
+        if (format == "hocr") content_type = "text/html; charset=utf-8";
+        else if (format == "alto") content_type = "application/xml; charset=utf-8";
+        else if (format == "pdf") content_type = "application/pdf";
+
+        res.set_content(rendered, content_type);
+        free(rendered);
+    });
+
+    // POST /text/sr — text image super-resolution (upscale low-DPI text before OCR)
+    svr.Post("/text/sr", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!text_sr_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no text SR model loaded (use --sr-model)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 3);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(text_sr_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_text_sr_process(
+            text_sr_ctx, data, w, h,
+            /*tile_size=*/0, /*tile_overlap=*/0,
+            &out, &ow, &oh);
+        stbi_image_free(data);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        if (rc != 0 || !out) {
+            res.status = 500;
+            res.set_content("{\"error\": \"text SR processing failed\"}", "application/json");
+            return;
+        }
+
+        // Base64-encode the raw RGB output
+        static const char b64chars[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        const size_t n_bytes = (size_t)ow * oh * 3;
+        std::string b64;
+        b64.reserve(((n_bytes + 2) / 3) * 4);
+        for (size_t i = 0; i < n_bytes; i += 3) {
+            uint32_t v = (uint32_t)out[i] << 16;
+            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
+            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
+            b64 += b64chars[(v >> 18) & 0x3f];
+            b64 += b64chars[(v >> 12) & 0x3f];
+            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
+            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
+        }
+        crispembed_text_sr_free_image(out);
+
+        const int scale = crispembed_text_sr_upscale_factor(text_sr_ctx);
+
+        std::ostringstream js;
+        js << "{\"image\": \"" << b64 << "\""
+           << ", \"width\": " << ow << ", \"height\": " << oh
+           << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": " << scale
+           << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /text/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n",
+                ms, w, h, ow, oh, scale);
+        res.set_content(js.str(), "application/json");
+    });
+
+    // POST /pan/sr — PAN whole-image super-resolution (Pixel Attention Network)
+    svr.Post("/pan/sr", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!pan_sr_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no PAN SR model loaded (use --pan-model)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 3);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(pan_sr_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_pan_sr_process(
+            pan_sr_ctx, data, w, h,
+            /*tile_size=*/0, /*tile_overlap=*/0,
+            &out, &ow, &oh);
+        stbi_image_free(data);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        if (rc != 0 || !out) {
+            res.status = 500;
+            res.set_content("{\"error\": \"PAN SR processing failed\"}", "application/json");
+            return;
+        }
+
+        // Base64-encode the raw RGB output
+        static const char b64chars[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        const size_t n_bytes = (size_t)ow * oh * 3;
+        std::string b64;
+        b64.reserve(((n_bytes + 2) / 3) * 4);
+        for (size_t i = 0; i < n_bytes; i += 3) {
+            uint32_t v = (uint32_t)out[i] << 16;
+            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
+            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
+            b64 += b64chars[(v >> 18) & 0x3f];
+            b64 += b64chars[(v >> 12) & 0x3f];
+            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
+            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
+        }
+        crispembed_pan_sr_free_image(out);
+
+        const int scale = crispembed_pan_sr_scale(pan_sr_ctx);
+
+        std::ostringstream js;
+        js << "{\"image\": \"" << b64 << "\""
+           << ", \"width\": " << ow << ", \"height\": " << oh
+           << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": " << scale
+           << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /pan/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n",
+                ms, w, h, ow, oh, scale);
+        res.set_content(js.str(), "application/json");
+    });
+
+    // POST /tbsrn/sr — TBSRN text-crop super-resolution (always 2×)
+    svr.Post("/tbsrn/sr", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!tbsrn_sr_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no TBSRN SR model loaded (use --tbsrn-model)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 3);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(tbsrn_sr_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_tbsrn_sr_process(
+            tbsrn_sr_ctx, data, w, h,
+            &out, &ow, &oh);
+        stbi_image_free(data);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        if (rc != 0 || !out) {
+            res.status = 500;
+            res.set_content("{\"error\": \"TBSRN SR processing failed\"}", "application/json");
+            return;
+        }
+
+        // Base64-encode the raw RGB output
+        static const char b64chars[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        const size_t n_bytes = (size_t)ow * oh * 3;
+        std::string b64;
+        b64.reserve(((n_bytes + 2) / 3) * 4);
+        for (size_t i = 0; i < n_bytes; i += 3) {
+            uint32_t v = (uint32_t)out[i] << 16;
+            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
+            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
+            b64 += b64chars[(v >> 18) & 0x3f];
+            b64 += b64chars[(v >> 12) & 0x3f];
+            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
+            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
+        }
+        crispembed_tbsrn_sr_free_image(out);
+
+        std::ostringstream js;
+        js << "{\"image\": \"" << b64 << "\""
+           << ", \"width\": " << ow << ", \"height\": " << oh
+           << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": 2"
+           << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /tbsrn/sr in %.1f ms (%dx%d -> %dx%d, 2x)\n",
+                ms, w, h, ow, oh);
+        res.set_content(js.str(), "application/json");
+    });
+
+    // POST /ocr/document — end-to-end multi-page OCR
+    // Accepts:
+    //   multipart/form-data: files named "page" (or "page0","page1",...) → image bytes
+    //   OR application/json: {"images": ["/path/page1.png", "/path/page2.png"],
+    //                         "format": "text|hocr|alto|pdf",
+    //                         "cleanup": true, "dewarp": false}
+    // Returns: rendered document in the requested format
+    svr.Post("/ocr/document", [&](const httplib::Request & req, httplib::Response & res) {
+        std::string format = "text";
+        bool do_cleanup = true;
+        bool do_dewarp = false;
+        std::vector<std::string> temp_files; // track files to clean up
+
+        // Collect page images (either from multipart or JSON paths)
+        std::vector<std::string> page_paths;
+
+        if (req.is_multipart_form_data()) {
+            // Multipart upload: save each file to temp, collect paths
+            auto files = req.files;
+            int page_idx = 0;
+            for (auto & [name, file] : files) {
+                if (name == "format") { format = file.content; continue; }
+                if (name == "cleanup") { do_cleanup = file.content != "false" && file.content != "0"; continue; }
+                if (name == "dewarp") { do_dewarp = file.content == "true" || file.content == "1"; continue; }
+                // Must be a page image
+                char tmp_path[256];
+                snprintf(tmp_path, sizeof(tmp_path), "/tmp/crispembed_doc_%d_%d.img",
+                         (int)getpid(), page_idx++);
+                FILE * f = fopen(tmp_path, "wb");
+                if (f) {
+                    fwrite(file.content.data(), 1, file.content.size(), f);
+                    fclose(f);
+                    page_paths.push_back(tmp_path);
+                    temp_files.push_back(tmp_path);
+                }
+            }
+        } else {
+            // JSON mode: parse image paths
+            auto body = req.body;
+            auto fpos = body.find("\"format\"");
+            if (fpos != std::string::npos) {
+                auto q1 = body.find('"', fpos + 8);
+                auto q2 = body.find('"', q1 + 1);
+                if (q1 != std::string::npos && q2 != std::string::npos)
+                    format = body.substr(q1 + 1, q2 - q1 - 1);
+            }
+            // Parse "images" array
+            auto apos = body.find("\"images\"");
+            if (apos != std::string::npos) {
+                auto arr_start = body.find('[', apos);
+                auto arr_end = body.find(']', arr_start);
+                if (arr_start != std::string::npos && arr_end != std::string::npos) {
+                    size_t p = arr_start;
+                    while ((p = body.find('"', p + 1)) < arr_end) {
+                        auto q2 = body.find('"', p + 1);
+                        if (q2 < arr_end) {
+                            page_paths.push_back(body.substr(p + 1, q2 - p - 1));
+                            p = q2;
+                        } else break;
+                    }
+                }
+            }
+            // Single image shortcut
+            if (page_paths.empty()) {
+                auto ipos = body.find("\"image\"");
+                if (ipos != std::string::npos) {
+                    auto q1 = body.find('"', ipos + 7);
+                    auto q2 = body.find('"', q1 + 1);
+                    if (q1 != std::string::npos && q2 != std::string::npos)
+                        page_paths.push_back(body.substr(q1 + 1, q2 - q1 - 1));
+                }
+            }
+        }
+
+        if (page_paths.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no page images provided\"}", "application/json");
+            return;
+        }
+
+        auto t0 = std::chrono::high_resolution_clock::now();
+
+        // Process each page
+        ocr_renderer * renderer = ocr_render_create(
+            format == "hocr" ? OCR_RENDER_HOCR :
+            format == "alto" ? OCR_RENDER_ALTO :
+            format == "pdf"  ? OCR_RENDER_PDF : OCR_RENDER_TEXT);
+        if (format == "pdf") ocr_render_set_pdfa(renderer, 1);
+        ocr_render_begin(renderer);
+
+        int total_regions = 0;
+        for (size_t pi = 0; pi < page_paths.size(); pi++) {
+            int w = 0, h = 0, ch = 0;
+            unsigned char * img = stbi_load(page_paths[pi].c_str(), &w, &h, &ch, 0);
+            if (!img) continue;
+
+            // Optional dewarp (grayscale)
+            std::vector<uint8_t> gray_buf;
+            if (do_dewarp && ch >= 1) {
+                // Convert to gray if needed
+                std::vector<uint8_t> gray(w * h);
+                if (ch == 1) {
+                    memcpy(gray.data(), img, w * h);
+                } else {
+                    for (int i = 0; i < w * h; i++)
+                        gray[i] = (uint8_t)((img[i*ch]*77 + img[i*ch+1]*150 + img[i*ch+2]*29) >> 8);
+                }
+                std::vector<uint8_t> dewarped(w * h);
+                int dw = 0, dh = 0;
+                if (crispembed_dewarp(gray.data(), w, h, dewarped.data(), &dw, &dh) == 0) {
+                    gray_buf = std::move(dewarped);
+                    // Can't easily feed gray back to color OCR, so skip dewarp for color pipelines
+                }
+            }
+
+            // OCR: use orchestrator if available, else single-shot math_ocr
+            int n_results = 0;
+            const char * full_text = nullptr;
+            float mean_conf = 0;
+            const crispembed_ocr_result * results = nullptr;
+
+            if (ocr_orch_ctx) {
+                std::lock_guard<std::mutex> lock(ocr_orch_mutex);
+                results = crispembed_ocr_pipeline_run(
+                    ocr_orch_ctx, page_paths[pi].c_str(),
+                    &n_results, &full_text, &mean_conf);
+            } else if (math_ocr_ctx) {
+                std::lock_guard<std::mutex> lock(math_ocr_mutex);
+                int out_len = 0;
+                const char * text = crispembed_math_ocr_recognize(
+                    math_ocr_ctx, img, w, h, ch, &out_len);
+                // Wrap single result
+                static crispembed_ocr_result single_result;
+                if (text && out_len > 0) {
+                    single_result = {0, 0, (float)w, (float)h, 1.0f, text, out_len};
+                    results = &single_result;
+                    n_results = 1;
+                    full_text = text;
+                }
+            }
+
+            stbi_image_free(img);
+
+            // Build render page from results
+            if (n_results > 0 && results) {
+                total_regions += n_results;
+                std::vector<ocr_render_word> words(n_results);
+                std::vector<ocr_render_line> lines(n_results);
+                for (int i = 0; i < n_results; i++) {
+                    words[i] = {results[i].text,
+                                (int)results[i].x, (int)results[i].y,
+                                (int)results[i].w, (int)results[i].h,
+                                results[i].confidence};
+                    lines[i] = {&words[i], 1,
+                                (int)results[i].x, (int)results[i].y,
+                                (int)results[i].w, (int)results[i].h};
+                }
+                ocr_render_page page = {lines.data(), n_results,
+                                        w, h, page_paths[pi].c_str()};
+                ocr_render_add_page(renderer, &page);
+            } else {
+                // Empty page
+                ocr_render_page page = {nullptr, 0, w, h, page_paths[pi].c_str()};
+                ocr_render_add_page(renderer, &page);
+            }
+        }
+
+        ocr_render_end(renderer);
+
+        auto t1 = std::chrono::high_resolution_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        // Clean up temp files
+        for (auto & tf : temp_files) std::remove(tf.c_str());
+
+        // Return rendered document
+        int out_size = ocr_render_output_size(renderer);
+        const char * out_data = ocr_render_output(renderer);
+
+        const char * content_type = "text/plain";
+        if (format == "hocr") content_type = "text/html; charset=utf-8";
+        else if (format == "alto") content_type = "application/xml; charset=utf-8";
+        else if (format == "pdf") content_type = "application/pdf";
+
+        res.set_content(std::string(out_data, out_size), content_type);
+        ocr_render_free(renderer);
+
+        fprintf(stderr, "crispembed-server: /ocr/document %zu pages, %d regions, format=%s, %.1f ms\n",
+                page_paths.size(), total_regions, format.c_str(), ms);
+    });
+
     // GET /health
     svr.Get("/health", [&](const httplib::Request &, httplib::Response & res) {
         std::ostringstream js;
@@ -1465,6 +2389,9 @@ int main(int argc, char ** argv) {
         if (text_det_ctx) js << ", \"text_detection\": true";
         if (ner_ctx) js << ", \"ner\": true";
         if (ocr_orch_ctx) js << ", \"ocr_orchestrator\": true";
+        if (text_sr_ctx) js << ", \"text_sr\": true, \"text_sr_upscale\": " << crispembed_text_sr_upscale_factor(text_sr_ctx);
+        if (pan_sr_ctx) js << ", \"pan_sr\": true, \"pan_sr_upscale\": " << crispembed_pan_sr_scale(pan_sr_ctx);
+        if (tbsrn_sr_ctx) js << ", \"tbsrn_sr\": true, \"tbsrn_sr_upscale\": 2";
         js << ", \"scan_cleanup\": true";  // always available (no model needed)
         js << "}";
         res.set_content(js.str(), "application/json");
@@ -1486,13 +2413,28 @@ int main(int argc, char ** argv) {
     if (layout_ctx) fprintf(stderr, "  POST /layout/detect   — {\"image\": \"page.png\"}\n");
     if (text_det_ctx) fprintf(stderr, "  POST /text/detect     — {\"image\": \"page.png\"}\n");
     if (ner_ctx) fprintf(stderr, "  POST /ner/extract     — {\"text\": \"...\", \"labels\": [\"person\", ...]}\n");
+    if (kie_ctx) fprintf(stderr, "  POST /kie/extract     — {\"image\": \"doc.png\", \"labels\": [\"total\", ...]} (OCR+NER)\n");
     if (ocr_orch_ctx) fprintf(stderr, "  POST /ocr/pipeline    — {\"image\": \"doc.png\"} (routing + cleanup + accept-gate)\n");
+    if (text_sr_ctx) fprintf(stderr, "  POST /text/sr         — {\"image\": \"low_dpi.png\"} (upscale %dx)\n", crispembed_text_sr_upscale_factor(text_sr_ctx));
+    if (pan_sr_ctx) fprintf(stderr, "  POST /pan/sr          — {\"image\": \"photo.png\"} (upscale %dx)\n", crispembed_pan_sr_scale(pan_sr_ctx));
+    if (tbsrn_sr_ctx) fprintf(stderr, "  POST /tbsrn/sr        — {\"image\": \"text_crop.png\"} (upscale 2x)\n");
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
+    fprintf(stderr, "  POST /pdf/dpi              — {\"file\": \"...\"} (PDF DPI profiling)\n");
+    fprintf(stderr, "  POST /preprocess/skew      — {\"image\": \"...\"} (find skew angle)\n");
+    fprintf(stderr, "  POST /preprocess/dewarp    — {\"image\": \"...\"} (straighten curved text)\n");
+    fprintf(stderr, "  POST /preprocess/tps-dewarp — {\"image\": \"...\", \"model\": \"tps-loc.gguf\"}\n");
+    fprintf(stderr, "  POST /preprocess/cc-detect — {\"image\": \"...\"} (model-free line detection)\n");
+    fprintf(stderr, "  POST /render/ocr           — {\"results\": [...], \"format\": \"hocr|alto|pdf\"}\n");
+    fprintf(stderr, "  POST /ocr/document         — multi-page OCR → searchable PDF/hOCR/text (upload or paths)\n");
     if (ctx && crispembed_has_colbert(ctx)) fprintf(stderr, "  POST /colbert/score   — {\"query\": \"...\", \"documents\": [...]}\n");
     fprintf(stderr, "  GET  /health\n\n");
 
     svr.listen(host, port);
 
+    if (kie_ctx) crispembed_kie_free(kie_ctx);
+    if (text_sr_ctx) crispembed_text_sr_free(text_sr_ctx);
+    if (pan_sr_ctx) crispembed_pan_sr_free(pan_sr_ctx);
+    if (tbsrn_sr_ctx) crispembed_tbsrn_sr_free(tbsrn_sr_ctx);
     if (ner_ctx) crispembed_ner_free(ner_ctx);
     if (layout_ctx) crispembed_layout_free(layout_ctx);
     if (text_det_ctx) crispembed_text_det_free(text_det_ctx);

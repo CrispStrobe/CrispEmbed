@@ -315,29 +315,40 @@ jobs:
           # Mirror of CrispASR's working list.
           sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "nvrtc", "nvrtc_dev", "nvtx", "cuda_profiler_api", "visual_studio_integration"]'
 
-      - name: Configure
-        run: >
-          cmake -S . -B build
-          -DCMAKE_BUILD_TYPE=Release
-          -DCRISPEMBED_BUILD_SHARED=ON
-          -DGGML_CUDA=ON
-          -DGGML_BLAS=OFF
-
-      - name: Build
-        run: cmake --build build --config Release -j4
+      # Build with the Ninja generator inside an MSVC dev env (vcvars64): nvcc
+      # finds cl.exe directly and CMake never needs the CUDA MSBuild "toolset"
+      # — the VS generator's `enable_language(CUDA)` fails with "No CUDA toolset
+      # found" on hosted runners (copying the .props into BuildCustomizations
+      # doesn't reliably fix it). This mirrors CrispASR's working windows-cuda
+      # job. Ninja uses a flat output layout (build\bin), handled in Package.
+      - name: Configure + build (Ninja + vcvars)
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cmake -S . -B build -G Ninja ^
+            -DCMAKE_BUILD_TYPE=Release ^
+            -DCRISPEMBED_BUILD_SHARED=ON ^
+            -DGGML_CUDA=ON ^
+            -DGGML_BLAS=OFF ^
+            -DCMAKE_CUDA_ARCHITECTURES="75-real;86-real;89-real;120-real;120-virtual" ^
+            -DGGML_NATIVE=OFF ^
+            -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON
+          cmake --build build -j %NUMBER_OF_PROCESSORS%
 
       - name: Package
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path pkg
-          foreach ($bin in "crispembed.exe","crispembed-server.exe","crispembed-quantize.exe") {
-            Copy-Item "build/Release/$bin" pkg/ -ErrorAction SilentlyContinue
+          # Ninja's flat layout puts exes + the dll in build\bin (not
+          # build\Release); search recursively so it works regardless of layout.
+          foreach ($pat in "crispembed.exe","crispembed-server.exe","crispembed-quantize.exe","crispembed.dll","crispembed.lib") {
+            Get-ChildItem -Path "build" -Recurse -Filter $pat -ErrorAction SilentlyContinue |
+              Select-Object -First 1 | ForEach-Object { Copy-Item $_.FullName pkg/ -Force }
           }
-          Copy-Item "build/Release/crispembed.dll", "build/Release/crispembed.lib" pkg/ -ErrorAction SilentlyContinue
           Get-ChildItem -Path "build" -Recurse -Filter "ggml*.dll" | ForEach-Object {
               Copy-Item $_.FullName pkg/ -Force
           }
-          Get-ChildItem -Path "build/ggml" -Recurse -Filter "ggml*.lib" | ForEach-Object {
+          Get-ChildItem -Path "build" -Recurse -Filter "ggml*.lib" | ForEach-Object {
               Copy-Item $_.FullName pkg/ -Force
           }
           # Bundle CUDA runtime DLLs so the zip is self-contained.

@@ -3217,6 +3217,7 @@ extern "C" crispembed_ocr_pipeline_params crispembed_ocr_pipeline_defaults(void)
     p.det_model       = nullptr;
     p.rec_model       = nullptr;
     p.nafnet_model    = nullptr;
+    p.sr_model        = nullptr;
     p.vlm_model       = nullptr;
     p.vlm_engine      = 0;
     p.punct_model     = nullptr;
@@ -3230,6 +3231,9 @@ extern "C" void * crispembed_ocr_pipeline_init(
     cfg.router = params->router != 0;
     if (params->nafnet_model && *params->nafnet_model) {
         cfg.nafnet_model = params->nafnet_model;
+    }
+    if (params->sr_model && *params->sr_model) {
+        cfg.sr_model = params->sr_model;
     }
     // Apply the flat models / accept-gate / cleanup toggle to every stage of
     // every chain (per-stage config lands in a later slice via JSON).
@@ -3266,6 +3270,10 @@ extern "C" void * crispembed_ocr_pipeline_init(
             ch.stages.push_back(vs);
         }
     }
+    // Enable verbose logging via environment variable
+    if (const char * v = std::getenv("CRISPEMBED_VERBOSE_OCR"))
+        cfg.verbose = (v[0] == '1' || v[0] == 'y' || v[0] == 'Y');
+
     auto * w = new ocr_pipeline_orch_wrapper();
     if (!ocr_orchestrator::load(&w->ctx, cfg, n_threads)) {
         delete w;
@@ -3349,12 +3357,14 @@ static scan_cleanup_params to_cleanup(const crispembed_scan_cleanup_params & p) 
 }
 
 extern "C" void * crispembed_ocr_pipeline_init_stages(
-        int router, const char * nafnet_model, const char * punct_model,
+        int router, const char * nafnet_model, const char * sr_model,
+        const char * punct_model,
         const crispembed_ocr_stage * stages, int n_stages, int n_threads) {
     if (!stages || n_stages <= 0) return nullptr;
     ocr_orchestrator::config cfg;
     cfg.router = router != 0;
     if (nafnet_model && *nafnet_model) cfg.nafnet_model = nafnet_model;
+    if (sr_model && *sr_model) cfg.sr_model = sr_model;
 
     // Group stages into per-source-type chains, preserving array order.
     for (int i = 0; i < n_stages; i++) {
@@ -3537,6 +3547,157 @@ extern "C" int crispembed_ner_extract(void * ctx, const char * text,
 }
 
 // ===========================================================================
+// LiLT — Language-independent Layout Transformer
+// ===========================================================================
+
+#include "lilt_kie.h"
+
+struct crispembed_lilt_ctx {
+    lilt_kie::context* pipe = nullptr;
+    std::vector<lilt_kie::token_result> last_results;
+    std::vector<crispembed_lilt_token> last_tokens;
+};
+
+extern "C" void * crispembed_lilt_init(const char * model_path, int n_threads) {
+    if (!model_path) return nullptr;
+    auto* ctx = new crispembed_lilt_ctx;
+    if (!lilt_kie::load(&ctx->pipe, model_path, n_threads)) {
+        delete ctx;
+        return nullptr;
+    }
+    return ctx;
+}
+
+extern "C" void crispembed_lilt_free(void * ptr) {
+    if (!ptr) return;
+    auto* ctx = (crispembed_lilt_ctx*)ptr;
+    if (ctx->pipe) lilt_kie::free(ctx->pipe);
+    delete ctx;
+}
+
+extern "C" const crispembed_lilt_token * crispembed_lilt_classify(
+        void * ptr, const int32_t * input_ids, const int32_t * bbox,
+        int n_tokens, int * out_n) {
+    if (out_n) *out_n = 0;
+    if (!ptr || !input_ids || !bbox || n_tokens <= 0) return nullptr;
+
+    auto* ctx = (crispembed_lilt_ctx*)ptr;
+    ctx->last_results = lilt_kie::classify(ctx->pipe, input_ids, bbox, n_tokens);
+
+    ctx->last_tokens.clear();
+    ctx->last_tokens.reserve(ctx->last_results.size());
+    for (const auto& r : ctx->last_results) {
+        crispembed_lilt_token t;
+        t.token_id = r.token_id;
+        t.label_id = r.label_id;
+        t.label    = r.label.c_str();
+        t.score    = r.score;
+        ctx->last_tokens.push_back(t);
+    }
+
+    if (out_n) *out_n = (int)ctx->last_tokens.size();
+    return ctx->last_tokens.data();
+}
+
+extern "C" int crispembed_lilt_num_labels(void * ptr) {
+    if (!ptr) return 0;
+    return lilt_kie::num_labels(((crispembed_lilt_ctx*)ptr)->pipe);
+}
+
+extern "C" const char * crispembed_lilt_label_name(void * ptr, int label_id) {
+    if (!ptr) return "";
+    return lilt_kie::label_name(((crispembed_lilt_ctx*)ptr)->pipe, label_id);
+}
+
+// ===========================================================================
+// Key Information Extraction (KIE)
+// ===========================================================================
+
+#include "kie_pipeline.h"
+
+// Internal state for the C API — holds the pipeline context plus the last
+// result's strings/fields so they stay alive for the caller.
+struct crispembed_kie_ctx {
+    kie_pipeline::context* pipe = nullptr;
+
+    // Last result storage (valid until next extract call or free).
+    kie_pipeline::result last_result;
+    std::vector<crispembed_kie_field> last_fields;
+    std::string last_ocr_text;
+};
+
+extern "C" void * crispembed_kie_init(
+        const char * ocr_det_model, const char * ocr_rec_model,
+        const char * ner_model, int n_threads) {
+    if (!ocr_det_model || !ocr_rec_model || !ner_model) return nullptr;
+
+    kie_pipeline::config cfg;
+    cfg.ocr = ocr_orchestrator::default_config();
+
+    // Wire in the provided OCR models to the first stage of the default chain.
+    for (auto& chain : cfg.ocr.chains) {
+        for (auto& stage : chain.stages) {
+            if (stage.eng == ocr_orchestrator::engine::dbnet_trocr) {
+                stage.model_a = ocr_det_model;
+                stage.model_b = ocr_rec_model;
+            }
+        }
+    }
+    cfg.ner_model = ner_model;
+    cfg.threshold = 0.5f;
+
+    auto* kctx = new crispembed_kie_ctx;
+    if (!kie_pipeline::load(&kctx->pipe, cfg, n_threads)) {
+        delete kctx;
+        return nullptr;
+    }
+    return kctx;
+}
+
+extern "C" crispembed_kie_result crispembed_kie_extract(
+        void * ptr, const char * image_path,
+        const char ** labels, int n_labels,
+        float threshold) {
+    crispembed_kie_result out;
+    std::memset(&out, 0, sizeof(out));
+    if (!ptr || !image_path) return out;
+
+    auto* kctx = (crispembed_kie_ctx*)ptr;
+
+    kctx->last_result = kie_pipeline::extract(kctx->pipe, image_path, labels, n_labels, threshold);
+    kctx->last_ocr_text = kctx->last_result.ocr_full_text;
+
+    // Build flat C field array.
+    kctx->last_fields.clear();
+    kctx->last_fields.reserve(kctx->last_result.fields.size());
+    for (const auto& f : kctx->last_result.fields) {
+        crispembed_kie_field cf;
+        cf.label = f.label.c_str();
+        cf.value = f.value.c_str();
+        cf.score = f.score;
+        cf.x = f.x;
+        cf.y = f.y;
+        cf.w = f.w;
+        cf.h = f.h;
+        kctx->last_fields.push_back(cf);
+    }
+
+    out.fields         = kctx->last_fields.data();
+    out.n_fields       = (int)kctx->last_fields.size();
+    out.ocr_text       = kctx->last_ocr_text.c_str();
+    out.ocr_confidence = kctx->last_result.ocr_confidence;
+    out.n_ocr_regions  = kctx->last_result.n_ocr_regions;
+    return out;
+}
+
+extern "C" void crispembed_kie_free(void * ptr) {
+    if (!ptr) return;
+    auto* kctx = (crispembed_kie_ctx*)ptr;
+    if (kctx->pipe) kie_pipeline::free(kctx->pipe);
+    delete kctx;
+}
+
+// ===========================================================================
 // Scan Cleanup
 // ===========================================================================
 
@@ -3605,6 +3766,89 @@ extern "C" int crispembed_scan_cleanup_process_simple(
 }
 
 // ---------------------------------------------------------------------------
+// Text super-resolution
+// ---------------------------------------------------------------------------
+
+#include "text_sr.h"
+
+extern "C" void * crispembed_text_sr_init(const char * model_path, int n_threads) {
+    return text_sr_init(model_path, n_threads);
+}
+
+extern "C" void crispembed_text_sr_free(void * ctx) {
+    text_sr_free((text_sr_context *)ctx);
+}
+
+extern "C" int crispembed_text_sr_upscale_factor(const void * ctx) {
+    return text_sr_upscale_factor((const text_sr_context *)ctx);
+}
+
+extern "C" int crispembed_text_sr_process(
+        void * ctx,
+        const uint8_t * pixels, int width, int height,
+        int tile_size, int tile_overlap,
+        uint8_t ** out_pixels, int * out_width, int * out_height) {
+    return text_sr_process((text_sr_context *)ctx, pixels, width, height,
+                           tile_size, tile_overlap, out_pixels, out_width, out_height);
+}
+
+extern "C" void crispembed_text_sr_free_image(uint8_t * pixels) {
+    text_sr_free_image(pixels);
+}
+
+// ---------------------------------------------------------------------------
+// TBSRN text-line super-resolution
+// ---------------------------------------------------------------------------
+
+#include "tbsrn_sr.h"
+
+extern "C" void * crispembed_tbsrn_sr_init(const char * model_path, int n_threads) {
+    return tbsrn_sr_init(model_path, n_threads);
+}
+
+extern "C" void crispembed_tbsrn_sr_free(void * ctx) {
+    tbsrn_sr_free((tbsrn_sr_context *)ctx);
+}
+
+extern "C" int crispembed_tbsrn_sr_process(
+        void * ctx,
+        const uint8_t * pixels, int width, int height,
+        uint8_t ** out_pixels, int * out_width, int * out_height) {
+    return tbsrn_sr_process((tbsrn_sr_context *)ctx, pixels, width, height,
+                            out_pixels, out_width, out_height);
+}
+
+extern "C" void crispembed_tbsrn_sr_free_image(uint8_t * pixels) {
+    tbsrn_sr_free_image(pixels);
+}
+
+// ---------------------------------------------------------------------------
+// PAN whole-image super-resolution
+// ---------------------------------------------------------------------------
+
+#include "pan_sr.h"
+
+extern "C" void * crispembed_pan_sr_init(const char * model_path, int n_threads) {
+    return pan_sr_init(model_path, n_threads);
+}
+extern "C" void crispembed_pan_sr_free(void * ctx) {
+    pan_sr_free((pan_sr_context *)ctx);
+}
+extern "C" int crispembed_pan_sr_scale(const void * ctx) {
+    return pan_sr_scale((const pan_sr_context *)ctx);
+}
+extern "C" int crispembed_pan_sr_process(
+        void * ctx, const uint8_t * pixels, int width, int height,
+        int tile_size, int tile_overlap,
+        uint8_t ** out_pixels, int * out_width, int * out_height) {
+    return pan_sr_process((pan_sr_context *)ctx, pixels, width, height,
+                          tile_size, tile_overlap, out_pixels, out_width, out_height);
+}
+extern "C" void crispembed_pan_sr_free_image(uint8_t * pixels) {
+    pan_sr_free_image(pixels);
+}
+
+// ---------------------------------------------------------------------------
 // Punctuation restoration — FireRedPunc / PCS
 // ---------------------------------------------------------------------------
 
@@ -3660,4 +3904,152 @@ extern "C" const char * crispembed_punct_process(void * ctx, const char * text) 
     w->result_buf = result;
     free(result);
     return w->result_buf.c_str();
+}
+
+// ---------------------------------------------------------------------------
+// OCR Result Renderers
+// ---------------------------------------------------------------------------
+
+#include "ocr_render.h"
+
+extern "C" char * crispembed_ocr_render(
+    const crispembed_ocr_result * results, int n_results,
+    int page_width, int page_height,
+    const char * format)
+{
+    if (!results || n_results <= 0 || !format) return nullptr;
+
+    // Determine format
+    ocr_render_format fmt = OCR_RENDER_TEXT;
+    if (strcmp(format, "hocr") == 0) fmt = OCR_RENDER_HOCR;
+    else if (strcmp(format, "alto") == 0) fmt = OCR_RENDER_ALTO;
+    else if (strcmp(format, "pdf") == 0) fmt = OCR_RENDER_PDF;
+
+    // Convert crispembed_ocr_result to ocr_render structures.
+    // Each result becomes a single-word line (since we don't have
+    // line-level grouping from the pipeline results).
+    std::vector<ocr_render_word> words(n_results);
+    std::vector<ocr_render_line> lines(n_results);
+    for (int i = 0; i < n_results; i++) {
+        words[i] = {results[i].text,
+                    (int)results[i].x, (int)results[i].y,
+                    (int)results[i].w, (int)results[i].h,
+                    results[i].confidence};
+        lines[i] = {&words[i], 1,
+                    (int)results[i].x, (int)results[i].y,
+                    (int)results[i].w, (int)results[i].h};
+    }
+    ocr_render_page page = {lines.data(), n_results,
+                            page_width, page_height, nullptr};
+
+    ocr_renderer * r = ocr_render_create(fmt);
+    ocr_render_begin(r);
+    ocr_render_add_page(r, &page);
+    ocr_render_end(r);
+
+    int size = ocr_render_output_size(r);
+    char * out = (char *)malloc(size + 1);
+    if (out) {
+        memcpy(out, ocr_render_output(r), size);
+        out[size] = '\0';
+    }
+    ocr_render_free(r);
+    return out;
+}
+
+// ---------------------------------------------------------------------------
+// Classical Preprocessing — C API wrappers
+// ---------------------------------------------------------------------------
+
+#include "dewarp.h"
+#include "tps_warp.h"
+#include "cc_detect.h"
+#include "classical_preproc.h"
+#include "pdf_info.h"
+
+extern "C" int crispembed_pdf_page_dpi(
+    const char * pdf_path, int page,
+    float * out_dpi, int * out_n_images)
+{
+    pdf_page_dpi_result r = {};
+    int ret = pdf_page_dpi(pdf_path, page, &r);
+    if (out_dpi) *out_dpi = r.dpi;
+    if (out_n_images) *out_n_images = r.n_images;
+    return ret;
+}
+
+extern "C" int crispembed_dewarp(
+    const uint8_t * gray, int w, int h,
+    uint8_t * out, int * out_w, int * out_h)
+{
+    return dewarp_page(gray, w, h, out, out_w, out_h);
+}
+
+extern "C" int crispembed_tps_dewarp(
+    const uint8_t * gray, int w, int h,
+    const float * src_x, const float * src_y,
+    const float * dst_x, const float * dst_y, int n,
+    uint8_t * out)
+{
+    return tps_dewarp(gray, w, h, src_x, src_y, dst_x, dst_y, n, out);
+}
+
+extern "C" int crispembed_tps_auto_dewarp(
+    const uint8_t * gray, int w, int h,
+    const char * model_path,
+    uint8_t * out)
+{
+    return tps_auto_dewarp(gray, w, h, model_path, out);
+}
+
+extern "C" crispembed_ocr_result * crispembed_cc_detect(
+    const uint8_t * gray, int w, int h, int * out_n)
+{
+    int n = 0;
+    cc_text_region * regions = cc_detect_lines(gray, w, h, &n);
+    if (!regions || n <= 0) {
+        if (out_n) *out_n = 0;
+        cc_detect_free(regions);
+        return nullptr;
+    }
+    // Convert to crispembed_ocr_result
+    auto * results = (crispembed_ocr_result *)malloc(n * sizeof(crispembed_ocr_result));
+    for (int i = 0; i < n; i++) {
+        results[i].x = (float)regions[i].x;
+        results[i].y = (float)regions[i].y;
+        results[i].w = (float)regions[i].w;
+        results[i].h = (float)regions[i].h;
+        results[i].confidence = 1.0f;
+        results[i].text = nullptr;
+        results[i].text_len = 0;
+    }
+    cc_detect_free(regions);
+    if (out_n) *out_n = n;
+    return results;
+}
+
+extern "C" int crispembed_find_skew(
+    const uint8_t * gray, int w, int h,
+    float * angle, float * confidence)
+{
+    return find_skew_angle(gray, w, h, angle, confidence);
+}
+
+extern "C" void crispembed_adaptive_binarize(
+    const uint8_t * gray, int w, int h, uint8_t * out)
+{
+    adaptive_otsu(gray, w, h, 0, 0, 0, out);
+}
+
+extern "C" void crispembed_background_norm(
+    const uint8_t * gray, int w, int h, uint8_t * out)
+{
+    background_norm(gray, w, h, 0, 0, out);
+}
+
+extern "C" void crispembed_despeckle(
+    const uint8_t * gray, int w, int h,
+    int max_w, int max_h, uint8_t * out)
+{
+    despeckle_gray(gray, w, h, max_w, max_h, out);
 }

@@ -1520,6 +1520,606 @@ class CrispNER {
 }
 
 // ---------------------------------------------------------------------------
+// LiLT — Language-independent Layout Transformer
+// ---------------------------------------------------------------------------
+
+/// Token classification result from LiLT.
+class LiltToken {
+  final int tokenId;
+  final int labelId;
+  final String label;
+  final double score;
+
+  const LiltToken({
+    required this.tokenId,
+    required this.labelId,
+    required this.label,
+    required this.score,
+  });
+
+  @override
+  String toString() => 'LiltToken($tokenId → $label, score=${score.toStringAsFixed(3)})';
+}
+
+/// LiLT dual-stream encoder for layout-aware document understanding.
+///
+/// ```dart
+/// final lilt = CrispLiLT('lilt-funsd-f32.gguf');
+/// final tokens = lilt.classify([0, 10566, 35, 2],
+///     bbox: [[0,0,0,0], [10,50,90,80], [90,50,110,80], [0,0,0,0]]);
+/// for (final t in tokens) print(t);
+/// lilt.dispose();
+/// ```
+class CrispLiLT {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedLiltFreeDart _freeFn;
+  late final CrispembedLiltClassifyDart _classifyFn;
+  late final CrispembedLiltNumLabelsDart _numLabelsFn;
+
+  CrispLiLT(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+
+    final init = _lib.lookupFunction<CrispembedLiltInitNative,
+        CrispembedLiltInitDart>('crispembed_lilt_init');
+    _freeFn = _lib.lookupFunction<CrispembedLiltFreeNative,
+        CrispembedLiltFreeDart>('crispembed_lilt_free');
+    _classifyFn = _lib.lookupFunction<CrispembedLiltClassifyNative,
+        CrispembedLiltClassifyDart>('crispembed_lilt_classify');
+    _numLabelsFn = _lib.lookupFunction<CrispembedLiltNumLabelsNative,
+        CrispembedLiltNumLabelsDart>('crispembed_lilt_num_labels');
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = init(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load LiLT model: $modelPath');
+    }
+  }
+
+  int get numLabels => _numLabelsFn(_ctx);
+
+  List<LiltToken> classify(List<int> inputIds, {required List<List<int>> bbox}) {
+    _checkDisposed();
+    final T = inputIds.length;
+    final idsPtr = calloc<Int32>(T);
+    for (var i = 0; i < T; i++) idsPtr[i] = inputIds[i];
+    final bboxPtr = calloc<Int32>(T * 4);
+    for (var i = 0; i < T; i++) {
+      for (var j = 0; j < 4; j++) {
+        bboxPtr[i * 4 + j] = (i < bbox.length && j < bbox[i].length) ? bbox[i][j] : 0;
+      }
+    }
+    final outN = calloc<Int32>();
+
+    try {
+      final resultPtr = _classifyFn(_ctx, idsPtr, bboxPtr, T, outN);
+      if (resultPtr == nullptr || outN.value <= 0) return [];
+
+      // crispembed_lilt_token: int token_id, int label_id, char* label, float score
+      final structSize = 2 * sizeOf<Int32>() + sizeOf<Pointer>() + sizeOf<Float>();
+      final results = <LiltToken>[];
+      for (var i = 0; i < outN.value; i++) {
+        final base = resultPtr.cast<Uint8>().elementAt(i * structSize);
+        final ints = base.cast<Int32>();
+        final tokenId = ints[0];
+        final labelId = ints[1];
+        final labelPtr = base.elementAt(2 * sizeOf<Int32>()).cast<Pointer<Utf8>>();
+        final label = labelPtr.value != nullptr ? labelPtr.value.toDartString() : '';
+        final scorePtr = base.elementAt(2 * sizeOf<Int32>() + sizeOf<Pointer>()).cast<Float>();
+        results.add(LiltToken(
+          tokenId: tokenId, labelId: labelId,
+          label: label, score: scorePtr.value,
+        ));
+      }
+      return results;
+    } finally {
+      calloc.free(idsPtr);
+      calloc.free(bboxPtr);
+      calloc.free(outN);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispLiLT has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Key Information Extraction (KIE) — OCR + NER pipeline
+// ---------------------------------------------------------------------------
+
+/// A single extracted key-value field with spatial position.
+class KieField {
+  final String label;
+  final String value;
+  final double score;
+  final double x, y, w, h;
+
+  const KieField({
+    required this.label,
+    required this.value,
+    required this.score,
+    required this.x,
+    required this.y,
+    required this.w,
+    required this.h,
+  });
+
+  @override
+  String toString() =>
+      'KieField($label="$value", score=${score.toStringAsFixed(3)}, '
+      'bbox=[$x,$y,$w,$h])';
+}
+
+/// Result of KIE extraction.
+class KieResult {
+  final List<KieField> fields;
+  final String ocrText;
+  final double ocrConfidence;
+  final int nOcrRegions;
+
+  const KieResult({
+    required this.fields,
+    required this.ocrText,
+    required this.ocrConfidence,
+    required this.nOcrRegions,
+  });
+}
+
+/// Key Information Extraction — chains OCR + NER to extract structured
+/// key-value fields from document images (receipts, invoices, forms).
+class CrispKIE {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedKieFreeDart _freeFn;
+  late final CrispembedKieExtractDart _extractFn;
+
+  CrispKIE(String ocrDetModel, String ocrRecModel, String nerModel,
+      {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+
+    final init = _lib.lookupFunction<CrispembedKieInitNative,
+        CrispembedKieInitDart>('crispembed_kie_init');
+    _freeFn = _lib.lookupFunction<CrispembedKieFreeNative,
+        CrispembedKieFreeDart>('crispembed_kie_free');
+    _extractFn = _lib.lookupFunction<CrispembedKieExtractNative,
+        CrispembedKieExtractDart>('crispembed_kie_extract');
+
+    final detPtr = ocrDetModel.toNativeUtf8();
+    final recPtr = ocrRecModel.toNativeUtf8();
+    final nerPtr = nerModel.toNativeUtf8();
+    _ctx = init(detPtr, recPtr, nerPtr, nThreads);
+    calloc.free(detPtr);
+    calloc.free(recPtr);
+    calloc.free(nerPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to init KIE pipeline');
+    }
+  }
+
+  KieResult extract(String imagePath, {
+    required List<String> labels,
+    double threshold = 0.5,
+  }) {
+    _checkDisposed();
+
+    final imgPtr = imagePath.toNativeUtf8();
+    final nLabels = labels.length;
+    final labelPtrs = calloc<Pointer<Utf8>>(nLabels);
+    final nativeLabelPtrs = <Pointer<Utf8>>[];
+    for (var i = 0; i < nLabels; i++) {
+      final p = labels[i].toNativeUtf8();
+      nativeLabelPtrs.add(p);
+      labelPtrs[i] = p;
+    }
+
+    try {
+      final res = _extractFn(_ctx, imgPtr, labelPtrs, nLabels, threshold);
+
+      final fields = <KieField>[];
+      if (res.nFields > 0 && res.fields != nullptr) {
+        final fieldSize = 2 * sizeOf<Pointer>() + 5 * sizeOf<Float>();
+        for (var i = 0; i < res.nFields; i++) {
+          final base = res.fields.cast<Uint8>().elementAt(i * fieldSize);
+          final labelPtr = base.cast<Pointer<Utf8>>().value;
+          final valuePtr = base.elementAt(sizeOf<Pointer>()).cast<Pointer<Utf8>>().value;
+          final floats = base.elementAt(2 * sizeOf<Pointer>()).cast<Float>();
+
+          fields.add(KieField(
+            label: labelPtr != nullptr ? labelPtr.toDartString() : '',
+            value: valuePtr != nullptr ? valuePtr.toDartString() : '',
+            score: floats[0],
+            x: floats[1],
+            y: floats[2],
+            w: floats[3],
+            h: floats[4],
+          ));
+        }
+      }
+
+      return KieResult(
+        fields: fields,
+        ocrText: res.ocrText != nullptr ? res.ocrText.toDartString() : '',
+        ocrConfidence: res.ocrConfidence,
+        nOcrRegions: res.nOcrRegions,
+      );
+    } finally {
+      calloc.free(imgPtr);
+      for (final p in nativeLabelPtrs) {
+        calloc.free(p);
+      }
+      calloc.free(labelPtrs);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispKIE has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Text Super-Resolution
+// ---------------------------------------------------------------------------
+
+/// Result from text super-resolution upscaling.
+class TextSrResult {
+  final Uint8List pixels;
+  final int width;
+  final int height;
+
+  const TextSrResult({
+    required this.pixels,
+    required this.width,
+    required this.height,
+  });
+}
+
+/// Text super-resolution model — upscales low-DPI document images.
+class CrispTextSr {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedTextSrFreeDart _freeFn;
+  late final CrispembedTextSrUpscaleFactorDart _upscaleFactorFn;
+  late final CrispembedTextSrProcessDart _processFn;
+  late final CrispembedTextSrFreeImageDart _freeImageFn;
+
+  CrispTextSr(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedTextSrInitNative, CrispembedTextSrInitDart>(
+            'crispembed_text_sr_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load text SR model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _freeFn = _lib.lookupFunction<CrispembedTextSrFreeNative,
+        CrispembedTextSrFreeDart>('crispembed_text_sr_free');
+    _upscaleFactorFn = _lib.lookupFunction<CrispembedTextSrUpscaleFactorNative,
+        CrispembedTextSrUpscaleFactorDart>('crispembed_text_sr_upscale_factor');
+    _processFn = _lib.lookupFunction<CrispembedTextSrProcessNative,
+        CrispembedTextSrProcessDart>('crispembed_text_sr_process');
+    _freeImageFn = _lib.lookupFunction<CrispembedTextSrFreeImageNative,
+        CrispembedTextSrFreeImageDart>('crispembed_text_sr_free_image');
+  }
+
+  int get upscaleFactor {
+    _checkDisposed();
+    return _upscaleFactorFn(_ctx);
+  }
+
+  TextSrResult process(
+    Uint8List pixels,
+    int width,
+    int height, {
+    int tileSize = 0,
+    int tileOverlap = 0,
+  }) {
+    _checkDisposed();
+    if (pixels.length != width * height * 3) {
+      throw ArgumentError(
+          'pixels.length (${pixels.length}) must equal width * height * 3 (${width * height * 3})');
+    }
+
+    final pxNative = calloc<Uint8>(pixels.length);
+    pxNative.asTypedList(pixels.length).setAll(0, pixels);
+
+    final outPxPtr = calloc<Pointer<Uint8>>();
+    final outW = calloc<Int32>();
+    final outH = calloc<Int32>();
+
+    try {
+      final rc = _processFn(
+          _ctx, pxNative, width, height, tileSize, tileOverlap,
+          outPxPtr, outW, outH);
+
+      if (rc != 0 || outPxPtr.value.address == 0) {
+        throw Exception('Text SR process failed (rc=$rc)');
+      }
+
+      final ow = outW.value;
+      final oh = outH.value;
+      final resultPixels =
+          Uint8List.fromList(outPxPtr.value.asTypedList(ow * oh * 3));
+      _freeImageFn(outPxPtr.value);
+
+      return TextSrResult(pixels: resultPixels, width: ow, height: oh);
+    } finally {
+      calloc.free(pxNative);
+      calloc.free(outPxPtr);
+      calloc.free(outW);
+      calloc.free(outH);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispTextSr has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// PAN Super-Resolution
+// ---------------------------------------------------------------------------
+
+/// Result from PAN super-resolution upscaling.
+class PanSrResult {
+  final Uint8List pixels;
+  final int width;
+  final int height;
+
+  const PanSrResult({
+    required this.pixels,
+    required this.width,
+    required this.height,
+  });
+}
+
+/// PAN super-resolution model — upscales low-DPI document images.
+class CrispPanSr {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedPanSrFreeDart _freeFn;
+  late final CrispembedPanSrScaleDart _scaleFn;
+  late final CrispembedPanSrProcessDart _processFn;
+  late final CrispembedPanSrFreeImageDart _freeImageFn;
+
+  CrispPanSr(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedPanSrInitNative, CrispembedPanSrInitDart>(
+            'crispembed_pan_sr_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load PAN SR model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _freeFn = _lib.lookupFunction<CrispembedPanSrFreeNative,
+        CrispembedPanSrFreeDart>('crispembed_pan_sr_free');
+    _scaleFn = _lib.lookupFunction<CrispembedPanSrScaleNative,
+        CrispembedPanSrScaleDart>('crispembed_pan_sr_scale');
+    _processFn = _lib.lookupFunction<CrispembedPanSrProcessNative,
+        CrispembedPanSrProcessDart>('crispembed_pan_sr_process');
+    _freeImageFn = _lib.lookupFunction<CrispembedPanSrFreeImageNative,
+        CrispembedPanSrFreeImageDart>('crispembed_pan_sr_free_image');
+  }
+
+  int get scale {
+    _checkDisposed();
+    return _scaleFn(_ctx);
+  }
+
+  PanSrResult process(
+    Uint8List pixels,
+    int width,
+    int height, {
+    int tileSize = 0,
+    int tileOverlap = 0,
+  }) {
+    _checkDisposed();
+    if (pixels.length != width * height * 3) {
+      throw ArgumentError(
+          'pixels.length (${pixels.length}) must equal width * height * 3 (${width * height * 3})');
+    }
+
+    final pxNative = calloc<Uint8>(pixels.length);
+    pxNative.asTypedList(pixels.length).setAll(0, pixels);
+
+    final outPxPtr = calloc<Pointer<Uint8>>();
+    final outW = calloc<Int32>();
+    final outH = calloc<Int32>();
+
+    try {
+      final rc = _processFn(
+          _ctx, pxNative, width, height, tileSize, tileOverlap,
+          outPxPtr, outW, outH);
+
+      if (rc != 0 || outPxPtr.value.address == 0) {
+        throw Exception('PAN SR process failed (rc=$rc)');
+      }
+
+      final ow = outW.value;
+      final oh = outH.value;
+      final resultPixels =
+          Uint8List.fromList(outPxPtr.value.asTypedList(ow * oh * 3));
+      _freeImageFn(outPxPtr.value);
+
+      return PanSrResult(pixels: resultPixels, width: ow, height: oh);
+    } finally {
+      calloc.free(pxNative);
+      calloc.free(outPxPtr);
+      calloc.free(outW);
+      calloc.free(outH);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispPanSr has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// TBSRN Super-Resolution (always 2×, 16×64 → 32×128)
+// ---------------------------------------------------------------------------
+
+/// Result from TBSRN super-resolution upscaling.
+class TbsrnSrResult {
+  final Uint8List pixels;
+  final int width;
+  final int height;
+
+  const TbsrnSrResult({
+    required this.pixels,
+    required this.width,
+    required this.height,
+  });
+}
+
+/// TBSRN super-resolution model — upscales text-image crops (always 2×).
+class CrispTbsrnSr {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedTbsrnSrFreeDart _freeFn;
+  late final CrispembedTbsrnSrProcessDart _processFn;
+  late final CrispembedTbsrnSrFreeImageDart _freeImageFn;
+
+  /// TBSRN is always 2×.
+  static const int scale = 2;
+
+  CrispTbsrnSr(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedTbsrnSrInitNative, CrispembedTbsrnSrInitDart>(
+            'crispembed_tbsrn_sr_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load TBSRN SR model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _freeFn = _lib.lookupFunction<CrispembedTbsrnSrFreeNative,
+        CrispembedTbsrnSrFreeDart>('crispembed_tbsrn_sr_free');
+    _processFn = _lib.lookupFunction<CrispembedTbsrnSrProcessNative,
+        CrispembedTbsrnSrProcessDart>('crispembed_tbsrn_sr_process');
+    _freeImageFn = _lib.lookupFunction<CrispembedTbsrnSrFreeImageNative,
+        CrispembedTbsrnSrFreeImageDart>('crispembed_tbsrn_sr_free_image');
+  }
+
+  TbsrnSrResult process(
+    Uint8List pixels,
+    int width,
+    int height,
+  ) {
+    _checkDisposed();
+    if (pixels.length != width * height * 3) {
+      throw ArgumentError(
+          'pixels.length (${pixels.length}) must equal width * height * 3 (${width * height * 3})');
+    }
+
+    final pxNative = calloc<Uint8>(pixels.length);
+    pxNative.asTypedList(pixels.length).setAll(0, pixels);
+
+    final outPxPtr = calloc<Pointer<Uint8>>();
+    final outW = calloc<Int32>();
+    final outH = calloc<Int32>();
+
+    try {
+      final rc = _processFn(
+          _ctx, pxNative, width, height,
+          outPxPtr, outW, outH);
+
+      if (rc != 0 || outPxPtr.value.address == 0) {
+        throw Exception('TBSRN SR process failed (rc=$rc)');
+      }
+
+      final ow = outW.value;
+      final oh = outH.value;
+      final resultPixels =
+          Uint8List.fromList(outPxPtr.value.asTypedList(ow * oh * 3));
+      _freeImageFn(outPxPtr.value);
+
+      return TbsrnSrResult(pixels: resultPixels, width: ow, height: oh);
+    } finally {
+      calloc.free(pxNative);
+      calloc.free(outPxPtr);
+      calloc.free(outW);
+      calloc.free(outH);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispTbsrnSr has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // OCR Orchestrator (source-type routing + cleanup + accept-gate)
 // ---------------------------------------------------------------------------
 
@@ -1544,6 +2144,7 @@ class CrispOcrOrchestrator {
   /// [minChars] — accept-gate minimum text yield.
   /// [minConfidence] — accept-gate confidence floor.
   /// [nafnetModel] — optional NAFNet GGUF for tier-2 learned denoise.
+  /// [srModel] — optional text super-resolution GGUF for low-DPI upscaling.
   /// [vlmModel] — optional VLM GGUF for escalation fallback.
   /// [vlmEngine] — VLM engine: 0=GOT, 1=GLM, 2=Qwen2-VL, 3=InternVL2.
   /// [punctModel] — optional punctuation restoration model GGUF.
@@ -1554,6 +2155,7 @@ class CrispOcrOrchestrator {
       int minChars = 8,
       double minConfidence = 0.5,
       String? nafnetModel,
+      String? srModel,
       String? vlmModel,
       int vlmEngine = 0,
       String? punctModel,
@@ -1568,14 +2170,14 @@ class CrispOcrOrchestrator {
         CrispembedOcrPipelineRunDart>('crispembed_ocr_pipeline_run');
 
     // Build crispembed_ocr_pipeline_params struct.
-    // Layout (64-bit): 3×int32 + 1×float + 5×pointer + 1×int32 + 1×pointer
+    // Layout (64-bit): 3×int32 + 1×float + 6×pointer + 1×int32 + 1×pointer
     //   router(4) + cleanup_enabled(4) + min_chars(4) + min_confidence(4)
-    //   + det_model(8) + rec_model(8) + nafnet_model(8) + vlm_model(8)
-    //   + vlm_engine(4) + pad(4) + punct_model(8)
-    // Total: 64 bytes on 64-bit (with alignment padding)
+    //   + det_model(8) + rec_model(8) + nafnet_model(8) + sr_model(8)
+    //   + vlm_model(8) + vlm_engine(4) + pad(4) + punct_model(8)
+    // Total: 72 bytes on 64-bit (with alignment padding)
     final ptrSize = sizeOf<Pointer>();
     // Use a generous allocation and write at known offsets
-    final paramsSize = 16 + 4 * ptrSize + 4 + (ptrSize - 4) + ptrSize;
+    final paramsSize = 16 + 6 * ptrSize + 4 + (ptrSize - 4) + ptrSize;
     final params = calloc<Uint8>(paramsSize);
 
     // Ints at byte 0, 4, 8
@@ -1589,13 +2191,15 @@ class CrispOcrOrchestrator {
     final detPtr = detModelPath.toNativeUtf8();
     final recPtr = recModelPath.toNativeUtf8();
     final nafPtr = nafnetModel != null ? nafnetModel.toNativeUtf8() : nullptr.cast<Utf8>();
+    final srPtr = srModel != null ? srModel.toNativeUtf8() : nullptr.cast<Utf8>();
     final vlmPtr = vlmModel != null ? vlmModel.toNativeUtf8() : nullptr.cast<Utf8>();
     ptrBase[0] = detPtr;      // det_model
     ptrBase[1] = recPtr;      // rec_model
     ptrBase[2] = nafPtr;      // nafnet_model
-    ptrBase[3] = vlmPtr;      // vlm_model
-    // vlm_engine at byte 16 + 4*ptrSize
-    final vlmEngOff = 16 + 4 * ptrSize;
+    ptrBase[3] = srPtr;       // sr_model
+    ptrBase[4] = vlmPtr;      // vlm_model
+    // vlm_engine at byte 16 + 5*ptrSize
+    final vlmEngOff = 16 + 5 * ptrSize;
     params.elementAt(vlmEngOff).cast<Int32>()[0] = vlmEngine;
     // punct_model pointer at next aligned offset
     final punctOff = vlmEngOff + ptrSize; // aligned to pointer size
@@ -1607,6 +2211,7 @@ class CrispOcrOrchestrator {
     calloc.free(detPtr);
     calloc.free(recPtr);
     if (nafnetModel != null) calloc.free(nafPtr);
+    if (srModel != null) calloc.free(srPtr);
     if (vlmModel != null) calloc.free(vlmPtr);
     if (punctModel != null) calloc.free(punctPtr);
     calloc.free(params);
@@ -1646,4 +2251,269 @@ class CrispOcrOrchestrator {
       _disposed = true;
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Classical Preprocessing (model-free, CPU-only)
+// ---------------------------------------------------------------------------
+
+/// Classical document preprocessing — dewarp, deskew, binarize, despeckle,
+/// PDF DPI profiling. No model downloads needed. All operations are CPU-only.
+class CrispPreprocess {
+  late final DynamicLibrary _lib;
+  late final CrispembedPdfPageDpiDart _pdfPageDpiFn;
+  late final CrispembedDewarpDart _dewarpFn;
+  late final CrispembedTpsAutoDewarpDart _tpsAutoDewarpFn;
+  late final CrispembedFindSkewDart _findSkewFn;
+  late final CrispembedAdaptiveBinarizeDart _binarizeFn;
+  late final CrispembedBackgroundNormDart _bgNormFn;
+  late final CrispembedDespeckleDart _despeckleFn;
+  late final CrispembedCcDetectDart _ccDetectFn;
+
+  CrispPreprocess({String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _pdfPageDpiFn = _lib.lookupFunction<CrispembedPdfPageDpiNative,
+        CrispembedPdfPageDpiDart>('crispembed_pdf_page_dpi');
+    _dewarpFn = _lib.lookupFunction<CrispembedDewarpNative,
+        CrispembedDewarpDart>('crispembed_dewarp');
+    _tpsAutoDewarpFn = _lib.lookupFunction<CrispembedTpsAutoDewarpNative,
+        CrispembedTpsAutoDewarpDart>('crispembed_tps_auto_dewarp');
+    _findSkewFn = _lib.lookupFunction<CrispembedFindSkewNative,
+        CrispembedFindSkewDart>('crispembed_find_skew');
+    _binarizeFn = _lib.lookupFunction<CrispembedAdaptiveBinarizeNative,
+        CrispembedAdaptiveBinarizeDart>('crispembed_adaptive_binarize');
+    _bgNormFn = _lib.lookupFunction<CrispembedBackgroundNormNative,
+        CrispembedBackgroundNormDart>('crispembed_background_norm');
+    _despeckleFn = _lib.lookupFunction<CrispembedDespeckleNative,
+        CrispembedDespeckleDart>('crispembed_despeckle');
+    _ccDetectFn = _lib.lookupFunction<CrispembedCcDetectNative,
+        CrispembedCcDetectDart>('crispembed_cc_detect');
+  }
+
+  /// PDF DPI profiling -- analyse embedded images on a PDF page.
+  /// Returns (dpi, nImages), or null on failure.
+  ({double dpi, int nImages})? pdfPageDpi(String path, {int page = 0}) {
+    final cPath = path.toNativeUtf8();
+    final outDpi = calloc<Float>();
+    final outN = calloc<Int32>();
+    final ret = _pdfPageDpiFn(cPath, page, outDpi, outN);
+    final result = ret == 0
+        ? (dpi: outDpi.value.toDouble(), nImages: outN.value)
+        : null;
+    calloc.free(cPath);
+    calloc.free(outDpi);
+    calloc.free(outN);
+    return result;
+  }
+
+  /// Dewarp a grayscale page image (straighten curved text lines).
+  /// Returns dewarped image bytes, or null on failure.
+  Uint8List? dewarp(Uint8List gray, int w, int h) {
+    final inp = calloc<Uint8>(w * h);
+    inp.asTypedList(w * h).setAll(0, gray);
+    final out = calloc<Uint8>(w * h);
+    final ow = calloc<Int32>();
+    final oh = calloc<Int32>();
+    final ret = _dewarpFn(inp, w, h, out, ow, oh);
+    Uint8List? result;
+    if (ret == 0) {
+      result = Uint8List.fromList(out.asTypedList(ow.value * oh.value));
+    }
+    calloc.free(inp);
+    calloc.free(out);
+    calloc.free(ow);
+    calloc.free(oh);
+    return result;
+  }
+
+  /// TPS auto-dewarp using a learned localizer model (GGUF).
+  /// Returns dewarped image bytes, or null on failure.
+  Uint8List? tpsDewarp(Uint8List gray, int w, int h, String modelPath) {
+    final inp = calloc<Uint8>(w * h);
+    inp.asTypedList(w * h).setAll(0, gray);
+    final out = calloc<Uint8>(w * h);
+    final cPath = modelPath.toNativeUtf8();
+    final ret = _tpsAutoDewarpFn(inp, w, h, cPath.cast<Utf8>(), out);
+    Uint8List? result;
+    if (ret == 0) {
+      result = Uint8List.fromList(out.asTypedList(w * h));
+    }
+    calloc.free(inp);
+    calloc.free(out);
+    calloc.free(cPath);
+    return result;
+  }
+
+  /// Find skew angle in degrees. Returns (angle, confidence).
+  ({double angle, double confidence}) findSkew(Uint8List gray, int w, int h) {
+    final inp = calloc<Uint8>(w * h);
+    inp.asTypedList(w * h).setAll(0, gray);
+    final angle = calloc<Float>();
+    final conf = calloc<Float>();
+    _findSkewFn(inp, w, h, angle, conf);
+    final result = (angle: angle.value.toDouble(), confidence: conf.value.toDouble());
+    calloc.free(inp);
+    calloc.free(angle);
+    calloc.free(conf);
+    return result;
+  }
+
+  /// Adaptive Otsu binarization (handles uneven lighting).
+  Uint8List adaptiveBinarize(Uint8List gray, int w, int h) {
+    final inp = calloc<Uint8>(w * h);
+    inp.asTypedList(w * h).setAll(0, gray);
+    final out = calloc<Uint8>(w * h);
+    _binarizeFn(inp, w, h, out);
+    final result = Uint8List.fromList(out.asTypedList(w * h));
+    calloc.free(inp);
+    calloc.free(out);
+    return result;
+  }
+
+  /// Normalize background (handle gradients/shadows).
+  Uint8List backgroundNorm(Uint8List gray, int w, int h) {
+    final inp = calloc<Uint8>(w * h);
+    inp.asTypedList(w * h).setAll(0, gray);
+    final out = calloc<Uint8>(w * h);
+    _bgNormFn(inp, w, h, out);
+    final result = Uint8List.fromList(out.asTypedList(w * h));
+    calloc.free(inp);
+    calloc.free(out);
+    return result;
+  }
+
+  /// Remove small noise components from a binary image.
+  Uint8List despeckle(Uint8List gray, int w, int h,
+      {int maxW = 5, int maxH = 5}) {
+    final inp = calloc<Uint8>(w * h);
+    inp.asTypedList(w * h).setAll(0, gray);
+    final out = calloc<Uint8>(w * h);
+    _despeckleFn(inp, w, h, maxW, maxH, out);
+    final result = Uint8List.fromList(out.asTypedList(w * h));
+    calloc.free(inp);
+    calloc.free(out);
+    return result;
+  }
+
+  /// Detect text line regions using connected components (model-free).
+  /// Returns list of bounding boxes {x, y, w, h}.
+  List<({int x, int y, int w, int h})> ccDetect(Uint8List gray, int width, int height) {
+    final inp = calloc<Uint8>(width * height);
+    inp.asTypedList(width * height).setAll(0, gray);
+    final outN = calloc<Int32>();
+    final ptr = _ccDetectFn(inp, width, height, outN);
+    final n = outN.value;
+    calloc.free(inp);
+    calloc.free(outN);
+    if (ptr == nullptr || n <= 0) return [];
+    // Parse crispembed_ocr_result structs (same layout as OcrResult)
+    final structSize = sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>();
+    final results = <({int x, int y, int w, int h})>[];
+    for (var i = 0; i < n; i++) {
+      final base = ptr.cast<Uint8>().elementAt(i * structSize);
+      final floats = base.cast<Float>();
+      results.add((
+        x: floats[0].toInt(),
+        y: floats[1].toInt(),
+        w: floats[2].toInt(),
+        h: floats[3].toInt(),
+      ));
+    }
+    calloc.free(ptr);
+    return results;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Punctuation Restoration
+// ---------------------------------------------------------------------------
+
+/// Post-process OCR text with punctuation/spacing restoration.
+/// Loads a FireRedPunc or PCS model from a GGUF file.
+class CrispPunct {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  late final CrispembedPunctFreeDart _freeFn;
+  late final CrispembedPunctProcessDart _processFn;
+  bool _disposed = false;
+
+  CrispPunct(String modelPath, {int nThreads = 4, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    final initFn = _lib.lookupFunction<CrispembedPunctInitNative,
+        CrispembedPunctInitDart>('crispembed_punct_init');
+    _freeFn = _lib.lookupFunction<CrispembedPunctFreeNative,
+        CrispembedPunctFreeDart>('crispembed_punct_free');
+    _processFn = _lib.lookupFunction<CrispembedPunctProcessNative,
+        CrispembedPunctProcessDart>('crispembed_punct_process');
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = initFn(pathPtr, nThreads);
+    calloc.free(pathPtr);
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load punct model: $modelPath');
+    }
+  }
+
+  /// Add punctuation/spacing to text. Returns processed text.
+  String process(String text) {
+    if (_disposed) return text;
+    final textPtr = text.toNativeUtf8();
+    final result = _processFn(_ctx, textPtr);
+    calloc.free(textPtr);
+    return result != nullptr ? result.toDartString() : text;
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// OCR Rendering (text, hOCR, ALTO, PDF)
+// ---------------------------------------------------------------------------
+
+/// Render OCR results to structured format (hOCR, ALTO, or plain text).
+/// This is a one-shot function — no persistent state needed.
+String? ocrRender(DynamicLibrary lib, List<OcrResult> results,
+    int pageWidth, int pageHeight, String format) {
+  if (results.isEmpty) return null;
+  final renderFn = lib.lookupFunction<CrispembedOcrRenderNative,
+      CrispembedOcrRenderDart>('crispembed_ocr_render');
+
+  // Build the C result array. crispembed_ocr_result layout:
+  // 5 floats (x,y,w,h,conf) + pointer (text) + int32 (text_len)
+  final structSize = sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>();
+  final arr = calloc<Uint8>(results.length * structSize);
+  final textPtrs = <Pointer<Utf8>>[];
+
+  for (var i = 0; i < results.length; i++) {
+    final r = results[i];
+    final base = arr.elementAt(i * structSize);
+    final floats = base.cast<Float>();
+    floats[0] = r.x.toDouble();
+    floats[1] = r.y.toDouble();
+    floats[2] = r.w.toDouble();
+    floats[3] = r.h.toDouble();
+    floats[4] = r.confidence.toDouble();
+    final textPtr = r.text.toNativeUtf8();
+    textPtrs.add(textPtr);
+    base.elementAt(sizeOf<Float>() * 5).cast<Pointer<Utf8>>()[0] = textPtr;
+    base.elementAt(sizeOf<Float>() * 5 + sizeOf<Pointer>()).cast<Int32>()[0] =
+        r.text.length;
+  }
+
+  final fmtPtr = format.toNativeUtf8();
+  final ptr = renderFn(
+      arr.cast<Void>(), results.length, pageWidth, pageHeight, fmtPtr);
+  calloc.free(fmtPtr);
+  for (final tp in textPtrs) calloc.free(tp);
+  calloc.free(arr);
+
+  if (ptr == nullptr) return null;
+  final result = ptr.toDartString();
+  calloc.free(ptr);
+  return result;
 }

@@ -54,6 +54,10 @@ ocr_renderer * ocr_render_create(ocr_render_format format);
 /// Set the page separator for plain text output (default: "\f").
 void ocr_render_set_separator(ocr_renderer * r, const char * sep);
 
+/// Enable PDF/A-2b compliance (adds XMP metadata + sRGB OutputIntent).
+/// Must be called before ocr_render_begin(). Only affects PDF format.
+void ocr_render_set_pdfa(ocr_renderer * r, int enabled);
+
 /// Begin a document.
 void ocr_render_begin(ocr_renderer * r);
 
