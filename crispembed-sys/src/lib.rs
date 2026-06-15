@@ -735,6 +735,13 @@ extern "C" {
     ) -> *mut c_char;
 
     // ── Classical preprocessing ──
+    /// PDF DPI profiling — analyse embedded images in a PDF page.
+    /// Returns 0 on success, -1 on error.
+    pub fn crispembed_pdf_page_dpi(
+        pdf_path: *const c_char, page: c_int,
+        out_dpi: *mut f32, out_n_images: *mut c_int,
+    ) -> c_int;
+
     pub fn crispembed_dewarp(
         gray: *const u8, w: c_int, h: c_int,
         out: *mut u8, out_w: *mut c_int, out_h: *mut c_int,

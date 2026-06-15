@@ -1817,6 +1817,24 @@ impl Drop for CrispOcrPipeline {
 
 // ── Classical Preprocessing ────────────────────────────────────────
 
+/// PDF DPI profiling -- analyse embedded images in a PDF page.
+/// Returns `(dpi, n_images)` on success, or an error message.
+pub fn pdf_page_dpi(path: &str, page: i32) -> Result<(f32, i32), String> {
+    let c_path = CString::new(path).map_err(|e| format!("invalid path: {e}"))?;
+    let mut dpi: f32 = 0.0;
+    let mut n_images: i32 = 0;
+    let ret = unsafe {
+        crispembed_sys::crispembed_pdf_page_dpi(
+            c_path.as_ptr(), page,
+            &mut dpi, &mut n_images,
+        )
+    };
+    if ret != 0 {
+        return Err(format!("pdf_page_dpi failed for '{path}' page {page}"));
+    }
+    Ok((dpi, n_images))
+}
+
 /// Dewarp a grayscale page image (straighten curved text lines).
 /// Returns the dewarped image as a Vec<u8>, or Err if dewarping failed.
 pub fn dewarp(gray: &[u8], width: i32, height: i32) -> Result<(Vec<u8>, i32, i32), String> {

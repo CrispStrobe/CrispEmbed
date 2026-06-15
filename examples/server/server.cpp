@@ -19,6 +19,7 @@
 //   POST /colbert/score   — {"query": "...", "documents": [...]} → ColBERT scoring
 //   POST /ner/extract     — {"text": "...", "labels": [...]} → NER entities
 //   POST /scan/cleanup    — {"image": "scan.png"} → cleaned image
+//   POST /pdf/dpi              — {"file": "path.pdf"} → per-page DPI info
 //   POST /preprocess/skew      — {"image": "..."} → {"angle": F, "confidence": F}
 //   POST /preprocess/dewarp    — {"image": "...", "output": "..."} → PGM image or JSON
 //   POST /preprocess/cc-detect — {"image": "..."} → {"regions": [...]}
@@ -30,6 +31,7 @@
 #include "ocr_render.h"
 #include "scan_cleanup.h"
 #include "model_mgr.h"
+#include "pdf_info.h"
 #include "httplib.h"
 
 // stb_image for /math/ocr image loading
@@ -1577,6 +1579,47 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /pdf/dpi — PDF DPI profiling (no model needed)
+    svr.Post("/pdf/dpi", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+        std::string file_path;
+        auto pos = body.find("\"file\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 6);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                file_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (file_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'file' field\"}", "application/json");
+            return;
+        }
+        int n_pages = 0;
+        pdf_page_dpi_result * results = pdf_all_pages_dpi(file_path.c_str(), &n_pages);
+        if (!results || n_pages <= 0) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot read PDF\"}", "application/json");
+            return;
+        }
+        std::ostringstream js;
+        js << "{\"pages\":[";
+        for (int i = 0; i < n_pages; i++) {
+            if (i > 0) js << ",";
+            js << "{\"page\":" << i
+               << ",\"dpi\":" << results[i].dpi
+               << ",\"dpi_min\":" << results[i].dpi_min
+               << ",\"dpi_max\":" << results[i].dpi_max
+               << ",\"n_images\":" << results[i].n_images
+               << ",\"page_width_pt\":" << results[i].page_width_pt
+               << ",\"page_height_pt\":" << results[i].page_height_pt
+               << "}";
+        }
+        js << "]}";
+        pdf_dpi_free(results);
+        res.set_content(js.str(), "application/json");
+    });
+
     // POST /preprocess/skew — find skew angle (no model needed)
     svr.Post("/preprocess/skew", [&](const httplib::Request & req, httplib::Response & res) {
         auto body = req.body;
@@ -2183,6 +2226,7 @@ int main(int argc, char ** argv) {
     if (ocr_orch_ctx) fprintf(stderr, "  POST /ocr/pipeline    — {\"image\": \"doc.png\"} (routing + cleanup + accept-gate)\n");
     if (text_sr_ctx) fprintf(stderr, "  POST /text/sr         — {\"image\": \"low_dpi.png\"} (upscale %dx)\n", crispembed_text_sr_upscale_factor(text_sr_ctx));
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
+    fprintf(stderr, "  POST /pdf/dpi              — {\"file\": \"...\"} (PDF DPI profiling)\n");
     fprintf(stderr, "  POST /preprocess/skew      — {\"image\": \"...\"} (find skew angle)\n");
     fprintf(stderr, "  POST /preprocess/dewarp    — {\"image\": \"...\"} (straighten curved text)\n");
     fprintf(stderr, "  POST /preprocess/tps-dewarp — {\"image\": \"...\", \"model\": \"tps-loc.gguf\"}\n");

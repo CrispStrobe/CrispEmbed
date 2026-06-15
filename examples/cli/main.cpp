@@ -14,6 +14,7 @@
 #include "hmer_ocr.h"
 #include "bttr_ocr.h"
 #include "scan_cleanup.h"
+#include "pdf_info.h"
 
 // stb_image for --detect image loading
 #define STB_IMAGE_STATIC
@@ -92,6 +93,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
     fprintf(stderr, "  --punct-model M  post-process OCR text with punctuation model (FireRedPunc/PCS)\n");
     fprintf(stderr, "  --output-format F  OCR output format: text (default), hocr, alto\n");
+    fprintf(stderr, "  --pdf-dpi FILE     analyse PDF DPI (per-page image resolution profiling)\n");
     fprintf(stderr, "  --find-skew FILE   detect skew angle (degrees) of a document image\n");
     fprintf(stderr, "  --dewarp FILE      dewarp a curved document page (straighten text lines)\n");
     fprintf(stderr, "  --tps-dewarp MODEL FILE  TPS-based dewarp (learned, needs model GGUF)\n");
@@ -171,6 +173,7 @@ int main(int argc, char ** argv) {
     std::string punct_model;    // --punct-model: post-process OCR with punctuation
     std::string output_format;  // --output-format: text/hocr/alto
     std::string pipeline_engine; // --ocr-engine NAME
+    std::string pdf_dpi_path;    // --pdf-dpi FILE
     std::string find_skew_path;  // --find-skew FILE
     std::string dewarp_path;     // --dewarp FILE
     std::string tps_dewarp_model; // --tps-dewarp MODEL FILE
@@ -245,6 +248,8 @@ int main(int argc, char ** argv) {
             det_model = argv[++i];
         } else if (strcmp(argv[i], "--face-pipeline") == 0) {
             face_pipeline_mode = true;
+        } else if (strcmp(argv[i], "--pdf-dpi") == 0 && i + 1 < argc) {
+            pdf_dpi_path = argv[++i];
         } else if (strcmp(argv[i], "--find-skew") == 0 && i + 1 < argc) {
             find_skew_path = argv[++i];
         } else if (strcmp(argv[i], "--dewarp") == 0 && i + 1 < argc) {
@@ -310,6 +315,25 @@ int main(int argc, char ** argv) {
     }
 
     // Standalone preprocessing commands (no model needed)
+    if (!pdf_dpi_path.empty()) {
+        int n_pages = 0;
+        pdf_page_dpi_result * results = pdf_all_pages_dpi(pdf_dpi_path.c_str(), &n_pages);
+        if (!results || n_pages <= 0) {
+            fprintf(stderr, "error: cannot read PDF '%s'\n", pdf_dpi_path.c_str());
+            return 1;
+        }
+        printf("{\"pages\":[");
+        for (int i = 0; i < n_pages; i++) {
+            if (i > 0) printf(",");
+            printf("{\"page\":%d,\"dpi\":%.1f,\"dpi_min\":%.1f,\"dpi_max\":%.1f,"
+                   "\"n_images\":%d,\"page_width_pt\":%.1f,\"page_height_pt\":%.1f}",
+                   i, results[i].dpi, results[i].dpi_min, results[i].dpi_max,
+                   results[i].n_images, results[i].page_width_pt, results[i].page_height_pt);
+        }
+        printf("]}\n");
+        pdf_dpi_free(results);
+        return 0;
+    }
     if (!find_skew_path.empty()) {
         int w, h, ch;
         unsigned char * data = stbi_load(find_skew_path.c_str(), &w, &h, &ch, 1);

@@ -161,6 +161,7 @@ list(APPEND CRISPEMBED_SOURCES src/kie_pipeline.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lilt_kie.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tps_warp.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tps_locnet.cpp)
+list(APPEND CRISPEMBED_SOURCES src/pdf_info.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -395,6 +396,9 @@ target_link_libraries(test-text-sr PRIVATE crispembed)
 
 add_executable(test-tbsrn-diff tests/test_tbsrn_diff.cpp)
 target_link_libraries(test-tbsrn-diff PRIVATE crispembed)
+
+add_executable(test-pdf-info tests/test_pdf_info.cpp)
+target_link_libraries(test-pdf-info PRIVATE crispembed)
 
 endif() # NOT iOS
 

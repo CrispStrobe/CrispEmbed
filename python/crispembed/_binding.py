@@ -2457,6 +2457,11 @@ class CrispOcrOrchestrator:
 # ---------------------------------------------------------------------------
 
 def _setup_preproc_signatures(lib):
+    lib.crispembed_pdf_page_dpi.argtypes = [
+        ctypes.c_char_p, ctypes.c_int,
+        ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_int)]
+    lib.crispembed_pdf_page_dpi.restype = ctypes.c_int
+
     lib.crispembed_dewarp.argtypes = [
         ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
         ctypes.POINTER(ctypes.c_uint8), ctypes.POINTER(ctypes.c_int),
@@ -2510,6 +2515,26 @@ class CrispPreprocess:
     def __init__(self, lib_path: Optional[str] = None):
         self._lib = _load_library(lib_path)
         _setup_preproc_signatures(self._lib)
+
+    def pdf_page_dpi(self, path: str, page: int = 0) -> Tuple[float, int]:
+        """Get the DPI and image count for a PDF page.
+
+        Args:
+            path: path to the PDF file.
+            page: zero-based page index (default 0).
+
+        Returns:
+            (dpi, n_images) tuple. dpi is the mean DPI across embedded
+            raster images on that page; n_images is the image count.
+        """
+        dpi = ctypes.c_float(0)
+        n_images = ctypes.c_int(0)
+        ret = self._lib.crispembed_pdf_page_dpi(
+            path.encode('utf-8'), page,
+            ctypes.byref(dpi), ctypes.byref(n_images))
+        if ret != 0:
+            return (0.0, 0)
+        return (dpi.value, n_images.value)
 
     def dewarp(self, gray: np.ndarray, w: int, h: int) -> np.ndarray:
         """Dewarp a grayscale page image. Returns dewarped uint8 array."""
