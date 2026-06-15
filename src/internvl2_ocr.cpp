@@ -1017,10 +1017,15 @@ bool load(context &ctx, const char *gguf_path, int n_threads, int verbosity) {
                ctx.m.lhp.intermediate_size, ctx.m.lhp.vocab_size);
     }
 
-    // Init backend
-    ctx.backend = ggml_backend_cpu_init();
-    ctx.backend_cpu = ctx.backend;
-    ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
+    // Init backend — prefer GPU when available
+    bool force_cpu = (getenv("INTERNVL2_OCR_FORCE_CPU") && atoi(getenv("INTERNVL2_OCR_FORCE_CPU")));
+    ctx.backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx.backend) ctx.backend = ggml_backend_cpu_init();
+    if (ggml_backend_is_cpu(ctx.backend))
+        ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
+    // CPU fallback for scheduler (sched asserts last backend is CPU)
+    ctx.backend_cpu = ggml_backend_is_cpu(ctx.backend) ? nullptr : ggml_backend_cpu_init();
+    if (ctx.backend_cpu) ggml_backend_cpu_set_n_threads(ctx.backend_cpu, n_threads);
 
     // Load tensors
     if (!load_tensors(ctx, gguf_path)) {
@@ -1028,12 +1033,16 @@ bool load(context &ctx, const char *gguf_path, int n_threads, int verbosity) {
         return false;
     }
 
-    // Init scheduler
-    ggml_backend_t backends[] = {ctx.backend};
-    ctx.sched = ggml_backend_sched_new(backends, nullptr, 1, 16384, false, false);
+    // Init scheduler — GPU + CPU fallback when available
+    std::vector<ggml_backend_t> backends;
+    backends.push_back(ctx.backend);
+    if (ctx.backend_cpu) backends.push_back(ctx.backend_cpu);
+    ctx.sched = ggml_backend_sched_new(backends.data(), nullptr,
+                                       (int)backends.size(), 16384, false, false);
 
     if (verbosity >= 1) {
-        printf("  Ready (CPU, %d threads)\n", n_threads);
+        const char *bname = ggml_backend_is_cpu(ctx.backend) ? "CPU" : "GPU";
+        printf("  Ready (%s, %d threads)\n", bname, n_threads);
     }
 
     return true;
@@ -1044,6 +1053,7 @@ void free_(context &ctx) {
     if (ctx.sched) { ggml_backend_sched_free(ctx.sched); ctx.sched = nullptr; }
     if (ctx.model_buf) { ggml_backend_buffer_free(ctx.model_buf); ctx.model_buf = nullptr; }
     if (ctx.model_ctx) { ggml_free(ctx.model_ctx); ctx.model_ctx = nullptr; }
+    if (ctx.backend_cpu) { ggml_backend_free(ctx.backend_cpu); ctx.backend_cpu = nullptr; }
     if (ctx.backend) { ggml_backend_free(ctx.backend); ctx.backend = nullptr; }
 }
 

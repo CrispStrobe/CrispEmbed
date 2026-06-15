@@ -157,6 +157,7 @@ struct context {
 
     // Backend
     ggml_backend_t backend = nullptr;
+    ggml_backend_t backend_cpu = nullptr;  // CPU fallback when primary is GPU
     ggml_backend_sched_t sched = nullptr;
     core_gguf::WeightLoad wl;
     int n_threads = 4;
@@ -173,9 +174,12 @@ bool load(context** out, const char* path, int n_threads) {
 
     fprintf(stderr, "layout_detect: loading %s\n", path);
 
-    // Load weights
-    ctx->backend = ggml_backend_cpu_init();
-    ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
+    // Load weights — prefer GPU backend when available
+    bool force_cpu = (getenv("LAYOUT_DETECT_FORCE_CPU") && atoi(getenv("LAYOUT_DETECT_FORCE_CPU")));
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
 
     if (!core_gguf::load_weights(path, ctx->backend, "layout", ctx->wl)) {
         fprintf(stderr, "layout_detect: failed to load weights\n");
@@ -339,9 +343,16 @@ bool load(context** out, const char* path, int n_threads) {
     if (!dec.anchors) { LDBG("  MISS: decoder anchors\n"); missing++; }
     if (!dec.layers[0].self_qkv_w) { LDBG("  MISS: decoder layer 0 self QKV\n"); missing++; }
 
-    // Create backend scheduler
+    // Create backend scheduler — append CPU fallback when primary is GPU
+    // (ggml_backend_sched_new asserts last backend is CPU)
+    ctx->backend_cpu = ggml_backend_is_cpu(ctx->backend) ? nullptr : ggml_backend_cpu_init();
+    if (ctx->backend_cpu) ggml_backend_cpu_set_n_threads(ctx->backend_cpu, n_threads);
     int sched_max = 4096;
-    ctx->sched = ggml_backend_sched_new(&ctx->backend, nullptr, 1, sched_max, false, false);
+    std::vector<ggml_backend_t> backends;
+    backends.push_back(ctx->backend);
+    if (ctx->backend_cpu) backends.push_back(ctx->backend_cpu);
+    ctx->sched = ggml_backend_sched_new(backends.data(), nullptr,
+                                        (int)backends.size(), sched_max, false, false);
     if (!ctx->sched) {
         fprintf(stderr, "layout_detect: failed to create scheduler\n");
         return false;
@@ -1836,6 +1847,7 @@ std::vector<region> detect_file(context* ctx, const char* path,
 void free(context* ctx) {
     if (!ctx) return;
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
+    if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     core_gguf::free_weights(ctx->wl);
     delete ctx;

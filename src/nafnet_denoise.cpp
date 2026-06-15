@@ -314,6 +314,8 @@ nafnet_context * nafnet_init(const char * model_path, int n_threads) {
     core_gguf::free_metadata(meta);
 
     // Pass 2: load weights (CPU backend)
+    // NOTE: CPU-only — forward pass is scalar C++ (NAFNet U-Net with direct
+    // tensor->data access, backend freed after load). GPU requires ggml graph rewrite.
     ggml_backend_t backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, backend, "nafnet", ctx->wl)) {
         fprintf(stderr, "nafnet: failed to load weights\n");

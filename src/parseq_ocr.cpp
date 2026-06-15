@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <map>
 #include <string>
@@ -208,8 +209,11 @@ static void linear_batch(const float * x, const float * W, const float * b,
 parseq_ocr_context * parseq_ocr_init(const char * model_path, int n_threads) {
     auto * ctx = new parseq_ocr_context();
     ctx->n_threads = n_threads;
-    ctx->backend = ggml_backend_cpu_init();
-    ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
+    bool force_cpu = (getenv("PARSEQ_OCR_FORCE_CPU") && atoi(getenv("PARSEQ_OCR_FORCE_CPU")));
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
 
     // Pass 1: read metadata
     gguf_context * meta = core_gguf::open_metadata(model_path);

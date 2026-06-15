@@ -861,6 +861,8 @@ ppformulanet_ocr_context* ppformulanet_ocr_init(const char* model_path, int n_th
             hp.enc_hidden, hp.dec_layers, hp.dec_heads, hp.dec_d_model,
             hp.vocab_size, ctx->vocab.size());
 
+    // NOTE: CPU-only — forward pass is scalar C++ (HGNetv2+MBart with direct
+    // tensor->data access). GPU enablement requires rewriting as ggml graph.
     ctx->backend = ggml_backend_cpu_init();
     ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
 
