@@ -3205,6 +3205,7 @@ struct ocr_pipeline_orch_wrapper {
     ocr_orchestrator::result    last;
     std::vector<crispembed_ocr_result> c_results;
     std::string full_text;
+    void * punct = nullptr;   // optional post-OCR punctuation/spacing restorer
 };
 
 extern "C" crispembed_ocr_pipeline_params crispembed_ocr_pipeline_defaults(void) {
@@ -3218,6 +3219,7 @@ extern "C" crispembed_ocr_pipeline_params crispembed_ocr_pipeline_defaults(void)
     p.nafnet_model    = nullptr;
     p.vlm_model       = nullptr;
     p.vlm_engine      = 0;
+    p.punct_model     = nullptr;
     return p;
 }
 
@@ -3269,6 +3271,9 @@ extern "C" void * crispembed_ocr_pipeline_init(
         delete w;
         return nullptr;
     }
+    if (params->punct_model && *params->punct_model) {
+        w->punct = crispembed_punct_init(params->punct_model, n_threads);
+    }
     return w;
 }
 
@@ -3282,6 +3287,11 @@ extern "C" const crispembed_ocr_result * crispembed_ocr_pipeline_run(
     auto * w  = (ocr_pipeline_orch_wrapper *)ctx;
     w->last      = ocr_orchestrator::run_file(w->ctx, image_path);
     w->full_text = w->last.full_text;
+    // Optional post-OCR restore: punctuation / capitalization / spacing.
+    if (w->punct && !w->full_text.empty()) {
+        const char * restored = crispembed_punct_process(w->punct, w->full_text.c_str());
+        if (restored && *restored) w->full_text = restored;
+    }
     w->c_results.resize(w->last.regions.size());
     for (size_t i = 0; i < w->last.regions.size(); i++) {
         auto & r = w->last.regions[i];
@@ -3339,7 +3349,7 @@ static scan_cleanup_params to_cleanup(const crispembed_scan_cleanup_params & p) 
 }
 
 extern "C" void * crispembed_ocr_pipeline_init_stages(
-        int router, const char * nafnet_model,
+        int router, const char * nafnet_model, const char * punct_model,
         const crispembed_ocr_stage * stages, int n_stages, int n_threads) {
     if (!stages || n_stages <= 0) return nullptr;
     ocr_orchestrator::config cfg;
@@ -3384,6 +3394,9 @@ extern "C" void * crispembed_ocr_pipeline_init_stages(
         delete w;
         return nullptr;
     }
+    if (punct_model && *punct_model) {
+        w->punct = crispembed_punct_init(punct_model, n_threads);
+    }
     return w;
 }
 
@@ -3391,6 +3404,7 @@ extern "C" void crispembed_ocr_pipeline_free(void * ctx) {
     if (!ctx) return;
     auto * w = (ocr_pipeline_orch_wrapper *)ctx;
     if (w->ctx) ocr_orchestrator::free(w->ctx);
+    if (w->punct) crispembed_punct_free(w->punct);
     delete w;
 }
 
