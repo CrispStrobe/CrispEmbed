@@ -811,6 +811,22 @@ CRISPEMBED_API void   crispembed_punct_free(void * ctx);
 /// valid until next call or free.
 CRISPEMBED_API const char * crispembed_punct_process(void * ctx, const char * text);
 
+// ---------------------------------------------------------------------------
+// OCR Result Renderers — text, hOCR, ALTO, PDF
+// ---------------------------------------------------------------------------
+// Re-exported from ocr_render.h for convenience. See that header for the
+// full struct definitions (ocr_render_word, ocr_render_line, ocr_render_page,
+// ocr_renderer). The C API here provides a simpler one-shot interface.
+
+/// Render OCR results (from crispembed_ocr_pipeline_run) to a format string.
+/// format: "text" | "hocr" | "alto" | "pdf"
+/// Returns newly allocated string (caller frees with free()).
+/// For multi-page: call repeatedly and concatenate, or use ocr_render.h directly.
+CRISPEMBED_API char * crispembed_ocr_render(
+    const crispembed_ocr_result * results, int n_results,
+    int page_width, int page_height,
+    const char * format);
+
 #ifdef __cplusplus
 }
 #endif
