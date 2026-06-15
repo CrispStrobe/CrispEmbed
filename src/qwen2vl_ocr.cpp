@@ -1527,6 +1527,7 @@ static ggml_cgraph * build_decode_step_graph(
 
 bool generate(context &ctx,
               const float *image_embeds, int n_image_tokens, int embed_dim,
+              const int32_t *grid_thw,  // actual image grid (t,h,w) for mRoPE
               const int32_t *prompt_token_ids, int n_prompt_tokens,
               int max_new_tokens,
               generate_result &out) {
@@ -1540,11 +1541,10 @@ bool generate(context &ctx,
 
     // ── Step 1: Prefill — full forward pass to get logits + KV cache ──
     image_input img_in = {};
-    int32_t grid_thw_dummy[3] = {1, 1, 1};
     if (image_embeds && n_image_tokens > 0) {
         img_in.image_embeds = image_embeds;
         img_in.n_image_tokens = n_image_tokens;
-        img_in.grid_thw = grid_thw_dummy;
+        img_in.grid_thw = grid_thw;  // actual spatial grid for mRoPE
         img_in.n_images = 1;
     }
 
@@ -2047,6 +2047,7 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx,
     bool ok = qwen2vl_ocr::generate(ctx->inner,
                                      vis.image_embeds, vis.n_merged,
                                      vis.embed_dim,
+                                     pp.grid_thw,  // pass actual grid for mRoPE
                                      token_ids.data(), (int)token_ids.size(),
                                      ctx->max_tokens, gen);
 
