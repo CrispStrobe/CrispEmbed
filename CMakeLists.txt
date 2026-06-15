@@ -148,6 +148,8 @@ list(APPEND CRISPEMBED_SOURCES src/parseq_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/glm_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/got_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tesseract_lstm.cpp)
+list(APPEND CRISPEMBED_SOURCES src/fireredpunc.cpp)
+list(APPEND CRISPEMBED_SOURCES src/pcs.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)

@@ -792,6 +792,23 @@ CRISPEMBED_API void * crispembed_ocr_pipeline_init_stages(
     int n_stages,
     int n_threads);
 
+// ---------------------------------------------------------------------------
+// Punctuation Restoration — FireRedPunc / PCS
+// ---------------------------------------------------------------------------
+// Post-processing for CTC output (Tesseract LSTM, ASR, etc.): inserts
+// spaces, punctuation, and capitalization into unpunctuated text.
+// Two backends: FireRedPunc (BERT Chinese+multilingual, 5 classes) and
+// PCS (XLM-R, punctuation + capitalization + segmentation).
+// Copied from CrispASR; will be refactored into shared crisp_punc/ library.
+
+/// Load a punctuation model (auto-detects FireRedPunc vs PCS from GGUF arch).
+CRISPEMBED_API void * crispembed_punct_init(const char * model_path, int n_threads);
+/// Free punct context.
+CRISPEMBED_API void   crispembed_punct_free(void * ctx);
+/// Add punctuation/spaces to text. Returns string owned by context,
+/// valid until next call or free.
+CRISPEMBED_API const char * crispembed_punct_process(void * ctx, const char * text);
+
 #ifdef __cplusplus
 }
 #endif

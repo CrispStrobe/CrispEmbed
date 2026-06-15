@@ -3589,3 +3589,61 @@ extern "C" int crispembed_scan_cleanup_process_simple(
     return scan_cleanup_process((scan_cleanup_ctx *)ctx, pixels, width, height, channels,
                                 p, out_pixels, out_width, out_height);
 }
+
+// ---------------------------------------------------------------------------
+// Punctuation restoration — FireRedPunc / PCS
+// ---------------------------------------------------------------------------
+
+#include "fireredpunc.h"
+#include "pcs.h"
+
+enum punct_type { PUNCT_FIREREDPUNC, PUNCT_PCS };
+
+struct punct_wrapper {
+    punct_type type;
+    void * ctx;
+    std::string result_buf;
+};
+
+extern "C" void * crispembed_punct_init(const char * model_path, int n_threads) {
+    (void)n_threads;
+    if (!model_path) return nullptr;
+
+    gguf_context * meta = core_gguf::open_metadata(model_path);
+    if (!meta) return nullptr;
+    std::string arch = core_gguf::kv_str(meta, "general.architecture", "fireredpunc");
+    core_gguf::free_metadata(meta);
+
+    auto * w = new punct_wrapper();
+    if (arch == "pcs" || arch == "pcs_xlmr") {
+        w->type = PUNCT_PCS;
+        w->ctx = pcs_init(model_path);
+    } else {
+        w->type = PUNCT_FIREREDPUNC;
+        w->ctx = fireredpunc_init(model_path);
+    }
+    if (!w->ctx) { delete w; return nullptr; }
+    return w;
+}
+
+extern "C" void crispembed_punct_free(void * ctx) {
+    if (!ctx) return;
+    auto * w = (punct_wrapper *)ctx;
+    if (w->type == PUNCT_PCS) pcs_free((pcs_context *)w->ctx);
+    else fireredpunc_free((fireredpunc_context *)w->ctx);
+    delete w;
+}
+
+extern "C" const char * crispembed_punct_process(void * ctx, const char * text) {
+    if (!ctx || !text) return text;
+    auto * w = (punct_wrapper *)ctx;
+    char * result = nullptr;
+    if (w->type == PUNCT_PCS)
+        result = pcs_process((pcs_context *)w->ctx, text);
+    else
+        result = fireredpunc_process((fireredpunc_context *)w->ctx, text);
+    if (!result) return text;
+    w->result_buf = result;
+    free(result);
+    return w->result_buf.c_str();
+}
