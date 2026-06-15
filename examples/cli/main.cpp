@@ -88,6 +88,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
     fprintf(stderr, "  --punct-model M  post-process OCR text with punctuation model (FireRedPunc/PCS)\n");
     fprintf(stderr, "  --output-format F  OCR output format: text (default), hocr, alto\n");
+    fprintf(stderr, "  --find-skew FILE   detect skew angle (degrees) of a document image\n");
+    fprintf(stderr, "  --dewarp FILE      dewarp a curved document page (straighten text lines)\n");
+    fprintf(stderr, "  --cc-detect FILE   detect text lines via connected components (model-free)\n");
     fprintf(stderr, "  --cleanup        preprocess scan before OCR (deskew, crop borders, whiten background)\n");
     fprintf(stderr, "  --cleanup-only F process scan and write cleaned image to stdout (no OCR)\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
@@ -157,7 +160,10 @@ int main(int argc, char ** argv) {
     float pipeline_min_conf = -1.0f;    // --ocr-min-conf: accept-gate override (-1 = default)
     std::string punct_model;    // --punct-model: post-process OCR with punctuation
     std::string output_format;  // --output-format: text/hocr/alto
-    std::string pipeline_engine; // --ocr-engine NAME: primary pipeline engine (dbnet_trocr/surya/tesseract/got/glm/qwen2vl/internvl2)
+    std::string pipeline_engine; // --ocr-engine NAME
+    std::string find_skew_path;  // --find-skew FILE
+    std::string dewarp_path;     // --dewarp FILE
+    std::string cc_detect_path;  // --cc-detect FILE
     bool face_pipeline_mode = false;
     float conf_threshold = 0.5f;
     std::string lora_adapter;   // LoRA adapter name (--lora)
@@ -221,6 +227,12 @@ int main(int argc, char ** argv) {
             det_model = argv[++i];
         } else if (strcmp(argv[i], "--face-pipeline") == 0) {
             face_pipeline_mode = true;
+        } else if (strcmp(argv[i], "--find-skew") == 0 && i + 1 < argc) {
+            find_skew_path = argv[++i];
+        } else if (strcmp(argv[i], "--dewarp") == 0 && i + 1 < argc) {
+            dewarp_path = argv[++i];
+        } else if (strcmp(argv[i], "--cc-detect") == 0 && i + 1 < argc) {
+            cc_detect_path = argv[++i];
         } else if (strcmp(argv[i], "--cleanup") == 0) {
             cleanup_mode = true;
         } else if (strcmp(argv[i], "--punct-model") == 0 && i + 1 < argc) {
@@ -272,6 +284,57 @@ int main(int argc, char ** argv) {
         } else {
             texts.push_back(argv[i]);
         }
+    }
+
+    // Standalone preprocessing commands (no model needed)
+    if (!find_skew_path.empty()) {
+        int w, h, ch;
+        unsigned char * data = stbi_load(find_skew_path.c_str(), &w, &h, &ch, 1);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", find_skew_path.c_str()); return 1; }
+        float angle = 0, conf = 0;
+        crispembed_find_skew(data, w, h, &angle, &conf);
+        stbi_image_free(data);
+        if (json_output) printf("{\"angle\":%.3f,\"confidence\":%.3f}\n", angle, conf);
+        else printf("angle=%.3f deg  confidence=%.3f\n", angle, conf);
+        return 0;
+    }
+    if (!dewarp_path.empty()) {
+        int w, h, ch;
+        unsigned char * data = stbi_load(dewarp_path.c_str(), &w, &h, &ch, 1);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", dewarp_path.c_str()); return 1; }
+        std::vector<uint8_t> out(w * h);
+        int ow = 0, oh = 0;
+        int ret = crispembed_dewarp(data, w, h, out.data(), &ow, &oh);
+        stbi_image_free(data);
+        if (ret != 0) { fprintf(stderr, "dewarp failed (too few textlines?)\n"); return 1; }
+        // Write result as PGM to stdout
+        printf("P5\n%d %d\n255\n", ow, oh);
+        fwrite(out.data(), 1, ow * oh, stdout);
+        return 0;
+    }
+    if (!cc_detect_path.empty()) {
+        int w, h, ch;
+        unsigned char * data = stbi_load(cc_detect_path.c_str(), &w, &h, &ch, 1);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", cc_detect_path.c_str()); return 1; }
+        int n = 0;
+        crispembed_ocr_result * regions = crispembed_cc_detect(data, w, h, &n);
+        stbi_image_free(data);
+        if (json_output) {
+            printf("[");
+            for (int i = 0; i < n; i++) {
+                if (i > 0) printf(",");
+                printf("{\"x\":%.0f,\"y\":%.0f,\"w\":%.0f,\"h\":%.0f}",
+                       regions[i].x, regions[i].y, regions[i].w, regions[i].h);
+            }
+            printf("]\n");
+        } else {
+            printf("detected %d text regions\n", n);
+            for (int i = 0; i < n; i++)
+                printf("  [%d] (%.0f, %.0f) %.0fx%.0f\n", i,
+                       regions[i].x, regions[i].y, regions[i].w, regions[i].h);
+        }
+        if (regions) free(regions);
+        return 0;
     }
 
     if (model_arg.empty() && cleanup_only_path.empty() && ocr_pipeline_path.empty()) {

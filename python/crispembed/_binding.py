@@ -2337,3 +2337,73 @@ class CrispPreprocess:
             w, h, max_w, max_h,
             out.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)))
         return out.reshape(h, w)
+
+    def cc_detect(self, gray: np.ndarray, w: int, h: int) -> list:
+        """Detect text lines using connected components (model-free).
+        Returns list of dicts with x, y, w, h keys."""
+        self._lib.crispembed_cc_detect.argtypes = [
+            ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+            ctypes.POINTER(ctypes.c_int)]
+        self._lib.crispembed_cc_detect.restype = ctypes.POINTER(_CrispOcrResult)
+        n = ctypes.c_int(0)
+        ptr = self._lib.crispembed_cc_detect(
+            gray.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
+            w, h, ctypes.byref(n))
+        results = []
+        for i in range(n.value):
+            r = ptr[i]
+            results.append({"x": r.x, "y": r.y, "w": r.w, "h": r.h})
+        if ptr and n.value > 0:
+            ctypes.cdll.LoadLibrary("libc.so.6").free(ptr)
+        return results
+
+
+def _setup_ocr_render_signatures(lib):
+    lib.crispembed_ocr_render.argtypes = [
+        ctypes.POINTER(_CrispOcrResult), ctypes.c_int,
+        ctypes.c_int, ctypes.c_int, ctypes.c_char_p]
+    lib.crispembed_ocr_render.restype = ctypes.c_void_p
+
+
+def ocr_render(results: list, page_w: int, page_h: int, format: str = "text",
+               lib_path: Optional[str] = None) -> str:
+    """Render OCR results to text/hOCR/ALTO/PDF format.
+
+    Args:
+        results: list of dicts with keys: text, x, y, w, h, confidence.
+        page_w: page width in pixels.
+        page_h: page height in pixels.
+        format: "text", "hocr", "alto", or "pdf".
+
+    Returns:
+        Rendered string (or PDF bytes as string for "pdf" format).
+    """
+    lib = _load_library(lib_path)
+    _setup_ocr_render_signatures(lib)
+    _setup_ocr_pipeline_signatures(lib)  # for _CrispOcrResult
+
+    n = len(results)
+    if n == 0:
+        return ""
+
+    # Build C-compatible result array
+    arr = (_CrispOcrResult * n)()
+    text_bufs = []  # keep alive
+    for i, r in enumerate(results):
+        arr[i].x = r.get("x", 0)
+        arr[i].y = r.get("y", 0)
+        arr[i].w = r.get("w", 0)
+        arr[i].h = r.get("h", 0)
+        arr[i].confidence = r.get("confidence", 1.0)
+        text_bytes = r.get("text", "").encode("utf-8")
+        text_bufs.append(ctypes.c_char_p(text_bytes))
+        arr[i].text = text_bufs[-1]
+        arr[i].text_len = len(text_bytes)
+
+    fmt = format.encode("utf-8")
+    ptr = lib.crispembed_ocr_render(arr, n, page_w, page_h, fmt)
+    if not ptr:
+        return ""
+    result = ctypes.cast(ptr, ctypes.c_char_p).value.decode("utf-8", errors="replace")
+    ctypes.cdll.LoadLibrary("libc.so.6").free(ptr)
+    return result
