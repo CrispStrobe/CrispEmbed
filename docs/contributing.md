@@ -212,7 +212,7 @@ Utility libraries (not model backends) follow a lighter pattern.
 | 1-bit DWA morphology | header | — | — | — | — | — |
 | CC text line detection | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Page dewarping | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| OCR renderers (text, hOCR, ALTO, PDF) | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| OCR renderers (text, hOCR, ALTO, PDF) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Punctuation restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ### Implementation patterns
