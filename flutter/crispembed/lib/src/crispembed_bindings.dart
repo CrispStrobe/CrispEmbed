@@ -580,9 +580,40 @@ typedef CrispembedTbsrnSrProcessDart = int Function(
     Pointer<Uint8> input,
     int width,
     int height,
+// --- SAFMN Super-Resolution (safmn_sr) ---
+typedef CrispembedSafmnSrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedSafmnSrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedSafmnSrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedSafmnSrFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedSafmnSrScaleNative = Int32 Function(Pointer<Void> ctx);
+typedef CrispembedSafmnSrScaleDart = int Function(Pointer<Void> ctx);
+
+typedef CrispembedSafmnSrProcessNative = Int32 Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    Int32 width,
+    Int32 height,
+    Int32 tileSize,
+    Int32 tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+typedef CrispembedSafmnSrProcessDart = int Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    int width,
+    int height,
+    int tileSize,
+    int tileOverlap,
     Pointer<Pointer<Uint8>> outPixels,
     Pointer<Int32> outWidth,
     Pointer<Int32> outHeight);
 
 typedef CrispembedTbsrnSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedTbsrnSrFreeImageDart = void Function(Pointer<Uint8> pixels);
+typedef CrispembedSafmnSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
+typedef CrispembedSafmnSrFreeImageDart = void Function(Pointer<Uint8> pixels);

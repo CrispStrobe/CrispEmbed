@@ -3849,6 +3849,41 @@ extern "C" void crispembed_pan_sr_free_image(uint8_t * pixels) {
 }
 
 // ---------------------------------------------------------------------------
+// SAFMN whole-image super-resolution
+// ---------------------------------------------------------------------------
+
+#include "safmn_sr.h"
+
+extern "C" void * crispembed_safmn_sr_init(const char * model_path, int n_threads) {
+    return safmn_init(model_path, n_threads);
+}
+extern "C" void crispembed_safmn_sr_free(void * ctx) {
+    safmn_free((safmn_context *)ctx);
+}
+extern "C" int crispembed_safmn_sr_scale(const void * ctx) {
+    return safmn_get_scale((const safmn_context *)ctx);
+}
+extern "C" int crispembed_safmn_sr_process(
+        void * ctx, const uint8_t * pixels, int width, int height,
+        int /*tile_size*/, int /*tile_overlap*/,
+        uint8_t ** out_pixels, int * out_width, int * out_height) {
+    int scale = safmn_get_scale((const safmn_context *)ctx);
+    int ow = width * scale;
+    int oh = height * scale;
+    uint8_t * out = (uint8_t *)malloc((size_t)ow * oh * 3);
+    if (!out) return -1;
+    int rc = safmn_process((safmn_context *)ctx, pixels, width, height, out);
+    if (rc != 0) { free(out); return rc; }
+    *out_pixels = out;
+    *out_width  = ow;
+    *out_height = oh;
+    return 0;
+}
+extern "C" void crispembed_safmn_sr_free_image(uint8_t * pixels) {
+    free(pixels);
+}
+
+// ---------------------------------------------------------------------------
 // Punctuation restoration — FireRedPunc / PCS
 // ---------------------------------------------------------------------------
 
