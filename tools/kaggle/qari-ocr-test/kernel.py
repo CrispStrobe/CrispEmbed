@@ -178,7 +178,8 @@ print("Uploaded qari-ocr-ref.gguf")
 
 # ─── 7. Build + run CrispEmbed diff test ──────────────────────────────
 print("\n=== CrispEmbed diff test ===")
-gguf_path = hf_hub_download('cstr/qari-ocr-crispembed-GGUF', 'qari-ocr-2b-q4_k.gguf')
+# Use F16 to eliminate quantization as a variable
+gguf_path = hf_hub_download('cstr/qari-ocr-crispembed-GGUF', 'qari-ocr-2b-f16.gguf')
 
 ce_dir = '/kaggle/working/CrispEmbed'
 if os.path.exists(ce_dir): shutil.rmtree(ce_dir)
