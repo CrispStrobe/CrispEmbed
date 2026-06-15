@@ -112,6 +112,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --tbsrn-sr FILE  standalone TBSRN super-resolution: upscale text crop, write PPM to stdout\n");
     fprintf(stderr, "                   (needs --tbsrn-model PATH: TBSRN GGUF, always 2x, 16x64->32x128)\n");
     fprintf(stderr, "  --tbsrn-model PATH TBSRN super-resolution GGUF (used with --tbsrn-sr)\n");
+    fprintf(stderr, "  --table-parse FILE  parse a grayscale table image, print HTML to stdout\n");
+    fprintf(stderr, "                      (optional --table-ocr-model PATH: Tesseract LSTM GGUF for cell OCR)\n");
+    fprintf(stderr, "  --table-ocr-model PATH  Tesseract LSTM GGUF for built-in cell OCR (used with --table-parse)\n");
     fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
     fprintf(stderr, "  --ocr-rec MODEL  general OCR: text recognition model (TrOCR, e.g. trocr-printed)\n");
     fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
@@ -179,6 +182,8 @@ int main(int argc, char ** argv) {
     std::string pan_sr_path;           // --pan-sr FILE: standalone PAN upscaling
     std::string tbsrn_model;           // --tbsrn-model: TBSRN super-resolution GGUF
     std::string tbsrn_sr_path;         // --tbsrn-sr FILE: standalone TBSRN upscaling
+    std::string table_parse_path;      // --table-parse FILE: table structure recognition
+    std::string table_ocr_model;       // --table-ocr-model: Tesseract LSTM GGUF for cell OCR
     std::string pipeline_vlm_model;     // --vlm-model NAME: VLM escalation engine GGUF
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
@@ -298,6 +303,10 @@ int main(int argc, char ** argv) {
             tbsrn_model = argv[++i];
         } else if (strcmp(argv[i], "--tbsrn-sr") == 0 && i + 1 < argc) {
             tbsrn_sr_path = argv[++i];
+        } else if (strcmp(argv[i], "--table-parse") == 0 && i + 1 < argc) {
+            table_parse_path = argv[++i];
+        } else if (strcmp(argv[i], "--table-ocr-model") == 0 && i + 1 < argc) {
+            table_ocr_model = argv[++i];
         } else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) {
             pipeline_vlm_model = argv[++i];
         } else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) {
@@ -460,6 +469,21 @@ int main(int argc, char ** argv) {
         printf("P6\n%d %d\n255\n", ow, oh);
         fwrite(out, 1, (size_t)ow * oh * 3, stdout);
         crispembed_tbsrn_sr_free_image(out);
+        return 0;
+    }
+    if (!table_parse_path.empty()) {
+        int w, h, ch;
+        unsigned char * data = stbi_load(table_parse_path.c_str(), &w, &h, &ch, 1);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", table_parse_path.c_str()); return 1; }
+        const char * ocr_path = table_ocr_model.empty() ? nullptr : table_ocr_model.c_str();
+        void * tpctx = crispembed_table_parse_init(ocr_path, n_threads);
+        if (!tpctx) { stbi_image_free(data); fprintf(stderr, "error: cannot init table parser\n"); return 1; }
+        char * html = crispembed_table_parse_to_html(tpctx, data, w, h);
+        stbi_image_free(data);
+        crispembed_table_parse_free(tpctx);
+        if (!html) { fprintf(stderr, "error: table parsing failed\n"); return 1; }
+        fputs(html, stdout);
+        crispembed_table_parse_free_string(html);
         return 0;
     }
 

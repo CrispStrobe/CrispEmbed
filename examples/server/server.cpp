@@ -79,6 +79,7 @@ int main(int argc, char ** argv) {
     std::string sr_model_path;        // text super-resolution model (--sr-model)
     std::string pan_model_path;       // PAN super-resolution model (--pan-model)
     std::string tbsrn_model_path;     // TBSRN super-resolution model (--tbsrn-model)
+    std::string table_ocr_model_path; // table cell OCR model (--table-ocr-model)
     int port = 8080;
     int n_threads = 4;
 
@@ -104,6 +105,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--sr-model") == 0 && i + 1 < argc) sr_model_path = argv[++i];
         else if (strcmp(argv[i], "--pan-model") == 0 && i + 1 < argc) pan_model_path = argv[++i];
         else if (strcmp(argv[i], "--tbsrn-model") == 0 && i + 1 < argc) tbsrn_model_path = argv[++i];
+        else if (strcmp(argv[i], "--table-ocr-model") == 0 && i + 1 < argc) table_ocr_model_path = argv[++i];
     }
 
     if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && tbsrn_model_path.empty()) {
@@ -137,6 +139,9 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --pan-model MODEL PAN SR GGUF (Pixel Attention Network, 2x or 4x); enables POST /pan/sr\n");
         fprintf(stderr, "\nTBSRN super-resolution (text-crop upscaling, always 2x):\n");
         fprintf(stderr, "  --tbsrn-model MODEL TBSRN SR GGUF (16x64->32x128); enables POST /tbsrn/sr\n");
+        fprintf(stderr, "\nTable structure recognition:\n");
+        fprintf(stderr, "  --table-ocr-model MODEL  Tesseract LSTM GGUF for cell OCR; enables POST /table/parse\n");
+        fprintf(stderr, "                           (omit to run without cell OCR — structure only)\n");
         return 1;
     }
 
@@ -827,6 +832,19 @@ int main(int argc, char ** argv) {
         tbsrn_sr_ctx = crispembed_tbsrn_sr_init(tbsrn_model_path.c_str(), n_threads);
         if (!tbsrn_sr_ctx)
             fprintf(stderr, "Warning: failed to load TBSRN SR model '%s'\n", tbsrn_model_path.c_str());
+    }
+
+    // ── Table Structure Recognition ──
+    // The context is always created (table_parse_init accepts NULL ocr_model_path).
+    // We create it unconditionally so that POST /table/parse is always available.
+    void * table_parse_ctx = nullptr;
+    std::mutex table_parse_mutex;
+
+    {
+        const char * ocr_path = table_ocr_model_path.empty() ? nullptr : table_ocr_model_path.c_str();
+        table_parse_ctx = crispembed_table_parse_init(ocr_path, n_threads);
+        if (!table_parse_ctx)
+            fprintf(stderr, "Warning: failed to init table parser\n");
     }
 
     // POST /clip/text — CLIP text encoding
@@ -2179,6 +2197,92 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /table/parse — table structure recognition (HTML output)
+    // Request:  {"image": "/path/to/table.png"}
+    //           {"image": "...", "ocr_model": "/path/to/tess.gguf"}  (override at request time)
+    // Response: {"html": "<table>...</table>", "n_rows": N, "n_cols": N, "ms": ...}
+    svr.Post("/table/parse", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!table_parse_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"table parser not available\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 1);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(table_parse_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        char * html = crispembed_table_parse_to_html(table_parse_ctx, data, w, h);
+        stbi_image_free(data);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        if (!html) {
+            res.status = 500;
+            res.set_content("{\"error\": \"table parsing failed\"}", "application/json");
+            return;
+        }
+
+        // Detect grid dimensions for the response
+        int n_rows = 0, n_cols = 0;
+        // Re-load to detect grid (small overhead; avoids storing the decoded buffer)
+        {
+            int gw, gh, gc;
+            unsigned char * gdata = stbi_load(image_path.c_str(), &gw, &gh, &gc, 1);
+            if (gdata) {
+                crispembed_table_parse_detect_grid(gdata, gw, gh, &n_rows, &n_cols);
+                stbi_image_free(gdata);
+            }
+        }
+
+        // Escape HTML for JSON string embedding
+        std::string html_str(html);
+        crispembed_table_parse_free_string(html);
+
+        std::string escaped;
+        escaped.reserve(html_str.size() + 32);
+        for (char c : html_str) {
+            if (c == '"')       escaped += "\\\"";
+            else if (c == '\\') escaped += "\\\\";
+            else if (c == '\n') escaped += "\\n";
+            else if (c == '\r') escaped += "\\r";
+            else                escaped += c;
+        }
+
+        std::ostringstream js;
+        js << "{\"html\": \"" << escaped << "\""
+           << ", \"n_rows\": " << n_rows
+           << ", \"n_cols\": " << n_cols
+           << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /table/parse in %.1f ms (%dx%d, %d rows, %d cols)\n",
+                ms, w, h, n_rows, n_cols);
+        res.set_content(js.str(), "application/json");
+    });
+
     // POST /ocr/document — end-to-end multi-page OCR
     // Accepts:
     //   multipart/form-data: files named "page" (or "page0","page1",...) → image bytes
@@ -2392,6 +2496,7 @@ int main(int argc, char ** argv) {
         if (text_sr_ctx) js << ", \"text_sr\": true, \"text_sr_upscale\": " << crispembed_text_sr_upscale_factor(text_sr_ctx);
         if (pan_sr_ctx) js << ", \"pan_sr\": true, \"pan_sr_upscale\": " << crispembed_pan_sr_scale(pan_sr_ctx);
         if (tbsrn_sr_ctx) js << ", \"tbsrn_sr\": true, \"tbsrn_sr_upscale\": 2";
+        if (table_parse_ctx) js << ", \"table_parse\": true";
         js << ", \"scan_cleanup\": true";  // always available (no model needed)
         js << "}";
         res.set_content(js.str(), "application/json");
@@ -2418,6 +2523,8 @@ int main(int argc, char ** argv) {
     if (text_sr_ctx) fprintf(stderr, "  POST /text/sr         — {\"image\": \"low_dpi.png\"} (upscale %dx)\n", crispembed_text_sr_upscale_factor(text_sr_ctx));
     if (pan_sr_ctx) fprintf(stderr, "  POST /pan/sr          — {\"image\": \"photo.png\"} (upscale %dx)\n", crispembed_pan_sr_scale(pan_sr_ctx));
     if (tbsrn_sr_ctx) fprintf(stderr, "  POST /tbsrn/sr        — {\"image\": \"text_crop.png\"} (upscale 2x)\n");
+    if (table_parse_ctx) fprintf(stderr, "  POST /table/parse     — {\"image\": \"table.png\"}%s\n",
+        table_ocr_model_path.empty() ? " (structure only, no cell OCR)" : " (structure + cell OCR)");
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
     fprintf(stderr, "  POST /pdf/dpi              — {\"file\": \"...\"} (PDF DPI profiling)\n");
     fprintf(stderr, "  POST /preprocess/skew      — {\"image\": \"...\"} (find skew angle)\n");
@@ -2435,6 +2542,7 @@ int main(int argc, char ** argv) {
     if (text_sr_ctx) crispembed_text_sr_free(text_sr_ctx);
     if (pan_sr_ctx) crispembed_pan_sr_free(pan_sr_ctx);
     if (tbsrn_sr_ctx) crispembed_tbsrn_sr_free(tbsrn_sr_ctx);
+    if (table_parse_ctx) crispembed_table_parse_free(table_parse_ctx);
     if (ner_ctx) crispembed_ner_free(ner_ctx);
     if (layout_ctx) crispembed_layout_free(layout_ctx);
     if (text_det_ctx) crispembed_text_det_free(text_det_ctx);
