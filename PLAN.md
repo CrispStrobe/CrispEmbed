@@ -722,9 +722,9 @@ Listed in priority order:
 - [x] **Image downsampling calculator** — `compute_downsample_factor()`:
   DPI-based + max_pixels constraint. Pure math. DONE.
 
-- [ ] **PDF page DPI profiling** — analyze images in a PDF page to determine
-  effective DPI (weighted harmonic mean for mixed-resolution pages).
-  Helps auto-select OCR resolution. ~100 LOC.
+- [x] **PDF page DPI profiling** — zero-dependency PDF parser that extracts
+  image metadata to compute effective page DPI. Weighted harmonic mean for
+  mixed-resolution pages. 36/36 tests, exact DPI at 72-600 DPI. DONE.
 
 - [x] **OCR quality scoring** — `ocr_quality_score()`: binary-search
   dictionary lookup for word match ratio. DONE.
@@ -736,10 +736,10 @@ Listed in priority order:
 
 ### Advanced OCR capabilities (Apache-2.0 references available)
 
-- [ ] **TPS Spatial Transformer** — learnable thin-plate-spline dewarping.
-  Better than cubic baseline fitting for irregular distortion (perspective,
-  finger occlusion). Reference: aster.pytorch (MIT). ~300 LOC.
-  Complements classical dewarp as a learned alternative.
+- [x] **TPS Spatial Transformer** — learnable thin-plate-spline dewarping.
+  20-point control prediction CNN (108K params, PaddleOCR RARE, Apache-2.0).
+  TPS math + localization net + auto_dewarp pipeline. Parity cos=1.000000.
+  Full integration: C API, CLI, server, Python, Rust, Dart. DONE.
 
 - [x] **Text angle classification** — `detect_text_angle()`: heuristic
   0°/180° detection via ascender/descender asymmetry + page-level ink
@@ -749,18 +749,88 @@ Listed in priority order:
   images (TableMaster / attention-based table heads). Converts table images
   to `<table><tr><td>`. Pairs with RT-DETRv2 layout detection.
 
-- [ ] **Key Information Extraction (KIE)** — LayoutLM-style document
-  understanding. Extract structured fields from forms, receipts, invoices.
-  Combines OCR text with spatial layout features. Larger effort.
+- [x] **Key Information Extraction (KIE)** — OCR + NER pipeline for
+  structured field extraction from documents. LiLT layout-aware model
+  (dual-stream BiACM, 25/25 layers cos=1.000000). Plus simple
+  OCR→NER chaining. Full integration. DONE.
 
-- [ ] **Text super-resolution** — upscale low-resolution text images
-  before OCR to improve recognition accuracy. Dedicated SR models as
-  preprocessing step in the orchestrator.
+- [x] **Text super-resolution** — NAFNet-SR (tiled full-page, Hann
+  blending, 2x/4x), TBSRN (per-line, PaddleOCR Telescope, 1.1M params),
+  PAN (whole-image, 272K params). Auto-trigger in orchestrator when
+  DPI < threshold. Parity-tested. Full integration. DONE.
 
 - [x] **Refined DBNet postprocessing** — DONE. Moore contour tracing,
   convex hull (Andrew's monotone chain), min-area rotated rectangle
   (rotating calipers), polygon-interior probability scoring (ray-casting),
   Unclip on rotated rect. Replaces axis-aligned bbox with rotated quad.
+
+---
+
+### Image restoration — next-gen models to port
+
+Current engines: NAFNet denoise (29M, SIDD), NAFNet-SR (tiled full-page),
+TBSRN (per-line), PAN (whole-image 272K). These are CNN-only. The field
+has moved to transformer and hybrid architectures with better quality.
+
+Listed in priority order (last 4 are highest priority — practical for
+CPU inference with existing patterns).
+
+#### Priority 1 — Port next (lightweight, drop-in upgrades)
+
+| # | Model | Params | Task | License | Why |
+|---|-------|--------|------|---------|-----|
+| 1 | **SAFMN** | ~200K | SR | Apache-2.0 | Extremely lightweight, spatially-adaptive feature modulation. Best SR quality/size ratio. Drop-in PAN replacement. ICCV 2023. |
+| 2 | **SwinIR-light** | ~900K | SR | Apache-2.0 | Well-proven Swin Transformer SR. Small enough for CPU. Already have Swin encoder from MixTex. ICCV 2021 workshop. |
+| 3 | **Restormer** | 26M | Denoise/SR/Deblur | Apache-2.0 | Multi-task restoration (denoise + SR + deblur in one model). Same weight class as NAFNet but better quality. Multi-Dconv head transposed attention. CVPR 2022. |
+| 4 | **SCUNet** | ~15M | Denoise | Apache-2.0 | Swin-Conv-UNet hybrid. Direct NAFNet denoise replacement with better quality on real-world degradation. CVPR 2022. |
+
+#### Priority 2 — Evaluate later (heavier or GAN-based)
+
+| # | Model | Params | Task | License | Why |
+|---|-------|--------|------|---------|-----|
+| 5 | **HAT** | 20M+ | SR | MIT | Current SOTA for single-image SR. Hybrid Attention Transformer. Heavier than SwinIR but highest PSNR. CVPR 2023. |
+| 6 | **DAT** | 20M+ | SR | Apache-2.0 | Dual Aggregation Transformer. Competitive with HAT, slightly different attention design. ICCV 2023. |
+| 7 | **Real-ESRGAN** | ~17M | SR | BSD-3 | GAN-based SR, good for real-world degradation (blur, noise, compression). Has compact "animevideo" variant. ICCV 2021 workshop. |
+| 8 | **PromptIR** | ~26M | All-in-one | MIT | Prompt-guided restoration handling multiple degradation types in one model. NeurIPS 2023. |
+| 9 | **AirNet** | ~9M | All-in-one | — | Contrastive degradation encoder + all-in-one restoration. CVPR 2022. Check license before porting. |
+
+#### Implementation notes
+
+- **SAFMN** (Priority 1): 200K params, spatially-adaptive feature modulation.
+  Architecture: shallow feature extraction → N SAFM blocks → PixelShuffle.
+  Each SAFM block: channel mixing (1×1 conv) + spatial mixing (multi-scale
+  DW-conv with channel split). ~200 LOC C++ engine. Converter adapts from
+  existing NAFNet pattern (Conv+BN folding). Reference: `liang-j20/SAFMN`.
+
+- **SwinIR-light** (Priority 1): Reuses Swin window attention from
+  `mixtex_ocr.cpp`. Architecture: shallow embed → N RSTB (residual Swin
+  transformer blocks) → upsample (PixelShuffle). ~400 LOC. Reference:
+  `JingyunLiang/SwinIR`.
+
+- **Restormer** (Priority 1): Multi-Dconv head transposed attention
+  (transpose spatial to channel dimension, then attention). U-Net
+  encoder-decoder with skip connections. Follows NAFNet inference pattern
+  closely. ~600 LOC. Reference: `swz30/Restormer`.
+
+- **SCUNet** (Priority 1): Swin-Conv-UNet. Alternates Swin transformer
+  blocks with residual conv blocks in a U-Net. Follows `nafnet_denoise.cpp`
+  pattern for the U-Net structure, adds Swin blocks from `mixtex_ocr.cpp`.
+  ~500 LOC. Reference: `cszn/SCUNet`.
+
+- **HAT/DAT** (Priority 2): Larger transformer SR models. Same Swin-based
+  pattern as SwinIR but with additional attention mechanisms (overlapping
+  cross-attention for HAT, spatial/channel aggregation for DAT). Port after
+  SwinIR-light proves the Swin SR pipeline.
+
+- **Real-ESRGAN** (Priority 2): GAN-based, so inference is just the
+  generator network (RRDB blocks — residual-in-residual dense blocks).
+  No discriminator needed at inference. The compact variant uses fewer
+  RRDB blocks.
+
+- **PromptIR/AirNet** (Priority 2): All-in-one models that could replace
+  the separate denoise + SR pipeline with a single model. PromptIR uses
+  learnable prompts to select degradation type; AirNet uses a contrastive
+  encoder. Evaluate whether single-model quality matches dedicated models.
 
 ---
 
