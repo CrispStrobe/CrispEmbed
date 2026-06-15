@@ -14,6 +14,10 @@ DeBERTa-v3-base (209M, Apache-2.0, recommended) and LFM2.5-350M (LFM-1.0).
 Detect arbitrary entity types at inference time — no retraining needed.
 CLI (`--ner`), server (`POST /ner/extract`), Python (`CrispNER`), Rust, Dart.
 
+**KIE**: Key Information Extraction — chains OCR + NER to extract structured
+key-value fields from document images (receipts, invoices, forms). No new model
+needed. CLI (`--kie`), server (`POST /kie/extract`), Python (`CrispKIE`), Dart.
+
 **Vision**: CLIP and SigLIP text-image cross-modal search (encode text and images
 into the same vector space). YuNet/SCRFD face detection, ArcFace/SFace/AuraFace
 face recognition. Full detect-align-encode pipeline.
@@ -379,6 +383,40 @@ for e in entities:
 Parity: all 16 backbone layers cos=1.000000 vs HF reference. Layer fusion and
 BiLSTM cos=1.000000. 17/17 entities match across 5 test texts.
 Source: [VAGOsolutions/SauerkrautLM-LFM2.5-GLiNER](https://huggingface.co/VAGOsolutions/SauerkrautLM-LFM2.5-GLiNER) (LFM Open License v1.0).
+
+## Key Information Extraction (KIE)
+
+Chains the OCR pipeline (text detection + recognition) with GLiNER zero-shot NER
+to extract structured key-value fields from document images — receipts, invoices,
+forms, business cards. No new model needed: uses existing OCR + NER models.
+
+```bash
+# CLI — extract fields from a receipt image
+./build/crispembed -m gliner-lfm-f32.gguf \
+    --ocr-det dbnet-det-f16.gguf --ocr-rec trocr-printed-q8_0.gguf \
+    --kie receipt.png --kie-labels "total,date,vendor" --json
+
+# Server — auto-enabled when NER + OCR det/rec are loaded
+./build/crispembed-server --ner gliner-lfm-f32.gguf \
+    --ocr-det dbnet-det-f16.gguf --ocr-rec trocr-printed-q8_0.gguf --port 8080
+curl -X POST http://localhost:8080/kie/extract \
+  -d '{"image": "receipt.png", "labels": ["total", "date", "vendor"], "threshold": 0.5}'
+
+# Python
+from crispembed import CrispKIE
+kie = CrispKIE("dbnet-det-f16.gguf", "trocr-printed-q8_0.gguf", "gliner-lfm-f32.gguf")
+result = kie.extract("receipt.png", labels=["total", "date", "vendor"])
+for f in result["fields"]:
+    print(f"{f['label']} = {f['value']} (score={f['score']:.2f}, bbox={f['bbox']})")
+```
+
+Output (JSON mode):
+```json
+{"n_ocr_regions": 12, "ocr_confidence": 0.85, "fields": [
+  {"label": "total", "value": "$42.50", "score": 0.92, "bbox": [120.0, 340.0, 200.0, 30.0]},
+  {"label": "date", "value": "2026-06-15", "score": 0.88, "bbox": [50.0, 20.0, 150.0, 25.0]}
+]}
+```
 
 ## Model licenses
 
@@ -835,6 +873,7 @@ face detection/recognition, ViT/CLIP vision, math OCR, and NER:
 - `POST /vit/encode`, `POST /clip/text` — image/text encoding
 - `POST /math/ocr` — formula recognition `{"image": "path"}` → `{"latex": "..."}`
 - `POST /ner/extract` — NER `{"text": "...", "labels": [...]}` → `{"entities": [...]}`
+- `POST /kie/extract` — KIE `{"image": "doc.png", "labels": ["total", ...]}` → `{"fields": [...]}`
 
 **BERT encoder** (all-MiniLM, gte, arctic-embed-xs, paraphrase-multilingual-MiniLM-L12-v2):
 - Token + Position + Type embeddings → Post-LN transformer → Mean/CLS pooling
