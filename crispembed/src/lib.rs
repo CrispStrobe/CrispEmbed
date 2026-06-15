@@ -2329,3 +2329,58 @@ impl Drop for CrispSafmnSr {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Real-ESRGAN Super-Resolution
+// ---------------------------------------------------------------------------
+
+/// Safe wrapper for the Real-ESRGAN whole-image super-resolution engine.
+pub struct CrispEsrganSr {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispEsrganSr {}
+
+impl CrispEsrganSr {
+    /// Load a Real-ESRGAN GGUF model.  `n_threads = 0` → auto.
+    pub fn new(model_path: impl AsRef<Path>, n_threads: i32) -> Option<Self> {
+        let c_path = CString::new(model_path.as_ref().to_str()?).ok()?;
+        let ctx = unsafe { crispembed_sys::crispembed_esrgan_sr_init(c_path.as_ptr(), n_threads) };
+        if ctx.is_null() { None } else { Some(Self { ctx }) }
+    }
+
+    /// Upscale factor (e.g. 4).
+    pub fn scale(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_esrgan_sr_scale(self.ctx) }
+    }
+
+    /// Super-resolve an RGB image (H×W×3, row-major uint8).
+    /// Returns `(pixels, out_w, out_h)` or `None` on failure.
+    pub fn process(&mut self, pixels: &[u8], width: i32, height: i32) -> Option<(Vec<u8>, i32, i32)> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut out_w: i32 = 0;
+        let mut out_h: i32 = 0;
+        let rc = unsafe {
+            crispembed_sys::crispembed_esrgan_sr_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width, height,
+                0, 0,
+                &mut out_ptr, &mut out_w, &mut out_h,
+            )
+        };
+        if rc != 0 || out_ptr.is_null() { return None; }
+        let n = (out_w as usize) * (out_h as usize) * 3;
+        let data = unsafe { std::slice::from_raw_parts(out_ptr, n) }.to_vec();
+        unsafe { crispembed_sys::crispembed_esrgan_sr_free_image(out_ptr) };
+        Some((data, out_w, out_h))
+    }
+}
+
+impl Drop for CrispEsrganSr {
+    fn drop(&mut self) {
+        if !self.ctx.is_null() {
+            unsafe { crispembed_sys::crispembed_esrgan_sr_free(self.ctx) };
+        }
+    }
+}

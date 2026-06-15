@@ -2231,6 +2231,122 @@ class CrispSafmnSr {
 }
 
 // ---------------------------------------------------------------------------
+// Real-ESRGAN Super-Resolution (SRVGGNetCompact, 620K params)
+// ---------------------------------------------------------------------------
+
+/// Result from Real-ESRGAN super-resolution.
+class EsrganSrResult {
+  final Uint8List pixels;
+  final int width;
+  final int height;
+
+  const EsrganSrResult({
+    required this.pixels,
+    required this.width,
+    required this.height,
+  });
+}
+
+/// Real-ESRGAN super-resolution model — SRVGGNetCompact whole-image upscaling.
+class CrispEsrganSr {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedEsrganSrFreeDart _freeFn;
+  late final CrispembedEsrganSrScaleDart _scaleFn;
+  late final CrispembedEsrganSrProcessDart _processFn;
+  late final CrispembedEsrganSrFreeImageDart _freeImageFn;
+
+  CrispEsrganSr(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedEsrganSrInitNative, CrispembedEsrganSrInitDart>(
+            'crispembed_esrgan_sr_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load Real-ESRGAN SR model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _freeFn = _lib.lookupFunction<CrispembedEsrganSrFreeNative,
+        CrispembedEsrganSrFreeDart>('crispembed_esrgan_sr_free');
+    _scaleFn = _lib.lookupFunction<CrispembedEsrganSrScaleNative,
+        CrispembedEsrganSrScaleDart>('crispembed_esrgan_sr_scale');
+    _processFn = _lib.lookupFunction<CrispembedEsrganSrProcessNative,
+        CrispembedEsrganSrProcessDart>('crispembed_esrgan_sr_process');
+    _freeImageFn = _lib.lookupFunction<CrispembedEsrganSrFreeImageNative,
+        CrispembedEsrganSrFreeImageDart>('crispembed_esrgan_sr_free_image');
+  }
+
+  int get scale {
+    _checkDisposed();
+    return _scaleFn(_ctx);
+  }
+
+  EsrganSrResult process(
+    Uint8List pixels,
+    int width,
+    int height, {
+    int tileSize = 0,
+    int tileOverlap = 0,
+  }) {
+    _checkDisposed();
+    if (pixels.length != width * height * 3) {
+      throw ArgumentError(
+          'pixels.length (${pixels.length}) must equal width * height * 3 (${width * height * 3})');
+    }
+
+    final pxNative = calloc<Uint8>(pixels.length);
+    pxNative.asTypedList(pixels.length).setAll(0, pixels);
+
+    final outPxPtr = calloc<Pointer<Uint8>>();
+    final outW = calloc<Int32>();
+    final outH = calloc<Int32>();
+
+    try {
+      final rc = _processFn(
+          _ctx, pxNative, width, height, tileSize, tileOverlap,
+          outPxPtr, outW, outH);
+
+      if (rc != 0 || outPxPtr.value.address == 0) {
+        throw Exception('Real-ESRGAN SR process failed (rc=$rc)');
+      }
+
+      final ow = outW.value;
+      final oh = outH.value;
+      final resultPixels =
+          Uint8List.fromList(outPxPtr.value.asTypedList(ow * oh * 3));
+      _freeImageFn(outPxPtr.value);
+
+      return EsrganSrResult(pixels: resultPixels, width: ow, height: oh);
+    } finally {
+      calloc.free(pxNative);
+      calloc.free(outPxPtr);
+      calloc.free(outW);
+      calloc.free(outH);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispEsrganSr has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // TBSRN Super-Resolution (always 2×, 16×64 → 32×128)
 // ---------------------------------------------------------------------------
 
