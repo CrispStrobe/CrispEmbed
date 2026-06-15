@@ -1539,12 +1539,24 @@ class CrispOcrOrchestrator {
   ///
   /// [detModelPath] — text detection GGUF (DBNet / Surya).
   /// [recModelPath] — text recognition GGUF (TrOCR / VLM).
+  /// [router] — enable source-type classification (screenshot/scan/photo).
+  /// [cleanup] — enable scan cleanup (deskew, crop, whiten).
   /// [minChars] — accept-gate minimum text yield.
   /// [minConfidence] — accept-gate confidence floor.
+  /// [nafnetModel] — optional NAFNet GGUF for tier-2 learned denoise.
+  /// [vlmModel] — optional VLM GGUF for escalation fallback.
+  /// [vlmEngine] — VLM engine: 0=GOT, 1=GLM, 2=Qwen2-VL, 3=InternVL2.
+  /// [punctModel] — optional punctuation restoration model GGUF.
   CrispOcrOrchestrator(String detModelPath, String recModelPath,
       {int nThreads = 4,
+      bool router = true,
+      bool cleanup = true,
       int minChars = 8,
       double minConfidence = 0.5,
+      String? nafnetModel,
+      String? vlmModel,
+      int vlmEngine = 0,
+      String? punctModel,
       String? libPath}) {
     _lib = _openNativeLib(libPath);
 
@@ -1555,28 +1567,48 @@ class CrispOcrOrchestrator {
     _runFn = _lib.lookupFunction<CrispembedOcrPipelineRunNative,
         CrispembedOcrPipelineRunDart>('crispembed_ocr_pipeline_run');
 
-    // Build params struct: 4 ints + 1 float + 4 pointers + 1 int = 72 bytes on 64-bit
-    // Match the C struct layout of crispembed_ocr_pipeline_params
-    final paramsSize = 4 * 4 + 4 + 5 * sizeOf<Pointer>(); // approximate
+    // Build crispembed_ocr_pipeline_params struct.
+    // Layout (64-bit): 3×int32 + 1×float + 5×pointer + 1×int32 + 1×pointer
+    //   router(4) + cleanup_enabled(4) + min_chars(4) + min_confidence(4)
+    //   + det_model(8) + rec_model(8) + nafnet_model(8) + vlm_model(8)
+    //   + vlm_engine(4) + pad(4) + punct_model(8)
+    // Total: 64 bytes on 64-bit (with alignment padding)
+    final ptrSize = sizeOf<Pointer>();
+    // Use a generous allocation and write at known offsets
+    final paramsSize = 16 + 4 * ptrSize + 4 + (ptrSize - 4) + ptrSize;
     final params = calloc<Uint8>(paramsSize);
-    final ints = params.cast<Int32>();
-    ints[0] = 1; // router
-    ints[1] = 1; // cleanup_enabled
-    ints[2] = minChars; // min_chars
-    final floats = params.cast<Uint8>().elementAt(12).cast<Float>();
-    floats[0] = minConfidence;
-    // Model pointers at offset 16
-    final ptrs = params.cast<Uint8>().elementAt(16).cast<Pointer<Utf8>>();
+
+    // Ints at byte 0, 4, 8
+    params.cast<Int32>()[0] = router ? 1 : 0;
+    params.cast<Int32>()[1] = cleanup ? 1 : 0;
+    params.cast<Int32>()[2] = minChars;
+    // Float at byte 12
+    params.elementAt(12).cast<Float>()[0] = minConfidence;
+    // Pointers at byte 16 (aligned)
+    final ptrBase = params.elementAt(16).cast<Pointer<Utf8>>();
     final detPtr = detModelPath.toNativeUtf8();
     final recPtr = recModelPath.toNativeUtf8();
-    ptrs[0] = detPtr;
-    ptrs[1] = recPtr;
-    // nafnet, vlm: null (already zeroed by calloc)
+    final nafPtr = nafnetModel != null ? nafnetModel.toNativeUtf8() : nullptr.cast<Utf8>();
+    final vlmPtr = vlmModel != null ? vlmModel.toNativeUtf8() : nullptr.cast<Utf8>();
+    ptrBase[0] = detPtr;      // det_model
+    ptrBase[1] = recPtr;      // rec_model
+    ptrBase[2] = nafPtr;      // nafnet_model
+    ptrBase[3] = vlmPtr;      // vlm_model
+    // vlm_engine at byte 16 + 4*ptrSize
+    final vlmEngOff = 16 + 4 * ptrSize;
+    params.elementAt(vlmEngOff).cast<Int32>()[0] = vlmEngine;
+    // punct_model pointer at next aligned offset
+    final punctOff = vlmEngOff + ptrSize; // aligned to pointer size
+    final punctPtr = punctModel != null ? punctModel.toNativeUtf8() : nullptr.cast<Utf8>();
+    params.elementAt(punctOff).cast<Pointer<Utf8>>()[0] = punctPtr;
 
     _ctx = initFn(params.cast<Void>(), nThreads);
 
     calloc.free(detPtr);
     calloc.free(recPtr);
+    if (nafnetModel != null) calloc.free(nafPtr);
+    if (vlmModel != null) calloc.free(vlmPtr);
+    if (punctModel != null) calloc.free(punctPtr);
     calloc.free(params);
 
     if (_ctx == nullptr) {
