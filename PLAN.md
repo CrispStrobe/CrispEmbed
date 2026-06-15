@@ -16,7 +16,7 @@ with a single `crispembed` binary + C library that:
 5. Supports Q4_K / Q5_K / Q6_K / Q8_0 / F16 / F32 quantisation
 6. Exposes a C API, CLI, HTTP server, Python, Rust, and Dart wrappers
 
-## Architecture (v0.8.0)
+## Architecture (v0.7.0)
 
 ```
 Input text / image / audio
@@ -58,53 +58,40 @@ Input text / image / audio
     ├─► Math  ──► BTTR: DenseNet + Transformer decoder (bttr_ocr.cpp)
     │               Handwritten math → LaTeX (CROHME 2014, 53% exact match)
     │
-    ├─► Math  ──► PosFormer: DenseNet + Transformer + ARM (posformer_ocr.cpp)
-    │               Handwritten math → LaTeX (CROHME 2014, 57% exact match)
+    ├─► Math  ──► PosFormer: BTTR + ARM coverage (posformer_ocr.cpp)
+    │               Handwritten math → LaTeX (CROHME, improved over BTTR)
     │
-    ├─► Math  ──► MixTex: Swin-Tiny + RoBERTa decoder (mixtex_ocr.cpp)
-    │               Chinese+English math → LaTeX (86M, Apache-2.0)
+    ├─► Math  ──► MixTex: Swin-Tiny + RoBERTa (mixtex_ocr.cpp)
+    │               Chinese+English LaTeX OCR (25681 BPE vocab)
     │
     ├─► Math  ──► PP-FormulaNet-S: HGNetv2 + MBart (ppformulanet_ocr.cpp)
-    │               Printed math → LaTeX (20M, AGPL-3.0 distill)
+    │               57M params, 384×384 input
     │
     ├─► Math  ──► PP-FormulaNet-L: SAM-ViT + MBart (ppformulanet_l_ocr.cpp)
-    │               Printed math → LaTeX (181M, Apache-2.0)
+    │               181M params, 768×768 input
     │
-    ├─► OCR   ──► InternVL2.5: InternViT-300M + InternLM2.5-1.8B (internvl2_ocr.cpp)
-    │               2.1B VLM OCR, EN+DE, KV cache, dynamic tiling, OCRBench ~830
+    ├─► OCR   ──► DBNet + TrOCR pipeline (ocr_pipeline.cpp)
+    │               Text detection → recognition → reading-order sort
     │
-    ├─► OCR   ──► GOT-OCR2: SAM ViT-B + Qwen2-0.5B (got_ocr.cpp)
-    │               Document OCR (0.7B, Apache-2.0, text+LaTeX+tables)
+    ├─► OCR   ──► Surya-OCR-2 detector (surya_det.cpp)
+    │               EfficientViT + SegFormer, 38M, 91 languages
     │
-    ├─► OCR   ──► GLM-OCR: CogViT + GLM-0.5B (glm_ocr.cpp)
-    │               Document OCR (0.9B, MIT, OmniDocBench #1, 8 langs)
+    ├─► OCR   ──► Qwen2.5-VL (qwen2vl_ocr.cpp)
+    │               3B VLM, German business document OCR
     │
-    ├─► OCR   ──► Qwen2.5-VL: 32L ViT + Qwen2.5 LLM (qwen2vl_ocr.cpp)
-    │               German/multilingual VLM OCR (3.6B, Apache-2.0)
+    ├─► Layout ─► RT-DETRv2 docling-heron (layout_detect.cpp)
+    │               ResNet-50 + deformable xattn, 17 document classes
     │
-    ├─► Scene ──► PARSeq: ViT + 1-layer two-stream decoder (parseq_ocr.cpp)
-    │               Scene text recognition, 94-char ASCII, 24M (base) / 6M (tiny)
+    │   ── PLANNED ──
     │
-    ├─► Layout──► RT-DETRv2: ResNet-50 + deformable decoder (layout_detect.cpp)
-    │               Document layout analysis, 17 classes (42M, Apache-2.0)
-    │
-    ├─► TextDet─► Surya: EfficientViT segformer (surya_det.cpp)
-    │               Text line detection, 91 languages (38M, OpenRail-M)
-    │
-    ├─► Cleanup─► Scan cleanup: classical + NAFNet U-Net (scan_cleanup.cpp)
-    │               Deskew, crop, whiten (tier 1) + learned denoise (tier 2)
-    │
-    ├─► OCR   ──► Tesseract LSTM: VGSL line recognizer (tesseract_lstm.cpp)
-    │               Conv stacking + LSTM stack + CTC decode, 126 languages
-    │               ~3 MB Q4_K per language, from .traineddata via converter
-    │
-    └─► Text  ──► GLiNER NER: dual-backbone span matching (gliner_ner.cpp)
-                    Zero-shot NER with two backbone options:
-                    • LFM2.5-bi (BPE → ShortConv+GQA → layer fusion → BiLSTM)
-                    • DeBERTa-v3 (SPM → disentangled attn → 768→512 proj → BiLSTM)
+    ├─► OCR   ──► PARSeq (24M, MIT) — fast text-line recognition EN+DE
+    ├─► OCR   ──► InternVL2.5-2B (2.1B, MIT) — OCRBench ~830, EN+DE
+    ├─► OCR   ──► InternVL2-1B (0.9B, MIT) — edge/WASM OCR
+    ├─► OCR   ──► Granite Vision 3.3-2B (3B, Apache) — OCRBench 852
+    └─► OCR   ──► H2OVL-Mississippi-2B (2.1B, Apache) — OCRBench 782
 ```
 
-## Supported architectures (v0.8.0)
+## Supported architectures (v0.7.0)
 
 | Architecture | Tokenizer | Key features | Example models |
 |---|---|---|---|
@@ -122,25 +109,18 @@ Input text / image / audio
 | ViT (SigLIP/CLIP) | — | Conv2D patch embed, CLS/mean/attn pool | siglip-base, clip-vit-base |
 | CLIP text | CLIP BPE | Pre-LN, causal mask, EOS pool | clip-text-base/large |
 | CNN (SCRFD/YuNet) | — | FPN, anchor decode, NMS | scrfd-det-10g, yunet |
-| LFM2.5 bidirectional | GPT-2 BPE | ShortConv+GQA, RoPE, SwiGLU, BiLSTM, GLiNER head | gliner-lfm (NER) |
-| DeBERTa-v3 + GLiNER | SentencePiece | Disentangled c2c/c2p/p2c attn, 768→512 proj, BiLSTM, markerV0 | gliner-deberta (NER, Apache-2.0) |
 | CNN (ArcFace) | — | ResNet-100, 512-D L2 | w600k_r50, auraface-v1, sface |
 | DeiT+TrOCR | — | ggml graph encoder + decoder | pix2tex-mfr |
 | HMER | — | DenseNet-121 + GRU attention | hmer (handwritten math) |
 | BTTR | — | DenseNet + Transformer decoder | bttr (handwritten math) |
-| InternVL2.5 | SentencePiece BPE | InternViT-300M + pixel unshuffle + InternLM2.5-1.8B (GQA 16/8, SwiGLU, KV cache) | internvl2.5-2b (VLM OCR) |
-| PosFormer | — | DenseNet encoder + 3-layer Transformer decoder + ARM coverage attention | posformer (handwritten math) |
-| MixTex (Swin+RoBERTa) | BPE | Swin-Tiny encoder (shifted windows, RPB) + 4-layer RoBERTa decoder with cross-attn | mixtex-zhen (CN+EN LaTeX) |
-| PP-FormulaNet-S | — | HGNetv2 CNN encoder + 2-layer MBart decoder, Conv-BN folded | texo-distill (printed math) |
-| PP-FormulaNet-L | — | SAM-ViT encoder (windowed+global, decomposed RPE) + 8-layer MBart decoder | ppformulanet-l (printed math) |
-| GOT-OCR2 | GPT-2 BPE | SAM ViT-B (windowed+global, decomposed RPE) + Qwen2-0.5B (24L, MHA) | got-ocr2 (document OCR) |
-| GLM-OCR | SentencePiece BPE | CogViT-24L + Conv2D downsample + merger + GLM-0.5B (16L, GQA 16/8) | glm-ocr (document OCR) |
-| Qwen2.5-VL | GPT-2 BPE | 32L ViT (1280d) + spatial merger + 36L Qwen2.5 (2048d, GQA 16/2, mRoPE) | qwen2.5-vl-3b (VLM OCR) |
-| RT-DETRv2 | — | ResNet-50 + HybridEncoder (AIFI+FPN) + 6-layer deformable decoder, 300 queries | layout-heron (layout detection) |
-| Surya detector | — | EfficientViT-Large segformer, LiteMLA linear attention, SegFormer decode head | surya-det (text detection) |
-| PARSeq | — (char-level) | ViT-12L encoder + 1-layer two-stream decoder, GELU, 94-char ASCII | parseq (scene text) |
-| NAFNet | — | U-Net with NAFBlocks (SimpleGate + SCA), enc=[2,2,4,8], mid=12, dec=[2,2,2,2] | nafnet-denoise (scan cleanup) |
-| Tesseract LSTM | — (unicharset) | VGSL: Conv stacking + FC+tanh + MaxPool + SummLSTM + LSTMs + Softmax + CTC | tesseract-eng (line OCR, 126 langs) |
+| PosFormer | — | DenseNet + Transformer + ARM | posformer (handwritten math) |
+| MixTex | BPE (25681) | Swin-Tiny + RoBERTa 4L decoder | mixtex (CN+EN LaTeX) |
+| PP-FormulaNet-S | BPE (50000) | HGNetv2 CNN + MBart 2L decoder | ppformulanet (57M) |
+| PP-FormulaNet-L | BPE (50000) | SAM-ViT + MBart 8L decoder | ppformulanet-l (181M) |
+| DBNet | — | ResNet-18 + FPN + DB head | text detection (12M) |
+| Surya-Det | — | EfficientViT + SegFormer | surya-ocr-2 detector (38M, 91 langs) |
+| RT-DETRv2 | — | ResNet-50 + deformable xattn | layout-heron (17 classes) |
+| Qwen2.5-VL | tiktoken | ViT-32L + spatial merger + Qwen2.5 LLM | german-ocr-3 (3B) |
 
 ## Shared code with CrispASR
 
@@ -148,8 +128,6 @@ Input text / image / audio
 |-----------|--------|-------------|
 | ggml | submodule | identical |
 | GGUF loader | src/core/gguf_loader.{h,cpp} | copy |
-| FireRedPunc | src/fireredpunc.{h,cpp} | copy (TODO: crisp_punc/ shared lib) |
-| PCS | src/pcs.{h,cpp} | copy (TODO: crisp_punc/ shared lib) |
 | Attention helper | src/core/attention.h | copy (header-only) |
 | FFN helper | src/core/ffn.h | copy (header-only) |
 | httplib.h | examples/server/ | copy |
@@ -179,24 +157,6 @@ CrispEmbed/
 │   ├── math_ocr.{h,cpp}        DeiT+TrOCR printed math OCR
 │   ├── hmer_ocr.{h,cpp}        HMER handwritten math OCR
 │   ├── bttr_ocr.{h,cpp}        BTTR handwritten math OCR
-│   ├── posformer_ocr.{h,cpp}   PosFormer handwritten math OCR (ARM)
-│   ├── mixtex_ocr.{h,cpp}      MixTex CN+EN LaTeX OCR (Swin+RoBERTa)
-│   ├── ppformulanet_ocr.{h,cpp}  PP-FormulaNet-S printed math OCR
-│   ├── ppformulanet_l_ocr.{h,cpp} PP-FormulaNet-L printed math OCR
-│   ├── internvl2_ocr.{h,cpp}   InternVL2.5-2B VLM OCR (KV cache)
-│   ├── got_ocr.{h,cpp}         GOT-OCR2 document OCR (SAM+Qwen2)
-│   ├── glm_ocr.{h,cpp}         GLM-OCR document OCR (CogViT+GLM)
-│   ├── qwen2vl_ocr.{h,cpp}     Qwen2.5-VL VLM OCR (ViT+Qwen2.5)
-│   ├── parseq_ocr.{h,cpp}      PARSeq scene text OCR (ViT + 2-stream decoder)
-│   ├── layout_detect.{h,cpp}   RT-DETRv2 document layout detection
-│   ├── surya_det.{h,cpp}       Surya text line detection (EfficientViT)
-│   ├── gliner_ner.{h,cpp}      GLiNER zero-shot NER (LFM2.5/DeBERTa-v3)
-│   ├── scan_cleanup.{h,cpp}   document scan preprocessing (tier 1 + 2)
-│   ├── nafnet_denoise.{h,cpp}  NAFNet U-Net denoising CNN (tier 2)
-│   ├── tesseract_lstm.{h,cpp}  Tesseract LSTM line OCR (VGSL + CTC)
-│   ├── fireredpunc.{h,cpp}    FireRedPunc punctuation restoration (BERT)
-│   ├── pcs.{h,cpp}            PCS punct+caps+segmentation (XLM-R)
-│   ├── ocr_orchestrator.{h,cpp} Multi-stage OCR pipeline orchestrator
 │   ├── tokenizer.h             WordPiece + SentencePiece + BPE
 │   ├── tokenizer_bpe.cpp       GPT-2 byte-level BPE
 │   ├── model_mgr.{h,cpp}       registry + auto-download
@@ -212,20 +172,6 @@ CrispEmbed/
 │   ├── convert-face-to-gguf.py
 │   ├── convert-hmer-to-gguf.py
 │   ├── convert-bttr-to-gguf.py
-│   ├── convert-posformer-to-gguf.py
-│   ├── convert-mixtex-to-gguf.py
-│   ├── convert-ppformulanet-to-gguf.py
-│   ├── convert-ppformulanet-l-to-gguf.py
-│   ├── convert-internvl2-to-gguf.py
-│   ├── convert-got-ocr-to-gguf.py
-│   ├── convert-glm-ocr-to-gguf.py
-│   ├── convert-qwen2vl-to-gguf.py
-│   ├── convert-parseq-to-gguf.py
-│   ├── convert-surya-det-to-gguf.py
-│   ├── convert-gliner-lfm-to-gguf.py
-│   ├── convert-gliner-deberta-to-gguf.py
-│   ├── convert-nafnet-to-gguf.py
-│   ├── convert-tesseract-to-gguf.py
 │   └── upload_to_hf.py
 ├── python/crispembed/          ctypes wrapper
 ├── crispembed-sys/             Rust FFI bindings
@@ -237,117 +183,126 @@ CrispEmbed/
 
 ## Pending roadmap
 
-### Remaining work (prioritised)
+### Performance
 
-#### Bugs / polish
+- [x] True batched graph for decoder models (single compute for N texts, block-diagonal causal mask, ~3x speedup)
+- [ ] KV cache for prefix-shared decoder batches
+- [x] SigLIP attention pooling head (mean pool works; attn pool for full parity)
 
-- [x] **Layout detection decoder** — full parity achieved (7/7 detections match
-  Python ONNX reference to 3 decimal places, all 6 decoder layers cos_min=1.0).
-  14 bugs found and fixed total. Q8_0 model uploaded to HuggingFace.
-- [x] **Surya detector GPU** — `surya_det.cpp` now uses `ggml_backend_init_best()`
-  (`SURYA_DET_FORCE_CPU=1` pins CPU for parity debugging). Metal verified on M1:
-  F16/Q8_0 run on the GPU, heatmap parity vs CPU to ~3 decimals (sub-pixel box
-  drift from F16 matmul accumulation). CUDA build works on Kaggle P100
-  (GGML_CUDA_NO_VMM=ON): Q8_0+F16 both detect 17 regions correctly.
+### Models
 
-#### Scan cleanup / document preprocessing
+- [x] CLIP text encoder (causal mask variant)
+- [x] SigLIP-large, CLIP-large conversion + upload
+- [x] SigLIP / ViT quantization (conv2d needs F32 kernel — selective quant)
+- [x] YuNet lightweight face detection alternative
+- [x] SFace INT8 quantization (Q8_0 cos=0.9999, Q4_K cos=0.974; 37→10→6 MB)
+- [x] Face model quantized inference via graph replayer (YuNet F16/Q8_0 working; fixed depthwise IC, ggml_n_dims trailing-1s, Q→F32 dequant path)
+- [x] ViT parity: cos 0.8→1.0 (was patch ordering bug — permute(2,1,0) gave column-major spatial, fixed to permute(1,2,0,3) for row-major matching HF)
+- [x] Nomic v2 MoE (MoE routing layer in encoder) — cos=1.000000 vs HF
+- [x] LoRA adapter hot-swap (Jina v5 per-task adapters, pre-compute merge on CPU, ~10-50ms switch)
 
-- [x] **Tier 1 — Classical (no model needed)**
-  - [x] Deskew via Hough transform on Sobel edges + bilinear rotation
-  - [x] Otsu global + Sauvola adaptive binarization (integral image)
-  - [x] Border crop via row/column energy projection
-  - [x] Background whitening via morphological open (min-pool→max-pool, divide)
-- [x] **Tier 2 — Learned denoising CNN (NAFNet, MIT)**
-  - [x] NAFNet-SIDD-width32 (29M params, 56 MB F16 GGUF) — pre-trained on SIDD
-  - [x] Converter: `models/convert-nafnet-to-gguf.py` (F16/F32)
-  - [x] Engine: `src/nafnet_denoise.{h,cpp}` — CPU-scalar U-Net forward pass
-  - [x] Integrated into scan_cleanup pipeline (loads when model_path provided)
-- [x] Wire into OCR pipeline as preprocessing step (`--cleanup` before `--ocr`)
-- [x] C API: `crispembed_scan_cleanup_init/process/free`
-- [x] CLI: `--cleanup` flag before `--ocr`, `--cleanup-only FILE` standalone
-- [x] Server: `POST /scan/cleanup` endpoint (always available, no model)
-- [x] Python: `CrispScanCleanup` class with `.process()` (file/PIL/numpy)
+### OCR — next-gen models to port
 
-#### OCR models — remaining
+#### Specialized detection + recognition (lightweight pipeline models)
 
-- [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL-2B fine-tune
-- [ ] Granite Vision 3.3-2B (3B, Apache-2.0) — OCRBench 852
-- [ ] Granite-Docling-258M (258M, Apache-2.0) — SigLIP2 + Granite-165M, document
-  conversion (layout + OCR + tables + equations), DocTags output → Markdown/HTML.
-  Smallest VLM, GGUF available via llama.cpp. ibm-granite/granite-docling-258M
+- [~] surya-ocr-2 (0.7B, OpenRail-M free <$5M) — detector ported, FULL PARITY VERIFIED (heatmap max+mean exact match)
+- [ ] **PARSeq (24M, MIT)** — ViT encoder + Transformer decoder, 96% avg on 7 EN scene-text benchmarks, best accuracy/size ratio for text-line recognition. Multilingual via docTR variant (Latin scripts incl. German). Pure transformer — all ops battle-tested in GGML. Would replace TrOCR in ocr_pipeline for 3-14x smaller model.
+- [ ] GLM-OCR (0.9B, MIT) — CogViT + GLM-0.5B, 8 languages, GGUF already exists at ggml-org/GLM-OCR-GGUF
+- [ ] GOT-OCR2_0 (0.7B, Apache-2.0) — SAM-ViT + Qwen-0.5B, end-to-end doc OCR (math+tables+text), trust_remote_code
 
-#### Tesseract LSTM — DONE (see HISTORY.md)
+#### VLM-based OCR (OCRBench-ranked, document understanding)
 
-Converter, C++ engine, Python reference, 12 language GGUFs, parity tests.
+- [x] **Keyven/german-ocr-3 — Qwen2.5-VL base engine DONE** (see blueprint below)
+- [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL, German business docs → structured JSON
+- [ ] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL fine-tune, 12+ languages incl. German, GGUF exists
+- [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics
+- [ ] **InternVL2.5-2B (~2.1B, MIT)** — InternViT-300M-448px + pixel unshuffle (4:1) + MLP projector + InternLM2.5-1.8B. Dynamic resolution via 448px tiling (1-12 tiles). Multilingual (EN+DE). OCRBench ~830. **Already in llama.cpp** (InternVL2.5 1B+4B confirmed). Port path: adapt llama.cpp InternVL graph or write native engine. Smallest competitive VLM for OCR.
+- [ ] **InternVL2-1B (~0.9B, MIT)** — InternViT-300M-448px + MLP projector + Qwen2-0.5B. OCRBench 779. Tiniest VLM option (0.9B total, quantizes to ~500MB Q4_K). Same InternVL arch as 2.5-2B. **Already in llama.cpp**. Best for WASM/mobile/edge OCR.
+- [ ] **InternVL2.5-2B vs InternVL3-2B** — InternVL3-2B also confirmed in llama.cpp. Evaluate which scores higher on OCRBench before porting.
+- [ ] **Granite Vision 3.3-2B (~3B, Apache-2.0)** — SigLIP2-400M + 2-layer MLP (GELU) + Granite-3.1-2B (128k ctx). LLaVA-style arch. OCRBench 852 (highest in class). English-only. SigLIP2 is standard ViT (already have SigLIP v1 in vit_embed.cpp). Largest at 3B but highest score.
+- [ ] **H2OVL-Mississippi-2B (~2.1B, Apache-2.0)** — InternVL-based arch + H2O-Danube-1.8B LLM. OCRBench 782. Trained on 17M image-text pairs. Same vision pipeline as InternVL, different LLM backbone. Port after InternVL2.5-2B (shares vision encoder).
 
-#### Punctuation restoration — DONE (see HISTORY.md)
+#### OCRBench leaderboard reference (small VLMs, ≤3B)
 
-FireRedPunc + PCS from CrispASR, CLI + C API + orchestrator.
-- [ ] **Refactor into shared `crisp_punc/` library** (avoid drift with CrispASR).
-- [ ] Debug PCS tensor-bounds assert on quantized models.
+| Rank | Model | LLM | Params | OCRBench | License | llama.cpp | Priority |
+|------|-------|-----|--------|----------|---------|-----------|----------|
+| 1 | Granite Vision 3.3-2B | Granite-3.1-2B | 3B | 852 | Apache-2.0 | Not yet | Medium (EN-only) |
+| 2 | InternVL2.5-2B* | InternLM2.5-1.8B | 2.1B | ~830 | MIT | **Yes** | **High** |
+| 3 | MiniMonkey | InternLM2-1.8B | ~2B | 806 | — | No | Low |
+| 4 | H2OVL-Mississippi-2B | H2O-Danube-1.8B | 2.1B | 782 | Apache-2.0 | No | Medium |
+| 5 | InternVL2-1B | Qwen2-0.5B | 0.9B | 779 | MIT | **Yes** | **High (edge)** |
+| 6 | InternVL2-4B | Phi-3-mini | ~4B | 776 | MIT | Yes | Low (too big) |
+| 7 | H2OVL-Mississippi-0.8B | H2O-Danube3-0.5B | 0.8B | 751 | Apache-2.0 | No | Medium (tiny) |
 
-#### Orchestrator — DONE (see HISTORY.md)
+*InternVL2.5-2B not on original leaderboard slice but scores higher than InternVL2-2B (768).
 
-Full wiring: server, Python, Dart, Rust. Verbose logging. GOT-OCR2 GPU fix.
-- [ ] Orchestrator unit tests (classify / accept-gate / escalation).
-- [ ] Tunable source-type classifier thresholds (saturation, white fraction).
-- [ ] Runtime config updates without context reload.
+### Bindings
 
-#### Classical preprocessing — DONE (see HISTORY.md)
+- [x] Python wrapper `encode_image()` for standalone SigLIP/CLIP
+- [x] CrispFacePipeline export + from_registry() + Python unit tests + face_search example
+- [ ] CrispLens integration — update `crispembed_client.py` for face pipeline
 
-Leptonica cherry-picks: DWA morph (21x), CC detect (4ms), adaptive Otsu,
-deskew (3ms), despeckle, bg norm, page dewarp (10ms). 56 tests, all pass.
+### Feature gaps vs fastembed-rs
 
-#### OCR renderers — DONE (see HISTORY.md)
+| Gap | Impact | Effort | Notes |
+|---|---|---|---|
+| ~~Nomic v2 MoE~~ | ~~Low~~ | ~~High~~ | ~~MoE routing layer in encoder~~ DONE |
+| Qwen3-VL multimodal | Low | High | Reuse BidirLM-Omni scaffolding |
 
-Plain text, hOCR, ALTO 3.1, searchable PDF. 36 tests. CLI `--output-format`.
-- [ ] Searchable PDF with embedded page image (XObject).
+### Pending improvements
 
-#### Nice-to-have
+- [x] **Layout decoder → ggml graph** — Self-attention + FFN now use
+  ggml graph with BLAS-accelerated matmuls. Decoder: 16.4s → 8s (2x).
+  Total: 36s → 19.6s. Key fix: weight data must be transposed when
+  creating ggml input tensors (Gemm convention ↔ ggml mul_mat stride).
+  Cross-attention stays CPU scalar (deformable grid sampling).
 
-- [ ] CrispCalc Dart catalog entries for InternVL2 (`OcrModelVariant`)
-- [ ] Qwen3-VL multimodal (low priority, reuse BidirLM-Omni scaffolding)
+- [x] **PPFormulaNet-L: BLAS enabled, Q8_0 — 53s (was 60s)** — The 4 global
+  layers (2304² attention matrix = 5.3M per head × 12 heads) dominate
+  encoder time. Options: (a) use flash_attn_ext for memory efficiency,
+  (b) tile/block the computation to improve cache behavior,
+  (c) Q8_0 quantized attention for reduced bandwidth.
 
-### Completed (v0.8.0)
+- [x] **Upload layout-heron GGUFs to HuggingFace** — The Q8_0 model
+  (43 MB) exists at `/mnt/storage/models/layout-heron-q8_0.gguf` but
+  hasn't been published to `cstr/layout-heron-gguf`. Also need F16
+  variant and model card.
 
-#### Performance
-- [x] Batched decoder graph (~3x speedup)
-- [x] KV prefix sharing for batched decoder
-- [x] SigLIP attention pooling head
-- [x] Layout decoder → ggml graph (2x speedup)
-- [x] PPFormulaNet-L BLAS + Q8_0 (53s)
-- [x] Streaming ColBERT SSE (`POST /colbert/score`)
+- [x] **CrispCalc Dart catalog** — Add `OcrModelVariant` entries for
+  layout-heron (Q8_0, F16, F32) in `lib/engine/ocr_model_manager.dart`.
+  Register at appropriate priority tier in `ocr_providers_init.dart`.
 
-#### Models
-- [x] CLIP text + SigLIP-large + CLIP-large
-- [x] ViT quantization, YuNet, SFace/AuraFace quantization
-- [x] Face model quantized graph replay
-- [x] ViT parity fix (patch permute bug)
-- [x] Nomic v2 MoE encoder (cos=1.000)
-- [x] LoRA hot-swap + Jina v5 live-test (4 adapters cos >= 0.998)
-- [x] GLiNER DeBERTa-v3 NER (Apache-2.0)
-- [x] ColBERT MaxSim scoring (C API + server endpoint)
-- [x] BGE-M3 crash fix (clip_text guard)
-- [x] LoRA quantizer fix (preserve A/B at F16)
-- [x] Face pipeline Python wrapper
-- [x] Q8_0 layout model verified
-- [x] Layout-heron GGUFs uploaded to HuggingFace
-- [x] CrispCalc Dart catalog (layout-heron)
+- [ ] **Layout detection score gap** — Current: 0.934 vs HF 0.955.
+  Root cause: bilinear resize pixel differences (PIL vs custom C++)
+  cascading through 50+ backbone Conv layers. Fix: match PIL's exact
+  coordinate mapping or use stb_image_resize2 with matching filter.
 
-#### OCR — ported
-- [x] Qwen2.5-VL-3B (Keyven/german-ocr-3 base)
-- [x] InternVL2.5-2B (2.1B, MIT, cos=1.000)
-- [x] InternVL2-1B (0.9B, MIT) + C++ tokenizer encode
-- [x] PARSeq (24M, Apache-2.0, scene text)
-- [x] GLM-OCR (0.9B, MIT, OmniDocBench #1)
-- [x] GOT-OCR2 (0.7B, Apache-2.0, full parity)
-- [x] MixTex full E2E parity — cos=1.000000 encoder + decoder (6 bugs fixed)
-- [x] Nanonets-OCR-s (3B, Apache-2.0, Qwen2.5-VL fine-tune)
-- [x] PosFormer (handwritten math, DenseNet+Transformer+ARM, 57% CROHME, BSD-2)
-- [x] PP-FormulaNet-S/Texo-Distill (printed, HGNetv2+MBart 20M, AGPL-3.0 distill)
-- [x] PP-FormulaNet-L (printed, SAM-ViT+MBart 181M, Apache-2.0)
-- [x] Qari-OCR (2B, Apache-2.0, Arabic+diacritics, LoRA merged into Qwen2-VL-2B)
-- [x] Surya detector (parity verified, stb_image, Q8_0/Q4_K working)
+- [ ] **Verify Q8_0 layout model works** — The `ensure_f32` +
+  `read_f32` dequantization fixes are committed but untested due to
+  VPS load. Need to confirm no crash and measure Q8_0 vs F32 parity.
+
+- [ ] **KV cache for prefix-shared decoder batches** — When multiple texts
+  share a prompt prefix (e.g. Jina v5 instruction prefix), compute KV
+  for the shared prefix once and reuse across the batch.
+
+- [ ] **Streaming ColBERT late interaction scoring** — Server-side MaxSim
+  scoring via `/colbert/score` endpoint with SSE streaming.
+
+- [x] **Quantized GGUF for face models** — Quantizer now flattens 4D conv
+  weights to 2D before quantizing. SFace: Q8_0 cos=0.9996 (37→10 MB),
+  Q6_K cos=0.9966 (37→8 MB). Q4_K cos=0.936 (too low for recognition).
+  SCRFD detection: Q8_0 17→10 MB, Q4_K 17→8.7 MB.
+
+- [ ] **Live-test LoRA with Jina v5** — LoRA hot-swap is implemented but
+  not end-to-end tested with real Jina v5 adapters. Need to: convert with
+  `--lora-mode=separate`, verify each adapter (retrieval, classification,
+  clustering, text-matching) matches the baked version (cos >= 0.9999),
+  confirm switching works correctly, test with the Python wrapper.
+
+- [x] **3D tensor quantization for MoE experts** — DONE. Quantizer now
+  handles 3D tensors by quantizing each 2D slice independently. Results:
+  nomic-v2-moe Q8_0: 1122→487 MB (3.8x), Q4_K: 1095→352 MB (5.2x).
+  Quality: Q8_0 cos=0.9995, Q4_K cos=0.964 vs F32.
 
 ---
 
@@ -378,7 +333,7 @@ Block-diagonal F32 causal mask, per-text RoPE, last-token pooling. ~3x speedup.
 
 ---
 
-### Blueprint: KV cache for prefix-shared decoder batches — DONE
+### Blueprint: KV cache for prefix-shared decoder batches
 
 **Goal**: When N texts share a prompt prefix (e.g. Jina v5 instruction
 `"Retrieve semantically similar text.\nQuery: "`), compute KV for the
@@ -410,7 +365,7 @@ mechanics are well-understood from LLM inference.
 
 ---
 
-### Blueprint: Batched decoder improvements (F16 mask + Gemma3 NaN fix) — DONE
+### Blueprint: Batched decoder improvements (F16 mask + Gemma3 NaN fix)
 
 **Goal**: Two targeted fixes for the batched decoder path.
 
@@ -438,7 +393,7 @@ after the first layer and fall back to F32 compute for that batch.
 
 ---
 
-### Blueprint: Streaming ColBERT late interaction scoring — DONE
+### Blueprint: Streaming ColBERT late interaction scoring
 
 **Goal**: Add `/colbert/score` endpoint to the HTTP server for MaxSim
 scoring between a query's multi-vector embeddings and pre-stored document
@@ -473,7 +428,7 @@ the main engineering work.
 
 ---
 
-### Blueprint: WASM build target — DONE
+### Blueprint: WASM build target
 
 **Goal**: Compile CrispEmbed to WebAssembly for browser-based embedding.
 
@@ -512,7 +467,7 @@ target.
 
 ---
 
-### Blueprint: INT4 GGUF for face models — DONE
+### Blueprint: INT4 GGUF for face models
 
 **Goal**: Quantize Conv2D weights in face models (SCRFD, AuraFace, SFace)
 to Q4_K for 4x size reduction.
@@ -552,7 +507,7 @@ testing.
 
 ---
 
-### Blueprint: Live-test LoRA with Jina v5 — DONE
+### Blueprint: Live-test LoRA with Jina v5
 
 **Goal**: End-to-end verification that LoRA hot-swap works correctly with
 real Jina v5 adapters, not just unit tests.
@@ -582,7 +537,7 @@ jina-v5-small-lora.gguf`
 
 ---
 
-### Blueprint: 3D tensor quantization for MoE experts — DONE
+### Blueprint: 3D tensor quantization for MoE experts
 
 **Goal**: Extend `tools/quantize.cpp` to quantize 3D tensors (MoE expert
 weights) instead of copying them as F32.
@@ -624,16 +579,35 @@ per expert, which supports quantized weights. Should work.
 
 ---
 
-### Blueprint: Face pipeline Python wrapper — DONE
+### Blueprint: CrispLens face pipeline integration
 
-Implemented. `CrispFace` (detect/encode) and `CrispFacePipeline` (detect→align→encode,
-match, from_registry with defaults) fully wired in `python/crispembed/_binding.py`.
-Feature parity with CLI (`--face`, `--detect`, `--face-pipeline`) and server
-(`POST /face/detect`, `POST /face/pipeline`).
+**Goal**: Python API for face detection + recognition so CrispLens can
+call it for face search/verification.
+
+**Current state**: Face C API is complete (`crispembed.h` lines 408-475):
+`crispembed_detect_faces()`, `crispembed_encode_face()`,
+`crispembed_face_pipeline()`. Missing: Python wrapper.
+
+**Step 1 -- Python wrapper** (`python/crispembed/_binding.py`):
+- ctypes bindings for face functions.
+- `CrispFace` class: `detect(image_path)`, `encode(image_path, landmarks)`,
+  `pipeline(image_path)` returning dicts with bbox/confidence/embedding.
+
+**Step 2 -- High-level API** (`python/crispembed/__init__.py`):
+- `from crispembed import CrispFace`
+- `CrispFace.from_registry("yunet", "auraface-v1")` for auto-download.
+
+**Step 3 -- Example** (`examples/face_search.py`):
+- Index faces from a directory, query by image, return top-K matches.
+
+**Files**: `python/crispembed/_binding.py`, `python/crispembed/__init__.py`,
+`examples/face_search.py`
+
+**Effort**: Low (1-2 days). C API is already complete and tested.
 
 ---
 
-### Blueprint: surya-ocr-2 (full-page OCR, 91 languages) — DONE (Metal GPU on M1 + CUDA on Kaggle both working)
+### Blueprint: surya-ocr-2 (full-page OCR, 91 languages) — IN PROGRESS
 
 **Goal**: Port surya-ocr-2 for multilingual full-page OCR with text
 detection, recognition, and layout analysis.
@@ -676,24 +650,19 @@ GitHub: https://github.com/VikParuchuri/surya
 - [x] Heatmap → polygon post-processing (connected components + bbox)
 - [x] Move encoder to ggml graph — 13min→1min (13x). Stages 0-2 + block0: 17s via graph. LiteMLA + decode scalar.
 - [x] Upload GGUF to HuggingFace — https://huggingface.co/cstr/surya-det-GGUF (F32, F16, Q8_0, Q4_K)
-- [x] Q8_0/Q4_K crash fix — dequant Q→F32 before reshape in g_conv (ne[0] block alignment)
-- [x] GPU testing — Metal on M1 verified (`ggml_backend_init_best`). Stage 0-2
-  graph ~4.4s GPU vs ~5.9s CPU, stage-3 block0 ~0.75s vs ~0.94s; LiteMLA +
-  decode head remain CPU-scalar. F16 + Q8_0 both run, heatmap parity vs CPU to
-  ~3 decimals (sub-pixel box drift from F16 matmul accumulation). Weight reads
-  routed through `ggml_backend_tensor_get` so scalar paths work off GPU buffers.
-  CUDA build works on Kaggle P100 (GGML_CUDA_NO_VMM=ON to bypass the upstream
-  `CUDA::cuda_driver` link issue): Q8_0+F16 both detect 17 regions correctly.
-- [x] Image format support: PNG/JPG via stb_image done
+- [ ] CUDA/GPU testing via Kaggle kernel (P100/T4)
+- [ ] Image format support: test binaries need PNG/JPG via stb_image
 
-**GGUFs**: `cstr/surya-det-GGUF` — F32 (147 MB), F16 (73 MB), Q8_0 (41 MB), Q4_K (30 MB)
+**GGUFs**: `/mnt/storage/gguf-models/surya-det-{f32,f16}.gguf`
 
 **Files**: `src/surya_det.{h,cpp}`, `models/convert-surya-det-to-gguf.py`,
 `tools/dump_surya_det_reference.py`, `tests/test_surya_det{,_diff}.cpp`
 
+**Effort**: Medium remaining (3-4 days for parity + ggml graph + postproc).
+
 ---
 
-### Blueprint: MixTex ZhEn-Latex-OCR (86M, Apache-2.0) — DONE
+### Blueprint: MixTex ZhEn-Latex-OCR (86M, Apache-2.0) — IN PROGRESS
 
 **Goal**: Chinese+English math LaTeX OCR. Smallest new model, introduces
 Swin encoder as new building block.
@@ -714,20 +683,15 @@ Swin encoder as new building block.
    - BPE tokenizer, 25681 tokens (LaTeX + CJK)
    - max_position=300, greedy decode
 
-**Status** (2026-06-13):
+**Status** (2026-06-11):
 - [x] Reference dumper: `tools/dump_mixtex_reference.py`
 - [x] GGUF converter: `models/convert-mixtex-to-gguf.py` (345 tensors)
-- [x] GGUF files: F32=329MB, F16=165MB, Q8_0, Q4_K at `/mnt/storage/gguf-models/`
+- [x] GGUF files: F32=329MB, F16=165MB at `/mnt/storage/gguf-models/`
 - [x] C++ engine: `src/mixtex_ocr.{h,cpp}` — runs end-to-end, Swin+RoBERTa
-- [x] Parity test — cos=1.000000 on all encoder blocks (non-shifted + shifted)
+- [ ] Parity test (encoder parity vs Python reference)
 
 **Key new op**: Swin shifted-window attention with relative position bias.
-Pad → cyclic shift → window partition → local MHSA + RPB lookup → window reverse → reverse shift → unpad.
-
-**Bugs found and fixed** (3 bugs in shifted-window attention):
-1. Cyclic shift sign convention — `cyclic_shift(+s)` ≠ `torch.roll(-s)`, signs inverted
-2. Pad-then-shift order — HF pads FIRST then shifts; C++ was reversed
-3. GELU variant — tanh approximation → exact erf matching `nn.GELU()`
+Window partition → local MHSA + RPB lookup → window reverse → shift.
 
 **Files**: `tools/dump_mixtex_reference.py`, `models/convert-mixtex-to-gguf.py`
 
@@ -735,7 +699,7 @@ Pad → cyclic shift → window partition → local MHSA + RPB lookup → window
 
 ---
 
-### Blueprint: GLM-OCR (0.9B, MIT, GGUF exists) — DONE
+### Blueprint: GLM-OCR (0.9B, MIT, GGUF exists)
 
 **Goal**: Integrate GLM-OCR for general document OCR. GGUF already
 converted by ggml-org — may only need inference integration, not
@@ -758,70 +722,72 @@ re-converting.
 
 ---
 
-### Blueprint: GOT-OCR2 (0.7B, Apache-2.0) — DONE
+### Blueprint: GOT-OCR2_0 (0.7B, Apache-2.0)
 
-Implemented June 2026. Full parity on vision encoder (SAM ViT-B with
-windowed + global attention, decomposed RPE) + neck + downsample +
-projector + Qwen2-0.5B LLM decoder. All checkpoints cos ≥ 0.999.
+**Goal**: End-to-end document OCR that handles plain text, LaTeX math,
+tables, and formatted output in a single model.
 
-**Architecture**: SAM ViT-B (12L, 768d, window_size=14, global at
-[2,5,8,11]) → neck (Conv→LN2d→Conv→LN2d) → downsample (Conv 256→512→1024,
-stride 2) → Linear(1024,1024) projector → Qwen2-0.5B (24L, 1024d, MHA
-16/16, standard RoPE, SiLU SwiGLU) → autoregressive generation.
+**Source**: stepfun-ai/GOT-OCR2_0 (0.7B, Apache-2.0)
 
-**Key learnings**: Per-layer diff comparison must happen inside the layer
-loop (not after), since `hidden` is overwritten by each subsequent layer.
-Vision uses LayerNorm+GELU (not RMSNorm+SiLU). Windowed layers need CPU
-LN1 before partition, then pass both LN'd and original data into graph.
+**Architecture**: SAM-style ViT-B vision encoder (12 layers, 768-dim,
+16x16 patches, custom "Vary" backbone) + Qwen-0.5B causal LM decoder
+(24 layers, 1024-dim). tiktoken tokenizer. Requires `trust_remote_code`.
 
-**Files**: `src/got_ocr.{h,cpp}`, `models/convert-got-ocr-to-gguf.py`,
-`tools/dump_got_ocr_reference.py`, `tests/test_got_ocr_diff.cpp`
+**Reuse**: Qwen decoder path already in CrispEmbed. SAM-ViT encoder is
+similar to PPFormulaNet-L's encoder (already ported). Main new work is
+the vision-language connector and GOT-specific prompt templates.
 
----
+**Step 1 — Converter**: `models/convert-got-ocr-to-gguf.py`
+- Export vision encoder + connector + LM decoder.
+- Handle custom modeling code (GOTQwenForCausalLM).
 
-### Blueprint: Nanonets-OCR-s — DONE
+**Step 2 — C inference**: `src/got_ocr.{h,cpp}`
 
-Actual model: `nanonets/Nanonets-OCR-s` (Qwen2.5-VL-3B fine-tune, Apache-2.0,
-71K downloads). Same architecture as existing qwen2vl engine — no new code.
-Converted via Kaggle kernel (VPS too tight for 3B model).
-GGUFs at `cstr/nanonets-ocr-s-crispembed-GGUF` (F16/Q8_0/Q4_K).
-Registry entry: `nanonets-ocr-s`.
+**Files**: `src/got_ocr.{h,cpp}`, `models/convert-got-ocr-to-gguf.py`
+
+**Effort**: Medium (4-5 days). Custom vision backbone needs careful
+mapping; decoder side reuses existing Qwen3 path.
 
 ---
 
-### Blueprint: Qari-OCR (Arabic, 2B, Apache-2.0) — DONE
+### Blueprint: Nanonets-OCR2-1.5B (Apache-2.0)
 
-**Goal**: Arabic OCR with diacritics support (tashkeel).
+**Goal**: Multilingual document OCR (12+ languages incl. German).
+
+**Source**: nanonets/Nanonets-OCR2-1.5B-exp (1.5B, Apache-2.0)
+Fine-tune of Qwen2-VL-2B-Instruct.
+
+**Architecture**: Qwen2-VL vision encoder + Qwen2-VL language decoder.
+Standard Qwen2-VL architecture — well-supported in llama.cpp, GGUF
+already exists.
+
+**Approach**: Since this is a standard Qwen2-VL fine-tune with existing
+GGUF, integration may follow the same pattern as GLM-OCR — load
+existing GGUF and write native inference.
+
+**Files**: `src/nanonets_ocr.{h,cpp}` or reuse VLM dispatch
+
+**Effort**: Medium (3-4 days). Standard Qwen2-VL, well-documented.
+
+---
+
+### Blueprint: Qari-OCR (Arabic, 2B, Apache-2.0)
+
+**Goal**: Arabic OCR with diacritics support.
 
 **Source**: NAMAA-Space/Qari-OCR-0.2.2.1-VL-2B-Instruct (Apache-2.0)
-LoRA fine-tune of Qwen2-VL-2B-Instruct on 50K Arabic OCR samples.
-WER=0.221, CER=0.059, BLEU=0.597.
+Fine-tune of Qwen2-VL-2B-Instruct for Arabic text.
 
-**Architecture**: Same as existing `qwen2vl_ocr.cpp` — Qwen2-VL family.
-- LLM: 1536d, 28L, 12H/2KV, FFN=8960 (vs 3B's 2048d/36L/16H)
-- Vision: 1536d, 32L, 16H (vs 3B's 1280d)
-- Engine reads all dims from GGUF metadata — no code changes needed.
+**Note**: The published fine-tune was trained from a 4-bit quantized
+base (unsloth/bnb). For GGUF porting, may need to source fp16 weights
+or re-fine-tune from the full-precision Qwen2-VL base.
 
-**Conversion**: LoRA adapter (r=16, α=16, 324 pairs, 116 MB) merged into
-full-precision Qwen2-VL-2B-Instruct base. Merge is tensor-by-tensor
-(W' = W + scale * B @ A). Needs 16 GB RAM → Kaggle kernel.
-
-**Status**:
-- [x] Architecture compatibility verified (qwen2vl_ocr engine is parameterized)
-- [x] Kaggle conversion kernel written (`tools/kaggle/qari-ocr-convert/`)
-- [x] Registry entry added (`qari-ocr`)
-- [x] Run Kaggle kernel (merge + convert + quantize + upload)
-  - Fixed qwen2vl converter: Qwen2-VL uses embed_dim/mlp_ratio/in_chans (not intermediate_size/in_channels)
-  - GGUFs: F16 (4.7 GB), Q8_0 (2.3 GB), Q4_K (1.6 GB) at cstr/qari-ocr-crispembed-GGUF
-- [ ] Test on Arabic document images
-
-**Files**: `tools/kaggle/qari-ocr-convert/{kernel.py,kernel-metadata.json}`
-
-**Effort**: Low (1 day). No new C++ code — reuses qwen2vl_ocr engine.
+**Effort**: Medium (3-4 days). Same Qwen2-VL base as Nanonets — share
+infrastructure.
 
 ---
 
-### Blueprint: Keyven/german-ocr (German docs, Apache-2.0) — MERGED TO MAIN
+### Blueprint: Keyven/german-ocr (German docs, Apache-2.0) — IN PROGRESS
 
 **Goal**: German business document OCR with structured JSON output.
 
@@ -829,46 +795,31 @@ full-precision Qwen2-VL-2B-Instruct base. Merge is tensor-by-tensor
 fine-tune of this). Architecture: 32-layer ViT (1280d) + spatial merger
 (2×2→2048d) + 36-layer Qwen2.5 LLM (2048d, GQA 16/2, mRoPE).
 
-**Status (2026-06-12): Standalone CLI pipeline complete. Needs 16+ GB RAM.**
+**Status (2026-06-12):**
 
 | Step | Status | Notes |
 |------|--------|-------|
 | C++ inference engine | DONE | `src/qwen2vl_ocr.{h,cpp}` — vision + LLM + generation |
-| GGUF converter | DONE | `models/convert-qwen2vl-to-gguf.py` (lazy tensor, with tokenizer) |
+| GGUF converter | DONE | `models/convert-qwen2vl-to-gguf.py` (lazy tensor loading) |
 | Reference dumper | DONE | `tools/dump_qwen2vl_reference.py` (safetensors, ~600MB peak) |
 | Parity: vision encoder | DONE | 32/32 layers cos=1.000 |
 | Parity: spatial merger | DONE | cos=1.000, max_abs=6e-4 |
 | Parity: LLM decoder | DONE | 2/2 layers cos=1.000 with mRoPE |
 | E2E generation (Q4_K) | DONE | "Um die Rechnung im Bild als" — coherent German |
-| Quantization | DONE | Q8_0 (3.9GB), Q4_K (2.6GB, vision Q8_0 floor) |
+| Quantization | DONE | F16 (7.6GB), Q8_0 (3.9GB), Q4_K (2.6GB, vision Q8_0 floor) |
 | HuggingFace upload | DONE | `cstr/qwen2.5-vl-3b-crispembed-GGUF` (F16 + Q8_0 + Q4_K) |
-| Wire into C ABI | DONE | `crispembed.cpp` dispatch, arch="qwen2vl" auto-detect |
-| CLI + model registry | DONE | `model_mgr.cpp` entry, `--ocr` auto-dispatch |
-| Unit + smoke tests | DONE | `test_qwen2vl.cpp` 14/14 pass (unit + Q4K smoke) |
-| C++ image preprocessor | DONE | `image_preprocess.cpp` wired into recognize_raw() |
-| BPE tokenizer in C++ | DONE | Vocab+merges in GGUF, loaded at init, set_prompt() tokenizes |
-| GPT-2 byte decoder | DONE | Output is decoded UTF-8 text, not raw token IDs |
-| KV cache | DONE | Prefill extracts K/V, decode uses cache (O(1)/token) |
-| Load Keyven fine-tune | REVISED | german-ocr-3.1 is 2B (not 3B) — different LLM config, needs investigation |
-| Windowed ViT attention | TODO | Currently full attention all layers (correct but slower) |
+| Wire into C ABI | TODO | Add to `crispembed.cpp` dispatch |
+| CLI + model registry | TODO | Add to `model_mgr.cpp`, `--ocr` dispatch |
 | Python bindings | TODO | Wire via `CrispMathOcr` auto-dispatch |
 | CrispCalc catalog | TODO | `OcrModelVariant` entries |
-
-**Standalone CLI now works** (on machines with 16+ GB RAM):
-```
-crispembed --ocr qwen2vl-3b image.png
-# or with custom prompt:
-qwen2vl_ocr_set_prompt(ctx, "Extrahiere die Rechnung als JSON.");
-```
-The Q4_K model (2.6 GB) + ggml compute graph needs ~5 GB peak RAM.
-OOMs on 8 GB machines — use Kaggle (16 GB) or desktop for inference.
-
-**Next priority:** Load Keyven fine-tune weights + test on real invoices.
+| KV cache | TODO | O(n²)→O(n) per generated token |
+| C++ image preprocessor | TODO | Currently uses Python-generated patches |
+| Load Keyven fine-tune | TODO | Same architecture, just different weights |
 
 **GGUFs**: `cstr/qwen2.5-vl-3b-crispembed-GGUF` on HuggingFace:
-- `qwen2.5-vl-3b-f16.gguf` — 7.57 GiB (no tokenizer — needs re-convert)
-- `qwen2.5-vl-3b-q8_0.gguf` — 3.93 GiB (v2: with BPE tokenizer)
-- `qwen2.5-vl-3b-q4_k.gguf` — 2.61 GiB (v2: with BPE tokenizer)
+- `qwen2.5-vl-3b-f16.gguf` — 7.57 GiB
+- `qwen2.5-vl-3b-q8_0.gguf` — 3.93 GiB (2x compression)
+- `qwen2.5-vl-3b-q4_k.gguf` — 2.61 GiB (3x, vision Q8_0 preserved)
 
 **Key learnings:**
 - Vision weights need Q8_0 floor in quantizer (Q4_K degrades OCR)
@@ -877,418 +828,237 @@ OOMs on 8 GB machines — use Kaggle (16 GB) or desktop for inference.
 - mRoPE uses neghalf rotation with `GGML_ROPE_TYPE_MROPE`
 - Token splicing: `x = embed * keep_mask + image_patches`
 - `AutoConfig` varies by transformers version — read config.json directly
-- Kaggle: always use CrispASR kaggle_harness.py, don't pip install torch
 
 **Files**: `src/qwen2vl_ocr.{h,cpp}`, `models/convert-qwen2vl-to-gguf.py`,
 `tools/dump_qwen2vl_reference.py`, `tools/qwen2vl_tokenize.py`,
-`tests/test_qwen2vl{,_diff,_e2e}.cpp`, `tools/kaggle/qwen2vl-convert/`
+`tests/test_qwen2vl_diff.cpp`, `tests/test_qwen2vl_e2e.cpp`,
+`tools/kaggle/qwen2vl-convert/`
 
 ---
 
-### Blueprint: Scan cleanup / document preprocessing — DONE
+### Blueprint: PARSeq — Lightweight Text-Line Recognition (24M, MIT)
 
-**Goal**: Pre-process scanned document images to improve OCR quality.
-Replaces the ocrmypdf/unpaper pipeline with a pure C++ implementation
-inside CrispEmbed, optionally GPU-accelerated via ggml backends.
+**Goal**: Fast, accurate text-line recognizer for EN+DE to replace TrOCR
+in `ocr_pipeline.cpp`. 3-14x smaller than TrOCR-small (62M) with
+comparable or better accuracy.
 
-**Two tiers**: classical image processing (no model, works immediately)
-and a learned denoising CNN (small GGUF, handles complex degradation).
+**Source**: baudm/parseq (MIT), docTR multilingual variant for German.
+Paper: "Scene Text Recognition with Permuted Autoregressive Sequence Models"
 
-#### Tier 1 — Classical (no model needed, ~500 LOC)
+**Architecture** (24M base):
+1. **Encoder**: ViT-Small (12 layers, 384d, 6 heads, patch 8×4)
+   - Input: 128×32 grayscale or RGB text-line crop
+   - Patch embed: Conv2d [384, 3, 8, 4] → flatten → [N_patches, 384]
+   - Standard ViT with class token, GELU FFN, post-LN
+   - Output: [N_patches+1, 384]
 
-**1a. Deskew**
+2. **Decoder**: Permuted Autoregressive Transformer (2 layers, 384d, 6 heads)
+   - Cross-attention to encoder output
+   - Position queries (max 26 tokens)
+   - Greedy or refinement decode (iterative)
+   - 94-char charset (digits + upper/lower + punctuation)
 
-Detect dominant text line angle, rotate image to horizontal.
+**Variants**:
+- PARSeq-tiny: ~12M, ~93% accuracy — ideal for WASM/mobile
+- PARSeq-base: ~24M, ~96% accuracy — sweet spot
+- docTR multilingual: Latin charset covering German umlauts (ä, ö, ü, ß)
 
-Two detection methods:
-- **Surya-based** (preferred when surya_det is loaded): extract text line
-  bounding boxes from the heatmap, compute median angle from box orientations.
-  Already have the heatmap → polygon pipeline in `surya_det.cpp`.
-- **Hough-based** (standalone, no model): binarize → edge detect (Sobel) →
-  Hough line accumulator → peak angle. Pure C++, ~100 LOC.
+**GGML ops needed**: All standard — ggml_mul_mat, ggml_flash_attn_ext,
+ggml_norm, ggml_gelu, ggml_conv_2d. Identical to existing TrOCR decoder
+path. No exotic ops.
 
-Rotation: bilinear or bicubic affine transform. Can use ggml for GPU:
-```cpp
-// Build affine grid, sample via ggml_conv_2d or manual interpolation
-// Or: ggml doesn't have grid_sample yet — do CPU-side bilinear for now,
-// move to ggml when grid_sample lands
-void deskew(const float * src, float * dst, int w, int h, float angle_deg);
-```
+**Steps**:
+1. Converter: `models/convert-parseq-to-gguf.py` — export ViT encoder +
+   Transformer decoder. Simple weight mapping (no custom code).
+2. Reference dumper: `tools/dump_parseq_reference.py`
+3. C++ engine: `src/parseq_ocr.{h,cpp}` — encoder + decoder graph
+4. Integration: replace TrOCR in `ocr_pipeline.cpp` (or add as option)
+5. Test: parity vs Python + DBNet+PARSeq pipeline end-to-end
 
-**1b. Binarization**
+**GGUFs**: `/mnt/storage/gguf-models/parseq-{base,tiny}-{f32,f16,q8_0}.gguf`
 
-Convert grayscale scan to clean black-on-white for traditional OCR.
+**Files**: `src/parseq_ocr.{h,cpp}`, `models/convert-parseq-to-gguf.py`,
+`tools/dump_parseq_reference.py`, `tests/test_parseq.cpp`
 
-Two methods:
-- **Otsu** (global threshold): histogram → between-class variance
-  maximization. ~30 LOC. Good for clean scans with uniform lighting.
-- **Sauvola** (adaptive threshold): per-pixel threshold from local
-  mean + stddev in a sliding window (typically 15×15 to 31×31).
-  `T(x,y) = mean(x,y) * (1 + k * (stddev(x,y)/R - 1))`, k=0.2, R=128.
-  The sliding window mean/variance can be computed efficiently via
-  integral images (summed area table) — O(1) per pixel after O(N)
-  precompute. ~80 LOC.
-
-ggml opportunity: the local mean is a box blur (depthwise conv2d with
-uniform kernel). Could run as ggml graph for GPU acceleration on large
-images, but integral image approach is already O(N) on CPU.
-
-**1c. Border crop**
-
-Remove black scanner borders and bleed-through edges.
-
-Approach: project row and column pixel intensities (mean or sum per
-row/col). Find the content rectangle where intensity transitions from
-border (dark) to content (light). Threshold: mean intensity > 0.8 * global
-mean. ~50 LOC.
-
-Alternative: flood fill from the 4 corners with a tolerance, mark
-connected dark region as border, crop to bounding box of non-border.
-
-**1d. Background whitening**
-
-Flatten uneven lighting and yellowed/gray paper.
-
-Approach: morphological open (erode then dilate with large kernel, e.g.
-51×51) to estimate the background surface. Then:
-`cleaned = clip(src / background * 255, 0, 255)`
-
-ggml opportunity: erode = min-pool, dilate = max-pool. `ggml_pool_2d`
-supports max-pool, and min-pool can be done as `-max_pool(-x)`. This
-is a natural fit for GPU acceleration on large scans (e.g. 4000×6000).
-
-```cpp
-// Pseudo-code for ggml-based morphological open
-ggml_tensor * neg = ggml_scale(ctx, src, -1.0f);
-ggml_tensor * eroded = ggml_pool_2d(ctx, neg, GGML_OP_POOL_MAX, k, k, k, k, 0, 0);
-eroded = ggml_scale(ctx, eroded, -1.0f);  // min-pool result
-ggml_tensor * background = ggml_pool_2d(ctx, eroded, GGML_OP_POOL_MAX, k, k, k, k, 0, 0);
-ggml_tensor * cleaned = ggml_div(ctx, src, ggml_add(ctx, background, eps));
-```
-
-#### Tier 2 — Learned denoising CNN (~1-2M params, GGUF model)
-
-**Goal**: Handle complex scan degradation (uneven lighting, stains,
-bleed-through, compression artifacts, faded ink) in a single forward pass.
-Replaces separate denoise + background + contrast steps.
-
-**Model candidates** (all BSD/MIT/Apache):
-- **NAFNet-tiny** (megvii-research/NAFNet, MIT): Non-linear Activation
-  Free Network. Pure conv + channel attention + SimpleGate, no GELU/ReLU.
-  All ops map cleanly to ggml: conv2d, element-wise mul, channel avg pool.
-  ~1M params, ~4 MB F16 GGUF.
-- **SCUNet-tiny** (cszn/SCUNet, Apache-2.0): Swin-Conv-UNet hybrid.
-  Uses Swin transformer blocks — we already have Swin from MixTex.
-  ~2M params, ~8 MB GGUF.
-- **Custom lightweight**: 5-layer residual CNN (Conv3x3-ReLU-Conv3x3
-  + skip, ×5, final Conv1x1). Train on paired clean/dirty document data.
-  ~500K params, ~2 MB GGUF. Simplest to implement.
-
-**Training data**: Pair clean digital documents with synthetically
-degraded versions (add noise, uneven lighting, blur, JPEG artifacts,
-simulated bleed-through). DocUNet or similar benchmark datasets.
-Or: render clean PDFs, apply degradation transforms, train on pairs.
-
-**Implementation** — follows standard CrispEmbed engine pattern:
-```
-src/scan_cleanup.{h,cpp}          — C++ inference engine
-models/convert-scan-cleanup-to-gguf.py — GGUF converter
-tools/dump_scan_cleanup_reference.py   — parity reference dumper
-tests/test_scan_cleanup.cpp       — parity + visual quality test
-```
-
-All conv layers run as a single ggml graph → GPU-accelerated on
-Metal/CUDA/Vulkan. Expected speed: <100ms for a 2000×3000 scan
-on GPU, ~500ms on CPU.
-
-#### Pipeline integration
-
-The cleanup module slots in before detection and recognition:
-
-```
-raw scan → scan_cleanup (tier 1 and/or tier 2)
-         → surya_det (text line detection)
-         → crop regions
-         → ocr_recognize (any OCR engine)
-```
-
-**C API:**
-```c
-scan_cleanup_ctx * scan_cleanup_init(const char * model_path, int n_threads);
-// model_path = NULL for tier-1-only (no learned model)
-void scan_cleanup_free(scan_cleanup_ctx * ctx);
-
-typedef struct scan_cleanup_params {
-    bool deskew;           // default: true
-    bool binarize;         // default: false (most OCR prefers grayscale)
-    bool crop_borders;     // default: true
-    bool whiten_background;// default: true
-    bool denoise_model;    // default: true (if model loaded)
-    float sauvola_k;       // default: 0.2
-    int   sauvola_window;  // default: 25
-    int   morph_kernel;    // default: 51
-} scan_cleanup_params;
-
-// Process in-place or to new buffer
-int scan_cleanup_process(scan_cleanup_ctx * ctx,
-                         const uint8_t * src, int w, int h, int ch,
-                         uint8_t * dst, scan_cleanup_params params);
-```
-
-**CLI:** `crispembed --cleanup [--cleanup-model model.gguf] --ocr image.png`
-**Server:** `POST /scan/cleanup` — accepts image, returns cleaned PNG/JPEG
-**Python:** `CrispScanCleanup(model_path=None)` with `.process(image)` method
-
-**Files**: `src/scan_cleanup.{h,cpp}`, `models/convert-scan-cleanup-to-gguf.py`,
-`tests/test_scan_cleanup.cpp`
-
-**Effort**: Tier 1 = Low (1-2 days, pure C++, no model). Tier 2 = Medium
-(3-4 days: pick model, convert, implement, train/fine-tune if custom).
+**Effort**: Medium (3-4 days). Pure ViT — reuses patterns from TrOCR/math_ocr.
 
 ---
 
-### Blueprint: Tesseract LSTM OCR engine
+### Blueprint: InternVL2.5-2B — Document OCR + Understanding (2.1B, MIT)
 
-**Goal**: Port Tesseract's LSTM line-recognition engine to CrispEmbed via GGML.
-This gives 126 languages of OCR in tiny (~2-4 MB Q4_K) GGUF models, running on
-the existing DBNet/Surya text detection pipeline. Not a full Tesseract port —
-only the neural recognizer (stage 3) and CTC decoder (stage 4). Page layout
-analysis, Leptonica preprocessing, and DAWG language models are out of scope
-(CrispEmbed already has superior neural alternatives for detection/layout).
+**Goal**: Compact VLM for full document understanding: OCR + VQA + KIE +
+layout comprehension. OCRBench ~830. Multilingual (EN+DE). MIT license.
 
-**Why**: TrOCR is more accurate on clean printed text but covers few languages
-and costs ~300 MB per model. Tesseract LSTM covers 126 languages at ~5 MB each
-(~3 MB Q4_K), runs in microseconds per line on CPU, and provides character-level
-confidence scores. The two engines are complementary: TrOCR for quality,
-Tesseract LSTM for breadth and speed.
+**Source**: OpenGVLab/InternVL2_5-2B (MIT)
+Already in llama.cpp (InternVL2.5 1B+4B confirmed in multimodal.md).
 
-#### Tesseract LSTM architecture
+**Architecture** (2.1B total):
+1. **Vision encoder**: InternViT-300M-448px-V2.5 (300M)
+   - Standard ViT: 24 layers, 384d, 6 heads, patch 14
+   - Input: 448×448 per tile, dynamic tiling (1-12 tiles)
+   - Pixel unshuffle: 4:1 spatial token reduction
+   - Output: ~256 visual tokens per tile (1024 for 448px / 14 / 2)
 
-The LSTM engine (--oem 1, default since Tesseract 4.0) uses a custom C++ neural
-network framework with a DSL called VGSL (Variable-size Graph Specification
-Language). A typical English line recognizer has this topology:
+2. **Projector**: 2-layer MLP with GELU (randomly initialized)
+   - Linear(384→1536) → GELU → Linear(1536→1536)
 
-```
-VGSL spec: [1,36,0,1 Ct3,3,16 Mp3,3 Lfys48 Lfx96 Lrx96 Lfx256 O1c111]
+3. **LLM decoder**: InternLM2.5-1.8B-chat (1.8B)
+   - 24 layers, 1536d, 12 heads (GQA 12/4), RoPE
+   - SiLU FFN (gate/up/down), RMSNorm
+   - 8k context window
 
-Input          1x36x(variable)x1 — height-normalized grayscale line image
-Convolve 3x3   im2col stacking (no learned weights, just neighborhood concat)
-FullyConnected tanh activation, 16 outputs — this IS the "conv" layer
-Maxpool 3x3    max-pool, reduces height by 3x
-XYTranspose    swap x/y axes
-SummLSTM       y-summarizing forward LSTM (48 units) — collapses height to 1
-XYTranspose    swap back
-LSTM forward   forward LSTM (96 units) over x-axis (time)
-Reversed LSTM  reverse LSTM (96 units) over x-axis
-LSTM forward   forward LSTM (256 units) over x-axis
-Softmax        FullyConnected → 111 classes (unicharset size)
-```
+**Dynamic resolution**: Images split into 448×448 tiles based on aspect
+ratio. Each tile processed independently by ViT. Thumbnail tile always
+included. Max 12 tiles = 12×256 = 3072 visual tokens.
 
-Key insight: Tesseract's `Convolve` layer is NOT a learned convolution. It just
-stacks (im2col) the 3x3 neighborhood of each pixel, then a `FullyConnected`
-layer with tanh activation acts as the actual "convolution". This simplifies the
-port: no `ggml_conv_2d` needed, just matmul.
+**Two port paths**:
 
-#### Binary format (.traineddata)
+**Path A — Leverage llama.cpp (fastest, 1-2 days)**:
+- llama.cpp already has InternVL2.5 support
+- Use their GGUF converter: `convert_hf_to_gguf.py`
+- Write thin wrapper in CrispEmbed that calls the same graph
+- Pro: minimal new code. Con: depends on llama.cpp graph structure.
 
-The `.traineddata` file is a custom archive with these components:
-- `lstm` (component 17): serialized network tree + LSTMRecognizer metadata
-- `lstm-unicharset` (21): character set mapping (ID → UTF-8)
-- `lstm-recoder` (22): maps unicharset IDs to network output classes
-- `lstm-*-dawg` (18-20): language model DAWGs (optional, not used here)
+**Path B — Native CrispEmbed engine (3-5 days)**:
+- `src/internvl2_ocr.{h,cpp}` — vision + projector + LLM from scratch
+- Vision encoder: identical ViT to existing `vit_embed.cpp` (same ops)
+- Pixel unshuffle: `ggml_reshape_4d` + `ggml_permute` (trivial)
+- MLP projector: 2× `ggml_mul_mat` + `ggml_gelu` (trivial)
+- LLM decoder: standard transformer, reuse patterns from `qwen2vl_ocr.cpp`
+  (GQA, RoPE, SiLU FFN — all identical). RoPE is standard 1D (simpler
+  than Qwen2.5-VL's mRoPE).
+- Pro: full control, follows CrispEmbed patterns. Con: more code.
 
-Archive header: `int32 n_entries`, then `n_entries × int64` offsets (-1 = absent).
+**Recommended**: Path B. The architecture is simpler than Qwen2.5-VL
+(which is already done). No mRoPE, no spatial merger, no 3D RoPE.
+Standard 1D RoPE + GQA + SiLU FFN.
 
-LSTM component binary format (recursive, little-endian):
-```
-LSTMRecognizer:
-  Network tree (recursive)
-  STRING network_str       — VGSL spec
-  int32  training_flags
-  int32  training_iteration
-  int32  sample_iteration
-  int32  null_char          — CTC blank class index
-  f64    adam_beta, learning_rate, momentum
+**Steps**:
+1. Converter: `models/convert-internvl2-to-gguf.py`
+2. Reference dumper: `tools/dump_internvl2_reference.py`
+3. C++ engine: `src/internvl2_ocr.{h,cpp}`
+4. Parity: vision encoder → projector → LLM layer-by-layer
+5. E2E generation test with German + English documents
+6. Quantize: F16, Q8_0, Q4_K (vision at Q8_0 floor, like Qwen2.5-VL)
 
-Network base class:
-  int8   type_enum          — if 0 (NT_NONE): followed by STRING type_name
-  int8   training_state
-  int8   needs_to_backprop
-  int32  network_flags
-  int32  ni                 — input size
-  int32  no                 — output size
-  int32  num_weights
-  STRING name               — VGSL layer name
+**GGUFs**: `/mnt/storage/gguf-models/internvl2.5-2b-{f16,q8_0,q4_k}.gguf`
 
-Plumbing (Series/Parallel):
-  uint32 count              — number of sub-networks
-  count × Network           — recursive children
-  [if NF_LAYER_SPECIFIC_LR]: vector<float> learning_rates
+**Expected sizes**:
+- F16: ~4.2 GB
+- Q8_0: ~2.2 GB
+- Q4_K: ~1.4 GB (vision Q8_0 preserved)
 
-WeightMatrix:
-  uint8 mode                — bit 0: int8, bit 1: double, bit 2: adam
-  if int8:
-    GENERIC_2D_ARRAY<int8>  — (no, ni+1) including bias column
-    uint32 n_scales
-    n_scales × f64 scales   — per-output-row scale (stored as scale * 127)
-  if float:
-    GENERIC_2D_ARRAY<double> — (no, ni+1) including bias column
+**Files**: `src/internvl2_ocr.{h,cpp}`, `models/convert-internvl2-to-gguf.py`,
+`tools/dump_internvl2_reference.py`, `tests/test_internvl2_ocr.cpp`
 
-GENERIC_2D_ARRAY<T>:
-  int32 dim1, int32 dim2    — (rows, cols)
-  T     empty               — default value
-  dim1 × dim2 × T           — row-major data
+**Effort**: Medium (3-5 days). Simpler than Qwen2.5-VL (no mRoPE).
 
-STRING:
-  uint32 length             — byte count (no null terminator)
-  length × char
-```
+---
 
-Weight matrices are (no, ni+1) — the last column is the bias vector.
+### Blueprint: InternVL2-1B — Edge/WASM OCR (0.9B, MIT)
 
-Gate order for LSTM: CI (cell input), GI (input gate), GF1 (forget gate),
-GO (output gate). Each is a WeightMatrix of shape (ns, na+1) where ns = hidden
-size and na = ni + ns (input + recurrent). 4 gates per LSTM layer.
+**Goal**: Tiniest competitive VLM for OCR. 0.9B params, quantizes to
+~500MB Q4_K. OCRBench 779. Ideal for WASM, mobile, or resource-
+constrained edge deployment.
 
-#### Existing CrispEmbed code to reuse
+**Source**: OpenGVLab/InternVL2-1B (MIT)
 
-- **BiLSTM cell**: `src/gliner_ner.cpp:855-939` — `lstm_forward_one_dir()` and
-  `bilstm_forward_cached()`. Handles forward/reverse, PyTorch gate order
-  (i,f,g,o). Needs minor adaptation: Tesseract gate order is CI,GI,GF1,GO
-  (same as i,g,f,o — note g and f are swapped vs PyTorch).
-- **GRU cell**: `src/hmer_ocr.cpp:594-631` — precedent for CPU-side recurrent
-  cells with GGUF-loaded weights.
-- **Weight dequantization**: `crispembed_diff.h` and existing model loaders
-  handle quantized tensor reads via `ggml_get_type_traits()`.
+**Architecture** (0.9B total):
+1. **Vision encoder**: InternViT-300M-448px (same as 2.5-2B)
+2. **Projector**: MLP (same pattern)
+3. **LLM decoder**: Qwen2-0.5B-Instruct (0.5B)
+   - 24 layers, 896d, 14 heads (GQA 14/2), RoPE
+   - SiLU FFN, RMSNorm
 
-#### Converter: `models/convert-tesseract-to-gguf.py`
+**Reuse**: Shares vision encoder + projector with InternVL2.5-2B.
+Only the LLM decoder differs (Qwen2-0.5B vs InternLM2.5-1.8B).
+If InternVL2.5-2B is ported first, this is a ~1 day adaptation.
 
-**Input**: `.traineddata` file (tessdata_fast int8 or tessdata_best float32).
-**Output**: GGUF file with architecture `"tesseract_lstm"`.
+**Steps**:
+1. Reuse converter with `--model OpenGVLab/InternVL2-1B`
+2. Swap LLM config (Qwen2 0.5B params)
+3. Test: OCR quality on EN+DE docs, compare vs 2.5-2B
 
-Steps:
-1. Parse traineddata archive, extract lstm/unicharset/recoder components.
-2. Recursively parse the network tree, extracting all WeightMatrix tensors.
-3. For int8 weights: dequantize using per-row scales → float32, then let
-   `crispembed-quantize` re-quantize to ggml Q4_K/Q8_0 (better quality than
-   keeping Tesseract's custom int8 scheme).
-4. For float64 weights (tessdata_best): cast to float32.
-5. Weight matrix layout: strip the bias column (last col of ni+1 dim) into a
-   separate bias tensor. Store weight as (no, ni) and bias as (no,).
-6. Write GGUF metadata: VGSL spec, unicharset tokens, recoder mapping,
-   null_char, input height, network topology.
+**GGUFs**: `/mnt/storage/gguf-models/internvl2-1b-{f16,q8_0,q4_k}.gguf`
 
-Tensor naming convention:
-```
-conv.weight         — (16, 9) from ConvSeries FullyConnected
-conv.bias           — (16,)
-lstm.0.CI.weight    — (48, 48+16) = (ns, ns+ni) y-summarizing
-lstm.0.CI.bias      — (48,)
-lstm.0.GI.weight    — etc.
-lstm.1.CI.weight    — forward x LSTM (96 units)
-lstm.2.CI.weight    — reverse x LSTM (96 units)
-lstm.3.CI.weight    — forward x LSTM (256 units)
-output.weight       — (111, 257) softmax
-output.bias         — (111,)
-```
+**Expected sizes**:
+- F16: ~1.8 GB
+- Q8_0: ~1.0 GB
+- Q4_K: ~0.5 GB
 
-**Parity testing**: The converter also dumps intermediate activations in a
-reference GGUF when `--dump-ref` is passed. For each LSTM layer, captures
-the gate pre-activations and hidden states at timestep 0 and T//2. The C++
-engine compares against these via `crispembed_diff`.
+**Effort**: Low (1-2 days) if InternVL2.5-2B is done first.
 
-Since Tesseract is installed on this machine (`libtesseract5` 5.3.4), we can
-generate ground-truth text output via `tesseract --oem 1 image.png stdout`
-and compare character error rate (CER) against CrispEmbed's output.
+---
 
-#### Engine: `src/tesseract_lstm.{h,cpp}`
+### Blueprint: Granite Vision 3.3-2B — Highest OCRBench (3B, Apache-2.0)
 
-**C API**:
-```c
-typedef struct tesseract_lstm_context tesseract_lstm_context;
+**Goal**: Highest OCRBench score (852) in the small VLM class. English-
+focused document OCR. Apache-2.0 license. LLaVA-style architecture.
 
-tesseract_lstm_context * crispembed_tess_ocr_init(
-    const char * model_path, int n_threads);
+**Source**: ibm-granite/granite-vision-3.3-2b (Apache-2.0)
 
-// Recognize a single pre-cropped text line image.
-// Returns UTF-8 text. Caller must free with crispembed_tess_ocr_free_text().
-char * crispembed_tess_ocr_recognize_line(
-    tesseract_lstm_context * ctx,
-    const uint8_t * gray_pixels,  // height-normalized grayscale
-    int width, int height);
+**Architecture** (3B total):
+1. **Vision encoder**: SigLIP2-400M (google/siglip2-so400m-patch14-384)
+   - Standard ViT: patch 14, 384×384 input, ~400M params
+   - AnyRes: multi-scale grid for high-res documents (up to 768px)
+   - CrispEmbed already has SigLIP v1 in `vit_embed.cpp`
 
-// Confidence per character (optional).
-float * crispembed_tess_ocr_char_confidences(
-    tesseract_lstm_context * ctx, int * n_chars);
+2. **Projector**: 2-layer MLP with GELU
+   - Standard LLaVA connector
 
-void crispembed_tess_ocr_free_text(char * text);
-void crispembed_tess_ocr_free(tesseract_lstm_context * ctx);
-```
+3. **LLM decoder**: Granite-3.1-2B-Instruct (2B, 128k context)
+   - Standard transformer, details TBD (likely GQA + RoPE + SiLU)
 
-**Forward pass** (all CPU-side, no ggml graph — models are tiny):
-1. Load GGUF, dequantize all weights to F32 (cached, ~1-5 MB total).
-2. Input: grayscale line image, height-normalized to model's `ni` (e.g. 36px).
-3. Convolve stacking: for each pixel (x,y), stack 3x3 neighborhood → 9 values.
-4. FullyConnected + tanh: matmul (9→16) + bias + tanh activation.
-5. MaxPool 3x3: reduce spatial dims by 3x.
-6. XYTranspose: swap axes so LSTM runs over y (height).
-7. SummLSTM: forward LSTM over y, keep only final hidden state → collapses
-   height to 1. Output: (width', 48).
-8. XYTranspose back.
-9. Forward LSTM (96): over x-axis.
-10. Reverse LSTM (96): over x-axis, reversed.
-11. Concatenate forward + reverse → (width', 192)? No — Tesseract doesn't
-    concatenate; each LSTM output replaces the input for the next layer.
-    The forward and reverse are separate layers in the Series, not a BiLSTM.
-12. Forward LSTM (256): over x-axis.
-13. Softmax output: matmul (256→111) + softmax.
-14. CTC decode: greedy (collapse repeats, remove blanks) or beam search.
+**Key consideration**: English-only. Despite highest OCRBench score, no
+German support out of the box. Fine-tuning on German data would be needed.
+Also largest at 3B (vs 2.1B for InternVL2.5-2B).
 
-**CTC greedy decode** (~30 lines):
-```
-prev = -1
-for t in range(T):
-    best = argmax(logits[t])
-    if best != blank_id and best != prev:
-        output.append(recoder_to_unichar[best])
-    prev = best
-```
+**Port approach**: SigLIP2 is a standard ViT — diff vs SigLIP v1 is
+minor (same patch14, similar dims). Granite LLM is a standard decoder.
+Main work is verifying SigLIP2 compatibility with existing `vit_embed.cpp`
+and writing the LLaVA-style token splicing.
 
-**Implementation note**: Unlike GLiNER's BiLSTM which uses `lstm_forward_one_dir`
-with separate fwd/rev calls, here each LSTM layer in the Series is independent.
-The "reverse" layer is wrapped in a `Reversed` container that just feeds the
-input sequence backwards. We reuse the same `lstm_forward_one_dir` function.
+**Steps**:
+1. Verify SigLIP2 vs SigLIP v1 differences (likely: attention pooling,
+   minor norm changes)
+2. Converter: `models/convert-granite-vision-to-gguf.py`
+3. C++ engine: `src/granite_vision_ocr.{h,cpp}` (or reuse generic VLM dispatch)
+4. Parity test on English documents
 
-Gate order mapping: Tesseract stores gates as CI (cell input = g in PyTorch),
-GI (input gate = i), GF1 (forget gate = f), GO (output gate = o). Our existing
-`lstm_forward_one_dir` expects PyTorch order (i,f,g,o). Either reorder during
-conversion or adjust the cell code. Reorder during conversion is cleaner.
+**GGUFs**: `/mnt/storage/gguf-models/granite-vision-3.3-2b-{f16,q8_0,q4_k}.gguf`
 
-#### File layout
+**Expected sizes**:
+- F16: ~6 GB
+- Q8_0: ~3.2 GB
+- Q4_K: ~2.0 GB
 
-```
-models/convert-tesseract-to-gguf.py   — converter (~400 lines)
-src/tesseract_lstm.h                   — header + C API
-src/tesseract_lstm.cpp                 — engine (~350 lines)
-tools/dump_tesseract_reference.py      — parity reference dumper
-```
+**Files**: `src/granite_vision_ocr.{h,cpp}`, `models/convert-granite-vision-to-gguf.py`
 
-**Effort**: Medium (3-4 days). Converter parsing is the hardest part (reverse-
-engineering the binary format is already done above). The LSTM forward pass
-reuses existing code. CTC decode is trivial.
+**Effort**: Medium (3-4 days). SigLIP v1→v2 delta is small; Granite LLM
+is standard. Lower priority than InternVL due to English-only + larger size.
 
-#### Parity testing strategy
+---
 
-1. **Text output parity**: Run `tesseract --oem 1 image.png stdout` and compare
-   against `crispembed --tess-ocr image.png`. Measure CER (character error rate).
-   Target: CER = 0 for tessdata_best (float) source; CER < 0.5% for
-   tessdata_fast (int8 dequantized → re-quantized).
+### Blueprint: H2OVL-Mississippi-2B — InternVL + H2O-Danube (2.1B, Apache-2.0)
 
-2. **Intermediate activation parity**: The converter's `--dump-ref` mode captures
-   per-layer outputs. The C++ engine compares via `crispembed_diff`. Target:
-   cos_min >= 0.999 for float source, >= 0.99 for int8 source.
+**Goal**: Alternative 2B VLM trained on 17M image-text pairs. OCRBench
+782. Uses InternVL vision pipeline with H2O-Danube LLM.
 
-3. **End-to-end with detection**: Feed DBNet-detected text lines through the
-   Tesseract LSTM recognizer. Compare against `tesseract --oem 1` on the same
-   full-page image (which uses its own layout analysis). This tests the
-   integration but not exact parity (different detection → different line crops).
+**Source**: h2oai/h2ovl-mississippi-2b (Apache-2.0)
+
+**Architecture** (2.1B total):
+1. **Vision encoder**: InternViT-based (same InternVL pipeline)
+   - Same 448px tiling, pixel unshuffle, MLP projector
+2. **LLM decoder**: H2O-Danube2-1.8B
+   - Standard transformer, GQA, RoPE, SiLU FFN
+
+**Reuse**: If InternVL2.5-2B is ported, this shares the vision encoder
+and projector. Only the LLM backbone differs (Danube vs InternLM).
+
+**Port priority**: Lower than InternVL2.5-2B (which scores higher and
+has llama.cpp support). Port after InternVL family as a ~1 day swap of
+the LLM backbone.
+
+**GGUFs**: `/mnt/storage/gguf-models/h2ovl-mississippi-2b-{f16,q8_0,q4_k}.gguf`
+
+**Effort**: Low (1-2 days) if InternVL2.5-2B is done first.
