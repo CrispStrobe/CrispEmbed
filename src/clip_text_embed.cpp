@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -177,9 +178,12 @@ bool load(context** out, const char* path, int n_threads) {
             ctx->hidden, ctx->n_layers, ctx->n_heads, ctx->vocab_size,
             ctx->max_pos, ctx->proj_dim);
 
-    // Load weights
-    ctx->backend = ggml_backend_cpu_init();
-    ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
+    // Load weights — prefer GPU backend when available
+    bool force_cpu = (getenv("CLIP_TEXT_FORCE_CPU") && atoi(getenv("CLIP_TEXT_FORCE_CPU")));
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
 
     if (!core_gguf::load_weights(path, ctx->backend, "clip_text", ctx->wl)) {
         fprintf(stderr, "clip_text: failed to load weights\n");
