@@ -3547,6 +3547,69 @@ extern "C" int crispembed_ner_extract(void * ctx, const char * text,
 }
 
 // ===========================================================================
+// LiLT — Language-independent Layout Transformer
+// ===========================================================================
+
+#include "lilt_kie.h"
+
+struct crispembed_lilt_ctx {
+    lilt_kie::context* pipe = nullptr;
+    std::vector<lilt_kie::token_result> last_results;
+    std::vector<crispembed_lilt_token> last_tokens;
+};
+
+extern "C" void * crispembed_lilt_init(const char * model_path, int n_threads) {
+    if (!model_path) return nullptr;
+    auto* ctx = new crispembed_lilt_ctx;
+    if (!lilt_kie::load(&ctx->pipe, model_path, n_threads)) {
+        delete ctx;
+        return nullptr;
+    }
+    return ctx;
+}
+
+extern "C" void crispembed_lilt_free(void * ptr) {
+    if (!ptr) return;
+    auto* ctx = (crispembed_lilt_ctx*)ptr;
+    if (ctx->pipe) lilt_kie::free(ctx->pipe);
+    delete ctx;
+}
+
+extern "C" const crispembed_lilt_token * crispembed_lilt_classify(
+        void * ptr, const int32_t * input_ids, const int32_t * bbox,
+        int n_tokens, int * out_n) {
+    if (out_n) *out_n = 0;
+    if (!ptr || !input_ids || !bbox || n_tokens <= 0) return nullptr;
+
+    auto* ctx = (crispembed_lilt_ctx*)ptr;
+    ctx->last_results = lilt_kie::classify(ctx->pipe, input_ids, bbox, n_tokens);
+
+    ctx->last_tokens.clear();
+    ctx->last_tokens.reserve(ctx->last_results.size());
+    for (const auto& r : ctx->last_results) {
+        crispembed_lilt_token t;
+        t.token_id = r.token_id;
+        t.label_id = r.label_id;
+        t.label    = r.label.c_str();
+        t.score    = r.score;
+        ctx->last_tokens.push_back(t);
+    }
+
+    if (out_n) *out_n = (int)ctx->last_tokens.size();
+    return ctx->last_tokens.data();
+}
+
+extern "C" int crispembed_lilt_num_labels(void * ptr) {
+    if (!ptr) return 0;
+    return lilt_kie::num_labels(((crispembed_lilt_ctx*)ptr)->pipe);
+}
+
+extern "C" const char * crispembed_lilt_label_name(void * ptr, int label_id) {
+    if (!ptr) return "";
+    return lilt_kie::label_name(((crispembed_lilt_ctx*)ptr)->pipe, label_id);
+}
+
+// ===========================================================================
 // Key Information Extraction (KIE)
 // ===========================================================================
 
