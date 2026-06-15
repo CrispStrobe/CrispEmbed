@@ -1,17 +1,25 @@
-// crispembed server — HTTP API for text embedding.
+// crispembed server — HTTP API for embeddings, OCR, face, NER, layout.
 //
-// Usage: crispembed --server -m model.gguf [--port 8080]
+// Usage: crispembed-server -m model.gguf [--port 8080] [--host 0.0.0.0]
 //
 // Endpoints:
-//   POST /embed           — {"texts": ["hello", "world"]} → {"embeddings": [[...], [...]]}
-//   POST /v1/embeddings   — OpenAI-compatible
+//   POST /embed           — {"texts": ["hello"]} → {"embeddings": [[...]]}
+//   POST /v1/embeddings   — OpenAI-compatible embedding API
 //   POST /api/embed       — Ollama-compatible (batch)
 //   POST /api/embeddings  — Ollama-compatible (single, legacy)
-//   POST /math/ocr        — {"image": "formula.png"} → {"latex": "...", "len": N, "ms": M}
-//   POST /ocr             — {"image": "doc.png"} → {"results": [...], "ms": M}  (detect+recognize)
+//   POST /math/ocr        — {"image": "formula.png"} → {"text": "...", "ms": M}
+//   POST /ocr             — {"image": "doc.png"} → {"results": [...], "ms": M}
+//   POST /ocr/pipeline    — {"image": "doc.png"} → full orchestrator (routing+cleanup+gate)
 //   POST /layout/detect   — {"image": "page.png"} → {"regions": [...]}
-//   POST /ner/extract     — {"text": "...", "labels": [...]} → {"entities": [...]}
-//   GET  /health          — server status
+//   POST /text/detect     — {"image": "page.png"} → {"regions": [...]}
+//   POST /detect          — {"image": "face.jpg"} → face detection
+//   POST /face            — {"image": "face.jpg"} → face embedding
+//   POST /vit/encode      — {"image": "img.jpg"} → ViT embedding
+//   POST /clip/text       — {"text": "query"} → CLIP text embedding
+//   POST /colbert/score   — {"query": "...", "documents": [...]} → ColBERT scoring
+//   POST /ner/extract     — {"text": "...", "labels": [...]} → NER entities
+//   POST /scan/cleanup    — {"image": "scan.png"} → cleaned image
+//   GET  /health          — server status + loaded capabilities
 
 #include "crispembed.h"
 #include "scan_cleanup.h"
@@ -57,6 +65,9 @@ int main(int argc, char ** argv) {
     std::string text_det_model_path;  // surya text detection model
     std::string ner_model_path;       // NER model (GLiNER)
     bool enable_ocr_orch = false;     // --ocr-pipeline: enable orchestrator endpoint
+    std::string vlm_model_path;       // VLM escalation model for orchestrator
+    int vlm_engine = 0;               // 0=GOT, 1=GLM, 2=Qwen2-VL, 3=InternVL2
+    std::string punct_model_path;     // punct restoration model for orchestrator
     int port = 8080;
     int n_threads = 4;
 
@@ -76,6 +87,9 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--text-det") == 0 && i + 1 < argc) text_det_model_path = argv[++i];
         else if (strcmp(argv[i], "--ner") == 0 && i + 1 < argc) ner_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr-pipeline") == 0) enable_ocr_orch = true;
+        else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) vlm_model_path = argv[++i];
+        else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) vlm_engine = atoi(argv[++i]);
+        else if (strcmp(argv[i], "--punct-model") == 0 && i + 1 < argc) punct_model_path = argv[++i];
     }
 
     if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty()) {
@@ -92,8 +106,17 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --ocr MODEL   math OCR model (PP-FormulaNet, HMER, BTTR GGUF)\n");
         fprintf(stderr, "\nLayout detection (document structure):\n");
         fprintf(stderr, "  --layout MODEL   RT-DETRv2 layout detection model GGUF\n");
+        fprintf(stderr, "\nText detection:\n");
+        fprintf(stderr, "  --text-det MODEL  Surya text line detection model GGUF\n");
         fprintf(stderr, "\nNamed Entity Recognition:\n");
-        fprintf(stderr, "  --ner MODEL      GLiNER zero-shot NER model GGUF\n");
+        fprintf(stderr, "  --ner MODEL       GLiNER zero-shot NER model GGUF\n");
+        fprintf(stderr, "\nOCR orchestrator (full pipeline with routing + cleanup + accept-gate):\n");
+        fprintf(stderr, "  --ocr-pipeline    enable POST /ocr/pipeline endpoint\n");
+        fprintf(stderr, "  --ocr-det MODEL   detection model (required with --ocr-pipeline)\n");
+        fprintf(stderr, "  --ocr-rec MODEL   recognition model (required with --ocr-pipeline)\n");
+        fprintf(stderr, "  --vlm-model MODEL VLM escalation fallback GGUF (optional)\n");
+        fprintf(stderr, "  --vlm-engine N    VLM backend: 0=GOT 1=GLM 2=Qwen2-VL 3=InternVL2\n");
+        fprintf(stderr, "  --punct-model M   post-OCR punctuation/spacing GGUF (optional)\n");
         return 1;
     }
 
@@ -126,6 +149,16 @@ int main(int argc, char ** argv) {
     }
 
     httplib::Server svr;
+
+    // CORS: allow browser access from any origin
+    svr.set_default_headers({
+        {"Access-Control-Allow-Origin", "*"},
+        {"Access-Control-Allow-Methods", "POST, GET, OPTIONS"},
+        {"Access-Control-Allow-Headers", "Content-Type, Authorization"},
+    });
+    svr.Options("/(.*)", [](const httplib::Request &, httplib::Response & res) {
+        res.status = 204;
+    });
 
     // POST /embed — simple API
     svr.Post("/embed", [&](const httplib::Request & req, httplib::Response & res) {
@@ -668,6 +701,17 @@ int main(int argc, char ** argv) {
         if (!rec_r.empty()) ocr_rec_model_path = rec_r;
         pp.det_model = ocr_det_model_path.c_str();
         pp.rec_model = ocr_rec_model_path.c_str();
+        if (!vlm_model_path.empty()) {
+            std::string vlm_r = crispembed_mgr::resolve_model(vlm_model_path, true);
+            if (!vlm_r.empty()) vlm_model_path = vlm_r;
+            pp.vlm_model = vlm_model_path.c_str();
+            pp.vlm_engine = vlm_engine;
+        }
+        if (!punct_model_path.empty()) {
+            std::string punct_r = crispembed_mgr::resolve_model(punct_model_path, true);
+            if (!punct_r.empty()) punct_model_path = punct_r;
+            pp.punct_model = punct_model_path.c_str();
+        }
         ocr_orch_ctx = crispembed_ocr_pipeline_init(&pp, n_threads);
         if (!ocr_orch_ctx)
             fprintf(stderr, "Warning: failed to init OCR orchestrator\n");
