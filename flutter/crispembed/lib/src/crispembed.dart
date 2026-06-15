@@ -2120,6 +2120,100 @@ class CrispTbsrnSr {
 }
 
 // ---------------------------------------------------------------------------
+// Table Structure Recognition
+// ---------------------------------------------------------------------------
+
+/// Table structure recognition — extracts an HTML table from a grayscale image.
+///
+/// Uses morphological line detection and grid intersection analysis. Optional
+/// built-in cell OCR via a Tesseract LSTM GGUF model.
+///
+/// ```dart
+/// final tp = CrispTableParse();                       // no OCR
+/// final tp = CrispTableParse(ocrModelPath: 'tess.gguf');
+/// final html = tp.toHtml(grayPixels, width, height);  // Uint8List, row-major
+/// tp.dispose();
+/// ```
+class CrispTableParse {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedTableParseFreeDart _freeFn;
+  late final CrispembedTableParseToHtmlDart _toHtmlFn;
+  late final CrispembedTableParseFreeStringDart _freeStringFn;
+
+  /// Initialize the table parser.
+  ///
+  /// [ocrModelPath]: path to a Tesseract LSTM GGUF for built-in cell OCR.
+  ///   Pass null to skip OCR (cells will be empty in the returned HTML).
+  /// [nThreads]: CPU threads for OCR (0 = auto).
+  CrispTableParse({String? ocrModelPath, int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = ocrModelPath != null ? ocrModelPath.toNativeUtf8() : nullptr;
+    _ctx = _lib
+        .lookupFunction<CrispembedTableParseInitNative,
+            CrispembedTableParseInitDart>('crispembed_table_parse_init')
+        .call(pathPtr.cast<Utf8>(), nThreads);
+    if (ocrModelPath != null) calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to init table parser'
+          '${ocrModelPath != null ? " with OCR model: $ocrModelPath" : ""}');
+    }
+  }
+
+  void _bindFunctions() {
+    _freeFn = _lib.lookupFunction<CrispembedTableParseFreeNative,
+        CrispembedTableParseFreeDart>('crispembed_table_parse_free');
+    _toHtmlFn = _lib.lookupFunction<CrispembedTableParseToHtmlNative,
+        CrispembedTableParseToHtmlDart>('crispembed_table_parse_to_html');
+    _freeStringFn = _lib.lookupFunction<CrispembedTableParseFreeStringNative,
+        CrispembedTableParseFreeStringDart>('crispembed_table_parse_free_string');
+  }
+
+  /// Parse a grayscale table image and return an HTML string.
+  ///
+  /// [gray]: uint8 grayscale pixels, row-major [height × width].
+  /// Returns an HTML string containing a `<table>` element.
+  String toHtml(Uint8List gray, int width, int height) {
+    _checkDisposed();
+    if (gray.length != width * height) {
+      throw ArgumentError(
+          'gray.length (${gray.length}) must equal width * height ($width * $height)');
+    }
+
+    final pxNative = calloc<Uint8>(gray.length);
+    pxNative.asTypedList(gray.length).setAll(0, gray);
+
+    try {
+      final ptr = _toHtmlFn(_ctx, pxNative, width, height);
+      if (ptr == nullptr) {
+        throw Exception('Table parsing failed');
+      }
+      final result = ptr.toDartString();
+      _freeStringFn(ptr);
+      return result;
+    } finally {
+      calloc.free(pxNative);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispTableParse has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // OCR Orchestrator (source-type routing + cleanup + accept-gate)
 // ---------------------------------------------------------------------------
 
