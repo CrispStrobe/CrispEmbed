@@ -321,9 +321,9 @@ Models: [`cstr/surya-det-GGUF`](https://huggingface.co/cstr/surya-det-GGUF) — 
 
 ## Scan Cleanup
 
-Document scan preprocessing — replaces the ocrmypdf/unpaper pipeline with
-pure C++. Two tiers: classical image processing (no model) and learned
-denoising via NAFNet CNN (GGUF model, MIT license).
+Document scan preprocessing — pure C++, no external tool dependencies.
+Two tiers: classical image processing (no model) and learned denoising
+via NAFNet CNN (GGUF model, MIT license).
 
 **Tier 1 (classical, no model):** deskew (Hough transform), Otsu/Sauvola
 binarization, border crop, background whitening (morphological open).
