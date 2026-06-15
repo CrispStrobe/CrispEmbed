@@ -704,8 +704,11 @@ Window partition → local MHSA + RPB lookup → window reverse → shift.
 OCRmyPDF (MPL-2.0) has capabilities we lack. We CANNOT port its code
 (MPL-2.0 is file-level copyleft; our repo is MIT). We implement from
 first principles using the PDF specification (ISO 32000, public) and
-MIT/Apache-2.0 reference implementations (libharu zlib, qpdf Apache-2.0,
-pdfcpu Apache-2.0). Listed in priority order:
+Apache-2.0 reference implementations. Primary reference:
+**Tesseract's pdfrenderer.cpp** (Apache-2.0, 976 LOC) — already has
+rotation-aware text matrix, glyph-width font, JPEG image embedding.
+Also: qpdf (Apache-2.0), pdfcpu (Apache-2.0), libharu (zlib).
+Listed in priority order:
 
 - [ ] **PDF text layer with rotation-aware CTM** — our current PDF renderer
   positions text with simple `Td` commands, which breaks on rotated pages.
