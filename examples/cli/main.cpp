@@ -112,6 +112,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --tbsrn-sr FILE  standalone TBSRN text-line SR: upscale text crop, write PPM to stdout\n");
     fprintf(stderr, "                   (needs --tbsrn-model PATH: TBSRN GGUF, Telescope, fixed 4x)\n");
     fprintf(stderr, "  --tbsrn-model PATH TBSRN text-line super-resolution GGUF (used with --tbsrn-sr)\n");
+    fprintf(stderr, "  --safmn-sr FILE  standalone SAFMN super-resolution: upscale image, write PPM to stdout\n");
+    fprintf(stderr, "                   (needs --safmn-model PATH: SAFMN GGUF, SAFM+CCM AttBlocks, 2x or 4x)\n");
+    fprintf(stderr, "  --safmn-model PATH SAFMN super-resolution GGUF (used with --safmn-sr)\n");
     fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
     fprintf(stderr, "  --ocr-rec MODEL  general OCR: text recognition model (TrOCR, e.g. trocr-printed)\n");
     fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
@@ -179,6 +182,8 @@ int main(int argc, char ** argv) {
     std::string pan_sr_path;           // --pan-sr FILE: standalone PAN upscaling
     std::string tbsrn_model;           // --tbsrn-model: TBSRN text-line SR GGUF
     std::string tbsrn_sr_path;         // --tbsrn-sr FILE: standalone TBSRN upscaling
+    std::string safmn_model;           // --safmn-model: SAFMN super-resolution GGUF
+    std::string safmn_sr_path;         // --safmn-sr FILE: standalone SAFMN upscaling
     std::string pipeline_vlm_model;     // --vlm-model NAME: VLM escalation engine GGUF
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
@@ -298,6 +303,10 @@ int main(int argc, char ** argv) {
             tbsrn_model = argv[++i];
         } else if (strcmp(argv[i], "--tbsrn-sr") == 0 && i + 1 < argc) {
             tbsrn_sr_path = argv[++i];
+        } else if (strcmp(argv[i], "--safmn-model") == 0 && i + 1 < argc) {
+            safmn_model = argv[++i];
+        } else if (strcmp(argv[i], "--safmn-sr") == 0 && i + 1 < argc) {
+            safmn_sr_path = argv[++i];
         } else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) {
             pipeline_vlm_model = argv[++i];
         } else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) {
@@ -460,6 +469,26 @@ int main(int argc, char ** argv) {
         printf("P6\n%d %d\n255\n", ow, oh);
         fwrite(out, 1, (size_t)ow * oh * 3, stdout);
         crispembed_tbsrn_sr_free_image(out);
+    if (!safmn_sr_path.empty()) {
+        if (safmn_model.empty()) {
+            fprintf(stderr, "error: --safmn-sr requires --safmn-model <path>\n");
+            return 1;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(safmn_sr_path.c_str(), &w, &h, &ch, 3);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", safmn_sr_path.c_str()); return 1; }
+        void * sctx = crispembed_safmn_sr_init(safmn_model.c_str(), n_threads);
+        if (!sctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load SAFMN model '%s'\n", safmn_model.c_str()); return 1; }
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_safmn_sr_process(sctx, data, w, h, 0, 0, &out, &ow, &oh);
+        stbi_image_free(data);
+        crispembed_safmn_sr_free(sctx);
+        if (rc != 0 || !out) { fprintf(stderr, "error: SAFMN SR processing failed\n"); return 1; }
+        // Write result as PPM (RGB) to stdout
+        printf("P6\n%d %d\n255\n", ow, oh);
+        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+        crispembed_safmn_sr_free_image(out);
         return 0;
     }
 

@@ -162,6 +162,7 @@ list(APPEND CRISPEMBED_SOURCES src/kie_pipeline.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lilt_kie.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tps_warp.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tps_locnet.cpp)
+list(APPEND CRISPEMBED_SOURCES src/safmn_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/pdf_info.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
@@ -400,6 +401,9 @@ target_link_libraries(test-text-sr PRIVATE crispembed)
 
 add_executable(test-tbsrn-diff tests/test_tbsrn_diff.cpp)
 target_link_libraries(test-tbsrn-diff PRIVATE crispembed)
+
+add_executable(test-safmn-diff tests/test_safmn_diff.cpp)
+target_link_libraries(test-safmn-diff PRIVATE crispembed)
 
 add_executable(test-pan-diff tests/test_pan_diff.cpp)
 target_link_libraries(test-pan-diff PRIVATE crispembed)

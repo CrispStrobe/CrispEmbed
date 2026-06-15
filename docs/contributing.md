@@ -216,6 +216,7 @@ Utility libraries (not model backends) follow a lighter pattern.
 | Punctuation restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | TPS dewarp (learned) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | PDF DPI profiling | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| SAFMN super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ### Implementation patterns
 
