@@ -2902,6 +2902,116 @@ class CrispPunct {
 }
 
 // ---------------------------------------------------------------------------
+// Restormer image restoration (CVPR 2022)
+// ---------------------------------------------------------------------------
+
+/// Result from Restormer image restoration.
+class RestormerResult {
+  final Uint8List pixels;
+  final int width;
+  final int height;
+
+  const RestormerResult({
+    required this.pixels,
+    required this.width,
+    required this.height,
+  });
+}
+
+/// Restormer image restoration model — denoise, deblur, or derain images.
+class CrispRestormer {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedRestormerFreeDart _freeFn;
+  late final CrispembedRestormerProcessDart _processFn;
+  late final CrispembedRestormerFreeImageDart _freeImageFn;
+
+  CrispRestormer(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedRestormerInitNative,
+            CrispembedRestormerInitDart>('crispembed_restormer_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw StateError('Failed to load Restormer model: $modelPath');
+    }
+
+    _freeFn = _lib.lookupFunction<CrispembedRestormerFreeNative,
+        CrispembedRestormerFreeDart>('crispembed_restormer_free');
+    _processFn = _lib.lookupFunction<CrispembedRestormerProcessNative,
+        CrispembedRestormerProcessDart>('crispembed_restormer_process');
+    _freeImageFn = _lib.lookupFunction<CrispembedRestormerFreeImageNative,
+        CrispembedRestormerFreeImageDart>('crispembed_restormer_free_image');
+  }
+
+  /// Restore an RGB image (denoise / deblur / derain).
+  ///
+  /// [pixels] must be RGB uint8 bytes of length [width] * [height] * 3.
+  /// Returns a [RestormerResult] with the same dimensions as the input.
+  RestormerResult process(
+    Uint8List pixels,
+    int width,
+    int height, {
+    int tileSize = 0,
+    int tileOverlap = 0,
+  }) {
+    _checkDisposed();
+    final pxNative = calloc<Uint8>(pixels.length);
+    final outPxPtr = calloc<Pointer<Uint8>>();
+
+    try {
+      for (var i = 0; i < pixels.length; i++) {
+        pxNative[i] = pixels[i];
+      }
+
+      final rc = _processFn(
+        _ctx,
+        pxNative,
+        width,
+        height,
+        tileSize,
+        tileOverlap,
+        outPxPtr,
+      );
+
+      if (rc != 0 || outPxPtr.value == nullptr) {
+        throw StateError('Restormer processing failed (rc=$rc)');
+      }
+
+      final outPtr = outPxPtr.value;
+      final len = width * height * 3;
+      final resultPixels = Uint8List(len);
+      for (var i = 0; i < len; i++) {
+        resultPixels[i] = outPtr[i];
+      }
+      _freeImageFn(outPtr);
+
+      return RestormerResult(pixels: resultPixels, width: width, height: height);
+    } finally {
+      calloc.free(pxNative);
+      calloc.free(outPxPtr);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispRestormer has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // OCR Rendering (text, hOCR, ALTO, PDF)
 // ---------------------------------------------------------------------------
 

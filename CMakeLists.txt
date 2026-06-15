@@ -147,6 +147,7 @@ list(APPEND CRISPEMBED_SOURCES src/nafnet_denoise.cpp)
 list(APPEND CRISPEMBED_SOURCES src/text_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tbsrn_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/pan_sr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/restormer.cpp)
 list(APPEND CRISPEMBED_SOURCES src/parseq_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/glm_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/got_ocr.cpp)
@@ -412,6 +413,9 @@ target_link_libraries(test-esrgan-diff PRIVATE crispembed)
 
 add_executable(test-pan-diff tests/test_pan_diff.cpp)
 target_link_libraries(test-pan-diff PRIVATE crispembed)
+
+add_executable(test-restormer-diff tests/test_restormer_diff.cpp)
+target_link_libraries(test-restormer-diff PRIVATE crispembed)
 
 add_executable(test-pdf-info tests/test_pdf_info.cpp)
 target_link_libraries(test-pdf-info PRIVATE crispembed)

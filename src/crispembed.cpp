@@ -3919,6 +3919,28 @@ extern "C" void crispembed_esrgan_sr_free_image(uint8_t * pixels) {
 }
 
 // ---------------------------------------------------------------------------
+// Restormer image restoration
+// ---------------------------------------------------------------------------
+
+#include "restormer.h"
+
+extern "C" void * crispembed_restormer_init(const char * model_path, int n_threads) {
+    return restormer_init(model_path, n_threads);
+}
+extern "C" void crispembed_restormer_free(void * ctx) {
+    restormer_free((restormer_context *)ctx);
+}
+extern "C" int crispembed_restormer_process(
+        void * ctx, const uint8_t * pixels, int width, int height,
+        int tile_size, int tile_overlap, uint8_t ** out_pixels) {
+    return restormer_process((restormer_context *)ctx, pixels, width, height,
+                             tile_size, tile_overlap, out_pixels);
+}
+extern "C" void crispembed_restormer_free_image(uint8_t * pixels) {
+    restormer_free_image(pixels);
+}
+
+// ---------------------------------------------------------------------------
 // Punctuation restoration — FireRedPunc / PCS
 // ---------------------------------------------------------------------------
 
