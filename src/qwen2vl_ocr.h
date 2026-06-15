@@ -221,6 +221,7 @@ struct generate_result {
 
 bool generate(context &ctx,
               const float *image_embeds, int n_image_tokens, int embed_dim,
+              const int32_t *grid_thw,  // actual image grid (t,h,w) for mRoPE
               const int32_t *prompt_token_ids, int n_prompt_tokens,
               int max_new_tokens,
               generate_result &out);
