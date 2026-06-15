@@ -548,6 +548,27 @@ static const ModelEntry k_registry[] = {
      "TPS localization CNN for document dewarping (108K params, 20 control points)", "0.4 MB", "apache-2.0",
      "https://huggingface.co/cstr/tps-loc-GGUF"},
 
+    // --- Text super-resolution ---
+
+    {"pan-sr-x4",
+     "pan-x4-f16.gguf",
+     "https://huggingface.co/cstr/crispembed-gguf/resolve/main/pan-x4-f16.gguf",
+     "PAN 4× whole-image super-resolution (272K params)", "0.5 MB", "apache-2.0",
+     "https://huggingface.co/cstr/crispembed-gguf"},
+
+    {"tbsrn-sr",
+     "tbsrn-telescope-f16.gguf",
+     "https://huggingface.co/cstr/crispembed-gguf/resolve/main/tbsrn-telescope-f16.gguf",
+     "TBSRN 2× text-line super-resolution (1.1M params)", "2 MB", "apache-2.0",
+     "https://huggingface.co/cstr/crispembed-gguf"},
+
+    // text-sr: NAFNet-SR engine — no default model; supply a custom trained GGUF.
+    {"text-sr",
+     "text-sr-nafnet.gguf",
+     "",
+     "NAFNet-SR text super-resolution engine (custom trained model required)", "", "apache-2.0",
+     ""},
+
     {"qwen2vl-3b",
      "qwen2.5-vl-3b-q4_k.gguf",
      "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF/resolve/main/qwen2.5-vl-3b-q4_k.gguf",

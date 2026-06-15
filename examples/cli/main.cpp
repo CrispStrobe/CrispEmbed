@@ -109,6 +109,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --pan-sr FILE    standalone PAN super-resolution: upscale image, write PGM to stdout\n");
     fprintf(stderr, "                   (needs --pan-model PATH: PAN GGUF, Pixel Attention Network, 2x or 4x)\n");
     fprintf(stderr, "  --pan-model PATH PAN super-resolution GGUF (used with --pan-sr)\n");
+    fprintf(stderr, "  --tbsrn-sr FILE  standalone TBSRN super-resolution: upscale text crop, write PPM to stdout\n");
+    fprintf(stderr, "                   (needs --tbsrn-model PATH: TBSRN GGUF, always 2x, 16x64->32x128)\n");
+    fprintf(stderr, "  --tbsrn-model PATH TBSRN super-resolution GGUF (used with --tbsrn-sr)\n");
     fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
     fprintf(stderr, "  --ocr-rec MODEL  general OCR: text recognition model (TrOCR, e.g. trocr-printed)\n");
     fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
@@ -174,6 +177,8 @@ int main(int argc, char ** argv) {
     std::string sr_model;              // --sr-model: text super-resolution GGUF
     std::string pan_model;             // --pan-model: PAN super-resolution GGUF
     std::string pan_sr_path;           // --pan-sr FILE: standalone PAN upscaling
+    std::string tbsrn_model;           // --tbsrn-model: TBSRN super-resolution GGUF
+    std::string tbsrn_sr_path;         // --tbsrn-sr FILE: standalone TBSRN upscaling
     std::string pipeline_vlm_model;     // --vlm-model NAME: VLM escalation engine GGUF
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
@@ -289,6 +294,10 @@ int main(int argc, char ** argv) {
             pan_model = argv[++i];
         } else if (strcmp(argv[i], "--pan-sr") == 0 && i + 1 < argc) {
             pan_sr_path = argv[++i];
+        } else if (strcmp(argv[i], "--tbsrn-model") == 0 && i + 1 < argc) {
+            tbsrn_model = argv[++i];
+        } else if (strcmp(argv[i], "--tbsrn-sr") == 0 && i + 1 < argc) {
+            tbsrn_sr_path = argv[++i];
         } else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) {
             pipeline_vlm_model = argv[++i];
         } else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) {
@@ -429,6 +438,28 @@ int main(int argc, char ** argv) {
         printf("P6\n%d %d\n255\n", ow, oh);
         fwrite(out, 1, (size_t)ow * oh * 3, stdout);
         crispembed_pan_sr_free_image(out);
+        return 0;
+    }
+    if (!tbsrn_sr_path.empty()) {
+        if (tbsrn_model.empty()) {
+            fprintf(stderr, "error: --tbsrn-sr requires --tbsrn-model <path>\n");
+            return 1;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(tbsrn_sr_path.c_str(), &w, &h, &ch, 3);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", tbsrn_sr_path.c_str()); return 1; }
+        void * tctx = crispembed_tbsrn_sr_init(tbsrn_model.c_str(), n_threads);
+        if (!tctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load TBSRN model '%s'\n", tbsrn_model.c_str()); return 1; }
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_tbsrn_sr_process(tctx, data, w, h, &out, &ow, &oh);
+        stbi_image_free(data);
+        crispembed_tbsrn_sr_free(tctx);
+        if (rc != 0 || !out) { fprintf(stderr, "error: TBSRN SR processing failed\n"); return 1; }
+        // Write result as PPM (RGB) to stdout
+        printf("P6\n%d %d\n255\n", ow, oh);
+        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+        crispembed_tbsrn_sr_free_image(out);
         return 0;
     }
 
