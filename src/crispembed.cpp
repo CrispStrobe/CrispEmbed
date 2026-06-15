@@ -3939,6 +3939,18 @@ extern "C" char * crispembed_ocr_render(
 #include "tps_warp.h"
 #include "cc_detect.h"
 #include "classical_preproc.h"
+#include "pdf_info.h"
+
+extern "C" int crispembed_pdf_page_dpi(
+    const char * pdf_path, int page,
+    float * out_dpi, int * out_n_images)
+{
+    pdf_page_dpi_result r = {};
+    int ret = pdf_page_dpi(pdf_path, page, &r);
+    if (out_dpi) *out_dpi = r.dpi;
+    if (out_n_images) *out_n_images = r.n_images;
+    return ret;
+}
 
 extern "C" int crispembed_dewarp(
     const uint8_t * gray, int w, int h,

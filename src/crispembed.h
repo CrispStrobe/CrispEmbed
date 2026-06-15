@@ -951,6 +951,13 @@ CRISPEMBED_API char * crispembed_ocr_render(
 // ---------------------------------------------------------------------------
 // CPU-only, model-free, fast tier. No GGUF models needed.
 
+/// PDF DPI profiling — analyse embedded images in a PDF page.
+/// Returns 0 on success, -1 on error. Sets *out_dpi to the mean DPI
+/// across all raster images on the page, and *out_n_images to the count.
+CRISPEMBED_API int crispembed_pdf_page_dpi(
+    const char * pdf_path, int page,
+    float * out_dpi, int * out_n_images);
+
 /// Dewarp a grayscale page (straighten curved text lines).
 /// [out] must be pre-allocated (w*h bytes). Returns 0 on success.
 CRISPEMBED_API int crispembed_dewarp(
