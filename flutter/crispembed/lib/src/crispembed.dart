@@ -1916,10 +1916,11 @@ class CrispOcrOrchestrator {
 // Classical Preprocessing (model-free, CPU-only)
 // ---------------------------------------------------------------------------
 
-/// Classical document preprocessing — dewarp, deskew, binarize, despeckle.
-/// No model downloads needed. All operations are CPU-only.
+/// Classical document preprocessing — dewarp, deskew, binarize, despeckle,
+/// PDF DPI profiling. No model downloads needed. All operations are CPU-only.
 class CrispPreprocess {
   late final DynamicLibrary _lib;
+  late final CrispembedPdfPageDpiDart _pdfPageDpiFn;
   late final CrispembedDewarpDart _dewarpFn;
   late final CrispembedTpsAutoDewarpDart _tpsAutoDewarpFn;
   late final CrispembedFindSkewDart _findSkewFn;
@@ -1930,6 +1931,8 @@ class CrispPreprocess {
 
   CrispPreprocess({String? libPath}) {
     _lib = _openNativeLib(libPath);
+    _pdfPageDpiFn = _lib.lookupFunction<CrispembedPdfPageDpiNative,
+        CrispembedPdfPageDpiDart>('crispembed_pdf_page_dpi');
     _dewarpFn = _lib.lookupFunction<CrispembedDewarpNative,
         CrispembedDewarpDart>('crispembed_dewarp');
     _tpsAutoDewarpFn = _lib.lookupFunction<CrispembedTpsAutoDewarpNative,
@@ -1944,6 +1947,22 @@ class CrispPreprocess {
         CrispembedDespeckleDart>('crispembed_despeckle');
     _ccDetectFn = _lib.lookupFunction<CrispembedCcDetectNative,
         CrispembedCcDetectDart>('crispembed_cc_detect');
+  }
+
+  /// PDF DPI profiling -- analyse embedded images on a PDF page.
+  /// Returns (dpi, nImages), or null on failure.
+  ({double dpi, int nImages})? pdfPageDpi(String path, {int page = 0}) {
+    final cPath = path.toNativeUtf8();
+    final outDpi = calloc<Float>();
+    final outN = calloc<Int32>();
+    final ret = _pdfPageDpiFn(cPath, page, outDpi, outN);
+    final result = ret == 0
+        ? (dpi: outDpi.value.toDouble(), nImages: outN.value)
+        : null;
+    calloc.free(cPath);
+    calloc.free(outDpi);
+    calloc.free(outN);
+    return result;
   }
 
   /// Dewarp a grayscale page image (straighten curved text lines).

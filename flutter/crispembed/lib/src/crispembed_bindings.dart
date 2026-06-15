@@ -364,6 +364,14 @@ typedef CrispembedOcrPipelineFreeDart = void Function(Pointer<Void> ctx);
 typedef CrispembedOcrPipelineDefaultsNative = Void Function(Pointer<Void> outParams);
 typedef CrispembedOcrPipelineDefaultsDart = void Function(Pointer<Void> outParams);
 
+// --- PDF DPI Profiling ---
+typedef CrispembedPdfPageDpiNative = Int32 Function(
+    Pointer<Utf8> pdfPath, Int32 page,
+    Pointer<Float> outDpi, Pointer<Int32> outNImages);
+typedef CrispembedPdfPageDpiDart = int Function(
+    Pointer<Utf8> pdfPath, int page,
+    Pointer<Float> outDpi, Pointer<Int32> outNImages);
+
 // --- Classical Preprocessing ---
 typedef CrispembedDewarpNative = Int32 Function(
     Pointer<Uint8> gray, Int32 w, Int32 h,

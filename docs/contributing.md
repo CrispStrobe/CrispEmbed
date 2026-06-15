@@ -215,6 +215,7 @@ Utility libraries (not model backends) follow a lighter pattern.
 | OCR renderers (text, hOCR, ALTO, PDF) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Punctuation restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | TPS dewarp (learned) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| PDF DPI profiling | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ### Implementation patterns
 
