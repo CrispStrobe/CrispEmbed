@@ -28,6 +28,7 @@ struct stored_line {
 struct stored_page {
     std::vector<stored_line> lines;
     int width, height;
+    std::string image_path; // for PDF image embedding
 };
 
 struct ocr_renderer {
@@ -243,6 +244,7 @@ static void pdf_add_page(ocr_renderer * r, const ocr_render_page * page) {
     stored_page sp;
     sp.width = page->page_width;
     sp.height = page->page_height;
+    if (page->image_path) sp.image_path = page->image_path;
     for (int i = 0; i < page->n_lines; i++) {
         const ocr_render_line * line = &page->lines[i];
         stored_line sl;
@@ -306,30 +308,104 @@ static void pdf_end(ocr_renderer * r) {
     out += "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>\nendobj\n";
 
     // Per-page objects: each page needs a Page dict + content stream
+    // and optionally an image XObject.
+    //
+    // Text rendering approach (from Tesseract pdfrenderer.cpp, Apache-2.0):
+    // - Use text matrix `Tm` with affine coefficients for rotation-aware
+    //   positioning (not simple `Td`).
+    // - Scale font size so rendered text width matches bounding box width.
+    //   Helvetica average glyph width ≈ 0.6 * font_size.
+    // - Rendering mode 3 = invisible text (selectable but not drawn).
     std::vector<int> page_ids;
     for (auto & sp : r->pages) {
-        // Build content stream: invisible text at OCR positions
+        // Build content stream
         std::string content;
+
+        // If image path is provided, embed as JPEG XObject
+        // (image drawn first, text overlaid on top)
+        int img_obj_id = 0;
+        std::vector<uint8_t> jpeg_data;
+        if (!sp.image_path.empty()) {
+            // Read the image file as raw bytes (assume JPEG or re-encode)
+            FILE * imgf = fopen(sp.image_path.c_str(), "rb");
+            if (imgf) {
+                fseek(imgf, 0, SEEK_END);
+                long sz = ftell(imgf);
+                fseek(imgf, 0, SEEK_SET);
+                jpeg_data.resize(sz);
+                fread(jpeg_data.data(), 1, sz, imgf);
+                fclose(imgf);
+            }
+        }
+
+        if (!jpeg_data.empty()) {
+            // Draw image as full-page background
+            // cm = Coordinate Transform Matrix: scale to page size
+            snprintf(buf, sizeof(buf), "q\n%d 0 0 %d 0 0 cm\n/Im1 Do\nQ\n",
+                     sp.width, sp.height);
+            content += buf;
+        }
+
+        // Invisible text layer
         content += "BT\n";
         content += "3 Tr\n"; // Rendering mode 3 = invisible
 
         for (auto & sl : sp.lines) {
             for (auto & sw : sl.words) {
                 if (sw.text.empty()) continue;
-                // PDF coordinates: y is bottom-up
-                int pdf_x = sw.x;
-                int pdf_y = sp.height - sw.y - sw.h;
-                // Font size: approximate from word height
-                int font_size = std::max(4, sw.h);
 
-                snprintf(buf, sizeof(buf), "/F1 %d Tf\n", font_size);
+                // PDF coordinates: y is bottom-up
+                double pdf_x = (double)sw.x;
+                double pdf_y = (double)(sp.height - sw.y - sw.h);
+
+                // Compute font size to match word width.
+                // Helvetica average glyph width ≈ 0.55 * font_size.
+                // We want: text_length ≈ word_width_in_points
+                int n_chars = (int)sw.text.size();
+                double desired_width = (double)sw.w;
+                double font_size = (n_chars > 0)
+                    ? desired_width / (n_chars * 0.55)
+                    : (double)sw.h;
+                font_size = std::max(4.0, std::min(200.0, font_size));
+
+                // Use Tm (text matrix) for positioning.
+                // For horizontal text: a=1, b=0, c=0, d=1, e=x, f=y
+                // This allows easy extension to rotated text later.
+                snprintf(buf, sizeof(buf),
+                    "/F1 %.1f Tf\n"
+                    "1 0 0 1 %.1f %.1f Tm\n"
+                    "(%s) Tj\n",
+                    font_size, pdf_x, pdf_y,
+                    pdf_escape(sw.text).c_str());
                 content += buf;
-                snprintf(buf, sizeof(buf), "%d %d Td\n", pdf_x, pdf_y);
-                content += buf;
-                content += "(" + pdf_escape(sw.text) + ") Tj\n";
             }
         }
         content += "ET\n";
+
+        // Image XObject (if image data available)
+        if (!jpeg_data.empty()) {
+            img_obj_id = next_id++;
+            obj_start(img_obj_id);
+
+            // Detect if JPEG (starts with FF D8) or PNG
+            bool is_jpeg = jpeg_data.size() >= 2 &&
+                           jpeg_data[0] == 0xFF && jpeg_data[1] == 0xD8;
+            const char * filter = is_jpeg ? "/DCTDecode" : "/FlateDecode";
+            // For simplicity, only JPEG is truly embedded; PNG would need
+            // decompression + re-encoding. Just embed raw bytes with DCTDecode.
+
+            snprintf(buf, sizeof(buf),
+                "<< /Type /XObject /Subtype /Image\n"
+                "   /Width %d /Height %d\n"
+                "   /ColorSpace /DeviceRGB\n"
+                "   /BitsPerComponent 8\n"
+                "   /Filter %s\n"
+                "   /Length %d >>\nstream\n",
+                sp.width, sp.height, filter, (int)jpeg_data.size());
+            out += buf;
+            out.append((const char *)jpeg_data.data(), jpeg_data.size());
+            out += "\nendstream\nendobj\n";
+        }
 
         // Content stream object
         int stream_id = next_id++;
@@ -343,13 +419,20 @@ static void pdf_end(ocr_renderer * r) {
         int page_id = next_id++;
         page_ids.push_back(page_id);
         obj_start(page_id);
+
+        // Resources: font + optional image
+        std::string resources = "<< /Font << /F1 " + std::to_string(font_id) + " 0 R >>";
+        if (img_obj_id > 0)
+            resources += " /XObject << /Im1 " + std::to_string(img_obj_id) + " 0 R >>";
+        resources += " >>";
+
         snprintf(buf, sizeof(buf),
             "<< /Type /Page /Parent %d 0 R "
             "/MediaBox [0 0 %d %d] "
             "/Contents %d 0 R "
-            "/Resources << /Font << /F1 %d 0 R >> >> "
+            "/Resources %s "
             ">>\nendobj\n",
-            pages_id, sp.width, sp.height, stream_id, font_id);
+            pages_id, sp.width, sp.height, stream_id, resources.c_str());
         out += buf;
     }
 
