@@ -390,6 +390,8 @@ mixtex_ocr_context * mixtex_ocr_init(const char * model_path, int n_threads) {
             hp.vocab_size, ctx->vocab.size());
 
     // Pass 2: weights
+    // NOTE: CPU-only — forward pass is scalar C++ (Swin+RoBERTa with direct
+    // tensor->data access). GPU enablement requires rewriting as ggml graph.
     ctx->backend = ggml_backend_cpu_init();
     ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
     if (!core_gguf::load_weights(model_path, ctx->backend, "mixtex_ocr", ctx->wl)) {

@@ -267,6 +267,8 @@ hmer_ocr_context * hmer_ocr_init(const char * model_path, int n_threads) {
             hp.hidden_size, hp.output_size, ctx->vocab.size());
 
     // Phase 2: load weights
+    // NOTE: CPU-only — forward pass is scalar C++ (DenseNet+GRU with direct
+    // tensor->data access). GPU enablement requires rewriting as ggml graph.
     ggml_backend_t backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, backend, "hmer_ocr", ctx->wl)) {
         ggml_backend_free(backend);
