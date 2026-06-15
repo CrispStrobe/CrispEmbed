@@ -79,6 +79,7 @@ int main(int argc, char ** argv) {
     std::string sr_model_path;        // text super-resolution model (--sr-model)
     std::string pan_model_path;       // PAN super-resolution model (--pan-model)
     std::string tbsrn_model_path;     // TBSRN text-line SR model (--tbsrn-model)
+    std::string safmn_model_path;     // SAFMN super-resolution model (--safmn-model)
     int port = 8080;
     int n_threads = 4;
 
@@ -107,6 +108,10 @@ int main(int argc, char ** argv) {
     }
 
     if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && tbsrn_model_path.empty()) {
+        else if (strcmp(argv[i], "--safmn-model") == 0 && i + 1 < argc) safmn_model_path = argv[++i];
+    }
+
+    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && safmn_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
@@ -137,6 +142,8 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --pan-model MODEL PAN SR GGUF (Pixel Attention Network, 2x or 4x); enables POST /pan/sr\n");
         fprintf(stderr, "\nTBSRN text-line super-resolution:\n");
         fprintf(stderr, "  --tbsrn-model MODEL TBSRN GGUF (Telescope, 1.1M params, fixed 4x); enables POST /tbsrn/sr\n");
+        fprintf(stderr, "\nSAFMN super-resolution (lightweight whole-image upscaling):\n");
+        fprintf(stderr, "  --safmn-model MODEL SAFMN SR GGUF (SAFM+CCM AttBlocks, 2x or 4x); enables POST /safmn/sr\n");
         return 1;
     }
 
@@ -827,6 +834,14 @@ int main(int argc, char ** argv) {
         tbsrn_sr_ctx = crispembed_tbsrn_sr_init(tbsrn_model_path.c_str(), n_threads);
         if (!tbsrn_sr_ctx)
             fprintf(stderr, "Warning: failed to load TBSRN SR model '%s'\n", tbsrn_model_path.c_str());
+    // ── SAFMN Super-Resolution ──
+    void * safmn_sr_ctx = nullptr;
+    std::mutex safmn_sr_mutex;
+
+    if (!safmn_model_path.empty()) {
+        safmn_sr_ctx = crispembed_safmn_sr_init(safmn_model_path.c_str(), n_threads);
+        if (!safmn_sr_ctx)
+            fprintf(stderr, "Warning: failed to load SAFMN SR model '%s'\n", safmn_model_path.c_str());
     }
 
     // POST /clip/text — CLIP text encoding
@@ -2105,6 +2120,11 @@ int main(int argc, char ** argv) {
         if (!tbsrn_sr_ctx) {
             res.status = 503;
             res.set_content("{\"error\": \"no TBSRN SR model loaded (use --tbsrn-model)\"}", "application/json");
+    // POST /safmn/sr — SAFMN whole-image super-resolution (SAFM+CCM AttBlocks)
+    svr.Post("/safmn/sr", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!safmn_sr_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no SAFMN SR model loaded (use --safmn-model)\"}", "application/json");
             return;
         }
 
@@ -2132,12 +2152,16 @@ int main(int argc, char ** argv) {
         }
 
         std::lock_guard<std::mutex> lock(tbsrn_sr_mutex);
+        std::lock_guard<std::mutex> lock(safmn_sr_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         uint8_t * out = nullptr;
         int ow = 0, oh = 0;
         int rc = crispembed_tbsrn_sr_process(
             tbsrn_sr_ctx, data, w, h,
+        int rc = crispembed_safmn_sr_process(
+            safmn_sr_ctx, data, w, h,
+            /*tile_size=*/0, /*tile_overlap=*/0,
             &out, &ow, &oh);
         stbi_image_free(data);
 
@@ -2147,6 +2171,7 @@ int main(int argc, char ** argv) {
         if (rc != 0 || !out) {
             res.status = 500;
             res.set_content("{\"error\": \"TBSRN SR processing failed\"}", "application/json");
+            res.set_content("{\"error\": \"SAFMN SR processing failed\"}", "application/json");
             return;
         }
 
@@ -2166,6 +2191,9 @@ int main(int argc, char ** argv) {
             b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
         }
         crispembed_tbsrn_sr_free_image(out);
+        crispembed_safmn_sr_free_image(out);
+
+        const int scale = crispembed_safmn_sr_scale(safmn_sr_ctx);
 
         std::ostringstream js;
         js << "{\"image\": \"" << b64 << "\""
@@ -2176,6 +2204,11 @@ int main(int argc, char ** argv) {
 
         fprintf(stderr, "crispembed-server: /tbsrn/sr in %.1f ms (%dx%d -> %dx%d, 4x)\n",
                 ms, w, h, ow, oh);
+           << ", \"upscale_factor\": " << scale
+           << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /safmn/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n",
+                ms, w, h, ow, oh, scale);
         res.set_content(js.str(), "application/json");
     });
 
@@ -2392,6 +2425,7 @@ int main(int argc, char ** argv) {
         if (text_sr_ctx) js << ", \"text_sr\": true, \"text_sr_upscale\": " << crispembed_text_sr_upscale_factor(text_sr_ctx);
         if (pan_sr_ctx) js << ", \"pan_sr\": true, \"pan_sr_upscale\": " << crispembed_pan_sr_scale(pan_sr_ctx);
         if (tbsrn_sr_ctx) js << ", \"tbsrn_sr\": true, \"tbsrn_sr_upscale\": 4";
+        if (safmn_sr_ctx) js << ", \"safmn_sr\": true, \"safmn_sr_upscale\": " << crispembed_safmn_sr_scale(safmn_sr_ctx);
         js << ", \"scan_cleanup\": true";  // always available (no model needed)
         js << "}";
         res.set_content(js.str(), "application/json");
@@ -2418,6 +2452,7 @@ int main(int argc, char ** argv) {
     if (text_sr_ctx) fprintf(stderr, "  POST /text/sr         — {\"image\": \"low_dpi.png\"} (upscale %dx)\n", crispembed_text_sr_upscale_factor(text_sr_ctx));
     if (pan_sr_ctx) fprintf(stderr, "  POST /pan/sr          — {\"image\": \"photo.png\"} (upscale %dx)\n", crispembed_pan_sr_scale(pan_sr_ctx));
     if (tbsrn_sr_ctx) fprintf(stderr, "  POST /tbsrn/sr        — {\"image\": \"text_line.png\"} (upscale 4x)\n");
+    if (safmn_sr_ctx) fprintf(stderr, "  POST /safmn/sr        — {\"image\": \"photo.png\"} (upscale %dx)\n", crispembed_safmn_sr_scale(safmn_sr_ctx));
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
     fprintf(stderr, "  POST /pdf/dpi              — {\"file\": \"...\"} (PDF DPI profiling)\n");
     fprintf(stderr, "  POST /preprocess/skew      — {\"image\": \"...\"} (find skew angle)\n");
@@ -2435,6 +2470,7 @@ int main(int argc, char ** argv) {
     if (text_sr_ctx) crispembed_text_sr_free(text_sr_ctx);
     if (pan_sr_ctx) crispembed_pan_sr_free(pan_sr_ctx);
     if (tbsrn_sr_ctx) crispembed_tbsrn_sr_free(tbsrn_sr_ctx);
+    if (safmn_sr_ctx) crispembed_safmn_sr_free(safmn_sr_ctx);
     if (ner_ctx) crispembed_ner_free(ner_ctx);
     if (layout_ctx) crispembed_layout_free(layout_ctx);
     if (text_det_ctx) crispembed_text_det_free(text_det_ctx);

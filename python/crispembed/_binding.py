@@ -2623,6 +2623,23 @@ def _setup_tbsrn_sr_signatures(lib):
     lib.crispembed_tbsrn_sr_process.argtypes = [
         ctypes.c_void_p,
         ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+# SAFMN Whole-Image Super-Resolution (SAFM+CCM AttBlocks, Apache-2.0)
+# ---------------------------------------------------------------------------
+
+def _setup_safmn_sr_signatures(lib):
+    lib.crispembed_safmn_sr_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_safmn_sr_init.restype = ctypes.c_void_p
+
+    lib.crispembed_safmn_sr_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_safmn_sr_free.restype = None
+
+    lib.crispembed_safmn_sr_scale.argtypes = [ctypes.c_void_p]
+    lib.crispembed_safmn_sr_scale.restype = ctypes.c_int
+
+    lib.crispembed_safmn_sr_process.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.c_int, ctypes.c_int,
         ctypes.POINTER(ctypes.POINTER(ctypes.c_uint8)),
         ctypes.POINTER(ctypes.c_int),
         ctypes.POINTER(ctypes.c_int),
@@ -2656,11 +2673,47 @@ class CrispTbsrnSr:
     def process(self, pixels: np.ndarray, width: int, height: int,
                 ) -> Tuple[np.ndarray, int, int]:
         """Upscale a text-image crop (always 2×).
+    lib.crispembed_safmn_sr_process.restype = ctypes.c_int
+
+    lib.crispembed_safmn_sr_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_safmn_sr_free_image.restype = None
+
+
+class CrispSafmnSr:
+    """SAFMN super-resolution — lightweight upscaling with SAFM+CCM AttBlocks.
+
+    Usage::
+
+        sr = CrispSafmnSr("safmn-sr-x4.gguf")
+        print(sr.scale)  # e.g. 4
+        out = sr.process(pixels, width, height)  # returns (ndarray, out_w, out_h)
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 4,
+                 lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_safmn_sr_signatures(self._lib)
+        self._ctx = self._lib.crispembed_safmn_sr_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load SAFMN SR model: {model_path}")
+
+    @property
+    def scale(self) -> int:
+        """Return the scale factor (e.g. 2, 4) reported by the model."""
+        return self._lib.crispembed_safmn_sr_scale(self._ctx)
+
+    def process(self, pixels: np.ndarray, width: int, height: int,
+                tile_size: int = 0, tile_overlap: int = 0
+                ) -> Tuple[np.ndarray, int, int]:
+        """Upscale an image.
 
         Args:
             pixels: uint8 numpy array, flattened or shaped (H, W, C).
             width: source image width in pixels.
             height: source image height in pixels.
+            tile_size: tile size for tiled inference (0 = full image).
+            tile_overlap: overlap between tiles in pixels.
 
         Returns:
             Tuple of (output_ndarray uint8 shape (out_h, out_w, 3), out_w, out_h).
@@ -2682,11 +2735,23 @@ class CrispTbsrnSr:
         ow, oh = out_w.value, out_h.value
         buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
         self._lib.crispembed_tbsrn_sr_free_image(out_ptr)
+        rc = self._lib.crispembed_safmn_sr_process(
+            self._ctx, px_ptr, width, height,
+            tile_size, tile_overlap,
+            ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
+        )
+        if rc != 0 or not out_ptr:
+            raise RuntimeError("SAFMN SR processing failed")
+
+        ow, oh = out_w.value, out_h.value
+        buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
+        self._lib.crispembed_safmn_sr_free_image(out_ptr)
         return buf.reshape(oh, ow, 3), ow, oh
 
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:
             self._lib.crispembed_tbsrn_sr_free(self._ctx)
+            self._lib.crispembed_safmn_sr_free(self._ctx)
             self._ctx = None
 
 
