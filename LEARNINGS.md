@@ -1828,3 +1828,20 @@ Packing 32 pixels per uint32 and using word-level OR (dilation) gives
 21x speedup over float separable morphology and 32x less memory.
 The cache efficiency from 1-bit packing dominates even over the
 algorithmic improvement.
+
+## PAN super-resolution for low-DPI OCR
+
+Tested PAN 4x upscale on 75dpi text (150×9 px → 600×36 px):
+- 75dpi raw → Tesseract: "C Melbe Wesld1" (garbage)
+- 75dpi + PAN 4x → Tesseract: "Hello Werdd 123" (1 char error)
+- 150dpi raw → Tesseract: "Hello World 123" (perfect)
+
+Key findings:
+1. PAN 4x rescues unreadable 75dpi text — garbage → mostly correct
+2. Don't cleanup (binarize/deskew) before SR — destroys sub-10px text
+3. Don't cleanup after SR either — upscaled text is clean enough
+4. For 150dpi+, no SR needed — OCR works fine directly
+5. Optimal pipeline: estimate DPI → if < 150, PAN 4x → OCR
+
+The `estimate_dpi()` heuristic assumes longer edge ≈ 11 inches (A4/letter).
+This is wrong for cropped regions but acceptable for full pages.
