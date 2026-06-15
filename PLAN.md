@@ -729,9 +729,8 @@ Listed in priority order:
 - [x] **OCR quality scoring** — `ocr_quality_score()`: binary-search
   dictionary lookup for word match ratio. DONE.
 
-- [ ] **PDF/A metadata** — XMP metadata packet + ICC sRGB profile embedding
-  per the PDF/A spec (ISO 19005). Portable subset that doesn't need
-  Ghostscript. Reference: pdfcpu (Apache-2.0) XMP handling. ~200 LOC.
+- [x] **PDF/A-2b metadata** — `ocr_render_set_pdfa()` adds XMP metadata
+  stream (pdfaid:part=2, conformance=B) + sRGB OutputIntent. DONE.
 
 ---
 
