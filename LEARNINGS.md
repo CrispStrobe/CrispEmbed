@@ -1,5 +1,24 @@
 # CrispEmbed — Technical Learnings
 
+## Qwen2-VL vs Qwen2.5-VL config field names
+
+The vision config schema differs between Qwen2-VL and Qwen2.5-VL:
+
+| Field | Qwen2-VL | Qwen2.5-VL |
+|-------|----------|------------|
+| ViT block dim | `embed_dim` (1280) | `hidden_size` (1280) |
+| Merger output | `hidden_size` (1536) | `out_hidden_size` (2048) |
+| FFN size | `mlp_ratio` (4) → computed | `intermediate_size` (3420) |
+| Input channels | `in_chans` (3) | `in_channels` (3) |
+
+Critically, Qwen2-VL's `hidden_size` is the **merger output** (= LLM input dim),
+not the ViT block dim. The GGUF `vision.hidden_size` must be set to `embed_dim`
+(the ViT block dim), not `hidden_size`. Getting this wrong means every attention
+head_dim computation in the engine is wrong → garbage output, no obvious crash.
+
+Fix: use `getattr(vc, 'embed_dim', vc.hidden_size)` for the block dim,
+`getattr(vc, 'intermediate_size', None) or embed_dim * mlp_ratio` for FFN.
+
 ## NAFNet dequant: always use ggml_get_type_traits for quantized tensors
 
 When loading quantized GGUF weights for CPU-scalar inference, the `to_f32()`
@@ -1760,3 +1779,52 @@ start at index `padding_idx + 1 = 2`. So decode step 0 uses
 `pos_embed[2]`, step 1 uses `pos_embed[3]`, etc. Using index 0
 (random values, norm=0.57) and index 1 (all zeros, padding) produces
 wrong embeddings that cascade through the decoder.
+
+## Tesseract `.traineddata` binary format
+
+The `.traineddata` file is a custom archive: `int32 n_entries`, then
+`n_entries × int64` offsets (-1 = absent). Component 17 = LSTM network.
+
+The LSTM component has a recursive binary tree starting with
+`Network::Serialize`: `int8 type_enum` (if 0 → read type string),
+then `int8 training, int8 needs_bp, int32 flags, int32 ni, int32 no,
+int32 num_weights, uint32 name_len + chars`.
+
+Key gotcha: `kDoubleFlag = 128` (not 2!). Controls whether scales/arrays
+use float64 vs float32. The kInt8Flag is 1, kAdamFlag is 4.
+
+## Tesseract int8 weight dequantization
+
+Stored scale = `runtime_scale * INT8_MAX`. At load:
+`loaded_scale = stored / 127`. Runtime: `output = dot(int8_w, int8_input) * loaded_scale`.
+For float dequant: `float_w = int8_w * stored_scale` (the RAW value,
+NOT divided by 127). The factor of 127 cancels with the int8 input
+quantization. Dividing by 127 gives weights 127x too small.
+
+## Tesseract Convolve layer is NOT a learned conv
+
+`Convolve` in Tesseract just stacks (im2col) the 3×3 neighborhood —
+no trainable weights. The actual "convolution" is a `FullyConnected`
+layer with tanh activation in a `Series` after the `Convolve`.
+
+## XYTranspose wraps SummLSTM, not the other way
+
+`Reversed(NT_XYTRANSPOSE)` extends `Plumbing` — it's a container that
+reads child networks (including count + learning rates). The `Lfys`
+VGSL layer is actually: `XYTranspose(SummLSTM)` where the XYTranspose
+swaps axes before and after so the LSTM runs over the y-dimension.
+
+## Vertical shear for deskew, not horizontal
+
+Leptonica's `pixFindSkew` uses VERTICAL shear (shift columns up/down)
+to score alignment, NOT horizontal (shift rows left/right). Horizontal
+shear doesn't change row sums for horizontal text lines. Vertical
+shear moves pixels between rows, which is what the differential
+square-sum scoring measures.
+
+## 1-bit DWA morphology: massive speedup from word-level ops
+
+Packing 32 pixels per uint32 and using word-level OR (dilation) gives
+21x speedup over float separable morphology and 32x less memory.
+The cache efficiency from 1-bit packing dominates even over the
+algorithmic improvement.

@@ -144,6 +144,9 @@ list(APPEND CRISPEMBED_SOURCES src/internvl2_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/gliner_ner.cpp)
 list(APPEND CRISPEMBED_SOURCES src/scan_cleanup.cpp)
 list(APPEND CRISPEMBED_SOURCES src/nafnet_denoise.cpp)
+list(APPEND CRISPEMBED_SOURCES src/text_sr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/tbsrn_sr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/pan_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/parseq_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/glm_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/got_ocr.cpp)
@@ -154,6 +157,12 @@ list(APPEND CRISPEMBED_SOURCES src/morph_fast.cpp)
 list(APPEND CRISPEMBED_SOURCES src/cc_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/classical_preproc.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_render.cpp)
+list(APPEND CRISPEMBED_SOURCES src/dewarp.cpp)
+list(APPEND CRISPEMBED_SOURCES src/kie_pipeline.cpp)
+list(APPEND CRISPEMBED_SOURCES src/lilt_kie.cpp)
+list(APPEND CRISPEMBED_SOURCES src/tps_warp.cpp)
+list(APPEND CRISPEMBED_SOURCES src/tps_locnet.cpp)
+list(APPEND CRISPEMBED_SOURCES src/pdf_info.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -302,6 +311,15 @@ endif()
 add_executable(test-gliner-ner tests/test_gliner_ner.cpp)
 target_link_libraries(test-gliner-ner PRIVATE crispembed)
 
+add_executable(test-kie-pipeline tests/test_kie_pipeline.cpp)
+target_link_libraries(test-kie-pipeline PRIVATE crispembed)
+
+add_executable(test-lilt-kie tests/test_lilt_kie.cpp)
+target_link_libraries(test-lilt-kie PRIVATE crispembed)
+
+add_executable(test-lilt-diff tests/test_lilt_diff.cpp)
+target_link_libraries(test-lilt-diff PRIVATE crispembed)
+
 add_executable(test-gliner-diff tests/test_gliner_diff.cpp)
 target_link_libraries(test-gliner-diff PRIVATE crispembed)
 
@@ -363,6 +381,31 @@ target_link_libraries(test-classical-preproc PRIVATE crispembed)
 
 add_executable(test-ocr-render tests/test_ocr_render.cpp)
 target_link_libraries(test-ocr-render PRIVATE crispembed)
+
+add_executable(test-dewarp tests/test_dewarp.cpp)
+target_include_directories(test-dewarp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-dewarp PRIVATE crispembed)
+
+add_executable(test-tps-warp tests/test_tps_warp.cpp)
+target_link_libraries(test-tps-warp PRIVATE crispembed)
+
+add_executable(test-tps-locnet tests/test_tps_locnet.cpp)
+target_link_libraries(test-tps-locnet PRIVATE crispembed)
+
+add_executable(test-tps-parity tests/test_tps_parity.cpp)
+target_link_libraries(test-tps-parity PRIVATE crispembed)
+
+add_executable(test-text-sr tests/test_text_sr.cpp)
+target_link_libraries(test-text-sr PRIVATE crispembed)
+
+add_executable(test-tbsrn-diff tests/test_tbsrn_diff.cpp)
+target_link_libraries(test-tbsrn-diff PRIVATE crispembed)
+
+add_executable(test-pan-diff tests/test_pan_diff.cpp)
+target_link_libraries(test-pan-diff PRIVATE crispembed)
+
+add_executable(test-pdf-info tests/test_pdf_info.cpp)
+target_link_libraries(test-pdf-info PRIVATE crispembed)
 
 endif() # NOT iOS
 

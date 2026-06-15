@@ -1139,6 +1139,10 @@ pub struct OcrResult {
     pub confidence: f32,
 }
 
+/// Alias used by the model-free detector (`cc_detect`) and the result
+/// renderers (`ocr_render`): same box+text+confidence shape as [`OcrResult`].
+pub type OcrRegion = OcrResult;
+
 impl OcrPipeline {
     /// Load an OCR pipeline from detection + recognition GGUF models.
     pub fn new(det_model: &str, rec_model: &str, n_threads: i32) -> Result<Self, String> {
@@ -1728,12 +1732,17 @@ impl CrispOcrPipeline {
     pub fn from_stages(
         router: bool,
         nafnet_model: Option<&str>,
+        sr_model: Option<&str>,
         punct_model: Option<&str>,
         stages: &[OcrStageSpec],
         n_threads: i32,
     ) -> Result<Self, String> {
         let naf = match nafnet_model {
             Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("nafnet: {e}"))?),
+            _ => None,
+        };
+        let sr = match sr_model {
+            Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("sr: {e}"))?),
             _ => None,
         };
         let punct = match punct_model {
@@ -1785,6 +1794,7 @@ impl CrispOcrPipeline {
             crispembed_sys::crispembed_ocr_pipeline_init_stages(
                 router as std::os::raw::c_int,
                 naf.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+                sr.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
                 punct.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
                 c_stages.as_ptr(),
                 c_stages.len() as std::os::raw::c_int,
@@ -1803,4 +1813,209 @@ impl Drop for CrispOcrPipeline {
     fn drop(&mut self) {
         unsafe { crispembed_sys::crispembed_ocr_pipeline_free(self.ctx) }
     }
+}
+
+// ── Classical Preprocessing ────────────────────────────────────────
+
+/// PDF DPI profiling -- analyse embedded images in a PDF page.
+/// Returns `(dpi, n_images)` on success, or an error message.
+pub fn pdf_page_dpi(path: &str, page: i32) -> Result<(f32, i32), String> {
+    let c_path = CString::new(path).map_err(|e| format!("invalid path: {e}"))?;
+    let mut dpi: f32 = 0.0;
+    let mut n_images: i32 = 0;
+    let ret = unsafe {
+        crispembed_sys::crispembed_pdf_page_dpi(
+            c_path.as_ptr(), page,
+            &mut dpi, &mut n_images,
+        )
+    };
+    if ret != 0 {
+        return Err(format!("pdf_page_dpi failed for '{path}' page {page}"));
+    }
+    Ok((dpi, n_images))
+}
+
+/// Dewarp a grayscale page image (straighten curved text lines).
+/// Returns the dewarped image as a Vec<u8>, or Err if dewarping failed.
+pub fn dewarp(gray: &[u8], width: i32, height: i32) -> Result<(Vec<u8>, i32, i32), String> {
+    let mut out = vec![0u8; (width * height) as usize];
+    let mut ow: i32 = 0;
+    let mut oh: i32 = 0;
+    let ret = unsafe {
+        crispembed_sys::crispembed_dewarp(
+            gray.as_ptr(), width, height,
+            out.as_mut_ptr(), &mut ow, &mut oh)
+    };
+    if ret != 0 { return Err("dewarping failed (too few textlines?)".into()); }
+    Ok((out, ow, oh))
+}
+
+/// TPS auto-dewarp using a learned localizer model (GGUF).
+/// Returns the dewarped image as a Vec<u8>, or Err if dewarping failed.
+pub fn tps_auto_dewarp(gray: &[u8], width: i32, height: i32, model_path: &str) -> Result<Vec<u8>, String> {
+    let c_path = std::ffi::CString::new(model_path).map_err(|e| e.to_string())?;
+    let mut out = vec![0u8; (width * height) as usize];
+    let ret = unsafe {
+        crispembed_sys::crispembed_tps_auto_dewarp(
+            gray.as_ptr(), width, height,
+            c_path.as_ptr(), out.as_mut_ptr())
+    };
+    if ret != 0 { return Err("TPS auto-dewarp failed".into()); }
+    Ok(out)
+}
+
+/// Detect text line regions using connected components (model-free, GPU-free).
+pub fn cc_detect(gray: &[u8], width: i32, height: i32) -> Vec<OcrRegion> {
+    let mut n: i32 = 0;
+    let ptr = unsafe { crispembed_sys::crispembed_cc_detect(gray.as_ptr(), width, height, &mut n) };
+    if ptr.is_null() || n <= 0 { return vec![]; }
+    let mut regions = Vec::with_capacity(n as usize);
+    for i in 0..n as usize {
+        let r = unsafe { &*ptr.add(i) };
+        regions.push(OcrRegion {
+            text: String::new(),
+            x: r.x, y: r.y, w: r.w, h: r.h,
+            confidence: r.confidence,
+        });
+    }
+    unsafe { libc::free(ptr as *mut std::ffi::c_void) };
+    regions
+}
+
+/// Find the skew angle of a document image (degrees).
+pub fn find_skew(gray: &[u8], width: i32, height: i32) -> Result<(f32, f32), String> {
+    let mut angle: f32 = 0.0;
+    let mut conf: f32 = 0.0;
+    let ret = unsafe {
+        crispembed_sys::crispembed_find_skew(gray.as_ptr(), width, height, &mut angle, &mut conf)
+    };
+    if ret != 0 { return Err("skew detection failed".into()); }
+    Ok((angle, conf))
+}
+
+/// Render OCR results to a format string ("text", "hocr", "alto", "pdf").
+pub fn ocr_render(results: &[OcrRegion], page_w: i32, page_h: i32, format: &str) -> Option<String> {
+    if results.is_empty() { return None; }
+    let fmt = std::ffi::CString::new(format).ok()?;
+    // Build C-compatible result array
+    let texts: Vec<std::ffi::CString> = results.iter()
+        .map(|r| std::ffi::CString::new(r.text.as_str()).unwrap_or_default())
+        .collect();
+    let c_results: Vec<crispembed_sys::CrispembedOcrResult> = results.iter()
+        .enumerate()
+        .map(|(i, r)| crispembed_sys::CrispembedOcrResult {
+            x: r.x, y: r.y, w: r.w, h: r.h,
+            confidence: r.confidence,
+            text: texts[i].as_ptr(),
+            text_len: texts[i].as_bytes().len() as i32,
+        })
+        .collect();
+    let ptr = unsafe {
+        crispembed_sys::crispembed_ocr_render(
+            c_results.as_ptr(), c_results.len() as i32,
+            page_w, page_h, fmt.as_ptr())
+    };
+    if ptr.is_null() { return None; }
+    let s = unsafe { std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned() };
+    unsafe { libc::free(ptr as *mut std::ffi::c_void) };
+    Some(s)
+}
+
+/// One page of OCR regions for [`ocr_render_pages`].
+pub struct OcrRenderPageInput<'a> {
+    pub regions: &'a [OcrRegion],
+    pub page_width: i32,
+    pub page_height: i32,
+    /// Original image path (used by the searchable-PDF image layer).
+    pub image_path: Option<&'a str>,
+}
+
+/// Render one or more pages to **bytes** via the lower-level `ocr_render.h` API
+/// (`create → begin → add_page* → end → output_size`). Unlike [`ocr_render`]
+/// (one-shot, `String`, single-page, NUL-truncated), this is:
+///   - **binary-safe** — uses `output_size`, so searchable **PDF** works;
+///   - **multi-page** — emits a single document spanning all pages.
+///
+/// `format`: `"text"` | `"hocr"` | `"alto"` | `"pdf"`. Each region becomes a
+/// one-word line (the orchestrator emits region-level boxes). `pdfa` enables
+/// PDF/A-2b archival compliance (XMP metadata + sRGB OutputIntent) — only
+/// affects the `"pdf"` format; ignored otherwise. Returns `None` on
+/// allocation/render failure.
+pub fn ocr_render_pages(pages: &[OcrRenderPageInput], format: &str, pdfa: bool) -> Option<Vec<u8>> {
+    use crispembed_sys::{OcrRenderLine, OcrRenderPage, OcrRenderWord};
+    let fmt = match format {
+        "hocr" => 1,
+        "alto" => 2,
+        "pdf" => 3,
+        _ => 0,
+    };
+    let r = unsafe { crispembed_sys::ocr_render_create(fmt) };
+    if r.is_null() {
+        return None;
+    }
+    // PDF/A-2b must be set before begin(); no-op for non-PDF formats.
+    if pdfa {
+        unsafe { crispembed_sys::ocr_render_set_pdfa(r, 1) };
+    }
+    unsafe { crispembed_sys::ocr_render_begin(r) };
+
+    for page in pages {
+        // Build per-page C structs. The renderer copies the data during
+        // add_page, so these buffers only need to live for that call.
+        let texts: Vec<std::ffi::CString> = page
+            .regions
+            .iter()
+            .map(|reg| std::ffi::CString::new(reg.text.as_str()).unwrap_or_default())
+            .collect();
+        let words: Vec<OcrRenderWord> = page
+            .regions
+            .iter()
+            .enumerate()
+            .map(|(i, reg)| OcrRenderWord {
+                text: texts[i].as_ptr(),
+                x: reg.x as i32,
+                y: reg.y as i32,
+                w: reg.w as i32,
+                h: reg.h as i32,
+                confidence: reg.confidence,
+            })
+            .collect();
+        // One word per line (region-level granularity).
+        let lines: Vec<OcrRenderLine> = page
+            .regions
+            .iter()
+            .enumerate()
+            .map(|(i, reg)| OcrRenderLine {
+                words: &words[i],
+                n_words: 1,
+                x: reg.x as i32,
+                y: reg.y as i32,
+                w: reg.w as i32,
+                h: reg.h as i32,
+            })
+            .collect();
+        let img = page
+            .image_path
+            .and_then(|p| std::ffi::CString::new(p).ok());
+        let c_page = OcrRenderPage {
+            lines: lines.as_ptr(),
+            n_lines: lines.len() as i32,
+            page_width: page.page_width,
+            page_height: page.page_height,
+            image_path: img.as_ref().map_or(std::ptr::null(), |c| c.as_ptr()),
+        };
+        unsafe { crispembed_sys::ocr_render_add_page(r, &c_page) };
+        // texts/words/lines/img dropped here — safe (add_page copied).
+    }
+
+    unsafe { crispembed_sys::ocr_render_end(r) };
+    let size = unsafe { crispembed_sys::ocr_render_output_size(r) };
+    let ptr = unsafe { crispembed_sys::ocr_render_output(r) } as *const u8;
+    let bytes = if ptr.is_null() || size <= 0 {
+        Vec::new()
+    } else {
+        unsafe { std::slice::from_raw_parts(ptr, size as usize) }.to_vec()
+    };
+    unsafe { crispembed_sys::ocr_render_free(r) };
+    Some(bytes)
 }

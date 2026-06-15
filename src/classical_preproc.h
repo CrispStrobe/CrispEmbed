@@ -84,6 +84,63 @@ void despeckle_gray(const uint8_t * gray, int w, int h,
 void background_norm(const uint8_t * gray, int w, int h,
                      int tile_w, int tile_h, uint8_t * out);
 
+// ---------------------------------------------------------------------------
+// 5. Image downsampling calculator
+// ---------------------------------------------------------------------------
+
+/// Compute the optimal scale factor for downsampling before OCR.
+/// Returns a factor in (0, 1] — multiply image dimensions by this factor.
+/// target_dpi: desired OCR resolution (300 is typical for printed text).
+/// current_dpi: source image DPI (0 = estimate from dimensions).
+/// max_pixels: maximum total pixels after downsampling (0 = no limit).
+float compute_downsample_factor(int w, int h, int current_dpi,
+                                 int target_dpi, int max_pixels);
+
+// ---------------------------------------------------------------------------
+// 6. OCR quality scoring
+// ---------------------------------------------------------------------------
+
+/// Score OCR output quality by matching words against a dictionary.
+/// Returns fraction of words found in the dictionary [0, 1].
+/// [text] — OCR output text (UTF-8, space-separated words).
+/// [dict] — array of dictionary words (must be sorted).
+/// [n_dict] — number of words in dictionary.
+float ocr_quality_score(const char * text,
+                         const char ** dict, int n_dict);
+
+// ---------------------------------------------------------------------------
+// 7. Text angle classification (0° vs 180°)
+// ---------------------------------------------------------------------------
+
+/// Detect if text in an image is upside-down (rotated 180°).
+/// Uses ascender/descender asymmetry + differential scoring at 0° and 180°.
+///
+/// Returns: 0 if correctly oriented, 180 if upside-down.
+/// [confidence] receives a score in [0,1] — higher = more certain.
+int detect_text_angle(const uint8_t * gray, int w, int h,
+                       float * confidence);
+
+// ---------------------------------------------------------------------------
+// 8. TPS spatial transformer (learned dewarping)
+// ---------------------------------------------------------------------------
+
+/// Dewarp a grayscale page image using Thin-Plate Spline control points.
+///
+/// Given N source/target control point pairs, solves the TPS interpolation
+/// system and applies the inverse warp with bilinear sampling.
+///
+/// [gray]    — row-major uint8 grayscale input (w * h).
+/// [src_x/y] — source control point coordinates (length n).
+/// [dst_x/y] — target (straightened) control point coordinates (length n).
+/// [n]       — number of control points (>= 3).
+/// [out]     — output: dewarped uint8 grayscale. Caller allocates w * h.
+///
+/// Returns 0 on success, 1 on failure (too few points, singular system).
+int tps_dewarp(const uint8_t * gray, int w, int h,
+               const float * src_x, const float * src_y,
+               const float * dst_x, const float * dst_y, int n,
+               uint8_t * out);
+
 #ifdef __cplusplus
 }
 #endif

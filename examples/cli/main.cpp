@@ -14,6 +14,7 @@
 #include "hmer_ocr.h"
 #include "bttr_ocr.h"
 #include "scan_cleanup.h"
+#include "pdf_info.h"
 
 // stb_image for --detect image loading
 #define STB_IMAGE_STATIC
@@ -84,14 +85,33 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --ner TEXT       named entity recognition (GLiNER, needs -m ner_model.gguf)\n");
     fprintf(stderr, "  --ner-labels L   comma-separated entity types (default: person,organization,location)\n");
     fprintf(stderr, "  --ner-threshold F  confidence threshold for NER (default: 0.5)\n");
+    fprintf(stderr, "  --kie FILE       key information extraction: OCR + NER on a document image\n");
+    fprintf(stderr, "                   needs -m ner_model.gguf --ocr-det det.gguf --ocr-rec rec.gguf\n");
+    fprintf(stderr, "  --kie-labels L   comma-separated field names (default: uses --ner-labels)\n");
+    fprintf(stderr, "  --kie-threshold F  confidence threshold for KIE (default: 0.5)\n");
+    fprintf(stderr, "  --lilt FILE      LiLT token classification from JSON input\n");
+    fprintf(stderr, "                   JSON: {\"input_ids\": [...], \"bbox\": [[x0,y0,x1,y1], ...]}\n");
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
     fprintf(stderr, "  --punct-model M  post-process OCR text with punctuation model (FireRedPunc/PCS)\n");
+    fprintf(stderr, "  --output-format F  OCR output format: text (default), hocr, alto\n");
+    fprintf(stderr, "  --pdf-dpi FILE     analyse PDF DPI (per-page image resolution profiling)\n");
+    fprintf(stderr, "  --find-skew FILE   detect skew angle (degrees) of a document image\n");
+    fprintf(stderr, "  --dewarp FILE      dewarp a curved document page (straighten text lines)\n");
+    fprintf(stderr, "  --tps-dewarp MODEL FILE  TPS-based dewarp (learned, needs model GGUF)\n");
+    fprintf(stderr, "  --cc-detect FILE   detect text lines via connected components (model-free)\n");
     fprintf(stderr, "  --cleanup        preprocess scan before OCR (deskew, crop borders, whiten background)\n");
     fprintf(stderr, "  --cleanup-only F process scan and write cleaned image to stdout (no OCR)\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
     fprintf(stderr, "       --ocr-engine N  primary engine (dbnet_trocr|surya|tesseract|got|glm|qwen2vl|internvl2)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
+    fprintf(stderr, "       --sr-model PATH text super-resolution GGUF for low-DPI upscaling (NAFNet+PixelShuffle)\n");
+    fprintf(stderr, "  --pan-sr FILE    standalone PAN super-resolution: upscale image, write PGM to stdout\n");
+    fprintf(stderr, "                   (needs --pan-model PATH: PAN GGUF, Pixel Attention Network, 2x or 4x)\n");
+    fprintf(stderr, "  --pan-model PATH PAN super-resolution GGUF (used with --pan-sr)\n");
+    fprintf(stderr, "  --tbsrn-sr FILE  standalone TBSRN super-resolution: upscale text crop, write PPM to stdout\n");
+    fprintf(stderr, "                   (needs --tbsrn-model PATH: TBSRN GGUF, always 2x, 16x64->32x128)\n");
+    fprintf(stderr, "  --tbsrn-model PATH TBSRN super-resolution GGUF (used with --tbsrn-sr)\n");
     fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
     fprintf(stderr, "  --ocr-rec MODEL  general OCR: text recognition model (TrOCR, e.g. trocr-printed)\n");
     fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
@@ -143,6 +163,10 @@ int main(int argc, char ** argv) {
     std::string ner_text;    // text for NER extraction
     std::string ner_labels = "person,organization,location"; // comma-separated entity types
     float ner_threshold = 0.5f;
+    std::string kie_path;    // image for KIE extraction
+    std::string kie_labels;  // comma-separated field names (defaults to ner_labels)
+    float kie_threshold = 0.5f;
+    std::string lilt_path;   // JSON file for LiLT token classification
     std::string det_model;   // detection model for --face-pipeline
     std::string ocr_det_path;  // general OCR: text detection model (DBNet)
     std::string ocr_rec_path;  // general OCR: text recognition model (TrOCR)
@@ -150,12 +174,24 @@ int main(int argc, char ** argv) {
     std::string cleanup_only_path;      // --cleanup-only FILE: standalone cleanup
     std::string ocr_pipeline_path;      // --ocr-pipeline FILE: full orchestrator
     bool pipeline_denoise = false;      // --denoise: NAFNet tier-2 in the pipeline
+    std::string sr_model;              // --sr-model: text super-resolution GGUF
+    std::string pan_model;             // --pan-model: PAN super-resolution GGUF
+    std::string pan_sr_path;           // --pan-sr FILE: standalone PAN upscaling
+    std::string tbsrn_model;           // --tbsrn-model: TBSRN super-resolution GGUF
+    std::string tbsrn_sr_path;         // --tbsrn-sr FILE: standalone TBSRN upscaling
     std::string pipeline_vlm_model;     // --vlm-model NAME: VLM escalation engine GGUF
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
     float pipeline_min_conf = -1.0f;    // --ocr-min-conf: accept-gate override (-1 = default)
     std::string punct_model;    // --punct-model: post-process OCR with punctuation
-    std::string pipeline_engine; // --ocr-engine NAME: primary pipeline engine (dbnet_trocr/surya/tesseract/got/glm/qwen2vl/internvl2)
+    std::string output_format;  // --output-format: text/hocr/alto
+    std::string pipeline_engine; // --ocr-engine NAME
+    std::string pdf_dpi_path;    // --pdf-dpi FILE
+    std::string find_skew_path;  // --find-skew FILE
+    std::string dewarp_path;     // --dewarp FILE
+    std::string tps_dewarp_model; // --tps-dewarp MODEL FILE
+    std::string tps_dewarp_path;
+    std::string cc_detect_path;  // --cc-detect FILE
     bool face_pipeline_mode = false;
     float conf_threshold = 0.5f;
     std::string lora_adapter;   // LoRA adapter name (--lora)
@@ -215,14 +251,35 @@ int main(int argc, char ** argv) {
             ner_labels = argv[++i];
         } else if (strcmp(argv[i], "--ner-threshold") == 0 && i + 1 < argc) {
             ner_threshold = (float)atof(argv[++i]);
+        } else if (strcmp(argv[i], "--kie") == 0 && i + 1 < argc) {
+            kie_path = argv[++i];
+        } else if (strcmp(argv[i], "--kie-labels") == 0 && i + 1 < argc) {
+            kie_labels = argv[++i];
+        } else if (strcmp(argv[i], "--kie-threshold") == 0 && i + 1 < argc) {
+            kie_threshold = (float)atof(argv[++i]);
+        } else if (strcmp(argv[i], "--lilt") == 0 && i + 1 < argc) {
+            lilt_path = argv[++i];
         } else if (strcmp(argv[i], "--det") == 0 && i + 1 < argc) {
             det_model = argv[++i];
         } else if (strcmp(argv[i], "--face-pipeline") == 0) {
             face_pipeline_mode = true;
+        } else if (strcmp(argv[i], "--pdf-dpi") == 0 && i + 1 < argc) {
+            pdf_dpi_path = argv[++i];
+        } else if (strcmp(argv[i], "--find-skew") == 0 && i + 1 < argc) {
+            find_skew_path = argv[++i];
+        } else if (strcmp(argv[i], "--dewarp") == 0 && i + 1 < argc) {
+            dewarp_path = argv[++i];
+        } else if (strcmp(argv[i], "--tps-dewarp") == 0 && i + 2 < argc) {
+            tps_dewarp_model = argv[++i];
+            tps_dewarp_path  = argv[++i];
+        } else if (strcmp(argv[i], "--cc-detect") == 0 && i + 1 < argc) {
+            cc_detect_path = argv[++i];
         } else if (strcmp(argv[i], "--cleanup") == 0) {
             cleanup_mode = true;
         } else if (strcmp(argv[i], "--punct-model") == 0 && i + 1 < argc) {
             punct_model = argv[++i];
+        } else if (strcmp(argv[i], "--output-format") == 0 && i + 1 < argc) {
+            output_format = argv[++i];
         } else if (strcmp(argv[i], "--cleanup-only") == 0 && i + 1 < argc) {
             cleanup_only_path = argv[++i];
         } else if (strcmp(argv[i], "--ocr-pipeline") == 0 && i + 1 < argc) {
@@ -231,6 +288,16 @@ int main(int argc, char ** argv) {
             pipeline_engine = argv[++i];
         } else if (strcmp(argv[i], "--denoise") == 0) {
             pipeline_denoise = true;
+        } else if (strcmp(argv[i], "--sr-model") == 0 && i + 1 < argc) {
+            sr_model = argv[++i];
+        } else if (strcmp(argv[i], "--pan-model") == 0 && i + 1 < argc) {
+            pan_model = argv[++i];
+        } else if (strcmp(argv[i], "--pan-sr") == 0 && i + 1 < argc) {
+            pan_sr_path = argv[++i];
+        } else if (strcmp(argv[i], "--tbsrn-model") == 0 && i + 1 < argc) {
+            tbsrn_model = argv[++i];
+        } else if (strcmp(argv[i], "--tbsrn-sr") == 0 && i + 1 < argc) {
+            tbsrn_sr_path = argv[++i];
         } else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) {
             pipeline_vlm_model = argv[++i];
         } else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) {
@@ -268,6 +335,132 @@ int main(int argc, char ** argv) {
         } else {
             texts.push_back(argv[i]);
         }
+    }
+
+    // Standalone preprocessing commands (no model needed)
+    if (!pdf_dpi_path.empty()) {
+        int n_pages = 0;
+        pdf_page_dpi_result * results = pdf_all_pages_dpi(pdf_dpi_path.c_str(), &n_pages);
+        if (!results || n_pages <= 0) {
+            fprintf(stderr, "error: cannot read PDF '%s'\n", pdf_dpi_path.c_str());
+            return 1;
+        }
+        printf("{\"pages\":[");
+        for (int i = 0; i < n_pages; i++) {
+            if (i > 0) printf(",");
+            printf("{\"page\":%d,\"dpi\":%.1f,\"dpi_min\":%.1f,\"dpi_max\":%.1f,"
+                   "\"n_images\":%d,\"page_width_pt\":%.1f,\"page_height_pt\":%.1f}",
+                   i, results[i].dpi, results[i].dpi_min, results[i].dpi_max,
+                   results[i].n_images, results[i].page_width_pt, results[i].page_height_pt);
+        }
+        printf("]}\n");
+        pdf_dpi_free(results);
+        return 0;
+    }
+    if (!find_skew_path.empty()) {
+        int w, h, ch;
+        unsigned char * data = stbi_load(find_skew_path.c_str(), &w, &h, &ch, 1);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", find_skew_path.c_str()); return 1; }
+        float angle = 0, conf = 0;
+        crispembed_find_skew(data, w, h, &angle, &conf);
+        stbi_image_free(data);
+        if (json_output) printf("{\"angle\":%.3f,\"confidence\":%.3f}\n", angle, conf);
+        else printf("angle=%.3f deg  confidence=%.3f\n", angle, conf);
+        return 0;
+    }
+    if (!dewarp_path.empty()) {
+        int w, h, ch;
+        unsigned char * data = stbi_load(dewarp_path.c_str(), &w, &h, &ch, 1);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", dewarp_path.c_str()); return 1; }
+        std::vector<uint8_t> out(w * h);
+        int ow = 0, oh = 0;
+        int ret = crispembed_dewarp(data, w, h, out.data(), &ow, &oh);
+        stbi_image_free(data);
+        if (ret != 0) { fprintf(stderr, "dewarp failed (too few textlines?)\n"); return 1; }
+        // Write result as PGM to stdout
+        printf("P5\n%d %d\n255\n", ow, oh);
+        fwrite(out.data(), 1, ow * oh, stdout);
+        return 0;
+    }
+    if (!tps_dewarp_path.empty()) {
+        int w, h, ch;
+        unsigned char * data = stbi_load(tps_dewarp_path.c_str(), &w, &h, &ch, 1);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", tps_dewarp_path.c_str()); return 1; }
+        std::vector<uint8_t> out(w * h);
+        int ret = crispembed_tps_auto_dewarp(data, w, h, tps_dewarp_model.c_str(), out.data());
+        stbi_image_free(data);
+        if (ret != 0) { fprintf(stderr, "tps-dewarp failed\n"); return 1; }
+        printf("P5\n%d %d\n255\n", w, h);
+        fwrite(out.data(), 1, w * h, stdout);
+        return 0;
+    }
+    if (!cc_detect_path.empty()) {
+        int w, h, ch;
+        unsigned char * data = stbi_load(cc_detect_path.c_str(), &w, &h, &ch, 1);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", cc_detect_path.c_str()); return 1; }
+        int n = 0;
+        crispembed_ocr_result * regions = crispembed_cc_detect(data, w, h, &n);
+        stbi_image_free(data);
+        if (json_output) {
+            printf("[");
+            for (int i = 0; i < n; i++) {
+                if (i > 0) printf(",");
+                printf("{\"x\":%.0f,\"y\":%.0f,\"w\":%.0f,\"h\":%.0f}",
+                       regions[i].x, regions[i].y, regions[i].w, regions[i].h);
+            }
+            printf("]\n");
+        } else {
+            printf("detected %d text regions\n", n);
+            for (int i = 0; i < n; i++)
+                printf("  [%d] (%.0f, %.0f) %.0fx%.0f\n", i,
+                       regions[i].x, regions[i].y, regions[i].w, regions[i].h);
+        }
+        if (regions) free(regions);
+        return 0;
+    }
+    if (!pan_sr_path.empty()) {
+        if (pan_model.empty()) {
+            fprintf(stderr, "error: --pan-sr requires --pan-model <path>\n");
+            return 1;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(pan_sr_path.c_str(), &w, &h, &ch, 3);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", pan_sr_path.c_str()); return 1; }
+        void * pctx = crispembed_pan_sr_init(pan_model.c_str(), n_threads);
+        if (!pctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load PAN model '%s'\n", pan_model.c_str()); return 1; }
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_pan_sr_process(pctx, data, w, h, 0, 0, &out, &ow, &oh);
+        stbi_image_free(data);
+        crispembed_pan_sr_free(pctx);
+        if (rc != 0 || !out) { fprintf(stderr, "error: PAN SR processing failed\n"); return 1; }
+        // Write result as PPM (RGB) to stdout
+        printf("P6\n%d %d\n255\n", ow, oh);
+        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+        crispembed_pan_sr_free_image(out);
+        return 0;
+    }
+    if (!tbsrn_sr_path.empty()) {
+        if (tbsrn_model.empty()) {
+            fprintf(stderr, "error: --tbsrn-sr requires --tbsrn-model <path>\n");
+            return 1;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(tbsrn_sr_path.c_str(), &w, &h, &ch, 3);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", tbsrn_sr_path.c_str()); return 1; }
+        void * tctx = crispembed_tbsrn_sr_init(tbsrn_model.c_str(), n_threads);
+        if (!tctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load TBSRN model '%s'\n", tbsrn_model.c_str()); return 1; }
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_tbsrn_sr_process(tctx, data, w, h, &out, &ow, &oh);
+        stbi_image_free(data);
+        crispembed_tbsrn_sr_free(tctx);
+        if (rc != 0 || !out) { fprintf(stderr, "error: TBSRN SR processing failed\n"); return 1; }
+        // Write result as PPM (RGB) to stdout
+        printf("P6\n%d %d\n255\n", ow, oh);
+        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+        crispembed_tbsrn_sr_free_image(out);
+        return 0;
     }
 
     if (model_arg.empty() && cleanup_only_path.empty() && ocr_pipeline_path.empty()) {
@@ -369,8 +562,9 @@ int main(int argc, char ** argv) {
             st.min_confidence     = min_conf;
             pctx = crispembed_ocr_pipeline_init_stages(
                 /*router=*/0,
-                nafnet.empty() ? nullptr : nafnet.c_str(),
-                punct.empty()  ? nullptr : punct.c_str(),
+                nafnet.empty()    ? nullptr : nafnet.c_str(),
+                sr_model.empty()  ? nullptr : sr_model.c_str(),
+                punct.empty()     ? nullptr : punct.c_str(),
                 &st, 1, n_threads);
         } else {
             // Default flat path (DBNet+TrOCR + source-type routing).
@@ -393,14 +587,29 @@ int main(int argc, char ** argv) {
         float mean_conf = 0.0f;
         const crispembed_ocr_result* res = crispembed_ocr_pipeline_run(
             pctx, ocr_pipeline_path.c_str(), &n_res, &full_text, &mean_conf);
-        if (json_output) {
+
+        // Output in requested format
+        if (!output_format.empty() && output_format != "text") {
+            // Structured output (hOCR, ALTO, PDF)
+            // Need page dimensions — load image to get them
+            int pw = 0, ph = 0, pc = 0;
+            unsigned char * pimg = stbi_load(ocr_pipeline_path.c_str(), &pw, &ph, &pc, 0);
+            if (pimg) stbi_image_free(pimg);
+            if (pw == 0) { pw = 2480; ph = 3508; } // A4 fallback
+
+            char * rendered = crispembed_ocr_render(res, n_res, pw, ph,
+                                                     output_format.c_str());
+            if (rendered) {
+                printf("%s", rendered);
+                free(rendered);
+            }
+        } else if (json_output) {
             printf("{\"n_regions\":%d,\"mean_confidence\":%.3f,\"full_text\":\"%s\"}\n",
                    n_res, mean_conf, json_escape(full_text ? full_text : "").c_str());
         } else {
             printf("regions=%d  mean_conf=%.2f\n%s\n",
                    n_res, mean_conf, full_text ? full_text : "");
         }
-        (void)res;
         crispembed_ocr_pipeline_free(pctx);
         return 0;
     }
@@ -727,6 +936,146 @@ int main(int argc, char ** argv) {
             }
         }
         crispembed_ner_free(nctx);
+        return 0;
+    }
+
+    // Key Information Extraction (OCR + NER pipeline)
+    if (!kie_path.empty()) {
+        auto resolve = [&](const std::string & n) {
+            return crispembed_mgr::resolve_model(n, auto_download, accepted_license);
+        };
+        std::string det = resolve(ocr_det_path.empty() ? "dbnet-det" : ocr_det_path);
+        std::string rec = resolve(ocr_rec_path.empty() ? "qwen2vl-ocr" : ocr_rec_path);
+
+        void* kctx = crispembed_kie_init(det.c_str(), rec.c_str(),
+                                          model_path.c_str(), n_threads);
+        if (!kctx) { fprintf(stderr, "error: failed to init KIE pipeline\n"); return 1; }
+
+        // Parse comma-separated labels (use --kie-labels, fall back to --ner-labels).
+        const std::string& labels_str = kie_labels.empty() ? ner_labels : kie_labels;
+        std::vector<std::string> label_strs;
+        std::istringstream lss(labels_str);
+        std::string lbl;
+        while (std::getline(lss, lbl, ',')) {
+            size_t start = lbl.find_first_not_of(" \t");
+            size_t end = lbl.find_last_not_of(" \t");
+            if (start != std::string::npos)
+                label_strs.push_back(lbl.substr(start, end - start + 1));
+        }
+        std::vector<const char*> label_ptrs;
+        for (const auto& s : label_strs) label_ptrs.push_back(s.c_str());
+
+        crispembed_kie_result res = crispembed_kie_extract(
+            kctx, kie_path.c_str(),
+            label_ptrs.data(), (int)label_ptrs.size(),
+            kie_threshold);
+
+        if (json_output) {
+            printf("{\"n_ocr_regions\":%d,\"ocr_confidence\":%.3f,\"fields\":[",
+                   res.n_ocr_regions, res.ocr_confidence);
+            for (int i = 0; i < res.n_fields; i++) {
+                if (i > 0) printf(",");
+                printf("{\"label\":\"%s\",\"value\":\"%s\",\"score\":%.4f,"
+                       "\"bbox\":[%.1f,%.1f,%.1f,%.1f]}",
+                       json_escape(res.fields[i].label).c_str(),
+                       json_escape(res.fields[i].value).c_str(),
+                       res.fields[i].score,
+                       res.fields[i].x, res.fields[i].y,
+                       res.fields[i].w, res.fields[i].h);
+            }
+            printf("]}\n");
+        } else {
+            printf("OCR: %d regions, confidence=%.2f\n", res.n_ocr_regions, res.ocr_confidence);
+            printf("%d fields extracted:\n", res.n_fields);
+            for (int i = 0; i < res.n_fields; i++) {
+                printf("  %s = \"%s\"  (score=%.3f, bbox=[%.0f,%.0f,%.0f,%.0f])\n",
+                       res.fields[i].label, res.fields[i].value,
+                       res.fields[i].score,
+                       res.fields[i].x, res.fields[i].y,
+                       res.fields[i].w, res.fields[i].h);
+            }
+        }
+        crispembed_kie_free(kctx);
+        return 0;
+    }
+
+    // LiLT token classification from JSON input
+    if (!lilt_path.empty()) {
+        void* lctx = crispembed_lilt_init(model_path.c_str(), n_threads);
+        if (!lctx) { fprintf(stderr, "error: failed to load LiLT model\n"); return 1; }
+
+        // Read JSON file: {"input_ids": [...], "bbox": [[x0,y0,x1,y1], ...]}
+        std::ifstream jf(lilt_path);
+        if (!jf.is_open()) { fprintf(stderr, "error: cannot open %s\n", lilt_path.c_str()); crispembed_lilt_free(lctx); return 1; }
+        std::string jstr((std::istreambuf_iterator<char>(jf)), std::istreambuf_iterator<char>());
+
+        // Minimal JSON parsing for input_ids and bbox arrays
+        std::vector<int32_t> ids, bbox_flat;
+        {
+            auto parse_int_array = [](const std::string& s, size_t start) -> std::vector<int32_t> {
+                std::vector<int32_t> result;
+                auto pos = s.find('[', start);
+                if (pos == std::string::npos) return result;
+                auto end = s.find(']', pos);
+                if (end == std::string::npos) return result;
+                std::string arr = s.substr(pos + 1, end - pos - 1);
+                std::istringstream iss(arr);
+                std::string tok;
+                while (std::getline(iss, tok, ',')) {
+                    try { result.push_back(std::stoi(tok)); } catch (...) {}
+                }
+                return result;
+            };
+            auto id_pos = jstr.find("\"input_ids\"");
+            if (id_pos != std::string::npos) ids = parse_int_array(jstr, id_pos);
+            auto bb_pos = jstr.find("\"bbox\"");
+            if (bb_pos != std::string::npos) {
+                // bbox is [[x0,y0,x1,y1], ...] — flatten all nested arrays
+                auto outer_start = jstr.find('[', bb_pos);
+                auto outer_end = jstr.rfind(']');
+                if (outer_start != std::string::npos && outer_end != std::string::npos) {
+                    std::string flat = jstr.substr(outer_start, outer_end - outer_start + 1);
+                    // Remove all [ and ]
+                    for (char& c : flat) if (c == '[' || c == ']') c = ' ';
+                    std::istringstream iss(flat);
+                    std::string tok;
+                    while (std::getline(iss, tok, ',')) {
+                        try { bbox_flat.push_back(std::stoi(tok)); } catch (...) {}
+                    }
+                }
+            }
+        }
+
+        int T = (int)ids.size();
+        if (T == 0 || (int)bbox_flat.size() < T * 4) {
+            fprintf(stderr, "error: invalid JSON (need input_ids + bbox)\n");
+            crispembed_lilt_free(lctx); return 1;
+        }
+
+        int out_n = 0;
+        const crispembed_lilt_token* toks = crispembed_lilt_classify(
+            lctx, ids.data(), bbox_flat.data(), T, &out_n);
+
+        if (json_output) {
+            printf("{\"tokens\":[");
+            for (int i = 0; i < out_n; i++) {
+                if (i > 0) printf(",");
+                printf("{\"token_id\":%d,\"label\":\"%s\",\"score\":%.4f}",
+                       toks[i].token_id,
+                       json_escape(toks[i].label ? toks[i].label : "").c_str(),
+                       toks[i].score);
+            }
+            printf("]}\n");
+        } else {
+            printf("%d tokens classified:\n", out_n);
+            for (int i = 0; i < out_n; i++) {
+                printf("  token=%5d  label=%-15s  score=%.3f\n",
+                       toks[i].token_id,
+                       toks[i].label ? toks[i].label : "",
+                       toks[i].score);
+            }
+        }
+        crispembed_lilt_free(lctx);
         return 0;
     }
 

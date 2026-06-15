@@ -305,6 +305,63 @@ typedef CrispembedNerExtractDart = int Function(
     double threshold,
     Pointer<Pointer<Void>> outEntities);
 
+// --- LiLT — Language-independent Layout Transformer ---
+typedef CrispembedLiltInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedLiltInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedLiltFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedLiltFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedLiltClassifyNative = Pointer<Void> Function(
+    Pointer<Void> ctx, Pointer<Int32> inputIds, Pointer<Int32> bbox,
+    Int32 nTokens, Pointer<Int32> outN);
+typedef CrispembedLiltClassifyDart = Pointer<Void> Function(
+    Pointer<Void> ctx, Pointer<Int32> inputIds, Pointer<Int32> bbox,
+    int nTokens, Pointer<Int32> outN);
+
+typedef CrispembedLiltNumLabelsNative = Int32 Function(Pointer<Void> ctx);
+typedef CrispembedLiltNumLabelsDart = int Function(Pointer<Void> ctx);
+
+// --- Key Information Extraction (KIE) — OCR + NER pipeline ---
+typedef CrispembedKieInitNative = Pointer<Void> Function(
+    Pointer<Utf8> ocrDetModel, Pointer<Utf8> ocrRecModel,
+    Pointer<Utf8> nerModel, Int32 nThreads);
+typedef CrispembedKieInitDart = Pointer<Void> Function(
+    Pointer<Utf8> ocrDetModel, Pointer<Utf8> ocrRecModel,
+    Pointer<Utf8> nerModel, int nThreads);
+
+typedef CrispembedKieFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedKieFreeDart = void Function(Pointer<Void> ctx);
+
+// crispembed_kie_extract returns crispembed_kie_result by value.
+// Layout: Pointer fields, int n_fields, char* ocr_text, float ocr_confidence, int n_ocr_regions
+typedef CrispembedKieExtractNative = CrispembedKieResultFFI Function(
+    Pointer<Void> ctx, Pointer<Utf8> imagePath,
+    Pointer<Pointer<Utf8>> labels, Int32 nLabels,
+    Float threshold);
+typedef CrispembedKieExtractDart = CrispembedKieResultFFI Function(
+    Pointer<Void> ctx, Pointer<Utf8> imagePath,
+    Pointer<Pointer<Utf8>> labels, int nLabels,
+    double threshold);
+
+/// FFI struct matching crispembed_kie_result (returned by value).
+final class CrispembedKieResultFFI extends Struct {
+  external Pointer<Void> fields;
+
+  @Int32()
+  external int nFields;
+
+  external Pointer<Utf8> ocrText;
+
+  @Float()
+  external double ocrConfidence;
+
+  @Int32()
+  external int nOcrRegions;
+}
+
 // --- OCR Orchestrator (source-type routing + cleanup + accept-gate) ---
 // Uses the simple init path: crispembed_ocr_pipeline_init(params*, n_threads)
 // The params struct is built in Dart and passed as a pointer.
@@ -325,3 +382,178 @@ typedef CrispembedOcrPipelineFreeDart = void Function(Pointer<Void> ctx);
 
 typedef CrispembedOcrPipelineDefaultsNative = Void Function(Pointer<Void> outParams);
 typedef CrispembedOcrPipelineDefaultsDart = void Function(Pointer<Void> outParams);
+
+// --- PDF DPI Profiling ---
+typedef CrispembedPdfPageDpiNative = Int32 Function(
+    Pointer<Utf8> pdfPath, Int32 page,
+    Pointer<Float> outDpi, Pointer<Int32> outNImages);
+typedef CrispembedPdfPageDpiDart = int Function(
+    Pointer<Utf8> pdfPath, int page,
+    Pointer<Float> outDpi, Pointer<Int32> outNImages);
+
+// --- Classical Preprocessing ---
+typedef CrispembedDewarpNative = Int32 Function(
+    Pointer<Uint8> gray, Int32 w, Int32 h,
+    Pointer<Uint8> out, Pointer<Int32> outW, Pointer<Int32> outH);
+typedef CrispembedDewarpDart = int Function(
+    Pointer<Uint8> gray, int w, int h,
+    Pointer<Uint8> out, Pointer<Int32> outW, Pointer<Int32> outH);
+
+typedef CrispembedTpsAutoDewarpNative = Int32 Function(
+    Pointer<Uint8> gray, Int32 w, Int32 h,
+    Pointer<Utf8> modelPath, Pointer<Uint8> out);
+typedef CrispembedTpsAutoDewarpDart = int Function(
+    Pointer<Uint8> gray, int w, int h,
+    Pointer<Utf8> modelPath, Pointer<Uint8> out);
+
+typedef CrispembedFindSkewNative = Int32 Function(
+    Pointer<Uint8> gray, Int32 w, Int32 h,
+    Pointer<Float> angle, Pointer<Float> confidence);
+typedef CrispembedFindSkewDart = int Function(
+    Pointer<Uint8> gray, int w, int h,
+    Pointer<Float> angle, Pointer<Float> confidence);
+
+typedef CrispembedAdaptiveBinarizeNative = Void Function(
+    Pointer<Uint8> gray, Int32 w, Int32 h, Pointer<Uint8> out);
+typedef CrispembedAdaptiveBinarizeDart = void Function(
+    Pointer<Uint8> gray, int w, int h, Pointer<Uint8> out);
+
+typedef CrispembedBackgroundNormNative = Void Function(
+    Pointer<Uint8> gray, Int32 w, Int32 h, Pointer<Uint8> out);
+typedef CrispembedBackgroundNormDart = void Function(
+    Pointer<Uint8> gray, int w, int h, Pointer<Uint8> out);
+
+typedef CrispembedDespeckleNative = Void Function(
+    Pointer<Uint8> gray, Int32 w, Int32 h,
+    Int32 maxW, Int32 maxH, Pointer<Uint8> out);
+typedef CrispembedDespeckleDart = void Function(
+    Pointer<Uint8> gray, int w, int h,
+    int maxW, int maxH, Pointer<Uint8> out);
+
+typedef CrispembedCcDetectNative = Pointer<Void> Function(
+    Pointer<Uint8> gray, Int32 w, Int32 h, Pointer<Int32> outN);
+typedef CrispembedCcDetectDart = Pointer<Void> Function(
+    Pointer<Uint8> gray, int w, int h, Pointer<Int32> outN);
+
+// --- OCR Rendering ---
+typedef CrispembedOcrRenderNative = Pointer<Utf8> Function(
+    Pointer<Void> results, Int32 nResults,
+    Int32 pageWidth, Int32 pageHeight, Pointer<Utf8> format);
+typedef CrispembedOcrRenderDart = Pointer<Utf8> Function(
+    Pointer<Void> results, int nResults,
+    int pageWidth, int pageHeight, Pointer<Utf8> format);
+
+// --- Punctuation Restoration ---
+typedef CrispembedPunctInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedPunctInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedPunctFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedPunctFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedPunctProcessNative = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Utf8> text);
+typedef CrispembedPunctProcessDart = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Utf8> text);
+
+// --- Text Super-Resolution (text_sr) ---
+typedef CrispembedTextSrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedTextSrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedTextSrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedTextSrFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedTextSrUpscaleFactorNative = Int32 Function(Pointer<Void> ctx);
+typedef CrispembedTextSrUpscaleFactorDart = int Function(Pointer<Void> ctx);
+
+typedef CrispembedTextSrProcessNative = Int32 Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    Int32 width,
+    Int32 height,
+    Int32 tileSize,
+    Int32 tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+typedef CrispembedTextSrProcessDart = int Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    int width,
+    int height,
+    int tileSize,
+    int tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+
+typedef CrispembedTextSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
+typedef CrispembedTextSrFreeImageDart = void Function(Pointer<Uint8> pixels);
+
+// --- PAN Super-Resolution (pan_sr) ---
+typedef CrispembedPanSrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedPanSrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedPanSrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedPanSrFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedPanSrScaleNative = Int32 Function(Pointer<Void> ctx);
+typedef CrispembedPanSrScaleDart = int Function(Pointer<Void> ctx);
+
+typedef CrispembedPanSrProcessNative = Int32 Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    Int32 width,
+    Int32 height,
+    Int32 tileSize,
+    Int32 tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+typedef CrispembedPanSrProcessDart = int Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    int width,
+    int height,
+    int tileSize,
+    int tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+
+typedef CrispembedPanSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
+typedef CrispembedPanSrFreeImageDart = void Function(Pointer<Uint8> pixels);
+
+// --- TBSRN Super-Resolution (tbsrn_sr, always 2×) ---
+typedef CrispembedTbsrnSrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedTbsrnSrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedTbsrnSrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedTbsrnSrFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedTbsrnSrProcessNative = Int32 Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> input,
+    Int32 width,
+    Int32 height,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+typedef CrispembedTbsrnSrProcessDart = int Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> input,
+    int width,
+    int height,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+
+typedef CrispembedTbsrnSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
+typedef CrispembedTbsrnSrFreeImageDart = void Function(Pointer<Uint8> pixels);

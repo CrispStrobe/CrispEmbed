@@ -4,6 +4,123 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 2026 — Text Super-Resolution (PAN, TBSRN, NAFNet-SR)
+
+Three engines for upscaling low-resolution text images before OCR, integrated
+into the document preprocessing pipeline.
+
+### PAN 4× whole-image super-resolution
+
+Pixel Attention Network (PAN) for 4× upscaling of full document pages.
+
+- **Architecture**: shallow feature extraction (Conv3×3) → 6 SC-PA blocks
+  (depthwise-separable conv + pixel attention gates) → PixelShuffle(4) upsampler.
+  272K parameters, C++ forward pass.
+- **GGUF**: `pan-x4-f16.gguf` — 0.5 MB F16.
+- **Converter**: `models/convert-pan-to-gguf.py`.
+- **Parity**: cos=0.999654 vs PyTorch reference (F16, full-page input).
+- **License**: Apache-2.0.
+
+### TBSRN 2× per-line super-resolution
+
+Text Before Super-Resolution Network (TBSRN) for 2× upscaling of individual
+OCR text-line crops (telescope training scheme).
+
+- **Architecture**: shallow feature extraction → 3 residual groups (6 TSA blocks
+  each, transformer-style self-attention on spatial tokens) → PixelShuffle(2)
+  upsampler. 1.1M parameters, C++ forward pass.
+- **GGUF**: `tbsrn-telescope-f16.gguf` — 2 MB F16.
+- **Converter**: `models/convert-tbsrn-to-gguf.py`.
+- **Parity**: cos=0.999985 vs PyTorch reference (F16, 32×128 text-line crop).
+- **License**: Apache-2.0.
+
+### NAFNet-SR engine (no model yet)
+
+Engine scaffolding for NAFNet-SR custom super-resolution models. Reuses the
+existing `nafnet_denoise.cpp` architecture with a configurable upsampling tail.
+No pre-trained GGUF included — supply a custom trained checkpoint via `--sr-model`.
+
+### Integration matrix
+
+| Surface | PAN (`--pan-sr`) | TBSRN (`--tbsrn-sr`) | NAFNet-SR (`--sr-model`) |
+|---------|-----------------|----------------------|--------------------------|
+| C API | `crispembed_pan_sr_*` | `crispembed_tbsrn_sr_*` | `crispembed_nafnet_sr_*` |
+| CLI | `--pan-sr` | `--tbsrn-sr` | `--sr-model` |
+| Server | `POST /pan/sr` | `POST /tbsrn/sr` | — |
+| Python | `CrispPanSr` | `CrispTbsrnSr` | — |
+| Rust | `CrispPanSr` | `CrispTbsrnSr` | — |
+
+New files: `src/pan_sr.{h,cpp}`, `src/tbsrn_sr.{h,cpp}`,
+`models/convert-pan-to-gguf.py`, `models/convert-tbsrn-to-gguf.py`,
+`tools/dump_pan_reference.py`, `tools/dump_tbsrn_reference.py`,
+`tests/test_pan_sr.cpp`, `tests/test_tbsrn_sr.cpp`.
+
+---
+
+## June 2026 — Tesseract LSTM OCR + classical preprocessing + renderers
+
+### Tesseract LSTM line-recognition engine
+
+Ported Tesseract's LSTM line-recognition engine to CrispEmbed via GGML.
+126 languages from `.traineddata` files (435 KB–1.7 MB Q8_0 per language).
+
+- Converter (`convert-tesseract-to-gguf.py`): recursive binary tree parser,
+  int8 dequant, gate reorder, GGUF emit. Supports tessdata_best + tessdata_fast.
+- C++ engine (`tesseract_lstm.{h,cpp}`): Conv stacking → FC+tanh → MaxPool →
+  SummLSTM → LSTMs → Softmax → CTC decode. Pure CPU, no ggml graph.
+- Python reference (`dump_tesseract_reference.py`): pure-numpy forward pass.
+- Parity: 8/8 stages cos_min=1.000000. Spaces + punctuation emitted natively.
+- 12 language GGUFs on HuggingFace (`cstr/tesseract-lstm-GGUF`).
+
+### Classical preprocessing (from Leptonica, BSD-2)
+
+CPU-only, model-free, fast tier. Self-contained C++, no Leptonica dependency.
+
+- 1-bit DWA morphology (`morph_fast`): 21x speedup, 32x less memory.
+- CC text line detection (`cc_detect`): model-free, 4.3ms/page, zero downloads.
+- Adaptive Otsu (`classical_preproc`): per-tile + bilinear interpolation.
+- Differential-square-sum deskew: 3ms/page, binary search on 4x-reduced image.
+- CC despeckle: flood-fill + size filter.
+- Background normalization: tile-based 90th-percentile + smoothing.
+- Page dewarping (`dewarp`): cubic baseline fitting + disparity warp. 10ms.
+
+### OCR result renderers (`ocr_render`)
+
+Plain text (configurable separator), hOCR (XHTML), ALTO 3.1 (XML),
+searchable PDF (invisible text layer, rendering mode 3). 36/36 tests.
+Wired into CLI (`--output-format`), C API, Rust, Python.
+
+### Punctuation restoration
+
+FireRedPunc + PCS copied from CrispASR. Auto-detect from GGUF arch.
+CLI `--punct-model`, C API, orchestrator integration. Registered in model_mgr.
+
+### OCR pipeline orchestrator
+
+Wired into HTTP server, Python, Dart, Rust. Full params in all layers.
+CORS headers. VLM escalation in Rust. Verbose logging (`CRISPEMBED_VERBOSE_OCR`).
+GOT-OCR2 GPU scheduler fix. CC detect as model-free detector option.
+
+### Wiring
+
+All new capabilities: C API + Rust FFI + safe Rust + Python bindings.
+docs/contributing.md updated with utility library checklist + integration matrix.
+### Additional improvements (June 15)
+
+- **Searchable PDF with image**: JPEG XObject embedding + glyph-width-aware
+  text positioning (Tm matrix, font scaled to match bbox width).
+- **PDF/A-2b metadata**: XMP metadata stream + sRGB OutputIntent.
+- **Refined DBNet postprocessing**: Moore contour tracing + convex hull +
+  min-area rotated rectangle (rotating calipers) + polygon-interior scoring.
+- **Text angle classification**: heuristic 0°/180° detection via
+  ascender/descender asymmetry.
+- **Image downsampling calculator**: DPI + max_pixels aware.
+- **OCR quality scoring**: dictionary-based word matching.
+
+63 new tests total, all passing.
+
+---
+
 ## June 2026 — Qari-OCR (Arabic with diacritics, 2B, Apache-2.0)
 
 Port of NAMAA-Space/Qari-OCR-0.2.2.1-VL-2B-Instruct — Arabic OCR with
@@ -42,8 +159,8 @@ path with different dimensions. Test kernel prepared but not yet run.
 
 ## June 2026 — Scan cleanup (document preprocessing pipeline)
 
-Two-tier document scan preprocessing module replacing the
-ocrmypdf/unpaper pipeline with pure C++.
+Two-tier document scan preprocessing module — pure C++, no external
+tool dependencies.
 
 ### Tier 1 — Classical (no model needed)
 
@@ -730,7 +847,7 @@ All handwritten math datasets are NC. The C++ inference is clean-room.
 - Quantized: F16 (39 MB), Q8_0 (22 MB, identical quality), Q4_K (13 MB, degraded)
 - GGUF models published: huggingface.co/cstr/texo-distill-gguf
 - Diff regime: encoder cos=1.000000, decoder verified via layer-by-layer debug traces
-- Source: Texo (AGPL-3.0) distilled from PaddleOCR PP-FormulaNet-S (Apache-2.0)
+- Source: Texo (AGPL-3.0) distilled from PP-FormulaNet-S (Apache-2.0)
   trained on UniMER-1M (CC-BY-4.0)
 
 ## June 2026 — Nomic v2 MoE Encoder
