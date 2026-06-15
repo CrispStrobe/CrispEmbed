@@ -558,6 +558,35 @@ typedef CrispembedPanSrProcessDart = int Function(
 typedef CrispembedPanSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedPanSrFreeImageDart = void Function(Pointer<Uint8> pixels);
 
+// --- Restormer image restoration ---
+typedef CrispembedRestormerInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedRestormerInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedRestormerFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedRestormerFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedRestormerProcessNative = Int32 Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    Int32 width,
+    Int32 height,
+    Int32 tileSize,
+    Int32 tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels);
+typedef CrispembedRestormerProcessDart = int Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    int width,
+    int height,
+    int tileSize,
+    int tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels);
+
+typedef CrispembedRestormerFreeImageNative = Void Function(Pointer<Uint8> pixels);
+typedef CrispembedRestormerFreeImageDart = void Function(Pointer<Uint8> pixels);
+
 // --- TBSRN Super-Resolution (tbsrn_sr, always 2×) ---
 typedef CrispembedTbsrnSrInitNative = Pointer<Void> Function(
     Pointer<Utf8> modelPath, Int32 nThreads);

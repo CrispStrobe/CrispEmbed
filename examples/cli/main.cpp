@@ -179,6 +179,8 @@ int main(int argc, char ** argv) {
     std::string pan_sr_path;           // --pan-sr FILE: standalone PAN upscaling
     std::string tbsrn_model;           // --tbsrn-model: TBSRN text-line SR GGUF
     std::string tbsrn_sr_path;         // --tbsrn-sr FILE: standalone TBSRN upscaling
+    std::string restormer_model;        // --restormer MODEL: Restormer image restoration GGUF
+    std::string restormer_path;         // --restormer FILE: standalone Restormer processing
     std::string pipeline_vlm_model;     // --vlm-model NAME: VLM escalation engine GGUF
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
@@ -298,6 +300,10 @@ int main(int argc, char ** argv) {
             tbsrn_model = argv[++i];
         } else if (strcmp(argv[i], "--tbsrn-sr") == 0 && i + 1 < argc) {
             tbsrn_sr_path = argv[++i];
+        } else if (strcmp(argv[i], "--restormer") == 0 && i + 1 < argc) {
+            restormer_model = argv[++i];
+        } else if (strcmp(argv[i], "--restormer-input") == 0 && i + 1 < argc) {
+            restormer_path = argv[++i];
         } else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) {
             pipeline_vlm_model = argv[++i];
         } else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) {
@@ -460,6 +466,27 @@ int main(int argc, char ** argv) {
         printf("P6\n%d %d\n255\n", ow, oh);
         fwrite(out, 1, (size_t)ow * oh * 3, stdout);
         crispembed_tbsrn_sr_free_image(out);
+        return 0;
+    }
+    if (!restormer_path.empty()) {
+        if (restormer_model.empty()) {
+            fprintf(stderr, "error: --restormer-input requires --restormer <model>\n");
+            return 1;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(restormer_path.c_str(), &w, &h, &ch, 3);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", restormer_path.c_str()); return 1; }
+        void * rctx = crispembed_restormer_init(restormer_model.c_str(), n_threads);
+        if (!rctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load Restormer model '%s'\n", restormer_model.c_str()); return 1; }
+        uint8_t * out = nullptr;
+        int rc = crispembed_restormer_process(rctx, data, w, h, 0, 0, &out);
+        stbi_image_free(data);
+        crispembed_restormer_free(rctx);
+        if (rc != 0 || !out) { fprintf(stderr, "error: Restormer processing failed\n"); return 1; }
+        // Write result as PPM (RGB) to stdout
+        printf("P6\n%d %d\n255\n", w, h);
+        fwrite(out, 1, (size_t)w * h * 3, stdout);
+        crispembed_restormer_free_image(out);
         return 0;
     }
 

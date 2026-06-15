@@ -1795,6 +1795,84 @@ impl Drop for CrispPanSr {
 }
 
 // ---------------------------------------------------------------------------
+// Restormer image restoration (CVPR 2022)
+// ---------------------------------------------------------------------------
+
+/// Restormer whole-image restoration (denoising, deblurring, deraining).
+///
+/// ```no_run
+/// let r = CrispRestormer::new("restormer-denoise.gguf", 4).unwrap();
+/// let pixels = r.process(&rgb_bytes, 640, 480, 0, 0).unwrap();
+/// ```
+pub struct CrispRestormer {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispRestormer {}
+
+impl CrispRestormer {
+    /// Load a Restormer GGUF model.
+    ///
+    /// - `model_path` -- path to the `.gguf` file.
+    /// - `n_threads`  -- CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_restormer_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_restormer_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Restore an RGB image (denoising / deblurring / deraining).
+    ///
+    /// - `pixels`       -- RGB uint8 bytes (h * w * 3).
+    /// - `width`/`height` -- input image dimensions.
+    /// - `tile_size`    -- tile size for tiled inference (0 = full image).
+    /// - `tile_overlap` -- overlap between tiles in pixels.
+    ///
+    /// Returns output RGB bytes of the same dimensions as the input.
+    pub fn process(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        tile_size: i32,
+        tile_overlap: i32,
+    ) -> Result<Vec<u8>, String> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+
+        let rc = unsafe {
+            crispembed_sys::crispembed_restormer_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                tile_size,
+                tile_overlap,
+                &mut out_ptr,
+            )
+        };
+
+        if rc != 0 || out_ptr.is_null() {
+            return Err("Restormer processing failed".into());
+        }
+
+        let len = (width * height * 3) as usize;
+        let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_restormer_free_image(out_ptr) };
+
+        Ok(result)
+    }
+}
+
+impl Drop for CrispRestormer {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_restormer_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // OCR Pipeline (orchestrator)
 // ---------------------------------------------------------------------------
 
