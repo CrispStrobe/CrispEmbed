@@ -2116,3 +2116,118 @@ class CrispScanCleanup:
         if hasattr(self, '_ctx') and self._ctx:
             self._lib.crispembed_scan_cleanup_free(self._ctx)
             self._ctx = None
+
+
+# ---------------------------------------------------------------------------
+# OCR Orchestrator (source-type routing + cleanup + accept-gate)
+# ---------------------------------------------------------------------------
+
+class _CrispOcrPipelineParams(ctypes.Structure):
+    _fields_ = [
+        ("router", ctypes.c_int),
+        ("cleanup_enabled", ctypes.c_int),
+        ("min_chars", ctypes.c_int),
+        ("min_confidence", ctypes.c_float),
+        ("det_model", ctypes.c_char_p),
+        ("rec_model", ctypes.c_char_p),
+        ("nafnet_model", ctypes.c_char_p),
+        ("vlm_model", ctypes.c_char_p),
+        ("vlm_engine", ctypes.c_int),
+    ]
+
+
+def _setup_ocr_orchestrator_signatures(lib):
+    lib.crispembed_ocr_pipeline_defaults.argtypes = []
+    lib.crispembed_ocr_pipeline_defaults.restype = _CrispOcrPipelineParams
+
+    lib.crispembed_ocr_pipeline_init.argtypes = [
+        ctypes.POINTER(_CrispOcrPipelineParams), ctypes.c_int]
+    lib.crispembed_ocr_pipeline_init.restype = ctypes.c_void_p
+
+    lib.crispembed_ocr_pipeline_run.argtypes = [
+        ctypes.c_void_p, ctypes.c_char_p,
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_char_p),
+        ctypes.POINTER(ctypes.c_float),
+    ]
+    lib.crispembed_ocr_pipeline_run.restype = ctypes.POINTER(_CrispOcrResult)
+
+    lib.crispembed_ocr_pipeline_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_ocr_pipeline_free.restype = None
+
+
+class CrispOcrOrchestrator:
+    """OCR orchestrator with source-type routing, cleanup, and accept-gate.
+
+    Composes detection + recognition engines with automatic source-type
+    classification (screenshot vs scan vs photo), per-stage cleanup, and
+    cascading with confidence-based accept gates.
+
+    Usage::
+
+        orch = CrispOcrOrchestrator("surya-det", "qwen2vl-3b")
+        result = orch.run("document.png")
+        print(result["text"])
+        print(f"  {result['n_regions']} regions, confidence={result['mean_confidence']:.2f}")
+    """
+
+    def __init__(self, det_model: str, rec_model: str, *,
+                 router: bool = True, cleanup: bool = True,
+                 min_chars: int = 8, min_confidence: float = 0.5,
+                 nafnet_model: Optional[str] = None,
+                 vlm_model: Optional[str] = None, vlm_engine: int = 0,
+                 n_threads: int = 4, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_ocr_orchestrator_signatures(self._lib)
+        _setup_ocr_pipeline_signatures(self._lib)  # for _CrispOcrResult
+
+        params = self._lib.crispembed_ocr_pipeline_defaults()
+        params.router = int(router)
+        params.cleanup_enabled = int(cleanup)
+        params.min_chars = min_chars
+        params.min_confidence = min_confidence
+        params.det_model = det_model.encode("utf-8")
+        params.rec_model = rec_model.encode("utf-8")
+        if nafnet_model:
+            params.nafnet_model = nafnet_model.encode("utf-8")
+        if vlm_model:
+            params.vlm_model = vlm_model.encode("utf-8")
+            params.vlm_engine = vlm_engine
+
+        self._ctx = self._lib.crispembed_ocr_pipeline_init(
+            ctypes.byref(params), n_threads)
+        if not self._ctx:
+            raise RuntimeError("Failed to init OCR orchestrator")
+
+    def run(self, image_path: str) -> dict:
+        """Run the full orchestrator pipeline on an image.
+
+        Returns:
+            Dict with keys: text, n_regions, mean_confidence, regions.
+        """
+        n = ctypes.c_int(0)
+        full_text = ctypes.c_char_p()
+        mean_conf = ctypes.c_float(0.0)
+        ptr = self._lib.crispembed_ocr_pipeline_run(
+            self._ctx, str(image_path).encode("utf-8"),
+            ctypes.byref(n), ctypes.byref(full_text), ctypes.byref(mean_conf))
+
+        regions = []
+        for i in range(n.value):
+            r = ptr[i]
+            regions.append({
+                "text": r.text.decode("utf-8") if r.text else "",
+                "x": r.x, "y": r.y, "w": r.w, "h": r.h,
+                "confidence": r.confidence,
+            })
+        return {
+            "text": full_text.value.decode("utf-8") if full_text.value else "",
+            "n_regions": n.value,
+            "mean_confidence": mean_conf.value,
+            "regions": regions,
+        }
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_ocr_pipeline_free(self._ctx)
+            self._ctx = None
