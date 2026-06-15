@@ -151,6 +151,7 @@ list(APPEND CRISPEMBED_SOURCES src/tesseract_lstm.cpp)
 list(APPEND CRISPEMBED_SOURCES src/fireredpunc.cpp)
 list(APPEND CRISPEMBED_SOURCES src/pcs.cpp)
 list(APPEND CRISPEMBED_SOURCES src/morph_fast.cpp)
+list(APPEND CRISPEMBED_SOURCES src/cc_detect.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 if(CRISPEMBED_HAS_CRISP_AUDIO)
@@ -349,6 +350,10 @@ target_link_libraries(test-tesseract-lstm-diff PRIVATE crispembed)
 
 add_executable(test-morph-fast tests/test_morph_fast.cpp)
 target_link_libraries(test-morph-fast PRIVATE crispembed)
+
+add_executable(test-cc-detect tests/test_cc_detect.cpp)
+target_include_directories(test-cc-detect PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-cc-detect PRIVATE crispembed)
 
 endif() # NOT iOS
 
