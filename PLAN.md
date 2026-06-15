@@ -424,6 +424,7 @@ Priority order (by impact across speed × quality × resources):
 - [x] PosFormer (handwritten math, DenseNet+Transformer+ARM, 57% CROHME, BSD-2)
 - [x] PP-FormulaNet-S/Texo-Distill (printed, HGNetv2+MBart 20M, AGPL-3.0 distill)
 - [x] PP-FormulaNet-L (printed, SAM-ViT+MBart 181M, Apache-2.0)
+- [x] Qari-OCR (2B, Apache-2.0, Arabic+diacritics, LoRA merged into Qwen2-VL-2B)
 - [x] Surya detector (parity verified, stb_image, Q8_0/Q4_K working)
 
 ---
