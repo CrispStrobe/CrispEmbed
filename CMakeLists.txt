@@ -150,6 +150,7 @@ list(APPEND CRISPEMBED_SOURCES src/pan_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/restormer.cpp)
 list(APPEND CRISPEMBED_SOURCES src/parseq_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/glm_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/bert_ner.cpp)
 list(APPEND CRISPEMBED_SOURCES src/got_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tesseract_lstm.cpp)
 list(APPEND CRISPEMBED_SOURCES src/fireredpunc.cpp)
@@ -317,6 +318,9 @@ target_link_libraries(test-gliner-ner PRIVATE crispembed)
 
 add_executable(test-kie-pipeline tests/test_kie_pipeline.cpp)
 target_link_libraries(test-kie-pipeline PRIVATE crispembed)
+
+add_executable(test-bert-ner tests/test_bert_ner.cpp)
+target_link_libraries(test-bert-ner PRIVATE crispembed)
 
 add_executable(test-lilt-kie tests/test_lilt_kie.cpp)
 target_link_libraries(test-lilt-kie PRIVATE crispembed)
