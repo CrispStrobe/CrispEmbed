@@ -758,9 +758,10 @@ Listed in priority order:
   before OCR to improve recognition accuracy. Dedicated SR models as
   preprocessing step in the orchestrator.
 
-- [ ] **Refined DBNet postprocessing** — Unclip polygon expansion, Vatti
-  clipping, box scoring refinements. Review and adopt improvements
-  from Apache-2.0 references. ~200 LOC.
+- [x] **Refined DBNet postprocessing** — DONE. Moore contour tracing,
+  convex hull (Andrew's monotone chain), min-area rotated rectangle
+  (rotating calipers), polygon-interior probability scoring (ray-casting),
+  Unclip on rotated rect. Replaces axis-aligned bbox with rotated quad.
 
 ---
 

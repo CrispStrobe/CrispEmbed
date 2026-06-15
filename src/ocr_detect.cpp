@@ -497,8 +497,199 @@ static std::vector<float> forward(context* ctx, const float* pixels, int H, int 
 // Post-processing: prob map → bounding boxes
 // ---------------------------------------------------------------------------
 
-// Simple connected-component labeling + bounding box extraction.
-// Uses threshold binarization + flood-fill.
+// Contour tracing: extract the boundary pixels of a connected component
+// using Moore neighborhood tracing (8-connected boundary following).
+static std::vector<std::pair<int,int>> trace_contour(
+    const uint8_t * binary, int w, int h,
+    const int * labels, int label, int start_x, int start_y)
+{
+    std::vector<std::pair<int,int>> contour;
+    // Moore neighborhood: 8 directions, starting from right
+    const int dx[] = {1, 1, 0, -1, -1, -1, 0, 1};
+    const int dy[] = {0, 1, 1, 1, 0, -1, -1, -1};
+
+    int cx = start_x, cy = start_y;
+    int dir = 0; // start looking right
+
+    auto is_fg = [&](int x, int y) -> bool {
+        if (x < 0 || x >= w || y < 0 || y >= h) return false;
+        return labels[x + y * w] == label;
+    };
+
+    // Find start: leftmost pixel in topmost row of component
+    // (already provided as start_x, start_y)
+    int max_steps = w * h * 2; // safety limit
+    do {
+        contour.push_back({cx, cy});
+        // Look for next boundary pixel
+        bool found = false;
+        for (int i = 0; i < 8; i++) {
+            int d = (dir + 6 + i) % 8; // start from dir-2 (backtrack)
+            int nx = cx + dx[d], ny = cy + dy[d];
+            if (is_fg(nx, ny)) {
+                cx = nx; cy = ny;
+                dir = d;
+                found = true;
+                break;
+            }
+        }
+        if (!found) break;
+        if (--max_steps <= 0) break;
+    } while (cx != start_x || cy != start_y || contour.size() < 3);
+
+    return contour;
+}
+
+// Compute minimum-area bounding rectangle for a set of points.
+// Uses the rotating calipers algorithm on the convex hull.
+// Returns center (cx,cy), size (w,h), angle in degrees.
+struct min_rect {
+    float cx, cy, w, h, angle;
+};
+
+static min_rect min_area_rect(const std::vector<std::pair<int,int>> & pts) {
+    min_rect r = {0, 0, 0, 0, 0};
+    if (pts.size() < 3) {
+        if (!pts.empty()) {
+            int mnx = pts[0].first, mxx = mnx, mny = pts[0].second, mxy = mny;
+            for (auto & p : pts) {
+                if (p.first < mnx) mnx = p.first;
+                if (p.first > mxx) mxx = p.first;
+                if (p.second < mny) mny = p.second;
+                if (p.second > mxy) mxy = p.second;
+            }
+            r.cx = (mnx + mxx) / 2.0f;
+            r.cy = (mny + mxy) / 2.0f;
+            r.w = (float)(mxx - mnx + 1);
+            r.h = (float)(mxy - mny + 1);
+        }
+        return r;
+    }
+
+    // Convex hull (Andrew's monotone chain)
+    auto pts_sorted = pts;
+    std::sort(pts_sorted.begin(), pts_sorted.end());
+    std::vector<std::pair<int,int>> hull;
+    // Lower hull
+    for (auto & p : pts_sorted) {
+        while (hull.size() >= 2) {
+            auto & a = hull[hull.size()-2];
+            auto & b = hull[hull.size()-1];
+            long cross = (long)(b.first-a.first)*(p.second-a.second)
+                       - (long)(b.second-a.second)*(p.first-a.first);
+            if (cross <= 0) hull.pop_back(); else break;
+        }
+        hull.push_back(p);
+    }
+    // Upper hull
+    int lower_size = (int)hull.size();
+    for (int i = (int)pts_sorted.size()-2; i >= 0; i--) {
+        auto & p = pts_sorted[i];
+        while ((int)hull.size() > lower_size) {
+            auto & a = hull[hull.size()-2];
+            auto & b = hull[hull.size()-1];
+            long cross = (long)(b.first-a.first)*(p.second-a.second)
+                       - (long)(b.second-a.second)*(p.first-a.first);
+            if (cross <= 0) hull.pop_back(); else break;
+        }
+        hull.push_back(p);
+    }
+    hull.pop_back(); // remove duplicate last point
+
+    if (hull.size() < 3) {
+        // Degenerate — use axis-aligned bbox
+        int mnx = hull[0].first, mxx = mnx, mny = hull[0].second, mxy = mny;
+        for (auto & p : hull) {
+            if (p.first < mnx) mnx = p.first;
+            if (p.first > mxx) mxx = p.first;
+            if (p.second < mny) mny = p.second;
+            if (p.second > mxy) mxy = p.second;
+        }
+        r.cx = (mnx + mxx) / 2.0f; r.cy = (mny + mxy) / 2.0f;
+        r.w = (float)(mxx - mnx + 1); r.h = (float)(mxy - mny + 1);
+        return r;
+    }
+
+    // Rotating calipers: try each hull edge as base, find min-area rectangle
+    float min_area = 1e30f;
+    int n = (int)hull.size();
+    for (int i = 0; i < n; i++) {
+        int j = (i + 1) % n;
+        float ex = (float)(hull[j].first - hull[i].first);
+        float ey = (float)(hull[j].second - hull[i].second);
+        float len = sqrtf(ex*ex + ey*ey);
+        if (len < 1e-6f) continue;
+        ex /= len; ey /= len;
+        // Project all hull points onto this edge direction and its perpendicular
+        float min_proj = 1e30f, max_proj = -1e30f;
+        float min_perp = 1e30f, max_perp = -1e30f;
+        for (auto & p : hull) {
+            float dx = (float)(p.first - hull[i].first);
+            float dy = (float)(p.second - hull[i].second);
+            float proj = dx * ex + dy * ey;
+            float perp = -dx * ey + dy * ex;
+            if (proj < min_proj) min_proj = proj;
+            if (proj > max_proj) max_proj = proj;
+            if (perp < min_perp) min_perp = perp;
+            if (perp > max_perp) max_perp = perp;
+        }
+        float area = (max_proj - min_proj) * (max_perp - min_perp);
+        if (area < min_area) {
+            min_area = area;
+            r.w = max_proj - min_proj;
+            r.h = max_perp - min_perp;
+            // Center in original coords
+            float mid_proj = (min_proj + max_proj) / 2;
+            float mid_perp = (min_perp + max_perp) / 2;
+            r.cx = hull[i].first + mid_proj * ex - mid_perp * ey;
+            r.cy = hull[i].second + mid_proj * ey + mid_perp * ex;
+            r.angle = atan2f(ey, ex) * 180.0f / 3.14159265f;
+        }
+    }
+    // Normalize: ensure w >= h (swap if needed, adjust angle)
+    if (r.w < r.h) {
+        std::swap(r.w, r.h);
+        r.angle += 90.0f;
+    }
+    if (r.angle > 180.0f) r.angle -= 360.0f;
+    if (r.angle < -180.0f) r.angle += 360.0f;
+    return r;
+}
+
+// Score a box by averaging prob_map values inside the polygon.
+// More accurate than scoring the entire bounding box (which includes
+// background pixels between text and bbox edges).
+static float score_polygon(const float * prob_map, int map_w, int map_h,
+                            const std::vector<std::pair<int,int>> & contour,
+                            int min_x, int min_y, int max_x, int max_y) {
+    if (contour.empty()) return 0;
+    float sum = 0;
+    int count = 0;
+    // Simple approach: for each pixel in the bbox, check if it's inside
+    // the polygon using ray-casting
+    for (int y = min_y; y <= max_y && y < map_h; y++) {
+        for (int x = min_x; x <= max_x && x < map_w; x++) {
+            // Ray casting: count crossings to the right
+            int crossings = 0;
+            int n = (int)contour.size();
+            for (int i = 0, j = n-1; i < n; j = i++) {
+                int yi = contour[i].second, yj = contour[j].second;
+                int xi = contour[i].first, xj = contour[j].first;
+                if ((yi <= y && yj > y) || (yj <= y && yi > y)) {
+                    float t = (float)(y - yi) / (yj - yi);
+                    if (x < xi + t * (xj - xi)) crossings++;
+                }
+            }
+            if (crossings & 1) {
+                sum += prob_map[x + y * map_w];
+                count++;
+            }
+        }
+    }
+    return count > 0 ? sum / count : 0;
+}
+
+// Connected-component labeling + contour-based bounding box extraction.
 static std::vector<text_box> extract_boxes(const float* prob_map,
                                             int map_w, int map_h,
                                             float prob_threshold,
@@ -569,32 +760,51 @@ static std::vector<text_box> extract_boxes(const float* prob_map,
                 float mean_score = sum_prob / count;
                 if (mean_score < box_threshold) continue;
 
-                // Compute bounding box with unclip expansion
-                float bw = (float)(max_x - min_x + 1);
-                float bh = (float)(max_y - min_y + 1);
+                // Trace contour of this component
+                auto contour = trace_contour(binary.data(), map_w, map_h,
+                                              labels.data(), label, min_x, min_y);
+
+                // Score against probability map (polygon interior only)
+                float poly_score = score_polygon(prob_map, map_w, map_h,
+                                                  contour, min_x, min_y, max_x, max_y);
+                if (poly_score < box_threshold) continue;
+
+                // Compute minimum-area rotated rectangle
+                min_rect mr = min_area_rect(contour);
+
+                // Apply unclip expansion
+                float bw = mr.w, bh = mr.h;
                 float perimeter = 2 * (bw + bh);
                 float area = (float)count;
-                // Offset expansion (Vatti-style clipping approximation)
                 float offset = area * unclip_ratio / perimeter;
+                mr.w += 2 * offset;
+                mr.h += 2 * offset;
 
-                float rx = std::max(0.0f, (float)min_x - offset);
-                float ry = std::max(0.0f, (float)min_y - offset);
-                float rx2 = std::min((float)(map_w - 1), (float)max_x + offset);
-                float ry2 = std::min((float)(map_h - 1), (float)max_y + offset);
+                // Clamp to map bounds
+                float half_w = mr.w / 2, half_h = mr.h / 2;
+                float ang_rad = mr.angle * 3.14159265f / 180.0f;
+                float cos_a = cosf(ang_rad), sin_a = sinf(ang_rad);
 
                 text_box tb;
-                tb.x = rx * scale_x;
-                tb.y = ry * scale_y;
-                tb.w = (rx2 - rx) * scale_x;
-                tb.h = (ry2 - ry) * scale_y;
-                tb.score = mean_score;
-                tb.angle = 0;
+                // Compute axis-aligned bounding box of the rotated rectangle
+                float abs_cw = fabsf(cos_a * half_w) + fabsf(sin_a * half_h);
+                float abs_ch = fabsf(sin_a * half_w) + fabsf(cos_a * half_h);
+                tb.x = std::max(0.0f, (mr.cx - abs_cw)) * scale_x;
+                tb.y = std::max(0.0f, (mr.cy - abs_ch)) * scale_y;
+                tb.w = std::min(2 * abs_cw, (float)map_w - (mr.cx - abs_cw)) * scale_x;
+                tb.h = std::min(2 * abs_ch, (float)map_h - (mr.cy - abs_ch)) * scale_y;
+                tb.score = poly_score;
+                tb.angle = mr.angle;
 
-                // Quad corners (axis-aligned for now)
-                tb.qx[0] = tb.x;          tb.qy[0] = tb.y;
-                tb.qx[1] = tb.x + tb.w;   tb.qy[1] = tb.y;
-                tb.qx[2] = tb.x + tb.w;   tb.qy[2] = tb.y + tb.h;
-                tb.qx[3] = tb.x;          tb.qy[3] = tb.y + tb.h;
+                // Quad corners of the rotated rectangle
+                float corners[4][2] = {
+                    {-half_w, -half_h}, { half_w, -half_h},
+                    { half_w,  half_h}, {-half_w,  half_h}
+                };
+                for (int c = 0; c < 4; c++) {
+                    tb.qx[c] = (mr.cx + corners[c][0]*cos_a - corners[c][1]*sin_a) * scale_x;
+                    tb.qy[c] = (mr.cy + corners[c][0]*sin_a + corners[c][1]*cos_a) * scale_y;
+                }
 
                 results.push_back(tb);
             }
