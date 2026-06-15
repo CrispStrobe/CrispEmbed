@@ -3823,6 +3823,32 @@ extern "C" void crispembed_tbsrn_sr_free_image(uint8_t * pixels) {
 }
 
 // ---------------------------------------------------------------------------
+// PAN whole-image super-resolution
+// ---------------------------------------------------------------------------
+
+#include "pan_sr.h"
+
+extern "C" void * crispembed_pan_sr_init(const char * model_path, int n_threads) {
+    return pan_sr_init(model_path, n_threads);
+}
+extern "C" void crispembed_pan_sr_free(void * ctx) {
+    pan_sr_free((pan_sr_context *)ctx);
+}
+extern "C" int crispembed_pan_sr_scale(const void * ctx) {
+    return pan_sr_scale((const pan_sr_context *)ctx);
+}
+extern "C" int crispembed_pan_sr_process(
+        void * ctx, const uint8_t * pixels, int width, int height,
+        int tile_size, int tile_overlap,
+        uint8_t ** out_pixels, int * out_width, int * out_height) {
+    return pan_sr_process((pan_sr_context *)ctx, pixels, width, height,
+                          tile_size, tile_overlap, out_pixels, out_width, out_height);
+}
+extern "C" void crispembed_pan_sr_free_image(uint8_t * pixels) {
+    pan_sr_free_image(pixels);
+}
+
+// ---------------------------------------------------------------------------
 // Punctuation restoration — FireRedPunc / PCS
 // ---------------------------------------------------------------------------
 

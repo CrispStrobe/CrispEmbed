@@ -868,6 +868,22 @@ CRISPEMBED_API int crispembed_tbsrn_sr_process(
 
 CRISPEMBED_API void crispembed_tbsrn_sr_free_image(uint8_t * pixels);
 
+// ---------------------------------------------------------------------------
+// PAN Whole-Image Super-Resolution — PaddleGAN PAN (Apache-2.0).
+// 4× (or 2×) upscale with SCPA blocks + pixel attention. ~272K params.
+// ---------------------------------------------------------------------------
+
+CRISPEMBED_API void * crispembed_pan_sr_init(const char * model_path, int n_threads);
+CRISPEMBED_API void   crispembed_pan_sr_free(void * ctx);
+CRISPEMBED_API int    crispembed_pan_sr_scale(const void * ctx);
+
+CRISPEMBED_API int crispembed_pan_sr_process(
+    void * ctx, const uint8_t * pixels, int width, int height,
+    int tile_size, int tile_overlap,
+    uint8_t ** out_pixels, int * out_width, int * out_height);
+
+CRISPEMBED_API void crispembed_pan_sr_free_image(uint8_t * pixels);
+
 /// Variant with individual params (for FFI bindings that can't pass structs by value).
 CRISPEMBED_API int crispembed_scan_cleanup_process_simple(
     void * ctx,
