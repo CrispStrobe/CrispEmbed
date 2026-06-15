@@ -23,7 +23,7 @@ import numpy as np
 # ── Pure numpy ops ──────────────────────────────────────────────────────
 
 def conv2d(x, weight, bias, stride=1, padding=0, groups=1):
-    """Conv2D forward (im2col, vectorized): x=[B,IC,H,W], weight=[OC,IC/G,KH,KW]."""
+    """Conv2D forward (vectorized im2col): x=[B,IC,H,W], weight=[OC,IC/G,KH,KW]."""
     B, IC, H, W = x.shape
     OC, IC_G, KH, KW = weight.shape
     if padding > 0:
@@ -31,21 +31,26 @@ def conv2d(x, weight, bias, stride=1, padding=0, groups=1):
     _, _, PH, PW = x.shape
     OH = (PH - KH) // stride + 1
     OW = (PW - KW) // stride + 1
+
+    # im2col via stride tricks
     s = x.strides
     col = np.lib.stride_tricks.as_strided(
         x, shape=(B, IC, KH, KW, OH, OW),
-        strides=(s[0], s[1], s[2], s[3], s[2] * stride, s[3] * stride))
+        strides=(s[0], s[1], s[2], s[3], s[2]*stride, s[3]*stride))
     col = col.reshape(B, IC * KH * KW, OH * OW)
+
     if groups == 1:
         w = weight.reshape(OC, IC * KH * KW)
-        out = np.einsum('ij,bjk->bik', w, col)
+        out = w @ col  # [B, OC, OH*OW] via broadcasting
     else:
         oc_pg = OC // groups
+        ic_pg = IC_G
         out = np.zeros((B, OC, OH * OW), dtype=np.float32)
         for g in range(groups):
-            w_g = weight[g * oc_pg:(g + 1) * oc_pg].reshape(oc_pg, IC_G * KH * KW)
-            c_g = col[:, g * IC_G * KH * KW:(g + 1) * IC_G * KH * KW]
-            out[:, g * oc_pg:(g + 1) * oc_pg] = np.einsum('ij,bjk->bik', w_g, c_g)
+            w_g = weight[g*oc_pg:(g+1)*oc_pg].reshape(oc_pg, ic_pg*KH*KW)
+            c_g = col[:, g*ic_pg*KH*KW:(g+1)*ic_pg*KH*KW]
+            out[:, g*oc_pg:(g+1)*oc_pg] = w_g @ c_g
+
     out = out.reshape(B, OC, OH, OW)
     if bias is not None:
         out += bias.reshape(1, OC, 1, 1)
@@ -342,8 +347,7 @@ def main():
 
     print(f"\nIntermediate activations:")
     for name, data in intermediates.items():
-        shp = str(list(data.shape))
-        print(f"  {name:20s}  shape={shp:30s}  mean={data.mean():.6f}  std={data.std():.6f}")
+        print(f"  {name:20s}  shape={str(list(data.shape)):30s}  mean={data.mean():.6f}  std={data.std():.6f}")
 
     write_gguf(args.output, intermediates)
 
