@@ -617,6 +617,7 @@ typedef struct crispembed_ocr_pipeline_params {
     const char * nafnet_model;  // NAFNet denoise GGUF for tier-2 (NULL/"" = classical only)
     const char * vlm_model;     // optional single-shot VLM escalation GGUF (NULL/"" = none)
     int          vlm_engine;    // VLM engine when vlm_model set: 0=GOT 1=GLM 2=Qwen2-VL 3=InternVL2
+    const char * punct_model;   // optional post-OCR punctuation/spacing restorer (FireRedPunc/PCS); NULL/"" = off
 } crispembed_ocr_pipeline_params;
 
 CRISPEMBED_API crispembed_ocr_pipeline_params crispembed_ocr_pipeline_defaults(void);
@@ -788,6 +789,7 @@ typedef struct crispembed_ocr_stage {
 CRISPEMBED_API void * crispembed_ocr_pipeline_init_stages(
     int router,
     const char * nafnet_model,
+    const char * punct_model,   // optional post-OCR punctuation/spacing restorer (NULL/"" = off)
     const crispembed_ocr_stage * stages,
     int n_stages,
     int n_threads);

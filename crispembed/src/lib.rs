@@ -1632,6 +1632,7 @@ impl CrispOcrPipeline {
     /// Build a pipeline. `nafnet_model = None` (or "") runs classical cleanup
     /// only (no learned tier-2 denoise).
     #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         det_model: &str,
         rec_model: &str,
@@ -1640,12 +1641,17 @@ impl CrispOcrPipeline {
         cleanup_enabled: bool,
         min_chars: i32,
         min_confidence: f32,
+        punct_model: Option<&str>,
         n_threads: i32,
     ) -> Result<Self, String> {
         let det = CString::new(det_model).map_err(|e| format!("det path: {e}"))?;
         let rec = CString::new(rec_model).map_err(|e| format!("rec path: {e}"))?;
         let naf = match nafnet_model {
             Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("nafnet path: {e}"))?),
+            _ => None,
+        };
+        let punct = match punct_model {
+            Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("punct path: {e}"))?),
             _ => None,
         };
         let params = crispembed_sys::CrispembedOcrPipelineParams {
@@ -1656,10 +1662,11 @@ impl CrispOcrPipeline {
             det_model: det.as_ptr(),
             rec_model: rec.as_ptr(),
             nafnet_model: naf.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
-            // VLM escalation stage is configured via the CLI/JSON path for now;
-            // CrispSorter's binding defaults it off (slice D wires it through).
+            // VLM escalation stage is configured via the per-stage builder path;
+            // the flat constructor defaults it off.
             vlm_model: std::ptr::null(),
             vlm_engine: 0,
+            punct_model: punct.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
         };
         let ctx = unsafe { crispembed_sys::crispembed_ocr_pipeline_init(&params, n_threads) };
         if ctx.is_null() {
@@ -1715,11 +1722,16 @@ impl CrispOcrPipeline {
     pub fn from_stages(
         router: bool,
         nafnet_model: Option<&str>,
+        punct_model: Option<&str>,
         stages: &[OcrStageSpec],
         n_threads: i32,
     ) -> Result<Self, String> {
         let naf = match nafnet_model {
             Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("nafnet: {e}"))?),
+            _ => None,
+        };
+        let punct = match punct_model {
+            Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("punct: {e}"))?),
             _ => None,
         };
         // Keep the per-stage CStrings alive until after the init call (C++
@@ -1767,6 +1779,7 @@ impl CrispOcrPipeline {
             crispembed_sys::crispembed_ocr_pipeline_init_stages(
                 router as std::os::raw::c_int,
                 naf.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+                punct.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
                 c_stages.as_ptr(),
                 c_stages.len() as std::os::raw::c_int,
                 n_threads,
