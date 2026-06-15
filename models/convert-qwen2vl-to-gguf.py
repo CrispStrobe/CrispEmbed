@@ -254,9 +254,9 @@ def main():
     print(f"  LLM: {tcv('num_hidden_layers')}L, {tcv('hidden_size')}d, "
           f"{tcv('num_attention_heads')}H/{tcv('num_key_value_heads')}KV, "
           f"inter={tcv('intermediate_size')}")
-    print(f"  Vision: {vc.depth}L, {vc.hidden_size}d, {vc.num_heads}H, "
+    print(f"  Vision: {vc.depth}L, {vis_block_dim}d, {vc.num_heads}H, "
           f"patch={vc.spatial_patch_size}, merge={vc.spatial_merge_size}, "
-          f"out={vc.out_hidden_size}")
+          f"out={out_hidden}")
 
     # Image preprocessor config
     try:
