@@ -1286,6 +1286,57 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /table/parse — rule-based table structure recognition
+    // Request:  {"image": "/path/to/table.png"}
+    // Response: {"html": "<table>...</table>", "ms": T}
+    svr.Post("/table/parse", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no image path\"}", "application/json");
+            return;
+        }
+
+        auto t0 = std::chrono::steady_clock::now();
+
+        // Load image as grayscale
+        int w = 0, h = 0, ch = 0;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 1);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+
+        void * tctx = crispembed_table_parse_init(nullptr, n_threads);
+        char * html = tctx ? crispembed_table_parse_to_html(tctx, data, w, h) : nullptr;
+        stbi_image_free(data);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        if (html) {
+            std::ostringstream js;
+            js << "{\"html\": \"" << json_escape(html)
+               << "\", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+            res.set_content(js.str(), "application/json");
+            crispembed_table_parse_free_string(html);
+        } else {
+            res.set_content("{\"error\": \"table parsing failed\"}", "application/json");
+        }
+        if (tctx) crispembed_table_parse_free(tctx);
+
+        fprintf(stderr, "crispembed-server: /table/parse in %.1f ms\n", ms);
+    });
+
     // POST /text/detect — surya text line detection
     // Request:  {"image": "/path/to/page.png", "threshold": 0.6}
     // Response: {"boxes": [{"bbox": [x0, y0, x1, y1], "confidence": 0.95}, ...]}
@@ -2503,6 +2554,7 @@ int main(int argc, char ** argv) {
     if (math_ocr_ctx) fprintf(stderr, "  POST /math/ocr        — {\"image\": \"formula.png\"}\n");
     if (ocr_pipeline_ctx) fprintf(stderr, "  POST /ocr             — {\"image\": \"document.png\"} (detect+recognize)\n");
     if (layout_ctx) fprintf(stderr, "  POST /layout/detect   — {\"image\": \"page.png\"}\n");
+    fprintf(stderr, "  POST /table/parse     — {\"image\": \"table.png\"} → {\"html\": \"<table>...\"}\n");
     if (text_det_ctx) fprintf(stderr, "  POST /text/detect     — {\"image\": \"page.png\"}\n");
     if (ner_ctx) fprintf(stderr, "  POST /ner/extract     — {\"text\": \"...\", \"labels\": [\"person\", ...]}\n");
     if (kie_ctx) fprintf(stderr, "  POST /kie/extract     — {\"image\": \"doc.png\", \"labels\": [\"total\", ...]} (OCR+NER)\n");
