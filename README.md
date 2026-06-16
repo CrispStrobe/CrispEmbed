@@ -9,14 +9,16 @@ Text, image, and face embeddings in one binary.
 Qwen3, Gemma3, SPLADE, DeBERTa-v2). Dense, sparse (SPLADE/BGE-M3), ColBERT
 multi-vector, cross-encoder rerankers, bi-encoder reranking.
 
-**NER**: Zero-shot Named Entity Recognition via GLiNER. Two backbone options:
-DeBERTa-v3-base (209M, Apache-2.0, recommended) and LFM2.5-350M (LFM-1.0).
-Detect arbitrary entity types at inference time — no retraining needed.
-CLI (`--ner`), server (`POST /ner/extract`), Python (`CrispNER`), Rust, Dart.
+**NER**: Zero-shot (GLiNER, DeBERTa-v3/LFM2.5) and fixed-label (BERT/XLM-R) Named
+Entity Recognition. Auto-detected from GGUF — same `--ner` API for both.
+Fixed-label: `bert-base-ner` (EN), `xlmr-ner-hrl` (10 languages). CLI, server, Python, Dart.
 
 **KIE**: Key Information Extraction — chains OCR + NER to extract structured
 key-value fields from document images (receipts, invoices, forms). No new model
 needed. CLI (`--kie`), server (`POST /kie/extract`), Python (`CrispKIE`), Dart.
+
+**LID**: Text language identification (CLD3/GlotLID) — auto-selects Tesseract model
+by detected language. Server (`POST /lid/detect`), Python (`CrispTextLID`).
 
 **LiLT**: Layout-aware document understanding via dual-stream encoder (RoBERTa +
 layout transformer with BiACM). Token classification for form understanding
@@ -447,6 +449,49 @@ for e in entities:
 Parity: all 16 backbone layers cos=1.000000 vs HF reference. Layer fusion and
 BiLSTM cos=1.000000. 17/17 entities match across 5 test texts.
 Source: [VAGOsolutions/SauerkrautLM-LFM2.5-GLiNER](https://huggingface.co/VAGOsolutions/SauerkrautLM-LFM2.5-GLiNER) (LFM Open License v1.0).
+
+### BERT / XLM-R Fixed-Label NER
+
+Fixed-label token classification NER using existing BERT/XLM-R encoders with a
+Linear classifier head. Auto-detected from GGUF metadata (`ner.classifier.weight`).
+
+| Model | Languages | Labels | Params | License |
+|-------|-----------|--------|--------|---------|
+| `bert-base-ner` | English | 9 (PER/LOC/ORG/MISC) | 110M | MIT |
+| `xlmr-ner-hrl` | 10 (en/de/fr/es/pt/it/nl/ar/zh/hi) | 9 (PER/LOC/ORG/MISC/DATE) | 278M | MIT |
+
+```bash
+./build/crispembed -m bert-base-ner --ner "Apple CEO Tim Cook visited Cupertino"
+# Apple (ORG), Tim Cook (PER), Cupertino (LOC)
+```
+
+Same `--ner` flag and `crispembed_ner_*` API as GLiNER — backend auto-detected from GGUF.
+
+## Language Identification (LID)
+
+Text-based language identification via shared `crisp_lid` library from CrispASR.
+Two backends auto-detected from GGUF: CLD3 (109 languages, Apache-2.0) and
+GlotLID (2102 ISO 639-3, Apache-2.0).
+
+Integrated into the OCR orchestrator for automatic Tesseract model selection:
+set `--lid-model cld3` + `--tess-model-dir /path/to/models/` and the pipeline
+detects the document language then picks `tesseract-{lang}-q8_0.gguf`.
+
+```bash
+# Server
+curl -X POST http://localhost:8080/lid/detect \
+  -d '{"text": "Hallo Welt, wie geht es Ihnen?"}'
+# → {"lang": "de", "confidence": 0.99}
+
+# Python
+from crispembed import CrispTextLID
+lid = CrispTextLID("cld3-f16.gguf")
+lang, conf = lid.predict("Bonjour le monde")  # ("fr", 0.98)
+
+# OCR pipeline with LID
+./build/crispembed --ocr-pipeline doc.png --lid-model cld3-f16.gguf --json
+# → {"n_regions": 5, ..., "detected_lang": "de", "lang_confidence": 0.97, ...}
+```
 
 ## Key Information Extraction (KIE)
 
@@ -979,6 +1024,7 @@ face detection/recognition, ViT/CLIP vision, math OCR, and NER:
 - `POST /vit/encode`, `POST /clip/text` — image/text encoding
 - `POST /math/ocr` — formula recognition `{"image": "path"}` → `{"latex": "..."}`
 - `POST /ner/extract` — NER `{"text": "...", "labels": [...]}` → `{"entities": [...]}`
+- `POST /lid/detect` — LID `{"text": "..."}` → `{"lang": "de", "confidence": 0.99}`
 - `POST /kie/extract` — KIE `{"image": "doc.png", "labels": ["total", ...]}` → `{"fields": [...]}`
 - `POST /ocr/document` — multi-page OCR: upload images → searchable PDF / hOCR / ALTO / text
 - `POST /preprocess/skew` — find skew angle `{"image": "..."}` → `{"angle": F}`
