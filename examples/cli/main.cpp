@@ -82,6 +82,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
     fprintf(stderr, "  --layout FILE    document layout detection (RT-DETRv2, needs -m layout_model.gguf)\n");
+    fprintf(stderr, "  --table FILE     table structure → HTML (rule-based, optional --ocr-rec for cell OCR)\n");
     fprintf(stderr, "  --ner TEXT       named entity recognition (GLiNER, needs -m ner_model.gguf)\n");
     fprintf(stderr, "  --ner-labels L   comma-separated entity types (default: person,organization,location)\n");
     fprintf(stderr, "  --ner-threshold F  confidence threshold for NER (default: 0.5)\n");
@@ -109,6 +110,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --pan-sr FILE    standalone PAN super-resolution: upscale image, write PGM to stdout\n");
     fprintf(stderr, "                   (needs --pan-model PATH: PAN GGUF, Pixel Attention Network, 2x or 4x)\n");
     fprintf(stderr, "  --pan-model PATH PAN super-resolution GGUF (used with --pan-sr)\n");
+    fprintf(stderr, "  --swinir-sr FILE standalone SwinIR super-resolution: upscale image, write PPM to stdout\n");
+    fprintf(stderr, "                   (needs --swinir-model PATH: SwinIR GGUF, Swin Transformer, 2x/3x/4x)\n");
+    fprintf(stderr, "  --swinir-model PATH SwinIR super-resolution GGUF (used with --swinir-sr)\n");
     fprintf(stderr, "  --tbsrn-sr FILE  standalone TBSRN text-line SR: upscale text crop, write PPM to stdout\n");
     fprintf(stderr, "                   (needs --tbsrn-model PATH: TBSRN GGUF, Telescope, fixed 4x)\n");
     fprintf(stderr, "  --tbsrn-model PATH TBSRN text-line super-resolution GGUF (used with --tbsrn-sr)\n");
@@ -160,6 +164,7 @@ int main(int argc, char ** argv) {
     std::string hmer_path;   // image for handwritten math OCR (HMER)
     std::string bttr_path;   // image for handwritten math OCR (BTTR)
     std::string layout_path; // image for layout detection
+    std::string table_path;  // image for table structure recognition
     std::string ner_text;    // text for NER extraction
     std::string ner_labels = "person,organization,location"; // comma-separated entity types
     float ner_threshold = 0.5f;
@@ -177,10 +182,14 @@ int main(int argc, char ** argv) {
     std::string sr_model;              // --sr-model: text super-resolution GGUF
     std::string pan_model;             // --pan-model: PAN super-resolution GGUF
     std::string pan_sr_path;           // --pan-sr FILE: standalone PAN upscaling
+    std::string swinir_model;          // --swinir-model: SwinIR super-resolution GGUF
+    std::string swinir_sr_path;        // --swinir-sr FILE: standalone SwinIR upscaling
     std::string tbsrn_model;           // --tbsrn-model: TBSRN text-line SR GGUF
     std::string tbsrn_sr_path;         // --tbsrn-sr FILE: standalone TBSRN upscaling
     std::string restormer_model;        // --restormer MODEL: Restormer image restoration GGUF
     std::string restormer_path;         // --restormer FILE: standalone Restormer processing
+    std::string scunet_model;           // --scunet-model MODEL: SCUNet denoising GGUF
+    std::string scunet_path;            // --scunet-denoise FILE: standalone SCUNet denoising
     std::string pipeline_vlm_model;     // --vlm-model NAME: VLM escalation engine GGUF
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
@@ -247,6 +256,8 @@ int main(int argc, char ** argv) {
             bttr_path = argv[++i];
         } else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc) {
             layout_path = argv[++i];
+        } else if (strcmp(argv[i], "--table") == 0 && i + 1 < argc) {
+            table_path = argv[++i];
         } else if (strcmp(argv[i], "--ner") == 0 && i + 1 < argc) {
             ner_text = argv[++i];
         } else if (strcmp(argv[i], "--ner-labels") == 0 && i + 1 < argc) {
@@ -296,6 +307,10 @@ int main(int argc, char ** argv) {
             pan_model = argv[++i];
         } else if (strcmp(argv[i], "--pan-sr") == 0 && i + 1 < argc) {
             pan_sr_path = argv[++i];
+        } else if (strcmp(argv[i], "--swinir-model") == 0 && i + 1 < argc) {
+            swinir_model = argv[++i];
+        } else if (strcmp(argv[i], "--swinir-sr") == 0 && i + 1 < argc) {
+            swinir_sr_path = argv[++i];
         } else if (strcmp(argv[i], "--tbsrn-model") == 0 && i + 1 < argc) {
             tbsrn_model = argv[++i];
         } else if (strcmp(argv[i], "--tbsrn-sr") == 0 && i + 1 < argc) {
@@ -304,6 +319,10 @@ int main(int argc, char ** argv) {
             restormer_model = argv[++i];
         } else if (strcmp(argv[i], "--restormer-input") == 0 && i + 1 < argc) {
             restormer_path = argv[++i];
+        } else if (strcmp(argv[i], "--scunet-model") == 0 && i + 1 < argc) {
+            scunet_model = argv[++i];
+        } else if (strcmp(argv[i], "--scunet-denoise") == 0 && i + 1 < argc) {
+            scunet_path = argv[++i];
         } else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) {
             pipeline_vlm_model = argv[++i];
         } else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) {
@@ -446,6 +465,28 @@ int main(int argc, char ** argv) {
         crispembed_pan_sr_free_image(out);
         return 0;
     }
+    if (!swinir_sr_path.empty()) {
+        if (swinir_model.empty()) {
+            fprintf(stderr, "error: --swinir-sr requires --swinir-model <path>\n");
+            return 1;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(swinir_sr_path.c_str(), &w, &h, &ch, 3);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", swinir_sr_path.c_str()); return 1; }
+        void * sctx = crispembed_swinir_sr_init(swinir_model.c_str(), n_threads);
+        if (!sctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load SwinIR model '%s'\n", swinir_model.c_str()); return 1; }
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_swinir_sr_process(sctx, data, w, h, 0, 0, &out, &ow, &oh);
+        stbi_image_free(data);
+        crispembed_swinir_sr_free(sctx);
+        if (rc != 0 || !out) { fprintf(stderr, "error: SwinIR SR processing failed\n"); return 1; }
+        // Write result as PPM (RGB) to stdout
+        printf("P6\n%d %d\n255\n", ow, oh);
+        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+        crispembed_swinir_sr_free_image(out);
+        return 0;
+    }
     if (!tbsrn_sr_path.empty()) {
         if (tbsrn_model.empty()) {
             fprintf(stderr, "error: --tbsrn-sr requires --tbsrn-model <path>\n");
@@ -487,6 +528,27 @@ int main(int argc, char ** argv) {
         printf("P6\n%d %d\n255\n", w, h);
         fwrite(out, 1, (size_t)w * h * 3, stdout);
         crispembed_restormer_free_image(out);
+        return 0;
+    }
+    if (!scunet_path.empty()) {
+        if (scunet_model.empty()) {
+            fprintf(stderr, "error: --scunet-denoise requires --scunet-model <model>\n");
+            return 1;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(scunet_path.c_str(), &w, &h, &ch, 3);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", scunet_path.c_str()); return 1; }
+        void * sctx = crispembed_scunet_init(scunet_model.c_str(), n_threads);
+        if (!sctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load SCUNet model '%s'\n", scunet_model.c_str()); return 1; }
+        uint8_t * out = nullptr;
+        int rc = crispembed_scunet_process(sctx, data, w, h, &out);
+        stbi_image_free(data);
+        crispembed_scunet_free(sctx);
+        if (rc != 0 || !out) { fprintf(stderr, "error: SCUNet denoising failed\n"); return 1; }
+        // Write result as PPM (RGB) to stdout
+        printf("P6\n%d %d\n255\n", w, h);
+        fwrite(out, 1, (size_t)w * h * 3, stdout);
+        crispembed_scunet_free_image(out);
         return 0;
     }
 
@@ -914,6 +976,37 @@ int main(int argc, char ** argv) {
             }
         }
         crispembed_layout_free(lctx);
+        return 0;
+    }
+
+    // Table structure recognition (rule-based)
+    if (!table_path.empty()) {
+        // Use --ocr-rec model for cell OCR if provided, else no OCR (structure only)
+        const char* ocr_model = ocr_rec_path.empty() ? nullptr : ocr_rec_path.c_str();
+        void* tctx = crispembed_table_parse_init(ocr_model, n_threads);
+        if (!tctx) { fprintf(stderr, "error: failed to init table parser\n"); return 1; }
+
+        int w, h, ch;
+        unsigned char* data = stbi_load(table_path.c_str(), &w, &h, &ch, 1); // grayscale
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", table_path.c_str());
+                     crispembed_table_parse_free(tctx); return 1; }
+
+        char* html = crispembed_table_parse_to_html(tctx, data, w, h);
+        stbi_image_free(data);
+
+        if (html) {
+            if (json_output) {
+                printf("{\"html\": \"%s\"}\n", json_escape(html).c_str());
+            } else {
+                printf("%s\n", html);
+            }
+            crispembed_table_parse_free_string(html);
+        } else {
+            fprintf(stderr, "error: table parsing failed\n");
+            crispembed_table_parse_free(tctx);
+            return 1;
+        }
+        crispembed_table_parse_free(tctx);
         return 0;
     }
 
