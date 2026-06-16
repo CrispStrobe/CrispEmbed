@@ -216,18 +216,19 @@ Utility libraries (not model backends) follow a lighter pattern.
 | Punctuation restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | TPS dewarp (learned) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | PDF DPI profiling | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| NAFNet denoising | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| TBSRN text-line SR | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| PAN whole-image SR | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| HAT SR (SOTA) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| DAT SR | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | SAFMN super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Real-ESRGAN super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| SwinIR super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Restormer restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | SCUNet denoising | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | InstructIR restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | AdaIR restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| HAT super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| DAT super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| SwinIR super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Restormer restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| NAFNet-SR text super-res | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| TBSRN text-line SR | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| PAN whole-image SR | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Text LID (standalone) | ✓ | — | ✓ | ✓ | — | ✓ |
 | Table structure recognition | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | BERT NER token classification | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | LiLT layout-aware KIE | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
