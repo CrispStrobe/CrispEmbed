@@ -20,6 +20,7 @@ void stbi_image_free(void* retval_from_stbi_load);
 }
 
 #include <algorithm>
+#include <chrono>
 #include <cassert>
 #include <cmath>
 #include <cstdio>
@@ -870,8 +871,9 @@ static bool run_decoder_prefill(context &ctx,
     int kv_repeat = n_heads / n_kv_heads;
 
     for (int step = 1; step < max_new_tokens && best != eos_id; step++) {
-        if (!kv_ok) break;  // fallback not implemented, stop
+        if (!kv_ok) break;
 
+        auto t_step_start = std::chrono::steady_clock::now();
         int pos = n_kv;
         // Embed new token
         auto tok_emb = embed_tokens_cpu({(int32_t)best});
@@ -1025,7 +1027,9 @@ static bool run_decoder_prefill(context &ctx,
         for (int v = 0; v < V; v++)
             if (logits_data[v] > best_score) { best_score = logits_data[v]; best = v; }
         generated.push_back(best);
-        fprintf(stderr, "  gen[%d] tok=%d%s\n", step, best, kv_ok ? " (cached)" : "");
+        auto t_step_end = std::chrono::steady_clock::now();
+        double step_ms = std::chrono::duration<double, std::milli>(t_step_end - t_step_start).count();
+        fprintf(stderr, "  gen[%d] tok=%d (%.0fms)%s\n", step, best, step_ms, kv_ok ? " cached" : "");
     }
 
     // Decode generated token IDs to text using the vocab
