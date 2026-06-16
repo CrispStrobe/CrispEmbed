@@ -3488,6 +3488,65 @@ extern "C" void crispembed_ocr_pipeline_free(void * ctx) {
 }
 
 // ---------------------------------------------------------------------------
+// Standalone Text LID
+// ---------------------------------------------------------------------------
+
+#if __has_include("text_lid_dispatch.h")
+#include "text_lid_dispatch.h"
+#define HAS_LID 1
+#else
+#define HAS_LID 0
+#endif
+
+extern "C" void * crispembed_lid_init(const char * model_path, int n_threads) {
+#if HAS_LID
+    return text_lid_init_from_file(model_path, n_threads);
+#else
+    (void)model_path; (void)n_threads;
+    fprintf(stderr, "crispembed: LID not available (crisp_lid not linked)\n");
+    return nullptr;
+#endif
+}
+
+extern "C" void crispembed_lid_free(void * ctx) {
+#if HAS_LID
+    if (ctx) text_lid_free((text_lid_context *)ctx);
+#else
+    (void)ctx;
+#endif
+}
+
+extern "C" const char * crispembed_lid_predict(void * ctx, const char * text, float * out_confidence) {
+#if HAS_LID
+    if (!ctx || !text) { if (out_confidence) *out_confidence = 0; return ""; }
+    return text_lid_predict((text_lid_context *)ctx, text, out_confidence);
+#else
+    (void)ctx; (void)text;
+    if (out_confidence) *out_confidence = 0;
+    return "";
+#endif
+}
+
+extern "C" int crispembed_lid_predict_topk(void * ctx, const char * text, int k,
+                                            const char ** out_labels, float * out_confidences) {
+#if HAS_LID
+    if (!ctx || !text) return 0;
+    return text_lid_predict_topk((text_lid_context *)ctx, text, k, out_labels, out_confidences);
+#else
+    (void)ctx; (void)text; (void)k; (void)out_labels; (void)out_confidences;
+    return 0;
+#endif
+}
+
+extern "C" int crispembed_lid_n_labels(const void * ctx) {
+#if HAS_LID
+    return ctx ? text_lid_n_labels((const text_lid_context *)ctx) : 0;
+#else
+    (void)ctx; return 0;
+#endif
+}
+
+// ---------------------------------------------------------------------------
 // Layout Detection (RT-DETRv2)
 // ---------------------------------------------------------------------------
 
