@@ -194,6 +194,14 @@ class CrispEmbed:
         ]
         lib.crispembed_rerank.restype = ctypes.c_float
 
+        # --- ColBERT MaxSim scoring ---
+        lib.crispembed_colbert_score.argtypes = [
+            ctypes.POINTER(ctypes.c_float), ctypes.c_int,
+            ctypes.POINTER(ctypes.c_float), ctypes.c_int,
+            ctypes.c_int,
+        ]
+        lib.crispembed_colbert_score.restype = ctypes.c_float
+
         # --- Audio encoding (BidirLM-Omni etc.) ---
         # Symbols may be missing from older builds  - guard each lookup.
         if hasattr(lib, "crispembed_has_audio"):
@@ -413,6 +421,25 @@ class CrispEmbed:
             ptr, shape=(n_tokens.value * colbert_dim.value,)
         ).copy()
         return flat.reshape(n_tokens.value, colbert_dim.value)
+
+    def colbert_score(self, query_vecs: np.ndarray, doc_vecs: np.ndarray) -> float:
+        """Compute ColBERT MaxSim score between query and document token vectors.
+
+        Args:
+            query_vecs: np.ndarray shape (n_query, dim) from encode_multivec.
+            doc_vecs: np.ndarray shape (n_doc, dim) from encode_multivec.
+
+        Returns:
+            MaxSim score: sum_i(max_j(dot(Q[i], D[j]))).
+        """
+        q = np.ascontiguousarray(query_vecs, dtype=np.float32)
+        d = np.ascontiguousarray(doc_vecs, dtype=np.float32)
+        nq, dim = q.shape
+        nd = d.shape[0]
+        return float(self._lib.crispembed_colbert_score(
+            q.ctypes.data_as(ctypes.POINTER(ctypes.c_float)), nq,
+            d.ctypes.data_as(ctypes.POINTER(ctypes.c_float)), nd,
+            dim))
 
     # ------------------------------------------------------------------
     # Audio encoding (BidirLM-Omni etc.)
