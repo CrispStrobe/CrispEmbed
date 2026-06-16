@@ -216,6 +216,8 @@ int main(int argc, char ** argv) {
     std::string instructir_model;       // --instructir-model MODEL: InstructIR restoration GGUF
     std::string instructir_path;        // --instructir FILE: standalone InstructIR processing
     int instructir_task = 0;            // --instructir-task N: task 0-6
+    std::string adair_model;            // --adair-model MODEL: AdaIR restoration GGUF
+    std::string adair_path;             // --adair FILE: standalone AdaIR processing
     std::string pipeline_vlm_model;     // --vlm-model NAME: VLM escalation engine GGUF
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
@@ -380,6 +382,10 @@ int main(int argc, char ** argv) {
             instructir_path = argv[++i];
         } else if (strcmp(argv[i], "--instructir-task") == 0 && i + 1 < argc) {
             instructir_task = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "--adair-model") == 0 && i + 1 < argc) {
+            adair_model = argv[++i];
+        } else if (strcmp(argv[i], "--adair") == 0 && i + 1 < argc) {
+            adair_path = argv[++i];
         } else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) {
             pipeline_vlm_model = argv[++i];
         } else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) {
@@ -711,6 +717,27 @@ int main(int argc, char ** argv) {
         printf("P6\n%d %d\n255\n", w, h);
         fwrite(out, 1, (size_t)w * h * 3, stdout);
         crispembed_instructir_free_image(out);
+        return 0;
+    }
+    if (!adair_path.empty()) {
+        if (adair_model.empty()) {
+            fprintf(stderr, "error: --adair requires --adair-model <model>\n");
+            return 1;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(adair_path.c_str(), &w, &h, &ch, 3);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", adair_path.c_str()); return 1; }
+        void * actx = crispembed_adair_init(adair_model.c_str(), n_threads);
+        if (!actx) { stbi_image_free(data); fprintf(stderr, "error: cannot load AdaIR model '%s'\n", adair_model.c_str()); return 1; }
+        uint8_t * out = nullptr;
+        int rc = crispembed_adair_process(actx, data, w, h, &out);
+        stbi_image_free(data);
+        crispembed_adair_free(actx);
+        if (rc != 0 || !out) { fprintf(stderr, "error: AdaIR restoration failed\n"); return 1; }
+        // Write result as PPM (RGB) to stdout
+        printf("P6\n%d %d\n255\n", w, h);
+        fwrite(out, 1, (size_t)w * h * 3, stdout);
+        crispembed_adair_free_image(out);
         return 0;
     }
 

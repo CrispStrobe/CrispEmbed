@@ -220,6 +220,7 @@ Utility libraries (not model backends) follow a lighter pattern.
 | Real-ESRGAN super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | SCUNet denoising | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | InstructIR restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| AdaIR restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ### Implementation patterns
 

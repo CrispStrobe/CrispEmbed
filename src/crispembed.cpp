@@ -4286,6 +4286,32 @@ extern "C" void crispembed_instructir_free_image(uint8_t * pixels) {
 }
 
 // ---------------------------------------------------------------------------
+// AdaIR all-in-one image restoration
+// ---------------------------------------------------------------------------
+
+#include "adair.h"
+
+extern "C" void * crispembed_adair_init(const char * model_path, int n_threads) {
+    return adair_init(model_path, n_threads);
+}
+extern "C" void crispembed_adair_free(void * ctx) {
+    adair_free((adair_context *)ctx);
+}
+extern "C" int crispembed_adair_process(
+        void * ctx, const uint8_t * pixels, int width, int height,
+        uint8_t ** out_pixels) {
+    uint8_t * out = (uint8_t *)malloc((size_t)width * height * 3);
+    if (!out) return -1;
+    int rc = adair_process((adair_context *)ctx, pixels, width, height, out);
+    if (rc != 0) { free(out); return rc; }
+    *out_pixels = out;
+    return 0;
+}
+extern "C" void crispembed_adair_free_image(uint8_t * pixels) {
+    free(pixels);
+}
+
+// ---------------------------------------------------------------------------
 // Punctuation restoration — FireRedPunc / PCS
 // ---------------------------------------------------------------------------
 
