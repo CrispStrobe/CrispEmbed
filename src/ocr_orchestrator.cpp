@@ -30,6 +30,13 @@
 #else
 #define CRISPEMBED_HAS_LID 0
 #endif
+// Truecasing (optional, from crisp_truecase shared lib).
+#if __has_include("crisp_truecase.h")
+#include "crisp_truecase.h"
+#define CRISPEMBED_HAS_TRUECASE 1
+#else
+#define CRISPEMBED_HAS_TRUECASE 0
+#endif
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../ggml/examples/stb_image_write.h"
@@ -78,6 +85,10 @@ struct context {
 #endif
     std::string              detected_lang;      // cached LID result
     float                    lang_confidence = 0.0f;
+    std::string              tess_resolved_model; // LID-resolved tesseract model path
+#if CRISPEMBED_HAS_TRUECASE
+    truecaser_lstm_context*  tc     = nullptr;   // truecaser (BiLSTM)
+#endif
 };
 
 // ── defaults ────────────────────────────────────────────────────────────────
@@ -235,6 +246,32 @@ static std::vector<ocr_pipeline::ocr_result> wrap_fulltext(const char* text,
     return out;
 }
 
+// ISO 639-1 (LID output) → Tesseract ISO 639-3 code mapping.
+static const char* lid_to_tesseract(const char* iso1) {
+    if (!iso1) return nullptr;
+    struct { const char* iso1; const char* tess; } map[] = {
+        {"en", "eng"}, {"de", "deu"}, {"fr", "fra"}, {"es", "spa"},
+        {"it", "ita"}, {"pt", "por"}, {"nl", "nld"}, {"ru", "rus"},
+        {"ar", "ara"}, {"ja", "jpn"}, {"ko", "kor"}, {"zh", "chi_sim"},
+    };
+    for (auto& m : map)
+        if (strcmp(iso1, m.iso1) == 0) return m.tess;
+    return nullptr;
+}
+
+// Resolve a Tesseract model path from LID language code.
+static std::string resolve_tess_model(const config& cfg, const char* iso1) {
+    const char* tess_code = lid_to_tesseract(iso1);
+    if (!tess_code) return "";
+    if (cfg.tess_model_dir.empty()) return "";
+    std::string path = cfg.tess_model_dir + "/tesseract-"
+                     + std::string(tess_code) + "-q8_0.gguf";
+    FILE* f = fopen(path.c_str(), "r");
+    if (!f) return "";
+    fclose(f);
+    return path;
+}
+
 // Run one engine on a (already-cleaned) image path. DBNet+TrOCR is a
 // detect+recognize pipeline; the VLM engines are single-shot full-image OCR.
 static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
@@ -344,8 +381,33 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
                 }
             }
             if (!ctx->tess) {
-                ctx->tess = tesseract_lstm_init(st.model_b.c_str(), ctx->n_threads);
-                if (!ctx->tess) { fprintf(stderr, "ocr_orchestrator: tesseract load failed\n"); return {}; }
+                std::string tess_model = st.model_b;
+                // Auto-select: if model_b is "auto" and LID detected a language,
+                // resolve to the matching tesseract-{lang} model.
+                if (tess_model == "auto") {
+#if CRISPEMBED_HAS_LID
+                    if (!ctx->detected_lang.empty()) {
+                        std::string resolved = resolve_tess_model(ctx->cfg, ctx->detected_lang.c_str());
+                        if (!resolved.empty()) {
+                            tess_model = resolved;
+                            if (ctx->cfg.verbose)
+                                fprintf(stderr, "ocr_orchestrator: LID auto-select → %s\n", resolved.c_str());
+                        }
+                    }
+#endif
+                    if (tess_model == "auto") {
+                        // Fallback to English if no LID or no matching model
+                        std::string fallback = resolve_tess_model(ctx->cfg, "en");
+                        tess_model = fallback.empty() ? st.model_b : fallback;
+                    }
+                }
+                if (tess_model == "auto") {
+                    fprintf(stderr, "ocr_orchestrator: tesseract model_b='auto' but no models found\n");
+                    return {};
+                }
+                ctx->tess = tesseract_lstm_init(tess_model.c_str(), ctx->n_threads);
+                if (!ctx->tess) { fprintf(stderr, "ocr_orchestrator: tesseract load failed: %s\n", tess_model.c_str()); return {}; }
+                ctx->tess_resolved_model = tess_model;
             }
             auto boxes = ocr_detect::detect_file(ctx->tess_det, path,
                                                  st.params.det_prob_threshold,
@@ -535,6 +597,18 @@ bool load(context** out, const config& cfg, int n_threads) {
         }
     }
 #endif
+#if CRISPEMBED_HAS_TRUECASE
+    if (!cfg.truecase_model.empty()) {
+        ctx->tc = truecaser_lstm_init(cfg.truecase_model.c_str());
+        if (ctx->tc) {
+            if (cfg.verbose)
+                fprintf(stderr, "ocr_orchestrator: truecaser loaded\n");
+        } else {
+            fprintf(stderr, "ocr_orchestrator: WARNING: failed to load truecaser: %s\n",
+                    cfg.truecase_model.c_str());
+        }
+    }
+#endif
     *out            = ctx;
     return true;
 }
@@ -560,6 +634,23 @@ static const char * source_type_name(source_type t) {
         case source_type::photo:       return "photo";
         default: return "unknown";
     }
+}
+
+// Apply optional post-processing (truecasing) to OCR result.
+static void postprocess(context* ctx, result& r) {
+#if CRISPEMBED_HAS_TRUECASE
+    if (ctx->tc && !r.full_text.empty()) {
+        char* tc_text = truecaser_lstm_process(ctx->tc, r.full_text.c_str());
+        if (tc_text && strcmp(tc_text, r.full_text.c_str()) != 0) {
+            r.full_text = tc_text;
+            if (ctx->cfg.verbose)
+                fprintf(stderr, "ocr_orchestrator: truecaser applied\n");
+        }
+        if (tc_text) ::free(tc_text);
+    }
+#else
+    (void)ctx; (void)r;
+#endif
 }
 
 result run_file(context* ctx, const char* image_path) {
@@ -626,6 +717,7 @@ result run_file(context* ctx, const char* image_path) {
                 }
             }
 #endif
+            postprocess(ctx, r);
             return r;
         }
         if (r.full_text.size() > best.full_text.size()) best = std::move(r);
@@ -647,6 +739,7 @@ result run_file(context* ctx, const char* image_path) {
         }
     }
 #endif
+    postprocess(ctx, best);
     return best;
 }
 
@@ -665,6 +758,9 @@ void free(context* ctx) {
     if (ctx->pan)    pan_sr_free(ctx->pan);
 #if CRISPEMBED_HAS_LID
     if (ctx->lid)    text_lid_free(ctx->lid);
+#endif
+#if CRISPEMBED_HAS_TRUECASE
+    if (ctx->tc)     truecaser_lstm_free(ctx->tc);
 #endif
     delete ctx;
 }
