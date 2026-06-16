@@ -16,7 +16,7 @@ with a single `crispembed` binary + C library that:
 5. Supports Q4_K / Q5_K / Q6_K / Q8_0 / F16 / F32 quantisation
 6. Exposes a C API, CLI, HTTP server, Python, Rust, and Dart wrappers
 
-## Architecture (v0.7.0)
+## Architecture (v0.11)
 
 ```
 Input text / image / audio
@@ -82,16 +82,45 @@ Input text / image / audio
     ├─► Layout ─► RT-DETRv2 docling-heron (layout_detect.cpp)
     │               ResNet-50 + deformable xattn, 17 document classes
     │
+    ├─► OCR   ──► PARSeq scene text recognition (parseq_ocr.cpp)
+    │               ViT + Transformer, 24M, 94-char ASCII, Apache-2.0
+    │
+    ├─► OCR   ──► InternVL2 (internvl2_ocr.cpp)
+    │               InternViT + InternLM2.5 VLM, 1B/2B, MIT
+    │
+    ├─► OCR   ──► GLM-OCR (glm_ocr.cpp)
+    │               CogVLM2 + GLM-4, 0.9B, 8 languages, MIT
+    │
+    ├─► OCR   ──► GOT-OCR2 (got_ocr.cpp)
+    │               SAM ViT-B + Qwen2-0.5B, document+math+table, Apache-2.0
+    │
+    ├─► OCR   ──► Tesseract LSTM (tesseract_lstm.cpp)
+    │               DBNet detection + per-line LSTM, 126 languages
+    │
+    ├─► NER   ──► BERT/XLM-R token classification (bert_ner.cpp)
+    │               Fixed-label NER: PER/LOC/ORG/MISC, auto-detected
+    │
+    ├─► NER   ──► GLiNER zero-shot (gliner_ner.cpp)
+    │               LFM2.5/DeBERTa-v3 + BiLSTM + span matching
+    │
+    ├─► KIE   ──► OCR + NER pipeline (kie_pipeline.cpp)
+    │               Phase 1: OCR→NER. Phase 2: LiLT layout-aware
+    │
+    ├─► KIE   ──► LiLT layout transformer (lilt_kie.cpp)
+    │               Dual-stream RoBERTa + BiACM, 130M, FUNSD, MIT
+    │
+    ├─► LID   ──► Text language identification (crisp_lid)
+    │               CLD3 / GlotLID, Tesseract auto-select
+    │
+    ├─► Table ──► Rule-based table structure (table_parse.cpp)
+    │               Line detection + grid + cell OCR → HTML
+    │
     │   ── PLANNED ──
     │
-    ├─► OCR   ──► PARSeq (24M, MIT) — fast text-line recognition EN+DE
-    ├─► OCR   ──► InternVL2.5-2B (2.1B, MIT) — OCRBench ~830, EN+DE
-    ├─► OCR   ──► InternVL2-1B (0.9B, MIT) — edge/WASM OCR
-    ├─► OCR   ──► Granite Vision 3.3-2B (3B, Apache) — OCRBench 852
-    └─► OCR   ──► H2OVL-Mississippi-2B (2.1B, Apache) — OCRBench 782
+    └─► OCR   ──► Granite Vision 3.3-2B (3B, Apache) — OCRBench 852
 ```
 
-## Supported architectures (v0.7.0)
+## Supported architectures (v0.11)
 
 | Architecture | Tokenizer | Key features | Example models |
 |---|---|---|---|
@@ -121,6 +150,14 @@ Input text / image / audio
 | Surya-Det | — | EfficientViT + SegFormer | surya-ocr-2 detector (38M, 91 langs) |
 | RT-DETRv2 | — | ResNet-50 + deformable xattn | layout-heron (17 classes) |
 | Qwen2.5-VL | tiktoken | ViT-32L + spatial merger + Qwen2.5 LLM | german-ocr-3 (3B) |
+| InternVL2 | tiktoken | InternViT + InternLM2.5 LLM | internvl2-1b/2b, H2OVL |
+| GLM-OCR | BPE | CogVLM2 + GLM-4 decoder | glm-edge-ocr (0.9B) |
+| GOT-OCR2 | BPE | SAM ViT-B + Qwen2-0.5B | got-ocr2 (0.7B) |
+| PARSeq | — | ViT + AR/NAR Transformer | parseq (24M, 94-char) |
+| Tesseract LSTM | — | DBNet det + LSTM line rec | 126 languages |
+| LiLT | RoBERTa BPE | RoBERTa + layout transformer + BiACM | lilt-funsd (130M) |
+| BERT NER | WordPiece/SP | BERT/XLM-R + Linear classifier | bert-ner, xlmr-ner-hrl |
+| Table parser | — | Rule-based morphology + grid detection | table_parse (no model) |
 
 ## Shared code with CrispASR
 
@@ -132,6 +169,9 @@ Input text / image / audio
 | FFN helper | src/core/ffn.h | copy (header-only) |
 | httplib.h | examples/server/ | copy |
 | crisp_audio | CrispASR build | shared library |
+| crisp_punc | CrispASR/crisp_punc/ | shared library (FireRedPunc + PCS) |
+| crisp_lid | CrispASR/crisp_lid/ | shared library (CLD3 + GlotLID) |
+| crisp_truecase | CrispASR/crisp_truecase/ | shared library (stat + CRF + BiLSTM) |
 
 ## File layout (current)
 
@@ -671,7 +711,7 @@ call it for face search/verification.
 
 ---
 
-### Blueprint: surya-ocr-2 (full-page OCR, 91 languages) — IN PROGRESS
+### Blueprint: surya-ocr-2 (full-page OCR, 91 languages) — DONE
 
 **Goal**: Port surya-ocr-2 for multilingual full-page OCR with text
 detection, recognition, and layout analysis.
@@ -727,7 +767,7 @@ GitHub: https://github.com/VikParuchuri/surya
 
 ---
 
-### Blueprint: MixTex ZhEn-Latex-OCR (86M, Apache-2.0) — IN PROGRESS
+### Blueprint: MixTex ZhEn-Latex-OCR (86M, Apache-2.0) — DONE
 
 **Goal**: Chinese+English math LaTeX OCR. Smallest new model, introduces
 Swin encoder as new building block.
@@ -906,7 +946,7 @@ Current engines (all DONE with full integration):
   learnable prompts; AirNet uses contrastive encoder.
 ---
 
-### Blueprint: GLM-OCR (0.9B, MIT, GGUF exists)
+### Blueprint: GLM-OCR (0.9B, MIT) — DONE
 
 **Goal**: Integrate GLM-OCR for general document OCR. GGUF already
 converted by ggml-org — may only need inference integration, not
@@ -929,7 +969,7 @@ re-converting.
 
 ---
 
-### Blueprint: GOT-OCR2_0 (0.7B, Apache-2.0)
+### Blueprint: GOT-OCR2_0 (0.7B, Apache-2.0) — DONE
 
 **Goal**: End-to-end document OCR that handles plain text, LaTeX math,
 tables, and formatted output in a single model.
@@ -1016,7 +1056,7 @@ LoRA fine-tune (r=16, 324 pairs) of Qwen2-VL-2B-Instruct on 50K Arabic samples.
 
 ---
 
-### Blueprint: Keyven/german-ocr (German docs, Apache-2.0) — IN PROGRESS
+### Blueprint: Keyven/german-ocr (German docs, Apache-2.0) — DONE
 
 **Goal**: German business document OCR with structured JSON output.
 
@@ -1065,7 +1105,7 @@ fine-tune of this). Architecture: 32-layer ViT (1280d) + spatial merger
 
 ---
 
-### Blueprint: PARSeq — Lightweight Text-Line Recognition (24M, MIT)
+### Blueprint: PARSeq — Lightweight Text-Line Recognition (24M, MIT) — DONE
 
 **Goal**: Fast, accurate text-line recognizer for EN+DE to replace TrOCR
 in `ocr_pipeline.cpp`. 3-14x smaller than TrOCR-small (62M) with
@@ -1113,7 +1153,7 @@ path. No exotic ops.
 
 ---
 
-### Blueprint: InternVL2.5-2B — Document OCR + Understanding (2.1B, MIT)
+### Blueprint: InternVL2.5-2B — Document OCR + Understanding (2.1B, MIT) — DONE
 
 **Goal**: Compact VLM for full document understanding: OCR + VQA + KIE +
 layout comprehension. OCRBench ~830. Multilingual (EN+DE). MIT license.
@@ -1184,7 +1224,7 @@ Standard 1D RoPE + GQA + SiLU FFN.
 
 ---
 
-### Blueprint: InternVL2-1B — Edge/WASM OCR (0.9B, MIT)
+### Blueprint: InternVL2-1B — Edge/WASM OCR (0.9B, MIT) — DONE
 
 **Goal**: Tiniest competitive VLM for OCR. 0.9B params, quantizes to
 ~500MB Q4_K. OCRBench 779. Ideal for WASM, mobile, or resource-
@@ -1268,7 +1308,7 @@ is standard. Lower priority than InternVL due to English-only + larger size.
 
 ---
 
-### Blueprint: H2OVL-Mississippi-2B — InternVL + H2O-Danube (2.1B, Apache-2.0)
+### Blueprint: H2OVL-Mississippi-2B — InternVL + H2O-Danube (2.1B, Apache-2.0) — DONE
 
 **Goal**: Alternative 2B VLM trained on 17M image-text pairs. OCRBench
 782. Uses InternVL vision pipeline with H2O-Danube LLM.
