@@ -37,7 +37,7 @@ def main():
 
     # Load checkpoint
     import torch
-    sd = torch.load(str(model_path), map_location="cpu", weights_only=True)
+    sd = torch.load(str(model_path), map_location="cpu", weights_only=False)
     # Handle nested state dict (some checkpoints wrap in 'params' or 'params_ema')
     if "params_ema" in sd:
         sd = sd["params_ema"]
@@ -119,13 +119,21 @@ def main():
 
     total_params = 0
     tensor_count = 0
+    # Tensors that contain indices or BN stats — must stay FP32 to avoid overflow
+    keep_f32 = ("relative_position_index", "attn_mask")
     for name, tensor in sorted(sd.items()):
-        data = tensor.float().numpy().astype(dtype_np)
+        # Skip num_batches_tracked (unused in eval mode, names too long for GGUF)
+        if "num_batches_tracked" in name:
+            continue
+        use_f32 = any(k in name for k in keep_f32)
+        d_np = np.float32 if use_f32 else dtype_np
+        d_gguf = gguf.GGMLQuantizationType.F32 if use_f32 else dtype_gguf
+        data = tensor.float().numpy().astype(d_np)
         # Flatten 4D conv weights to 2D for quantization
         if data.ndim == 4:
             data = data.reshape(data.shape[0], -1)
         total_params += data.size
-        writer.add_tensor(name, data, raw_dtype=dtype_gguf)
+        writer.add_tensor(name, data, raw_dtype=d_gguf)
         tensor_count += 1
 
     writer.write_header_to_file()
