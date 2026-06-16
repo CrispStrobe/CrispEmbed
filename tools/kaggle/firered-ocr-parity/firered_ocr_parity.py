@@ -57,11 +57,11 @@ try:
     from huggingface_hub import hf_hub_download
 
     config_path = hf_hub_download("FireRedTeam/FireRed-OCR", "config.json",
-                                   cache_dir=str(WORK / "hf_cache"), token=hf_token)
+                                   cache_dir="/tmp/hf_cache", token=hf_token)
     log("Config downloaded")
 
     model_path = hf_hub_download("FireRedTeam/FireRed-OCR", "model.safetensors",
-                                  cache_dir=str(WORK / "hf_cache"), token=hf_token)
+                                  cache_dir="/tmp/hf_cache", token=hf_token)
     log(f"Model downloaded: {os.path.getsize(model_path) / 1e9:.1f} GB")
 
     with open(config_path) as f:
