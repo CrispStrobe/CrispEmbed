@@ -594,6 +594,39 @@ typedef CrispembedHatSrProcessDart = int Function(
 typedef CrispembedHatSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedHatSrFreeImageDart = void Function(Pointer<Uint8> pixels);
 
+// --- DAT Super-Resolution (Dual Aggregation Transformer, ICCV 2023) ---
+typedef CrispembedDatSrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedDatSrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedDatSrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedDatSrFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedDatSrProcessNative = Int32 Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    Int32 width,
+    Int32 height,
+    Int32 tileW,
+    Int32 tileH,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+typedef CrispembedDatSrProcessDart = int Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    int width,
+    int height,
+    int tileW,
+    int tileH,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+
+typedef CrispembedDatSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
+typedef CrispembedDatSrFreeImageDart = void Function(Pointer<Uint8> pixels);
+
 // --- Restormer image restoration ---
 typedef CrispembedRestormerInitNative = Pointer<Void> Function(
     Pointer<Utf8> modelPath, Int32 nThreads);

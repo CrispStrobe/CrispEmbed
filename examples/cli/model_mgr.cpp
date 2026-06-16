@@ -580,6 +580,12 @@ static const ModelEntry k_registry[] = {
      "HAT 4x SR (21M params, CVPR 2023 SOTA)", "40 MB", "MIT",
      "https://huggingface.co/cstr/text-super-resolution-gguf"},
 
+    {"dat-sr-x2",
+     "dat-light-x2-f16.gguf",
+     "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/dat-light-x2-f16.gguf",
+     "DAT-light 2x SR (830K params, ICCV 2023, dual attention)", "38 MB", "Apache-2.0",
+     "https://huggingface.co/cstr/text-super-resolution-gguf"},
+
     {"restormer-denoise",
      "restormer-denoise-f16.gguf",
      "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/restormer-denoise-f16.gguf",

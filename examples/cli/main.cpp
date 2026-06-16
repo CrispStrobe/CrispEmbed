@@ -110,6 +110,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --pan-sr FILE    standalone PAN super-resolution: upscale image, write PGM to stdout\n");
     fprintf(stderr, "                   (needs --pan-model PATH: PAN GGUF, Pixel Attention Network, 2x or 4x)\n");
     fprintf(stderr, "  --pan-model PATH PAN super-resolution GGUF (used with --pan-sr)\n");
+    fprintf(stderr, "  --dat-sr FILE    standalone DAT super-resolution: upscale image, write PPM to stdout\n");
+    fprintf(stderr, "                   (needs --dat-model PATH: DAT GGUF, Dual Aggregation Transformer, 2x)\n");
+    fprintf(stderr, "  --dat-model PATH DAT super-resolution GGUF (used with --dat-sr)\n");
     fprintf(stderr, "  --swinir-sr FILE standalone SwinIR super-resolution: upscale image, write PPM to stdout\n");
     fprintf(stderr, "                   (needs --swinir-model PATH: SwinIR GGUF, Swin Transformer, 2x/3x/4x)\n");
     fprintf(stderr, "  --swinir-model PATH SwinIR super-resolution GGUF (used with --swinir-sr)\n");
@@ -182,6 +185,8 @@ int main(int argc, char ** argv) {
     std::string sr_model;              // --sr-model: text super-resolution GGUF
     std::string pan_model;             // --pan-model: PAN super-resolution GGUF
     std::string pan_sr_path;           // --pan-sr FILE: standalone PAN upscaling
+    std::string dat_model;             // --dat-model: DAT super-resolution GGUF
+    std::string dat_sr_path;           // --dat-sr FILE: standalone DAT upscaling
     std::string swinir_model;          // --swinir-model: SwinIR super-resolution GGUF
     std::string swinir_sr_path;        // --swinir-sr FILE: standalone SwinIR upscaling
     std::string tbsrn_model;           // --tbsrn-model: TBSRN text-line SR GGUF
@@ -308,6 +313,10 @@ int main(int argc, char ** argv) {
             sr_model = argv[++i];
         } else if (strcmp(argv[i], "--pan-model") == 0 && i + 1 < argc) {
             pan_model = argv[++i];
+        } else if (strcmp(argv[i], "--dat-model") == 0 && i + 1 < argc) {
+            dat_model = argv[++i];
+        } else if (strcmp(argv[i], "--dat-sr") == 0 && i + 1 < argc) {
+            dat_sr_path = argv[++i];
         } else if (strcmp(argv[i], "--pan-sr") == 0 && i + 1 < argc) {
             pan_sr_path = argv[++i];
         } else if (strcmp(argv[i], "--swinir-model") == 0 && i + 1 < argc) {
@@ -472,6 +481,27 @@ int main(int argc, char ** argv) {
         printf("P6\n%d %d\n255\n", ow, oh);
         fwrite(out, 1, (size_t)ow * oh * 3, stdout);
         crispembed_pan_sr_free_image(out);
+        return 0;
+    }
+    if (!dat_sr_path.empty()) {
+        if (dat_model.empty()) {
+            fprintf(stderr, "error: --dat-sr requires --dat-model <path>\n");
+            return 1;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(dat_sr_path.c_str(), &w, &h, &ch, 3);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", dat_sr_path.c_str()); return 1; }
+        void * dctx = crispembed_dat_sr_init(dat_model.c_str(), n_threads);
+        if (!dctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load DAT model '%s'\n", dat_model.c_str()); return 1; }
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_dat_sr_process(dctx, data, w, h, 0, 0, &out, &ow, &oh);
+        stbi_image_free(data);
+        crispembed_dat_sr_free(dctx);
+        if (rc != 0 || !out) { fprintf(stderr, "error: DAT SR processing failed\n"); return 1; }
+        printf("P6\n%d %d\n255\n", ow, oh);
+        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+        crispembed_dat_sr_free_image(out);
         return 0;
     }
     if (!swinir_sr_path.empty()) {

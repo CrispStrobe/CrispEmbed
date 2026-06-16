@@ -2234,6 +2234,69 @@ class CrispHatSr {
   }
 }
 
+// ---------------------------------------------------------------------------
+// DAT Super-Resolution (Dual Aggregation Transformer, ICCV 2023)
+// ---------------------------------------------------------------------------
+
+class DatSrResult {
+  final Uint8List pixels;
+  final int width;
+  final int height;
+  const DatSrResult({required this.pixels, required this.width, required this.height});
+}
+
+class CrispDatSr {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedDatSrFreeDart _freeFn;
+  late final CrispembedDatSrProcessDart _processFn;
+  late final CrispembedDatSrFreeImageDart _freeImageFn;
+
+  CrispDatSr(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _freeFn = _lib.lookupFunction<CrispembedDatSrFreeNative, CrispembedDatSrFreeDart>('crispembed_dat_sr_free');
+    _processFn = _lib.lookupFunction<CrispembedDatSrProcessNative, CrispembedDatSrProcessDart>('crispembed_dat_sr_process');
+    _freeImageFn = _lib.lookupFunction<CrispembedDatSrFreeImageNative, CrispembedDatSrFreeImageDart>('crispembed_dat_sr_free_image');
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib.lookupFunction<CrispembedDatSrInitNative, CrispembedDatSrInitDart>('crispembed_dat_sr_init').call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+    if (_ctx == nullptr) throw Exception('Failed to load DAT SR model: $modelPath');
+  }
+
+  DatSrResult process(Uint8List pixels, int width, int height, {int tileW = 0, int tileH = 0}) {
+    _checkDisposed();
+    final pxNative = calloc<Uint8>(pixels.length);
+    pxNative.asTypedList(pixels.length).setAll(0, pixels);
+    final outPxPtr = calloc<Pointer<Uint8>>();
+    final outW = calloc<Int32>();
+    final outH = calloc<Int32>();
+    try {
+      final rc = _processFn(_ctx, pxNative, width, height, tileW, tileH, outPxPtr, outW, outH);
+      if (rc != 0 || outPxPtr.value.address == 0) throw Exception('DAT SR process failed');
+      final ow = outW.value, oh = outH.value;
+      final result = Uint8List.fromList(outPxPtr.value.asTypedList(ow * oh * 3));
+      _freeImageFn(outPxPtr.value);
+      return DatSrResult(pixels: result, width: ow, height: oh);
+    } finally {
+      calloc.free(pxNative);
+      calloc.free(outPxPtr);
+      calloc.free(outW);
+      calloc.free(outH);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) { _freeFn(_ctx); _disposed = true; }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispDatSr has been disposed');
+  }
+}
+
 /// Result from SAFMN super-resolution.
 class SafmnSrResult {
   final Uint8List pixels;
