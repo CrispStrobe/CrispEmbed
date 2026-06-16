@@ -32,6 +32,12 @@
 #include "scan_cleanup.h"
 #include "model_mgr.h"
 #include "pdf_info.h"
+#if __has_include("text_lid_dispatch.h")
+#include "text_lid_dispatch.h"
+#define SERVER_HAS_LID 1
+#else
+#define SERVER_HAS_LID 0
+#endif
 #include "httplib.h"
 
 // stb_image for /math/ocr image loading
@@ -72,6 +78,7 @@ int main(int argc, char ** argv) {
     std::string layout_model_path;    // layout detection model (RT-DETRv2)
     std::string text_det_model_path;  // surya text detection model
     std::string ner_model_path;       // NER model (GLiNER)
+    std::string lid_model_path;       // text LID model
     bool enable_ocr_orch = false;     // --ocr-pipeline: enable orchestrator endpoint
     std::string vlm_model_path;       // VLM escalation model for orchestrator
     int vlm_engine = 0;               // 0=GOT, 1=GLM, 2=Qwen2-VL, 3=InternVL2
@@ -105,6 +112,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc) layout_model_path = argv[++i];
         else if (strcmp(argv[i], "--text-det") == 0 && i + 1 < argc) text_det_model_path = argv[++i];
         else if (strcmp(argv[i], "--ner") == 0 && i + 1 < argc) ner_model_path = argv[++i];
+        else if (strcmp(argv[i], "--lid") == 0 && i + 1 < argc) lid_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr-pipeline") == 0) enable_ocr_orch = true;
         else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) vlm_model_path = argv[++i];
         else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) vlm_engine = atoi(argv[++i]);
@@ -140,6 +148,7 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --text-det MODEL  Surya text line detection model GGUF\n");
         fprintf(stderr, "\nNamed Entity Recognition:\n");
         fprintf(stderr, "  --ner MODEL       GLiNER zero-shot NER model GGUF\n");
+        fprintf(stderr, "  --lid MODEL       text LID model GGUF (CLD3 or GlotLID)\n");
         fprintf(stderr, "\nOCR orchestrator (full pipeline with routing + cleanup + accept-gate):\n");
         fprintf(stderr, "  --ocr-pipeline    enable POST /ocr/pipeline endpoint\n");
         fprintf(stderr, "  --ocr-det MODEL   detection model (required with --ocr-pipeline)\n");
@@ -818,6 +827,20 @@ int main(int argc, char ** argv) {
         if (!ner_ctx)
             fprintf(stderr, "Warning: failed to load NER model '%s'\n", ner_model_path.c_str());
     }
+
+    // Text LID
+#if SERVER_HAS_LID
+    text_lid_context * lid_ctx = nullptr;
+    std::mutex lid_mutex;
+
+    if (!lid_model_path.empty()) {
+        std::string resolved = crispembed_mgr::resolve_model(lid_model_path, true);
+        if (!resolved.empty()) lid_model_path = resolved;
+        lid_ctx = text_lid_init_from_file(lid_model_path.c_str(), n_threads);
+        if (!lid_ctx)
+            fprintf(stderr, "Warning: failed to load LID model '%s'\n", lid_model_path.c_str());
+    }
+#endif
 
     // KIE (OCR + NER pipeline) — auto-enabled when NER + OCR det/rec are all loaded.
     void * kie_ctx = nullptr;
@@ -1598,6 +1621,53 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "crispembed-server: /ner/extract in %.1f ms (%d entities)\n", ms, n);
         res.set_content(js.str(), "application/json");
     });
+
+    // POST /lid/detect — text language identification
+    // Request:  {"text": "Hallo Welt, wie geht es Ihnen?"}
+    // Response: {"lang": "de", "confidence": 0.99, "ms": T}
+#if SERVER_HAS_LID
+    svr.Post("/lid/detect", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!lid_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no LID model loaded (use --lid)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string text;
+        auto pos = body.find("\"text\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 6);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                text = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+
+        if (text.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"provide \\\"text\\\" field\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(lid_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        float conf = 0.0f;
+        const char * lang = text_lid_predict(lid_ctx, text.c_str(), &conf);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        std::ostringstream js;
+        js << "{\"lang\": \"" << (lang ? lang : "") << "\""
+           << ", \"confidence\": " << std::fixed << std::setprecision(4) << conf
+           << ", \"ms\": " << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /lid/detect → %s (%.2f) in %.1f ms\n",
+                lang ? lang : "?", conf, ms);
+        res.set_content(js.str(), "application/json");
+    });
+#endif
 
     // POST /kie/extract — key information extraction (OCR + NER)
     // Request:  {"image": "/path/to/doc.png", "labels": ["total", "date", "vendor"], "threshold": 0.5}
@@ -3231,6 +3301,9 @@ int main(int argc, char ** argv) {
     fprintf(stderr, "  POST /table/parse     — {\"image\": \"table.png\"} → {\"html\": \"<table>...\"}\n");
     if (text_det_ctx) fprintf(stderr, "  POST /text/detect     — {\"image\": \"page.png\"}\n");
     if (ner_ctx) fprintf(stderr, "  POST /ner/extract     — {\"text\": \"...\", \"labels\": [\"person\", ...]}\n");
+#if SERVER_HAS_LID
+    if (lid_ctx) fprintf(stderr, "  POST /lid/detect      — {\"text\": \"...\"} → {\"lang\": \"de\", \"confidence\": 0.99}\n");
+#endif
     if (kie_ctx) fprintf(stderr, "  POST /kie/extract     — {\"image\": \"doc.png\", \"labels\": [\"total\", ...]} (OCR+NER)\n");
     if (ocr_orch_ctx) fprintf(stderr, "  POST /ocr/pipeline    — {\"image\": \"doc.png\"} (routing + cleanup + accept-gate)\n");
     if (text_sr_ctx) fprintf(stderr, "  POST /text/sr         — {\"image\": \"low_dpi.png\"} (upscale %dx)\n", crispembed_text_sr_upscale_factor(text_sr_ctx));
@@ -3270,6 +3343,9 @@ int main(int argc, char ** argv) {
     if (scunet_ctx) crispembed_scunet_free(scunet_ctx);
     if (instructir_ctx) crispembed_instructir_free(instructir_ctx);
     if (ner_ctx) crispembed_ner_free(ner_ctx);
+#if SERVER_HAS_LID
+    if (lid_ctx) text_lid_free(lid_ctx);
+#endif
     if (layout_ctx) crispembed_layout_free(layout_ctx);
     if (text_det_ctx) crispembed_text_det_free(text_det_ctx);
     if (ocr_orch_ctx) crispembed_ocr_pipeline_free(ocr_orch_ctx);
