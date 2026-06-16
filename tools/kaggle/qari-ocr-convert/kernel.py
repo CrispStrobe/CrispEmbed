@@ -112,6 +112,16 @@ print(f"F16 GGUF: {os.path.getsize(GGUF_F16) / 1e9:.2f} GB")
 print("\n=== Building quantizer ===")
 subprocess.run(['git', 'submodule', 'update', '--init', '--recursive'],
                cwd=crispembed_dir, check=False)
+
+# Strip test targets from CMakeLists (may reference files not in shallow clone)
+import re
+cml_path = os.path.join(crispembed_dir, 'CMakeLists.txt')
+with open(cml_path) as f:
+    cml = f.read()
+cml = re.sub(r'(?:add_executable|target_link_libraries|target_include_directories)\(test-[^\)]*\)\n?', '', cml)
+with open(cml_path, 'w') as f:
+    f.write(cml)
+
 build_dir = '/kaggle/working/build'
 os.makedirs(build_dir, exist_ok=True)
 subprocess.check_call(['cmake', '-S', crispembed_dir, '-B', build_dir,
