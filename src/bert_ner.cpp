@@ -9,6 +9,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -76,7 +77,11 @@ bool load(context** out, const char* model_path, int n_threads) {
     core_gguf::free_metadata(gctx);
 
     // Load classifier weight tensors (need a separate backend for the classifier)
-    ggml_backend_t cls_backend = ggml_backend_cpu_init();
+    bool force_cpu = (getenv("BERT_NER_FORCE_CPU") && atoi(getenv("BERT_NER_FORCE_CPU")));
+    ggml_backend_t cls_backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!cls_backend) cls_backend = ggml_backend_cpu_init();
+    if (ggml_backend_is_cpu(cls_backend))
+        ggml_backend_cpu_set_n_threads(cls_backend, n_threads);
     core_gguf::WeightLoad wl;
     if (!core_gguf::load_weights(model_path, cls_backend, "bert_ner", wl)) {
         fprintf(stderr, "bert_ner: warning: could not load weight tensors\n");
