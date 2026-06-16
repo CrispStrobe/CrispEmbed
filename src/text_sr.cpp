@@ -16,6 +16,12 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+
+// MSVC's <cmath> doesn't define M_PI without _USE_MATH_DEFINES (matches
+// scan_cleanup.cpp / bttr_ocr.cpp). Define a portable fallback.
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 #include <string>
 #include <vector>
 
