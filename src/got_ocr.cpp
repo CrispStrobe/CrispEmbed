@@ -1438,20 +1438,77 @@ void got_ocr_free(got_ocr_context * ctx) {
 
 const char * got_ocr_recognize_raw(got_ocr_context * ctx,
     const uint8_t * px, int w, int h, int ch, int * out_len) {
-    if (!ctx) return nullptr;
-    // TODO: implement full pipeline (resize + normalize + vision + generate)
-    (void)px; (void)w; (void)h; (void)ch;
-    ctx->result = "";
-    if (out_len) *out_len = 0;
+    if (!ctx || !px) {
+        if (out_len) *out_len = 0;
+        return "";
+    }
+
+    auto &v = ctx->inner.m.vhp;
+    auto &l = ctx->inner.m.lhp;
+    int imgS = (int)v.image_size; // 1024
+
+    // Resize to (imgS, imgS) with bilinear interpolation + CLIP normalize
+    std::vector<float> pixels(3 * imgS * imgS);
+    for (int c = 0; c < 3; c++) {
+        for (int y = 0; y < imgS; y++) {
+            float fy = (float)y * h / imgS;
+            int iy = std::min((int)fy, h - 1);
+            for (int x = 0; x < imgS; x++) {
+                float fx = (float)x * w / imgS;
+                int ix = std::min((int)fx, w - 1);
+                int ci = std::min(c, ch - 1);
+                float val = (float)px[(iy * w + ix) * ch + ci] / 255.0f;
+                pixels[c * imgS * imgS + y * imgS + x] =
+                    (val - v.image_mean[c]) / v.image_std[c];
+            }
+        }
+    }
+
+    // Vision encode
+    got_ocr::vision_result vr;
+    if (!got_ocr::encode_vision(ctx->inner, pixels.data(), vr)) {
+        fprintf(stderr, "got_ocr: vision encoding failed\n");
+        if (out_len) *out_len = 0;
+        return "";
+    }
+
+    // Build prompt: [image_token_id] * image_token_len
+    int n_img_tokens = vr.n_tokens;
+    int prompt_len = (int)l.image_token_len;
+    std::vector<int32_t> prompt(prompt_len);
+    for (int i = 0; i < prompt_len; i++)
+        prompt[i] = (int32_t)l.image_token_id;
+
+    // Generate
+    got_ocr::generate_result gen;
+    bool ok = got_ocr::generate(ctx->inner,
+        vr.hidden, n_img_tokens, (int)vr.hidden_dim,
+        prompt.data(), prompt_len, 1024, gen);
+    free(vr.hidden);
+
+    if (!ok) {
+        if (out_len) *out_len = 0;
+        return "";
+    }
+
+    ctx->result = gen.text;
+    if (out_len) *out_len = (int)ctx->result.size();
     return ctx->result.c_str();
 }
 
 const char * got_ocr_recognize(got_ocr_context * ctx,
     const float * px, int w, int h, int * out_len) {
-    if (!ctx) return nullptr;
-    // TODO: implement full pipeline
-    (void)px; (void)w; (void)h;
-    ctx->result = "";
-    if (out_len) *out_len = 0;
-    return ctx->result.c_str();
+    if (!ctx || !px) {
+        if (out_len) *out_len = 0;
+        return "";
+    }
+    // Convert grayscale float [0,1] to RGB uint8
+    std::vector<uint8_t> rgb(w * h * 3);
+    for (int i = 0; i < w * h; i++) {
+        uint8_t v = (uint8_t)std::min(255.0f, std::max(0.0f, px[i] * 255.0f));
+        rgb[i * 3 + 0] = v;
+        rgb[i * 3 + 1] = v;
+        rgb[i * 3 + 2] = v;
+    }
+    return got_ocr_recognize_raw(ctx, rgb.data(), w, h, 3, out_len);
 }
