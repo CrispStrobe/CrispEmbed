@@ -119,18 +119,63 @@ bool load_hparams(context &ctx, const char *path) {
     lhp.vision_start_token_id   = u32("qwen2vl.vision_start_token_id", lhp.vision_start_token_id);
     lhp.vision_end_token_id     = u32("qwen2vl.vision_end_token_id", lhp.vision_end_token_id);
 
-    // mRoPE sections
-    idx = gguf_find_key(g, "qwen2vl.rope_sections");
+    // mRoPE sections (try qwen3vl prefix first, then qwen2vl)
+    idx = gguf_find_key(g, "qwen3vl.rope_sections");
+    if (idx < 0) idx = gguf_find_key(g, "qwen2vl.rope_sections");
     if (idx >= 0) {
         int n = std::min(4, (int)gguf_get_arr_n(g, idx));
         auto *data = (const uint32_t *)gguf_get_arr_data(g, idx);
         for (int i = 0; i < n; i++) lhp.rope_sections[i] = (int)data[i];
     }
 
+    // Qwen3-VL: interleaved mRoPE + QK norms
+    int interleaved_idx = gguf_find_key(g, "qwen3vl.mrope_interleaved");
+    if (interleaved_idx >= 0) lhp.mrope_interleaved = gguf_get_val_u32(g, interleaved_idx) != 0;
+    int qknorm_idx = gguf_find_key(g, "qwen3vl.has_qk_norm");
+    if (qknorm_idx >= 0) lhp.has_qk_norm = gguf_get_val_u32(g, qknorm_idx) != 0;
+
+    // Qwen3-VL: deepstack visual indexes
+    idx = gguf_find_key(g, "qwen3vl.vision.deepstack_indexes");
+    if (idx >= 0) {
+        int n = (int)gguf_get_arr_n(g, idx);
+        auto *data = (const int32_t *)gguf_get_arr_data(g, idx);
+        vhp.deepstack_indexes.resize(n);
+        for (int i = 0; i < n; i++) vhp.deepstack_indexes[i] = data[i];
+    }
+
+    // Also try qwen3vl prefix for all config keys
+    auto u32_3 = [&](const char *k, uint32_t d) {
+        std::string qwen3_key = std::string("qwen3vl") + (strchr(k, '.') ? strchr(k, '.') : "");
+        int i = gguf_find_key(g, qwen3_key.c_str());
+        return i >= 0 ? (uint32_t)gguf_get_val_u32(g, i) : d;
+    };
+    // Re-read with qwen3vl prefix (overrides qwen2vl if present)
+    vhp.depth           = u32_3("qwen3vl.vision.depth", vhp.depth);
+    vhp.hidden_size     = u32_3("qwen3vl.vision.hidden_size", vhp.hidden_size);
+    vhp.num_heads       = u32_3("qwen3vl.vision.num_heads", vhp.num_heads);
+    vhp.spatial_patch_size = u32_3("qwen3vl.vision.patch_size", vhp.spatial_patch_size);
+    vhp.spatial_merge_size = u32_3("qwen3vl.vision.spatial_merge_size", vhp.spatial_merge_size);
+    vhp.temporal_patch_size = u32_3("qwen3vl.vision.temporal_patch_size", vhp.temporal_patch_size);
+    vhp.out_hidden_size = u32_3("qwen3vl.vision.out_hidden_size", vhp.out_hidden_size);
+    lhp.vocab_size      = u32_3("qwen3vl.vocab_size", lhp.vocab_size);
+    lhp.hidden_size     = u32_3("qwen3vl.hidden_size", lhp.hidden_size);
+    lhp.intermediate_size = u32_3("qwen3vl.intermediate_size", lhp.intermediate_size);
+    lhp.num_hidden_layers = u32_3("qwen3vl.num_hidden_layers", lhp.num_hidden_layers);
+    lhp.num_attention_heads = u32_3("qwen3vl.num_attention_heads", lhp.num_attention_heads);
+    lhp.num_key_value_heads = u32_3("qwen3vl.num_key_value_heads", lhp.num_key_value_heads);
+    lhp.image_token_id  = u32_3("qwen3vl.image_token_id", lhp.image_token_id);
+
+    auto f32_3 = [&](const char *k, float d) {
+        int i = gguf_find_key(g, k);
+        return i >= 0 ? gguf_get_val_f32(g, i) : d;
+    };
+    lhp.rope_theta = f32_3("qwen3vl.rope_theta", lhp.rope_theta);
+
     // Tie embeddings
-    int tie_idx = gguf_find_key(g, "qwen2vl.tie_word_embeddings");
+    int tie_idx = gguf_find_key(g, "qwen3vl.tie_word_embeddings");
+    if (tie_idx < 0) tie_idx = gguf_find_key(g, "qwen2vl.tie_word_embeddings");
     if (tie_idx >= 0) {
-        lhp.tie_word_embeddings = gguf_get_val_bool(g, tie_idx);
+        lhp.tie_word_embeddings = gguf_get_val_u32(g, tie_idx) != 0;
     }
 
     core_gguf::free_metadata(g);
@@ -241,10 +286,31 @@ bool load_tensors(context &ctx, const char *path) {
         ly.ffn_gate_w  = get2(p1 + "ffn_gate.weight",  p2 + "ffn_gate.weight");
         ly.ffn_up_w    = get2(p1 + "ffn_up.weight",    p2 + "ffn_up.weight");
         ly.ffn_down_w  = get2(p1 + "ffn_down.weight",  p2 + "ffn_down.weight");
+
+        // Qwen3-VL: QK norms (try both naming conventions)
+        std::string p3 = "llm.blk." + std::to_string(i) + ".";
+        ly.q_norm_w = get(p1 + "attn_q_norm.weight");
+        if (!ly.q_norm_w) ly.q_norm_w = get(p3 + "attn.q_norm.weight");
+        ly.k_norm_w = get(p1 + "attn_k_norm.weight");
+        if (!ly.k_norm_w) ly.k_norm_w = get(p3 + "attn.k_norm.weight");
+
+        // Also try qwen3vl naming for Q/K/V/O if CrispEmbed/llama.cpp names not found
+        if (!ly.q_w) ly.q_w = get(p3 + "attn.q.weight");
+        if (!ly.k_w) ly.k_w = get(p3 + "attn.k.weight");
+        if (!ly.v_w) ly.v_w = get(p3 + "attn.v.weight");
+        if (!ly.o_w) ly.o_w = get(p3 + "attn.o.weight");
+        if (!ly.attn_norm_w) ly.attn_norm_w = get(p3 + "norm1.weight");
+        if (!ly.ffn_norm_w) ly.ffn_norm_w = get(p3 + "norm2.weight");
+        if (!ly.ffn_gate_w) ly.ffn_gate_w = get(p3 + "ffn.gate.weight");
+        if (!ly.ffn_up_w) ly.ffn_up_w = get(p3 + "ffn.up.weight");
+        if (!ly.ffn_down_w) ly.ffn_down_w = get(p3 + "ffn.down.weight");
     }
 
     m.output_norm_w = get2("l.output_norm.weight", "output_norm.weight");
+    if (!m.output_norm_w) m.output_norm_w = get("llm.norm.weight");
     m.lm_head_w     = get2("l.lm_head.weight", "output.weight");
+    if (!m.lm_head_w) m.lm_head_w = get("llm.lm_head.weight");
+    if (!m.lm_head_w) m.lm_head_w = get("llm.embed.weight");  // tied
 
     return true;
 }
@@ -1062,6 +1128,16 @@ bool run_llm_forward(context &ctx,
         Q = ggml_reshape_3d(g, Q, head_dim, n_heads, n_tokens);
         K = ggml_reshape_3d(g, K, head_dim, n_kv_heads, n_tokens);
         V = ggml_reshape_3d(g, V, head_dim, n_kv_heads, n_tokens);
+
+        // Qwen3-VL: per-head QK RMSNorm (applied after reshape, before RoPE)
+        if (ly.q_norm_w) {
+            Q = ggml_rms_norm(g, Q, lhp.rms_norm_eps);
+            Q = ggml_mul(g, Q, ly.q_norm_w);
+        }
+        if (ly.k_norm_w) {
+            K = ggml_rms_norm(g, K, lhp.rms_norm_eps);
+            K = ggml_mul(g, K, ly.k_norm_w);
+        }
 
         // Apply mRoPE (multi-dimensional rotary position embedding)
         Q = ggml_rope_multi(g, Q, pos_ids, nullptr,

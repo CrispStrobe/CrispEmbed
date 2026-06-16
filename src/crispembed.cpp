@@ -3025,7 +3025,7 @@ static math_ocr_type detect_arch(const char * path) {
     if (arch == "ppformulanet_l") return MATH_OCR_PPFORMULANET_L;
     if (arch == "posformer") return MATH_OCR_POSFORMER;
     if (arch == "mixtex") return MATH_OCR_MIXTEX;
-    if (arch == "qwen2vl") return MATH_OCR_QWEN2VL;
+    if (arch == "qwen2vl" || arch == "qwen3vl") return MATH_OCR_QWEN2VL;
     if (arch == "internvl2") return MATH_OCR_INTERNVL2;
 if (arch == "parseq") return MATH_OCR_PARSEQ;
 if (arch == "glm_ocr") return MATH_OCR_GLM_OCR;
