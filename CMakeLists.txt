@@ -87,6 +87,20 @@ else()
 endif()
 
 # ---------------------------------------------------------------------------
+# crisp_punc — shared punctuation library, lives in CrispASR.
+# When present, replaces the local fireredpunc.cpp + pcs.cpp copies.
+# ---------------------------------------------------------------------------
+set(CRISP_PUNC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../CrispASR/crisp_punc"
+    CACHE PATH "Path to CrispASR's crisp_punc subdirectory")
+set(CRISPEMBED_HAS_CRISP_PUNC OFF)
+if(EXISTS "${CRISP_PUNC_DIR}/CMakeLists.txt")
+    message(STATUS "crispembed: linking crisp_punc from ${CRISP_PUNC_DIR}")
+    set(CRISPEMBED_HAS_CRISP_PUNC ON)
+else()
+    message(STATUS "crispembed: crisp_punc not found at ${CRISP_PUNC_DIR} — using local copies")
+endif()
+
+# ---------------------------------------------------------------------------
 # Core GGUF loader library
 # ---------------------------------------------------------------------------
 add_library(crispembed-core STATIC
@@ -102,6 +116,10 @@ target_link_libraries(crispembed-core PUBLIC ggml ggml-base)
 
 # Pull crisp_audio in AFTER crispembed-core is defined: crisp_audio's
 # CMakeLists picks crispembed-core as its dependency target.
+if(CRISPEMBED_HAS_CRISP_PUNC)
+    add_subdirectory(${CRISP_PUNC_DIR}
+                     ${CMAKE_BINARY_DIR}/crisp_punc)
+endif()
 if(CRISPEMBED_HAS_CRISP_AUDIO)
     add_subdirectory(${CRISP_AUDIO_DIR}
                      ${CMAKE_BINARY_DIR}/crisp_audio)
@@ -153,8 +171,10 @@ list(APPEND CRISPEMBED_SOURCES src/glm_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/bert_ner.cpp)
 list(APPEND CRISPEMBED_SOURCES src/got_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tesseract_lstm.cpp)
-list(APPEND CRISPEMBED_SOURCES src/fireredpunc.cpp)
-list(APPEND CRISPEMBED_SOURCES src/pcs.cpp)
+if(NOT CRISPEMBED_HAS_CRISP_PUNC)
+    list(APPEND CRISPEMBED_SOURCES src/fireredpunc.cpp)
+    list(APPEND CRISPEMBED_SOURCES src/pcs.cpp)
+endif()
 list(APPEND CRISPEMBED_SOURCES src/morph_fast.cpp)
 list(APPEND CRISPEMBED_SOURCES src/cc_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/classical_preproc.cpp)
@@ -197,6 +217,9 @@ if(GGML_BLAS)
 endif()
 if(CRISPEMBED_HAS_CRISP_AUDIO)
     target_link_libraries(crispembed PUBLIC crisp_audio)
+endif()
+if(CRISPEMBED_HAS_CRISP_PUNC)
+    target_link_libraries(crispembed PUBLIC crisp_punc)
 endif()
 
 # ---------------------------------------------------------------------------
@@ -487,6 +510,9 @@ if(CRISPEMBED_BUILD_SHARED)
     )
     if(CRISPEMBED_HAS_CRISP_AUDIO)
         target_link_libraries(crispembed-shared PRIVATE crisp_audio)
+    endif()
+    if(CRISPEMBED_HAS_CRISP_PUNC)
+        target_link_libraries(crispembed-shared PRIVATE crisp_punc)
     endif()
 
     set_target_properties(crispembed-shared PROPERTIES
