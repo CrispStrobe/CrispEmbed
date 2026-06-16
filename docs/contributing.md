@@ -8,8 +8,9 @@ This guide covers adding a new model backend (OCR, embedding, face, etc.) to Cri
 2. [ ] Write the GGUF converter (`models/convert-yourmodel-to-gguf.py`)
 3. [ ] Write the reference dumper (`tools/dump_yourmodel_reference.py`)
 4. [ ] Wire into the C ABI (`src/crispembed.cpp`)
-5. [ ] Wire into CMake + CLI + model registry
-6. [ ] Verify parity, quantize, update CrispCalc catalog
+5. [ ] **Wire into orchestrator** (OCR only): enum + `map_engine` + header comment + `ocr_orchestrator.cpp` dispatch + CrispSorter
+6. [ ] Wire into CMake + CLI + model registry + all bindings (Python, Rust, Dart)
+7. [ ] Verify parity, quantize, update CrispCalc catalog
 
 ---
 
@@ -114,7 +115,89 @@ Edit `src/crispembed.cpp`:
 
 **Grep for an existing model** (e.g., `MATH_OCR_PPFORMULANET_L`) and replicate every occurrence.
 
-## Step 5: CMake, CLI, Model Registry
+## Step 5: Orchestrator + map_engine (OCR models only)
+
+If the model is an OCR / document-understanding engine, it must be wired
+into the orchestrator pipeline so it can be selected as a stage engine
+from C, Python, Rust, Dart, and CrispSorter.
+
+### 5a. Add to `enum class engine` (`src/ocr_orchestrator.h`)
+
+```cpp
+enum class engine {
+    dbnet_trocr,   // 0
+    surya,         // 1
+    // ...existing...
+    yourmodel,     // N  ← append at the end, NEVER reorder existing entries
+};
+```
+
+**CRITICAL**: Append only. Never insert in the middle or reorder — the
+integer values are a shipped ABI used by CrispSorter and any C consumer
+via `crispembed_ocr_stage.engine`.
+
+### 5b. Add to `map_engine()` (`src/crispembed.cpp`)
+
+This is the C-int → enum bridge used by `crispembed_ocr_pipeline_init_stages()`.
+Without this, the engine is unreachable from the C API.
+
+```cpp
+static ocr_orchestrator::engine map_engine(int e) {
+    // ...existing cases...
+    case N:  return E::yourmodel;    // ← same int as enum position
+}
+```
+
+**The int must match the enum's ordinal position.** Verify by checking
+the `ocr_stage.engine` comment in `crispembed.h` — it documents the
+canonical int→engine mapping. Update that comment when adding a new engine.
+
+### 5c. Update the `ocr_stage.engine` comment (`src/crispembed.h`)
+
+The `crispembed_ocr_stage` struct has a comment documenting the int mapping:
+```c
+int engine;  // 0=dbnet_trocr 1=surya 2=got ... N=yourmodel (matches map_engine)
+```
+**This comment is the contract.** CrispSorter and external consumers read it
+to know which int selects which engine. If the comment disagrees with
+`map_engine`, consumers will select the wrong engine. Always update both
+together and verify they agree.
+
+### 5d. Wire into `ocr_orchestrator.cpp`
+
+1. Add `#include "yourmodel.h"` at the top
+2. Add a context pointer to the `context` struct: `yourmodel_context * ym = nullptr;`
+3. Add a `case engine::yourmodel:` block in `run_engine()` — lazy-load + recognize
+4. Add `case engine::yourmodel: return "yourmodel";` in `engine_name()`
+5. Add `if (ctx.ym) yourmodel_free(ctx.ym);` in `free()`
+
+### 5e. Expose in CrispSorter (`CrispSorter/lib/engine/`)
+
+CrispSorter (the Tauri desktop app) selects engines by the same int IDs.
+When adding a new engine to CrispEmbed, also add it to:
+
+1. `ocr_providers_init.dart` — register with `engine_id: N`
+2. `ocr_model_manager.dart` — add `OcrModelVariant` entries
+3. UI dropdown label (if not auto-generated from registry)
+
+If you don't have access to the CrispSorter repo, leave a TODO in the
+commit message so it gets picked up.
+
+### Verification
+
+After wiring, verify the full chain:
+```python
+from crispembed import CrispOcrOrchestrator
+orch = CrispOcrOrchestrator(stages=[
+    {"engine": N, "model_a": "yourmodel.gguf"}
+])
+text = orch.run("document.png")
+```
+
+If this fails silently (falls back to dbnet_trocr), `map_engine` is missing
+the case for int N.
+
+## Step 6: CMake, CLI, Model Registry, Bindings
 
 ### CMakeLists.txt
 ```cmake
@@ -155,13 +238,21 @@ Add a class following the `CrispVit` / `CrispMathOcr` pattern:
 
 For OCR models: already wired via `CrispMathOcr` (auto-dispatches from GGUF arch).
 
+### Rust Bindings (`crispembed-sys/src/lib.rs` + `crispembed/src/lib.rs`)
+1. Add FFI declarations in `crispembed-sys` (extern C block)
+2. Add safe wrapper struct in `crispembed` with `new()`, inference method, `Drop`
+
+### Dart / Flutter (`flutter/crispembed/lib/src/`)
+1. Add Native + Dart typedefs in `crispembed_bindings.dart`
+2. Add class in `crispembed.dart` with constructor, inference method, `dispose()`
+
 ### CrispCalc Dart Catalog (`lib/engine/ocr_model_manager.dart`)
 Add `OcrModelVariant` entries with Q8_0, Q4_K, and F16 variants.
 
 ### CrispCalc Provider Init (`lib/engine/ocr_providers_init.dart`)
 Register the new model at the appropriate priority tier.
 
-## Step 6: Verify Parity + Quantize
+## Step 7: Verify Parity + Quantize
 
 ### Test binary (`tests/test_yourmodel.cpp`)
 ```
