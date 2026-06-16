@@ -189,6 +189,17 @@ subprocess.check_call(['git', 'clone', '--depth=1', '--recursive',
 bld = '/kaggle/working/build'
 if os.path.exists(bld): shutil.rmtree(bld)
 os.makedirs(bld)
+# Strip test targets from CMakeLists to avoid missing file errors
+import re
+cml_path = os.path.join(ce_dir, 'CMakeLists.txt')
+with open(cml_path) as f:
+    cml = f.read()
+# Remove all add_executable(test-*) + target_link_libraries(test-*) lines
+cml = re.sub(r'add_executable\(test-[^\)]+\)\n', '', cml)
+cml = re.sub(r'target_link_libraries\(test-[^\)]+\)\n', '', cml)
+with open(cml_path, 'w') as f:
+    f.write(cml)
+
 r_cmake = subprocess.run(['cmake', '-S', ce_dir, '-B', bld, '-DCMAKE_BUILD_TYPE=Release'],
                          capture_output=True, text=True)
 if r_cmake.returncode != 0:
