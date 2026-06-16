@@ -10,6 +10,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <map>
 #include <numeric>
@@ -80,6 +81,7 @@ struct lilt_model {
 struct context {
     lilt_model model;
     ggml_backend_t backend = nullptr;
+    ggml_backend_t backend_cpu = nullptr;
     core_gguf::WeightLoad wl;
     ggml_backend_sched_t sched = nullptr;
     std::vector<char> compute_meta;
@@ -96,9 +98,15 @@ bool load(context** out, const char* model_path, int n_threads) {
     auto* ctx = new context;
     ctx->n_threads = n_threads;
 
-    // Init CPU backend
-    ctx->backend = ggml_backend_cpu_init();
+    // Init backend — prefer GPU when available
+    bool force_cpu = (getenv("LILT_KIE_FORCE_CPU") && atoi(getenv("LILT_KIE_FORCE_CPU")));
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (!ctx->backend) { delete ctx; return false; }
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
+    ctx->backend_cpu = ggml_backend_is_cpu(ctx->backend) ? nullptr : ggml_backend_cpu_init();
+    if (ctx->backend_cpu) ggml_backend_cpu_set_n_threads(ctx->backend_cpu, n_threads);
 
     // Pass 1: read metadata
     gguf_context* gctx = core_gguf::open_metadata(model_path);
@@ -215,7 +223,11 @@ bool load(context** out, const char* model_path, int n_threads) {
 
     // Create scheduler
     ctx->compute_meta.resize(ggml_tensor_overhead() * 8192 + ggml_graph_overhead_custom(8192, false));
-    ctx->sched = ggml_backend_sched_new(&ctx->backend, nullptr, 1, 8192, false, false);
+    std::vector<ggml_backend_t> backends;
+    backends.push_back(ctx->backend);
+    if (ctx->backend_cpu) backends.push_back(ctx->backend_cpu);
+    ctx->sched = ggml_backend_sched_new(backends.data(), nullptr,
+                                        (int)backends.size(), 8192, false, false);
 
     *out = ctx;
     return true;
@@ -514,7 +526,8 @@ std::vector<token_result> classify(context* ctx,
     ggml_backend_tensor_set(t_bbox, bbox_flat.data(), 0, T * 6 * sizeof(int32_t));
 
     // Compute
-    ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
     if (ggml_backend_sched_graph_compute(ctx->sched, gf) != GGML_STATUS_SUCCESS) {
         fprintf(stderr, "lilt_kie: graph compute failed\n");
         return results;
@@ -599,7 +612,8 @@ std::vector<dump_tensor> classify_dump(context* ctx,
     ggml_tensor* t_bbox = ggml_graph_get_tensor(gf, "bbox_ids");
     ggml_backend_tensor_set(t_bbox, bbox_flat.data(), 0, T * 6 * sizeof(int32_t));
 
-    ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
     if (ggml_backend_sched_graph_compute(ctx->sched, gf) != GGML_STATUS_SUCCESS) {
         return dumps;
     }
@@ -653,6 +667,7 @@ void free(context* ctx) {
     if (!ctx) return;
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
     core_gguf::free_weights(ctx->wl);
+    if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     delete ctx;
 }

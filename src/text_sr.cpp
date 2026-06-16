@@ -9,6 +9,7 @@
 
 #include "text_sr.h"
 #include "core/gguf_loader.h"
+#include "ggml-backend.h"
 #include "ggml-cpu.h"
 
 #include <algorithm>
@@ -28,21 +29,21 @@
 // ── Helpers (shared with nafnet_denoise.cpp — kept static to avoid ODR) ────
 
 static const float * tsr_to_f32(const ggml_tensor * t, std::vector<float> & buf) {
-    if (t->type == GGML_TYPE_F32) {
-        return (const float *)t->data;
-    }
     int64_t n = ggml_nelements(t);
     buf.resize(n);
-    if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t * src = (const ggml_fp16_t *)t->data;
-        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(src[i]);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+    } else if (t->type == GGML_TYPE_F16) {
+        std::vector<ggml_fp16_t> tmp(n);
+        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
+        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(tmp[i]);
     } else {
+        size_t raw_sz = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_sz);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
         const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) {
-            traits->to_float(t->data, buf.data(), n);
-        } else {
-            memset(buf.data(), 0, n * sizeof(float));
-        }
+        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
+        else memset(buf.data(), 0, n * sizeof(float));
     }
     return buf.data();
 }
@@ -319,7 +320,9 @@ text_sr_context * text_sr_init(const char * model_path, int n_threads) {
         return nullptr;
     }
 
-    ggml_backend_t backend = ggml_backend_cpu_init();
+    bool force_cpu = (getenv("TEXT_SR_FORCE_CPU") && atoi(getenv("TEXT_SR_FORCE_CPU")));
+    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!backend) backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, backend, "text_sr", ctx->wl)) {
         fprintf(stderr, "text_sr: failed to load weights\n");
         ggml_backend_free(backend);
