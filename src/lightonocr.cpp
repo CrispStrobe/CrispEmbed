@@ -9,8 +9,15 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 
-#define STB_IMAGE_STATIC
-#include "../../ggml/examples/stb_image.h"
+// stbi_load/stbi_image_free are provided with C linkage by image_preprocess.cpp's
+// STB_IMAGE_IMPLEMENTATION. Forward-declare them here (matching ocr_orchestrator.cpp)
+// instead of including stb_image.h — `#define STB_IMAGE_STATIC` + include declared
+// them static-without-definition in this TU → undefined-internal link error.
+extern "C" {
+unsigned char* stbi_load(const char* filename, int* x, int* y, int* channels_in_file,
+                         int desired_channels);
+void stbi_image_free(void* retval_from_stbi_load);
+}
 
 #include <algorithm>
 #include <cassert>
