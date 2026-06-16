@@ -689,6 +689,12 @@ static const ModelEntry k_registry[] = {
      "GOT-OCR2 document OCR (SAM-ViT-B + Qwen2-0.5B, 0.7B, text/LaTeX/tables)", "750 MB", "apache-2.0",
      "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF"},
 
+    {"deepseek-ocr2",
+     "deepseek-ocr2-f16.gguf",
+     "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF/resolve/main/deepseek-ocr2-f16.gguf",
+     "DeepSeek-OCR-2 (SAM + Qwen2-enc + MoE decoder, 3.4B, grounding)", "6.5 GB", "apache-2.0",
+     "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF"},
+
     {"gliner-lfm",
      "gliner-lfm-q8_0.gguf",
      "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF/resolve/main/gliner-lfm-q8_0.gguf",
