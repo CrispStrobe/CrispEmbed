@@ -3499,6 +3499,30 @@ extern "C" const char * crispembed_ocr_pipeline_detected_lang(void * ctx, float 
     return w->last.detected_lang.c_str();
 }
 
+// Per-region recognition confidence (mean per-char softmax) from the last run.
+// Returns 0 for an out-of-range index or recognizer that yields no confidence.
+extern "C" float crispembed_ocr_pipeline_region_rec_confidence(void * ctx, int region_idx) {
+    if (!ctx) return 0.0f;
+    auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    if (region_idx < 0 || (size_t)region_idx >= w->last.regions.size()) return 0.0f;
+    return w->last.regions[region_idx].rec_confidence;
+}
+
+// Per-character confidence for a region from the last run. Returns a pointer to
+// `*out_len` floats (owned by ctx, valid until the next run / free), or NULL
+// when the recognizer doesn't expose per-character confidence.
+extern "C" const float * crispembed_ocr_pipeline_region_char_conf(
+        void * ctx, int region_idx, int * out_len) {
+    if (out_len) *out_len = 0;
+    if (!ctx) return nullptr;
+    auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    if (region_idx < 0 || (size_t)region_idx >= w->last.regions.size()) return nullptr;
+    auto & cc = w->last.regions[region_idx].char_conf;
+    if (cc.empty()) return nullptr;
+    if (out_len) *out_len = (int)cc.size();
+    return cc.data();
+}
+
 extern "C" void crispembed_ocr_pipeline_free(void * ctx) {
     if (!ctx) return;
     auto * w = (ocr_pipeline_orch_wrapper *)ctx;
