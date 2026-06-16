@@ -537,15 +537,27 @@ static const ModelEntry k_registry[] = {
      "https://huggingface.co/cstr/qari-ocr-crispembed-GGUF"},
 
     {"granite-vision",
-     "granite-vision-3.3-2b-f16.gguf",
-     "https://huggingface.co/cstr/granite-vision-crispembed-GGUF/resolve/main/granite-vision-3.3-2b-f16.gguf",
-     "Granite Vision 3.3-2B OCR (SigLIP+Granite LLM, OCRBench 852)", "5647 MB", "apache-2.0",
+     "granite-vision-3.3-2b-q8_0.gguf",
+     "https://huggingface.co/cstr/granite-vision-crispembed-GGUF/resolve/main/granite-vision-3.3-2b-q8_0.gguf",
+     "Granite Vision 3.3-2B OCR (SigLIP+Granite LLM, OCRBench 852)", "3212 MB", "apache-2.0",
+     "https://huggingface.co/cstr/granite-vision-crispembed-GGUF"},
+
+    {"granite-vision-q4k",
+     "granite-vision-3.3-2b-q4_k.gguf",
+     "https://huggingface.co/cstr/granite-vision-crispembed-GGUF/resolve/main/granite-vision-3.3-2b-q4_k.gguf",
+     "Granite Vision 3.3-2B OCR Q4_K (LLM Q4_K, vision F16)", "1913 MB", "apache-2.0",
      "https://huggingface.co/cstr/granite-vision-crispembed-GGUF"},
 
     {"firered-ocr",
-     "firered-ocr-f16.gguf",
-     "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF/resolve/main/firered-ocr-f16.gguf",
-     "FireRed-OCR (Qwen3-VL 2B, GRPO, tables+LaTeX)", "4059 MB", "apache-2.0",
+     "firered-ocr-q8_0.gguf",
+     "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF/resolve/main/firered-ocr-q8_0.gguf",
+     "FireRed-OCR (Qwen3-VL 2B, GRPO, tables+LaTeX)", "2249 MB", "apache-2.0",
+     "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF"},
+
+    {"firered-ocr-q4k",
+     "firered-ocr-q4_k.gguf",
+     "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF/resolve/main/firered-ocr-q4_k.gguf",
+     "FireRed-OCR Q4_K (Qwen3-VL 2B)", "1577 MB", "apache-2.0",
      "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF"},
 
     {"nafnet-denoise",
