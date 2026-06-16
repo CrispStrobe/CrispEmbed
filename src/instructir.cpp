@@ -11,6 +11,7 @@
 #include "instructir.h"
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
+#include "ggml-cpu.h"
 
 #include <algorithm>
 #include <cmath>
@@ -22,17 +23,23 @@
 
 // ── Helpers (same as nafnet_denoise.cpp / safmn_sr.cpp) ──
 
+// GPU-safe: uses ggml_backend_tensor_get instead of direct tensor->data
 static const float * to_f32(const ggml_tensor * t, std::vector<float> & buf) {
     if (!t) return nullptr;
-    if (t->type == GGML_TYPE_F32) return (const float *)t->data;
     int64_t n = ggml_nelements(t);
     buf.resize(n);
-    if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t * s = (const ggml_fp16_t *)t->data;
-        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(s[i]);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+    } else if (t->type == GGML_TYPE_F16) {
+        std::vector<ggml_fp16_t> tmp(n);
+        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
+        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(tmp[i]);
     } else {
+        size_t raw_sz = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_sz);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
         const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) traits->to_float(t->data, buf.data(), n);
+        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
         else memset(buf.data(), 0, n * sizeof(float));
     }
     return buf.data();
@@ -218,6 +225,7 @@ static void icb_forward(float * x, int c, int h, int w,
 // ── Model context ──
 
 struct instructir_context {
+    ggml_backend_t backend = nullptr;
     ggml_context * gguf_ctx;
     ggml_backend_buffer_t gguf_buf;
 
@@ -284,15 +292,17 @@ instructir_context * instructir_init(const char * model_path, int n_threads) {
     int emb_dim = (int)core_gguf::kv_u32(meta, "instructir.emb_dim", 256);
     core_gguf::free_metadata(meta);
 
-    ggml_backend_t backend = ggml_backend_init_by_type(GGML_BACKEND_DEVICE_TYPE_CPU, nullptr);
+    bool force_cpu = (getenv("INSTRUCTIR_FORCE_CPU") && atoi(getenv("INSTRUCTIR_FORCE_CPU")));
+    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!backend) backend = ggml_backend_cpu_init();
     if (!backend) return nullptr;
     core_gguf::WeightLoad wl;
     if (!core_gguf::load_weights(model_path, backend, "instructir", wl)) {
         ggml_backend_free(backend); return nullptr;
     }
-    ggml_backend_free(backend);
 
     auto * ctx = new instructir_context;
+    ctx->backend = backend;
     ctx->gguf_ctx = wl.ctx; ctx->gguf_buf = wl.buf;
     ctx->n_tasks = n_tasks; ctx->emb_dim = emb_dim;
     ctx->task_embeddings = core_gguf::require(wl.tensors, "task_embeddings", "instructir");
@@ -347,6 +357,7 @@ void instructir_free(instructir_context * ctx) {
     core_gguf::WeightLoad wl;
     wl.ctx = ctx->gguf_ctx; wl.buf = ctx->gguf_buf;
     core_gguf::free_weights(wl);
+    if (ctx->backend) ggml_backend_free(ctx->backend);
     delete ctx;
 }
 
