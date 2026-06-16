@@ -23,6 +23,13 @@
 #include "text_sr.h"
 #include "pan_sr.h"
 #include "core/gguf_loader.h"
+// Text LID for language-aware Tesseract model selection (optional).
+#if __has_include("text_lid_dispatch.h")
+#include "text_lid_dispatch.h"
+#define CRISPEMBED_HAS_LID 1
+#else
+#define CRISPEMBED_HAS_LID 0
+#endif
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "../ggml/examples/stb_image_write.h"
@@ -66,6 +73,11 @@ struct context {
     text_sr_context*         sr     = nullptr;   // NAFNet-SR (low-DPI upscale)
     pan_sr_context*          pan    = nullptr;   // PAN 4x SR (alternative upscaler)
     enum { SR_NONE, SR_NAFNET, SR_PAN } sr_kind = SR_NONE;
+#if CRISPEMBED_HAS_LID
+    text_lid_context*        lid    = nullptr;   // text LID for language routing
+#endif
+    std::string              detected_lang;      // cached LID result
+    float                    lang_confidence = 0.0f;
 };
 
 // ── defaults ────────────────────────────────────────────────────────────────
@@ -510,6 +522,19 @@ bool load(context** out, const config& cfg, int n_threads) {
     auto* ctx       = new context();
     ctx->cfg        = cfg;
     ctx->n_threads  = n_threads;
+#if CRISPEMBED_HAS_LID
+    if (!cfg.lid_model.empty()) {
+        ctx->lid = text_lid_init_from_file(cfg.lid_model.c_str(), n_threads);
+        if (ctx->lid) {
+            if (cfg.verbose)
+                fprintf(stderr, "ocr_orchestrator: LID loaded (%s, %d labels)\n",
+                        text_lid_backend(ctx->lid), text_lid_n_labels(ctx->lid));
+        } else {
+            fprintf(stderr, "ocr_orchestrator: WARNING: failed to load LID model: %s\n",
+                    cfg.lid_model.c_str());
+        }
+    }
+#endif
     *out            = ctx;
     return true;
 }
@@ -586,6 +611,21 @@ result run_file(context* ctx, const char* image_path) {
 
         if (passed) {
             if (!sr_path.empty()) std::remove(sr_path.c_str());
+#if CRISPEMBED_HAS_LID
+            // Run LID on the recognized text to detect language.
+            if (ctx->lid && !r.full_text.empty()) {
+                float conf = 0.0f;
+                const char* lang = text_lid_predict(ctx->lid, r.full_text.c_str(), &conf);
+                if (lang && conf > 0.3f) {
+                    r.detected_lang = lang;
+                    r.lang_confidence = conf;
+                    ctx->detected_lang = lang;
+                    ctx->lang_confidence = conf;
+                    if (verbose)
+                        fprintf(stderr, "ocr_orchestrator: LID → %s (%.2f)\n", lang, conf);
+                }
+            }
+#endif
             return r;
         }
         if (r.full_text.size() > best.full_text.size()) best = std::move(r);
@@ -597,6 +637,16 @@ result run_file(context* ctx, const char* image_path) {
                 tried, (int)best.full_text.size());
     best.used_type    = st;
     best.stages_tried = tried;
+#if CRISPEMBED_HAS_LID
+    if (ctx->lid && !best.full_text.empty()) {
+        float conf = 0.0f;
+        const char* lang = text_lid_predict(ctx->lid, best.full_text.c_str(), &conf);
+        if (lang && conf > 0.3f) {
+            best.detected_lang = lang;
+            best.lang_confidence = conf;
+        }
+    }
+#endif
     return best;
 }
 
@@ -613,6 +663,9 @@ void free(context* ctx) {
     if (ctx->clean2) scan_cleanup_free(ctx->clean2);
     if (ctx->sr)     text_sr_free(ctx->sr);
     if (ctx->pan)    pan_sr_free(ctx->pan);
+#if CRISPEMBED_HAS_LID
+    if (ctx->lid)    text_lid_free(ctx->lid);
+#endif
     delete ctx;
 }
 
