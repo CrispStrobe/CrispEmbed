@@ -765,7 +765,7 @@ static const ModelEntry k_registry[] = {
     {"xlmr-ner-hrl",
      "xlmr-ner-hrl-q8_0.gguf",
      "https://huggingface.co/cstr/xlmr-ner-hrl-GGUF/resolve/main/xlmr-ner-hrl-q8_0.gguf",
-     "XLM-R multilingual NER (278M, 10 langs, 9 labels, MIT)", "281 MB", "mit",
+     "XLM-R multilingual NER (278M, 10 langs, 9 labels, CoNLL-2003 trained*)", "281 MB", "other*",
      "https://huggingface.co/cstr/xlmr-ner-hrl-GGUF"},
 
     // Text language identification
