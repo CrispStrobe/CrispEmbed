@@ -82,6 +82,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
     fprintf(stderr, "  --layout FILE    document layout detection (RT-DETRv2, needs -m layout_model.gguf)\n");
+    fprintf(stderr, "  --table FILE     table structure → HTML (rule-based, optional --ocr-rec for cell OCR)\n");
     fprintf(stderr, "  --ner TEXT       named entity recognition (GLiNER, needs -m ner_model.gguf)\n");
     fprintf(stderr, "  --ner-labels L   comma-separated entity types (default: person,organization,location)\n");
     fprintf(stderr, "  --ner-threshold F  confidence threshold for NER (default: 0.5)\n");
@@ -160,6 +161,7 @@ int main(int argc, char ** argv) {
     std::string hmer_path;   // image for handwritten math OCR (HMER)
     std::string bttr_path;   // image for handwritten math OCR (BTTR)
     std::string layout_path; // image for layout detection
+    std::string table_path;  // image for table structure recognition
     std::string ner_text;    // text for NER extraction
     std::string ner_labels = "person,organization,location"; // comma-separated entity types
     float ner_threshold = 0.5f;
@@ -247,6 +249,8 @@ int main(int argc, char ** argv) {
             bttr_path = argv[++i];
         } else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc) {
             layout_path = argv[++i];
+        } else if (strcmp(argv[i], "--table") == 0 && i + 1 < argc) {
+            table_path = argv[++i];
         } else if (strcmp(argv[i], "--ner") == 0 && i + 1 < argc) {
             ner_text = argv[++i];
         } else if (strcmp(argv[i], "--ner-labels") == 0 && i + 1 < argc) {
@@ -914,6 +918,37 @@ int main(int argc, char ** argv) {
             }
         }
         crispembed_layout_free(lctx);
+        return 0;
+    }
+
+    // Table structure recognition (rule-based)
+    if (!table_path.empty()) {
+        // Use --ocr-rec model for cell OCR if provided, else no OCR (structure only)
+        const char* ocr_model = ocr_rec_path.empty() ? nullptr : ocr_rec_path.c_str();
+        void* tctx = crispembed_table_parse_init(ocr_model, n_threads);
+        if (!tctx) { fprintf(stderr, "error: failed to init table parser\n"); return 1; }
+
+        int w, h, ch;
+        unsigned char* data = stbi_load(table_path.c_str(), &w, &h, &ch, 1); // grayscale
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", table_path.c_str());
+                     crispembed_table_parse_free(tctx); return 1; }
+
+        char* html = crispembed_table_parse_to_html(tctx, data, w, h);
+        stbi_image_free(data);
+
+        if (html) {
+            if (json_output) {
+                printf("{\"html\": \"%s\"}\n", json_escape(html).c_str());
+            } else {
+                printf("%s\n", html);
+            }
+            crispembed_table_parse_free_string(html);
+        } else {
+            fprintf(stderr, "error: table parsing failed\n");
+            crispembed_table_parse_free(tctx);
+            return 1;
+        }
+        crispembed_table_parse_free(tctx);
         return 0;
     }
 

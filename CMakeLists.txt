@@ -420,6 +420,9 @@ target_link_libraries(test-dewarp PRIVATE crispembed)
 add_executable(test-tps-warp tests/test_tps_warp.cpp)
 target_link_libraries(test-tps-warp PRIVATE crispembed)
 
+add_executable(test-bert-ner-diff tests/test_bert_ner_diff.cpp)
+target_link_libraries(test-bert-ner-diff PRIVATE crispembed)
+
 add_executable(test-tps-locnet tests/test_tps_locnet.cpp)
 target_link_libraries(test-tps-locnet PRIVATE crispembed)
 
