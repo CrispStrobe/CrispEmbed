@@ -549,6 +549,15 @@ CRISPEMBED_API const char * crispembed_math_ocr_recognize_gray(
     void * ctx, const float * pixels,
     int width, int height, int * out_len);
 
+/// Per-token confidence from the last recognition. Returns array of length
+/// *n_tokens (one per decode step). Valid until next recognize call.
+/// Works for all auto-dispatched architectures (TrOCR, HMER, BTTR, PARSeq, etc.).
+CRISPEMBED_API const float * crispembed_math_ocr_confidences(
+    const void * ctx, int * n_tokens);
+
+/// Mean confidence across all tokens from the last recognition.
+CRISPEMBED_API float crispembed_math_ocr_mean_confidence(const void * ctx);
+
 // ---------------------------------------------------------------------------
 // Handwritten Math OCR — HMER (DenseNet-121 + GRU attention decoder)
 // ---------------------------------------------------------------------------

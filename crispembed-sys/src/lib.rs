@@ -507,6 +507,19 @@ extern "C" {
     /// Free all resources held by a math OCR context. Safe to call with NULL.
     pub fn crispembed_math_ocr_free(ctx: *mut MathOcrContext);
 
+    /// Per-token confidence scores from the most recent math OCR call.
+    /// Returns a pointer to `*n_tokens` floats owned by the context,
+    /// valid until the next recognize call. Returns NULL on failure or
+    /// if the engine does not produce per-token scores.
+    pub fn crispembed_math_ocr_confidences(
+        ctx: *const MathOcrContext,
+        n_tokens: *mut c_int,
+    ) -> *const c_float;
+
+    /// Mean confidence score across all tokens from the most recent math OCR
+    /// call. Returns 0.0 if no recognition has been performed yet.
+    pub fn crispembed_math_ocr_mean_confidence(ctx: *const MathOcrContext) -> c_float;
+
     /// Recognize math from grayscale float pixels [0..1].
     /// Returns a NUL-terminated LaTeX string owned by the context, valid
     /// until the next call. Returns NULL on failure.
