@@ -81,6 +81,7 @@ struct parseq_ocr_context {
 
     std::string result_buf;
     std::vector<float> encoder_output;  // [N * D]
+    std::vector<float> char_confidences; // per-character softmax probabilities
 
     // Dequant cache for quantized weights
     std::map<const void *, std::vector<float>> dequant_cache;
@@ -504,6 +505,7 @@ static bool run_encoder(parseq_ocr_context * ctx, const float * pixels) {
 // ---------------------------------------------------------------------------
 
 static std::string run_decoder_ar(parseq_ocr_context * ctx) {
+    ctx->char_confidences.clear();
     const auto & hp = ctx->hp;
     const int D = hp.embed_dim;
     const int N = hp.n_patches;
@@ -654,11 +656,21 @@ static std::string run_decoder_ar(parseq_ocr_context * ctx) {
         std::vector<float> logits(hp.vocab_size);
         linear_batch(h_final.data(), hd_w, hd_b, 1, D, hp.vocab_size, logits.data());
 
-        // Argmax
+        // Softmax + argmax (for both prediction and confidence)
+        float max_logit = logits[0];
+        for (int k = 1; k < hp.vocab_size; k++)
+            if (logits[k] > max_logit) max_logit = logits[k];
+        float sum_exp = 0;
+        for (int k = 0; k < hp.vocab_size; k++) {
+            logits[k] = expf(logits[k] - max_logit);
+            sum_exp += logits[k];
+        }
+        for (int k = 0; k < hp.vocab_size; k++) logits[k] /= sum_exp;
+
         int pred = 0;
-        float best = logits[0];
+        float best_prob = logits[0];
         for (int k = 1; k < hp.vocab_size; k++) {
-            if (logits[k] > best) { best = logits[k]; pred = k; }
+            if (logits[k] > best_prob) { best_prob = logits[k]; pred = k; }
         }
 
         // Head output: 0=EOS, 1..94=chars
@@ -668,6 +680,7 @@ static std::string run_decoder_ar(parseq_ocr_context * ctx) {
         // charset[0]="[E]", charset[1..94]=chars, charset[95]="[B]", charset[96]="[P]"
         if (pred >= 1 && pred <= 94 && pred < (int)ctx->charset.size()) {
             result += ctx->charset[pred];
+            ctx->char_confidences.push_back(best_prob);
         }
 
         // Feed prediction back as next context token
@@ -777,4 +790,20 @@ const char * parseq_ocr_recognize_raw(
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
+}
+
+const float * parseq_ocr_confidences(const parseq_ocr_context * ctx, int * n_chars) {
+    if (!ctx || ctx->char_confidences.empty()) {
+        if (n_chars) *n_chars = 0;
+        return nullptr;
+    }
+    if (n_chars) *n_chars = (int)ctx->char_confidences.size();
+    return ctx->char_confidences.data();
+}
+
+float parseq_ocr_mean_confidence(const parseq_ocr_context * ctx) {
+    if (!ctx || ctx->char_confidences.empty()) return 0.0f;
+    double sum = 0;
+    for (float c : ctx->char_confidences) sum += c;
+    return (float)(sum / ctx->char_confidences.size());
 }
