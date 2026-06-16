@@ -44,8 +44,37 @@ def main():
 
     print(f"Loading: {args.model}")
     processor = AutoProcessor.from_pretrained(args.model, trust_remote_code=True)
-    model = AutoModelForImageTextToText.from_pretrained(
-        args.model, trust_remote_code=True, dtype=torch.bfloat16)
+
+    # LightOnOCR checkpoint uses 'vision_encoder'/'vision_projection' but
+    # transformers' Mistral3 class expects 'vision_tower'/'multi_modal_projector'.
+    # Load with name remapping.
+    from safetensors import safe_open
+    from huggingface_hub import hf_hub_download
+    from transformers import AutoConfig
+    from pathlib import Path
+
+    model_path = Path(args.model)
+    sf_path = str(model_path / "model.safetensors") if model_path.is_dir() else \
+              hf_hub_download(args.model, "model.safetensors",
+                  cache_dir='/mnt/akademie_storage/huggingface/hub/')
+
+    config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
+    model = AutoModelForImageTextToText.from_config(config)
+
+    sd = {}
+    with safe_open(sf_path, framework="pt") as sf:
+        for name in sf.keys():
+            t = sf.get_tensor(name)
+            mapped = name.replace("model.vision_encoder.", "model.vision_tower.") \
+                         .replace("model.vision_projection.", "model.multi_modal_projector.")
+            sd[mapped] = t
+
+    missing, unexpected = model.load_state_dict(sd, strict=False)
+    print(f"  Loaded {len(sd)-len(unexpected)} tensors, {len(missing)} missing, {len(unexpected)} unexpected")
+    if missing:
+        for m in missing[:3]: print(f"    missing: {m}")
+
+    model = model.to(torch.bfloat16)
     model.eval()
 
     # Load image
