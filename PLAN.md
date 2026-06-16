@@ -891,18 +891,19 @@ Current engines (all DONE with full integration):
   DW-conv gating. ~1400 LOC C++ engine. cos=0.999956 parity vs PyTorch.
   
 - **HAT** (Priority 2): Hybrid Attention Transformer. Same Swin-based
-  pattern as SwinIR but with overlapping cross-attention.
+- **HAT** (DONE): Hybrid Attention Transformer (21M, MIT, CVPR 2023 SOTA).
+  Swin + overlapping cross-attention. cos=0.999990. All bindings wired.
 
-- **Real-ESRGAN** (Priority 2): GAN-based, so inference is just the
-  generator network (RRDB blocks — residual-in-residual dense blocks).
-  No discriminator needed at inference. The compact variant uses fewer
-  RRDB blocks.
+- **Real-ESRGAN** (DONE): SRVGGNetCompact (~620K, BSD-3). All bindings.
 
-- **PromptIR/AirNet** (Priority 2): All-in-one models that could replace
-  the separate denoise + SR pipeline with a single model. PromptIR uses
-  learnable prompts to select degradation type; AirNet uses a contrastive
-  encoder. Evaluate whether single-model quality matches dedicated models.
+- **AdaIR** (DONE): Adaptive all-in-one restoration (28.8M, MIT).
+  Restormer + AFLB. cos=0.999924. All bindings wired.
 
+- **InstructIR** (DONE): Text-guided restoration (~15M, Apache-2.0).
+  All bindings wired.
+
+- **PromptIR/AirNet** (Priority 2): All-in-one models. PromptIR uses
+  learnable prompts; AirNet uses contrastive encoder.
 ---
 
 ### Blueprint: GLM-OCR (0.9B, MIT, GGUF exists)
