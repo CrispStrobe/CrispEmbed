@@ -17,6 +17,7 @@
 #include "tps_warp.h"
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
+#include "ggml-cpu.h"
 
 #include <algorithm>
 #include <cmath>
@@ -30,23 +31,23 @@
 // Helpers: CPU-scalar conv2d, pooling, FC
 // ---------------------------------------------------------------------------
 
-// Dequant any ggml tensor to float
+// Dequant any ggml tensor to float (GPU-safe: uses ggml_backend_tensor_get)
 static const float * to_f32(const ggml_tensor * t, std::vector<float> & buf) {
-    if (t->type == GGML_TYPE_F32) {
-        return (const float *)t->data;
-    }
     int64_t n = ggml_nelements(t);
     buf.resize(n);
-    if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t * src = (const ggml_fp16_t *)t->data;
-        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(src[i]);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+    } else if (t->type == GGML_TYPE_F16) {
+        std::vector<ggml_fp16_t> tmp(n);
+        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
+        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(tmp[i]);
     } else {
+        size_t raw_sz = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_sz);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
         const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) {
-            traits->to_float(t->data, buf.data(), n);
-        } else {
-            memset(buf.data(), 0, n * sizeof(float));
-        }
+        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
+        else memset(buf.data(), 0, n * sizeof(float));
     }
     return buf.data();
 }
@@ -173,11 +174,9 @@ tps_locnet * tps_locnet_load(const char * gguf_path) {
     core_gguf::free_metadata(meta);
 
     // Pass 2: load weights
-    ggml_backend_t backend = ggml_backend_init_by_type(GGML_BACKEND_DEVICE_TYPE_CPU, nullptr);
-    if (!backend) {
-        fprintf(stderr, "tps_locnet: failed to init CPU backend\n");
-        return nullptr;
-    }
+    bool force_cpu = (getenv("TPS_LOCNET_FORCE_CPU") && atoi(getenv("TPS_LOCNET_FORCE_CPU")));
+    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!backend) backend = ggml_backend_cpu_init();
 
     core_gguf::WeightLoad wl;
     if (!core_gguf::load_weights(gguf_path, backend, "tps_locnet", wl)) {
