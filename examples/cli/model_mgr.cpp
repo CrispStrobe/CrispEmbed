@@ -707,6 +707,26 @@ static const ModelEntry k_registry[] = {
      "LiLT base encoder (130M params, MIT)", "497 MB", "mit",
      "https://huggingface.co/cstr/lilt-base-GGUF"},
 
+    // BERT fixed-label NER (CoNLL-03: PER/LOC/ORG/MISC)
+    {"bert-base-ner",
+     "bert-base-ner-q8_0.gguf",
+     "https://huggingface.co/cstr/bert-base-NER-GGUF/resolve/main/bert-base-ner-q8_0.gguf",
+     "BERT NER (110M, CoNLL-03, 9 labels, MIT)", "111 MB", "mit",
+     "https://huggingface.co/cstr/bert-base-NER-GGUF"},
+
+    // Text language identification
+    {"cld3",
+     "cld3-f16.gguf",
+     "https://huggingface.co/cstr/cld3-GGUF/resolve/main/cld3-f16.gguf",
+     "Google CLD3 text LID (109 languages, Apache-2.0)", "1.2 MB", "apache-2.0",
+     "https://huggingface.co/cstr/cld3-GGUF"},
+
+    {"glotlid",
+     "lid-glotlid-f16.gguf",
+     "https://huggingface.co/cstr/glotlid-GGUF/resolve/main/lid-glotlid-f16.gguf",
+     "GlotLID-V3 text LID (2102 ISO 639-3 languages)", "3.3 MB", "apache-2.0",
+     "https://huggingface.co/cstr/glotlid-GGUF"},
+
     // Tesseract LSTM line OCR — lightweight multilingual (from tessdata_best)
     {"tesseract-eng",
      "tesseract-eng-q8_0.gguf",

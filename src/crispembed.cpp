@@ -992,8 +992,10 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             // Standard GELU FFN (BERT / NomicBERT dense layers)
             ffn = ggml_mul_mat(gctx, L.fc1_w, cur);
             if (L.fc1_b) ffn = ggml_add(gctx, ffn, L.fc1_b);
-            // NomicBERT uses exact erf-GELU; classic BERT uses tanh-approx GELU
-            ffn = ctx->use_rope ? ggml_gelu_erf(gctx, ffn) : ggml_gelu(gctx, ffn);
+            // HuggingFace/PyTorch GELU is erf-exact; use it for all BERT models
+            // to match reference outputs (tanh-approx causes argmax flips in
+            // token classification on borderline tokens).
+            ffn = ggml_gelu_erf(gctx, ffn);
             ffn = ggml_mul_mat(gctx, L.fc2_w, ffn);
             if (L.fc2_b) ffn = ggml_add(gctx, ffn, L.fc2_b);
         }
