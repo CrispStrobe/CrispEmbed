@@ -1077,13 +1077,13 @@ fine-tune of this). Architecture: 32-layer ViT (1280d) + spatial merger
 | E2E generation (Q4_K) | DONE | "Um die Rechnung im Bild als" — coherent German |
 | Quantization | DONE | F16 (7.6GB), Q8_0 (3.9GB), Q4_K (2.6GB, vision Q8_0 floor) |
 | HuggingFace upload | DONE | `cstr/qwen2.5-vl-3b-crispembed-GGUF` (F16 + Q8_0 + Q4_K) |
-| Wire into C ABI | TODO | Add to `crispembed.cpp` dispatch |
-| CLI + model registry | TODO | Add to `model_mgr.cpp`, `--ocr` dispatch |
-| Python bindings | TODO | Wire via `CrispMathOcr` auto-dispatch |
-| CrispCalc catalog | TODO | `OcrModelVariant` entries |
+| Wire into C ABI | DONE | Accessible via `crispembed_ocr_pipeline_init` orchestrator |
+| CLI + model registry | DONE | `--ocr` dispatch, model_mgr entries for qwen2vl/german-ocr |
+| Python bindings | DONE | Via `CrispOcrPipeline` / `CrispOcrOrchestrator` |
+| CrispCalc catalog | N/A | Superceded by model_mgr registry |
 | KV cache | TODO | O(n²)→O(n) per generated token |
 | C++ image preprocessor | TODO | Currently uses Python-generated patches |
-| Load Keyven fine-tune | TODO | Same architecture, just different weights |
+| Load Keyven fine-tune | DONE | Same architecture, just different weights — runs unchanged |
 
 **GGUFs**: `cstr/qwen2.5-vl-3b-crispembed-GGUF` on HuggingFace:
 - `qwen2.5-vl-3b-f16.gguf` — 7.57 GiB
