@@ -406,8 +406,10 @@ static ggml_tensor* conv_relu(ggml_context* g, ggml_tensor* x, const conv_w& c,
     auto* w = prep_conv(g, c.w, IC, KH, KW);
     x = ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1);
     if (c.b) {
-        int OC = (int)c.b->ne[0];
-        x = ggml_add(g, x, ggml_reshape_3d(g, c.b, 1, 1, OC));
+        auto* b = c.b;
+        if (b->type != GGML_TYPE_F32) b = ggml_cast(g, b, GGML_TYPE_F32);
+        int OC = (int)b->ne[0];
+        x = ggml_add(g, x, ggml_reshape_3d(g, b, 1, 1, OC));
     }
     if (relu) x = ggml_relu(g, x);
     return x;
@@ -420,8 +422,10 @@ static ggml_tensor* conv_silu(ggml_context* g, ggml_tensor* x, const conv_w& c,
     auto* w = prep_conv(g, c.w, IC, KH, KW);
     x = ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1);
     if (c.b) {
-        int OC = (int)c.b->ne[0];
-        x = ggml_add(g, x, ggml_reshape_3d(g, c.b, 1, 1, OC));
+        auto* b = c.b;
+        if (b->type != GGML_TYPE_F32) b = ggml_cast(g, b, GGML_TYPE_F32);
+        int OC = (int)b->ne[0];
+        x = ggml_add(g, x, ggml_reshape_3d(g, b, 1, 1, OC));
     }
     // SiLU: x * sigmoid(x)
     x = ggml_mul(g, x, ggml_sigmoid(g, x));
@@ -436,7 +440,10 @@ static ggml_tensor* linear(ggml_context* g, ggml_tensor* x, ggml_tensor* w, ggml
         w = ggml_cont(g, ggml_transpose(g, w));
     }
     x = ggml_mul_mat(g, w, x);
-    if (b) x = ggml_add(g, x, b);
+    if (b) {
+        if (b->type != GGML_TYPE_F32) b = ggml_cast(g, b, GGML_TYPE_F32);
+        x = ggml_add(g, x, b);
+    }
     return x;
 }
 
@@ -444,8 +451,12 @@ static ggml_tensor* layer_norm(ggml_context* g, ggml_tensor* x,
                                 ggml_tensor* w, ggml_tensor* b, float eps = 1e-5f) {
     if (!w) return x;
     x = ggml_norm(g, x, eps);
+    if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
     x = ggml_mul(g, x, w);
-    if (b) x = ggml_add(g, x, b);
+    if (b) {
+        if (b->type != GGML_TYPE_F32) b = ggml_cast(g, b, GGML_TYPE_F32);
+        x = ggml_add(g, x, b);
+    }
     return x;
 }
 
@@ -615,7 +626,9 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
     {
         auto* x_pos = p5_flat;
         if (enc.pos_embed) {
-            auto* pe = ggml_reshape_2d(g, enc.pos_embed, s5_c, s5_w * s5_h);
+            auto* pe = enc.pos_embed;
+            if (pe->type != GGML_TYPE_F32) pe = ggml_cast(g, pe, GGML_TYPE_F32);
+            pe = ggml_reshape_2d(g, pe, s5_c, s5_w * s5_h);
             x_pos = ggml_add(g, p5_flat, pe);  // x + pos (for Q/K projection)
         }
 
