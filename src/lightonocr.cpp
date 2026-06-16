@@ -662,8 +662,8 @@ static bool run_decoder_prefill(context &ctx,
     ggml_tensor *pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, n_prompt);
     ggml_set_name(pos_ids, "pos_ids"); ggml_set_input(pos_ids);
 
-    auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor* {
-        return ggml_mul(g, ggml_rms_norm(g, t, rms_eps), w);
+    auto rmsnorm = [&rms_eps](ggml_context *gc, ggml_tensor *t, ggml_tensor *w) -> ggml_tensor* {
+        return ggml_mul(gc, ggml_rms_norm(gc, t, rms_eps), w);
     };
 
     // Decoder layers
@@ -672,7 +672,7 @@ static bool run_decoder_prefill(context &ctx,
         ggml_tensor *residual = x;
 
         // Pre-attn RMSNorm
-        ggml_tensor *normed = rmsnorm(x, L.attn_norm_w);
+        ggml_tensor *normed = rmsnorm(g, x, L.attn_norm_w);
 
         // Q/K/V (no bias)
         ggml_tensor *Q = ggml_mul_mat(g, L.q_w, normed);
@@ -744,7 +744,7 @@ static bool run_decoder_prefill(context &ctx,
 
         // FFN: SwiGLU
         residual = x;
-        normed = rmsnorm(x, L.ffn_norm_w);
+        normed = rmsnorm(g, x, L.ffn_norm_w);
 
         ggml_tensor *gate = ggml_silu(g, ggml_mul_mat(g, L.gate_w, normed));
         ggml_tensor *up = ggml_mul_mat(g, L.up_w, normed);
@@ -755,7 +755,7 @@ static bool run_decoder_prefill(context &ctx,
     }
 
     // Final RMSNorm
-    x = rmsnorm(x, m.lm_norm_w);
+    x = rmsnorm(g, x, m.lm_norm_w);
 
     // LM head: tied weights (embed_tokens transposed)
     // Only decode last token to save memory
@@ -820,15 +820,116 @@ static bool run_decoder_prefill(context &ctx,
     fprintf(stderr, "lightonocr: logits[eos=%d] = %.3f\n", eos_id, logits_data[eos_id]);
 
     if (best == eos_id) {
-        // Decode tokens to text
         out_text = "";
         return true;
     }
 
-    // For subsequent tokens: rebuild the full sequence each time (O(n²) fallback)
-    // A proper KV-cached version would follow qwen2vl_ocr.cpp's pattern.
-    // For now, limit to the prefill output only.
-    // TODO: add KV cache for O(n) decode steps
+    // Multi-token decode: O(n²) full recompute per token.
+    // Embed each new token, append to full_emb, rebuild decoder graph.
+    for (int step = 1; step < max_new_tokens && best != eos_id; step++) {
+        // Embed the newly generated token
+        std::vector<int32_t> new_ids = {(int32_t)best};
+        auto new_emb = embed_tokens_cpu(new_ids);
+        full_emb.insert(full_emb.end(), new_emb.begin(), new_emb.end());
+        n_prompt++;
+
+        // Rebuild decoder graph for the extended sequence
+        ggml_init_params ip2{ctx.compute_meta.size(), ctx.compute_meta.data(), true};
+        ggml_context *g2 = ggml_init(ip2);
+        ggml_cgraph *gf2 = ggml_new_graph_custom(g2, 16384, false);
+
+        ggml_tensor *x2 = ggml_new_tensor_2d(g2, GGML_TYPE_F32, D, n_prompt);
+        ggml_set_name(x2, "lm_input"); ggml_set_input(x2);
+        ggml_tensor *mask2 = ggml_new_tensor_2d(g2, GGML_TYPE_F32, n_prompt, n_prompt);
+        ggml_set_name(mask2, "causal_mask"); ggml_set_input(mask2);
+        ggml_tensor *pos2 = ggml_new_tensor_1d(g2, GGML_TYPE_I32, n_prompt);
+        ggml_set_name(pos2, "pos_ids"); ggml_set_input(pos2);
+
+        // Re-run the same decoder graph (copy-paste is ugly but works)
+        ggml_tensor *cur = x2;
+        for (int il = 0; il < n_layers; il++) {
+            auto &L = m.lm[il];
+            ggml_tensor *res = cur;
+            ggml_tensor *normed = rmsnorm(g2, cur, L.attn_norm_w);
+            ggml_tensor *Q = ggml_mul_mat(g2, L.q_w, normed);
+            ggml_tensor *K = ggml_mul_mat(g2, L.k_w, normed);
+            ggml_tensor *V = ggml_mul_mat(g2, L.v_w, normed);
+            Q = ggml_reshape_3d(g2, Q, head_dim, n_heads, n_prompt);
+            K = ggml_reshape_3d(g2, K, head_dim, n_kv_heads, n_prompt);
+            V = ggml_reshape_3d(g2, V, head_dim, n_kv_heads, n_prompt);
+            if (m.use_qk_norm && L.q_norm_w && L.k_norm_w) {
+                Q = ggml_cont(g2, ggml_reshape_2d(g2, Q, head_dim, n_heads * n_prompt));
+                Q = ggml_rms_norm(g2, Q, rms_eps); Q = ggml_mul(g2, Q, L.q_norm_w);
+                Q = ggml_cont(g2, ggml_reshape_3d(g2, Q, head_dim, n_heads, n_prompt));
+                K = ggml_cont(g2, ggml_reshape_2d(g2, K, head_dim, n_kv_heads * n_prompt));
+                K = ggml_rms_norm(g2, K, rms_eps); K = ggml_mul(g2, K, L.k_norm_w);
+                K = ggml_cont(g2, ggml_reshape_3d(g2, K, head_dim, n_kv_heads, n_prompt));
+            }
+            Q = ggml_rope_ext(g2, Q, pos2, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0,
+                              rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+            K = ggml_rope_ext(g2, K, pos2, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0,
+                              rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+            if (n_kv_heads < n_heads) {
+                int rep = n_heads / n_kv_heads;
+                K = ggml_reshape_4d(g2, K, head_dim, 1, n_kv_heads, n_prompt);
+                K = ggml_repeat(g2, K, ggml_new_tensor_4d(g2, K->type, head_dim, rep, n_kv_heads, n_prompt));
+                K = ggml_reshape_3d(g2, K, head_dim, n_heads, n_prompt);
+                V = ggml_reshape_4d(g2, V, head_dim, 1, n_kv_heads, n_prompt);
+                V = ggml_repeat(g2, V, ggml_new_tensor_4d(g2, V->type, head_dim, rep, n_kv_heads, n_prompt));
+                V = ggml_reshape_3d(g2, V, head_dim, n_heads, n_prompt);
+            }
+            float sc = 1.0f / sqrtf((float)head_dim);
+            Q = ggml_cont(g2, ggml_permute(g2, Q, 0, 2, 1, 3));
+            K = ggml_cont(g2, ggml_permute(g2, K, 0, 2, 1, 3));
+            V = ggml_cont(g2, ggml_permute(g2, V, 0, 2, 1, 3));
+            ggml_tensor *scores = ggml_soft_max_ext(g2, ggml_mul_mat(g2, K, Q), mask2, sc, 0.0f);
+            ggml_tensor *Vp = ggml_cont(g2, ggml_permute(g2, V, 1, 0, 2, 3));
+            ggml_tensor *attn = ggml_mul_mat(g2, Vp, scores);
+            attn = ggml_cont(g2, ggml_permute(g2, attn, 0, 2, 1, 3));
+            attn = ggml_reshape_2d(g2, attn, n_heads * head_dim, n_prompt);
+            attn = ggml_mul_mat(g2, L.o_w, attn);
+            cur = ggml_add(g2, res, attn);
+            res = cur;
+            normed = rmsnorm(g2, cur, L.ffn_norm_w);
+            ggml_tensor *gate = ggml_silu(g2, ggml_mul_mat(g2, L.gate_w, normed));
+            ggml_tensor *up = ggml_mul_mat(g2, L.up_w, normed);
+            cur = ggml_add(g2, res, ggml_mul_mat(g2, L.down_w, ggml_mul(g2, gate, up)));
+        }
+        cur = rmsnorm(g2, cur, m.lm_norm_w);
+        ggml_tensor *lx = ggml_view_2d(g2, cur, D, 1, cur->nb[1], (size_t)(n_prompt-1)*cur->nb[1]);
+        lx = ggml_cont(g2, lx);
+        ggml_tensor *ll = ggml_reshape_1d(g2, ggml_mul_mat(g2, m.embed_tokens, lx), V);
+        ggml_set_name(ll, "last_logits"); ggml_set_output(ll);
+        ggml_build_forward_expand(gf2, ll);
+
+        ggml_backend_sched_reset(ctx.sched);
+        if (!ggml_backend_sched_alloc_graph(ctx.sched, gf2)) { ggml_free(g2); break; }
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf2, "lm_input"),
+                                full_emb.data(), 0, D * n_prompt * sizeof(float));
+        std::vector<float> md(n_prompt * n_prompt);
+        for (int i = 0; i < n_prompt; i++)
+            for (int j = 0; j < n_prompt; j++)
+                md[i * n_prompt + j] = (j <= i) ? 0.0f : -INFINITY;
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf2, "causal_mask"),
+                                md.data(), 0, md.size() * sizeof(float));
+        std::vector<int32_t> pd(n_prompt);
+        for (int i = 0; i < n_prompt; i++) pd[i] = i;
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf2, "pos_ids"),
+                                pd.data(), 0, pd.size() * sizeof(int32_t));
+        ggml_backend_cpu_set_n_threads(ctx.backend, ctx.n_threads);
+        if (ggml_backend_sched_graph_compute(ctx.sched, gf2) != GGML_STATUS_SUCCESS) {
+            ggml_free(g2); break;
+        }
+        ggml_backend_tensor_get(ggml_graph_get_tensor(gf2, "last_logits"),
+                                logits_data.data(), 0, V * sizeof(float));
+        ggml_free(g2);
+
+        best = 0; best_score = -INFINITY;
+        for (int v = 0; v < V; v++)
+            if (logits_data[v] > best_score) { best_score = logits_data[v]; best = v; }
+        generated.push_back(best);
+        fprintf(stderr, "  gen[%d] tok=%d\n", step, best);
+    }
 
     // Decode generated token IDs to text using the vocab
     out_text = "";
