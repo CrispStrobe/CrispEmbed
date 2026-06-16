@@ -2619,6 +2619,98 @@ class CrispScunet {
 }
 
 // ---------------------------------------------------------------------------
+// InstructIR All-in-One Restoration (NAFNet+ICB, 16M params, MIT)
+// ---------------------------------------------------------------------------
+
+/// InstructIR all-in-one image restoration model — 7 tasks.
+/// Tasks: 0=denoise, 1=deblur, 2=dehaze, 3=derain,
+///        4=super_resolution, 5=low_light, 6=enhance.
+class CrispInstructIR {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedInstructirFreeDart _freeFn;
+  late final CrispembedInstructirNTasksDart _nTasksFn;
+  late final CrispembedInstructirProcessDart _processFn;
+  late final CrispembedInstructirFreeImageDart _freeImageFn;
+
+  CrispInstructIR(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedInstructirInitNative, CrispembedInstructirInitDart>(
+            'crispembed_instructir_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load InstructIR model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _freeFn = _lib.lookupFunction<CrispembedInstructirFreeNative,
+        CrispembedInstructirFreeDart>('crispembed_instructir_free');
+    _nTasksFn = _lib.lookupFunction<CrispembedInstructirNTasksNative,
+        CrispembedInstructirNTasksDart>('crispembed_instructir_n_tasks');
+    _processFn = _lib.lookupFunction<CrispembedInstructirProcessNative,
+        CrispembedInstructirProcessDart>('crispembed_instructir_process');
+    _freeImageFn = _lib.lookupFunction<CrispembedInstructirFreeImageNative,
+        CrispembedInstructirFreeImageDart>('crispembed_instructir_free_image');
+  }
+
+  int get nTasks {
+    _checkDisposed();
+    return _nTasksFn(_ctx);
+  }
+
+  /// Restore an image with the specified task. Output has same dimensions.
+  Uint8List process(Uint8List pixels, int width, int height, {int task = 0}) {
+    _checkDisposed();
+    if (pixels.length != width * height * 3) {
+      throw ArgumentError(
+          'pixels.length (${pixels.length}) must equal width * height * 3 (${width * height * 3})');
+    }
+
+    final pxNative = calloc<Uint8>(pixels.length);
+    pxNative.asTypedList(pixels.length).setAll(0, pixels);
+
+    final outPxPtr = calloc<Pointer<Uint8>>();
+
+    try {
+      final rc = _processFn(_ctx, task, pxNative, width, height, outPxPtr);
+
+      if (rc != 0 || outPxPtr.value.address == 0) {
+        throw Exception('InstructIR processing failed (rc=$rc, task=$task)');
+      }
+
+      final resultPixels =
+          Uint8List.fromList(outPxPtr.value.asTypedList(width * height * 3));
+      _freeImageFn(outPxPtr.value);
+
+      return resultPixels;
+    } finally {
+      calloc.free(pxNative);
+      calloc.free(outPxPtr);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispInstructIR has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // TBSRN Super-Resolution (always 2×, 16×64 → 32×128)
 // ---------------------------------------------------------------------------
 

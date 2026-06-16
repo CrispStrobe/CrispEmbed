@@ -792,3 +792,33 @@ typedef CrispembedSwinirSrFreeImageDart = void Function(Pointer<Uint8> pixels);
 
 typedef CrispembedScunetFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedScunetFreeImageDart = void Function(Pointer<Uint8> pixels);
+
+// --- InstructIR All-in-One Restoration (instructir) ---
+typedef CrispembedInstructirInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedInstructirInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedInstructirFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedInstructirFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedInstructirNTasksNative = Int32 Function(Pointer<Void> ctx);
+typedef CrispembedInstructirNTasksDart = int Function(Pointer<Void> ctx);
+
+typedef CrispembedInstructirProcessNative = Int32 Function(
+    Pointer<Void> ctx,
+    Int32 task,
+    Pointer<Uint8> pixels,
+    Int32 width,
+    Int32 height,
+    Pointer<Pointer<Uint8>> outPixels);
+typedef CrispembedInstructirProcessDart = int Function(
+    Pointer<Void> ctx,
+    int task,
+    Pointer<Uint8> pixels,
+    int width,
+    int height,
+    Pointer<Pointer<Uint8>> outPixels);
+
+typedef CrispembedInstructirFreeImageNative = Void Function(Pointer<Uint8> pixels);
+typedef CrispembedInstructirFreeImageDart = void Function(Pointer<Uint8> pixels);

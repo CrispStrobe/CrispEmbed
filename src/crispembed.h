@@ -1010,6 +1010,21 @@ CRISPEMBED_API int crispembed_hat_sr_process(
     uint8_t ** out_pixels, int * out_width, int * out_height);
 
 CRISPEMBED_API void crispembed_hat_sr_free_image(uint8_t * pixels);
+// InstructIR — All-in-one image restoration (NAFNet+ICB, ECCV 2024).
+// 7 tasks: denoise, deblur, dehaze, derain, super_resolution, low_light, enhance.
+// ~16M params, MIT license. Source: mv-lab/InstructIR.
+// ---------------------------------------------------------------------------
+
+CRISPEMBED_API void * crispembed_instructir_init(const char * model_path, int n_threads);
+CRISPEMBED_API void   crispembed_instructir_free(void * ctx);
+CRISPEMBED_API int    crispembed_instructir_n_tasks(const void * ctx);
+
+CRISPEMBED_API int crispembed_instructir_process(
+    void * ctx, int task,
+    const uint8_t * pixels, int width, int height,
+    uint8_t ** out_pixels);
+
+CRISPEMBED_API void crispembed_instructir_free_image(uint8_t * pixels);
 
 /// Variant with individual params (for FFI bindings that can't pass structs by value).
 CRISPEMBED_API int crispembed_scan_cleanup_process_simple(

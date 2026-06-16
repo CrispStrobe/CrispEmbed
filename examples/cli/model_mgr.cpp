@@ -592,6 +592,12 @@ static const ModelEntry k_registry[] = {
      "SCUNet color denoising (Swin-Conv-UNet, 18M params, SIDD)", "69 MB", "apache-2.0",
      "https://huggingface.co/cstr/scunet-GGUF"},
 
+    {"instructir",
+     "instructir-f16.gguf",
+     "https://huggingface.co/cstr/InstructIR-GGUF/resolve/main/instructir-f16.gguf",
+     "InstructIR all-in-one restoration (NAFNet+ICB, 16M params, 7 tasks)", "32 MB", "MIT",
+     "https://huggingface.co/cstr/InstructIR-GGUF"},
+
     // text-sr: NAFNet-SR engine — no default model; supply a custom trained GGUF.
     {"text-sr",
      "text-sr-nafnet.gguf",

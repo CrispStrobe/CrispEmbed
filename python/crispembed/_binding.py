@@ -3212,6 +3212,93 @@ class CrispScunet:
 
 
 # ---------------------------------------------------------------------------
+# InstructIR all-in-one image restoration (NAFNet+ICB, 7 tasks, MIT)
+# ---------------------------------------------------------------------------
+
+def _setup_instructir_signatures(lib):
+    lib.crispembed_instructir_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_instructir_init.restype = ctypes.c_void_p
+
+    lib.crispembed_instructir_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_instructir_free.restype = None
+
+    lib.crispembed_instructir_n_tasks.argtypes = [ctypes.c_void_p]
+    lib.crispembed_instructir_n_tasks.restype = ctypes.c_int
+
+    lib.crispembed_instructir_process.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_int,
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_uint8)),
+    ]
+    lib.crispembed_instructir_process.restype = ctypes.c_int
+
+    lib.crispembed_instructir_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_instructir_free_image.restype = None
+
+
+class CrispInstructIR:
+    """InstructIR all-in-one image restoration — NAFNet+ICB, 7 tasks.
+
+    Tasks: 0=denoise, 1=deblur, 2=dehaze, 3=derain,
+           4=super_resolution, 5=low_light, 6=enhance.
+
+    Usage::
+
+        ir = CrispInstructIR("instructir-f16.gguf")
+        out = ir.process(pixels, width, height, task=0)  # returns ndarray (H, W, 3)
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 4,
+                 lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_instructir_signatures(self._lib)
+        self._ctx = self._lib.crispembed_instructir_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load InstructIR model: {model_path}")
+
+    @property
+    def n_tasks(self) -> int:
+        """Return the number of supported tasks."""
+        return self._lib.crispembed_instructir_n_tasks(self._ctx)
+
+    def process(self, pixels: np.ndarray, width: int, height: int,
+                task: int = 0) -> np.ndarray:
+        """Restore an image with the specified task.
+
+        Args:
+            pixels: uint8 numpy array, flattened or shaped (H, W, 3).
+            width: source image width in pixels.
+            height: source image height in pixels.
+            task: restoration task ID (0-6).
+
+        Returns:
+            output_ndarray uint8 shape (height, width, 3).
+        """
+        flat = np.asarray(pixels, dtype=np.uint8).flatten()
+        px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+
+        out_ptr = ctypes.POINTER(ctypes.c_uint8)()
+
+        rc = self._lib.crispembed_instructir_process(
+            self._ctx, task, px_ptr, width, height,
+            ctypes.byref(out_ptr),
+        )
+        if rc != 0 or not out_ptr:
+            raise RuntimeError("InstructIR processing failed")
+
+        buf = np.ctypeslib.as_array(out_ptr, shape=(height * width * 3,)).copy()
+        self._lib.crispembed_instructir_free_image(out_ptr)
+        return buf.reshape(height, width, 3)
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_instructir_free(self._ctx)
+            self._ctx = None
+
+
+# ---------------------------------------------------------------------------
 # OCR Orchestrator (source-type routing + cleanup + accept-gate)
 # ---------------------------------------------------------------------------
 
