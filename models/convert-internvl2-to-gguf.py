@@ -235,7 +235,7 @@ def main():
     llm_hidden_act = lc.get("hidden_act", "silu")
 
     # RoPE scaling
-    rope_scaling = lc.get("rope_scaling", {})
+    rope_scaling = lc.get("rope_scaling") or {}
     rope_type = rope_scaling.get("type", "")
     rope_factor = float(rope_scaling.get("factor", 1.0))
 
