@@ -756,6 +756,26 @@ extern "C" {
     ) -> c_int;
     pub fn crispembed_pan_sr_free_image(pixels: *mut u8);
 
+    // ── HAT super-resolution (Hybrid Attention Transformer, CVPR 2023) ──
+    // FFI for the safe CrispHatSr wrapper. The C header (crispembed.h) and
+    // safe wrapper landed without these extern decls — same omission class as
+    // SAFMN/ESRGAN earlier.
+    pub fn crispembed_hat_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_hat_sr_free(ctx: *mut c_void);
+    pub fn crispembed_hat_sr_scale(ctx: *const c_void) -> c_int;
+    pub fn crispembed_hat_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        tile_size: c_int,
+        tile_overlap: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_hat_sr_free_image(pixels: *mut u8);
+
     // SAFMN whole-image SR (the safe CrispSafmnSr wrapper referenced these but
     // the FFI decls were never added — the C symbols exist in crispembed.h).
     pub fn crispembed_safmn_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
