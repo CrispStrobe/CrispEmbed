@@ -909,3 +909,83 @@ typedef CrispembedAdairProcessDart = int Function(
 
 typedef CrispembedAdairFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedAdairFreeImageDart = void Function(Pointer<Uint8> pixels);
+
+// --- Layout Detection (RT-DETR docling-heron) ---
+typedef CrispembedLayoutInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedLayoutInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedLayoutFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedLayoutFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedLayoutDetectNative = Pointer<Void> Function(
+    Pointer<Void> ctx, Pointer<Utf8> imagePath, Float scoreThreshold,
+    Pointer<Int32> outN);
+typedef CrispembedLayoutDetectDart = Pointer<Void> Function(
+    Pointer<Void> ctx, Pointer<Utf8> imagePath, double scoreThreshold,
+    Pointer<Int32> outN);
+
+// --- HMER Handwritten Math OCR ---
+typedef CrispembedHmerOcrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedHmerOcrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedHmerOcrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedHmerOcrFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedHmerOcrRecognizeNative = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Uint8> pixels,
+    Int32 width, Int32 height, Int32 channels);
+typedef CrispembedHmerOcrRecognizeDart = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Uint8> pixels,
+    int width, int height, int channels);
+
+// --- BTTR Handwritten Math OCR ---
+typedef CrispembedBttrOcrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedBttrOcrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedBttrOcrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedBttrOcrFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedBttrOcrRecognizeNative = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Uint8> pixels,
+    Int32 width, Int32 height, Int32 channels);
+typedef CrispembedBttrOcrRecognizeDart = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Uint8> pixels,
+    int width, int height, int channels);
+
+// --- Text Detection (DBNet/Surya) ---
+typedef CrispembedTextDetInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedTextDetInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedTextDetFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedTextDetFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedTextDetNative = Pointer<Void> Function(
+    Pointer<Void> ctx, Pointer<Uint8> pixels,
+    Int32 width, Int32 height, Int32 channels,
+    Float textThreshold, Float lowThreshold, Pointer<Int32> outN);
+typedef CrispembedTextDetDart = Pointer<Void> Function(
+    Pointer<Void> ctx, Pointer<Uint8> pixels,
+    int width, int height, int channels,
+    double textThreshold, double lowThreshold, Pointer<Int32> outN);
+
+// --- Punctuation Restoration ---
+typedef CrispembedPunctInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedPunctInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedPunctFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedPunctFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedPunctProcessNative = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Utf8> text);
+typedef CrispembedPunctProcessDart = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Utf8> text);
