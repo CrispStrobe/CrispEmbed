@@ -219,6 +219,7 @@ Utility libraries (not model backends) follow a lighter pattern.
 | SAFMN super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Real-ESRGAN super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | SCUNet denoising | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| InstructIR restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ### Implementation patterns
 

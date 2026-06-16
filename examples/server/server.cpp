@@ -82,6 +82,7 @@ int main(int argc, char ** argv) {
     std::string tbsrn_model_path;     // TBSRN text-line SR model (--tbsrn-model)
     std::string restormer_model_path; // Restormer restoration model (--restormer-model)
     std::string scunet_model_path;   // SCUNet denoising model (--scunet-model)
+    std::string instructir_model_path; // InstructIR restoration model (--instructir-model)
     int port = 8080;
     int n_threads = 4;
 
@@ -110,9 +111,12 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--tbsrn-model") == 0 && i + 1 < argc) tbsrn_model_path = argv[++i];
         else if (strcmp(argv[i], "--restormer-model") == 0 && i + 1 < argc) restormer_model_path = argv[++i];
         else if (strcmp(argv[i], "--scunet-model") == 0 && i + 1 < argc) scunet_model_path = argv[++i];
+        else if (strcmp(argv[i], "--instructir-model") == 0 && i + 1 < argc) instructir_model_path = argv[++i];
     }
 
     if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && swinir_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty()) {
+    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && swinir_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty()) {
+    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
@@ -149,6 +153,8 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --restormer-model MODEL Restormer GGUF (26M params, CVPR 2022); enables POST /restormer\n");
         fprintf(stderr, "\nSCUNet image denoising:\n");
         fprintf(stderr, "  --scunet-model MODEL  SCUNet GGUF (18M params, CVPR 2022); enables POST /scunet/denoise\n");
+        fprintf(stderr, "\nInstructIR all-in-one image restoration:\n");
+        fprintf(stderr, "  --instructir-model MODEL  InstructIR GGUF (16M params, ECCV 2024); enables POST /instructir/restore\n");
         return 1;
     }
 
@@ -869,6 +875,16 @@ int main(int argc, char ** argv) {
         scunet_ctx = crispembed_scunet_init(scunet_model_path.c_str(), n_threads);
         if (!scunet_ctx)
             fprintf(stderr, "Warning: failed to load SCUNet model '%s'\n", scunet_model_path.c_str());
+    }
+
+    // ── InstructIR all-in-one restoration ──
+    void * instructir_ctx = nullptr;
+    std::mutex instructir_mutex;
+
+    if (!instructir_model_path.empty()) {
+        instructir_ctx = crispembed_instructir_init(instructir_model_path.c_str(), n_threads);
+        if (!instructir_ctx)
+            fprintf(stderr, "Warning: failed to load InstructIR model '%s'\n", instructir_model_path.c_str());
     }
 
     // POST /clip/text — CLIP text encoding
@@ -2505,6 +2521,95 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /instructir/restore — InstructIR all-in-one image restoration
+    svr.Post("/instructir/restore", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!instructir_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no InstructIR model loaded (use --instructir-model)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+
+        // Parse task (default 0 = denoise)
+        int task = 0;
+        auto tpos = body.find("\"task\"");
+        if (tpos != std::string::npos) {
+            auto colon = body.find(':', tpos + 5);
+            if (colon != std::string::npos)
+                task = atoi(body.c_str() + colon + 1);
+        }
+        if (task < 0 || task > 6) {
+            res.status = 400;
+            res.set_content("{\"error\": \"task must be 0-6\"}", "application/json");
+            return;
+        }
+
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 3);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(instructir_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        uint8_t * out = nullptr;
+        int rc = crispembed_instructir_process(instructir_ctx, task, data, w, h, &out);
+        stbi_image_free(data);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        if (rc != 0 || !out) {
+            res.status = 500;
+            res.set_content("{\"error\": \"InstructIR processing failed\"}", "application/json");
+            return;
+        }
+
+        // Base64-encode the raw RGB output
+        static const char b64chars[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        const size_t n_bytes = (size_t)w * h * 3;
+        std::string b64;
+        b64.reserve(((n_bytes + 2) / 3) * 4);
+        for (size_t i = 0; i < n_bytes; i += 3) {
+            uint32_t v = (uint32_t)out[i] << 16;
+            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
+            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
+            b64 += b64chars[(v >> 18) & 0x3f];
+            b64 += b64chars[(v >> 12) & 0x3f];
+            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
+            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
+        }
+        crispembed_instructir_free_image(out);
+
+        std::ostringstream js;
+        js << "{\"image\": \"" << b64 << "\""
+           << ", \"width\": " << w << ", \"height\": " << h
+           << ", \"task\": " << task
+           << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /instructir/restore task=%d in %.1f ms (%dx%d)\n",
+                task, ms, w, h);
+        res.set_content(js.str(), "application/json");
+    });
+
     // POST /ocr/document — end-to-end multi-page OCR
     // Accepts:
     //   multipart/form-data: files named "page" (or "page0","page1",...) → image bytes
@@ -2721,6 +2826,7 @@ int main(int argc, char ** argv) {
         if (tbsrn_sr_ctx) js << ", \"tbsrn_sr\": true, \"tbsrn_sr_upscale\": 4";
         if (restormer_ctx) js << ", \"restormer\": true";
         if (scunet_ctx) js << ", \"scunet\": true";
+        if (instructir_ctx) js << ", \"instructir\": true";
         js << ", \"scan_cleanup\": true";  // always available (no model needed)
         js << "}";
         res.set_content(js.str(), "application/json");
@@ -2751,6 +2857,7 @@ int main(int argc, char ** argv) {
     if (tbsrn_sr_ctx) fprintf(stderr, "  POST /tbsrn/sr        — {\"image\": \"text_line.png\"} (upscale 4x)\n");
     if (restormer_ctx) fprintf(stderr, "  POST /restormer       — {\"image\": \"noisy.png\"} (denoise/restore)\n");
     if (scunet_ctx) fprintf(stderr, "  POST /scunet/denoise  — {\"image\": \"noisy.png\"} (Swin-Conv-UNet denoise)\n");
+    if (instructir_ctx) fprintf(stderr, "  POST /instructir/restore — {\"image\": \"...\", \"task\": 0} (all-in-one restoration)\n");
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
     fprintf(stderr, "  POST /pdf/dpi              — {\"file\": \"...\"} (PDF DPI profiling)\n");
     fprintf(stderr, "  POST /preprocess/skew      — {\"image\": \"...\"} (find skew angle)\n");
@@ -2771,6 +2878,7 @@ int main(int argc, char ** argv) {
     if (tbsrn_sr_ctx) crispembed_tbsrn_sr_free(tbsrn_sr_ctx);
     if (restormer_ctx) crispembed_restormer_free(restormer_ctx);
     if (scunet_ctx) crispembed_scunet_free(scunet_ctx);
+    if (instructir_ctx) crispembed_instructir_free(instructir_ctx);
     if (ner_ctx) crispembed_ner_free(ner_ctx);
     if (layout_ctx) crispembed_layout_free(layout_ctx);
     if (text_det_ctx) crispembed_text_det_free(text_det_ctx);
