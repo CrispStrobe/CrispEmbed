@@ -4015,6 +4015,32 @@ extern "C" void crispembed_safmn_sr_free_image(uint8_t * pixels) {
 }
 
 // ---------------------------------------------------------------------------
+// SwinIR-light whole-image super-resolution
+// ---------------------------------------------------------------------------
+
+#include "swinir_sr.h"
+
+extern "C" void * crispembed_swinir_sr_init(const char * model_path, int n_threads) {
+    return swinir_sr_init(model_path, n_threads);
+}
+extern "C" void crispembed_swinir_sr_free(void * ctx) {
+    swinir_sr_free((swinir_sr_context *)ctx);
+}
+extern "C" int crispembed_swinir_sr_scale(const void * ctx) {
+    return swinir_sr_scale((const swinir_sr_context *)ctx);
+}
+extern "C" int crispembed_swinir_sr_process(
+        void * ctx, const uint8_t * pixels, int width, int height,
+        int tile_size, int tile_overlap,
+        uint8_t ** out_pixels, int * out_width, int * out_height) {
+    return swinir_sr_process((swinir_sr_context *)ctx, pixels, width, height,
+                             tile_size, tile_overlap, out_pixels, out_width, out_height);
+}
+extern "C" void crispembed_swinir_sr_free_image(uint8_t * pixels) {
+    swinir_sr_free_image(pixels);
+}
+
+// ---------------------------------------------------------------------------
 // Real-ESRGAN whole-image super-resolution
 // ---------------------------------------------------------------------------
 
