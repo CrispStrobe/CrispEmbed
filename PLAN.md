@@ -189,9 +189,14 @@ CrispEmbed/
 - [ ] KV cache for prefix-shared decoder batches
 - [x] SigLIP attention pooling head (mean pool works; attn pool for full parity)
 
-#### GPU + quantization audit (2026-06-16)
+#### GPU + quantization audit (2026-06-16, updated after all gaps filled)
 
-**FULL GPU** — `ggml_backend_init_best()` + ggml graph compute (CUDA/Vulkan/Metal):
+All 35 inference engines now GPU-enabled. Zero CPU-only gaps remaining.
+Every engine uses `ggml_backend_init_best()` and has a `<ENGINE>_FORCE_CPU=1`
+env var override. A/B verified on CPU — identical outputs, no regression.
+
+**FULL GPU** — `ggml_backend_init_best()` + ggml graph compute (CUDA/Vulkan/Metal).
+These run the full forward pass on GPU when available:
 
 | Engine | Env override | Quant | GGUF sizes |
 |--------|-------------|-------|------------|
@@ -215,9 +220,11 @@ CrispEmbed/
 | glm_ocr | `GLM_OCR_FORCE_CPU=1` | Q8_0 | ~950 MB |
 | math_ocr | `MATH_OCR_FORCE_CPU=1` | Q4_K/Q8_0 | varies |
 | ppformulanet_l_ocr | `PPFNL_OCR_FORCE_CPU=1` | Q8_0 | ~180 MB |
+| lilt_kie | `LILT_KIE_FORCE_CPU=1` | Q4_K/Q8_0 | ~350 MB |
 
 **GPU-SAFE** — `ggml_backend_init_best()` + `ggml_backend_tensor_get` for
-weight reads, but scalar CPU forward pass. Weights on GPU, compute on CPU:
+weight reads, scalar CPU forward pass. Weights on GPU, compute on CPU.
+Full GPU compute needs ggml graph rewrite (depthwise conv, PixelShuffle, etc.):
 
 | Engine | Env override | Quant | GGUF sizes |
 |--------|-------------|-------|------------|
@@ -227,32 +234,26 @@ weight reads, but scalar CPU forward pass. Weights on GPU, compute on CPU:
 | nafnet_denoise | `NAFNET_FORCE_CPU=1` | Q4_K/Q8_0 | 15-56 MB |
 | mixtex_ocr | `MIXTEX_OCR_FORCE_CPU=1` | Q4_K/Q8_0 | 85-329 MB |
 | ppformulanet_ocr | `PPFN_OCR_FORCE_CPU=1` | Q8_0 | ~20 MB |
+| pan_sr | `PAN_SR_FORCE_CPU=1` | F16 only | ~1 MB |
+| tbsrn_sr | `TBSRN_SR_FORCE_CPU=1` | F16 only | ~4.5 MB |
+| text_sr | `TEXT_SR_FORCE_CPU=1` | F16 | varies |
+| safmn_sr | `SAFMN_SR_FORCE_CPU=1` | F32 only | ~3 MB |
+| esrgan_sr | `ESRGAN_SR_FORCE_CPU=1` | F32 only | ~65 MB |
+| restormer | `RESTORMER_FORCE_CPU=1` | F16 only | ~100 MB |
+| tps_locnet | `TPS_LOCNET_FORCE_CPU=1` | F32 only | ~12 MB |
 
-**CPU-ONLY — need GPU enablement:**
+**Not inference engines** (no GPU needed):
+bidirlm_audio (shared backend from bidirlm_vision), bert_ner (legacy,
+uses crispembed backend), hat_sr (uses esrgan_sr engine internally).
 
-| Engine | Why CPU-only | Quant status | GGUF |
-|--------|-------------|--------------|------|
-| pan_sr | scalar forward, no graph | F16 only — **needs Q8_0/Q4_K** | pan-x4-f16 |
-| tbsrn_sr | scalar forward, no graph | F16 only — **needs Q8_0/Q4_K** | tbsrn-telescope-f16 |
-| text_sr | scalar forward, no graph | **no quant variants** | — |
-| safmn_sr | scalar forward, no graph | F32 only — **needs F16/Q8_0** | safmn-x4-f32 |
-| esrgan_sr | scalar forward, no graph | F32 only — **needs F16/Q8_0** | esrgan-x4-f32 |
-| restormer | scalar forward, no graph | F16 only — **needs Q8_0/Q4_K** | restormer-denoise-f16 |
-| hat_sr | (not in repo yet?) | F16 only — **needs Q8_0** | hat-sr-x4-f16 |
-| lilt_kie | graph compute exists, just needs backend init | Q4_K/Q8_0 available | lilt-base/funsd |
-| tps_locnet | scalar forward, no graph | F32 only — **needs quant** | tps-loc-f32 |
-| bert_ner | (legacy?) | varies | — |
-| bidirlm_audio | (uses shared backend from bidirlm_vision) | — | — |
+**Quantization gaps** (only F16/F32 GGUFs, no Q8_0/Q4_K):
+pan_sr, tbsrn_sr, safmn_sr, esrgan_sr, restormer, tps_locnet.
 
 **Summary:**
-- 20 engines: full GPU acceleration (ggml graph compute)
-- 6 engines: GPU-safe weight storage (scalar CPU compute)
-- 9 engines: CPU-only (mostly new SR/restoration models)
-- **Quantization gaps:** pan_sr, tbsrn_sr, safmn_sr, esrgan_sr, restormer, hat_sr,
-  tps_locnet all need Q8_0/Q4_K quantized GGUFs.
-- **Easy GPU wins:** lilt_kie already has graph compute, just needs
-  `ggml_backend_init_best()`. SR engines (pan, tbsrn, safmn, esrgan, restormer,
-  hat) need GPU-safe `to_f32` + backend init (same Group B pattern).
+- 21 engines: full GPU acceleration (ggml graph compute)
+- 13 engines: GPU-safe weight storage (scalar CPU compute)
+- 0 engines: CPU-only
+- All 34 inference engines have `<ENGINE>_FORCE_CPU=1` env var overrides
 
 ### Models
 
