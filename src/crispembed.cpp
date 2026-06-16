@@ -4387,3 +4387,29 @@ extern "C" int crispembed_table_parse_detect_grid(
         int * out_n_rows, int * out_n_cols) {
     return table_parse_detect_grid(gray, width, height, out_n_rows, out_n_cols);
 }
+
+// ---------------------------------------------------------------------------
+// HAT super-resolution
+// ---------------------------------------------------------------------------
+
+#include "hat_sr.h"
+
+extern "C" void * crispembed_hat_sr_init(const char * model_path, int n_threads) {
+    return hat_sr_init(model_path, n_threads);
+}
+extern "C" void crispembed_hat_sr_free(void * ctx) {
+    hat_sr_free((hat_sr_context *)ctx);
+}
+extern "C" int crispembed_hat_sr_scale(const void * ctx) {
+    return hat_sr_scale((const hat_sr_context *)ctx);
+}
+extern "C" int crispembed_hat_sr_process(
+        void * ctx, const uint8_t * pixels, int width, int height,
+        int tile_size, int tile_overlap,
+        uint8_t ** out_pixels, int * out_width, int * out_height) {
+    return hat_sr_process((hat_sr_context *)ctx, pixels, width, height,
+                          tile_size, tile_overlap, out_pixels, out_width, out_height);
+}
+extern "C" void crispembed_hat_sr_free_image(uint8_t * pixels) {
+    hat_sr_free_image(pixels);
+}
