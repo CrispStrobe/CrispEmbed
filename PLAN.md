@@ -856,7 +856,7 @@ Current engines (all DONE with full integration):
 | # | Model | Params | Task | License | Status |
 |---|-------|--------|------|---------|--------|
 | 5 | **HAT** | 20M+ | SR | MIT | Not started |
-| 6 | **DAT** | 20M+ | SR | Apache-2.0 | Not started |
+| 6 | **DAT** | ~830K (light) | SR | Apache-2.0 | **DONE** (engine+converter+C API, cos=0.9999 parity) |
 | 7 | **Real-ESRGAN** | ~0.9M-17M | SR | BSD-3 | DONE |
 | 8 | **PromptIR** | ~26M | All-in-one | MIT | Not started |
 | 9 | **AirNet** | ~9M | All-in-one | — | Not started (check license) |
@@ -884,10 +884,13 @@ Current engines (all DONE with full integration):
   pattern for the U-Net structure, adds Swin blocks from `mixtex_ocr.cpp`.
   ~500 LOC. Reference: `cszn/SCUNet`.
 
-- **HAT/DAT** (Priority 2): Larger transformer SR models. Same Swin-based
-  pattern as SwinIR but with additional attention mechanisms (overlapping
-  cross-attention for HAT, spatial/channel aggregation for DAT). Port after
-  SwinIR-light proves the Swin SR pipeline.
+- **DAT** (Priority 2, DONE): Dual Aggregation Transformer. Split-channel
+  windowed spatial attention + L2-normalized transposed channel attention,
+  both with AIM (Adaptive Interaction Module). SGFN feed-forward with
+  DW-conv gating. ~1400 LOC C++ engine. cos=0.999956 parity vs PyTorch.
+  
+- **HAT** (Priority 2): Hybrid Attention Transformer. Same Swin-based
+  pattern as SwinIR but with overlapping cross-attention.
 
 - **Real-ESRGAN** (Priority 2): GAN-based, so inference is just the
   generator network (RRDB blocks — residual-in-residual dense blocks).

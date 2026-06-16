@@ -119,7 +119,7 @@ def main():
 
     total_params = 0
     tensor_count = 0
-    # Tensors that contain indices or BN stats — must stay FP32 to avoid overflow
+    # Tensors that contain indices — must stay FP32 to avoid overflow
     keep_f32 = ("relative_position_index", "attn_mask")
     for name, tensor in sorted(sd.items()):
         # Skip num_batches_tracked (unused in eval mode, names too long for GGUF)

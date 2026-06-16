@@ -4010,6 +4010,29 @@ extern "C" void crispembed_pan_sr_free_image(uint8_t * pixels) {
 }
 
 // ---------------------------------------------------------------------------
+// DAT (Dual Aggregation Transformer) super-resolution
+// ---------------------------------------------------------------------------
+
+#include "dat_sr.h"
+
+extern "C" void * crispembed_dat_sr_init(const char * model_path, int n_threads) {
+    return dat_sr_init(model_path, n_threads);
+}
+extern "C" void crispembed_dat_sr_free(void * ctx) {
+    dat_sr_free((dat_sr_context *)ctx);
+}
+extern "C" int crispembed_dat_sr_process(
+        void * ctx, const uint8_t * pixels, int width, int height,
+        int tile_w, int tile_h,
+        uint8_t ** out_pixels, int * out_width, int * out_height) {
+    return dat_sr_process((dat_sr_context *)ctx, pixels, width, height,
+                          tile_w, tile_h, out_pixels, out_width, out_height);
+}
+extern "C" void crispembed_dat_sr_free_image(uint8_t * pixels) {
+    dat_sr_free_image(pixels);
+}
+
+// ---------------------------------------------------------------------------
 // SAFMN whole-image super-resolution
 // ---------------------------------------------------------------------------
 
