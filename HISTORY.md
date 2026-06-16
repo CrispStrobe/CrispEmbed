@@ -4,6 +4,25 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 16, 2026 — LightOnOCR-2-1B (OCR Arena #2)
+
+End-to-end port of [lightonai/LightOnOCR-2-1B](https://huggingface.co/lightonai/LightOnOCR-2-1B)
+(Apache-2.0, 1B params, OCR Arena #2 with ELO 1697).
+
+- **Architecture**: Pixtral ViT (24L, 1024d, 2D RoPE, SiLU FFN) + spatial merge 2×2
+  projection + Qwen3 decoder (28L, 1024d, GQA 16/8, QK norm, SwiGLU)
+- **Converter**: `models/convert-lightonocr-to-gguf.py` — lazy safetensors loading
+- **Engine**: `src/lightonocr.{h,cpp}` — vision encoder + projection + decoder
+- **Key challenge**: Pixtral 2D RoPE (interleaved h/w frequencies, not mRoPE)
+- **QK norm fix**: model produced EOS without chat template prompt framing;
+  fixed by embedding prefix/suffix text tokens around image features
+- **GGUF**: F16 (2.2GB), Q8_0 (1.0GB), Q4_K (622MB) — `cstr/lightonocr-GGUF`
+- **Dispatch**: `--ocr` auto-detects from GGUF arch, `--ocr-engine lightonocr`
+- **Orchestrator**: wired as single-shot VLM engine
+- **Decode**: O(n²) full recompute per token (KV cache TODO)
+
+---
+
 ## June 15-16, 2026 — KIE, LiLT, BERT NER, LID, Truecasing, Shared Libraries
 
 ### Key Information Extraction (KIE)

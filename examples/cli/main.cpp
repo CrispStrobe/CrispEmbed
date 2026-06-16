@@ -105,7 +105,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --cleanup        preprocess scan before OCR (deskew, crop borders, whiten background)\n");
     fprintf(stderr, "  --cleanup-only F process scan and write cleaned image to stdout (no OCR)\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
-    fprintf(stderr, "       --ocr-engine N  primary engine (dbnet_trocr|surya|tesseract|got|glm|qwen2vl|internvl2)\n");
+    fprintf(stderr, "       --ocr-engine N  primary engine (dbnet_trocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
     fprintf(stderr, "       --truecase-model M  post-OCR truecasing (BiLSTM)\n");
@@ -802,7 +802,8 @@ int main(int argc, char ** argv) {
             if (n == "glm")       return 3;
             if (n == "qwen2vl")   return 4;
             if (n == "internvl2") return 5;
-            if (n == "tesseract") return 6;
+            if (n == "tesseract")  return 6;
+            if (n == "lightonocr") return 11;
             return 0; // dbnet_trocr
         };
         std::string nafnet, vlm, punct;
@@ -818,11 +819,12 @@ int main(int argc, char ** argv) {
         if (!pipeline_engine.empty()) {
             // Explicit primary engine → single-stage pipeline via the builder.
             const int eid = eng_id(pipeline_engine);
-            const bool is_vlm = (eid >= 2 && eid <= 5);
+            const bool is_vlm = (eid >= 2 && eid <= 5) || eid == 11;
             if (is_vlm) {
                 const char * dflt = (eid == 2) ? "got-ocr2"
                                   : (eid == 3) ? "glm-ocr"
-                                  : (eid == 5) ? "internvl2-ocr" : "qwen2vl-ocr";
+                                  : (eid == 5) ? "internvl2-ocr"
+                                  : (eid == 11) ? "lightonocr" : "qwen2vl-ocr";
                 ma = resolve(!ocr_rec_path.empty() ? ocr_rec_path : dflt);
             } else {
                 ma = resolve(ocr_det_path.empty() ? "dbnet-det" : ocr_det_path);
