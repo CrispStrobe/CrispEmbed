@@ -2215,6 +2215,137 @@ pub fn cc_detect(gray: &[u8], width: i32, height: i32) -> Vec<OcrRegion> {
     regions
 }
 
+/// Table structure recognition — parse a table image into HTML (rule-based
+/// morphological line detection + per-cell OCR).
+pub struct CrispTableParse {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispTableParse {}
+
+impl CrispTableParse {
+    /// Load a table parser. `ocr_model_path` is the recognition GGUF used to
+    /// read cell text (e.g. a TrOCR / Tesseract model).
+    pub fn new(ocr_model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let c = CString::new(ocr_model_path).map_err(|e| format!("ocr model path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_table_parse_init(c.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err("crispembed_table_parse_init failed".into());
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Parse a grayscale table image (row-major `height × width`) into an HTML
+    /// `<table>` string. Returns `None` on failure.
+    pub fn to_html(&self, gray: &[u8], width: i32, height: i32) -> Option<String> {
+        let ptr = unsafe {
+            crispembed_sys::crispembed_table_parse_to_html(self.ctx, gray.as_ptr(), width, height)
+        };
+        if ptr.is_null() {
+            return None;
+        }
+        let s = unsafe { std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned() };
+        unsafe { crispembed_sys::crispembed_table_parse_free_string(ptr) };
+        Some(s)
+    }
+
+    /// Detect the grid dimensions (rows, cols) of a table image without OCR.
+    pub fn detect_grid(gray: &[u8], width: i32, height: i32) -> Option<(i32, i32)> {
+        let mut rows: i32 = 0;
+        let mut cols: i32 = 0;
+        let rc = unsafe {
+            crispembed_sys::crispembed_table_parse_detect_grid(
+                gray.as_ptr(),
+                width,
+                height,
+                &mut rows,
+                &mut cols,
+            )
+        };
+        if rc != 0 {
+            return None;
+        }
+        Some((rows, cols))
+    }
+}
+
+impl Drop for CrispTableParse {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_table_parse_free(self.ctx) };
+    }
+}
+
+/// One LiLT-classified token (label + confidence).
+pub struct LiltToken {
+    pub token_id: i32,
+    pub label_id: i32,
+    pub label: String,
+    pub score: f32,
+}
+
+/// LiLT — layout-aware token classification for documents (FUNSD-style labels).
+/// Lower-level: takes pre-tokenized `input_ids` + normalized `bbox` (in
+/// `[0,1000]`); the caller supplies a matching tokenizer + OCR boxes.
+pub struct CrispLiLT {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispLiLT {}
+
+impl CrispLiLT {
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let c = CString::new(model_path).map_err(|e| format!("model path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_lilt_init(c.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err("crispembed_lilt_init failed".into());
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Classify tokens. `bbox` is `input_ids.len() * 4` normalized coords.
+    pub fn classify(&self, input_ids: &[i32], bbox: &[i32]) -> Vec<LiltToken> {
+        let n = input_ids.len() as i32;
+        if bbox.len() != input_ids.len() * 4 {
+            return vec![];
+        }
+        let mut out_n: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_lilt_classify(
+                self.ctx,
+                input_ids.as_ptr(),
+                bbox.as_ptr(),
+                n,
+                &mut out_n,
+            )
+        };
+        if ptr.is_null() || out_n <= 0 {
+            return vec![];
+        }
+        let mut toks = Vec::with_capacity(out_n as usize);
+        for i in 0..out_n as usize {
+            let t = unsafe { &*ptr.add(i) };
+            let label = if t.label.is_null() {
+                String::new()
+            } else {
+                unsafe { std::ffi::CStr::from_ptr(t.label).to_string_lossy().into_owned() }
+            };
+            toks.push(LiltToken {
+                token_id: t.token_id,
+                label_id: t.label_id,
+                label,
+                score: t.score,
+            });
+        }
+        toks
+    }
+}
+
+impl Drop for CrispLiLT {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_lilt_free(self.ctx) };
+    }
+}
+
 /// Find the skew angle of a document image (degrees).
 pub fn find_skew(gray: &[u8], width: i32, height: i32) -> Result<(f32, f32), String> {
     let mut angle: f32 = 0.0;
@@ -2459,6 +2590,54 @@ impl Drop for CrispEsrganSr {
     fn drop(&mut self) {
         if !self.ctx.is_null() {
             unsafe { crispembed_sys::crispembed_esrgan_sr_free(self.ctx) };
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// SCUNet Image Denoising
+// ---------------------------------------------------------------------------
+
+/// Safe wrapper for the SCUNet image denoising engine.
+pub struct CrispScunet {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispScunet {}
+
+impl CrispScunet {
+    /// Load a SCUNet GGUF model.  `n_threads = 0` → auto.
+    pub fn new(model_path: impl AsRef<Path>, n_threads: i32) -> Option<Self> {
+        let c_path = CString::new(model_path.as_ref().to_str()?).ok()?;
+        let ctx = unsafe { crispembed_sys::crispembed_scunet_init(c_path.as_ptr(), n_threads) };
+        if ctx.is_null() { None } else { Some(Self { ctx }) }
+    }
+
+    /// Denoise an RGB image (H×W×3, row-major uint8).
+    /// Returns `(pixels, width, height)` or `None` on failure.
+    /// Output has the same dimensions as input.
+    pub fn process(&mut self, pixels: &[u8], width: i32, height: i32) -> Option<(Vec<u8>, i32, i32)> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let rc = unsafe {
+            crispembed_sys::crispembed_scunet_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width, height,
+                &mut out_ptr,
+            )
+        };
+        if rc != 0 || out_ptr.is_null() { return None; }
+        let n = (width as usize) * (height as usize) * 3;
+        let data = unsafe { std::slice::from_raw_parts(out_ptr, n) }.to_vec();
+        unsafe { crispembed_sys::crispembed_scunet_free_image(out_ptr) };
+        Some((data, width, height))
+    }
+}
+
+impl Drop for CrispScunet {
+    fn drop(&mut self) {
+        if !self.ctx.is_null() {
+            unsafe { crispembed_sys::crispembed_scunet_free(self.ctx) };
         }
     }
 }
