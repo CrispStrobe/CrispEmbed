@@ -1058,13 +1058,14 @@ extern "C" {
 
     // ── ColBERT scoring ──
     pub fn crispembed_colbert_score(
-        q_embs: *const c_float, q_tokens: c_int, q_dim: c_int,
-        d_embs: *const c_float, d_tokens: c_int,
+        query_vecs: *const c_float, n_query: c_int,
+        doc_vecs: *const c_float, n_doc: c_int,
+        dim: c_int,
     ) -> c_float;
     pub fn crispembed_colbert_score_batch(
-        q_embs: *const c_float, q_tokens: c_int, q_dim: c_int,
-        d_embs_array: *const *const c_float, d_tokens_array: *const c_int,
-        n_docs: c_int, out_scores: *mut c_float,
+        query_vecs: *const c_float, n_query: c_int,
+        doc_vecs_list: *const *const c_float, doc_n_tokens: *const c_int,
+        n_docs: c_int, dim: c_int, out_scores: *mut c_float,
     ) -> c_int;
 
     // ── Raw token encoding ──
