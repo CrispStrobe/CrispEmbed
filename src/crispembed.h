@@ -652,6 +652,32 @@ CRISPEMBED_API const char * crispembed_ocr_pipeline_detected_lang(
     void * ctx, float * out_confidence);
 
 CRISPEMBED_API void crispembed_ocr_pipeline_free(void * ctx);
+
+// ---------------------------------------------------------------------------
+// Standalone Text Language Identification (LID).
+// Uses the same model as the orchestrator's built-in LID but as a
+// standalone context for arbitrary text input.
+// ---------------------------------------------------------------------------
+
+/// Load a text LID model from GGUF. Returns opaque context or NULL.
+CRISPEMBED_API void * crispembed_lid_init(const char * model_path, int n_threads);
+CRISPEMBED_API void   crispembed_lid_free(void * ctx);
+
+/// Predict the language of a UTF-8 text string.
+/// Returns ISO 639-1 code (e.g. "en", "de", "fr"). Owned by ctx.
+/// *out_confidence receives the prediction confidence [0,1].
+CRISPEMBED_API const char * crispembed_lid_predict(
+    void * ctx, const char * text, float * out_confidence);
+
+/// Predict top-k languages. Returns number of results (≤ k).
+/// out_labels and out_confidences are caller-allocated arrays of size k.
+CRISPEMBED_API int crispembed_lid_predict_topk(
+    void * ctx, const char * text, int k,
+    const char ** out_labels, float * out_confidences);
+
+/// Number of languages the model can detect.
+CRISPEMBED_API int crispembed_lid_n_labels(const void * ctx);
+
 // (Full per-stage builder API declared after the scan-cleanup section below,
 //  since crispembed_ocr_stage embeds crispembed_scan_cleanup_params.)
 
