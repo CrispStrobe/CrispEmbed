@@ -3154,6 +3154,38 @@ case MATH_OCR_GRANITE_VISION: {
     return nullptr;
 }
 
+extern "C" const float * crispembed_math_ocr_confidences(const void * ctx, int * n_tokens) {
+    if (n_tokens) *n_tokens = 0;
+    if (!ctx) return nullptr;
+    auto * u = (const unified_math_ocr *)ctx;
+    switch (u->type) {
+        case MATH_OCR_PIX2TEX:        return math_ocr_confidences((const math_ocr_context *)u->ctx, n_tokens);
+        case MATH_OCR_HMER:           return hmer_ocr_confidences((const hmer_ocr_context *)u->ctx, n_tokens);
+        case MATH_OCR_BTTR:           return bttr_ocr_confidences((const bttr_ocr_context *)u->ctx, n_tokens);
+        case MATH_OCR_PPFORMULANET:   return ppformulanet_ocr_confidences((const ppformulanet_ocr_context *)u->ctx, n_tokens);
+        case MATH_OCR_PPFORMULANET_L: return ppformulanet_l_ocr_confidences((const ppformulanet_l_ocr_context *)u->ctx, n_tokens);
+        case MATH_OCR_POSFORMER:      return posformer_ocr_confidences((const posformer_ocr_context *)u->ctx, n_tokens);
+        case MATH_OCR_MIXTEX:         return mixtex_ocr_confidences((const mixtex_ocr_context *)u->ctx, n_tokens);
+        case MATH_OCR_QWEN2VL:        return qwen2vl_ocr_confidences((const qwen2vl_ocr_context *)u->ctx, n_tokens);
+        case MATH_OCR_INTERNVL2:      return internvl2_ocr_confidences((const internvl2_ocr_context *)u->ctx, n_tokens);
+        case MATH_OCR_PARSEQ:         return parseq_ocr_confidences((const parseq_ocr_context *)u->ctx, n_tokens);
+        case MATH_OCR_GLM_OCR:        return glm_ocr_confidences((const glm_ocr_context *)u->ctx, n_tokens);
+        case MATH_OCR_GOT_OCR:        return got_ocr_confidences((const got_ocr_context *)u->ctx, n_tokens);
+        case MATH_OCR_TESSERACT_LSTM: return tesseract_lstm_confidences((const tesseract_lstm_context *)u->ctx, n_tokens);
+        default: return nullptr;
+    }
+}
+
+extern "C" float crispembed_math_ocr_mean_confidence(const void * ctx) {
+    if (!ctx) return 0.0f;
+    int n = 0;
+    const float * c = crispembed_math_ocr_confidences(ctx, &n);
+    if (!c || n <= 0) return 0.0f;
+    double sum = 0;
+    for (int i = 0; i < n; i++) sum += c[i];
+    return (float)(sum / n);
+}
+
 // Also expose individual APIs for direct use
 extern "C" void * crispembed_hmer_ocr_init(const char * p, int t) { return hmer_ocr_init(p, t); }
 extern "C" void crispembed_hmer_ocr_free(void * c) { hmer_ocr_free((hmer_ocr_context*)c); }
