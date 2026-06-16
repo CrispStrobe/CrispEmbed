@@ -285,7 +285,7 @@ esrgan_sr engine internally).
 - [x] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL pruned fine-tune (16L vs 28L), 12+ languages incl. German. DONE: runs on existing qwen2vl_ocr engine unchanged. GGUF converted (F16 3.6GB, Q4_K 1.3GB). Model registry entry added.
 - [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics (parity bug: hallucinated text)
 - [ ] **Granite Vision 3.3-2B (~3B, Apache-2.0)** — OCRBench 852 (highest in class). English-only.
-- [ ] **H2OVL-Mississippi-2B (~2.1B, Apache-2.0)** — OCRBench 782.
+- [x] **H2OVL-Mississippi-2B (~2.1B, Apache-2.0)** — OCRBench 782. DONE: InternViT-300M + Danube-2-1.8B (Mistral arch). Runs on existing internvl2_ocr engine unchanged. GGUF converted (F16 1.2GB, Q4_K 457MB). Model registry entry added.
 
 #### OCRBench leaderboard reference (small VLMs, ≤3B)
 
