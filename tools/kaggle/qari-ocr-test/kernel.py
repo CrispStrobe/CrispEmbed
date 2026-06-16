@@ -194,9 +194,8 @@ import re
 cml_path = os.path.join(ce_dir, 'CMakeLists.txt')
 with open(cml_path) as f:
     cml = f.read()
-# Remove all add_executable(test-*) + target_link_libraries(test-*) lines
-cml = re.sub(r'add_executable\(test-[^\)]+\)\n', '', cml)
-cml = re.sub(r'target_link_libraries\(test-[^\)]+\)\n', '', cml)
+# Remove all test-* targets (add_executable + target_link_libraries + target_include)
+cml = re.sub(r'(?:add_executable|target_link_libraries|target_include_directories)\(test-[^\)]*\)\n?', '', cml)
 with open(cml_path, 'w') as f:
     f.write(cml)
 
