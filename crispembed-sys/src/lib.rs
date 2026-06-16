@@ -1076,6 +1076,14 @@ extern "C" {
     // ── OCR pipeline detected language ──
     pub fn crispembed_ocr_pipeline_detected_lang(ctx: *mut c_void) -> *const c_char;
 
+    // ── OCR pipeline per-region / per-character confidence (last run) ──
+    pub fn crispembed_ocr_pipeline_region_rec_confidence(ctx: *mut c_void, region_idx: c_int) -> c_float;
+    pub fn crispembed_ocr_pipeline_region_char_conf(
+        ctx: *mut c_void,
+        region_idx: c_int,
+        out_len: *mut c_int,
+    ) -> *const c_float;
+
     // ── LiLT accessors ──
     pub fn crispembed_lilt_num_labels(ctx: *mut c_void) -> c_int;
     pub fn crispembed_lilt_label_name(ctx: *mut c_void, label_id: c_int) -> *const c_char;

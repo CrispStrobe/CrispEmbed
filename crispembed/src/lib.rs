@@ -2032,6 +2032,11 @@ pub struct OcrPipelineRegion {
     pub w: f32,
     pub h: f32,
     pub confidence: f32,
+    /// Recognition confidence (mean per-char softmax); 0 if unavailable.
+    pub rec_confidence: f32,
+    /// Per-character confidence; empty when the recognizer doesn't expose it
+    /// (e.g. VLM engines). Aligns with `text`'s characters when present.
+    pub char_conf: Vec<f32>,
 }
 
 /// Result of a full OCR pipeline run.
@@ -2207,11 +2212,32 @@ impl CrispOcrPipeline {
         let mut regions = Vec::new();
         if !arr.is_null() && n > 0 {
             let slice = unsafe { std::slice::from_raw_parts(arr, n as usize) };
-            for r in slice {
+            for (i, r) in slice.iter().enumerate() {
                 let text = if r.text.is_null() {
                     String::new()
                 } else {
                     unsafe { CStr::from_ptr(r.text) }.to_string_lossy().into_owned()
+                };
+                // Per-region + per-character confidence from the last run (side
+                // accessors; empty/0 for recognizers that don't expose them).
+                let rec_confidence = unsafe {
+                    crispembed_sys::crispembed_ocr_pipeline_region_rec_confidence(
+                        self.ctx,
+                        i as std::os::raw::c_int,
+                    )
+                };
+                let mut cc_len: std::os::raw::c_int = 0;
+                let cc_ptr = unsafe {
+                    crispembed_sys::crispembed_ocr_pipeline_region_char_conf(
+                        self.ctx,
+                        i as std::os::raw::c_int,
+                        &mut cc_len,
+                    )
+                };
+                let char_conf = if cc_ptr.is_null() || cc_len <= 0 {
+                    Vec::new()
+                } else {
+                    unsafe { std::slice::from_raw_parts(cc_ptr, cc_len as usize) }.to_vec()
                 };
                 regions.push(OcrPipelineRegion {
                     text,
@@ -2220,6 +2246,8 @@ impl CrispOcrPipeline {
                     w: r.w,
                     h: r.h,
                     confidence: r.confidence,
+                    rec_confidence,
+                    char_conf,
                 });
             }
         }
