@@ -902,6 +902,21 @@ CRISPEMBED_API int crispembed_pan_sr_process(
 CRISPEMBED_API void crispembed_pan_sr_free_image(uint8_t * pixels);
 
 // ---------------------------------------------------------------------------
+// DAT (Dual Aggregation Transformer) Super-Resolution — ICCV 2023 (Apache-2.0).
+// DAT-light x2: ~830K params, dual spatial+channel attention with AIM.
+// ---------------------------------------------------------------------------
+
+CRISPEMBED_API void * crispembed_dat_sr_init(const char * model_path, int n_threads);
+CRISPEMBED_API void   crispembed_dat_sr_free(void * ctx);
+
+CRISPEMBED_API int crispembed_dat_sr_process(
+    void * ctx, const uint8_t * pixels, int width, int height,
+    int tile_w, int tile_h,
+    uint8_t ** out_pixels, int * out_width, int * out_height);
+
+CRISPEMBED_API void crispembed_dat_sr_free_image(uint8_t * pixels);
+
+// ---------------------------------------------------------------------------
 // SAFMN Whole-Image Super-Resolution — sunny2109/SAFMN (Apache-2.0).
 // 4× (or 2×) upscale with SAFM+CCM AttBlocks + PixelShuffle. ~228K params.
 // ---------------------------------------------------------------------------
