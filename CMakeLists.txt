@@ -24,6 +24,10 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 # Suppress MSVC deprecation warnings for standard C functions
 if(MSVC)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    # MSVC's <cmath> only defines M_PI etc. with this. Define it globally so
+    # source files don't each need a `#ifndef M_PI` guard (a recurring Windows
+    # build break: text_sr/pan_sr/restormer/swinir_sr all hit it).
+    add_definitions(-D_USE_MATH_DEFINES)
 endif()
 
 # ---------------------------------------------------------------------------
