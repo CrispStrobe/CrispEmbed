@@ -118,6 +118,7 @@ struct hmer_ocr_context {
 
     // Inference state
     std::string result_buf;
+    std::vector<float> char_confidences; // per-token softmax probabilities
 
     // Cached encoder output: (enc_h * enc_w, 1024)
     std::vector<float> encoder_output;
@@ -829,6 +830,15 @@ static int decoder_step(hmer_ocr_context * ctx,
         }
     }
 
+    // Confidence: softmax of winning token
+    {
+        float max_l = logits[0];
+        for (int v = 1; v < V; v++) if (logits[v] > max_l) max_l = logits[v];
+        float sum_e = 0;
+        for (int v = 0; v < V; v++) sum_e += expf(logits[v] - max_l);
+        ctx->char_confidences.push_back(expf(logits[best] - max_l) / sum_e);
+    }
+
     return best;
 }
 
@@ -837,6 +847,7 @@ static int decoder_step(hmer_ocr_context * ctx,
 // ---------------------------------------------------------------------------
 
 static std::string greedy_decode(hmer_ocr_context * ctx) {
+    ctx->char_confidences.clear();
     const auto & hp = ctx->hparams;
     const int H = hp.hidden_size;
     const int enc_n = ctx->enc_h * ctx->enc_w;
@@ -871,7 +882,12 @@ static std::string greedy_decode(hmer_ocr_context * ctx) {
 
     for (int step = 0; step < hp.max_seq_len; step++) {
         int tok = decoder_step(ctx, prev_token, state);
-        if (tok == hp.eol_token) break;
+        if (tok == hp.eol_token) {
+            // Pop the EOL confidence pushed inside decoder_step
+            if (!ctx->char_confidences.empty())
+                ctx->char_confidences.pop_back();
+            break;
+        }
         tokens.push_back(tok);
         prev_token = tok;
     }
@@ -978,4 +994,20 @@ const char * hmer_ocr_recognize_raw(
         }
     }
     return hmer_ocr_recognize(ctx, gray.data(), width, height, out_len);
+}
+
+const float * hmer_ocr_confidences(const hmer_ocr_context * ctx, int * n_chars) {
+    if (!ctx || ctx->char_confidences.empty()) {
+        if (n_chars) *n_chars = 0;
+        return nullptr;
+    }
+    if (n_chars) *n_chars = (int)ctx->char_confidences.size();
+    return ctx->char_confidences.data();
+}
+
+float hmer_ocr_mean_confidence(const hmer_ocr_context * ctx) {
+    if (!ctx || ctx->char_confidences.empty()) return 0.0f;
+    double sum = 0;
+    for (float c : ctx->char_confidences) sum += c;
+    return (float)(sum / ctx->char_confidences.size());
 }

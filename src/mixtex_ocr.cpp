@@ -332,6 +332,7 @@ struct mixtex_ocr_context {
 
     // Output buffer
     std::string output_text;
+    std::vector<float> char_confidences; // per-token softmax probabilities
 
     // KV cache for decoder
     std::vector<std::vector<float>> kv_cache_k; // [layer][step * D]
@@ -898,6 +899,7 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
 // ---------------------------------------------------------------------------
 static std::string run_decoder(mixtex_ocr_context* ctx,
                                 const float* enc_output, int enc_len, int enc_dim) {
+    ctx->char_confidences.clear();
     auto& hp = ctx->hp;
     int D = hp.dec_hidden;
     int n_layers = hp.dec_layers;
@@ -1164,6 +1166,16 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
             if (logits[v] > logits[best]) best = v;
 
         if (best == hp.eos_token) break;
+
+        // Confidence: softmax of winning token
+        {
+            float max_l = logits[0];
+            for (int v = 1; v < vocab; v++) if (logits[v] > max_l) max_l = logits[v];
+            float sum_e = 0;
+            for (int v = 0; v < vocab; v++) sum_e += expf(logits[v] - max_l);
+            ctx->char_confidences.push_back(expf(logits[best] - max_l) / sum_e);
+        }
+
         tokens.push_back(best);
     }
 
@@ -1250,4 +1262,20 @@ const char * mixtex_ocr_recognize_gray(mixtex_ocr_context * ctx,
         rgb[i * 3] = rgb[i * 3 + 1] = rgb[i * 3 + 2] = v;
     }
     return mixtex_ocr_recognize(ctx, rgb.data(), width, height, 3, out_len);
+}
+
+const float * mixtex_ocr_confidences(const mixtex_ocr_context * ctx, int * n_chars) {
+    if (!ctx || ctx->char_confidences.empty()) {
+        if (n_chars) *n_chars = 0;
+        return nullptr;
+    }
+    if (n_chars) *n_chars = (int)ctx->char_confidences.size();
+    return ctx->char_confidences.data();
+}
+
+float mixtex_ocr_mean_confidence(const mixtex_ocr_context * ctx) {
+    if (!ctx || ctx->char_confidences.empty()) return 0.0f;
+    double sum = 0;
+    for (float c : ctx->char_confidences) sum += c;
+    return (float)(sum / ctx->char_confidences.size());
 }
