@@ -1,2 +1,0 @@
-/mnt/volume1/emsdk/upstream/emscripten/emar qc libcrisp_audio.a CMakeFiles/crisp_audio.dir/src/audio_tower.cpp.o
-/mnt/volume1/emsdk/upstream/emscripten/emranlib libcrisp_audio.a

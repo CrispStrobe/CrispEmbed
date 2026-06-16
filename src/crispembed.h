@@ -909,6 +909,24 @@ CRISPEMBED_API int crispembed_safmn_sr_process(
 CRISPEMBED_API void crispembed_safmn_sr_free_image(uint8_t * pixels);
 
 // ---------------------------------------------------------------------------
+// SwinIR-light Whole-Image Super-Resolution — JingyunLiang/SwinIR (Apache-2.0).
+// Swin Transformer for Image Restoration (ICCVW 2021).
+// Lightweight: 4 RSTB × 6 Swin blocks, embed_dim=60, ~0.9M–4.2M params.
+// Supports 2×, 3×, 4× upscale via PixelShuffle ending.
+// ---------------------------------------------------------------------------
+
+CRISPEMBED_API void * crispembed_swinir_sr_init(const char * model_path, int n_threads);
+CRISPEMBED_API void   crispembed_swinir_sr_free(void * ctx);
+CRISPEMBED_API int    crispembed_swinir_sr_scale(const void * ctx);
+
+CRISPEMBED_API int crispembed_swinir_sr_process(
+    void * ctx, const uint8_t * pixels, int width, int height,
+    int tile_size, int tile_overlap,
+    uint8_t ** out_pixels, int * out_width, int * out_height);
+
+CRISPEMBED_API void crispembed_swinir_sr_free_image(uint8_t * pixels);
+
+// ---------------------------------------------------------------------------
 // Real-ESRGAN Whole-Image Super-Resolution — xinntao/Real-ESRGAN (BSD-3).
 // 4× upscale with SRVGGNetCompact (17 Conv+PReLU + PixelShuffle). ~620K params.
 // ---------------------------------------------------------------------------
@@ -938,6 +956,20 @@ CRISPEMBED_API int crispembed_restormer_process(
     uint8_t ** out_pixels);
 
 CRISPEMBED_API void crispembed_restormer_free_image(uint8_t * pixels);
+
+// ---------------------------------------------------------------------------
+// SCUNet — Image denoising (Swin-Conv-UNet hybrid blocks). CVPR 2022.
+// U-Net combining Swin Transformer + residual Conv blocks. ~18M params, Apache-2.0.
+// ---------------------------------------------------------------------------
+
+CRISPEMBED_API void * crispembed_scunet_init(const char * model_path, int n_threads);
+CRISPEMBED_API void   crispembed_scunet_free(void * ctx);
+
+CRISPEMBED_API int crispembed_scunet_process(
+    void * ctx, const uint8_t * pixels, int width, int height,
+    uint8_t ** out_pixels);
+
+CRISPEMBED_API void crispembed_scunet_free_image(uint8_t * pixels);
 
 /// Variant with individual params (for FFI bindings that can't pass structs by value).
 CRISPEMBED_API int crispembed_scan_cleanup_process_simple(

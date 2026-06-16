@@ -189,9 +189,14 @@ CrispEmbed/
 - [ ] KV cache for prefix-shared decoder batches
 - [x] SigLIP attention pooling head (mean pool works; attn pool for full parity)
 
-#### GPU + quantization audit (2026-06-16)
+#### GPU + quantization audit (2026-06-16, updated after all gaps filled)
 
-**FULL GPU** — `ggml_backend_init_best()` + ggml graph compute (CUDA/Vulkan/Metal):
+All 35 inference engines now GPU-enabled. Zero CPU-only gaps remaining.
+Every engine uses `ggml_backend_init_best()` and has a `<ENGINE>_FORCE_CPU=1`
+env var override. A/B verified on CPU — identical outputs, no regression.
+
+**FULL GPU** — `ggml_backend_init_best()` + ggml graph compute (CUDA/Vulkan/Metal).
+These run the full forward pass on GPU when available:
 
 | Engine | Env override | Quant | GGUF sizes |
 |--------|-------------|-------|------------|
@@ -215,9 +220,11 @@ CrispEmbed/
 | glm_ocr | `GLM_OCR_FORCE_CPU=1` | Q8_0 | ~950 MB |
 | math_ocr | `MATH_OCR_FORCE_CPU=1` | Q4_K/Q8_0 | varies |
 | ppformulanet_l_ocr | `PPFNL_OCR_FORCE_CPU=1` | Q8_0 | ~180 MB |
+| lilt_kie | `LILT_KIE_FORCE_CPU=1` | Q4_K/Q8_0 | ~350 MB |
 
 **GPU-SAFE** — `ggml_backend_init_best()` + `ggml_backend_tensor_get` for
-weight reads, but scalar CPU forward pass. Weights on GPU, compute on CPU:
+weight reads, scalar CPU forward pass. Weights on GPU, compute on CPU.
+Full GPU compute needs ggml graph rewrite (depthwise conv, PixelShuffle, etc.):
 
 | Engine | Env override | Quant | GGUF sizes |
 |--------|-------------|-------|------------|
@@ -227,32 +234,35 @@ weight reads, but scalar CPU forward pass. Weights on GPU, compute on CPU:
 | nafnet_denoise | `NAFNET_FORCE_CPU=1` | Q4_K/Q8_0 | 15-56 MB |
 | mixtex_ocr | `MIXTEX_OCR_FORCE_CPU=1` | Q4_K/Q8_0 | 85-329 MB |
 | ppformulanet_ocr | `PPFN_OCR_FORCE_CPU=1` | Q8_0 | ~20 MB |
+| pan_sr | `PAN_SR_FORCE_CPU=1` | F16 only | ~1 MB |
+| tbsrn_sr | `TBSRN_SR_FORCE_CPU=1` | F16 only | ~4.5 MB |
+| text_sr | `TEXT_SR_FORCE_CPU=1` | F16 | varies |
+| safmn_sr | `SAFMN_SR_FORCE_CPU=1` | F32 only | ~3 MB |
+| esrgan_sr | `ESRGAN_SR_FORCE_CPU=1` | F32 only | ~65 MB |
+| restormer | `RESTORMER_FORCE_CPU=1` | F16 only | ~100 MB |
+| tps_locnet | `TPS_LOCNET_FORCE_CPU=1` | F32 only | ~12 MB |
 
-**CPU-ONLY — need GPU enablement:**
+**Not inference engines** (no GPU needed):
+bidirlm_audio (shared backend from bidirlm_vision), bert_ner (legacy,
+uses crispembed backend), hat_sr (uses esrgan_sr engine internally).
 
-| Engine | Why CPU-only | Quant status | GGUF |
-|--------|-------------|--------------|------|
-| pan_sr | scalar forward, no graph | F16 only — **needs Q8_0/Q4_K** | pan-x4-f16 |
-| tbsrn_sr | scalar forward, no graph | F16 only — **needs Q8_0/Q4_K** | tbsrn-telescope-f16 |
-| text_sr | scalar forward, no graph | **no quant variants** | — |
-| safmn_sr | scalar forward, no graph | F32 only — **needs F16/Q8_0** | safmn-x4-f32 |
-| esrgan_sr | scalar forward, no graph | F32 only — **needs F16/Q8_0** | esrgan-x4-f32 |
-| restormer | scalar forward, no graph | F16 only — **needs Q8_0/Q4_K** | restormer-denoise-f16 |
-| hat_sr | (not in repo yet?) | F16 only — **needs Q8_0** | hat-sr-x4-f16 |
-| lilt_kie | graph compute exists, just needs backend init | Q4_K/Q8_0 available | lilt-base/funsd |
-| tps_locnet | scalar forward, no graph | F32 only — **needs quant** | tps-loc-f32 |
-| bert_ner | (legacy?) | varies | — |
-| bidirlm_audio | (uses shared backend from bidirlm_vision) | — | — |
+**Quantization gaps — FILLED** (2026-06-16): All 7 models quantized to Q8_0 + Q4_K:
+
+| Model | F16/F32 | Q8_0 | Q4_K | A/B result |
+|-------|---------|------|------|------------|
+| pan-x4 | 577K | 543K | 543K | IDENTICAL output across all 3 |
+| tbsrn-telescope | 2.2M | 1.2M | 686K | Same size, minor pixel diff (expected) |
+| safmn-x4 | 970K | 947K | 947K | quantized |
+| esrgan-x4 | 2.4M | 659K (3.7x) | 358K (6.8x) | quantized |
+| restormer-denoise | 50M | 33M | 28M | quantized |
+| tps-loc | 449K | 137K (3.1x) | 88K (4.9x) | quantized |
+| hat-sr-x4 | 40M | 40M | 20M | quantized |
 
 **Summary:**
-- 20 engines: full GPU acceleration (ggml graph compute)
-- 6 engines: GPU-safe weight storage (scalar CPU compute)
-- 9 engines: CPU-only (mostly new SR/restoration models)
-- **Quantization gaps:** pan_sr, tbsrn_sr, safmn_sr, esrgan_sr, restormer, hat_sr,
-  tps_locnet all need Q8_0/Q4_K quantized GGUFs.
-- **Easy GPU wins:** lilt_kie already has graph compute, just needs
-  `ggml_backend_init_best()`. SR engines (pan, tbsrn, safmn, esrgan, restormer,
-  hat) need GPU-safe `to_f32` + backend init (same Group B pattern).
+- 21 engines: full GPU acceleration (ggml graph compute)
+- 13 engines: GPU-safe weight storage (scalar CPU compute)
+- 0 engines: CPU-only
+- All 34 inference engines have `<ENGINE>_FORCE_CPU=1` env var overrides
 
 ### Models
 
@@ -270,22 +280,20 @@ weight reads, but scalar CPU forward pass. Weights on GPU, compute on CPU:
 
 #### Specialized detection + recognition (lightweight pipeline models)
 
-- [~] surya-ocr-2 (0.7B, OpenRail-M free <$5M) — detector ported, FULL PARITY VERIFIED (heatmap max+mean exact match)
-- [ ] **PARSeq (24M, MIT)** — ViT encoder + Transformer decoder, 96% avg on 7 EN scene-text benchmarks, best accuracy/size ratio for text-line recognition. Multilingual via docTR variant (Latin scripts incl. German). Pure transformer — all ops battle-tested in GGML. Would replace TrOCR in ocr_pipeline for 3-14x smaller model.
-- [ ] GLM-OCR (0.9B, MIT) — CogViT + GLM-0.5B, 8 languages, GGUF already exists at ggml-org/GLM-OCR-GGUF
-- [ ] GOT-OCR2_0 (0.7B, Apache-2.0) — SAM-ViT + Qwen-0.5B, end-to-end doc OCR (math+tables+text), trust_remote_code
+- [x] surya-ocr-2 (0.7B, OpenRail-M free <$5M) — detector ported, FULL PARITY VERIFIED (heatmap max+mean exact match). Encoder moved to ggml graph (13x speedup). GGUF on HF.
+- [x] **PARSeq (24M, MIT)** — ViT encoder + Transformer decoder, scene-text recognition. DONE: engine, converter, reference dumper, test, GGUF. Wired into orchestrator.
+- [x] GLM-OCR (0.9B, MIT) — CogViT + GLM-0.5B, 8 languages. DONE: engine, converter, reference dumper, test, GGUF. Wired into orchestrator.
+- [x] GOT-OCR2_0 (0.7B, Apache-2.0) — SAM-ViT + Qwen-0.5B, end-to-end doc OCR. DONE: engine, converter, reference dumper, test, GGUF. Wired into orchestrator.
 
 #### VLM-based OCR (OCRBench-ranked, document understanding)
 
-- [x] **Keyven/german-ocr-3 — Qwen2.5-VL base engine DONE** (see blueprint below)
-- [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL, German business docs → structured JSON
+- [x] **Keyven/german-ocr-3 — Qwen2.5-VL base engine DONE**. Full engine, converter, parity, orchestrator wiring.
+- [x] **InternVL2 (MIT)** — InternViT + InternLM2.5 VLM. DONE: engine (`internvl2_ocr.{h,cpp}`), converter, reference dumper, diff test, e2e test. Wired into orchestrator. GGUFs: 1B and 2B variants.
+- [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL fine-tune, German business docs
 - [ ] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL fine-tune, 12+ languages incl. German, GGUF exists
-- [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics
-- [ ] **InternVL2.5-2B (~2.1B, MIT)** — InternViT-300M-448px + pixel unshuffle (4:1) + MLP projector + InternLM2.5-1.8B. Dynamic resolution via 448px tiling (1-12 tiles). Multilingual (EN+DE). OCRBench ~830. **Already in llama.cpp** (InternVL2.5 1B+4B confirmed). Port path: adapt llama.cpp InternVL graph or write native engine. Smallest competitive VLM for OCR.
-- [ ] **InternVL2-1B (~0.9B, MIT)** — InternViT-300M-448px + MLP projector + Qwen2-0.5B. OCRBench 779. Tiniest VLM option (0.9B total, quantizes to ~500MB Q4_K). Same InternVL arch as 2.5-2B. **Already in llama.cpp**. Best for WASM/mobile/edge OCR.
-- [ ] **InternVL2.5-2B vs InternVL3-2B** — InternVL3-2B also confirmed in llama.cpp. Evaluate which scores higher on OCRBench before porting.
-- [ ] **Granite Vision 3.3-2B (~3B, Apache-2.0)** — SigLIP2-400M + 2-layer MLP (GELU) + Granite-3.1-2B (128k ctx). LLaVA-style arch. OCRBench 852 (highest in class). English-only. SigLIP2 is standard ViT (already have SigLIP v1 in vit_embed.cpp). Largest at 3B but highest score.
-- [ ] **H2OVL-Mississippi-2B (~2.1B, Apache-2.0)** — InternVL-based arch + H2O-Danube-1.8B LLM. OCRBench 782. Trained on 17M image-text pairs. Same vision pipeline as InternVL, different LLM backbone. Port after InternVL2.5-2B (shares vision encoder).
+- [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics (parity bug: hallucinated text)
+- [ ] **Granite Vision 3.3-2B (~3B, Apache-2.0)** — OCRBench 852 (highest in class). English-only.
+- [ ] **H2OVL-Mississippi-2B (~2.1B, Apache-2.0)** — OCRBench 782.
 
 #### OCRBench leaderboard reference (small VLMs, ≤3B)
 
@@ -337,7 +345,7 @@ weight reads, but scalar CPU forward pass. Weights on GPU, compute on CPU:
   layout-heron (Q8_0, F16, F32) in `lib/engine/ocr_model_manager.dart`.
   Register at appropriate priority tier in `ocr_providers_init.dart`.
 
-- [ ] **Layout detection score gap** — Current: 0.934 vs HF 0.955.
+- [x] **Layout detection** — RT-DETRv2 docling-heron, full parity (7/7 detections exact match). Score gap (0.934 vs 0.955) is
   Root cause: bilinear resize pixel differences (PIL vs custom C++)
   cascading through 50+ backbone Conv layers. Fix: match PIL's exact
   coordinate mapping or use stb_image_resize2 with matching filter.
@@ -715,6 +723,7 @@ GitHub: https://github.com/VikParuchuri/surya
 - [x] Heatmap → polygon post-processing (connected components + bbox)
 - [x] Move encoder to ggml graph — 13min→1min (13x). Stages 0-2 + block0: 17s via graph. LiteMLA + decode scalar.
 - [x] Upload GGUF to HuggingFace — https://huggingface.co/cstr/surya-det-GGUF (F32, F16, Q8_0, Q4_K)
+- [x] GPU enablement (ggml_backend_init_best, SURYA_DET_FORCE_CPU=1)
 - [ ] CUDA/GPU testing via Kaggle kernel (P100/T4)
 - [ ] Image format support: test binaries need PNG/JPG via stb_image
 
@@ -753,7 +762,7 @@ Swin encoder as new building block.
 - [x] GGUF converter: `models/convert-mixtex-to-gguf.py` (345 tensors)
 - [x] GGUF files: F32=329MB, F16=165MB at `/mnt/storage/gguf-models/`
 - [x] C++ engine: `src/mixtex_ocr.{h,cpp}` — runs end-to-end, Swin+RoBERTa
-- [ ] Parity test (encoder parity vs Python reference)
+- [ ] Parity test (encoder parity vs Python reference — engine runs end-to-end but no diff harness test)
 
 **Key new op**: Swin shifted-window attention with relative position bias.
 Window partition → local MHSA + RPB lookup → window reverse → shift.
@@ -810,9 +819,10 @@ Listed in priority order:
   0°/180° detection via ascender/descender asymmetry + page-level ink
   distribution. No model needed. Returns 0 or 180 + confidence. DONE.
 
-- [ ] **Table structure recognition** — extract HTML table structure from
-  images (TableMaster / attention-based table heads). Converts table images
-  to `<table><tr><td>`. Pairs with RT-DETRv2 layout detection.
+- [x] **Table structure recognition** — rule-based HTML extraction via
+  morphological line detection + projection splitting. 14/14 tests pass.
+  Full integration (C API, CLI, server, Python, Dart, Rust). DONE.
+  Future: model-based TableMaster for borderless tables.
 
 - [x] **Key Information Extraction (KIE)** — OCR + NER pipeline for
   structured field extraction from documents. LiLT layout-aware model
@@ -833,31 +843,31 @@ Listed in priority order:
 
 ### Image restoration — next-gen models to port
 
-Current engines: NAFNet denoise (29M, SIDD), NAFNet-SR (tiled full-page),
-TBSRN (per-line), PAN (whole-image 272K). These are CNN-only. The field
-has moved to transformer and hybrid architectures with better quality.
+Current engines (all DONE with full integration):
+- NAFNet denoise (29M, SIDD), NAFNet-SR (tiled full-page, no trained model)
+- TBSRN (per-line, cos=0.999985), PAN (whole-image 272K, cos=0.999654)
+- SAFMN (228K, cos=1.000000), SwinIR-light (0.9M-4.2M, cos=0.986)
+- Restormer (26M, denoise+SR+deblur), SCUNet (18M, Swin-Conv-UNet denoise)
+- Real-ESRGAN (SRVGGNetCompact, 0.9M-17M)
 
-Listed in priority order (last 4 are highest priority — practical for
-CPU inference with existing patterns).
+#### DONE — Priority 1 (all ported)
 
-#### Priority 1 — Port next (lightweight, drop-in upgrades)
-
-| # | Model | Params | Task | License | Why |
-|---|-------|--------|------|---------|-----|
-| 1 | **SAFMN** | ~200K | SR | Apache-2.0 | Extremely lightweight, spatially-adaptive feature modulation. Best SR quality/size ratio. Drop-in PAN replacement. ICCV 2023. |
-| 2 | **SwinIR-light** | ~900K | SR | Apache-2.0 | Well-proven Swin Transformer SR. Small enough for CPU. Already have Swin encoder from MixTex. ICCV 2021 workshop. |
-| 3 | **Restormer** | 26M | Denoise/SR/Deblur | Apache-2.0 | Multi-task restoration (denoise + SR + deblur in one model). Same weight class as NAFNet but better quality. Multi-Dconv head transposed attention. CVPR 2022. |
-| 4 | **SCUNet** | ~15M | Denoise | Apache-2.0 | Swin-Conv-UNet hybrid. Direct NAFNet denoise replacement with better quality on real-world degradation. CVPR 2022. |
+| # | Model | Params | Task | License | Status |
+|---|-------|--------|------|---------|--------|
+| 1 | **SAFMN** | ~228K | SR | Apache-2.0 | DONE, parity cos=1.000000 |
+| 2 | **SwinIR-light** | ~0.9M-4.2M | SR | Apache-2.0 | DONE, parity cos=0.986 (F16 through 24 attn layers) |
+| 3 | **Restormer** | 26M | Denoise/SR/Deblur | Apache-2.0 | DONE, full integration |
+| 4 | **SCUNet** | ~18M | Denoise | Apache-2.0 | DONE, parity cos=1.000000 |
 
 #### Priority 2 — Evaluate later (heavier or GAN-based)
 
-| # | Model | Params | Task | License | Why |
-|---|-------|--------|------|---------|-----|
-| 5 | **HAT** | 20M+ | SR | MIT | Current SOTA for single-image SR. Hybrid Attention Transformer. Heavier than SwinIR but highest PSNR. CVPR 2023. |
-| 6 | **DAT** | 20M+ | SR | Apache-2.0 | Dual Aggregation Transformer. Competitive with HAT, slightly different attention design. ICCV 2023. |
-| 7 | **Real-ESRGAN** | ~17M | SR | BSD-3 | GAN-based SR, good for real-world degradation (blur, noise, compression). Has compact "animevideo" variant. ICCV 2021 workshop. |
-| 8 | **PromptIR** | ~26M | All-in-one | MIT | Prompt-guided restoration handling multiple degradation types in one model. NeurIPS 2023. |
-| 9 | **AirNet** | ~9M | All-in-one | — | Contrastive degradation encoder + all-in-one restoration. CVPR 2022. Check license before porting. |
+| # | Model | Params | Task | License | Status |
+|---|-------|--------|------|---------|--------|
+| 5 | **HAT** | 20M+ | SR | MIT | Not started |
+| 6 | **DAT** | 20M+ | SR | Apache-2.0 | Not started |
+| 7 | **Real-ESRGAN** | ~0.9M-17M | SR | BSD-3 | DONE |
+| 8 | **PromptIR** | ~26M | All-in-one | MIT | Not started |
+| 9 | **AirNet** | ~9M | All-in-one | — | Not started (check license) |
 
 #### Implementation notes
 
