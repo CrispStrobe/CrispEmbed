@@ -226,6 +226,7 @@ list(APPEND CRISPEMBED_SOURCES src/lilt_kie.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tps_warp.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tps_locnet.cpp)
 list(APPEND CRISPEMBED_SOURCES src/safmn_sr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/instructir.cpp)
 list(APPEND CRISPEMBED_SOURCES src/esrgan_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/swinir_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/scunet_denoise.cpp)
@@ -489,6 +490,9 @@ target_link_libraries(test-safmn-diff PRIVATE crispembed)
 
 add_executable(test-esrgan-diff tests/test_esrgan_diff.cpp)
 target_link_libraries(test-esrgan-diff PRIVATE crispembed)
+
+add_executable(test-instructir-diff tests/test_instructir_diff.cpp)
+target_link_libraries(test-instructir-diff PRIVATE crispembed)
 
 add_executable(test-scunet-diff tests/test_scunet_diff.cpp)
 target_link_libraries(test-scunet-diff PRIVATE crispembed)
