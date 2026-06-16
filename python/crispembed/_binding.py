@@ -1549,6 +1549,15 @@ def _setup_math_ocr_signatures(lib):
     ]
     lib.crispembed_math_ocr_recognize_gray.restype = ctypes.c_char_p
 
+    lib.crispembed_math_ocr_confidences.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_math_ocr_confidences.restype = ctypes.POINTER(ctypes.c_float)
+
+    lib.crispembed_math_ocr_mean_confidence.argtypes = [ctypes.c_void_p]
+    lib.crispembed_math_ocr_mean_confidence.restype = ctypes.c_float
+
 
 class CrispMathOcr:
     """Math/document OCR  - recognizes LaTeX or text from images.
@@ -1626,6 +1635,28 @@ class CrispMathOcr:
             ctypes.byref(out_len),
         )
         return result.decode("utf-8") if result else ""
+
+    def confidences(self) -> np.ndarray:
+        """Per-token confidence scores from the most recent recognize call.
+
+        Returns:
+            numpy float32 array of per-token confidence scores, shape (n_tokens,).
+            Returns an empty array if the engine does not produce token scores.
+        """
+        n = ctypes.c_int(0)
+        ptr = self._lib.crispembed_math_ocr_confidences(self._ctx, ctypes.byref(n))
+        if not ptr or n.value == 0:
+            return np.array([], dtype=np.float32)
+        return np.ctypeslib.as_array(ptr, shape=(n.value,)).copy()
+
+    @property
+    def mean_confidence(self) -> float:
+        """Mean token confidence from the most recent recognize call.
+
+        Returns:
+            Float in [0, 1], or 0.0 if no recognition has been performed yet.
+        """
+        return float(self._lib.crispembed_math_ocr_mean_confidence(self._ctx))
 
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:
@@ -3607,6 +3638,14 @@ def _setup_ocr_orchestrator_signatures(lib):
     lib.crispembed_ocr_pipeline_free.argtypes = [ctypes.c_void_p]
     lib.crispembed_ocr_pipeline_free.restype = None
 
+    lib.crispembed_ocr_pipeline_region_rec_confidence.argtypes = [
+        ctypes.c_void_p, ctypes.c_int]
+    lib.crispembed_ocr_pipeline_region_rec_confidence.restype = ctypes.c_float
+
+    lib.crispembed_ocr_pipeline_region_char_conf.argtypes = [
+        ctypes.c_void_p, ctypes.c_int, ctypes.POINTER(ctypes.c_int)]
+    lib.crispembed_ocr_pipeline_region_char_conf.restype = ctypes.POINTER(ctypes.c_float)
+
 
 class CrispOcrOrchestrator:
     """OCR orchestrator with source-type routing, cleanup, and accept-gate.
@@ -3684,6 +3723,39 @@ class CrispOcrOrchestrator:
             "mean_confidence": mean_conf.value,
             "regions": regions,
         }
+
+    def region_rec_confidence(self, region_idx: int) -> float:
+        """Return the mean per-character recognition confidence for a region.
+
+        Args:
+            region_idx: Zero-based index into the regions array from the last
+                ``run()`` call.
+
+        Returns:
+            Float in [0, 1]. Returns 0.0 for out-of-range indices or if the
+            recognizer does not produce per-region confidence.
+        """
+        return float(self._lib.crispembed_ocr_pipeline_region_rec_confidence(
+            self._ctx, ctypes.c_int(region_idx)))
+
+    def region_char_conf(self, region_idx: int) -> np.ndarray:
+        """Return per-character confidence scores for a region.
+
+        Args:
+            region_idx: Zero-based index into the regions array from the last
+                ``run()`` call.
+
+        Returns:
+            numpy float32 array of per-character confidence scores. Returns an
+            empty array when the recognizer does not expose character-level
+            confidence or the index is out of range.
+        """
+        out_len = ctypes.c_int(0)
+        ptr = self._lib.crispembed_ocr_pipeline_region_char_conf(
+            self._ctx, ctypes.c_int(region_idx), ctypes.byref(out_len))
+        if not ptr or out_len.value == 0:
+            return np.array([], dtype=np.float32)
+        return np.ctypeslib.as_array(ptr, shape=(out_len.value,)).copy()
 
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:
