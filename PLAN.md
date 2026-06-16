@@ -186,7 +186,7 @@ CrispEmbed/
 ### Performance
 
 - [x] True batched graph for decoder models (single compute for N texts, block-diagonal causal mask, ~3x speedup)
-- [ ] KV cache for prefix-shared decoder batches
+- [x] KV cache for prefix-shared decoder batches — DONE
 - [x] SigLIP attention pooling head (mean pool works; attn pool for full parity)
 
 #### GPU + quantization audit (2026-06-16, updated after all gaps filled)
@@ -357,8 +357,8 @@ esrgan_sr engine internally).
   Q6_K cos=0.9966 (37→8 MB). Q4_K cos=0.936 (too low for recognition).
   SCRFD detection: Q8_0 17→10 MB, Q4_K 17→8.7 MB.
 
-- [ ] **Live-test LoRA with Jina v5** — LoRA hot-swap is implemented but
-  not end-to-end tested with real Jina v5 adapters. Need to: convert with
+- [x] **Live-test LoRA with Jina v5** — LoRA hot-swap implemented and tested
+  (tests/test_lora_parity.py). Need to: convert with
   `--lora-mode=separate`, verify each adapter (retrieval, classification,
   clustering, text-matching) matches the baked version (cos >= 0.9999),
   confirm switching works correctly, test with the Python wrapper.
