@@ -3006,9 +3006,10 @@ extern "C" int crispembed_colbert_score_batch(
 #include "pix2struct.h"
 #include "tesseract_lstm.h"
 #include "granite_vision_ocr.h"
+#include "lightonocr.h"
 #include "core/gguf_loader.h"
 
-enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L, MATH_OCR_POSFORMER, MATH_OCR_MIXTEX, MATH_OCR_QWEN2VL, MATH_OCR_INTERNVL2, MATH_OCR_PARSEQ, MATH_OCR_GLM_OCR, MATH_OCR_GOT_OCR, MATH_OCR_TESSERACT_LSTM, MATH_OCR_GRANITE_VISION };
+enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L, MATH_OCR_POSFORMER, MATH_OCR_MIXTEX, MATH_OCR_QWEN2VL, MATH_OCR_INTERNVL2, MATH_OCR_PARSEQ, MATH_OCR_GLM_OCR, MATH_OCR_GOT_OCR, MATH_OCR_TESSERACT_LSTM, MATH_OCR_GRANITE_VISION, MATH_OCR_LIGHTONOCR };
 
 struct unified_math_ocr {
     math_ocr_type type;
@@ -3033,6 +3034,7 @@ if (arch == "glm_ocr") return MATH_OCR_GLM_OCR;
 if (arch == "got_ocr") return MATH_OCR_GOT_OCR;
 if (arch == "tesseract_lstm") return MATH_OCR_TESSERACT_LSTM;
 if (arch == "granite_vision") return MATH_OCR_GRANITE_VISION;
+if (arch == "lightonocr") return MATH_OCR_LIGHTONOCR;
     return MATH_OCR_PIX2TEX;
 }
 
@@ -3054,6 +3056,7 @@ case MATH_OCR_GLM_OCR:        inner = glm_ocr_init(path, n_threads); break;
 case MATH_OCR_GOT_OCR:        inner = got_ocr_init(path, n_threads); break;
 case MATH_OCR_TESSERACT_LSTM: inner = tesseract_lstm_init(path, n_threads); break;
 case MATH_OCR_GRANITE_VISION: inner = granite_vision_init(path, n_threads); break;
+case MATH_OCR_LIGHTONOCR:     inner = lightonocr_init(path, n_threads); break;
     }
     if (!inner) return nullptr;
     auto * u = new unified_math_ocr{type, inner};
@@ -3078,6 +3081,7 @@ case MATH_OCR_GLM_OCR:        glm_ocr_free((glm_ocr_context *)u->ctx); break;
 case MATH_OCR_GOT_OCR:        got_ocr_free((got_ocr_context *)u->ctx); break;
 case MATH_OCR_TESSERACT_LSTM: tesseract_lstm_free((tesseract_lstm_context *)u->ctx); break;
 case MATH_OCR_GRANITE_VISION: granite_vision_free((granite_vision_context *)u->ctx); break;
+case MATH_OCR_LIGHTONOCR:     lightonocr_free((lightonocr_context *)u->ctx); break;
     }
     delete u;
 }
@@ -3113,6 +3117,7 @@ case MATH_OCR_TESSERACT_LSTM: {
             return tesseract_lstm_recognize((tesseract_lstm_context *)u->ctx, gray.data(), w, h, ol);
         }
 case MATH_OCR_GRANITE_VISION: return granite_vision_recognize((granite_vision_context *)u->ctx, px, w, h, ch, nullptr, ol);
+case MATH_OCR_LIGHTONOCR:     return lightonocr_recognize_raw((lightonocr_context *)u->ctx, px, w, h, ch, ol);
     }
     return nullptr;
 }
@@ -3151,6 +3156,15 @@ case MATH_OCR_GRANITE_VISION: {
             }
             return granite_vision_recognize((granite_vision_context *)u->ctx, rgb.data(), w, h, 3, nullptr, ol);
         }
+case MATH_OCR_LIGHTONOCR: {
+            // Convert float gray → uint8 RGB for lightonocr_recognize_raw
+            std::vector<uint8_t> rgb(w * h * 3);
+            for (int i = 0; i < w * h; i++) {
+                uint8_t v = (uint8_t)(px[i] * 255.0f + 0.5f);
+                rgb[i * 3] = rgb[i * 3 + 1] = rgb[i * 3 + 2] = v;
+            }
+            return lightonocr_recognize_raw((lightonocr_context *)u->ctx, rgb.data(), w, h, 3, ol);
+        }
     }
     return nullptr;
 }
@@ -3173,6 +3187,7 @@ extern "C" const float * crispembed_math_ocr_confidences(const void * ctx, int *
         case MATH_OCR_GLM_OCR:        return glm_ocr_confidences((const glm_ocr_context *)u->ctx, n_tokens);
         case MATH_OCR_GOT_OCR:        return got_ocr_confidences((const got_ocr_context *)u->ctx, n_tokens);
         case MATH_OCR_TESSERACT_LSTM: return tesseract_lstm_confidences((const tesseract_lstm_context *)u->ctx, n_tokens);
+        case MATH_OCR_LIGHTONOCR:     return nullptr;  // lightonocr does not expose per-token confidences
         default: return nullptr;
     }
 }
@@ -3236,6 +3251,50 @@ extern "C" const float * crispembed_pix2struct_encode_patches(
         int * out_dim) {
     if (!ctx) return nullptr;
     return pix2struct_encode_patches((pix2struct_context *)ctx, patches, n_patches, out_dim);
+}
+
+// ---------------------------------------------------------------------------
+// Granite Vision OCR wrappers
+// ---------------------------------------------------------------------------
+
+extern "C" crispembed_granite_vision_context * crispembed_granite_vision_init(
+        const char * model_path, int n_threads) {
+    return (crispembed_granite_vision_context *)granite_vision_init(model_path, n_threads);
+}
+
+extern "C" void crispembed_granite_vision_free(crispembed_granite_vision_context * ctx) {
+    if (ctx) granite_vision_free((granite_vision_context *)ctx);
+}
+
+extern "C" const char * crispembed_granite_vision_recognize(
+        crispembed_granite_vision_context * ctx,
+        const uint8_t * pixels, int width, int height, int channels,
+        const char * prompt, int * out_len) {
+    if (!ctx) return nullptr;
+    return granite_vision_recognize((granite_vision_context *)ctx,
+                                    pixels, width, height, channels, prompt, out_len);
+}
+
+// ---------------------------------------------------------------------------
+// LightOnOCR wrappers
+// ---------------------------------------------------------------------------
+
+extern "C" crispembed_lightonocr_context * crispembed_lightonocr_init(
+        const char * model_path, int n_threads) {
+    return (crispembed_lightonocr_context *)lightonocr_init(model_path, n_threads);
+}
+
+extern "C" void crispembed_lightonocr_free(crispembed_lightonocr_context * ctx) {
+    if (ctx) lightonocr_free((lightonocr_context *)ctx);
+}
+
+extern "C" const char * crispembed_lightonocr_recognize(
+        crispembed_lightonocr_context * ctx,
+        const uint8_t * pixels, int width, int height, int channels,
+        int * out_len) {
+    if (!ctx) return nullptr;
+    return lightonocr_recognize_raw((lightonocr_context *)ctx,
+                                    pixels, width, height, channels, out_len);
 }
 
 extern "C" void crispembed_free(crispembed_context * ctx) {

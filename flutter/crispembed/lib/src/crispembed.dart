@@ -1359,6 +1359,176 @@ class CrispPix2Struct {
 }
 
 // ---------------------------------------------------------------------------
+// Granite Vision OCR — LLaVA-Next (OCRBench 852)
+// ---------------------------------------------------------------------------
+
+/// Granite Vision OCR (SigLIP ViT + Granite-3.1-2B decoder).
+///
+/// ```dart
+/// final gv = CrispGraniteVision('granite-vision.gguf');
+/// final text = gv.recognize(imageBytes, 800, 600);
+/// print(text);
+/// gv.dispose();
+/// ```
+class CrispGraniteVision {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedGraniteVisionRecognizeDart _recognizeFn;
+  late final CrispembedGraniteVisionFreeDart _freeFn;
+
+  /// Load a Granite Vision GGUF model.
+  ///
+  /// [modelPath] — path to the `.gguf` model file.
+  /// [nThreads] — CPU thread count (0 = auto-detect).
+  /// [libPath] — optional path to the shared library.
+  CrispGraniteVision(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedGraniteVisionInitNative,
+            CrispembedGraniteVisionInitDart>('crispembed_granite_vision_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load Granite Vision model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _recognizeFn = _lib.lookupFunction<CrispembedGraniteVisionRecognizeNative,
+        CrispembedGraniteVisionRecognizeDart>('crispembed_granite_vision_recognize');
+    _freeFn = _lib.lookupFunction<CrispembedGraniteVisionFreeNative,
+        CrispembedGraniteVisionFreeDart>('crispembed_granite_vision_free');
+  }
+
+  /// Recognize text from a raw RGB image.
+  ///
+  /// [imageBytes] — raw RGB pixel bytes, row-major (length = width * height * channels).
+  /// [width] / [height] — image dimensions.
+  /// [channels] — 3 (RGB) or 4 (RGBA).
+  /// [prompt] — optional prompt (null for default OCR prompt).
+  String recognize(Uint8List imageBytes, int width, int height,
+      {int channels = 3, String? prompt}) {
+    _checkDisposed();
+    final pixPtr = calloc<Uint8>(imageBytes.length);
+    pixPtr.asTypedList(imageBytes.length).setAll(0, imageBytes);
+    final outLen = calloc<Int32>();
+    Pointer<Utf8> promptPtr = nullptr;
+    if (prompt != null) promptPtr = prompt.toNativeUtf8();
+
+    try {
+      final result = _recognizeFn(_ctx, pixPtr, width, height, channels,
+          promptPtr, outLen);
+      if (result == nullptr) return '';
+      return result.toDartString();
+    } finally {
+      calloc.free(pixPtr);
+      calloc.free(outLen);
+      if (promptPtr != nullptr) calloc.free(promptPtr);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispGraniteVision has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// LightOnOCR — Pixtral ViT + Qwen3 decoder
+// ---------------------------------------------------------------------------
+
+/// LightOnOCR model (Pixtral ViT + Qwen3 decoder, 2-1B).
+///
+/// ```dart
+/// final locr = CrispLightOnOcr('lightonocr.gguf');
+/// final text = locr.recognize(imageBytes, 800, 600);
+/// print(text);
+/// locr.dispose();
+/// ```
+class CrispLightOnOcr {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedLightOnOcrRecognizeDart _recognizeFn;
+  late final CrispembedLightOnOcrFreeDart _freeFn;
+
+  /// Load a LightOnOCR GGUF model.
+  ///
+  /// [modelPath] — path to the `.gguf` model file.
+  /// [nThreads] — CPU thread count (0 = auto-detect).
+  /// [libPath] — optional path to the shared library.
+  CrispLightOnOcr(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedLightOnOcrInitNative,
+            CrispembedLightOnOcrInitDart>('crispembed_lightonocr_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load LightOnOCR model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _recognizeFn = _lib.lookupFunction<CrispembedLightOnOcrRecognizeNative,
+        CrispembedLightOnOcrRecognizeDart>('crispembed_lightonocr_recognize');
+    _freeFn = _lib.lookupFunction<CrispembedLightOnOcrFreeNative,
+        CrispembedLightOnOcrFreeDart>('crispembed_lightonocr_free');
+  }
+
+  /// Recognize text from a raw RGB image.
+  ///
+  /// [imageBytes] — raw RGB pixel bytes, row-major.
+  /// [width] / [height] — image dimensions.
+  /// [channels] — 3 (RGB) or 4 (RGBA).
+  String recognize(Uint8List imageBytes, int width, int height,
+      {int channels = 3}) {
+    _checkDisposed();
+    final pixPtr = calloc<Uint8>(imageBytes.length);
+    pixPtr.asTypedList(imageBytes.length).setAll(0, imageBytes);
+    final outLen = calloc<Int32>();
+
+    try {
+      final result = _recognizeFn(_ctx, pixPtr, width, height, channels,
+          outLen);
+      if (result == nullptr) return '';
+      return result.toDartString();
+    } finally {
+      calloc.free(pixPtr);
+      calloc.free(outLen);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispLightOnOcr has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // General OCR Pipeline (text detection + recognition)
 // ---------------------------------------------------------------------------
 

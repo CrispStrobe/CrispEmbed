@@ -69,7 +69,7 @@ pub struct CrispembedOcrPipelineParams {
 #[repr(C)]
 pub struct CrispembedOcrStage {
     pub source_type: c_int,   // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    pub engine: c_int,        // 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl 5=internvl2
+    pub engine: c_int,        // 0=dbnet_trocr 1=surya ... 9=pix2struct 10=granite_vision 11=lightonocr
     pub model_a: *const c_char,
     pub model_b: *const c_char,
     pub cleanup_enabled: c_int,
@@ -694,6 +694,59 @@ extern "C" {
 /// Opaque handle to a Pix2Struct context.
 #[repr(C)]
 pub struct Pix2StructContext(c_void);
+
+/// Opaque handle to a Granite Vision OCR context.
+#[repr(C)]
+pub struct GraniteVisionContext(c_void);
+
+/// Opaque handle to a LightOnOCR context.
+#[repr(C)]
+pub struct LightOnOcrContext(c_void);
+
+extern "C" {
+    // ── Granite Vision OCR ──
+
+    /// Load a Granite Vision GGUF model. Returns NULL on failure.
+    pub fn crispembed_granite_vision_init(
+        model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut GraniteVisionContext;
+
+    /// Free Granite Vision context. Safe to call with NULL.
+    pub fn crispembed_granite_vision_free(ctx: *mut GraniteVisionContext);
+
+    /// Recognize text from raw pixel bytes. prompt may be null.
+    pub fn crispembed_granite_vision_recognize(
+        ctx: *mut GraniteVisionContext,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        prompt: *const c_char,
+        out_len: *mut c_int,
+    ) -> *const c_char;
+
+    // ── LightOnOCR ──
+
+    /// Load a LightOnOCR GGUF model. Returns NULL on failure.
+    pub fn crispembed_lightonocr_init(
+        model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut LightOnOcrContext;
+
+    /// Free LightOnOCR context. Safe to call with NULL.
+    pub fn crispembed_lightonocr_free(ctx: *mut LightOnOcrContext);
+
+    /// Recognize text from raw pixel bytes (RGB/RGBA).
+    pub fn crispembed_lightonocr_recognize(
+        ctx: *mut LightOnOcrContext,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        out_len: *mut c_int,
+    ) -> *const c_char;
+}
 
 /// Opaque handle to a NER context (GLiNER zero-shot NER).
 #[repr(C)]

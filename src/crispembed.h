@@ -549,6 +549,49 @@ CRISPEMBED_API const float * crispembed_pix2struct_encode_patches(
         int * out_dim);
 
 // ---------------------------------------------------------------------------
+// Granite Vision OCR — LLaVA-Next architecture (SigLIP ViT + Granite-3.1-2B).
+// OCRBench 852, Apache-2.0 (ibm-granite).
+// ---------------------------------------------------------------------------
+
+typedef struct crispembed_granite_vision_context crispembed_granite_vision_context;
+
+/// Load a Granite Vision GGUF model. Returns NULL on failure.
+CRISPEMBED_API crispembed_granite_vision_context * crispembed_granite_vision_init(
+        const char * model_path, int n_threads);
+
+/// Free Granite Vision context. Safe to call with NULL.
+CRISPEMBED_API void crispembed_granite_vision_free(crispembed_granite_vision_context * ctx);
+
+/// Recognize text from raw pixel bytes. prompt may be NULL for default OCR prompt.
+/// Returns UTF-8 text (owned by ctx, valid until next call or free).
+/// *out_len receives the byte length of the returned string.
+CRISPEMBED_API const char * crispembed_granite_vision_recognize(
+        crispembed_granite_vision_context * ctx,
+        const uint8_t * pixels, int width, int height, int channels,
+        const char * prompt, int * out_len);
+
+// ---------------------------------------------------------------------------
+// LightOnOCR — Pixtral ViT + Qwen3 decoder (2-1B).
+// ---------------------------------------------------------------------------
+
+typedef struct crispembed_lightonocr_context crispembed_lightonocr_context;
+
+/// Load a LightOnOCR GGUF model. Returns NULL on failure.
+CRISPEMBED_API crispembed_lightonocr_context * crispembed_lightonocr_init(
+        const char * model_path, int n_threads);
+
+/// Free LightOnOCR context. Safe to call with NULL.
+CRISPEMBED_API void crispembed_lightonocr_free(crispembed_lightonocr_context * ctx);
+
+/// Recognize text from raw pixel bytes (RGB/RGBA).
+/// Returns UTF-8 text (owned by ctx, valid until next call or free).
+/// *out_len receives the byte length of the returned string.
+CRISPEMBED_API const char * crispembed_lightonocr_recognize(
+        crispembed_lightonocr_context * ctx,
+        const uint8_t * pixels, int width, int height, int channels,
+        int * out_len);
+
+// ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
 
@@ -1144,7 +1187,7 @@ CRISPEMBED_API int crispembed_scan_cleanup_process_simple(
 /// One pipeline stage: engine + models + cleanup + engine params + accept-gate.
 typedef struct crispembed_ocr_stage {
     int   source_type;   // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    int   engine;        // 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl 5=internvl2 6=tesseract 7=parseq
+    int   engine;        // 0=dbnet_trocr 1=surya 2=qwen2vl 3=got 4=parseq 5=glm 6=internvl2 7=tesseract 8=deepseek_ocr2 9=pix2struct 10=granite_vision 11=lightonocr
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
     int   cleanup_enabled;

@@ -8,7 +8,7 @@ from ._binding import (
     CrispTextSr, CrispTbsrnSr, CrispPanSr, CrispHatSr, CrispDatSr,
     CrispSafmnSr, CrispEsrganSr, CrispSwinirSr,
     CrispRestormer, CrispScunet, CrispAdaIR, CrispInstructIR,
-    CrispPix2Struct,
+    CrispPix2Struct, CrispGraniteVision, CrispLightOnOCR,
 )
 
 __all__ = [
@@ -19,7 +19,7 @@ __all__ = [
     "CrispTextSr", "CrispTbsrnSr", "CrispPanSr", "CrispHatSr", "CrispDatSr",
     "CrispSafmnSr", "CrispEsrganSr", "CrispSwinirSr",
     "CrispRestormer", "CrispScunet", "CrispAdaIR", "CrispInstructIR",
-    "CrispPix2Struct",
+    "CrispPix2Struct", "CrispGraniteVision", "CrispLightOnOCR",
 ]
 # Tracks /VERSION (the C library version). Wheel CI copies the freshly built
 # libcrispembed.{so,dylib,dll} + ggml siblings alongside this file.
