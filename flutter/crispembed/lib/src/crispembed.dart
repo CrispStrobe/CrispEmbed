@@ -1259,6 +1259,106 @@ class CrispVit {
 }
 
 // ---------------------------------------------------------------------------
+// Pix2Struct — document understanding (image → text)
+// ---------------------------------------------------------------------------
+
+/// Wraps a Pix2Struct model loaded via `crispembed_pix2struct_init`.
+///
+/// Variable-resolution ViT encoder + T5 decoder (282M params).
+/// Generates text from document/chart/screen images.
+///
+/// ```dart
+/// final p2s = CrispPix2Struct('pix2struct-base.gguf');
+/// final text = p2s.generate(imageBytes, 800, 600);
+/// print(text);
+/// p2s.dispose();
+/// ```
+class CrispPix2Struct {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  // Cached function lookups
+  late final CrispembedPix2StructGenerateDart _generateFn;
+  late final CrispembedPix2StructFreeTextDart _freeTextFn;
+  late final CrispembedPix2StructFreeDart _freeFn;
+
+  /// Load a Pix2Struct GGUF model for document understanding.
+  ///
+  /// [modelPath] — path to the `.gguf` model file.
+  /// [nThreads] — CPU thread count (0 = auto-detect).
+  /// [libPath] — optional path to the shared library.
+  CrispPix2Struct(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedPix2StructInitNative,
+            CrispembedPix2StructInitDart>('crispembed_pix2struct_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load Pix2Struct model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _generateFn = _lib.lookupFunction<CrispembedPix2StructGenerateNative,
+        CrispembedPix2StructGenerateDart>('crispembed_pix2struct_generate');
+    _freeTextFn = _lib.lookupFunction<CrispembedPix2StructFreeTextNative,
+        CrispembedPix2StructFreeTextDart>('crispembed_pix2struct_free_text');
+    _freeFn = _lib.lookupFunction<CrispembedPix2StructFreeNative,
+        CrispembedPix2StructFreeDart>('crispembed_pix2struct_free');
+  }
+
+  // ------------------------------------------------------------------
+  // Inference
+  // ------------------------------------------------------------------
+
+  /// Generate text from a raw RGB image.
+  ///
+  /// [imageBytes] — raw RGB pixel bytes, row-major (length = width * height * 3).
+  /// [width] / [height] — image dimensions.
+  /// [maxTokens] — maximum number of tokens to generate (default 256).
+  ///
+  /// Returns the generated text string, or empty string on failure.
+  String generate(Uint8List imageBytes, int width, int height,
+      {int maxTokens = 256}) {
+    _checkDisposed();
+    final pixPtr = calloc<Uint8>(imageBytes.length);
+    pixPtr.asTypedList(imageBytes.length).setAll(0, imageBytes);
+
+    try {
+      final result = _generateFn(_ctx, pixPtr, width, height, maxTokens);
+      if (result == nullptr) return '';
+      final text = result.toDartString();
+      _freeTextFn(result);
+      return text;
+    } finally {
+      calloc.free(pixPtr);
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Lifecycle
+  // ------------------------------------------------------------------
+
+  /// Release all native resources. Must be called when done.
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispPix2Struct has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // General OCR Pipeline (text detection + recognition)
 // ---------------------------------------------------------------------------
 
