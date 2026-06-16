@@ -536,6 +536,12 @@ static const ModelEntry k_registry[] = {
      "Qari Arabic OCR with diacritics (Qwen2-VL-2B fine-tune)", "1300 MB", "apache-2.0",
      "https://huggingface.co/cstr/qari-ocr-crispembed-GGUF"},
 
+    {"granite-vision",
+     "granite-vision-3.3-2b-f16.gguf",
+     "https://huggingface.co/cstr/granite-vision-crispembed-GGUF/resolve/main/granite-vision-3.3-2b-f16.gguf",
+     "Granite Vision 3.3-2B OCR (SigLIP+Granite LLM, OCRBench 852)", "5647 MB", "apache-2.0",
+     "https://huggingface.co/cstr/granite-vision-crispembed-GGUF"},
+
     {"nafnet-denoise",
      "nafnet-sidd-w32-q8_0.gguf",
      "https://huggingface.co/cstr/nafnet-sidd-GGUF/resolve/main/nafnet-sidd-w32-q8_0.gguf",
