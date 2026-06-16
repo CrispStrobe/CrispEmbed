@@ -16,6 +16,9 @@
 #include "qwen2vl_ocr.h"
 #include "internvl2_ocr.h"
 #include "deepseek_ocr2.h"
+#include "pix2struct.h"
+#include "granite_vision_ocr.h"
+#include "lightonocr.h"
 // Tesseract-LSTM line recognizer + DBNet detection (the tesseract engine pairs
 // detection with per-line tesseract recognition).
 #include "tesseract_lstm.h"
@@ -76,6 +79,9 @@ struct context {
     qwen2vl_ocr_context*     qwen   = nullptr;   // Qwen2.5-VL (single-shot VLM)
     internvl2_ocr_context*   intern = nullptr;   // InternVL2 (single-shot VLM)
     deepseek_ocr2_context*   dsocr2 = nullptr;   // DeepSeek-OCR-2 (MoE VLM)
+    pix2struct_context*      p2s    = nullptr;   // Pix2Struct (doc/chart understanding)
+    granite_vision_context*  gv     = nullptr;   // Granite Vision (LLaVA-Next)
+    lightonocr_context*      locr   = nullptr;   // LightOnOCR (Pixtral ViT + Qwen3)
     ocr_detect::context*     tess_det = nullptr; // DBNet detection for the tesseract engine
     tesseract_lstm_context*  tess   = nullptr;   // Tesseract-LSTM line recognizer
     ocr_detect::context*     parseq_det = nullptr; // DBNet detection for the parseq engine
@@ -555,6 +561,55 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             stbi_image_free(rgb);
             return results;
         }
+        case engine::pix2struct: {
+            if (!ctx->p2s) {
+                if (st.model_a.empty()) { fprintf(stderr, "ocr_orchestrator: pix2struct stage missing model_a\n"); return {}; }
+                ctx->p2s = pix2struct_init(st.model_a.c_str(), ctx->n_threads);
+                if (!ctx->p2s) { fprintf(stderr, "ocr_orchestrator: pix2struct load failed\n"); return {}; }
+            }
+            int w = 0, h = 0, c = 0;
+            unsigned char* px = stbi_load(path, &w, &h, &c, 3);
+            if (!px) return {};
+            int max_tok = st.params.vlm_max_tokens > 0 ? st.params.vlm_max_tokens : 2048;
+            const char* t = pix2struct_generate(ctx->p2s, px, w, h, max_tok);
+            auto out = wrap_fulltext(t, w, h);
+            if (t) pix2struct_free_text(t);
+            stbi_image_free(px);
+            return out;
+        }
+        case engine::granite_vision: {
+            if (!ctx->gv) {
+                if (st.model_a.empty()) { fprintf(stderr, "ocr_orchestrator: granite_vision stage missing model_a\n"); return {}; }
+                ctx->gv = granite_vision_init(st.model_a.c_str(), ctx->n_threads);
+                if (!ctx->gv) { fprintf(stderr, "ocr_orchestrator: granite_vision load failed\n"); return {}; }
+            }
+            if (st.params.vlm_max_tokens > 0) granite_vision_set_max_tokens(ctx->gv, st.params.vlm_max_tokens);
+            int w = 0, h = 0, c = 0;
+            unsigned char* px = stbi_load(path, &w, &h, &c, 3);
+            if (!px) return {};
+            int len = 0;
+            const char* prompt = st.params.vlm_prompt.empty() ? nullptr : st.params.vlm_prompt.c_str();
+            const char* t = granite_vision_recognize(ctx->gv, px, w, h, 3, prompt, &len);
+            auto out = wrap_fulltext(t, w, h);
+            stbi_image_free(px);
+            return out;
+        }
+        case engine::lightonocr: {
+            if (!ctx->locr) {
+                if (st.model_a.empty()) { fprintf(stderr, "ocr_orchestrator: lightonocr stage missing model_a\n"); return {}; }
+                ctx->locr = lightonocr_init(st.model_a.c_str(), ctx->n_threads);
+                if (!ctx->locr) { fprintf(stderr, "ocr_orchestrator: lightonocr load failed\n"); return {}; }
+            }
+            if (st.params.vlm_max_tokens > 0) lightonocr_set_max_tokens(ctx->locr, st.params.vlm_max_tokens);
+            int w = 0, h = 0, c = 0;
+            unsigned char* px = stbi_load(path, &w, &h, &c, 3);
+            if (!px) return {};
+            int len = 0;
+            const char* t = lightonocr_recognize_raw(ctx->locr, px, w, h, 3, &len);
+            auto out = wrap_fulltext(t, w, h);
+            stbi_image_free(px);
+            return out;
+        }
         default:
             fprintf(stderr, "ocr_orchestrator: engine %d not wired\n", (int)st.eng);
             return {};
@@ -723,6 +778,9 @@ static const char * engine_name(engine e) {
         case engine::internvl2:   return "internvl2";
         case engine::tesseract:      return "tesseract";
         case engine::deepseek_ocr2:  return "deepseek_ocr2";
+        case engine::pix2struct:     return "pix2struct";
+        case engine::granite_vision: return "granite_vision";
+        case engine::lightonocr:     return "lightonocr";
         default: return "unknown";
     }
 }
@@ -852,6 +910,9 @@ void free(context* ctx) {
     if (ctx->qwen)   qwen2vl_ocr_free(ctx->qwen);
     if (ctx->intern) internvl2_ocr_free(ctx->intern);
     if (ctx->dsocr2) deepseek_ocr2_free(ctx->dsocr2);
+    if (ctx->p2s)    pix2struct_free(ctx->p2s);
+    if (ctx->gv)     granite_vision_free(ctx->gv);
+    if (ctx->locr)   lightonocr_free(ctx->locr);
     if (ctx->tess_det) ocr_detect::free(ctx->tess_det);
     if (ctx->tess)   tesseract_lstm_free(ctx->tess);
     if (ctx->parseq_det) ocr_detect::free(ctx->parseq_det);

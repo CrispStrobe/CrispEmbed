@@ -4036,6 +4036,175 @@ class CrispPix2Struct:
             self._ctx = None
 
 
+def _setup_granite_vision_signatures(lib):
+    """Register ctypes signatures for crispembed_granite_vision_* functions."""
+    lib.crispembed_granite_vision_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_granite_vision_init.restype = ctypes.c_void_p
+
+    lib.crispembed_granite_vision_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_granite_vision_free.restype = None
+
+    lib.crispembed_granite_vision_recognize.argtypes = [
+        ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
+        ctypes.c_int, ctypes.c_int, ctypes.c_int,
+        ctypes.c_char_p, ctypes.POINTER(ctypes.c_int)]
+    lib.crispembed_granite_vision_recognize.restype = ctypes.c_char_p
+
+
+class CrispGraniteVision:
+    """Granite Vision OCR — LLaVA-Next architecture (OCRBench 852).
+
+    Usage::
+
+        gv = CrispGraniteVision("granite-vision.gguf")
+        text = gv.recognize("document.png")
+        print(text)
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 0, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_granite_vision_signatures(self._lib)
+        self._ctx = self._lib.crispembed_granite_vision_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load Granite Vision model: {model_path}")
+
+    def recognize(self, image_path: str, prompt: Optional[str] = None) -> str:
+        """Recognize text from a document/chart image.
+
+        Args:
+            image_path: Path to the image file (JPG/PNG/BMP).
+            prompt: Optional prompt (None for default OCR prompt).
+
+        Returns:
+            The recognized text string, or empty string on failure.
+        """
+        import numpy as np
+        from PIL import Image
+        img = Image.open(image_path).convert("RGB")
+        pixels = np.array(img, dtype=np.uint8)
+        h, w = pixels.shape[:2]
+        data = pixels.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+        out_len = ctypes.c_int(0)
+        prompt_bytes = prompt.encode("utf-8") if prompt else None
+        ptr = self._lib.crispembed_granite_vision_recognize(
+            self._ctx, data, w, h, 3, prompt_bytes, ctypes.byref(out_len))
+        if not ptr:
+            return ""
+        return ptr.decode("utf-8")
+
+    def recognize_raw(self, image_bytes: bytes, width: int, height: int,
+                      channels: int = 3, prompt: Optional[str] = None) -> str:
+        """Recognize text from raw pixel bytes.
+
+        Args:
+            image_bytes: Raw RGB(A) pixel data (row-major).
+            width:  Image width in pixels.
+            height: Image height in pixels.
+            channels: Number of channels (3=RGB, 4=RGBA).
+            prompt: Optional prompt (None for default OCR prompt).
+
+        Returns:
+            The recognized text string, or empty string on failure.
+        """
+        buf = (ctypes.c_uint8 * len(image_bytes)).from_buffer_copy(image_bytes)
+        out_len = ctypes.c_int(0)
+        prompt_bytes = prompt.encode("utf-8") if prompt else None
+        ptr = self._lib.crispembed_granite_vision_recognize(
+            self._ctx, buf, width, height, channels, prompt_bytes,
+            ctypes.byref(out_len))
+        if not ptr:
+            return ""
+        return ptr.decode("utf-8")
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_granite_vision_free(self._ctx)
+            self._ctx = None
+
+
+def _setup_lightonocr_signatures(lib):
+    """Register ctypes signatures for crispembed_lightonocr_* functions."""
+    lib.crispembed_lightonocr_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_lightonocr_init.restype = ctypes.c_void_p
+
+    lib.crispembed_lightonocr_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_lightonocr_free.restype = None
+
+    lib.crispembed_lightonocr_recognize.argtypes = [
+        ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
+        ctypes.c_int, ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.c_int)]
+    lib.crispembed_lightonocr_recognize.restype = ctypes.c_char_p
+
+
+class CrispLightOnOCR:
+    """LightOnOCR — Pixtral ViT + Qwen3 decoder.
+
+    Usage::
+
+        locr = CrispLightOnOCR("lightonocr.gguf")
+        text = locr.recognize("document.png")
+        print(text)
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 0, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_lightonocr_signatures(self._lib)
+        self._ctx = self._lib.crispembed_lightonocr_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load LightOnOCR model: {model_path}")
+
+    def recognize(self, image_path: str) -> str:
+        """Recognize text from a document image.
+
+        Args:
+            image_path: Path to the image file (JPG/PNG/BMP).
+
+        Returns:
+            The recognized text string, or empty string on failure.
+        """
+        import numpy as np
+        from PIL import Image
+        img = Image.open(image_path).convert("RGB")
+        pixels = np.array(img, dtype=np.uint8)
+        h, w = pixels.shape[:2]
+        data = pixels.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+        out_len = ctypes.c_int(0)
+        ptr = self._lib.crispembed_lightonocr_recognize(
+            self._ctx, data, w, h, 3, ctypes.byref(out_len))
+        if not ptr:
+            return ""
+        return ptr.decode("utf-8")
+
+    def recognize_raw(self, image_bytes: bytes, width: int, height: int,
+                      channels: int = 3) -> str:
+        """Recognize text from raw pixel bytes.
+
+        Args:
+            image_bytes: Raw RGB(A) pixel data (row-major).
+            width:  Image width in pixels.
+            height: Image height in pixels.
+            channels: Number of channels (3=RGB, 4=RGBA).
+
+        Returns:
+            The recognized text string, or empty string on failure.
+        """
+        buf = (ctypes.c_uint8 * len(image_bytes)).from_buffer_copy(image_bytes)
+        out_len = ctypes.c_int(0)
+        ptr = self._lib.crispembed_lightonocr_recognize(
+            self._ctx, buf, width, height, channels, ctypes.byref(out_len))
+        if not ptr:
+            return ""
+        return ptr.decode("utf-8")
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_lightonocr_free(self._ctx)
+            self._ctx = None
+
+
 def ocr_render(results: list, page_w: int, page_h: int, format: str = "text",
                lib_path: Optional[str] = None) -> str:
     """Render OCR results to text/hOCR/ALTO/PDF format.
