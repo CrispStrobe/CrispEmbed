@@ -23,3 +23,7 @@ CLAUDE.md
 handover-prompts/
 hf-cache/
 .claude/handover-*.md
+
+# accidentally-committed CMake build trees (incl. VPS-path caches)
+build-*/
+build-embed-wasm/
