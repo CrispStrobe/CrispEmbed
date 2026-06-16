@@ -1082,7 +1082,7 @@ fine-tune of this). Architecture: 32-layer ViT (1280d) + spatial merger
 | Python bindings | DONE | Via `CrispOcrPipeline` / `CrispOcrOrchestrator` |
 | CrispCalc catalog | N/A | Superceded by model_mgr registry |
 | KV cache | DONE | Prefill + single-token decode with per-layer K/V cache |
-| C++ image preprocessor | TODO | Currently uses Python-generated patches |
+| C++ image preprocessor | DONE | Qwen2VL: smart_resize+patchify, InternVL2: dynamic tiling, GOT/GLM: resize+normalize |
 | Load Keyven fine-tune | DONE | Same architecture, just different weights — runs unchanged |
 
 **GGUFs**: `cstr/qwen2.5-vl-3b-crispembed-GGUF` on HuggingFace:
