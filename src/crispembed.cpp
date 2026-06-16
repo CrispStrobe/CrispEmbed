@@ -3785,6 +3785,36 @@ extern "C" void * crispembed_kie_init(
     return kctx;
 }
 
+// LiLT-aware KIE: same as crispembed_kie_init but also wires a LiLT GGUF so the
+// pipeline runs layout-aware token classification (Phase 2). ner_model may be
+// empty when relying on LiLT alone.
+extern "C" void * crispembed_kie_init_lilt(
+        const char * ocr_det_model, const char * ocr_rec_model,
+        const char * ner_model, const char * lilt_model, int n_threads) {
+    if (!ocr_det_model || !ocr_rec_model) return nullptr;
+
+    kie_pipeline::config cfg;
+    cfg.ocr = ocr_orchestrator::default_config();
+    for (auto& chain : cfg.ocr.chains) {
+        for (auto& stage : chain.stages) {
+            if (stage.eng == ocr_orchestrator::engine::dbnet_trocr) {
+                stage.model_a = ocr_det_model;
+                stage.model_b = ocr_rec_model;
+            }
+        }
+    }
+    if (ner_model && *ner_model) cfg.ner_model = ner_model;
+    if (lilt_model && *lilt_model) cfg.lilt_model = lilt_model;
+    cfg.threshold = 0.5f;
+
+    auto* kctx = new crispembed_kie_ctx;
+    if (!kie_pipeline::load(&kctx->pipe, cfg, n_threads)) {
+        delete kctx;
+        return nullptr;
+    }
+    return kctx;
+}
+
 extern "C" crispembed_kie_result crispembed_kie_extract(
         void * ptr, const char * image_path,
         const char ** labels, int n_labels,

@@ -786,6 +786,15 @@ CRISPEMBED_API void * crispembed_kie_init(
     const char * ner_model,       // GLiNER NER GGUF
     int n_threads);
 
+/// Like crispembed_kie_init but also wires a LiLT GGUF for layout-aware token
+/// classification (Phase 2). ner_model / lilt_model may be "" / NULL.
+CRISPEMBED_API void * crispembed_kie_init_lilt(
+    const char * ocr_det_model,
+    const char * ocr_rec_model,
+    const char * ner_model,
+    const char * lilt_model,
+    int n_threads);
+
 /// Extract structured fields from a document image.
 /// labels: array of field names to extract (e.g. "total", "date", "vendor")
 /// n_labels: number of labels
