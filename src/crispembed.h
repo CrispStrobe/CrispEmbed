@@ -939,6 +939,22 @@ CRISPEMBED_API int crispembed_restormer_process(
 
 CRISPEMBED_API void crispembed_restormer_free_image(uint8_t * pixels);
 
+// ---------------------------------------------------------------------------
+// HAT — Hybrid Attention Transformer SR. CVPR 2023, MIT license.
+// SOTA single-image SR. Window attention + OCAB + CAB. ~21M params.
+// ---------------------------------------------------------------------------
+
+CRISPEMBED_API void * crispembed_hat_sr_init(const char * model_path, int n_threads);
+CRISPEMBED_API void   crispembed_hat_sr_free(void * ctx);
+CRISPEMBED_API int    crispembed_hat_sr_scale(const void * ctx);
+
+CRISPEMBED_API int crispembed_hat_sr_process(
+    void * ctx, const uint8_t * pixels, int width, int height,
+    int tile_size, int tile_overlap,
+    uint8_t ** out_pixels, int * out_width, int * out_height);
+
+CRISPEMBED_API void crispembed_hat_sr_free_image(uint8_t * pixels);
+
 /// Variant with individual params (for FFI bindings that can't pass structs by value).
 CRISPEMBED_API int crispembed_scan_cleanup_process_simple(
     void * ctx,

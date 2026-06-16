@@ -2118,6 +2118,122 @@ class CrispPanSr {
   }
 }
 
+// ---------------------------------------------------------------------------
+// HAT Super-Resolution (Hybrid Attention Transformer, CVPR 2023)
+// ---------------------------------------------------------------------------
+
+/// Result from HAT super-resolution upscaling.
+class HatSrResult {
+  final Uint8List pixels;
+  final int width;
+  final int height;
+
+  const HatSrResult({
+    required this.pixels,
+    required this.width,
+    required this.height,
+  });
+}
+
+/// HAT super-resolution model — upscales low-DPI document images (CVPR 2023 SOTA, 21M params).
+class CrispHatSr {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedHatSrFreeDart _freeFn;
+  late final CrispembedHatSrScaleDart _scaleFn;
+  late final CrispembedHatSrProcessDart _processFn;
+  late final CrispembedHatSrFreeImageDart _freeImageFn;
+
+  CrispHatSr(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedHatSrInitNative, CrispembedHatSrInitDart>(
+            'crispembed_hat_sr_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load HAT SR model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _freeFn = _lib.lookupFunction<CrispembedHatSrFreeNative,
+        CrispembedHatSrFreeDart>('crispembed_hat_sr_free');
+    _scaleFn = _lib.lookupFunction<CrispembedHatSrScaleNative,
+        CrispembedHatSrScaleDart>('crispembed_hat_sr_scale');
+    _processFn = _lib.lookupFunction<CrispembedHatSrProcessNative,
+        CrispembedHatSrProcessDart>('crispembed_hat_sr_process');
+    _freeImageFn = _lib.lookupFunction<CrispembedHatSrFreeImageNative,
+        CrispembedHatSrFreeImageDart>('crispembed_hat_sr_free_image');
+  }
+
+  int get scale {
+    _checkDisposed();
+    return _scaleFn(_ctx);
+  }
+
+  HatSrResult process(
+    Uint8List pixels,
+    int width,
+    int height, {
+    int tileSize = 64,
+    int tileOverlap = 8,
+  }) {
+    _checkDisposed();
+    if (pixels.length != width * height * 3) {
+      throw ArgumentError(
+          'pixels.length (${pixels.length}) must equal width * height * 3 (${width * height * 3})');
+    }
+
+    final pxNative = calloc<Uint8>(pixels.length);
+    pxNative.asTypedList(pixels.length).setAll(0, pixels);
+
+    final outPxPtr = calloc<Pointer<Uint8>>();
+    final outW = calloc<Int32>();
+    final outH = calloc<Int32>();
+
+    try {
+      final rc = _processFn(
+          _ctx, pxNative, width, height, tileSize, tileOverlap,
+          outPxPtr, outW, outH);
+
+      if (rc != 0 || outPxPtr.value.address == 0) {
+        throw Exception('HAT SR process failed (rc=$rc)');
+      }
+
+      final ow = outW.value;
+      final oh = outH.value;
+      final resultPixels =
+          Uint8List.fromList(outPxPtr.value.asTypedList(ow * oh * 3));
+      _freeImageFn(outPxPtr.value);
+
+      return HatSrResult(pixels: resultPixels, width: ow, height: oh);
+    } finally {
+      calloc.free(pxNative);
+      calloc.free(outPxPtr);
+      calloc.free(outW);
+      calloc.free(outH);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispHatSr has been disposed');
+  }
+}
+
 /// Result from SAFMN super-resolution.
 class SafmnSrResult {
   final Uint8List pixels;
