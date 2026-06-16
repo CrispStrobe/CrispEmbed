@@ -105,6 +105,34 @@ else()
 endif()
 
 # ---------------------------------------------------------------------------
+# crisp_lid — shared text LID library, lives in CrispASR.
+# Enables OCR language routing (pick Tesseract model by detected language).
+# ---------------------------------------------------------------------------
+set(CRISP_LID_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../CrispASR/crisp_lid"
+    CACHE PATH "Path to CrispASR's crisp_lid subdirectory")
+set(CRISPEMBED_HAS_CRISP_LID OFF)
+if(EXISTS "${CRISP_LID_DIR}/CMakeLists.txt")
+    message(STATUS "crispembed: linking crisp_lid from ${CRISP_LID_DIR}")
+    set(CRISPEMBED_HAS_CRISP_LID ON)
+else()
+    message(STATUS "crispembed: crisp_lid not found at ${CRISP_LID_DIR} — LID disabled")
+endif()
+
+# ---------------------------------------------------------------------------
+# crisp_truecase — shared truecasing library, lives in CrispASR.
+# Post-OCR truecasing (German noun capitalization, etc.).
+# ---------------------------------------------------------------------------
+set(CRISP_TRUECASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../CrispASR/crisp_truecase"
+    CACHE PATH "Path to CrispASR's crisp_truecase subdirectory")
+set(CRISPEMBED_HAS_CRISP_TRUECASE OFF)
+if(EXISTS "${CRISP_TRUECASE_DIR}/CMakeLists.txt")
+    message(STATUS "crispembed: linking crisp_truecase from ${CRISP_TRUECASE_DIR}")
+    set(CRISPEMBED_HAS_CRISP_TRUECASE ON)
+else()
+    message(STATUS "crispembed: crisp_truecase not found at ${CRISP_TRUECASE_DIR} — truecasing disabled")
+endif()
+
+# ---------------------------------------------------------------------------
 # Core GGUF loader library
 # ---------------------------------------------------------------------------
 add_library(crispembed-core STATIC
@@ -123,6 +151,14 @@ target_link_libraries(crispembed-core PUBLIC ggml ggml-base)
 if(CRISPEMBED_HAS_CRISP_PUNC)
     add_subdirectory(${CRISP_PUNC_DIR}
                      ${CMAKE_BINARY_DIR}/crisp_punc)
+endif()
+if(CRISPEMBED_HAS_CRISP_LID)
+    add_subdirectory(${CRISP_LID_DIR}
+                     ${CMAKE_BINARY_DIR}/crisp_lid)
+endif()
+if(CRISPEMBED_HAS_CRISP_TRUECASE)
+    add_subdirectory(${CRISP_TRUECASE_DIR}
+                     ${CMAKE_BINARY_DIR}/crisp_truecase)
 endif()
 if(CRISPEMBED_HAS_CRISP_AUDIO)
     add_subdirectory(${CRISP_AUDIO_DIR}
@@ -226,6 +262,12 @@ if(CRISPEMBED_HAS_CRISP_AUDIO)
 endif()
 if(CRISPEMBED_HAS_CRISP_PUNC)
     target_link_libraries(crispembed PUBLIC crisp_punc)
+endif()
+if(CRISPEMBED_HAS_CRISP_LID)
+    target_link_libraries(crispembed PUBLIC crisp_lid)
+endif()
+if(CRISPEMBED_HAS_CRISP_TRUECASE)
+    target_link_libraries(crispembed PUBLIC crisp_truecase)
 endif()
 
 # ---------------------------------------------------------------------------
@@ -528,6 +570,12 @@ if(CRISPEMBED_BUILD_SHARED)
     endif()
     if(CRISPEMBED_HAS_CRISP_PUNC)
         target_link_libraries(crispembed-shared PRIVATE crisp_punc)
+    endif()
+    if(CRISPEMBED_HAS_CRISP_LID)
+        target_link_libraries(crispembed-shared PRIVATE crisp_lid)
+    endif()
+    if(CRISPEMBED_HAS_CRISP_TRUECASE)
+        target_link_libraries(crispembed-shared PRIVATE crisp_truecase)
     endif()
 
     set_target_properties(crispembed-shared PROPERTIES
