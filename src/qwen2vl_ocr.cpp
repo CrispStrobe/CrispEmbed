@@ -1597,6 +1597,7 @@ bool generate(context &ctx,
     }
 
     // Greedy: argmax prefill logits at last position
+    out.token_confidences.clear();
     const float *last_logits = prefill.logits + (size_t)(n_prompt_tokens - 1) * V;
     int best_id = 0;
     float best_score = -INFINITY;
@@ -1606,6 +1607,15 @@ bool generate(context &ctx,
             best_id = v;
         }
     }
+
+    // Confidence: numerically-stable softmax for winning token
+    {
+        float max_l = best_score;
+        float sum_exp = 0.0f;
+        for (int v = 0; v < V; v++) sum_exp += expf(last_logits[v] - max_l);
+        out.token_confidences.push_back(expf(best_score - max_l) / sum_exp);
+    }
+
     if (prefill.hidden) free(prefill.hidden);
     free(prefill.logits);
     // Free prefill graph context (KV already extracted to k_cache/v_cache)
@@ -1640,6 +1650,12 @@ bool generate(context &ctx,
             best_id = 0; best_score = -INFINITY;
             for (int v = 0; v < V; v++) {
                 if (last_logits[v] > best_score) { best_score = last_logits[v]; best_id = v; }
+            }
+            {
+                float max_l = best_score;
+                float sum_exp = 0.0f;
+                for (int v = 0; v < V; v++) sum_exp += expf(last_logits[v] - max_l);
+                out.token_confidences.push_back(expf(best_score - max_l) / sum_exp);
             }
             if (fwd.hidden) free(fwd.hidden);
             free(fwd.logits);
@@ -1730,6 +1746,13 @@ bool generate(context &ctx,
             best_id = 0; best_score = -INFINITY;
             for (int v = 0; v < V; v++) {
                 if (logits_data[v] > best_score) { best_score = logits_data[v]; best_id = v; }
+            }
+
+            {
+                float max_l = best_score;
+                float sum_exp = 0.0f;
+                for (int v = 0; v < V; v++) sum_exp += expf(logits_data[v] - max_l);
+                out.token_confidences.push_back(expf(best_score - max_l) / sum_exp);
             }
 
             // Append new K/V to cache
@@ -1848,6 +1871,7 @@ struct qwen2vl_ocr_context {
     std::vector<int32_t> prompt_ids;  // cached tokenized prompt
     int max_tokens = 512;
     std::string last_result;
+    std::vector<float> char_confidences;
 
     // Special token IDs (from GGUF metadata)
     int32_t im_start_id = 151644;
@@ -2065,6 +2089,8 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx,
         return nullptr;
     }
 
+    ctx->char_confidences = std::move(gen.token_confidences);
+
     // 4. Decode token IDs to text
     if (ctx->has_tokenizer) {
         ctx->last_result = gpt2_bpe_decode(gen.token_ids, ctx->tokenizer.get_vocab());
@@ -2129,5 +2155,21 @@ const char * qwen2vl_ocr_recognize(
     }
 
     return qwen2vl_ocr_recognize_raw(ctx, rgb.data(), width, height, 3, out_len);
+}
+
+const float * qwen2vl_ocr_confidences(const qwen2vl_ocr_context * ctx, int * n_tokens) {
+    if (!ctx || ctx->char_confidences.empty()) {
+        if (n_tokens) *n_tokens = 0;
+        return nullptr;
+    }
+    if (n_tokens) *n_tokens = (int)ctx->char_confidences.size();
+    return ctx->char_confidences.data();
+}
+
+float qwen2vl_ocr_mean_confidence(const qwen2vl_ocr_context * ctx) {
+    if (!ctx || ctx->char_confidences.empty()) return 0.0f;
+    double sum = 0;
+    for (float c : ctx->char_confidences) sum += c;
+    return (float)(sum / ctx->char_confidences.size());
 }
 

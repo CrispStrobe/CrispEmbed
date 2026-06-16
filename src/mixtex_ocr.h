@@ -54,6 +54,15 @@ const char * mixtex_ocr_recognize_gray(mixtex_ocr_context * ctx,
                                         int width, int height,
                                         int * out_len);
 
+/// Get per-character confidence scores from the last recognition.
+/// Returns array of length *n_chars (one per output token).
+/// Each value is the softmax probability of the winning token.
+/// Valid until the next recognize call. Returns NULL if no recognition done.
+const float * mixtex_ocr_confidences(const mixtex_ocr_context * ctx, int * n_chars);
+
+/// Get mean confidence across all tokens from the last recognition.
+float mixtex_ocr_mean_confidence(const mixtex_ocr_context * ctx);
+
 #ifdef __cplusplus
 }
 #endif

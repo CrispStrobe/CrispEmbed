@@ -217,6 +217,7 @@ bool run_llm_forward(context &ctx,
 struct generate_result {
     std::vector<int32_t> token_ids;
     std::string text;
+    std::vector<float> token_confidences;
 };
 
 bool generate(context &ctx,
@@ -261,6 +262,9 @@ const char * qwen2vl_ocr_recognize(
     const float * pixels,
     int width, int height,
     int * out_len);
+
+const float * qwen2vl_ocr_confidences(const qwen2vl_ocr_context * ctx, int * n_tokens);
+float qwen2vl_ocr_mean_confidence(const qwen2vl_ocr_context * ctx);
 
 #ifdef __cplusplus
 }
