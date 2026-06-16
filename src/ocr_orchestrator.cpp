@@ -232,14 +232,21 @@ static std::string clean_to_temp(context* ctx, const cleanup_profile& cp,
 // Wrap a single-shot VLM engine's whole-image text as one region covering the
 // full image. VLMs don't expose per-region confidence, so use 1.0.
 static std::vector<ocr_pipeline::ocr_result> wrap_fulltext(const char* text,
-                                                           int w, int h) {
+                                                           int w, int h,
+                                                           const float* conf = nullptr,
+                                                           int n_conf = 0,
+                                                           float mean = 0.0f) {
     std::vector<ocr_pipeline::ocr_result> out;
     if (text && *text) {
         ocr_pipeline::ocr_result r;
         r.box.x = 0.0f; r.box.y = 0.0f;
         r.box.w = (float)w; r.box.h = (float)h;
         r.box.score = 1.0f;
-        r.confidence = 1.0f;
+        // Recognition confidence (mean per-token softmax) when the engine
+        // exposes it; per-token vector kept for the proofreading UI.
+        r.rec_confidence = mean;
+        r.confidence = (mean > 0.0f) ? mean : 1.0f;
+        if (conf && n_conf > 0) r.char_conf.assign(conf, conf + n_conf);
         r.text = text;
         out.push_back(std::move(r));
     }
@@ -311,7 +318,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             if (!px) return {};
             int len = 0;
             const char* t = got_ocr_recognize_raw(ctx->got, px, w, h, 3, &len);
-            auto out = wrap_fulltext(t, w, h);
+            int nconf = 0;
+            const float* conf = got_ocr_confidences(ctx->got, &nconf);
+            auto out = wrap_fulltext(t, w, h, conf, nconf, got_ocr_mean_confidence(ctx->got));
             stbi_image_free(px);
             return out;
         }
@@ -326,7 +335,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             if (!px) return {};
             int len = 0;
             const char* t = glm_ocr_recognize_raw(ctx->glm, px, w, h, 3, &len);
-            auto out = wrap_fulltext(t, w, h);
+            int nconf = 0;
+            const float* conf = glm_ocr_confidences(ctx->glm, &nconf);
+            auto out = wrap_fulltext(t, w, h, conf, nconf, glm_ocr_mean_confidence(ctx->glm));
             stbi_image_free(px);
             return out;
         }
@@ -343,7 +354,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             if (!px) return {};
             int len = 0;
             const char* t = qwen2vl_ocr_recognize_raw(ctx->qwen, px, w, h, 3, &len);
-            auto out = wrap_fulltext(t, w, h);
+            int nconf = 0;
+            const float* conf = qwen2vl_ocr_confidences(ctx->qwen, &nconf);
+            auto out = wrap_fulltext(t, w, h, conf, nconf, qwen2vl_ocr_mean_confidence(ctx->qwen));
             stbi_image_free(px);
             return out;
         }
@@ -360,7 +373,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             if (!px) return {};
             int len = 0;
             const char* t = internvl2_ocr_recognize_raw(ctx->intern, px, w, h, 3, &len);
-            auto out = wrap_fulltext(t, w, h);
+            int nconf = 0;
+            const float* conf = internvl2_ocr_confidences(ctx->intern, &nconf);
+            auto out = wrap_fulltext(t, w, h, conf, nconf, internvl2_ocr_mean_confidence(ctx->intern));
             stbi_image_free(px);
             return out;
         }
@@ -444,8 +459,10 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
                     double s = 0.0;
                     for (int k = 0; k < n_conf; k++) s += conf[k];
                     mean = (float)(s / n_conf);
+                    r.char_conf.assign(conf, conf + n_conf);
                 }
                 r.confidence = mean;
+                r.rec_confidence = mean;
                 r.text = std::string(t, len);
                 if (!r.text.empty()) results.push_back(std::move(r));
             }
