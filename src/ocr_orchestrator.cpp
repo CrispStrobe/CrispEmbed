@@ -15,6 +15,7 @@
 #include "glm_ocr.h"
 #include "qwen2vl_ocr.h"
 #include "internvl2_ocr.h"
+#include "deepseek_ocr2.h"
 // Tesseract-LSTM line recognizer + DBNet detection (the tesseract engine pairs
 // detection with per-line tesseract recognition).
 #include "tesseract_lstm.h"
@@ -73,6 +74,7 @@ struct context {
     glm_ocr_context*         glm    = nullptr;   // GLM-OCR (single-shot VLM)
     qwen2vl_ocr_context*     qwen   = nullptr;   // Qwen2.5-VL (single-shot VLM)
     internvl2_ocr_context*   intern = nullptr;   // InternVL2 (single-shot VLM)
+    deepseek_ocr2_context*   dsocr2 = nullptr;   // DeepSeek-OCR-2 (MoE VLM)
     ocr_detect::context*     tess_det = nullptr; // DBNet detection for the tesseract engine
     tesseract_lstm_context*  tess   = nullptr;   // Tesseract-LSTM line recognizer
     scan_cleanup_ctx*        clean1 = nullptr;   // tier-1 classical (model = NULL)
@@ -379,6 +381,23 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             stbi_image_free(px);
             return out;
         }
+        case engine::deepseek_ocr2: {
+            if (!ctx->dsocr2) {
+                if (st.model_a.empty()) { fprintf(stderr, "ocr_orchestrator: deepseek_ocr2 stage missing model_a\n"); return {}; }
+                ctx->dsocr2 = deepseek_ocr2_init(st.model_a.c_str(), ctx->n_threads);
+                if (!ctx->dsocr2) { fprintf(stderr, "ocr_orchestrator: deepseek_ocr2 load failed\n"); return {}; }
+            }
+            int w = 0, h = 0, c = 0;
+            unsigned char* px = stbi_load(path, &w, &h, &c, 3);
+            if (!px) return {};
+            int len = 0;
+            const char* t = deepseek_ocr2_recognize_raw(ctx->dsocr2, px, w, h, 3, &len);
+            int nconf = 0;
+            const float* conf = deepseek_ocr2_confidences(ctx->dsocr2, &nconf);
+            auto out = wrap_fulltext(t, w, h, conf, nconf, deepseek_ocr2_mean_confidence(ctx->dsocr2));
+            stbi_image_free(px);
+            return out;
+        }
         case engine::tesseract: {
             // DBNet detection (model_a) + per-line Tesseract-LSTM recognition
             // (model_b). Tesseract-LSTM recognizes a single text line, so each
@@ -638,7 +657,8 @@ static const char * engine_name(engine e) {
         case engine::glm:         return "glm";
         case engine::qwen2vl:     return "qwen2vl";
         case engine::internvl2:   return "internvl2";
-        case engine::tesseract:   return "tesseract";
+        case engine::tesseract:      return "tesseract";
+        case engine::deepseek_ocr2:  return "deepseek_ocr2";
         default: return "unknown";
     }
 }
@@ -767,6 +787,7 @@ void free(context* ctx) {
     if (ctx->glm)    glm_ocr_free(ctx->glm);
     if (ctx->qwen)   qwen2vl_ocr_free(ctx->qwen);
     if (ctx->intern) internvl2_ocr_free(ctx->intern);
+    if (ctx->dsocr2) deepseek_ocr2_free(ctx->dsocr2);
     if (ctx->tess_det) ocr_detect::free(ctx->tess_det);
     if (ctx->tess)   tesseract_lstm_free(ctx->tess);
     if (ctx->clean1) scan_cleanup_free(ctx->clean1);
