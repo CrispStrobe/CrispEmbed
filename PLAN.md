@@ -246,8 +246,17 @@ Full GPU compute needs ggml graph rewrite (depthwise conv, PixelShuffle, etc.):
 bidirlm_audio (shared backend from bidirlm_vision), bert_ner (legacy,
 uses crispembed backend), hat_sr (uses esrgan_sr engine internally).
 
-**Quantization gaps** (only F16/F32 GGUFs, no Q8_0/Q4_K):
-pan_sr, tbsrn_sr, safmn_sr, esrgan_sr, restormer, tps_locnet.
+**Quantization gaps — FILLED** (2026-06-16): All 7 models quantized to Q8_0 + Q4_K:
+
+| Model | F16/F32 | Q8_0 | Q4_K | A/B result |
+|-------|---------|------|------|------------|
+| pan-x4 | 577K | 543K | 543K | IDENTICAL output across all 3 |
+| tbsrn-telescope | 2.2M | 1.2M | 686K | Same size, minor pixel diff (expected) |
+| safmn-x4 | 970K | 947K | 947K | quantized |
+| esrgan-x4 | 2.4M | 659K (3.7x) | 358K (6.8x) | quantized |
+| restormer-denoise | 50M | 33M | 28M | quantized |
+| tps-loc | 449K | 137K (3.1x) | 88K (4.9x) | quantized |
+| hat-sr-x4 | 40M | 40M | 20M | quantized |
 
 **Summary:**
 - 21 engines: full GPU acceleration (ggml graph compute)
