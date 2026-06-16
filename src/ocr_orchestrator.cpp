@@ -19,6 +19,7 @@
 // Tesseract-LSTM line recognizer + DBNet detection (the tesseract engine pairs
 // detection with per-line tesseract recognition).
 #include "tesseract_lstm.h"
+#include "parseq_ocr.h"
 #include "ocr_detect.h"
 // Text super-resolution (low-DPI upscale before OCR).
 #include "text_sr.h"
@@ -77,6 +78,8 @@ struct context {
     deepseek_ocr2_context*   dsocr2 = nullptr;   // DeepSeek-OCR-2 (MoE VLM)
     ocr_detect::context*     tess_det = nullptr; // DBNet detection for the tesseract engine
     tesseract_lstm_context*  tess   = nullptr;   // Tesseract-LSTM line recognizer
+    ocr_detect::context*     parseq_det = nullptr; // DBNet detection for the parseq engine
+    parseq_ocr_context*      parseq = nullptr;   // PARSeq scene-text recognizer (per-char conf)
     scan_cleanup_ctx*        clean1 = nullptr;   // tier-1 classical (model = NULL)
     scan_cleanup_ctx*        clean2 = nullptr;   // tier-2 NAFNet (model = nafnet_model)
     text_sr_context*         sr     = nullptr;   // NAFNet-SR (low-DPI upscale)
@@ -488,10 +491,71 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             stbi_image_free(gray);
             return results;
         }
-        case engine::parseq:
+        case engine::parseq: {
+            // DBNet detection (model_a) + per-region PARSeq recognition
+            // (model_b). PARSeq is a scene-text recognizer for a single cropped
+            // line/word, so each detected region is cropped (RGB) and recognized
+            // in turn. PARSeq exposes per-character confidence (1:1 with chars).
+            if (!ctx->parseq_det) {
+                if (st.model_a.empty() || st.model_b.empty()) {
+                    fprintf(stderr, "ocr_orchestrator: parseq stage missing models "
+                            "(model_a=det, model_b=parseq)\n");
+                    return {};
+                }
+                if (!ocr_detect::load(&ctx->parseq_det, st.model_a.c_str(), ctx->n_threads)) {
+                    fprintf(stderr, "ocr_orchestrator: parseq detection load failed\n");
+                    ctx->parseq_det = nullptr;
+                    return {};
+                }
+            }
+            if (!ctx->parseq) {
+                ctx->parseq = parseq_ocr_init(st.model_b.c_str(), ctx->n_threads);
+                if (!ctx->parseq) {
+                    fprintf(stderr, "ocr_orchestrator: parseq load failed: %s\n", st.model_b.c_str());
+                    return {};
+                }
+            }
+            auto boxes = ocr_detect::detect_file(ctx->parseq_det, path,
+                                                 st.params.det_prob_threshold,
+                                                 st.params.det_box_threshold,
+                                                 1.5f, st.params.det_target_short);
+            if (boxes.empty()) return {};
+            int w = 0, h = 0, c = 0;
+            unsigned char* rgb = stbi_load(path, &w, &h, &c, 3); // force RGB
+            if (!rgb) return {};
+            std::vector<ocr_pipeline::ocr_result> results;
+            results.reserve(boxes.size());
+            const int pad = 2;
+            for (auto& b : boxes) {
+                int cx = std::max(0, (int)b.x - pad);
+                int cy = std::max(0, (int)b.y - pad);
+                int cw = std::min((int)b.w + 2 * pad, w - cx);
+                int chh = std::min((int)b.h + 2 * pad, h - cy);
+                if (cw <= 0 || chh <= 0) continue;
+                std::vector<uint8_t> crop((size_t)cw * chh * 3);
+                for (int y = 0; y < chh; y++) {
+                    std::memcpy(crop.data() + (size_t)y * cw * 3,
+                                rgb + ((size_t)(cy + y) * w + cx) * 3, (size_t)cw * 3);
+                }
+                int len = 0;
+                const char* t = parseq_ocr_recognize_raw(ctx->parseq, crop.data(), cw, chh, 3, &len);
+                if (!t || len <= 0) continue;
+                ocr_pipeline::ocr_result r;
+                r.box = b;
+                int n_conf = 0;
+                const float* conf = parseq_ocr_confidences(ctx->parseq, &n_conf);
+                float mean = parseq_ocr_mean_confidence(ctx->parseq);
+                if (mean <= 0.0f) mean = b.score;
+                if (conf && n_conf > 0) r.char_conf.assign(conf, conf + n_conf);
+                r.confidence = mean;
+                r.rec_confidence = mean;
+                r.text = std::string(t, len);
+                if (!r.text.empty()) results.push_back(std::move(r));
+            }
+            stbi_image_free(rgb);
+            return results;
+        }
         default:
-            // ParSeq is a scene-text recognizer (needs detection); not a
-            // standalone document engine — skip in the orchestrator for now.
             fprintf(stderr, "ocr_orchestrator: engine %d not wired\n", (int)st.eng);
             return {};
     }
@@ -790,6 +854,8 @@ void free(context* ctx) {
     if (ctx->dsocr2) deepseek_ocr2_free(ctx->dsocr2);
     if (ctx->tess_det) ocr_detect::free(ctx->tess_det);
     if (ctx->tess)   tesseract_lstm_free(ctx->tess);
+    if (ctx->parseq_det) ocr_detect::free(ctx->parseq_det);
+    if (ctx->parseq) parseq_ocr_free(ctx->parseq);
     if (ctx->clean1) scan_cleanup_free(ctx->clean1);
     if (ctx->clean2) scan_cleanup_free(ctx->clean2);
     if (ctx->sr)     text_sr_free(ctx->sr);
