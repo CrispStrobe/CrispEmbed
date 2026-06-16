@@ -1795,6 +1795,94 @@ impl Drop for CrispPanSr {
 }
 
 // ---------------------------------------------------------------------------
+// HAT super-resolution (Hybrid Attention Transformer, CVPR 2023)
+// ---------------------------------------------------------------------------
+
+/// HAT whole-image super-resolution (Hybrid Attention Transformer, 21M params, CVPR 2023 SOTA).
+///
+/// ```no_run
+/// let sr = CrispHatSr::new("hat-sr-x4-f16.gguf", 4).unwrap();
+/// println!("scale: {}", sr.scale());
+/// let (pixels, out_w, out_h) = sr.process(&rgb_bytes, 320, 240, 64, 8).unwrap();
+/// ```
+pub struct CrispHatSr {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispHatSr {}
+
+impl CrispHatSr {
+    /// Load a HAT GGUF model.
+    ///
+    /// - `model_path` -- path to the `.gguf` file.
+    /// - `n_threads`  -- CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_hat_sr_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_hat_sr_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Return the scale factor reported by the model (e.g. 2 or 4).
+    pub fn scale(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_hat_sr_scale(self.ctx) }
+    }
+
+    /// Upscale an RGB image.
+    ///
+    /// - `pixels`       -- RGB uint8 bytes (h * w * 3).
+    /// - `width`/`height` -- input image dimensions.
+    /// - `tile_size`    -- tile size for tiled inference (0 = full image).
+    /// - `tile_overlap` -- overlap between tiles in pixels.
+    ///
+    /// Returns `(output_rgb_bytes, out_width, out_height)`.
+    pub fn process(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        tile_size: i32,
+        tile_overlap: i32,
+    ) -> Result<(Vec<u8>, i32, i32), String> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut ow: i32 = 0;
+        let mut oh: i32 = 0;
+
+        let rc = unsafe {
+            crispembed_sys::crispembed_hat_sr_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                tile_size,
+                tile_overlap,
+                &mut out_ptr,
+                &mut ow,
+                &mut oh,
+            )
+        };
+
+        if rc != 0 || out_ptr.is_null() {
+            return Err("HAT SR processing failed".into());
+        }
+
+        let len = (ow * oh * 3) as usize;
+        let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_hat_sr_free_image(out_ptr) };
+
+        Ok((result, ow, oh))
+    }
+}
+
+impl Drop for CrispHatSr {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_hat_sr_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Restormer image restoration (CVPR 2022)
 // ---------------------------------------------------------------------------
 

@@ -109,6 +109,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --pan-sr FILE    standalone PAN super-resolution: upscale image, write PGM to stdout\n");
     fprintf(stderr, "                   (needs --pan-model PATH: PAN GGUF, Pixel Attention Network, 2x or 4x)\n");
     fprintf(stderr, "  --pan-model PATH PAN super-resolution GGUF (used with --pan-sr)\n");
+    fprintf(stderr, "  --hat-sr FILE    standalone HAT super-resolution: upscale image, write PPM to stdout\n");
+    fprintf(stderr, "                   (needs --hat-model PATH: HAT GGUF, Hybrid Attention Transformer, 2x or 4x)\n");
+    fprintf(stderr, "  --hat-model PATH HAT super-resolution GGUF (used with --hat-sr)\n");
     fprintf(stderr, "  --tbsrn-sr FILE  standalone TBSRN text-line SR: upscale text crop, write PPM to stdout\n");
     fprintf(stderr, "                   (needs --tbsrn-model PATH: TBSRN GGUF, Telescope, fixed 4x)\n");
     fprintf(stderr, "  --tbsrn-model PATH TBSRN text-line super-resolution GGUF (used with --tbsrn-sr)\n");
@@ -177,6 +180,8 @@ int main(int argc, char ** argv) {
     std::string sr_model;              // --sr-model: text super-resolution GGUF
     std::string pan_model;             // --pan-model: PAN super-resolution GGUF
     std::string pan_sr_path;           // --pan-sr FILE: standalone PAN upscaling
+    std::string hat_model;             // --hat-model: HAT super-resolution GGUF
+    std::string hat_sr_path;           // --hat-sr FILE: standalone HAT upscaling
     std::string tbsrn_model;           // --tbsrn-model: TBSRN text-line SR GGUF
     std::string tbsrn_sr_path;         // --tbsrn-sr FILE: standalone TBSRN upscaling
     std::string restormer_model;        // --restormer MODEL: Restormer image restoration GGUF
@@ -296,6 +301,10 @@ int main(int argc, char ** argv) {
             pan_model = argv[++i];
         } else if (strcmp(argv[i], "--pan-sr") == 0 && i + 1 < argc) {
             pan_sr_path = argv[++i];
+        } else if (strcmp(argv[i], "--hat-model") == 0 && i + 1 < argc) {
+            hat_model = argv[++i];
+        } else if (strcmp(argv[i], "--hat-sr") == 0 && i + 1 < argc) {
+            hat_sr_path = argv[++i];
         } else if (strcmp(argv[i], "--tbsrn-model") == 0 && i + 1 < argc) {
             tbsrn_model = argv[++i];
         } else if (strcmp(argv[i], "--tbsrn-sr") == 0 && i + 1 < argc) {
@@ -444,6 +453,28 @@ int main(int argc, char ** argv) {
         printf("P6\n%d %d\n255\n", ow, oh);
         fwrite(out, 1, (size_t)ow * oh * 3, stdout);
         crispembed_pan_sr_free_image(out);
+        return 0;
+    }
+    if (!hat_sr_path.empty()) {
+        if (hat_model.empty()) {
+            fprintf(stderr, "error: --hat-sr requires --hat-model <path>\n");
+            return 1;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(hat_sr_path.c_str(), &w, &h, &ch, 3);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", hat_sr_path.c_str()); return 1; }
+        void * hctx = crispembed_hat_sr_init(hat_model.c_str(), n_threads);
+        if (!hctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load HAT model '%s'\n", hat_model.c_str()); return 1; }
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_hat_sr_process(hctx, data, w, h, 64, 8, &out, &ow, &oh);
+        stbi_image_free(data);
+        crispembed_hat_sr_free(hctx);
+        if (rc != 0 || !out) { fprintf(stderr, "error: HAT SR processing failed\n"); return 1; }
+        // Write result as PPM (RGB) to stdout
+        printf("P6\n%d %d\n255\n", ow, oh);
+        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+        crispembed_hat_sr_free_image(out);
         return 0;
     }
     if (!tbsrn_sr_path.empty()) {

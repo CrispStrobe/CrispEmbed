@@ -574,6 +574,12 @@ static const ModelEntry k_registry[] = {
      "PAN 4x image SR (272K params, PaddleGAN)", "0.5 MB", "Apache-2.0",
      "https://huggingface.co/cstr/text-super-resolution-gguf"},
 
+    {"hat-sr-x4",
+     "hat-sr-x4-f16.gguf",
+     "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/hat-sr-x4-f16.gguf",
+     "HAT 4x SR (21M params, CVPR 2023 SOTA)", "40 MB", "MIT",
+     "https://huggingface.co/cstr/text-super-resolution-gguf"},
+
     {"restormer-denoise",
      "restormer-denoise-f16.gguf",
      "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/restormer-denoise-f16.gguf",
