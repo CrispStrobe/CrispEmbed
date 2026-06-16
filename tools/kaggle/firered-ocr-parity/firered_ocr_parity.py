@@ -5,14 +5,26 @@ import gc, json, math, os, struct, subprocess, sys, time, traceback
 from pathlib import Path
 
 WORK = Path("/kaggle/working")
-os.chdir(WORK)
+try:
+    os.makedirs(WORK, exist_ok=True)
+    os.chdir(WORK)
+except Exception:
+    WORK = Path(".")
+
+# Write progress immediately — use str path for maximum compat
+PROGRESS = str(WORK / "progress.txt")
+with open(PROGRESS, "w") as _f:
+    _f.write("STARTING\n")
 
 def log(msg):
     print(msg, flush=True)
-    with open(WORK / "progress.txt", "a") as f:
-        f.write(msg + "\n")
+    try:
+        with open(PROGRESS, "a") as f:
+            f.write(msg + "\n")
+    except Exception:
+        pass
 
-log("=== FireRed-OCR Parity v3 ===")
+log("=== FireRed-OCR Parity v4 ===")
 log(f"Python {sys.version}")
 
 # Write progress immediately so we can see output even on crash
