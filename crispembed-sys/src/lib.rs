@@ -920,6 +920,51 @@ extern "C" {
         n_tokens: c_int,
         out_n: *mut c_int,
     ) -> *const CrispembedLiltToken;
+
+    // ── High-level KIE pipeline (image → structured fields) ──
+    pub fn crispembed_kie_init(
+        ocr_det_model: *const c_char,
+        ocr_rec_model: *const c_char,
+        ner_model: *const c_char,
+        n_threads: c_int,
+    ) -> *mut c_void;
+    pub fn crispembed_kie_init_lilt(
+        ocr_det_model: *const c_char,
+        ocr_rec_model: *const c_char,
+        ner_model: *const c_char,
+        lilt_model: *const c_char,
+        n_threads: c_int,
+    ) -> *mut c_void;
+    pub fn crispembed_kie_extract(
+        ctx: *mut c_void,
+        image_path: *const c_char,
+        labels: *const *const c_char,
+        n_labels: c_int,
+        threshold: c_float,
+    ) -> CrispembedKieResult;
+    pub fn crispembed_kie_free(ctx: *mut c_void);
+}
+
+/// `crispembed_kie_field` — one extracted field (label + value + box + score).
+#[repr(C)]
+pub struct CrispembedKieField {
+    pub label: *const c_char,
+    pub value: *const c_char,
+    pub score: c_float,
+    pub x: c_float,
+    pub y: c_float,
+    pub w: c_float,
+    pub h: c_float,
+}
+
+/// `crispembed_kie_result` — extracted fields + OCR metadata.
+#[repr(C)]
+pub struct CrispembedKieResult {
+    pub fields: *const CrispembedKieField,
+    pub n_fields: c_int,
+    pub ocr_text: *const c_char,
+    pub ocr_confidence: c_float,
+    pub n_ocr_regions: c_int,
 }
 
 /// `crispembed_lilt_token` — one classified token.

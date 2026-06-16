@@ -2346,6 +2346,126 @@ impl Drop for CrispLiLT {
     }
 }
 
+/// One KIE field extracted from a document (label + value + box + score).
+pub struct KieField {
+    pub label: String,
+    pub value: String,
+    pub score: f32,
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+}
+
+/// High-level key-information extraction (image → structured fields). OCRs the
+/// image internally and runs GLiNER (and, via [`Self::new_lilt`], LiLT
+/// layout-aware classification) to extract the requested field labels.
+pub struct CrispKie {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispKie {}
+
+impl CrispKie {
+    /// GLiNER-based KIE (OCR det + rec + NER models).
+    pub fn new(ocr_det: &str, ocr_rec: &str, ner_model: &str, n_threads: i32) -> Result<Self, String> {
+        Self::init(ocr_det, ocr_rec, ner_model, None, n_threads)
+    }
+
+    /// Layout-aware KIE with a LiLT model (plus optional GLiNER `ner_model`).
+    pub fn new_lilt(
+        ocr_det: &str,
+        ocr_rec: &str,
+        ner_model: &str,
+        lilt_model: &str,
+        n_threads: i32,
+    ) -> Result<Self, String> {
+        Self::init(ocr_det, ocr_rec, ner_model, Some(lilt_model), n_threads)
+    }
+
+    fn init(
+        ocr_det: &str,
+        ocr_rec: &str,
+        ner_model: &str,
+        lilt_model: Option<&str>,
+        n_threads: i32,
+    ) -> Result<Self, String> {
+        let det = CString::new(ocr_det).map_err(|e| format!("det: {e}"))?;
+        let rec = CString::new(ocr_rec).map_err(|e| format!("rec: {e}"))?;
+        let ner = CString::new(ner_model).map_err(|e| format!("ner: {e}"))?;
+        let ctx = match lilt_model {
+            Some(lilt) => {
+                let l = CString::new(lilt).map_err(|e| format!("lilt: {e}"))?;
+                unsafe {
+                    crispembed_sys::crispembed_kie_init_lilt(
+                        det.as_ptr(), rec.as_ptr(), ner.as_ptr(), l.as_ptr(), n_threads,
+                    )
+                }
+            }
+            None => unsafe {
+                crispembed_sys::crispembed_kie_init(det.as_ptr(), rec.as_ptr(), ner.as_ptr(), n_threads)
+            },
+        };
+        if ctx.is_null() {
+            return Err("crispembed_kie_init failed".into());
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Extract the requested `labels` from a document image.
+    pub fn extract(
+        &self,
+        image_path: &str,
+        labels: &[&str],
+        threshold: f32,
+    ) -> Result<Vec<KieField>, String> {
+        let img = CString::new(image_path).map_err(|e| format!("image path: {e}"))?;
+        let cstrs: Vec<CString> = labels
+            .iter()
+            .map(|l| CString::new(*l).unwrap_or_default())
+            .collect();
+        let ptrs: Vec<*const std::os::raw::c_char> = cstrs.iter().map(|c| c.as_ptr()).collect();
+        let res = unsafe {
+            crispembed_sys::crispembed_kie_extract(
+                self.ctx,
+                img.as_ptr(),
+                ptrs.as_ptr(),
+                ptrs.len() as i32,
+                threshold,
+            )
+        };
+        let mut out = Vec::new();
+        if !res.fields.is_null() && res.n_fields > 0 {
+            let cstr = |p: *const std::os::raw::c_char| {
+                if p.is_null() {
+                    String::new()
+                } else {
+                    unsafe { std::ffi::CStr::from_ptr(p).to_string_lossy().into_owned() }
+                }
+            };
+            for i in 0..res.n_fields as usize {
+                let f = unsafe { &*res.fields.add(i) };
+                out.push(KieField {
+                    label: cstr(f.label),
+                    value: cstr(f.value),
+                    score: f.score,
+                    x: f.x,
+                    y: f.y,
+                    w: f.w,
+                    h: f.h,
+                });
+            }
+        }
+        Ok(out)
+    }
+}
+
+impl Drop for CrispKie {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_kie_free(self.ctx) };
+    }
+}
+
 /// Find the skew angle of a document image (degrees).
 pub fn find_skew(gray: &[u8], width: i32, height: i32) -> Result<(f32, f32), String> {
     let mut angle: f32 = 0.0;
