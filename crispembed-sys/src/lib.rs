@@ -878,6 +878,28 @@ extern "C" {
         out_n_rows: *mut c_int,
         out_n_cols: *mut c_int,
     ) -> c_int;
+
+    // ── LiLT layout-aware token classification ──
+    pub fn crispembed_lilt_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_lilt_free(ctx: *mut c_void);
+    /// input_ids: [n_tokens]; bbox: [n_tokens*4] (x0,y0,x1,y1 in [0,1000]).
+    /// Returns an array (owned by ctx, valid until the next call / free).
+    pub fn crispembed_lilt_classify(
+        ctx: *mut c_void,
+        input_ids: *const i32,
+        bbox: *const i32,
+        n_tokens: c_int,
+        out_n: *mut c_int,
+    ) -> *const CrispembedLiltToken;
+}
+
+/// `crispembed_lilt_token` — one classified token.
+#[repr(C)]
+pub struct CrispembedLiltToken {
+    pub token_id: c_int,
+    pub label_id: c_int,
+    pub label: *const c_char,
+    pub score: c_float,
 }
 
 // ---------------------------------------------------------------------------
