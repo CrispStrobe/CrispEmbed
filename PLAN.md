@@ -189,44 +189,70 @@ CrispEmbed/
 - [ ] KV cache for prefix-shared decoder batches
 - [x] SigLIP attention pooling head (mean pool works; attn pool for full parity)
 
-#### GPU enablement — all remaining CPU-only engines
+#### GPU + quantization audit (2026-06-16)
 
-All models run on ggml. 8 engines already had GPU via `ggml_backend_init_best()`.
-15 engines were hardcoded `ggml_backend_cpu_init()`. Two groups:
+**FULL GPU** — `ggml_backend_init_best()` + ggml graph compute (CUDA/Vulkan/Metal):
 
-**Group A — Graph-based engines (mechanical backend init change) — DONE:**
-These use `ggml_gallocr` or `ggml_backend_sched` + `ggml_backend_graph_compute`.
-Change: swap `ggml_backend_cpu_init()` → `ggml_backend_init_best()`, add CPU
-fallback backend for scheduler, add `<ENGINE>_FORCE_CPU=1` env var override.
+| Engine | Env override | Quant | GGUF sizes |
+|--------|-------------|-------|------------|
+| crispembed (BERT/XLM-R/etc.) | `CRISPEMBED_FORCE_CPU=1` | Q4_K/Q8_0 | varies |
+| decoder_embed (Qwen3/Gemma3) | (inherits from crispembed) | Q4_K/Q8_0 | varies |
+| bidirlm_vision | (auto GPU device) | Q8_0/F16 | varies |
+| fireredpunc | (auto) | Q8_0 | ~400 MB |
+| pcs | (auto) | Q8_0 | ~1 GB |
+| gliner_ner | `CRISPEMBED_FORCE_CPU=1` | Q4_K/Q8_0 | varies |
+| got_ocr | (auto) | Q4_K/Q8_0 | ~700 MB |
+| surya_det | `SURYA_DET_FORCE_CPU=1` | Q4_K/Q8_0 | 30-73 MB |
+| tesseract_lstm | (auto) | Q4_K/Q8_0 | ~3 MB/lang |
+| vit_embed | `VIT_EMBED_FORCE_CPU=1` | Q4_K/Q8_0 | 50-350 MB |
+| clip_text_embed | `CLIP_TEXT_FORCE_CPU=1` | F32 | ~250 MB |
+| cnn_embed | `CNN_EMBED_FORCE_CPU=1` | Q4_K/Q8_0 | 5-250 MB |
+| ocr_detect | `OCR_DETECT_FORCE_CPU=1` | Q4_K/Q8_0 | 7 MB |
+| parseq_ocr | `PARSEQ_OCR_FORCE_CPU=1` | Q4_K/Q8_0 | 6-90 MB |
+| layout_detect | `LAYOUT_DETECT_FORCE_CPU=1` | Q8_0 | ~42 MB |
+| internvl2_ocr | `INTERNVL2_OCR_FORCE_CPU=1` | Q4_K/Q8_0 | 1-4 GB |
+| qwen2vl_ocr | `QWEN2VL_OCR_FORCE_CPU=1` | Q4_K/Q8_0 | 2.6-7.6 GB |
+| glm_ocr | `GLM_OCR_FORCE_CPU=1` | Q8_0 | ~950 MB |
+| math_ocr | `MATH_OCR_FORCE_CPU=1` | Q4_K/Q8_0 | varies |
+| ppformulanet_l_ocr | `PPFNL_OCR_FORCE_CPU=1` | Q8_0 | ~180 MB |
 
-- [x] **vit_embed** — gallocr, `VIT_EMBED_FORCE_CPU=1`
-- [x] **clip_text_embed** — gallocr, `CLIP_TEXT_FORCE_CPU=1`
-- [x] **cnn_embed** — gallocr, `CNN_EMBED_FORCE_CPU=1`
-- [x] **ocr_detect** — gallocr, `OCR_DETECT_FORCE_CPU=1`
-- [x] **parseq_ocr** — gallocr, `PARSEQ_OCR_FORCE_CPU=1`
-- [x] **layout_detect** — sched+gallocr, `LAYOUT_DETECT_FORCE_CPU=1`
-- [x] **internvl2_ocr** — sched, `INTERNVL2_OCR_FORCE_CPU=1`
-- [x] **qwen2vl_ocr** — sched, `QWEN2VL_OCR_FORCE_CPU=1`
-- [x] **glm_ocr** — sched, `GLM_OCR_FORCE_CPU=1`
-- [x] **math_ocr** — sched, `MATH_OCR_FORCE_CPU=1`
-- [x] **ppformulanet_l_ocr** — sched+scalar hybrid, `PPFNL_OCR_FORCE_CPU=1`
-  (fixed `to_f32` helper to use `ggml_backend_tensor_get` for GPU-safe weight reads)
+**GPU-SAFE** — `ggml_backend_init_best()` + `ggml_backend_tensor_get` for
+weight reads, but scalar CPU forward pass. Weights on GPU, compute on CPU:
 
-**Group B — CPU-scalar engines (ggml graph rewrite for GPU):**
-These load weights via ggml backend but do forward pass with raw `float*`
-pointer arithmetic. Changing backend to GPU would crash (`tensor->data` is
-a device pointer, not CPU-accessible). GPU enablement requires rewriting
-the forward pass as ggml graphs, then switching to `ggml_backend_init_best()`.
+| Engine | Env override | Quant | GGUF sizes |
+|--------|-------------|-------|------------|
+| hmer_ocr | `HMER_OCR_FORCE_CPU=1` | Q4_K/Q8_0 | 12-48 MB |
+| bttr_ocr | `BTTR_OCR_FORCE_CPU=1` | Q4_K/Q8_0 | 12-48 MB |
+| posformer_ocr | `POSFORMER_OCR_FORCE_CPU=1` | Q4_K/Q8_0 | 10-25 MB |
+| nafnet_denoise | `NAFNET_FORCE_CPU=1` | Q4_K/Q8_0 | 15-56 MB |
+| mixtex_ocr | `MIXTEX_OCR_FORCE_CPU=1` | Q4_K/Q8_0 | 85-329 MB |
+| ppformulanet_ocr | `PPFN_OCR_FORCE_CPU=1` | Q8_0 | ~20 MB |
 
-- [x] **hmer_ocr** — GPU-safe weight reads via `ggml_backend_tensor_get`, `HMER_OCR_FORCE_CPU=1`
-- [x] **bttr_ocr** — GPU-safe weight reads, `BTTR_OCR_FORCE_CPU=1`
-- [x] **posformer_ocr** — GPU-safe weight reads, `POSFORMER_OCR_FORCE_CPU=1`
-- [x] **nafnet_denoise** — GPU-safe weight reads, backend kept alive, `NAFNET_FORCE_CPU=1`
-- [x] **mixtex_ocr** — GPU-safe weight reads, `MIXTEX_OCR_FORCE_CPU=1`
-- [x] **ppformulanet_ocr** — GPU-safe weight reads, `PPFN_OCR_FORCE_CPU=1`
-  All 6: `to_f32`/`tf32`/`tensor_f32` helpers rewritten to use `ggml_backend_tensor_get`,
-  backends switched to `ggml_backend_init_best()`. Scalar forward pass remains CPU —
-  full GPU compute needs ggml graph rewrite (future: depthwise conv, PixelShuffle, etc.).
+**CPU-ONLY — need GPU enablement:**
+
+| Engine | Why CPU-only | Quant status | GGUF |
+|--------|-------------|--------------|------|
+| pan_sr | scalar forward, no graph | F16 only — **needs Q8_0/Q4_K** | pan-x4-f16 |
+| tbsrn_sr | scalar forward, no graph | F16 only — **needs Q8_0/Q4_K** | tbsrn-telescope-f16 |
+| text_sr | scalar forward, no graph | **no quant variants** | — |
+| safmn_sr | scalar forward, no graph | F32 only — **needs F16/Q8_0** | safmn-x4-f32 |
+| esrgan_sr | scalar forward, no graph | F32 only — **needs F16/Q8_0** | esrgan-x4-f32 |
+| restormer | scalar forward, no graph | F16 only — **needs Q8_0/Q4_K** | restormer-denoise-f16 |
+| hat_sr | (not in repo yet?) | F16 only — **needs Q8_0** | hat-sr-x4-f16 |
+| lilt_kie | graph compute exists, just needs backend init | Q4_K/Q8_0 available | lilt-base/funsd |
+| tps_locnet | scalar forward, no graph | F32 only — **needs quant** | tps-loc-f32 |
+| bert_ner | (legacy?) | varies | — |
+| bidirlm_audio | (uses shared backend from bidirlm_vision) | — | — |
+
+**Summary:**
+- 20 engines: full GPU acceleration (ggml graph compute)
+- 6 engines: GPU-safe weight storage (scalar CPU compute)
+- 9 engines: CPU-only (mostly new SR/restoration models)
+- **Quantization gaps:** pan_sr, tbsrn_sr, safmn_sr, esrgan_sr, restormer, hat_sr,
+  tps_locnet all need Q8_0/Q4_K quantized GGUFs.
+- **Easy GPU wins:** lilt_kie already has graph compute, just needs
+  `ggml_backend_init_best()`. SR engines (pan, tbsrn, safmn, esrgan, restormer,
+  hat) need GPU-safe `to_f32` + backend init (same Group B pattern).
 
 ### Models
 
