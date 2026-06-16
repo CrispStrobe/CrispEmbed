@@ -189,10 +189,18 @@ subprocess.check_call(['git', 'clone', '--depth=1', '--recursive',
 bld = '/kaggle/working/build'
 if os.path.exists(bld): shutil.rmtree(bld)
 os.makedirs(bld)
-subprocess.check_call(['cmake', '-S', ce_dir, '-B', bld, '-DCMAKE_BUILD_TYPE=Release'],
-                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-subprocess.check_call(['cmake', '--build', bld, '--target', 'crispembed-cli', '-j4'],
-                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+r_cmake = subprocess.run(['cmake', '-S', ce_dir, '-B', bld, '-DCMAKE_BUILD_TYPE=Release'],
+                         capture_output=True, text=True)
+if r_cmake.returncode != 0:
+    print(f"cmake configure FAILED:\n{r_cmake.stderr[-1000:]}")
+    sys.exit(1)
+
+r_build = subprocess.run(['cmake', '--build', bld, '--target', 'crispembed-cli', '-j4'],
+                         capture_output=True, text=True, timeout=1200)
+if r_build.returncode != 0:
+    print(f"cmake build FAILED:\n{r_build.stderr[-2000:]}")
+    sys.exit(1)
+print("Build OK")
 
 cli = os.path.join(bld, 'crispembed')
 env = os.environ.copy()
