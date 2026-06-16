@@ -53,73 +53,69 @@ int main(int argc, char **argv) {
     // Python patches directly to isolate vision encoder bugs from
     // preprocessing bugs.
 
+    // Try both naming conventions: "input_patches" (newer) and "pixel_values" (Qari ref)
     auto [ref_patches, n_ref_patches_elem] = ref.get_f32("input_patches");
     if (!ref_patches || n_ref_patches_elem == 0) {
-        fprintf(stderr, "WARNING: no input_patches in reference — "
-                "cannot compare preprocessing\n");
+        auto [pv, pv_n] = ref.get_f32("pixel_values");
+        ref_patches = pv;
+        n_ref_patches_elem = pv_n;
+    }
+    if (!ref_patches || n_ref_patches_elem == 0) {
+        fprintf(stderr, "WARNING: no input_patches/pixel_values in reference\n");
     }
 
-    // Derive grid_thw from vis_patch_embed shape.
-    // vis_patch_embed is (n_patches, D_v=1280). We know the image dimensions
-    // from the reference dump. For the test image (640x480), after Qwen2VL
-    // preprocessing: 644x476 → patches = 34x46 = 1564.
-    // The patch embed output shape tells us n_patches.
+    // Derive grid_thw from vision layer or merger shape.
     int32_t grid_thw[3] = {1, 0, 0};
     {
+        // Try vis_patch_embed first (newer format), then vis_layer_0 (Qari format)
         auto vis_shape = ref.shape("vis_patch_embed");
+        if (vis_shape.empty()) vis_shape = ref.shape("vis_layer_0");
+        // Try vis_merger_output first, then vis_merger
+        auto merger_shape = ref.shape("vis_merger_output");
+        if (merger_shape.empty()) merger_shape = ref.shape("vis_merger");
+
+        int n_p = 0, n_merged = 0;
         if (vis_shape.size() >= 2) {
-            // GGUF stores (D, N) in column-major — shape[1] is n_patches
-            int n_p = (int)vis_shape[1];
-            auto merger_shape = ref.shape("vis_merger_output");
-            if (merger_shape.size() >= 2) {
-                int n_merged = (int)merger_shape[1];
-                // n_patches = h * w, n_merged = (h/2)*(w/2)
-                // Find h,w closest to square (prefer portrait-ish)
-                int best_h = 0, best_w = 0;
-                int best_diff = n_p;
-                for (int h = 2; h * h <= n_p * 2; h += 2) {
-                    if (n_p % h == 0) {
-                        int w = n_p / h;
-                        if (w % 2 == 0 && (h / 2) * (w / 2) == n_merged) {
-                            int diff = std::abs(h - w);
-                            if (diff < best_diff) {
-                                best_diff = diff;
-                                best_h = h;
-                                best_w = w;
-                            }
+            // Column-major: shape[0] is innermost dim (D), shape[1] is n_patches
+            n_p = (int)vis_shape[0];  // Could be [n_patches, D] or [D, n_patches]
+            int d_v = (int)vis_shape[1];
+            // The larger dim is D (1280), smaller is n_patches
+            if (d_v < n_p) { std::swap(n_p, d_v); }
+        }
+        if (merger_shape.size() >= 2) {
+            n_merged = (int)merger_shape[0];
+            int d_m = (int)merger_shape[1];
+            if (d_m < n_merged) { std::swap(n_merged, d_m); }
+        }
+
+        if (n_p > 0 && n_merged > 0) {
+            int best_h = 0, best_w = 0, best_diff = n_p;
+            for (int h = 2; h * h <= n_p * 2; h += 2) {
+                if (n_p % h == 0) {
+                    int w = n_p / h;
+                    if (w % 2 == 0 && (h / 2) * (w / 2) == n_merged) {
+                        int diff = std::abs(h - w);
+                        if (diff < best_diff) {
+                            best_diff = diff; best_h = h; best_w = w;
                         }
                     }
                 }
-                grid_thw[1] = best_h;
-                grid_thw[2] = best_w;
             }
+            grid_thw[1] = best_h;
+            grid_thw[2] = best_w;
         }
     }
 
     bool has_vision = (grid_thw[1] > 0 && grid_thw[2] > 0);
     if (!has_vision) {
-        printf("No vision tensors in reference — LLM-only test mode\n");
+        printf("No vision grid derivable from reference — LLM-only test mode\n");
     }
 
     int n_patches = grid_thw[0] * grid_thw[1] * grid_thw[2];
     printf("\nGrid: t=%d h=%d w=%d  n_patches=%d\n",
            grid_thw[0], grid_thw[1], grid_thw[2], n_patches);
-
-    // Print reference tensor info
-    if (ref.has("vis_patch_embed")) {
-        auto [pe_data, pe_n] = ref.get_f32("vis_patch_embed");
-        printf("vis_patch_embed ref: n_elem=%zu, first5=[%.4f, %.4f, %.4f, %.4f, %.4f]\n",
-               pe_n, pe_data[0], pe_data[1], pe_data[2], pe_data[3], pe_data[4]);
-    }
-    if (ref.has("input_patches")) {
-        auto [p_data, p_n] = ref.get_f32("input_patches");
-        printf("input_patches ref: n_elem=%zu, first5=[%.4f, %.4f, %.4f, %.4f, %.4f]\n",
-               p_n, p_data[0], p_data[1], p_data[2], p_data[3], p_data[4]);
-        auto s = ref.shape("input_patches");
-        printf("  shape: [%lld", (long long)s[0]);
-        for (size_t i = 1; i < s.size(); i++) printf(", %lld", (long long)s[i]);
-        printf("]  (GGUF column-major)\n");
-    }
+    if (ref_patches)
+        printf("Input patches: %zu elements\n", n_ref_patches_elem);
 
     // ── Load model ──────────────────────────────────────────────
     printf("\nLoading model: %s\n", model_path);
@@ -150,16 +146,27 @@ int main(int argc, char **argv) {
                result.n_merged, result.embed_dim);
     }
 
-    // Compare merger output
-    if (has_vision && ref.has("vis_merger_output")) {
-        auto [ref_merger, n_merger] = ref.get_f32("vis_merger_output");
-        if (result.image_embeds && ref_merger) {
-            auto r = ref.compare("vis_merger_output",
+    // Compare merger output (try both naming conventions)
+    {
+        const char *merger_name = ref.has("vis_merger_output") ? "vis_merger_output"
+                                : ref.has("vis_merger") ? "vis_merger" : nullptr;
+        if (has_vision && merger_name && result.image_embeds) {
+            auto r = ref.compare(merger_name,
                                   result.image_embeds,
                                   (size_t)result.n_merged * result.embed_dim);
-            printf("  vis_merger_output: cos_min=%.6f max_abs=%.2e %s\n",
-                   r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            printf("  %s: cos_min=%.6f max_abs=%.2e %s\n",
+                   merger_name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
         }
+    }
+
+    // Compare per-layer vision outputs
+    for (uint32_t il = 0; il < 32; il++) {
+        char name[64];
+        std::snprintf(name, sizeof(name), "vis_layer_%u", il);
+        if (!ref.has(name)) continue;
+        // The diff harness in the engine already compared these if diff_ref_path is set,
+        // but print the results here for clarity
+        printf("  (ref has %s)\n", name);
     }
 
     qwen2vl_ocr::vision_result_free(result);

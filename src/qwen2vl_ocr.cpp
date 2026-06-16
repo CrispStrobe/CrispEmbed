@@ -175,7 +175,12 @@ bool load_hparams(context &ctx, const char *path) {
     int tie_idx = gguf_find_key(g, "qwen3vl.tie_word_embeddings");
     if (tie_idx < 0) tie_idx = gguf_find_key(g, "qwen2vl.tie_word_embeddings");
     if (tie_idx >= 0) {
-        lhp.tie_word_embeddings = gguf_get_val_u32(g, tie_idx) != 0;
+        // May be stored as BOOL or UINT32 depending on converter version
+        auto tie_type = gguf_get_kv_type(g, tie_idx);
+        if (tie_type == GGUF_TYPE_BOOL)
+            lhp.tie_word_embeddings = gguf_get_val_bool(g, tie_idx);
+        else
+            lhp.tie_word_embeddings = gguf_get_val_u32(g, tie_idx) != 0;
     }
 
     core_gguf::free_metadata(g);
