@@ -774,6 +774,23 @@ extern "C" {
     ) -> c_int;
     pub fn crispembed_safmn_sr_free_image(pixels: *mut u8);
 
+    // ── SwinIR-light super-resolution ──
+    pub fn crispembed_swinir_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_swinir_sr_free(ctx: *mut c_void);
+    pub fn crispembed_swinir_sr_scale(ctx: *const c_void) -> c_int;
+    pub fn crispembed_swinir_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        tile_size: c_int,
+        tile_overlap: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_swinir_sr_free_image(pixels: *mut u8);
+
     // Real-ESRGAN whole-image SR (same: safe wrapper present, FFI decls missing).
     pub fn crispembed_esrgan_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
     pub fn crispembed_esrgan_sr_free(ctx: *mut c_void);
@@ -804,6 +821,18 @@ extern "C" {
         out_pixels: *mut *mut u8,
     ) -> c_int;
     pub fn crispembed_restormer_free_image(pixels: *mut u8);
+
+    // ── SCUNet image denoising ──
+    pub fn crispembed_scunet_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_scunet_free(ctx: *mut c_void);
+    pub fn crispembed_scunet_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        out_pixels: *mut *mut u8,
+    ) -> c_int;
+    pub fn crispembed_scunet_free_image(pixels: *mut u8);
 
     // ── OCR result rendering ──
     pub fn crispembed_ocr_render(
@@ -857,6 +886,49 @@ extern "C" {
     pub fn crispembed_despeckle(
         gray: *const u8, w: c_int, h: c_int,
         max_w: c_int, max_h: c_int, out: *mut u8);
+
+    // ── Table structure recognition ──
+    pub fn crispembed_table_parse_init(
+        ocr_model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut c_void;
+    pub fn crispembed_table_parse_free(ctx: *mut c_void);
+    pub fn crispembed_table_parse_to_html(
+        ctx: *mut c_void,
+        gray: *const u8,
+        width: c_int,
+        height: c_int,
+    ) -> *mut c_char;
+    pub fn crispembed_table_parse_free_string(s: *mut c_char);
+    pub fn crispembed_table_parse_detect_grid(
+        gray: *const u8,
+        width: c_int,
+        height: c_int,
+        out_n_rows: *mut c_int,
+        out_n_cols: *mut c_int,
+    ) -> c_int;
+
+    // ── LiLT layout-aware token classification ──
+    pub fn crispembed_lilt_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_lilt_free(ctx: *mut c_void);
+    /// input_ids: [n_tokens]; bbox: [n_tokens*4] (x0,y0,x1,y1 in [0,1000]).
+    /// Returns an array (owned by ctx, valid until the next call / free).
+    pub fn crispembed_lilt_classify(
+        ctx: *mut c_void,
+        input_ids: *const i32,
+        bbox: *const i32,
+        n_tokens: c_int,
+        out_n: *mut c_int,
+    ) -> *const CrispembedLiltToken;
+}
+
+/// `crispembed_lilt_token` — one classified token.
+#[repr(C)]
+pub struct CrispembedLiltToken {
+    pub token_id: c_int,
+    pub label_id: c_int,
+    pub label: *const c_char,
+    pub score: c_float,
 }
 
 // ---------------------------------------------------------------------------
