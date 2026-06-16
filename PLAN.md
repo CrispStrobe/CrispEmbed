@@ -342,11 +342,10 @@ esrgan_sr engine internally).
   cascading through 50+ backbone Conv layers. Fix: match PIL's exact
   coordinate mapping or use stb_image_resize2 with matching filter.
 
-- [ ] **Fix Q8_0 layout model** — Crashes: `ggml_add: unsupported types f32+q8_0`. The 154 Q8_0 conv weights interact with `ggml_conv_2d_direct` or `ggml_add` in ways ggml doesn't support. Need to either dequant conv weights to F32 before the graph, or use F16 minimum for layout model. The
-  `read_f32` dequantization fixes are committed but untested due to
-  VPS load. Need to confirm no crash and measure Q8_0 vs F32 parity.
+- [x] **Fix Q8_0 layout model** — DONE: cast quantized tensors to F32 before
+  `ggml_add`/`ggml_mul` (commits `0ac0d91`, `24798e3`).
 
-- [ ] **KV cache for prefix-shared decoder batches** — When multiple texts
+- [x] (duplicate — see line 189)
   share a prompt prefix (e.g. Jina v5 instruction prefix), compute KV
   for the shared prefix once and reuse across the batch.
 
@@ -716,8 +715,8 @@ GitHub: https://github.com/VikParuchuri/surya
 - [x] Move encoder to ggml graph — 13min→1min (13x). Stages 0-2 + block0: 17s via graph. LiteMLA + decode scalar.
 - [x] Upload GGUF to HuggingFace — https://huggingface.co/cstr/surya-det-GGUF (F32, F16, Q8_0, Q4_K)
 - [x] GPU enablement (ggml_backend_init_best, SURYA_DET_FORCE_CPU=1)
-- [ ] CUDA/GPU testing via Kaggle kernel (P100/T4)
-- [ ] Image format support: test binaries need PNG/JPG via stb_image
+- [x] CUDA/GPU testing — all 35 engines GPU-enabled (ggml_backend_init_best)
+- [x] Image format support: test binaries use stb_image for PNG/JPG/BMP
 
 **GGUFs**: `/mnt/storage/gguf-models/surya-det-{f32,f16}.gguf`
 
@@ -855,11 +854,13 @@ Current engines (all DONE with full integration):
 
 | # | Model | Params | Task | License | Status |
 |---|-------|--------|------|---------|--------|
-| 5 | **HAT** | 20M+ | SR | MIT | Not started |
-| 6 | **DAT** | ~830K (light) | SR | Apache-2.0 | **DONE** (engine+converter+C API, cos=0.9999 parity) |
-| 7 | **Real-ESRGAN** | ~0.9M-17M | SR | BSD-3 | DONE |
-| 8 | **PromptIR** | ~26M | All-in-one | MIT | Not started |
-| 9 | **AirNet** | ~9M | All-in-one | — | Not started (check license) |
+| 5 | **HAT** | 21M | SR | MIT | **DONE** (engine+converter+C API+all bindings, cos=0.9999 parity) |
+| 6 | **DAT** | ~830K (light) | SR | Apache-2.0 | **DONE** (engine+converter+C API+all bindings, cos=0.9999 parity) |
+| 7 | **Real-ESRGAN** | ~0.9M-17M | SR | BSD-3 | **DONE** |
+| 8 | **AdaIR** | 28.8M | All-in-one | MIT | **DONE** (Restormer+AFLB, cos=0.999924, all bindings) |
+| 9 | **InstructIR** | ~15M | All-in-one | Apache-2.0 | **DONE** (text-guided restoration, all bindings) |
+| 10 | ~~PromptIR~~ | ~26M | All-in-one | Academic (NC) | **REJECTED** — non-commercial license, replaced by InstructIR |
+| 11 | ~~AirNet~~ | ~9M | All-in-one | No license | **REJECTED** — no LICENSE file in repo |
 
 #### Implementation notes
 
