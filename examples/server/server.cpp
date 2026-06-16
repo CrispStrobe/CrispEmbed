@@ -94,6 +94,7 @@ int main(int argc, char ** argv) {
     std::string restormer_model_path; // Restormer restoration model (--restormer-model)
     std::string scunet_model_path;   // SCUNet denoising model (--scunet-model)
     std::string instructir_model_path; // InstructIR restoration model (--instructir-model)
+    std::string adair_model_path;     // AdaIR restoration model (--adair-model)
     int port = 8080;
     int n_threads = 4;
 
@@ -128,9 +129,11 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--restormer-model") == 0 && i + 1 < argc) restormer_model_path = argv[++i];
         else if (strcmp(argv[i], "--scunet-model") == 0 && i + 1 < argc) scunet_model_path = argv[++i];
         else if (strcmp(argv[i], "--instructir-model") == 0 && i + 1 < argc) instructir_model_path = argv[++i];
+        else if (strcmp(argv[i], "--adair-model") == 0 && i + 1 < argc) adair_model_path = argv[++i];
     }
 
     if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() && dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty()) {
+    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty() && adair_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
@@ -178,6 +181,8 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --scunet-model MODEL  SCUNet GGUF (18M params, CVPR 2022); enables POST /scunet/denoise\n");
         fprintf(stderr, "\nInstructIR all-in-one image restoration:\n");
         fprintf(stderr, "  --instructir-model MODEL  InstructIR GGUF (16M params, ECCV 2024); enables POST /instructir/restore\n");
+        fprintf(stderr, "\nAdaIR all-in-one image restoration:\n");
+        fprintf(stderr, "  --adair-model MODEL  AdaIR GGUF (28.8M params, ICLR 2025); enables POST /adair/restore\n");
         return 1;
     }
 
@@ -962,6 +967,16 @@ int main(int argc, char ** argv) {
         instructir_ctx = crispembed_instructir_init(instructir_model_path.c_str(), n_threads);
         if (!instructir_ctx)
             fprintf(stderr, "Warning: failed to load InstructIR model '%s'\n", instructir_model_path.c_str());
+    }
+
+    // ── AdaIR all-in-one restoration ──
+    void * adair_ctx = nullptr;
+    std::mutex adair_mutex;
+
+    if (!adair_model_path.empty()) {
+        adair_ctx = crispembed_adair_init(adair_model_path.c_str(), n_threads);
+        if (!adair_ctx)
+            fprintf(stderr, "Warning: failed to load AdaIR model '%s'\n", adair_model_path.c_str());
     }
 
     // POST /clip/text — CLIP text encoding
@@ -3058,6 +3073,80 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /adair/restore — AdaIR all-in-one image restoration (Restormer+AFLB+FFT)
+    svr.Post("/adair/restore", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!adair_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no AdaIR model loaded (use --adair-model)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 3);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(adair_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        uint8_t * out = nullptr;
+        int rc = crispembed_adair_process(adair_ctx, data, w, h, &out);
+        stbi_image_free(data);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        if (rc != 0 || !out) {
+            res.status = 500;
+            res.set_content("{\"error\": \"AdaIR restoration failed\"}", "application/json");
+            return;
+        }
+
+        // Base64-encode the raw RGB output
+        static const char b64chars[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        const size_t n_bytes = (size_t)w * h * 3;
+        std::string b64;
+        b64.reserve(((n_bytes + 2) / 3) * 4);
+        for (size_t i = 0; i < n_bytes; i += 3) {
+            uint32_t v = (uint32_t)out[i] << 16;
+            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
+            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
+            b64 += b64chars[(v >> 18) & 0x3f];
+            b64 += b64chars[(v >> 12) & 0x3f];
+            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
+            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
+        }
+        crispembed_adair_free_image(out);
+
+        std::ostringstream js;
+        js << "{\"image\": \"" << b64 << "\""
+           << ", \"width\": " << w << ", \"height\": " << h
+           << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /adair/restore in %.1f ms (%dx%d)\n",
+                ms, w, h);
+        res.set_content(js.str(), "application/json");
+    });
+
     // POST /ocr/document — end-to-end multi-page OCR
     // Accepts:
     //   multipart/form-data: files named "page" (or "page0","page1",...) → image bytes
@@ -3279,6 +3368,7 @@ int main(int argc, char ** argv) {
         if (restormer_ctx) js << ", \"restormer\": true";
         if (scunet_ctx) js << ", \"scunet\": true";
         if (instructir_ctx) js << ", \"instructir\": true";
+        if (adair_ctx) js << ", \"adair\": true";
         js << ", \"scan_cleanup\": true";  // always available (no model needed)
         js << "}";
         res.set_content(js.str(), "application/json");
@@ -3317,6 +3407,7 @@ int main(int argc, char ** argv) {
     if (restormer_ctx) fprintf(stderr, "  POST /restormer       — {\"image\": \"noisy.png\"} (denoise/restore)\n");
     if (scunet_ctx) fprintf(stderr, "  POST /scunet/denoise  — {\"image\": \"noisy.png\"} (Swin-Conv-UNet denoise)\n");
     if (instructir_ctx) fprintf(stderr, "  POST /instructir/restore — {\"image\": \"...\", \"task\": 0} (all-in-one restoration)\n");
+    if (adair_ctx) fprintf(stderr, "  POST /adair/restore     — {\"image\": \"noisy.png\"} (Restormer+AFLB+FFT restore)\n");
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
     fprintf(stderr, "  POST /pdf/dpi              — {\"file\": \"...\"} (PDF DPI profiling)\n");
     fprintf(stderr, "  POST /preprocess/skew      — {\"image\": \"...\"} (find skew angle)\n");
@@ -3341,6 +3432,7 @@ int main(int argc, char ** argv) {
     if (tbsrn_sr_ctx) crispembed_tbsrn_sr_free(tbsrn_sr_ctx);
     if (restormer_ctx) crispembed_restormer_free(restormer_ctx);
     if (scunet_ctx) crispembed_scunet_free(scunet_ctx);
+    if (adair_ctx) crispembed_adair_free(adair_ctx);
     if (instructir_ctx) crispembed_instructir_free(instructir_ctx);
     if (ner_ctx) crispembed_ner_free(ner_ctx);
 #if SERVER_HAS_LID

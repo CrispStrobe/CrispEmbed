@@ -3005,3 +3005,51 @@ impl Drop for CrispInstructIR {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// AdaIR All-in-One Image Restoration
+// ---------------------------------------------------------------------------
+
+/// Safe wrapper for the AdaIR all-in-one image restoration engine.
+pub struct CrispAdaIR {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispAdaIR {}
+
+impl CrispAdaIR {
+    /// Load an AdaIR GGUF model.  `n_threads = 0` -> auto.
+    pub fn new(model_path: impl AsRef<Path>, n_threads: i32) -> Option<Self> {
+        let c_path = CString::new(model_path.as_ref().to_str()?).ok()?;
+        let ctx = unsafe { crispembed_sys::crispembed_adair_init(c_path.as_ptr(), n_threads) };
+        if ctx.is_null() { None } else { Some(Self { ctx }) }
+    }
+
+    /// Restore an RGB image (H*W*3, row-major uint8).
+    /// Returns `(pixels, width, height)` or `None` on failure.
+    /// Output has the same dimensions as input.
+    pub fn process(&mut self, pixels: &[u8], width: i32, height: i32) -> Option<(Vec<u8>, i32, i32)> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let rc = unsafe {
+            crispembed_sys::crispembed_adair_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width, height,
+                &mut out_ptr,
+            )
+        };
+        if rc != 0 || out_ptr.is_null() { return None; }
+        let n = (width as usize) * (height as usize) * 3;
+        let data = unsafe { std::slice::from_raw_parts(out_ptr, n) }.to_vec();
+        unsafe { crispembed_sys::crispembed_adair_free_image(out_ptr) };
+        Some((data, width, height))
+    }
+}
+
+impl Drop for CrispAdaIR {
+    fn drop(&mut self) {
+        if !self.ctx.is_null() {
+            unsafe { crispembed_sys::crispembed_adair_free(self.ctx) };
+        }
+    }
+}

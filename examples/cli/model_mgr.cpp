@@ -610,6 +610,12 @@ static const ModelEntry k_registry[] = {
      "InstructIR all-in-one restoration (NAFNet+ICB, 16M params, 7 tasks)", "32 MB", "MIT",
      "https://huggingface.co/cstr/InstructIR-GGUF"},
 
+    {"adair-5d",
+     "adair-5d-f16.gguf",
+     "https://huggingface.co/cstr/AdaIR-GGUF/resolve/main/adair-5d-f16.gguf",
+     "AdaIR all-in-one restoration (Restormer+AFLB+FFT, 28.8M params, 5 tasks)", "57 MB", "MIT",
+     "https://huggingface.co/cstr/AdaIR-GGUF"},
+
     // text-sr: NAFNet-SR engine — no default model; supply a custom trained GGUF.
     {"text-sr",
      "text-sr-nafnet.gguf",

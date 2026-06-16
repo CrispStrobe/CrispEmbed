@@ -1061,6 +1061,21 @@ CRISPEMBED_API int crispembed_instructir_process(
 
 CRISPEMBED_API void crispembed_instructir_free_image(uint8_t * pixels);
 
+// ---------------------------------------------------------------------------
+// AdaIR — All-in-one image restoration (Restormer+AFLB+FFT, ICLR 2025).
+// 5 tasks: denoise, derain, dehaze, deblur, low-light. ~28.8M params, MIT.
+// Source: c-yn/AdaIR.
+// ---------------------------------------------------------------------------
+
+CRISPEMBED_API void * crispembed_adair_init(const char * model_path, int n_threads);
+CRISPEMBED_API void   crispembed_adair_free(void * ctx);
+
+CRISPEMBED_API int crispembed_adair_process(
+    void * ctx, const uint8_t * pixels, int width, int height,
+    uint8_t ** out_pixels);
+
+CRISPEMBED_API void crispembed_adair_free_image(uint8_t * pixels);
+
 /// Variant with individual params (for FFI bindings that can't pass structs by value).
 CRISPEMBED_API int crispembed_scan_cleanup_process_simple(
     void * ctx,

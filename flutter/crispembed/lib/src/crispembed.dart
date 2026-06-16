@@ -2774,6 +2774,89 @@ class CrispInstructIR {
 }
 
 // ---------------------------------------------------------------------------
+// AdaIR All-in-One Restoration (Restormer+AFLB+FFT, 28.8M params, MIT)
+// ---------------------------------------------------------------------------
+
+/// AdaIR all-in-one image restoration model — 5 tasks.
+/// Tasks: denoise, derain, dehaze, deblur, low-light.
+class CrispAdaIR {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedAdairFreeDart _freeFn;
+  late final CrispembedAdairProcessDart _processFn;
+  late final CrispembedAdairFreeImageDart _freeImageFn;
+
+  CrispAdaIR(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedAdairInitNative, CrispembedAdairInitDart>(
+            'crispembed_adair_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load AdaIR model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _freeFn = _lib.lookupFunction<CrispembedAdairFreeNative,
+        CrispembedAdairFreeDart>('crispembed_adair_free');
+    _processFn = _lib.lookupFunction<CrispembedAdairProcessNative,
+        CrispembedAdairProcessDart>('crispembed_adair_process');
+    _freeImageFn = _lib.lookupFunction<CrispembedAdairFreeImageNative,
+        CrispembedAdairFreeImageDart>('crispembed_adair_free_image');
+  }
+
+  /// Restore an image. Output has the same dimensions as input.
+  Uint8List process(Uint8List pixels, int width, int height) {
+    _checkDisposed();
+    if (pixels.length != width * height * 3) {
+      throw ArgumentError(
+          'pixels.length (${pixels.length}) must equal width * height * 3 (${width * height * 3})');
+    }
+
+    final pxNative = calloc<Uint8>(pixels.length);
+    pxNative.asTypedList(pixels.length).setAll(0, pixels);
+
+    final outPxPtr = calloc<Pointer<Uint8>>();
+
+    try {
+      final rc = _processFn(_ctx, pxNative, width, height, outPxPtr);
+
+      if (rc != 0 || outPxPtr.value.address == 0) {
+        throw Exception('AdaIR restoration failed (rc=$rc)');
+      }
+
+      final resultPixels =
+          Uint8List.fromList(outPxPtr.value.asTypedList(width * height * 3));
+      _freeImageFn(outPxPtr.value);
+
+      return resultPixels;
+    } finally {
+      calloc.free(pxNative);
+      calloc.free(outPxPtr);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispAdaIR has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
 // TBSRN Super-Resolution (always 2×, 16×64 → 32×128)
 // ---------------------------------------------------------------------------
 

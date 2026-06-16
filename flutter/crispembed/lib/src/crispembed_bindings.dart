@@ -855,3 +855,28 @@ typedef CrispembedInstructirProcessDart = int Function(
 
 typedef CrispembedInstructirFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedInstructirFreeImageDart = void Function(Pointer<Uint8> pixels);
+
+// --- AdaIR All-in-One Restoration (adair) ---
+typedef CrispembedAdairInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedAdairInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedAdairFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedAdairFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedAdairProcessNative = Int32 Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    Int32 width,
+    Int32 height,
+    Pointer<Pointer<Uint8>> outPixels);
+typedef CrispembedAdairProcessDart = int Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    int width,
+    int height,
+    Pointer<Pointer<Uint8>> outPixels);
+
+typedef CrispembedAdairFreeImageNative = Void Function(Pointer<Uint8> pixels);
+typedef CrispembedAdairFreeImageDart = void Function(Pointer<Uint8> pixels);
