@@ -399,6 +399,9 @@ target_link_libraries(test-kie-pipeline PRIVATE crispembed)
 add_executable(test-bert-ner tests/test_bert_ner.cpp)
 target_link_libraries(test-bert-ner PRIVATE crispembed)
 
+add_executable(test-lightonocr tests/test_lightonocr.cpp)
+target_link_libraries(test-lightonocr PRIVATE crispembed)
+
 add_executable(test-lilt-kie tests/test_lilt_kie.cpp)
 target_link_libraries(test-lilt-kie PRIVATE crispembed)
 
