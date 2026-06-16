@@ -281,7 +281,7 @@ esrgan_sr engine internally).
 
 - [x] **Keyven/german-ocr-3 — Qwen2.5-VL base engine DONE**. Full engine, converter, parity, orchestrator wiring.
 - [x] **InternVL2 (MIT)** — InternViT + InternLM2.5 VLM. DONE: engine (`internvl2_ocr.{h,cpp}`), converter, reference dumper, diff test, e2e test. Wired into orchestrator. GGUFs: 1B and 2B variants.
-- [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL fine-tune, German business docs
+- [x] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL fine-tune, German business docs. DONE: wrote merge-llamacpp-qwen2vl-gguf.py to convert split llama.cpp GGUFs (LLM+mmproj) to single CrispEmbed GGUF. Loads and passes unit tests on qwen2vl_ocr engine. Q4_K 1.3GB.
 - [x] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL pruned fine-tune (16L vs 28L), 12+ languages incl. German. DONE: runs on existing qwen2vl_ocr engine unchanged. GGUF converted (F16 3.6GB, Q4_K 1.3GB). Model registry entry added.
 - [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics (parity bug: hallucinated text)
 - [ ] **Granite Vision 3.3-2B (~3B, Apache-2.0)** — OCRBench 852 (highest in class). English-only.
