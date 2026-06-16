@@ -12,6 +12,28 @@
 
 #include <stdint.h>
 
+// DLL export/import (Windows) — without this the ocr_render_* symbols are not
+// exported from crispembed.dll, so consumers (e.g. CrispSorter) fail to link on
+// Windows with LNK2019 even though macOS/Linux resolve them via default symbol
+// visibility. Guarded so it composes with crispembed.h's identical definition.
+#ifndef CRISPEMBED_API
+#  if defined(_WIN32) || defined(__CYGWIN__)
+#    if defined(CRISPEMBED_BUILD)
+#      define CRISPEMBED_API __declspec(dllexport)
+#    elif defined(CRISPEMBED_SHARED)
+#      define CRISPEMBED_API __declspec(dllimport)
+#    else
+#      define CRISPEMBED_API
+#    endif
+#  else
+#    if defined(CRISPEMBED_BUILD)
+#      define CRISPEMBED_API __attribute__((visibility("default")))
+#    else
+#      define CRISPEMBED_API
+#    endif
+#  endif
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -49,34 +71,34 @@ typedef enum ocr_render_format {
 typedef struct ocr_renderer ocr_renderer;
 
 /// Create a renderer for the given format.
-ocr_renderer * ocr_render_create(ocr_render_format format);
+CRISPEMBED_API ocr_renderer * ocr_render_create(ocr_render_format format);
 
 /// Set the page separator for plain text output (default: "\f").
-void ocr_render_set_separator(ocr_renderer * r, const char * sep);
+CRISPEMBED_API void ocr_render_set_separator(ocr_renderer * r, const char * sep);
 
 /// Enable PDF/A-2b compliance (adds XMP metadata + sRGB OutputIntent).
 /// Must be called before ocr_render_begin(). Only affects PDF format.
-void ocr_render_set_pdfa(ocr_renderer * r, int enabled);
+CRISPEMBED_API void ocr_render_set_pdfa(ocr_renderer * r, int enabled);
 
 /// Begin a document.
-void ocr_render_begin(ocr_renderer * r);
+CRISPEMBED_API void ocr_render_begin(ocr_renderer * r);
 
 /// Add a page of OCR results.
-void ocr_render_add_page(ocr_renderer * r, const ocr_render_page * page);
+CRISPEMBED_API void ocr_render_add_page(ocr_renderer * r, const ocr_render_page * page);
 
 /// End the document and finalize output.
-void ocr_render_end(ocr_renderer * r);
+CRISPEMBED_API void ocr_render_end(ocr_renderer * r);
 
 /// Get the rendered output as a string. Valid until free.
 /// For PDF format, returns the raw PDF bytes (use ocr_render_output_size
 /// for the byte count since PDFs contain binary data).
-const char * ocr_render_output(const ocr_renderer * r);
+CRISPEMBED_API const char * ocr_render_output(const ocr_renderer * r);
 
 /// Get the output size in bytes.
-int ocr_render_output_size(const ocr_renderer * r);
+CRISPEMBED_API int ocr_render_output_size(const ocr_renderer * r);
 
 /// Free the renderer and all associated memory.
-void ocr_render_free(ocr_renderer * r);
+CRISPEMBED_API void ocr_render_free(ocr_renderer * r);
 
 #ifdef __cplusplus
 }
