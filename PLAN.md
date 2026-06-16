@@ -342,7 +342,7 @@ esrgan_sr engine internally).
   cascading through 50+ backbone Conv layers. Fix: match PIL's exact
   coordinate mapping or use stb_image_resize2 with matching filter.
 
-- [ ] **Verify Q8_0 layout model works** — The `ensure_f32` +
+- [ ] **Fix Q8_0 layout model** — Crashes: `ggml_add: unsupported types f32+q8_0`. The 154 Q8_0 conv weights interact with `ggml_conv_2d_direct` or `ggml_add` in ways ggml doesn't support. Need to either dequant conv weights to F32 before the graph, or use F16 minimum for layout model. The
   `read_f32` dequantization fixes are committed but untested due to
   VPS load. Need to confirm no crash and measure Q8_0 vs F32 parity.
 
@@ -754,7 +754,7 @@ Swin encoder as new building block.
 - [x] GGUF converter: `models/convert-mixtex-to-gguf.py` (345 tensors)
 - [x] GGUF files: F32=329MB, F16=165MB at `/mnt/storage/gguf-models/`
 - [x] C++ engine: `src/mixtex_ocr.{h,cpp}` — runs end-to-end, Swin+RoBERTa
-- [ ] Parity test (encoder parity vs Python reference — engine runs end-to-end but no diff harness test)
+- [x] Parity test RAN — encoder PERFECT (all 4 stages cos=1.000000). Decoder BROKEN (cos=-1.0, generates garbage "cĠcĠcĠ..."). Cross-attention or embedding bug in decoder. Needs per-layer debugging of self-attn → cross-attn → FFN pipeline.
 
 **Key new op**: Swin shifted-window attention with relative position bias.
 Window partition → local MHSA + RPB lookup → window reverse → shift.
