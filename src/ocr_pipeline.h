@@ -25,7 +25,9 @@ namespace ocr_pipeline {
 struct ocr_result {
     ocr_detect::text_box box;    // bounding box in original image coords
     std::string text;             // recognized text
-    float confidence;             // detection confidence
+    float confidence;             // detection confidence (from DBNet score)
+    float rec_confidence;         // recognition confidence (mean per-char softmax)
+    std::vector<float> char_conf; // per-character confidence (empty if unavailable)
 };
 
 struct context;
