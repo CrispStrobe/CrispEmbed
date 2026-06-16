@@ -3001,6 +3001,34 @@ class CrispSwinirSr:
         sr = CrispSwinirSr("swinir-sr-x4.gguf")
         print(sr.scale)  # e.g. 4
         out = sr.process(pixels, width, height)  # returns (ndarray, out_w, out_h)
+# SCUNet Image Denoising (Swin-Conv-UNet, Apache-2.0)
+# ---------------------------------------------------------------------------
+
+def _setup_scunet_signatures(lib):
+    lib.crispembed_scunet_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_scunet_init.restype = ctypes.c_void_p
+
+    lib.crispembed_scunet_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_scunet_free.restype = None
+
+    lib.crispembed_scunet_process.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_uint8)),
+    ]
+    lib.crispembed_scunet_process.restype = ctypes.c_int
+
+    lib.crispembed_scunet_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_scunet_free_image.restype = None
+
+
+class CrispScunet:
+    """SCUNet image denoising — Swin-Conv-UNet hybrid blocks.
+
+    Usage::
+
+        dn = CrispScunet("scunet-color-f32.gguf")
+        out = dn.process(pixels, width, height)  # returns ndarray (H, W, 3)
     """
 
     def __init__(self, model_path: str, n_threads: int = 4,
@@ -3031,6 +3059,23 @@ class CrispSwinirSr:
 
         Returns:
             Tuple of (output_ndarray uint8 shape (out_h, out_w, 3), out_w, out_h).
+        _setup_scunet_signatures(self._lib)
+        self._ctx = self._lib.crispembed_scunet_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load SCUNet model: {model_path}")
+
+    def process(self, pixels: np.ndarray, width: int, height: int
+                ) -> np.ndarray:
+        """Denoise an image (same resolution output).
+
+        Args:
+            pixels: uint8 numpy array, flattened or shaped (H, W, 3).
+            width: source image width in pixels.
+            height: source image height in pixels.
+
+        Returns:
+            output_ndarray uint8 shape (height, width, 3).
         """
         flat = np.asarray(pixels, dtype=np.uint8).flatten()
         px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
@@ -3055,6 +3100,21 @@ class CrispSwinirSr:
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:
             self._lib.crispembed_swinir_sr_free(self._ctx)
+
+        rc = self._lib.crispembed_scunet_process(
+            self._ctx, px_ptr, width, height,
+            ctypes.byref(out_ptr),
+        )
+        if rc != 0 or not out_ptr:
+            raise RuntimeError("SCUNet denoising failed")
+
+        buf = np.ctypeslib.as_array(out_ptr, shape=(height * width * 3,)).copy()
+        self._lib.crispembed_scunet_free_image(out_ptr)
+        return buf.reshape(height, width, 3)
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_scunet_free(self._ctx)
             self._ctx = None
 
 

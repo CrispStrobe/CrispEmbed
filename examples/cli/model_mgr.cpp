@@ -580,6 +580,12 @@ static const ModelEntry k_registry[] = {
      "Restormer image restoration (26M params, CVPR 2022)", "50 MB", "Apache-2.0",
      "https://huggingface.co/cstr/text-super-resolution-gguf"},
 
+    {"scunet-color",
+     "scunet-color-f32.gguf",
+     "https://huggingface.co/cstr/scunet-GGUF/resolve/main/scunet-color-f32.gguf",
+     "SCUNet color denoising (Swin-Conv-UNet, 18M params, SIDD)", "69 MB", "apache-2.0",
+     "https://huggingface.co/cstr/scunet-GGUF"},
+
     // text-sr: NAFNet-SR engine — no default model; supply a custom trained GGUF.
     {"text-sr",
      "text-sr-nafnet.gguf",

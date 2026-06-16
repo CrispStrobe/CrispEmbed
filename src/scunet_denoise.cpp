@@ -133,16 +133,15 @@ static void wmsa_forward(
     int nWh = Hp / win_size, nWw = Wp / win_size;
     int nW = nWh * nWw;
 
-    // Pad input (replicate edge)
+    // Pad input (zero-pad, matching F.pad in Python)
     std::vector<float> padded(C * Hp * Wp, 0.0f);
     for (int c = 0; c < C; c++)
-        for (int y = 0; y < Hp; y++)
-            for (int x = 0; x < Wp; x++) {
-                int sy = std::min(y, H - 1), sx = std::min(x, W - 1);
-                padded[c * Hp * Wp + y * Wp + x] = x_chw[c * H * W + sy * W + sx];
-            }
+        for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++)
+                padded[c * Hp * Wp + y * Wp + x] = x_chw[c * H * W + y * W + x];
 
-    // Cyclic shift
+    // Cyclic shift: torch.roll(shifts=(-sh, -sh), dims=(2,3))
+    // shifted[y,x] = original[(y+sh)%H, (x+sh)%W]
     std::vector<float> shifted;
     if (shift) {
         shifted.resize(C * Hp * Wp);
@@ -150,7 +149,7 @@ static void wmsa_forward(
         for (int c = 0; c < C; c++)
             for (int y = 0; y < Hp; y++)
                 for (int x = 0; x < Wp; x++) {
-                    int sy = (y + Hp - sh) % Hp, sx = (x + Wp - sh) % Wp;
+                    int sy = (y + sh) % Hp, sx = (x + sh) % Wp;
                     shifted[c * Hp * Wp + y * Wp + x] = padded[c * Hp * Wp + sy * Wp + sx];
                 }
         std::swap(padded, shifted);
@@ -299,14 +298,15 @@ static void wmsa_forward(
                 }
         }
 
-    // Reverse shift
+    // Reverse shift: torch.roll(shifts=(sh, sh)) undoes roll(shifts=(-sh, -sh))
+    // unshifted[y,x] = shifted[(y-sh+H)%H, (x-sh+W)%W]
     if (shift) {
         shifted.resize(C * Hp * Wp);
         int sh = win_size / 2;
         for (int c = 0; c < C; c++)
             for (int y = 0; y < Hp; y++)
                 for (int x = 0; x < Wp; x++) {
-                    int sy = (y + sh) % Hp, sx = (x + sh) % Wp;
+                    int sy = (y + Hp - sh) % Hp, sx = (x + Wp - sh) % Wp;
                     shifted[c * Hp * Wp + y * Wp + x] = rev[c * Hp * Wp + sy * Wp + sx];
                 }
         std::swap(rev, shifted);
@@ -331,6 +331,11 @@ struct swin_block_wt {
     ggml_tensor * mlp2_w, * mlp2_b;
 };
 
+// Global debug callback for swin block internals (set by debug forward pass)
+static scunet_stage_cb g_swin_debug_cb;
+static int g_swin_debug_block_id = -1;
+static int g_swin_block_counter = 0;
+
 static void swin_block_forward(
     float * x, int C, int H, int W,
     const swin_block_wt & wt,
@@ -339,28 +344,48 @@ static void swin_block_forward(
     std::vector<float> & scratch)
 {
     int hw = H * W;
+    int cur_block = g_swin_block_counter++;
 
     // LN1 + WMSA
     std::vector<float> normed(C * hw);
+    // Cache the weight pointers before the per-pixel loop
+    const float * ln1_w_ptr = to_f32(wt.ln1_w, dq1);
+    const float * ln1_b_ptr = to_f32(wt.ln1_b, dq2);
     for (int y = 0; y < H; y++)
         for (int xi = 0; xi < W; xi++) {
             // Gather pixel's channels
             std::vector<float> pix(C);
             for (int c = 0; c < C; c++) pix[c] = x[c * hw + y * W + xi];
             std::vector<float> pix_out(C);
-            layer_norm(pix.data(), C, to_f32(wt.ln1_w, dq1), to_f32(wt.ln1_b, dq2), pix_out.data());
+            layer_norm(pix.data(), C, ln1_w_ptr, ln1_b_ptr, pix_out.data());
             for (int c = 0; c < C; c++) normed[c * hw + y * W + xi] = pix_out[c];
         }
 
+    if (g_swin_debug_cb && cur_block == g_swin_debug_block_id)
+        g_swin_debug_cb("ln1_chw", normed.data(), C * hw);
+
+    // Cache all weight pointers before passing to wmsa
+    const float * qkv_w_ptr = to_f32(wt.qkv_w, dq1);
+    const float * qkv_b_ptr = to_f32(wt.qkv_b, dq2);
+    const float * proj_w_ptr = to_f32(wt.proj_w, dq1);
+    const float * proj_b_ptr = to_f32(wt.proj_b, dq2);
+    const float * rpb_ptr = to_f32(wt.rpb, dq1);
+
     std::vector<float> attn_out(C * hw);
     wmsa_forward(normed.data(), C, H, W,
-                 to_f32(wt.qkv_w, dq1), to_f32(wt.qkv_b, dq2),
-                 to_f32(wt.proj_w, dq1), to_f32(wt.proj_b, dq2),
-                 to_f32(wt.rpb, dq1),
+                 qkv_w_ptr, qkv_b_ptr,
+                 proj_w_ptr, proj_b_ptr,
+                 rpb_ptr,
                  n_heads, win_size, shift,
                  attn_out.data(), scratch);
 
+    if (g_swin_debug_cb && cur_block == g_swin_debug_block_id)
+        g_swin_debug_cb("wmsa_out", attn_out.data(), C * hw);
+
     for (int i = 0; i < C * hw; i++) x[i] += attn_out[i];
+
+    if (g_swin_debug_cb && cur_block == g_swin_debug_block_id)
+        g_swin_debug_cb("after_wmsa", x, C * hw);
 
     // LN2 + MLP
     const float * m0w = to_f32(wt.mlp0_w, dq1);
@@ -390,6 +415,9 @@ static void swin_block_forward(
                 x[o * hw + y * W + xi] += sum;
             }
         }
+
+    if (g_swin_debug_cb && cur_block == g_swin_debug_block_id)
+        g_swin_debug_cb("full_swin", x, C * hw);
 }
 
 // ── ConvTransBlock ──
@@ -646,6 +674,82 @@ int scunet_process_float(scunet_context * ctx,
            to_f32(ctx->tail_w, dq1), to_f32(ctx->tail_b, dq2),
            3, 3, 3, 1, 1, output_chw);
 
+    return 0;
+}
+
+int scunet_process_float_debug(scunet_context * ctx,
+                                const float * input_chw, int width, int height,
+                                float * output_chw,
+                                scunet_stage_cb cb) {
+    if (!ctx || !input_chw || !output_chw) return -1;
+    int H = height, W = width;
+    std::vector<float> dq1, dq2, scratch;
+
+    // Enable swin block debug for block 0 (first trans block in first CTB)
+    g_swin_debug_cb = cb;
+    g_swin_debug_block_id = 0; // block 1 = first shifted window block
+    g_swin_block_counter = 0;
+
+    std::vector<float> x(ctx->dim * H * W);
+    conv2d(input_chw, 3, H, W, to_f32(ctx->head_w, dq1), to_f32(ctx->head_b, dq2),
+           ctx->dim, 3, 3, 1, 1, x.data());
+    if (cb) cb("head", x.data(), ctx->dim * H * W);
+
+    std::vector<float> skip_head(x.begin(), x.end());
+    std::vector<std::vector<float>> skips;
+
+    const char * enc_names[] = {"m_down1", "m_down2", "m_down3"};
+    int ch = ctx->dim, cur_h = H, cur_w = W;
+    for (int s = 0; s < 3; s++) {
+        int n_heads = std::max(1, (ch / 2) / ctx->head_dim);
+        for (int i = 0; i < 4; i++) {
+            bool shift = (i % 2 == 1);
+            ctb_forward(x.data(), ch, cur_h, cur_w, ctx->enc[s].blocks[i],
+                        n_heads, ctx->win_size, shift, dq1, dq2, scratch);
+        }
+        int next_ch = ch * 2, nh = cur_h / 2, nw = cur_w / 2;
+        std::vector<float> ds(next_ch * nh * nw);
+        conv2d(x.data(), ch, cur_h, cur_w,
+               to_f32(ctx->enc[s].ds_w, dq1), to_f32(ctx->enc[s].ds_b, dq2),
+               next_ch, 2, 2, 0, 2, ds.data());
+        skips.push_back(std::move(ds));
+        x = skips.back();
+        ch = next_ch; cur_h = nh; cur_w = nw;
+        if (cb) cb(enc_names[s], x.data(), ch * cur_h * cur_w);
+    }
+
+    int body_heads = std::max(1, (ch / 2) / ctx->head_dim);
+    for (int i = 0; i < 4; i++) {
+        bool shift = (i % 2 == 1);
+        ctb_forward(x.data(), ch, cur_h, cur_w, ctx->body.blocks[i],
+                    body_heads, ctx->win_size, shift, dq1, dq2, scratch);
+    }
+    if (cb) cb("body", x.data(), ch * cur_h * cur_w);
+
+    const char * dec_names[] = {"m_up3", "m_up2", "m_up1"};
+    for (int s = 0; s < 3; s++) {
+        auto & sk = skips[2 - s];
+        for (int i = 0; i < ch * cur_h * cur_w; i++) x[i] += sk[i];
+        int next_ch = ch / 2, nh = cur_h * 2, nw = cur_w * 2;
+        std::vector<float> us(next_ch * nh * nw);
+        conv_transpose2d(x.data(), ch, cur_h, cur_w,
+                         to_f32(ctx->dec[s].us_w, dq1), to_f32(ctx->dec[s].us_b, dq2),
+                         next_ch, 2, 2, 2, us.data());
+        x = std::move(us);
+        ch = next_ch; cur_h = nh; cur_w = nw;
+        int n_heads = std::max(1, (ch / 2) / ctx->head_dim);
+        for (int i = 0; i < 4; i++) {
+            bool shift = (i % 2 == 1);
+            ctb_forward(x.data(), ch, cur_h, cur_w, ctx->dec[s].blocks[i],
+                        n_heads, ctx->win_size, shift, dq1, dq2, scratch);
+        }
+        if (cb) cb(dec_names[s], x.data(), ch * cur_h * cur_w);
+    }
+
+    for (int i = 0; i < ch * cur_h * cur_w; i++) x[i] += skip_head[i];
+    conv2d(x.data(), ch, cur_h, cur_w,
+           to_f32(ctx->tail_w, dq1), to_f32(ctx->tail_b, dq2),
+           3, 3, 3, 1, 1, output_chw);
     return 0;
 }
 
