@@ -1144,7 +1144,7 @@ CRISPEMBED_API int crispembed_scan_cleanup_process_simple(
 /// One pipeline stage: engine + models + cleanup + engine params + accept-gate.
 typedef struct crispembed_ocr_stage {
     int   source_type;   // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    int   engine;        // 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl 5=internvl2 6=tesseract
+    int   engine;        // 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl 5=internvl2 6=tesseract 7=parseq
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
     int   cleanup_enabled;
