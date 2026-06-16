@@ -72,6 +72,7 @@ int main(int argc, char ** argv) {
     std::string layout_model_path;    // layout detection model (RT-DETRv2)
     std::string text_det_model_path;  // surya text detection model
     std::string ner_model_path;       // NER model (GLiNER)
+    std::string lid_model_path;       // standalone text LID model (--lid-model)
     bool enable_ocr_orch = false;     // --ocr-pipeline: enable orchestrator endpoint
     std::string vlm_model_path;       // VLM escalation model for orchestrator
     int vlm_engine = 0;               // 0=GOT, 1=GLM, 2=Qwen2-VL, 3=InternVL2
@@ -105,6 +106,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc) layout_model_path = argv[++i];
         else if (strcmp(argv[i], "--text-det") == 0 && i + 1 < argc) text_det_model_path = argv[++i];
         else if (strcmp(argv[i], "--ner") == 0 && i + 1 < argc) ner_model_path = argv[++i];
+        else if (strcmp(argv[i], "--lid-model") == 0 && i + 1 < argc) lid_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr-pipeline") == 0) enable_ocr_orch = true;
         else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) vlm_model_path = argv[++i];
         else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) vlm_engine = atoi(argv[++i]);
@@ -122,7 +124,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--instructir-model") == 0 && i + 1 < argc) instructir_model_path = argv[++i];
     }
 
-    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() && dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty()) {
+    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && lid_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() && dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
@@ -831,6 +833,16 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "Warning: failed to init KIE pipeline\n");
     }
 
+    // ── Standalone Text LID ──
+    void * lid_ctx = nullptr;
+    std::mutex lid_mutex;
+
+    if (!lid_model_path.empty()) {
+        lid_ctx = crispembed_lid_init(lid_model_path.c_str(), n_threads);
+        if (!lid_ctx)
+            fprintf(stderr, "Warning: failed to load LID model '%s'\n", lid_model_path.c_str());
+    }
+
     // ── Text Super-Resolution ──
     void * text_sr_ctx = nullptr;
     std::mutex text_sr_mutex;
@@ -1305,11 +1317,18 @@ int main(int argc, char ** argv) {
         auto t1 = std::chrono::high_resolution_clock::now();
         double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
 
+        // Get detected language from LID (if configured)
+        float lang_conf = 0.0f;
+        const char * det_lang = crispembed_ocr_pipeline_detected_lang(ocr_orch_ctx, &lang_conf);
+
         std::ostringstream js;
         js << "{\"text\":\"" << json_escape(full_text ? full_text : "") << "\""
            << ",\"n_regions\":" << n_results
-           << ",\"mean_confidence\":" << std::fixed << std::setprecision(4) << mean_conf
-           << ",\"results\":[";
+           << ",\"mean_confidence\":" << std::fixed << std::setprecision(4) << mean_conf;
+        if (det_lang && *det_lang)
+           js << ",\"detected_lang\":\"" << det_lang << "\""
+              << ",\"lang_confidence\":" << std::setprecision(4) << lang_conf;
+        js << ",\"results\":[";
         for (int i = 0; i < n_results; i++) {
             if (i > 0) js << ",";
             js << "{\"text\":\"" << json_escape(results[i].text) << "\""
@@ -1596,6 +1615,72 @@ int main(int argc, char ** argv) {
         js << "], \"ms\": " << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /ner/extract in %.1f ms (%d entities)\n", ms, n);
+        res.set_content(js.str(), "application/json");
+    });
+
+    // POST /lid/detect — standalone text language identification
+    // Request:  {"text": "Hallo Welt, wie geht es?", "k": 3}
+    // Response: {"language": "de", "confidence": 0.98, "top_k": [{"lang": "de", "conf": 0.98}, ...]}
+    svr.Post("/lid/detect", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!lid_ctx) {
+            res.set_content("{\"error\":\"LID model not loaded. Use --lid-model MODEL\"}", "application/json");
+            res.status = 503;
+            return;
+        }
+        std::string text;
+        int k = 1;
+        // Parse JSON body
+        auto body = req.body;
+        // Simple JSON extraction (text + k fields)
+        auto text_pos = body.find("\"text\"");
+        if (text_pos != std::string::npos) {
+            auto colon = body.find(':', text_pos);
+            auto quote1 = body.find('"', colon + 1);
+            auto quote2 = body.find('"', quote1 + 1);
+            if (quote1 != std::string::npos && quote2 != std::string::npos)
+                text = body.substr(quote1 + 1, quote2 - quote1 - 1);
+        }
+        auto k_pos = body.find("\"k\"");
+        if (k_pos != std::string::npos) {
+            auto colon = body.find(':', k_pos);
+            if (colon != std::string::npos) k = std::atoi(body.c_str() + colon + 1);
+        }
+        if (text.empty()) {
+            res.set_content("{\"error\":\"missing 'text' field\"}", "application/json");
+            res.status = 400;
+            return;
+        }
+        if (k < 1) k = 1;
+        if (k > 20) k = 20;
+
+        std::lock_guard<std::mutex> lock(lid_mutex);
+        auto t0 = std::chrono::high_resolution_clock::now();
+
+        std::ostringstream js;
+        if (k == 1) {
+            float conf = 0;
+            const char * lang = crispembed_lid_predict(lid_ctx, text.c_str(), &conf);
+            js << "{\"language\":\"" << (lang ? lang : "") << "\""
+               << ",\"confidence\":" << std::fixed << std::setprecision(4) << conf;
+        } else {
+            std::vector<const char *> labels(k, nullptr);
+            std::vector<float> confs(k, 0.0f);
+            int n = crispembed_lid_predict_topk(lid_ctx, text.c_str(), k, labels.data(), confs.data());
+            js << "{\"language\":\"" << (n > 0 && labels[0] ? labels[0] : "") << "\""
+               << ",\"confidence\":" << std::fixed << std::setprecision(4) << (n > 0 ? confs[0] : 0.0f)
+               << ",\"top_k\":[";
+            for (int i = 0; i < n; i++) {
+                if (i > 0) js << ",";
+                js << "{\"lang\":\"" << (labels[i] ? labels[i] : "") << "\""
+                   << ",\"conf\":" << std::setprecision(4) << confs[i] << "}";
+            }
+            js << "]";
+        }
+        auto t1 = std::chrono::high_resolution_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+        js << ",\"ms\":" << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /lid/detect in %.1f ms\n", ms);
         res.set_content(js.str(), "application/json");
     });
 
@@ -3197,6 +3282,7 @@ int main(int argc, char ** argv) {
         if (layout_ctx) js << ", \"layout\": true";
         if (text_det_ctx) js << ", \"text_detection\": true";
         if (ner_ctx) js << ", \"ner\": true";
+        if (lid_ctx) js << ", \"lid\": true";
         if (ocr_orch_ctx) js << ", \"ocr_orchestrator\": true";
         if (text_sr_ctx) js << ", \"text_sr\": true, \"text_sr_upscale\": " << crispembed_text_sr_upscale_factor(text_sr_ctx);
         if (pan_sr_ctx) js << ", \"pan_sr\": true, \"pan_sr_upscale\": " << crispembed_pan_sr_scale(pan_sr_ctx);
@@ -3231,6 +3317,7 @@ int main(int argc, char ** argv) {
     fprintf(stderr, "  POST /table/parse     — {\"image\": \"table.png\"} → {\"html\": \"<table>...\"}\n");
     if (text_det_ctx) fprintf(stderr, "  POST /text/detect     — {\"image\": \"page.png\"}\n");
     if (ner_ctx) fprintf(stderr, "  POST /ner/extract     — {\"text\": \"...\", \"labels\": [\"person\", ...]}\n");
+    if (lid_ctx) fprintf(stderr, "  POST /lid/detect      — {\"text\": \"...\", \"k\": 3} → language identification\n");
     if (kie_ctx) fprintf(stderr, "  POST /kie/extract     — {\"image\": \"doc.png\", \"labels\": [\"total\", ...]} (OCR+NER)\n");
     if (ocr_orch_ctx) fprintf(stderr, "  POST /ocr/pipeline    — {\"image\": \"doc.png\"} (routing + cleanup + accept-gate)\n");
     if (text_sr_ctx) fprintf(stderr, "  POST /text/sr         — {\"image\": \"low_dpi.png\"} (upscale %dx)\n", crispembed_text_sr_upscale_factor(text_sr_ctx));
@@ -3270,6 +3357,7 @@ int main(int argc, char ** argv) {
     if (scunet_ctx) crispembed_scunet_free(scunet_ctx);
     if (instructir_ctx) crispembed_instructir_free(instructir_ctx);
     if (ner_ctx) crispembed_ner_free(ner_ctx);
+    if (lid_ctx) crispembed_lid_free(lid_ctx);
     if (layout_ctx) crispembed_layout_free(layout_ctx);
     if (text_det_ctx) crispembed_text_det_free(text_det_ctx);
     if (ocr_orch_ctx) crispembed_ocr_pipeline_free(ocr_orch_ctx);
