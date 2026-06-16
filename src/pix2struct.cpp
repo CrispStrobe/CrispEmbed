@@ -595,13 +595,8 @@ const char * pix2struct_generate(pix2struct_context * ctx,
                                  int max_tokens) {
     // TODO: implement image preprocessing (variable-resolution patching)
     // For now, return empty string
+    if (!ctx) return nullptr;
     (void)image; (void)width; (void)height; (void)max_tokens;
-    if (!ctx) return nullptr;
-
-    // Placeholder — full image-to-patches preprocessing needed
-    static std::string result = "";
-    (void)image; (void)width; (void)height;
-    if (!ctx) return nullptr;
 
     static std::string result;
     result = greedy_decode(ctx, max_tokens > 0 ? max_tokens : 256);
