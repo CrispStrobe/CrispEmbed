@@ -349,7 +349,6 @@ esrgan_sr engine internally).
 
 - [x] Python wrapper `encode_image()` for standalone SigLIP/CLIP
 - [x] CrispFacePipeline export + from_registry() + Python unit tests + face_search example
-- [ ] CrispLens integration — update `crispembed_client.py` for face pipeline
 
 ### Feature gaps vs fastembed-rs
 
