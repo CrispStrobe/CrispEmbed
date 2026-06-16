@@ -666,10 +666,6 @@ static bool run_decoder_prefill(context &ctx,
         return ggml_mul(gc, ggml_rms_norm(gc, t, rms_eps), w);
     };
 
-    // Store K/V pointers per layer for cache extraction after compute
-    std::vector<ggml_tensor*> kv_k_ptrs(n_layers, nullptr);
-    std::vector<ggml_tensor*> kv_v_ptrs(n_layers, nullptr);
-
     // Decoder layers
     for (int il = 0; il < n_layers; il++) {
         auto &L = m.lm[il];
@@ -711,13 +707,21 @@ static bool run_decoder_prefill(context &ctx,
                           head_dim, GGML_ROPE_TYPE_NEOX, 0,
                           rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-        // KV cache extraction disabled — ggml_set_output on 56 tensors
-        // (28 K + 28 V) prevents memory reuse and causes OOM on 8GB.
-        // The decode loop falls back to O(n²) full recompute.
-        // TODO: implement streaming KV extraction or use the qwen2vl
-        // approach (dedicated graph output pass).
-        // kv_k_ptrs[il] = K;
-        // kv_v_ptrs[il] = V;
+        // Output post-RoPE K/V for KV cache extraction
+        // ggml_cont creates a concrete node (not a view) that's findable
+        // by ggml_graph_get_tensor. Shape: (head_dim, n_kv_heads, n_prompt)
+        // = (kv_dim, n_prompt) when flattened.
+        {
+            char kname[32], vname[32];
+            snprintf(kname, sizeof(kname), "k_out_%d", il);
+            snprintf(vname, sizeof(vname), "v_out_%d", il);
+            // Name K and V directly — they're already graph nodes
+            // (output of ggml_rope_ext / ggml_reshape_3d which are ops)
+            ggml_set_name(K, kname);
+            ggml_set_output(K);
+            ggml_set_name(V, vname);
+            ggml_set_output(V);
+        }
 
         // GQA repeat K/V if needed
         if (n_kv_heads < n_heads) {
@@ -778,7 +782,7 @@ static bool run_decoder_prefill(context &ctx,
     ggml_set_name(last_logits, "last_logits"); ggml_set_output(last_logits);
     ggml_build_forward_expand(gf, last_logits);
 
-    // K/V outputs are stored in kv_k_ptrs/kv_v_ptrs for extraction after compute
+    // K/V outputs are named k_out_N/v_out_N — extracted after compute via ggml_graph_get_tensor
 
     // Allocate and compute
     ggml_backend_sched_reset(ctx.sched);
@@ -817,14 +821,30 @@ static bool run_decoder_prefill(context &ctx,
     std::vector<float> logits_data(V);
     ggml_tensor *t_logits = ggml_graph_get_tensor(gf, "last_logits");
     ggml_backend_tensor_get(t_logits, logits_data.data(), 0, V * sizeof(float));
-    // Extract KV cache from prefill graph outputs (using stored pointers)
+    // Debug: check if k_out_0 is findable
+    {
+        ggml_tensor *test = ggml_graph_get_tensor(gf, "k_out_0");
+        fprintf(stderr, "lightonocr: k_out_0 found: %s\n", test ? "YES" : "NO");
+        // Also try the raw K tensor name
+        ggml_tensor *test2 = ggml_graph_get_tensor(gf, "K");
+        fprintf(stderr, "lightonocr: 'K' found: %s\n", test2 ? "YES" : "NO");
+    }
+
+    // Extract KV cache from prefill graph (read BEFORE freeing g)
     std::vector<std::vector<float>> k_cache(n_layers), v_cache(n_layers);
     bool kv_ok = true;
     for (int il = 0; il < n_layers; il++) {
-        ggml_tensor *kt = kv_k_ptrs[il];
-        ggml_tensor *vt = kv_v_ptrs[il];
-        if (!kt || !vt) { kv_ok = false; break; }
-        size_t sz = (size_t)kv_dim * n_prompt;
+        char kname[32], vname[32];
+        snprintf(kname, sizeof(kname), "k_out_%d", il);
+        snprintf(vname, sizeof(vname), "v_out_%d", il);
+        ggml_tensor *kt = ggml_graph_get_tensor(gf, kname);
+        ggml_tensor *vt = ggml_graph_get_tensor(gf, vname);
+        if (!kt || !vt) {
+            if (il == 0) fprintf(stderr, "lightonocr: k_out_%d not found in graph\n", il);
+            kv_ok = false; break;
+        }
+        // K/V are 3D (head_dim, n_kv_heads, n_prompt) — read as flat (kv_dim * n_prompt)
+        size_t sz = (size_t)ggml_nelements(kt);
         k_cache[il].resize(sz);
         v_cache[il].resize(sz);
         ggml_backend_tensor_get(kt, k_cache[il].data(), 0, sz * sizeof(float));
