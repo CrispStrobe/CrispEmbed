@@ -24,7 +24,7 @@ def log(msg):
     except Exception:
         pass
 
-log("=== FireRed-OCR Parity v4 ===")
+log("=== FireRed-OCR Parity v8 ===")
 log(f"Python {sys.version}")
 
 # Write progress immediately so we can see output even on crash
