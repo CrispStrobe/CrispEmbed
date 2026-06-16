@@ -1107,12 +1107,73 @@ void glm_ocr_free(glm_ocr_context *ctx) {
 
 const char * glm_ocr_recognize_raw(glm_ocr_context *ctx,
     const uint8_t *px, int w, int h, int ch, int *out_len) {
-    if (out_len) *out_len = 0;
-    return "";
+    if (!ctx || !px) {
+        if (out_len) *out_len = 0;
+        return "";
+    }
+
+    auto &v = ctx->ctx.m.vhp;
+    auto &l = ctx->ctx.m.lhp;
+    int imgS = (int)v.image_size; // 336
+
+    // Resize to (imgS, imgS) with bilinear interpolation + CLIP normalize
+    std::vector<float> pixels(3 * imgS * imgS);
+    for (int c = 0; c < 3; c++) {
+        for (int y = 0; y < imgS; y++) {
+            float fy = (float)y * h / imgS;
+            int iy = std::min((int)fy, h - 1);
+            for (int x = 0; x < imgS; x++) {
+                float fx = (float)x * w / imgS;
+                int ix = std::min((int)fx, w - 1);
+                int ci = std::min(c, ch - 1);
+                float val = (float)px[(iy * w + ix) * ch + ci] / 255.0f;
+                pixels[c * imgS * imgS + y * imgS + x] =
+                    (val - v.image_mean[c]) / v.image_std[c];
+            }
+        }
+    }
+
+    // Vision encode
+    glm_ocr::vision_result vr;
+    if (!glm_ocr::encode_vision(ctx->ctx, pixels.data(), vr)) {
+        fprintf(stderr, "glm_ocr: vision encoding failed\n");
+        if (out_len) *out_len = 0;
+        return "";
+    }
+
+    // Build prompt: [image_token_id] * n_image_tokens
+    int n_img_tokens = vr.n_tokens;
+    std::vector<int32_t> prompt(n_img_tokens, (int32_t)l.image_token_id);
+
+    // Generate
+    glm_ocr::generate_result gen;
+    bool ok = glm_ocr::generate(ctx->ctx,
+        vr.hidden, n_img_tokens, (int)vr.hidden_dim,
+        prompt.data(), (int)prompt.size(), 1024, gen);
+    free(vr.hidden);
+
+    if (!ok) {
+        if (out_len) *out_len = 0;
+        return "";
+    }
+
+    ctx->last_text = gen.text;
+    if (out_len) *out_len = (int)ctx->last_text.size();
+    return ctx->last_text.c_str();
 }
 
 const char * glm_ocr_recognize(glm_ocr_context *ctx,
     const float *px, int w, int h, int *out_len) {
-    if (out_len) *out_len = 0;
-    return "";
+    if (!ctx || !px) {
+        if (out_len) *out_len = 0;
+        return "";
+    }
+    std::vector<uint8_t> rgb(w * h * 3);
+    for (int i = 0; i < w * h; i++) {
+        uint8_t v = (uint8_t)std::min(255.0f, std::max(0.0f, px[i] * 255.0f));
+        rgb[i * 3 + 0] = v;
+        rgb[i * 3 + 1] = v;
+        rgb[i * 3 + 2] = v;
+    }
+    return glm_ocr_recognize_raw(ctx, rgb.data(), w, h, 3, out_len);
 }

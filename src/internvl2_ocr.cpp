@@ -20,6 +20,7 @@
 // Per-layer diff comparison via crispembed_diff.h when ctx.diff_ref_path is set.
 
 #include "internvl2_ocr.h"
+#include "image_preprocess.h"
 #include "crispembed_diff.h"
 #include "core/gguf_loader.h"
 #include "core/bpe.h"
@@ -1604,31 +1605,31 @@ const char * internvl2_ocr_recognize_raw(
         return "";
     }
 
-    // Convert uint8 RGB to normalized float (single tile, resize to 448x448)
-    const int img_size = (int)ctx->ctx.m.vhp.image_size;
-    std::vector<float> pixels(3 * img_size * img_size);
-
-    // Simple bilinear resize + normalize
-    const float *mean = ctx->ctx.m.vhp.image_mean;
-    const float *std_v = ctx->ctx.m.vhp.image_std;
-    for (int c = 0; c < 3; c++) {
-        for (int y = 0; y < img_size; y++) {
-            for (int x = 0; x < img_size; x++) {
-                float sy = (float)y * height / img_size;
-                float sx = (float)x * width / img_size;
-                int iy = std::min((int)sy, height - 1);
-                int ix = std::min((int)sx, width - 1);
-                int ch = std::min(c, channels - 1);
-                float val = (float)pixel_bytes[(iy * width + ix) * channels + ch] / 255.0f;
-                pixels[c * img_size * img_size + y * img_size + x] =
-                    (val - mean[c]) / std_v[c];
-            }
-        }
+    // Use proper dynamic tiling preprocessor from image_preprocess.cpp
+    const auto &vhp = ctx->ctx.m.vhp;
+    image_preproc::internvl_config cfg;
+    cfg.image_size        = (int)vhp.image_size;   // 448
+    cfg.min_dynamic_patch = 1;
+    cfg.max_dynamic_patch = 12;
+    cfg.use_thumbnail     = true;
+    for (int i = 0; i < 3; i++) {
+        cfg.mean[i] = vhp.image_mean[i];
+        cfg.std[i]  = vhp.image_std[i];
     }
 
-    // Encode vision (single tile)
+    image_preproc::internvl_result pp;
+    if (!image_preproc::preprocess_internvl_rgb(pixel_bytes, height, width, channels, cfg, pp)) {
+        fprintf(stderr, "internvl2_ocr: image preprocessing failed\n");
+        if (out_len) *out_len = 0;
+        return "";
+    }
+
+    fprintf(stderr, "internvl2_ocr: %dx%d → %d tiles (%dx%d grid, %dpx)\n",
+            width, height, pp.n_tiles, pp.grid_rows, pp.grid_cols, pp.tile_size);
+
+    // Encode vision with all tiles (dynamic tiling + optional thumbnail)
     internvl2_ocr::vision_pipeline_result vpr;
-    if (!internvl2_ocr::encode_vision(ctx->ctx, pixels.data(), 1, vpr)) {
+    if (!internvl2_ocr::encode_vision(ctx->ctx, pp.tiles.data(), pp.n_tiles, vpr)) {
         if (out_len) *out_len = 0;
         return "";
     }
