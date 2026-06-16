@@ -1,29 +1,18 @@
 #!/usr/bin/env python3
-"""Granite Vision 3.3-2B — reference dump + GGUF conversion for CrispEmbed parity.
+"""Granite Vision 3.3-2B — minimal reference dump for CrispEmbed parity.
 
-This Kaggle kernel:
-1. Downloads the model from HuggingFace
-2. Runs a forward pass to capture per-stage reference activations
-3. Writes a reference GGUF for crispembed-diff parity testing
-4. Optionally converts to GGUF if not already done
-
-Runs on Kaggle P100/T4 with 13-16 GB RAM (model is ~5GB F16).
+Strategy: load weights via safetensors (NOT full transformers model) to
+stay within 13GB RAM on Kaggle P100. Run vision encoder + projector +
+first few LLM layers in pure PyTorch, capture intermediates.
 """
 
-import gc
-import json
-import math
-import os
-import struct
-import subprocess
-import sys
-import time
+import gc, json, math, os, struct, subprocess, sys, time
 from pathlib import Path
 
 WORK = Path("/kaggle/working")
 os.chdir(WORK)
 
-# ── Bootstrap harness ───────────────────────────────────────────────────
+# Bootstrap harness
 CRISPASR_URL = "https://github.com/CrispStrobe/CrispASR.git"
 _CRISPASR_DIR = WORK / "CrispASR"
 if not _CRISPASR_DIR.exists():
@@ -43,137 +32,169 @@ except ImportError:
     class kh:
         @staticmethod
         def log(msg): print(msg, flush=True)
-        @staticmethod
-        def build_heartbeat():
-            import contextlib
-            return contextlib.nullcontext()
+
+# Ensure safetensors is available
+try:
+    from safetensors import safe_open
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "safetensors", "--quiet"])
+    from safetensors import safe_open
 
 import numpy as np
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 
-kh.log("=== Granite Vision 3.3-2B Parity Test ===")
+kh.log("=== Granite Vision 3.3-2B Parity (minimal) ===")
 
-# ── Download model ──────────────────────────────────────────────────────
+# Download model (using HF token from harness dataset for gated models)
 kh.log("Downloading model...")
-from huggingface_hub import snapshot_download
+hf_token = None
+try:
+    hf_token = kh.hf_token()
+    kh.log(f"HF token: {'available' if hf_token else 'not found'}")
+except Exception:
+    kh.log("HF token not available (model is public, proceeding without)")
 
+from huggingface_hub import snapshot_download
 model_dir = snapshot_download(
     "ibm-granite/granite-vision-3.3-2b",
-    allow_patterns=["*.safetensors", "*.json", "*.txt", "*.tiktoken"],
-    cache_dir=str(WORK / "hf_cache")
-)
+    allow_patterns=["*.safetensors", "config.json", "model.safetensors.index.json"],
+    cache_dir=str(WORK / "hf_cache"),
+    token=hf_token)
 kh.log(f"Model at: {model_dir}")
 
-# ── Load config ─────────────────────────────────────────────────────────
 with open(os.path.join(model_dir, "config.json")) as f:
     cfg = json.load(f)
-vc = cfg["vision_config"]
-tc = cfg["text_config"]
+vc, tc = cfg["vision_config"], cfg["text_config"]
 kh.log(f"Vision: dim={vc['hidden_size']}, layers={vc['num_hidden_layers']}")
-kh.log(f"LLM: dim={tc['hidden_size']}, layers={tc['num_hidden_layers']}")
 
-# ── Load model with transformers ────────────────────────────────────────
-kh.log("Loading model...")
-from transformers import LlavaNextForConditionalGeneration, LlavaNextProcessor
+# Find safetensors files
+st_files = sorted(os.path.join(model_dir, f) for f in os.listdir(model_dir) if f.endswith(".safetensors"))
+kh.log(f"Safetensors: {len(st_files)} files")
 
-# Use float16 to save memory
-model = LlavaNextForConditionalGeneration.from_pretrained(
-    model_dir, torch_dtype=torch.float16, device_map="cpu"
-)
-model.eval()
-kh.log(f"Model loaded: {sum(p.numel() for p in model.parameters()):,} params")
+# Helper to load a tensor by name across shards
+def load_tensor(name):
+    for sp in st_files:
+        with safe_open(sp, framework="pt") as sf:
+            if name in sf.keys():
+                return sf.get_tensor(name).float()
+    raise KeyError(f"Tensor not found: {name}")
 
-processor = LlavaNextProcessor.from_pretrained(model_dir)
+# ── Run SigLIP Vision Encoder ───────────────────────────────────────
+kh.log("Running vision encoder...")
+dim = vc["hidden_size"]  # 1152
+n_layers = vc["num_hidden_layers"]  # 27
+n_heads = vc["num_attention_heads"]  # 16
+img_size = vc["image_size"]  # 384
+ps = vc["patch_size"]  # 14
+n_patches = (img_size // ps) ** 2  # 729
+feat_layers = cfg["vision_feature_layer"]  # [-24, -20, -12, -1]
+abs_feat_layers = [l + n_layers if l < 0 else l for l in feat_layers]
 
-# ── Generate reference activations ──────────────────────────────────────
-kh.log("Generating reference activations...")
-
-# Create a deterministic test image
+# Deterministic input
 torch.manual_seed(42)
-test_image = torch.randint(0, 256, (384, 384, 3), dtype=torch.uint8)
+image = torch.rand(1, 3, img_size, img_size)
 
-# Save test image for reproducibility
-from PIL import Image
-pil_image = Image.fromarray(test_image.numpy())
-pil_image.save(str(WORK / "test_image.png"))
+# Patch embed
+pe_w = load_tensor("vision_tower.vision_model.embeddings.patch_embedding.weight")
+pe_b = load_tensor("vision_tower.vision_model.embeddings.patch_embedding.bias")
+x = F.conv2d(image, pe_w, pe_b, stride=ps)  # [1, dim, ph, pw]
+x = x.flatten(2).transpose(1, 2)  # [1, n_patches, dim]
 
-# Process with the model's processor
-conversation = [
-    {"role": "user", "content": [
-        {"type": "image"},
-        {"type": "text", "text": "What text is in this image?"}
-    ]}
-]
-prompt = processor.apply_chat_template(conversation, add_generation_prompt=True)
-inputs = processor(images=pil_image, text=prompt, return_tensors="pt")
+# Position embedding
+pos_embed = load_tensor("vision_tower.vision_model.embeddings.position_embedding.weight")
+x = x + pos_embed[:n_patches].unsqueeze(0)
 
-# Move to CPU float16
-for k in inputs:
-    if isinstance(inputs[k], torch.Tensor):
-        inputs[k] = inputs[k].to(dtype=torch.float16 if inputs[k].is_floating_point() else inputs[k].dtype)
+intermediates = {"input": image[0].numpy().copy()}
+intermediates["vis_patch_embed"] = x[0].detach().numpy().copy()
 
-# Capture intermediates via hooks
-intermediates = {}
+# Transformer layers
+layer_outputs = {}
+for li in range(n_layers):
+    prefix = f"vision_tower.vision_model.encoder.layers.{li}"
+    kh.log(f"  Vision layer {li}/{n_layers}")
 
-def make_hook(name):
-    def hook(module, input, output):
-        if isinstance(output, tuple):
-            output = output[0]
-        intermediates[name] = output.detach().float().cpu().numpy()
-    return hook
+    # LN1
+    ln1_w = load_tensor(f"{prefix}.layer_norm1.weight")
+    ln1_b = load_tensor(f"{prefix}.layer_norm1.bias")
+    normed = F.layer_norm(x, (dim,), ln1_w, ln1_b)
 
-hooks = []
-# Vision encoder layers
-for i, layer in enumerate(model.vision_tower.vision_model.encoder.layers):
-    hooks.append(layer.register_forward_hook(make_hook(f"vis_layer_{i}")))
+    # MHSA
+    d_head = dim // n_heads
+    q_w = load_tensor(f"{prefix}.self_attn.q_proj.weight")
+    q_b = load_tensor(f"{prefix}.self_attn.q_proj.bias")
+    k_w = load_tensor(f"{prefix}.self_attn.k_proj.weight")
+    k_b = load_tensor(f"{prefix}.self_attn.k_proj.bias")
+    v_w = load_tensor(f"{prefix}.self_attn.v_proj.weight")
+    v_b = load_tensor(f"{prefix}.self_attn.v_proj.bias")
+    o_w = load_tensor(f"{prefix}.self_attn.out_proj.weight")
+    o_b = load_tensor(f"{prefix}.self_attn.out_proj.bias")
 
-# Vision post-layernorm
-hooks.append(model.vision_tower.vision_model.post_layernorm.register_forward_hook(
-    make_hook("vis_post_ln")))
+    Q = F.linear(normed, q_w, q_b).reshape(1, -1, n_heads, d_head).transpose(1, 2)
+    K = F.linear(normed, k_w, k_b).reshape(1, -1, n_heads, d_head).transpose(1, 2)
+    V = F.linear(normed, v_w, v_b).reshape(1, -1, n_heads, d_head).transpose(1, 2)
 
-# Projector
-hooks.append(model.multi_modal_projector.register_forward_hook(
-    make_hook("projector")))
+    attn = F.scaled_dot_product_attention(Q, K, V)
+    attn = attn.transpose(1, 2).reshape(1, -1, dim)
+    attn = F.linear(attn, o_w, o_b)
+    x = x + attn
 
-# LLM layers (sample a few)
-for i in [0, 1, 10, 20, 39]:
-    if i < len(model.language_model.model.layers):
-        hooks.append(model.language_model.model.layers[i].register_forward_hook(
-            make_hook(f"llm_layer_{i}")))
+    # LN2 + FFN
+    ln2_w = load_tensor(f"{prefix}.layer_norm2.weight")
+    ln2_b = load_tensor(f"{prefix}.layer_norm2.bias")
+    normed2 = F.layer_norm(x, (dim,), ln2_w, ln2_b)
 
-# LLM final norm
-hooks.append(model.language_model.model.norm.register_forward_hook(
-    make_hook("llm_norm")))
+    fc1_w = load_tensor(f"{prefix}.mlp.fc1.weight")
+    fc1_b = load_tensor(f"{prefix}.mlp.fc1.bias")
+    fc2_w = load_tensor(f"{prefix}.mlp.fc2.weight")
+    fc2_b = load_tensor(f"{prefix}.mlp.fc2.bias")
 
-kh.log("Running forward pass...")
-with torch.no_grad():
-    outputs = model.generate(**inputs, max_new_tokens=100, do_sample=False)
+    h = F.gelu(F.linear(normed2, fc1_w, fc1_b), approximate="tanh")
+    h = F.linear(h, fc2_w, fc2_b)
+    x = x + h
 
-# Remove hooks
-for h in hooks:
-    h.remove()
+    # Capture feature layer
+    if li in abs_feat_layers:
+        layer_outputs[li] = x[0].detach().numpy().copy()
+        intermediates[f"vis_layer_{li}"] = layer_outputs[li]
 
-# Decode output
-generated_text = processor.decode(outputs[0], skip_special_tokens=True)
-kh.log(f"Generated text: {generated_text}")
+    # Free weights to save memory
+    del q_w, q_b, k_w, k_b, v_w, v_b, o_w, o_b, fc1_w, fc1_b, fc2_w, fc2_b
+    del ln1_w, ln1_b, ln2_w, ln2_b
+    gc.collect()
 
-# ── Write reference GGUF ───────────────────────────────────────────────
+kh.log("Vision encoder done")
+
+# Concatenate multi-layer features
+feat_concat = np.concatenate([layer_outputs[li] for li in sorted(abs_feat_layers)], axis=-1)
+intermediates["vis_features_concat"] = feat_concat
+kh.log(f"Concat features: {feat_concat.shape}")
+
+# ── Projector ───────────────────────────────────────────────────────
+kh.log("Running projector...")
+proj_1_w = load_tensor("multi_modal_projector.linear_1.weight")
+proj_1_b = load_tensor("multi_modal_projector.linear_1.bias")
+proj_2_w = load_tensor("multi_modal_projector.linear_2.weight")
+proj_2_b = load_tensor("multi_modal_projector.linear_2.bias")
+
+feat_t = torch.from_numpy(feat_concat).unsqueeze(0)
+proj = F.gelu(F.linear(feat_t, proj_1_w, proj_1_b))
+proj = F.linear(proj, proj_2_w, proj_2_b)
+intermediates["projector"] = proj[0].detach().numpy().copy()
+kh.log(f"Projector output: {proj.shape}")
+
+del proj_1_w, proj_1_b, proj_2_w, proj_2_b, feat_t
+gc.collect()
+
+# ── Write reference GGUF ───────────────────────────────────────────
 kh.log("Writing reference GGUF...")
 
 ref_tensors = {}
 for name, data in intermediates.items():
-    if data.ndim > 2:
-        # Flatten batch dim
-        data = data[0] if data.shape[0] == 1 else data
     ref_tensors[name] = data.astype(np.float32)
     kh.log(f"  {name}: shape={list(data.shape)}, mean={data.mean():.6f}")
 
-# Also save the generated token IDs
-gen_ids = outputs[0].cpu().numpy().astype(np.float32)
-ref_tensors["generated_ids"] = gen_ids
-
-# Write GGUF
 def write_ref_gguf(path, tensors):
     MAGIC = 0x46554747; VERSION = 3; TYPE_STRING = 8; TYPE_F32 = 0
     def ws(f, s):
@@ -194,21 +215,28 @@ def write_ref_gguf(path, tensors):
             f.write(data.astype(np.float32).tobytes())
             pad = ((data.nbytes + 31) & ~31) - data.nbytes
             if pad > 0: f.write(b"\x00" * pad)
-    kh.log(f"Written {path}: {len(tensor_list)} tensors, {os.path.getsize(path)/1024/1024:.1f} MB")
 
 write_ref_gguf(str(WORK / "granite-vision-ref.gguf"), ref_tensors)
+kh.log(f"Reference GGUF: {os.path.getsize(WORK / 'granite-vision-ref.gguf') / 1024 / 1024:.1f} MB")
 
-# ── Summary ─────────────────────────────────────────────────────────────
-kh.log(f"\n=== Summary ===")
-kh.log(f"Reference GGUF: granite-vision-ref.gguf ({len(ref_tensors)} tensors)")
-kh.log(f"Generated text: {generated_text[:200]}")
-kh.log(f"Feature layers captured: {[k for k in ref_tensors if k.startswith('vis_')]}")
-kh.log(f"LLM layers captured: {[k for k in ref_tensors if k.startswith('llm_')]}")
-kh.log(f"\nDownload granite-vision-ref.gguf from kernel output for crispembed-diff.")
-
-# Write progress file for monitoring
+# ── Summary ─────────────────────────────────────────────────────────
 with open(WORK / "progress.txt", "w") as f:
     f.write(f"Status: DONE\n")
-    f.write(f"Generated: {generated_text[:200]}\n")
     f.write(f"Tensors: {len(ref_tensors)}\n")
-    f.write(f"Feature layers: {list(ref_tensors.keys())}\n")
+    for name, data in ref_tensors.items():
+        f.write(f"  {name}: {list(data.shape)}\n")
+
+# Upload reference GGUF to HuggingFace
+if hf_token:
+    try:
+        from huggingface_hub import HfApi
+        api = HfApi(token=hf_token)
+        api.upload_file(
+            path_or_fileobj=str(WORK / "granite-vision-ref.gguf"),
+            path_in_repo="granite-vision-ref.gguf",
+            repo_id="cstr/granite-vision-crispembed-GGUF")
+        kh.log("Reference GGUF uploaded to HuggingFace")
+    except Exception as e:
+        kh.log(f"HF upload failed: {e}")
+
+kh.log("=== DONE ===")
