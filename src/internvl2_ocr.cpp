@@ -1511,6 +1511,7 @@ bool generate(context &ctx,
     ctx.kvc.n_past = n_prompt_tokens;
 
     // Greedy argmax on prefill logits (last token)
+    out.token_confidences.clear();
     int best_id = 0;
     float best_score = -INFINITY;
     for (int v = 0; v < V; v++) {
@@ -1519,6 +1520,15 @@ bool generate(context &ctx,
             best_id = v;
         }
     }
+
+    // Confidence: numerically-stable softmax for winning token
+    {
+        float max_l = best_score;
+        float sum_exp = 0.0f;
+        for (int v = 0; v < V; v++) sum_exp += expf(logits[v] - max_l);
+        out.token_confidences.push_back(expf(best_score - max_l) / sum_exp);
+    }
+
     out.token_ids.push_back(best_id);
     if (ctx.verbosity >= 1) {
         fprintf(stderr, "  gen[0]: token=%d score=%.2f (prefill %d tokens)\n",
@@ -1548,6 +1558,13 @@ bool generate(context &ctx,
             }
         }
 
+        {
+            float max_l = best_score;
+            float sum_exp = 0.0f;
+            for (int v = 0; v < V; v++) sum_exp += expf(logits[v] - max_l);
+            out.token_confidences.push_back(expf(best_score - max_l) / sum_exp);
+        }
+
         out.token_ids.push_back(best_id);
         if (ctx.verbosity >= 1) {
             fprintf(stderr, "  gen[%d]: token=%d score=%.2f\n", gen, best_id, best_score);
@@ -1569,6 +1586,7 @@ struct internvl2_ocr_context {
     std::string last_text;
     std::string prompt = "OCR this image.";
     int max_tokens = 512;
+    std::vector<float> char_confidences;
 };
 
 internvl2_ocr_context * internvl2_ocr_init(const char *model_path, int n_threads) {
@@ -1654,6 +1672,7 @@ const char * internvl2_ocr_recognize_raw(
     }
 
     ctx->last_text = ctx->ctx.tok.decode(gen.token_ids);
+    ctx->char_confidences = std::move(gen.token_confidences);
 
     if (out_len) *out_len = (int)ctx->last_text.size();
     return ctx->last_text.c_str();
@@ -1677,4 +1696,20 @@ const char * internvl2_ocr_recognize(
         rgb[i * 3 + 2] = v;
     }
     return internvl2_ocr_recognize_raw(ctx, rgb.data(), width, height, 3, out_len);
+}
+
+const float * internvl2_ocr_confidences(const internvl2_ocr_context * ctx, int * n_tokens) {
+    if (!ctx || ctx->char_confidences.empty()) {
+        if (n_tokens) *n_tokens = 0;
+        return nullptr;
+    }
+    if (n_tokens) *n_tokens = (int)ctx->char_confidences.size();
+    return ctx->char_confidences.data();
+}
+
+float internvl2_ocr_mean_confidence(const internvl2_ocr_context * ctx) {
+    if (!ctx || ctx->char_confidences.empty()) return 0.0f;
+    double sum = 0;
+    for (float c : ctx->char_confidences) sum += c;
+    return (float)(sum / ctx->char_confidences.size());
 }

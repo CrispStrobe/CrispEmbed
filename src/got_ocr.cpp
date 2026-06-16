@@ -1385,7 +1385,17 @@ bool got_ocr::generate(context &ctx,
     ggml_free(lg.gctx);
 
     // Argmax
+    out.token_confidences.clear();
     int next_token = (int)(std::max_element(last_logits.begin(), last_logits.end()) - last_logits.begin());
+
+    // Confidence: numerically-stable softmax for winning token
+    {
+        float max_l = last_logits[next_token];
+        float sum_exp = 0.0f;
+        for (int v = 0; v < V; v++) sum_exp += expf(last_logits[v] - max_l);
+        out.token_confidences.push_back(1.0f / sum_exp);
+    }
+
     out.token_ids.push_back(next_token);
     ctx.kvc.n_past = T;
 
@@ -1403,6 +1413,14 @@ bool got_ocr::generate(context &ctx,
         ctx.kvc.n_past += 1;
 
         next_token = (int)(std::max_element(logits.begin(), logits.end()) - logits.begin());
+
+        {
+            float max_l = logits[next_token];
+            float sum_exp = 0.0f;
+            for (int v = 0; v < (int)logits.size(); v++) sum_exp += expf(logits[v] - max_l);
+            out.token_confidences.push_back(1.0f / sum_exp);
+        }
+
         out.token_ids.push_back(next_token);
 
         if (next_token == (int)l.eos_token_id) break;
@@ -1419,6 +1437,7 @@ bool got_ocr::generate(context &ctx,
 struct got_ocr_context {
     got_ocr::context inner;
     std::string result;
+    std::vector<float> char_confidences;
 };
 
 got_ocr_context * got_ocr_init(const char * model_path, int n_threads) {
@@ -1492,6 +1511,7 @@ const char * got_ocr_recognize_raw(got_ocr_context * ctx,
     }
 
     ctx->result = gen.text;
+    ctx->char_confidences = std::move(gen.token_confidences);
     if (out_len) *out_len = (int)ctx->result.size();
     return ctx->result.c_str();
 }
@@ -1511,4 +1531,20 @@ const char * got_ocr_recognize(got_ocr_context * ctx,
         rgb[i * 3 + 2] = v;
     }
     return got_ocr_recognize_raw(ctx, rgb.data(), w, h, 3, out_len);
+}
+
+const float * got_ocr_confidences(const got_ocr_context * ctx, int * n_tokens) {
+    if (!ctx || ctx->char_confidences.empty()) {
+        if (n_tokens) *n_tokens = 0;
+        return nullptr;
+    }
+    if (n_tokens) *n_tokens = (int)ctx->char_confidences.size();
+    return ctx->char_confidences.data();
+}
+
+float got_ocr_mean_confidence(const got_ocr_context * ctx) {
+    if (!ctx || ctx->char_confidences.empty()) return 0.0f;
+    double sum = 0;
+    for (float c : ctx->char_confidences) sum += c;
+    return (float)(sum / ctx->char_confidences.size());
 }

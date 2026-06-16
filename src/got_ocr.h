@@ -174,6 +174,7 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
 struct generate_result {
     std::vector<int32_t> token_ids;
     std::string text;
+    std::vector<float> token_confidences;
 };
 
 bool generate(context &ctx,
@@ -195,6 +196,9 @@ const char * got_ocr_recognize_raw(got_ocr_context * ctx,
     const uint8_t * px, int w, int h, int ch, int * out_len);
 const char * got_ocr_recognize(got_ocr_context * ctx,
     const float * px, int w, int h, int * out_len);
+
+const float * got_ocr_confidences(const got_ocr_context * ctx, int * n_tokens);
+float got_ocr_mean_confidence(const got_ocr_context * ctx);
 
 #ifdef __cplusplus
 }

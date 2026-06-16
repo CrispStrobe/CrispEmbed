@@ -49,6 +49,15 @@ const char * posformer_ocr_recognize_raw(
     const uint8_t * pixel_bytes, int width, int height, int channels,
     int * out_len);
 
+/// Get per-character confidence scores from the last recognition.
+/// Returns array of length *n_chars (one per output token).
+/// Each value is the softmax probability of the winning token.
+/// Valid until the next recognize call. Returns NULL if no recognition done.
+const float * posformer_ocr_confidences(const posformer_ocr_context * ctx, int * n_chars);
+
+/// Get mean confidence across all tokens from the last recognition.
+float posformer_ocr_mean_confidence(const posformer_ocr_context * ctx);
+
 #ifdef __cplusplus
 }
 #endif

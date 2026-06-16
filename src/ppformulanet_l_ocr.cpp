@@ -259,6 +259,7 @@ struct ppformulanet_l_ocr_context {
     ggml_backend_sched_t sched = nullptr;
     int n_threads;
     std::string result_buf;
+    std::vector<float> char_confidences; // per-token softmax probabilities
 
     // Cached encoder output (after projector: 144 tokens × 512d)
     std::vector<float> proj_out;
@@ -1365,6 +1366,7 @@ static std::vector<float> decoder_step(
 }
 
 static std::vector<int> greedy_decode(ppformulanet_l_ocr_context* ctx) {
+    ctx->char_confidences.clear();
     const auto& hp = ctx->hparams;
     const int max_steps = std::min(hp.max_seq_len, 512);
 
@@ -1388,6 +1390,16 @@ static std::vector<int> greedy_decode(ppformulanet_l_ocr_context* ctx) {
         }
 
         if (best == hp.eos_token || best == hp.pad_token) break;
+
+        // Confidence: softmax of winning token
+        {
+            float max_l = logits[0];
+            for (int v = 1; v < hp.vocab_size; v++) if (logits[v] > max_l) max_l = logits[v];
+            float sum_e = 0;
+            for (int v = 0; v < hp.vocab_size; v++) sum_e += expf(logits[v] - max_l);
+            ctx->char_confidences.push_back(expf(logits[best] - max_l) / sum_e);
+        }
+
         tokens.push_back(best);
         tok = best;
     }
@@ -1596,6 +1608,22 @@ const char* ppformulanet_l_ocr_recognize_chw(ppformulanet_l_ocr_context* ctx,
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
+}
+
+const float * ppformulanet_l_ocr_confidences(const ppformulanet_l_ocr_context * ctx, int * n_chars) {
+    if (!ctx || ctx->char_confidences.empty()) {
+        if (n_chars) *n_chars = 0;
+        return nullptr;
+    }
+    if (n_chars) *n_chars = (int)ctx->char_confidences.size();
+    return ctx->char_confidences.data();
+}
+
+float ppformulanet_l_ocr_mean_confidence(const ppformulanet_l_ocr_context * ctx) {
+    if (!ctx || ctx->char_confidences.empty()) return 0.0f;
+    double sum = 0;
+    for (float c : ctx->char_confidences) sum += c;
+    return (float)(sum / ctx->char_confidences.size());
 }
 
 const float* ppformulanet_l_ocr_get_encoder_output(

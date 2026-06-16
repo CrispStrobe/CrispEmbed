@@ -103,6 +103,7 @@ struct posformer_ocr_context {
     int n_threads;
 
     std::string result_buf;
+    std::vector<float> char_confidences; // per-token softmax probabilities
     std::vector<float> encoder_output;
     int n_enc_pos;
     int enc_h, enc_w;  // spatial dims of encoder output (needed for ARM)
@@ -582,6 +583,7 @@ static void compute_arm(posformer_ocr_context * ctx,
 // ---------------------------------------------------------------------------
 
 static std::string greedy_decode(posformer_ocr_context * ctx) {
+    ctx->char_confidences.clear();
     const auto & hp = ctx->hparams;
     const int D = hp.d_model;
     const int V = hp.vocab_size;
@@ -821,6 +823,15 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
         }
 
         if (best == hp.eos_token || best == hp.pad_token) break;
+
+        // Confidence: softmax of winning token
+        {
+            float max_l = logits[0];
+            for (int v = 1; v < V; v++) if (logits[v] > max_l) max_l = logits[v];
+            float sum_e = 0;
+            for (int v = 0; v < V; v++) sum_e += expf(logits[v] - max_l);
+            ctx->char_confidences.push_back(expf(logits[best] - max_l) / sum_e);
+        }
         tokens.push_back(best);
         prev_token = best;
     }
@@ -915,4 +926,20 @@ const char * posformer_ocr_recognize_raw(
         }
     }
     return posformer_ocr_recognize(ctx, gray.data(), width, height, out_len);
+}
+
+const float * posformer_ocr_confidences(const posformer_ocr_context * ctx, int * n_chars) {
+    if (!ctx || ctx->char_confidences.empty()) {
+        if (n_chars) *n_chars = 0;
+        return nullptr;
+    }
+    if (n_chars) *n_chars = (int)ctx->char_confidences.size();
+    return ctx->char_confidences.data();
+}
+
+float posformer_ocr_mean_confidence(const posformer_ocr_context * ctx) {
+    if (!ctx || ctx->char_confidences.empty()) return 0.0f;
+    double sum = 0;
+    for (float c : ctx->char_confidences) sum += c;
+    return (float)(sum / ctx->char_confidences.size());
 }
