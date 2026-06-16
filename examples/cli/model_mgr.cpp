@@ -542,6 +542,12 @@ static const ModelEntry k_registry[] = {
      "Granite Vision 3.3-2B OCR (SigLIP+Granite LLM, OCRBench 852)", "5647 MB", "apache-2.0",
      "https://huggingface.co/cstr/granite-vision-crispembed-GGUF"},
 
+    {"firered-ocr",
+     "firered-ocr-f16.gguf",
+     "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF/resolve/main/firered-ocr-f16.gguf",
+     "FireRed-OCR (Qwen3-VL 2B, GRPO, tables+LaTeX)", "4059 MB", "apache-2.0",
+     "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF"},
+
     {"nafnet-denoise",
      "nafnet-sidd-w32-q8_0.gguf",
      "https://huggingface.co/cstr/nafnet-sidd-GGUF/resolve/main/nafnet-sidd-w32-q8_0.gguf",
