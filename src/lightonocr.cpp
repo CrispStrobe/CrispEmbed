@@ -238,8 +238,14 @@ static std::vector<float> preprocess_image(const uint8_t *rgb, int w, int h,
     int rw = (int)(w * scale);
     int rh = (int)(h * scale);
     // Round up to patch grid
-    int pw = (rw + patch_size - 1) / patch_size;
-    int ph = (rh + patch_size - 1) / patch_size;
+    // Pixtral: ceiling division for patch count (matches _num_image_tokens)
+    // num_tokens = (dim - 1) // patch_size + 1
+    // Then resize image to num_tokens * patch_size
+    int pw = (rw - 1) / patch_size + 1;
+    int ph = (rh - 1) / patch_size + 1;
+    // Ensure even for spatial merge (merge_size=2)
+    if (pw % 2 != 0) pw++;
+    if (ph % 2 != 0) ph++;
     int tw = pw * patch_size;
     int th = ph * patch_size;
 
@@ -1116,6 +1122,9 @@ std::string recognize_raw(context &ctx,
     auto patch_embeds = apply_patch_conv(ctx, img, th, tw, ph, pw);
     fprintf(stderr, "lightonocr: patch_conv done (%d patches × %d dim)\n",
             n_patches, ctx.m.vis_dim);
+    // Debug: print first patch values for parity check
+    fprintf(stderr, "lightonocr: patch[0,:5] = [%.8f, %.8f, %.8f, %.8f, %.8f]\n",
+            patch_embeds[0], patch_embeds[1], patch_embeds[2], patch_embeds[3], patch_embeds[4]);
 
     // Step 2: 2D RoPE
     std::vector<float> rope_cos, rope_sin;
