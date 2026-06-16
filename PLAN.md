@@ -1081,7 +1081,7 @@ fine-tune of this). Architecture: 32-layer ViT (1280d) + spatial merger
 | CLI + model registry | DONE | `--ocr` dispatch, model_mgr entries for qwen2vl/german-ocr |
 | Python bindings | DONE | Via `CrispOcrPipeline` / `CrispOcrOrchestrator` |
 | CrispCalc catalog | N/A | Superceded by model_mgr registry |
-| KV cache | TODO | O(n²)→O(n) per generated token |
+| KV cache | DONE | Prefill + single-token decode with per-layer K/V cache |
 | C++ image preprocessor | TODO | Currently uses Python-generated patches |
 | Load Keyven fine-tune | DONE | Same architecture, just different weights — runs unchanged |
 
