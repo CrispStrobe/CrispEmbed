@@ -857,6 +857,27 @@ extern "C" {
     pub fn crispembed_despeckle(
         gray: *const u8, w: c_int, h: c_int,
         max_w: c_int, max_h: c_int, out: *mut u8);
+
+    // ── Table structure recognition ──
+    pub fn crispembed_table_parse_init(
+        ocr_model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut c_void;
+    pub fn crispembed_table_parse_free(ctx: *mut c_void);
+    pub fn crispembed_table_parse_to_html(
+        ctx: *mut c_void,
+        gray: *const u8,
+        width: c_int,
+        height: c_int,
+    ) -> *mut c_char;
+    pub fn crispembed_table_parse_free_string(s: *mut c_char);
+    pub fn crispembed_table_parse_detect_grid(
+        gray: *const u8,
+        width: c_int,
+        height: c_int,
+        out_n_rows: *mut c_int,
+        out_n_cols: *mut c_int,
+    ) -> c_int;
 }
 
 // ---------------------------------------------------------------------------

@@ -2215,6 +2215,66 @@ pub fn cc_detect(gray: &[u8], width: i32, height: i32) -> Vec<OcrRegion> {
     regions
 }
 
+/// Table structure recognition — parse a table image into HTML (rule-based
+/// morphological line detection + per-cell OCR).
+pub struct CrispTableParse {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispTableParse {}
+
+impl CrispTableParse {
+    /// Load a table parser. `ocr_model_path` is the recognition GGUF used to
+    /// read cell text (e.g. a TrOCR / Tesseract model).
+    pub fn new(ocr_model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let c = CString::new(ocr_model_path).map_err(|e| format!("ocr model path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_table_parse_init(c.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err("crispembed_table_parse_init failed".into());
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Parse a grayscale table image (row-major `height × width`) into an HTML
+    /// `<table>` string. Returns `None` on failure.
+    pub fn to_html(&self, gray: &[u8], width: i32, height: i32) -> Option<String> {
+        let ptr = unsafe {
+            crispembed_sys::crispembed_table_parse_to_html(self.ctx, gray.as_ptr(), width, height)
+        };
+        if ptr.is_null() {
+            return None;
+        }
+        let s = unsafe { std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned() };
+        unsafe { crispembed_sys::crispembed_table_parse_free_string(ptr) };
+        Some(s)
+    }
+
+    /// Detect the grid dimensions (rows, cols) of a table image without OCR.
+    pub fn detect_grid(gray: &[u8], width: i32, height: i32) -> Option<(i32, i32)> {
+        let mut rows: i32 = 0;
+        let mut cols: i32 = 0;
+        let rc = unsafe {
+            crispembed_sys::crispembed_table_parse_detect_grid(
+                gray.as_ptr(),
+                width,
+                height,
+                &mut rows,
+                &mut cols,
+            )
+        };
+        if rc != 0 {
+            return None;
+        }
+        Some((rows, cols))
+    }
+}
+
+impl Drop for CrispTableParse {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_table_parse_free(self.ctx) };
+    }
+}
+
 /// Find the skew angle of a document image (degrees).
 pub fn find_skew(gray: &[u8], width: i32, height: i32) -> Result<(f32, f32), String> {
     let mut angle: f32 = 0.0;
