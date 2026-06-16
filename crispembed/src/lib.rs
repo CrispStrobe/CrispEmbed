@@ -2853,6 +2853,62 @@ impl Drop for CrispEsrganSr {
 }
 
 // ---------------------------------------------------------------------------
+// SwinIR Super-Resolution
+// ---------------------------------------------------------------------------
+
+/// Safe wrapper for the SwinIR whole-image super-resolution engine.
+pub struct CrispSwinirSr {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispSwinirSr {}
+
+impl CrispSwinirSr {
+    /// Load a SwinIR GGUF model.  `n_threads = 0` → auto.
+    pub fn new(model_path: impl AsRef<Path>, n_threads: i32) -> Option<Self> {
+        let c_path = CString::new(model_path.as_ref().to_str()?).ok()?;
+        let ctx = unsafe { crispembed_sys::crispembed_swinir_sr_init(c_path.as_ptr(), n_threads) };
+        if ctx.is_null() { None } else { Some(Self { ctx }) }
+    }
+
+    /// Upscale factor (2, 3, or 4).
+    pub fn scale(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_swinir_sr_scale(self.ctx) }
+    }
+
+    /// Super-resolve an RGB image (H×W×3, row-major uint8).
+    /// `tile_size` and `tile_overlap` may be 0 for defaults.
+    /// Returns `(pixels, out_w, out_h)` or `None` on failure.
+    pub fn process(&mut self, pixels: &[u8], width: i32, height: i32, tile_size: i32, tile_overlap: i32) -> Option<(Vec<u8>, i32, i32)> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut out_w: i32 = 0;
+        let mut out_h: i32 = 0;
+        let rc = unsafe {
+            crispembed_sys::crispembed_swinir_sr_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width, height,
+                tile_size, tile_overlap,
+                &mut out_ptr, &mut out_w, &mut out_h,
+            )
+        };
+        if rc != 0 || out_ptr.is_null() { return None; }
+        let n = (out_w as usize) * (out_h as usize) * 3;
+        let data = unsafe { std::slice::from_raw_parts(out_ptr, n) }.to_vec();
+        unsafe { crispembed_sys::crispembed_swinir_sr_free_image(out_ptr) };
+        Some((data, out_w, out_h))
+    }
+}
+
+impl Drop for CrispSwinirSr {
+    fn drop(&mut self) {
+        if !self.ctx.is_null() {
+            unsafe { crispembed_sys::crispembed_swinir_sr_free(self.ctx) };
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // SCUNet Image Denoising
 // ---------------------------------------------------------------------------
 
