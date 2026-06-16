@@ -22,6 +22,11 @@
 
 #include <algorithm>
 #include <cmath>
+
+// MSVC's <cmath> doesn't define M_PI without _USE_MATH_DEFINES.
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>

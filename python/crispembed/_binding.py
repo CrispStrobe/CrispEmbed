@@ -2686,22 +2686,7 @@ class CrispRestormer:
         if hasattr(self, '_ctx') and self._ctx:
             self._lib.crispembed_restormer_free(self._ctx)
             self._ctx = None
-
-
 # ---------------------------------------------------------------------------
-# TBSRN Super-Resolution (always 2×, 16×64 → 32×128)
-# ---------------------------------------------------------------------------
-
-def _setup_tbsrn_sr_signatures(lib):
-    lib.crispembed_tbsrn_sr_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
-    lib.crispembed_tbsrn_sr_init.restype = ctypes.c_void_p
-
-    lib.crispembed_tbsrn_sr_free.argtypes = [ctypes.c_void_p]
-    lib.crispembed_tbsrn_sr_free.restype = None
-
-    lib.crispembed_tbsrn_sr_process.argtypes = [
-        ctypes.c_void_p,
-        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
 # SAFMN Whole-Image Super-Resolution (SAFM+CCM AttBlocks, Apache-2.0)
 # ---------------------------------------------------------------------------
 
@@ -2723,39 +2708,12 @@ def _setup_safmn_sr_signatures(lib):
         ctypes.POINTER(ctypes.c_int),
         ctypes.POINTER(ctypes.c_int),
     ]
-    lib.crispembed_tbsrn_sr_process.restype = ctypes.c_int
-
-    lib.crispembed_tbsrn_sr_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
-    lib.crispembed_tbsrn_sr_free_image.restype = None
-
-
-class CrispTbsrnSr:
-    """TBSRN super-resolution — upscale text-image crops (always 2×, 16×64 → 32×128).
-
-    Usage::
-
-        sr = CrispTbsrnSr("tbsrn-sr.gguf")
-        out = sr.process(pixels, width, height)  # returns (ndarray, out_w, out_h)
-    """
-
-    scale: int = 2  # TBSRN is always 2×
-
-    def __init__(self, model_path: str, n_threads: int = 4,
-                 lib_path: Optional[str] = None):
-        self._lib = _load_library(lib_path)
-        _setup_tbsrn_sr_signatures(self._lib)
-        self._ctx = self._lib.crispembed_tbsrn_sr_init(
-            model_path.encode("utf-8"), n_threads)
-        if not self._ctx:
-            raise RuntimeError(f"Failed to load TBSRN SR model: {model_path}")
-
-    def process(self, pixels: np.ndarray, width: int, height: int,
-                ) -> Tuple[np.ndarray, int, int]:
-        """Upscale a text-image crop (always 2×).
     lib.crispembed_safmn_sr_process.restype = ctypes.c_int
 
     lib.crispembed_safmn_sr_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
     lib.crispembed_safmn_sr_free_image.restype = None
+
+
 
 
 class CrispSafmnSr:
