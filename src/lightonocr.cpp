@@ -577,16 +577,66 @@ static bool run_decoder_prefill(context &ctx,
     const float rope_theta = m.lm_rope_theta;
     const int eos_id = m.eos_token_id;
 
-    // Build prompt: just image tokens for now (no chat template tokenization)
-    // A proper implementation would tokenize the prompt text and splice image
-    // tokens at the <image> placeholder positions. For now, feed image tokens
-    // directly followed by a newline token.
-    int n_prompt = n_image_tokens;
+    // Build prompt sequence: [text_before_image | image_tokens | text_after_image]
+    // Chat template: <|im_start|>user\n[image]OCR this document.<|im_end|>\n<|im_start|>assistant\n
+    // For simplicity, use a minimal prompt: just image tokens bracketed by
+    // special tokens that tell the model to start generating.
+    //
+    // Token IDs for Qwen3 chat template:
+    //   <|im_start|> = 151644, user = ? , <|im_end|> = 151645, assistant = ?
+    // We'll embed a few framing tokens + image + assistant prefix.
 
-    // The prompt embedding is the projected image features directly — these
-    // are already in the LM embedding space (D-dimensional).
-    // For a real implementation we'd also embed text tokens via embed_tokens
-    // and splice them together at the <image> placeholder.
+    // Build the full prompt embedding: text tokens with image features spliced in.
+    // Chat template for LightOnOCR:
+    //   <|im_start|>user\n<image>OCR this document.<|im_end|>\n<|im_start|>assistant\n
+    // We construct: [prefix_tokens] + [image_features] + [suffix_tokens]
+    // where prefix = <|im_start|>user\n  and suffix = OCR this.<|im_end|>\n<|im_start|>assistant\n
+
+    // Qwen3 special tokens
+    const int im_start = 151644;  // <|im_start|>
+    const int im_end   = 151645;  // <|im_end|>
+    const int nl_tok   = 198;     // \n
+
+    // Simple prefix/suffix token IDs (hardcoded for now)
+    std::vector<int32_t> prefix_ids = {im_start, 882 /*user*/, nl_tok};  // <|im_start|>user\n
+    std::vector<int32_t> suffix_ids = {nl_tok, im_end, nl_tok, im_start, 78191 /*assistant*/, nl_tok};
+
+    int n_prefix = (int)prefix_ids.size();
+    int n_suffix = (int)suffix_ids.size();
+    int n_prompt = n_prefix + n_image_tokens + n_suffix;
+
+    // Embed prefix and suffix tokens via embed_tokens on CPU
+    auto embed_tokens_cpu = [&](const std::vector<int32_t> &ids) -> std::vector<float> {
+        int n = (int)ids.size();
+        ggml_init_params eip{ggml_tensor_overhead() * 16 + ggml_graph_overhead(), nullptr, true};
+        ggml_context *eg = ggml_init(eip);
+        ggml_tensor *idx = ggml_new_tensor_1d(eg, GGML_TYPE_I32, n);
+        ggml_set_input(idx);
+        ggml_tensor *emb = ggml_get_rows(eg, m.embed_tokens, idx);
+        ggml_set_output(emb);
+        ggml_cgraph *egf = ggml_new_graph(eg);
+        ggml_build_forward_expand(egf, emb);
+        ggml_backend_sched_reset(ctx.sched);
+        ggml_backend_sched_alloc_graph(ctx.sched, egf);
+        ggml_backend_tensor_set(idx, ids.data(), 0, n * sizeof(int32_t));
+        ggml_backend_sched_graph_compute(ctx.sched, egf);
+        std::vector<float> result(D * n);
+        ggml_backend_tensor_get(emb, result.data(), 0, result.size() * sizeof(float));
+        ggml_free(eg);
+        return result;
+    };
+
+    auto prefix_emb = embed_tokens_cpu(prefix_ids);
+    auto suffix_emb = embed_tokens_cpu(suffix_ids);
+
+    // Build combined embedding: [prefix_emb | image_embeds | suffix_emb]
+    std::vector<float> full_emb(D * n_prompt);
+    memcpy(full_emb.data(), prefix_emb.data(), D * n_prefix * sizeof(float));
+    memcpy(full_emb.data() + D * n_prefix, image_embeds.data(), D * n_image_tokens * sizeof(float));
+    memcpy(full_emb.data() + D * (n_prefix + n_image_tokens), suffix_emb.data(), D * n_suffix * sizeof(float));
+
+    fprintf(stderr, "lightonocr: prompt = %d prefix + %d image + %d suffix = %d total\n",
+            n_prefix, n_image_tokens, n_suffix, n_prompt);
 
     // Prefill: build decoder graph for n_prompt tokens
     ggml_init_params ip{ctx.compute_meta.size(), ctx.compute_meta.data(), true};
@@ -628,19 +678,18 @@ static bool run_decoder_prefill(context &ctx,
         V = ggml_reshape_3d(g, V, head_dim, n_kv_heads, n_prompt);
 
         // QK norm (Qwen3): RMSNorm per head on the head_dim axis
+        // Applied AFTER reshape but BEFORE RoPE (matching HF Qwen3Attention)
         if (m.use_qk_norm && L.q_norm_w && L.k_norm_w) {
-            // Reshape to 2D for norm: (head_dim, n_heads * T) → norm → reshape back
-            int QT = n_heads * n_prompt;
-            Q = ggml_reshape_2d(g, Q, head_dim, QT);
+            // Flatten heads×tokens for RMSNorm, then reshape back
+            Q = ggml_cont(g, ggml_reshape_2d(g, Q, head_dim, n_heads * n_prompt));
             Q = ggml_rms_norm(g, Q, rms_eps);
             Q = ggml_mul(g, Q, L.q_norm_w);
-            Q = ggml_reshape_3d(g, Q, head_dim, n_heads, n_prompt);
+            Q = ggml_cont(g, ggml_reshape_3d(g, Q, head_dim, n_heads, n_prompt));
 
-            int KT = n_kv_heads * n_prompt;
-            K = ggml_reshape_2d(g, K, head_dim, KT);
+            K = ggml_cont(g, ggml_reshape_2d(g, K, head_dim, n_kv_heads * n_prompt));
             K = ggml_rms_norm(g, K, rms_eps);
             K = ggml_mul(g, K, L.k_norm_w);
-            K = ggml_reshape_3d(g, K, head_dim, n_kv_heads, n_prompt);
+            K = ggml_cont(g, ggml_reshape_3d(g, K, head_dim, n_kv_heads, n_prompt));
         }
 
         // RoPE (standard 1D, not mRoPE)
@@ -720,7 +769,7 @@ static bool run_decoder_prefill(context &ctx,
 
     // Set inputs
     ggml_tensor *t_in = ggml_graph_get_tensor(gf, "lm_input");
-    ggml_backend_tensor_set(t_in, image_embeds.data(), 0, D * n_prompt * sizeof(float));
+    ggml_backend_tensor_set(t_in, full_emb.data(), 0, D * n_prompt * sizeof(float));
 
     // Build causal mask (-inf above diagonal)
     std::vector<float> mask_data(n_prompt * n_prompt);
@@ -758,7 +807,10 @@ static bool run_decoder_prefill(context &ctx,
         if (logits_data[v] > best_score) { best_score = logits_data[v]; best = v; }
     generated.push_back(best);
 
-    fprintf(stderr, "lightonocr: prefill done, first token=%d\n", best);
+    fprintf(stderr, "lightonocr: prefill done, first token=%d (score=%.2f)\n", best, best_score);
+    fprintf(stderr, "lightonocr: logits[0..4] = [%.3f, %.3f, %.3f, %.3f, %.3f]\n",
+            logits_data[0], logits_data[1], logits_data[2], logits_data[3], logits_data[4]);
+    fprintf(stderr, "lightonocr: logits[eos=%d] = %.3f\n", eos_id, logits_data[eos_id]);
 
     if (best == eos_id) {
         // Decode tokens to text
