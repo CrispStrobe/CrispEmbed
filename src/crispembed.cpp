@@ -3157,13 +3157,10 @@ case MATH_OCR_GRANITE_VISION: {
             return granite_vision_recognize((granite_vision_context *)u->ctx, rgb.data(), w, h, 3, nullptr, ol);
         }
 case MATH_OCR_LIGHTONOCR: {
-            // Convert float gray → uint8 RGB for lightonocr_recognize_raw
-            std::vector<uint8_t> rgb(w * h * 3);
-            for (int i = 0; i < w * h; i++) {
-                uint8_t v = (uint8_t)(px[i] * 255.0f + 0.5f);
-                rgb[i * 3] = rgb[i * 3 + 1] = rgb[i * 3 + 2] = v;
-            }
-            return lightonocr_recognize_raw((lightonocr_context *)u->ctx, rgb.data(), w, h, 3, ol);
+            std::vector<uint8_t> gray(w * h);
+            for (int i = 0; i < w * h; i++)
+                gray[i] = (uint8_t)(px[i] * 255.0f + 0.5f);
+            return lightonocr_recognize_raw((lightonocr_context *)u->ctx, gray.data(), w, h, 1, ol);
         }
     }
     return nullptr;
