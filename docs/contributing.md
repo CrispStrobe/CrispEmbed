@@ -221,6 +221,16 @@ Utility libraries (not model backends) follow a lighter pattern.
 | SCUNet denoising | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | InstructIR restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | AdaIR restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| HAT super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| DAT super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| SwinIR super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Restormer restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| NAFNet-SR text super-res | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| TBSRN text-line SR | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| PAN whole-image SR | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Table structure recognition | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| BERT NER token classification | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| LiLT layout-aware KIE | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ### Implementation patterns
 
