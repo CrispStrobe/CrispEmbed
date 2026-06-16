@@ -3421,12 +3421,18 @@ static scan_cleanup_params to_cleanup(const crispembed_scan_cleanup_params & p) 
 extern "C" void * crispembed_ocr_pipeline_init_stages(
         int router, const char * nafnet_model, const char * sr_model,
         const char * punct_model,
+        const char * lid_model, const char * truecase_model,
+        const char * tess_model_dir,
         const crispembed_ocr_stage * stages, int n_stages, int n_threads) {
     if (!stages || n_stages <= 0) return nullptr;
     ocr_orchestrator::config cfg;
     cfg.router = router != 0;
     if (nafnet_model && *nafnet_model) cfg.nafnet_model = nafnet_model;
     if (sr_model && *sr_model) cfg.sr_model = sr_model;
+    // LID + truecasing + Tesseract auto-select (mirrors the params-struct path).
+    if (lid_model && *lid_model) cfg.lid_model = lid_model;
+    if (truecase_model && *truecase_model) cfg.truecase_model = truecase_model;
+    if (tess_model_dir && *tess_model_dir) cfg.tess_model_dir = tess_model_dir;
 
     // Group stages into per-source-type chains, preserving array order.
     for (int i = 0; i < n_stages; i++) {
