@@ -1,7 +1,7 @@
 """CrispEmbed Python wrapper via ctypes.
 
 Supports dense, sparse (BGE-M3/SPLADE), ColBERT multi-vector, and
-cross-encoder reranking — all via a single shared library.
+cross-encoder reranking  - all via a single shared library.
 """
 
 import ctypes
@@ -195,7 +195,7 @@ class CrispEmbed:
         lib.crispembed_rerank.restype = ctypes.c_float
 
         # --- Audio encoding (BidirLM-Omni etc.) ---
-        # Symbols may be missing from older builds — guard each lookup.
+        # Symbols may be missing from older builds  - guard each lookup.
         if hasattr(lib, "crispembed_has_audio"):
             lib.crispembed_has_audio.argtypes = [ctypes.c_void_p]
             lib.crispembed_has_audio.restype = ctypes.c_int
@@ -474,7 +474,7 @@ class CrispEmbed:
         """Encode an image into the model's shared embedding space.
 
         Mean-pools the vision tower output across merged tokens and
-        L2-normalizes — yields a single vector cosine-comparable to
+        L2-normalizes  - yields a single vector cosine-comparable to
         ``encode(text)``.
 
         Args:
@@ -489,7 +489,7 @@ class CrispEmbed:
         """
         if not hasattr(self._lib, "crispembed_encode_image"):
             return np.empty((0,), dtype=np.float32)
-        from .image import preprocess_image  # local import — heavy deps
+        from .image import preprocess_image  # local import  - heavy deps
         kw = {}
         if processor is not None:
             kw["processor"] = processor
@@ -513,7 +513,7 @@ class CrispEmbed:
         return np.ctypeslib.as_array(ptr, shape=(out_dim.value,)).copy()
 
     def encode_image_raw(self, image, *, processor=None, model_name: Optional[str] = None):
-        """Run the vision tower without pooling — returns (image_embeds, deepstack_features).
+        """Run the vision tower without pooling  - returns (image_embeds, deepstack_features).
 
         ``image_embeds``: np.ndarray (n_merged, dim).
         ``deepstack_features``: list of np.ndarrays each (n_merged, dim).
@@ -566,14 +566,14 @@ class CrispEmbed:
     ) -> np.ndarray:
         """Lower-level: image-conditioned embedding from pre-tokenized ids.
 
-        Skips the C++ BPE tokenizer entirely — useful when you need
+        Skips the C++ BPE tokenizer entirely  - useful when you need
         byte-identical parity with an external tokenizer (e.g. HF) and
         want to remove tokenizer-round-trip risk from a parity test.
 
         Args:
             token_ids: 1-D int32 array (or list) of token ids; must contain
                 the right number of image_token_id placeholders.
-            pixel_patches: float32 (n_patches, 1536) — output of
+            pixel_patches: float32 (n_patches, 1536)  - output of
                 ``crispembed.image.preprocess_image``.
             grid_thw: int32 (n_images, 3) with rows ``(t, h_patches, w_patches)``.
 
@@ -669,7 +669,7 @@ class CrispEmbed:
 
         `text` must contain the right number of image-pad placeholder tokens
         (e.g. ``"<|vision_start|><|image_pad|>...<|image_pad|><|vision_end|>...""``)
-        — typically you build it via the HF chat template.
+         - typically you build it via the HF chat template.
 
         Args:
             text: Prompt with image-pad placeholders.
@@ -1053,7 +1053,7 @@ def _det_to_dict(det: _FaceDetection) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# CrispFace — detection + recognition
+# CrispFace  - detection + recognition
 # ---------------------------------------------------------------------------
 
 class CrispFace:
@@ -1202,7 +1202,7 @@ class CrispFace:
 
 
 # ---------------------------------------------------------------------------
-# CrispFacePipeline — joint detect + embed in one call
+# CrispFacePipeline  - joint detect + embed in one call
 # ---------------------------------------------------------------------------
 
 class CrispFacePipeline:
@@ -1287,9 +1287,9 @@ class CrispFacePipeline:
         Returns:
             List of dicts with keys:
 
-            * ``"det"`` — detection dict (``x, y, w, h, confidence,
+            * ``"det"``  - detection dict (``x, y, w, h, confidence,
               landmarks``).
-            * ``"embedding"`` — ``np.ndarray`` of shape ``(rec_dim,)``,
+            * ``"embedding"``  - ``np.ndarray`` of shape ``(rec_dim,)``,
               L2-normalized face embedding.
         """
         n_faces = ctypes.c_int(0)
@@ -1359,7 +1359,7 @@ class CrispFacePipeline:
 
 
 # ---------------------------------------------------------------------------
-# CrispVit — standalone ViT image embedding (SigLIP, CLIP)
+# CrispVit  - standalone ViT image embedding (SigLIP, CLIP)
 # ---------------------------------------------------------------------------
 
 def _setup_vit_signatures(lib):
@@ -1431,7 +1431,7 @@ class CrispVit:
 
 
 # ---------------------------------------------------------------------------
-# CrispClipText — CLIP text encoding
+# CrispClipText  - CLIP text encoding
 # ---------------------------------------------------------------------------
 
 def _setup_clip_text_signatures(lib):
@@ -1524,7 +1524,7 @@ def _setup_math_ocr_signatures(lib):
 
 
 class CrispMathOcr:
-    """Math/document OCR — recognizes LaTeX or text from images.
+    """Math/document OCR  - recognizes LaTeX or text from images.
 
     Supports pix2tex (printed math), PP-FormulaNet (printed math),
     PP-FormulaNet-L (printed math, best), Texo-Distill (printed math, small),
@@ -1722,7 +1722,7 @@ def _setup_ocr_pipeline_signatures(lib):
 
 
 class CrispOcrPipeline:
-    """General OCR pipeline — text detection (DBNet) + recognition (TrOCR).
+    """General OCR pipeline  - text detection (DBNet) + recognition (TrOCR).
 
     Detects text regions in a document image, then recognizes each crop.
 
@@ -1918,7 +1918,7 @@ def _setup_ner_signatures(lib):
 class CrispNER:
     """Zero-shot Named Entity Recognition via GLiNER.
 
-    Detects arbitrary entity types specified at inference time — no
+    Detects arbitrary entity types specified at inference time  - no
     retraining needed. Uses an LFM2.5 bidirectional backbone with a
     GLiNER span-matching head.
 
@@ -1983,7 +1983,7 @@ class CrispNER:
             self._ctx = None
 
 
-# ── LiLT — Language-independent Layout Transformer ──────────────────
+# ── LiLT  - Language-independent Layout Transformer ──────────────────
 
 class _LiLTToken(ctypes.Structure):
     _fields_ = [
@@ -2018,7 +2018,7 @@ def _setup_lilt_signatures(lib):
 
 
 class CrispLiLT:
-    """LiLT — Language-independent Layout Transformer for document understanding.
+    """LiLT  - Language-independent Layout Transformer for document understanding.
 
     Dual-stream encoder (RoBERTa text + layout transformer with BiACM)
     for token classification. Supports form understanding (FUNSD) with
@@ -2131,7 +2131,7 @@ def _setup_kie_signatures(lib):
 
 
 class CrispKIE:
-    """Key Information Extraction — OCR + NER pipeline.
+    """Key Information Extraction  - OCR + NER pipeline.
 
     Chains text detection + recognition with GLiNER zero-shot NER to
     extract structured key-value fields from document images (receipts,
@@ -2251,7 +2251,7 @@ def _setup_scan_cleanup_signatures(lib):
 class CrispScanCleanup:
     """Document scan preprocessing (deskew, crop, whiten, binarize).
 
-    No model needed — pure classical image processing.
+    No model needed  - pure classical image processing.
 
     Usage::
 
@@ -2286,7 +2286,7 @@ class CrispScanCleanup:
             binarize_method: 0 = Otsu, 1 = Sauvola.
 
         Returns:
-            numpy uint8 array (H, W, 3) — cleaned RGB image.
+            numpy uint8 array (H, W, 3)  - cleaned RGB image.
         """
         import numpy as np
 
@@ -2371,7 +2371,7 @@ def _setup_text_sr_signatures(lib):
 
 
 class CrispTextSr:
-    """Text super-resolution — upscale low-resolution document images.
+    """Text super-resolution  - upscale low-resolution document images.
 
     Usage::
 
@@ -2545,7 +2545,7 @@ def _setup_pan_sr_signatures(lib):
 
 
 class CrispPanSr:
-    """PAN super-resolution — upscale low-resolution document images.
+    """PAN super-resolution  - upscale low-resolution document images.
 
     Usage::
 
@@ -2633,7 +2633,7 @@ def _setup_restormer_signatures(lib):
 
 
 class CrispRestormer:
-    """Restormer image restoration — denoise, deblur, or derain document images.
+    """Restormer image restoration  - denoise, deblur, or derain document images.
 
     Usage::
 
@@ -2713,11 +2713,16 @@ def _setup_safmn_sr_signatures(lib):
     lib.crispembed_safmn_sr_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
     lib.crispembed_safmn_sr_free_image.restype = None
 
+    lib.crispembed_tbsrn_sr_process.restype = ctypes.c_int
+
+    lib.crispembed_tbsrn_sr_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_tbsrn_sr_free_image.restype = None
+
 
 
 
 class CrispSafmnSr:
-    """SAFMN super-resolution — lightweight upscaling with SAFM+CCM AttBlocks.
+    """SAFMN super-resolution  - lightweight upscaling with SAFM+CCM AttBlocks.
 
     Usage::
 
@@ -2814,7 +2819,7 @@ def _setup_table_parse_signatures(lib):
 
 
 class CrispTableParse:
-    """Table structure recognition — extracts HTML from a table image.
+    """Table structure recognition  - extracts HTML from a table image.
 
     Uses morphological line detection and grid intersection analysis to
     produce an HTML ``<table>`` element. Optional built-in cell OCR via
@@ -2896,7 +2901,7 @@ def _setup_esrgan_sr_signatures(lib):
 
 
 class CrispEsrganSr:
-    """Real-ESRGAN super-resolution — SRVGGNetCompact whole-image upscaling.
+    """Real-ESRGAN super-resolution  - SRVGGNetCompact whole-image upscaling.
 
     Usage::
 
@@ -2957,6 +2962,99 @@ class CrispEsrganSr:
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:
             self._lib.crispembed_esrgan_sr_free(self._ctx)
+            self._ctx = None
+
+
+# ---------------------------------------------------------------------------
+# SwinIR-light Whole-Image Super-Resolution (Swin Transformer, Apache-2.0)
+# ---------------------------------------------------------------------------
+
+def _setup_swinir_sr_signatures(lib):
+    lib.crispembed_swinir_sr_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_swinir_sr_init.restype = ctypes.c_void_p
+
+    lib.crispembed_swinir_sr_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_swinir_sr_free.restype = None
+
+    lib.crispembed_swinir_sr_scale.argtypes = [ctypes.c_void_p]
+    lib.crispembed_swinir_sr_scale.restype = ctypes.c_int
+
+    lib.crispembed_swinir_sr_process.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int,
+        ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.POINTER(ctypes.c_uint8)),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_swinir_sr_process.restype = ctypes.c_int
+
+    lib.crispembed_swinir_sr_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
+    lib.crispembed_swinir_sr_free_image.restype = None
+
+
+class CrispSwinirSr:
+    """SwinIR-light super-resolution  - Swin Transformer whole-image upscaling.
+
+    Usage::
+
+        sr = CrispSwinirSr("swinir-sr-x4.gguf")
+        print(sr.scale)  # e.g. 4
+        out = sr.process(pixels, width, height)  # returns (ndarray, out_w, out_h)
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 4,
+                 lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_swinir_sr_signatures(self._lib)
+        self._ctx = self._lib.crispembed_swinir_sr_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load SwinIR SR model: {model_path}")
+
+    @property
+    def scale(self) -> int:
+        """Return the scale factor (e.g. 2, 3, 4) reported by the model."""
+        return self._lib.crispembed_swinir_sr_scale(self._ctx)
+
+    def process(self, pixels: np.ndarray, width: int, height: int,
+                tile_size: int = 0, tile_overlap: int = 0
+                ) -> Tuple[np.ndarray, int, int]:
+        """Upscale an image.
+
+        Args:
+            pixels: uint8 numpy array, flattened or shaped (H, W, C).
+            width: source image width in pixels.
+            height: source image height in pixels.
+            tile_size: tile size for tiled inference (0 = auto).
+            tile_overlap: overlap between tiles in pixels (0 = auto).
+
+        Returns:
+            Tuple of (output_ndarray uint8 shape (out_h, out_w, 3), out_w, out_h).
+        """
+        flat = np.asarray(pixels, dtype=np.uint8).flatten()
+        px_ptr = flat.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+
+        out_ptr = ctypes.POINTER(ctypes.c_uint8)()
+        out_w = ctypes.c_int(0)
+        out_h = ctypes.c_int(0)
+
+        rc = self._lib.crispembed_swinir_sr_process(
+            self._ctx, px_ptr, width, height,
+            tile_size, tile_overlap,
+            ctypes.byref(out_ptr), ctypes.byref(out_w), ctypes.byref(out_h),
+        )
+        if rc != 0 or not out_ptr:
+            raise RuntimeError("SwinIR SR processing failed")
+
+        ow, oh = out_w.value, out_h.value
+        buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
+        self._lib.crispembed_swinir_sr_free_image(out_ptr)
+        return buf.reshape(oh, ow, 3), ow, oh
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_swinir_sr_free(self._ctx)
             self._ctx = None
 
 
@@ -3131,7 +3229,7 @@ def _setup_preproc_signatures(lib):
 
 
 class CrispPreprocess:
-    """Classical document preprocessing — model-free, CPU-only.
+    """Classical document preprocessing  - model-free, CPU-only.
 
     Provides dewarp, deskew, adaptive binarization, background normalization,
     and despeckle on grayscale uint8 images.
