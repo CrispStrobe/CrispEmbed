@@ -704,3 +704,39 @@ typedef CrispembedEsrganSrProcessDart = int Function(
 
 typedef CrispembedEsrganSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedEsrganSrFreeImageDart = void Function(Pointer<Uint8> pixels);
+
+// --- SwinIR-light Super-Resolution (swinir_sr) ---
+typedef CrispembedSwinirSrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedSwinirSrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedSwinirSrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedSwinirSrFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedSwinirSrScaleNative = Int32 Function(Pointer<Void> ctx);
+typedef CrispembedSwinirSrScaleDart = int Function(Pointer<Void> ctx);
+
+typedef CrispembedSwinirSrProcessNative = Int32 Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    Int32 width,
+    Int32 height,
+    Int32 tileSize,
+    Int32 tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+typedef CrispembedSwinirSrProcessDart = int Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    int width,
+    int height,
+    int tileSize,
+    int tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+
+typedef CrispembedSwinirSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
+typedef CrispembedSwinirSrFreeImageDart = void Function(Pointer<Uint8> pixels);

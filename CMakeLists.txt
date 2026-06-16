@@ -186,6 +186,7 @@ list(APPEND CRISPEMBED_SOURCES src/tps_warp.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tps_locnet.cpp)
 list(APPEND CRISPEMBED_SOURCES src/safmn_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/esrgan_sr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/swinir_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/pdf_info.cpp)
 list(APPEND CRISPEMBED_SOURCES src/table_parse.cpp)
 
@@ -452,6 +453,9 @@ target_link_libraries(test-pdf-info PRIVATE crispembed)
 
 add_executable(test-table-parse tests/test_table_parse.cpp)
 target_link_libraries(test-table-parse PRIVATE crispembed)
+
+add_executable(test-swinir-diff tests/test_swinir_diff.cpp)
+target_link_libraries(test-swinir-diff PRIVATE crispembed)
 
 endif() # NOT iOS
 
