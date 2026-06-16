@@ -776,6 +776,22 @@ extern "C" {
     ) -> c_int;
     pub fn crispembed_hat_sr_free_image(pixels: *mut u8);
 
+    // DAT super-resolution (Dual Aggregation Transformer, ICCV 2023)
+    pub fn crispembed_dat_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_dat_sr_free(ctx: *mut c_void);
+    pub fn crispembed_dat_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        tile_w: c_int,
+        tile_h: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_dat_sr_free_image(pixels: *mut u8);
+
     // SAFMN whole-image SR (the safe CrispSafmnSr wrapper referenced these but
     // the FFI decls were never added — the C symbols exist in crispembed.h).
     pub fn crispembed_safmn_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
