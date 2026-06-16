@@ -821,15 +821,6 @@ static bool run_decoder_prefill(context &ctx,
     std::vector<float> logits_data(V);
     ggml_tensor *t_logits = ggml_graph_get_tensor(gf, "last_logits");
     ggml_backend_tensor_get(t_logits, logits_data.data(), 0, V * sizeof(float));
-    // Debug: check if k_out_0 is findable
-    {
-        ggml_tensor *test = ggml_graph_get_tensor(gf, "k_out_0");
-        fprintf(stderr, "lightonocr: k_out_0 found: %s\n", test ? "YES" : "NO");
-        // Also try the raw K tensor name
-        ggml_tensor *test2 = ggml_graph_get_tensor(gf, "K");
-        fprintf(stderr, "lightonocr: 'K' found: %s\n", test2 ? "YES" : "NO");
-    }
-
     // Extract KV cache from prefill graph (read BEFORE freeing g)
     std::vector<std::vector<float>> k_cache(n_layers), v_cache(n_layers);
     bool kv_ok = true;
