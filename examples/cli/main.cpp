@@ -78,7 +78,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --top-n N        limit rerank output to top N documents\n");
     fprintf(stderr, "  --face FILE      encode face from image (recognition model)\n");
     fprintf(stderr, "  --detect FILE    detect faces in image (detection model)\n");
-    fprintf(stderr, "  --ocr FILE       OCR → text (auto-detect: pix2tex/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/parseq/qwen2vl/internvl2/glm-ocr/tesseract-lstm)\n");
+    fprintf(stderr, "  --ocr FILE       OCR → text (auto-detect: pix2tex/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/parseq/qwen2vl/internvl2/glm-ocr/tesseract-lstm/lightonocr)\n");
     fprintf(stderr, "  --pix2struct FILE  Pix2Struct document understanding → text (needs -m pix2struct.gguf)\n");
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
