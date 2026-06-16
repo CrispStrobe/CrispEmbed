@@ -61,6 +61,29 @@ int main(int argc, char ** argv) {
     snprintf(msg, sizeof(msg), "encoder max_abs < 0.01 (got %.6f)", r.max_abs);
     check(msg, r.max_abs < 0.01f);
 
+    // Decoder step 0 parity (if dec-ref available as argv[3])
+    if (argc >= 4) {
+        crispembed_diff::Ref dec_ref;
+        if (dec_ref.load(argv[3])) {
+            printf("\n=== Decoder step 0 ===\n");
+            std::vector<float> logits(50244); // vocab_size
+            int ret2 = pix2struct_decode_step0(ctx, logits.data());
+            check("decode_step0 returns 0", ret2 == 0);
+
+            auto r2 = dec_ref.compare("logits_step0", logits.data(), 50244);
+            printf("  logits: cos=%.6f max_abs=%.6f  %s\n",
+                   r2.cos_min, r2.max_abs, r2.is_pass(0.999f) ? "PASS" : "FAIL");
+            check("logits cos >= 0.999", r2.is_pass(0.999f));
+
+            // Check argmax
+            int argmax = 0;
+            for (int i = 1; i < 50244; i++)
+                if (logits[i] > logits[argmax]) argmax = i;
+            printf("  argmax: %d (expected 411)\n", argmax);
+            check("argmax == 411 (token '<')", argmax == 411);
+        }
+    }
+
     pix2struct_free(ctx);
     printf("\n=== Results: %d passed, %d failed ===\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
