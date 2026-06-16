@@ -588,15 +588,79 @@ int pix2struct_decode_step0(pix2struct_context * ctx, float * out_logits) {
     return 0;
 }
 
+// ── Image preprocessing: variable-resolution patching ──
+// Mirrors HF Pix2StructImageProcessor.extract_flattened_patches
+
+static std::vector<float> image_to_patches(const uint8_t * rgb, int W, int H,
+                                            int max_patches, int patch_size,
+                                            int * out_n_patches) {
+    const int pH = patch_size, pW = patch_size, C = 3;
+    float scale = sqrtf((float)max_patches * ((float)pH / H) * ((float)pW / W));
+    int n_rows = std::max(1, std::min((int)floorf(scale * H / pH), max_patches));
+    int n_cols = std::max(1, std::min((int)floorf(scale * W / pW), max_patches));
+    while (n_rows * n_cols > max_patches) {
+        if (n_rows > n_cols) n_rows--; else n_cols--;
+    }
+    int rH = n_rows * pH, rW = n_cols * pW;
+
+    std::vector<float> resized(C * rH * rW);
+    for (int c = 0; c < C; c++)
+        for (int y = 0; y < rH; y++)
+            for (int x = 0; x < rW; x++) {
+                float sy = ((float)y + 0.5f) * H / rH - 0.5f;
+                float sx = ((float)x + 0.5f) * W / rW - 0.5f;
+                sy = std::max(0.0f, std::min(sy, (float)(H - 1)));
+                sx = std::max(0.0f, std::min(sx, (float)(W - 1)));
+                int y0 = (int)sy, x0 = (int)sx;
+                int y1 = std::min(y0 + 1, H - 1), x1 = std::min(x0 + 1, W - 1);
+                float fy = sy - y0, fx = sx - x0;
+                float v = (1-fy)*((1-fx)*(float)rgb[(y0*W+x0)*C+c] + fx*(float)rgb[(y0*W+x1)*C+c])
+                        + fy*((1-fx)*(float)rgb[(y1*W+x0)*C+c] + fx*(float)rgb[(y1*W+x1)*C+c]);
+                resized[c * rH * rW + y * rW + x] = v / 255.0f;
+            }
+
+    int total = C * rH * rW;
+    float mean = 0;
+    for (int i = 0; i < total; i++) mean += resized[i];
+    mean /= total;
+    float var = 0;
+    for (int i = 0; i < total; i++) { float d = resized[i] - mean; var += d * d; }
+    float adj_std = std::max(sqrtf(var / total), 1.0f / sqrtf((float)total));
+    for (int i = 0; i < total; i++) resized[i] = (resized[i] - mean) / adj_std;
+
+    int n_patches = n_rows * n_cols;
+    int patch_dim = pH * pW * C;
+    int feat_dim = patch_dim + 2;
+    std::vector<float> patches(max_patches * feat_dim, 0.0f);
+    for (int r = 0; r < n_rows; r++)
+        for (int col = 0; col < n_cols; col++) {
+            int pi = r * n_cols + col;
+            patches[pi * feat_dim + 0] = (float)(r + 1);
+            patches[pi * feat_dim + 1] = (float)(col + 1);
+            for (int c = 0; c < C; c++)
+                for (int py = 0; py < pH; py++)
+                    for (int px = 0; px < pW; px++)
+                        patches[pi * feat_dim + 2 + c * pH * pW + py * pW + px] =
+                            resized[c * rH * rW + (r * pH + py) * rW + (col * pW + px)];
+        }
+    if (out_n_patches) *out_n_patches = n_patches;
+    return patches;
+}
+
 // ── Generate ──
 
 const char * pix2struct_generate(pix2struct_context * ctx,
                                  const uint8_t * image, int width, int height,
                                  int max_tokens) {
-    // TODO: implement image preprocessing (variable-resolution patching)
-    // For now, return empty string
-    if (!ctx) return nullptr;
-    (void)image; (void)width; (void)height; (void)max_tokens;
+    if (!ctx || !image || width <= 0 || height <= 0) return nullptr;
+
+    int n_patches = 0;
+    auto patches = image_to_patches(image, width, height,
+                                     ctx->max_patches, ctx->patch_size, &n_patches);
+    if (n_patches <= 0) return nullptr;
+
+    int out_dim = 0;
+    pix2struct_encode_patches(ctx, patches.data(), n_patches, &out_dim);
 
     static std::string result;
     result = greedy_decode(ctx, max_tokens > 0 ? max_tokens : 256);
@@ -604,6 +668,6 @@ const char * pix2struct_generate(pix2struct_context * ctx,
 }
 
 void pix2struct_free_text(const char * text) {
-    (void)text; // static string, no-op
+    (void)text;
     (void)text;
 }
