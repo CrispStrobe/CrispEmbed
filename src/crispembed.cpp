@@ -3270,6 +3270,9 @@ extern "C" crispembed_ocr_pipeline_params crispembed_ocr_pipeline_defaults(void)
     p.vlm_model       = nullptr;
     p.vlm_engine      = 0;
     p.punct_model     = nullptr;
+    p.lid_model       = nullptr;
+    p.truecase_model  = nullptr;
+    p.tess_model_dir  = nullptr;
     return p;
 }
 
@@ -3319,6 +3322,14 @@ extern "C" void * crispembed_ocr_pipeline_init(
             ch.stages.push_back(vs);
         }
     }
+    // LID + truecasing + Tesseract auto-select
+    if (params->lid_model && *params->lid_model)
+        cfg.lid_model = params->lid_model;
+    if (params->truecase_model && *params->truecase_model)
+        cfg.truecase_model = params->truecase_model;
+    if (params->tess_model_dir && *params->tess_model_dir)
+        cfg.tess_model_dir = params->tess_model_dir;
+
     // Enable verbose logging via environment variable
     if (const char * v = std::getenv("CRISPEMBED_VERBOSE_OCR"))
         cfg.verbose = (v[0] == '1' || v[0] == 'y' || v[0] == 'Y');

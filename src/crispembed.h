@@ -627,6 +627,9 @@ typedef struct crispembed_ocr_pipeline_params {
     const char * vlm_model;     // optional single-shot VLM escalation GGUF (NULL/"" = none)
     int          vlm_engine;    // VLM engine when vlm_model set: 0=GOT 1=GLM 2=Qwen2-VL 3=InternVL2
     const char * punct_model;   // optional post-OCR punctuation/spacing restorer (FireRedPunc/PCS); NULL/"" = off
+    const char * lid_model;     // optional text LID GGUF for language detection (NULL/"" = off)
+    const char * truecase_model; // optional truecaser GGUF for post-OCR truecasing (NULL/"" = off)
+    const char * tess_model_dir; // directory of tesseract-{lang}-q8_0.gguf for LID auto-select (NULL/"" = off)
 } crispembed_ocr_pipeline_params;
 
 CRISPEMBED_API crispembed_ocr_pipeline_params crispembed_ocr_pipeline_defaults(void);

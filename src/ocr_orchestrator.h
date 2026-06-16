@@ -105,6 +105,8 @@ struct config {
     std::string        sr_model;        // text SR GGUF path ("" = disabled)
     int                sr_target_dpi = 200;  // auto-trigger SR when estimated DPI < this
     std::string        lid_model;       // text LID GGUF path ("" = no LID)
+    std::string        truecase_model;  // truecaser GGUF path ("" = no truecasing)
+    std::string        tess_model_dir;  // directory of tesseract-{lang}-q8_0.gguf files for auto-select
     std::vector<chain> chains;          // one per source_type, or a single chain
     bool               verbose = false; // log stage transitions, gate decisions, failures
 };
