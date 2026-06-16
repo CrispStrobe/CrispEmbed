@@ -10,6 +10,7 @@
 
 #include "swinir_sr.h"
 #include "core/gguf_loader.h"
+#include "ggml-backend.h"
 #include "ggml-cpu.h"
 
 #include <algorithm>
@@ -28,15 +29,20 @@
 // ── Helpers ────────────────────────────────────────────────────────────
 
 static const float * sir_to_f32(const ggml_tensor * t, std::vector<float> & buf) {
-    if (t->type == GGML_TYPE_F32) return (const float *)t->data;
     int64_t n = ggml_nelements(t);
     buf.resize(n);
-    if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t * src = (const ggml_fp16_t *)t->data;
-        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(src[i]);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+    } else if (t->type == GGML_TYPE_F16) {
+        std::vector<ggml_fp16_t> tmp(n);
+        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
+        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(tmp[i]);
     } else {
+        size_t raw_sz = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_sz);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
         const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) traits->to_float(t->data, buf.data(), n);
+        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
         else memset(buf.data(), 0, n * sizeof(float));
     }
     return buf.data();
@@ -322,10 +328,11 @@ struct swinir_sr_context {
         int64_t n = ggml_nelements(t);
         ibufs.emplace_back(n);
         if (t->type == GGML_TYPE_I32) {
-            memcpy(ibufs.back().data(), t->data, n * sizeof(int32_t));
+            ggml_backend_tensor_get(t, ibufs.back().data(), 0, n * sizeof(int32_t));
         } else {
-            const float * f = (const float *)t->data;
-            for (int64_t i = 0; i < n; i++) ibufs.back()[i] = (int32_t)f[i];
+            std::vector<float> tmp(n);
+            ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(float));
+            for (int64_t i = 0; i < n; i++) ibufs.back()[i] = (int32_t)tmp[i];
         }
         return ibufs.back().data();
     }
@@ -350,7 +357,11 @@ swinir_sr_context * swinir_sr_init(const char * model_path, int n_threads) {
     ctx->upscale     = core_gguf::kv_u32(meta, "swinir.upscale", 4);
     core_gguf::free_metadata(meta);
 
-    ggml_backend_t backend = ggml_backend_cpu_init();
+    bool force_cpu = (getenv("SWINIR_SR_FORCE_CPU") && atoi(getenv("SWINIR_SR_FORCE_CPU")));
+    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!backend) backend = ggml_backend_cpu_init();
+    if (ggml_backend_is_cpu(backend))
+        ggml_backend_cpu_set_n_threads(backend, ctx->n_threads);
     if (!core_gguf::load_weights(model_path, backend, "swinir", ctx->wl)) {
         fprintf(stderr, "swinir_sr: failed to load weights\n");
         ggml_backend_free(backend); delete ctx; return nullptr;
