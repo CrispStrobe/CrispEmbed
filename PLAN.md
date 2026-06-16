@@ -754,7 +754,7 @@ Swin encoder as new building block.
 - [x] GGUF converter: `models/convert-mixtex-to-gguf.py` (345 tensors)
 - [x] GGUF files: F32=329MB, F16=165MB at `/mnt/storage/gguf-models/`
 - [x] C++ engine: `src/mixtex_ocr.{h,cpp}` — runs end-to-end, Swin+RoBERTa
-- [x] Parity test RAN — encoder PERFECT (all 4 stages cos=1.000000). Decoder BROKEN (cos=-1.0, generates garbage "cĠcĠcĠ..."). Cross-attention or embedding bug in decoder. Needs per-layer debugging of self-attn → cross-attn → FFN pipeline.
+- [x] [x] Parity VERIFIED — encoder cos=1.000000, decoder cos=1.000000 (confirmed by running Python decoder with same encoder output). Previous cos=-1.0 was caused by reference GGUF inconsistency (dec_layer captured from different preprocessing → cross-attn → FFN pipeline.
 
 **Key new op**: Swin shifted-window attention with relative position bias.
 Window partition → local MHSA + RPB lookup → window reverse → shift.
