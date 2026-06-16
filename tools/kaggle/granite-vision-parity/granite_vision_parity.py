@@ -25,13 +25,19 @@ if not _CRISPASR_DIR.exists():
 if str(_CRISPASR_DIR / "tools" / "kaggle") not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+class _kh_stub:
+    @staticmethod
+    def log(msg): print(msg, flush=True)
+    @staticmethod
+    def resolve_hf_token(): return None
+
+kh = _kh_stub()
 try:
-    import kaggle_harness as kh
-    kh.init_progress()
-except ImportError:
-    class kh:
-        @staticmethod
-        def log(msg): print(msg, flush=True)
+    import kaggle_harness as _kh_real
+    _kh_real.init_progress()
+    kh = _kh_real
+except Exception as e:
+    print(f"Harness init failed ({e}), using stub", flush=True)
 
 # Ensure safetensors is available
 try:
