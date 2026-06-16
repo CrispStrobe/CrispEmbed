@@ -1012,6 +1012,42 @@ typedef CrispembedPix2StructEncodePatchesDart = Pointer<Float> Function(
     Pointer<Void> ctx, Pointer<Float> patches,
     int nPatches, Pointer<Int32> outDim);
 
+// --- Granite Vision OCR ---
+typedef CrispembedGraniteVisionInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedGraniteVisionInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedGraniteVisionFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedGraniteVisionFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedGraniteVisionRecognizeNative = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Uint8> pixels,
+    Int32 width, Int32 height, Int32 channels,
+    Pointer<Utf8> prompt, Pointer<Int32> outLen);
+typedef CrispembedGraniteVisionRecognizeDart = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Uint8> pixels,
+    int width, int height, int channels,
+    Pointer<Utf8> prompt, Pointer<Int32> outLen);
+
+// --- LightOnOCR ---
+typedef CrispembedLightOnOcrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedLightOnOcrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedLightOnOcrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedLightOnOcrFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedLightOnOcrRecognizeNative = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Uint8> pixels,
+    Int32 width, Int32 height, Int32 channels,
+    Pointer<Int32> outLen);
+typedef CrispembedLightOnOcrRecognizeDart = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Uint8> pixels,
+    int width, int height, int channels,
+    Pointer<Int32> outLen);
+
 // --- Punctuation Restoration ---
 typedef CrispembedPunctInitNative = Pointer<Void> Function(
     Pointer<Utf8> modelPath, Int32 nThreads);

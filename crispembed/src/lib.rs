@@ -3214,3 +3214,132 @@ impl Drop for CrispPix2Struct {
         unsafe { crispembed_sys::crispembed_pix2struct_free(self.ctx) }
     }
 }
+
+// ======================================================================
+// Granite Vision OCR — LLaVA-Next (OCRBench 852)
+// ======================================================================
+
+/// Granite Vision OCR model (SigLIP ViT + Granite-3.1-2B decoder).
+///
+/// Not `Sync` — do not share between threads. Each thread should hold its
+/// own `CrispGraniteVision` instance. `Send`-safe: you can move it across threads.
+///
+/// # Example
+///
+/// ```no_run
+/// use crispembed::CrispGraniteVision;
+///
+/// let mut gv = CrispGraniteVision::new("/path/to/granite-vision.gguf", 0).unwrap();
+/// let text = gv.recognize(b"...", 800, 600, 3, None);
+/// println!("output: {:?}", text);
+/// ```
+pub struct CrispGraniteVision {
+    ctx: *mut crispembed_sys::GraniteVisionContext,
+}
+
+unsafe impl Send for CrispGraniteVision {}
+
+impl CrispGraniteVision {
+    /// Load a Granite Vision GGUF model file.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_granite_vision_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_granite_vision_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Recognize text from raw pixel bytes.
+    ///
+    /// - `pixels`   — row-major RGB(A) bytes.
+    /// - `width`    — image width in pixels.
+    /// - `height`   — image height in pixels.
+    /// - `channels` — 3 (RGB) or 4 (RGBA).
+    /// - `prompt`   — optional prompt; `None` for default OCR prompt.
+    pub fn recognize(&mut self, pixels: &[u8], width: i32, height: i32,
+                     channels: i32, prompt: Option<&str>) -> Option<String> {
+        let prompt_c = prompt.map(|p| CString::new(p).ok()).flatten();
+        let prompt_ptr = prompt_c.as_ref().map_or(std::ptr::null(), |c| c.as_ptr());
+        let mut out_len: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_granite_vision_recognize(
+                self.ctx, pixels.as_ptr(), width, height, channels,
+                prompt_ptr, &mut out_len,
+            )
+        };
+        if ptr.is_null() {
+            return None;
+        }
+        Some(unsafe { CStr::from_ptr(ptr) }.to_str().ok()?.to_string())
+    }
+}
+
+impl Drop for CrispGraniteVision {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_granite_vision_free(self.ctx) }
+    }
+}
+
+// ======================================================================
+// LightOnOCR — Pixtral ViT + Qwen3 decoder
+// ======================================================================
+
+/// LightOnOCR model (Pixtral ViT + Qwen3 decoder, 2-1B).
+///
+/// Not `Sync` — do not share between threads. Each thread should hold its
+/// own `CrispLightOnOcr` instance. `Send`-safe: you can move it across threads.
+///
+/// # Example
+///
+/// ```no_run
+/// use crispembed::CrispLightOnOcr;
+///
+/// let mut locr = CrispLightOnOcr::new("/path/to/lightonocr.gguf", 0).unwrap();
+/// let text = locr.recognize(b"...", 800, 600, 3);
+/// println!("output: {:?}", text);
+/// ```
+pub struct CrispLightOnOcr {
+    ctx: *mut crispembed_sys::LightOnOcrContext,
+}
+
+unsafe impl Send for CrispLightOnOcr {}
+
+impl CrispLightOnOcr {
+    /// Load a LightOnOCR GGUF model file.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_lightonocr_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_lightonocr_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Recognize text from raw pixel bytes.
+    ///
+    /// - `pixels`   — row-major RGB(A) bytes.
+    /// - `width`    — image width in pixels.
+    /// - `height`   — image height in pixels.
+    /// - `channels` — 3 (RGB) or 4 (RGBA).
+    pub fn recognize(&mut self, pixels: &[u8], width: i32, height: i32,
+                     channels: i32) -> Option<String> {
+        let mut out_len: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_lightonocr_recognize(
+                self.ctx, pixels.as_ptr(), width, height, channels,
+                &mut out_len,
+            )
+        };
+        if ptr.is_null() {
+            return None;
+        }
+        Some(unsafe { CStr::from_ptr(ptr) }.to_str().ok()?.to_string())
+    }
+}
+
+impl Drop for CrispLightOnOcr {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_lightonocr_free(self.ctx) }
+    }
+}
