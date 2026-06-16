@@ -349,8 +349,8 @@ esrgan_sr engine internally).
   share a prompt prefix (e.g. Jina v5 instruction prefix), compute KV
   for the shared prefix once and reuse across the batch.
 
-- [ ] **Streaming ColBERT late interaction scoring** — Server-side MaxSim
-  scoring via `/colbert/score` endpoint with SSE streaming.
+- [x] **Streaming ColBERT late interaction scoring** — DONE: `POST /colbert/score`
+  endpoint with SSE streaming. Server-side MaxSim scoring.
 
 - [x] **Quantized GGUF for face models** — Quantizer now flattens 4D conv
   weights to 2D before quantizing. SFace: Q8_0 cos=0.9996 (37→10 MB),
