@@ -3933,6 +3933,109 @@ def _setup_ocr_render_signatures(lib):
     lib.crispembed_ocr_render.restype = ctypes.c_void_p
 
 
+# ---------------------------------------------------------------------------
+# CrispPix2Struct — Pix2Struct document understanding (image → text)
+# ---------------------------------------------------------------------------
+
+def _setup_pix2struct_signatures(lib):
+    """Register ctypes signatures for crispembed_pix2struct_* functions."""
+    lib.crispembed_pix2struct_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_pix2struct_init.restype = ctypes.c_void_p
+
+    lib.crispembed_pix2struct_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_pix2struct_free.restype = None
+
+    lib.crispembed_pix2struct_generate.argtypes = [
+        ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8),
+        ctypes.c_int, ctypes.c_int, ctypes.c_int]
+    lib.crispembed_pix2struct_generate.restype = ctypes.c_char_p
+
+    lib.crispembed_pix2struct_free_text.argtypes = [ctypes.c_char_p]
+    lib.crispembed_pix2struct_free_text.restype = None
+
+    lib.crispembed_pix2struct_encode_patches.argtypes = [
+        ctypes.c_void_p, ctypes.POINTER(ctypes.c_float),
+        ctypes.c_int, ctypes.POINTER(ctypes.c_int)]
+    lib.crispembed_pix2struct_encode_patches.restype = ctypes.POINTER(ctypes.c_float)
+
+
+class CrispPix2Struct:
+    """Pix2Struct document understanding — image-to-text.
+
+    Variable-resolution ViT encoder + T5 decoder (282M params).
+    Supports 17 fine-tuned variants for document understanding,
+    chart-to-text, screen-to-text, etc.
+
+    Usage::
+
+        p2s = CrispPix2Struct("pix2struct-base.gguf")
+        text = p2s.generate("document.png")
+        print(text)
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 0, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_pix2struct_signatures(self._lib)
+        self._ctx = self._lib.crispembed_pix2struct_init(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load Pix2Struct model: {model_path}")
+
+    def generate(self, image_path: str, max_tokens: int = 256) -> str:
+        """Generate text from a document/chart/screen image.
+
+        Loads the image from disk, runs the full Pix2Struct encoder-decoder
+        pipeline, and returns the generated text.
+
+        Args:
+            image_path: Path to the image file (JPG/PNG/BMP).
+            max_tokens: Maximum number of tokens to generate.
+
+        Returns:
+            The generated text string, or empty string on failure.
+        """
+        import numpy as np
+        from PIL import Image
+        img = Image.open(image_path).convert("RGB")
+        pixels = np.array(img, dtype=np.uint8)
+        h, w = pixels.shape[:2]
+        data = pixels.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+        ptr = self._lib.crispembed_pix2struct_generate(
+            self._ctx, data, w, h, max_tokens)
+        if not ptr:
+            return ""
+        text = ptr.decode("utf-8")
+        self._lib.crispembed_pix2struct_free_text(ptr)
+        return text
+
+    def generate_raw(self, image_bytes: bytes, width: int, height: int,
+                     max_tokens: int = 256) -> str:
+        """Generate text from raw RGB pixel bytes.
+
+        Args:
+            image_bytes: Raw RGB pixel data (row-major, length = width*height*3).
+            width:  Image width in pixels.
+            height: Image height in pixels.
+            max_tokens: Maximum number of tokens to generate.
+
+        Returns:
+            The generated text string, or empty string on failure.
+        """
+        buf = (ctypes.c_uint8 * len(image_bytes)).from_buffer_copy(image_bytes)
+        ptr = self._lib.crispembed_pix2struct_generate(
+            self._ctx, buf, width, height, max_tokens)
+        if not ptr:
+            return ""
+        text = ptr.decode("utf-8")
+        self._lib.crispembed_pix2struct_free_text(ptr)
+        return text
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_pix2struct_free(self._ctx)
+            self._ctx = None
+
+
 def ocr_render(results: list, page_w: int, page_h: int, format: str = "text",
                lib_path: Optional[str] = None) -> str:
     """Render OCR results to text/hOCR/ALTO/PDF format.
