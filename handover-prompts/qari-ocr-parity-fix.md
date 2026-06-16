@@ -3,8 +3,23 @@
 ## Target machine
 
 16 GB M1 Mac. The Qari-OCR model is ~4.7 GB F16 GGUF — fits comfortably.
-Build with: `cmake -B build -G Ninja && ninja -C build crispembed`
+Even the Q4_K (1.7 GB) reproduces the bug.
+Build with: `cmake -B build -G Ninja && ninja -C build test-qwen2vl-diff`
 (Apple Silicon native, no ccache needed, builds in ~2 min)
+
+## NEW FINDING (2026-06-16): Bug is in the VISION ENCODER
+
+Running the diff test on the VPS with Q4_K confirmed:
+```
+vis_merger: cos_min=0.056324 max_abs=5.36e+01 FAIL
+```
+cos=0.056 means the vision encoder output is essentially **garbage** — the
+bug is NOT in the LLM decoder, NOT in preprocessing. The 32-layer ViT
+produces wrong features which propagate through the merger to the LLM.
+
+Two fixes were already committed:
+1. `gguf_get_val_u32` crash on BOOL-typed `tie_word_embeddings` — FIXED
+2. Diff test tensor name compatibility (pixel_values vs input_patches) — FIXED
 
 ## The bug
 
@@ -29,32 +44,32 @@ is still wrong. The Kaggle diff harness confirmed:
 - Vision shapes: correct (132×1280, merger 33×1536)
 - **Divergence starts at prefill logits** — the first generated token differs
 
-Possible causes to investigate (in order of likelihood):
+Since the bug is CONFIRMED in the vision encoder (cos=0.056 at merger),
+focus investigation here. Ranked causes:
 
-1. **Vision RoPE theta**: The vision RoPE uses `theta=10000.0` hardcoded
-   (line 326 of `qwen2vl_ocr.cpp`). Qwen2-VL may use a different theta
-   for its vision encoder. Check `preprocessor_config.json` or the PyTorch
-   model's `VisionRotaryEmbedding`.
+1. **Vision embed_dim confusion**: Qwen2-VL config has BOTH `embed_dim=1280`
+   (ViT block dim) AND `hidden_size=1536` (merger output / LLM input).
+   The engine reads `vhp.hidden_size` at line 378. If the GGUF stores
+   `qwen2vl.vision.hidden_size=1536` but the ViT blocks are 1280-wide,
+   the QKV projections and FFN will read wrong-sized weight matrices.
+   **CHECK**: print `vhp.hidden_size` vs actual weight shapes of
+   `v.blk.0.attn_qkv.weight`. If H=1536 but weight is [3840,1280],
+   that's the bug. Fix: use `embed_dim` for ViT block dim.
 
-2. **Fullatt block indexes**: Qwen2-VL uses `fullatt_block_indexes` to
-   switch between windowed and full attention in the vision encoder (like
-   Swin). The GGUF may not store these correctly. Check the converter at
-   `models/convert-qwen2vl-to-gguf.py` lines 370+.
+2. **Fullatt block indexes missing**: Qwen2-VL uses windowed attention
+   on most layers + full attention on specific layers. If
+   `qwen2vl.vision.fullatt_block_indexes` is missing from GGUF, ALL
+   layers use full attention (wrong). Check converter line ~370.
 
-3. **Vision hidden_size vs embed_dim mismatch**: Qwen2-VL has `embed_dim=1280`
-   (ViT block dim) and `hidden_size=1536` (merger output dim). The merger
-   projects from 1280 to 1536. If the engine confuses these, shapes match
-   but values are wrong.
+3. **Vision RoPE theta**: Hardcoded `theta=10000.0` at line 326. Confirm
+   this matches PyTorch's `VisionRotaryEmbedding.inv_freq`.
 
-4. **LLM attention bias**: Qwen2-VL LLM has `attention_bias=True` (Q/K/V/O
-   projections have bias). Qwen2.5-VL does not. The engine loads biases
-   when present (lines 280-284), but verify they're actually being applied
-   in the attention graph.
+4. **Window size**: Qwen2-VL uses `window_size=112` pixels = 8 patches
+   (112/14). Check `qwen2vl.vision.window_size` in the GGUF.
 
-5. **mRoPE grid construction**: The image position IDs for mRoPE in the LLM
-   must match PyTorch exactly. Grid [1,6,22] means t=1, h=6, w=22 patches
-   after merging. Check `build_mrope_position_ids` in the engine vs
-   `Qwen2VLRotaryEmbedding` in PyTorch.
+5. **Quantization artifact** (unlikely at cos=0.056): Q4_K quantization
+   could cause some error, but cos=0.056 is WAY beyond quantization noise.
+   Try with F16 GGUF to rule out.
 
 ## How to debug
 
