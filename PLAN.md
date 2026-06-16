@@ -221,6 +221,7 @@ These run the full forward pass on GPU when available:
 | math_ocr | `MATH_OCR_FORCE_CPU=1` | Q4_K/Q8_0 | varies |
 | ppformulanet_l_ocr | `PPFNL_OCR_FORCE_CPU=1` | Q8_0 | ~180 MB |
 | lilt_kie | `LILT_KIE_FORCE_CPU=1` | Q4_K/Q8_0 | ~350 MB |
+| bert_ner | `BERT_NER_FORCE_CPU=1` | varies | varies |
 
 **GPU-SAFE** — `ggml_backend_init_best()` + `ggml_backend_tensor_get` for
 weight reads, scalar CPU forward pass. Weights on GPU, compute on CPU.
@@ -234,35 +235,26 @@ Full GPU compute needs ggml graph rewrite (depthwise conv, PixelShuffle, etc.):
 | nafnet_denoise | `NAFNET_FORCE_CPU=1` | Q4_K/Q8_0 | 15-56 MB |
 | mixtex_ocr | `MIXTEX_OCR_FORCE_CPU=1` | Q4_K/Q8_0 | 85-329 MB |
 | ppformulanet_ocr | `PPFN_OCR_FORCE_CPU=1` | Q8_0 | ~20 MB |
-| pan_sr | `PAN_SR_FORCE_CPU=1` | F16 only | ~1 MB |
-| tbsrn_sr | `TBSRN_SR_FORCE_CPU=1` | F16 only | ~4.5 MB |
+| pan_sr | `PAN_SR_FORCE_CPU=1` | Q4_K/Q8_0/F16 | 543K-577K |
+| tbsrn_sr | `TBSRN_SR_FORCE_CPU=1` | Q4_K/Q8_0/F16 | 686K-2.2M |
 | text_sr | `TEXT_SR_FORCE_CPU=1` | F16 | varies |
-| safmn_sr | `SAFMN_SR_FORCE_CPU=1` | F32 only | ~3 MB |
-| esrgan_sr | `ESRGAN_SR_FORCE_CPU=1` | F32 only | ~65 MB |
-| restormer | `RESTORMER_FORCE_CPU=1` | F16 only | ~100 MB |
-| tps_locnet | `TPS_LOCNET_FORCE_CPU=1` | F32 only | ~12 MB |
+| safmn_sr | `SAFMN_SR_FORCE_CPU=1` | Q4_K/Q8_0/F32 | 947K-970K |
+| esrgan_sr | `ESRGAN_SR_FORCE_CPU=1` | Q4_K/Q8_0/F32 | 358K-2.4M |
+| restormer | `RESTORMER_FORCE_CPU=1` | Q4_K/Q8_0/F16 | 28-50 MB |
+| tps_locnet | `TPS_LOCNET_FORCE_CPU=1` | Q4_K/Q8_0/F32 | 88K-449K |
+| scunet_denoise | `SCUNET_FORCE_CPU=1` | Q4_K/Q8_0 | varies |
+| swinir_sr | `SWINIR_SR_FORCE_CPU=1` | Q4_K/Q8_0 | varies |
 
-**Not inference engines** (no GPU needed):
-bidirlm_audio (shared backend from bidirlm_vision), bert_ner (legacy,
-uses crispembed backend), hat_sr (uses esrgan_sr engine internally).
+**Not model engines** (no GPU needed):
+bidirlm_audio (shared backend from bidirlm_vision), hat_sr (uses
+esrgan_sr engine internally).
 
-**Quantization gaps — FILLED** (2026-06-16): All 7 models quantized to Q8_0 + Q4_K:
-
-| Model | F16/F32 | Q8_0 | Q4_K | A/B result |
-|-------|---------|------|------|------------|
-| pan-x4 | 577K | 543K | 543K | IDENTICAL output across all 3 |
-| tbsrn-telescope | 2.2M | 1.2M | 686K | Same size, minor pixel diff (expected) |
-| safmn-x4 | 970K | 947K | 947K | quantized |
-| esrgan-x4 | 2.4M | 659K (3.7x) | 358K (6.8x) | quantized |
-| restormer-denoise | 50M | 33M | 28M | quantized |
-| tps-loc | 449K | 137K (3.1x) | 88K (4.9x) | quantized |
-| hat-sr-x4 | 40M | 40M | 20M | quantized |
-
-**Summary:**
-- 21 engines: full GPU acceleration (ggml graph compute)
-- 13 engines: GPU-safe weight storage (scalar CPU compute)
+**Summary (2026-06-16, final):**
+- 22 engines: full GPU acceleration (ggml graph compute)
+- 15 engines: GPU-safe weight storage (scalar CPU compute)
 - 0 engines: CPU-only
-- All 34 inference engines have `<ENGINE>_FORCE_CPU=1` env var overrides
+- All 37 inference engines have `<ENGINE>_FORCE_CPU=1` env var overrides
+- All SR/restoration models quantized to Q8_0 + Q4_K (zero quant gaps)
 
 ### Models
 
@@ -290,7 +282,7 @@ uses crispembed backend), hat_sr (uses esrgan_sr engine internally).
 - [x] **Keyven/german-ocr-3 — Qwen2.5-VL base engine DONE**. Full engine, converter, parity, orchestrator wiring.
 - [x] **InternVL2 (MIT)** — InternViT + InternLM2.5 VLM. DONE: engine (`internvl2_ocr.{h,cpp}`), converter, reference dumper, diff test, e2e test. Wired into orchestrator. GGUFs: 1B and 2B variants.
 - [ ] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL fine-tune, German business docs
-- [ ] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL fine-tune, 12+ languages incl. German, GGUF exists
+- [x] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL pruned fine-tune (16L vs 28L), 12+ languages incl. German. DONE: runs on existing qwen2vl_ocr engine unchanged. GGUF converted (F16 3.6GB, Q4_K 1.3GB). Model registry entry added.
 - [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics (parity bug: hallucinated text)
 - [ ] **Granite Vision 3.3-2B (~3B, Apache-2.0)** — OCRBench 852 (highest in class). English-only.
 - [ ] **H2OVL-Mississippi-2B (~2.1B, Apache-2.0)** — OCRBench 782.
