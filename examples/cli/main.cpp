@@ -858,11 +858,22 @@ int main(int argc, char ** argv) {
                 free(rendered);
             }
         } else if (json_output) {
-            printf("{\"n_regions\":%d,\"mean_confidence\":%.3f,\"full_text\":\"%s\"}\n",
-                   n_res, mean_conf, json_escape(full_text ? full_text : "").c_str());
+            float lang_conf = 0;
+            const char * det_lang = crispembed_ocr_pipeline_detected_lang(pctx, &lang_conf);
+            printf("{\"n_regions\":%d,\"mean_confidence\":%.3f", n_res, mean_conf);
+            if (det_lang && *det_lang)
+                printf(",\"detected_lang\":\"%s\",\"lang_confidence\":%.3f", det_lang, lang_conf);
+            printf(",\"full_text\":\"%s\"}\n",
+                   json_escape(full_text ? full_text : "").c_str());
         } else {
-            printf("regions=%d  mean_conf=%.2f\n%s\n",
-                   n_res, mean_conf, full_text ? full_text : "");
+            float lang_conf = 0;
+            const char * det_lang = crispembed_ocr_pipeline_detected_lang(pctx, &lang_conf);
+            if (det_lang && *det_lang)
+                printf("regions=%d  mean_conf=%.2f  lang=%s (%.2f)\n%s\n",
+                       n_res, mean_conf, det_lang, lang_conf, full_text ? full_text : "");
+            else
+                printf("regions=%d  mean_conf=%.2f\n%s\n",
+                       n_res, mean_conf, full_text ? full_text : "");
         }
         crispembed_ocr_pipeline_free(pctx);
         return 0;
