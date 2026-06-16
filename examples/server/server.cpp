@@ -78,6 +78,10 @@ int main(int argc, char ** argv) {
     std::string punct_model_path;     // punct restoration model for orchestrator
     std::string sr_model_path;        // text super-resolution model (--sr-model)
     std::string pan_model_path;       // PAN super-resolution model (--pan-model)
+    std::string hat_model_path;       // HAT super-resolution model (--hat-model)
+    std::string dat_model_path;       // DAT super-resolution model (--dat-model)
+    std::string safmn_model_path;     // SAFMN super-resolution model (--safmn-model)
+    std::string esrgan_model_path;    // Real-ESRGAN super-resolution model (--esrgan-model)
     std::string swinir_model_path;    // SwinIR super-resolution model (--swinir-model)
     std::string tbsrn_model_path;     // TBSRN text-line SR model (--tbsrn-model)
     std::string restormer_model_path; // Restormer restoration model (--restormer-model)
@@ -107,6 +111,10 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--punct-model") == 0 && i + 1 < argc) punct_model_path = argv[++i];
         else if (strcmp(argv[i], "--sr-model") == 0 && i + 1 < argc) sr_model_path = argv[++i];
         else if (strcmp(argv[i], "--pan-model") == 0 && i + 1 < argc) pan_model_path = argv[++i];
+        else if (strcmp(argv[i], "--hat-model") == 0 && i + 1 < argc) hat_model_path = argv[++i];
+        else if (strcmp(argv[i], "--dat-model") == 0 && i + 1 < argc) dat_model_path = argv[++i];
+        else if (strcmp(argv[i], "--safmn-model") == 0 && i + 1 < argc) safmn_model_path = argv[++i];
+        else if (strcmp(argv[i], "--esrgan-model") == 0 && i + 1 < argc) esrgan_model_path = argv[++i];
         else if (strcmp(argv[i], "--swinir-model") == 0 && i + 1 < argc) swinir_model_path = argv[++i];
         else if (strcmp(argv[i], "--tbsrn-model") == 0 && i + 1 < argc) tbsrn_model_path = argv[++i];
         else if (strcmp(argv[i], "--restormer-model") == 0 && i + 1 < argc) restormer_model_path = argv[++i];
@@ -114,9 +122,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--instructir-model") == 0 && i + 1 < argc) instructir_model_path = argv[++i];
     }
 
-    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && swinir_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty()) {
-    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && swinir_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty()) {
-    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty()) {
+    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() && dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
@@ -145,6 +151,14 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --sr-model MODEL  text SR GGUF (NAFNet+PixelShuffle, 2x or 4x); enables POST /text/sr\n");
         fprintf(stderr, "\nPAN super-resolution (whole-image upscaling):\n");
         fprintf(stderr, "  --pan-model MODEL PAN SR GGUF (Pixel Attention Network, 2x or 4x); enables POST /pan/sr\n");
+        fprintf(stderr, "\nHAT super-resolution (Hybrid Attention Transformer, 4x):\n");
+        fprintf(stderr, "  --hat-model MODEL   HAT GGUF (21M params, CVPR 2023 SOTA); enables POST /hat/sr\n");
+        fprintf(stderr, "\nDAT super-resolution (Dual Aggregation Transformer, 2x):\n");
+        fprintf(stderr, "  --dat-model MODEL   DAT-light GGUF (830K params, ICCV 2023); enables POST /dat/sr\n");
+        fprintf(stderr, "\nSAFMN super-resolution (4x):\n");
+        fprintf(stderr, "  --safmn-model MODEL SAFMN GGUF (228K params, ICCV 2023); enables POST /safmn/sr\n");
+        fprintf(stderr, "\nReal-ESRGAN super-resolution (4x):\n");
+        fprintf(stderr, "  --esrgan-model MODEL Real-ESRGAN GGUF (620K params); enables POST /esrgan/sr\n");
         fprintf(stderr, "\nSwinIR super-resolution (Swin Transformer, 2x/3x/4x):\n");
         fprintf(stderr, "  --swinir-model MODEL SwinIR GGUF (lightweight, ~0.9M-4.2M params); enables POST /swinir/sr\n");
         fprintf(stderr, "\nTBSRN text-line super-resolution:\n");
@@ -835,6 +849,46 @@ int main(int argc, char ** argv) {
         pan_sr_ctx = crispembed_pan_sr_init(pan_model_path.c_str(), n_threads);
         if (!pan_sr_ctx)
             fprintf(stderr, "Warning: failed to load PAN SR model '%s'\n", pan_model_path.c_str());
+    }
+
+    // ── HAT Super-Resolution ──
+    void * hat_sr_ctx = nullptr;
+    std::mutex hat_sr_mutex;
+
+    if (!hat_model_path.empty()) {
+        hat_sr_ctx = crispembed_hat_sr_init(hat_model_path.c_str(), n_threads);
+        if (!hat_sr_ctx)
+            fprintf(stderr, "Warning: failed to load HAT SR model '%s'\n", hat_model_path.c_str());
+    }
+
+    // ── DAT Super-Resolution ──
+    void * dat_sr_ctx = nullptr;
+    std::mutex dat_sr_mutex;
+
+    if (!dat_model_path.empty()) {
+        dat_sr_ctx = crispembed_dat_sr_init(dat_model_path.c_str(), n_threads);
+        if (!dat_sr_ctx)
+            fprintf(stderr, "Warning: failed to load DAT SR model '%s'\n", dat_model_path.c_str());
+    }
+
+    // ── SAFMN Super-Resolution ──
+    void * safmn_sr_ctx = nullptr;
+    std::mutex safmn_sr_mutex;
+
+    if (!safmn_model_path.empty()) {
+        safmn_sr_ctx = crispembed_safmn_sr_init(safmn_model_path.c_str(), n_threads);
+        if (!safmn_sr_ctx)
+            fprintf(stderr, "Warning: failed to load SAFMN SR model '%s'\n", safmn_model_path.c_str());
+    }
+
+    // ── Real-ESRGAN Super-Resolution ──
+    void * esrgan_sr_ctx = nullptr;
+    std::mutex esrgan_sr_mutex;
+
+    if (!esrgan_model_path.empty()) {
+        esrgan_sr_ctx = crispembed_esrgan_sr_init(esrgan_model_path.c_str(), n_threads);
+        if (!esrgan_sr_ctx)
+            fprintf(stderr, "Warning: failed to load Real-ESRGAN SR model '%s'\n", esrgan_model_path.c_str());
     }
 
     // ── SwinIR Super-Resolution ──
@@ -2209,6 +2263,330 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // POST /hat/sr — HAT whole-image super-resolution (Hybrid Attention Transformer)
+    svr.Post("/hat/sr", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!hat_sr_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no HAT SR model loaded (use --hat-model)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 3);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(hat_sr_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_hat_sr_process(
+            hat_sr_ctx, data, w, h,
+            /*tile_size=*/0, /*tile_overlap=*/0,
+            &out, &ow, &oh);
+        stbi_image_free(data);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        if (rc != 0 || !out) {
+            res.status = 500;
+            res.set_content("{\"error\": \"HAT SR processing failed\"}", "application/json");
+            return;
+        }
+
+        static const char b64chars[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        const size_t n_bytes = (size_t)ow * oh * 3;
+        std::string b64;
+        b64.reserve(((n_bytes + 2) / 3) * 4);
+        for (size_t i = 0; i < n_bytes; i += 3) {
+            uint32_t v = (uint32_t)out[i] << 16;
+            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
+            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
+            b64 += b64chars[(v >> 18) & 0x3f];
+            b64 += b64chars[(v >> 12) & 0x3f];
+            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
+            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
+        }
+        crispembed_hat_sr_free_image(out);
+
+        const int scale = crispembed_hat_sr_scale(hat_sr_ctx);
+
+        std::ostringstream js;
+        js << "{\"image\": \"" << b64 << "\""
+           << ", \"width\": " << ow << ", \"height\": " << oh
+           << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": " << scale
+           << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /hat/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n",
+                ms, w, h, ow, oh, scale);
+        res.set_content(js.str(), "application/json");
+    });
+
+    // POST /dat/sr — DAT whole-image super-resolution (Dual Aggregation Transformer)
+    svr.Post("/dat/sr", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!dat_sr_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no DAT SR model loaded (use --dat-model)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 3);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(dat_sr_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_dat_sr_process(
+            dat_sr_ctx, data, w, h,
+            /*tile_size=*/0, /*tile_overlap=*/0,
+            &out, &ow, &oh);
+        stbi_image_free(data);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        if (rc != 0 || !out) {
+            res.status = 500;
+            res.set_content("{\"error\": \"DAT SR processing failed\"}", "application/json");
+            return;
+        }
+
+        static const char b64chars[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        const size_t n_bytes = (size_t)ow * oh * 3;
+        std::string b64;
+        b64.reserve(((n_bytes + 2) / 3) * 4);
+        for (size_t i = 0; i < n_bytes; i += 3) {
+            uint32_t v = (uint32_t)out[i] << 16;
+            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
+            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
+            b64 += b64chars[(v >> 18) & 0x3f];
+            b64 += b64chars[(v >> 12) & 0x3f];
+            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
+            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
+        }
+        crispembed_dat_sr_free_image(out);
+
+        const int scale = (w > 0) ? ow / w : 2;
+
+        std::ostringstream js;
+        js << "{\"image\": \"" << b64 << "\""
+           << ", \"width\": " << ow << ", \"height\": " << oh
+           << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": " << scale
+           << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /dat/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n",
+                ms, w, h, ow, oh, scale);
+        res.set_content(js.str(), "application/json");
+    });
+
+    // POST /safmn/sr — SAFMN whole-image super-resolution
+    svr.Post("/safmn/sr", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!safmn_sr_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no SAFMN SR model loaded (use --safmn-model)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 3);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(safmn_sr_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_safmn_sr_process(
+            safmn_sr_ctx, data, w, h,
+            /*tile_size=*/0, /*tile_overlap=*/0,
+            &out, &ow, &oh);
+        stbi_image_free(data);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        if (rc != 0 || !out) {
+            res.status = 500;
+            res.set_content("{\"error\": \"SAFMN SR processing failed\"}", "application/json");
+            return;
+        }
+
+        static const char b64chars[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        const size_t n_bytes = (size_t)ow * oh * 3;
+        std::string b64;
+        b64.reserve(((n_bytes + 2) / 3) * 4);
+        for (size_t i = 0; i < n_bytes; i += 3) {
+            uint32_t v = (uint32_t)out[i] << 16;
+            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
+            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
+            b64 += b64chars[(v >> 18) & 0x3f];
+            b64 += b64chars[(v >> 12) & 0x3f];
+            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
+            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
+        }
+        crispembed_safmn_sr_free_image(out);
+
+        const int scale = crispembed_safmn_sr_scale(safmn_sr_ctx);
+
+        std::ostringstream js;
+        js << "{\"image\": \"" << b64 << "\""
+           << ", \"width\": " << ow << ", \"height\": " << oh
+           << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": " << scale
+           << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /safmn/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n",
+                ms, w, h, ow, oh, scale);
+        res.set_content(js.str(), "application/json");
+    });
+
+    // POST /esrgan/sr — Real-ESRGAN whole-image super-resolution
+    svr.Post("/esrgan/sr", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!esrgan_sr_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no Real-ESRGAN SR model loaded (use --esrgan-model)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 3);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(esrgan_sr_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        uint8_t * out = nullptr;
+        int ow = 0, oh = 0;
+        int rc = crispembed_esrgan_sr_process(
+            esrgan_sr_ctx, data, w, h,
+            /*tile_size=*/0, /*tile_overlap=*/0,
+            &out, &ow, &oh);
+        stbi_image_free(data);
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        if (rc != 0 || !out) {
+            res.status = 500;
+            res.set_content("{\"error\": \"Real-ESRGAN SR processing failed\"}", "application/json");
+            return;
+        }
+
+        static const char b64chars[] =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        const size_t n_bytes = (size_t)ow * oh * 3;
+        std::string b64;
+        b64.reserve(((n_bytes + 2) / 3) * 4);
+        for (size_t i = 0; i < n_bytes; i += 3) {
+            uint32_t v = (uint32_t)out[i] << 16;
+            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
+            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
+            b64 += b64chars[(v >> 18) & 0x3f];
+            b64 += b64chars[(v >> 12) & 0x3f];
+            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
+            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
+        }
+        crispembed_esrgan_sr_free_image(out);
+
+        const int scale = crispembed_esrgan_sr_scale(esrgan_sr_ctx);
+
+        std::ostringstream js;
+        js << "{\"image\": \"" << b64 << "\""
+           << ", \"width\": " << ow << ", \"height\": " << oh
+           << ", \"original_width\": " << w << ", \"original_height\": " << h
+           << ", \"upscale_factor\": " << scale
+           << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /esrgan/sr in %.1f ms (%dx%d -> %dx%d, %dx)\n",
+                ms, w, h, ow, oh, scale);
+        res.set_content(js.str(), "application/json");
+    });
+
     // POST /swinir/sr — SwinIR-light whole-image super-resolution
     svr.Post("/swinir/sr", [&](const httplib::Request & req, httplib::Response & res) {
         if (!swinir_sr_ctx) {
@@ -2822,6 +3200,10 @@ int main(int argc, char ** argv) {
         if (ocr_orch_ctx) js << ", \"ocr_orchestrator\": true";
         if (text_sr_ctx) js << ", \"text_sr\": true, \"text_sr_upscale\": " << crispembed_text_sr_upscale_factor(text_sr_ctx);
         if (pan_sr_ctx) js << ", \"pan_sr\": true, \"pan_sr_upscale\": " << crispembed_pan_sr_scale(pan_sr_ctx);
+        if (hat_sr_ctx) js << ", \"hat_sr\": true, \"hat_sr_upscale\": " << crispembed_hat_sr_scale(hat_sr_ctx);
+        if (dat_sr_ctx) js << ", \"dat_sr\": true";
+        if (safmn_sr_ctx) js << ", \"safmn_sr\": true, \"safmn_sr_upscale\": " << crispembed_safmn_sr_scale(safmn_sr_ctx);
+        if (esrgan_sr_ctx) js << ", \"esrgan_sr\": true, \"esrgan_sr_upscale\": " << crispembed_esrgan_sr_scale(esrgan_sr_ctx);
         if (swinir_sr_ctx) js << ", \"swinir_sr\": true, \"swinir_sr_upscale\": " << crispembed_swinir_sr_scale(swinir_sr_ctx);
         if (tbsrn_sr_ctx) js << ", \"tbsrn_sr\": true, \"tbsrn_sr_upscale\": 4";
         if (restormer_ctx) js << ", \"restormer\": true";
@@ -2853,6 +3235,10 @@ int main(int argc, char ** argv) {
     if (ocr_orch_ctx) fprintf(stderr, "  POST /ocr/pipeline    — {\"image\": \"doc.png\"} (routing + cleanup + accept-gate)\n");
     if (text_sr_ctx) fprintf(stderr, "  POST /text/sr         — {\"image\": \"low_dpi.png\"} (upscale %dx)\n", crispembed_text_sr_upscale_factor(text_sr_ctx));
     if (pan_sr_ctx) fprintf(stderr, "  POST /pan/sr          — {\"image\": \"photo.png\"} (upscale %dx)\n", crispembed_pan_sr_scale(pan_sr_ctx));
+    if (hat_sr_ctx) fprintf(stderr, "  POST /hat/sr          — {\"image\": \"photo.png\"} (upscale %dx)\n", crispembed_hat_sr_scale(hat_sr_ctx));
+    if (dat_sr_ctx) fprintf(stderr, "  POST /dat/sr          — {\"image\": \"photo.png\"} (upscale 2x)\n");
+    if (safmn_sr_ctx) fprintf(stderr, "  POST /safmn/sr        — {\"image\": \"photo.png\"} (upscale %dx)\n", crispembed_safmn_sr_scale(safmn_sr_ctx));
+    if (esrgan_sr_ctx) fprintf(stderr, "  POST /esrgan/sr       — {\"image\": \"photo.png\"} (upscale %dx)\n", crispembed_esrgan_sr_scale(esrgan_sr_ctx));
     if (swinir_sr_ctx) fprintf(stderr, "  POST /swinir/sr       — {\"image\": \"photo.png\"} (upscale %dx)\n", crispembed_swinir_sr_scale(swinir_sr_ctx));
     if (tbsrn_sr_ctx) fprintf(stderr, "  POST /tbsrn/sr        — {\"image\": \"text_line.png\"} (upscale 4x)\n");
     if (restormer_ctx) fprintf(stderr, "  POST /restormer       — {\"image\": \"noisy.png\"} (denoise/restore)\n");
@@ -2874,6 +3260,10 @@ int main(int argc, char ** argv) {
     if (kie_ctx) crispembed_kie_free(kie_ctx);
     if (text_sr_ctx) crispembed_text_sr_free(text_sr_ctx);
     if (pan_sr_ctx) crispembed_pan_sr_free(pan_sr_ctx);
+    if (hat_sr_ctx) crispembed_hat_sr_free(hat_sr_ctx);
+    if (dat_sr_ctx) crispembed_dat_sr_free(dat_sr_ctx);
+    if (safmn_sr_ctx) crispembed_safmn_sr_free(safmn_sr_ctx);
+    if (esrgan_sr_ctx) crispembed_esrgan_sr_free(esrgan_sr_ctx);
     if (swinir_sr_ctx) crispembed_swinir_sr_free(swinir_sr_ctx);
     if (tbsrn_sr_ctx) crispembed_tbsrn_sr_free(tbsrn_sr_ctx);
     if (restormer_ctx) crispembed_restormer_free(restormer_ctx);
