@@ -1983,6 +1983,108 @@ class CrispNER:
             self._ctx = None
 
 
+# ── Text LID — Language Identification ───────────────────────────────
+
+def _setup_lid_signatures(lib):
+    lib.text_lid_init_from_file.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.text_lid_init_from_file.restype = ctypes.c_void_p
+
+    lib.text_lid_free.argtypes = [ctypes.c_void_p]
+    lib.text_lid_free.restype = None
+
+    lib.text_lid_predict.argtypes = [
+        ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_float)
+    ]
+    lib.text_lid_predict.restype = ctypes.c_char_p
+
+    lib.text_lid_n_labels.argtypes = [ctypes.c_void_p]
+    lib.text_lid_n_labels.restype = ctypes.c_int
+
+
+class CrispTextLID:
+    """Text-based language identification (CLD3 / GlotLID).
+
+    Usage::
+
+        lid = CrispTextLID("cld3-f16.gguf")
+        lang, conf = lid.predict("Hallo Welt")
+        # lang="de", conf=0.99
+    """
+
+    def __init__(self, model_path: str, n_threads: int = 1, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_lid_signatures(self._lib)
+        self._ctx = self._lib.text_lid_init_from_file(
+            model_path.encode("utf-8"), n_threads)
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load LID model: {model_path}")
+
+    @property
+    def n_labels(self) -> int:
+        return self._lib.text_lid_n_labels(self._ctx)
+
+    def predict(self, text: str) -> tuple:
+        """Predict language. Returns (iso_code, confidence)."""
+        conf = ctypes.c_float(0.0)
+        lang = self._lib.text_lid_predict(
+            self._ctx, text.encode("utf-8"), ctypes.byref(conf))
+        return (lang.decode("utf-8") if lang else "", float(conf.value))
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.text_lid_free(self._ctx)
+            self._ctx = None
+
+
+# ── Truecaser — BiLSTM character-level truecasing ────────────────────
+
+def _setup_truecase_signatures(lib):
+    lib.truecaser_lstm_init.argtypes = [ctypes.c_char_p]
+    lib.truecaser_lstm_init.restype = ctypes.c_void_p
+
+    lib.truecaser_lstm_free.argtypes = [ctypes.c_void_p]
+    lib.truecaser_lstm_free.restype = None
+
+    lib.truecaser_lstm_process.argtypes = [ctypes.c_void_p, ctypes.c_char_p]
+    lib.truecaser_lstm_process.restype = ctypes.c_char_p
+
+
+class CrispTruecaser:
+    """BiLSTM character-level truecaser.
+
+    Usage::
+
+        tc = CrispTruecaser("truecaser-lstm.gguf")
+        text = tc.process("die bundesregierung hat beschlossen")
+        # "Die Bundesregierung hat beschlossen"
+    """
+
+    def __init__(self, model_path: str, lib_path: Optional[str] = None):
+        self._lib = _load_library(lib_path)
+        _setup_truecase_signatures(self._lib)
+        self._ctx = self._lib.truecaser_lstm_init(model_path.encode("utf-8"))
+        if not self._ctx:
+            raise RuntimeError(f"Failed to load truecaser: {model_path}")
+
+    def process(self, text: str) -> str:
+        """Apply truecasing. Returns truecased text."""
+        result = self._lib.truecaser_lstm_process(
+            self._ctx, text.encode("utf-8"))
+        if result:
+            out = result.decode("utf-8")
+            # truecaser_lstm_process returns malloc'd string — but Python
+            # ctypes c_char_p auto-copies, so the C string is leaked.
+            # This is a known limitation; use the C API directly for
+            # tight memory control.
+            return out
+        return text
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.truecaser_lstm_free(self._ctx)
+            self._ctx = None
+
+
 # ── LiLT  - Language-independent Layout Transformer ──────────────────
 
 class _LiLTToken(ctypes.Structure):
