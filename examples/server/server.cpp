@@ -15,6 +15,7 @@
 //   POST /detect          — {"image": "face.jpg"} → face detection
 //   POST /face            — {"image": "face.jpg"} → face embedding
 //   POST /vit/encode      — {"image": "img.jpg"} → ViT embedding
+//   POST /pix2struct/generate — {"image": "doc.png", "max_tokens": 256} → {"text": "...", "ms": M}
 //   POST /clip/text       — {"text": "query"} → CLIP text embedding
 //   POST /colbert/score   — {"query": "...", "documents": [...]} → ColBERT scoring
 //   POST /ner/extract     — {"text": "...", "labels": [...]} → NER entities
@@ -95,6 +96,7 @@ int main(int argc, char ** argv) {
     std::string scunet_model_path;   // SCUNet denoising model (--scunet-model)
     std::string instructir_model_path; // InstructIR restoration model (--instructir-model)
     std::string adair_model_path;     // AdaIR restoration model (--adair-model)
+    std::string pix2struct_model_path; // Pix2Struct document understanding model (--pix2struct)
     int port = 8080;
     int n_threads = 4;
 
@@ -106,6 +108,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--det") == 0 && i + 1 < argc) det_model_path = argv[++i];
         else if (strcmp(argv[i], "--rec") == 0 && i + 1 < argc) rec_model_path = argv[++i];
         else if (strcmp(argv[i], "--vit") == 0 && i + 1 < argc) vit_model_path = argv[++i];
+        else if (strcmp(argv[i], "--pix2struct") == 0 && i + 1 < argc) pix2struct_model_path = argv[++i];
         else if (strcmp(argv[i], "--clip-text") == 0 && i + 1 < argc) clip_text_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr") == 0 && i + 1 < argc) math_ocr_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr-det") == 0 && i + 1 < argc) ocr_det_model_path = argv[++i];
@@ -141,6 +144,7 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --rec MODEL   face recognition model (ArcFace/SFace GGUF)\n");
         fprintf(stderr, "\nStandalone ViT (SigLIP/CLIP):\n");
         fprintf(stderr, "  --vit MODEL   ViT image embedding model (SigLIP/CLIP GGUF)\n");
+        fprintf(stderr, "  --pix2struct MODEL  Pix2Struct document understanding model GGUF\n");
         fprintf(stderr, "  --clip-text MODEL  CLIP text encoder GGUF\n");
         fprintf(stderr, "\nMath OCR (formula recognition):\n");
         fprintf(stderr, "  --ocr MODEL   math OCR model (PP-FormulaNet, HMER, BTTR GGUF)\n");
@@ -725,6 +729,82 @@ int main(int argc, char ** argv) {
         js << "], \"dim\": " << d << "}";
 
         fprintf(stderr, "crispembed-server: /vit/encode in %.1f ms (dim=%d)\n", ms, d);
+        res.set_content(js.str(), "application/json");
+    });
+
+    // ── Pix2Struct (document understanding) ──
+    crispembed_pix2struct_context * pix2struct_ctx = nullptr;
+    std::mutex pix2struct_mutex;
+
+    if (!pix2struct_model_path.empty()) {
+        pix2struct_ctx = crispembed_pix2struct_init(pix2struct_model_path.c_str(), n_threads);
+        if (!pix2struct_ctx)
+            fprintf(stderr, "Warning: failed to load Pix2Struct model '%s'\n", pix2struct_model_path.c_str());
+    }
+
+    // POST /pix2struct/generate — document understanding image-to-text
+    // Request:  {"image": "/path/to/doc.png", "max_tokens": 256}
+    // Response: {"text": "...", "ms": M}
+    svr.Post("/pix2struct/generate", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!pix2struct_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no Pix2Struct model loaded (use --pix2struct)\"}", "application/json");
+            return;
+        }
+
+        auto body = req.body;
+        std::string image_path;
+        int max_tokens = 256;
+
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos)
+                image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        auto mpos = body.find("\"max_tokens\"");
+        if (mpos != std::string::npos) {
+            auto colon = body.find(':', mpos + 12);
+            if (colon != std::string::npos)
+                max_tokens = atoi(body.c_str() + colon + 1);
+        }
+
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no image path\"}", "application/json");
+            return;
+        }
+
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 0);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(pix2struct_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        const char * text = crispembed_pix2struct_generate(pix2struct_ctx, data, w, h, max_tokens);
+        stbi_image_free(data);
+
+        if (!text) {
+            res.status = 500;
+            res.set_content("{\"error\": \"Pix2Struct generation failed\"}", "application/json");
+            return;
+        }
+
+        auto t1 = std::chrono::steady_clock::now();
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+
+        std::ostringstream js;
+        js << "{\"text\": \"" << json_escape(text)
+           << "\", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
+
+        fprintf(stderr, "crispembed-server: /pix2struct/generate in %.1f ms\n", ms);
+        crispembed_pix2struct_free_text(text);
         res.set_content(js.str(), "application/json");
     });
 
@@ -3370,6 +3450,7 @@ int main(int argc, char ** argv) {
         if (layout_ctx) js << ", \"layout\": true";
         if (text_det_ctx) js << ", \"text_detection\": true";
         if (ner_ctx) js << ", \"ner\": true";
+        if (pix2struct_ctx) js << ", \"pix2struct\": true";
         if (ocr_orch_ctx) js << ", \"ocr_orchestrator\": true";
         if (text_sr_ctx) js << ", \"text_sr\": true, \"text_sr_upscale\": " << crispembed_text_sr_upscale_factor(text_sr_ctx);
         if (pan_sr_ctx) js << ", \"pan_sr\": true, \"pan_sr_upscale\": " << crispembed_pan_sr_scale(pan_sr_ctx);
@@ -3399,6 +3480,7 @@ int main(int argc, char ** argv) {
     if (face_det && face_rec) fprintf(stderr, "  POST /face            — {\"image\": \"path.jpg\"} (pipeline)\n");
     if (vit_ctx) fprintf(stderr, "  POST /vit/encode      — {\"image\": \"path.jpg\"}\n");
     if (clip_text_ctx) fprintf(stderr, "  POST /clip/text       — {\"text\": \"query\"}\n");
+    if (pix2struct_ctx) fprintf(stderr, "  POST /pix2struct/generate — {\"image\": \"doc.png\", \"max_tokens\": 256}\n");
     if (math_ocr_ctx) fprintf(stderr, "  POST /math/ocr        — {\"image\": \"formula.png\"}\n");
     if (ocr_pipeline_ctx) fprintf(stderr, "  POST /ocr             — {\"image\": \"document.png\"} (detect+recognize)\n");
     if (layout_ctx) fprintf(stderr, "  POST /layout/detect   — {\"image\": \"page.png\"}\n");
@@ -3459,6 +3541,7 @@ int main(int argc, char ** argv) {
     if (math_ocr_ctx) crispembed_math_ocr_free(math_ocr_ctx);
     if (clip_text_ctx) crispembed_clip_text_free(clip_text_ctx);
     if (vit_ctx) crispembed_vit_free(vit_ctx);
+    if (pix2struct_ctx) crispembed_pix2struct_free(pix2struct_ctx);
     if (face_det) crispembed_face_free(face_det);
     if (face_rec) crispembed_face_free(face_rec);
     if (ctx) crispembed_free(ctx);

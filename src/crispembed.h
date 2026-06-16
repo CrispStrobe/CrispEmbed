@@ -517,6 +517,38 @@ CRISPEMBED_API const crispembed_face_result * crispembed_face_pipeline(
 CRISPEMBED_API void crispembed_face_free(crispembed_face_context * ctx);
 
 // ---------------------------------------------------------------------------
+// Pix2Struct — variable-resolution ViT + T5 decoder, image-to-text.
+// Document understanding / OCR (282M params, 17 fine-tuned variants).
+// ---------------------------------------------------------------------------
+
+typedef struct crispembed_pix2struct_context crispembed_pix2struct_context;
+
+// Load a Pix2Struct GGUF model. Returns NULL on failure.
+CRISPEMBED_API crispembed_pix2struct_context * crispembed_pix2struct_init(
+        const char * model_path, int n_threads);
+
+// Free all Pix2Struct resources. Safe to call with NULL.
+CRISPEMBED_API void crispembed_pix2struct_free(crispembed_pix2struct_context * ctx);
+
+// Generate text from an image. Returns a malloc'd string; caller must free
+// with crispembed_pix2struct_free_text(). Returns NULL on failure.
+CRISPEMBED_API const char * crispembed_pix2struct_generate(
+        crispembed_pix2struct_context * ctx,
+        const uint8_t * image, int width, int height,
+        int max_tokens);
+
+// Free a string returned by crispembed_pix2struct_generate().
+CRISPEMBED_API void crispembed_pix2struct_free_text(const char * text);
+
+// Encode image patches to hidden-state embeddings.
+// Returns a pointer to (*out_dim) floats, owned by ctx, valid until the
+// next call. Returns NULL on failure.
+CRISPEMBED_API const float * crispembed_pix2struct_encode_patches(
+        crispembed_pix2struct_context * ctx,
+        const float * patches, int n_patches,
+        int * out_dim);
+
+// ---------------------------------------------------------------------------
 // Lifecycle
 // ---------------------------------------------------------------------------
 
