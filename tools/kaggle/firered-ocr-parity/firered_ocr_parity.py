@@ -60,7 +60,15 @@ try:
 
     def load_tensor(name):
         with safe_open(model_path, framework="pt") as sf:
-            return sf.get_tensor(name).float()
+            t = sf.get_tensor(name)
+            return t.float()  # F32 for computation accuracy
+
+    # List available tensor names for debugging
+    with safe_open(model_path, framework="pt") as sf:
+        all_keys = sorted(sf.keys())
+        vis_keys = [k for k in all_keys if k.startswith("model.visual.blocks.0.")]
+        log(f"Total tensors: {len(all_keys)}")
+        log(f"Vision block 0 keys: {vis_keys}")
 
     # ── Vision encoder ──────────────────────────────────────────────
     log("Running vision encoder...")
@@ -98,10 +106,18 @@ try:
     layer_features = {}
     for li in range(depth):
         prefix = f"model.visual.blocks.{li}"
-        if li % 4 == 0: log(f"  Vision layer {li}/{depth}")
+        if li % 4 == 0:
+            import psutil
+            mem = psutil.virtual_memory()
+            log(f"  Vision layer {li}/{depth} (RAM: {mem.used/1e9:.1f}/{mem.total/1e9:.1f} GB)")
 
-        ln1_w = load_tensor(f"{prefix}.norm1.weight")
-        ln1_b = load_tensor(f"{prefix}.norm1.bias")
+        try:
+            ln1_w = load_tensor(f"{prefix}.norm1.weight")
+            ln1_b = load_tensor(f"{prefix}.norm1.bias")
+        except KeyError as e:
+            log(f"  Layer {li}: missing norm1 ({e}), trying layer_norm1...")
+            ln1_w = load_tensor(f"{prefix}.layer_norm1.weight")
+            ln1_b = load_tensor(f"{prefix}.layer_norm1.bias")
         normed = F.layer_norm(x, (dim,), ln1_w, ln1_b)
         del ln1_w, ln1_b
 
@@ -135,8 +151,12 @@ try:
         del attn, proj_w, proj_b
 
         # FFN
-        ln2_w = load_tensor(f"{prefix}.norm2.weight")
-        ln2_b = load_tensor(f"{prefix}.norm2.bias")
+        try:
+            ln2_w = load_tensor(f"{prefix}.norm2.weight")
+            ln2_b = load_tensor(f"{prefix}.norm2.bias")
+        except KeyError:
+            ln2_w = load_tensor(f"{prefix}.layer_norm2.weight")
+            ln2_b = load_tensor(f"{prefix}.layer_norm2.bias")
         normed2 = F.layer_norm(x, (dim,), ln2_w, ln2_b)
         del ln2_w, ln2_b
 
