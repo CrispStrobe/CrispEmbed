@@ -69,6 +69,8 @@ def main():
                 p = s.split("."); li = int(p[1]); r = ".".join(p[2:])
                 r = r.replace("attn.qkv.", "attn.qkv.")
                 r = r.replace("attn.proj.", "attn.proj.")
+                r = r.replace("mlp.linear_fc1.", "ffn.up.")
+                r = r.replace("mlp.linear_fc2.", "ffn.down.")
                 r = r.replace("mlp.fc1.", "ffn.up.")
                 r = r.replace("mlp.fc2.", "ffn.down.")
                 return f"v.blk.{li}.{r}"
