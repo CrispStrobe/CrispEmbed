@@ -236,6 +236,13 @@ jobs:
           sub-packages: '["nvcc", "cudart", "nvrtc-dev"]'
           non-cuda-sub-packages: '["libcublas-dev"]'
 
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: linux-x86_64-cuda
+          variant: ccache
+          max-size: 3G
+
       - name: Configure
         run: >
           cmake -S . -B build
@@ -243,6 +250,9 @@ jobs:
           -DCRISPEMBED_BUILD_SHARED=ON
           -DGGML_CUDA=ON
           -DGGML_BLAS=OFF
+          -DCMAKE_C_COMPILER_LAUNCHER=ccache
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: cmake --build build --config Release -j4
@@ -331,10 +341,26 @@ jobs:
         with:
           arch: x64
 
+      # ccache caches nvcc + cl object compilation ACROSS runs (persisted via
+      # the GitHub Actions cache). The first run after a cache miss is still a
+      # full ~hour build (5 GPU arches × the full engine set), but subsequent
+      # releases reuse cached objects → minutes. Launcher flags below wrap both
+      # the C++ and CUDA compilers. Release build = no PDBs, so ccache caches cl
+      # cleanly.
+      - name: ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: windows-x86_64-cuda
+          variant: ccache
+          max-size: 3G
+
       # Build with the Ninja generator: nvcc finds cl.exe directly and CMake
       # never needs the CUDA MSBuild "toolset" (the VS generator's
       # enable_language(CUDA) fails with "No CUDA toolset found" on hosted
       # runners). Ninja's flat layout (build\bin) is handled in Package.
+      # -j capped at 2: nvcc TUs across 5 arches are RAM-heavy; the 4-core/16 GB
+      # runner thrashes (and crawls) at -j NUMBER_OF_PROCESSORS — matches the
+      # Kaggle harness's CUDA -j cap.
       - name: Configure + build (Ninja)
         shell: pwsh
         run: |
@@ -343,10 +369,13 @@ jobs:
             -DCRISPEMBED_BUILD_SHARED=ON `
             -DGGML_CUDA=ON `
             -DGGML_BLAS=OFF `
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache `
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache `
+            -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache `
             -DCMAKE_CUDA_ARCHITECTURES="75-real;86-real;89-real;120-real;120-virtual" `
             -DGGML_NATIVE=OFF `
             -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON
-          cmake --build build -j $env:NUMBER_OF_PROCESSORS
+          cmake --build build -j 2
 
       - name: Package
         shell: pwsh
