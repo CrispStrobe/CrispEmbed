@@ -558,6 +558,42 @@ typedef CrispembedPanSrProcessDart = int Function(
 typedef CrispembedPanSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedPanSrFreeImageDart = void Function(Pointer<Uint8> pixels);
 
+// --- HAT Super-Resolution (hat_sr) ---
+typedef CrispembedHatSrInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedHatSrInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedHatSrFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedHatSrFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedHatSrScaleNative = Int32 Function(Pointer<Void> ctx);
+typedef CrispembedHatSrScaleDart = int Function(Pointer<Void> ctx);
+
+typedef CrispembedHatSrProcessNative = Int32 Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    Int32 width,
+    Int32 height,
+    Int32 tileSize,
+    Int32 tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+typedef CrispembedHatSrProcessDart = int Function(
+    Pointer<Void> ctx,
+    Pointer<Uint8> pixels,
+    int width,
+    int height,
+    int tileSize,
+    int tileOverlap,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+
+typedef CrispembedHatSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
+typedef CrispembedHatSrFreeImageDart = void Function(Pointer<Uint8> pixels);
+
 // --- Restormer image restoration ---
 typedef CrispembedRestormerInitNative = Pointer<Void> Function(
     Pointer<Utf8> modelPath, Int32 nThreads);

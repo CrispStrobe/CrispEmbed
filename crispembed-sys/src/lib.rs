@@ -756,6 +756,23 @@ extern "C" {
     ) -> c_int;
     pub fn crispembed_pan_sr_free_image(pixels: *mut u8);
 
+    // ── HAT super-resolution ──
+    pub fn crispembed_hat_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_hat_sr_free(ctx: *mut c_void);
+    pub fn crispembed_hat_sr_scale(ctx: *const c_void) -> c_int;
+    pub fn crispembed_hat_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        tile_size: c_int,
+        tile_overlap: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_hat_sr_free_image(pixels: *mut u8);
+
     // ── Restormer image restoration ──
     pub fn crispembed_restormer_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
     pub fn crispembed_restormer_free(ctx: *mut c_void);

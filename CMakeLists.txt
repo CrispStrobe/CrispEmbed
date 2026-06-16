@@ -166,6 +166,7 @@ list(APPEND CRISPEMBED_SOURCES src/text_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tbsrn_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/pan_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/restormer.cpp)
+list(APPEND CRISPEMBED_SOURCES src/hat_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/parseq_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/glm_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/bert_ner.cpp)
@@ -449,6 +450,9 @@ target_link_libraries(test-pdf-info PRIVATE crispembed)
 
 add_executable(test-table-parse tests/test_table_parse.cpp)
 target_link_libraries(test-table-parse PRIVATE crispembed)
+
+add_executable(test-hat-diff tests/test_hat_diff.cpp)
+target_link_libraries(test-hat-diff PRIVATE crispembed)
 
 endif() # NOT iOS
 
