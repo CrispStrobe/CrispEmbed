@@ -106,6 +106,16 @@ typedef CrispembedEncodeMultivec = Pointer<Float> Function(
     Pointer<Int32> outNTokens,
     Pointer<Int32> outDim);
 
+// --- ColBERT MaxSim scoring ---
+typedef CrispembedColbertScoreNative = Float Function(
+    Pointer<Float> queryVecs, Int32 nQuery,
+    Pointer<Float> docVecs, Int32 nDoc,
+    Int32 dim);
+typedef CrispembedColbertScore = double Function(
+    Pointer<Float> queryVecs, int nQuery,
+    Pointer<Float> docVecs, int nDoc,
+    int dim);
+
 // --- Reranker ---
 typedef CrispembedRerankNative = Float Function(
     Pointer<CrispembedContext> ctx,

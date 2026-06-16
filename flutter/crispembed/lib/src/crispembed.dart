@@ -470,6 +470,29 @@ class CrispEmbed {
   }
 
   // ------------------------------------------------------------------
+  // ColBERT MaxSim scoring
+  // ------------------------------------------------------------------
+
+  late final CrispembedColbertScore _colbertScore = _lib
+      .lookupFunction<CrispembedColbertScoreNative, CrispembedColbertScore>(
+          'crispembed_colbert_score');
+
+  /// Compute ColBERT MaxSim score between query and document token vectors.
+  double colbertScore(Float32List queryVecs, int nQuery,
+      Float32List docVecs, int nDoc, int dim) {
+    final qPtr = calloc<Float>(queryVecs.length);
+    final dPtr = calloc<Float>(docVecs.length);
+    qPtr.asTypedList(queryVecs.length).setAll(0, queryVecs);
+    dPtr.asTypedList(docVecs.length).setAll(0, docVecs);
+    try {
+      return _colbertScore(qPtr, nQuery, dPtr, nDoc, dim);
+    } finally {
+      calloc.free(qPtr);
+      calloc.free(dPtr);
+    }
+  }
+
+  // ------------------------------------------------------------------
   // Cross-encoder reranking
   // ------------------------------------------------------------------
 

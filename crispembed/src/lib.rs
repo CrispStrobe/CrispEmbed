@@ -361,6 +361,16 @@ impl CrispEmbed {
         raw.chunks(dim).map(|c| c.to_vec()).collect()
     }
 
+    /// ColBERT MaxSim score between query and document token vectors.
+    pub fn colbert_score(query_vecs: &[f32], n_query: i32, doc_vecs: &[f32], n_doc: i32, dim: i32) -> f32 {
+        unsafe {
+            crispembed_sys::crispembed_colbert_score(
+                query_vecs.as_ptr(), n_query,
+                doc_vecs.as_ptr(), n_doc,
+                dim)
+        }
+    }
+
     // ------------------------------------------------------------------
     // Per-token contextual embeddings (any encoder model)
     // ------------------------------------------------------------------
