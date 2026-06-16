@@ -1636,6 +1636,102 @@ class CrispLiLT {
 }
 
 // ---------------------------------------------------------------------------
+// Text LID — Language Identification
+// ---------------------------------------------------------------------------
+
+/// Text-based language identification (CLD3 / GlotLID).
+class CrispTextLID {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final TextLidFreeDart _freeFn;
+  late final TextLidPredictDart _predictFn;
+  late final TextLidNLabelsDart _nLabelsFn;
+
+  CrispTextLID(String modelPath, {int nThreads = 1, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    final init = _lib.lookupFunction<TextLidInitNative, TextLidInitDart>(
+        'text_lid_init_from_file');
+    _freeFn = _lib.lookupFunction<TextLidFreeNative, TextLidFreeDart>(
+        'text_lid_free');
+    _predictFn = _lib.lookupFunction<TextLidPredictNative, TextLidPredictDart>(
+        'text_lid_predict');
+    _nLabelsFn = _lib.lookupFunction<TextLidNLabelsNative, TextLidNLabelsDart>(
+        'text_lid_n_labels');
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = init(pathPtr, nThreads);
+    calloc.free(pathPtr);
+    if (_ctx == nullptr) throw Exception('Failed to load LID model: $modelPath');
+  }
+
+  int get nLabels => _nLabelsFn(_ctx);
+
+  /// Predict language. Returns (isoCode, confidence).
+  (String, double) predict(String text) {
+    if (_disposed) throw StateError('CrispTextLID has been disposed');
+    final textPtr = text.toNativeUtf8();
+    final confPtr = calloc<Float>();
+    try {
+      final langPtr = _predictFn(_ctx, textPtr, confPtr);
+      final lang = langPtr != nullptr ? langPtr.toDartString() : '';
+      return (lang, confPtr.value);
+    } finally {
+      calloc.free(textPtr);
+      calloc.free(confPtr);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) { _freeFn(_ctx); _disposed = true; }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Truecaser — BiLSTM character-level
+// ---------------------------------------------------------------------------
+
+/// BiLSTM character-level truecaser.
+class CrispTruecaser {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final TruecaserLstmFreeDart _freeFn;
+  late final TruecaserLstmProcessDart _processFn;
+
+  CrispTruecaser(String modelPath, {String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    final init = _lib.lookupFunction<TruecaserLstmInitNative,
+        TruecaserLstmInitDart>('truecaser_lstm_init');
+    _freeFn = _lib.lookupFunction<TruecaserLstmFreeNative,
+        TruecaserLstmFreeDart>('truecaser_lstm_free');
+    _processFn = _lib.lookupFunction<TruecaserLstmProcessNative,
+        TruecaserLstmProcessDart>('truecaser_lstm_process');
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = init(pathPtr);
+    calloc.free(pathPtr);
+    if (_ctx == nullptr) throw Exception('Failed to load truecaser: $modelPath');
+  }
+
+  /// Apply truecasing. Returns truecased text.
+  String process(String text) {
+    if (_disposed) throw StateError('CrispTruecaser has been disposed');
+    final textPtr = text.toNativeUtf8();
+    try {
+      final resultPtr = _processFn(_ctx, textPtr);
+      return resultPtr != nullptr ? resultPtr.toDartString() : text;
+    } finally {
+      calloc.free(textPtr);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) { _freeFn(_ctx); _disposed = true; }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Key Information Extraction (KIE) — OCR + NER pipeline
 // ---------------------------------------------------------------------------
 
