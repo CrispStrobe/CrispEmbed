@@ -4098,6 +4098,32 @@ extern "C" void crispembed_restormer_free_image(uint8_t * pixels) {
 }
 
 // ---------------------------------------------------------------------------
+// SCUNet image denoising
+// ---------------------------------------------------------------------------
+
+#include "scunet_denoise.h"
+
+extern "C" void * crispembed_scunet_init(const char * model_path, int n_threads) {
+    return scunet_init(model_path, n_threads);
+}
+extern "C" void crispembed_scunet_free(void * ctx) {
+    scunet_free((scunet_context *)ctx);
+}
+extern "C" int crispembed_scunet_process(
+        void * ctx, const uint8_t * pixels, int width, int height,
+        uint8_t ** out_pixels) {
+    uint8_t * out = (uint8_t *)malloc((size_t)width * height * 3);
+    if (!out) return -1;
+    int rc = scunet_process((scunet_context *)ctx, pixels, width, height, out);
+    if (rc != 0) { free(out); return rc; }
+    *out_pixels = out;
+    return 0;
+}
+extern "C" void crispembed_scunet_free_image(uint8_t * pixels) {
+    free(pixels);
+}
+
+// ---------------------------------------------------------------------------
 // Punctuation restoration — FireRedPunc / PCS
 // ---------------------------------------------------------------------------
 

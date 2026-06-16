@@ -718,6 +718,16 @@ typedef CrispembedSwinirSrScaleNative = Int32 Function(Pointer<Void> ctx);
 typedef CrispembedSwinirSrScaleDart = int Function(Pointer<Void> ctx);
 
 typedef CrispembedSwinirSrProcessNative = Int32 Function(
+// --- SCUNet Denoising (scunet) ---
+typedef CrispembedScunetInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedScunetInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedScunetFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedScunetFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedScunetProcessNative = Int32 Function(
     Pointer<Void> ctx,
     Pointer<Uint8> pixels,
     Int32 width,
@@ -728,6 +738,8 @@ typedef CrispembedSwinirSrProcessNative = Int32 Function(
     Pointer<Int32> outWidth,
     Pointer<Int32> outHeight);
 typedef CrispembedSwinirSrProcessDart = int Function(
+    Pointer<Pointer<Uint8>> outPixels);
+typedef CrispembedScunetProcessDart = int Function(
     Pointer<Void> ctx,
     Pointer<Uint8> pixels,
     int width,
@@ -740,3 +752,7 @@ typedef CrispembedSwinirSrProcessDart = int Function(
 
 typedef CrispembedSwinirSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedSwinirSrFreeImageDart = void Function(Pointer<Uint8> pixels);
+    Pointer<Pointer<Uint8>> outPixels);
+
+typedef CrispembedScunetFreeImageNative = Void Function(Pointer<Uint8> pixels);
+typedef CrispembedScunetFreeImageDart = void Function(Pointer<Uint8> pixels);

@@ -188,6 +188,8 @@ int main(int argc, char ** argv) {
     std::string tbsrn_sr_path;         // --tbsrn-sr FILE: standalone TBSRN upscaling
     std::string restormer_model;        // --restormer MODEL: Restormer image restoration GGUF
     std::string restormer_path;         // --restormer FILE: standalone Restormer processing
+    std::string scunet_model;           // --scunet-model MODEL: SCUNet denoising GGUF
+    std::string scunet_path;            // --scunet-denoise FILE: standalone SCUNet denoising
     std::string pipeline_vlm_model;     // --vlm-model NAME: VLM escalation engine GGUF
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
@@ -317,6 +319,10 @@ int main(int argc, char ** argv) {
             restormer_model = argv[++i];
         } else if (strcmp(argv[i], "--restormer-input") == 0 && i + 1 < argc) {
             restormer_path = argv[++i];
+        } else if (strcmp(argv[i], "--scunet-model") == 0 && i + 1 < argc) {
+            scunet_model = argv[++i];
+        } else if (strcmp(argv[i], "--scunet-denoise") == 0 && i + 1 < argc) {
+            scunet_path = argv[++i];
         } else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc) {
             pipeline_vlm_model = argv[++i];
         } else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc) {
@@ -522,6 +528,27 @@ int main(int argc, char ** argv) {
         printf("P6\n%d %d\n255\n", w, h);
         fwrite(out, 1, (size_t)w * h * 3, stdout);
         crispembed_restormer_free_image(out);
+        return 0;
+    }
+    if (!scunet_path.empty()) {
+        if (scunet_model.empty()) {
+            fprintf(stderr, "error: --scunet-denoise requires --scunet-model <model>\n");
+            return 1;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(scunet_path.c_str(), &w, &h, &ch, 3);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", scunet_path.c_str()); return 1; }
+        void * sctx = crispembed_scunet_init(scunet_model.c_str(), n_threads);
+        if (!sctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load SCUNet model '%s'\n", scunet_model.c_str()); return 1; }
+        uint8_t * out = nullptr;
+        int rc = crispembed_scunet_process(sctx, data, w, h, &out);
+        stbi_image_free(data);
+        crispembed_scunet_free(sctx);
+        if (rc != 0 || !out) { fprintf(stderr, "error: SCUNet denoising failed\n"); return 1; }
+        // Write result as PPM (RGB) to stdout
+        printf("P6\n%d %d\n255\n", w, h);
+        fwrite(out, 1, (size_t)w * h * 3, stdout);
+        crispembed_scunet_free_image(out);
         return 0;
     }
 
