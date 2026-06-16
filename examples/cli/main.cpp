@@ -79,6 +79,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --face FILE      encode face from image (recognition model)\n");
     fprintf(stderr, "  --detect FILE    detect faces in image (detection model)\n");
     fprintf(stderr, "  --ocr FILE       OCR → text (auto-detect: pix2tex/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/parseq/qwen2vl/internvl2/glm-ocr/tesseract-lstm)\n");
+    fprintf(stderr, "  --pix2struct FILE  Pix2Struct document understanding → text (needs -m pix2struct.gguf)\n");
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
     fprintf(stderr, "  --layout FILE    document layout detection (RT-DETRv2, needs -m layout_model.gguf)\n");
@@ -218,6 +219,8 @@ int main(int argc, char ** argv) {
     int instructir_task = 0;            // --instructir-task N: task 0-6
     std::string adair_model;            // --adair-model MODEL: AdaIR restoration GGUF
     std::string adair_path;             // --adair FILE: standalone AdaIR processing
+    std::string pix2struct_path;         // --pix2struct FILE: Pix2Struct document understanding
+    int pix2struct_max_tokens = 256;     // --pix2struct-max-tokens N
     std::string pipeline_vlm_model;     // --vlm-model NAME: VLM escalation engine GGUF
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
@@ -285,6 +288,10 @@ int main(int argc, char ** argv) {
             hmer_path = argv[++i];
         } else if (strcmp(argv[i], "--bttr") == 0 && i + 1 < argc) {
             bttr_path = argv[++i];
+        } else if (strcmp(argv[i], "--pix2struct") == 0 && i + 1 < argc) {
+            pix2struct_path = argv[++i];
+        } else if (strcmp(argv[i], "--pix2struct-max-tokens") == 0 && i + 1 < argc) {
+            pix2struct_max_tokens = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc) {
             layout_path = argv[++i];
         } else if (strcmp(argv[i], "--table") == 0 && i + 1 < argc) {
@@ -1398,6 +1405,30 @@ int main(int argc, char ** argv) {
             }
         }
         crispembed_lilt_free(lctx);
+        return 0;
+    }
+
+    // Pix2Struct document understanding (image → text)
+    if (!pix2struct_path.empty()) {
+        auto * p2s = crispembed_pix2struct_init(model_path.c_str(), n_threads);
+        if (!p2s) { fprintf(stderr, "error: failed to load Pix2Struct model\n"); return 1; }
+        int w, h, ch;
+        unsigned char * data = stbi_load(pix2struct_path.c_str(), &w, &h, &ch, 0);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", pix2struct_path.c_str()); crispembed_pix2struct_free(p2s); return 1; }
+
+        const char * text = crispembed_pix2struct_generate(p2s, data, w, h, pix2struct_max_tokens);
+        stbi_image_free(data);
+        if (text) {
+            if (json_output) {
+                printf("{\"text\":\"%s\"}\n", json_escape(text).c_str());
+            } else {
+                printf("%s\n", text);
+            }
+            crispembed_pix2struct_free_text(text);
+        } else {
+            fprintf(stderr, "error: Pix2Struct generation failed\n");
+        }
+        crispembed_pix2struct_free(p2s);
         return 0;
     }
 

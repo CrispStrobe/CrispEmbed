@@ -3003,6 +3003,7 @@ extern "C" int crispembed_colbert_score_batch(
 #include "parseq_ocr.h"
 #include "glm_ocr.h"
 #include "got_ocr.h"
+#include "pix2struct.h"
 #include "tesseract_lstm.h"
 #include "granite_vision_ocr.h"
 #include "core/gguf_loader.h"
@@ -3203,6 +3204,38 @@ extern "C" const char * crispembed_bttr_ocr_recognize(void * c, const uint8_t * 
 }
 extern "C" const char * crispembed_bttr_ocr_recognize_gray(void * c, const float * px, int w, int h, int * ol) {
     return bttr_ocr_recognize((bttr_ocr_context*)c, px, w, h, ol);
+}
+
+// ---------------------------------------------------------------------------
+// Pix2Struct — wrappers around pix2struct.h
+// ---------------------------------------------------------------------------
+
+extern "C" crispembed_pix2struct_context * crispembed_pix2struct_init(const char * model_path, int n_threads) {
+    return (crispembed_pix2struct_context *)pix2struct_init(model_path, n_threads);
+}
+
+extern "C" void crispembed_pix2struct_free(crispembed_pix2struct_context * ctx) {
+    if (ctx) pix2struct_free((pix2struct_context *)ctx);
+}
+
+extern "C" const char * crispembed_pix2struct_generate(
+        crispembed_pix2struct_context * ctx,
+        const uint8_t * image, int width, int height,
+        int max_tokens) {
+    if (!ctx) return nullptr;
+    return pix2struct_generate((pix2struct_context *)ctx, image, width, height, max_tokens);
+}
+
+extern "C" void crispembed_pix2struct_free_text(const char * text) {
+    pix2struct_free_text(text);
+}
+
+extern "C" const float * crispembed_pix2struct_encode_patches(
+        crispembed_pix2struct_context * ctx,
+        const float * patches, int n_patches,
+        int * out_dim) {
+    if (!ctx) return nullptr;
+    return pix2struct_encode_patches((pix2struct_context *)ctx, patches, n_patches, out_dim);
 }
 
 extern "C" void crispembed_free(crispembed_context * ctx) {

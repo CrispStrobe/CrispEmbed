@@ -986,6 +986,32 @@ typedef CrispembedTextDetDart = Pointer<Void> Function(
     int width, int height, int channels,
     double textThreshold, double lowThreshold, Pointer<Int32> outN);
 
+// --- Pix2Struct (document understanding) ---
+typedef CrispembedPix2StructInitNative = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, Int32 nThreads);
+typedef CrispembedPix2StructInitDart = Pointer<Void> Function(
+    Pointer<Utf8> modelPath, int nThreads);
+
+typedef CrispembedPix2StructFreeNative = Void Function(Pointer<Void> ctx);
+typedef CrispembedPix2StructFreeDart = void Function(Pointer<Void> ctx);
+
+typedef CrispembedPix2StructGenerateNative = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Uint8> image,
+    Int32 width, Int32 height, Int32 maxTokens);
+typedef CrispembedPix2StructGenerateDart = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Uint8> image,
+    int width, int height, int maxTokens);
+
+typedef CrispembedPix2StructFreeTextNative = Void Function(Pointer<Utf8> text);
+typedef CrispembedPix2StructFreeTextDart = void Function(Pointer<Utf8> text);
+
+typedef CrispembedPix2StructEncodePatchesNative = Pointer<Float> Function(
+    Pointer<Void> ctx, Pointer<Float> patches,
+    Int32 nPatches, Pointer<Int32> outDim);
+typedef CrispembedPix2StructEncodePatchesDart = Pointer<Float> Function(
+    Pointer<Void> ctx, Pointer<Float> patches,
+    int nPatches, Pointer<Int32> outDim);
+
 // --- Punctuation Restoration ---
 typedef CrispembedPunctInitNative = Pointer<Void> Function(
     Pointer<Utf8> modelPath, Int32 nThreads);

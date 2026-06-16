@@ -3126,3 +3126,91 @@ impl Drop for CrispAdaIR {
         }
     }
 }
+
+// ======================================================================
+// Pix2Struct — image-to-text document understanding
+// ======================================================================
+
+/// Pix2Struct image-to-text model (variable-resolution ViT + T5 decoder, 282M params).
+///
+/// Not `Sync` — do not share between threads. Each thread should hold its
+/// own `CrispPix2Struct` instance. `Send`-safe: you can move it across threads.
+///
+/// # Example
+///
+/// ```no_run
+/// use crispembed::CrispPix2Struct;
+///
+/// let mut p2s = CrispPix2Struct::new("/path/to/pix2struct.gguf", 0).unwrap();
+/// let text = p2s.generate(b"...", 800, 600, 256);
+/// println!("output: {:?}", text);
+/// ```
+pub struct CrispPix2Struct {
+    ctx: *mut crispembed_sys::Pix2StructContext,
+}
+
+// Safety: the underlying C library serialises all mutable access through
+// the opaque context pointer; we hold the only reference.
+unsafe impl Send for CrispPix2Struct {}
+
+impl CrispPix2Struct {
+    /// Load a Pix2Struct GGUF model file.
+    ///
+    /// - `model_path` — path to the `.gguf` file.
+    /// - `n_threads`  — CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_pix2struct_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_pix2struct_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Generate text from a raw RGB/RGBA image buffer.
+    ///
+    /// - `image`      — row-major pixel bytes (RGB or RGBA).
+    /// - `width`      — image width in pixels.
+    /// - `height`     — image height in pixels.
+    /// - `max_tokens` — maximum number of tokens to generate.
+    ///
+    /// Returns the generated text, or `None` on failure.
+    /// The returned string is a fresh allocation — no lifetime ties to `self`.
+    pub fn generate(&mut self, image: &[u8], width: i32, height: i32, max_tokens: i32) -> Option<String> {
+        let ptr = unsafe {
+            crispembed_sys::crispembed_pix2struct_generate(
+                self.ctx, image.as_ptr(), width, height, max_tokens,
+            )
+        };
+        if ptr.is_null() {
+            return None;
+        }
+        let s = unsafe { std::ffi::CStr::from_ptr(ptr) }
+            .to_str().ok()?.to_string();
+        unsafe { crispembed_sys::crispembed_pix2struct_free_text(ptr) };
+        Some(s)
+    }
+
+    /// Encode image patches to hidden-state embeddings.
+    ///
+    /// Returns a dense float vector of length `out_dim`, or an empty vector
+    /// on failure.
+    pub fn encode_patches(&mut self, patches: &[f32], n_patches: i32) -> Vec<f32> {
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_pix2struct_encode_patches(
+                self.ctx, patches.as_ptr(), n_patches, &mut out_dim,
+            )
+        };
+        if ptr.is_null() || out_dim <= 0 {
+            return vec![];
+        }
+        unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
+    }
+}
+
+impl Drop for CrispPix2Struct {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_pix2struct_free(self.ctx) }
+    }
+}

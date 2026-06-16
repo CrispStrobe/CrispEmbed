@@ -656,7 +656,44 @@ extern "C" {
         threshold: c_float,
         out_entities: *mut *mut NerEntity,
     ) -> c_int;
+
+    // ── Pix2Struct (image-to-text document understanding) ──
+
+    /// Load a Pix2Struct GGUF model. Returns NULL on failure.
+    pub fn crispembed_pix2struct_init(
+        model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut Pix2StructContext;
+
+    /// Free all Pix2Struct resources. Safe to call with NULL.
+    pub fn crispembed_pix2struct_free(ctx: *mut Pix2StructContext);
+
+    /// Generate text from an image. Returns a malloc'd string; caller must
+    /// free with `crispembed_pix2struct_free_text`. Returns NULL on failure.
+    pub fn crispembed_pix2struct_generate(
+        ctx: *mut Pix2StructContext,
+        image: *const u8,
+        width: c_int,
+        height: c_int,
+        max_tokens: c_int,
+    ) -> *const c_char;
+
+    /// Free a string returned by `crispembed_pix2struct_generate`.
+    pub fn crispembed_pix2struct_free_text(text: *const c_char);
+
+    /// Encode image patches to hidden-state embeddings.
+    /// Returns pointer to `*out_dim` floats, owned by ctx, valid until next call.
+    pub fn crispembed_pix2struct_encode_patches(
+        ctx: *mut Pix2StructContext,
+        patches: *const c_float,
+        n_patches: c_int,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
 }
+
+/// Opaque handle to a Pix2Struct context.
+#[repr(C)]
+pub struct Pix2StructContext(c_void);
 
 /// Opaque handle to a NER context (GLiNER zero-shot NER).
 #[repr(C)]

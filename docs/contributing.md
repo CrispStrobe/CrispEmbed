@@ -232,6 +232,7 @@ Utility libraries (not model backends) follow a lighter pattern.
 | Table structure recognition | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | BERT NER token classification | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | LiLT layout-aware KIE | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Pix2Struct document understanding | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ### Implementation patterns
 
