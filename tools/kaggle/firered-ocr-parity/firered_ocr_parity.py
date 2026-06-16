@@ -173,10 +173,19 @@ try:
         del ln2_w, ln2_b
 
         try:
-            fc1_w = load_tensor(f"{prefix}.mlp.fc1.weight")
-            fc1_b = load_tensor(f"{prefix}.mlp.fc1.bias")
-            fc2_w = load_tensor(f"{prefix}.mlp.fc2.weight")
-            fc2_b = load_tensor(f"{prefix}.mlp.fc2.bias")
+            # Qwen3-VL uses mlp.linear_fc1/linear_fc2, older uses mlp.fc1/fc2
+            try:
+                fc1_w = load_tensor(f"{prefix}.mlp.fc1.weight")
+                fc1_b = load_tensor(f"{prefix}.mlp.fc1.bias")
+            except KeyError:
+                fc1_w = load_tensor(f"{prefix}.mlp.linear_fc1.weight")
+                fc1_b = load_tensor(f"{prefix}.mlp.linear_fc1.bias")
+            try:
+                fc2_w = load_tensor(f"{prefix}.mlp.fc2.weight")
+                fc2_b = load_tensor(f"{prefix}.mlp.fc2.bias")
+            except KeyError:
+                fc2_w = load_tensor(f"{prefix}.mlp.linear_fc2.weight")
+                fc2_b = load_tensor(f"{prefix}.mlp.linear_fc2.bias")
             h = F.gelu(F.linear(normed2, fc1_w, fc1_b), approximate="tanh")
             h = F.linear(h, fc2_w, fc2_b)
             del fc1_w, fc1_b, fc2_w, fc2_b
