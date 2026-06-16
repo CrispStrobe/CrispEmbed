@@ -1983,7 +1983,7 @@ class CrispNER:
             self._ctx = None
 
 
-# ── Text LID — Language Identification ───────────────────────────────
+# ── Text LID -- Language Identification ───────────────────────────────
 
 def _setup_lid_signatures(lib):
     lib.text_lid_init_from_file.argtypes = [ctypes.c_char_p, ctypes.c_int]
@@ -2036,7 +2036,7 @@ class CrispTextLID:
             self._ctx = None
 
 
-# ── Truecaser — BiLSTM character-level truecasing ────────────────────
+# ── Truecaser -- BiLSTM character-level truecasing ────────────────────
 
 def _setup_truecase_signatures(lib):
     lib.truecaser_lstm_init.argtypes = [ctypes.c_char_p]
@@ -2072,7 +2072,7 @@ class CrispTruecaser:
             self._ctx, text.encode("utf-8"))
         if result:
             out = result.decode("utf-8")
-            # truecaser_lstm_process returns malloc'd string — but Python
+            # truecaser_lstm_process returns malloc'd string -- but Python
             # ctypes c_char_p auto-copies, so the C string is leaked.
             # This is a known limitation; use the C API directly for
             # tight memory control.
@@ -2740,7 +2740,7 @@ def _setup_hat_sr_signatures(lib):
 
 
 class CrispHatSr:
-    """HAT super-resolution — upscale low-resolution document images (CVPR 2023 SOTA).
+    """HAT super-resolution -- upscale low-resolution document images (CVPR 2023 SOTA).
 
     Usage::
 
@@ -2827,7 +2827,7 @@ def _setup_dat_sr_signatures(lib):
 
 
 class CrispDatSr:
-    """DAT super-resolution — Dual Aggregation Transformer ICCV 2023 (830K params, 2x).
+    """DAT super-resolution -- Dual Aggregation Transformer ICCV 2023 (830K params, 2x).
 
     Usage::
 
@@ -3255,13 +3255,9 @@ def _setup_swinir_sr_signatures(lib):
 
 
 class CrispSwinirSr:
-    """SwinIR-light super-resolution  - Swin Transformer whole-image upscaling.
+    """SwinIR-light super-resolution -- Swin Transformer whole-image upscaling."""
+    pass  # TODO: wire SwinIR Python class methods
 
-    Usage::
-
-        sr = CrispSwinirSr("swinir-sr-x4.gguf")
-        print(sr.scale)  # e.g. 4
-        out = sr.process(pixels, width, height)  # returns (ndarray, out_w, out_h)
 # SCUNet Image Denoising (Swin-Conv-UNet, Apache-2.0)
 # ---------------------------------------------------------------------------
 
@@ -3284,7 +3280,7 @@ def _setup_scunet_signatures(lib):
 
 
 class CrispScunet:
-    """SCUNet image denoising — Swin-Conv-UNet hybrid blocks.
+    """SCUNet image denoising -- Swin-Conv-UNet hybrid blocks.
 
     Usage::
 
@@ -3295,8 +3291,8 @@ class CrispScunet:
     def __init__(self, model_path: str, n_threads: int = 4,
                  lib_path: Optional[str] = None):
         self._lib = _load_library(lib_path)
-        _setup_swinir_sr_signatures(self._lib)
-        self._ctx = self._lib.crispembed_swinir_sr_init(
+        _setup_scunet_signatures(self._lib)
+        self._ctx = self._lib.crispembed_scunet_init(
             model_path.encode("utf-8"), n_threads)
         if not self._ctx:
             raise RuntimeError(f"Failed to load SwinIR SR model: {model_path}")
@@ -3320,11 +3316,13 @@ class CrispScunet:
 
         Returns:
             Tuple of (output_ndarray uint8 shape (out_h, out_w, 3), out_w, out_h).
-        _setup_scunet_signatures(self._lib)
-        self._ctx = self._lib.crispembed_scunet_init(
-            model_path.encode("utf-8"), n_threads)
-        if not self._ctx:
-            raise RuntimeError(f"Failed to load SCUNet model: {model_path}")
+        """
+        # TODO: implement SwinIR process method
+        raise NotImplementedError("CrispSwinirSr.process not yet implemented")
+
+    def __del__(self):
+        if hasattr(self, '_ctx') and self._ctx:
+            self._lib.crispembed_swinir_sr_free(self._ctx)
 
     def process(self, pixels: np.ndarray, width: int, height: int
                 ) -> np.ndarray:
@@ -3406,7 +3404,7 @@ def _setup_instructir_signatures(lib):
 
 
 class CrispInstructIR:
-    """InstructIR all-in-one image restoration — NAFNet+ICB, 7 tasks.
+    """InstructIR all-in-one image restoration -- NAFNet+ICB, 7 tasks.
 
     Tasks: 0=denoise, 1=deblur, 2=dehaze, 3=derain,
            4=super_resolution, 5=low_light, 6=enhance.
@@ -3489,7 +3487,7 @@ def _setup_adair_signatures(lib):
 
 
 class CrispAdaIR:
-    """AdaIR all-in-one image restoration — Restormer+AFLB+FFT.
+    """AdaIR all-in-one image restoration -- Restormer+AFLB+FFT.
 
     5 tasks: denoise, derain, dehaze, deblur, low-light.
     28.8M params, MIT license (ICLR 2025).
