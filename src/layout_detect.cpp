@@ -816,10 +816,17 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     // Backbone
     // Verify stem weight is the folded version
-    {
-        float wv[3];
-        ggml_backend_tensor_get(ctx->backbone.stem[0].w, wv, 0, 3*sizeof(float));
-        fprintf(stderr, "  stem[0].w first3: %.6f %.6f %.6f (expected: 0.002018)\n", wv[0], wv[1], wv[2]);
+    if (std::getenv("CRISPEMBED_LAYOUT_DEBUG")) {
+        auto* t = ctx->backbone.stem[0].w;
+        std::vector<uint8_t> raw(ggml_nbytes(t));
+        ggml_backend_tensor_get(t, raw.data(), 0, raw.size());
+        std::vector<float> fv(3);
+        if (t->type == GGML_TYPE_F32) memcpy(fv.data(), raw.data(), 3*sizeof(float));
+        else if (t->type == GGML_TYPE_F16) {
+            auto* src = (const ggml_fp16_t*)raw.data();
+            for (int i = 0; i < 3; i++) fv[i] = ggml_fp16_to_fp32(src[i]);
+        }
+        fprintf(stderr, "  stem[0].w first3: %.6f %.6f %.6f (expected: 0.002018)\n", fv[0], fv[1], fv[2]);
     }
     fprintf(stderr, "layout_detect: building backbone + encoder graph...\n");
     ggml_tensor *c3, *c4, *c5;
@@ -959,9 +966,11 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     auto cpu_linear = [](const float* x, float* y, int in_d, int out_d, int N,
                           ggml_tensor* w_t, ggml_tensor* b_t) {
-        std::vector<float> W(out_d * in_d), b(out_d, 0.0f);
-        if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, out_d * in_d * sizeof(float));
-        if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, out_d * sizeof(float));
+        auto W = tensor_to_f32(w_t);
+        auto b_v = tensor_to_f32(b_t);
+        if (W.empty()) W.resize(out_d * in_d, 0.0f);
+        if (b_v.empty()) b_v.resize(out_d, 0.0f);
+        auto& b = b_v;
         // Auto-detect weight convention for non-square weights from ggml ne[0].
         // Square weights (in_d==out_d): always MatMul (in, out) convention.
         // Non-square: ne[0] reveals numpy col count. If ne[0]==out_d → (in,out).
@@ -985,9 +994,10 @@ std::vector<region> detect(context* ctx, const float* pixels,
     };
 
     auto cpu_layernorm = [](float* x, int D, int N, ggml_tensor* w_t, ggml_tensor* b_t) {
-        std::vector<float> w(D), b(D);
-        if (w_t) ggml_backend_tensor_get(w_t, w.data(), 0, D * sizeof(float));
-        if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, D * sizeof(float));
+        auto w = tensor_to_f32(w_t);
+        auto b = tensor_to_f32(b_t);
+        if (w.empty()) w.resize(D, 1.0f);
+        if (b.empty()) b.resize(D, 0.0f);
         for (int n = 0; n < N; n++) {
             float mean = 0, var = 0;
             for (int d = 0; d < D; d++) mean += x[d * N + n];
@@ -1031,9 +1041,10 @@ std::vector<region> detect(context* ctx, const float* pixels,
             {
                 auto* w_t = ctx->decoder.input_proj[lv].w;
                 auto* b_t = ctx->decoder.input_proj[lv].b;
-                std::vector<float> W(D * D), b(D, 0.0f);
-                if (w_t) ggml_backend_tensor_get(w_t, W.data(), 0, D * D * sizeof(float));
-                if (b_t) ggml_backend_tensor_get(b_t, b.data(), 0, D * sizeof(float));
+                auto W = tensor_to_f32(w_t);
+                auto b = tensor_to_f32(b_t);
+                if (W.empty()) W.resize(D * D, 0.0f);
+                if (b.empty()) b.resize(D, 0.0f);
                 for (int n = 0; n < N_lv; n++) {
                     for (int o = 0; o < D; o++) {
                         float sum = b[o];
@@ -1058,9 +1069,8 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     // Initialize queries from anchors
     // anchors: [300, 4] — reference points (cx, cy, w, h) in [0, 1]
-    std::vector<float> anchors(N_queries * 4);
-    if (ctx->decoder.anchors)
-        ggml_backend_tensor_get(ctx->decoder.anchors, anchors.data(), 0, N_queries * 4 * sizeof(float));
+    auto anchors = tensor_to_f32(ctx->decoder.anchors);
+    if (anchors.empty()) anchors.resize(N_queries * 4, 0.0f);
 
     // Query embeddings: project encoder output to get initial queries
     // Helper: CPU-side matrix multiply y = W @ x + b
@@ -1071,9 +1081,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
     // Apply valid_mask to memory (zeros out padding positions)
     if (ctx->decoder.valid_mask) {
         // valid_mask is [1, N_total, 1] — broadcast over channels
-        std::vector<float> mask(total_tokens);
-        ggml_backend_tensor_get(ctx->decoder.valid_mask, mask.data(), 0,
-                                total_tokens * sizeof(float));
+        auto mask = tensor_to_f32(ctx->decoder.valid_mask);
         for (int n = 0; n < total_tokens; n++)
             if (mask[n] == 0.0f)
                 for (int d = 0; d < D; d++)
@@ -1095,8 +1103,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
         ggml_tensor* proj_b = ctx->wl.tensors.count("model.decoder.enc_output.proj.bias")
             ? ctx->wl.tensors.at("model.decoder.enc_output.proj.bias") : nullptr;
         if (proj_b) {
-            std::vector<float> bias(D);
-            ggml_backend_tensor_get(proj_b, bias.data(), 0, D * sizeof(float));
+            auto bias = tensor_to_f32(proj_b);
             for (int n = 0; n < total_tokens; n++)
                 for (int d = 0; d < D; d++)
                     enc_proj[d * total_tokens + n] += bias[d];
@@ -1250,11 +1257,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
                     int token_idx = token_scores[q].second;
                     for (int d = 0; d < 4; d++) {
                         float bbox_logit = out[d * N_total + token_idx];
-                        float logit_anchor;
-                        ggml_backend_tensor_get(ctx->decoder.anchors,
-                            &logit_anchor,
-                            (size_t)(token_idx * 4 + d) * sizeof(float),
-                            sizeof(float));
+                        float logit_anchor = anchors[token_idx * 4 + d];
                         ref_points[q * 4 + d] = 1.0f / (1.0f + expf(-(bbox_logit + logit_anchor)));
                     }
                 }
