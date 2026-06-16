@@ -381,6 +381,30 @@ static void gv_projector(granite_vision_context * ctx,
               output);
 }
 
+// ── Vision dump for crispembed-diff ─────────────────────────────────────
+
+void granite_vision_dump_vision(granite_vision_context * ctx,
+                                 const float * image_f32, int img_h, int img_w,
+                                 gv_dump_cb cb, void * ud) {
+    if (!ctx || !image_f32 || !cb) return;
+
+    int T_vis = 0;
+    int n_feat = (int)ctx->feature_layers.size();
+    int feat_dim = n_feat * ctx->vis_dim;
+
+    // Run vision encoder
+    std::vector<float> vis_out(729 * feat_dim);  // max patches
+    gv_vision_forward(ctx, image_f32, img_h, img_w, vis_out.data(), &T_vis);
+
+    // Emit concatenated features
+    cb("vis_features_concat", vis_out.data(), T_vis * feat_dim, ud);
+
+    // Run projector
+    std::vector<float> proj_out(T_vis * ctx->llm_dim);
+    gv_projector(ctx, vis_out.data(), T_vis, feat_dim, proj_out.data());
+    cb("projector", proj_out.data(), T_vis * ctx->llm_dim, ud);
+}
+
 // ── Granite LLM Forward (single token, with KV cache) ──────────────────
 
 static void gv_llm_decode_step(granite_vision_context * ctx,

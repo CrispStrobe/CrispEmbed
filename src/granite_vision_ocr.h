@@ -32,6 +32,13 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
 // Set max generation tokens (default: 2048).
 void granite_vision_set_max_tokens(granite_vision_context * ctx, int max_tokens);
 
+// Run vision encoder + projector only (for crispembed-diff parity).
+// image_f32: [3, img_h, img_w] float [0,1]. Callback receives named stages.
+typedef void (*gv_dump_cb)(const char * name, const float * data, int n, void * ud);
+void granite_vision_dump_vision(granite_vision_context * ctx,
+                                 const float * image_f32, int img_h, int img_w,
+                                 gv_dump_cb cb, void * ud);
+
 #ifdef __cplusplus
 }
 #endif
