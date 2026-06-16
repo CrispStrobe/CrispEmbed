@@ -107,12 +107,14 @@ def main():
                 if n: tmap[n] = (k, sp)
     print(f"Mapped: {len(tmap)} tensors")
 
-    # Get shapes (lazy)
+    # Get shapes (lazy). Flatten 5D tensors to 4D (GGUF max is 4D).
     tinfo = {}
     for gn, (sk, sp) in tmap.items():
         with safe_open(sp, framework="pt") as sf:
             t = sf.get_tensor(sk)
             shape = list(t.shape)
+            if len(shape) == 5:
+                shape = [shape[0], shape[1] * shape[2], shape[3], shape[4]]
             dt = GGML_TYPE_F16 if (args.fp16 and len(shape) >= 2) else GGML_TYPE_F32
             nb = int(np.prod(shape)) * (2 if dt == GGML_TYPE_F16 else 4)
             tinfo[gn] = (shape, nb, dt)
@@ -171,9 +173,16 @@ def main():
             shape, nb, dt = tinfo[n]
             sk, sp = tmap[n]
             with safe_open(sp, framework="pt") as sf:
-                t = sf.get_tensor(sk); a = t.float().numpy(); del t
-            d = a.astype(np.float16).tobytes() if dt == GGML_TYPE_F16 else a.astype(np.float32).tobytes()
-            del a; gc.collect()
+                t = sf.get_tensor(sk)
+            # Flatten 5D→4D (Conv3D patch embed)
+            if t.ndim == 5:
+                t = t.reshape(t.shape[0], t.shape[1]*t.shape[2], t.shape[3], t.shape[4])
+            # Convert BF16→FP16 directly (no F32 intermediate to save RAM)
+            if dt == GGML_TYPE_F16:
+                d = t.half().numpy().tobytes()
+            else:
+                d = t.float().numpy().tobytes()
+            del t; gc.collect()
             f.write(d)
             pad = ((len(d) + 31) & ~31) - len(d)
             if pad > 0: f.write(b"\x00" * pad)
