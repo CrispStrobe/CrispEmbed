@@ -3006,9 +3006,10 @@ extern "C" int crispembed_colbert_score_batch(
 #include "pix2struct.h"
 #include "tesseract_lstm.h"
 #include "granite_vision_ocr.h"
+#include "lightonocr.h"
 #include "core/gguf_loader.h"
 
-enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L, MATH_OCR_POSFORMER, MATH_OCR_MIXTEX, MATH_OCR_QWEN2VL, MATH_OCR_INTERNVL2, MATH_OCR_PARSEQ, MATH_OCR_GLM_OCR, MATH_OCR_GOT_OCR, MATH_OCR_TESSERACT_LSTM, MATH_OCR_GRANITE_VISION };
+enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L, MATH_OCR_POSFORMER, MATH_OCR_MIXTEX, MATH_OCR_QWEN2VL, MATH_OCR_INTERNVL2, MATH_OCR_PARSEQ, MATH_OCR_GLM_OCR, MATH_OCR_GOT_OCR, MATH_OCR_TESSERACT_LSTM, MATH_OCR_GRANITE_VISION, MATH_OCR_LIGHTONOCR };
 
 struct unified_math_ocr {
     math_ocr_type type;
@@ -3033,6 +3034,7 @@ if (arch == "glm_ocr") return MATH_OCR_GLM_OCR;
 if (arch == "got_ocr") return MATH_OCR_GOT_OCR;
 if (arch == "tesseract_lstm") return MATH_OCR_TESSERACT_LSTM;
 if (arch == "granite_vision") return MATH_OCR_GRANITE_VISION;
+if (arch == "lightonocr") return MATH_OCR_LIGHTONOCR;
     return MATH_OCR_PIX2TEX;
 }
 
@@ -3054,6 +3056,7 @@ case MATH_OCR_GLM_OCR:        inner = glm_ocr_init(path, n_threads); break;
 case MATH_OCR_GOT_OCR:        inner = got_ocr_init(path, n_threads); break;
 case MATH_OCR_TESSERACT_LSTM: inner = tesseract_lstm_init(path, n_threads); break;
 case MATH_OCR_GRANITE_VISION: inner = granite_vision_init(path, n_threads); break;
+case MATH_OCR_LIGHTONOCR:     inner = lightonocr_init(path, n_threads); break;
     }
     if (!inner) return nullptr;
     auto * u = new unified_math_ocr{type, inner};
@@ -3078,6 +3081,7 @@ case MATH_OCR_GLM_OCR:        glm_ocr_free((glm_ocr_context *)u->ctx); break;
 case MATH_OCR_GOT_OCR:        got_ocr_free((got_ocr_context *)u->ctx); break;
 case MATH_OCR_TESSERACT_LSTM: tesseract_lstm_free((tesseract_lstm_context *)u->ctx); break;
 case MATH_OCR_GRANITE_VISION: granite_vision_free((granite_vision_context *)u->ctx); break;
+case MATH_OCR_LIGHTONOCR:     lightonocr_free((lightonocr_context *)u->ctx); break;
     }
     delete u;
 }
@@ -3113,6 +3117,7 @@ case MATH_OCR_TESSERACT_LSTM: {
             return tesseract_lstm_recognize((tesseract_lstm_context *)u->ctx, gray.data(), w, h, ol);
         }
 case MATH_OCR_GRANITE_VISION: return granite_vision_recognize((granite_vision_context *)u->ctx, px, w, h, ch, nullptr, ol);
+case MATH_OCR_LIGHTONOCR:     return lightonocr_recognize_raw((lightonocr_context *)u->ctx, px, w, h, ch, ol);
     }
     return nullptr;
 }
@@ -3150,6 +3155,13 @@ case MATH_OCR_GRANITE_VISION: {
                 rgb[i * 3] = rgb[i * 3 + 1] = rgb[i * 3 + 2] = v;
             }
             return granite_vision_recognize((granite_vision_context *)u->ctx, rgb.data(), w, h, 3, nullptr, ol);
+        }
+case MATH_OCR_LIGHTONOCR: {
+            // Convert float gray → uint8 grayscale for lightonocr
+            std::vector<uint8_t> gray(w * h);
+            for (int i = 0; i < w * h; i++)
+                gray[i] = (uint8_t)(px[i] * 255.0f + 0.5f);
+            return lightonocr_recognize_raw((lightonocr_context *)u->ctx, gray.data(), w, h, 1, ol);
         }
     }
     return nullptr;
