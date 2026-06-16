@@ -21,6 +21,17 @@ void stbi_image_free(void* retval_from_stbi_load);
 
 #include <algorithm>
 #include <chrono>
+
+// Env var gating: CRISPEMBED_LIGHTONOCR_FLASH_ATTN=1 to use flash attention
+// Default: manual attention (confirmed working output)
+static bool use_flash_attn() {
+    static int cached = -1;
+    if (cached < 0) {
+        const char *v = std::getenv("CRISPEMBED_LIGHTONOCR_FLASH_ATTN");
+        cached = (v && (v[0] == '1' || v[0] == 'y' || v[0] == 'Y')) ? 1 : 0;
+    }
+    return cached != 0;
+}
 #include <cassert>
 #include <cmath>
 #include <cstdio>
@@ -417,13 +428,20 @@ static bool run_vision_encoder(context &ctx,
         Q = apply_rope(Q);
         K = apply_rope(K);
 
-        // Flash attention (fused, no mask for vision encoder — full attention)
         Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3)); // (HD, T, NH)
         K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
         V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-        ggml_tensor *attn = ggml_flash_attn_ext(g, Q, K, V,
-                                                  nullptr, attn_scale, 0.0f, 0.0f);
+        ggml_tensor *attn;
+        if (use_flash_attn()) {
+            attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, attn_scale, 0.0f, 0.0f);
+        } else {
+            ggml_tensor *scores = ggml_mul_mat(g, K, Q);
+            scores = ggml_soft_max_ext(g, scores, nullptr, attn_scale, 0.0f);
+            ggml_tensor *V_perm = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
+            attn = ggml_mul_mat(g, V_perm, scores);
+            attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        }
         attn = ggml_reshape_2d(g, attn, D, n_patches);
 
         // Output projection
@@ -649,8 +667,9 @@ static bool run_decoder_prefill(context &ctx,
     ggml_tensor *x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_prompt);
     ggml_set_name(x, "lm_input"); ggml_set_input(x);
 
-    // Causal mask: (n_prompt, n_prompt) — F16 for ggml_flash_attn_ext
-    ggml_tensor *mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, n_prompt, n_prompt);
+    // Causal mask: F16 for flash_attn, F32 for manual attention
+    ggml_type mask_type = use_flash_attn() ? GGML_TYPE_F16 : GGML_TYPE_F32;
+    ggml_tensor *mask = ggml_new_tensor_2d(g, mask_type, n_prompt, n_prompt);
     ggml_set_name(mask, "causal_mask"); ggml_set_input(mask);
 
     // Position IDs: [0, 1, 2, ..., n_prompt-1]
@@ -732,13 +751,21 @@ static bool run_decoder_prefill(context &ctx,
             V = ggml_reshape_3d(g, V, head_dim, n_heads, n_prompt);
         }
 
-        // Flash attention (fused Q@K softmax V)
         float scale = 1.0f / sqrtf((float)head_dim);
         Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3)); // (hd, T, nh)
         K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
         V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-        ggml_tensor *attn = ggml_flash_attn_ext(g, Q, K, V, mask, scale, 0.0f, 0.0f);
+        ggml_tensor *attn;
+        if (use_flash_attn()) {
+            attn = ggml_flash_attn_ext(g, Q, K, V, mask, scale, 0.0f, 0.0f);
+        } else {
+            ggml_tensor *scores = ggml_mul_mat(g, K, Q);
+            scores = ggml_soft_max_ext(g, scores, mask, scale, 0.0f);
+            ggml_tensor *V_perm = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
+            attn = ggml_mul_mat(g, V_perm, scores);
+            attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        }
         int q_total = n_heads * head_dim;
         attn = ggml_reshape_2d(g, attn, q_total, n_prompt);
 
@@ -785,13 +812,21 @@ static bool run_decoder_prefill(context &ctx,
     ggml_tensor *t_in = ggml_graph_get_tensor(gf, "lm_input");
     ggml_backend_tensor_set(t_in, full_emb.data(), 0, D * n_prompt * sizeof(float));
 
-    // Build causal mask (-inf above diagonal) in F16 for flash_attn_ext
-    std::vector<ggml_fp16_t> mask_data(n_prompt * n_prompt);
-    for (int i = 0; i < n_prompt; i++)
-        for (int j = 0; j < n_prompt; j++)
-            mask_data[i * n_prompt + j] = ggml_fp32_to_fp16((j <= i) ? 0.0f : -INFINITY);
+    // Build causal mask (-inf above diagonal)
     ggml_tensor *t_mask = ggml_graph_get_tensor(gf, "causal_mask");
-    ggml_backend_tensor_set(t_mask, mask_data.data(), 0, mask_data.size() * sizeof(ggml_fp16_t));
+    if (use_flash_attn()) {
+        std::vector<ggml_fp16_t> mask_data(n_prompt * n_prompt);
+        for (int i = 0; i < n_prompt; i++)
+            for (int j = 0; j < n_prompt; j++)
+                mask_data[i * n_prompt + j] = ggml_fp32_to_fp16((j <= i) ? 0.0f : -INFINITY);
+        ggml_backend_tensor_set(t_mask, mask_data.data(), 0, mask_data.size() * sizeof(ggml_fp16_t));
+    } else {
+        std::vector<float> mask_data(n_prompt * n_prompt);
+        for (int i = 0; i < n_prompt; i++)
+            for (int j = 0; j < n_prompt; j++)
+                mask_data[i * n_prompt + j] = (j <= i) ? 0.0f : -INFINITY;
+        ggml_backend_tensor_set(t_mask, mask_data.data(), 0, mask_data.size() * sizeof(float));
+    }
 
     // Position IDs: [0, 1, 2, ..., n_prompt-1]
     std::vector<int32_t> pos_data(n_prompt);
@@ -941,13 +976,20 @@ static bool run_decoder_prefill(context &ctx,
                 V_full = ggml_reshape_3d(g2, V_full, head_dim, n_heads, seq);
             }
 
-            // Flash attention (fused Q@K softmax V, no mask for decode step)
             float sc = 1.0f / sqrtf((float)head_dim);
             Q = ggml_cont(g2, ggml_permute(g2, Q, 0, 2, 1, 3));
             K_full = ggml_cont(g2, ggml_permute(g2, K_full, 0, 2, 1, 3));
             V_full = ggml_cont(g2, ggml_permute(g2, V_full, 0, 2, 1, 3));
-            ggml_tensor *attn = ggml_flash_attn_ext(g2, Q, K_full, V_full,
-                                                     nullptr, sc, 0.0f, 0.0f);
+            ggml_tensor *attn;
+            if (use_flash_attn()) {
+                attn = ggml_flash_attn_ext(g2, Q, K_full, V_full, nullptr, sc, 0.0f, 0.0f);
+            } else {
+                ggml_tensor *scores = ggml_mul_mat(g2, K_full, Q);
+                scores = ggml_soft_max_ext(g2, scores, nullptr, sc, 0.0f);
+                ggml_tensor *Vp = ggml_cont(g2, ggml_permute(g2, V_full, 1, 0, 2, 3));
+                attn = ggml_mul_mat(g2, Vp, scores);
+                attn = ggml_cont(g2, ggml_permute(g2, attn, 0, 2, 1, 3));
+            }
             attn = ggml_reshape_2d(g2, attn, n_heads * head_dim, 1);
             attn = ggml_mul_mat(g2, L.o_w, attn);
             cur = ggml_add(g2, res, attn);
