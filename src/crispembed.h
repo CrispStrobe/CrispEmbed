@@ -651,6 +651,16 @@ CRISPEMBED_API const crispembed_ocr_result * crispembed_ocr_pipeline_run(
 CRISPEMBED_API const char * crispembed_ocr_pipeline_detected_lang(
     void * ctx, float * out_confidence);
 
+/// Per-region recognition confidence (mean per-char softmax) from the last run.
+CRISPEMBED_API float crispembed_ocr_pipeline_region_rec_confidence(
+    void * ctx, int region_idx);
+
+/// Per-character confidence for a region from the last run. Returns a pointer to
+/// `*out_len` floats (owned by ctx, valid until the next run/free), or NULL when
+/// the recognizer doesn't expose per-character confidence (e.g. VLM engines).
+CRISPEMBED_API const float * crispembed_ocr_pipeline_region_char_conf(
+    void * ctx, int region_idx, int * out_len);
+
 CRISPEMBED_API void crispembed_ocr_pipeline_free(void * ctx);
 
 // ---------------------------------------------------------------------------
