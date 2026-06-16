@@ -24,7 +24,7 @@ def log(msg):
     except Exception:
         pass
 
-log("=== FireRed-OCR Parity v8 ===")
+log("=== FireRed-OCR Parity v9 ===")
 log(f"Python {sys.version}")
 
 # Write progress immediately so we can see output even on crash
@@ -140,7 +140,7 @@ try:
             qkv = F.linear(normed, qkv_w, qkv_b)
             Q, K, V = qkv.chunk(3, dim=-1)
             del qkv_w, qkv_b, qkv
-        except KeyError:
+        except (KeyError, Exception):
             Q = F.linear(normed, load_tensor(f"{prefix}.attn.q.weight"),
                          load_tensor(f"{prefix}.attn.q.bias"))
             K = F.linear(normed, load_tensor(f"{prefix}.attn.k.weight"),
@@ -166,7 +166,7 @@ try:
         try:
             ln2_w = load_tensor(f"{prefix}.norm2.weight")
             ln2_b = load_tensor(f"{prefix}.norm2.bias")
-        except KeyError:
+        except (KeyError, Exception):
             ln2_w = load_tensor(f"{prefix}.layer_norm2.weight")
             ln2_b = load_tensor(f"{prefix}.layer_norm2.bias")
         normed2 = F.layer_norm(x, (dim,), ln2_w, ln2_b)
@@ -177,19 +177,19 @@ try:
             try:
                 fc1_w = load_tensor(f"{prefix}.mlp.fc1.weight")
                 fc1_b = load_tensor(f"{prefix}.mlp.fc1.bias")
-            except KeyError:
+            except (KeyError, Exception):
                 fc1_w = load_tensor(f"{prefix}.mlp.linear_fc1.weight")
                 fc1_b = load_tensor(f"{prefix}.mlp.linear_fc1.bias")
             try:
                 fc2_w = load_tensor(f"{prefix}.mlp.fc2.weight")
                 fc2_b = load_tensor(f"{prefix}.mlp.fc2.bias")
-            except KeyError:
+            except (KeyError, Exception):
                 fc2_w = load_tensor(f"{prefix}.mlp.linear_fc2.weight")
                 fc2_b = load_tensor(f"{prefix}.mlp.linear_fc2.bias")
             h = F.gelu(F.linear(normed2, fc1_w, fc1_b), approximate="tanh")
             h = F.linear(h, fc2_w, fc2_b)
             del fc1_w, fc1_b, fc2_w, fc2_b
-        except KeyError:
+        except (KeyError, Exception):
             gate_w = load_tensor(f"{prefix}.mlp.gate_proj.weight")
             up_w = load_tensor(f"{prefix}.mlp.up_proj.weight")
             down_w = load_tensor(f"{prefix}.mlp.down_proj.weight")
