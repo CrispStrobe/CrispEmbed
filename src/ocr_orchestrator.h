@@ -45,6 +45,7 @@ enum class engine {
     glm,           // glm_ocr.cpp
     internvl2,     // internvl2_ocr.cpp
     tesseract,     // DBNet detection + Tesseract-LSTM line recognition
+    deepseek_ocr2, // deepseek_ocr2.cpp (MoE VLM)
 };
 
 // Image category used to pick a chain. `auto_detect` runs the classifier.
