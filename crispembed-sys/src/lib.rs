@@ -1011,6 +1011,84 @@ extern "C" {
         threshold: c_float,
     ) -> CrispembedKieResult;
     pub fn crispembed_kie_free(ctx: *mut c_void);
+
+    // ── HMER handwritten math OCR ──
+    pub fn crispembed_hmer_ocr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_hmer_ocr_free(ctx: *mut c_void);
+    pub fn crispembed_hmer_ocr_recognize(
+        ctx: *mut c_void, pixels: *const u8, width: c_int, height: c_int, channels: c_int,
+    ) -> *const c_char;
+    pub fn crispembed_hmer_ocr_recognize_gray(
+        ctx: *mut c_void, gray: *const u8, width: c_int, height: c_int,
+    ) -> *const c_char;
+
+    // ── BTTR handwritten math OCR ──
+    pub fn crispembed_bttr_ocr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_bttr_ocr_free(ctx: *mut c_void);
+    pub fn crispembed_bttr_ocr_recognize(
+        ctx: *mut c_void, pixels: *const u8, width: c_int, height: c_int, channels: c_int,
+    ) -> *const c_char;
+    pub fn crispembed_bttr_ocr_recognize_gray(
+        ctx: *mut c_void, gray: *const u8, width: c_int, height: c_int,
+    ) -> *const c_char;
+
+    // ── CLIP text encoder ──
+    pub fn crispembed_clip_text_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_clip_text_free(ctx: *mut c_void);
+    pub fn crispembed_clip_text_dim(ctx: *const c_void) -> c_int;
+    pub fn crispembed_clip_text_encode(
+        ctx: *mut c_void, text: *const c_char, out_n: *mut c_int,
+    ) -> *const c_float;
+
+    // ── Text detection (DBNet/Surya) ──
+    pub fn crispembed_text_det_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_text_det_free(ctx: *mut c_void);
+    pub fn crispembed_text_det(
+        ctx: *mut c_void, pixels: *const u8, width: c_int, height: c_int, channels: c_int,
+        text_threshold: c_float, low_threshold: c_float, out_n: *mut c_int,
+    ) -> *const CrispembedTextDetResult;
+    pub fn crispembed_text_det_heatmap(
+        ctx: *mut c_void, out_h: *mut c_int, out_w: *mut c_int,
+    ) -> *const c_float;
+
+    // ── Punctuation restoration ──
+    pub fn crispembed_punct_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_punct_free(ctx: *mut c_void);
+    pub fn crispembed_punct_process(ctx: *mut c_void, text: *const c_char) -> *const c_char;
+
+    // ── ColBERT scoring ──
+    pub fn crispembed_colbert_score(
+        q_embs: *const c_float, q_tokens: c_int, q_dim: c_int,
+        d_embs: *const c_float, d_tokens: c_int,
+    ) -> c_float;
+    pub fn crispembed_colbert_score_batch(
+        q_embs: *const c_float, q_tokens: c_int, q_dim: c_int,
+        d_embs_array: *const *const c_float, d_tokens_array: *const c_int,
+        n_docs: c_int, out_scores: *mut c_float,
+    ) -> c_int;
+
+    // ── Raw token encoding ──
+    pub fn crispembed_encode_tokens_raw(
+        ctx: *mut CrispembedContext, tokens: *const c_int, n_tokens: c_int,
+        out_n: *mut c_int,
+    ) -> *const c_float;
+
+    // ── OCR pipeline detected language ──
+    pub fn crispembed_ocr_pipeline_detected_lang(ctx: *mut c_void) -> *const c_char;
+
+    // ── LiLT accessors ──
+    pub fn crispembed_lilt_num_labels(ctx: *mut c_void) -> c_int;
+    pub fn crispembed_lilt_label_name(ctx: *mut c_void, label_id: c_int) -> *const c_char;
+}
+
+/// Text detection result (matches `crispembed_text_det_result` in C).
+#[repr(C)]
+pub struct CrispembedTextDetResult {
+    pub x0: c_float,
+    pub y0: c_float,
+    pub x1: c_float,
+    pub y1: c_float,
+    pub confidence: c_float,
 }
 
 /// `crispembed_kie_field` — one extracted field (label + value + box + score).
