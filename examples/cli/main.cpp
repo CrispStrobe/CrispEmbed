@@ -106,6 +106,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
     fprintf(stderr, "       --ocr-engine N  primary engine (dbnet_trocr|surya|tesseract|got|glm|qwen2vl|internvl2)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
+    fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
+    fprintf(stderr, "       --truecase-model M  post-OCR truecasing (BiLSTM)\n");
+    fprintf(stderr, "       --tess-model-dir D  directory of tesseract-{lang}-q8_0.gguf for auto-select\n");
     fprintf(stderr, "       --sr-model PATH text super-resolution GGUF for low-DPI upscaling (NAFNet+PixelShuffle)\n");
     fprintf(stderr, "  --pan-sr FILE    standalone PAN super-resolution: upscale image, write PGM to stdout\n");
     fprintf(stderr, "                   (needs --pan-model PATH: PAN GGUF, Pixel Attention Network, 2x or 4x)\n");
@@ -217,6 +220,9 @@ int main(int argc, char ** argv) {
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
     float pipeline_min_conf = -1.0f;    // --ocr-min-conf: accept-gate override (-1 = default)
+    std::string lid_model;              // --lid-model: text LID for language routing
+    std::string truecase_model;         // --truecase-model: post-OCR truecasing
+    std::string tess_model_dir;         // --tess-model-dir: tesseract models directory
     std::string punct_model;    // --punct-model: post-process OCR with punctuation
     std::string output_format;  // --output-format: text/hocr/alto
     std::string pipeline_engine; // --ocr-engine NAME
@@ -322,6 +328,12 @@ int main(int argc, char ** argv) {
             ocr_pipeline_path = argv[++i];
         } else if (strcmp(argv[i], "--ocr-engine") == 0 && i + 1 < argc) {
             pipeline_engine = argv[++i];
+        } else if (strcmp(argv[i], "--lid-model") == 0 && i + 1 < argc) {
+            lid_model = argv[++i];
+        } else if (strcmp(argv[i], "--truecase-model") == 0 && i + 1 < argc) {
+            truecase_model = argv[++i];
+        } else if (strcmp(argv[i], "--tess-model-dir") == 0 && i + 1 < argc) {
+            tess_model_dir = argv[++i];
         } else if (strcmp(argv[i], "--denoise") == 0) {
             pipeline_denoise = true;
         } else if (strcmp(argv[i], "--sr-model") == 0 && i + 1 < argc) {
@@ -816,6 +828,9 @@ int main(int argc, char ** argv) {
             pp.vlm_model    = vlm.empty()    ? nullptr : vlm.c_str();
             pp.vlm_engine   = pipeline_vlm_engine;
             pp.punct_model  = punct.empty()  ? nullptr : punct.c_str();
+            pp.lid_model      = lid_model.empty()      ? nullptr : lid_model.c_str();
+            pp.truecase_model = truecase_model.empty() ? nullptr : truecase_model.c_str();
+            pp.tess_model_dir = tess_model_dir.empty() ? nullptr : tess_model_dir.c_str();
             pp.min_chars     = min_chars;
             pp.min_confidence = min_conf;
             pctx = crispembed_ocr_pipeline_init(&pp, n_threads);
