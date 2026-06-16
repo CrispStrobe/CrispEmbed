@@ -665,6 +665,12 @@ static const ModelEntry k_registry[] = {
      "H2OVL-Mississippi-2B VLM OCR (InternViT-300M + Danube-2-1.8B, OCRBench 782)", "457 MB", "apache-2.0",
      "https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF"},
 
+    {"h2ovl-mississippi-800m",
+     "h2ovl-800m-q4_k.gguf",
+     "https://huggingface.co/cstr/h2ovl-800m-crispembed-GGUF/resolve/main/h2ovl-800m-q4_k.gguf",
+     "H2OVL-Mississippi-0.8B VLM OCR (InternViT-300M + Danube-3-0.5B, OCRBench 751, edge)", "398 MB", "apache-2.0",
+     "https://huggingface.co/cstr/h2ovl-800m-crispembed-GGUF"},
+
     {"internvl2-2b",
      "internvl2.5-2b-q4_k.gguf",
      "https://huggingface.co/cstr/internvl2.5-2b-crispembed-GGUF/resolve/main/internvl2.5-2b-q4_k.gguf",
