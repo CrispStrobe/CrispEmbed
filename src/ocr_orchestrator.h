@@ -104,6 +104,7 @@ struct config {
     std::string        nafnet_model;    // shared NAFNet GGUF path ("" = no tier-2)
     std::string        sr_model;        // text SR GGUF path ("" = disabled)
     int                sr_target_dpi = 200;  // auto-trigger SR when estimated DPI < this
+    std::string        lid_model;       // text LID GGUF path ("" = no LID)
     std::vector<chain> chains;          // one per source_type, or a single chain
     bool               verbose = false; // log stage transitions, gate decisions, failures
 };
@@ -119,6 +120,8 @@ struct result {
     engine      used_engine = engine::dbnet_trocr;
     source_type used_type   = source_type::auto_detect;
     int         stages_tried = 0;
+    std::string detected_lang;    // ISO 639-1 code from LID ("" if no LID)
+    float       lang_confidence = 0.0f;
 };
 
 struct context;
