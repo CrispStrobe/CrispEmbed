@@ -3459,6 +3459,13 @@ extern "C" void * crispembed_ocr_pipeline_init_stages(
     return w;
 }
 
+extern "C" const char * crispembed_ocr_pipeline_detected_lang(void * ctx, float * out_confidence) {
+    if (!ctx) { if (out_confidence) *out_confidence = 0.0f; return ""; }
+    auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    if (out_confidence) *out_confidence = w->last.lang_confidence;
+    return w->last.detected_lang.c_str();
+}
+
 extern "C" void crispembed_ocr_pipeline_free(void * ctx) {
     if (!ctx) return;
     auto * w = (ocr_pipeline_orch_wrapper *)ctx;
