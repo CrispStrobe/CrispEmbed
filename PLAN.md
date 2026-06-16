@@ -324,7 +324,7 @@ esrgan_sr engine internally).
 - [x] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL fine-tune, German business docs. DONE: wrote merge-llamacpp-qwen2vl-gguf.py to convert split llama.cpp GGUFs (LLM+mmproj) to single CrispEmbed GGUF. Loads and passes unit tests on qwen2vl_ocr engine. Q4_K 1.3GB.
 - [x] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL pruned fine-tune (16L vs 28L), 12+ languages incl. German. DONE: runs on existing qwen2vl_ocr engine unchanged. GGUF converted (F16 3.6GB, Q4_K 1.3GB). Model registry entry added.
 - [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics (parity bug: hallucinated text)
-- [ ] **Granite Vision 3.3-2B (~3B, Apache-2.0)** — OCRBench 852 (highest in class). English-only.
+- [x] **Granite Vision 3.3-2B (~3B, Apache-2.0)** — OCRBench 852. DONE: SigLIP ViT + Granite-3.1-2B LLM. Engine (`granite_vision_ocr.{h,cpp}`), GGUF converter (lazy safetensors, 804 tensors, 5.6GB F16), model registry, HF upload. Parity testing via Kaggle kernel (model too large for VPS).
 - [x] **H2OVL-Mississippi-2B (~2.1B, Apache-2.0)** — OCRBench 782. DONE: InternViT-300M + Danube-2-1.8B (Mistral arch). Runs on existing internvl2_ocr engine unchanged. GGUF converted (F16 1.2GB, Q4_K 457MB). Model registry entry added.
 
 #### OCRBench leaderboard reference (small VLMs, ≤3B)
