@@ -1,0 +1,14 @@
+{
+  "id": "${KAGGLE_ACCOUNT}/crispembed-granite-vision-parity",
+  "title": "CrispEmbed Granite Vision 3.3-2B Parity Test",
+  "code_file": "granite_vision_parity.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_internet": "true",
+  "competition_sources": [],
+  "dataset_sources": ["${KAGGLE_ACCOUNT}/crispasr-hf-token"],
+  "kernel_sources": [],
+  "model_sources": []
+}
