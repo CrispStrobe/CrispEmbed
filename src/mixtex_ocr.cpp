@@ -879,7 +879,10 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
     if (enc_stage_ref) {
         crispembed_diff::Ref sr;
         if (sr.load(enc_stage_ref)) {
-            auto r = sr.compare("enc_output", x.data(), H * W * D);
+            // Try both names: reference may use "enc_layernorm" or "enc_output"
+            auto r = sr.has("enc_layernorm")
+                   ? sr.compare("enc_layernorm", x.data(), H * W * D)
+                   : sr.compare("enc_output", x.data(), H * W * D);
             fprintf(stderr, "[mixtex-diff] enc_output (full): cos=%.6f max_abs=%.2e %s\n",
                     r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
         }
@@ -1033,7 +1036,15 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
             hidden = std::move(ln);
 
             // Diff: after self-attention (step 0, layer 0)
-            if (has_dec_diff && step == 0 && li == 0) {
+            if (has_dec_diff && step == 0 && li == 0 && std::getenv("CRISPEMBED_MIXTEX_DEBUG")) {
+                fprintf(stderr, "[mixtex-diff] Q[:4]: %.4f %.4f %.4f %.4f\n",
+                        q[0], q[1], q[2], q[3]);
+                fprintf(stderr, "[mixtex-diff] V[:4]: %.4f %.4f %.4f %.4f\n",
+                        attn_out[0], attn_out[1], attn_out[2], attn_out[3]);
+                fprintf(stderr, "[mixtex-diff] proj[:4]: %.4f %.4f %.4f %.4f\n",
+                        proj[0], proj[1], proj[2], proj[3]);
+                fprintf(stderr, "[mixtex-diff] h2[:4]: %.4f %.4f %.4f %.4f\n",
+                        hidden[0], hidden[1], hidden[2], hidden[3]);
                 auto r = dec_diff.compare("L0_after_self_attn", hidden.data(), D);
                 fprintf(stderr, "[mixtex-diff] L0_after_self_attn: cos=%.6f max_abs=%.2e %s\n",
                         r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
@@ -1081,6 +1092,9 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
 
             // Diff: after cross-attention (step 0, layer 0)
             if (has_dec_diff && step == 0 && li == 0) {
+                if (std::getenv("CRISPEMBED_MIXTEX_DEBUG"))
+                    fprintf(stderr, "[mixtex-diff] after_xattn[:4]: %.6f %.6f %.6f %.6f\n",
+                            hidden[0], hidden[1], hidden[2], hidden[3]);
                 auto r = dec_diff.compare("L0_after_cross_attn", hidden.data(), D);
                 fprintf(stderr, "[mixtex-diff] L0_after_cross_attn: cos=%.6f max_abs=%.2e %s\n",
                         r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
@@ -1100,6 +1114,9 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
 
             // Diff: compare layer output (step 0 only)
             if (has_dec_diff && step == 0) {
+                if (std::getenv("CRISPEMBED_MIXTEX_DEBUG"))
+                    fprintf(stderr, "[mixtex-diff] after_ffn[:4]: %.6f %.6f %.6f %.6f\n",
+                            hidden[0], hidden[1], hidden[2], hidden[3]);
                 char name[32];
                 snprintf(name, sizeof(name), "dec_layer_%d", li);
                 auto r = dec_diff.compare(name, hidden.data(), D);
