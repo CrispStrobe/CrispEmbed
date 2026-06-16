@@ -1,5 +1,67 @@
 # CrispEmbed — Technical Learnings
 
+## GELU variant matters for token classification
+
+HuggingFace/PyTorch uses erf-exact GELU (`torch.nn.functional.gelu`), not the
+tanh approximation from the original BERT paper. For embedding retrieval the
+difference is negligible (cos ~0.9999), but for token classification (NER) the
+small per-value differences (~1e-4) compound through 12 layers and flip argmax
+on borderline tokens. Fix: always use `ggml_gelu_erf` for BERT/XLM-R models.
+
+Before fix: 2/4 entities detected (missing Apple ORG, Cupertino LOC).
+After fix: 4/4 entities match Python exactly, all scores > 0.997.
+
+## Cased vs uncased BERT tokenizer auto-detection
+
+BERT-cased models (e.g. `dslim/bert-base-NER`) require case-preserving
+tokenization. The GGUF doesn't store `do_lower_case`. Detect from vocab:
+if single-letter uppercase tokens ("A", "B", ...) exist in the vocab, it's
+a cased model. WordPiece tokenizer must skip `tolower()` in that case.
+
+Wrong casing: "Barack" → ["bar", "##ack"] (6 subwords, all predicted O).
+Correct casing: "Barack" → ["Barack"] (1 token, predicted B-PER with 0.999).
+
+## BiACM: attention score fusion, not embedding fusion
+
+LiLT's BiACM (Bidirectional Attention Complementation) adds text and layout
+attention **scores** before softmax — NOT the embeddings themselves. Each stream
+maintains separate Q/K/V projections and separate FFN layers. Only the attention
+score matrices are shared (added element-wise at each layer). This means
+`ggml_flash_attn_ext` cannot be used — scores must be computed manually
+(`Q @ K^T`), summed, then passed to `ggml_soft_max` before applying to V.
+
+## Layout embedding concatenation order
+
+LiLT layout embeddings: 6 position lookups concatenated in this exact order:
+`x(x0), y(y0), x(x1), y(y1), h(y1-y0), w(x1-x0)` → 6×128 = 768d.
+Getting h/w swapped (w before h) causes cos=0.28 at the embedding level,
+cascading to cos=-0.35 at layer 11. Getting it right: cos=1.000000 on all layers.
+
+## RoBERTa position IDs start at 2, not 1
+
+RoBERTa uses `padding_idx=1`, so positions start at `padding_idx + 1 = 2`.
+Using offset 1 (like standard BERT) causes cos=0.97 at layer 0, degrading
+to cos=0.80 by layer 11 — subtle enough to look like a precision issue
+but actually a systematic bug. Fixed: `pos_ids[i] = i + 2` for RoBERTa/XLM-R.
+
+## crispembed-diff test: always use matching inputs
+
+Parity tests must use identical inputs between Python reference and C++.
+The LiLT diff test initially used hardcoded bboxes in C++ that didn't match
+the Python dumper's dynamically-generated bboxes — cos dropped to 0.20 at
+the layout embedding level. Fix: store `input_ids` and `bbox` in the
+reference GGUF and read them in the C++ test.
+
+## Shared library pattern: conditional fallback
+
+When extracting code into shared `crisp_*/` libraries from CrispASR:
+- Guard CrispASR-specific code (auto-download, model registry) with
+  `#ifdef CRISPASR_BUILD` — set via CMake `target_compile_definitions`
+- Both repos check `EXISTS "${CRISP_*_DIR}/CMakeLists.txt"` and fall
+  back to local copies when the sibling repo is absent
+- Link order matters on MinGW: consumer before provider
+- Always run full unit tests (439 in CrispASR) after the refactor
+
 ## Qwen2-VL vs Qwen2.5-VL config field names
 
 The vision config schema differs between Qwen2-VL and Qwen2.5-VL:
