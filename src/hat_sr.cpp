@@ -22,6 +22,7 @@
 
 #include "hat_sr.h"
 #include "core/gguf_loader.h"
+#include "ggml-backend.h"
 #include "ggml-cpu.h"
 
 #include <algorithm>
@@ -34,16 +35,22 @@
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
+// GPU-safe: uses ggml_backend_tensor_get instead of direct tensor->data
 static const float * hat_to_f32(const ggml_tensor * t, std::vector<float> & buf) {
-    if (t->type == GGML_TYPE_F32) return (const float *)t->data;
     int64_t n = ggml_nelements(t);
     buf.resize(n);
-    if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t * src = (const ggml_fp16_t *)t->data;
-        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(src[i]);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+    } else if (t->type == GGML_TYPE_F16) {
+        std::vector<ggml_fp16_t> tmp(n);
+        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
+        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(tmp[i]);
     } else {
+        size_t raw_sz = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_sz);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
         const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) traits->to_float(t->data, buf.data(), n);
+        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
         else memset(buf.data(), 0, n * sizeof(float));
     }
     return buf.data();
@@ -447,8 +454,10 @@ struct hat_sr_context {
     int n_layers;
     int n_threads;
 
+    ggml_backend_t backend = nullptr;
     core_gguf::WeightLoad wl;
     std::vector<std::vector<float>> wbufs;
+    std::vector<std::vector<int>> i32_bufs;
 
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
@@ -460,8 +469,11 @@ struct hat_sr_context {
     const int * get_i32(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t || t->type != GGML_TYPE_F32) return nullptr;
-        // RPI is stored as float but contains int indices — cast
-        return (const int *)t->data;
+        // RPI stored as float but contains int indices — read via backend API
+        int n = (int)ggml_nelements(t);
+        i32_bufs.emplace_back(n);
+        ggml_backend_tensor_get(t, i32_bufs.back().data(), 0, n * sizeof(int));
+        return i32_bufs.back().data();
     }
 };
 
@@ -488,12 +500,13 @@ hat_sr_context * hat_sr_init(const char * model_path, int n_threads) {
 
     core_gguf::free_metadata(meta);
 
-    ggml_backend_t backend = ggml_backend_cpu_init();
-    if (!core_gguf::load_weights(model_path, backend, "hat", ctx->wl)) {
+    bool force_cpu = (getenv("HAT_SR_FORCE_CPU") && atoi(getenv("HAT_SR_FORCE_CPU")));
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
+    if (!core_gguf::load_weights(model_path, ctx->backend, "hat", ctx->wl)) {
         fprintf(stderr, "hat_sr: failed to load weights\n");
-        ggml_backend_free(backend); delete ctx; return nullptr;
+        ggml_backend_free(ctx->backend); delete ctx; return nullptr;
     }
-    ggml_backend_free(backend);
 
     fprintf(stderr, "hat_sr: embed=%d, ws=%d, upscale=%dx, layers=%d, %d tensors\n",
             ctx->embed_dim, ctx->window_size, ctx->upscale, ctx->n_layers,
@@ -502,7 +515,10 @@ hat_sr_context * hat_sr_init(const char * model_path, int n_threads) {
 }
 
 void hat_sr_free(hat_sr_context * ctx) {
-    if (ctx) { core_gguf::free_weights(ctx->wl); delete ctx; }
+    if (!ctx) return;
+    core_gguf::free_weights(ctx->wl);
+    if (ctx->backend) ggml_backend_free(ctx->backend);
+    delete ctx;
 }
 
 int hat_sr_scale(const hat_sr_context * ctx) { return ctx ? ctx->upscale : 0; }
