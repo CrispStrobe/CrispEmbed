@@ -178,8 +178,8 @@ print("Uploaded qari-ocr-ref.gguf")
 
 # ─── 7. Build + run CrispEmbed diff test ──────────────────────────────
 print("\n=== CrispEmbed diff test ===")
-# Use F16 to eliminate quantization as a variable
-gguf_path = hf_hub_download('cstr/qari-ocr-crispembed-GGUF', 'qari-ocr-2b-f16.gguf')
+# Use Q8_0 — best balance of quality and speed on CPU
+gguf_path = hf_hub_download('cstr/qari-ocr-crispembed-GGUF', 'qari-ocr-2b-q8_0.gguf')
 
 ce_dir = '/kaggle/working/CrispEmbed'
 if os.path.exists(ce_dir): shutil.rmtree(ce_dir)
@@ -199,8 +199,11 @@ env = os.environ.copy()
 env['LD_LIBRARY_PATH'] = os.path.join(bld, 'ggml/src')
 
 # Run OCR and capture output
+t0 = time.time()
 r = subprocess.run([cli, '-m', gguf_path, '--ocr', '/kaggle/working/test.png'],
-                   capture_output=True, text=True, env=env, timeout=600)
+                   capture_output=True, text=True, env=env, timeout=7200)
+t1 = time.time()
+print(f"CrispEmbed inference took {t1-t0:.0f}s")
 print(f"CrispEmbed output: '{r.stdout.strip()[:300]}'")
 
 # Print last 20 lines of stderr for debug info
