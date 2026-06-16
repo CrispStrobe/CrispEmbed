@@ -120,7 +120,7 @@ Input text / image / audio
     ├─► OCR   ──► LightOnOCR-2-1B (1B, Apache-2.0) — OCR Arena #2, Mistral ViT + Qwen3
     ├─► OCR   ──► FireRed-OCR (2.1B, Apache-2.0) — Qwen3-VL, GRPO, tables+LaTeX
     ├─► OCR   ──► NuExtract3 (4B, Apache-2.0) — structured extraction + Markdown
-    ├─► OCR   ──► DeepSeek-OCR-2 (3B, Apache-2.0) — DeepEncoder V2 + MoE decoder
+    ├─► OCR   ──► DeepSeek-OCR-2 (3B, Apache-2.0) — DONE: converter+engine+orchestrator+HF
     └─► OCR   ──► Granite Vision 3.3-2B (3B, Apache) — OCRBench 852
 ```
 
