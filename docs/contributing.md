@@ -218,6 +218,7 @@ Utility libraries (not model backends) follow a lighter pattern.
 | PDF DPI profiling | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | SAFMN super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Real-ESRGAN super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| SCUNet denoising | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ### Implementation patterns
 

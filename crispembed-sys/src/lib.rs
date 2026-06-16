@@ -822,6 +822,18 @@ extern "C" {
     ) -> c_int;
     pub fn crispembed_restormer_free_image(pixels: *mut u8);
 
+    // ── SCUNet image denoising ──
+    pub fn crispembed_scunet_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_scunet_free(ctx: *mut c_void);
+    pub fn crispembed_scunet_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        out_pixels: *mut *mut u8,
+    ) -> c_int;
+    pub fn crispembed_scunet_free_image(pixels: *mut u8);
+
     // ── OCR result rendering ──
     pub fn crispembed_ocr_render(
         results: *const CrispembedOcrResult,
