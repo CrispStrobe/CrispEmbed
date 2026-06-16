@@ -9,6 +9,8 @@
 
 #include <stdint.h>
 
+#include <functional>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -31,6 +33,13 @@ int scunet_process_float(scunet_context * ctx,
 
 #ifdef __cplusplus
 }
+
+/// Debug variant with per-stage callback for parity testing.
+using scunet_stage_cb = std::function<void(const char * name, const float * data, int n)>;
+int scunet_process_float_debug(scunet_context * ctx,
+                                const float * input_chw, int width, int height,
+                                float * output_chw,
+                                scunet_stage_cb cb);
 #endif
 
 #endif
