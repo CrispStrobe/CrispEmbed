@@ -324,6 +324,35 @@ typedef CrispembedLiltClassifyDart = Pointer<Void> Function(
 typedef CrispembedLiltNumLabelsNative = Int32 Function(Pointer<Void> ctx);
 typedef CrispembedLiltNumLabelsDart = int Function(Pointer<Void> ctx);
 
+// --- Text LID — Language Identification ---
+typedef TextLidInitNative = Pointer<Void> Function(
+    Pointer<Utf8> ggufPath, Int32 nThreads);
+typedef TextLidInitDart = Pointer<Void> Function(
+    Pointer<Utf8> ggufPath, int nThreads);
+
+typedef TextLidFreeNative = Void Function(Pointer<Void> ctx);
+typedef TextLidFreeDart = void Function(Pointer<Void> ctx);
+
+typedef TextLidPredictNative = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Utf8> text, Pointer<Float> outConf);
+typedef TextLidPredictDart = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Utf8> text, Pointer<Float> outConf);
+
+typedef TextLidNLabelsNative = Int32 Function(Pointer<Void> ctx);
+typedef TextLidNLabelsDart = int Function(Pointer<Void> ctx);
+
+// --- Truecaser — BiLSTM character-level ---
+typedef TruecaserLstmInitNative = Pointer<Void> Function(Pointer<Utf8> modelPath);
+typedef TruecaserLstmInitDart = Pointer<Void> Function(Pointer<Utf8> modelPath);
+
+typedef TruecaserLstmFreeNative = Void Function(Pointer<Void> ctx);
+typedef TruecaserLstmFreeDart = void Function(Pointer<Void> ctx);
+
+typedef TruecaserLstmProcessNative = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Utf8> text);
+typedef TruecaserLstmProcessDart = Pointer<Utf8> Function(
+    Pointer<Void> ctx, Pointer<Utf8> text);
+
 // --- Key Information Extraction (KIE) — OCR + NER pipeline ---
 typedef CrispembedKieInitNative = Pointer<Void> Function(
     Pointer<Utf8> ocrDetModel, Pointer<Utf8> ocrRecModel,
