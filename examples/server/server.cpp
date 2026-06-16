@@ -1243,14 +1243,26 @@ int main(int argc, char ** argv) {
         const char * latex = crispembed_math_ocr_recognize(math_ocr_ctx, pixels, w, h, ch, &out_len);
         stbi_image_free(pixels);
 
+        // Fetch per-token and mean confidence scores after recognition.
+        float mean_conf = crispembed_math_ocr_mean_confidence(math_ocr_ctx);
+        int n_tok_conf = 0;
+        const float * tok_conf = crispembed_math_ocr_confidences(math_ocr_ctx, &n_tok_conf);
+
         auto t1 = std::chrono::steady_clock::now();
         double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
 
         std::ostringstream js;
         js << "{\"latex\": \"" << json_escape(latex ? latex : "") << "\", \"len\": " << out_len
+           << ", \"confidence\": " << std::fixed << std::setprecision(4) << mean_conf
+           << ", \"token_confidences\": [";
+        for (int i = 0; i < n_tok_conf; i++) {
+            if (i > 0) js << ",";
+            js << std::fixed << std::setprecision(4) << tok_conf[i];
+        }
+        js << "]"
            << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
 
-        fprintf(stderr, "crispembed-server: /math/ocr in %.1f ms (%d chars)\n", ms, out_len);
+        fprintf(stderr, "crispembed-server: /math/ocr in %.1f ms (%d chars, conf=%.2f)\n", ms, out_len, mean_conf);
         res.set_content(js.str(), "application/json");
     });
 
@@ -1294,7 +1306,8 @@ int main(int argc, char ** argv) {
             js << "{\"text\":\"" << json_escape(results[i].text) << "\""
                << ",\"bbox\":[" << results[i].x << "," << results[i].y
                << "," << (results[i].x + results[i].w) << "," << (results[i].y + results[i].h) << "]"
-               << ",\"confidence\":" << results[i].confidence << "}";
+               << ",\"confidence\":" << results[i].confidence
+               << ",\"rec_confidence\":" << results[i].confidence << "}";
         }
         js << "],\"n\":" << n_results << ",\"ms\":" << std::fixed << std::setprecision(1) << ms << "}";
 
@@ -1349,10 +1362,12 @@ int main(int argc, char ** argv) {
            << ",\"results\":[";
         for (int i = 0; i < n_results; i++) {
             if (i > 0) js << ",";
+            float rec_conf = crispembed_ocr_pipeline_region_rec_confidence(ocr_orch_ctx, i);
             js << "{\"text\":\"" << json_escape(results[i].text) << "\""
                << ",\"bbox\":[" << results[i].x << "," << results[i].y
                << "," << (results[i].x + results[i].w) << "," << (results[i].y + results[i].h) << "]"
-               << ",\"confidence\":" << results[i].confidence << "}";
+               << ",\"confidence\":" << results[i].confidence
+               << ",\"rec_confidence\":" << std::fixed << std::setprecision(4) << rec_conf << "}";
         }
         js << "],\"ms\":" << std::fixed << std::setprecision(1) << ms << "}";
 
