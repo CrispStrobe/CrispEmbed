@@ -714,6 +714,12 @@ static const ModelEntry k_registry[] = {
      "BERT NER (110M, CoNLL-03, 9 labels, MIT)", "111 MB", "mit",
      "https://huggingface.co/cstr/bert-base-NER-GGUF"},
 
+    {"xlmr-ner-hrl",
+     "xlmr-ner-hrl-q8_0.gguf",
+     "https://huggingface.co/cstr/xlmr-ner-hrl-GGUF/resolve/main/xlmr-ner-hrl-q8_0.gguf",
+     "XLM-R multilingual NER (278M, 10 langs, 9 labels, MIT)", "281 MB", "mit",
+     "https://huggingface.co/cstr/xlmr-ner-hrl-GGUF"},
+
     // Text language identification
     {"cld3",
      "cld3-f16.gguf",
