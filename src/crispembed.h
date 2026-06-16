@@ -1117,6 +1117,9 @@ CRISPEMBED_API void * crispembed_ocr_pipeline_init_stages(
     const char * nafnet_model,
     const char * sr_model,      // optional text SR GGUF for low-DPI upscaling (NULL/"" = off)
     const char * punct_model,   // optional post-OCR punctuation/spacing restorer (NULL/"" = off)
+    const char * lid_model,        // optional text LID GGUF for language detection (NULL/"" = off)
+    const char * truecase_model,   // optional truecaser GGUF for post-OCR truecasing (NULL/"" = off)
+    const char * tess_model_dir,   // dir of tesseract-{lang} GGUFs for LID auto-select (NULL/"" = off)
     const crispembed_ocr_stage * stages,
     int n_stages,
     int n_threads);

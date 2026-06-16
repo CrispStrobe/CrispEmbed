@@ -2120,6 +2120,9 @@ impl CrispOcrPipeline {
         vlm_model: Option<&str>,
         vlm_engine: i32,
         punct_model: Option<&str>,
+        lid_model: Option<&str>,
+        truecase_model: Option<&str>,
+        tess_model_dir: Option<&str>,
         n_threads: i32,
     ) -> Result<Self, String> {
         let det = CString::new(det_model).map_err(|e| format!("det path: {e}"))?;
@@ -2136,6 +2139,18 @@ impl CrispOcrPipeline {
             Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("punct path: {e}"))?),
             _ => None,
         };
+        // Optional post-OCR LID / truecasing / Tesseract LID auto-select.
+        let cstr_opt = |o: Option<&str>, what: &str| -> Result<Option<CString>, String> {
+            match o {
+                Some(p) if !p.is_empty() => {
+                    Ok(Some(CString::new(p).map_err(|e| format!("{what} path: {e}"))?))
+                }
+                _ => Ok(None),
+            }
+        };
+        let lid = cstr_opt(lid_model, "lid")?;
+        let truecase = cstr_opt(truecase_model, "truecase")?;
+        let tess_dir = cstr_opt(tess_model_dir, "tess_model_dir")?;
         let params = crispembed_sys::CrispembedOcrPipelineParams {
             router: router as std::os::raw::c_int,
             cleanup_enabled: cleanup_enabled as std::os::raw::c_int,
@@ -2148,6 +2163,9 @@ impl CrispOcrPipeline {
             vlm_engine: vlm_engine as std::os::raw::c_int,
             punct_model: punct.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
             sr_model: std::ptr::null(),
+            lid_model: lid.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+            truecase_model: truecase.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+            tess_model_dir: tess_dir.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
         };
         let ctx = unsafe { crispembed_sys::crispembed_ocr_pipeline_init(&params, n_threads) };
         if ctx.is_null() {
@@ -2205,6 +2223,9 @@ impl CrispOcrPipeline {
         nafnet_model: Option<&str>,
         sr_model: Option<&str>,
         punct_model: Option<&str>,
+        lid_model: Option<&str>,
+        truecase_model: Option<&str>,
+        tess_model_dir: Option<&str>,
         stages: &[OcrStageSpec],
         n_threads: i32,
     ) -> Result<Self, String> {
@@ -2220,6 +2241,17 @@ impl CrispOcrPipeline {
             Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("punct: {e}"))?),
             _ => None,
         };
+        let cstr_opt = |o: Option<&str>, what: &str| -> Result<Option<CString>, String> {
+            match o {
+                Some(p) if !p.is_empty() => {
+                    Ok(Some(CString::new(p).map_err(|e| format!("{what}: {e}"))?))
+                }
+                _ => Ok(None),
+            }
+        };
+        let lid = cstr_opt(lid_model, "lid")?;
+        let truecase = cstr_opt(truecase_model, "truecase")?;
+        let tess_dir = cstr_opt(tess_model_dir, "tess_model_dir")?;
         // Keep the per-stage CStrings alive until after the init call (C++
         // copies them into std::string).
         let mut keep: Vec<CString> = Vec::with_capacity(stages.len() * 3);
@@ -2267,6 +2299,9 @@ impl CrispOcrPipeline {
                 naf.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
                 sr.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
                 punct.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+                lid.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+                truecase.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+                tess_dir.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
                 c_stages.as_ptr(),
                 c_stages.len() as std::os::raw::c_int,
                 n_threads,
