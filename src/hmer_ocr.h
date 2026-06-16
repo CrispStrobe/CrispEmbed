@@ -66,6 +66,15 @@ const char * hmer_ocr_recognize_raw(
     int * out_len
 );
 
+/// Get per-character confidence scores from the last recognition.
+/// Returns array of length *n_chars (one per output token).
+/// Each value is the softmax probability of the winning token.
+/// Valid until the next recognize call. Returns NULL if no recognition done.
+const float * hmer_ocr_confidences(const hmer_ocr_context * ctx, int * n_chars);
+
+/// Get mean confidence across all tokens from the last recognition.
+float hmer_ocr_mean_confidence(const hmer_ocr_context * ctx);
+
 #ifdef __cplusplus
 }
 #endif
