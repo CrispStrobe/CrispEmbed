@@ -284,7 +284,13 @@ jobs:
   # installed system-wide (common on Windows dev boxes).
   build-windows-x86_64-cuda:
     name: Build windows-x86_64-cuda
-    runs-on: windows-latest
+    # Pin to windows-2022 (VS 2022 / MSVC 14.4x). `windows-latest` now ships
+    # Visual Studio 18 (MSVC 14.51), which CUDA 12.8's nvcc rejects:
+    #   host_config.h(170): fatal error C1189: unsupported Microsoft Visual
+    #   Studio version! Only the versions between 2017 and 2022 are supported.
+    # The non-CUDA windows legs don't invoke nvcc, so they stay on
+    # windows-latest; only this leg needs the CUDA-supported host compiler.
+    runs-on: windows-2022
     env:
       CUDA_VERSION: "12.8.0"
     steps:
