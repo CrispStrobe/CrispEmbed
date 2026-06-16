@@ -642,6 +642,12 @@ CRISPEMBED_API const crispembed_ocr_result * crispembed_ocr_pipeline_run(
     void * ctx, const char * image_path, int * out_n_results,
     const char ** out_full_text, float * out_mean_confidence);
 
+/// Get the detected language from the last pipeline run (via LID).
+/// Returns ISO 639-1 code (e.g. "en", "de") or "" if LID not configured.
+/// confidence is written to *out_confidence if non-NULL.
+CRISPEMBED_API const char * crispembed_ocr_pipeline_detected_lang(
+    void * ctx, float * out_confidence);
+
 CRISPEMBED_API void crispembed_ocr_pipeline_free(void * ctx);
 // (Full per-stage builder API declared after the scan-cleanup section below,
 //  since crispembed_ocr_stage embeds crispembed_scan_cleanup_params.)
