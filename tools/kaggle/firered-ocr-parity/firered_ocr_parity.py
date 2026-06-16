@@ -61,10 +61,15 @@ kh.log("=== FireRed-OCR (Qwen3-VL) Parity Test ===")
 # ── Download model ──────────────────────────────────────────────────
 hf_token = None
 try:
-    hf_token = kh.hf_token()
-    kh.log(f"HF token: {'available' if hf_token else 'not found'}")
+    hf_token = kh.resolve_hf_token()
 except Exception:
-    kh.log("HF token not available")
+    # Manual fallback: read from dataset file
+    for p in ["/kaggle/input/crispasr-hf-token/hf_token.txt",
+              "/kaggle/input/datasets/chr1s4/crispasr-hf-token/hf_token.txt"]:
+        if os.path.exists(p):
+            hf_token = open(p).read().strip()
+            break
+kh.log(f"HF token: {'available' if hf_token else 'not found'}")
 
 from huggingface_hub import snapshot_download
 model_dir = snapshot_download(
