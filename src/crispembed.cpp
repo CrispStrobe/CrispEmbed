@@ -3516,6 +3516,7 @@ extern "C" const crispembed_ocr_result * crispembed_ocr_pipeline_run(
 static ocr_orchestrator::engine map_engine(int e) {
     using E = ocr_orchestrator::engine;
     switch (e) {
+        case 0:  return E::dbnet_trocr;
         case 1:  return E::surya;
         case 2:  return E::got;
         case 3:  return E::glm;
@@ -3523,6 +3524,10 @@ static ocr_orchestrator::engine map_engine(int e) {
         case 5:  return E::internvl2;
         case 6:  return E::tesseract;
         case 7:  return E::parseq;
+        case 8:  return E::deepseek_ocr2;
+        case 9:  return E::pix2struct;
+        case 10: return E::granite_vision;
+        case 11: return E::lightonocr;
         default: return E::dbnet_trocr;
     }
 }
