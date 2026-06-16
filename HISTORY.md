@@ -4,6 +4,94 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 15-16, 2026 — KIE, LiLT, BERT NER, LID, Truecasing, Shared Libraries
+
+### Key Information Extraction (KIE)
+
+Two-phase pipeline for extracting structured fields from document images.
+
+**Phase 1 — OCR + NER**: Chains OCR orchestrator (text detection + recognition)
+with GLiNER zero-shot NER. Character offset tracking maps NER entities back to
+source OCR regions with bounding boxes.
+- Files: `src/kie_pipeline.{h,cpp}`, C API `crispembed_kie_*`
+- CLI: `--kie FILE --kie-labels "total,date,vendor"`
+- Server: `POST /kie/extract`
+- Bindings: Python `CrispKIE`, Dart `CrispKIE`
+
+**Phase 2 — LiLT Layout Transformer**: Dual-stream encoder (RoBERTa 768d +
+layout transformer 192d) with BiACM (bidirectional attention complementation).
+Token classification for form understanding (FUNSD: question/answer/header).
+- Architecture: 130.7M params, 12 layers, 12 heads, MIT license
+- Parity: 25/25 layers cos=1.000000 vs HuggingFace
+- Files: `src/lilt_kie.{h,cpp}`, converter, ref dumper, diff test
+- HF models: `cstr/lilt-funsd-GGUF`, `cstr/lilt-base-GGUF` (F32/Q8_0/Q4_K)
+
+### BERT / XLM-R Fixed-Label NER
+
+Fixed-label token classification NER using existing BERT/XLM-R encoders with
+a Linear(hidden, num_labels) head. Auto-detected from GGUF (`ner.classifier.weight`).
+Same `crispembed_ner_*` API — backend auto-dispatched (GLiNER vs BERT NER).
+
+- `dslim/bert-base-NER`: 110M, CoNLL-03, 9 labels (PER/LOC/ORG/MISC), MIT
+- `Davlan/xlm-roberta-base-ner-hrl`: 278M, 10 languages, 9 labels, MIT
+- GELU fix: switched all BERT FFN to erf-exact (matching HF/PyTorch)
+- Cased tokenizer fix: auto-detect `do_lower_case` from vocab content
+- `crispembed_encode_tokens_raw()`: unnormalized hidden states for classification
+- HF models: `cstr/bert-base-NER-GGUF`, `cstr/xlmr-ner-hrl-GGUF`
+
+### Language Identification (LID)
+
+Text-based LID integrated into OCR orchestrator for automatic Tesseract model
+selection. ISO 639-1 → Tesseract 639-3 mapping (12 languages).
+
+- Shared library: `CrispASR/crisp_lid/` (fastText + CLD3 + dispatch)
+- Orchestrator: `config.lid_model`, runs LID after OCR, populates `result.detected_lang`
+- Tesseract auto-select: `model_b = "auto"` → resolves `tesseract-{lang}-q8_0.gguf`
+- Server: `POST /lid/detect`, `--lid MODEL` flag
+- Bindings: Python `CrispTextLID`, Dart `CrispTextLID`
+- C API: `crispembed_ocr_pipeline_detected_lang()`
+
+### Truecasing
+
+Post-OCR truecasing (German noun capitalization) via BiLSTM character-level model.
+
+- Shared library: `CrispASR/crisp_truecase/` (stat + CRF + BiLSTM)
+- Orchestrator: `config.truecase_model`, applied to `full_text` after OCR
+- CLI: `--truecase-model MODEL`
+- Bindings: Python `CrispTruecaser`, Dart `CrispTruecaser`
+
+### Shared Libraries (cross-repo with CrispASR)
+
+Extracted 3 new shared libraries to eliminate code drift between CrispASR and CrispEmbed:
+
+| Library | Purpose | LOC |
+|---------|---------|-----|
+| `crisp_punc/` | Punctuation restoration (FireRedPunc + PCS) | 1666 |
+| `crisp_lid/` | Text LID (fastText + CLD3 + dispatch) | 2098 |
+| `crisp_truecase/` | Truecasing (stat + CRF + BiLSTM) | 1002 |
+
+All follow the `crisp_audio/` pattern: self-contained CMakeLists, auto-detect
+core target (`crispasr-core` or `crispembed-core`), conditional fallback to
+local copies when sibling repo is absent.
+
+### Table Structure Recognition
+
+Rule-based table parser: morphological line detection → grid intersection →
+per-cell OCR → HTML `<table>` output. No model needed.
+- Files: `src/table_parse.{h,cpp}`, C API, CLI `--table`, server `POST /table/parse`
+- Test: 14/14 pass (ruled + borderless grids)
+
+### Orchestrator Tests
+
+Comprehensive test suite: 56/56 PASS across 10 sections (classifier, accept-gate,
+multi-stage escalation, chain selection, C API, edge cases, punctuation).
+
+### Handover Prompts
+
+All 18 handover prompts completed.
+
+---
+
 ## June 2026 — Text Super-Resolution (PAN, TBSRN, NAFNet-SR)
 
 Three engines for upscaling low-resolution text images before OCR, integrated
