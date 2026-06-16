@@ -1883,6 +1883,56 @@ impl Drop for CrispHatSr {
 }
 
 // ---------------------------------------------------------------------------
+// DAT super-resolution (Dual Aggregation Transformer, ICCV 2023)
+// ---------------------------------------------------------------------------
+
+/// DAT whole-image super-resolution (830K params, dual spatial+channel attention).
+pub struct CrispDatSr {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispDatSr {}
+
+impl CrispDatSr {
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_dat_sr_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_dat_sr_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    pub fn process(
+        &self, pixels: &[u8], width: i32, height: i32,
+        tile_w: i32, tile_h: i32,
+    ) -> Result<(Vec<u8>, i32, i32), String> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut ow: i32 = 0;
+        let mut oh: i32 = 0;
+        let rc = unsafe {
+            crispembed_sys::crispembed_dat_sr_process(
+                self.ctx, pixels.as_ptr(), width, height,
+                tile_w, tile_h, &mut out_ptr, &mut ow, &mut oh,
+            )
+        };
+        if rc != 0 || out_ptr.is_null() {
+            return Err("DAT SR processing failed".into());
+        }
+        let len = (ow * oh * 3) as usize;
+        let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_dat_sr_free_image(out_ptr) };
+        Ok((result, ow, oh))
+    }
+}
+
+impl Drop for CrispDatSr {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_dat_sr_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Restormer image restoration (CVPR 2022)
 // ---------------------------------------------------------------------------
 
