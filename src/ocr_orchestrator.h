@@ -46,6 +46,9 @@ enum class engine {
     internvl2,     // internvl2_ocr.cpp
     tesseract,     // DBNet detection + Tesseract-LSTM line recognition
     deepseek_ocr2, // deepseek_ocr2.cpp (MoE VLM)
+    pix2struct,    // pix2struct.cpp (document/chart understanding)
+    granite_vision,// granite_vision_ocr.cpp (LLaVA-Next, OCRBench 852)
+    lightonocr,    // lightonocr.cpp (Pixtral ViT + Qwen3 decoder)
 };
 
 // Image category used to pick a chain. `auto_detect` runs the classifier.
