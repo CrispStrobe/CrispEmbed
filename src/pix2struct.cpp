@@ -519,6 +519,75 @@ static void decoder_step(pix2struct_context * ctx,
     linear(final_h.data(), H, to_f32(ctx->lm_head, dq1), ctx->vocab_size, logits);
 }
 
+// ── Greedy decode from pre-encoded patches ──
+
+static std::string greedy_decode(pix2struct_context * ctx, int max_tokens) {
+    if (!ctx || ctx->enc_cache_n <= 0) return "";
+    if (max_tokens <= 0) max_tokens = 256;
+
+    const int H = ctx->hidden;
+    std::vector<float> dq1, scratch;
+    const float * emb_w = to_f32(ctx->tok_emb, dq1);
+
+    // Start with decoder_start_token_id = 0
+    std::vector<int32_t> generated = {0};
+    std::vector<std::vector<float>> token_embs;
+
+    // Embed start token
+    std::vector<float> emb(H);
+    for (int i = 0; i < H; i++) emb[i] = emb_w[0 * H + i]; // token 0
+    token_embs.push_back(emb);
+
+    std::vector<float> logits(ctx->vocab_size);
+
+    for (int step = 0; step < max_tokens; step++) {
+        decoder_step(ctx, token_embs, step, logits.data(), dq1, scratch);
+
+        // Argmax
+        int best = 0;
+        float best_val = logits[0];
+        for (int i = 1; i < ctx->vocab_size; i++) {
+            if (logits[i] > best_val) { best_val = logits[i]; best = i; }
+        }
+
+        if (best == ctx->eos_id) break;
+        generated.push_back(best);
+
+        // Embed new token
+        std::vector<float> new_emb(H);
+        for (int i = 0; i < H; i++) new_emb[i] = emb_w[best * H + i];
+        token_embs.push_back(new_emb);
+    }
+
+    // TODO: decode token ids to text using tokenizer
+    // For now, return token ids as comma-separated string
+    std::string result;
+    for (size_t i = 1; i < generated.size(); i++) {
+        if (i > 1) result += ",";
+        result += std::to_string(generated[i]);
+    }
+    return result;
+}
+
+// ── Public decode API for parity testing ──
+
+int pix2struct_decode_step0(pix2struct_context * ctx, float * out_logits) {
+    if (!ctx || ctx->enc_cache_n <= 0 || !out_logits) return -1;
+
+    const int H = ctx->hidden;
+    std::vector<float> dq1, scratch;
+    const float * emb_w = to_f32(ctx->tok_emb, dq1);
+
+    // Single token: decoder_start_token_id = 0
+    std::vector<std::vector<float>> token_embs;
+    std::vector<float> emb(H);
+    for (int i = 0; i < H; i++) emb[i] = emb_w[0 * H + i];
+    token_embs.push_back(emb);
+
+    decoder_step(ctx, token_embs, 0, out_logits, dq1, scratch);
+    return 0;
+}
+
 // ── Generate ──
 
 const char * pix2struct_generate(pix2struct_context * ctx,
@@ -531,9 +600,15 @@ const char * pix2struct_generate(pix2struct_context * ctx,
 
     // Placeholder — full image-to-patches preprocessing needed
     static std::string result = "";
+    (void)image; (void)width; (void)height;
+    if (!ctx) return nullptr;
+
+    static std::string result;
+    result = greedy_decode(ctx, max_tokens > 0 ? max_tokens : 256);
     return result.c_str();
 }
 
 void pix2struct_free_text(const char * text) {
     (void)text; // static string, no-op
+    (void)text;
 }

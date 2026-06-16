@@ -29,6 +29,11 @@ const char * pix2struct_generate(pix2struct_context * ctx,
 /// Free text returned by pix2struct_generate.
 void pix2struct_free_text(const char * text);
 
+/// Run one decoder step (for parity testing).
+/// Must call pix2struct_encode_patches first.
+/// out_logits: [vocab_size] float array, caller allocates.
+int pix2struct_decode_step0(pix2struct_context * ctx, float * out_logits);
+
 /// Process pre-computed patches (for parity testing).
 /// patches: [n_patches, 770] float (row_id, col_id, 768 pixel values).
 /// Returns encoder output [n_patches, hidden_size].
