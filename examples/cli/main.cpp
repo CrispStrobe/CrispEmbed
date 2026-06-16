@@ -843,6 +843,9 @@ int main(int argc, char ** argv) {
                 nafnet.empty()    ? nullptr : nafnet.c_str(),
                 sr_model.empty()  ? nullptr : sr_model.c_str(),
                 punct.empty()     ? nullptr : punct.c_str(),
+                lid_model.empty()      ? nullptr : lid_model.c_str(),
+                truecase_model.empty() ? nullptr : truecase_model.c_str(),
+                tess_model_dir.empty() ? nullptr : tess_model_dir.c_str(),
                 &st, 1, n_threads);
         } else {
             // Default flat path (DBNet+TrOCR + source-type routing).

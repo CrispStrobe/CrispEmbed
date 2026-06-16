@@ -132,8 +132,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--adair-model") == 0 && i + 1 < argc) adair_model_path = argv[++i];
     }
 
-    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() && dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty()) {
-    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty() && adair_model_path.empty()) {
+    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() && dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty() && adair_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
