@@ -46,6 +46,7 @@ struct vision_hparams {
     uint32_t out_hidden_size = 2048;
     uint32_t window_size = 112;          // windowed attention
     std::vector<int> fullatt_block_indexes = {7, 15, 23, 31};  // full attention layers
+    std::vector<int> deepstack_indexes;  // Qwen3-VL: multi-layer feature concat (e.g. [5,11,17])
 
     // Image preprocessor
     float image_mean[3] = {0.4815f, 0.4578f, 0.4082f};
@@ -70,6 +71,8 @@ struct llm_hparams {
     float rms_norm_eps = 1e-6f;
     float rope_theta = 1000000.0f;
     int rope_sections[4] = {16, 24, 24, 0};  // mRoPE sections
+    bool mrope_interleaved = false;           // Qwen3-VL: interleaved mRoPE
+    bool has_qk_norm = false;                 // Qwen3-VL: RMSNorm on Q/K per head
     bool tie_word_embeddings = true;
 
     // Special token IDs
@@ -115,6 +118,9 @@ struct llm_layer {
     ggml_tensor *k_w = nullptr, *k_b = nullptr;
     ggml_tensor *v_w = nullptr, *v_b = nullptr;
     ggml_tensor *o_w = nullptr;
+    // Qwen3-VL: per-head QK RMSNorm
+    ggml_tensor *q_norm_w = nullptr;
+    ggml_tensor *k_norm_w = nullptr;
     // SwiGLU FFN (no biases)
     ggml_tensor *ffn_gate_w = nullptr;
     ggml_tensor *ffn_up_w = nullptr;
