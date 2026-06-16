@@ -763,6 +763,13 @@ static const ModelEntry k_registry[] = {
      "GlotLID-V3 text LID (2102 ISO 639-3 languages)", "3.3 MB", "apache-2.0",
      "https://huggingface.co/cstr/glotlid-GGUF"},
 
+    // LightOnOCR-2-1B — Pixtral ViT + Qwen3 decoder (OCR Arena #2)
+    {"lightonocr",
+     "lightonocr-1b-q4_k.gguf",
+     "https://huggingface.co/cstr/lightonocr-GGUF/resolve/main/lightonocr-1b-q4_k.gguf",
+     "LightOnOCR-2-1B (1B, Pixtral+Qwen3, Apache-2.0)", "622 MB", "apache-2.0",
+     "https://huggingface.co/cstr/lightonocr-GGUF"},
+
     // Tesseract LSTM line OCR — lightweight multilingual (from tessdata_best)
     {"tesseract-eng",
      "tesseract-eng-q8_0.gguf",
