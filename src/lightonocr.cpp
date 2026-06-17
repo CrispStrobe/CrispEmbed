@@ -280,28 +280,34 @@ static void compute_2d_rope(int ph, int pw, int head_dim, float theta,
                              std::vector<float> &cos_out,
                              std::vector<float> &sin_out) {
     int T = ph * pw;
-    int half = head_dim / 2;
+    int half = head_dim / 2;     // rotate-half pair stride
+    int quarter = head_dim / 4;  // # of h freqs = # of w freqs
     cos_out.resize(head_dim * T);
     sin_out.resize(head_dim * T);
 
-    // Pixtral: even freq indices → height, odd → width
-    // freq[i] = 1 / (theta^(i / dim))
+    // Pixtral 2D RoPE (transformers PixtralRotaryEmbedding): build the dim/2
+    // base frequencies, then height uses freqs[::2] and width uses freqs[1::2].
+    // The per-patch angle vector is [h_angles(dim/4) | w_angles(dim/4)] and the
+    // attention applies it with rotate_half — i.e. cos/sin must repeat the
+    // angle vector across the two halves: idx j and j+half share the same angle.
+    //   freqs[k] = 1 / theta^(2k/dim),  h_freq[j] = freqs[2j], w_freq[j] = freqs[2j+1]
     std::vector<float> freqs(half);
-    for (int i = 0; i < half; i++)
-        freqs[i] = 1.0f / powf(theta, (float)(2 * i) / head_dim);
+    for (int k = 0; k < half; k++)
+        freqs[k] = 1.0f / powf(theta, (float)(2 * k) / head_dim);
 
     for (int y = 0; y < ph; y++) {
         for (int x = 0; x < pw; x++) {
             int t = y * pw + x;
-            for (int i = 0; i < half; i++) {
-                // Even indices: height position, odd: width position
-                float angle_h = y * freqs[i];
-                float angle_w = x * freqs[i];
-                // Interleave: dim[2i] = height, dim[2i+1] = width
-                cos_out[t * head_dim + 2 * i + 0] = cosf(angle_h);
-                sin_out[t * head_dim + 2 * i + 0] = sinf(angle_h);
-                cos_out[t * head_dim + 2 * i + 1] = cosf(angle_w);
-                sin_out[t * head_dim + 2 * i + 1] = sinf(angle_w);
+            float *cr = cos_out.data() + (size_t)t * head_dim;
+            float *sr = sin_out.data() + (size_t)t * head_dim;
+            for (int j = 0; j < quarter; j++) {
+                float ah = y * freqs[2 * j];      // height, freqs[::2]
+                float aw = x * freqs[2 * j + 1];  // width,  freqs[1::2]
+                // first half: [h_angles | w_angles]; second half repeats it
+                cr[j] = cr[j + half] = cosf(ah);
+                sr[j] = sr[j + half] = sinf(ah);
+                cr[quarter + j] = cr[quarter + j + half] = cosf(aw);
+                sr[quarter + j] = sr[quarter + j + half] = sinf(aw);
             }
         }
     }
@@ -519,19 +525,44 @@ static bool run_projection(context &ctx,
     int mw = pw / merge;
     int n_merged = mh * mw;
 
-    // Spatial merge on CPU: group 2×2 patches → concat features
-    // Input: (D, ph*pw), output: (D*4, mh*mw)
-    int merge_dim = D * merge * merge;  // 4096
+    // Mistral3 projector applies norm(image_features) BEFORE the patch merger
+    // (forward: norm → patch_merger → linear_1 → gelu → linear_2). The norm is
+    // an RMSNorm over the D-dim vision features, per patch. Do it on CPU here,
+    // before the 2×2 spatial merge, and drop the (wrong) trailing norm below.
+    std::vector<float> vis_normed(vis_out.size());
+    {
+        std::vector<float> nw(D);
+        ggml_backend_tensor_get(m.proj_norm_w, nw.data(), 0, D * sizeof(float));
+        const float eps = ctx.m.lm_rms_eps;  // text_config.rms_norm_eps
+        int n_patches = ph * pw;
+        for (int p = 0; p < n_patches; p++) {
+            const float *src = vis_out.data() + (size_t)p * D;
+            float *dst = vis_normed.data() + (size_t)p * D;
+            double ss = 0.0;
+            for (int i = 0; i < D; i++) ss += (double)src[i] * src[i];
+            float scale = 1.0f / std::sqrt((float)(ss / D) + eps);
+            for (int i = 0; i < D; i++) dst[i] = src[i] * scale * nw[i];
+        }
+    }
+
+    // Spatial merge on CPU: group 2×2 patches → concat features.
+    // Mistral3PatchMerger uses F.unfold, which orders the merge_dim vector
+    // CHANNEL-major: [c0·(k00,k01,k10,k11), c1·(...), ...] — i.e. for each of
+    // the D channels, the merge*merge kernel positions. (NOT patch-major.)
+    int msq = merge * merge;
+    int merge_dim = D * msq;  // 4096
     std::vector<float> merged(merge_dim * n_merged, 0.0f);
     for (int my = 0; my < mh; my++) {
         for (int mx = 0; mx < mw; mx++) {
             int out_idx = my * mw + mx;
+            float *dst = merged.data() + (size_t)out_idx * merge_dim;
             for (int dy = 0; dy < merge; dy++) {
                 for (int dx = 0; dx < merge; dx++) {
                     int src_idx = (my * merge + dy) * pw + (mx * merge + dx);
-                    int feat_offset = (dy * merge + dx) * D;
-                    memcpy(merged.data() + out_idx * merge_dim + feat_offset,
-                           vis_out.data() + src_idx * D, D * sizeof(float));
+                    int kpos = dy * merge + dx;
+                    const float *src = vis_normed.data() + (size_t)src_idx * D;
+                    for (int c = 0; c < D; c++)
+                        dst[c * msq + kpos] = src[c];
                 }
             }
         }
@@ -550,11 +581,9 @@ static bool run_projection(context &ctx,
     // linear1: (D → D)
     x = ggml_mul_mat(g, m.proj_linear1_w, x);
     x = ggml_gelu_erf(g, x);
-    // linear2: (D → D)
+    // linear2: (D → D). (The projector norm is applied to the vision features
+    // BEFORE the merge above, matching Mistral3MultiModalProjector — not here.)
     x = ggml_mul_mat(g, m.proj_linear2_w, x);
-    // RMSNorm
-    x = ggml_rms_norm(g, x, 1e-6f);
-    x = ggml_mul(g, x, m.proj_norm_w);
 
     ggml_set_name(x, "proj_out"); ggml_set_output(x);
     ggml_build_forward_expand(gf, x);
@@ -727,16 +756,17 @@ static bool run_decoder_prefill(context &ctx,
                           head_dim, GGML_ROPE_TYPE_NEOX, 0,
                           rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-        // Output post-RoPE K/V for KV cache extraction
-        // ggml_cont creates a concrete node (not a view) that's findable
-        // by ggml_graph_get_tensor. Shape: (head_dim, n_kv_heads, n_prompt)
-        // = (kv_dim, n_prompt) when flattened.
+        // Output post-RoPE K/V for KV cache extraction. These are read back via
+        // ggml_backend_tensor_get, so they MUST be materialized: V is a
+        // ggml_reshape_3d *view* of the projection, and a view marked as an
+        // output has its (shared) buffer reused by the no-alloc scheduler →
+        // garbage read-back. ggml_cont gives each its own concrete buffer.
         {
             char kname[32], vname[32];
             snprintf(kname, sizeof(kname), "k_out_%d", il);
             snprintf(vname, sizeof(vname), "v_out_%d", il);
-            // Name K and V directly — they're already graph nodes
-            // (output of ggml_rope_ext / ggml_reshape_3d which are ops)
+            K = ggml_cont(g, K);
+            V = ggml_cont(g, V);
             ggml_set_name(K, kname);
             ggml_set_output(K);
             ggml_set_name(V, vname);
@@ -917,6 +947,10 @@ static bool run_decoder_prefill(context &ctx,
         ggml_tensor *pos2 = ggml_new_tensor_1d(g2, GGML_TYPE_I32, 1);
         ggml_set_name(pos2, "pos_ids"); ggml_set_input(pos2);
 
+        // side outputs (k_out/v_out) aren't ancestors of the logits — collect
+        // so the graph builder doesn't prune them
+        std::vector<ggml_tensor *> kv_out2;
+
         ggml_tensor *cur = x2;
         char name[64];
         for (int il = 0; il < n_layers; il++) {
@@ -950,11 +984,13 @@ static bool run_decoder_prefill(context &ctx,
 
             // Output new K/V for cache append
             snprintf(name, sizeof(name), "k_out_%d", il);
-            ggml_tensor *K_new_flat = ggml_reshape_1d(g2, K_new, kv_dim);
+            ggml_tensor *K_new_flat = ggml_cont(g2, ggml_reshape_1d(g2, K_new, kv_dim));
             ggml_set_name(K_new_flat, name); ggml_set_output(K_new_flat);
+            kv_out2.push_back(K_new_flat);
             snprintf(name, sizeof(name), "v_out_%d", il);
-            ggml_tensor *V_new_flat = ggml_reshape_1d(g2, V_new, kv_dim);
+            ggml_tensor *V_new_flat = ggml_cont(g2, ggml_reshape_1d(g2, V_new, kv_dim));
             ggml_set_name(V_new_flat, name); ggml_set_output(V_new_flat);
+            kv_out2.push_back(V_new_flat);
 
             // Load KV cache + concat new
             ggml_tensor *k_in = ggml_new_tensor_2d(g2, GGML_TYPE_F32, kv_dim, n_kv);
@@ -1012,6 +1048,7 @@ static bool run_decoder_prefill(context &ctx,
         ggml_tensor *ll = ggml_reshape_1d(g2, ggml_mul_mat(g2, m.embed_tokens, cur), V);
         ggml_set_name(ll, "last_logits"); ggml_set_output(ll);
         ggml_build_forward_expand(gf2, ll);
+        for (ggml_tensor *t : kv_out2) ggml_build_forward_expand(gf2, t);
 
         ggml_backend_sched_reset(ctx.sched);
         if (!ggml_backend_sched_alloc_graph(ctx.sched, gf2)) { ggml_free(g2); break; }
@@ -1144,6 +1181,17 @@ std::string recognize_raw(context &ctx,
     }
     int n_image_tokens = (ph / ctx.m.spatial_merge_size) * (pw / ctx.m.spatial_merge_size);
     fprintf(stderr, "lightonocr: projection done → %d image tokens\n", n_image_tokens);
+
+    if (const char *dp = getenv("CRISPEMBED_LIGHTON_DUMP")) {
+        auto wr = [&](const char *suf, const std::vector<float> &v) {
+            std::string p = std::string(dp) + suf;
+            FILE *f = fopen(p.c_str(), "wb");
+            if (f) { fwrite(v.data(), sizeof(float), v.size(), f); fclose(f); }
+            fprintf(stderr, "lighton dump %s: %zu floats\n", suf, v.size());
+        };
+        wr("_vis.bin", vis_out);
+        wr("_proj.bin", proj_out);
+    }
 
     // Step 5: Qwen3 decoder — greedy generation from image tokens
     std::string gen_text;
