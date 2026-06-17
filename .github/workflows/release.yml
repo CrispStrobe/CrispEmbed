@@ -358,9 +358,10 @@ jobs:
       # never needs the CUDA MSBuild "toolset" (the VS generator's
       # enable_language(CUDA) fails with "No CUDA toolset found" on hosted
       # runners). Ninja's flat layout (build\bin) is handled in Package.
-      # -j capped at 2: nvcc TUs across 5 arches are RAM-heavy; the 4-core/16 GB
-      # runner thrashes (and crawls) at -j NUMBER_OF_PROCESSORS — matches the
-      # Kaggle harness's CUDA -j cap.
+      # Build at -j NUMBER_OF_PROCESSORS: this build is compile-bound, not
+      # RAM-bound — v0.11.7 finished at -j4 (~67 min) without OOM, while an
+      # -j2 cap was actually slower (~85 min) by halving throughput. With the
+      # ccache above warmed, most TUs are cache hits anyway (negligible RAM).
       - name: Configure + build (Ninja)
         shell: pwsh
         run: |
@@ -375,7 +376,7 @@ jobs:
             -DCMAKE_CUDA_ARCHITECTURES="75-real;86-real;89-real;120-real;120-virtual" `
             -DGGML_NATIVE=OFF `
             -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON
-          cmake --build build -j 2
+          cmake --build build -j $env:NUMBER_OF_PROCESSORS
 
       - name: Package
         shell: pwsh
