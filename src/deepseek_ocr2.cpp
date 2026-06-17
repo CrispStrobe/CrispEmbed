@@ -722,9 +722,12 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
             window_partition(hidden.data(), residual_input.data(), nP, ws, C);
         }
 
+        if (getenv("DS_DBG")) fprintf(stderr, "  [dbg] sam li=%d is_global=%d aH=%d nW=%d T=%d rp_h.sz=%zu\n",
+                li, is_global, aH, nW, T, ctx.rp_h_per_layer[li].size());
         std::vector<float> rp_h_ggml(aH * aH * hd), rp_w_ggml(aW * aW * hd);
         reformat_rp_table(ctx.rp_h_per_layer[li].data(), rp_h_ggml.data(), aH, hd);
         reformat_rp_table(ctx.rp_w_per_layer[li].data(), rp_w_ggml.data(), aW, hd);
+        if (getenv("DS_DBG")) fprintf(stderr, "  [dbg] sam li=%d reformat ok, building graph\n", li);
 
         size_t meta_sz = 8 * 1024 * 1024;
         std::vector<uint8_t> mb(meta_sz);
@@ -795,13 +798,17 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
     std::vector<float> neck2_ln(nC * nP * nP);
     layernorm2d_cpu(neck2.data(), neck2_ln.data(), nC, nP, nP, nln2_w.data(), nln2_b.data());
 
-    // Downsample: Conv(256->512,3x3,s2,p1) -> Conv(512->1024,3x3,s2,p1)
-    int ds1_ch = 512, ds1_H = (nP + 2 - 3) / 2 + 1, ds1_W = ds1_H;
+    // Downsample: Conv(256->ds1,3x3,s2,p1) -> Conv(ds1->ds2,3x3,s2,p1). The
+    // output channels come from the actual weights (ne[1]): net_2 = 256->512,
+    // net_3 = 512->896 here (896 = the Qwen2 encoder dim), NOT the config's
+    // nominal downsample_channels [512,1024]. Hardcoding 1024 overruns net_3.
+    int ds1_ch = (int)ctx.m.net_2_w->ne[1];
+    int ds1_H = (nP + 2 - 3) / 2 + 1, ds1_W = ds1_H;
     auto n2_w = to_f32(ctx.m.net_2_w);
     std::vector<float> ds1(ds1_ch * ds1_H * ds1_W);
     conv2d_cpu(neck2_ln.data(), ds1.data(), n2_w.data(), nullptr, nC, ds1_ch, nP, nP, 3, 3, 2, 1);
 
-    int ds2_ch = 1024, ds2_H = (ds1_H + 2 - 3) / 2 + 1, ds2_W = ds2_H;
+    int ds2_ch = (int)ctx.m.net_3_w->ne[1], ds2_H = (ds1_H + 2 - 3) / 2 + 1, ds2_W = ds2_H;
     auto n3_w = to_f32(ctx.m.net_3_w);
     std::vector<float> ds2(ds2_ch * ds2_H * ds2_W);
     conv2d_cpu(ds1.data(), ds2.data(), n3_w.data(), nullptr, ds1_ch, ds2_ch, ds1_H, ds1_W, 3, 3, 2, 1);
@@ -1017,7 +1024,9 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx &ctx, int li, int T, int 
     lag.gf = ggml_new_graph_custom(g, 4096, false);
 
     auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor* {
-        return ggml_mul(g, ggml_rms_norm(g, t, eps), w);
+        // ensure_f32: the norm weight is F16 in an all-F16 GGUF, and ggml's
+        // elementwise mul does not support an f32×f16 operand pair.
+        return ggml_mul(g, ggml_rms_norm(g, t, eps), ensure_f32(g, w));
     };
 
     // Input hidden states
@@ -1261,6 +1270,8 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *image_embeds, int n_i
 
     while (n_generated < max_new) {
         int T = (int)cur_tokens.size();
+        if (getenv("DS_DBG"))
+            fprintf(stderr, "  [dbg] decode step gen=%d n_past=%d T=%d\n", n_generated, n_past, T);
 
         // Build input embeddings
         std::vector<float> input_emb(T * D);
@@ -1532,6 +1543,9 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
         fprintf(stderr, "deepseek_ocr2: projection failed\n");
         if (out_len) *out_len = 0; return "";
     }
+
+    fprintf(stderr, "deepseek_ocr2: stages done — sam=%d/%d qwen2=%d/%d proj=%d image tokens\n",
+            n_sam_tokens, sam_dim, n_enc_tokens, enc_dim, n_enc_tokens);
 
     // 4. Build prompt: image placeholder tokens
     int n_img_tokens = n_enc_tokens;
