@@ -31,6 +31,7 @@
 #include "gguf.h"
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -54,6 +55,15 @@ bool load_hparams(context &ctx, const char *path) {
     };
     auto f32v = [&](const char *k, float d) {
         return core_gguf::kv_f32(g, k, d);
+    };
+    auto boolv = [&](int i, bool d) {
+        if (i < 0) return d;
+        switch (gguf_get_kv_type(g, i)) {
+            case GGUF_TYPE_BOOL:   return gguf_get_val_bool(g, i);
+            case GGUF_TYPE_UINT32: return gguf_get_val_u32(g, i) != 0;
+            case GGUF_TYPE_INT32:  return gguf_get_val_i32(g, i) != 0;
+            default:               return d;
+        }
     };
 
     auto &vhp = ctx.m.vhp;
@@ -130,9 +140,9 @@ bool load_hparams(context &ctx, const char *path) {
 
     // Qwen3-VL: interleaved mRoPE + QK norms
     int interleaved_idx = gguf_find_key(g, "qwen3vl.mrope_interleaved");
-    if (interleaved_idx >= 0) lhp.mrope_interleaved = gguf_get_val_u32(g, interleaved_idx) != 0;
+    lhp.mrope_interleaved = boolv(interleaved_idx, lhp.mrope_interleaved);
     int qknorm_idx = gguf_find_key(g, "qwen3vl.has_qk_norm");
-    if (qknorm_idx >= 0) lhp.has_qk_norm = gguf_get_val_u32(g, qknorm_idx) != 0;
+    lhp.has_qk_norm = boolv(qknorm_idx, lhp.has_qk_norm);
 
     // Qwen3-VL: deepstack visual indexes
     idx = gguf_find_key(g, "qwen3vl.vision.deepstack_indexes");
@@ -174,14 +184,7 @@ bool load_hparams(context &ctx, const char *path) {
     // Tie embeddings
     int tie_idx = gguf_find_key(g, "qwen3vl.tie_word_embeddings");
     if (tie_idx < 0) tie_idx = gguf_find_key(g, "qwen2vl.tie_word_embeddings");
-    if (tie_idx >= 0) {
-        // May be stored as BOOL or UINT32 depending on converter version
-        auto tie_type = gguf_get_kv_type(g, tie_idx);
-        if (tie_type == GGUF_TYPE_BOOL)
-            lhp.tie_word_embeddings = gguf_get_val_bool(g, tie_idx);
-        else
-            lhp.tie_word_embeddings = gguf_get_val_u32(g, tie_idx) != 0;
-    }
+    lhp.tie_word_embeddings = boolv(tie_idx, lhp.tie_word_embeddings);
 
     core_gguf::free_metadata(g);
     return true;
@@ -288,6 +291,7 @@ bool load_tensors(context &ctx, const char *path) {
         ly.v_w         = get2(p1 + "attn_v.weight",    p2 + "attn_v.weight");
         ly.v_b         = get2(p1 + "attn_v.bias",      p2 + "attn_v.bias");
         ly.o_w         = get2(p1 + "attn_o.weight",    p2 + "attn_output.weight");
+        ly.o_b         = get2(p1 + "attn_o.bias",      p2 + "attn_output.bias");
         ly.ffn_gate_w  = get2(p1 + "ffn_gate.weight",  p2 + "ffn_gate.weight");
         ly.ffn_up_w    = get2(p1 + "ffn_up.weight",    p2 + "ffn_up.weight");
         ly.ffn_down_w  = get2(p1 + "ffn_down.weight",  p2 + "ffn_down.weight");
@@ -304,6 +308,7 @@ bool load_tensors(context &ctx, const char *path) {
         if (!ly.k_w) ly.k_w = get(p3 + "attn.k.weight");
         if (!ly.v_w) ly.v_w = get(p3 + "attn.v.weight");
         if (!ly.o_w) ly.o_w = get(p3 + "attn.o.weight");
+        if (!ly.o_b) ly.o_b = get(p3 + "attn.o.bias");
         if (!ly.attn_norm_w) ly.attn_norm_w = get(p3 + "norm1.weight");
         if (!ly.ffn_norm_w) ly.ffn_norm_w = get(p3 + "norm2.weight");
         if (!ly.ffn_gate_w) ly.ffn_gate_w = get(p3 + "ffn.gate.weight");
@@ -328,21 +333,24 @@ struct host_rope {
 };
 
 void compute_vision_rope(host_rope &out, const int32_t *grid_thw,
-                         int n_patches, int head_dim, float theta = 10000.0f) {
+                         int n_patches, int head_dim, int spatial_merge = 1,
+                         bool merge_order = false, float theta = 10000.0f) {
     out.cos_buf.resize((size_t)n_patches * head_dim);
     out.sin_buf.resize((size_t)n_patches * head_dim);
 
+    // VisionRotaryEmbedding is built with dim = head_dim/2 (see blueprint:
+    // self.rotary_pos_emb = VisionRotaryEmbedding(head_dim // 2)). Its inv_freq
+    // is 1/theta^(arange(0,dim,2)/dim) → exponent 2j/(head_dim/2), NOT 2j/head_dim.
     const int quart = head_dim / 4;
+    const float rot_dim = (float)(head_dim / 2);
     std::vector<float> inv_freq(quart);
     for (int j = 0; j < quart; j++) {
-        inv_freq[j] = 1.0f / std::pow(theta, (float)(2 * j) / (float)head_dim);
+        inv_freq[j] = 1.0f / std::pow(theta, (float)(2 * j) / rot_dim);
     }
 
     int t = grid_thw[0], h = grid_thw[1], w = grid_thw[2];
     int tok = 0;
-    for (int f = 0; f < t; f++) {
-        for (int row = 0; row < h; row++) {
-            for (int col = 0; col < w; col++) {
+    auto fill_one = [&](int row, int col) {
                 float *cr = out.cos_buf.data() + (size_t)tok * head_dim;
                 float *sr = out.sin_buf.data() + (size_t)tok * head_dim;
                 for (int j = 0; j < quart; j++) {
@@ -358,6 +366,24 @@ void compute_vision_rope(host_rope &out, const int32_t *grid_thw,
                     sr[j + 3 * quart]    = std::sin(vc);
                 }
                 tok++;
+    };
+
+    for (int f = 0; f < t; f++) {
+        if (merge_order && spatial_merge > 1) {
+            for (int mh = 0; mh < h / spatial_merge; mh++) {
+                for (int mw = 0; mw < w / spatial_merge; mw++) {
+                    for (int ir = 0; ir < spatial_merge; ir++) {
+                        for (int ic = 0; ic < spatial_merge; ic++) {
+                            fill_one(mh * spatial_merge + ir, mw * spatial_merge + ic);
+                        }
+                    }
+                }
+            }
+        } else {
+            for (int row = 0; row < h; row++) {
+                for (int col = 0; col < w; col++) {
+                    fill_one(row, col);
+                }
             }
         }
     }
@@ -526,10 +552,12 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         // FFN: variant-aware
         ggml_tensor *ffn;
         if (is_qwen2 && blk.ffn_fc1_w) {
-            // Qwen2-VL: exact erf GELU fc1 → fc2 (nn.GELU(), not tanh approx)
+            // Qwen2-VL VisionMlp: ACT2FN[config.hidden_act] with the vision
+            // config default hidden_act="quick_gelu" = x*sigmoid(1.702*x).
+            // (The merger's PatchMerger uses nn.GELU() exact erf — see below.)
             ffn = ggml_mul_mat(g, blk.ffn_fc1_w, y);
             if (blk.ffn_fc1_b) ffn = ggml_add(g, ffn, blk.ffn_fc1_b);
-            ffn = ggml_gelu_erf(g, ffn);
+            ffn = ggml_gelu_quick(g, ffn);
             ffn = ggml_mul_mat(g, blk.ffn_fc2_w, ffn);
             if (blk.ffn_fc2_b) ffn = ggml_add(g, ffn, blk.ffn_fc2_b);
         } else {
@@ -830,7 +858,9 @@ bool encode_vision(context &ctx,
     // Compute 2D RoPE tables
     const int head_dim = (int)ctx.m.vhp.hidden_size / (int)ctx.m.vhp.num_heads;
     host_rope rope;
-    compute_vision_rope(rope, grid_thw, n_patches, head_dim);
+    compute_vision_rope(rope, grid_thw, n_patches, head_dim,
+                        (int)ctx.m.vhp.spatial_merge_size,
+                        ctx.m.vhp.is_qwen2_vl);
 
     // Build graph
     auto gr = build_vision_graph(ctx, n_patches, grid_thw);
@@ -882,6 +912,32 @@ bool encode_vision(context &ctx,
         return false;
     }
 
+    // Per-layer vision diff — done HERE while gr.gf buffers are still valid
+    // (the merger graph below resets the scheduler and reuses these buffers).
+    if (!ctx.diff_ref_path.empty()) {
+        crispembed_diff::Ref vref;
+        if (vref.load(ctx.diff_ref_path)) {
+            const int Hd = (int)ctx.m.vhp.hidden_size;
+            for (uint32_t il = 0; il < ctx.m.vhp.depth; il++) {
+                char nm[64];
+                std::snprintf(nm, sizeof(nm), "vis_layer_%u", il);
+                if (!vref.has(nm)) continue;
+                ggml_tensor *lt = ggml_graph_get_tensor(gr.gf, nm);
+                if (!lt) {
+                    fprintf(stderr, "  diff %s: TENSOR NOT IN GRAPH\n", nm);
+                    continue;
+                }
+                std::vector<float> ld((size_t)n_patches * Hd);
+                ggml_backend_tensor_get(lt, ld.data(), 0, ld.size() * sizeof(float));
+                auto r = vref.compare(nm, ld.data(), ld.size());
+                fprintf(stderr, "  diff %s: cos_min=%.6f max_abs=%.2e %s "
+                                "C++[%.4f %.4f %.4f]\n",
+                        nm, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL",
+                        ld[0], ld[1], ld[2]);
+            }
+        }
+    }
+
     const int H = (int)ctx.m.vhp.hidden_size;
     const int merge = (int)ctx.m.vhp.spatial_merge_size;
     const int h_p = gr.h_patches;
@@ -902,22 +958,33 @@ bool encode_vision(context &ctx,
     // Patch index = row * w_p + col
     std::vector<float> merged_data((size_t)n_merged * merger_in_dim);
 
-    int midx = 0;
-    for (int mh = 0; mh < merged_h; mh++) {
-        for (int mw = 0; mw < merged_w; mw++) {
+    if (ctx.m.vhp.is_qwen2_vl) {
+        // Qwen2-VL image preprocessing already orders patches by merge groups:
+        // (merged_h, merged_w, merge_h, merge_w). PyTorch merger then uses
+        // ln_q(x).view(-1, merge*merge*H), so each group is consecutive.
+        for (int midx = 0; midx < n_merged; midx++) {
             float *dst = merged_data.data() + (size_t)midx * merger_in_dim;
-            int off = 0;
-            for (int ir = 0; ir < merge; ir++) {
-                for (int ic = 0; ic < merge; ic++) {
-                    int row = mh * merge + ir;
-                    int col = mw * merge + ic;
-                    int patch_idx = row * w_p + col;
-                    const float *src = normed_data.data() + (size_t)patch_idx * H;
-                    std::memcpy(dst + off, src, H * sizeof(float));
-                    off += H;
+            const float *src = normed_data.data() + (size_t)midx * merge * merge * H;
+            std::memcpy(dst, src, (size_t)merger_in_dim * sizeof(float));
+        }
+    } else {
+        int midx = 0;
+        for (int mh = 0; mh < merged_h; mh++) {
+            for (int mw = 0; mw < merged_w; mw++) {
+                float *dst = merged_data.data() + (size_t)midx * merger_in_dim;
+                int off = 0;
+                for (int ir = 0; ir < merge; ir++) {
+                    for (int ic = 0; ic < merge; ic++) {
+                        int row = mh * merge + ir;
+                        int col = mw * merge + ic;
+                        int patch_idx = row * w_p + col;
+                        const float *src = normed_data.data() + (size_t)patch_idx * H;
+                        std::memcpy(dst + off, src, H * sizeof(float));
+                        off += H;
+                    }
                 }
+                midx++;
             }
-            midx++;
         }
     }
 
@@ -981,48 +1048,9 @@ bool encode_vision(context &ctx,
         ggml_free(g2);
     }
 
-    // Diff comparison if enabled
-    if (!ctx.diff_ref_path.empty()) {
-        crispembed_diff::Ref ref;
-        if (ref.load(ctx.diff_ref_path)) {
-            // Compare patch embedding first
-            ggml_tensor *pe_out = ggml_graph_get_tensor(gr.gf, "patch_embed_out");
-            if (pe_out && ref.has("vis_patch_embed")) {
-                std::vector<float> pe_data((size_t)n_patches * H);
-                ggml_backend_tensor_get(pe_out, pe_data.data(), 0,
-                                        pe_data.size() * sizeof(float));
-                auto r = ref.compare("vis_patch_embed", pe_data.data(),
-                                     pe_data.size());
-                fprintf(stderr, "  diff vis_patch_embed: cos_min=%.6f max_abs=%.2e %s\n",
-                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
-                // Print first 5 values from C++ and reference
-                fprintf(stderr, "    C++: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
-                        pe_data[0], pe_data[1], pe_data[2], pe_data[3], pe_data[4]);
-                auto [ref_pe, ref_n] = ref.get_f32("vis_patch_embed");
-                if (ref_pe) {
-                    fprintf(stderr, "    Ref: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
-                            ref_pe[0], ref_pe[1], ref_pe[2], ref_pe[3], ref_pe[4]);
-                }
-            }
-
-            // Compare per-layer
-            for (uint32_t il = 0; il < ctx.m.vhp.depth; il++) {
-                char name[64];
-                std::snprintf(name, sizeof(name), "vis_layer_%u", il);
-                ggml_tensor *layer_out = ggml_graph_get_tensor(gr.gf, name);
-                if (layer_out && ref.has(name)) {
-                    std::vector<float> layer_data((size_t)n_patches * H);
-                    ggml_backend_tensor_get(layer_out, layer_data.data(), 0,
-                                            layer_data.size() * sizeof(float));
-                    auto r = ref.compare(name, layer_data.data(),
-                                         layer_data.size());
-                    fprintf(stderr, "  diff %s: cos_min=%.6f max_abs=%.2e %s\n",
-                            name, r.cos_min, r.max_abs,
-                            r.is_pass() ? "PASS" : "FAIL");
-                }
-            }
-        }
-    }
+    // Note: per-vision-layer diff comparison is done earlier (right after the
+    // vision graph compute), while gr.gf's buffers are still valid — the merger
+    // graph above resets the scheduler and reuses those buffers.
 
     return true;
 }
@@ -1215,6 +1243,7 @@ bool run_llm_forward(context &ctx,
 
         // Output projection
         attn_out = ggml_mul_mat(g, ly.o_w, attn_out);
+        if (ly.o_b) attn_out = ggml_add(g, attn_out, ly.o_b);
         x = ggml_add(g, residual, attn_out);
 
         // Pre-FFN RMSNorm
@@ -1283,6 +1312,7 @@ bool run_llm_forward(context &ctx,
     std::vector<int32_t> pos_data(n_tokens * 4, 0);
     const int img_tok_id = (int)lhp.image_token_id;
     const int spatial_merge = (int)ctx.m.vhp.spatial_merge_size;
+    int rope_delta = 0;
 
     if (has_image) {
         // Build keep_mask and image_patches
@@ -1342,25 +1372,26 @@ bool run_llm_forward(context &ctx,
             int grid_t = img->grid_thw[img_consumed * 3 + 0];
             int grid_h = img->grid_thw[img_consumed * 3 + 1] / spatial_merge;
             int grid_w = img->grid_thw[img_consumed * 3 + 2] / spatial_merge;
-            int t_idx = last_max + 1;
+            int image_pos_offset = last_max + 1;
 
             int tok = 0;
             for (int ft = 0; ft < grid_t && tok < n_img_tokens; ft++) {
                 for (int fh = 0; fh < grid_h && tok < n_img_tokens; fh++) {
                     for (int fw = 0; fw < grid_w && tok < n_img_tokens; fw++) {
                         int pos = img_start + tok;
-                        pos_data[pos]                = t_idx;
-                        pos_data[n_tokens + pos]     = fh;
-                        pos_data[2 * n_tokens + pos] = fw;
+                        pos_data[pos]                = image_pos_offset + ft;
+                        pos_data[n_tokens + pos]     = image_pos_offset + fh;
+                        pos_data[2 * n_tokens + pos] = image_pos_offset + fw;
                         tok++;
                     }
                 }
             }
 
-            last_max = t_idx + std::max(grid_h, grid_w) - 1;
+            last_max = image_pos_offset + std::max(grid_t, std::max(grid_h, grid_w)) - 1;
             img_consumed++;
             st = ed;
         }
+        rope_delta = last_max + 1 - n_tokens;
     } else {
         // Text-only: all 3 dims = sequential position
         for (int i = 0; i < n_tokens; i++) {
@@ -1383,6 +1414,7 @@ bool run_llm_forward(context &ctx,
     // Read outputs
     out.n_tokens = n_tokens;
     out.hidden_dim = D;
+    out.rope_delta = rope_delta;
 
     // Read logits if available (for generation)
     ggml_tensor *logits_t = ggml_graph_get_tensor(gf, "logits");
@@ -1584,6 +1616,7 @@ static ggml_cgraph * build_decode_step_graph(
         attn_out = ggml_reshape_2d(g, attn_out, D, 1);
 
         attn_out = ggml_mul_mat(g, ly.o_w, attn_out);
+        if (ly.o_b) attn_out = ggml_add(g, attn_out, ly.o_b);
         x = ggml_add(g, residual, attn_out);
 
         // FFN
@@ -1652,6 +1685,7 @@ bool generate(context &ctx,
     std::vector<std::vector<float>> k_cache(n_layers);
     std::vector<std::vector<float>> v_cache(n_layers);
     bool kv_ok = (prefill.kv_graph != nullptr);
+    if (getenv("CRISPEMBED_NO_KV_CACHE")) kv_ok = false;
 
     if (kv_ok) {
         for (int il = 0; il < n_layers; il++) {
@@ -1712,6 +1746,7 @@ bool generate(context &ctx,
 
     // ── Decode: single-token steps with KV cache ──
     int n_kv = n_prompt_tokens;  // KV cache size grows each step
+    const int rope_delta = prefill.rope_delta;
 
     for (int gen = 1; gen < max_new_tokens; gen++) {
         if (!kv_ok) {
@@ -1742,7 +1777,8 @@ bool generate(context &ctx,
             free(fwd.logits);
         } else {
             // KV-cached decode step
-            int pos = n_kv;  // position of the new token
+            int pos = n_kv;  // cache position of the new token
+            int rope_pos = pos + rope_delta;
 
             ggml_init_params ip{
                 ctx.compute_meta.size(),
@@ -1792,8 +1828,8 @@ bool generate(context &ctx,
             ggml_tensor *te = ggml_graph_get_tensor(gf, "tok_emb");
             ggml_backend_tensor_set(te, tok_emb.data(), 0, D * sizeof(float));
 
-            // Set mRoPE position (all 3 dims = pos for text tokens)
-            int32_t pos_data[4] = {pos, pos, pos, 0};
+            // Set mRoPE position (HF uses cache_position + rope_delta after image prefill)
+            int32_t pos_data[4] = {rope_pos, rope_pos, rope_pos, 0};
             ggml_tensor *pi = ggml_graph_get_tensor(gf, "pos_ids");
             ggml_backend_tensor_set(pi, pos_data, 0, 4 * sizeof(int32_t));
 
@@ -1948,6 +1984,8 @@ struct qwen2vl_ocr_context {
     qwen2vl_ocr::context inner;
     BPETokenizer tokenizer;
     bool has_tokenizer = false;
+    bool tokenizer_can_encode = false;
+    bool use_qari_default_prompt = false;
     std::string prompt = "Describe this image.";
     std::vector<int32_t> prompt_ids;  // cached tokenized prompt
     int max_tokens = 512;
@@ -1967,7 +2005,7 @@ struct qwen2vl_ocr_context {
 
     // Tokenize a text string via BPE. Falls back to hardcoded IDs if no tokenizer.
     std::vector<int32_t> tokenize(const std::string & text) {
-        if (has_tokenizer) {
+        if (has_tokenizer && tokenizer_can_encode) {
             auto enc = tokenizer.encode(text);
             // BPETokenizer.encode() adds BOS/EOS — strip them for raw text
             // We just want the raw token IDs without special tokens
@@ -1982,18 +2020,24 @@ struct qwen2vl_ocr_context {
         std::vector<int32_t> ids;
 
         // <|im_start|>system\nYou are a helpful assistant.<|im_end|>\n
-        ids.push_back(im_start_id);
-        ids.push_back(system_id);
-        ids.push_back(newline_id);
-        // "You are a helpful assistant."
-        auto sys_tokens = tokenize("You are a helpful assistant.");
-        if (sys_tokens.empty()) {
-            ids.insert(ids.end(), {2610, 525, 264, 10950, 17847, 13});
-        } else {
-            ids.insert(ids.end(), sys_tokens.begin(), sys_tokens.end());
+        // Qari-OCR is used WITHOUT a system message (just the user turn with
+        // the image + OCR instruction), so skip the system block in that mode.
+        // Qwen2-VL's chat template prepends a default system message when none
+        // is supplied. Include it (set CRISPEMBED_QARI_NO_SYSTEM=1 to drop it).
+        if (!getenv("CRISPEMBED_QARI_NO_SYSTEM")) {
+            ids.push_back(im_start_id);
+            ids.push_back(system_id);
+            ids.push_back(newline_id);
+            // "You are a helpful assistant."
+            auto sys_tokens = tokenize("You are a helpful assistant.");
+            if (sys_tokens.empty()) {
+                ids.insert(ids.end(), {2610, 525, 264, 10950, 17847, 13});
+            } else {
+                ids.insert(ids.end(), sys_tokens.begin(), sys_tokens.end());
+            }
+            ids.push_back(im_end_id);
+            ids.push_back(newline_id);
         }
-        ids.push_back(im_end_id);
-        ids.push_back(newline_id);
 
         // <|im_start|>user\n<|vision_start|>
         ids.push_back(im_start_id);
@@ -2014,7 +2058,7 @@ struct qwen2vl_ocr_context {
             auto toks = tokenize(prompt);
             if (toks.empty()) {
                 // Fallback: "Describe this image."
-                ids.insert(ids.end(), {41215, 419, 2168, 13});
+                ids.insert(ids.end(), {74785, 419, 2168, 13});
             } else {
                 ids.insert(ids.end(), toks.begin(), toks.end());
             }
@@ -2033,6 +2077,26 @@ struct qwen2vl_ocr_context {
 
 // Shared post-load init: load tokenizer from GGUF, set special IDs
 static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
+    std::string model_path_lc = gguf_path ? gguf_path : "";
+    for (char &c : model_path_lc) c = (char)std::tolower((unsigned char)c);
+    const bool is_qari = model_path_lc.find("qari-ocr") != std::string::npos;
+    // Qari-OCR's long OCR instruction. NOTE: with the current chat framing the
+    // model does not reliably enter OCR mode (it answers conversationally), so
+    // this is opt-in via CRISPEMBED_QARI_LONG_PROMPT while the exact template is
+    // pinned down. Default is the standard "Describe this image." (validated to
+    // match the HF prefill at cos≈0.9999). See handover notes.
+    if (is_qari && getenv("CRISPEMBED_QARI_LONG_PROMPT")) {
+        ctx->use_qari_default_prompt = true;
+        // EXACT Qari training prompt — note the embedded newlines ("\n ") after
+        // each sentence, which the model was fine-tuned on. Flattening them to
+        // spaces changes tokenization and breaks OCR-mode recognition.
+        ctx->prompt =
+            "Below is the image of one page of a document, as well as some raw "
+            "textual content that was previously extracted for it.\n Just return "
+            "the plain text representation of this document as if you were reading "
+            "it naturally.\n Do not hallucinate.\n";
+    }
+
     // Load BPE tokenizer from GGUF metadata
     gguf_context * g = core_gguf::open_metadata(gguf_path);
     if (g) {
@@ -2063,8 +2127,12 @@ static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
             // GPT-2 BPE: no BOS, no suffix, not SPM style
             ctx->tokenizer.load(vocab, merges, eos_id, pad_id, -1, -1, false, 8192);
             ctx->has_tokenizer = true;
+            ctx->tokenizer_can_encode = !merges.empty();
             fprintf(stderr, "qwen2vl_ocr: loaded BPE tokenizer (%d tokens, %zu merges)\n",
                     n, merges.size());
+            if (merges.empty()) {
+                fprintf(stderr, "qwen2vl_ocr: tokenizer merges missing; prompt encoding uses built-in fallbacks\n");
+            }
         }
 
         // Read special token IDs
@@ -2079,7 +2147,19 @@ static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
     }
 
     // Pre-tokenize default prompt
-    if (ctx->has_tokenizer) {
+    if (is_qari && ctx->use_qari_default_prompt && ctx->tokenizer_can_encode) {
+        // Tokenize the exact Qari prompt (with newlines) via BPE.
+        ctx->prompt_ids = ctx->tokenize(ctx->prompt);
+    } else if (is_qari && ctx->use_qari_default_prompt) {
+        // No-merges fallback: hardcoded IDs (newlines flattened — degraded).
+        ctx->prompt_ids = {
+            38214, 374, 279, 2168, 315, 825, 2150, 315, 264, 2197, 11, 438,
+            1632, 438, 1045, 7112, 62533, 2213, 429, 572, 8597, 27432, 369,
+            432, 13, 4599, 470, 279, 14396, 1467, 13042, 315, 419, 2197,
+            438, 421, 498, 1033, 5290, 432, 17712, 13, 3155, 537, 58023,
+            3277, 13,
+        };
+    } else if (ctx->tokenizer_can_encode) {
         ctx->prompt_ids = ctx->tokenize(ctx->prompt);
     }
 }
@@ -2117,7 +2197,8 @@ void qwen2vl_ocr_free(qwen2vl_ocr_context * ctx) {
 void qwen2vl_ocr_set_prompt(qwen2vl_ocr_context * ctx, const char * prompt) {
     if (ctx && prompt) {
         ctx->prompt = prompt;
-        if (ctx->has_tokenizer) {
+        if (ctx->tokenizer_can_encode) {
+            ctx->use_qari_default_prompt = false;
             ctx->prompt_ids = ctx->tokenize(prompt);
             fprintf(stderr, "qwen2vl_ocr: prompt tokenized to %zu tokens\n",
                     ctx->prompt_ids.size());
@@ -2218,6 +2299,19 @@ const char * qwen2vl_ocr_recognize_raw(
             width, height, pp.resized_w, pp.resized_h,
             pp.n_patches, pp.grid_thw[1], pp.grid_thw[2]);
 
+    if (const char *dp = getenv("CRISPEMBED_DUMP_PATCHES")) {
+        FILE *df = fopen(dp, "wb");
+        if (df) {
+            int hdr[4] = {pp.n_patches, (int)pp.patches.size() / pp.n_patches,
+                          pp.grid_thw[1], pp.grid_thw[2]};
+            fwrite(hdr, sizeof(int), 4, df);
+            fwrite(pp.patches.data(), sizeof(float), pp.patches.size(), df);
+            fclose(df);
+            fprintf(stderr, "qwen2vl_ocr: dumped patches to %s (%d x %d)\n",
+                    dp, hdr[0], hdr[1]);
+        }
+    }
+
     return run_pipeline(ctx, pp, out_len);
 }
 
@@ -2253,4 +2347,3 @@ float qwen2vl_ocr_mean_confidence(const qwen2vl_ocr_context * ctx) {
     for (float c : ctx->char_confidences) sum += c;
     return (float)(sum / ctx->char_confidences.size());
 }
-
