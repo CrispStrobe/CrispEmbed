@@ -34,12 +34,24 @@ real image, inject them into the C++ engine via test hooks (`GEN_FROM_REF`,
 4. **No-cache decode dropped the image; KV-cache outputs were pruned.** The
    single-token decode fell back to a full-recompute path that called
    `run_llm_forward` WITHOUT the image (image-blind → the model "describes a
-   blank page" / answers conversationally). Separately, the KV-cache path was
-   *never* active: the `k_out_N`/`v_out_N` side-output tensors are not ancestors
-   of the logits, so `ggml_build_forward_expand(gf, logits)` pruned them and
-   `ggml_graph_get_tensor` returned null → silent fallback to no-cache. Fix:
-   pass the image to the recompute path, and `ggml_build_forward_expand` each
-   side output explicitly so it survives graph construction.
+   blank page" / answers conversationally). Pass the image through. The KV-cache
+   path itself had two bugs that only surfaced once the recompute was fixed:
+   - **(a) side outputs pruned.** `k_out_N`/`v_out_N` are not ancestors of the
+     logits, so `ggml_build_forward_expand(gf, logits)` dropped them and
+     `ggml_graph_get_tensor` returned null → silent no-cache. Call
+     `ggml_build_forward_expand` on each side output explicitly.
+   - **(b) cached V was a view into a reused buffer.** In the decode step
+     `K_new` comes from `ggml_rope_multi` (materialized) but `V_new` was a
+     `ggml_reshape_3d` *view*. Marking a view as a graph output and reading it
+     back under a no-alloc scheduler returns GARBAGE — the scheduler reuses that
+     buffer for later ops. Symptom: the cached K matched HF to ~1e-3 but the
+     cached V was off by 6-9 (massive-activation magnitudes) at scattered
+     elements; generation matched for 1-2 tokens then collapsed. Fix:
+     `ggml_cont` K_new/V_new before `ggml_set_output`. (The prefill already did
+     `reshape_2d(ggml_cont(V), ...)`; the decode forgot the cont.)
+   General rule: **any tensor you `ggml_set_output` and read back via
+   `ggml_backend_tensor_get` under a no-alloc scheduler must be materialized
+   (`ggml_cont`), not a view** — otherwise its storage is fair game for reuse.
 
 **Diagnostic tells:** a VLM that says "I'm just a text-based assistant" or
 paraphrases the OCR instruction (often in Chinese, the Qwen base language) is
