@@ -7,20 +7,24 @@
 #include "deepseek_ocr2.h"
 #include "crispembed_diff.h"
 #include "core/gguf_loader.h"
+#include "core/bpe.h"
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <chrono>
+#include <thread>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // ---------------------------------------------------------------------------
@@ -32,14 +36,17 @@ struct sam_hparams {
     int patch_size = 16, image_size = 1024, window_size = 14;
     int neck_out = 256;
     std::vector<int> global_attn_indexes{2, 5, 8, 11};
-    float image_mean[3] = {0.48145466f, 0.4578275f, 0.40821073f};
-    float image_std[3]  = {0.26862954f, 0.26130258f, 0.27577711f};
+    // DeepSeek-OCR2 BasicImageTransform: simple [-1,1] normalization (mean=std=0.5),
+    // NOT CLIP normalization. (processor_config.json image_mean/std = 0.5.)
+    float image_mean[3] = {0.5f, 0.5f, 0.5f};
+    float image_std[3]  = {0.5f, 0.5f, 0.5f};
 };
 
 struct qwen2_enc_hparams {
     int depth = 24, hidden = 896, heads = 14, kv_heads = 2;
     int intermediate = 4864;
     float rms_eps = 1e-6f;
+    float rope_theta = 1000000.0f;
 };
 
 struct llm_hparams {
@@ -104,7 +111,7 @@ struct model_weights {
 
     // Qwen2 encoder
     std::vector<qwen2_enc_layer_w> qwen2_layers;
-    ggml_tensor *query_768{}, *query_1024{};
+    ggml_tensor *query_768{}, *query_1024{}, *qe_output_norm{};
 
     // Projector
     ggml_tensor *projector_w{}, *projector_b{};
@@ -131,6 +138,8 @@ struct ds_ocr2_ctx {
 
     // Tokenizer
     std::vector<std::string> id_to_piece;
+    std::unordered_map<std::string, int32_t> token_to_id;
+    std::unordered_map<std::string, int32_t> merge_rank;
     int tok_vocab_size = 0;
 
     // KV cache for LLM decoder
@@ -420,9 +429,19 @@ static bool load_hparams(ds_ocr2_ctx &ctx, const char *path) {
     if (vocab_idx >= 0) {
         int n = (int)gguf_get_arr_n(g, vocab_idx);
         ctx.id_to_piece.resize(n);
-        for (int i = 0; i < n; i++)
+        ctx.token_to_id.reserve(n * 2);
+        for (int i = 0; i < n; i++) {
             ctx.id_to_piece[i] = gguf_get_arr_str(g, vocab_idx, i);
+            ctx.token_to_id[ctx.id_to_piece[i]] = i;
+        }
         ctx.tok_vocab_size = n;
+    }
+    int merges_idx = gguf_find_key(g, "tokenizer.ggml.merges");
+    if (merges_idx >= 0) {
+        int n = (int)gguf_get_arr_n(g, merges_idx);
+        ctx.merge_rank.reserve(n * 2);
+        for (int i = 0; i < n; i++)
+            ctx.merge_rank[gguf_get_arr_str(g, merges_idx, i)] = i;
     }
 
     core_gguf::free_metadata(g);
@@ -493,6 +512,7 @@ static bool load_tensors(ds_ocr2_ctx &ctx, const char *path) {
     }
     m.query_768  = F("qe.query_768");
     m.query_1024 = F("qe.query_1024");
+    m.qe_output_norm = F("qe.output_norm.weight");
 
     // Projector
     m.projector_w = F("proj.weight"); m.projector_b = F("proj.bias");
@@ -831,6 +851,18 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
 // Qwen2 bidirectional encoder (CPU-scalar)
 // ---------------------------------------------------------------------------
 
+// NEOX (rotate_half) RoPE applied in-place to one head_dim vector at `pos`.
+static void apply_rope_neox(float *v, int hd, int pos, float theta) {
+    int half = hd / 2;
+    for (int j = 0; j < half; j++) {
+        float freq = 1.0f / powf(theta, (float)(2 * j) / hd);
+        float a = pos * freq, c = cosf(a), s = sinf(a);
+        float x1 = v[j], x2 = v[j + half];
+        v[j]        = x1 * c - x2 * s;
+        v[j + half] = x2 * c + x1 * s;
+    }
+}
+
 static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis, int vis_dim,
                           std::vector<float> &out_enc, int &out_n_tokens, int &out_dim) {
     auto &qhp = ctx.m.qhp;
@@ -852,25 +884,21 @@ static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis,
     // The vis features need to be projected to D first if dims don't match.
     // For now assume vis_dim == D or handle the mismatch.
 
-    int T = n_query + n_vis;
+    // Blueprint (CustomQwen2): x_combined = cat([visual, queries]) — VISUAL
+    // FIRST, then the learned query tokens. token_type 0=visual (non-causal),
+    // 1=query (causal). RoPE applied at positions 0..T-1. Returns the query
+    // half (y[:, n_vis:]).
+    int T = n_vis + n_query;
     std::vector<float> hidden(T * D, 0.0f);
-
-    // Copy query tokens
-    if (n_query > 0)
-        memcpy(hidden.data(), query_data.data(), n_query * D * sizeof(float));
-
-    // Copy visual features (project if dim mismatch)
-    if (vis_dim == D) {
-        memcpy(hidden.data() + n_query * D, vis_features, n_vis * D * sizeof(float));
-    } else {
-        // If vis_dim != D, we'd need a linear projection here
-        // For the expected architecture, vis_dim=1024 and D=896, so there should be
-        // a projection in the SAM->Qwen2 path. This might be handled differently.
-        // For safety, truncate or zero-pad.
+    if (vis_dim == D)
+        memcpy(hidden.data(), vis_features, (size_t)n_vis * D * sizeof(float));
+    else
         for (int t = 0; t < n_vis; t++)
             for (int d = 0; d < D; d++)
-                hidden[(n_query + t) * D + d] = (d < vis_dim) ? vis_features[t * vis_dim + d] : 0.0f;
-    }
+                hidden[t * D + d] = (d < vis_dim) ? vis_features[t * vis_dim + d] : 0.0f;
+    if (n_query > 0)
+        memcpy(hidden.data() + (size_t)n_vis * D, query_data.data(),
+               (size_t)n_query * D * sizeof(float));
 
     // Run bidirectional transformer layers
     for (int li = 0; li < qhp.depth; li++) {
@@ -900,7 +928,17 @@ static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis,
                        vw.data(), vb.empty() ? nullptr : vb.data());
         }
 
-        // Multi-head attention (bidirectional — no causal mask)
+        // NEOX RoPE at positions 0..T-1 (Qwen2, rope_theta from config).
+        for (int t = 0; t < T; t++) {
+            for (int h = 0; h < nh; h++)
+                apply_rope_neox(Q.data() + t * q_dim + h * hd, hd, t, qhp.rope_theta);
+            for (int h = 0; h < nkv; h++)
+                apply_rope_neox(K.data() + t * kv_dim + h * hd, hd, t, qhp.rope_theta);
+        }
+
+        // Multi-head attention with the token-type mask: visual tokens
+        // (< n_vis) attend to visual only (bidirectional); query tokens (>=
+        // n_vis) attend to all visual + causally to earlier/equal queries.
         float attn_scale = 1.0f / sqrtf((float)hd);
         std::vector<float> attn_out(T * D, 0.0f);
 
@@ -909,8 +947,12 @@ static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis,
 
             // Compute scores for all query positions
             for (int qi = 0; qi < T; qi++) {
+                bool qi_vis = qi < n_vis;
                 std::vector<float> scores(T);
                 for (int ki = 0; ki < T; ki++) {
+                    bool allowed = qi_vis ? (ki < n_vis)
+                                          : (ki < n_vis || ki <= qi);
+                    if (!allowed) { scores[ki] = -INFINITY; continue; }
                     float dot = 0;
                     for (int d = 0; d < hd; d++)
                         dot += Q[qi * q_dim + h * hd + d] * K[ki * kv_dim + kv_h * hd + d];
@@ -958,11 +1000,22 @@ static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis,
         }
     }
 
-    // Output: only the query tokens (first n_query)
+    // Final RMSNorm (Qwen2Model.norm) over all tokens.
+    if (ctx.m.qe_output_norm) {
+        auto fn = to_f32(ctx.m.qe_output_norm);
+        std::vector<float> tmp(D);
+        for (int t = 0; t < T; t++) {
+            rmsnorm_cpu(hidden.data() + t * D, tmp.data(), D, fn.data(), eps);
+            memcpy(hidden.data() + t * D, tmp.data(), D * sizeof(float));
+        }
+    }
+
+    // Output = the query half (blueprint y[:, n_vis:]): positions n_vis..T-1.
     out_n_tokens = (n_query > 0) ? n_query : T;
     out_dim = D;
-    out_enc.resize(out_n_tokens * D);
-    memcpy(out_enc.data(), hidden.data(), out_n_tokens * D * sizeof(float));
+    out_enc.resize((size_t)out_n_tokens * D);
+    memcpy(out_enc.data(), hidden.data() + (size_t)n_vis * D,
+           (size_t)out_n_tokens * D * sizeof(float));
     return true;
 }
 
@@ -1065,32 +1118,39 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx &ctx, int li, int T, int 
     K = ggml_rope_ext(g, K, pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0,
                       lhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-    // Output new K/V for cache. The reshape_2d makes these *views* of the
-    // cont'd permute; a view marked set_output and read back via
-    // ggml_backend_tensor_get under the no-alloc scheduler returns garbage (its
-    // buffer is reused once attention consumes it). cont the reshape so the
-    // read-back data survives. (Same bug class fixed in qwen2vl/lightonocr.)
-    ggml_tensor *K_new = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
-    K_new = ggml_cont(g, ggml_reshape_2d(g, K_new, nkv * hd, T));
+    // Materialize K/V once for the attention path. K/V come from rope as
+    // [hd, nkv, T] (memory: hd fastest, then nkv, then T) — exactly the layout
+    // the cache reload expects (reshape_3d(hd, nkv, n_past)). Do NOT permute the
+    // token/head axes (an earlier permute(0,2,1,3) transposed T<->nkv and
+    // scrambled the cache).
+    ggml_tensor *Kc = ggml_cont(g, K);  // [hd, nkv, T]
+    ggml_tensor *Vc = ggml_cont(g, V);
+
+    // Cache outputs: an INDEPENDENT cont (not aliasing Kc/Vc). The attention
+    // path below consumes Kc/Vc; under the no-alloc scheduler their buffers get
+    // recycled once attention reads them, so a cache view sharing that buffer
+    // would read garbage on the read-back (prefill attention still works, but
+    // the cache is poisoned — exactly the "first token right, rest garbage"
+    // symptom). Giving k_out/v_out their own cont copies the data into a
+    // dedicated buffer that survives. Matches the verified qwen2vl_ocr path
+    // (which conts K separately for cache vs attention).
+    ggml_tensor *K_new = ggml_cont(g, ggml_reshape_2d(g, Kc, nkv * hd, T));
     ggml_set_name(K_new, "k_out"); ggml_set_output(K_new);
 
-    ggml_tensor *V_new = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
-    V_new = ggml_cont(g, ggml_reshape_2d(g, V_new, nkv * hd, T));
+    ggml_tensor *V_new = ggml_cont(g, ggml_reshape_2d(g, Vc, nkv * hd, T));
     ggml_set_name(V_new, "v_out"); ggml_set_output(V_new);
 
-    // Build full K/V (cache + new)
+    // Build full K/V (cache + new) for attention — use Kc/Vc, not the cache outs.
     ggml_tensor *Kfull, *Vfull;
     if (n_past > 0) {
         ggml_tensor *kc3 = ggml_reshape_3d(g, k_cache_in, hd, nkv, n_past);
-        ggml_tensor *kn3 = ggml_reshape_3d(g, K_new, hd, nkv, T);
-        Kfull = ggml_concat(g, kc3, kn3, 2);  // [hd, nkv, Lk]
+        Kfull = ggml_concat(g, kc3, Kc, 2);  // [hd, nkv, Lk]
 
         ggml_tensor *vc3 = ggml_reshape_3d(g, v_cache_in, hd, nkv, n_past);
-        ggml_tensor *vn3 = ggml_reshape_3d(g, V_new, hd, nkv, T);
-        Vfull = ggml_concat(g, vc3, vn3, 2);
+        Vfull = ggml_concat(g, vc3, Vc, 2);
     } else {
-        Kfull = ggml_reshape_3d(g, K_new, hd, nkv, T);
-        Vfull = ggml_reshape_3d(g, V_new, hd, nkv, T);
+        Kfull = Kc;
+        Vfull = Vc;
     }
 
     // GQA repeat if needed
@@ -1140,6 +1200,11 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx &ctx, int li, int T, int 
 
     ggml_set_name(x, "layer_output"); ggml_set_output(x);
     ggml_build_forward_expand(lag.gf, x);
+    // k_out/v_out (the cache copies) are NOT ancestors of layer_output (the
+    // attention path consumes Kc/Vc, not these), so expand them explicitly via
+    // their pointers — a graph lookup by name would miss them (not yet added).
+    ggml_build_forward_expand(lag.gf, K_new);
+    ggml_build_forward_expand(lag.gf, V_new);
     return lag;
 }
 
@@ -1161,70 +1226,79 @@ static void moe_ffn_cpu(ds_ocr2_ctx &ctx, int li, float *hidden, int T) {
     auto sh_uw = to_f32(ly.shared_up_w);
     auto sh_dw = to_f32(ly.shared_down_w);
 
-    // Dequant routed expert weights (lazy — all at once)
     struct exp_w { std::vector<float> gw, uw, dw; };
     std::vector<exp_w> exp_ws(n_exp);
-    // Only dequant experts that are actually selected (deferred below)
 
+    // Pass 1 (serial, cheap): RMSNorm + route every token, recording its
+    // normed vector and its top-k experts/weights. Also note which experts get
+    // used so we dequant only those.
+    std::vector<float> normed_all((size_t)T * D);
+    std::vector<std::array<int, 16>> tk_idx(T);
+    std::vector<std::array<float, 16>> tk_w(T);
+    std::vector<char> used(n_exp, 0);
     for (int t = 0; t < T; t++) {
-        float *tok = hidden + t * D;
-
-        // RMSNorm
-        std::vector<float> normed(D);
-        rmsnorm_cpu(tok, normed.data(), D, post_ln.data(), eps);
-
-        // Router: matmul hidden x gate_weight^T -> softmax -> top-k
+        float *normed = normed_all.data() + (size_t)t * D;
+        rmsnorm_cpu(hidden + t * D, normed, D, post_ln.data(), eps);
         std::vector<float> logits(n_exp);
         for (int e = 0; e < n_exp; e++) {
             float dot = 0;
             for (int d = 0; d < D; d++) dot += normed[d] * router[e * D + d];
             logits[e] = dot;
         }
-
-        // Softmax
         float max_l = *std::max_element(logits.begin(), logits.end());
         float sum_exp = 0;
         for (int e = 0; e < n_exp; e++) { logits[e] = expf(logits[e] - max_l); sum_exp += logits[e]; }
         for (int e = 0; e < n_exp; e++) logits[e] /= sum_exp;
-
-        // Top-k selection
         std::vector<std::pair<float, int>> scored(n_exp);
         for (int e = 0; e < n_exp; e++) scored[e] = {logits[e], e};
         std::partial_sort(scored.begin(), scored.begin() + top_k, scored.end(),
                           [](auto &a, auto &b) { return a.first > b.first; });
-
-        // DeepSeek-V2 MoE gate: config norm_topk_prob=False and
-        // routed_scaling_factor=1.0, so the routed weights are the raw softmax
-        // probabilities of the top-k experts — do NOT renormalize them to sum 1.
-        // (Renormalizing changes the relative expert weighting and the output.)
-        // The optional scaling factor is applied via `scale` below.
-
-        // Run top-k routed experts
-        std::vector<float> routed_out(D, 0.0f);
+        // norm_topk_prob=False, routed_scaling_factor=1.0 → raw top-k softmax probs.
         for (int k = 0; k < top_k; k++) {
-            int eid = scored[k].second;
-            float w = scored[k].first * scale;
+            tk_idx[t][k] = scored[k].second;
+            tk_w[t][k]   = scored[k].first * scale;
+            used[scored[k].second] = 1;
+        }
+    }
 
-            // Lazy dequant
-            if (exp_ws[eid].gw.empty()) {
-                exp_ws[eid].gw = to_f32(ly.experts[eid].gate_w);
-                exp_ws[eid].uw = to_f32(ly.experts[eid].up_w);
-                exp_ws[eid].dw = to_f32(ly.experts[eid].down_w);
-            }
-
-            std::vector<float> expert_out(D);
-            swiglu_ffn_cpu(normed.data(), expert_out.data(), D, inter_e,
-                           exp_ws[eid].gw.data(), exp_ws[eid].uw.data(), exp_ws[eid].dw.data());
-            for (int d = 0; d < D; d++) routed_out[d] += w * expert_out[d];
+    // Dequant the used routed experts once (parallel-unsafe lazy dequant is gone).
+    for (int e = 0; e < n_exp; e++)
+        if (used[e]) {
+            exp_ws[e].gw = to_f32(ly.experts[e].gate_w);
+            exp_ws[e].uw = to_f32(ly.experts[e].up_w);
+            exp_ws[e].dw = to_f32(ly.experts[e].down_w);
         }
 
-        // Shared expert
-        std::vector<float> shared_out(D);
-        swiglu_ffn_cpu(normed.data(), shared_out.data(), D, inter_s,
-                       sh_gw.data(), sh_uw.data(), sh_dw.data());
-
-        // Combine: residual + routed + shared
-        for (int d = 0; d < D; d++) tok[d] += routed_out[d] + shared_out[d];
+    // Pass 2 (parallel over tokens): each token's expert FFNs are independent
+    // and write only to its own row, so split the token range across threads.
+    int nthreads = std::max(1, ctx.n_threads);
+    if (nthreads > T) nthreads = std::max(1, T);
+    auto worker = [&](int t0, int t1) {
+        for (int t = t0; t < t1; t++) {
+            const float *normed = normed_all.data() + (size_t)t * D;
+            float *tok = hidden + t * D;
+            std::vector<float> routed_out(D, 0.0f), expert_out(D);
+            for (int k = 0; k < top_k; k++) {
+                int eid = tk_idx[t][k]; float w = tk_w[t][k];
+                swiglu_ffn_cpu(normed, expert_out.data(), D, inter_e,
+                               exp_ws[eid].gw.data(), exp_ws[eid].uw.data(), exp_ws[eid].dw.data());
+                for (int d = 0; d < D; d++) routed_out[d] += w * expert_out[d];
+            }
+            std::vector<float> shared_out(D);
+            swiglu_ffn_cpu(normed, shared_out.data(), D, inter_s,
+                           sh_gw.data(), sh_uw.data(), sh_dw.data());
+            for (int d = 0; d < D; d++) tok[d] += routed_out[d] + shared_out[d];
+        }
+    };
+    if (nthreads <= 1) worker(0, T);
+    else {
+        std::vector<std::thread> pool;
+        int chunk = (T + nthreads - 1) / nthreads;
+        for (int ti = 0; ti < nthreads; ti++) {
+            int t0 = ti * chunk, t1 = std::min(T, t0 + chunk);
+            if (t0 < t1) pool.emplace_back(worker, t0, t1);
+        }
+        for (auto &th : pool) th.join();
     }
 }
 
@@ -1232,8 +1306,10 @@ static void moe_ffn_cpu(ds_ocr2_ctx &ctx, int li, float *hidden, int T) {
 // Full LLM decoder forward
 // ---------------------------------------------------------------------------
 
-static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *image_embeds, int n_img,
-                            const int32_t *prompt_ids, int n_prompt, int max_new,
+// Runs the MoE decoder. `prompt_embeds` is the fully-assembled prompt embedding
+// matrix [n_prompt x D] (bos + image features + view-separator + instruction
+// token embeddings), built by the caller. Generation continues until EOS.
+static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_prompt, int max_new,
                             std::vector<int32_t> &out_ids, std::vector<float> &out_confs) {
     auto &lhp = ctx.m.lhp;
     int D = lhp.hidden, V = lhp.vocab_size;
@@ -1263,33 +1339,34 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *image_embeds, int n_i
     auto norm_w = to_f32(ctx.m.output_norm_w);
     auto head_w = to_f32(ctx.m.lm_head_w ? ctx.m.lm_head_w : ctx.m.embed_tokens);
 
+    // Diagnostic: DS_NO_KV disables the KV cache and re-runs the entire growing
+    // sequence each step (n_past always 0). Slow but a ground-truth reference to
+    // isolate cache bugs from prefill bugs.
+    bool no_kv = getenv("DS_NO_KV") != nullptr;
+    std::vector<float> full_emb(prompt_embeds, prompt_embeds + (size_t)n_prompt * D);
+
     // Run generation loop
     int n_generated = 0;
-    std::vector<int32_t> cur_tokens(prompt_ids, prompt_ids + n_prompt);
+    std::vector<int32_t> cur_tokens;  // tokens generated so far (single-token steps)
     int n_past = 0;
 
     while (n_generated < max_new) {
-        int T = (int)cur_tokens.size();
+        // Prefill (n_past==0) processes the whole assembled prompt; subsequent
+        // steps process one freshly-generated token at a time. In no_kv mode the
+        // whole sequence is reprocessed every step.
+        int T = no_kv ? (int)(full_emb.size() / D) : ((n_past == 0) ? n_prompt : (int)cur_tokens.size());
         if (getenv("DS_DBG"))
             fprintf(stderr, "  [dbg] decode step gen=%d n_past=%d T=%d\n", n_generated, n_past, T);
 
         // Build input embeddings
         std::vector<float> input_emb(T * D);
-        int img_idx = 0;
-        for (int t = 0; t < T; t++) {
-            if (n_past == 0 && image_embeds) {
-                // Check if this is an image token placeholder
-                // Simple heuristic: if token is in image range, splice
+        if (no_kv) {
+            memcpy(input_emb.data(), full_emb.data(), (size_t)T * D * sizeof(float));
+        } else if (n_past == 0) {
+            memcpy(input_emb.data(), prompt_embeds, (size_t)T * D * sizeof(float));
+        } else {
+            for (int t = 0; t < T; t++)
                 get_embedding(cur_tokens[t], input_emb.data() + t * D);
-                // Override with image embeddings for image token positions
-                if (img_idx < n_img && cur_tokens[t] >= 151643) {
-                    // Use image embedding instead
-                    memcpy(input_emb.data() + t * D, image_embeds + img_idx * D, D * sizeof(float));
-                    img_idx++;
-                }
-            } else {
-                get_embedding(cur_tokens[t], input_emb.data() + t * D);
-            }
         }
 
         // Process each layer
@@ -1334,7 +1411,9 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *image_embeds, int n_i
             ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "mask"),
                                     mask.data(), 0, Lk * T * sizeof(ggml_fp16_t));
 
+            auto _t0 = std::chrono::steady_clock::now();
             ggml_backend_sched_graph_compute(ctx.sched, lag.gf);
+            auto _t1 = std::chrono::steady_clock::now();
 
             // Read outputs
             ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "layer_output"),
@@ -1347,15 +1426,24 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *image_embeds, int n_i
             ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "v_out"),
                                     v_new.data(), 0, kv_dim * T * sizeof(float));
 
-            ctx.kvc.k_cache[li].insert(ctx.kvc.k_cache[li].end(), k_new.begin(), k_new.end());
-            ctx.kvc.v_cache[li].insert(ctx.kvc.v_cache[li].end(), v_new.begin(), v_new.end());
+            if (!no_kv) {
+                ctx.kvc.k_cache[li].insert(ctx.kvc.k_cache[li].end(), k_new.begin(), k_new.end());
+                ctx.kvc.v_cache[li].insert(ctx.kvc.v_cache[li].end(), v_new.begin(), v_new.end());
+            }
 
             ggml_free(lag.gctx);
 
             // MoE FFN (layers 1-11)
+            auto _t2 = std::chrono::steady_clock::now();
             if (!is_dense) {
                 moe_ffn_cpu(ctx, li, hidden.data(), T);
             }
+            auto _t3 = std::chrono::steady_clock::now();
+            if (getenv("DS_DBG"))
+                fprintf(stderr, "  [dbg] llm li=%d attn=%lldms moe=%lldms (n_threads=%d)\n", li,
+                        (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_t1-_t0).count(),
+                        (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_t3-_t2).count(),
+                        ctx.n_threads);
 
             // Diff comparison
             if (!ctx.diff_ref_path.empty() && n_past == 0) {
@@ -1370,7 +1458,7 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *image_embeds, int n_i
             }
         }
 
-        n_past += T;
+        if (!no_kv) n_past += T;
 
         // Final norm + LM head (CPU)
         std::vector<float> last_hidden(D);
@@ -1401,10 +1489,20 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *image_embeds, int n_i
         out_ids.push_back(next);
         n_generated++;
 
+        if (getenv("DS_DBG")) {
+            const char *pc = (next >= 0 && next < ctx.tok_vocab_size) ? ctx.id_to_piece[next].c_str() : "?";
+            fprintf(stderr, "  [gen %d] id=%d piece=%s\n", n_generated - 1, next, pc);
+        }
+
         if (next == lhp.eos_token_id) break;
 
-        // Next step: single token
+        // Next step: single token (or, in no_kv mode, append to the full sequence)
         cur_tokens = {(int32_t)next};
+        if (no_kv) {
+            size_t off = full_emb.size();
+            full_emb.resize(off + D);
+            get_embedding(next, full_emb.data() + off);
+        }
     }
 
     return true;
@@ -1415,14 +1513,44 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *image_embeds, int n_i
 // ---------------------------------------------------------------------------
 
 static std::string decode_tokens(const ds_ocr2_ctx &ctx, const int32_t *ids, int n) {
-    std::string result;
+    // Inverse of the GPT-2 byte-level BPE byte_encoder(): codepoint -> raw byte.
+    // The vocab pieces live in "byte-encoded unicode" space (e.g. 'Ġ' = space),
+    // so we concatenate the pieces then map each UTF-8 codepoint back to its
+    // original byte to recover real text.
+    static std::unordered_map<uint32_t, uint8_t> byte_decoder = [] {
+        std::unordered_map<uint32_t, uint8_t> m;
+        const auto &enc = core_bpe::byte_encoder();
+        for (int b = 0; b < 256; b++) m[(uint32_t)enc[b]] = (uint8_t)b;
+        return m;
+    }();
+
+    std::string merged;
     for (int i = 0; i < n; i++) {
         int id = ids[i];
         if (id == ctx.m.lhp.eos_token_id) continue;
         if (id < 0 || id >= ctx.tok_vocab_size) continue;
         const auto &piece = ctx.id_to_piece[id];
-        if (!piece.empty() && piece[0] == '<' && piece.back() == '>') continue;
-        result += piece;
+        // Skip special marker tokens like <｜...｜>.
+        if (piece.size() >= 2 && piece[0] == '<' && piece.back() == '>') continue;
+        merged += piece;
+    }
+
+    // Decode UTF-8 codepoints of `merged` back to raw bytes.
+    std::string result;
+    size_t i = 0;
+    while (i < merged.size()) {
+        unsigned char c = (unsigned char)merged[i];
+        size_t len = (c < 0x80) ? 1 : ((c & 0xE0) == 0xC0) ? 2 : ((c & 0xF0) == 0xE0) ? 3 : 4;
+        if (i + len > merged.size()) len = 1;
+        uint32_t cp = 0;
+        if (len == 1) cp = c;
+        else if (len == 2) cp = ((c & 0x1F) << 6) | (merged[i+1] & 0x3F);
+        else if (len == 3) cp = ((c & 0x0F) << 12) | ((merged[i+1] & 0x3F) << 6) | (merged[i+2] & 0x3F);
+        else cp = ((c & 0x07) << 18) | ((merged[i+1] & 0x3F) << 12) | ((merged[i+2] & 0x3F) << 6) | (merged[i+3] & 0x3F);
+        auto it = byte_decoder.find(cp);
+        if (it != byte_decoder.end()) result.push_back((char)it->second);
+        else result.append(merged, i, len);  // not in map: keep as-is
+        i += len;
     }
     return result;
 }
@@ -1502,23 +1630,66 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
     const uint8_t * px, int w, int h, int ch, int * out_len) {
     if (!ctx || !px) { if (out_len) *out_len = 0; return ""; }
 
+    // Isolation test: DS_TEXT_TEST runs the LLM decoder as a pure language
+    // model (no vision) to verify the decoder/MoE/rope in isolation.
+    if (const char *tt = getenv("DS_TEXT_TEST")) {
+        auto &mdl = ctx->inner.m;
+        int D = mdl.lhp.hidden;
+        auto embed_w = to_f32(mdl.embed_tokens);
+        std::vector<int32_t> ids = {0};  // bos
+        auto more = core_bpe::tokenize_simple(ctx->inner.token_to_id, ctx->inner.merge_rank, tt);
+        ids.insert(ids.end(), more.begin(), more.end());
+        std::vector<float> pe((size_t)ids.size() * D);
+        for (size_t i = 0; i < ids.size(); i++)
+            memcpy(pe.data() + i * D, embed_w.data() + (size_t)ids[i] * D, D * sizeof(float));
+        fprintf(stderr, "  [TEXT_TEST] prompt=\"%s\" ids:", tt);
+        for (int id : ids) fprintf(stderr, " %d", id);
+        fprintf(stderr, "\n");
+        std::vector<int32_t> g; std::vector<float> gc;
+        run_llm_decoder(ctx->inner, pe.data(), (int)ids.size(), 40, g, gc);
+        ctx->result = decode_tokens(ctx->inner, g.data(), (int)g.size());
+        if (out_len) *out_len = (int)ctx->result.size();
+        return ctx->result.c_str();
+    }
+
     auto &s = ctx->inner.m.shp;
     int imgS = s.image_size;
 
-    // Resize to (imgS, imgS) with bilinear interpolation + normalize
+    // Preprocess like the HF reference: ImageOps.pad(image, (imgS, imgS)) —
+    // resize preserving aspect ratio to fit inside imgS×imgS, center, and pad
+    // the borders with the mean colour (gray 127). Then normalize to [-1,1]
+    // (mean=std=0.5). The padded border normalizes to exactly 0.
+    float scale = std::min((float)imgS / w, (float)imgS / h);
+    int rw = std::max(1, (int)lroundf(w * scale));
+    int rh = std::max(1, (int)lroundf(h * scale));
+    int ox = (imgS - rw) / 2;
+    int oy = (imgS - rh) / 2;
+
     std::vector<float> pixels(3 * imgS * imgS);
-    for (int c = 0; c < 3; c++)
+    for (int c = 0; c < 3; c++) {
+        int ci = std::min(c, ch - 1);
         for (int y = 0; y < imgS; y++) {
-            float fy = (float)y * h / imgS;
-            int iy = std::min((int)fy, h - 1);
             for (int x = 0; x < imgS; x++) {
-                float fx = (float)x * w / imgS;
-                int ix = std::min((int)fx, w - 1);
-                int ci = std::min(c, ch - 1);
-                float val = (float)px[(iy * w + ix) * ch + ci] / 255.0f;
+                float val;
+                if (x < ox || x >= ox + rw || y < oy || y >= oy + rh) {
+                    val = s.image_mean[c];  // gray padding -> normalizes to 0
+                } else {
+                    // Bilinear sample from source at the un-scaled position.
+                    float sx = (x - ox + 0.5f) / scale - 0.5f;
+                    float sy = (y - oy + 0.5f) / scale - 0.5f;
+                    int x0 = (int)floorf(sx), y0 = (int)floorf(sy);
+                    float dx = sx - x0, dy = sy - y0;
+                    int x1 = std::min(x0 + 1, w - 1), y1 = std::min(y0 + 1, h - 1);
+                    x0 = std::min(std::max(x0, 0), w - 1);
+                    y0 = std::min(std::max(y0, 0), h - 1);
+                    auto P = [&](int xx, int yy) { return (float)px[(yy * w + xx) * ch + ci] / 255.0f; };
+                    val = P(x0,y0)*(1-dx)*(1-dy) + P(x1,y0)*dx*(1-dy)
+                        + P(x0,y1)*(1-dx)*dy     + P(x1,y1)*dx*dy;
+                }
                 pixels[c * imgS * imgS + y * imgS + x] = (val - s.image_mean[c]) / s.image_std[c];
             }
         }
+    }
 
     // 1. SAM vision encoder
     std::vector<float> sam_features;
@@ -1547,20 +1718,65 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
     fprintf(stderr, "deepseek_ocr2: stages done — sam=%d/%d qwen2=%d/%d proj=%d image tokens\n",
             n_sam_tokens, sam_dim, n_enc_tokens, enc_dim, n_enc_tokens);
 
-    // 4. Build prompt: image placeholder tokens
-    int n_img_tokens = n_enc_tokens;
-    std::vector<int32_t> prompt(n_img_tokens, 151643);  // placeholder token IDs
+    // 4. Assemble the LLM prompt embeddings. The HF reference (infer + plain
+    //    template, prompt "<image>\nFree OCR.") builds the token sequence:
+    //        [bos] + <image>*N + <view_sep> + tokenize("\nFree OCR.")
+    //    where the N image placeholders + the view-separator placeholder are
+    //    masked-scatter-replaced by [global_features (N), view_seperator (1)].
+    //    We build the embedding matrix directly: text positions use
+    //    embed_tokens, image positions use the projected vision features, and
+    //    the separator position uses the learned v.view_separator embedding.
+    auto &mdl = ctx->inner.m;
+    auto &lhp = mdl.lhp;
+    int D = lhp.hidden;
+    auto embed_w = to_f32(mdl.embed_tokens);
+    auto vsep    = to_f32(mdl.view_separator);  // [D]
+
+    // Instruction text after <image>. DeepSeek-OCR2 plain prompt: "\nFree OCR."
+    std::vector<int32_t> instr_ids =
+        core_bpe::tokenize_simple(ctx->inner.token_to_id, ctx->inner.merge_rank, "\nFree OCR.");
+
+    int n_img_tokens = n_enc_tokens;            // 256 global features
+    int n_prompt = 1 /*bos*/ + n_img_tokens + 1 /*view_sep*/ + (int)instr_ids.size();
+    std::vector<float> prompt_embeds((size_t)n_prompt * D);
+
+    int row = 0;
+    auto put_tok = [&](int32_t id) {
+        memcpy(prompt_embeds.data() + (size_t)row * D, embed_w.data() + (size_t)id * D,
+               D * sizeof(float));
+        row++;
+    };
+    put_tok(0);  // bos = <｜begin▁of▁sentence｜>
+    for (int i = 0; i < n_img_tokens; i++) {
+        memcpy(prompt_embeds.data() + (size_t)row * D, proj_out.data() + (size_t)i * D,
+               D * sizeof(float));
+        row++;
+    }
+    memcpy(prompt_embeds.data() + (size_t)row * D, vsep.data(), D * sizeof(float));  // view separator
+    row++;
+    for (int32_t id : instr_ids) put_tok(id);
+
+    if (getenv("DS_DBG")) {
+        fprintf(stderr, "  [dbg] prompt: bos + %d img + sep + %zu instr = %d tokens; instr_ids:",
+                n_img_tokens, instr_ids.size(), n_prompt);
+        for (int32_t id : instr_ids) fprintf(stderr, " %d", id);
+        fprintf(stderr, "\n");
+    }
 
     // 5. LLM decoder
     std::vector<int32_t> gen_ids;
     std::vector<float> gen_confs;
-    if (!run_llm_decoder(ctx->inner, proj_out.data(), n_img_tokens,
-                         prompt.data(), (int)prompt.size(), 1024,
+    if (!run_llm_decoder(ctx->inner, prompt_embeds.data(), n_prompt, 1024,
                          gen_ids, gen_confs)) {
         fprintf(stderr, "deepseek_ocr2: LLM decode failed\n");
         if (out_len) *out_len = 0; return "";
     }
 
+    if (getenv("DS_DBG")) {
+        fprintf(stderr, "  [dbg] gen_ids (%zu):", gen_ids.size());
+        for (int id : gen_ids) fprintf(stderr, " %d", id);
+        fprintf(stderr, "\n");
+    }
     ctx->result = decode_tokens(ctx->inner, gen_ids.data(), (int)gen_ids.size());
     ctx->char_confidences = std::move(gen_confs);
     if (out_len) *out_len = (int)ctx->result.size();
