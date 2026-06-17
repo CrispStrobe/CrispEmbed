@@ -113,11 +113,11 @@ struct vision_merger {
 struct llm_layer {
     ggml_tensor *attn_norm_w = nullptr;  // RMSNorm
     ggml_tensor *ffn_norm_w = nullptr;
-    // Attention: Q/K/V have bias, O has no bias
+    // Attention: Qwen2-VL has Q/K/V/O bias; Qwen2.5-VL generally omits them.
     ggml_tensor *q_w = nullptr, *q_b = nullptr;
     ggml_tensor *k_w = nullptr, *k_b = nullptr;
     ggml_tensor *v_w = nullptr, *v_b = nullptr;
-    ggml_tensor *o_w = nullptr;
+    ggml_tensor *o_w = nullptr, *o_b = nullptr;
     // Qwen3-VL: per-head QK RMSNorm
     ggml_tensor *q_norm_w = nullptr;
     ggml_tensor *k_norm_w = nullptr;
@@ -200,6 +200,7 @@ struct llm_result {
     int n_tokens = 0;
     int hidden_dim = 0;
     int vocab_size = 0;
+    int rope_delta = 0;       // mRoPE delta for cached decode after image prefill
     // Graph pointer for KV cache extraction (valid until next call)
     struct ggml_cgraph *kv_graph = nullptr;
     struct ggml_context *kv_graph_ctx = nullptr;  // owns the graph memory
