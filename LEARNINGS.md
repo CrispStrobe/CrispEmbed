@@ -44,13 +44,23 @@ channel counts from the weight `ne[1]`, not a hardcoded 1024 (was an OOB read);
 (b) the LLM rmsnorm multiplied an f32 activation by the f16 norm weight, which
 ggml's elementwise ops reject — `ensure_f32` the weight.
 
-**Still open:** (1) the Qwen2 vision encoder forward — concat `[visual,queries]`
-(not `[queries,visual]`), the token-type attention mask, return `y[:,n_query:]`,
-and apply the final `qe.output_norm` (the engine never loads/applies it). (2)
-End-to-end verification is **hardware-blocked here**: the 3.4B MoE with
-4096-token SAM global attention is impractically slow on this CPU (didn't finish
-the encoder in 500 s), and the fp32 PyTorch reference OOMs a 16 GB Mac — finish
-on the VPS or a GPU box. The `crispembed-quantize` tool was hardened meanwhile:
+**Still open — the Qwen2 vision encoder forward has 5 bugs** (all confirmed vs
+`deepencoderv2.py` `CustomQwen2Decoder`, which subclasses `Qwen2Model`,
+`rope_theta=1e6`): (1) concat `[visual, queries]`, not `[queries, visual]`;
+(2) a token-type attention mask (visual↔visual bidirectional; queries→all-visual
++ causal-among-queries) — the engine is fully bidirectional; (3) **RoPE is
+applied** (positions 0..T-1) — the engine omits it entirely; (4) return
+`y[:, n_vis:]` (the query half), not the first half; (5) apply the final
+`qe.output_norm` (the engine never loads/applies it). The LLM splice/prompt also
+looks wrong (heuristic `token >= 151643`, an all-image-token prompt, and the
+`view_separator` is loaded but unused). These need the diff-vs-HF harness to fix
+safely — applying them blind is risky.
+
+**Verification is hardware-blocked here**: the 3.4B MoE with 4096-token SAM
+global attention is impractically slow on this CPU (didn't finish the encoder in
+500 s), and the fp32 PyTorch reference OOMs a 16 GB Mac — finish on the VPS or a
+GPU box. The engine has diff hooks (`diff_ref_path`: sam_output / qwen2_enc_output
+/ projector_output) ready for that pass. The `crispembed-quantize` tool was hardened meanwhile:
 it keeps the MoE router (`*.mlp_gate.weight` / `ffn_gate_inp`) and the `qe.*`
 Qwen2 encoder at Q8_0.
 
