@@ -1,5 +1,46 @@
 # CrispEmbed — Technical Learnings
 
+## DeepSeek-OCR-2: an untested, fundamentally-incomplete port (2026-06)
+
+`deepseek_ocr2.cpp` + `convert-deepseek-ocr2-to-gguf.py` were committed in a
+single feat commit and **never ran end-to-end** — the published GGUF
+(`cstr/deepseek-ocr2-crispembed-GGUF`) will not even load. Diagnosed via the
+HF blueprints (`deepencoderv2.py`, `modeling_deepseekocr2.py`,
+`modeling_deepseekv2.py`) + a metadata dump:
+
+1. **Converter is a stub — no tensor renaming.** It does
+   `for name in header: writer.add_tensor(name, ...)`, emitting raw HF names
+   (`model.sam_model.*`, `model.qwen2_model.model.model.layers.N.*`,
+   `model.layers.N.*`). The engine loads short names (`v.*`, `qe.*`, `l.*`), so
+   it finds *zero* tensors. An audit of all converters shows this is the only
+   complex-VLM converter with no rename map (lightonocr=20, pix2struct=19,
+   firered=17, layout=14, decoder-embed=10, qwen2vl/internvl2/glm/got=6-8). The
+   renames=0 outliers otherwise are simple SR/restoration nets (esrgan, swinir,
+   scunet, …) whose engines match the raw names — those are fine.
+2. **merges written as array-of-arrays.** tokenizer.json stores merges as
+   `[a, b]` pairs; the converter wrote them as a GGUF nested array (elemtype 9),
+   which ggml rejects ("invalid GGUF type 9"). Must flatten to `"a b"` strings
+   (same fix as Qari). FIXED in the converter.
+3. **Tensor names exceed GGML_MAX_NAME (64).** Because of (1), names like
+   `model.qwen2_model.model.model.layers.N.post_attention_layernorm.weight` (70
+   chars) blow the ggml limit — a free consequence of not renaming.
+
+Engine bugs found by blueprint comparison (use_mla=False → standard
+`LlamaAttention`, so an agent's MLA RoPE/scale findings were false positives):
+- **MoE gate**: config `norm_topk_prob=False`, `routed_scaling_factor=1.0` →
+  use the raw top-k softmax probs; the engine renormalized them. FIXED.
+- **Qwen2 vision encoder** (`CustomQwen2`): blueprint concatenates
+  `[visual, queries]`, applies a token-type mask (visual↔visual bidirectional;
+  queries→all-visual + causal-among-queries), and returns `y[:, n_query:]`. Our
+  engine has the order reversed, is fully bidirectional, and returns the first
+  half. NOT fixed (needs a loadable GGUF to verify).
+
+**Status:** completing this port needs a converter rewrite (full HF→engine name
+map), re-conversion from the safetensors, the remaining engine fixes, and a
+diff-vs-HF pass — the last is hard here (3.4B fp32 ref OOMs a 16 GB Mac). The
+`crispembed-quantize` tool was hardened meanwhile: it now keeps the MoE router
+(`*.mlp_gate.weight` / `ffn_gate_inp`) and the `qe.*` Qwen2 encoder at Q8_0.
+
 ## Qwen2-VL (Qari-OCR) parity: four independent bugs, four layers
 
 Qari-OCR (a Qwen2-VL-2B Arabic OCR fine-tune) produced garbage. The diff
