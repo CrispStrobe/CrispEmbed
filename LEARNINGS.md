@@ -35,11 +35,24 @@ Engine bugs found by blueprint comparison (use_mla=False → standard
   engine has the order reversed, is fully bidirectional, and returns the first
   half. NOT fixed (needs a loadable GGUF to verify).
 
-**Status:** completing this port needs a converter rewrite (full HF→engine name
-map), re-conversion from the safetensors, the remaining engine fixes, and a
-diff-vs-HF pass — the last is hard here (3.4B fp32 ref OOMs a 16 GB Mac). The
-`crispembed-quantize` tool was hardened meanwhile: it now keeps the MoE router
-(`*.mlp_gate.weight` / `ffn_gate_inp`) and the `qe.*` Qwen2 encoder at Q8_0.
+**Progress (2026-06):** the converter now has the full HF→engine rename map and
+deepseek_ocr2 is wired into the `--ocr` arch dispatcher, so the model **loads
+(2707 tensors) and runs through the SAM stack without crashing**. Two crashes
+fixed along the way: (a) the SAM downsample `net_3` outputs 896 channels (the
+Qwen2 dim), not the config's nominal `downsample_channels` 1024 — derive the
+channel counts from the weight `ne[1]`, not a hardcoded 1024 (was an OOB read);
+(b) the LLM rmsnorm multiplied an f32 activation by the f16 norm weight, which
+ggml's elementwise ops reject — `ensure_f32` the weight.
+
+**Still open:** (1) the Qwen2 vision encoder forward — concat `[visual,queries]`
+(not `[queries,visual]`), the token-type attention mask, return `y[:,n_query:]`,
+and apply the final `qe.output_norm` (the engine never loads/applies it). (2)
+End-to-end verification is **hardware-blocked here**: the 3.4B MoE with
+4096-token SAM global attention is impractically slow on this CPU (didn't finish
+the encoder in 500 s), and the fp32 PyTorch reference OOMs a 16 GB Mac — finish
+on the VPS or a GPU box. The `crispembed-quantize` tool was hardened meanwhile:
+it keeps the MoE router (`*.mlp_gate.weight` / `ffn_gate_inp`) and the `qe.*`
+Qwen2 encoder at Q8_0.
 
 ## Qwen2-VL (Qari-OCR) parity: four independent bugs, four layers
 
