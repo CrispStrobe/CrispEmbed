@@ -66,12 +66,45 @@ Two KV-cache designs exist across the autoregressive decoders:
   k_view))`. No host read-back, cpy materializes. **Safe** — prefer this pattern
   for new backends.
 
-Audit result: `lightonocr.cpp` has the bug **and is confirmed broken** (loops
-"ALIEN" on a trivial English page even with the cont fix → it has further bugs;
-needs a full diff-vs-HF pass). `deepseek_ocr2.cpp` has the same read-back +
-reshape-view pattern (untested, no local model). got/glm/internvl2 are safe (cpy
-pattern). All CPU-scalar decoders (mixtex, bttr, hmer, posformer, ppformulanet*,
-granite_vision, math_ocr, decoder_embed) have no ggml decode graph → immune.
+Audit result: `lightonocr.cpp` had the cont bug AND three more (see next
+section); now fixed and matching HF. `deepseek_ocr2.cpp` has the same read-back +
+reshape-view pattern (untested, no local model — likely also broken). got/glm/
+internvl2 are safe (cpy pattern). All CPU-scalar decoders (mixtex, bttr, hmer,
+posformer, ppformulanet*, granite_vision, math_ocr, decoder_embed) have no ggml
+decode graph → immune.
+
+## LightOnOCR-2-1B (Pixtral ViT + Qwen3): four bugs, fixed via HF diff
+
+LightOnOCR looped ("ALIEN…", then digit garbage) despite a git note claiming the
+KV cache was "confirmed working". A PyTorch diff (dump `vision_tower` /
+`multi_modal_projector` / `language_model` layer outputs, compare per-row cos)
+localized **four** bugs — the projection ones were the blockers (proj cos was
+≈0, i.e. random):
+
+1. **KV-cache V was a reshape view** marked `set_output` and read back → garbage
+   (the cross-backend bug above). `ggml_cont` before `set_output` + expand the
+   side outputs.
+2. **Pixtral 2D-RoPE built interleaved but applied rotate-half.** The cos/sin
+   table used interleaved layout (`dim[2i]`=h, `dim[2i+1]`=w) and `freqs[i]` for
+   both axes, but `apply_rope` is rotate-half. Pixtral
+   (`PixtralRotaryEmbedding`) is rotate-half: `freqs=1/theta^(2k/dim)`, height
+   uses `freqs[::2]`, width `freqs[1::2]`, angle vector `[h(dim/4)|w(dim/4)]`
+   **repeated** across the two halves (idx j and j+dim/2 share the angle).
+   Verified numerically equal to HF (max diff 0.0).
+3. **Projector RMSNorm in the wrong place.** `Mistral3MultiModalProjector` is
+   `norm → patch_merger → linear_1 → gelu → linear_2`; the C++ applied the norm
+   *last*. The norm is an RMSNorm over the per-patch D-dim vision features,
+   **before** the 2×2 merge.
+4. **Patch-merger merge order was patch-major, not channel-major.** Mistral3's
+   `Mistral3PatchMerger` uses `F.unfold`, which lays out the `D·merge²` vector
+   **channel-major**: `[c0·(k00,k01,k10,k11), c1·…]`. The C++ concatenated whole
+   patches (`[patch00's D ch | patch01's D ch | …]`) — a permutation the merging
+   weight can't undo (→ proj cos ≈ 0, random). Fix: `dst[c*msq + kpos] = src[c]`.
+
+Result: first token and OCR text match HF exactly ("Qari OCR parity smoke test /
+Invoice number: QA-2026-0616 / Total due: $42.75 / Please return plain text
+only."). `vis_out` cos ≈0.99 / `proj_out` ≈0.88 vs fp32 HF is just q4_k
+quantization — the greedy output is still exact.
 
 **Diagnostic tells:** a VLM that says "I'm just a text-based assistant" or
 paraphrases the OCR instruction (often in Chinese, the Qwen base language) is
