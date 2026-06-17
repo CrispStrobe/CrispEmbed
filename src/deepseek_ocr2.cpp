@@ -1184,10 +1184,11 @@ static void moe_ffn_cpu(ds_ocr2_ctx &ctx, int li, float *hidden, int T) {
         std::partial_sort(scored.begin(), scored.begin() + top_k, scored.end(),
                           [](auto &a, auto &b) { return a.first > b.first; });
 
-        // Normalize top-k weights to sum to 1
-        float wsum = 0;
-        for (int k = 0; k < top_k; k++) wsum += scored[k].first;
-        if (wsum > 0) for (int k = 0; k < top_k; k++) scored[k].first /= wsum;
+        // DeepSeek-V2 MoE gate: config norm_topk_prob=False and
+        // routed_scaling_factor=1.0, so the routed weights are the raw softmax
+        // probabilities of the top-k experts — do NOT renormalize them to sum 1.
+        // (Renormalizing changes the relative expert weighting and the output.)
+        // The optional scaling factor is applied via `scale` below.
 
         // Run top-k routed experts
         std::vector<float> routed_out(D, 0.0f);
