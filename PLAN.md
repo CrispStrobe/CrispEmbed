@@ -1086,7 +1086,7 @@ fine-tune of this). Architecture: 32-layer ViT (1280d) + spatial merger
 | CLI + model registry | DONE | `--ocr` dispatch, model_mgr entries for qwen2vl/german-ocr |
 | Python bindings | DONE | Via `CrispOcrPipeline` / `CrispOcrOrchestrator` |
 | CrispCalc catalog | N/A | Superceded by model_mgr registry |
-| KV cache | DONE | Prefill + single-token decode with per-layer K/V cache |
+| KV cache | PARTIAL | Extraction fixed (k_out/v_out were pruned from the graph); single-token decode graph still diverges from full recompute after a few steps. Default is the exact full-recompute path; opt into cached decode with `CRISPEMBED_USE_KV_CACHE=1`. TODO: fix `build_decode_step_graph` to match `run_llm_forward` token-for-token. |
 | C++ image preprocessor | DONE | Qwen2VL: smart_resize+patchify, InternVL2: dynamic tiling, GOT/GLM: resize+normalize |
 | Load Keyven fine-tune | DONE | Same architecture, just different weights — runs unchanged |
 
