@@ -1058,10 +1058,11 @@ LoRA fine-tune (r=16, 324 pairs) of Qwen2-VL-2B-Instruct on 50K Arabic samples.
    fixed with `ggml_cont` before `ggml_set_output`.
 
 **Cross-backend KV-cache audit** (same view/prune bug class): `lightonocr.cpp`
-shares the read-back pattern and is **confirmed broken** (loops on a trivial
-page) — needs its own diff-vs-HF pass; `deepseek_ocr2.cpp` has the same pattern
-(untested). `got_ocr`/`glm_ocr`/`internvl2_ocr` use the safe `ggml_cpy`-to-
-persistent-buffer pattern. See the KV cache table row above and LEARNINGS.md.
+shared the read-back pattern AND had three more bugs (Pixtral 2D-RoPE layout,
+projector norm order, channel-major patch-merge) — all **fixed**, now matches HF
+token-for-token (see LEARNINGS.md 'LightOnOCR-2-1B'). `deepseek_ocr2.cpp` has the
+same read-back pattern (untested, likely also broken). `got_ocr`/`glm_ocr`/
+`internvl2_ocr` use the safe `ggml_cpy`-to-persistent-buffer pattern.
 
 ---
 
