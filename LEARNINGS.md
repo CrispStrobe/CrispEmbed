@@ -1,5 +1,57 @@
 # CrispEmbed — Technical Learnings
 
+## Qwen2-VL (Qari-OCR) parity: four independent bugs, four layers
+
+Qari-OCR (a Qwen2-VL-2B Arabic OCR fine-tune) produced garbage. The diff
+harness (`test-qwen2vl-diff`) plus a PyTorch ground-truth comparison localized
+**four** independent bugs, one per layer of the stack. Methodology: dump the
+HF model's vision-merger output, token_ids and per-layer LLM hidden states for a
+real image, inject them into the C++ engine via test hooks (`GEN_FROM_REF`,
+`LLM_FROM_REF`), and bisect.
+
+1. **Vision MLP activation.** Qwen2-VL `VisionMlp` uses `ACT2FN[hidden_act]`
+   with the *vision* config default `hidden_act="quick_gelu"` (`x·σ(1.702x)`),
+   NOT the merger's exact `nn.GELU()`. The engine used `ggml_gelu_erf` for both.
+   Fix: `ggml_gelu_quick` for the ViT block, keep `ggml_gelu_erf` for the
+   merger. (vis_layer_0 cos 0.995 → 0.99999.)
+
+2. **Vision 2D-RoPE inv_freq.** `VisionRotaryEmbedding` is built with
+   `dim = head_dim/2`, so `inv_freq[j] = theta^(-2j/(head_dim/2))`. Using
+   `head_dim` in the denominator makes the frequencies decay half as fast —
+   a subtle error (layer 0 still ~0.995) that compounds over 32 layers to
+   destroy the merger (cos 0.06). Shared by Qwen2.5-VL (same
+   `VisionRotaryEmbedding(head_dim//2)`), so the fix is correct for both.
+   (vis_merger 0.37 → 0.99; last_logits 0.96 → 0.9999.)
+
+3. **`last_logits` validates only the LAST position.** The prefill's final-token
+   logit matched HF at 0.9999, yet generation was garbage. For the last token,
+   causal == bidirectional attention, so a correct last-token logit does NOT
+   prove the per-position KV is right. Always validate intermediate positions
+   (per-layer hidden states across the WHOLE sequence) before trusting prefill —
+   `LLM_FROM_REF` (inject HF embeds) gave cos 0.99997 across all 714 positions
+   and proved the LLM forward correct, isolating the bug to generation.
+
+4. **No-cache decode dropped the image; KV-cache outputs were pruned.** The
+   single-token decode fell back to a full-recompute path that called
+   `run_llm_forward` WITHOUT the image (image-blind → the model "describes a
+   blank page" / answers conversationally). Separately, the KV-cache path was
+   *never* active: the `k_out_N`/`v_out_N` side-output tensors are not ancestors
+   of the logits, so `ggml_build_forward_expand(gf, logits)` pruned them and
+   `ggml_graph_get_tensor` returned null → silent fallback to no-cache. Fix:
+   pass the image to the recompute path, and `ggml_build_forward_expand` each
+   side output explicitly so it survives graph construction.
+
+**Diagnostic tells:** a VLM that says "I'm just a text-based assistant" or
+paraphrases the OCR instruction (often in Chinese, the Qwen base language) is
+not seeing the image — suspect splice/decode, not vision. Conversely, output
+that's coherent-but-wrong-content with a correct first token points at
+per-position KV, not the prefill logit.
+
+**Out-of-distribution caveat:** Qari is an *Arabic full-page* OCR model. Test it
+on rendered Arabic (PIL + raqm, `direction='rtl'`), not sparse English — with a
+describe-style prompt and a tiny image it legitimately answers "blank page",
+matching HF.
+
 ## GELU variant matters for token classification
 
 HuggingFace/PyTorch uses erf-exact GELU (`torch.nn.functional.gelu`), not the

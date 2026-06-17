@@ -1141,6 +1141,11 @@ bool run_llm_forward(context &ctx,
         return ggml_mul(g, y, w);
     };
 
+    // Collect post-RoPE K/V output tensors so the graph builder includes them
+    // (they are side outputs, not ancestors of the logits — without this they
+    // are pruned and the KV cache can't be extracted).
+    std::vector<ggml_tensor *> kv_out_tensors;
+
     // Decoder layers
     for (int il = 0; il < n_layers; il++) {
         const auto &ly = ctx.m.llm_layers[il];
@@ -1204,6 +1209,8 @@ bool run_llm_forward(context &ctx,
             ggml_set_name(V_flat, vname);
             ggml_set_output(K_flat);
             ggml_set_output(V_flat);
+            kv_out_tensors.push_back(K_flat);
+            kv_out_tensors.push_back(V_flat);
         }
 
         // GQA: interleave KV heads to match Q heads
@@ -1284,6 +1291,9 @@ bool run_llm_forward(context &ctx,
     }
 
     ggml_build_forward_expand(gf, x);
+    // Also expand for the KV-cache side outputs so they are computed and
+    // retrievable by generate() (otherwise the KV cache silently disables).
+    for (ggml_tensor *t : kv_out_tensors) ggml_build_forward_expand(gf, t);
 
     // Allocate and compute
     ggml_backend_sched_reset(ctx.sched);
@@ -1684,8 +1694,11 @@ bool generate(context &ctx,
     // k_out_N / v_out_N tensors: (kv_dim, n_prompt_tokens) each
     std::vector<std::vector<float>> k_cache(n_layers);
     std::vector<std::vector<float>> v_cache(n_layers);
-    bool kv_ok = (prefill.kv_graph != nullptr);
-    if (getenv("CRISPEMBED_NO_KV_CACHE")) kv_ok = false;
+    // The single-token KV-cache decode graph still diverges from the full
+    // recompute after a few steps (tracked in PLAN.md). The full-recompute
+    // path is exact (matches HF token-for-token), so default to it; opt into
+    // the faster cached decode with CRISPEMBED_USE_KV_CACHE=1.
+    bool kv_ok = (prefill.kv_graph != nullptr) && getenv("CRISPEMBED_USE_KV_CACHE");
 
     if (kv_ok) {
         for (int il = 0; il < n_layers; il++) {
@@ -1756,7 +1769,8 @@ bool generate(context &ctx,
             for (auto id : out.token_ids) all_tokens.push_back(id);
 
             llm_result fwd = {};
-            ok = run_llm_forward(ctx, all_tokens.data(), (int)all_tokens.size(), fwd);
+            ok = run_llm_forward(ctx, all_tokens.data(), (int)all_tokens.size(), fwd,
+                                 (img_in.image_embeds) ? &img_in : nullptr);
             if (!ok || !fwd.logits) {
                 if (fwd.hidden) free(fwd.hidden);
                 if (fwd.logits) free(fwd.logits);
@@ -1801,7 +1815,9 @@ bool generate(context &ctx,
             {
                 // Read one row from embed_tokens (may be quantized)
                 // Use a tiny ggml graph: get_rows(embed_tokens, [best_id])
-                ggml_init_params eip{4096, nullptr, true};
+                ggml_init_params eip{
+                    ggml_graph_overhead() + 8 * ggml_tensor_overhead(),
+                    nullptr, true};
                 ggml_context *eg = ggml_init(eip);
                 ggml_tensor *idx = ggml_new_tensor_1d(eg, GGML_TYPE_I32, 1);
                 ggml_set_input(idx);
@@ -2080,21 +2096,17 @@ static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
     std::string model_path_lc = gguf_path ? gguf_path : "";
     for (char &c : model_path_lc) c = (char)std::tolower((unsigned char)c);
     const bool is_qari = model_path_lc.find("qari-ocr") != std::string::npos;
-    // Qari-OCR's long OCR instruction. NOTE: with the current chat framing the
-    // model does not reliably enter OCR mode (it answers conversationally), so
-    // this is opt-in via CRISPEMBED_QARI_LONG_PROMPT while the exact template is
-    // pinned down. Default is the standard "Describe this image." (validated to
-    // match the HF prefill at cos≈0.9999). See handover notes.
-    if (is_qari && getenv("CRISPEMBED_QARI_LONG_PROMPT")) {
+    // Qari-OCR's documented inference prompt (NAMAA-Space model card): standard
+    // Qwen2-VL chat template (system "You are a helpful assistant." included by
+    // the template) + this exact single-line instruction in the user turn.
+    // Set CRISPEMBED_QARI_STD_PROMPT=1 to use the generic "Describe this image."
+    if (is_qari && !getenv("CRISPEMBED_QARI_STD_PROMPT")) {
         ctx->use_qari_default_prompt = true;
-        // EXACT Qari training prompt — note the embedded newlines ("\n ") after
-        // each sentence, which the model was fine-tuned on. Flattening them to
-        // spaces changes tokenization and breaks OCR-mode recognition.
         ctx->prompt =
             "Below is the image of one page of a document, as well as some raw "
-            "textual content that was previously extracted for it.\n Just return "
+            "textual content that was previously extracted for it. Just return "
             "the plain text representation of this document as if you were reading "
-            "it naturally.\n Do not hallucinate.\n";
+            "it naturally. Do not hallucinate.";
     }
 
     // Load BPE tokenizer from GGUF metadata
@@ -2223,6 +2235,19 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx,
                                      pp.grid_thw, vis)) {
         fprintf(stderr, "qwen2vl_ocr: vision encoder failed\n");
         return nullptr;
+    }
+
+    if (const char *dp = getenv("CRISPEMBED_DUMP_MERGER")) {
+        FILE *df = fopen(dp, "wb");
+        if (df) {
+            int hdr[2] = {vis.n_merged, vis.embed_dim};
+            fwrite(hdr, sizeof(int), 2, df);
+            fwrite(vis.image_embeds, sizeof(float),
+                   (size_t)vis.n_merged * vis.embed_dim, df);
+            fclose(df);
+            fprintf(stderr, "qwen2vl_ocr: dumped merger to %s (%d x %d)\n",
+                    dp, vis.n_merged, vis.embed_dim);
+        }
     }
 
     // 2. Build token IDs with image_pad placeholders

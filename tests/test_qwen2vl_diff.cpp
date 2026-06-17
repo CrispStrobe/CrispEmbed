@@ -107,6 +107,9 @@ int main(int argc, char **argv) {
         }
     }
 
+    if (const char *ge = getenv("CRISPEMBED_GRID")) {
+        sscanf(ge, "%d,%d,%d", &grid_thw[0], &grid_thw[1], &grid_thw[2]);
+    }
     bool has_vision = (grid_thw[1] > 0 && grid_thw[2] > 0);
     if (!has_vision) {
         printf("No vision tensors in reference — LLM-only test mode\n");
