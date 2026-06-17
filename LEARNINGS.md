@@ -1,6 +1,11 @@
 # CrispEmbed — Technical Learnings
 
-## DeepSeek-OCR-2: an untested, fundamentally-incomplete port (2026-06)
+## DeepSeek-OCR-2: from a never-run port to character-perfect OCR (2026-06)
+
+> **Status: WORKING.** Character-perfect OCR on Metal + q4_k. The history below
+> is preserved because the failure modes (stub converter, scrambled/aliased KV
+> cache, missing instruction prompt, wrong normalization) are instructive — jump
+> to "RESOLVED (2026-06)" for the fixes that landed it.
 
 `deepseek_ocr2.cpp` + `convert-deepseek-ocr2-to-gguf.py` were committed in a
 single feat commit and **never ran end-to-end** — the published GGUF
@@ -44,25 +49,55 @@ channel counts from the weight `ne[1]`, not a hardcoded 1024 (was an OOB read);
 (b) the LLM rmsnorm multiplied an f32 activation by the f16 norm weight, which
 ggml's elementwise ops reject — `ensure_f32` the weight.
 
-**Still open — the Qwen2 vision encoder forward has 5 bugs** (all confirmed vs
-`deepencoderv2.py` `CustomQwen2Decoder`, which subclasses `Qwen2Model`,
-`rope_theta=1e6`): (1) concat `[visual, queries]`, not `[queries, visual]`;
-(2) a token-type attention mask (visual↔visual bidirectional; queries→all-visual
-+ causal-among-queries) — the engine is fully bidirectional; (3) **RoPE is
-applied** (positions 0..T-1) — the engine omits it entirely; (4) return
-`y[:, n_vis:]` (the query half), not the first half; (5) apply the final
-`qe.output_norm` (the engine never loads/applies it). The LLM splice/prompt also
-looks wrong (heuristic `token >= 151643`, an all-image-token prompt, and the
-`view_separator` is loaded but unused). These need the diff-vs-HF harness to fix
-safely — applying them blind is risky.
+The Qwen2 vision encoder forward had 5 bugs (all confirmed vs `deepencoderv2.py`
+`CustomQwen2Decoder`, which subclasses `Qwen2Model`, `rope_theta=1e6`):
+(1) concat `[visual, queries]`, not `[queries, visual]`; (2) a token-type
+attention mask (visual↔visual bidirectional; queries→all-visual + causal-among-
+queries) — the engine was fully bidirectional; (3) **RoPE is applied**
+(positions 0..T-1) — the engine omitted it; (4) return `y[:, n_vis:]` (the query
+half), not the first half; (5) apply the final `qe.output_norm`. All five FIXED.
 
-**Verification is hardware-blocked here**: the 3.4B MoE with 4096-token SAM
-global attention is impractically slow on this CPU (didn't finish the encoder in
-500 s), and the fp32 PyTorch reference OOMs a 16 GB Mac — finish on the VPS or a
-GPU box. The engine has diff hooks (`diff_ref_path`: sam_output / qwen2_enc_output
-/ projector_output) ready for that pass. The `crispembed-quantize` tool was hardened meanwhile:
-it keeps the MoE router (`*.mlp_gate.weight` / `ffn_gate_inp`) and the `qe.*`
-Qwen2 encoder at Q8_0.
+**RESOLVED (2026-06): character-perfect OCR on Metal + q4_k.** The key
+unlock was the user's insight — quantize to q4_k and run on the Metal GPU
+(`cmake -B build -DGGML_METAL=ON -DGGML_METAL_EMBED_LIBRARY=ON`) instead of
+fighting CPU speed. With Metal active (~20 s prefill, MoE expert dispatch
+parallelized across `n_threads` with `std::thread`), the pipeline became fast
+enough to iterate. The remaining bugs, in the order they unblocked the output:
+
+1. **KV-cache axis scramble.** K/V were `permute(0,2,1,3)`'d before flattening
+   to `[nkv*hd, T]`, transposing the token and head axes vs the reload's
+   `reshape_3d(hd, nkv, n_past)`. Flatten with a plain `cont()+reshape`, no
+   permute — exactly the verified qwen2vl_ocr path. This alone fixed the first
+   generated token.
+2. **KV-cache buffer aliasing** (the "first token right, rest garbage"
+   signature). `k_out`/`v_out` were views sharing the *same* `cont(K/V)` buffer
+   the attention path consumes; under the no-alloc scheduler that buffer is
+   recycled once attention reads it, so prefill computed the right first token
+   but **cached garbage**. Give the cache outputs their own `cont` and
+   `ggml_build_forward_expand` them (they are not ancestors of `layer_output`).
+   Isolation that nailed this: `DS_NO_KV` (recompute the full sequence each
+   step) produced " Paris." for "The capital of France is" while the cached
+   path produced "Paris vro vro…".
+3. **Prompt construction.** The decoder was fed 256 placeholder tokens with no
+   bos, no view-separator and no instruction. The HF `infer` + plain template
+   builds `[bos] + <image>*256 + <view_sep> + tokenize("Free OCR.")`; the 257
+   image/sep slots are masked-scatter-replaced by `[global_features(256),
+   view_seperator(1)]`. Assemble that as an embedding matrix directly (text
+   slots from `embed_tokens`, image slots from the projector, separator from the
+   learned `v.view_separator`). `image_token_id` is **128815**, not the Qwen
+   `151643` the old heuristic assumed; eos is **1** (`<｜end▁of▁sentence｜>`).
+4. **Byte-level BPE I/O.** Added a `core_bpe` encoder (merges loaded from the
+   GGUF) to tokenize the instruction, and the **inverse** GPT-2 byte map on
+   decode so pieces render as text (`Ġ`→space) instead of raw byte-unicode.
+5. **Image preprocessing.** DeepSeek-OCR2 uses `mean=std=0.5` ([-1,1]), **not**
+   CLIP normalization, and `ImageOps.pad` (aspect-preserving resize + gray
+   border), not a stretch resize. With CLIP mean/std the model hallucinated a
+   markdown table; with the correct preprocessing it reads the page verbatim.
+
+The diagnostics added for this (`DS_DBG`, `DS_NO_KV`, `DS_TEXT_TEST`) are
+env-gated and left in. The `crispembed-quantize` tool keeps the MoE router
+(`*.mlp_gate.weight` / `ffn_gate_inp`) and the `qe.*` Qwen2 encoder at Q8_0,
+which is what makes q4_k safe for this MoE.
 
 ## Qwen2-VL (Qari-OCR) parity: four independent bugs, four layers
 
