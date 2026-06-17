@@ -1023,7 +1023,7 @@ existing GGUF and write native inference.
 
 ---
 
-### Blueprint: Qari-OCR (Arabic, 2B, Apache-2.0) — CONVERTED, PARITY BUG OPEN
+### Blueprint: Qari-OCR (Arabic, 2B, Apache-2.0) — FIXED (matches HF token-for-token)
 
 **Goal**: Arabic OCR with diacritics support (tashkeel).
 
@@ -1042,22 +1042,26 @@ LoRA fine-tune (r=16, 324 pairs) of Qwen2-VL-2B-Instruct on 50K Arabic samples.
 - [x] Registry entry: `qari-ocr`
 - [x] mRoPE grid_thw fix (was using dummy [1,1,1])
 - [x] Reference GGUF captured (11 tensors: vis layers, merger, LLM layers, logits)
-- [ ] **PARITY BUG**: CrispEmbed generates hallucinated prompt text instead of OCR
+- [x] **PARITY BUG FIXED** — five bugs across four layers (see LEARNINGS.md
+  "Qwen2-VL (Qari-OCR) parity: four independent bugs, four layers"). Verified
+  on a rendered Arabic page: cached decode reproduces PyTorch
+  `Qwen2VLForConditionalGeneration` token-for-token.
 
-**Diagnostic findings** (Kaggle diff harness):
-- PyTorch output: `'This image contains the text "Hello World 2024".'`
-- CrispEmbed output: `'Below is the plain text representation...'` (prompt echo)
-- PyTorch top-1 at last position: `This` (18.13)
-- CrispEmbed top-1: `Below` (14.19) — different token, lower score
-- Vision activations: shapes correct (132×1280, merger 33×1536)
-- Token IDs: 58 tokens, 33 image_pad, grid [1,6,22] — all match
-- **Divergence is in prefill logits** — vision embeds reach LLM but
-  produce different attention patterns. Likely cause: Qwen2-VL uses
-  GELU vision FFN (fc1/fc2) vs Qwen2.5-VL's SwiGLU (gate/up/down),
-  and the C++ forward pass may have a subtle difference in activation
-  or normalization order for the Qwen2-VL variant.
-- Reference GGUF at `cstr/qari-ocr-crispembed-GGUF/qari-ocr-ref.gguf`
-  for offline per-layer cos comparison via test-qwen2vl-diff.
+**Root causes (all fixed):**
+1. Vision MLP used `gelu_erf`; Qwen2-VL `VisionMlp` is `quick_gelu`.
+2. Vision 2D-RoPE `inv_freq` used `head_dim`; should be `head_dim/2`
+   (`VisionRotaryEmbedding(head_dim//2)`). Shared by Qwen2.5-VL.
+3. No-cache decode fallback dropped the image (image-blind generation).
+4. KV-cache side outputs (`k_out`/`v_out`) pruned from the graph → silent
+   no-cache → fixed with explicit `ggml_build_forward_expand`.
+5. Cached V was a `ggml_reshape` *view* the scheduler reused → garbage →
+   fixed with `ggml_cont` before `ggml_set_output`.
+
+**Cross-backend KV-cache audit** (same view/prune bug class): `lightonocr.cpp`
+shares the read-back pattern and is **confirmed broken** (loops on a trivial
+page) — needs its own diff-vs-HF pass; `deepseek_ocr2.cpp` has the same pattern
+(untested). `got_ocr`/`glm_ocr`/`internvl2_ocr` use the safe `ggml_cpy`-to-
+persistent-buffer pattern. See the KV cache table row above and LEARNINGS.md.
 
 ---
 
