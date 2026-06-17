@@ -1565,7 +1565,13 @@ static ggml_cgraph * build_decode_step_graph(
                                 head_dim, sections, GGML_ROPE_TYPE_MROPE,
                                 0, lhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-        // Output new K/V for cache append
+        // Output new K/V for cache append. V_new is a reshape *view* of the
+        // V projection; the no-alloc scheduler may reuse that buffer before we
+        // read it back, so materialize both into their own buffers via cont
+        // (K_new comes straight from rope and is already materialized, but cont
+        // it too for symmetry/safety).
+        K_new = ggml_cont(g, K_new);
+        V_new = ggml_cont(g, V_new);
         std::snprintf(name, sizeof(name), "k_out_%d", il);
         ggml_set_name(K_new, name);
         ggml_set_output(K_new);
@@ -1694,11 +1700,12 @@ bool generate(context &ctx,
     // k_out_N / v_out_N tensors: (kv_dim, n_prompt_tokens) each
     std::vector<std::vector<float>> k_cache(n_layers);
     std::vector<std::vector<float>> v_cache(n_layers);
-    // The single-token KV-cache decode graph still diverges from the full
-    // recompute after a few steps (tracked in PLAN.md). The full-recompute
-    // path is exact (matches HF token-for-token), so default to it; opt into
-    // the faster cached decode with CRISPEMBED_USE_KV_CACHE=1.
-    bool kv_ok = (prefill.kv_graph != nullptr) && getenv("CRISPEMBED_USE_KV_CACHE");
+    // KV-cache decode now matches the full recompute token-for-token (the V
+    // side output had to be cont'd — it was a reshape view the scheduler
+    // reused). Cached decode is the default; CRISPEMBED_NO_KV_CACHE=1 forces
+    // the (exact, slower) full-recompute path for A/B comparison.
+    bool kv_ok = (prefill.kv_graph != nullptr);
+    if (getenv("CRISPEMBED_NO_KV_CACHE")) kv_ok = false;
 
     if (kv_ok) {
         for (int il = 0; il < n_layers; il++) {
