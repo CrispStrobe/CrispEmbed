@@ -234,13 +234,14 @@ curl -X POST http://localhost:8080/ner/extract \
 
 ## OCR
 
-Thirteen engines for image → text, all auto-detected from GGUF metadata via
+Fourteen engines for image → text, all auto-detected from GGUF metadata via
 the unified `crispembed_math_ocr_*` C API. Available through CLI (`--ocr`),
 HTTP server (`POST /math/ocr`), Python (`CrispMathOcr`), Rust, and Dart/Flutter.
 
 | Model | Architecture | Params | Q4_K Size | Use case | License |
 |-------|-------------|--------|-----------|----------|---------|
 | **BTTR** | DenseNet + Transformer | 6.5M | — | Handwritten math | MIT |
+| **DeepSeek-OCR-2** | SAM ViT-B + Qwen2 enc + DeepSeek-V2 MoE | 3B | 2.2 GB | Document OCR (runs on Metal + q4_k) | Apache-2.0 |
 | **DeiT+TrOCR** | DeiT-S + TrOCR | 65M | — | Printed math | Apache-2.0 |
 | **GLM-OCR** | CogViT + GLM-0.5B | 0.9B | 849 MB | Document OCR (OmniDocBench #1, 8 langs) | MIT |
 | **GOT-OCR2** | SAM ViT-B + Qwen2-0.5B | 0.7B | 422 MB | Document OCR (text+LaTeX+tables) | Apache-2.0 |
