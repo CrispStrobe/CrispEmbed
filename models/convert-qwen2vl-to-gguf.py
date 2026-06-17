@@ -296,7 +296,8 @@ def main():
         writer.add_string("tokenizer.ggml.model", "gpt2")  # GPT-2 byte-level BPE
         writer.add_uint32("tokenizer.ggml.type", 1)  # 1 = BPE
 
-        # Write BPE merges
+        # Write BPE merges. Some Qwen2-VL adapter repos (including Qari-OCR)
+        # ship merges only inside tokenizer.json rather than as merges.txt.
         try:
             merges_file = resolve_file("merges.txt")
             with open(merges_file) as mf:
@@ -308,7 +309,23 @@ def main():
             writer.add_array("tokenizer.ggml.merges", raw_merges)
             print(f"  Merges: {len(raw_merges)}")
         except Exception as e:
-            print(f"  Merges not found ({e}) — tokenizer will use vocab-only mode")
+            try:
+                tok_json_file = resolve_file("tokenizer.json")
+                with open(tok_json_file, "r", encoding="utf-8") as jf:
+                    tok_json = json.load(jf)
+                raw_merges = []
+                for merge in tok_json.get("model", {}).get("merges", []):
+                    if isinstance(merge, str):
+                        raw_merges.append(merge)
+                    elif isinstance(merge, list) and len(merge) == 2:
+                        raw_merges.append(f"{merge[0]} {merge[1]}")
+                if raw_merges:
+                    writer.add_array("tokenizer.ggml.merges", raw_merges)
+                    print(f"  Merges: {len(raw_merges)} (from tokenizer.json)")
+                else:
+                    print(f"  Merges not found ({e}) — tokenizer will use vocab-only mode")
+            except Exception as e2:
+                print(f"  Merges not found ({e}; tokenizer.json fallback: {e2}) — tokenizer will use vocab-only mode")
 
         # Special token IDs (standard ggml keys)
         eos_id = getattr(tok, "eos_token_id", None)
@@ -439,7 +456,7 @@ def main():
                 # Norms (RMSNorm, no bias)
                 ("input_layernorm.weight",          "attn_norm.weight"),
                 ("post_attention_layernorm.weight",  "ffn_norm.weight"),
-                # Self-attention (Q/K/V have bias, O has no bias)
+                # Self-attention (Qwen2-VL has Q/K/V/O bias; Qwen2.5-VL omits them)
                 ("self_attn.q_proj.weight",          "attn_q.weight"),
                 ("self_attn.q_proj.bias",            "attn_q.bias"),
                 ("self_attn.k_proj.weight",          "attn_k.weight"),
@@ -447,6 +464,7 @@ def main():
                 ("self_attn.v_proj.weight",          "attn_v.weight"),
                 ("self_attn.v_proj.bias",            "attn_v.bias"),
                 ("self_attn.o_proj.weight",          "attn_o.weight"),
+                ("self_attn.o_proj.bias",            "attn_o.bias"),
                 # MLP (no biases)
                 ("mlp.gate_proj.weight",             "ffn_gate.weight"),
                 ("mlp.up_proj.weight",               "ffn_up.weight"),
