@@ -275,16 +275,30 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             qtype_used = GGML_TYPE_Q8_0;
         }
 
-        // Vision encoder weights (v.blk.*): keep at Q8_0 minimum for OCR quality.
-        // The vision encoder directly determines text recognition accuracy —
-        // aggressive quantization (Q4_K, Q3_K, Q2_K) degrades OCR performance.
-        // Merger weights (v.merger.*) are also critical for vision→LLM projection.
-        bool is_vision_weight = sname.rfind("v.", 0) == 0;
+        // Vision encoder weights: keep at Q8_0 minimum for OCR quality. The
+        // vision encoder directly determines text recognition accuracy, so
+        // aggressive quantization (Q4_K, Q3_K, Q2_K) degrades it. Covers both
+        // "v.*" (SAM ViT / merger) and "qe.*" (the DeepSeek-OCR Qwen2 vision
+        // encoder), which otherwise wouldn't match the "v." prefix.
+        bool is_vision_weight = sname.rfind("v.", 0) == 0 ||
+                                sname.rfind("qe.", 0) == 0;
         if (quantize && is_vision_weight &&
             qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 &&
             qtype != GGML_TYPE_Q6_K && qtype != GGML_TYPE_Q5_K) {
             qtype_used = GGML_TYPE_Q8_0;
             printf("(vision→Q8_0) ");
+        }
+
+        // MoE router / gating weights (DeepSeek-V2: "*.mlp_gate.weight", also
+        // the generic "ffn_gate_inp"): these pick which experts run, so even
+        // small quant error flips the top-k selection and corrupts the output.
+        // Keep them at Q8_0 minimum (they are tiny: n_experts × hidden).
+        bool is_moe_router = sname.find("mlp_gate.weight") != std::string::npos ||
+                             sname.find("ffn_gate_inp") != std::string::npos;
+        if (quantize && is_moe_router &&
+            qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16) {
+            qtype_used = GGML_TYPE_Q8_0;
+            printf("(moe-router→Q8_0) ");
         }
 
         int64_t qk = ggml_blck_size(qtype_used);

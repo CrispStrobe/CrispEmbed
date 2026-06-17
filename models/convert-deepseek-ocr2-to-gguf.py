@@ -146,7 +146,16 @@ def main():
             tokens[idx] = tok
     writer.add_array("tokenizer.ggml.tokens", tokens)
     if merges:
-        writer.add_array("tokenizer.ggml.merges", merges)
+        # tokenizer.json may store merges as ["a", "b"] PAIRS (newer tokenizers)
+        # or as "a b" strings. GGUF arrays cannot be nested (array-of-arrays is
+        # not a valid type and won't load), so flatten each pair to "a b".
+        merges_str = []
+        for mg in merges:
+            if isinstance(mg, (list, tuple)) and len(mg) == 2:
+                merges_str.append(f"{mg[0]} {mg[1]}")
+            elif isinstance(mg, str):
+                merges_str.append(mg)
+        writer.add_array("tokenizer.ggml.merges", merges_str)
     # Find EOS token
     eos_id = lang_cfg.get("eos_token_id", 1)
     writer.add_uint32("deepseek_ocr2.tokenizer.eos_id", eos_id)
