@@ -22,6 +22,81 @@ from pathlib import Path
 
 import gguf
 import numpy as np
+import re
+
+
+def map_tensor_name(n):
+    """Map a HuggingFace DeepSeek-OCR-2 tensor name to the short scheme the
+    crispembed engine loads (v.* SAM, qe.* Qwen2 encoder, l.* MoE LLM). Returns
+    None for tensors the engine does not consume. (The old converter emitted the
+    raw HF names — which the engine never finds, and some exceed GGML_MAX_NAME.)"""
+    if n.startswith("model.sam_model."):
+        s = n[len("model.sam_model."):]
+        if s == "patch_embed.proj.weight": return "v.patch_embed.weight"
+        if s == "patch_embed.proj.bias":   return "v.patch_embed.bias"
+        if s == "pos_embed":               return "v.pos_embed"
+        m = re.match(r"blocks\.(\d+)\.(.+)", s)
+        if m:
+            sub = {
+                "norm1.weight":"ln1.weight","norm1.bias":"ln1.bias",
+                "norm2.weight":"ln2.weight","norm2.bias":"ln2.bias",
+                "attn.qkv.weight":"attn_qkv.weight","attn.qkv.bias":"attn_qkv.bias",
+                "attn.proj.weight":"attn_proj.weight","attn.proj.bias":"attn_proj.bias",
+                "attn.rel_pos_h":"attn_rel_pos_h","attn.rel_pos_w":"attn_rel_pos_w",
+                "mlp.lin1.weight":"ffn_up.weight","mlp.lin1.bias":"ffn_up.bias",
+                "mlp.lin2.weight":"ffn_down.weight","mlp.lin2.bias":"ffn_down.bias",
+            }.get(m.group(2))
+            if sub: return f"v.blk.{m.group(1)}.{sub}"
+        return {
+            "neck.0.weight":"v.neck_conv1.weight",
+            "neck.1.weight":"v.neck_ln1.weight","neck.1.bias":"v.neck_ln1.bias",
+            "neck.2.weight":"v.neck_conv2.weight",
+            "neck.3.weight":"v.neck_ln2.weight","neck.3.bias":"v.neck_ln2.bias",
+            "net_2.weight":"v.net_2.weight","net_3.weight":"v.net_3.weight",
+        }.get(s)
+    if n.startswith("model.qwen2_model."):
+        s = n[len("model.qwen2_model."):]
+        if s == "query_768.weight":  return "qe.query_768"
+        if s == "query_1024.weight": return "qe.query_1024"
+        if s == "model.model.norm.weight": return "qe.output_norm.weight"
+        m = re.match(r"model\.model\.layers\.(\d+)\.(.+)", s)
+        if m:
+            sub = {
+                "input_layernorm.weight":"input_layernorm.weight",
+                "post_attention_layernorm.weight":"post_attention_layernorm.weight",
+                "self_attn.q_proj.weight":"attn_q.weight","self_attn.q_proj.bias":"attn_q.bias",
+                "self_attn.k_proj.weight":"attn_k.weight","self_attn.k_proj.bias":"attn_k.bias",
+                "self_attn.v_proj.weight":"attn_v.weight","self_attn.v_proj.bias":"attn_v.bias",
+                "self_attn.o_proj.weight":"attn_o.weight",
+                "mlp.gate_proj.weight":"ffn_gate.weight","mlp.up_proj.weight":"ffn_up.weight",
+                "mlp.down_proj.weight":"ffn_down.weight",
+            }.get(m.group(2))
+            if sub: return f"qe.blk.{m.group(1)}.{sub}"
+        return None
+    if n == "model.embed_tokens.weight": return "l.embed_tokens.weight"
+    if n == "lm_head.weight":            return "l.lm_head.weight"
+    if n == "model.norm.weight":         return "l.output_norm.weight"
+    if n == "model.projector.layers.weight": return "proj.weight"
+    if n == "model.projector.layers.bias":   return "proj.bias"
+    if n == "model.view_seperator":      return "v.view_separator"
+    m = re.match(r"model\.layers\.(\d+)\.(.+)", n)
+    if m:
+        i, r = m.group(1), m.group(2)
+        direct = {
+            "input_layernorm.weight":"input_layernorm.weight",
+            "post_attention_layernorm.weight":"post_attention_layernorm.weight",
+            "self_attn.q_proj.weight":"attn_q.weight","self_attn.k_proj.weight":"attn_k.weight",
+            "self_attn.v_proj.weight":"attn_v.weight","self_attn.o_proj.weight":"attn_o.weight",
+            "mlp.gate_proj.weight":"ffn_gate.weight","mlp.up_proj.weight":"ffn_up.weight",
+            "mlp.down_proj.weight":"ffn_down.weight","mlp.gate.weight":"mlp_gate.weight",
+            "mlp.shared_experts.gate_proj.weight":"shared_exp.ffn_gate.weight",
+            "mlp.shared_experts.up_proj.weight":"shared_exp.ffn_up.weight",
+            "mlp.shared_experts.down_proj.weight":"shared_exp.ffn_down.weight",
+        }.get(r)
+        if direct: return f"l.blk.{i}.{direct}"
+        e = re.match(r"mlp\.experts\.(\d+)\.(gate|up|down)_proj\.weight", r)
+        if e: return f"l.blk.{i}.exp.{e.group(1)}.ffn_{e.group(2)}.weight"
+    return None
 
 
 def main():
@@ -202,7 +277,12 @@ def main():
             raise ValueError(f"Unsupported dtype: {dtype_str}")
         return arr
 
+    skipped = 0
     for name in tensor_names:
+        gguf_name = map_tensor_name(name)
+        if gguf_name is None:
+            skipped += 1
+            continue  # not consumed by the engine
         info = header_json[name]
         data = read_tensor(args.model, info, data_offset)
 
@@ -212,7 +292,7 @@ def main():
 
         data = data.astype(dtype_np)
         total_params += data.size
-        writer.add_tensor(name, data, raw_dtype=dtype_gguf)
+        writer.add_tensor(gguf_name, data, raw_dtype=dtype_gguf)
         tensor_count += 1
 
         if tensor_count % 100 == 0:
