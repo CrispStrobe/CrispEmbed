@@ -1,5 +1,49 @@
 # Handover: Fix Qari-OCR Parity Bug
 
+## RESOLUTION (2026-06-17): vision encoder bug FIXED
+
+The vision-encoder garbage (cos 0.056) had **two root causes**, both verified
+against `tmp/qwen2_vl_modeling.py` (HF blueprint):
+
+1. **Vision MLP activation** — Qwen2-VL `VisionMlp` uses `ACT2FN[hidden_act]`
+   with the vision config default `hidden_act="quick_gelu"` (= `x·σ(1.702x)`).
+   The engine used `ggml_gelu_erf`. Fix: `ggml_gelu_quick` for the Qwen2-VL ViT
+   block MLP (the merger's `PatchMerger` keeps `nn.GELU()` = `ggml_gelu_erf`).
+   → vis_layer_0 cos 0.995 → 0.99999.
+2. **Vision 2D-RoPE `inv_freq`** — `VisionRotaryEmbedding` is built with
+   `dim = head_dim/2` (=40), so `inv_freq[j]=theta^(-2j/(head_dim/2))`. The
+   engine used `head_dim` in the denominator → frequencies decayed half as
+   fast. Fix: `rot_dim = head_dim/2` in `compute_vision_rope`. This is shared
+   by Qwen2.5-VL too (same `VisionRotaryEmbedding(head_dim//2)`), so it's
+   correct for both variants — NOT a regression.
+   → vis_merger cos 0.368 → 0.988, last_logits 0.964 → **0.99991**.
+
+Diff-test status now (F16): vis_layer_0..3 PASS (≥0.9999), vis_layer_31 0.9989
+(massive-activation token, F16), vis_merger 0.988 (only 3/33 rows <0.999 — all
+blank/background tokens; every TEXT token is >0.999), **last_logits PASS 0.99991**.
+
+### Other things verified correct (NOT bugs)
+- **KV cache**: proven correct — `CRISPEMBED_NO_KV_CACHE=1` (full recompute each
+  step) gives byte-identical output.
+- **LLM forward**: with reference (PyTorch) embeds, llm_layer_0/1 PASS at
+  **0.99997** (`LLM_FROM_REF=1` in test-qwen2vl-diff).
+- **Native preprocessing**: matches HF `Qwen2VLImageProcessor` at cos 0.99983
+  (CLIP mean/std, grid 38×64, merge-group patch order all correct).
+
+### OPEN: live OCR prompt framing (NOT an engine bug)
+Even with PyTorch-perfect embeds the model answers conversationally instead of
+OCR-ing ("Hello, I am your friendly assistant." / a Chinese paraphrase of the
+task / "I'm just a text-based assistant…"). The standard "Describe this image."
+prompt is validated (matches HF prefill 0.9999) but yields a *description*, not
+raw OCR. The long Qari prompt (`CRISPEMBED_QARI_LONG_PROMPT=1`) does not reliably
+trigger OCR mode. Resolving this needs Qari's exact `chat_template.json` +
+a PyTorch Qari run to compare the *generated* tokens (the diff harness only
+validates the prefill). Debug env vars added: `CRISPEMBED_QARI_LONG_PROMPT`,
+`CRISPEMBED_QARI_NO_SYSTEM`, `CRISPEMBED_NO_KV_CACHE`, `CRISPEMBED_DUMP_PATCHES`,
+and test-only `GEN_FROM_REF` / `LLM_FROM_REF` / `QARI_PROMPT`.
+
+---
+
 ## Target machine
 
 16 GB M1 Mac. The Qari-OCR model is ~4.7 GB F16 GGUF — fits comfortably.
