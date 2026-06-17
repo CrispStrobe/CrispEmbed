@@ -122,7 +122,7 @@ Input text / image / audio
     │
     ├─► OCR   ──► FireRed-OCR (2.1B, Apache-2.0) — Qwen3-VL, GRPO, tables+LaTeX
     ├─► OCR   ──► NuExtract3 (4B, Apache-2.0) — structured extraction + Markdown
-    ├─► OCR   ──► DeepSeek-OCR-2 (3B, Apache-2.0) — DONE: converter+engine+orchestrator+HF
+    ├─► OCR   ──► DeepSeek-OCR-2 (3B, Apache-2.0) — DONE: char-perfect OCR on Metal+q4_k (SAM+Qwen2 enc+MoE)
     └─► OCR   ──► Granite Vision 3.3-2B (3B, Apache) — OCRBench 852
 ```
 
@@ -1061,9 +1061,11 @@ LoRA fine-tune (r=16, 324 pairs) of Qwen2-VL-2B-Instruct on 50K Arabic samples.
 shared the read-back pattern AND had three more bugs (Pixtral 2D-RoPE layout,
 projector norm order, channel-major patch-merge) — all **fixed**, now matches HF
 token-for-token (see LEARNINGS.md 'LightOnOCR-2-1B'). `deepseek_ocr2.cpp` had the
-same read-back pattern — cont fix applied (provably correct) but NOT verified
-end-to-end (no local model); may need a full diff-vs-HF pass like lightonocr. `got_ocr`/`glm_ocr`/
-`internvl2_ocr` use the safe `ggml_cpy`-to-persistent-buffer pattern.
+same read-back pattern PLUS a KV-cache axis scramble (permute before flatten) and
+a missing instruction prompt + wrong (CLIP) normalization — all **fixed**, now
+produces character-perfect OCR on Metal + q4_k (see LEARNINGS.md 'DeepSeek-OCR-2').
+`got_ocr`/`glm_ocr`/`internvl2_ocr` use the safe `ggml_cpy`-to-persistent-buffer
+pattern.
 
 ---
 
