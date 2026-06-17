@@ -67,8 +67,10 @@ Two KV-cache designs exist across the autoregressive decoders:
   for new backends.
 
 Audit result: `lightonocr.cpp` had the cont bug AND three more (see next
-section); now fixed and matching HF. `deepseek_ocr2.cpp` has the same read-back +
-reshape-view pattern (untested, no local model — likely also broken). got/glm/
+section); now fixed and matching HF. `deepseek_ocr2.cpp` had the same read-back +
+reshape-view pattern — the cont fix is applied (provably correct), but it is
+NOT verified end-to-end (no local model) and, like lightonocr, may have further
+architecture bugs needing a diff-vs-HF pass. got/glm/
 internvl2 are safe (cpy pattern). All CPU-scalar decoders (mixtex, bttr, hmer,
 posformer, ppformulanet*, granite_vision, math_ocr, decoder_embed) have no ggml
 decode graph → immune.

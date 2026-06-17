@@ -1056,13 +1056,17 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx &ctx, int li, int T, int 
     K = ggml_rope_ext(g, K, pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0,
                       lhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-    // Output new K/V for cache
+    // Output new K/V for cache. The reshape_2d makes these *views* of the
+    // cont'd permute; a view marked set_output and read back via
+    // ggml_backend_tensor_get under the no-alloc scheduler returns garbage (its
+    // buffer is reused once attention consumes it). cont the reshape so the
+    // read-back data survives. (Same bug class fixed in qwen2vl/lightonocr.)
     ggml_tensor *K_new = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
-    K_new = ggml_reshape_2d(g, K_new, nkv * hd, T);
+    K_new = ggml_cont(g, ggml_reshape_2d(g, K_new, nkv * hd, T));
     ggml_set_name(K_new, "k_out"); ggml_set_output(K_new);
 
     ggml_tensor *V_new = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
-    V_new = ggml_reshape_2d(g, V_new, nkv * hd, T);
+    V_new = ggml_cont(g, ggml_reshape_2d(g, V_new, nkv * hd, T));
     ggml_set_name(V_new, "v_out"); ggml_set_output(V_new);
 
     // Build full K/V (cache + new)
