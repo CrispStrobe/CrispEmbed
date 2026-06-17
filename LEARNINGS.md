@@ -53,6 +53,26 @@ real image, inject them into the C++ engine via test hooks (`GEN_FROM_REF`,
    `ggml_backend_tensor_get` under a no-alloc scheduler must be materialized
    (`ggml_cont`), not a view** — otherwise its storage is fair game for reuse.
 
+### Cross-backend audit of the view-as-output KV bug (2026-06)
+
+Two KV-cache designs exist across the autoregressive decoders:
+- **Read-back into a host vector** (qwen2vl, lightonocr, deepseek_ocr2): compute
+  K/V in the graph, `set_output`, `ggml_backend_tensor_get` into `std::vector`,
+  feed back as inputs next step. **Vulnerable** to both the prune bug (side
+  outputs not expanded) and the view bug (V is a reshape view). This is the
+  pattern that broke Qari.
+- **`ggml_cpy` into a persistent KV buffer** (got_ocr, glm_ocr, internvl2_ocr):
+  allocate persistent K/V tensors, `ggml_build_forward_expand(gf, ggml_cpy(K,
+  k_view))`. No host read-back, cpy materializes. **Safe** — prefer this pattern
+  for new backends.
+
+Audit result: `lightonocr.cpp` has the bug **and is confirmed broken** (loops
+"ALIEN" on a trivial English page even with the cont fix → it has further bugs;
+needs a full diff-vs-HF pass). `deepseek_ocr2.cpp` has the same read-back +
+reshape-view pattern (untested, no local model). got/glm/internvl2 are safe (cpy
+pattern). All CPU-scalar decoders (mixtex, bttr, hmer, posformer, ppformulanet*,
+granite_vision, math_ocr, decoder_embed) have no ggml decode graph → immune.
+
 **Diagnostic tells:** a VLM that says "I'm just a text-based assistant" or
 paraphrases the OCR instruction (often in Chinese, the Qwen base language) is
 not seeing the image — suspect splice/decode, not vision. Conversely, output
