@@ -32,6 +32,8 @@ pub struct ModelInfo {
     pub desc: String,
     pub filename: String,
     pub size: String,
+    pub license: String,
+    pub model_card_url: String,
 }
 
 /// A loaded crispembed model.
@@ -142,6 +144,34 @@ impl CrispEmbed {
         }
     }
 
+    /// Query prefix from the built-in registry name table, or empty string.
+    pub fn query_prefix(model_name: &str) -> String {
+        let name = match CString::new(model_name) {
+            Ok(s) => s,
+            Err(_) => return String::new(),
+        };
+        let ptr = unsafe { crispembed_sys::crispembed_query_prefix(name.as_ptr()) };
+        if ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned()
+        }
+    }
+
+    /// Passage/document prefix from the built-in registry name table, or empty string.
+    pub fn passage_prefix(model_name: &str) -> String {
+        let name = match CString::new(model_name) {
+            Ok(s) => s,
+            Err(_) => return String::new(),
+        };
+        let ptr = unsafe { crispembed_sys::crispembed_passage_prefix(name.as_ptr()) };
+        if ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(ptr) }.to_string_lossy().into_owned()
+        }
+    }
+
     pub fn list_models() -> Vec<ModelInfo> {
         let n = unsafe { crispembed_sys::crispembed_n_models() };
         let mut models = Vec::with_capacity(n.max(0) as usize);
@@ -160,6 +190,8 @@ impl CrispEmbed {
                 desc: read(unsafe { crispembed_sys::crispembed_model_desc(i) }),
                 filename: read(unsafe { crispembed_sys::crispembed_model_filename(i) }),
                 size: read(unsafe { crispembed_sys::crispembed_model_size(i) }),
+                license: read(unsafe { crispembed_sys::crispembed_model_license(i) }),
+                model_card_url: read(unsafe { crispembed_sys::crispembed_model_card_url(i) }),
             });
         }
         models

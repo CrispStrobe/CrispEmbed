@@ -582,10 +582,10 @@ column) or the upstream model card before using a model commercially.
 |---|---|---|
 | **Permissive** (Apache-2.0 / MIT) | most BERT/XLM-R/MPNet, BGE, E5, Granite, Snowflake, MXBai, Nomic, MS-Marco, Qwen3, Harrier, BidirLM-Omni, GTE-v1.5, `gliner-deberta` (NER), `lilt-funsd`, `lilt-base` (KIE) | commercial use OK with normal attribution |
 | **CC BY-NC 4.0** (non-commercial) | `jina-v5-nano`, `jina-v5-small`, `jina-reranker-v2-base-multilingual` | research/evaluation only; commercial use requires a paid license from Jina (sales@jina.ai) |
-| **LFM Open License v1.0** | `gliner-lfm` (NER) | free under $10M annual revenue; above that requires commercial license from Liquid AI |
+| **LFM Open License v1.0** | `lfm2-embed`, `lfm2-embed-q4k`, `gliner-lfm` (NER) | free under $10M annual revenue; above that requires commercial license from Liquid AI |
 | **Gemma Terms of Use** | `embeddinggemma-300m` | commercial use permitted **subject to** Google's [Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy) |
 
-Restricted-license entries (NC + Gemma) are marked with `*` in
+Restricted-license entries (NC + Gemma/vendor terms such as LFM) are marked with `*` in
 `--list-models`. Auto-download for them requires explicit consent:
 
 ```bash

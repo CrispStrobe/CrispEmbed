@@ -53,6 +53,18 @@ MODELS = {
         "langs": ["en"],
         "desc": "Snowflake Arctic Embed XS. CLS pooling, optimized for retrieval.",
     },
+    "lfm2-embed": {
+        "base_model": "LiquidAI/LFM2.5-Embedding-350M",
+        "arch": "LFM2.5",
+        "dim": 1024,
+        "layers": 16,
+        "params": "350M",
+        "pooling": "CLS",
+        "tokenizer": "BPE",
+        "license": "lfm1.0",
+        "langs": ["en", "es", "de", "fr", "it", "pt", "ar", "sv", "no", "ja", "ko"],
+        "desc": "LiquidAI LFM2.5 Embedding 350M. Bidirectional ShortConv/GQA hybrid, 1024-dimensional CLS-pooled embeddings.",
+    },
     "multilingual-e5-small": {
         "base_model": "intfloat/multilingual-e5-small",
         "arch": "XLM-R",

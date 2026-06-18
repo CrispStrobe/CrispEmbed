@@ -136,6 +136,10 @@ GEMMA_LIKE = {
     "intel-research-use-license",
 }
 
+VENDOR_RESTRICTED = {
+    "lfm1.0",
+}
+
 
 def classify(license_tag: str) -> str:
     if not license_tag:
@@ -143,7 +147,7 @@ def classify(license_tag: str) -> str:
     tag = license_tag.strip().lower()
     if tag in NC_EXACT or any(p in tag for p in NC_PATTERNS):
         return "NC"
-    if tag in GEMMA_LIKE:
+    if tag in GEMMA_LIKE or tag in VENDOR_RESTRICTED:
         return "GEMMA"
     if tag in PERMISSIVE:
         return "PERMISSIVE"

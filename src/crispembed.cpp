@@ -1722,6 +1722,16 @@ extern "C" const char * crispembed_model_size(int index) {
     return value ? value : "";
 }
 
+extern "C" const char * crispembed_model_license(int index) {
+    const char * value = crispembed_mgr::model_license(index);
+    return value ? value : "";
+}
+
+extern "C" const char * crispembed_model_card_url(int index) {
+    const char * value = crispembed_mgr::model_card_url(index);
+    return value ? value : "";
+}
+
 extern "C" const float * crispembed_encode(crispembed_context * ctx,
                                             const char * text,
                                             int * out_n_dim) {
