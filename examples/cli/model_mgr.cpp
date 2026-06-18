@@ -69,6 +69,9 @@ static const char * query_prefix(const char * model) {
     // Jina v5
     if (strstr(model, "jina-v5"))
         return "Query: ";
+    // LFM2.5 Embedding
+    if (strstr(model, "lfm2-embed") || strstr(model, "lfm2.5-embed"))
+        return "query: ";
     return nullptr;
 }
 
@@ -83,6 +86,9 @@ static const char * passage_prefix(const char * model) {
     // Jina v5
     if (strstr(model, "jina-v5"))
         return "Passage: ";
+    // LFM2.5 Embedding
+    if (strstr(model, "lfm2-embed") || strstr(model, "lfm2.5-embed"))
+        return "document: ";
     return nullptr;
 }
 
@@ -718,6 +724,21 @@ static const ModelEntry k_registry[] = {
      "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF/resolve/main/deepseek-ocr2-f16.gguf",
      "DeepSeek-OCR-2 (SAM + Qwen2-enc + MoE decoder, 3.4B, grounding)", "6.5 GB", "apache-2.0",
      "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF"},
+
+    // LFM2.5-Embedding-350M — LiquidAI bidirectional hybrid (10 ShortConv + 6 GQA)
+    // 1024-dim CLS pooling, 11 languages (EN/ES/DE/FR/IT/PT/AR/SV/NO/JA/KO)
+    // License: LFM Open License v1.0 (commercial use requires separate agreement)
+    {"lfm2-embed",
+     "lfm2-embed-q8_0.gguf",
+     "https://huggingface.co/cstr/lfm2-embed-GGUF/resolve/main/lfm2-embed-q8_0.gguf",
+     "LFM2.5 1024d 11-lang CLS hybrid (350M)", "419 MB", "lfm1.0*",
+     "https://huggingface.co/LiquidAI/LFM2.5-Embedding-350M"},
+
+    {"lfm2-embed-q4k",
+     "lfm2-embed-q4_k.gguf",
+     "https://huggingface.co/cstr/lfm2-embed-GGUF/resolve/main/lfm2-embed-q4_k.gguf",
+     "LFM2.5 1024d 11-lang CLS hybrid Q4_K (350M)", "254 MB", "lfm1.0*",
+     "https://huggingface.co/LiquidAI/LFM2.5-Embedding-350M"},
 
     {"gliner-lfm",
      "gliner-lfm-q8_0.gguf",
