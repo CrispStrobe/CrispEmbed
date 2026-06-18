@@ -328,6 +328,12 @@ class CrispEmbed:
 
         lib.crispembed_model_size.argtypes = [ctypes.c_int]
         lib.crispembed_model_size.restype = ctypes.c_char_p
+        if hasattr(lib, "crispembed_model_license"):
+            lib.crispembed_model_license.argtypes = [ctypes.c_int]
+            lib.crispembed_model_license.restype = ctypes.c_char_p
+        if hasattr(lib, "crispembed_model_card_url"):
+            lib.crispembed_model_card_url.argtypes = [ctypes.c_int]
+            lib.crispembed_model_card_url.restype = ctypes.c_char_p
 
     # ------------------------------------------------------------------
     # Dense embedding
@@ -969,10 +975,27 @@ class CrispEmbed:
         return resolved
 
     @staticmethod
+    def query_prefix(model_name: str, lib_path: Optional[str] = None) -> str:
+        lib = _load_library(lib_path)
+        lib.crispembed_query_prefix.argtypes = [ctypes.c_char_p]
+        lib.crispembed_query_prefix.restype = ctypes.c_char_p
+        raw = lib.crispembed_query_prefix(model_name.encode("utf-8"))
+        return raw.decode("utf-8") if raw else ""
+
+    @staticmethod
+    def passage_prefix(model_name: str, lib_path: Optional[str] = None) -> str:
+        lib = _load_library(lib_path)
+        lib.crispembed_passage_prefix.argtypes = [ctypes.c_char_p]
+        lib.crispembed_passage_prefix.restype = ctypes.c_char_p
+        raw = lib.crispembed_passage_prefix(model_name.encode("utf-8"))
+        return raw.decode("utf-8") if raw else ""
+
+    @staticmethod
     def list_models(lib_path: Optional[str] = None) -> List[Dict[str, str]]:
         """List supported models with descriptions.
 
-        Returns a list of dicts with keys: name, desc, filename, size.
+        Returns a list of dicts with keys: name, desc, filename, size,
+        license, model_card_url.
         """
         lib = _load_library(lib_path)
         lib.crispembed_n_models.argtypes = []
@@ -985,6 +1008,14 @@ class CrispEmbed:
         lib.crispembed_model_filename.restype = ctypes.c_char_p
         lib.crispembed_model_size.argtypes = [ctypes.c_int]
         lib.crispembed_model_size.restype = ctypes.c_char_p
+        has_license = hasattr(lib, "crispembed_model_license")
+        has_card_url = hasattr(lib, "crispembed_model_card_url")
+        if has_license:
+            lib.crispembed_model_license.argtypes = [ctypes.c_int]
+            lib.crispembed_model_license.restype = ctypes.c_char_p
+        if has_card_url:
+            lib.crispembed_model_card_url.argtypes = [ctypes.c_int]
+            lib.crispembed_model_card_url.restype = ctypes.c_char_p
 
         models = []
         for i in range(lib.crispembed_n_models()):
@@ -993,6 +1024,8 @@ class CrispEmbed:
                 "desc": (lib.crispembed_model_desc(i) or b"").decode("utf-8"),
                 "filename": (lib.crispembed_model_filename(i) or b"").decode("utf-8"),
                 "size": (lib.crispembed_model_size(i) or b"").decode("utf-8"),
+                "license": ((lib.crispembed_model_license(i) if has_license else b"") or b"").decode("utf-8"),
+                "model_card_url": ((lib.crispembed_model_card_url(i) if has_card_url else b"") or b"").decode("utf-8"),
             })
         return models
 

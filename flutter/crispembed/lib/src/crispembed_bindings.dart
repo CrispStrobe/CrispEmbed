@@ -42,6 +42,9 @@ typedef CrispembedResolveModelNative = Pointer<Utf8> Function(
 typedef CrispembedResolveModel = Pointer<Utf8> Function(
     Pointer<Utf8> arg, int autoDownload);
 
+typedef CrispembedPrefixNative = Pointer<Utf8> Function(Pointer<Utf8> modelName);
+typedef CrispembedPrefix = Pointer<Utf8> Function(Pointer<Utf8> modelName);
+
 typedef CrispembedNModelsNative = Int32 Function();
 typedef CrispembedNModels = int Function();
 
