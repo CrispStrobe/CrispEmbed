@@ -148,6 +148,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  multilingual-e5-small, pixie-rune-v1, arctic-embed-l-v2,\n");
     fprintf(stderr, "  octen-0.6b, f2llm-v2-0.6b, jina-v5-nano, jina-v5-small,\n");
     fprintf(stderr, "  harrier-0.6b, harrier-270m, qwen3-embed-0.6b,\n");
+    fprintf(stderr, "  lfm2-embed, lfm2-embed-q4k,\n");
     fprintf(stderr, "  yunet (face detection, 0.2 MB)\n");
     fprintf(stderr, "\n");
 }
@@ -1105,7 +1106,7 @@ int main(int argc, char ** argv) {
     }
 
     // Check if this is a CNN face model (SFace/AuraFace/SCRFD).
-    if (!face_path.empty() || !detect_path.empty() || print_dim) {
+    if (!face_path.empty() || !detect_path.empty()) {
         cnn_embed::context* cctx = nullptr;
         if (cnn_embed::load(&cctx, model_path.c_str(), n_threads)) {
             if (print_dim) {
@@ -1555,8 +1556,8 @@ int main(int argc, char ** argv) {
     }
 
     // Check if this is a standalone ViT GGUF (SigLIP/CLIP image encoder).
-    // Route to vit_embed for --image-raw, --image, --dim, --list-models.
-    if (!image_path.empty() || !image_raw_path.empty() || print_dim) {
+    // Route to vit_embed for --image-raw and --image.
+    if (!image_path.empty() || !image_raw_path.empty()) {
         // Try loading as ViT first
         vit_embed::context* vctx = nullptr;
         if (vit_embed::load(&vctx, model_path.c_str(), n_threads)) {
@@ -1607,6 +1608,20 @@ int main(int argc, char ** argv) {
     // Init model
     crispembed_context * ctx = crispembed_init(model_path.c_str(), n_threads);
     if (!ctx) {
+        if (print_dim) {
+            vit_embed::context* vctx = nullptr;
+            if (vit_embed::load(&vctx, model_path.c_str(), n_threads)) {
+                printf("%d\n", vit_embed::dim(vctx));
+                vit_embed::free(vctx);
+                return 0;
+            }
+            cnn_embed::context* cctx = nullptr;
+            if (cnn_embed::load(&cctx, model_path.c_str(), n_threads)) {
+                printf("%d\n", cnn_embed::dim(cctx));
+                cnn_embed::free(cctx);
+                return 0;
+            }
+        }
         fprintf(stderr, "error: failed to load model '%s'\n", model_path.c_str());
         return 1;
     }

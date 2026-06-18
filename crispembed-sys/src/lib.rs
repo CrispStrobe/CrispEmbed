@@ -159,6 +159,8 @@ extern "C" {
     pub fn crispembed_model_desc(index: c_int) -> *const c_char;
     pub fn crispembed_model_filename(index: c_int) -> *const c_char;
     pub fn crispembed_model_size(index: c_int) -> *const c_char;
+    pub fn crispembed_model_license(index: c_int) -> *const c_char;
+    pub fn crispembed_model_card_url(index: c_int) -> *const c_char;
 
     // ------------------------------------------------------------------
     // Dense embedding

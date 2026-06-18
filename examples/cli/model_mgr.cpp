@@ -731,25 +731,25 @@ static const ModelEntry k_registry[] = {
     {"lfm2-embed",
      "lfm2-embed-q8_0.gguf",
      "https://huggingface.co/cstr/lfm2-embed-GGUF/resolve/main/lfm2-embed-q8_0.gguf",
-     "LFM2.5 1024d 11-lang CLS hybrid (350M)", "419 MB", "lfm1.0*",
+     "LFM2.5 1024d 11-lang CLS hybrid (350M)", "419 MB", "lfm1.0",
      "https://huggingface.co/LiquidAI/LFM2.5-Embedding-350M"},
 
     {"lfm2-embed-q4k",
      "lfm2-embed-q4_k.gguf",
      "https://huggingface.co/cstr/lfm2-embed-GGUF/resolve/main/lfm2-embed-q4_k.gguf",
-     "LFM2.5 1024d 11-lang CLS hybrid Q4_K (350M)", "254 MB", "lfm1.0*",
+     "LFM2.5 1024d 11-lang CLS hybrid Q4_K (350M)", "254 MB", "lfm1.0",
      "https://huggingface.co/LiquidAI/LFM2.5-Embedding-350M"},
 
     {"gliner-lfm",
      "gliner-lfm-q8_0.gguf",
      "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF/resolve/main/gliner-lfm-q8_0.gguf",
-     "GLiNER zero-shot NER (LFM2.5-350M bidirectional, 5 languages)", "419 MB", "lfm1.0*",
+     "GLiNER zero-shot NER (LFM2.5-350M bidirectional, 5 languages)", "419 MB", "lfm1.0",
      "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF"},
 
     {"gliner-lfm-q4k",
      "gliner-lfm-q4_k.gguf",
      "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF/resolve/main/gliner-lfm-q4_k.gguf",
-     "GLiNER zero-shot NER (LFM2.5-350M, Q4_K compact)", "254 MB", "lfm1.0*",
+     "GLiNER zero-shot NER (LFM2.5-350M, Q4_K compact)", "254 MB", "lfm1.0",
      "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF"},
 
     {"gliner-deberta",
@@ -1032,7 +1032,7 @@ bool license_requires_acceptance(const char * spdx) {
     // Vendor licenses with use-restriction policies the user must accept.
     static const char * restricted[] = {
         "gemma", "llama2", "llama3", "llama3.1", "llama3.2", "llama3.3",
-        "llama4", "qwen-research", "mistral-ai-research", "other", nullptr,
+        "llama4", "qwen-research", "mistral-ai-research", "lfm1.0", "other", nullptr,
     };
     for (const char ** p = restricted; *p; ++p) {
         if (strcmp(spdx, *p) == 0) return true;

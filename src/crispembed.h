@@ -111,6 +111,8 @@ CRISPEMBED_API const char * crispembed_model_name(int index);
 CRISPEMBED_API const char * crispembed_model_desc(int index);
 CRISPEMBED_API const char * crispembed_model_filename(int index);
 CRISPEMBED_API const char * crispembed_model_size(int index);
+CRISPEMBED_API const char * crispembed_model_license(int index);
+CRISPEMBED_API const char * crispembed_model_card_url(int index);
 
 // Encode a single text string. Returns a pointer to a float array of
 // length *out_n_dim (the model's output embedding dimension). The
