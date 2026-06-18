@@ -37,12 +37,16 @@ class ModelInfo {
   final String desc;
   final String filename;
   final String size;
+  final String license;
+  final String modelCardUrl;
 
   const ModelInfo({
     required this.name,
     required this.desc,
     required this.filename,
     required this.size,
+    this.license = '',
+    this.modelCardUrl = '',
   });
 }
 
@@ -651,6 +655,32 @@ class CrispEmbed {
     }
   }
 
+  static String queryPrefix(String modelName, {String? libPath}) {
+    final lib = _openNativeLib(libPath);
+    final fn = lib.lookupFunction<CrispembedPrefixNative,
+        CrispembedPrefix>('crispembed_query_prefix');
+    final arg = modelName.toNativeUtf8();
+    try {
+      final out = fn(arg);
+      return out == nullptr ? '' : out.toDartString();
+    } finally {
+      calloc.free(arg);
+    }
+  }
+
+  static String passagePrefix(String modelName, {String? libPath}) {
+    final lib = _openNativeLib(libPath);
+    final fn = lib.lookupFunction<CrispembedPrefixNative,
+        CrispembedPrefix>('crispembed_passage_prefix');
+    final arg = modelName.toNativeUtf8();
+    try {
+      final out = fn(arg);
+      return out == nullptr ? '' : out.toDartString();
+    } finally {
+      calloc.free(arg);
+    }
+  }
+
   static List<ModelInfo> listModels({String? libPath}) {
     final lib = _openNativeLib(libPath);
     final nModels = lib.lookupFunction<CrispembedNModelsNative, CrispembedNModels>(
@@ -663,6 +693,10 @@ class CrispEmbed {
         CrispembedModelString>('crispembed_model_filename');
     final modelSize = lib.lookupFunction<CrispembedModelStringNative,
         CrispembedModelString>('crispembed_model_size');
+    final modelLicense = lib.lookupFunction<CrispembedModelStringNative,
+        CrispembedModelString>('crispembed_model_license');
+    final modelCardUrl = lib.lookupFunction<CrispembedModelStringNative,
+        CrispembedModelString>('crispembed_model_card_url');
     final models = <ModelInfo>[];
     for (var i = 0; i < nModels(); i++) {
       models.add(ModelInfo(
@@ -670,6 +704,8 @@ class CrispEmbed {
         desc: modelDesc(i).toDartString(),
         filename: modelFilename(i).toDartString(),
         size: modelSize(i).toDartString(),
+        license: modelLicense(i).toDartString(),
+        modelCardUrl: modelCardUrl(i).toDartString(),
       ));
     }
     return models;
