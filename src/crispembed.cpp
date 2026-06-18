@@ -1735,6 +1735,27 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx,
         enc_text = prefixed.c_str();
     }
 
+    if (ctx->is_lfm2 && ctx->lfm2_ctx) {
+        const int dim = lfm2_embed_n_embd(ctx->lfm2_ctx);
+        ctx->last_output.resize(dim);
+        if (!lfm2_embed_encode_to(ctx->lfm2_ctx, enc_text, ctx->last_output.data())) {
+            return nullptr;
+        }
+
+        if (ctx->matryoshka_dim > 0 && ctx->matryoshka_dim < dim) {
+            ctx->last_output.resize(ctx->matryoshka_dim);
+            float norm = 0;
+            for (int i = 0; i < ctx->matryoshka_dim; i++)
+                norm += ctx->last_output[i] * ctx->last_output[i];
+            norm = sqrtf(std::max(norm, 1e-12f));
+            for (int i = 0; i < ctx->matryoshka_dim; i++)
+                ctx->last_output[i] /= norm;
+        }
+
+        if (out_n_dim) *out_n_dim = (int)ctx->last_output.size();
+        return ctx->last_output.data();
+    }
+
     embed_tokens tokens;
     if (ctx->use_bpe) {
         tokens = ctx->bpe_tokenizer.encode(enc_text);
@@ -1756,10 +1777,7 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx,
         }
     }
 
-    // NOLINTNEXTLINE(bugprone-branch-clone)
-    if (ctx->is_lfm2 && ctx->lfm2_ctx) {
-        ctx->last_output = lfm2_embed_encode(ctx->lfm2_ctx, enc_text);
-    } else if (ctx->is_decoder && ctx->dec) {
+    if (ctx->is_decoder && ctx->dec) {
         ctx->last_output = decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads,
                                                   ctx->sched, &ctx->compute_meta);
     } else {
@@ -1835,10 +1853,12 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
     if (!ctx || !texts || n_texts <= 0) return nullptr;
 
     if (ctx->is_lfm2 && ctx->lfm2_ctx) {
-        std::vector<std::vector<float>> batch_results;
-        batch_results.reserve(n_texts);
+        const int dim = lfm2_embed_n_embd(ctx->lfm2_ctx);
+        const int out_dim = (ctx->matryoshka_dim > 0 && ctx->matryoshka_dim < dim) ? ctx->matryoshka_dim : dim;
+        ctx->last_output.resize(n_texts * out_dim);
+        std::vector<float> tmp;
+        if (out_dim < dim) tmp.resize(dim);
 
-        int dim = 0;
         for (int i = 0; i < n_texts; i++) {
             const char * inp = texts[i] ? texts[i] : "";
             std::string prefixed;
@@ -1847,33 +1867,17 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
                 inp = prefixed.c_str();
             }
 
-            auto vec = lfm2_embed_encode(ctx->lfm2_ctx, inp);
-            if (vec.empty()) {
+            float * dst = ctx->last_output.data() + i * out_dim;
+            float * enc_dst = (out_dim < dim) ? tmp.data() : dst;
+            if (!lfm2_embed_encode_to(ctx->lfm2_ctx, inp, enc_dst)) {
                 fprintf(stderr, "crispembed: LFM2 batch encode failed for item %d\n", i);
                 return nullptr;
             }
-            if (dim == 0) {
-                dim = (int)vec.size();
-            } else if ((int)vec.size() != dim) {
-                fprintf(stderr, "crispembed: LFM2 batch dimension mismatch for item %d\n", i);
-                return nullptr;
-            }
-            batch_results.push_back(std::move(vec));
-        }
-
-        const int out_dim = (ctx->matryoshka_dim > 0 && ctx->matryoshka_dim < dim) ? ctx->matryoshka_dim : dim;
-        ctx->last_output.resize(n_texts * out_dim);
-
-        for (int i = 0; i < n_texts; i++) {
-            const auto & vec = batch_results[i];
-            float * dst = ctx->last_output.data() + i * out_dim;
             if (out_dim < dim) {
                 float norm = 0;
-                for (int j = 0; j < out_dim; j++) norm += vec[j] * vec[j];
+                for (int j = 0; j < out_dim; j++) norm += tmp[j] * tmp[j];
                 norm = sqrtf(std::max(norm, 1e-12f));
-                for (int j = 0; j < out_dim; j++) dst[j] = vec[j] / norm;
-            } else {
-                memcpy(dst, vec.data(), out_dim * sizeof(float));
+                for (int j = 0; j < out_dim; j++) dst[j] = tmp[j] / norm;
             }
         }
 
