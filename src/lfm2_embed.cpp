@@ -92,6 +92,8 @@ struct lfm2_embed_model {
 struct lfm2_embed_ctx {
     lfm2_embed_model model;
     ggml_backend_t   backend = nullptr;
+    ggml_gallocr_t   galloc = nullptr;
+    std::vector<int32_t> pos_cache;
 };
 
 // ============================================================================
@@ -165,6 +167,7 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
     core_gguf::WeightLoad wl;
     if (!core_gguf::load_weights(path, backend, "lfm2", wl)) {
         fprintf(stderr, "[lfm2_embed] failed to load weights: %s\n", path);
+        if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
         delete ctx;
         return nullptr;
     }
@@ -207,6 +210,15 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
         }
     }
 
+    ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+    if (!ctx->galloc) {
+        fprintf(stderr, "[lfm2_embed] failed to create graph allocator\n");
+        ggml_backend_buffer_free(ctx->model.buf);
+        ggml_free(ctx->model.ctx);
+        delete ctx;
+        return nullptr;
+    }
+
     fprintf(stderr, "[lfm2_embed] loaded: hidden=%u, layers=%u, heads=%u/%u, "
             "ff=%u, vocab=%u\n",
             hp.hidden_size, hp.n_layers, hp.n_heads, hp.n_kv_heads,
@@ -216,6 +228,7 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
 
 void lfm2_embed_free(lfm2_embed_ctx * ctx) {
     if (!ctx) return;
+    if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
     if (ctx->model.buf) ggml_backend_buffer_free(ctx->model.buf);
     if (ctx->model.ctx) ggml_free(ctx->model.ctx);
     // backend is owned by crispembed_context — do not free here
@@ -247,10 +260,6 @@ static std::vector<int32_t> lfm2_tokenize(const lfm2_embed_model & m,
 // ============================================================================
 // Graph building blocks  (bidirectional LFM2 — matches gliner_ner.cpp exactly)
 // ============================================================================
-
-// Per-call position tensors collected during graph construction so they can
-// be filled after allocation.
-static thread_local std::vector<ggml_tensor *> tl_pos_tensors;
 
 static ggml_tensor * lfm2_rms_norm(ggml_context * g, ggml_tensor * x,
                                     ggml_tensor * w, float eps) {
@@ -298,7 +307,8 @@ static ggml_tensor * lfm2_short_conv(ggml_context * g, ggml_tensor * x,
 static ggml_tensor * lfm2_gqa(ggml_context * g, ggml_tensor * x,
                                 const lfm2_layer & w,
                                 int H, int nh, int nkv, int hd,
-                                int T, float theta) {
+                                int T, float theta,
+                                ggml_tensor * pos) {
     ggml_tensor * Q = ggml_mul_mat(g, w.attn_q_proj_w, x);
     ggml_tensor * K = ggml_mul_mat(g, w.attn_k_proj_w, x);
     ggml_tensor * V = ggml_mul_mat(g, w.attn_v_proj_w, x);
@@ -313,12 +323,6 @@ static ggml_tensor * lfm2_gqa(ggml_context * g, ggml_tensor * x,
     };
     Q = ggml_mul(g, ggml_rms_norm(g, Q, 1e-5f), f32(w.attn_q_ln_w));
     K = ggml_mul(g, ggml_rms_norm(g, K, 1e-5f), f32(w.attn_k_ln_w));
-
-    // RoPE positions [0 .. T-1]
-    ggml_tensor * pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
-    ggml_set_name(pos, "positions");
-    ggml_set_input(pos);
-    tl_pos_tensors.push_back(pos);
 
     Q = ggml_rope_ext(g, Q, pos, nullptr, hd,
                       GGML_ROPE_TYPE_NEOX, 0, theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
@@ -339,11 +343,12 @@ static ggml_tensor * lfm2_gqa(ggml_context * g, ggml_tensor * x,
 static ggml_tensor * lfm2_layer_fwd(ggml_context * g, ggml_tensor * x,
                                      const lfm2_layer & w,
                                      int H, int nh, int nkv, int hd,
-                                     int T, float eps, float theta) {
+                                     int T, float eps, float theta,
+                                     ggml_tensor * pos) {
     ggml_tensor * r = x;
     ggml_tensor * h = lfm2_rms_norm(g, x, w.operator_norm_w, eps);
     h = w.is_attention
-        ? lfm2_gqa(g, h, w, H, nh, nkv, hd, T, theta)
+        ? lfm2_gqa(g, h, w, H, nh, nkv, hd, T, theta, pos)
         : lfm2_short_conv(g, h, w, H, T);
     x = ggml_add(g, r, h);
     r = x;
@@ -356,8 +361,8 @@ static ggml_tensor * lfm2_layer_fwd(ggml_context * g, ggml_tensor * x,
 // Encode
 // ============================================================================
 
-std::vector<float> lfm2_embed_encode(lfm2_embed_ctx * ctx, const char * text) {
-    if (!ctx || !text) return {};
+bool lfm2_embed_encode_to(lfm2_embed_ctx * ctx, const char * text, float * out) {
+    if (!ctx || !text || !out) return false;
 
     const auto & hp = ctx->model.hparams;
     const int  H   = (int)hp.hidden_size;
@@ -368,16 +373,17 @@ std::vector<float> lfm2_embed_encode(lfm2_embed_ctx * ctx, const char * text) {
     const float theta = hp.rope_theta;
 
     std::vector<int32_t> ids = lfm2_tokenize(ctx->model, text);
-    if (ids.empty()) return {};
+    if (ids.empty()) return false;
     const int T = (int)ids.size();
 
     // Build graph (no-alloc metadata context from a small heap buffer)
-    const int max_nodes = 512 + (int)hp.n_layers * 80;
+    // ~50 nodes/layer (ShortConv ~20 + GQA ~30, plus cast + cont nodes)
+    const int max_nodes = 1024 + (int)hp.n_layers * 120;
     size_t meta_size = ggml_tensor_overhead() * (size_t)max_nodes
                      + ggml_graph_overhead_custom(max_nodes, false);
     struct ggml_init_params ip = { meta_size, /*mem_buffer=*/nullptr, /*no_alloc=*/true };
     ggml_context * g = ggml_init(ip);
-    if (!g) return {};
+    if (!g) return false;
 
     // Input token IDs
     ggml_tensor * inp = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
@@ -387,11 +393,17 @@ std::vector<float> lfm2_embed_encode(lfm2_embed_ctx * ctx, const char * text) {
     // Embedding lookup
     ggml_tensor * cur = ggml_get_rows(g, ctx->model.embed_tokens_w, inp);
 
-    // Transformer layers (track pos tensors for post-alloc filling)
-    tl_pos_tensors.clear();
+    ggml_tensor * pos = nullptr;
+    if (hp.layer_types.find('a') != std::string::npos) {
+        pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+        ggml_set_name(pos, "positions");
+        ggml_set_input(pos);
+    }
+
+    // Transformer layers
     for (uint32_t il = 0; il < hp.n_layers; il++) {
         cur = lfm2_layer_fwd(g, cur, ctx->model.layers[il],
-                             H, nh, nkv, hd, T, eps, theta);
+                             H, nh, nkv, hd, T, eps, theta, pos);
     }
 
     // Final norm (embedding_norm applied after all layers, matching GLiNER usage)
@@ -405,40 +417,41 @@ std::vector<float> lfm2_embed_encode(lfm2_embed_ctx * ctx, const char * text) {
     ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
     ggml_build_forward_expand(gf, cls);
 
-    // Allocate and run via gallocr (self-contained, no shared scheduler needed)
-    ggml_gallocr_t galloc = ggml_gallocr_new(
-        ggml_backend_get_default_buffer_type(ctx->backend));
-    if (!ggml_gallocr_alloc_graph(galloc, gf)) {
+    if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
         fprintf(stderr, "[lfm2_embed] graph allocation failed (T=%d)\n", T);
-        ggml_gallocr_free(galloc);
         ggml_free(g);
-        return {};
+        return false;
     }
 
     // Fill inputs (tensors are allocated — safe to set now)
     ggml_backend_tensor_set(inp, ids.data(), 0, T * sizeof(int32_t));
-    {
-        std::vector<int32_t> pos(T);
-        for (int i = 0; i < T; i++) pos[i] = i;
-        for (ggml_tensor * pt : tl_pos_tensors)
-            ggml_backend_tensor_set(pt, pos.data(), 0, T * sizeof(int32_t));
+    if (pos) {
+        ctx->pos_cache.resize(T);
+        for (int i = 0; i < T; i++) ctx->pos_cache[i] = i;
+        ggml_backend_tensor_set(pos, ctx->pos_cache.data(), 0, T * sizeof(int32_t));
     }
 
     ggml_backend_graph_compute(ctx->backend, gf);
 
     // Read CLS embedding
-    std::vector<float> out(H);
-    ggml_backend_tensor_get(cls, out.data(), 0, H * sizeof(float));
+    ggml_backend_tensor_get(cls, out, 0, H * sizeof(float));
 
-    ggml_gallocr_free(galloc);
     ggml_free(g);
 
     // L2 normalise
     float norm = 0.0f;
-    for (float v : out) norm += v * v;
+    for (int i = 0; i < H; i++) norm += out[i] * out[i];
     norm = sqrtf(std::max(norm, 1e-12f));
-    for (float & v : out) v /= norm;
+    for (int i = 0; i < H; i++) out[i] /= norm;
 
+    return true;
+}
+
+std::vector<float> lfm2_embed_encode(lfm2_embed_ctx * ctx, const char * text) {
+    if (!ctx || !text) return {};
+    const int H = (int)ctx->model.hparams.hidden_size;
+    std::vector<float> out(H);
+    if (!lfm2_embed_encode_to(ctx, text, out.data())) return {};
     return out;
 }
 
@@ -484,11 +497,17 @@ std::vector<lfm2_dump_entry> lfm2_embed_encode_dump(lfm2_embed_ctx * ctx,
     cur = post_embed_out;
 
     // Per-layer outputs
-    tl_pos_tensors.clear();
+    ggml_tensor * pos = nullptr;
+    if (hp.layer_types.find('a') != std::string::npos) {
+        pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+        ggml_set_name(pos, "positions");
+        ggml_set_input(pos);
+    }
+
     std::vector<ggml_tensor *> layer_outs(hp.n_layers);
     for (uint32_t il = 0; il < hp.n_layers; il++) {
         cur = lfm2_layer_fwd(g, cur, ctx->model.layers[il],
-                             H, nh, nkv, hd, T, eps, theta);
+                             H, nh, nkv, hd, T, eps, theta, pos);
         layer_outs[il] = ggml_cont(g, cur);
         char lname[32];
         snprintf(lname, sizeof(lname), "layer_%u", il);
@@ -522,11 +541,10 @@ std::vector<lfm2_dump_entry> lfm2_embed_encode_dump(lfm2_embed_ctx * ctx,
     }
 
     ggml_backend_tensor_set(inp, ids.data(), 0, T * sizeof(int32_t));
-    {
-        std::vector<int32_t> pos(T);
-        for (int i = 0; i < T; i++) pos[i] = i;
-        for (ggml_tensor * pt : tl_pos_tensors)
-            ggml_backend_tensor_set(pt, pos.data(), 0, T * sizeof(int32_t));
+    if (pos) {
+        ctx->pos_cache.resize(T);
+        for (int i = 0; i < T; i++) ctx->pos_cache[i] = i;
+        ggml_backend_tensor_set(pos, ctx->pos_cache.data(), 0, T * sizeof(int32_t));
     }
 
     ggml_backend_graph_compute(ctx->backend, gf);

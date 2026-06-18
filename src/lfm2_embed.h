@@ -30,6 +30,9 @@ void lfm2_embed_free(lfm2_embed_ctx * ctx);
 // CLS vector.  Returns empty on error.
 std::vector<float> lfm2_embed_encode(lfm2_embed_ctx * ctx, const char * text);
 
+// Encode directly into an existing hidden_size-sized buffer. Returns false on error.
+bool lfm2_embed_encode_to(lfm2_embed_ctx * ctx, const char * text, float * out);
+
 // Output dimension (hidden_size = 1024).
 int lfm2_embed_n_embd(const lfm2_embed_ctx * ctx);
 
