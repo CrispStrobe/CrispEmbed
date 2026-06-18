@@ -196,11 +196,15 @@ static bool validate_encoder_model(const embed_model & m, bool pre_ln) {
 }
 
 #include "decoder_embed_internal.h"
+#include "lfm2_embed.h"
 
 struct crispembed_context {
     embed_model model;
     std::unique_ptr<dec_model> dec;  // non-null for decoder models
     bool is_decoder = false;
+    // LFM2.5 bidirectional embedding (arch="lfm2")
+    lfm2_embed_ctx * lfm2_ctx = nullptr;
+    bool is_lfm2 = false;
     WordPieceTokenizer wp_tokenizer;
     SentencePieceTokenizer sp_tokenizer;
     BPETokenizer bpe_tokenizer;
@@ -1534,21 +1538,35 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
     // Encoder models (BERT/XLM-R) have bert.* keys and enc.N.* tensor names.
     gguf_init_params gp = { true, nullptr };
     gguf_context * g = gguf_init_from_file(model_path, gp);
-    bool is_dec = false;
+    bool is_dec  = false;
+    bool is_lfm2 = false;
     if (g) {
         is_dec = gguf_find_key(g, "decoder.hidden_size") >= 0;
         if (!is_dec) {
             int64_t ki = gguf_find_key(g, "general.architecture");
             if (ki >= 0) {
                 std::string arch = gguf_get_val_str(g, ki);
-                is_dec = (arch == "qwen3" || arch == "gemma3" || arch == "llama"
-                       || arch == "qwen2" || arch == "mistral" || arch == "phi3");
+                is_dec  = (arch == "qwen3" || arch == "gemma3" || arch == "llama"
+                        || arch == "qwen2" || arch == "mistral" || arch == "phi3");
+                is_lfm2 = (arch == "lfm2");
             }
         }
         gguf_free(g);
     }
 
-    if (is_dec) {
+    if (is_lfm2) {
+        ctx->is_lfm2 = true;
+        ctx->backend = crispembed_init_backend(ctx->n_threads);
+        ctx->backends.push_back(ctx->backend);
+        if (!ctx->backend) { delete ctx; return nullptr; }
+        if (ggml_backend_is_cpu(ctx->backend)) {
+            ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+        }
+        ctx->lfm2_ctx = lfm2_embed_load(model_path, ctx->backend);
+        if (!ctx->lfm2_ctx) { delete ctx; return nullptr; }
+        ctx->model.hparams.n_embd   = (uint32_t)lfm2_embed_n_embd(ctx->lfm2_ctx);
+        ctx->model.hparams.n_output = ctx->model.hparams.n_embd;
+    } else if (is_dec) {
         ctx->is_decoder = true;
         ctx->dec = std::make_unique<dec_model>();
         // Initialize backends for decoder
@@ -1739,7 +1757,9 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx,
     }
 
     // NOLINTNEXTLINE(bugprone-branch-clone)
-    if (ctx->is_decoder && ctx->dec) {
+    if (ctx->is_lfm2 && ctx->lfm2_ctx) {
+        ctx->last_output = lfm2_embed_encode(ctx->lfm2_ctx, enc_text);
+    } else if (ctx->is_decoder && ctx->dec) {
         ctx->last_output = decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads,
                                                   ctx->sched, &ctx->compute_meta);
     } else {
@@ -3313,6 +3333,7 @@ extern "C" void crispembed_free(crispembed_context * ctx) {
         delete v;
         ctx->vision_ctx = nullptr;
     }
+    if (ctx->lfm2_ctx) { lfm2_embed_free(ctx->lfm2_ctx); ctx->lfm2_ctx = nullptr; }
     if (ctx->qkv_buf) { ggml_backend_buffer_free(ctx->qkv_buf); ctx->qkv_buf = nullptr; }
     if (ctx->qkv_ctx) { ggml_free(ctx->qkv_ctx); ctx->qkv_ctx = nullptr; }
     core_gguf::free_weights(ctx->wl);
