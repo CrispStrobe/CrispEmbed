@@ -1834,6 +1834,53 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
                                                    int * out_n_dim) {
     if (!ctx || !texts || n_texts <= 0) return nullptr;
 
+    if (ctx->is_lfm2 && ctx->lfm2_ctx) {
+        std::vector<std::vector<float>> batch_results;
+        batch_results.reserve(n_texts);
+
+        int dim = 0;
+        for (int i = 0; i < n_texts; i++) {
+            const char * inp = texts[i] ? texts[i] : "";
+            std::string prefixed;
+            if (!ctx->prefix.empty()) {
+                prefixed = ctx->prefix + inp;
+                inp = prefixed.c_str();
+            }
+
+            auto vec = lfm2_embed_encode(ctx->lfm2_ctx, inp);
+            if (vec.empty()) {
+                fprintf(stderr, "crispembed: LFM2 batch encode failed for item %d\n", i);
+                return nullptr;
+            }
+            if (dim == 0) {
+                dim = (int)vec.size();
+            } else if ((int)vec.size() != dim) {
+                fprintf(stderr, "crispembed: LFM2 batch dimension mismatch for item %d\n", i);
+                return nullptr;
+            }
+            batch_results.push_back(std::move(vec));
+        }
+
+        const int out_dim = (ctx->matryoshka_dim > 0 && ctx->matryoshka_dim < dim) ? ctx->matryoshka_dim : dim;
+        ctx->last_output.resize(n_texts * out_dim);
+
+        for (int i = 0; i < n_texts; i++) {
+            const auto & vec = batch_results[i];
+            float * dst = ctx->last_output.data() + i * out_dim;
+            if (out_dim < dim) {
+                float norm = 0;
+                for (int j = 0; j < out_dim; j++) norm += vec[j] * vec[j];
+                norm = sqrtf(std::max(norm, 1e-12f));
+                for (int j = 0; j < out_dim; j++) dst[j] = vec[j] / norm;
+            } else {
+                memcpy(dst, vec.data(), out_dim * sizeof(float));
+            }
+        }
+
+        if (out_n_dim) *out_n_dim = out_dim;
+        return ctx->last_output.data();
+    }
+
     // Tokenize all texts (with prefix if set)
     std::vector<embed_tokens> all_tokens(n_texts);
     for (int i = 0; i < n_texts; i++) {
