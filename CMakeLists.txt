@@ -422,6 +422,9 @@ target_link_libraries(test-ocr-orchestrator PRIVATE crispembed)
 add_executable(test-conv-ext tests/test_conv_ext.cpp)
 target_link_libraries(test-conv-ext PRIVATE crispembed)
 
+add_executable(test-gguf-loader-mmap tests/test_gguf_loader_mmap.cpp)
+target_link_libraries(test-gguf-loader-mmap PRIVATE crispembed)
+
 add_executable(test-ocr-pipeline tests/test_ocr_pipeline.cpp)
 target_link_libraries(test-ocr-pipeline PRIVATE crispembed)
 

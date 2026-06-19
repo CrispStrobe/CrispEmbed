@@ -133,8 +133,9 @@ struct model_weights {
 
 struct ds_ocr2_ctx {
     model_weights m;
-    ggml_context *model_ctx{};
-    ggml_backend_buffer_t model_buf{};
+    ggml_context *model_ctx{};            // alias into model_wl (do not free separately)
+    ggml_backend_buffer_t model_buf{};    // alias into model_wl
+    core_gguf::WeightLoad model_wl;       // owns ctx/buf (+ the mmap on the no-copy path)
     ggml_backend_t backend{}, backend_cpu{};
     ggml_backend_sched_t sched{};
     std::vector<uint8_t> compute_meta;
@@ -470,12 +471,19 @@ static bool load_hparams(ds_ocr2_ctx &ctx, const char *path) {
 }
 
 static bool load_tensors(ds_ocr2_ctx &ctx, const char *path) {
-    core_gguf::WeightLoad wl;
-    if (!core_gguf::load_weights(path, ctx.backend, "deepseek_ocr2", wl)) return false;
+    // DS_MMAP=1 opts into the no-copy mmap load (Metal/CPU unified memory):
+    // point the weight buffer at the mmap'd file instead of copying ~2 GB into
+    // a fresh buffer — halves resident memory. On Metal the pages still get
+    // wired on first use, so it's a memory win more than a first-load-time win;
+    // default stays the proven copy path. Falls back automatically if
+    // unsupported. Validated equal by tests/test_gguf_loader_mmap.
+    bool try_mmap = getenv("DS_MMAP") != nullptr;
+    if (!core_gguf::load_weights(path, ctx.backend, "deepseek_ocr2", ctx.model_wl, try_mmap))
+        return false;
 
-    ctx.model_ctx = wl.ctx;
-    ctx.model_buf = wl.buf;
-    auto &t = wl.tensors;
+    ctx.model_ctx = ctx.model_wl.ctx;
+    ctx.model_buf = ctx.model_wl.buf;
+    auto &t = ctx.model_wl.tensors;
     auto F = [&](const char *n) -> ggml_tensor* {
         auto it = t.find(n); return it != t.end() ? it->second : nullptr;
     };
@@ -2093,8 +2101,10 @@ void deepseek_ocr2_free(deepseek_ocr2_context * ctx) {
     if (c.sched) ggml_backend_sched_free(c.sched);
     if (c.moe_buf) ggml_backend_buffer_free(c.moe_buf);
     if (c.moe_ctx) ggml_free(c.moe_ctx);
-    if (c.model_buf) ggml_backend_buffer_free(c.model_buf);
-    if (c.model_ctx) ggml_free(c.model_ctx);
+    // model_buf/model_ctx alias model_wl — free via free_weights (also unmaps).
+    c.model_buf = nullptr;
+    c.model_ctx = nullptr;
+    core_gguf::free_weights(c.model_wl);
     if (c.backend) ggml_backend_free(c.backend);
     if (c.backend_cpu) ggml_backend_free(c.backend_cpu);
     delete ctx;
