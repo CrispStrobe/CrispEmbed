@@ -28,10 +28,16 @@ pub struct CrispembedHparams {
 /// Opaque handle to a loaded face model (detector or recogniser).
 pub type CrispembedFaceContext = std::ffi::c_void;
 
-/// Opaque handle to a unified math OCR context (auto-detects architecture:
-/// pix2tex, HMER, BTTR, PosFormer, PPFormulaNet, PPFormulaNet-L, Texo).
+/// Opaque handle to an auto-dispatched OCR model context. Reads the GGUF
+/// architecture and routes to the matching backend — math (pix2tex, HMER,
+/// BTTR, PosFormer, PPFormulaNet/-L, MixTex) or text/document (PARSeq,
+/// Qwen2.5-VL, InternVL2, GLM-OCR, GOT-OCR, Tesseract-LSTM, Granite-Vision,
+/// LightOnOCR, DeepSeek-OCR2).
 #[repr(C)]
-pub struct MathOcrContext(c_void);
+pub struct OcrModelContext(c_void);
+
+/// Deprecated alias for [`OcrModelContext`] (pre-rename name).
+pub type MathOcrContext = OcrModelContext;
 
 /// OCR result for a single detected text region (from the general OCR pipeline).
 #[repr(C)]
@@ -486,10 +492,10 @@ extern "C" {
     /// Initialize a unified math OCR context. Auto-detects architecture
     /// (pix2tex, HMER, BTTR, PosFormer, PPFormulaNet, PPFormulaNet-L, Texo)
     /// from GGUF metadata. `n_threads` = 0 for auto-detect. Returns NULL on failure.
-    pub fn crispembed_math_ocr_init(
+    pub fn crispembed_ocr_model_init(
         model_path: *const c_char,
         n_threads: c_int,
-    ) -> *mut MathOcrContext;
+    ) -> *mut OcrModelContext;
 
     /// Recognize math in raw pixel bytes (RGB or RGBA).
     /// `pixel_bytes` is `(height, width, channels)` row-major uint8.
@@ -497,8 +503,8 @@ extern "C" {
     /// Returns a NUL-terminated LaTeX string owned by the context, valid
     /// until the next call. `out_len` receives the byte length (may be NULL).
     /// Returns NULL on failure.
-    pub fn crispembed_math_ocr_recognize(
-        ctx: *mut MathOcrContext,
+    pub fn crispembed_ocr_model_recognize(
+        ctx: *mut OcrModelContext,
         pixel_bytes: *const u8,
         width: c_int,
         height: c_int,
@@ -507,26 +513,53 @@ extern "C" {
     ) -> *const c_char;
 
     /// Free all resources held by a math OCR context. Safe to call with NULL.
-    pub fn crispembed_math_ocr_free(ctx: *mut MathOcrContext);
+    pub fn crispembed_ocr_model_free(ctx: *mut OcrModelContext);
 
     /// Per-token confidence scores from the most recent math OCR call.
     /// Returns a pointer to `*n_tokens` floats owned by the context,
     /// valid until the next recognize call. Returns NULL on failure or
     /// if the engine does not produce per-token scores.
-    pub fn crispembed_math_ocr_confidences(
-        ctx: *const MathOcrContext,
+    pub fn crispembed_ocr_model_confidences(
+        ctx: *const OcrModelContext,
         n_tokens: *mut c_int,
     ) -> *const c_float;
 
     /// Mean confidence score across all tokens from the most recent math OCR
     /// call. Returns 0.0 if no recognition has been performed yet.
-    pub fn crispembed_math_ocr_mean_confidence(ctx: *const MathOcrContext) -> c_float;
+    pub fn crispembed_ocr_model_mean_confidence(ctx: *const OcrModelContext) -> c_float;
 
     /// Recognize math from grayscale float pixels [0..1].
     /// Returns a NUL-terminated LaTeX string owned by the context, valid
     /// until the next call. Returns NULL on failure.
+    pub fn crispembed_ocr_model_recognize_gray(
+        ctx: *mut OcrModelContext,
+        pixels: *const c_float,
+        width: c_int,
+        height: c_int,
+        out_len: *mut c_int,
+    ) -> *const c_char;
+
+    // --- Deprecated aliases (pre-rename names; forward to crispembed_ocr_model_*).
+    pub fn crispembed_math_ocr_init(
+        model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut OcrModelContext;
+    pub fn crispembed_math_ocr_recognize(
+        ctx: *mut OcrModelContext,
+        pixel_bytes: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        out_len: *mut c_int,
+    ) -> *const c_char;
+    pub fn crispembed_math_ocr_free(ctx: *mut OcrModelContext);
+    pub fn crispembed_math_ocr_confidences(
+        ctx: *const OcrModelContext,
+        n_tokens: *mut c_int,
+    ) -> *const c_float;
+    pub fn crispembed_math_ocr_mean_confidence(ctx: *const OcrModelContext) -> c_float;
     pub fn crispembed_math_ocr_recognize_gray(
-        ctx: *mut MathOcrContext,
+        ctx: *mut OcrModelContext,
         pixels: *const c_float,
         width: c_int,
         height: c_int,

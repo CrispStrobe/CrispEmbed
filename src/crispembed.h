@@ -601,38 +601,55 @@ CRISPEMBED_API const char * crispembed_lightonocr_recognize(
 CRISPEMBED_API void crispembed_free(crispembed_context * ctx);
 
 // ---------------------------------------------------------------------------
-// Unified Math OCR — auto-detects model architecture from GGUF metadata.
-// Supports pix2tex (printed), PP-FormulaNet (printed/small), PP-FormulaNet-L
-// (printed/best), Texo-Distill (printed/tiny), HMER (handwritten), BTTR
-// (handwritten), PosFormer (handwritten), MixTex (Chinese+English LaTeX),
-// PARSeq (scene text, ViT+Transformer, 94-char ASCII, Apache-2.0),
-// Qwen2.5-VL (VLM, German docs), InternVL2.5/2-1B (VLM, EN+DE),
-// GLM-OCR (VLM, 8 langs, OmniDocBench #1).
+// OCR model — a single auto-dispatched recognizer. Reads "general.architecture"
+// from the GGUF and routes to the matching backend. Despite the historical
+// "math" naming (still available via the deprecated crispembed_math_ocr_*
+// aliases below), this dispatcher covers both math and general text/document
+// OCR architectures:
+//   math:  pix2tex (printed), PP-FormulaNet / PP-FormulaNet-L, Texo-Distill,
+//          HMER / BTTR / PosFormer (handwritten), MixTex (zh+en LaTeX)
+//   text:  PARSeq (scene text), Qwen2.5-VL, InternVL2.5/2-1B, GLM-OCR,
+//          GOT-OCR, Tesseract-LSTM, Granite-Vision, LightOnOCR, DeepSeek-OCR2
+//
+// This is the single-model recognizer. For detection + recognition see the
+// crispembed_ocr_* pipeline, and for source-routing + cleanup + escalation see
+// the crispembed_ocr_pipeline_* orchestrator below.
 // ---------------------------------------------------------------------------
 
-// Initialize. Reads "general.architecture" from the GGUF to dispatch
-// to the correct inference backend (pix2tex, hmer, bttr, ppformulanet,
-// mixtex, parseq, qwen2vl, internvl2, glm-ocr, got-ocr, tesseract_lstm).
-CRISPEMBED_API void * crispembed_math_ocr_init(const char * model_path, int n_threads);
-CRISPEMBED_API void crispembed_math_ocr_free(void * ctx);
+CRISPEMBED_API void * crispembed_ocr_model_init(const char * model_path, int n_threads);
+CRISPEMBED_API void crispembed_ocr_model_free(void * ctx);
 
 // Recognize from raw pixel bytes (RGB/RGBA/grayscale).
-CRISPEMBED_API const char * crispembed_math_ocr_recognize(
+CRISPEMBED_API const char * crispembed_ocr_model_recognize(
     void * ctx, const uint8_t * pixel_bytes,
     int width, int height, int channels, int * out_len);
 
 // Recognize from grayscale float pixels [0..1].
-CRISPEMBED_API const char * crispembed_math_ocr_recognize_gray(
+CRISPEMBED_API const char * crispembed_ocr_model_recognize_gray(
     void * ctx, const float * pixels,
     int width, int height, int * out_len);
 
 /// Per-token confidence from the last recognition. Returns array of length
 /// *n_tokens (one per decode step). Valid until next recognize call.
 /// Works for all auto-dispatched architectures (TrOCR, HMER, BTTR, PARSeq, etc.).
-CRISPEMBED_API const float * crispembed_math_ocr_confidences(
+CRISPEMBED_API const float * crispembed_ocr_model_confidences(
     const void * ctx, int * n_tokens);
 
 /// Mean confidence across all tokens from the last recognition.
+CRISPEMBED_API float crispembed_ocr_model_mean_confidence(const void * ctx);
+
+// --- Deprecated aliases (pre-rename names; forward to crispembed_ocr_model_*).
+// Kept for ABI compatibility; prefer the crispembed_ocr_model_* names above.
+CRISPEMBED_API void * crispembed_math_ocr_init(const char * model_path, int n_threads);
+CRISPEMBED_API void crispembed_math_ocr_free(void * ctx);
+CRISPEMBED_API const char * crispembed_math_ocr_recognize(
+    void * ctx, const uint8_t * pixel_bytes,
+    int width, int height, int channels, int * out_len);
+CRISPEMBED_API const char * crispembed_math_ocr_recognize_gray(
+    void * ctx, const float * pixels,
+    int width, int height, int * out_len);
+CRISPEMBED_API const float * crispembed_math_ocr_confidences(
+    const void * ctx, int * n_tokens);
 CRISPEMBED_API float crispembed_math_ocr_mean_confidence(const void * ctx);
 
 // ---------------------------------------------------------------------------
