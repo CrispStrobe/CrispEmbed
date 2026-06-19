@@ -19,6 +19,7 @@
 
 #include "mixtex_ocr.h"
 #include "core/gguf_loader.h"
+#include "core/cpu_ops.h"
 #include "crispembed_diff.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -34,96 +35,12 @@
 #include <string>
 #include <vector>
 
-// ---------------------------------------------------------------------------
-// FP16/quantized → F32 dequantization
-// ---------------------------------------------------------------------------
-// GPU-safe: uses ggml_backend_tensor_get instead of direct tensor->data access
-static std::vector<float> to_f32(const ggml_tensor* t) {
-    if (!t) return {};
-    int n = (int)ggml_nelements(t);
-    std::vector<float> out(n);
-    if (t->type == GGML_TYPE_F32) {
-        ggml_backend_tensor_get(t, out.data(), 0, n * sizeof(float));
-    } else if (t->type == GGML_TYPE_F16) {
-        std::vector<ggml_fp16_t> tmp(n);
-        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
-        for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(tmp[i]);
-    } else {
-        size_t raw_sz = ggml_nbytes(t);
-        std::vector<uint8_t> raw(raw_sz);
-        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
-        const auto* traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) {
-            traits->to_float(raw.data(), out.data(), n);
-        }
-    }
-    return out;
-}
-
-// ---------------------------------------------------------------------------
-// CPU math helpers
-// ---------------------------------------------------------------------------
-static void layernorm_cpu(const float* in, float* out, int D,
-                          const float* w, const float* b, float eps = 1e-5f) {
-    double mean = 0;
-    for (int i = 0; i < D; i++) mean += in[i];
-    mean /= D;
-    double var = 0;
-    for (int i = 0; i < D; i++) { double d = in[i] - mean; var += d * d; }
-    var /= D;
-    float s = 1.0f / sqrtf((float)var + eps);
-    for (int i = 0; i < D; i++)
-        out[i] = ((in[i] - (float)mean) * s) * w[i] + b[i];
-}
-
-static void linear_cpu(const float* in, float* out, int in_dim, int out_dim,
-                        const float* weight, const float* bias) {
-    for (int o = 0; o < out_dim; o++) {
-        float s = bias ? bias[o] : 0.0f;
-        for (int i = 0; i < in_dim; i++)
-            s += in[i] * weight[o * in_dim + i];
-        out[o] = s;
-    }
-}
-
-// Exact GELU (erf-based, matching nn.GELU() in HF Swin)
-static float gelu(float x) {
-    return 0.5f * x * (1.0f + erff(x / sqrtf(2.0f)));
-}
-
-static void softmax(float* data, int n) {
-    float mx = data[0];
-    for (int i = 1; i < n; i++) if (data[i] > mx) mx = data[i];
-    float sum = 0;
-    for (int i = 0; i < n; i++) { data[i] = expf(data[i] - mx); sum += data[i]; }
-    for (int i = 0; i < n; i++) data[i] /= sum;
-}
-
-// Multi-head attention (single query position)
-static void mha_1q_cpu(const float* q, const float* k, const float* v,
-                        float* out, int n_kv, int D, int n_heads,
-                        const float* attn_bias = nullptr) {
-    int hd = D / n_heads;
-    float scale = 1.0f / sqrtf((float)hd);
-    for (int h = 0; h < n_heads; h++) {
-        int off = h * hd;
-        std::vector<float> scores(n_kv);
-        for (int t = 0; t < n_kv; t++) {
-            float dot = 0;
-            for (int d = 0; d < hd; d++)
-                dot += q[off + d] * k[t * D + off + d];
-            scores[t] = dot * scale;
-            if (attn_bias) scores[t] += attn_bias[h * n_kv + t]; // NOT USED for decoder
-        }
-        softmax(scores.data(), n_kv);
-        for (int d = 0; d < hd; d++) {
-            float sum = 0;
-            for (int t = 0; t < n_kv; t++)
-                sum += scores[t] * v[t * D + off + d];
-            out[off + d] = sum;
-        }
-    }
-}
+using core_cpu::to_f32;
+using core_cpu::layernorm_cpu;
+using core_cpu::linear_cpu;
+using core_cpu::softmax;
+using core_cpu::mha_1q_cpu;
+using core_cpu::gelu_erf;
 
 // ---------------------------------------------------------------------------
 // Swin window attention helpers
@@ -562,7 +479,7 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
     auto pn_b = to_f32(ctx->patch_norm_b);
     for (int i = 0; i < N; i++)
         layernorm_cpu(patches.data() + i * D, patches.data() + i * D,
-                      D, pn_w.data(), pn_b.data());
+                      D, pn_w.data(), pn_b.data(), 1e-5f);
 
     if (ctx->dump) dump_stats("enc_embed", patches.data(), N * D);
 
@@ -593,7 +510,7 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             auto ln1_w = to_f32(blk.ln1_w), ln1_b = to_f32(blk.ln1_b);
             for (int i = 0; i < HW; i++)
                 layernorm_cpu(x.data() + i * D, normed.data() + i * D,
-                              D, ln1_w.data(), ln1_b.data());
+                              D, ln1_w.data(), ln1_b.data(), 1e-5f);
 
             // Diff: compare LN1 output
             if (has_diff && stage == 0) {
@@ -779,9 +696,9 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
 
             for (int i = 0; i < HW; i++) {
                 std::vector<float> ln(D), up(ffn_dim), down(D);
-                layernorm_cpu(x.data() + i * D, ln.data(), D, ln2_w.data(), ln2_b.data());
+                layernorm_cpu(x.data() + i * D, ln.data(), D, ln2_w.data(), ln2_b.data(), 1e-5f);
                 linear_cpu(ln.data(), up.data(), D, ffn_dim, up_w.data(), up_b.data());
-                for (int j = 0; j < ffn_dim; j++) up[j] = gelu(up[j]);
+                for (int j = 0; j < ffn_dim; j++) up[j] = gelu_erf(up[j]);
                 linear_cpu(up.data(), down.data(), ffn_dim, D, down_w.data(), down_b.data());
                 for (int d = 0; d < D; d++) x[i * D + d] += down[d];
             }
@@ -844,7 +761,7 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             // LayerNorm on 4*D
             for (int i = 0; i < newN; i++)
                 layernorm_cpu(merged.data() + i * 4 * D, merged.data() + i * 4 * D,
-                              4 * D, norm_w.data(), norm_b.data());
+                              4 * D, norm_w.data(), norm_b.data(), 1e-5f);
 
             // Linear reduction: [newN, 4*D] → [newN, 2*D]
             std::vector<float> reduced(newN * new_D);
@@ -872,7 +789,7 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
         auto fn_b = to_f32(ctx->enc_final_norm_b);
         int N_out = H * W;
         for (int i = 0; i < N_out; i++)
-            layernorm_cpu(x.data() + i * D, x.data() + i * D, D, fn_w.data(), fn_b.data());
+            layernorm_cpu(x.data() + i * D, x.data() + i * D, D, fn_w.data(), fn_b.data(), 1e-5f);
     }
 
     // Diff: per-stage encoder output
@@ -1109,7 +1026,7 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
 
             std::vector<float> up(hp.dec_ffn), down(D);
             linear_cpu(hidden.data(), up.data(), D, hp.dec_ffn, fu_w.data(), fu_b.data());
-            for (int j = 0; j < hp.dec_ffn; j++) up[j] = gelu(up[j]);
+            for (int j = 0; j < hp.dec_ffn; j++) up[j] = gelu_erf(up[j]);
             linear_cpu(up.data(), down.data(), hp.dec_ffn, D, fd_w.data(), fd_b.data());
             for (int d = 0; d < D; d++) hidden[d] += down[d];
             layernorm_cpu(hidden.data(), hidden.data(), D, fln_w.data(), fln_b.data(), 1e-12f);
@@ -1130,7 +1047,7 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
         // LM head: Dense → GELU → LN → project to vocab
         std::vector<float> lm_h(D);
         linear_cpu(hidden.data(), lm_h.data(), D, D, lm_d_w.data(), lm_d_b.data());
-        for (int d = 0; d < D; d++) lm_h[d] = gelu(lm_h[d]);
+        for (int d = 0; d < D; d++) lm_h[d] = gelu_erf(lm_h[d]);
         layernorm_cpu(lm_h.data(), lm_h.data(), D, lm_n_w.data(), lm_n_b.data(), 1e-12f);
 
         // Project to vocab (tied weights = word_embed_w transposed)

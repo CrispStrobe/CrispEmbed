@@ -4,6 +4,35 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 19, 2026 — core/cpu_ops.h refactoring (Phase 1)
+
+Extracted ~100 lines of CPU-scalar helper functions duplicated across 6+ engine
+files into a shared header-only `src/core/cpu_ops.h` (namespace `core_cpu`).
+
+**Functions extracted:** to_f32 (GPU-safe dequant), layernorm_cpu (raw + tensor
+overloads), layernorm2d_cpu, rmsnorm_cpu, linear_cpu (raw + tensor overloads),
+conv2d_cpu (with groups), gelu (tanh approx), gelu_erf (exact), silu/silu_inplace,
+softmax, hardswish_inplace, relu6_inplace, relu_inplace, mha_1q_cpu.
+
+**Engines refactored:** surya_det, got_ocr, ppformulanet_l_ocr, ppformulanet_ocr,
+deepseek_ocr2, mixtex_ocr. Net: −728 lines deleted, +74 lines added (using decls).
+
+**Key design decisions:**
+- No default `eps` parameter — every call site must be explicit to prevent silent
+  behavior changes across engines that historically used 1e-5, 1e-6, or 1e-12.
+- `gelu` vs `gelu_erf`: two variants because engines use different approximations
+  (mixtex uses erf-exact matching `nn.GELU()`; ppformulanet_l uses tanh approx).
+- `conv2d_cpu` has `groups=1` default so engines without grouped convolution
+  don't need to change call sites.
+- All `to_f32` upgraded to GPU-safe `ggml_backend_tensor_get` path (some engines
+  previously used direct `t->data` access which fails on GPU backends).
+
+**Testing:** 88 unit tests (test_core_cpu_ops.cpp), verified parity on surya-det
+(q8_0, f16), glm-ocr-diff (cos=1.000000 all checkpoints), mixtex-diff (identical
+to main branch output), ppformulanet (q4_0).
+
+---
+
 ## June 19, 2026 — OCR Confidence, HF Uploads, LFM2.5
 
 ### Per-character/token confidence for all OCR engines
