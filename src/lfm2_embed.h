@@ -36,6 +36,18 @@ bool lfm2_embed_encode_to(lfm2_embed_ctx * ctx, const char * text, float * out);
 // Output dimension (hidden_size = 1024).
 int lfm2_embed_n_embd(const lfm2_embed_ctx * ctx);
 
+// ColBERT multi-vector output: per-token embeddings projected to colbert_dim.
+// Returns n_tokens (0 on error). Output: [n_tokens * colbert_dim] L2-normalised.
+// Caller allocates out (max_tokens * colbert_dim floats).
+int lfm2_embed_encode_multivec(lfm2_embed_ctx * ctx, const char * text,
+                                float * out, int max_tokens);
+
+// ColBERT output dimension (128 for LFM2.5-ColBERT, 0 if no ColBERT head).
+int lfm2_embed_colbert_dim(const lfm2_embed_ctx * ctx);
+
+// Check if the model has a ColBERT projection head.
+bool lfm2_embed_has_colbert(const lfm2_embed_ctx * ctx);
+
 // Dump mode: encode + capture per-layer intermediates for parity testing.
 // Fills *names and *data with one entry per captured stage.
 // Shape is (T * H) row-major for 2D tensors, (H,) for CLS vectors.
