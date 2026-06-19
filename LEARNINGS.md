@@ -24,12 +24,11 @@ names (`blk.N.attn_q` vs our `llm.layers.N.attn.q`, `v.blk.N` vs
 ## Qwen2-VL engine handles 4+ architectures (2026-06)
 
 The `qwen2vl_ocr` engine reads all hyperparams from GGUF metadata with
-prefix probing for `qwen2vl.*`, `qwen3vl.*`, and `dots_ocr.*`. This
+prefix probing for `qwen2vl.*` and `qwen3vl.*`. This
 means it handles:
 - Qwen2-VL (original)
 - Qwen2.5-VL (updated)
 - Qwen3-VL / FireRed-OCR (new attention patterns)
-- dots.ocr (42-layer deep vision, same LLM structure)
 - Nanonets-OCR2 (pruned Qwen2-VL, 16L vs 28L)
 
 Key: never hardcode layer counts or dimensions — always read from GGUF.
