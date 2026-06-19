@@ -27,3 +27,7 @@ hf-cache/
 # accidentally-committed CMake build trees (incl. VPS-path caches)
 build-*/
 build-embed-wasm/
+
+# local model/blueprint downloads (this session)
+.models-tmp/
+.ds-blueprints/

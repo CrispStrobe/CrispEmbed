@@ -151,6 +151,52 @@ env-gated and left in. The `crispembed-quantize` tool keeps the MoE router
 (`*.mlp_gate.weight` / `ffn_gate_inp`) and the `qe.*` Qwen2 encoder at Q8_0,
 which is what makes q4_k safe for this MoE.
 
+### Speed (~15×) + portability + a numerics red herring (2026-06)
+
+Three findings from making it fast and verifying it on macOS/Metal:
+
+1. **The qwen2 encoder was the one stage NOT on the GPU** — `encode_qwen2` was
+   pure CPU-scalar (naive O(T²) attention + per-token `linear_cpu`/`swiglu_cpu`),
+   ~9 min of vision on an M1 while SAM and the decoder were already ggml graphs.
+   Ported it to `build_qwen2_enc_layer_graph` (one graph over all `T=n_vis+n_query`
+   tokens, no KV cache), reusing the in-file `build_llm_layer_attn` pattern: NEOX
+   `ggml_rope_ext`, GQA interleave, `ggml_soft_max_ext` + a precomputed F16
+   bidirectional/query mask. **Vision (SAM+enc+proj) ~9 min → ~37 s.** Verified
+   bit-equivalent to the scalar path (per-layer `cos_min` matched to 5 digits);
+   `DS_QWEN2_SCALAR=1` keeps the scalar reference for A/B.
+
+2. **Decoder use-after-free, masked by the slow encoder.** `build_llm_layer_attn`
+   built its graph in a **local** `std::vector meta` buffer and *returned the
+   graph* — the buffer freed on return, leaving `gf` dangling. Latent UB: fine on
+   Linux (freed heap intact), `EXC_BAD_ACCESS` in `ggml_backend_sched_alloc_graph`
+   on macOS. It never surfaced before because every run died/timed-out in the
+   9-min scalar encoder, *before* reaching decode-step-0. The fast encoder exposed
+   it immediately. Fix: own the meta buffer **in** the returned struct (move
+   preserves `data()`), matching the SAM pattern (caller-scoped buffer). With this
+   the full OCR runs end-to-end in ~2 min and is character-perfect.
+
+3. **The encoder's parity "failure" is a metric artifact, not a bug.** Against an
+   fp32 PyTorch reference the encoder output looks broken (`cos_min`→−0.07,
+   `cos_mean`~0.5 over 24 layers). But an **independent naive-fp32 NumPy
+   reimplementation diverges identically** (cos_mean 0.57 vs the C++ 0.50) — so
+   the gap is inherent fp32-vs-PyTorch-SDPA sensitivity on this model's
+   **attention-sink massive activations** (token 0, channel 570, growing to ~410),
+   not a code error. Confirmed not quantization: q8_0-roundtripping the weights in
+   PyTorch keeps cos_mean 0.9995. `cos_min` is misleading here (dominated by the
+   one massive channel) — judge the encoder by `cos_mean`, or just by the OCR
+   text, which is correct. Lesson: before chasing a "bug" on a massive-activation
+   model, reproduce the reference path naively in fp32 — if *it* also diverges,
+   the divergence is numerical, not yours.
+
+Harness notes from the hunt: the per-stage diff was comparing the **wrong
+tensors** (pre-neck 4096×768 vs the final 256×896 SAM output; pre-norm full-seq
+vs the post-norm query-half encoder output) — the dead `diff_ref_path` is now
+wired to a `DS_REF` env var with corrected comparison points + per-layer
+bisection. `tools/dump_deepseek_ocr2_reference.py` was rewritten to instantiate
+the vision modules standalone from `deepencoderv2.py` (the bundled MoE
+`modeling_deepseekv2.py` won't import on transformers ≥4.48 — `LlamaFlashAttention2`
+was removed), so the reference GGUF builds on CPU without the 3.4B decoder.
+
 ## Qwen2-VL (Qari-OCR) parity: four independent bugs, four layers
 
 Qari-OCR (a Qwen2-VL-2B Arabic OCR fine-tune) produced garbage. The diff
