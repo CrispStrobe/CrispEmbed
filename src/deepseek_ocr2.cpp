@@ -1751,13 +1751,22 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
     }
     ctx.kvc.n_past = 0;
 
-    // Build initial embedding: splice image embeds at image_token positions
-    // For simplicity, assume prompt = [special_tokens...] with image placeholders
-    auto embed_w = to_f32(ctx.m.embed_tokens);
-
+    // Per-row embedding: dequant only the requested row on demand instead of
+    // the whole 128k×1280 table (~655 MB held for the entire decode). The decode
+    // touches ~one row per generated token, so the table f32 copy was pure waste.
+    ggml_tensor* emb_t = ctx.m.embed_tokens;
+    const auto* emb_tt = ggml_get_type_traits(emb_t->type);
+    const size_t emb_row_bytes = ggml_row_size(emb_t->type, D);
+    std::vector<uint8_t> emb_row;
     auto get_embedding = [&](int32_t tok_id, float *out_emb) {
-        for (int d = 0; d < D; d++)
-            out_emb[d] = embed_w[tok_id * D + d];
+        const size_t off = (size_t)tok_id * emb_row_bytes;
+        if (emb_t->type == GGML_TYPE_F32) {
+            ggml_backend_tensor_get(emb_t, out_emb, off, (size_t)D * sizeof(float));
+        } else {
+            emb_row.resize(emb_row_bytes);
+            ggml_backend_tensor_get(emb_t, emb_row.data(), off, emb_row_bytes);
+            emb_tt->to_float(emb_row.data(), out_emb, D);
+        }
     };
 
     // Dequant weights needed for LM head
