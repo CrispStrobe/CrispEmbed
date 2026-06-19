@@ -198,8 +198,21 @@ The 64 per-expert tensors are stacked once at load into `[in,out,n_exp]`
 (`stack_moe_experts`, a `memcpy` of each quantized expert into its slice — same
 shape/type so blocks stay aligned; +~1.3 GB, gated so the CPU path doesn't pay
 it). Per-layer prefill ~2015 ms → ~50 ms (~40×); **full OCR ~121 s → ~43 s**,
-byte-identical output. `DS_MOE_CPU=1` keeps the scalar path. Vision (~37 s SAM
-global attention over 4096 patches) is the bottleneck again.
+byte-identical output. `DS_MOE_CPU=1` keeps the scalar path.
+
+**Then vision — and the surprise was the convs, not the attention.** Per-stage
+timers showed SAM's 12 attention layers (already Metal) were only ~3 s; the rest
+was scalar CPU: the **neck/downsample `conv2d_cpu`** (3.7-8 s, thread-variance-
+prone) and patch embed (~2 s). Threading both (exact) roughly halved them, then
+porting the neck/downsample to `ggml_conv_2d` (`build_sam_neck_graph`: 4 convs +
+2 channel-axis LayerNorm-2d via permute→`ggml_norm`→affine→permute) dropped it to
+**~150 ms** (~20-40×). Gotcha: the conv kernels are Q8_0 (vision floor), and you
+**cannot reshape a quantized `[768,256]` to `[1,1,768,256]`** (`ne[0]=1` breaks
+the 32-block) — dequant to F32 and feed as graph inputs. SAM ~12 s → ~4.7 s,
+`sam_output` cos unchanged (0.999253). `DS_SAM_CONV_CPU=1` keeps the CPU chain.
+Net: full OCR ~9 min (start of session, never completed) → **~23 s**, character-
+perfect. Remaining costs: model load (~5-12 s, cold disk + Metal buffer copy) and
+the SAM attention (~4 s, hard to flash-attn due to decomposed rel-pos bias).
 
 Harness notes from the hunt: the per-stage diff was comparing the **wrong
 tensors** (pre-neck 4096×768 vs the final 256×896 SAM output; pre-norm full-seq
