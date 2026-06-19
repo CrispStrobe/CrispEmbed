@@ -733,6 +733,270 @@ def run_llm_decoder(shard_files, input_embeds, config, max_layers=None):
     return intermediates
 
 
+# ── Combined vision+LLM pipeline ─────────────────────────────────────
+
+def run_combined_pipeline(shard_files, merger_output, deepstack_features,
+                          grid_thw, config, max_llm_layers=None):
+    """Run LLM decoder with vision-text splicing and deepstack injection.
+
+    Builds the same token sequence as the C++ engine:
+      <|im_start|>system\nYou are a helpful assistant.<|im_end|>\n
+      <|im_start|>user\n<|vision_start|><|image_pad|>×N<|vision_end|>
+      Describe this image.<|im_end|>\n<|im_start|>assistant\n
+
+    Then:
+      1. Look up token embeddings
+      2. Replace image_pad positions with merger_output
+      3. At LLM layers 0,1,2: add deepstack features at image positions
+      4. Run LLM forward, capture per-layer intermediates
+    """
+    tc = config.get("text_config", config)
+    D = tc["hidden_size"]
+    n_heads = tc["num_attention_heads"]
+    n_kv_heads = tc["num_key_value_heads"]
+    head_dim = tc.get("head_dim", D // n_heads)
+    n_layers = tc["num_hidden_layers"]
+    rms_eps = tc.get("rms_norm_eps", 1e-6)
+
+    rope_cfg = tc.get("rope_scaling", {})
+    rope_sections = rope_cfg.get("mrope_section", [24, 20, 20])
+    rope_theta = tc.get("rope_theta", 5000000.0)
+    is_interleaved = rope_cfg.get("mrope_interleaved", True)
+
+    if max_llm_layers is not None:
+        n_layers = min(n_layers, max_llm_layers)
+
+    # Special token IDs (same as C++ engine)
+    im_start = 151644
+    im_end = 151645
+    system_tok = 8948
+    user_tok = 872
+    assistant_tok = 77091
+    newline_tok = 198
+    vision_start = config.get("vision_start_token_id", 151652)
+    image_pad = config.get("image_token_id", 151655)
+    vision_end = config.get("vision_end_token_id", 151653)
+
+    n_image_tokens = merger_output.shape[0]
+    merge_size = config["vision_config"]["spatial_merge_size"]
+
+    # Build token sequence matching C++ build_token_ids()
+    # System message
+    # "You are a helpful assistant." = [2610, 525, 264, 10950, 17847, 13]
+    token_ids = [
+        im_start, system_tok, newline_tok,
+        2610, 525, 264, 10950, 17847, 13,
+        im_end, newline_tok,
+        # User turn with image
+        im_start, user_tok, newline_tok,
+        vision_start,
+    ]
+    img_start_pos = len(token_ids)
+    token_ids.extend([image_pad] * n_image_tokens)
+    img_end_pos = len(token_ids)
+    token_ids.append(vision_end)
+    # "Describe this image." = [74785, 419, 2168, 13]
+    token_ids.extend([74785, 419, 2168, 13])
+    token_ids.extend([im_end, newline_tok, im_start, assistant_tok, newline_tok])
+
+    T = len(token_ids)
+    token_ids_arr = np.array(token_ids, dtype=np.int32)
+
+    print(f"  Combined pipeline: {T} tokens, {n_image_tokens} image tokens "
+          f"at positions [{img_start_pos}..{img_end_pos})")
+
+    intermediates = {}
+    intermediates["token_ids"] = token_ids_arr.astype(np.float32)
+
+    # Build tensor name → shard mapping
+    tensor_to_shard = {}
+    for path in shard_files:
+        with safe_open(str(path), framework="pt") as f:
+            for key in f.keys():
+                tensor_to_shard[key] = str(path)
+
+    def get_tensor(name):
+        if name not in tensor_to_shard:
+            return None
+        with safe_open(tensor_to_shard[name], framework="pt") as f:
+            return f.get_tensor(name).float().numpy()
+
+    def require(name):
+        t = get_tensor(name)
+        if t is None:
+            raise ValueError(f"Required tensor not found: {name}")
+        return t
+
+    # 1. Token embeddings
+    embed_w = require("model.language_model.embed_tokens.weight")
+    x = embed_w[token_ids_arr]  # (T, D)
+
+    intermediates["llm_embed_raw"] = x.copy()
+
+    # 2. Splice: replace image_pad positions with merger output
+    for i in range(n_image_tokens):
+        x[img_start_pos + i] = merger_output[i]
+
+    intermediates["llm_embed"] = x.copy()
+    print(f"  After splice: first5={x[0, :5]}")
+    print(f"  Image tok[0]: first5={x[img_start_pos, :5]}")
+    print(f"  Merger[0]:    first5={merger_output[0, :5]}")
+
+    # 3. Build mRoPE positions (matching C++ engine logic)
+    #    Text tokens: all 3 dims = sequential
+    #    Image tokens: t=frame_offset, h=row, w=col (within merged grid)
+    positions = np.zeros((T, 3), dtype=np.float32)
+
+    # Text before image: positions 0..img_start_pos-1
+    for i in range(img_start_pos):
+        positions[i] = [float(i)] * 3
+
+    # Image tokens: spatial grid positions
+    _, h_p, w_p = grid_thw
+    grid_h = h_p // merge_size
+    grid_w = w_p // merge_size
+    image_pos_offset = img_start_pos  # continue from last text position
+
+    tok = 0
+    for ft in range(grid_thw[0]):
+        for fh in range(grid_h):
+            for fw in range(grid_w):
+                if tok >= n_image_tokens:
+                    break
+                pos = img_start_pos + tok
+                positions[pos, 0] = float(image_pos_offset + ft)
+                positions[pos, 1] = float(image_pos_offset + fh)
+                positions[pos, 2] = float(image_pos_offset + fw)
+                tok += 1
+
+    last_max = image_pos_offset + max(grid_thw[0], grid_h, grid_w) - 1
+
+    # Text after image: continue from last_max + 1
+    text_after_start = img_end_pos
+    for i in range(text_after_start, T):
+        pos_val = float(last_max + 1 + (i - text_after_start))
+        positions[i] = [pos_val] * 3
+
+    intermediates["mrope_positions"] = positions.copy()
+
+    # 4. Causal mask
+    causal_mask = np.full((T, T), -np.inf, dtype=np.float32)
+    for i in range(T):
+        for j in range(i + 1):
+            causal_mask[i, j] = 0.0
+
+    apply_rope_fn = apply_imrope if is_interleaved else None
+
+    # 5. LLM forward with deepstack injection
+    for li in range(n_layers):
+        # Deepstack injection: at layers 0, 1, 2 add deepstack features
+        if li < len(deepstack_features) and deepstack_features[li] is not None:
+            ds_feat = deepstack_features[li]  # (n_image_tokens, D)
+            for i in range(n_image_tokens):
+                x[img_start_pos + i] += ds_feat[i]
+            intermediates[f"llm_post_ds_{li}"] = x.copy()
+            print(f"  LLM L{li} post-deepstack: img_tok[0] first5={x[img_start_pos, :5]}")
+
+        prefix = f"model.language_model.layers.{li}."
+
+        # Pre-attn RMSNorm
+        norm_w = require(prefix + "input_layernorm.weight")
+        normed = rms_norm(x, norm_w, eps=rms_eps)
+
+        # Q/K/V projections (no bias)
+        q_w = require(prefix + "self_attn.q_proj.weight")
+        k_w = require(prefix + "self_attn.k_proj.weight")
+        v_w = require(prefix + "self_attn.v_proj.weight")
+        o_w = require(prefix + "self_attn.o_proj.weight")
+
+        Q = linear(normed, q_w).reshape(T, n_heads, head_dim)
+        K = linear(normed, k_w).reshape(T, n_kv_heads, head_dim)
+        V = linear(normed, v_w).reshape(T, n_kv_heads, head_dim)
+
+        # QK RMSNorm
+        q_norm_w = get_tensor(prefix + "self_attn.q_norm.weight")
+        k_norm_w = get_tensor(prefix + "self_attn.k_norm.weight")
+        if q_norm_w is not None:
+            q_ms = (Q ** 2).mean(axis=-1, keepdims=True)
+            Q = Q / np.sqrt(q_ms + rms_eps) * q_norm_w
+        if k_norm_w is not None:
+            k_ms = (K ** 2).mean(axis=-1, keepdims=True)
+            K = K / np.sqrt(k_ms + rms_eps) * k_norm_w
+
+        # GQA
+        kv_repeat = n_heads // n_kv_heads
+        K = np.repeat(K, kv_repeat, axis=1)
+        V = np.repeat(V, kv_repeat, axis=1)
+
+        Q = Q.transpose(1, 0, 2)
+        K = K.transpose(1, 0, 2)
+        V = V.transpose(1, 0, 2)
+
+        # Dump Q before RoPE for comparison
+        if li == 0:
+            intermediates["llm_L0_Q_pre_rope"] = Q.transpose(1, 0, 2).reshape(T, D).copy()
+
+        # mRoPE
+        Q = apply_rope_fn(Q, positions, rope_sections, rope_theta, head_dim)
+        K = apply_rope_fn(K, positions, rope_sections, rope_theta, head_dim)
+
+        # Dump intra-layer intermediates for first layer
+        if li == 0:
+            # Q after rope: (nh, T, hd) → dump as (T, D) by transposing back
+            intermediates["llm_L0_Q_rope"] = Q.transpose(1, 0, 2).reshape(T, D).copy()
+            intermediates["llm_L0_K_rope"] = K.transpose(1, 0, 2).reshape(T, D).copy()
+
+        scores = (Q @ K.transpose(0, 2, 1)) / math.sqrt(head_dim)
+        scores = scores + causal_mask[np.newaxis, :, :]
+        attn = softmax(scores)
+        attn_out = (attn @ V).transpose(1, 0, 2).reshape(T, D)
+        attn_out = linear(attn_out, o_w)
+
+        if li == 0:
+            intermediates["llm_L0_attn_out"] = attn_out.copy()
+
+        x = x + attn_out
+
+        if li == 0:
+            intermediates["llm_L0_post_attn"] = x.copy()
+
+        # SwiGLU FFN
+        ffn_norm_w = require(prefix + "post_attention_layernorm.weight")
+        normed2 = rms_norm(x, ffn_norm_w, eps=rms_eps)
+
+        gate_w = require(prefix + "mlp.gate_proj.weight")
+        up_w = require(prefix + "mlp.up_proj.weight")
+        down_w = require(prefix + "mlp.down_proj.weight")
+
+        gate = linear(normed2, gate_w)
+        up = linear(normed2, up_w)
+        ffn_out = linear(silu(gate) * up, down_w)
+        x = x + ffn_out
+
+        intermediates[f"llm_layer_{li}"] = x.copy()
+        print(f"  LLM L{li}: first5={x[0, :5]}")
+
+    # Final norm
+    final_norm_w = get_tensor("model.language_model.norm.weight")
+    if final_norm_w is not None:
+        x = rms_norm(x, final_norm_w, eps=rms_eps)
+        intermediates["llm_final_norm"] = x.copy()
+
+    # Logits at last position
+    lm_head_w = get_tensor("model.language_model.lm_head.weight")
+    if lm_head_w is None:
+        # Tied embeddings
+        lm_head_w = embed_w
+    if lm_head_w is not None:
+        last_hidden = x[-1:]  # (1, D)
+        logits = last_hidden @ lm_head_w.T  # (1, V)
+        intermediates["last_logits"] = logits.copy()
+        top5 = np.argsort(logits[0])[-5:][::-1]
+        print(f"  Top5 logit IDs: {top5.tolist()}")
+
+    return intermediates
+
+
 # ── Main ──────────────────────────────────────────────────────────────
 
 def main():
@@ -751,6 +1015,8 @@ def main():
                    help="Skip LLM decoder (vision only)")
     p.add_argument("--skip-vision", action="store_true",
                    help="Skip vision encoder (LLM only)")
+    p.add_argument("--combined", action="store_true",
+                   help="Run combined vision+LLM pipeline with splicing + deepstack")
     args = p.parse_args()
 
     # Download model files
@@ -834,6 +1100,25 @@ def main():
             all_intermediates.update(llm_ints)
         else:
             print("  WARNING: embed_tokens not found, skipping LLM")
+
+    # ── Combined vision+LLM pipeline ────────────────────────────
+    if args.combined and "vis_merger_output" in all_intermediates:
+        print(f"\n=== Combined vision+LLM pipeline ===")
+        merger_out = all_intermediates["vis_merger_output"]
+        # Collect deepstack features in order
+        ds_feats = []
+        ds_idx = 0
+        while f"vis_deepstack_{ds_idx}" in all_intermediates:
+            ds_feats.append(all_intermediates[f"vis_deepstack_{ds_idx}"])
+            ds_idx += 1
+
+        max_llm = args.max_llm_layers if args.max_llm_layers else 2
+        combined_ints = run_combined_pipeline(
+            shard_files, merger_out, ds_feats,
+            grid_thw, config,
+            max_llm_layers=max_llm,
+        )
+        all_intermediates.update(combined_ints)
 
     # ── Write reference GGUF ─────────────────────────────────────
     print(f"\nWriting reference GGUF: {args.output}")

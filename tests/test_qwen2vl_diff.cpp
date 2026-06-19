@@ -220,6 +220,11 @@ int main(int argc, char **argv) {
             img.n_image_tokens = use_n_merged;
             img.grid_thw = grid_thw;
             img.n_images = 1;
+            // Pass deepstack embeds if available
+            if (!result.deepstack_embeds.empty()) {
+                img.deepstack_embeds = (const float *const *)result.deepstack_embeds.data();
+                img.n_deepstack = (int)result.deepstack_embeds.size();
+            }
         }
 
         qwen2vl_ocr::llm_result llm_out;
