@@ -305,13 +305,15 @@ embed, LM head) — full OCR ~9 min (never completed) → ~12 s warm. Profiled
 warm breakdown: load ~9 s cold / 0.8 s warm · SAM ~4.7 s · decode ~3.8 s ·
 enc+proj ~1.1 s. Remaining levers, ranked by leverage:
 
-- [ ] **#1 Load-path prefetch (~5–6 s, highest leverage).** `load_tensors` is
-  ~9 s cold even though 2.1 GB off an SSD should be ~1–2 s, and no-copy mmap vs
-  copy made no difference — so it's the *read pattern*: `core_gguf::load_weights`
-  page-faults per-tensor (2707 small faults) with no prefetch. Try
-  `madvise(MADV_WILLNEED/SEQUENTIAL)` on the mmap, or one large sequential read
-  of the data region. A/B with the `DS_DBG` `init.load_tensors` timer. (Also: a
-  near-full APFS volume is genuinely slow — freeing disk may help on its own.)
+- [x] **#1 Load-path prefetch — DONE, but not the bottleneck.** Added
+  `madvise(MADV_SEQUENTIAL/WILLNEED)` to `core_gguf::load_weights` (correct
+  practice, helps genuinely disk-bound cold loads on other systems). On *this*
+  machine it didn't move the needle, and the diagnostic explains why: the disk
+  reads 2.1 GB in **1.17 s** and a warm load is **0.8 s** — so the ~9–18 s cold
+  loads are **memory-pressure / swap**, not readahead. During a run the process
+  holds ~5 GB (2.1 model + 1.3 stacked experts + 0.65 embed-f32 + Metal) on a
+  16 GB box, so file pages and new allocations contend and swap. → the real load
+  lever is **reducing the footprint** (#3, #4), not prefetch.
 - [ ] **#2 Decode graph reuse (~1–1.5 s).** Decode rebuilds 12 graphs/token ×
   32 = 384× (`ggml_init(4 MB)` + `sched_alloc` Metal allocation each). Keep one
   persistent per-layer graph (fixed max-KV, mask the tail) and reuse it across
