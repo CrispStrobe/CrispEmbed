@@ -1089,18 +1089,18 @@ List<FaceResult> _decodePipelineBuffer(Pointer<Void> buf, int n, int embDim) {
 // Math OCR (pix2tex) — image → LaTeX
 // ---------------------------------------------------------------------------
 
-/// Wraps a pix2tex math OCR model loaded via `crispembed_math_ocr_init`.
+/// Wraps a pix2tex math OCR model loaded via `crispembed_ocr_model_init`.
 ///
 /// Converts grayscale image pixel data into LaTeX strings using a ViT
 /// encoder + transformer decoder architecture.
 ///
 /// ```dart
-/// final ocr = CrispMathOcr('pix2tex.gguf');
+/// final ocr = CrispOcrModel('pix2tex.gguf');
 /// final latex = ocr.recognize(grayBytes, width: 320, height: 64);
 /// print(latex);  // e.g. '\frac{a}{b} + c^2'
 /// ocr.dispose();
 /// ```
-class CrispMathOcr {
+class CrispOcrModel {
   late final DynamicLibrary _lib;
   late final Pointer<Void> _ctx;
   bool _disposed = false;
@@ -1116,14 +1116,14 @@ class CrispMathOcr {
   /// [nThreads] — CPU thread count (0 = auto-detect).
   /// [libPath] — optional path to the shared library. If omitted, searches
   ///   standard platform locations.
-  CrispMathOcr(String modelPath, {int nThreads = 0, String? libPath}) {
+  CrispOcrModel(String modelPath, {int nThreads = 0, String? libPath}) {
     _lib = _openNativeLib(libPath);
     _bindFunctions();
 
     final pathPtr = modelPath.toNativeUtf8();
     _ctx = _lib
         .lookupFunction<CrispembedMathOcrInitNative, CrispembedMathOcrInitDart>(
-            'crispembed_math_ocr_init')
+            'crispembed_ocr_model_init')
         .call(pathPtr, nThreads);
     calloc.free(pathPtr);
 
@@ -1134,9 +1134,9 @@ class CrispMathOcr {
 
   void _bindFunctions() {
     _recognizeFn = _lib.lookupFunction<CrispembedMathOcrRecognizeNative,
-        CrispembedMathOcrRecognizeDart>('crispembed_math_ocr_recognize');
+        CrispembedMathOcrRecognizeDart>('crispembed_ocr_model_recognize');
     _freeFn = _lib.lookupFunction<CrispembedMathOcrFreeNative,
-        CrispembedMathOcrFreeDart>('crispembed_math_ocr_free');
+        CrispembedMathOcrFreeDart>('crispembed_ocr_model_free');
   }
 
   // ------------------------------------------------------------------
@@ -1184,9 +1184,14 @@ class CrispMathOcr {
   }
 
   void _checkDisposed() {
-    if (_disposed) throw StateError('CrispMathOcr has been disposed');
+    if (_disposed) throw StateError('CrispOcrModel has been disposed');
   }
 }
+
+/// Deprecated alias for [CrispOcrModel]. The dispatcher now handles general
+/// text/document OCR in addition to math, so it was renamed.
+@Deprecated('Renamed to CrispOcrModel')
+typedef CrispMathOcr = CrispOcrModel;
 
 // ---------------------------------------------------------------------------
 // Standalone ViT image embedding (SigLIP, CLIP)

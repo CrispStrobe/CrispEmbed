@@ -2,7 +2,7 @@
 
 from ._binding import (
     CrispEmbed, CrispVit, CrispFace, CrispFacePipeline, CrispClipText,
-    CrispMathOcr, CrispOcrPipeline, CrispOcrOrchestrator, CrispPreprocess,
+    CrispOcrModel, CrispMathOcr, CrispOcrPipeline, CrispOcrOrchestrator, CrispPreprocess,
     CrispLayout, CrispTextDetect, CrispNER, CrispKIE, CrispLiLT,
     CrispTextLID, CrispTruecaser, CrispScanCleanup, CrispTableParse,
     CrispTextSr, CrispTbsrnSr, CrispPanSr, CrispHatSr, CrispDatSr,
@@ -13,7 +13,7 @@ from ._binding import (
 
 __all__ = [
     "CrispEmbed", "CrispVit", "CrispFace", "CrispFacePipeline", "CrispClipText",
-    "CrispMathOcr", "CrispOcrPipeline", "CrispOcrOrchestrator", "CrispPreprocess",
+    "CrispOcrModel", "CrispMathOcr", "CrispOcrPipeline", "CrispOcrOrchestrator", "CrispPreprocess",
     "CrispLayout", "CrispTextDetect", "CrispNER", "CrispKIE", "CrispLiLT",
     "CrispTextLID", "CrispTruecaser", "CrispScanCleanup", "CrispTableParse",
     "CrispTextSr", "CrispTbsrnSr", "CrispPanSr", "CrispHatSr", "CrispDatSr",

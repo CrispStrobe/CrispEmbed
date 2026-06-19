@@ -1437,11 +1437,11 @@ int main(int argc, char ** argv) {
 
     // Unified math OCR (auto-detect architecture from GGUF metadata)
     if (!ocr_path.empty()) {
-        void* octx = crispembed_math_ocr_init(model_path.c_str(), n_threads);
+        void* octx = crispembed_ocr_model_init(model_path.c_str(), n_threads);
         if (!octx) { fprintf(stderr, "error: failed to load OCR model\n"); return 1; }
         int w, h, ch;
         unsigned char* data = stbi_load(ocr_path.c_str(), &w, &h, &ch, 0);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", ocr_path.c_str()); crispembed_math_ocr_free(octx); return 1; }
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", ocr_path.c_str()); crispembed_ocr_model_free(octx); return 1; }
 
         // Optional scan cleanup before OCR
         uint8_t * cleaned = nullptr;
@@ -1458,7 +1458,7 @@ int main(int argc, char ** argv) {
         }
 
         int out_len = 0;
-        const char* latex = crispembed_math_ocr_recognize(octx, data, w, h, ch, &out_len);
+        const char* latex = crispembed_ocr_model_recognize(octx, data, w, h, ch, &out_len);
         if (cleaned) scan_cleanup_free_image(cleaned); else stbi_image_free(data);
         if (latex && out_len > 0) {
             // Apply punctuation restoration if --punct-model is set
@@ -1481,7 +1481,7 @@ int main(int argc, char ** argv) {
         } else {
             fprintf(stderr, "error: OCR recognition failed\n");
         }
-        crispembed_math_ocr_free(octx);
+        crispembed_ocr_model_free(octx);
         return 0;
     }
 

@@ -37,7 +37,7 @@ Python (`CrispOcrPipeline`), Rust (`OcrPipeline`), Flutter (`CrispOcrPipeline`).
 **Scene Text OCR**: PARSeq (ViT encoder + Transformer decoder, 24M params,
 94-char ASCII, Apache-2.0). Base 91 MB F32 / 24 MB Q8_0, Tiny 12 MB F16 / 6 MB Q8_0.
 State-of-the-art accuracy for scene text recognition (ECCV 2022).
-CLI (`--ocr`), server (`POST /math/ocr`), Python (`CrispMathOcr`), auto-detected.
+CLI (`--ocr`), server (`POST /ocr/model`), Python (`CrispOcrModel`), auto-detected.
 
 **Math OCR**: Seven engines for math-image → LaTeX:
 PP-FormulaNet-L (printed, SAM-ViT+MBart 181M, Apache-2.0, 122 MB Q4_K),
@@ -227,7 +227,7 @@ python tests/test_cli_parity.py --cli ./build/crispembed \
 curl -X POST http://localhost:8080/embed -d '{"texts": ["Hello world"]}'
 curl -X POST http://localhost:8080/clip/text -d '{"text": "a photo of a cat"}'
 curl -X POST http://localhost:8080/vit/encode -d '{"image": "photo.jpg"}'
-curl -X POST http://localhost:8080/math/ocr -d '{"image": "formula.png"}'
+curl -X POST http://localhost:8080/ocr/model -d '{"image": "formula.png"}'
 curl -X POST http://localhost:8080/ner/extract \
   -d '{"text": "Tim Cook at Apple", "labels": ["person", "organization"]}'
 ```
@@ -235,8 +235,10 @@ curl -X POST http://localhost:8080/ner/extract \
 ## OCR
 
 Fourteen engines for image → text, all auto-detected from GGUF metadata via
-the unified `crispembed_math_ocr_*` C API. Available through CLI (`--ocr`),
-HTTP server (`POST /math/ocr`), Python (`CrispMathOcr`), Rust, and Dart/Flutter.
+the unified `crispembed_ocr_model_*` C API (formerly `crispembed_math_ocr_*`,
+kept as deprecated aliases). Available through CLI (`--ocr`), HTTP server
+(`POST /ocr/model`, alias `POST /math/ocr`), Python (`CrispOcrModel`), Rust
+(`OcrModel`), and Dart/Flutter (`CrispOcrModel`).
 
 | Model | Architecture | Params | Q4_K Size | Use case | License |
 |-------|-------------|--------|-----------|----------|---------|
@@ -265,16 +267,16 @@ graph compute. Encoder parity cos=0.999962 vs HuggingFace reference.
 
 # Server
 ./build/crispembed-server --ocr ppformulanet-l-q8_0.gguf --port 8080
-curl -X POST http://localhost:8080/math/ocr -d '{"image": "formula.png"}'
+curl -X POST http://localhost:8080/ocr/model -d '{"image": "formula.png"}'
 
 # Python
-from crispembed import CrispMathOcr
-ocr = CrispMathOcr("ppformulanet-l-q8_0.gguf")
+from crispembed import CrispOcrModel
+ocr = CrispOcrModel("ppformulanet-l-q8_0.gguf")
 latex = ocr.recognize("formula.png")
 
 # C API
-void *ctx = crispembed_math_ocr_init("ppformulanet-l-q8_0.gguf", 4);
-const char *latex = crispembed_math_ocr_recognize(ctx, pixels, w, h, ch, &len);
+void *ctx = crispembed_ocr_model_init("ppformulanet-l-q8_0.gguf", 4);
+const char *latex = crispembed_ocr_model_recognize(ctx, pixels, w, h, ch, &len);
 ```
 
 **Flutter integration**: The `flutter/crispembed/` plugin provides `CrispEmbedOcr`
@@ -860,9 +862,9 @@ if omni.has_vision:
 Math OCR:
 
 ```python
-from crispembed import CrispMathOcr
+from crispembed import CrispOcrModel
 
-ocr = CrispMathOcr("ppformulanet-l-q8_0.gguf")
+ocr = CrispOcrModel("ppformulanet-l-q8_0.gguf")
 latex = ocr.recognize("formula.png")           # file path
 latex = ocr.recognize(pil_image)               # PIL Image
 latex = ocr.recognize(numpy_uint8_array)       # (H, W, C) uint8
@@ -1040,7 +1042,7 @@ face detection/recognition, ViT/CLIP vision, math OCR, and NER:
 - `POST /api/embeddings` — Ollama legacy single
 - `POST /detect`, `POST /face` — face detection/recognition
 - `POST /vit/encode`, `POST /clip/text` — image/text encoding
-- `POST /math/ocr` — formula recognition `{"image": "path"}` → `{"latex": "..."}`
+- `POST /ocr/model` — OCR recognition `{"image": "path"}` → `{"latex": "..."}` (alias: `/math/ocr`)
 - `POST /ner/extract` — NER `{"text": "...", "labels": [...]}` → `{"entities": [...]}`
 - `POST /lid/detect` — LID `{"text": "..."}` → `{"lang": "de", "confidence": 0.99}`
 - `POST /kie/extract` — KIE `{"image": "doc.png", "labels": ["total", ...]}` → `{"fields": [...]}`
