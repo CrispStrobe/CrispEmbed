@@ -76,6 +76,10 @@ struct lfm2_embed_model {
     ggml_tensor * embedding_norm_w = nullptr;
     std::vector<lfm2_layer> layers;
 
+    // ColBERT projection head: Linear(hidden→colbert_dim, no bias)
+    ggml_tensor * colbert_proj_w = nullptr;
+    int colbert_dim = 0;
+
     ggml_context       * ctx = nullptr;
     ggml_backend_buffer_t buf = nullptr;
     std::map<std::string, ggml_tensor *> tensors;
@@ -210,6 +214,15 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
         }
     }
 
+    // ColBERT projection head (optional — present in LFM2.5-ColBERT)
+    ctx->model.colbert_proj_w = core_gguf::try_get(wl.tensors, "colbert.projection.weight");
+    if (ctx->model.colbert_proj_w) {
+        // Weight shape [colbert_dim, hidden] in PyTorch → ne[0]=hidden, ne[1]=colbert_dim in ggml
+        ctx->model.colbert_dim = (int)ctx->model.colbert_proj_w->ne[1];
+        fprintf(stderr, "[lfm2_embed] ColBERT head: %d → %d\n",
+                hp.hidden_size, ctx->model.colbert_dim);
+    }
+
     ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
     if (!ctx->galloc) {
         fprintf(stderr, "[lfm2_embed] failed to create graph allocator\n");
@@ -220,9 +233,10 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
     }
 
     fprintf(stderr, "[lfm2_embed] loaded: hidden=%u, layers=%u, heads=%u/%u, "
-            "ff=%u, vocab=%u\n",
+            "ff=%u, vocab=%u%s\n",
             hp.hidden_size, hp.n_layers, hp.n_heads, hp.n_kv_heads,
-            hp.ff_dim, hp.vocab_size);
+            hp.ff_dim, hp.vocab_size,
+            ctx->model.colbert_dim > 0 ? ", ColBERT" : "");
     return ctx;
 }
 
@@ -453,6 +467,112 @@ std::vector<float> lfm2_embed_encode(lfm2_embed_ctx * ctx, const char * text) {
     std::vector<float> out(H);
     if (!lfm2_embed_encode_to(ctx, text, out.data())) return {};
     return out;
+}
+
+int lfm2_embed_colbert_dim(const lfm2_embed_ctx * ctx) {
+    return ctx ? ctx->model.colbert_dim : 0;
+}
+
+bool lfm2_embed_has_colbert(const lfm2_embed_ctx * ctx) {
+    return ctx && ctx->model.colbert_dim > 0 && ctx->model.colbert_proj_w;
+}
+
+int lfm2_embed_encode_multivec(lfm2_embed_ctx * ctx, const char * text,
+                                float * out, int max_tokens) {
+    if (!ctx || !text || !out || !lfm2_embed_has_colbert(ctx)) return 0;
+
+    const auto & hp = ctx->model.hparams;
+    const int H = (int)hp.hidden_size;
+    const int cd = ctx->model.colbert_dim;
+
+    // Tokenize
+    std::vector<int32_t> ids = lfm2_bpe_encode(ctx->model.token_to_id,
+                                                ctx->model.merge_rank, text);
+    int T = (int)ids.size();
+    if (T <= 0) return 0;
+    if (T > max_tokens) T = max_tokens;
+
+    // Build graph — same as encode_to but output ALL tokens, not just CLS
+    const int nh  = (int)hp.n_heads;
+    const int nkv = (int)hp.n_kv_heads;
+    const int hd  = H / nh;
+    const float eps   = hp.rms_eps;
+    const float theta = hp.rope_theta;
+    const int max_nodes = 4096;
+
+    ggml_init_params gp = {
+        ggml_tensor_overhead() * max_nodes + ggml_graph_overhead_custom(max_nodes, false),
+        nullptr, true
+    };
+    ggml_context * g = ggml_init(gp);
+
+    ggml_tensor * inp = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+    ggml_set_name(inp, "input_ids"); ggml_set_input(inp);
+    ggml_tensor * pos = nullptr;
+    if (ctx->model.layers[0].is_attention) {
+        pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+        ggml_set_name(pos, "pos_ids"); ggml_set_input(pos);
+    }
+
+    // Token embedding
+    ggml_tensor * cur = ggml_get_rows(g, ctx->model.embed_tokens_w, inp);
+
+    // Encoder layers
+    for (uint32_t il = 0; il < hp.n_layers; il++) {
+        cur = lfm2_layer_fwd(g, cur, ctx->model.layers[il],
+                             H, nh, nkv, hd, T, eps, theta, pos);
+    }
+
+    // Final norm
+    cur = lfm2_rms_norm(g, cur, ctx->model.embedding_norm_w, eps);
+
+    // ColBERT projection: [H, T] → matmul with proj [cd, H] → [cd, T]
+    ggml_tensor * projected = ggml_mul_mat(g, ctx->model.colbert_proj_w, cur);
+    ggml_set_name(projected, "colbert_out");
+    ggml_set_output(projected);
+
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+    ggml_build_forward_expand(gf, projected);
+
+    if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
+        fprintf(stderr, "[lfm2_embed] ColBERT graph allocation failed (T=%d)\n", T);
+        ggml_free(g);
+        return 0;
+    }
+
+    // Fill inputs
+    ggml_backend_tensor_set(inp, ids.data(), 0, T * sizeof(int32_t));
+    if (pos) {
+        ctx->pos_cache.resize(T);
+        for (int i = 0; i < T; i++) ctx->pos_cache[i] = i;
+        ggml_backend_tensor_set(pos, ctx->pos_cache.data(), 0, T * sizeof(int32_t));
+    }
+
+    ggml_backend_graph_compute(ctx->backend, gf);
+
+    // Read projected output: [cd, T] in ggml → read as [T, cd] row-major
+    std::vector<float> raw(cd * T);
+    ggml_backend_tensor_get(projected, raw.data(), 0, cd * T * sizeof(float));
+
+    ggml_free(g);
+
+    // Transpose from ggml [cd, T] (col-major per token) to [T, cd] row-major
+    // and L2-normalize each token
+    for (int t = 0; t < T; t++) {
+        float norm = 0.0f;
+        for (int d = 0; d < cd; d++) {
+            float v = raw[d * T + t]; // ggml layout: fast dim is cd, stride T
+            // Actually ggml [cd, T]: element [d, t] = data[t * cd + d] (ne[0]=cd is fast)
+            // Wait — ggml_mul_mat output has ne[0] = cd (from proj), ne[1] = T
+            // So data[t * cd + d] is correct for row t, column d
+            out[t * cd + d] = raw[t * cd + d];
+            norm += raw[t * cd + d] * raw[t * cd + d];
+        }
+        norm = sqrtf(std::max(norm, 1e-12f));
+        for (int d = 0; d < cd; d++) out[t * cd + d] /= norm;
+    }
+
+    return T;
 }
 
 // ============================================================================
