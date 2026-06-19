@@ -4,6 +4,57 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 19, 2026 — OCR Confidence, dots.ocr, HF Uploads, LFM2.5
+
+### Per-character/token confidence for all OCR engines
+
+Added softmax-based confidence tracking to every OCR engine's greedy
+decode loop. 15 engines now expose `<engine>_confidences()` +
+`<engine>_mean_confidence()`. Wired through: C API
+(`crispembed_math_ocr_confidences`), Rust FFI, Python
+(`CrispMathOcr.confidences()`, `CrispOcrOrchestrator.region_rec_confidence()`),
+and Server (JSON `"confidence"` + `"token_confidences"` fields).
+
+Engines: parseq, tesseract_lstm, math_ocr, hmer, bttr, posformer, mixtex,
+ppformulanet, ppformulanet_l, glm_ocr, got_ocr, qwen2vl_ocr, internvl2_ocr,
+granite_vision, lightonocr. Test suite: 44/44 pass (26 unit + 18 live).
+
+### dots.ocr (3B, MIT, 100+ languages)
+
+Qwen2.5-VL derived VLM with 42-layer vision encoder. Runs on existing
+`qwen2vl_ocr` engine with zero code changes — added `dots_ocr` arch
+dispatch + metadata prefix probing. GGUF: F16, Q8_0, Q4_K on HF.
+
+### New model registry entries
+
+- **dots.ocr** (3B, MIT) — `cstr/dots-ocr-crispembed-GGUF`
+- **FireRed-OCR** (Qwen3-VL 2B) — `cstr/firered-ocr-crispembed-GGUF`
+- **H2OVL-Mississippi-0.8B** — smallest VLM OCR (OCRBench 751, 398MB Q4_K)
+- **Nanonets-OCR2-1.5B** — Qwen2-VL pruned (16L), runs on qwen2vl_ocr
+- **german-ocr-3.1** — Qwen2.5-VL fine-tune for German business docs
+  (new `merge-llamacpp-qwen2vl-gguf.py` tool for split llama.cpp GGUFs)
+
+### LFM2.5-Embedding + ColBERT (LiquidAI)
+
+- LFM2.5-Embedding-350M: 1024d CLS hybrid embeddings, 11 languages
+- LFM2.5-ColBERT-350M: per-token 128d multi-vector output
+- Both: converter, parity test, registry, HF upload
+
+### HuggingFace uploads
+
+All OCR model repos now have F16 + Q8_0 + Q4_K GGUFs with READMEs:
+granite-vision, lightonocr, dots-ocr, firered-ocr. DeepSeek-OCR-2
+quantization running on Kaggle (6.4GB F16 too large for VPS).
+
+### Bug fixes
+
+- Layout Q8_0/F16 crash: `tensor_to_f32()` for all decoder weight reads
+- MixTex decoder: parity VERIFIED (cos=1.0 — was reference GGUF inconsistency)
+- LightOnOCR prompt: correct chat template token IDs for OCR output
+- Qwen2-VL KV cache: cont V view fix for correct token-for-token decode
+
+---
+
 ## June 16, 2026 — LightOnOCR-2-1B (OCR Arena #2)
 
 End-to-end port of [lightonai/LightOnOCR-2-1B](https://huggingface.co/lightonai/LightOnOCR-2-1B)
