@@ -347,12 +347,12 @@ esrgan_sr engine internally).
 |---|-------|--------|-------------|---------|-------------|--------------|
 | ~~1~~ | ~~dots.ocr~~ | ~~3B~~ | ~~88.4%~~ | ~~NOT pure MIT~~ | — | REMOVED: supplemental PRC license agreement |
 | 2 | **PaddleOCR-VL-1.6** | 1.6B | 96.3% SOTA | Apache-2.0 | NaViT + ERNIE-4.5-0.3B | New (NaViT+ERNIE) |
-| 3 | **MinerU2.5-Pro** | 1.2B | 90.7% | ? | Two-stage NaViT + LLM | New (two-stage) |
-| 4 | **SmolDocling** | 256M | — | Apache-2.0? | Compact VLM, DocTags output | New (tiny) |
-| 5 | **Hunyuan-OCR** | 1B | — | ? | Tencent native multimodal | New |
+| ~~3~~ | ~~MinerU2.5-Pro~~ | ~~1.2B~~ | ~~90.7%~~ | ~~NOT pure Apache~~ | — | SKIP: Apache-2.0 + commercial thresholds (MAU>100M/rev>$20M), mandatory attribution, gated HF model |
+| 4 | **SmolDocling** | 256M | — | Apache-2.0 | Idefics3/SmolVLM, IBM Research | New (tiny) |
+| ~~5~~ | ~~Hunyuan-OCR~~ | ~~1B~~ | — | ? | Tencent | SKIP: license unknown |
 | 6 | **PaddleOCR-VL-0.9B** | 0.9B | — | Apache-2.0 | NaViT-675M + ERNIE-0.3B | Same as PaddleOCR-VL |
 
-**Priority order**: PaddleOCR-VL (SOTA 96.3%, Apache-2.0), then SmolDocling (tiny, Apache-2.0).
+**Priority order**: SmolDocling (tiny 256M, Apache-2.0, IBM), then PaddleOCR-VL (SOTA 96.3%, Apache-2.0).
 
 #### OCRBench leaderboard reference (small VLMs, ≤3B)
 
