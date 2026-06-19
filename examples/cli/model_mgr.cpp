@@ -731,6 +731,33 @@ static const ModelEntry k_registry[] = {
      "DeepSeek-OCR-2 (SAM + Qwen2-enc + MoE decoder, 3.4B, grounding)", "6.5 GB", "apache-2.0",
      "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF"},
 
+    // PaddleOCR-VL-0.9B — NaViT ViT + ERNIE-4.5 LLM, 109 languages
+    // License: Apache-2.0
+    {"paddleocr-vl",
+     "paddleocr-vl-0.9b-q8_0.gguf",
+     "https://huggingface.co/cstr/paddleocr-vl-0.9b-GGUF/resolve/main/paddleocr-vl-0.9b-q8_0.gguf",
+     "PaddleOCR-VL 0.9B NaViT+ERNIE-4.5 109-lang OCR", "1.4 GB", "apache-2.0",
+     "https://huggingface.co/PaddlePaddle/PaddleOCR-VL"},
+
+    {"paddleocr-vl-q4k",
+     "paddleocr-vl-0.9b-q4_k.gguf",
+     "https://huggingface.co/cstr/paddleocr-vl-0.9b-GGUF/resolve/main/paddleocr-vl-0.9b-q4_k.gguf",
+     "PaddleOCR-VL 0.9B NaViT+ERNIE-4.5 Q4_K 109-lang OCR", "1.3 GB", "apache-2.0",
+     "https://huggingface.co/PaddlePaddle/PaddleOCR-VL"},
+
+    // PaddleOCR-VL-1.6 — same arch as 0.9B, improved training (96.3% OmniDocBench)
+    {"paddleocr-vl-1.6",
+     "paddleocr-vl-1.6-q8_0.gguf",
+     "https://huggingface.co/cstr/paddleocr-vl-1.6-GGUF/resolve/main/paddleocr-vl-1.6-q8_0.gguf",
+     "PaddleOCR-VL 1.6 NaViT+ERNIE-4.5 SOTA 109-lang OCR", "1.4 GB", "apache-2.0",
+     "https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6"},
+
+    {"paddleocr-vl-1.6-q4k",
+     "paddleocr-vl-1.6-q4_k.gguf",
+     "https://huggingface.co/cstr/paddleocr-vl-1.6-GGUF/resolve/main/paddleocr-vl-1.6-q4_k.gguf",
+     "PaddleOCR-VL 1.6 NaViT+ERNIE-4.5 SOTA Q4_K 109-lang OCR", "1.3 GB", "apache-2.0",
+     "https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6"},
+
     // LFM2.5-Embedding-350M — LiquidAI bidirectional hybrid (10 ShortConv + 6 GQA)
     // 1024-dim CLS pooling, 11 languages (EN/ES/DE/FR/IT/PT/AR/SV/NO/JA/KO)
     // License: LFM Open License v1.0 (commercial use requires separate agreement)
