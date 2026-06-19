@@ -700,6 +700,30 @@ static ggml_cgraph* build_sam_layer_graph(ggml_context* g, ds_ocr2_ctx* ctx,
 // CPU conv2d_cpu chain. Conv kernels are fed as F32 inputs (the GGUF stores them
 // Q8_0 — can't reshape a quantized tensor to [1,1,IC,OC]). Default path;
 // DS_SAM_CONV_CPU=1 restores the CPU chain. Validated equal via DS_REF sam_output.
+// Metal graph for the SAM patch embedding (conv 3->C, PS×PS, stride PS) + the
+// absolute position embedding. Replaces the scalar/threaded per-patch matmul.
+// Produces hidden as [C, N] (== hidden[tok*C+c]). Kernel/pos fed as F32.
+static ggml_cgraph* build_sam_patch_graph(ggml_context* g, int imgS, int PS, int C, int nP) {
+    ggml_cgraph* gf = ggml_new_graph(g);
+    ggml_tensor* px = ggml_new_tensor_4d(g, GGML_TYPE_F32, imgS, imgS, 3, 1);
+    ggml_set_name(px, "px"); ggml_set_input(px);
+    ggml_tensor* w = ggml_new_tensor_4d(g, GGML_TYPE_F32, PS, PS, 3, C);
+    ggml_set_name(w, "w_patch"); ggml_set_input(w);
+    ggml_tensor* bias = ggml_new_tensor_1d(g, GGML_TYPE_F32, C);
+    ggml_set_name(bias, "pe_b"); ggml_set_input(bias);
+    ggml_tensor* pos = ggml_new_tensor_2d(g, GGML_TYPE_F32, C, nP * nP);
+    ggml_set_name(pos, "pos"); ggml_set_input(pos);
+
+    ggml_tensor* x = ggml_conv_2d(g, w, px, PS, PS, 0, 0, 1, 1);   // [nP,nP,C]
+    x = ggml_cont(g, ggml_permute(g, x, 1, 2, 0, 3));             // [C,nP,nP]
+    x = ggml_reshape_2d(g, x, C, nP * nP);                        // [C, N]
+    x = ggml_add(g, x, bias);                                     // + per-channel bias
+    x = ggml_add(g, x, pos);
+    ggml_set_name(x, "patch_out"); ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+    return gf;
+}
+
 static ggml_cgraph* build_sam_neck_graph(ggml_context* g, int nP, int C, int nC,
                                          int ds1_ch, int ds2_ch) {
     ggml_cgraph* gf = ggml_new_graph(g);
@@ -763,27 +787,44 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
     int patch_dim = 3 * PS * PS;
     std::vector<float> hidden(N * C);
 
-    // Patch embed is a per-patch matmul (patch_dim×C); patches are independent,
-    // so parallelize over rows. ~2 s scalar → ~0.5 s threaded, exact.
-    auto patch_rows = [&](int py0, int py1) {
-        std::vector<float> patch(patch_dim);
-        for (int py = py0; py < py1; py++)
-            for (int px = 0; px < nP; px++) {
-                int tok = py * nP + px;
-                for (int c = 0; c < 3; c++)
-                    for (int ky = 0; ky < PS; ky++)
-                        for (int kx = 0; kx < PS; kx++)
-                            patch[c * PS * PS + ky * PS + kx] =
-                                pixels[c * s.image_size * s.image_size
-                                       + (py * PS + ky) * s.image_size + (px * PS + kx)];
-                for (int o = 0; o < C; o++) {
-                    float sv = pe_b.empty() ? 0.0f : pe_b[o];
-                    for (int i = 0; i < patch_dim; i++) sv += pe_w[o * patch_dim + i] * patch[i];
-                    hidden[tok * C + o] = sv + (pos.empty() ? 0.0f : pos[tok * C + o]);
+    if (!getenv("DS_SAM_CONV_CPU")) {
+        // Patch embed on Metal (conv 3->C, PS×PS stride PS) + position embed.
+        size_t meta_sz = 8 * 1024 * 1024;
+        std::vector<uint8_t> mb(meta_sz);
+        ggml_init_params ip = { meta_sz, mb.data(), true };
+        ggml_context* gc = ggml_init(ip);
+        ggml_cgraph* gf = build_sam_patch_graph(gc, s.image_size, PS, C, nP);
+        ggml_backend_sched_reset(ctx.sched);
+        ggml_backend_sched_alloc_graph(ctx.sched, gf);
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "px"), pixels, 0,
+                                (size_t)3 * s.image_size * s.image_size * sizeof(float));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "w_patch"), pe_w.data(), 0, pe_w.size() * sizeof(float));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pe_b"), pe_b.data(), 0, pe_b.size() * sizeof(float));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos"), pos.data(), 0, pos.size() * sizeof(float));
+        ggml_backend_sched_graph_compute(ctx.sched, gf);
+        ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "patch_out"), hidden.data(), 0,
+                                (size_t)N * C * sizeof(float));
+        ggml_free(gc);
+    } else {
+        // Threaded CPU per-patch matmul (exact fallback).
+        auto patch_rows = [&](int py0, int py1) {
+            std::vector<float> patch(patch_dim);
+            for (int py = py0; py < py1; py++)
+                for (int px = 0; px < nP; px++) {
+                    int tok = py * nP + px;
+                    for (int c = 0; c < 3; c++)
+                        for (int ky = 0; ky < PS; ky++)
+                            for (int kx = 0; kx < PS; kx++)
+                                patch[c * PS * PS + ky * PS + kx] =
+                                    pixels[c * s.image_size * s.image_size
+                                           + (py * PS + ky) * s.image_size + (px * PS + kx)];
+                    for (int o = 0; o < C; o++) {
+                        float sv = pe_b.empty() ? 0.0f : pe_b[o];
+                        for (int i = 0; i < patch_dim; i++) sv += pe_w[o * patch_dim + i] * patch[i];
+                        hidden[tok * C + o] = sv + (pos.empty() ? 0.0f : pos[tok * C + o]);
+                    }
                 }
-            }
-    };
-    {
+        };
         int nt = std::max(1, std::min(ctx.n_threads, nP));
         if (nt <= 1) patch_rows(0, nP);
         else {
