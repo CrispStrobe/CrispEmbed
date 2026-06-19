@@ -1474,6 +1474,7 @@ bool run_llm_forward(context &ctx,
     // (they are side outputs, not ancestors of the logits — without this they
     // are pruned and the KV cache can't be extracted).
     std::vector<ggml_tensor *> kv_out_tensors;
+    std::vector<ggml_tensor *> debug_tensors;  // layer 0 intermediates for diff
 
     // Qwen3-VL deepstack: pre-computed injection tensors per layer
     // These are set as graph inputs — one per deepstack layer
@@ -1498,6 +1499,12 @@ bool run_llm_forward(context &ctx,
         // before layer computation. Layer 0 ← deepstack[0], layer 1 ← deepstack[1], etc.
         if (has_image && il < n_ds && ds_inject_tensors[il]) {
             x = ggml_add(g, x, ds_inject_tensors[il]);
+            if (!ctx.diff_ref_path.empty()) {
+                char dsname[64];
+                std::snprintf(dsname, sizeof(dsname), "llm_post_ds_%d", il);
+                ggml_set_name(x, dsname);
+                ggml_set_output(x);
+            }
         }
 
         ggml_tensor *residual = x;
@@ -1528,6 +1535,16 @@ bool run_llm_forward(context &ctx,
             K = ggml_mul(g, K, ly.k_norm_w);
         }
 
+        // Layer 0 debug: Q before RoPE
+        if (il == 0 && !ctx.diff_ref_path.empty()) {
+            ggml_tensor *Q_pre = ggml_cont(g, Q);
+            Q_pre = ggml_reshape_2d(g, Q_pre, D, n_tokens);
+            Q_pre = ggml_cont(g, Q_pre);
+            ggml_set_name(Q_pre, "llm_L0_Q_pre_rope");
+            ggml_set_output(Q_pre);
+            debug_tensors.push_back(Q_pre);
+        }
+
         // Apply mRoPE (multi-dimensional rotary position embedding)
         // Qwen3-VL uses interleaved mRoPE (IMROPE); Qwen2/2.5-VL uses MROPE
         const int rope_type = lhp.mrope_interleaved
@@ -1548,6 +1565,17 @@ bool run_llm_forward(context &ctx,
                             0,
                             lhp.rope_theta,
                             1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+
+        // Layer 0 debug: dump Q/K after RoPE for parity testing
+        if (il == 0 && !ctx.diff_ref_path.empty()) {
+            // Q: (head_dim, n_heads, T) → cont → reshape to (D, T) for comparison
+            ggml_tensor *Q_dbg = ggml_cont(g, Q);
+            Q_dbg = ggml_reshape_2d(g, Q_dbg, D, n_tokens);
+            Q_dbg = ggml_cont(g, Q_dbg);  // ensure separate buffer
+            ggml_set_name(Q_dbg, "llm_L0_Q_rope");
+            ggml_set_output(Q_dbg);
+            debug_tensors.push_back(Q_dbg);
+        }
 
         // Output post-RoPE K/V for KV cache extraction
         // Shape: (head_dim, n_kv_heads, n_tokens) → flatten to (kv_dim, n_tokens)
@@ -1605,7 +1633,20 @@ bool run_llm_forward(context &ctx,
         // Output projection
         attn_out = ggml_mul_mat(g, ly.o_w, attn_out);
         if (ly.o_b) attn_out = ggml_add(g, attn_out, ly.o_b);
+
+        // Layer 0 debug: dump attn output and post-attn
+        if (il == 0 && !ctx.diff_ref_path.empty()) {
+            ggml_set_name(attn_out, "llm_L0_attn_out");
+            ggml_set_output(attn_out);
+        }
+
         x = ggml_add(g, residual, attn_out);
+
+        if (il == 0 && !ctx.diff_ref_path.empty()) {
+            ggml_tensor *pa = ggml_cont(g, x);  // force materialization
+            ggml_set_name(pa, "llm_L0_post_attn");
+            ggml_set_output(pa);
+        }
 
         // Pre-FFN RMSNorm
         residual = x;
@@ -1648,6 +1689,8 @@ bool run_llm_forward(context &ctx,
     // Also expand for the KV-cache side outputs so they are computed and
     // retrievable by generate() (otherwise the KV cache silently disables).
     for (ggml_tensor *t : kv_out_tensors) ggml_build_forward_expand(gf, t);
+    // Expand debug tensors (layer 0 intermediates for parity testing)
+    for (ggml_tensor *t : debug_tensors) ggml_build_forward_expand(gf, t);
 
     // Allocate and compute
     ggml_backend_sched_reset(ctx.sched);
@@ -1796,6 +1839,55 @@ bool run_llm_forward(context &ctx,
     ggml_backend_tensor_set(pos_t_tensor, pos_data.data(), 0,
                             pos_data.size() * sizeof(int32_t));
 
+    // Debug: dump mRoPE positions for comparison
+    if (ctx.verbosity >= 2 && !ctx.diff_ref_path.empty()) {
+        fprintf(stderr, "  mRoPE positions (C++):\n");
+        for (int i = 0; i < std::min(n_tokens, 20); i++) {
+            fprintf(stderr, "    tok %3d: t=%d h=%d w=%d\n", i,
+                    pos_data[i], pos_data[n_tokens + i], pos_data[2 * n_tokens + i]);
+        }
+        if (n_tokens > 20) {
+            // Show a few image tokens and last tokens
+            for (int i = 20; i < std::min(n_tokens, 25); i++) {
+                fprintf(stderr, "    tok %3d: t=%d h=%d w=%d\n", i,
+                        pos_data[i], pos_data[n_tokens + i], pos_data[2 * n_tokens + i]);
+            }
+            fprintf(stderr, "    ...\n");
+            for (int i = std::max(20, n_tokens - 5); i < n_tokens; i++) {
+                fprintf(stderr, "    tok %3d: t=%d h=%d w=%d\n", i,
+                        pos_data[i], pos_data[n_tokens + i], pos_data[2 * n_tokens + i]);
+            }
+        }
+
+        // Compare with reference if available
+        if (!ctx.diff_ref_path.empty()) {
+            crispembed_diff::Ref pref;
+            if (pref.load(ctx.diff_ref_path) && pref.has("mrope_positions")) {
+                auto [rp, rn] = pref.get_f32("mrope_positions");
+                int n_ref = (int)(rn / 3);
+                if (n_ref == n_tokens) {
+                    int n_mismatch = 0;
+                    for (int i = 0; i < n_tokens; i++) {
+                        int rt = (int)rp[i * 3 + 0];
+                        int rh = (int)rp[i * 3 + 1];
+                        int rw = (int)rp[i * 3 + 2];
+                        int ct = pos_data[i];
+                        int ch = pos_data[n_tokens + i];
+                        int cw = pos_data[2 * n_tokens + i];
+                        if (rt != ct || rh != ch || rw != cw) {
+                            if (n_mismatch < 10) {
+                                fprintf(stderr, "    MISMATCH tok %d: C++(%d,%d,%d) ref(%d,%d,%d)\n",
+                                        i, ct, ch, cw, rt, rh, rw);
+                            }
+                            n_mismatch++;
+                        }
+                    }
+                    fprintf(stderr, "    mRoPE pos mismatches: %d/%d\n", n_mismatch, n_tokens);
+                }
+            }
+        }
+    }
+
     if (ggml_backend_sched_graph_compute(ctx.sched, gf) != GGML_STATUS_SUCCESS) {
         fprintf(stderr, "qwen2vl_ocr: LLM graph compute failed\n");
         ggml_free(g);
@@ -1838,6 +1930,47 @@ bool run_llm_forward(context &ctx,
                 auto r = ref.compare("llm_embed", emb_data.data(), emb_data.size());
                 fprintf(stderr, "  diff llm_embed: cos_min=%.6f max_abs=%.2e %s\n",
                         r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
+
+            // Compare intra-layer 0 intermediates
+            for (const char *iname : {"llm_L0_Q_pre_rope", "llm_L0_Q_rope", "llm_L0_attn_out", "llm_L0_post_attn"}) {
+                ggml_tensor *it = ggml_graph_get_tensor(gf, iname);
+                if (it && ref.has(iname)) {
+                    size_t n = (size_t)ggml_nelements(it);
+                    std::vector<float> id(n);
+                    ggml_backend_tensor_get(it, id.data(), 0, n * sizeof(float));
+                    auto r = ref.compare(iname, id.data(), n);
+                    fprintf(stderr, "  diff %s: cos_min=%.6f max_abs=%.2e %s\n",
+                            iname, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                    if (!r.is_pass()) {
+                        auto [rd, rn] = ref.get_f32(iname);
+                        fprintf(stderr, "    C++: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                                id[0], id[1], id[2], id[3], id[4]);
+                        fprintf(stderr, "    Ref: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                                rd[0], rd[1], rd[2], rd[3], rd[4]);
+                    }
+                }
+            }
+
+            // Compare post-deepstack injection
+            for (int dsi = 0; dsi < n_ds; dsi++) {
+                char dsname[64];
+                std::snprintf(dsname, sizeof(dsname), "llm_post_ds_%d", dsi);
+                ggml_tensor *dst = ggml_graph_get_tensor(gf, dsname);
+                if (dst && ref.has(dsname)) {
+                    std::vector<float> dd((size_t)n_tokens * D);
+                    ggml_backend_tensor_get(dst, dd.data(), 0, dd.size() * sizeof(float));
+                    auto r = ref.compare(dsname, dd.data(), dd.size());
+                    fprintf(stderr, "  diff %s: cos_min=%.6f max_abs=%.2e %s\n",
+                            dsname, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                    if (!r.is_pass()) {
+                        auto [rd, rn] = ref.get_f32(dsname);
+                        fprintf(stderr, "    C++: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                                dd[0], dd[1], dd[2], dd[3], dd[4]);
+                        fprintf(stderr, "    Ref: [%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                                rd[0], rd[1], rd[2], rd[3], rd[4]);
+                    }
+                }
             }
 
             // Compare per-layer
