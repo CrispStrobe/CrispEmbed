@@ -4,7 +4,7 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
-## June 19, 2026 — OCR Confidence, dots.ocr, HF Uploads, LFM2.5
+## June 19, 2026 — OCR Confidence, HF Uploads, LFM2.5
 
 ### Per-character/token confidence for all OCR engines
 
@@ -19,15 +19,17 @@ Engines: parseq, tesseract_lstm, math_ocr, hmer, bttr, posformer, mixtex,
 ppformulanet, ppformulanet_l, glm_ocr, got_ocr, qwen2vl_ocr, internvl2_ocr,
 granite_vision, lightonocr. Test suite: 44/44 pass (26 unit + 18 live).
 
-### dots.ocr (3B, MIT, 100+ languages)
+### dots.ocr — REMOVED from main (license issue)
 
-Qwen2.5-VL derived VLM with 42-layer vision encoder. Runs on existing
-`qwen2vl_ocr` engine with zero code changes — added `dots_ocr` arch
-dispatch + metadata prefix probing. GGUF: F16, Q8_0, Q4_K on HF.
+dots.ocr (rednote-hilab) claims MIT on HuggingFace but has a supplemental
+"dots.ocr LICENSE AGREEMENT" with PRC governing law (Hangzhou Arbitration),
+unilateral license amendment (90-day forced migration), prohibited uses,
+mandatory "Built with dots.mocr" attribution, and trademark restrictions.
+Code moved to feat/dots-ocr branch only, with license warnings. HF repo
+set to private.
 
 ### New model registry entries
 
-- **dots.ocr** (3B, MIT) — `cstr/dots-ocr-crispembed-GGUF`
 - **FireRed-OCR** (Qwen3-VL 2B) — `cstr/firered-ocr-crispembed-GGUF`
 - **H2OVL-Mississippi-0.8B** — smallest VLM OCR (OCRBench 751, 398MB Q4_K)
 - **Nanonets-OCR2-1.5B** — Qwen2-VL pruned (16L), runs on qwen2vl_ocr

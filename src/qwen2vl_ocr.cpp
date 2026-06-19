@@ -181,33 +181,8 @@ bool load_hparams(context &ctx, const char *path) {
     };
     lhp.rope_theta = f32_3("qwen3vl.rope_theta", lhp.rope_theta);
 
-    // Also try dots_ocr prefix (dots.ocr uses standard Qwen2 LLM, not Qwen2-VL mRoPE)
-    auto u32_d = [&](const char *k, uint32_t d) {
-        std::string dk = std::string("dots_ocr") + (strchr(k, '.') ? strchr(k, '.') : "");
-        int i = gguf_find_key(g, dk.c_str());
-        return i >= 0 ? (uint32_t)gguf_get_val_u32(g, i) : d;
-    };
-    vhp.depth           = u32_d("dots_ocr.vision.depth", vhp.depth);
-    vhp.hidden_size     = u32_d("dots_ocr.vision.hidden_size", vhp.hidden_size);
-    vhp.num_heads       = u32_d("dots_ocr.vision.num_heads", vhp.num_heads);
-    vhp.spatial_patch_size = u32_d("dots_ocr.vision.patch_size", vhp.spatial_patch_size);
-    vhp.spatial_merge_size = u32_d("dots_ocr.vision.spatial_merge_size", vhp.spatial_merge_size);
-    vhp.temporal_patch_size = u32_d("dots_ocr.vision.temporal_patch_size", vhp.temporal_patch_size);
-    lhp.vocab_size      = u32_d("dots_ocr.vocab_size", lhp.vocab_size);
-    lhp.hidden_size     = u32_d("dots_ocr.hidden_size", lhp.hidden_size);
-    lhp.intermediate_size = u32_d("dots_ocr.intermediate_size", lhp.intermediate_size);
-    lhp.num_hidden_layers = u32_d("dots_ocr.num_hidden_layers", lhp.num_hidden_layers);
-    lhp.num_attention_heads = u32_d("dots_ocr.num_attention_heads", lhp.num_attention_heads);
-    lhp.num_key_value_heads = u32_d("dots_ocr.num_key_value_heads", lhp.num_key_value_heads);
-    lhp.image_token_id  = u32_d("dots_ocr.image_token_id", lhp.image_token_id);
-    {
-        int i = gguf_find_key(g, "dots_ocr.rope_theta");
-        if (i >= 0) lhp.rope_theta = gguf_get_val_f32(g, i);
-    }
-
     // Tie embeddings
-    int tie_idx = gguf_find_key(g, "dots_ocr.tie_word_embeddings");
-    if (tie_idx < 0) tie_idx = gguf_find_key(g, "qwen3vl.tie_word_embeddings");
+    int tie_idx = gguf_find_key(g, "qwen3vl.tie_word_embeddings");
     if (tie_idx < 0) tie_idx = gguf_find_key(g, "qwen2vl.tie_word_embeddings");
     lhp.tie_word_embeddings = boolv(tie_idx, lhp.tie_word_embeddings);
 
