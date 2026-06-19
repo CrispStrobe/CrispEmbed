@@ -647,14 +647,15 @@ static bool run_decoder_prefill(context &ctx,
     // We construct: [prefix_tokens] + [image_features] + [suffix_tokens]
     // where prefix = <|im_start|>user\n  and suffix = OCR this.<|im_end|>\n<|im_start|>assistant\n
 
-    // Qwen3 special tokens
-    const int im_start = 151644;  // <|im_start|>
-    const int im_end   = 151645;  // <|im_end|>
-    const int nl_tok   = 198;     // \n
-
-    // Simple prefix/suffix token IDs (hardcoded for now)
-    std::vector<int32_t> prefix_ids = {im_start, 882 /*user*/, nl_tok};  // <|im_start|>user\n
-    std::vector<int32_t> suffix_ids = {nl_tok, im_end, nl_tok, im_start, 78191 /*assistant*/, nl_tok};
+    // Qwen3 chat template token IDs (verified with AutoTokenizer):
+    //   <|im_start|>user\n  [IMAGE]  OCR this document.<|im_end|>\n<|im_start|>assistant\n
+    // Prefix: before image. Suffix: after image + assistant trigger.
+    std::vector<int32_t> prefix_ids = {151644, 872, 198};  // <|im_start|> user \n
+    std::vector<int32_t> suffix_ids = {
+        93495, 419, 2197, 13,  // OCR this document.
+        151645, 198,           // <|im_end|> \n
+        151644, 77091, 198     // <|im_start|> assistant \n
+    };
 
     int n_prefix = (int)prefix_ids.size();
     int n_suffix = (int)suffix_ids.size();
