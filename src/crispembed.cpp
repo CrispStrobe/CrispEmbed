@@ -3226,6 +3226,7 @@ extern "C" const char * crispembed_math_ocr_recognize_gray(
 case MATH_OCR_PARSEQ:         return parseq_ocr_recognize((parseq_ocr_context *)u->ctx, px, w, h, ol);
 case MATH_OCR_GLM_OCR:        return glm_ocr_recognize((glm_ocr_context *)u->ctx, px, w, h, ol);
 case MATH_OCR_GOT_OCR:        return got_ocr_recognize((got_ocr_context *)u->ctx, px, w, h, ol);
+case MATH_OCR_DEEPSEEK_OCR2:  return deepseek_ocr2_recognize((deepseek_ocr2_context *)u->ctx, px, w, h, ol);
 case MATH_OCR_TESSERACT_LSTM: {
             // Convert float [0,1] grayscale → uint8
             std::vector<uint8_t> gray(w * h);
@@ -3269,6 +3270,7 @@ extern "C" const float * crispembed_math_ocr_confidences(const void * ctx, int *
         case MATH_OCR_PARSEQ:         return parseq_ocr_confidences((const parseq_ocr_context *)u->ctx, n_tokens);
         case MATH_OCR_GLM_OCR:        return glm_ocr_confidences((const glm_ocr_context *)u->ctx, n_tokens);
         case MATH_OCR_GOT_OCR:        return got_ocr_confidences((const got_ocr_context *)u->ctx, n_tokens);
+        case MATH_OCR_DEEPSEEK_OCR2:  return deepseek_ocr2_confidences((const deepseek_ocr2_context *)u->ctx, n_tokens);
         case MATH_OCR_TESSERACT_LSTM: return tesseract_lstm_confidences((const tesseract_lstm_context *)u->ctx, n_tokens);
         case MATH_OCR_LIGHTONOCR:     return nullptr;  // lightonocr does not expose per-token confidences
         default: return nullptr;
