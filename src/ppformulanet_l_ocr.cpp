@@ -10,6 +10,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gguf_loader.h"
+#include "core/cpu_ops.h"
 
 #include <algorithm>
 #include <cassert>
@@ -22,176 +23,13 @@
 #include <string>
 #include <vector>
 
-// ---------------------------------------------------------------------------
-// FP16/quantized → F32 dequantization
-// ---------------------------------------------------------------------------
-
-static std::vector<float> to_f32(const ggml_tensor* t) {
-    if (!t) return {};
-    int n = (int)ggml_nelements(t);
-    std::vector<float> out(n);
-    if (t->type == GGML_TYPE_F32) {
-        // Use backend API to support GPU-resident tensors
-        ggml_backend_tensor_get(t, out.data(), 0, n * sizeof(float));
-    } else if (t->type == GGML_TYPE_F16) {
-        std::vector<ggml_fp16_t> tmp(n);
-        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
-        for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(tmp[i]);
-    } else {
-        // Quantized: read raw bytes then dequantize
-        size_t raw_sz = ggml_nbytes(t);
-        std::vector<uint8_t> raw(raw_sz);
-        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
-        const auto* traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) {
-            traits->to_float(raw.data(), out.data(), n);
-        } else {
-            memset(out.data(), 0, n * sizeof(float));
-        }
-    }
-    return out;
-}
-
-// ---------------------------------------------------------------------------
-// CPU-side math helpers
-// ---------------------------------------------------------------------------
-
-static void layernorm_cpu(const float* in, float* out, int D,
-                          const float* w, const float* b, float eps = 1e-5f) {
-    double mean = 0;
-    for (int i = 0; i < D; i++) mean += in[i];
-    mean /= D;
-    double var = 0;
-    for (int i = 0; i < D; i++) { double d = in[i] - mean; var += d * d; }
-    var /= D;
-    float s = 1.0f / sqrtf((float)var + eps);
-    for (int i = 0; i < D; i++)
-        out[i] = ((in[i] - (float)mean) * s) * (w ? w[i] : 1.0f) + (b ? b[i] : 0.0f);
-}
-
-static void layernorm_cpu(const float* in, float* out, int D,
-                          const ggml_tensor* w, const ggml_tensor* b, float eps = 1e-5f) {
-    auto wv = to_f32(w);
-    auto bv = to_f32(b);
-    layernorm_cpu(in, out, D,
-                  wv.empty() ? nullptr : wv.data(),
-                  bv.empty() ? nullptr : bv.data(), eps);
-}
-
-// LayerNorm2d: normalize over channel dim for NCHW tensor
-// Input/output shape: (C, H, W), normalize over C for each spatial position
-static void layernorm2d_cpu(const float* in, float* out,
-                            int C, int H, int W,
-                            const float* w, const float* b, float eps = 1e-6f) {
-    for (int y = 0; y < H; y++) {
-        for (int x = 0; x < W; x++) {
-            double mean = 0;
-            for (int c = 0; c < C; c++)
-                mean += in[c * H * W + y * W + x];
-            mean /= C;
-            double var = 0;
-            for (int c = 0; c < C; c++) {
-                double d = in[c * H * W + y * W + x] - mean;
-                var += d * d;
-            }
-            var /= C;
-            float s = 1.0f / sqrtf((float)var + eps);
-            for (int c = 0; c < C; c++) {
-                float v = (in[c * H * W + y * W + x] - (float)mean) * s;
-                out[c * H * W + y * W + x] = v * (w ? w[c] : 1.0f) + (b ? b[c] : 0.0f);
-            }
-        }
-    }
-}
-
-static void linear_cpu(const float* in, float* out, int in_dim, int out_dim,
-                        const float* w, const float* b) {
-    for (int o = 0; o < out_dim; o++) {
-        float s = b ? b[o] : 0.0f;
-        for (int i = 0; i < in_dim; i++)
-            s += in[i] * w[o * in_dim + i];
-        out[o] = s;
-    }
-}
-
-static void linear_cpu(const float* in, float* out, int in_dim, int out_dim,
-                        const ggml_tensor* w, const ggml_tensor* b) {
-    auto wv = to_f32(w);
-    auto bv = to_f32(b);
-    linear_cpu(in, out, in_dim, out_dim, wv.data(), bv.empty() ? nullptr : bv.data());
-}
-
-static float gelu(float x) {
-    return 0.5f * x * (1.0f + tanhf(0.7978845608f * (x + 0.044715f * x * x * x)));
-}
-
-static void mha_1q_cpu(const float* q, const float* k, const float* v,
-                        float* out, int n_kv, int D, int n_heads) {
-    int hd = D / n_heads;
-    std::vector<float> result(D, 0.0f);
-    for (int h = 0; h < n_heads; h++) {
-        int off = h * hd;
-        std::vector<float> scores(n_kv);
-        for (int ki = 0; ki < n_kv; ki++) {
-            float s = 0;
-            for (int d = 0; d < hd; d++)
-                s += q[off + d] * k[ki * D + off + d];
-            scores[ki] = s / sqrtf((float)hd);
-        }
-        float maxs = *std::max_element(scores.begin(), scores.end());
-        float sum = 0;
-        for (int ki = 0; ki < n_kv; ki++) {
-            scores[ki] = expf(scores[ki] - maxs);
-            sum += scores[ki];
-        }
-        for (int ki = 0; ki < n_kv; ki++) scores[ki] /= sum;
-        for (int d = 0; d < hd; d++) {
-            float s = 0;
-            for (int ki = 0; ki < n_kv; ki++)
-                s += scores[ki] * v[ki * D + off + d];
-            result[off + d] = s;
-        }
-    }
-    memcpy(out, result.data(), D * sizeof(float));
-}
-
-// 2D convolution (NCHW layout), handles groups and arbitrary padding
-static void conv2d_cpu(const float* in, float* out,
-                        const float* weight, const float* bias,
-                        int in_ch, int out_ch, int H, int W,
-                        int kh, int kw, int stride, int pad,
-                        int groups) {
-    int out_H = (H + 2 * pad - kh) / stride + 1;
-    int out_W = (W + 2 * pad - kw) / stride + 1;
-    int ch_per_group_in = in_ch / groups;
-    int ch_per_group_out = out_ch / groups;
-
-    for (int oc = 0; oc < out_ch; oc++) {
-        int g = oc / ch_per_group_out;
-        float b = bias ? bias[oc] : 0.0f;
-        for (int oy = 0; oy < out_H; oy++) {
-            for (int ox = 0; ox < out_W; ox++) {
-                float sum = b;
-                for (int ic = 0; ic < ch_per_group_in; ic++) {
-                    int actual_ic = g * ch_per_group_in + ic;
-                    for (int ky = 0; ky < kh; ky++) {
-                        for (int kx = 0; kx < kw; kx++) {
-                            int iy = oy * stride - pad + ky;
-                            int ix = ox * stride - pad + kx;
-                            if (iy >= 0 && iy < H && ix >= 0 && ix < W) {
-                                float pixel = in[actual_ic * H * W + iy * W + ix];
-                                int w_idx = oc * (ch_per_group_in * kh * kw)
-                                            + ic * kh * kw + ky * kw + kx;
-                                sum += pixel * weight[w_idx];
-                            }
-                        }
-                    }
-                }
-                out[oc * out_H * out_W + oy * out_W + ox] = sum;
-            }
-        }
-    }
-}
+using core_cpu::to_f32;
+using core_cpu::layernorm_cpu;
+using core_cpu::layernorm2d_cpu;
+using core_cpu::linear_cpu;
+using core_cpu::gelu;
+using core_cpu::mha_1q_cpu;
+using core_cpu::conv2d_cpu;
 
 // ---------------------------------------------------------------------------
 // Structs: ViT Encoder layer
@@ -818,7 +656,7 @@ static void run_encoder_graph(ppformulanet_l_ocr_context* ctx,
                C, nC, nP, nP, 1, 1, 1, 0, 1);
     auto nln1_w = to_f32(ctx->neck_ln1_w);
     auto nln1_b = to_f32(ctx->neck_ln1_b);
-    layernorm2d_cpu(neck1.data(), neck1.data(), nC, nP, nP, nln1_w.data(), nln1_b.data());
+    layernorm2d_cpu(neck1.data(), neck1.data(), nC, nP, nP, nln1_w.data(), nln1_b.data(), 1e-6f);
 
     auto nc2_w = to_f32(ctx->neck_conv2_w);
     std::vector<float> neck2(nC * nP * nP);
@@ -826,7 +664,7 @@ static void run_encoder_graph(ppformulanet_l_ocr_context* ctx,
                nC, nC, nP, nP, 3, 3, 1, 1, 1);
     auto nln2_w = to_f32(ctx->neck_ln2_w);
     auto nln2_b = to_f32(ctx->neck_ln2_b);
-    layernorm2d_cpu(neck2.data(), neck2.data(), nC, nP, nP, nln2_w.data(), nln2_b.data());
+    layernorm2d_cpu(neck2.data(), neck2.data(), nC, nP, nP, nln2_w.data(), nln2_b.data(), 1e-6f);
 
     fprintf(stderr, "ppfnl: neck done, shape=(%d, %d, %d)\n", nC, nP, nP);
 
@@ -1181,7 +1019,7 @@ static void run_encoder(ppformulanet_l_ocr_context* ctx,
     auto nln1_w = to_f32(ctx->neck_ln1_w);
     auto nln1_b = to_f32(ctx->neck_ln1_b);
     layernorm2d_cpu(neck1.data(), neck1.data(), nC, nP, nP,
-                    nln1_w.data(), nln1_b.data());
+                    nln1_w.data(), nln1_b.data(), 1e-6f);
 
     // Conv3×3 (256 → 256, padding=1)
     auto nc2_w = to_f32(ctx->neck_conv2_w);
@@ -1193,7 +1031,7 @@ static void run_encoder(ppformulanet_l_ocr_context* ctx,
     auto nln2_w = to_f32(ctx->neck_ln2_w);
     auto nln2_b = to_f32(ctx->neck_ln2_b);
     layernorm2d_cpu(neck2.data(), neck2.data(), nC, nP, nP,
-                    nln2_w.data(), nln2_b.data());
+                    nln2_w.data(), nln2_b.data(), 1e-6f);
 
     fprintf(stderr, "ppfnl: neck done, shape=(%d, %d, %d)\n", nC, nP, nP);
 
@@ -1300,7 +1138,7 @@ static std::vector<float> decoder_step(
         x[i] = tok_data[token * D + i] * scale + pos_data[(step + 2) * D + i];
 
     // Embedding LayerNorm
-    layernorm_cpu(x.data(), x.data(), D, ctx->embed_ln_w, ctx->embed_ln_b);
+    layernorm_cpu(x.data(), x.data(), D, ctx->embed_ln_w, ctx->embed_ln_b, 1e-5f);
 
     // Decoder layers
     for (int li = 0; li < hp.dec_layers; li++) {
@@ -1308,7 +1146,7 @@ static std::vector<float> decoder_step(
 
         // --- Self-attention (PRE-LN) ---
         std::vector<float> residual(x.begin(), x.end());
-        layernorm_cpu(x.data(), x.data(), D, l.self_ln_w, l.self_ln_b);
+        layernorm_cpu(x.data(), x.data(), D, l.self_ln_w, l.self_ln_b, 1e-5f);
 
         std::vector<float> q(D), k(D), v(D);
         linear_cpu(x.data(), q.data(), D, D, l.self_q_w, l.self_q_b);
@@ -1329,7 +1167,7 @@ static std::vector<float> decoder_step(
 
         // --- Cross-attention (PRE-LN) ---
         residual.assign(x.begin(), x.end());
-        layernorm_cpu(x.data(), x.data(), D, l.cross_ln_w, l.cross_ln_b);
+        layernorm_cpu(x.data(), x.data(), D, l.cross_ln_w, l.cross_ln_b, 1e-5f);
 
         std::vector<float> cq(D);
         linear_cpu(x.data(), cq.data(), D, D, l.cross_q_w, l.cross_q_b);
@@ -1345,7 +1183,7 @@ static std::vector<float> decoder_step(
 
         // --- FFN (PRE-LN) ---
         residual.assign(x.begin(), x.end());
-        layernorm_cpu(x.data(), x.data(), D, l.ff_ln_w, l.ff_ln_b);
+        layernorm_cpu(x.data(), x.data(), D, l.ff_ln_w, l.ff_ln_b, 1e-5f);
 
         std::vector<float> ff_up(hp.dec_ffn_dim);
         linear_cpu(x.data(), ff_up.data(), D, hp.dec_ffn_dim, l.ff_up_w, l.ff_up_b);
@@ -1356,7 +1194,7 @@ static std::vector<float> decoder_step(
     }
 
     // Final LayerNorm
-    layernorm_cpu(x.data(), x.data(), D, ctx->final_ln_w, ctx->final_ln_b);
+    layernorm_cpu(x.data(), x.data(), D, ctx->final_ln_w, ctx->final_ln_b, 1e-5f);
 
     // LM head (no bias)
     std::vector<float> logits(V);

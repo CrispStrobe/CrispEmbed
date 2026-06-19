@@ -8,6 +8,7 @@
 #include "crispembed_diff.h"
 #include "core/gguf_loader.h"
 #include "core/bpe.h"
+#include "core/cpu_ops.h"
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
@@ -157,105 +158,15 @@ struct ds_ocr2_ctx {
 };
 
 // ---------------------------------------------------------------------------
-// CPU helpers (shared with got_ocr.cpp pattern)
+// CPU helpers — shared via core/cpu_ops.h
 // ---------------------------------------------------------------------------
-
-static std::vector<float> to_f32(const ggml_tensor* t) {
-    if (!t) return {};
-    int n = (int)ggml_nelements(t);
-    std::vector<float> out(n);
-    if (t->type == GGML_TYPE_F32) {
-        memcpy(out.data(), t->data, n * sizeof(float));
-    } else if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t* src = (const ggml_fp16_t*)t->data;
-        for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(src[i]);
-    } else {
-        const auto* traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float)
-            traits->to_float(t->data, out.data(), n);
-        else
-            memset(out.data(), 0, n * sizeof(float));
-    }
-    return out;
-}
-
-static void layernorm_cpu(const float* in, float* out, int D,
-                          const float* w, const float* b, float eps = 1e-6f) {
-    double mean = 0;
-    for (int i = 0; i < D; i++) mean += in[i];
-    mean /= D;
-    double var = 0;
-    for (int i = 0; i < D; i++) { double d = in[i] - mean; var += d * d; }
-    var /= D;
-    float s = 1.0f / sqrtf((float)var + eps);
-    for (int i = 0; i < D; i++)
-        out[i] = ((in[i] - (float)mean) * s) * (w ? w[i] : 1.0f) + (b ? b[i] : 0.0f);
-}
-
-static void layernorm2d_cpu(const float* in, float* out, int C, int H, int W,
-                            const float* w, const float* b, float eps = 1e-6f) {
-    for (int y = 0; y < H; y++)
-        for (int x = 0; x < W; x++) {
-            double mean = 0;
-            for (int c = 0; c < C; c++) mean += in[c * H * W + y * W + x];
-            mean /= C;
-            double var = 0;
-            for (int c = 0; c < C; c++) {
-                double d = in[c * H * W + y * W + x] - mean; var += d * d;
-            }
-            var /= C;
-            float s = 1.0f / sqrtf((float)var + eps);
-            for (int c = 0; c < C; c++) {
-                float v = (in[c * H * W + y * W + x] - (float)mean) * s;
-                out[c * H * W + y * W + x] = v * (w ? w[c] : 1.0f) + (b ? b[c] : 0.0f);
-            }
-        }
-}
-
-static void rmsnorm_cpu(const float* in, float* out, int D,
-                        const float* w, float eps = 1e-6f) {
-    double ss = 0;
-    for (int i = 0; i < D; i++) ss += (double)in[i] * in[i];
-    float s = 1.0f / sqrtf((float)(ss / D) + eps);
-    for (int i = 0; i < D; i++) out[i] = in[i] * s * (w ? w[i] : 1.0f);
-}
-
-static void linear_cpu(const float* in, float* out, int in_dim, int out_dim,
-                       const float* w, const float* b) {
-    for (int o = 0; o < out_dim; o++) {
-        float s = b ? b[o] : 0.0f;
-        for (int i = 0; i < in_dim; i++) s += in[i] * w[o * in_dim + i];
-        out[o] = s;
-    }
-}
-
-static void conv2d_cpu(const float* in, float* out, const float* weight,
-                       const float* bias, int in_ch, int out_ch, int H, int W,
-                       int kh, int kw, int stride, int pad) {
-    int oH = (H + 2 * pad - kh) / stride + 1;
-    int oW = (W + 2 * pad - kw) / stride + 1;
-    for (int oc = 0; oc < out_ch; oc++) {
-        float b = bias ? bias[oc] : 0.0f;
-        for (int oy = 0; oy < oH; oy++)
-            for (int ox = 0; ox < oW; ox++) {
-                float sum = b;
-                for (int ic = 0; ic < in_ch; ic++)
-                    for (int ky2 = 0; ky2 < kh; ky2++)
-                        for (int kx2 = 0; kx2 < kw; kx2++) {
-                            int iy = oy * stride - pad + ky2;
-                            int ix = ox * stride - pad + kx2;
-                            if (iy >= 0 && iy < H && ix >= 0 && ix < W)
-                                sum += in[ic * H * W + iy * W + ix]
-                                     * weight[oc * (in_ch * kh * kw) + ic * kh * kw + ky2 * kw + kx2];
-                        }
-                out[oc * oH * oW + oy * oW + ox] = sum;
-            }
-    }
-}
-
-static void silu_cpu(float* x, int n) {
-    for (int i = 0; i < n; i++) x[i] = x[i] / (1.0f + expf(-x[i]));
-}
+using core_cpu::to_f32;
+using core_cpu::layernorm_cpu;
+using core_cpu::layernorm2d_cpu;
+using core_cpu::rmsnorm_cpu;
+using core_cpu::linear_cpu;
+using core_cpu::conv2d_cpu;
+using core_cpu::silu_inplace;
 
 static void swiglu_ffn_cpu(const float* in, float* out, int D, int inter,
                            const float* gate_w, const float* up_w,
@@ -263,7 +174,7 @@ static void swiglu_ffn_cpu(const float* in, float* out, int D, int inter,
     std::vector<float> gate(inter), up(inter);
     linear_cpu(in, gate.data(), D, inter, gate_w, nullptr);
     linear_cpu(in, up.data(), D, inter, up_w, nullptr);
-    silu_cpu(gate.data(), inter);
+    silu_inplace(gate.data(), inter);
     for (int i = 0; i < inter; i++) gate[i] *= up[i];
     linear_cpu(gate.data(), out, inter, D, down_w, nullptr);
 }
@@ -808,7 +719,7 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
 
     auto nln1_w = to_f32(ctx.m.neck_ln1_w), nln1_b = to_f32(ctx.m.neck_ln1_b);
     std::vector<float> neck1_ln(nC * nP * nP);
-    layernorm2d_cpu(neck1.data(), neck1_ln.data(), nC, nP, nP, nln1_w.data(), nln1_b.data());
+    layernorm2d_cpu(neck1.data(), neck1_ln.data(), nC, nP, nP, nln1_w.data(), nln1_b.data(), 1e-6f);
 
     auto nc2_w = to_f32(ctx.m.neck_conv2_w);
     std::vector<float> neck2(nC * nP * nP);
@@ -816,7 +727,7 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
 
     auto nln2_w = to_f32(ctx.m.neck_ln2_w), nln2_b = to_f32(ctx.m.neck_ln2_b);
     std::vector<float> neck2_ln(nC * nP * nP);
-    layernorm2d_cpu(neck2.data(), neck2_ln.data(), nC, nP, nP, nln2_w.data(), nln2_b.data());
+    layernorm2d_cpu(neck2.data(), neck2_ln.data(), nC, nP, nP, nln2_w.data(), nln2_b.data(), 1e-6f);
 
     // Downsample: Conv(256->ds1,3x3,s2,p1) -> Conv(ds1->ds2,3x3,s2,p1). The
     // output channels come from the actual weights (ne[1]): net_2 = 256->512,
