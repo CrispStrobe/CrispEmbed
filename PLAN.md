@@ -227,7 +227,7 @@ CrispEmbed/
 │   ├── qwen2vl_ocr / internvl2_ocr / glm_ocr / got_ocr / lightonocr      VLM OCR
 │   ├── deepseek_ocr2 / granite_vision_ocr / parseq_ocr / tesseract_lstm  OCR engines
 │   ├── tokenizer*.{h,cpp}      WordPiece + SentencePiece + BPE
-│   └── core/                   shared helpers (from CrispASR)
+│   └── core/                   shared helpers (gguf_loader, bpe, mel, cpu_ops)
 ├── examples/
 │   ├── cli/main.cpp            CLI binary
 │   └── server/server.cpp       HTTP server (4 API dialects)
@@ -300,17 +300,14 @@ InternVL2-2B (768).
 
 ### Refactoring
 
-- [ ] **Extract shared VLM building blocks to `core/` headers** — Every OCR engine
-  (granite_vision, internvl2, qwen2vl, got_ocr, smoldocling, etc.) duplicates the
-  same ~100 lines of CPU-scalar helpers: `to_f32()`, `layernorm()`, `rmsnorm()`,
-  `linear()`, `gelu()`/`silu()`, `rope()`, `pixel_shuffle()`, GQA attention, and
-  KV cache management. CrispASR already has shared `core/` headers for this
-  (`core/attention.h`, `core/ffn.h`, `core/cpu_ops.h`). CrispEmbed should extract:
-  - `core/cpu_ops.h` — to_f32, layernorm, rmsnorm, linear, gelu, silu, pixel_shuffle
-  - `core/vlm_attention.h` — MHA with KV cache, RoPE, GQA repeat
-  - `core/vlm_decoder.h` — Llama-family autoregressive decode loop (shared by 5+ engines)
-  Benefits: bug fixes apply everywhere, SIMD optimizations benefit all engines,
-  new engine porting reduces from ~800 LOC to ~300 LOC (just arch-specific glue).
+- [x] **Extract shared VLM building blocks to `core/` headers** (Phase 1 done) —
+  - [x] `core/cpu_ops.h` — to_f32, layernorm (raw + tensor overloads), layernorm2d,
+    rmsnorm, linear (raw + tensor overloads), conv2d (with groups), gelu, gelu_erf,
+    silu, softmax, hardswish, relu6, relu, mha_1q_cpu. Replaced in 6 engine files
+    (surya_det, got_ocr, ppformulanet_l_ocr, ppformulanet_ocr, deepseek_ocr2,
+    mixtex_ocr) — 728 lines deleted. 88 unit tests in test_core_cpu_ops.cpp.
+  - [ ] `core/vlm_attention.h` — MHA with KV cache, RoPE, GQA repeat
+  - [ ] `core/vlm_decoder.h` — Llama-family autoregressive decode loop (shared by 5+ engines)
 
 ---
 
