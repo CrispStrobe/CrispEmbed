@@ -554,6 +554,18 @@ static const ModelEntry k_registry[] = {
      "Granite Vision 3.3-2B OCR Q4_K (LLM Q4_K, vision F16)", "1913 MB", "apache-2.0",
      "https://huggingface.co/cstr/granite-vision-crispembed-GGUF"},
 
+    {"dots-ocr",
+     "dots-ocr-q8_0.gguf",
+     "https://huggingface.co/cstr/dots-ocr-crispembed-GGUF/resolve/main/dots-ocr-q8_0.gguf",
+     "dots.ocr (3B, 100+ langs, tables+formula, MIT)", "1500 MB", "mit",
+     "https://huggingface.co/cstr/dots-ocr-crispembed-GGUF"},
+
+    {"dots-ocr-q4k",
+     "dots-ocr-q4_k.gguf",
+     "https://huggingface.co/cstr/dots-ocr-crispembed-GGUF/resolve/main/dots-ocr-q4_k.gguf",
+     "dots.ocr Q4_K (3B, compact)", "912 MB", "mit",
+     "https://huggingface.co/cstr/dots-ocr-crispembed-GGUF"},
+
     {"firered-ocr",
      "firered-ocr-q8_0.gguf",
      "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF/resolve/main/firered-ocr-q8_0.gguf",
