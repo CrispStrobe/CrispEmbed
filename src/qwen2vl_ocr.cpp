@@ -83,6 +83,14 @@ bool load_hparams(context &ctx, const char *path) {
     vhp.min_pixels          = u32("qwen2vl.vision.min_pixels", vhp.min_pixels);
     vhp.max_pixels          = u32("qwen2vl.vision.max_pixels", vhp.max_pixels);
 
+    // PaddleOCR-VL: position embeddings + layer norm eps
+    int pos_embed_idx = gguf_find_key(g, "qwen2vl.vision.has_position_embed");
+    vhp.has_position_embed = boolv(pos_embed_idx, vhp.has_position_embed);
+    {
+        int i = gguf_find_key(g, "qwen2vl.vision.layer_norm_eps");
+        if (i >= 0) vhp.layer_norm_eps = gguf_get_val_f32(g, i);
+    }
+
     // Fullatt block indexes
     int idx = gguf_find_key(g, "qwen2vl.vision.fullatt_block_indexes");
     if (idx >= 0) {
@@ -214,6 +222,18 @@ bool load_tensors(context &ctx, const char *path) {
     // Vision encoder (CrispEmbed names; mmproj names as fallback)
     m.patch_embed_w = get2("v.patch_embed.weight", "v.patch_embd.weight");
     m.patch_embed_b = get("v.patch_embed.bias");
+
+    // PaddleOCR-VL: learned position embeddings
+    m.position_embed_w = get("v.position_embed.weight");
+    m.packing_pos_embed_w = get("v.packing_pos_embed.weight");
+    m.post_layernorm_w = get("v.post_layernorm.weight");
+    m.post_layernorm_b = get("v.post_layernorm.bias");
+    if (m.position_embed_w) {
+        m.vhp.has_position_embed = true;
+        if (ctx.verbosity >= 1) {
+            fprintf(stderr, "  vision: has learned position embeddings\n");
+        }
+    }
 
     m.vis_blocks.resize(m.vhp.depth);
     for (uint32_t i = 0; i < m.vhp.depth; i++) {
@@ -442,6 +462,17 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
     if (ctx.m.patch_embed_b) {
         x = ggml_add(g, x, ctx.m.patch_embed_b);
     }
+
+    // PaddleOCR-VL: add packing position embeddings
+    if (ctx.m.packing_pos_embed_w) {
+        // packing_pos_embed_w: [32768, H], packing_pos_ids: [n_patches] int32
+        ggml_tensor *pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, n_patches);
+        ggml_set_name(pos_ids, "packing_pos_ids");
+        ggml_set_input(pos_ids);
+        ggml_tensor *pos_emb = ggml_get_rows(g, ctx.m.packing_pos_embed_w, pos_ids);
+        x = ggml_add(g, x, pos_emb);
+    }
+
     ggml_set_name(x, "patch_embed_out");
     if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
 
@@ -552,12 +583,17 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         // FFN: variant-aware
         ggml_tensor *ffn;
         if (is_qwen2 && blk.ffn_fc1_w) {
-            // Qwen2-VL VisionMlp: ACT2FN[config.hidden_act] with the vision
-            // config default hidden_act="quick_gelu" = x*sigmoid(1.702*x).
-            // (The merger's PatchMerger uses nn.GELU() exact erf — see below.)
+            // Qwen2-VL VisionMlp: ACT2FN[config.hidden_act]:
+            //   quick_gelu = x*sigmoid(1.702*x) (Qwen2-VL default)
+            //   gelu_pytorch_tanh = GELU(tanh approximation) (PaddleOCR-VL)
             ffn = ggml_mul_mat(g, blk.ffn_fc1_w, y);
             if (blk.ffn_fc1_b) ffn = ggml_add(g, ffn, blk.ffn_fc1_b);
-            ffn = ggml_gelu_quick(g, ffn);
+            if (vhp.has_position_embed) {
+                // PaddleOCR-VL: gelu_pytorch_tanh
+                ffn = ggml_gelu(g, ffn);
+            } else {
+                ffn = ggml_gelu_quick(g, ffn);
+            }
             ffn = ggml_mul_mat(g, blk.ffn_fc2_w, ffn);
             if (blk.ffn_fc2_b) ffn = ggml_add(g, ffn, blk.ffn_fc2_b);
         } else {
@@ -577,6 +613,18 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         char name[64];
         std::snprintf(name, sizeof(name), "vis_layer_%u", il);
         ggml_set_name(x, name);
+        if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
+    }
+
+    // ── Post-layernorm (PaddleOCR-VL: applied after last encoder layer) ──
+    if (ctx.m.post_layernorm_w) {
+        ggml_tensor *pln = ggml_norm(g, x, vhp.layer_norm_eps);
+        pln = ggml_mul(g, pln, ctx.m.post_layernorm_w);
+        if (ctx.m.post_layernorm_b) {
+            pln = ggml_add(g, pln, ctx.m.post_layernorm_b);
+        }
+        x = pln;
+        ggml_set_name(x, "post_layernorm_out");
         if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
     }
 
@@ -898,6 +946,15 @@ bool encode_vision(context &ctx,
     if (!set_in("sin_in", rope.sin_buf.data(),
                 rope.sin_buf.size() * sizeof(float)))
         return false;
+
+    // PaddleOCR-VL: packing position IDs (sequential 0..n_patches-1)
+    if (ctx.m.packing_pos_embed_w) {
+        std::vector<int32_t> pos_ids(n_patches);
+        for (int i = 0; i < n_patches; i++) pos_ids[i] = i;
+        if (!set_in("packing_pos_ids", pos_ids.data(),
+                    (size_t)n_patches * sizeof(int32_t)))
+            return false;
+    }
 
     // Compute
     if (ggml_backend_sched_graph_compute(ctx.sched, gr.gf) != GGML_STATUS_SUCCESS) {
