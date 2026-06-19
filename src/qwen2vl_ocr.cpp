@@ -1475,9 +1475,31 @@ bool run_llm_forward(context &ctx,
     // are pruned and the KV cache can't be extracted).
     std::vector<ggml_tensor *> kv_out_tensors;
 
+    // Qwen3-VL deepstack: pre-computed injection tensors per layer
+    // These are set as graph inputs — one per deepstack layer
+    int n_ds = (int)ctx.m.vhp.deepstack_indexes.size();
+    std::vector<ggml_tensor *> ds_inject_tensors(n_ds, nullptr);
+    if (has_image && n_ds > 0) {
+        for (int dsi = 0; dsi < n_ds; dsi++) {
+            // ds_inject: (D, n_tokens) — deepstack embeds at image positions, 0 elsewhere
+            char dsname[64];
+            std::snprintf(dsname, sizeof(dsname), "ds_inject_%d", dsi);
+            ds_inject_tensors[dsi] = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_tokens);
+            ggml_set_name(ds_inject_tensors[dsi], dsname);
+            ggml_set_input(ds_inject_tensors[dsi]);
+        }
+    }
+
     // Decoder layers
     for (int il = 0; il < n_layers; il++) {
         const auto &ly = ctx.m.llm_layers[il];
+
+        // Qwen3-VL deepstack injection: add deepstack features at image positions
+        // before layer computation. Layer 0 ← deepstack[0], layer 1 ← deepstack[1], etc.
+        if (has_image && il < n_ds && ds_inject_tensors[il]) {
+            x = ggml_add(g, x, ds_inject_tensors[il]);
+        }
+
         ggml_tensor *residual = x;
 
         // Pre-attn RMSNorm
@@ -1677,6 +1699,33 @@ bool run_llm_forward(context &ctx,
         ggml_tensor *ip = ggml_graph_get_tensor(gf, "image_patches");
         ggml_backend_tensor_set(ip, patch_data.data(), 0,
                                 patch_data.size() * sizeof(float));
+
+        // Qwen3-VL deepstack injection: build per-layer injection tensors
+        // Each ds_inject_i is (D, n_tokens) — deepstack embeds at image positions, 0 elsewhere
+        for (int dsi = 0; dsi < n_ds; dsi++) {
+            char dsname[64];
+            std::snprintf(dsname, sizeof(dsname), "ds_inject_%d", dsi);
+            ggml_tensor *ds_t = ggml_graph_get_tensor(gf, dsname);
+            if (!ds_t) continue;
+
+            std::vector<float> ds_data((size_t)n_tokens * D, 0.0f);
+
+            if (img->deepstack_embeds && dsi < img->n_deepstack &&
+                img->deepstack_embeds[dsi]) {
+                // Map deepstack embeds to image token positions (same mapping as image_patches)
+                int ds_idx = 0;
+                for (int t = 0; t < n_tokens && ds_idx < img->n_image_tokens; t++) {
+                    if (token_ids[t] != img_tok_id) continue;
+                    std::memcpy(ds_data.data() + (size_t)t * D,
+                                img->deepstack_embeds[dsi] + (size_t)ds_idx * D,
+                                (size_t)D * sizeof(float));
+                    ds_idx++;
+                }
+            }
+
+            ggml_backend_tensor_set(ds_t, ds_data.data(), 0,
+                                    ds_data.size() * sizeof(float));
+        }
 
         // Build mRoPE positions with image awareness
         // Text tokens: pos_t = pos_h = pos_w = sequential
@@ -2017,6 +2066,9 @@ bool generate(context &ctx,
         img_in.n_image_tokens = n_image_tokens;
         img_in.grid_thw = grid_thw;  // actual spatial grid for mRoPE
         img_in.n_images = 1;
+        // Qwen3-VL: deepstack embeds passed via context temporary
+        img_in.deepstack_embeds = ctx.deepstack_embeds_tmp;
+        img_in.n_deepstack = ctx.n_deepstack_tmp;
     }
 
     // ── Prefill: full forward pass, extract KV cache ──
@@ -2590,12 +2642,15 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx,
 
     // 3. Generate text
     qwen2vl_ocr::generate_result gen = {};
-    // Pass grid_thw for mRoPE position computation
-    qwen2vl_ocr::image_input img_in = {};
-    img_in.image_embeds = vis.image_embeds;
-    img_in.n_image_tokens = vis.n_merged;
-    img_in.grid_thw = pp.grid_thw;
-    img_in.n_images = 1;
+
+    // Wire deepstack embeds for Qwen3-VL injection
+    // Store pointers for image_input (generate will pass them to run_llm_forward)
+    std::vector<const float *> ds_ptrs;
+    for (auto *p : vis.deepstack_embeds) ds_ptrs.push_back(p);
+
+    // Temporarily store deepstack info in context for generate() to pick up
+    ctx->inner.deepstack_embeds_tmp = ds_ptrs.empty() ? nullptr : ds_ptrs.data();
+    ctx->inner.n_deepstack_tmp = (int)ds_ptrs.size();
 
     bool ok = qwen2vl_ocr::generate(ctx->inner,
                                      vis.image_embeds, vis.n_merged,
@@ -2603,6 +2658,9 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx,
                                      pp.grid_thw,  // pass actual grid for mRoPE
                                      token_ids.data(), (int)token_ids.size(),
                                      ctx->max_tokens, gen);
+
+    ctx->inner.deepstack_embeds_tmp = nullptr;
+    ctx->inner.n_deepstack_tmp = 0;
 
     qwen2vl_ocr::vision_result_free(vis);
 
