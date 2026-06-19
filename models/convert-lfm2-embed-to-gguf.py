@@ -46,6 +46,10 @@ def remap_tensor_name(hf_name: str) -> str | None:
     if "rotary_emb" in n:
         return None
 
+    # ColBERT projection head (from sentence-transformers 1_Dense module)
+    if n == "2_Dense.linear.weight" or n == "1_Dense.linear.weight" or n == "dense.weight":
+        return "colbert.projection.weight"
+
     # Strip optional "model." prefix (some checkpoints include it, some don't)
     prefix = "model."
     rest = n[len(prefix):] if n.startswith(prefix) else n
