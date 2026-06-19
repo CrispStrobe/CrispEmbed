@@ -126,12 +126,12 @@ Input text / image / audio
     │
     │   ── NEW PLANNED ──
     │
-    ├─► OCR   ──► dots.ocr (3B, MIT) — Qwen2.5-VL derived, 42L vision, 100+ langs, formula+tables
-    ├─► OCR   ──► PaddleOCR-VL-1.6 (1.6B, Apache-2.0) — SOTA 96.33% OmniDocBench, NaViT+ERNIE
-    ├─► OCR   ──► MinerU2.5-Pro (1.2B, ?) — two-stage native-res, 90.67% OmniDocBench
-    ├─► OCR   ──► SmolDocling (256M, Apache-2.0?) — ultra-compact, DocTags format
-    ├─► OCR   ──► NuExtract3 (4B, Apache-2.0) — structured extraction + Markdown
-    └─► OCR   ──► Hunyuan-OCR (1B, ?) — Tencent all-in-one pipeline
+    ├─► OCR   ──► dots.ocr (3B, MIT) — DONE: runs on qwen2vl_ocr, 42L vision
+    ├─► OCR   ──► PaddleOCR-VL-1.6 (1.6B, Apache-2.0) — pending: NaViT+ERNIE (new arch)
+    ├─► OCR   ──► MinerU2.5-Pro (1.2B, ?) — pending: two-stage native-res
+    ├─► OCR   ──► SmolDocling (256M, Apache-2.0?) — pending: ultra-compact
+    ├─► OCR   ──► NuExtract3 (4B, Apache-2.0) — pending: structured extraction
+    └─► OCR   ──► Hunyuan-OCR (1B, ?) — pending: Tencent all-in-one
 ```
 
 ## Supported architectures (v0.11)
@@ -337,7 +337,7 @@ esrgan_sr engine internally).
 - [x] **InternVL2 (MIT)** — InternViT + InternLM2.5 VLM. DONE: engine (`internvl2_ocr.{h,cpp}`), converter, reference dumper, diff test, e2e test. Wired into orchestrator. GGUFs: 1B and 2B variants.
 - [x] Keyven/german-ocr-3.1 (2B, Apache-2.0) — Qwen2.5-VL fine-tune, German business docs. DONE: wrote merge-llamacpp-qwen2vl-gguf.py to convert split llama.cpp GGUFs (LLM+mmproj) to single CrispEmbed GGUF. Loads and passes unit tests on qwen2vl_ocr engine. Q4_K 1.3GB.
 - [x] Nanonets-OCR2-1.5B (1.5B, Apache-2.0) — Qwen2-VL pruned fine-tune (16L vs 28L), 12+ languages incl. German. DONE: runs on existing qwen2vl_ocr engine unchanged. GGUF converted (F16 3.6GB, Q4_K 1.3GB). Model registry entry added.
-- [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics (parity bug: hallucinated text)
+- [x] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics. DONE: parity bug FIXED (5 bugs across 4 layers — KV cache, image-aware decode, cont V view, instruction prompt, normalization). Matches HF token-for-token.
 - [x] **Granite Vision 3.3-2B (~3B, Apache-2.0)** — OCRBench 852. DONE: SigLIP ViT + Granite-3.1-2B LLM. Engine (`granite_vision_ocr.{h,cpp}`), GGUF converter (lazy safetensors, 804 tensors, 5.6GB F16), model registry, HF upload. Parity testing via Kaggle kernel (model too large for VPS).
 - [x] **H2OVL-Mississippi-2B (~2.1B, Apache-2.0)** — OCRBench 782. DONE: InternViT-300M + Danube-2-1.8B (Mistral arch). Runs on existing internvl2_ocr engine unchanged. GGUF converted (F16 1.2GB, Q4_K 457MB). Model registry entry added.
 
