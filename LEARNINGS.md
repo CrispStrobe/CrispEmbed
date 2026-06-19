@@ -188,6 +188,19 @@ Three findings from making it fast and verifying it on macOS/Metal:
    model, reproduce the reference path naively in fp32 — if *it* also diverges,
    the divergence is numerical, not yours.
 
+**Then the decoder MoE was the whole budget.** With the encoder on the GPU,
+`moe_ffn_cpu` (scalar, per-token, re-dequantizing q4_k experts every step) was
+~99% of LLM time: ~2000 ms/layer prefill, ~47 ms/layer/token decode; attention
+was already negligible. Ported it into the layer graph via `ggml_mul_mat_id`,
+reusing crispembed.cpp's BERT-MoE pattern (router→softmax→`ggml_top_k`→`get_rows`
+weights→`mul_mat_id` gate/up/down→weighted sum + a combined shared expert).
+The 64 per-expert tensors are stacked once at load into `[in,out,n_exp]`
+(`stack_moe_experts`, a `memcpy` of each quantized expert into its slice — same
+shape/type so blocks stay aligned; +~1.3 GB, gated so the CPU path doesn't pay
+it). Per-layer prefill ~2015 ms → ~50 ms (~40×); **full OCR ~121 s → ~43 s**,
+byte-identical output. `DS_MOE_CPU=1` keeps the scalar path. Vision (~37 s SAM
+global attention over 4096 patches) is the bottleneck again.
+
 Harness notes from the hunt: the per-stage diff was comparing the **wrong
 tensors** (pre-neck 4096×768 vs the final 256×896 SAM output; pre-norm full-seq
 vs the post-norm query-half encoder output) — the dead `diff_ref_path` is now

@@ -95,6 +95,9 @@ struct llm_layer_w {
     moe_expert_w shared_experts[2];
     // Single shared expert (combined)
     ggml_tensor *shared_gate_w{}, *shared_up_w{}, *shared_down_w{};
+    // Experts stacked as [in, out, n_exp] for ggml_mul_mat_id (Metal MoE path).
+    // Built at load by stack_moe_experts() when the graph MoE path is active.
+    ggml_tensor *gate_exps{}, *up_exps{}, *down_exps{};
 };
 
 struct model_weights {
@@ -135,6 +138,11 @@ struct ds_ocr2_ctx {
     ggml_backend_t backend{}, backend_cpu{};
     ggml_backend_sched_t sched{};
     std::vector<uint8_t> compute_meta;
+
+    // Stacked MoE expert weights ([in,out,n_exp]) for the ggml_mul_mat_id path.
+    ggml_context *moe_ctx{};
+    ggml_backend_buffer_t moe_buf{};
+    bool moe_metal = false;  // true once experts are stacked + the graph path is on
 
     // Tokenizer
     std::vector<std::string> id_to_piece;
@@ -1216,6 +1224,58 @@ static bool project_to_llm(ds_ocr2_ctx &ctx, const float *enc_out, int n_tokens,
 // LLM decoder — ggml graph for attention + CPU-scalar MoE FFN
 // ---------------------------------------------------------------------------
 
+// Stack the 64 per-expert weights of each MoE layer into [in, out, n_exp]
+// tensors so the decode graph can dispatch them with ggml_mul_mat_id on Metal
+// (instead of the per-token CPU-scalar moe_ffn_cpu). Keeps the quantized blocks
+// as-is — each expert is the same shape/type, so its bytes are a contiguous
+// slice. Allocates a dedicated backend buffer (the per-expert tensors stay in
+// model_buf for the DS_MOE_CPU fallback). Returns false on any failure → caller
+// falls back to the CPU MoE.
+static bool stack_moe_experts(ds_ocr2_ctx &ctx) {
+    int n_exp = ctx.m.lhp.n_experts;
+    int n_moe = 0;
+    for (auto &ly : ctx.m.llm_layers)
+        if ((int)ly.experts.size() == n_exp && ly.experts[0].gate_w) n_moe++;
+    if (n_moe == 0) return false;
+
+    ggml_init_params ip = { (size_t)n_moe * 3 * ggml_tensor_overhead() + 4096, nullptr, true };
+    ctx.moe_ctx = ggml_init(ip);
+    if (!ctx.moe_ctx) return false;
+
+    for (auto &ly : ctx.m.llm_layers) {
+        if ((int)ly.experts.size() != n_exp || !ly.experts[0].gate_w) continue;
+        auto &e0 = ly.experts[0];
+        ly.gate_exps = ggml_new_tensor_3d(ctx.moe_ctx, e0.gate_w->type, e0.gate_w->ne[0], e0.gate_w->ne[1], n_exp);
+        ly.up_exps   = ggml_new_tensor_3d(ctx.moe_ctx, e0.up_w->type,   e0.up_w->ne[0],   e0.up_w->ne[1],   n_exp);
+        ly.down_exps = ggml_new_tensor_3d(ctx.moe_ctx, e0.down_w->type, e0.down_w->ne[0], e0.down_w->ne[1], n_exp);
+    }
+
+    ctx.moe_buf = ggml_backend_alloc_ctx_tensors(ctx.moe_ctx, ctx.backend);
+    if (!ctx.moe_buf) { ggml_free(ctx.moe_ctx); ctx.moe_ctx = nullptr; return false; }
+
+    std::vector<uint8_t> tmp;
+    auto fill = [&](ggml_tensor *stacked, const std::vector<moe_expert_w> &exps,
+                    ggml_tensor *moe_expert_w::*member) {
+        for (int e = 0; e < n_exp; e++) {
+            ggml_tensor *src = exps[e].*member;
+            size_t nb = ggml_nbytes(src);
+            if (nb != stacked->nb[2]) return false;  // slice size must match
+            tmp.resize(nb);
+            ggml_backend_tensor_get(src, tmp.data(), 0, nb);
+            ggml_backend_tensor_set(stacked, tmp.data(), (size_t)e * stacked->nb[2], nb);
+        }
+        return true;
+    };
+    for (auto &ly : ctx.m.llm_layers) {
+        if (!ly.gate_exps) continue;
+        if (!fill(ly.gate_exps, ly.experts, &moe_expert_w::gate_w) ||
+            !fill(ly.up_exps,   ly.experts, &moe_expert_w::up_w) ||
+            !fill(ly.down_exps, ly.experts, &moe_expert_w::down_w))
+            return false;
+    }
+    return true;
+}
+
 struct llm_attn_graph {
     ggml_cgraph *gf{};
     ggml_context *gctx{};
@@ -1230,7 +1290,7 @@ struct llm_attn_graph {
 // Build attention-only graph for one LLM layer (no FFN — MoE done on CPU)
 // For layer 0 (dense), includes the FFN in the graph.
 static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx &ctx, int li, int T, int n_past,
-                                            bool include_ffn) {
+                                            bool include_ffn, bool include_moe = false) {
     auto &lhp = ctx.m.lhp;
     auto &ly = ctx.m.llm_layers[li];
     int D = lhp.hidden, nh = lhp.heads, nkv = lhp.kv_heads;
@@ -1366,6 +1426,38 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx &ctx, int li, int T, int 
         ggml_tensor *up = ggml_mul_mat(g, ly.ffn_up_w, h);
         ggml_tensor *ffn = ggml_mul_mat(g, ly.ffn_down_w, ggml_mul(g, gate, up));
         x = ggml_add(g, residual, ffn);
+    } else if (include_moe) {
+        // DeepSeek-V2 MoE FFN on Metal via ggml_mul_mat_id. Router → softmax →
+        // top-k (raw probs; norm_topk_prob=False, routed_scaling_factor=1.0) →
+        // per-expert SwiGLU dispatch → weighted sum + a (combined) shared expert.
+        int n_exp = lhp.n_experts, K = lhp.n_experts_top;
+        ggml_tensor *residual = x;
+        ggml_tensor *hn = rmsnorm(x, ly.post_ln_w);  // [D, T]
+
+        ggml_tensor *logits = ggml_mul_mat(g, ly.router_w, hn);    // [n_exp, T]
+        ggml_tensor *probs  = ggml_soft_max(g, logits);
+        ggml_tensor *ids    = ggml_top_k(g, probs, K);             // [K, T] I32
+        ggml_tensor *p3     = ggml_reshape_3d(g, probs, 1, n_exp, T);
+        ggml_tensor *top_w  = ggml_reshape_2d(g, ggml_get_rows(g, p3, ids), K, T);  // [K, T]
+        top_w = ggml_scale(g, top_w, lhp.routed_scaling_factor);
+
+        ggml_tensor *hn3 = ggml_reshape_3d(g, hn, D, 1, T);
+        ggml_tensor *hnK = ggml_repeat(g, hn3, ggml_new_tensor_3d(g, hn->type, D, K, T));
+        ggml_tensor *gate = ggml_silu(g, ggml_mul_mat_id(g, ly.gate_exps, hnK, ids));  // [inter,K,T]
+        ggml_tensor *up   = ggml_mul_mat_id(g, ly.up_exps, hnK, ids);
+        ggml_tensor *down = ggml_mul_mat_id(g, ly.down_exps, ggml_mul(g, gate, up), ids);  // [D,K,T]
+
+        // Weighted sum over the K experts: down [D,K,T] → [K,D,T], w [K,1,T] → [1,D,T].
+        ggml_tensor *down_p = ggml_cont(g, ggml_permute(g, down, 1, 0, 2, 3));
+        ggml_tensor *w_col  = ggml_reshape_3d(g, top_w, K, 1, T);
+        ggml_tensor *routed = ggml_reshape_2d(g, ggml_mul_mat(g, w_col, down_p), D, T);
+
+        // Combined shared expert (always active), SwiGLU on the same normed input.
+        ggml_tensor *sg = ggml_silu(g, ggml_mul_mat(g, ly.shared_gate_w, hn));
+        ggml_tensor *su = ggml_mul_mat(g, ly.shared_up_w, hn);
+        ggml_tensor *shared = ggml_mul_mat(g, ly.shared_down_w, ggml_mul(g, sg, su));
+
+        x = ggml_add(g, residual, ggml_add(g, routed, shared));
     }
 
     ggml_set_name(x, "layer_output"); ggml_set_output(x);
@@ -1544,9 +1636,11 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
 
         for (int li = 0; li < n_layers; li++) {
             bool is_dense = (li == 0);
+            // MoE in-graph (Metal) when experts were stacked; else CPU fallback.
+            bool moe_in_graph = ctx.moe_metal && !is_dense;
 
             // Build and run attention graph
-            auto lag = build_llm_layer_attn(ctx, li, T, n_past, is_dense);
+            auto lag = build_llm_layer_attn(ctx, li, T, n_past, is_dense, moe_in_graph);
             ggml_backend_sched_reset(ctx.sched);
             if (!ggml_backend_sched_alloc_graph(ctx.sched, lag.gf)) {
                 ggml_free(lag.gctx);
@@ -1603,9 +1697,9 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
 
             ggml_free(lag.gctx);
 
-            // MoE FFN (layers 1-11)
+            // MoE FFN (layers 1-11): in-graph on Metal (done above) or CPU here.
             auto _t2 = std::chrono::steady_clock::now();
-            if (!is_dense) {
+            if (!is_dense && !moe_in_graph) {
                 moe_ffn_cpu(ctx, li, hidden.data(), T);
             }
             auto _t3 = std::chrono::steady_clock::now();
@@ -1775,6 +1869,15 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
 
     precompute_rpe_tables(ctx);
 
+    // Stack MoE experts for the Metal ggml_mul_mat_id decode path (default).
+    // DS_MOE_CPU=1 keeps the per-token CPU-scalar moe_ffn_cpu (slower, but the
+    // reference path / fallback for platforms where mul_mat_id misbehaves).
+    if (!getenv("DS_MOE_CPU")) {
+        ctx.moe_metal = stack_moe_experts(ctx);
+        if (!ctx.moe_metal)
+            fprintf(stderr, "deepseek_ocr2: MoE expert stacking failed — using CPU MoE\n");
+    }
+
     if (ctx.verbosity >= 1) {
         auto &s = ctx.m.shp; auto &q = ctx.m.qhp; auto &l = ctx.m.lhp;
         fprintf(stderr, "deepseek_ocr2: loaded %s\n", model_path);
@@ -1795,6 +1898,8 @@ void deepseek_ocr2_free(deepseek_ocr2_context * ctx) {
     if (!ctx) return;
     auto &c = ctx->inner;
     if (c.sched) ggml_backend_sched_free(c.sched);
+    if (c.moe_buf) ggml_backend_buffer_free(c.moe_buf);
+    if (c.moe_ctx) ggml_free(c.moe_ctx);
     if (c.model_buf) ggml_backend_buffer_free(c.model_buf);
     if (c.model_ctx) ggml_free(c.model_ctx);
     if (c.backend) ggml_backend_free(c.backend);
