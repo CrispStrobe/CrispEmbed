@@ -70,7 +70,7 @@ if not REPO.exists():
 kh.step("cloned")
 
 kh.install_build_toolchain()
-BUILD = WORK / "build"
+BUILD = REPO / "build"
 BUILD.mkdir(exist_ok=True)
 
 cmake_cfg = (
