@@ -380,6 +380,20 @@ esrgan_sr engine internally).
 | ~~Nomic v2 MoE~~ | ~~Low~~ | ~~High~~ | ~~MoE routing layer in encoder~~ DONE |
 | Qwen3-VL multimodal | Low | High | Reuse BidirLM-Omni scaffolding |
 
+### Refactoring
+
+- [ ] **Extract shared VLM building blocks to `core/` headers** — Every OCR engine
+  (granite_vision, internvl2, qwen2vl, got_ocr, smoldocling, etc.) duplicates the
+  same ~100 lines of CPU-scalar helpers: `to_f32()`, `layernorm()`, `rmsnorm()`,
+  `linear()`, `gelu()`/`silu()`, `rope()`, `pixel_shuffle()`, GQA attention, and
+  KV cache management. CrispASR already has shared `core/` headers for this
+  (`core/attention.h`, `core/ffn.h`, `core/cpu_ops.h`). CrispEmbed should extract:
+  - `core/cpu_ops.h` — to_f32, layernorm, rmsnorm, linear, gelu, silu, pixel_shuffle
+  - `core/vlm_attention.h` — MHA with KV cache, RoPE, GQA repeat
+  - `core/vlm_decoder.h` — Llama-family autoregressive decode loop (shared by 5+ engines)
+  Benefits: bug fixes apply everywhere, SIMD optimizations benefit all engines,
+  new engine porting reduces from ~800 LOC to ~300 LOC (just arch-specific glue).
+
 ### Pending improvements
 
 - [x] **Layout decoder → ggml graph** — Self-attention + FFN now use
