@@ -3113,9 +3113,10 @@ extern "C" int crispembed_colbert_score_batch(
 #include "granite_vision_ocr.h"
 #include "lightonocr.h"
 #include "deepseek_ocr2.h"
+#include "smoldocling_ocr.h"
 #include "core/gguf_loader.h"
 
-enum ocr_model_type { OCR_MODEL_PIX2TEX, OCR_MODEL_HMER, OCR_MODEL_BTTR, OCR_MODEL_PPFORMULANET, OCR_MODEL_PPFORMULANET_L, OCR_MODEL_POSFORMER, OCR_MODEL_MIXTEX, OCR_MODEL_QWEN2VL, OCR_MODEL_INTERNVL2, OCR_MODEL_PARSEQ, OCR_MODEL_GLM_OCR, OCR_MODEL_GOT_OCR, OCR_MODEL_TESSERACT_LSTM, OCR_MODEL_GRANITE_VISION, OCR_MODEL_LIGHTONOCR, OCR_MODEL_DEEPSEEK_OCR2 };
+enum ocr_model_type { OCR_MODEL_PIX2TEX, OCR_MODEL_HMER, OCR_MODEL_BTTR, OCR_MODEL_PPFORMULANET, OCR_MODEL_PPFORMULANET_L, OCR_MODEL_POSFORMER, OCR_MODEL_MIXTEX, OCR_MODEL_QWEN2VL, OCR_MODEL_INTERNVL2, OCR_MODEL_PARSEQ, OCR_MODEL_GLM_OCR, OCR_MODEL_GOT_OCR, OCR_MODEL_TESSERACT_LSTM, OCR_MODEL_GRANITE_VISION, OCR_MODEL_LIGHTONOCR, OCR_MODEL_DEEPSEEK_OCR2, OCR_MODEL_SMOLDOCLING };
 
 struct ocr_model {
     ocr_model_type type;
@@ -3142,6 +3143,7 @@ if (arch == "tesseract_lstm") return OCR_MODEL_TESSERACT_LSTM;
 if (arch == "granite_vision") return OCR_MODEL_GRANITE_VISION;
 if (arch == "lightonocr") return OCR_MODEL_LIGHTONOCR;
 if (arch == "deepseek_ocr2") return OCR_MODEL_DEEPSEEK_OCR2;
+if (arch == "smoldocling") return OCR_MODEL_SMOLDOCLING;
     return OCR_MODEL_PIX2TEX;
 }
 
@@ -3165,6 +3167,7 @@ case OCR_MODEL_TESSERACT_LSTM: inner = tesseract_lstm_init(path, n_threads); bre
 case OCR_MODEL_GRANITE_VISION: inner = granite_vision_init(path, n_threads); break;
 case OCR_MODEL_LIGHTONOCR:     inner = lightonocr_init(path, n_threads); break;
 case OCR_MODEL_DEEPSEEK_OCR2:  inner = deepseek_ocr2_init(path, n_threads); break;
+case OCR_MODEL_SMOLDOCLING:    inner = smoldocling_init(path, n_threads); break;
     }
     if (!inner) return nullptr;
     auto * u = new ocr_model{type, inner};
@@ -3191,6 +3194,7 @@ case OCR_MODEL_TESSERACT_LSTM: tesseract_lstm_free((tesseract_lstm_context *)u->
 case OCR_MODEL_GRANITE_VISION: granite_vision_free((granite_vision_context *)u->ctx); break;
 case OCR_MODEL_LIGHTONOCR:     lightonocr_free((lightonocr_context *)u->ctx); break;
 case OCR_MODEL_DEEPSEEK_OCR2:  deepseek_ocr2_free((deepseek_ocr2_context *)u->ctx); break;
+case OCR_MODEL_SMOLDOCLING:    smoldocling_free((smoldocling_context *)u->ctx); break;
     }
     delete u;
 }
@@ -3228,6 +3232,7 @@ case OCR_MODEL_TESSERACT_LSTM: {
 case OCR_MODEL_GRANITE_VISION: return granite_vision_recognize((granite_vision_context *)u->ctx, px, w, h, ch, nullptr, ol);
 case OCR_MODEL_LIGHTONOCR:     return lightonocr_recognize_raw((lightonocr_context *)u->ctx, px, w, h, ch, ol);
 case OCR_MODEL_DEEPSEEK_OCR2:  return deepseek_ocr2_recognize_raw((deepseek_ocr2_context *)u->ctx, px, w, h, ch, ol);
+case OCR_MODEL_SMOLDOCLING:    return smoldocling_recognize_raw((smoldocling_context *)u->ctx, px, w, h, ch, ol);
     }
     return nullptr;
 }
@@ -3272,6 +3277,14 @@ case OCR_MODEL_LIGHTONOCR: {
             for (int i = 0; i < w * h; i++)
                 gray[i] = (uint8_t)(px[i] * 255.0f + 0.5f);
             return lightonocr_recognize_raw((lightonocr_context *)u->ctx, gray.data(), w, h, 1, ol);
+        }
+case OCR_MODEL_SMOLDOCLING: {
+            std::vector<uint8_t> rgb(w * h * 3);
+            for (int i = 0; i < w * h; i++) {
+                uint8_t v = (uint8_t)(px[i] * 255.0f + 0.5f);
+                rgb[i * 3] = rgb[i * 3 + 1] = rgb[i * 3 + 2] = v;
+            }
+            return smoldocling_recognize_raw((smoldocling_context *)u->ctx, rgb.data(), w, h, 3, ol);
         }
     }
     return nullptr;

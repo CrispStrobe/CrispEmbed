@@ -138,7 +138,7 @@ Input text / image / audio
     │
     │   ── PLANNED ──
     │
-    └─► OCR   ──► SmolDocling (256M, CDLA-Permissive-2.0)
+    └─► OCR   ──► SmolDocling (256M, Apache-2.0) — DONE: SigLIP + SmolLM2, DocTags
                     Idefics3/SmolVLM, IBM Research, DocTags output (tiny, EN-only)
 ```
 
@@ -274,11 +274,11 @@ safmn_sr, esrgan_sr, restormer, tps_locnet, scunet_denoise, swinir_sr.
 | 2 | **PaddleOCR-VL-0.9B** | 0.9B | — | Apache-2.0 | NaViT + ERNIE-4.5-0.3B | **DONE**: reuses qwen2vl_ocr engine, Q8_0/Q4_K on HF |
 | 3 | **PaddleOCR-VL-1.6** | 0.9B | 96.3% SOTA | Apache-2.0 | NaViT + ERNIE-4.5-0.3B (same arch, improved training) | **DONE**: Q8_0/Q4_K on HF |
 | ~~4~~ | ~~MinerU2.5-Pro~~ | ~~1.2B~~ | ~~90.7%~~ | ~~NOT pure Apache~~ | — | REJECTED: commercial thresholds, mandatory attribution, gated HF |
-| 5 | **SmolDocling** | 256M | — | CDLA-Permissive-2.0 | Idefics3/SmolVLM, IBM Research | Pending (EN-only, borderline license) |
+| 5 | **SmolDocling** | 256M | — | Apache-2.0 | Idefics3/SmolVLM, IBM Research | DONE: engine + parity cos=0.9999, HF `cstr/smoldocling-GGUF` |
 | ~~6~~ | ~~Hunyuan-OCR~~ | ~~1B~~ | — | ~~Custom Tencent~~ | — | REJECTED: excludes EU/UK/South Korea |
 | 7 | **Qari-OCR** | 4B | Apache-2.0 | Qwen2-VL fine-tune (Arabic only) | Pending (4B = large, Arabic-only, parity bug) |
 
-**Remaining**: SmolDocling (tiny but EN-only + borderline license), Qari-OCR (Arabic-only, 4B).
+**Remaining**: Qari-OCR (Arabic-only, 4B, parity bug).
 
 #### OCRBench leaderboard reference (small VLMs, ≤3B)
 
