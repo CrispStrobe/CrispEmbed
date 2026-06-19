@@ -418,6 +418,10 @@ esrgan_sr engine internally).
 - [x] **Streaming ColBERT late interaction scoring** — DONE: `POST /colbert/score`
   endpoint with SSE streaming. Server-side MaxSim scoring.
 
+- [x] **LFM2.5-ColBERT-350M** — DONE: Multi-vector ColBERT via LFM2.5 backbone
+  + Dense(1024→128) projection. F32 parity cos=0.999995. Quants: Q8_0 (361MB),
+  Q5_K (258MB), Q4_K (224MB). HF: `cstr/lfm2-colbert-GGUF`.
+
 - [x] **Quantized GGUF for face models** — Quantizer now flattens 4D conv
   weights to 2D before quantizing. SFace: Q8_0 cos=0.9996 (37→10 MB),
   Q6_K cos=0.9966 (37→8 MB). Q4_K cos=0.936 (too low for recognition).
