@@ -681,7 +681,7 @@ if(CRISPEMBED_WASM_EMBED AND EMSCRIPTEN)
         SUFFIX       ".js"
     )
 endif()
-add_executable(test-adair-diff ../tests/test_adair_diff.cpp)
+add_executable(test-adair-diff tests/test_adair_diff.cpp)
 target_link_libraries(test-adair-diff PRIVATE crispembed)
 
 add_executable(test-pix2struct-diff tests/test_pix2struct_diff.cpp)
