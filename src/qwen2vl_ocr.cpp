@@ -1801,27 +1801,13 @@ bool generate(context &ctx,
             int pos = n_kv;  // cache position of the new token
             int rope_pos = pos + rope_delta;
 
-            ggml_init_params ip{
-                ctx.compute_meta.size(),
-                ctx.compute_meta.data(),
-                true,
-            };
-            ggml_context *g = ggml_init(ip);
-            ggml_cgraph *gf = build_decode_step_graph(ctx, g, n_kv, pos);
-
-            ggml_backend_sched_reset(ctx.sched);
-            if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
-                fprintf(stderr, "qwen2vl_ocr: decode step alloc failed\n");
-                ggml_free(g);
-                return false;
-            }
-
-            // Set token embedding input
-            // Look up the embedding for best_id from embed_tokens
+            // Look up token embedding BEFORE building the decode graph so we
+            // never reset the scheduler after graph allocation.  Resetting after
+            // alloc left stale buffer pointers on graph tensors; the second alloc
+            // then aborted when the scheduler found pre-allocated tensors in a
+            // buffer it could no longer associate with a backend.
             std::vector<float> tok_emb(D);
             {
-                // Read one row from embed_tokens (may be quantized)
-                // Use a tiny ggml graph: get_rows(embed_tokens, [best_id])
                 ggml_init_params eip{
                     ggml_graph_overhead() + 8 * ggml_tensor_overhead(),
                     nullptr, true};
@@ -1841,9 +1827,17 @@ bool generate(context &ctx,
                 ggml_free(eg);
             }
 
-            // Re-alloc decode graph (sched was reset by embed lookup)
+            ggml_init_params ip{
+                ctx.compute_meta.size(),
+                ctx.compute_meta.data(),
+                true,
+            };
+            ggml_context *g = ggml_init(ip);
+            ggml_cgraph *gf = build_decode_step_graph(ctx, g, n_kv, pos);
+
             ggml_backend_sched_reset(ctx.sched);
             if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
+                fprintf(stderr, "qwen2vl_ocr: decode step alloc failed\n");
                 ggml_free(g);
                 return false;
             }
