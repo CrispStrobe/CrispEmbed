@@ -298,6 +298,41 @@ InternVL2-2B (768).
 |---|---|---|---|
 | Qwen3-VL multimodal | Low | High | Reuse BidirLM-Omni scaffolding |
 
+### DeepSeek-OCR-2 performance (remaining levers)
+
+The pipeline is now mostly on Metal (encoder, MoE decode, SAM convs + patch
+embed, LM head) — full OCR ~9 min (never completed) → ~12 s warm. Profiled
+warm breakdown: load ~9 s cold / 0.8 s warm · SAM ~4.7 s · decode ~3.8 s ·
+enc+proj ~1.1 s. Remaining levers, ranked by leverage:
+
+- [ ] **#1 Load-path prefetch (~5–6 s, highest leverage).** `load_tensors` is
+  ~9 s cold even though 2.1 GB off an SSD should be ~1–2 s, and no-copy mmap vs
+  copy made no difference — so it's the *read pattern*: `core_gguf::load_weights`
+  page-faults per-tensor (2707 small faults) with no prefetch. Try
+  `madvise(MADV_WILLNEED/SEQUENTIAL)` on the mmap, or one large sequential read
+  of the data region. A/B with the `DS_DBG` `init.load_tensors` timer. (Also: a
+  near-full APFS volume is genuinely slow — freeing disk may help on its own.)
+- [ ] **#2 Decode graph reuse (~1–1.5 s).** Decode rebuilds 12 graphs/token ×
+  32 = 384× (`ggml_init(4 MB)` + `sched_alloc` Metal allocation each). Keep one
+  persistent per-layer graph (fixed max-KV, mask the tail) and reuse it across
+  tokens, llama.cpp-style. Moderate refactor.
+- [ ] **#3 Per-row embedding dequant (~0.5 s + 655 MB).** Decode dequants the
+  whole 128k×1280 embed table to F32 just to look up ~32 rows; dequant per row.
+- [ ] **#4 Converter-emitted stacked experts (memory, ~0.6 s).** Emit
+  `ffn_{gate,up,down}_exps [in,out,n_exp]` from the converter (needs a Kaggle
+  reconvert + loader tweak) so the runtime skips `stack_moe_experts` and the
+  +1.3 GB duplication → footprint 3.4 → 2.1 GB → better cache retention (helps
+  #1's cold/warm swing). Primarily a memory win.
+- [ ] **#5 SAM flash-attention (marginal, skip unless needed).** The SAM
+  attention uses a decomposed rel-pos bias (rel_h/rel_w added to scores), which
+  blocks `ggml_flash_attn_ext` unless the bias is materialized as a [T,T] mask —
+  fiddly, and the win is small (~3–4 s SAM is mostly the genuine 4096-token
+  global attention compute).
+
+All deepseek perf paths are env-gated with validated CPU fallbacks
+(`DS_QWEN2_SCALAR`, `DS_MOE_CPU`, `DS_SAM_CONV_CPU`, `DS_LMHEAD_CPU`, `DS_MMAP`,
+`DS_REF` parity harness, `DS_DBG` timers).
+
 ### Refactoring
 
 - [ ] **Extract shared VLM building blocks to `core/` headers** — Every OCR engine
