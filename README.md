@@ -582,7 +582,7 @@ column) or the upstream model card before using a model commercially.
 |---|---|---|
 | **Permissive** (Apache-2.0 / MIT) | most BERT/XLM-R/MPNet, BGE, E5, Granite, Snowflake, MXBai, Nomic, MS-Marco, Qwen3, Harrier, BidirLM-Omni, GTE-v1.5, `gliner-deberta` (NER), `lilt-funsd`, `lilt-base` (KIE) | commercial use OK with normal attribution |
 | **CC BY-NC 4.0** (non-commercial) | `jina-v5-nano`, `jina-v5-small`, `jina-reranker-v2-base-multilingual` | research/evaluation only; commercial use requires a paid license from Jina (sales@jina.ai) |
-| **LFM Open License v1.0** | `lfm2-embed`, `lfm2-embed-q4k`, `gliner-lfm` (NER) | free under $10M annual revenue; above that requires commercial license from Liquid AI |
+| **LFM Open License v1.0** | `lfm2-embed`, `lfm2-embed-q4k`, `lfm2-colbert`, `gliner-lfm` (NER) | free under $10M annual revenue; above that requires commercial license from Liquid AI |
 | **Gemma Terms of Use** | `embeddinggemma-300m` | commercial use permitted **subject to** Google's [Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy) |
 
 Restricted-license entries (NC + Gemma/vendor terms such as LFM) are marked with `*` in
@@ -747,7 +747,7 @@ Embedding tables quantized to Q8_0 even in Q4_K mode (quality-sensitive).
 
 ## BGE-M3 / Sparse / ColBERT / Reranker
 
-CrispEmbed supports all three BGE-M3 retrieval modalities plus cross-encoder rerankers.
+CrispEmbed supports all three BGE-M3 retrieval modalities, LFM2.5-ColBERT multi-vector retrieval, plus cross-encoder rerankers.
 
 ```bash
 # Convert BGE-M3 (writes sparse_linear.weight + colbert_linear.weight into GGUF)
@@ -774,6 +774,23 @@ if model.has_sparse():
 if model.has_colbert():
     multi = model.encode_multivec("Hello world")    # [[f32; 128]; n_tokens]
 ```
+
+**LFM2.5-ColBERT** (128d per-token, LFM Open License v1.0):
+
+```python
+model = CrispEmbed("lfm2-colbert-q8_0.gguf")       # 361 MB, cos=0.998
+q = model.encode_multivec("query: machine learning")
+d = model.encode_multivec("document: deep learning is a subset of ML")
+import numpy as np
+score = (q @ d.T).max(axis=1).sum()                 # MaxSim late interaction
+```
+
+| Quant | Size | ColBERT cos vs fp16 |
+|-------|------|---------------------|
+| F32 | 677 MB | 0.999995 |
+| Q8_0 | 361 MB | 0.998 |
+| Q5_K | 258 MB | 0.977 |
+| Q4_K | 224 MB | 0.959 |
 
 Cross-encoder rerankers:
 
