@@ -1015,6 +1015,14 @@ typedef CrispembedPix2StructEncodePatchesDart = Pointer<Float> Function(
     Pointer<Void> ctx, Pointer<Float> patches,
     int nPatches, Pointer<Int32> outDim);
 
+typedef CrispembedPix2StructConfidencesNative = Pointer<Float> Function(
+    Pointer<Void> ctx, Pointer<Int32> nTokens);
+typedef CrispembedPix2StructConfidencesDart = Pointer<Float> Function(
+    Pointer<Void> ctx, Pointer<Int32> nTokens);
+
+typedef CrispembedPix2StructMeanConfidenceNative = Float Function(Pointer<Void> ctx);
+typedef CrispembedPix2StructMeanConfidenceDart = double Function(Pointer<Void> ctx);
+
 // --- Granite Vision OCR ---
 typedef CrispembedGraniteVisionInitNative = Pointer<Void> Function(
     Pointer<Utf8> modelPath, Int32 nThreads);

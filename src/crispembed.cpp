@@ -3383,6 +3383,16 @@ extern "C" void crispembed_pix2struct_free_text(const char * text) {
     pix2struct_free_text(text);
 }
 
+extern "C" const float * crispembed_pix2struct_confidences(const crispembed_pix2struct_context * ctx, int * n_tokens) {
+    if (!ctx) { if (n_tokens) *n_tokens = 0; return nullptr; }
+    return pix2struct_confidences((const pix2struct_context *)ctx, n_tokens);
+}
+
+extern "C" float crispembed_pix2struct_mean_confidence(const crispembed_pix2struct_context * ctx) {
+    if (!ctx) return 0.0f;
+    return pix2struct_mean_confidence((const pix2struct_context *)ctx);
+}
+
 extern "C" const float * crispembed_pix2struct_encode_patches(
         crispembed_pix2struct_context * ctx,
         const float * patches, int n_patches,

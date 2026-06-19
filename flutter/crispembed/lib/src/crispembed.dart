@@ -1383,6 +1383,34 @@ class CrispPix2Struct {
   }
 
   // ------------------------------------------------------------------
+  // Confidence
+  // ------------------------------------------------------------------
+
+  /// Per-token softmax confidence from the last [generate] call.
+  List<double> confidences() {
+    _checkDisposed();
+    final nPtr = calloc<Int32>();
+    try {
+      final fn = _lib.lookupFunction<CrispembedPix2StructConfidencesNative,
+          CrispembedPix2StructConfidencesDart>('crispembed_pix2struct_confidences');
+      final ptr = fn(_ctx, nPtr);
+      final n = nPtr.value;
+      if (ptr == nullptr || n <= 0) return [];
+      return List.generate(n, (i) => ptr[i]);
+    } finally {
+      calloc.free(nPtr);
+    }
+  }
+
+  /// Mean softmax confidence from the last [generate] call.
+  double meanConfidence() {
+    _checkDisposed();
+    final fn = _lib.lookupFunction<CrispembedPix2StructMeanConfidenceNative,
+        CrispembedPix2StructMeanConfidenceDart>('crispembed_pix2struct_mean_confidence');
+    return fn(_ctx);
+  }
+
+  // ------------------------------------------------------------------
   // Lifecycle
   // ------------------------------------------------------------------
 
