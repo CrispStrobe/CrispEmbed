@@ -82,7 +82,7 @@ int main(int argc, char ** argv) {
     std::string lid_model_path;       // text LID model
     bool enable_ocr_orch = false;     // --ocr-pipeline: enable orchestrator endpoint
     std::string vlm_model_path;       // VLM escalation model for orchestrator
-    int vlm_engine = 0;               // 0=GOT, 1=GLM, 2=Qwen2-VL, 3=InternVL2
+    int vlm_engine = 0;               // 0=GOT, 1=GLM, 2=Qwen2-VL(+PaddleOCR-VL), 3=InternVL2
     std::string punct_model_path;     // punct restoration model for orchestrator
     std::string sr_model_path;        // text super-resolution model (--sr-model)
     std::string pan_model_path;       // PAN super-resolution model (--pan-model)

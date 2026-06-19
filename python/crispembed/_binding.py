@@ -3716,7 +3716,7 @@ class CrispOcrOrchestrator:
                  min_chars: int = 8, min_confidence: float = 0.5,
                  nafnet_model: Optional[str] = None,
                  sr_model: Optional[str] = None,
-                 vlm_model: Optional[str] = None, vlm_engine: int = 0,
+                 vlm_model: Optional[str] = None, vlm_engine: int = 0,  # 0=GOT 1=GLM 2=Qwen2-VL/PaddleOCR-VL 3=InternVL2
                  punct_model: Optional[str] = None,
                  n_threads: int = 4, lib_path: Optional[str] = None):
         self._lib = _load_library(lib_path)
