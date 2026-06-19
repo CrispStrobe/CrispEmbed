@@ -58,6 +58,10 @@ struct vision_hparams {
     //   false = Qwen2.5-VL (RMSNorm, fused QKV, SwiGLU FFN)
     //   true  = Qwen2-VL   (LayerNorm with bias, fused QKV, GELU fc1/fc2 FFN)
     bool is_qwen2_vl = false;
+
+    // PaddleOCR-VL: learned position embeddings + post_layernorm
+    bool has_position_embed = false;
+    float layer_norm_eps = 1e-6f;
 };
 
 struct llm_hparams {
@@ -133,6 +137,10 @@ struct model {
 
     // Vision encoder
     ggml_tensor *patch_embed_w = nullptr, *patch_embed_b = nullptr;
+    ggml_tensor *position_embed_w = nullptr;        // PaddleOCR-VL: learned pos embed
+    ggml_tensor *packing_pos_embed_w = nullptr;     // PaddleOCR-VL: packing pos embed
+    ggml_tensor *post_layernorm_w = nullptr;         // PaddleOCR-VL: post-encoder layernorm
+    ggml_tensor *post_layernorm_b = nullptr;
     std::vector<vision_block> vis_blocks;
     vision_merger merger;
 
