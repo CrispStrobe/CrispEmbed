@@ -620,6 +620,13 @@ Q4_K (1.4 GB). Vision weights kept at Q8_0 floor in quantizer.
 
 **License**: MIT (OpenGVLab/InternVL2_5-2B).
 
+**Sibling variants on the same engine** (no new code — just GGUF conversion +
+registry entries, the InternViT vision tower and projector are shared):
+- **InternVL2-1B** (0.9B, MIT) — InternViT-300M + Qwen2-0.5B decoder. Edge/WASM
+  target, OCRBench 779. GGUFs: F16 (~1.8 GB), Q8_0 (~1.0 GB), Q4_K (~0.5 GB).
+- **H2OVL-Mississippi-2B** (2.1B, Apache-2.0) — InternViT + H2O-Danube2-1.8B
+  (Mistral arch). OCRBench 782. GGUFs: F16 (1.2 GB), Q4_K (457 MB).
+
 ---
 
 ## June 2026 — GLiNER zero-shot NER (LFM2.5 backbone)
