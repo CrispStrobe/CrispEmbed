@@ -60,7 +60,7 @@ scratch.mkdir(parents=True, exist_ok=True)
 
 with kh.build_heartbeat("download.model"):
     src = snapshot_download(
-        repo_id="deepseek-ai/DeepSeek-OCR2",
+        repo_id="deepseek-ai/DeepSeek-OCR-2",
         cache_dir=str(scratch),
         token=hf_token,
     )
