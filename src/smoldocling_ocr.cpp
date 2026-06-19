@@ -13,6 +13,7 @@
 
 #include "smoldocling_ocr.h"
 #include "core/gguf_loader.h"
+#include "core/vlm_attention.h"
 #include "ggml-cpu.h"
 
 #include <algorithm>
@@ -705,68 +706,20 @@ static void sd_llm_decode_step(smoldocling_context * ctx,
                   ctx->get(lp + ".attn.v.weight"), nullptr, V_new.data());
 
         // RoPE (neghalf / non-interleaved)
-        // rotate_half(x) = [-x[half:], x[:half]]
-        // result = x * cos + rotate_half(x) * sin
         float theta = ctx->rope_theta;
-        int half = d_head / 2;
+        core_vlm::apply_rope(Q.data(), n_heads, d_head, n_past, theta,
+                             core_vlm::RoPEStyle::NEGHALF);
+        core_vlm::apply_rope(K_new.data(), n_kv, d_head, n_past, theta,
+                             core_vlm::RoPEStyle::NEGHALF);
 
-        for (int h = 0; h < n_heads; h++) {
-            float * qh = Q.data() + h * d_head;
-            for (int d = 0; d < half; d++) {
-                float freq = 1.0f / powf(theta, 2.0f * d / d_head);
-                float angle = n_past * freq;
-                float cos_a = cosf(angle), sin_a = sinf(angle);
-                float q_lo = qh[d], q_hi = qh[d + half];
-                qh[d]        = q_lo * cos_a - q_hi * sin_a;
-                qh[d + half] = q_hi * cos_a + q_lo * sin_a;
-            }
-        }
-        for (int h = 0; h < n_kv; h++) {
-            float * kh = K_new.data() + h * d_head;
-            for (int d = 0; d < half; d++) {
-                float freq = 1.0f / powf(theta, 2.0f * d / d_head);
-                float angle = n_past * freq;
-                float cos_a = cosf(angle), sin_a = sinf(angle);
-                float k_lo = kh[d], k_hi = kh[d + half];
-                kh[d]        = k_lo * cos_a - k_hi * sin_a;
-                kh[d + half] = k_hi * cos_a + k_lo * sin_a;
-            }
-        }
-
-        // Store K, V in cache
-        int kv_off = li * 2 * max_seq * kv_dim;
-        int k_off = kv_off;
-        int v_off = kv_off + max_seq * kv_dim;
-        memcpy(ctx->kv_cache.data() + k_off + n_past * kv_dim, K_new.data(), kv_dim * sizeof(float));
-        memcpy(ctx->kv_cache.data() + v_off + n_past * kv_dim, V_new.data(), kv_dim * sizeof(float));
-
-        // Compute attention
-        float scale = 1.0f / sqrtf((float)d_head);
+        // GQA attention with KV cache
         std::vector<float> attn_out(q_dim, 0.0f);
-        int Lk = n_past + 1;
-
-        for (int h = 0; h < n_heads; h++) {
-            int kv_h = h / kv_repeat;
-            float max_s = -1e9f;
-            std::vector<float> scores(Lk);
-            for (int k = 0; k < Lk; k++) {
-                float s = 0;
-                for (int d = 0; d < d_head; d++)
-                    s += Q[h * d_head + d] * ctx->kv_cache[k_off + k * kv_dim + kv_h * d_head + d];
-                s *= scale;
-                scores[k] = s;
-                if (s > max_s) max_s = s;
-            }
-            float sum_e = 0;
-            for (int k = 0; k < Lk; k++) { scores[k] = expf(scores[k] - max_s); sum_e += scores[k]; }
-            float inv = 1.0f / sum_e;
-            for (int d = 0; d < d_head; d++) {
-                float val = 0;
-                for (int k = 0; k < Lk; k++)
-                    val += scores[k] * inv * ctx->kv_cache[v_off + k * kv_dim + kv_h * d_head + d];
-                attn_out[h * d_head + d] = val;
-            }
-        }
+        core_vlm::gqa_attn_step(Q.data(), K_new.data(), V_new.data(),
+                                ctx->kv_cache.data(),
+                                n_heads, n_kv, d_head,
+                                max_seq, n_past,
+                                li, ctx->llm_layers,
+                                attn_out.data());
 
         // Output projection
         std::vector<float> proj(D);
@@ -780,18 +733,13 @@ static void sd_llm_decode_step(smoldocling_context * ctx,
         memcpy(normed.data(), x.data(), D * sizeof(float));
         sd_rmsnorm(normed.data(), 1, D, ctx->get(lp + ".ffn_norm.weight"), eps);
 
-        // SwiGLU: silu(gate) * up, then down
+        // SwiGLU FFN
         int ffn = ctx->llm_ffn_dim;
-        std::vector<float> gate(ffn), up(ffn);
-        sd_linear(normed.data(), 1, D, ffn,
-                  ctx->get(lp + ".ffn.gate.weight"), nullptr, gate.data());
-        sd_linear(normed.data(), 1, D, ffn,
-                  ctx->get(lp + ".ffn.up.weight"), nullptr, up.data());
-        for (int i = 0; i < ffn; i++) gate[i] = sd_silu(gate[i]) * up[i];
-
         std::vector<float> down(D);
-        sd_linear(gate.data(), 1, ffn, D,
-                  ctx->get(lp + ".ffn.down.weight"), nullptr, down.data());
+        core_vlm::swiglu_ffn(normed.data(), down.data(), D, ffn,
+                             ctx->get(lp + ".ffn.gate.weight"),
+                             ctx->get(lp + ".ffn.up.weight"),
+                             ctx->get(lp + ".ffn.down.weight"));
 
         // Residual
         for (int d = 0; d < D; d++) x[d] += down[d];

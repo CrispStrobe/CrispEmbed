@@ -426,6 +426,9 @@ target_link_libraries(test-conv-ext PRIVATE crispembed)
 add_executable(test-core-cpu-ops tests/test_core_cpu_ops.cpp)
 target_link_libraries(test-core-cpu-ops PRIVATE crispembed)
 
+add_executable(test-core-vlm-attention tests/test_core_vlm_attention.cpp)
+target_link_libraries(test-core-vlm-attention PRIVATE crispembed)
+
 add_executable(test-ocr-pipeline tests/test_ocr_pipeline.cpp)
 target_link_libraries(test-ocr-pipeline PRIVATE crispembed)
 
