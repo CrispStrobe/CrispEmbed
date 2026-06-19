@@ -2071,6 +2071,14 @@ static ggml_cgraph * build_decode_step_graph(
         K_new = ggml_reshape_3d(g, K_new, head_dim, n_kv_heads, 1);
         V_new = ggml_reshape_3d(g, V_new, head_dim, n_kv_heads, 1);
 
+        // Qwen3-VL: per-head QK RMSNorm (after reshape, before RoPE — same as prefill)
+        if (ly.q_norm_w) {
+            Q = ggml_mul(g, ggml_rms_norm(g, Q, rms_eps), ly.q_norm_w);
+        }
+        if (ly.k_norm_w) {
+            K_new = ggml_mul(g, ggml_rms_norm(g, K_new, rms_eps), ly.k_norm_w);
+        }
+
         // Apply mRoPE to Q and K (IMROPE for Qwen3-VL, MROPE for Qwen2/2.5-VL)
         const int rope_type = lhp.mrope_interleaved
             ? GGML_ROPE_TYPE_IMROPE : GGML_ROPE_TYPE_MROPE;
