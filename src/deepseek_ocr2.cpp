@@ -239,26 +239,39 @@ static void linear_cpu(const float* in, float* out, int in_dim, int out_dim,
 
 static void conv2d_cpu(const float* in, float* out, const float* weight,
                        const float* bias, int in_ch, int out_ch, int H, int W,
-                       int kh, int kw, int stride, int pad) {
+                       int kh, int kw, int stride, int pad, int n_threads = 1) {
     int oH = (H + 2 * pad - kh) / stride + 1;
     int oW = (W + 2 * pad - kw) / stride + 1;
-    for (int oc = 0; oc < out_ch; oc++) {
-        float b = bias ? bias[oc] : 0.0f;
-        for (int oy = 0; oy < oH; oy++)
-            for (int ox = 0; ox < oW; ox++) {
-                float sum = b;
-                for (int ic = 0; ic < in_ch; ic++)
-                    for (int ky2 = 0; ky2 < kh; ky2++)
-                        for (int kx2 = 0; kx2 < kw; kx2++) {
-                            int iy = oy * stride - pad + ky2;
-                            int ix = ox * stride - pad + kx2;
-                            if (iy >= 0 && iy < H && ix >= 0 && ix < W)
-                                sum += in[ic * H * W + iy * W + ix]
-                                     * weight[oc * (in_ch * kh * kw) + ic * kh * kw + ky2 * kw + kx2];
-                        }
-                out[oc * oH * oW + oy * oW + ox] = sum;
-            }
+    // Each output channel writes its own plane → parallelize over oc. This is
+    // the SAM neck/downsample hot path (~10 s scalar); threading it is exact.
+    auto plane = [&](int oc0, int oc1) {
+        for (int oc = oc0; oc < oc1; oc++) {
+            float b = bias ? bias[oc] : 0.0f;
+            for (int oy = 0; oy < oH; oy++)
+                for (int ox = 0; ox < oW; ox++) {
+                    float sum = b;
+                    for (int ic = 0; ic < in_ch; ic++)
+                        for (int ky2 = 0; ky2 < kh; ky2++)
+                            for (int kx2 = 0; kx2 < kw; kx2++) {
+                                int iy = oy * stride - pad + ky2;
+                                int ix = ox * stride - pad + kx2;
+                                if (iy >= 0 && iy < H && ix >= 0 && ix < W)
+                                    sum += in[ic * H * W + iy * W + ix]
+                                         * weight[oc * (in_ch * kh * kw) + ic * kh * kw + ky2 * kw + kx2];
+                            }
+                    out[oc * oH * oW + oy * oW + ox] = sum;
+                }
+        }
+    };
+    int nt = std::max(1, std::min(n_threads, out_ch));
+    if (nt <= 1) { plane(0, out_ch); return; }
+    std::vector<std::thread> pool;
+    int chunk = (out_ch + nt - 1) / nt;
+    for (int t = 0; t < nt; t++) {
+        int o0 = t * chunk, o1 = std::min(out_ch, o0 + chunk);
+        if (o0 < o1) pool.emplace_back(plane, o0, o1);
     }
+    for (auto& th : pool) th.join();
 }
 
 static void silu_cpu(float* x, int n) {
@@ -687,6 +700,14 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
     auto &s = ctx.m.shp;
     int C = s.hidden, PS = s.patch_size, nP = s.image_size / PS;
     int N = nP * nP, hd = s.head_dim, ws = s.window_size;
+    auto _sam_t = std::chrono::steady_clock::now();
+    auto sam_mark = [&](const char *w) {
+        if (!getenv("DS_DBG")) return;
+        auto now = std::chrono::steady_clock::now();
+        fprintf(stderr, "  [time] sam.%s %lldms\n", w,
+                (long long)std::chrono::duration_cast<std::chrono::milliseconds>(now - _sam_t).count());
+        _sam_t = now;
+    };
 
     // Patch embedding
     auto pe_w = to_f32(ctx.m.patch_embed_w);
@@ -695,23 +716,41 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
     int patch_dim = 3 * PS * PS;
     std::vector<float> hidden(N * C);
 
-    for (int py = 0; py < nP; py++)
-        for (int px = 0; px < nP; px++) {
-            int tok = py * nP + px;
-            std::vector<float> patch(patch_dim);
-            for (int c = 0; c < 3; c++)
-                for (int ky = 0; ky < PS; ky++)
-                    for (int kx = 0; kx < PS; kx++)
-                        patch[c * PS * PS + ky * PS + kx] =
-                            pixels[c * s.image_size * s.image_size
-                                   + (py * PS + ky) * s.image_size + (px * PS + kx)];
-            for (int o = 0; o < C; o++) {
-                float sv = pe_b.empty() ? 0.0f : pe_b[o];
-                for (int i = 0; i < patch_dim; i++) sv += pe_w[o * patch_dim + i] * patch[i];
-                hidden[tok * C + o] = sv + (pos.empty() ? 0.0f : pos[tok * C + o]);
+    // Patch embed is a per-patch matmul (patch_dim×C); patches are independent,
+    // so parallelize over rows. ~2 s scalar → ~0.5 s threaded, exact.
+    auto patch_rows = [&](int py0, int py1) {
+        std::vector<float> patch(patch_dim);
+        for (int py = py0; py < py1; py++)
+            for (int px = 0; px < nP; px++) {
+                int tok = py * nP + px;
+                for (int c = 0; c < 3; c++)
+                    for (int ky = 0; ky < PS; ky++)
+                        for (int kx = 0; kx < PS; kx++)
+                            patch[c * PS * PS + ky * PS + kx] =
+                                pixels[c * s.image_size * s.image_size
+                                       + (py * PS + ky) * s.image_size + (px * PS + kx)];
+                for (int o = 0; o < C; o++) {
+                    float sv = pe_b.empty() ? 0.0f : pe_b[o];
+                    for (int i = 0; i < patch_dim; i++) sv += pe_w[o * patch_dim + i] * patch[i];
+                    hidden[tok * C + o] = sv + (pos.empty() ? 0.0f : pos[tok * C + o]);
+                }
             }
+    };
+    {
+        int nt = std::max(1, std::min(ctx.n_threads, nP));
+        if (nt <= 1) patch_rows(0, nP);
+        else {
+            std::vector<std::thread> pool;
+            int chunk = (nP + nt - 1) / nt;
+            for (int t = 0; t < nt; t++) {
+                int y0 = t * chunk, y1 = std::min(nP, y0 + chunk);
+                if (y0 < y1) pool.emplace_back(patch_rows, y0, y1);
+            }
+            for (auto& th : pool) th.join();
         }
+    }
 
+    sam_mark("patch_embed");
     // Pre-dequant LN weights for windowed layers
     std::vector<std::vector<float>> ln1_ws(s.depth), ln1_bs(s.depth);
     for (int li = 0; li < s.depth; li++)
@@ -722,6 +761,7 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
 
     // Per-layer ggml graph
     for (int li = 0; li < s.depth; li++) {
+        auto _slt = std::chrono::steady_clock::now();
         auto &blk = ctx.m.sam_blocks[li];
         bool is_global = blk.is_global;
         int aH = is_global ? nP : ws, aW = aH, wN = aH * aW;
@@ -790,6 +830,11 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
         if (ctx.verbosity >= 2)
             fprintf(stderr, "deepseek_ocr2: sam_layer_%d done (%s, T=%d)\n",
                     li, is_global ? "global" : "window", T);
+        if (getenv("DS_DBG"))
+            fprintf(stderr, "  [time] sam_li=%d (%s T=%d) %lldms\n", li,
+                    is_global ? "global" : "window", T,
+                    (long long)std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::steady_clock::now() - _slt).count());
     }
 
     // Diff: pre-neck ViT output (4096x768). The reference dump does not capture
@@ -804,6 +849,7 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
         }
     }
 
+    sam_mark("layers");
     // Neck: Conv(768->256,1x1) -> LN2d -> Conv(256->256,3x3,p1) -> LN2d
     int nC = s.neck_out;
     std::vector<float> chw(C * nP * nP);
@@ -814,7 +860,7 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
 
     auto nc1_w = to_f32(ctx.m.neck_conv1_w);
     std::vector<float> neck1(nC * nP * nP);
-    conv2d_cpu(chw.data(), neck1.data(), nc1_w.data(), nullptr, C, nC, nP, nP, 1, 1, 1, 0);
+    conv2d_cpu(chw.data(), neck1.data(), nc1_w.data(), nullptr, C, nC, nP, nP, 1, 1, 1, 0, ctx.n_threads);
 
     auto nln1_w = to_f32(ctx.m.neck_ln1_w), nln1_b = to_f32(ctx.m.neck_ln1_b);
     std::vector<float> neck1_ln(nC * nP * nP);
@@ -822,7 +868,7 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
 
     auto nc2_w = to_f32(ctx.m.neck_conv2_w);
     std::vector<float> neck2(nC * nP * nP);
-    conv2d_cpu(neck1_ln.data(), neck2.data(), nc2_w.data(), nullptr, nC, nC, nP, nP, 3, 3, 1, 1);
+    conv2d_cpu(neck1_ln.data(), neck2.data(), nc2_w.data(), nullptr, nC, nC, nP, nP, 3, 3, 1, 1, ctx.n_threads);
 
     auto nln2_w = to_f32(ctx.m.neck_ln2_w), nln2_b = to_f32(ctx.m.neck_ln2_b);
     std::vector<float> neck2_ln(nC * nP * nP);
@@ -836,12 +882,12 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
     int ds1_H = (nP + 2 - 3) / 2 + 1, ds1_W = ds1_H;
     auto n2_w = to_f32(ctx.m.net_2_w);
     std::vector<float> ds1(ds1_ch * ds1_H * ds1_W);
-    conv2d_cpu(neck2_ln.data(), ds1.data(), n2_w.data(), nullptr, nC, ds1_ch, nP, nP, 3, 3, 2, 1);
+    conv2d_cpu(neck2_ln.data(), ds1.data(), n2_w.data(), nullptr, nC, ds1_ch, nP, nP, 3, 3, 2, 1, ctx.n_threads);
 
     int ds2_ch = (int)ctx.m.net_3_w->ne[1], ds2_H = (ds1_H + 2 - 3) / 2 + 1, ds2_W = ds2_H;
     auto n3_w = to_f32(ctx.m.net_3_w);
     std::vector<float> ds2(ds2_ch * ds2_H * ds2_W);
-    conv2d_cpu(ds1.data(), ds2.data(), n3_w.data(), nullptr, ds1_ch, ds2_ch, ds1_H, ds1_W, 3, 3, 2, 1);
+    conv2d_cpu(ds1.data(), ds2.data(), n3_w.data(), nullptr, ds1_ch, ds2_ch, ds1_H, ds1_W, 3, 3, 2, 1, ctx.n_threads);
 
     // Flatten to [n_tokens, dim]
     int n_vis = ds2_H * ds2_W, vis_D = ds2_ch;
@@ -852,6 +898,7 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
             out_features[tok * vis_D + c] = ds2[c * ds2_H * ds2_W + y * ds2_W + x];
     }
 
+    sam_mark("neck_downsample");
     out_n_tokens = n_vis;
     out_dim = vis_D;
 
@@ -1972,6 +2019,16 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
         }
     }
 
+    bool dbg_t = getenv("DS_DBG") != nullptr;
+    auto _ts = std::chrono::steady_clock::now();
+    auto stage_ms = [&](const char *name) {
+        if (!dbg_t) return;
+        auto now = std::chrono::steady_clock::now();
+        fprintf(stderr, "  [time] %s %lldms\n", name,
+                (long long)std::chrono::duration_cast<std::chrono::milliseconds>(now - _ts).count());
+        _ts = now;
+    };
+
     // 1. SAM vision encoder
     std::vector<float> sam_features;
     int n_sam_tokens, sam_dim;
@@ -1979,6 +2036,7 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
         fprintf(stderr, "deepseek_ocr2: SAM encoding failed\n");
         if (out_len) *out_len = 0; return "";
     }
+    stage_ms("sam");
 
     // 2. Qwen2 bidirectional encoder
     std::vector<float> enc_out;
@@ -1988,6 +2046,7 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
         fprintf(stderr, "deepseek_ocr2: Qwen2 encoder failed\n");
         if (out_len) *out_len = 0; return "";
     }
+    stage_ms("qwen2_enc");
 
     // 3. Project to LLM dimension
     std::vector<float> proj_out;
@@ -1995,6 +2054,7 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
         fprintf(stderr, "deepseek_ocr2: projection failed\n");
         if (out_len) *out_len = 0; return "";
     }
+    stage_ms("projector");
 
     fprintf(stderr, "deepseek_ocr2: stages done — sam=%d/%d qwen2=%d/%d proj=%d image tokens\n",
             n_sam_tokens, sam_dim, n_enc_tokens, enc_dim, n_enc_tokens);
