@@ -223,8 +223,9 @@ bool load_tensors(context &ctx, const char *path) {
     m.patch_embed_w = get2("v.patch_embed.weight", "v.patch_embd.weight");
     m.patch_embed_b = get("v.patch_embed.bias");
 
-    // PaddleOCR-VL: learned position embeddings
+    // Learned position embeddings (PaddleOCR-VL or Qwen3-VL)
     m.position_embed_w = get("v.position_embed.weight");
+    if (!m.position_embed_w) m.position_embed_w = get("v.pos_embed.weight");
     m.packing_pos_embed_w = get("v.packing_pos_embed.weight");
     m.post_layernorm_w = get("v.post_layernorm.weight");
     m.post_layernorm_b = get("v.post_layernorm.bias");
@@ -463,14 +464,21 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         x = ggml_add(g, x, ctx.m.patch_embed_b);
     }
 
-    // PaddleOCR-VL: add packing position embeddings
+    // PaddleOCR-VL: add packing position embeddings (direct lookup)
     if (ctx.m.packing_pos_embed_w) {
-        // packing_pos_embed_w: [32768, H], packing_pos_ids: [n_patches] int32
         ggml_tensor *pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, n_patches);
         ggml_set_name(pos_ids, "packing_pos_ids");
         ggml_set_input(pos_ids);
         ggml_tensor *pos_emb = ggml_get_rows(g, ctx.m.packing_pos_embed_w, pos_ids);
         x = ggml_add(g, x, pos_emb);
+    }
+
+    // Qwen3-VL: add bilinear-interpolated position embeddings (pre-computed on CPU)
+    if (ctx.m.position_embed_w && !ctx.m.packing_pos_embed_w) {
+        ggml_tensor *pos_embed_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, H, n_patches);
+        ggml_set_name(pos_embed_in, "pos_embed_in");
+        ggml_set_input(pos_embed_in);
+        x = ggml_add(g, x, pos_embed_in);
     }
 
     ggml_set_name(x, "patch_embed_out");
@@ -956,6 +964,108 @@ bool encode_vision(context &ctx,
             return false;
     }
 
+    // Qwen3-VL: compute bilinear-interpolated position embeddings on CPU
+    if (ctx.m.position_embed_w && !ctx.m.packing_pos_embed_w) {
+        const int H = (int)ctx.m.vhp.hidden_size;
+        const int num_pos = (int)ctx.m.position_embed_w->ne[1];  // 2304
+        const int side = (int)std::sqrt((float)num_pos);          // 48
+        const int merge = (int)ctx.m.vhp.spatial_merge_size;
+        const int h_p = grid_thw[1];
+        const int w_p = grid_thw[2];
+        const int t_p = grid_thw[0];
+
+        // Read position embedding weights from backend
+        std::vector<float> pos_w((size_t)num_pos * H);
+        ggml_backend_tensor_get(ctx.m.position_embed_w, pos_w.data(), 0,
+                                pos_w.size() * sizeof(float));
+
+        // Compute bilinear grid positions
+        auto linspace = [](int n, float end) -> std::vector<float> {
+            std::vector<float> v(n);
+            if (n == 1) { v[0] = 0.0f; return v; }
+            for (int i = 0; i < n; i++)
+                v[i] = end * (float)i / (float)(n - 1);
+            return v;
+        };
+
+        auto h_grid = linspace(h_p, (float)(side - 1));
+        auto w_grid = linspace(w_p, (float)(side - 1));
+
+        // For each (h,w) position, compute 4 corner indices and bilinear weights
+        struct bilinear_corner {
+            int idx[4];     // indices into pos_embed table
+            float wt[4];    // bilinear weights
+        };
+
+        std::vector<bilinear_corner> corners(h_p * w_p);
+        for (int ih = 0; ih < h_p; ih++) {
+            int hf = (int)h_grid[ih];
+            int hc = std::min(hf + 1, side - 1);
+            float hfrac = h_grid[ih] - (float)hf;
+            for (int iw = 0; iw < w_p; iw++) {
+                int wf = (int)w_grid[iw];
+                int wc = std::min(wf + 1, side - 1);
+                float wfrac = w_grid[iw] - (float)wf;
+
+                auto &c = corners[ih * w_p + iw];
+                c.idx[0] = hf * side + wf;  // top-left
+                c.idx[1] = hf * side + wc;  // top-right
+                c.idx[2] = hc * side + wf;  // bottom-left
+                c.idx[3] = hc * side + wc;  // bottom-right
+                c.wt[0] = (1.0f - hfrac) * (1.0f - wfrac);
+                c.wt[1] = (1.0f - hfrac) * wfrac;
+                c.wt[2] = hfrac * (1.0f - wfrac);
+                c.wt[3] = hfrac * wfrac;
+            }
+        }
+
+        // Merge-aware reordering:
+        // (h_p, w_p) → (h_p/m, m, w_p/m, m) → transpose(1,2) → flatten
+        int hm = h_p / merge;
+        int wm = w_p / merge;
+        std::vector<int> reorder(h_p * w_p);
+        int ridx = 0;
+        for (int mh = 0; mh < hm; mh++) {
+            for (int mw = 0; mw < wm; mw++) {
+                for (int ir = 0; ir < merge; ir++) {
+                    for (int ic = 0; ic < merge; ic++) {
+                        int row = mh * merge + ir;
+                        int col = mw * merge + ic;
+                        reorder[ridx++] = row * w_p + col;
+                    }
+                }
+            }
+        }
+
+        // Compute bilinear-interpolated position embeddings in reordered order
+        int total_patches = t_p * h_p * w_p;
+        std::vector<float> pos_embeds((size_t)total_patches * H, 0.0f);
+
+        for (int frame = 0; frame < t_p; frame++) {
+            for (int i = 0; i < h_p * w_p; i++) {
+                int src = reorder[i];
+                const auto &c = corners[src];
+                float *dst = pos_embeds.data() + ((size_t)frame * h_p * w_p + i) * H;
+                for (int ci = 0; ci < 4; ci++) {
+                    const float *emb = pos_w.data() + (size_t)c.idx[ci] * H;
+                    float weight = c.wt[ci];
+                    for (int d = 0; d < H; d++) {
+                        dst[d] += emb[d] * weight;
+                    }
+                }
+            }
+        }
+
+        if (!set_in("pos_embed_in", pos_embeds.data(),
+                    (size_t)total_patches * H * sizeof(float)))
+            return false;
+
+        if (ctx.verbosity >= 2) {
+            fprintf(stderr, "  bilinear pos_embed: side=%d, h=%d w=%d, first5=[%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                    side, h_p, w_p, pos_embeds[0], pos_embeds[1], pos_embeds[2], pos_embeds[3], pos_embeds[4]);
+        }
+    }
+
     // Compute
     if (ggml_backend_sched_graph_compute(ctx.sched, gr.gf) != GGML_STATUS_SUCCESS) {
         fprintf(stderr, "qwen2vl_ocr: graph compute failed\n");
@@ -975,6 +1085,21 @@ bool encode_vision(context &ctx,
         crispembed_diff::Ref vref;
         if (vref.load(ctx.diff_ref_path)) {
             const int Hd = (int)ctx.m.vhp.hidden_size;
+
+            // Compare patch_embed output first
+            if (vref.has("vis_patch_embed")) {
+                ggml_tensor *pe = ggml_graph_get_tensor(gr.gf, "patch_embed_out");
+                if (pe) {
+                    std::vector<float> pd((size_t)n_patches * Hd);
+                    ggml_backend_tensor_get(pe, pd.data(), 0, pd.size() * sizeof(float));
+                    auto r = vref.compare("vis_patch_embed", pd.data(), pd.size());
+                    fprintf(stderr, "  diff vis_patch_embed: cos_min=%.6f max_abs=%.2e %s "
+                                    "C++[%.4f %.4f %.4f]\n",
+                            r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL",
+                            pd[0], pd[1], pd[2]);
+                }
+            }
+
             for (uint32_t il = 0; il < ctx.m.vhp.depth; il++) {
                 char nm[64];
                 std::snprintf(nm, sizeof(nm), "vis_layer_%u", il);
@@ -1235,9 +1360,12 @@ bool run_llm_forward(context &ctx,
         }
 
         // Apply mRoPE (multi-dimensional rotary position embedding)
+        // Qwen3-VL uses interleaved mRoPE (IMROPE); Qwen2/2.5-VL uses MROPE
+        const int rope_type = lhp.mrope_interleaved
+            ? GGML_ROPE_TYPE_IMROPE : GGML_ROPE_TYPE_MROPE;
         Q = ggml_rope_multi(g, Q, pos_ids, nullptr,
                             head_dim, sections,
-                            GGML_ROPE_TYPE_MROPE,
+                            rope_type,
                             0,  // n_ctx_orig
                             lhp.rope_theta,
                             1.0f,  // freq_scale
@@ -1247,7 +1375,7 @@ bool run_llm_forward(context &ctx,
                             0.0f); // beta_slow
         K = ggml_rope_multi(g, K, pos_ids, nullptr,
                             head_dim, sections,
-                            GGML_ROPE_TYPE_MROPE,
+                            rope_type,
                             0,
                             lhp.rope_theta,
                             1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
@@ -1614,12 +1742,14 @@ static ggml_cgraph * build_decode_step_graph(
         K_new = ggml_reshape_3d(g, K_new, head_dim, n_kv_heads, 1);
         V_new = ggml_reshape_3d(g, V_new, head_dim, n_kv_heads, 1);
 
-        // Apply mRoPE to Q and K
+        // Apply mRoPE to Q and K (IMROPE for Qwen3-VL, MROPE for Qwen2/2.5-VL)
+        const int rope_type = lhp.mrope_interleaved
+            ? GGML_ROPE_TYPE_IMROPE : GGML_ROPE_TYPE_MROPE;
         Q = ggml_rope_multi(g, Q, pos_ids, nullptr,
-                            head_dim, sections, GGML_ROPE_TYPE_MROPE,
+                            head_dim, sections, rope_type,
                             0, lhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
         K_new = ggml_rope_multi(g, K_new, pos_ids, nullptr,
-                                head_dim, sections, GGML_ROPE_TYPE_MROPE,
+                                head_dim, sections, rope_type,
                                 0, lhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
         // Output new K/V for cache append. V_new is a reshape *view* of the
