@@ -1,6 +1,6 @@
 {
-  "id": "${KAGGLE_ACCOUNT}/crispembed-quant-upload",
-  "title": "CrispEmbed Quantize + Upload",
+  "id": "${KAGGLE_ACCOUNT}/crispembed-deepseek-quant",
+  "title": "crispembed-deepseek-quant",
   "code_file": "quant_upload.py",
   "language": "python",
   "kernel_type": "script",
