@@ -486,8 +486,7 @@ int lfm2_embed_encode_multivec(lfm2_embed_ctx * ctx, const char * text,
     const int cd = ctx->model.colbert_dim;
 
     // Tokenize
-    std::vector<int32_t> ids = lfm2_bpe_encode(ctx->model.token_to_id,
-                                                ctx->model.merge_rank, text);
+    std::vector<int32_t> ids = lfm2_tokenize(ctx->model, text);
     int T = (int)ids.size();
     if (T <= 0) return 0;
     if (T > max_tokens) T = max_tokens;
@@ -495,8 +494,8 @@ int lfm2_embed_encode_multivec(lfm2_embed_ctx * ctx, const char * text,
     // Build graph — same as encode_to but output ALL tokens, not just CLS
     const int nh  = (int)hp.n_heads;
     const int nkv = (int)hp.n_kv_heads;
-    const int hd  = H / nh;
-    const float eps   = hp.rms_eps;
+    const int hd  = (int)hp.head_dim;
+    const float eps   = hp.norm_eps;
     const float theta = hp.rope_theta;
     const int max_nodes = 4096;
 
@@ -509,7 +508,7 @@ int lfm2_embed_encode_multivec(lfm2_embed_ctx * ctx, const char * text,
     ggml_tensor * inp = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
     ggml_set_name(inp, "input_ids"); ggml_set_input(inp);
     ggml_tensor * pos = nullptr;
-    if (ctx->model.layers[0].is_attention) {
+    if (hp.layer_types.find('a') != std::string::npos) {
         pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
         ggml_set_name(pos, "pos_ids"); ggml_set_input(pos);
     }

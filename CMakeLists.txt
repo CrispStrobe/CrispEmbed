@@ -689,3 +689,6 @@ target_link_libraries(test-pix2struct-diff PRIVATE crispembed)
 
 add_executable(test-lfm2-diff tests/test_lfm2_diff.cpp)
 target_link_libraries(test-lfm2-diff PRIVATE crispembed)
+
+add_executable(test-lfm2-colbert-diff tests/test_lfm2_colbert_diff.cpp)
+target_link_libraries(test-lfm2-colbert-diff PRIVATE crispembed)
