@@ -825,7 +825,7 @@ def main():
             # Simple test: encode token IDs [0, 1, 2, 3, 4]
             test_ids = np.array([0, 1, 2, 3, 4], dtype=np.int32)
             input_embeds = embed_w[test_ids]
-            all_intermediates["llm_test_token_ids"] = test_ids.astype(np.float32)
+            all_intermediates["token_ids"] = test_ids.astype(np.float32)
 
             llm_ints = run_llm_decoder(
                 shard_files, input_embeds, config,
