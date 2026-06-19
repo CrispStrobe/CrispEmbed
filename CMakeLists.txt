@@ -211,6 +211,7 @@ list(APPEND CRISPEMBED_SOURCES src/dat_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/deepseek_ocr2.cpp)
 list(APPEND CRISPEMBED_SOURCES src/restormer.cpp)
 list(APPEND CRISPEMBED_SOURCES src/granite_vision_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/smoldocling_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/pix2struct.cpp)
 list(APPEND CRISPEMBED_SOURCES src/parseq_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/glm_ocr.cpp)
@@ -527,6 +528,12 @@ target_link_libraries(test-swinir-diff PRIVATE crispembed)
 
 add_executable(test-granite-vision-diff tests/test_granite_vision_diff.cpp)
 target_link_libraries(test-granite-vision-diff PRIVATE crispembed)
+
+add_executable(test-smoldocling-smoke tests/test_smoldocling_smoke.cpp)
+target_link_libraries(test-smoldocling-smoke PRIVATE crispembed)
+
+add_executable(test-smoldocling-diff tests/test_smoldocling_diff.cpp)
+target_link_libraries(test-smoldocling-diff PRIVATE crispembed)
 
 add_executable(test-confidence tests/test_confidence.cpp)
 target_link_libraries(test-confidence PRIVATE crispembed)
