@@ -668,13 +668,12 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
     K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
     V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-    // Attention
-    ggml_tensor *scores = ggml_mul_mat(g, K, Q);
-    scores = ggml_soft_max_ext(g, scores, nullptr, attn_scale, 0.0f);
-
-    ggml_tensor *V_perm = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
-    ggml_tensor *attn_out = ggml_mul_mat(g, V_perm, scores);
-    attn_out = ggml_cont(g, ggml_permute(g, attn_out, 0, 2, 1, 3));
+    // Attention. Use ggml's fused flash-attention op instead of materializing
+    // the full scores tensor. Q/K/V are (head_dim, n_patches, n_heads), which
+    // is exactly the layout ggml_flash_attn_ext expects.
+    ggml_tensor *attn_out =
+        ggml_flash_attn_ext(g, Q, K, V, nullptr, attn_scale, 0.0f, 0.0f);
+    ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
     attn_out = ggml_reshape_2d(g, attn_out, H, n_patches);
 
     attn_out = ggml_mul_mat(g, blk.proj_w, attn_out);
@@ -1624,7 +1623,7 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
 
   // Causal mask: (n_tokens, n_tokens) with -inf for future positions
   ggml_tensor *causal_mask =
-      ggml_new_tensor_2d(g, GGML_TYPE_F32, n_tokens, n_tokens);
+      ggml_new_tensor_2d(g, GGML_TYPE_F16, n_tokens, n_tokens);
   ggml_set_name(causal_mask, "causal_mask");
   ggml_set_input(causal_mask);
 
@@ -1795,18 +1794,14 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
       V = ggml_reshape_3d(g, V, head_dim, n_heads, n_tokens);
     }
 
-    // Attention (same pattern as vision encoder)
+    // Attention
     Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3)); // (hd, T, nh)
     K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
     V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-    ggml_tensor *scores = ggml_mul_mat(g, K, Q); // (T, T, nh)
-    scores = ggml_add(g, scores, causal_mask);
-    scores = ggml_soft_max_ext(g, scores, nullptr, attn_scale, 0.0f);
-
-    ggml_tensor *V_perm = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
-    ggml_tensor *attn_out = ggml_mul_mat(g, V_perm, scores);
-    attn_out = ggml_cont(g, ggml_permute(g, attn_out, 0, 2, 1, 3));
+    ggml_tensor *attn_out =
+        ggml_flash_attn_ext(g, Q, K, V, causal_mask, attn_scale, 0.0f, 0.0f);
+    ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
     attn_out = ggml_reshape_2d(g, attn_out, D, n_tokens);
 
     // Output projection
@@ -1895,15 +1890,16 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
   ggml_backend_tensor_set(ids_t, token_ids, 0, n_tokens * sizeof(int32_t));
 
   // Build causal mask on CPU
-  std::vector<float> mask_data((size_t)n_tokens * n_tokens, -INFINITY);
+  std::vector<ggml_fp16_t> mask_data(
+      (size_t)n_tokens * n_tokens, ggml_fp32_to_fp16(-INFINITY));
   for (int i = 0; i < n_tokens; i++) {
     for (int j = 0; j <= i; j++) {
-      mask_data[(size_t)i * n_tokens + j] = 0.0f;
+      mask_data[(size_t)i * n_tokens + j] = ggml_fp32_to_fp16(0.0f);
     }
   }
   ggml_tensor *mask_t = ggml_graph_get_tensor(gf, "causal_mask");
   ggml_backend_tensor_set(mask_t, mask_data.data(), 0,
-                          mask_data.size() * sizeof(float));
+                          mask_data.size() * sizeof(ggml_fp16_t));
 
   // Build mRoPE position IDs and image splicing data
   std::vector<int32_t> pos_data(n_tokens * 4, 0);
@@ -2362,14 +2358,10 @@ static ggml_cgraph *build_decode_step_graph(
     K_full = ggml_cont(g, ggml_permute(g, K_full, 0, 2, 1, 3)); // (hd, seq, nh)
     V_full = ggml_cont(g, ggml_permute(g, V_full, 0, 2, 1, 3));
 
-    ggml_tensor *scores = ggml_mul_mat(g, K_full, Q); // (seq, 1, nh)
-    // No causal mask needed — single query always attends to all cached KV
-    scores = ggml_soft_max_ext(g, scores, nullptr, attn_scale, 0.0f);
-
-    ggml_tensor *V_perm = ggml_cont(g, ggml_permute(g, V_full, 1, 0, 2, 3));
-    ggml_tensor *attn_out = ggml_mul_mat(g, V_perm, scores); // (hd, 1, nh)
-    attn_out =
-        ggml_cont(g, ggml_permute(g, attn_out, 0, 2, 1, 3)); // (hd, nh, 1)
+    // No causal mask needed — single query always attends to all cached KV.
+    ggml_tensor *attn_out = ggml_flash_attn_ext(
+        g, Q, K_full, V_full, nullptr, attn_scale, 0.0f, 0.0f);
+    ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
     attn_out = ggml_reshape_2d(g, attn_out, D, 1);
 
     attn_out = ggml_mul_mat(g, ly.o_w, attn_out);
@@ -2486,6 +2478,8 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
       size_t sz = (size_t)kv_dim * n_prompt_tokens;
       k_cache[il].resize(sz);
       v_cache[il].resize(sz);
+      k_cache[il].reserve((size_t)kv_dim * (n_prompt_tokens + max_new_tokens));
+      v_cache[il].reserve((size_t)kv_dim * (n_prompt_tokens + max_new_tokens));
       ggml_backend_tensor_get(kt, k_cache[il].data(), 0, sz * sizeof(float));
       ggml_backend_tensor_get(vt, v_cache[il].data(), 0, sz * sizeof(float));
     }
@@ -2693,18 +2687,22 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
 
       // Append new K/V to cache
       for (int il = 0; il < n_layers; il++) {
-        std::vector<float> k_new(kv_dim), v_new(kv_dim);
         std::snprintf(name, sizeof(name), "k_out_%d", il);
         ggml_tensor *ko = ggml_graph_get_tensor(gf, name);
-        if (ko)
-          ggml_backend_tensor_get(ko, k_new.data(), 0, kv_dim * sizeof(float));
+        size_t k_old = k_cache[il].size();
+        k_cache[il].resize(k_old + (size_t)kv_dim);
+        if (ko) {
+          ggml_backend_tensor_get(ko, k_cache[il].data() + k_old, 0,
+                                  kv_dim * sizeof(float));
+        }
         std::snprintf(name, sizeof(name), "v_out_%d", il);
         ggml_tensor *vo = ggml_graph_get_tensor(gf, name);
-        if (vo)
-          ggml_backend_tensor_get(vo, v_new.data(), 0, kv_dim * sizeof(float));
-
-        k_cache[il].insert(k_cache[il].end(), k_new.begin(), k_new.end());
-        v_cache[il].insert(v_cache[il].end(), v_new.begin(), v_new.end());
+        size_t v_old = v_cache[il].size();
+        v_cache[il].resize(v_old + (size_t)kv_dim);
+        if (vo) {
+          ggml_backend_tensor_get(vo, v_cache[il].data() + v_old, 0,
+                                  kv_dim * sizeof(float));
+        }
       }
       n_kv++;
       long long read_ms = qwen_ms_since(t_part);
