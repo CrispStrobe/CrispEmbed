@@ -22,6 +22,14 @@ void stbi_image_free(void* retval_from_stbi_load);
 #include <algorithm>
 #include <chrono>
 
+// Env var helpers for gating debug prints and feature paths
+static bool env_flag(const char *name) {
+    const char *v = std::getenv(name);
+    return v && (v[0] == '1' || v[0] == 'y' || v[0] == 'Y');
+}
+#define LOCR_DEBUG env_flag("CRISPEMBED_LIGHTONOCR_DEBUG")
+#define LOCR_NO_KV env_flag("CRISPEMBED_LIGHTONOCR_NO_KV")
+
 // Env var gating: CRISPEMBED_LIGHTONOCR_FLASH_ATTN=1 to use flash attention
 // Default: manual attention (confirmed working output)
 static bool use_flash_attn() {
@@ -252,19 +260,30 @@ static std::vector<float> preprocess_image(const uint8_t *rgb, int w, int h,
     int tw = pw * patch_size;
     int th = ph * patch_size;
 
-    // Bilinear resize + normalize (ImageNet mean/std)
+    // Bilinear resize to (tw, th) + normalize (ImageNet mean/std).
+    // The image must fill the entire target grid — Pixtral processor does
+    // img.resize((tw, th), BILINEAR) which stretches the input to fit.
     const float mean[3] = {0.48145466f, 0.4578275f, 0.40821073f};
     const float std_[3] = {0.26862954f, 0.26130258f, 0.27577711f};
 
     std::vector<float> pixels(3 * th * tw, 0.0f);
-    for (int y = 0; y < rh; y++) {
-        float sy = (float)y * h / rh;
+    for (int y = 0; y < th; y++) {
+        float sy = (float)y * (h - 1) / std::max(th - 1, 1);
         int y0 = std::min((int)sy, h - 1);
-        for (int x = 0; x < rw; x++) {
-            float sx = (float)x * w / rw;
+        int y1 = std::min(y0 + 1, h - 1);
+        float fy = sy - y0;
+        for (int x = 0; x < tw; x++) {
+            float sx = (float)x * (w - 1) / std::max(tw - 1, 1);
             int x0 = std::min((int)sx, w - 1);
+            int x1 = std::min(x0 + 1, w - 1);
+            float fx = sx - x0;
             for (int c = 0; c < 3; c++) {
-                float val = rgb[(y0 * w + x0) * 3 + c] / 255.0f;
+                // Bilinear interpolation
+                float v00 = rgb[(y0 * w + x0) * 3 + c] / 255.0f;
+                float v01 = rgb[(y0 * w + x1) * 3 + c] / 255.0f;
+                float v10 = rgb[(y1 * w + x0) * 3 + c] / 255.0f;
+                float v11 = rgb[(y1 * w + x1) * 3 + c] / 255.0f;
+                float val = (1-fy)*((1-fx)*v00 + fx*v01) + fy*((1-fx)*v10 + fx*v11);
                 pixels[c * th * tw + y * tw + x] = (val - mean[c]) / std_[c];
             }
         }
@@ -391,7 +410,7 @@ static bool run_vision_encoder(context &ctx,
     ggml_tensor *x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_patches);
     ggml_set_name(x, "vis_input"); ggml_set_input(x);
 
-    // (HD, 1, n_patches) — broadcasts over NH heads in ggml_mul
+    // cos/sin for 2D RoPE, broadcast over heads: (HD, 1, n_patches)
     ggml_tensor *cos_in = ggml_new_tensor_3d(g, GGML_TYPE_F32, HD, 1, n_patches);
     ggml_tensor *sin_in = ggml_new_tensor_3d(g, GGML_TYPE_F32, HD, 1, n_patches);
     ggml_set_name(cos_in, "cos_in"); ggml_set_input(cos_in);
@@ -403,7 +422,18 @@ static bool run_vision_encoder(context &ctx,
         x = ggml_mul(g, x, m.ln_pre_w);
     }
 
-    // RoPE helper (rotate-half)
+    bool debug = LOCR_DEBUG;
+    std::vector<ggml_tensor *> dbg_outputs;  // side outputs to expand into graph
+
+    // Debug: mark ln_pre output for readback
+    if (debug && m.ln_pre_w) {
+        ggml_tensor *ln_pre_dbg = ggml_cont(g, x);
+        ggml_set_name(ln_pre_dbg, "dbg_ln_pre");
+        ggml_set_output(ln_pre_dbg);
+        dbg_outputs.push_back(ln_pre_dbg);
+    }
+
+    // RoPE helper (rotate-half) — broadcasts cos/sin (HD, 1, T) over NH heads
     auto apply_rope = [&](ggml_tensor *t) -> ggml_tensor * {
         int half = HD / 2;
         ggml_tensor *h1 = ggml_view_3d(g, t, half, NH, n_patches,
@@ -413,9 +443,6 @@ static bool run_vision_encoder(context &ctx,
                                          (size_t)half * t->nb[0]);
         ggml_tensor *h2_neg = ggml_scale(g, ggml_cont(g, h2), -1.0f);
         ggml_tensor *rot = ggml_concat(g, h2_neg, ggml_cont(g, h1), 0);
-        // Broadcast cos/sin: (HD, n_patches) → needs reshaping to (HD, 1, n_patches)
-        // for broadcasting over NH heads. But we compute as (HD, NH, n_patches) by repeat.
-        // Simple approach: mul with (HD, n_patches) broadcasts along dim 1 in ggml.
         return ggml_add(g, ggml_mul(g, t, cos_in), ggml_mul(g, rot, sin_in));
     };
 
@@ -442,6 +469,21 @@ static bool run_vision_encoder(context &ctx,
         // Apply 2D RoPE
         Q = apply_rope(Q);
         K = apply_rope(K);
+
+        // Debug: mark Q/K after RoPE and V for readback (before permute)
+        if (debug && il == 0) {
+            char nm[32];
+            ggml_tensor *q_dbg = ggml_cont(g, ggml_reshape_2d(g, Q, D, n_patches));
+            snprintf(nm, sizeof(nm), "dbg_q_rope_%d", il);
+            ggml_set_name(q_dbg, nm); ggml_set_output(q_dbg);
+            dbg_outputs.push_back(q_dbg);
+
+            ggml_tensor *k_dbg = ggml_cont(g, ggml_reshape_2d(g, K, D, n_patches));
+            snprintf(nm, sizeof(nm), "dbg_k_rope_%d", il);
+            ggml_set_name(k_dbg, nm); ggml_set_output(k_dbg);
+            dbg_outputs.push_back(k_dbg);
+
+        }
 
         Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3)); // (HD, T, NH)
         K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
@@ -476,10 +518,18 @@ static bool run_vision_encoder(context &ctx,
         ffn = ggml_mul_mat(g, L.down_w, ffn);
 
         x = ggml_add(g, residual, ffn);
+
+        // Debug: skip remaining layers after first 1 for fast parity testing
+        if (debug && il == 0) {
+            fprintf(stderr, "lightonocr: DEBUG — stopping vision encoder at layer %d\n", il);
+            break;
+        }
     }
 
     ggml_set_name(x, "vis_out"); ggml_set_output(x);
     ggml_build_forward_expand(gf, x);
+    for (auto *dbg_t : dbg_outputs)
+        ggml_build_forward_expand(gf, dbg_t);
 
     // Allocate and compute
     ggml_backend_sched_reset(ctx.sched);
@@ -508,6 +558,24 @@ static bool run_vision_encoder(context &ctx,
     ggml_tensor *t_out = ggml_graph_get_tensor(gf, "vis_out");
     out.resize(D * n_patches);
     ggml_backend_tensor_get(t_out, out.data(), 0, out.size() * sizeof(float));
+
+    // Debug: read named debug tensors for parity comparison
+    if (LOCR_DEBUG) {
+        auto dump_dbg = [&](const char *name) {
+            ggml_tensor *t = ggml_graph_get_tensor(gf, name);
+            if (!t) return;
+            size_t nel = ggml_nelements(t);
+            std::vector<float> d(nel);
+            ggml_backend_tensor_get(t, d.data(), 0, nel * sizeof(float));
+            int n = std::min((int)nel, 10);
+            fprintf(stderr, "lightonocr: %s[0,:%d] =", name, n);
+            for (int i = 0; i < n; i++) fprintf(stderr, " %.6f", d[i]);
+            fprintf(stderr, "\n");
+        };
+        dump_dbg("dbg_ln_pre");
+        dump_dbg("dbg_q_rope_0");
+        dump_dbg("dbg_k_rope_0");
+    }
 
     ggml_free(g);
     return true;
@@ -886,8 +954,9 @@ static bool run_decoder_prefill(context &ctx,
     ggml_tensor *t_logits = ggml_graph_get_tensor(gf, "last_logits");
     ggml_backend_tensor_get(t_logits, logits_data.data(), 0, V * sizeof(float));
     // Extract KV cache from prefill graph (read BEFORE freeing g)
+    // Disable KV cache with CRISPEMBED_LIGHTONOCR_NO_KV=1 for A/B testing
     std::vector<std::vector<float>> k_cache(n_layers), v_cache(n_layers);
-    bool kv_ok = true;
+    bool kv_ok = !LOCR_NO_KV;
     for (int il = 0; il < n_layers; il++) {
         char kname[32], vname[32];
         snprintf(kname, sizeof(kname), "k_out_%d", il);
@@ -1170,10 +1239,17 @@ std::string recognize_raw(context &ctx,
     // Debug: print first patch values for parity check
     fprintf(stderr, "lightonocr: patch[0,:5] = [%.8f, %.8f, %.8f, %.8f, %.8f]\n",
             patch_embeds[0], patch_embeds[1], patch_embeds[2], patch_embeds[3], patch_embeds[4]);
+    // (patch[7] debug removed — was used for image resize parity debugging)
 
     // Step 2: 2D RoPE
     std::vector<float> rope_cos, rope_sin;
     compute_2d_rope(ph, pw, ctx.m.vis_head_dim, ctx.m.vis_rope_theta, rope_cos, rope_sin);
+    if (LOCR_DEBUG) {
+        fprintf(stderr, "lightonocr: rope_cos[0,:5] = [%.6f, %.6f, %.6f, %.6f, %.6f]\n",
+                rope_cos[0], rope_cos[1], rope_cos[2], rope_cos[3], rope_cos[4]);
+        fprintf(stderr, "lightonocr: rope_sin[0,:5] = [%.6f, %.6f, %.6f, %.6f, %.6f]\n",
+                rope_sin[0], rope_sin[1], rope_sin[2], rope_sin[3], rope_sin[4]);
+    }
 
     // Step 3: vision encoder
     std::vector<float> vis_out;
@@ -1181,6 +1257,10 @@ std::string recognize_raw(context &ctx,
         return "";
     }
     fprintf(stderr, "lightonocr: vision encoder done\n");
+    if (LOCR_DEBUG) {
+        fprintf(stderr, "lightonocr: vis_out[0,:5] = [%.6f, %.6f, %.6f, %.6f, %.6f]\n",
+                vis_out[0], vis_out[1], vis_out[2], vis_out[3], vis_out[4]);
+    }
 
     // Step 4: projection (spatial merge + MLP)
     std::vector<float> proj_out;
