@@ -172,6 +172,10 @@ struct context {
 
     // Optional diff harness path (set before encode to enable comparison)
     std::string diff_ref_path;
+
+    // Temporary: deepstack embeds for passing through generate → run_llm_forward
+    const float *const *deepstack_embeds_tmp = nullptr;
+    int n_deepstack_tmp = 0;
 };
 
 // ── API ──────────────────────────────────────────────────────────────
@@ -223,6 +227,9 @@ struct image_input {
     int n_image_tokens = 0;
     const int32_t *grid_thw = nullptr;    // (3,) per image
     int n_images = 0;
+    // Qwen3-VL deepstack: per-layer features for injection into LLM layers 0..N-1
+    const float *const *deepstack_embeds = nullptr;  // array of (n_image_tokens, D) pointers
+    int n_deepstack = 0;
 };
 
 bool run_llm_forward(context &ctx,
