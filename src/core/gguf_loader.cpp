@@ -236,6 +236,16 @@ struct MappedFile {
             base = nullptr;
             return;
         }
+        // Cold load is dominated by per-tensor page faults (2000+ small reads
+        // with no read-ahead). Hint sequential access and kick off an async
+        // read-ahead of the whole file so the copy loop streams instead of
+        // stalling page-by-page. Advisory — ignore failures.
+#if defined(MADV_SEQUENTIAL)
+        ::madvise(base, size, MADV_SEQUENTIAL);
+#endif
+#if defined(MADV_WILLNEED)
+        ::madvise(base, size, MADV_WILLNEED);
+#endif
         ok = true;
 #endif
     }
