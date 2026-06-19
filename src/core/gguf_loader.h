@@ -94,6 +94,11 @@ struct WeightLoad {
     ggml_context* ctx = nullptr;
     ggml_backend_buffer_t buf = nullptr;
     std::map<std::string, ggml_tensor*> tensors;
+    // Set only on the no-copy mmap path: the file stays mapped for the buffer's
+    // lifetime (the buffer points directly at these pages). free_weights() unmaps.
+    void* mmap_addr = nullptr;
+    size_t mmap_len = 0;
+    bool used_mmap = false;  // true if the no-copy path was actually taken
 };
 
 // Load all tensor metadata + weights into a new ggml_context backed by
@@ -102,7 +107,15 @@ struct WeightLoad {
 // them into the model struct).
 //
 // model_tag is used only in error messages ("parakeet: ...").
-bool load_weights(const char* path, ggml_backend_t backend, const char* model_tag, WeightLoad& out);
+//
+// try_mmap (opt-in, default off): when the backend device supports
+// buffer_from_host_ptr (e.g. Metal/CPU unified memory), point the backend
+// buffer directly at the mmap'd file instead of allocating a buffer and
+// copying 2.x GB into it — halving resident memory and skipping the copy.
+// Falls back to the copy path automatically if unsupported. Behaviour is
+// otherwise identical (validated by tests/test_gguf_loader_mmap).
+bool load_weights(const char* path, ggml_backend_t backend, const char* model_tag,
+                  WeightLoad& out, bool try_mmap = false);
 
 // Free a WeightLoad's resources. Call when the model is being destroyed
 // and the buffer/context are not held elsewhere.
