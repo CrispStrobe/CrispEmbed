@@ -295,6 +295,28 @@ bool load_tensors(context &ctx, const char *path) {
     m.merger.fc2_w  = get2("v.merger.fc2.weight", "mm.2.weight");
     m.merger.fc2_b  = get2("v.merger.fc2.bias",   "mm.2.bias");
 
+    // Qwen3-VL: deepstack mergers
+    if (!m.vhp.deepstack_indexes.empty()) {
+        int n_ds = (int)m.vhp.deepstack_indexes.size();
+        m.deepstack_mergers.resize(n_ds);
+        for (int ds = 0; ds < n_ds; ds++) {
+            auto &dm = m.deepstack_mergers[ds];
+            std::string dp = "v.deepstack." + std::to_string(ds) + ".";
+            dm.norm_w = get(dp + "norm.weight");
+            dm.norm_b = get(dp + "norm.bias");
+            dm.fc1_w  = get(dp + "fc1.weight");
+            dm.fc1_b  = get(dp + "fc1.bias");
+            dm.fc2_w  = get(dp + "fc2.weight");
+            dm.fc2_b  = get(dp + "fc2.bias");
+        }
+        if (ctx.verbosity >= 1) {
+            fprintf(stderr, "  deepstack: %d mergers at layers [", n_ds);
+            for (int i = 0; i < n_ds; i++)
+                fprintf(stderr, "%s%d", i ? "," : "", m.vhp.deepstack_indexes[i]);
+            fprintf(stderr, "]\n");
+        }
+    }
+
     // LLM decoder (CrispEmbed "l.blk.*" or llama.cpp "blk.*")
     m.embed_tokens = get2("l.embed_tokens.weight", "token_embd.weight");
 
@@ -622,6 +644,14 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
         std::snprintf(name, sizeof(name), "vis_layer_%u", il);
         ggml_set_name(x, name);
         if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
+
+        // Qwen3-VL: mark deepstack layers as outputs for extraction
+        for (int dsi = 0; dsi < (int)vhp.deepstack_indexes.size(); dsi++) {
+            if ((int)il == vhp.deepstack_indexes[dsi]) {
+                ggml_set_output(x);
+                break;
+            }
+        }
     }
 
     // ── Post-layernorm (PaddleOCR-VL: applied after last encoder layer) ──
@@ -1129,11 +1159,124 @@ bool encode_vision(context &ctx,
     const int n_merged = merged_h * merged_w;
     const int merger_in_dim = H * merge * merge;
 
-    // Read normed features: ne=(H, n_patches) in column-major
-    // Flat layout: [dim0_patch0, dim1_patch0, ..., dimH_patch0, dim0_patch1, ...]
+    // Read normed features for main merger NOW (before deepstack resets scheduler)
     std::vector<float> normed_data((size_t)n_patches * H);
     ggml_backend_tensor_get(pre_merger, normed_data.data(), 0,
                             normed_data.size() * sizeof(float));
+
+    // ── Qwen3-VL: deepstack merger processing ──
+    // Extract ALL intermediate layer outputs FIRST (before any sched_reset),
+    // then run through per-layer mergers.
+    // DeepStack mergers use post-shuffle norm: spatial_merge → LayerNorm → FC1 → GELU → FC2
+    std::vector<std::vector<float>> ds_merged_data;  // spatially-merged data per deepstack
+    if (!ctx.m.deepstack_mergers.empty()) {
+        int n_ds = (int)ctx.m.deepstack_mergers.size();
+        ds_merged_data.resize(n_ds);
+
+        // Phase 1: extract all deepstack layer outputs while vision graph buffers are valid
+        for (int dsi = 0; dsi < n_ds; dsi++) {
+            int layer_idx = ctx.m.vhp.deepstack_indexes[dsi];
+            char lname[64];
+            std::snprintf(lname, sizeof(lname), "vis_layer_%d", layer_idx);
+            ggml_tensor *lt = ggml_graph_get_tensor(gr.gf, lname);
+            if (!lt) {
+                fprintf(stderr, "qwen2vl_ocr: deepstack layer %d not in graph\n", layer_idx);
+                continue;
+            }
+
+            std::vector<float> layer_data((size_t)n_patches * H);
+            ggml_backend_tensor_get(lt, layer_data.data(), 0,
+                                    layer_data.size() * sizeof(float));
+
+            // Spatial merge: consecutive merge² patches → merger_in_dim vector
+            ds_merged_data[dsi].resize((size_t)n_merged * merger_in_dim);
+            for (int midx = 0; midx < n_merged; midx++) {
+                float *dst = ds_merged_data[dsi].data() + (size_t)midx * merger_in_dim;
+                const float *src = layer_data.data() + (size_t)midx * merge * merge * H;
+                std::memcpy(dst, src, (size_t)merger_in_dim * sizeof(float));
+            }
+        }
+
+        // Phase 2: run each deepstack merger graph (these reset the scheduler)
+        const int out_dim = (int)ctx.m.vhp.out_hidden_size;
+        out.deepstack_embeds.resize(n_ds);
+
+        for (int dsi = 0; dsi < n_ds; dsi++) {
+            if (ds_merged_data[dsi].empty()) {
+                out.deepstack_embeds[dsi] = nullptr;
+                continue;
+            }
+
+            const auto &dm = ctx.m.deepstack_mergers[dsi];
+
+            ggml_init_params ip_ds{
+                ctx.compute_meta.size(),
+                ctx.compute_meta.data(),
+                true,
+            };
+            ggml_context *g_ds = ggml_init(ip_ds);
+            ggml_cgraph *gf_ds = ggml_new_graph(g_ds);
+
+            ggml_tensor *ds_in = ggml_new_tensor_2d(g_ds, GGML_TYPE_F32,
+                                                      merger_in_dim, n_merged);
+            ggml_set_name(ds_in, "ds_in");
+            ggml_set_input(ds_in);
+
+            // Post-shuffle LayerNorm (on merger_in_dim = 4096)
+            ggml_tensor *ds = ds_in;
+            if (dm.norm_w) {
+                ds = ggml_norm(g_ds, ds, 1e-6f);
+                ds = ggml_mul(g_ds, ds, dm.norm_w);
+                if (dm.norm_b) ds = ggml_add(g_ds, ds, dm.norm_b);
+            }
+
+            // FC1 → GELU → FC2
+            ds = ggml_mul_mat(g_ds, dm.fc1_w, ds);
+            if (dm.fc1_b) ds = ggml_add(g_ds, ds, dm.fc1_b);
+            ds = ggml_gelu_erf(g_ds, ds);
+            ds = ggml_mul_mat(g_ds, dm.fc2_w, ds);
+            if (dm.fc2_b) ds = ggml_add(g_ds, ds, dm.fc2_b);
+
+            ggml_set_name(ds, "ds_out");
+            ggml_set_output(ds);
+            ggml_build_forward_expand(gf_ds, ds);
+
+            ggml_backend_sched_reset(ctx.sched);
+            if (!ggml_backend_sched_alloc_graph(ctx.sched, gf_ds)) {
+                fprintf(stderr, "qwen2vl_ocr: deepstack %d graph alloc failed\n", dsi);
+                ggml_free(g_ds);
+                out.deepstack_embeds[dsi] = nullptr;
+                continue;
+            }
+
+            ggml_tensor *ds_in_t = ggml_graph_get_tensor(gf_ds, "ds_in");
+            ggml_backend_tensor_set(ds_in_t, ds_merged_data[dsi].data(), 0,
+                                    ds_merged_data[dsi].size() * sizeof(float));
+
+            if (ggml_backend_sched_graph_compute(ctx.sched, gf_ds) != GGML_STATUS_SUCCESS) {
+                fprintf(stderr, "qwen2vl_ocr: deepstack %d graph compute failed\n", dsi);
+                ggml_free(g_ds);
+                out.deepstack_embeds[dsi] = nullptr;
+                continue;
+            }
+
+            ggml_tensor *ds_out_t = ggml_graph_get_tensor(gf_ds, "ds_out");
+            out.deepstack_embeds[dsi] = (float *)malloc((size_t)n_merged * out_dim * sizeof(float));
+            ggml_backend_tensor_get(ds_out_t, out.deepstack_embeds[dsi], 0,
+                                    (size_t)n_merged * out_dim * sizeof(float));
+
+            if (ctx.verbosity >= 1) {
+                int layer_idx = ctx.m.vhp.deepstack_indexes[dsi];
+                fprintf(stderr, "  deepstack %d (layer %d): %d merged, first5=[%.4f, %.4f, %.4f, %.4f, %.4f]\n",
+                        dsi, layer_idx, n_merged,
+                        out.deepstack_embeds[dsi][0], out.deepstack_embeds[dsi][1],
+                        out.deepstack_embeds[dsi][2], out.deepstack_embeds[dsi][3],
+                        out.deepstack_embeds[dsi][4]);
+            }
+
+            ggml_free(g_ds);
+        }
+    }
 
     // CPU spatial merge: group 2×2 patches, concatenate features
     // normed_data layout: patch_idx * H + dim_idx (column-major ggml)
@@ -1242,6 +1385,10 @@ void vision_result_free(vision_result &r) {
         free(r.image_embeds);
         r.image_embeds = nullptr;
     }
+    for (auto *p : r.deepstack_embeds) {
+        if (p) free(p);
+    }
+    r.deepstack_embeds.clear();
 }
 
 // ── LLM decoder forward pass (text-only, no KV cache) ───────────────
