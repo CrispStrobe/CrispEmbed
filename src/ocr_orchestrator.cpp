@@ -590,7 +590,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             int len = 0;
             const char* prompt = st.params.vlm_prompt.empty() ? nullptr : st.params.vlm_prompt.c_str();
             const char* t = granite_vision_recognize(ctx->gv, px, w, h, 3, prompt, &len);
-            auto out = wrap_fulltext(t, w, h);
+            int nconf = 0;
+            const float* conf = granite_vision_confidences(ctx->gv, &nconf);
+            auto out = wrap_fulltext(t, w, h, conf, nconf, granite_vision_mean_confidence(ctx->gv));
             stbi_image_free(px);
             return out;
         }
