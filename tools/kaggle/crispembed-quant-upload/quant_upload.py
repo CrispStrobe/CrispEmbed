@@ -124,11 +124,10 @@ q4_gb = OUT_Q4.stat().st_size / (1024**3)
 print(f"[7] Q4_K: {q4_gb:.2f} GiB", flush=True)
 kh.step("q4k_done", size_gb=round(q4_gb, 2))
 
-# Delete F16 to free space before upload
-OUT_F16.unlink(missing_ok=True)
-kh.step("f16_deleted_for_space")
-
 # --- Step 7: Upload to HF ---
+# The HF repo's existing f16 has a broken tokenizer (nested-array merges,
+# predates the converter fix). Upload the freshly-converted f16 FIRST to
+# replace it, then delete it locally to free space before the quant uploads.
 HF_REPO = "cstr/deepseek-ocr2-crispembed-GGUF"
 if hf_token:
     from huggingface_hub import HfApi
@@ -137,6 +136,22 @@ if hf_token:
         api.create_repo(HF_REPO, repo_type="model", exist_ok=True)
     except Exception as e:
         print(f"[8] repo: {e}", flush=True)
+
+    # Upload F16 first (it's still on disk and is the conversion source).
+    if OUT_F16.exists():
+        sz = OUT_F16.stat().st_size / (1024**3)
+        print(f"[8] uploading deepseek-ocr2-f16.gguf ({sz:.1f} GiB)", flush=True)
+        with kh.build_heartbeat("upload.f16"):
+            api.upload_file(
+                path_or_fileobj=str(OUT_F16),
+                path_in_repo="deepseek-ocr2-f16.gguf",
+                repo_id=HF_REPO, repo_type="model",
+                commit_message="F16 (reconverted, fixed tokenizer)",
+            )
+        print("[8] uploaded deepseek-ocr2-f16.gguf", flush=True)
+        # Free space before the quant uploads (quants already on disk).
+        OUT_F16.unlink(missing_ok=True)
+        kh.step("f16_uploaded_and_deleted")
 
     for path, name, msg in [
         (OUT_Q8, "deepseek-ocr2-q8_0.gguf", "Q8_0 (reconverted, fixed tokenizer)"),
