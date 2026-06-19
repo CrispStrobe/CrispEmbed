@@ -1,5 +1,58 @@
 # CrispEmbed — Technical Learnings
 
+## Per-engine confidence: softmax without modifying logits (2026-06)
+
+When adding per-token confidence to all 15 OCR engines, the key insight:
+compute `exp(logits[best] - max_logit) / sum_exp` in a separate block
+WITHOUT overwriting the logits array. Many engines have debug prints
+referencing raw logit values after the argmax. Overwriting logits for
+softmax breaks those prints. The one-pass approach
+`conf = 1.0 / sum_exp` (since `exp(best - max) = exp(0) = 1` when best
+IS the max) is both faster and non-destructive.
+
+## llama.cpp GGUF ≠ CrispEmbed GGUF (2026-06)
+
+llama.cpp splits VLMs into LLM + mmproj GGUFs with different tensor
+names (`blk.N.attn_q` vs our `llm.layers.N.attn.q`, `v.blk.N` vs
+`vis.blocks.N`). When a model is only available as llama.cpp GGUFs
+(e.g. german-ocr-3.1), use `merge-llamacpp-qwen2vl-gguf.py` to:
+1. Read both GGUFs (no gguf pip dependency — standalone reader)
+2. Map tensor names via regex
+3. Merge metadata from both sources
+4. Write single combined GGUF with our naming convention
+
+## Qwen2-VL engine handles 4+ architectures (2026-06)
+
+The `qwen2vl_ocr` engine reads all hyperparams from GGUF metadata with
+prefix probing for `qwen2vl.*`, `qwen3vl.*`, and `dots_ocr.*`. This
+means it handles:
+- Qwen2-VL (original)
+- Qwen2.5-VL (updated)
+- Qwen3-VL / FireRed-OCR (new attention patterns)
+- dots.ocr (42-layer deep vision, same LLM structure)
+- Nanonets-OCR2 (pruned Qwen2-VL, 16L vs 28L)
+
+Key: never hardcode layer counts or dimensions — always read from GGUF.
+
+## Reference GGUF consistency trap (2026-06)
+
+MixTex showed cos=-1.0 on decoder parity, causing 3 hours of debugging.
+Root cause: the reference dumper captured encoder stages from a
+preprocessed synthetic image, but decoder stages from `model.generate()`
+which used ViTImageProcessor preprocessing — different encoder outputs
+feeding the same decoder reference. Fix: always run encoder+decoder
+from the SAME input in the reference dumper, or use the reference's
+own `enc_layernorm` output to drive the Python decoder comparison.
+
+## ggml_add doesn't support mixed types (2026-06)
+
+`ggml_add(f32, f16)` crashes with `binary_op: unsupported types`.
+`ggml_cast` in the graph SHOULD convert F16→F32, but some code paths
+read model weights directly via `ggml_backend_tensor_get` assuming F32
+layout — this reads wrong data sizes from F16 tensors (`tensor read out
+of bounds`). Fix: use `tensor_to_f32()` helper that reads raw bytes via
+`ggml_nbytes()` then dequantizes via `ggml_get_type_traits()->to_float`.
+
 ## DeepSeek-OCR-2: from a never-run port to character-perfect OCR (2026-06)
 
 > **Status: WORKING.** Character-perfect OCR on Metal + q4_k. The history below
