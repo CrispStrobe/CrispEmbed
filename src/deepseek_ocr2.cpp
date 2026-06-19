@@ -8,7 +8,6 @@
 #include "crispembed_diff.h"
 #include "core/gguf_loader.h"
 #include "core/bpe.h"
-#include "core/cpu_ops.h"
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
@@ -96,6 +95,9 @@ struct llm_layer_w {
     moe_expert_w shared_experts[2];
     // Single shared expert (combined)
     ggml_tensor *shared_gate_w{}, *shared_up_w{}, *shared_down_w{};
+    // Experts stacked as [in, out, n_exp] for ggml_mul_mat_id (Metal MoE path).
+    // Built at load by stack_moe_experts() when the graph MoE path is active.
+    ggml_tensor *gate_exps{}, *up_exps{}, *down_exps{};
 };
 
 struct model_weights {
@@ -131,11 +133,17 @@ struct model_weights {
 
 struct ds_ocr2_ctx {
     model_weights m;
-    ggml_context *model_ctx{};
-    ggml_backend_buffer_t model_buf{};
+    ggml_context *model_ctx{};            // alias into model_wl (do not free separately)
+    ggml_backend_buffer_t model_buf{};    // alias into model_wl
+    core_gguf::WeightLoad model_wl;       // owns ctx/buf (+ the mmap on the no-copy path)
     ggml_backend_t backend{}, backend_cpu{};
     ggml_backend_sched_t sched{};
     std::vector<uint8_t> compute_meta;
+
+    // Stacked MoE expert weights ([in,out,n_exp]) for the ggml_mul_mat_id path.
+    ggml_context *moe_ctx{};
+    ggml_backend_buffer_t moe_buf{};
+    bool moe_metal = false;  // true once experts are stacked + the graph path is on
 
     // Tokenizer
     std::vector<std::string> id_to_piece;
@@ -158,15 +166,118 @@ struct ds_ocr2_ctx {
 };
 
 // ---------------------------------------------------------------------------
-// CPU helpers — shared via core/cpu_ops.h
+// CPU helpers (shared with got_ocr.cpp pattern)
 // ---------------------------------------------------------------------------
-using core_cpu::to_f32;
-using core_cpu::layernorm_cpu;
-using core_cpu::layernorm2d_cpu;
-using core_cpu::rmsnorm_cpu;
-using core_cpu::linear_cpu;
-using core_cpu::conv2d_cpu;
-using core_cpu::silu_inplace;
+
+static std::vector<float> to_f32(const ggml_tensor* t) {
+    if (!t) return {};
+    int n = (int)ggml_nelements(t);
+    std::vector<float> out(n);
+    if (t->type == GGML_TYPE_F32) {
+        memcpy(out.data(), t->data, n * sizeof(float));
+    } else if (t->type == GGML_TYPE_F16) {
+        const ggml_fp16_t* src = (const ggml_fp16_t*)t->data;
+        for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(src[i]);
+    } else {
+        const auto* traits = ggml_get_type_traits(t->type);
+        if (traits && traits->to_float)
+            traits->to_float(t->data, out.data(), n);
+        else
+            memset(out.data(), 0, n * sizeof(float));
+    }
+    return out;
+}
+
+static void layernorm_cpu(const float* in, float* out, int D,
+                          const float* w, const float* b, float eps = 1e-6f) {
+    double mean = 0;
+    for (int i = 0; i < D; i++) mean += in[i];
+    mean /= D;
+    double var = 0;
+    for (int i = 0; i < D; i++) { double d = in[i] - mean; var += d * d; }
+    var /= D;
+    float s = 1.0f / sqrtf((float)var + eps);
+    for (int i = 0; i < D; i++)
+        out[i] = ((in[i] - (float)mean) * s) * (w ? w[i] : 1.0f) + (b ? b[i] : 0.0f);
+}
+
+static void layernorm2d_cpu(const float* in, float* out, int C, int H, int W,
+                            const float* w, const float* b, float eps = 1e-6f) {
+    for (int y = 0; y < H; y++)
+        for (int x = 0; x < W; x++) {
+            double mean = 0;
+            for (int c = 0; c < C; c++) mean += in[c * H * W + y * W + x];
+            mean /= C;
+            double var = 0;
+            for (int c = 0; c < C; c++) {
+                double d = in[c * H * W + y * W + x] - mean; var += d * d;
+            }
+            var /= C;
+            float s = 1.0f / sqrtf((float)var + eps);
+            for (int c = 0; c < C; c++) {
+                float v = (in[c * H * W + y * W + x] - (float)mean) * s;
+                out[c * H * W + y * W + x] = v * (w ? w[c] : 1.0f) + (b ? b[c] : 0.0f);
+            }
+        }
+}
+
+static void rmsnorm_cpu(const float* in, float* out, int D,
+                        const float* w, float eps = 1e-6f) {
+    double ss = 0;
+    for (int i = 0; i < D; i++) ss += (double)in[i] * in[i];
+    float s = 1.0f / sqrtf((float)(ss / D) + eps);
+    for (int i = 0; i < D; i++) out[i] = in[i] * s * (w ? w[i] : 1.0f);
+}
+
+static void linear_cpu(const float* in, float* out, int in_dim, int out_dim,
+                       const float* w, const float* b) {
+    for (int o = 0; o < out_dim; o++) {
+        float s = b ? b[o] : 0.0f;
+        for (int i = 0; i < in_dim; i++) s += in[i] * w[o * in_dim + i];
+        out[o] = s;
+    }
+}
+
+static void conv2d_cpu(const float* in, float* out, const float* weight,
+                       const float* bias, int in_ch, int out_ch, int H, int W,
+                       int kh, int kw, int stride, int pad, int n_threads = 1) {
+    int oH = (H + 2 * pad - kh) / stride + 1;
+    int oW = (W + 2 * pad - kw) / stride + 1;
+    // Each output channel writes its own plane → parallelize over oc. This is
+    // the SAM neck/downsample hot path (~10 s scalar); threading it is exact.
+    auto plane = [&](int oc0, int oc1) {
+        for (int oc = oc0; oc < oc1; oc++) {
+            float b = bias ? bias[oc] : 0.0f;
+            for (int oy = 0; oy < oH; oy++)
+                for (int ox = 0; ox < oW; ox++) {
+                    float sum = b;
+                    for (int ic = 0; ic < in_ch; ic++)
+                        for (int ky2 = 0; ky2 < kh; ky2++)
+                            for (int kx2 = 0; kx2 < kw; kx2++) {
+                                int iy = oy * stride - pad + ky2;
+                                int ix = ox * stride - pad + kx2;
+                                if (iy >= 0 && iy < H && ix >= 0 && ix < W)
+                                    sum += in[ic * H * W + iy * W + ix]
+                                         * weight[oc * (in_ch * kh * kw) + ic * kh * kw + ky2 * kw + kx2];
+                            }
+                    out[oc * oH * oW + oy * oW + ox] = sum;
+                }
+        }
+    };
+    int nt = std::max(1, std::min(n_threads, out_ch));
+    if (nt <= 1) { plane(0, out_ch); return; }
+    std::vector<std::thread> pool;
+    int chunk = (out_ch + nt - 1) / nt;
+    for (int t = 0; t < nt; t++) {
+        int o0 = t * chunk, o1 = std::min(out_ch, o0 + chunk);
+        if (o0 < o1) pool.emplace_back(plane, o0, o1);
+    }
+    for (auto& th : pool) th.join();
+}
+
+static void silu_cpu(float* x, int n) {
+    for (int i = 0; i < n; i++) x[i] = x[i] / (1.0f + expf(-x[i]));
+}
 
 static void swiglu_ffn_cpu(const float* in, float* out, int D, int inter,
                            const float* gate_w, const float* up_w,
@@ -174,7 +285,7 @@ static void swiglu_ffn_cpu(const float* in, float* out, int D, int inter,
     std::vector<float> gate(inter), up(inter);
     linear_cpu(in, gate.data(), D, inter, gate_w, nullptr);
     linear_cpu(in, up.data(), D, inter, up_w, nullptr);
-    silu_inplace(gate.data(), inter);
+    silu_cpu(gate.data(), inter);
     for (int i = 0; i < inter; i++) gate[i] *= up[i];
     linear_cpu(gate.data(), out, inter, D, down_w, nullptr);
 }
@@ -360,12 +471,19 @@ static bool load_hparams(ds_ocr2_ctx &ctx, const char *path) {
 }
 
 static bool load_tensors(ds_ocr2_ctx &ctx, const char *path) {
-    core_gguf::WeightLoad wl;
-    if (!core_gguf::load_weights(path, ctx.backend, "deepseek_ocr2", wl)) return false;
+    // DS_MMAP=1 opts into the no-copy mmap load (Metal/CPU unified memory):
+    // point the weight buffer at the mmap'd file instead of copying ~2 GB into
+    // a fresh buffer — halves resident memory. On Metal the pages still get
+    // wired on first use, so it's a memory win more than a first-load-time win;
+    // default stays the proven copy path. Falls back automatically if
+    // unsupported. Validated equal by tests/test_gguf_loader_mmap.
+    bool try_mmap = getenv("DS_MMAP") != nullptr;
+    if (!core_gguf::load_weights(path, ctx.backend, "deepseek_ocr2", ctx.model_wl, try_mmap))
+        return false;
 
-    ctx.model_ctx = wl.ctx;
-    ctx.model_buf = wl.buf;
-    auto &t = wl.tensors;
+    ctx.model_ctx = ctx.model_wl.ctx;
+    ctx.model_buf = ctx.model_wl.buf;
+    auto &t = ctx.model_wl.tensors;
     auto F = [&](const char *n) -> ggml_tensor* {
         auto it = t.find(n); return it != t.end() ? it->second : nullptr;
     };
@@ -585,11 +703,90 @@ static ggml_cgraph* build_sam_layer_graph(ggml_context* g, ds_ocr2_ctx* ctx,
 // SAM vision encoder
 // ---------------------------------------------------------------------------
 
+// Metal graph for the SAM neck + downsample (conv 768->256 1x1, LN2d, conv
+// 256->256 3x3, LN2d, conv 256->512 3x3 s2, conv 512->896 3x3 s2). Replaces the
+// CPU conv2d_cpu chain. Conv kernels are fed as F32 inputs (the GGUF stores them
+// Q8_0 — can't reshape a quantized tensor to [1,1,IC,OC]). Default path;
+// DS_SAM_CONV_CPU=1 restores the CPU chain. Validated equal via DS_REF sam_output.
+// Metal graph for the SAM patch embedding (conv 3->C, PS×PS, stride PS) + the
+// absolute position embedding. Replaces the scalar/threaded per-patch matmul.
+// Produces hidden as [C, N] (== hidden[tok*C+c]). Kernel/pos fed as F32.
+static ggml_cgraph* build_sam_patch_graph(ggml_context* g, int imgS, int PS, int C, int nP) {
+    ggml_cgraph* gf = ggml_new_graph(g);
+    ggml_tensor* px = ggml_new_tensor_4d(g, GGML_TYPE_F32, imgS, imgS, 3, 1);
+    ggml_set_name(px, "px"); ggml_set_input(px);
+    ggml_tensor* w = ggml_new_tensor_4d(g, GGML_TYPE_F32, PS, PS, 3, C);
+    ggml_set_name(w, "w_patch"); ggml_set_input(w);
+    ggml_tensor* bias = ggml_new_tensor_1d(g, GGML_TYPE_F32, C);
+    ggml_set_name(bias, "pe_b"); ggml_set_input(bias);
+    ggml_tensor* pos = ggml_new_tensor_2d(g, GGML_TYPE_F32, C, nP * nP);
+    ggml_set_name(pos, "pos"); ggml_set_input(pos);
+
+    ggml_tensor* x = ggml_conv_2d(g, w, px, PS, PS, 0, 0, 1, 1);   // [nP,nP,C]
+    x = ggml_cont(g, ggml_permute(g, x, 1, 2, 0, 3));             // [C,nP,nP]
+    x = ggml_reshape_2d(g, x, C, nP * nP);                        // [C, N]
+    x = ggml_add(g, x, bias);                                     // + per-channel bias
+    x = ggml_add(g, x, pos);
+    ggml_set_name(x, "patch_out"); ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+    return gf;
+}
+
+static ggml_cgraph* build_sam_neck_graph(ggml_context* g, int nP, int C, int nC,
+                                         int ds1_ch, int ds2_ch) {
+    ggml_cgraph* gf = ggml_new_graph(g);
+    ggml_tensor* chw = ggml_new_tensor_4d(g, GGML_TYPE_F32, nP, nP, C, 1);
+    ggml_set_name(chw, "chw"); ggml_set_input(chw);
+    auto in4 = [&](const char* nm, int kw, int kh, int ic, int oc) {
+        ggml_tensor* t = ggml_new_tensor_4d(g, GGML_TYPE_F32, kw, kh, ic, oc);
+        ggml_set_name(t, nm); ggml_set_input(t); return t;
+    };
+    auto in1 = [&](const char* nm, int n) {
+        ggml_tensor* t = ggml_new_tensor_1d(g, GGML_TYPE_F32, n);
+        ggml_set_name(t, nm); ggml_set_input(t); return t;
+    };
+    ggml_tensor* w_nc1 = in4("w_nc1", 1, 1, C, nC);
+    ggml_tensor* w_nc2 = in4("w_nc2", 3, 3, nC, nC);
+    ggml_tensor* w_n2  = in4("w_n2", 3, 3, nC, ds1_ch);
+    ggml_tensor* w_n3  = in4("w_n3", 3, 3, ds1_ch, ds2_ch);
+    ggml_tensor *ln1w = in1("ln1w", nC), *ln1b = in1("ln1b", nC);
+    ggml_tensor *ln2w = in1("ln2w", nC), *ln2b = in1("ln2b", nC);
+
+    // LayerNorm over the channel axis (ne[2]) at each spatial position.
+    auto ln2d = [&](ggml_tensor* x, ggml_tensor* w, ggml_tensor* b) {
+        ggml_tensor* xp = ggml_cont(g, ggml_permute(g, x, 1, 2, 0, 3));  // [C,W,H]
+        xp = ggml_norm(g, xp, 1e-6f);
+        xp = ggml_add(g, ggml_mul(g, xp, w), b);
+        return ggml_cont(g, ggml_permute(g, xp, 2, 0, 1, 3));            // [W,H,C]
+    };
+
+    ggml_tensor* x = ggml_conv_2d(g, w_nc1, chw, 1, 1, 0, 0, 1, 1);  // [nP,nP,nC]
+    x = ln2d(x, ln1w, ln1b);
+    x = ggml_conv_2d(g, w_nc2, x, 1, 1, 1, 1, 1, 1);                 // [nP,nP,nC]
+    x = ln2d(x, ln2w, ln2b);
+    x = ggml_conv_2d(g, w_n2, x, 2, 2, 1, 1, 1, 1);                  // [ds1,ds1,ds1_ch]
+    x = ggml_conv_2d(g, w_n3, x, 2, 2, 1, 1, 1, 1);                  // [ds2,ds2,ds2_ch]
+    int ds2 = (nP + 2 - 3) / 2 + 1; ds2 = (ds2 + 2 - 3) / 2 + 1;
+    x = ggml_cont(g, ggml_permute(g, x, 1, 2, 0, 3));               // [C, W, H]
+    x = ggml_reshape_2d(g, x, ds2_ch, ds2 * ds2);                   // [C, n_vis] = out_features
+    ggml_set_name(x, "neck_out"); ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+    return gf;
+}
+
 static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
                        std::vector<float> &out_features, int &out_n_tokens, int &out_dim) {
     auto &s = ctx.m.shp;
     int C = s.hidden, PS = s.patch_size, nP = s.image_size / PS;
     int N = nP * nP, hd = s.head_dim, ws = s.window_size;
+    auto _sam_t = std::chrono::steady_clock::now();
+    auto sam_mark = [&](const char *w) {
+        if (!getenv("DS_DBG")) return;
+        auto now = std::chrono::steady_clock::now();
+        fprintf(stderr, "  [time] sam.%s %lldms\n", w,
+                (long long)std::chrono::duration_cast<std::chrono::milliseconds>(now - _sam_t).count());
+        _sam_t = now;
+    };
 
     // Patch embedding
     auto pe_w = to_f32(ctx.m.patch_embed_w);
@@ -598,23 +795,58 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
     int patch_dim = 3 * PS * PS;
     std::vector<float> hidden(N * C);
 
-    for (int py = 0; py < nP; py++)
-        for (int px = 0; px < nP; px++) {
-            int tok = py * nP + px;
+    if (!getenv("DS_SAM_CONV_CPU")) {
+        // Patch embed on Metal (conv 3->C, PS×PS stride PS) + position embed.
+        size_t meta_sz = 8 * 1024 * 1024;
+        std::vector<uint8_t> mb(meta_sz);
+        ggml_init_params ip = { meta_sz, mb.data(), true };
+        ggml_context* gc = ggml_init(ip);
+        ggml_cgraph* gf = build_sam_patch_graph(gc, s.image_size, PS, C, nP);
+        ggml_backend_sched_reset(ctx.sched);
+        ggml_backend_sched_alloc_graph(ctx.sched, gf);
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "px"), pixels, 0,
+                                (size_t)3 * s.image_size * s.image_size * sizeof(float));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "w_patch"), pe_w.data(), 0, pe_w.size() * sizeof(float));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pe_b"), pe_b.data(), 0, pe_b.size() * sizeof(float));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos"), pos.data(), 0, pos.size() * sizeof(float));
+        ggml_backend_sched_graph_compute(ctx.sched, gf);
+        ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "patch_out"), hidden.data(), 0,
+                                (size_t)N * C * sizeof(float));
+        ggml_free(gc);
+    } else {
+        // Threaded CPU per-patch matmul (exact fallback).
+        auto patch_rows = [&](int py0, int py1) {
             std::vector<float> patch(patch_dim);
-            for (int c = 0; c < 3; c++)
-                for (int ky = 0; ky < PS; ky++)
-                    for (int kx = 0; kx < PS; kx++)
-                        patch[c * PS * PS + ky * PS + kx] =
-                            pixels[c * s.image_size * s.image_size
-                                   + (py * PS + ky) * s.image_size + (px * PS + kx)];
-            for (int o = 0; o < C; o++) {
-                float sv = pe_b.empty() ? 0.0f : pe_b[o];
-                for (int i = 0; i < patch_dim; i++) sv += pe_w[o * patch_dim + i] * patch[i];
-                hidden[tok * C + o] = sv + (pos.empty() ? 0.0f : pos[tok * C + o]);
+            for (int py = py0; py < py1; py++)
+                for (int px = 0; px < nP; px++) {
+                    int tok = py * nP + px;
+                    for (int c = 0; c < 3; c++)
+                        for (int ky = 0; ky < PS; ky++)
+                            for (int kx = 0; kx < PS; kx++)
+                                patch[c * PS * PS + ky * PS + kx] =
+                                    pixels[c * s.image_size * s.image_size
+                                           + (py * PS + ky) * s.image_size + (px * PS + kx)];
+                    for (int o = 0; o < C; o++) {
+                        float sv = pe_b.empty() ? 0.0f : pe_b[o];
+                        for (int i = 0; i < patch_dim; i++) sv += pe_w[o * patch_dim + i] * patch[i];
+                        hidden[tok * C + o] = sv + (pos.empty() ? 0.0f : pos[tok * C + o]);
+                    }
+                }
+        };
+        int nt = std::max(1, std::min(ctx.n_threads, nP));
+        if (nt <= 1) patch_rows(0, nP);
+        else {
+            std::vector<std::thread> pool;
+            int chunk = (nP + nt - 1) / nt;
+            for (int t = 0; t < nt; t++) {
+                int y0 = t * chunk, y1 = std::min(nP, y0 + chunk);
+                if (y0 < y1) pool.emplace_back(patch_rows, y0, y1);
             }
+            for (auto& th : pool) th.join();
         }
+    }
 
+    sam_mark("patch_embed");
     // Pre-dequant LN weights for windowed layers
     std::vector<std::vector<float>> ln1_ws(s.depth), ln1_bs(s.depth);
     for (int li = 0; li < s.depth; li++)
@@ -625,6 +857,7 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
 
     // Per-layer ggml graph
     for (int li = 0; li < s.depth; li++) {
+        auto _slt = std::chrono::steady_clock::now();
         auto &blk = ctx.m.sam_blocks[li];
         bool is_global = blk.is_global;
         int aH = is_global ? nP : ws, aW = aH, wN = aH * aW;
@@ -693,18 +926,26 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
         if (ctx.verbosity >= 2)
             fprintf(stderr, "deepseek_ocr2: sam_layer_%d done (%s, T=%d)\n",
                     li, is_global ? "global" : "window", T);
+        if (getenv("DS_DBG"))
+            fprintf(stderr, "  [time] sam_li=%d (%s T=%d) %lldms\n", li,
+                    is_global ? "global" : "window", T,
+                    (long long)std::chrono::duration_cast<std::chrono::milliseconds>(
+                        std::chrono::steady_clock::now() - _slt).count());
     }
 
-    // Diff: SAM output
+    // Diff: pre-neck ViT output (4096x768). The reference dump does not capture
+    // this intermediate; named distinctly so it never collides with the final
+    // SAM output below.
     if (!ctx.diff_ref_path.empty()) {
         crispembed_diff::Ref ref;
-        if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("sam_output")) {
-            auto r = ref.compare("sam_output", hidden.data(), N * C);
-            fprintf(stderr, "  sam_output: cos_min=%.6f max_abs=%.6f %s\n",
+        if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("sam_vit_output")) {
+            auto r = ref.compare("sam_vit_output", hidden.data(), N * C);
+            fprintf(stderr, "  sam_vit_output: cos_min=%.6f max_abs=%.6f %s\n",
                     r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
         }
     }
 
+    sam_mark("layers");
     // Neck: Conv(768->256,1x1) -> LN2d -> Conv(256->256,3x3,p1) -> LN2d
     int nC = s.neck_out;
     std::vector<float> chw(C * nP * nP);
@@ -713,48 +954,81 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
         for (int c = 0; c < C; c++) chw[c * nP * nP + y * nP + x] = hidden[tok * C + c];
     }
 
-    auto nc1_w = to_f32(ctx.m.neck_conv1_w);
-    std::vector<float> neck1(nC * nP * nP);
-    conv2d_cpu(chw.data(), neck1.data(), nc1_w.data(), nullptr, C, nC, nP, nP, 1, 1, 1, 0);
-
-    auto nln1_w = to_f32(ctx.m.neck_ln1_w), nln1_b = to_f32(ctx.m.neck_ln1_b);
-    std::vector<float> neck1_ln(nC * nP * nP);
-    layernorm2d_cpu(neck1.data(), neck1_ln.data(), nC, nP, nP, nln1_w.data(), nln1_b.data(), 1e-6f);
-
-    auto nc2_w = to_f32(ctx.m.neck_conv2_w);
-    std::vector<float> neck2(nC * nP * nP);
-    conv2d_cpu(neck1_ln.data(), neck2.data(), nc2_w.data(), nullptr, nC, nC, nP, nP, 3, 3, 1, 1);
-
-    auto nln2_w = to_f32(ctx.m.neck_ln2_w), nln2_b = to_f32(ctx.m.neck_ln2_b);
-    std::vector<float> neck2_ln(nC * nP * nP);
-    layernorm2d_cpu(neck2.data(), neck2_ln.data(), nC, nP, nP, nln2_w.data(), nln2_b.data(), 1e-6f);
-
-    // Downsample: Conv(256->ds1,3x3,s2,p1) -> Conv(ds1->ds2,3x3,s2,p1). The
-    // output channels come from the actual weights (ne[1]): net_2 = 256->512,
-    // net_3 = 512->896 here (896 = the Qwen2 encoder dim), NOT the config's
-    // nominal downsample_channels [512,1024]. Hardcoding 1024 overruns net_3.
+    // net_2 = 256->512, net_3 = 512->896 (= Qwen2 dim); derive channels from the
+    // weights (ne[1]), not the config's nominal [512,1024] (which overruns).
     int ds1_ch = (int)ctx.m.net_2_w->ne[1];
-    int ds1_H = (nP + 2 - 3) / 2 + 1, ds1_W = ds1_H;
-    auto n2_w = to_f32(ctx.m.net_2_w);
-    std::vector<float> ds1(ds1_ch * ds1_H * ds1_W);
-    conv2d_cpu(neck2_ln.data(), ds1.data(), n2_w.data(), nullptr, nC, ds1_ch, nP, nP, 3, 3, 2, 1);
-
-    int ds2_ch = (int)ctx.m.net_3_w->ne[1], ds2_H = (ds1_H + 2 - 3) / 2 + 1, ds2_W = ds2_H;
-    auto n3_w = to_f32(ctx.m.net_3_w);
-    std::vector<float> ds2(ds2_ch * ds2_H * ds2_W);
-    conv2d_cpu(ds1.data(), ds2.data(), n3_w.data(), nullptr, ds1_ch, ds2_ch, ds1_H, ds1_W, 3, 3, 2, 1);
-
-    // Flatten to [n_tokens, dim]
+    int ds2_ch = (int)ctx.m.net_3_w->ne[1];
+    int ds1_H = (nP + 2 - 3) / 2 + 1;
+    int ds2_H = (ds1_H + 2 - 3) / 2 + 1, ds2_W = ds2_H;
     int n_vis = ds2_H * ds2_W, vis_D = ds2_ch;
-    out_features.resize(n_vis * vis_D);
-    for (int tok = 0; tok < n_vis; tok++) {
-        int y = tok / ds2_W, x = tok % ds2_W;
-        for (int c = 0; c < vis_D; c++)
-            out_features[tok * vis_D + c] = ds2[c * ds2_H * ds2_W + y * ds2_W + x];
+    out_features.resize((size_t)n_vis * vis_D);
+
+    if (!getenv("DS_SAM_CONV_CPU")) {
+        // Neck + downsample on Metal (ggml_conv_2d), ~20-40x vs the CPU convs and
+        // no thread-scheduling variance. Conv kernels fed as F32 (GGUF stores them
+        // Q8_0; can't reshape a quantized tensor to [1,1,IC,OC]). DS_SAM_CONV_CPU=1
+        // restores the threaded CPU chain. Validated equal via DS_REF sam_output.
+        auto nc1 = to_f32(ctx.m.neck_conv1_w), nc2 = to_f32(ctx.m.neck_conv2_w);
+        auto n2 = to_f32(ctx.m.net_2_w), n3 = to_f32(ctx.m.net_3_w);
+        auto l1w = to_f32(ctx.m.neck_ln1_w), l1b = to_f32(ctx.m.neck_ln1_b);
+        auto l2w = to_f32(ctx.m.neck_ln2_w), l2b = to_f32(ctx.m.neck_ln2_b);
+        size_t meta_sz = 16 * 1024 * 1024;
+        std::vector<uint8_t> mb(meta_sz);
+        ggml_init_params ip = { meta_sz, mb.data(), true };
+        ggml_context* gc = ggml_init(ip);
+        ggml_cgraph* gf = build_sam_neck_graph(gc, nP, C, nC, ds1_ch, ds2_ch);
+        ggml_backend_sched_reset(ctx.sched);
+        ggml_backend_sched_alloc_graph(ctx.sched, gf);
+        auto setn = [&](const char* nm, const std::vector<float>& v) {
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, nm), v.data(), 0, v.size() * sizeof(float));
+        };
+        setn("chw", chw); setn("w_nc1", nc1); setn("w_nc2", nc2); setn("w_n2", n2); setn("w_n3", n3);
+        setn("ln1w", l1w); setn("ln1b", l1b); setn("ln2w", l2w); setn("ln2b", l2b);
+        ggml_backend_sched_graph_compute(ctx.sched, gf);
+        ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "neck_out"), out_features.data(), 0,
+                                (size_t)n_vis * vis_D * sizeof(float));
+        ggml_free(gc);
+    } else {
+        auto nc1_w = to_f32(ctx.m.neck_conv1_w);
+        std::vector<float> neck1(nC * nP * nP);
+        conv2d_cpu(chw.data(), neck1.data(), nc1_w.data(), nullptr, C, nC, nP, nP, 1, 1, 1, 0, ctx.n_threads);
+        auto nln1_w = to_f32(ctx.m.neck_ln1_w), nln1_b = to_f32(ctx.m.neck_ln1_b);
+        std::vector<float> neck1_ln(nC * nP * nP);
+        layernorm2d_cpu(neck1.data(), neck1_ln.data(), nC, nP, nP, nln1_w.data(), nln1_b.data());
+        auto nc2_w = to_f32(ctx.m.neck_conv2_w);
+        std::vector<float> neck2(nC * nP * nP);
+        conv2d_cpu(neck1_ln.data(), neck2.data(), nc2_w.data(), nullptr, nC, nC, nP, nP, 3, 3, 1, 1, ctx.n_threads);
+        auto nln2_w = to_f32(ctx.m.neck_ln2_w), nln2_b = to_f32(ctx.m.neck_ln2_b);
+        std::vector<float> neck2_ln(nC * nP * nP);
+        layernorm2d_cpu(neck2.data(), neck2_ln.data(), nC, nP, nP, nln2_w.data(), nln2_b.data());
+        auto n2_w = to_f32(ctx.m.net_2_w);
+        std::vector<float> ds1((size_t)ds1_ch * ds1_H * ds1_H);
+        conv2d_cpu(neck2_ln.data(), ds1.data(), n2_w.data(), nullptr, nC, ds1_ch, nP, nP, 3, 3, 2, 1, ctx.n_threads);
+        auto n3_w = to_f32(ctx.m.net_3_w);
+        std::vector<float> ds2((size_t)ds2_ch * ds2_H * ds2_W);
+        conv2d_cpu(ds1.data(), ds2.data(), n3_w.data(), nullptr, ds1_ch, ds2_ch, ds1_H, ds1_H, 3, 3, 2, 1, ctx.n_threads);
+        for (int tok = 0; tok < n_vis; tok++) {
+            int y = tok / ds2_W, x = tok % ds2_W;
+            for (int c = 0; c < vis_D; c++)
+                out_features[tok * vis_D + c] = ds2[c * ds2_H * ds2_W + y * ds2_W + x];
+        }
     }
 
+    sam_mark("neck_downsample");
     out_n_tokens = n_vis;
     out_dim = vis_D;
+
+    // Diff: final SAM output (post neck + downsample), [256, 896] — this is the
+    // tensor the reference dump's "sam_output" corresponds to (sam_model output).
+    if (!ctx.diff_ref_path.empty()) {
+        crispembed_diff::Ref ref;
+        if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("sam_output")) {
+            auto r = ref.compare("sam_output", out_features.data(),
+                                 (size_t)out_n_tokens * out_dim);
+            fprintf(stderr, "  sam_output: cos_min=%.6f max_abs=%.6f %s\n",
+                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+        }
+    }
     return true;
 }
 
@@ -772,6 +1046,84 @@ static void apply_rope_neox(float *v, int hd, int pos, float theta) {
         v[j]        = x1 * c - x2 * s;
         v[j + half] = x2 * c + x1 * s;
     }
+}
+
+// Graph-based qwen2 encoder layer (runs on ctx.sched / Metal). One layer over
+// all T = n_vis + n_query tokens at once — bidirectional, no KV cache. Mirrors
+// build_llm_layer_attn (NEOX RoPE, GQA interleave, soft_max_ext+mask) but adds
+// q/k/v biases and an always-on SwiGLU FFN. The graph is built + executed +
+// freed within one scope by the caller (SAM pattern), so the meta buffer never
+// outlives the context. Gated by DS_QWEN2_SCALAR=1 (falls back to the CPU path).
+static ggml_cgraph* build_qwen2_enc_layer_graph(ggml_context* g, ds_ocr2_ctx* ctx, int li, int T) {
+    auto &qhp = ctx->m.qhp;
+    auto &ly  = ctx->m.qwen2_layers[li];
+    int D = qhp.hidden, nh = qhp.heads, nkv = qhp.kv_heads;
+    int hd = D / nh, kv_repeat = nh / nkv;
+    float eps = qhp.rms_eps;
+
+    ggml_cgraph* gf = ggml_new_graph_custom(g, 2048, false);
+    auto rmsnorm = [&](ggml_tensor* t, ggml_tensor* w) {
+        return ggml_mul(g, ggml_rms_norm(g, t, eps), ensure_f32(g, w));
+    };
+
+    ggml_tensor* x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+    ggml_set_name(x, "layer_input"); ggml_set_input(x);
+    ggml_tensor* pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+    ggml_set_name(pos_ids, "pos_ids"); ggml_set_input(pos_ids);
+    ggml_tensor* mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, T, T);  // [keys, queries]
+    ggml_set_name(mask, "mask"); ggml_set_input(mask);
+
+    // Pre-norm + Q/K/V (+ bias)
+    ggml_tensor* h = rmsnorm(x, ly.in_ln_w);
+    ggml_tensor* Q = ggml_mul_mat(g, ly.q_w, h);
+    ggml_tensor* K = ggml_mul_mat(g, ly.k_w, h);
+    ggml_tensor* V = ggml_mul_mat(g, ly.v_w, h);
+    if (ly.q_b) Q = ggml_add(g, Q, ensure_f32(g, ly.q_b));
+    if (ly.k_b) K = ggml_add(g, K, ensure_f32(g, ly.k_b));
+    if (ly.v_b) V = ggml_add(g, V, ensure_f32(g, ly.v_b));
+
+    Q = ggml_reshape_3d(g, Q, hd, nh, T);
+    K = ggml_reshape_3d(g, K, hd, nkv, T);
+    V = ggml_reshape_3d(g, V, hd, nkv, T);
+    Q = ggml_rope_ext(g, Q, pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0,
+                      qhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+    K = ggml_rope_ext(g, K, pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0,
+                      qhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+
+    ggml_tensor* Kfull = ggml_cont(g, K);
+    ggml_tensor* Vfull = ggml_cont(g, V);
+    if (kv_repeat > 1) {  // GQA interleave (not tile)
+        Kfull = ggml_reshape_4d(g, Kfull, hd, 1, nkv, T);
+        Kfull = ggml_repeat(g, Kfull, ggml_new_tensor_4d(g, Kfull->type, hd, kv_repeat, nkv, T));
+        Kfull = ggml_reshape_3d(g, Kfull, hd, nh, T);
+        Vfull = ggml_reshape_4d(g, Vfull, hd, 1, nkv, T);
+        Vfull = ggml_repeat(g, Vfull, ggml_new_tensor_4d(g, Vfull->type, hd, kv_repeat, nkv, T));
+        Vfull = ggml_reshape_3d(g, Vfull, hd, nh, T);
+    }
+
+    Q     = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));      // [hd, T, nh]
+    Kfull = ggml_cont(g, ggml_permute(g, Kfull, 0, 2, 1, 3));
+    Vfull = ggml_cont(g, ggml_permute(g, Vfull, 0, 2, 1, 3));
+
+    ggml_tensor* scores = ggml_mul_mat(g, Kfull, Q);          // [T(keys), T(queries), nh]
+    scores = ggml_soft_max_ext(g, scores, mask, 1.0f / sqrtf((float)hd), 0.0f);
+    ggml_tensor* Vt = ggml_cont(g, ggml_permute(g, Vfull, 1, 0, 2, 3));
+    ggml_tensor* attn = ggml_mul_mat(g, Vt, scores);
+    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+    attn = ggml_reshape_2d(g, attn, D, T);
+    attn = ggml_mul_mat(g, ly.o_w, attn);
+    x = ggml_add(g, x, attn);
+
+    // SwiGLU FFN + residual
+    ggml_tensor* res = x;
+    h = rmsnorm(x, ly.post_ln_w);
+    ggml_tensor* gate = ggml_silu(g, ggml_mul_mat(g, ly.gate_w, h));
+    ggml_tensor* up   = ggml_mul_mat(g, ly.up_w, h);
+    x = ggml_add(g, res, ggml_mul_mat(g, ly.down_w, ggml_mul(g, gate, up)));
+
+    ggml_set_name(x, "layer_output"); ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+    return gf;
 }
 
 static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis, int vis_dim,
@@ -811,7 +1163,53 @@ static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis,
         memcpy(hidden.data() + (size_t)n_vis * D, query_data.data(),
                (size_t)n_query * D * sizeof(float));
 
-    // Run bidirectional transformer layers
+    // Run the 24 bidirectional transformer layers. Default: ggml graph on
+    // ctx.sched (Metal). DS_QWEN2_SCALAR=1 forces the CPU-scalar reference path.
+    if (!getenv("DS_QWEN2_SCALAR")) {
+        std::vector<int32_t> pos(T);
+        for (int t = 0; t < T; t++) pos[t] = t;
+        // Bidirectional-vis + causal-query mask, shared across layers. Layout
+        // matches soft_max_ext: [keys, queries], mask[qi*T + ki].
+        std::vector<ggml_fp16_t> emask((size_t)T * T);
+        const ggml_fp16_t z = ggml_fp32_to_fp16(0.0f), ninf = ggml_fp32_to_fp16(-INFINITY);
+        for (int qi = 0; qi < T; qi++) {
+            bool qv = qi < n_vis;
+            for (int ki = 0; ki < T; ki++) {
+                bool ok = qv ? (ki < n_vis) : (ki < n_vis || ki <= qi);
+                emask[(size_t)qi * T + ki] = ok ? z : ninf;
+            }
+        }
+        for (int li = 0; li < qhp.depth; li++) {
+            size_t meta_sz = 16 * 1024 * 1024;
+            std::vector<uint8_t> mb(meta_sz);
+            ggml_init_params ip = { meta_sz, mb.data(), true };
+            ggml_context* gc = ggml_init(ip);
+            ggml_cgraph* gf = build_qwen2_enc_layer_graph(gc, &ctx, li, T);
+            ggml_backend_sched_reset(ctx.sched);
+            ggml_backend_sched_alloc_graph(ctx.sched, gf);
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "layer_input"),
+                                    hidden.data(), 0, (size_t)T * D * sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
+                                    pos.data(), 0, (size_t)T * sizeof(int32_t));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "mask"),
+                                    emask.data(), 0, (size_t)T * T * sizeof(ggml_fp16_t));
+            ggml_backend_sched_graph_compute(ctx.sched, gf);
+            ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "layer_output"),
+                                    hidden.data(), 0, (size_t)T * D * sizeof(float));
+            ggml_free(gc);
+
+            if (!ctx.diff_ref_path.empty()) {
+                char nm[32]; snprintf(nm, sizeof(nm), "qwen2_layer_%d", li);
+                crispembed_diff::Ref ref;
+                if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(nm)) {
+                    auto r = ref.compare(nm, hidden.data(), (size_t)T * D);
+                    fprintf(stderr, "  %s: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                            nm, r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                }
+            }
+        }
+    } else
+    // Run bidirectional transformer layers (CPU-scalar reference path)
     for (int li = 0; li < qhp.depth; li++) {
         auto &ly = ctx.m.qwen2_layers[li];
         auto in_ln = to_f32(ly.in_ln_w), post_ln = to_f32(ly.post_ln_w);
@@ -888,6 +1286,18 @@ static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis,
             linear_cpu(attn_out.data() + t * D, proj.data() + t * D, D, D, ow.data(), nullptr);
         for (int i = 0; i < T * D; i++) hidden[i] += proj[i];
 
+        // Diff: post-attention hidden (residual + attn, pre-FFN). Splits each
+        // layer into attention-half vs FFN-half to localize the divergence.
+        if (!ctx.diff_ref_path.empty()) {
+            char nm[40]; snprintf(nm, sizeof(nm), "qwen2_layer_%d_postattn", li);
+            crispembed_diff::Ref ref;
+            if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(nm)) {
+                auto r = ref.compare(nm, hidden.data(), (size_t)T * D);
+                fprintf(stderr, "  %s: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                        nm, r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
+        }
+
         // Post-attn norm + SwiGLU FFN + residual
         for (int t = 0; t < T; t++) {
             rmsnorm_cpu(hidden.data() + t * D, normed.data() + t * D, D, post_ln.data(), eps);
@@ -899,15 +1309,17 @@ static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis,
 
         if (ctx.verbosity >= 2)
             fprintf(stderr, "deepseek_ocr2: qwen2_enc_layer_%d done\n", li);
-    }
 
-    // Diff: Qwen2 encoder output
-    if (!ctx.diff_ref_path.empty()) {
-        crispembed_diff::Ref ref;
-        if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("qwen2_enc_output")) {
-            auto r = ref.compare("qwen2_enc_output", hidden.data(), T * D);
-            fprintf(stderr, "  qwen2_enc_output: cos_min=%.6f max_abs=%.6f %s\n",
-                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+        // Diff: per-layer qwen2 hidden state (full [vis+query] seq, pre-final-norm)
+        // for bisecting the encoder divergence.
+        if (!ctx.diff_ref_path.empty()) {
+            char nm[32]; snprintf(nm, sizeof(nm), "qwen2_layer_%d", li);
+            crispembed_diff::Ref ref;
+            if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(nm)) {
+                auto r = ref.compare(nm, hidden.data(), (size_t)T * D);
+                fprintf(stderr, "  %s: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                        nm, r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
         }
     }
 
@@ -927,6 +1339,18 @@ static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis,
     out_enc.resize((size_t)out_n_tokens * D);
     memcpy(out_enc.data(), hidden.data() + (size_t)n_vis * D,
            (size_t)out_n_tokens * D * sizeof(float));
+
+    // Diff: Qwen2 encoder output (post final-norm, query half) — this is the
+    // tensor the reference dump's "qwen2_enc_output" corresponds to.
+    if (!ctx.diff_ref_path.empty()) {
+        crispembed_diff::Ref ref;
+        if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("qwen2_enc_output")) {
+            auto r = ref.compare("qwen2_enc_output", out_enc.data(),
+                                 (size_t)out_n_tokens * D);
+            fprintf(stderr, "  qwen2_enc_output: cos_min=%.6f max_abs=%.6f %s\n",
+                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+        }
+    }
     return true;
 }
 
@@ -963,15 +1387,73 @@ static bool project_to_llm(ds_ocr2_ctx &ctx, const float *enc_out, int n_tokens,
 // LLM decoder — ggml graph for attention + CPU-scalar MoE FFN
 // ---------------------------------------------------------------------------
 
+// Stack the 64 per-expert weights of each MoE layer into [in, out, n_exp]
+// tensors so the decode graph can dispatch them with ggml_mul_mat_id on Metal
+// (instead of the per-token CPU-scalar moe_ffn_cpu). Keeps the quantized blocks
+// as-is — each expert is the same shape/type, so its bytes are a contiguous
+// slice. Allocates a dedicated backend buffer (the per-expert tensors stay in
+// model_buf for the DS_MOE_CPU fallback). Returns false on any failure → caller
+// falls back to the CPU MoE.
+static bool stack_moe_experts(ds_ocr2_ctx &ctx) {
+    int n_exp = ctx.m.lhp.n_experts;
+    int n_moe = 0;
+    for (auto &ly : ctx.m.llm_layers)
+        if ((int)ly.experts.size() == n_exp && ly.experts[0].gate_w) n_moe++;
+    if (n_moe == 0) return false;
+
+    ggml_init_params ip = { (size_t)n_moe * 3 * ggml_tensor_overhead() + 4096, nullptr, true };
+    ctx.moe_ctx = ggml_init(ip);
+    if (!ctx.moe_ctx) return false;
+
+    for (auto &ly : ctx.m.llm_layers) {
+        if ((int)ly.experts.size() != n_exp || !ly.experts[0].gate_w) continue;
+        auto &e0 = ly.experts[0];
+        ly.gate_exps = ggml_new_tensor_3d(ctx.moe_ctx, e0.gate_w->type, e0.gate_w->ne[0], e0.gate_w->ne[1], n_exp);
+        ly.up_exps   = ggml_new_tensor_3d(ctx.moe_ctx, e0.up_w->type,   e0.up_w->ne[0],   e0.up_w->ne[1],   n_exp);
+        ly.down_exps = ggml_new_tensor_3d(ctx.moe_ctx, e0.down_w->type, e0.down_w->ne[0], e0.down_w->ne[1], n_exp);
+    }
+
+    ctx.moe_buf = ggml_backend_alloc_ctx_tensors(ctx.moe_ctx, ctx.backend);
+    if (!ctx.moe_buf) { ggml_free(ctx.moe_ctx); ctx.moe_ctx = nullptr; return false; }
+
+    std::vector<uint8_t> tmp;
+    auto fill = [&](ggml_tensor *stacked, const std::vector<moe_expert_w> &exps,
+                    ggml_tensor *moe_expert_w::*member) {
+        for (int e = 0; e < n_exp; e++) {
+            ggml_tensor *src = exps[e].*member;
+            size_t nb = ggml_nbytes(src);
+            if (nb != stacked->nb[2]) return false;  // slice size must match
+            tmp.resize(nb);
+            ggml_backend_tensor_get(src, tmp.data(), 0, nb);
+            ggml_backend_tensor_set(stacked, tmp.data(), (size_t)e * stacked->nb[2], nb);
+        }
+        return true;
+    };
+    for (auto &ly : ctx.m.llm_layers) {
+        if (!ly.gate_exps) continue;
+        if (!fill(ly.gate_exps, ly.experts, &moe_expert_w::gate_w) ||
+            !fill(ly.up_exps,   ly.experts, &moe_expert_w::up_w) ||
+            !fill(ly.down_exps, ly.experts, &moe_expert_w::down_w))
+            return false;
+    }
+    return true;
+}
+
 struct llm_attn_graph {
     ggml_cgraph *gf{};
     ggml_context *gctx{};
+    // The no-alloc ggml context places its tensor/graph metadata in `meta`, so
+    // the buffer must outlive the returned graph. Holding it here (moved out with
+    // the struct) fixes a use-after-free: a local meta buffer was freed on return,
+    // leaving gf/gctx dangling — a latent crash that surfaced once the fast
+    // (graph) qwen2 encoder let the decoder prefill actually run.
+    std::vector<uint8_t> meta;
 };
 
 // Build attention-only graph for one LLM layer (no FFN — MoE done on CPU)
 // For layer 0 (dense), includes the FFN in the graph.
 static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx &ctx, int li, int T, int n_past,
-                                            bool include_ffn) {
+                                            bool include_ffn, bool include_moe = false) {
     auto &lhp = ctx.m.lhp;
     auto &ly = ctx.m.llm_layers[li];
     int D = lhp.hidden, nh = lhp.heads, nkv = lhp.kv_heads;
@@ -980,9 +1462,9 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx &ctx, int li, int T, int 
     float eps = lhp.rms_eps;
 
     size_t meta_sz = 4 * 1024 * 1024;
-    std::vector<uint8_t> meta(meta_sz);
-    ggml_init_params ip = { meta_sz, meta.data(), true };
     llm_attn_graph lag;
+    lag.meta.resize(meta_sz);  // owned by lag; survives the return (move preserves data ptr)
+    ggml_init_params ip = { meta_sz, lag.meta.data(), true };
     lag.gctx = ggml_init(ip);
     auto *g = lag.gctx;
     lag.gf = ggml_new_graph_custom(g, 4096, false);
@@ -1107,6 +1589,38 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx &ctx, int li, int T, int 
         ggml_tensor *up = ggml_mul_mat(g, ly.ffn_up_w, h);
         ggml_tensor *ffn = ggml_mul_mat(g, ly.ffn_down_w, ggml_mul(g, gate, up));
         x = ggml_add(g, residual, ffn);
+    } else if (include_moe) {
+        // DeepSeek-V2 MoE FFN on Metal via ggml_mul_mat_id. Router → softmax →
+        // top-k (raw probs; norm_topk_prob=False, routed_scaling_factor=1.0) →
+        // per-expert SwiGLU dispatch → weighted sum + a (combined) shared expert.
+        int n_exp = lhp.n_experts, K = lhp.n_experts_top;
+        ggml_tensor *residual = x;
+        ggml_tensor *hn = rmsnorm(x, ly.post_ln_w);  // [D, T]
+
+        ggml_tensor *logits = ggml_mul_mat(g, ly.router_w, hn);    // [n_exp, T]
+        ggml_tensor *probs  = ggml_soft_max(g, logits);
+        ggml_tensor *ids    = ggml_top_k(g, probs, K);             // [K, T] I32
+        ggml_tensor *p3     = ggml_reshape_3d(g, probs, 1, n_exp, T);
+        ggml_tensor *top_w  = ggml_reshape_2d(g, ggml_get_rows(g, p3, ids), K, T);  // [K, T]
+        top_w = ggml_scale(g, top_w, lhp.routed_scaling_factor);
+
+        ggml_tensor *hn3 = ggml_reshape_3d(g, hn, D, 1, T);
+        ggml_tensor *hnK = ggml_repeat(g, hn3, ggml_new_tensor_3d(g, hn->type, D, K, T));
+        ggml_tensor *gate = ggml_silu(g, ggml_mul_mat_id(g, ly.gate_exps, hnK, ids));  // [inter,K,T]
+        ggml_tensor *up   = ggml_mul_mat_id(g, ly.up_exps, hnK, ids);
+        ggml_tensor *down = ggml_mul_mat_id(g, ly.down_exps, ggml_mul(g, gate, up), ids);  // [D,K,T]
+
+        // Weighted sum over the K experts: down [D,K,T] → [K,D,T], w [K,1,T] → [1,D,T].
+        ggml_tensor *down_p = ggml_cont(g, ggml_permute(g, down, 1, 0, 2, 3));
+        ggml_tensor *w_col  = ggml_reshape_3d(g, top_w, K, 1, T);
+        ggml_tensor *routed = ggml_reshape_2d(g, ggml_mul_mat(g, w_col, down_p), D, T);
+
+        // Combined shared expert (always active), SwiGLU on the same normed input.
+        ggml_tensor *sg = ggml_silu(g, ggml_mul_mat(g, ly.shared_gate_w, hn));
+        ggml_tensor *su = ggml_mul_mat(g, ly.shared_up_w, hn);
+        ggml_tensor *shared = ggml_mul_mat(g, ly.shared_down_w, ggml_mul(g, sg, su));
+
+        x = ggml_add(g, residual, ggml_add(g, routed, shared));
     }
 
     ggml_set_name(x, "layer_output"); ggml_set_output(x);
@@ -1237,18 +1751,32 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
     }
     ctx.kvc.n_past = 0;
 
-    // Build initial embedding: splice image embeds at image_token positions
-    // For simplicity, assume prompt = [special_tokens...] with image placeholders
-    auto embed_w = to_f32(ctx.m.embed_tokens);
-
+    // Per-row embedding: dequant only the requested row on demand instead of
+    // the whole 128k×1280 table (~655 MB held for the entire decode). The decode
+    // touches ~one row per generated token, so the table f32 copy was pure waste.
+    ggml_tensor* emb_t = ctx.m.embed_tokens;
+    const auto* emb_tt = ggml_get_type_traits(emb_t->type);
+    const size_t emb_row_bytes = ggml_row_size(emb_t->type, D);
+    std::vector<uint8_t> emb_row;
     auto get_embedding = [&](int32_t tok_id, float *out_emb) {
-        for (int d = 0; d < D; d++)
-            out_emb[d] = embed_w[tok_id * D + d];
+        const size_t off = (size_t)tok_id * emb_row_bytes;
+        if (emb_t->type == GGML_TYPE_F32) {
+            ggml_backend_tensor_get(emb_t, out_emb, off, (size_t)D * sizeof(float));
+        } else {
+            emb_row.resize(emb_row_bytes);
+            ggml_backend_tensor_get(emb_t, emb_row.data(), off, emb_row_bytes);
+            emb_tt->to_float(emb_row.data(), out_emb, D);
+        }
     };
 
     // Dequant weights needed for LM head
     auto norm_w = to_f32(ctx.m.output_norm_w);
-    auto head_w = to_f32(ctx.m.lm_head_w ? ctx.m.lm_head_w : ctx.m.embed_tokens);
+    // LM head: default runs as a Metal quantized mul_mat (DS_LMHEAD_CPU=1 forces
+    // the scalar path). Only dequant the 662 MB head weight for the CPU path.
+    ggml_tensor *lm_w = ctx.m.lm_head_w ? ctx.m.lm_head_w : ctx.m.embed_tokens;
+    bool lmhead_cpu = getenv("DS_LMHEAD_CPU") != nullptr;
+    std::vector<float> head_w;
+    if (lmhead_cpu) head_w = to_f32(lm_w);
 
     // Diagnostic: DS_NO_KV disables the KV cache and re-runs the entire growing
     // sequence each step (n_past always 0). Slow but a ground-truth reference to
@@ -1285,9 +1813,11 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
 
         for (int li = 0; li < n_layers; li++) {
             bool is_dense = (li == 0);
+            // MoE in-graph (Metal) when experts were stacked; else CPU fallback.
+            bool moe_in_graph = ctx.moe_metal && !is_dense;
 
             // Build and run attention graph
-            auto lag = build_llm_layer_attn(ctx, li, T, n_past, is_dense);
+            auto lag = build_llm_layer_attn(ctx, li, T, n_past, is_dense, moe_in_graph);
             ggml_backend_sched_reset(ctx.sched);
             if (!ggml_backend_sched_alloc_graph(ctx.sched, lag.gf)) {
                 ggml_free(lag.gctx);
@@ -1344,9 +1874,9 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
 
             ggml_free(lag.gctx);
 
-            // MoE FFN (layers 1-11)
+            // MoE FFN (layers 1-11): in-graph on Metal (done above) or CPU here.
             auto _t2 = std::chrono::steady_clock::now();
-            if (!is_dense) {
+            if (!is_dense && !moe_in_graph) {
                 moe_ffn_cpu(ctx, li, hidden.data(), T);
             }
             auto _t3 = std::chrono::steady_clock::now();
@@ -1376,7 +1906,30 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
         rmsnorm_cpu(hidden.data() + (T - 1) * D, last_hidden.data(), D, norm_w.data(), lhp.rms_eps);
 
         std::vector<float> logits(V);
-        linear_cpu(last_hidden.data(), logits.data(), D, V, head_w.data(), nullptr);
+        if (lmhead_cpu) {
+            linear_cpu(last_hidden.data(), logits.data(), D, V, head_w.data(), nullptr);
+        } else {
+            // logits = lm_w @ last_hidden on Metal (quantized; ~165M mults/token
+            // off the scalar path). Build+run+free in scope (no dangling graph).
+            size_t meta_sz = 1 * 1024 * 1024;
+            std::vector<uint8_t> mb(meta_sz);
+            ggml_init_params ip = { meta_sz, mb.data(), true };
+            ggml_context* gc = ggml_init(ip);
+            ggml_cgraph* gf = ggml_new_graph(gc);
+            ggml_tensor* in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, 1);
+            ggml_set_name(in, "lmh_in"); ggml_set_input(in);
+            ggml_tensor* out = ggml_mul_mat(gc, lm_w, in);  // [V, 1]
+            ggml_set_name(out, "lmh_out"); ggml_set_output(out);
+            ggml_build_forward_expand(gf, out);
+            ggml_backend_sched_reset(ctx.sched);
+            ggml_backend_sched_alloc_graph(ctx.sched, gf);
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "lmh_in"),
+                                    last_hidden.data(), 0, (size_t)D * sizeof(float));
+            ggml_backend_sched_graph_compute(ctx.sched, gf);
+            ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "lmh_out"),
+                                    logits.data(), 0, (size_t)V * sizeof(float));
+            ggml_free(gc);
+        }
 
         // Diff: logits
         if (!ctx.diff_ref_path.empty() && n_generated == 0) {
@@ -1481,6 +2034,12 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
     auto &ctx = c->inner;
     ctx.n_threads = n_threads;
 
+    // Parity harness: when DS_REF points at a crispembed_diff GGUF dump, each
+    // stage (sam_output, qwen2_enc_output, projector_output, llm logits) is
+    // compared against the reference and a cos_min/max_abs line is printed.
+    // See tools/dump_deepseek_ocr2_reference.py.
+    if (const char *ref = getenv("DS_REF")) ctx.diff_ref_path = ref;
+
     if (!load_hparams(ctx, model_path)) {
         fprintf(stderr, "deepseek_ocr2: failed to load hparams\n");
         delete c; return nullptr;
@@ -1503,12 +2062,31 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
                                        (int)backends.size(), 32768, false, false);
     ctx.compute_meta.resize(16 * 1024 * 1024);
 
+    auto _it = std::chrono::steady_clock::now();
+    auto init_ms = [&](const char *w) {
+        if (!getenv("DS_DBG")) return;
+        auto now = std::chrono::steady_clock::now();
+        fprintf(stderr, "  [time] init.%s %lldms\n", w,
+                (long long)std::chrono::duration_cast<std::chrono::milliseconds>(now - _it).count());
+        _it = now;
+    };
     if (!load_tensors(ctx, model_path)) {
         fprintf(stderr, "deepseek_ocr2: failed to load tensors\n");
         delete c; return nullptr;
     }
+    init_ms("load_tensors");
 
     precompute_rpe_tables(ctx);
+
+    // Stack MoE experts for the Metal ggml_mul_mat_id decode path (default).
+    // DS_MOE_CPU=1 keeps the per-token CPU-scalar moe_ffn_cpu (slower, but the
+    // reference path / fallback for platforms where mul_mat_id misbehaves).
+    if (!getenv("DS_MOE_CPU")) {
+        ctx.moe_metal = stack_moe_experts(ctx);
+        if (!ctx.moe_metal)
+            fprintf(stderr, "deepseek_ocr2: MoE expert stacking failed — using CPU MoE\n");
+    }
+    init_ms("stack_moe_experts");
 
     if (ctx.verbosity >= 1) {
         auto &s = ctx.m.shp; auto &q = ctx.m.qhp; auto &l = ctx.m.lhp;
@@ -1530,8 +2108,12 @@ void deepseek_ocr2_free(deepseek_ocr2_context * ctx) {
     if (!ctx) return;
     auto &c = ctx->inner;
     if (c.sched) ggml_backend_sched_free(c.sched);
-    if (c.model_buf) ggml_backend_buffer_free(c.model_buf);
-    if (c.model_ctx) ggml_free(c.model_ctx);
+    if (c.moe_buf) ggml_backend_buffer_free(c.moe_buf);
+    if (c.moe_ctx) ggml_free(c.moe_ctx);
+    // model_buf/model_ctx alias model_wl — free via free_weights (also unmaps).
+    c.model_buf = nullptr;
+    c.model_ctx = nullptr;
+    core_gguf::free_weights(c.model_wl);
     if (c.backend) ggml_backend_free(c.backend);
     if (c.backend_cpu) ggml_backend_free(c.backend_cpu);
     delete ctx;
@@ -1602,6 +2184,16 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
         }
     }
 
+    bool dbg_t = getenv("DS_DBG") != nullptr;
+    auto _ts = std::chrono::steady_clock::now();
+    auto stage_ms = [&](const char *name) {
+        if (!dbg_t) return;
+        auto now = std::chrono::steady_clock::now();
+        fprintf(stderr, "  [time] %s %lldms\n", name,
+                (long long)std::chrono::duration_cast<std::chrono::milliseconds>(now - _ts).count());
+        _ts = now;
+    };
+
     // 1. SAM vision encoder
     std::vector<float> sam_features;
     int n_sam_tokens, sam_dim;
@@ -1609,6 +2201,7 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
         fprintf(stderr, "deepseek_ocr2: SAM encoding failed\n");
         if (out_len) *out_len = 0; return "";
     }
+    stage_ms("sam");
 
     // 2. Qwen2 bidirectional encoder
     std::vector<float> enc_out;
@@ -1618,6 +2211,7 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
         fprintf(stderr, "deepseek_ocr2: Qwen2 encoder failed\n");
         if (out_len) *out_len = 0; return "";
     }
+    stage_ms("qwen2_enc");
 
     // 3. Project to LLM dimension
     std::vector<float> proj_out;
@@ -1625,6 +2219,7 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
         fprintf(stderr, "deepseek_ocr2: projection failed\n");
         if (out_len) *out_len = 0; return "";
     }
+    stage_ms("projector");
 
     fprintf(stderr, "deepseek_ocr2: stages done — sam=%d/%d qwen2=%d/%d proj=%d image tokens\n",
             n_sam_tokens, sam_dim, n_enc_tokens, enc_dim, n_enc_tokens);
