@@ -180,6 +180,15 @@ struct context {
     // Qwen3-VL position embeddings may be quantized. Keep the dequantized
     // table once per loaded model instead of expanding it for every image.
     std::vector<float> position_embed_cache;
+
+    struct kv_cache {
+        ggml_context *ctx = nullptr;
+        ggml_backend_buffer_t buf = nullptr;
+        ggml_tensor *k = nullptr;
+        ggml_tensor *v = nullptr;
+        int max_seq = 0;
+        bool allocated = false;
+    } kvc;
 };
 
 // ── API ──────────────────────────────────────────────────────────────

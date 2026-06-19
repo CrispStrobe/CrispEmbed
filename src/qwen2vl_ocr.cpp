@@ -990,7 +990,65 @@ bool load(context &ctx, const char *gguf_path, int n_threads, int verbosity,
   return true;
 }
 
+static void free_kv_cache(context &ctx) {
+  if (ctx.kvc.buf) {
+    ggml_backend_buffer_free(ctx.kvc.buf);
+    ctx.kvc.buf = nullptr;
+  }
+  if (ctx.kvc.ctx) {
+    ggml_free(ctx.kvc.ctx);
+    ctx.kvc.ctx = nullptr;
+  }
+  ctx.kvc.k = nullptr;
+  ctx.kvc.v = nullptr;
+  ctx.kvc.max_seq = 0;
+  ctx.kvc.allocated = false;
+}
+
+static bool alloc_kv_cache(context &ctx, int max_seq) {
+  free_kv_cache(ctx);
+
+  const auto &lhp = ctx.m.lhp;
+  const int n_layers = (int)lhp.num_hidden_layers;
+  const int n_kv_heads = (int)lhp.num_key_value_heads;
+  const int head_dim = (int)lhp.hidden_size / (int)lhp.num_attention_heads;
+  const int kv_dim = head_dim * n_kv_heads;
+
+  ggml_init_params ip{2 * ggml_tensor_overhead() + 256, nullptr, true};
+  ctx.kvc.ctx = ggml_init(ip);
+  if (!ctx.kvc.ctx)
+    return false;
+
+  // Match the existing prefill side-output layout:
+  // k_out/v_out are (head_dim * kv_heads, tokens) per layer.
+  ctx.kvc.k =
+      ggml_new_tensor_3d(ctx.kvc.ctx, GGML_TYPE_F16, kv_dim, max_seq, n_layers);
+  ctx.kvc.v =
+      ggml_new_tensor_3d(ctx.kvc.ctx, GGML_TYPE_F16, kv_dim, max_seq, n_layers);
+  ggml_set_name(ctx.kvc.k, "qwen_kv_k");
+  ggml_set_name(ctx.kvc.v, "qwen_kv_v");
+
+  ctx.kvc.buf = ggml_backend_alloc_ctx_tensors(ctx.kvc.ctx, ctx.backend);
+  if (!ctx.kvc.buf) {
+    fprintf(stderr, "qwen2vl_ocr: KV cache allocation failed (max_seq=%d)\n",
+            max_seq);
+    free_kv_cache(ctx);
+    return false;
+  }
+  ggml_backend_buffer_clear(ctx.kvc.buf, 0);
+  ctx.kvc.max_seq = max_seq;
+  ctx.kvc.allocated = true;
+
+  if (ctx.verbosity >= 1) {
+    size_t bytes = ggml_backend_buffer_get_size(ctx.kvc.buf);
+    fprintf(stderr, "  backend KV cache: %d layers, max_seq=%d, %.1f MB\n",
+            n_layers, max_seq, (float)bytes / (1024.0f * 1024.0f));
+  }
+  return true;
+}
+
 void free_(context &ctx) {
+  free_kv_cache(ctx);
   if (ctx.sched) {
     ggml_backend_sched_free(ctx.sched);
     ctx.sched = nullptr;
@@ -1578,7 +1636,6 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
   const int n_layers = (int)lhp.num_hidden_layers;
   const float rms_eps = lhp.rms_norm_eps;
   const float attn_scale = 1.0f / std::sqrt((float)head_dim);
-  const int kv_repeat = n_heads / n_kv_heads;
 
   ggml_init_params ip{
       ctx.compute_meta.size(),
@@ -1769,29 +1826,6 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
       ggml_set_output(V_flat);
       kv_out_tensors.push_back(K_flat);
       kv_out_tensors.push_back(V_flat);
-    }
-
-    // GQA: interleave KV heads to match Q heads
-    // K: (head_dim, n_kv, T) → (head_dim, n_heads, T)
-    // Each KV head serves kv_repeat Q heads (interleave, not tile)
-    // ggml_repeat tiles [0,1,0,1,...] but we need [0,0,...,1,1,...]
-    // Use reshape + repeat on the right axis:
-    // K(hd, n_kv, T) → K(hd, 1, n_kv, T) → repeat → K(hd, kv_repeat, n_kv, T)
-    // → reshape → K(hd, n_heads, T)
-    if (kv_repeat > 1) {
-      // Reshape to add repeat dimension
-      K = ggml_reshape_4d(g, K, head_dim, 1, n_kv_heads, n_tokens);
-      V = ggml_reshape_4d(g, V, head_dim, 1, n_kv_heads, n_tokens);
-      // Create target shape for repeat
-      ggml_tensor *K_tgt = ggml_new_tensor_4d(g, K->type, head_dim, kv_repeat,
-                                              n_kv_heads, n_tokens);
-      ggml_tensor *V_tgt = ggml_new_tensor_4d(g, V->type, head_dim, kv_repeat,
-                                              n_kv_heads, n_tokens);
-      K = ggml_repeat(g, K, K_tgt);
-      V = ggml_repeat(g, V, V_tgt);
-      // Reshape back to (head_dim, n_heads, T)
-      K = ggml_reshape_3d(g, K, head_dim, n_heads, n_tokens);
-      V = ggml_reshape_3d(g, V, head_dim, n_heads, n_tokens);
     }
 
     // Attention
@@ -2232,7 +2266,6 @@ static ggml_cgraph *build_decode_step_graph(
   const int n_layers = (int)lhp.num_hidden_layers;
   const float rms_eps = lhp.rms_norm_eps;
   const float attn_scale = 1.0f / std::sqrt((float)head_dim);
-  const int kv_repeat = n_heads / n_kv_heads;
   const int kv_dim = head_dim * n_kv_heads; // KV projection dim
 
   ggml_cgraph *gf = ggml_new_graph_custom(g, 16384, false);
@@ -2299,23 +2332,43 @@ static ggml_cgraph *build_decode_step_graph(
                             rope_type, 0, lhp.rope_theta, 1.0f, 0.0f, 1.0f,
                             0.0f, 0.0f);
 
-    // Output new K/V for cache append. V_new is a reshape *view* of the
-    // V projection; the no-alloc scheduler may reuse that buffer before we
-    // read it back, so materialize both into their own buffers via cont
-    // (K_new comes straight from rope and is already materialized, but cont
-    // it too for symmetry/safety).
     K_new = ggml_cont(g, K_new);
     V_new = ggml_cont(g, V_new);
-    std::snprintf(name, sizeof(name), "k_out_%d", il);
-    ggml_set_name(K_new, name);
-    ggml_set_output(K_new);
-    std::snprintf(name, sizeof(name), "v_out_%d", il);
-    ggml_set_name(V_new, name);
-    ggml_set_output(V_new);
 
-    // Load KV cache and concatenate
     ggml_tensor *K_full, *V_full;
-    if (n_kv > 0) {
+    if (ctx.kvc.allocated) {
+      ggml_tensor *K_flat = ggml_reshape_2d(g, K_new, kv_dim, 1);
+      ggml_tensor *V_flat = ggml_reshape_2d(g, V_new, kv_dim, 1);
+
+      ggml_tensor *k_view =
+          ggml_view_2d(g, ctx.kvc.k, kv_dim, 1, ctx.kvc.k->nb[1],
+                       (size_t)il * ctx.kvc.k->nb[2] +
+                           (size_t)n_kv * ctx.kvc.k->nb[1]);
+      ggml_tensor *v_view =
+          ggml_view_2d(g, ctx.kvc.v, kv_dim, 1, ctx.kvc.v->nb[1],
+                       (size_t)il * ctx.kvc.v->nb[2] +
+                           (size_t)n_kv * ctx.kvc.v->nb[1]);
+      ggml_build_forward_expand(gf, ggml_cpy(g, K_flat, k_view));
+      ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_view));
+
+      const int seq_len = n_kv + 1;
+      ggml_tensor *k_layer =
+          ggml_view_2d(g, ctx.kvc.k, kv_dim, seq_len, ctx.kvc.k->nb[1],
+                       (size_t)il * ctx.kvc.k->nb[2]);
+      ggml_tensor *v_layer =
+          ggml_view_2d(g, ctx.kvc.v, kv_dim, seq_len, ctx.kvc.v->nb[1],
+                       (size_t)il * ctx.kvc.v->nb[2]);
+      K_full = ggml_reshape_3d(g, k_layer, head_dim, n_kv_heads, seq_len);
+      V_full = ggml_reshape_3d(g, v_layer, head_dim, n_kv_heads, seq_len);
+    } else if (n_kv > 0) {
+      // Host-backed fallback: upload the current KV cache as graph inputs.
+      std::snprintf(name, sizeof(name), "k_out_%d", il);
+      ggml_set_name(K_new, name);
+      ggml_set_output(K_new);
+      std::snprintf(name, sizeof(name), "v_out_%d", il);
+      ggml_set_name(V_new, name);
+      ggml_set_output(V_new);
+
       ggml_tensor *k_cache = ggml_new_tensor_2d(g, GGML_TYPE_F32, kv_dim, n_kv);
       std::snprintf(name, sizeof(name), "k_in_%d", il);
       ggml_set_name(k_cache, name);
@@ -2333,29 +2386,19 @@ static ggml_cgraph *build_decode_step_graph(
       K_full = ggml_concat(g, k_cache, K_new, 2); // concat on seq dim
       V_full = ggml_concat(g, v_cache, V_new, 2);
     } else {
+      std::snprintf(name, sizeof(name), "k_out_%d", il);
+      ggml_set_name(K_new, name);
+      ggml_set_output(K_new);
+      std::snprintf(name, sizeof(name), "v_out_%d", il);
+      ggml_set_name(V_new, name);
+      ggml_set_output(V_new);
       K_full = K_new;
       V_full = V_new;
     }
 
-    // GQA: repeat KV heads
-    if (kv_repeat > 1) {
-      int seq_len = n_kv + 1;
-      K_full = ggml_reshape_4d(g, K_full, head_dim, 1, n_kv_heads, seq_len);
-      ggml_tensor *K_tgt = ggml_new_tensor_4d(g, K_full->type, head_dim,
-                                              kv_repeat, n_kv_heads, seq_len);
-      K_full = ggml_repeat(g, K_full, K_tgt);
-      K_full = ggml_reshape_3d(g, K_full, head_dim, n_heads, seq_len);
-
-      V_full = ggml_reshape_4d(g, V_full, head_dim, 1, n_kv_heads, seq_len);
-      ggml_tensor *V_tgt = ggml_new_tensor_4d(g, V_full->type, head_dim,
-                                              kv_repeat, n_kv_heads, seq_len);
-      V_full = ggml_repeat(g, V_full, V_tgt);
-      V_full = ggml_reshape_3d(g, V_full, head_dim, n_heads, seq_len);
-    }
-
     // Attention: Q(hd, nh, 1) @ K_full^T(hd, nh, seq) → scores(seq, 1, nh)
     Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));           // (hd, 1, nh)
-    K_full = ggml_cont(g, ggml_permute(g, K_full, 0, 2, 1, 3)); // (hd, seq, nh)
+    K_full = ggml_cont(g, ggml_permute(g, K_full, 0, 2, 1, 3)); // (hd, seq, nkv)
     V_full = ggml_cont(g, ggml_permute(g, V_full, 0, 2, 1, 3));
 
     // No causal mask needed — single query always attends to all cached KV.
@@ -2454,6 +2497,7 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
   // k_out_N / v_out_N tensors: (kv_dim, n_prompt_tokens) each
   std::vector<std::vector<float>> k_cache(n_layers);
   std::vector<std::vector<float>> v_cache(n_layers);
+  bool backend_kv_ok = false;
   // KV-cache decode now matches the full recompute token-for-token (the V
   // side output had to be cont'd — it was a reshape view the scheduler
   // reused). Cached decode is the default; CRISPEMBED_NO_KV_CACHE=1 forces
@@ -2463,30 +2507,68 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
     kv_ok = false;
 
   if (kv_ok) {
-    for (int il = 0; il < n_layers; il++) {
-      char name[64];
-      std::snprintf(name, sizeof(name), "k_out_%d", il);
-      ggml_tensor *kt = ggml_graph_get_tensor(prefill.kv_graph, name);
-      std::snprintf(name, sizeof(name), "v_out_%d", il);
-      ggml_tensor *vt = ggml_graph_get_tensor(prefill.kv_graph, name);
+    backend_kv_ok = alloc_kv_cache(ctx, n_prompt_tokens + max_new_tokens);
+    if (backend_kv_ok) {
+      const size_t kv_seed_sz = (size_t)kv_dim * n_prompt_tokens;
+      std::vector<float> kv_seed(kv_seed_sz);
+      std::vector<ggml_fp16_t> kv_seed_f16(kv_seed_sz);
+      for (int il = 0; il < n_layers; il++) {
+        char name[64];
+        std::snprintf(name, sizeof(name), "k_out_%d", il);
+        ggml_tensor *kt = ggml_graph_get_tensor(prefill.kv_graph, name);
+        std::snprintf(name, sizeof(name), "v_out_%d", il);
+        ggml_tensor *vt = ggml_graph_get_tensor(prefill.kv_graph, name);
 
-      if (!kt || !vt) {
-        kv_ok = false;
-        break;
+        if (!kt || !vt) {
+          backend_kv_ok = false;
+          break;
+        }
+
+        ggml_backend_tensor_get(kt, kv_seed.data(), 0,
+                                kv_seed_sz * sizeof(float));
+        for (size_t i = 0; i < kv_seed_sz; i++)
+          kv_seed_f16[i] = ggml_fp32_to_fp16(kv_seed[i]);
+        ggml_backend_tensor_set(ctx.kvc.k, kv_seed_f16.data(),
+                                (size_t)il * ctx.kvc.k->nb[2],
+                                kv_seed_sz * sizeof(ggml_fp16_t));
+        ggml_backend_tensor_get(vt, kv_seed.data(), 0,
+                                kv_seed_sz * sizeof(float));
+        for (size_t i = 0; i < kv_seed_sz; i++)
+          kv_seed_f16[i] = ggml_fp32_to_fp16(kv_seed[i]);
+        ggml_backend_tensor_set(ctx.kvc.v, kv_seed_f16.data(),
+                                (size_t)il * ctx.kvc.v->nb[2],
+                                kv_seed_sz * sizeof(ggml_fp16_t));
       }
+      if (!backend_kv_ok)
+        free_kv_cache(ctx);
+    }
 
-      size_t sz = (size_t)kv_dim * n_prompt_tokens;
-      k_cache[il].resize(sz);
-      v_cache[il].resize(sz);
-      k_cache[il].reserve((size_t)kv_dim * (n_prompt_tokens + max_new_tokens));
-      v_cache[il].reserve((size_t)kv_dim * (n_prompt_tokens + max_new_tokens));
-      ggml_backend_tensor_get(kt, k_cache[il].data(), 0, sz * sizeof(float));
-      ggml_backend_tensor_get(vt, v_cache[il].data(), 0, sz * sizeof(float));
+    if (!backend_kv_ok) {
+      for (int il = 0; il < n_layers; il++) {
+        char name[64];
+        std::snprintf(name, sizeof(name), "k_out_%d", il);
+        ggml_tensor *kt = ggml_graph_get_tensor(prefill.kv_graph, name);
+        std::snprintf(name, sizeof(name), "v_out_%d", il);
+        ggml_tensor *vt = ggml_graph_get_tensor(prefill.kv_graph, name);
+
+        if (!kt || !vt) {
+          kv_ok = false;
+          break;
+        }
+
+        size_t sz = (size_t)kv_dim * n_prompt_tokens;
+        k_cache[il].resize(sz);
+        v_cache[il].resize(sz);
+        k_cache[il].reserve((size_t)kv_dim * (n_prompt_tokens + max_new_tokens));
+        v_cache[il].reserve((size_t)kv_dim * (n_prompt_tokens + max_new_tokens));
+        ggml_backend_tensor_get(kt, k_cache[il].data(), 0, sz * sizeof(float));
+        ggml_backend_tensor_get(vt, v_cache[il].data(), 0, sz * sizeof(float));
+      }
     }
   }
   stage_ms("kv_extract");
 
-  if (kv_ok && ctx.verbosity >= 1) {
+  if (kv_ok && !backend_kv_ok && ctx.verbosity >= 1) {
     fprintf(stderr, "  KV cache: %d layers × %d tokens × %d dim = %.1f MB\n",
             n_layers, n_prompt_tokens, kv_dim,
             (float)n_layers * n_prompt_tokens * kv_dim * 2 * sizeof(float) /
@@ -2633,9 +2715,9 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
       ggml_tensor *pi = ggml_graph_get_tensor(gf, "pos_ids");
       ggml_backend_tensor_set(pi, pos_data, 0, 4 * sizeof(int32_t));
 
-      // Set KV cache inputs
+      // Set KV cache inputs for the host-backed fallback path.
       char name[64];
-      for (int il = 0; il < n_layers; il++) {
+      for (int il = 0; il < n_layers && !backend_kv_ok; il++) {
         if (n_kv > 0) {
           std::snprintf(name, sizeof(name), "k_in_%d", il);
           ggml_tensor *ki = ggml_graph_get_tensor(gf, name);
@@ -2685,23 +2767,25 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
         out.token_confidences.push_back(expf(best_score - max_l) / sum_exp);
       }
 
-      // Append new K/V to cache
-      for (int il = 0; il < n_layers; il++) {
-        std::snprintf(name, sizeof(name), "k_out_%d", il);
-        ggml_tensor *ko = ggml_graph_get_tensor(gf, name);
-        size_t k_old = k_cache[il].size();
-        k_cache[il].resize(k_old + (size_t)kv_dim);
-        if (ko) {
-          ggml_backend_tensor_get(ko, k_cache[il].data() + k_old, 0,
-                                  kv_dim * sizeof(float));
-        }
-        std::snprintf(name, sizeof(name), "v_out_%d", il);
-        ggml_tensor *vo = ggml_graph_get_tensor(gf, name);
-        size_t v_old = v_cache[il].size();
-        v_cache[il].resize(v_old + (size_t)kv_dim);
-        if (vo) {
-          ggml_backend_tensor_get(vo, v_cache[il].data() + v_old, 0,
-                                  kv_dim * sizeof(float));
+      if (!backend_kv_ok) {
+        // Append new K/V to host cache.
+        for (int il = 0; il < n_layers; il++) {
+          std::snprintf(name, sizeof(name), "k_out_%d", il);
+          ggml_tensor *ko = ggml_graph_get_tensor(gf, name);
+          size_t k_old = k_cache[il].size();
+          k_cache[il].resize(k_old + (size_t)kv_dim);
+          if (ko) {
+            ggml_backend_tensor_get(ko, k_cache[il].data() + k_old, 0,
+                                    kv_dim * sizeof(float));
+          }
+          std::snprintf(name, sizeof(name), "v_out_%d", il);
+          ggml_tensor *vo = ggml_graph_get_tensor(gf, name);
+          size_t v_old = v_cache[il].size();
+          v_cache[il].resize(v_old + (size_t)kv_dim);
+          if (vo) {
+            ggml_backend_tensor_get(vo, v_cache[il].data() + v_old, 0,
+                                    kv_dim * sizeof(float));
+          }
         }
       }
       n_kv++;
