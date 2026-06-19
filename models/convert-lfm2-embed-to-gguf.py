@@ -246,6 +246,22 @@ def main():
         state_dict = torch.load(pt_path, map_location="cpu", weights_only=True)
         print(f"Loading weights from: {pt_path}")
 
+    # Load ColBERT 1_Dense projection if present (sentence-transformers layout)
+    dense_st = os.path.join(model_dir, "1_Dense", "model.safetensors")
+    dense_pt = os.path.join(model_dir, "1_Dense", "pytorch_model.bin")
+    if os.path.exists(dense_st):
+        from safetensors import safe_open
+        with safe_open(dense_st, framework="pt", device="cpu") as f:
+            for key in f.keys():
+                state_dict[f"1_Dense.{key}"] = f.get_tensor(key)
+        print(f"  ColBERT Dense: loaded from {dense_st}")
+    elif os.path.exists(dense_pt):
+        import torch
+        dense_sd = torch.load(dense_pt, map_location="cpu", weights_only=True)
+        for key, val in dense_sd.items():
+            state_dict[f"1_Dense.{key}"] = val
+        print(f"  ColBERT Dense: loaded from {dense_pt}")
+
     n_written = 0
     n_skipped = 0
     for hf_name in sorted(state_dict.keys()):
