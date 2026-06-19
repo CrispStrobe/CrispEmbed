@@ -120,10 +120,18 @@ Input text / image / audio
     ├─► OCR   ──► LightOnOCR-2-1B (lightonocr.cpp) — DONE
     │               Pixtral ViT + Qwen3, 1B, OCR Arena #2, Apache-2.0
     │
-    ├─► OCR   ──► FireRed-OCR (2.1B, Apache-2.0) — Qwen3-VL, GRPO, tables+LaTeX
+    ├─► OCR   ──► FireRed-OCR (qwen2vl_ocr.cpp) — DONE: Qwen3-VL 2B, GRPO
+    ├─► OCR   ──► DeepSeek-OCR-2 (deepseek_ocr2.cpp) — DONE: SAM+Qwen2+MoE, 3.4B
+    ├─► OCR   ──► Granite Vision 3.3-2B (granite_vision_ocr.cpp) — DONE: OCRBench 852
+    │
+    │   ── NEW PLANNED ──
+    │
+    ├─► OCR   ──► dots.ocr (3B, MIT) — Qwen2.5-VL derived, 42L vision, 100+ langs, formula+tables
+    ├─► OCR   ──► PaddleOCR-VL-1.6 (1.6B, Apache-2.0) — SOTA 96.33% OmniDocBench, NaViT+ERNIE
+    ├─► OCR   ──► MinerU2.5-Pro (1.2B, ?) — two-stage native-res, 90.67% OmniDocBench
+    ├─► OCR   ──► SmolDocling (256M, Apache-2.0?) — ultra-compact, DocTags format
     ├─► OCR   ──► NuExtract3 (4B, Apache-2.0) — structured extraction + Markdown
-    ├─► OCR   ──► DeepSeek-OCR-2 (3B, Apache-2.0) — DONE: char-perfect OCR on Metal+q4_k (SAM+Qwen2 enc+MoE)
-    └─► OCR   ──► Granite Vision 3.3-2B (3B, Apache) — OCRBench 852
+    └─► OCR   ──► Hunyuan-OCR (1B, ?) — Tencent all-in-one pipeline
 ```
 
 ## Supported architectures (v0.11)
@@ -332,6 +340,19 @@ esrgan_sr engine internally).
 - [ ] Qari-OCR (2B, Apache-2.0) — Qwen2-VL fine-tune, Arabic with diacritics (parity bug: hallucinated text)
 - [x] **Granite Vision 3.3-2B (~3B, Apache-2.0)** — OCRBench 852. DONE: SigLIP ViT + Granite-3.1-2B LLM. Engine (`granite_vision_ocr.{h,cpp}`), GGUF converter (lazy safetensors, 804 tensors, 5.6GB F16), model registry, HF upload. Parity testing via Kaggle kernel (model too large for VPS).
 - [x] **H2OVL-Mississippi-2B (~2.1B, Apache-2.0)** — OCRBench 782. DONE: InternViT-300M + Danube-2-1.8B (Mistral arch). Runs on existing internvl2_ocr engine unchanged. GGUF converted (F16 1.2GB, Q4_K 457MB). Model registry entry added.
+
+#### Next-gen OCR models to port
+
+| # | Model | Params | OmniDocBench | License | Architecture | Reuse engine? |
+|---|-------|--------|-------------|---------|-------------|--------------|
+| 1 | **dots.ocr** | 3B (1.7B LLM) | 88.4% | MIT | Qwen2.5-VL derived, 42L vision, temporal_patch=1 | qwen2vl_ocr (config delta) |
+| 2 | **PaddleOCR-VL-1.6** | 1.6B | 96.3% SOTA | Apache-2.0 | NaViT + ERNIE-4.5-0.3B | New (NaViT+ERNIE) |
+| 3 | **MinerU2.5-Pro** | 1.2B | 90.7% | ? | Two-stage NaViT + LLM | New (two-stage) |
+| 4 | **SmolDocling** | 256M | — | Apache-2.0? | Compact VLM, DocTags output | New (tiny) |
+| 5 | **Hunyuan-OCR** | 1B | — | ? | Tencent native multimodal | New |
+| 6 | **PaddleOCR-VL-0.9B** | 0.9B | — | Apache-2.0 | NaViT-675M + ERNIE-0.3B | Same as PaddleOCR-VL |
+
+**Priority order**: dots.ocr first (MIT, reuses qwen2vl engine), then PaddleOCR-VL (SOTA, Apache-2.0).
 
 #### OCRBench leaderboard reference (small VLMs, ≤3B)
 
