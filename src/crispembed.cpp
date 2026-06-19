@@ -1566,6 +1566,11 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
         if (!ctx->lfm2_ctx) { delete ctx; return nullptr; }
         ctx->model.hparams.n_embd   = (uint32_t)lfm2_embed_n_embd(ctx->lfm2_ctx);
         ctx->model.hparams.n_output = ctx->model.hparams.n_embd;
+        // ColBERT multi-vector support
+        if (lfm2_embed_has_colbert(ctx->lfm2_ctx)) {
+            ctx->model.has_colbert = true;
+            ctx->model.colbert_dim = lfm2_embed_colbert_dim(ctx->lfm2_ctx);
+        }
     } else if (is_dec) {
         ctx->is_decoder = true;
         ctx->dec = std::make_unique<dec_model>();
@@ -2139,6 +2144,21 @@ extern "C" const float * crispembed_encode_multivec(crispembed_context * ctx,
                                                       int                * out_n_tokens,
                                                       int                * out_dim) {
     if (!ctx || !text || !ctx->model.has_colbert || ctx->is_decoder) return nullptr;
+
+    // LFM2 ColBERT path — uses its own tokenizer + encoder
+    if (ctx->is_lfm2 && ctx->lfm2_ctx) {
+        const int cd = lfm2_embed_colbert_dim(ctx->lfm2_ctx);
+        const int max_tok = 512;
+        ctx->last_multivec.resize(max_tok * cd);
+        int n = lfm2_embed_encode_multivec(ctx->lfm2_ctx, text,
+                                            ctx->last_multivec.data(), max_tok);
+        if (n <= 0) return nullptr;
+        ctx->last_multivec_n_tokens = n;
+        ctx->last_multivec_dim = cd;
+        if (out_n_tokens) *out_n_tokens = n;
+        if (out_dim) *out_dim = cd;
+        return ctx->last_multivec.data();
+    }
 
     embed_tokens tokens;
     if (ctx->use_sentencepiece) tokens = ctx->sp_tokenizer.encode(text);
