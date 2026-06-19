@@ -606,7 +606,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             if (!px) return {};
             int len = 0;
             const char* t = lightonocr_recognize_raw(ctx->locr, px, w, h, 3, &len);
-            auto out = wrap_fulltext(t, w, h);
+            int nconf = 0;
+            const float* conf = lightonocr_confidences(ctx->locr, &nconf);
+            auto out = wrap_fulltext(t, w, h, conf, nconf, lightonocr_mean_confidence(ctx->locr));
             stbi_image_free(px);
             return out;
         }
