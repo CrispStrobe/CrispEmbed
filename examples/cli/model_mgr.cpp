@@ -69,8 +69,9 @@ static const char * query_prefix(const char * model) {
     // Jina v5
     if (strstr(model, "jina-v5"))
         return "Query: ";
-    // LFM2.5 Embedding
-    if (strstr(model, "lfm2-embed") || strstr(model, "lfm2.5-embed"))
+    // LFM2.5 Embedding / ColBERT
+    if (strstr(model, "lfm2-embed") || strstr(model, "lfm2.5-embed") ||
+        strstr(model, "lfm2-colbert") || strstr(model, "lfm2.5-colbert"))
         return "query: ";
     return nullptr;
 }
@@ -86,8 +87,9 @@ static const char * passage_prefix(const char * model) {
     // Jina v5
     if (strstr(model, "jina-v5"))
         return "Passage: ";
-    // LFM2.5 Embedding
-    if (strstr(model, "lfm2-embed") || strstr(model, "lfm2.5-embed"))
+    // LFM2.5 Embedding / ColBERT
+    if (strstr(model, "lfm2-embed") || strstr(model, "lfm2.5-embed") ||
+        strstr(model, "lfm2-colbert") || strstr(model, "lfm2.5-colbert"))
         return "document: ";
     return nullptr;
 }
@@ -751,6 +753,21 @@ static const ModelEntry k_registry[] = {
      "https://huggingface.co/cstr/lfm2-embed-GGUF/resolve/main/lfm2-embed-q4_k.gguf",
      "LFM2.5 1024d 11-lang CLS hybrid Q4_K (350M)", "254 MB", "lfm1.0",
      "https://huggingface.co/LiquidAI/LFM2.5-Embedding-350M"},
+
+    // LFM2.5-ColBERT-350M — LiquidAI ColBERT multi-vector (per-token 128d)
+    // Same backbone as LFM2.5-Embedding + Dense projection head
+    // License: LFM Open License v1.0
+    {"lfm2-colbert",
+     "lfm2-colbert-q8_0.gguf",
+     "https://huggingface.co/cstr/lfm2-colbert-GGUF/resolve/main/lfm2-colbert-q8_0.gguf",
+     "LFM2.5 ColBERT 128d multi-vector hybrid (350M)", "419 MB", "lfm1.0",
+     "https://huggingface.co/LiquidAI/LFM2.5-ColBERT-350M"},
+
+    {"lfm2-colbert-q4k",
+     "lfm2-colbert-q4_k.gguf",
+     "https://huggingface.co/cstr/lfm2-colbert-GGUF/resolve/main/lfm2-colbert-q4_k.gguf",
+     "LFM2.5 ColBERT 128d multi-vector Q4_K (350M)", "254 MB", "lfm1.0",
+     "https://huggingface.co/LiquidAI/LFM2.5-ColBERT-350M"},
 
     {"gliner-lfm",
      "gliner-lfm-q8_0.gguf",
