@@ -323,35 +323,14 @@ Detailed specs for pending roadmap items. Each blueprint is self-contained
 so a fresh agent can implement it independently. (Blueprints for completed
 work have been moved to `HISTORY.md`.)
 
-### Blueprint: KV cache for prefix-shared decoder batches
+### Blueprint: KV cache for prefix-shared decoder batches — DONE
 
-**Goal**: When N texts share a prompt prefix (e.g. Jina v5 instruction
-`"Retrieve semantically similar text.\nQuery: "`), compute KV for the
-prefix once and reuse across the batch, saving ~40% of compute.
-
-**Current state**: `decoder_encode_tokens_batch()` (decoder_embed.cpp:1158)
-pads all sequences to T_max and builds a block-diagonal mask. Each text
-recomputes the full prefix independently.
-
-**Approach**:
-1. Detect common prefix: compare token IDs across batch, find longest
-   shared prefix length `P`. Typical Jina v5 prefix is ~15 tokens.
-2. Compute prefix KV: Run a single forward pass for `[P]` tokens.
-   Extract K/V tensors for each layer → `prefix_kv[layer] = {K, V}`.
-3. Extend graph: For each text's remaining `T-P` tokens, use pre-computed
-   prefix K/V. Modify `ggml_flash_attn_ext` call to pass concatenated
-   K = `[prefix_K ; text_K]`, V = `[prefix_V ; text_V]`.
-4. Mask: Each text attends causally to `[prefix + own_tokens]`, not to
-   other texts' tokens.
-
-**Challenge**: ggml's `flash_attn_ext` takes K/V as single tensors. Need
-either: (a) pre-concatenate K/V on CPU before graph compute, or (b) use
-`ggml_concat` in-graph (adds one concat op per layer, negligible cost).
-
-**Files**: `src/decoder_embed.cpp`, `src/decoder_embed.h`
-
-**Effort**: Medium (3-4 days). Prefix detection is trivial; KV caching
-mechanics are well-understood from LLM inference.
+Implemented in `decoder_encode_tokens_batch()` (decoder_embed.cpp:1188).
+- `detect_common_prefix()` finds longest shared prefix across batch
+- Layout: `[prefix_0..P-1 | suf0_pad | suf1_pad | ...]` — prefix appears once
+- Custom attention mask: each suffix attends causally to shared prefix + own suffix
+- Saves `(B-1)*P` tokens of redundant compute (~40% for Jina v5 batches)
+- Minimum prefix threshold: 4 tokens (not worth mask complexity for shorter)
 
 ---
 
@@ -363,39 +342,10 @@ Both fixes are implemented in `decoder_embed.cpp`:
 
 ---
 
-### Blueprint: WASM build target
+### Blueprint: WASM build target — DONE
 
-**Goal**: Compile CrispEmbed to WebAssembly for browser-based embedding.
-
-**Current state**: ggml has Emscripten support (whisper.cpp WASM demo
-exists). CrispEmbed uses standard ggml APIs. CMakeLists.txt has no WASM
-target.
-
-**Step 1 -- CMake toolchain**:
-- Add `cmake/wasm.cmake` toolchain file for Emscripten.
-- Build static library + JS wrapper. Disable audio/face/vision paths
-  (browser doesn't need them). Target: `crispembed.js` + `crispembed.wasm`.
-- Flags: `-s WASM=1 -s ALLOW_MEMORY_GROWTH=1 -msimd128` (relaxed SIMD).
-- Threading: `-pthread -s SHARED_MEMORY=1` requires `SharedArrayBuffer`
-  (needs COOP/COEP headers). Start single-threaded, add workers later.
-
-**Step 2 -- JS API** (`wasm/crispembed.js`):
-- `async function loadModel(url)` — fetch and load GGUF into WASM heap.
-- `function encode(text)` — returns Float32Array of embedding.
-- `async function encodeBatch(texts)` — batch encode.
-
-**Step 3 -- Demo page** (`wasm/demo.html`):
-- Load a small model (all-MiniLM-L6-v2, 24 MB Q4_K).
-- Text input → encode → show embedding dims + cosine vs reference.
-
-**Challenges**:
-- Memory: 2 GB WASM limit. MiniLM Q4_K fits (24 MB); larger models need
-  streaming GGUF or won't fit.
-- First load: GGUF download + WASM compilation. Use `caches` API.
-- No GPU: CPU-only, but ggml SIMD kernels should be fast enough for
-  small models.
-
-**Files**: `cmake/wasm.cmake`, `wasm/crispembed.js`, `wasm/demo.html`,
-`CMakeLists.txt` (add wasm target)
-
-**Effort**: Medium (3-4 days). Main risk is ggml WASM compatibility.
+Implemented via `build-wasm.sh` (Math OCR) and `build-embed-wasm.sh`
+(text embeddings). CI workflows in `.github/workflows/build-wasm.yml`
+and `build-wasm-embed.yml`. HuggingFace Space demo at `hf-space/`.
+README mentions: "Math OCR compiles to WebAssembly (1 MB) via build-wasm.sh.
+Runs entirely client-side — no server, no API key."
