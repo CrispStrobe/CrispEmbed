@@ -1713,7 +1713,12 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
 
     // Dequant weights needed for LM head
     auto norm_w = to_f32(ctx.m.output_norm_w);
-    auto head_w = to_f32(ctx.m.lm_head_w ? ctx.m.lm_head_w : ctx.m.embed_tokens);
+    // LM head: default runs as a Metal quantized mul_mat (DS_LMHEAD_CPU=1 forces
+    // the scalar path). Only dequant the 662 MB head weight for the CPU path.
+    ggml_tensor *lm_w = ctx.m.lm_head_w ? ctx.m.lm_head_w : ctx.m.embed_tokens;
+    bool lmhead_cpu = getenv("DS_LMHEAD_CPU") != nullptr;
+    std::vector<float> head_w;
+    if (lmhead_cpu) head_w = to_f32(lm_w);
 
     // Diagnostic: DS_NO_KV disables the KV cache and re-runs the entire growing
     // sequence each step (n_past always 0). Slow but a ground-truth reference to
@@ -1843,7 +1848,30 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
         rmsnorm_cpu(hidden.data() + (T - 1) * D, last_hidden.data(), D, norm_w.data(), lhp.rms_eps);
 
         std::vector<float> logits(V);
-        linear_cpu(last_hidden.data(), logits.data(), D, V, head_w.data(), nullptr);
+        if (lmhead_cpu) {
+            linear_cpu(last_hidden.data(), logits.data(), D, V, head_w.data(), nullptr);
+        } else {
+            // logits = lm_w @ last_hidden on Metal (quantized; ~165M mults/token
+            // off the scalar path). Build+run+free in scope (no dangling graph).
+            size_t meta_sz = 1 * 1024 * 1024;
+            std::vector<uint8_t> mb(meta_sz);
+            ggml_init_params ip = { meta_sz, mb.data(), true };
+            ggml_context* gc = ggml_init(ip);
+            ggml_cgraph* gf = ggml_new_graph(gc);
+            ggml_tensor* in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, 1);
+            ggml_set_name(in, "lmh_in"); ggml_set_input(in);
+            ggml_tensor* out = ggml_mul_mat(gc, lm_w, in);  // [V, 1]
+            ggml_set_name(out, "lmh_out"); ggml_set_output(out);
+            ggml_build_forward_expand(gf, out);
+            ggml_backend_sched_reset(ctx.sched);
+            ggml_backend_sched_alloc_graph(ctx.sched, gf);
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "lmh_in"),
+                                    last_hidden.data(), 0, (size_t)D * sizeof(float));
+            ggml_backend_sched_graph_compute(ctx.sched, gf);
+            ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "lmh_out"),
+                                    logits.data(), 0, (size_t)V * sizeof(float));
+            ggml_free(gc);
+        }
 
         // Diff: logits
         if (!ctx.diff_ref_path.empty() && n_generated == 0) {
