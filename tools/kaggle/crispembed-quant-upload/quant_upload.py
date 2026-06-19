@@ -72,12 +72,15 @@ print("[4] converting to F16 GGUF", flush=True)
 OUT_F16 = WORK / "deepseek-ocr2-f16.gguf"
 converter = REPO / "models" / "convert-deepseek-ocr2-to-gguf.py"
 
+src_p = Path(src)
 with kh.build_heartbeat("convert.f16"):
     subprocess.check_call([
         sys.executable, str(converter),
-        "--model", src,
+        "--model", str(src_p / "model-00001-of-000001.safetensors"),
+        "--config", str(src_p / "config.json"),
+        "--tokenizer", str(src_p / "tokenizer.json"),
         "--output", str(OUT_F16),
-        "--dtype", "f16",
+        "--fp16",
     ])
 f16_gb = OUT_F16.stat().st_size / (1024**3)
 print(f"[4] F16: {f16_gb:.2f} GiB", flush=True)
