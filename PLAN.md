@@ -126,7 +126,7 @@ Input text / image / audio
     │
     │   ── NEW PLANNED ──
     │
-    ├─► OCR   ──► dots.ocr (3B, MIT) — DONE: runs on qwen2vl_ocr, 42L vision
+    ├─► OCR   ──► dots.ocr (3B) — REMOVED from main: license is NOT pure MIT (supplemental PRC agreement)
     ├─► OCR   ──► PaddleOCR-VL-1.6 (1.6B, Apache-2.0) — pending: NaViT+ERNIE (new arch)
     ├─► OCR   ──► MinerU2.5-Pro (1.2B, ?) — pending: two-stage native-res
     ├─► OCR   ──► SmolDocling (256M, Apache-2.0?) — pending: ultra-compact
@@ -345,14 +345,14 @@ esrgan_sr engine internally).
 
 | # | Model | Params | OmniDocBench | License | Architecture | Reuse engine? |
 |---|-------|--------|-------------|---------|-------------|--------------|
-| 1 | **dots.ocr** | 3B (1.7B LLM) | 88.4% | MIT | Qwen2.5-VL derived, 42L vision, temporal_patch=1 | qwen2vl_ocr (config delta) |
+| ~~1~~ | ~~dots.ocr~~ | ~~3B~~ | ~~88.4%~~ | ~~NOT pure MIT~~ | — | REMOVED: supplemental PRC license agreement |
 | 2 | **PaddleOCR-VL-1.6** | 1.6B | 96.3% SOTA | Apache-2.0 | NaViT + ERNIE-4.5-0.3B | New (NaViT+ERNIE) |
 | 3 | **MinerU2.5-Pro** | 1.2B | 90.7% | ? | Two-stage NaViT + LLM | New (two-stage) |
 | 4 | **SmolDocling** | 256M | — | Apache-2.0? | Compact VLM, DocTags output | New (tiny) |
 | 5 | **Hunyuan-OCR** | 1B | — | ? | Tencent native multimodal | New |
 | 6 | **PaddleOCR-VL-0.9B** | 0.9B | — | Apache-2.0 | NaViT-675M + ERNIE-0.3B | Same as PaddleOCR-VL |
 
-**Priority order**: dots.ocr first (MIT, reuses qwen2vl engine), then PaddleOCR-VL (SOTA, Apache-2.0).
+**Priority order**: PaddleOCR-VL (SOTA 96.3%, Apache-2.0), then SmolDocling (tiny, Apache-2.0).
 
 #### OCRBench leaderboard reference (small VLMs, ≤3B)
 
