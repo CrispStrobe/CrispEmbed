@@ -132,17 +132,20 @@ Input text / image / audio
     ├─► Table ──► Rule-based table structure (table_parse.cpp)
     │               Line detection + grid + cell OCR → HTML
     │
+    ├─► OCR   ──► PaddleOCR-VL (qwen2vl_ocr.cpp) — DONE
+    │               NaViT ViT + ERNIE-4.5-0.3B, 109 langs, Apache-2.0
+    │               OmniDocBench SOTA 96.3% (1.6) / 0.9B variant
+    │
     │   ── PLANNED ──
     │
-    ├─► OCR   ──► PaddleOCR-VL (1.6B / 0.9B, Apache-2.0)
-    │               NaViT + ERNIE-4.5, OmniDocBench SOTA 96.3% (new arch)
-    └─► OCR   ──► SmolDocling (256M, Apache-2.0)
-                    Idefics3/SmolVLM, IBM Research, DocTags output (tiny)
+    └─► OCR   ──► SmolDocling (256M, CDLA-Permissive-2.0)
+                    Idefics3/SmolVLM, IBM Research, DocTags output (tiny, EN-only)
 ```
 
-(Evaluated and **skipped** for licensing: dots.ocr — supplemental PRC
-agreement, not pure MIT; MinerU2.5-Pro — Apache + commercial thresholds;
-Hunyuan-OCR — license unknown. See the next-gen table below.)
+(Evaluated and **rejected** for licensing: dots.ocr — supplemental PRC
+agreement (rednote/Xiaohongshu), not pure MIT; MinerU2.5-Pro — commercial
+thresholds + gated HF; Hunyuan-OCR — custom Tencent license, excludes
+EU/UK/South Korea. See the next-gen table below.)
 
 ## Supported architectures (v0.11)
 
@@ -174,7 +177,7 @@ Hunyuan-OCR — license unknown. See the next-gen table below.)
 | DBNet | — | ResNet-18 + FPN + DB head | text detection (12M) |
 | Surya-Det | — | EfficientViT + SegFormer | surya-ocr-2 detector (38M, 91 langs) |
 | RT-DETRv2 | — | ResNet-50 + deformable xattn | layout-heron (17 classes) |
-| Qwen2.5-VL / Qwen2-VL | tiktoken | ViT-32L + spatial merger + Qwen LLM | german-ocr-3 (3B), FireRed-OCR, Qari-OCR, Nanonets |
+| Qwen2.5-VL / Qwen2-VL | tiktoken | ViT-32L + spatial merger + Qwen LLM | german-ocr-3 (3B), FireRed-OCR, Qari-OCR, Nanonets, PaddleOCR-VL |
 | InternVL2 | tiktoken | InternViT + InternLM2.5 LLM | internvl2-1b/2b, H2OVL |
 | GLM-OCR | BPE | CogVLM2 + GLM-4 decoder | glm-edge-ocr (0.9B) |
 | GOT-OCR2 | BPE | SAM ViT-B + Qwen2-0.5B | got-ocr2 (0.7B) |
@@ -265,17 +268,17 @@ safmn_sr, esrgan_sr, restormer, tps_locnet, scunet_denoise, swinir_sr.
 
 ### OCR — next-gen models to port
 
-| # | Model | Params | OmniDocBench | License | Architecture | Reuse engine? |
-|---|-------|--------|-------------|---------|-------------|--------------|
-| ~~1~~ | ~~dots.ocr~~ | ~~3B~~ | ~~88.4%~~ | ~~NOT pure MIT~~ | — | REMOVED: supplemental PRC license agreement |
-| 2 | **PaddleOCR-VL-1.6** | 1.6B | 96.3% SOTA | Apache-2.0 | NaViT + ERNIE-4.5-0.3B | New (NaViT+ERNIE) |
-| ~~3~~ | ~~MinerU2.5-Pro~~ | ~~1.2B~~ | ~~90.7%~~ | ~~NOT pure Apache~~ | — | SKIP: commercial thresholds (MAU>100M/rev>$20M), mandatory attribution, gated HF |
-| 4 | **SmolDocling** | 256M | — | Apache-2.0 | Idefics3/SmolVLM, IBM Research | New (tiny) |
-| ~~5~~ | ~~Hunyuan-OCR~~ | ~~1B~~ | — | ? | Tencent | SKIP: license unknown |
-| 6 | **PaddleOCR-VL-0.9B** | 0.9B | — | Apache-2.0 | NaViT-675M + ERNIE-0.3B | Same as PaddleOCR-VL |
+| # | Model | Params | OmniDocBench | License | Architecture | Status |
+|---|-------|--------|-------------|---------|-------------|--------|
+| ~~1~~ | ~~dots.ocr~~ | ~~3B~~ | ~~88.4%~~ | ~~NOT pure MIT~~ | — | REJECTED: supplemental PRC license (rednote/Xiaohongshu) |
+| 2 | **PaddleOCR-VL-0.9B** | 0.9B | — | Apache-2.0 | NaViT + ERNIE-4.5-0.3B | **DONE**: reuses qwen2vl_ocr engine, Q8_0/Q4_K on HF |
+| 3 | **PaddleOCR-VL-1.6** | 0.9B | 96.3% SOTA | Apache-2.0 | NaViT + ERNIE-4.5-0.3B (same arch, improved training) | **DONE**: Q8_0/Q4_K on HF |
+| ~~4~~ | ~~MinerU2.5-Pro~~ | ~~1.2B~~ | ~~90.7%~~ | ~~NOT pure Apache~~ | — | REJECTED: commercial thresholds, mandatory attribution, gated HF |
+| 5 | **SmolDocling** | 256M | — | CDLA-Permissive-2.0 | Idefics3/SmolVLM, IBM Research | Pending (EN-only, borderline license) |
+| ~~6~~ | ~~Hunyuan-OCR~~ | ~~1B~~ | — | ~~Custom Tencent~~ | — | REJECTED: excludes EU/UK/South Korea |
+| 7 | **Qari-OCR** | 4B | Apache-2.0 | Qwen2-VL fine-tune (Arabic only) | Pending (4B = large, Arabic-only, parity bug) |
 
-**Priority order**: SmolDocling (tiny 256M, Apache-2.0, IBM), then PaddleOCR-VL
-(SOTA 96.3%, Apache-2.0).
+**Remaining**: SmolDocling (tiny but EN-only + borderline license), Qari-OCR (Arabic-only, 4B).
 
 #### OCRBench leaderboard reference (small VLMs, ≤3B)
 
@@ -352,31 +355,11 @@ mechanics are well-understood from LLM inference.
 
 ---
 
-### Blueprint: Batched decoder improvements (F16 mask + Gemma3 NaN fix)
+### Blueprint: Batched decoder improvements (F16 mask + Gemma3 NaN fix) — DONE
 
-**Goal**: Two targeted fixes for the batched decoder path.
-
-**F16 attention mask**: Current mask is F32 (`ggml_new_tensor_2d(gctx,
-GGML_TYPE_F32, T_total, T_total)` at decoder_embed.cpp:1297). For
-T_total=512 that's 1 MB; for T_total=2048 it's 16 MB. `ggml_flash_attn_ext`
-supports F16 `kq_b` natively. Change to:
-```cpp
-ggml_tensor * attn_mask = ggml_new_tensor_2d(gctx, GGML_TYPE_F16, T_total, T_total);
-```
-CPU-side mask fill: cast `-INFINITY` and `0.0f` to `ggml_fp16_t` via
-`ggml_fp32_to_fp16()`. Reduces mask memory 2x.
-
-**Gemma3 NaN fix**: Some Gemma3 GGUFs produce NaN embeddings on certain
-inputs. Root cause: `(1+w)*rms_norm(x)` can overflow when `w` is large
-and `rms_norm(x)` has extreme values. The Ollama-format GGUFs pre-bake
-`1+w` into norm weights (flag `gemma_norm=false`), but CrispEmbed-native
-GGUFs use raw `w` with `gemma_norm=true`. Fix: clamp RMSNorm output to
-`[-65504, 65504]` (F16 max) before the `(1+w)` multiply, or detect NaN
-after the first layer and fall back to F32 compute for that batch.
-
-**Files**: `src/decoder_embed.cpp`
-
-**Effort**: Low (1 day). Both are mechanical changes.
+Both fixes are implemented in `decoder_embed.cpp`:
+- **F16 attention mask**: `ggml_new_tensor_2d(gctx, GGML_TYPE_F16, T_total, T_total)` (line 1386). 2x memory reduction.
+- **Gemma3 NaN fix**: `ggml_clamp(gctx, x, -1000.0f, 1000.0f)` before `(1+w)*x` (line 668). Prevents overflow in CrispEmbed-native GGUFs with `gemma_norm=true`.
 
 ---
 
