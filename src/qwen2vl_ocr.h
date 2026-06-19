@@ -176,6 +176,10 @@ struct context {
     // Temporary: deepstack embeds for passing through generate → run_llm_forward
     const float *const *deepstack_embeds_tmp = nullptr;
     int n_deepstack_tmp = 0;
+
+    // Qwen3-VL position embeddings may be quantized. Keep the dequantized
+    // table once per loaded model instead of expanding it for every image.
+    std::vector<float> position_embed_cache;
 };
 
 // ── API ──────────────────────────────────────────────────────────────
@@ -211,8 +215,9 @@ void vision_result_free(vision_result &r);
 // For parity testing. Returns final hidden states.
 struct llm_result {
     float *hidden = nullptr;   // (T, D) final hidden states (malloc'd)
-    float *logits = nullptr;   // (T, V) logits (if lm_head available)
+    float *logits = nullptr;   // (n_logits, V) logits (if lm_head available)
     int n_tokens = 0;
+    int n_logits = 0;
     int hidden_dim = 0;
     int vocab_size = 0;
     int rope_delta = 0;       // mRoPE delta for cached decode after image prefill
@@ -235,7 +240,9 @@ struct image_input {
 bool run_llm_forward(context &ctx,
                      const int32_t *token_ids, int n_tokens,
                      llm_result &out,
-                     const image_input *img = nullptr);
+                     const image_input *img = nullptr,
+                     bool logits_last_only = false,
+                     bool materialize_hidden = true);
 
 // Generate text from image + prompt.
 // Returns generated token IDs and decoded text.
