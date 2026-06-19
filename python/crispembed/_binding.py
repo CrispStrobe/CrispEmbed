@@ -1559,40 +1559,40 @@ class CrispClipText:
             self._ctx = None
 
 
-def _setup_math_ocr_signatures(lib):
-    lib.crispembed_math_ocr_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
-    lib.crispembed_math_ocr_init.restype = ctypes.c_void_p
+def _setup_ocr_model_signatures(lib):
+    lib.crispembed_ocr_model_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
+    lib.crispembed_ocr_model_init.restype = ctypes.c_void_p
 
-    lib.crispembed_math_ocr_free.argtypes = [ctypes.c_void_p]
-    lib.crispembed_math_ocr_free.restype = None
+    lib.crispembed_ocr_model_free.argtypes = [ctypes.c_void_p]
+    lib.crispembed_ocr_model_free.restype = None
 
-    lib.crispembed_math_ocr_recognize.argtypes = [
+    lib.crispembed_ocr_model_recognize.argtypes = [
         ctypes.c_void_p,
         ctypes.POINTER(ctypes.c_uint8),
         ctypes.c_int, ctypes.c_int, ctypes.c_int,
         ctypes.POINTER(ctypes.c_int),
     ]
-    lib.crispembed_math_ocr_recognize.restype = ctypes.c_char_p
+    lib.crispembed_ocr_model_recognize.restype = ctypes.c_char_p
 
-    lib.crispembed_math_ocr_recognize_gray.argtypes = [
+    lib.crispembed_ocr_model_recognize_gray.argtypes = [
         ctypes.c_void_p,
         ctypes.POINTER(ctypes.c_float),
         ctypes.c_int, ctypes.c_int,
         ctypes.POINTER(ctypes.c_int),
     ]
-    lib.crispembed_math_ocr_recognize_gray.restype = ctypes.c_char_p
+    lib.crispembed_ocr_model_recognize_gray.restype = ctypes.c_char_p
 
-    lib.crispembed_math_ocr_confidences.argtypes = [
+    lib.crispembed_ocr_model_confidences.argtypes = [
         ctypes.c_void_p,
         ctypes.POINTER(ctypes.c_int),
     ]
-    lib.crispembed_math_ocr_confidences.restype = ctypes.POINTER(ctypes.c_float)
+    lib.crispembed_ocr_model_confidences.restype = ctypes.POINTER(ctypes.c_float)
 
-    lib.crispembed_math_ocr_mean_confidence.argtypes = [ctypes.c_void_p]
-    lib.crispembed_math_ocr_mean_confidence.restype = ctypes.c_float
+    lib.crispembed_ocr_model_mean_confidence.argtypes = [ctypes.c_void_p]
+    lib.crispembed_ocr_model_mean_confidence.restype = ctypes.c_float
 
 
-class CrispMathOcr:
+class CrispOcrModel:
     """Math/document OCR  - recognizes LaTeX or text from images.
 
     Supports pix2tex (printed math), PP-FormulaNet (printed math),
@@ -1606,22 +1606,22 @@ class CrispMathOcr:
     Usage::
 
         # Math formula OCR
-        ocr = CrispMathOcr("ppformulanet-l-q8_0.gguf")
+        ocr = CrispOcrModel("ppformulanet-l-q8_0.gguf")
         latex = ocr.recognize("formula.png")
         # "\\frac{a}{b}"
 
         # Document OCR (VLM)
-        ocr = CrispMathOcr("internvl2.5-2b-q4_k.gguf")
+        ocr = CrispOcrModel("internvl2.5-2b-q4_k.gguf")
         text = ocr.recognize("document.png")
     """
 
     def __init__(self, model_path: str, n_threads: int = 4, lib_path: Optional[str] = None):
         self._lib = _load_library(lib_path)
-        _setup_math_ocr_signatures(self._lib)
-        self._ctx = self._lib.crispembed_math_ocr_init(
+        _setup_ocr_model_signatures(self._lib)
+        self._ctx = self._lib.crispembed_ocr_model_init(
             model_path.encode("utf-8"), n_threads)
         if not self._ctx:
-            raise RuntimeError(f"Failed to load math OCR model: {model_path}")
+            raise RuntimeError(f"Failed to load OCR model: {model_path}")
 
     def recognize(self, image) -> str:
         """Recognize LaTeX from an image.
@@ -1641,7 +1641,7 @@ class CrispMathOcr:
         h, w = arr.shape[:2]
         ch = arr.shape[2] if arr.ndim == 3 else 1
         out_len = ctypes.c_int(0)
-        result = self._lib.crispembed_math_ocr_recognize(
+        result = self._lib.crispembed_ocr_model_recognize(
             self._ctx,
             arr.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8)),
             ctypes.c_int(w), ctypes.c_int(h), ctypes.c_int(ch),
@@ -1661,7 +1661,7 @@ class CrispMathOcr:
         arr = np.ascontiguousarray(pixels, dtype=np.float32)
         h, w = arr.shape[:2]
         out_len = ctypes.c_int(0)
-        result = self._lib.crispembed_math_ocr_recognize_gray(
+        result = self._lib.crispembed_ocr_model_recognize_gray(
             self._ctx,
             arr.ctypes.data_as(ctypes.POINTER(ctypes.c_float)),
             ctypes.c_int(w), ctypes.c_int(h),
@@ -1677,7 +1677,7 @@ class CrispMathOcr:
             Returns an empty array if the engine does not produce token scores.
         """
         n = ctypes.c_int(0)
-        ptr = self._lib.crispembed_math_ocr_confidences(self._ctx, ctypes.byref(n))
+        ptr = self._lib.crispembed_ocr_model_confidences(self._ctx, ctypes.byref(n))
         if not ptr or n.value == 0:
             return np.array([], dtype=np.float32)
         return np.ctypeslib.as_array(ptr, shape=(n.value,)).copy()
@@ -1689,12 +1689,28 @@ class CrispMathOcr:
         Returns:
             Float in [0, 1], or 0.0 if no recognition has been performed yet.
         """
-        return float(self._lib.crispembed_math_ocr_mean_confidence(self._ctx))
+        return float(self._lib.crispembed_ocr_model_mean_confidence(self._ctx))
 
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:
-            self._lib.crispembed_math_ocr_free(self._ctx)
+            self._lib.crispembed_ocr_model_free(self._ctx)
             self._ctx = None
+
+
+class CrispMathOcr(CrispOcrModel):
+    """Deprecated alias for :class:`CrispOcrModel`.
+
+    The dispatcher now handles general text/document OCR in addition to math,
+    so it was renamed. This subclass is kept for backward compatibility.
+    """
+
+    def __init__(self, *args, **kwargs):
+        import warnings
+        warnings.warn(
+            "CrispMathOcr is deprecated; use CrispOcrModel instead.",
+            DeprecationWarning, stacklevel=2,
+        )
+        super().__init__(*args, **kwargs)
 
 
 class _LayoutRegion(ctypes.Structure):
