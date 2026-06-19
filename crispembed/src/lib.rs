@@ -3246,6 +3246,24 @@ impl CrispPix2Struct {
     }
 }
 
+    /// Per-token softmax confidences from the last `generate` call.
+    pub fn confidences(&self) -> Vec<f32> {
+        let mut n: std::os::raw::c_int = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_pix2struct_confidences(self.ctx, &mut n)
+        };
+        if ptr.is_null() || n <= 0 {
+            return vec![];
+        }
+        unsafe { std::slice::from_raw_parts(ptr, n as usize) }.to_vec()
+    }
+
+    /// Mean softmax confidence from the last `generate` call.
+    pub fn mean_confidence(&self) -> f32 {
+        unsafe { crispembed_sys::crispembed_pix2struct_mean_confidence(self.ctx) }
+    }
+}
+
 impl Drop for CrispPix2Struct {
     fn drop(&mut self) {
         unsafe { crispembed_sys::crispembed_pix2struct_free(self.ctx) }

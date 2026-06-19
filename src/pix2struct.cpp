@@ -127,6 +127,9 @@ struct pix2struct_context {
     // Cached encoder output
     std::vector<float> enc_cache;
     int enc_cache_n;
+
+    // Per-token confidence (softmax probability of greedy-selected token)
+    std::vector<float> char_confidences;
 };
 
 pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
@@ -539,6 +542,7 @@ static std::string greedy_decode(pix2struct_context * ctx, int max_tokens) {
     token_embs.push_back(emb);
 
     std::vector<float> logits(ctx->vocab_size);
+    ctx->char_confidences.clear();
 
     for (int step = 0; step < max_tokens; step++) {
         decoder_step(ctx, token_embs, step, logits.data(), dq1, scratch);
@@ -552,6 +556,7 @@ static std::string greedy_decode(pix2struct_context * ctx, int max_tokens) {
 
         if (best == ctx->eos_id) break;
         generated.push_back(best);
+        { float se = 0; for (int i = 0; i < ctx->vocab_size; i++) se += expf(logits[i] - best_val); ctx->char_confidences.push_back(1.0f / se); }
 
         // Embed new token
         std::vector<float> new_emb(H);
@@ -669,5 +674,16 @@ const char * pix2struct_generate(pix2struct_context * ctx,
 
 void pix2struct_free_text(const char * text) {
     (void)text;
-    (void)text;
+}
+
+const float * pix2struct_confidences(const pix2struct_context * ctx, int * n_tokens) {
+    if (!ctx || ctx->char_confidences.empty()) { if (n_tokens) *n_tokens = 0; return nullptr; }
+    if (n_tokens) *n_tokens = (int)ctx->char_confidences.size();
+    return ctx->char_confidences.data();
+}
+
+float pix2struct_mean_confidence(const pix2struct_context * ctx) {
+    if (!ctx || ctx->char_confidences.empty()) return 0.0f;
+    double s = 0; for (float v : ctx->char_confidences) s += v;
+    return (float)(s / ctx->char_confidences.size());
 }

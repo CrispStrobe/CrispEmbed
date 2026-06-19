@@ -572,7 +572,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             if (!px) return {};
             int max_tok = st.params.vlm_max_tokens > 0 ? st.params.vlm_max_tokens : 2048;
             const char* t = pix2struct_generate(ctx->p2s, px, w, h, max_tok);
-            auto out = wrap_fulltext(t, w, h);
+            int nconf = 0;
+            const float* conf = pix2struct_confidences(ctx->p2s, &nconf);
+            auto out = wrap_fulltext(t, w, h, conf, nconf, pix2struct_mean_confidence(ctx->p2s));
             if (t) pix2struct_free_text(t);
             stbi_image_free(px);
             return out;
