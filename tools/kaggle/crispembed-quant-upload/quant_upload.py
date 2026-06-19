@@ -1,86 +1,138 @@
 #!/usr/bin/env python3
-"""Kaggle kernel: quantize DeepSeek-OCR-2 F16 → Q8_0 + Q4_K and upload to HF.
+"""CrispEmbed — DeepSeek-OCR-2 quantize + upload.
 
-Uses CrispASR kaggle_harness.py for proper HF token resolution, heartbeat, etc.
+Download F16 GGUF from HF, quantize to Q8_0 + Q4_K, upload back.
+Follows the proven qwen2vl_convert.py pattern exactly.
 """
 
-import subprocess, os, sys, time, shutil
+import os, subprocess, sys, shutil, time
+from pathlib import Path
 
-# ── Step 1: Clone CrispASR for the kaggle harness ──
-os.chdir("/kaggle/working")
-subprocess.run("git clone --depth 1 https://github.com/CrispStrobe/CrispASR.git", shell=True)
-sys.path.insert(0, "/kaggle/working/CrispASR/tools/kaggle")
+WORK = Path("/kaggle/working")
+CRISPASR_URL = "https://github.com/CrispStrobe/CrispASR.git"
+_CRISPASR_DIR = WORK / "CrispASR"
+
+# Clone CrispASR for kaggle_harness; fall back to bundled copy
+if not _CRISPASR_DIR.exists():
+    try:
+        subprocess.check_call(["git", "clone", "--depth", "1",
+            CRISPASR_URL, str(_CRISPASR_DIR)])
+        sys.path.insert(0, str(_CRISPASR_DIR / "tools" / "kaggle"))
+    except Exception:
+        pass
+if str(_CRISPASR_DIR / "tools" / "kaggle") not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kaggle_harness as kh
+kh.init_progress()
+hf_token = kh.resolve_hf_token()
+kh.step("harness_ready", hf_token_ok=bool(hf_token))
 
-kh.resolve_tokens()
-hf_token = os.environ.get("HF_TOKEN", "")
-print(f"HF token: {hf_token[:15]}..." if hf_token else "ERROR: No HF token")
-if not hf_token:
-    sys.exit(1)
+# --- Step 1: Install deps ---
+subprocess.check_call([
+    sys.executable, "-m", "pip", "install", "--quiet",
+    "safetensors", "huggingface_hub", "hf_transfer",
+])
+kh.step("deps_installed")
 
-# ── Step 2: Clone CrispEmbed and build quantizer ──
-os.chdir("/kaggle/working")
-subprocess.run("git clone --depth 1 https://github.com/CrispStrobe/CrispEmbed.git", shell=True)
-os.chdir("/kaggle/working/CrispEmbed")
-subprocess.run("git submodule update --init --recursive", shell=True)
+# --- Step 2: Download F16 GGUF from HF ---
+print("[2] downloading DeepSeek-OCR-2 F16 GGUF", flush=True)
+from huggingface_hub import hf_hub_download
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
 
-# Install build tools
-subprocess.run("apt-get update -qq && apt-get install -y -qq ninja-build cmake", shell=True)
+for candidate in ("/kaggle/temp", "/tmp"):
+    if os.path.isdir(candidate):
+        scratch = Path(candidate) / "deepseek-cache"
+        break
+scratch.mkdir(parents=True, exist_ok=True)
 
-# Build quantizer only
-subprocess.run("cmake -B build -DCMAKE_BUILD_TYPE=Release -G Ninja", shell=True, check=True)
-subprocess.run("ninja -C build -j$(nproc) crispembed-quantize", shell=True, check=True)
+with kh.build_heartbeat("download.f16"):
+    f16_path = hf_hub_download(
+        "cstr/deepseek-ocr2-crispembed-GGUF",
+        "deepseek-ocr2-f16.gguf",
+        cache_dir=str(scratch),
+        token=hf_token,
+    )
+f16_size = os.path.getsize(f16_path) / (1024**3)
+print(f"[2] F16: {f16_size:.2f} GiB at {f16_path}", flush=True)
+kh.step("f16_downloaded", size_gb=round(f16_size, 2))
 
-QUANTIZE = "/kaggle/working/CrispEmbed/build/crispembed-quantize"
+# --- Step 3: Clone CrispEmbed and build quantizer ---
+print("[3] building crispembed-quantize", flush=True)
 
-# ── Step 3: Download DeepSeek-OCR-2 F16 from HF ──
-print("\n" + "="*60)
-print("Downloading DeepSeek-OCR-2 F16...")
-print("="*60)
+REPO = WORK / "CrispEmbed"
+if not REPO.exists():
+    subprocess.check_call([
+        "git", "clone", "--depth", "1", "--branch", "main",
+        "https://github.com/CrispStrobe/CrispEmbed.git", str(REPO),
+    ])
+    subprocess.check_call(["git", "-C", str(REPO), "submodule", "update",
+                           "--init", "--recursive"])
+kh.step("cloned")
 
-os.makedirs("/kaggle/working/models", exist_ok=True)
-subprocess.run(
-    f"huggingface-cli download cstr/deepseek-ocr2-crispembed-GGUF deepseek-ocr2-f16.gguf "
-    f"--local-dir /kaggle/working/models --token {hf_token}",
-    shell=True, check=True
+kh.install_build_toolchain()
+BUILD = WORK / "build"
+BUILD.mkdir(exist_ok=True)
+
+cmake_cfg = (
+    f"cmake -G Ninja -S {REPO} -B {BUILD} "
+    f"-DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=OFF "
+    + " ".join(kh.cache_and_link_flags())
 )
+kh.sh_with_progress(cmake_cfg)
 
-f16 = "/kaggle/working/models/deepseek-ocr2-f16.gguf"
-assert os.path.exists(f16), f"F16 not found at {f16}"
-print(f"F16 size: {os.path.getsize(f16)/1e9:.1f} GB")
+with kh.build_heartbeat("cmake.build"):
+    kh.sh_with_progress(
+        f"cmake --build {BUILD} --target crispembed-quantize "
+        f"-j{kh.safe_build_jobs(gpu=False)}"
+    )
+kh.step("quantize_built")
+QUANTIZE = BUILD / "crispembed-quantize"
 
-# ── Step 4: Quantize ──
-print("\n" + "="*60)
-print("Quantizing to Q8_0...")
-print("="*60)
+# --- Step 4: Quantize ---
+OUT_Q8 = WORK / "deepseek-ocr2-q8_0.gguf"
+print("[4] quantizing F16 -> Q8_0", flush=True)
+with kh.build_heartbeat("quantize.q8"):
+    subprocess.check_call([str(QUANTIZE), f16_path, str(OUT_Q8), "q8_0"])
+q8_gb = OUT_Q8.stat().st_size / (1024**3)
+print(f"[4] Q8_0: {q8_gb:.2f} GiB", flush=True)
+kh.step("q8_done", size_gb=round(q8_gb, 2))
 
-q8 = "/kaggle/working/models/deepseek-ocr2-q8_0.gguf"
-q4 = "/kaggle/working/models/deepseek-ocr2-q4_k.gguf"
+OUT_Q4 = WORK / "deepseek-ocr2-q4_k.gguf"
+print("[5] quantizing F16 -> Q4_K", flush=True)
+with kh.build_heartbeat("quantize.q4k"):
+    subprocess.check_call([str(QUANTIZE), f16_path, str(OUT_Q4), "q4_k"])
+q4_gb = OUT_Q4.stat().st_size / (1024**3)
+print(f"[5] Q4_K: {q4_gb:.2f} GiB", flush=True)
+kh.step("q4k_done", size_gb=round(q4_gb, 2))
 
-with kh.build_heartbeat():
-    subprocess.run(f"{QUANTIZE} {f16} {q8} q8_0", shell=True, check=True)
-    print(f"Q8_0 size: {os.path.getsize(q8)/1e9:.1f} GB")
+# --- Step 5: Upload to HF ---
+HF_REPO = "cstr/deepseek-ocr2-crispembed-GGUF"
+if hf_token:
+    from huggingface_hub import HfApi
+    api = HfApi(token=hf_token)
+    try:
+        api.create_repo(HF_REPO, repo_type="model", exist_ok=True)
+    except Exception as e:
+        print(f"[6] repo: {e}", flush=True)
 
-    subprocess.run(f"{QUANTIZE} {f16} {q4} q4_k", shell=True, check=True)
-    print(f"Q4_K size: {os.path.getsize(q4)/1e9:.1f} GB")
+    for path, name, msg in [
+        (OUT_Q8, "deepseek-ocr2-q8_0.gguf", "Q8_0 quantized"),
+        (OUT_Q4, "deepseek-ocr2-q4_k.gguf", "Q4_K quantized"),
+    ]:
+        if path.exists():
+            sz = path.stat().st_size / (1024**3)
+            print(f"[6] uploading {name} ({sz:.1f} GiB)", flush=True)
+            with kh.build_heartbeat(f"upload.{name}"):
+                api.upload_file(
+                    path_or_fileobj=str(path),
+                    path_in_repo=name,
+                    repo_id=HF_REPO, repo_type="model",
+                    commit_message=msg,
+                )
+            print(f"[6] uploaded {name}", flush=True)
+    kh.step("uploaded")
+else:
+    print("[6] SKIP upload — no HF token", flush=True)
 
-# ── Step 5: Upload to HF ──
-print("\n" + "="*60)
-print("Uploading quantized models to HF...")
-print("="*60)
-
-from huggingface_hub import HfApi
-api = HfApi(token=hf_token)
-repo = "cstr/deepseek-ocr2-crispembed-GGUF"
-
-for path, name in [(q8, "deepseek-ocr2-q8_0.gguf"), (q4, "deepseek-ocr2-q4_k.gguf")]:
-    if os.path.exists(path):
-        sz = os.path.getsize(path) / 1e9
-        print(f"Uploading {name} ({sz:.1f} GB)...")
-        api.upload_file(path_or_fileobj=path, path_in_repo=name,
-                        repo_id=repo, repo_type="model")
-        print(f"  Done: {name}")
-
-print("\n" + "="*60)
-print("ALL DONE")
-print("="*60)
+kh.step("all_done")
+print("\n[DONE] DeepSeek-OCR-2 quantization complete", flush=True)

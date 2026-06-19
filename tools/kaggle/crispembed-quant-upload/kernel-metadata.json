@@ -1,6 +1,6 @@
 {
-  "id": "chr1str/crispembed-quant-upload",
-  "title": "CrispEmbed Quantize + Upload",
+  "id": "chr1str/crispembed-deepseek-quant",
+  "title": "crispembed-deepseek-quant",
   "code_file": "quant_upload.py",
   "language": "python",
   "kernel_type": "script",
