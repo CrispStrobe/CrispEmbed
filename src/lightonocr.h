@@ -57,6 +57,9 @@ const char * lightonocr_recognize_file(
     const char * image_path,
     int * out_len);
 
+const float * lightonocr_confidences(const lightonocr_context * ctx, int * n_tokens);
+float lightonocr_mean_confidence(const lightonocr_context * ctx);
+
 #ifdef __cplusplus
 }
 #endif
