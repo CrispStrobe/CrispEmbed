@@ -63,7 +63,7 @@ pub struct CrispembedOcrPipelineParams {
     pub nafnet_model: *const c_char,
     pub sr_model: *const c_char,
     pub vlm_model: *const c_char,
-    pub vlm_engine: c_int,
+    pub vlm_engine: c_int, // 0=GOT 1=GLM 2=Qwen2-VL/PaddleOCR-VL 3=InternVL2
     pub punct_model: *const c_char,
     pub lid_model: *const c_char,
     pub truecase_model: *const c_char,
@@ -75,7 +75,7 @@ pub struct CrispembedOcrPipelineParams {
 #[repr(C)]
 pub struct CrispembedOcrStage {
     pub source_type: c_int,   // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    pub engine: c_int,        // 0=dbnet_trocr 1=surya ... 9=pix2struct 10=granite_vision 11=lightonocr
+    pub engine: c_int,        // 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl(+PaddleOCR-VL) 5=internvl2 6=tesseract 7=parseq 8=deepseek_ocr2 9=pix2struct 10=granite_vision 11=lightonocr
     pub model_a: *const c_char,
     pub model_b: *const c_char,
     pub cleanup_enabled: c_int,
