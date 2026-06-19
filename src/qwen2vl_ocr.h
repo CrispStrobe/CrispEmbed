@@ -143,6 +143,7 @@ struct model {
     ggml_tensor *post_layernorm_b = nullptr;
     std::vector<vision_block> vis_blocks;
     vision_merger merger;
+    std::vector<vision_merger> deepstack_mergers;  // Qwen3-VL: mergers at deepstack_indexes
 
     // LLM decoder
     ggml_tensor *embed_tokens = nullptr;
@@ -191,6 +192,8 @@ struct vision_result {
     float *image_embeds = nullptr;  // malloc'd, caller frees
     int n_merged = 0;
     int embed_dim = 0;
+    // Qwen3-VL deepstack: per-layer merged features for LLM injection
+    std::vector<float *> deepstack_embeds;  // each malloc'd, caller frees
 };
 
 bool encode_vision(context &ctx,
