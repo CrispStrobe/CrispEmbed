@@ -118,6 +118,7 @@ struct granite_vision_context {
 
     // Output buffer
     std::string output_text;
+    std::vector<float> char_confidences;
 
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
@@ -605,6 +606,7 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
 
     // Greedy decode
     ctx->output_text.clear();
+    ctx->char_confidences.clear();
     int eos_id = 0;  // Granite uses token 0 as EOS
 
     for (int step = 0; step < ctx->max_tokens; step++) {
@@ -616,6 +618,14 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
         }
 
         if (best_id == eos_id) break;
+
+        // Confidence: softmax of winning token
+        {
+            float sum_e = 0;
+            for (int v = 0; v < ctx->vocab_size; v++)
+                sum_e += expf(logits[v] - best_score);
+            ctx->char_confidences.push_back(1.0f / sum_e);
+        }
 
         // TODO: detokenize best_id → text
         // For now, just store the token ID (proper tokenizer integration needed)
@@ -632,4 +642,20 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
 
     if (out_len) *out_len = (int)ctx->output_text.size();
     return ctx->output_text.c_str();
+}
+
+const float * granite_vision_confidences(const granite_vision_context * ctx, int * n) {
+    if (!ctx || ctx->char_confidences.empty()) {
+        if (n) *n = 0;
+        return nullptr;
+    }
+    if (n) *n = (int)ctx->char_confidences.size();
+    return ctx->char_confidences.data();
+}
+
+float granite_vision_mean_confidence(const granite_vision_context * ctx) {
+    if (!ctx || ctx->char_confidences.empty()) return 0.0f;
+    double sum = 0;
+    for (float c : ctx->char_confidences) sum += c;
+    return (float)(sum / ctx->char_confidences.size());
 }

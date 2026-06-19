@@ -107,6 +107,9 @@ struct context {
     // Tokenizer
     std::vector<std::string> vocab;
     std::unordered_map<std::string, int> token_to_id;
+
+    // Per-token confidence
+    std::vector<float> char_confidences;
 };
 
 // ---------------------------------------------------------------------------
@@ -909,12 +912,14 @@ static bool run_decoder_prefill(context &ctx,
                 n_layers, n_prompt, kv_dim,
                 (float)n_layers * n_prompt * kv_dim * 2 * sizeof(float) / (1024*1024));
 
+    ctx.char_confidences.clear();
     std::vector<int32_t> generated;
     int best = 0;
     float best_score = -INFINITY;
     for (int v = 0; v < V; v++)
         if (logits_data[v] > best_score) { best_score = logits_data[v]; best = v; }
     generated.push_back(best);
+    { float se = 0; for (int v = 0; v < V; v++) se += expf(logits_data[v] - best_score); ctx.char_confidences.push_back(1.0f / se); }
 
     fprintf(stderr, "lightonocr: prefill done, first token=%d (score=%.2f)\n", best, best_score);
     fprintf(stderr, "lightonocr: logits[0..4] = [%.3f, %.3f, %.3f, %.3f, %.3f]\n",
@@ -1097,7 +1102,9 @@ static bool run_decoder_prefill(context &ctx,
         best = 0; best_score = -INFINITY;
         for (int v = 0; v < V; v++)
             if (logits_data[v] > best_score) { best_score = logits_data[v]; best = v; }
+        if (best == eos_id) break;
         generated.push_back(best);
+        { float se = 0; for (int v = 0; v < V; v++) se += expf(logits_data[v] - best_score); ctx.char_confidences.push_back(1.0f / se); }
         auto t_step_end = std::chrono::steady_clock::now();
         double step_ms = std::chrono::duration<double, std::milli>(t_step_end - t_step_start).count();
         fprintf(stderr, "  gen[%d] tok=%d (%.0fms)%s\n", step, best, step_ms, kv_ok ? " cached" : "");
@@ -1263,4 +1270,16 @@ extern "C" const char * lightonocr_recognize_file(
     c->ctx.last_text = lightonocr::recognize_file(c->ctx, image_path, c->max_tokens);
     if (out_len) *out_len = (int)c->ctx.last_text.size();
     return c->ctx.last_text.c_str();
+}
+
+extern "C" const float * lightonocr_confidences(const lightonocr_context * c, int * n) {
+    if (!c || c->ctx.char_confidences.empty()) { if (n) *n = 0; return nullptr; }
+    if (n) *n = (int)c->ctx.char_confidences.size();
+    return c->ctx.char_confidences.data();
+}
+
+extern "C" float lightonocr_mean_confidence(const lightonocr_context * c) {
+    if (!c || c->ctx.char_confidences.empty()) return 0.0f;
+    double s = 0; for (float v : c->ctx.char_confidences) s += v;
+    return (float)(s / c->ctx.char_confidences.size());
 }
