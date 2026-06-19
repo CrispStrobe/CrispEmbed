@@ -11,6 +11,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gguf_loader.h"
+#include "core/cpu_ops.h"
 
 #include <algorithm>
 #include <cmath>
@@ -21,99 +22,12 @@
 #include <string>
 #include <vector>
 
-// ---------------------------------------------------------------------------
-// FP16/quantized → F32 dequantization
-// ---------------------------------------------------------------------------
-
-// GPU-safe: uses ggml_backend_tensor_get instead of direct tensor->data access
-static std::vector<float> to_f32(const ggml_tensor* t) {
-    if (!t) return {};
-    int n = (int)ggml_nelements(t);
-    std::vector<float> out(n);
-    if (t->type == GGML_TYPE_F32) {
-        ggml_backend_tensor_get(t, out.data(), 0, n * sizeof(float));
-    } else if (t->type == GGML_TYPE_F16) {
-        std::vector<ggml_fp16_t> tmp(n);
-        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
-        for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(tmp[i]);
-    } else {
-        size_t raw_sz = ggml_nbytes(t);
-        std::vector<uint8_t> raw(raw_sz);
-        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
-        const auto* traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) {
-            traits->to_float(raw.data(), out.data(), n);
-        } else {
-            memset(out.data(), 0, n * sizeof(float));
-        }
-    }
-    return out;
-}
-
-// ---------------------------------------------------------------------------
-// CPU-side math helpers
-// ---------------------------------------------------------------------------
-
-static void layernorm_cpu(const float* in, float* out, int D,
-                          const ggml_tensor* w, const ggml_tensor* b) {
-    auto wv = to_f32(w);
-    auto bv = to_f32(b);
-    double mean = 0;
-    for (int i = 0; i < D; i++) mean += in[i];
-    mean /= D;
-    double var = 0;
-    for (int i = 0; i < D; i++) { double d = in[i] - mean; var += d * d; }
-    var /= D;
-    float s = 1.0f / sqrtf((float)var + 1e-5f);
-    for (int i = 0; i < D; i++)
-        out[i] = ((in[i] - (float)mean) * s) * (wv.empty() ? 1.0f : wv[i])
-                 + (bv.empty() ? 0.0f : bv[i]);
-}
-
-static void linear_cpu(const float* in, float* out, int in_dim, int out_dim,
-                        const ggml_tensor* w, const ggml_tensor* b) {
-    auto wv = to_f32(w);
-    auto bv = to_f32(b);
-    for (int o = 0; o < out_dim; o++) {
-        float s = bv.empty() ? 0.0f : bv[o];
-        for (int i = 0; i < in_dim; i++)
-            s += in[i] * wv[o * in_dim + i];
-        out[o] = s;
-    }
-}
-
-static void mha_1q_cpu(const float* q, const float* k, const float* v,
-                        float* out, int n_kv, int D, int n_heads) {
-    int hd = D / n_heads;
-    std::vector<float> result(D, 0.0f);
-    for (int h = 0; h < n_heads; h++) {
-        int off = h * hd;
-        // Compute attention scores for this head
-        std::vector<float> scores(n_kv);
-        for (int ki = 0; ki < n_kv; ki++) {
-            float s = 0;
-            for (int d = 0; d < hd; d++)
-                s += q[off + d] * k[ki * D + off + d];
-            scores[ki] = s / sqrtf((float)hd);
-        }
-        // Softmax
-        float maxs = *std::max_element(scores.begin(), scores.end());
-        float sum = 0;
-        for (int ki = 0; ki < n_kv; ki++) {
-            scores[ki] = expf(scores[ki] - maxs);
-            sum += scores[ki];
-        }
-        for (int ki = 0; ki < n_kv; ki++) scores[ki] /= sum;
-        // Weighted sum
-        for (int d = 0; d < hd; d++) {
-            float s = 0;
-            for (int ki = 0; ki < n_kv; ki++)
-                s += scores[ki] * v[ki * D + off + d];
-            result[off + d] = s;
-        }
-    }
-    memcpy(out, result.data(), D * sizeof(float));
-}
+using core_cpu::to_f32;
+using core_cpu::layernorm_cpu;
+using core_cpu::linear_cpu;
+using core_cpu::mha_1q_cpu;
+using core_cpu::conv2d_cpu;
+using core_cpu::relu_inplace;
 
 // ---------------------------------------------------------------------------
 // Structs
@@ -316,52 +230,6 @@ static void map_tensors(ppformulanet_ocr_context* ctx) {
 // We perform convolution manually on CPU. For a 57M model at 384×384 this
 // is ~0.5-1 second on a modern CPU. Good enough for initial port; can move
 // to ggml graph later for SIMD acceleration.
-
-// Helper: 2D convolution, handles groups
-static void conv2d_cpu(const float* in, float* out,
-                        const float* weight, const float* bias,
-                        int in_ch, int out_ch, int H, int W,
-                        int kh, int kw, int stride, int pad,
-                        int groups) {
-    int out_H = (H + 2 * pad - kh) / stride + 1;
-    int out_W = (W + 2 * pad - kw) / stride + 1;
-    int ch_per_group_in = in_ch / groups;
-    int ch_per_group_out = out_ch / groups;
-
-    for (int oc = 0; oc < out_ch; oc++) {
-        int g = oc / ch_per_group_out;
-        int oc_in_group = oc % ch_per_group_out;
-        float b = bias ? bias[oc] : 0.0f;
-
-        for (int oy = 0; oy < out_H; oy++) {
-            for (int ox = 0; ox < out_W; ox++) {
-                float sum = b;
-                for (int ic = 0; ic < ch_per_group_in; ic++) {
-                    int actual_ic = g * ch_per_group_in + ic;
-                    for (int ky = 0; ky < kh; ky++) {
-                        for (int kx = 0; kx < kw; kx++) {
-                            int iy = oy * stride - pad + ky;
-                            int ix = ox * stride - pad + kx;
-                            if (iy >= 0 && iy < H && ix >= 0 && ix < W) {
-                                float pixel = in[actual_ic * H * W + iy * W + ix];
-                                int w_idx = oc * (ch_per_group_in * kh * kw)
-                                            + ic * kh * kw + ky * kw + kx;
-                                sum += pixel * weight[w_idx];
-                            }
-                        }
-                    }
-                }
-                out[oc * out_H * out_W + oy * out_W + ox] = sum;
-            }
-        }
-    }
-}
-
-// ReLU in-place
-static void relu_inplace(float* data, int n) {
-    for (int i = 0; i < n; i++)
-        if (data[i] < 0) data[i] = 0;
-}
 
 // MaxPool2d(kernel=2, stride=1, ceil_mode=True) on padded input
 static void maxpool2d_k2s1_ceil(const float* in, float* out,
@@ -692,7 +560,7 @@ static std::vector<float> decoder_step(ppformulanet_ocr_context* ctx,
         fprintf(stderr, "ppfn: [dbg] tok_emb+pos first 5: %.5f %.5f %.5f %.5f %.5f\n",
                 x[0], x[1], x[2], x[3], x[4]);
     }
-    layernorm_cpu(x.data(), x.data(), D, ctx->embed_ln_w, ctx->embed_ln_b);
+    layernorm_cpu(x.data(), x.data(), D, ctx->embed_ln_w, ctx->embed_ln_b, 1e-5f);
     if (dbg && step == 0) {
         fprintf(stderr, "ppfn: [dbg] after embed_ln first 5: %.5f %.5f %.5f %.5f %.5f\n",
                 x[0], x[1], x[2], x[3], x[4]);
@@ -704,7 +572,7 @@ static std::vector<float> decoder_step(ppformulanet_ocr_context* ctx,
 
         // --- Self-attention (PRE-LN) ---
         std::vector<float> residual(x.begin(), x.end());
-        layernorm_cpu(x.data(), x.data(), D, l.self_ln_w, l.self_ln_b);
+        layernorm_cpu(x.data(), x.data(), D, l.self_ln_w, l.self_ln_b, 1e-5f);
 
         std::vector<float> q(D), k(D), v(D);
         linear_cpu(x.data(), q.data(), D, D, l.self_q_w, l.self_q_b);
@@ -726,7 +594,7 @@ static std::vector<float> decoder_step(ppformulanet_ocr_context* ctx,
 
         // --- Cross-attention (PRE-LN) ---
         residual.assign(x.begin(), x.end());
-        layernorm_cpu(x.data(), x.data(), D, l.cross_ln_w, l.cross_ln_b);
+        layernorm_cpu(x.data(), x.data(), D, l.cross_ln_w, l.cross_ln_b, 1e-5f);
 
         std::vector<float> cq(D);
         linear_cpu(x.data(), cq.data(), D, D, l.cross_q_w, l.cross_q_b);
@@ -742,7 +610,7 @@ static std::vector<float> decoder_step(ppformulanet_ocr_context* ctx,
 
         // --- FFN (PRE-LN) ---
         residual.assign(x.begin(), x.end());
-        layernorm_cpu(x.data(), x.data(), D, l.ff_ln_w, l.ff_ln_b);
+        layernorm_cpu(x.data(), x.data(), D, l.ff_ln_w, l.ff_ln_b, 1e-5f);
 
         std::vector<float> ff_up(hp.dec_ffn_dim);
         linear_cpu(x.data(), ff_up.data(), D, hp.dec_ffn_dim, l.ff_up_w, l.ff_up_b);
@@ -761,7 +629,7 @@ static std::vector<float> decoder_step(ppformulanet_ocr_context* ctx,
         fprintf(stderr, "ppfn: [dbg] before final_ln first 5: %.5f %.5f %.5f %.5f %.5f\n",
                 x[0], x[1], x[2], x[3], x[4]);
     }
-    layernorm_cpu(x.data(), x.data(), D, ctx->final_ln_w, ctx->final_ln_b);
+    layernorm_cpu(x.data(), x.data(), D, ctx->final_ln_w, ctx->final_ln_b, 1e-5f);
     if (dbg && step == 0) {
         fprintf(stderr, "ppfn: [dbg] after final_ln first 5: %.5f %.5f %.5f %.5f %.5f\n",
                 x[0], x[1], x[2], x[3], x[4]);

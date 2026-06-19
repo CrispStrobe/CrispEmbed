@@ -6,6 +6,7 @@
 #include "got_ocr.h"
 #include "crispembed_diff.h"
 #include "core/gguf_loader.h"
+#include "core/cpu_ops.h"
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
@@ -23,107 +24,11 @@
 #include <string>
 #include <vector>
 
-// ---------------------------------------------------------------------------
-// CPU helpers
-// ---------------------------------------------------------------------------
-
-static std::vector<float> to_f32(const ggml_tensor* t) {
-    if (!t) return {};
-    int n = (int)ggml_nelements(t);
-    std::vector<float> out(n);
-    if (t->type == GGML_TYPE_F32) {
-        memcpy(out.data(), t->data, n * sizeof(float));
-    } else if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t* src = (const ggml_fp16_t*)t->data;
-        for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(src[i]);
-    } else {
-        const auto* traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) {
-            traits->to_float(t->data, out.data(), n);
-        } else {
-            memset(out.data(), 0, n * sizeof(float));
-        }
-    }
-    return out;
-}
-
-static void layernorm_cpu(const float* in, float* out, int D,
-                          const float* w, const float* b, float eps = 1e-6f) {
-    double mean = 0;
-    for (int i = 0; i < D; i++) mean += in[i];
-    mean /= D;
-    double var = 0;
-    for (int i = 0; i < D; i++) { double d = in[i] - mean; var += d * d; }
-    var /= D;
-    float s = 1.0f / sqrtf((float)var + eps);
-    for (int i = 0; i < D; i++)
-        out[i] = ((in[i] - (float)mean) * s) * (w ? w[i] : 1.0f) + (b ? b[i] : 0.0f);
-}
-
-static void layernorm2d_cpu(const float* in, float* out,
-                            int C, int H, int W,
-                            const float* w, const float* b, float eps = 1e-6f) {
-    for (int y = 0; y < H; y++) {
-        for (int x = 0; x < W; x++) {
-            double mean = 0;
-            for (int c = 0; c < C; c++)
-                mean += in[c * H * W + y * W + x];
-            mean /= C;
-            double var = 0;
-            for (int c = 0; c < C; c++) {
-                double d = in[c * H * W + y * W + x] - mean;
-                var += d * d;
-            }
-            var /= C;
-            float s = 1.0f / sqrtf((float)var + eps);
-            for (int c = 0; c < C; c++) {
-                float v = (in[c * H * W + y * W + x] - (float)mean) * s;
-                out[c * H * W + y * W + x] = v * (w ? w[c] : 1.0f) + (b ? b[c] : 0.0f);
-            }
-        }
-    }
-}
-
-static void linear_cpu(const float* in, float* out, int in_dim, int out_dim,
-                        const float* w, const float* b) {
-    for (int o = 0; o < out_dim; o++) {
-        float s = b ? b[o] : 0.0f;
-        for (int i = 0; i < in_dim; i++)
-            s += in[i] * w[o * in_dim + i];
-        out[o] = s;
-    }
-}
-
-static void conv2d_cpu(const float* in, float* out,
-                        const float* weight, const float* bias,
-                        int in_ch, int out_ch, int H, int W,
-                        int kh, int kw, int stride, int pad) {
-    int out_H = (H + 2 * pad - kh) / stride + 1;
-    int out_W = (W + 2 * pad - kw) / stride + 1;
-    for (int oc = 0; oc < out_ch; oc++) {
-        float b = bias ? bias[oc] : 0.0f;
-        for (int oy = 0; oy < out_H; oy++) {
-            for (int ox = 0; ox < out_W; ox++) {
-                float sum = b;
-                for (int ic = 0; ic < in_ch; ic++) {
-                    for (int ky2 = 0; ky2 < kh; ky2++) {
-                        for (int kx2 = 0; kx2 < kw; kx2++) {
-                            int iy = oy * stride - pad + ky2;
-                            int ix = ox * stride - pad + kx2;
-                            if (iy >= 0 && iy < H && ix >= 0 && ix < W) {
-                                float pixel = in[ic * H * W + iy * W + ix];
-                                int w_idx = oc * (in_ch * kh * kw)
-                                            + ic * kh * kw + ky2 * kw + kx2;
-                                sum += pixel * weight[w_idx];
-                            }
-                        }
-                    }
-                }
-                out[oc * out_H * out_W + oy * out_W + ox] = sum;
-            }
-        }
-    }
-}
+using core_cpu::to_f32;
+using core_cpu::layernorm_cpu;
+using core_cpu::layernorm2d_cpu;
+using core_cpu::linear_cpu;
+using core_cpu::conv2d_cpu;
 
 // ---------------------------------------------------------------------------
 // Window partition / unpartition (SAM ViT pattern)
@@ -813,7 +718,7 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
     auto nln1_b = to_f32(ctx.m.neck_ln1_b);
     std::vector<float> neck1_ln(nC * nP * nP);
     layernorm2d_cpu(neck1.data(), neck1_ln.data(), nC, nP, nP,
-                    nln1_w.data(), nln1_b.data());
+                    nln1_w.data(), nln1_b.data(), 1e-6f);
 
     // Conv2 (256→256, 3×3, pad=1)
     auto nc2_w = to_f32(ctx.m.neck_conv2_w);
@@ -826,7 +731,7 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
     auto nln2_b = to_f32(ctx.m.neck_ln2_b);
     std::vector<float> neck2_ln(nC * nP * nP);
     layernorm2d_cpu(neck2.data(), neck2_ln.data(), nC, nP, nP,
-                    nln2_w.data(), nln2_b.data());
+                    nln2_w.data(), nln2_b.data(), 1e-6f);
 
     // ── Downsample (CPU): Conv(256→512, 3×3, s2, p1) → Conv(512→1024, 3×3, s2, p1) ──
     int ds1_out_ch = 512;
