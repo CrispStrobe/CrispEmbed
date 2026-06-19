@@ -545,36 +545,49 @@ def apply_imrope(x, positions, sections, theta, head_dim):
     sections: [s0, s1, s2] — how dims are split (e.g. [24, 20, 20])
     theta: rope base frequency
 
-    Interleaved pattern: instead of [TTT...HHH...WWW...],
-    dims cycle through [T,H,W,T,H,W,...].
-    Rotation: neghalf — pairs are (j, j+half) where half = hd//2.
+    Matches ggml GGML_ROPE_TYPE_IMROPE exactly:
+    - For each dim pair i0 (0,2,4,...), sector = (i0/2) % sect_dims
+    - sector%3==0 and sector < 3*s0 → temporal position
+    - sector%3==1 and sector < 3*s1 → height position
+    - sector%3==2 and sector < 3*s2 → width position
+    - else → extra (position 0)
+    - Rotation: neghalf — pairs are (j, j+half) where j=i0/2, half=hd/2
+    - theta accumulates across ALL pairs: theta *= theta_scale per pair
     """
     nh, T, hd = x.shape
     out = x.copy()
     half = hd // 2
-
-    # Build section lookup: for each "slot" 0..sum(sections)-1,
-    # which position dimension does it use?
     sect_dims = sum(sections)
-    slot_to_pos = np.zeros(sect_dims, dtype=np.int32)
-    offset = 0
-    for si, s in enumerate(sections):
-        for j in range(s):
-            slot_to_pos[offset + j] = si
-        offset += s
+    theta_scale = theta ** (-2.0 / hd)
 
     for t_idx in range(T):
-        pos_vals = [float(positions[t_idx, i]) for i in range(len(sections))]
+        pos_t = float(positions[t_idx, 0])
+        pos_h = float(positions[t_idx, 1])
+        pos_w = float(positions[t_idx, 2])
+
+        # Accumulate theta for each position dimension independently
+        # (ggml uses theta_t, theta_h, theta_w that all scale together)
+        cur_theta_t = pos_t
+        cur_theta_h = pos_h
+        cur_theta_w = pos_w
 
         for i0 in range(0, hd, 2):
             j = i0 // 2  # pair index
-            # Interleaved: slot = j % sect_dims, then cycle
-            slot = j % sect_dims
-            pos_dim = slot_to_pos[slot]
-            pos_val = pos_vals[pos_dim]
+            sector = j % sect_dims
 
+            # Determine which position to use (matching ggml IMROPE)
+            if sector % 3 == 1 and sector < 3 * sections[1]:
+                cur_theta = cur_theta_h
+            elif sector % 3 == 2 and sector < 3 * sections[2]:
+                cur_theta = cur_theta_w
+            elif sector % 3 == 0 and sector < 3 * sections[0]:
+                cur_theta = cur_theta_t
+            else:
+                cur_theta = 0.0  # extra dims
+
+            # Frequency: theta^(-2*i0/hd) = theta_scale^(i0/2)
             freq = 1.0 / (theta ** (float(i0) / hd))
-            angle = pos_val * freq
+            angle = cur_theta * freq
             cos_a = math.cos(angle)
             sin_a = math.sin(angle)
 
