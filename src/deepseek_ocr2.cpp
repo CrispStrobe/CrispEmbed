@@ -695,6 +695,53 @@ static ggml_cgraph* build_sam_layer_graph(ggml_context* g, ds_ocr2_ctx* ctx,
 // SAM vision encoder
 // ---------------------------------------------------------------------------
 
+// Metal graph for the SAM neck + downsample (conv 768->256 1x1, LN2d, conv
+// 256->256 3x3, LN2d, conv 256->512 3x3 s2, conv 512->896 3x3 s2). Replaces the
+// CPU conv2d_cpu chain. Conv kernels are fed as F32 inputs (the GGUF stores them
+// Q8_0 — can't reshape a quantized tensor to [1,1,IC,OC]). Default path;
+// DS_SAM_CONV_CPU=1 restores the CPU chain. Validated equal via DS_REF sam_output.
+static ggml_cgraph* build_sam_neck_graph(ggml_context* g, int nP, int C, int nC,
+                                         int ds1_ch, int ds2_ch) {
+    ggml_cgraph* gf = ggml_new_graph(g);
+    ggml_tensor* chw = ggml_new_tensor_4d(g, GGML_TYPE_F32, nP, nP, C, 1);
+    ggml_set_name(chw, "chw"); ggml_set_input(chw);
+    auto in4 = [&](const char* nm, int kw, int kh, int ic, int oc) {
+        ggml_tensor* t = ggml_new_tensor_4d(g, GGML_TYPE_F32, kw, kh, ic, oc);
+        ggml_set_name(t, nm); ggml_set_input(t); return t;
+    };
+    auto in1 = [&](const char* nm, int n) {
+        ggml_tensor* t = ggml_new_tensor_1d(g, GGML_TYPE_F32, n);
+        ggml_set_name(t, nm); ggml_set_input(t); return t;
+    };
+    ggml_tensor* w_nc1 = in4("w_nc1", 1, 1, C, nC);
+    ggml_tensor* w_nc2 = in4("w_nc2", 3, 3, nC, nC);
+    ggml_tensor* w_n2  = in4("w_n2", 3, 3, nC, ds1_ch);
+    ggml_tensor* w_n3  = in4("w_n3", 3, 3, ds1_ch, ds2_ch);
+    ggml_tensor *ln1w = in1("ln1w", nC), *ln1b = in1("ln1b", nC);
+    ggml_tensor *ln2w = in1("ln2w", nC), *ln2b = in1("ln2b", nC);
+
+    // LayerNorm over the channel axis (ne[2]) at each spatial position.
+    auto ln2d = [&](ggml_tensor* x, ggml_tensor* w, ggml_tensor* b) {
+        ggml_tensor* xp = ggml_cont(g, ggml_permute(g, x, 1, 2, 0, 3));  // [C,W,H]
+        xp = ggml_norm(g, xp, 1e-6f);
+        xp = ggml_add(g, ggml_mul(g, xp, w), b);
+        return ggml_cont(g, ggml_permute(g, xp, 2, 0, 1, 3));            // [W,H,C]
+    };
+
+    ggml_tensor* x = ggml_conv_2d(g, w_nc1, chw, 1, 1, 0, 0, 1, 1);  // [nP,nP,nC]
+    x = ln2d(x, ln1w, ln1b);
+    x = ggml_conv_2d(g, w_nc2, x, 1, 1, 1, 1, 1, 1);                 // [nP,nP,nC]
+    x = ln2d(x, ln2w, ln2b);
+    x = ggml_conv_2d(g, w_n2, x, 2, 2, 1, 1, 1, 1);                  // [ds1,ds1,ds1_ch]
+    x = ggml_conv_2d(g, w_n3, x, 2, 2, 1, 1, 1, 1);                  // [ds2,ds2,ds2_ch]
+    int ds2 = (nP + 2 - 3) / 2 + 1; ds2 = (ds2 + 2 - 3) / 2 + 1;
+    x = ggml_cont(g, ggml_permute(g, x, 1, 2, 0, 3));               // [C, W, H]
+    x = ggml_reshape_2d(g, x, ds2_ch, ds2 * ds2);                   // [C, n_vis] = out_features
+    ggml_set_name(x, "neck_out"); ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+    return gf;
+}
+
 static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
                        std::vector<float> &out_features, int &out_n_tokens, int &out_dim) {
     auto &s = ctx.m.shp;
@@ -858,44 +905,64 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
         for (int c = 0; c < C; c++) chw[c * nP * nP + y * nP + x] = hidden[tok * C + c];
     }
 
-    auto nc1_w = to_f32(ctx.m.neck_conv1_w);
-    std::vector<float> neck1(nC * nP * nP);
-    conv2d_cpu(chw.data(), neck1.data(), nc1_w.data(), nullptr, C, nC, nP, nP, 1, 1, 1, 0, ctx.n_threads);
-
-    auto nln1_w = to_f32(ctx.m.neck_ln1_w), nln1_b = to_f32(ctx.m.neck_ln1_b);
-    std::vector<float> neck1_ln(nC * nP * nP);
-    layernorm2d_cpu(neck1.data(), neck1_ln.data(), nC, nP, nP, nln1_w.data(), nln1_b.data());
-
-    auto nc2_w = to_f32(ctx.m.neck_conv2_w);
-    std::vector<float> neck2(nC * nP * nP);
-    conv2d_cpu(neck1_ln.data(), neck2.data(), nc2_w.data(), nullptr, nC, nC, nP, nP, 3, 3, 1, 1, ctx.n_threads);
-
-    auto nln2_w = to_f32(ctx.m.neck_ln2_w), nln2_b = to_f32(ctx.m.neck_ln2_b);
-    std::vector<float> neck2_ln(nC * nP * nP);
-    layernorm2d_cpu(neck2.data(), neck2_ln.data(), nC, nP, nP, nln2_w.data(), nln2_b.data());
-
-    // Downsample: Conv(256->ds1,3x3,s2,p1) -> Conv(ds1->ds2,3x3,s2,p1). The
-    // output channels come from the actual weights (ne[1]): net_2 = 256->512,
-    // net_3 = 512->896 here (896 = the Qwen2 encoder dim), NOT the config's
-    // nominal downsample_channels [512,1024]. Hardcoding 1024 overruns net_3.
+    // net_2 = 256->512, net_3 = 512->896 (= Qwen2 dim); derive channels from the
+    // weights (ne[1]), not the config's nominal [512,1024] (which overruns).
     int ds1_ch = (int)ctx.m.net_2_w->ne[1];
-    int ds1_H = (nP + 2 - 3) / 2 + 1, ds1_W = ds1_H;
-    auto n2_w = to_f32(ctx.m.net_2_w);
-    std::vector<float> ds1(ds1_ch * ds1_H * ds1_W);
-    conv2d_cpu(neck2_ln.data(), ds1.data(), n2_w.data(), nullptr, nC, ds1_ch, nP, nP, 3, 3, 2, 1, ctx.n_threads);
-
-    int ds2_ch = (int)ctx.m.net_3_w->ne[1], ds2_H = (ds1_H + 2 - 3) / 2 + 1, ds2_W = ds2_H;
-    auto n3_w = to_f32(ctx.m.net_3_w);
-    std::vector<float> ds2(ds2_ch * ds2_H * ds2_W);
-    conv2d_cpu(ds1.data(), ds2.data(), n3_w.data(), nullptr, ds1_ch, ds2_ch, ds1_H, ds1_W, 3, 3, 2, 1, ctx.n_threads);
-
-    // Flatten to [n_tokens, dim]
+    int ds2_ch = (int)ctx.m.net_3_w->ne[1];
+    int ds1_H = (nP + 2 - 3) / 2 + 1;
+    int ds2_H = (ds1_H + 2 - 3) / 2 + 1, ds2_W = ds2_H;
     int n_vis = ds2_H * ds2_W, vis_D = ds2_ch;
-    out_features.resize(n_vis * vis_D);
-    for (int tok = 0; tok < n_vis; tok++) {
-        int y = tok / ds2_W, x = tok % ds2_W;
-        for (int c = 0; c < vis_D; c++)
-            out_features[tok * vis_D + c] = ds2[c * ds2_H * ds2_W + y * ds2_W + x];
+    out_features.resize((size_t)n_vis * vis_D);
+
+    if (!getenv("DS_SAM_CONV_CPU")) {
+        // Neck + downsample on Metal (ggml_conv_2d), ~20-40x vs the CPU convs and
+        // no thread-scheduling variance. Conv kernels fed as F32 (GGUF stores them
+        // Q8_0; can't reshape a quantized tensor to [1,1,IC,OC]). DS_SAM_CONV_CPU=1
+        // restores the threaded CPU chain. Validated equal via DS_REF sam_output.
+        auto nc1 = to_f32(ctx.m.neck_conv1_w), nc2 = to_f32(ctx.m.neck_conv2_w);
+        auto n2 = to_f32(ctx.m.net_2_w), n3 = to_f32(ctx.m.net_3_w);
+        auto l1w = to_f32(ctx.m.neck_ln1_w), l1b = to_f32(ctx.m.neck_ln1_b);
+        auto l2w = to_f32(ctx.m.neck_ln2_w), l2b = to_f32(ctx.m.neck_ln2_b);
+        size_t meta_sz = 16 * 1024 * 1024;
+        std::vector<uint8_t> mb(meta_sz);
+        ggml_init_params ip = { meta_sz, mb.data(), true };
+        ggml_context* gc = ggml_init(ip);
+        ggml_cgraph* gf = build_sam_neck_graph(gc, nP, C, nC, ds1_ch, ds2_ch);
+        ggml_backend_sched_reset(ctx.sched);
+        ggml_backend_sched_alloc_graph(ctx.sched, gf);
+        auto setn = [&](const char* nm, const std::vector<float>& v) {
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, nm), v.data(), 0, v.size() * sizeof(float));
+        };
+        setn("chw", chw); setn("w_nc1", nc1); setn("w_nc2", nc2); setn("w_n2", n2); setn("w_n3", n3);
+        setn("ln1w", l1w); setn("ln1b", l1b); setn("ln2w", l2w); setn("ln2b", l2b);
+        ggml_backend_sched_graph_compute(ctx.sched, gf);
+        ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "neck_out"), out_features.data(), 0,
+                                (size_t)n_vis * vis_D * sizeof(float));
+        ggml_free(gc);
+    } else {
+        auto nc1_w = to_f32(ctx.m.neck_conv1_w);
+        std::vector<float> neck1(nC * nP * nP);
+        conv2d_cpu(chw.data(), neck1.data(), nc1_w.data(), nullptr, C, nC, nP, nP, 1, 1, 1, 0, ctx.n_threads);
+        auto nln1_w = to_f32(ctx.m.neck_ln1_w), nln1_b = to_f32(ctx.m.neck_ln1_b);
+        std::vector<float> neck1_ln(nC * nP * nP);
+        layernorm2d_cpu(neck1.data(), neck1_ln.data(), nC, nP, nP, nln1_w.data(), nln1_b.data());
+        auto nc2_w = to_f32(ctx.m.neck_conv2_w);
+        std::vector<float> neck2(nC * nP * nP);
+        conv2d_cpu(neck1_ln.data(), neck2.data(), nc2_w.data(), nullptr, nC, nC, nP, nP, 3, 3, 1, 1, ctx.n_threads);
+        auto nln2_w = to_f32(ctx.m.neck_ln2_w), nln2_b = to_f32(ctx.m.neck_ln2_b);
+        std::vector<float> neck2_ln(nC * nP * nP);
+        layernorm2d_cpu(neck2.data(), neck2_ln.data(), nC, nP, nP, nln2_w.data(), nln2_b.data());
+        auto n2_w = to_f32(ctx.m.net_2_w);
+        std::vector<float> ds1((size_t)ds1_ch * ds1_H * ds1_H);
+        conv2d_cpu(neck2_ln.data(), ds1.data(), n2_w.data(), nullptr, nC, ds1_ch, nP, nP, 3, 3, 2, 1, ctx.n_threads);
+        auto n3_w = to_f32(ctx.m.net_3_w);
+        std::vector<float> ds2((size_t)ds2_ch * ds2_H * ds2_W);
+        conv2d_cpu(ds1.data(), ds2.data(), n3_w.data(), nullptr, ds1_ch, ds2_ch, ds1_H, ds1_H, 3, 3, 2, 1, ctx.n_threads);
+        for (int tok = 0; tok < n_vis; tok++) {
+            int y = tok / ds2_W, x = tok % ds2_W;
+            for (int c = 0; c < vis_D; c++)
+                out_features[tok * vis_D + c] = ds2[c * ds2_H * ds2_W + y * ds2_W + x];
+        }
     }
 
     sam_mark("neck_downsample");
@@ -1909,10 +1976,19 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
                                        (int)backends.size(), 32768, false, false);
     ctx.compute_meta.resize(16 * 1024 * 1024);
 
+    auto _it = std::chrono::steady_clock::now();
+    auto init_ms = [&](const char *w) {
+        if (!getenv("DS_DBG")) return;
+        auto now = std::chrono::steady_clock::now();
+        fprintf(stderr, "  [time] init.%s %lldms\n", w,
+                (long long)std::chrono::duration_cast<std::chrono::milliseconds>(now - _it).count());
+        _it = now;
+    };
     if (!load_tensors(ctx, model_path)) {
         fprintf(stderr, "deepseek_ocr2: failed to load tensors\n");
         delete c; return nullptr;
     }
+    init_ms("load_tensors");
 
     precompute_rpe_tables(ctx);
 
@@ -1924,6 +2000,7 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
         if (!ctx.moe_metal)
             fprintf(stderr, "deepseek_ocr2: MoE expert stacking failed — using CPU MoE\n");
     }
+    init_ms("stack_moe_experts");
 
     if (ctx.verbosity >= 1) {
         auto &s = ctx.m.shp; auto &q = ctx.m.qhp; auto &l = ctx.m.lhp;
