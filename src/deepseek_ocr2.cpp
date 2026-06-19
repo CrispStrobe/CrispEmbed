@@ -784,12 +784,14 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
                     li, is_global ? "global" : "window", T);
     }
 
-    // Diff: SAM output
+    // Diff: pre-neck ViT output (4096x768). The reference dump does not capture
+    // this intermediate; named distinctly so it never collides with the final
+    // SAM output below.
     if (!ctx.diff_ref_path.empty()) {
         crispembed_diff::Ref ref;
-        if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("sam_output")) {
-            auto r = ref.compare("sam_output", hidden.data(), N * C);
-            fprintf(stderr, "  sam_output: cos_min=%.6f max_abs=%.6f %s\n",
+        if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("sam_vit_output")) {
+            auto r = ref.compare("sam_vit_output", hidden.data(), N * C);
+            fprintf(stderr, "  sam_vit_output: cos_min=%.6f max_abs=%.6f %s\n",
                     r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
         }
     }
@@ -844,6 +846,18 @@ static bool encode_sam(ds_ocr2_ctx &ctx, const float *pixels,
 
     out_n_tokens = n_vis;
     out_dim = vis_D;
+
+    // Diff: final SAM output (post neck + downsample), [256, 896] — this is the
+    // tensor the reference dump's "sam_output" corresponds to (sam_model output).
+    if (!ctx.diff_ref_path.empty()) {
+        crispembed_diff::Ref ref;
+        if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("sam_output")) {
+            auto r = ref.compare("sam_output", out_features.data(),
+                                 (size_t)out_n_tokens * out_dim);
+            fprintf(stderr, "  sam_output: cos_min=%.6f max_abs=%.6f %s\n",
+                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+        }
+    }
     return true;
 }
 
@@ -861,6 +875,84 @@ static void apply_rope_neox(float *v, int hd, int pos, float theta) {
         v[j]        = x1 * c - x2 * s;
         v[j + half] = x2 * c + x1 * s;
     }
+}
+
+// Graph-based qwen2 encoder layer (runs on ctx.sched / Metal). One layer over
+// all T = n_vis + n_query tokens at once — bidirectional, no KV cache. Mirrors
+// build_llm_layer_attn (NEOX RoPE, GQA interleave, soft_max_ext+mask) but adds
+// q/k/v biases and an always-on SwiGLU FFN. The graph is built + executed +
+// freed within one scope by the caller (SAM pattern), so the meta buffer never
+// outlives the context. Gated by DS_QWEN2_SCALAR=1 (falls back to the CPU path).
+static ggml_cgraph* build_qwen2_enc_layer_graph(ggml_context* g, ds_ocr2_ctx* ctx, int li, int T) {
+    auto &qhp = ctx->m.qhp;
+    auto &ly  = ctx->m.qwen2_layers[li];
+    int D = qhp.hidden, nh = qhp.heads, nkv = qhp.kv_heads;
+    int hd = D / nh, kv_repeat = nh / nkv;
+    float eps = qhp.rms_eps;
+
+    ggml_cgraph* gf = ggml_new_graph_custom(g, 2048, false);
+    auto rmsnorm = [&](ggml_tensor* t, ggml_tensor* w) {
+        return ggml_mul(g, ggml_rms_norm(g, t, eps), ensure_f32(g, w));
+    };
+
+    ggml_tensor* x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+    ggml_set_name(x, "layer_input"); ggml_set_input(x);
+    ggml_tensor* pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+    ggml_set_name(pos_ids, "pos_ids"); ggml_set_input(pos_ids);
+    ggml_tensor* mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, T, T);  // [keys, queries]
+    ggml_set_name(mask, "mask"); ggml_set_input(mask);
+
+    // Pre-norm + Q/K/V (+ bias)
+    ggml_tensor* h = rmsnorm(x, ly.in_ln_w);
+    ggml_tensor* Q = ggml_mul_mat(g, ly.q_w, h);
+    ggml_tensor* K = ggml_mul_mat(g, ly.k_w, h);
+    ggml_tensor* V = ggml_mul_mat(g, ly.v_w, h);
+    if (ly.q_b) Q = ggml_add(g, Q, ensure_f32(g, ly.q_b));
+    if (ly.k_b) K = ggml_add(g, K, ensure_f32(g, ly.k_b));
+    if (ly.v_b) V = ggml_add(g, V, ensure_f32(g, ly.v_b));
+
+    Q = ggml_reshape_3d(g, Q, hd, nh, T);
+    K = ggml_reshape_3d(g, K, hd, nkv, T);
+    V = ggml_reshape_3d(g, V, hd, nkv, T);
+    Q = ggml_rope_ext(g, Q, pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0,
+                      qhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+    K = ggml_rope_ext(g, K, pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0,
+                      qhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+
+    ggml_tensor* Kfull = ggml_cont(g, K);
+    ggml_tensor* Vfull = ggml_cont(g, V);
+    if (kv_repeat > 1) {  // GQA interleave (not tile)
+        Kfull = ggml_reshape_4d(g, Kfull, hd, 1, nkv, T);
+        Kfull = ggml_repeat(g, Kfull, ggml_new_tensor_4d(g, Kfull->type, hd, kv_repeat, nkv, T));
+        Kfull = ggml_reshape_3d(g, Kfull, hd, nh, T);
+        Vfull = ggml_reshape_4d(g, Vfull, hd, 1, nkv, T);
+        Vfull = ggml_repeat(g, Vfull, ggml_new_tensor_4d(g, Vfull->type, hd, kv_repeat, nkv, T));
+        Vfull = ggml_reshape_3d(g, Vfull, hd, nh, T);
+    }
+
+    Q     = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));      // [hd, T, nh]
+    Kfull = ggml_cont(g, ggml_permute(g, Kfull, 0, 2, 1, 3));
+    Vfull = ggml_cont(g, ggml_permute(g, Vfull, 0, 2, 1, 3));
+
+    ggml_tensor* scores = ggml_mul_mat(g, Kfull, Q);          // [T(keys), T(queries), nh]
+    scores = ggml_soft_max_ext(g, scores, mask, 1.0f / sqrtf((float)hd), 0.0f);
+    ggml_tensor* Vt = ggml_cont(g, ggml_permute(g, Vfull, 1, 0, 2, 3));
+    ggml_tensor* attn = ggml_mul_mat(g, Vt, scores);
+    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+    attn = ggml_reshape_2d(g, attn, D, T);
+    attn = ggml_mul_mat(g, ly.o_w, attn);
+    x = ggml_add(g, x, attn);
+
+    // SwiGLU FFN + residual
+    ggml_tensor* res = x;
+    h = rmsnorm(x, ly.post_ln_w);
+    ggml_tensor* gate = ggml_silu(g, ggml_mul_mat(g, ly.gate_w, h));
+    ggml_tensor* up   = ggml_mul_mat(g, ly.up_w, h);
+    x = ggml_add(g, res, ggml_mul_mat(g, ly.down_w, ggml_mul(g, gate, up)));
+
+    ggml_set_name(x, "layer_output"); ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+    return gf;
 }
 
 static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis, int vis_dim,
@@ -900,7 +992,53 @@ static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis,
         memcpy(hidden.data() + (size_t)n_vis * D, query_data.data(),
                (size_t)n_query * D * sizeof(float));
 
-    // Run bidirectional transformer layers
+    // Run the 24 bidirectional transformer layers. Default: ggml graph on
+    // ctx.sched (Metal). DS_QWEN2_SCALAR=1 forces the CPU-scalar reference path.
+    if (!getenv("DS_QWEN2_SCALAR")) {
+        std::vector<int32_t> pos(T);
+        for (int t = 0; t < T; t++) pos[t] = t;
+        // Bidirectional-vis + causal-query mask, shared across layers. Layout
+        // matches soft_max_ext: [keys, queries], mask[qi*T + ki].
+        std::vector<ggml_fp16_t> emask((size_t)T * T);
+        const ggml_fp16_t z = ggml_fp32_to_fp16(0.0f), ninf = ggml_fp32_to_fp16(-INFINITY);
+        for (int qi = 0; qi < T; qi++) {
+            bool qv = qi < n_vis;
+            for (int ki = 0; ki < T; ki++) {
+                bool ok = qv ? (ki < n_vis) : (ki < n_vis || ki <= qi);
+                emask[(size_t)qi * T + ki] = ok ? z : ninf;
+            }
+        }
+        for (int li = 0; li < qhp.depth; li++) {
+            size_t meta_sz = 16 * 1024 * 1024;
+            std::vector<uint8_t> mb(meta_sz);
+            ggml_init_params ip = { meta_sz, mb.data(), true };
+            ggml_context* gc = ggml_init(ip);
+            ggml_cgraph* gf = build_qwen2_enc_layer_graph(gc, &ctx, li, T);
+            ggml_backend_sched_reset(ctx.sched);
+            ggml_backend_sched_alloc_graph(ctx.sched, gf);
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "layer_input"),
+                                    hidden.data(), 0, (size_t)T * D * sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
+                                    pos.data(), 0, (size_t)T * sizeof(int32_t));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "mask"),
+                                    emask.data(), 0, (size_t)T * T * sizeof(ggml_fp16_t));
+            ggml_backend_sched_graph_compute(ctx.sched, gf);
+            ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "layer_output"),
+                                    hidden.data(), 0, (size_t)T * D * sizeof(float));
+            ggml_free(gc);
+
+            if (!ctx.diff_ref_path.empty()) {
+                char nm[32]; snprintf(nm, sizeof(nm), "qwen2_layer_%d", li);
+                crispembed_diff::Ref ref;
+                if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(nm)) {
+                    auto r = ref.compare(nm, hidden.data(), (size_t)T * D);
+                    fprintf(stderr, "  %s: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                            nm, r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                }
+            }
+        }
+    } else
+    // Run bidirectional transformer layers (CPU-scalar reference path)
     for (int li = 0; li < qhp.depth; li++) {
         auto &ly = ctx.m.qwen2_layers[li];
         auto in_ln = to_f32(ly.in_ln_w), post_ln = to_f32(ly.post_ln_w);
@@ -977,6 +1115,18 @@ static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis,
             linear_cpu(attn_out.data() + t * D, proj.data() + t * D, D, D, ow.data(), nullptr);
         for (int i = 0; i < T * D; i++) hidden[i] += proj[i];
 
+        // Diff: post-attention hidden (residual + attn, pre-FFN). Splits each
+        // layer into attention-half vs FFN-half to localize the divergence.
+        if (!ctx.diff_ref_path.empty()) {
+            char nm[40]; snprintf(nm, sizeof(nm), "qwen2_layer_%d_postattn", li);
+            crispembed_diff::Ref ref;
+            if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(nm)) {
+                auto r = ref.compare(nm, hidden.data(), (size_t)T * D);
+                fprintf(stderr, "  %s: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                        nm, r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
+        }
+
         // Post-attn norm + SwiGLU FFN + residual
         for (int t = 0; t < T; t++) {
             rmsnorm_cpu(hidden.data() + t * D, normed.data() + t * D, D, post_ln.data(), eps);
@@ -988,15 +1138,17 @@ static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis,
 
         if (ctx.verbosity >= 2)
             fprintf(stderr, "deepseek_ocr2: qwen2_enc_layer_%d done\n", li);
-    }
 
-    // Diff: Qwen2 encoder output
-    if (!ctx.diff_ref_path.empty()) {
-        crispembed_diff::Ref ref;
-        if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("qwen2_enc_output")) {
-            auto r = ref.compare("qwen2_enc_output", hidden.data(), T * D);
-            fprintf(stderr, "  qwen2_enc_output: cos_min=%.6f max_abs=%.6f %s\n",
-                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+        // Diff: per-layer qwen2 hidden state (full [vis+query] seq, pre-final-norm)
+        // for bisecting the encoder divergence.
+        if (!ctx.diff_ref_path.empty()) {
+            char nm[32]; snprintf(nm, sizeof(nm), "qwen2_layer_%d", li);
+            crispembed_diff::Ref ref;
+            if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(nm)) {
+                auto r = ref.compare(nm, hidden.data(), (size_t)T * D);
+                fprintf(stderr, "  %s: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                        nm, r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
         }
     }
 
@@ -1016,6 +1168,18 @@ static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis,
     out_enc.resize((size_t)out_n_tokens * D);
     memcpy(out_enc.data(), hidden.data() + (size_t)n_vis * D,
            (size_t)out_n_tokens * D * sizeof(float));
+
+    // Diff: Qwen2 encoder output (post final-norm, query half) — this is the
+    // tensor the reference dump's "qwen2_enc_output" corresponds to.
+    if (!ctx.diff_ref_path.empty()) {
+        crispembed_diff::Ref ref;
+        if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("qwen2_enc_output")) {
+            auto r = ref.compare("qwen2_enc_output", out_enc.data(),
+                                 (size_t)out_n_tokens * D);
+            fprintf(stderr, "  qwen2_enc_output: cos_min=%.6f max_abs=%.6f %s\n",
+                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+        }
+    }
     return true;
 }
 
@@ -1055,6 +1219,12 @@ static bool project_to_llm(ds_ocr2_ctx &ctx, const float *enc_out, int n_tokens,
 struct llm_attn_graph {
     ggml_cgraph *gf{};
     ggml_context *gctx{};
+    // The no-alloc ggml context places its tensor/graph metadata in `meta`, so
+    // the buffer must outlive the returned graph. Holding it here (moved out with
+    // the struct) fixes a use-after-free: a local meta buffer was freed on return,
+    // leaving gf/gctx dangling — a latent crash that surfaced once the fast
+    // (graph) qwen2 encoder let the decoder prefill actually run.
+    std::vector<uint8_t> meta;
 };
 
 // Build attention-only graph for one LLM layer (no FFN — MoE done on CPU)
@@ -1069,9 +1239,9 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx &ctx, int li, int T, int 
     float eps = lhp.rms_eps;
 
     size_t meta_sz = 4 * 1024 * 1024;
-    std::vector<uint8_t> meta(meta_sz);
-    ggml_init_params ip = { meta_sz, meta.data(), true };
     llm_attn_graph lag;
+    lag.meta.resize(meta_sz);  // owned by lag; survives the return (move preserves data ptr)
+    ggml_init_params ip = { meta_sz, lag.meta.data(), true };
     lag.gctx = ggml_init(ip);
     auto *g = lag.gctx;
     lag.gf = ggml_new_graph_custom(g, 4096, false);
@@ -1569,6 +1739,12 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
     auto *c = new deepseek_ocr2_context;
     auto &ctx = c->inner;
     ctx.n_threads = n_threads;
+
+    // Parity harness: when DS_REF points at a crispembed_diff GGUF dump, each
+    // stage (sam_output, qwen2_enc_output, projector_output, llm logits) is
+    // compared against the reference and a cos_min/max_abs line is printed.
+    // See tools/dump_deepseek_ocr2_reference.py.
+    if (const char *ref = getenv("DS_REF")) ctx.diff_ref_path = ref;
 
     if (!load_hparams(ctx, model_path)) {
         fprintf(stderr, "deepseek_ocr2: failed to load hparams\n");
