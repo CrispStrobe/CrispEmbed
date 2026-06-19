@@ -33,6 +33,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -44,6 +45,16 @@
 namespace qwen2vl_ocr {
 
 namespace {
+
+using qwen_clock = std::chrono::steady_clock;
+
+bool qwen_dbg() { return getenv("QWEN_DBG") != nullptr; }
+
+long long qwen_ms_since(qwen_clock::time_point t0) {
+  return (long long)std::chrono::duration_cast<std::chrono::milliseconds>(
+             qwen_clock::now() - t0)
+      .count();
+}
 
 // ── Hparams loading ──────────────────────────────────────────────────
 
@@ -1013,6 +1024,19 @@ void free_(context &ctx) {
 
 bool encode_vision(context &ctx, const float *patches, int n_patches,
                    const int32_t *grid_thw, vision_result &out) {
+  const bool dbg_t = qwen2vl_ocr::qwen_dbg();
+  auto t_stage = qwen2vl_ocr::qwen_clock::now();
+  auto stage_ms = [&](const char *name) {
+    if (!dbg_t)
+      return;
+    auto now = qwen2vl_ocr::qwen_clock::now();
+    fprintf(stderr, "  [time] vision.%s %lldms\n", name,
+            (long long)std::chrono::duration_cast<std::chrono::milliseconds>(
+                now - t_stage)
+                .count());
+    t_stage = now;
+  };
+
   // Debug: verify weight tensor is loaded correctly
   if (ctx.verbosity >= 2 && ctx.m.patch_embed_w) {
     float w5[5];
@@ -1031,11 +1055,13 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
   host_rope rope;
   compute_vision_rope(rope, grid_thw, n_patches, head_dim,
                       (int)ctx.m.vhp.spatial_merge_size, ctx.m.vhp.is_qwen2_vl);
+  stage_ms("rope");
 
   // Build graph
   auto gr = build_vision_graph(ctx, n_patches, grid_thw);
   if (!gr.gf)
     return false;
+  stage_ms("graph_build");
 
   // Allocate via scheduler (handles model weights + compute buffers)
   ggml_backend_sched_reset(ctx.sched);
@@ -1043,6 +1069,7 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
     fprintf(stderr, "qwen2vl_ocr: graph allocation failed\n");
     return false;
   }
+  stage_ms("graph_alloc");
 
   // Set input tensors
   const int patch_flat_dim =
@@ -1094,23 +1121,29 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
     // ggml_nbytes (quantized) then calling to_float avoids the out-of-bounds
     // assert that fires when we ask for F32-sized bytes from a quantized
     // buffer.
-    std::vector<float> pos_w((size_t)num_pos * H);
-    if (ctx.m.position_embed_w->type == GGML_TYPE_F32) {
-      ggml_backend_tensor_get(ctx.m.position_embed_w, pos_w.data(), 0,
-                              pos_w.size() * sizeof(float));
-    } else {
-      size_t qsz = ggml_nbytes(ctx.m.position_embed_w);
-      std::vector<uint8_t> qbuf(qsz);
-      ggml_backend_tensor_get(ctx.m.position_embed_w, qbuf.data(), 0, qsz);
-      const auto *tt = ggml_get_type_traits(ctx.m.position_embed_w->type);
-      if (tt && tt->to_float) {
-        tt->to_float(qbuf.data(), pos_w.data(), (int64_t)num_pos * H);
+    if (ctx.position_embed_cache.size() != (size_t)num_pos * H) {
+      ctx.position_embed_cache.assign((size_t)num_pos * H, 0.0f);
+      if (ctx.m.position_embed_w->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(ctx.m.position_embed_w,
+                                ctx.position_embed_cache.data(), 0,
+                                ctx.position_embed_cache.size() *
+                                    sizeof(float));
       } else {
-        fprintf(stderr, "qwen2vl_ocr: cannot dequant pos_embed type %d\n",
-                (int)ctx.m.position_embed_w->type);
-        return false;
+        size_t qsz = ggml_nbytes(ctx.m.position_embed_w);
+        std::vector<uint8_t> qbuf(qsz);
+        ggml_backend_tensor_get(ctx.m.position_embed_w, qbuf.data(), 0, qsz);
+        const auto *tt = ggml_get_type_traits(ctx.m.position_embed_w->type);
+        if (tt && tt->to_float) {
+          tt->to_float(qbuf.data(), ctx.position_embed_cache.data(),
+                       (int64_t)num_pos * H);
+        } else {
+          fprintf(stderr, "qwen2vl_ocr: cannot dequant pos_embed type %d\n",
+                  (int)ctx.m.position_embed_w->type);
+          return false;
+        }
       }
     }
+    const std::vector<float> &pos_w = ctx.position_embed_cache;
 
     // Compute bilinear grid positions
     auto linspace = [](int n, float end) -> std::vector<float> {
@@ -1204,6 +1237,7 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
               pos_embeds[3], pos_embeds[4]);
     }
   }
+  stage_ms("inputs");
 
   // Compute
   if (ggml_backend_sched_graph_compute(ctx.sched, gr.gf) !=
@@ -1211,6 +1245,7 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
     fprintf(stderr, "qwen2vl_ocr: graph compute failed\n");
     return false;
   }
+  stage_ms("graph_compute");
 
   // Read pre-merger output (normed ViT features)
   ggml_tensor *pre_merger = ggml_graph_get_tensor(gr.gf, "vis_pre_merger");
@@ -1277,6 +1312,7 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
   std::vector<float> normed_data((size_t)n_patches * H);
   ggml_backend_tensor_get(pre_merger, normed_data.data(), 0,
                           normed_data.size() * sizeof(float));
+  stage_ms("read_pre_merger");
 
   // ── Qwen3-VL: deepstack merger processing ──
   // Extract ALL intermediate layer outputs FIRST (before any sched_reset),
@@ -1314,6 +1350,7 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
         std::memcpy(dst, src, (size_t)merger_in_dim * sizeof(float));
       }
     }
+    stage_ms("deepstack_extract");
 
     // Phase 2: run each deepstack merger graph (these reset the scheduler)
     const int out_dim = (int)ctx.m.vhp.out_hidden_size;
@@ -1400,6 +1437,11 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
       }
 
       ggml_free(g_ds);
+      if (dbg_t) {
+        char nm[64];
+        std::snprintf(nm, sizeof(nm), "deepstack_%d", dsi);
+        stage_ms(nm);
+      }
     }
   }
 
@@ -1445,6 +1487,7 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
             n_merged, merger_in_dim, merged_data[0], merged_data[1],
             merged_data[2], merged_data[3], merged_data[4]);
   }
+  stage_ms("spatial_merge");
 
   // FC1 → GELU → FC2 via a second ggml graph
   {
@@ -1502,6 +1545,7 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
 
     ggml_free(g2);
   }
+  stage_ms("merger");
 
   // Note: per-vision-layer diff comparison is done earlier (right after the
   // vision graph compute), while gr.gf's buffers are still valid — the merger
@@ -1525,7 +1569,8 @@ void vision_result_free(vision_result &r) {
 // ── LLM decoder forward pass (text-only, no KV cache) ───────────────
 
 bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
-                     llm_result &out, const image_input *img) {
+                     llm_result &out, const image_input *img,
+                     bool logits_last_only, bool materialize_hidden) {
   const auto &lhp = ctx.m.lhp;
   const int D = (int)lhp.hidden_size;
   const int n_heads = (int)lhp.num_attention_heads;
@@ -1816,7 +1861,13 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
     lm_head = ctx.m.embed_tokens;
   }
   if (lm_head) {
-    ggml_tensor *logits = ggml_mul_mat(g, lm_head, x);
+    ggml_tensor *logit_input = x;
+    if (logits_last_only && n_tokens > 1) {
+      logit_input = ggml_view_2d(g, x, D, 1, x->nb[1],
+                                 (size_t)(n_tokens - 1) * x->nb[1]);
+      logit_input = ggml_cont(g, logit_input);
+    }
+    ggml_tensor *logits = ggml_mul_mat(g, lm_head, logit_input);
     ggml_set_name(logits, "logits");
     ggml_set_output(logits);
     x = logits;
@@ -2056,18 +2107,22 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
   ggml_tensor *logits_t = ggml_graph_get_tensor(gf, "logits");
   if (logits_t) {
     int V = (int)logits_t->ne[0];
+    int n_logits = (int)logits_t->ne[1];
     out.vocab_size = V;
-    out.logits = (float *)malloc((size_t)n_tokens * V * sizeof(float));
+    out.n_logits = n_logits;
+    out.logits = (float *)malloc((size_t)n_logits * V * sizeof(float));
     ggml_backend_tensor_get(logits_t, out.logits, 0,
-                            (size_t)n_tokens * V * sizeof(float));
+                            (size_t)n_logits * V * sizeof(float));
   }
 
   // Read hidden states
-  out.hidden = (float *)malloc((size_t)n_tokens * D * sizeof(float));
-  ggml_tensor *final_out = ggml_graph_get_tensor(gf, "llm_final_norm");
-  if (final_out) {
-    ggml_backend_tensor_get(final_out, out.hidden, 0,
-                            (size_t)n_tokens * D * sizeof(float));
+  if (materialize_hidden) {
+    out.hidden = (float *)malloc((size_t)n_tokens * D * sizeof(float));
+    ggml_tensor *final_out = ggml_graph_get_tensor(gf, "llm_final_norm");
+    if (final_out) {
+      ggml_backend_tensor_get(final_out, out.hidden, 0,
+                              (size_t)n_tokens * D * sizeof(float));
+    }
   }
 
   // Diff comparison
@@ -2354,6 +2409,19 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
               const int32_t *grid_thw, // actual image grid (t,h,w) for mRoPE
               const int32_t *prompt_token_ids, int n_prompt_tokens,
               int max_new_tokens, generate_result &out) {
+  const bool dbg_t = qwen2vl_ocr::qwen_dbg();
+  auto t_stage = qwen2vl_ocr::qwen_clock::now();
+  auto stage_ms = [&](const char *name) {
+    if (!dbg_t)
+      return;
+    auto now = qwen2vl_ocr::qwen_clock::now();
+    fprintf(stderr, "  [time] llm.%s %lldms\n", name,
+            (long long)std::chrono::duration_cast<std::chrono::milliseconds>(
+                now - t_stage)
+                .count());
+    t_stage = now;
+  };
+
   const auto &lhp = ctx.m.lhp;
   const int D = (int)lhp.hidden_size;
   const int V = (int)lhp.vocab_size;
@@ -2377,7 +2445,9 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
   // ── Prefill: full forward pass, extract KV cache ──
   llm_result prefill = {};
   bool ok = run_llm_forward(ctx, prompt_token_ids, n_prompt_tokens, prefill,
-                            (img_in.image_embeds) ? &img_in : nullptr);
+                            (img_in.image_embeds) ? &img_in : nullptr,
+                            /*logits_last_only=*/true,
+                            /*materialize_hidden=*/false);
   if (!ok || !prefill.logits) {
     if (prefill.hidden)
       free(prefill.hidden);
@@ -2386,6 +2456,7 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
     fprintf(stderr, "qwen2vl_ocr: prefill failed\n");
     return false;
   }
+  stage_ms("prefill");
 
   // Extract per-layer KV cache from prefill graph outputs
   // k_out_N / v_out_N tensors: (kv_dim, n_prompt_tokens) each
@@ -2419,6 +2490,7 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
       ggml_backend_tensor_get(vt, v_cache[il].data(), 0, sz * sizeof(float));
     }
   }
+  stage_ms("kv_extract");
 
   if (kv_ok && ctx.verbosity >= 1) {
     fprintf(stderr, "  KV cache: %d layers × %d tokens × %d dim = %.1f MB\n",
@@ -2429,7 +2501,9 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
 
   // Greedy: argmax prefill logits at last position
   out.token_confidences.clear();
-  const float *last_logits = prefill.logits + (size_t)(n_prompt_tokens - 1) * V;
+  const int prefill_logit_row =
+      (prefill.n_logits == n_prompt_tokens) ? (n_prompt_tokens - 1) : 0;
+  const float *last_logits = prefill.logits + (size_t)prefill_logit_row * V;
   int best_id = 0;
   float best_score = -INFINITY;
   for (int v = 0; v < V; v++) {
@@ -2508,6 +2582,7 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
       free(fwd.logits);
     } else {
       // KV-cached decode step
+      auto t_decode = qwen_clock::now();
       int pos = n_kv; // cache position of the new token
       int rope_pos = pos + rope_delta;
 
@@ -2535,6 +2610,8 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
         ggml_backend_tensor_get(emb, tok_emb.data(), 0, D * sizeof(float));
         ggml_free(eg);
       }
+      long long embed_ms = qwen_ms_since(t_decode);
+      auto t_part = qwen_clock::now();
 
       ggml_init_params ip{
           ctx.compute_meta.size(),
@@ -2550,6 +2627,8 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
         ggml_free(g);
         return false;
       }
+      long long build_ms = qwen_ms_since(t_part);
+      t_part = qwen_clock::now();
 
       ggml_tensor *te = ggml_graph_get_tensor(gf, "tok_emb");
       ggml_backend_tensor_set(te, tok_emb.data(), 0, D * sizeof(float));
@@ -2576,6 +2655,8 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
                                     v_cache[il].size() * sizeof(float));
         }
       }
+      long long upload_ms = qwen_ms_since(t_part);
+      t_part = qwen_clock::now();
 
       // Compute
       if (ggml_backend_sched_graph_compute(ctx.sched, gf) !=
@@ -2584,6 +2665,8 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
         ggml_free(g);
         return false;
       }
+      long long compute_ms = qwen_ms_since(t_part);
+      t_part = qwen_clock::now();
 
       // Read logits
       ggml_tensor *logits_t = ggml_graph_get_tensor(gf, "logits");
@@ -2624,6 +2707,14 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
         v_cache[il].insert(v_cache[il].end(), v_new.begin(), v_new.end());
       }
       n_kv++;
+      long long read_ms = qwen_ms_since(t_part);
+      if (dbg_t) {
+        fprintf(stderr,
+                "  [time] llm.decode gen=%d embed=%lldms build=%lldms "
+                "upload=%lldms compute=%lldms read=%lldms total=%lldms\n",
+                gen, embed_ms, build_ms, upload_ms, compute_ms, read_ms,
+                qwen_ms_since(t_decode));
+      }
 
       ggml_free(g);
     }
@@ -2964,6 +3055,19 @@ void qwen2vl_ocr_set_max_tokens(qwen2vl_ocr_context *ctx, int max_tokens) {
 // Internal: run full pipeline (preprocess → vision → tokenize → generate)
 static const char *run_pipeline(qwen2vl_ocr_context *ctx,
                                 const image_preproc::result &pp, int *out_len) {
+  const bool dbg_t = qwen2vl_ocr::qwen_dbg();
+  auto t_stage = qwen2vl_ocr::qwen_clock::now();
+  auto stage_ms = [&](const char *name) {
+    if (!dbg_t)
+      return;
+    auto now = qwen2vl_ocr::qwen_clock::now();
+    fprintf(stderr, "  [time] %s %lldms\n", name,
+            (long long)std::chrono::duration_cast<std::chrono::milliseconds>(
+                now - t_stage)
+                .count());
+    t_stage = now;
+  };
+
   // 1. Run vision encoder
   qwen2vl_ocr::vision_result vis = {};
   if (!qwen2vl_ocr::encode_vision(ctx->inner, pp.patches.data(), pp.n_patches,
@@ -2971,6 +3075,7 @@ static const char *run_pipeline(qwen2vl_ocr_context *ctx,
     fprintf(stderr, "qwen2vl_ocr: vision encoder failed\n");
     return nullptr;
   }
+  stage_ms("vision");
 
   if (const char *dp = getenv("CRISPEMBED_DUMP_MERGER")) {
     FILE *df = fopen(dp, "wb");
@@ -3005,6 +3110,7 @@ static const char *run_pipeline(qwen2vl_ocr_context *ctx,
       ctx->inner, vis.image_embeds, vis.n_merged, vis.embed_dim,
       pp.grid_thw, // pass actual grid for mRoPE
       token_ids.data(), (int)token_ids.size(), ctx->max_tokens, gen);
+  stage_ms("generate");
 
   ctx->inner.deepstack_embeds_tmp = nullptr;
   ctx->inner.n_deepstack_tmp = 0;
@@ -3031,6 +3137,7 @@ static const char *run_pipeline(qwen2vl_ocr_context *ctx,
       ctx->last_result += std::to_string(gen.token_ids[i]);
     }
   }
+  stage_ms("decode_text");
 
   if (out_len)
     *out_len = (int)ctx->last_result.size();
@@ -3042,6 +3149,9 @@ const char *qwen2vl_ocr_recognize_raw(qwen2vl_ocr_context *ctx,
                                       int height, int channels, int *out_len) {
   if (!ctx || !pixel_bytes)
     return nullptr;
+
+  const bool dbg_t = qwen2vl_ocr::qwen_dbg();
+  auto t0 = qwen2vl_ocr::qwen_clock::now();
 
   // Preprocess image via image_preprocess.cpp
   const auto &vhp = ctx->inner.m.vhp;
@@ -3061,6 +3171,10 @@ const char *qwen2vl_ocr_recognize_raw(qwen2vl_ocr_context *ctx,
                                      pp)) {
     fprintf(stderr, "qwen2vl_ocr: image preprocessing failed\n");
     return nullptr;
+  }
+  if (dbg_t) {
+    fprintf(stderr, "  [time] preprocess %lldms\n",
+            qwen2vl_ocr::qwen_ms_since(t0));
   }
 
   fprintf(stderr, "qwen2vl_ocr: %dx%d → %dx%d, %d patches (%dx%d)\n", width,
