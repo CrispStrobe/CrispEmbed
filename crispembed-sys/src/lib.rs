@@ -716,6 +716,15 @@ extern "C" {
     /// Free a string returned by `crispembed_pix2struct_generate`.
     pub fn crispembed_pix2struct_free_text(text: *const c_char);
 
+    /// Per-token softmax confidence from the last generate call.
+    pub fn crispembed_pix2struct_confidences(
+        ctx: *const Pix2StructContext,
+        n_tokens: *mut c_int,
+    ) -> *const c_float;
+
+    /// Mean softmax confidence from the last generate call.
+    pub fn crispembed_pix2struct_mean_confidence(ctx: *const Pix2StructContext) -> c_float;
+
     /// Encode image patches to hidden-state embeddings.
     /// Returns pointer to `*out_dim` floats, owned by ctx, valid until next call.
     pub fn crispembed_pix2struct_encode_patches(

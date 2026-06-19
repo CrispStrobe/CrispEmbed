@@ -29,6 +29,10 @@ const char * pix2struct_generate(pix2struct_context * ctx,
 /// Free text returned by pix2struct_generate.
 void pix2struct_free_text(const char * text);
 
+/// Per-token softmax confidence from the last generate call.
+const float * pix2struct_confidences(const pix2struct_context * ctx, int * n_tokens);
+float pix2struct_mean_confidence(const pix2struct_context * ctx);
+
 /// Run one decoder step (for parity testing).
 /// Must call pix2struct_encode_patches first.
 /// out_logits: [vocab_size] float array, caller allocates.

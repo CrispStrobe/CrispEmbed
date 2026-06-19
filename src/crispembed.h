@@ -542,6 +542,12 @@ CRISPEMBED_API const char * crispembed_pix2struct_generate(
 // Free a string returned by crispembed_pix2struct_generate().
 CRISPEMBED_API void crispembed_pix2struct_free_text(const char * text);
 
+// Per-token softmax confidence from the last generate call.
+CRISPEMBED_API const float * crispembed_pix2struct_confidences(
+        const crispembed_pix2struct_context * ctx, int * n_tokens);
+CRISPEMBED_API float crispembed_pix2struct_mean_confidence(
+        const crispembed_pix2struct_context * ctx);
+
 // Encode image patches to hidden-state embeddings.
 // Returns a pointer to (*out_dim) floats, owned by ctx, valid until the
 // next call. Returns NULL on failure.

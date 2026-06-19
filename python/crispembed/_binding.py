@@ -4002,6 +4002,11 @@ def _setup_pix2struct_signatures(lib):
     lib.crispembed_pix2struct_free_text.argtypes = [ctypes.c_char_p]
     lib.crispembed_pix2struct_free_text.restype = None
 
+    lib.crispembed_pix2struct_confidences.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_int)]
+    lib.crispembed_pix2struct_confidences.restype = ctypes.POINTER(ctypes.c_float)
+    lib.crispembed_pix2struct_mean_confidence.argtypes = [ctypes.c_void_p]
+    lib.crispembed_pix2struct_mean_confidence.restype = ctypes.c_float
+
     lib.crispembed_pix2struct_encode_patches.argtypes = [
         ctypes.c_void_p, ctypes.POINTER(ctypes.c_float),
         ctypes.c_int, ctypes.POINTER(ctypes.c_int)]
@@ -4078,6 +4083,18 @@ class CrispPix2Struct:
         text = ptr.decode("utf-8")
         self._lib.crispembed_pix2struct_free_text(ptr)
         return text
+
+    def confidences(self):
+        """Return per-token softmax confidences from the last generate call."""
+        n = ctypes.c_int(0)
+        ptr = self._lib.crispembed_pix2struct_confidences(self._ctx, ctypes.byref(n))
+        if not ptr or n.value <= 0:
+            return []
+        return [ptr[i] for i in range(n.value)]
+
+    def mean_confidence(self) -> float:
+        """Return mean softmax confidence from the last generate call."""
+        return self._lib.crispembed_pix2struct_mean_confidence(self._ctx)
 
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:
