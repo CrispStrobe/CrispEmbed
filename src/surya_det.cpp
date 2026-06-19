@@ -8,6 +8,7 @@
 
 #include "surya_det.h"
 #include "core/gguf_loader.h"
+#include "core/cpu_ops.h"
 #include "ggml-cpu.h"
 
 #include <chrono>
@@ -21,98 +22,12 @@
 #include <string>
 #include <vector>
 
-// ---------------------------------------------------------------------------
-// FP16/quantized → F32 dequantization
-// ---------------------------------------------------------------------------
-static std::vector<float> to_f32(const ggml_tensor* t) {
-    if (!t) return {};
-    int n = (int)ggml_nelements(t);
-    size_t nbytes = ggml_nbytes(t);
-    std::vector<float> out(n);
-    // Pull raw bytes via the backend so this works whether the weight lives
-    // in a CPU buffer or a GPU (Metal/CUDA) buffer where t->data isn't a
-    // valid host pointer.
-    std::vector<uint8_t> raw(nbytes);
-    ggml_backend_tensor_get(t, raw.data(), 0, nbytes);
-    const void* src = raw.data();
-    if (t->type == GGML_TYPE_F32) {
-        memcpy(out.data(), src, n * sizeof(float));
-    } else if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t* s = (const ggml_fp16_t*)src;
-        for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(s[i]);
-    } else {
-        const auto* traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) {
-            traits->to_float(src, out.data(), n);
-        } else {
-            memset(out.data(), 0, n * sizeof(float));
-        }
-    }
-    return out;
-}
-
-// ---------------------------------------------------------------------------
-// CPU-side conv2d with groups (handles regular, depthwise, pointwise)
-// ---------------------------------------------------------------------------
-static void conv2d_cpu(const float* in, float* out,
-                        const float* weight, const float* bias,
-                        int in_ch, int out_ch, int H, int W,
-                        int kh, int kw, int stride, int pad,
-                        int groups) {
-    int out_H = (H + 2 * pad - kh) / stride + 1;
-    int out_W = (W + 2 * pad - kw) / stride + 1;
-    int ch_per_group_in = in_ch / groups;
-    int ch_per_group_out = out_ch / groups;
-
-    for (int oc = 0; oc < out_ch; oc++) {
-        int g = oc / ch_per_group_out;
-        float b = bias ? bias[oc] : 0.0f;
-
-        for (int oy = 0; oy < out_H; oy++) {
-            for (int ox = 0; ox < out_W; ox++) {
-                float sum = b;
-                for (int ic = 0; ic < ch_per_group_in; ic++) {
-                    int actual_ic = g * ch_per_group_in + ic;
-                    for (int ky = 0; ky < kh; ky++) {
-                        for (int kx = 0; kx < kw; kx++) {
-                            int iy = oy * stride - pad + ky;
-                            int ix = ox * stride - pad + kx;
-                            if (iy >= 0 && iy < H && ix >= 0 && ix < W) {
-                                float pixel = in[actual_ic * H * W + iy * W + ix];
-                                int w_idx = oc * (ch_per_group_in * kh * kw)
-                                            + ic * kh * kw + ky * kw + kx;
-                                sum += pixel * weight[w_idx];
-                            }
-                        }
-                    }
-                }
-                out[oc * out_H * out_W + oy * out_W + ox] = sum;
-            }
-        }
-    }
-}
-
-// Activations
-static void hardswish_inplace(float* data, int n) {
-    for (int i = 0; i < n; i++) {
-        float x = data[i];
-        if (x <= -3.0f) data[i] = 0.0f;
-        else if (x >= 3.0f) { /* keep x */ }
-        else data[i] = x * (x + 3.0f) / 6.0f;
-    }
-}
-
-static void relu6_inplace(float* data, int n) {
-    for (int i = 0; i < n; i++) {
-        if (data[i] < 0.0f) data[i] = 0.0f;
-        else if (data[i] > 6.0f) data[i] = 6.0f;
-    }
-}
-
-static void relu_inplace(float* data, int n) {
-    for (int i = 0; i < n; i++)
-        if (data[i] < 0.0f) data[i] = 0.0f;
-}
+using core_cpu::to_f32;
+using core_cpu::conv2d_cpu;
+using core_cpu::hardswish_inplace;
+using core_cpu::relu6_inplace;
+using core_cpu::relu_inplace;
+using core_cpu::linear_cpu;
 
 // Bilinear interpolation for upsampling [C, H, W] → [C, tH, tW]
 static void bilinear_upsample(const float* in, float* out,
@@ -143,17 +58,6 @@ static void bilinear_upsample(const float* in, float* out,
                 out[c * tH * tW + oy * tW + ox] = v;
             }
         }
-    }
-}
-
-// Linear (matmul): [out_dim, in_dim] × [in_dim] → [out_dim]
-static void linear_cpu(const float* in, float* out, int in_dim, int out_dim,
-                        const float* weight, const float* bias) {
-    for (int o = 0; o < out_dim; o++) {
-        float s = bias ? bias[o] : 0.0f;
-        for (int i = 0; i < in_dim; i++)
-            s += in[i] * weight[o * in_dim + i];
-        out[o] = s;
     }
 }
 
