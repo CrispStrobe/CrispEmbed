@@ -25,36 +25,40 @@ language:
   - ko
 ---
 
-# LFM2.5-ColBERT-350M GGUF
+# LFM2.5-ColBERT-350M — CrispEmbed GGUF
 
-GGUF conversions of [LiquidAI/LFM2.5-ColBERT-350M](https://huggingface.co/LiquidAI/LFM2.5-ColBERT-350M) for [CrispEmbed](https://github.com/CrispStrobe/CrispEmbed) inference.
+CrispEmbed-native GGUF quantizations of [LiquidAI/LFM2.5-ColBERT-350M](https://huggingface.co/LiquidAI/LFM2.5-ColBERT-350M).
 
-ColBERT multi-vector late interaction retrieval — per-token 128-dimensional embeddings with MaxSim scoring for fine-grained passage matching.
+Multi-vector (ColBERT-style) retrieval: per-token embeddings projected to 128 dimensions, L2-normalized. Uses late interaction (MaxSim) scoring for fine-grained token-level matching.
+
+**Format note:** These GGUFs use CrispEmbed's internal tensor naming (`lfm.*` prefix, arch=`lfm2`). They include the `colbert.projection.weight` tensor from the `1_Dense` module. **Not** compatible with llama.cpp.
 
 ## Model variants
 
-| File | Quant | Size | Notes |
-|------|-------|------|-------|
-| `lfm2-colbert-f32.gguf` | F32 | 677 MB | Full precision (dev only) |
-| `lfm2-colbert-q8_0.gguf` | Q8_0 | 361 MB | Recommended |
-| `lfm2-colbert-q5_k.gguf` | Q5_K | 258 MB | Good quality/size tradeoff |
-| `lfm2-colbert-q4_k.gguf` | Q4_K | 224 MB | Max compression |
-
-Parity vs F32 reference (cos similarity): F32 = 0.999995, Q8_0 = 0.998, Q5_K = 0.977, Q4_K = 0.959.
+| File | Quant | Size | ColBERT cos vs F32 |
+|------|-------|------|--------------------|
+| `lfm2-colbert-f32.gguf` | F32 | 677 MB | 0.999995 |
+| `lfm2-colbert-q8_0.gguf` | Q8_0 | 361 MB | 0.998 |
+| `lfm2-colbert-q5_k.gguf` | Q5_K | 258 MB | 0.977 |
+| `lfm2-colbert-q4_k.gguf` | Q4_K | 224 MB | 0.959 |
 
 ## Architecture
 
-LFM2.5-350M bidirectional backbone (16 layers: 10 ShortConv + 6 GQA attention, 1024-dim hidden, SwiGLU FFN) + Dense 128-dim projection head with L2 normalization. Per-token output for ColBERT late interaction retrieval.
-
-- **Backbone**: Hybrid ShortConv/GQA architecture with bidirectional processing
+- **Backbone**: LFM2.5-350M bidirectional hybrid (16 layers: 10 ShortConv + 6 GQA attention, 1024-dim hidden, SwiGLU FFN)
 - **ColBERT head**: Linear(1024, 128) + L2 normalize per token
 - **Scoring**: MaxSim — max over doc tokens of cosine similarity per query token, summed
+- **Parameters**: 350M + 128K projection head
+- **Languages**: EN, ES, DE, FR, IT, PT, AR, SV, NO, JA, KO (11 languages)
+- **Task prefixes**: `"query: "` for queries, `"document: "` for passages
 
 ## Usage
 
 ```bash
-# CLI — encode ColBERT vectors
+# ColBERT multi-vector encode
 ./crispembed -m lfm2-colbert-q8_0.gguf --colbert "query: what is deep learning?"
+
+# JSON output (per-token vectors)
+./crispembed -m lfm2-colbert-q8_0.gguf --colbert --json "query: machine learning"
 
 # Server
 ./crispembed-server --embed lfm2-colbert-q8_0.gguf --port 8080
@@ -87,15 +91,28 @@ let query = model.encode_multivec("query: what is deep learning?");
 let doc = model.encode_multivec("document: Neural networks learn representations");
 ```
 
-## Prefixes
+## Conversion
 
-Following the original model convention:
-- **Queries**: `query: ` prefix
-- **Documents**: `document: ` prefix
+Convert from the source model yourself:
+
+```bash
+git clone https://github.com/CrispStrobe/CrispEmbed
+cd CrispEmbed
+
+# Convert (loads 1_Dense/model.safetensors for ColBERT projection)
+python models/convert-lfm2-embed-to-gguf.py \
+    --model LiquidAI/LFM2.5-ColBERT-350M \
+    --output lfm2-colbert-f32.gguf --dtype f32
+
+# Quantize
+./build/crispembed-quantize lfm2-colbert-f32.gguf lfm2-colbert-q8_0.gguf q8_0
+./build/crispembed-quantize lfm2-colbert-f32.gguf lfm2-colbert-q5_k.gguf q5_k
+./build/crispembed-quantize lfm2-colbert-f32.gguf lfm2-colbert-q4_k.gguf q4_k
+```
 
 ## License
 
-LFM Open License v1.0 — see [LICENSE](https://huggingface.co/LiquidAI/LFM2.5-350M/blob/main/LICENSE).
+[LFM Open License v1.0](https://huggingface.co/LiquidAI/LFM2.5-350M/blob/main/LICENSE) — same as the base model.
 
 ## Credits
 
