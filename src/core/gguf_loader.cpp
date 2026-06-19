@@ -168,11 +168,26 @@ std::vector<int> kv_i32_array(gguf_context* gctx, const char* key) {
 
 namespace {
 
+// Platform unmap, shared by MappedFile's destructor and free_weights() (the
+// no-copy path transfers the mapping into WeightLoad, which unmaps on free).
+void core_unmap(void* base, size_t size) {
+    if (!base) return;
+#if defined(__EMSCRIPTEN__)
+    (void)size;
+#elif defined(_WIN32)
+    (void)size;
+    UnmapViewOfFile(base);
+#else
+    ::munmap(base, size);
+#endif
+}
+
 // Read a file slice into a backend tensor. Uses mmap on POSIX; falls back
 // to pread/lseek+read when mmap is unavailable (rare in practice).
 //
 // On POSIX the mmap lives for the duration of one load call — we copy via
-// ggml_backend_tensor_set then unmap. No mmap persists past load_weights().
+// ggml_backend_tensor_set then unmap. No mmap persists past load_weights()
+// UNLESS release() is called (the no-copy path keeps it alive in WeightLoad).
 struct MappedFile {
     int fd = -1;
     void* base = nullptr;
@@ -221,27 +236,31 @@ struct MappedFile {
             base = nullptr;
             return;
         }
+        // Cold load is dominated by per-tensor page faults (2000+ small reads
+        // with no read-ahead). Hint sequential access and kick off an async
+        // read-ahead of the whole file so the copy loop streams instead of
+        // stalling page-by-page. Advisory — ignore failures.
+#if defined(MADV_SEQUENTIAL)
+        ::madvise(base, size, MADV_SEQUENTIAL);
+#endif
+#if defined(MADV_WILLNEED)
+        ::madvise(base, size, MADV_WILLNEED);
+#endif
         ok = true;
 #endif
     }
-    ~MappedFile() {
-#if defined(__EMSCRIPTEN__)
-        // no-op
-#elif defined(_WIN32)
-        if (base)
-            UnmapViewOfFile(base);
-#else
-        if (base)
-            ::munmap(base, size);
-#endif
-    }
+    ~MappedFile() { core_unmap(base, size); }
+    // Transfer ownership of the mapping out (the no-copy path stores it in
+    // WeightLoad). After release() the destructor will not unmap.
+    void release() { base = nullptr; size = 0; }
     MappedFile(const MappedFile&) = delete;
     MappedFile& operator=(const MappedFile&) = delete;
 };
 
 } // namespace
 
-bool load_weights(const char* path, ggml_backend_t backend, const char* model_tag, WeightLoad& out) {
+bool load_weights(const char* path, ggml_backend_t backend, const char* model_tag,
+                  WeightLoad& out, bool try_mmap) {
     const char* tag = model_tag ? model_tag : "core_gguf";
 
     gguf_init_params gp = {/*.no_alloc=*/true, /*.ctx=*/&out.ctx};
@@ -251,6 +270,53 @@ bool load_weights(const char* path, ggml_backend_t backend, const char* model_ta
         if (gctx)
             gguf_free(gctx);
         return false;
+    }
+
+    const size_t data_off = gguf_get_data_offset(gctx);
+
+    // --- No-copy mmap path (opt-in) ----------------------------------------
+    // Point the backend buffer directly at the mmap'd file (no 2.x GB copy,
+    // half the resident memory). Only when the device advertises
+    // buffer_from_host_ptr (Metal/CPU unified memory); otherwise fall through.
+    if (try_mmap) {
+        ggml_backend_dev_t dev = ggml_backend_get_device(backend);
+        ggml_backend_dev_props props{};
+        if (dev) ggml_backend_dev_get_props(dev, &props);
+        if (dev && props.caps.buffer_from_host_ptr) {
+            MappedFile mf(path);
+            if (mf.ok && mf.size > data_off) {
+                size_t max_ts = 0;
+                for (ggml_tensor* t = ggml_get_first_tensor(out.ctx); t; t = ggml_get_next_tensor(out.ctx, t))
+                    max_ts = std::max(max_ts, ggml_nbytes(t));
+                void* host_base = (char*)mf.base + data_off;
+                ggml_backend_buffer_t buf =
+                    ggml_backend_dev_buffer_from_host_ptr(dev, host_base, mf.size - data_off, max_ts);
+                bool ok = (buf != nullptr);
+                if (ok) {
+                    for (ggml_tensor* t = ggml_get_first_tensor(out.ctx); t; t = ggml_get_next_tensor(out.ctx, t)) {
+                        out.tensors[ggml_get_name(t)] = t;
+                        const int64_t tid = gguf_find_tensor(gctx, ggml_get_name(t));
+                        if (tid < 0) continue;
+                        const size_t off = gguf_get_tensor_offset(gctx, tid);
+                        if (ggml_backend_tensor_alloc(buf, t, (char*)host_base + off) != GGML_STATUS_SUCCESS) {
+                            ok = false; break;
+                        }
+                    }
+                }
+                if (ok) {
+                    out.buf = buf;
+                    out.mmap_addr = mf.base;
+                    out.mmap_len = mf.size;
+                    out.used_mmap = true;
+                    mf.release();          // WeightLoad now owns the mapping
+                    gguf_free(gctx);
+                    return true;
+                }
+                if (buf) ggml_backend_buffer_free(buf);
+                out.tensors.clear();       // discard partial; mf dtor unmaps
+            }
+            // mmap unsupported here / failed → fall through to the copy path
+        }
     }
 
     out.buf = ggml_backend_alloc_ctx_tensors(out.ctx, backend);
@@ -273,7 +339,6 @@ bool load_weights(const char* path, ggml_backend_t backend, const char* model_ta
             gguf_free(gctx);
             return false;
         }
-        const size_t data_off = gguf_get_data_offset(gctx);
         std::vector<uint8_t> tbuf;
         for (ggml_tensor* t = ggml_get_first_tensor(out.ctx); t; t = ggml_get_next_tensor(out.ctx, t)) {
             out.tensors[ggml_get_name(t)] = t;
@@ -297,7 +362,6 @@ bool load_weights(const char* path, ggml_backend_t backend, const char* model_ta
         }
         fclose(fp);
     } else {
-        const size_t data_off = gguf_get_data_offset(gctx);
         for (ggml_tensor* t = ggml_get_first_tensor(out.ctx); t; t = ggml_get_next_tensor(out.ctx, t)) {
             out.tensors[ggml_get_name(t)] = t;
             const int64_t tid = gguf_find_tensor(gctx, ggml_get_name(t));
@@ -315,8 +379,14 @@ bool load_weights(const char* path, ggml_backend_t backend, const char* model_ta
 
 void free_weights(WeightLoad& wl) {
     if (wl.buf) {
-        ggml_backend_buffer_free(wl.buf);
+        ggml_backend_buffer_free(wl.buf);   // no-copy buffer doesn't own the pages
         wl.buf = nullptr;
+    }
+    if (wl.mmap_addr) {                      // unmap after the buffer is freed
+        core_unmap(wl.mmap_addr, wl.mmap_len);
+        wl.mmap_addr = nullptr;
+        wl.mmap_len = 0;
+        wl.used_mmap = false;
     }
     if (wl.ctx) {
         ggml_free(wl.ctx);
