@@ -73,7 +73,7 @@ int main(int argc, char ** argv) {
     std::string rec_model_path;  // face recognition model
     std::string vit_model_path;  // standalone ViT model (SigLIP/CLIP)
     std::string clip_text_model_path;  // CLIP text encoder
-    std::string math_ocr_model_path;   // math OCR model (PP-FormulaNet, HMER, BTTR, PosFormer, etc.)
+    std::string ocr_model_path;   // math OCR model (PP-FormulaNet, HMER, BTTR, PosFormer, etc.)
     std::string ocr_det_model_path;   // general OCR: text detection model (DBNet)
     std::string ocr_rec_model_path;   // general OCR: text recognition model (TrOCR)
     std::string layout_model_path;    // layout detection model (RT-DETRv2)
@@ -110,7 +110,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--vit") == 0 && i + 1 < argc) vit_model_path = argv[++i];
         else if (strcmp(argv[i], "--pix2struct") == 0 && i + 1 < argc) pix2struct_model_path = argv[++i];
         else if (strcmp(argv[i], "--clip-text") == 0 && i + 1 < argc) clip_text_model_path = argv[++i];
-        else if (strcmp(argv[i], "--ocr") == 0 && i + 1 < argc) math_ocr_model_path = argv[++i];
+        else if (strcmp(argv[i], "--ocr") == 0 && i + 1 < argc) ocr_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr-det") == 0 && i + 1 < argc) ocr_det_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr-rec") == 0 && i + 1 < argc) ocr_rec_model_path = argv[++i];
         else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc) layout_model_path = argv[++i];
@@ -135,7 +135,7 @@ int main(int argc, char ** argv) {
         else if (strcmp(argv[i], "--adair-model") == 0 && i + 1 < argc) adair_model_path = argv[++i];
     }
 
-    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && math_ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() && dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty() && adair_model_path.empty()) {
+    if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && ocr_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() && dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty() && adair_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
@@ -819,15 +819,15 @@ int main(int argc, char ** argv) {
     }
 
     // ── Math OCR ──
-    void * math_ocr_ctx = nullptr;
-    std::mutex math_ocr_mutex;
+    void * ocr_model_ctx = nullptr;
+    std::mutex ocr_model_mutex;
 
-    if (!math_ocr_model_path.empty()) {
-        std::string resolved = crispembed_mgr::resolve_model(math_ocr_model_path, true);
-        if (!resolved.empty()) math_ocr_model_path = resolved;
-        math_ocr_ctx = crispembed_math_ocr_init(math_ocr_model_path.c_str(), n_threads);
-        if (!math_ocr_ctx)
-            fprintf(stderr, "Warning: failed to load math OCR model '%s'\n", math_ocr_model_path.c_str());
+    if (!ocr_model_path.empty()) {
+        std::string resolved = crispembed_mgr::resolve_model(ocr_model_path, true);
+        if (!resolved.empty()) ocr_model_path = resolved;
+        ocr_model_ctx = crispembed_ocr_model_init(ocr_model_path.c_str(), n_threads);
+        if (!ocr_model_ctx)
+            fprintf(stderr, "Warning: failed to load math OCR model '%s'\n", ocr_model_path.c_str());
     }
 
     // ── General OCR Pipeline (text detection + recognition) ──
@@ -1283,13 +1283,14 @@ int main(int argc, char ** argv) {
         }
     });
 
-    // POST /math/ocr — formula recognition
+    // POST /ocr/model — single-model OCR recognition (math or text, auto-dispatched).
+    // /math/ocr is kept as a deprecated alias for the same handler.
     // Request:  {"image": "/path/to/formula.png"}
     // Response: {"latex": "\\frac{a}{b}", "len": 12, "ms": 450.2}
-    svr.Post("/math/ocr", [&](const httplib::Request & req, httplib::Response & res) {
-        if (!math_ocr_ctx) {
+    auto ocr_model_handler = [&](const httplib::Request & req, httplib::Response & res) {
+        if (!ocr_model_ctx) {
             res.status = 503;
-            res.set_content("{\"error\": \"no math OCR model loaded (use --ocr)\"}", "application/json");
+            res.set_content("{\"error\": \"no OCR model loaded (use --ocr)\"}", "application/json");
             return;
         }
 
@@ -1308,7 +1309,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(math_ocr_mutex);
+        std::lock_guard<std::mutex> lock(ocr_model_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         int w = 0, h = 0, ch = 0;
@@ -1320,13 +1321,13 @@ int main(int argc, char ** argv) {
         }
 
         int out_len = 0;
-        const char * latex = crispembed_math_ocr_recognize(math_ocr_ctx, pixels, w, h, ch, &out_len);
+        const char * latex = crispembed_ocr_model_recognize(ocr_model_ctx, pixels, w, h, ch, &out_len);
         stbi_image_free(pixels);
 
         // Fetch per-token and mean confidence scores after recognition.
-        float mean_conf = crispembed_math_ocr_mean_confidence(math_ocr_ctx);
+        float mean_conf = crispembed_ocr_model_mean_confidence(ocr_model_ctx);
         int n_tok_conf = 0;
-        const float * tok_conf = crispembed_math_ocr_confidences(math_ocr_ctx, &n_tok_conf);
+        const float * tok_conf = crispembed_ocr_model_confidences(ocr_model_ctx, &n_tok_conf);
 
         auto t1 = std::chrono::steady_clock::now();
         double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
@@ -1342,9 +1343,11 @@ int main(int argc, char ** argv) {
         js << "]"
            << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
 
-        fprintf(stderr, "crispembed-server: /math/ocr in %.1f ms (%d chars, conf=%.2f)\n", ms, out_len, mean_conf);
+        fprintf(stderr, "crispembed-server: /ocr/model in %.1f ms (%d chars, conf=%.2f)\n", ms, out_len, mean_conf);
         res.set_content(js.str(), "application/json");
-    });
+    };
+    svr.Post("/ocr/model", ocr_model_handler);
+    svr.Post("/math/ocr", ocr_model_handler);  // deprecated alias
 
     // POST /ocr — general text detection + recognition pipeline
     // Request:  {"image": "/path/to/document.png"}
@@ -3356,7 +3359,7 @@ int main(int argc, char ** argv) {
                 }
             }
 
-            // OCR: use orchestrator if available, else single-shot math_ocr
+            // OCR: use orchestrator if available, else single-shot OCR model
             int n_results = 0;
             const char * full_text = nullptr;
             float mean_conf = 0;
@@ -3367,11 +3370,11 @@ int main(int argc, char ** argv) {
                 results = crispembed_ocr_pipeline_run(
                     ocr_orch_ctx, page_paths[pi].c_str(),
                     &n_results, &full_text, &mean_conf);
-            } else if (math_ocr_ctx) {
-                std::lock_guard<std::mutex> lock(math_ocr_mutex);
+            } else if (ocr_model_ctx) {
+                std::lock_guard<std::mutex> lock(ocr_model_mutex);
                 int out_len = 0;
-                const char * text = crispembed_math_ocr_recognize(
-                    math_ocr_ctx, img, w, h, ch, &out_len);
+                const char * text = crispembed_ocr_model_recognize(
+                    ocr_model_ctx, img, w, h, ch, &out_len);
                 // Wrap single result
                 static crispembed_ocr_result single_result;
                 if (text && out_len > 0) {
@@ -3445,7 +3448,7 @@ int main(int argc, char ** argv) {
         if (face_rec) js << ", \"face_recognition\": true, \"face_dim\": " << crispembed_face_dim(face_rec);
         if (vit_ctx) js << ", \"vit\": true, \"vit_dim\": " << crispembed_vit_dim(vit_ctx);
         if (clip_text_ctx) js << ", \"clip_text\": true, \"clip_text_dim\": " << crispembed_clip_text_dim(clip_text_ctx);
-        if (math_ocr_ctx) js << ", \"math_ocr\": true";
+        if (ocr_model_ctx) js << ", \"ocr_model\": true, \"math_ocr\": true";
         if (ocr_pipeline_ctx) js << ", \"ocr_pipeline\": true";
         if (layout_ctx) js << ", \"layout\": true";
         if (text_det_ctx) js << ", \"text_detection\": true";
@@ -3481,7 +3484,7 @@ int main(int argc, char ** argv) {
     if (vit_ctx) fprintf(stderr, "  POST /vit/encode      — {\"image\": \"path.jpg\"}\n");
     if (clip_text_ctx) fprintf(stderr, "  POST /clip/text       — {\"text\": \"query\"}\n");
     if (pix2struct_ctx) fprintf(stderr, "  POST /pix2struct/generate — {\"image\": \"doc.png\", \"max_tokens\": 256}\n");
-    if (math_ocr_ctx) fprintf(stderr, "  POST /math/ocr        — {\"image\": \"formula.png\"}\n");
+    if (ocr_model_ctx) fprintf(stderr, "  POST /ocr/model       — {\"image\": \"formula.png\"}  (alias: /math/ocr)\n");
     if (ocr_pipeline_ctx) fprintf(stderr, "  POST /ocr             — {\"image\": \"document.png\"} (detect+recognize)\n");
     if (layout_ctx) fprintf(stderr, "  POST /layout/detect   — {\"image\": \"page.png\"}\n");
     fprintf(stderr, "  POST /table/parse     — {\"image\": \"table.png\"} → {\"html\": \"<table>...\"}\n");
@@ -3538,7 +3541,7 @@ int main(int argc, char ** argv) {
     if (text_det_ctx) crispembed_text_det_free(text_det_ctx);
     if (ocr_orch_ctx) crispembed_ocr_pipeline_free(ocr_orch_ctx);
     if (ocr_pipeline_ctx) crispembed_ocr_free(ocr_pipeline_ctx);
-    if (math_ocr_ctx) crispembed_math_ocr_free(math_ocr_ctx);
+    if (ocr_model_ctx) crispembed_ocr_model_free(ocr_model_ctx);
     if (clip_text_ctx) crispembed_clip_text_free(clip_text_ctx);
     if (vit_ctx) crispembed_vit_free(vit_ctx);
     if (pix2struct_ctx) crispembed_pix2struct_free(pix2struct_ctx);

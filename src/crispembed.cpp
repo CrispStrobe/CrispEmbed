@@ -3088,8 +3088,12 @@ extern "C" int crispembed_colbert_score_batch(
 }
 
 // ---------------------------------------------------------------------------
-// Unified Math OCR — auto-detects model architecture from GGUF metadata.
-// Supports: pix2tex_mfr (DeiT+TrOCR), hmer (DenseNet+GRU), bttr (DenseNet+Transformer)
+// OCR model dispatcher — auto-detects model architecture from GGUF metadata and
+// routes to the matching backend. Covers both math (pix2tex_mfr, hmer, bttr,
+// ppformulanet, posformer, mixtex) and general text/document OCR (qwen2vl,
+// internvl2, glm_ocr, got_ocr, parseq, tesseract_lstm, granite_vision,
+// lightonocr, deepseek_ocr2). Public API: crispembed_ocr_model_* (the
+// crispembed_math_ocr_* names are kept as deprecated forwarding aliases).
 // ---------------------------------------------------------------------------
 
 #include "math_ocr.h"
@@ -3111,105 +3115,105 @@ extern "C" int crispembed_colbert_score_batch(
 #include "deepseek_ocr2.h"
 #include "core/gguf_loader.h"
 
-enum math_ocr_type { MATH_OCR_PIX2TEX, MATH_OCR_HMER, MATH_OCR_BTTR, MATH_OCR_PPFORMULANET, MATH_OCR_PPFORMULANET_L, MATH_OCR_POSFORMER, MATH_OCR_MIXTEX, MATH_OCR_QWEN2VL, MATH_OCR_INTERNVL2, MATH_OCR_PARSEQ, MATH_OCR_GLM_OCR, MATH_OCR_GOT_OCR, MATH_OCR_TESSERACT_LSTM, MATH_OCR_GRANITE_VISION, MATH_OCR_LIGHTONOCR, MATH_OCR_DEEPSEEK_OCR2 };
+enum ocr_model_type { OCR_MODEL_PIX2TEX, OCR_MODEL_HMER, OCR_MODEL_BTTR, OCR_MODEL_PPFORMULANET, OCR_MODEL_PPFORMULANET_L, OCR_MODEL_POSFORMER, OCR_MODEL_MIXTEX, OCR_MODEL_QWEN2VL, OCR_MODEL_INTERNVL2, OCR_MODEL_PARSEQ, OCR_MODEL_GLM_OCR, OCR_MODEL_GOT_OCR, OCR_MODEL_TESSERACT_LSTM, OCR_MODEL_GRANITE_VISION, OCR_MODEL_LIGHTONOCR, OCR_MODEL_DEEPSEEK_OCR2 };
 
-struct unified_math_ocr {
-    math_ocr_type type;
+struct ocr_model {
+    ocr_model_type type;
     void * ctx;
 };
 
-static math_ocr_type detect_arch(const char * path) {
+static ocr_model_type detect_arch(const char * path) {
     gguf_context * g = core_gguf::open_metadata(path);
-    if (!g) return MATH_OCR_PIX2TEX;
+    if (!g) return OCR_MODEL_PIX2TEX;
     std::string arch = core_gguf::kv_str(g, "general.architecture", "pix2tex_mfr");
     core_gguf::free_metadata(g);
-    if (arch == "hmer") return MATH_OCR_HMER;
-    if (arch == "bttr") return MATH_OCR_BTTR;
-    if (arch == "ppformulanet") return MATH_OCR_PPFORMULANET;
-    if (arch == "ppformulanet_l") return MATH_OCR_PPFORMULANET_L;
-    if (arch == "posformer") return MATH_OCR_POSFORMER;
-    if (arch == "mixtex") return MATH_OCR_MIXTEX;
-    if (arch == "qwen2vl" || arch == "qwen3vl") return MATH_OCR_QWEN2VL;
-    if (arch == "internvl2") return MATH_OCR_INTERNVL2;
-if (arch == "parseq") return MATH_OCR_PARSEQ;
-if (arch == "glm_ocr") return MATH_OCR_GLM_OCR;
-if (arch == "got_ocr") return MATH_OCR_GOT_OCR;
-if (arch == "tesseract_lstm") return MATH_OCR_TESSERACT_LSTM;
-if (arch == "granite_vision") return MATH_OCR_GRANITE_VISION;
-if (arch == "lightonocr") return MATH_OCR_LIGHTONOCR;
-if (arch == "deepseek_ocr2") return MATH_OCR_DEEPSEEK_OCR2;
-    return MATH_OCR_PIX2TEX;
+    if (arch == "hmer") return OCR_MODEL_HMER;
+    if (arch == "bttr") return OCR_MODEL_BTTR;
+    if (arch == "ppformulanet") return OCR_MODEL_PPFORMULANET;
+    if (arch == "ppformulanet_l") return OCR_MODEL_PPFORMULANET_L;
+    if (arch == "posformer") return OCR_MODEL_POSFORMER;
+    if (arch == "mixtex") return OCR_MODEL_MIXTEX;
+    if (arch == "qwen2vl" || arch == "qwen3vl") return OCR_MODEL_QWEN2VL;
+    if (arch == "internvl2") return OCR_MODEL_INTERNVL2;
+if (arch == "parseq") return OCR_MODEL_PARSEQ;
+if (arch == "glm_ocr") return OCR_MODEL_GLM_OCR;
+if (arch == "got_ocr") return OCR_MODEL_GOT_OCR;
+if (arch == "tesseract_lstm") return OCR_MODEL_TESSERACT_LSTM;
+if (arch == "granite_vision") return OCR_MODEL_GRANITE_VISION;
+if (arch == "lightonocr") return OCR_MODEL_LIGHTONOCR;
+if (arch == "deepseek_ocr2") return OCR_MODEL_DEEPSEEK_OCR2;
+    return OCR_MODEL_PIX2TEX;
 }
 
-extern "C" void * crispembed_math_ocr_init(const char * path, int n_threads) {
+extern "C" void * crispembed_ocr_model_init(const char * path, int n_threads) {
     auto type = detect_arch(path);
     void * inner = nullptr;
     switch (type) {
-        case MATH_OCR_PIX2TEX:      inner = math_ocr_init(path, n_threads); break;
-        case MATH_OCR_HMER:         inner = hmer_ocr_init(path, n_threads); break;
-        case MATH_OCR_BTTR:         inner = bttr_ocr_init(path, n_threads); break;
-        case MATH_OCR_PPFORMULANET: inner = ppformulanet_ocr_init(path, n_threads); break;
-        case MATH_OCR_PPFORMULANET_L: inner = ppformulanet_l_ocr_init(path, n_threads); break;
-        case MATH_OCR_POSFORMER:      inner = posformer_ocr_init(path, n_threads); break;
-        case MATH_OCR_MIXTEX:         inner = mixtex_ocr_init(path, n_threads); break;
-        case MATH_OCR_QWEN2VL:        inner = qwen2vl_ocr_init(path, n_threads); break;
-        case MATH_OCR_INTERNVL2:      inner = internvl2_ocr_init(path, n_threads); break;
-case MATH_OCR_PARSEQ:         inner = parseq_ocr_init(path, n_threads); break;
-case MATH_OCR_GLM_OCR:        inner = glm_ocr_init(path, n_threads); break;
-case MATH_OCR_GOT_OCR:        inner = got_ocr_init(path, n_threads); break;
-case MATH_OCR_TESSERACT_LSTM: inner = tesseract_lstm_init(path, n_threads); break;
-case MATH_OCR_GRANITE_VISION: inner = granite_vision_init(path, n_threads); break;
-case MATH_OCR_LIGHTONOCR:     inner = lightonocr_init(path, n_threads); break;
-case MATH_OCR_DEEPSEEK_OCR2:  inner = deepseek_ocr2_init(path, n_threads); break;
+        case OCR_MODEL_PIX2TEX:      inner = math_ocr_init(path, n_threads); break;
+        case OCR_MODEL_HMER:         inner = hmer_ocr_init(path, n_threads); break;
+        case OCR_MODEL_BTTR:         inner = bttr_ocr_init(path, n_threads); break;
+        case OCR_MODEL_PPFORMULANET: inner = ppformulanet_ocr_init(path, n_threads); break;
+        case OCR_MODEL_PPFORMULANET_L: inner = ppformulanet_l_ocr_init(path, n_threads); break;
+        case OCR_MODEL_POSFORMER:      inner = posformer_ocr_init(path, n_threads); break;
+        case OCR_MODEL_MIXTEX:         inner = mixtex_ocr_init(path, n_threads); break;
+        case OCR_MODEL_QWEN2VL:        inner = qwen2vl_ocr_init(path, n_threads); break;
+        case OCR_MODEL_INTERNVL2:      inner = internvl2_ocr_init(path, n_threads); break;
+case OCR_MODEL_PARSEQ:         inner = parseq_ocr_init(path, n_threads); break;
+case OCR_MODEL_GLM_OCR:        inner = glm_ocr_init(path, n_threads); break;
+case OCR_MODEL_GOT_OCR:        inner = got_ocr_init(path, n_threads); break;
+case OCR_MODEL_TESSERACT_LSTM: inner = tesseract_lstm_init(path, n_threads); break;
+case OCR_MODEL_GRANITE_VISION: inner = granite_vision_init(path, n_threads); break;
+case OCR_MODEL_LIGHTONOCR:     inner = lightonocr_init(path, n_threads); break;
+case OCR_MODEL_DEEPSEEK_OCR2:  inner = deepseek_ocr2_init(path, n_threads); break;
     }
     if (!inner) return nullptr;
-    auto * u = new unified_math_ocr{type, inner};
+    auto * u = new ocr_model{type, inner};
     return u;
 }
 
-extern "C" void crispembed_math_ocr_free(void * ctx) {
+extern "C" void crispembed_ocr_model_free(void * ctx) {
     if (!ctx) return;
-    auto * u = (unified_math_ocr *)ctx;
+    auto * u = (ocr_model *)ctx;
     switch (u->type) {
-        case MATH_OCR_PIX2TEX:      math_ocr_free((math_ocr_context *)u->ctx); break;
-        case MATH_OCR_HMER:         hmer_ocr_free((hmer_ocr_context *)u->ctx); break;
-        case MATH_OCR_BTTR:         bttr_ocr_free((bttr_ocr_context *)u->ctx); break;
-        case MATH_OCR_PPFORMULANET: ppformulanet_ocr_free((ppformulanet_ocr_context *)u->ctx); break;
-        case MATH_OCR_PPFORMULANET_L: ppformulanet_l_ocr_free((ppformulanet_l_ocr_context *)u->ctx); break;
-        case MATH_OCR_POSFORMER:      posformer_ocr_free((posformer_ocr_context *)u->ctx); break;
-        case MATH_OCR_MIXTEX:         mixtex_ocr_free((mixtex_ocr_context *)u->ctx); break;
-        case MATH_OCR_QWEN2VL:        qwen2vl_ocr_free((qwen2vl_ocr_context *)u->ctx); break;
-        case MATH_OCR_INTERNVL2:      internvl2_ocr_free((internvl2_ocr_context *)u->ctx); break;
-case MATH_OCR_PARSEQ:         parseq_ocr_free((parseq_ocr_context *)u->ctx); break;
-case MATH_OCR_GLM_OCR:        glm_ocr_free((glm_ocr_context *)u->ctx); break;
-case MATH_OCR_GOT_OCR:        got_ocr_free((got_ocr_context *)u->ctx); break;
-case MATH_OCR_TESSERACT_LSTM: tesseract_lstm_free((tesseract_lstm_context *)u->ctx); break;
-case MATH_OCR_GRANITE_VISION: granite_vision_free((granite_vision_context *)u->ctx); break;
-case MATH_OCR_LIGHTONOCR:     lightonocr_free((lightonocr_context *)u->ctx); break;
-case MATH_OCR_DEEPSEEK_OCR2:  deepseek_ocr2_free((deepseek_ocr2_context *)u->ctx); break;
+        case OCR_MODEL_PIX2TEX:      math_ocr_free((math_ocr_context *)u->ctx); break;
+        case OCR_MODEL_HMER:         hmer_ocr_free((hmer_ocr_context *)u->ctx); break;
+        case OCR_MODEL_BTTR:         bttr_ocr_free((bttr_ocr_context *)u->ctx); break;
+        case OCR_MODEL_PPFORMULANET: ppformulanet_ocr_free((ppformulanet_ocr_context *)u->ctx); break;
+        case OCR_MODEL_PPFORMULANET_L: ppformulanet_l_ocr_free((ppformulanet_l_ocr_context *)u->ctx); break;
+        case OCR_MODEL_POSFORMER:      posformer_ocr_free((posformer_ocr_context *)u->ctx); break;
+        case OCR_MODEL_MIXTEX:         mixtex_ocr_free((mixtex_ocr_context *)u->ctx); break;
+        case OCR_MODEL_QWEN2VL:        qwen2vl_ocr_free((qwen2vl_ocr_context *)u->ctx); break;
+        case OCR_MODEL_INTERNVL2:      internvl2_ocr_free((internvl2_ocr_context *)u->ctx); break;
+case OCR_MODEL_PARSEQ:         parseq_ocr_free((parseq_ocr_context *)u->ctx); break;
+case OCR_MODEL_GLM_OCR:        glm_ocr_free((glm_ocr_context *)u->ctx); break;
+case OCR_MODEL_GOT_OCR:        got_ocr_free((got_ocr_context *)u->ctx); break;
+case OCR_MODEL_TESSERACT_LSTM: tesseract_lstm_free((tesseract_lstm_context *)u->ctx); break;
+case OCR_MODEL_GRANITE_VISION: granite_vision_free((granite_vision_context *)u->ctx); break;
+case OCR_MODEL_LIGHTONOCR:     lightonocr_free((lightonocr_context *)u->ctx); break;
+case OCR_MODEL_DEEPSEEK_OCR2:  deepseek_ocr2_free((deepseek_ocr2_context *)u->ctx); break;
     }
     delete u;
 }
 
-extern "C" const char * crispembed_math_ocr_recognize(
+extern "C" const char * crispembed_ocr_model_recognize(
     void * ctx, const uint8_t * px, int w, int h, int ch, int * ol
 ) {
     if (!ctx) return nullptr;
-    auto * u = (unified_math_ocr *)ctx;
+    auto * u = (ocr_model *)ctx;
     switch (u->type) {
-        case MATH_OCR_PIX2TEX:      return math_ocr_recognize_raw((math_ocr_context *)u->ctx, px, w, h, ch, ol);
-        case MATH_OCR_HMER:         return hmer_ocr_recognize_raw((hmer_ocr_context *)u->ctx, px, w, h, ch, ol);
-        case MATH_OCR_BTTR:         return bttr_ocr_recognize_raw((bttr_ocr_context *)u->ctx, px, w, h, ch, ol);
-        case MATH_OCR_PPFORMULANET: return ppformulanet_ocr_recognize_raw((ppformulanet_ocr_context *)u->ctx, px, w, h, ch, ol);
-        case MATH_OCR_PPFORMULANET_L: return ppformulanet_l_ocr_recognize_raw((ppformulanet_l_ocr_context *)u->ctx, px, w, h, ch, ol);
-        case MATH_OCR_POSFORMER:      return posformer_ocr_recognize_raw((posformer_ocr_context *)u->ctx, px, w, h, ch, ol);
-        case MATH_OCR_MIXTEX:         return mixtex_ocr_recognize((mixtex_ocr_context *)u->ctx, px, w, h, ch, ol);
-        case MATH_OCR_QWEN2VL:        return qwen2vl_ocr_recognize_raw((qwen2vl_ocr_context *)u->ctx, px, w, h, ch, ol);
-        case MATH_OCR_INTERNVL2:      return internvl2_ocr_recognize_raw((internvl2_ocr_context *)u->ctx, px, w, h, ch, ol);
-case MATH_OCR_PARSEQ:         return parseq_ocr_recognize_raw((parseq_ocr_context *)u->ctx, px, w, h, ch, ol);
-case MATH_OCR_GLM_OCR:        return glm_ocr_recognize_raw((glm_ocr_context *)u->ctx, px, w, h, ch, ol);
-case MATH_OCR_GOT_OCR:        return got_ocr_recognize_raw((got_ocr_context *)u->ctx, px, w, h, ch, ol);
-case MATH_OCR_TESSERACT_LSTM: {
+        case OCR_MODEL_PIX2TEX:      return math_ocr_recognize_raw((math_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case OCR_MODEL_HMER:         return hmer_ocr_recognize_raw((hmer_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case OCR_MODEL_BTTR:         return bttr_ocr_recognize_raw((bttr_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case OCR_MODEL_PPFORMULANET: return ppformulanet_ocr_recognize_raw((ppformulanet_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case OCR_MODEL_PPFORMULANET_L: return ppformulanet_l_ocr_recognize_raw((ppformulanet_l_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case OCR_MODEL_POSFORMER:      return posformer_ocr_recognize_raw((posformer_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case OCR_MODEL_MIXTEX:         return mixtex_ocr_recognize((mixtex_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case OCR_MODEL_QWEN2VL:        return qwen2vl_ocr_recognize_raw((qwen2vl_ocr_context *)u->ctx, px, w, h, ch, ol);
+        case OCR_MODEL_INTERNVL2:      return internvl2_ocr_recognize_raw((internvl2_ocr_context *)u->ctx, px, w, h, ch, ol);
+case OCR_MODEL_PARSEQ:         return parseq_ocr_recognize_raw((parseq_ocr_context *)u->ctx, px, w, h, ch, ol);
+case OCR_MODEL_GLM_OCR:        return glm_ocr_recognize_raw((glm_ocr_context *)u->ctx, px, w, h, ch, ol);
+case OCR_MODEL_GOT_OCR:        return got_ocr_recognize_raw((got_ocr_context *)u->ctx, px, w, h, ch, ol);
+case OCR_MODEL_TESSERACT_LSTM: {
             // tesseract_lstm_recognize takes grayscale uint8 — convert if needed
             if (ch == 1) {
                 return tesseract_lstm_recognize((tesseract_lstm_context *)u->ctx, px, w, h, ol);
@@ -3221,40 +3225,40 @@ case MATH_OCR_TESSERACT_LSTM: {
             }
             return tesseract_lstm_recognize((tesseract_lstm_context *)u->ctx, gray.data(), w, h, ol);
         }
-case MATH_OCR_GRANITE_VISION: return granite_vision_recognize((granite_vision_context *)u->ctx, px, w, h, ch, nullptr, ol);
-case MATH_OCR_LIGHTONOCR:     return lightonocr_recognize_raw((lightonocr_context *)u->ctx, px, w, h, ch, ol);
-case MATH_OCR_DEEPSEEK_OCR2:  return deepseek_ocr2_recognize_raw((deepseek_ocr2_context *)u->ctx, px, w, h, ch, ol);
+case OCR_MODEL_GRANITE_VISION: return granite_vision_recognize((granite_vision_context *)u->ctx, px, w, h, ch, nullptr, ol);
+case OCR_MODEL_LIGHTONOCR:     return lightonocr_recognize_raw((lightonocr_context *)u->ctx, px, w, h, ch, ol);
+case OCR_MODEL_DEEPSEEK_OCR2:  return deepseek_ocr2_recognize_raw((deepseek_ocr2_context *)u->ctx, px, w, h, ch, ol);
     }
     return nullptr;
 }
 
-extern "C" const char * crispembed_math_ocr_recognize_gray(
+extern "C" const char * crispembed_ocr_model_recognize_gray(
     void * ctx, const float * px, int w, int h, int * ol
 ) {
     if (!ctx) return nullptr;
-    auto * u = (unified_math_ocr *)ctx;
+    auto * u = (ocr_model *)ctx;
     switch (u->type) {
-        case MATH_OCR_PIX2TEX:      return math_ocr_recognize((math_ocr_context *)u->ctx, px, w, h, ol);
-        case MATH_OCR_HMER:         return hmer_ocr_recognize((hmer_ocr_context *)u->ctx, px, w, h, ol);
-        case MATH_OCR_BTTR:         return bttr_ocr_recognize((bttr_ocr_context *)u->ctx, px, w, h, ol);
-        case MATH_OCR_PPFORMULANET: return ppformulanet_ocr_recognize((ppformulanet_ocr_context *)u->ctx, px, w, h, ol);
-        case MATH_OCR_PPFORMULANET_L: return ppformulanet_l_ocr_recognize((ppformulanet_l_ocr_context *)u->ctx, px, w, h, ol);
-        case MATH_OCR_POSFORMER:      return posformer_ocr_recognize((posformer_ocr_context *)u->ctx, px, w, h, ol);
-        case MATH_OCR_MIXTEX:         return mixtex_ocr_recognize_gray((mixtex_ocr_context *)u->ctx, px, w, h, ol);
-        case MATH_OCR_QWEN2VL:        return qwen2vl_ocr_recognize((qwen2vl_ocr_context *)u->ctx, px, w, h, ol);
-        case MATH_OCR_INTERNVL2:      return internvl2_ocr_recognize((internvl2_ocr_context *)u->ctx, px, w, h, ol);
-case MATH_OCR_PARSEQ:         return parseq_ocr_recognize((parseq_ocr_context *)u->ctx, px, w, h, ol);
-case MATH_OCR_GLM_OCR:        return glm_ocr_recognize((glm_ocr_context *)u->ctx, px, w, h, ol);
-case MATH_OCR_GOT_OCR:        return got_ocr_recognize((got_ocr_context *)u->ctx, px, w, h, ol);
-case MATH_OCR_DEEPSEEK_OCR2:  return deepseek_ocr2_recognize((deepseek_ocr2_context *)u->ctx, px, w, h, ol);
-case MATH_OCR_TESSERACT_LSTM: {
+        case OCR_MODEL_PIX2TEX:      return math_ocr_recognize((math_ocr_context *)u->ctx, px, w, h, ol);
+        case OCR_MODEL_HMER:         return hmer_ocr_recognize((hmer_ocr_context *)u->ctx, px, w, h, ol);
+        case OCR_MODEL_BTTR:         return bttr_ocr_recognize((bttr_ocr_context *)u->ctx, px, w, h, ol);
+        case OCR_MODEL_PPFORMULANET: return ppformulanet_ocr_recognize((ppformulanet_ocr_context *)u->ctx, px, w, h, ol);
+        case OCR_MODEL_PPFORMULANET_L: return ppformulanet_l_ocr_recognize((ppformulanet_l_ocr_context *)u->ctx, px, w, h, ol);
+        case OCR_MODEL_POSFORMER:      return posformer_ocr_recognize((posformer_ocr_context *)u->ctx, px, w, h, ol);
+        case OCR_MODEL_MIXTEX:         return mixtex_ocr_recognize_gray((mixtex_ocr_context *)u->ctx, px, w, h, ol);
+        case OCR_MODEL_QWEN2VL:        return qwen2vl_ocr_recognize((qwen2vl_ocr_context *)u->ctx, px, w, h, ol);
+        case OCR_MODEL_INTERNVL2:      return internvl2_ocr_recognize((internvl2_ocr_context *)u->ctx, px, w, h, ol);
+case OCR_MODEL_PARSEQ:         return parseq_ocr_recognize((parseq_ocr_context *)u->ctx, px, w, h, ol);
+case OCR_MODEL_GLM_OCR:        return glm_ocr_recognize((glm_ocr_context *)u->ctx, px, w, h, ol);
+case OCR_MODEL_GOT_OCR:        return got_ocr_recognize((got_ocr_context *)u->ctx, px, w, h, ol);
+case OCR_MODEL_DEEPSEEK_OCR2:  return deepseek_ocr2_recognize((deepseek_ocr2_context *)u->ctx, px, w, h, ol);
+case OCR_MODEL_TESSERACT_LSTM: {
             // Convert float [0,1] grayscale → uint8
             std::vector<uint8_t> gray(w * h);
             for (int i = 0; i < w * h; i++)
                 gray[i] = (uint8_t)(px[i] * 255.0f + 0.5f);
             return tesseract_lstm_recognize((tesseract_lstm_context *)u->ctx, gray.data(), w, h, ol);
         }
-case MATH_OCR_GRANITE_VISION: {
+case OCR_MODEL_GRANITE_VISION: {
             // Convert float gray → uint8 RGB for granite_vision_recognize
             std::vector<uint8_t> rgb(w * h * 3);
             for (int i = 0; i < w * h; i++) {
@@ -3263,7 +3267,7 @@ case MATH_OCR_GRANITE_VISION: {
             }
             return granite_vision_recognize((granite_vision_context *)u->ctx, rgb.data(), w, h, 3, nullptr, ol);
         }
-case MATH_OCR_LIGHTONOCR: {
+case OCR_MODEL_LIGHTONOCR: {
             std::vector<uint8_t> gray(w * h);
             for (int i = 0; i < w * h; i++)
                 gray[i] = (uint8_t)(px[i] * 255.0f + 0.5f);
@@ -3273,38 +3277,66 @@ case MATH_OCR_LIGHTONOCR: {
     return nullptr;
 }
 
-extern "C" const float * crispembed_math_ocr_confidences(const void * ctx, int * n_tokens) {
+extern "C" const float * crispembed_ocr_model_confidences(const void * ctx, int * n_tokens) {
     if (n_tokens) *n_tokens = 0;
     if (!ctx) return nullptr;
-    auto * u = (const unified_math_ocr *)ctx;
+    auto * u = (const ocr_model *)ctx;
     switch (u->type) {
-        case MATH_OCR_PIX2TEX:        return math_ocr_confidences((const math_ocr_context *)u->ctx, n_tokens);
-        case MATH_OCR_HMER:           return hmer_ocr_confidences((const hmer_ocr_context *)u->ctx, n_tokens);
-        case MATH_OCR_BTTR:           return bttr_ocr_confidences((const bttr_ocr_context *)u->ctx, n_tokens);
-        case MATH_OCR_PPFORMULANET:   return ppformulanet_ocr_confidences((const ppformulanet_ocr_context *)u->ctx, n_tokens);
-        case MATH_OCR_PPFORMULANET_L: return ppformulanet_l_ocr_confidences((const ppformulanet_l_ocr_context *)u->ctx, n_tokens);
-        case MATH_OCR_POSFORMER:      return posformer_ocr_confidences((const posformer_ocr_context *)u->ctx, n_tokens);
-        case MATH_OCR_MIXTEX:         return mixtex_ocr_confidences((const mixtex_ocr_context *)u->ctx, n_tokens);
-        case MATH_OCR_QWEN2VL:        return qwen2vl_ocr_confidences((const qwen2vl_ocr_context *)u->ctx, n_tokens);
-        case MATH_OCR_INTERNVL2:      return internvl2_ocr_confidences((const internvl2_ocr_context *)u->ctx, n_tokens);
-        case MATH_OCR_PARSEQ:         return parseq_ocr_confidences((const parseq_ocr_context *)u->ctx, n_tokens);
-        case MATH_OCR_GLM_OCR:        return glm_ocr_confidences((const glm_ocr_context *)u->ctx, n_tokens);
-        case MATH_OCR_GOT_OCR:        return got_ocr_confidences((const got_ocr_context *)u->ctx, n_tokens);
-        case MATH_OCR_DEEPSEEK_OCR2:  return deepseek_ocr2_confidences((const deepseek_ocr2_context *)u->ctx, n_tokens);
-        case MATH_OCR_TESSERACT_LSTM: return tesseract_lstm_confidences((const tesseract_lstm_context *)u->ctx, n_tokens);
-        case MATH_OCR_LIGHTONOCR:     return nullptr;  // lightonocr does not expose per-token confidences
+        case OCR_MODEL_PIX2TEX:        return math_ocr_confidences((const math_ocr_context *)u->ctx, n_tokens);
+        case OCR_MODEL_HMER:           return hmer_ocr_confidences((const hmer_ocr_context *)u->ctx, n_tokens);
+        case OCR_MODEL_BTTR:           return bttr_ocr_confidences((const bttr_ocr_context *)u->ctx, n_tokens);
+        case OCR_MODEL_PPFORMULANET:   return ppformulanet_ocr_confidences((const ppformulanet_ocr_context *)u->ctx, n_tokens);
+        case OCR_MODEL_PPFORMULANET_L: return ppformulanet_l_ocr_confidences((const ppformulanet_l_ocr_context *)u->ctx, n_tokens);
+        case OCR_MODEL_POSFORMER:      return posformer_ocr_confidences((const posformer_ocr_context *)u->ctx, n_tokens);
+        case OCR_MODEL_MIXTEX:         return mixtex_ocr_confidences((const mixtex_ocr_context *)u->ctx, n_tokens);
+        case OCR_MODEL_QWEN2VL:        return qwen2vl_ocr_confidences((const qwen2vl_ocr_context *)u->ctx, n_tokens);
+        case OCR_MODEL_INTERNVL2:      return internvl2_ocr_confidences((const internvl2_ocr_context *)u->ctx, n_tokens);
+        case OCR_MODEL_PARSEQ:         return parseq_ocr_confidences((const parseq_ocr_context *)u->ctx, n_tokens);
+        case OCR_MODEL_GLM_OCR:        return glm_ocr_confidences((const glm_ocr_context *)u->ctx, n_tokens);
+        case OCR_MODEL_GOT_OCR:        return got_ocr_confidences((const got_ocr_context *)u->ctx, n_tokens);
+        case OCR_MODEL_DEEPSEEK_OCR2:  return deepseek_ocr2_confidences((const deepseek_ocr2_context *)u->ctx, n_tokens);
+        case OCR_MODEL_TESSERACT_LSTM: return tesseract_lstm_confidences((const tesseract_lstm_context *)u->ctx, n_tokens);
+        case OCR_MODEL_LIGHTONOCR:     return nullptr;  // lightonocr does not expose per-token confidences
         default: return nullptr;
     }
 }
 
-extern "C" float crispembed_math_ocr_mean_confidence(const void * ctx) {
+extern "C" float crispembed_ocr_model_mean_confidence(const void * ctx) {
     if (!ctx) return 0.0f;
     int n = 0;
-    const float * c = crispembed_math_ocr_confidences(ctx, &n);
+    const float * c = crispembed_ocr_model_confidences(ctx, &n);
     if (!c || n <= 0) return 0.0f;
     double sum = 0;
     for (int i = 0; i < n; i++) sum += c[i];
     return (float)(sum / n);
+}
+
+// --- Deprecated aliases -----------------------------------------------------
+// The dispatcher was originally named crispembed_math_ocr_* but now handles
+// general text/document OCR as well as math. The crispembed_ocr_model_* names
+// above are canonical; these thin forwarders preserve ABI compatibility for
+// existing callers and will be removed in a future major release.
+extern "C" void * crispembed_math_ocr_init(const char * path, int n_threads) {
+    return crispembed_ocr_model_init(path, n_threads);
+}
+extern "C" void crispembed_math_ocr_free(void * ctx) {
+    crispembed_ocr_model_free(ctx);
+}
+extern "C" const char * crispembed_math_ocr_recognize(
+    void * ctx, const uint8_t * px, int w, int h, int ch, int * ol
+) {
+    return crispembed_ocr_model_recognize(ctx, px, w, h, ch, ol);
+}
+extern "C" const char * crispembed_math_ocr_recognize_gray(
+    void * ctx, const float * px, int w, int h, int * ol
+) {
+    return crispembed_ocr_model_recognize_gray(ctx, px, w, h, ol);
+}
+extern "C" const float * crispembed_math_ocr_confidences(const void * ctx, int * n_tokens) {
+    return crispembed_ocr_model_confidences(ctx, n_tokens);
+}
+extern "C" float crispembed_math_ocr_mean_confidence(const void * ctx) {
+    return crispembed_ocr_model_mean_confidence(ctx);
 }
 
 // Also expose individual APIs for direct use

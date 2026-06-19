@@ -1041,14 +1041,14 @@ impl Drop for CrispFacePipeline {
 /// A loaded pix2tex math OCR model (encoder-decoder).
 ///
 /// Not `Sync` — do not share between threads. Each thread should hold its
-/// own `MathOcr` instance. `Send`-safe: you can move it across threads.
+/// own `OcrModel` instance. `Send`-safe: you can move it across threads.
 ///
 /// # Example
 ///
 /// ```no_run
-/// use crispembed::MathOcr;
+/// use crispembed::OcrModel;
 ///
-/// let mut ocr = MathOcr::new("/path/to/model.gguf", 0).unwrap();
+/// let mut ocr = OcrModel::new("/path/to/model.gguf", 0).unwrap();
 ///
 /// // pixels: (height, width, 3) row-major uint8 RGB
 /// let pixels: Vec<u8> = vec![255u8; 64 * 64 * 3];
@@ -1056,24 +1056,24 @@ impl Drop for CrispFacePipeline {
 ///     println!("LaTeX: {latex}");
 /// }
 /// ```
-pub struct MathOcr {
-    ctx: *mut crispembed_sys::MathOcrContext,
+pub struct OcrModel {
+    ctx: *mut crispembed_sys::OcrModelContext,
 }
 
 // Safety: the underlying C library serialises all mutable access through
 // the opaque context pointer; we hold the only reference.
-unsafe impl Send for MathOcr {}
+unsafe impl Send for OcrModel {}
 
-impl MathOcr {
+impl OcrModel {
     /// Load a math OCR GGUF model file (auto-detects architecture).
     ///
     /// - `model_path` — path to the `.gguf` file.
     /// - `n_threads`  — CPU thread count; pass `0` for automatic.
     pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
         let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
-        let ctx = unsafe { crispembed_sys::crispembed_math_ocr_init(path.as_ptr(), n_threads) };
+        let ctx = unsafe { crispembed_sys::crispembed_ocr_model_init(path.as_ptr(), n_threads) };
         if ctx.is_null() {
-            return Err(format!("crispembed_math_ocr_init failed for '{model_path}'"));
+            return Err(format!("crispembed_ocr_model_init failed for '{model_path}'"));
         }
         Ok(Self { ctx })
     }
@@ -1104,7 +1104,7 @@ impl MathOcr {
 
         let mut out_len: i32 = 0;
         let ptr = unsafe {
-            crispembed_sys::crispembed_math_ocr_recognize(
+            crispembed_sys::crispembed_ocr_model_recognize(
                 self.ctx,
                 pixel_bytes.as_ptr(),
                 width,
@@ -1132,7 +1132,7 @@ impl MathOcr {
     pub fn recognize_gray(&mut self, pixels: &[f32], width: i32, height: i32) -> Option<String> {
         let mut out_len: i32 = 0;
         let ptr = unsafe {
-            crispembed_sys::crispembed_math_ocr_recognize_gray(
+            crispembed_sys::crispembed_ocr_model_recognize_gray(
                 self.ctx,
                 pixels.as_ptr(),
                 width,
@@ -1151,11 +1151,16 @@ impl MathOcr {
     }
 }
 
-impl Drop for MathOcr {
+impl Drop for OcrModel {
     fn drop(&mut self) {
-        unsafe { crispembed_sys::crispembed_math_ocr_free(self.ctx) }
+        unsafe { crispembed_sys::crispembed_ocr_model_free(self.ctx) }
     }
 }
+
+/// Deprecated alias for [`OcrModel`]. The dispatcher now handles general
+/// text/document OCR in addition to math, so it was renamed.
+#[deprecated(note = "renamed to OcrModel")]
+pub type MathOcr = OcrModel;
 
 // ---------------------------------------------------------------------------
 // General OCR Pipeline — text detection (DBNet) + recognition (TrOCR)
