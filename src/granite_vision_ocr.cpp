@@ -215,18 +215,38 @@ struct gv_tokenizer {
         }
     }
 
-    // Encode a prompt containing a single literal "<image>" marker. The marker
-    // is emitted as image_id; everything else is byte-level BPE text.
+    // Encode a chat prompt containing special markers (granite role tokens +
+    // "<image>"). Each recognized marker is emitted as its single token id;
+    // the spans between are byte-level BPE. Without this, "<|start_of_role|>"
+    // etc. would BPE-split into byte pieces and the model never sees the chat
+    // structure → it parrots/rambles instead of answering.
     std::vector<int> encode_prompt(const std::string & text) const {
         std::vector<int> ids;
-        const std::string marker = "<image>";
-        size_t pos = 0, m;
-        while ((m = text.find(marker, pos)) != std::string::npos) {
-            encode_piece(text.substr(pos, m - pos), ids);
-            ids.push_back(image_id);
-            pos = m + marker.size();
+        static const std::string specials[] = {
+            "<|start_of_role|>", "<|end_of_role|>", "<|end_of_text|>", "<image>"
+        };
+        size_t pos = 0;
+        while (pos < text.size()) {
+            size_t best = std::string::npos; size_t best_len = 0; int best_id = -1;
+            for (const auto & sp : specials) {
+                size_t m = text.find(sp, pos);
+                if (m == std::string::npos || (best != std::string::npos && m >= best))
+                    continue;
+                int id;
+                if (sp == "<image>") {
+                    id = image_id;
+                } else {
+                    auto it = token_to_id.find(sp);
+                    if (it == token_to_id.end()) continue;  // not in this vocab
+                    id = it->second;
+                }
+                best = m; best_len = sp.size(); best_id = id;
+            }
+            if (best == std::string::npos) { encode_piece(text.substr(pos), ids); break; }
+            if (best > pos) encode_piece(text.substr(pos, best - pos), ids);
+            ids.push_back(best_id);
+            pos = best + best_len;
         }
-        encode_piece(text.substr(pos), ids);
         return ids;
     }
 
@@ -746,8 +766,10 @@ static bool gv_run_projector_graph(granite_vision_context * ctx,
 // Returns false on error; caller applies LM head + logits_scaling on CPU.
 static bool gv_run_llm_body(granite_vision_context * ctx,
                              const float * embeds, int T, int n_past,
-                             float * hidden_out) {
+                             float * hidden_out,
+                             gv_dump_cb dump_cb = nullptr, void * dump_ud = nullptr) {
     if (!ctx->llm_sched || !ctx->kvc_buf) return false;
+    std::vector<std::pair<int, ggml_tensor*>> dbg_layers;
 
     const int D        = ctx->llm_dim;
     const int n_heads  = ctx->llm_heads;
@@ -885,6 +907,14 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
         ggml_tensor * up   = ggml_mul_mat(g, sw(uw), h);
         ggml_tensor * down = ggml_mul_mat(g, sw(dw), ggml_mul(g, gate, up));
         x = ggml_add(g, resid, ggml_scale(g, down, res_mul));
+
+        if (dump_cb && (li == 0 || li == 1 || li == ctx->llm_layers / 2 ||
+                        li == ctx->llm_layers - 1)) {
+            ggml_tensor * dbg = ggml_cont(g, x);
+            ggml_set_output(dbg);
+            ggml_build_forward_expand(gf, dbg);
+            dbg_layers.emplace_back(li, dbg);
+        }
     }
 
     // Final RMSNorm (all T tokens; caller reads only the last one)
@@ -925,6 +955,18 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     // Read back last token's hidden state (offset = (T-1)*D floats)
     ggml_backend_tensor_get(out_t, hidden_out,
                             (size_t)(T - 1) * D * sizeof(float), D * sizeof(float));
+
+    if (dump_cb) {
+        std::vector<float> buf(D);
+        for (auto & [li, dbg] : dbg_layers) {
+            ggml_backend_tensor_get(dbg, buf.data(),
+                                    (size_t)(T - 1) * D * sizeof(float), D * sizeof(float));
+            char nm[48];
+            snprintf(nm, sizeof(nm), "llm_layer_%d_out", li);
+            dump_cb(nm, buf.data(), D, dump_ud);
+        }
+        dump_cb("llm_final_norm", hidden_out, D, dump_ud);
+    }
     ggml_free(g);
     return true;
 }
@@ -1251,6 +1293,47 @@ void granite_vision_dump_llm(granite_vision_context * ctx,
     }
 }
 
+// Same as granite_vision_dump_llm but exercises the ggml LLM graph
+// (gv_run_llm_body) instead of the scalar decode, so the graph path can be
+// validated layer-by-layer against the reference. Runs all tokens as a single
+// prefill (T = n_tokens, n_past = 0); the last token's per-layer states match
+// the scalar path's last-token dump under causal attention.
+void granite_vision_dump_llm_graph(granite_vision_context * ctx,
+                                   const int * tokens, int n_tokens,
+                                   gv_dump_cb cb, void * ud) {
+    if (!ctx || !tokens || n_tokens <= 0 || !cb) return;
+    int D = ctx->llm_dim;
+    if (!gv_alloc_kv_cache(ctx, n_tokens + 4)) {
+        fprintf(stderr, "granite_vision: dump_llm_graph — kv alloc failed\n");
+        return;
+    }
+
+    const float * embed_w = ctx->get("llm.embed.weight");
+    float emb_mul = ctx->embedding_multiplier;
+    std::vector<float> embeds((size_t)n_tokens * D);
+    for (int t = 0; t < n_tokens; t++)
+        for (int d = 0; d < D; d++)
+            embeds[(size_t)t * D + d] = embed_w[(size_t)tokens[t] * D + d] * emb_mul;
+
+    cb("llm_embed_in", embeds.data() + (size_t)(n_tokens - 1) * D, D, ud);
+
+    std::vector<float> hidden(D);
+    if (!gv_run_llm_body(ctx, embeds.data(), n_tokens, 0, hidden.data(), cb, ud)) {
+        fprintf(stderr, "granite_vision: dump_llm_graph — gv_run_llm_body failed\n");
+        return;
+    }
+
+    const float * lm_w = ctx->get("llm.lm_head.weight");
+    if (!lm_w && ctx->tie_word_embeddings) lm_w = ctx->get("llm.embed.weight");
+    if (lm_w) {
+        std::vector<float> logits(ctx->vocab_size);
+        core_cpu::linear_cpu(hidden.data(), logits.data(), D, ctx->vocab_size, lm_w, nullptr);
+        float inv = 1.0f / ctx->logits_scaling;
+        for (int v = 0; v < ctx->vocab_size; v++) logits[v] *= inv;
+        cb("llm_logits", logits.data(), ctx->vocab_size, ud);
+    }
+}
+
 // ── Main recognize function ────────────────────────────────────────────
 
 const char * granite_vision_recognize(granite_vision_context * ctx,
@@ -1312,19 +1395,22 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
     float emb_mul = ctx->embedding_multiplier;
     std::vector<float> logits(ctx->vocab_size);
 
-    // ── Build the LLaVA-Next chat prompt and tokenize it ────────────────
-    // Matches ibm-granite/granite-vision-3.3-2b's chat template:
-    //   <|system|>\n<sys text>\n<|user|>\n<image>\n<instruction>\n<|assistant|>\n
-    // add_bos_token=False, add_generation_prompt=True. The single <image>
-    // marker expands to the n_vis_tokens projected vision rows.
+    // ── Build the Granite chat prompt and tokenize it ───────────────────
+    // ibm-granite/granite-vision-3.3-2b uses the Granite role-token template
+    // (NOT the LLaVA <|system|>/<|user|> format — those tokens aren't even in
+    // the vocab). Each turn: <|start_of_role|>ROLE<|end_of_role|>CONTENT<|end_of_text|>\n
+    // then a trailing assistant header for generation. add_bos_token=False.
+    // The single <image> marker expands to the n_vis_tokens projected rows.
     const char * instruction =
         (prompt && prompt[0]) ? prompt : "Convert this image to text.";
     std::string sys =
         "A chat between a curious user and an artificial intelligence assistant. "
         "The assistant gives helpful, detailed, and polite answers to the user's questions.";
     std::string full =
-        "<|system|>\n" + sys + "\n<|user|>\n<image>\n" + std::string(instruction) +
-        "\n<|assistant|>\n";
+        "<|start_of_role|>system<|end_of_role|>" + sys + "<|end_of_text|>\n"
+        "<|start_of_role|>user<|end_of_role|><image>" + std::string(instruction) +
+        "<|end_of_text|>\n"
+        "<|start_of_role|>assistant<|end_of_role|>";
 
     std::vector<int> prompt_ids;
     if (ctx->have_tokenizer) {
