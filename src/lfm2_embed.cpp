@@ -83,7 +83,8 @@ struct lfm2_embed_model {
 
     ggml_context       * ctx = nullptr;
     ggml_backend_buffer_t buf = nullptr;
-    std::unordered_map<std::string, ggml_tensor*> tensors;
+    std::unordered_map<std::string, ggml_tensor *> tensors;
+
 
     // BPE tokenizer
     std::unordered_map<std::string, int32_t> token_to_id;

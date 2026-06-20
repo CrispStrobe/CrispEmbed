@@ -90,6 +90,7 @@ struct math_ocr_context {
     // Infrastructure
     std::vector<std::string> vocab;
     core_gguf::WeightLoad wl;
+    core_cpu::DequantCache dcache;  // per-context (replaces global _deq_cache)
     ggml_backend_t backend = nullptr;
     ggml_backend_t backend_cpu = nullptr;
     ggml_backend_sched_t sched = nullptr;
@@ -431,23 +432,15 @@ static void run_encoder(math_ocr_context* ctx, const float* pixels_rgb, int img_
 // Decoder (scalar — fast enough for autoregressive single-token steps)
 // ---------------------------------------------------------------------------
 
-// Cached F32 buffers for decoder weights (avoid repeated dequantization)
-static std::unordered_map<const void*, std::vector<float>> _deq_cache;
-
-static const float* cached_f32(const ggml_tensor* t) {
-    if (!t) return nullptr;
-    if (t->type == GGML_TYPE_F32) return (const float*)t->data;
-    auto it = _deq_cache.find(t->data);
-    if (it != _deq_cache.end()) return it->second.data();
-    auto& buf = _deq_cache[t->data];
-    buf = to_f32(t);
-    return buf.data();
+// Per-context dequant cache (was global static — thread-unsafe + leaked across contexts)
+static const float* cached_f32(math_ocr_context * ctx, const ggml_tensor* t) {
+    return ctx->dcache.get(t);
 }
 
-static void layernorm_cpu(const float* x, float* y, int D, const ggml_tensor* w, const ggml_tensor* b) {
+static void layernorm_cpu(math_ocr_context* ctx, const float* x, float* y, int D, const ggml_tensor* w, const ggml_tensor* b) {
     if (!w || !b) { if (x != y) memcpy(y, x, D * sizeof(float)); return; }
-    const float* W = cached_f32(w);
-    const float* B = cached_f32(b);
+    const float* W = cached_f32(ctx, w);
+    const float* B = cached_f32(ctx, b);
     float mean = 0, var = 0;
     for (int i = 0; i < D; i++) mean += x[i];
     mean /= D;
@@ -456,10 +449,10 @@ static void layernorm_cpu(const float* x, float* y, int D, const ggml_tensor* w,
     for (int i = 0; i < D; i++) y[i] = (x[i] - mean) * inv * W[i] + B[i];
 }
 
-static void linear_cpu(const float* inp, float* out, int in_d, int out_d, const ggml_tensor* w, const ggml_tensor* b) {
+static void linear_cpu(math_ocr_context* ctx, const float* inp, float* out, int in_d, int out_d, const ggml_tensor* w, const ggml_tensor* b) {
     if (!w) { memset(out, 0, out_d * sizeof(float)); return; }
-    const float* W = cached_f32(w);
-    const float* B = cached_f32(b);
+    const float* W = cached_f32(ctx, w);
+    const float* B = cached_f32(ctx, b);
     core_cpu::linear_cpu(inp, out, in_d, out_d, W, B);
 }
 
@@ -535,7 +528,7 @@ static std::vector<float> decoder_step_scalar(math_ocr_context* ctx,
             for (int i = 0; i < D && pos * D + i < (int)pe.size(); i++)
                 ds.x[i] += pe[pos * D + i];
     }
-    layernorm_cpu(ds.x.data(), ds.x.data(), D, ctx->dec_embed_ln_w, ctx->dec_embed_ln_b);
+    layernorm_cpu(ctx, ds.x.data(), ds.x.data(), D, ctx->dec_embed_ln_w, ctx->dec_embed_ln_b);
     if (step == 0) {
         fprintf(stderr, "math_ocr: dec embed+pos+ln x[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",
                 ds.x[0],ds.x[1],ds.x[2],ds.x[3],ds.x[4]);
@@ -546,40 +539,40 @@ static std::vector<float> decoder_step_scalar(math_ocr_context* ctx,
         if (!l.self_q_w) continue;
 
         // Self-attention
-        linear_cpu(ds.x.data(), ds.q.data(), D, D, l.self_q_w, l.self_q_b);
-        linear_cpu(ds.x.data(), ds.k.data(), D, D, l.self_k_w, l.self_k_b);
-        linear_cpu(ds.x.data(), ds.v.data(), D, D, l.self_v_w, l.self_v_b);
+        linear_cpu(ctx, ds.x.data(), ds.q.data(), D, D, l.self_q_w, l.self_q_b);
+        linear_cpu(ctx, ds.x.data(), ds.k.data(), D, D, l.self_k_w, l.self_k_b);
+        linear_cpu(ctx, ds.x.data(), ds.v.data(), D, D, l.self_v_w, l.self_v_b);
         kv_k[li].insert(kv_k[li].end(), ds.k.begin(), ds.k.end());
         kv_v[li].insert(kv_v[li].end(), ds.v.begin(), ds.v.end());
 
         mha_1q(ds.q.data(), kv_k[li].data(), kv_v[li].data(), ds.sa.data(),
                step+1, D, hp.dec_heads, ds.scores.data());
-        linear_cpu(ds.sa.data(), ds.sa_proj.data(), D, D, l.self_out_w, l.self_out_b);
+        linear_cpu(ctx, ds.sa.data(), ds.sa_proj.data(), D, D, l.self_out_w, l.self_out_b);
         for (int i = 0; i < D; i++) ds.x[i] += ds.sa_proj[i];
-        layernorm_cpu(ds.x.data(), ds.x.data(), D, l.self_ln_w, l.self_ln_b);
+        layernorm_cpu(ctx, ds.x.data(), ds.x.data(), D, l.self_ln_w, l.self_ln_b);
 
         // Cross-attention
         if (l.cross_q_w && !ctx->enc_out.empty()) {
-            linear_cpu(ds.x.data(), ds.cq.data(), D, D, l.cross_q_w, l.cross_q_b);
+            linear_cpu(ctx, ds.x.data(), ds.cq.data(), D, D, l.cross_q_w, l.cross_q_b);
 
             int n_enc = ctx->n_enc_tokens;
             const float* ck = ctx->cross_k_cache[li].data();
             const float* cv = ctx->cross_v_cache[li].data();
 
             mha_1q(ds.cq.data(), ck, cv, ds.ca.data(), n_enc, D, hp.dec_heads, ds.scores.data());
-            linear_cpu(ds.ca.data(), ds.ca_proj.data(), D, D, l.cross_out_w, l.cross_out_b);
+            linear_cpu(ctx, ds.ca.data(), ds.ca_proj.data(), D, D, l.cross_out_w, l.cross_out_b);
             for (int i = 0; i < D; i++) ds.x[i] += ds.ca_proj[i];
-            layernorm_cpu(ds.x.data(), ds.x.data(), D, l.cross_ln_w, l.cross_ln_b);
+            layernorm_cpu(ctx, ds.x.data(), ds.x.data(), D, l.cross_ln_w, l.cross_ln_b);
         }
 
         // FFN
         if (l.ff_up_w) {
             const int FF = hp.dec_ffn_dim;
-            linear_cpu(ds.x.data(), ds.inter.data(), D, FF, l.ff_up_w, l.ff_up_b);
+            linear_cpu(ctx, ds.x.data(), ds.inter.data(), D, FF, l.ff_up_w, l.ff_up_b);
             for (int i = 0; i < FF; i++) ds.inter[i] = ds.inter[i] > 0 ? ds.inter[i] : 0;
-            linear_cpu(ds.inter.data(), ds.ffn.data(), FF, D, l.ff_down_w, l.ff_down_b);
+            linear_cpu(ctx, ds.inter.data(), ds.ffn.data(), FF, D, l.ff_down_w, l.ff_down_b);
             for (int i = 0; i < D; i++) ds.x[i] += ds.ffn[i];
-            layernorm_cpu(ds.x.data(), ds.x.data(), D, l.ff_ln_w, l.ff_ln_b);
+            layernorm_cpu(ctx, ds.x.data(), ds.x.data(), D, l.ff_ln_w, l.ff_ln_b);
         }
         if (step == 0 && li < 3) {
             fprintf(stderr, "math_ocr: dec L%d end x[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",
@@ -587,13 +580,13 @@ static std::vector<float> decoder_step_scalar(math_ocr_context* ctx,
         }
     }
 
-    layernorm_cpu(ds.x.data(), ds.x.data(), D, ctx->dec_final_ln_w, ctx->dec_final_ln_b);
+    layernorm_cpu(ctx, ds.x.data(), ds.x.data(), D, ctx->dec_final_ln_w, ctx->dec_final_ln_b);
     if (step == 0) {
         fprintf(stderr, "math_ocr: dec final x[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",
                 ds.x[0],ds.x[1],ds.x[2],ds.x[3],ds.x[4]);
     }
     std::vector<float> logits(V, 0.0f);
-    linear_cpu(ds.x.data(), logits.data(), D, V, ctx->lm_head_w, ctx->lm_head_b);
+    linear_cpu(ctx, ds.x.data(), logits.data(), D, V, ctx->lm_head_w, ctx->lm_head_b);
     return logits;
 }
 
@@ -809,7 +802,7 @@ static std::vector<int> run_decoder_graph(math_ocr_context* ctx) {
                 for (int i = 0; i < D && pos * D + i < (int)pos_emb_f32.size(); i++)
                     emb[i] += pos_emb_f32[pos * D + i];
         }
-        layernorm_cpu(emb.data(), emb.data(), D, ctx->dec_embed_ln_w, ctx->dec_embed_ln_b);
+        layernorm_cpu(ctx, emb.data(), emb.data(), D, ctx->dec_embed_ln_w, ctx->dec_embed_ln_b);
 
         if (step == 0) {
             fprintf(stderr, "math_ocr: [graph] dec embed+pos+ln x[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",

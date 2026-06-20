@@ -1113,19 +1113,7 @@ static llm_graph build_llm_graph(got_ocr::context &ctx, int n_tokens, int n_past
             Vfull = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
         }
 
-        // GQA broadcast (MHA: nh==nkv, so this is a no-op)
-        int kv_repeat = nh / nkv;
-        if (kv_repeat > 1) {
-            Kfull = ggml_reshape_4d(g, Kfull, hd, Lk, 1, nkv);
-            ggml_tensor *K_tgt = ggml_new_tensor_4d(g, Kfull->type, hd, Lk, kv_repeat, nkv);
-            Kfull = ggml_repeat(g, Kfull, K_tgt);
-            Kfull = ggml_reshape_3d(g, Kfull, hd, Lk, nh);
-
-            Vfull = ggml_reshape_4d(g, Vfull, hd, Lk, 1, nkv);
-            ggml_tensor *V_tgt = ggml_new_tensor_4d(g, Vfull->type, hd, Lk, kv_repeat, nkv);
-            Vfull = ggml_repeat(g, Vfull, V_tgt);
-            Vfull = ggml_reshape_3d(g, Vfull, hd, Lk, nh);
-        }
+        // flash_attn_ext handles GQA natively; GOT-OCR2 is MHA (nh==nkv)
 
         // Flash attention
         Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));

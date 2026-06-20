@@ -26,6 +26,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <map>
+#include <unordered_map>
 #include <string>
 #include <vector>
 
@@ -207,7 +208,8 @@ struct dat_sr_context {
     std::string upsampler;
 
     core_gguf::WeightLoad wl;
-    std::unordered_map<std::string, ggml_tensor*> tensors;
+    std::unordered_map<std::string, ggml_tensor *> tensors;
+
     std::map<const void *, std::vector<float>> dequant_cache;
 
     float mean[3];

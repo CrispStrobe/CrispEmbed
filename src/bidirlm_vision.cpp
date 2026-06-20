@@ -164,7 +164,7 @@ struct host_prep {
 
     std::vector<float>   cos_buf;            // (head_dim, n_patches) ne-flat
     std::vector<float>   sin_buf;
-    std::vector<float>   mask_buf;           // (n_patches, n_patches)
+    std::vector<ggml_fp16_t> mask_buf;        // (n_patches, n_patches) F16
 };
 
 void compute_host_inputs(const hparams& hp,
@@ -192,7 +192,7 @@ void compute_host_inputs(const hparams& hp,
     hp_out.cos_buf.assign((size_t)head_dim * n_patches, 0.0f);
     hp_out.sin_buf.assign((size_t)head_dim * n_patches, 0.0f);
     hp_out.mask_buf.assign((size_t)n_patches * n_patches,
-                            -std::numeric_limits<float>::infinity());
+                            ggml_fp32_to_fp16(-INFINITY));
 
     // Precompute inv_freq[j] = 1 / theta^(2j/half) for j in [0, quart).
     // (BidirLMOmniVisionRotaryEmbedding uses dim=head_dim/2 internally.)
@@ -230,7 +230,7 @@ void compute_host_inputs(const hparams& hp,
             const int block_end = seq_offset + tokens_per_frame;
             for (int i = block_start; i < block_end; i++) {
                 for (int j = block_start; j < block_end; j++) {
-                    hp_out.mask_buf[(size_t)i * n_patches + j] = 0.0f;
+                    hp_out.mask_buf[(size_t)i * n_patches + j] = ggml_fp32_to_fp16(0.0f);
                 }
             }
 
@@ -429,15 +429,13 @@ graph_outputs build_graph(context& ctx, int n_patches, bool include_deepstack) {
         Q = apply_rope(Q);
         K = apply_rope(K);
 
-        // Permute to (head_dim, n_patches, n_heads): treat n_heads as batch.
-        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
-        K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
-        V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
+        // Permute to (head_dim, n_patches, n_heads) for flash_attn_ext
+        Q = ggml_permute(g, Q, 0, 2, 1, 3);
+        K = ggml_permute(g, K, 0, 2, 1, 3);
+        V = ggml_permute(g, V, 0, 2, 1, 3);
 
-        // flash_attn_ext: Q/K/V are (hd, n_patches, n_heads); mask is F16 (n_patches, n_patches).
+        // Flash attention with block-diagonal mask (F16)
         ggml_tensor* attn = ggml_flash_attn_ext(g, Q, K, V, mask_in, attn_scale, 0.0f, 0.0f);
-        // Output is (hd, n_patches, n_heads) → permute to (hd, n_heads, n_patches) for reshape.
-        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
         attn = ggml_reshape_2d(g, attn, H, n_patches);
 
         attn = ggml_mul_mat(g, blk.proj_w, attn);
@@ -659,14 +657,8 @@ bool encode(context& ctx,
                 prep.cos_buf.size() * sizeof(float))) return false;
     if (!set_in("sin_in", prep.sin_buf.data(),
                 prep.sin_buf.size() * sizeof(float))) return false;
-    {
-        // mask tensor is F16 — convert the float prep.mask_buf in place.
-        std::vector<ggml_fp16_t> mask_f16(prep.mask_buf.size());
-        for (size_t i = 0; i < prep.mask_buf.size(); i++)
-            mask_f16[i] = ggml_fp32_to_fp16(prep.mask_buf[i]);
-        if (!set_in("attn_mask", mask_f16.data(),
-                    mask_f16.size() * sizeof(ggml_fp16_t))) return false;
-    }
+    if (!set_in("attn_mask", prep.mask_buf.data(),
+                prep.mask_buf.size() * sizeof(ggml_fp16_t))) return false;
 
     {
         auto t_comp0 = std::chrono::steady_clock::now();
