@@ -55,7 +55,30 @@ Configurable via env vars. Small images bypass tiling.
 - tps_warp: coarse grid + bilinear interpolation (was O(W*H*N) with sqrt+log per pixel).
 - gliner_ner: DeBERTa relative position tensor cached (was 117MB per call at T=200).
 - OpenMP: parallelized pixel-level loops in image_preprocess, dewarp, scan_cleanup.
+  Also mel.cpp STFT loop (parallel across frames, `if(T > 16)` guard).
 - lightonocr: decode graph reuse — build once, update input data only across steps.
+- parseq_ocr: encoder graph caching — built once, reused across recognize calls.
+- internvl2: vision encoder graph cached across tile invocations.
+- hmer_ocr: DenseNet encoder converted from scalar to ggml graph (3x speedup).
+
+### Benchmark instrumentation (56 runtimes)
+Added opt-in per-step timing to all 56 runtime files (61 files, ~1800 lines).
+Each runtime has a `CRISPEMBED_<MODULE>_BENCH` env var that gates
+`[module-bench]` stderr output. Zero overhead when unset — flag read once
+at init, stored as bool. Covers: preprocess, encoder, decoder, per-tile,
+per-decode-step, postprocess, total.
+
+### Per-backend VLM optimizations
+- **lightonocr** (2.09x total): flash attn default, direct embed lookup,
+  F16 ggml KV cache (internvl2 pattern), patch embed → ggml matmul.
+- **got_ocr**: patch embed → ggml matmul, neck+downsample+projector → ggml
+  graph (conv2d_direct + LN2d via permute+norm + mul_mat).
+- **glm_ocr**: downsample+merger → ggml graph (conv2d_direct + batched SwiGLU).
+- **smoldocling**: patch embed → ggml matmul, F16 norm weight cast fix
+  (unblocked ggml LLM on Q4_K models).
+- **Native GQA**: removed ggml_repeat KV head expansion before flash_attn_ext
+  in internvl2, lightonocr, got_ocr, glm_ocr (-76 lines total).
+  flash_attn handles GQA via broadcast factors (rk2 = neq2/nek2).
 
 ### Pix2Struct full rewrite
 - **ggml graph encoder**: 12-layer T5 encoder as single ggml graph with

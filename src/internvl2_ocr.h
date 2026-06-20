@@ -219,6 +219,13 @@ struct context {
 
     // Optional diff harness path
     std::string diff_ref_path;
+
+    // Cached vision encoder graph (built once, reused across tiles)
+    ggml_context *vis_graph_ctx = nullptr;
+    ggml_cgraph *vis_graph = nullptr;
+    ggml_tensor *vis_input = nullptr;
+    ggml_tensor *vis_output = nullptr;
+    bool vis_graph_cached = false;
 };
 
 // ── API ──────────────────────────────────────────────────────────────

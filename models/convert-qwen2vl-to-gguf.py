@@ -85,6 +85,26 @@ def add_tensor(writer, name, data, wt_func):
         raise ValueError(f"Unexpected tensor type: {type(data)}")
 
 
+def get_tensor_info(data):
+    """Get (shape, dtype, nbytes, raw_dtype) for add_tensor_info."""
+    if isinstance(data, Q8Tensor):
+        return data.shape, np.dtype(np.uint8), len(data.data), gguf.GGMLQuantizationType.Q8_0
+    elif isinstance(data, np.ndarray):
+        if data.dtype == np.float16:
+            return data.shape, data.dtype, data.nbytes, gguf.GGMLQuantizationType.F16
+        else:
+            return data.shape, data.dtype, data.nbytes, gguf.GGMLQuantizationType.F32
+    raise ValueError(f"Unexpected tensor type: {type(data)}")
+
+
+def write_tensor(writer, data):
+    """Write tensor data in streaming mode."""
+    if isinstance(data, Q8Tensor):
+        writer.write_tensor_data(data.data)
+    else:
+        writer.write_tensor_data(data)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True,
@@ -189,7 +209,6 @@ def main():
 
     model_name = args.model.split("/")[-1] if "/" in args.model else Path(args.model).name
     writer.add_string("general.name", model_name)
-    writer.add_string("general.architecture", ARCH)
 
     # LLM config — read from raw JSON for robustness across transformers versions.
     # Qwen2_5_VLConfig nests text params variously depending on version.
@@ -353,64 +372,49 @@ def main():
     except Exception as e:
         print(f"  Tokenizer export failed: {e}")
 
-    # ── Vision encoder tensors ───────────────────────────────────────
+    # ── Build tensor mapping ────────────────────────────────────────
+    # Collect (gguf_name, hf_key, is_patch_embed) tuples, then stream
+    # in two passes: add_tensor_info (metadata only), then write_tensor_data.
+    # This keeps peak memory to ~1 tensor at a time instead of buffering all.
+
+    tensor_specs = []  # (gguf_name, hf_key, special)  special: None or "patch_embed"
 
     if not args.llm_only:
-        print("\nExporting vision encoder...")
-        VPFX = "v."  # compact GGUF prefix
+        VPFX = "v."
 
-        def vw(gguf_name, hf_key):
-            """Write a vision tensor."""
-            if hf_key not in sd:
-                return False
-            t = get_tensor(hf_key)
-            data = f32(t) if is_norm_or_bias(gguf_name) else wt(t)
-            del t
-            add_tensor(writer, gguf_name, data, wt)
-            return True
-
-        # Patch embedding: Conv3D weight (out, in, T, H, W) → flatten to 2D
         pe_key = "visual.patch_embed.proj.weight"
         if pe_key in sd:
-            pe_w = get_tensor(pe_key)
-            pe_w_flat = pe_w.reshape(pe_w.shape[0], -1).contiguous()
-            data = wt(pe_w_flat)
-            add_tensor(writer, VPFX + "patch_embed.weight", data, wt)
-        vw(VPFX + "patch_embed.bias", "visual.patch_embed.proj.bias")
+            tensor_specs.append((VPFX + "patch_embed.weight", pe_key, "patch_embed"))
+        if "visual.patch_embed.proj.bias" in sd:
+            tensor_specs.append((VPFX + "patch_embed.bias", "visual.patch_embed.proj.bias", None))
 
-        # ViT blocks (32 layers for 3B)
         n_vis_layers = int(vc.depth)
         for i in range(n_vis_layers):
             p = f"visual.blocks.{i}."
             q = f"{VPFX}blk.{i}."
-
             for hf_suf, gg_suf in [
-                # Norms (LayerNorm with bias for Qwen2-VL, RMSNorm for 2.5)
                 ("norm1.weight",         "norm1.weight"),
                 ("norm1.bias",           "norm1.bias"),
                 ("norm2.weight",         "norm2.weight"),
                 ("norm2.bias",           "norm2.bias"),
-                # Fused QKV attention (both variants)
                 ("attn.qkv.weight",      "attn_qkv.weight"),
                 ("attn.qkv.bias",        "attn_qkv.bias"),
                 ("attn.proj.weight",     "attn_proj.weight"),
                 ("attn.proj.bias",       "attn_proj.bias"),
-                # SwiGLU MLP — Qwen2.5-VL (gate + up + down)
                 ("mlp.gate_proj.weight", "ffn_gate.weight"),
                 ("mlp.gate_proj.bias",   "ffn_gate.bias"),
                 ("mlp.up_proj.weight",   "ffn_up.weight"),
                 ("mlp.up_proj.bias",     "ffn_up.bias"),
                 ("mlp.down_proj.weight", "ffn_down.weight"),
                 ("mlp.down_proj.bias",   "ffn_down.bias"),
-                # GELU fc1/fc2 MLP — Qwen2-VL
                 ("mlp.fc1.weight",       "ffn_fc1.weight"),
                 ("mlp.fc1.bias",         "ffn_fc1.bias"),
                 ("mlp.fc2.weight",       "ffn_fc2.weight"),
                 ("mlp.fc2.bias",         "ffn_fc2.bias"),
             ]:
-                vw(q + gg_suf, p + hf_suf)
+                if p + hf_suf in sd:
+                    tensor_specs.append((q + gg_suf, p + hf_suf, None))
 
-        # Merger: ln_q + mlp.0 + mlp.2
         for hf_suf, gg_suf in [
             ("ln_q.weight",    "norm.weight"),
             ("ln_q.bias",      "norm.bias"),
@@ -419,30 +423,20 @@ def main():
             ("mlp.2.weight",   "fc2.weight"),
             ("mlp.2.bias",     "fc2.bias"),
         ]:
-            vw(VPFX + "merger." + gg_suf, "visual.merger." + hf_suf)
+            hf_key = "visual.merger." + hf_suf
+            if hf_key in sd:
+                tensor_specs.append((VPFX + "merger." + gg_suf, hf_key, None))
 
-        print(f"  Vision: {n_vis_layers} blocks + merger exported")
+        print(f"  Vision: {n_vis_layers} blocks + merger → {len(tensor_specs)} tensors")
 
-    # ── LLM decoder tensors ──────────────────────────────────────────
+    n_vis_tensors = len(tensor_specs)
 
     if not args.vision_only:
-        print("\nExporting LLM decoder...")
-        LPFX = "l."  # compact GGUF prefix
+        LPFX = "l."
 
-        def lw(gguf_name, hf_key):
-            """Write an LLM tensor."""
-            if hf_key not in sd:
-                return False
-            t = get_tensor(hf_key)
-            data = f32(t) if is_norm_or_bias(gguf_name) else wt(t)
-            del t
-            add_tensor(writer, gguf_name, data, wt)
-            return True
+        if "model.embed_tokens.weight" in sd:
+            tensor_specs.append((LPFX + "embed_tokens.weight", "model.embed_tokens.weight", None))
 
-        # Token embeddings
-        lw(LPFX + "embed_tokens.weight", "model.embed_tokens.weight")
-
-        # Decoder layers
         n_llm_layers = int(tcv("num_hidden_layers", 36))
         if args.max_llm_layers is not None:
             n_llm_layers = min(n_llm_layers, args.max_llm_layers)
@@ -451,12 +445,9 @@ def main():
         for i in range(n_llm_layers):
             p = f"model.layers.{i}."
             q = f"{LPFX}blk.{i}."
-
             for hf_suf, gg_suf in [
-                # Norms (RMSNorm, no bias)
                 ("input_layernorm.weight",          "attn_norm.weight"),
                 ("post_attention_layernorm.weight",  "ffn_norm.weight"),
-                # Self-attention (Qwen2-VL has Q/K/V/O bias; Qwen2.5-VL omits them)
                 ("self_attn.q_proj.weight",          "attn_q.weight"),
                 ("self_attn.q_proj.bias",            "attn_q.bias"),
                 ("self_attn.k_proj.weight",          "attn_k.weight"),
@@ -465,32 +456,62 @@ def main():
                 ("self_attn.v_proj.bias",            "attn_v.bias"),
                 ("self_attn.o_proj.weight",          "attn_o.weight"),
                 ("self_attn.o_proj.bias",            "attn_o.bias"),
-                # MLP (no biases)
                 ("mlp.gate_proj.weight",             "ffn_gate.weight"),
                 ("mlp.up_proj.weight",               "ffn_up.weight"),
                 ("mlp.down_proj.weight",             "ffn_down.weight"),
             ]:
-                lw(q + gg_suf, p + hf_suf)
+                if p + hf_suf in sd:
+                    tensor_specs.append((q + gg_suf, p + hf_suf, None))
 
-        # Final norm
-        lw(LPFX + "output_norm.weight", "model.norm.weight")
+        if "model.norm.weight" in sd:
+            tensor_specs.append((LPFX + "output_norm.weight", "model.norm.weight", None))
 
-        # LM head (may be tied to embed_tokens)
         if "lm_head.weight" in all_tensor_names:
-            lw(LPFX + "lm_head.weight", "lm_head.weight")
+            tensor_specs.append((LPFX + "lm_head.weight", "lm_head.weight", None))
         elif tcv("tie_word_embeddings", True):
             writer.add_bool("qwen2vl.tie_word_embeddings", True)
             print("  lm_head: tied to embed_tokens")
-        else:
-            print("  WARNING: lm_head.weight not found and not tied!")
 
-        print(f"  LLM: {n_llm_layers} layers exported")
+        print(f"  LLM: {n_llm_layers} layers → {len(tensor_specs) - n_vis_tensors} tensors")
 
-    # ── Finalize ─────────────────────────────────────────────────────
+    # ── Streaming write: two passes ─────────────────────────────────
+    import gc
 
+    def convert_tensor(gguf_name, hf_key, special):
+        """Load, convert, and return a tensor as numpy array."""
+        t = get_tensor(hf_key)
+        if special == "patch_embed":
+            t = t.reshape(t.shape[0], -1).contiguous()
+        data = f32(t) if is_norm_or_bias(gguf_name) else wt(t)
+        del t
+        return data
+
+    print(f"\nPass 1: collecting tensor metadata ({len(tensor_specs)} tensors)...")
+    for idx, (gguf_name, hf_key, special) in enumerate(tensor_specs):
+        data = convert_tensor(gguf_name, hf_key, special)
+        shape, dtype, nbytes, raw_dtype = get_tensor_info(data)
+        writer.add_tensor_info(gguf_name, shape, dtype, nbytes, raw_dtype=raw_dtype)
+        del data
+        if idx % 50 == 0:
+            gc.collect()
+
+    gc.collect()
+
+    print("Writing header + metadata...")
     writer.write_header_to_file()
     writer.write_kv_data_to_file()
-    writer.write_tensors_to_file()
+    writer.write_ti_data_to_file()
+
+    print(f"Pass 2: streaming tensor data ({len(tensor_specs)} tensors)...")
+    for idx, (gguf_name, hf_key, special) in enumerate(tensor_specs):
+        data = convert_tensor(gguf_name, hf_key, special)
+        write_tensor(writer, data)
+        del data
+        if idx % 50 == 0:
+            gc.collect()
+        if (idx + 1) % 100 == 0:
+            print(f"  [{idx + 1}/{len(tensor_specs)}] written")
+
     writer.close()
 
     import os

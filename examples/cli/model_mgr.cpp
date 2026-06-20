@@ -955,6 +955,26 @@ static const ModelEntry k_registry[] = {
      "PCS punct+caps+segmentation (XLM-R-base, multilingual)", "170 MB", "mit",
      "https://huggingface.co/cstr/pcs-xlmr-base-GGUF"},
 
+    // Uni-MuMER handwritten math OCR (Qwen3-VL / Qwen2.5-VL fine-tunes)
+    {"uni-mumer-qwen3-vl-2b",
+     "uni-mumer-qwen3-vl-2b-q4_k.gguf",
+     "https://huggingface.co/cstr/uni-mumer-qwen3-vl-2b-GGUF/resolve/main/uni-mumer-qwen3-vl-2b-q4_k.gguf",
+     "Uni-MuMER handwritten math→LaTeX (Qwen3-VL-2B, 82% CROHME)", "1509 MB", "apache-2.0",
+     "https://huggingface.co/cstr/uni-mumer-qwen3-vl-2b-GGUF"},
+
+    {"uni-mumer-qwen2.5-vl-3b",
+     "uni-mumer-qwen2.5-vl-3b-q4_k.gguf",
+     "https://huggingface.co/cstr/uni-mumer-qwen2.5-vl-3b-GGUF/resolve/main/uni-mumer-qwen2.5-vl-3b-q4_k.gguf",
+     "Uni-MuMER handwritten math→LaTeX (Qwen2.5-VL-3B, 82.25% CROHME)", "2614 MB", "apache-2.0",
+     "https://huggingface.co/cstr/uni-mumer-qwen2.5-vl-3b-GGUF"},
+
+    // TexTeller 3.0 math OCR (ViT + TrOCR, 310M, printed + handwritten)
+    {"texteller-3",
+     "texteller-3-q8_0.gguf",
+     "https://huggingface.co/cstr/texteller-3-GGUF/resolve/main/texteller-3-q8_0.gguf",
+     "TexTeller 3.0 math→LaTeX (ViT+TrOCR, 310M, EN+CN)", "302 MB", "apache-2.0",
+     "https://huggingface.co/cstr/texteller-3-GGUF"},
+
     {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
 };
 
