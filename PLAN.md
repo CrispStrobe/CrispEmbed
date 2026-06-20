@@ -136,6 +136,9 @@ Input text / image / audio
     │               NaViT ViT + ERNIE-4.5-0.3B, 109 langs, Apache-2.0
     │               OmniDocBench SOTA 96.3% (1.6) / 0.9B variant
     │
+    ├─► Math  ──► Uni-MuMER-Qwen3-VL-2B (unimumer_ocr via qwen2vl_ocr.cpp)
+    │               Handwritten math → LaTeX, 2.1B, Apache-2.0, 82% CROHME
+    │
     │   ── PLANNED ──
     │
     └─► OCR   ──► SmolDocling (256M, Apache-2.0) — DONE: SigLIP + SmolLM2, DocTags
@@ -303,22 +306,22 @@ all Apache-2.0 and would be a major accuracy upgrade.
 
 | # | Model | Params | CROHME 2014 | License | Architecture | Effort | Status |
 |---|-------|--------|-------------|---------|-------------|--------|--------|
-| 1 | **Uni-MuMER-Qwen3-VL-2B** | 2.1B | ~82% (3B variant) | Apache-2.0 | Qwen3-VL fine-tune (multi-task: recognition + symbol counting + position) | Low — reuses existing `qwen2vl_ocr.cpp` engine, same GGUF converter | [ ] Pending |
+| 1 | **Uni-MuMER-Qwen3-VL-2B** | 2.1B | ~82% (3B variant) | Apache-2.0 | Qwen3-VL fine-tune (multi-task: recognition + symbol counting + position) | Low — reuses existing `qwen2vl_ocr.cpp` engine, same GGUF converter | **DONE**: Q4_K/Q8_0, auto-prompt, `<think>` stripping |
 | 2 | **Uni-MuMER-Qwen2.5-VL-3B** | 3.4B | 82.25% | Apache-2.0 | Qwen2.5-VL fine-tune | Low — same engine | [ ] Pending |
 | 3 | **TexTeller 3.0** | 0.3B | unknown | Apache-2.0 | ViT + Transformer decoder, 80M training pairs, supports handwritten | Medium — needs new GGUF converter (TrOCR-like arch but not identical) | [ ] Pending |
 | 4 | PP-FormulaNet-L | 181M | ~57% | Apache-2.0 | SAM-ViT + MBart | — | Already integrated (mostly printed math) |
 
 **Recommended priority:**
 
-1. **Uni-MuMER-Qwen3-VL-2B** (best ROI) — same Qwen3-VL base we already
-   support. Convert via `convert-qwen3vl-to-gguf.py` → quantize Q4_K/Q8_0
-   → add to CrispCalc catalog as "Handwritten Math (82%, Apache-2.0)".
-   The fine-tune adds handwriting-specific LoRA/full weights on top of the
-   base Qwen3-VL architecture — the GGUF converter should work as-is since
-   the architecture key is still `qwen3vl`. Verify with CROHME 2014 test.
+1. **Uni-MuMER-Qwen3-VL-2B** — **DONE**. Pure fine-tune of Qwen3-VL-2B-Instruct
+   (phxember/Uni-MuMER-Qwen3-VL-2B, Apache-2.0). Reuses `qwen2vl_ocr.cpp` engine
+   with auto-detected math OCR prompt and `<think>` token stripping. Converter
+   fixed for transformers 5.x `rope_parameters` field + `processor_config.json`
+   nested format + `tokenizer.json` fallback. GGUF: Q4_K (1.5 GB), Q8_0 (2.2 GB).
+   Tested: `x^{2}+2xy+y^{2}=0`, `E=mc^{2}+\int f(x)dx` — correct.
 
    Source: [github.com/BFlameSwift/Uni-MuMER](https://github.com/BFlameSwift/Uni-MuMER)
-   Weights: HuggingFace (released 2025-06-02), also Google Drive
+   Weights: [huggingface.co/phxember/Uni-MuMER-Qwen3-VL-2B](https://huggingface.co/phxember/Uni-MuMER-Qwen3-VL-2B)
 
 2. **TexTeller 3.0** (lightweight option) — at 300M params, small enough
    for mobile. Architecture is ViT encoder + Transformer decoder (similar
