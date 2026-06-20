@@ -372,8 +372,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   Migrated: smoldocling_ocr (replaced wbufs), granite_vision_ocr (replaced
   wcache). Remaining runtimes still need migration.
 
-- [ ] **Adopt F16 ggml KV cache** — Port to: deepseek_ocr2 (F32 std::vector),
-  pix2struct (no KV cache at all).
+- [ ] **Adopt F16 ggml KV cache** — Port to: deepseek_ocr2 (F32 std::vector).
+  pix2struct: **DONE** (`088d359`) — F32 std::vector KV cache + cross-attn pre-compute.
   lightonocr: **DONE** (`485cb97`, branch `lighton-perf`) — 2.09x total speedup.
   granite_vision_ocr: **DONE** (`66b8de2`).
   smoldocling_ocr: **DONE** (`bc329e4`, branch `feat/smoldocling-kvcache-prefill`).
@@ -419,9 +419,11 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `run_llm_forward(populate_kvc=true)` writes K/V directly into kvc via
   `ggml_cpy` in the prefill graph (F32→F16 in graph, no CPU bounce).
 
-- [ ] **Move pix2struct to ggml graphs + add KV cache** — fully scalar, no ggml
-  graphs, no KV cache, O(T^2) recompute per decode step. No cross-attention K/V
-  caching either (re-projects all encoder outputs every step).
+- [x] **Move pix2struct to ggml graphs + add KV cache** — DONE (`088d359`,
+  `51a3008`). Encoder as single ggml graph, decoder with incremental self-attn
+  KV cache + pre-computed cross-attn K/V via ggml graph. DequantCache for all
+  weight access. Per-step heap allocations hoisted to context scratch buffers.
+  Parity: encoder cos=0.9999, decoder cos=1.0000.
 
 - [x] **scunet per-pixel heap allocations** — Hoisted `std::vector<float>` pix,
   pix_out, pix_norm, h allocations outside the spatial loops. Also cached LN2
