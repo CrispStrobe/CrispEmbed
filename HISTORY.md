@@ -48,6 +48,14 @@ Configurable via env vars. Small images bypass tiling.
 - ppformulanet_l: removed 370 lines of dead scalar encoder code.
 - restormer: removed dead rst_gdfn() stub, fixed double variance computation.
 - BPE merge: priority queue O(N log N) in bpe.h + tokenizer_bpe.cpp.
+- WordPiece trie: O(len) longest-match via trie traversal (was O(len²) suffix scan).
+- DAT SR BatchNorm fusion: 54 conv+BN pairs fused at load time (3 per AIM block × 18).
+- Bilinear resize: replaced nearest-neighbor in 6 math/OCR runtimes for better quality.
+- morph_fast: power-of-2 horizontal dilation for large kernels.
+- tps_warp: coarse grid + bilinear interpolation (was O(W*H*N) with sqrt+log per pixel).
+- gliner_ner: DeBERTa relative position tensor cached (was 117MB per call at T=200).
+- OpenMP: parallelized pixel-level loops in image_preprocess, dewarp, scan_cleanup.
+- lightonocr: decode graph reuse — build once, update input data only across steps.
 
 ### Pix2Struct full rewrite
 - **ggml graph encoder**: 12-layer T5 encoder as single ggml graph with
