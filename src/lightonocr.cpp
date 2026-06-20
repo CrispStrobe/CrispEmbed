@@ -101,6 +101,16 @@ struct model {
     std::vector<lm_layer> lm;
 };
 
+struct kv_cache_state {
+    ggml_context *ctx = nullptr;
+    ggml_backend_buffer_t buf = nullptr;
+    ggml_tensor *k = nullptr;   // (head_dim, max_seq, n_kv_heads, n_layers) F16
+    ggml_tensor *v = nullptr;   // same shape
+    int max_seq = 0;
+    int n_past = 0;
+    bool allocated = false;
+};
+
 struct context {
     model m;
     ggml_backend_t backend = nullptr;
@@ -112,6 +122,9 @@ struct context {
     bool bench = false;
     std::string last_text;
 
+    // Persistent F16 KV cache (internvl2 pattern)
+    kv_cache_state kvc;
+
     // Tokenizer
     std::vector<std::string> vocab;
     std::unordered_map<std::string, int> token_to_id;
@@ -119,6 +132,51 @@ struct context {
     // Per-token confidence
     std::vector<float> char_confidences;
 };
+
+// ---------------------------------------------------------------------------
+// KV cache management
+// ---------------------------------------------------------------------------
+
+static bool alloc_kv_cache(context &ctx, int max_seq) {
+    auto &m = ctx.m;
+    int hd = m.lm_head_dim;
+    int nkv = m.lm_kv_heads;
+    int nl = m.lm_layers;
+
+    size_t ctx_size = 2 * ggml_tensor_overhead() + 256;
+    ggml_init_params ip{ctx_size, nullptr, true};
+    ctx.kvc.ctx = ggml_init(ip);
+
+    ctx.kvc.k = ggml_new_tensor_4d(ctx.kvc.ctx, GGML_TYPE_F16, hd, max_seq, nkv, nl);
+    ctx.kvc.v = ggml_new_tensor_4d(ctx.kvc.ctx, GGML_TYPE_F16, hd, max_seq, nkv, nl);
+    ggml_set_name(ctx.kvc.k, "kv_k");
+    ggml_set_name(ctx.kvc.v, "kv_v");
+
+    ctx.kvc.buf = ggml_backend_alloc_ctx_tensors(ctx.kvc.ctx, ctx.backend);
+    if (!ctx.kvc.buf) {
+        fprintf(stderr, "lightonocr: KV cache alloc failed (max_seq=%d)\n", max_seq);
+        ggml_free(ctx.kvc.ctx);
+        ctx.kvc.ctx = nullptr;
+        return false;
+    }
+    ggml_backend_buffer_clear(ctx.kvc.buf, 0);
+
+    ctx.kvc.max_seq = max_seq;
+    ctx.kvc.n_past = 0;
+    ctx.kvc.allocated = true;
+
+    size_t kv_bytes = ggml_backend_buffer_get_size(ctx.kvc.buf);
+    fprintf(stderr, "lightonocr: KV cache: %d layers, max_seq=%d, %.1f MB (F16)\n",
+            nl, max_seq, (float)kv_bytes / 1024 / 1024);
+    return true;
+}
+
+static void free_kv_cache(context &ctx) {
+    if (ctx.kvc.buf) { ggml_backend_buffer_free(ctx.kvc.buf); ctx.kvc.buf = nullptr; }
+    if (ctx.kvc.ctx) { ggml_free(ctx.kvc.ctx); ctx.kvc.ctx = nullptr; }
+    ctx.kvc.allocated = false;
+    ctx.kvc.n_past = 0;
+}
 
 // ---------------------------------------------------------------------------
 // Loading
@@ -233,6 +291,7 @@ bool load(context &ctx, const char *gguf_path, int n_threads) {
 }
 
 void free_(context &ctx) {
+    free_kv_cache(ctx);
     if (ctx.sched) ggml_backend_sched_free(ctx.sched);
     core_gguf::free_weights(ctx.wl);
     if (ctx.backend) ggml_backend_free(ctx.backend);
@@ -780,6 +839,14 @@ static bool run_decoder_prefill(context &ctx,
     fprintf(stderr, "lightonocr: prompt = %d prefix + %d image + %d suffix = %d total\n",
             n_prefix, n_image_tokens, n_suffix, n_prompt);
 
+    // Allocate persistent F16 KV cache
+    int max_seq = n_prompt + ctx.max_tokens + 16;
+    free_kv_cache(ctx);
+    if (!alloc_kv_cache(ctx, max_seq)) {
+        fprintf(stderr, "lightonocr: KV cache alloc failed\n");
+        return false;
+    }
+
     // Prefill: build decoder graph for n_prompt tokens
     ggml_init_params ip{ctx.compute_meta.size(), ctx.compute_meta.data(), true};
     ggml_context *g = ggml_init(ip);
@@ -843,21 +910,24 @@ static bool run_decoder_prefill(context &ctx,
                           head_dim, GGML_ROPE_TYPE_NEOX, 0,
                           rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-        // Output post-RoPE K/V for KV cache extraction. These are read back via
-        // ggml_backend_tensor_get, so they MUST be materialized: V is a
-        // ggml_reshape_3d *view* of the projection, and a view marked as an
-        // output has its (shared) buffer reused by the no-alloc scheduler →
-        // garbage read-back. ggml_cont gives each its own concrete buffer.
+        // Write post-RoPE K/V into persistent F16 cache via ggml_cpy.
+        // K/V are (head_dim, n_kv_heads, n_prompt) F32 → cache is (head_dim, max_seq, n_kv_heads, n_layers) F16.
+        // We permute to (head_dim, n_prompt, n_kv_heads) then cpy into a view at layer il, offset 0.
         {
-            char kname[32], vname[32];
-            snprintf(kname, sizeof(kname), "k_out_%d", il);
-            snprintf(vname, sizeof(vname), "v_out_%d", il);
-            K = ggml_cont(g, K);
-            V = ggml_cont(g, V);
-            ggml_set_name(K, kname);
-            ggml_set_output(K);
-            ggml_set_name(V, vname);
-            ggml_set_output(V);
+            ggml_tensor *K_perm = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3)); // (hd, T, nkv)
+            ggml_tensor *V_perm = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
+
+            ggml_tensor *k_view = ggml_view_4d(g, ctx.kvc.k,
+                head_dim, n_prompt, n_kv_heads, 1,
+                ctx.kvc.k->nb[1], ctx.kvc.k->nb[2], ctx.kvc.k->nb[3],
+                (size_t)il * ctx.kvc.k->nb[3]);
+            ggml_tensor *v_view = ggml_view_4d(g, ctx.kvc.v,
+                head_dim, n_prompt, n_kv_heads, 1,
+                ctx.kvc.v->nb[1], ctx.kvc.v->nb[2], ctx.kvc.v->nb[3],
+                (size_t)il * ctx.kvc.v->nb[3]);
+
+            ggml_build_forward_expand(gf, ggml_cpy(g, K_perm, k_view));
+            ggml_build_forward_expand(gf, ggml_cpy(g, V_perm, v_view));
         }
 
         // GQA repeat K/V if needed
@@ -968,33 +1038,13 @@ static bool run_decoder_prefill(context &ctx,
     std::vector<float> logits_data(V);
     ggml_tensor *t_logits = ggml_graph_get_tensor(gf, "last_logits");
     ggml_backend_tensor_get(t_logits, logits_data.data(), 0, V * sizeof(float));
-    // Extract KV cache from prefill graph (read BEFORE freeing g)
-    // Disable KV cache with CRISPEMBED_LIGHTONOCR_NO_KV=1 for A/B testing
-    std::vector<std::vector<float>> k_cache(n_layers), v_cache(n_layers);
-    bool kv_ok = !LOCR_NO_KV;
-    for (int il = 0; il < n_layers; il++) {
-        char kname[32], vname[32];
-        snprintf(kname, sizeof(kname), "k_out_%d", il);
-        snprintf(vname, sizeof(vname), "v_out_%d", il);
-        ggml_tensor *kt = ggml_graph_get_tensor(gf, kname);
-        ggml_tensor *vt = ggml_graph_get_tensor(gf, vname);
-        if (!kt || !vt) {
-            if (il == 0) fprintf(stderr, "lightonocr: k_out_%d not found in graph\n", il);
-            kv_ok = false; break;
-        }
-        // K/V are 3D (head_dim, n_kv_heads, n_prompt) — read as flat (kv_dim * n_prompt)
-        size_t sz = (size_t)ggml_nelements(kt);
-        k_cache[il].resize(sz);
-        v_cache[il].resize(sz);
-        ggml_backend_tensor_get(kt, k_cache[il].data(), 0, sz * sizeof(float));
-        ggml_backend_tensor_get(vt, v_cache[il].data(), 0, sz * sizeof(float));
-    }
+
+    // KV cache was written directly into persistent F16 tensors by ggml_cpy
     ggml_free(g);
-    fprintf(stderr, "lightonocr: KV extraction: %s\n", kv_ok ? "OK" : "FAILED");
-    if (kv_ok)
-        fprintf(stderr, "lightonocr: KV cache: %d layers × %d tokens × %d dim = %.1f MB\n",
-                n_layers, n_prompt, kv_dim,
-                (float)n_layers * n_prompt * kv_dim * 2 * sizeof(float) / (1024*1024));
+    ctx.kvc.n_past = n_prompt;
+    bool kv_ok = ctx.kvc.allocated && !LOCR_NO_KV;
+    fprintf(stderr, "lightonocr: KV cache: %s (F16, %d tokens cached)\n",
+            kv_ok ? "OK" : "DISABLED", n_prompt);
 
     ctx.char_confidences.clear();
     std::vector<int32_t> generated;
@@ -1020,21 +1070,22 @@ static bool run_decoder_prefill(context &ctx,
         return true;
     }
 
-    // KV-cached decode: O(n) per step
+    // KV-cached decode: persistent F16 cache, graph rebuilt per step with ggml_view
     long long decode_total_ms = 0;
     int decode_steps = 0;
-    int n_kv = n_prompt;
     int kv_repeat = n_heads / n_kv_heads;
 
     for (int step = 1; step < max_new_tokens && best != eos_id; step++) {
         if (!kv_ok) break;
 
         auto t_step_start = std::chrono::steady_clock::now();
-        int pos = n_kv;
+        int n_past = ctx.kvc.n_past;
+        int Lk = n_past + 1;  // total KV length after this step
+
         // Embed new token
         auto tok_emb = embed_tokens_cpu({(int32_t)best});
 
-        // Build single-token decode graph
+        // Build single-token decode graph with persistent KV cache
         ggml_init_params ip2{ctx.compute_meta.size(), ctx.compute_meta.data(), true};
         ggml_context *g2 = ggml_init(ip2);
         ggml_cgraph *gf2 = ggml_new_graph_custom(g2, 16384, false);
@@ -1044,12 +1095,7 @@ static bool run_decoder_prefill(context &ctx,
         ggml_tensor *pos2 = ggml_new_tensor_1d(g2, GGML_TYPE_I32, 1);
         ggml_set_name(pos2, "pos_ids"); ggml_set_input(pos2);
 
-        // side outputs (k_out/v_out) aren't ancestors of the logits — collect
-        // so the graph builder doesn't prune them
-        std::vector<ggml_tensor *> kv_out2;
-
         ggml_tensor *cur = x2;
-        char name[64];
         for (int il = 0; il < n_layers; il++) {
             auto &L = m.lm[il];
             ggml_tensor *res = cur;
@@ -1073,59 +1119,64 @@ static bool run_decoder_prefill(context &ctx,
                 K_new = ggml_cont(g2, ggml_reshape_3d(g2, K_new, head_dim, n_kv_heads, 1));
             }
 
-            // RoPE at position `pos`
+            // RoPE
             Q = ggml_rope_ext(g2, Q, pos2, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0,
                               rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
             K_new = ggml_rope_ext(g2, K_new, pos2, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0,
                                   rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-            // Output new K/V for cache append
-            snprintf(name, sizeof(name), "k_out_%d", il);
-            ggml_tensor *K_new_flat = ggml_cont(g2, ggml_reshape_1d(g2, K_new, kv_dim));
-            ggml_set_name(K_new_flat, name); ggml_set_output(K_new_flat);
-            kv_out2.push_back(K_new_flat);
-            snprintf(name, sizeof(name), "v_out_%d", il);
-            ggml_tensor *V_new_flat = ggml_cont(g2, ggml_reshape_1d(g2, V_new, kv_dim));
-            ggml_set_name(V_new_flat, name); ggml_set_output(V_new_flat);
-            kv_out2.push_back(V_new_flat);
+            // Write new K/V into persistent cache at n_past
+            ggml_tensor *K_new_perm = ggml_cont(g2, ggml_permute(g2, K_new, 0, 2, 1, 3)); // (hd, 1, nkv)
+            ggml_tensor *V_new_perm = ggml_cont(g2, ggml_permute(g2, V_new, 0, 2, 1, 3));
 
-            // Load KV cache + concat new
-            ggml_tensor *k_in = ggml_new_tensor_2d(g2, GGML_TYPE_F32, kv_dim, n_kv);
-            snprintf(name, sizeof(name), "k_in_%d", il);
-            ggml_set_name(k_in, name); ggml_set_input(k_in);
-            ggml_tensor *v_in = ggml_new_tensor_2d(g2, GGML_TYPE_F32, kv_dim, n_kv);
-            snprintf(name, sizeof(name), "v_in_%d", il);
-            ggml_set_name(v_in, name); ggml_set_input(v_in);
+            ggml_tensor *k_dst = ggml_view_4d(g2, ctx.kvc.k,
+                head_dim, 1, n_kv_heads, 1,
+                ctx.kvc.k->nb[1], ctx.kvc.k->nb[2], ctx.kvc.k->nb[3],
+                (size_t)il * ctx.kvc.k->nb[3] + (size_t)n_past * ctx.kvc.k->nb[1]);
+            ggml_tensor *v_dst = ggml_view_4d(g2, ctx.kvc.v,
+                head_dim, 1, n_kv_heads, 1,
+                ctx.kvc.v->nb[1], ctx.kvc.v->nb[2], ctx.kvc.v->nb[3],
+                (size_t)il * ctx.kvc.v->nb[3] + (size_t)n_past * ctx.kvc.v->nb[1]);
 
-            ggml_tensor *K_full = ggml_concat(g2,
-                ggml_reshape_3d(g2, k_in, head_dim, n_kv_heads, n_kv), K_new, 2);
-            ggml_tensor *V_full = ggml_concat(g2,
-                ggml_reshape_3d(g2, v_in, head_dim, n_kv_heads, n_kv), V_new, 2);
+            ggml_build_forward_expand(gf2, ggml_cpy(g2, K_new_perm, k_dst));
+            ggml_build_forward_expand(gf2, ggml_cpy(g2, V_new_perm, v_dst));
+
+            // Read full KV history [0..Lk) from cache
+            ggml_tensor *Kfull = ggml_cont(g2, ggml_view_3d(g2, ctx.kvc.k,
+                head_dim, Lk, n_kv_heads,
+                ctx.kvc.k->nb[1], ctx.kvc.k->nb[2],
+                (size_t)il * ctx.kvc.k->nb[3]));
+            ggml_tensor *Vfull = ggml_cont(g2, ggml_view_3d(g2, ctx.kvc.v,
+                head_dim, Lk, n_kv_heads,
+                ctx.kvc.v->nb[1], ctx.kvc.v->nb[2],
+                (size_t)il * ctx.kvc.v->nb[3]));
 
             // GQA repeat
-            int seq = n_kv + 1;
             if (kv_repeat > 1) {
-                K_full = ggml_reshape_4d(g2, K_full, head_dim, 1, n_kv_heads, seq);
-                K_full = ggml_repeat(g2, K_full,
-                    ggml_new_tensor_4d(g2, K_full->type, head_dim, kv_repeat, n_kv_heads, seq));
-                K_full = ggml_reshape_3d(g2, K_full, head_dim, n_heads, seq);
-                V_full = ggml_reshape_4d(g2, V_full, head_dim, 1, n_kv_heads, seq);
-                V_full = ggml_repeat(g2, V_full,
-                    ggml_new_tensor_4d(g2, V_full->type, head_dim, kv_repeat, n_kv_heads, seq));
-                V_full = ggml_reshape_3d(g2, V_full, head_dim, n_heads, seq);
+                Kfull = ggml_reshape_4d(g2, Kfull, head_dim, Lk, 1, n_kv_heads);
+                Kfull = ggml_repeat(g2, Kfull,
+                    ggml_new_tensor_4d(g2, Kfull->type, head_dim, Lk, kv_repeat, n_kv_heads));
+                Kfull = ggml_reshape_3d(g2, Kfull, head_dim, Lk, n_heads);
+                Vfull = ggml_reshape_4d(g2, Vfull, head_dim, Lk, 1, n_kv_heads);
+                Vfull = ggml_repeat(g2, Vfull,
+                    ggml_new_tensor_4d(g2, Vfull->type, head_dim, Lk, kv_repeat, n_kv_heads));
+                Vfull = ggml_reshape_3d(g2, Vfull, head_dim, Lk, n_heads);
             }
 
+            // Permute: (hd, Lk, nh) → (hd, nh, Lk) for attention; Q is (hd, nh, 1)
             float sc = 1.0f / sqrtf((float)head_dim);
             Q = ggml_cont(g2, ggml_permute(g2, Q, 0, 2, 1, 3));
-            K_full = ggml_cont(g2, ggml_permute(g2, K_full, 0, 2, 1, 3));
-            V_full = ggml_cont(g2, ggml_permute(g2, V_full, 0, 2, 1, 3));
+
             ggml_tensor *attn;
             if (use_flash_attn()) {
-                attn = ggml_flash_attn_ext(g2, Q, K_full, V_full, nullptr, sc, 0.0f, 0.0f);
+                // flash_attn expects K/V as (hd, Lk, nh) — already in that layout
+                attn = ggml_flash_attn_ext(g2, Q, Kfull, Vfull, nullptr, sc, 0.0f, 0.0f);
             } else {
-                ggml_tensor *scores = ggml_mul_mat(g2, K_full, Q);
+                Kfull = ggml_cont(g2, ggml_permute(g2, Kfull, 0, 2, 1, 3));
+                Vfull = ggml_cont(g2, ggml_permute(g2, Vfull, 0, 2, 1, 3));
+                ggml_tensor *scores = ggml_mul_mat(g2, Kfull, Q);
                 scores = ggml_soft_max_ext(g2, scores, nullptr, sc, 0.0f);
-                ggml_tensor *Vp = ggml_cont(g2, ggml_permute(g2, V_full, 1, 0, 2, 3));
+                ggml_tensor *Vp = ggml_cont(g2, ggml_permute(g2, Vfull, 1, 0, 2, 3));
                 attn = ggml_mul_mat(g2, Vp, scores);
                 attn = ggml_cont(g2, ggml_permute(g2, attn, 0, 2, 1, 3));
             }
@@ -1145,7 +1196,6 @@ static bool run_decoder_prefill(context &ctx,
         ggml_tensor *ll = ggml_reshape_1d(g2, ggml_mul_mat(g2, m.embed_tokens, cur), V);
         ggml_set_name(ll, "last_logits"); ggml_set_output(ll);
         ggml_build_forward_expand(gf2, ll);
-        for (ggml_tensor *t : kv_out2) ggml_build_forward_expand(gf2, t);
 
         ggml_backend_sched_reset(ctx.sched);
         if (!ggml_backend_sched_alloc_graph(ctx.sched, gf2)) { ggml_free(g2); break; }
@@ -1153,19 +1203,9 @@ static bool run_decoder_prefill(context &ctx,
         // Set inputs
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf2, "tok_emb"),
                                 tok_emb.data(), 0, D * sizeof(float));
-        int32_t pos_val = pos;
+        int32_t pos_val = n_past;
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf2, "pos_ids"),
                                 &pos_val, 0, sizeof(int32_t));
-        for (int il = 0; il < n_layers; il++) {
-            snprintf(name, sizeof(name), "k_in_%d", il);
-            ggml_tensor *ki = ggml_graph_get_tensor(gf2, name);
-            if (ki) ggml_backend_tensor_set(ki, k_cache[il].data(), 0,
-                                             k_cache[il].size() * sizeof(float));
-            snprintf(name, sizeof(name), "v_in_%d", il);
-            ggml_tensor *vi = ggml_graph_get_tensor(gf2, name);
-            if (vi) ggml_backend_tensor_set(vi, v_cache[il].data(), 0,
-                                             v_cache[il].size() * sizeof(float));
-        }
 
         ggml_backend_cpu_set_n_threads(ctx.backend, ctx.n_threads);
         if (ggml_backend_sched_graph_compute(ctx.sched, gf2) != GGML_STATUS_SUCCESS) {
@@ -1175,19 +1215,7 @@ static bool run_decoder_prefill(context &ctx,
         ggml_backend_tensor_get(ggml_graph_get_tensor(gf2, "last_logits"),
                                 logits_data.data(), 0, V * sizeof(float));
 
-        // Append new K/V to cache
-        for (int il = 0; il < n_layers; il++) {
-            std::vector<float> k_new(kv_dim), v_new(kv_dim);
-            snprintf(name, sizeof(name), "k_out_%d", il);
-            ggml_tensor *ko = ggml_graph_get_tensor(gf2, name);
-            if (ko) ggml_backend_tensor_get(ko, k_new.data(), 0, kv_dim * sizeof(float));
-            snprintf(name, sizeof(name), "v_out_%d", il);
-            ggml_tensor *vo = ggml_graph_get_tensor(gf2, name);
-            if (vo) ggml_backend_tensor_get(vo, v_new.data(), 0, kv_dim * sizeof(float));
-            k_cache[il].insert(k_cache[il].end(), k_new.begin(), k_new.end());
-            v_cache[il].insert(v_cache[il].end(), v_new.begin(), v_new.end());
-        }
-        n_kv++;
+        ctx.kvc.n_past++;
         ggml_free(g2);
 
         best = 0; best_score = -INFINITY;
