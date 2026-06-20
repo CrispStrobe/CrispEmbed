@@ -342,13 +342,20 @@ struct restormer_context {
     core_gguf::WeightLoad wl;
     core_cpu::DequantCache dcache;
 
+    // ggml conv infrastructure
+    ggml_backend_t       enc_backend  = nullptr;
+    ggml_backend_sched_t enc_sched    = nullptr;
+
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t) return nullptr;
         return dcache.get(t);
     }
 
-    // Get the first dimension (ne[0]) of a tensor — used to read hidden sizes
+    ggml_tensor * get_raw(const std::string & name) {
+        return core_gguf::try_get(wl.tensors, name.c_str());
+    }
+
     int64_t dim0(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         return t ? t->ne[0] : 0;
@@ -390,11 +397,24 @@ restormer_context * restormer_init(const char * model_path, int n_threads) {
             ctx->heads[0], ctx->heads[1], ctx->heads[2], ctx->heads[3],
             ctx->ffn_factor, ctx->n_refine, (int)ctx->wl.tensors.size());
     ctx->bench = (std::getenv("CRISPEMBED_RESTORMER_BENCH") != nullptr);
+
+    ctx->enc_backend = ggml_backend_cpu_init();
+    if (ctx->enc_backend) {
+        ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads);
+        ggml_backend_t backends[] = { ctx->enc_backend };
+        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+    }
+
     return ctx;
 }
 
 void restormer_free(restormer_context * ctx) {
-    if (ctx) { core_gguf::free_weights(ctx->wl); delete ctx; }
+    if (ctx) {
+        if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+        if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
+        core_gguf::free_weights(ctx->wl);
+        delete ctx;
+    }
 }
 
 // ── Forward pass (single tile) ─────────────────────────────────────────

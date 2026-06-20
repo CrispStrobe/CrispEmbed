@@ -9,6 +9,7 @@
 // ICB: sigmoid(Linear(text_embd→C)) * (x*gamma+beta) → NAFBlock → +x
 
 #include "instructir.h"
+#include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -129,7 +130,7 @@ struct nafblock_wt {
 
 static void nafblock_forward(float * x, int c, int h, int w,
                               const nafblock_wt & wt,
-                              std::vector<float> & dq1, std::vector<float> & dq2) {
+                              core_cpu::DequantCache & dqc) {
     int hw = h * w, c2 = c * 2;
     if (!wt.beta || !wt.gamma || !wt.norm1_w || !wt.conv1_w || !wt.conv2_w ||
         !wt.sca_w || !wt.conv3_w || !wt.norm2_w || !wt.conv4_w || !wt.conv5_w) {
@@ -139,17 +140,17 @@ static void nafblock_forward(float * x, int c, int h, int w,
                 (void*)wt.norm2_w, (void*)wt.conv4_w, (void*)wt.conv5_w);
         return;
     }
-    const float * beta = to_f32(wt.beta, dq1);
-    const float * gamma = to_f32(wt.gamma, dq2);
+    const float * beta = dqc.get(wt.beta);
+    const float * gamma = dqc.get(wt.gamma);
 
     // Spatial mixing
     std::vector<float> t1(c * hw), t2(c2 * hw), t3(c * hw);
-    layernorm2d(x, c, h, w, to_f32(wt.norm1_w, dq1), to_f32(wt.norm1_b, dq2), t1.data());
-    conv2d(t1.data(), c, h, w, to_f32(wt.conv1_w, dq1), to_f32(wt.conv1_b, dq2),
+    layernorm2d(x, c, h, w, dqc.get(wt.norm1_w), dqc.get(wt.norm1_b), t1.data());
+    conv2d(t1.data(), c, h, w, dqc.get(wt.conv1_w), dqc.get(wt.conv1_b),
            c2, 1, 1, 0, 1, 1, t2.data());
     // DW conv outputs c2 channels — need a c2-sized buffer
     std::vector<float> dw_out(c2 * hw);
-    conv2d(t2.data(), c2, h, w, to_f32(wt.conv2_w, dq1), to_f32(wt.conv2_b, dq2),
+    conv2d(t2.data(), c2, h, w, dqc.get(wt.conv2_w), dqc.get(wt.conv2_b),
            c2, 3, 3, 1, 1, c2, dw_out.data());
     simple_gate(dw_out.data(), c2, hw, t3.data());
     // SCA
@@ -160,8 +161,8 @@ static void nafblock_forward(float * x, int c, int h, int w,
     }
     std::vector<float> sca(c);
     {
-        const float * sca_w = to_f32(wt.sca_w, dq1);
-        const float * sca_b = to_f32(wt.sca_b, dq2);
+        const float * sca_w = dqc.get(wt.sca_w);
+        const float * sca_b = dqc.get(wt.sca_b);
         for (int o = 0; o < c; o++) {
             float sum = sca_b[o];
             for (int i = 0; i < c; i++) sum += sca_w[o * c + i] * pool[i];
@@ -170,18 +171,18 @@ static void nafblock_forward(float * x, int c, int h, int w,
     }
     for (int ch = 0; ch < c; ch++)
         for (int i = 0; i < hw; i++) t3[ch * hw + i] *= sca[ch];
-    conv2d(t3.data(), c, h, w, to_f32(wt.conv3_w, dq1), to_f32(wt.conv3_b, dq2),
+    conv2d(t3.data(), c, h, w, dqc.get(wt.conv3_w), dqc.get(wt.conv3_b),
            c, 1, 1, 0, 1, 1, t1.data());
     for (int ch = 0; ch < c; ch++)
         for (int i = 0; i < hw; i++)
             x[ch * hw + i] += t1[ch * hw + i] * beta[ch];
 
     // Channel mixing
-    layernorm2d(x, c, h, w, to_f32(wt.norm2_w, dq1), to_f32(wt.norm2_b, dq2), t1.data());
-    conv2d(t1.data(), c, h, w, to_f32(wt.conv4_w, dq1), to_f32(wt.conv4_b, dq2),
+    layernorm2d(x, c, h, w, dqc.get(wt.norm2_w), dqc.get(wt.norm2_b), t1.data());
+    conv2d(t1.data(), c, h, w, dqc.get(wt.conv4_w), dqc.get(wt.conv4_b),
            c2, 1, 1, 0, 1, 1, t2.data());
     simple_gate(t2.data(), c2, hw, t3.data());
-    conv2d(t3.data(), c, h, w, to_f32(wt.conv5_w, dq1), to_f32(wt.conv5_b, dq2),
+    conv2d(t3.data(), c, h, w, dqc.get(wt.conv5_w), dqc.get(wt.conv5_b),
            c, 1, 1, 0, 1, 1, t1.data());
     for (int ch = 0; ch < c; ch++)
         for (int i = 0; i < hw; i++)
@@ -199,15 +200,15 @@ struct icb_wt {
 static void icb_forward(float * x, int c, int h, int w,
                          const float * text_embd, int emb_dim,
                          const icb_wt & wt,
-                         std::vector<float> & dq1, std::vector<float> & dq2) {
+                         core_cpu::DequantCache & dqc) {
     int hw = h * w;
-    const float * beta = to_f32(wt.beta, dq1);
-    const float * gamma = to_f32(wt.gamma, dq2);
+    const float * beta = dqc.get(wt.beta);
+    const float * gamma = dqc.get(wt.gamma);
 
     // Gating from text embedding
     std::vector<float> gate(c);
-    const float * fc_w = to_f32(wt.fc_w, dq1);
-    const float * fc_b = to_f32(wt.fc_b, dq2);
+    const float * fc_w = dqc.get(wt.fc_w);
+    const float * fc_b = dqc.get(wt.fc_b);
     for (int o = 0; o < c; o++) {
         float sum = fc_b[o];
         for (int i = 0; i < emb_dim; i++) sum += fc_w[o * emb_dim + i] * text_embd[i];
@@ -221,7 +222,7 @@ static void icb_forward(float * x, int c, int h, int w,
             y[ch * hw + i] = (x[ch * hw + i] * gamma[ch] + beta[ch]) * gate[ch];
 
     // NAFBlock refinement
-    nafblock_forward(y.data(), c, h, w, wt.block, dq1, dq2);
+    nafblock_forward(y.data(), c, h, w, wt.block, dqc);
 
     // Residual
     for (int i = 0; i < c * hw; i++) x[i] += y[i];
@@ -233,6 +234,7 @@ struct instructir_context {
     ggml_backend_t backend = nullptr;
     ggml_context * gguf_ctx;
     ggml_backend_buffer_t gguf_buf;
+    core_cpu::DequantCache dqc;
 
     int n_tasks, emb_dim;
     bool bench;
@@ -383,16 +385,16 @@ int instructir_process_float(instructir_context * ctx, int task,
     auto t_total = std::chrono::steady_clock::now();
 
     int H = height, W = width;
-    std::vector<float> dq1, dq2;
+    auto & dqc = ctx->dqc;
 
     // Get task embedding [256]
-    const float * all_emb = to_f32(ctx->task_embeddings, dq1);
+    const float * all_emb = dqc.get(ctx->task_embeddings);
     const float * text_embd = all_emb + task * ctx->emb_dim;
 
     // Intro conv
     int ch = 32;
     std::vector<float> x(ch * H * W);
-    conv2d(input_chw, 3, H, W, to_f32(ctx->intro_w, dq1), to_f32(ctx->intro_b, dq2),
+    conv2d(input_chw, 3, H, W, dqc.get(ctx->intro_w), dqc.get(ctx->intro_b),
            ch, 3, 3, 1, 1, 1, x.data());
 
     // Encoder
@@ -402,17 +404,17 @@ int instructir_process_float(instructir_context * ctx, int task,
     for (int lvl = 0; lvl < 4; lvl++) {
         auto t_enc = std::chrono::steady_clock::now();
         for (int i = 0; i < ctx->enc_n_blocks[lvl]; i++) {
-            nafblock_forward(x.data(), ch, cur_h, cur_w, ctx->enc[lvl].blocks[i], dq1, dq2);
+            nafblock_forward(x.data(), ch, cur_h, cur_w, ctx->enc[lvl].blocks[i], dqc);
         }
         icb_forward(x.data(), ch, cur_h, cur_w, text_embd, ctx->emb_dim,
-                    ctx->enc[lvl].cond, dq1, dq2);
+                    ctx->enc[lvl].cond, dqc);
         skips.push_back(std::vector<float>(x.begin(), x.end()));
         // Downsample: Conv2d(C→2C, k=2, s=2)
         int next_ch = ch * 2;
         int nh = cur_h / 2, nw = cur_w / 2;
         std::vector<float> ds(next_ch * nh * nw);
         conv2d(x.data(), ch, cur_h, cur_w,
-               to_f32(ctx->enc[lvl].down_w, dq1), to_f32(ctx->enc[lvl].down_b, dq2),
+               dqc.get(ctx->enc[lvl].down_w), dqc.get(ctx->enc[lvl].down_b),
                next_ch, 2, 2, 0, 2, 1, ds.data());
         x = std::move(ds);
         ch = next_ch; cur_h = nh; cur_w = nw;
@@ -426,7 +428,7 @@ int instructir_process_float(instructir_context * ctx, int task,
     // Middle
     auto t_mid = std::chrono::steady_clock::now();
     for (int i = 0; i < 4; i++)
-        nafblock_forward(x.data(), ch, cur_h, cur_w, ctx->middle[i], dq1, dq2);
+        nafblock_forward(x.data(), ch, cur_h, cur_w, ctx->middle[i], dqc);
     if (bench) {
         auto t_mid_end = std::chrono::steady_clock::now();
         fprintf(stderr, "[instructir-bench] middle: %.1f ms\n",
@@ -441,7 +443,7 @@ int instructir_process_float(instructir_context * ctx, int task,
         int up_ch = next_ch * 4; // after conv1x1, before shuffle
         std::vector<float> up(up_ch * cur_h * cur_w);
         conv2d(x.data(), ch, cur_h, cur_w,
-               to_f32(ctx->dec[lvl].up_w, dq1), to_f32(ctx->dec[lvl].up_b, dq2),
+               dqc.get(ctx->dec[lvl].up_w), dqc.get(ctx->dec[lvl].up_b),
                up_ch, 1, 1, 0, 1, 1, up.data());
         int nh = cur_h * 2, nw = cur_w * 2;
         x.resize(next_ch * nh * nw);
@@ -453,9 +455,9 @@ int instructir_process_float(instructir_context * ctx, int task,
         for (int i = 0; i < ch * cur_h * cur_w; i++) x[i] += sk[i];
 
         for (int i = 0; i < ctx->dec_n_blocks[lvl]; i++)
-            nafblock_forward(x.data(), ch, cur_h, cur_w, ctx->dec[lvl].blocks[i], dq1, dq2);
+            nafblock_forward(x.data(), ch, cur_h, cur_w, ctx->dec[lvl].blocks[i], dqc);
         icb_forward(x.data(), ch, cur_h, cur_w, text_embd, ctx->emb_dim,
-                    ctx->dec[lvl].cond, dq1, dq2);
+                    ctx->dec[lvl].cond, dqc);
         if (bench) {
             auto t_dec_end = std::chrono::steady_clock::now();
             fprintf(stderr, "[instructir-bench] dec level %d: %.1f ms\n",
@@ -465,7 +467,7 @@ int instructir_process_float(instructir_context * ctx, int task,
 
     // Ending conv + global residual
     conv2d(x.data(), ch, cur_h, cur_w,
-           to_f32(ctx->ending_w, dq1), to_f32(ctx->ending_b, dq2),
+           dqc.get(ctx->ending_w), dqc.get(ctx->ending_b),
            3, 3, 3, 1, 1, 1, output_chw);
     for (int i = 0; i < 3 * H * W; i++) output_chw[i] += input_chw[i];
 

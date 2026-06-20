@@ -1032,6 +1032,8 @@ bool load(context &ctx, const char *gguf_path, int n_threads, int verbosity) {
 
 void free_(context &ctx) {
     free_kv_cache(ctx);
+    if (ctx.vis_graph_ctx) { ggml_free(ctx.vis_graph_ctx); ctx.vis_graph_ctx = nullptr; }
+    ctx.vis_graph_cached = false;
     if (ctx.sched) { ggml_backend_sched_free(ctx.sched); ctx.sched = nullptr; }
     if (ctx.model_buf) { ggml_backend_buffer_free(ctx.model_buf); ctx.model_buf = nullptr; }
     if (ctx.model_ctx) { ggml_free(ctx.model_ctx); ctx.model_ctx = nullptr; }
@@ -1068,62 +1070,51 @@ bool encode_vision_tile(context &ctx, const float *pixels, vision_result &out) {
         }
     }
 
-    // Build and compute vision graph
-    vision_graph vg = build_vision_graph(ctx);
-
-    ggml_backend_sched_reset(ctx.sched);
-    if (!ggml_backend_sched_alloc_graph(ctx.sched, vg.gf)) {
-        fprintf(stderr, "internvl2_ocr: vision graph alloc failed\n");
-        ggml_free(vg.gctx);
-        return false;
+    // Build vision graph once, reuse across tiles (fixed input dimensions)
+    if (!ctx.vis_graph_cached) {
+        vision_graph vg = build_vision_graph(ctx);
+        ggml_backend_sched_reset(ctx.sched);
+        if (!ggml_backend_sched_alloc_graph(ctx.sched, vg.gf)) {
+            fprintf(stderr, "internvl2_ocr: vision graph alloc failed\n");
+            ggml_free(vg.gctx);
+            return false;
+        }
+        ctx.vis_graph_ctx = vg.gctx;
+        ctx.vis_graph = vg.gf;
+        ctx.vis_input = vg.pixel_in;
+        ctx.vis_output = vg.output;
+        ctx.vis_graph_cached = true;
     }
 
-    // Set input
-    ggml_backend_tensor_set(vg.pixel_in, patches.data(), 0,
+    // Set input and compute (reusing cached graph)
+    ggml_backend_tensor_set(ctx.vis_input, patches.data(), 0,
                             n_patches * patch_flat * sizeof(float));
-
-    // Compute
-    ggml_backend_sched_graph_compute(ctx.sched, vg.gf);
+    ggml_backend_sched_graph_compute(ctx.sched, ctx.vis_graph);
 
     // Read output: (D, n_pos)
     out.n_tokens = n_pos;
     out.hidden_dim = D;
     out.hidden = (float *)malloc(n_pos * D * sizeof(float));
-    ggml_backend_tensor_get(vg.output, out.hidden, 0,
+    ggml_backend_tensor_get(ctx.vis_output, out.hidden, 0,
                             n_pos * D * sizeof(float));
 
-    // Diff comparison if enabled
+    // Diff comparison if enabled (uses cached graph tensors)
     if (!ctx.diff_ref_path.empty()) {
         crispembed_diff::Ref ref;
         if (ref.load(ctx.diff_ref_path.c_str())) {
-            // Compare patch embed
-            {
+            ggml_tensor *pe_t = ggml_graph_get_tensor(ctx.vis_graph, "vis_patch_embed");
+            if (pe_t) {
                 float *vis_pe = (float *)malloc(n_pos * D * sizeof(float));
-                ggml_tensor *pe_t = ggml_graph_get_tensor(vg.gf, "vis_patch_embed");
-                if (pe_t) {
-                    ggml_backend_tensor_get(pe_t, vis_pe, 0, n_pos * D * sizeof(float));
-                    auto r = ref.compare("vis_patch_embed", vis_pe, n_pos * D);
-                    printf("  vis_patch_embed: cos=%.6f max_abs=%.6f %s\n",
-                           r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
-                }
+                ggml_backend_tensor_get(pe_t, vis_pe, 0, n_pos * D * sizeof(float));
+                auto r = ref.compare("vis_patch_embed", vis_pe, n_pos * D);
+                printf("  vis_patch_embed: cos=%.6f max_abs=%.6f %s\n",
+                       r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
                 free(vis_pe);
-            }
-            // Compare layer outputs
-            for (size_t i = 0; i < vg.layer_outputs.size(); i++) {
-                char name[64];
-                snprintf(name, sizeof(name), "vis_layer_%zu", i);
-                float *buf = (float *)malloc(n_pos * D * sizeof(float));
-                ggml_backend_tensor_get(vg.layer_outputs[i], buf, 0,
-                                        n_pos * D * sizeof(float));
-                auto r = ref.compare(name, buf, n_pos * D);
-                printf("  %s: cos=%.6f max_abs=%.6f %s\n",
-                       name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
-                free(buf);
             }
         }
     }
 
-    ggml_free(vg.gctx);
+    // Graph context kept alive for reuse (freed in free_)
     return true;
 }
 
