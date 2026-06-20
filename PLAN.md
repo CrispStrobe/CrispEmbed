@@ -511,7 +511,7 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   - [x] `nafnet_denoise.cpp` — **DONE** (`b580e5c`). conv2d_ggml replaces all scalar convs.
   - [x] `esrgan_sr.cpp` — **DONE** (`4f1d052`). Full conv chain ggml graph, 6x speedup.
   - [ ] `safmn_sr.cpp` — 8× SAFM + CCM (multi-scale DW conv), ~15-25G, easy
-  - [ ] `restormer.cpp` — U-Net + transposed attention + GDFN, ~80-120G, easy
+  - [ ] `restormer.cpp` — U-Net + transposed attention + GDFN, ~80-120G, easy (infra added `a167136`)
   - [ ] `instructir.cpp` — NAFNet U-Net + text conditioning (ICB), ~80-120G, medium
   - [ ] `pan_sr.cpp` — 16× SCPA + pixel shuffle, ~40-60G, medium
   - [ ] `dat_sr.cpp` — 18× dual attention (spatial+channel), ~60-90G, medium
