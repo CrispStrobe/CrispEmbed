@@ -284,9 +284,14 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // quantized. Worse, SigLIP's D=1152 is not 256-divisible, so a Q4_K
         // target fell back to Q4_0 (legacy 4-bit) on the vision weights; Q8_0
         // has block size 32 (1152 % 32 == 0) so it applies cleanly here.
+        // Also keep the multimodal projector ("proj.*") at Q8_0: it is a tiny
+        // 2-layer bridge from vision features into the LLM embedding space, and
+        // quantizing it to Q4_K measurably hurt parity (HF-blueprint projector
+        // cos 0.929 at Q4_K vs ~0.95 at Q8_0) for negligible size.
         bool is_vision_weight = sname.rfind("v.", 0) == 0 ||
                                 sname.rfind("qe.", 0) == 0 ||
-                                sname.rfind("vis.", 0) == 0;
+                                sname.rfind("vis.", 0) == 0 ||
+                                sname.rfind("proj.", 0) == 0;
         if (quantize && is_vision_weight &&
             qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 &&
             qtype != GGML_TYPE_Q6_K && qtype != GGML_TYPE_Q5_K) {
