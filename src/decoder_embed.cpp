@@ -743,11 +743,10 @@ std::vector<float> decoder_encode_tokens(
                                layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
         }
 
-        // Attention via flash_attn_ext (GQA-native, O(T) memory vs O(T²) scores).
-        // fa_mask is nullptr for bidirectional models; F16 causal (T,T) otherwise.
-        Q = ggml_cont(gctx, ggml_permute(gctx, Q, 0, 2, 1, 3));  // (hd, T, nh)
-        K = ggml_cont(gctx, ggml_permute(gctx, K, 0, 2, 1, 3));  // (hd, T, nkv)
-        V = ggml_cont(gctx, ggml_permute(gctx, V, 0, 2, 1, 3));  // (hd, T, nkv)
+        // Attention: flash_attn_ext (fused QKV, lower memory)
+        Q = ggml_permute(gctx, Q, 0, 2, 1, 3);
+        K = ggml_permute(gctx, K, 0, 2, 1, 3);
+        V = ggml_permute(gctx, V, 0, 2, 1, 3);
 
         float scale = (m.attn_scale > 0.0f)
                         ? (1.0f / sqrtf(m.attn_scale))
@@ -902,13 +901,17 @@ std::vector<float> decoder_encode_tokens(
             }
         }
 
-        if (fa_mask) {
-            std::vector<ggml_fp16_t> mdata((size_t)T * T);
-            for (int q = 0; q < T; q++)
-                for (int k = 0; k < T; k++)
-                    mdata[(size_t)q * T + k] = ggml_fp32_to_fp16(k <= q ? 0.0f : -INFINITY);
-            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "causal_mask"),
-                                    mdata.data(), 0, (size_t)T * T * sizeof(ggml_fp16_t));
+        // Fill causal mask if needed (F16, lower triangle = 0, upper = -inf)
+        if (!m.is_bidirectional) {
+            ggml_tensor * cm = ggml_graph_get_tensor(gf, "causal_mask");
+            if (cm) {
+                std::vector<ggml_fp16_t> mask_data(T * T);
+                ggml_fp16_t neg_inf = ggml_fp32_to_fp16(-INFINITY);
+                for (int i = 0; i < T; i++)
+                    for (int j = 0; j < T; j++)
+                        mask_data[i * T + j] = (j <= i) ? 0 : neg_inf;
+                ggml_backend_tensor_set(cm, mask_data.data(), 0, T * T * sizeof(ggml_fp16_t));
+            }
         }
 
         // Compute via scheduler
@@ -1477,15 +1480,15 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
                            head_dim, rope_mode, 0,
                            layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-        // flash_attn_ext: GQA-native, O(T) memory vs O(T²) scores.
+        // Flash attention with explicit mask
+        Q = ggml_permute(gctx, Q, 0, 2, 1, 3);
+        K = ggml_permute(gctx, K, 0, 2, 1, 3);
+        V = ggml_permute(gctx, V, 0, 2, 1, 3);
+
         float scale = (m.attn_scale > 0.0f)
                         ? (1.0f / sqrtf(m.attn_scale))
                         : (1.0f / sqrtf((float)head_dim));
-        Q = ggml_cont(gctx, ggml_permute(gctx, Q, 0, 2, 1, 3));  // [hd, T, nh]
-        K = ggml_cont(gctx, ggml_permute(gctx, K, 0, 2, 1, 3));  // [hd, T, nkv]
-        V = ggml_cont(gctx, ggml_permute(gctx, V, 0, 2, 1, 3));  // [hd, T, nkv]
         ggml_tensor * attn = ggml_flash_attn_ext(gctx, Q, K, V, attn_mask, scale, 0.0f, 0.0f);
-        attn = ggml_cont(gctx, ggml_permute(gctx, attn, 0, 2, 1, 3));  // [hd, nh, T]
         attn = ggml_reshape_2d(gctx, attn, q_dim, T_total);
 
         attn = ggml_mul_mat(gctx, L.o_w, attn);

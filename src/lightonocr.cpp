@@ -980,29 +980,26 @@ static bool run_decoder_prefill(context &ctx,
             ggml_build_forward_expand(gf, ggml_cpy(g, V_perm, v_view));
         }
 
-        // GQA repeat K/V if needed
-        if (n_kv_heads < n_heads) {
-            int repeat = n_heads / n_kv_heads;
-            K = ggml_reshape_4d(g, K, head_dim, 1, n_kv_heads, n_prompt);
-            ggml_tensor *K_tgt = ggml_new_tensor_4d(g, K->type, head_dim, repeat, n_kv_heads, n_prompt);
-            K = ggml_repeat(g, K, K_tgt);
-            K = ggml_reshape_3d(g, K, head_dim, n_heads, n_prompt);
-
-            V = ggml_reshape_4d(g, V, head_dim, 1, n_kv_heads, n_prompt);
-            ggml_tensor *V_tgt = ggml_new_tensor_4d(g, V->type, head_dim, repeat, n_kv_heads, n_prompt);
-            V = ggml_repeat(g, V, V_tgt);
-            V = ggml_reshape_3d(g, V, head_dim, n_heads, n_prompt);
-        }
-
         float scale = 1.0f / sqrtf((float)head_dim);
         Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3)); // (hd, T, nh)
-        K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
+        K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3)); // (hd, T, nkv)
         V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
         ggml_tensor *attn;
         if (use_flash_attn()) {
+            // flash_attn_ext handles GQA natively (broadcast rk2 = nh/nkv)
             attn = ggml_flash_attn_ext(g, Q, K, V, mask, scale, 0.0f, 0.0f);
         } else {
+            // Manual attention needs matching head counts — expand K/V
+            if (n_kv_heads < n_heads) {
+                int repeat = n_heads / n_kv_heads;
+                K = ggml_reshape_4d(g, K, head_dim, n_prompt, 1, n_kv_heads);
+                K = ggml_repeat(g, K, ggml_new_tensor_4d(g, K->type, head_dim, n_prompt, repeat, n_kv_heads));
+                K = ggml_reshape_3d(g, K, head_dim, n_prompt, n_heads);
+                V = ggml_reshape_4d(g, V, head_dim, n_prompt, 1, n_kv_heads);
+                V = ggml_repeat(g, V, ggml_new_tensor_4d(g, V->type, head_dim, n_prompt, repeat, n_kv_heads));
+                V = ggml_reshape_3d(g, V, head_dim, n_prompt, n_heads);
+            }
             ggml_tensor *scores = ggml_mul_mat(g, K, Q);
             scores = ggml_soft_max_ext(g, scores, mask, scale, 0.0f);
             ggml_tensor *V_perm = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
@@ -1201,27 +1198,26 @@ static bool run_decoder_prefill(context &ctx,
                 ctx.kvc.v->nb[1], ctx.kvc.v->nb[2],
                 (size_t)il * ctx.kvc.v->nb[3]));
 
-            // GQA repeat
-            if (kv_repeat > 1) {
-                Kfull = ggml_reshape_4d(g2, Kfull, head_dim, Lk, 1, n_kv_heads);
-                Kfull = ggml_repeat(g2, Kfull,
-                    ggml_new_tensor_4d(g2, Kfull->type, head_dim, Lk, kv_repeat, n_kv_heads));
-                Kfull = ggml_reshape_3d(g2, Kfull, head_dim, Lk, n_heads);
-                Vfull = ggml_reshape_4d(g2, Vfull, head_dim, Lk, 1, n_kv_heads);
-                Vfull = ggml_repeat(g2, Vfull,
-                    ggml_new_tensor_4d(g2, Vfull->type, head_dim, Lk, kv_repeat, n_kv_heads));
-                Vfull = ggml_reshape_3d(g2, Vfull, head_dim, Lk, n_heads);
-            }
-
-            // Permute: (hd, Lk, nh) → (hd, nh, Lk) for attention; Q is (hd, nh, 1)
+            // Kfull/Vfull are (hd, Lk, nkv). Q is (hd, nh, 1).
             float sc = 1.0f / sqrtf((float)head_dim);
             Q = ggml_cont(g2, ggml_permute(g2, Q, 0, 2, 1, 3));
 
             ggml_tensor *attn;
             if (use_flash_attn()) {
-                // flash_attn expects K/V as (hd, Lk, nh) — already in that layout
+                // flash_attn_ext handles GQA natively (broadcast rk2 = nh/nkv)
                 attn = ggml_flash_attn_ext(g2, Q, Kfull, Vfull, nullptr, sc, 0.0f, 0.0f);
             } else {
+                // Manual attention needs expanded heads
+                if (kv_repeat > 1) {
+                    Kfull = ggml_reshape_4d(g2, Kfull, head_dim, Lk, 1, n_kv_heads);
+                    Kfull = ggml_repeat(g2, Kfull,
+                        ggml_new_tensor_4d(g2, Kfull->type, head_dim, Lk, kv_repeat, n_kv_heads));
+                    Kfull = ggml_reshape_3d(g2, Kfull, head_dim, Lk, n_heads);
+                    Vfull = ggml_reshape_4d(g2, Vfull, head_dim, Lk, 1, n_kv_heads);
+                    Vfull = ggml_repeat(g2, Vfull,
+                        ggml_new_tensor_4d(g2, Vfull->type, head_dim, Lk, kv_repeat, n_kv_heads));
+                    Vfull = ggml_reshape_3d(g2, Vfull, head_dim, Lk, n_heads);
+                }
                 Kfull = ggml_cont(g2, ggml_permute(g2, Kfull, 0, 2, 1, 3));
                 Vfull = ggml_cont(g2, ggml_permute(g2, Vfull, 0, 2, 1, 3));
                 ggml_tensor *scores = ggml_mul_mat(g2, Kfull, Q);

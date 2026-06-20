@@ -295,6 +295,48 @@ safmn_sr, esrgan_sr, restormer, tps_locnet, scunet_denoise, swinir_sr.
 *InternVL2.5-2B not on the original leaderboard slice but scores higher than
 InternVL2-2B (768).
 
+### Handwritten math OCR — permissive-license models to port
+
+Current handwritten math models (PosFormer/BTTR/HMER) are CC BY-NC-SA 3.0
+(non-commercial). Best accuracy: 57% on CROHME 2014. These candidates are
+all Apache-2.0 and would be a major accuracy upgrade.
+
+| # | Model | Params | CROHME 2014 | License | Architecture | Effort | Status |
+|---|-------|--------|-------------|---------|-------------|--------|--------|
+| 1 | **Uni-MuMER-Qwen3-VL-2B** | 2.1B | ~82% (3B variant) | Apache-2.0 | Qwen3-VL fine-tune (multi-task: recognition + symbol counting + position) | Low — reuses existing `qwen2vl_ocr.cpp` engine, same GGUF converter | [ ] Pending |
+| 2 | **Uni-MuMER-Qwen2.5-VL-3B** | 3.4B | 82.25% | Apache-2.0 | Qwen2.5-VL fine-tune | Low — same engine | [ ] Pending |
+| 3 | **TexTeller 3.0** | 0.3B | unknown | Apache-2.0 | ViT + Transformer decoder, 80M training pairs, supports handwritten | Medium — needs new GGUF converter (TrOCR-like arch but not identical) | [ ] Pending |
+| 4 | PP-FormulaNet-L | 181M | ~57% | Apache-2.0 | SAM-ViT + MBart | — | Already integrated (mostly printed math) |
+
+**Recommended priority:**
+
+1. **Uni-MuMER-Qwen3-VL-2B** (best ROI) — same Qwen3-VL base we already
+   support. Convert via `convert-qwen3vl-to-gguf.py` → quantize Q4_K/Q8_0
+   → add to CrispCalc catalog as "Handwritten Math (82%, Apache-2.0)".
+   The fine-tune adds handwriting-specific LoRA/full weights on top of the
+   base Qwen3-VL architecture — the GGUF converter should work as-is since
+   the architecture key is still `qwen3vl`. Verify with CROHME 2014 test.
+
+   Source: [github.com/BFlameSwift/Uni-MuMER](https://github.com/BFlameSwift/Uni-MuMER)
+   Weights: HuggingFace (released 2025-06-02), also Google Drive
+
+2. **TexTeller 3.0** (lightweight option) — at 300M params, small enough
+   for mobile. Architecture is ViT encoder + Transformer decoder (similar
+   to pix2tex but trained on 80M pairs including handwritten). Would need
+   a new converter or adaptation of `convert-pix2tex-to-gguf.py`. Benchmark
+   on CROHME before committing to full integration.
+
+   Source: [github.com/OleehyO/TexTeller](https://github.com/OleehyO/TexTeller)
+   Weights: [huggingface.co/OleehyO/TexTeller](https://huggingface.co/OleehyO/TexTeller)
+
+3. **Uni-MuMER-Qwen2.5-VL-3B** (fallback) — if Qwen3-VL variant has
+   issues, the 3B Qwen2.5-VL variant has proven 82.25% accuracy and uses
+   the same engine. Slightly larger (3.4B) but still under 4B.
+
+**Impact**: replacing NC-licensed 57% models with Apache-2.0 82% models
+eliminates the license acceptance gate in the UI AND nearly doubles
+handwritten accuracy. This is the single highest-value remaining OCR task.
+
 ### Feature gaps vs fastembed-rs
 
 | Gap | Impact | Effort | Notes |
@@ -433,10 +475,11 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 #### P1 — High-impact targeted improvements
 
 - [ ] **Flash attention everywhere** — use `ggml_flash_attn_ext` in:
-  - `decoder_embed.cpp` single-text path (lines 731-748, manual Q@K+softmax+V)
-  - `bidirlm_vision.cpp` (block-diagonal mask — flash_attn accepts masks)
-  - `lilt_kie.cpp` (BiACM score combination may need adaptation)
-  - `qwen2vl_ocr.cpp` LLM decode (lines 1294-1306)
+  - `decoder_embed.cpp`: **DONE** (`29d8a08`) — both single-text and batch paths
+  - `bidirlm_vision.cpp`: **DONE** (`fd8cd09`) — F16 mask, halves mask memory
+  - `lilt_kie.cpp`: SKIPPED — BiACM adds text+layout scores before softmax,
+    incompatible with fused flash_attn kernel
+  - `qwen2vl_ocr.cpp`: already uses flash_attn
   - `deepseek_ocr2.cpp` all attention paths
 
 - [ ] **Move remaining scalar encoders to ggml graphs**:
@@ -492,7 +535,7 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   separate ggml graphs per decode token (line 1288-1295). A single graph
   covering all attention layers would reduce graph construction cost by 12x.
 
-- [ ] **glm_ocr / got_ocr: scalar downsample/merger → ggml** — glm `host_matmul`
+- [x] **glm_ocr / got_ocr: scalar downsample/merger → ggml** — DONE. glm `host_matmul`
   (lines 493-502) and got neck (lines 699-773) use scalar CPU for Conv+matmul
   projectors. Should be ggml graph ops.
 
@@ -503,9 +546,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `g_litemla` returns nullptr, the graph-accelerated LiteMLA is stubbed out.
   Currently falls back to CPU-scalar attention.
 
-- [ ] **Add tiling to SR runtimes without it** — `nafnet_denoise`,
-  `scunet_denoise`, `instructir`, `adair` process entire images with no tiling.
-  OOM or poor cache behavior for images >512px. (`esrgan_sr` + `safmn_sr` DONE.)
+- [x] **Add tiling to SR runtimes without it** — ALL DONE. Hann-window overlap
+  tiling added to esrgan_sr, safmn_sr, nafnet_denoise, scunet_denoise,
+  instructir, adair. All env-configurable. Small images bypass tiling.
 
 #### P2 — Moderate improvements
 
@@ -525,9 +568,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   ocr_detect, surya_det, layout_detect. Eliminates ~1-3ms malloc/free
   overhead per call; significant for small/fast models (DBNet 12M, PARSeq 24M).
 
-- [ ] **internvl2: native GQA in flash_attn** — currently `ggml_repeat` tiles
-  KV heads before passing to flash_attn (lines 909-919). Modern
-  `ggml_flash_attn_ext` supports GQA natively — pass K/V directly.
+- [x] **Native GQA in flash_attn (all VLMs)** — DONE. Removed `ggml_repeat`
+  KV head expansion before `flash_attn_ext` in internvl2 (`7cffe56`),
+  lightonocr, got_ocr, glm_ocr (`fbae7ba`). flash_attn handles GQA via
+  broadcast factors (rk2 = neq2/nek2). -76 lines total.
 
 - [ ] **internvl2: batch vision tiles** — `encode_vision()` (line 1200-1226)
   processes tiles one at a time with separate graph allocations per tile.
@@ -564,19 +608,19 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **mel.cpp: OpenMP on STFT loop** — each frame's FFT is independent
   (line 73-84). `#pragma omp parallel for` on the `t` loop.
 
-- [ ] **mel.cpp: SIMD/BLAS for mel projection** — naive triple-loop matmul
-  (T*128*201 ≈ 38M scalar MACs). BLAS or SIMD inner loop.
+- [x] **mel.cpp: SIMD for mel projection** — DONE. Float MelsFreqs layout uses
+  `core_cpu::dot_product()` (AVX2+FMA/NEON). Double-precision path kept scalar.
 
-- [ ] **gguf_loader: `madvise(MADV_SEQUENTIAL)`** after mmap (line 217) for
-  better kernel readahead on cold model loads.
+- [x] **gguf_loader: `madvise(MADV_SEQUENTIAL)`** — already done (line 244).
+  Also has MADV_WILLNEED (line 247).
 
-- [x] **gguf_loader: `std::unordered_map` for tensor lookup** — DONE (`f98358e`).
-  Changed WeightLoad::tensors and all 13 model struct fields from std::map
-  (O(log N)) to std::unordered_map (O(1) average). Also updated CrispASR's
-  audio_tower.cpp and lid_cld3.cpp for the same.
+- [x] **gguf_loader: `std::unordered_map` for tensor lookup** — DONE
+  (`0777f30`, `f98358e`). Replaced std::map with std::unordered_map in
+  WeightLoad and all model files; try_get/require moved to concrete .cpp
+  functions. O(1) avg lookups.
 
-- [ ] **instructir: SCA weight dequant inside per-channel loop** — lines
-  162-163 re-dequant entire weight matrix C times. Hoist outside the loop.
+- [x] **instructir: SCA weight dequant inside per-channel loop** — DONE
+  (`06b3190`). Hoisted sca_w/sca_b dequant outside per-channel loop.
 
 - [x] **Otsu threshold: extract shared utility** — Added
   `core_cpu::otsu_threshold()` to `cpu_ops.h`. Replaced duplicated
@@ -587,28 +631,25 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `scan_cleanup`, `face_align` all accept `n_threads` but run single-threaded
   pixel loops.
 
-- [ ] **pcs: cache FC weights at load** — weight dequant via
-  `ggml_backend_tensor_get` every inference call (lines 508-519, 557-568).
+- [x] **pcs: cache FC weights at load** — DONE. All 17 FC head tensors cached
+  in `fc_cache` struct at init. No per-call `ggml_backend_tensor_get`.
 
-- [ ] **restormer: dead `rst_gdfn()` stub** — lines 262-280 are a stub with
-  all `(void)` casts. Remove dead code.
-
-- [ ] **restormer: `rst_layernorm_bf` computes variance twice** — first
-  sum-of-squares pass (lines 100-104) is dead work; only the mean-subtracted
-  pass (lines 108-114) is used.
+- [x] **restormer: dead `rst_gdfn()` stub** — DONE (`06b3190`). Removed.
+- [x] **restormer: `rst_layernorm_bf` computes variance twice** — DONE
+  (`06b3190`). Removed dead first-pass sum-of-squares.
 
 #### P3 — Nice-to-have / minor
 
-- [ ] **bpe.h: priority queue for BPE merges** — O(N^2) in symbol count due
-  to `vector::erase` from middle. Priority queue → O(N log N).
-
-- [ ] **tokenizer_bpe.cpp: same O(N^2) merge issue** as bpe.h.
+- [x] **bpe.h: priority queue for BPE merges** — DONE (`eae73de`).
+  Linked list + min-heap, O(N log N). Both bpe.h and tokenizer_bpe.cpp.
+- [x] **tokenizer_bpe.cpp: same O(N^2) merge issue** — DONE (`eae73de`).
 
 - [ ] **tokenizer.cpp: trie for WordPiece** — currently linear scan for longest
   match. Trie would be O(len).
 
-- [ ] **cpu_ops.h: `layernorm2d_cpu` cache-hostile access** — iterates (y,x,c)
-  but accesses stride-H*W across channels. NHWC layout or transpose first.
+- [x] **cpu_ops.h: `layernorm2d_cpu` cache-hostile access** — already fixed
+  (gather-norm-scatter with contiguous buf). Now uses thread-local buf
+  to eliminate per-call heap alloc (`113202d`).
 
 - [x] **vlm_attention.h: pre-allocate scores vector outside head loop** —
   DONE (`9172ba1`). Thread-local buffer replaces per-head std::vector.
@@ -623,8 +664,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   (math_ocr, mixtex, ppformulanet, ppformulanet_l) and several others
   (got_ocr, surya_det, parseq_ocr) use nearest-neighbor. Quality issue.
 
-- [ ] **bttr beam search: top-K selection** — O(V * beam_width) candidates
-  created then sorted. Use partial_sort or nth_element for top-K.
+- [x] **bttr beam search: top-K selection** — DONE (`113202d`).
+  Replaced std::sort with std::partial_sort for O(N·log(K)) top-K.
 
 - [x] **bttr_ocr decoder alloc hoist + SIMD attention** — DONE (`4febeb6`).
   Pre-allocated scratch buffers, core_cpu::dot_product in MHA, pre-alloc KV cache.
@@ -660,15 +701,14 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **hmer coverage conv per step** — conv2d(256, 256, 3x3) per decoder
   step is the attention mechanism. Expensive but architecturally required.
 
-- [ ] **ppformulanet_l: ggml context reuse across layers** — new 8MB
-  context allocated and freed for each of 12 layers. Reuse single buffer.
+- [x] **ppformulanet_l: ggml meta buffer reuse across layers** — DONE
+  (`b7bc237`). Hoisted 8MB meta_buf before 12-layer loop.
 
-- [ ] **math_ocr: global dequant cache → per-context** — global static
-  `unordered_map` at line 455 is thread-unsafe. Move to per-context.
+- [x] **math_ocr: global dequant cache → per-context** — already done.
+  Uses `core_cpu::DequantCache dcache` per-context (line 93).
 
-- [ ] **Remove dead scalar fallback encoder in ppformulanet_l** — lines
-  716-962 (~250 lines) are kept for debugging but never used in production.
-  Guard with `#ifdef DEBUG`.
+- [x] **Remove dead scalar fallback encoder in ppformulanet_l** — DONE
+  (`c7bd92c`). Removed 370 lines of unused scalar encoder code.
 
 ---
 
@@ -710,11 +750,27 @@ single-threaded, must not OOM.
 ### glm_ocr (CogVLM2 + GLM-4, 0.9B) — DONE
 - [x] Downsample + merger → ggml graph (conv2d_direct + batched SwiGLU + LayerNorm)
   Gated: CRISPEMBED_GLM_OCR_SCALAR_MERGER=1. Merger: 383ms on q4_k.
-### granite_vision — PENDING
-### smoldocling — PENDING
-### internvl2 — PENDING
-### SR/denoise — PENDING
-### Embedding — PENDING
+### granite_vision — PENDING (LLM decoder ggml graph not yet validated)
+
+### smoldocling (SigLIP + SmolLM2, 256M) — IN PROGRESS
+- [x] F16 KV cache + batched prefill (done earlier, `bc329e4`)
+- [x] Patch embedding → ggml matmul (im2col + mul_mat, F16 bias cast)
+  Gated: CRISPEMBED_SMOLDOCLING_SCALAR_PATCH=1
+- [ ] LLM decoder → ggml graphs (currently CPU scalar via core_vlm, 30 layers)
+### internvl2 — DONE (already optimized)
+  F16 KV cache, flash attn, ggml patch embed, ggml vision graph — all done.
+  Remaining: native GQA in flash_attn (skip ggml_repeat), batch vision tiles.
+### SR/denoise — DONE (SIMD + batched linear)
+- [x] dat_sr: `linear_batch_cpu` + SIMD `linear_cpu`, batch QKV/proj/FFN (`a71c123`)
+- [x] swinir_sr: batch per-token linear + SIMD dot product (`dcf6556`)
+- [x] hat_sr: SIMD dot product in SA/OCA + SIMD channel attention (`b199741`)
+- [x] scunet_denoise: batch QKV/proj via `linear_batch_cpu` + SIMD dot (`52250ef`)
+- [x] mixtex_ocr: SIMD dot product in Swin attention (`816a88a`)
+- [x] instructir: SCA dequant hoist (`06b3190`)
+- [x] restormer: dead code removal + variance fix (`06b3190`)
+
+### Embedding — DONE (flash attention)
+- [x] decoder_embed: `ggml_flash_attn_ext` in single-text + batch paths (`29d8a08`)
 
 ---
 
