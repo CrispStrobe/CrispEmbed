@@ -220,21 +220,8 @@ static ggml_tensor* g_mha(ggml_context* g, ggml_tensor* Q, ggml_tensor* K, ggml_
     Q = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, Q, hd, n_heads, T), 0, 2, 1, 3));
     K = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, K, hd, n_heads, T), 0, 2, 1, 3));
     V = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, V, hd, n_heads, T), 0, 2, 1, 3));
-    // scores = Q^T @ K / sqrt(hd) → [T, T, nh]
-    ggml_tensor* scores = ggml_mul_mat(g, K, Q);
-    scores = ggml_scale(g, scores, 1.0f / sqrtf((float)hd));
-    scores = ggml_soft_max(g, scores);
-    // attn = V @ scores^T → we need [hd, T, nh]
-    // V is [hd, T, nh], scores is [T, T, nh]
-    // We want: for each head, output[d, qi] = Σ_ki scores[ki, qi] * V[d, ki]
-    // That's V @ scores^T per head = ggml_mul_mat(V_transposed, scores)
-    // But simpler: transpose scores → [T, T, nh], then ggml_mul_mat(V, scores_t) doesn't work.
-    // Use the flash_attn pattern: scores @ V → need V as [hd, T, nh]
-    // ggml_mul_mat(a, b) computes b @ a^T. We want scores @ V.
-    // So: ggml_mul_mat(V_transposed, scores) where V_transposed is [T, hd, nh]
-    ggml_tensor* Vt = ggml_cont(g, ggml_transpose(g, V)); // [T, hd, nh]
-    ggml_tensor* attn = ggml_mul_mat(g, Vt, scores);       // [hd, T, nh]
-    // → [hd, nh, T] → [H, T]
+    ggml_tensor* attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
+    // Output: [hd, T, nh] → [hd, nh, T] → [H, T]
     attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
     return ggml_reshape_2d(g, attn, H, T);
 }
@@ -253,29 +240,9 @@ static ggml_tensor* g_mha_1q(ggml_context* g, ggml_tensor* Q, ggml_tensor* K, gg
     // V: [H, n_kv] → [hd, nh, n_kv] → permute → [hd, n_kv, nh]
     V = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, V, hd, n_heads, n_kv), 0, 2, 1, 3));
 
-    // scores = K^T @ Q / sqrt(hd) → [n_kv, 1, nh]
-    // ggml_mul_mat(a, b) = b @ a^T, so ggml_mul_mat(K, Q) = Q^T @ K → wrong shape
-    // We want each head: score[k] = Σ_d Q[d] * K[d, k] = dot(Q, K[:, k])
-    // ggml_mul_mat(K, Q): K is [hd, n_kv, nh], Q is [hd, 1, nh]
-    //   → result is [n_kv, 1, nh] (for each head: Q^T @ K → [1, n_kv]^T = [n_kv, 1])
-    ggml_tensor* scores = ggml_mul_mat(g, K, Q);
-    scores = ggml_scale(g, scores, 1.0f / sqrtf((float)hd));
-    scores = ggml_soft_max(g, scores);
-
-    // attn = scores @ V: for each head, out[d] = Σ_k scores[k] * V[d, k]
-    // V is [hd, n_kv, nh], scores is [n_kv, 1, nh]
-    // ggml_mul_mat(Vt, scores) where Vt = V^T → [n_kv, hd, nh]
-    // → Vt^T @ scores^T → doesn't work directly.
-    // Use: ggml_mul_mat(V_transposed, scores):
-    //   V^T is [n_kv, hd, nh], scores is [n_kv, 1, nh]
-    //   result = scores^T @ V^T^T = scores^T @ V, but ggml_mul_mat(a, b) = b @ a^T
-    //   so ggml_mul_mat([n_kv, hd, nh], [n_kv, 1, nh]) = [1, nh] @ [hd, n_kv]^T ... no
-    // Let's use the same pattern as g_mha:
-    ggml_tensor* Vt = ggml_cont(g, ggml_transpose(g, V)); // [n_kv, hd, nh]
-    ggml_tensor* attn = ggml_mul_mat(g, Vt, scores);       // [hd, 1, nh]
-
-    // → [hd, nh, 1] → [H, 1]
-    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+    // flash_attn_ext: Q [hd,1,nh], K [hd,n_kv,nh], V [hd,n_kv,nh] → output [hd,1,nh]
+    ggml_tensor* attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
+    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3)); // [hd, nh, 1]
     return ggml_reshape_2d(g, attn, H, 1);
 }
 
