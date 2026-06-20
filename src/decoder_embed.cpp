@@ -1477,21 +1477,15 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
                            head_dim, rope_mode, 0,
                            layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-        // Manual attention with mask (no ggml_diag_mask_inf — we use explicit mask)
-        Q = ggml_cont(gctx, ggml_permute(gctx, Q, 0, 2, 1, 3));
-        K = ggml_cont(gctx, ggml_permute(gctx, K, 0, 2, 1, 3));
-        V = ggml_cont(gctx, ggml_permute(gctx, V, 0, 2, 1, 3));
-
+        // flash_attn_ext: GQA-native, O(T) memory vs O(T²) scores.
         float scale = (m.attn_scale > 0.0f)
                         ? (1.0f / sqrtf(m.attn_scale))
                         : (1.0f / sqrtf((float)head_dim));
-        ggml_tensor * scores = ggml_mul_mat(gctx, K, Q);
-        // Fused scale + mask + softmax (mask is F16, halves memory)
-        scores = ggml_soft_max_ext(gctx, scores, attn_mask, scale, 0.0f);
-
-        ggml_tensor * V_perm = ggml_cont(gctx, ggml_permute(gctx, V, 1, 0, 2, 3));
-        ggml_tensor * attn = ggml_mul_mat(gctx, V_perm, scores);
-        attn = ggml_cont(gctx, ggml_permute(gctx, attn, 0, 2, 1, 3));
+        Q = ggml_cont(gctx, ggml_permute(gctx, Q, 0, 2, 1, 3));  // [hd, T, nh]
+        K = ggml_cont(gctx, ggml_permute(gctx, K, 0, 2, 1, 3));  // [hd, T, nkv]
+        V = ggml_cont(gctx, ggml_permute(gctx, V, 0, 2, 1, 3));  // [hd, T, nkv]
+        ggml_tensor * attn = ggml_flash_attn_ext(gctx, Q, K, V, attn_mask, scale, 0.0f, 0.0f);
+        attn = ggml_cont(gctx, ggml_permute(gctx, attn, 0, 2, 1, 3));  // [hd, nh, T]
         attn = ggml_reshape_2d(gctx, attn, q_dim, T_total);
 
         attn = ggml_mul_mat(gctx, L.o_w, attn);
