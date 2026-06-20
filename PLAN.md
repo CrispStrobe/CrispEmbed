@@ -496,7 +496,7 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   - `hmer_ocr` DenseNet encoder: **DONE** (`273969d`). ggml graph, 3x speedup.
   - `bttr_ocr` / `posformer_ocr` DenseNet encoders: **DONE** (`7c6d8e1`). ~2x speedup.
   - `mixtex_ocr` Swin encoder: pending (12500-token window attention).
-  - `ppformulanet_ocr` HGNetv2 CNN: pending (57M-param at 384x384).
+  - `ppformulanet_ocr` HGNetv2 CNN: **DONE** (`c058099`). ggml conv2d graph, 12x speedup.
 
 - [x] **Patch embedding conv → ggml matmul** — Most VLM runtimes now use ggml
   graph (internvl2, granite, smoldocling, qwen2vl) or im2col+matmul (got,
@@ -568,9 +568,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   dominates at ~700ms for the 350M Q8_0 model. Architecturally aligns LFM2
   with the rest of the codebase and enables future GPU dispatch.
 
-- [x] **Graph caching** — parseq_ocr encoder graph now built once and reused
-  across calls (`c171c14`). Eliminates per-call ggml_init + 12-layer tensor
-  creation + graph build. Remaining runtimes: TrOCR (variable-length decoder),
+- [x] **Graph caching** — parseq_ocr encoder graph built once and reused
+  across calls (`c171c14`); math_ocr DeiT encoder graph cached per unique
+  token-count T (`31e0c0e`). Eliminates per-call ggml_init + tensor creation +
+  graph build. Remaining runtimes: TrOCR (variable-length decoder),
   VLMs (variable token counts).
 
 - [x] **`ggml_gallocr` reuse** — moved gallocr from per-call to per-context
