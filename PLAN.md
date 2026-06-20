@@ -390,6 +390,19 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   ggml_rope_ext NEOX + F16 KV cache + ggml_flash_attn_ext + SwiGLU FFN,
   scaled residuals). LM head stays CPU (linear_cpu, SIMD). Scalar fallback
   preserved in `gv_llm_decode_step` (used by dump_llm parity).
+  - **Crash fix (`feat/granite-vision-ne-fix`)**: the projector + LLM graphs
+    aborted on `GGML_ASSERT(ggml_can_mul_mat)` — the converter stores 2D
+    weights in PyTorch `[out,in]` order, so non-square weights need a
+    `ggml_reshape_2d(w, ne[1], ne[0])` before `ggml_mul_mat` (the vision FFN
+    already did this). Applied to projector linear_1 and LLM k/v/gate/up/down.
+  - **ggml LLM decode is NOT yet validated**: it runs but produces wrong
+    tokens (decode runs away to max_tokens). Gated behind
+    `CRISPEMBED_GRANITE_LLM_GRAPH=1`; default is the diff-validated scalar
+    decode (`gv_llm_decode_step`, crispembed-diff cos=1.0). Vision + projector
+    ggml graphs are correct and stay on Metal.
+  - **Memory**: the scalar fallback's DequantCache materializes ~9 GB of F32
+    weights (swaps on a 16 GB machine). Q4_K vec_dot would keep it bounded
+    (~2 GB); see `tools/dump_granite_llm_reference.py` for the parity harness.
 
 - [x] **Batched prefill for granite** — DONE (`66b8de2`). All prompt tokens
   (vision + text, 759 total) assembled into one buffer and passed to
