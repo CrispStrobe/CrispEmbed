@@ -587,6 +587,106 @@ static std::vector<float> decoder_step_scalar(math_ocr_context* ctx,
 }
 
 // ---------------------------------------------------------------------------
+// Beam search decoder (scalar — reuses decoder_step_scalar per beam)
+// ---------------------------------------------------------------------------
+
+struct MathOcrBeam {
+    std::vector<int> tokens;
+    float score;
+    int prev_token;
+    bool finished;
+    std::vector<std::vector<float>> kv_k;
+    std::vector<std::vector<float>> kv_v;
+};
+
+static std::vector<int> run_decoder_beam_scalar(math_ocr_context* ctx, int beam_width) {
+    const auto& hp = ctx->hparams;
+    const int V = hp.vocab_size;
+    const int n_dec = hp.dec_layers;
+    const int max_steps = std::min(hp.max_seq_len, 200);
+
+    ctx->ds.allocated = false;
+    ensure_dec_scratch(ctx, hp.max_seq_len);
+
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, 1);
+
+    std::vector<MathOcrBeam> beams(1);
+    beams[0].score = 0.0f;
+    beams[0].prev_token = hp.decoder_start_token;
+    beams[0].finished = false;
+    beams[0].kv_k.resize(n_dec);
+    beams[0].kv_v.resize(n_dec);
+
+    std::vector<MathOcrBeam> completed;
+
+    for (int step = 0; step < max_steps; step++) {
+        struct Cand { int bi; int tok; float score; };
+        std::vector<Cand> cands;
+
+        for (int bi = 0; bi < (int)beams.size(); bi++) {
+            if (beams[bi].finished) continue;
+            auto logits = decoder_step_scalar(ctx, beams[bi].prev_token, step,
+                                              beams[bi].kv_k, beams[bi].kv_v);
+            float max_l = *std::max_element(logits.begin(), logits.end());
+            float sum_e = 0.0f;
+            for (int v = 0; v < V; v++) { logits[v] = expf(logits[v] - max_l); sum_e += logits[v]; }
+            float log_sum = logf(sum_e) + max_l;
+            for (int v = 0; v < V; v++) {
+                float log_p = logits[v] > 0 ? logf(logits[v]) + max_l - log_sum : -100.0f;
+                cands.push_back({bi, v, beams[bi].score + log_p});
+            }
+        }
+
+        if (cands.empty()) break;
+
+        int keep = std::min(beam_width, (int)cands.size());
+        std::partial_sort(cands.begin(), cands.begin() + keep, cands.end(),
+                          [](const Cand& a, const Cand& b) { return a.score > b.score; });
+
+        std::vector<MathOcrBeam> new_beams;
+        new_beams.reserve(keep);
+        for (int i = 0; i < keep; i++) {
+            const auto& c = cands[i];
+            MathOcrBeam nb;
+            nb.tokens   = beams[c.bi].tokens;
+            nb.kv_k     = beams[c.bi].kv_k;
+            nb.kv_v     = beams[c.bi].kv_v;
+            nb.score    = c.score;
+            if (c.tok == hp.eos_token || c.tok == hp.pad_token) {
+                nb.finished = true;
+                nb.prev_token = c.tok;
+                float len = (float)nb.tokens.size();
+                nb.score /= len > 0 ? len : 1.0f;
+                completed.push_back(std::move(nb));
+            } else {
+                nb.tokens.push_back(c.tok);
+                nb.prev_token = c.tok;
+                nb.finished = false;
+                new_beams.push_back(std::move(nb));
+            }
+        }
+
+        beams = std::move(new_beams);
+        if (beams.empty()) break;
+    }
+
+    for (auto& b : beams) {
+        float len = (float)b.tokens.size();
+        b.score /= len > 0 ? len : 1.0f;
+        completed.push_back(std::move(b));
+    }
+
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+
+    if (completed.empty()) return {};
+    auto best = std::max_element(completed.begin(), completed.end(),
+                                  [](const MathOcrBeam& a, const MathOcrBeam& b) { return a.score < b.score; });
+    return best->tokens;
+}
+
+// ---------------------------------------------------------------------------
 // Graph-based decoder (one step at a time, with external KV cache)
 // ---------------------------------------------------------------------------
 
@@ -1230,6 +1330,122 @@ const char* math_ocr_recognize_raw(math_ocr_context* ctx, const uint8_t* bytes,
         else { int b = i * ch; gray[i] = (0.299f*bytes[b] + 0.587f*bytes[b+1] + 0.114f*bytes[b+2]) / 255.0f; }
     }
     return math_ocr_recognize(ctx, gray.data(), w, h, out_len);
+}
+
+const char* math_ocr_recognize_beam(math_ocr_context* ctx, const float* pixels,
+                                     int width, int height,
+                                     int beam_width, int* out_len) {
+    if (!ctx || !pixels) return nullptr;
+    if (beam_width <= 1)
+        return math_ocr_recognize(ctx, pixels, width, height, out_len);
+
+    const int S = ctx->hparams.image_size;
+
+    // Preprocess: resize + gray→3ch + normalize (mean=0.5, std=0.5)
+    std::vector<float> rgb(3 * S * S);
+    float fsx = (float)width / S, fsy = (float)height / S;
+    for (int y = 0; y < S; y++) {
+        float fy = y * fsy;
+        int y0 = (int)fy, y1 = std::min(y0 + 1, height - 1);
+        float wy = fy - y0;
+        for (int x = 0; x < S; x++) {
+            float fx = x * fsx;
+            int x0 = (int)fx, x1 = std::min(x0 + 1, width - 1);
+            float wx = fx - x0;
+            float v = (1 - wy) * ((1 - wx) * pixels[y0*width+x0] + wx * pixels[y0*width+x1])
+                    +      wy  * ((1 - wx) * pixels[y1*width+x0] + wx * pixels[y1*width+x1]);
+            v = (v - 0.5f) / 0.5f;
+            rgb[0*S*S + y*S + x] = rgb[1*S*S + y*S + x] = rgb[2*S*S + y*S + x] = v;
+        }
+    }
+
+    run_encoder(ctx, rgb.data(), S, S);
+
+    // Precompute cross-attention K/V
+    {
+        const int n_enc = ctx->n_enc_tokens;
+        const int D = ctx->hparams.dec_d_model;
+        const int E = ctx->hparams.enc_hidden;
+        const int n_dec = ctx->hparams.dec_layers;
+        ctx->cross_k_cache.resize(n_dec);
+        ctx->cross_v_cache.resize(n_dec);
+        size_t meta_sz = 64 * 1024 * 1024;
+        std::vector<uint8_t> meta(meta_sz);
+        ggml_init_params ip = { meta_sz, meta.data(), true };
+        ggml_context* g = ggml_init(ip);
+        ggml_cgraph* gf = ggml_new_graph_custom(g, n_dec * 6 + 16, false);
+        ggml_tensor* enc_inp = ggml_new_tensor_2d(g, GGML_TYPE_F32, E, n_enc);
+        ggml_set_name(enc_inp, "enc_for_cross"); ggml_set_input(enc_inp);
+        std::vector<ggml_tensor*> k_outs(n_dec), v_outs(n_dec);
+        for (int li = 0; li < n_dec; li++) {
+            const auto& l = ctx->dec_layers[li];
+            char name[64];
+            ggml_tensor* k = ggml_mul_mat(g, l.cross_k_w, enc_inp);
+            if (l.cross_k_b) k = ggml_add(g, k, ensure_f32(g, l.cross_k_b));
+            snprintf(name, sizeof(name), "cross_k_%d", li); ggml_set_name(k, name); ggml_set_output(k);
+            ggml_tensor* v = ggml_mul_mat(g, l.cross_v_w, enc_inp);
+            if (l.cross_v_b) v = ggml_add(g, v, ensure_f32(g, l.cross_v_b));
+            snprintf(name, sizeof(name), "cross_v_%d", li); ggml_set_name(v, name); ggml_set_output(v);
+            k_outs[li] = k; v_outs[li] = v;
+            ggml_build_forward_expand(gf, k); ggml_build_forward_expand(gf, v);
+        }
+        ggml_backend_sched_reset(ctx->sched);
+        if (ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
+            ggml_tensor* inp_t = ggml_graph_get_tensor(gf, "enc_for_cross");
+            if (inp_t) ggml_backend_tensor_set(inp_t, ctx->enc_out.data(), 0, n_enc * E * sizeof(float));
+            ggml_backend_sched_graph_compute(ctx->sched, gf);
+            for (int li = 0; li < n_dec; li++) {
+                ctx->cross_k_cache[li].resize(n_enc * D);
+                ctx->cross_v_cache[li].resize(n_enc * D);
+                char name[64];
+                snprintf(name, sizeof(name), "cross_k_%d", li);
+                ggml_tensor* kt = ggml_graph_get_tensor(gf, name);
+                if (kt) ggml_backend_tensor_get(kt, ctx->cross_k_cache[li].data(), 0, n_enc * D * sizeof(float));
+                snprintf(name, sizeof(name), "cross_v_%d", li);
+                ggml_tensor* vt = ggml_graph_get_tensor(gf, name);
+                if (vt) ggml_backend_tensor_get(vt, ctx->cross_v_cache[li].data(), 0, n_enc * D * sizeof(float));
+            }
+        }
+        ggml_free(g);
+    }
+
+    std::vector<int> tokens = run_decoder_beam_scalar(ctx, beam_width);
+
+    ctx->result_buf.clear();
+    for (size_t i = 1; i < tokens.size(); i++) {
+        int tok = tokens[i];
+        if (tok >= 0 && tok < (int)ctx->vocab.size()) {
+            const auto& piece = ctx->vocab[tok];
+            for (size_t j = 0; j < piece.size(); ) {
+                if (j + 2 < piece.size() &&
+                    (uint8_t)piece[j] == 0xE2 && (uint8_t)piece[j+1] == 0x96 && (uint8_t)piece[j+2] == 0x81) {
+                    ctx->result_buf += ' '; j += 3;
+                } else if (j + 1 < piece.size() &&
+                           (uint8_t)piece[j] == 0xC4 && (uint8_t)piece[j+1] == 0xA0) {
+                    ctx->result_buf += ' '; j += 2;
+                } else { ctx->result_buf += piece[j]; j++; }
+            }
+        }
+    }
+    while (!ctx->result_buf.empty() && ctx->result_buf.front() == ' ')
+        ctx->result_buf.erase(ctx->result_buf.begin());
+    while (!ctx->result_buf.empty() && ctx->result_buf.back() == ' ')
+        ctx->result_buf.pop_back();
+
+    if (out_len) *out_len = (int)ctx->result_buf.size();
+    return ctx->result_buf.c_str();
+}
+
+const char* math_ocr_recognize_raw_beam(math_ocr_context* ctx, const uint8_t* bytes,
+                                          int w, int h, int ch,
+                                          int beam_width, int* out_len) {
+    if (!ctx || !bytes) return nullptr;
+    std::vector<float> gray(w * h);
+    for (int i = 0; i < w * h; i++) {
+        if (ch == 1) gray[i] = bytes[i] / 255.0f;
+        else { int b = i * ch; gray[i] = (0.299f*bytes[b] + 0.587f*bytes[b+1] + 0.114f*bytes[b+2]) / 255.0f; }
+    }
+    return math_ocr_recognize_beam(ctx, gray.data(), w, h, beam_width, out_len);
 }
 
 const float * math_ocr_confidences(const math_ocr_context * ctx, int * n_chars) {
