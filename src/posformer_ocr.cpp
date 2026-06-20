@@ -115,6 +115,18 @@ struct posformer_ocr_context {
     int n_enc_pos;
     int enc_h, enc_w;  // spatial dims of encoder output (needed for ARM)
 
+    // Pre-allocated decoder scratch (avoids per-step/per-layer heap allocs)
+    struct dec_scratch {
+        std::vector<float> x, qkv, attn_out, sa_proj;
+        std::vector<float> cq, ca_out, ca_proj;
+        std::vector<float> ffn_up, ffn_down;
+        std::vector<float> scores;
+        std::vector<float> logits;
+        std::vector<float> raw_scores, cov_bias;
+        std::vector<float> prev_layer_ca_weights;
+        bool allocated = false;
+    } ds;
+
     bool bench;
 };
 
@@ -557,6 +569,36 @@ static void compute_arm(posformer_ocr_context * ctx,
 }
 
 // ---------------------------------------------------------------------------
+// Allocate decoder scratch buffers (once, reused across all decode steps)
+// ---------------------------------------------------------------------------
+
+static void ensure_dec_scratch(posformer_ocr_context * ctx, int max_seq) {
+    if (ctx->ds.allocated) return;
+    const int D = ctx->hparams.d_model;
+    const int F = ctx->hparams.dim_feedforward;
+    const int V = ctx->hparams.vocab_size;
+    const int nhead = ctx->hparams.nhead;
+    const int n_enc = ctx->n_enc_pos;
+    int max_kv = std::max(max_seq, n_enc);
+
+    ctx->ds.x.resize(D);
+    ctx->ds.qkv.resize(3 * D);
+    ctx->ds.attn_out.resize(D);
+    ctx->ds.sa_proj.resize(D);
+    ctx->ds.cq.resize(D);
+    ctx->ds.ca_out.resize(D);
+    ctx->ds.ca_proj.resize(D);
+    ctx->ds.ffn_up.resize(F);
+    ctx->ds.ffn_down.resize(D);
+    ctx->ds.scores.resize(max_kv);
+    ctx->ds.logits.resize(V);
+    ctx->ds.raw_scores.resize(nhead * n_enc);
+    ctx->ds.cov_bias.resize(nhead * n_enc);
+    ctx->ds.prev_layer_ca_weights.resize(nhead * n_enc);
+    ctx->ds.allocated = true;
+}
+
+// ---------------------------------------------------------------------------
 // Transformer decoder with ARM (greedy, incremental)
 // ---------------------------------------------------------------------------
 
@@ -570,9 +612,18 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
     const int head_dim = D / nhead;
     const float scale = 1.0f / sqrtf((float)head_dim);
 
-    // KV caches for self-attention
+    // Pre-allocate scratch buffers
+    ctx->ds.allocated = false;
+    ensure_dec_scratch(ctx, hp.max_len);
+    auto & ds = ctx->ds;
+
+    // KV caches for self-attention (pre-allocated)
     std::vector<std::vector<float>> kv_k(hp.num_decoder_layers);
     std::vector<std::vector<float>> kv_v(hp.num_decoder_layers);
+    for (int li = 0; li < hp.num_decoder_layers; li++) {
+        kv_k[li].resize(hp.max_len * D);
+        kv_v[li].resize(hp.max_len * D);
+    }
 
     // Precompute cross-attention K/V from encoder output
     std::vector<std::vector<float>> ca_ck(hp.num_decoder_layers);
@@ -595,11 +646,8 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
         }
     }
 
-    // ARM coverage accumulators.
-    // ARM is applied between layers: layer 1 gets coverage from layer 0,
-    // layer 2 gets coverage from layer 1. That's 2 ARM invocations.
-    // Each accumulator is [2*nhead, n_enc] = [16, n_enc].
-    const int n_arm = hp.num_decoder_layers - 1;  // 2
+    // ARM coverage accumulators
+    const int n_arm = hp.num_decoder_layers - 1;
     std::vector<std::vector<float>> arm_accum(n_arm);
     for (int i = 0; i < n_arm; i++)
         arm_accum[i].assign(2 * nhead * n_enc, 0.0f);
@@ -609,178 +657,166 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
 
     for (int step = 0; step < hp.max_len; step++) {
         // Token embedding + LayerNorm
-        std::vector<float> x(D);
+        memset(ds.x.data(), 0, D * sizeof(float));
         if (ctx->word_embed_w && prev_token >= 0 && prev_token < V) {
             const float * emb = tf32(ctx, ctx->word_embed_w);
-            memcpy(x.data(), emb + prev_token * D, D * sizeof(float));
+            memcpy(ds.x.data(), emb + prev_token * D, D * sizeof(float));
         }
-        layernorm(x.data(), D,
+        layernorm(ds.x.data(), D,
                   tf32(ctx, ctx->word_embed_ln_w),
                   tf32(ctx, ctx->word_embed_ln_b));
 
         if (ctx->pos_enc && step < 500) {
             const float * pe = tf32(ctx, ctx->pos_enc);
-            for (int i = 0; i < D; i++) x[i] += pe[step * D + i];
+            for (int i = 0; i < D; i++) ds.x[i] += pe[step * D + i];
         }
 
-        // Cross-attention weights from previous layer (for ARM)
-        std::vector<float> prev_layer_ca_weights(nhead * n_enc);
+        memset(ds.prev_layer_ca_weights.data(), 0, nhead * n_enc * sizeof(float));
 
         for (int li = 0; li < hp.num_decoder_layers; li++) {
             const auto & l = ctx->dec_layers[li];
 
             // --- Self-attention ---
-            std::vector<float> qkv(3 * D);
-            linear(x.data(), D, tf32(ctx, l.sa_qkv_w), tf32(ctx, l.sa_qkv_b),
-                   3 * D, qkv.data());
-            float * q = qkv.data(), * k = qkv.data() + D, * v = qkv.data() + 2*D;
+            linear(ds.x.data(), D, tf32(ctx, l.sa_qkv_w), tf32(ctx, l.sa_qkv_b),
+                   3 * D, ds.qkv.data());
+            float * q = ds.qkv.data(), * k = ds.qkv.data() + D, * v = ds.qkv.data() + 2*D;
 
-            kv_k[li].insert(kv_k[li].end(), k, k + D);
-            kv_v[li].insert(kv_v[li].end(), v, v + D);
+            memcpy(&kv_k[li][step * D], k, D * sizeof(float));
+            memcpy(&kv_v[li][step * D], v, D * sizeof(float));
             int n_past = step + 1;
 
-            std::vector<float> attn_out(D, 0.0f);
+            memset(ds.attn_out.data(), 0, D * sizeof(float));
             for (int h = 0; h < nhead; h++) {
-                std::vector<float> scores(n_past);
+                int off = h * head_dim;
                 float max_s = -1e9f;
                 for (int ki = 0; ki < n_past; ki++) {
-                    float dot = 0;
-                    for (int d = 0; d < head_dim; d++)
-                        dot += q[h*head_dim+d] * kv_k[li][ki*D+h*head_dim+d];
-                    scores[ki] = dot * scale;
-                    if (scores[ki] > max_s) max_s = scores[ki];
+                    ds.scores[ki] = core_cpu::dot_product(
+                        q + off, &kv_k[li][ki * D + off], head_dim) * scale;
+                    if (ds.scores[ki] > max_s) max_s = ds.scores[ki];
                 }
                 float sum_exp = 0;
-                for (auto & s : scores) { s = expf(s - max_s); sum_exp += s; }
-                for (auto & s : scores) s /= sum_exp;
+                for (int ki = 0; ki < n_past; ki++) {
+                    ds.scores[ki] = expf(ds.scores[ki] - max_s);
+                    sum_exp += ds.scores[ki];
+                }
+                float inv = 1.0f / sum_exp;
+                for (int ki = 0; ki < n_past; ki++) ds.scores[ki] *= inv;
                 for (int d = 0; d < head_dim; d++) {
                     float s = 0;
                     for (int ki = 0; ki < n_past; ki++)
-                        s += scores[ki] * kv_v[li][ki*D+h*head_dim+d];
-                    attn_out[h*head_dim+d] = s;
+                        s += ds.scores[ki] * kv_v[li][ki*D + off + d];
+                    ds.attn_out[off + d] = s;
                 }
             }
-            std::vector<float> sa_proj(D);
-            linear(attn_out.data(), D, tf32(ctx, l.sa_out_w),
-                   tf32(ctx, l.sa_out_b), D, sa_proj.data());
-            for (int i = 0; i < D; i++) x[i] += sa_proj[i];
-            layernorm(x.data(), D, tf32(ctx, l.ln1_w), tf32(ctx, l.ln1_b));
+            linear(ds.attn_out.data(), D, tf32(ctx, l.sa_out_w),
+                   tf32(ctx, l.sa_out_b), D, ds.sa_proj.data());
+            for (int i = 0; i < D; i++) ds.x[i] += ds.sa_proj[i];
+            layernorm(ds.x.data(), D, tf32(ctx, l.ln1_w), tf32(ctx, l.ln1_b));
 
             // --- Cross-attention (with ARM for layers > 0) ---
             {
                 const float * ca_W = tf32(ctx, l.ca_qkv_w);
                 const float * ca_B = tf32(ctx, l.ca_qkv_b);
-                std::vector<float> cq(D);
-                linear(x.data(), D, ca_W, ca_B, D, cq.data());
+                linear(ds.x.data(), D, ca_W, ca_B, D, ds.cq.data());
 
                 const float * ck = ca_ck[li].data();
                 const float * cv = ca_cv[li].data();
 
-                // Compute raw attention scores
-                std::vector<float> raw_scores(nhead * n_enc);
+                // Compute raw attention scores with SIMD dot product
                 for (int h = 0; h < nhead; h++) {
+                    int off = h * head_dim;
                     float max_s = -1e9f;
                     for (int ki = 0; ki < n_enc; ki++) {
-                        float dot = 0;
-                        for (int d = 0; d < head_dim; d++)
-                            dot += cq[h*head_dim+d] * ck[ki*D+h*head_dim+d];
-                        raw_scores[h*n_enc+ki] = dot * scale;
-                        if (raw_scores[h*n_enc+ki] > max_s)
-                            max_s = raw_scores[h*n_enc+ki];
+                        ds.raw_scores[h*n_enc+ki] = core_cpu::dot_product(
+                            ds.cq.data() + off, &ck[ki*D + off], head_dim) * scale;
+                        if (ds.raw_scores[h*n_enc+ki] > max_s)
+                            max_s = ds.raw_scores[h*n_enc+ki];
                     }
-                    // First softmax to get initial attention weights
                     float sum_exp = 0;
                     for (int ki = 0; ki < n_enc; ki++) {
-                        raw_scores[h*n_enc+ki] = expf(raw_scores[h*n_enc+ki] - max_s);
-                        sum_exp += raw_scores[h*n_enc+ki];
+                        ds.raw_scores[h*n_enc+ki] = expf(ds.raw_scores[h*n_enc+ki] - max_s);
+                        sum_exp += ds.raw_scores[h*n_enc+ki];
                     }
+                    float inv = 1.0f / sum_exp;
                     for (int ki = 0; ki < n_enc; ki++)
-                        raw_scores[h*n_enc+ki] /= sum_exp;
+                        ds.raw_scores[h*n_enc+ki] *= inv;
                 }
 
-                // curr_attn = raw_scores after first softmax (for ARM input)
-                // These are the "initial attention weights" before ARM refinement.
-
                 if (li > 0) {
-                    // Apply ARM: compute coverage bias and subtract from logits
-                    std::vector<float> cov_bias(nhead * n_enc);
+                    // Apply ARM
                     compute_arm(ctx, arm_accum[li - 1].data(),
-                                prev_layer_ca_weights.data(),
-                                raw_scores.data(),
-                                prev_token, cov_bias.data());
+                                ds.prev_layer_ca_weights.data(),
+                                ds.raw_scores.data(),
+                                prev_token, ds.cov_bias.data());
 
-                    // Recompute attention: subtract coverage bias from raw logits, re-softmax
-                    // We need the raw logits (pre-softmax). Recompute them.
+                    // Recompute attention with coverage bias
                     for (int h = 0; h < nhead; h++) {
+                        int off = h * head_dim;
                         float max_s = -1e9f;
                         for (int ki = 0; ki < n_enc; ki++) {
-                            float dot = 0;
-                            for (int d = 0; d < head_dim; d++)
-                                dot += cq[h*head_dim+d] * ck[ki*D+h*head_dim+d];
-                            float logit = dot * scale - cov_bias[h*n_enc+ki];
-                            raw_scores[h*n_enc+ki] = logit;
+                            float logit = core_cpu::dot_product(
+                                ds.cq.data() + off, &ck[ki*D + off], head_dim) * scale
+                                - ds.cov_bias[h*n_enc+ki];
+                            ds.raw_scores[h*n_enc+ki] = logit;
                             if (logit > max_s) max_s = logit;
                         }
                         float sum_exp = 0;
                         for (int ki = 0; ki < n_enc; ki++) {
-                            raw_scores[h*n_enc+ki] = expf(raw_scores[h*n_enc+ki] - max_s);
-                            sum_exp += raw_scores[h*n_enc+ki];
+                            ds.raw_scores[h*n_enc+ki] = expf(ds.raw_scores[h*n_enc+ki] - max_s);
+                            sum_exp += ds.raw_scores[h*n_enc+ki];
                         }
+                        float inv = 1.0f / sum_exp;
                         for (int ki = 0; ki < n_enc; ki++)
-                            raw_scores[h*n_enc+ki] /= sum_exp;
+                            ds.raw_scores[h*n_enc+ki] *= inv;
                     }
                 }
 
-                // Save this layer's attention weights for next layer's ARM
-                memcpy(prev_layer_ca_weights.data(), raw_scores.data(),
+                // Save for next layer's ARM
+                memcpy(ds.prev_layer_ca_weights.data(), ds.raw_scores.data(),
                        nhead * n_enc * sizeof(float));
 
                 // Weighted sum of values
-                std::vector<float> ca_out(D, 0.0f);
+                memset(ds.ca_out.data(), 0, D * sizeof(float));
                 for (int h = 0; h < nhead; h++)
                     for (int d = 0; d < head_dim; d++) {
                         float s = 0;
                         for (int ki = 0; ki < n_enc; ki++)
-                            s += raw_scores[h*n_enc+ki] * cv[ki*D+h*head_dim+d];
-                        ca_out[h*head_dim+d] = s;
+                            s += ds.raw_scores[h*n_enc+ki] * cv[ki*D+h*head_dim+d];
+                        ds.ca_out[h*head_dim+d] = s;
                     }
 
-                std::vector<float> ca_proj(D);
-                linear(ca_out.data(), D, tf32(ctx, l.ca_out_w),
-                       tf32(ctx, l.ca_out_b), D, ca_proj.data());
-                for (int i = 0; i < D; i++) x[i] += ca_proj[i];
-                layernorm(x.data(), D, tf32(ctx, l.ln2_w), tf32(ctx, l.ln2_b));
+                linear(ds.ca_out.data(), D, tf32(ctx, l.ca_out_w),
+                       tf32(ctx, l.ca_out_b), D, ds.ca_proj.data());
+                for (int i = 0; i < D; i++) ds.x[i] += ds.ca_proj[i];
+                layernorm(ds.x.data(), D, tf32(ctx, l.ln2_w), tf32(ctx, l.ln2_b));
             }
 
             // --- FFN ---
             {
                 const int F = hp.dim_feedforward;
-                std::vector<float> up(F);
-                linear(x.data(), D, tf32(ctx, l.ff_up_w),
-                       tf32(ctx, l.ff_up_b), F, up.data());
-                relu_ip(up.data(), F);
-                std::vector<float> down(D);
-                linear(up.data(), F, tf32(ctx, l.ff_down_w),
-                       tf32(ctx, l.ff_down_b), D, down.data());
-                for (int i = 0; i < D; i++) x[i] += down[i];
-                layernorm(x.data(), D, tf32(ctx, l.ln3_w), tf32(ctx, l.ln3_b));
+                linear(ds.x.data(), D, tf32(ctx, l.ff_up_w),
+                       tf32(ctx, l.ff_up_b), F, ds.ffn_up.data());
+                relu_ip(ds.ffn_up.data(), F);
+                linear(ds.ffn_up.data(), F, tf32(ctx, l.ff_down_w),
+                       tf32(ctx, l.ff_down_b), D, ds.ffn_down.data());
+                for (int i = 0; i < D; i++) ds.x[i] += ds.ffn_down[i];
+                layernorm(ds.x.data(), D, tf32(ctx, l.ln3_w), tf32(ctx, l.ln3_b));
             }
         }
 
         // Output projection
-        std::vector<float> logits(V);
-        linear(x.data(), D, tf32(ctx, ctx->proj_w), tf32(ctx, ctx->proj_b),
-               V, logits.data());
+        linear(ds.x.data(), D, tf32(ctx, ctx->proj_w), tf32(ctx, ctx->proj_b),
+               V, ds.logits.data());
 
         int best = 0;
-        float best_score = logits[0];
+        float best_score = ds.logits[0];
         for (int v = 1; v < V; v++)
-            if (logits[v] > best_score) { best_score = logits[v]; best = v; }
+            if (ds.logits[v] > best_score) { best_score = ds.logits[v]; best = v; }
 
         // Debug: dump top-5 logits
         {
             std::vector<std::pair<float,int>> scored(V);
-            for (int v = 0; v < V; v++) scored[v] = {logits[v], v};
+            for (int v = 0; v < V; v++) scored[v] = {ds.logits[v], v};
             std::sort(scored.begin(), scored.end(), [](auto &a, auto &b){ return a.first > b.first; });
             fprintf(stderr, "  step %d: token=%d '%s' | top5:", step, best,
                     best < (int)ctx->vocab.size() ? ctx->vocab[best].c_str() : "?");
@@ -790,25 +826,22 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
                         scored[i].first);
             fprintf(stderr, "\n");
 
-            // Dump logits to file if env POSFORMER_DUMP is set
             const char * dump_dir = getenv("POSFORMER_DUMP");
             if (dump_dir) {
                 char path[256];
                 snprintf(path, sizeof(path), "%s/cpp_step%03d_logits.f32", dump_dir, step);
                 FILE * f = fopen(path, "wb");
-                if (f) { fwrite(logits.data(), sizeof(float), V, f); fclose(f); }
+                if (f) { fwrite(ds.logits.data(), sizeof(float), V, f); fclose(f); }
             }
         }
 
         if (best == hp.eos_token || best == hp.pad_token) break;
 
-        // Confidence: softmax of winning token
+        // Confidence
         {
-            float max_l = logits[0];
-            for (int v = 1; v < V; v++) if (logits[v] > max_l) max_l = logits[v];
             float sum_e = 0;
-            for (int v = 0; v < V; v++) sum_e += expf(logits[v] - max_l);
-            ctx->char_confidences.push_back(expf(logits[best] - max_l) / sum_e);
+            for (int v = 0; v < V; v++) sum_e += expf(ds.logits[v] - best_score);
+            ctx->char_confidences.push_back(1.0f / sum_e);
         }
         tokens.push_back(best);
         prev_token = best;
