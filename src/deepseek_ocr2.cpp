@@ -1547,30 +1547,14 @@ static PdGraph build_persistent_decode_graph(ds_ocr2_ctx &ctx, int max_kv) {
         ggml_tensor* vp    = ggml_reshape_3d(g, pd.t_v_cache[li], hd, nkv, max_kv_in);
         ggml_tensor* Vfull = ggml_concat(g, vp, Vc, 2);
 
-        // GQA expand (for this model nh==nkv so the block is skipped)
-        int kv_repeat = nh / nkv;
-        if (kv_repeat > 1) {
-            Kfull = ggml_reshape_4d(g, Kfull, hd, 1, nkv, max_kv);
-            Kfull = ggml_reshape_3d(g, ggml_repeat(g, Kfull,
-                        ggml_new_tensor_4d(g, Kfull->type, hd, kv_repeat, nkv, max_kv)),
-                        hd, nh, max_kv);
-            Vfull = ggml_reshape_4d(g, Vfull, hd, 1, nkv, max_kv);
-            Vfull = ggml_reshape_3d(g, ggml_repeat(g, Vfull,
-                        ggml_new_tensor_4d(g, Vfull->type, hd, kv_repeat, nkv, max_kv)),
-                        hd, nh, max_kv);
-        }
-
-        // Attention
+        // flash_attn_ext handles GQA natively (Q.ne[2] % K.ne[2] == 0)
         Q     = ggml_cont(g, ggml_permute(g, Q,     0, 2, 1, 3));  // [hd, 1,      nh]
-        Kfull = ggml_cont(g, ggml_permute(g, Kfull, 0, 2, 1, 3));  // [hd, max_kv, nh]
-        Vfull = ggml_cont(g, ggml_permute(g, Vfull, 0, 2, 1, 3));
+        Kfull = ggml_cont(g, ggml_permute(g, Kfull, 0, 2, 1, 3));  // [hd, max_kv, nkv]
+        Vfull = ggml_cont(g, ggml_permute(g, Vfull, 0, 2, 1, 3));  // [hd, max_kv, nkv]
 
-        ggml_tensor* scores = ggml_mul_mat(g, Kfull, Q);  // [max_kv, nh, 1]
-        scores = ggml_soft_max_ext(g, scores, pd.t_mask, 1.0f / sqrtf((float)hd), 0.0f);
-
-        ggml_tensor* Vt   = ggml_cont(g, ggml_permute(g, Vfull, 1, 0, 2, 3));
-        ggml_tensor* attn = ggml_mul_mat(g, Vt, scores);
-        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        ggml_tensor* attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull,
+                                                 pd.t_mask, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
+        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));  // [hd, nh, 1]
         attn = ggml_reshape_2d(g, attn, D, 1);
         attn = ggml_mul_mat(g, ly.o_w, attn);
         x = ggml_add(g, x, attn);
@@ -1716,36 +1700,17 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx &ctx, int li, int T, int 
         Vfull = Vc;
     }
 
-    // GQA repeat if needed
-    int kv_repeat = nh / nkv;
-    if (kv_repeat > 1) {
-        Kfull = ggml_reshape_4d(g, Kfull, hd, 1, nkv, Lk);
-        ggml_tensor *K_tgt = ggml_new_tensor_4d(g, Kfull->type, hd, kv_repeat, nkv, Lk);
-        Kfull = ggml_repeat(g, Kfull, K_tgt);
-        Kfull = ggml_reshape_3d(g, Kfull, hd, nh, Lk);
+    // flash_attn_ext handles GQA natively; causal mask is F16 [Lk, T]
+    Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));      // [hd, T,  nh]
+    Kfull = ggml_cont(g, ggml_permute(g, Kfull, 0, 2, 1, 3));  // [hd, Lk, nkv]
+    Vfull = ggml_cont(g, ggml_permute(g, Vfull, 0, 2, 1, 3));  // [hd, Lk, nkv]
 
-        Vfull = ggml_reshape_4d(g, Vfull, hd, 1, nkv, Lk);
-        ggml_tensor *V_tgt = ggml_new_tensor_4d(g, Vfull->type, hd, kv_repeat, nkv, Lk);
-        Vfull = ggml_repeat(g, Vfull, V_tgt);
-        Vfull = ggml_reshape_3d(g, Vfull, hd, nh, Lk);
-    }
-
-    // Attention
-    Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));  // [hd, T, nh]
-    Kfull = ggml_cont(g, ggml_permute(g, Kfull, 0, 2, 1, 3));
-    Vfull = ggml_cont(g, ggml_permute(g, Vfull, 0, 2, 1, 3));
-
-    // Causal mask
     ggml_tensor *mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, Lk, T);
     ggml_set_name(mask, "mask"); ggml_set_input(mask);
 
-    ggml_tensor *scores = ggml_mul_mat(g, Kfull, Q);
     float attn_scale = 1.0f / sqrtf((float)hd);
-    scores = ggml_soft_max_ext(g, scores, mask, attn_scale, 0.0f);
-
-    ggml_tensor *Vt = ggml_cont(g, ggml_permute(g, Vfull, 1, 0, 2, 3));
-    ggml_tensor *attn = ggml_mul_mat(g, Vt, scores);
-    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+    ggml_tensor *attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, mask, attn_scale, 0.0f, 0.0f);
+    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));  // [hd, nh, T]
     attn = ggml_reshape_2d(g, attn, D, T);
 
     attn = ggml_mul_mat(g, ly.o_w, attn);
