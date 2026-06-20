@@ -528,10 +528,11 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `scan_cleanup.cpp` with monotonic deque sliding window — O(1) amortized per
   pixel. For K=51 this is ~50x fewer comparisons.
 
-- [x] **Weight dequant caching in SR runtimes** — Migrated 7 Pattern-A runtimes
-  (hat_sr, swinir_sr, pan_sr, text_sr, nafnet_denoise, restormer, tbsrn_sr)
-  from `wbufs` append to `core_cpu::DequantCache`. 4 Pattern-B runtimes
-  (instructir, adair, esrgan, safmn) use inline dequant — separate TODO.
+- [x] **Weight dequant caching in SR runtimes** — ALL DONE. Pattern-A (7 runtimes:
+  hat_sr, swinir_sr, pan_sr, text_sr, nafnet_denoise, restormer, tbsrn_sr)
+  migrated from `wbufs` to `core_cpu::DequantCache`. Pattern-B (instructir,
+  adair) now use persistent `DequantCache` on context as well (`0c87d93`).
+  esrgan and safmn already cache via their ggml graph (no scalar path).
 
 - [x] **Migrate duplicated helpers to `core/cpu_ops.h`** — bttr_ocr, hmer_ocr,
   posformer_ocr: replaced duplicated conv2d/relu/layernorm/linear with
