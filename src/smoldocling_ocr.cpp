@@ -787,6 +787,7 @@ static bool sd_run_llm_body(smoldocling_context *ctx,
     ggml_set_input(causal_mask);
 
     auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor * {
+        if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
         return ggml_mul(g, ggml_rms_norm(g, t, eps), w);
     };
 

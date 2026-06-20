@@ -1,5 +1,64 @@
 # CrispEmbed — Technical Learnings
 
+## SIMD dot_product as the universal optimization lever (2026-06)
+
+A single `dot_product()` function with AVX2+FMA/NEON in `core/cpu_ops.h`
+accelerated 30+ runtimes because every CPU-side matmul, attention dot
+product, and LSTM gate computation reduces to the same inner loop:
+`sum += a[i] * b[i]`. By making `linear_cpu` and `mha_1q_cpu` delegate
+to `dot_product()`, all existing callers got SIMD for free without any
+per-engine changes. Key pattern: dual-accumulator unroll (16-wide) with
+single-accumulator cleanup (8-wide) plus scalar tail — handles any
+dimension without alignment requirements.
+
+## DequantCache: init-time vs per-call weight dequantization (2026-06)
+
+The biggest single performance win across the codebase was caching
+dequantized weights. The anti-pattern: `to_f32(tensor)` returns a new
+`std::vector<float>` each call, so a 30-layer decoder running 512 steps
+re-dequantizes the same immutable weights `30 * 4 * 512 = 61K` times.
+The fix: `DequantCache` struct with `unordered_map<void*, vector<float>>`
+keyed on `tensor->data`. First call dequantizes; subsequent calls return
+the cached pointer. Thread-safety: one cache per inference context (not
+global static — that was the math_ocr bug).
+
+## Thread-local buffers eliminate per-call allocations in shared primitives (2026-06)
+
+Hot-path functions like `mha_1q_cpu`, `swiglu_ffn`, and `layernorm2d_cpu` were
+allocating `std::vector<float>` on every call (per head, per position, per step).
+`thread_local std::vector<float>` with lazy resize eliminates all heap allocation
+after the first call while remaining thread-safe. Pattern: check `size() < N`,
+resize if needed, use `.data()`. The buffer persists across calls on the same
+thread. For callers with pre-existing scratch buffers, offer an optional
+`float* scores_buf = nullptr` parameter so they can pass their own.
+
+## BPE merge: linked list + priority queue for O(N log N) (2026-06)
+
+The standard BPE merge loop finds the lowest-rank adjacent pair, merges it,
+and repeats. Naive implementation: O(N) scan per iteration × O(N) erase = O(N²).
+Fix: doubly-linked list of symbol nodes + min-heap of `(rank, left_node_id)`.
+Pop the best pair, merge left←right, requeue affected neighbors. Stale entries
+(where the pair text no longer matches the rank) are filtered on pop by
+re-checking the merge table. Total: O(N log N). Applied to both `bpe.h`
+(used by lightonocr, granite_speech) and `tokenizer_bpe.cpp` (all BPE models).
+
+## T5 attention uses scale=1.0 (no 1/sqrt(d)) (2026-06)
+
+Unlike standard Transformer attention where `scores = QK^T / sqrt(d_k)`,
+T5 uses raw dot products with scale=1.0. When using `ggml_flash_attn_ext`,
+pass `scale=1.0f` explicitly. The relative position bias is added as a mask
+tensor. In the pix2struct encoder, there's no relative bias (positions come
+from row/col embeddings) — pass `nullptr` mask + `scale=1.0f`.
+
+## Hann-window tiling for SR/restoration models (2026-06)
+
+All SR/denoise models can process arbitrary image sizes via overlapping
+tiles with raised-cosine blending. Key formula for the blend weight at
+each pixel: `w = hann_y * hann_x` where `hann(p) = 0.5 - 0.5*cos(pi*p/overlap)`
+in the overlap zone, 1.0 elsewhere. Accumulate weighted outputs + weight
+map, divide at the end. Tile size must be aligned to the model's
+downsample factor (e.g. 16 for a 4-stage U-Net with 2x per stage).
+
 ## Per-engine confidence: softmax without modifying logits (2026-06)
 
 When adding per-token confidence to all 15 OCR engines, the key insight:
