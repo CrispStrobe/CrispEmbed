@@ -399,12 +399,13 @@ void free_weights(WeightLoad& wl) {
 // Tensor lookup helpers
 // ---------------------------------------------------------------------------
 
-ggml_tensor* try_get(const std::unordered_map<std::string, ggml_tensor*>& tensors, const char* name) {
+// Signatures use `core_gguf::tensor_map` (see gguf_loader.h cross-repo contract).
+ggml_tensor* try_get(const tensor_map& tensors, const char* name) {
     auto it = tensors.find(name);
     return it != tensors.end() ? it->second : nullptr;
 }
 
-ggml_tensor* require(const std::unordered_map<std::string, ggml_tensor*>& tensors, const char* name, const char* model_tag) {
+ggml_tensor* require(const tensor_map& tensors, const char* name, const char* model_tag) {
     auto it = tensors.find(name);
     if (it == tensors.end()) {
         fprintf(stderr, "%s: required tensor '%s' not found in GGUF\n", model_tag ? model_tag : "core_gguf", name);
