@@ -644,6 +644,43 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 
 ---
 
+## Per-Backend Performance Optimization (Q4_K, A/B benchmarked)
+
+Systematic per-backend optimization pass. Every change is A/B benchmarked
+using `CRISPEMBED_<MODULE>_BENCH=1` on Q4_K models. Constraint: 8GB VPS,
+single-threaded, must not OOM.
+
+### lightonocr (Pixtral ViT 24L + Qwen3 28L, 1B) — IN PROGRESS
+
+**Baseline** (400×100 image, 240 patches, q4_k, CPU 4-thread):
+  vision=64.5s, projection=0.2s, prefill=36.4s, decode(6tok)=123.6s, total=245.2s
+
+**Done:**
+- [x] Flash attention default — 1.5x vision, 1.4x prefill
+- [x] Direct embed lookup (no ggml graph per token) — eliminates per-step overhead
+
+**After optimizations**: total=205.9s (1.19x). Per-step decode ~18-20s.
+
+**Remaining:**
+- [ ] **F16 ggml KV cache** — internvl2 pattern: persistent F16 backend tensors,
+      `ggml_view_4d` + `ggml_cpy` writes, zero CPU↔backend transfer per step.
+      Currently F32 std::vector re-uploaded via `ggml_backend_tensor_set` every step.
+- [ ] **Decode graph reuse** — graph structure identical across steps if KV cache
+      is fixed-size. Build once, reuse, only update inputs.
+- [ ] **Patch embedding → ggml matmul** — scalar 6-deep nested conv loops.
+
+### qwen2vl — PENDING
+### deepseek_ocr2 — PENDING
+### got_ocr — PENDING
+### glm_ocr — PENDING
+### granite_vision — PENDING
+### smoldocling — PENDING
+### internvl2 — PENDING
+### SR/denoise — PENDING
+### Embedding — PENDING
+
+---
+
 ## Implementation blueprints
 
 Detailed specs for pending roadmap items. Each blueprint is self-contained
