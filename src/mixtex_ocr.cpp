@@ -254,6 +254,11 @@ struct mixtex_ocr_context {
     std::vector<std::vector<float>> kv_cache_k; // [layer][step * D]
     std::vector<std::vector<float>> kv_cache_v;
 
+    // ggml batched-matmul infrastructure for encoder
+    ggml_backend_t       enc_backend  = nullptr;
+    ggml_backend_sched_t enc_sched    = nullptr;
+    std::vector<uint8_t> enc_meta;
+
     bool bench = false;
 };
 
@@ -421,12 +426,22 @@ mixtex_ocr_context * mixtex_ocr_init(const char * model_path, int n_threads) {
 
     ctx->bench = (std::getenv("CRISPEMBED_MIXTEX_BENCH") != nullptr);
 
+    // ggml encoder batched-matmul infrastructure
+    ctx->enc_backend = ggml_backend_cpu_init();
+    if (ctx->enc_backend) {
+        ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads);
+        ggml_backend_t backends[] = { ctx->enc_backend };
+        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+    }
+
     fprintf(stderr, "mixtex_ocr: loaded %s\n", model_path);
     return ctx;
 }
 
 void mixtex_ocr_free(mixtex_ocr_context * ctx) {
     if (!ctx) return;
+    if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+    if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
     core_gguf::free_weights(ctx->wl);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     delete ctx;
@@ -437,7 +452,124 @@ const mixtex_ocr_hparams * mixtex_ocr_get_hparams(const mixtex_ocr_context * ctx
 }
 
 // ---------------------------------------------------------------------------
-// Swin encoder forward pass
+// Batched linear via ggml — replaces per-token linear_cpu loops
+// ---------------------------------------------------------------------------
+
+// Batched: output[N, out_D] = input[N, in_D] @ weight^T + bias
+// Uses a tiny ggml graph with ggml_mul_mat for AVX-512 acceleration.
+static void batch_linear(mixtex_ocr_context * ctx,
+                          const float * input, int N, int in_D,
+                          ggml_tensor * weight, ggml_tensor * bias, int out_D,
+                          float * output) {
+    if (!ctx->enc_sched) {
+        // fallback: per-row scalar
+        auto wf = to_f32(weight);
+        auto bf = bias ? to_f32(bias) : std::vector<float>();
+        for (int i = 0; i < N; i++)
+            linear_cpu(input + i * in_D, output + i * out_D, in_D, out_D,
+                       wf.data(), bf.empty() ? nullptr : bf.data());
+        return;
+    }
+    int max_nodes = 32;
+    size_t buf_size = ggml_tensor_overhead() * max_nodes
+                    + ggml_graph_overhead_custom(max_nodes, false);
+    ctx->enc_meta.resize(std::max(ctx->enc_meta.size(), buf_size));
+    ggml_init_params ip = { buf_size, ctx->enc_meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+
+    ggml_tensor * x = ggml_new_tensor_2d(g, GGML_TYPE_F32, in_D, N);
+    ggml_set_name(x, "x");
+    ggml_set_input(x);
+
+    ggml_tensor * w = weight;
+    ggml_tensor * out = ggml_mul_mat(g, w, x); // [out_D, N]
+    if (bias) {
+        // Broadcast bias across N: create [out_D, N] input for add
+        ggml_tensor * b_input = ggml_new_tensor_2d(g, GGML_TYPE_F32, out_D, N);
+        ggml_set_name(b_input, "b");
+        ggml_set_input(b_input);
+        out = ggml_add(g, out, b_input);
+    }
+    ggml_set_name(out, "out");
+    ggml_set_output(out);
+    ggml_build_forward_expand(gf, out);
+
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "mixtex: batch_linear alloc failed\n");
+        return;
+    }
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), input, 0,
+                             N * in_D * sizeof(float));
+    if (bias) {
+        // Fill bias buffer: repeat bias vector N times
+        auto bv = to_f32(bias);
+        std::vector<float> b_data(N * out_D);
+        for (int i = 0; i < N; i++)
+            memcpy(b_data.data() + i * out_D, bv.data(), out_D * sizeof(float));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "b"), b_data.data(), 0,
+                                 N * out_D * sizeof(float));
+    }
+
+    for (int i = 0; i < ggml_backend_sched_get_n_backends(ctx->enc_sched); i++) {
+        ggml_backend_t be = ggml_backend_sched_get_backend(ctx->enc_sched, i);
+        ggml_backend_dev_t dev = ggml_backend_get_device(be);
+        ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
+        if (reg) {
+            auto * fn = (ggml_backend_set_n_threads_t)
+                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            if (fn) fn(be, ctx->n_threads);
+        }
+    }
+    ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), output, 0,
+                             N * out_D * sizeof(float));
+}
+
+// Batched LayerNorm via ggml: [N, D] → [N, D]
+static void batch_layernorm(mixtex_ocr_context * ctx,
+                             const float * input, int N, int D,
+                             ggml_tensor * w_t, ggml_tensor * b_t,
+                             float * output) {
+    if (!ctx->enc_sched) {
+        auto wf = to_f32(w_t), bf = to_f32(b_t);
+        for (int i = 0; i < N; i++)
+            layernorm_cpu(input + i * D, output + i * D, D,
+                          wf.data(), bf.data(), 1e-5f);
+        return;
+    }
+    int max_nodes = 32;
+    size_t buf_size = ggml_tensor_overhead() * max_nodes
+                    + ggml_graph_overhead_custom(max_nodes, false);
+    ctx->enc_meta.resize(std::max(ctx->enc_meta.size(), buf_size));
+    ggml_init_params ip = { buf_size, ctx->enc_meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+
+    ggml_tensor * x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, N);
+    ggml_set_name(x, "x");
+    ggml_set_input(x);
+    ggml_tensor * norm = ggml_norm(g, x, 1e-5f);
+    ggml_tensor * w = (w_t->type != GGML_TYPE_F32) ? ggml_cast(g, w_t, GGML_TYPE_F32) : w_t;
+    ggml_tensor * b = (b_t->type != GGML_TYPE_F32) ? ggml_cast(g, b_t, GGML_TYPE_F32) : b_t;
+    norm = ggml_mul(g, norm, w);
+    norm = ggml_add(g, norm, b);
+    ggml_set_name(norm, "out");
+    ggml_set_output(norm);
+    ggml_build_forward_expand(gf, norm);
+
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) return;
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), input, 0,
+                             N * D * sizeof(float));
+    ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), output, 0,
+                             N * D * sizeof(float));
+}
+
+// ---------------------------------------------------------------------------
+// Swin encoder forward pass (scalar fallback)
 // ---------------------------------------------------------------------------
 static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                                             const float* pixels_chw,
@@ -477,12 +609,9 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
         }
     }
 
-    // LayerNorm after patch embedding
-    auto pn_w = to_f32(ctx->patch_norm_w);
-    auto pn_b = to_f32(ctx->patch_norm_b);
-    for (int i = 0; i < N; i++)
-        layernorm_cpu(patches.data() + i * D, patches.data() + i * D,
-                      D, pn_w.data(), pn_b.data(), 1e-5f);
+    // LayerNorm after patch embedding (batched via ggml)
+    batch_layernorm(ctx, patches.data(), N, D,
+                    ctx->patch_norm_w, ctx->patch_norm_b, patches.data());
 
     if (ctx->dump) dump_stats("enc_embed", patches.data(), N * D);
 
@@ -508,12 +637,10 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             auto& blk = ctx->stage_blocks[stage][bi];
             int HW = H * W;
 
-            // Pre-attention LayerNorm
+            // Pre-attention LayerNorm (batched via ggml)
             std::vector<float> normed(HW * D);
-            auto ln1_w = to_f32(blk.ln1_w), ln1_b = to_f32(blk.ln1_b);
-            for (int i = 0; i < HW; i++)
-                layernorm_cpu(x.data() + i * D, normed.data() + i * D,
-                              D, ln1_w.data(), ln1_b.data(), 1e-5f);
+            batch_layernorm(ctx, x.data(), HW, D,
+                            blk.ln1_w, blk.ln1_b, normed.data());
 
             // Diff: compare LN1 output
             if (has_diff && stage == 0) {
@@ -692,19 +819,21 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             }
 
             // FFN: LN → up → GELU → down → residual
-            auto ln2_w = to_f32(blk.ln2_w), ln2_b = to_f32(blk.ln2_b);
-            auto up_w = to_f32(blk.ffn_up_w), up_b = to_f32(blk.ffn_up_b);
-            auto down_w = to_f32(blk.ffn_down_w), down_b = to_f32(blk.ffn_down_b);
             int ffn_dim = (int)blk.ffn_up_w->ne[1]; // output dim of up proj
 
-            for (int i = 0; i < HW; i++) {
-                std::vector<float> ln(D), up(ffn_dim), down(D);
-                layernorm_cpu(x.data() + i * D, ln.data(), D, ln2_w.data(), ln2_b.data(), 1e-5f);
-                linear_cpu(ln.data(), up.data(), D, ffn_dim, up_w.data(), up_b.data());
-                for (int j = 0; j < ffn_dim; j++) up[j] = gelu_erf(up[j]);
-                linear_cpu(up.data(), down.data(), ffn_dim, D, down_w.data(), down_b.data());
-                for (int d = 0; d < D; d++) x[i * D + d] += down[d];
-            }
+            // FFN: LN → up → GELU → down → residual (batched via ggml)
+            std::vector<float> ln_out(HW * D);
+            batch_layernorm(ctx, x.data(), HW, D, blk.ln2_w, blk.ln2_b, ln_out.data());
+
+            std::vector<float> up(HW * ffn_dim);
+            batch_linear(ctx, ln_out.data(), HW, D, blk.ffn_up_w, blk.ffn_up_b, ffn_dim, up.data());
+
+            for (int j = 0; j < HW * ffn_dim; j++) up[j] = gelu_erf(up[j]);
+
+            std::vector<float> down(HW * D);
+            batch_linear(ctx, up.data(), HW, ffn_dim, blk.ffn_down_w, blk.ffn_down_b, D, down.data());
+
+            for (int i = 0; i < HW * D; i++) x[i] += down[i];
 
             // Diff after full block (attention + FFN)
             if (has_diff && stage == 0) {
@@ -761,16 +890,14 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                 }
             }
 
-            // LayerNorm on 4*D
-            for (int i = 0; i < newN; i++)
-                layernorm_cpu(merged.data() + i * 4 * D, merged.data() + i * 4 * D,
-                              4 * D, norm_w.data(), norm_b.data(), 1e-5f);
+            // LayerNorm on 4*D (batched via ggml)
+            batch_layernorm(ctx, merged.data(), newN, 4 * D,
+                            ds.norm_w, ds.norm_b, merged.data());
 
-            // Linear reduction: [newN, 4*D] → [newN, 2*D]
+            // Linear reduction: [newN, 4*D] → [newN, 2*D] (batched via ggml)
             std::vector<float> reduced(newN * new_D);
-            for (int i = 0; i < newN; i++)
-                linear_cpu(merged.data() + i * 4 * D, reduced.data() + i * new_D,
-                           4 * D, new_D, red_w.data(), nullptr);
+            batch_linear(ctx, merged.data(), newN, 4 * D,
+                          ds.reduction_w, nullptr, new_D, reduced.data());
 
             x = std::move(reduced);
             H = newH; W = newW; D = new_D;
@@ -788,11 +915,9 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
 
     // Final LayerNorm
     if (ctx->enc_final_norm_w) {
-        auto fn_w = to_f32(ctx->enc_final_norm_w);
-        auto fn_b = to_f32(ctx->enc_final_norm_b);
         int N_out = H * W;
-        for (int i = 0; i < N_out; i++)
-            layernorm_cpu(x.data() + i * D, x.data() + i * D, D, fn_w.data(), fn_b.data(), 1e-5f);
+        batch_layernorm(ctx, x.data(), N_out, D,
+                        ctx->enc_final_norm_w, ctx->enc_final_norm_b, x.data());
     }
 
     // Diff: per-stage encoder output
