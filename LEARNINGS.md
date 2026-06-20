@@ -2249,3 +2249,59 @@ Key findings:
 
 The `estimate_dpi()` heuristic assumes longer edge ≈ 11 inches (A4/letter).
 This is wrong for cropped regions but acceptable for full pages.
+
+## SigLIP ViT ggml graph: tensor layout and permute pattern
+
+SigLIP ViT (D=1152, n_heads=16, d_head=72, T=729 patches) ggml graph
+matches the pattern established in `bidirlm_vision.cpp` (Qwen2VL ViT).
+Key differences vs Qwen2VL:
+
+1. **No RoPE**: SigLIP uses absolute position embeddings added before
+   the transformer loop. No cos/sin tensors needed.
+
+2. **Separate Q, K, V projections**: bidirlm uses fused QKV; SigLIP
+   uses three independent `vis.layer.N.attn.{q,k,v}.weight` matrices.
+   Three `ggml_mul_mat` calls per layer instead of one.
+
+3. **GELU (tanh approx)** in FFN: `ggml_gelu`. Not `ggml_gelu_erf`.
+
+**Tensor shapes through the attention block:**
+- Input x: `[D, T]` ggml (ne[0]=D fast dim, ne[1]=T tokens)
+- After QKV mul_mat + bias: `[D, T]`
+- After `reshape_3d(Q, d_head, n_heads, T)`: `[d_head, n_heads, T]`
+- After `permute(0, 2, 1, 3)` + `cont`: `[d_head, T, n_heads]` contiguous
+- scores = `mul_mat(K, Q)`: K=[d_head,T,n_heads], Q=[d_head,T,n_heads]
+  → `[T_k, T_q, n_heads]`. `ggml_mul_mat(a,b)` computes b@a^T so
+  the inner dim (ne[0]) must match: both ne[0]=d_head ✓
+- After `soft_max_ext(scores, null, 1/sqrt(d_head), 0)`: same shape,
+  softmax over dim 0 (key axis) ✓
+- V_perm = `permute(V, 1, 0, 2, 3)` + `cont`: `[T, d_head, n_heads]`
+- attn = `mul_mat(V_perm, scores)`: [T,d_head,n_heads] × [T_k,T_q,n_heads]
+  → `[d_head, T_q, n_heads]`
+- After `permute(attn, 0, 2, 1, 3)` + `cont`: `[d_head, n_heads, T]`
+- After `reshape_2d(attn, D, T)`: `[D, T]` — per-token D-vector with
+  head-major interleaving: [h0_d0, h0_d1, ..., h1_d0, ...] ✓
+
+**ggml_norm broadcasting**: `ggml_norm(g, x, eps)` normalizes along ne[0].
+For x=[D,T], each of the T token vectors is independently normalized ✓.
+`ggml_mul(g, normed, w)` where w=[D] broadcasts over T via `ggml_can_repeat`
+(T % 1 == 0). No reshape needed for bias/scale vectors.
+
+**Feature extraction**: `ggml_set_output(ggml_cont(g, x))` at each
+`feature_layers[fi]` layer index. The ggml_cont ensures the feature tensor
+is a separate node (not an alias of x); the scheduler keeps its buffer live
+after the full graph runs. Four feature layers → four independent tensors
+read back via `ggml_backend_tensor_get` after compute.
+
+**compute_meta buffer**: Pre-allocated in `vis_compute_meta` (owned by
+`granite_vision_context`). Passed to `ggml_init({size, data, no_alloc=true})`.
+`ggml_free(g)` after compute frees only the `ggml_context` struct (small
+malloc), NOT the buffer itself — so the graph nodes in compute_meta stay
+valid while the scheduler holds the alloc. Buffer is overwritten on the
+next inference call (graph rebuilt from scratch each call). This avoids
+heap allocation per inference. Same pattern as `bidirlm_vision.cpp`.
+
+**Scalar fallback**: `gv_run_vit_graph` sets `feat_outs.assign(n_feat, {})`
+at entry. If the graph fails (alloc fails, compute fails, missing weights),
+it returns early with all feat_outs empty. The caller checks
+`n_feat > 0 && layer_outputs[0].empty()` to trigger the scalar path.
