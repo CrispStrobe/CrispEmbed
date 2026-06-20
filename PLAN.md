@@ -372,11 +372,13 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   Migrated: smoldocling_ocr (replaced wbufs), granite_vision_ocr (replaced
   wcache). Remaining runtimes still need migration.
 
-- [ ] **Adopt F16 ggml KV cache** — Port to: qwen2vl_ocr (F32 std::vector,
-  re-uploads entire cache each step), deepseek_ocr2 (same), lightonocr
-  (same + O(n^2) total transfer), smoldocling_ocr (F32 flat vector),
+- [ ] **Adopt F16 ggml KV cache** — Port to: deepseek_ocr2 (F32 std::vector),
+  lightonocr (F32 std::vector, O(n^2) total transfer),
   pix2struct (no KV cache at all).
   granite_vision_ocr: **DONE** (`66b8de2`).
+  smoldocling_ocr: **DONE** (`bc329e4`, branch `feat/smoldocling-kvcache-prefill`).
+  qwen2vl_ocr: **DONE** — already had F16 kvc; fixed CPU round-trip in seeding
+  (`48948a6`, branch `feat/qwen2vl-kvcache`).
 
 - [x] **Move granite_vision_ocr vision encoder to ggml graphs** — DONE
   (feat/granite-vision-ggml-graph). SigLIP ViT (27 layers, T=729,
@@ -393,7 +395,16 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   (vision + text, 759 total) assembled into one buffer and passed to
   `gv_run_llm_body` as a single T=759 call. Replaces 759 serial decode
   steps with 1 batched ggml graph invocation.
-  smoldocling: still scalar prefill (separate TODO).
+
+- [x] **F16 KV cache + batched prefill for smoldocling** — DONE (`bc329e4`,
+  branch `feat/smoldocling-kvcache-prefill`). SmolLM2-135M (30L, 576d, GQA
+  9/3). Batches entire prompt in one `sd_run_llm_body` call. Scalar fallback
+  via `sd_llm_decode_step` preserved. Uses CPU backend with Accelerate BLAS.
+
+- [x] **Eliminate CPU round-trips in qwen2vl KV seeding** — DONE (`48948a6`,
+  branch `feat/qwen2vl-kvcache`). Moved `alloc_kv_cache` before prefill;
+  `run_llm_forward(populate_kvc=true)` writes K/V directly into kvc via
+  `ggml_cpy` in the prefill graph (F32→F16 in graph, no CPU bounce).
 
 - [ ] **Move pix2struct to ggml graphs + add KV cache** — fully scalar, no ggml
   graphs, no KV cache, O(T^2) recompute per decode step. No cross-attention K/V
