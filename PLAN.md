@@ -486,13 +486,14 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   (lines 493-502) and got neck (lines 699-773) use scalar CPU for Conv+matmul
   projectors. Should be ggml graph ops.
 
-- [ ] **gliner_ner BiLSTM SIMD/BLAS** — lines 871-902 are fully scalar triple-
-  nested loops. 4*512*1024 + 4*512*512 ≈ 3M MACs per timestep. BLAS gemv or
-  even simple SIMD inner product would help significantly.
+- [x] **gliner_ner BiLSTM SIMD/BLAS** — already done via `core_cpu::linear_cpu`
+  (NEON/AVX2 GEMV) in lstm_forward_one_dir. Item was stale; covered by `53921c4`.
 
-- [ ] **LiteMLA graph implementation** — `surya_det.cpp` line 792 has TODO:
-  `g_litemla` returns nullptr, the graph-accelerated LiteMLA is stubbed out.
-  Currently falls back to CPU-scalar attention.
+- [x] **LiteMLA graph implementation** — `g_litemla` now a full ggml graph:
+  QKV conv → agg DW/PW conv → concat → reshape → Q/K/V views → ReLU → batched
+  mul_mat KTV → sum_rows K_sum → mul_mat out_unnorm → mul_mat norm → clamp+repeat+div
+  → permute → proj conv. Phase 2 of `run_forward_graph` extended to include all 6
+  EfficientViT blocks in one ggml graph (no scalar fallback). DONE (this commit).
 
 - [ ] **Add tiling to SR runtimes without it** — `esrgan_sr`, `safmn_sr`,
   `nafnet_denoise`, `scunet_denoise`, `instructir`, `adair` process entire
