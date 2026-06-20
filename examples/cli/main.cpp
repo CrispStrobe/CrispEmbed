@@ -150,6 +150,8 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  harrier-0.6b, harrier-270m, qwen3-embed-0.6b,\n");
     fprintf(stderr, "  lfm2-embed, lfm2-embed-q4k,\n");
     fprintf(stderr, "  yunet (face detection, 0.2 MB)\n");
+    fprintf(stderr, "  uni-mumer-qwen3-vl-2b, uni-mumer-qwen2.5-vl-3b (handwritten math OCR)\n");
+    fprintf(stderr, "  texteller-3 (printed+handwritten math OCR, 310M)\n");
     fprintf(stderr, "\n");
 }
 
