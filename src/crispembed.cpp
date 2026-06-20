@@ -3597,6 +3597,7 @@ extern "C" void * crispembed_ocr_pipeline_init(
         case 1: vlm_eng = ocr_orchestrator::engine::glm;       break;
         case 2: vlm_eng = ocr_orchestrator::engine::qwen2vl;   break;
         case 3: vlm_eng = ocr_orchestrator::engine::internvl2; break;
+        case 4: vlm_eng = ocr_orchestrator::engine::qwen3vl;   break;
         default: vlm_eng = ocr_orchestrator::engine::got;      break;
     }
     const bool has_vlm = params->vlm_model && *params->vlm_model;
@@ -3693,6 +3694,7 @@ static ocr_orchestrator::engine map_engine(int e) {
         case 9:  return E::pix2struct;
         case 10: return E::granite_vision;
         case 11: return E::lightonocr;
+        case 12: return E::qwen3vl;
         default: return E::dbnet_trocr;
     }
 }
