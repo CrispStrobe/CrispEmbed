@@ -346,8 +346,11 @@ All deepseek perf paths are env-gated with validated CPU fallbacks
     silu, softmax, hardswish, relu6, relu, mha_1q_cpu. Replaced in 6 engine files
     (surya_det, got_ocr, ppformulanet_l_ocr, ppformulanet_ocr, deepseek_ocr2,
     mixtex_ocr) — 728 lines deleted. 88 unit tests in test_core_cpu_ops.cpp.
-  - [ ] `core/vlm_attention.h` — MHA with KV cache, RoPE, GQA repeat
-  - [ ] `core/vlm_decoder.h` — Llama-family autoregressive decode loop (shared by 5+ engines)
+  - [x] `core/vlm_attention.h` — RoPE (neghalf + interleaved), GQA attention with
+    KV cache, SwiGLU FFN. Replaced in smoldocling + granite_vision (134 lines deleted).
+    97 unit tests in test_core_vlm_attention.cpp. Commit `c730539`.
+  - [ ] `core/vlm_decoder.h` — unified decode loop (deferred: only 2 scalar engines,
+    premature to abstract)
 
 ---
 
