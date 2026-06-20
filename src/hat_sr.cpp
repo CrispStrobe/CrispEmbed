@@ -65,16 +65,7 @@ static void hat_conv2d(const float * input, int ic, int h, int w,
 static void hat_linear(const float * input, int n, int id, int od,
                        const float * weight, const float * bias,
                        float * output) {
-    for (int i = 0; i < n; i++) {
-        const float * in_row = input + i * id;
-        float * out_row = output + i * od;
-        for (int o = 0; o < od; o++) {
-            float sum = bias ? bias[o] : 0.0f;
-            for (int j = 0; j < id; j++)
-                sum += in_row[j] * weight[o * id + j];
-            out_row[o] = sum;
-        }
-    }
+    core_cpu::linear_batch_cpu(input, output, n, id, od, weight, bias);
 }
 
 // LayerNorm on last dim: data[N, D] in-place
@@ -207,8 +198,7 @@ static void hat_window_attn(const float * x, int nw, int ws2, int C, int n_heads
 
                 for (int k_pos = 0; k_pos < ws2; k_pos++) {
                     const float * k_row = &K_wh[k_pos * d];
-                    float s = 0;
-                    for (int di = 0; di < d; di++) s += q_row[di] * k_row[di];
+                    float s = core_cpu::dot_product(q_row, k_row, d);
                     s += rpb_table[rpi[q_pos * ws2 + k_pos] * n_heads + h];
                     if (attn_mask && n_mask_windows > 0)
                         s += attn_mask[(w % n_mask_windows) * ws2 * ws2 + q_pos * ws2 + k_pos];
@@ -269,17 +259,11 @@ static void hat_cab(const float * input, int C, int H, int W,
         pooled[c] = sum / HW;
     }
     std::vector<float> ca_mid(sq_c);
-    for (int o = 0; o < sq_c; o++) {
-        float s = ca_down_b[o];
-        for (int c = 0; c < C; c++) s += ca_down_w[o * C + c] * pooled[c];
-        ca_mid[o] = s > 0 ? s : 0;  // ReLU
-    }
+    core_cpu::linear_cpu(pooled.data(), ca_mid.data(), C, sq_c, ca_down_w, ca_down_b);
+    for (int o = 0; o < sq_c; o++) ca_mid[o] = ca_mid[o] > 0 ? ca_mid[o] : 0; // ReLU
     std::vector<float> ca_out(C);
-    for (int o = 0; o < C; o++) {
-        float s = ca_up_b[o];
-        for (int c = 0; c < sq_c; c++) s += ca_up_w[o * sq_c + c] * ca_mid[c];
-        ca_out[o] = 1.0f / (1.0f + expf(-s));  // Sigmoid
-    }
+    core_cpu::linear_cpu(ca_mid.data(), ca_out.data(), sq_c, C, ca_up_w, ca_up_b);
+    for (int o = 0; o < C; o++) ca_out[o] = 1.0f / (1.0f + expf(-ca_out[o])); // Sigmoid
     // Multiply
     for (int c = 0; c < C; c++)
         for (int i = 0; i < HW; i++)
@@ -378,8 +362,7 @@ static void hat_ocab(float * x, int HW, int C, int H, int W, int ws, int n_heads
 
                 for (int k = 0; k < ows2; k++) {
                     const float * k_row = &kv_win[(w * ows2 + k) * 2 * C + h_idx * d];
-                    float s = 0;
-                    for (int di = 0; di < d; di++) s += q_row[di] * scale * k_row[di];
+                    float s = core_cpu::dot_product(q_row, k_row, d) * scale;
                     // RPI may contain negative indices (PyTorch wraps them)
                     int rpi_val = rpi[q * ows2 + k];
                     int rpb_len = (ws + overlap_ws - 1) * (ws + overlap_ws - 1);

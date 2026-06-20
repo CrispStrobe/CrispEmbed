@@ -3002,11 +3002,6 @@ class SwinirSrResult {
 
 /// SwinIR-light super-resolution model — Swin Transformer whole-image upscaling.
 class CrispSwinirSr {
-// SCUNet Denoising (Swin-Conv-UNet, 18M params)
-// ---------------------------------------------------------------------------
-
-/// SCUNet image denoising model — Swin-Conv-UNet hybrid blocks.
-class CrispScunet {
   late final DynamicLibrary _lib;
   late final Pointer<Void> _ctx;
   bool _disposed = false;
@@ -3017,11 +3012,6 @@ class CrispScunet {
   late final CrispembedSwinirSrFreeImageDart _freeImageFn;
 
   CrispSwinirSr(String modelPath, {int nThreads = 0, String? libPath}) {
-  late final CrispembedScunetFreeDart _freeFn;
-  late final CrispembedScunetProcessDart _processFn;
-  late final CrispembedScunetFreeImageDart _freeImageFn;
-
-  CrispScunet(String modelPath, {int nThreads = 0, String? libPath}) {
     _lib = _openNativeLib(libPath);
     _bindFunctions();
 
@@ -3029,14 +3019,11 @@ class CrispScunet {
     _ctx = _lib
         .lookupFunction<CrispembedSwinirSrInitNative, CrispembedSwinirSrInitDart>(
             'crispembed_swinir_sr_init')
-        .lookupFunction<CrispembedScunetInitNative, CrispembedScunetInitDart>(
-            'crispembed_scunet_init')
         .call(pathPtr, nThreads);
     calloc.free(pathPtr);
 
     if (_ctx == nullptr) {
       throw Exception('Failed to load SwinIR SR model: $modelPath');
-      throw Exception('Failed to load SCUNet model: $modelPath');
     }
   }
 
@@ -3063,16 +3050,6 @@ class CrispScunet {
     int tileSize = 0,
     int tileOverlap = 0,
   }) {
-    _freeFn = _lib.lookupFunction<CrispembedScunetFreeNative,
-        CrispembedScunetFreeDart>('crispembed_scunet_free');
-    _processFn = _lib.lookupFunction<CrispembedScunetProcessNative,
-        CrispembedScunetProcessDart>('crispembed_scunet_process');
-    _freeImageFn = _lib.lookupFunction<CrispembedScunetFreeImageNative,
-        CrispembedScunetFreeImageDart>('crispembed_scunet_free_image');
-  }
-
-  /// Denoise an image. Output has the same dimensions as input.
-  Uint8List process(Uint8List pixels, int width, int height) {
     _checkDisposed();
     if (pixels.length != width * height * 3) {
       throw ArgumentError(
@@ -3107,6 +3084,72 @@ class CrispScunet {
       calloc.free(outPxPtr);
       calloc.free(outW);
       calloc.free(outH);
+    }
+  }
+
+  void dispose() {
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
+  }
+
+  void _checkDisposed() {
+    if (_disposed) throw StateError('CrispSwinirSr has been disposed');
+  }
+}
+
+// ---------------------------------------------------------------------------
+// SCUNet Denoising (Swin-Conv-UNet, 18M params)
+// ---------------------------------------------------------------------------
+
+/// SCUNet image denoising model — Swin-Conv-UNet hybrid blocks.
+class CrispScunet {
+  late final DynamicLibrary _lib;
+  late final Pointer<Void> _ctx;
+  bool _disposed = false;
+
+  late final CrispembedScunetFreeDart _freeFn;
+  late final CrispembedScunetProcessDart _processFn;
+  late final CrispembedScunetFreeImageDart _freeImageFn;
+
+  CrispScunet(String modelPath, {int nThreads = 0, String? libPath}) {
+    _lib = _openNativeLib(libPath);
+    _bindFunctions();
+
+    final pathPtr = modelPath.toNativeUtf8();
+    _ctx = _lib
+        .lookupFunction<CrispembedScunetInitNative, CrispembedScunetInitDart>(
+            'crispembed_scunet_init')
+        .call(pathPtr, nThreads);
+    calloc.free(pathPtr);
+
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load SCUNet model: $modelPath');
+    }
+  }
+
+  void _bindFunctions() {
+    _freeFn = _lib.lookupFunction<CrispembedScunetFreeNative,
+        CrispembedScunetFreeDart>('crispembed_scunet_free');
+    _processFn = _lib.lookupFunction<CrispembedScunetProcessNative,
+        CrispembedScunetProcessDart>('crispembed_scunet_process');
+    _freeImageFn = _lib.lookupFunction<CrispembedScunetFreeImageNative,
+        CrispembedScunetFreeImageDart>('crispembed_scunet_free_image');
+  }
+
+  /// Denoise an image. Output has the same dimensions as input.
+  Uint8List process(Uint8List pixels, int width, int height) {
+    _checkDisposed();
+    if (pixels.length != width * height * 3) {
+      throw ArgumentError(
+          'pixels.length (${pixels.length}) must equal width * height * 3 (${width * height * 3})');
+    }
+
+    final pxNative = calloc<Uint8>(pixels.length);
+    pxNative.asTypedList(pixels.length).setAll(0, pixels);
+
+    final outPxPtr = calloc<Pointer<Uint8>>();
 
     try {
       final rc = _processFn(_ctx, pxNative, width, height, outPxPtr);
@@ -3134,7 +3177,6 @@ class CrispScunet {
   }
 
   void _checkDisposed() {
-    if (_disposed) throw StateError('CrispSwinirSr has been disposed');
     if (_disposed) throw StateError('CrispScunet has been disposed');
   }
 }
@@ -3311,115 +3353,6 @@ class CrispAdaIR {
 
   void _checkDisposed() {
     if (_disposed) throw StateError('CrispAdaIR has been disposed');
-  }
-}
-
-// ---------------------------------------------------------------------------
-// TBSRN Super-Resolution (always 2×, 16×64 → 32×128)
-// ---------------------------------------------------------------------------
-
-/// Result from TBSRN super-resolution upscaling.
-class TbsrnSrResult {
-  final Uint8List pixels;
-  final int width;
-  final int height;
-
-  const TbsrnSrResult({
-    required this.pixels,
-    required this.width,
-    required this.height,
-  });
-}
-
-/// TBSRN super-resolution model — upscales text-image crops (always 2×).
-class CrispTbsrnSr {
-  late final DynamicLibrary _lib;
-  late final Pointer<Void> _ctx;
-  bool _disposed = false;
-
-  late final CrispembedTbsrnSrFreeDart _freeFn;
-  late final CrispembedTbsrnSrProcessDart _processFn;
-  late final CrispembedTbsrnSrFreeImageDart _freeImageFn;
-
-  /// TBSRN is always 2×.
-  static const int scale = 2;
-
-  CrispTbsrnSr(String modelPath, {int nThreads = 0, String? libPath}) {
-    _lib = _openNativeLib(libPath);
-    _bindFunctions();
-
-    final pathPtr = modelPath.toNativeUtf8();
-    _ctx = _lib
-        .lookupFunction<CrispembedTbsrnSrInitNative, CrispembedTbsrnSrInitDart>(
-            'crispembed_tbsrn_sr_init')
-        .call(pathPtr, nThreads);
-    calloc.free(pathPtr);
-
-    if (_ctx == nullptr) {
-      throw Exception('Failed to load TBSRN SR model: $modelPath');
-    }
-  }
-
-  void _bindFunctions() {
-    _freeFn = _lib.lookupFunction<CrispembedTbsrnSrFreeNative,
-        CrispembedTbsrnSrFreeDart>('crispembed_tbsrn_sr_free');
-    _processFn = _lib.lookupFunction<CrispembedTbsrnSrProcessNative,
-        CrispembedTbsrnSrProcessDart>('crispembed_tbsrn_sr_process');
-    _freeImageFn = _lib.lookupFunction<CrispembedTbsrnSrFreeImageNative,
-        CrispembedTbsrnSrFreeImageDart>('crispembed_tbsrn_sr_free_image');
-  }
-
-  TbsrnSrResult process(
-    Uint8List pixels,
-    int width,
-    int height,
-  ) {
-    _checkDisposed();
-    if (pixels.length != width * height * 3) {
-      throw ArgumentError(
-          'pixels.length (${pixels.length}) must equal width * height * 3 (${width * height * 3})');
-    }
-
-    final pxNative = calloc<Uint8>(pixels.length);
-    pxNative.asTypedList(pixels.length).setAll(0, pixels);
-
-    final outPxPtr = calloc<Pointer<Uint8>>();
-    final outW = calloc<Int32>();
-    final outH = calloc<Int32>();
-
-    try {
-      final rc = _processFn(
-          _ctx, pxNative, width, height,
-          outPxPtr, outW, outH);
-
-      if (rc != 0 || outPxPtr.value.address == 0) {
-        throw Exception('TBSRN SR process failed (rc=$rc)');
-      }
-
-      final ow = outW.value;
-      final oh = outH.value;
-      final resultPixels =
-          Uint8List.fromList(outPxPtr.value.asTypedList(ow * oh * 3));
-      _freeImageFn(outPxPtr.value);
-
-      return TbsrnSrResult(pixels: resultPixels, width: ow, height: oh);
-    } finally {
-      calloc.free(pxNative);
-      calloc.free(outPxPtr);
-      calloc.free(outW);
-      calloc.free(outH);
-    }
-  }
-
-  void dispose() {
-    if (!_disposed) {
-      _freeFn(_ctx);
-      _disposed = true;
-    }
-  }
-
-  void _checkDisposed() {
-    if (_disposed) throw StateError('CrispTbsrnSr has been disposed');
   }
 }
 

@@ -9,6 +9,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gguf_loader.h"
+#include "core/cpu_ops.h"
 
 // stb_image declarations (implementation lives in image_preprocess.cpp)
 extern "C" {
@@ -101,6 +102,16 @@ struct math_ocr_context {
     int n_enc_tokens = 0;
     std::vector<std::vector<float>> cross_k_cache; // per layer [n_enc * D]
     std::vector<std::vector<float>> cross_v_cache;
+
+    // Pre-allocated decoder scratch (avoids per-step heap allocs)
+    struct dec_scratch {
+        std::vector<float> x, normed, q, k, v, sa, sa_proj;
+        std::vector<float> cq, ca, ca_proj;
+        std::vector<float> inter, ffn;
+        std::vector<float> logits;
+        std::vector<float> scores; // for mha_1q
+        bool allocated = false;
+    } ds;
 
     bool bench = false;
 };
@@ -449,35 +460,56 @@ static void linear_cpu(const float* inp, float* out, int in_d, int out_d, const 
     if (!w) { memset(out, 0, out_d * sizeof(float)); return; }
     const float* W = cached_f32(w);
     const float* B = cached_f32(b);
-    for (int o = 0; o < out_d; o++) {
-        float s = B ? B[o] : 0.0f;
-        for (int j = 0; j < in_d; j++) s += inp[j] * W[o * in_d + j];
-        out[o] = s;
-    }
+    core_cpu::linear_cpu(inp, out, in_d, out_d, W, B);
 }
 
+// MHA with pre-allocated scores buffer (avoids per-head heap alloc)
 static void mha_1q(const float* q, const float* K, const float* V,
-                    float* out, int n_kv, int D, int n_heads) {
+                    float* out, int n_kv, int D, int n_heads, float* scores_buf) {
     int hd = D / n_heads;
     float scale = 1.0f / sqrtf((float)hd);
     for (int h = 0; h < n_heads; h++) {
-        std::vector<float> sc(n_kv);
+        int off = h * hd;
         float mx = -1e9f;
         for (int k = 0; k < n_kv; k++) {
-            float dot = 0;
-            for (int d = 0; d < hd; d++) dot += q[h*hd+d] * K[k*D+h*hd+d];
-            sc[k] = dot * scale;
-            mx = std::max(mx, sc[k]);
+            scores_buf[k] = core_cpu::dot_product(q + off, &K[k*D + off], hd) * scale;
+            if (scores_buf[k] > mx) mx = scores_buf[k];
         }
         float se = 0;
-        for (auto& s : sc) { s = expf(s - mx); se += s; }
-        for (auto& s : sc) s /= se;
+        for (int k = 0; k < n_kv; k++) {
+            scores_buf[k] = expf(scores_buf[k] - mx);
+            se += scores_buf[k];
+        }
+        float inv = 1.0f / se;
+        for (int k = 0; k < n_kv; k++) scores_buf[k] *= inv;
         for (int d = 0; d < hd; d++) {
             float sum = 0;
-            for (int k = 0; k < n_kv; k++) sum += sc[k] * V[k*D+h*hd+d];
-            out[h*hd+d] = sum;
+            for (int k = 0; k < n_kv; k++) sum += scores_buf[k] * V[k*D + off + d];
+            out[off + d] = sum;
         }
     }
+}
+
+static void ensure_dec_scratch(math_ocr_context* ctx, int max_kv) {
+    if (ctx->ds.allocated) return;
+    const auto& hp = ctx->hparams;
+    const int D = hp.dec_d_model, V = hp.vocab_size, FF = hp.dec_ffn_dim;
+    int n_enc = ctx->n_enc_tokens;
+
+    ctx->ds.x.resize(D);
+    ctx->ds.q.resize(D);
+    ctx->ds.k.resize(D);
+    ctx->ds.v.resize(D);
+    ctx->ds.sa.resize(D);
+    ctx->ds.sa_proj.resize(D);
+    ctx->ds.cq.resize(D);
+    ctx->ds.ca.resize(D);
+    ctx->ds.ca_proj.resize(D);
+    ctx->ds.inter.resize(FF);
+    ctx->ds.ffn.resize(D);
+    ctx->ds.logits.resize(V);
+    ctx->ds.scores.resize(std::max(max_kv, n_enc));
+    ctx->ds.allocated = true;
 }
 
 static std::vector<float> decoder_step_scalar(math_ocr_context* ctx,
@@ -485,90 +517,83 @@ static std::vector<float> decoder_step_scalar(math_ocr_context* ctx,
                                          std::vector<std::vector<float>>& kv_k,
                                          std::vector<std::vector<float>>& kv_v) {
     const auto& hp = ctx->hparams;
-    const int D = hp.dec_d_model, E = hp.enc_hidden, V = hp.vocab_size;
+    const int D = hp.dec_d_model, V = hp.vocab_size;
+    auto& ds = ctx->ds;
 
-    std::vector<float> x(D, 0.0f), normed(D);
+    memset(ds.x.data(), 0, D * sizeof(float));
 
-    // Token + positional embedding (dequantize for FP16/quantized)
+    // Token + positional embedding
     if (ctx->tok_embed && tok >= 0 && tok < V) {
         auto emb = to_f32(ctx->tok_embed);
         float sc = sqrtf((float)D);
-        for (int i = 0; i < D; i++) x[i] = emb[tok * D + i] * sc;
+        for (int i = 0; i < D; i++) ds.x[i] = emb[tok * D + i] * sc;
     }
     if (ctx->pos_embed_dec) {
         auto pe = to_f32(ctx->pos_embed_dec);
         int pos = step + 2;
         if (pos < hp.max_seq_len)
             for (int i = 0; i < D && pos * D + i < (int)pe.size(); i++)
-                x[i] += pe[pos * D + i];
+                ds.x[i] += pe[pos * D + i];
     }
-    layernorm_cpu(x.data(), x.data(), D, ctx->dec_embed_ln_w, ctx->dec_embed_ln_b);
+    layernorm_cpu(ds.x.data(), ds.x.data(), D, ctx->dec_embed_ln_w, ctx->dec_embed_ln_b);
     if (step == 0) {
         fprintf(stderr, "math_ocr: dec embed+pos+ln x[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",
-                x[0],x[1],x[2],x[3],x[4]);
+                ds.x[0],ds.x[1],ds.x[2],ds.x[3],ds.x[4]);
     }
 
     for (int li = 0; li < hp.dec_layers; li++) {
         const auto& l = ctx->dec_layers[li];
         if (!l.self_q_w) continue;
 
-        // TrOCR/BART uses POST-LN: attn → residual → LN (not pre-LN)
-
         // Self-attention
-        std::vector<float> q(D), k(D), v(D);
-        linear_cpu(x.data(), q.data(), D, D, l.self_q_w, l.self_q_b);
-        linear_cpu(x.data(), k.data(), D, D, l.self_k_w, l.self_k_b);
-        linear_cpu(x.data(), v.data(), D, D, l.self_v_w, l.self_v_b);
-        kv_k[li].insert(kv_k[li].end(), k.begin(), k.end());
-        kv_v[li].insert(kv_v[li].end(), v.begin(), v.end());
+        linear_cpu(ds.x.data(), ds.q.data(), D, D, l.self_q_w, l.self_q_b);
+        linear_cpu(ds.x.data(), ds.k.data(), D, D, l.self_k_w, l.self_k_b);
+        linear_cpu(ds.x.data(), ds.v.data(), D, D, l.self_v_w, l.self_v_b);
+        kv_k[li].insert(kv_k[li].end(), ds.k.begin(), ds.k.end());
+        kv_v[li].insert(kv_v[li].end(), ds.v.begin(), ds.v.end());
 
-        std::vector<float> sa(D);
-        mha_1q(q.data(), kv_k[li].data(), kv_v[li].data(), sa.data(), step+1, D, hp.dec_heads);
-        std::vector<float> sa_proj(D);
-        linear_cpu(sa.data(), sa_proj.data(), D, D, l.self_out_w, l.self_out_b);
-        for (int i = 0; i < D; i++) x[i] += sa_proj[i];  // residual
-        layernorm_cpu(x.data(), x.data(), D, l.self_ln_w, l.self_ln_b);  // post-LN
+        mha_1q(ds.q.data(), kv_k[li].data(), kv_v[li].data(), ds.sa.data(),
+               step+1, D, hp.dec_heads, ds.scores.data());
+        linear_cpu(ds.sa.data(), ds.sa_proj.data(), D, D, l.self_out_w, l.self_out_b);
+        for (int i = 0; i < D; i++) ds.x[i] += ds.sa_proj[i];
+        layernorm_cpu(ds.x.data(), ds.x.data(), D, l.self_ln_w, l.self_ln_b);
 
         // Cross-attention
         if (l.cross_q_w && !ctx->enc_out.empty()) {
-            std::vector<float> cq(D);
-            linear_cpu(x.data(), cq.data(), D, D, l.cross_q_w, l.cross_q_b);
+            linear_cpu(ds.x.data(), ds.cq.data(), D, D, l.cross_q_w, l.cross_q_b);
 
             int n_enc = ctx->n_enc_tokens;
             const float* ck = ctx->cross_k_cache[li].data();
             const float* cv = ctx->cross_v_cache[li].data();
 
-            std::vector<float> ca(D);
-            mha_1q(cq.data(), ck, cv, ca.data(), n_enc, D, hp.dec_heads);
-            std::vector<float> ca_proj(D);
-            linear_cpu(ca.data(), ca_proj.data(), D, D, l.cross_out_w, l.cross_out_b);
-            for (int i = 0; i < D; i++) x[i] += ca_proj[i];  // residual
-            layernorm_cpu(x.data(), x.data(), D, l.cross_ln_w, l.cross_ln_b);  // post-LN
+            mha_1q(ds.cq.data(), ck, cv, ds.ca.data(), n_enc, D, hp.dec_heads, ds.scores.data());
+            linear_cpu(ds.ca.data(), ds.ca_proj.data(), D, D, l.cross_out_w, l.cross_out_b);
+            for (int i = 0; i < D; i++) ds.x[i] += ds.ca_proj[i];
+            layernorm_cpu(ds.x.data(), ds.x.data(), D, l.cross_ln_w, l.cross_ln_b);
         }
 
         // FFN
         if (l.ff_up_w) {
             const int FF = hp.dec_ffn_dim;
-            std::vector<float> inter(FF), ffn(D);
-            linear_cpu(x.data(), inter.data(), D, FF, l.ff_up_w, l.ff_up_b);
-            for (int i = 0; i < FF; i++) inter[i] = inter[i] > 0 ? inter[i] : 0;
-            linear_cpu(inter.data(), ffn.data(), FF, D, l.ff_down_w, l.ff_down_b);
-            for (int i = 0; i < D; i++) x[i] += ffn[i];  // residual
-            layernorm_cpu(x.data(), x.data(), D, l.ff_ln_w, l.ff_ln_b);  // post-LN
+            linear_cpu(ds.x.data(), ds.inter.data(), D, FF, l.ff_up_w, l.ff_up_b);
+            for (int i = 0; i < FF; i++) ds.inter[i] = ds.inter[i] > 0 ? ds.inter[i] : 0;
+            linear_cpu(ds.inter.data(), ds.ffn.data(), FF, D, l.ff_down_w, l.ff_down_b);
+            for (int i = 0; i < D; i++) ds.x[i] += ds.ffn[i];
+            layernorm_cpu(ds.x.data(), ds.x.data(), D, l.ff_ln_w, l.ff_ln_b);
         }
         if (step == 0 && li < 3) {
             fprintf(stderr, "math_ocr: dec L%d end x[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",
-                    li, x[0],x[1],x[2],x[3],x[4]);
+                    li, ds.x[0],ds.x[1],ds.x[2],ds.x[3],ds.x[4]);
         }
     }
 
-    layernorm_cpu(x.data(), x.data(), D, ctx->dec_final_ln_w, ctx->dec_final_ln_b);
+    layernorm_cpu(ds.x.data(), ds.x.data(), D, ctx->dec_final_ln_w, ctx->dec_final_ln_b);
     if (step == 0) {
         fprintf(stderr, "math_ocr: dec final x[:5]=[%.4f %.4f %.4f %.4f %.4f]\n",
-                x[0],x[1],x[2],x[3],x[4]);
+                ds.x[0],ds.x[1],ds.x[2],ds.x[3],ds.x[4]);
     }
     std::vector<float> logits(V, 0.0f);
-    linear_cpu(x.data(), logits.data(), D, V, ctx->lm_head_w, ctx->lm_head_b);
+    linear_cpu(ds.x.data(), logits.data(), D, V, ctx->lm_head_w, ctx->lm_head_b);
     return logits;
 }
 
@@ -760,6 +785,8 @@ static std::vector<int> run_decoder_graph(math_ocr_context* ctx) {
     std::vector<int> scalar_tokens = {hp.decoder_start_token};
     float min_cos = 1.0f;
     fprintf(stderr, "math_ocr: DECODER_VALIDATE enabled — comparing graph vs scalar\n");
+    ctx->ds.allocated = false;
+    ensure_dec_scratch(ctx, hp.max_seq_len);
 #endif
 
     std::vector<int> tokens = {hp.decoder_start_token};

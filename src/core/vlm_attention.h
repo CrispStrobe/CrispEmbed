@@ -198,12 +198,16 @@ static inline void gqa_attn_step(
     // explicit attention_multiplier via attn_scale.
     float scale = attn_scale >= 0.0f ? attn_scale : 1.0f / sqrtf((float)head_dim);
 
+    // Thread-local scores buffer (avoids per-head heap alloc)
+    static thread_local std::vector<float> tl_scores;
+    if ((int)tl_scores.size() < Lk) tl_scores.resize(Lk);
+    float* scores = tl_scores.data();
+
     for (int h = 0; h < n_heads; h++) {
         int kv_h = h / kv_repeat;
 
         // Compute attention scores: Q·K^T (SIMD-accelerated via dot_product)
         float max_s = -1e9f;
-        std::vector<float> scores(Lk);
         for (int k = 0; k < Lk; k++) {
             float s = core_cpu::dot_product(
                 q + h * head_dim,
@@ -248,18 +252,23 @@ static inline void swiglu_ffn(const float* x, float* out,
                                 int hidden_dim, int intermediate_dim,
                                 const float* gate_w, const float* up_w,
                                 const float* down_w) {
-    std::vector<float> gate(intermediate_dim), up(intermediate_dim);
+    // Thread-local buffers (avoids per-call heap alloc for intermediate_dim vectors)
+    static thread_local std::vector<float> tl_gate, tl_up;
+    if ((int)tl_gate.size() < intermediate_dim) {
+        tl_gate.resize(intermediate_dim);
+        tl_up.resize(intermediate_dim);
+    }
 
-    core_cpu::linear_cpu(x, gate.data(), hidden_dim, intermediate_dim,
+    core_cpu::linear_cpu(x, tl_gate.data(), hidden_dim, intermediate_dim,
                          gate_w, nullptr);
-    core_cpu::linear_cpu(x, up.data(), hidden_dim, intermediate_dim,
+    core_cpu::linear_cpu(x, tl_up.data(), hidden_dim, intermediate_dim,
                          up_w, nullptr);
 
     // silu(gate) * up
     for (int i = 0; i < intermediate_dim; i++)
-        gate[i] = core_cpu::silu(gate[i]) * up[i];
+        tl_gate[i] = core_cpu::silu(tl_gate[i]) * tl_up[i];
 
-    core_cpu::linear_cpu(gate.data(), out, intermediate_dim, hidden_dim,
+    core_cpu::linear_cpu(tl_gate.data(), out, intermediate_dim, hidden_dim,
                          down_w, nullptr);
 }
 

@@ -320,9 +320,8 @@ enc+proj ~1.1 s. Remaining levers, ranked by leverage:
 - [x] **#2 Decode graph reuse (~1–1.5 s) — DONE.** Persistent T=1 decode graph
   with fixed max-KV, incremental KV-cache mask; 2× faster decode stage.
   (`fcb5b11 perf(ocr2): persistent T=1 decode graph reuse`)
-- [x] **#3 Per-row embedding dequant** — already implemented: `put_tok` lambda
-  (line ~2604) and `get_embedding` lambda (line ~1950) both use per-row
-  `ggml_backend_tensor_get`. Item was stale.
+- [ ] **#3 Per-row embedding dequant (~0.5 s + 655 MB).** Decode dequants the
+  whole 128k×1280 embed table to F32 just to look up ~32 rows; dequant per row.
 - [ ] **#4 Converter-emitted stacked experts (memory, ~0.6 s).** Emit
   `ffn_{gate,up,down}_exps [in,out,n_exp]` from the converter (needs a Kaggle
   reconvert + loader tweak) so the runtime skips `stack_moe_experts` and the
@@ -373,9 +372,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   Migrated: smoldocling_ocr (replaced wbufs), granite_vision_ocr (replaced
   wcache). Remaining runtimes still need migration.
 
-- [ ] **Adopt F16 ggml KV cache** — Port to: deepseek_ocr2 (F32 std::vector),
-  lightonocr (F32 std::vector, O(n^2) total transfer),
-  pix2struct (no KV cache at all).
+- [ ] **Adopt F16 ggml KV cache** — Port to: deepseek_ocr2 (F32 std::vector).
+  pix2struct: **DONE** (`088d359`) — F32 std::vector KV cache + cross-attn pre-compute.
+  lightonocr: **DONE** (`485cb97`, branch `lighton-perf`) — 2.09x total speedup.
   granite_vision_ocr: **DONE** (`66b8de2`).
   smoldocling_ocr: **DONE** (`bc329e4`, branch `feat/smoldocling-kvcache-prefill`).
   qwen2vl_ocr: **DONE** — already had F16 kvc; fixed CPU round-trip in seeding
@@ -391,6 +390,19 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   ggml_rope_ext NEOX + F16 KV cache + ggml_flash_attn_ext + SwiGLU FFN,
   scaled residuals). LM head stays CPU (linear_cpu, SIMD). Scalar fallback
   preserved in `gv_llm_decode_step` (used by dump_llm parity).
+  - **Crash fix (`feat/granite-vision-ne-fix`)**: the projector + LLM graphs
+    aborted on `GGML_ASSERT(ggml_can_mul_mat)` — the converter stores 2D
+    weights in PyTorch `[out,in]` order, so non-square weights need a
+    `ggml_reshape_2d(w, ne[1], ne[0])` before `ggml_mul_mat` (the vision FFN
+    already did this). Applied to projector linear_1 and LLM k/v/gate/up/down.
+  - **ggml LLM decode is NOT yet validated**: it runs but produces wrong
+    tokens (decode runs away to max_tokens). Gated behind
+    `CRISPEMBED_GRANITE_LLM_GRAPH=1`; default is the diff-validated scalar
+    decode (`gv_llm_decode_step`, crispembed-diff cos=1.0). Vision + projector
+    ggml graphs are correct and stay on Metal.
+  - **Memory**: the scalar fallback's DequantCache materializes ~9 GB of F32
+    weights (swaps on a 16 GB machine). Q4_K vec_dot would keep it bounded
+    (~2 GB); see `tools/dump_granite_llm_reference.py` for the parity harness.
 
 - [x] **Batched prefill for granite** — DONE (`66b8de2`). All prompt tokens
   (vision + text, 759 total) assembled into one buffer and passed to
@@ -407,9 +419,11 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `run_llm_forward(populate_kvc=true)` writes K/V directly into kvc via
   `ggml_cpy` in the prefill graph (F32→F16 in graph, no CPU bounce).
 
-- [ ] **Move pix2struct to ggml graphs + add KV cache** — fully scalar, no ggml
-  graphs, no KV cache, O(T^2) recompute per decode step. No cross-attention K/V
-  caching either (re-projects all encoder outputs every step).
+- [x] **Move pix2struct to ggml graphs + add KV cache** — DONE (`088d359`,
+  `51a3008`). Encoder as single ggml graph, decoder with incremental self-attn
+  KV cache + pre-computed cross-attn K/V via ggml graph. DequantCache for all
+  weight access. Per-step heap allocations hoisted to context scratch buffers.
+  Parity: encoder cos=0.9999, decoder cos=1.0000.
 
 - [x] **scunet per-pixel heap allocations** — Hoisted `std::vector<float>` pix,
   pix_out, pix_norm, h allocations outside the spatial loops. Also cached LN2
@@ -418,16 +432,12 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 
 #### P1 — High-impact targeted improvements
 
-- [x] **Flash attention everywhere** — use `ggml_flash_attn_ext` in:
-  - `decoder_embed.cpp` single-text and batch-text paths — DONE (`d02be13`)
-  - `bidirlm_vision.cpp` — DONE (`6d021d5`); F16 mask conversion at call site
-  - `lilt_kie.cpp` — BiACM cross-modal: EXCLUDED (combines two score tensors before softmax)
-  - `qwen2vl_ocr.cpp` LLM decode — DONE (already flash_attn_ext)
-  - `deepseek_ocr2.cpp` Qwen2 encoder, LLM decode+prefill — DONE (`c75b95d`, `bf7f529`)
-  - `lightonocr.cpp` prefill + decode paths — DONE (`b2fd202`); GQA removed from flash path
-  - `granite_vision_ocr.cpp` vision encoder, `math_ocr.cpp` g_mha/g_mha_1q,
-    `layout_detect.cpp` AIFI + decoder self-attn — DONE (`dc0861b`)
-  - Windowed Swin/DeBERTa attention excluded (relative pos biases added to scores)
+- [ ] **Flash attention everywhere** — use `ggml_flash_attn_ext` in:
+  - `decoder_embed.cpp` single-text path (lines 731-748, manual Q@K+softmax+V)
+  - `bidirlm_vision.cpp` (block-diagonal mask — flash_attn accepts masks)
+  - `lilt_kie.cpp` (BiACM score combination may need adaptation)
+  - `qwen2vl_ocr.cpp` LLM decode (lines 1294-1306)
+  - `deepseek_ocr2.cpp` all attention paths
 
 - [ ] **Move remaining scalar encoders to ggml graphs**:
   - `deepseek_ocr2` Qwen2 encoder (lines 777-931): 24-layer bidirectional
@@ -437,67 +447,65 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   - `mixtex_ocr` Swin encoder: 12500-token window attention, scalar.
   - `ppformulanet_ocr` HGNetv2 CNN: 57M-param CNN at 384x384, scalar `conv2d_cpu`.
 
-- [ ] **Patch embedding conv → ggml matmul** — every VLM runtime (all 9) uses
-  scalar 6-deep nested loops for patch embedding. Since it's a strided conv,
-  it's equivalent to im2col + single matmul. Affects: qwen2vl, internvl2,
-  deepseek, granite, got, glm, lightonocr, smoldocling, pix2struct.
+- [x] **Patch embedding conv → ggml matmul** — Most VLM runtimes now use ggml
+  graph (internvl2, granite, smoldocling, qwen2vl) or im2col+matmul (got,
+  lightonocr, pix2struct). Remaining: glm, deepseek (minor, scalar fallback).
 
 - [x] **Pre-compute RoPE frequency tables** — Added `RoPEFreqTable` struct to
   `vlm_attention.h` with `precompute(head_dim, theta)` and `apply()` methods.
   Eliminates `powf` per-element. Migrated: smoldocling_ocr (NEGHALF),
   granite_vision_ocr (NEGHALF). Remaining `core_vlm` users still on `apply_rope()`.
 
-- [ ] **Batch linear → GEMM in SR/restoration attention** — dat_sr, swinir_sr,
-  hat_sr, scunet, mixtex call `linear_cpu` per-token for QKV projection.
-  Batch N tokens into one `[N, D] × [D, 3D]` matmul instead.
+- [x] **Batch linear → GEMM in SR/restoration attention** — DONE. dat_sr
+  (`a71c123`), swinir_sr (`dcf6556`), hat_sr (`b199741`), scunet (`52250ef`),
+  mixtex (`816a88a`): replaced per-token scalar linear with
+  linear_batch_cpu (SIMD), SIMD dot_product in attention.
 
 - [ ] **Sequential region recognition → batched** — `ocr_pipeline.cpp` (line 112)
   and `table_parse.cpp` (line 337) recognize each detected text region one at a
   time. Batch crops into a single encoder pass for PARSeq/TrOCR.
 
-- [ ] **Eliminate redundant image loading in orchestrator** — `ocr_orchestrator.cpp`
-  calls `stbi_load` for the same image N times across N engine attempts. Load once,
-  pass pixel buffer. Also: `clean_to_temp` (line 212) writes a cleaned image to
-  temp PNG then re-loads it — pass the buffer directly.
+- [x] **Eliminate redundant image loading in orchestrator** — Pre-load image once
+  per stage in the accept-gate loop, pass pixel buffer to all 9 VLM engines.
+  Eliminates N-1 redundant JPEG/PNG decodes per multi-stage run.
 
-- [x] **LSTM gate SIMD** — `tesseract_lstm.cpp` and `gliner_ner.cpp` BiLSTM:
-  replaced scalar gate loops with `core_cpu::linear_cpu` (NEON/AVX2).
-  DONE (`b2dd957`, `53921c4`).
+- [x] **LSTM gate SIMD** — `tesseract_lstm.cpp` inner dot-product loops in both
+  `lstm_forward` and `summ_lstm_forward` now use `core_cpu::dot_product()`.
+  AVX2+FMA accelerated on x86-64, NEON on ARM.
 
-- [x] **Sliding-window min/max pool** — `scan_cleanup.cpp` `min_pool_2d` and
-  `max_pool_2d`: O(K²) → O(wh) monotone deque. DONE (`07232b5`).
+- [x] **Sliding-window min/max pool** — Replaced O(K) per-pixel brute-force in
+  `scan_cleanup.cpp` with monotonic deque sliding window — O(1) amortized per
+  pixel. For K=51 this is ~50x fewer comparisons.
 
-- [x] **Weight dequant caching in SR runtimes** — migrated all 7 SR files with
-  growing `wbufs` / `to_f32+scratch` patterns to `core_cpu::DequantCache`:
-  swinir, hat, pan, tbsrn, text (DONE `b45ccf9`), esrgan, safmn (DONE `4b0c6ba`).
+- [x] **Weight dequant caching in SR runtimes** — Migrated 7 Pattern-A runtimes
+  (hat_sr, swinir_sr, pan_sr, text_sr, nafnet_denoise, restormer, tbsrn_sr)
+  from `wbufs` append to `core_cpu::DequantCache`. 4 Pattern-B runtimes
+  (instructir, adair, esrgan, safmn) use inline dequant — separate TODO.
 
-- [x] **Migrate duplicated helpers to `core/cpu_ops.h`** — `bttr_ocr.cpp` and
-  `posformer_ocr.cpp` replaced with shims calling `core_cpu::conv2d_cpu`,
-  `relu_inplace`, `maxpool2d_cpu`, `avgpool2d_cpu`, `apply_bn_cpu`,
-  `layernorm_cpu`, `linear_cpu`. `hmer_ocr.cpp` partial (apply_bn_scale,
-  relu_inplace). DONE (`fd0d8aa`).
+- [x] **Migrate duplicated helpers to `core/cpu_ops.h`** — bttr_ocr, hmer_ocr,
+  posformer_ocr: replaced duplicated conv2d/relu/layernorm/linear with
+  `core_cpu` shared versions (SIMD-accelerated). Replaced per-context
+  `dequant_cache` map with `core_cpu::DequantCache`. Kept unique helpers
+  (maxpool, avgpool, apply_bn) as-is.
 
-- [x] **deepseek_ocr2: single multi-layer encoder graph** — Qwen2 encoder
-  (24 layers) now built as one ggml graph, eliminating 23 GPU↔CPU round-trips
-  of the hidden state per encoder call. DONE (`910d036`).
-  (The LLM decoder was already multi-layer since initial implementation.)
+- [ ] **deepseek_ocr2: single multi-layer LLM graph** — currently builds 12
+  separate ggml graphs per decode token (line 1288-1295). A single graph
+  covering all attention layers would reduce graph construction cost by 12x.
 
 - [ ] **glm_ocr / got_ocr: scalar downsample/merger → ggml** — glm `host_matmul`
   (lines 493-502) and got neck (lines 699-773) use scalar CPU for Conv+matmul
   projectors. Should be ggml graph ops.
 
-- [x] **gliner_ner BiLSTM SIMD/BLAS** — already done via `core_cpu::linear_cpu`
-  (NEON/AVX2 GEMV) in lstm_forward_one_dir. Item was stale; covered by `53921c4`.
+- [x] **gliner_ner BiLSTM SIMD** — Gate computation now uses
+  `core_cpu::dot_product()` (AVX2+FMA/NEON). ~3M MACs per timestep accelerated.
 
-- [x] **LiteMLA graph implementation** — `g_litemla` now a full ggml graph:
-  QKV conv → agg DW/PW conv → concat → reshape → Q/K/V views → ReLU → batched
-  mul_mat KTV → sum_rows K_sum → mul_mat out_unnorm → mul_mat norm → clamp+repeat+div
-  → permute → proj conv. Phase 2 of `run_forward_graph` extended to include all 6
-  EfficientViT blocks in one ggml graph (no scalar fallback). DONE (this commit).
+- [ ] **LiteMLA graph implementation** — `surya_det.cpp` line 792 has TODO:
+  `g_litemla` returns nullptr, the graph-accelerated LiteMLA is stubbed out.
+  Currently falls back to CPU-scalar attention.
 
-- [ ] **Add tiling to SR runtimes without it** — `esrgan_sr`, `safmn_sr`,
-  `nafnet_denoise`, `scunet_denoise`, `instructir`, `adair` process entire
-  images with no tiling. OOM or poor cache behavior for images >512px.
+- [ ] **Add tiling to SR runtimes without it** — `nafnet_denoise`,
+  `scunet_denoise`, `instructir`, `adair` process entire images with no tiling.
+  OOM or poor cache behavior for images >512px. (`esrgan_sr` + `safmn_sr` DONE.)
 
 #### P2 — Moderate improvements
 
@@ -517,8 +525,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   ocr_detect, surya_det, layout_detect. Eliminates ~1-3ms malloc/free
   overhead per call; significant for small/fast models (DBNet 12M, PARSeq 24M).
 
-- [x] **internvl2: native GQA in flash_attn** — already using GQA-native
-  flash_attn_ext at lines 908-922; no ggml_repeat in the live path.
+- [ ] **internvl2: native GQA in flash_attn** — currently `ggml_repeat` tiles
+  KV heads before passing to flash_attn (lines 909-919). Modern
+  `ggml_flash_attn_ext` supports GQA natively — pass K/V directly.
 
 - [ ] **internvl2: batch vision tiles** — `encode_vision()` (line 1200-1226)
   processes tiles one at a time with separate graph allocations per tile.
@@ -528,39 +537,29 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `hat_sr.cpp` convert layouts at every block boundary (30-50 full-image
   transposes per forward pass). Choose one canonical layout.
 
-- [x] **Pre-compute attention masks — hat_sr** — DONE (`ec653a3`).
-  `hat_sr_context` now caches the SW-MSA mask keyed on (pH, pW); all
-  interior tiles of the same size reuse it. `swinir_sr` already loads
-  its mask from GGUF (stale). `dat_sr` dynamic position bias: deferred.
+- [ ] **Pre-compute attention masks and position biases** — `hat_sr` and
+  `swinir_sr` rebuild shift masks per tile, `dat_sr` rebuilds dynamic position
+  bias per block. All deterministic for a given tile size.
 
-- [ ] **Fuse BatchNorm into conv weights at model load** — `dat_sr` and
-  `tbsrn_sr` apply BN as a separate pass after conv. Fold scale/shift into
-  conv weight + bias at init time.
+- [x] **Fuse BatchNorm into conv weights at model load** — TBSRN: fused 11
+  conv+BN pairs (2 per SRB × 5 + 1 final) at init. `dat_sr` still pending.
 
-- [x] **qwen2vl: token embedding via direct read** — already done: the
-  persistent decode graph (`build_decode_step_graph`, line 2386) uses
-  `ggml_get_rows` as the first graph op, eliminating the separate embed
-  mini-graph and its sched_reset/sched_alloc overhead. Item was stale.
+- [x] **qwen2vl: token embedding via direct read** — DONE. Embed is now part of
+  the main LLM graph (ggml_get_rows runs on GPU). lightonocr uses direct
+  tensor read (embed_tokens_cpu).
 
-- [x] **lightonocr: decode graph reuse** — DONE (`27b650a`). `LocPdGraph`
-  struct + `build_locr_pd_graph(ctx, max_kv)`: fixed-size KV tensors
-  `[kv_dim, max_kv-1]` per layer + F16 mask `[max_kv, 1]`. First step
-  uploads prefill KV; subsequent steps write only the new K/V row
-  (kv_dim-sized offset set) and unmask one mask slot. Gate:
-  `LOCR_DECODE_REBUILD=1`.
+- [ ] **lightonocr / deepseek: decode graph reuse** — graph structure is
+  identical across decode steps. Build once, update input data only.
 
-- [x] **qwen2vl: F32 causal mask → F16** — already F16 (line 1788,
-  `GGML_TYPE_F16`). Item was stale.
+- [x] **qwen2vl: F32 causal mask → F16** — already F16 (GGML_TYPE_F16)
+  (half the memory).
 
-- [x] **gliner_ner: DeBERTa relative position expansion** — DONE (`39f7bf5`).
-  `precompute_deberta_rel_embd()` at init caches LN-normalized rel_embd
-  (eliminates per-call dequant+LN). Per-T expansion cached in
-  `ctx->rel_pos_expanded_cache`; reused on repeated T (common in batch
-  processing), saving the full T*T×H re-expansion + 120MB alloc per hit.
+- [ ] **gliner_ner: DeBERTa relative position expansion** — creates [H, T*T]
+  F32 tensor on CPU every call. T=200 → 117MB. Cache or compute incrementally.
 
-- [ ] **Pre-compute 2D positional encoding** — `bttr_ocr` and `posformer_ocr`
-  recompute sinf/cosf/powf for every spatial position on every inference call.
-  Cache at init since dimensions are fixed.
+- [x] **Pre-compute 2D positional encoding** — TBSRN: cached at init (fixed
+  16×64 dims, reused across 5 SRB blocks). BTTR/PosFormer: cached for
+  last-used (h, w) — skips ~327K sinf/cosf evals on repeated calls.
 
 - [ ] **mel.cpp: OpenMP on STFT loop** — each frame's FFT is independent
   (line 73-84). `#pragma omp parallel for` on the `t` loop.
@@ -578,9 +577,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **instructir: SCA weight dequant inside per-channel loop** — lines
   162-163 re-dequant entire weight matrix C times. Hoist outside the loop.
 
-- [ ] **Otsu threshold: extract shared utility** — duplicated 6 times across
-  `table_parse.cpp`, `cc_detect.cpp`, `classical_preproc.cpp`, `scan_cleanup.cpp`,
-  `dewarp.cpp`. Move to `core/`.
+- [x] **Otsu threshold: extract shared utility** — Added
+  `core_cpu::otsu_threshold()` to `cpu_ops.h`. Replaced duplicated
+  implementations in cc_detect, table_parse, classical_preproc, dewarp.
+  scan_cleanup float variant kept separate (different input type).
 
 - [ ] **OpenMP in pixel-level ops** — `image_preprocess`, `dewarp`,
   `scan_cleanup`, `face_align` all accept `n_threads` but run single-threaded
@@ -609,11 +609,14 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **cpu_ops.h: `layernorm2d_cpu` cache-hostile access** — iterates (y,x,c)
   but accesses stride-H*W across channels. NHWC layout or transpose first.
 
-- [ ] **vlm_attention.h: pre-allocate scores vector outside head loop** —
-  `std::vector<float> scores(n_kv)` at line 161 allocated per-head per-step.
-
-- [ ] **vlm_attention.h: pre-allocate `swiglu_ffn` intermediates** — two
-  `intermediate_dim`-sized vectors (line 207) allocated every call.
+- [x] **vlm_attention.h: pre-allocate scores vector outside head loop** —
+  DONE (`9172ba1`). Thread-local buffer replaces per-head std::vector.
+- [x] **vlm_attention.h: pre-allocate `swiglu_ffn` intermediates** — DONE
+  (`9172ba1`). Thread-local buffers for gate/up vectors.
+- [x] **cpu_ops.h mha_1q_cpu alloc elimination** — DONE (`9172ba1`).
+  Write directly to output, thread-local scores buffer, optional external buf.
+- [x] **parseq_ocr decoder alloc hoist** — DONE (`38177e2`). ~18 per-step
+  vectors moved to pre-allocated dec_scratch struct.
 
 - [ ] **Nearest-neighbor → bilinear resize** — 4 of 7 math OCR runtimes
   (math_ocr, mixtex, ppformulanet, ppformulanet_l) and several others
@@ -621,6 +624,17 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 
 - [ ] **bttr beam search: top-K selection** — O(V * beam_width) candidates
   created then sorted. Use partial_sort or nth_element for top-K.
+
+- [x] **bttr_ocr decoder alloc hoist + SIMD attention** — DONE (`4febeb6`).
+  Pre-allocated scratch buffers, core_cpu::dot_product in MHA, pre-alloc KV cache.
+- [x] **posformer_ocr decoder alloc hoist + SIMD attention** — DONE (`080c75e`).
+  Same pattern as bttr, including ARM-specific buffers (raw_scores, cov_bias).
+- [x] **hmer_ocr GRU decoder alloc hoist + SIMD** — DONE (`98e6daf`).
+  Pre-allocated scratch for GRU/Bahdanau attention, SIMD v() dot product,
+  SIMD enc_ua precomputation via core_cpu::linear_cpu.
+- [x] **math_ocr SIMD linear + scalar decoder allocs** — DONE (`ac3a362`).
+  Replaced scalar linear_cpu with core_cpu::linear_cpu (SIMD), SIMD dot_product
+  in mha_1q, pre-allocated scalar decoder scratch.
 
 - [ ] **Add beam search to math OCR runtimes** — only bttr_ocr has it.
   mixtex, math_ocr, hmer, posformer, ppformulanet, ppformulanet_l are
@@ -654,6 +668,52 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **Remove dead scalar fallback encoder in ppformulanet_l** — lines
   716-962 (~250 lines) are kept for debugging but never used in production.
   Guard with `#ifdef DEBUG`.
+
+---
+
+## Per-Backend Performance Optimization (Q4_K, A/B benchmarked)
+
+Systematic per-backend optimization pass. Every change is A/B benchmarked
+using `CRISPEMBED_<MODULE>_BENCH=1` on Q4_K models. Constraint: 8GB VPS,
+single-threaded, must not OOM.
+
+### lightonocr (Pixtral ViT 24L + Qwen3 28L, 1B) — 2.09x done
+
+**Baseline** (400×100 image, 240 patches, q4_k, CPU 4-thread):
+  vision=64.5s, projection=0.2s, prefill=36.4s, decode(6tok)=123.6s, total=245.2s
+
+**Done:**
+- [x] Flash attention default — 1.5x vision, 1.4x prefill
+- [x] Direct embed lookup (no ggml graph per token) — eliminates per-step overhead
+- [x] F16 ggml KV cache — persistent F16 backend tensors, ggml_view + ggml_cpy,
+      zero CPU↔backend transfer per step. Halves KV memory.
+
+**After all optimizations**: vision=20.6s, prefill=14.0s, decode=69.5s, total=117.5s (**2.09x**)
+
+- [x] Patch embedding → ggml matmul (im2col + mul_mat, scalar fallback gated)
+
+**Remaining:**
+- [ ] **Decode graph reuse** — graph still rebuilt per step (tensor shapes change
+      with Lk). Need fixed-max-KV graph with ggml_view variable-length reads.
+
+### qwen2vl — DONE (already optimized)
+  F16 KV cache, flash attn, ggml patch embed, direct embed lookup, F16 mask — all done.
+
+### deepseek_ocr2 — PENDING (needs q4_k model, 3.4B too large for 8GB VPS f16-only)
+
+### got_ocr (SAM ViT-B + Qwen2-0.5B, 0.7B) — DONE
+- [x] Patch embedding → ggml matmul (same im2col pattern, scalar fallback gated)
+- [x] Neck+downsample+projector → ggml graph (conv2d_direct + LN2d via permute+norm + mul_mat)
+  Gated: CRISPEMBED_GOT_OCR_SCALAR_NECK=1 / CRISPEMBED_GOT_OCR_SCALAR_PATCH=1
+
+### glm_ocr (CogVLM2 + GLM-4, 0.9B) — DONE
+- [x] Downsample + merger → ggml graph (conv2d_direct + batched SwiGLU + LayerNorm)
+  Gated: CRISPEMBED_GLM_OCR_SCALAR_MERGER=1. Merger: 383ms on q4_k.
+### granite_vision — PENDING
+### smoldocling — PENDING
+### internvl2 — PENDING
+### SR/denoise — PENDING
+### Embedding — PENDING
 
 ---
 

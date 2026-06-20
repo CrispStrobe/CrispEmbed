@@ -140,15 +140,77 @@ static inline float dot_product(const float* a, const float* b, int n) {
 
 static inline void layernorm_cpu(const float* in, float* out, int D,
                                  const float* w, const float* b, float eps) {
-    double mean = 0;
-    for (int i = 0; i < D; i++) mean += in[i];
-    mean /= D;
-    double var = 0;
-    for (int i = 0; i < D; i++) { double d = in[i] - mean; var += d * d; }
-    var /= D;
-    float s = 1.0f / sqrtf((float)var + eps);
+    // Mean (SIMD-accelerated sum)
+    float fmean;
+    {
+        float sum = 0.0f;
+#if defined(__AVX2__)
+        __m256 acc = _mm256_setzero_ps();
+        int i = 0;
+        for (; i + 7 < D; i += 8)
+            acc = _mm256_add_ps(acc, _mm256_loadu_ps(in + i));
+        __m128 lo = _mm256_castps256_ps128(acc);
+        __m128 hi = _mm256_extractf128_ps(acc, 1);
+        lo = _mm_add_ps(lo, hi);
+        lo = _mm_add_ps(lo, _mm_movehl_ps(lo, lo));
+        lo = _mm_add_ss(lo, _mm_shuffle_ps(lo, lo, 1));
+        sum = _mm_cvtss_f32(lo);
+        for (; i < D; i++) sum += in[i];
+#else
+        for (int i = 0; i < D; i++) sum += in[i];
+#endif
+        fmean = sum / D;
+    }
+    // Variance (SIMD-accelerated sum of squared differences)
+    float fvar;
+    {
+        float ss = 0.0f;
+#if defined(__AVX2__) && defined(__FMA__)
+        __m256 vmean = _mm256_set1_ps(fmean);
+        __m256 acc = _mm256_setzero_ps();
+        int i = 0;
+        for (; i + 7 < D; i += 8) {
+            __m256 d = _mm256_sub_ps(_mm256_loadu_ps(in + i), vmean);
+            acc = _mm256_fmadd_ps(d, d, acc);
+        }
+        __m128 lo = _mm256_castps256_ps128(acc);
+        __m128 hi = _mm256_extractf128_ps(acc, 1);
+        lo = _mm_add_ps(lo, hi);
+        lo = _mm_add_ps(lo, _mm_movehl_ps(lo, lo));
+        lo = _mm_add_ss(lo, _mm_shuffle_ps(lo, lo, 1));
+        ss = _mm_cvtss_f32(lo);
+        for (; i < D; i++) { float d = in[i] - fmean; ss += d * d; }
+#else
+        for (int i = 0; i < D; i++) { float d = in[i] - fmean; ss += d * d; }
+#endif
+        fvar = ss / D;
+    }
+    // Scale + shift (SIMD-accelerated)
+    float s = 1.0f / sqrtf(fvar + eps);
+#if defined(__AVX2__) && defined(__FMA__)
+    {
+        __m256 vs = _mm256_set1_ps(s);
+        __m256 vm = _mm256_set1_ps(fmean);
+        int i = 0;
+        if (w && b) {
+            for (; i + 7 < D; i += 8) {
+                __m256 v = _mm256_mul_ps(_mm256_sub_ps(_mm256_loadu_ps(in + i), vm), vs);
+                v = _mm256_fmadd_ps(v, _mm256_loadu_ps(w + i), _mm256_loadu_ps(b + i));
+                _mm256_storeu_ps(out + i, v);
+            }
+        } else if (w) {
+            for (; i + 7 < D; i += 8) {
+                __m256 v = _mm256_mul_ps(_mm256_sub_ps(_mm256_loadu_ps(in + i), vm), vs);
+                _mm256_storeu_ps(out + i, _mm256_mul_ps(v, _mm256_loadu_ps(w + i)));
+            }
+        }
+        for (; i < D; i++)
+            out[i] = ((in[i] - fmean) * s) * (w ? w[i] : 1.0f) + (b ? b[i] : 0.0f);
+    }
+#else
     for (int i = 0; i < D; i++)
-        out[i] = ((in[i] - (float)mean) * s) * (w ? w[i] : 1.0f) + (b ? b[i] : 0.0f);
+        out[i] = ((in[i] - fmean) * s) * (w ? w[i] : 1.0f) + (b ? b[i] : 0.0f);
+#endif
 }
 
 // ---------------------------------------------------------------------------
@@ -172,23 +234,20 @@ static inline void layernorm_cpu(const float* in, float* out, int D,
 static inline void layernorm2d_cpu(const float* in, float* out,
                                    int C, int H, int W,
                                    const float* w, const float* b, float eps) {
+    // Gather C values per spatial position into contiguous buffer for
+    // cache-friendly norm computation (original does 3×C strided accesses
+    // with stride H*W per position — cache-hostile for large spatial dims).
+    std::vector<float> buf(C);
+    int HW = H * W;
     for (int y = 0; y < H; y++) {
         for (int x = 0; x < W; x++) {
-            double mean = 0;
-            for (int c = 0; c < C; c++)
-                mean += in[c * H * W + y * W + x];
-            mean /= C;
-            double var = 0;
-            for (int c = 0; c < C; c++) {
-                double d = in[c * H * W + y * W + x] - mean;
-                var += d * d;
-            }
-            var /= C;
-            float s = 1.0f / sqrtf((float)var + eps);
-            for (int c = 0; c < C; c++) {
-                float v = (in[c * H * W + y * W + x] - (float)mean) * s;
-                out[c * H * W + y * W + x] = v * (w ? w[c] : 1.0f) + (b ? b[c] : 0.0f);
-            }
+            int pos = y * W + x;
+            // Gather: strided → contiguous
+            for (int c = 0; c < C; c++) buf[c] = in[c * HW + pos];
+            // Compute layernorm on contiguous buffer
+            layernorm_cpu(buf.data(), buf.data(), C, w, b, eps);
+            // Scatter: contiguous → strided
+            for (int c = 0; c < C; c++) out[c * HW + pos] = buf[c];
         }
     }
 }
@@ -199,10 +258,47 @@ static inline void layernorm2d_cpu(const float* in, float* out,
 
 static inline void rmsnorm_cpu(const float* in, float* out, int D,
                                const float* w, float eps) {
-    double ss = 0;
-    for (int i = 0; i < D; i++) ss += (double)in[i] * in[i];
-    float s = 1.0f / sqrtf((float)(ss / D) + eps);
+    // Sum of squares (SIMD-accelerated)
+    float ss = 0.0f;
+#if defined(__AVX2__) && defined(__FMA__)
+    {
+        __m256 acc = _mm256_setzero_ps();
+        int i = 0;
+        for (; i + 7 < D; i += 8) {
+            __m256 v = _mm256_loadu_ps(in + i);
+            acc = _mm256_fmadd_ps(v, v, acc);
+        }
+        __m128 lo = _mm256_castps256_ps128(acc);
+        __m128 hi = _mm256_extractf128_ps(acc, 1);
+        lo = _mm_add_ps(lo, hi);
+        lo = _mm_add_ps(lo, _mm_movehl_ps(lo, lo));
+        lo = _mm_add_ss(lo, _mm_shuffle_ps(lo, lo, 1));
+        ss = _mm_cvtss_f32(lo);
+        for (; i < D; i++) ss += in[i] * in[i];
+    }
+#else
+    for (int i = 0; i < D; i++) ss += in[i] * in[i];
+#endif
+    float s = 1.0f / sqrtf(ss / D + eps);
+    // Scale (SIMD-accelerated)
+#if defined(__AVX2__)
+    {
+        __m256 vs = _mm256_set1_ps(s);
+        int i = 0;
+        if (w) {
+            for (; i + 7 < D; i += 8)
+                _mm256_storeu_ps(out + i, _mm256_mul_ps(
+                    _mm256_mul_ps(_mm256_loadu_ps(in + i), vs),
+                    _mm256_loadu_ps(w + i)));
+        } else {
+            for (; i + 7 < D; i += 8)
+                _mm256_storeu_ps(out + i, _mm256_mul_ps(_mm256_loadu_ps(in + i), vs));
+        }
+        for (; i < D; i++) out[i] = in[i] * s * (w ? w[i] : 1.0f);
+    }
+#else
     for (int i = 0; i < D; i++) out[i] = in[i] * s * (w ? w[i] : 1.0f);
+#endif
 }
 
 // ---------------------------------------------------------------------------
@@ -216,6 +312,21 @@ static inline void linear_cpu(const float* in, float* out, int in_dim, int out_d
         float s = dot_product(in, w + o * in_dim, in_dim);
         out[o] = s + (b ? b[o] : 0.0f);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Linear batched (matrix-matrix multiply): N tokens at once
+// ---------------------------------------------------------------------------
+// in:  [N, in_dim] row-major    (N rows of in_dim)
+// out: [N, out_dim] row-major   (N rows of out_dim)
+// w:   [out_dim, in_dim] row-major
+// Equivalent to: for (i=0..N-1) linear_cpu(in+i*in_dim, out+i*out_dim, ...)
+
+static inline void linear_batch_cpu(const float* in, float* out,
+                                     int N, int in_dim, int out_dim,
+                                     const float* w, const float* b) {
+    for (int i = 0; i < N; i++)
+        linear_cpu(in + i * in_dim, out + i * out_dim, in_dim, out_dim, w, b);
 }
 
 // ---------------------------------------------------------------------------
@@ -296,13 +407,45 @@ static inline void silu_inplace(float* data, int n) {
     for (int i = 0; i < n; i++) data[i] = data[i] / (1.0f + expf(-data[i]));
 }
 
-// In-place softmax
+// In-place softmax (SIMD-accelerated max, normalize)
 static inline void softmax(float* data, int n) {
+    // Max (SIMD-accelerated)
     float mx = data[0];
+#if defined(__AVX2__)
+    if (n >= 8) {
+        __m256 vmx = _mm256_loadu_ps(data);
+        int i = 8;
+        for (; i + 7 < n; i += 8)
+            vmx = _mm256_max_ps(vmx, _mm256_loadu_ps(data + i));
+        __m128 lo = _mm256_castps256_ps128(vmx);
+        __m128 hi = _mm256_extractf128_ps(vmx, 1);
+        lo = _mm_max_ps(lo, hi);
+        lo = _mm_max_ps(lo, _mm_movehl_ps(lo, lo));
+        lo = _mm_max_ss(lo, _mm_shuffle_ps(lo, lo, 1));
+        mx = _mm_cvtss_f32(lo);
+        for (; i < n; i++) if (data[i] > mx) mx = data[i];
+    } else {
+        for (int i = 1; i < n; i++) if (data[i] > mx) mx = data[i];
+    }
+#else
     for (int i = 1; i < n; i++) if (data[i] > mx) mx = data[i];
+#endif
+    // Exp + sum (expf is not SIMD-friendly, keep scalar)
     float sum = 0;
     for (int i = 0; i < n; i++) { data[i] = expf(data[i] - mx); sum += data[i]; }
-    for (int i = 0; i < n; i++) data[i] /= sum;
+    // Normalize (SIMD-accelerated)
+    float inv_sum = 1.0f / sum;
+#if defined(__AVX2__)
+    {
+        __m256 vs = _mm256_set1_ps(inv_sum);
+        int i = 0;
+        for (; i + 7 < n; i += 8)
+            _mm256_storeu_ps(data + i, _mm256_mul_ps(_mm256_loadu_ps(data + i), vs));
+        for (; i < n; i++) data[i] *= inv_sum;
+    }
+#else
+    for (int i = 0; i < n; i++) data[i] *= inv_sum;
+#endif
 }
 
 // HardSwish: x * min(max(x+3, 0), 6) / 6
@@ -388,17 +531,35 @@ static inline void apply_bn_cpu(float* data, int ch, int sp,
 
 // Multi-head attention (single query position)
 // q: [D], k: [n_kv, D], v: [n_kv, D], out: [D]
+// scores_buf: optional pre-allocated buffer [>=n_kv] to avoid per-head heap alloc.
+//             If nullptr, uses a thread-local buffer (safe, no per-call alloc).
 static inline void mha_1q_cpu(const float* q, const float* k, const float* v,
-                               float* out, int n_kv, int D, int n_heads) {
+                               float* out, int n_kv, int D, int n_heads,
+                               float* scores_buf = nullptr) {
     int hd = D / n_heads;
-    std::vector<float> result(D, 0.0f);
+    // Write directly to out (avoids separate result vector + memcpy)
+    memset(out, 0, D * sizeof(float));
+
+    // Scores buffer: use external if provided, else thread-local (no per-call alloc)
+    static thread_local std::vector<float> tl_scores;
+    float* scores;
+    if (scores_buf) {
+        scores = scores_buf;
+    } else {
+        if ((int)tl_scores.size() < n_kv) tl_scores.resize(n_kv);
+        scores = tl_scores.data();
+    }
+
+    float scale = 1.0f / sqrtf((float)hd);
     for (int h = 0; h < n_heads; h++) {
         int off = h * hd;
-        std::vector<float> scores(n_kv);
-        float scale = 1.0f / sqrtf((float)hd);
-        for (int ki = 0; ki < n_kv; ki++)
+        // Q·K scores (SIMD via dot_product)
+        float maxs = -1e30f;
+        for (int ki = 0; ki < n_kv; ki++) {
             scores[ki] = dot_product(q + off, k + ki * D + off, hd) * scale;
-        float maxs = *std::max_element(scores.begin(), scores.end());
+            if (scores[ki] > maxs) maxs = scores[ki];
+        }
+        // Softmax
         float sum = 0;
         for (int ki = 0; ki < n_kv; ki++) {
             scores[ki] = expf(scores[ki] - maxs);
@@ -406,14 +567,58 @@ static inline void mha_1q_cpu(const float* q, const float* k, const float* v,
         }
         float inv_sum = 1.0f / sum;
         for (int ki = 0; ki < n_kv; ki++) scores[ki] *= inv_sum;
-        for (int d = 0; d < hd; d++) {
-            float s = 0;
-            for (int ki = 0; ki < n_kv; ki++)
-                s += scores[ki] * v[ki * D + off + d];
-            result[off + d] = s;
+        // Weighted V accumulation: out[off:off+hd] = sum(scores[ki] * V[ki][off:off+hd])
+        float * dst = out + off;
+        for (int ki = 0; ki < n_kv; ki++) {
+            float s = scores[ki];
+            const float * vrow = v + ki * D + off;
+#if defined(__AVX2__) && defined(__FMA__)
+            __m256 vs = _mm256_set1_ps(s);
+            int d = 0;
+            for (; d + 7 < hd; d += 8)
+                _mm256_storeu_ps(dst + d, _mm256_fmadd_ps(vs, _mm256_loadu_ps(vrow + d),
+                                                           _mm256_loadu_ps(dst + d)));
+            for (; d < hd; d++) dst[d] += s * vrow[d];
+#elif defined(__ARM_NEON)
+            float32x4_t vs = vdupq_n_f32(s);
+            int d = 0;
+            for (; d + 3 < hd; d += 4)
+                vst1q_f32(dst + d, vfmaq_f32(vld1q_f32(dst + d), vs, vld1q_f32(vrow + d)));
+            for (; d < hd; d++) dst[d] += s * vrow[d];
+#else
+            for (int d = 0; d < hd; d++) dst[d] += s * vrow[d];
+#endif
         }
     }
-    memcpy(out, result.data(), D * sizeof(float));
+}
+
+// ---------------------------------------------------------------------------
+// Otsu threshold — interclass variance maximization
+// ---------------------------------------------------------------------------
+// Returns the optimal uint8 threshold for binarizing a grayscale image.
+// Shared across table_parse, cc_detect, classical_preproc, dewarp.
+
+static inline uint8_t otsu_threshold(const uint8_t* gray, int n) {
+    int hist[256] = {};
+    for (int i = 0; i < n; i++) hist[gray[i]]++;
+    double sum = 0;
+    for (int i = 0; i < 256; i++) sum += i * hist[i];
+    double sumB = 0;
+    int wB = 0;
+    double max_var = 0;
+    int best_t = 128;
+    for (int t = 0; t < 256; t++) {
+        wB += hist[t];
+        if (wB == 0) continue;
+        int wF = n - wB;
+        if (wF == 0) break;
+        sumB += t * hist[t];
+        double mB = sumB / wB;
+        double mF = (sum - sumB) / wF;
+        double var = (double)wB * wF * (mB - mF) * (mB - mF);
+        if (var > max_var) { max_var = var; best_t = t; }
+    }
+    return (uint8_t)best_t;
 }
 
 } // namespace core_cpu

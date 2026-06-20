@@ -842,21 +842,13 @@ typedef CrispembedScunetProcessNative = Int32 Function(
     Pointer<Uint8> pixels,
     Int32 width,
     Int32 height,
-    Int32 tileSize,
-    Int32 tileOverlap,
-    Pointer<Pointer<Uint8>> outPixels,
-    Pointer<Int32> outWidth,
-    Pointer<Int32> outHeight);
+    Pointer<Pointer<Uint8>> outPixels);
 typedef CrispembedScunetProcessDart = int Function(
     Pointer<Void> ctx,
     Pointer<Uint8> pixels,
     int width,
     int height,
-    int tileSize,
-    int tileOverlap,
-    Pointer<Pointer<Uint8>> outPixels,
-    Pointer<Int32> outWidth,
-    Pointer<Int32> outHeight);
+    Pointer<Pointer<Uint8>> outPixels);
 
 typedef CrispembedScunetFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedScunetFreeImageDart = void Function(Pointer<Uint8> pixels);

@@ -277,11 +277,16 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
 
         // Vision encoder weights: keep at Q8_0 minimum for OCR quality. The
         // vision encoder directly determines text recognition accuracy, so
-        // aggressive quantization (Q4_K, Q3_K, Q2_K) degrades it. Covers both
-        // "v.*" (SAM ViT / merger) and "qe.*" (the DeepSeek-OCR Qwen2 vision
-        // encoder), which otherwise wouldn't match the "v." prefix.
+        // aggressive quantization (Q4_K, Q3_K, Q2_K) degrades it. Covers
+        // "v.*" (SAM ViT / merger), "qe.*" (the DeepSeek-OCR Qwen2 vision
+        // encoder), and "vis.*" (granite_vision SigLIP, smoldocling) — the
+        // latter does NOT start with "v." so it was being aggressively
+        // quantized. Worse, SigLIP's D=1152 is not 256-divisible, so a Q4_K
+        // target fell back to Q4_0 (legacy 4-bit) on the vision weights; Q8_0
+        // has block size 32 (1152 % 32 == 0) so it applies cleanly here.
         bool is_vision_weight = sname.rfind("v.", 0) == 0 ||
-                                sname.rfind("qe.", 0) == 0;
+                                sname.rfind("qe.", 0) == 0 ||
+                                sname.rfind("vis.", 0) == 0;
         if (quantize && is_vision_weight &&
             qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 &&
             qtype != GGML_TYPE_Q6_K && qtype != GGML_TYPE_Q5_K) {
