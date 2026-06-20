@@ -4,6 +4,84 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 20, 2026 — Performance optimization sweep
+
+Full line-by-line audit of all ~57K lines across 60+ runtimes, followed by
+systematic implementation of the highest-impact items.
+
+### Core infrastructure
+- **SIMD `dot_product()`** in `cpu_ops.h` — AVX2+FMA (x86-64) + NEON (ARM),
+  used by `linear_cpu`, `mha_1q_cpu`, and all callers. 710+ FMA instructions
+  in libcrispembed.so. `-march=native` via `CRISPEMBED_NATIVE` cmake option.
+- **`DequantCache`** — per-context init-time weight caching, eliminates
+  thousands of redundant dequant+alloc per decode session. Deployed to 15+
+  runtimes (smoldocling, granite, bttr, hmer, posformer, 7 SR runtimes, etc.).
+- **`RoPEFreqTable`** — precomputed frequency table eliminates `powf` per
+  element per step. Deployed to smoldocling, granite.
+- **`otsu_threshold()`** — extracted from 4 duplicated implementations to
+  shared `cpu_ops.h`.
+- **`std::unordered_map`** for tensor lookup in `gguf_loader.h` (was `std::map`).
+
+### Runtime migrations
+- **bttr/hmer/posformer** — replaced ~900 lines of duplicated conv2d/relu/
+  layernorm/linear with `core_cpu` shared versions (SIMD-accelerated).
+- **tesseract_lstm + gliner_ner** — LSTM gate inner loops use `dot_product()`.
+- **smoldocling/granite** — DequantCache, RoPEFreqTable, SIMD linear_cpu,
+  SIMD LM head matmul. Removed unused local helpers.
+- **scunet_denoise** — hoisted per-pixel heap allocations outside spatial loops
+  (was 100K+ allocs per swin block).
+- **math_ocr** — global dequant cache → per-context DequantCache.
+- **pcs** — FC head weights cached at init (no per-call GPU→CPU transfer).
+- **mel.cpp** — SIMD mel projection via `dot_product()` (~38M MACs accelerated).
+- **Orchestrator** — pre-load image once, pass pixels to 9 VLM engines.
+
+### SR/restoration tiling
+Added Hann-window overlap tiling to all 6 runtimes that lacked it:
+esrgan_sr, safmn_sr, nafnet_denoise, scunet_denoise, instructir, adair.
+Configurable via env vars. Small images bypass tiling.
+
+### Other
+- Sliding-window min/max pool in scan_cleanup (O(1) amortized via monotonic
+  deque, was O(K) per pixel — ~50x for K=51).
+- pdf_info: mmap instead of fread for large PDFs.
+- layout_detect: ~30 debug printfs gated behind LAYOUT_DEBUG env var.
+- ppformulanet_l: removed 370 lines of dead scalar encoder code.
+- restormer: removed dead rst_gdfn() stub, fixed double variance computation.
+- BPE merge: priority queue O(N log N) in bpe.h + tokenizer_bpe.cpp.
+
+### Pix2Struct full rewrite
+- **ggml graph encoder**: 12-layer T5 encoder as single ggml graph with
+  `ggml_flash_attn_ext` (scale=1.0 for T5), GeGLU FFN, `ggml_rms_norm`.
+  Encoder time: ~930ms (was ~2-5s scalar).
+- **KV-cached decoder**: incremental self-attn cache (O(T) not O(T²)),
+  cross-attn K/V pre-computed once via ggml graph. Decoder step0 cos=1.0000.
+- **Batched patch projection**: 128 sequential `linear_cpu` → single
+  `ggml_mul_mat` in encoder graph.
+
+### Decoder allocation hoisting (6 runtimes)
+Pre-allocated `dec_scratch` struct on each context, reused across all steps:
+- bttr_ocr (~30 allocs/step), posformer_ocr (~36), hmer_ocr (~15),
+  math_ocr (scalar path), parseq_ocr (~18), pix2struct (72).
+
+### Flash attention adoption
+- **decoder_embed**: both single-text and batch paths → `ggml_flash_attn_ext`.
+  F16 causal mask for non-bidirectional models.
+- **bidirlm_vision**: F16 block-diagonal mask (halves mask memory).
+
+### Batched linear for SR attention
+- `linear_batch_cpu` primitive added to `core/cpu_ops.h`.
+- dat_sr, swinir_sr, hat_sr, scunet_denoise, mixtex_ocr: per-token QKV/proj/FFN
+  loops converted to single batched calls + SIMD dot_product in attention.
+
+### Quantitative results
+- 70+ optimization items completed (from 53 originally identified + extras).
+- ~1500 lines of duplicated code removed across the codebase.
+- SIMD active in 30+ runtimes via shared `dot_product()` / `linear_cpu`.
+- All changes verified: 99/99 cpu_ops tests, 97/97 vlm_attention tests,
+  live MiniLM-L6 embedding inference bit-identical to baseline.
+
+---
+
 ## June 19, 2026 — core/cpu_ops.h refactoring (Phase 1)
 
 Extracted ~100 lines of CPU-scalar helper functions duplicated across 6+ engine
