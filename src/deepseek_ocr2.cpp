@@ -2575,8 +2575,13 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
     auto &mdl = ctx->inner.m;
     auto &lhp = mdl.lhp;
     int D = lhp.hidden;
-    auto embed_w = to_f32(mdl.embed_tokens);
-    auto vsep    = to_f32(mdl.view_separator);  // [D]
+    auto vsep = to_f32(mdl.view_separator);  // [D] — tiny (1 row), to_f32 is fine
+
+    // Per-row embed dequant: avoid materialising the full 128k×1280 (~655 MB) table.
+    ggml_tensor* emb_t = mdl.embed_tokens;
+    const auto* emb_tt = ggml_get_type_traits(emb_t->type);
+    const size_t emb_row_bytes = ggml_row_size(emb_t->type, D);
+    std::vector<uint8_t> emb_row_buf(emb_row_bytes);
 
     // Instruction text after <image>. DeepSeek-OCR2 plain prompt: "\nFree OCR."
     std::vector<int32_t> instr_ids =
@@ -2588,8 +2593,14 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
 
     int row = 0;
     auto put_tok = [&](int32_t id) {
-        memcpy(prompt_embeds.data() + (size_t)row * D, embed_w.data() + (size_t)id * D,
-               D * sizeof(float));
+        float *dst = prompt_embeds.data() + (size_t)row * D;
+        const size_t off = (size_t)id * emb_row_bytes;
+        if (emb_t->type == GGML_TYPE_F32) {
+            ggml_backend_tensor_get(emb_t, dst, off, (size_t)D * sizeof(float));
+        } else {
+            ggml_backend_tensor_get(emb_t, emb_row_buf.data(), off, emb_row_bytes);
+            emb_tt->to_float(emb_row_buf.data(), dst, D);
+        }
         row++;
     };
     put_tok(0);  // bos = <｜begin▁of▁sentence｜>

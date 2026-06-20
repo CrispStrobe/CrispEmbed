@@ -262,7 +262,8 @@ struct image_input {
 bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
                      llm_result &out, const image_input *img = nullptr,
                      bool logits_last_only = false,
-                     bool materialize_hidden = true);
+                     bool materialize_hidden = false,
+                     bool populate_kvc = false);
 
 // Generate text from image + prompt.
 // Returns generated token IDs and decoded text.
