@@ -577,9 +577,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   processes tiles one at a time with separate graph allocations per tile.
   Batch multiple tiles into one graph.
 
-- [ ] **Eliminate redundant CHW↔HWC layout conversions** — `dat_sr.cpp` and
-  `hat_sr.cpp` convert layouts at every block boundary (30-50 full-image
-  transposes per forward pass). Choose one canonical layout.
+- [ ] **Eliminate redundant CHW↔HWC layout conversions** — `dat_sr.cpp`
+  converts at every block boundary. Low priority: layouts are comments/
+  documentation, actual transposes are minimal after SIMD linear_batch refactor.
 
 - [x] **Pre-compute attention masks and position biases** — Already resolved:
   swinir_sr masks loaded from GGUF model file (stored as tensors, cached via
