@@ -162,6 +162,7 @@ struct ds_ocr2_ctx {
     std::vector<std::vector<float>> rp_h_per_layer, rp_w_per_layer;
 
     int n_threads = 4, verbosity = 1;
+    bool bench = false;
     std::string diff_ref_path;
 };
 
@@ -2411,6 +2412,8 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
     }
     init_ms("stack_moe_experts");
 
+    ctx.bench = (std::getenv("CRISPEMBED_DEEPSEEK_OCR2_BENCH") != nullptr);
+
     if (ctx.verbosity >= 1) {
         auto &s = ctx.m.shp; auto &q = ctx.m.qhp; auto &l = ctx.m.lhp;
         fprintf(stderr, "deepseek_ocr2: loaded %s\n", model_path);
@@ -2507,6 +2510,8 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
         }
     }
 
+    const bool bench = ctx->inner.bench;
+    auto t_total = std::chrono::steady_clock::now();
     bool dbg_t = getenv("DS_DBG") != nullptr;
     auto _ts = std::chrono::steady_clock::now();
     auto stage_ms = [&](const char *name) {
@@ -2518,6 +2523,7 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
     };
 
     // 1. SAM vision encoder
+    auto t_sam = std::chrono::steady_clock::now();
     std::vector<float> sam_features;
     int n_sam_tokens, sam_dim;
     if (!encode_sam(ctx->inner, pixels.data(), sam_features, n_sam_tokens, sam_dim)) {
@@ -2525,8 +2531,14 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
         if (out_len) *out_len = 0; return "";
     }
     stage_ms("sam");
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_sam).count();
+        fprintf(stderr, "[deepseek_ocr2-bench] sam_encoder: %lldms\n", (long long)ms);
+    }
 
     // 2. Qwen2 bidirectional encoder
+    auto t_proj = std::chrono::steady_clock::now();
     std::vector<float> enc_out;
     int n_enc_tokens, enc_dim;
     if (!encode_qwen2(ctx->inner, sam_features.data(), n_sam_tokens, sam_dim,
@@ -2543,6 +2555,11 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
         if (out_len) *out_len = 0; return "";
     }
     stage_ms("projector");
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_proj).count();
+        fprintf(stderr, "[deepseek_ocr2-bench] projection: %lldms\n", (long long)ms);
+    }
 
     fprintf(stderr, "deepseek_ocr2: stages done — sam=%d/%d qwen2=%d/%d proj=%d image tokens\n",
             n_sam_tokens, sam_dim, n_enc_tokens, enc_dim, n_enc_tokens);
@@ -2593,12 +2610,21 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx,
     }
 
     // 5. LLM decoder
+    auto t_llm = std::chrono::steady_clock::now();
     std::vector<int32_t> gen_ids;
     std::vector<float> gen_confs;
     if (!run_llm_decoder(ctx->inner, prompt_embeds.data(), n_prompt, 1024,
                          gen_ids, gen_confs)) {
         fprintf(stderr, "deepseek_ocr2: LLM decode failed\n");
         if (out_len) *out_len = 0; return "";
+    }
+    if (bench) {
+        auto llm_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_llm).count();
+        fprintf(stderr, "[deepseek_ocr2-bench] llm_decoder: %lldms\n", (long long)llm_ms);
+        auto total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_total).count();
+        fprintf(stderr, "[deepseek_ocr2-bench] total: %lldms\n", (long long)total_ms);
     }
 
     if (getenv("DS_DBG")) {

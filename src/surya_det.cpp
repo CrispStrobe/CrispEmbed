@@ -160,6 +160,7 @@ struct surya_det_context {
 
     // Debug
     bool dump;
+    bool bench;
     std::map<std::string, std::vector<float>> debug_tensors;
 };
 
@@ -187,7 +188,8 @@ static ggml_tensor* find(const std::map<std::string, ggml_tensor*>& m, const cha
 surya_det_context * surya_det_init(const char * model_path, int n_threads) {
     auto* ctx = new surya_det_context{};
     ctx->n_threads = n_threads > 0 ? n_threads : 4;
-    ctx->dump = (getenv("SURYA_DET_DUMP") != nullptr);
+    ctx->dump  = (getenv("SURYA_DET_DUMP") != nullptr);
+    ctx->bench = (std::getenv("CRISPEMBED_SURYA_DET_BENCH") != nullptr);
 
     // Pass 1: metadata
     gguf_context* gctx = core_gguf::open_metadata(model_path);
@@ -817,6 +819,8 @@ static const float * run_forward_graph(surya_det_context * ctx,
                                         const float * input_data, int H, int W,
                                         int * out_h, int * out_w) {
     auto& hp = ctx->hp;
+    const bool bench = ctx->bench;
+    auto t_total_graph = std::chrono::steady_clock::now();
 
     // The LiteMLA attention in stage 3 is hard to express as a ggml graph.
     // Strategy: use ggml graph for stages 0-2 + decode head (the bottlenecks),
@@ -908,6 +912,7 @@ static const float * run_forward_graph(surya_det_context * ctx,
     double enc_ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
 
     if (ctx->dump) fprintf(stderr, "surya_det: stages 0-2 graph compute: %.1f ms\n", enc_ms);
+    if (bench) fprintf(stderr, "[surya_det-bench] stages 0-2: %.1f ms\n", enc_ms);
 
     // Read stage outputs
     ggml_tensor* s0_out = ggml_graph_get_tensor(gf, "stage_0");
@@ -970,6 +975,7 @@ static const float * run_forward_graph(surya_det_context * ctx,
         auto t3 = std::chrono::steady_clock::now();
         double b0_ms = std::chrono::duration<double, std::milli>(t3 - t2).count();
         if (ctx->dump) fprintf(stderr, "surya_det: stage3 block0 graph: %.1f ms\n", b0_ms);
+        if (bench) fprintf(stderr, "[surya_det-bench] stage3 (MBConv block0): %.1f ms\n", b0_ms);
 
         ggml_tensor* s3_t = ggml_graph_get_tensor(gf2, "s3_b0");
         int sH = (int)s3_t->ne[1], sW = (int)s3_t->ne[0];
@@ -985,9 +991,15 @@ static const float * run_forward_graph(surya_det_context * ctx,
         int ch = hp.stage_ch[3];
         (void)prev_ch;
 
+        auto t_vit = std::chrono::steady_clock::now();
         for (int b = 0; b < 6; b++) {
             s3_data = evitvit_block_fwd(s3_data.data(), ctx->stage3_vit[b],
                                          ch, sH, sW, hp.head_dim);
+        }
+        if (bench) {
+            double ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t_vit).count();
+            fprintf(stderr, "[surya_det-bench] ViT blocks (LiteMLA x6): %.1f ms\n", ms);
         }
 
         // --- Phase 3: decode head ---
@@ -999,7 +1011,13 @@ static const float * run_forward_graph(surya_det_context * ctx,
         stage_outputs[2] = std::move(s2_data);
         stage_outputs[3] = std::move(s3_data);
 
+        auto t_dec = std::chrono::steady_clock::now();
         auto heatmap = decode_head_fwd(ctx, stage_outputs, stage_H, stage_W);
+        if (bench) {
+            double ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t_dec).count();
+            fprintf(stderr, "[surya_det-bench] decode head: %.1f ms\n", ms);
+        }
 
         int out_hm_h = stage_H[0], out_hm_w = stage_W[0];
         ctx->heatmap = std::move(heatmap);
@@ -1007,6 +1025,12 @@ static const float * run_forward_graph(surya_det_context * ctx,
         ctx->heatmap_w = out_hm_w;
 
         if (ctx->dump) dump_stats("heatmap (graph)", ctx->heatmap.data(), 2 * out_hm_h * out_hm_w);
+
+        if (bench) {
+            double total_ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t_total_graph).count();
+            fprintf(stderr, "[surya_det-bench] total: %.1f ms\n", total_ms);
+        }
 
         if (out_h) *out_h = out_hm_h;
         if (out_w) *out_w = out_hm_w;
@@ -1028,12 +1052,15 @@ static const float * run_forward(surya_det_context * ctx,
 
     auto& hp = ctx->hp;
     bool dump = ctx->dump;
+    const bool bench = ctx->bench;
+    auto t_total_scalar = std::chrono::steady_clock::now();
 
     if (dump) {
         fprintf(stderr, "surya_det: input [3, %d, %d]\n", H, W);
         dump_stats("input", input_data, 3 * H * W);
     }
 
+    auto t_stages012 = std::chrono::steady_clock::now();
     // === Stem ===
     // in_conv: Conv3x3 s2 + hardswish
     auto stem = apply_conv(input_data, ctx->stem_in_conv, 3, H, W,
@@ -1114,6 +1141,11 @@ static const float * run_forward(surya_det_context * ctx,
 
     stage_H[2] = H; stage_W[2] = W;
     if (dump) dump_stats("stage_2", s2.data(), ch * H * W);
+    if (bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_stages012).count();
+        fprintf(stderr, "[surya_det-bench] stages 0-2 (scalar): %.1f ms\n", ms);
+    }
 
     // === Stage 3 ===
     prev_ch = hp.stage_ch[2]; // 256
@@ -1129,8 +1161,18 @@ static const float * run_forward(surya_det_context * ctx,
     W = (W + 2 - 3) / 2 + 1;  // 75 → 38
 
     if (dump) dump_stats("stage_3_block_0", s3.data(), ch * H * W);
+    {
+        auto t_s3b0 = std::chrono::steady_clock::now();
+        // Timing already captured above; emit here for stage3 block0 scalar
+        if (bench) {
+            double ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t_s3b0).count();
+            (void)ms; // block0 was timed as part of the MBConv call above
+        }
+    }
 
     // Blocks 1-6: EfficientVitBlock (LiteMLA + MBConv, both with residual)
+    auto t_vit_scalar = std::chrono::steady_clock::now();
     for (int b = 0; b < 6; b++) {
         bool dump_block = dump && (b == 0); // dump internals for first block only
         char blk_pfx[32];
@@ -1143,6 +1185,11 @@ static const float * run_forward(surya_det_context * ctx,
             dump_stats(name, s3.data(), ch * H * W);
         }
     }
+    if (bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_vit_scalar).count();
+        fprintf(stderr, "[surya_det-bench] ViT blocks (LiteMLA x6, scalar): %.1f ms\n", ms);
+    }
 
     stage_H[3] = H; stage_W[3] = W;
     if (dump) dump_stats("stage_3", s3.data(), ch * H * W);
@@ -1154,7 +1201,13 @@ static const float * run_forward(surya_det_context * ctx,
     stage_outputs[2] = std::move(s2);
     stage_outputs[3] = std::move(s3);
 
+    auto t_dec_scalar = std::chrono::steady_clock::now();
     auto heatmap = decode_head_fwd(ctx, stage_outputs, stage_H, stage_W);
+    if (bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_dec_scalar).count();
+        fprintf(stderr, "[surya_det-bench] decode head (scalar): %.1f ms\n", ms);
+    }
 
     int out_hm_h = stage_H[0], out_hm_w = stage_W[0]; // 300x300
     ctx->heatmap = std::move(heatmap);
@@ -1162,6 +1215,12 @@ static const float * run_forward(surya_det_context * ctx,
     ctx->heatmap_w = out_hm_w;
 
     if (dump) dump_stats("heatmap", ctx->heatmap.data(), 2 * out_hm_h * out_hm_w);
+
+    if (bench) {
+        double total_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_total_scalar).count();
+        fprintf(stderr, "[surya_det-bench] total: %.1f ms\n", total_ms);
+    }
 
     if (out_h) *out_h = out_hm_h;
     if (out_w) *out_w = out_hm_w;

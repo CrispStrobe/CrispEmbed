@@ -15,6 +15,8 @@
 #include "morph_fast.h"
 
 #include <algorithm>
+#include <chrono>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <vector>
@@ -208,7 +210,11 @@ cc_text_region * cc_detect_lines_params(
     if (out_n) *out_n = 0;
     if (!gray || width <= 0 || height <= 0) return nullptr;
 
+    const bool bench = (std::getenv("CRISPEMBED_CC_DETECT_BENCH") != nullptr);
+    auto t_total = std::chrono::steady_clock::now();
+
     // 1. Binarize (Otsu + 1 so pixels AT the threshold are foreground)
+    auto t_bin0 = std::chrono::steady_clock::now();
     uint8_t thresh = params.binarize_threshold;
     if (thresh == 0) {
         thresh = otsu_threshold(gray, width, height);
@@ -218,8 +224,14 @@ cc_text_region * cc_detect_lines_params(
     int wpl = 0;
     uint32_t * bits = morph_u8_to_1bit(gray, width, height, thresh, &wpl);
     if (!bits) return nullptr;
+    if (bench) {
+        auto t_bin1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[cc-detect-bench] binarize: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_bin1 - t_bin0).count());
+    }
 
     // 2. Horizontal close → merge characters into lines
+    auto t_close0 = std::chrono::steady_clock::now();
     uint32_t * closed = morph_close_brick(bits, width, height, wpl,
                                            params.close_hsize, params.close_vsize);
     morph_free(bits);
@@ -236,12 +248,24 @@ cc_text_region * cc_detect_lines_params(
         if (!opened) return nullptr;
         closed = opened;
     }
+    if (bench) {
+        auto t_close1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[cc-detect-bench] close: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_close1 - t_close0).count());
+    }
 
     // 5. Connected component labeling → bounding boxes
+    auto t_cc0 = std::chrono::steady_clock::now();
     auto boxes = cc_label_boxes(closed, width, height, wpl);
     morph_free(closed);
+    if (bench) {
+        auto t_cc1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[cc-detect-bench] CC label: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_cc1 - t_cc0).count());
+    }
 
     // 6. Filter by minimum size and sort
+    auto t_filt0 = std::chrono::steady_clock::now();
     std::vector<cc_text_region> regions;
     for (auto & b : boxes) {
         int rw = b.x1 - b.x0 + 1;
@@ -265,6 +289,16 @@ cc_text_region * cc_detect_lines_params(
     if (!result) return nullptr;
     memcpy(result, regions.data(), n * sizeof(cc_text_region));
     if (out_n) *out_n = n;
+
+    if (bench) {
+        auto t_filt1 = std::chrono::steady_clock::now();
+        auto t_total1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[cc-detect-bench] filter: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_filt1 - t_filt0).count());
+        fprintf(stderr, "[cc-detect-bench] total: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
+    }
+
     return result;
 }
 

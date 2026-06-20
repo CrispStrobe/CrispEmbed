@@ -14,6 +14,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 
 // MSVC's <cmath> doesn't define M_PI without _USE_MATH_DEFINES.
@@ -312,6 +313,7 @@ static void swin_block_forward(float * x, int H, int W, int D,
 struct swinir_sr_context {
     int embed_dim, n_rstb, n_blocks, n_heads, window_size, mlp_ratio, upscale;
     int n_threads;
+    bool bench;
     core_gguf::WeightLoad wl;
     std::vector<std::vector<float>> wbufs;
     std::vector<std::vector<int32_t>> ibufs;
@@ -371,6 +373,7 @@ swinir_sr_context * swinir_sr_init(const char * model_path, int n_threads) {
     fprintf(stderr, "swinir_sr: dim=%d, rstb=%d, blocks=%d, heads=%d, ws=%d, scale=%dx, %d tensors\n",
             ctx->embed_dim, ctx->n_rstb, ctx->n_blocks, ctx->n_heads,
             ctx->window_size, ctx->upscale, (int)ctx->wl.tensors.size());
+    ctx->bench = (std::getenv("CRISPEMBED_SWINIR_SR_BENCH") != nullptr);
     return ctx;
 }
 
@@ -584,6 +587,10 @@ int swinir_sr_process(swinir_sr_context * ctx,
                       uint8_t ** output, int * out_width, int * out_height) {
     if (!ctx || !input || !output || width <= 0 || height <= 0) return -1;
 
+    const bool bench = ctx->bench;
+    using ms_f = std::chrono::duration<double, std::milli>;
+    auto t_total = std::chrono::steady_clock::now();
+
     int r = ctx->upscale;
     if (tile_size <= 0) tile_size = 64;
     if (tile_overlap <= 0) tile_overlap = 8;
@@ -600,12 +607,18 @@ int swinir_sr_process(swinir_sr_context * ctx,
     build_blend_window(out_tile, out_overlap, blend_win);
 
     // Convert input to [3, H, W] float [0, 1]
+    auto t_pre = std::chrono::steady_clock::now();
     std::vector<float> full_input(3 * height * width);
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
             for (int c = 0; c < 3; c++)
                 full_input[c * height * width + y * width + x] =
                     input[(y * width + x) * 3 + c] / 255.0f;
+    if (bench) {
+        auto t_pre_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[swinir_sr-bench] preprocess: %.1f ms\n",
+                ms_f(t_pre_end - t_pre).count());
+    }
 
     int step = tile_size - tile_overlap;
     int ntx = std::max(1, (width + step - 1) / step);
@@ -631,7 +644,13 @@ int swinir_sr_process(swinir_sr_context * ctx,
 
             int otw = tw * r, oth = th * r;
             std::vector<float> tile_out(3 * oth * otw);
+            auto t_tile = std::chrono::steady_clock::now();
             swinir_forward_tile(ctx, tile_in.data(), tw, th, tile_out.data());
+            if (bench) {
+                auto t_tile_end = std::chrono::steady_clock::now();
+                fprintf(stderr, "[swinir_sr-bench] tile %d,%d: %.1f ms\n",
+                        ty, tx, ms_f(t_tile_end - t_tile).count());
+            }
 
             // Blend
             int ox0 = x0 * r, oy0 = y0 * r;
@@ -657,6 +676,7 @@ int swinir_sr_process(swinir_sr_context * ctx,
     }
 
     // Normalize + convert to uint8
+    auto t_post = std::chrono::steady_clock::now();
     uint8_t * out_buf = (uint8_t *)malloc(3 * oh * ow);
     if (!out_buf) return -1;
     for (int y = 0; y < oh; y++)
@@ -672,6 +692,13 @@ int swinir_sr_process(swinir_sr_context * ctx,
     *output = out_buf;
     *out_width = ow;
     *out_height = oh;
+    if (bench) {
+        auto t_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[swinir_sr-bench] postprocess: %.1f ms\n",
+                ms_f(t_end - t_post).count());
+        fprintf(stderr, "[swinir_sr-bench] total: %.1f ms\n",
+                ms_f(t_end - t_total).count());
+    }
 
     if (getenv("CRISPEMBED_SWINIR_DEBUG")) {
         // Print output pixel stats

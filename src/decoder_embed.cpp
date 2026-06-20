@@ -15,6 +15,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -549,6 +550,10 @@ std::vector<float> decoder_encode_tokens(
     std::vector<uint8_t> * compute_meta,
     const dec_image_input * img) {
 
+    const bool bench = (std::getenv("CRISPEMBED_DECODER_EMBED_BENCH") != nullptr);
+    auto t_total = std::chrono::steady_clock::now();
+    auto t_build0 = std::chrono::steady_clock::now();
+
     const int T = (int)tokens.ids.size();
     const int H = m.n_embd;
     const int n_heads = m.n_head;
@@ -792,6 +797,12 @@ std::vector<float> decoder_encode_tokens(
     ggml_set_output(cur);
     ggml_build_forward_expand(gf, cur);
 
+    if (bench) {
+        auto t_build1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[decoder_embed-bench] graph build: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_build1 - t_build0).count());
+    }
+
     // --- Build host-side input buffers ---
     std::vector<int32_t> pos_data;
     if (use_mrope) {
@@ -890,7 +901,15 @@ std::vector<float> decoder_encode_tokens(
         }
 
         // Compute via scheduler
-        ggml_backend_sched_graph_compute(sched, gf);
+        {
+            auto t_comp0 = std::chrono::steady_clock::now();
+            ggml_backend_sched_graph_compute(sched, gf);
+            if (bench) {
+                auto t_comp1 = std::chrono::steady_clock::now();
+                fprintf(stderr, "[decoder_embed-bench] compute: %.3f ms\n",
+                        std::chrono::duration<double, std::milli>(t_comp1 - t_comp0).count());
+            }
+        }
     } else {
         // CPU fallback (set data directly)
         int32_t * id = (int32_t *)ids_t->data;
@@ -925,10 +944,19 @@ std::vector<float> decoder_encode_tokens(
             work.resize(cplan.work_size);
             cplan.work_data = work.data();
         }
-        ggml_graph_compute(gf, &cplan);
+        {
+            auto t_comp0 = std::chrono::steady_clock::now();
+            ggml_graph_compute(gf, &cplan);
+            if (bench) {
+                auto t_comp1 = std::chrono::steady_clock::now();
+                fprintf(stderr, "[decoder_embed-bench] compute: %.3f ms\n",
+                        std::chrono::duration<double, std::milli>(t_comp1 - t_comp0).count());
+            }
+        }
     }
 
     // --- Read output ---
+    auto t_post0 = std::chrono::steady_clock::now();
     ggml_tensor * out = ggml_graph_get_tensor(gf, "decoder_out");
     std::vector<float> hidden(H * T);
     if (use_sched) {
@@ -981,6 +1009,15 @@ std::vector<float> decoder_encode_tokens(
     for (int i = 0; i < (int)pooled.size(); i++) norm += pooled[i] * pooled[i];
     norm = sqrtf(std::max(norm, 1e-12f));
     for (int i = 0; i < (int)pooled.size(); i++) pooled[i] /= norm;
+
+    if (bench) {
+        auto t_post1 = std::chrono::steady_clock::now();
+        auto t_total1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[decoder_embed-bench] postprocess: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_post1 - t_post0).count());
+        fprintf(stderr, "[decoder_embed-bench] total: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
+    }
 
     return pooled;
 }

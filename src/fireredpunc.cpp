@@ -17,6 +17,7 @@
 #include "gguf.h"
 
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -238,6 +239,7 @@ struct fireredpunc_context {
     ggml_backend_buffer_t buf = nullptr;
     ggml_context* w_ctx = nullptr;
     ggml_backend_sched_t sched = nullptr;
+    bool bench = false;
 };
 
 // ---------------------------------------------------------------------------
@@ -355,6 +357,10 @@ static bool fireredpunc_load(fireredpunc_context& ctx, const char* path) {
 // ---------------------------------------------------------------------------
 
 static std::vector<int> fireredpunc_run(fireredpunc_context& ctx, const std::vector<int>& token_ids) {
+    const bool bench = ctx.bench;
+    auto t_total = std::chrono::steady_clock::now();
+    auto t_pre0  = std::chrono::steady_clock::now();
+
     const int N = (int)token_ids.size();
     // Prepend CLS + append SEP
     const int seq_len = N + 2;
@@ -486,7 +492,21 @@ static std::vector<int> fireredpunc_run(fireredpunc_context& ctx, const std::vec
         ggml_backend_tensor_set(type_ids, types.data(), 0, seq_len * sizeof(int32_t));
     }
 
-    ggml_backend_sched_graph_compute(ctx.sched, gf);
+    if (bench) {
+        auto t_pre1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[fireredpunc-bench] preprocess: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_pre1 - t_pre0).count());
+    }
+
+    {
+        auto t_comp0 = std::chrono::steady_clock::now();
+        ggml_backend_sched_graph_compute(ctx.sched, gf);
+        if (bench) {
+            auto t_comp1 = std::chrono::steady_clock::now();
+            fprintf(stderr, "[fireredpunc-bench] graph compute: %.3f ms\n",
+                    std::chrono::duration<double, std::milli>(t_comp1 - t_comp0).count());
+        }
+    }
 
     // Dump embedding for diff-testing
     if (getenv("FIREREDPUNC_DEBUG")) {
@@ -508,6 +528,7 @@ static std::vector<int> fireredpunc_run(fireredpunc_context& ctx, const std::vec
     }
 
     // Read logits: [n_classes, N]
+    auto t_post0 = std::chrono::steady_clock::now();
     std::vector<float> logits_buf(ctx.n_classes * N);
     ggml_backend_tensor_get(logits, logits_buf.data(), 0, logits_buf.size() * sizeof(float));
 
@@ -538,6 +559,16 @@ static std::vector<int> fireredpunc_run(fireredpunc_context& ctx, const std::vec
     }
 
     ggml_free(ctx0);
+
+    if (bench) {
+        auto t_post1 = std::chrono::steady_clock::now();
+        auto t_total1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[fireredpunc-bench] postprocess: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_post1 - t_post0).count());
+        fprintf(stderr, "[fireredpunc-bench] total: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
+    }
+
     return preds;
 }
 
@@ -547,6 +578,7 @@ static std::vector<int> fireredpunc_run(fireredpunc_context& ctx, const std::vec
 
 fireredpunc_context* fireredpunc_init(const char* model_path) {
     auto* ctx = new fireredpunc_context();
+    ctx->bench = (std::getenv("CRISPEMBED_FIREREDPUNC_BENCH") != nullptr);
     if (!fireredpunc_load(*ctx, model_path)) {
         delete ctx;
         return nullptr;
