@@ -54,6 +54,19 @@ private:
     int max_length_ = 512;
     bool do_lower_case_ = true;
 
+    // Trie for O(len) longest-match WordPiece lookup.
+    // Two roots: trie_root_ for first pieces, trie_cont_ for ## continuations.
+    struct TrieNode {
+        int token_id = -1;  // -1 = no token ends here
+        std::unordered_map<char, int> children;  // char → index in trie_nodes_
+    };
+    std::vector<TrieNode> trie_nodes_;
+    int trie_root_ = -1;  // index of root for first-piece tokens
+    int trie_cont_ = -1;  // index of root for continuation (##) tokens
+    bool trie_built_ = false;
+
+    void build_trie();
+
     // WordPiece: split a single word into subword tokens.
     std::vector<int> wordpiece(const std::string & word) const;
 };
