@@ -15,6 +15,7 @@
 //   → transpose → [64, T]
 
 #include "tbsrn_sr.h"
+#include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -286,7 +287,7 @@ struct tbsrn_sr_context {
     bool bench;
 
     core_gguf::WeightLoad wl;
-    std::vector<std::vector<float>> weight_bufs;
+    core_cpu::DequantCache dcache;
 
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
@@ -294,8 +295,7 @@ struct tbsrn_sr_context {
             fprintf(stderr, "tbsrn_sr: missing tensor %s\n", name.c_str());
             return nullptr;
         }
-        weight_bufs.emplace_back();
-        return tbsrn_to_f32(t, weight_bufs.back());
+        return dcache.get(t);
     }
 };
 

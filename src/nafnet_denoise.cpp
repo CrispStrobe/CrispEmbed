@@ -10,6 +10,7 @@
 //   x = prev + x * gamma
 
 #include "nafnet_denoise.h"
+#include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -289,7 +290,7 @@ struct nafnet_context {
     std::string model_path;
 
     // Dequantized weight cache
-    std::vector<std::vector<float>> weight_bufs;
+    core_cpu::DequantCache dcache;
 
     const float * get_tensor(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
@@ -297,8 +298,7 @@ struct nafnet_context {
             fprintf(stderr, "nafnet: missing tensor %s\n", name.c_str());
             return nullptr;
         }
-        weight_bufs.emplace_back();
-        return to_f32(t, weight_bufs.back());
+        return dcache.get(t);
     }
 };
 
