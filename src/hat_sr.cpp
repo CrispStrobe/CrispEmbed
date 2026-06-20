@@ -441,6 +441,10 @@ struct hat_sr_context {
     core_cpu::DequantCache dcache;
     std::vector<std::vector<int>> i32_bufs;
 
+    // Cached SW-MSA attention mask: reused when pH/pW repeat (common in tiling).
+    int mask_cache_pH = 0, mask_cache_pW = 0;
+    std::vector<float> mask_cache;
+
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t) return nullptr;
@@ -647,15 +651,14 @@ static void hat_forward_tile(hat_sr_context * ctx,
     if (pe_norm_w && pe_norm_b)
         hat_layernorm(x.data(), HW, C, pe_norm_w, pe_norm_b);
 
-    // Compute attention mask for shifted windows
+    // Build SW-MSA attention mask (cache by pH×pW — reused across tiles of same size)
     int nH = pH / ws, nW = pW / ws;
     int n_mask_windows = nH * nW;
     int shift_size = ws / 2;
     int ws2 = ws * ws;
 
-    // Build SW-MSA mask (same as SwinIR)
-    std::vector<float> attn_mask(n_mask_windows * ws2 * ws2, 0.0f);
-    {
+    if (ctx->mask_cache_pH != pH || ctx->mask_cache_pW != pW) {
+        ctx->mask_cache.assign(n_mask_windows * ws2 * ws2, 0.0f);
         std::vector<int> img_mask(pH * pW, 0);
         int cnt = 0;
         int h_slices[] = {0, pH - ws, pH - shift_size, pH};
@@ -667,7 +670,6 @@ static void hat_forward_tile(hat_sr_context * ctx,
                         img_mask[y * pW + xi] = cnt;
                 cnt++;
             }
-        // Window partition the mask
         std::vector<int> mask_windows(n_mask_windows * ws2);
         for (int wh = 0; wh < nH; wh++)
             for (int ww = 0; ww < nW; ww++)
@@ -675,14 +677,16 @@ static void hat_forward_tile(hat_sr_context * ctx,
                     for (int xi = 0; xi < ws; xi++)
                         mask_windows[(wh * nW + ww) * ws2 + y * ws + xi] =
                             img_mask[(wh * ws + y) * pW + (ww * ws + xi)];
-        // Build attention mask
         for (int w = 0; w < n_mask_windows; w++)
             for (int i = 0; i < ws2; i++)
                 for (int j = 0; j < ws2; j++) {
                     int diff = mask_windows[w * ws2 + i] - mask_windows[w * ws2 + j];
-                    attn_mask[w * ws2 * ws2 + i * ws2 + j] = (diff != 0) ? -100.0f : 0.0f;
+                    ctx->mask_cache[w * ws2 * ws2 + i * ws2 + j] = (diff != 0) ? -100.0f : 0.0f;
                 }
+        ctx->mask_cache_pH = pH;
+        ctx->mask_cache_pW = pW;
     }
+    const std::vector<float> & attn_mask = ctx->mask_cache;
 
     // Get relative position indices
     const float * rpi_sa_f = ctx->get("rpi_sa");
