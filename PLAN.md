@@ -785,9 +785,11 @@ single-threaded, must not OOM.
 - [x] Downsample + merger → ggml graph (conv2d_direct + batched SwiGLU + LayerNorm)
   Gated: CRISPEMBED_GLM_OCR_SCALAR_MERGER=1. Merger: 383ms on q4_k.
 ### granite_vision — PARTIAL
-- [x] Weight reshape fix: `sw()` helper in `gv_run_llm_body` corrects PyTorch [out,in]→ggml [in,out] for K/V/gate/up/down (`55ed5be`)
+- [x] Weight reshape fix: `sw()` helper in `gv_run_llm_body` corrects PyTorch [out,in]→ggml [in,out] for K/V/gate/up/down
 - [x] Skip LM head matmul during scalar prefill: `want_logits` parameter cuts ~99.8% of prefill LM head work (`55ed5be`)
-- [ ] LLM decoder ggml batch graph (replaces the scalar token-by-token fallback entirely)
+- [x] Fix ggml LLM graph input tensor: `x` after the layer loop was the final output node, not the input; saved as `x_in` before the loop (`d116394`). Was the root cause of "decode runs away" with `CRISPEMBED_GRANITE_LLM_GRAPH=1`. Pending runtime validation.
+- [ ] Persistent decode graph (reuse across T=1 decode steps, like lightonocr `27b650a`)
+- [ ] Native GQA in flash_attn (remove explicit ggml_repeat for KV heads)
 
 ### smoldocling (SigLIP + SmolLM2, 256M) — IN PROGRESS
 - [x] F16 KV cache + batched prefill (done earlier, `bc329e4`)
