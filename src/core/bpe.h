@@ -21,6 +21,7 @@
 #include <climits>
 #include <cstdint>
 #include <cstring>
+#include <queue>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -132,24 +133,62 @@ inline void bpe_one(const std::unordered_map<std::string, int32_t>& token_to_id,
     if (symbols.empty())
         return;
 
-    if (!merge_rank.empty()) {
-        const int max_iter = (int)symbols.size();
-        for (int iter = 0; iter < max_iter && symbols.size() >= 2; iter++) {
-            int best_i = -1;
-            int best_rank = INT_MAX;
-            for (size_t k = 0; k + 1 < symbols.size(); k++) {
-                std::string pair = symbols[k] + " " + symbols[k + 1];
-                auto it = merge_rank.find(pair);
-                if (it != merge_rank.end() && (int)it->second < best_rank) {
-                    best_rank = it->second;
-                    best_i = (int)k;
-                }
-            }
-            if (best_i < 0)
-                break;
-            symbols[best_i] += symbols[best_i + 1];
-            symbols.erase(symbols.begin() + best_i + 1);
+    if (!merge_rank.empty() && symbols.size() >= 2) {
+        // Priority-queue BPE: O(N log N) instead of O(N²).
+        // Linked list of symbol nodes + min-heap of (rank, left_node_id) pairs.
+        struct Node { std::string text; int prev, next; };
+        int n = (int)symbols.size();
+        std::vector<Node> nodes(n);
+        for (int i = 0; i < n; i++) {
+            nodes[i].text = std::move(symbols[i]);
+            nodes[i].prev = i - 1;
+            nodes[i].next = i < n - 1 ? i + 1 : -1;
         }
+
+        // (rank, left_node_id) — lower rank = higher priority
+        using PQEntry = std::pair<int32_t, int>;
+        auto cmp = [](const PQEntry& a, const PQEntry& b) { return a.first > b.first; };
+        std::priority_queue<PQEntry, std::vector<PQEntry>, decltype(cmp)> pq(cmp);
+
+        // Helper: try to add pair (i, nodes[i].next) to the queue
+        auto try_add = [&](int i) {
+            int j = nodes[i].next;
+            if (j < 0) return;
+            std::string pair = nodes[i].text + " " + nodes[j].text;
+            auto it = merge_rank.find(pair);
+            if (it != merge_rank.end())
+                pq.push({it->second, i});
+        };
+
+        // Seed queue with all initial adjacent pairs
+        for (int i = 0; i < n; i++) try_add(i);
+
+        while (!pq.empty()) {
+            auto [rank, left] = pq.top(); pq.pop();
+            int right = nodes[left].next;
+            if (right < 0) continue; // stale entry
+
+            // Validate: re-check that the merge is still the correct pair at this rank
+            std::string pair = nodes[left].text + " " + nodes[right].text;
+            auto it = merge_rank.find(pair);
+            if (it == merge_rank.end() || it->second != rank) continue; // stale
+
+            // Merge: left absorbs right
+            nodes[left].text += nodes[right].text;
+            nodes[left].next = nodes[right].next;
+            if (nodes[right].next >= 0)
+                nodes[nodes[right].next].prev = left;
+            nodes[right].next = -1; nodes[right].prev = -1; // mark dead
+
+            // Re-queue new adjacent pairs
+            if (nodes[left].prev >= 0) try_add(nodes[left].prev);
+            try_add(left);
+        }
+
+        // Collect surviving symbols (node 0 is always head — never absorbed)
+        symbols.clear();
+        for (int i = 0; i >= 0; i = nodes[i].next)
+            symbols.push_back(nodes[i].text);
     }
 
     for (const auto& s : symbols) {
