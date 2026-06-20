@@ -86,16 +86,7 @@ static void hat_conv2d(const float * input, int ic, int h, int w,
 static void hat_linear(const float * input, int n, int id, int od,
                        const float * weight, const float * bias,
                        float * output) {
-    for (int i = 0; i < n; i++) {
-        const float * in_row = input + i * id;
-        float * out_row = output + i * od;
-        for (int o = 0; o < od; o++) {
-            float sum = bias ? bias[o] : 0.0f;
-            for (int j = 0; j < id; j++)
-                sum += in_row[j] * weight[o * id + j];
-            out_row[o] = sum;
-        }
-    }
+    core_cpu::linear_batch_cpu(input, output, n, id, od, weight, bias);
 }
 
 // LayerNorm on last dim: data[N, D] in-place
