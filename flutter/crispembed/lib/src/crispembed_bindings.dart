@@ -720,6 +720,10 @@ typedef CrispembedTbsrnSrProcessDart = int Function(
     Pointer<Uint8> input,
     int width,
     int height,
+    Pointer<Pointer<Uint8>> outPixels,
+    Pointer<Int32> outWidth,
+    Pointer<Int32> outHeight);
+
 // --- SAFMN Super-Resolution (safmn_sr) ---
 typedef CrispembedSafmnSrInitNative = Pointer<Void> Function(
     Pointer<Utf8> modelPath, Int32 nThreads);
