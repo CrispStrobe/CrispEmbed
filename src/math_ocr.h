@@ -141,6 +141,36 @@ const float * math_ocr_confidences(const math_ocr_context * ctx, int * n_chars);
 /// Get mean confidence across all tokens from the last recognition.
 float math_ocr_mean_confidence(const math_ocr_context * ctx);
 
+/// Encode N crops in one batched encoder pass (single ggml graph call).
+///
+/// [crops]    — array of N raw image buffers (interleaved RGB, 3 channels each)
+/// [widths]   — widths[i] is the width of crops[i]
+/// [heights]  — heights[i] is the height of crops[i]
+/// [n_crops]  — number of crops (batch size B)
+///
+/// On success, stores per-crop encoder outputs internally.  Subsequent calls
+/// to math_ocr_decode_batch_crop() retrieve the text for each crop.
+/// Returns true on success.
+bool math_ocr_encode_batch_raw(
+    math_ocr_context * ctx,
+    const uint8_t * const * crops,
+    const int * widths,
+    const int * heights,
+    int n_crops
+);
+
+/// Decode crop at index [crop_idx] using the encoder output stored by the
+/// most recent math_ocr_encode_batch_raw() call.
+///
+/// [crop_idx] — index in [0, n_crops-1] from the encode call.
+/// Returns a null-terminated string valid until the next decode or recognize
+/// call.  Returns NULL on error or if encode has not been called.
+const char * math_ocr_decode_batch_crop(
+    math_ocr_context * ctx,
+    int crop_idx,
+    int * out_len
+);
+
 #ifdef __cplusplus
 }
 #endif
