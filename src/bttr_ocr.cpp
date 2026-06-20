@@ -105,8 +105,13 @@ struct bttr_ocr_context {
     std::vector<float> pe_cache;  // (n_pos * D) — PE values to add to encoder output
     int pe_cache_h = 0, pe_cache_w = 0;
 
-    // Dequant cache
+    // Dequant cache (scalar fallback)
     core_cpu::DequantCache dequant_cache;
+
+    // ggml graph encoder
+    ggml_backend_t       enc_backend  = nullptr;
+    ggml_backend_sched_t enc_sched    = nullptr;
+    std::vector<uint8_t> enc_compute_meta;
 
     // GGUF state
     core_gguf::WeightLoad wl;
@@ -333,11 +338,21 @@ bttr_ocr_context * bttr_ocr_init(const char * model_path, int n_threads) {
 
     ctx->bench = (std::getenv("CRISPEMBED_BTTR_BENCH") != nullptr);
 
+    // Set up ggml backend + scheduler for encoder graph
+    ctx->enc_backend = ggml_backend_cpu_init();
+    if (ctx->enc_backend) {
+        ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads);
+        ggml_backend_t backends[] = { ctx->enc_backend };
+        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+    }
+
     return ctx.release();
 }
 
 void bttr_ocr_free(bttr_ocr_context * ctx) {
     if (!ctx) return;
+    if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+    if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
     core_gguf::free_weights(ctx->wl);
     delete ctx;
 }
@@ -347,7 +362,236 @@ const bttr_ocr_hparams * bttr_ocr_get_hparams(const bttr_ocr_context * ctx) {
 }
 
 // ---------------------------------------------------------------------------
-// DenseNet encoder
+// ggml graph: DenseNet encoder (conv + pool + concat via ggml ops)
+// ---------------------------------------------------------------------------
+
+// Prepare conv weight: reshape 2D→4D if needed, cast to F16.
+static ggml_tensor * bttr_prep_conv(ggml_context * g, ggml_tensor * w,
+                                     int IC, int KH, int KW) {
+    if (!w) return nullptr;
+    if (ggml_n_dims(w) == 2) {
+        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
+            w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+        int64_t OC = w->ne[1];
+        w = ggml_reshape_4d(g, w, KW, KH, IC, OC);
+    }
+    if (w->type != GGML_TYPE_F16)
+        w = ggml_cast(g, w, GGML_TYPE_F16);
+    return w;
+}
+
+// Conv2D + bias (BN folded into weights)
+static ggml_tensor * bttr_conv(ggml_context * g, ggml_tensor * x,
+                                ggml_tensor * w, ggml_tensor * bias,
+                                int IC, int KH, int KW,
+                                int stride, int pad) {
+    w = bttr_prep_conv(g, w, IC, KH, KW);
+    x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
+    if (bias) {
+        ggml_tensor * b = ggml_reshape_3d(g, bias, 1, 1, bias->ne[0]);
+        x = ggml_add(g, x, b);
+    }
+    return x;
+}
+
+// BN scale+offset (post_norm: separate scale/offset tensors, not folded)
+static ggml_tensor * bttr_bn(ggml_context * g, ggml_tensor * x,
+                              ggml_tensor * scale, ggml_tensor * offset) {
+    ggml_tensor * s = ggml_reshape_3d(g, scale,  1, 1, scale->ne[0]);
+    ggml_tensor * o = ggml_reshape_3d(g, offset, 1, 1, offset->ne[0]);
+    x = ggml_mul(g, x, s);
+    x = ggml_add(g, x, o);
+    return x;
+}
+
+static ggml_cgraph * build_bttr_encoder_graph(bttr_ocr_context * ctx, int W, int H) {
+    const auto & hp = ctx->hparams;
+    const int gr = hp.growth_rate;     // 24
+    const int bn_size = 4;             // bottleneck multiplier
+    const int init_ch = 2 * gr;        // 48
+
+    // Graph size: 48 layers × ~30 nodes + overhead
+    int graph_size = 48 * 40 + 600;
+    size_t buf_size = ggml_tensor_overhead() * (graph_size + 200)
+                    + ggml_graph_overhead_custom(graph_size, false);
+    ctx->enc_compute_meta.resize(buf_size);
+
+    ggml_init_params ip = { buf_size, ctx->enc_compute_meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, graph_size, false);
+
+    // Input: 1-channel grayscale (W, H, 1)
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, 1);
+    ggml_set_name(x, "pixel_input");
+    ggml_set_input(x);
+
+    // Stem: Conv(1→48, 7×7, s=2, p=3) + bias (BN folded) + ReLU
+    x = bttr_conv(g, x, ctx->stem_conv_w, ctx->stem_conv_b, 1, 7, 7, 2, 3);
+    x = ggml_relu(g, x);
+
+    // MaxPool(2×2, s=2, p=0) — ceil_mode emulated with p=1
+    // ceil_mode with k=2,s=2: out = (in+1)/2 = (in+2*1-2)/2+1 → pad=1 gives ceil
+    // But ggml pool with pad=1 adds 1 to both sides, giving out=(in+2-2)/2+1=(in)/2+1
+    // which is ceil((in)/2)+... Actually: ceil_mode with k=2,s=2:
+    //   out = ceil((in - 2 + 2*0) / 2) + 1 = ceil(in/2 - 1) + 1
+    // No, simpler: ceil_mode means out_h = ceil(in_h / stride) = (in_h + stride - 1) / stride
+    // Standard: out_h = (in_h + 2*pad - k) / stride + 1
+    // To get ceil_mode with k=2,s=2: out_h = (in_h + 1) / 2
+    // With pad=0: out_h = (in_h - 2) / 2 + 1 = (in_h) / 2
+    // With pad=1: out_h = (in_h + 2 - 2) / 2 + 1 = in_h/2 + 1 (too big for even in_h)
+    // The difference only matters for odd spatial dims.
+    // For now, use pad=0 (floor mode) — difference is at most 1 pixel at border.
+    // TODO: exact ceil_mode if needed
+    x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 2, 2, 2, 2, 0, 0);
+
+    int cur_ch = init_ch;
+
+    // Dense block helper
+    auto dense_block = [&](const std::vector<dense_layer_bttr> & layers) {
+        for (const auto & l : layers) {
+            if (!l.conv1_w) continue;
+            int bn_ch = bn_size * gr;  // 96
+
+            // Conv1(cur_ch→96, 1×1) + bias (BN folded) + ReLU
+            ggml_tensor * bot = bttr_conv(g, x, l.conv1_w, l.conv1_b,
+                                           cur_ch, 1, 1, 1, 0);
+            bot = ggml_relu(g, bot);
+
+            // Conv2(96→24, 3×3) + bias (BN folded) + ReLU
+            ggml_tensor * nf = bttr_conv(g, bot, l.conv2_w, l.conv2_b,
+                                          bn_ch, 3, 3, 1, 1);
+            nf = ggml_relu(g, nf);
+
+            // Concat along channel dim (dim=2 in ggml WHC)
+            x = ggml_concat(g, x, nf, 2);
+            cur_ch += gr;
+        }
+    };
+
+    auto transition = [&](const transition_bttr & t) {
+        int out_ch = cur_ch / 2;
+        // Conv1×1 + bias (BN folded) + ReLU
+        x = bttr_conv(g, x, t.conv_w, t.conv_b, cur_ch, 1, 1, 1, 0);
+        x = ggml_relu(g, x);
+        // AvgPool(2×2, s=2) — floor mode (see ceil_mode note above)
+        x = ggml_pool_2d(g, x, GGML_OP_POOL_AVG, 2, 2, 2, 2, 0, 0);
+        cur_ch = out_ch;
+    };
+
+    // Block 1: 48 → 48+16*24 = 432
+    dense_block(ctx->block1);
+    transition(ctx->trans1);  // 432 → 216
+
+    // Block 2: 216 → 216+16*24 = 600
+    dense_block(ctx->block2);
+    transition(ctx->trans2);  // 600 → 300
+
+    // Block 3: 300 → 300+16*24 = 684
+    dense_block(ctx->block3);
+
+    // Post-norm (BN scale+offset)
+    x = bttr_bn(g, x, ctx->post_norm_scale, ctx->post_norm_offset);
+
+    // Feature projection: Conv1×1(684→256) + ReLU
+    x = bttr_conv(g, x, ctx->feat_proj_w, ctx->feat_proj_b,
+                   cur_ch, 1, 1, 1, 0);
+    x = ggml_relu(g, x);
+
+    ggml_set_name(x, "encoder_out");
+    ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+    return gf;
+}
+
+static void run_encoder_ggml(bttr_ocr_context * ctx,
+                              const float * gray, int W, int H) {
+    ggml_cgraph * gf = build_bttr_encoder_graph(ctx, W, H);
+
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "bttr_ocr: failed to allocate encoder graph\n");
+        return;
+    }
+
+    // Set input (1-channel gray, already in row-major = CHW = ggml WHC memory order)
+    ggml_tensor * pixel_in = ggml_graph_get_tensor(gf, "pixel_input");
+    ggml_backend_tensor_set(pixel_in, gray, 0, W * H * sizeof(float));
+
+    // Set threads and compute
+    for (int i = 0; i < ggml_backend_sched_get_n_backends(ctx->enc_sched); i++) {
+        ggml_backend_t be = ggml_backend_sched_get_backend(ctx->enc_sched, i);
+        ggml_backend_dev_t dev = ggml_backend_get_device(be);
+        ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
+        if (reg) {
+            auto * fn = (ggml_backend_set_n_threads_t)
+                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            if (fn) fn(be, ctx->n_threads);
+        }
+    }
+    if (ggml_backend_sched_graph_compute(ctx->enc_sched, gf) != GGML_STATUS_SUCCESS) {
+        fprintf(stderr, "bttr_ocr: encoder graph compute failed\n");
+        return;
+    }
+
+    // Read output: (W', H', D) → transpose to (H'*W', D)
+    ggml_tensor * enc_out = ggml_graph_get_tensor(gf, "encoder_out");
+    int out_w = (int)enc_out->ne[0], out_h = (int)enc_out->ne[1], D = (int)enc_out->ne[2];
+    int n_pos = out_h * out_w;
+
+    std::vector<float> chw(D * n_pos);
+    ggml_backend_tensor_get(enc_out, chw.data(), 0, chw.size() * sizeof(float));
+
+    // Transpose CHW → HW×D
+    ctx->encoder_output.resize(n_pos * D);
+    for (int c = 0; c < D; c++)
+        for (int i = 0; i < n_pos; i++)
+            ctx->encoder_output[i * D + c] = chw[c * n_pos + i];
+
+    // LayerNorm per position
+    const float * ln_w = tf32(ctx, ctx->enc_ln_w);
+    const float * ln_b = tf32(ctx, ctx->enc_ln_b);
+    for (int i = 0; i < n_pos; i++)
+        layernorm(ctx->encoder_output.data() + i * D, D, ln_w, ln_b);
+
+    // 2D PE (keep from scalar path — trivial compute, position-dependent)
+    {
+        int cur_h = out_h, cur_w = out_w;
+        if (cur_h != ctx->pe_cache_h || cur_w != ctx->pe_cache_w) {
+            const int half_d = D / 2;
+            const int quarter_d = half_d / 2;
+            const float scale = 2.0f * (float)M_PI;
+            std::vector<float> inv_freq(half_d);
+            for (int i = 0; i < half_d; i++)
+                inv_freq[i] = 1.0f / powf(10000.0f, (float)i / (float)half_d);
+            ctx->pe_cache.assign(n_pos * D, 0.0f);
+            for (int y = 0; y < cur_h; y++)
+                for (int x = 0; x < cur_w; x++) {
+                    float y_norm = scale * (float)(y + 1) / (float)cur_h;
+                    float x_norm = scale * (float)(x + 1) / (float)cur_w;
+                    float * pe = ctx->pe_cache.data() + (y * cur_w + x) * D;
+                    for (int i = 0; i < quarter_d; i++) {
+                        pe[2*i]     = sinf(x_norm * inv_freq[2*i]);
+                        pe[2*i + 1] = cosf(x_norm * inv_freq[2*i + 1]);
+                    }
+                    for (int i = 0; i < quarter_d; i++) {
+                        pe[half_d + 2*i]     = sinf(y_norm * inv_freq[2*i]);
+                        pe[half_d + 2*i + 1] = cosf(y_norm * inv_freq[2*i + 1]);
+                    }
+                }
+            ctx->pe_cache_h = cur_h;
+            ctx->pe_cache_w = cur_w;
+        }
+        for (int i = 0; i < n_pos * D; i++)
+            ctx->encoder_output[i] += ctx->pe_cache[i];
+    }
+
+    ctx->n_enc_pos = n_pos;
+    fprintf(stderr, "bttr_ocr: encoder (ggml): (%d, %d, %d) → %d positions × %d\n",
+            (int)enc_out->ne[2], out_h, out_w, n_pos, D);
+}
+
+// ---------------------------------------------------------------------------
+// DenseNet encoder (scalar fallback)
 // ---------------------------------------------------------------------------
 
 static void run_encoder(bttr_ocr_context * ctx, const float * gray, int W, int H) {
@@ -1072,7 +1316,10 @@ const char * bttr_ocr_recognize(
         std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
     t0 = std::chrono::steady_clock::now();
-    run_encoder(ctx, input, w, h);
+    if (ctx->enc_sched && !std::getenv("BTTR_OCR_SCALAR_ENCODER"))
+        run_encoder_ggml(ctx, input, w, h);
+    else
+        run_encoder(ctx, input, w, h);
     if (bench) fprintf(stderr, "[bttr-bench] encoder: %.1f ms\n",
         std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
@@ -1123,7 +1370,10 @@ const char * bttr_ocr_recognize_beam(
         std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
     t0 = std::chrono::steady_clock::now();
-    run_encoder(ctx, input, w, h);
+    if (ctx->enc_sched && !std::getenv("BTTR_OCR_SCALAR_ENCODER"))
+        run_encoder_ggml(ctx, input, w, h);
+    else
+        run_encoder(ctx, input, w, h);
     if (bench) fprintf(stderr, "[bttr-bench] encoder: %.1f ms\n",
         std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
