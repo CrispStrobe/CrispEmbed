@@ -33,7 +33,7 @@ struct face_result {
 struct context;
 
 // Load CNN GGUF. Returns true on success.
-bool load(context** ctx, const char* path, int n_threads = 4);
+bool load(context** ctx, const char* path, int n_threads = 1);
 
 // Encode a face image (recognition). pixels: [3, H, W] CHW float32.
 // Returns embedding vector (128-D for SFace, 512-D for AuraFace).

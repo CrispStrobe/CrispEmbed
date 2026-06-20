@@ -905,7 +905,7 @@ static void detokenize(ppformulanet_l_ocr_context* ctx, const std::vector<int>& 
 
 ppformulanet_l_ocr_context* ppformulanet_l_ocr_init(const char* model_path, int n_threads) {
     auto ctx = std::make_unique<ppformulanet_l_ocr_context>();
-    ctx->n_threads = n_threads > 0 ? n_threads : 4;
+    ctx->n_threads = n_threads > 0 ? n_threads : 1;
 
     gguf_context* gctx = core_gguf::open_metadata(model_path);
     if (!gctx) {

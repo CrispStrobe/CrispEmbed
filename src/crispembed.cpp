@@ -215,7 +215,7 @@ struct crispembed_context {
     ggml_backend_t backend = nullptr;
     std::vector<ggml_backend_t> backends;
     ggml_backend_sched_t sched = nullptr;
-    int n_threads = 4;
+    int n_threads = 1;
     int pool_method = 0;  // 0=mean, 1=cls, 2=last-token
     int pos_offset = 0;   // position embedding offset (2 for RoBERTa/XLM-R)
     bool use_rope = false;    // encoder uses RoPE instead of absolute position embeddings (NomicBERT)
@@ -1564,7 +1564,7 @@ static std::vector<float> run_encoder_raw(crispembed_context * ctx,
 
 extern "C" crispembed_context * crispembed_init(const char * model_path, int n_threads) {
     auto * ctx = new crispembed_context;
-    ctx->n_threads = n_threads > 0 ? n_threads : 4;
+    ctx->n_threads = n_threads > 0 ? n_threads : 1;
     if (model_path) ctx->model_path_for_audio = model_path;
     ctx->dump_layers = (std::getenv("CRISPEMBED_DUMP_LAYERS") != nullptr);
     ctx->bench       = (std::getenv("CRISPEMBED_CRISPEMBED_BENCH") != nullptr);

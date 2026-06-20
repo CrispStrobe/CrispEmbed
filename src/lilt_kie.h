@@ -33,7 +33,7 @@ struct token_result {
 struct context;
 
 // Load LiLT GGUF model. Returns true on success.
-bool load(context** ctx, const char* model_path, int n_threads = 4);
+bool load(context** ctx, const char* model_path, int n_threads = 1);
 
 // Run token classification. Returns per-token predictions.
 // input_ids: [n_tokens] token ids (including BOS/EOS)

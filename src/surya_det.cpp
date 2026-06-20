@@ -191,7 +191,7 @@ static ggml_tensor* find(const std::unordered_map<std::string, ggml_tensor*>& m,
 
 surya_det_context * surya_det_init(const char * model_path, int n_threads) {
     auto* ctx = new surya_det_context{};
-    ctx->n_threads = n_threads > 0 ? n_threads : 4;
+    ctx->n_threads = n_threads > 0 ? n_threads : 1;
     ctx->dump  = (getenv("SURYA_DET_DUMP") != nullptr);
     ctx->bench = (std::getenv("CRISPEMBED_SURYA_DET_BENCH") != nullptr);
 

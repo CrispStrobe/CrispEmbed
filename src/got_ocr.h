@@ -141,7 +141,7 @@ struct context {
     std::vector<uint8_t> compute_meta;
     kv_cache kvc;
     tokenizer tok;
-    int n_threads = 4;
+    int n_threads = 1;
     int verbosity = 1;
     bool bench = false;
     std::string diff_ref_path;
@@ -150,7 +150,7 @@ struct context {
     std::vector<std::vector<float>> rp_w_per_layer;
 };
 
-bool load(context &ctx, const char *gguf_path, int n_threads = 4, int verbosity = 1);
+bool load(context &ctx, const char *gguf_path, int n_threads = 1, int verbosity = 1);
 void free_(context &ctx);
 
 struct vision_result {

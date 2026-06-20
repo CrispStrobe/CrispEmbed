@@ -72,7 +72,7 @@ namespace ocr_orchestrator {
 
 struct context {
     config cfg;
-    int    n_threads = 4;
+    int    n_threads = 1;
     // Lazily-loaded engine + cleanup handles (loaded on first use).
     ocr_pipeline::context*   dbnet  = nullptr;   // DBNet detection + TrOCR recognition
     got_ocr_context*         got    = nullptr;   // GOT-OCR2 (single-shot VLM)

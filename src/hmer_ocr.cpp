@@ -248,7 +248,7 @@ static bool map_tensors(hmer_ocr_context * ctx) {
 
 hmer_ocr_context * hmer_ocr_init(const char * model_path, int n_threads) {
     auto ctx = std::make_unique<hmer_ocr_context>();
-    ctx->n_threads = n_threads > 0 ? n_threads : 4;
+    ctx->n_threads = n_threads > 0 ? n_threads : 1;
 
     // Phase 1: metadata
     gguf_context * gctx = core_gguf::open_metadata(model_path);
