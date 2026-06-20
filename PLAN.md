@@ -311,7 +311,7 @@ all Apache-2.0 and would be a major accuracy upgrade.
 |---|-------|--------|-------------|---------|-------------|--------|--------|
 | 1 | **Uni-MuMER-Qwen3-VL-2B** | 2.1B | ~82% (3B variant) | Apache-2.0 | Qwen3-VL fine-tune (multi-task: recognition + symbol counting + position) | Low — reuses existing `qwen2vl_ocr.cpp` engine, same GGUF converter | **DONE**: Q4_K/Q8_0, auto-prompt, `<think>` stripping |
 | 2 | **Uni-MuMER-Qwen2.5-VL-3B** | 3.4B | 82.25% | Apache-2.0 | Qwen2.5-VL fine-tune | Low — same engine | **DONE**: Q4_K (2.6 GB) / Q8_0 (4.2 GB), streaming converter |
-| 3 | **TexTeller 3.0** | 0.3B | unknown | Apache-2.0 | ViT + Transformer decoder, 80M training pairs, supports handwritten | Medium — needs new GGUF converter (TrOCR-like arch but not identical) | [ ] Pending |
+| 3 | **TexTeller 3.0** | 0.3B | unknown | Apache-2.0 | ViT-12 (768d) + TrOCR-12 (1024d), 15K vocab, 448px grayscale | Low — reuses existing `math_ocr.cpp` + `convert-trocr-safetensors-to-gguf.py` | **WIP**: loads+runs, encoder parity issue (attention output ~5x scale mismatch) |
 | 4 | PP-FormulaNet-L | 181M | ~57% | Apache-2.0 | SAM-ViT + MBart | — | Already integrated (mostly printed math) |
 
 **Recommended priority:**
@@ -326,11 +326,15 @@ all Apache-2.0 and would be a major accuracy upgrade.
    Source: [github.com/BFlameSwift/Uni-MuMER](https://github.com/BFlameSwift/Uni-MuMER)
    Weights: [huggingface.co/phxember/Uni-MuMER-Qwen3-VL-2B](https://huggingface.co/phxember/Uni-MuMER-Qwen3-VL-2B)
 
-2. **TexTeller 3.0** (lightweight option) — at 300M params, small enough
-   for mobile. Architecture is ViT encoder + Transformer decoder (similar
-   to pix2tex but trained on 80M pairs including handwritten). Would need
-   a new converter or adaptation of `convert-pix2tex-to-gguf.py`. Benchmark
-   on CROHME before committing to full integration.
+2. **TexTeller 3.0** — **WIP**. Standard VisionEncoderDecoderModel: ViT (12L, 768d,
+   448px grayscale) + TrOCR decoder (12L, 1024d, 15K vocab). Reuses existing
+   `math_ocr.cpp` engine and `convert-trocr-safetensors-to-gguf.py` converter.
+   Converter fixed: added_tokens.json merge, scale_embedding metadata.
+   Engine fixed: dynamic channel count (1ch grayscale), ViT CLS-only (no DeiT
+   distillation token), tied embeddings as LM head, GELU decoder FFN.
+   GGUF: F16 (568 MB), Q8_0 (302 MB), Q4_K (169 MB).
+   **Remaining**: encoder attention output diverges ~5x from Python reference.
+   Q/K values match but post-attention residual does not. Needs parity harness.
 
    Source: [github.com/OleehyO/TexTeller](https://github.com/OleehyO/TexTeller)
    Weights: [huggingface.co/OleehyO/TexTeller](https://huggingface.co/OleehyO/TexTeller)
