@@ -459,9 +459,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `lstm_forward` and `summ_lstm_forward` now use `core_cpu::dot_product()`.
   AVX2+FMA accelerated on x86-64, NEON on ARM.
 
-- [ ] **Sliding-window min/max pool** — `scan_cleanup.cpp` `min_pool_2d` and
-  `max_pool_2d` are O(K^2) per pixel. For K=51, that's ~2500 comparisons/pixel.
-  Monotonic deque → O(1) amortized.
+- [x] **Sliding-window min/max pool** — Replaced O(K) per-pixel brute-force in
+  `scan_cleanup.cpp` with monotonic deque sliding window — O(1) amortized per
+  pixel. For K=51 this is ~50x fewer comparisons.
 
 - [x] **Weight dequant caching in SR runtimes** — Migrated 7 Pattern-A runtimes
   (hat_sr, swinir_sr, pan_sr, text_sr, nafnet_denoise, restormer, tbsrn_sr)
@@ -482,9 +482,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   (lines 493-502) and got neck (lines 699-773) use scalar CPU for Conv+matmul
   projectors. Should be ggml graph ops.
 
-- [ ] **gliner_ner BiLSTM SIMD/BLAS** — lines 871-902 are fully scalar triple-
-  nested loops. 4*512*1024 + 4*512*512 ≈ 3M MACs per timestep. BLAS gemv or
-  even simple SIMD inner product would help significantly.
+- [x] **gliner_ner BiLSTM SIMD** — Gate computation now uses
+  `core_cpu::dot_product()` (AVX2+FMA/NEON). ~3M MACs per timestep accelerated.
 
 - [ ] **LiteMLA graph implementation** — `surya_det.cpp` line 792 has TODO:
   `g_litemla` returns nullptr, the graph-accelerated LiteMLA is stubbed out.
@@ -565,9 +564,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **instructir: SCA weight dequant inside per-channel loop** — lines
   162-163 re-dequant entire weight matrix C times. Hoist outside the loop.
 
-- [ ] **Otsu threshold: extract shared utility** — duplicated 6 times across
-  `table_parse.cpp`, `cc_detect.cpp`, `classical_preproc.cpp`, `scan_cleanup.cpp`,
-  `dewarp.cpp`. Move to `core/`.
+- [x] **Otsu threshold: extract shared utility** — Added
+  `core_cpu::otsu_threshold()` to `cpu_ops.h`. Replaced duplicated
+  implementations in cc_detect, table_parse, classical_preproc, dewarp.
+  scan_cleanup float variant kept separate (different input type).
 
 - [ ] **OpenMP in pixel-level ops** — `image_preprocess`, `dewarp`,
   `scan_cleanup`, `face_align` all accept `n_threads` but run single-threaded
