@@ -760,9 +760,7 @@ single-threaded, must not OOM.
 
 - [x] Patch embedding → ggml matmul (im2col + mul_mat, scalar fallback gated)
 
-**Remaining:**
-- [ ] **Decode graph reuse** — graph still rebuilt per step (tensor shapes change
-      with Lk). Need fixed-max-KV graph with ggml_view variable-length reads.
+**Remaining:** none — all major optimizations complete. Decode graph reuse done (`27b650a`).
 
 ### qwen2vl — DONE (already optimized)
   F16 KV cache, flash attn, ggml patch embed, direct embed lookup, F16 mask — all done.
