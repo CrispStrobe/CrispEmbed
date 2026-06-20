@@ -608,7 +608,7 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   16×64 dims, reused across 5 SRB blocks). BTTR/PosFormer: cached for
   last-used (h, w) — skips ~327K sinf/cosf evals on repeated calls.
 
-- [ ] **mel.cpp: OpenMP on STFT loop** — each frame's FFT is independent
+- [x] **mel.cpp: OpenMP on STFT loop** — DONE (`8242a67`). Each frame's FFT is independent
   (line 73-84). `#pragma omp parallel for` on the `t` loop.
 
 - [x] **mel.cpp: SIMD for mel projection** — DONE. Float MelsFreqs layout uses
