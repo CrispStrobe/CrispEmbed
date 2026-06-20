@@ -2389,3 +2389,38 @@ on 16 GB). Needs split-residency loading in `core_gguf` (CrispASR has it,
 CrispEmbed does not yet). Full-CPU is not viable: Metal vision is ~3 s vs ~125 s
 on CPU ggml. Until then the ggml LLM stays behind `CRISPEMBED_GRANITE_LLM_GRAPH`
 and the default decode is the diff-validated scalar path.
+
+## granite_vision: ggml LLM decode — Metal garbage is invariant to every compute change (graph-execution bug, not a kernel)
+
+Update / correction to the cross-backend note above. The ggml LLM decode
+graph (`gv_run_llm_body`) is **bit-correct on a CPU-only backend** (per-layer
+cos=0.999 vs `tools/dump_granite_llm_reference.py`) but produces deterministic
+garbage on Metal. Critically, that Metal garbage is **byte-identical** (same
+per-layer max_abs: 13.1, 13.7, 26.7, 46.7, 199, …) across every change we
+tried:
+
+- Q4_K weights vs F16-dequantized weights (load-time conversion)
+- `ggml_flash_attn_ext` vs manual `soft_max_ext` attention (vision's pattern)
+- reading KV history vs using fresh K/V (and removing the KV-cache cpy entirely)
+- per-op `ggml_reshape_2d` vs a load-time physical `ne` swap of the weights
+- patching `kernel_rms_norm`'s cross-simdgroup reduction (CrispASR upstream-prs/08)
+
+Because the output does not change when the math does, the bug is **not in any
+compute op** — it is in how this graph is *executed* on the Metal backend
+(`ggml_backend_sched_reset` + the shared `vis_compute_meta` no-alloc context +
+the externally-allocated `kvc_buf` + the per-layer `ggml_set_output` read-back).
+`GGML_SCHED_DEBUG=2` shows the whole graph as a single split on MTL0 (no
+cross-backend copies), so the earlier cross-backend hypothesis is wrong.
+Suspects, in order: the set_output intermediate tensors being reused/not
+resident on read-back (cf. CLAUDE.md landmine "ggml scheduler: never reset
+between alloc and compute"); the shared meta buffer; the external KV buffer.
+The vision/projector graphs (same sched) read back correctly, so the difference
+is in `gv_run_llm_body`'s specific setup, which is where to look next.
+
+Separately confirmed: CrispEmbed's vendored ggml still carries the buggy
+`kernel_rms_norm`/`kernel_norm`/`kernel_l2_norm` cross-simdgroup reduction
+(CrispASR upstream-prs/08, `sumf = simd_sum(shmem_f32[tiisg])`) — a real latent
+Metal bug worth applying to the ggml fork even though it is not the granite
+cause. The per-layer ggml diff harness (`granite_vision_dump_llm_graph`,
+`test-granite-vision-diff … graph`, plus `CRISPEMBED_GRANITE_CPU` to force the
+CPU backend) is what made this tractable; keep it.
