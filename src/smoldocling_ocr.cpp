@@ -403,31 +403,75 @@ static void sd_vision_forward(smoldocling_context * ctx,
     int hd = D / nh;  // 64
     float eps = 1e-6f;
 
-    // ── CPU-scalar patch embedding (Conv2D is small, not worth graphing) ──
+    // ── Patch embedding: im2col + ggml matmul ──
+    // Gated: CRISPEMBED_SMOLDOCLING_SCALAR_PATCH=1 for scalar fallback
     auto * pe_t = core_gguf::try_get(ctx->wl.tensors, "vis.patch_embed.weight");
     auto * pb_t = core_gguf::try_get(ctx->wl.tensors, "vis.patch_embed.bias");
-    std::vector<float> pe_buf, pb_buf;
-    const float * pe_w = sd_to_f32(pe_t, pe_buf);
-    const float * pe_b = pb_t ? sd_to_f32(pb_t, pb_buf) : nullptr;
+    int patch_dim = 3 * ps * ps;  // 588
 
-    std::vector<float> patch_embed(T * D);
-    for (int py = 0; py < ph; py++) {
+    // im2col: extract non-overlapping patches → [T, patch_dim]
+    std::vector<float> im2col(T * patch_dim, 0.0f);
+    for (int py = 0; py < ph; py++)
         for (int px = 0; px < pw; px++) {
             int t = py * pw + px;
-            float * out_row = patch_embed.data() + t * D;
-            for (int d = 0; d < D; d++) {
-                float sum = pe_b ? pe_b[d] : 0.0f;
-                for (int c = 0; c < 3; c++)
-                    for (int ky = 0; ky < ps; ky++)
-                        for (int kx = 0; kx < ps; kx++) {
-                            int iy = py * ps + ky, ix = px * ps + kx;
-                            if (iy < img_h && ix < img_w)
-                                sum += image[c * img_h * img_w + iy * img_w + ix]
-                                     * pe_w[d * 3 * ps * ps + c * ps * ps + ky * ps + kx];
-                        }
-                out_row[d] = sum;
-            }
+            for (int c = 0; c < 3; c++)
+                for (int ky = 0; ky < ps; ky++) {
+                    int iy = py * ps + ky;
+                    if (iy >= img_h) continue;
+                    for (int kx = 0; kx < ps; kx++) {
+                        int ix = px * ps + kx;
+                        if (ix >= img_w) continue;
+                        im2col[t * patch_dim + c * ps * ps + ky * ps + kx] =
+                            image[c * img_h * img_w + iy * img_w + ix];
+                    }
+                }
         }
+
+    std::vector<float> patch_embed(T * D);
+    static const bool scalar_patch = (std::getenv("CRISPEMBED_SMOLDOCLING_SCALAR_PATCH") != nullptr);
+    if (scalar_patch) {
+        std::vector<float> pe_buf, pb_buf;
+        const float * pe_w = sd_to_f32(pe_t, pe_buf);
+        const float * pe_b = pb_t ? sd_to_f32(pb_t, pb_buf) : nullptr;
+        for (int t = 0; t < T; t++)
+            for (int d = 0; d < D; d++) {
+                float s = pe_b ? pe_b[d] : 0.0f;
+                for (int k = 0; k < patch_dim; k++)
+                    s += im2col[t * patch_dim + k] * pe_w[d * patch_dim + k];
+                patch_embed[t * D + d] = s;
+            }
+    } else {
+        // ggml graph: matmul weight × im2col → [D, T]
+        size_t buf_sz = ggml_tensor_overhead() * 10 + ggml_graph_overhead();
+        ggml_init_params eip{buf_sz, nullptr, true};
+        ggml_context *eg = ggml_init(eip);
+        ggml_tensor *w = ggml_reshape_2d(eg, pe_t, patch_dim, D);
+        ggml_tensor *inp = ggml_new_tensor_2d(eg, GGML_TYPE_F32, patch_dim, T);
+        ggml_set_name(inp, "im2col"); ggml_set_input(inp);
+        ggml_tensor *out = ggml_mul_mat(eg, w, inp);
+        if (pb_t) {
+            ggml_tensor *b = pb_t;
+            if (b->type != GGML_TYPE_F32) b = ggml_cast(eg, b, GGML_TYPE_F32);
+            out = ggml_add(eg, out, b);
+        }
+        ggml_set_name(out, "pe_out"); ggml_set_output(out);
+        ggml_cgraph *egf = ggml_new_graph(eg);
+        ggml_build_forward_expand(egf, out);
+        ggml_backend_sched_t pe_sched = ggml_backend_sched_new(&ctx->backend, nullptr, 1, 16, false, false);
+        ggml_backend_sched_reset(pe_sched);
+        if (!ggml_backend_sched_alloc_graph(pe_sched, egf)) {
+            fprintf(stderr, "smoldocling: patch_embed graph alloc failed\n");
+            ggml_backend_sched_free(pe_sched);
+            ggml_free(eg);
+            return;
+        }
+        ggml_backend_tensor_set(ggml_graph_get_tensor(egf, "im2col"),
+                                im2col.data(), 0, T * patch_dim * sizeof(float));
+        ggml_backend_sched_graph_compute(pe_sched, egf);
+        ggml_backend_tensor_get(ggml_graph_get_tensor(egf, "pe_out"),
+                                patch_embed.data(), 0, T * D * sizeof(float));
+        ggml_backend_sched_free(pe_sched);
+        ggml_free(eg);
     }
 
     // Add position embedding
