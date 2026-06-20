@@ -19,6 +19,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -648,6 +649,7 @@ struct adair_context {
     ggml_context * gguf_ctx;
     ggml_backend_buffer_t gguf_buf;
 
+    bool bench;
     ggml_tensor * patch_embed_w, * patch_embed_b;
     ggml_tensor * output_w, * output_b;
 
@@ -775,6 +777,7 @@ adair_context * adair_init(const char * model_path, int n_threads) {
     load_fre(wl, "net.fre2", ctx->fre2);
     load_fre(wl, "net.fre3", ctx->fre3);
 
+    ctx->bench = (std::getenv("CRISPEMBED_ADAIR_BENCH") != nullptr);
     return ctx;
 }
 
@@ -791,6 +794,11 @@ int adair_process_float(adair_context * ctx,
                         const float * input_chw, int width, int height,
                         float * output_chw) {
     if (!ctx || !input_chw || !output_chw) return -1;
+
+    const bool bench = ctx->bench;
+    using ms_f = std::chrono::duration<double, std::milli>;
+    auto t_total = std::chrono::steady_clock::now();
+
     int H = height, W = width;
     std::vector<float> dq1, dq2;
 
@@ -803,8 +811,14 @@ int adair_process_float(adair_context * ctx,
     // Encoder level 1: 4 TB at 48ch
     int heads[] = {1, 2, 4, 8};
     int cur_h = H, cur_w = W;
+    auto t_enc1 = std::chrono::steady_clock::now();
     for (auto & tb : ctx->enc1) tb_forward(x.data(), ch, cur_h, cur_w, heads[0], tb, dq1, dq2);
     std::vector<float> skip1(x.begin(), x.end());
+    if (bench) {
+        auto t_enc1_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[adair-bench] enc1: %.1f ms\n",
+                ms_f(t_enc1_end - t_enc1).count());
+    }
 
     // Downsample 1→2: Conv3x3 + PixelUnshuffle(2)
     std::vector<float> ds(ch / 2 * cur_h * cur_w);
@@ -815,8 +829,14 @@ int adair_process_float(adair_context * ctx,
     pixel_unshuffle(ds.data(), ch / 4, cur_h * 2, cur_w * 2, 2, x.data());
 
     // Encoder level 2: 6 TB at 96ch
+    auto t_enc2 = std::chrono::steady_clock::now();
     for (auto & tb : ctx->enc2) tb_forward(x.data(), ch, cur_h, cur_w, heads[1], tb, dq1, dq2);
     std::vector<float> skip2(x.begin(), x.end());
+    if (bench) {
+        auto t_enc2_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[adair-bench] enc2: %.1f ms\n",
+                ms_f(t_enc2_end - t_enc2).count());
+    }
 
     // Downsample 2→3
     ds.resize(ch / 2 * cur_h * cur_w);
@@ -827,8 +847,14 @@ int adair_process_float(adair_context * ctx,
     pixel_unshuffle(ds.data(), ch / 4, cur_h * 2, cur_w * 2, 2, x.data());
 
     // Encoder level 3: 6 TB at 192ch
+    auto t_enc3 = std::chrono::steady_clock::now();
     for (auto & tb : ctx->enc3) tb_forward(x.data(), ch, cur_h, cur_w, heads[2], tb, dq1, dq2);
     std::vector<float> skip3(x.begin(), x.end());
+    if (bench) {
+        auto t_enc3_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[adair-bench] enc3: %.1f ms\n",
+                ms_f(t_enc3_end - t_enc3).count());
+    }
 
     // Downsample 3→4
     ds.resize(ch / 2 * cur_h * cur_w);
@@ -839,13 +865,25 @@ int adair_process_float(adair_context * ctx,
     pixel_unshuffle(ds.data(), ch / 4, cur_h * 2, cur_w * 2, 2, x.data());
 
     // Latent: 8 TB at 384ch
+    auto t_latent = std::chrono::steady_clock::now();
     for (int bi = 0; bi < (int)ctx->latent.size(); bi++) {
         tb_forward(x.data(), ch, cur_h, cur_w, heads[3], ctx->latent[bi], dq1, dq2);
     }
+    if (bench) {
+        auto t_latent_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[adair-bench] latent: %.1f ms\n",
+                ms_f(t_latent_end - t_latent).count());
+    }
 
     // fre1(inp_img, latent): refine latent BEFORE upsample
+    auto t_fre1 = std::chrono::steady_clock::now();
     fre_forward(input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2],
                 ctx->fre1, x.data(), dq1, dq2);
+    if (bench) {
+        auto t_fre1_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[adair-bench] fre1: %.1f ms\n",
+                ms_f(t_fre1_end - t_fre1).count());
+    }
 
     // Upsample 4→3 + cat(skip3) + reduce
     int up_ch = ch * 2;
@@ -863,11 +901,17 @@ int adair_process_float(adair_context * ctx,
            ch, 1, 1, 0, 1, 1, x.data());
 
     // Decoder level 3: 6 TB
+    auto t_dec3 = std::chrono::steady_clock::now();
     for (auto & tb : ctx->dec3) tb_forward(x.data(), ch, cur_h, cur_w, heads[2], tb, dq1, dq2);
 
     // fre2(inp_img, out_dec3): replace dec3 output
     fre_forward(input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2],
                 ctx->fre2, x.data(), dq1, dq2);
+    if (bench) {
+        auto t_dec3_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[adair-bench] dec3+fre2: %.1f ms\n",
+                ms_f(t_dec3_end - t_dec3).count());
+    }
 
     // Upsample 3→2 + cat(skip2) + reduce
     up_ch = ch * 2;
@@ -884,11 +928,17 @@ int adair_process_float(adair_context * ctx,
            ch, 1, 1, 0, 1, 1, x.data());
 
     // Decoder level 2: 6 TB
+    auto t_dec2 = std::chrono::steady_clock::now();
     for (auto & tb : ctx->dec2) tb_forward(x.data(), ch, cur_h, cur_w, heads[1], tb, dq1, dq2);
 
     // fre3(inp_img, out_dec2): replace dec2 output
     fre_forward(input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2],
                 ctx->fre3, x.data(), dq1, dq2);
+    if (bench) {
+        auto t_dec2_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[adair-bench] dec2+fre3: %.1f ms\n",
+                ms_f(t_dec2_end - t_dec2).count());
+    }
 
     // Upsample 2→1 + cat(skip1) → 96ch (no reduce, dec1 is 96ch)
     up_ch = ch * 2;
@@ -905,6 +955,7 @@ int adair_process_float(adair_context * ctx,
     x.assign(cat.begin(), cat.end());
 
     // Decoder level 1: 4 TB at 96ch
+    auto t_dec1 = std::chrono::steady_clock::now();
     for (auto & tb : ctx->dec1) tb_forward(x.data(), ch, cur_h, cur_w, heads[0], tb, dq1, dq2);
 
     // Refinement: 4 TB at 96ch
@@ -915,6 +966,13 @@ int adair_process_float(adair_context * ctx,
            3, 3, 3, 1, 1, 1, output_chw);
     for (int i = 0; i < 3 * H * W; i++) output_chw[i] += input_chw[i];
 
+    if (bench) {
+        auto t_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[adair-bench] dec1+refine+output: %.1f ms\n",
+                ms_f(t_end - t_dec1).count());
+        fprintf(stderr, "[adair-bench] total: %.1f ms\n",
+                ms_f(t_end - t_total).count());
+    }
     return 0;
 }
 

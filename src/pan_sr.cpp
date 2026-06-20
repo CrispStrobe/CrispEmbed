@@ -17,6 +17,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 
 // MSVC's <cmath> doesn't define M_PI without _USE_MATH_DEFINES.
@@ -119,6 +120,7 @@ static void pan_bilinear(const float * src, int c, int h, int w, int scale, floa
 struct pan_sr_context {
     int nf, unf, nb, scale;
     int n_threads;
+    bool bench;
     core_gguf::WeightLoad wl;
     std::vector<std::vector<float>> wbufs;
 
@@ -153,6 +155,7 @@ pan_sr_context * pan_sr_init(const char * model_path, int n_threads) {
 
     fprintf(stderr, "pan_sr: nf=%d unf=%d nb=%d scale=%dx, %d tensors\n",
             ctx->nf, ctx->unf, ctx->nb, ctx->scale, (int)ctx->wl.tensors.size());
+    ctx->bench = (std::getenv("CRISPEMBED_PAN_SR_BENCH") != nullptr);
     return ctx;
 }
 
@@ -290,6 +293,10 @@ int pan_sr_process(pan_sr_context * ctx,
                    uint8_t ** output, int * out_width, int * out_height) {
     if (!ctx || !input || !output || width <= 0 || height <= 0) return -1;
 
+    const bool bench = ctx->bench;
+    using ms_f = std::chrono::duration<double, std::milli>;
+    auto t_total = std::chrono::steady_clock::now();
+
     int scale = ctx->scale;
     if (tile_size <= 0) tile_size = 128;
     if (tile_overlap <= 0) tile_overlap = 16;
@@ -303,12 +310,18 @@ int pan_sr_process(pan_sr_context * ctx,
     std::vector<float> weight_map(oh * ow, 0.0f);
 
     // Full input [3, H, W] float [0, 1]
+    auto t_pre = std::chrono::steady_clock::now();
     std::vector<float> full(3 * height * width);
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
             for (int c = 0; c < 3; c++)
                 full[c * height * width + y * width + x] =
                     input[(y * width + x) * 3 + c] / 255.0f;
+    if (bench) {
+        auto t_pre_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[pan_sr-bench] preprocess: %.1f ms\n",
+                ms_f(t_pre_end - t_pre).count());
+    }
 
     int step = tile_size - tile_overlap;
     int ntx = std::max(1, (width + step - 1) / step);
@@ -333,7 +346,13 @@ int pan_sr_process(pan_sr_context * ctx,
 
             int otw = tw * scale, oth = th * scale;
             std::vector<float> tile_out(3 * oth * otw);
+            auto t_fwd = std::chrono::steady_clock::now();
             pan_forward_tile(ctx, tile_in.data(), tw, th, tile_out.data());
+            if (bench) {
+                auto t_fwd_end = std::chrono::steady_clock::now();
+                fprintf(stderr, "[pan_sr-bench] tile %d,%d forward: %.1f ms\n",
+                        ty, tx, ms_f(t_fwd_end - t_fwd).count());
+            }
 
             // Blend with Hann ramp at overlapping edges
             int ox0 = x0 * scale, oy0 = y0 * scale;
@@ -360,6 +379,7 @@ int pan_sr_process(pan_sr_context * ctx,
         }
     }
 
+    auto t_post = std::chrono::steady_clock::now();
     uint8_t * out_buf = (uint8_t *)malloc(3 * oh * ow);
     if (!out_buf) return -1;
     for (int y = 0; y < oh; y++)
@@ -376,6 +396,13 @@ int pan_sr_process(pan_sr_context * ctx,
     *out_width = ow;
     *out_height = oh;
     fprintf(stderr, "pan_sr: done %dx%d\n", ow, oh);
+    if (bench) {
+        auto t_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[pan_sr-bench] postprocess: %.1f ms\n",
+                ms_f(t_end - t_post).count());
+        fprintf(stderr, "[pan_sr-bench] total: %.1f ms\n",
+                ms_f(t_end - t_total).count());
+    }
     return 0;
 }
 
