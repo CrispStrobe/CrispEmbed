@@ -2159,7 +2159,7 @@ impl CrispOcrPipeline {
     /// Build a pipeline. `nafnet_model = None` (or "") runs classical cleanup
     /// only (no learned tier-2 denoise). `vlm_model = None` disables VLM
     /// escalation; when set, `vlm_engine` selects the backend
-    /// (0=GOT, 1=GLM, 2=Qwen2-VL/PaddleOCR-VL, 3=InternVL2).
+    /// (0=GOT, 1=GLM, 2=Qwen2-VL/PaddleOCR-VL, 3=InternVL2, 4=Qwen3-VL).
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         det_model: &str,
