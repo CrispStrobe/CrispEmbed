@@ -362,8 +362,9 @@ enc+proj ~1.1 s. Remaining levers, ranked by leverage:
 - [x] **#2 Decode graph reuse (~1–1.5 s) — DONE.** Persistent T=1 decode graph
   with fixed max-KV, incremental KV-cache mask; 2× faster decode stage.
   (`fcb5b11 perf(ocr2): persistent T=1 decode graph reuse`)
-- [ ] **#3 Per-row embedding dequant (~0.5 s + 655 MB).** Decode dequants the
-  whole 128k×1280 embed table to F32 just to look up ~32 rows; dequant per row.
+- [x] **#3 Per-row embedding dequant** — already done. `put_tok` lambda (~line
+  2604) and `get_embedding` lambda (~line 1950) both use per-row
+  `ggml_backend_tensor_get`. Item was stale.
 - [ ] **#4 Converter-emitted stacked experts (memory, ~0.6 s).** Emit
   `ffn_{gate,up,down}_exps [in,out,n_exp]` from the converter (needs a Kaggle
   reconvert + loader tweak) so the runtime skips `stack_moe_experts` and the
@@ -532,9 +533,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `dequant_cache` map with `core_cpu::DequantCache`. Kept unique helpers
   (maxpool, avgpool, apply_bn) as-is.
 
-- [ ] **deepseek_ocr2: single multi-layer LLM graph** — currently builds 12
-  separate ggml graphs per decode token (line 1288-1295). A single graph
-  covering all attention layers would reduce graph construction cost by 12x.
+- [x] **deepseek_ocr2: single multi-layer encoder graph** — Qwen2 encoder
+  (24 layers) now built as one ggml graph, eliminating 23 GPU↔CPU round-trips
+  of the hidden state per encoder call. DONE (`910d036`).
+  (The LLM decoder was already multi-layer since initial implementation.)
 
 - [x] **glm_ocr / got_ocr: scalar downsample/merger → ggml** — DONE. glm `host_matmul`
   (lines 493-502) and got neck (lines 699-773) use scalar CPU for Conv+matmul
@@ -594,8 +596,12 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   the main LLM graph (ggml_get_rows runs on GPU). lightonocr uses direct
   tensor read (embed_tokens_cpu).
 
-- [ ] **lightonocr / deepseek: decode graph reuse** — graph structure is
-  identical across decode steps. Build once, update input data only.
+- [x] **lightonocr: decode graph reuse** — DONE (`27b650a`). `LocPdGraph`
+  struct + `build_locr_pd_graph(ctx, max_kv)`: fixed-size KV tensors
+  `[kv_dim, max_kv-1]` per layer + F16 mask `[max_kv, 1]`. First step
+  uploads prefill KV; subsequent steps write only the new K/V row and unmask
+  one mask slot. Gate: `LOCR_DECODE_REBUILD=1`.
+  deepseek: pending (no local q4_k model for timing).
 
 - [x] **qwen2vl: F32 causal mask → F16** — already F16 (GGML_TYPE_F16)
   (half the memory).
