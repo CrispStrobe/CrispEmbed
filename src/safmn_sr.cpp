@@ -420,36 +420,129 @@ int safmn_process_float(safmn_context * ctx,
     return 0;
 }
 
+// Build a 2D raised-cosine (Hann) blending window for tile overlap regions.
+static void build_blend_window(int tile_size, int overlap, std::vector<float> & win) {
+    win.resize(tile_size * tile_size);
+    for (int y = 0; y < tile_size; y++) {
+        float wy = 1.0f;
+        if (y < overlap)
+            wy = 0.5f - 0.5f * cosf((float)M_PI * y / overlap);
+        else if (y >= tile_size - overlap)
+            wy = 0.5f - 0.5f * cosf((float)M_PI * (tile_size - 1 - y) / overlap);
+        for (int x = 0; x < tile_size; x++) {
+            float wx = 1.0f;
+            if (x < overlap)
+                wx = 0.5f - 0.5f * cosf((float)M_PI * x / overlap);
+            else if (x >= tile_size - overlap)
+                wx = 0.5f - 0.5f * cosf((float)M_PI * (tile_size - 1 - x) / overlap);
+            win[y * tile_size + x] = wy * wx;
+        }
+    }
+}
+
 int safmn_process(safmn_context * ctx,
                   const uint8_t * input, int width, int height,
                   uint8_t * output) {
     if (!ctx || !input || !output) return -1;
 
-    int hw = width * height;
+    int r = ctx->scale;
+    int tile_size = 128;
+    int tile_overlap = 16;
+    const char * ts_env = std::getenv("CRISPEMBED_SAFMN_TILE");
+    if (ts_env) tile_size = std::max(32, atoi(ts_env));
+    tile_overlap = std::min(tile_overlap, tile_size / 4);
 
-    // Convert uint8 HWC → float CHW [0,1]
-    std::vector<float> in_chw(3 * hw);
+    int hw = width * height;
+    std::vector<float> full_input(3 * hw);
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
             for (int c = 0; c < 3; c++)
-                in_chw[c * hw + y * width + x] =
+                full_input[c * hw + y * width + x] =
                     (float)input[(y * width + x) * 3 + c] / 255.0f;
 
-    int out_h = height * ctx->scale, out_w = width * ctx->scale;
-    int out_hw = out_h * out_w;
-    std::vector<float> out_chw(3 * out_hw);
+    int ow = width * r, oh = height * r;
 
-    int ret = safmn_process_float(ctx, in_chw.data(), width, height, out_chw.data());
-    if (ret != 0) return ret;
+    // Small image: single-shot (no tiling overhead)
+    if (width <= tile_size && height <= tile_size) {
+        std::vector<float> out_chw(3 * oh * ow);
+        int ret = safmn_process_float(ctx, full_input.data(), width, height, out_chw.data());
+        if (ret != 0) return ret;
+        for (int y = 0; y < oh; y++)
+            for (int x = 0; x < ow; x++)
+                for (int c = 0; c < 3; c++) {
+                    float v = out_chw[c * oh * ow + y * ow + x] * 255.0f;
+                    output[(y * ow + x) * 3 + c] =
+                        (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));
+                }
+        return 0;
+    }
 
-    // Convert float CHW → uint8 HWC, clamped [0, 255]
-    for (int y = 0; y < out_h; y++)
-        for (int x = 0; x < out_w; x++)
+    // Tiled processing with Hann-window blending
+    int out_tile = tile_size * r;
+    int out_overlap = tile_overlap * r;
+    std::vector<float> accum(3 * oh * ow, 0.0f);
+    std::vector<float> weight_map(oh * ow, 0.0f);
+    std::vector<float> blend_win;
+    build_blend_window(out_tile, out_overlap, blend_win);
+
+    int step = tile_size - tile_overlap;
+    int n_tiles_x = std::max(1, (width + step - 1) / step);
+    int n_tiles_y = std::max(1, (height + step - 1) / step);
+
+    fprintf(stderr, "safmn: %dx%d -> %dx%d (%dx), tiles=%dx%d (size=%d, overlap=%d)\n",
+            width, height, ow, oh, r, n_tiles_x, n_tiles_y, tile_size, tile_overlap);
+
+    for (int ty = 0; ty < n_tiles_y; ty++) {
+        for (int tx = 0; tx < n_tiles_x; tx++) {
+            int x0 = std::min(tx * step, std::max(0, width - tile_size));
+            int y0 = std::min(ty * step, std::max(0, height - tile_size));
+            int tw = std::min(tile_size, width - x0);
+            int th = std::min(tile_size, height - y0);
+
+            std::vector<float> tile_in(3 * th * tw);
+            for (int c = 0; c < 3; c++)
+                for (int y = 0; y < th; y++)
+                    for (int x = 0; x < tw; x++)
+                        tile_in[c * th * tw + y * tw + x] =
+                            full_input[c * height * width + (y0 + y) * width + (x0 + x)];
+
+            int otw = tw * r, oth = th * r;
+            std::vector<float> tile_out(3 * oth * otw);
+            int ret = safmn_process_float(ctx, tile_in.data(), tw, th, tile_out.data());
+            if (ret != 0) return ret;
+
+            int ox0 = x0 * r, oy0 = y0 * r;
+            for (int y = 0; y < oth; y++) {
+                for (int x = 0; x < otw; x++) {
+                    float w = 1.0f;
+                    if (tw == tile_size && th == tile_size)
+                        w = blend_win[y * out_tile + x];
+                    else {
+                        if (x0 > 0 && x < out_overlap)
+                            w *= 0.5f - 0.5f * cosf((float)M_PI * x / out_overlap);
+                        if (y0 > 0 && y < out_overlap)
+                            w *= 0.5f - 0.5f * cosf((float)M_PI * y / out_overlap);
+                    }
+                    int dy = oy0 + y, dx = ox0 + x;
+                    if (dy >= oh || dx >= ow) continue;
+                    for (int c = 0; c < 3; c++)
+                        accum[c * oh * ow + dy * ow + dx] +=
+                            tile_out[c * oth * otw + y * otw + x] * w;
+                    weight_map[dy * ow + dx] += w;
+                }
+            }
+        }
+    }
+
+    for (int y = 0; y < oh; y++)
+        for (int x = 0; x < ow; x++) {
+            float wt = weight_map[y * ow + x];
+            if (wt <= 0.0f) wt = 1.0f;
             for (int c = 0; c < 3; c++) {
-                float v = out_chw[c * out_hw + y * out_w + x] * 255.0f;
-                output[(y * out_w + x) * 3 + c] =
+                float v = accum[c * oh * ow + y * ow + x] / wt * 255.0f;
+                output[(y * ow + x) * 3 + c] =
                     (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));
             }
-
+        }
     return 0;
 }
