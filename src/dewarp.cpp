@@ -11,6 +11,7 @@
 //   5. Apply the disparity map via bilinear interpolation
 
 #include "dewarp.h"
+#include "core/cpu_ops.h"
 #include "morph_fast.h"
 #include "cc_detect.h"
 
@@ -89,16 +90,7 @@ static std::vector<baseline> extract_baselines(
     const cc_text_region * regions, int n_regions, int sampling)
 {
     // Binarize for scanning
-    // Simple: use Otsu threshold
-    int hist[256] = {};
-    for (int i = 0; i < w*h; i++) hist[gray[i]]++;
-    double sum = 0; for (int i = 0; i < 256; i++) sum += (double)i*hist[i];
-    double sumB = 0; int wB = 0; double maxv = 0; int best = 128;
-    for (int t = 0; t < 256; t++) {
-        wB += hist[t]; if (!wB) continue; int wF = w*h - wB; if (!wF) break;
-        sumB += (double)t*hist[t]; double d = sumB/wB - (sum-sumB)/wF;
-        double v = (double)wB*wF*d*d; if (v > maxv) { maxv = v; best = t; }
-    }
+    uint8_t best = core_cpu::otsu_threshold(gray, w * h);
     uint8_t thresh = (uint8_t)(best < 255 ? best + 1 : best);
 
     std::vector<baseline> baselines;
