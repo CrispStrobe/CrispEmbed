@@ -226,6 +226,8 @@ struct sd_tokenizer {
 
 // ── Context ───────────────────────────────────────────────────────────
 
+static constexpr int kSdLlmGraphCap = 4096;
+
 struct smoldocling_context {
     // Vision hparams
     int vis_dim, vis_layers, vis_heads, vis_image_size, vis_patch_size;
@@ -250,16 +252,27 @@ struct smoldocling_context {
     core_gguf::WeightLoad wl;
     core_cpu::DequantCache dcache;   // caches dequantized weights (replaces wbufs)
 
-    // ggml backend for vision encoder (BLAS-accelerated)
+    // ggml backend (shared: vis encoder + LLM decoder)
     ggml_backend_t backend = nullptr;
+
+    // LLM decoder: reusable scheduler + pre-allocated metadata buffer
+    ggml_backend_sched_t llm_sched = nullptr;
+    std::vector<uint8_t> llm_compute_meta;
+
+    // F16 KV cache on the backend (re-allocated per image call)
+    ggml_context        * kvc_ctx    = nullptr;
+    ggml_tensor         * kvc_k      = nullptr;  // [kv_dim, max_seq, n_layers] F16
+    ggml_tensor         * kvc_v      = nullptr;
+    ggml_backend_buffer_t kvc_buf    = nullptr;
+    int                   kvc_max_seq = 0;
 
     // RoPE frequency table (precomputed once at init)
     core_vlm::RoPEFreqTable rope_freq;
 
-    // KV cache
+    // Scalar fallback KV cache (used when ggml graph path is unavailable)
     std::vector<float> kv_cache;
-    int kv_allocated;
-    int n_past;
+    int kv_allocated = 0;
+    int n_past       = 0;
 
     // Output buffer
     std::string output_text;
@@ -345,11 +358,26 @@ smoldocling_context * smoldocling_init(const char * model_path, int n_threads) {
 
     ctx->bench = (std::getenv("CRISPEMBED_SMOLDOCLING_BENCH") != nullptr);
 
+    // LLM scheduler: reuse the same CPU backend (weights already in CPU memory)
+    {
+        size_t meta_sz = ggml_tensor_overhead() * kSdLlmGraphCap
+                       + ggml_graph_overhead_custom(kSdLlmGraphCap, false);
+        ctx->llm_compute_meta.resize(meta_sz);
+        ggml_backend_t backends[1] = { ctx->backend };
+        ctx->llm_sched = ggml_backend_sched_new(backends, nullptr, 1, kSdLlmGraphCap, false, false);
+        if (!ctx->llm_sched) {
+            fprintf(stderr, "smoldocling: failed to create LLM scheduler — scalar fallback only\n");
+        }
+    }
+
     return ctx;
 }
 
 void smoldocling_free(smoldocling_context * ctx) {
     if (ctx) {
+        if (ctx->kvc_buf) ggml_backend_buffer_free(ctx->kvc_buf);
+        if (ctx->kvc_ctx) ggml_free(ctx->kvc_ctx);
+        if (ctx->llm_sched) ggml_backend_sched_free(ctx->llm_sched);
         core_gguf::free_weights(ctx->wl);
         if (ctx->backend) ggml_backend_free(ctx->backend);
         delete ctx;
@@ -634,6 +662,236 @@ static void sd_connector(smoldocling_context * ctx,
     *out_n = n_out;
 }
 
+// ── F16 KV cache management ───────────────────────────────────────────
+
+static void sd_free_kv_cache(smoldocling_context *ctx) {
+    if (ctx->kvc_buf) { ggml_backend_buffer_free(ctx->kvc_buf); ctx->kvc_buf = nullptr; }
+    if (ctx->kvc_ctx) { ggml_free(ctx->kvc_ctx); ctx->kvc_ctx = nullptr; }
+    ctx->kvc_k = nullptr;
+    ctx->kvc_v = nullptr;
+    ctx->kvc_max_seq = 0;
+}
+
+static bool sd_alloc_kv_cache(smoldocling_context *ctx, int max_seq) {
+    sd_free_kv_cache(ctx);
+
+    const int n_layers = ctx->llm_layers;
+    const int kv_dim   = ctx->llm_kv_heads * ctx->head_dim;
+
+    ggml_init_params ip{2 * ggml_tensor_overhead() + 256, nullptr, true};
+    ctx->kvc_ctx = ggml_init(ip);
+    if (!ctx->kvc_ctx) return false;
+
+    ctx->kvc_k = ggml_new_tensor_3d(ctx->kvc_ctx, GGML_TYPE_F16, kv_dim, max_seq, n_layers);
+    ctx->kvc_v = ggml_new_tensor_3d(ctx->kvc_ctx, GGML_TYPE_F16, kv_dim, max_seq, n_layers);
+    ggml_set_name(ctx->kvc_k, "sd_kv_k");
+    ggml_set_name(ctx->kvc_v, "sd_kv_v");
+
+    ctx->kvc_buf = ggml_backend_alloc_ctx_tensors(ctx->kvc_ctx, ctx->backend);
+    if (!ctx->kvc_buf) {
+        fprintf(stderr, "smoldocling: KV cache allocation failed (max_seq=%d)\n", max_seq);
+        sd_free_kv_cache(ctx);
+        return false;
+    }
+    ggml_backend_buffer_clear(ctx->kvc_buf, 0);
+    ctx->kvc_max_seq = max_seq;
+
+    size_t bytes = ggml_backend_buffer_get_size(ctx->kvc_buf);
+    fprintf(stderr, "  smoldocling KV cache: %d layers, max_seq=%d, %.1f MB\n",
+            n_layers, max_seq, (float)bytes / (1024.0f * 1024.0f));
+    return true;
+}
+
+// ── LLM body via ggml graph (batched — handles prefill T>1 and decode T=1) ─
+
+// embeds[T*D]: token embeddings (F32). n_past: tokens already in KV cache.
+// Writes K/V into kvc_k/kvc_v at positions [n_past..n_past+T-1].
+// Reads hidden state of last token into hidden_out[D].
+// Returns false on allocation or compute failure.
+static bool sd_run_llm_body(smoldocling_context *ctx,
+                             const float *embeds, int T, int n_past,
+                             float *hidden_out) {
+    const int D        = ctx->llm_dim;         // 576
+    const int n_heads  = ctx->llm_heads;       // 9
+    const int n_kv     = ctx->llm_kv_heads;    // 3
+    const int hd       = ctx->head_dim;        // 64
+    const int n_layers = ctx->llm_layers;      // 30
+    const int kv_dim   = n_kv * hd;            // 192
+    const float eps    = ctx->rms_eps;
+    const float scale  = 1.0f / sqrtf((float)hd);
+    const int kv_total = n_past + T;
+
+    ggml_init_params ip{ctx->llm_compute_meta.size(),
+                        ctx->llm_compute_meta.data(), true};
+    ggml_context *g = ggml_init(ip);
+    if (!g) return false;
+
+    ggml_cgraph *gf = ggml_new_graph_custom(g, kSdLlmGraphCap, false);
+
+    // Inputs
+    ggml_tensor *x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+    ggml_set_name(x, "llm_embeds");
+    ggml_set_input(x);
+
+    ggml_tensor *pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+    ggml_set_name(pos_ids, "pos_ids");
+    ggml_set_input(pos_ids);
+
+    // Causal mask [kv_total, T] F16: mask[k,q]=0 if k<=n_past+q else -inf
+    ggml_tensor *causal_mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, kv_total, T);
+    ggml_set_name(causal_mask, "causal_mask");
+    ggml_set_input(causal_mask);
+
+    auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor * {
+        return ggml_mul(g, ggml_rms_norm(g, t, eps), w);
+    };
+
+    for (int il = 0; il < n_layers; il++) {
+        char buf[64];
+        snprintf(buf, sizeof(buf), "llm.layers.%d", il);
+        std::string lp(buf);
+
+        ggml_tensor *attn_w = core_gguf::try_get(ctx->wl.tensors, (lp + ".attn_norm.weight").c_str());
+        ggml_tensor *q_w    = core_gguf::try_get(ctx->wl.tensors, (lp + ".attn.q.weight").c_str());
+        ggml_tensor *k_w    = core_gguf::try_get(ctx->wl.tensors, (lp + ".attn.k.weight").c_str());
+        ggml_tensor *v_w    = core_gguf::try_get(ctx->wl.tensors, (lp + ".attn.v.weight").c_str());
+        ggml_tensor *o_w    = core_gguf::try_get(ctx->wl.tensors, (lp + ".attn.o.weight").c_str());
+        ggml_tensor *ffn_w  = core_gguf::try_get(ctx->wl.tensors, (lp + ".ffn_norm.weight").c_str());
+        ggml_tensor *gate_w = core_gguf::try_get(ctx->wl.tensors, (lp + ".ffn.gate.weight").c_str());
+        ggml_tensor *up_w   = core_gguf::try_get(ctx->wl.tensors, (lp + ".ffn.up.weight").c_str());
+        ggml_tensor *down_w = core_gguf::try_get(ctx->wl.tensors, (lp + ".ffn.down.weight").c_str());
+
+        if (!attn_w || !q_w || !k_w || !v_w || !o_w || !ffn_w || !gate_w || !up_w || !down_w) {
+            fprintf(stderr, "smoldocling: missing weights for layer %d\n", il);
+            ggml_free(g);
+            return false;
+        }
+
+        ggml_tensor *residual = x;
+        x = rmsnorm(x, attn_w);
+
+        // QKV projections
+        ggml_tensor *Q = ggml_mul_mat(g, q_w, x);  // [n_heads*hd, T]
+        ggml_tensor *K = ggml_mul_mat(g, k_w, x);  // [kv_dim, T]
+        ggml_tensor *V = ggml_mul_mat(g, v_w, x);  // [kv_dim, T]
+
+        // Reshape for attention: head_dim × n_heads × T
+        Q = ggml_reshape_3d(g, Q, hd, n_heads, T);
+        K = ggml_reshape_3d(g, K, hd, n_kv,    T);
+        V = ggml_reshape_3d(g, V, hd, n_kv,    T);
+
+        // RoPE (NEOX = GPT-NeoX split-half, matches SmolLM2)
+        Q = ggml_rope_ext(g, Q, pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0,
+                          ctx->rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        K = ggml_rope_ext(g, K, pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0,
+                          ctx->rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+
+        // Materialize K/V before writing to cache
+        K = ggml_cont(g, K);
+        V = ggml_cont(g, V);
+
+        // Write [kv_dim, T] into kvc_k/kvc_v at layer il, position n_past
+        {
+            ggml_tensor *K_flat = ggml_reshape_2d(g, K, kv_dim, T);
+            ggml_tensor *V_flat = ggml_reshape_2d(g, V, kv_dim, T);
+
+            ggml_tensor *k_wr = ggml_view_2d(g, ctx->kvc_k, kv_dim, T,
+                ctx->kvc_k->nb[1],
+                (size_t)il * ctx->kvc_k->nb[2] + (size_t)n_past * ctx->kvc_k->nb[1]);
+            ggml_tensor *v_wr = ggml_view_2d(g, ctx->kvc_v, kv_dim, T,
+                ctx->kvc_v->nb[1],
+                (size_t)il * ctx->kvc_v->nb[2] + (size_t)n_past * ctx->kvc_v->nb[1]);
+
+            ggml_build_forward_expand(gf, ggml_cpy(g, K_flat, k_wr));
+            ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_wr));
+        }
+
+        // Read full [kv_dim, kv_total] from cache for this layer
+        ggml_tensor *K_cache = ggml_reshape_3d(g,
+            ggml_view_2d(g, ctx->kvc_k, kv_dim, kv_total,
+                ctx->kvc_k->nb[1], (size_t)il * ctx->kvc_k->nb[2]),
+            hd, n_kv, kv_total);
+        ggml_tensor *V_cache = ggml_reshape_3d(g,
+            ggml_view_2d(g, ctx->kvc_v, kv_dim, kv_total,
+                ctx->kvc_v->nb[1], (size_t)il * ctx->kvc_v->nb[2]),
+            hd, n_kv, kv_total);
+
+        // Permute for flash_attn_ext:
+        // Q: [hd, n_heads, T] → [hd, T, n_heads]
+        // K/V: [hd, n_kv, kv_total] → [hd, kv_total, n_kv]
+        // flash_attn_ext handles GQA natively (n_heads != n_kv)
+        Q       = ggml_cont(g, ggml_permute(g, Q,       0, 2, 1, 3));
+        K_cache =            ggml_permute(g, K_cache, 0, 2, 1, 3);
+        V_cache =            ggml_permute(g, V_cache, 0, 2, 1, 3);
+
+        ggml_tensor *attn = ggml_flash_attn_ext(g, Q, K_cache, V_cache,
+                                                 causal_mask, scale, 0.0f, 0.0f);
+        ggml_flash_attn_ext_set_prec(attn, GGML_PREC_F32);
+        // Output: [hd, n_heads, T] → [D, T]
+        attn = ggml_reshape_2d(g, attn, D, T);
+
+        // Output projection + residual
+        x = ggml_add(g, residual, ggml_mul_mat(g, o_w, attn));
+
+        // FFN: RMSNorm → SwiGLU → residual
+        residual = x;
+        x = rmsnorm(x, ffn_w);
+        ggml_tensor *gate = ggml_silu(g, ggml_mul_mat(g, gate_w, x));
+        ggml_tensor *up   = ggml_mul_mat(g, up_w, x);
+        x = ggml_add(g, residual, ggml_mul_mat(g, down_w, ggml_mul(g, gate, up)));
+    }
+
+    // Final RMSNorm
+    ggml_tensor *norm_w = core_gguf::try_get(ctx->wl.tensors, "llm.norm.weight");
+    if (norm_w) x = rmsnorm(x, norm_w);
+
+    ggml_set_name(x, "llm_output");
+    ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+
+    // Allocate and compute
+    ggml_backend_sched_reset(ctx->llm_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->llm_sched, gf)) {
+        fprintf(stderr, "smoldocling: LLM graph alloc failed\n");
+        ggml_free(g);
+        return false;
+    }
+
+    // Upload inputs
+    ggml_tensor *emb_t = ggml_graph_get_tensor(gf, "llm_embeds");
+    ggml_backend_tensor_set(emb_t, embeds, 0, (size_t)T * D * sizeof(float));
+
+    std::vector<int32_t> pos_data(T);
+    for (int t = 0; t < T; t++) pos_data[t] = n_past + t;
+    ggml_tensor *pos_t = ggml_graph_get_tensor(gf, "pos_ids");
+    ggml_backend_tensor_set(pos_t, pos_data.data(), 0, T * sizeof(int32_t));
+
+    // Causal mask: mask[k,q]=0 if k<=n_past+q else -inf; shape [kv_total, T]
+    std::vector<ggml_fp16_t> mask_data((size_t)kv_total * T);
+    for (int q = 0; q < T; q++)
+        for (int k = 0; k < kv_total; k++)
+            mask_data[(size_t)q * kv_total + k] =
+                ggml_fp32_to_fp16(k <= n_past + q ? 0.0f : -INFINITY);
+    ggml_tensor *mask_t = ggml_graph_get_tensor(gf, "causal_mask");
+    ggml_backend_tensor_set(mask_t, mask_data.data(), 0,
+                            mask_data.size() * sizeof(ggml_fp16_t));
+
+    if (ggml_backend_sched_graph_compute(ctx->llm_sched, gf) != GGML_STATUS_SUCCESS) {
+        fprintf(stderr, "smoldocling: LLM graph compute failed\n");
+        ggml_free(g);
+        return false;
+    }
+
+    // Read last token's hidden state
+    ggml_tensor *out_t = ggml_graph_get_tensor(gf, "llm_output");
+    ggml_backend_tensor_get(out_t, hidden_out,
+                            (size_t)(T - 1) * D * sizeof(float),
+                            (size_t)D * sizeof(float));
+
+    ggml_free(g);
+    return true;
+}
+
 // ── LLM Decode Step (SmolLM2-135M, single token with KV cache) ───────
 
 // skip_logits=true skips the expensive lm_head matmul (49280×576).
@@ -826,46 +1084,68 @@ const char * smoldocling_recognize_raw(smoldocling_context * ctx,
     fprintf(stderr, "smoldocling: prompt has %d tokens (%d image + %d text)\n",
             (int)input_ids.size(), n_connector_tokens, (int)input_ids.size() - n_connector_tokens);
 
-    // Allocate KV cache
-    int max_seq = n_connector_tokens + ctx->max_tokens + 32;
-    int kv_dim = ctx->llm_kv_heads * ctx->head_dim;
-    ctx->kv_cache.assign(2 * ctx->llm_layers * max_seq * kv_dim, 0.0f);
-    ctx->kv_allocated = max_seq;
-    ctx->n_past = 0;
-
-    fprintf(stderr, "smoldocling: KV cache allocated: %d max_seq, %.1f MB\n",
-            max_seq, (float)(ctx->kv_cache.size() * 4) / 1e6f);
-
     // Get embedding weights — DequantCache keeps the pointer stable across calls
     const float * embed_w = ctx->get("llm.embed.weight");
-    fprintf(stderr, "smoldocling: starting prefill of %d tokens...\n",
-            (int)input_ids.size());
+    const float * lm_head_w = ctx->get("llm.lm_head.weight");
 
-    // Prefill: process all input tokens through LLM
+    const int prefill_len = (int)input_ids.size();
+    int max_seq = prefill_len + ctx->max_tokens + 4;
+
+    // Build flat prefill embedding matrix [prefill_len × D]
+    std::vector<float> prefill_embeds((size_t)prefill_len * D);
+    {
+        int vis_idx = 0;
+        for (int t = 0; t < prefill_len; t++) {
+            float *dst = prefill_embeds.data() + (size_t)t * D;
+            if (input_ids[t] == ctx->image_token_id && vis_idx < n_connector_tokens) {
+                memcpy(dst, connector_out.data() + (size_t)vis_idx * D, D * sizeof(float));
+                vis_idx++;
+            } else {
+                memcpy(dst, embed_w + (size_t)input_ids[t] * D, D * sizeof(float));
+            }
+        }
+    }
+
+    // Try ggml batched prefill path
+    bool use_ggml = (ctx->llm_sched != nullptr)
+                 && sd_alloc_kv_cache(ctx, max_seq);
+
     std::vector<float> logits(ctx->vocab_size);
-    int vis_idx = 0;
+    std::vector<float> hidden(D);
+    ctx->n_past = 0;
+
+    fprintf(stderr, "smoldocling: starting prefill of %d tokens (%s)...\n",
+            prefill_len, use_ggml ? "ggml batched" : "scalar");
 
     auto t_prefill = std::chrono::steady_clock::now();
-    for (int t = 0; t < (int)input_ids.size(); t++) {
-        std::vector<float> token_embed(D);
-        if (input_ids[t] == ctx->image_token_id && vis_idx < n_connector_tokens) {
-            // Replace image token with connector output
-            memcpy(token_embed.data(), connector_out.data() + vis_idx * D, D * sizeof(float));
-            vis_idx++;
+
+    if (use_ggml) {
+        if (!sd_run_llm_body(ctx, prefill_embeds.data(), prefill_len, 0, hidden.data())) {
+            fprintf(stderr, "smoldocling: ggml prefill failed, falling back to scalar\n");
+            sd_free_kv_cache(ctx);
+            use_ggml = false;
         } else {
-            // Text embedding
-            int id = input_ids[t];
-            for (int d = 0; d < D; d++)
-                token_embed[d] = embed_w[id * D + d];
+            ctx->n_past = prefill_len;
+            if (lm_head_w)
+                core_cpu::linear_cpu(hidden.data(), logits.data(), D, ctx->vocab_size, lm_head_w, nullptr);
         }
-
-        bool is_last = (t == (int)input_ids.size() - 1);
-        sd_llm_decode_step(ctx, token_embed.data(), ctx->n_past, logits.data(),
-                           /*skip_logits=*/!is_last);
-        ctx->n_past++;
-
-        // DequantCache: no periodic clear needed (each weight cached once)
     }
+
+    if (!use_ggml) {
+        // Scalar fallback: token-by-token with F32 KV cache
+        int kv_dim = ctx->llm_kv_heads * ctx->head_dim;
+        ctx->kv_cache.assign((size_t)2 * ctx->llm_layers * max_seq * kv_dim, 0.0f);
+        ctx->kv_allocated = max_seq;
+        ctx->n_past = 0;
+
+        for (int t = 0; t < prefill_len; t++) {
+            bool is_last = (t == prefill_len - 1);
+            sd_llm_decode_step(ctx, prefill_embeds.data() + (size_t)t * D,
+                               ctx->n_past, logits.data(), /*skip_logits=*/!is_last);
+            ctx->n_past++;
+        }
+    }
+
     if (bench) {
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - t_prefill).count();
@@ -875,34 +1155,43 @@ const char * smoldocling_recognize_raw(smoldocling_context * ctx,
     // Greedy decode
     ctx->output_text.clear();
     std::vector<int> output_ids;
-    int eos_id = 2;  // <|im_end|>
-    int eou_id = 49279;  // <end_of_utterance>
+    const int eos_id = 2;    // <|im_end|>
+    const int eou_id = 49279; // <end_of_utterance>
 
-    long long decode_total_ms = 0;
-    int decode_steps = 0;
     auto t_decode_start = std::chrono::steady_clock::now();
     for (int step = 0; step < ctx->max_tokens; step++) {
         auto t_step = std::chrono::steady_clock::now();
-        // Argmax
+
         int best_id = 0;
         float best_score = logits[0];
-        for (int v = 1; v < ctx->vocab_size; v++) {
+        for (int v = 1; v < ctx->vocab_size; v++)
             if (logits[v] > best_score) { best_score = logits[v]; best_id = v; }
-        }
 
         if (best_id == eos_id || best_id == eou_id) break;
-
         output_ids.push_back(best_id);
 
-        // Embed next token (use persistent copy)
-        std::vector<float> next_embed(D);
-        for (int d = 0; d < D; d++)
-            next_embed[d] = embed_w[best_id * D + d];
+        const float *next_emb = embed_w + (size_t)best_id * D;
 
-        sd_llm_decode_step(ctx, next_embed.data(), ctx->n_past, logits.data());
-        ctx->n_past++;
+        if (use_ggml) {
+            if (!sd_run_llm_body(ctx, next_emb, 1, ctx->n_past, hidden.data())) {
+                fprintf(stderr, "smoldocling: ggml decode step failed at step %d\n", step);
+                break;
+            }
+            ctx->n_past++;
+            if (lm_head_w)
+                core_cpu::linear_cpu(hidden.data(), logits.data(), D, ctx->vocab_size, lm_head_w, nullptr);
+        } else {
+            std::vector<float> next_embed(next_emb, next_emb + D);
+            sd_llm_decode_step(ctx, next_embed.data(), ctx->n_past, logits.data());
+            ctx->n_past++;
+        }
 
-        // DequantCache: no periodic clear needed
+        if (bench) {
+            auto step_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - t_step).count();
+            if (step == 0 || step == 1)
+                fprintf(stderr, "[smoldocling-bench] decode_step[%d]: %lldms\n", step, (long long)step_ms);
+        }
     }
     if (bench) {
         auto t_decode_end = std::chrono::steady_clock::now();
