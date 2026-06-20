@@ -133,9 +133,7 @@ static void window_mhsa(const float* tokens, float* out,
         std::vector<float> scores(n_tokens * n_tokens);
         for (int i = 0; i < n_tokens; i++) {
             for (int j = 0; j < n_tokens; j++) {
-                float dot = 0;
-                for (int d = 0; d < hd; d++)
-                    dot += Q[i * D + off + d] * K[j * D + off + d];
+                float dot = core_cpu::dot_product(&Q[i * D + off], &K[j * D + off], hd);
                 scores[i * n_tokens + j] = dot * scale;
 
                 // Add relative position bias
