@@ -230,6 +230,15 @@ CRISPEMBED_API float crispembed_rerank(crispembed_context * ctx,
                                         const char         * query,
                                         const char         * document);
 
+// Batch rerank: score multiple documents against the same query in one call.
+// Classifier weights are cached after the first call (avoids 4MB GPU→CPU
+// transfer per document). Returns number of documents scored.
+CRISPEMBED_API int crispembed_rerank_batch(crispembed_context * ctx,
+                                            const char         * query,
+                                            const char        ** documents,
+                                            int                  n_docs,
+                                            float              * out_scores);
+
 // ---------------------------------------------------------------------------
 // Audio encoding (omnimodal embedding models)
 // ---------------------------------------------------------------------------
