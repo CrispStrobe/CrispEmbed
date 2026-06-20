@@ -477,7 +477,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **Flash attention everywhere** — use `ggml_flash_attn_ext` in:
   - `decoder_embed.cpp`: **DONE** (`29d8a08`) — both single-text and batch paths
   - `bidirlm_vision.cpp`: **DONE** (`fd8cd09`) — F16 mask, halves mask memory
-  - `lilt_kie.cpp` (BiACM score combination may need adaptation)
+  - `lilt_kie.cpp`: SKIPPED — BiACM adds text+layout scores before softmax,
+    incompatible with fused flash_attn kernel
   - `qwen2vl_ocr.cpp`: already uses flash_attn
   - `deepseek_ocr2.cpp` all attention paths
 
@@ -699,8 +700,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **hmer coverage conv per step** — conv2d(256, 256, 3x3) per decoder
   step is the attention mechanism. Expensive but architecturally required.
 
-- [ ] **ppformulanet_l: ggml context reuse across layers** — new 8MB
-  context allocated and freed for each of 12 layers. Reuse single buffer.
+- [x] **ppformulanet_l: ggml meta buffer reuse across layers** — DONE
+  (`b7bc237`). Hoisted 8MB meta_buf before 12-layer loop.
 
 - [ ] **math_ocr: global dequant cache → per-context** — global static
   `unordered_map` at line 455 is thread-unsafe. Move to per-context.
