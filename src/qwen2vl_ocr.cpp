@@ -1730,9 +1730,9 @@ void vision_result_free(vision_result &r) {
 
 bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
                      llm_result &out, const image_input *img,
-                     bool logits_last_only = false,
-                     bool materialize_hidden = false,
-                     bool populate_kvc = false) {
+                     bool logits_last_only,
+                     bool materialize_hidden,
+                     bool populate_kvc) {
   const auto &lhp = ctx.m.lhp;
   const int D = (int)lhp.hidden_size;
   const int n_heads = (int)lhp.num_attention_heads;
