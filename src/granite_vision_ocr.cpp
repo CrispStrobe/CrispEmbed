@@ -250,6 +250,18 @@ struct granite_vision_context {
     ggml_backend_t backend = nullptr;
     ggml_backend_t vis_backend_cpu = nullptr;  // CPU fallback for ops Metal can't run
     ggml_backend_sched_t vis_sched = nullptr;
+    // The 40-layer LLM graph runs on a dedicated homogeneous CPU sched. The
+    // Metal path corrupts it via a ggml-alloc in-place buffer-reuse bug on the
+    // long F32 graph (see LEARNINGS); CPU is bit-correct and still beats the
+    // hand-written scalar fallback (Accelerate + threads + native vec_dot).
+    ggml_backend_t llm_backend_cpu = nullptr;
+    ggml_backend_sched_t llm_sched = nullptr;
+    // CPU-resident copies of the llm.* weight tensors (the rest stay on the
+    // Metal `backend` so the SigLIP tower keeps its GPU path). gv_run_llm_body
+    // prefers these so the CPU llm_sched never touches a Metal-resident leaf.
+    ggml_context * llm_wctx = nullptr;
+    ggml_backend_buffer_t llm_wbuf = nullptr;
+    std::map<std::string, ggml_tensor*> llm_tensors;
     std::vector<uint8_t> vis_compute_meta;     // pre-allocated ggml graph metadata buffer (shared)
 
     // Vision hparams
@@ -302,6 +314,43 @@ struct granite_vision_context {
 };
 
 // ── Init / Free ────────────────────────────────────────────────────────
+
+// Mirror the llm.* weight tensors (raw quantized bytes) from the loaded
+// (Metal) buffer into a CPU buffer so the CPU-only llm_sched can execute the
+// LLM graph. ne/type are preserved exactly, so gv_run_llm_body's transposed-ne
+// reshape (sw) behaves identically. Returns false (and leaves llm_tensors
+// empty → wt() falls back to wl) on any allocation failure.
+static bool gv_mirror_llm_weights_to_cpu(granite_vision_context * ctx) {
+    std::vector<std::pair<std::string, ggml_tensor*>> llm;
+    for (auto & kv : ctx->wl.tensors)
+        if (kv.first.rfind("llm.", 0) == 0) llm.push_back(kv);
+    if (llm.empty()) return false;
+
+    ggml_init_params ip{(llm.size() + 1) * ggml_tensor_overhead(), nullptr, /*no_alloc=*/true};
+    ctx->llm_wctx = ggml_init(ip);
+    if (!ctx->llm_wctx) return false;
+    for (auto & [name, src] : llm) {
+        ggml_tensor * dst = ggml_new_tensor(ctx->llm_wctx, src->type, GGML_MAX_DIMS, src->ne);
+        ggml_set_name(dst, name.c_str());
+        ctx->llm_tensors[name] = dst;
+    }
+    ctx->llm_wbuf = ggml_backend_alloc_ctx_tensors(ctx->llm_wctx, ctx->llm_backend_cpu);
+    if (!ctx->llm_wbuf) {
+        ggml_free(ctx->llm_wctx); ctx->llm_wctx = nullptr; ctx->llm_tensors.clear();
+        return false;
+    }
+    std::vector<uint8_t> tmp;
+    for (auto & [name, src] : llm) {
+        size_t nb = ggml_nbytes(src);
+        tmp.resize(nb);
+        ggml_backend_tensor_get(src, tmp.data(), 0, nb);
+        ggml_backend_tensor_set(ctx->llm_tensors[name], tmp.data(), 0, nb);
+    }
+    fprintf(stderr, "granite_vision: mirrored %zu LLM weight tensors to CPU "
+            "(%.0f MB) for the CPU decode graph\n", llm.size(),
+            (double)ggml_backend_buffer_get_size(ctx->llm_wbuf) / 1048576.0);
+    return true;
+}
 
 granite_vision_context * granite_vision_init(const char * model_path, int n_threads) {
     auto * ctx = new granite_vision_context;
@@ -390,7 +439,23 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
         }
         ctx->vis_sched = ggml_backend_sched_new(
             bends.data(), nullptr, (int)bends.size(), meta_cap, false, false);
+
+        // Dedicated CPU-only sched for the LLM graph (see llm_sched comment).
+        ctx->llm_backend_cpu = ggml_backend_cpu_init();
+        if (ctx->llm_backend_cpu) {
+            ggml_backend_cpu_set_n_threads(ctx->llm_backend_cpu, ctx->n_threads);
+            ctx->llm_sched = ggml_backend_sched_new(
+                &ctx->llm_backend_cpu, nullptr, 1, meta_cap, false, false);
+        }
     }
+
+    // Split residency: when the weights loaded onto a non-CPU backend (Metal),
+    // mirror just the llm.* tensors into a CPU buffer so the CPU llm_sched can
+    // run the LLM graph (the Metal path corrupts it via the ggml-alloc bug).
+    // The duplicated Q4_K LLM weights add ~the model's LLM size in RAM; vision
+    // weights stay only on Metal.
+    if (ctx->llm_backend_cpu && !ggml_backend_is_cpu(ctx->backend))
+        gv_mirror_llm_weights_to_cpu(ctx);
 
     int n_patches = (ctx->vis_image_size / ctx->vis_patch_size);
     n_patches *= n_patches;  // 27*27 = 729
@@ -409,6 +474,10 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
             ctx->have_tokenizer ? (int)ctx->tokenizer.vocab.size() : 0);
 
     ctx->bench = (std::getenv("CRISPEMBED_GRANITE_OCR_BENCH") != nullptr);
+    if (const char * mt = std::getenv("CRISPEMBED_GRANITE_MAX_TOKENS")) {
+        int v = atoi(mt);
+        if (v > 0) ctx->max_tokens = v;
+    }
 
     return ctx;
 }
@@ -417,7 +486,11 @@ void granite_vision_free(granite_vision_context * ctx) {
     if (ctx) {
         if (ctx->kvc_buf) { ggml_backend_buffer_free(ctx->kvc_buf); ctx->kvc_buf = nullptr; }
         if (ctx->kvc_ctx) { ggml_free(ctx->kvc_ctx); ctx->kvc_ctx = nullptr; }
+        if (ctx->llm_wbuf)        ggml_backend_buffer_free(ctx->llm_wbuf);
+        if (ctx->llm_wctx)        ggml_free(ctx->llm_wctx);
+        if (ctx->llm_sched)       ggml_backend_sched_free(ctx->llm_sched);
         if (ctx->vis_sched)       ggml_backend_sched_free(ctx->vis_sched);
+        if (ctx->llm_backend_cpu) ggml_backend_free(ctx->llm_backend_cpu);
         if (ctx->vis_backend_cpu) ggml_backend_free(ctx->vis_backend_cpu);
         core_gguf::free_weights(ctx->wl);
         if (ctx->backend)         ggml_backend_free(ctx->backend);
@@ -602,7 +675,9 @@ static bool gv_alloc_kv_cache(granite_vision_context * ctx, int max_seq) {
     ggml_set_name(ctx->kvc_k, "gv_kv_k");
     ggml_set_name(ctx->kvc_v, "gv_kv_v");
 
-    ctx->kvc_buf = ggml_backend_alloc_ctx_tensors(ctx->kvc_ctx, ctx->backend);
+    // KV cache lives on the LLM's CPU backend so the CPU LLM graph can read it.
+    ggml_backend_t kv_be = ctx->llm_backend_cpu ? ctx->llm_backend_cpu : ctx->backend;
+    ctx->kvc_buf = ggml_backend_alloc_ctx_tensors(ctx->kvc_ctx, kv_be);
     if (!ctx->kvc_buf) {
         ggml_free(ctx->kvc_ctx); ctx->kvc_ctx = nullptr;
         ctx->kvc_k = ctx->kvc_v = nullptr;
@@ -672,7 +747,7 @@ static bool gv_run_projector_graph(granite_vision_context * ctx,
 static bool gv_run_llm_body(granite_vision_context * ctx,
                              const float * embeds, int T, int n_past,
                              float * hidden_out) {
-    if (!ctx->vis_sched || !ctx->kvc_buf) return false;
+    if (!ctx->llm_sched || !ctx->kvc_buf) return false;
 
     const int D        = ctx->llm_dim;
     const int n_heads  = ctx->llm_heads;
@@ -700,6 +775,10 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     ggml_set_name(mask, "causal_mask"); ggml_set_input(mask);
 
     auto wt = [&](const std::string & name) -> ggml_tensor * {
+        if (!ctx->llm_tensors.empty()) {
+            auto it = ctx->llm_tensors.find(name);
+            if (it != ctx->llm_tensors.end()) return it->second;
+        }
         return core_gguf::try_get(ctx->wl.tensors, name.c_str());
     };
     auto rmsnorm = [&](ggml_tensor * t, ggml_tensor * w) -> ggml_tensor * {
@@ -815,8 +894,8 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     ggml_build_forward_expand(gf, out_t);
 
     // ── Schedule + compute ──
-    ggml_backend_sched_reset(ctx->vis_sched);
-    if (!ggml_backend_sched_alloc_graph(ctx->vis_sched, gf)) {
+    ggml_backend_sched_reset(ctx->llm_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->llm_sched, gf)) {
         fprintf(stderr, "granite_vision: LLM graph alloc failed (T=%d, Lk=%d)\n", T, Lk);
         ggml_free(g); return false;
     }
@@ -838,7 +917,7 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
             mask_data[(size_t)q * Lk + k] = (k <= n_past + q) ? h0 : hni;
     ggml_backend_tensor_set(mask, mask_data.data(), 0, mask_data.size() * sizeof(ggml_fp16_t));
 
-    if (ggml_backend_sched_graph_compute(ctx->vis_sched, gf) != GGML_STATUS_SUCCESS) {
+    if (ggml_backend_sched_graph_compute(ctx->llm_sched, gf) != GGML_STATUS_SUCCESS) {
         fprintf(stderr, "granite_vision: LLM graph compute failed\n");
         ggml_free(g); return false;
     }
