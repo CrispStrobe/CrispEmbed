@@ -118,6 +118,16 @@ struct bttr_ocr_context {
     std::vector<float> encoder_output; // (n_pos, d_model)
     int n_enc_pos;
 
+    // Pre-allocated decoder scratch (avoids per-step/per-layer heap allocs)
+    struct dec_scratch {
+        std::vector<float> x, qkv, attn_out, sa_proj;
+        std::vector<float> cq, ca_out, ca_proj;
+        std::vector<float> ffn_up, ffn_down;
+        std::vector<float> scores;  // max(n_enc, max_seq)
+        std::vector<float> logits;
+        bool allocated = false;
+    } ds;
+
     bool bench;
 };
 
@@ -512,6 +522,31 @@ static void run_encoder(bttr_ocr_context * ctx, const float * gray, int W, int H
 }
 
 // ---------------------------------------------------------------------------
+// Allocate decoder scratch buffers (once, reused across all decode steps)
+// ---------------------------------------------------------------------------
+
+static void ensure_dec_scratch(bttr_ocr_context * ctx, int max_seq) {
+    if (ctx->ds.allocated) return;
+    const int D = ctx->hparams.d_model;
+    const int F = ctx->hparams.dim_feedforward;
+    const int V = ctx->hparams.vocab_size;
+    int max_kv = std::max(max_seq, ctx->n_enc_pos);
+
+    ctx->ds.x.resize(D);
+    ctx->ds.qkv.resize(3 * D);
+    ctx->ds.attn_out.resize(D);
+    ctx->ds.sa_proj.resize(D);
+    ctx->ds.cq.resize(D);
+    ctx->ds.ca_out.resize(D);
+    ctx->ds.ca_proj.resize(D);
+    ctx->ds.ffn_up.resize(F);
+    ctx->ds.ffn_down.resize(D);
+    ctx->ds.scores.resize(max_kv);
+    ctx->ds.logits.resize(V);
+    ctx->ds.allocated = true;
+}
+
+// ---------------------------------------------------------------------------
 // Transformer decoder (greedy, single-step with KV cache)
 // ---------------------------------------------------------------------------
 
@@ -522,10 +557,20 @@ static std::string greedy_decode(bttr_ocr_context * ctx) {
     const int V = hp.vocab_size;
     const int n_enc = ctx->n_enc_pos;
     const int head_dim = D / hp.nhead;
+    const float scale = 1.0f / sqrtf((float)head_dim);
 
-    // KV caches for self-attention
+    // Pre-allocate scratch buffers
+    ctx->ds.allocated = false;
+    ensure_dec_scratch(ctx, hp.max_len);
+    auto & ds = ctx->ds;
+
+    // KV caches for self-attention (pre-allocated for max_len)
     std::vector<std::vector<float>> kv_k(hp.num_decoder_layers);
     std::vector<std::vector<float>> kv_v(hp.num_decoder_layers);
+    for (int li = 0; li < hp.num_decoder_layers; li++) {
+        kv_k[li].resize(hp.max_len * D);
+        kv_v[li].resize(hp.max_len * D);
+    }
 
     // Precompute cross-attention K/V from encoder output (constant across steps)
     std::vector<std::vector<float>> ca_ck(hp.num_decoder_layers);
@@ -553,148 +598,130 @@ static std::string greedy_decode(bttr_ocr_context * ctx) {
 
     for (int step = 0; step < hp.max_len; step++) {
         // Token embedding + LayerNorm
-        std::vector<float> x(D);
+        memset(ds.x.data(), 0, D * sizeof(float));
         if (ctx->word_embed_w && prev_token >= 0 && prev_token < V) {
             const float * emb = tf32(ctx, ctx->word_embed_w);
-            memcpy(x.data(), emb + prev_token * D, D * sizeof(float));
+            memcpy(ds.x.data(), emb + prev_token * D, D * sizeof(float));
         }
-        layernorm(x.data(), D,
+        layernorm(ds.x.data(), D,
                   tf32(ctx, ctx->word_embed_ln_w),
                   tf32(ctx, ctx->word_embed_ln_b));
 
-        // Add positional encoding
         if (ctx->pos_enc && step < 500) {
             const float * pe = tf32(ctx, ctx->pos_enc);
-            for (int i = 0; i < D; i++) x[i] += pe[step * D + i];
+            for (int i = 0; i < D; i++) ds.x[i] += pe[step * D + i];
         }
 
-        // Decoder layers
         for (int li = 0; li < hp.num_decoder_layers; li++) {
             const auto & l = ctx->dec_layers[li];
 
             // --- Causal self-attention ---
-            // Fused QKV: in_proj_weight = [Wq; Wk; Wv], each (D, D)
-            std::vector<float> qkv(3 * D);
-            linear(x.data(), D, tf32(ctx, l.sa_qkv_w), tf32(ctx, l.sa_qkv_b), 3*D, qkv.data());
-            float * q = qkv.data(), * k = qkv.data() + D, * v = qkv.data() + 2*D;
+            linear(ds.x.data(), D, tf32(ctx, l.sa_qkv_w), tf32(ctx, l.sa_qkv_b),
+                   3*D, ds.qkv.data());
+            float * q = ds.qkv.data(), * k = ds.qkv.data() + D, * v = ds.qkv.data() + 2*D;
 
-            // Append K, V to cache
-            kv_k[li].insert(kv_k[li].end(), k, k + D);
-            kv_v[li].insert(kv_v[li].end(), v, v + D);
+            // Write K/V to pre-allocated cache
+            memcpy(&kv_k[li][step * D], k, D * sizeof(float));
+            memcpy(&kv_v[li][step * D], v, D * sizeof(float));
             int n_past = step + 1;
 
-            // Multi-head attention
-            std::vector<float> attn_out(D, 0.0f);
-            float scale = 1.0f / sqrtf((float)head_dim);
+            // Multi-head attention with SIMD dot product
+            memset(ds.attn_out.data(), 0, D * sizeof(float));
             for (int h = 0; h < hp.nhead; h++) {
-                std::vector<float> scores(n_past);
+                int off = h * head_dim;
                 float max_s = -1e9f;
                 for (int ki = 0; ki < n_past; ki++) {
-                    float dot = 0;
-                    for (int d = 0; d < head_dim; d++)
-                        dot += q[h*head_dim + d] * kv_k[li][ki*D + h*head_dim + d];
-                    scores[ki] = dot * scale;
-                    if (scores[ki] > max_s) max_s = scores[ki];
+                    ds.scores[ki] = core_cpu::dot_product(
+                        q + off, &kv_k[li][ki * D + off], head_dim) * scale;
+                    if (ds.scores[ki] > max_s) max_s = ds.scores[ki];
                 }
                 float sum_exp = 0;
                 for (int ki = 0; ki < n_past; ki++) {
-                    scores[ki] = expf(scores[ki] - max_s);
-                    sum_exp += scores[ki];
+                    ds.scores[ki] = expf(ds.scores[ki] - max_s);
+                    sum_exp += ds.scores[ki];
                 }
-                for (int ki = 0; ki < n_past; ki++) scores[ki] /= sum_exp;
+                float inv = 1.0f / sum_exp;
+                for (int ki = 0; ki < n_past; ki++) ds.scores[ki] *= inv;
                 for (int d = 0; d < head_dim; d++) {
                     float s = 0;
                     for (int ki = 0; ki < n_past; ki++)
-                        s += scores[ki] * kv_v[li][ki*D + h*head_dim + d];
-                    attn_out[h*head_dim + d] = s;
+                        s += ds.scores[ki] * kv_v[li][ki*D + off + d];
+                    ds.attn_out[off + d] = s;
                 }
             }
-            // Output projection + residual
-            std::vector<float> sa_proj(D);
-            linear(attn_out.data(), D, tf32(ctx, l.sa_out_w), tf32(ctx, l.sa_out_b), D, sa_proj.data());
-            for (int i = 0; i < D; i++) x[i] += sa_proj[i];
-            // Post-LN
-            layernorm(x.data(), D, tf32(ctx, l.ln1_w), tf32(ctx, l.ln1_b));
+            linear(ds.attn_out.data(), D, tf32(ctx, l.sa_out_w),
+                   tf32(ctx, l.sa_out_b), D, ds.sa_proj.data());
+            for (int i = 0; i < D; i++) ds.x[i] += ds.sa_proj[i];
+            layernorm(ds.x.data(), D, tf32(ctx, l.ln1_w), tf32(ctx, l.ln1_b));
 
             // --- Cross-attention ---
-            // Q from decoder, K/V from encoder (fused QKV but only Q uses decoder state)
-            // Actually, nn.TransformerDecoderLayer's multihead_attn uses:
-            //   Q = decoder_hidden, K = V = encoder_output
-            // But with fused in_proj_weight, we need to split:
-            //   Q = x @ Wq + bq (first D rows)
-            //   K = enc @ Wk + bk (next D rows)
-            //   V = enc @ Wv + bv (last D rows)
             {
-                // Q from decoder state (first D rows of fused QKV)
                 const float * ca_W = tf32(ctx, l.ca_qkv_w);
                 const float * ca_B = tf32(ctx, l.ca_qkv_b);
-                std::vector<float> cq(D);
-                linear(x.data(), D, ca_W, ca_B, D, cq.data());
+                linear(ds.x.data(), D, ca_W, ca_B, D, ds.cq.data());
 
-                // K, V from precomputed cache
                 const float * ck = ca_ck[li].data();
                 const float * cv = ca_cv[li].data();
 
-                // MHA
-                std::vector<float> ca_out(D, 0.0f);
+                memset(ds.ca_out.data(), 0, D * sizeof(float));
                 for (int h = 0; h < hp.nhead; h++) {
-                    std::vector<float> scores(n_enc);
+                    int off = h * head_dim;
                     float max_s = -1e9f;
                     for (int ki = 0; ki < n_enc; ki++) {
-                        float dot = 0;
-                        for (int d = 0; d < head_dim; d++)
-                            dot += cq[h*head_dim + d] * ck[ki*D + h*head_dim + d];
-                        scores[ki] = dot * scale;
-                        if (scores[ki] > max_s) max_s = scores[ki];
+                        ds.scores[ki] = core_cpu::dot_product(
+                            ds.cq.data() + off, &ck[ki * D + off], head_dim) * scale;
+                        if (ds.scores[ki] > max_s) max_s = ds.scores[ki];
                     }
                     float sum_exp = 0;
-                    for (auto & s : scores) { s = expf(s - max_s); sum_exp += s; }
-                    for (auto & s : scores) s /= sum_exp;
+                    for (int ki = 0; ki < n_enc; ki++) {
+                        ds.scores[ki] = expf(ds.scores[ki] - max_s);
+                        sum_exp += ds.scores[ki];
+                    }
+                    float inv = 1.0f / sum_exp;
+                    for (int ki = 0; ki < n_enc; ki++) ds.scores[ki] *= inv;
                     for (int d = 0; d < head_dim; d++) {
                         float s = 0;
                         for (int ki = 0; ki < n_enc; ki++)
-                            s += scores[ki] * cv[ki*D + h*head_dim + d];
-                        ca_out[h*head_dim + d] = s;
+                            s += ds.scores[ki] * cv[ki*D + off + d];
+                        ds.ca_out[off + d] = s;
                     }
                 }
-                std::vector<float> ca_proj(D);
-                linear(ca_out.data(), D, tf32(ctx, l.ca_out_w), tf32(ctx, l.ca_out_b), D, ca_proj.data());
-                for (int i = 0; i < D; i++) x[i] += ca_proj[i];
-                layernorm(x.data(), D, tf32(ctx, l.ln2_w), tf32(ctx, l.ln2_b));
+                linear(ds.ca_out.data(), D, tf32(ctx, l.ca_out_w),
+                       tf32(ctx, l.ca_out_b), D, ds.ca_proj.data());
+                for (int i = 0; i < D; i++) ds.x[i] += ds.ca_proj[i];
+                layernorm(ds.x.data(), D, tf32(ctx, l.ln2_w), tf32(ctx, l.ln2_b));
             }
 
             // --- FFN ---
             {
                 const int F = hp.dim_feedforward;
-                std::vector<float> up(F);
-                linear(x.data(), D, tf32(ctx, l.ff_up_w), tf32(ctx, l.ff_up_b), F, up.data());
-                relu_ip(up.data(), F);
-                std::vector<float> down(D);
-                linear(up.data(), F, tf32(ctx, l.ff_down_w), tf32(ctx, l.ff_down_b), D, down.data());
-                for (int i = 0; i < D; i++) x[i] += down[i];
-                layernorm(x.data(), D, tf32(ctx, l.ln3_w), tf32(ctx, l.ln3_b));
+                linear(ds.x.data(), D, tf32(ctx, l.ff_up_w),
+                       tf32(ctx, l.ff_up_b), F, ds.ffn_up.data());
+                relu_ip(ds.ffn_up.data(), F);
+                linear(ds.ffn_up.data(), F, tf32(ctx, l.ff_down_w),
+                       tf32(ctx, l.ff_down_b), D, ds.ffn_down.data());
+                for (int i = 0; i < D; i++) ds.x[i] += ds.ffn_down[i];
+                layernorm(ds.x.data(), D, tf32(ctx, l.ln3_w), tf32(ctx, l.ln3_b));
             }
         }
 
         // Output projection
-        std::vector<float> logits(V);
-        linear(x.data(), D, tf32(ctx, ctx->proj_w), tf32(ctx, ctx->proj_b), V, logits.data());
+        linear(ds.x.data(), D, tf32(ctx, ctx->proj_w), tf32(ctx, ctx->proj_b),
+               V, ds.logits.data());
 
         // Argmax
         int best = 0;
-        float best_score = logits[0];
+        float best_score = ds.logits[0];
         for (int v = 1; v < V; v++)
-            if (logits[v] > best_score) { best_score = logits[v]; best = v; }
+            if (ds.logits[v] > best_score) { best_score = ds.logits[v]; best = v; }
 
         if (best == hp.eos_token || best == hp.pad_token) break;
 
-        // Confidence: softmax of winning token
+        // Confidence
         {
-            float max_l = logits[0];
-            for (int v = 1; v < V; v++) if (logits[v] > max_l) max_l = logits[v];
             float sum_e = 0;
-            for (int v = 0; v < V; v++) sum_e += expf(logits[v] - max_l);
-            ctx->char_confidences.push_back(expf(logits[best] - max_l) / sum_e);
+            for (int v = 0; v < V; v++) sum_e += expf(ds.logits[v] - best_score);
+            ctx->char_confidences.push_back(1.0f / sum_e);
         }
 
         tokens.push_back(best);
@@ -740,113 +767,113 @@ static void decode_step(bttr_ocr_context * ctx,
     const int head_dim = D / hp.nhead;
     const float scale = 1.0f / sqrtf((float)head_dim);
 
+    auto & ds = ctx->ds;
+
     // Token embedding + LayerNorm
-    std::vector<float> x(D);
+    memset(ds.x.data(), 0, D * sizeof(float));
     if (ctx->word_embed_w && beam.prev_token >= 0 && beam.prev_token < V) {
         const float * emb = tf32(ctx, ctx->word_embed_w);
-        memcpy(x.data(), emb + beam.prev_token * D, D * sizeof(float));
+        memcpy(ds.x.data(), emb + beam.prev_token * D, D * sizeof(float));
     }
-    layernorm(x.data(), D, tf32(ctx, ctx->word_embed_ln_w),
+    layernorm(ds.x.data(), D, tf32(ctx, ctx->word_embed_ln_w),
               tf32(ctx, ctx->word_embed_ln_b));
 
     if (ctx->pos_enc && step < 500) {
         const float * pe = tf32(ctx, ctx->pos_enc);
-        for (int i = 0; i < D; i++) x[i] += pe[step * D + i];
+        for (int i = 0; i < D; i++) ds.x[i] += pe[step * D + i];
     }
 
     for (int li = 0; li < hp.num_decoder_layers; li++) {
         const auto & l = ctx->dec_layers[li];
 
         // Self-attention
-        std::vector<float> qkv(3 * D);
-        linear(x.data(), D, tf32(ctx, l.sa_qkv_w), tf32(ctx, l.sa_qkv_b),
-               3 * D, qkv.data());
-        float * q = qkv.data(), * k = qkv.data() + D, * v = qkv.data() + 2*D;
+        linear(ds.x.data(), D, tf32(ctx, l.sa_qkv_w), tf32(ctx, l.sa_qkv_b),
+               3 * D, ds.qkv.data());
+        float * q = ds.qkv.data(), * k = ds.qkv.data() + D, * v = ds.qkv.data() + 2*D;
 
         beam.kv_k[li].insert(beam.kv_k[li].end(), k, k + D);
         beam.kv_v[li].insert(beam.kv_v[li].end(), v, v + D);
         int n_past = step + 1;
 
-        std::vector<float> attn_out(D, 0.0f);
+        memset(ds.attn_out.data(), 0, D * sizeof(float));
         for (int h = 0; h < hp.nhead; h++) {
-            std::vector<float> scores(n_past);
+            int off = h * head_dim;
             float max_s = -1e9f;
             for (int ki = 0; ki < n_past; ki++) {
-                float dot = 0;
-                for (int d = 0; d < head_dim; d++)
-                    dot += q[h*head_dim+d] * beam.kv_k[li][ki*D+h*head_dim+d];
-                scores[ki] = dot * scale;
-                if (scores[ki] > max_s) max_s = scores[ki];
+                ds.scores[ki] = core_cpu::dot_product(
+                    q + off, &beam.kv_k[li][ki*D + off], head_dim) * scale;
+                if (ds.scores[ki] > max_s) max_s = ds.scores[ki];
             }
             float sum_exp = 0;
-            for (auto & s : scores) { s = expf(s - max_s); sum_exp += s; }
-            for (auto & s : scores) s /= sum_exp;
+            for (int ki = 0; ki < n_past; ki++) {
+                ds.scores[ki] = expf(ds.scores[ki] - max_s);
+                sum_exp += ds.scores[ki];
+            }
+            float inv = 1.0f / sum_exp;
+            for (int ki = 0; ki < n_past; ki++) ds.scores[ki] *= inv;
             for (int d = 0; d < head_dim; d++) {
                 float s = 0;
                 for (int ki = 0; ki < n_past; ki++)
-                    s += scores[ki] * beam.kv_v[li][ki*D+h*head_dim+d];
-                attn_out[h*head_dim+d] = s;
+                    s += ds.scores[ki] * beam.kv_v[li][ki*D + off + d];
+                ds.attn_out[off + d] = s;
             }
         }
-        std::vector<float> sa_proj(D);
-        linear(attn_out.data(), D, tf32(ctx, l.sa_out_w),
-               tf32(ctx, l.sa_out_b), D, sa_proj.data());
-        for (int i = 0; i < D; i++) x[i] += sa_proj[i];
-        layernorm(x.data(), D, tf32(ctx, l.ln1_w), tf32(ctx, l.ln1_b));
+        linear(ds.attn_out.data(), D, tf32(ctx, l.sa_out_w),
+               tf32(ctx, l.sa_out_b), D, ds.sa_proj.data());
+        for (int i = 0; i < D; i++) ds.x[i] += ds.sa_proj[i];
+        layernorm(ds.x.data(), D, tf32(ctx, l.ln1_w), tf32(ctx, l.ln1_b));
 
         // Cross-attention
         {
             const float * ca_W = tf32(ctx, l.ca_qkv_w);
             const float * ca_B = tf32(ctx, l.ca_qkv_b);
-            std::vector<float> cq(D);
-            linear(x.data(), D, ca_W, ca_B, D, cq.data());
+            linear(ds.x.data(), D, ca_W, ca_B, D, ds.cq.data());
             const float * ck = ca_ck[li].data();
             const float * cv = ca_cv[li].data();
-            std::vector<float> ca_out(D, 0.0f);
+            memset(ds.ca_out.data(), 0, D * sizeof(float));
             for (int h = 0; h < hp.nhead; h++) {
-                std::vector<float> scores(n_enc);
+                int off = h * head_dim;
                 float max_s = -1e9f;
                 for (int ki = 0; ki < n_enc; ki++) {
-                    float dot = 0;
-                    for (int d = 0; d < head_dim; d++)
-                        dot += cq[h*head_dim+d] * ck[ki*D+h*head_dim+d];
-                    scores[ki] = dot * scale;
-                    if (scores[ki] > max_s) max_s = scores[ki];
+                    ds.scores[ki] = core_cpu::dot_product(
+                        ds.cq.data() + off, &ck[ki*D + off], head_dim) * scale;
+                    if (ds.scores[ki] > max_s) max_s = ds.scores[ki];
                 }
                 float sum_exp = 0;
-                for (auto & s : scores) { s = expf(s - max_s); sum_exp += s; }
-                for (auto & s : scores) s /= sum_exp;
+                for (int ki = 0; ki < n_enc; ki++) {
+                    ds.scores[ki] = expf(ds.scores[ki] - max_s);
+                    sum_exp += ds.scores[ki];
+                }
+                float inv = 1.0f / sum_exp;
+                for (int ki = 0; ki < n_enc; ki++) ds.scores[ki] *= inv;
                 for (int d = 0; d < head_dim; d++) {
                     float s = 0;
                     for (int ki = 0; ki < n_enc; ki++)
-                        s += scores[ki] * cv[ki*D+h*head_dim+d];
-                    ca_out[h*head_dim+d] = s;
+                        s += ds.scores[ki] * cv[ki*D + off + d];
+                    ds.ca_out[off + d] = s;
                 }
             }
-            std::vector<float> ca_proj(D);
-            linear(ca_out.data(), D, tf32(ctx, l.ca_out_w),
-                   tf32(ctx, l.ca_out_b), D, ca_proj.data());
-            for (int i = 0; i < D; i++) x[i] += ca_proj[i];
-            layernorm(x.data(), D, tf32(ctx, l.ln2_w), tf32(ctx, l.ln2_b));
+            linear(ds.ca_out.data(), D, tf32(ctx, l.ca_out_w),
+                   tf32(ctx, l.ca_out_b), D, ds.ca_proj.data());
+            for (int i = 0; i < D; i++) ds.x[i] += ds.ca_proj[i];
+            layernorm(ds.x.data(), D, tf32(ctx, l.ln2_w), tf32(ctx, l.ln2_b));
         }
 
         // FFN
         {
             const int F = hp.dim_feedforward;
-            std::vector<float> up(F);
-            linear(x.data(), D, tf32(ctx, l.ff_up_w),
-                   tf32(ctx, l.ff_up_b), F, up.data());
-            relu_ip(up.data(), F);
-            std::vector<float> down(D);
-            linear(up.data(), F, tf32(ctx, l.ff_down_w),
-                   tf32(ctx, l.ff_down_b), D, down.data());
-            for (int i = 0; i < D; i++) x[i] += down[i];
-            layernorm(x.data(), D, tf32(ctx, l.ln3_w), tf32(ctx, l.ln3_b));
+            linear(ds.x.data(), D, tf32(ctx, l.ff_up_w),
+                   tf32(ctx, l.ff_up_b), F, ds.ffn_up.data());
+            relu_ip(ds.ffn_up.data(), F);
+            linear(ds.ffn_up.data(), F, tf32(ctx, l.ff_down_w),
+                   tf32(ctx, l.ff_down_b), D, ds.ffn_down.data());
+            for (int i = 0; i < D; i++) ds.x[i] += ds.ffn_down[i];
+            layernorm(ds.x.data(), D, tf32(ctx, l.ln3_w), tf32(ctx, l.ln3_b));
         }
     }
 
     logits_out.resize(V);
-    linear(x.data(), D, tf32(ctx, ctx->proj_w), tf32(ctx, ctx->proj_b),
+    linear(ds.x.data(), D, tf32(ctx, ctx->proj_w), tf32(ctx, ctx->proj_b),
            V, logits_out.data());
 }
 
@@ -854,6 +881,10 @@ static std::string beam_decode(bttr_ocr_context * ctx, int beam_width) {
     const auto & hp = ctx->hparams;
     const int D = hp.d_model;
     const int n_enc = ctx->n_enc_pos;
+
+    // Pre-allocate decoder scratch
+    ctx->ds.allocated = false;
+    ensure_dec_scratch(ctx, hp.max_len);
 
     // Precompute cross-attention K/V (shared across all beams)
     std::vector<std::vector<float>> ca_ck(hp.num_decoder_layers);
