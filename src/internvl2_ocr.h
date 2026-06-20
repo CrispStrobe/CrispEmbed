@@ -213,7 +213,7 @@ struct context {
     // KV cache for autoregressive generation
     kv_cache kvc;
 
-    int n_threads = 4;
+    int n_threads = 1;
     int verbosity = 1;
     bool bench = false;
 
@@ -224,7 +224,7 @@ struct context {
 // ── API ──────────────────────────────────────────────────────────────
 
 // Load model from GGUF file.
-bool load(context &ctx, const char *gguf_path, int n_threads = 4, int verbosity = 1);
+bool load(context &ctx, const char *gguf_path, int n_threads = 1, int verbosity = 1);
 
 // Free model resources.
 void free_(context &ctx);

@@ -79,7 +79,7 @@ struct context {
     ggml_backend_t backend = nullptr;
     core_gguf::WeightLoad wl;
     ggml_gallocr_t galloc = nullptr;  // persistent graph allocator (reused across calls)
-    int n_threads = 4;
+    int n_threads = 1;
     bool bench = false;
 };
 

@@ -35,7 +35,7 @@ struct context;
 // Load both detection and recognition models.
 // det_path: DBNet GGUF, rec_path: TrOCR GGUF.
 bool load(context** ctx, const char* det_path, const char* rec_path,
-          int n_threads = 4);
+          int n_threads = 1);
 
 // Run full pipeline on an image file.
 // Returns detected text regions sorted in reading order (top→bottom, left→right).
