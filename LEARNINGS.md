@@ -2352,3 +2352,23 @@ scaled by `attention_multiplier` = 1/64 not 1/√d, embedding/residual/logits
 multipliers, tied lm_head) is validated layer-by-layer by
 `tools/dump_granite_llm_reference.py` (builds the reference straight from the
 dequantized GGUF — no 5 GB HF checkout needed) at cos=1.0.
+
+## Granite Vision: split-residency LLM graph (Fix B, in progress)
+
+The granite LLM has two decode paths in `granite_vision_ocr.cpp`:
+- **Scalar** (`gv_llm_decode_step`, default): correct (cos=1.0) but **unusably slow** — it
+  feeds `core_cpu::linear_cpu` *dequantized F32* weights via `DequantCache`, which balloons
+  the ~1.8 GB Q4_K LLM to ~7 GB F32 → swap on a 16 GB machine. A short crop did not finish
+  decoding in 170 s.
+- **ggml graph** (`gv_run_llm_body`, opt-in `CRISPEMBED_GRANITE_LLM_GRAPH=1`): uses **raw Q4_K**
+  weights with native quantized kernels — fast + low memory. But on Metal it hits the
+  ggml-alloc in-place buffer-reuse bug (garbage). On a homogeneous **CPU** sched it is
+  bit-correct.
+
+Fix B routes the LLM graph to a dedicated CPU-only `llm_sched` + CPU-resident F16 KV cache
+(implemented). The remaining blocker: **all weights load to Metal** (`load_weights(path,
+ctx->backend, ...)` at the init), so the CPU-only sched aborts in
+`ggml_backend_sched_split_graph` on Metal-resident weight leaves. The loader must place the
+**LLM Q4_K weights on a CPU buffer** (vision/proj stay on Metal so the SigLIP tower keeps its
+Metal path — "performance not affected"). `core_gguf::load_weights` is single-backend only;
+a non-duplicating split needs a per-tensor backend selector (backward-compatible overload).
