@@ -3050,20 +3050,18 @@ static void post_load_init(qwen2vl_ocr_context *ctx, const char *gguf_path) {
   std::string model_path_lc = gguf_path ? gguf_path : "";
   for (char &c : model_path_lc)
     c = (char)std::tolower((unsigned char)c);
-  const bool is_qari = model_path_lc.find("qari-ocr") != std::string::npos;
+  bool is_qari = model_path_lc.find("qari-ocr") != std::string::npos ||
+                 model_path_lc.find("qari_ocr") != std::string::npos;
   const bool is_unimumer = model_path_lc.find("uni-mumer") != std::string::npos ||
                            model_path_lc.find("unimumer") != std::string::npos;
-  // Qari-OCR's documented inference prompt (NAMAA-Space model card): standard
-  // Qwen2-VL chat template (system "You are a helpful assistant." included by
-  // the template) + this exact single-line instruction in the user turn.
-  // Set CRISPEMBED_QARI_STD_PROMPT=1 to use the generic "Describe this image."
+  // Qari-OCR direct OCR prompt: outputs only the transcribed text with no
+  // preamble. Set CRISPEMBED_QARI_STD_PROMPT=1 for the generic "Describe this
+  // image." fallback instead.
   if (is_qari && !getenv("CRISPEMBED_QARI_STD_PROMPT")) {
     ctx->use_qari_default_prompt = true;
     ctx->prompt =
-        "Below is the image of one page of a document, as well as some raw "
-        "textual content that was previously extracted for it. Just return "
-        "the plain text representation of this document as if you were reading "
-        "it naturally. Do not hallucinate.";
+        "Read all text in this image and output it exactly as it appears. "
+        "Output only the transcribed text, nothing else.";
   }
   // Uni-MuMER handwritten math recognition prompt (from paper, Appendix A).
   if (is_unimumer) {
@@ -3141,43 +3139,40 @@ static void post_load_init(qwen2vl_ocr_context *ctx, const char *gguf_path) {
       }
     }
 
-    // Auto-detect Uni-MuMER from general.name (works even if filename differs)
-    if (!is_unimumer && !is_qari) {
+    // Auto-detect Qari / Uni-MuMER from general.name (robust to filename changes)
+    {
       std::string model_name = core_gguf::kv_str(g, "general.name", "");
       std::string name_lc = model_name;
       for (char &c : name_lc) c = (char)std::tolower((unsigned char)c);
-      if (name_lc.find("uni-mumer") != std::string::npos ||
-          name_lc.find("unimumer") != std::string::npos) {
+      if (!is_qari && !getenv("CRISPEMBED_QARI_STD_PROMPT") &&
+          name_lc.find("qari") != std::string::npos) {
+        is_qari = true;
+        ctx->use_qari_default_prompt = true;
+        ctx->prompt =
+            "Read all text in this image and output it exactly as it appears. "
+            "Output only the transcribed text, nothing else.";
+        if (ctx->inner.verbosity >= 1)
+          fprintf(stderr, "qwen2vl_ocr: detected Qari-OCR from general.name, using OCR prompt\n");
+      }
+      if (!is_unimumer &&
+          (name_lc.find("uni-mumer") != std::string::npos ||
+           name_lc.find("unimumer") != std::string::npos)) {
         ctx->prompt =
             "I have an image of a handwritten mathematical expression. Please "
             "write out the expression of the formula in the image using LaTeX "
             "format.";
         ctx->max_tokens = 2048;
-        if (ctx->inner.verbosity >= 1) {
+        if (ctx->inner.verbosity >= 1)
           fprintf(stderr, "qwen2vl_ocr: detected Uni-MuMER model, using math OCR prompt\n");
-        }
       }
     }
 
     core_gguf::free_metadata(g);
   }
 
-  // Pre-tokenize default prompt
-  if (is_qari && ctx->use_qari_default_prompt && ctx->tokenizer_can_encode) {
-    // Tokenize the exact Qari prompt (with newlines) via BPE.
+  // Pre-tokenize prompt when BPE merges are available
+  if (ctx->tokenizer_can_encode)
     ctx->prompt_ids = ctx->tokenize(ctx->prompt);
-  } else if (is_qari && ctx->use_qari_default_prompt) {
-    // No-merges fallback: hardcoded IDs (newlines flattened — degraded).
-    ctx->prompt_ids = {
-        38214, 374,   279,  2168, 315,   825,  2150,  315,  264,   2197,
-        11,    438,   1632, 438,  1045,  7112, 62533, 2213, 429,   572,
-        8597,  27432, 369,  432,  13,    4599, 470,   279,  14396, 1467,
-        13042, 315,   419,  2197, 438,   421,  498,   1033, 5290,  432,
-        17712, 13,    3155, 537,  58023, 3277, 13,
-    };
-  } else if (ctx->tokenizer_can_encode) {
-    ctx->prompt_ids = ctx->tokenize(ctx->prompt);
-  }
 }
 
 qwen2vl_ocr_context *qwen2vl_ocr_init(const char *model_path, int n_threads) {
