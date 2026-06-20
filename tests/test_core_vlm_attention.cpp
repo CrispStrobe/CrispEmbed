@@ -544,6 +544,72 @@ static void test_swiglu_ffn_asymmetric() {
 }
 
 // ===========================================================================
+// RoPEFreqTable — precomputed frequency table, same results as apply_rope()
+// ===========================================================================
+static void test_rope_freq_table_identity() {
+    printf("test_rope_freq_table_identity...\n");
+
+    // position=0 → all angles = 0 → cos=1, sin=0 → identity for any style
+    RoPEFreqTable ft;
+    ft.precompute(4, 10000.0f);
+    CHECK(ft.freqs.size() == 2, "freq_table: freqs size == head_dim/2");
+    CHECK(ft.head_dim == 4, "freq_table: head_dim stored");
+
+    float qk[] = {1.0f, 2.0f, 3.0f, 4.0f};
+    ft.apply(qk, 1, 0, RoPEStyle::NEGHALF);
+
+    for (int i = 0; i < 4; i++)
+        CHECK_CLOSE(qk[i], (float)(i + 1), 1e-6f, "freq_table: identity at pos=0");
+}
+
+static void test_rope_freq_table_matches_apply_rope_neghalf() {
+    printf("test_rope_freq_table_matches_apply_rope_neghalf...\n");
+
+    float a[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
+    float b[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f};
+
+    RoPEFreqTable ft;
+    ft.precompute(4, 10000.0f);
+    ft.apply(a, 2, 7, RoPEStyle::NEGHALF);
+    apply_rope(b, 2, 4, 7, 10000.0f, RoPEStyle::NEGHALF);
+
+    for (int i = 0; i < 8; i++)
+        CHECK_CLOSE(a[i], b[i], 1e-5f, "freq_table NEGHALF matches apply_rope");
+}
+
+static void test_rope_freq_table_matches_apply_rope_interleaved() {
+    printf("test_rope_freq_table_matches_apply_rope_interleaved...\n");
+
+    float a[] = {1.5f, -0.5f, 2.0f, 3.0f, -1.0f, 4.0f, 0.5f, -2.0f};
+    float b[] = {1.5f, -0.5f, 2.0f, 3.0f, -1.0f, 4.0f, 0.5f, -2.0f};
+
+    RoPEFreqTable ft;
+    ft.precompute(4, 500.0f);
+    ft.apply(a, 2, 13, RoPEStyle::INTERLEAVED);
+    apply_rope(b, 2, 4, 13, 500.0f, RoPEStyle::INTERLEAVED);
+
+    for (int i = 0; i < 8; i++)
+        CHECK_CLOSE(a[i], b[i], 1e-5f, "freq_table INTERLEAVED matches apply_rope");
+}
+
+static void test_rope_freq_table_reuse() {
+    printf("test_rope_freq_table_reuse...\n");
+
+    // Same table used at different positions must produce same result as apply_rope
+    RoPEFreqTable ft;
+    ft.precompute(4, 10000.0f);
+
+    for (int pos = 0; pos < 5; pos++) {
+        float a[] = {1.0f, 2.0f, 3.0f, 4.0f};
+        float b[] = {1.0f, 2.0f, 3.0f, 4.0f};
+        ft.apply(a, 1, pos, RoPEStyle::INTERLEAVED);
+        apply_rope(b, 1, 4, pos, 10000.0f, RoPEStyle::INTERLEAVED);
+        for (int i = 0; i < 4; i++)
+            CHECK_CLOSE(a[i], b[i], 1e-5f, "freq_table reuse matches apply_rope");
+    }
+}
+
+// ===========================================================================
 // Integration-style: RoPE + GQA attention together
 // ===========================================================================
 static void test_rope_then_attn() {
@@ -625,6 +691,12 @@ int main() {
     test_swiglu_ffn_zero_input();
     test_swiglu_ffn_silu_gating();
     test_swiglu_ffn_asymmetric();
+
+    // RoPEFreqTable
+    test_rope_freq_table_identity();
+    test_rope_freq_table_matches_apply_rope_neghalf();
+    test_rope_freq_table_matches_apply_rope_interleaved();
+    test_rope_freq_table_reuse();
 
     // Integration
     test_rope_then_attn();
