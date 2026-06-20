@@ -224,6 +224,13 @@ struct gliner_context {
     bool weights_cached = false;
     bool bench = false;
 
+    // DeBERTa: LN-normalized relative position embeddings cached at init.
+    // Avoids per-call dequant + LN. Size: max_pos × H floats (row-major).
+    std::vector<float> rel_embd_ln;
+    // Cached expanded [H, T*T] for the last T seen; avoids re-expansion when T repeats.
+    int                rel_pos_cache_T = 0;
+    std::vector<float> rel_pos_expanded_cache;
+
     // Output storage (valid until next call)
     std::vector<gliner_ner_entity> result_entities;
     std::vector<std::string>       result_texts;
@@ -752,26 +759,21 @@ static ggml_tensor * gliner_build_deberta_encoder(
     return cur;
 }
 
-// Expand DeBERTa relative position embeddings on CPU.
-// Fills the [H, T*T] tensor with bucketed position embeddings.
-static void fill_deberta_rel_pos(
-    const gliner_model & model, ggml_tensor * rpe_t, int T,
-    ggml_backend_t backend)
-{
-    const int H = (int)model.hparams.hidden_size;
-    const int max_pos = (int)model.rel_embd_w->ne[1];
-    const int pos_buckets = (int)model.hparams.position_buckets;
+// Precompute LN-normalized relative position embeddings for DeBERTa at init.
+// Called once; result stored in ctx->rel_embd_ln to avoid per-call dequant+LN.
+static void precompute_deberta_rel_embd(gliner_context * ctx) {
+    const auto & m = ctx->model;
+    if (!m.rel_embd_w) return;
+    const int H = (int)m.hparams.hidden_size;
+    const int max_pos = (int)m.rel_embd_w->ne[1];
 
-    // Read rel_embd from backend (handles quantized types via dequant)
-    std::vector<float> embd_data = tensor_to_f32_backend(model.rel_embd_w, backend);
-
-    // Apply encoder LayerNorm to relative embeddings
-    if (model.encoder_ln_w && model.encoder_ln_b) {
-        std::vector<float> ln_w = tensor_to_f32_backend(model.encoder_ln_w, backend);
-        std::vector<float> ln_b = tensor_to_f32_backend(model.encoder_ln_b, backend);
-        const float ln_eps = model.hparams.layer_norm_eps;
+    ctx->rel_embd_ln = tensor_to_f32_backend(m.rel_embd_w, ctx->backend);
+    if (m.encoder_ln_w && m.encoder_ln_b) {
+        std::vector<float> ln_w = tensor_to_f32_backend(m.encoder_ln_w, ctx->backend);
+        std::vector<float> ln_b = tensor_to_f32_backend(m.encoder_ln_b, ctx->backend);
+        const float ln_eps = m.hparams.layer_norm_eps;
         for (int p = 0; p < max_pos; p++) {
-            float * row = &embd_data[(size_t)p * H];
+            float * row = &ctx->rel_embd_ln[(size_t)p * H];
             double sum = 0.0, sum2 = 0.0;
             for (int d = 0; d < H; d++) { sum += row[d]; sum2 += (double)row[d] * row[d]; }
             float mean = (float)(sum / H);
@@ -781,9 +783,33 @@ static void fill_deberta_rel_pos(
                 row[d] = (row[d] - mean) * inv_std * ln_w[d] + ln_b[d];
         }
     }
+}
 
-    // Expand with log-bucket indices
-    std::vector<float> expanded((size_t)H * T * T);
+// Expand DeBERTa relative position embeddings on CPU.
+// Uses ctx->rel_embd_ln (precomputed at init) and caches the [H, T*T]
+// expansion for the last T to skip re-expansion on repeated T.
+static void fill_deberta_rel_pos(
+    const gliner_model & model, ggml_tensor * rpe_t, int T,
+    gliner_context * ctx)
+{
+    const int H = (int)model.hparams.hidden_size;
+    const int max_pos = (int)model.rel_embd_w->ne[1];
+    const int pos_buckets = (int)model.hparams.position_buckets;
+    const size_t total = (size_t)H * T * T;
+
+    if (T == ctx->rel_pos_cache_T) {
+        // Same T as last call — reuse cached expansion directly.
+        ggml_backend_tensor_set(rpe_t, ctx->rel_pos_expanded_cache.data(), 0,
+                                total * sizeof(float));
+        return;
+    }
+
+    // Different T: expand from cached LN-normalized embd.
+    const std::vector<float> & embd = ctx->rel_embd_ln.empty()
+        ? tensor_to_f32_backend(model.rel_embd_w, ctx->backend)
+        : ctx->rel_embd_ln;
+
+    ctx->rel_pos_expanded_cache.resize(total);
     for (int i = 0; i < T; i++) {
         for (int j = 0; j < T; j++) {
             int bucket;
@@ -808,12 +834,14 @@ static void fill_deberta_rel_pos(
             }
             if (bucket < 0) bucket = 0;
             if (bucket >= max_pos) bucket = max_pos - 1;
-            memcpy(&expanded[(size_t)(i * T + j) * H],
-                   &embd_data[(size_t)bucket * H],
+            memcpy(&ctx->rel_pos_expanded_cache[(size_t)(i * T + j) * H],
+                   &embd[(size_t)bucket * H],
                    H * sizeof(float));
         }
     }
-    ggml_backend_tensor_set(rpe_t, expanded.data(), 0, expanded.size() * sizeof(float));
+    ctx->rel_pos_cache_T = T;
+    ggml_backend_tensor_set(rpe_t, ctx->rel_pos_expanded_cache.data(), 0,
+                            total * sizeof(float));
 }
 
 // ============================================================================
@@ -1030,6 +1058,11 @@ void * gliner_ner_init(const char * model_path, int n_threads) {
         ctx->fuser_out_proj_b = tensor_to_f32_backend(m.fuser_output_proj_b, ctx->backend);
     }
     ctx->weights_cached = true;
+    if (m.hparams.backbone == GLINER_BACKBONE_DEBERTA && m.rel_embd_w) {
+        precompute_deberta_rel_embd(ctx);
+        GDBG("precomputed DeBERTa rel_embd LN (%d positions × %d dim)",
+             (int)m.rel_embd_w->ne[1], (int)m.hparams.hidden_size);
+    }
     GDBG("cached BiLSTM weights, backbone=%s",
          m.hparams.backbone == GLINER_BACKBONE_DEBERTA ? "DeBERTa" : "LFM2");
 
@@ -1254,9 +1287,9 @@ int gliner_ner_extract(void * ptr,
         ggml_tensor * inp_ids = ggml_graph_get_tensor(gf, "input_ids");
         ggml_backend_tensor_set(inp_ids, input_ids.data(), 0, T * sizeof(int32_t));
 
-        // Fill relative position embeddings
+        // Fill relative position embeddings (uses cached LN-normalized embd + per-T cache)
         ggml_tensor * rpe_t = ggml_graph_get_tensor(gf, "rel_pos_expanded");
-        if (rpe_t) fill_deberta_rel_pos(model, rpe_t, T, ctx->backend);
+        if (rpe_t) fill_deberta_rel_pos(model, rpe_t, T, ctx);
 
         elapsed();
         ggml_backend_graph_compute(ctx->backend, gf);
