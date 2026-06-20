@@ -684,6 +684,16 @@ std::vector<float> decoder_encode_tokens(
     ggml_set_name(pos, "pos_ids");
     ggml_set_input(pos);
 
+    // Causal mask for flash_attn_ext: shared across all layers; bidirectional
+    // models pass nullptr (full attention).  Shape (T, T) F16; 0.0 for positions
+    // k ≤ q (attend), -INF for k > q (block).
+    ggml_tensor * fa_mask = nullptr;
+    if (!m.is_bidirectional) {
+        fa_mask = ggml_new_tensor_2d(gctx, GGML_TYPE_F16, T, T);
+        ggml_set_name(fa_mask, "causal_mask");
+        ggml_set_input(fa_mask);
+    }
+
     // --- Transformer layers ---
     for (int il = 0; il < m.n_layer; il++) {
         const auto & L = m.layers[il];
@@ -733,24 +743,16 @@ std::vector<float> decoder_encode_tokens(
                                layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
         }
 
-        // Attention: permute → scores → mask → softmax → value
-        Q = ggml_cont(gctx, ggml_permute(gctx, Q, 0, 2, 1, 3));
-        K = ggml_cont(gctx, ggml_permute(gctx, K, 0, 2, 1, 3));
-        V = ggml_cont(gctx, ggml_permute(gctx, V, 0, 2, 1, 3));
+        // Attention via flash_attn_ext (GQA-native, O(T) memory vs O(T²) scores).
+        // fa_mask is nullptr for bidirectional models; F16 causal (T,T) otherwise.
+        Q = ggml_cont(gctx, ggml_permute(gctx, Q, 0, 2, 1, 3));  // (hd, T, nh)
+        K = ggml_cont(gctx, ggml_permute(gctx, K, 0, 2, 1, 3));  // (hd, T, nkv)
+        V = ggml_cont(gctx, ggml_permute(gctx, V, 0, 2, 1, 3));  // (hd, T, nkv)
 
         float scale = (m.attn_scale > 0.0f)
                         ? (1.0f / sqrtf(m.attn_scale))
                         : (1.0f / sqrtf((float)head_dim));
-        ggml_tensor * scores = ggml_mul_mat(gctx, K, Q);
-        scores = ggml_scale(gctx, scores, scale);
-        if (!m.is_bidirectional) {
-            scores = ggml_diag_mask_inf(gctx, scores, 0);
-        }
-        scores = ggml_soft_max(gctx, scores);
-
-        ggml_tensor * V_perm = ggml_cont(gctx, ggml_permute(gctx, V, 1, 0, 2, 3));
-        ggml_tensor * attn = ggml_mul_mat(gctx, V_perm, scores);
-        attn = ggml_cont(gctx, ggml_permute(gctx, attn, 0, 2, 1, 3));
+        ggml_tensor * attn = ggml_flash_attn_ext(gctx, Q, K, V, fa_mask, scale, 0.0f, 0.0f);
         attn = ggml_reshape_2d(gctx, attn, q_dim, T);
 
         attn = ggml_mul_mat(gctx, L.o_w, attn);
@@ -900,6 +902,15 @@ std::vector<float> decoder_encode_tokens(
             }
         }
 
+        if (fa_mask) {
+            std::vector<ggml_fp16_t> mdata((size_t)T * T);
+            for (int q = 0; q < T; q++)
+                for (int k = 0; k < T; k++)
+                    mdata[(size_t)q * T + k] = ggml_fp32_to_fp16(k <= q ? 0.0f : -INFINITY);
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "causal_mask"),
+                                    mdata.data(), 0, (size_t)T * T * sizeof(ggml_fp16_t));
+        }
+
         // Compute via scheduler
         {
             auto t_comp0 = std::chrono::steady_clock::now();
@@ -925,6 +936,13 @@ std::vector<float> decoder_encode_tokens(
         if (ones_hd) {
             float * d = (float *)ones_hd->data;
             for (int i = 0; i < head_dim; i++) d[i] = 1.0f;
+        }
+
+        if (fa_mask) {
+            auto * md = (ggml_fp16_t *)fa_mask->data;
+            for (int q = 0; q < T; q++)
+                for (int k = 0; k < T; k++)
+                    md[(size_t)q * T + k] = ggml_fp32_to_fp16(k <= q ? 0.0f : -INFINITY);
         }
 
         if (has_image) {
