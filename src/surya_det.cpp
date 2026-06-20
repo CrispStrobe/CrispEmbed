@@ -773,52 +773,92 @@ static ggml_tensor* g_mbconv(ggml_context* g, ggml_tensor* x,
     return x;
 }
 
-// Graph-based LiteMLA linear attention
-// This is complex — Q,K,V split, ReLU kernel, pad V, matmul
+// Graph-based LiteMLA linear attention.
+// Linear attention formula: out = (Q @ (K^T @ V)) / (Q · K_sum)
+// where K_sum[d] = sum_hw K[hw,d] — equivalent to the "pad V with 1" trick.
 static ggml_tensor* g_litemla(ggml_context* g, ggml_tensor* x,
                                const litemla_weights& w,
                                int in_ch, int head_dim) {
-    int heads = in_ch / head_dim;
-    int total_dim = heads * head_dim;
-    int HW_dim = (int)(x->ne[0] * x->ne[1]); // W * H
+    int heads    = in_ch / head_dim;
+    int n_groups = 2 * heads;          // original scale + 1 aggregated scale
+    int HW       = (int)(x->ne[0] * x->ne[1]);
+    int W        = (int)x->ne[0];
+    int H        = (int)x->ne[1];
+    int concat_dim = n_groups * head_dim; // == 2 * in_ch
 
-    // QKV: Conv1x1
-    ggml_tensor* qkv = g_conv(g, x, w.qkv, in_ch, 1, 1, 1, 0, 1, 0);
+    // 1. QKV Conv1x1 + multi-scale aggregation
+    ggml_tensor* qkv = g_conv(g, x,   w.qkv,    in_ch,       1, 1, 1, 0, 1,       0);
+    ggml_tensor* agg = g_conv(g, qkv, w.agg_dw, 3 * in_ch,   5, 5, 1, 2, 3*in_ch, 0);
+    agg              = g_conv(g, agg,  w.agg_pw, 3 * in_ch,   1, 1, 1, 0, 3*heads, 0);
 
-    // Aggregation: DW 5x5 + grouped PW 1x1
-    ggml_tensor* agg = g_conv(g, qkv, w.agg_dw, 3 * total_dim, 5, 5, 1, 2,
-                               3 * total_dim, 0);
-    agg = g_conv(g, agg, w.agg_pw, 3 * total_dim, 1, 1, 1, 0, 3 * heads, 0);
+    // 2. Concat [qkv, agg] along channels → [W, H, n_groups*3*head_dim]
+    ggml_tensor* multi = ggml_concat(g, qkv, agg, 2);
 
-    // Concat [qkv, agg] along channel dim → [2*3*total_dim, H, W]
-    ggml_tensor* multi = ggml_concat(g, qkv, agg, 2); // dim=2 is channels in ggml [W,H,C]
+    // 3. Reshape → [HW, 3*head_dim, n_groups]
+    //    multi[c, hw] where c = g*3*head_dim + qkv_d → multi_r[hw, qkv_d, g]
+    ggml_tensor* multi_r = ggml_reshape_3d(g, multi, HW, 3 * head_dim, n_groups);
 
-    // The linear attention math is complex to express in ggml graph ops
-    // (reshape + chunk + ReLU + pad + matmul + normalize)
-    // For now, we keep the LiteMLA as CPU-scalar and only accelerate
-    // the convolutions before and after it.
-    // TODO: express full LiteMLA in ggml graph
+    // 4. Extract Q/K/V views: each [HW, head_dim, n_groups]
+    //    Strides come from multi_r (contiguous): nb1=HW*f32, nb2=HW*3*hd*f32
+    size_t f = sizeof(float);
+    size_t nb1 = (size_t)HW * f;
+    size_t nb2 = (size_t)HW * 3 * head_dim * f;
+    ggml_tensor* Q = ggml_view_3d(g, multi_r, HW, head_dim, n_groups, nb1, nb2, 0);
+    ggml_tensor* K = ggml_view_3d(g, multi_r, HW, head_dim, n_groups, nb1, nb2,
+                                   (size_t)head_dim * nb1);
+    ggml_tensor* V = ggml_view_3d(g, multi_r, HW, head_dim, n_groups, nb1, nb2,
+                                   (size_t)(2 * head_dim) * nb1);
 
-    // Final projection: Conv1x1 + BN(folded)
-    // (This will be applied after we get the attention output)
-    // For now, return the concatenated multi-scale tensor
-    // and let the caller handle the attention + proj
-    (void)multi; // suppress unused warning
+    // 5. ReLU kernel on Q and K (ggml_relu output is contiguous)
+    Q = ggml_relu(g, Q);
+    K = ggml_relu(g, K);
+    V = ggml_cont(g, V); // contiguous copy for matmul
 
-    // Fallback: return x unchanged — the full LiteMLA needs CPU-scalar
-    // This is a placeholder; real implementation needs the attention math
-    return nullptr; // signal to caller to use scalar fallback
+    // 6. KTV = K^T @ V → [head_dim, head_dim, n_groups]
+    //    ggml_mul_mat(A, B): A=[K, M], B=[K, N] → [M, N]; K=HW, M=head_dim, N=head_dim
+    ggml_tensor* KTV = ggml_mul_mat(g, K, V);
+
+    // 7. K_sum = sum_hw K[hw, :, :] → [1, head_dim, n_groups]
+    ggml_tensor* K_sum = ggml_sum_rows(g, K); // sums ne[0]=HW → [1, head_dim, n_groups]
+
+    // 8. Q_T = permute Q [HW, head_dim, n_groups] → [head_dim, HW, n_groups]
+    ggml_tensor* Q_T = ggml_cont(g, ggml_permute(g, Q, 1, 0, 2, 3));
+
+    // 9. out_unnorm = KTV @ Q_T → [head_dim, HW, n_groups]
+    //    A=KTV [head_dim, head_dim, n_g], B=Q_T [head_dim, HW, n_g] → [head_dim, HW, n_g]
+    ggml_tensor* out_unnorm = ggml_mul_mat(g, KTV, Q_T);
+
+    // 10. norm = K_sum^T @ Q_T → [1, HW, n_groups]
+    //    Permute K_sum [1, head_dim, n_g] → [head_dim, 1, n_g]
+    ggml_tensor* K_sum_T = ggml_cont(g, ggml_permute(g, K_sum, 1, 0, 2, 3));
+    ggml_tensor* norm    = ggml_mul_mat(g, K_sum_T, Q_T); // [1, HW, n_groups]
+
+    // 11. Clamp norm to eps for numerical stability, broadcast-divide out_unnorm
+    ggml_tensor* norm_c   = ggml_clamp(g, norm, 1e-5f, 1e30f);
+    ggml_tensor* norm_rep = ggml_repeat(g, norm_c, out_unnorm); // [head_dim, HW, n_g]
+    ggml_tensor* out_norm = ggml_div(g, out_unnorm, norm_rep);
+
+    // 12. Permute [head_dim, HW, n_groups] → [HW, head_dim, n_groups]
+    //     then reshape to [W, H, concat_dim] for the projection conv
+    ggml_tensor* out_T   = ggml_cont(g, ggml_permute(g, out_norm, 1, 0, 2, 3));
+    ggml_tensor* proj_in = ggml_reshape_3d(g, out_T, W, H, concat_dim);
+
+    // 13. Final Conv1x1 projection
+    return g_conv(g, proj_in, w.proj, concat_dim, 1, 1, 1, 0, 1, 0);
 }
 
-// Graph-based EfficientVitBlock
+// Graph-based EfficientVitBlock = LiteMLA (context) + MBConv (local), both with residual.
 static ggml_tensor* g_evitvit_block(ggml_context* g, ggml_tensor* x,
                                       const evitvit_block_weights& w,
                                       int ch, int head_dim) {
-    // LiteMLA is complex — fall back to scalar for now
-    // The convolutions (MBConv local) can be graph-accelerated
-    // but the attention math needs scalar
-    (void)g; (void)w; (void)ch; (void)head_dim;
-    return nullptr; // signal scalar fallback
+    // Context module: LiteMLA + residual
+    ggml_tensor* ctx_out = g_litemla(g, x, w.ctx, ch, head_dim);
+    ctx_out = ggml_add(g, ctx_out, x);
+
+    // Local module: MBConv (expand_ratio=6) + residual
+    int mid_ch = ch * 6;
+    ggml_tensor* local_out = g_mbconv(g, ctx_out, w.local, ch, mid_ch, 1, false, 1);
+    return ggml_add(g, local_out, ctx_out);
 }
 
 static const float * run_forward_graph(surya_det_context * ctx,
@@ -943,25 +983,32 @@ static const float * run_forward_graph(surya_det_context * ctx,
         dump_stats("stage_2 (graph)", s2_data.data(), s2_data.size());
     }
 
-    // --- Phase 2: ggml graph for stage 3 block 0 (6144-ch MBConv, big bottleneck) ---
+    // --- Phase 2: stage3 block0 (MBConv) + 6 EfficientViT blocks (LiteMLA+MBConv) ---
     {
-        struct ggml_init_params p2 = {256 * 1024 * 1024, nullptr, true};
+        struct ggml_init_params p2 = {16 * 1024 * 1024, nullptr, true};
         ggml_context* g2 = ggml_init(p2);
         ggml_tensor* s2_inp = ggml_new_tensor_3d(g2, GGML_TYPE_F32, s2_W, s2_H, s2_C);
         ggml_set_name(s2_inp, "s2_in");
         ggml_set_input(s2_inp);
 
-        ggml_tensor* s3_out = g_mbconv(g2, s2_inp, ctx->stage3_block0,
-                                        hp.stage_ch[2], hp.stage_ch[2] * 24,
-                                        2, false, 1);
-        ggml_set_name(s3_out, "s3_b0");
-        ggml_set_output(s3_out);
+        // Stage3 block0: stride-2 MBConv 256→6144→512
+        ggml_tensor* s3 = g_mbconv(g2, s2_inp, ctx->stage3_block0,
+                                    hp.stage_ch[2], hp.stage_ch[2] * 24,
+                                    2, false, 1);
 
-        ggml_cgraph* gf2 = ggml_new_graph_custom(g2, 256, false);
-        ggml_build_forward_expand(gf2, s3_out);
+        // 6 EfficientViT blocks (LiteMLA context + MBConv local, both with residual)
+        int ch = hp.stage_ch[3];
+        for (int b = 0; b < 6; b++) {
+            s3 = g_evitvit_block(g2, s3, ctx->stage3_vit[b], ch, hp.head_dim);
+        }
+        ggml_set_name(s3, "s3_out");
+        ggml_set_output(s3);
+
+        ggml_cgraph* gf2 = ggml_new_graph_custom(g2, 2048, false);
+        ggml_build_forward_expand(gf2, s3);
 
         if (!ggml_gallocr_alloc_graph(ctx->galloc, gf2)) {
-            fprintf(stderr, "surya_det: stage3 block0 graph alloc failed\n");
+            fprintf(stderr, "surya_det: stage3 graph alloc failed\n");
             ggml_free(g2);
             return nullptr;
         }
@@ -972,33 +1019,16 @@ static const float * run_forward_graph(surya_det_context * ctx,
         auto t2 = std::chrono::steady_clock::now();
         ggml_backend_graph_compute(ctx->backend, gf2);
         auto t3 = std::chrono::steady_clock::now();
-        double b0_ms = std::chrono::duration<double, std::milli>(t3 - t2).count();
-        if (ctx->dump) fprintf(stderr, "surya_det: stage3 block0 graph: %.1f ms\n", b0_ms);
-        if (bench) fprintf(stderr, "[surya_det-bench] stage3 (MBConv block0): %.1f ms\n", b0_ms);
+        if (bench) fprintf(stderr, "[surya_det-bench] stage3 (MBConv+6×ViT ggml): %.1f ms\n",
+                           std::chrono::duration<double, std::milli>(t3 - t2).count());
 
-        ggml_tensor* s3_t = ggml_graph_get_tensor(gf2, "s3_b0");
+        ggml_tensor* s3_t = ggml_graph_get_tensor(gf2, "s3_out");
         int sH = (int)s3_t->ne[1], sW = (int)s3_t->ne[0];
         int s3_ch = (int)s3_t->ne[2];
         std::vector<float> s3_data(s3_ch * sH * sW);
         ggml_backend_tensor_get(s3_t, s3_data.data(), 0, s3_data.size() * sizeof(float));
 
         ggml_free(g2);
-
-        // Continue with scalar LiteMLA blocks
-        int prev_ch = hp.stage_ch[2];
-        int ch = hp.stage_ch[3];
-        (void)prev_ch;
-
-        auto t_vit = std::chrono::steady_clock::now();
-        for (int b = 0; b < 6; b++) {
-            s3_data = evitvit_block_fwd(s3_data.data(), ctx->stage3_vit[b],
-                                         ch, sH, sW, hp.head_dim);
-        }
-        if (bench) {
-            double ms = std::chrono::duration<double, std::milli>(
-                std::chrono::steady_clock::now() - t_vit).count();
-            fprintf(stderr, "[surya_det-bench] ViT blocks (LiteMLA x6): %.1f ms\n", ms);
-        }
 
         // --- Phase 3: decode head ---
         int stage_H[4] = { s0_H, s1_H, s2_H, sH };
