@@ -173,6 +173,7 @@ struct context {
 
   int n_threads = 4;
   int verbosity = 1;
+  bool bench = false;
 
   // Optional diff harness path (set before encode to enable comparison)
   std::string diff_ref_path;

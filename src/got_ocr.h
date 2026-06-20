@@ -143,6 +143,7 @@ struct context {
     tokenizer tok;
     int n_threads = 4;
     int verbosity = 1;
+    bool bench = false;
     std::string diff_ref_path;
     // Precomputed RPE tables per layer
     std::vector<std::vector<float>> rp_h_per_layer;

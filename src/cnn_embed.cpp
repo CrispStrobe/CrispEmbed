@@ -22,6 +22,7 @@
 #include "../ggml/examples/stb_image.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -69,12 +70,14 @@ struct context {
     ggml_backend_t backend = nullptr;
     core_gguf::WeightLoad wl;
     int n_threads = 4;
+    bool bench = false;
 };
 
 bool load(context** out, const char* path, int n_threads) {
     auto* ctx = new context();
     *out = ctx;
     ctx->n_threads = n_threads;
+    ctx->bench = (std::getenv("CRISPEMBED_CNN_EMBED_BENCH") != nullptr);
 
     // Read metadata
     gguf_context* g = core_gguf::open_metadata(path);
@@ -259,6 +262,9 @@ static ggml_tensor* replay_graph(ggml_context* g, context* ctx, ggml_tensor* inp
 std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     if (!ctx || H != ctx->input_h || W != ctx->input_w) return {};
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     const int n_blocks = (int)ctx->blocks.size();
     const bool use_graph_replay = (n_blocks == 0 && !ctx->graph_topology.empty());
 
@@ -400,6 +406,7 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     }
 
     // Set input pixels
+    auto t_pre0 = bench ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
     ggml_tensor* inp = ggml_graph_get_tensor(gf, "input");
     ggml_backend_tensor_set(inp, pixels, 0, 3 * H * W * sizeof(float));
 
@@ -413,11 +420,23 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     set_bn("bn1_shift", ctx->bn1_shift);
     set_bn("fc_bn_scale", ctx->fc_bn_scale);
     set_bn("fc_bn_shift", ctx->fc_bn_shift);
+    if (bench) {
+        auto t_pre1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[cnn_embed-bench] preprocess: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_pre1 - t_pre0).count());
+    }
 
     // Compute
+    auto t_compute0 = bench ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
     ggml_backend_graph_compute(ctx->backend, gf);
+    if (bench) {
+        auto t_compute1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[cnn_embed-bench] graph compute: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_compute1 - t_compute0).count());
+    }
 
     // Read output
+    auto t_post0 = bench ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
     ggml_tensor* out = ggml_graph_get_tensor(gf, "embedding");
     int d = (int)ggml_nelements(out);
     std::vector<float> emb(d);
@@ -428,6 +447,14 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     for (float v : emb) norm += v * v;
     norm = std::sqrt(norm);
     if (norm > 1e-9f) for (float& v : emb) v /= norm;
+    if (bench) {
+        auto t_post1 = std::chrono::steady_clock::now();
+        auto t_total1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[cnn_embed-bench] postprocess+L2norm: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_post1 - t_post0).count());
+        fprintf(stderr, "[cnn_embed-bench] total: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
+    }
 
     ggml_gallocr_free(alloc);
     ggml_free(g);

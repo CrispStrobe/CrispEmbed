@@ -17,6 +17,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -495,6 +496,7 @@ struct scunet_context {
     ggml_backend_t backend;
 
     int dim, win_size, head_dim;
+    bool bench;
     ggml_tensor * head_w, * head_b;
     scunet_stage enc[3]; // down1, down2, down3
     scunet_stage body;
@@ -588,6 +590,7 @@ scunet_context * scunet_init(const char * model_path, int n_threads) {
         }
     }
 
+    ctx->bench = (std::getenv("CRISPEMBED_SCUNET_BENCH") != nullptr);
     return ctx;
 }
 
@@ -604,6 +607,10 @@ int scunet_process_float(scunet_context * ctx,
                          const float * input_chw, int width, int height,
                          float * output_chw) {
     if (!ctx || !input_chw || !output_chw) return -1;
+
+    const bool bench = ctx->bench;
+    using ms_f = std::chrono::duration<double, std::milli>;
+    auto t_total = std::chrono::steady_clock::now();
 
     int H = height, W = width;
     std::vector<float> dq1, dq2, scratch;
@@ -622,6 +629,7 @@ int scunet_process_float(scunet_context * ctx,
     int cur_h = H, cur_w = W;
     int enc_channels[] = {64, 128, 256};
     for (int s = 0; s < 3; s++) {
+        auto t_enc = std::chrono::steady_clock::now();
         int n_heads = std::max(1, (ch / 2) / ctx->head_dim);
         for (int i = 0; i < 4; i++) {
             // Check for null tensors
@@ -644,19 +652,31 @@ int scunet_process_float(scunet_context * ctx,
         skips.push_back(std::move(ds));
         x = skips.back(); // copy
         ch = next_ch; cur_h = nh; cur_w = nw;
+        if (bench) {
+            auto t_enc_end = std::chrono::steady_clock::now();
+            fprintf(stderr, "[scunet-bench] enc stage %d: %.1f ms\n",
+                    s, ms_f(t_enc_end - t_enc).count());
+        }
     }
 
     // Body
+    auto t_body = std::chrono::steady_clock::now();
     int body_heads = std::max(1, (ch / 2) / ctx->head_dim);
     for (int i = 0; i < 4; i++) {
         bool shift = (i % 2 == 1);
         ctb_forward(x.data(), ch, cur_h, cur_w, ctx->body.blocks[i],
                     body_heads, ctx->win_size, shift, dq1, dq2, scratch);
     }
+    if (bench) {
+        auto t_body_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[scunet-bench] body: %.1f ms\n",
+                ms_f(t_body_end - t_body).count());
+    }
 
     // Decoder
     int dec_channels[] = {256, 128, 64};
     for (int s = 0; s < 3; s++) {
+        auto t_dec = std::chrono::steady_clock::now();
         // Skip connection (add before upsample)
         auto & sk = skips[2 - s];
         for (int i = 0; i < ch * cur_h * cur_w; i++) x[i] += sk[i];
@@ -677,6 +697,11 @@ int scunet_process_float(scunet_context * ctx,
             ctb_forward(x.data(), ch, cur_h, cur_w, ctx->dec[s].blocks[i],
                         n_heads, ctx->win_size, shift, dq1, dq2, scratch);
         }
+        if (bench) {
+            auto t_dec_end = std::chrono::steady_clock::now();
+            fprintf(stderr, "[scunet-bench] dec stage %d: %.1f ms\n",
+                    s, ms_f(t_dec_end - t_dec).count());
+        }
     }
 
     // Final skip + tail
@@ -685,6 +710,11 @@ int scunet_process_float(scunet_context * ctx,
            to_f32(ctx->tail_w, dq1), to_f32(ctx->tail_b, dq2),
            3, 3, 3, 1, 1, output_chw);
 
+    if (bench) {
+        auto t_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[scunet-bench] total: %.1f ms\n",
+                ms_f(t_end - t_total).count());
+    }
     return 0;
 }
 

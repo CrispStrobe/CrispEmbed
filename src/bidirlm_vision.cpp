@@ -32,6 +32,7 @@
 #include "gguf.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -512,6 +513,7 @@ bool load(context& ctx, const char* gguf_path, ggml_backend_t shared_backend,
           int n_threads, int verbosity) {
     ctx.n_threads = n_threads > 0 ? n_threads : 4;
     ctx.verbosity = verbosity;
+    ctx.bench = (std::getenv("CRISPEMBED_BIDIRLM_VISION_BENCH") != nullptr);
 
     if (!load_hparams(ctx, gguf_path)) return false;
 
@@ -576,6 +578,9 @@ bool encode(context& ctx,
             bool include_deepstack) {
     if (!grid_thw || n_images <= 0 || n_patches <= 0 || !pixel_patches) return false;
 
+    const bool bench = ctx.bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     const auto& hp = ctx.m.hp;
     const int merge_unit = (int)(hp.spatial_merge_size * hp.spatial_merge_size);
 
@@ -600,16 +605,34 @@ bool encode(context& ctx,
                                 (int)hp.patch_size *
                                 (int)hp.patch_size;
 
+    auto t_prep0 = std::chrono::steady_clock::now();
     host_prep prep;
     compute_host_inputs(hp, grid_thw, n_images, prep);
+    if (bench) {
+        auto t_prep1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[bidirlm-vision-bench] host_prep: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_prep1 - t_prep0).count());
+    }
 
+    auto t_build0 = std::chrono::steady_clock::now();
     graph_outputs gout = build_graph(ctx, n_patches, include_deepstack);
     ggml_cgraph* gf = gout.gf;
+    if (bench) {
+        auto t_build1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[bidirlm-vision-bench] graph build: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_build1 - t_build0).count());
+    }
 
+    auto t_alloc0 = std::chrono::steady_clock::now();
     ggml_backend_sched_reset(ctx.sched);
     if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
         fprintf(stderr, "bidirlm_vision: failed to allocate compute graph\n");
         return false;
+    }
+    if (bench) {
+        auto t_alloc1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[bidirlm-vision-bench] alloc: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_alloc1 - t_alloc0).count());
     }
 
     // Set inputs.
@@ -642,12 +665,21 @@ bool encode(context& ctx,
     if (!set_in("attn_mask", prep.mask_buf.data(),
                 prep.mask_buf.size() * sizeof(float))) return false;
 
-    if (ggml_backend_sched_graph_compute(ctx.sched, gf) != GGML_STATUS_SUCCESS) {
-        fprintf(stderr, "bidirlm_vision: graph compute failed\n");
-        return false;
+    {
+        auto t_comp0 = std::chrono::steady_clock::now();
+        if (ggml_backend_sched_graph_compute(ctx.sched, gf) != GGML_STATUS_SUCCESS) {
+            fprintf(stderr, "bidirlm_vision: graph compute failed\n");
+            return false;
+        }
+        if (bench) {
+            auto t_comp1 = std::chrono::steady_clock::now();
+            fprintf(stderr, "[bidirlm-vision-bench] compute: %.3f ms\n",
+                    std::chrono::duration<double, std::milli>(t_comp1 - t_comp0).count());
+        }
     }
 
     // Read out.
+    auto t_read0 = std::chrono::steady_clock::now();
     ggml_tensor* img_t = ggml_graph_get_tensor(gf, "image_embeds");
     if (!img_t) return false;
     const int dim = (int)img_t->ne[0];
@@ -679,6 +711,16 @@ bool encode(context& ctx,
         ggml_backend_tensor_get(dt, out.deepstack + (size_t)k * n_merged * dim, 0,
                                 (size_t)n_merged * dim * sizeof(float));
     }
+
+    if (bench) {
+        auto t_read1 = std::chrono::steady_clock::now();
+        auto t_total1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[bidirlm-vision-bench] read outputs: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_read1 - t_read0).count());
+        fprintf(stderr, "[bidirlm-vision-bench] total: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
+    }
+
     return true;
 }
 

@@ -32,6 +32,7 @@
 #include "gguf.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -1041,6 +1042,8 @@ bool load(context &ctx, const char *gguf_path, int n_threads, int verbosity) {
     ctx.sched = ggml_backend_sched_new(backends.data(), nullptr,
                                        (int)backends.size(), 16384, false, false);
 
+    ctx.bench = (std::getenv("CRISPEMBED_INTERNVL2_BENCH") != nullptr);
+
     if (verbosity >= 1) {
         const char *bname = ggml_backend_is_cpu(ctx.backend) ? "CPU" : "GPU";
         printf("  Ready (%s, %d threads)\n", bname, n_threads);
@@ -1187,6 +1190,9 @@ bool project_vision(context &ctx, const float *vis_hidden, int n_patches,
 
 bool encode_vision(context &ctx, const float *tiles, int n_tiles,
                    vision_pipeline_result &out) {
+    const bool bench = ctx.bench;
+    auto t_vis_total = std::chrono::steady_clock::now();
+
     const auto &vhp = ctx.m.vhp;
     const auto &php = ctx.m.php;
     const int img_size = (int)vhp.image_size;
@@ -1228,6 +1234,11 @@ bool encode_vision(context &ctx, const float *tiles, int n_tiles,
     out.image_embeds = all_embeds;
     out.n_image_tokens = total_tokens;
     out.embed_dim = out_dim;
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_vis_total).count();
+        fprintf(stderr, "[internvl2-bench] vision_encoder: %lldms\n", (long long)ms);
+    }
     return true;
 }
 
@@ -1501,7 +1512,11 @@ bool generate(context &ctx,
         }
     }
 
+    const bool bench = ctx.bench;
+    auto t_gen_total = std::chrono::steady_clock::now();
+
     // ── Prefill: process all prompt tokens at once ──
+    auto t_prefill = std::chrono::steady_clock::now();
     std::vector<float> logits;
     const splice_data *sd_ptr = (image_embeds && n_image_tokens > 0) ? &sd : nullptr;
     if (!run_cached_step(ctx, prompt_token_ids, n_prompt_tokens, 0, logits, sd_ptr)) {
@@ -1509,6 +1524,11 @@ bool generate(context &ctx,
         return false;
     }
     ctx.kvc.n_past = n_prompt_tokens;
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_prefill).count();
+        fprintf(stderr, "[internvl2-bench] prefill: %lldms\n", (long long)ms);
+    }
 
     // Greedy argmax on prefill logits (last token)
     out.token_confidences.clear();
@@ -1540,7 +1560,10 @@ bool generate(context &ctx,
     }
 
     // ── Decode: one token at a time with KV cache ──
+    long long decode_total_ms = 0;
+    int decode_steps = 0;
     for (int gen = 1; gen < max_new_tokens; gen++) {
+        auto t_step = std::chrono::steady_clock::now();
         int32_t next_token = best_id;
 
         if (!run_cached_step(ctx, &next_token, 1, ctx.kvc.n_past, logits)) {
@@ -1548,6 +1571,13 @@ bool generate(context &ctx,
             return false;
         }
         ctx.kvc.n_past += 1;
+        if (bench) {
+            auto step_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - t_step).count();
+            decode_total_ms += step_ms;
+            decode_steps++;
+            fprintf(stderr, "[internvl2-bench] decode_step[%d]: %lldms\n", gen, (long long)step_ms);
+        }
 
         best_id = 0;
         best_score = -INFINITY;
@@ -1574,6 +1604,13 @@ bool generate(context &ctx,
 
     // Decode generated tokens to text
     out.text = ctx.tok.decode(out.token_ids);
+    if (bench) {
+        fprintf(stderr, "[internvl2-bench] decode_total: %lldms (%d steps)\n",
+                decode_total_ms, decode_steps);
+        auto total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_gen_total).count();
+        fprintf(stderr, "[internvl2-bench] total: %lldms\n", (long long)total_ms);
+    }
     return true;
 }
 

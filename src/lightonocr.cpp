@@ -110,6 +110,7 @@ struct context {
     std::vector<char> compute_meta;
     int n_threads = 4;
     int max_tokens = 2048;
+    bool bench = false;
     std::string last_text;
 
     // Tokenizer
@@ -226,6 +227,8 @@ bool load(context &ctx, const char *gguf_path, int n_threads) {
     // Scheduler
     ctx.compute_meta.resize(ggml_tensor_overhead() * 16384 + ggml_graph_overhead_custom(16384, false));
     ctx.sched = ggml_backend_sched_new(&ctx.backend, nullptr, 1, 16384, false, false);
+
+    ctx.bench = (std::getenv("CRISPEMBED_LIGHTONOCR_BENCH") != nullptr);
 
     return true;
 }
@@ -691,6 +694,8 @@ static bool run_decoder_prefill(context &ctx,
                                  int n_image_tokens,
                                  int max_new_tokens,
                                  std::string &out_text) {
+    const bool bench = ctx.bench;
+    auto t_prefill_start = std::chrono::steady_clock::now();
     auto &m = ctx.m;
     const int D = m.lm_dim;
     const int V = m.vocab_size;
@@ -990,6 +995,11 @@ static bool run_decoder_prefill(context &ctx,
     generated.push_back(best);
     { float se = 0; for (int v = 0; v < V; v++) se += expf(logits_data[v] - best_score); ctx.char_confidences.push_back(1.0f / se); }
 
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_prefill_start).count();
+        fprintf(stderr, "[lightonocr-bench] prefill: %lldms\n", (long long)ms);
+    }
     fprintf(stderr, "lightonocr: prefill done, first token=%d (score=%.2f)\n", best, best_score);
     fprintf(stderr, "lightonocr: logits[0..4] = [%.3f, %.3f, %.3f, %.3f, %.3f]\n",
             logits_data[0], logits_data[1], logits_data[2], logits_data[3], logits_data[4]);
@@ -1001,6 +1011,8 @@ static bool run_decoder_prefill(context &ctx,
     }
 
     // KV-cached decode: O(n) per step
+    long long decode_total_ms = 0;
+    int decode_steps = 0;
     int n_kv = n_prompt;
     int kv_repeat = n_heads / n_kv_heads;
 
@@ -1176,7 +1188,18 @@ static bool run_decoder_prefill(context &ctx,
         { float se = 0; for (int v = 0; v < V; v++) se += expf(logits_data[v] - best_score); ctx.char_confidences.push_back(1.0f / se); }
         auto t_step_end = std::chrono::steady_clock::now();
         double step_ms = std::chrono::duration<double, std::milli>(t_step_end - t_step_start).count();
-        fprintf(stderr, "  gen[%d] tok=%d (%.0fms)%s\n", step, best, step_ms, kv_ok ? " cached" : "");
+        if (bench) {
+            long long step_ms_ll = (long long)step_ms;
+            decode_total_ms += step_ms_ll;
+            decode_steps++;
+            fprintf(stderr, "[lightonocr-bench] decode_step[%d]: %lldms\n", step, step_ms_ll);
+        } else {
+            fprintf(stderr, "  gen[%d] tok=%d (%.0fms)%s\n", step, best, step_ms, kv_ok ? " cached" : "");
+        }
+    }
+
+    if (bench) {
+        fprintf(stderr, "[lightonocr-bench] decode_total: %lldms (%d steps)\n", decode_total_ms, decode_steps);
     }
 
     // Decode generated token IDs to text using the vocab
@@ -1205,6 +1228,8 @@ static bool run_decoder_prefill(context &ctx,
 std::string recognize_raw(context &ctx,
                            const uint8_t *pixels, int width, int height, int channels,
                            int max_tokens) {
+    const bool bench = ctx.bench;
+    auto t_total = std::chrono::steady_clock::now();
     // Convert to RGB
     std::vector<uint8_t> rgb;
     const uint8_t *rgb_data = pixels;
@@ -1252,9 +1277,15 @@ std::string recognize_raw(context &ctx,
     }
 
     // Step 3: vision encoder
+    auto t_vis = std::chrono::steady_clock::now();
     std::vector<float> vis_out;
     if (!run_vision_encoder(ctx, patch_embeds, rope_cos, rope_sin, n_patches, vis_out)) {
         return "";
+    }
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_vis).count();
+        fprintf(stderr, "[lightonocr-bench] vision_encoder: %lldms\n", (long long)ms);
     }
     fprintf(stderr, "lightonocr: vision encoder done\n");
     if (LOCR_DEBUG) {
@@ -1263,11 +1294,17 @@ std::string recognize_raw(context &ctx,
     }
 
     // Step 4: projection (spatial merge + MLP)
+    auto t_proj = std::chrono::steady_clock::now();
     std::vector<float> proj_out;
     if (!run_projection(ctx, vis_out, ph, pw, proj_out)) {
         return "";
     }
     int n_image_tokens = (ph / ctx.m.spatial_merge_size) * (pw / ctx.m.spatial_merge_size);
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_proj).count();
+        fprintf(stderr, "[lightonocr-bench] projection: %lldms\n", (long long)ms);
+    }
     fprintf(stderr, "lightonocr: projection done → %d image tokens\n", n_image_tokens);
 
     if (const char *dp = getenv("CRISPEMBED_LIGHTON_DUMP")) {
@@ -1286,6 +1323,11 @@ std::string recognize_raw(context &ctx,
     if (!run_decoder_prefill(ctx, proj_out, n_image_tokens, max_tokens, gen_text)) {
         fprintf(stderr, "lightonocr: decoder failed\n");
         return "";
+    }
+    if (bench) {
+        auto total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_total).count();
+        fprintf(stderr, "[lightonocr-bench] total: %lldms\n", (long long)total_ms);
     }
     fprintf(stderr, "lightonocr: generated: %s\n", gen_text.c_str());
 

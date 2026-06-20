@@ -221,6 +221,7 @@ struct gliner_context {
     std::vector<float> fuser_W1_w, fuser_W1_b, fuser_W2_w, fuser_W2_b;
     std::vector<float> fuser_out_proj_w, fuser_out_proj_b;
     bool weights_cached = false;
+    bool bench = false;
 
     // Output storage (valid until next call)
     std::vector<gliner_ner_entity> result_entities;
@@ -982,6 +983,7 @@ void * gliner_ner_init(const char * model_path, int n_threads) {
 
     auto * ctx = new gliner_context();
     ctx->n_threads = n_threads;
+    ctx->bench = (std::getenv("CRISPEMBED_GLINER_BENCH") != nullptr);
 
     // Init backend
     const char * force_cpu = std::getenv("CRISPEMBED_FORCE_CPU");
@@ -1054,6 +1056,10 @@ int gliner_ner_extract(void * ptr,
     auto * ctx = (gliner_context *)ptr;
     auto & model = ctx->model;
     auto & hp = model.hparams;
+
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+    auto t_enc0  = std::chrono::steady_clock::now();
 
     // Clear previous results
     ctx->result_entities.clear();
@@ -1254,6 +1260,11 @@ int gliner_ner_extract(void * ptr,
         elapsed();
         ggml_backend_graph_compute(ctx->backend, gf);
         GDBG("DeBERTa encoder: %.1f ms", elapsed());
+        if (bench) {
+            auto t_enc1 = std::chrono::steady_clock::now();
+            fprintf(stderr, "[gliner-bench] encoder: %.3f ms\n",
+                    std::chrono::duration<double, std::milli>(t_enc1 - t_enc0).count());
+        }
 
         // Diff comparison
         if (diff_ref_path) {
@@ -1337,6 +1348,11 @@ int gliner_ner_extract(void * ptr,
         elapsed();
         ggml_backend_graph_compute(ctx->backend, gf);
         GDBG("LFM2 backbone: %.1f ms", elapsed());
+        if (bench) {
+            auto t_enc1 = std::chrono::steady_clock::now();
+            fprintf(stderr, "[gliner-bench] encoder: %.3f ms\n",
+                    std::chrono::duration<double, std::milli>(t_enc1 - t_enc0).count());
+        }
 
         // Read layer outputs for fusion
         std::vector<std::vector<float>> all_layer_outs(hp.n_layers);
@@ -1349,6 +1365,7 @@ int gliner_ner_extract(void * ptr,
         ggml_free(g);
 
         // Layer fusion (CPU)
+        auto t_fuse0 = std::chrono::steady_clock::now();
         int NL = (int)hp.n_layers;
         std::vector<float> layer_scores(NL);
         for (int l = 0; l < NL; l++) {
@@ -1389,6 +1406,11 @@ int gliner_ner_extract(void * ptr,
             }
         }
         GDBG("layer fusion: %.1f ms", elapsed());
+        if (bench) {
+            auto t_fuse1 = std::chrono::steady_clock::now();
+            fprintf(stderr, "[gliner-bench] layer fusion: %.3f ms\n",
+                    std::chrono::duration<double, std::milli>(t_fuse1 - t_fuse0).count());
+        }
     }
 
     // -----------------------------------------------------------------------
@@ -1435,8 +1457,16 @@ int gliner_ner_extract(void * ptr,
     const int lstm_hidden = (int)std::sqrt(ctx->lstm_W_hh_fwd.size() / 4.0);
     const int lstm_out_dim = 2 * lstm_hidden;
     std::vector<float> lstm_out(n_words * lstm_out_dim);
-    bilstm_forward_cached(word_reps.data(), lstm_out.data(),
-                          n_words, head_dim_gl, lstm_hidden, ctx);
+    {
+        auto t_lstm0 = std::chrono::steady_clock::now();
+        bilstm_forward_cached(word_reps.data(), lstm_out.data(),
+                              n_words, head_dim_gl, lstm_hidden, ctx);
+        if (bench) {
+            auto t_lstm1 = std::chrono::steady_clock::now();
+            fprintf(stderr, "[gliner-bench] BiLSTM: %.3f ms\n",
+                    std::chrono::duration<double, std::milli>(t_lstm1 - t_lstm0).count());
+        }
+    }
 
     if (diff_ref_path) {
         crispembed_diff::Ref ref;
@@ -1483,6 +1513,7 @@ int gliner_ner_extract(void * ptr,
     std::vector<ScoredSpan> candidates;
 
     // ---- Pass 1: proj_start/end [/first] + prompt_rep ----
+    auto t_head0 = std::chrono::steady_clock::now();
     {
         size_t hbuf = ggml_tensor_overhead() * 256 + ggml_graph_overhead_custom(2048, false);
         ggml_init_params hip = { hbuf, nullptr, true };
@@ -1631,6 +1662,12 @@ int gliner_ner_extract(void * ptr,
         }
     }
 
+    if (bench) {
+        auto t_head1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[gliner-bench] head passes: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_head1 - t_head0).count());
+    }
+
     GDBG("found %zu candidate spans above threshold %.2f", candidates.size(), threshold);
 
     // -----------------------------------------------------------------------
@@ -1698,6 +1735,10 @@ int gliner_ner_extract(void * ptr,
         auto t_end = std::chrono::steady_clock::now();
         double total_ms = std::chrono::duration<double, std::milli>(t_end - t_start).count();
         GDBG("total: %.1f ms, extracted %zu entities", total_ms, ctx->result_entities.size());
+        if (bench) {
+            fprintf(stderr, "[gliner-bench] total: %.3f ms\n",
+                    std::chrono::duration<double, std::milli>(t_end - t_total).count());
+        }
     }
     return (int)ctx->result_entities.size();
 }

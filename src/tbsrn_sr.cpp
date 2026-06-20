@@ -20,6 +20,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -282,6 +283,7 @@ struct tbsrn_sr_context {
     int hidden_units;  // 32 → 2*hidden_units = 64 channels
     int upscale_factor;
     int n_threads;
+    bool bench;
 
     core_gguf::WeightLoad wl;
     std::vector<std::vector<float>> weight_bufs;
@@ -327,6 +329,7 @@ tbsrn_sr_context * tbsrn_sr_init(const char * model_path, int n_threads) {
     int C = 2 * ctx->hidden_units;
     fprintf(stderr, "tbsrn_sr: srb_nums=%d, channels=%d, upscale=%dx, %d tensors\n",
             ctx->srb_nums, C, ctx->upscale_factor, (int)ctx->wl.tensors.size());
+    ctx->bench = (std::getenv("CRISPEMBED_TBSRN_SR_BENCH") != nullptr);
     return ctx;
 }
 
@@ -343,6 +346,10 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
                      const uint8_t * input, int width, int height,
                      uint8_t ** output, int * out_width, int * out_height) {
     if (!ctx || !input || !output || width <= 0 || height <= 0) return -1;
+
+    const bool bench = ctx->bench;
+    using ms_f = std::chrono::duration<double, std::milli>;
+    auto t_total = std::chrono::steady_clock::now();
 
     int C = 2 * ctx->hidden_units;  // 64
     int LR_H = 16, LR_W = 64;
@@ -384,6 +391,7 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
 
     // 5× RecurrentResidualBlock
     for (int i = 0; i < ctx->srb_nums; i++) {
+        auto t_blk = std::chrono::steady_clock::now();
         char prefix[32];
         snprintf(prefix, sizeof(prefix), "srb.%d", i);
         std::string p(prefix);
@@ -475,6 +483,11 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
         // Residual: x = x + fe_spatial
         for (int j = 0; j < C * T; j++)
             x[j] += fe_spatial[j];
+        if (bench) {
+            auto t_blk_end = std::chrono::steady_clock::now();
+            fprintf(stderr, "[tbsrn_sr-bench] block %d: %.1f ms\n",
+                    i, ms_f(t_blk_end - t_blk).count());
+        }
     }
 
     // block7: Conv3(64→64) + BN on block6 output (= x)
@@ -524,6 +537,11 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
     *out_width = HR_W;
     *out_height = HR_H;
     fprintf(stderr, "tbsrn_sr: done %dx%d → %dx%d\n", width, height, HR_W, HR_H);
+    if (bench) {
+        auto t_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[tbsrn_sr-bench] total: %.1f ms\n",
+                ms_f(t_end - t_total).count());
+    }
     return 0;
 }
 

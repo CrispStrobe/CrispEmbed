@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -85,6 +86,8 @@ struct parseq_ocr_context {
 
     // Dequant cache for quantized weights
     std::map<const void *, std::vector<float>> dequant_cache;
+
+    bool bench;
 };
 
 // ---------------------------------------------------------------------------
@@ -330,6 +333,8 @@ parseq_ocr_context * parseq_ocr_init(const char * model_path, int n_threads) {
     ctx->head_w         = T("head.weight");
     ctx->head_b         = T("head.bias");
 
+    ctx->bench = (std::getenv("CRISPEMBED_PARSEQ_BENCH") != nullptr);
+
     return ctx;
 }
 
@@ -555,9 +560,13 @@ static std::string run_decoder_ar(parseq_ocr_context * ctx) {
     tgt_in[0] = bos_id;  // 95
 
     // Pre-compute cross-attention K/V from memory (constant across steps)
+    const bool bench = ctx->bench;
+    auto t_dec_kv = std::chrono::steady_clock::now();
     std::vector<float> ca_K(N * D), ca_V(N * D);
     linear_batch(memory, ca_w + D * D, ca_b + D, N, D, D, ca_K.data());
     linear_batch(memory, ca_w + 2 * D * D, ca_b + 2 * D, N, D, D, ca_V.data());
+    if (bench) fprintf(stderr, "[parseq-bench] decoder CA K/V: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_dec_kv).count());
 
     for (int i = 0; i < num_steps; i++) {
         const int j = i + 1;  // next token index
@@ -761,13 +770,28 @@ const char * parseq_ocr_recognize(
 ) {
     if (!ctx || !pixels) return nullptr;
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
+    auto t0 = std::chrono::steady_clock::now();
     std::vector<float> input;
     preprocess_gray_to_input(pixels, width, height,
                              ctx->hp.img_w, ctx->hp.img_h, input);
+    if (bench) fprintf(stderr, "[parseq-bench] preprocess: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
+    t0 = std::chrono::steady_clock::now();
     if (!run_encoder(ctx, input.data())) return nullptr;
+    if (bench) fprintf(stderr, "[parseq-bench] encoder graph: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
+    t0 = std::chrono::steady_clock::now();
     ctx->result_buf = run_decoder_ar(ctx);
+    if (bench) fprintf(stderr, "[parseq-bench] decoder total: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+
+    if (bench) fprintf(stderr, "[parseq-bench] total: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
@@ -780,13 +804,28 @@ const char * parseq_ocr_recognize_raw(
 ) {
     if (!ctx || !pixel_bytes) return nullptr;
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
+    auto t0 = std::chrono::steady_clock::now();
     std::vector<float> input;
     preprocess_rgb_to_input(pixel_bytes, width, height, channels,
                             ctx->hp.img_w, ctx->hp.img_h, input);
+    if (bench) fprintf(stderr, "[parseq-bench] preprocess: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
+    t0 = std::chrono::steady_clock::now();
     if (!run_encoder(ctx, input.data())) return nullptr;
+    if (bench) fprintf(stderr, "[parseq-bench] encoder graph: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
+    t0 = std::chrono::steady_clock::now();
     ctx->result_buf = run_decoder_ar(ctx);
+    if (bench) fprintf(stderr, "[parseq-bench] decoder total: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+
+    if (bench) fprintf(stderr, "[parseq-bench] total: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();

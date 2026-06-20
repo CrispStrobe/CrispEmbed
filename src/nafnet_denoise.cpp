@@ -14,13 +14,14 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 
+#include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
-#include <algorithm>
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
@@ -278,6 +279,7 @@ struct nafnet_context {
     std::vector<int> dec_blk_nums;
     int middle_blk_num;
     int n_threads;
+    bool bench;
 
     // Backend (kept alive for GPU-resident weight access)
     ggml_backend_t backend = nullptr;
@@ -343,6 +345,7 @@ nafnet_context * nafnet_init(const char * model_path, int n_threads) {
         fprintf(stderr, "%s%d", i ? "," : "", ctx->dec_blk_nums[i]);
     fprintf(stderr, "], %d tensors\n", (int)ctx->wl.tensors.size());
 
+    ctx->bench = (std::getenv("CRISPEMBED_NAFNET_BENCH") != nullptr);
     return ctx;
 }
 
@@ -361,6 +364,10 @@ int nafnet_process(nafnet_context * ctx,
                    uint8_t * output) {
     if (!ctx || !input || !output || width <= 0 || height <= 0) return -1;
 
+    const bool bench = ctx->bench;
+    using ms_f = std::chrono::duration<double, std::milli>;
+    auto t_total = std::chrono::steady_clock::now();
+
     int W = ctx->width;
     int ns = ctx->n_stages;
 
@@ -370,6 +377,7 @@ int nafnet_process(nafnet_context * ctx,
     int pw = ((width + pad_mult - 1) / pad_mult) * pad_mult;
 
     // Convert input to [3, ph, pw] float [0, 1]
+    auto t_pre = std::chrono::steady_clock::now();
     std::vector<float> img(3 * ph * pw, 0.0f);
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
@@ -435,11 +443,17 @@ int nafnet_process(nafnet_context * ctx,
         cur_c = W;
     }
 
+    if (bench) {
+        auto t_pre_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[nafnet-bench] preprocess+intro: %.1f ms\n",
+                ms_f(t_pre_end - t_pre).count());
+    }
     fprintf(stderr, "nafnet: intro done (%dx%d, %d ch)\n", cur_w, cur_h, cur_c);
 
     // Encoder
     std::vector<std::vector<float>> skip_connections;
     for (int s = 0; s < ns; s++) {
+        auto t_enc = std::chrono::steady_clock::now();
         int c = W * (1 << s);  // 32, 64, 128, 256
 
         // Run NAFBlocks
@@ -472,10 +486,16 @@ int nafnet_process(nafnet_context * ctx,
         cur_h = next_h;
         cur_w = next_w;
 
+        if (bench) {
+            auto t_enc_end = std::chrono::steady_clock::now();
+            fprintf(stderr, "[nafnet-bench] enc stage %d: %.1f ms\n",
+                    s, ms_f(t_enc_end - t_enc).count());
+        }
         fprintf(stderr, "nafnet: enc stage %d done (%dx%d, %d ch)\n", s, cur_w, cur_h, cur_c);
     }
 
     // Middle blocks
+    auto t_mid = std::chrono::steady_clock::now();
     for (int b = 0; b < ctx->middle_blk_num; b++) {
         char prefix[64];
         snprintf(prefix, sizeof(prefix), "mid.%d", b);
@@ -484,10 +504,16 @@ int nafnet_process(nafnet_context * ctx,
         nafblock_forward(img.data(), cur_c, cur_h, cur_w, wt, block_out.data(), tmp1, tmp2, tmp3);
         img = std::move(block_out);
     }
+    if (bench) {
+        auto t_mid_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[nafnet-bench] middle: %.1f ms\n",
+                ms_f(t_mid_end - t_mid).count());
+    }
     fprintf(stderr, "nafnet: middle done (%d blocks)\n", ctx->middle_blk_num);
 
     // Decoder
     for (int s = 0; s < ns; s++) {
+        auto t_dec = std::chrono::steady_clock::now();
         // Upsample: 1x1 conv (c → 4c/4 * 4 = c for PixelShuffle) then PixelShuffle(2)
         int next_c = cur_c / 2;
         int next_h = cur_h * 2, next_w = cur_w * 2;
@@ -527,10 +553,16 @@ int nafnet_process(nafnet_context * ctx,
             img = std::move(block_out);
         }
 
+        if (bench) {
+            auto t_dec_end = std::chrono::steady_clock::now();
+            fprintf(stderr, "[nafnet-bench] dec stage %d: %.1f ms\n",
+                    s, ms_f(t_dec_end - t_dec).count());
+        }
         fprintf(stderr, "nafnet: dec stage %d done (%dx%d, %d ch)\n", s, cur_w, cur_h, cur_c);
     }
 
     // Ending conv: W → 3
+    auto t_end_phase = std::chrono::steady_clock::now();
     {
         auto * end_w = ctx->get_tensor("ending.weight");
         auto * end_b = ctx->get_tensor("ending.bias");
@@ -558,6 +590,13 @@ int nafnet_process(nafnet_context * ctx,
         }
     }
 
+    if (bench) {
+        auto t_fin = std::chrono::steady_clock::now();
+        fprintf(stderr, "[nafnet-bench] ending: %.1f ms\n",
+                ms_f(t_fin - t_end_phase).count());
+        fprintf(stderr, "[nafnet-bench] total: %.1f ms\n",
+                ms_f(t_fin - t_total).count());
+    }
     fprintf(stderr, "nafnet: done (%dx%d)\n", width, height);
     return 0;
 }
