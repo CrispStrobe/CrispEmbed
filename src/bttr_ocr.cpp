@@ -101,6 +101,10 @@ struct bttr_ocr_context {
     // Tokenizer
     std::vector<std::string> vocab;
 
+    // 2D positional encoding cache
+    std::vector<float> pe_cache;  // (n_pos * D) — PE values to add to encoder output
+    int pe_cache_h = 0, pe_cache_w = 0;
+
     // Dequant cache
     core_cpu::DequantCache dequant_cache;
 
@@ -450,44 +454,55 @@ static void run_encoder(bttr_ocr_context * ctx, const float * gray, int W, int H
     //   pos_x = stack(sin(x * inv_freq[0::2]), cos(x * inv_freq[1::2])).flatten
     //   pos_y = stack(sin(y * inv_freq[0::2]), cos(y * inv_freq[1::2])).flatten
     //   pos = cat(pos_x, pos_y)
+    // Cache the PE buffer: it depends only on (cur_h, cur_w, D).
     {
-        const int half_d = D / 2;           // 128
-        const int quarter_d = half_d / 2;   // 64
-        const float scale = 2.0f * (float)M_PI;
+        if (cur_h != ctx->pe_cache_h || cur_w != ctx->pe_cache_w) {
+            // Recompute and store PE into cache.
+            const int half_d = D / 2;           // 128
+            const int quarter_d = half_d / 2;   // 64
+            const float scale = 2.0f * (float)M_PI;
 
-        // Precompute inv_freq: (half_d,) = 1/10000^(i/half_d)
-        std::vector<float> inv_freq(half_d);
-        for (int i = 0; i < half_d; i++)
-            inv_freq[i] = 1.0f / powf(10000.0f, (float)i / (float)half_d);
+            // Precompute inv_freq: (half_d,) = 1/10000^(i/half_d)
+            std::vector<float> inv_freq(half_d);
+            for (int i = 0; i < half_d; i++)
+                inv_freq[i] = 1.0f / powf(10000.0f, (float)i / (float)half_d);
 
-        for (int y = 0; y < cur_h; y++) {
-            for (int x = 0; x < cur_w; x++) {
-                // Normalized coordinates (cumsum-based, 1-indexed, then /max * scale)
-                float y_norm = scale * (float)(y + 1) / (float)cur_h;
-                float x_norm = scale * (float)(x + 1) / (float)cur_w;
+            ctx->pe_cache.assign(n_pos * D, 0.0f);
+            for (int y = 0; y < cur_h; y++) {
+                for (int x = 0; x < cur_w; x++) {
+                    // Normalized coordinates (cumsum-based, 1-indexed, then /max * scale)
+                    float y_norm = scale * (float)(y + 1) / (float)cur_h;
+                    float x_norm = scale * (float)(x + 1) / (float)cur_w;
 
-                int pos_idx = y * cur_w + x;
-                float * enc = ctx->encoder_output.data() + pos_idx * D;
+                    int pos_idx = y * cur_w + x;
+                    float * pe = ctx->pe_cache.data() + pos_idx * D;
 
-                // pos_x occupies enc[0..half_d-1]
-                // pos_x = stack(sin(x*inv_freq[even]), cos(x*inv_freq[odd])).flatten
-                // flatten of stack([A0,A1,...A63], [B0,B1,...B63], dim=-1)
-                // = [A0,B0, A1,B1, ..., A63,B63]
-                for (int i = 0; i < quarter_d; i++) {
-                    float sx = x_norm * inv_freq[2 * i];      // even inv_freq → sin
-                    float cx = x_norm * inv_freq[2 * i + 1];  // odd inv_freq → cos
-                    enc[2 * i]     += sinf(sx);
-                    enc[2 * i + 1] += cosf(cx);
-                }
-                // pos_y occupies enc[half_d..D-1]
-                for (int i = 0; i < quarter_d; i++) {
-                    float sy = y_norm * inv_freq[2 * i];
-                    float cy = y_norm * inv_freq[2 * i + 1];
-                    enc[half_d + 2 * i]     += sinf(sy);
-                    enc[half_d + 2 * i + 1] += cosf(cy);
+                    // pos_x occupies pe[0..half_d-1]
+                    // pos_x = stack(sin(x*inv_freq[even]), cos(x*inv_freq[odd])).flatten
+                    // flatten of stack([A0,A1,...A63], [B0,B1,...B63], dim=-1)
+                    // = [A0,B0, A1,B1, ..., A63,B63]
+                    for (int i = 0; i < quarter_d; i++) {
+                        float sx = x_norm * inv_freq[2 * i];      // even inv_freq → sin
+                        float cx = x_norm * inv_freq[2 * i + 1];  // odd inv_freq → cos
+                        pe[2 * i]     = sinf(sx);
+                        pe[2 * i + 1] = cosf(cx);
+                    }
+                    // pos_y occupies pe[half_d..D-1]
+                    for (int i = 0; i < quarter_d; i++) {
+                        float sy = y_norm * inv_freq[2 * i];
+                        float cy = y_norm * inv_freq[2 * i + 1];
+                        pe[half_d + 2 * i]     = sinf(sy);
+                        pe[half_d + 2 * i + 1] = cosf(cy);
+                    }
                 }
             }
+            ctx->pe_cache_h = cur_h;
+            ctx->pe_cache_w = cur_w;
         }
+
+        // Add cached PE to encoder output.
+        for (int i = 0; i < n_pos * D; i++)
+            ctx->encoder_output[i] += ctx->pe_cache[i];
     }
 
     ctx->n_enc_pos = n_pos;
