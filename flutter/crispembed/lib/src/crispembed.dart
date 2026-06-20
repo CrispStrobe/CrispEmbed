@@ -3544,7 +3544,7 @@ class CrispOcrOrchestrator {
   /// [nafnetModel] — optional NAFNet GGUF for tier-2 learned denoise.
   /// [srModel] — optional text super-resolution GGUF for low-DPI upscaling.
   /// [vlmModel] — optional VLM GGUF for escalation fallback.
-  /// [vlmEngine] — VLM engine: 0=GOT, 1=GLM, 2=Qwen2-VL/PaddleOCR-VL, 3=InternVL2.
+  /// [vlmEngine] — VLM engine: 0=GOT, 1=GLM, 2=Qwen2-VL/PaddleOCR-VL, 3=InternVL2, 4=Qwen3-VL.
   /// [punctModel] — optional punctuation restoration model GGUF.
   CrispOcrOrchestrator(String detModelPath, String recModelPath,
       {int nThreads = 4,
