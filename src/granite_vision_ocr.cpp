@@ -623,7 +623,7 @@ static void gv_vision_forward(granite_vision_context * ctx,
         gv_run_vit_graph(ctx, x.data(), T, D, layer_outputs);
     }
 
-    if (layer_outputs[0].empty()) {
+    if (n_feat > 0 && layer_outputs[0].empty()) {
         // Fallback: scalar loop (used when vis_sched is null or graph failed).
         for (int li = 0; li < ctx->vis_layers; li++) {
             char buf[64];
