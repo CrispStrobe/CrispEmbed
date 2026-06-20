@@ -580,9 +580,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   processes tiles one at a time with separate graph allocations per tile.
   Batch multiple tiles into one graph.
 
-- [ ] **Eliminate redundant CHW↔HWC layout conversions** — `dat_sr.cpp`
-  converts at every block boundary. Low priority: layouts are comments/
-  documentation, actual transposes are minimal after SIMD linear_batch refactor.
+- [x] **Eliminate redundant CHW↔HWC layout conversions** — post SIMD
+  linear_batch refactor the remaining layout switches in `dat_sr.cpp` are
+  minimal and inlined; no material gain from further restructuring. Closed.
 
 - [x] **Pre-compute attention masks and position biases** — Already resolved:
   swinir_sr masks loaded from GGUF model file (stored as tensors, cached via
@@ -706,8 +706,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   unconditional printfs converted to LDBG() macro (gated behind LAYOUT_DEBUG).
   Remaining files (surya_det, ocr_detect) still have some unconditional prints.
 
-- [ ] **hmer coverage conv per step** — conv2d(256, 256, 3x3) per decoder
-  step is the attention mechanism. Expensive but architecturally required.
+- [x] **hmer coverage conv per step** — conv2d(256, 256, 3x3) is the Bahdanau
+  coverage attention mechanism; cannot be eliminated without changing the
+  architecture. Item closed as won't-optimize.
 
 - [x] **ppformulanet_l: ggml meta buffer reuse across layers** — DONE
   (`b7bc237`). Hoisted 8MB meta_buf before 12-layer loop.
