@@ -513,9 +513,12 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   mixtex (`816a88a`): replaced per-token scalar linear with
   linear_batch_cpu (SIMD), SIMD dot_product in attention.
 
-- [ ] **Sequential region recognition → batched** — `ocr_pipeline.cpp` (line 112)
-  and `table_parse.cpp` (line 337) recognize each detected text region one at a
-  time. Batch crops into a single encoder pass for PARSeq/TrOCR.
+- [x] **Sequential region recognition → batched** — `ocr_pipeline.cpp` now
+  batch-encodes all detected crops in one ggml graph call
+  (`math_ocr_encode_batch_raw`), then decodes sequentially
+  (`math_ocr_decode_batch_crop`). Single [H, T, B] encoder graph replaces
+  N×[H, T] invocations; fallback to sequential path if batch alloc fails.
+  `table_parse` uses Tesseract/callback — not batchable; closed for now.
 
 - [x] **Eliminate redundant image loading in orchestrator** — Pre-load image once
   per stage in the accept-gate loop, pass pixel buffer to all 9 VLM engines.
@@ -791,7 +794,7 @@ single-threaded, must not OOM.
 - [x] Native GQA in flash_attn: removed explicit ggml_repeat for KV heads, pass K/V with n_kv heads directly to flash_attn_ext (`b579345`). Saves ~10 lines and avoids materialization of repeated heads.
 - [ ] Persistent decode graph (reuse across T=1 decode steps, like lightonocr `27b650a`)
 
-### smoldocling (SigLIP + SmolLM2, 256M) — IN PROGRESS
+### smoldocling (SigLIP + SmolLM2, 256M) — DONE
 - [x] F16 KV cache + batched prefill (done earlier, `bc329e4`)
 - [x] Patch embedding → ggml matmul (im2col + mul_mat, F16 bias cast)
   Gated: CRISPEMBED_SMOLDOCLING_SCALAR_PATCH=1
@@ -800,7 +803,7 @@ single-threaded, must not OOM.
   Tested: prefill=2.3s, decode=62s (128 steps).
 ### internvl2 — DONE (already optimized)
   F16 KV cache, flash attn, ggml patch embed, ggml vision graph — all done.
-  Remaining: native GQA in flash_attn (skip ggml_repeat), batch vision tiles.
+  Native GQA (`7cffe56`) and batch vision tiles (`c714758`) completed.
 ### SR/denoise — DONE (SIMD + batched linear)
 - [x] dat_sr: `linear_batch_cpu` + SIMD `linear_cpu`, batch QKV/proj/FFN (`a71c123`)
 - [x] swinir_sr: batch per-token linear + SIMD dot product (`dcf6556`)
