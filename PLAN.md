@@ -282,9 +282,9 @@ safmn_sr, esrgan_sr, restormer, tps_locnet, scunet_denoise, swinir_sr.
 | ~~4~~ | ~~MinerU2.5-Pro~~ | ~~1.2B~~ | ~~90.7%~~ | ~~NOT pure Apache~~ | — | REJECTED: commercial thresholds, mandatory attribution, gated HF |
 | 5 | **SmolDocling** | 256M | — | Apache-2.0 | Idefics3/SmolVLM, IBM Research | DONE: engine + parity cos=0.9999, HF `cstr/smoldocling-GGUF` |
 | ~~6~~ | ~~Hunyuan-OCR~~ | ~~1B~~ | — | ~~Custom Tencent~~ | — | REJECTED: excludes EU/UK/South Korea |
-| 7 | **Qari-OCR** | 4B | Apache-2.0 | Qwen2-VL fine-tune (Arabic only) | Pending (4B = large, Arabic-only, parity bug) |
+| 7 | **Qari-OCR** | 4B | Apache-2.0 | Qwen2-VL fine-tune (Arabic only) | Vision parity fixed (cos≥0.9995 on Q4_K); LLM 0.929 vs F16 ref = Q4_K floor, not a bug. Prompt framing open (model answers conversationally). |
 
-**Remaining**: Qari-OCR (Arabic-only, 4B, parity bug). FireRed-OCR (Qwen3-VL 2B) and german-ocr-3 reuse the qwen2vl_ocr engine; runtime ne-fix handles GGUF converters that store weights in PyTorch (out, in) order.
+**Remaining**: FireRed-OCR (Qwen3-VL 2B) and german-ocr-3 reuse the qwen2vl_ocr engine; runtime ne-fix handles GGUF converters that store weights in PyTorch (out, in) order. Qari-OCR vision parity resolved (two fixes: quick_gelu activation and rot_dim=head_dim/2 for 2D-RoPE); OCR prompt framing still open.
 
 #### OCRBench leaderboard reference (small VLMs, ≤3B)
 
