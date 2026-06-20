@@ -3490,6 +3490,18 @@ extern "C" float crispembed_ocr_model_mean_confidence(const void * ctx) {
     return (float)(sum / n);
 }
 
+extern "C" void crispembed_ocr_model_set_max_tokens(void * ctx, int max_tokens) {
+    if (!ctx || max_tokens <= 0) return;
+    auto * u = (ocr_model *)ctx;
+    switch (u->type) {
+        case OCR_MODEL_QWEN2VL:        qwen2vl_ocr_set_max_tokens((qwen2vl_ocr_context *)u->ctx, max_tokens); break;
+        case OCR_MODEL_INTERNVL2:      internvl2_ocr_set_max_tokens((internvl2_ocr_context *)u->ctx, max_tokens); break;
+        case OCR_MODEL_GRANITE_VISION: granite_vision_set_max_tokens((granite_vision_context *)u->ctx, max_tokens); break;
+        case OCR_MODEL_LIGHTONOCR:     lightonocr_set_max_tokens((lightonocr_context *)u->ctx, max_tokens); break;
+        default: break; // formula OCR engines: no-op
+    }
+}
+
 // --- Deprecated aliases -----------------------------------------------------
 // The dispatcher was originally named crispembed_math_ocr_* but now handles
 // general text/document OCR as well as math. The crispembed_ocr_model_* names
