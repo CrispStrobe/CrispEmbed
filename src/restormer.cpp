@@ -353,6 +353,12 @@ struct restormer_context {
     ggml_backend_t       enc_backend  = nullptr;
     ggml_backend_sched_t enc_sched    = nullptr;
 
+    // Pre-permuted conv weights: 4D PyTorch→2D ggml [IC*KH*KW, OC] F32
+    // Stored per tensor name to avoid per-call permute overhead.
+    ggml_context * prep_ctx = nullptr;
+    ggml_backend_buffer_t prep_buf = nullptr;
+    std::unordered_map<std::string, ggml_tensor *> prep_weights;
+
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t) return nullptr;
@@ -360,6 +366,9 @@ struct restormer_context {
     }
 
     ggml_tensor * get_raw(const std::string & name) {
+        // Return pre-permuted 2D weight if available (avoids per-call permute)
+        auto it = prep_weights.find(name);
+        if (it != prep_weights.end()) return it->second;
         return core_gguf::try_get(wl.tensors, name.c_str());
     }
 
@@ -412,11 +421,97 @@ restormer_context * restormer_init(const char * model_path, int n_threads) {
         ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
     }
 
+    // Pre-permute 4D conv weights → 2D [IC*KH*KW, OC] F32 for ggml_conv_2d.
+    // This avoids per-call permute overhead (4D→F32→permute→cont→F16 on every conv).
+    {
+        // Count 4D conv weights to size the context
+        int n4d = 0;
+        for (auto & [name, t] : ctx->wl.tensors)
+            if (ggml_n_dims(t) == 4 && name.find("weight") != std::string::npos) n4d++;
+
+        if (n4d > 0) {
+            // Allocate ggml context for pre-permuted weights
+            size_t ctx_size = ggml_tensor_overhead() * (n4d + 1);
+            ggml_init_params ip = { ctx_size, nullptr, false };
+            ctx->prep_ctx = ggml_init(ip);
+
+            // Create F32 2D tensors and fill with permuted data
+            size_t total_bytes = 0;
+            std::vector<std::pair<std::string, ggml_tensor *>> to_fill;
+            for (auto & [name, t] : ctx->wl.tensors) {
+                if (ggml_n_dims(t) != 4 || name.find("weight") == std::string::npos) continue;
+                // t: ne[0]=OC, ne[1]=IC, ne[2]=KH, ne[3]=KW (PyTorch order)
+                int64_t OC = t->ne[0], IC = t->ne[1], KH = t->ne[2], KW = t->ne[3];
+                // Create 2D: [IC*KH*KW, OC] — ggml conv_2d reshape format
+                ggml_tensor * w2d = ggml_new_tensor_2d(ctx->prep_ctx, GGML_TYPE_F32, IC*KH*KW, OC);
+                ggml_set_name(w2d, name.c_str());
+                total_bytes += ggml_nbytes(w2d);
+                to_fill.push_back({name, w2d});
+            }
+
+            ctx->prep_buf = ggml_backend_alloc_ctx_tensors(ctx->prep_ctx, ctx->enc_backend);
+
+            // Fill: dequant source → permute → write to new tensor
+            for (auto & [name, w2d] : to_fill) {
+                ggml_tensor * src = ctx->wl.tensors[name];
+                int64_t OC = src->ne[0], IC = src->ne[1], KH = src->ne[2], KW = src->ne[3];
+                int64_t n = ggml_nelements(src);
+
+                // Dequant source to F32
+                std::vector<float> f32_src(n);
+                if (src->type == GGML_TYPE_F32) {
+                    ggml_backend_tensor_get(src, f32_src.data(), 0, n * sizeof(float));
+                } else if (src->type == GGML_TYPE_F16) {
+                    std::vector<ggml_fp16_t> tmp(n);
+                    ggml_backend_tensor_get(src, tmp.data(), 0, n * sizeof(ggml_fp16_t));
+                    for (int64_t i = 0; i < n; i++) f32_src[i] = ggml_fp16_to_fp32(tmp[i]);
+                } else {
+                    size_t raw_sz = ggml_nbytes(src);
+                    std::vector<uint8_t> raw(raw_sz);
+                    ggml_backend_tensor_get(src, raw.data(), 0, raw_sz);
+                    auto * traits = ggml_get_type_traits(src->type);
+                    if (traits && traits->to_float) traits->to_float(raw.data(), f32_src.data(), n);
+                }
+
+                // Permute: src[oc][ic][kh][kw] → dst[ic*kh*kw][oc]
+                // src memory: for kw, for kh, for ic, for oc → src[oc*IC*KH*KW + ic*KH*KW + kh*KW + kw]
+                // dst memory: for oc, for (ic*kh*kw) → dst[oc * IC*KH*KW + ic*KH*KW + kh*KW + kw]
+                // Wait — ggml ne[0] is innermost. src ne[0]=OC means OC is fastest.
+                // src layout: src[kw * OC*IC*KH + kh * OC*IC + ic * OC + oc]
+                // Actually in ggml: element at (i0,i1,i2,i3) = data[i3*nb3 + i2*nb2 + i1*nb1 + i0*nb0]
+                // For src: nb0=sizeof(type), nb1=ne[0]*nb0, nb2=ne[0]*ne[1]*nb0, nb3=ne[0]*ne[1]*ne[2]*nb0
+                // So src[oc, ic, kh, kw] = data[kw*OC*IC*KH + kh*OC*IC + ic*OC + oc]
+                // (oc=i0 fastest, kw=i3 slowest)
+                //
+                // For dst 2D [IC*KH*KW, OC]: element at (ikw, oc) = data[oc * IC*KH*KW + ikw]
+                // where ikw = ic*KH*KW + kh*KW + kw
+
+                std::vector<float> f32_dst(n);
+                for (int64_t oc = 0; oc < OC; oc++)
+                    for (int64_t ic = 0; ic < IC; ic++)
+                        for (int64_t kh = 0; kh < KH; kh++)
+                            for (int64_t kw = 0; kw < KW; kw++) {
+                                int64_t src_idx = kw*OC*IC*KH + kh*OC*IC + ic*OC + oc;
+                                int64_t ikw = ic*KH*KW + kh*KW + kw;
+                                int64_t dst_idx = oc * IC*KH*KW + ikw;
+                                f32_dst[dst_idx] = f32_src[src_idx];
+                            }
+
+                ggml_backend_tensor_set(w2d, f32_dst.data(), 0, n * sizeof(float));
+                ctx->prep_weights[name] = w2d;
+            }
+            fprintf(stderr, "restormer: pre-permuted %d conv weights (%.1f MB)\n",
+                    n4d, total_bytes / (1024.0 * 1024.0));
+        }
+    }
+
     return ctx;
 }
 
 void restormer_free(restormer_context * ctx) {
     if (ctx) {
+        if (ctx->prep_buf) ggml_backend_buffer_free(ctx->prep_buf);
+        if (ctx->prep_ctx) ggml_free(ctx->prep_ctx);
         if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
         if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
         core_gguf::free_weights(ctx->wl);
@@ -431,8 +526,8 @@ static void rst_conv2d_ggml(restormer_context * ctx,
                              ggml_tensor * wt, ggml_tensor * bt,
                              int oc, int kh, int kw, int pad, int groups,
                              float * output) {
-    if (!ctx->enc_sched || !wt || ggml_n_dims(wt) >= 4) {
-        // scalar fallback via dequant (4D weights need permute which adds overhead)
+    if (!ctx->enc_sched || !wt) {
+        // scalar fallback via dequant (per-call ggml overhead too high for U-Net)
         rst_conv2d(input, ic, h, w,
                    ctx->dcache.get(wt), bt ? ctx->dcache.get(bt) : nullptr,
                    oc, kh, kw, pad, groups, output);
