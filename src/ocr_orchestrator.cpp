@@ -293,11 +293,14 @@ static std::string resolve_tess_model(const config& cfg, const char* iso1) {
     return path;
 }
 
-// Run one engine on a (already-cleaned) image path. DBNet+TrOCR is a
-// detect+recognize pipeline; the VLM engines are single-shot full-image OCR.
+// Run one engine on a (already-cleaned) image. VLM engines use pre-loaded
+// pixels (px/pw/ph) when available to avoid redundant stbi_load from disk.
+// Falls back to loading from `path` if px is null.
 static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
                                                         const stage& st,
-                                                        const char* path) {
+                                                        const char* path,
+                                                        const unsigned char* px = nullptr,
+                                                        int pw = 0, int ph = 0) {
     switch (st.eng) {
         case engine::dbnet_trocr:
         case engine::surya: {
@@ -327,15 +330,17 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
                 ctx->got = got_ocr_init(st.model_a.c_str(), ctx->n_threads);
                 if (!ctx->got) { fprintf(stderr, "ocr_orchestrator: got load failed\n"); return {}; }
             }
-            int w = 0, h = 0, c = 0;
-            unsigned char* px = stbi_load(path, &w, &h, &c, 3);
-            if (!px) return {};
+            int w = pw, h = ph;
+            unsigned char* loaded = nullptr;
+            const unsigned char* img = px;
+            if (!img) { int c = 0; loaded = stbi_load(path, &w, &h, &c, 3); img = loaded; }
+            if (!img) return {};
             int len = 0;
-            const char* t = got_ocr_recognize_raw(ctx->got, px, w, h, 3, &len);
+            const char* t = got_ocr_recognize_raw(ctx->got, img, w, h, 3, &len);
             int nconf = 0;
             const float* conf = got_ocr_confidences(ctx->got, &nconf);
             auto out = wrap_fulltext(t, w, h, conf, nconf, got_ocr_mean_confidence(ctx->got));
-            stbi_image_free(px);
+            if (loaded) stbi_image_free(loaded);
             return out;
         }
         case engine::glm: {
@@ -344,15 +349,17 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
                 ctx->glm = glm_ocr_init(st.model_a.c_str(), ctx->n_threads);
                 if (!ctx->glm) { fprintf(stderr, "ocr_orchestrator: glm load failed\n"); return {}; }
             }
-            int w = 0, h = 0, c = 0;
-            unsigned char* px = stbi_load(path, &w, &h, &c, 3);
-            if (!px) return {};
+            int w = pw, h = ph;
+            unsigned char* loaded = nullptr;
+            const unsigned char* img = px;
+            if (!img) { int c = 0; loaded = stbi_load(path, &w, &h, &c, 3); img = loaded; }
+            if (!img) return {};
             int len = 0;
-            const char* t = glm_ocr_recognize_raw(ctx->glm, px, w, h, 3, &len);
+            const char* t = glm_ocr_recognize_raw(ctx->glm, img, w, h, 3, &len);
             int nconf = 0;
             const float* conf = glm_ocr_confidences(ctx->glm, &nconf);
             auto out = wrap_fulltext(t, w, h, conf, nconf, glm_ocr_mean_confidence(ctx->glm));
-            stbi_image_free(px);
+            if (loaded) stbi_image_free(loaded);
             return out;
         }
         case engine::qwen2vl: {
@@ -363,15 +370,17 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             }
             if (st.params.vlm_max_tokens > 0) qwen2vl_ocr_set_max_tokens(ctx->qwen, st.params.vlm_max_tokens);
             if (!st.params.vlm_prompt.empty()) qwen2vl_ocr_set_prompt(ctx->qwen, st.params.vlm_prompt.c_str());
-            int w = 0, h = 0, c = 0;
-            unsigned char* px = stbi_load(path, &w, &h, &c, 3);
-            if (!px) return {};
+            int w = pw, h = ph;
+            unsigned char* loaded = nullptr;
+            const unsigned char* img = px;
+            if (!img) { int c = 0; loaded = stbi_load(path, &w, &h, &c, 3); img = loaded; }
+            if (!img) return {};
             int len = 0;
-            const char* t = qwen2vl_ocr_recognize_raw(ctx->qwen, px, w, h, 3, &len);
+            const char* t = qwen2vl_ocr_recognize_raw(ctx->qwen, img, w, h, 3, &len);
             int nconf = 0;
             const float* conf = qwen2vl_ocr_confidences(ctx->qwen, &nconf);
             auto out = wrap_fulltext(t, w, h, conf, nconf, qwen2vl_ocr_mean_confidence(ctx->qwen));
-            stbi_image_free(px);
+            if (loaded) stbi_image_free(loaded);
             return out;
         }
         case engine::qwen3vl: {
@@ -382,15 +391,17 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             }
             if (st.params.vlm_max_tokens > 0) qwen2vl_ocr_set_max_tokens(ctx->qwen3, st.params.vlm_max_tokens);
             if (!st.params.vlm_prompt.empty()) qwen2vl_ocr_set_prompt(ctx->qwen3, st.params.vlm_prompt.c_str());
-            int w = 0, h = 0, c = 0;
-            unsigned char* px = stbi_load(path, &w, &h, &c, 3);
-            if (!px) return {};
+            int w = pw, h = ph;
+            unsigned char* loaded = nullptr;
+            const unsigned char* img = px;
+            if (!img) { int c = 0; loaded = stbi_load(path, &w, &h, &c, 3); img = loaded; }
+            if (!img) return {};
             int len = 0;
-            const char* t = qwen2vl_ocr_recognize_raw(ctx->qwen3, px, w, h, 3, &len);
+            const char* t = qwen2vl_ocr_recognize_raw(ctx->qwen3, img, w, h, 3, &len);
             int nconf = 0;
             const float* conf = qwen2vl_ocr_confidences(ctx->qwen3, &nconf);
             auto out = wrap_fulltext(t, w, h, conf, nconf, qwen2vl_ocr_mean_confidence(ctx->qwen3));
-            stbi_image_free(px);
+            if (loaded) stbi_image_free(loaded);
             return out;
         }
         case engine::internvl2: {
@@ -401,15 +412,17 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             }
             if (st.params.vlm_max_tokens > 0) internvl2_ocr_set_max_tokens(ctx->intern, st.params.vlm_max_tokens);
             if (!st.params.vlm_prompt.empty()) internvl2_ocr_set_prompt(ctx->intern, st.params.vlm_prompt.c_str());
-            int w = 0, h = 0, c = 0;
-            unsigned char* px = stbi_load(path, &w, &h, &c, 3);
-            if (!px) return {};
+            int w = pw, h = ph;
+            unsigned char* loaded = nullptr;
+            const unsigned char* img = px;
+            if (!img) { int c = 0; loaded = stbi_load(path, &w, &h, &c, 3); img = loaded; }
+            if (!img) return {};
             int len = 0;
-            const char* t = internvl2_ocr_recognize_raw(ctx->intern, px, w, h, 3, &len);
+            const char* t = internvl2_ocr_recognize_raw(ctx->intern, img, w, h, 3, &len);
             int nconf = 0;
             const float* conf = internvl2_ocr_confidences(ctx->intern, &nconf);
             auto out = wrap_fulltext(t, w, h, conf, nconf, internvl2_ocr_mean_confidence(ctx->intern));
-            stbi_image_free(px);
+            if (loaded) stbi_image_free(loaded);
             return out;
         }
         case engine::deepseek_ocr2: {
@@ -418,15 +431,17 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
                 ctx->dsocr2 = deepseek_ocr2_init(st.model_a.c_str(), ctx->n_threads);
                 if (!ctx->dsocr2) { fprintf(stderr, "ocr_orchestrator: deepseek_ocr2 load failed\n"); return {}; }
             }
-            int w = 0, h = 0, c = 0;
-            unsigned char* px = stbi_load(path, &w, &h, &c, 3);
-            if (!px) return {};
+            int w = pw, h = ph;
+            unsigned char* loaded = nullptr;
+            const unsigned char* img = px;
+            if (!img) { int c = 0; loaded = stbi_load(path, &w, &h, &c, 3); img = loaded; }
+            if (!img) return {};
             int len = 0;
-            const char* t = deepseek_ocr2_recognize_raw(ctx->dsocr2, px, w, h, 3, &len);
+            const char* t = deepseek_ocr2_recognize_raw(ctx->dsocr2, img, w, h, 3, &len);
             int nconf = 0;
             const float* conf = deepseek_ocr2_confidences(ctx->dsocr2, &nconf);
             auto out = wrap_fulltext(t, w, h, conf, nconf, deepseek_ocr2_mean_confidence(ctx->dsocr2));
-            stbi_image_free(px);
+            if (loaded) stbi_image_free(loaded);
             return out;
         }
         case engine::tesseract: {
@@ -589,16 +604,18 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
                 ctx->p2s = pix2struct_init(st.model_a.c_str(), ctx->n_threads);
                 if (!ctx->p2s) { fprintf(stderr, "ocr_orchestrator: pix2struct load failed\n"); return {}; }
             }
-            int w = 0, h = 0, c = 0;
-            unsigned char* px = stbi_load(path, &w, &h, &c, 3);
-            if (!px) return {};
+            int w = pw, h = ph;
+            unsigned char* loaded = nullptr;
+            const unsigned char* img = px;
+            if (!img) { int c = 0; loaded = stbi_load(path, &w, &h, &c, 3); img = loaded; }
+            if (!img) return {};
             int max_tok = st.params.vlm_max_tokens > 0 ? st.params.vlm_max_tokens : 2048;
-            const char* t = pix2struct_generate(ctx->p2s, px, w, h, max_tok);
+            const char* t = pix2struct_generate(ctx->p2s, img, w, h, max_tok);
             int nconf = 0;
             const float* conf = pix2struct_confidences(ctx->p2s, &nconf);
             auto out = wrap_fulltext(t, w, h, conf, nconf, pix2struct_mean_confidence(ctx->p2s));
             if (t) pix2struct_free_text(t);
-            stbi_image_free(px);
+            if (loaded) stbi_image_free(loaded);
             return out;
         }
         case engine::granite_vision: {
@@ -608,16 +625,18 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
                 if (!ctx->gv) { fprintf(stderr, "ocr_orchestrator: granite_vision load failed\n"); return {}; }
             }
             if (st.params.vlm_max_tokens > 0) granite_vision_set_max_tokens(ctx->gv, st.params.vlm_max_tokens);
-            int w = 0, h = 0, c = 0;
-            unsigned char* px = stbi_load(path, &w, &h, &c, 3);
-            if (!px) return {};
+            int w = pw, h = ph;
+            unsigned char* loaded = nullptr;
+            const unsigned char* img = px;
+            if (!img) { int c = 0; loaded = stbi_load(path, &w, &h, &c, 3); img = loaded; }
+            if (!img) return {};
             int len = 0;
             const char* prompt = st.params.vlm_prompt.empty() ? nullptr : st.params.vlm_prompt.c_str();
-            const char* t = granite_vision_recognize(ctx->gv, px, w, h, 3, prompt, &len);
+            const char* t = granite_vision_recognize(ctx->gv, img, w, h, 3, prompt, &len);
             int nconf = 0;
             const float* conf = granite_vision_confidences(ctx->gv, &nconf);
             auto out = wrap_fulltext(t, w, h, conf, nconf, granite_vision_mean_confidence(ctx->gv));
-            stbi_image_free(px);
+            if (loaded) stbi_image_free(loaded);
             return out;
         }
         case engine::lightonocr: {
@@ -627,15 +646,17 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
                 if (!ctx->locr) { fprintf(stderr, "ocr_orchestrator: lightonocr load failed\n"); return {}; }
             }
             if (st.params.vlm_max_tokens > 0) lightonocr_set_max_tokens(ctx->locr, st.params.vlm_max_tokens);
-            int w = 0, h = 0, c = 0;
-            unsigned char* px = stbi_load(path, &w, &h, &c, 3);
-            if (!px) return {};
+            int w = pw, h = ph;
+            unsigned char* loaded = nullptr;
+            const unsigned char* img = px;
+            if (!img) { int c = 0; loaded = stbi_load(path, &w, &h, &c, 3); img = loaded; }
+            if (!img) return {};
             int len = 0;
-            const char* t = lightonocr_recognize_raw(ctx->locr, px, w, h, 3, &len);
+            const char* t = lightonocr_recognize_raw(ctx->locr, img, w, h, 3, &len);
             int nconf = 0;
             const float* conf = lightonocr_confidences(ctx->locr, &nconf);
             auto out = wrap_fulltext(t, w, h, conf, nconf, lightonocr_mean_confidence(ctx->locr));
-            stbi_image_free(px);
+            if (loaded) stbi_image_free(loaded);
             return out;
         }
         default:
@@ -894,7 +915,13 @@ result run_file(context* ctx, const char* image_path) {
         std::string tmp = clean_to_temp(ctx, s.cleanup, effective_path);
         const char* ocr_path = tmp.empty() ? effective_path : tmp.c_str();
 
-        result r = assemble(run_engine(ctx, s, ocr_path), s.eng, st);
+        // Pre-load image once for VLM engines (avoids redundant stbi_load
+        // inside each engine case when multiple stages use the same image)
+        int img_w = 0, img_h = 0, img_c = 0;
+        unsigned char* img_px = stbi_load(ocr_path, &img_w, &img_h, &img_c, 3);
+        result r = assemble(run_engine(ctx, s, ocr_path, img_px, img_w, img_h),
+                            s.eng, st);
+        if (img_px) stbi_image_free(img_px);
         r.used_type    = st;
         r.stages_tried = tried;
 
