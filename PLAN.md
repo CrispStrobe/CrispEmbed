@@ -622,6 +622,17 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **bttr beam search: top-K selection** — O(V * beam_width) candidates
   created then sorted. Use partial_sort or nth_element for top-K.
 
+- [x] **bttr_ocr decoder alloc hoist + SIMD attention** — DONE (`4febeb6`).
+  Pre-allocated scratch buffers, core_cpu::dot_product in MHA, pre-alloc KV cache.
+- [x] **posformer_ocr decoder alloc hoist + SIMD attention** — DONE (`080c75e`).
+  Same pattern as bttr, including ARM-specific buffers (raw_scores, cov_bias).
+- [x] **hmer_ocr GRU decoder alloc hoist + SIMD** — DONE (`98e6daf`).
+  Pre-allocated scratch for GRU/Bahdanau attention, SIMD v() dot product,
+  SIMD enc_ua precomputation via core_cpu::linear_cpu.
+- [x] **math_ocr SIMD linear + scalar decoder allocs** — DONE (`ac3a362`).
+  Replaced scalar linear_cpu with core_cpu::linear_cpu (SIMD), SIMD dot_product
+  in mha_1q, pre-allocated scalar decoder scratch.
+
 - [ ] **Add beam search to math OCR runtimes** — only bttr_ocr has it.
   mixtex, math_ocr, hmer, posformer, ppformulanet, ppformulanet_l are
   greedy-only. Beam width=3 typically helps math OCR accuracy.
