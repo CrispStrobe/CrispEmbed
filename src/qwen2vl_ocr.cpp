@@ -983,6 +983,8 @@ bool load(context &ctx, const char *gguf_path, int n_threads, int verbosity,
             ctx.m.vhp.is_qwen2_vl ? "Qwen2-VL" : "Qwen2.5-VL");
   }
 
+  ctx.bench = (std::getenv("CRISPEMBED_QWEN2VL_BENCH") != nullptr);
+
   if (verbosity >= 1) {
     fprintf(stderr, "qwen2vl_ocr: loaded successfully\n");
   }
@@ -1081,6 +1083,8 @@ void free_(context &ctx) {
 
 bool encode_vision(context &ctx, const float *patches, int n_patches,
                    const int32_t *grid_thw, vision_result &out) {
+  const bool bench = ctx.bench;
+  auto t_vis_start = std::chrono::steady_clock::now();
   const bool dbg_t = qwen2vl_ocr::qwen_dbg();
   auto t_stage = qwen2vl_ocr::qwen_clock::now();
   auto stage_ms = [&](const char *name) {
@@ -1302,6 +1306,11 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
     return false;
   }
   stage_ms("graph_compute");
+  if (bench) {
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - t_vis_start).count();
+    fprintf(stderr, "[qwen2vl-bench] vision_encoder: %lldms\n", (long long)ms);
+  }
 
   // Read pre-merger output (normed ViT features)
   ggml_tensor *pre_merger = ggml_graph_get_tensor(gr.gf, "vis_pre_merger");
@@ -1602,6 +1611,11 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
     ggml_free(g2);
   }
   stage_ms("merger");
+  if (bench) {
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - t_vis_start).count();
+    fprintf(stderr, "[qwen2vl-bench] merger: %lldms\n", (long long)ms);
+  }
 
   // Note: per-vision-layer diff comparison is done earlier (right after the
   // vision graph compute), while gr.gf's buffers are still valid — the merger
@@ -2430,6 +2444,8 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
               const int32_t *grid_thw, // actual image grid (t,h,w) for mRoPE
               const int32_t *prompt_token_ids, int n_prompt_tokens,
               int max_new_tokens, generate_result &out) {
+  const bool bench = ctx.bench;
+  auto t_gen_total = std::chrono::steady_clock::now();
   const bool dbg_t = qwen2vl_ocr::qwen_dbg();
   auto t_stage = qwen2vl_ocr::qwen_clock::now();
   auto stage_ms = [&](const char *name) {
@@ -2478,6 +2494,11 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
     return false;
   }
   stage_ms("prefill");
+  if (bench) {
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - t_gen_total).count();
+    fprintf(stderr, "[qwen2vl-bench] prefill: %lldms\n", (long long)ms);
+  }
 
   // Extract per-layer KV cache from prefill graph outputs
   // k_out_N / v_out_N tensors: (kv_dim, n_prompt_tokens) each
@@ -2604,6 +2625,8 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
     return true;
 
   // ── Decode: single-token steps with KV cache ──
+  long long decode_total_ms = 0;
+  int decode_steps = 0;
   int n_kv = n_prompt_tokens; // grows each step
   const int rope_delta = prefill.rope_delta;
 
@@ -2623,6 +2646,7 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
   std::vector<float> logits_data(V);
 
   for (int gen = 1; gen < max_new_tokens; gen++) {
+    auto t_step = std::chrono::steady_clock::now();
     if (!kv_ok || !backend_kv_ok) {
       // Fallback: full recompute (no KV cache available).
       std::vector<int32_t> all_tokens(prompt_token_ids,
@@ -2744,8 +2768,22 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
       fprintf(stderr, "  gen[%d]: token=%d score=%.2f%s\n", gen, best_id,
               best_score, kv_ok ? " (cached)" : "");
     }
+    if (bench) {
+      auto step_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+          std::chrono::steady_clock::now() - t_step).count();
+      decode_total_ms += step_ms;
+      decode_steps++;
+      fprintf(stderr, "[qwen2vl-bench] decode_step[%d]: %lldms\n", gen, (long long)step_ms);
+    }
     if (best_id == eos_id)
       break;
+  }
+
+  if (bench) {
+    fprintf(stderr, "[qwen2vl-bench] decode_total: %lldms (%d steps)\n", decode_total_ms, decode_steps);
+    auto total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - t_gen_total).count();
+    fprintf(stderr, "[qwen2vl-bench] total: %lldms\n", (long long)total_ms);
   }
 
   return true;

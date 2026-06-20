@@ -11,6 +11,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -268,6 +269,7 @@ struct crispembed_context {
     // LoRA adapter name cache for list_lora API
     std::vector<std::string> lora_name_strings;
     std::vector<const char *> lora_name_ptrs;
+    bool bench = false;
 };
 
 // ---------------------------------------------------------------------------
@@ -1107,6 +1109,8 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
     const auto & hp = ctx->model.hparams;
     const int T = (int)tokens.ids.size();
     const int H = hp.n_embd;
+    const bool bench = ctx->bench;
+    auto t_encode_total = std::chrono::steady_clock::now();
 
     // Pad T to bucket for scheduler reservation reuse
     int T_bucket = bucket_seq_len(T);
@@ -1270,9 +1274,15 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
 
     // Compute (scheduler dispatches to GPU or CPU)
     debug_encode_stage("encode_tokens:compute", T, 1, 0);
+    auto t_compute = std::chrono::steady_clock::now();
     if (!sched_graph_compute(ctx->sched, gf, ctx->n_threads)) {
         fprintf(stderr, "crispembed: encoder compute failed\n");
         return {};
+    }
+    if (bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_compute).count();
+        fprintf(stderr, "[crispembed-bench] encode_tokens graph compute (T=%d): %.1f ms\n", T, ms);
     }
 
     // Dump per-layer intermediates for diff harness
@@ -1345,10 +1355,19 @@ static std::vector<float> encode_tokens(crispembed_context * ctx,
     }
 
     // L2 normalize
+    auto t_pool = std::chrono::steady_clock::now();
     float norm = 0;
     for (int h = 0; h < dim; h++) norm += pooled[h] * pooled[h];
     norm = sqrtf(std::max(norm, 1e-12f));
     for (int h = 0; h < dim; h++) pooled[h] /= norm;
+    if (bench) {
+        double ms_pool = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_pool).count();
+        double ms_total = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_encode_total).count();
+        fprintf(stderr, "[crispembed-bench] encode_tokens pool+normalize: %.2f ms\n", ms_pool);
+        fprintf(stderr, "[crispembed-bench] encode_tokens total: %.1f ms\n", ms_total);
+    }
 
     return pooled;
 }
@@ -1503,9 +1522,16 @@ static std::vector<float> run_encoder_raw(crispembed_context * ctx,
     }
 
     debug_encode_stage("run_encoder_raw:compute", T, 1, mode);
+    auto t_raw_compute = std::chrono::steady_clock::now();
     if (!sched_graph_compute(ctx->sched, gf, ctx->n_threads)) {
         fprintf(stderr, "crispembed: compute failed (mode=%d)\n", mode);
         return {};
+    }
+    if (ctx->bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_raw_compute).count();
+        fprintf(stderr, "[crispembed-bench] run_encoder_raw graph compute (T=%d, mode=%d): %.1f ms\n",
+                T, mode, ms);
     }
 
     const char * out_name = (mode == 1) ? "sparse_out"
@@ -1531,6 +1557,7 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
     ctx->n_threads = n_threads > 0 ? n_threads : 4;
     if (model_path) ctx->model_path_for_audio = model_path;
     ctx->dump_layers = (std::getenv("CRISPEMBED_DUMP_LAYERS") != nullptr);
+    ctx->bench       = (std::getenv("CRISPEMBED_CRISPEMBED_BENCH") != nullptr);
 
     // Detect model type from GGUF metadata.
     // Decoder models have either decoder.hidden_size (CrispEmbed-native) or
@@ -1741,6 +1768,7 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx,
                                             const char * text,
                                             int * out_n_dim) {
     if (!ctx || !text) return nullptr;
+    auto t_enc_start = std::chrono::steady_clock::now();
 
     // Prepend prefix if set (e.g. "query: ", "Represent this sentence: ")
     std::string prefixed;
@@ -1810,6 +1838,11 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx,
             ctx->last_output[i] /= norm;
     }
 
+    if (ctx->bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_enc_start).count();
+        fprintf(stderr, "[crispembed-bench] crispembed_encode total: %.1f ms\n", ms);
+    }
     if (out_n_dim) *out_n_dim = (int)ctx->last_output.size();
     return ctx->last_output.data();
 }
@@ -1866,6 +1899,7 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
                                                    int n_texts,
                                                    int * out_n_dim) {
     if (!ctx || !texts || n_texts <= 0) return nullptr;
+    auto t_batch_start = std::chrono::steady_clock::now();
 
     if (ctx->is_lfm2 && ctx->lfm2_ctx) {
         const int dim = lfm2_embed_n_embd(ctx->lfm2_ctx);
@@ -1966,6 +2000,12 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx,
             memcpy(ctx->last_output.data() + i * out_dim, vec.data(), d * sizeof(float));
         }
     }
+    if (ctx->bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_batch_start).count();
+        fprintf(stderr, "[crispembed-bench] crispembed_encode_batch total (%d texts): %.1f ms\n",
+                n_texts, ms);
+    }
     if (out_n_dim) *out_n_dim = out_dim;
     return ctx->last_output.data();
 }
@@ -1995,6 +2035,7 @@ extern "C" int crispembed_encode_sparse(crispembed_context * ctx,
                                          const int32_t    ** out_indices,
                                          const float      ** out_values) {
     if (!ctx || !text || !ctx->model.has_sparse || ctx->is_decoder) return 0;
+    auto t_sparse_start = std::chrono::steady_clock::now();
 
     embed_tokens tokens;
     if (ctx->use_sentencepiece) tokens = ctx->sp_tokenizer.encode(text);
@@ -2080,6 +2121,11 @@ extern "C" int crispembed_encode_sparse(crispembed_context * ctx,
 
         if (out_indices) *out_indices = ctx->last_sparse_indices.data();
         if (out_values) *out_values = ctx->last_sparse_values.data();
+        if (ctx->bench) {
+            double ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t_sparse_start).count();
+            fprintf(stderr, "[crispembed-bench] crispembed_encode_sparse total: %.1f ms\n", ms);
+        }
         return (int)ctx->last_sparse_indices.size();
     }
 
@@ -2131,6 +2177,11 @@ extern "C" int crispembed_encode_sparse(crispembed_context * ctx,
     int n = (int)ctx->last_sparse_indices.size();
     if (out_indices) *out_indices = ctx->last_sparse_indices.data();
     if (out_values)  *out_values  = ctx->last_sparse_values.data();
+    if (ctx->bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_sparse_start).count();
+        fprintf(stderr, "[crispembed-bench] crispembed_encode_sparse total: %.1f ms\n", ms);
+    }
     return n;
 }
 
@@ -2144,6 +2195,7 @@ extern "C" const float * crispembed_encode_multivec(crispembed_context * ctx,
                                                       int                * out_n_tokens,
                                                       int                * out_dim) {
     if (!ctx || !text || !ctx->model.has_colbert || ctx->is_decoder) return nullptr;
+    auto t_multivec_start = std::chrono::steady_clock::now();
 
     // LFM2 ColBERT path — uses its own tokenizer + encoder
     if (ctx->is_lfm2 && ctx->lfm2_ctx) {
@@ -2157,6 +2209,11 @@ extern "C" const float * crispembed_encode_multivec(crispembed_context * ctx,
         ctx->last_multivec_dim = cd;
         if (out_n_tokens) *out_n_tokens = n;
         if (out_dim) *out_dim = cd;
+        if (ctx->bench) {
+            double ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t_multivec_start).count();
+            fprintf(stderr, "[crispembed-bench] crispembed_encode_multivec total: %.1f ms\n", ms);
+        }
         return ctx->last_multivec.data();
     }
 
@@ -2194,6 +2251,11 @@ extern "C" const float * crispembed_encode_multivec(crispembed_context * ctx,
 
     if (out_n_tokens) *out_n_tokens = raw_T;
     if (out_dim)      *out_dim      = dim;
+    if (ctx->bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_multivec_start).count();
+        fprintf(stderr, "[crispembed-bench] crispembed_encode_multivec total: %.1f ms\n", ms);
+    }
     return ctx->last_multivec.data();
 }
 
@@ -2212,6 +2274,7 @@ extern "C" const float * crispembed_encode_tokens(crispembed_context * ctx,
                                                     int                * out_n_tokens,
                                                     int                * out_dim) {
     if (!ctx || !text || ctx->is_decoder) return nullptr;
+    auto t_tokens_start = std::chrono::steady_clock::now();
 
     // Apply the configured prefix (e.g. "query: ") for consistency with
     // the dense encode path.
@@ -2252,6 +2315,11 @@ extern "C" const float * crispembed_encode_tokens(crispembed_context * ctx,
 
     if (out_n_tokens) *out_n_tokens = raw_T;
     if (out_dim)      *out_dim      = dim;
+    if (ctx->bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_tokens_start).count();
+        fprintf(stderr, "[crispembed-bench] crispembed_encode_tokens total: %.1f ms\n", ms);
+    }
     return ctx->last_token_embeddings.data();
 }
 
@@ -2326,6 +2394,7 @@ extern "C" float crispembed_rerank(crispembed_context * ctx,
                                     const char         * document) {
     if (!ctx || !query || !document || !ctx->model.is_reranker || ctx->is_decoder)
         return 0.0f;
+    auto t_rerank_start = std::chrono::steady_clock::now();
 
     embed_tokens tokens;
     if (ctx->use_sentencepiece)
@@ -2410,6 +2479,11 @@ extern "C" float crispembed_rerank(crispembed_context * ctx,
             ggml_backend_tensor_get(ctx->model.classifier_b, &bias, 0, sizeof(float));
             score += bias;
         }
+    }
+    if (ctx->bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_rerank_start).count();
+        fprintf(stderr, "[crispembed-bench] crispembed_rerank total: %.1f ms\n", ms);
     }
     return score;
 }

@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #ifndef M_PI
@@ -107,6 +108,8 @@ struct posformer_ocr_context {
     std::vector<float> encoder_output;
     int n_enc_pos;
     int enc_h, enc_w;  // spatial dims of encoder output (needed for ARM)
+
+    bool bench;
 };
 
 // ---------------------------------------------------------------------------
@@ -356,6 +359,8 @@ posformer_ocr_context * posformer_ocr_init(const char * model_path, int n_thread
         return nullptr;
     }
     if (!map_tensors(ctx.get())) return nullptr;
+
+    ctx->bench = (std::getenv("CRISPEMBED_POSFORMER_BENCH") != nullptr);
 
     return ctx.release();
 }
@@ -883,6 +888,10 @@ const char * posformer_ocr_recognize(
 ) {
     if (!ctx || !pixels || width <= 0 || height <= 0) return nullptr;
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
+    auto t0 = std::chrono::steady_clock::now();
     const int n = width * height;
     float mean = 0;
     for (int i = 0; i < n; i++) mean += pixels[i];
@@ -903,9 +912,21 @@ const char * posformer_ocr_recognize(
         input = scaled.data();
         fprintf(stderr, "posformer_ocr: scaled %dx%d → %dx%d\n", width, height, w, h);
     }
+    if (bench) fprintf(stderr, "[posformer-bench] preprocess: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
+    t0 = std::chrono::steady_clock::now();
     run_encoder(ctx, input, w, h);
+    if (bench) fprintf(stderr, "[posformer-bench] encoder: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+
+    t0 = std::chrono::steady_clock::now();
     ctx->result_buf = greedy_decode(ctx);
+    if (bench) fprintf(stderr, "[posformer-bench] decoder: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+
+    if (bench) fprintf(stderr, "[posformer-bench] total: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();

@@ -14,6 +14,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -230,6 +231,7 @@ struct instructir_context {
     ggml_backend_buffer_t gguf_buf;
 
     int n_tasks, emb_dim;
+    bool bench;
     ggml_tensor * task_embeddings; // [n_tasks, 256]
 
     ggml_tensor * intro_w, * intro_b;
@@ -349,6 +351,7 @@ instructir_context * instructir_init(const char * model_path, int n_threads) {
         load_nafblock(wl, pfx, ctx->middle[i]);
     }
 
+    ctx->bench = (std::getenv("CRISPEMBED_INSTRUCTIR_BENCH") != nullptr);
     return ctx;
 }
 
@@ -371,6 +374,10 @@ int instructir_process_float(instructir_context * ctx, int task,
     if (!ctx || !input_chw || !output_chw || task < 0 || task >= ctx->n_tasks)
         return -1;
 
+    const bool bench = ctx->bench;
+    using ms_f = std::chrono::duration<double, std::milli>;
+    auto t_total = std::chrono::steady_clock::now();
+
     int H = height, W = width;
     std::vector<float> dq1, dq2;
 
@@ -389,6 +396,7 @@ int instructir_process_float(instructir_context * ctx, int task,
     int cur_h = H, cur_w = W;
     int channels[] = {32, 64, 128, 256};
     for (int lvl = 0; lvl < 4; lvl++) {
+        auto t_enc = std::chrono::steady_clock::now();
         for (int i = 0; i < ctx->enc_n_blocks[lvl]; i++) {
             nafblock_forward(x.data(), ch, cur_h, cur_w, ctx->enc[lvl].blocks[i], dq1, dq2);
         }
@@ -404,14 +412,26 @@ int instructir_process_float(instructir_context * ctx, int task,
                next_ch, 2, 2, 0, 2, 1, ds.data());
         x = std::move(ds);
         ch = next_ch; cur_h = nh; cur_w = nw;
+        if (bench) {
+            auto t_enc_end = std::chrono::steady_clock::now();
+            fprintf(stderr, "[instructir-bench] enc level %d: %.1f ms\n",
+                    lvl, ms_f(t_enc_end - t_enc).count());
+        }
     }
 
     // Middle
+    auto t_mid = std::chrono::steady_clock::now();
     for (int i = 0; i < 4; i++)
         nafblock_forward(x.data(), ch, cur_h, cur_w, ctx->middle[i], dq1, dq2);
+    if (bench) {
+        auto t_mid_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[instructir-bench] middle: %.1f ms\n",
+                ms_f(t_mid_end - t_mid).count());
+    }
 
     // Decoder
     for (int lvl = 0; lvl < 4; lvl++) {
+        auto t_dec = std::chrono::steady_clock::now();
         // Upsample: Conv1x1(C→4C') + PixelShuffle(2)
         int next_ch = ch / 2;
         int up_ch = next_ch * 4; // after conv1x1, before shuffle
@@ -432,6 +452,11 @@ int instructir_process_float(instructir_context * ctx, int task,
             nafblock_forward(x.data(), ch, cur_h, cur_w, ctx->dec[lvl].blocks[i], dq1, dq2);
         icb_forward(x.data(), ch, cur_h, cur_w, text_embd, ctx->emb_dim,
                     ctx->dec[lvl].cond, dq1, dq2);
+        if (bench) {
+            auto t_dec_end = std::chrono::steady_clock::now();
+            fprintf(stderr, "[instructir-bench] dec level %d: %.1f ms\n",
+                    lvl, ms_f(t_dec_end - t_dec).count());
+        }
     }
 
     // Ending conv + global residual
@@ -440,6 +465,11 @@ int instructir_process_float(instructir_context * ctx, int task,
            3, 3, 3, 1, 1, 1, output_chw);
     for (int i = 0; i < 3 * H * W; i++) output_chw[i] += input_chw[i];
 
+    if (bench) {
+        auto t_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[instructir-bench] total: %.1f ms\n",
+                ms_f(t_end - t_total).count());
+    }
     return 0;
 }
 

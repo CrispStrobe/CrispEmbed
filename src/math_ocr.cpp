@@ -101,6 +101,8 @@ struct math_ocr_context {
     int n_enc_tokens = 0;
     std::vector<std::vector<float>> cross_k_cache; // per layer [n_enc * D]
     std::vector<std::vector<float>> cross_v_cache;
+
+    bool bench = false;
 };
 
 // ---------------------------------------------------------------------------
@@ -1022,6 +1024,8 @@ math_ocr_context* math_ocr_init(const char* model_path, int n_threads) {
     for (int i = 0; i < hp.dec_layers; i++) if (ctx->dec_layers[i].self_q_w) md++;
     fprintf(stderr, "math_ocr: mapped %d/%d enc, %d/%d dec\n", me, hp.enc_layers, md, hp.dec_layers);
 
+    ctx->bench = (std::getenv("CRISPEMBED_MATH_OCR_BENCH") != nullptr);
+
     fprintf(stderr, "math_ocr: init complete, returning context\n");
     return ctx.release();
 }
@@ -1044,8 +1048,12 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
     if (!ctx || !pixels) return nullptr;
     const int S = ctx->hparams.image_size;
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     fprintf(stderr, "math_ocr: image_size S=%d, allocating rgb(%d)\n", S, 3*S*S);
     // Resize + expand gray→3ch CHW + normalize (mean=0.5, std=0.5)
+    auto tb0 = std::chrono::steady_clock::now();
     std::vector<float> rgb(3 * S * S);
     fprintf(stderr, "math_ocr: rgb allocated\n");
     float sx = (float)width / S, sy_f = (float)height / S;
@@ -1058,10 +1066,15 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
             rgb[1*S*S + y*S + x] = v;
             rgb[2*S*S + y*S + x] = v;
         }
+    if (bench) fprintf(stderr, "[math_ocr-bench] preprocess: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-tb0).count());
 
     // Encoder (ggml graph — fast)
     fprintf(stderr, "math_ocr: about to run encoder S=%d\n", S);
+    tb0 = std::chrono::steady_clock::now();
     run_encoder(ctx, rgb.data(), S, S);
+    if (bench) fprintf(stderr, "[math_ocr-bench] encoder: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-tb0).count());
     fprintf(stderr, "math_ocr: encoder done, n_enc=%d\n", ctx->n_enc_tokens);
 
     // Precompute cross-attention K/V via ggml graph (SIMD, fast)
@@ -1155,6 +1168,7 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
     double dec_ms = std::chrono::duration<double, std::milli>(dec_t1 - dec_t0).count();
     fprintf(stderr, "math_ocr: decoder done in %.1f ms (%zu tokens)\n",
             dec_ms, tokens.size());
+    if (bench) fprintf(stderr, "[math_ocr-bench] decoder: %.1f ms\n", dec_ms);
 
     ctx->result_buf.clear();
     for (size_t i = 1; i < tokens.size(); i++) {
@@ -1188,6 +1202,9 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
         ctx->result_buf.erase(ctx->result_buf.begin());
     while (!ctx->result_buf.empty() && ctx->result_buf.back() == ' ')
         ctx->result_buf.pop_back();
+
+    if (bench) fprintf(stderr, "[math_ocr-bench] total: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();

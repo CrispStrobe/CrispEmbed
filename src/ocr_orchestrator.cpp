@@ -47,6 +47,7 @@
 #include "../ggml/examples/stb_image_write.h"
 
 #include <atomic>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -98,6 +99,7 @@ struct context {
     std::string              detected_lang;      // cached LID result
     float                    lang_confidence = 0.0f;
     std::string              tess_resolved_model; // LID-resolved tesseract model path
+    bool                     bench = false;
 #if CRISPEMBED_HAS_TRUECASE
     truecaser_lstm_context*  tc     = nullptr;   // truecaser (BiLSTM)
 #endif
@@ -765,6 +767,7 @@ bool load(context** out, const config& cfg, int n_threads) {
     auto* ctx       = new context();
     ctx->cfg        = cfg;
     ctx->n_threads  = n_threads;
+    ctx->bench      = (std::getenv("CRISPEMBED_OCR_ORCH_BENCH") != nullptr);
 #if CRISPEMBED_HAS_LID
     if (!cfg.lid_model.empty()) {
         ctx->lid = text_lid_init_from_file(cfg.lid_model.c_str(), n_threads);
@@ -843,9 +846,19 @@ result run_file(context* ctx, const char* image_path) {
     result best;
     if (!ctx || !image_path) return best;
     bool verbose = ctx->cfg.verbose;
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
 
+    // Classify source type
+    auto t_classify = std::chrono::steady_clock::now();
     const source_type st =
         ctx->cfg.router ? classify_file(image_path) : source_type::auto_detect;
+    if (bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_classify).count();
+        fprintf(stderr, "[ocr_orch-bench] classify: %.1f ms (%s)\n",
+                ms, source_type_name(st));
+    }
     if (verbose)
         fprintf(stderr, "ocr_orchestrator: source_type=%s for %s\n",
                 source_type_name(st), image_path);
@@ -858,7 +871,13 @@ result run_file(context* ctx, const char* image_path) {
     }
 
     // Text super-resolution: upscale low-DPI images before OCR
+    auto t_sr = std::chrono::steady_clock::now();
     std::string sr_path = maybe_sr(ctx, image_path);
+    if (bench && !sr_path.empty()) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_sr).count();
+        fprintf(stderr, "[ocr_orch-bench] SR: %.1f ms\n", ms);
+    }
     const char* effective_path = sr_path.empty() ? image_path : sr_path.c_str();
 
     int tried = 0;
@@ -871,6 +890,7 @@ result run_file(context* ctx, const char* image_path) {
                     tried, engine_name(s.eng),
                     s.cleanup.enabled ? "on" : "off");
 
+        auto t_stage = std::chrono::steady_clock::now();
         std::string tmp = clean_to_temp(ctx, s.cleanup, effective_path);
         const char* ocr_path = tmp.empty() ? effective_path : tmp.c_str();
 
@@ -881,6 +901,12 @@ result run_file(context* ctx, const char* image_path) {
         if (!tmp.empty()) std::remove(tmp.c_str());
 
         bool passed = passes_gate(r, s.accept);
+        if (bench) {
+            double ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t_stage).count();
+            fprintf(stderr, "[ocr_orch-bench] stage %d (%s): %.1f ms, gate=%s\n",
+                    tried, engine_name(s.eng), ms, passed ? "PASS" : "FAIL");
+        }
         if (verbose)
             fprintf(stderr, "ocr_orchestrator: stage %d → %d chars, conf=%.2f, gate=%s\n",
                     tried, (int)r.full_text.size(), r.mean_confidence,
@@ -890,6 +916,7 @@ result run_file(context* ctx, const char* image_path) {
             if (!sr_path.empty()) std::remove(sr_path.c_str());
 #if CRISPEMBED_HAS_LID
             // Run LID on the recognized text to detect language.
+            auto t_lid = std::chrono::steady_clock::now();
             if (ctx->lid && !r.full_text.empty()) {
                 float conf = 0.0f;
                 const char* lang = text_lid_predict(ctx->lid, r.full_text.c_str(), &conf);
@@ -901,9 +928,23 @@ result run_file(context* ctx, const char* image_path) {
                     if (verbose)
                         fprintf(stderr, "ocr_orchestrator: LID → %s (%.2f)\n", lang, conf);
                 }
+                if (bench) {
+                    double ms = std::chrono::duration<double, std::milli>(
+                        std::chrono::steady_clock::now() - t_lid).count();
+                    fprintf(stderr, "[ocr_orch-bench] LID: %.1f ms\n", ms);
+                }
             }
 #endif
+            auto t_post = std::chrono::steady_clock::now();
             postprocess(ctx, r);
+            if (bench) {
+                double ms = std::chrono::duration<double, std::milli>(
+                    std::chrono::steady_clock::now() - t_post).count();
+                double total_ms = std::chrono::duration<double, std::milli>(
+                    std::chrono::steady_clock::now() - t_total).count();
+                fprintf(stderr, "[ocr_orch-bench] postprocess: %.1f ms\n", ms);
+                fprintf(stderr, "[ocr_orch-bench] total: %.1f ms\n", total_ms);
+            }
             return r;
         }
         if (r.full_text.size() > best.full_text.size()) best = std::move(r);
@@ -917,15 +958,30 @@ result run_file(context* ctx, const char* image_path) {
     best.stages_tried = tried;
 #if CRISPEMBED_HAS_LID
     if (ctx->lid && !best.full_text.empty()) {
+        auto t_lid = std::chrono::steady_clock::now();
         float conf = 0.0f;
         const char* lang = text_lid_predict(ctx->lid, best.full_text.c_str(), &conf);
         if (lang && conf > 0.3f) {
             best.detected_lang = lang;
             best.lang_confidence = conf;
         }
+        if (bench) {
+            double ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t_lid).count();
+            fprintf(stderr, "[ocr_orch-bench] LID: %.1f ms\n", ms);
+        }
     }
 #endif
+    auto t_post = std::chrono::steady_clock::now();
     postprocess(ctx, best);
+    if (bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_post).count();
+        double total_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_total).count();
+        fprintf(stderr, "[ocr_orch-bench] postprocess: %.1f ms\n", ms);
+        fprintf(stderr, "[ocr_orch-bench] total: %.1f ms\n", total_ms);
+    }
     return best;
 }
 

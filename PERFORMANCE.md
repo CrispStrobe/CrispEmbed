@@ -288,3 +288,34 @@ optimized model: QKV fusion + flash attention + graph caching). On 12-layer mode
 operator fusion) gives it a slight edge. On Arctic-M batch, they're tied.
 
 **Cosine similarity**: CrispEmbed vs FastEmbed cos=0.999999-1.000000 on all models.
+
+## Per-Step Benchmark Instrumentation
+
+Every runtime in CrispEmbed has opt-in per-step timing controlled by environment
+variables. Set `CRISPEMBED_<MODULE>_BENCH=1` to get `[module-bench]` lines on
+stderr showing millisecond timing for each processing phase (preprocess, encoder,
+decoder, postprocess, per-tile, per-decode-step, total).
+
+Zero overhead when unset — the flag is read once at init and stored as a bool.
+
+| Category | Env vars |
+|---|---|
+| Embedding | `CRISPEMBED_CRISPEMBED_BENCH`, `VIT_EMBED`, `CNN_EMBED`, `CLIP_TEXT`, `LFM2_EMBED`, `DECODER_EMBED` |
+| OCR detect | `CRISPEMBED_OCR_DETECT_BENCH`, `LAYOUT_DETECT`, `SURYA_DET`, `CC_DETECT` |
+| OCR recognize | `CRISPEMBED_PARSEQ_BENCH`, `BTTR`, `HMER`, `POSFORMER`, `TESSERACT`, `PIX2STRUCT`, `MIXTEX`, `MATH_OCR`, `PPFN`, `PPFN_L` |
+| VLM/LLM OCR | `CRISPEMBED_QWEN2VL_BENCH`, `GOT_OCR`, `GLM_OCR`, `GRANITE_OCR`, `INTERNVL2`, `DEEPSEEK_OCR2`, `LIGHTONOCR`, `SMOLDOCLING` |
+| Super-resolution | `CRISPEMBED_ESRGAN_BENCH`, `DAT_SR`, `HAT_SR`, `PAN_SR`, `SAFMN_SR`, `SWINIR_SR`, `TBSRN_SR`, `TEXT_SR` |
+| Denoise/restore | `CRISPEMBED_NAFNET_BENCH`, `SCUNET`, `RESTORMER`, `INSTRUCTIR`, `ADAIR` |
+| NER/KIE | `CRISPEMBED_GLINER_BENCH`, `BERT_NER`, `LILT_KIE` |
+| Pipeline | `CRISPEMBED_OCR_PIPELINE_BENCH`, `OCR_ORCH`, `KIE_PIPELINE`, `SCAN_CLEANUP`, `TABLE_PARSE` |
+| Misc | `CRISPEMBED_PCS_BENCH`, `FIREREDPUNC`, `BIDIRLM_AUDIO`, `BIDIRLM_VISION`, `FACE_ALIGN`, `DEWARP`, `TPS_LOCNET` |
+
+Example:
+```
+CRISPEMBED_PARSEQ_BENCH=1 ./crispembed-cli ocr image.png
+# [parseq-bench] preprocess: 0.3 ms
+# [parseq-bench] encoder graph (12 layers): 4.2 ms
+# [parseq-bench] decoder CA K/V precompute: 0.1 ms
+# [parseq-bench] decoder total (5 steps): 1.8 ms
+# [parseq-bench] total: 6.4 ms
+```

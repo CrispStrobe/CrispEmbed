@@ -77,6 +77,7 @@ struct context {
 
     int n_threads = 4;
     int verbosity = 1;
+    bool bench = false;
 };
 
 // Load the vision tower from the same GGUF file the rest of the BidirLM

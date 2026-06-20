@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -215,6 +216,7 @@ struct dat_sr_context {
 
     float mean[3];
     float img_range;
+    bool bench;
 };
 
 static const float * get_w(dat_sr_context * ctx, const std::string & name) {
@@ -1258,6 +1260,7 @@ dat_sr_context * dat_sr_init(const char * model_path, int n_threads) {
             ctx->embed_dim, ctx->num_heads, total_blocks,
             ctx->split_size[0], ctx->split_size[1],
             ctx->upscale, ctx->resi_connection.c_str(), ctx->upsampler.c_str());
+    ctx->bench = (std::getenv("CRISPEMBED_DAT_SR_BENCH") != nullptr);
     return ctx;
 }
 
@@ -1266,6 +1269,10 @@ int dat_sr_process(dat_sr_context * ctx,
                     int tile_w, int tile_h,
                     uint8_t ** out, int * out_w, int * out_h) {
     if (!ctx || !pixels || w <= 0 || h <= 0) return -1;
+
+    const bool bench = ctx->bench;
+    using ms_f = std::chrono::duration<double, std::milli>;
+    auto t_total = std::chrono::steady_clock::now();
 
     int r = ctx->upscale;
     int oW = w * r, oH = h * r;
@@ -1287,6 +1294,7 @@ int dat_sr_process(dat_sr_context * ctx,
     int pad_h = ((h + max_sp - 1) / max_sp) * max_sp;
 
     // Convert uint8 RGB to float CHW [0,1] with padding
+    auto t_pre = std::chrono::steady_clock::now();
     std::vector<float> input(3 * pad_h * pad_w, 0.0f);
     for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++)
@@ -1311,6 +1319,11 @@ int dat_sr_process(dat_sr_context * ctx,
             }
         }
     }
+    if (bench) {
+        auto t_pre_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[dat_sr-bench] preprocess: %.1f ms\n",
+                ms_f(t_pre_end - t_pre).count());
+    }
 
     int pad_oW = pad_w * r, pad_oH = pad_h * r;
     std::vector<float> accum(3 * pad_oH * pad_oW, 0.0f);
@@ -1321,11 +1334,17 @@ int dat_sr_process(dat_sr_context * ctx,
 
     if (single_tile) {
         fprintf(stderr, "dat_sr: %dx%d → %dx%d (%dx), single pass\n", w, h, oW, oH, r);
+        auto t_tile = std::chrono::steady_clock::now();
         std::vector<float> full_out(3 * pad_oH * pad_oW);
         dat_forward(ctx, input.data(), pad_h, pad_w, full_out.data());
         // Copy to accum, weight=1
         accum = std::move(full_out);
         std::fill(weight.begin(), weight.end(), 1.0f);
+        if (bench) {
+            auto t_tile_end = std::chrono::steady_clock::now();
+            fprintf(stderr, "[dat_sr-bench] tile 0,0: %.1f ms\n",
+                    ms_f(t_tile_end - t_tile).count());
+        }
     } else {
         int n_tiles_x = (pad_w + step_w - 1) / step_w;
         int n_tiles_y = (pad_h + step_h - 1) / step_h;
@@ -1350,7 +1369,13 @@ int dat_sr_process(dat_sr_context * ctx,
 
                 int otw = tw * r, oth = th * r;
                 std::vector<float> tile_out(3 * oth * otw);
+                auto t_tile = std::chrono::steady_clock::now();
                 dat_forward(ctx, tile_in.data(), th, tw, tile_out.data());
+                if (bench) {
+                    auto t_tile_end = std::chrono::steady_clock::now();
+                    fprintf(stderr, "[dat_sr-bench] tile %d,%d: %.1f ms\n",
+                            ty, tx, ms_f(t_tile_end - t_tile).count());
+                }
 
                 int ox0 = x0 * r, oy0 = y0 * r;
                 for (int y = 0; y < oth; y++) {
@@ -1369,6 +1394,7 @@ int dat_sr_process(dat_sr_context * ctx,
     }
 
     // Normalize and convert to uint8
+    auto t_post = std::chrono::steady_clock::now();
     *out = (uint8_t *)malloc(oW * oH * 3);
     if (!*out) return -1;
     for (int y = 0; y < oH; y++)
@@ -1383,6 +1409,13 @@ int dat_sr_process(dat_sr_context * ctx,
 
     *out_w = oW;
     *out_h = oH;
+    if (bench) {
+        auto t_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[dat_sr-bench] postprocess: %.1f ms\n",
+                ms_f(t_end - t_post).count());
+        fprintf(stderr, "[dat_sr-bench] total: %.1f ms\n",
+                ms_f(t_end - t_total).count());
+    }
     return 0;
 }
 

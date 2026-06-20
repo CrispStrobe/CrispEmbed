@@ -14,6 +14,7 @@
 #include "ggml-backend.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -130,6 +131,8 @@ struct pix2struct_context {
 
     // Per-token confidence (softmax probability of greedy-selected token)
     std::vector<float> char_confidences;
+
+    bool bench;
 };
 
 pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
@@ -215,6 +218,7 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
     }
 
     ctx->enc_cache_n = 0;
+    ctx->bench = (std::getenv("CRISPEMBED_PIX2STRUCT_BENCH") != nullptr);
     return ctx;
 }
 
@@ -659,16 +663,32 @@ const char * pix2struct_generate(pix2struct_context * ctx,
                                  int max_tokens) {
     if (!ctx || !image || width <= 0 || height <= 0) return nullptr;
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
+    auto t0 = std::chrono::steady_clock::now();
     int n_patches = 0;
     auto patches = image_to_patches(image, width, height,
                                      ctx->max_patches, ctx->patch_size, &n_patches);
     if (n_patches <= 0) return nullptr;
+    if (bench) fprintf(stderr, "[pix2struct-bench] preprocess: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
+    t0 = std::chrono::steady_clock::now();
     int out_dim = 0;
     pix2struct_encode_patches(ctx, patches.data(), n_patches, &out_dim);
+    if (bench) fprintf(stderr, "[pix2struct-bench] encoder: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
+    t0 = std::chrono::steady_clock::now();
     static std::string result;
     result = greedy_decode(ctx, max_tokens > 0 ? max_tokens : 256);
+    if (bench) fprintf(stderr, "[pix2struct-bench] decoder: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+
+    if (bench) fprintf(stderr, "[pix2struct-bench] total: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
+
     return result.c_str();
 }
 

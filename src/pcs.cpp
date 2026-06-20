@@ -20,6 +20,7 @@
 #include "gguf.h"
 
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -184,6 +185,7 @@ struct pcs_context {
     ggml_backend_buffer_t buf = nullptr;
     ggml_context* w_ctx = nullptr;
     ggml_backend_sched_t sched = nullptr;
+    bool bench = false;
 };
 
 // ---------------------------------------------------------------------------
@@ -311,6 +313,10 @@ struct PCSResult {
 };
 
 static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
+    const bool bench = ctx.bench;
+    auto t_total = std::chrono::steady_clock::now();
+    auto t_pre0  = std::chrono::steady_clock::now();
+
     const int N = (int)token_ids.size();
     const int seq_len = N + 2; // CLS + tokens + SEP
     const int d = ctx.d_model;
@@ -448,9 +454,24 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
         ggml_backend_tensor_set(type_ids, types.data(), 0, seq_len * sizeof(int32_t));
     }
 
-    ggml_backend_sched_graph_compute(ctx.sched, gf);
+    if (bench) {
+        auto t_pre1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[pcs-bench] preprocess: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_pre1 - t_pre0).count());
+    }
+
+    {
+        auto t_comp0 = std::chrono::steady_clock::now();
+        ggml_backend_sched_graph_compute(ctx.sched, gf);
+        if (bench) {
+            auto t_comp1 = std::chrono::steady_clock::now();
+            fprintf(stderr, "[pcs-bench] graph compute: %.3f ms\n",
+                    std::chrono::duration<double, std::milli>(t_comp1 - t_comp0).count());
+        }
+    }
 
     // Read outputs
+    auto t_post0 = std::chrono::steady_clock::now();
     PCSResult result;
     result.post_preds.resize(N);
     result.pre_preds.resize(N);
@@ -591,6 +612,16 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
     }
 
     ggml_free(ctx0);
+
+    if (bench) {
+        auto t_post1 = std::chrono::steady_clock::now();
+        auto t_total1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[pcs-bench] postprocess: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_post1 - t_post0).count());
+        fprintf(stderr, "[pcs-bench] total: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
+    }
+
     return result;
 }
 
@@ -600,6 +631,7 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
 
 pcs_context* pcs_init(const char* model_path) {
     auto* ctx = new pcs_context();
+    ctx->bench = (std::getenv("CRISPEMBED_PCS_BENCH") != nullptr);
     if (!pcs_load(*ctx, model_path)) {
         delete ctx;
         return nullptr;

@@ -161,6 +161,7 @@ struct context {
     ggml_backend_sched_t sched = nullptr;
     core_gguf::WeightLoad wl;
     int n_threads = 4;
+    bool bench = false;
 };
 
 // ---------------------------------------------------------------------------
@@ -171,6 +172,7 @@ bool load(context** out, const char* path, int n_threads) {
     auto* ctx = new context();
     *out = ctx;
     ctx->n_threads = n_threads;
+    ctx->bench = (std::getenv("CRISPEMBED_LAYOUT_DETECT_BENCH") != nullptr);
 
     fprintf(stderr, "layout_detect: loading %s\n", path);
 
@@ -795,6 +797,9 @@ std::vector<region> detect(context* ctx, const float* pixels,
                             float score_threshold) {
     if (!ctx || !pixels) return {};
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     const int H = ctx->input_h, W = ctx->input_w;  // 640
     const int D = 256, N_heads = 8, N_queries = 300;
     const int N_levels = 3, N_points = 4;
@@ -866,6 +871,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     // Compute
     fprintf(stderr, "layout_detect: computing backbone + encoder...\n");
+    auto t_phase1 = std::chrono::steady_clock::now();
     ggml_backend_graph_compute(ctx->backend, gf);
 
     // Per-block backbone comparison
@@ -961,8 +967,14 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     ggml_gallocr_free(alloc);
     ggml_free(g);
+    if (bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_phase1).count();
+        fprintf(stderr, "[layout_detect-bench] Phase 1 backbone+encoder: %.1f ms\n", ms);
+    }
 
     // --- Phase 2: Decoder (CPU-side) ---
+    auto t_phase2 = std::chrono::steady_clock::now();
 
     auto cpu_linear = [](const float* x, float* y, int in_d, int out_d, int N,
                           ggml_tensor* w_t, ggml_tensor* b_t) {
@@ -1745,7 +1757,14 @@ std::vector<region> detect(context* ctx, const float* pixels,
         }
     }
 
+    if (bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_phase2).count();
+        fprintf(stderr, "[layout_detect-bench] Phase 2 decoder: %.1f ms\n", ms);
+    }
+
     // --- Phase 3: Detection heads ---
+    auto t_phase3 = std::chrono::steady_clock::now();
     // Class scores from final decoder output
     std::vector<float> class_scores(ctx->num_classes * N_queries);
     cpu_linear(queries.data(), class_scores.data(), D, ctx->num_classes, N_queries,
@@ -1794,6 +1813,14 @@ std::vector<region> detect(context* ctx, const float* pixels,
         float max_score = 0;
         for (auto& v : class_scores) max_score = std::max(max_score, v);
         fprintf(stderr, "layout_detect: max class score after sigmoid: %.6f\n", max_score);
+    }
+    if (bench) {
+        double ms3 = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_phase3).count();
+        double total_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_total).count();
+        fprintf(stderr, "[layout_detect-bench] Phase 3 heads: %.1f ms\n", ms3);
+        fprintf(stderr, "[layout_detect-bench] total: %.1f ms\n", total_ms);
     }
     fprintf(stderr, "layout_detect: %zu detections (score > %.2f)\n",
             results.size(), score_threshold);

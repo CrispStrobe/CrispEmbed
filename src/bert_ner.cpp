@@ -7,6 +7,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -28,12 +29,15 @@ struct context {
 
     // Last result storage
     std::vector<entity> last_entities;
+
+    bool bench = false;
 };
 
 bool load(context** out, const char* model_path, int n_threads) {
     if (!out || !model_path) return false;
 
     auto* ctx = new context;
+    ctx->bench = (std::getenv("CRISPEMBED_BERT_NER_BENCH") != nullptr);
 
     // Load encoder via existing CrispEmbed API.
     ctx->enc = crispembed_init(model_path, n_threads);
@@ -145,6 +149,9 @@ std::vector<entity> extract(context* ctx, const char* text) {
     ctx->last_entities.clear();
     if (!ctx || !text || !text[0]) return ctx->last_entities;
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     // Step 1: Get per-token hidden states from the encoder.
     // encode_tokens returns L2-normalized vectors, but for NER we need
     // the raw (unnormalized) hidden states. We'll use the raw encoder output.
@@ -158,12 +165,20 @@ std::vector<entity> extract(context* ctx, const char* text) {
     // The encode_tokens API normalizes, which is wrong for classification.
     // Let me use a workaround: call the encoder and read the raw output.
 
+    auto t_enc0 = std::chrono::steady_clock::now();
     int n_tokens = 0, dim = 0;
     const float* hidden = crispembed_encode_tokens_raw(ctx->enc, text, &n_tokens, &dim);
+    if (bench) {
+        auto t_enc1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[bert_ner-bench] encoder: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_enc1 - t_enc0).count());
+    }
     if (!hidden || n_tokens == 0) return ctx->last_entities;
 
     const int H = dim;
     const int L = ctx->n_labels;
+
+    auto t_cls0 = std::chrono::steady_clock::now();
 
     // Step 2: Apply classifier head: logits[t, l] = sum_h(W[l,h] * hidden[t,h]) + b[l]
     // cls_weight is [n_labels, hidden_dim] row-major (from PyTorch)
@@ -298,6 +313,15 @@ std::vector<entity> extract(context* ctx, const char* text) {
         }
     }
     flush_span();
+
+    if (bench) {
+        auto t_cls1 = std::chrono::steady_clock::now();
+        auto t_total1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[bert_ner-bench] classifier+BIO decode: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_cls1 - t_cls0).count());
+        fprintf(stderr, "[bert_ner-bench] total: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
+    }
 
     return ctx->last_entities;
 }

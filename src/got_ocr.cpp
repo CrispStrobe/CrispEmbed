@@ -389,6 +389,8 @@ bool got_ocr::load(context &ctx, const char *gguf_path, int n_threads, int verbo
 
     precompute_rpe_tables(ctx);
 
+    ctx.bench = (std::getenv("CRISPEMBED_GOT_OCR_BENCH") != nullptr);
+
     if (verbosity >= 1) {
         auto &v = ctx.m.vhp;
         auto &l = ctx.m.lhp;
@@ -534,6 +536,8 @@ static ggml_cgraph* build_vis_layer_graph(ggml_context* g,
 }
 
 bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &out) {
+    const bool bench = ctx.bench;
+    auto t_vis_total = std::chrono::steady_clock::now();
     auto &v = ctx.m.vhp;
     int C = (int)v.hidden_size;
     int PS = (int)v.patch_size;
@@ -695,6 +699,11 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
     float ms = std::chrono::duration<float, std::milli>(t_end - t_start).count();
     if (ctx.verbosity >= 1)
         fprintf(stderr, "got_ocr: ViT done %.0f ms (%d layers)\n", ms, v.depth);
+    if (bench) {
+        auto vit_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            t_end - t_vis_total).count();
+        fprintf(stderr, "[got_ocr-bench] vision_encoder: %lldms\n", (long long)vit_ms);
+    }
 
     // ── Neck (CPU) ──────────────────────────────────────────────
     int nC = (int)v.neck_out_channels;
@@ -808,6 +817,12 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
     memcpy(out.hidden, proj_out.data(), n_vis_tokens * vis_D * sizeof(float));
     out.n_tokens = n_vis_tokens;
     out.hidden_dim = vis_D;
+
+    if (bench) {
+        auto np_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_end).count();
+        fprintf(stderr, "[got_ocr-bench] neck_projector: %lldms\n", (long long)np_ms);
+    }
 
     return true;
 }
@@ -1223,6 +1238,8 @@ bool got_ocr::generate(context &ctx,
                        const int32_t *prompt_ids, int n_prompt,
                        int max_new_tokens,
                        generate_result &out) {
+    const bool bench = ctx.bench;
+    auto t_gen_total = std::chrono::steady_clock::now();
     auto &l = ctx.m.lhp;
     int D = (int)l.hidden_size;
 
@@ -1282,6 +1299,11 @@ bool got_ocr::generate(context &ctx,
     ggml_backend_tensor_set(lg.img_embeds, img_data.data(), 0, D * T * sizeof(float));
 
     ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_gen_total).count();
+        fprintf(stderr, "[got_ocr-bench] prefill: %lldms\n", (long long)ms);
+    }
 
     int V = (int)l.vocab_size;
     std::vector<float> last_logits(V);
@@ -1310,7 +1332,10 @@ bool got_ocr::generate(context &ctx,
     }
 
     // Autoregressive decode
+    long long decode_total_ms = 0;
+    int decode_steps = 0;
     for (int step = 0; step < max_new_tokens - 1; step++) {
+        auto t_step = std::chrono::steady_clock::now();
         int32_t tok = (int32_t)next_token;
         std::vector<float> logits;
         if (!run_cached_step(ctx, &tok, 1, ctx.kvc.n_past, logits))
@@ -1328,7 +1353,22 @@ bool got_ocr::generate(context &ctx,
 
         out.token_ids.push_back(next_token);
 
+        if (bench) {
+            auto step_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - t_step).count();
+            decode_total_ms += step_ms;
+            decode_steps++;
+            fprintf(stderr, "[got_ocr-bench] decode_step[%d]: %lldms\n", step + 1, (long long)step_ms);
+        }
+
         if (next_token == (int)l.eos_token_id) break;
+    }
+
+    if (bench) {
+        fprintf(stderr, "[got_ocr-bench] decode_total: %lldms (%d steps)\n", decode_total_ms, decode_steps);
+        auto total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_gen_total).count();
+        fprintf(stderr, "[got_ocr-bench] total: %lldms\n", (long long)total_ms);
     }
 
     out.text = ctx.tok.decode(out.token_ids.data(), (int)out.token_ids.size());
