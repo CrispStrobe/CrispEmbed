@@ -105,6 +105,11 @@ struct posformer_ocr_context {
 
     core_cpu::DequantCache dequant_cache;
 
+    // ggml graph encoder
+    ggml_backend_t       enc_backend  = nullptr;
+    ggml_backend_sched_t enc_sched    = nullptr;
+    std::vector<uint8_t> enc_compute_meta;
+
     core_gguf::WeightLoad wl;
     int n_threads;
 
@@ -334,11 +339,20 @@ posformer_ocr_context * posformer_ocr_init(const char * model_path, int n_thread
 
     ctx->bench = (std::getenv("CRISPEMBED_POSFORMER_BENCH") != nullptr);
 
+    ctx->enc_backend = ggml_backend_cpu_init();
+    if (ctx->enc_backend) {
+        ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads);
+        ggml_backend_t backends[] = { ctx->enc_backend };
+        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+    }
+
     return ctx.release();
 }
 
 void posformer_ocr_free(posformer_ocr_context * ctx) {
     if (!ctx) return;
+    if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+    if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
     core_gguf::free_weights(ctx->wl);
     delete ctx;
 }
@@ -348,7 +362,179 @@ const posformer_ocr_hparams * posformer_ocr_get_hparams(const posformer_ocr_cont
 }
 
 // ---------------------------------------------------------------------------
-// DenseNet encoder (identical to BTTR)
+// ggml graph: DenseNet encoder (identical to BTTR except no ReLU after proj)
+// ---------------------------------------------------------------------------
+
+static ggml_tensor * pf_prep_conv(ggml_context * g, ggml_tensor * w,
+                                   int IC, int KH, int KW) {
+    if (!w) return nullptr;
+    if (ggml_n_dims(w) == 2) {
+        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
+            w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+        w = ggml_reshape_4d(g, w, KW, KH, IC, w->ne[1]);
+    }
+    if (w->type != GGML_TYPE_F16)
+        w = ggml_cast(g, w, GGML_TYPE_F16);
+    return w;
+}
+
+static ggml_tensor * pf_conv(ggml_context * g, ggml_tensor * x,
+                              ggml_tensor * w, ggml_tensor * bias,
+                              int IC, int KH, int KW, int stride, int pad) {
+    w = pf_prep_conv(g, w, IC, KH, KW);
+    x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
+    if (bias) {
+        ggml_tensor * b = ggml_reshape_3d(g, bias, 1, 1, bias->ne[0]);
+        x = ggml_add(g, x, b);
+    }
+    return x;
+}
+
+static ggml_tensor * pf_bn(ggml_context * g, ggml_tensor * x,
+                             ggml_tensor * scale, ggml_tensor * offset) {
+    ggml_tensor * s = ggml_reshape_3d(g, scale,  1, 1, scale->ne[0]);
+    ggml_tensor * o = ggml_reshape_3d(g, offset, 1, 1, offset->ne[0]);
+    return ggml_add(g, ggml_mul(g, x, s), o);
+}
+
+static ggml_cgraph * build_pf_encoder_graph(posformer_ocr_context * ctx, int W, int H) {
+    const auto & hp = ctx->hparams;
+    const int gr = hp.growth_rate, bn_size = 4, init_ch = 2 * gr;
+
+    int graph_size = 48 * 40 + 600;
+    size_t buf_size = ggml_tensor_overhead() * (graph_size + 200)
+                    + ggml_graph_overhead_custom(graph_size, false);
+    ctx->enc_compute_meta.resize(buf_size);
+    ggml_init_params ip = { buf_size, ctx->enc_compute_meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, graph_size, false);
+
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, 1);
+    ggml_set_name(x, "pixel_input");
+    ggml_set_input(x);
+
+    x = pf_conv(g, x, ctx->stem_conv_w, ctx->stem_conv_b, 1, 7, 7, 2, 3);
+    x = ggml_relu(g, x);
+    x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 2, 2, 2, 2, 0, 0);
+
+    int cur_ch = init_ch;
+    auto dense_block = [&](const std::vector<dense_layer_pf> & layers) {
+        for (const auto & l : layers) {
+            if (!l.conv1_w) continue;
+            ggml_tensor * bot = pf_conv(g, x, l.conv1_w, l.conv1_b, cur_ch, 1, 1, 1, 0);
+            bot = ggml_relu(g, bot);
+            ggml_tensor * nf = pf_conv(g, bot, l.conv2_w, l.conv2_b, bn_size*gr, 3, 3, 1, 1);
+            nf = ggml_relu(g, nf);
+            x = ggml_concat(g, x, nf, 2);
+            cur_ch += gr;
+        }
+    };
+    auto transition = [&](const transition_pf & t) {
+        int out_ch = cur_ch / 2;
+        x = pf_conv(g, x, t.conv_w, t.conv_b, cur_ch, 1, 1, 1, 0);
+        x = ggml_relu(g, x);
+        x = ggml_pool_2d(g, x, GGML_OP_POOL_AVG, 2, 2, 2, 2, 0, 0);
+        cur_ch = out_ch;
+    };
+
+    dense_block(ctx->block1); transition(ctx->trans1);
+    dense_block(ctx->block2); transition(ctx->trans2);
+    dense_block(ctx->block3);
+
+    x = pf_bn(g, x, ctx->post_norm_scale, ctx->post_norm_offset);
+    // Feature projection: Conv1×1(684→256) — NO ReLU (unlike BTTR)
+    x = pf_conv(g, x, ctx->feat_proj_w, ctx->feat_proj_b, cur_ch, 1, 1, 1, 0);
+
+    ggml_set_name(x, "encoder_out");
+    ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+    return gf;
+}
+
+static void run_encoder_ggml(posformer_ocr_context * ctx,
+                              const float * gray, int W, int H) {
+    ggml_cgraph * gf = build_pf_encoder_graph(ctx, W, H);
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "posformer_ocr: failed to allocate encoder graph\n");
+        return;
+    }
+
+    ggml_tensor * pixel_in = ggml_graph_get_tensor(gf, "pixel_input");
+    ggml_backend_tensor_set(pixel_in, gray, 0, W * H * sizeof(float));
+
+    for (int i = 0; i < ggml_backend_sched_get_n_backends(ctx->enc_sched); i++) {
+        ggml_backend_t be = ggml_backend_sched_get_backend(ctx->enc_sched, i);
+        ggml_backend_dev_t dev = ggml_backend_get_device(be);
+        ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
+        if (reg) {
+            auto * fn = (ggml_backend_set_n_threads_t)
+                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            if (fn) fn(be, ctx->n_threads);
+        }
+    }
+    if (ggml_backend_sched_graph_compute(ctx->enc_sched, gf) != GGML_STATUS_SUCCESS) {
+        fprintf(stderr, "posformer_ocr: encoder graph compute failed\n");
+        return;
+    }
+
+    ggml_tensor * enc_out = ggml_graph_get_tensor(gf, "encoder_out");
+    int out_w = (int)enc_out->ne[0], out_h = (int)enc_out->ne[1], D = (int)enc_out->ne[2];
+    int n_pos = out_h * out_w;
+
+    std::vector<float> chw(D * n_pos);
+    ggml_backend_tensor_get(enc_out, chw.data(), 0, chw.size() * sizeof(float));
+
+    ctx->encoder_output.resize(n_pos * D);
+    for (int c = 0; c < D; c++)
+        for (int i = 0; i < n_pos; i++)
+            ctx->encoder_output[i * D + c] = chw[c * n_pos + i];
+
+    // 2D PE (before LayerNorm for PosFormer)
+    {
+        int cur_h = out_h, cur_w = out_w;
+        if (cur_h != ctx->pe_cache_h || cur_w != ctx->pe_cache_w) {
+            const int half_d = D / 2, quarter_d = half_d / 2;
+            const float scale = 2.0f * (float)M_PI;
+            std::vector<float> inv_freq(quarter_d);
+            for (int i = 0; i < quarter_d; i++)
+                inv_freq[i] = 1.0f / powf(10000.0f, (float)(2*i) / (float)half_d);
+            ctx->pe_cache.assign(n_pos * D, 0.0f);
+            for (int y = 0; y < cur_h; y++)
+                for (int x = 0; x < cur_w; x++) {
+                    float y_norm = scale * (float)(y+1) / (float)cur_h;
+                    float x_norm = scale * (float)(x+1) / (float)cur_w;
+                    float * pe = ctx->pe_cache.data() + (y * cur_w + x) * D;
+                    for (int i = 0; i < quarter_d; i++) {
+                        float freq = inv_freq[i];
+                        pe[2*i]          = sinf(x_norm * freq);
+                        pe[2*i + 1]      = cosf(x_norm * freq);
+                        pe[half_d + 2*i]     = sinf(y_norm * freq);
+                        pe[half_d + 2*i + 1] = cosf(y_norm * freq);
+                    }
+                }
+            ctx->pe_cache_h = cur_h;
+            ctx->pe_cache_w = cur_w;
+        }
+        for (int i = 0; i < n_pos * D; i++)
+            ctx->encoder_output[i] += ctx->pe_cache[i];
+    }
+
+    // LayerNorm per position (after PE for PosFormer)
+    const float * ln_w = tf32(ctx, ctx->enc_ln_w);
+    const float * ln_b = tf32(ctx, ctx->enc_ln_b);
+    for (int i = 0; i < n_pos; i++)
+        layernorm(ctx->encoder_output.data() + i * D, D, ln_w, ln_b);
+
+    ctx->n_enc_pos = n_pos;
+    ctx->enc_h = out_h;
+    ctx->enc_w = out_w;
+    fprintf(stderr, "posformer_ocr: encoder (ggml): (%d, %d, %d) → %d positions × %d\n",
+            D, out_h, out_w, n_pos, D);
+}
+
+// ---------------------------------------------------------------------------
+// DenseNet encoder (scalar fallback, identical to BTTR)
 // ---------------------------------------------------------------------------
 
 static void run_encoder(posformer_ocr_context * ctx, const float * gray, int W, int H) {
@@ -921,7 +1107,10 @@ const char * posformer_ocr_recognize(
         std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
     t0 = std::chrono::steady_clock::now();
-    run_encoder(ctx, input, w, h);
+    if (ctx->enc_sched && !std::getenv("POSFORMER_SCALAR_ENCODER"))
+        run_encoder_ggml(ctx, input, w, h);
+    else
+        run_encoder(ctx, input, w, h);
     if (bench) fprintf(stderr, "[posformer-bench] encoder: %.1f ms\n",
         std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
