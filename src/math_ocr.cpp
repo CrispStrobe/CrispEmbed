@@ -104,6 +104,11 @@ struct math_ocr_context {
     std::vector<std::vector<float>> cross_k_cache; // per layer [n_enc * D]
     std::vector<std::vector<float>> cross_v_cache;
 
+    // Cached encoder ggml graph (built once per T, reused for all crops of same size)
+    ggml_context * enc_graph_g = nullptr;
+    ggml_cgraph  * enc_graph   = nullptr;
+    int enc_graph_T = -1;
+
     // Pre-allocated decoder scratch (avoids per-step heap allocs)
     struct dec_scratch {
         std::vector<float> x, normed, q, k, v, sa, sa_proj;
@@ -378,54 +383,45 @@ static void run_encoder(math_ocr_context* ctx, const float* pixels_rgb, int img_
         for (int i = 0; i < n; i++) embedded[i] += pe[i];
     }
 
-    // Step 2: Build and run ggml graph for transformer layers
-    fprintf(stderr, "math_ocr: encoder start (T=%d, H=%d, %d layers)\n", T, H, hp.enc_layers);
-    size_t meta_size = 16 * 1024 * 1024; // 16 MB metadata buffer
-    std::vector<uint8_t> meta(meta_size);
-    ggml_init_params ip = { meta_size, meta.data(), true };
-    ggml_context* g = ggml_init(ip);
+    // Step 2: Build (or reuse) ggml graph for transformer layers
+    if (ctx->enc_graph_T != T) {
+        // Free old cached graph if T changed (different image size)
+        if (ctx->enc_graph_g) { ggml_free(ctx->enc_graph_g); ctx->enc_graph_g = nullptr; }
+        ctx->enc_graph = nullptr;
 
-    ggml_cgraph* gf = build_encoder_graph(ctx, g, T);
+        size_t meta_size = 16 * 1024 * 1024;
+        std::vector<uint8_t> meta(meta_size);
+        ggml_init_params ip = { meta_size, meta.data(), true };
+        ggml_context* g = ggml_init(ip);
+        ctx->enc_graph = build_encoder_graph(ctx, g, T);
+        ctx->enc_graph_g = g;
+        ctx->enc_graph_T = T;
 
-    // Allocate + set input
-    fprintf(stderr, "math_ocr: graph built (%d nodes), allocating...\n", ggml_graph_n_nodes(gf));
-    ggml_backend_sched_reset(ctx->sched);
-    if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
-        fprintf(stderr, "math_ocr: encoder alloc failed\n");
-        ggml_free(g);
-        return;
+        ggml_backend_sched_reset(ctx->sched);
+        if (!ggml_backend_sched_alloc_graph(ctx->sched, ctx->enc_graph)) {
+            fprintf(stderr, "math_ocr: encoder alloc failed\n");
+            ggml_free(ctx->enc_graph_g);
+            ctx->enc_graph_g = nullptr; ctx->enc_graph = nullptr; ctx->enc_graph_T = -1;
+            return;
+        }
+    } else {
+        ggml_backend_sched_reset(ctx->sched);
+        if (!ggml_backend_sched_alloc_graph(ctx->sched, ctx->enc_graph)) {
+            fprintf(stderr, "math_ocr: encoder realloc failed\n");
+            return;
+        }
     }
 
-    ggml_tensor* inp = ggml_graph_get_tensor(gf, "enc_input");
+    ggml_tensor* inp = ggml_graph_get_tensor(ctx->enc_graph, "enc_input");
     if (inp) ggml_backend_tensor_set(inp, embedded.data(), 0, T * H * sizeof(float));
 
-    // Compute
-    fprintf(stderr, "math_ocr: computing encoder...\n");
-    ggml_backend_sched_graph_compute(ctx->sched, gf);
-    fprintf(stderr, "math_ocr: encoder done\n");
+    ggml_backend_sched_graph_compute(ctx->sched, ctx->enc_graph);
 
-    // Read output
-    ggml_tensor* out = ggml_graph_get_tensor(gf, "enc_output");
+    ggml_tensor* out = ggml_graph_get_tensor(ctx->enc_graph, "enc_output");
     ctx->enc_out.resize(T * H);
     if (out) ggml_backend_tensor_get(out, ctx->enc_out.data(), 0, T * H * sizeof(float));
 
     ctx->n_enc_tokens = T;
-
-    // Debug: dump first few encoder output values for comparison with ONNX ref
-    fprintf(stderr, "math_ocr: enc_out token 0 first 5: ");
-    for (int i = 0; i < 5 && i < H; i++) fprintf(stderr, "%.6f ", ctx->enc_out[0 * H + i]);
-    fprintf(stderr, "\nmath_ocr: enc_out token 2 first 5: ");
-    for (int i = 0; i < 5 && i < H; i++) fprintf(stderr, "%.6f ", ctx->enc_out[2 * H + i]);
-    fprintf(stderr, "\n");
-
-    // Also dump pre-transformer embedded values for debugging
-    fprintf(stderr, "math_ocr: embedded (pre-graph) token 0 first 5: ");
-    for (int i = 0; i < 5 && i < H; i++) fprintf(stderr, "%.6f ", embedded[0 * H + i]);
-    fprintf(stderr, "\nmath_ocr: embedded (pre-graph) token 2 first 5: ");
-    for (int i = 0; i < 5 && i < H; i++) fprintf(stderr, "%.6f ", embedded[2 * H + i]);
-    fprintf(stderr, "\n");
-
-    ggml_free(g);
 }
 
 // ---------------------------------------------------------------------------
@@ -1019,6 +1015,7 @@ math_ocr_context* math_ocr_init(const char* model_path, int n_threads) {
 
 void math_ocr_free(math_ocr_context* ctx) {
     if (!ctx) return;
+    if (ctx->enc_graph_g) ggml_free(ctx->enc_graph_g);
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
     if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);
     if (ctx->backend) ggml_backend_free(ctx->backend);
