@@ -9,6 +9,11 @@
 //   3. Vertical dilation = OR consecutive rows.
 //   4. Separable brick SE: horiz pass then vert pass.
 //   5. Erosion = complement of dilation of complement.
+//   6. Power-of-2 decomposition (horizontal, hsize > 16):
+//      build tmpbufs[k] covering {0..2^k-1} shifts in O(log2(half)) passes,
+//      then apply binary decomposition of (half+1) to cover {0..half} exactly.
+//      O(2*(log2(half) + popcount(half+1))) per row vs O(hsize) naive.
+//      Break-even ≈ hsize=16; for hsize=30-200 this gives 4-20× speedup.
 
 #include "morph_fast.h"
 
@@ -91,55 +96,121 @@ uint32_t * morph_u8_to_1bit(const uint8_t * gray, int w, int h,
 }
 
 // ---------------------------------------------------------------------------
-// Horizontal dilation: OR shifted copies of each row
+// Horizontal dilation helpers
 // ---------------------------------------------------------------------------
-// For dilation by hsize pixels: for each shift s in [-half, +half],
-// OR the row shifted left by s into the output.
-// Word-level: shift left by s means:
-//   if s >= 0: word[i] = (word[i] << s) | (word[i+1] >> (32-s))
-//   if s < 0:  word[i] = (word[i] >> -s) | (word[i-1] << (32+s))
+
+// OR src shifted RIGHT by s image pixels into dst (s > 0 = pixels move right).
+// "Right in image" = shift bits LEFT in packed MSB-first words.
+static void or_shift_right(uint32_t * dst, const uint32_t * src, int wpl, int s) {
+    int ws = s >> 5, bs = s & 31;
+    if (bs == 0) {
+        for (int i = 0; i < wpl - ws; i++) dst[i] |= src[i + ws];
+    } else {
+        for (int i = 0; i < wpl; i++) {
+            int si = i + ws;
+            if (si >= wpl) break;
+            dst[i] |= src[si] << bs;
+            if (si + 1 < wpl) dst[i] |= src[si + 1] >> (32 - bs);
+        }
+    }
+}
+
+// OR src shifted LEFT by s image pixels into dst (s > 0 = pixels move left).
+static void or_shift_left(uint32_t * dst, const uint32_t * src, int wpl, int s) {
+    int ws = s >> 5, bs = s & 31;
+    if (bs == 0) {
+        for (int i = wpl - 1; i >= ws; i--) dst[i] |= src[i - ws];
+    } else {
+        for (int i = wpl - 1; i >= 0; i--) {
+            int si = i - ws;
+            if (si < 0) break;
+            dst[i] |= src[si] >> bs;
+            if (si - 1 >= 0) dst[i] |= src[si - 1] << (32 - bs);
+        }
+    }
+}
+
+// Power-of-2 expansion: OR {shift(src, 0), shift(src,1), ..., shift(src, half)}
+// into dst using ceil(log2(half+1)) build passes + popcount(half+1) OR passes.
+// tmpbufs: array of at least ceil(log2(half+1))+1 row buffers of length wpl.
+// dir > 0 = expand right; dir < 0 = expand left.
+static void expand_one_dir(uint32_t * dst, const uint32_t * src, int wpl,
+                            int half, int dir, uint32_t ** tmpbufs)
+{
+    // Build power-of-2 tables: tmpbufs[k] covers {0..2^k - 1}
+    memcpy(tmpbufs[0], src, wpl * sizeof(uint32_t));
+    int max_k = 0;
+    while ((1 << (max_k + 1)) <= half + 1) {
+        memcpy(tmpbufs[max_k + 1], tmpbufs[max_k], wpl * sizeof(uint32_t));
+        if (dir > 0)
+            or_shift_right(tmpbufs[max_k + 1], tmpbufs[max_k], wpl, 1 << max_k);
+        else
+            or_shift_left(tmpbufs[max_k + 1], tmpbufs[max_k], wpl, 1 << max_k);
+        max_k++;
+    }
+    // Apply binary decomposition of (half + 1) to cover {0..half} exactly.
+    int accumulated = 0;
+    for (int k = max_k; k >= 0; k--) {
+        if ((half + 1) & (1 << k)) {
+            if (dir > 0)
+                or_shift_right(dst, tmpbufs[k], wpl, accumulated);
+            else
+                or_shift_left(dst, tmpbufs[k], wpl, accumulated);
+            accumulated += (1 << k);
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Horizontal dilation
+// ---------------------------------------------------------------------------
+// For small kernels (hsize <= MORPH_NAIVE_THRESH) use the naive O(hsize) loop.
+// For large kernels use power-of-2 decomposition: O(2*(log2(half)+popcount(half+1))).
+// Break-even is around hsize=16; large kernels (30-200) get 5-10x speedup.
+
+static constexpr int MORPH_NAIVE_THRESH = 16;
 
 static void dilate_horiz(const uint32_t * src, uint32_t * dst,
                           int w, int h, int wpl, int hsize) {
     if (hsize <= 1) { copy_bits(dst, src, wpl, h); return; }
     int half = hsize / 2;
 
+    if (hsize <= MORPH_NAIVE_THRESH) {
+        // Naive O(hsize * wpl) per row — fast enough for small kernels.
+        for (int y = 0; y < h; y++) {
+            const uint32_t * sline = src + y * wpl;
+            uint32_t * dline = dst + y * wpl;
+            memset(dline, 0, wpl * sizeof(uint32_t));
+            for (int i = 0; i < wpl; i++) dline[i] = sline[i];
+            for (int s = 1; s <= half; s++) {
+                or_shift_right(dline, sline, wpl, s);
+                or_shift_left(dline, sline, wpl, s);
+            }
+        }
+        return;
+    }
+
+    // Power-of-2 decomposition for large kernels.
+    // Allocate per-row temp buffers once and reuse across all rows.
+    int max_k = 0;
+    while ((1 << (max_k + 1)) <= half + 1) max_k++;
+    int n_bufs = max_k + 1;  // tmpbufs[0..max_k]
+    // Allocate a contiguous block: 2 * n_bufs buffers (right and left dirs share alloc)
+    std::vector<uint32_t> buf_storage((size_t)(2 * n_bufs) * wpl, 0u);
+    std::vector<uint32_t *> rbufs(n_bufs), lbufs(n_bufs);
+    for (int k = 0; k < n_bufs; k++) {
+        rbufs[k] = buf_storage.data() + (size_t)k * wpl;
+        lbufs[k] = buf_storage.data() + (size_t)(n_bufs + k) * wpl;
+    }
+
     for (int y = 0; y < h; y++) {
         const uint32_t * sline = src + y * wpl;
         uint32_t * dline = dst + y * wpl;
         memset(dline, 0, wpl * sizeof(uint32_t));
-
-        for (int s = -half; s <= half; s++) {
-            // OR shifted copy of sline into dline
-            if (s == 0) {
-                for (int i = 0; i < wpl; i++) dline[i] |= sline[i];
-            } else if (s > 0) {
-                // Shift left by s bits (pixels move right in image coords)
-                int ws = s >> 5;    // whole-word shift
-                int bs = s & 31;    // bit shift within word
-                for (int i = 0; i < wpl; i++) {
-                    int si = i + ws;
-                    if (si >= wpl) break;
-                    uint32_t val = sline[si] << bs;
-                    if (bs > 0 && si + 1 < wpl)
-                        val |= sline[si + 1] >> (32 - bs);
-                    dline[i] |= val;
-                }
-            } else {
-                // Shift right by -s bits
-                int rs = -s;
-                int ws = rs >> 5;
-                int bs = rs & 31;
-                for (int i = wpl - 1; i >= 0; i--) {
-                    int si = i - ws;
-                    if (si < 0) break;
-                    uint32_t val = sline[si] >> bs;
-                    if (bs > 0 && si - 1 >= 0)
-                        val |= sline[si - 1] << (32 - bs);
-                    dline[i] |= val;
-                }
-            }
-        }
+        // Right expansion covers shifts {0..half}
+        expand_one_dir(dline, sline, wpl, half, +1, rbufs.data());
+        // Left expansion covers {0..half}; shift-0 is redundant but OR is idempotent.
+        expand_one_dir(dline, sline, wpl, half, -1, lbufs.data());
     }
 }
 
