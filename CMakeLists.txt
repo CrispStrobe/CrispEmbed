@@ -39,6 +39,7 @@ option(GGML_VULKAN      "Enable Vulkan GPU acceleration" OFF)
 option(GGML_METAL       "Enable Metal GPU acceleration (macOS)" OFF)
 option(GGML_LLAMAFILE   "Enable llamafile optimized SGEMM" ON)
 option(CRISPEMBED_BUILD_SHARED "Build shared library for Python" ON)
+option(CRISPEMBED_NATIVE       "Use -march=native for CPU SIMD (AVX2/NEON)" ON)
 
 # BLAS vendor: Generic, OpenBLAS, Intel10_64lp (MKL), Apple, etc.
 if(NOT DEFINED GGML_BLAS_VENDOR)
@@ -250,6 +251,10 @@ target_include_directories(crispembed PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/ggml/include
     ${CMAKE_CURRENT_SOURCE_DIR}/examples/cli
 )
+# Enable SIMD intrinsics in cpu_ops.h (AVX2/FMA on x86, NEON on ARM)
+if(CRISPEMBED_NATIVE AND NOT EMSCRIPTEN AND NOT MSVC)
+    target_compile_options(crispembed PRIVATE -march=native)
+endif()
 # Avoid name clash with the DLL import lib (both would be crispembed.lib on Windows)
 set_target_properties(crispembed PROPERTIES ARCHIVE_OUTPUT_NAME crispembed-static)
 
@@ -597,6 +602,9 @@ if(CRISPEMBED_BUILD_SHARED)
     target_compile_definitions(crispembed-shared PRIVATE CRISPEMBED_BUILD)
     if(CRISPEMBED_HAS_CRISP_AUDIO)
         target_compile_definitions(crispembed-shared PRIVATE CRISPEMBED_HAS_CRISP_AUDIO)
+    endif()
+    if(CRISPEMBED_NATIVE AND NOT EMSCRIPTEN AND NOT MSVC)
+        target_compile_options(crispembed-shared PRIVATE -march=native)
     endif()
     # All ggml + crisp_audio + crispembed-core are STATIC libs baked into the
     # shared .so/.dylib. Mark them PRIVATE so they don't leak into the export

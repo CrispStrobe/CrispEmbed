@@ -485,6 +485,105 @@ static void test_mha_1q_cpu() {
 }
 
 // ---------------------------------------------------------------------------
+// dot_product — SIMD-accelerated dot product
+// ---------------------------------------------------------------------------
+static void test_dot_product() {
+    printf("test_dot_product...\n");
+
+    // Small: 4 elements (scalar tail only on AVX2)
+    {
+        float a[] = {1, 2, 3, 4};
+        float b[] = {5, 6, 7, 8};
+        float r = dot_product(a, b, 4);
+        CHECK_CLOSE(r, 70.0f, 1e-5f, "dot4");
+    }
+
+    // 8 elements (one AVX2 iteration, one NEON pair)
+    {
+        float a[8], b[8];
+        for (int i = 0; i < 8; i++) { a[i] = (float)(i + 1); b[i] = (float)(i + 1); }
+        float r = dot_product(a, b, 8);
+        CHECK_CLOSE(r, 204.0f, 1e-4f, "dot8");  // sum(i^2, i=1..8) = 204
+    }
+
+    // 17 elements (tests unrolled + tail)
+    {
+        float a[17], b[17];
+        float expected = 0;
+        for (int i = 0; i < 17; i++) { a[i] = (float)i * 0.1f; b[i] = (float)(16 - i) * 0.1f; expected += a[i] * b[i]; }
+        float r = dot_product(a, b, 17);
+        CHECK_CLOSE(r, expected, 1e-4f, "dot17");
+    }
+
+    // 256 elements (typical hidden dim)
+    {
+        std::vector<float> a(256), b(256);
+        float expected = 0;
+        for (int i = 0; i < 256; i++) {
+            a[i] = sinf((float)i * 0.01f);
+            b[i] = cosf((float)i * 0.01f);
+            expected += a[i] * b[i];
+        }
+        float r = dot_product(a.data(), b.data(), 256);
+        CHECK_CLOSE(r, expected, 1e-3f, "dot256");
+    }
+
+    // 1024 elements (typical embedding dim)
+    {
+        std::vector<float> a(1024), b(1024);
+        double expected = 0;
+        for (int i = 0; i < 1024; i++) {
+            a[i] = (float)i / 1024.0f;
+            b[i] = 1.0f - (float)i / 1024.0f;
+            expected += (double)a[i] * b[i];
+        }
+        float r = dot_product(a.data(), b.data(), 1024);
+        CHECK_CLOSE(r, (float)expected, 1e-2f, "dot1024");
+    }
+}
+
+// ---------------------------------------------------------------------------
+// DequantCache
+// ---------------------------------------------------------------------------
+static void test_dequant_cache() {
+    printf("test_dequant_cache...\n");
+
+    struct ggml_init_params params = { 4 * 1024 * 1024, nullptr, true };
+    struct ggml_context* ctx = ggml_init(params);
+    ggml_backend_t backend = ggml_backend_cpu_init();
+
+    float data[] = {1.0f, 2.0f, 3.0f, 4.0f};
+    ggml_backend_buffer_t buf;
+    ggml_tensor* t = make_tensor(ctx, backend, GGML_TYPE_F32, 4, data, sizeof(data), &buf);
+
+    DequantCache cache;
+
+    // First access dequantizes
+    const float* p1 = cache.get(t);
+    CHECK(p1 != nullptr, "cache first access non-null");
+    CHECK_CLOSE(p1[0], 1.0f, 1e-6f, "cache val[0]");
+    CHECK_CLOSE(p1[3], 4.0f, 1e-6f, "cache val[3]");
+
+    // Second access returns same pointer (cached)
+    const float* p2 = cache.get(t);
+    CHECK(p1 == p2, "cache returns same pointer");
+
+    // nullptr returns nullptr
+    const float* p3 = cache.get(nullptr);
+    CHECK(p3 == nullptr, "cache nullptr -> nullptr");
+
+    // clear invalidates
+    cache.clear();
+    const float* p4 = cache.get(t);
+    CHECK(p4 != nullptr, "cache after clear non-null");
+    // pointer may differ since it's a new vector
+
+    ggml_backend_buffer_free(buf);
+    ggml_backend_free(backend);
+    ggml_free(ctx);
+}
+
+// ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 int main() {
@@ -504,6 +603,8 @@ int main() {
     test_relu6();
     test_relu();
     test_mha_1q_cpu();
+    test_dot_product();
+    test_dequant_cache();
 
     printf("\n=== Results: %d passed, %d failed ===\n", g_pass, g_fail);
     return g_fail > 0 ? 1 : 0;
