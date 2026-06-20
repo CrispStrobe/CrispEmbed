@@ -102,6 +102,11 @@ struct parseq_ocr_context {
     bool bench;
 
     ggml_gallocr_t galloc = nullptr;
+
+    // Cached encoder graph (built once, reused across calls)
+    ggml_context * enc_graph_ctx = nullptr;
+    ggml_cgraph * enc_graph = nullptr;
+    bool enc_graph_allocated = false;
 };
 
 // ---------------------------------------------------------------------------
@@ -356,6 +361,7 @@ parseq_ocr_context * parseq_ocr_init(const char * model_path, int n_threads) {
 
 void parseq_ocr_free(parseq_ocr_context * ctx) {
     if (!ctx) return;
+    if (ctx->enc_graph_ctx) ggml_free(ctx->enc_graph_ctx);
     if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
     core_gguf::free_weights(ctx->wl);
     if (ctx->backend) ggml_backend_free(ctx->backend);
@@ -424,83 +430,67 @@ static bool run_encoder(parseq_ocr_context * ctx, const float * pixels) {
         for (int d = 0; d < D; d++)
             patch_out[t * D + d] += pe[t * D + d];
 
-    // Build ggml graph for encoder transformer layers
-    // Layout: x is [D, N] in ggml (ne[0]=D, ne[1]=N)
-    const int n_tensors = hp.enc_layers * 30 + 20;
-    const size_t buf_sz = n_tensors * ggml_tensor_overhead() + ggml_graph_overhead_custom(4096, false);
-    ggml_init_params ip = {buf_sz, nullptr, true};
-    ggml_context * g = ggml_init(ip);
+    // Build encoder graph once, reuse on subsequent calls (fixed input dimensions)
+    if (!ctx->enc_graph_allocated) {
+        const int n_tensors = hp.enc_layers * 30 + 20;
+        const size_t buf_sz = n_tensors * ggml_tensor_overhead() + ggml_graph_overhead_custom(4096, false);
+        ggml_init_params ip = {buf_sz, nullptr, true};
+        ggml_context * g = ggml_init(ip);
 
-    // Input tensor
-    ggml_tensor * x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, N);
-    ggml_set_name(x, "enc_input");
-    ggml_set_input(x);
+        ggml_tensor * x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, N);
+        ggml_set_name(x, "enc_input");
+        ggml_set_input(x);
 
-    // Encoder layers
-    for (int il = 0; il < hp.enc_layers; il++) {
-        const auto & L = ctx->enc_layers[il];
-        ggml_tensor * residual = x;
-
-        // Pre-LN
+        for (int il = 0; il < hp.enc_layers; il++) {
+            const auto & L = ctx->enc_layers[il];
+            ggml_tensor * residual = x;
+            x = ggml_norm(g, x, eps);
+            x = ggml_mul(g, x, L.ln1_w);
+            x = ggml_add(g, x, L.ln1_b);
+            ggml_tensor * qkv = ggml_mul_mat(g, L.qkv_w, x);
+            qkv = ggml_add(g, qkv, L.qkv_b);
+            ggml_tensor * Q = ggml_cont(g, ggml_view_2d(g, qkv, D, N, qkv->nb[1], 0));
+            ggml_tensor * K = ggml_cont(g, ggml_view_2d(g, qkv, D, N, qkv->nb[1], D * ggml_type_size(qkv->type)));
+            ggml_tensor * V = ggml_cont(g, ggml_view_2d(g, qkv, D, N, qkv->nb[1], 2 * D * ggml_type_size(qkv->type)));
+            Q = ggml_reshape_3d(g, Q, hd, nh, N);
+            K = ggml_reshape_3d(g, K, hd, nh, N);
+            V = ggml_reshape_3d(g, V, hd, nh, N);
+            Q = ggml_permute(g, Q, 0, 2, 1, 3);
+            K = ggml_permute(g, K, 0, 2, 1, 3);
+            V = ggml_permute(g, V, 0, 2, 1, 3);
+            float scale = 1.0f / std::sqrt((float)hd);
+            ggml_tensor * attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
+            attn = ggml_reshape_2d(g, attn, D, N);
+            attn = ggml_mul_mat(g, L.proj_w, attn);
+            attn = ggml_add(g, attn, L.proj_b);
+            x = ggml_add(g, residual, attn);
+            residual = x;
+            x = ggml_norm(g, x, eps);
+            x = ggml_mul(g, x, L.ln2_w);
+            x = ggml_add(g, x, L.ln2_b);
+            x = ggml_mul_mat(g, L.fc1_w, x);
+            x = ggml_add(g, x, L.fc1_b);
+            x = ggml_gelu(g, x);
+            x = ggml_mul_mat(g, L.fc2_w, x);
+            x = ggml_add(g, x, L.fc2_b);
+            x = ggml_add(g, residual, x);
+        }
         x = ggml_norm(g, x, eps);
-        x = ggml_mul(g, x, L.ln1_w);
-        x = ggml_add(g, x, L.ln1_b);
+        x = ggml_mul(g, x, ctx->enc_norm_w);
+        x = ggml_add(g, x, ctx->enc_norm_b);
+        ggml_set_name(x, "enc_output");
+        ggml_set_output(x);
 
-        // Fused QKV
-        ggml_tensor * qkv = ggml_mul_mat(g, L.qkv_w, x);  // [3D, N]
-        qkv = ggml_add(g, qkv, L.qkv_b);
+        ggml_cgraph * gf_graph = ggml_new_graph_custom(g, 4096, false);
+        ggml_build_forward_expand(gf_graph, x);
+        ggml_gallocr_alloc_graph(ctx->galloc, gf_graph);
 
-        ggml_tensor * Q = ggml_cont(g, ggml_view_2d(g, qkv, D, N, qkv->nb[1], 0));
-        ggml_tensor * K = ggml_cont(g, ggml_view_2d(g, qkv, D, N, qkv->nb[1], D * ggml_type_size(qkv->type)));
-        ggml_tensor * V = ggml_cont(g, ggml_view_2d(g, qkv, D, N, qkv->nb[1], 2 * D * ggml_type_size(qkv->type)));
-
-        // Reshape for MHA: [D, N] → [hd, nh, N] → permute to [hd, N, nh]
-        Q = ggml_reshape_3d(g, Q, hd, nh, N);
-        K = ggml_reshape_3d(g, K, hd, nh, N);
-        V = ggml_reshape_3d(g, V, hd, nh, N);
-        Q = ggml_permute(g, Q, 0, 2, 1, 3);
-        K = ggml_permute(g, K, 0, 2, 1, 3);
-        V = ggml_permute(g, V, 0, 2, 1, 3);
-
-        float scale = 1.0f / std::sqrt((float)hd);
-        ggml_tensor * attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
-        attn = ggml_reshape_2d(g, attn, D, N);
-
-        // Output projection
-        attn = ggml_mul_mat(g, L.proj_w, attn);
-        attn = ggml_add(g, attn, L.proj_b);
-
-        x = ggml_add(g, residual, attn);
-
-        // Pre-FFN LN
-        residual = x;
-        x = ggml_norm(g, x, eps);
-        x = ggml_mul(g, x, L.ln2_w);
-        x = ggml_add(g, x, L.ln2_b);
-
-        // FFN: fc1 → GELU → fc2
-        x = ggml_mul_mat(g, L.fc1_w, x);
-        x = ggml_add(g, x, L.fc1_b);
-        x = ggml_gelu(g, x);
-        x = ggml_mul_mat(g, L.fc2_w, x);
-        x = ggml_add(g, x, L.fc2_b);
-
-        x = ggml_add(g, residual, x);
+        ctx->enc_graph_ctx = g;
+        ctx->enc_graph = gf_graph;
+        ctx->enc_graph_allocated = true;
     }
 
-    // Final LayerNorm
-    x = ggml_norm(g, x, eps);
-    x = ggml_mul(g, x, ctx->enc_norm_w);
-    x = ggml_add(g, x, ctx->enc_norm_b);
-
-    ggml_set_name(x, "enc_output");
-    ggml_set_output(x);
-
-    // Build and compute graph
-    ggml_cgraph * gf_graph = ggml_new_graph_custom(g, 4096, false);
-    ggml_build_forward_expand(gf_graph, x);
-
-    ggml_gallocr_alloc_graph(ctx->galloc, gf_graph);
+    ggml_cgraph * gf_graph = ctx->enc_graph;
 
     // Set input
     ggml_tensor * inp = ggml_graph_get_tensor(gf_graph, "enc_input");
@@ -515,7 +505,7 @@ static bool run_encoder(parseq_ocr_context * ctx, const float * pixels) {
     ctx->encoder_output.resize(N * D);
     ggml_backend_tensor_get(out, ctx->encoder_output.data(), 0, N * D * sizeof(float));
 
-    ggml_free(g);
+    // Graph context kept alive for reuse (freed in parseq_ocr_free)
     return true;
 }
 
