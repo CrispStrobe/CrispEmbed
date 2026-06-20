@@ -28,10 +28,17 @@
 #include <vector>
 
 // Conv2d: [OC, IC/groups, KH, KW] weights. Input/output [C, H, W] planar.
-static void conv2d(const float * input, int ic, int ih, int iw,
-                   const float * weight, const float * bias,
-                   int oc, int kh, int kw, int pad, int groups,
-                   float * output) {
+struct safmn_context;  // forward decl
+static void conv2d_ggml(safmn_context * ctx,
+                         const float * input, int ic, int ih, int iw,
+                         ggml_tensor * wt, ggml_tensor * bt,
+                         int oc, int kh, int kw, int pad, int groups,
+                         float * output);
+
+static void conv2d_scalar(const float * input, int ic, int ih, int iw,
+                           const float * weight, const float * bias,
+                           int oc, int kh, int kw, int pad, int groups,
+                           float * output) {
     int oh = ih + 2 * pad - kh + 1;
     int ow = iw + 2 * pad - kw + 1;
     int ic_pg = ic / groups, oc_pg = oc / groups;
@@ -173,6 +180,10 @@ struct safmn_context {
     bool bench;
     core_cpu::DequantCache dcache;
 
+    // ggml conv infrastructure
+    ggml_backend_t       enc_backend  = nullptr;
+    ggml_backend_sched_t enc_sched    = nullptr;
+
     ggml_tensor * to_feat_w, * to_feat_b;
     std::vector<attblock_weights> blocks;
     ggml_tensor * to_img_w, * to_img_b;
@@ -244,11 +255,21 @@ safmn_context * safmn_init(const char * model_path, int n_threads) {
     }
 
     ctx->bench = (std::getenv("CRISPEMBED_SAFMN_SR_BENCH") != nullptr);
+
+    ctx->enc_backend = ggml_backend_cpu_init();
+    if (ctx->enc_backend) {
+        ggml_backend_cpu_set_n_threads(ctx->enc_backend, 1);
+        ggml_backend_t backends[] = { ctx->enc_backend };
+        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+    }
     return ctx;
 }
 
 void safmn_free(safmn_context * ctx) {
     if (!ctx) return;
+    if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+    if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
+
     core_gguf::WeightLoad wl;
     wl.ctx = ctx->gguf_ctx;
     wl.buf = ctx->gguf_buf;
@@ -258,6 +279,89 @@ void safmn_free(safmn_context * ctx) {
 
 int safmn_get_scale(const safmn_context * ctx) {
     return ctx ? ctx->scale : 0;
+}
+
+// ── ggml conv2d ───────────────────────────────────────────────────
+
+static void conv2d_ggml(safmn_context * ctx,
+                         const float * input, int ic, int ih, int iw,
+                         ggml_tensor * wt, ggml_tensor * bt,
+                         int oc, int kh, int kw, int pad, int groups,
+                         float * output) {
+    if (!ctx->enc_sched || !wt) {
+        // scalar fallback
+        std::vector<float> wf(ggml_nelements(wt)), bf;
+        auto tr = ggml_get_type_traits(wt->type);
+        if (wt->type == GGML_TYPE_F32) {
+            ggml_backend_tensor_get(wt, wf.data(), 0, wf.size()*4);
+        } else {
+            size_t raw_sz = ggml_nbytes(wt);
+            std::vector<uint8_t> raw(raw_sz);
+            ggml_backend_tensor_get(wt, raw.data(), 0, raw_sz);
+            if (tr && tr->to_float) tr->to_float(raw.data(), wf.data(), wf.size());
+        }
+        const float * bp = nullptr;
+        if (bt) {
+            bf.resize(ggml_nelements(bt));
+            ggml_backend_tensor_get(bt, bf.data(), 0, bf.size()*4);
+            bp = bf.data();
+        }
+        conv2d_scalar(input, ic, ih, iw, wf.data(), bp, oc, kh, kw, pad, groups, output);
+        return;
+    }
+    int max_nodes = 32;
+    size_t buf_size = ggml_tensor_overhead() * max_nodes
+                    + ggml_graph_overhead_custom(max_nodes, false);
+    std::vector<uint8_t> meta(buf_size);
+    ggml_init_params ip = { buf_size, meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, iw, ih, ic);
+    ggml_set_name(x, "x"); ggml_set_input(x);
+
+    ggml_tensor * w = wt;
+    if (groups > 1 && groups == ic) {
+        // Depthwise
+        if (ggml_n_dims(w) == 2) {
+            if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
+                w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+            w = ggml_reshape_4d(g, w, kw, kh, 1, w->ne[1]);
+        }
+        if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
+        x = ggml_conv_2d_dw(g, w, x, 1, 1, pad, pad, 1, 1);
+    } else {
+        if (ggml_n_dims(w) == 2) {
+            if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
+                w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+            w = ggml_reshape_4d(g, w, kw, kh, ic, w->ne[1]);
+        }
+        if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
+        x = ggml_conv_2d(g, w, x, 1, 1, pad, pad, 1, 1);
+    }
+    if (bt) {
+        ggml_tensor * b = ggml_reshape_3d(g, bt, 1, 1, oc);
+        x = ggml_add(g, x, b);
+    }
+    ggml_set_name(x, "out"); ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) return;
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), input, 0, ic*ih*iw*sizeof(float));
+    for (int i = 0; i < ggml_backend_sched_get_n_backends(ctx->enc_sched); i++) {
+        ggml_backend_t be = ggml_backend_sched_get_backend(ctx->enc_sched, i);
+        ggml_backend_dev_t dev = ggml_backend_get_device(be);
+        ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
+        if (reg) {
+            auto * fn = (ggml_backend_set_n_threads_t)
+                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            if (fn) fn(be, 1);
+        }
+    }
+    ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
+    int oh = ih + 2*pad - kh + 1, ow = iw + 2*pad - kw + 1;
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), output, 0, oc*oh*ow*sizeof(float));
 }
 
 // ── Forward pass ───────────────────────────────────────────────────
@@ -284,8 +388,8 @@ int safmn_process_float(safmn_context * ctx,
 
     // to_feat: Conv3x3(3→C, pad=1)
     std::vector<float> x(C * hw);
-    conv2d(input_chw, 3, H, W,
-           ctx->dcache.get(ctx->to_feat_w), ctx->dcache.get(ctx->to_feat_b),
+    conv2d_ggml(ctx, input_chw, 3, H, W,
+           ctx->to_feat_w, ctx->to_feat_b,
            C, 3, 3, 1, 1, x.data());
 
     // Save global residual
@@ -313,24 +417,21 @@ int safmn_process_float(safmn_context * ctx,
         for (int lv = 0; lv < ctx->n_levels; lv++) {
             const float * chunk_in = norm_buf.data() + lv * chunk_dim * hw;
             float * chunk_out = safm_cat.data() + lv * chunk_dim * hw;
-            const float * mfr_w = ctx->dcache.get(blk.safm.mfr_w[lv]);
-            const float * mfr_b = ctx->dcache.get(blk.safm.mfr_b[lv]);
-
             if (lv == 0) {
                 // Full resolution DW-Conv3x3
-                conv2d(chunk_in, chunk_dim, H, W,
-                       mfr_w, mfr_b,
+                conv2d_ggml(ctx, chunk_in, chunk_dim, H, W,
+                       blk.safm.mfr_w[lv], blk.safm.mfr_b[lv],
                        chunk_dim, 3, 3, 1, chunk_dim, chunk_out);
             } else {
                 // Pool → DW-Conv → Upsample
-                int s = 1 << lv; // 2, 4, 8
+                int s = 1 << lv;
                 int ph = std::max(1, H / s), pw = std::max(1, W / s);
                 pool_buf.resize(chunk_dim * ph * pw);
                 adaptive_max_pool2d(chunk_in, chunk_dim, H, W, ph, pw, pool_buf.data());
 
                 conv_tmp.resize(chunk_dim * ph * pw);
-                conv2d(pool_buf.data(), chunk_dim, ph, pw,
-                       mfr_w, mfr_b,
+                conv2d_ggml(ctx, pool_buf.data(), chunk_dim, ph, pw,
+                       blk.safm.mfr_w[lv], blk.safm.mfr_b[lv],
                        chunk_dim, 3, 3, 1, chunk_dim, conv_tmp.data());
 
                 nearest_upsample(conv_tmp.data(), chunk_dim, ph, pw, H, W, chunk_out);
@@ -339,16 +440,14 @@ int safmn_process_float(safmn_context * ctx,
 
         // 1x1 conv (aggr) + GELU + element-wise gate
         safm_buf.resize(C * hw);
-        conv2d(safm_cat.data(), C, H, W,
-               ctx->dcache.get(blk.safm.aggr_w), ctx->dcache.get(blk.safm.aggr_b),
+        conv2d_ggml(ctx, safm_cat.data(), C, H, W,
+               blk.safm.aggr_w, blk.safm.aggr_b,
                C, 1, 1, 0, 1, safm_buf.data());
         gelu_inplace(safm_buf.data(), C * hw);
 
-        // Gate: safm_buf * norm_buf (element-wise)
         for (int i = 0; i < C * hw; i++)
             safm_buf[i] *= norm_buf[i];
 
-        // Residual add
         for (int i = 0; i < C * hw; i++)
             x[i] += safm_buf[i];
 
@@ -357,15 +456,15 @@ int safmn_process_float(safmn_context * ctx,
                       ctx->dcache.get(blk.norm2_w), ctx->dcache.get(blk.norm2_b),
                       norm_buf.data());
 
-        int hidden = C * 2; // ffn_scale=2
+        int hidden = C * 2;
         ccm_buf.resize(hidden * hw);
-        conv2d(norm_buf.data(), C, H, W,
-               ctx->dcache.get(blk.ccm.conv1_w), ctx->dcache.get(blk.ccm.conv1_b),
+        conv2d_ggml(ctx, norm_buf.data(), C, H, W,
+               blk.ccm.conv1_w, blk.ccm.conv1_b,
                hidden, 3, 3, 1, 1, ccm_buf.data());
         gelu_inplace(ccm_buf.data(), hidden * hw);
 
-        conv2d(ccm_buf.data(), hidden, H, W,
-               ctx->dcache.get(blk.ccm.conv2_w), ctx->dcache.get(blk.ccm.conv2_b),
+        conv2d_ggml(ctx, ccm_buf.data(), hidden, H, W,
+               blk.ccm.conv2_w, blk.ccm.conv2_b,
                C, 1, 1, 0, 1, norm_buf.data());
 
         for (int i = 0; i < C * hw; i++)
@@ -384,8 +483,8 @@ int safmn_process_float(safmn_context * ctx,
     // to_img: Conv3x3 → PixelShuffle
     int out_ch = 3 * ctx->scale * ctx->scale;
     std::vector<float> pre_shuffle(out_ch * hw);
-    conv2d(x.data(), C, H, W,
-           ctx->dcache.get(ctx->to_img_w), ctx->dcache.get(ctx->to_img_b),
+    conv2d_ggml(ctx, x.data(), C, H, W,
+           ctx->to_img_w, ctx->to_img_b,
            out_ch, 3, 3, 1, 1, pre_shuffle.data());
 
     int out_h = H * ctx->scale, out_w = W * ctx->scale;
