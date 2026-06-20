@@ -177,7 +177,7 @@ EU/UK/South Korea. See the next-gen table below.)
 | DBNet | — | ResNet-18 + FPN + DB head | text detection (12M) |
 | Surya-Det | — | EfficientViT + SegFormer | surya-ocr-2 detector (38M, 91 langs) |
 | RT-DETRv2 | — | ResNet-50 + deformable xattn | layout-heron (17 classes) |
-| Qwen2.5-VL / Qwen2-VL | tiktoken | ViT-32L + spatial merger + Qwen LLM | german-ocr-3 (3B), FireRed-OCR, Qari-OCR, Nanonets, PaddleOCR-VL |
+| Qwen2.5-VL / Qwen2-VL / Qwen3-VL | tiktoken | ViT-32L + spatial merger + Qwen LLM; runtime ne-fix for transposed-weight GGUFs | german-ocr-3 (3B), FireRed-OCR, Qari-OCR, Nanonets, PaddleOCR-VL |
 | InternVL2 | tiktoken | InternViT + InternLM2.5 LLM | internvl2-1b/2b, H2OVL |
 | GLM-OCR | BPE | CogVLM2 + GLM-4 decoder | glm-edge-ocr (0.9B) |
 | GOT-OCR2 | BPE | SAM ViT-B + Qwen2-0.5B | got-ocr2 (0.7B) |
@@ -278,7 +278,7 @@ safmn_sr, esrgan_sr, restormer, tps_locnet, scunet_denoise, swinir_sr.
 | ~~6~~ | ~~Hunyuan-OCR~~ | ~~1B~~ | — | ~~Custom Tencent~~ | — | REJECTED: excludes EU/UK/South Korea |
 | 7 | **Qari-OCR** | 4B | Apache-2.0 | Qwen2-VL fine-tune (Arabic only) | Pending (4B = large, Arabic-only, parity bug) |
 
-**Remaining**: Qari-OCR (Arabic-only, 4B, parity bug).
+**Remaining**: Qari-OCR (Arabic-only, 4B, parity bug). FireRed-OCR (Qwen3-VL 2B) and german-ocr-3 reuse the qwen2vl_ocr engine; runtime ne-fix handles GGUF converters that store weights in PyTorch (out, in) order.
 
 #### OCRBench leaderboard reference (small VLMs, ≤3B)
 
@@ -317,10 +317,9 @@ enc+proj ~1.1 s. Remaining levers, ranked by leverage:
   holds ~5 GB (2.1 model + 1.3 stacked experts + 0.65 embed-f32 + Metal) on a
   16 GB box, so file pages and new allocations contend and swap. → the real load
   lever is **reducing the footprint** (#3, #4), not prefetch.
-- [ ] **#2 Decode graph reuse (~1–1.5 s).** Decode rebuilds 12 graphs/token ×
-  32 = 384× (`ggml_init(4 MB)` + `sched_alloc` Metal allocation each). Keep one
-  persistent per-layer graph (fixed max-KV, mask the tail) and reuse it across
-  tokens, llama.cpp-style. Moderate refactor.
+- [x] **#2 Decode graph reuse (~1–1.5 s) — DONE.** Persistent T=1 decode graph
+  with fixed max-KV, incremental KV-cache mask; 2× faster decode stage.
+  (`fcb5b11 perf(ocr2): persistent T=1 decode graph reuse`)
 - [ ] **#3 Per-row embedding dequant (~0.5 s + 655 MB).** Decode dequants the
   whole 128k×1280 embed table to F32 just to look up ~32 rows; dequant per row.
 - [ ] **#4 Converter-emitted stacked experts (memory, ~0.6 s).** Emit
