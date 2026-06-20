@@ -2372,3 +2372,34 @@ ctx->backend, ...)` at the init), so the CPU-only sched aborts in
 **LLM Q4_K weights on a CPU buffer** (vision/proj stay on Metal so the SigLIP tower keeps its
 Metal path — "performance not affected"). `core_gguf::load_weights` is single-backend only;
 a non-duplicating split needs a per-tensor backend selector (backward-compatible overload).
+
+### Fix B validation result (live): graph runs on CPU but is numerically WRONG
+With Fix B, the graph path runs on CPU without crashing (mirrored 362 llm.* Q4_K
+tensors = 1498 MB; KV on CPU; prefill 47.6s/784 tok, decode ~188 ms/tok — far
+better than the scalar path which swaps and never finishes). BUT the output is
+fluent degenerate repetition ("the image is a textual representation of the
+image, and it is a textual representation of the image, …"), not the actual
+text. The scalar path OCRs correctly, and both share the same prefill embeds +
+prompt — so `gv_run_llm_body` has a PRE-EXISTING numerical bug (its own comment
+warned "not yet numerically validated"). Fix B is correct as execution
+infrastructure but the graph must NOT be enabled by default until its numerics
+are fixed (per-layer diff of gv_run_llm_body vs granite-llm-ref.gguf — the
+batched-prefill KV path is the prime suspect). Graph stays opt-in.
+
+### Graph numerics VALIDATED correct; OCR garbage is downstream of the LLM
+test-granite-vision-diff <model> <ref> graph PASSES per-layer (layer0 0.9997,
+layer39 0.9964, logits 0.9994) — gv_run_llm_body is numerically correct on CPU
+(Fix B). Vision is separately validated (cos 0.99998). So the OCR ramble is NOT
+an LLM/vision numerical bug.
+
+Chat template: the GGUF vocab has ONLY granite role tokens (<|start_of_role|>,
+<|end_of_role|>, <|end_of_text|>, <image>) — NOT the LLaVA <|system|>/<|user|>/
+<|assistant|> the code assumed. Fixed encode_prompt to emit special tokens as
+single ids + switched to the granite template. BUT: with the *correct* granite
+tokens the model emits character garbage ("e q e q…"), whereas the *wrong* LLaVA
+template (role markers byte-BPE'd into pieces) produced fluent-but-wrong text
+("the image is a textual representation…"). So emitting the real role/control
+token ids is what breaks generation, despite the LLM graph being correct on
+text-only input. Open lead for next session: the special-token embeddings /
+their interaction with the image rows, or <|end_of_text|>(=eos id 0) appearing
+mid-prefill. Neither template yields correct OCR yet; the graph itself is fine.
