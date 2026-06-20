@@ -906,32 +906,11 @@ llm_graph build_llm_graph(context &ctx, int n_tokens, int n_past,
             Kfull = ggml_cont(g, k_layer);  // (hd, Lk, nkv)
             Vfull = ggml_cont(g, v_layer);
 
-            // GQA expansion: (hd, Lk, nkv) → (hd, Lk, nh)
-            if (kv_repeat > 1) {
-                Kfull = ggml_reshape_4d(g, Kfull, hd, Lk, 1, nkv);
-                ggml_tensor *K_tgt = ggml_new_tensor_4d(g, Kfull->type, hd, Lk, kv_repeat, nkv);
-                Kfull = ggml_repeat(g, Kfull, K_tgt);
-                Kfull = ggml_reshape_3d(g, Kfull, hd, Lk, nh);
-
-                Vfull = ggml_reshape_4d(g, Vfull, hd, Lk, 1, nkv);
-                ggml_tensor *V_tgt = ggml_new_tensor_4d(g, Vfull->type, hd, Lk, kv_repeat, nkv);
-                Vfull = ggml_repeat(g, Vfull, V_tgt);
-                Vfull = ggml_reshape_3d(g, Vfull, hd, Lk, nh);
-            }
+            // flash_attn_ext handles GQA natively (rk2 = neq2/nek2 broadcast)
+            // — no need to ggml_repeat K/V heads to match Q head count
         } else {
             // ── No KV cache: use current K/V directly ──
-            if (kv_repeat > 1) {
-                K_new = ggml_reshape_4d(g, K_new, hd, 1, nkv, T);
-                ggml_tensor *K_tgt = ggml_new_tensor_4d(g, K_new->type, hd, kv_repeat, nkv, T);
-                K_new = ggml_repeat(g, K_new, K_tgt);
-                K_new = ggml_reshape_3d(g, K_new, hd, nh, T);
-
-                V_new = ggml_reshape_4d(g, V_new, hd, 1, nkv, T);
-                ggml_tensor *V_tgt = ggml_new_tensor_4d(g, V_new->type, hd, kv_repeat, nkv, T);
-                V_new = ggml_repeat(g, V_new, V_tgt);
-                V_new = ggml_reshape_3d(g, V_new, hd, nh, T);
-            }
-            // Permute to (hd, T, nh) for flash_attn
+            // Permute to (hd, T, nkv) for flash_attn — GQA handled internally
             Kfull = ggml_cont(g, ggml_permute(g, K_new, 0, 2, 1, 3));
             Vfull = ggml_cont(g, ggml_permute(g, V_new, 0, 2, 1, 3));
         }
