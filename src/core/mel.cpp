@@ -69,9 +69,12 @@ std::vector<float> compute(const float* samples, int n_samples, const float* win
 
     std::vector<float> power((size_t)T * n_freqs, 0.0f);
     {
-        std::vector<float> fft_in((size_t)n_fft);
-        std::vector<float> fft_out((size_t)n_fft * 2);
+        // Each frame's FFT is independent — parallelize across frames.
+        // Thread-local fft_in/fft_out buffers avoid data races.
+        #pragma omp parallel for schedule(static) if(T > 16)
         for (int t = 0; t < T; t++) {
+            std::vector<float> fft_in((size_t)n_fft);
+            std::vector<float> fft_out((size_t)n_fft * 2);
             const float* frame = in_ptr + (size_t)(t + t_start) * hop;
             for (int n = 0; n < n_fft; n++)
                 fft_in[n] = frame[n] * window[n];
