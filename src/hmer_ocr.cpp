@@ -115,8 +115,13 @@ struct hmer_ocr_context {
     core_gguf::WeightLoad wl;
     int n_threads;
 
-    // Dequantized weight cache (for quantized models)
+    // Dequantized weight cache (for quantized models — scalar fallback only)
     core_cpu::DequantCache dequant_cache;
+
+    // ggml graph encoder infrastructure
+    ggml_backend_t       enc_backend  = nullptr;
+    ggml_backend_sched_t enc_sched    = nullptr;
+    std::vector<uint8_t> enc_compute_meta;  // graph metadata buffer
 
     // Inference state
     std::string result_buf;
@@ -304,11 +309,21 @@ hmer_ocr_context * hmer_ocr_init(const char * model_path, int n_threads) {
 
     ctx->bench = (std::getenv("CRISPEMBED_HMER_BENCH") != nullptr);
 
+    // Set up ggml backend + scheduler for encoder graph
+    ctx->enc_backend = ggml_backend_cpu_init();
+    if (ctx->enc_backend) {
+        ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads);
+        ggml_backend_t backends[] = { ctx->enc_backend };
+        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+    }
+
     return ctx.release();
 }
 
 void hmer_ocr_free(hmer_ocr_context * ctx) {
     if (!ctx) return;
+    if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+    if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
     core_gguf::free_weights(ctx->wl);
     delete ctx;
 }
@@ -405,7 +420,241 @@ static void avgpool2d(const float * input, int ch, int in_h, int in_w,
 }
 
 // ---------------------------------------------------------------------------
-// DenseNet-121 encoder forward pass
+// ggml graph: DenseNet-121 encoder
+// ---------------------------------------------------------------------------
+
+// Prepare conv weight: reshape 2D→4D if needed, cast to F16 for ggml_conv_2d.
+static ggml_tensor * enc_prep_conv(ggml_context * g, ggml_tensor * w,
+                                    int IC, int KH, int KW) {
+    if (!w) return nullptr;
+    if (ggml_n_dims(w) == 2) {
+        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
+            w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+        int64_t OC = w->ne[1];
+        w = ggml_reshape_4d(g, w, KW, KH, IC, OC);
+    }
+    if (w->type != GGML_TYPE_F16)
+        w = ggml_cast(g, w, GGML_TYPE_F16);
+    return w;
+}
+
+// BN scale+offset: x = x * scale + offset  (per-channel, broadcast over spatial)
+static ggml_tensor * enc_bn(ggml_context * g, ggml_tensor * x,
+                             ggml_tensor * scale, ggml_tensor * offset) {
+    // x shape: (W, H, C) in ggml convention — scale/offset are (C,)
+    ggml_tensor * s = ggml_reshape_3d(g, scale,  1, 1, scale->ne[0]);
+    ggml_tensor * o = ggml_reshape_3d(g, offset, 1, 1, offset->ne[0]);
+    x = ggml_mul(g, x, s);
+    x = ggml_add(g, x, o);
+    return x;
+}
+
+// Conv2D + optional bias
+static ggml_tensor * enc_conv2d(ggml_context * g, ggml_tensor * x,
+                                 ggml_tensor * w, ggml_tensor * bias,
+                                 int IC, int KH, int KW,
+                                 int stride, int pad) {
+    w = enc_prep_conv(g, w, IC, KH, KW);
+    x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
+    if (bias) {
+        ggml_tensor * b = ggml_reshape_3d(g, bias, 1, 1, bias->ne[0]);
+        x = ggml_add(g, x, b);
+    }
+    return x;
+}
+
+// Build the full DenseNet-121 encoder graph.
+// Input: pixel_input tensor (W, H, 2) — gray + mask
+// Output: encoder_out tensor (W', H', 1024)
+static ggml_cgraph * build_encoder_graph(hmer_ocr_context * ctx, int W, int H) {
+    const auto & hp = ctx->hparams;
+
+    // Estimate graph size: stem + 42 dense layers × ~10 nodes + transitions
+    // Graph size: 42 dense layers × ~30 nodes + stem + transitions + type casts
+    // Quantized models need extra cast nodes (Q→F32→reshape→F16 per conv weight)
+    // DenseNet concat graph has deep dependency tree, needs generous allocation
+    int graph_size = 42 * 40 + 600;
+    size_t buf_size = ggml_tensor_overhead() * (graph_size + 200)
+                    + ggml_graph_overhead_custom(graph_size, false);
+    ctx->enc_compute_meta.resize(buf_size);
+
+    ggml_init_params ip = { buf_size, ctx->enc_compute_meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, graph_size, false);
+
+    // Input tensor: (W, H, 2) — ggml layout is W×H×C
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, 2);
+    ggml_set_name(x, "pixel_input");
+    ggml_set_input(x);
+
+    // Stem: Conv2d(2→64, 7×7, stride=2, pad=3) + bias (BN folded) + ReLU
+    int ch = (int)hp.num_init_features;  // 64
+    x = enc_conv2d(g, x, ctx->stem_conv_w, ctx->stem_conv_b, 2, 7, 7, 2, 3);
+    x = ggml_relu(g, x);
+
+    // MaxPool(3×3, stride=2, pad=1)
+    x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 3, 3, 2, 2, 1, 1);
+
+    // Dense block helper
+    auto dense_block = [&](const std::vector<dense_layer> & layers, int & cur_ch) {
+        for (const auto & l : layers) {
+            if (!l.conv1_w) continue;
+
+            // BN1 + ReLU on cur features
+            ggml_tensor * normed = enc_bn(g, x, l.bn1_scale, l.bn1_offset);
+            normed = ggml_relu(g, normed);
+
+            // Conv1: 1×1 bottleneck → 128
+            int bn_ch = 128;
+            ggml_tensor * bottleneck = enc_conv2d(g, normed, l.conv1_w, nullptr,
+                                                   cur_ch, 1, 1, 1, 0);
+
+            // BN2 + ReLU
+            bottleneck = enc_bn(g, bottleneck, l.bn2_scale, l.bn2_offset);
+            bottleneck = ggml_relu(g, bottleneck);
+
+            // Conv2: 3×3 → growth_rate (32)
+            int gr = (int)hp.growth_rate;
+            ggml_tensor * new_feat = enc_conv2d(g, bottleneck, l.conv2_w, nullptr,
+                                                 bn_ch, 3, 3, 1, 1);
+
+            // Concat along channel dimension (dim=2 in ggml's W,H,C layout)
+            x = ggml_concat(g, x, new_feat, 2);
+            cur_ch += gr;
+        }
+    };
+
+    auto transition = [&](const transition_layer & t, int & cur_ch) {
+        // BN + ReLU
+        x = enc_bn(g, x, t.bn_scale, t.bn_offset);
+        x = ggml_relu(g, x);
+
+        // Conv 1×1: cur_ch → cur_ch/2
+        int out_ch = cur_ch / 2;
+        x = enc_conv2d(g, x, t.conv_w, nullptr, cur_ch, 1, 1, 1, 0);
+
+        // AvgPool 2×2
+        x = ggml_pool_2d(g, x, GGML_OP_POOL_AVG, 2, 2, 2, 2, 0, 0);
+        cur_ch = out_ch;
+    };
+
+    int cur_ch = ch;
+
+    // Block 1 (6 layers): 64 → 64+6*32 = 256
+    dense_block(ctx->block1, cur_ch);
+    transition(ctx->trans1, cur_ch);  // 256 → 128, spatial /2
+
+    // Block 2 (12 layers): 128 → 128+12*32 = 512
+    dense_block(ctx->block2, cur_ch);
+    transition(ctx->trans2, cur_ch);  // 512 → 256, spatial /2
+
+    // Block 3 (24 layers): 256 → 256+24*32 = 1024
+    dense_block(ctx->block3, cur_ch);
+
+    // Final BN + ReLU
+    x = enc_bn(g, x, ctx->final_bn_scale, ctx->final_bn_offset);
+    x = ggml_relu(g, x);
+
+    // Permute from WHC (ggml) to HW×C for the decoder
+    // ggml layout: ne[0]=W, ne[1]=H, ne[2]=C
+    // We need (H*W, C) output. Reshape to (W*H, C) then cont.
+    int64_t out_w = x->ne[0], out_h = x->ne[1], out_c = x->ne[2];
+    // Permute to (C, W, H) → cont → reshape to (C, W*H) → transpose → (W*H, C)
+    // Actually simpler: just reshape and let the caller transpose on CPU.
+    // Mark output so we can read it.
+    ggml_set_name(x, "encoder_out");
+    ggml_set_output(x);
+
+    ggml_build_forward_expand(gf, x);
+    return gf;
+}
+
+// Run encoder via ggml graph
+static void run_encoder_ggml(hmer_ocr_context * ctx,
+                              const float * gray, int W, int H) {
+    auto t0 = std::chrono::steady_clock::now();
+
+    // Build graph
+    ggml_cgraph * gf = build_encoder_graph(ctx, W, H);
+
+    // Allocate via scheduler
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "hmer_ocr: failed to allocate encoder graph\n");
+        return;
+    }
+
+    // Set input: 2-channel (gray + mask), WHC layout for ggml
+    // The scalar code uses CHW. ggml uses WHC (ne[0]=W, ne[1]=H, ne[2]=C).
+    // So we need to interleave: for each pixel (w,h), store [gray, mask].
+    // Actually ggml_conv_2d expects data in (W, H, C) layout where C is ne[2].
+    // That means channel-last: pixel[h*W+w] has C values contiguous.
+    // But our gray data is row-major (h*W+w). So:
+    //   Channel 0 (gray): input[w + h*W + 0*W*H] in WHC = same as HW order
+    //   Channel 1 (mask): input[w + h*W + 1*W*H] = 1.0
+    // Wait, ggml's ne[0] is the innermost dimension. For a 3D tensor (W,H,C),
+    // the stride is: ne[0]=W stride=1, ne[1]=H stride=W, ne[2]=C stride=W*H.
+    // So the memory layout is: for c in C, for h in H, for w in W: data[c*H*W + h*W + w]
+    // This IS CHW! Same as the scalar code.
+
+    int spatial = W * H;
+    std::vector<float> input(2 * spatial);
+    memcpy(input.data(), gray, spatial * sizeof(float));
+    std::fill(input.data() + spatial, input.data() + 2 * spatial, 1.0f);
+
+    ggml_tensor * pixel_in = ggml_graph_get_tensor(gf, "pixel_input");
+    ggml_backend_tensor_set(pixel_in, input.data(), 0, 2 * spatial * sizeof(float));
+
+    // Compute
+    for (int i = 0; i < ggml_backend_sched_get_n_backends(ctx->enc_sched); i++) {
+        ggml_backend_t be = ggml_backend_sched_get_backend(ctx->enc_sched, i);
+        ggml_backend_dev_t dev = ggml_backend_get_device(be);
+        ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
+        if (reg) {
+            auto * fn = (ggml_backend_set_n_threads_t)
+                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            if (fn) fn(be, ctx->n_threads);
+        }
+    }
+    if (ggml_backend_sched_graph_compute(ctx->enc_sched, gf) != GGML_STATUS_SUCCESS) {
+        fprintf(stderr, "hmer_ocr: encoder graph compute failed\n");
+        return;
+    }
+
+    // Read output: (W', H', C) in ggml = CHW in memory
+    ggml_tensor * enc_out = ggml_graph_get_tensor(gf, "encoder_out");
+    int out_w = (int)enc_out->ne[0];
+    int out_h = (int)enc_out->ne[1];
+    int out_c = (int)enc_out->ne[2];
+
+    ctx->enc_h = out_h;
+    ctx->enc_w = out_w;
+    int n_positions = out_h * out_w;
+
+    // Read CHW data from graph output
+    std::vector<float> chw_data(out_c * n_positions);
+    ggml_backend_tensor_get(enc_out, chw_data.data(), 0, chw_data.size() * sizeof(float));
+
+    // Transpose CHW → HW×C (same as scalar run_encoder)
+    ctx->encoder_output.resize(n_positions * out_c);
+    for (int c = 0; c < out_c; c++) {
+        for (int i = 0; i < n_positions; i++) {
+            ctx->encoder_output[i * out_c + c] = chw_data[c * n_positions + i];
+        }
+    }
+
+    if (ctx->bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t0).count();
+        fprintf(stderr, "[hmer-bench] encoder (ggml): %.1f ms\n", ms);
+    }
+
+    fprintf(stderr, "hmer_ocr: encoder output: (%d, %d, %d) = %d positions\n",
+            out_c, out_h, out_w, n_positions);
+}
+
+// ---------------------------------------------------------------------------
+// DenseNet-121 encoder forward pass (scalar fallback)
 // ---------------------------------------------------------------------------
 
 static void run_encoder(hmer_ocr_context * ctx,
@@ -905,9 +1154,14 @@ const char * hmer_ocr_recognize(
     if (bench) fprintf(stderr, "[hmer-bench] preprocess: %.1f ms\n",
         std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
-    // Run encoder
+    // Run encoder (ggml graph path, fallback to scalar if scheduler not set up or env override)
     t0 = std::chrono::steady_clock::now();
-    run_encoder(ctx, input, w, h);
+    bool use_scalar = std::getenv("HMER_OCR_SCALAR_ENCODER") != nullptr;
+    if (ctx->enc_sched && !use_scalar) {
+        run_encoder_ggml(ctx, input, w, h);
+    } else {
+        run_encoder(ctx, input, w, h);
+    }
     if (bench) fprintf(stderr, "[hmer-bench] encoder: %.1f ms\n",
         std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
