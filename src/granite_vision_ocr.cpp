@@ -22,6 +22,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <climits>
 #include <cmath>
 #include <cstdio>
@@ -245,6 +246,7 @@ struct granite_vision_context {
 
     int max_tokens;
     int n_threads;
+    bool bench = false;
 
     // Weight storage
     core_gguf::WeightLoad wl;
@@ -352,6 +354,8 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
             ctx->attention_multiplier,
             ctx->have_tokenizer ? "embedded" : "MISSING",
             ctx->have_tokenizer ? (int)ctx->tokenizer.vocab.size() : 0);
+
+    ctx->bench = (std::getenv("CRISPEMBED_GRANITE_OCR_BENCH") != nullptr);
 
     return ctx;
 }
@@ -735,14 +739,29 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
                     pixels[src_idx] / 255.0f;
             }
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     // Vision encoder
+    auto t_vis = std::chrono::steady_clock::now();
     std::vector<float> vis_features(T_vis * feat_dim);
     int n_vis_tokens = 0;
     gv_vision_forward(ctx, image.data(), img_size, img_size, vis_features.data(), &n_vis_tokens);
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_vis).count();
+        fprintf(stderr, "[granite_ocr-bench] vision_encoder: %lldms\n", (long long)ms);
+    }
 
     // Projector
+    auto t_proj = std::chrono::steady_clock::now();
     std::vector<float> proj_features(n_vis_tokens * D);
     gv_projector(ctx, vis_features.data(), n_vis_tokens, feat_dim, proj_features.data());
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_proj).count();
+        fprintf(stderr, "[granite_ocr-bench] projector: %lldms\n", (long long)ms);
+    }
 
     const float * embed_w = ctx->get("llm.embed.weight");
     float emb_mul = ctx->embedding_multiplier;
@@ -780,6 +799,7 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
     ctx->n_past = 0;
 
     // ── Prefill: text tokens (scaled embeds) with vision rows spliced in ──
+    auto t_prefill = std::chrono::steady_clock::now();
     std::vector<float> emb(D);
     for (int id : prompt_ids) {
         if (id == ctx->image_token_index) {
@@ -795,12 +815,20 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
             ctx->n_past++;
         }
     }
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_prefill).count();
+        fprintf(stderr, "[granite_ocr-bench] prefill: %lldms\n", (long long)ms);
+    }
 
     // ── Greedy decode → detokenized UTF-8 text ──────────────────────────
     ctx->output_text.clear();
     ctx->char_confidences.clear();
 
+    long long decode_total_ms = 0;
+    int decode_steps = 0;
     for (int step = 0; step < ctx->max_tokens; step++) {
+        auto t_step = std::chrono::steady_clock::now();
         int best_id = 0;
         float best_score = logits[0];
         for (int v = 1; v < ctx->vocab_size; v++)
@@ -821,6 +849,20 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
         for (int d = 0; d < D; d++) emb[d] = embed_w[(size_t)best_id * D + d] * emb_mul;
         gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
         ctx->n_past++;
+        if (bench) {
+            auto step_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - t_step).count();
+            decode_total_ms += step_ms;
+            decode_steps++;
+            fprintf(stderr, "[granite_ocr-bench] decode_step[%d]: %lldms\n", step, (long long)step_ms);
+        }
+    }
+    if (bench) {
+        fprintf(stderr, "[granite_ocr-bench] decode_total: %lldms (%d steps)\n",
+                decode_total_ms, decode_steps);
+        auto total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_total).count();
+        fprintf(stderr, "[granite_ocr-bench] total: %lldms\n", (long long)total_ms);
     }
 
     if (out_len) *out_len = (int)ctx->output_text.size();

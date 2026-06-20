@@ -139,6 +139,7 @@ struct context {
     tokenizer tok;
     int n_threads = 4;
     int verbosity = 1;
+    bool bench = false;
     std::string diff_ref_path;
 };
 

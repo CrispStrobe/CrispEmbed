@@ -20,6 +20,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -124,6 +125,8 @@ struct hmer_ocr_context {
     std::vector<float> encoder_output;
     int enc_h;  // spatial height after encoder
     int enc_w;  // spatial width after encoder
+
+    bool bench;
 };
 
 // ---------------------------------------------------------------------------
@@ -286,6 +289,8 @@ hmer_ocr_context * hmer_ocr_init(const char * model_path, int n_threads) {
     for (const auto & l : ctx->block3) if (l.conv1_w) mapped++;
     fprintf(stderr, "hmer_ocr: mapped %d/42 dense layers, %zu vocab tokens\n",
             mapped, ctx->vocab.size());
+
+    ctx->bench = (std::getenv("CRISPEMBED_HMER_BENCH") != nullptr);
 
     return ctx.release();
 }
@@ -942,7 +947,11 @@ const char * hmer_ocr_recognize(
 ) {
     if (!ctx || !pixels || width <= 0 || height <= 0) return nullptr;
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     // Auto-detect polarity and invert if needed
+    auto t0 = std::chrono::steady_clock::now();
     const int n = width * height;
     float mean = 0;
     for (int i = 0; i < n; i++) mean += pixels[i];
@@ -964,12 +973,23 @@ const char * hmer_ocr_recognize(
         input = scaled.data();
         fprintf(stderr, "hmer_ocr: scaled %dx%d → %dx%d\n", width, height, w, h);
     }
+    if (bench) fprintf(stderr, "[hmer-bench] preprocess: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
     // Run encoder
+    t0 = std::chrono::steady_clock::now();
     run_encoder(ctx, input, w, h);
+    if (bench) fprintf(stderr, "[hmer-bench] encoder: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
     // Run decoder
+    t0 = std::chrono::steady_clock::now();
     ctx->result_buf = greedy_decode(ctx);
+    if (bench) fprintf(stderr, "[hmer-bench] decoder: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+
+    if (bench) fprintf(stderr, "[hmer-bench] total: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();

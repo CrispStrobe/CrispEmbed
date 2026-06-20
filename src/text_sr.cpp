@@ -13,6 +13,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -277,6 +278,7 @@ struct text_sr_context {
     std::vector<int> dec_blk_nums;
     int middle_blk_num;
     int n_threads;
+    bool bench;
 
     core_gguf::WeightLoad wl;
     std::string model_path;
@@ -339,6 +341,7 @@ text_sr_context * text_sr_init(const char * model_path, int n_threads) {
         fprintf(stderr, "%s%d", i ? "," : "", ctx->dec_blk_nums[i]);
     fprintf(stderr, "], %d tensors\n", (int)ctx->wl.tensors.size());
 
+    ctx->bench = (std::getenv("CRISPEMBED_TEXT_SR_BENCH") != nullptr);
     return ctx;
 }
 
@@ -561,6 +564,10 @@ int text_sr_process(text_sr_context * ctx,
                     uint8_t ** output, int * out_width, int * out_height) {
     if (!ctx || !input || !output || width <= 0 || height <= 0) return -1;
 
+    const bool bench = ctx->bench;
+    using ms_f = std::chrono::duration<double, std::milli>;
+    auto t_total = std::chrono::steady_clock::now();
+
     int r = ctx->upscale_factor;
     if (tile_size <= 0) tile_size = 256;
     if (tile_overlap <= 0) tile_overlap = 32;
@@ -612,7 +619,13 @@ int text_sr_process(text_sr_context * ctx,
             // SR forward pass
             int otw = tw * r, oth = th * r;
             std::vector<float> tile_out(3 * oth * otw);
+            auto t_tile = std::chrono::steady_clock::now();
             sr_forward_tile(ctx, tile_in.data(), tw, th, tile_out.data());
+            if (bench) {
+                auto t_tile_end = std::chrono::steady_clock::now();
+                fprintf(stderr, "[text_sr-bench] tile %d,%d: %.1f ms\n",
+                        ty, tx, ms_f(t_tile_end - t_tile).count());
+            }
 
             // Blend into accumulator
             int ox0 = x0 * r, oy0 = y0 * r;
@@ -661,6 +674,11 @@ int text_sr_process(text_sr_context * ctx,
     *out_width = ow;
     *out_height = oh;
     fprintf(stderr, "text_sr: done (%dx%d)\n", ow, oh);
+    if (bench) {
+        auto t_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[text_sr-bench] total: %.1f ms\n",
+                ms_f(t_end - t_total).count());
+    }
     return 0;
 }
 

@@ -22,6 +22,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 
 // MSVC's <cmath> doesn't define M_PI without _USE_MATH_DEFINES.
@@ -366,6 +367,7 @@ struct restormer_context {
     int n_refine;
     bool has_bias;
     int n_threads;
+    bool bench;
 
     core_gguf::WeightLoad wl;
     std::vector<std::vector<float>> wbufs;
@@ -418,6 +420,7 @@ restormer_context * restormer_init(const char * model_path, int n_threads) {
             ctx->num_blocks[0], ctx->num_blocks[1], ctx->num_blocks[2], ctx->num_blocks[3],
             ctx->heads[0], ctx->heads[1], ctx->heads[2], ctx->heads[3],
             ctx->ffn_factor, ctx->n_refine, (int)ctx->wl.tensors.size());
+    ctx->bench = (std::getenv("CRISPEMBED_RESTORMER_BENCH") != nullptr);
     return ctx;
 }
 
@@ -670,6 +673,10 @@ int restormer_process(restormer_context * ctx,
                       uint8_t ** output) {
     if (!ctx || !input || !output || width <= 0 || height <= 0) return -1;
 
+    const bool bench = ctx->bench;
+    using ms_f = std::chrono::duration<double, std::milli>;
+    auto t_total = std::chrono::steady_clock::now();
+
     if (tile_size <= 0) tile_size = 128;
     if (tile_overlap <= 0) tile_overlap = 16;
     tile_overlap = std::min(tile_overlap, tile_size / 4);
@@ -706,7 +713,13 @@ int restormer_process(restormer_context * ctx,
                             full[c * height * width + (y0 + y) * width + (x0 + x)];
 
             std::vector<float> tile_out(3 * th * tw);
+            auto t_tile = std::chrono::steady_clock::now();
             rst_forward_tile(ctx, tile_in.data(), tw, th, tile_out.data());
+            if (bench) {
+                auto t_tile_end = std::chrono::steady_clock::now();
+                fprintf(stderr, "[restormer-bench] tile %d,%d: %.1f ms\n",
+                        ty, tx, ms_f(t_tile_end - t_tile).count());
+            }
 
             // Blend with Hann ramp
             int ot = tile_overlap;
@@ -742,6 +755,11 @@ int restormer_process(restormer_context * ctx,
 
     *output = out_buf;
     fprintf(stderr, "restormer: done %dx%d\n", width, height);
+    if (bench) {
+        auto t_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[restormer-bench] total: %.1f ms\n",
+                ms_f(t_end - t_total).count());
+    }
     return 0;
 }
 

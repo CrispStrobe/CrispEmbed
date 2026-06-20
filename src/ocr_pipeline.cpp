@@ -18,8 +18,10 @@ extern "C" {
 }
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <vector>
 
@@ -29,6 +31,7 @@ struct context {
     ocr_detect::context* det = nullptr;
     math_ocr_context* rec = nullptr;
     int n_threads = 4;
+    bool bench = false;
 };
 
 bool load(context** out, const char* det_path, const char* rec_path,
@@ -36,6 +39,7 @@ bool load(context** out, const char* det_path, const char* rec_path,
     auto* ctx = new context();
     *out = ctx;
     ctx->n_threads = n_threads;
+    ctx->bench = (std::getenv("CRISPEMBED_OCR_PIPELINE_BENCH") != nullptr);
 
     // Load detection model
     if (!ocr_detect::load(&ctx->det, det_path, n_threads)) {
@@ -86,10 +90,19 @@ std::vector<ocr_result> run_file(context* ctx, const char* image_path,
                                   int target_short_side) {
     if (!ctx || !ctx->det || !ctx->rec || !image_path) return {};
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     // Step 1: Detect text regions
+    auto t_detect = std::chrono::steady_clock::now();
     auto boxes = ocr_detect::detect_file(ctx->det, image_path,
                                           prob_threshold, box_threshold,
                                           1.5f, target_short_side);
+    if (bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_detect).count();
+        fprintf(stderr, "[ocr_pipeline-bench] detect: %.1f ms (%zu boxes)\n", ms, boxes.size());
+    }
 
     if (boxes.empty()) {
         fprintf(stderr, "ocr_pipeline: no text detected in %s\n", image_path);
@@ -109,6 +122,7 @@ std::vector<ocr_result> run_file(context* ctx, const char* image_path,
     std::vector<ocr_result> results;
     results.reserve(boxes.size());
 
+    double rec_total_ms = 0.0;
     for (size_t i = 0; i < boxes.size(); i++) {
         auto& b = boxes[i];
 
@@ -128,11 +142,16 @@ std::vector<ocr_result> run_file(context* ctx, const char* image_path,
         if (actual_w <= 0 || actual_h <= 0) continue;
 
         // Run recognition on the crop
+        auto t_rec = std::chrono::steady_clock::now();
         int out_len = 0;
         const char* text = math_ocr_recognize_raw(ctx->rec,
                                                     crop.data(),
                                                     actual_w, actual_h, 3,
                                                     &out_len);
+        if (bench) {
+            rec_total_ms += std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t_rec).count();
+        }
 
         ocr_result r;
         r.box = b;
@@ -145,6 +164,13 @@ std::vector<ocr_result> run_file(context* ctx, const char* image_path,
     }
 
     stbi_image_free(img);
+
+    if (bench) {
+        double total_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_total).count();
+        fprintf(stderr, "[ocr_pipeline-bench] recognize (all boxes): %.1f ms\n", rec_total_ms);
+        fprintf(stderr, "[ocr_pipeline-bench] total: %.1f ms\n", total_ms);
+    }
 
     fprintf(stderr, "ocr_pipeline: recognized %zu/%zu regions\n",
             results.size(), boxes.size());

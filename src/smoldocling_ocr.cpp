@@ -17,6 +17,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <climits>
 #include <cmath>
 #include <cstdio>
@@ -240,6 +241,7 @@ struct smoldocling_context {
 
     int max_tokens;
     int n_threads;
+    bool bench = false;
 
     // Tokenizer
     sd_tokenizer tokenizer;
@@ -340,6 +342,8 @@ smoldocling_context * smoldocling_init(const char * model_path, int n_threads) {
             ctx->llm_layers, ctx->llm_dim,
             ctx->llm_heads, ctx->llm_kv_heads, ctx->llm_ffn_dim,
             ctx->vocab_size, (int)ctx->wl.tensors.size());
+
+    ctx->bench = (std::getenv("CRISPEMBED_SMOLDOCLING_BENCH") != nullptr);
 
     return ctx;
 }
@@ -760,21 +764,36 @@ const char * smoldocling_recognize_raw(smoldocling_context * ctx,
                     pixels[src_idx] / 127.5f - 1.0f;
             }
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     // Vision encoder
     fprintf(stderr, "smoldocling: running vision encoder...\n");
+    auto t_vis = std::chrono::steady_clock::now();
     std::vector<float> vis_features(T_vis * ctx->vis_dim);
     int n_vis_tokens = 0;
     sd_vision_forward(ctx, image.data(), img_size, img_size,
                       vis_features.data(), &n_vis_tokens);
     fprintf(stderr, "smoldocling: vision done, %d tokens, first4=[%.4f,%.4f,%.4f,%.4f]\n",
             n_vis_tokens, vis_features[0], vis_features[1], vis_features[2], vis_features[3]);
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_vis).count();
+        fprintf(stderr, "[smoldocling-bench] vision_encoder: %lldms\n", (long long)ms);
+    }
 
     // Connector: pixel shuffle + projection
+    auto t_connector = std::chrono::steady_clock::now();
     int n_connector_tokens = 0;
     std::vector<float> connector_out(n_vis_tokens * D);  // will be <= n_vis_tokens
     sd_connector(ctx, vis_features.data(), n_vis_tokens,
                  connector_out.data(), &n_connector_tokens);
     fprintf(stderr, "smoldocling: connector done, %d tokens\n", n_connector_tokens);
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_connector).count();
+        fprintf(stderr, "[smoldocling-bench] connector: %lldms\n", (long long)ms);
+    }
 
     // Build input token sequence following SmolDocling chat template:
     //   <|im_start|>User:<image>Convert this page to docling.<end_of_utterance>\nAssistant:
@@ -826,6 +845,7 @@ const char * smoldocling_recognize_raw(smoldocling_context * ctx,
     std::vector<float> logits(ctx->vocab_size);
     int vis_idx = 0;
 
+    auto t_prefill = std::chrono::steady_clock::now();
     for (int t = 0; t < (int)input_ids.size(); t++) {
         std::vector<float> token_embed(D);
         if (input_ids[t] == ctx->image_token_id && vis_idx < n_connector_tokens) {
@@ -846,6 +866,11 @@ const char * smoldocling_recognize_raw(smoldocling_context * ctx,
 
         // DequantCache: no periodic clear needed (each weight cached once)
     }
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_prefill).count();
+        fprintf(stderr, "[smoldocling-bench] prefill: %lldms\n", (long long)ms);
+    }
 
     // Greedy decode
     ctx->output_text.clear();
@@ -853,7 +878,11 @@ const char * smoldocling_recognize_raw(smoldocling_context * ctx,
     int eos_id = 2;  // <|im_end|>
     int eou_id = 49279;  // <end_of_utterance>
 
+    long long decode_total_ms = 0;
+    int decode_steps = 0;
+    auto t_decode_start = std::chrono::steady_clock::now();
     for (int step = 0; step < ctx->max_tokens; step++) {
+        auto t_step = std::chrono::steady_clock::now();
         // Argmax
         int best_id = 0;
         float best_score = logits[0];
@@ -873,8 +902,15 @@ const char * smoldocling_recognize_raw(smoldocling_context * ctx,
         sd_llm_decode_step(ctx, next_embed.data(), ctx->n_past, logits.data());
         ctx->n_past++;
 
-        // Periodically clear weight buffers
         // DequantCache: no periodic clear needed
+    }
+    if (bench) {
+        auto t_decode_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[smoldocling-bench] decode (%d steps): %.1f ms\n",
+                (int)output_ids.size(),
+                std::chrono::duration<double, std::milli>(t_decode_end - t_decode).count());
+        fprintf(stderr, "[smoldocling-bench] total: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(t_decode_end - t_total).count());
     }
 
     // Detokenize
