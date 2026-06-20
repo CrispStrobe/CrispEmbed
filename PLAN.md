@@ -476,7 +476,7 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 
 - [ ] **Flash attention everywhere** — use `ggml_flash_attn_ext` in:
   - `decoder_embed.cpp`: **DONE** (`29d8a08`) — both single-text and batch paths
-  - `bidirlm_vision.cpp` (block-diagonal mask — flash_attn accepts masks)
+  - `bidirlm_vision.cpp`: **DONE** (`fd8cd09`) — F16 mask, halves mask memory
   - `lilt_kie.cpp` (BiACM score combination may need adaptation)
   - `qwen2vl_ocr.cpp`: already uses flash_attn
   - `deepseek_ocr2.cpp` all attention paths
@@ -609,8 +609,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **mel.cpp: SIMD/BLAS for mel projection** — naive triple-loop matmul
   (T*128*201 ≈ 38M scalar MACs). BLAS or SIMD inner loop.
 
-- [ ] **gguf_loader: `madvise(MADV_SEQUENTIAL)`** after mmap (line 217) for
-  better kernel readahead on cold model loads.
+- [x] **gguf_loader: `madvise(MADV_SEQUENTIAL)`** — already done (line 244).
+  Also has MADV_WILLNEED (line 247).
 
 - [x] **gguf_loader: `std::unordered_map` for tensor lookup** — DONE
   (`0777f30`). Replaced std::map with std::unordered_map in WeightLoad
@@ -645,8 +645,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **tokenizer.cpp: trie for WordPiece** — currently linear scan for longest
   match. Trie would be O(len).
 
-- [ ] **cpu_ops.h: `layernorm2d_cpu` cache-hostile access** — iterates (y,x,c)
-  but accesses stride-H*W across channels. NHWC layout or transpose first.
+- [x] **cpu_ops.h: `layernorm2d_cpu` cache-hostile access** — already fixed
+  (gather-norm-scatter with contiguous buf). Now uses thread-local buf
+  to eliminate per-call heap alloc (`113202d`).
 
 - [x] **vlm_attention.h: pre-allocate scores vector outside head loop** —
   DONE (`9172ba1`). Thread-local buffer replaces per-head std::vector.
@@ -661,8 +662,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   (math_ocr, mixtex, ppformulanet, ppformulanet_l) and several others
   (got_ocr, surya_det, parseq_ocr) use nearest-neighbor. Quality issue.
 
-- [ ] **bttr beam search: top-K selection** — O(V * beam_width) candidates
-  created then sorted. Use partial_sort or nth_element for top-K.
+- [x] **bttr beam search: top-K selection** — DONE (`113202d`).
+  Replaced std::sort with std::partial_sort for O(N·log(K)) top-K.
 
 - [x] **bttr_ocr decoder alloc hoist + SIMD attention** — DONE (`4febeb6`).
   Pre-allocated scratch buffers, core_cpu::dot_product in MHA, pre-alloc KV cache.
