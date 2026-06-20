@@ -639,9 +639,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   implementations in cc_detect, table_parse, classical_preproc, dewarp.
   scan_cleanup float variant kept separate (different input type).
 
-- [ ] **OpenMP in pixel-level ops** — `image_preprocess`, `dewarp`,
-  `scan_cleanup`, `face_align` all accept `n_threads` but run single-threaded
-  pixel loops.
+- [x] **OpenMP in pixel-level ops** — DONE (`af920b8`). Parallelized
+  `image_preprocess` (bicubic resize + normalize), `dewarp` (apply_warp),
+  `face_align` (affine warp). `scan_cleanup` uses sliding-window deques
+  (data-dependent, not parallelizable).
 
 - [x] **pcs: cache FC weights at load** — DONE. All 17 FC head tensors cached
   in `fc_cache` struct at init. No per-call `ggml_backend_tensor_get`.
@@ -656,8 +657,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   Linked list + min-heap, O(N log N). Both bpe.h and tokenizer_bpe.cpp.
 - [x] **tokenizer_bpe.cpp: same O(N^2) merge issue** — DONE (`eae73de`).
 
-- [ ] **tokenizer.cpp: trie for WordPiece** — currently linear scan for longest
-  match. Trie would be O(len).
+- [x] **tokenizer.cpp: trie for WordPiece** — DONE (`cce0fc1`). Two-root trie
+  (first-piece + continuation) built at load. O(len) longest match vs O(len²).
+  Output parity verified: MiniLM-L6-v2 produces identical embeddings.
 
 - [x] **cpu_ops.h: `layernorm2d_cpu` cache-hostile access** — already fixed
   (gather-norm-scatter with contiguous buf). Now uses thread-local buf
