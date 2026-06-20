@@ -698,32 +698,6 @@ typedef CrispembedRestormerProcessDart = int Function(
 typedef CrispembedRestormerFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedRestormerFreeImageDart = void Function(Pointer<Uint8> pixels);
 
-// --- TBSRN Super-Resolution (tbsrn_sr, always 2×) ---
-typedef CrispembedTbsrnSrInitNative = Pointer<Void> Function(
-    Pointer<Utf8> modelPath, Int32 nThreads);
-typedef CrispembedTbsrnSrInitDart = Pointer<Void> Function(
-    Pointer<Utf8> modelPath, int nThreads);
-
-typedef CrispembedTbsrnSrFreeNative = Void Function(Pointer<Void> ctx);
-typedef CrispembedTbsrnSrFreeDart = void Function(Pointer<Void> ctx);
-
-typedef CrispembedTbsrnSrProcessNative = Int32 Function(
-    Pointer<Void> ctx,
-    Pointer<Uint8> input,
-    Int32 width,
-    Int32 height,
-    Pointer<Pointer<Uint8>> outPixels,
-    Pointer<Int32> outWidth,
-    Pointer<Int32> outHeight);
-typedef CrispembedTbsrnSrProcessDart = int Function(
-    Pointer<Void> ctx,
-    Pointer<Uint8> input,
-    int width,
-    int height,
-    Pointer<Pointer<Uint8>> outPixels,
-    Pointer<Int32> outWidth,
-    Pointer<Int32> outHeight);
-
 // --- SAFMN Super-Resolution (safmn_sr) ---
 typedef CrispembedSafmnSrInitNative = Pointer<Void> Function(
     Pointer<Utf8> modelPath, Int32 nThreads);
@@ -757,8 +731,6 @@ typedef CrispembedSafmnSrProcessDart = int Function(
     Pointer<Int32> outWidth,
     Pointer<Int32> outHeight);
 
-typedef CrispembedTbsrnSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
-typedef CrispembedTbsrnSrFreeImageDart = void Function(Pointer<Uint8> pixels);
 typedef CrispembedSafmnSrFreeImageNative = Void Function(Pointer<Uint8> pixels);
 typedef CrispembedSafmnSrFreeImageDart = void Function(Pointer<Uint8> pixels);
 
@@ -1062,17 +1034,3 @@ typedef CrispembedLightOnOcrRecognizeDart = Pointer<Utf8> Function(
     Pointer<Void> ctx, Pointer<Uint8> pixels,
     int width, int height, int channels,
     Pointer<Int32> outLen);
-
-// --- Punctuation Restoration ---
-typedef CrispembedPunctInitNative = Pointer<Void> Function(
-    Pointer<Utf8> modelPath, Int32 nThreads);
-typedef CrispembedPunctInitDart = Pointer<Void> Function(
-    Pointer<Utf8> modelPath, int nThreads);
-
-typedef CrispembedPunctFreeNative = Void Function(Pointer<Void> ctx);
-typedef CrispembedPunctFreeDart = void Function(Pointer<Void> ctx);
-
-typedef CrispembedPunctProcessNative = Pointer<Utf8> Function(
-    Pointer<Void> ctx, Pointer<Utf8> text);
-typedef CrispembedPunctProcessDart = Pointer<Utf8> Function(
-    Pointer<Void> ctx, Pointer<Utf8> text);
