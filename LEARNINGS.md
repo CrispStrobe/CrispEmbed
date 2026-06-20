@@ -2427,15 +2427,61 @@ raw bytes and indexes with explicit `id`/`od`. But **`ggml_mul_mat` asserts**
 
 Fix: relabel the contiguous data with a reshape before the matmul —
 `ggml_mul_mat(g, ggml_reshape_2d(g, w, w->ne[1], w->ne[0]), x)`. This is a
-no-op for square weights and a pure view (no copy) otherwise. It is correct
-for Q4_K too: the quantizer made 256-element blocks along the stored-fast
-(`in`) axis, so the 8 blocks of an output row stay contiguous after the
-reshape. The vision FFN had this from the start; the projector and LLM
-graphs (`gv_run_projector_graph`, `gv_run_llm_body`) were missing it and
+no-op for square weights and a pure view (no copy) otherwise. The projector and
+LLM graphs (`gv_run_projector_graph`, `gv_run_llm_body`) were missing it and
 crashed until `feat/granite-vision-ne-fix`.
+
+**Caveat (this is a real footgun — see next entry):** the reshape is only valid
+on a *quantized* tensor when the **target `ne[0]` is a multiple of the quant
+block size**. It happens to hold for the Q4_K LLM weights (256-block; reshaped
+`ne[0]` ∈ {2048, 8192}) and the Q8_0 projector (32-block; 4608/2048), but NOT
+for the Q8_0 vision `ffn.down` (32-block; reshaped `ne[0]=4304`, 4304 % 32 ≠ 0).
+There the reshaped view mis-strides the blocks and silently returns garbage.
 
 Beware: a *systemic* load-time `ne` swap would double-correct the vision FFN
 (which already reshapes per-site) — pick one approach, not both.
+
+## granite_vision: the ggml-graph divergence was a Q8_0 reshape, not alloc reuse (2026-06-21)
+
+`gv_run_vit_graph` on Metal produced cos ~0 from the first encoder layer with
+`max_abs` exploding through the residual stream. A prior handover diagnosed an
+"unpatched ggml-alloc in-place buffer-reuse defect" (claiming the input `x_t`
+went NaN after compute). **That was wrong** — re-verifying with
+`CRISPEMBED_GRANITE_VIS_DBG=1` showed `x_t` *unchanged* after compute, no NaN.
+
+Real cause: `ggml_reshape_2d` on a **quantized** weight whose target `ne[0]`
+isn't a multiple of the quant block size. The converter stores 2D weights with
+transposed `ne` (ne[0]=out), so the FFN matmul relabels via reshape. For the
+Q8_0 `vis.layer.*.ffn.down` weight, `ne[0]` goes 1152→4304 and 4304 % 32 ≠ 0,
+so the reshaped view's 32-element Q8_0 blocks no longer align to rows — every
+down-projection from layer 0 onward is garbage that compounds through the
+residual adds (hence "explodes" and looks like an alloc smash). The square Q8_0
+attention weights are used raw (ne[0]=in=1152 already carries the blocks) and
+were always fine; the F16 `ffn.up` reshapes safely (per-element). This mirrors
+the merged `restormer`/`nafnet` "transposed 2D conv weight" fix, which also
+casts to F32 before reshaping a quantized weight.
+
+Fix (`gv_run_vit_graph` FFN): dequantize quantized weights to F32 *before* the
+reshape — `ggml_is_quantized(w->type) ? ggml_cast(g, w, F32) : w`, then
+`ggml_reshape_2d`. `ggml_cast` reads the Q8_0 with its *original* (correct) `ne`
+so the dequant is right; the post-cast F32 reshape is a plain element relabel.
+Result: per-layer parity with the scalar ViT (cos 0.9996–0.99987 early; 0.96
+late = the scalar's `F.layer_norm` eps 1e-5 vs model 1e-6 ref artifact, NOT a
+bug), and ~3 s vs ~100 s scalar. Gated behind `CRISPEMBED_GRANITE_VIS_GRAPH=1`.
+Two caveats keep it opt-in: the **ggml-CPU** backend still drifts at late layers
+(cos ~0.84 — only Metal is validated), and the full Metal OCR path is still
+blocked on the LLM Metal graph.
+
+**Separately on the LLM Metal graph:** the same handover called it "broken on
+Metal (emits EOS immediately)". The 7-token self-consistent diff
+(`granite-llm-ref`) actually **passes on Metal at cos 0.9999 through logits**, so
+the LLM math/weights/reshape are correct. But a full 784-token prefill (with
+spliced image features) on Metal still yields **0 decode steps** (first token =
+EOS), while the *same* prefill on the ggml-CPU backend decodes correctly (the
+handover's working baseline). So the residual LLM bug is a Metal
+**flash-attention-at-large-T** issue, not logic — the short diff can't surface
+it. Next step: try manual attention (`mul_mat`+`soft_max_ext`) for the prefill,
+or KV/mask padding, and diff a long-sequence prefill on Metal vs CPU.
 
 ## granite_vision OCR: the two image-path bugs (vision parity passed but OCR hallucinated)
 
@@ -2481,13 +2527,21 @@ outputs cos 0.05** while patch_embed (CPU scalar) is cos 1.0 and the scalar ViT
 loop is cos 0.96. To localize, `granite_vision_dump_vision` was extended to emit
 `vis_patch_embed` + per-feature-layer `vis_layer_N` stages, and
 `CRISPEMBED_GRANITE_VIS_SCALAR/CPU` levers added: the break is at the first
-encoder layer, identical across q4_k/q8_0 (not weights) and flash/manual attn
-(not attention), and the CPU backend yields NaN with `x_t` going NaN after a
-compute whose input uploaded fine — i.e. the **compute does not land in the
-read-back tensors**, an unpatched ggml-alloc in-place buffer-reuse defect (the
-same family that makes the Metal LLM graph emit EOS). Default vision is now the
-scalar ViT; the graph is gated behind `CRISPEMBED_GRANITE_VIS_GRAPH=1`. Full
-repair plan: `handover-prompts/granite-vision-graph-fix.md`.
+encoder layer, identical across q4_k/q8_0 and flash/manual attn.
+
+**CORRECTION (2026-06-21): the alloc-reuse diagnosis below was WRONG.** A later
+session re-verified independently: on Metal the graph's input `x_t` is *intact*
+after compute (not NaN), so there is no in-place buffer reuse. The "identical
+across q4_k/q8_0 and flash/manual attn" evidence does *not* implicate alloc — it
+equally fits a systematic weight-layout bug, since both test models carry **Q8_0
+vision** weights and the bug is in the FFN, not attention. Real cause: see the
+"Q8_0 reshape" entry directly below. The fix (cast the FFN weights to F32 before
+the transposed-ne reshape) brings every `gv_run_vit_graph` layer to scalar
+parity (cos 0.9996–0.99987 early; late layers track the scalar's 0.96 ref-eps
+artifact) and runs ~3 s vs ~100 s scalar. Lesson preserved: a self-consistent
+diff (`granite-llm-ref`) can't catch backend/weight bugs — only the HF-blueprint
+`granite-vision-ref` can; AND a handover's stated root cause must be re-verified,
+not trusted (here "NaN on CPU / alloc reuse" was never reproduced).
 
 Also: the on-disk `*-q4_k.tok.gguf` had **Q4_0 vision weights** (quantized
 before the `vis→Q8_0` fix in `tools/quantize.cpp`), collapsing scalar vision to
