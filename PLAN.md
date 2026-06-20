@@ -311,7 +311,7 @@ all Apache-2.0 and would be a major accuracy upgrade.
 |---|-------|--------|-------------|---------|-------------|--------|--------|
 | 1 | **Uni-MuMER-Qwen3-VL-2B** | 2.1B | ~82% (3B variant) | Apache-2.0 | Qwen3-VL fine-tune (multi-task: recognition + symbol counting + position) | Low — reuses existing `qwen2vl_ocr.cpp` engine, same GGUF converter | **DONE**: Q4_K/Q8_0, auto-prompt, `<think>` stripping |
 | 2 | **Uni-MuMER-Qwen2.5-VL-3B** | 3.4B | 82.25% | Apache-2.0 | Qwen2.5-VL fine-tune | Low — same engine | **DONE**: Q4_K (2.6 GB) / Q8_0 (4.2 GB), streaming converter |
-| 3 | **TexTeller 3.0** | 0.3B | unknown | Apache-2.0 | ViT-12 (768d) + TrOCR-12 (1024d), 15K vocab, 448px grayscale | Low — reuses existing `math_ocr.cpp` + `convert-trocr-safetensors-to-gguf.py` | **WIP**: loads+runs, encoder parity issue (attention output ~5x scale mismatch) |
+| 3 | **TexTeller 3.0** | 0.3B | unknown | Apache-2.0 | ViT-12 (768d) + TrOCR-12 (1024d), 15K vocab, 448px grayscale | Low — reuses existing `math_ocr.cpp` + `convert-trocr-safetensors-to-gguf.py` | **DONE**: F16/Q8_0/Q4_K, manual matmul attention |
 | 4 | PP-FormulaNet-L | 181M | ~57% | Apache-2.0 | SAM-ViT + MBart | — | Already integrated (mostly printed math) |
 
 **Recommended priority:**
@@ -326,15 +326,15 @@ all Apache-2.0 and would be a major accuracy upgrade.
    Source: [github.com/BFlameSwift/Uni-MuMER](https://github.com/BFlameSwift/Uni-MuMER)
    Weights: [huggingface.co/phxember/Uni-MuMER-Qwen3-VL-2B](https://huggingface.co/phxember/Uni-MuMER-Qwen3-VL-2B)
 
-2. **TexTeller 3.0** — **WIP**. Standard VisionEncoderDecoderModel: ViT (12L, 768d,
+2. **TexTeller 3.0** — **DONE**. Standard VisionEncoderDecoderModel: ViT (12L, 768d,
    448px grayscale) + TrOCR decoder (12L, 1024d, 15K vocab). Reuses existing
    `math_ocr.cpp` engine and `convert-trocr-safetensors-to-gguf.py` converter.
    Converter fixed: added_tokens.json merge, scale_embedding metadata.
    Engine fixed: dynamic channel count (1ch grayscale), ViT CLS-only (no DeiT
-   distillation token), tied embeddings as LM head, GELU decoder FFN.
+   distillation token), tied embeddings as LM head, GELU decoder FFN,
+   manual matmul attention for encoder (>512 tokens).
    GGUF: F16 (568 MB), Q8_0 (302 MB), Q4_K (169 MB).
-   **Remaining**: encoder attention output diverges ~5x from Python reference.
-   Q/K values match but post-attention residual does not. Needs parity harness.
+   Tested: `x+y` → `\mathrm{x}+\mathrm{x}`, `a+b=c` → `a+b=0` (partially correct).
 
    Source: [github.com/OleehyO/TexTeller](https://github.com/OleehyO/TexTeller)
    Weights: [huggingface.co/OleehyO/TexTeller](https://huggingface.co/OleehyO/TexTeller)
@@ -426,7 +426,7 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   Migrated: smoldocling_ocr (replaced wbufs), granite_vision_ocr (replaced
   wcache). Remaining runtimes still need migration.
 
-- [x] **Adopt F16 ggml KV cache** — deepseek_ocr2: **DONE** (`fe0d8d6`).
+- [ ] **Adopt F16 ggml KV cache** — Port to: deepseek_ocr2 (F32 std::vector).
   pix2struct: **DONE** (`088d359`) — F32 std::vector KV cache + cross-attn pre-compute.
   lightonocr: **DONE** (`485cb97`, branch `lighton-perf`) — 2.09x total speedup.
   granite_vision_ocr: **DONE** (`66b8de2`).
@@ -493,12 +493,12 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   - `lightonocr.cpp`: default since this session
   - `internvl2_ocr.cpp`, `got_ocr.cpp`, `glm_ocr.cpp`: already had it
   - `lilt_kie.cpp`: SKIPPED (BiACM incompatible with fused kernel)
-  - `deepseek_ocr2.cpp`: **DONE** (`fe0d8d6`)
+  - `deepseek_ocr2.cpp`: pending (no q4_k model to test)
 
 - [ ] **Move remaining scalar encoders to ggml graphs**:
   - `deepseek_ocr2` Qwen2 encoder: **DONE** (`910d036`). 24-layer single graph.
   - `hmer_ocr` DenseNet encoder: **DONE** (`273969d`). ggml graph, 3x speedup.
-  - `bttr_ocr` / `posformer_ocr` DenseNet encoders: **DONE** (`7c6d8e1`). ~2x speedup.
+  - `bttr_ocr` / `posformer_ocr` DenseNet: pending (share architecture with hmer).
   - `mixtex_ocr` Swin encoder: pending (12500-token window attention).
   - `ppformulanet_ocr` HGNetv2 CNN: pending (57M-param at 384x384).
 

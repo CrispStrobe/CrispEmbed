@@ -237,7 +237,15 @@ static ggml_tensor* g_mha(ggml_context* g, ggml_tensor* Q, ggml_tensor* K, ggml_
     Q = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, Q, hd, n_heads, T), 0, 2, 1, 3));
     K = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, K, hd, n_heads, T), 0, 2, 1, 3));
     V = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, V, hd, n_heads, T), 0, 2, 1, 3));
-    ggml_tensor* attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
+    // Q,K,V: [hd, T, nh]
+
+    ggml_tensor* attn;
+    // Manual matmul attention (more reliable than flash_attn_ext for some models)
+    ggml_tensor* scores = ggml_mul_mat(g, K, Q); // [T, T, nh]
+    scores = ggml_soft_max_ext(g, scores, nullptr, 1.0f / sqrtf((float)hd), 0.0f);
+    ggml_tensor* V_t = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3)); // [T, hd, nh]
+    attn = ggml_mul_mat(g, V_t, scores); // [hd, T, nh]
+
     // Output: [hd, T, nh] → [hd, nh, T] → [H, T]
     attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
     return ggml_reshape_2d(g, attn, H, T);
