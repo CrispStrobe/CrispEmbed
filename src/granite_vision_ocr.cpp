@@ -1040,7 +1040,8 @@ void granite_vision_dump_vision(granite_vision_context * ctx,
 static void gv_llm_decode_step(granite_vision_context * ctx,
                                 const float * token_embed, int n_past,
                                 float * logits,
-                                gv_dump_cb dump_cb = nullptr, void * dump_ud = nullptr) {
+                                gv_dump_cb dump_cb = nullptr, void * dump_ud = nullptr,
+                                bool want_logits = true) {
     int D = ctx->llm_dim;
     int n_heads = ctx->llm_heads;
     int n_kv = ctx->llm_kv_heads;
@@ -1132,8 +1133,9 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
     if (!lm_w && ctx->tie_word_embeddings)
         lm_w = ctx->get("llm.embed.weight");
 
-    if (lm_w) {
-        // SIMD-accelerated LM head matmul (49156 × 2048)
+    if (lm_w && (want_logits || dump_cb)) {
+        // SIMD-accelerated LM head matmul (49156 × 2048). Skipped during scalar
+        // prefill for all but the last token — only the final position seeds generation.
         core_cpu::linear_cpu(x.data(), logits, D, ctx->vocab_size, lm_w, nullptr);
         float inv_scale = 1.0f / ctx->logits_scaling;
         for (int v = 0; v < ctx->vocab_size; v++) logits[v] *= inv_scale;
@@ -1322,17 +1324,21 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
                              (D / ctx->llm_heads), 0.0f);
         ctx->kv_allocated = max_seq;
         ctx->n_past = 0;
-        for (int id : prompt_ids) {
+        for (size_t pi = 0; pi < prompt_ids.size(); pi++) {
+            int id = prompt_ids[pi];
+            bool last_prompt = (pi + 1 == prompt_ids.size());
             if (id == ctx->image_token_index) {
                 for (int t = 0; t < n_vis_tokens; t++) {
                     const float * vr = proj_features.data() + (size_t)t * D;
                     for (int d = 0; d < D; d++) emb[d] = vr[d] * emb_mul;
-                    gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
+                    gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data(),
+                                       nullptr, nullptr, /*want_logits=*/false);
                     ctx->n_past++;
                 }
             } else {
                 for (int d = 0; d < D; d++) emb[d] = embed_w[(size_t)id * D + d] * emb_mul;
-                gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
+                gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data(),
+                                   nullptr, nullptr, /*want_logits=*/last_prompt);
                 ctx->n_past++;
             }
         }
