@@ -506,6 +506,7 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `vlm_attention.h` with `precompute(head_dim, theta)` and `apply()` methods.
   Eliminates `powf` per-element. Migrated: smoldocling_ocr (NEGHALF),
   granite_vision_ocr (NEGHALF). Remaining `core_vlm` users still on `apply_rope()`.
+  Unit tests: 4 cases covering identity, NEGHALF/INTERLEAVED parity, reuse (`65c282d`).
 
 - [x] **Batch linear → GEMM in SR/restoration attention** — DONE. dat_sr
   (`a71c123`), swinir_sr (`dcf6556`), hat_sr (`b199741`), scunet (`52250ef`),
@@ -783,7 +784,10 @@ single-threaded, must not OOM.
 ### glm_ocr (CogVLM2 + GLM-4, 0.9B) — DONE
 - [x] Downsample + merger → ggml graph (conv2d_direct + batched SwiGLU + LayerNorm)
   Gated: CRISPEMBED_GLM_OCR_SCALAR_MERGER=1. Merger: 383ms on q4_k.
-### granite_vision — PENDING (LLM decoder ggml graph not yet validated)
+### granite_vision — PARTIAL
+- [x] Weight reshape fix: `sw()` helper in `gv_run_llm_body` corrects PyTorch [out,in]→ggml [in,out] for K/V/gate/up/down (`55ed5be`)
+- [x] Skip LM head matmul during scalar prefill: `want_logits` parameter cuts ~99.8% of prefill LM head work (`55ed5be`)
+- [ ] LLM decoder ggml batch graph (replaces the scalar token-by-token fallback entirely)
 
 ### smoldocling (SigLIP + SmolLM2, 256M) — IN PROGRESS
 - [x] F16 KV cache + batched prefill (done earlier, `bc329e4`)
