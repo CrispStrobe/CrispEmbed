@@ -53,8 +53,10 @@
 #include "gguf.h"
 
 #include <cstdint>
+#include <cstdio>
 #include <map>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace core_gguf {
@@ -122,16 +124,30 @@ bool load_weights(const char* path, ggml_backend_t backend, const char* model_ta
 void free_weights(WeightLoad& wl);
 
 // ---------------------------------------------------------------------------
-// Tensor lookup helpers
+// Tensor lookup helpers (templated so callers may pass std::map or
+// std::unordered_map — both are used across the codebase).
 // ---------------------------------------------------------------------------
 
 // Look up a tensor by name. Returns nullptr (silently) if missing.
-ggml_tensor* try_get(const std::map<std::string, ggml_tensor*>& tensors, const char* name);
+template<typename Map>
+inline ggml_tensor* try_get(const Map& tensors, const char* name) {
+    auto it = tensors.find(name);
+    return it != tensors.end() ? it->second : nullptr;
+}
 
 // Look up a tensor by name. Prints an error to stderr if missing but
 // still returns nullptr — the caller decides whether a missing tensor
 // is fatal.
-ggml_tensor* require(const std::map<std::string, ggml_tensor*>& tensors, const char* name, const char* model_tag);
+template<typename Map>
+inline ggml_tensor* require(const Map& tensors, const char* name, const char* model_tag) {
+    auto it = tensors.find(name);
+    if (it == tensors.end()) {
+        fprintf(stderr, "%s: required tensor '%s' not found in GGUF\n",
+                model_tag ? model_tag : "core_gguf", name);
+        return nullptr;
+    }
+    return it->second;
+}
 
 // Build a shell command that produces the formatted tensor name for a
 // per-layer lookup. Avoids the snprintf(buf, sizeof(buf), "...", i) line
