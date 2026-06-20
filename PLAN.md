@@ -568,9 +568,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   ocr_detect, surya_det, layout_detect. Eliminates ~1-3ms malloc/free
   overhead per call; significant for small/fast models (DBNet 12M, PARSeq 24M).
 
-- [ ] **internvl2: native GQA in flash_attn** — currently `ggml_repeat` tiles
-  KV heads before passing to flash_attn (lines 909-919). Modern
-  `ggml_flash_attn_ext` supports GQA natively — pass K/V directly.
+- [x] **internvl2: native GQA in flash_attn** — DONE (`7cffe56`). Removed
+  `ggml_repeat` KV head expansion. `flash_attn_ext` handles GQA via broadcast
+  factors (rk2 = neq2/nek2). Saves memory + ~20 tensor ops/layer/step.
 
 - [ ] **internvl2: batch vision tiles** — `encode_vision()` (line 1200-1226)
   processes tiles one at a time with separate graph allocations per tile.
