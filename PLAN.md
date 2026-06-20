@@ -449,22 +449,24 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   pass pixel buffer. Also: `clean_to_temp` (line 212) writes a cleaned image to
   temp PNG then re-loads it — pass the buffer directly.
 
-- [ ] **LSTM gate SIMD** — `tesseract_lstm.cpp` inner dot-product loop (lines
-  237-245) is the hot loop for line recognition. Unvectorized. Add SIMD
-  accumulation for the `wih_row[j] * xt[j]` inner product.
+- [x] **LSTM gate SIMD** — `tesseract_lstm.cpp` inner dot-product loops in both
+  `lstm_forward` and `summ_lstm_forward` now use `core_cpu::dot_product()`.
+  AVX2+FMA accelerated on x86-64, NEON on ARM.
 
 - [ ] **Sliding-window min/max pool** — `scan_cleanup.cpp` `min_pool_2d` and
   `max_pool_2d` are O(K^2) per pixel. For K=51, that's ~2500 comparisons/pixel.
   Monotonic deque → O(1) amortized.
 
-- [ ] **Weight dequant caching in SR runtimes** — only `dat_sr` has
-  `dequant_cache`. All other 12 SR/restoration files re-dequant same weights
-  per-block per-image via `ctx->get()` appending to `wbufs`. Either cache at
-  init or use the unified core cache (P0 item above).
+- [x] **Weight dequant caching in SR runtimes** — Migrated 7 Pattern-A runtimes
+  (hat_sr, swinir_sr, pan_sr, text_sr, nafnet_denoise, restormer, tbsrn_sr)
+  from `wbufs` append to `core_cpu::DequantCache`. 4 Pattern-B runtimes
+  (instructir, adair, esrgan, safmn) use inline dequant — separate TODO.
 
-- [ ] **Migrate duplicated helpers to `core/cpu_ops.h`** — `bttr_ocr.cpp`,
-  `hmer_ocr.cpp`, `posformer_ocr.cpp` each have ~300 lines of duplicated
-  conv2d/relu/layernorm/linear. Use the shared `core/cpu_ops.h` versions.
+- [x] **Migrate duplicated helpers to `core/cpu_ops.h`** — bttr_ocr, hmer_ocr,
+  posformer_ocr: replaced duplicated conv2d/relu/layernorm/linear with
+  `core_cpu` shared versions (SIMD-accelerated). Replaced per-context
+  `dequant_cache` map with `core_cpu::DequantCache`. Kept unique helpers
+  (maxpool, avgpool, apply_bn) as-is.
 
 - [ ] **deepseek_ocr2: single multi-layer LLM graph** — currently builds 12
   separate ggml graphs per decode token (line 1288-1295). A single graph
