@@ -417,12 +417,16 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 
 #### P1 — High-impact targeted improvements
 
-- [ ] **Flash attention everywhere** — use `ggml_flash_attn_ext` in:
-  - `decoder_embed.cpp` single-text path (lines 731-748, manual Q@K+softmax+V)
-  - `bidirlm_vision.cpp` (block-diagonal mask — flash_attn accepts masks)
-  - `lilt_kie.cpp` (BiACM score combination may need adaptation)
-  - `qwen2vl_ocr.cpp` LLM decode (lines 1294-1306)
-  - `deepseek_ocr2.cpp` all attention paths
+- [x] **Flash attention everywhere** — use `ggml_flash_attn_ext` in:
+  - `decoder_embed.cpp` single-text and batch-text paths — DONE (`d02be13`)
+  - `bidirlm_vision.cpp` — DONE (`6d021d5`); F16 mask conversion at call site
+  - `lilt_kie.cpp` — BiACM cross-modal: EXCLUDED (combines two score tensors before softmax)
+  - `qwen2vl_ocr.cpp` LLM decode — DONE (already flash_attn_ext)
+  - `deepseek_ocr2.cpp` Qwen2 encoder, LLM decode+prefill — DONE (`c75b95d`, `bf7f529`)
+  - `lightonocr.cpp` prefill + decode paths — DONE (`b2fd202`); GQA removed from flash path
+  - `granite_vision_ocr.cpp` vision encoder, `math_ocr.cpp` g_mha/g_mha_1q,
+    `layout_detect.cpp` AIFI + decoder self-attn — DONE (`dc0861b`)
+  - Windowed Swin/DeBERTa attention excluded (relative pos biases added to scores)
 
 - [ ] **Move remaining scalar encoders to ggml graphs**:
   - `deepseek_ocr2` Qwen2 encoder (lines 777-931): 24-layer bidirectional
@@ -455,22 +459,22 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   pass pixel buffer. Also: `clean_to_temp` (line 212) writes a cleaned image to
   temp PNG then re-loads it — pass the buffer directly.
 
-- [ ] **LSTM gate SIMD** — `tesseract_lstm.cpp` inner dot-product loop (lines
-  237-245) is the hot loop for line recognition. Unvectorized. Add SIMD
-  accumulation for the `wih_row[j] * xt[j]` inner product.
+- [x] **LSTM gate SIMD** — `tesseract_lstm.cpp` and `gliner_ner.cpp` BiLSTM:
+  replaced scalar gate loops with `core_cpu::linear_cpu` (NEON/AVX2).
+  DONE (`b2dd957`, `53921c4`).
 
-- [ ] **Sliding-window min/max pool** — `scan_cleanup.cpp` `min_pool_2d` and
-  `max_pool_2d` are O(K^2) per pixel. For K=51, that's ~2500 comparisons/pixel.
-  Monotonic deque → O(1) amortized.
+- [x] **Sliding-window min/max pool** — `scan_cleanup.cpp` `min_pool_2d` and
+  `max_pool_2d`: O(K²) → O(wh) monotone deque. DONE (`07232b5`).
 
-- [ ] **Weight dequant caching in SR runtimes** — only `dat_sr` has
-  `dequant_cache`. All other 12 SR/restoration files re-dequant same weights
-  per-block per-image via `ctx->get()` appending to `wbufs`. Either cache at
-  init or use the unified core cache (P0 item above).
+- [x] **Weight dequant caching in SR runtimes** — migrated all 7 SR files with
+  growing `wbufs` / `to_f32+scratch` patterns to `core_cpu::DequantCache`:
+  swinir, hat, pan, tbsrn, text (DONE `b45ccf9`), esrgan, safmn (DONE `4b0c6ba`).
 
-- [ ] **Migrate duplicated helpers to `core/cpu_ops.h`** — `bttr_ocr.cpp`,
-  `hmer_ocr.cpp`, `posformer_ocr.cpp` each have ~300 lines of duplicated
-  conv2d/relu/layernorm/linear. Use the shared `core/cpu_ops.h` versions.
+- [x] **Migrate duplicated helpers to `core/cpu_ops.h`** — `bttr_ocr.cpp` and
+  `posformer_ocr.cpp` replaced with shims calling `core_cpu::conv2d_cpu`,
+  `relu_inplace`, `maxpool2d_cpu`, `avgpool2d_cpu`, `apply_bn_cpu`,
+  `layernorm_cpu`, `linear_cpu`. `hmer_ocr.cpp` partial (apply_bn_scale,
+  relu_inplace). DONE (`fd0d8aa`).
 
 - [ ] **deepseek_ocr2: single multi-layer LLM graph** — currently builds 12
   separate ggml graphs per decode token (line 1288-1295). A single graph
