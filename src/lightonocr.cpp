@@ -745,24 +745,25 @@ static bool run_decoder_prefill(context &ctx,
     int n_suffix = (int)suffix_ids.size();
     int n_prompt = n_prefix + n_image_tokens + n_suffix;
 
-    // Embed prefix and suffix tokens via embed_tokens on CPU
+    // Per-row embed dequant: avoids building a ggml graph + alloc + compute cycle
+    // just to look up a handful of token IDs.
+    ggml_tensor* emb_t = m.embed_tokens;
+    const auto* emb_tt = ggml_get_type_traits(emb_t->type);
+    const size_t emb_row_bytes = ggml_row_size(emb_t->type, D);
+    std::vector<uint8_t> emb_row_buf(emb_row_bytes);
     auto embed_tokens_cpu = [&](const std::vector<int32_t> &ids) -> std::vector<float> {
         int n = (int)ids.size();
-        ggml_init_params eip{ggml_tensor_overhead() * 16 + ggml_graph_overhead(), nullptr, true};
-        ggml_context *eg = ggml_init(eip);
-        ggml_tensor *idx = ggml_new_tensor_1d(eg, GGML_TYPE_I32, n);
-        ggml_set_input(idx);
-        ggml_tensor *emb = ggml_get_rows(eg, m.embed_tokens, idx);
-        ggml_set_output(emb);
-        ggml_cgraph *egf = ggml_new_graph(eg);
-        ggml_build_forward_expand(egf, emb);
-        ggml_backend_sched_reset(ctx.sched);
-        ggml_backend_sched_alloc_graph(ctx.sched, egf);
-        ggml_backend_tensor_set(idx, ids.data(), 0, n * sizeof(int32_t));
-        ggml_backend_sched_graph_compute(ctx.sched, egf);
-        std::vector<float> result(D * n);
-        ggml_backend_tensor_get(emb, result.data(), 0, result.size() * sizeof(float));
-        ggml_free(eg);
+        std::vector<float> result((size_t)D * n);
+        for (int i = 0; i < n; i++) {
+            float *dst = result.data() + (size_t)i * D;
+            const size_t off = (size_t)ids[i] * emb_row_bytes;
+            if (emb_t->type == GGML_TYPE_F32) {
+                ggml_backend_tensor_get(emb_t, dst, off, (size_t)D * sizeof(float));
+            } else {
+                ggml_backend_tensor_get(emb_t, emb_row_buf.data(), off, emb_row_bytes);
+                emb_tt->to_float(emb_row_buf.data(), dst, D);
+            }
+        }
         return result;
     };
 
