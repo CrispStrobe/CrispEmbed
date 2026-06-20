@@ -102,11 +102,7 @@ static void sir_softmax(float * data, int n) {
 
 static void sir_linear(const float * in, float * out, int in_d, int out_d,
                        const float * w, const float * b) {
-    for (int o = 0; o < out_d; o++) {
-        float s = b ? b[o] : 0.0f;
-        for (int i = 0; i < in_d; i++) s += in[i] * w[o * in_d + i];
-        out[o] = s;
-    }
+    core_cpu::linear_cpu(in, out, in_d, out_d, w, b);
 }
 
 // ── Swin window attention ──────────────────────────────────────────────
