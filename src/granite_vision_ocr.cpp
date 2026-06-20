@@ -517,11 +517,10 @@ static void gv_run_vit_graph(granite_vision_context * ctx,
         V = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, V, d_head, n_heads, T), 0, 2, 1, 3));
 
         // flash_attn_ext returns [d_head, n_heads, T] → reshape directly to [D, T],
-        // matching the validated bidirlm_vision ViT (no extra permute). NOTE: this
-        // whole ggml vision graph currently mis-computes (HF-blueprint cos 0.05;
-        // produces NaN on CPU) — same ggml-graph defect class as the gated LLM
-        // graph — so it is OFF by default (see CRISPEMBED_GRANITE_VIS_GRAPH in
-        // gv_vision_forward). Kept here in canonical form for when it is repaired.
+        // matching the validated bidirlm_vision ViT (no extra permute). The square
+        // Q8_0 attn weights are used raw (no reshape) — correct because their
+        // ne[0]=in axis already carries the 32-blocks; only the non-square FFN
+        // weights need the reshape/dequant handling below.
         ggml_tensor * attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
         attn = ggml_reshape_2d(g, attn, D, T);
 
@@ -531,18 +530,25 @@ static void gv_run_vit_graph(granite_vision_context * ctx,
 
         // ── FFN ──
         // The converter stores 2D weights in PyTorch [out,in] order, so the
-        // non-square FFN weights have transposed ggml ne and ggml_mul_mat
-        // asserts (4304 != 1152). Reshape relabels the (contiguous) data to
-        // ggml's expected [in,out] — a no-op for the square attn weights, so
-        // they are left as-is. See memory: granite-converter-transposed-ne.
+        // non-square FFN weights have transposed ggml ne (ne[0]=out) and must be
+        // relabelled to ggml_mul_mat's [in,out] with a reshape. BUT reshaping a
+        // *quantized* tensor only stays valid when the target ne[0] is a multiple
+        // of the quant block size: vis.ffn.down is Q8_0 with ne[0] 1152→4304 and
+        // 4304 % 32 != 0, so the reshaped view's blocks are mis-strided → garbage
+        // that corrupts the residual stream from layer 0 (was misdiagnosed as a
+        // ggml-alloc reuse bug). Dequantizing to F32 first makes the reshape a
+        // plain element relabel. F16/F32 weights reshape safely as-is.
+        // See LEARNINGS "granite_vision: ggml graph divergence was a Q8_0 reshape".
+        auto reshape_w = [&](ggml_tensor * w) -> ggml_tensor * {
+            ggml_tensor * t = ggml_is_quantized(w->type) ? ggml_cast(g, w, GGML_TYPE_F32) : w;
+            return ggml_reshape_2d(g, t, w->ne[1], w->ne[0]);
+        };
         resid = x;
         y = ln_g(x, ln2_w, ln2_b);
-        ggml_tensor * fc1_t = ggml_reshape_2d(g, fc1_w, fc1_w->ne[1], fc1_w->ne[0]);
-        y = ggml_mul_mat(g, fc1_t, y);
+        y = ggml_mul_mat(g, reshape_w(fc1_w), y);
         if (fc1_b) y = ggml_add(g, y, fc1_b);
         y = ggml_gelu(g, y);
-        ggml_tensor * fc2_t = ggml_reshape_2d(g, fc2_w, fc2_w->ne[1], fc2_w->ne[0]);
-        y = ggml_mul_mat(g, fc2_t, y);
+        y = ggml_mul_mat(g, reshape_w(fc2_w), y);
         if (fc2_b) y = ggml_add(g, y, fc2_b);
         x = ggml_add(g, resid, y);
 
@@ -933,13 +939,17 @@ static void gv_vision_forward(granite_vision_context * ctx,
     int n_feat = (int)ctx->feature_layers.size();
     std::vector<std::vector<float>> layer_outputs(n_feat);
 
-    // The ggml ViT graph (gv_run_vit_graph) is currently NUMERICALLY BROKEN:
-    // HF-blueprint diff shows cos 0.05 vs HF (garbage from the first encoder
-    // layer; produces NaN on the CPU backend) — a ggml-graph defect in the same
-    // family as the gated-off LLM graph. The hand-written scalar ViT below is
-    // diff-validated (cos 0.96 on the random-input ref; ~0.9999 on real images,
-    // OCRBench 852), so it is the DEFAULT. Opt into the (broken, faster) graph
-    // with CRISPEMBED_GRANITE_VIS_GRAPH=1 only for debugging the graph itself.
+    // The ggml ViT graph (gv_run_vit_graph) is now NUMERICALLY CORRECT on the
+    // Metal backend after the Q8_0-FFN-reshape fix (see gv_run_vit_graph): per
+    // -layer crispembed-diff matches the scalar ViT to 3-4 decimals (layer 3/7/15
+    // cos 0.9996-0.99987; late layers track the scalar's 0.96 ref-eps artifact)
+    // and it runs ~3 s vs ~100 s scalar. It stays opt-in (not yet the DEFAULT)
+    // for two reasons: (a) the ggml-CPU backend still drifts at late layers
+    // (cos ~0.84) so only Metal is validated, and (b) the full Metal OCR path is
+    // still gated on the LLM Metal graph (0 decode steps at 784-token prefill).
+    // The scalar ViT below is diff-validated (cos ~0.9999 on real images,
+    // OCRBench 852) and remains the DEFAULT. Enable the graph (Metal) with
+    // CRISPEMBED_GRANITE_VIS_GRAPH=1.
     static const bool use_vis_graph = std::getenv("CRISPEMBED_GRANITE_VIS_GRAPH") != nullptr;
     if (ctx->vis_sched && use_vis_graph) {
         gv_run_vit_graph(ctx, x.data(), T, D, layer_outputs);
