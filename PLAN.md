@@ -788,8 +788,8 @@ single-threaded, must not OOM.
 - [x] Weight reshape fix: `sw()` helper in `gv_run_llm_body` corrects PyTorch [out,in]→ggml [in,out] for K/V/gate/up/down
 - [x] Skip LM head matmul during scalar prefill: `want_logits` parameter cuts ~99.8% of prefill LM head work (`55ed5be`)
 - [x] Fix ggml LLM graph input tensor: `x` after the layer loop was the final output node, not the input; saved as `x_in` before the loop (`d116394`). Was the root cause of "decode runs away" with `CRISPEMBED_GRANITE_LLM_GRAPH=1`. Pending runtime validation.
+- [x] Native GQA in flash_attn: removed explicit ggml_repeat for KV heads, pass K/V with n_kv heads directly to flash_attn_ext (`b579345`). Saves ~10 lines and avoids materialization of repeated heads.
 - [ ] Persistent decode graph (reuse across T=1 decode steps, like lightonocr `27b650a`)
-- [ ] Native GQA in flash_attn (remove explicit ggml_repeat for KV heads)
 
 ### smoldocling (SigLIP + SmolLM2, 256M) — IN PROGRESS
 - [x] F16 KV cache + batched prefill (done earlier, `bc329e4`)
