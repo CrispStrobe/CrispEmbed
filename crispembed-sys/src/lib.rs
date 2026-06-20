@@ -143,6 +143,24 @@ extern "C" {
     /// Get model hyperparameters (valid for the lifetime of `ctx`).
     pub fn crispembed_get_hparams(ctx: *const CrispembedContext) -> *const CrispembedHparams;
 
+    // ── LoRA adapter hot-swap ──
+
+    /// Activate a LoRA adapter by name. Pass NULL/"" to deactivate.
+    /// Returns 1 on success, 0 on failure.
+    pub fn crispembed_set_lora(ctx: *mut CrispembedContext, adapter_name: *const c_char) -> c_int;
+
+    /// Currently active adapter name ("" if none).
+    pub fn crispembed_get_lora(ctx: *const CrispembedContext) -> *const c_char;
+
+    /// List available adapters. Sets `*out_names` and `*out_count`.
+    /// Pointers owned by context (valid until `crispembed_free`).
+    /// Returns 0 if no adapters available.
+    pub fn crispembed_list_lora(
+        ctx: *const CrispembedContext,
+        out_names: *mut *const *const c_char,
+        out_count: *mut c_int,
+    ) -> c_int;
+
     /// Truncate output to `dim` dimensions (Matryoshka). 0 = model default.
     pub fn crispembed_set_dim(ctx: *mut CrispembedContext, dim: c_int);
 
@@ -1222,7 +1240,7 @@ extern "C" {
     ) -> *const c_float;
 
     // ── OCR pipeline detected language ──
-    pub fn crispembed_ocr_pipeline_detected_lang(ctx: *mut c_void) -> *const c_char;
+    pub fn crispembed_ocr_pipeline_detected_lang(ctx: *mut c_void, out_confidence: *mut c_float) -> *const c_char;
 
     // ── OCR pipeline per-region / per-character confidence (last run) ──
     pub fn crispembed_ocr_pipeline_region_rec_confidence(ctx: *mut c_void, region_idx: c_int) -> c_float;
