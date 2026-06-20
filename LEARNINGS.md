@@ -2461,6 +2461,40 @@ multipliers, tied lm_head) is validated layer-by-layer by
 `tools/dump_granite_llm_reference.py` (builds the reference straight from the
 dequantized GGUF — no 5 GB HF checkout needed) at cos=1.0.
 
+## granite_vision: a self-consistent diff can hide a broken graph (2026-06)
+
+CRITICAL methodology lesson. There are TWO references and they prove different
+things:
+- `tools/dump_granite_llm_reference.py` → `granite-llm-ref.gguf` is built from
+  the **same dequantized GGUF** the C++ uses. Passing it (cos 1.0) only proves
+  the C++ math matches a numpy reimplementation on identical weights. It CANNOT
+  catch weight corruption or a wrong runtime backend.
+- `tools/kaggle/granite-vision-parity/granite_vision_parity.py` →
+  `granite-vision-ref.gguf` is built from the **real HF safetensors** (true
+  parity). It catches weight AND code bugs. Download from
+  `cstr/granite-vision-crispembed-GGUF` (37 MB) — no need to rerun on Kaggle.
+
+A prior handover trusted the self-consistent LLM cos 1.0 + a stale "vision cos
+0.99998" and concluded OCR garbage was a prompt/template bug. The HF-blueprint
+diff instead showed the **Metal/ggml SigLIP ViT graph (`gv_run_vit_graph`)
+outputs cos 0.05** while patch_embed (CPU scalar) is cos 1.0 and the scalar ViT
+loop is cos 0.96. To localize, `granite_vision_dump_vision` was extended to emit
+`vis_patch_embed` + per-feature-layer `vis_layer_N` stages, and
+`CRISPEMBED_GRANITE_VIS_SCALAR/CPU` levers added: the break is at the first
+encoder layer, identical across q4_k/q8_0 (not weights) and flash/manual attn
+(not attention), and the CPU backend yields NaN with `x_t` going NaN after a
+compute whose input uploaded fine — i.e. the **compute does not land in the
+read-back tensors**, an unpatched ggml-alloc in-place buffer-reuse defect (the
+same family that makes the Metal LLM graph emit EOS). Default vision is now the
+scalar ViT; the graph is gated behind `CRISPEMBED_GRANITE_VIS_GRAPH=1`. Full
+repair plan: `handover-prompts/granite-vision-graph-fix.md`.
+
+Also: the on-disk `*-q4_k.tok.gguf` had **Q4_0 vision weights** (quantized
+before the `vis→Q8_0` fix in `tools/quantize.cpp`), collapsing scalar vision to
+cos 0.32. Requantize from F16 with the current quantizer (now also keeps
+`proj.*` at Q8_0) → vision parity matches q8_0. `projector_hidden_act="gelu"`
+is exact **erf** (`ggml_gelu_erf`), NOT the vision tower's tanh.
+
 ## ggml_flash_attn_ext handles GQA natively (2026-06)
 
 `ggml_flash_attn_ext` supports Group Query Attention without explicit
