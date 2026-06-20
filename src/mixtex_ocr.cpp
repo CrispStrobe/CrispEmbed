@@ -272,7 +272,7 @@ static void dump_stats(const char* name, const float* data, int n) {
 // ---------------------------------------------------------------------------
 // Init
 // ---------------------------------------------------------------------------
-static ggml_tensor* find(const std::map<std::string, ggml_tensor*>& m, const char* name) {
+static ggml_tensor* find(const std::unordered_map<std::string, ggml_tensor*>& m, const char* name) {
     return core_gguf::try_get(m, name);
 }
 
