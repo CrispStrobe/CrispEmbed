@@ -527,9 +527,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `hat_sr.cpp` convert layouts at every block boundary (30-50 full-image
   transposes per forward pass). Choose one canonical layout.
 
-- [ ] **Pre-compute attention masks and position biases** — `hat_sr` and
-  `swinir_sr` rebuild shift masks per tile, `dat_sr` rebuilds dynamic position
-  bias per block. All deterministic for a given tile size.
+- [x] **Pre-compute attention masks — hat_sr** — DONE (`ec653a3`).
+  `hat_sr_context` now caches the SW-MSA mask keyed on (pH, pW); all
+  interior tiles of the same size reuse it. `swinir_sr` already loads
+  its mask from GGUF (stale). `dat_sr` dynamic position bias: deferred.
 
 - [ ] **Fuse BatchNorm into conv weights at model load** — `dat_sr` and
   `tbsrn_sr` apply BN as a separate pass after conv. Fold scale/shift into
