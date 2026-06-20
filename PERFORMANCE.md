@@ -696,3 +696,22 @@ runtime category. "Existing" means the optimization is already implemented;
 
 5. **Add `ggml_gallocr` reuse**: Only lfm2_embed stores the allocator on context. All
    other runtimes create and free it per call.
+
+---
+
+## VLM OCR Benchmarks (Intel Xeon Skylake, 4 threads, CPU-only)
+
+### Qwen3-VL-2B-Instruct (q4_k, 1.5 GB)
+
+End-to-end OCR on 800×300 invoice image. `QWEN_DBG=1` for per-stage timing.
+
+| Setting | Patches | Vision | Prefill | Decode/step | Quality |
+|---------|---------|--------|---------|-------------|---------|
+| Default (max_pixels=16M) | 900 (18×50) | 24.5s | 35.3s | 5.0s | 5/5 lines |
+| `CRISPEMBED_MAX_PIXELS=65536` | 208 (8×26) | 15.0s | 21.7s | — | 4/5 lines |
+
+**Speedup**: 1.6× faster vision+prefill (60s → 37s) at minor quality loss.
+
+`CRISPEMBED_MAX_PIXELS` reduces input resolution before patch extraction.
+Useful for CPU-only deployment where speed matters more than pixel-perfect OCR.
+Applies to all VLM OCR engines that use `image_preprocess.cpp`.
