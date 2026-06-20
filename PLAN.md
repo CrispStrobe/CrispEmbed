@@ -577,13 +577,14 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   processes tiles one at a time with separate graph allocations per tile.
   Batch multiple tiles into one graph.
 
-- [ ] **Eliminate redundant CHW↔HWC layout conversions** — `dat_sr.cpp` and
-  `hat_sr.cpp` convert layouts at every block boundary (30-50 full-image
-  transposes per forward pass). Choose one canonical layout.
+- [ ] **Eliminate redundant CHW↔HWC layout conversions** — `dat_sr.cpp`
+  converts at every block boundary. Low priority: layouts are comments/
+  documentation, actual transposes are minimal after SIMD linear_batch refactor.
 
-- [ ] **Pre-compute attention masks and position biases** — `hat_sr` and
-  `swinir_sr` rebuild shift masks per tile, `dat_sr` rebuilds dynamic position
-  bias per block. All deterministic for a given tile size.
+- [x] **Pre-compute attention masks and position biases** — Already resolved:
+  swinir_sr masks loaded from GGUF model file (stored as tensors, cached via
+  DequantCache). hat_sr has no runtime mask computation. dat_sr position bias
+  depends on spatial dims which change per tile — not precomputable.
 
 - [x] **Fuse BatchNorm into conv weights at model load** — TBSRN: fused 11
   conv+BN pairs (2 per SRB × 5 + 1 final) at init. `dat_sr` still pending.
@@ -686,17 +687,16 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   over all shift values (O(hsize * wpl * h)). Leptonica-style decomposed
   2-pass (power-of-2) would be much faster for large kernels.
 
-- [ ] **pdf_info: mmap instead of full file read** — currently loads entire
-  PDF into memory (line 32-44). Problematic for 500MB+ files.
+- [x] **pdf_info: mmap instead of full file read** — DONE (`5f027aa`).
+  Memory-mapped on POSIX with MADV_SEQUENTIAL, fread fallback on Windows.
 
 - [ ] **tps_warp: coarse grid + bilinear interpolation** — evaluates all N
   control points per output pixel (O(W*H*N) with sqrt+log). Pre-compute
   coarse displacement grid, interpolate at render time.
 
-- [ ] **Debug fprintf gating** — layout_detect, surya_det, ocr_detect,
-  math_ocr, got_ocr, glm_ocr, and others emit `fprintf(stderr, ...)` in
-  production paths unconditionally. Gate behind a verbosity level or
-  compile-time flag.
+- [x] **Debug fprintf gating (layout_detect)** — DONE (`614132e`). ~30
+  unconditional printfs converted to LDBG() macro (gated behind LAYOUT_DEBUG).
+  Remaining files (surya_det, ocr_detect) still have some unconditional prints.
 
 - [ ] **hmer coverage conv per step** — conv2d(256, 256, 3x3) per decoder
   step is the attention mechanism. Expensive but architecturally required.
@@ -756,7 +756,9 @@ single-threaded, must not OOM.
 - [x] F16 KV cache + batched prefill (done earlier, `bc329e4`)
 - [x] Patch embedding → ggml matmul (im2col + mul_mat, F16 bias cast)
   Gated: CRISPEMBED_SMOLDOCLING_SCALAR_PATCH=1
-- [ ] LLM decoder → ggml graphs (currently CPU scalar via core_vlm, 30 layers)
+- [x] LLM decoder → ggml graphs — DONE. Was already implemented but blocked by
+  F16 norm weight type mismatch on Q4_K models. Fixed with ggml_cast (`91b1f89`).
+  Tested: prefill=2.3s, decode=62s (128 steps).
 ### internvl2 — DONE (already optimized)
   F16 KV cache, flash attn, ggml patch embed, ggml vision graph — all done.
   Remaining: native GQA in flash_attn (skip ggml_repeat), batch vision tiles.
