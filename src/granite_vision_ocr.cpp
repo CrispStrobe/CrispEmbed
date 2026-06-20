@@ -678,7 +678,7 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     const int n_heads  = ctx->llm_heads;
     const int n_kv     = ctx->llm_kv_heads;
     const int d_head   = D / n_heads;
-    const int kv_rep   = n_heads / n_kv;
+    // kv_rep not needed: ggml_flash_attn_ext handles GQA natively
     const int Lk       = n_past + T;
     const float eps    = ctx->rms_eps;
     const float res_mul = ctx->residual_multiplier;
@@ -779,18 +779,8 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
         ggml_tensor * Kfull = ggml_cont(g, k_lay);  // [d_head, Lk, n_kv]
         ggml_tensor * Vfull = ggml_cont(g, v_lay);
 
-        // GQA expansion: repeat KV heads kv_rep times → [d_head, Lk, n_heads]
-        if (kv_rep > 1) {
-            Kfull = ggml_reshape_4d(g, Kfull, d_head, Lk, 1, n_kv);
-            ggml_tensor * Kt = ggml_new_tensor_4d(g, Kfull->type, d_head, Lk, kv_rep, n_kv);
-            Kfull = ggml_reshape_3d(g, ggml_repeat(g, Kfull, Kt), d_head, Lk, n_heads);
-
-            Vfull = ggml_reshape_4d(g, Vfull, d_head, Lk, 1, n_kv);
-            ggml_tensor * Vt = ggml_new_tensor_4d(g, Vfull->type, d_head, Lk, kv_rep, n_kv);
-            Vfull = ggml_reshape_3d(g, ggml_repeat(g, Vfull, Vt), d_head, Lk, n_heads);
-        }
-
-        // flash_attn_ext: Q [d_head, T, n_heads], K [d_head, Lk, n_heads]
+        // flash_attn_ext handles GQA natively via rk2=n_heads/n_kv broadcast —
+        // no explicit KV head repeat needed. Q [d_head, T, n_heads], K/V [d_head, Lk, n_kv]
         Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));  // [d_head, T, n_heads]
         ggml_tensor * attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, mask, attn_mul, 0.0f, 0.0f);
         // Output: [d_head, n_heads, T] → reshape → [D, T]
