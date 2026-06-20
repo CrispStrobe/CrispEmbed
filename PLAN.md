@@ -694,9 +694,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   mixtex, math_ocr, hmer, posformer, ppformulanet, ppformulanet_l are
   greedy-only. Beam width=3 typically helps math OCR accuracy.
 
-- [ ] **morph_fast: decomposed dilation** — horizontal dilation iterates
-  over all shift values (O(hsize * wpl * h)). Leptonica-style decomposed
-  2-pass (power-of-2) would be much faster for large kernels.
+- [x] **morph_fast: decomposed dilation** — DONE (`825db30`). Power-of-2
+  horizontal dilation replaces O(hsize) naive loop for hsize > 16.
+  hsize=30 (cc_detect): ~3x; hsize=31-200 (table_parse line detection): 3-14x.
 
 - [x] **pdf_info: mmap instead of full file read** — DONE (`5f027aa`).
   Memory-mapped on POSIX with MADV_SEQUENTIAL, fread fallback on Windows.
