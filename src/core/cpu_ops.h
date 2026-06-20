@@ -318,6 +318,21 @@ static inline void linear_cpu(const float* in, float* out, int in_dim, int out_d
 }
 
 // ---------------------------------------------------------------------------
+// Linear batched (matrix-matrix multiply): N tokens at once
+// ---------------------------------------------------------------------------
+// in:  [N, in_dim] row-major    (N rows of in_dim)
+// out: [N, out_dim] row-major   (N rows of out_dim)
+// w:   [out_dim, in_dim] row-major
+// Equivalent to: for (i=0..N-1) linear_cpu(in+i*in_dim, out+i*out_dim, ...)
+
+static inline void linear_batch_cpu(const float* in, float* out,
+                                     int N, int in_dim, int out_dim,
+                                     const float* w, const float* b) {
+    for (int i = 0; i < N; i++)
+        linear_cpu(in + i * in_dim, out + i * out_dim, in_dim, out_dim, w, b);
+}
+
+// ---------------------------------------------------------------------------
 // Linear (ggml_tensor overload — dequantizes w/b via to_f32)
 // ---------------------------------------------------------------------------
 
