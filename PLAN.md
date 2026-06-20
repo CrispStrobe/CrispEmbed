@@ -474,13 +474,14 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 
 #### P1 — High-impact targeted improvements
 
-- [ ] **Flash attention everywhere** — use `ggml_flash_attn_ext` in:
-  - `decoder_embed.cpp`: **DONE** (`29d8a08`) — both single-text and batch paths
-  - `bidirlm_vision.cpp`: **DONE** (`fd8cd09`) — F16 mask, halves mask memory
-  - `lilt_kie.cpp`: SKIPPED — BiACM adds text+layout scores before softmax,
-    incompatible with fused flash_attn kernel
-  - `qwen2vl_ocr.cpp`: already uses flash_attn
-  - `deepseek_ocr2.cpp` all attention paths
+- [x] **Flash attention everywhere** — done for all compatible runtimes:
+  - `decoder_embed.cpp`: **DONE** (`29d8a08`)
+  - `bidirlm_vision.cpp`: **DONE** (`fd8cd09`)
+  - `qwen2vl_ocr.cpp`: already had it
+  - `lightonocr.cpp`: default since this session
+  - `internvl2_ocr.cpp`, `got_ocr.cpp`, `glm_ocr.cpp`: already had it
+  - `lilt_kie.cpp`: SKIPPED (BiACM incompatible with fused kernel)
+  - `deepseek_ocr2.cpp`: pending (no q4_k model to test)
 
 - [ ] **Move remaining scalar encoders to ggml graphs**:
   - `deepseek_ocr2` Qwen2 encoder (lines 777-931): 24-layer bidirectional
@@ -542,9 +543,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [x] **gliner_ner BiLSTM SIMD** — Gate computation now uses
   `core_cpu::dot_product()` (AVX2+FMA/NEON). ~3M MACs per timestep accelerated.
 
-- [ ] **LiteMLA graph implementation** — `surya_det.cpp` line 792 has TODO:
-  `g_litemla` returns nullptr, the graph-accelerated LiteMLA is stubbed out.
-  Currently falls back to CPU-scalar attention.
+- [x] **LiteMLA graph implementation** — already done. `g_litemla` is fully
+  implemented and `run_forward_graph` is the default path. Scalar fallback
+  only via `SURYA_DET_SCALAR=1`. Linear attention: Q@(K^T@V) / (Q·K_sum).
 
 - [x] **Add tiling to SR runtimes without it** — ALL DONE. Hann-window overlap
   tiling added to esrgan_sr, safmn_sr, nafnet_denoise, scunet_denoise,
