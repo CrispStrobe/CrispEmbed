@@ -159,10 +159,14 @@ static void nafblock_forward(float * x, int c, int h, int w,
         pool[ch] /= hw;
     }
     std::vector<float> sca(c);
-    for (int o = 0; o < c; o++) {
-        float sum = to_f32(wt.sca_b, dq2)[o];
-        for (int i = 0; i < c; i++) sum += to_f32(wt.sca_w, dq1)[o * c + i] * pool[i];
-        sca[o] = sum;
+    {
+        const float * sca_w = to_f32(wt.sca_w, dq1);
+        const float * sca_b = to_f32(wt.sca_b, dq2);
+        for (int o = 0; o < c; o++) {
+            float sum = sca_b[o];
+            for (int i = 0; i < c; i++) sum += sca_w[o * c + i] * pool[i];
+            sca[o] = sum;
+        }
     }
     for (int ch = 0; ch < c; ch++)
         for (int i = 0; i < hw; i++) t3[ch * hw + i] *= sca[ch];

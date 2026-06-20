@@ -98,23 +98,11 @@ static void rst_layernorm_bf(float * data, int c, int h, int w,
                               const float * weight) {
     int hw = h * w;
     for (int i = 0; i < hw; i++) {
-        // Compute var over channels at this spatial position
-        float var = 0;
-        for (int ch = 0; ch < c; ch++) {
-            float v = data[ch * hw + i];
-            var += v * v;
-        }
-        var /= c;
-        // The mean is NOT subtracted (BiasFree variant uses var only, no mean)
-        // Wait — looking at the code again:
-        // BiasFree: sigma = x.var(-1, unbiased=False); return x / sqrt(sigma+1e-5) * weight
-        // This is var without mean subtraction... no:
-        // torch var(-1, unbiased=False) = mean((x - mean(x))^2)
-        // So it DOES subtract mean first for variance, just doesn't subtract mean from output
+        // Compute variance over channels: var(-1, unbiased=False) = mean((x - mean)²)
         float mean = 0;
         for (int ch = 0; ch < c; ch++) mean += data[ch * hw + i];
         mean /= c;
-        var = 0;
+        float var = 0;
         for (int ch = 0; ch < c; ch++) {
             float d = data[ch * hw + i] - mean;
             var += d * d;
@@ -260,26 +248,7 @@ static void rst_mdta(const float * x, int C, int H, int W, int n_heads,
     rst_conv2d(attn_out.data(), C, H, W, proj_w, nullptr, C, 1, 1, 0, 1, output);
 }
 
-// ── GDFN (Gated-DConv Feed-Forward Network) ───────────────────────────
-
-static void rst_gdfn(const float * x, int C, int H, int W,
-                     const float * in_w, const float * dw_w, const float * out_w,
-                     float * output) {
-    // Derive hidden dim from weight shapes: in_w is [hidden*2, C, 1, 1]
-    // We get hidden*2 from the weight shape — but we don't have the shape here.
-    // Instead, infer from the fact that project_in maps C → hidden*2.
-    // Actually, we DO know: the GGUF tensor has the shape encoded.
-    // For now, compute from the canonical formula.
-    // The caller will pass the correct hidden size.
-
-    // Actually, let's just compute it: hidden = int(C * ffn_factor)
-    // But we don't have ffn_factor here. Let's use the weight shape approach.
-    // Since we're CPU-scalar and have the weight pointer, we can't query shape.
-    // The caller must pass hidden*2 as a parameter.
-    // Hmm, this is a design issue. Let me refactor to pass hidden explicitly.
-    (void)x; (void)C; (void)H; (void)W;
-    (void)in_w; (void)dw_w; (void)out_w; (void)output;
-}
+// (rst_gdfn stub removed — dead code, unused)
 
 // GDFN with explicit hidden size
 static void rst_gdfn_ex(const float * x, int C, int H, int W, int hidden2,
