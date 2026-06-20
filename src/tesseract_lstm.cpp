@@ -13,6 +13,7 @@
 
 #include "ggml.h"
 #include "ggml-backend.h"
+#include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 
 #include <algorithm>
@@ -231,22 +232,17 @@ static void lstm_forward(
     std::vector<float> h(ns, 0.0f);
     std::vector<float> c(ns, 0.0f);
     std::vector<float> gates(gs);
+    std::vector<float> hh_out(gs);  // W_hh @ h scratch (hoisted out of step loop)
 
     for (int step = 0; step < T; step++) {
         int t = reverse ? (T - 1 - step) : step;
         const float * xt = input + t * ni;
 
-        // gates = W_ih @ x + W_hh @ h + bias
-        for (int g = 0; g < gs; g++) {
-            float val = bias[g];
-            const float * wih_row = W_ih + g * ni;
-            for (int j = 0; j < ni; j++)
-                val += wih_row[j] * xt[j];
-            const float * whh_row = W_hh + g * ns;
-            for (int j = 0; j < ns; j++)
-                val += whh_row[j] * h[j];
-            gates[g] = val;
-        }
+        // gates = W_ih @ x + bias  (SIMD GEMV via linear_cpu)
+        core_cpu::linear_cpu(xt, gates.data(), ni, gs, W_ih, bias);
+        // gates += W_hh @ h
+        core_cpu::linear_cpu(h.data(), hh_out.data(), ns, gs, W_hh, nullptr);
+        for (int g = 0; g < gs; g++) gates[g] += hh_out[g];
 
         for (int j = 0; j < ns; j++) {
             float i_gate = 1.0f / (1.0f + expf(-gates[0*ns + j]));
