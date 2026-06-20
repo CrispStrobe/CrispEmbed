@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
+#include <deque>
 #include <vector>
 #include <cstdio>
 #include <cstdlib>
@@ -386,64 +387,82 @@ void scan_cleanup_find_content_rect(const float * gray, int w, int h,
 
 // ── 4. Background whitening ─────────────────────────────────────────
 
-// Min-pool (erode): sliding window minimum
+// Min-pool (erode): sliding window minimum — O(w*h) via monotone deque.
 static void min_pool_2d(const float * src, int w, int h, int k, float * dst) {
     int half = k / 2;
     std::vector<float> tmp(w * h);
+    std::deque<int> dq;
 
-    // Horizontal pass
+    // Horizontal pass: for each row, slide window [out_x-half, out_x+half].
     for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            float mn = 1.0f;
-            int x0 = std::max(0, x - half);
-            int x1 = std::min(w - 1, x + half);
-            for (int xx = x0; xx <= x1; xx++) {
-                mn = std::min(mn, src[y * w + xx]);
+        dq.clear();
+        for (int right = 0; right < w + half; right++) {
+            if (right < w) {
+                while (!dq.empty() && src[y*w + dq.back()] >= src[y*w + right])
+                    dq.pop_back();
+                dq.push_back(right);
             }
-            tmp[y * w + x] = mn;
+            int out_x = right - half;
+            if (out_x < 0 || out_x >= w) continue;
+            while (!dq.empty() && dq.front() < std::max(0, out_x - half))
+                dq.pop_front();
+            tmp[y*w + out_x] = dq.empty() ? 1.0f : src[y*w + dq.front()];
         }
     }
-    // Vertical pass
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            float mn = 1.0f;
-            int y0 = std::max(0, y - half);
-            int y1 = std::min(h - 1, y + half);
-            for (int yy = y0; yy <= y1; yy++) {
-                mn = std::min(mn, tmp[yy * w + x]);
+    // Vertical pass: same logic transposed.
+    for (int x = 0; x < w; x++) {
+        dq.clear();
+        for (int right = 0; right < h + half; right++) {
+            if (right < h) {
+                while (!dq.empty() && tmp[dq.back()*w + x] >= tmp[right*w + x])
+                    dq.pop_back();
+                dq.push_back(right);
             }
-            dst[y * w + x] = mn;
+            int out_y = right - half;
+            if (out_y < 0 || out_y >= h) continue;
+            while (!dq.empty() && dq.front() < std::max(0, out_y - half))
+                dq.pop_front();
+            dst[out_y*w + x] = dq.empty() ? 1.0f : tmp[dq.front()*w + x];
         }
     }
 }
 
-// Max-pool (dilate): sliding window maximum
+// Max-pool (dilate): sliding window maximum — O(w*h) via monotone deque.
 static void max_pool_2d(const float * src, int w, int h, int k, float * dst) {
     int half = k / 2;
     std::vector<float> tmp(w * h);
+    std::deque<int> dq;
 
-    // Horizontal pass
+    // Horizontal pass.
     for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            float mx = 0.0f;
-            int x0 = std::max(0, x - half);
-            int x1 = std::min(w - 1, x + half);
-            for (int xx = x0; xx <= x1; xx++) {
-                mx = std::max(mx, src[y * w + xx]);
+        dq.clear();
+        for (int right = 0; right < w + half; right++) {
+            if (right < w) {
+                while (!dq.empty() && src[y*w + dq.back()] <= src[y*w + right])
+                    dq.pop_back();
+                dq.push_back(right);
             }
-            tmp[y * w + x] = mx;
+            int out_x = right - half;
+            if (out_x < 0 || out_x >= w) continue;
+            while (!dq.empty() && dq.front() < std::max(0, out_x - half))
+                dq.pop_front();
+            tmp[y*w + out_x] = dq.empty() ? 0.0f : src[y*w + dq.front()];
         }
     }
-    // Vertical pass
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            float mx = 0.0f;
-            int y0 = std::max(0, y - half);
-            int y1 = std::min(h - 1, y + half);
-            for (int yy = y0; yy <= y1; yy++) {
-                mx = std::max(mx, tmp[yy * w + x]);
+    // Vertical pass.
+    for (int x = 0; x < w; x++) {
+        dq.clear();
+        for (int right = 0; right < h + half; right++) {
+            if (right < h) {
+                while (!dq.empty() && tmp[dq.back()*w + x] <= tmp[right*w + x])
+                    dq.pop_back();
+                dq.push_back(right);
             }
-            dst[y * w + x] = mx;
+            int out_y = right - half;
+            if (out_y < 0 || out_y >= h) continue;
+            while (!dq.empty() && dq.front() < std::max(0, out_y - half))
+                dq.pop_front();
+            dst[out_y*w + x] = dq.empty() ? 0.0f : tmp[dq.front()*w + x];
         }
     }
 }
