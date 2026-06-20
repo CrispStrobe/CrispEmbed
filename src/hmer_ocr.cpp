@@ -12,11 +12,12 @@
 
 #include "hmer_ocr.h"
 
+#include "core/cpu_ops.h"
+#include "core/gguf_loader.h"
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
-#include "core/gguf_loader.h"
 
 #include <algorithm>
 #include <cassert>
@@ -115,7 +116,7 @@ struct hmer_ocr_context {
     int n_threads;
 
     // Dequantized weight cache (for quantized models)
-    std::map<const void *, std::vector<float>> dequant_cache;
+    core_cpu::DequantCache dequant_cache;
 
     // Inference state
     std::string result_buf;
@@ -306,106 +307,36 @@ const hmer_ocr_hparams * hmer_ocr_get_hparams(const hmer_ocr_context * ctx) {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: get float data from tensor (dequantizes Q4/Q8/F16 → F32)
+// Helpers — core_cpu shared + local unique ops
 // ---------------------------------------------------------------------------
 
-// GPU-safe: uses ggml_backend_tensor_get instead of direct tensor->data access
 static const float * tensor_f32(hmer_ocr_context * ctx, struct ggml_tensor * t) {
-    // Cache key: t->data is unique per tensor (valid even as GPU device pointer)
-    auto it = ctx->dequant_cache.find(t->data);
-    if (it != ctx->dequant_cache.end()) return it->second.data();
-    const int64_t n = ggml_nelements(t);
-    auto & buf = ctx->dequant_cache[t->data];
-    buf.resize(n);
-    if (t->type == GGML_TYPE_F32) {
-        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
-    } else {
-        size_t raw_sz = ggml_nbytes(t);
-        std::vector<uint8_t> raw(raw_sz);
-        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
-        const auto * traits = ggml_get_type_traits(t->type);
-        if (traits->to_float) {
-            traits->to_float(raw.data(), buf.data(), n);
-        } else {
-            fprintf(stderr, "hmer_ocr: no dequant for type %s\n", ggml_type_name(t->type));
-            std::fill(buf.begin(), buf.end(), 0.0f);
-        }
-    }
-    return buf.data();
+    return ctx->dequant_cache.get(t);
 }
-
-// ---------------------------------------------------------------------------
-// Helper: linear projection y = x @ W^T + b
-// ---------------------------------------------------------------------------
 
 static void linear(const float * x, int in_dim,
                    const float * W, const float * B, int out_dim,
                    float * out) {
-    for (int o = 0; o < out_dim; o++) {
-        float sum = B ? B[o] : 0.0f;
-        for (int i = 0; i < in_dim; i++) {
-            sum += x[i] * W[o * in_dim + i];
-        }
-        out[o] = sum;
-    }
+    core_cpu::linear_cpu(x, out, in_dim, out_dim, W, B);
 }
 
-// ---------------------------------------------------------------------------
-// Helper: apply precomputed BN (scale*x + offset) in-place, channelwise
-// ---------------------------------------------------------------------------
-
+// BN scale+offset (unique — not in core_cpu)
 static void apply_bn_scale(float * data, int channels, int spatial,
                            const float * scale, const float * offset) {
-    // data layout: (channels, spatial) = CHW flattened
     for (int c = 0; c < channels; c++) {
         float s = scale[c], o = offset[c];
         float * row = data + c * spatial;
-        for (int i = 0; i < spatial; i++) {
-            row[i] = row[i] * s + o;
-        }
+        for (int i = 0; i < spatial; i++) row[i] = row[i] * s + o;
     }
 }
 
-// ---------------------------------------------------------------------------
-// Helper: ReLU in-place
-// ---------------------------------------------------------------------------
-
-static void relu_inplace(float * data, int n) {
-    for (int i = 0; i < n; i++) {
-        if (data[i] < 0) data[i] = 0;
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Helper: Conv2d (no stride, with padding)
-// ---------------------------------------------------------------------------
+static void relu_inplace(float * data, int n) { core_cpu::relu_inplace(data, n); }
 
 static void conv2d(const float * input, int in_ch, int in_h, int in_w,
                    const float * weight, const float * bias,
                    int out_ch, int kH, int kW, int stride, int pad,
-                   float * output, int out_h, int out_w) {
-    // weight: (out_ch, in_ch, kH, kW)
-    for (int oc = 0; oc < out_ch; oc++) {
-        float b = bias ? bias[oc] : 0.0f;
-        for (int oh = 0; oh < out_h; oh++) {
-            for (int ow = 0; ow < out_w; ow++) {
-                float sum = b;
-                for (int ic = 0; ic < in_ch; ic++) {
-                    for (int kh = 0; kh < kH; kh++) {
-                        for (int kw = 0; kw < kW; kw++) {
-                            int ih = oh * stride - pad + kh;
-                            int iw = ow * stride - pad + kw;
-                            if (ih >= 0 && ih < in_h && iw >= 0 && iw < in_w) {
-                                sum += input[ic * in_h * in_w + ih * in_w + iw] *
-                                       weight[oc * in_ch * kH * kW + ic * kH * kW + kh * kW + kw];
-                            }
-                        }
-                    }
-                }
-                output[oc * out_h * out_w + oh * out_w + ow] = sum;
-            }
-        }
-    }
+                   float * output, int /*out_h*/, int /*out_w*/) {
+    core_cpu::conv2d_cpu(input, output, weight, bias, in_ch, out_ch, in_h, in_w, kH, kW, stride, pad);
 }
 
 // ---------------------------------------------------------------------------
