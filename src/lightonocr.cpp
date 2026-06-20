@@ -246,8 +246,16 @@ void free_(context &ctx) {
 static std::vector<float> preprocess_image(const uint8_t *rgb, int w, int h,
                                              int patch_size, int max_size,
                                              int *out_ph, int *out_pw) {
+    // Allow runtime override of effective max_size for CPU-friendly inference
+    int eff_max = max_size;
+    if (const char *mp = getenv("CRISPEMBED_MAX_PIXELS")) {
+        int max_px = atoi(mp);
+        // Derive max_side from max_pixels assuming square aspect
+        int max_side = (int)std::sqrt((float)max_px);
+        eff_max = std::min(eff_max, max_side);
+    }
     // Resize to fit max_size while preserving aspect ratio, then pad to patch grid
-    float scale = std::min((float)max_size / w, (float)max_size / h);
+    float scale = std::min((float)eff_max / w, (float)eff_max / h);
     if (scale > 1.0f) scale = 1.0f;  // don't upscale
     int rw = (int)(w * scale);
     int rh = (int)(h * scale);
