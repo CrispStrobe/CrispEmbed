@@ -9,11 +9,12 @@
 //      Applied to layers 1 and 2 (not layer 0) using coverage from previous layer.
 
 #include "posformer_ocr.h"
+#include "core/cpu_ops.h"
+#include "core/gguf_loader.h"
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
-#include "core/gguf_loader.h"
 
 #include <algorithm>
 #include <cassert>
@@ -98,7 +99,7 @@ struct posformer_ocr_context {
     arm_weights arm;
 
     std::vector<std::string> vocab;
-    std::map<const void *, std::vector<float>> dequant_cache;
+    core_cpu::DequantCache dequant_cache;
 
     core_gguf::WeightLoad wl;
     int n_threads;
@@ -113,56 +114,21 @@ struct posformer_ocr_context {
 };
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Helpers — core_cpu shared + local unique ops
 // ---------------------------------------------------------------------------
 
-// GPU-safe: uses ggml_backend_tensor_get instead of direct tensor->data access
 static const float * tf32(posformer_ocr_context * ctx, struct ggml_tensor * t) {
-    if (!t) return nullptr;
-    auto it = ctx->dequant_cache.find(t->data);
-    if (it != ctx->dequant_cache.end()) return it->second.data();
-    const int64_t n = ggml_nelements(t);
-    auto & buf = ctx->dequant_cache[t->data];
-    buf.resize(n);
-    if (t->type == GGML_TYPE_F32) {
-        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
-    } else {
-        size_t raw_sz = ggml_nbytes(t);
-        std::vector<uint8_t> raw(raw_sz);
-        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
-        const auto * traits = ggml_get_type_traits(t->type);
-        if (traits->to_float) traits->to_float(raw.data(), buf.data(), n);
-        else std::fill(buf.begin(), buf.end(), 0.0f);
-    }
-    return buf.data();
+    return ctx->dequant_cache.get(t);
 }
 
 static void conv2d(const float * in, int ic, int ih, int iw,
                    const float * W, const float * B,
                    int oc, int kH, int kW, int stride, int pad,
-                   float * out, int oh, int ow) {
-    for (int o = 0; o < oc; o++) {
-        float b = B ? B[o] : 0.0f;
-        for (int y = 0; y < oh; y++)
-            for (int x = 0; x < ow; x++) {
-                float sum = b;
-                for (int c = 0; c < ic; c++)
-                    for (int ky = 0; ky < kH; ky++)
-                        for (int kx = 0; kx < kW; kx++) {
-                            int iy = y * stride - pad + ky;
-                            int ix = x * stride - pad + kx;
-                            if (iy >= 0 && iy < ih && ix >= 0 && ix < iw)
-                                sum += in[c*ih*iw + iy*iw + ix] *
-                                       W[o*ic*kH*kW + c*kH*kW + ky*kW + kx];
-                        }
-                out[o*oh*ow + y*ow + x] = sum;
-            }
-    }
+                   float * out, int /*oh*/, int /*ow*/) {
+    core_cpu::conv2d_cpu(in, out, W, B, ic, oc, ih, iw, kH, kW, stride, pad);
 }
 
-static void relu_ip(float * d, int n) {
-    for (int i = 0; i < n; i++) if (d[i] < 0) d[i] = 0;
-}
+static void relu_ip(float * d, int n) { core_cpu::relu_inplace(d, n); }
 
 static void maxpool2d_ceil(const float * in, int ch, int ih, int iw,
                            int k, int s, float * out, int oh, int ow) {
@@ -209,23 +175,13 @@ static void apply_bn(float * d, int ch, int sp,
 }
 
 static void layernorm(float * x, int d, const float * w, const float * b) {
-    float mean = 0, var = 0;
-    for (int i = 0; i < d; i++) mean += x[i];
-    mean /= d;
-    for (int i = 0; i < d; i++) { float v = x[i] - mean; var += v*v; }
-    var /= d;
-    float inv = 1.0f / sqrtf(var + 1e-5f);
-    for (int i = 0; i < d; i++) x[i] = (x[i] - mean) * inv * w[i] + b[i];
+    core_cpu::layernorm_cpu(x, x, d, w, b, 1e-5f);
 }
 
 static void linear(const float * x, int in_d,
                    const float * W, const float * B, int out_d,
                    float * out) {
-    for (int o = 0; o < out_d; o++) {
-        float s = B ? B[o] : 0.0f;
-        for (int i = 0; i < in_d; i++) s += x[i] * W[o*in_d + i];
-        out[o] = s;
-    }
+    core_cpu::linear_cpu(x, out, in_d, out_d, W, B);
 }
 
 // ---------------------------------------------------------------------------

@@ -17,6 +17,7 @@
 // GDFN: Conv1x1(dim→hidden*2) → DWConv3 → chunk → GELU(x1)*x2 → Conv1x1
 
 #include "restormer.h"
+#include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -370,13 +371,12 @@ struct restormer_context {
     bool bench;
 
     core_gguf::WeightLoad wl;
-    std::vector<std::vector<float>> wbufs;
+    core_cpu::DequantCache dcache;
 
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t) return nullptr;
-        wbufs.emplace_back();
-        return rst_to_f32(t, wbufs.back());
+        return dcache.get(t);
     }
 
     // Get the first dimension (ne[0]) of a tensor — used to read hidden sizes
