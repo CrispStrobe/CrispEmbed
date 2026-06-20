@@ -23,11 +23,13 @@
 
 #include <algorithm>
 #include <chrono>
+#include <climits>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // ── Helpers (same as other VLM engines) ────────────────────────────────
@@ -73,25 +75,156 @@ static void gv_rmsnorm(float * data, int n, int d, const float * weight, float e
     }
 }
 
+// gv_linear: delegate to SIMD-accelerated core_cpu::linear_cpu
 static void gv_linear(const float * input, int n, int id, int od,
                       const float * weight, const float * bias, float * output) {
-    for (int i = 0; i < n; i++) {
-        const float * in_row = input + i * id;
-        float * out_row = output + i * od;
-        for (int o = 0; o < od; o++) {
-            float sum = bias ? bias[o] : 0.0f;
-            for (int j = 0; j < id; j++) sum += in_row[j] * weight[o * id + j];
-            out_row[o] = sum;
-        }
-    }
+    for (int i = 0; i < n; i++)
+        core_cpu::linear_cpu(input + i * id, output + i * od, id, od, weight, bias);
 }
 
 static float gv_gelu(float x) {
-    // gelu_pytorch_tanh: 0.5*x*(1+tanh(sqrt(2/pi)*(x+0.044715*x^3)))
-    return 0.5f * x * (1.0f + tanhf(0.7978845608f * (x + 0.044715f * x * x * x)));
+    return core_cpu::gelu(x);
 }
 
-static float gv_silu(float x) { return x / (1.0f + expf(-x)); }
+static float gv_silu(float x) { return core_cpu::silu(x); }
+
+// ── GPT-2 byte-level BPE tokenizer ──────────────────────────────────────
+// Granite uses the StarCoder byte-level BPE (same byte<->unicode mapping as
+// GPT-2). Mirrors the proven smoldocling_ocr.cpp implementation.
+
+static const std::vector<int> & gv_byte_encoder() {
+    static std::vector<int> bs(256, 0);
+    static bool init = false;
+    if (init) return bs;
+    std::vector<int> printable;
+    for (int b = 0x21; b <= 0x7e; b++) printable.push_back(b);
+    for (int b = 0xa1; b <= 0xac; b++) printable.push_back(b);
+    for (int b = 0xae; b <= 0xff; b++) printable.push_back(b);
+    int next = 256;
+    for (int b = 0; b < 256; b++) {
+        bool found = false;
+        for (int p : printable) if (p == b) { found = true; break; }
+        bs[b] = found ? b : next++;
+    }
+    init = true;
+    return bs;
+}
+
+static const std::unordered_map<uint32_t, uint8_t> & gv_byte_decoder() {
+    static std::unordered_map<uint32_t, uint8_t> table;
+    static bool init = false;
+    if (init) return table;
+    auto & enc = gv_byte_encoder();
+    for (int b = 0; b < 256; b++) table[(uint32_t)enc[b]] = (uint8_t)b;
+    init = true;
+    return table;
+}
+
+static void gv_utf8_encode(uint32_t cp, std::string & out) {
+    if (cp < 0x80) { out.push_back((char)cp); }
+    else if (cp < 0x800) { out.push_back((char)(0xC0|(cp>>6))); out.push_back((char)(0x80|(cp&0x3F))); }
+    else if (cp < 0x10000) { out.push_back((char)(0xE0|(cp>>12))); out.push_back((char)(0x80|((cp>>6)&0x3F))); out.push_back((char)(0x80|(cp&0x3F))); }
+    else { out.push_back((char)(0xF0|(cp>>18))); out.push_back((char)(0x80|((cp>>12)&0x3F))); out.push_back((char)(0x80|((cp>>6)&0x3F))); out.push_back((char)(0x80|(cp&0x3F))); }
+}
+
+static std::string gv_bytes_to_unicode(const char * bytes, size_t n) {
+    auto & enc = gv_byte_encoder();
+    std::string out;
+    for (size_t i = 0; i < n; i++) gv_utf8_encode((uint32_t)enc[(unsigned char)bytes[i]], out);
+    return out;
+}
+
+static std::string gv_token_to_bytes(const std::string & token) {
+    auto & dec = gv_byte_decoder();
+    std::string out;
+    size_t i = 0;
+    while (i < token.size()) {
+        unsigned char c = (unsigned char)token[i];
+        uint32_t cp; size_t len;
+        if (c < 0x80) { cp = c; len = 1; }
+        else if ((c & 0xE0) == 0xC0 && i+1 < token.size()) { cp = ((c&0x1F)<<6)|((unsigned char)token[i+1]&0x3F); len = 2; }
+        else if ((c & 0xF0) == 0xE0 && i+2 < token.size()) { cp = ((c&0x0F)<<12)|(((unsigned char)token[i+1]&0x3F)<<6)|((unsigned char)token[i+2]&0x3F); len = 3; }
+        else if ((c & 0xF8) == 0xF0 && i+3 < token.size()) { cp = ((c&0x07)<<18)|(((unsigned char)token[i+1]&0x3F)<<12)|(((unsigned char)token[i+2]&0x3F)<<6)|((unsigned char)token[i+3]&0x3F); len = 4; }
+        else { i++; continue; }
+        i += len;
+        auto it = dec.find(cp);
+        if (it != dec.end()) out.push_back((char)it->second);
+    }
+    return out;
+}
+
+struct gv_tokenizer {
+    std::vector<std::string> vocab;
+    std::unordered_map<std::string, int> token_to_id;
+    std::unordered_map<std::string, int> merge_rank;
+    int image_id = 49155;
+
+    bool load(gguf_context * meta) {
+        vocab = core_gguf::kv_str_array(meta, "tokenizer.tokens");
+        if (vocab.empty()) vocab = core_gguf::kv_str_array(meta, "tokenizer.ggml.tokens");
+        if (vocab.empty()) return false;
+        for (int i = 0; i < (int)vocab.size(); i++) token_to_id[vocab[i]] = i;
+        auto merges = core_gguf::kv_str_array(meta, "tokenizer.merges");
+        if (merges.empty()) merges = core_gguf::kv_str_array(meta, "tokenizer.ggml.merges");
+        for (int i = 0; i < (int)merges.size(); i++) merge_rank[merges[i]] = i;
+        return true;
+    }
+
+    // Byte-level BPE on a raw substring (no special tokens inside).
+    void encode_piece(const std::string & text, std::vector<int> & ids) const {
+        if (text.empty()) return;
+        std::string uni = gv_bytes_to_unicode(text.data(), text.size());
+        std::vector<std::string> syms;
+        size_t i = 0;
+        while (i < uni.size()) {
+            unsigned char c = (unsigned char)uni[i];
+            size_t len = 1;
+            if ((c & 0xE0) == 0xC0) len = 2;
+            else if ((c & 0xF0) == 0xE0) len = 3;
+            else if ((c & 0xF8) == 0xF0) len = 4;
+            syms.push_back(uni.substr(i, len));
+            i += len;
+        }
+        while (syms.size() > 1) {
+            int best_rank = INT_MAX, best_i = -1;
+            for (int k = 0; k + 1 < (int)syms.size(); k++) {
+                auto it = merge_rank.find(syms[k] + " " + syms[k + 1]);
+                if (it != merge_rank.end() && it->second < best_rank) {
+                    best_rank = it->second; best_i = k;
+                }
+            }
+            if (best_i < 0) break;
+            syms[best_i] += syms[best_i + 1];
+            syms.erase(syms.begin() + best_i + 1);
+        }
+        for (auto & s : syms) {
+            auto it = token_to_id.find(s);
+            if (it != token_to_id.end()) ids.push_back(it->second);
+        }
+    }
+
+    // Encode a prompt containing a single literal "<image>" marker. The marker
+    // is emitted as image_id; everything else is byte-level BPE text.
+    std::vector<int> encode_prompt(const std::string & text) const {
+        std::vector<int> ids;
+        const std::string marker = "<image>";
+        size_t pos = 0, m;
+        while ((m = text.find(marker, pos)) != std::string::npos) {
+            encode_piece(text.substr(pos, m - pos), ids);
+            ids.push_back(image_id);
+            pos = m + marker.size();
+        }
+        encode_piece(text.substr(pos), ids);
+        return ids;
+    }
+
+    // Detokenize generated ids → UTF-8. Control/special tokens are skipped.
+    std::string decode_one(int id) const {
+        if (id < 0 || id >= (int)vocab.size()) return "";
+        if (id <= 18 || id >= 49152) return "";   // <|end_of_text|>, <fim_*>, <image>, ...
+        return gv_token_to_bytes(vocab[id]);
+    }
+};
 
 // ── Context ────────────────────────────────────────────────────────────
 
@@ -103,8 +236,13 @@ struct granite_vision_context {
     // LLM hparams
     int llm_dim, llm_layers, llm_heads, llm_kv_heads, llm_ffn_dim, vocab_size;
     float embedding_multiplier, residual_multiplier, logits_scaling, rope_theta;
+    float attention_multiplier, rms_eps;
     int image_token_index;
+    int eos_id;
     bool tie_word_embeddings;
+
+    gv_tokenizer tokenizer;
+    bool have_tokenizer = false;
 
     int max_tokens;
     int n_threads;
@@ -112,7 +250,10 @@ struct granite_vision_context {
 
     // Weight storage
     core_gguf::WeightLoad wl;
-    std::vector<std::vector<float>> wbufs;
+    core_cpu::DequantCache dcache;   // caches dequantized weights (replaces wcache/wbufs)
+
+    // RoPE frequency table (precomputed once at init)
+    core_vlm::RoPEFreqTable rope_freq;
 
     // KV cache
     std::vector<float> kv_cache;  // [2 * llm_layers * max_seq * head_dim * llm_kv_heads]
@@ -126,8 +267,7 @@ struct granite_vision_context {
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t) return nullptr;
-        wbufs.emplace_back();
-        return gv_to_f32(t, wbufs.back());
+        return dcache.get(t);
     }
 };
 
@@ -136,7 +276,7 @@ struct granite_vision_context {
 granite_vision_context * granite_vision_init(const char * model_path, int n_threads) {
     auto * ctx = new granite_vision_context;
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
-    ctx->max_tokens = 2048;
+    ctx->max_tokens = 1024;
     ctx->kv_allocated = 0;
     ctx->n_past = 0;
 
@@ -172,6 +312,23 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
     ctx->logits_scaling = idx >= 0 ? gguf_get_val_f32(meta, idx) : 8.0f;
     idx = gguf_find_key(meta, "granite_vision.rope_theta");
     ctx->rope_theta = idx >= 0 ? gguf_get_val_f32(meta, idx) : 300000.0f;
+    // Granite scales attention by an explicit attention_multiplier (= 1/64 for
+    // the 2B), NOT 1/sqrt(head_dim). Older GGUFs predate this key; default to
+    // the config value so they still decode correctly.
+    idx = gguf_find_key(meta, "granite_vision.attention_multiplier");
+    ctx->attention_multiplier = idx >= 0 ? gguf_get_val_f32(meta, idx) : 0.015625f;
+    idx = gguf_find_key(meta, "granite_vision.rms_eps");
+    ctx->rms_eps = idx >= 0 ? gguf_get_val_f32(meta, idx) : 1e-5f;
+    ctx->eos_id = core_gguf::kv_u32(meta, "granite_vision.eos_token_id", 0);
+
+    // Pre-compute RoPE frequency table (eliminates powf per element per step)
+    int head_dim = ctx->llm_dim / ctx->llm_heads;
+    ctx->rope_freq.precompute(head_dim, ctx->rope_theta);
+
+    // Tokenizer (optional: older GGUFs have none → engine falls back to
+    // emitting raw token-id markers so it still runs).
+    ctx->have_tokenizer = ctx->tokenizer.load(meta);
+    if (ctx->have_tokenizer) ctx->tokenizer.image_id = ctx->image_token_index;
 
     core_gguf::free_metadata(meta);
 
@@ -191,8 +348,12 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
             ctx->llm_layers, ctx->llm_dim,
             ctx->llm_heads, ctx->llm_kv_heads, ctx->llm_ffn_dim,
             ctx->vocab_size, (int)ctx->wl.tensors.size());
-    fprintf(stderr, "  multipliers: embed=%.1f, residual=%.2f, logits=%.1f\n",
-            ctx->embedding_multiplier, ctx->residual_multiplier, ctx->logits_scaling);
+    fprintf(stderr, "  multipliers: embed=%.1f, residual=%.2f, logits=%.1f, "
+            "attn=%.6f; tokenizer=%s (%d tokens)\n",
+            ctx->embedding_multiplier, ctx->residual_multiplier, ctx->logits_scaling,
+            ctx->attention_multiplier,
+            ctx->have_tokenizer ? "embedded" : "MISSING",
+            ctx->have_tokenizer ? (int)ctx->tokenizer.vocab.size() : 0);
 
     ctx->bench = (std::getenv("CRISPEMBED_GRANITE_OCR_BENCH") != nullptr);
 
@@ -415,19 +576,23 @@ void granite_vision_dump_vision(granite_vision_context * ctx,
 
 static void gv_llm_decode_step(granite_vision_context * ctx,
                                 const float * token_embed, int n_past,
-                                float * logits) {
+                                float * logits,
+                                gv_dump_cb dump_cb = nullptr, void * dump_ud = nullptr) {
     int D = ctx->llm_dim;
     int n_heads = ctx->llm_heads;
     int n_kv = ctx->llm_kv_heads;
     int d_head = D / n_heads;
     int kv_repeat = n_heads / n_kv;
-    float eps = 1e-5f;
+    (void)kv_repeat;
+    float eps = ctx->rms_eps;
     float res_mul = ctx->residual_multiplier;
 
     std::vector<float> x(D);
     memcpy(x.data(), token_embed, D * sizeof(float));
 
     int max_seq = ctx->kv_allocated;
+
+    if (dump_cb) dump_cb("llm_embed_in", x.data(), D, dump_ud);
 
     for (int li = 0; li < ctx->llm_layers; li++) {
         char buf[64];
@@ -436,8 +601,8 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
 
         // RMSNorm1
         std::vector<float> normed(D);
-        memcpy(normed.data(), x.data(), D * sizeof(float));
-        gv_rmsnorm(normed.data(), 1, D, ctx->get(lp + ".norm1.weight"), eps);
+        core_cpu::rmsnorm_cpu(x.data(), normed.data(), D,
+                              ctx->get(lp + ".norm1.weight"), eps);
 
         // GQA Self-Attention with KV cache
         std::vector<float> Q(D), K_new(n_kv * d_head), V_new(n_kv * d_head);
@@ -445,21 +610,23 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
         gv_linear(normed.data(), 1, D, n_kv * d_head, ctx->get(lp + ".attn.k.weight"), nullptr, K_new.data());
         gv_linear(normed.data(), 1, D, n_kv * d_head, ctx->get(lp + ".attn.v.weight"), nullptr, V_new.data());
 
-        // RoPE on Q and K (interleaved / Llama style)
-        float theta = ctx->rope_theta;
-        core_vlm::apply_rope(Q.data(), n_heads, d_head, n_past, theta,
-                             core_vlm::RoPEStyle::INTERLEAVED);
-        core_vlm::apply_rope(K_new.data(), n_kv, d_head, n_past, theta,
-                             core_vlm::RoPEStyle::INTERLEAVED);
+        // RoPE on Q and K — precomputed frequency table, NEGHALF style
+        // (Granite uses rotate_half = split-half, same as HF Llama)
+        ctx->rope_freq.apply(Q.data(), n_heads, n_past,
+                             core_vlm::RoPEStyle::NEGHALF);
+        ctx->rope_freq.apply(K_new.data(), n_kv, n_past,
+                             core_vlm::RoPEStyle::NEGHALF);
 
-        // GQA attention with KV cache
+        // GQA attention with KV cache. Granite scales scores by
+        // attention_multiplier (= 1/64), not 1/sqrt(head_dim).
         std::vector<float> attn_out(D, 0.0f);
         core_vlm::gqa_attn_step(Q.data(), K_new.data(), V_new.data(),
                                 ctx->kv_cache.data(),
                                 n_heads, n_kv, d_head,
                                 max_seq, n_past,
                                 li, ctx->llm_layers,
-                                attn_out.data());
+                                attn_out.data(),
+                                ctx->attention_multiplier);
 
         // Output projection
         std::vector<float> proj(D);
@@ -469,8 +636,8 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
         for (int d = 0; d < D; d++) x[d] += proj[d] * res_mul;
 
         // RMSNorm2 + SiLU MLP
-        memcpy(normed.data(), x.data(), D * sizeof(float));
-        gv_rmsnorm(normed.data(), 1, D, ctx->get(lp + ".norm2.weight"), eps);
+        core_cpu::rmsnorm_cpu(x.data(), normed.data(), D,
+                              ctx->get(lp + ".norm2.weight"), eps);
 
         int ffn = ctx->llm_ffn_dim;
         std::vector<float> down(D);
@@ -480,10 +647,22 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
                              ctx->get(lp + ".ffn.down.weight"));
 
         for (int d = 0; d < D; d++) x[d] += down[d] * res_mul;
+
+        if (dump_cb) {
+            char nb[48];
+            snprintf(nb, sizeof(nb), "llm_layer_%d_out", li);
+            dump_cb(nb, x.data(), D, dump_ud);
+        }
     }
 
     // Final RMSNorm
-    gv_rmsnorm(x.data(), 1, D, ctx->get("llm.norm.weight"), eps);
+    {
+        std::vector<float> tmp(D);
+        core_cpu::rmsnorm_cpu(x.data(), tmp.data(), D,
+                              ctx->get("llm.norm.weight"), eps);
+        memcpy(x.data(), tmp.data(), D * sizeof(float));
+    }
+    if (dump_cb) dump_cb("llm_final_norm", x.data(), D, dump_ud);
 
     // LM head (may be tied to embeddings)
     const float * lm_w = ctx->get("llm.lm_head.weight");
@@ -491,11 +670,42 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
         lm_w = ctx->get("llm.embed.weight");
 
     if (lm_w) {
-        for (int v = 0; v < ctx->vocab_size; v++) {
-            float sum = 0;
-            for (int d = 0; d < D; d++) sum += x[d] * lm_w[v * D + d];
-            logits[v] = sum / ctx->logits_scaling;
-        }
+        // SIMD-accelerated LM head matmul (49156 × 2048)
+        core_cpu::linear_cpu(x.data(), logits, D, ctx->vocab_size, lm_w, nullptr);
+        float inv_scale = 1.0f / ctx->logits_scaling;
+        for (int v = 0; v < ctx->vocab_size; v++) logits[v] *= inv_scale;
+    }
+    if (dump_cb) dump_cb("llm_logits", logits, ctx->vocab_size, dump_ud);
+}
+
+// ── LLM decode dump for crispembed-diff ─────────────────────────────────
+// Runs a fixed text-only token sequence (matching
+// tools/dump_granite_llm_reference.py) through the decoder and emits per-layer
+// hidden states + final logits for the last token, so the LLM decode path can
+// be validated layer-by-layer against the Python reference.
+void granite_vision_dump_llm(granite_vision_context * ctx,
+                             const int * tokens, int n_tokens,
+                             gv_dump_cb cb, void * ud) {
+    if (!ctx || !tokens || n_tokens <= 0 || !cb) return;
+    int D = ctx->llm_dim;
+    int max_seq = n_tokens + 4;
+    ctx->kv_cache.assign((size_t)2 * ctx->llm_layers * max_seq * ctx->llm_kv_heads *
+                         (D / ctx->llm_heads), 0.0f);
+    ctx->kv_allocated = max_seq;
+    ctx->n_past = 0;
+
+    const float * embed_w = ctx->get("llm.embed.weight");
+    float emb_mul = ctx->embedding_multiplier;
+    std::vector<float> logits(ctx->vocab_size);
+    std::vector<float> emb(D);
+
+    for (int t = 0; t < n_tokens; t++) {
+        int id = tokens[t];
+        for (int d = 0; d < D; d++) emb[d] = embed_w[(size_t)id * D + d] * emb_mul;
+        bool last = (t == n_tokens - 1);
+        gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data(),
+                           last ? cb : nullptr, last ? ud : nullptr);
+        ctx->n_past++;
     }
 }
 
@@ -553,27 +763,57 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
         fprintf(stderr, "[granite_ocr-bench] projector: %lldms\n", (long long)ms);
     }
 
-    // Allocate KV cache
-    int max_seq = n_vis_tokens + ctx->max_tokens + 100;
-    ctx->kv_cache.resize(2 * ctx->llm_layers * max_seq * ctx->llm_kv_heads * (D / ctx->llm_heads));
+    const float * embed_w = ctx->get("llm.embed.weight");
+    float emb_mul = ctx->embedding_multiplier;
+    std::vector<float> logits(ctx->vocab_size);
+
+    // ── Build the LLaVA-Next chat prompt and tokenize it ────────────────
+    // Matches ibm-granite/granite-vision-3.3-2b's chat template:
+    //   <|system|>\n<sys text>\n<|user|>\n<image>\n<instruction>\n<|assistant|>\n
+    // add_bos_token=False, add_generation_prompt=True. The single <image>
+    // marker expands to the n_vis_tokens projected vision rows.
+    const char * instruction =
+        (prompt && prompt[0]) ? prompt : "Convert this image to text.";
+    std::string sys =
+        "A chat between a curious user and an artificial intelligence assistant. "
+        "The assistant gives helpful, detailed, and polite answers to the user's questions.";
+    std::string full =
+        "<|system|>\n" + sys + "\n<|user|>\n<image>\n" + std::string(instruction) +
+        "\n<|assistant|>\n";
+
+    std::vector<int> prompt_ids;
+    if (ctx->have_tokenizer) {
+        prompt_ids = ctx->tokenizer.encode_prompt(full);
+    } else {
+        // No tokenizer embedded → image-only prefill (legacy behaviour).
+        prompt_ids.push_back(ctx->image_token_index);
+    }
+
+    // ── Allocate KV cache sized for prompt + image expansion + generation ─
+    int n_text = 0;
+    for (int id : prompt_ids) if (id != ctx->image_token_index) n_text++;
+    int max_seq = n_text + n_vis_tokens + ctx->max_tokens + 8;
+    ctx->kv_cache.assign((size_t)2 * ctx->llm_layers * max_seq * ctx->llm_kv_heads *
+                         (D / ctx->llm_heads), 0.0f);
     ctx->kv_allocated = max_seq;
     ctx->n_past = 0;
 
-    // Get embedding weights
-    const float * embed_w = ctx->get("llm.embed.weight");
-    float emb_mul = ctx->embedding_multiplier;
-
-    // Prefill: vision tokens through LLM
-    // For simplicity, process vision tokens one at a time through the LLM
-    // (proper implementation would do batched prefill)
-    std::vector<float> logits(ctx->vocab_size);
-
+    // ── Prefill: text tokens (scaled embeds) with vision rows spliced in ──
     auto t_prefill = std::chrono::steady_clock::now();
-    for (int t = 0; t < n_vis_tokens; t++) {
-        // Scale projected features by embedding_multiplier is NOT done for vision tokens
-        // (only text embeddings are scaled)
-        gv_llm_decode_step(ctx, proj_features.data() + t * D, ctx->n_past, logits.data());
-        ctx->n_past++;
+    std::vector<float> emb(D);
+    for (int id : prompt_ids) {
+        if (id == ctx->image_token_index) {
+            for (int t = 0; t < n_vis_tokens; t++) {
+                // Vision rows are NOT scaled by embedding_multiplier (HF scales
+                // only text embeddings; image features enter post-projector).
+                gv_llm_decode_step(ctx, proj_features.data() + t * D, ctx->n_past, logits.data());
+                ctx->n_past++;
+            }
+        } else {
+            for (int d = 0; d < D; d++) emb[d] = embed_w[(size_t)id * D + d] * emb_mul;
+            gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
+            ctx->n_past++;
+        }
     }
     if (bench) {
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -581,42 +821,33 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
         fprintf(stderr, "[granite_ocr-bench] prefill: %lldms\n", (long long)ms);
     }
 
-    // Greedy decode
+    // ── Greedy decode → detokenized UTF-8 text ──────────────────────────
     ctx->output_text.clear();
     ctx->char_confidences.clear();
-    int eos_id = 0;  // Granite uses token 0 as EOS
 
     long long decode_total_ms = 0;
     int decode_steps = 0;
     for (int step = 0; step < ctx->max_tokens; step++) {
         auto t_step = std::chrono::steady_clock::now();
-        // Find argmax
         int best_id = 0;
         float best_score = logits[0];
-        for (int v = 1; v < ctx->vocab_size; v++) {
+        for (int v = 1; v < ctx->vocab_size; v++)
             if (logits[v] > best_score) { best_score = logits[v]; best_id = v; }
-        }
 
-        if (best_id == eos_id) break;
+        if (best_id == ctx->eos_id) break;
 
-        // Confidence: softmax of winning token
-        {
-            float sum_e = 0;
-            for (int v = 0; v < ctx->vocab_size; v++)
-                sum_e += expf(logits[v] - best_score);
-            ctx->char_confidences.push_back(1.0f / sum_e);
-        }
+        float sum_e = 0;
+        for (int v = 0; v < ctx->vocab_size; v++)
+            sum_e += expf(logits[v] - best_score);
+        ctx->char_confidences.push_back(1.0f / sum_e);
 
-        // TODO: detokenize best_id → text
-        // For now, just store the token ID (proper tokenizer integration needed)
-        ctx->output_text += "<" + std::to_string(best_id) + ">";
+        if (ctx->have_tokenizer)
+            ctx->output_text += ctx->tokenizer.decode_one(best_id);
+        else
+            ctx->output_text += "<" + std::to_string(best_id) + ">";
 
-        // Embed next token
-        std::vector<float> next_embed(D);
-        for (int d = 0; d < D; d++)
-            next_embed[d] = embed_w[best_id * D + d] * emb_mul;
-
-        gv_llm_decode_step(ctx, next_embed.data(), ctx->n_past, logits.data());
+        for (int d = 0; d < D; d++) emb[d] = embed_w[(size_t)best_id * D + d] * emb_mul;
+        gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
         ctx->n_past++;
         if (bench) {
             auto step_ms = std::chrono::duration_cast<std::chrono::milliseconds>(

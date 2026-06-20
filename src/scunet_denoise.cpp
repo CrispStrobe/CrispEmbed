@@ -358,12 +358,12 @@ static void swin_block_forward(
     // Cache the weight pointers before the per-pixel loop
     const float * ln1_w_ptr = to_f32(wt.ln1_w, dq1);
     const float * ln1_b_ptr = to_f32(wt.ln1_b, dq2);
+    // Pre-allocate pixel buffers outside the loop (was per-pixel before)
+    std::vector<float> pix(C), pix_out(C);
     for (int y = 0; y < H; y++)
         for (int xi = 0; xi < W; xi++) {
             // Gather pixel's channels
-            std::vector<float> pix(C);
             for (int c = 0; c < C; c++) pix[c] = x[c * hw + y * W + xi];
-            std::vector<float> pix_out(C);
             layer_norm(pix.data(), C, ln1_w_ptr, ln1_b_ptr, pix_out.data());
             for (int c = 0; c < C; c++) normed[c * hw + y * W + xi] = pix_out[c];
         }
@@ -400,16 +400,20 @@ static void swin_block_forward(
     int mlp_hidden = (int)wt.mlp0_b->ne[0];
     const float * m2w = to_f32(wt.mlp2_w, dq1);
     const float * m2b = to_f32(wt.mlp2_b, dq2);
+    // Cache LN2 weights outside the per-pixel loop (was re-dequantized per pixel!)
+    const float * ln2_w_ptr = to_f32(wt.ln2_w, dq1);
+    const float * ln2_b_ptr = to_f32(wt.ln2_b, dq2);
 
+    // Pre-allocate buffers outside the pixel loop (was per-pixel before —
+    // 65536+ heap allocs per swin block for a 256x256 image)
+    std::vector<float> pix_norm(C);
+    std::vector<float> h(mlp_hidden);
     for (int y = 0; y < H; y++)
         for (int xi = 0; xi < W; xi++) {
-            std::vector<float> pix(C);
             for (int c = 0; c < C; c++) pix[c] = x[c * hw + y * W + xi];
-            std::vector<float> pix_norm(C);
-            layer_norm(pix.data(), C, to_f32(wt.ln2_w, dq1), to_f32(wt.ln2_b, dq2), pix_norm.data());
+            layer_norm(pix.data(), C, ln2_w_ptr, ln2_b_ptr, pix_norm.data());
 
             // MLP: Linear(C→hidden) + GELU + Linear(hidden→C)
-            std::vector<float> h(mlp_hidden);
             for (int o = 0; o < mlp_hidden; o++) {
                 float sum = m0b[o];
                 for (int i = 0; i < C; i++) sum += m0w[o * C + i] * pix_norm[i];
