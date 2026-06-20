@@ -73,10 +73,39 @@ Pre-allocated `dec_scratch` struct on each context, reused across all steps:
 - dat_sr, swinir_sr, hat_sr, scunet_denoise, mixtex_ocr: per-token QKV/proj/FFN
   loops converted to single batched calls + SIMD dot_product in attention.
 
+### cpu_ops.h SIMD acceleration (shared primitives)
+- **layernorm_cpu**: AVX2+FMA SIMD for mean (parallel sum), variance
+  (sub+fmadd accumulation), and scale+shift (fused v*w+b). Used by 12 engines.
+- **rmsnorm_cpu**: AVX2+FMA SIMD for sum-of-squares (fmadd) and scale
+  (8-wide multiply). Used by 12 engines.
+- **softmax**: AVX2 SIMD for max-reduction (_mm256_max_ps) and
+  normalization (8-wide multiply by 1/sum). Exp loop stays scalar.
+- **mha_1q_cpu**: Swapped V accumulation loop from d-outer/ki-inner
+  (cache-unfriendly) to ki-outer/d-inner (sequential V row access) +
+  AVX2+FMA 8-wide vectorized inner loop. Used by ppformulanet, math_ocr.
+- **layernorm2d_cpu**: Replaced 3 strided-access loops (stride H*W,
+  cache-hostile) with gather→layernorm_cpu→scatter pattern. Gathered
+  buffer is contiguous so norm benefits from layernorm SIMD.
+
+### Allocation infrastructure
+- **LFM2 ggml_backend_sched + T-bucketing**: migrated from raw
+  `ggml_gallocr` to `ggml_backend_sched` with sequence-length bucketing
+  (8/16/32/64/128/256/512). Same pattern as BERT encoder. Graph+alloc
+  overhead: ~2ms → ~0.7ms for same-bucket inputs.
+- **Persistent gallocr reuse**: 7 engines (vit_embed, clip_text_embed,
+  parseq_ocr, cnn_embed, ocr_detect, surya_det, layout_detect) moved from
+  per-call gallocr new/free to per-context persistent allocator.
+- **TBSRN BatchNorm fusion**: fused 11 conv+BN pairs (2 per SRB × 5 + 1
+  final) into conv weights at load time. Eliminates all runtime BN calls.
+- **2D PE caching**: TBSRN (fixed 64×16×64, reused across 5 SRB blocks),
+  BTTR/PosFormer (cached for last-used h×w dims). Eliminates ~327K
+  sinf/cosf evaluations per inference on repeated same-size calls.
+
 ### Quantitative results
 - 70+ optimization items completed (from 53 originally identified + extras).
 - ~1500 lines of duplicated code removed across the codebase.
-- SIMD active in 30+ runtimes via shared `dot_product()` / `linear_cpu`.
+- SIMD active in 30+ runtimes via shared `dot_product()` / `linear_cpu` /
+  `layernorm_cpu` / `rmsnorm_cpu` / `softmax` / `mha_1q_cpu`.
 - All changes verified: 99/99 cpu_ops tests, 97/97 vlm_attention tests,
   live MiniLM-L6 embedding inference bit-identical to baseline.
 
