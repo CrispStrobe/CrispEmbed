@@ -207,6 +207,50 @@ impl CrispEmbed {
         unsafe { crispembed_sys::crispembed_set_dim(self.ctx, dim) }
     }
 
+    // ── LoRA adapter hot-swap ──────────────────────────────────────
+
+    /// Activate a LoRA adapter by name.  Pass an empty string to deactivate
+    /// all adapters (base model only).  Returns `true` on success.
+    pub fn set_lora(&mut self, adapter_name: &str) -> bool {
+        let c = CString::new(adapter_name).unwrap_or_default();
+        unsafe { crispembed_sys::crispembed_set_lora(self.ctx, c.as_ptr()) == 1 }
+    }
+
+    /// Currently active LoRA adapter name, or `None` if none active.
+    pub fn get_lora(&self) -> Option<String> {
+        let ptr = unsafe { crispembed_sys::crispembed_get_lora(self.ctx) };
+        if ptr.is_null() {
+            return None;
+        }
+        let s = unsafe { CStr::from_ptr(ptr) }
+            .to_str()
+            .unwrap_or("")
+            .to_string();
+        if s.is_empty() { None } else { Some(s) }
+    }
+
+    /// List available LoRA adapter names (empty if the model has no adapters).
+    pub fn list_lora(&self) -> Vec<String> {
+        let mut names_ptr: *const *const std::os::raw::c_char = std::ptr::null();
+        let mut count: std::os::raw::c_int = 0;
+        let ok = unsafe {
+            crispembed_sys::crispembed_list_lora(self.ctx, &mut names_ptr, &mut count)
+        };
+        if ok == 0 || count <= 0 || names_ptr.is_null() {
+            return Vec::new();
+        }
+        (0..count as usize)
+            .filter_map(|i| {
+                let p = unsafe { *names_ptr.add(i) };
+                if p.is_null() {
+                    None
+                } else {
+                    Some(unsafe { CStr::from_ptr(p) }.to_string_lossy().into_owned())
+                }
+            })
+            .collect()
+    }
+
     /// Set a text prefix prepended to all inputs before tokenization.
     ///
     /// Typical values:
@@ -2289,6 +2333,24 @@ impl CrispOcrPipeline {
             }
         }
         Ok(OcrPipelineResult { regions, full_text, mean_confidence: mean_conf })
+    }
+
+    /// Return the ISO 639-1 language code detected by the LID model after the
+    /// last `run()` call (e.g. `"en"`, `"de"`). Returns `None` if LID was not
+    /// configured or the result was empty.
+    pub fn detected_lang(&self) -> Option<String> {
+        let mut conf: f32 = 0.0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_ocr_pipeline_detected_lang(self.ctx, &mut conf)
+        };
+        if ptr.is_null() {
+            return None;
+        }
+        let s = unsafe { std::ffi::CStr::from_ptr(ptr) }
+            .to_str()
+            .unwrap_or("")
+            .to_string();
+        if s.is_empty() { None } else { Some(s) }
     }
 
     /// Full per-stage builder: compose arbitrary per-source-type chains. Each
