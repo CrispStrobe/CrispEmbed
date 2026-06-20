@@ -42,6 +42,49 @@ enum class RoPEStyle {
 };
 
 // ---------------------------------------------------------------------------
+// RoPE frequency table — precompute once, reuse every step
+// ---------------------------------------------------------------------------
+// freqs[d] = 1.0 / theta^(2d / head_dim), for d in [0, head_dim/2).
+// Call precompute() once at init, then use apply() instead of apply_rope().
+
+struct RoPEFreqTable {
+    std::vector<float> freqs;   // [head_dim/2]
+    int head_dim = 0;
+
+    void precompute(int hd, float theta) {
+        head_dim = hd;
+        int half = hd / 2;
+        freqs.resize(half);
+        for (int d = 0; d < half; d++)
+            freqs[d] = 1.0f / powf(theta, 2.0f * d / hd);
+    }
+
+    void apply(float* qk, int n_heads, int position, RoPEStyle style) const {
+        int half = head_dim / 2;
+        for (int h = 0; h < n_heads; h++) {
+            float* head = qk + h * head_dim;
+            for (int d = 0; d < half; d++) {
+                float angle = position * freqs[d];
+                float cos_a = cosf(angle);
+                float sin_a = sinf(angle);
+                if (style == RoPEStyle::NEGHALF) {
+                    float lo = head[d];
+                    float hi = head[d + half];
+                    head[d]        = lo * cos_a - hi * sin_a;
+                    head[d + half] = hi * cos_a + lo * sin_a;
+                } else {
+                    int i0 = 2 * d;
+                    float v0 = head[i0];
+                    float v1 = head[i0 + 1];
+                    head[i0]     = v0 * cos_a - v1 * sin_a;
+                    head[i0 + 1] = v0 * sin_a + v1 * cos_a;
+                }
+            }
+        }
+    }
+};
+
+// ---------------------------------------------------------------------------
 // Scalar RoPE — apply rotary position embedding in-place
 // ---------------------------------------------------------------------------
 // Operates on a [n_heads * head_dim] Q or K vector.
@@ -156,15 +199,14 @@ static inline void gqa_attn_step(
     for (int h = 0; h < n_heads; h++) {
         int kv_h = h / kv_repeat;
 
-        // Compute attention scores: Q·K^T
+        // Compute attention scores: Q·K^T (SIMD-accelerated via dot_product)
         float max_s = -1e9f;
         std::vector<float> scores(Lk);
         for (int k = 0; k < Lk; k++) {
-            float s = 0;
-            for (int d = 0; d < head_dim; d++)
-                s += q[h * head_dim + d]
-                   * kv_cache[k_base + k * kv_dim + kv_h * head_dim + d];
-            s *= scale;
+            float s = core_cpu::dot_product(
+                q + h * head_dim,
+                kv_cache + k_base + k * kv_dim + kv_h * head_dim,
+                head_dim) * scale;
             scores[k] = s;
             if (s > max_s) max_s = s;
         }
