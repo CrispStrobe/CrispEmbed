@@ -373,8 +373,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   wcache). Remaining runtimes still need migration.
 
 - [ ] **Adopt F16 ggml KV cache** — Port to: deepseek_ocr2 (F32 std::vector),
-  lightonocr (F32 std::vector, O(n^2) total transfer),
   pix2struct (no KV cache at all).
+  lightonocr: **DONE** (`485cb97`, branch `lighton-perf`) — 2.09x total speedup.
   granite_vision_ocr: **DONE** (`66b8de2`).
   smoldocling_ocr: **DONE** (`bc329e4`, branch `feat/smoldocling-kvcache-prefill`).
   qwen2vl_ocr: **DONE** — already had F16 kvc; fixed CPU round-trip in seeding
