@@ -179,30 +179,39 @@ static void pixel_shuffle(const float * input, int c_in, int h, int w,
     }
 }
 
+// conv2d_ggml: defined after nafnet_context (needs struct members)
+static void conv2d_ggml(nafnet_context * ctx,
+                         const float * input, int ic, int ih, int iw,
+                         ggml_tensor * weight_t, ggml_tensor * bias_t,
+                         int oc, int kh, int kw, int stride, int pad,
+                         int groups, float * output);
+
 // ── NAFBlock ────────────────────────────────────────────────────────
 
 struct nafblock_weights {
     const float * beta;       // [1, C, 1, 1] → flatten to [C]
     const float * gamma;
-    const float * conv1_w;    // [2C, C, 1, 1]
-    const float * conv1_b;
-    const float * conv2_w;    // [2C, 1, 3, 3] (depthwise)
-    const float * conv2_b;
-    const float * conv3_w;    // [C, C, 1, 1]
-    const float * conv3_b;
-    const float * sca_w;      // [C, C, 1, 1]
-    const float * sca_b;
-    const float * conv4_w;    // [2C, C, 1, 1]
-    const float * conv4_b;
-    const float * conv5_w;    // [C, C, 1, 1]
-    const float * conv5_b;
     const float * norm1_w;    // [C]
     const float * norm1_b;
     const float * norm2_w;
     const float * norm2_b;
+    const float * sca_w_f;    // dequantized SCA weight for scalar path
+    const float * sca_b_f;
+    // ggml tensor pointers for conv2d_ggml
+    ggml_tensor * conv1_wt;   // [2C, C, 1, 1]
+    ggml_tensor * conv1_bt;
+    ggml_tensor * conv2_wt;   // [2C, 1, 3, 3] (depthwise)
+    ggml_tensor * conv2_bt;
+    ggml_tensor * conv3_wt;   // [C, C, 1, 1]
+    ggml_tensor * conv3_bt;
+    ggml_tensor * conv4_wt;   // [2C, C, 1, 1]
+    ggml_tensor * conv4_bt;
+    ggml_tensor * conv5_wt;   // [C, C, 1, 1]
+    ggml_tensor * conv5_bt;
 };
 
-static void nafblock_forward(const float * input, int c, int h, int w,
+static void nafblock_forward(nafnet_context * ctx,
+                             const float * input, int c, int h, int w,
                              const nafblock_weights & wt,
                              float * output,
                              std::vector<float> & tmp1,
@@ -212,62 +221,58 @@ static void nafblock_forward(const float * input, int c, int h, int w,
     int c2 = c * 2;
 
     // Part 1: spatial mixing
-    // x = LN1(input)
     tmp1.resize(c * hw);
     layernorm2d(input, c, h, w, wt.norm1_w, wt.norm1_b, tmp1.data());
 
-    // Conv1: 1x1, c → 2c
+    // Conv1: 1x1, c → 2c (ggml)
     tmp2.resize(c2 * hw);
-    conv2d_cpu(tmp1.data(), c, h, w, wt.conv1_w, wt.conv1_b, c2, 1, 1, 1, 0, 1, tmp2.data());
+    conv2d_ggml(ctx, tmp1.data(), c, h, w, wt.conv1_wt, wt.conv1_bt, c2, 1, 1, 1, 0, 1, tmp2.data());
 
-    // Conv2: 3x3 depthwise
+    // Conv2: 3x3 depthwise (ggml)
     tmp3.resize(c2 * hw);
-    conv2d_cpu(tmp2.data(), c2, h, w, wt.conv2_w, wt.conv2_b, c2, 3, 3, 1, 1, c2, tmp3.data());
+    conv2d_ggml(ctx, tmp2.data(), c2, h, w, wt.conv2_wt, wt.conv2_bt, c2, 3, 3, 1, 1, c2, tmp3.data());
 
-    // SimpleGate: 2c → c
+    // SimpleGate: 2c → c (scalar — just element multiply)
     tmp1.resize(c * hw);
     simple_gate(tmp3.data(), c2, h, w, tmp1.data());
 
-    // SCA
+    // SCA (scalar — global pool + small matmul + multiply)
     tmp2.resize(c * hw);
-    sca(tmp1.data(), c, h, w, wt.sca_w, wt.sca_b, tmp2.data());
+    sca(tmp1.data(), c, h, w, wt.sca_w_f, wt.sca_b_f, tmp2.data());
 
-    // Conv3: 1x1
+    // Conv3: 1x1 (ggml)
     tmp1.resize(c * hw);
-    conv2d_cpu(tmp2.data(), c, h, w, wt.conv3_w, wt.conv3_b, c, 1, 1, 1, 0, 1, tmp1.data());
+    conv2d_ggml(ctx, tmp2.data(), c, h, w, wt.conv3_wt, wt.conv3_bt, c, 1, 1, 1, 0, 1, tmp1.data());
 
     // Residual: input + tmp1 * beta
     tmp2.resize(c * hw);
     for (int ch = 0; ch < c; ch++) {
         float b = wt.beta[ch];
-        for (int i = 0; i < hw; i++) {
+        for (int i = 0; i < hw; i++)
             tmp2[ch * hw + i] = input[ch * hw + i] + tmp1[ch * hw + i] * b;
-        }
     }
 
     // Part 2: channel mixing
-    // x = LN2(tmp2)
     tmp1.resize(c * hw);
     layernorm2d(tmp2.data(), c, h, w, wt.norm2_w, wt.norm2_b, tmp1.data());
 
-    // Conv4: 1x1, c → 2c
+    // Conv4: 1x1, c → 2c (ggml)
     tmp3.resize(c2 * hw);
-    conv2d_cpu(tmp1.data(), c, h, w, wt.conv4_w, wt.conv4_b, c2, 1, 1, 1, 0, 1, tmp3.data());
+    conv2d_ggml(ctx, tmp1.data(), c, h, w, wt.conv4_wt, wt.conv4_bt, c2, 1, 1, 1, 0, 1, tmp3.data());
 
     // SimpleGate: 2c → c
     tmp1.resize(c * hw);
     simple_gate(tmp3.data(), c2, h, w, tmp1.data());
 
-    // Conv5: 1x1
+    // Conv5: 1x1 (ggml)
     tmp3.resize(c * hw);
-    conv2d_cpu(tmp1.data(), c, h, w, wt.conv5_w, wt.conv5_b, c, 1, 1, 1, 0, 1, tmp3.data());
+    conv2d_ggml(ctx, tmp1.data(), c, h, w, wt.conv5_wt, wt.conv5_bt, c, 1, 1, 1, 0, 1, tmp3.data());
 
     // Residual: tmp2 + tmp3 * gamma
     for (int ch = 0; ch < c; ch++) {
         float g = wt.gamma[ch];
-        for (int i = 0; i < hw; i++) {
+        for (int i = 0; i < hw; i++)
             output[ch * hw + i] = tmp2[ch * hw + i] + tmp3[ch * hw + i] * g;
-        }
     }
 }
 
@@ -284,6 +289,11 @@ struct nafnet_context {
 
     // Backend (kept alive for GPU-resident weight access)
     ggml_backend_t backend = nullptr;
+
+    // ggml graph infrastructure for batched matmuls
+    ggml_backend_t       enc_backend  = nullptr;
+    ggml_backend_sched_t enc_sched    = nullptr;
+    std::vector<uint8_t> enc_meta;
 
     // Weight data
     core_gguf::WeightLoad wl;
@@ -346,15 +356,108 @@ nafnet_context * nafnet_init(const char * model_path, int n_threads) {
     fprintf(stderr, "], %d tensors\n", (int)ctx->wl.tensors.size());
 
     ctx->bench = (std::getenv("CRISPEMBED_NAFNET_BENCH") != nullptr);
+
+    // ggml conv infrastructure
+    ctx->enc_backend = ggml_backend_cpu_init();
+    if (ctx->enc_backend) {
+        ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads);
+        ggml_backend_t backends[] = { ctx->enc_backend };
+        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+    }
+
     return ctx;
 }
 
 void nafnet_free(nafnet_context * ctx) {
     if (ctx) {
+        if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+        if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
         core_gguf::free_weights(ctx->wl);
         if (ctx->backend) ggml_backend_free(ctx->backend);
         delete ctx;
     }
+}
+
+// ── ggml conv2d implementation ──────────────────────────────────────
+
+static void conv2d_ggml(nafnet_context * ctx,
+                         const float * input, int ic, int ih, int iw,
+                         ggml_tensor * weight_t, ggml_tensor * bias_t,
+                         int oc, int kh, int kw, int stride, int pad,
+                         int groups, float * output) {
+    if (!ctx->enc_sched || !weight_t) {
+        // fallback to scalar
+        std::vector<float> wf_buf, bf_buf;
+        const float * wf = weight_t ? to_f32(weight_t, wf_buf) : nullptr;
+        const float * bf = bias_t ? to_f32(bias_t, bf_buf) : nullptr;
+        if (wf) conv2d_cpu(input, ic, ih, iw, wf, bf, oc, kh, kw, stride, pad, groups, output);
+        return;
+    }
+
+    int max_nodes = 32;
+    size_t buf_size = ggml_tensor_overhead() * max_nodes
+                    + ggml_graph_overhead_custom(max_nodes, false);
+    std::vector<uint8_t> meta(buf_size);
+    ggml_init_params ip = { buf_size, meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, iw, ih, ic);
+    ggml_set_name(x, "x");
+    ggml_set_input(x);
+
+    ggml_tensor * w = weight_t;
+    if (groups > 1) {
+        if (ggml_n_dims(w) == 2) {
+            if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
+                w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+            w = ggml_reshape_4d(g, w, kw, kh, 1, w->ne[1]);
+        }
+        if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
+        x = ggml_conv_2d_dw(g, w, x, stride, stride, pad, pad, 1, 1);
+    } else {
+        if (ggml_n_dims(w) == 2) {
+            if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
+                w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+            w = ggml_reshape_4d(g, w, kw, kh, ic, w->ne[1]);
+        }
+        if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
+        x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
+    }
+
+    if (bias_t) {
+        ggml_tensor * b = ggml_reshape_3d(g, bias_t, 1, 1, oc);
+        x = ggml_add(g, x, b);
+    }
+
+    ggml_set_name(x, "out");
+    ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "nafnet: conv2d_ggml alloc failed\n");
+        return;
+    }
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), input, 0,
+                             ic * ih * iw * sizeof(float));
+
+    for (int i = 0; i < ggml_backend_sched_get_n_backends(ctx->enc_sched); i++) {
+        ggml_backend_t be = ggml_backend_sched_get_backend(ctx->enc_sched, i);
+        ggml_backend_dev_t dev = ggml_backend_get_device(be);
+        ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
+        if (reg) {
+            auto * fn = (ggml_backend_set_n_threads_t)
+                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            if (fn) fn(be, ctx->n_threads);
+        }
+    }
+    ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
+
+    int oh = (ih + 2 * pad - kh) / stride + 1;
+    int ow = (iw + 2 * pad - kw) / stride + 1;
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), output, 0,
+                             oc * oh * ow * sizeof(float));
 }
 
 // ── Forward pass (single tile) ──────────────────────────────────────
@@ -406,39 +509,45 @@ static int nafnet_process_tile(nafnet_context * ctx,
     // Scratch buffers for NAFBlock
     std::vector<float> tmp1, tmp2, tmp3;
 
+    // Helper: get raw ggml tensor pointer (not dequantized)
+    auto get_raw = [&](const std::string & name) -> ggml_tensor * {
+        return core_gguf::try_get(ctx->wl.tensors, name.c_str());
+    };
+
     // Helper to load a NAFBlock's weights
     auto load_block = [&](const std::string & prefix, int c) -> nafblock_weights {
         nafblock_weights wt;
         wt.beta    = ctx->get_tensor(prefix + ".beta");
         wt.gamma   = ctx->get_tensor(prefix + ".gamma");
-        wt.conv1_w = ctx->get_tensor(prefix + ".conv1.weight");
-        wt.conv1_b = ctx->get_tensor(prefix + ".conv1.bias");
-        wt.conv2_w = ctx->get_tensor(prefix + ".conv2.weight");
-        wt.conv2_b = ctx->get_tensor(prefix + ".conv2.bias");
-        wt.conv3_w = ctx->get_tensor(prefix + ".conv3.weight");
-        wt.conv3_b = ctx->get_tensor(prefix + ".conv3.bias");
-        wt.sca_w   = ctx->get_tensor(prefix + ".sca.weight");
-        wt.sca_b   = ctx->get_tensor(prefix + ".sca.bias");
-        wt.conv4_w = ctx->get_tensor(prefix + ".conv4.weight");
-        wt.conv4_b = ctx->get_tensor(prefix + ".conv4.bias");
-        wt.conv5_w = ctx->get_tensor(prefix + ".conv5.weight");
-        wt.conv5_b = ctx->get_tensor(prefix + ".conv5.bias");
         wt.norm1_w = ctx->get_tensor(prefix + ".norm1.weight");
         wt.norm1_b = ctx->get_tensor(prefix + ".norm1.bias");
         wt.norm2_w = ctx->get_tensor(prefix + ".norm2.weight");
         wt.norm2_b = ctx->get_tensor(prefix + ".norm2.bias");
+        wt.sca_w_f = ctx->get_tensor(prefix + ".sca.weight");
+        wt.sca_b_f = ctx->get_tensor(prefix + ".sca.bias");
+        // ggml tensors for conv2d_ggml
+        wt.conv1_wt = get_raw(prefix + ".conv1.weight");
+        wt.conv1_bt = get_raw(prefix + ".conv1.bias");
+        wt.conv2_wt = get_raw(prefix + ".conv2.weight");
+        wt.conv2_bt = get_raw(prefix + ".conv2.bias");
+        wt.conv3_wt = get_raw(prefix + ".conv3.weight");
+        wt.conv3_bt = get_raw(prefix + ".conv3.bias");
+        wt.conv4_wt = get_raw(prefix + ".conv4.weight");
+        wt.conv4_bt = get_raw(prefix + ".conv4.bias");
+        wt.conv5_wt = get_raw(prefix + ".conv5.weight");
+        wt.conv5_bt = get_raw(prefix + ".conv5.bias");
         return wt;
     };
 
     int cur_h = ph, cur_w = pw;
     int cur_c = 3;
 
-    // Intro conv: 3 → W
+    // Intro conv: 3 → W (ggml)
     {
-        auto * intro_w = ctx->get_tensor("intro.weight");
-        auto * intro_b = ctx->get_tensor("intro.bias");
         std::vector<float> after_intro(W * cur_h * cur_w);
-        conv2d_cpu(img.data(), 3, cur_h, cur_w, intro_w, intro_b, W, 3, 3, 1, 1, 1, after_intro.data());
+        conv2d_ggml(ctx, img.data(), 3, cur_h, cur_w,
+                     get_raw("intro.weight"), get_raw("intro.bias"),
+                     W, 3, 3, 1, 1, 1, after_intro.data());
         img = std::move(after_intro);
         cur_c = W;
     }
@@ -462,24 +571,24 @@ static int nafnet_process_tile(nafnet_context * ctx,
             snprintf(prefix, sizeof(prefix), "enc.%d.%d", s, b);
             auto wt = load_block(prefix, c);
             std::vector<float> block_out(c * cur_h * cur_w);
-            nafblock_forward(img.data(), c, cur_h, cur_w, wt, block_out.data(), tmp1, tmp2, tmp3);
+            nafblock_forward(ctx, img.data(), c, cur_h, cur_w, wt, block_out.data(), tmp1, tmp2, tmp3);
             img = std::move(block_out);
         }
 
         // Save skip connection
         skip_connections.push_back(img);
 
-        // Downsample: Conv2d stride 2, kernel 2
+        // Downsample: Conv2d stride 2, kernel 2 (ggml)
         int next_c = c * 2;
         int next_h = cur_h / 2, next_w = cur_w / 2;
         {
             char name_w[64], name_b[64];
             snprintf(name_w, sizeof(name_w), "downs.%d.weight", s);
             snprintf(name_b, sizeof(name_b), "downs.%d.bias", s);
-            auto * dw = ctx->get_tensor(name_w);
-            auto * db = ctx->get_tensor(name_b);
             std::vector<float> down_out(next_c * next_h * next_w);
-            conv2d_cpu(img.data(), c, cur_h, cur_w, dw, db, next_c, 2, 2, 2, 0, 1, down_out.data());
+            conv2d_ggml(ctx, img.data(), c, cur_h, cur_w,
+                         get_raw(name_w), get_raw(name_b),
+                         next_c, 2, 2, 2, 0, 1, down_out.data());
             img = std::move(down_out);
         }
         cur_c = next_c;
@@ -501,7 +610,7 @@ static int nafnet_process_tile(nafnet_context * ctx,
         snprintf(prefix, sizeof(prefix), "mid.%d", b);
         auto wt = load_block(prefix, cur_c);
         std::vector<float> block_out(cur_c * cur_h * cur_w);
-        nafblock_forward(img.data(), cur_c, cur_h, cur_w, wt, block_out.data(), tmp1, tmp2, tmp3);
+        nafblock_forward(ctx, img.data(), cur_c, cur_h, cur_w, wt, block_out.data(), tmp1, tmp2, tmp3);
         img = std::move(block_out);
     }
     if (bench) {
@@ -520,13 +629,11 @@ static int nafnet_process_tile(nafnet_context * ctx,
         {
             char name_w[64];
             snprintf(name_w, sizeof(name_w), "ups.%d.weight", s);
-            auto * uw = ctx->get_tensor(name_w);
-            // Conv 1x1: cur_c → cur_c*2 (then PixelShuffle reduces by 4)
-            // Actually ups weight is [cur_c*2, cur_c, 1, 1] → output [cur_c*2, h, w]
-            // Then PixelShuffle(2): [cur_c*2, h, w] → [cur_c/2, 2h, 2w]
             int up_oc = cur_c * 2;
             std::vector<float> up_tmp(up_oc * cur_h * cur_w);
-            conv2d_cpu(img.data(), cur_c, cur_h, cur_w, uw, nullptr, up_oc, 1, 1, 1, 0, 1, up_tmp.data());
+            conv2d_ggml(ctx, img.data(), cur_c, cur_h, cur_w,
+                         get_raw(name_w), nullptr,
+                         up_oc, 1, 1, 1, 0, 1, up_tmp.data());
 
             std::vector<float> ps_out(next_c * next_h * next_w);
             pixel_shuffle(up_tmp.data(), up_oc, cur_h, cur_w, 2, ps_out.data());
@@ -549,7 +656,7 @@ static int nafnet_process_tile(nafnet_context * ctx,
             snprintf(prefix, sizeof(prefix), "dec.%d.%d", s, b);
             auto wt = load_block(prefix, cur_c);
             std::vector<float> block_out(cur_c * cur_h * cur_w);
-            nafblock_forward(img.data(), cur_c, cur_h, cur_w, wt, block_out.data(), tmp1, tmp2, tmp3);
+            nafblock_forward(ctx, img.data(), cur_c, cur_h, cur_w, wt, block_out.data(), tmp1, tmp2, tmp3);
             img = std::move(block_out);
         }
 
@@ -561,13 +668,13 @@ static int nafnet_process_tile(nafnet_context * ctx,
         fprintf(stderr, "nafnet: dec stage %d done (%dx%d, %d ch)\n", s, cur_w, cur_h, cur_c);
     }
 
-    // Ending conv: W → 3
+    // Ending conv: W → 3 (ggml)
     auto t_end_phase = std::chrono::steady_clock::now();
     {
-        auto * end_w = ctx->get_tensor("ending.weight");
-        auto * end_b = ctx->get_tensor("ending.bias");
         std::vector<float> ending(3 * cur_h * cur_w);
-        conv2d_cpu(img.data(), W, cur_h, cur_w, end_w, end_b, 3, 3, 3, 1, 1, 1, ending.data());
+        conv2d_ggml(ctx, img.data(), W, cur_h, cur_w,
+                     get_raw("ending.weight"), get_raw("ending.bias"),
+                     3, 3, 3, 1, 1, 1, ending.data());
         img = std::move(ending);
     }
 
