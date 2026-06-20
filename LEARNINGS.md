@@ -61,7 +61,9 @@ preceding conv's weights: `new_W[o] = bn_scale[o] * conv_W[o]`,
 `new_b[o] = bn_scale[o] * conv_b[o] + bn_shift[o]`, where
 `bn_scale = bn_weight / sqrt(bn_var + eps)` and
 `bn_shift = bn_bias - bn_mean * bn_scale`. This eliminates the BN pass
-entirely at runtime. Applied to TBSRN (11 conv+BN pairs). Key detail: the
+entirely at runtime. Applied to TBSRN (11 conv+BN pairs) and DAT SR (54
+conv+BN pairs across 3 patterns: dwconv, channel_interaction, spatial_interaction).
+Key detail: the
 fused weights go into a separate `fused` map checked first by `get()` — if
 found, returns the fused version; otherwise falls through to DequantCache.
 Output differs by ±1-2 pixel values due to float associativity
