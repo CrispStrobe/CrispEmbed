@@ -12,6 +12,7 @@
 #include "gguf.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -336,6 +337,8 @@ bool load(context &ctx, const char *gguf_path, int n_threads, int verbosity) {
     ctx.sched = ggml_backend_sched_new(backends.data(), nullptr,
                                        (int)backends.size(), 16384, false, false);
 
+    ctx.bench = (std::getenv("CRISPEMBED_GLM_OCR_BENCH") != nullptr);
+
     if (verbosity >= 1) {
         const char *bname = ggml_backend_is_cpu(ctx.backend) ? "CPU" : "GPU";
         printf("  Ready (%s, %d threads)\n", bname, n_threads);
@@ -387,6 +390,10 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
         }
     }
 
+    const bool bench = ctx.bench;
+    auto t_total = std::chrono::steady_clock::now();
+
+    auto t_vis = std::chrono::steady_clock::now();
     vision_graph vg = build_vision_graph(ctx, n_patches);
 
     ggml_backend_sched_reset(ctx.sched);
@@ -399,6 +406,11 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
     ggml_backend_tensor_set(vg.pixel_in, patches.data(), 0,
                             n_patches * patch_flat * sizeof(float));
     ggml_backend_sched_graph_compute(ctx.sched, vg.gf);
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_vis).count();
+        fprintf(stderr, "[glm_ocr-bench] vision_encoder: %lldms\n", (long long)ms);
+    }
 
     // Read vision encoder output: (D=1024, N=576)
     int vis_D = (int)vg.output->ne[0];
@@ -409,6 +421,7 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
 
     // ── Spatial downsample: Conv2D [out_hidden, 1024, 2, 2] stride 2 ──
     // Host-side: vis_out (1024, 576) → reshape to (1024, 24, 24) → conv2d → (1536, 12, 12)
+    auto t_ds = std::chrono::steady_clock::now();
     const int merge = (int)vhp.spatial_merge_size;
     const int out_h = n_ph / merge;  // 12
     const int out_w = n_pw / merge;  // 12
@@ -473,8 +486,15 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
         }
     }
 
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_ds).count();
+        fprintf(stderr, "[glm_ocr-bench] downsample: %lldms\n", (long long)ms);
+    }
+
     // ── Merger: proj → SwiGLU → LayerNorm ──
     // Read merger weights
+    auto t_merger = std::chrono::steady_clock::now();
     auto proj_w = read_model_w(ctx.m.merger.proj_w);
     auto gate_w = read_model_w(ctx.m.merger.gate_w);
     auto up_w   = read_model_w(ctx.m.merger.up_w);
@@ -538,6 +558,12 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
             float normed = (ffn[d] - mean) / std::sqrt(var + 1e-6f);
             merger_out[d + t * out_D] = normed * norm_w[d] + (norm_b.empty() ? 0 : norm_b[d]);
         }
+    }
+
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_merger).count();
+        fprintf(stderr, "[glm_ocr-bench] merger: %lldms\n", (long long)ms);
     }
 
     out.n_tokens = n_merged;
@@ -959,11 +985,20 @@ bool generate(context &ctx,
                     img_idx, n_prompt);
     }
 
+    const bool bench = ctx.bench;
+    auto t_gen_total = std::chrono::steady_clock::now();
+
     // Prefill
+    auto t_prefill = std::chrono::steady_clock::now();
     std::vector<float> logits;
     const splice_data *sd_ptr = (image_embeds && n_image_tokens > 0) ? &sd : nullptr;
     if (!run_cached_step(ctx, prompt_ids, n_prompt, 0, logits, sd_ptr)) return false;
     ctx.kvc.n_past = n_prompt;
+    if (bench) {
+        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_prefill).count();
+        fprintf(stderr, "[glm_ocr-bench] prefill: %lldms\n", (long long)ms);
+    }
 
     out.token_confidences.clear();
 
@@ -986,10 +1021,20 @@ bool generate(context &ctx,
     if (best_id == eos_id) { out.text = ctx.tok.decode(out.token_ids.data(), (int)out.token_ids.size()); return true; }
 
     // Decode
+    long long decode_total_ms = 0;
+    int decode_steps = 0;
     for (int gen = 1; gen < max_new_tokens; gen++) {
+        auto t_step = std::chrono::steady_clock::now();
         int32_t next = best_id;
         if (!run_cached_step(ctx, &next, 1, ctx.kvc.n_past, logits)) return false;
         ctx.kvc.n_past += 1;
+        if (bench) {
+            auto step_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - t_step).count();
+            decode_total_ms += step_ms;
+            decode_steps++;
+            fprintf(stderr, "[glm_ocr-bench] decode_step[%d]: %lldms\n", gen, (long long)step_ms);
+        }
 
         best_id = 0; best_score = -INFINITY;
         for (int v = 0; v < V; v++)
@@ -1009,6 +1054,13 @@ bool generate(context &ctx,
     }
 
     out.text = ctx.tok.decode(out.token_ids.data(), (int)out.token_ids.size());
+    if (bench) {
+        fprintf(stderr, "[glm_ocr-bench] decode_total: %lldms (%d steps)\n",
+                decode_total_ms, decode_steps);
+        auto total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - t_gen_total).count();
+        fprintf(stderr, "[glm_ocr-bench] total: %lldms\n", (long long)total_ms);
+    }
     return true;
 }
 

@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -86,6 +87,7 @@ struct context {
     ggml_backend_sched_t sched = nullptr;
     std::vector<char> compute_meta;
     int n_threads = 4;
+    bool bench = false;
 };
 
 // ---------------------------------------------------------------------------
@@ -97,6 +99,7 @@ bool load(context** out, const char* model_path, int n_threads) {
 
     auto* ctx = new context;
     ctx->n_threads = n_threads;
+    ctx->bench = (std::getenv("CRISPEMBED_LILT_KIE_BENCH") != nullptr);
 
     // Init backend — prefer GPU when available
     bool force_cpu = (getenv("LILT_KIE_FORCE_CPU") && atoi(getenv("LILT_KIE_FORCE_CPU")));
@@ -469,6 +472,10 @@ std::vector<token_result> classify(context* ctx,
     std::vector<token_result> results;
     if (!ctx || !input_ids || !bbox || T <= 0) return results;
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+    auto t_pre0  = std::chrono::steady_clock::now();
+
     auto& m = ctx->model;
 
     // Build graph
@@ -525,15 +532,30 @@ std::vector<token_result> classify(context* ctx,
     ggml_tensor* t_bbox = ggml_graph_get_tensor(gf, "bbox_ids");
     ggml_backend_tensor_set(t_bbox, bbox_flat.data(), 0, T * 6 * sizeof(int32_t));
 
+    if (bench) {
+        auto t_pre1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[lilt_kie-bench] preprocess: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_pre1 - t_pre0).count());
+    }
+
     // Compute
     if (ggml_backend_is_cpu(ctx->backend))
         ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
-    if (ggml_backend_sched_graph_compute(ctx->sched, gf) != GGML_STATUS_SUCCESS) {
-        fprintf(stderr, "lilt_kie: graph compute failed\n");
-        return results;
+    {
+        auto t_comp0 = std::chrono::steady_clock::now();
+        if (ggml_backend_sched_graph_compute(ctx->sched, gf) != GGML_STATUS_SUCCESS) {
+            fprintf(stderr, "lilt_kie: graph compute failed\n");
+            return results;
+        }
+        if (bench) {
+            auto t_comp1 = std::chrono::steady_clock::now();
+            fprintf(stderr, "[lilt_kie-bench] graph compute: %.3f ms\n",
+                    std::chrono::duration<double, std::milli>(t_comp1 - t_comp0).count());
+        }
     }
 
     // Read output
+    auto t_post0 = std::chrono::steady_clock::now();
     ggml_tensor* t_out = ggml_graph_get_tensor(gf, "output");
     if (!t_out) return results;
 
@@ -562,6 +584,15 @@ std::vector<token_result> classify(context* ctx,
         results[i].score    = score;
         auto it = m.id2label.find(best);
         results[i].label = (it != m.id2label.end()) ? it->second : "LABEL_" + std::to_string(best);
+    }
+
+    if (bench) {
+        auto t_post1 = std::chrono::steady_clock::now();
+        auto t_total1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[lilt_kie-bench] postprocess: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_post1 - t_post0).count());
+        fprintf(stderr, "[lilt_kie-bench] total: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
     }
 
     return results;

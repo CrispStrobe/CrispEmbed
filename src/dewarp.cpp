@@ -15,7 +15,9 @@
 #include "cc_detect.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <vector>
@@ -244,9 +246,18 @@ int dewarp_page_params(const uint8_t * gray, int w, int h,
         return 1;
     }
 
+    const bool bench = (std::getenv("CRISPEMBED_DEWARP_BENCH") != nullptr);
+    auto t_total = std::chrono::steady_clock::now();
+
     // 1. Find textline regions using CC detection
+    auto t_det0 = std::chrono::steady_clock::now();
     int n_regions = 0;
     cc_text_region * regions = cc_detect_lines(gray, w, h, &n_regions);
+    if (bench) {
+        auto t_det1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[dewarp-bench] detect lines: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_det1 - t_det0).count());
+    }
     if (!regions || n_regions < params.min_lines) {
         // Not enough textlines to build a model
         memcpy(out, gray, w * h);
@@ -257,8 +268,14 @@ int dewarp_page_params(const uint8_t * gray, int w, int h,
     }
 
     // 2. Extract baselines
+    auto t_bl0 = std::chrono::steady_clock::now();
     auto baselines = extract_baselines(gray, w, h, regions, n_regions, params.sampling);
     cc_detect_free(regions);
+    if (bench) {
+        auto t_bl1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[dewarp-bench] baselines: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_bl1 - t_bl0).count());
+    }
 
     if ((int)baselines.size() < params.min_lines) {
         memcpy(out, gray, w * h);
@@ -291,11 +308,26 @@ int dewarp_page_params(const uint8_t * gray, int w, int h,
     }
 
     // 3. Build disparity map
+    auto t_disp0 = std::chrono::steady_clock::now();
     std::vector<float> disparity(w * h);
     build_disparity_map(baselines, w, h, disparity.data());
+    if (bench) {
+        auto t_disp1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[dewarp-bench] disparity: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_disp1 - t_disp0).count());
+    }
 
     // 4. Apply warp
+    auto t_warp0 = std::chrono::steady_clock::now();
     apply_warp(gray, w, h, disparity.data(), out);
+    if (bench) {
+        auto t_warp1 = std::chrono::steady_clock::now();
+        auto t_total1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[dewarp-bench] warp: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_warp1 - t_warp0).count());
+        fprintf(stderr, "[dewarp-bench] total: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
+    }
 
     if (out_w) *out_w = w;
     if (out_h) *out_h = h;

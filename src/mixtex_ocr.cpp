@@ -254,6 +254,8 @@ struct mixtex_ocr_context {
     // KV cache for decoder
     std::vector<std::vector<float>> kv_cache_k; // [layer][step * D]
     std::vector<std::vector<float>> kv_cache_v;
+
+    bool bench = false;
 };
 
 // Debug helper
@@ -417,6 +419,8 @@ mixtex_ocr_context * mixtex_ocr_init(const char * model_path, int n_threads) {
     ctx->lm_ln_w = find(m, "dec.lm_head.ln.weight");
     ctx->lm_ln_b = find(m, "dec.lm_head.ln.bias");
     ctx->lm_bias = find(m, "dec.lm_head.bias");
+
+    ctx->bench = (std::getenv("CRISPEMBED_MIXTEX_BENCH") != nullptr);
 
     fprintf(stderr, "mixtex_ocr: loaded %s\n", model_path);
     return ctx;
@@ -1139,9 +1143,15 @@ const char * mixtex_ocr_recognize(mixtex_ocr_context * ctx,
                                    int * out_len) {
     if (!ctx || !pixels) { if (out_len) *out_len = 0; return nullptr; }
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     auto& hp = ctx->hp;
+    auto tb0 = std::chrono::steady_clock::now();
     auto input = preprocess_mixtex(pixels, width, height, channels,
                                     hp.image_h, hp.image_w);
+    if (bench) fprintf(stderr, "[mixtex-bench] preprocess: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-tb0).count());
 
     if (ctx->dump) dump_stats("input", input.data(), 3 * hp.image_h * hp.image_w);
 
@@ -1153,6 +1163,7 @@ const char * mixtex_ocr_recognize(mixtex_ocr_context * ctx,
     int enc_len = (int)enc_out.size() / hp.enc_hidden;
     fprintf(stderr, "mixtex_ocr: encoder %d tokens × %d dim (%.1f ms)\n",
             enc_len, hp.enc_hidden, enc_ms);
+    if (bench) fprintf(stderr, "[mixtex-bench] encoder: %.1f ms\n", enc_ms);
 
     auto t2 = std::chrono::steady_clock::now();
     ctx->output_text = run_decoder(ctx, enc_out.data(), enc_len, hp.enc_hidden);
@@ -1161,6 +1172,10 @@ const char * mixtex_ocr_recognize(mixtex_ocr_context * ctx,
 
     fprintf(stderr, "mixtex_ocr: decoded \"%s\" (%.1f ms)\n",
             ctx->output_text.c_str(), dec_ms);
+    if (bench) fprintf(stderr, "[mixtex-bench] decoder: %.1f ms\n", dec_ms);
+
+    if (bench) fprintf(stderr, "[mixtex-bench] total: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
 
     if (out_len) *out_len = (int)ctx->output_text.size();
     return ctx->output_text.c_str();

@@ -7,7 +7,9 @@
 #include "gliner_ner.h"
 #include "lilt_kie.h"
 
+#include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <sstream>
 
@@ -18,6 +20,7 @@ struct context {
     void*                      ner_ctx = nullptr;    // Phase 1: GLiNER
     lilt_kie::context*         lilt_ctx = nullptr;   // Phase 2: LiLT
     float                      threshold = 0.5f;
+    bool                       bench = false;
 };
 
 bool load(context** out, const config& cfg, int n_threads) {
@@ -25,6 +28,7 @@ bool load(context** out, const config& cfg, int n_threads) {
 
     auto* ctx = new context;
     ctx->threshold = cfg.threshold > 0.0f ? cfg.threshold : 0.5f;
+    ctx->bench = (std::getenv("CRISPEMBED_KIE_PIPELINE_BENCH") != nullptr);
 
     // Load OCR pipeline.
     if (!ocr_orchestrator::load(&ctx->ocr_ctx, cfg.ocr, n_threads)) {
@@ -280,8 +284,18 @@ result extract(context* ctx, const char* image_path,
     result res;
     if (!ctx || !image_path) return res;
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     // Step 1: Run OCR to get text regions with bounding boxes.
+    auto t_ocr = std::chrono::steady_clock::now();
     auto ocr_res = ocr_orchestrator::run_file(ctx->ocr_ctx, image_path);
+    if (bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_ocr).count();
+        fprintf(stderr, "[kie_pipeline-bench] OCR phase: %.1f ms (%zu regions)\n",
+                ms, ocr_res.regions.size());
+    }
     res.ocr_full_text  = ocr_res.full_text;
     res.ocr_confidence = ocr_res.mean_confidence;
     res.n_ocr_regions  = (int)ocr_res.regions.size();
@@ -291,14 +305,31 @@ result extract(context* ctx, const char* image_path,
     const float thr = threshold > 0.0f ? threshold : ctx->threshold;
 
     // Step 2: Extract fields using the available backend.
+    auto t_ner = std::chrono::steady_clock::now();
     if (ctx->lilt_ctx) {
         // Phase 2: LiLT layout-aware extraction (ignores labels param)
         extract_lilt(ctx, ocr_res, res);
+        if (bench) {
+            double ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t_ner).count();
+            fprintf(stderr, "[kie_pipeline-bench] LiLT/NER phase: %.1f ms\n", ms);
+        }
     } else if (ctx->ner_ctx) {
         // Phase 1: GLiNER NER text-only extraction
         if (labels && n_labels > 0) {
             extract_ner(ctx, ocr_res, labels, n_labels, thr, res);
         }
+        if (bench) {
+            double ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t_ner).count();
+            fprintf(stderr, "[kie_pipeline-bench] LiLT/NER phase: %.1f ms\n", ms);
+        }
+    }
+
+    if (bench) {
+        double total_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_total).count();
+        fprintf(stderr, "[kie_pipeline-bench] total: %.1f ms\n", total_ms);
     }
 
     return res;

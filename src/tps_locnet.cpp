@@ -20,6 +20,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -159,6 +160,8 @@ struct tps_locnet {
         ggml_tensor * w; // [oc, ic]
         ggml_tensor * b; // [oc]
     } fc1, fc2;
+
+    bool bench = false;
 };
 
 tps_locnet * tps_locnet_load(const char * gguf_path) {
@@ -190,6 +193,7 @@ tps_locnet * tps_locnet_load(const char * gguf_path) {
     net->gguf_buf = wl.buf;
     net->num_fiducial = num_fiducial;
     net->fc_dim = fc_dim;
+    net->bench = (std::getenv("CRISPEMBED_TPS_LOCNET_BENCH") != nullptr);
 
     // Bind tensors
     for (int i = 0; i < 4; i++) {
@@ -228,10 +232,14 @@ int tps_locnet_predict(tps_locnet * net,
                        float * out_x, float * out_y) {
     if (!net || !gray || !out_x || !out_y || w <= 0 || h <= 0) return 0;
 
+    const bool bench = net->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     const int F = net->num_fiducial;
 
     // Preprocess: grayscale → 3-channel planar float in [0,1]
     // (The localization net expects 3-channel input; replicate gray → RGB)
+    auto t_pre0 = std::chrono::steady_clock::now();
     int cur_h = h, cur_w = w;
     std::vector<float> buf_a(3 * cur_h * cur_w);
     for (int c = 0; c < 3; c++) {
@@ -242,11 +250,17 @@ int tps_locnet_predict(tps_locnet * net,
             }
         }
     }
+    if (bench) {
+        auto t_pre1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[tps_locnet-bench] preprocess: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_pre1 - t_pre0).count());
+    }
 
     std::vector<float> buf_b;
     std::vector<float> dq_w, dq_b;
 
     // Forward pass: 4 conv blocks
+    auto t_conv0 = std::chrono::steady_clock::now();
     int ic = 3;
     for (int i = 0; i < 4; i++) {
         int oc = net->channels[i];
@@ -285,7 +299,14 @@ int tps_locnet_predict(tps_locnet * net,
         ic = oc;
     }
 
+    if (bench) {
+        auto t_conv1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[tps_locnet-bench] conv layers: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_conv1 - t_conv0).count());
+    }
+
     // FC1 + ReLU
+    auto t_fc0 = std::chrono::steady_clock::now();
     const float * fc1_w = to_f32(net->fc1.w, dq_w);
     const float * fc1_b = to_f32(net->fc1.b, dq_b);
 
@@ -315,6 +336,15 @@ int tps_locnet_predict(tps_locnet * net,
     for (int i = 0; i < F; i++) {
         out_x[i] = (raw_pts[i * 2 + 0] + 1.0f) * 0.5f * (w - 1);
         out_y[i] = (raw_pts[i * 2 + 1] + 1.0f) * 0.5f * (h - 1);
+    }
+
+    if (bench) {
+        auto t_fc1 = std::chrono::steady_clock::now();
+        auto t_total1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[tps_locnet-bench] FC: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_fc1 - t_fc0).count());
+        fprintf(stderr, "[tps_locnet-bench] total: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
     }
 
     return F;

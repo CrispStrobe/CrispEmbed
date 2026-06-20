@@ -6,7 +6,10 @@
 // 3. Normalize to (x-127.5)/127.5 for ArcFace/SFace input
 
 #include "face_align.h"
+#include <chrono>
 #include <cmath>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <algorithm>
 
@@ -98,9 +101,18 @@ std::vector<float> align(
     const float* landmarks,
     int out_w, int out_h)
 {
+    const bool bench = (std::getenv("CRISPEMBED_FACE_ALIGN_BENCH") != nullptr);
+    auto t_total = std::chrono::steady_clock::now();
+
     // Compute affine transform: landmarks → reference points
     float M[6];
+    auto t_aff0 = std::chrono::steady_clock::now();
     estimate_affine(landmarks, REF_PTS_112, M);
+    if (bench) {
+        auto t_aff1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[face_align-bench] estimate_affine: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_aff1 - t_aff0).count());
+    }
 
     // Invert: we need src→dst mapping, but warpAffine uses dst→src
     // For similarity transform [a -b tx; b a ty]:
@@ -116,6 +128,7 @@ std::vector<float> align(
     inv[5] = (b*tx - a*ty) / det;
 
     // Warp: for each output pixel, sample from input
+    auto t_warp0 = std::chrono::steady_clock::now();
     std::vector<float> result(3 * out_h * out_w);
 
     for (int y = 0; y < out_h; y++) {
@@ -144,6 +157,15 @@ std::vector<float> align(
                 result[c * out_h * out_w + y * out_w + x] = (v - 127.5f) / 127.5f;
             }
         }
+    }
+
+    if (bench) {
+        auto t_warp1 = std::chrono::steady_clock::now();
+        auto t_total1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[face_align-bench] warp: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_warp1 - t_warp0).count());
+        fprintf(stderr, "[face_align-bench] total: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
     }
 
     return result;

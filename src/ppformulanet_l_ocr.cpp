@@ -111,6 +111,8 @@ struct ppformulanet_l_ocr_context {
     // Precomputed rel_pos lookup tables (built once at init).
     std::vector<std::vector<float>> rp_h_per_layer;
     std::vector<std::vector<float>> rp_w_per_layer;
+
+    bool bench = false;
 };
 
 // ---------------------------------------------------------------------------
@@ -1352,6 +1354,8 @@ ppformulanet_l_ocr_context* ppformulanet_l_ocr_init(const char* model_path, int 
         ctx->rp_w_per_layer[li] = get_rel_pos(aH, aH, rw.data(), rel_L, head_dim);
     }
 
+    ctx->bench = (std::getenv("CRISPEMBED_PPFN_L_BENCH") != nullptr);
+
     return ctx.release();
 }
 
@@ -1375,6 +1379,10 @@ const char* ppformulanet_l_ocr_recognize(ppformulanet_l_ocr_context* ctx,
     if (!ctx || !pixels) return nullptr;
     const int S = ctx->hparams.image_size;
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
+    auto t0 = std::chrono::steady_clock::now();
     const float MEAN = 0.7931f;
     const float STD  = 0.1738f;
 
@@ -1401,11 +1409,23 @@ const char* ppformulanet_l_ocr_recognize(ppformulanet_l_ocr_context* ctx,
                 rgb[c * S * S + dy * S + dx] = normed;
         }
     }
+    if (bench) fprintf(stderr, "[ppfn_l-bench] preprocess: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
+    t0 = std::chrono::steady_clock::now();
     run_encoder_graph(ctx, rgb.data(), S, S);
+    if (bench) fprintf(stderr, "[ppfn_l-bench] encoder: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+
+    t0 = std::chrono::steady_clock::now();
     precompute_cross_kv(ctx);
     auto tokens = greedy_decode(ctx);
     detokenize(ctx, tokens);
+    if (bench) fprintf(stderr, "[ppfn_l-bench] decoder: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+
+    if (bench) fprintf(stderr, "[ppfn_l-bench] total: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();

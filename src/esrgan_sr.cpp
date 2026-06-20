@@ -12,6 +12,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -108,6 +109,7 @@ struct esrgan_context {
     ggml_context * gguf_ctx;
     ggml_backend_buffer_t gguf_buf;
     int scale, num_feat, num_conv;
+    bool bench;
     // body.0=conv, body.1=prelu, body.2=conv, ..., body.34=conv
     std::vector<conv_layer> convs;   // 18 convolutions
     std::vector<prelu_layer> prelus; // 17 PReLU layers
@@ -157,6 +159,7 @@ esrgan_context * esrgan_init(const char * model_path, int n_threads) {
         }
     }
 
+    ctx->bench = (std::getenv("CRISPEMBED_ESRGAN_BENCH") != nullptr);
     return ctx;
 }
 
@@ -178,6 +181,10 @@ int esrgan_process_float(esrgan_context * ctx,
                          float * output_chw) {
     if (!ctx || !input_chw || !output_chw) return -1;
 
+    const bool bench = ctx->bench;
+    using ms_f = std::chrono::duration<double, std::milli>;
+    auto t_total = std::chrono::steady_clock::now();
+
     const int H = height, W = width, hw = H * W;
     std::vector<float> dq1, dq2;
 
@@ -191,6 +198,7 @@ int esrgan_process_float(esrgan_context * ctx,
     // Process: conv → prelu pairs, then final conv (no prelu)
     int n_convs = (int)ctx->convs.size();
     for (int ci = 0; ci < n_convs; ci++) {
+        auto t_conv = std::chrono::steady_clock::now();
         int oc = (ci == n_convs - 1) ? 3 * ctx->scale * ctx->scale : ctx->num_feat;
         buf_b.resize(oc * hw);
         conv2d(buf_a.data(), ic, H, W,
@@ -207,9 +215,15 @@ int esrgan_process_float(esrgan_context * ctx,
 
         std::swap(buf_a, buf_b);
         ic = oc;
+        if (bench) {
+            auto t_conv_end = std::chrono::steady_clock::now();
+            fprintf(stderr, "[esrgan-bench] conv %d: %.1f ms\n", ci,
+                    ms_f(t_conv_end - t_conv).count());
+        }
     }
 
     // PixelShuffle
+    auto t_ps = std::chrono::steady_clock::now();
     int out_h = H * ctx->scale, out_w = W * ctx->scale;
     int out_hw = out_h * out_w;
     std::vector<float> sr(3 * out_hw);
@@ -219,6 +233,13 @@ int esrgan_process_float(esrgan_context * ctx,
     nearest_upsample(input_chw, 3, H, W, ctx->scale, output_chw);
     for (int i = 0; i < 3 * out_hw; i++)
         output_chw[i] += sr[i];
+    if (bench) {
+        auto t_ps_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[esrgan-bench] pixelshuffle+residual: %.1f ms\n",
+                ms_f(t_ps_end - t_ps).count());
+        fprintf(stderr, "[esrgan-bench] total: %.1f ms\n",
+                ms_f(t_ps_end - t_total).count());
+    }
 
     return 0;
 }

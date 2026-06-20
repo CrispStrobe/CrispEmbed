@@ -18,6 +18,7 @@
 #include "gguf.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -70,12 +71,14 @@ struct context {
     ggml_backend_t backend = nullptr;
     core_gguf::WeightLoad wl;
     int n_threads = 4;
+    bool bench = false;
 };
 
 bool load(context** out, const char* path, int n_threads) {
     auto* ctx = new context();
     *out = ctx;
     ctx->n_threads = n_threads;
+    ctx->bench = (std::getenv("CRISPEMBED_CLIP_TEXT_BENCH") != nullptr);
 
     gguf_context* g = core_gguf::open_metadata(path);
     if (!g) { fprintf(stderr, "clip_text: cannot open %s\n", path); return false; }
@@ -233,6 +236,10 @@ bool load(context** out, const char* path, int n_threads) {
 std::vector<float> encode(context* ctx, const char* text) {
     if (!ctx || !text) return {};
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+    auto t_pre0  = std::chrono::steady_clock::now();
+
     // Tokenize
     embed_tokens toks;
     if (ctx->use_sp) {
@@ -382,6 +389,12 @@ std::vector<float> encode(context* ctx, const char* text) {
     ggml_gallocr_t alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
     ggml_gallocr_alloc_graph(alloc, gf);
 
+    if (bench) {
+        auto t_pre1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[clip_text-bench] tokenize+graph build: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_pre1 - t_pre0).count());
+    }
+
     // Set input: token IDs
     ggml_tensor* inp_ids = ggml_graph_get_tensor(gf, "input_ids");
     ggml_backend_tensor_set(inp_ids, toks.ids.data(), 0, T * sizeof(int32_t));
@@ -397,9 +410,18 @@ std::vector<float> encode(context* ctx, const char* text) {
     }
 
     // Compute
-    ggml_backend_graph_compute(ctx->backend, gf);
+    {
+        auto t_comp0 = std::chrono::steady_clock::now();
+        ggml_backend_graph_compute(ctx->backend, gf);
+        if (bench) {
+            auto t_comp1 = std::chrono::steady_clock::now();
+            fprintf(stderr, "[clip_text-bench] graph compute: %.3f ms\n",
+                    std::chrono::duration<double, std::milli>(t_comp1 - t_comp0).count());
+        }
+    }
 
     // Read output
+    auto t_post0 = std::chrono::steady_clock::now();
     ggml_tensor* out = ggml_graph_get_tensor(gf, "embedding");
     int out_dim = (int)ggml_nelements(out);
     std::vector<float> result(out_dim);
@@ -411,6 +433,15 @@ std::vector<float> encode(context* ctx, const char* text) {
     norm = std::sqrt(norm);
     if (norm > 1e-9f) {
         for (float& v : result) v /= norm;
+    }
+
+    if (bench) {
+        auto t_post1 = std::chrono::steady_clock::now();
+        auto t_total1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[clip_text-bench] postprocess+L2norm: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_post1 - t_post0).count());
+        fprintf(stderr, "[clip_text-bench] total: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
     }
 
     ggml_gallocr_free(alloc);

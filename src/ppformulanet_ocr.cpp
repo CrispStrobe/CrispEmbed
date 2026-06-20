@@ -14,6 +14,7 @@
 #include "core/cpu_ops.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -110,6 +111,8 @@ struct ppformulanet_ocr_context {
     // Cross-attention K/V cache (precomputed from projected encoder output)
     std::vector<std::vector<float>> cross_k_cache;
     std::vector<std::vector<float>> cross_v_cache;
+
+    bool bench;
 };
 
 // ---------------------------------------------------------------------------
@@ -771,6 +774,8 @@ ppformulanet_ocr_context* ppformulanet_ocr_init(const char* model_path, int n_th
     fprintf(stderr, "ppfn: %d blocks mapped, %d dec layers\n",
             n_mapped, hp.dec_layers);
 
+    ctx->bench = (std::getenv("CRISPEMBED_PPFN_BENCH") != nullptr);
+
     return ctx.release();
 }
 
@@ -792,11 +797,15 @@ const char* ppformulanet_ocr_recognize(ppformulanet_ocr_context* ctx,
     if (!ctx || !pixels) return nullptr;
     const int S = ctx->hparams.image_size;
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     // UniMERNet preprocessing:
     // 1. Resize maintaining aspect ratio to fit in S×S
     // 2. Pad with black (0) to fill S×S
     // 3. Convert grayscale → 3ch (replicate)
     // 4. Normalize: mean=0.7931, std=0.1738
+    auto t0 = std::chrono::steady_clock::now();
     const float MEAN = 0.7931f;
     const float STD  = 0.1738f;
 
@@ -827,11 +836,17 @@ const char* ppformulanet_ocr_recognize(ppformulanet_ocr_context* ctx,
                 rgb[c * S * S + dy * S + dx] = normed;
         }
     }
+    if (bench) fprintf(stderr, "[ppfn-bench] preprocess: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
     // Run encoder
+    t0 = std::chrono::steady_clock::now();
     run_encoder(ctx, rgb.data(), S, S);
+    if (bench) fprintf(stderr, "[ppfn-bench] encoder: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
     // Project to decoder dimension
+    t0 = std::chrono::steady_clock::now();
     project_encoder(ctx);
 
     // Precompute cross-attention K/V
@@ -839,6 +854,8 @@ const char* ppformulanet_ocr_recognize(ppformulanet_ocr_context* ctx,
 
     // Decode
     auto tokens = greedy_decode(ctx);
+    if (bench) fprintf(stderr, "[ppfn-bench] decoder: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
     // Detokenize: replace GPT-2 BPE Ġ (U+0120, bytes C4 A0) with space
     ctx->result_buf.clear();
@@ -856,6 +873,9 @@ const char* ppformulanet_ocr_recognize(ppformulanet_ocr_context* ctx,
             }
         }
     }
+
+    if (bench) fprintf(stderr, "[ppfn-bench] total: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
