@@ -923,7 +923,7 @@ std::vector<text_box> detect_file(context* ctx, const char* path,
 
     stbi_image_free(raw);
 
-    fprintf(stderr, "ocr_detect: %s %dx%d → %dx%d (padded %dx%d)\n",
+    if (ctx->bench) fprintf(stderr, "ocr_detect: %s %dx%d → %dx%d (padded %dx%d)\n",
             path, img_w, img_h, new_w, new_h, padded_w, padded_h);
 
     // Run detection
