@@ -59,6 +59,13 @@ static const float * rst_to_f32(const ggml_tensor * t, std::vector<float> & buf)
 }
 
 // Conv2D: weight [OC, IC, KH, KW] (or [OC, 1, KH, KW] for depthwise)
+struct restormer_context;  // forward decl
+static void rst_conv2d_ggml(restormer_context * ctx,
+                             const float * input, int ic, int h, int w,
+                             ggml_tensor * wt, ggml_tensor * bt,
+                             int oc, int kh, int kw, int pad, int groups,
+                             float * output);
+
 static void rst_conv2d(const float * input, int ic, int h, int w,
                        const float * weight, const float * bias,
                        int oc, int kh, int kw, int pad, int groups,
@@ -417,6 +424,74 @@ void restormer_free(restormer_context * ctx) {
     }
 }
 
+// ── ggml conv2d ───────────────────────────────────────────────────────
+
+static void rst_conv2d_ggml(restormer_context * ctx,
+                             const float * input, int ic, int h, int w,
+                             ggml_tensor * wt, ggml_tensor * bt,
+                             int oc, int kh, int kw, int pad, int groups,
+                             float * output) {
+    if (!ctx->enc_sched || !wt) {
+        // scalar fallback via dequant
+        rst_conv2d(input, ic, h, w,
+                   ctx->dcache.get(wt), bt ? ctx->dcache.get(bt) : nullptr,
+                   oc, kh, kw, pad, groups, output);
+        return;
+    }
+    int max_nodes = 32;
+    size_t buf_size = ggml_tensor_overhead() * max_nodes
+                    + ggml_graph_overhead_custom(max_nodes, false);
+    std::vector<uint8_t> meta(buf_size);
+    ggml_init_params ip = { buf_size, meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, w, h, ic);
+    ggml_set_name(x, "x"); ggml_set_input(x);
+
+    ggml_tensor * ww = wt;
+    if (groups > 1 && groups == ic) {
+        if (ggml_n_dims(ww) == 2) {
+            if (ww->type != GGML_TYPE_F32 && ww->type != GGML_TYPE_F16)
+                ww = ggml_cont(g, ggml_cast(g, ww, GGML_TYPE_F32));
+            ww = ggml_reshape_4d(g, ww, kw, kh, 1, ww->ne[1]);
+        }
+        if (ww->type != GGML_TYPE_F16) ww = ggml_cast(g, ww, GGML_TYPE_F16);
+        x = ggml_conv_2d_dw(g, ww, x, 1, 1, pad, pad, 1, 1);
+    } else {
+        if (ggml_n_dims(ww) == 2) {
+            if (ww->type != GGML_TYPE_F32 && ww->type != GGML_TYPE_F16)
+                ww = ggml_cont(g, ggml_cast(g, ww, GGML_TYPE_F32));
+            ww = ggml_reshape_4d(g, ww, kw, kh, ic, ww->ne[1]);
+        }
+        if (ww->type != GGML_TYPE_F16) ww = ggml_cast(g, ww, GGML_TYPE_F16);
+        x = ggml_conv_2d(g, ww, x, 1, 1, pad, pad, 1, 1);
+    }
+    if (bt) {
+        ggml_tensor * b = ggml_reshape_3d(g, bt, 1, 1, oc);
+        x = ggml_add(g, x, b);
+    }
+    ggml_set_name(x, "out"); ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) return;
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), input, 0, ic*h*w*sizeof(float));
+    for (int i = 0; i < ggml_backend_sched_get_n_backends(ctx->enc_sched); i++) {
+        ggml_backend_t be = ggml_backend_sched_get_backend(ctx->enc_sched, i);
+        ggml_backend_dev_t dev = ggml_backend_get_device(be);
+        ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
+        if (reg) {
+            auto * fn = (ggml_backend_set_n_threads_t)
+                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            if (fn) fn(be, ctx->n_threads);
+        }
+    }
+    ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
+    int oh = h + 2*pad - kh + 1, ow = w + 2*pad - kw + 1;
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), output, 0, oc*oh*ow*sizeof(float));
+}
+
 // ── Forward pass (single tile) ─────────────────────────────────────────
 
 static void rst_run_blocks(restormer_context * ctx, float * x, int C, int H, int W,
@@ -493,8 +568,9 @@ static void rst_forward_tile(restormer_context * ctx,
         // Check first few weight values
         rst_debug_dump("pe_weight", pe_w, 8);
     }
-    rst_conv2d(img.data(), 3, cH, cW, pe_w,
-               ctx->has_bias ? ctx->get("patch_embed.bias") : nullptr,
+    rst_conv2d_ggml(ctx, img.data(), 3, cH, cW,
+               ctx->get_raw("patch_embed.weight"),
+               ctx->has_bias ? ctx->get_raw("patch_embed.bias") : nullptr,
                C1, 3, 3, 1, 1, x.data());
     rst_debug_dump("patch_embed", x.data(), C1 * cH * cW);
     // Manual check: output[0,0,0] should be sum of 3x3 weighted patches
@@ -536,7 +612,7 @@ static void rst_forward_tile(restormer_context * ctx,
     {
         int half = dim / 2;
         std::vector<float> down_conv(half * cH * cW);
-        rst_conv2d(x.data(), C1, cH, cW, ctx->get("down.0.weight"), nullptr, half, 3, 3, 1, 1, down_conv.data());
+        rst_conv2d_ggml(ctx, x.data(), C1, cH, cW, ctx->get_raw("down.0.weight"), nullptr, half, 3, 3, 1, 1, down_conv.data());
         x.resize(C2 * (cH / 2) * (cW / 2));
         rst_pixel_unshuffle(down_conv.data(), half, cH, cW, 2, x.data());
         cH /= 2; cW /= 2;
@@ -551,7 +627,7 @@ static void rst_forward_tile(restormer_context * ctx,
     {
         int half = dim;
         std::vector<float> down_conv(half * cH * cW);
-        rst_conv2d(x.data(), C2, cH, cW, ctx->get("down.1.weight"), nullptr, half, 3, 3, 1, 1, down_conv.data());
+        rst_conv2d_ggml(ctx, x.data(), C2, cH, cW, ctx->get_raw("down.1.weight"), nullptr, half, 3, 3, 1, 1, down_conv.data());
         x.resize(C3 * (cH / 2) * (cW / 2));
         rst_pixel_unshuffle(down_conv.data(), half, cH, cW, 2, x.data());
         cH /= 2; cW /= 2;
@@ -566,7 +642,7 @@ static void rst_forward_tile(restormer_context * ctx,
     {
         int half = dim * 2;
         std::vector<float> down_conv(half * cH * cW);
-        rst_conv2d(x.data(), C3, cH, cW, ctx->get("down.2.weight"), nullptr, half, 3, 3, 1, 1, down_conv.data());
+        rst_conv2d_ggml(ctx, x.data(), C3, cH, cW, ctx->get_raw("down.2.weight"), nullptr, half, 3, 3, 1, 1, down_conv.data());
         x.resize(C4 * (cH / 2) * (cW / 2));
         rst_pixel_unshuffle(down_conv.data(), half, cH, cW, 2, x.data());
         cH /= 2; cW /= 2;
@@ -579,7 +655,7 @@ static void rst_forward_tile(restormer_context * ctx,
     {
         int up_oc = C4 * 2;
         std::vector<float> up_conv(up_oc * cH * cW);
-        rst_conv2d(x.data(), C4, cH, cW, ctx->get("up.0.weight"), nullptr, up_oc, 3, 3, 1, 1, up_conv.data());
+        rst_conv2d_ggml(ctx, x.data(), C4, cH, cW, ctx->get_raw("up.0.weight"), nullptr, up_oc, 3, 3, 1, 1, up_conv.data());
         cH *= 2; cW *= 2;
         x.resize(C3 * cH * cW);
         rst_pixel_shuffle(up_conv.data(), up_oc, cH / 2, cW / 2, 2, x.data());
@@ -591,8 +667,9 @@ static void rst_forward_tile(restormer_context * ctx,
         std::vector<float> cat(cat_c * cH * cW);
         memcpy(cat.data(), x.data(), C3 * cH * cW * sizeof(float));
         memcpy(cat.data() + C3 * cH * cW, enc3.data(), C3 * cH * cW * sizeof(float));
-        rst_conv2d(cat.data(), cat_c, cH, cW, ctx->get("reduce.2.weight"),
-                   ctx->has_bias ? ctx->get("reduce.2.bias") : nullptr,
+        rst_conv2d_ggml(ctx, cat.data(), cat_c, cH, cW,
+                   ctx->get_raw("reduce.2.weight"),
+                   ctx->has_bias ? ctx->get_raw("reduce.2.bias") : nullptr,
                    C3, 1, 1, 0, 1, x.data());
     }
     rst_run_blocks(ctx, x.data(), C3, cH, cW, "dec.2", ctx->num_blocks[2], ctx->heads[2], scratch);
@@ -601,7 +678,7 @@ static void rst_forward_tile(restormer_context * ctx,
     {
         int up_oc = C3 * 2;
         std::vector<float> up_conv(up_oc * cH * cW);
-        rst_conv2d(x.data(), C3, cH, cW, ctx->get("up.1.weight"), nullptr, up_oc, 3, 3, 1, 1, up_conv.data());
+        rst_conv2d_ggml(ctx, x.data(), C3, cH, cW, ctx->get_raw("up.1.weight"), nullptr, up_oc, 3, 3, 1, 1, up_conv.data());
         cH *= 2; cW *= 2;
         x.resize(C2 * cH * cW);
         rst_pixel_shuffle(up_conv.data(), up_oc, cH / 2, cW / 2, 2, x.data());
@@ -613,8 +690,9 @@ static void rst_forward_tile(restormer_context * ctx,
         std::vector<float> cat(cat_c * cH * cW);
         memcpy(cat.data(), x.data(), C2 * cH * cW * sizeof(float));
         memcpy(cat.data() + C2 * cH * cW, enc2.data(), C2 * cH * cW * sizeof(float));
-        rst_conv2d(cat.data(), cat_c, cH, cW, ctx->get("reduce.1.weight"),
-                   ctx->has_bias ? ctx->get("reduce.1.bias") : nullptr,
+        rst_conv2d_ggml(ctx, cat.data(), cat_c, cH, cW,
+                   ctx->get_raw("reduce.1.weight"),
+                   ctx->has_bias ? ctx->get_raw("reduce.1.bias") : nullptr,
                    C2, 1, 1, 0, 1, x.data());
     }
     rst_run_blocks(ctx, x.data(), C2, cH, cW, "dec.1", ctx->num_blocks[1], ctx->heads[1], scratch);
@@ -623,7 +701,7 @@ static void rst_forward_tile(restormer_context * ctx,
     {
         int up_oc = C2 * 2;
         std::vector<float> up_conv(up_oc * cH * cW);
-        rst_conv2d(x.data(), C2, cH, cW, ctx->get("up.2.weight"), nullptr, up_oc, 3, 3, 1, 1, up_conv.data());
+        rst_conv2d_ggml(ctx, x.data(), C2, cH, cW, ctx->get_raw("up.2.weight"), nullptr, up_oc, 3, 3, 1, 1, up_conv.data());
         cH *= 2; cW *= 2;
         x.resize(C1 * cH * cW);
         rst_pixel_shuffle(up_conv.data(), up_oc, cH / 2, cW / 2, 2, x.data());
@@ -645,8 +723,9 @@ static void rst_forward_tile(restormer_context * ctx,
 
     // Output: Conv3(96→3) + input residual
     std::vector<float> out(3 * cH * cW);
-    rst_conv2d(x.data(), dec1_c, cH, cW, ctx->get("output.weight"),
-               ctx->has_bias ? ctx->get("output.bias") : nullptr,
+    rst_conv2d_ggml(ctx, x.data(), dec1_c, cH, cW,
+               ctx->get_raw("output.weight"),
+               ctx->has_bias ? ctx->get_raw("output.bias") : nullptr,
                3, 3, 3, 1, 1, out.data());
     for (int c = 0; c < 3; c++)
         for (int y = 0; y < H; y++)
