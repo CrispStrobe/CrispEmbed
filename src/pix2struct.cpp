@@ -264,42 +264,53 @@ const float * pix2struct_encode_patches(pix2struct_context * ctx,
     const int d_ff = ctx->d_ff;
     const float eps = ctx->rms_eps;
 
-    // Step 1: Embed patches on CPU (projection + row/col embeddings)
-    // This part remains CPU-scalar because patch_proj is a simple linear
-    // and the row/col embedding lookup is inherently sequential per-patch.
-    std::vector<float> embedded(n_patches * H);
+    // Step 1: Prepare pixel data + position embeddings on CPU
+    // Extract pixels into contiguous [patch_dim, n_patches] matrix
+    // Gather row/col embeddings into [H, n_patches] matrix
+    std::vector<float> pixels_flat(patch_dim * n_patches);
+    std::vector<float> pos_emb(H * n_patches);
     {
-        const float * proj_w = ctx->dc.get(ctx->patch_proj_w);
-        const float * proj_b = ctx->dc.get(ctx->patch_proj_b);
         const float * row_w = ctx->dc.get(ctx->row_emb);
         const float * col_w = ctx->dc.get(ctx->col_emb);
 
         for (int p = 0; p < n_patches; p++) {
             int row_id = (int)patches[p * (patch_dim + 2) + 0];
             int col_id = (int)patches[p * (patch_dim + 2) + 1];
-            const float * pixels = &patches[p * (patch_dim + 2) + 2];
+            const float * px = &patches[p * (patch_dim + 2) + 2];
 
-            core_cpu::linear_cpu(pixels, &embedded[p * H], patch_dim, H, proj_w, proj_b);
+            // Copy pixel values into contiguous column
+            memcpy(&pixels_flat[p * patch_dim], px, patch_dim * sizeof(float));
 
+            // Gather row + col embeddings
             row_id = std::max(0, std::min(row_id, 4095));
             col_id = std::max(0, std::min(col_id, 4095));
-            for (int i = 0; i < H; i++) {
-                embedded[p * H + i] += row_w[row_id * H + i];
-                embedded[p * H + i] += col_w[col_id * H + i];
-            }
+            for (int i = 0; i < H; i++)
+                pos_emb[p * H + i] = row_w[row_id * H + i] + col_w[col_id * H + i];
         }
     }
 
-    // Step 2: Build ggml graph for 12 encoder layers
-    int max_nodes = ctx->enc_layers * 40 + 64;
+    // Step 2: Build ggml graph: patch_proj + pos_emb + 12 encoder layers
+    int max_nodes = ctx->enc_layers * 40 + 80;
     size_t meta_sz = ggml_tensor_overhead() * (max_nodes + 64)
                    + ggml_graph_overhead_custom(max_nodes, false);
     std::vector<uint8_t> meta_buf(meta_sz);
     ggml_init_params ip = { meta_sz, meta_buf.data(), true };
     ggml_context * gc = ggml_init(ip);
 
-    // Input: [H, n_patches]
-    ggml_tensor * x = ggml_new_tensor_2d(gc, GGML_TYPE_F32, H, n_patches);
+    // Patch projection: pixels [patch_dim, n_patches] @ proj_w → [H, n_patches]
+    ggml_tensor * px_inp = ggml_new_tensor_2d(gc, GGML_TYPE_F32, patch_dim, n_patches);
+    ggml_set_name(px_inp, "pixels");
+    ggml_set_input(px_inp);
+
+    ggml_tensor * x = ggml_mul_mat(gc, ctx->patch_proj_w, px_inp);
+    if (ctx->patch_proj_b)
+        x = ggml_add(gc, x, cast_f32(gc, ctx->patch_proj_b));
+
+    // Add position embeddings (pre-gathered row+col on CPU)
+    ggml_tensor * pe_inp = ggml_new_tensor_2d(gc, GGML_TYPE_F32, H, n_patches);
+    ggml_set_name(pe_inp, "pos_emb");
+    ggml_set_input(pe_inp);
+    x = ggml_add(gc, x, pe_inp);
     ggml_set_name(x, "enc_input");
     ggml_set_input(x);
 
@@ -368,8 +379,11 @@ const float * pix2struct_encode_patches(pix2struct_context * ctx,
         return nullptr;
     }
 
-    ggml_tensor * inp_t = ggml_graph_get_tensor(gf, "enc_input");
-    ggml_backend_tensor_set(inp_t, embedded.data(), 0, n_patches * H * sizeof(float));
+    // Feed pixel data and position embeddings
+    ggml_tensor * px_t = ggml_graph_get_tensor(gf, "pixels");
+    ggml_backend_tensor_set(px_t, pixels_flat.data(), 0, patch_dim * n_patches * sizeof(float));
+    ggml_tensor * pe_t = ggml_graph_get_tensor(gf, "pos_emb");
+    ggml_backend_tensor_set(pe_t, pos_emb.data(), 0, H * n_patches * sizeof(float));
 
     ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
 
