@@ -208,7 +208,7 @@ struct gliner_model {
 
 struct gliner_context {
     gliner_model model;
-    int n_threads    = 4;
+    int n_threads    = 1;
     ggml_backend_t backend     = nullptr;
     ggml_backend_t backend_cpu = nullptr;
 

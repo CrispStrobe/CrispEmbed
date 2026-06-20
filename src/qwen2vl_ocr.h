@@ -171,7 +171,7 @@ struct context {
   ggml_backend_sched_t sched = nullptr;
   std::vector<uint8_t> compute_meta;
 
-  int n_threads = 4;
+  int n_threads = 1;
   int verbosity = 1;
   bool bench = false;
 
@@ -209,7 +209,7 @@ struct context {
 
 // Load model from GGUF file. For llama.cpp split format (Keyven etc.),
 // pass the vision encoder mmproj GGUF as the second path.
-bool load(context &ctx, const char *gguf_path, int n_threads = 4,
+bool load(context &ctx, const char *gguf_path, int n_threads = 1,
           int verbosity = 1, const char *mmproj_path = nullptr);
 
 // Free model resources.

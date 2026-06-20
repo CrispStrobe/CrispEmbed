@@ -86,7 +86,7 @@ struct context {
     core_gguf::WeightLoad wl;
     ggml_backend_sched_t sched = nullptr;
     std::vector<char> compute_meta;
-    int n_threads = 4;
+    int n_threads = 1;
     bool bench = false;
 };
 

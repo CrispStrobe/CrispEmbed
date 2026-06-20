@@ -161,7 +161,7 @@ struct ds_ocr2_ctx {
     // Precomputed RPE tables
     std::vector<std::vector<float>> rp_h_per_layer, rp_w_per_layer;
 
-    int n_threads = 4, verbosity = 1;
+    int n_threads = 1, verbosity = 1;
     bool bench = false;
     std::string diff_ref_path;
 };

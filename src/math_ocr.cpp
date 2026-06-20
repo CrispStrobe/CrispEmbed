@@ -948,7 +948,7 @@ static std::vector<int> run_decoder_graph(math_ocr_context* ctx) {
 
 math_ocr_context* math_ocr_init(const char* model_path, int n_threads) {
     auto ctx = std::make_unique<math_ocr_context>();
-    ctx->n_threads = n_threads > 0 ? n_threads : 4;
+    ctx->n_threads = n_threads > 0 ? n_threads : 1;
 
     gguf_context* gctx = core_gguf::open_metadata(model_path);
     if (!gctx) { fprintf(stderr, "math_ocr: can't open %s\n", model_path); return nullptr; }

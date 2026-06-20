@@ -70,7 +70,7 @@ struct context {
     // Backend
     ggml_backend_t backend = nullptr;
     core_gguf::WeightLoad wl;
-    int n_threads = 4;
+    int n_threads = 1;
     bool bench = false;
 
     ggml_gallocr_t galloc = nullptr;

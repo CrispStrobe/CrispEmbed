@@ -48,7 +48,7 @@ struct region {
 struct context;
 
 // Load RT-DETRv2 GGUF model. Returns true on success.
-bool load(context** ctx, const char* path, int n_threads = 4);
+bool load(context** ctx, const char* path, int n_threads = 1);
 
 // Detect layout regions from image file. Handles resize to 640×640,
 // normalize, and coordinate rescaling.

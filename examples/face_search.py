@@ -78,7 +78,7 @@ def main():
         from crispembed import CrispEmbed
         rec_path = CrispEmbed.resolve_model(rec_path, auto_download=True, lib_path=args.lib)
 
-    pipe = CrispFacePipeline(det_path, rec_path, n_threads=4, lib_path=args.lib)
+    pipe = CrispFacePipeline(det_path, rec_path, n_threads=1, lib_path=args.lib)
 
     # Index
     print(f"Indexing faces in {args.index_dir}...")

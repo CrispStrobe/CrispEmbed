@@ -30,7 +30,7 @@ namespace ocr_pipeline {
 struct context {
     ocr_detect::context* det = nullptr;
     math_ocr_context* rec = nullptr;
-    int n_threads = 4;
+    int n_threads = 1;
     bool bench = false;
 };
 

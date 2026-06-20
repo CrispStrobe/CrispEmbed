@@ -54,7 +54,7 @@ struct context;
 
 // Build a KIE context. Loads OCR pipeline + NER model.
 // Returns false on failure (missing models, etc.).
-bool load(context** ctx, const config& cfg, int n_threads = 4);
+bool load(context** ctx, const config& cfg, int n_threads = 1);
 
 // Extract fields from a document image.
 // labels: array of field names to extract (e.g. "total", "date", "vendor")
