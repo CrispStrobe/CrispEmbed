@@ -944,13 +944,12 @@ static std::string beam_decode(bttr_ocr_context * ctx, int beam_width) {
 
         if (candidates.empty()) break;
 
-        // Sort by score descending, keep top beam_width
-        std::sort(candidates.begin(), candidates.end(),
-                  [](const Candidate & a, const Candidate & b) {
-                      return a.score > b.score;
-                  });
-
+        // Top-K by score descending (partial_sort for O(N·log(K)) vs O(N·log(N)))
         int keep = std::min(beam_width, (int)candidates.size());
+        std::partial_sort(candidates.begin(), candidates.begin() + keep, candidates.end(),
+                          [](const Candidate & a, const Candidate & b) {
+                              return a.score > b.score;
+                          });
         std::vector<Beam> new_beams;
         new_beams.reserve(keep);
 
