@@ -677,9 +677,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [x] **parseq_ocr decoder alloc hoist** — DONE (`38177e2`). ~18 per-step
   vectors moved to pre-allocated dec_scratch struct.
 
-- [ ] **Nearest-neighbor → bilinear resize** — 4 of 7 math OCR runtimes
-  (math_ocr, mixtex, ppformulanet, ppformulanet_l) and several others
-  (got_ocr, surya_det, parseq_ocr) use nearest-neighbor. Quality issue.
+- [x] **Nearest-neighbor → bilinear resize** — DONE (`12c12a1`). Upgraded
+  math_ocr, mixtex, ppformulanet, ppformulanet_l, surya_det, parseq_ocr
+  from integer-truncation to bilinear interpolation.
 
 - [x] **bttr beam search: top-K selection** — DONE (`113202d`).
   Replaced std::sort with std::partial_sort for O(N·log(K)) top-K.
@@ -706,9 +706,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [x] **pdf_info: mmap instead of full file read** — DONE (`5f027aa`).
   Memory-mapped on POSIX with MADV_SEQUENTIAL, fread fallback on Windows.
 
-- [ ] **tps_warp: coarse grid + bilinear interpolation** — evaluates all N
-  control points per output pixel (O(W*H*N) with sqrt+log). Pre-compute
-  coarse displacement grid, interpolate at render time.
+- [x] **tps_warp: coarse grid + bilinear interpolation** — DONE (`b142249`).
+  Pre-computes displacement on 8-px grid (O((W/8)*(H/8)*N)) then bilinearly
+  interpolates per pixel. All 19 unit tests pass.
 
 - [x] **Debug fprintf gating (layout_detect)** — DONE (`614132e`). ~30
   unconditional printfs converted to LDBG() macro (gated behind LAYOUT_DEBUG).
