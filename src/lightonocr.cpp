@@ -408,53 +408,103 @@ static void compute_2d_rope(int ph, int pw, int head_dim, float theta,
 // Vision encoder: Pixtral ViT with 2D RoPE
 // ---------------------------------------------------------------------------
 
-// Apply patch_conv via CPU (Conv2d 14x14 stride 14, no bias)
+// Apply patch_conv via ggml matmul (im2col + BLAS-backed mul_mat).
+// Conv2d 14×14 stride 14 with no overlap = extract each patch as flat vector,
+// then matmul with weight. Env: CRISPEMBED_LIGHTONOCR_SCALAR_PATCH=1 for fallback.
 static std::vector<float> apply_patch_conv(context &ctx,
                                              const std::vector<float> &pixels,
                                              int th, int tw, int ph, int pw) {
     const auto &m = ctx.m;
-    int D = m.vis_dim;
-    int P = m.patch_size;
+    int D = m.vis_dim;    // 1024
+    int P = m.patch_size; // 14
     int T = ph * pw;
+    int patch_len = 3 * P * P;  // 588
 
-    // patch_conv weight: [D, 3, P, P] in ggml = ne[0]=P, ne[1]=P, ne[2]=3, ne[3]=D
-    // Read weight from backend
-    std::vector<float> w(D * 3 * P * P);
-    ggml_backend_tensor_get(m.patch_conv_w, w.data(), 0, w.size() * sizeof(float));
-
-    // Conv2d with stride P: for each output patch (y,x) and channel d:
-    // out[d, y, x] = sum over c,ky,kx of w[d,c,ky,kx] * pixels[c, y*P+ky, x*P+kx]
-    std::vector<float> out(D * T, 0.0f);
-    for (int d = 0; d < D; d++) {
-        for (int py = 0; py < ph; py++) {
-            for (int px = 0; px < pw; px++) {
-                float sum = 0.0f;
-                for (int c = 0; c < 3; c++) {
-                    for (int ky = 0; ky < P; ky++) {
-                        for (int kx = 0; kx < P; kx++) {
-                            int iy = py * P + ky;
-                            int ix = px * P + kx;
-                            if (iy < th && ix < tw) {
-                                float pix = pixels[c * th * tw + iy * tw + ix];
-                                // Weight layout: ggml stores as [P, P, 3, D]
-                                // Index: d * (3*P*P) + c * (P*P) + ky * P + kx
-                                float wt = w[d * (3 * P * P) + c * (P * P) + ky * P + kx];
-                                sum += pix * wt;
-                            }
-                        }
+    // im2col: extract non-overlapping patches → [T, patch_len] F32
+    std::vector<float> im2col(T * patch_len, 0.0f);
+    for (int py = 0; py < ph; py++) {
+        for (int px = 0; px < pw; px++) {
+            int t = py * pw + px;
+            for (int c = 0; c < 3; c++) {
+                for (int ky = 0; ky < P; ky++) {
+                    int iy = py * P + ky;
+                    if (iy >= th) continue;
+                    for (int kx = 0; kx < P; kx++) {
+                        int ix = px * P + kx;
+                        if (ix >= tw) continue;
+                        im2col[t * patch_len + c * P * P + ky * P + kx] =
+                            pixels[c * th * tw + iy * tw + ix];
                     }
                 }
-                // ggml layout: (D, T) where fast axis = D
-                out[py * pw * D + px * D + d] = sum;
             }
         }
     }
 
-    // Reshape to (D, T) row-major for ggml
-    std::vector<float> result(D * T);
-    for (int t = 0; t < T; t++)
-        for (int d = 0; d < D; d++)
-            result[t * D + d] = out[t * D + d];
+    // Scalar fallback gated by env var
+    static const bool scalar_patch = (std::getenv("CRISPEMBED_LIGHTONOCR_SCALAR_PATCH") != nullptr);
+    if (scalar_patch) {
+        // weight: [D, patch_len] — dot product per output element
+        std::vector<float> w(D * patch_len);
+        ggml_backend_tensor_get(m.patch_conv_w, w.data(), 0, w.size() * sizeof(float));
+        std::vector<float> result(T * D);
+        for (int t = 0; t < T; t++)
+            for (int d = 0; d < D; d++) {
+                float s = 0;
+                for (int k = 0; k < patch_len; k++)
+                    s += im2col[t * patch_len + k] * w[d * patch_len + k];
+                result[t * D + d] = s;
+            }
+        return result;
+    }
+
+    // ggml graph: matmul weight × im2col → [D, T]
+    // patch_conv_w is stored as [P, P, 3, D] in ggml, which flattened is [patch_len, D]
+    // For ggml_mul_mat(A, B) = A^T × B, we need A=[patch_len, D], B=[patch_len, T]
+    // Result: [D, T]
+    size_t buf_sz = ggml_tensor_overhead() * 8 + ggml_graph_overhead();
+    ggml_init_params ip{buf_sz, nullptr, true};
+    ggml_context *g = ggml_init(ip);
+
+    // Reshape weight: [P, P, 3, D] → [patch_len, D] (same data, just metadata)
+    ggml_tensor *w = ggml_reshape_2d(g, m.patch_conv_w, patch_len, D);
+
+    ggml_tensor *inp = ggml_new_tensor_2d(g, GGML_TYPE_F32, patch_len, T);
+    ggml_set_name(inp, "im2col"); ggml_set_input(inp);
+
+    ggml_tensor *out = ggml_mul_mat(g, w, inp);  // [D, T]
+    ggml_set_name(out, "patch_out"); ggml_set_output(out);
+
+    ggml_cgraph *gf = ggml_new_graph(g);
+    ggml_build_forward_expand(gf, out);
+
+    ggml_backend_sched_reset(ctx.sched);
+    if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
+        fprintf(stderr, "lightonocr: patch_conv graph alloc failed, falling back to scalar\n");
+        ggml_free(g);
+        // Scalar fallback
+        std::vector<float> wf(D * patch_len);
+        ggml_backend_tensor_get(m.patch_conv_w, wf.data(), 0, wf.size() * sizeof(float));
+        std::vector<float> result(T * D);
+        for (int t = 0; t < T; t++)
+            for (int d = 0; d < D; d++) {
+                float s = 0;
+                for (int k = 0; k < patch_len; k++)
+                    s += im2col[t * patch_len + k] * wf[d * patch_len + k];
+                result[t * D + d] = s;
+            }
+        return result;
+    }
+
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "im2col"),
+                            im2col.data(), 0, T * patch_len * sizeof(float));
+
+    ggml_backend_cpu_set_n_threads(ctx.backend, ctx.n_threads);
+    ggml_backend_sched_graph_compute(ctx.sched, gf);
+
+    std::vector<float> result(T * D);
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "patch_out"),
+                            result.data(), 0, T * D * sizeof(float));
+    ggml_free(g);
     return result;
 }
 
