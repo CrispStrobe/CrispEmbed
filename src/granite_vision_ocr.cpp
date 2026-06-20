@@ -238,10 +238,18 @@ struct gv_tokenizer {
     }
 };
 
+// ── Constants ──────────────────────────────────────────────────────────
+// Graph capacity: 27 layers × ~50 ops/layer + inputs + feature outputs ≈ 1400.
+// 4096 gives comfortable headroom.
+static constexpr int kVisGraphCap = 4096;
+
 // ── Context ────────────────────────────────────────────────────────────
 
 struct granite_vision_context {
     ggml_backend_t backend = nullptr;
+    ggml_backend_t vis_backend_cpu = nullptr;  // CPU fallback for ops Metal can't run
+    ggml_backend_sched_t vis_sched = nullptr;
+    std::vector<uint8_t> vis_compute_meta;     // pre-allocated ggml graph metadata buffer
 
     // Vision hparams
     int vis_dim, vis_layers, vis_heads, vis_image_size, vis_patch_size;
@@ -356,6 +364,24 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
         ggml_backend_free(ctx->backend); delete ctx; return nullptr;
     }
 
+    // Build backend scheduler for the vision ggml graph.
+    ctx->vis_compute_meta.resize(
+        (size_t)kVisGraphCap * ggml_tensor_overhead() +
+        ggml_graph_overhead_custom(kVisGraphCap, false));
+    {
+        std::vector<ggml_backend_t> bends;
+        bends.push_back(ctx->backend);
+        if (!ggml_backend_is_cpu(ctx->backend)) {
+            ctx->vis_backend_cpu = ggml_backend_cpu_init();
+            if (ctx->vis_backend_cpu) {
+                ggml_backend_cpu_set_n_threads(ctx->vis_backend_cpu, ctx->n_threads);
+                bends.push_back(ctx->vis_backend_cpu);
+            }
+        }
+        ctx->vis_sched = ggml_backend_sched_new(
+            bends.data(), nullptr, (int)bends.size(), kVisGraphCap, false, false);
+    }
+
     int n_patches = (ctx->vis_image_size / ctx->vis_patch_size);
     n_patches *= n_patches;  // 27*27 = 729
 
@@ -379,14 +405,164 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
 
 void granite_vision_free(granite_vision_context * ctx) {
     if (ctx) {
+        if (ctx->vis_sched)       ggml_backend_sched_free(ctx->vis_sched);
+        if (ctx->vis_backend_cpu) ggml_backend_free(ctx->vis_backend_cpu);
         core_gguf::free_weights(ctx->wl);
-        if (ctx->backend) ggml_backend_free(ctx->backend);
+        if (ctx->backend)         ggml_backend_free(ctx->backend);
         delete ctx;
     }
 }
 
 void granite_vision_set_max_tokens(granite_vision_context * ctx, int max_tokens) {
     if (ctx) ctx->max_tokens = max_tokens > 0 ? max_tokens : 2048;
+}
+
+// ── ggml graph for 27-layer SigLIP ViT ────────────────────────────────
+//
+// Input x_in: [T*D] row-major (T rows of D floats, same layout as the scalar x).
+// Output feat_outs: one vector<float> per feature_layer, each T*D floats.
+// Uses ctx->vis_sched (Metal + CPU backends set up in granite_vision_init).
+static void gv_run_vit_graph(granite_vision_context * ctx,
+                              const float * x_in, int T, int D,
+                              std::vector<std::vector<float>> & feat_outs) {
+    const int   n_heads = ctx->vis_heads;
+    const int   d_head  = D / n_heads;
+    const int   n_feat  = (int)ctx->feature_layers.size();
+    const float eps     = 1e-6f;
+    const float scale   = 1.0f / sqrtf((float)d_head);
+
+    feat_outs.assign(n_feat, {});
+    if (!ctx->vis_sched) return;  // scheduler not init'd → caller falls back to scalar
+
+    // Each call rebuilds the graph into the pre-allocated compute_meta buffer,
+    // which is reused across calls (reset implicitly by ggml_init overwriting it).
+    ggml_init_params ip{ctx->vis_compute_meta.size(), ctx->vis_compute_meta.data(), /*no_alloc=*/true};
+    ggml_context * g  = ggml_init(ip);
+    ggml_cgraph  * gf = ggml_new_graph_custom(g, kVisGraphCap, false);
+
+    // Input: [D, T] in ggml (ne[0]=D fast-dim, ne[1]=T).
+    // Matches the scalar x buffer layout: x[t*D+d] = element (d, t).
+    ggml_tensor * x_t = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+    ggml_set_name(x_t, "vit_x");
+    ggml_set_input(x_t);
+    ggml_tensor * x = x_t;
+
+    // LayerNorm helper: norm(t, eps) → mul(w) → add(b)
+    auto ln_g = [&](ggml_tensor * t, ggml_tensor * w, ggml_tensor * b) -> ggml_tensor * {
+        ggml_tensor * y = ggml_norm(g, t, eps);
+        if (w) y = ggml_mul(g, y, w);
+        if (b) y = ggml_add(g, y, b);
+        return y;
+    };
+    auto wt = [&](const std::string & name) -> ggml_tensor * {
+        return core_gguf::try_get(ctx->wl.tensors, name.c_str());
+    };
+
+    std::vector<ggml_tensor *> feat_ptrs(n_feat, nullptr);
+
+    for (int li = 0; li < ctx->vis_layers; li++) {
+        std::string lp = "vis.layer." + std::to_string(li);
+
+        ggml_tensor * ln1_w = wt(lp + ".layer_norm1.weight");
+        ggml_tensor * ln1_b = wt(lp + ".layer_norm1.bias");
+        ggml_tensor * q_w   = wt(lp + ".attn.q.weight");
+        ggml_tensor * q_b   = wt(lp + ".attn.q.bias");
+        ggml_tensor * k_w   = wt(lp + ".attn.k.weight");
+        ggml_tensor * k_b   = wt(lp + ".attn.k.bias");
+        ggml_tensor * v_w   = wt(lp + ".attn.v.weight");
+        ggml_tensor * v_b   = wt(lp + ".attn.v.bias");
+        ggml_tensor * o_w   = wt(lp + ".attn.out.weight");
+        ggml_tensor * o_b   = wt(lp + ".attn.out.bias");
+        ggml_tensor * ln2_w = wt(lp + ".layer_norm2.weight");
+        ggml_tensor * ln2_b = wt(lp + ".layer_norm2.bias");
+        ggml_tensor * fc1_w = wt(lp + ".ffn.up.weight");
+        ggml_tensor * fc1_b = wt(lp + ".ffn.up.bias");
+        ggml_tensor * fc2_w = wt(lp + ".ffn.down.weight");
+        ggml_tensor * fc2_b = wt(lp + ".ffn.down.bias");
+
+        if (!q_w || !k_w || !v_w || !o_w || !fc1_w || !fc2_w) {
+            fprintf(stderr, "granite_vision: missing weights at layer %d, aborting graph\n", li);
+            ggml_free(g);
+            return;
+        }
+
+        // ── Attention ──
+        ggml_tensor * resid = x;
+        ggml_tensor * y = ln_g(x, ln1_w, ln1_b);
+
+        // QKV projections: [D, T]
+        ggml_tensor * Q = ggml_mul_mat(g, q_w, y); if (q_b) Q = ggml_add(g, Q, q_b);
+        ggml_tensor * K = ggml_mul_mat(g, k_w, y); if (k_b) K = ggml_add(g, K, k_b);
+        ggml_tensor * V = ggml_mul_mat(g, v_w, y); if (v_b) V = ggml_add(g, V, v_b);
+
+        // [D, T] → [d_head, n_heads, T] → permute → [d_head, T, n_heads]
+        Q = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, Q, d_head, n_heads, T), 0, 2, 1, 3));
+        K = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, K, d_head, n_heads, T), 0, 2, 1, 3));
+        V = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, V, d_head, n_heads, T), 0, 2, 1, 3));
+
+        // scores = K^T @ Q → [T_k, T_q, n_heads]; softmax scales by 1/sqrt(d_head)
+        ggml_tensor * scores = ggml_mul_mat(g, K, Q);
+        scores = ggml_soft_max_ext(g, scores, nullptr, scale, 0.0f);
+
+        // weighted values: V_perm=[T,d_head,n_heads], attn=[d_head,T,n_heads]
+        ggml_tensor * V_perm = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
+        ggml_tensor * attn   = ggml_mul_mat(g, V_perm, scores);
+        // [d_head, T, n_heads] → [d_head, n_heads, T] → [D, T]
+        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        attn = ggml_reshape_2d(g, attn, D, T);
+
+        attn = ggml_mul_mat(g, o_w, attn);
+        if (o_b) attn = ggml_add(g, attn, o_b);
+        x = ggml_add(g, resid, attn);
+
+        // ── FFN ──
+        resid = x;
+        y = ln_g(x, ln2_w, ln2_b);
+        y = ggml_mul_mat(g, fc1_w, y);
+        if (fc1_b) y = ggml_add(g, y, fc1_b);
+        y = ggml_gelu(g, y);
+        y = ggml_mul_mat(g, fc2_w, y);
+        if (fc2_b) y = ggml_add(g, y, fc2_b);
+        x = ggml_add(g, resid, y);
+
+        // ── Feature extraction ──
+        for (int fi = 0; fi < n_feat; fi++) {
+            if (li != ctx->feature_layers[fi]) continue;
+            ggml_tensor * fc = ggml_cont(g, x);
+            char nm[32]; snprintf(nm, sizeof(nm), "feat_%d", fi);
+            ggml_set_name(fc, nm);
+            ggml_set_output(fc);
+            ggml_build_forward_expand(gf, fc);
+            feat_ptrs[fi] = fc;
+        }
+    }
+
+    // Ensure the full graph is traced (last feature layer may not be the last ViT layer).
+    ggml_build_forward_expand(gf, x);
+
+    // ── Schedule + compute ──
+    ggml_backend_sched_reset(ctx->vis_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->vis_sched, gf)) {
+        fprintf(stderr, "granite_vision: vis graph alloc failed\n");
+        ggml_free(g); return;
+    }
+
+    // Upload input (x_in layout matches ggml [D,T]: x_in[t*D+d] = (d,t))
+    ggml_backend_tensor_set(x_t, x_in, 0, (size_t)T * D * sizeof(float));
+
+    if (ggml_backend_sched_graph_compute(ctx->vis_sched, gf) != GGML_STATUS_SUCCESS) {
+        fprintf(stderr, "granite_vision: vis graph compute failed\n");
+        ggml_free(g); return;
+    }
+
+    // Read back feature tensors (same [D,T] layout as scalar layer_outputs)
+    for (int fi = 0; fi < n_feat; fi++) {
+        if (!feat_ptrs[fi]) continue;
+        feat_outs[fi].resize((size_t)T * D);
+        ggml_backend_tensor_get(feat_ptrs[fi], feat_outs[fi].data(), 0, (size_t)T * D * sizeof(float));
+    }
+
+    ggml_free(g);
 }
 
 // ── SigLIP Vision Encoder ──────────────────────────────────────────────
@@ -438,105 +614,94 @@ static void gv_vision_forward(granite_vision_context * ctx,
                 x[t * D + d] += pos_w[t * D + d];
     }
 
-    // Store multi-layer features
+    // ── 27-layer SigLIP ViT (Metal-accelerated via ggml graph) ──
     int n_feat = (int)ctx->feature_layers.size();
     std::vector<std::vector<float>> layer_outputs(n_feat);
 
-    // Transformer layers
-    for (int li = 0; li < ctx->vis_layers; li++) {
-        char buf[64];
+    if (ctx->vis_sched) {
+        // Fast path: ggml graph runs on Metal (or CPU with SIMD via ggml's kernels).
+        gv_run_vit_graph(ctx, x.data(), T, D, layer_outputs);
+    }
 
-        // LN1 + MHSA + residual
-        std::vector<float> normed(T * D);
-        memcpy(normed.data(), x.data(), T * D * sizeof(float));
-        snprintf(buf, sizeof(buf), "vis.layer.%d.layer_norm1", li);
-        gv_layernorm(normed.data(), T, D, ctx->get(std::string(buf) + ".weight"),
-                     ctx->get(std::string(buf) + ".bias"), eps);
+    if (layer_outputs[0].empty()) {
+        // Fallback: scalar loop (used when vis_sched is null or graph failed).
+        for (int li = 0; li < ctx->vis_layers; li++) {
+            char buf[64];
+            std::vector<float> normed(T * D);
+            memcpy(normed.data(), x.data(), T * D * sizeof(float));
+            snprintf(buf, sizeof(buf), "vis.layer.%d.layer_norm1", li);
+            gv_layernorm(normed.data(), T, D, ctx->get(std::string(buf) + ".weight"),
+                         ctx->get(std::string(buf) + ".bias"), eps);
 
-        // MHSA: Q, K, V projections
-        snprintf(buf, sizeof(buf), "vis.layer.%d", li);
-        std::string lp(buf);
-        std::vector<float> Q(T * D), K(T * D), V(T * D);
-        gv_linear(normed.data(), T, D, D, ctx->get(lp + ".attn.q.weight"),
-                  ctx->get(lp + ".attn.q.bias"), Q.data());
-        gv_linear(normed.data(), T, D, D, ctx->get(lp + ".attn.k.weight"),
-                  ctx->get(lp + ".attn.k.bias"), K.data());
-        gv_linear(normed.data(), T, D, D, ctx->get(lp + ".attn.v.weight"),
-                  ctx->get(lp + ".attn.v.bias"), V.data());
+            std::string lp = std::string("vis.layer.") + std::to_string(li);
+            std::vector<float> Q(T * D), K(T * D), V(T * D);
+            gv_linear(normed.data(), T, D, D, ctx->get(lp + ".attn.q.weight"),
+                      ctx->get(lp + ".attn.q.bias"), Q.data());
+            gv_linear(normed.data(), T, D, D, ctx->get(lp + ".attn.k.weight"),
+                      ctx->get(lp + ".attn.k.bias"), K.data());
+            gv_linear(normed.data(), T, D, D, ctx->get(lp + ".attn.v.weight"),
+                      ctx->get(lp + ".attn.v.bias"), V.data());
 
-        // Multi-head attention
-        float scale = 1.0f / sqrtf((float)d_head);
-        std::vector<float> attn_out(T * D, 0.0f);
-        for (int h = 0; h < n_heads; h++) {
-            int off = h * d_head;
-            for (int q = 0; q < T; q++) {
-                // Compute attention scores
-                float max_s = -1e9f;
-                std::vector<float> scores(T);
-                for (int k = 0; k < T; k++) {
-                    float s = core_cpu::dot_product(Q.data() + q * D + off,
-                                                    K.data() + k * D + off, d_head) * scale;
-                    scores[k] = s;
-                    if (s > max_s) max_s = s;
-                }
-                float sum_e = 0;
-                for (int k = 0; k < T; k++) { scores[k] = expf(scores[k] - max_s); sum_e += scores[k]; }
-                float inv = 1.0f / sum_e;
-                for (int d = 0; d < d_head; d++) {
-                    float val = 0;
-                    for (int k = 0; k < T; k++) val += scores[k] * inv * V[k * D + off + d];
-                    attn_out[q * D + off + d] = val;
+            float scale = 1.0f / sqrtf((float)d_head);
+            std::vector<float> attn_out(T * D, 0.0f);
+            for (int h = 0; h < n_heads; h++) {
+                int off = h * d_head;
+                for (int q = 0; q < T; q++) {
+                    float max_s = -1e9f;
+                    std::vector<float> scores(T);
+                    for (int k = 0; k < T; k++) {
+                        float s = core_cpu::dot_product(Q.data() + q * D + off,
+                                                        K.data() + k * D + off, d_head) * scale;
+                        scores[k] = s;
+                        if (s > max_s) max_s = s;
+                    }
+                    float sum_e = 0;
+                    for (int k = 0; k < T; k++) { scores[k] = expf(scores[k] - max_s); sum_e += scores[k]; }
+                    float inv = 1.0f / sum_e;
+                    for (int d = 0; d < d_head; d++) {
+                        float val = 0;
+                        for (int k = 0; k < T; k++) val += scores[k] * inv * V[k * D + off + d];
+                        attn_out[q * D + off + d] = val;
+                    }
                 }
             }
-        }
 
-        // Output projection
-        std::vector<float> proj(T * D);
-        gv_linear(attn_out.data(), T, D, D, ctx->get(lp + ".attn.out.weight"),
-                  ctx->get(lp + ".attn.out.bias"), proj.data());
+            std::vector<float> proj(T * D);
+            gv_linear(attn_out.data(), T, D, D, ctx->get(lp + ".attn.out.weight"),
+                      ctx->get(lp + ".attn.out.bias"), proj.data());
+            for (int i = 0; i < T * D; i++) x[i] += proj[i];
 
-        // Residual
-        for (int i = 0; i < T * D; i++) x[i] += proj[i];
+            memcpy(normed.data(), x.data(), T * D * sizeof(float));
+            snprintf(buf, sizeof(buf), "vis.layer.%d.layer_norm2", li);
+            gv_layernorm(normed.data(), T, D, ctx->get(std::string(buf) + ".weight"),
+                         ctx->get(std::string(buf) + ".bias"), eps);
 
-        // LN2 + FFN + residual
-        memcpy(normed.data(), x.data(), T * D * sizeof(float));
-        snprintf(buf, sizeof(buf), "vis.layer.%d.layer_norm2", li);
-        gv_layernorm(normed.data(), T, D, ctx->get(std::string(buf) + ".weight"),
-                     ctx->get(std::string(buf) + ".bias"), eps);
+            auto * fc1_t = core_gguf::try_get(ctx->wl.tensors, (lp + ".ffn.up.weight").c_str());
+            int ffn_dim = fc1_t ? (int)fc1_t->ne[0] : 4304;
 
-        int ffn_dim = 4304;  // SigLIP intermediate_size
-        // Check actual weight size
-        auto * fc1_t = core_gguf::try_get(ctx->wl.tensors, (lp + ".ffn.up.weight").c_str());
-        if (fc1_t) ffn_dim = fc1_t->ne[0];
+            std::vector<float> fc1(T * ffn_dim);
+            gv_linear(normed.data(), T, D, ffn_dim, ctx->get(lp + ".ffn.up.weight"),
+                      ctx->get(lp + ".ffn.up.bias"), fc1.data());
+            for (int i = 0; i < T * ffn_dim; i++) fc1[i] = gv_gelu(fc1[i]);
 
-        std::vector<float> fc1(T * ffn_dim);
-        gv_linear(normed.data(), T, D, ffn_dim, ctx->get(lp + ".ffn.up.weight"),
-                  ctx->get(lp + ".ffn.up.bias"), fc1.data());
-        for (int i = 0; i < T * ffn_dim; i++) fc1[i] = gv_gelu(fc1[i]);
+            std::vector<float> fc2(T * D);
+            gv_linear(fc1.data(), T, ffn_dim, D, ctx->get(lp + ".ffn.down.weight"),
+                      ctx->get(lp + ".ffn.down.bias"), fc2.data());
+            for (int i = 0; i < T * D; i++) x[i] += fc2[i];
 
-        std::vector<float> fc2(T * D);
-        gv_linear(fc1.data(), T, ffn_dim, D, ctx->get(lp + ".ffn.down.weight"),
-                  ctx->get(lp + ".ffn.down.bias"), fc2.data());
-
-        for (int i = 0; i < T * D; i++) x[i] += fc2[i];
-
-        // Check if this layer is a feature extraction point
-        for (int fi = 0; fi < n_feat; fi++) {
-            if (li == ctx->feature_layers[fi]) {
-                layer_outputs[fi].assign(x.begin(), x.end());
+            for (int fi = 0; fi < n_feat; fi++) {
+                if (li == ctx->feature_layers[fi])
+                    layer_outputs[fi].assign(x.begin(), x.end());
             }
         }
     }
 
-    // Concatenate multi-layer features: [T, n_feat * D]
+    // Concatenate multi-layer features: output[t * feat_dim + fi * D + d]
     int feat_dim = n_feat * D;
-    for (int t = 0; t < T; t++) {
-        for (int fi = 0; fi < n_feat; fi++) {
-            for (int d = 0; d < D; d++) {
+    for (int t = 0; t < T; t++)
+        for (int fi = 0; fi < n_feat; fi++)
+            for (int d = 0; d < D; d++)
                 output[t * feat_dim + fi * D + d] = layer_outputs[fi][t * D + d];
-            }
-        }
-    }
     *out_tokens = T;
 }
 
