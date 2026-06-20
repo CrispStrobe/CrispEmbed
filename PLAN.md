@@ -607,8 +607,11 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [x] **qwen2vl: F32 causal mask → F16** — already F16 (GGML_TYPE_F16)
   (half the memory).
 
-- [ ] **gliner_ner: DeBERTa relative position expansion** — creates [H, T*T]
-  F32 tensor on CPU every call. T=200 → 117MB. Cache or compute incrementally.
+- [x] **gliner_ner: DeBERTa relative position expansion** — DONE (`a63875c`).
+  Two-level cache in `gliner_context`: (1) `rel_embd_norm` — LN-normalized
+  embedding weights, once per context; (2) `rel_pos_expanded_cache` — T×T
+  expansion, reused when T is unchanged. Eliminates 117 MB alloc+fill per call
+  for fixed-window workloads.
 
 - [x] **Pre-compute 2D positional encoding** — TBSRN: cached at init (fixed
   16×64 dims, reused across 5 SRB blocks). BTTR/PosFormer: cached for
