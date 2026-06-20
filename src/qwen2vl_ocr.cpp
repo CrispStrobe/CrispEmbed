@@ -1730,7 +1730,9 @@ void vision_result_free(vision_result &r) {
 
 bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
                      llm_result &out, const image_input *img,
-                     bool logits_last_only, bool materialize_hidden) {
+                     bool logits_last_only = false,
+                     bool materialize_hidden = false,
+                     bool populate_kvc = false) {
   const auto &lhp = ctx.m.lhp;
   const int D = (int)lhp.hidden_size;
   const int n_heads = (int)lhp.num_attention_heads;
@@ -1913,9 +1915,21 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
       debug_tensors.push_back(Q_dbg);
     }
 
-    // Output post-RoPE K/V for KV cache extraction
-    // Shape: (head_dim, n_kv_heads, n_tokens) → flatten to (kv_dim, n_tokens)
-    {
+    // K/V for cache: either write directly into the pre-allocated backend tensor
+    // (no CPU round-trip, F32→F16 conversion in graph) or export as side outputs
+    // for the legacy download-then-reupload seeding path.
+    if (populate_kvc && ctx.kvc.k && n_tokens <= ctx.kvc.max_seq) {
+      ggml_tensor *K_flat =
+          ggml_reshape_2d(g, ggml_cont(g, K), head_dim * n_kv_heads, n_tokens);
+      ggml_tensor *V_flat =
+          ggml_reshape_2d(g, ggml_cont(g, V), head_dim * n_kv_heads, n_tokens);
+      ggml_tensor *k_wr = ggml_view_2d(g, ctx.kvc.k, head_dim * n_kv_heads, n_tokens,
+          ctx.kvc.k->nb[1], (size_t)il * ctx.kvc.k->nb[2]);
+      ggml_tensor *v_wr = ggml_view_2d(g, ctx.kvc.v, head_dim * n_kv_heads, n_tokens,
+          ctx.kvc.v->nb[1], (size_t)il * ctx.kvc.v->nb[2]);
+      ggml_build_forward_expand(gf, ggml_cpy(g, K_flat, k_wr));
+      ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_wr));
+    } else {
       char kname[64], vname[64];
       std::snprintf(kname, sizeof(kname), "k_out_%d", il);
       std::snprintf(vname, sizeof(vname), "v_out_%d", il);
@@ -2569,12 +2583,19 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
     img_in.n_deepstack = ctx.n_deepstack_tmp;
   }
 
+  // Pre-allocate backend KV cache before prefill so run_llm_forward can write
+  // K/V directly into it (eliminates n_layers GPU→CPU→GPU round-trips).
+  const bool no_kv_cache = (getenv("CRISPEMBED_NO_KV_CACHE") != nullptr);
+  bool pre_alloc_ok = !no_kv_cache
+                   && alloc_kv_cache(ctx, n_prompt_tokens + max_new_tokens);
+
   // ── Prefill: full forward pass, extract KV cache ──
   llm_result prefill = {};
   bool ok = run_llm_forward(ctx, prompt_token_ids, n_prompt_tokens, prefill,
                             (img_in.image_embeds) ? &img_in : nullptr,
                             /*logits_last_only=*/true,
-                            /*materialize_hidden=*/false);
+                            /*materialize_hidden=*/false,
+                            /*populate_kvc=*/pre_alloc_ok);
   if (!ok || !prefill.logits) {
     if (prefill.hidden)
       free(prefill.hidden);
@@ -2590,88 +2611,52 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
     fprintf(stderr, "[qwen2vl-bench] prefill: %lldms\n", (long long)ms);
   }
 
-  // Extract per-layer KV cache from prefill graph outputs
-  // k_out_N / v_out_N tensors: (kv_dim, n_prompt_tokens) each
-  std::vector<std::vector<float>> k_cache(n_layers);
-  std::vector<std::vector<float>> v_cache(n_layers);
-  bool backend_kv_ok = false;
-  // KV-cache decode now matches the full recompute token-for-token (the V
-  // side output had to be cont'd — it was a reshape view the scheduler
-  // reused). Cached decode is the default; CRISPEMBED_NO_KV_CACHE=1 forces
-  // the (exact, slower) full-recompute path for A/B comparison.
-  bool kv_ok = (prefill.kv_graph != nullptr);
-  if (getenv("CRISPEMBED_NO_KV_CACHE"))
-    kv_ok = false;
+  bool backend_kv_ok = pre_alloc_ok;
+  bool kv_ok = backend_kv_ok;
 
-  if (kv_ok) {
-    backend_kv_ok = alloc_kv_cache(ctx, n_prompt_tokens + max_new_tokens);
-    if (backend_kv_ok) {
-      const size_t kv_seed_sz = (size_t)kv_dim * n_prompt_tokens;
-      std::vector<float> kv_seed(kv_seed_sz);
-      std::vector<ggml_fp16_t> kv_seed_f16(kv_seed_sz);
-      for (int il = 0; il < n_layers; il++) {
-        char name[64];
-        std::snprintf(name, sizeof(name), "k_out_%d", il);
-        ggml_tensor *kt = ggml_graph_get_tensor(prefill.kv_graph, name);
-        std::snprintf(name, sizeof(name), "v_out_%d", il);
-        ggml_tensor *vt = ggml_graph_get_tensor(prefill.kv_graph, name);
-
-        if (!kt || !vt) {
-          backend_kv_ok = false;
-          break;
-        }
-
-        ggml_backend_tensor_get(kt, kv_seed.data(), 0,
-                                kv_seed_sz * sizeof(float));
-        for (size_t i = 0; i < kv_seed_sz; i++)
-          kv_seed_f16[i] = ggml_fp32_to_fp16(kv_seed[i]);
-        ggml_backend_tensor_set(ctx.kvc.k, kv_seed_f16.data(),
-                                (size_t)il * ctx.kvc.k->nb[2],
-                                kv_seed_sz * sizeof(ggml_fp16_t));
-        ggml_backend_tensor_get(vt, kv_seed.data(), 0,
-                                kv_seed_sz * sizeof(float));
-        for (size_t i = 0; i < kv_seed_sz; i++)
-          kv_seed_f16[i] = ggml_fp32_to_fp16(kv_seed[i]);
-        ggml_backend_tensor_set(ctx.kvc.v, kv_seed_f16.data(),
-                                (size_t)il * ctx.kvc.v->nb[2],
-                                kv_seed_sz * sizeof(ggml_fp16_t));
-      }
-      if (!backend_kv_ok)
-        free_kv_cache(ctx);
+  if (pre_alloc_ok) {
+    // K/V already written to kvc by the prefill graph — free the graph now.
+    if (prefill.kv_graph_ctx) {
+      ggml_free(prefill.kv_graph_ctx);
+      prefill.kv_graph_ctx = nullptr;
     }
-
-    if (!backend_kv_ok) {
-      for (int il = 0; il < n_layers; il++) {
-        char name[64];
-        std::snprintf(name, sizeof(name), "k_out_%d", il);
-        ggml_tensor *kt = ggml_graph_get_tensor(prefill.kv_graph, name);
-        std::snprintf(name, sizeof(name), "v_out_%d", il);
-        ggml_tensor *vt = ggml_graph_get_tensor(prefill.kv_graph, name);
-
-        if (!kt || !vt) {
-          kv_ok = false;
-          break;
+    prefill.kv_graph = nullptr;
+  } else {
+    // Legacy fallback: extract K/V from prefill side-output tensors.
+    kv_ok = (prefill.kv_graph != nullptr) && !no_kv_cache;
+    if (kv_ok) {
+      backend_kv_ok = alloc_kv_cache(ctx, n_prompt_tokens + max_new_tokens);
+      if (backend_kv_ok) {
+        const size_t kv_seed_sz = (size_t)kv_dim * n_prompt_tokens;
+        std::vector<float> kv_seed(kv_seed_sz);
+        std::vector<ggml_fp16_t> kv_seed_f16(kv_seed_sz);
+        for (int il = 0; il < n_layers; il++) {
+          char name[64];
+          std::snprintf(name, sizeof(name), "k_out_%d", il);
+          ggml_tensor *kt = ggml_graph_get_tensor(prefill.kv_graph, name);
+          std::snprintf(name, sizeof(name), "v_out_%d", il);
+          ggml_tensor *vt = ggml_graph_get_tensor(prefill.kv_graph, name);
+          if (!kt || !vt) { backend_kv_ok = false; break; }
+          ggml_backend_tensor_get(kt, kv_seed.data(), 0,
+                                  kv_seed_sz * sizeof(float));
+          for (size_t i = 0; i < kv_seed_sz; i++)
+            kv_seed_f16[i] = ggml_fp32_to_fp16(kv_seed[i]);
+          ggml_backend_tensor_set(ctx.kvc.k, kv_seed_f16.data(),
+                                  (size_t)il * ctx.kvc.k->nb[2],
+                                  kv_seed_sz * sizeof(ggml_fp16_t));
+          ggml_backend_tensor_get(vt, kv_seed.data(), 0,
+                                  kv_seed_sz * sizeof(float));
+          for (size_t i = 0; i < kv_seed_sz; i++)
+            kv_seed_f16[i] = ggml_fp32_to_fp16(kv_seed[i]);
+          ggml_backend_tensor_set(ctx.kvc.v, kv_seed_f16.data(),
+                                  (size_t)il * ctx.kvc.v->nb[2],
+                                  kv_seed_sz * sizeof(ggml_fp16_t));
         }
-
-        size_t sz = (size_t)kv_dim * n_prompt_tokens;
-        k_cache[il].resize(sz);
-        v_cache[il].resize(sz);
-        k_cache[il].reserve((size_t)kv_dim *
-                            (n_prompt_tokens + max_new_tokens));
-        v_cache[il].reserve((size_t)kv_dim *
-                            (n_prompt_tokens + max_new_tokens));
-        ggml_backend_tensor_get(kt, k_cache[il].data(), 0, sz * sizeof(float));
-        ggml_backend_tensor_get(vt, v_cache[il].data(), 0, sz * sizeof(float));
+        if (!backend_kv_ok)
+          free_kv_cache(ctx);
       }
     }
-  }
-  stage_ms("kv_extract");
-
-  if (kv_ok && !backend_kv_ok && ctx.verbosity >= 1) {
-    fprintf(stderr, "  KV cache: %d layers × %d tokens × %d dim = %.1f MB\n",
-            n_layers, n_prompt_tokens, kv_dim,
-            (float)n_layers * n_prompt_tokens * kv_dim * 2 * sizeof(float) /
-                (1024 * 1024));
+    stage_ms("kv_extract");
   }
 
   // Greedy: argmax prefill logits at last position
@@ -2700,7 +2685,7 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
   if (prefill.hidden)
     free(prefill.hidden);
   free(prefill.logits);
-  // Free prefill graph context (KV already extracted to k_cache/v_cache)
+  // Free prefill graph context if not already freed in the pre_alloc_ok branch
   if (prefill.kv_graph_ctx)
     ggml_free(prefill.kv_graph_ctx);
 
