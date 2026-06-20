@@ -52,12 +52,21 @@ int main(int argc, char ** argv) {
     granite_vision_context * ctx = granite_vision_init(argv[1], 2);
     if (!ctx) { printf("Failed to load model\n"); return 1; }
 
-    // Get reference input
+    // Vision encoder + projector parity (ref must contain "input").
     auto [ref_input, ref_n] = ref.get_f32("input");
-    if (!ref_input) { printf("No 'input' in ref\n"); granite_vision_free(ctx); return 1; }
+    if (ref_input) {
+        printf("\nRunning vision encoder + projector...\n");
+        granite_vision_dump_vision(ctx, ref_input, 384, 384, dump_cb, nullptr);
+    }
 
-    printf("\nRunning vision encoder + projector...\n");
-    granite_vision_dump_vision(ctx, ref_input, 384, 384, dump_cb, nullptr);
+    // LLM decode parity (ref must contain "llm_logits"). The token sequence
+    // MUST match tools/dump_granite_llm_reference.py.
+    if (ref.has("llm_logits")) {
+        printf("\nRunning LLM decode (fixed token sequence)...\n");
+        const int tokens[] = {12, 345, 678, 901, 234, 56, 789};
+        granite_vision_dump_llm(ctx, tokens, (int)(sizeof(tokens) / sizeof(tokens[0])),
+                                dump_cb, nullptr);
+    }
 
     printf("\n%d passed, %d failed\n", g_pass, g_fail);
     granite_vision_free(ctx);
