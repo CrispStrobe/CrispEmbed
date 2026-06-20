@@ -2460,3 +2460,47 @@ scaled by `attention_multiplier` = 1/64 not 1/√d, embedding/residual/logits
 multipliers, tied lm_head) is validated layer-by-layer by
 `tools/dump_granite_llm_reference.py` (builds the reference straight from the
 dequantized GGUF — no 5 GB HF checkout needed) at cos=1.0.
+
+## ggml_flash_attn_ext handles GQA natively (2026-06)
+
+`ggml_flash_attn_ext` supports Group Query Attention without explicit
+`ggml_repeat` to tile KV heads to match Q head count. The CPU kernel
+(ops.cpp:8216) uses broadcast factors `rk2 = neq2/nek2` to map Q heads
+to KV heads internally. This means you can pass K/V with `n_kv_heads`
+directly — the kernel repeats automatically.
+
+Before: 20+ tensor ops per layer (reshape_4d + new_tensor_4d + repeat +
+reshape_3d, twice for K and V). After: zero ops, just pass nkv-head
+tensors. Applied to internvl2, lightonocr, got_ocr, glm_ocr (-76 lines).
+
+## F16 norm weights need ggml_cast in ggml graphs (2026-06)
+
+Q4_K GGUF models store RMSNorm/LayerNorm weights as F16 (not F32).
+When building ggml graphs, `ggml_mul(rms_norm_output, weight)` fails
+with "binary_op: unsupported types: dst: f32, src0: f32, src1: f16"
+because `ggml_rms_norm` always outputs F32 but the weight is F16.
+
+Fix: `if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);`
+before the multiply. This affected smoldocling's ggml LLM decoder and
+got_ocr's patch embedding bias on Q4_K models.
+
+## DenseNet ggml graph: ceil_mode pooling + concat dimension (2026-06)
+
+Converting DenseNet encoders to ggml graphs requires careful handling of:
+
+1. **ceil_mode pooling**: `ggml_pool_2d` uses floor mode. For ceil_mode
+   equivalent, pad the spatial dims by 1 before pooling (`ggml_pad`).
+   Getting this wrong causes spatial dimension mismatches in `ggml_concat`.
+
+2. **DenseNet concat**: `ggml_concat(a, b, 2)` concatenates along ne[2]
+   (channels in ggml's W,H,C layout). The assertion `a->ne[0]==b->ne[0]
+   && a->ne[1]==b->ne[1]` means spatial dimensions must match exactly.
+   Any pooling size mismatch cascades into a concat assertion failure.
+
+3. **Conv weight layout**: ggml_conv_2d needs weights as F16 4D tensors
+   [KW, KH, IC, OC]. Weights stored as 2D [IC*KH*KW, OC] need
+   `ggml_reshape_4d` + `ggml_cast(F16)` before use.
+
+hmer_ocr's ggml encoder is the working reference (`273969d`).
+bttr/posformer share the same architecture but need separate
+implementation due to different BN handling (folded vs separate).
