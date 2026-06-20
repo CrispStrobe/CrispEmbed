@@ -380,14 +380,24 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   smoldocling_ocr (F32 flat vector), granite_vision_ocr (F32 flat vector),
   pix2struct (no KV cache at all).
 
-- [ ] **Move granite_vision_ocr to ggml graphs** — the entire engine (vision
-  encoder, projector, LLM decoder) is CPU-scalar. Vision attention is
-  O(729^2 * 16 * 72) scalar ops per layer. LM head is (2048, 49156) scalar
-  matmul. Expected 10-50x speedup from ggml graph conversion.
+- [x] **Move granite_vision_ocr vision encoder to ggml graphs** — DONE
+  (feat/granite-vision-ggml-graph, `0d8ef74`). SigLIP ViT (27 layers,
+  T=729, D=1152, n_heads=16) now runs as a single ggml graph with Metal
+  backend: LN+QKV+softmax+V-weighted+outproj+FFN per layer, feature
+  extraction via `ggml_set_output` at feature_layers[] indices. Scalar
+  fallback retained. `gv_linear` also switched to `core_cpu::dot_product`
+  (SIMD). **Projector and LLM decoder still scalar — see remaining P0
+  items below.**
+
+- [ ] **granite_vision projector + LLM decoder → ggml graphs** — the MLP
+  projector (`gv_projector`, 2 linear layers) and all 40 LLM decode layers
+  (`gv_llm_decode_step`) are still CPU-scalar. The LM head (vocab=49156)
+  is a 2048×49156 SIMD matmul now, but still CPU. The decoder is the second
+  major bottleneck after the vision encoder.
 
 - [ ] **Batched prefill for smoldocling + granite** — both process vision tokens
   one-at-a-time through 30-40 LLM layers. smoldocling: lines 873-893.
-  granite: lines 552-557. For 64-729 vision tokens, this means 64-729 sequential
+  granite: lines 808-822. For 729 vision tokens this means 729 sequential
   full-model forward passes instead of 1.
 
 - [ ] **Move pix2struct to ggml graphs + add KV cache** — fully scalar, no ggml
