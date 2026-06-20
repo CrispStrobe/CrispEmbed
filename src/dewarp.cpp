@@ -195,6 +195,7 @@ static void build_disparity_map(
 static void apply_warp(const uint8_t * src, int w, int h,
                         const float * disparity,
                         uint8_t * dst) {
+    #pragma omp parallel for schedule(static) if(h > 32)
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
             float dy = disparity[y * w + x];

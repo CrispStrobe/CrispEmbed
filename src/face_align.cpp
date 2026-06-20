@@ -131,6 +131,7 @@ std::vector<float> align(
     auto t_warp0 = std::chrono::steady_clock::now();
     std::vector<float> result(3 * out_h * out_w);
 
+    #pragma omp parallel for schedule(static) if(out_h > 32)
     for (int y = 0; y < out_h; y++) {
         for (int x = 0; x < out_w; x++) {
             // Map dst→src using inverse

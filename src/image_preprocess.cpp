@@ -140,6 +140,7 @@ void bicubic_resize_u8_to_f32(const uint8_t * src, int src_h, int src_w,
 
     // Pass 1: horizontal resample → (src_h, dst_w, C) float32.
     std::vector<float> mid((size_t)src_h * dst_w * channels, 0.0f);
+    #pragma omp parallel for schedule(static) if(src_h > 32)
     for (int y = 0; y < src_h; y++) {
         for (int xo = 0; xo < dst_w; xo++) {
             const int   * xidx = wx.indices.data() + (size_t)xo * wx.support;
@@ -161,6 +162,7 @@ void bicubic_resize_u8_to_f32(const uint8_t * src, int src_h, int src_w,
     // a uint8 tensor casts to uint8 with round+clamp at the end of the AA
     // bicubic). Skipping the round leaves sub-pixel precision but produces
     // pixel values that diverge from HF's preprocessor by up to ~1/std.
+    #pragma omp parallel for schedule(static) if(dst_h > 32)
     for (int yo = 0; yo < dst_h; yo++) {
         const int   * yidx = wy.indices.data() + (size_t)yo * wy.support;
         const float * yw   = wy.weights.data() + (size_t)yo * wy.support;
@@ -251,6 +253,7 @@ void normalize_and_temporal_pad(const float * rgb_hwc, int H, int W, int channel
     // Build the first frame: rescale (/255) then normalize per channel.
     // Re-layout from HWC → CHW.
     const float scale = 1.0f / 255.0f;
+    #pragma omp parallel for schedule(static) if(H > 32)
     for (int y = 0; y < H; y++) {
         for (int x = 0; x < W; x++) {
             const float * px = rgb_hwc + (size_t)(y * W + x) * channels;
