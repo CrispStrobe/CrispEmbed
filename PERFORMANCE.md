@@ -636,28 +636,26 @@ runtime category. "Existing" means the optimization is already implemented;
 
 #### Top 10 highest-impact optimization opportunities
 
-| # | Opportunity | Scope | Expected speedup |
-|---|------------|-------|-----------------|
-| 1 | **SIMD in `core/cpu_ops.h` helpers** (`linear_cpu`, `conv2d_cpu`, `layernorm_cpu`) | All runtimes using CPU-side ops (30+) | 4-8x on all scalar matmuls/convolutions |
-| 2 | **Dequantized weight caching** — cache `to_f32()` results at init or first use instead of re-dequantizing every call | ~40 runtimes | Eliminates thousands of redundant alloc+dequant per inference |
-| 3 | **Adopt F16 ggml KV cache** (internvl2 pattern) across all VLM decoders | qwen2vl, deepseek, lightonocr, smoldocling, granite, pix2struct | Eliminates O(seq_len) per-step CPU→GPU re-upload; halves KV memory |
-| 4 | **Flash attention everywhere** — use `ggml_flash_attn_ext` in all attention ops | decoder_embed single path, bidirlm_vision, lilt_kie, qwen2vl LLM, deepseek LLM | Fused attention is 2-4x faster than manual Q@K+softmax+V |
-| 5 | **Move remaining scalar encoders to ggml graphs** | granite_vision, pix2struct, deepseek Qwen2 enc, bttr/hmer/posformer DenseNet, mixtex Swin, ppformulanet HGNet | 10-50x for models stuck on CPU-scalar path |
-| 6 | **Batched prefill for VLM decoders** | smoldocling, granite | Token-at-a-time through 30-40 layers is the worst bottleneck |
-| 7 | **Graph caching** — reuse ggml graph structure across calls with same seq_len | All 60+ runtimes | Eliminates per-call graph construction + allocation overhead |
-| 8 | **Pre-compute RoPE frequency tables** | vlm_attention.h, granite, smoldocling, all core_vlm users | Eliminates `powf`/`cosf`/`sinf` per-element per-step |
-| 9 | **Batch linear → GEMM** in SR attention (N separate `linear_cpu` → one matmul) | dat_sr, swinir_sr, hat_sr, scunet, mixtex | 10-100x for windowed attention QKV projection |
-| 10 | **Eliminate per-pixel/per-head heap allocations** in hot loops | scunet (per-pixel), vlm_attention (per-head scores), got_ocr (per-patch), dat_sr (per-window) | Removes 100K+ alloc/free cycles per forward pass |
+| # | Opportunity | Scope | Status |
+|---|------------|-------|--------|
+| 1 | **SIMD in `core/cpu_ops.h` helpers** | 30+ runtimes | **DONE** — `dot_product()` AVX2+FMA/NEON, 710 FMA instructions |
+| 2 | **Dequantized weight caching** | ~40 runtimes | **DONE** — `DequantCache` in core; migrated smoldocling + granite |
+| 3 | **Adopt F16 ggml KV cache** (internvl2 pattern) | 6 VLM decoders | Pending |
+| 4 | **Flash attention everywhere** | 5 runtimes | Pending |
+| 5 | **Move remaining scalar encoders to ggml graphs** | 7 encoders | Pending |
+| 6 | **Batched prefill for VLM decoders** | smoldocling, granite | Pending |
+| 7 | **Graph caching** | All 60+ runtimes | Pending |
+| 8 | **Pre-compute RoPE frequency tables** | core_vlm users | **DONE** — `RoPEFreqTable`; migrated smoldocling + granite |
+| 9 | **Batch linear → GEMM** in SR attention | 5 SR runtimes | Pending |
+| 10 | **Eliminate per-pixel/per-head heap allocations** | scunet, dat_sr, got_ocr | **DONE** (scunet) — hoisted per-pixel allocs outside loops |
 
 #### Architectural recommendations
 
-1. **Centralize dequant caching in `core/cpu_ops.h`**: Add a `CachedTensor` wrapper that
-   dequantizes on first access and returns cached F32 pointer thereafter. All runtimes
-   benefit immediately.
+1. ~~Centralize dequant caching in `core/cpu_ops.h`~~ — **DONE**: `DequantCache` struct
+   added. Migrated in smoldocling_ocr and granite_vision_ocr.
 
-2. **Add SIMD to `linear_cpu` and `conv2d_cpu`**: These two functions are called by 30+
-   runtimes. AVX2 (x86) and NEON (ARM) inner loops would give the single biggest
-   performance improvement across the entire codebase with a single code change.
+2. ~~Add SIMD to `linear_cpu` and `conv2d_cpu`~~ — **DONE** for `linear_cpu` (AVX2+FMA
+   and NEON via `dot_product()`). `conv2d_cpu` still scalar (needs im2col restructure).
 
 3. **Standardize KV cache on internvl2 pattern**: F16 ggml backend tensors with
    `ggml_view` + `ggml_cpy` writes. Port this to all VLM decoders.
