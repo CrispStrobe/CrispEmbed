@@ -329,6 +329,63 @@ static inline void relu_inplace(float* data, int n) {
         if (data[i] < 0.0f) data[i] = 0.0f;
 }
 
+// ---------------------------------------------------------------------------
+// Pooling helpers (NCHW layout, explicit output dims for ceil_mode compat)
+// ---------------------------------------------------------------------------
+
+// MaxPool2d: sliding window max, out[c,oy,ox] = max of window starting at (oy*s, ox*s).
+// Caller pre-computes oh/ow (handles ceil_mode by expanding them before calling).
+static inline void maxpool2d_cpu(const float* in, int ch, int ih, int iw,
+                                  int k, int s, float* out, int oh, int ow) {
+    for (int c = 0; c < ch; c++)
+        for (int y = 0; y < oh; y++)
+            for (int x = 0; x < ow; x++) {
+                float mx = -1e30f;
+                for (int ky = 0; ky < k; ky++)
+                    for (int kx = 0; kx < k; kx++) {
+                        int iy = y * s + ky, ix = x * s + kx;
+                        if (iy < ih && ix < iw) {
+                            float v = in[c * ih * iw + iy * iw + ix];
+                            if (v > mx) mx = v;
+                        }
+                    }
+                out[c * oh * ow + y * ow + x] = mx;
+            }
+}
+
+// AvgPool2d: counts only valid (in-bounds) pixels in the denominator.
+static inline void avgpool2d_cpu(const float* in, int ch, int ih, int iw,
+                                  int k, int s, float* out, int oh, int ow) {
+    for (int c = 0; c < ch; c++)
+        for (int y = 0; y < oh; y++)
+            for (int x = 0; x < ow; x++) {
+                float sum = 0; int cnt = 0;
+                for (int ky = 0; ky < k; ky++)
+                    for (int kx = 0; kx < k; kx++) {
+                        int iy = y * s + ky, ix = x * s + kx;
+                        if (iy < ih && ix < iw) {
+                            sum += in[c * ih * iw + iy * iw + ix];
+                            cnt++;
+                        }
+                    }
+                out[c * oh * ow + y * ow + x] = cnt > 0 ? sum / cnt : 0.0f;
+            }
+}
+
+// ---------------------------------------------------------------------------
+// BatchNorm (folded, i.e. scale+offset applied in-place)
+// ---------------------------------------------------------------------------
+// data layout: (ch, sp) = CHW flattened. Applies data[c,i] = data[c,i]*scale[c] + offset[c].
+
+static inline void apply_bn_cpu(float* data, int ch, int sp,
+                                 const float* scale, const float* offset) {
+    for (int c = 0; c < ch; c++) {
+        float s = scale[c], o = offset[c];
+        float* row = data + c * sp;
+        for (int i = 0; i < sp; i++) row[i] = row[i] * s + o;
+    }
+}
+
 // Multi-head attention (single query position)
 // q: [D], k: [n_kv, D], v: [n_kv, D], out: [D]
 static inline void mha_1q_cpu(const float* q, const float* k, const float* v,
