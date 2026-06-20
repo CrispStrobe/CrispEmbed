@@ -175,7 +175,7 @@ bool load(context** out, const char* path, int n_threads) {
     ctx->n_threads = n_threads;
     ctx->bench = (std::getenv("CRISPEMBED_LAYOUT_DETECT_BENCH") != nullptr);
 
-    fprintf(stderr, "layout_detect: loading %s\n", path);
+    LDBG( "layout_detect: loading %s\n", path);
 
     // Load weights — prefer GPU backend when available
     bool force_cpu = (getenv("LAYOUT_DETECT_FORCE_CPU") && atoi(getenv("LAYOUT_DETECT_FORCE_CPU")));
@@ -363,7 +363,7 @@ bool load(context** out, const char* path, int n_threads) {
 
     ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
 
-    fprintf(stderr, "layout_detect: loaded %zu tensors (%d missing)\n",
+    LDBG( "layout_detect: loaded %zu tensors (%d missing)\n",
             ctx->wl.tensors.size(), missing);
     return missing == 0;
 }
@@ -834,9 +834,9 @@ std::vector<region> detect(context* ctx, const float* pixels,
             auto* src = (const ggml_fp16_t*)raw.data();
             for (int i = 0; i < 3; i++) fv[i] = ggml_fp16_to_fp32(src[i]);
         }
-        fprintf(stderr, "  stem[0].w first3: %.6f %.6f %.6f (expected: 0.002018)\n", fv[0], fv[1], fv[2]);
+        LDBG( "  stem[0].w first3: %.6f %.6f %.6f (expected: 0.002018)\n", fv[0], fv[1], fv[2]);
     }
-    fprintf(stderr, "layout_detect: building backbone + encoder graph...\n");
+    LDBG( "layout_detect: building backbone + encoder graph...\n");
     ggml_tensor *c3, *c4, *c5;
     backbone_forward(g, ctx->backbone, input, &c3, &c4, &c5);
 
@@ -870,7 +870,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
     if (inp_t) ggml_backend_tensor_set(inp_t, pixels, 0, 3 * H * W * sizeof(float));
 
     // Compute
-    fprintf(stderr, "layout_detect: computing backbone + encoder...\n");
+    LDBG( "layout_detect: computing backbone + encoder...\n");
     auto t_phase1 = std::chrono::steady_clock::now();
     ggml_backend_graph_compute(ctx->backend, gf);
 
@@ -885,7 +885,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
             ggml_backend_tensor_get(t, data.data(), 0, n * sizeof(float));
             float fmin = 1e9, fmax = -1e9;
             for (auto v : data) { fmin = std::min(fmin, v); fmax = std::max(fmax, v); }
-            fprintf(stderr, "  %s: [%lld,%lld,%lld] range=[%.4f, %.4f]\n",
+            LDBG( "  %s: [%lld,%lld,%lld] range=[%.4f, %.4f]\n",
                     name, (long long)t->ne[0], (long long)t->ne[1], (long long)t->ne[2], fmin, fmax);
         };
         read_range("bb_stem");
@@ -948,7 +948,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
         // Print stats for comparison with Python reference
         float fmin = 1e9, fmax = -1e9;
         for (auto v : feats[i].data) { fmin = std::min(fmin, v); fmax = std::max(fmax, v); }
-        fprintf(stderr, "  s%d: %dx%d x %d range=[%.4f, %.4f]\n",
+        LDBG( "  s%d: %dx%d x %d range=[%.4f, %.4f]\n",
                 i+3, feats[i].W, feats[i].H, feats[i].C, fmin, fmax);
     }
 
@@ -1100,7 +1100,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
         if (getenv("LAYOUT_DEBUG")) {
             int n_valid = 0;
             for (auto v : mask) if (v > 0) n_valid++;
-            fprintf(stderr, "  valid_mask: %d/%d valid tokens\n", n_valid, total_tokens);
+            LDBG( "  valid_mask: %d/%d valid tokens\n", n_valid, total_tokens);
         }
     }
 
@@ -1134,7 +1134,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
             for (int n = 0; n < total_tokens; n++)
                 for (int d = 0; d < D; d++)
                     enc_proj[d * total_tokens + n] = ref_row[n * D + d];
-            fprintf(stderr, "  INJECTED HF enc_output from %s\n", getenv("LAYOUT_INJECT_REF"));
+            LDBG( "  INJECTED HF enc_output from %s\n", getenv("LAYOUT_INJECT_REF"));
         }
     }
     // Debug: also inject HF reference memory (raw encoder features for cross-attn)
@@ -1148,7 +1148,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
             for (int n = 0; n < total_tokens; n++)
                 for (int d = 0; d < D; d++)
                     memory[d * total_tokens + n] = ref_row[n * D + d];
-            fprintf(stderr, "  INJECTED HF memory from %s\n", getenv("LAYOUT_INJECT_MEMORY"));
+            LDBG( "  INJECTED HF memory from %s\n", getenv("LAYOUT_INJECT_MEMORY"));
         }
     }
 
@@ -1169,13 +1169,13 @@ std::vector<region> detect(context* ctx, const float* pixels,
                     float v = memory[d * total_tokens + i];
                     lmin = std::min(lmin, v); lmax = std::max(lmax, v);
                 }
-            fprintf(stderr, "  memory s%d (%d tokens): range=[%.4f, %.4f]\n",
+            LDBG( "  memory s%d (%d tokens): range=[%.4f, %.4f]\n",
                     lv+3, level_sizes[lv], lmin, lmax);
         }
-        fprintf(stderr, "  memory[s3,0,:8]: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
+        LDBG( "  memory[s3,0,:8]: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
                 mem_row[0], mem_row[1], mem_row[2], mem_row[3],
                 mem_row[4], mem_row[5], mem_row[6], mem_row[7]);
-        fprintf(stderr, "  memory[s4,0,:8]: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
+        LDBG( "  memory[s4,0,:8]: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
                 mem_row[6400*D+0], mem_row[6400*D+1], mem_row[6400*D+2], mem_row[6400*D+3],
                 mem_row[6400*D+4], mem_row[6400*D+5], mem_row[6400*D+6], mem_row[6400*D+7]);
     }
@@ -1189,10 +1189,10 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 enc_proj_row[n * D + d] = enc_proj[d * total_tokens + n];
         FILE* fp = fopen("/tmp/cpp_enc_output.bin", "wb");
         if (fp) { fwrite(enc_proj_row.data(), sizeof(float), D * total_tokens, fp); fclose(fp); }
-        fprintf(stderr, "  enc_proj: range=[%.4f, %.4f] (dumped to /tmp/cpp_enc_output.bin)\n",
+        LDBG( "  enc_proj: range=[%.4f, %.4f] (dumped to /tmp/cpp_enc_output.bin)\n",
                 *std::min_element(enc_proj.begin(), enc_proj.end()),
                 *std::max_element(enc_proj.begin(), enc_proj.end()));
-        fprintf(stderr, "  enc_proj[0,:8]: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
+        LDBG( "  enc_proj[0,:8]: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
                 enc_proj_row[0], enc_proj_row[1], enc_proj_row[2], enc_proj_row[3],
                 enc_proj_row[4], enc_proj_row[5], enc_proj_row[6], enc_proj_row[7]);
     }
@@ -1224,7 +1224,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
     // Debug: dump initial queries and top-K indices
     if (getenv("LAYOUT_DEBUG")) {
-        fprintf(stderr, "  top-K indices first 5: %d %d %d %d %d\n",
+        LDBG( "  top-K indices first 5: %d %d %d %d %d\n",
                 token_scores[0].second, token_scores[1].second, token_scores[2].second,
                 token_scores[3].second, token_scores[4].second);
         // Dump queries as [N, D] row-major
@@ -1234,7 +1234,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 q_row[q * D + d] = queries[d * N_queries + q];
         FILE* fp = fopen("/tmp/cpp_queries_init.bin", "wb");
         if (fp) { fwrite(q_row.data(), sizeof(float), D * N_queries, fp); fclose(fp); }
-        fprintf(stderr, "  query 0 first 4: %.6f %.6f %.6f %.6f\n",
+        LDBG( "  query 0 first 4: %.6f %.6f %.6f %.6f\n",
                 q_row[0], q_row[1], q_row[2], q_row[3]);
     }
 
@@ -1300,7 +1300,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
     if (getenv("LAYOUT_DEBUG")) {
         FILE* fp = fopen("/tmp/cpp_ref_points.bin", "wb");
         if (fp) { fwrite(ref_points.data(), sizeof(float), N_queries * 4, fp); fclose(fp); }
-        fprintf(stderr, "  ref_points[0]: cx=%.6f cy=%.6f w=%.6f h=%.6f\n",
+        LDBG( "  ref_points[0]: cx=%.6f cy=%.6f w=%.6f h=%.6f\n",
                 ref_points[0], ref_points[1], ref_points[2], ref_points[3]);
     }
 
@@ -1313,13 +1313,13 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 pe_row[q * D + d] = pos_enc[d * N_queries + q];
         FILE* fp = fopen("/tmp/cpp_pos_enc_init.bin", "wb");
         if (fp) { fwrite(pe_row.data(), sizeof(float), D * N_queries, fp); fclose(fp); }
-        fprintf(stderr, "  pos_enc[0] first 4: %.6f %.6f %.6f %.6f\n",
+        LDBG( "  pos_enc[0] first 4: %.6f %.6f %.6f %.6f\n",
                 pe_row[0], pe_row[1], pe_row[2], pe_row[3]);
     }
 
-    fprintf(stderr, "layout_detect: query init done (top-K score: %.3f..%.3f)\n",
+    LDBG( "layout_detect: query init done (top-K score: %.3f..%.3f)\n",
             token_scores[0].first, token_scores[N_queries-1].first);
-    fprintf(stderr, "layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
+    LDBG( "layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
 
     for (int li = 0; li < 6; li++) {
         // Recompute pos_enc from current reference points each layer (matches HF)
@@ -1744,7 +1744,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
                     q_row[q * D + d] = v;
                     qmin = std::min(qmin, v); qmax = std::max(qmax, v);
                 }
-            fprintf(stderr, "  dec0_output: range=[%.4f, %.4f]\n", qmin, qmax);
+            LDBG( "  dec0_output: range=[%.4f, %.4f]\n", qmin, qmax);
             fprintf(stderr, "  dec0_output[0,:8]: %.6f %.6f %.6f %.6f %.6f %.6f %.6f %.6f\n",
                     q_row[0], q_row[1], q_row[2], q_row[3], q_row[4], q_row[5], q_row[6], q_row[7]);
             FILE* fp = fopen("/tmp/cpp_dec0_out.bin", "wb");
