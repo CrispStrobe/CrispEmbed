@@ -431,6 +431,9 @@ target_link_libraries(test-conv-ext PRIVATE crispembed)
 add_executable(test-tokenizer tests/test_tokenizer.cpp)
 target_link_libraries(test-tokenizer PRIVATE crispembed)
 
+add_executable(test-litemla-attn tests/test_litemla_attn.cpp)
+target_link_libraries(test-litemla-attn PRIVATE crispembed)
+
 add_executable(test-core-cpu-ops tests/test_core_cpu_ops.cpp)
 target_link_libraries(test-core-cpu-ops PRIVATE crispembed)
 
