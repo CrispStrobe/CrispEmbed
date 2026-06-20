@@ -285,6 +285,11 @@ struct granite_vision_context {
     ggml_backend_buffer_t kvc_buf = nullptr;
     int kvc_max_seq = 0;
 
+    // F16 copies of the quantized weights, for GPU backends whose quantized
+    // mul_mat mishandles the converter's transposed layout (see init).
+    ggml_context * wf16_ctx = nullptr;
+    ggml_backend_buffer_t wf16_buf = nullptr;
+
     // Scalar fallback KV cache (used by dump_llm / when ggml path unavailable)
     std::vector<float> kv_cache;  // [2 * llm_layers * max_seq * head_dim * llm_kv_heads]
     int kv_allocated = 0;
@@ -399,6 +404,49 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
         t->nb[3] = t->nb[2];
     }
 
+    // GPU quantized mul_mat mishandles the converter's weight layout (Metal
+    // returns garbage where CPU is bit-correct; F16 mul_mat is fine, per the
+    // vision graph). On a GPU backend, dequantize the 2D quantized weights to
+    // F16 so the ggml graphs use Metal's (layout-tolerant) F16 mul_mat. Opt-out
+    // with CRISPEMBED_GRANITE_NO_W_F16. Scalar paths keep using the originals
+    // via gv_to_f32, so this only affects the ggml graphs.
+    if (!ggml_backend_is_cpu(ctx->backend) && std::getenv("CRISPEMBED_GRANITE_W_F16")) {
+        std::vector<std::pair<std::string, ggml_tensor *>> tg;
+        for (auto & kv : ctx->wl.tensors) {
+            ggml_tensor * t = kv.second;
+            if (ggml_n_dims(t) != 2) continue;
+            if (t->type == GGML_TYPE_F16 || t->type == GGML_TYPE_F32) continue;
+            tg.emplace_back(kv.first, t);
+        }
+        if (!tg.empty()) {
+            ggml_init_params ip{ tg.size() * ggml_tensor_overhead() + 256, nullptr, true };
+            ctx->wf16_ctx = ggml_init(ip);
+            std::vector<ggml_tensor *> nt;
+            for (auto & [nm, t] : tg) {
+                ggml_tensor * f = ggml_new_tensor_2d(ctx->wf16_ctx, GGML_TYPE_F16, t->ne[0], t->ne[1]);
+                ggml_set_name(f, nm.c_str());
+                nt.push_back(f);
+            }
+            ctx->wf16_buf = ggml_backend_alloc_ctx_tensors(ctx->wf16_ctx, ctx->backend);
+            for (size_t i = 0; i < tg.size(); i++) {
+                ggml_tensor * src = tg[i].second;
+                int64_t n = ggml_nelements(src);
+                std::vector<uint8_t> raw(ggml_nbytes(src));
+                ggml_backend_tensor_get(src, raw.data(), 0, raw.size());
+                std::vector<float> f32(n);
+                const auto * tr = ggml_get_type_traits(src->type);
+                tr->to_float(raw.data(), f32.data(), n);
+                std::vector<ggml_fp16_t> f16(n);
+                ggml_fp32_to_fp16_row(f32.data(), f16.data(), n);
+                ggml_backend_tensor_set(nt[i], f16.data(), 0, n * sizeof(ggml_fp16_t));
+                ctx->wl.tensors[tg[i].first] = nt[i];  // ggml graphs now see F16
+            }
+            float mb = (float)ggml_backend_buffer_get_size(ctx->wf16_buf) / 1048576.0f;
+            fprintf(stderr, "granite_vision: dequantized %zu weights to F16 for GPU (%.0f MB)\n",
+                    tg.size(), mb);
+        }
+    }
+
     // Backend scheduler shared by vis, projector, and LLM ggml graphs.
     // The meta buffer is sized for the largest graph (LLM: ~1850 nodes ≤ kLlmGraphCap=4096).
     int meta_cap = (kVisGraphCap > kLlmGraphCap) ? kVisGraphCap : kLlmGraphCap;
@@ -451,6 +499,8 @@ void granite_vision_free(granite_vision_context * ctx) {
     if (ctx) {
         if (ctx->kvc_buf) { ggml_backend_buffer_free(ctx->kvc_buf); ctx->kvc_buf = nullptr; }
         if (ctx->kvc_ctx) { ggml_free(ctx->kvc_ctx); ctx->kvc_ctx = nullptr; }
+        if (ctx->wf16_buf) { ggml_backend_buffer_free(ctx->wf16_buf); ctx->wf16_buf = nullptr; }
+        if (ctx->wf16_ctx) { ggml_free(ctx->wf16_ctx); ctx->wf16_ctx = nullptr; }
         if (ctx->vis_sched)       ggml_backend_sched_free(ctx->vis_sched);
         if (ctx->vis_backend_cpu) ggml_backend_free(ctx->vis_backend_cpu);
         core_gguf::free_weights(ctx->wl);
@@ -735,7 +785,16 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     auto wt = [&](const std::string & name) -> ggml_tensor * {
         return core_gguf::try_get(ctx->wl.tensors, name.c_str());
     };
+    bool manual_rms = std::getenv("CRISPEMBED_GRANITE_MANUAL_RMS") != nullptr;
     auto rmsnorm = [&](ggml_tensor * t, ggml_tensor * w) -> ggml_tensor * {
+        if (manual_rms) {
+            // Bypass kernel_rms_norm (buggy cross-simdgroup reduction on Metal,
+            // CrispASR upstream-prs/08). eps omitted (1e-5, negligible for the
+            // diff). t:[D,T]; ss:[1,T] broadcasts over D.
+            ggml_tensor * ss = ggml_sum_rows(g, ggml_sqr(g, t));
+            ss = ggml_scale(g, ss, 1.0f / (float)t->ne[0]);
+            return ggml_mul(g, ggml_div(g, t, ggml_sqrt(g, ss)), w);
+        }
         return ggml_mul(g, ggml_rms_norm(g, t, eps), w);
     };
     // Weight ne is corrected to standard [in,out] at load time (see init), so
@@ -792,17 +851,31 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
         ggml_tensor * vv_view = ggml_view_4d(g, ctx->kvc_v,
             d_head, T, n_kv, 1, kh_nb1, kh_nb2, kh_nb3,
             (size_t)li * ctx->kvc_v->nb[3] + (size_t)n_past * ctx->kvc_v->nb[1]);
-        ggml_build_forward_expand(gf, ggml_cpy(g, Kp, kv_view));
-        ggml_build_forward_expand(gf, ggml_cpy(g, Vp, vv_view));
+        if (!std::getenv("CRISPEMBED_GRANITE_NO_KVWRITE")) {
+            ggml_build_forward_expand(gf, ggml_cpy(g, Kp, kv_view));
+            ggml_build_forward_expand(gf, ggml_cpy(g, Vp, vv_view));
+        }
 
-        // Read full K/V history [0..Lk) for this layer
-        ggml_tensor * k_lay = ggml_view_3d(g, ctx->kvc_k,
-            d_head, Lk, n_kv, kh_nb1, kh_nb2, (size_t)li * kh_nb3);
-        ggml_tensor * v_lay = ggml_view_3d(g, ctx->kvc_v,
-            d_head, Lk, n_kv, ctx->kvc_v->nb[1], ctx->kvc_v->nb[2],
-            (size_t)li * ctx->kvc_v->nb[3]);
-        ggml_tensor * Kfull = ggml_cont(g, k_lay);  // [d_head, Lk, n_kv]
-        ggml_tensor * Vfull = ggml_cont(g, v_lay);
+        // Build the attention K/V WITHOUT reading back the positions this graph
+        // just wrote. On Metal the cpy-to-cache and a view-read of the same
+        // buffer are dispatched async with no dependency edge between them, so
+        // reading [0..Lk) right after writing [n_past..Lk) races the write and
+        // returns zeros → garbage (CPU runs sequentially and is unaffected).
+        // Instead: past [0..n_past) comes from prior, already-synced graphs;
+        // the current positions use the fresh Kp/Vp directly.
+        ggml_tensor * Kfull, * Vfull;  // [d_head, Lk, n_kv]
+        if (n_past == 0) {
+            Kfull = Kp;
+            Vfull = Vp;
+        } else {
+            ggml_tensor * k_past = ggml_view_3d(g, ctx->kvc_k,
+                d_head, n_past, n_kv, kh_nb1, kh_nb2, (size_t)li * kh_nb3);
+            ggml_tensor * v_past = ggml_view_3d(g, ctx->kvc_v,
+                d_head, n_past, n_kv, ctx->kvc_v->nb[1], ctx->kvc_v->nb[2],
+                (size_t)li * ctx->kvc_v->nb[3]);
+            Kfull = ggml_concat(g, ggml_cont(g, k_past), Kp, 1);
+            Vfull = ggml_concat(g, ggml_cont(g, v_past), Vp, 1);
+        }
 
         // GQA expansion: repeat KV heads kv_rep times → [d_head, Lk, n_heads]
         if (kv_rep > 1) {
@@ -815,10 +888,15 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
             Vfull = ggml_reshape_3d(g, ggml_repeat(g, Vfull, Vt), d_head, Lk, n_heads);
         }
 
-        // flash_attn_ext: Q [d_head, T, n_heads], K [d_head, Lk, n_heads]
-        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));  // [d_head, T, n_heads]
-        ggml_tensor * attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, mask, attn_mul, 0.0f, 0.0f);
-        // Output: [d_head, n_heads, T] → reshape → [D, T]
+        // Manual attention via soft_max_ext — same pattern as the (Metal-correct)
+        // vision graph. ggml_flash_attn_ext produced garbage here on Metal.
+        // Q:[d_head,T,n_heads], Kfull/Vfull:[d_head,Lk,n_heads], mask:[Lk,T].
+        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));        // [d_head, T, n_heads]
+        ggml_tensor * scores = ggml_mul_mat(g, Kfull, Q);        // [Lk, T, n_heads]
+        scores = ggml_soft_max_ext(g, scores, mask, attn_mul, 0.0f);
+        ggml_tensor * V_perm = ggml_cont(g, ggml_permute(g, Vfull, 1, 0, 2, 3)); // [Lk, d_head, n_heads]
+        ggml_tensor * attn = ggml_mul_mat(g, V_perm, scores);   // [d_head, T, n_heads]
+        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3)); // [d_head, n_heads, T]
         attn = ggml_reshape_2d(g, attn, D, T);
 
         // Output projection + scaled residual
