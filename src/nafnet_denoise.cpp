@@ -357,11 +357,11 @@ void nafnet_free(nafnet_context * ctx) {
     }
 }
 
-// ── Forward pass ────────────────────────────────────────────────────
+// ── Forward pass (single tile) ──────────────────────────────────────
 
-int nafnet_process(nafnet_context * ctx,
-                   const uint8_t * input, int width, int height,
-                   uint8_t * output) {
+static int nafnet_process_tile(nafnet_context * ctx,
+                               const uint8_t * input, int width, int height,
+                               uint8_t * output) {
     if (!ctx || !input || !output || width <= 0 || height <= 0) return -1;
 
     const bool bench = ctx->bench;
@@ -598,5 +598,111 @@ int nafnet_process(nafnet_context * ctx,
                 ms_f(t_fin - t_total).count());
     }
     fprintf(stderr, "nafnet: done (%dx%d)\n", width, height);
+    return 0;
+}
+
+// ── Tiled forward pass with Hann blending ──────────────────────────
+
+static void build_blend_window_1x(int tile_size, int overlap, std::vector<float> & win) {
+    win.resize(tile_size * tile_size);
+    for (int y = 0; y < tile_size; y++) {
+        float wy = 1.0f;
+        if (y < overlap)
+            wy = 0.5f - 0.5f * cosf((float)M_PI * y / overlap);
+        else if (y >= tile_size - overlap)
+            wy = 0.5f - 0.5f * cosf((float)M_PI * (tile_size - 1 - y) / overlap);
+        for (int x = 0; x < tile_size; x++) {
+            float wx = 1.0f;
+            if (x < overlap)
+                wx = 0.5f - 0.5f * cosf((float)M_PI * x / overlap);
+            else if (x >= tile_size - overlap)
+                wx = 0.5f - 0.5f * cosf((float)M_PI * (tile_size - 1 - x) / overlap);
+            win[y * tile_size + x] = wy * wx;
+        }
+    }
+}
+
+int nafnet_process(nafnet_context * ctx,
+                   const uint8_t * input, int width, int height,
+                   uint8_t * output) {
+    if (!ctx || !input || !output || width <= 0 || height <= 0) return -1;
+
+    // Tile size must be multiple of pad_mult (16 for 4-stage U-Net)
+    int pad_mult = 1 << ctx->n_stages;
+    int tile_size = 256;
+    int tile_overlap = 32;
+    const char * ts_env = std::getenv("CRISPEMBED_NAFNET_TILE");
+    if (ts_env) tile_size = std::max(pad_mult * 2, atoi(ts_env));
+    // Round tile_size up to pad_mult
+    tile_size = ((tile_size + pad_mult - 1) / pad_mult) * pad_mult;
+    tile_overlap = std::min(tile_overlap, tile_size / 4);
+
+    // Small image: single-shot
+    if (width <= tile_size && height <= tile_size)
+        return nafnet_process_tile(ctx, input, width, height, output);
+
+    // Tiled processing (1:1 denoising, no upscale)
+    std::vector<float> accum(3 * height * width, 0.0f);
+    std::vector<float> weight_map(height * width, 0.0f);
+    std::vector<float> blend_win;
+    build_blend_window_1x(tile_size, tile_overlap, blend_win);
+
+    int step = tile_size - tile_overlap;
+    int n_tiles_x = std::max(1, (width + step - 1) / step);
+    int n_tiles_y = std::max(1, (height + step - 1) / step);
+
+    fprintf(stderr, "nafnet: %dx%d, tiles=%dx%d (size=%d, overlap=%d)\n",
+            width, height, n_tiles_x, n_tiles_y, tile_size, tile_overlap);
+
+    for (int ty = 0; ty < n_tiles_y; ty++) {
+        for (int tx = 0; tx < n_tiles_x; tx++) {
+            int x0 = std::min(tx * step, std::max(0, width - tile_size));
+            int y0 = std::min(ty * step, std::max(0, height - tile_size));
+            int tw = std::min(tile_size, width - x0);
+            int th = std::min(tile_size, height - y0);
+
+            // Extract tile (HWC uint8)
+            std::vector<uint8_t> tile_in(tw * th * 3);
+            for (int y = 0; y < th; y++)
+                memcpy(tile_in.data() + y * tw * 3,
+                       input + ((y0 + y) * width + x0) * 3, tw * 3);
+
+            std::vector<uint8_t> tile_out(tw * th * 3);
+            int ret = nafnet_process_tile(ctx, tile_in.data(), tw, th, tile_out.data());
+            if (ret != 0) return ret;
+
+            // Blend into accumulator
+            for (int y = 0; y < th; y++) {
+                for (int x = 0; x < tw; x++) {
+                    float w = 1.0f;
+                    if (tw == tile_size && th == tile_size)
+                        w = blend_win[y * tile_size + x];
+                    else {
+                        if (x0 > 0 && x < tile_overlap)
+                            w *= 0.5f - 0.5f * cosf((float)M_PI * x / tile_overlap);
+                        if (y0 > 0 && y < tile_overlap)
+                            w *= 0.5f - 0.5f * cosf((float)M_PI * y / tile_overlap);
+                    }
+                    int dy = y0 + y, dx = x0 + x;
+                    for (int c = 0; c < 3; c++)
+                        accum[c * height * width + dy * width + dx] +=
+                            tile_out[(y * tw + x) * 3 + c] * w;
+                    weight_map[dy * width + dx] += w;
+                }
+            }
+        }
+    }
+
+    // Normalize and convert to uint8
+    for (int y = 0; y < height; y++)
+        for (int x = 0; x < width; x++) {
+            float wt = weight_map[y * width + x];
+            if (wt <= 0.0f) wt = 1.0f;
+            for (int c = 0; c < 3; c++) {
+                float v = accum[c * height * width + y * width + x] / wt;
+                output[(y * width + x) * 3 + c] =
+                    (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));
+            }
+        }
     return 0;
 }
