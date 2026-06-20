@@ -21,6 +21,7 @@
 //   Conv3 → GELU → Conv3 → ChannelAttention(AvgPool → Conv1 → ReLU → Conv1 → Sigmoid → mul)
 
 #include "hat_sr.h"
+#include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -458,14 +459,13 @@ struct hat_sr_context {
 
     ggml_backend_t backend = nullptr;
     core_gguf::WeightLoad wl;
-    std::vector<std::vector<float>> wbufs;
+    core_cpu::DequantCache dcache;
     std::vector<std::vector<int>> i32_bufs;
 
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t) return nullptr;
-        wbufs.emplace_back();
-        return hat_to_f32(t, wbufs.back());
+        return dcache.get(t);
     }
 
     const int * get_i32(const std::string & name) {
