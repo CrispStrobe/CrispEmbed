@@ -15,6 +15,7 @@
 #include "ggml-cpu.h"
 #include "gguf.h"
 
+#include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "core/bpe.h"
 #include "tokenizer.h"
@@ -868,6 +869,10 @@ static void lstm_forward_one_dir(
     std::vector<float> h(hidden_size, 0.0f);
     std::vector<float> c(hidden_size, 0.0f);
     std::vector<float> gates(gate_size);
+    std::vector<float> hh_out(gate_size);
+    // Fuse the two constant bias vectors once before the step loop.
+    std::vector<float> combined_b(gate_size);
+    for (int g = 0; g < gate_size; g++) combined_b[g] = b_ih[g] + b_hh[g];
 
     auto sigmoid = [](float x) -> float { return 1.0f / (1.0f + expf(-x)); };
 
@@ -875,15 +880,11 @@ static void lstm_forward_one_dir(
         int t = reverse ? (T - 1 - step) : step;
         const float * xt = input + t * input_size;
 
-        // gates = W_ih @ x + b_ih + W_hh @ h + b_hh
-        for (int g = 0; g < gate_size; g++) {
-            float val = b_ih[g] + b_hh[g];
-            for (int j = 0; j < input_size; j++)
-                val += W_ih[g * input_size + j] * xt[j];
-            for (int j = 0; j < hidden_size; j++)
-                val += W_hh[g * hidden_size + j] * h[j];
-            gates[g] = val;
-        }
+        // gates = W_ih @ x + (b_ih + b_hh)  (SIMD GEMV via linear_cpu)
+        core_cpu::linear_cpu(xt, gates.data(), input_size, gate_size, W_ih, combined_b.data());
+        // gates += W_hh @ h
+        core_cpu::linear_cpu(h.data(), hh_out.data(), hidden_size, gate_size, W_hh, nullptr);
+        for (int g = 0; g < gate_size; g++) gates[g] += hh_out[g];
 
         // Split into i, f, g, o gates
         for (int j = 0; j < hidden_size; j++) {
