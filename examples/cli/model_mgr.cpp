@@ -665,6 +665,12 @@ static const ModelEntry k_registry[] = {
      "Qwen2.5-VL-3B VLM OCR (32-layer ViT + 36-layer Qwen2.5, German docs)", "2610 MB", "apache-2.0",
      "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF"},
 
+    {"qwen3vl-2b",
+     "qwen3-vl-2b-q4_k.gguf",
+     "https://huggingface.co/cstr/qwen3-vl-2b-crispembed-gguf/resolve/main/qwen3-vl-2b-q4_k.gguf",
+     "Qwen3-VL-2B VLM OCR (24-layer ViT + 28-layer Qwen3, DeepStack, IMROPE)", "1590 MB", "apache-2.0",
+     "https://huggingface.co/cstr/qwen3-vl-2b-crispembed-gguf"},
+
     {"german-ocr-3.1",
      "german-ocr-3.1-q4_k.gguf",
      "https://huggingface.co/cstr/german-ocr-3.1-crispembed-GGUF/resolve/main/german-ocr-3.1-q4_k.gguf",
