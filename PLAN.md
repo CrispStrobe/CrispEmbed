@@ -580,9 +580,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   lightonocr, got_ocr, glm_ocr (`fbae7ba`). flash_attn handles GQA via
   broadcast factors (rk2 = neq2/nek2). -76 lines total.
 
-- [ ] **internvl2: batch vision tiles** — `encode_vision()` (line 1200-1226)
-  processes tiles one at a time with separate graph allocations per tile.
-  Batch multiple tiles into one graph.
+- [x] **internvl2: cache vision graph across tiles** — DONE (`c714758`).
+  Vision encoder graph built once on first tile, reused for all subsequent
+  tiles. Eliminates per-tile graph build + sched alloc overhead.
 
 - [x] **Eliminate redundant CHW↔HWC layout conversions** — post SIMD
   linear_batch refactor the remaining layout switches in `dat_sr.cpp` are
