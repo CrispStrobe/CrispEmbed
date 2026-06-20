@@ -711,6 +711,16 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [x] **Remove dead scalar fallback encoder in ppformulanet_l** — DONE
   (`c7bd92c`). Removed 370 lines of unused scalar encoder code.
 
+- [x] **cpu_ops.h: SIMD layernorm_cpu** — AVX2+FMA for mean/var/scale+shift.
+  Used by 12 engines. 99/99 unit tests pass.
+- [x] **cpu_ops.h: SIMD rmsnorm_cpu** — AVX2+FMA for sum-of-squares + scale.
+  Used by 12 engines. 99/99 unit tests pass.
+- [x] **cpu_ops.h: SIMD softmax** — AVX2 max-reduction + normalization.
+  99/99 unit tests pass.
+- [x] **cpu_ops.h: mha_1q_cpu cache-friendly V accumulation + SIMD** —
+  ki-outer loop (sequential V row) + AVX2+FMA 8-wide fmadd.
+  99/99 unit tests pass.
+
 ---
 
 ## Per-Backend Performance Optimization (Q4_K, A/B benchmarked)

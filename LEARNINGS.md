@@ -32,6 +32,31 @@ resize if needed, use `.data()`. The buffer persists across calls on the same
 thread. For callers with pre-existing scratch buffers, offer an optional
 `float* scores_buf = nullptr` parameter so they can pass their own.
 
+## BatchNorm fusion into conv weights at load time (2026-06)
+
+For Conv→BN sequences in eval mode, BN can be algebraically folded into the
+preceding conv's weights: `new_W[o] = bn_scale[o] * conv_W[o]`,
+`new_b[o] = bn_scale[o] * conv_b[o] + bn_shift[o]`, where
+`bn_scale = bn_weight / sqrt(bn_var + eps)` and
+`bn_shift = bn_bias - bn_mean * bn_scale`. This eliminates the BN pass
+entirely at runtime. Applied to TBSRN (11 conv+BN pairs). Key detail: the
+fused weights go into a separate `fused` map checked first by `get()` — if
+found, returns the fused version; otherwise falls through to DequantCache.
+Output differs by ±1-2 pixel values due to float associativity
+(`scale * (W*x)` ≠ `(scale*W) * x`), which is expected and acceptable.
+
+## ggml_backend_sched vs ggml_gallocr for repeated inference (2026-06)
+
+`ggml_gallocr` checks whether reallocation is needed on every `alloc_graph`
+call (walks the graph to compare sizes). `ggml_backend_sched` with
+`sched_reserve` pre-allocates for a bucket size, then `sched_alloc_graph`
+just assigns pointers — much faster for repeated same-shape calls. The
+T-bucketing pattern (8/16/32/64/128/256/512) reduces re-reserves when input
+lengths vary slightly. For LFM2 (350M, 16 layers), graph+alloc overhead
+dropped from ~2ms to ~0.7ms per call, but compute at ~700ms dominates —
+the win is primarily architectural (aligns with the encoder path, enables
+future GPU dispatch via the scheduler's multi-backend support).
+
 ## BPE merge: linked list + priority queue for O(N log N) (2026-06)
 
 The standard BPE merge loop finds the lowest-rank adjacent pair, merges it,
