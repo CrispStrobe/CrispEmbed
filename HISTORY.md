@@ -4,6 +4,45 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 20, 2026 — Granite Vision OCR: root-caused via HF-blueprint diff, scalar restored
+
+End-to-end Granite-Vision 3.3-2B OCR was producing garbage. A prior handover
+(`handover-prompts/granite-vision-ocr-generation.md`) blamed the chat template;
+that was wrong on every count. Methodical per-layer diffing against the **true
+HF reference** (`granite-vision-ref.gguf`, built from real safetensors by
+`tools/kaggle/granite-vision-parity/granite_vision_parity.py`) located the
+actual faults:
+
+- **Template is correct** as-is — the real HF `chat_template` uses
+  `<|system|>/<|user|>/<|assistant|>` as plain text (LLaVA-Next style).
+- **LLM math is correct** — `granite-llm-ref.gguf` self-consistency cos 1.0.
+- **The ggml SigLIP ViT graph (`gv_run_vit_graph`) miscomputes** — HF-blueprint
+  cos **0.05** (NaN/residual blow-up on CPU; broken from the first encoder
+  layer), independent of quantization (q4_k≡q8_0) and attention form
+  (flash≡manual). Same ggml-alloc buffer-reuse family as the Metal LLM graph.
+- **The on-disk `q4_k.tok` model had Q4_0 vision weights** (quantized before the
+  `vis→Q8_0` fix) → vision cos 0.32 even on the scalar path.
+
+Fixes (branch `fix/granite-vision-real`):
+- Default vision to the diff-validated **scalar ViT**; gate the broken graph
+  behind `CRISPEMBED_GRANITE_VIS_GRAPH=1`.
+- Projector GELU tanh→`ggml_gelu_erf` (`projector_hidden_act="gelu"`=erf).
+- Quantizer keeps `proj.*` at Q8_0 (alongside `vis.*`); requantized a proper
+  `granite-vision-3.3-2b-q4_k-visq8.gguf` (Q4_K LLM + Q8_0 vision/projector) —
+  vision parity now matches q8_0 exactly.
+- `core_gguf::tensor_map` alias in `gguf_loader.{h,cpp}` ending the cross-repo
+  std::map↔unordered_map flip-flop with CrispASR.
+- Diagnostic levers (`CRISPEMBED_GRANITE_VIS_SCALAR/GRAPH/CPU/DBG`) + per-layer
+  harness dump stages (`vis_patch_embed`, `vis_layer_N`).
+
+**Verified end-to-end OCR**: scalar vision + CPU LLM graph
+(`CRISPEMBED_GRANITE_CPU=1 CRISPEMBED_GRANITE_LLM_GRAPH=1`) →
+`<doc> The quick brown fox jumps over 1234. </doc>`. The graph backends remain
+broken (Metal vision + Metal LLM) — the perf follow-up is
+`handover-prompts/granite-vision-graph-fix.md`.
+
+---
+
 ## June 20, 2026 — Performance optimization sweep
 
 Full line-by-line audit of all ~57K lines across 60+ runtimes, followed by
