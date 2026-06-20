@@ -140,15 +140,77 @@ static inline float dot_product(const float* a, const float* b, int n) {
 
 static inline void layernorm_cpu(const float* in, float* out, int D,
                                  const float* w, const float* b, float eps) {
-    double mean = 0;
-    for (int i = 0; i < D; i++) mean += in[i];
-    mean /= D;
-    double var = 0;
-    for (int i = 0; i < D; i++) { double d = in[i] - mean; var += d * d; }
-    var /= D;
-    float s = 1.0f / sqrtf((float)var + eps);
+    // Mean (SIMD-accelerated sum)
+    float fmean;
+    {
+        float sum = 0.0f;
+#if defined(__AVX2__)
+        __m256 acc = _mm256_setzero_ps();
+        int i = 0;
+        for (; i + 7 < D; i += 8)
+            acc = _mm256_add_ps(acc, _mm256_loadu_ps(in + i));
+        __m128 lo = _mm256_castps256_ps128(acc);
+        __m128 hi = _mm256_extractf128_ps(acc, 1);
+        lo = _mm_add_ps(lo, hi);
+        lo = _mm_add_ps(lo, _mm_movehl_ps(lo, lo));
+        lo = _mm_add_ss(lo, _mm_shuffle_ps(lo, lo, 1));
+        sum = _mm_cvtss_f32(lo);
+        for (; i < D; i++) sum += in[i];
+#else
+        for (int i = 0; i < D; i++) sum += in[i];
+#endif
+        fmean = sum / D;
+    }
+    // Variance (SIMD-accelerated sum of squared differences)
+    float fvar;
+    {
+        float ss = 0.0f;
+#if defined(__AVX2__) && defined(__FMA__)
+        __m256 vmean = _mm256_set1_ps(fmean);
+        __m256 acc = _mm256_setzero_ps();
+        int i = 0;
+        for (; i + 7 < D; i += 8) {
+            __m256 d = _mm256_sub_ps(_mm256_loadu_ps(in + i), vmean);
+            acc = _mm256_fmadd_ps(d, d, acc);
+        }
+        __m128 lo = _mm256_castps256_ps128(acc);
+        __m128 hi = _mm256_extractf128_ps(acc, 1);
+        lo = _mm_add_ps(lo, hi);
+        lo = _mm_add_ps(lo, _mm_movehl_ps(lo, lo));
+        lo = _mm_add_ss(lo, _mm_shuffle_ps(lo, lo, 1));
+        ss = _mm_cvtss_f32(lo);
+        for (; i < D; i++) { float d = in[i] - fmean; ss += d * d; }
+#else
+        for (int i = 0; i < D; i++) { float d = in[i] - fmean; ss += d * d; }
+#endif
+        fvar = ss / D;
+    }
+    // Scale + shift (SIMD-accelerated)
+    float s = 1.0f / sqrtf(fvar + eps);
+#if defined(__AVX2__) && defined(__FMA__)
+    {
+        __m256 vs = _mm256_set1_ps(s);
+        __m256 vm = _mm256_set1_ps(fmean);
+        int i = 0;
+        if (w && b) {
+            for (; i + 7 < D; i += 8) {
+                __m256 v = _mm256_mul_ps(_mm256_sub_ps(_mm256_loadu_ps(in + i), vm), vs);
+                v = _mm256_fmadd_ps(v, _mm256_loadu_ps(w + i), _mm256_loadu_ps(b + i));
+                _mm256_storeu_ps(out + i, v);
+            }
+        } else if (w) {
+            for (; i + 7 < D; i += 8) {
+                __m256 v = _mm256_mul_ps(_mm256_sub_ps(_mm256_loadu_ps(in + i), vm), vs);
+                _mm256_storeu_ps(out + i, _mm256_mul_ps(v, _mm256_loadu_ps(w + i)));
+            }
+        }
+        for (; i < D; i++)
+            out[i] = ((in[i] - fmean) * s) * (w ? w[i] : 1.0f) + (b ? b[i] : 0.0f);
+    }
+#else
     for (int i = 0; i < D; i++)
-        out[i] = ((in[i] - (float)mean) * s) * (w ? w[i] : 1.0f) + (b ? b[i] : 0.0f);
+        out[i] = ((in[i] - fmean) * s) * (w ? w[i] : 1.0f) + (b ? b[i] : 0.0f);
+#endif
 }
 
 // ---------------------------------------------------------------------------
@@ -199,10 +261,47 @@ static inline void layernorm2d_cpu(const float* in, float* out,
 
 static inline void rmsnorm_cpu(const float* in, float* out, int D,
                                const float* w, float eps) {
-    double ss = 0;
-    for (int i = 0; i < D; i++) ss += (double)in[i] * in[i];
-    float s = 1.0f / sqrtf((float)(ss / D) + eps);
+    // Sum of squares (SIMD-accelerated)
+    float ss = 0.0f;
+#if defined(__AVX2__) && defined(__FMA__)
+    {
+        __m256 acc = _mm256_setzero_ps();
+        int i = 0;
+        for (; i + 7 < D; i += 8) {
+            __m256 v = _mm256_loadu_ps(in + i);
+            acc = _mm256_fmadd_ps(v, v, acc);
+        }
+        __m128 lo = _mm256_castps256_ps128(acc);
+        __m128 hi = _mm256_extractf128_ps(acc, 1);
+        lo = _mm_add_ps(lo, hi);
+        lo = _mm_add_ps(lo, _mm_movehl_ps(lo, lo));
+        lo = _mm_add_ss(lo, _mm_shuffle_ps(lo, lo, 1));
+        ss = _mm_cvtss_f32(lo);
+        for (; i < D; i++) ss += in[i] * in[i];
+    }
+#else
+    for (int i = 0; i < D; i++) ss += in[i] * in[i];
+#endif
+    float s = 1.0f / sqrtf(ss / D + eps);
+    // Scale (SIMD-accelerated)
+#if defined(__AVX2__)
+    {
+        __m256 vs = _mm256_set1_ps(s);
+        int i = 0;
+        if (w) {
+            for (; i + 7 < D; i += 8)
+                _mm256_storeu_ps(out + i, _mm256_mul_ps(
+                    _mm256_mul_ps(_mm256_loadu_ps(in + i), vs),
+                    _mm256_loadu_ps(w + i)));
+        } else {
+            for (; i + 7 < D; i += 8)
+                _mm256_storeu_ps(out + i, _mm256_mul_ps(_mm256_loadu_ps(in + i), vs));
+        }
+        for (; i < D; i++) out[i] = in[i] * s * (w ? w[i] : 1.0f);
+    }
+#else
     for (int i = 0; i < D; i++) out[i] = in[i] * s * (w ? w[i] : 1.0f);
+#endif
 }
 
 // ---------------------------------------------------------------------------
