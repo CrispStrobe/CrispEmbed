@@ -363,7 +363,11 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
     core_gguf::free_metadata(meta);
 
     {
-        ggml_backend_dev_t gdev = ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_GPU);
+        // Diagnostic/fallback lever: CRISPEMBED_GRANITE_CPU=1 keeps the whole
+        // engine (weights + ggml graphs) on the ggml CPU backend, bypassing the
+        // Metal ggml-alloc buffer-reuse bug that corrupts the vis/LLM graphs.
+        ggml_backend_dev_t gdev = std::getenv("CRISPEMBED_GRANITE_CPU")
+            ? nullptr : ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_GPU);
         ctx->backend = gdev ? ggml_backend_dev_init(gdev, nullptr) : nullptr;
         if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     }
@@ -512,10 +516,13 @@ static void gv_run_vit_graph(granite_vision_context * ctx,
         K = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, K, d_head, n_heads, T), 0, 2, 1, 3));
         V = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, V, d_head, n_heads, T), 0, 2, 1, 3));
 
-        // Full (unmasked) attention via flash_attn_ext — nullptr mask = no causal masking.
+        // flash_attn_ext returns [d_head, n_heads, T] → reshape directly to [D, T],
+        // matching the validated bidirlm_vision ViT (no extra permute). NOTE: this
+        // whole ggml vision graph currently mis-computes (HF-blueprint cos 0.05;
+        // produces NaN on CPU) — same ggml-graph defect class as the gated LLM
+        // graph — so it is OFF by default (see CRISPEMBED_GRANITE_VIS_GRAPH in
+        // gv_vision_forward). Kept here in canonical form for when it is repaired.
         ggml_tensor * attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
-        // [d_head, T, n_heads] → [d_head, n_heads, T] → [D, T]
-        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
         attn = ggml_reshape_2d(g, attn, D, T);
 
         attn = ggml_mul_mat(g, o_w, attn);
@@ -554,6 +561,15 @@ static void gv_run_vit_graph(granite_vision_context * ctx,
     // Ensure the full graph is traced (last feature layer may not be the last ViT layer).
     ggml_build_forward_expand(gf, x);
 
+    const bool gv_dbg = std::getenv("CRISPEMBED_GRANITE_VIS_DBG") != nullptr;
+    if (gv_dbg) {
+        fprintf(stderr, "[vis-dbg] n_nodes=%d cap=%d n_feat=%d x_t->buffer(pre)=%p\n",
+                ggml_graph_n_nodes(gf), kVisGraphCap, n_feat, (void*)x_t->buffer);
+        for (int fi = 0; fi < n_feat; fi++)
+            fprintf(stderr, "[vis-dbg] feat_ptrs[%d]=%p name=%s\n", fi,
+                    (void*)feat_ptrs[fi], feat_ptrs[fi] ? feat_ptrs[fi]->name : "(null)");
+    }
+
     // ── Schedule + compute ──
     ggml_backend_sched_reset(ctx->vis_sched);
     if (!ggml_backend_sched_alloc_graph(ctx->vis_sched, gf)) {
@@ -564,9 +580,24 @@ static void gv_run_vit_graph(granite_vision_context * ctx,
     // Upload input (x_in layout matches ggml [D,T]: x_in[t*D+d] = (d,t))
     ggml_backend_tensor_set(x_t, x_in, 0, (size_t)T * D * sizeof(float));
 
+    if (gv_dbg) {
+        fprintf(stderr, "[vis-dbg] post-alloc x_t->buffer=%p feat0->buffer=%p\n",
+                (void*)x_t->buffer, n_feat ? (void*)feat_ptrs[0]->buffer : nullptr);
+        std::vector<float> chk(8);
+        ggml_backend_tensor_get(x_t, chk.data(), 0, 8 * sizeof(float));
+        fprintf(stderr, "[vis-dbg] x_t[0..3] before set = %.4f %.4f %.4f %.4f\n",
+                chk[0], chk[1], chk[2], chk[3]);
+    }
+
     if (ggml_backend_sched_graph_compute(ctx->vis_sched, gf) != GGML_STATUS_SUCCESS) {
         fprintf(stderr, "granite_vision: vis graph compute failed\n");
         ggml_free(g); return;
+    }
+    if (gv_dbg) {
+        std::vector<float> chk(8);
+        ggml_backend_tensor_get(x_t, chk.data(), 0, 8 * sizeof(float));
+        fprintf(stderr, "[vis-dbg] x_t[0..3] after compute = %.4f %.4f %.4f %.4f\n",
+                chk[0], chk[1], chk[2], chk[3]);
     }
 
     // Read back feature tensors (same [D,T] layout as scalar layer_outputs)
@@ -642,7 +673,10 @@ static bool gv_run_projector_graph(granite_vision_context * ctx,
     // transposed-ne; mirrors the vision/LLM graph fix.
     ggml_tensor * h = ggml_mul_mat(g, ggml_reshape_2d(g, w1, w1->ne[1], w1->ne[0]), x);
     if (b1) h = ggml_add(g, h, b1);
-    h = ggml_gelu(g, h);
+    // projector_hidden_act = "gelu" (exact erf), NOT the vision tower's
+    // "gelu_pytorch_tanh". HF F.gelu() with no approximate= is erf. Using the
+    // tanh approx here measurably lowered projector parity (cos 0.954 vs HF).
+    h = ggml_gelu_erf(g, h);
     h = ggml_mul_mat(g, ggml_reshape_2d(g, w2, w2->ne[1], w2->ne[0]), h);
     if (b2) h = ggml_add(g, h, b2);
 
@@ -857,7 +891,8 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
 // Output: [n_patches, vis_dim * n_feature_layers] — concatenated features
 static void gv_vision_forward(granite_vision_context * ctx,
                                const float * image, int img_h, int img_w,
-                               float * output, int * out_tokens) {
+                               float * output, int * out_tokens,
+                               gv_dump_cb cb = nullptr, void * ud = nullptr) {
     int ps = ctx->vis_patch_size;
     int ph = img_h / ps, pw = img_w / ps;
     int T = ph * pw;  // number of patches (729 for 384/14)
@@ -899,12 +934,23 @@ static void gv_vision_forward(granite_vision_context * ctx,
                 x[t * D + d] += pos_w[t * D + d];
     }
 
+    // crispembed-diff: patch+pos embed is shared by both ViT paths, so this
+    // localises where divergence begins (vs the ref's "vis_patch_embed").
+    if (cb) cb("vis_patch_embed", x.data(), T * D, ud);
+
     // ── 27-layer SigLIP ViT (Metal-accelerated via ggml graph) ──
     int n_feat = (int)ctx->feature_layers.size();
     std::vector<std::vector<float>> layer_outputs(n_feat);
 
-    if (ctx->vis_sched) {
-        // Fast path: ggml graph runs on Metal (or CPU with SIMD via ggml's kernels).
+    // The ggml ViT graph (gv_run_vit_graph) is currently NUMERICALLY BROKEN:
+    // HF-blueprint diff shows cos 0.05 vs HF (garbage from the first encoder
+    // layer; produces NaN on the CPU backend) — a ggml-graph defect in the same
+    // family as the gated-off LLM graph. The hand-written scalar ViT below is
+    // diff-validated (cos 0.96 on the random-input ref; ~0.9999 on real images,
+    // OCRBench 852), so it is the DEFAULT. Opt into the (broken, faster) graph
+    // with CRISPEMBED_GRANITE_VIS_GRAPH=1 only for debugging the graph itself.
+    static const bool use_vis_graph = std::getenv("CRISPEMBED_GRANITE_VIS_GRAPH") != nullptr;
+    if (ctx->vis_sched && use_vis_graph) {
         gv_run_vit_graph(ctx, x.data(), T, D, layer_outputs);
     }
 
@@ -981,6 +1027,18 @@ static void gv_vision_forward(granite_vision_context * ctx,
         }
     }
 
+    // crispembed-diff: emit each captured feature layer ("vis_layer_<N>") so the
+    // first diverging layer pinpoints the bug (works for BOTH the Metal graph and
+    // the scalar loop, since both fill layer_outputs).
+    if (cb) {
+        for (int fi = 0; fi < n_feat; fi++) {
+            if (layer_outputs[fi].empty()) continue;
+            char nm[32];
+            snprintf(nm, sizeof(nm), "vis_layer_%d", ctx->feature_layers[fi]);
+            cb(nm, layer_outputs[fi].data(), T * D, ud);
+        }
+    }
+
     // Concatenate multi-layer features: output[t * feat_dim + fi * D + d]
     int feat_dim = n_feat * D;
     for (int t = 0; t < T; t++)
@@ -1005,7 +1063,8 @@ static void gv_projector(granite_vision_context * ctx,
     gv_linear(vis_features, n_tokens, feat_dim, out_dim,
               ctx->get("proj.linear_1.weight"), ctx->get("proj.linear_1.bias"),
               mid.data());
-    for (int i = 0; i < n_tokens * out_dim; i++) mid[i] = gv_gelu(mid[i]);
+    // projector_hidden_act = "gelu" (exact erf); see gv_run_projector_graph note.
+    for (int i = 0; i < n_tokens * out_dim; i++) mid[i] = core_cpu::gelu_erf(mid[i]);
     gv_linear(mid.data(), n_tokens, out_dim, out_dim,
               ctx->get("proj.linear_2.weight"), ctx->get("proj.linear_2.bias"),
               output);
@@ -1022,9 +1081,9 @@ void granite_vision_dump_vision(granite_vision_context * ctx,
     int n_feat = (int)ctx->feature_layers.size();
     int feat_dim = n_feat * ctx->vis_dim;
 
-    // Run vision encoder
+    // Run vision encoder (cb dumps vis_patch_embed + per-feature-layer stages)
     std::vector<float> vis_out(729 * feat_dim);  // max patches
-    gv_vision_forward(ctx, image_f32, img_h, img_w, vis_out.data(), &T_vis);
+    gv_vision_forward(ctx, image_f32, img_h, img_w, vis_out.data(), &T_vis, cb, ud);
 
     // Emit concatenated features
     cb("vis_features_concat", vis_out.data(), T_vis * feat_dim, ud);
