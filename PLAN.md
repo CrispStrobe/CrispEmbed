@@ -508,8 +508,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   Engines still using scalar `conv2d_cpu` + per-token `linear_cpu` loops.
   Same pattern as DenseNet/HGNetv2 conversions: replace with ggml_conv_2d,
   ggml_pool_2d, ggml_mul_mat, ggml_norm. Ordered by ease × impact:
-  - [ ] `nafnet_denoise.cpp` — U-Net + NAFBlock (conv+norm+SCA), ~70-100G, trivial conversion
-  - [ ] `esrgan_sr.cpp` — 17× Conv+PReLU stack, ~20-30G, trivial conversion
+  - [x] `nafnet_denoise.cpp` — **DONE** (`b580e5c`). conv2d_ggml replaces all scalar convs.
+  - [x] `esrgan_sr.cpp` — **DONE** (`4f1d052`). Full conv chain ggml graph, 6x speedup.
   - [ ] `safmn_sr.cpp` — 8× SAFM + CCM (multi-scale DW conv), ~15-25G, easy
   - [ ] `restormer.cpp` — U-Net + transposed attention + GDFN, ~80-120G, easy
   - [ ] `instructir.cpp` — NAFNet U-Net + text conditioning (ICB), ~80-120G, medium
