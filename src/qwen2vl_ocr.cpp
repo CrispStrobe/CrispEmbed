@@ -2398,8 +2398,8 @@ static ggml_cgraph *build_decode_step_graph(
 
     // Attention: Q(hd, nh, 1) @ K_full^T(hd, nh, seq) → scores(seq, 1, nh)
     Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));           // (hd, 1, nh)
-    K_full = ggml_cont(g, ggml_permute(g, K_full, 0, 2, 1, 3)); // (hd, seq, nkv)
-    V_full = ggml_cont(g, ggml_permute(g, V_full, 0, 2, 1, 3));
+    K_full = ggml_permute(g, K_full, 0, 2, 1, 3); // (hd, seq, nkv)
+    V_full = ggml_permute(g, V_full, 0, 2, 1, 3);
 
     // No causal mask needed — single query always attends to all cached KV.
     ggml_tensor *attn_out = ggml_flash_attn_ext(
