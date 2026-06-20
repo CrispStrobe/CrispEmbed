@@ -908,7 +908,7 @@ const char * smoldocling_recognize_raw(smoldocling_context * ctx,
         auto t_decode_end = std::chrono::steady_clock::now();
         fprintf(stderr, "[smoldocling-bench] decode (%d steps): %.1f ms\n",
                 (int)output_ids.size(),
-                std::chrono::duration<double, std::milli>(t_decode_end - t_decode).count());
+                std::chrono::duration<double, std::milli>(t_decode_end - t_decode_start).count());
         fprintf(stderr, "[smoldocling-bench] total: %.1f ms\n",
                 std::chrono::duration<double, std::milli>(t_decode_end - t_total).count());
     }
