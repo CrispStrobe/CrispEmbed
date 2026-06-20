@@ -337,10 +337,12 @@ static inline void mha_1q_cpu(const float* q, const float* k, const float* v,
     std::vector<float> result(D, 0.0f);
     for (int h = 0; h < n_heads; h++) {
         int off = h * hd;
+        // Q·K scores (SIMD via dot_product)
         std::vector<float> scores(n_kv);
         float scale = 1.0f / sqrtf((float)hd);
         for (int ki = 0; ki < n_kv; ki++)
             scores[ki] = dot_product(q + off, k + ki * D + off, hd) * scale;
+        // Softmax
         float maxs = *std::max_element(scores.begin(), scores.end());
         float sum = 0;
         for (int ki = 0; ki < n_kv; ki++) {
@@ -349,11 +351,28 @@ static inline void mha_1q_cpu(const float* q, const float* k, const float* v,
         }
         float inv_sum = 1.0f / sum;
         for (int ki = 0; ki < n_kv; ki++) scores[ki] *= inv_sum;
-        for (int d = 0; d < hd; d++) {
-            float s = 0;
-            for (int ki = 0; ki < n_kv; ki++)
-                s += scores[ki] * v[ki * D + off + d];
-            result[off + d] = s;
+        // Weighted V accumulation: result[off:off+hd] = sum(scores[ki] * V[ki][off:off+hd])
+        // ki-outer loop for cache-friendly access (V row is contiguous).
+        float * dst = result.data() + off;
+        for (int ki = 0; ki < n_kv; ki++) {
+            float s = scores[ki];
+            const float * vrow = v + ki * D + off;
+#if defined(__AVX2__) && defined(__FMA__)
+            __m256 vs = _mm256_set1_ps(s);
+            int d = 0;
+            for (; d + 7 < hd; d += 8)
+                _mm256_storeu_ps(dst + d, _mm256_fmadd_ps(vs, _mm256_loadu_ps(vrow + d),
+                                                           _mm256_loadu_ps(dst + d)));
+            for (; d < hd; d++) dst[d] += s * vrow[d];
+#elif defined(__ARM_NEON)
+            float32x4_t vs = vdupq_n_f32(s);
+            int d = 0;
+            for (; d + 3 < hd; d += 4)
+                vst1q_f32(dst + d, vfmaq_f32(vld1q_f32(dst + d), vs, vld1q_f32(vrow + d)));
+            for (; d < hd; d++) dst[d] += s * vrow[d];
+#else
+            for (int d = 0; d < hd; d++) dst[d] += s * vrow[d];
+#endif
         }
     }
     memcpy(out, result.data(), D * sizeof(float));
