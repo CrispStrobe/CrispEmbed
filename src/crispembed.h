@@ -653,6 +653,11 @@ CRISPEMBED_API const float * crispembed_ocr_model_confidences(
 /// Mean confidence across all tokens from the last recognition.
 CRISPEMBED_API float crispembed_ocr_model_mean_confidence(const void * ctx);
 
+/// Override the maximum number of tokens the VLM engine will generate.
+/// No-op for formula OCR engines (pix2tex, HMER, BTTR, etc.) that use fixed
+/// decode budgets. Must be called before crispembed_ocr_model_recognize.
+CRISPEMBED_API void crispembed_ocr_model_set_max_tokens(void * ctx, int max_tokens);
+
 // --- Deprecated aliases (pre-rename names; forward to crispembed_ocr_model_*).
 // Kept for ABI compatibility; prefer the crispembed_ocr_model_* names above.
 CRISPEMBED_API void * crispembed_math_ocr_init(const char * model_path, int n_threads);

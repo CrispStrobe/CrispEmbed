@@ -1309,7 +1309,16 @@ int main(int argc, char ** argv) {
             return;
         }
 
+        int req_max_tokens = 0;
+        auto mt_pos = body.find("\"max_tokens\"");
+        if (mt_pos != std::string::npos) {
+            auto colon = body.find(':', mt_pos + 12);
+            if (colon != std::string::npos)
+                req_max_tokens = std::atoi(body.c_str() + colon + 1);
+        }
+
         std::lock_guard<std::mutex> lock(ocr_model_mutex);
+        if (req_max_tokens > 0) crispembed_ocr_model_set_max_tokens(ocr_model_ctx, req_max_tokens);
         auto t0 = std::chrono::steady_clock::now();
 
         int w = 0, h = 0, ch = 0;
