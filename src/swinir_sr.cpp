@@ -214,9 +214,7 @@ static void swin_block_forward(float * x, int H, int W, int D,
 
         // QKV projection: [ws², D] → [ws², 3D]
         std::vector<float> qkv(ws2 * 3 * D);
-        for (int t = 0; t < ws2; t++)
-            sir_linear(win_tokens + t * D, qkv.data() + t * 3 * D,
-                       D, 3 * D, wt.qkv_w, wt.qkv_b);
+        core_cpu::linear_batch_cpu(win_tokens, qkv.data(), ws2, D, 3 * D, wt.qkv_w, wt.qkv_b);
 
         // Attention per head
         std::vector<float> attn_out(ws2 * D, 0.0f);
@@ -229,9 +227,7 @@ static void swin_block_forward(float * x, int H, int W, int D,
                 const float * qi = qkv.data() + i * 3 * D + off;         // Q
                 for (int j = 0; j < ws2; j++) {
                     const float * kj = qkv.data() + j * 3 * D + D + off; // K
-                    float dot = 0;
-                    for (int d = 0; d < hd; d++) dot += qi[d] * kj[d];
-                    float s = dot * scale;
+                    float s = core_cpu::dot_product(qi, kj, hd) * scale;
 
                     // RPB
                     if (wt.rpb_table && wt.rpb_index) {
@@ -267,9 +263,7 @@ static void swin_block_forward(float * x, int H, int W, int D,
         }
 
         // Output projection
-        for (int t = 0; t < ws2; t++)
-            sir_linear(attn_out.data() + t * D, win_result + t * D,
-                       D, D, wt.proj_w, wt.proj_b);
+        core_cpu::linear_batch_cpu(attn_out.data(), win_result, ws2, D, D, wt.proj_w, wt.proj_b);
     }
 
     // Window reverse
@@ -293,14 +287,10 @@ static void swin_block_forward(float * x, int H, int W, int D,
     int mlp_dim = D * 2; // mlp_ratio=2
     std::vector<float> mlp_up(N * mlp_dim);
     std::vector<float> mlp_dn(N * D);
-    for (int i = 0; i < N; i++) {
-        sir_linear(tmp.data() + i * D, mlp_up.data() + i * mlp_dim,
-                   D, mlp_dim, wt.mlp_up_w, wt.mlp_up_b);
-        for (int j = 0; j < mlp_dim; j++)
-            mlp_up[i * mlp_dim + j] = sir_gelu(mlp_up[i * mlp_dim + j]);
-        sir_linear(mlp_up.data() + i * mlp_dim, mlp_dn.data() + i * D,
-                   mlp_dim, D, wt.mlp_dn_w, wt.mlp_dn_b);
-    }
+    core_cpu::linear_batch_cpu(tmp.data(), mlp_up.data(), N, D, mlp_dim, wt.mlp_up_w, wt.mlp_up_b);
+    for (int i = 0; i < N * mlp_dim; i++)
+        mlp_up[i] = sir_gelu(mlp_up[i]);
+    core_cpu::linear_batch_cpu(mlp_up.data(), mlp_dn.data(), N, mlp_dim, D, wt.mlp_dn_w, wt.mlp_dn_b);
 
     for (int i = 0; i < N * D; i++) x[i] += mlp_dn[i];
 }
