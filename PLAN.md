@@ -320,8 +320,9 @@ enc+proj ~1.1 s. Remaining levers, ranked by leverage:
 - [x] **#2 Decode graph reuse (~1–1.5 s) — DONE.** Persistent T=1 decode graph
   with fixed max-KV, incremental KV-cache mask; 2× faster decode stage.
   (`fcb5b11 perf(ocr2): persistent T=1 decode graph reuse`)
-- [ ] **#3 Per-row embedding dequant (~0.5 s + 655 MB).** Decode dequants the
-  whole 128k×1280 embed table to F32 just to look up ~32 rows; dequant per row.
+- [x] **#3 Per-row embedding dequant** — already implemented: `put_tok` lambda
+  (line ~2604) and `get_embedding` lambda (line ~1950) both use per-row
+  `ggml_backend_tensor_get`. Item was stale.
 - [ ] **#4 Converter-emitted stacked experts (memory, ~0.6 s).** Emit
   `ffn_{gate,up,down}_exps [in,out,n_exp]` from the converter (needs a Kaggle
   reconvert + loader tweak) so the runtime skips `stack_moe_experts` and the
@@ -476,9 +477,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `layernorm_cpu`, `linear_cpu`. `hmer_ocr.cpp` partial (apply_bn_scale,
   relu_inplace). DONE (`fd0d8aa`).
 
-- [ ] **deepseek_ocr2: single multi-layer LLM graph** — currently builds 12
-  separate ggml graphs per decode token (line 1288-1295). A single graph
-  covering all attention layers would reduce graph construction cost by 12x.
+- [x] **deepseek_ocr2: single multi-layer encoder graph** — Qwen2 encoder
+  (24 layers) now built as one ggml graph, eliminating 23 GPU↔CPU round-trips
+  of the hidden state per encoder call. DONE (`910d036`).
+  (The LLM decoder was already multi-layer since initial implementation.)
 
 - [ ] **glm_ocr / got_ocr: scalar downsample/merger → ggml** — glm `host_matmul`
   (lines 493-502) and got neck (lines 699-773) use scalar CPU for Conv+matmul
@@ -514,9 +516,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   ocr_detect, surya_det, layout_detect. Eliminates ~1-3ms malloc/free
   overhead per call; significant for small/fast models (DBNet 12M, PARSeq 24M).
 
-- [ ] **internvl2: native GQA in flash_attn** — currently `ggml_repeat` tiles
-  KV heads before passing to flash_attn (lines 909-919). Modern
-  `ggml_flash_attn_ext` supports GQA natively — pass K/V directly.
+- [x] **internvl2: native GQA in flash_attn** — already using GQA-native
+  flash_attn_ext at lines 908-922; no ggml_repeat in the live path.
 
 - [ ] **internvl2: batch vision tiles** — `encode_vision()` (line 1200-1226)
   processes tiles one at a time with separate graph allocations per tile.
@@ -538,11 +539,15 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   and run a full ggml graph just to do `ggml_get_rows` for one token ID.
   Same issue in lightonocr (lines 736-754). Direct tensor read instead.
 
-- [ ] **lightonocr / deepseek: decode graph reuse** — graph structure is
-  identical across decode steps. Build once, update input data only.
+- [x] **lightonocr: decode graph reuse** — DONE (`27b650a`). `LocPdGraph`
+  struct + `build_locr_pd_graph(ctx, max_kv)`: fixed-size KV tensors
+  `[kv_dim, max_kv-1]` per layer + F16 mask `[max_kv, 1]`. First step
+  uploads prefill KV; subsequent steps write only the new K/V row
+  (kv_dim-sized offset set) and unmask one mask slot. Gate:
+  `LOCR_DECODE_REBUILD=1`.
 
-- [ ] **qwen2vl: F32 causal mask → F16** — internvl2 already uses F16 mask
-  (half the memory).
+- [x] **qwen2vl: F32 causal mask → F16** — already F16 (line 1788,
+  `GGML_TYPE_F16`). Item was stale.
 
 - [ ] **gliner_ner: DeBERTa relative position expansion** — creates [H, T*T]
   F32 tensor on CPU every call. T=200 → 117MB. Cache or compute incrementally.
