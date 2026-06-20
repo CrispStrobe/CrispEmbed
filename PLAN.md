@@ -690,14 +690,20 @@ single-threaded, must not OOM.
 
 **After all optimizations**: vision=20.6s, prefill=14.0s, decode=69.5s, total=117.5s (**2.09x**)
 
+- [x] Patch embedding → ggml matmul (im2col + mul_mat, scalar fallback gated)
+
 **Remaining:**
 - [ ] **Decode graph reuse** — graph still rebuilt per step (tensor shapes change
       with Lk). Need fixed-max-KV graph with ggml_view variable-length reads.
-- [ ] **Patch embedding → ggml matmul** — scalar 6-deep nested conv loops.
 
-### qwen2vl — PENDING
-### deepseek_ocr2 — PENDING
-### got_ocr — PENDING
+### qwen2vl — DONE (already optimized)
+  F16 KV cache, flash attn, ggml patch embed, direct embed lookup, F16 mask — all done.
+
+### deepseek_ocr2 — PENDING (needs q4_k model, 3.4B too large for 8GB VPS f16-only)
+
+### got_ocr (SAM ViT-B + Qwen2-0.5B, 0.7B) — IN PROGRESS
+- [x] Patch embedding → ggml matmul (same im2col pattern, scalar fallback gated)
+- [ ] Scalar neck/merger → ggml (Conv2d 1x1/3x3 + LN2d + projector)
 ### glm_ocr — PENDING
 ### granite_vision — PENDING
 ### smoldocling — PENDING
