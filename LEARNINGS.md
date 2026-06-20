@@ -2424,3 +2424,40 @@ Metal bug worth applying to the ggml fork even though it is not the granite
 cause. The per-layer ggml diff harness (`granite_vision_dump_llm_graph`,
 `test-granite-vision-diff … graph`, plus `CRISPEMBED_GRANITE_CPU` to force the
 CPU backend) is what made this tractable; keep it.
+
+## granite_vision: AUDIT RESULT — Metal ggml LLM hits the ggml-alloc buffer-reuse bug (#10/#11)
+
+Pinned the Metal ggml LLM failure precisely with `CRISPEMBED_GRANITE_NLAYERS`
+(cap the layer count) + value printing in the diff harness:
+
+| layers run | Metal output (layer_0_out, final_norm, logits) |
+| - | - |
+| 2  | **all zeros** (L2 = 0) |
+| 40 | **stale garbage** (L2 ≈ 13–200), byte-identical run to run |
+
+The read-back tensors (`ggml_set_output` + `ggml_cont`) contain UNINITIALIZED
+memory whose contents depend on the graph size — i.e. the compute results never
+land in the tensors we read. The **same graph computes correctly on CPU**
+(cos=0.999), and the vision/projector graphs (identical build → `sched_reset` →
+`alloc_graph` → set-input → `graph_compute` → `tensor_get` pattern) work on
+Metal because they are shorter/narrower.
+
+This is the documented, **unpatched** ggml-Metal scheduler / ggml-alloc
+in-place buffer-reuse bug — CrispASR upstream-prs/10 ("long F32 GPU graphs
+accumulate drift sensitive to in-place buffer reuse pattern") and /11 ("mixed /
+large-dimension graphs"). The granite LLM (40 layers × D=2048) is long+wide
+enough to trigger it; the 27-layer × 1152 vision tower is not.
+
+**Fixes (correct, not workarounds-in-disguise):**
+1. *ggml-sched / ggml-alloc patch* — the real fix lives in ggml (the
+   buffer-reuse planner must not reuse a `set_output` tensor's buffer). This is
+   upstream-prs/10's domain; no patch exists yet.
+2. *Homogeneous CPU LLM* — run `gv_run_llm_body` on a CPU-only backend (it is
+   bit-correct there and memory-bounded via Q4_K-direct) while vision/projector
+   stay on Metal. Needs split-residency loading (LLM weights on CPU); CrispEmbed
+   `core_gguf` doesn't have it yet (CrispASR does). Full-CPU is not an option:
+   Metal vision ≈ 3 s vs ≈ 125 s on CPU ggml.
+
+Until one of those lands, the ggml LLM stays behind CRISPEMBED_GRANITE_LLM_GRAPH
+and the default decode is the diff-validated scalar path. Debug levers added:
+CRISPEMBED_GRANITE_{CPU,NLAYERS,W_F16,NO_KVWRITE,MANUAL_RMS}.
