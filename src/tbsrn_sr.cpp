@@ -15,6 +15,7 @@
 //   → transpose → [64, T]
 
 #include "tbsrn_sr.h"
+#include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -29,26 +30,6 @@
 #include <vector>
 
 // ── Helpers ────────────────────────────────────────────────────────────
-
-static const float * tbsrn_to_f32(const ggml_tensor * t, std::vector<float> & buf) {
-    int64_t n = ggml_nelements(t);
-    buf.resize(n);
-    if (t->type == GGML_TYPE_F32) {
-        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
-    } else if (t->type == GGML_TYPE_F16) {
-        std::vector<ggml_fp16_t> tmp(n);
-        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
-        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(tmp[i]);
-    } else {
-        size_t raw_sz = ggml_nbytes(t);
-        std::vector<uint8_t> raw(raw_sz);
-        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
-        const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
-        else memset(buf.data(), 0, n * sizeof(float));
-    }
-    return buf.data();
-}
 
 // Conv2D: [OC, IC, KH, KW] weights, [OC] bias, planar [C, H, W]
 static void tbsrn_conv2d(const float * input, int ic, int ih, int iw,
@@ -286,7 +267,7 @@ struct tbsrn_sr_context {
     bool bench;
 
     core_gguf::WeightLoad wl;
-    std::vector<std::vector<float>> weight_bufs;
+    core_cpu::DequantCache dcache;
 
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
@@ -294,8 +275,7 @@ struct tbsrn_sr_context {
             fprintf(stderr, "tbsrn_sr: missing tensor %s\n", name.c_str());
             return nullptr;
         }
-        weight_bufs.emplace_back();
-        return tbsrn_to_f32(t, weight_bufs.back());
+        return dcache.get(t);
     }
 };
 
