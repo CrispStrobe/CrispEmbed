@@ -503,9 +503,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `g_litemla` returns nullptr, the graph-accelerated LiteMLA is stubbed out.
   Currently falls back to CPU-scalar attention.
 
-- [ ] **Add tiling to SR runtimes without it** — `safmn_sr`, `nafnet_denoise`,
+- [ ] **Add tiling to SR runtimes without it** — `nafnet_denoise`,
   `scunet_denoise`, `instructir`, `adair` process entire images with no tiling.
-  OOM or poor cache behavior for images >512px. (`esrgan_sr` DONE — Hann tiling.)
+  OOM or poor cache behavior for images >512px. (`esrgan_sr` + `safmn_sr` DONE.)
 
 #### P2 — Moderate improvements
 
