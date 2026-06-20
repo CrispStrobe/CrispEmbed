@@ -685,17 +685,16 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   over all shift values (O(hsize * wpl * h)). Leptonica-style decomposed
   2-pass (power-of-2) would be much faster for large kernels.
 
-- [ ] **pdf_info: mmap instead of full file read** — currently loads entire
-  PDF into memory (line 32-44). Problematic for 500MB+ files.
+- [x] **pdf_info: mmap instead of full file read** — DONE (`5f027aa`).
+  Memory-mapped on POSIX with MADV_SEQUENTIAL, fread fallback on Windows.
 
 - [ ] **tps_warp: coarse grid + bilinear interpolation** — evaluates all N
   control points per output pixel (O(W*H*N) with sqrt+log). Pre-compute
   coarse displacement grid, interpolate at render time.
 
-- [ ] **Debug fprintf gating** — layout_detect, surya_det, ocr_detect,
-  math_ocr, got_ocr, glm_ocr, and others emit `fprintf(stderr, ...)` in
-  production paths unconditionally. Gate behind a verbosity level or
-  compile-time flag.
+- [x] **Debug fprintf gating (layout_detect)** — DONE (`614132e`). ~30
+  unconditional printfs converted to LDBG() macro (gated behind LAYOUT_DEBUG).
+  Remaining files (surya_det, ocr_detect) still have some unconditional prints.
 
 - [ ] **hmer coverage conv per step** — conv2d(256, 256, 3x3) per decoder
   step is the attention mechanism. Expensive but architecturally required.
