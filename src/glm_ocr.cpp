@@ -419,8 +419,8 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
     ggml_backend_tensor_get(vg.output, vis_out.data(), 0,
                             vis_D * vis_N * sizeof(float));
 
-    // ── Spatial downsample: Conv2D [out_hidden, 1024, 2, 2] stride 2 ──
-    // Host-side: vis_out (1024, 576) → reshape to (1024, 24, 24) → conv2d → (1536, 12, 12)
+    // ── Downsample + Merger via ggml graph ──────────────────────
+    // Gated: CRISPEMBED_GLM_OCR_SCALAR_MERGER=1 for CPU-scalar fallback
     auto t_ds = std::chrono::steady_clock::now();
     const int merge = (int)vhp.spatial_merge_size;
     const int out_h = n_ph / merge;  // 12
@@ -428,142 +428,155 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
     const int out_D = (int)vhp.out_hidden_size;  // 1536
     const int n_merged = out_h * out_w;  // 144
 
-    // Read downsample weights
-    // Read downsample weights (may be F16 or Q8_0)
-    auto read_model_w = [&](ggml_tensor *t) -> std::vector<float> {
-        if (!t) return {};
-        size_t n = ggml_nelements(t);
-        size_t nb = ggml_nbytes(t);
-        std::vector<float> buf(n);
-        if (t->type == GGML_TYPE_F32) {
-            ggml_backend_tensor_get(t, buf.data(), 0, nb);
-        } else if (t->type == GGML_TYPE_F16) {
-            std::vector<uint8_t> raw(nb);
-            ggml_backend_tensor_get(t, raw.data(), 0, nb);
-            const ggml_fp16_t *fp16 = (const ggml_fp16_t *)raw.data();
-            for (size_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(fp16[i]);
-        } else {
-            std::vector<uint8_t> raw(nb);
-            ggml_backend_tensor_get(t, raw.data(), 0, nb);
-            ggml_get_type_traits(t->type)->to_float(raw.data(), buf.data(), n);
-        }
-        return buf;
-    };
-    std::vector<float> ds_w_buf = read_model_w(ctx.m.downsample_w);
-    std::vector<float> ds_b_buf = read_model_w(ctx.m.downsample_b);
+    std::vector<float> merger_out(out_D * n_merged);
+    static const bool scalar_merger = (std::getenv("CRISPEMBED_GLM_OCR_SCALAR_MERGER") != nullptr);
 
-    // Conv2D stride 2: for each output position, gather 2x2 patch from input
-    // ds_w: (out_D, D, 2, 2) stored as (D*2*2, out_D) in ggml col-major
-    std::vector<float> ds_out(out_D * n_merged, 0.0f);
-    int in_stride = D * 4;  // D * kH * kW flattened
-    for (int oh = 0; oh < out_h; oh++) {
-        for (int ow = 0; ow < out_w; ow++) {
-            int out_idx = oh * out_w + ow;
-            // Gather 2x2 patch of D-dim vectors
-            float patch[4096];  // D * 2 * 2 = 1024 * 4 = 4096
-            for (int kh = 0; kh < 2; kh++) {
-                for (int kw = 0; kw < 2; kw++) {
-                    int in_h = oh * 2 + kh;
-                    int in_w = ow * 2 + kw;
-                    int in_idx = in_h * n_pw + in_w;
-                    // vis_out is col-major (D, N): element [d, n] at d + n*D
-                    for (int d = 0; d < D; d++) {
-                        patch[d * 4 + kh * 2 + kw] = vis_out[d + in_idx * D];
+    if (scalar_merger) {
+        // ── Scalar CPU fallback (original code) ──
+        auto read_model_w = [&](ggml_tensor *t) -> std::vector<float> {
+            if (!t) return {};
+            size_t n = ggml_nelements(t);
+            size_t nb = ggml_nbytes(t);
+            std::vector<float> buf(n);
+            if (t->type == GGML_TYPE_F32) {
+                ggml_backend_tensor_get(t, buf.data(), 0, nb);
+            } else {
+                std::vector<uint8_t> raw(nb);
+                ggml_backend_tensor_get(t, raw.data(), 0, nb);
+                ggml_get_type_traits(t->type)->to_float(raw.data(), buf.data(), n);
+            }
+            return buf;
+        };
+        auto ds_w_buf = read_model_w(ctx.m.downsample_w);
+        auto ds_b_buf = read_model_w(ctx.m.downsample_b);
+        std::vector<float> ds_out(out_D * n_merged, 0.0f);
+        for (int oh = 0; oh < out_h; oh++)
+            for (int ow = 0; ow < out_w; ow++) {
+                int out_idx = oh * out_w + ow;
+                float patch[4096];
+                for (int kh = 0; kh < 2; kh++)
+                    for (int kw = 0; kw < 2; kw++) {
+                        int in_idx = (oh * 2 + kh) * n_pw + (ow * 2 + kw);
+                        for (int d = 0; d < D; d++)
+                            patch[d * 4 + kh * 2 + kw] = vis_out[d + in_idx * D];
                     }
+                for (int o = 0; o < out_D; o++) {
+                    float sum = 0;
+                    for (int k = 0; k < D * 4; k++)
+                        sum += ds_w_buf[k + o * D * 4] * patch[k];
+                    if (!ds_b_buf.empty()) sum += ds_b_buf[o];
+                    ds_out[o + out_idx * out_D] = sum;
                 }
             }
-            // Matmul: ds_w (out_D, D*4) @ patch (D*4,) → (out_D,)
-            // ds_w in ggml is (D*4, out_D) col-major = (ne0=D*4, ne1=out_D)
-            // So ds_w[i + j*D*4] = weight[j, i] in row-major
-            for (int o = 0; o < out_D; o++) {
-                float sum = 0;
-                for (int k = 0; k < D * 4; k++) {
-                    sum += ds_w_buf[k + o * D * 4] * patch[k];
-                }
-                if (!ds_b_buf.empty()) sum += ds_b_buf[o];
-                ds_out[o + out_idx * out_D] = sum;  // col-major (out_D, n_merged)
+        auto proj_w = read_model_w(ctx.m.merger.proj_w);
+        auto gate_w = read_model_w(ctx.m.merger.gate_w);
+        auto up_w   = read_model_w(ctx.m.merger.up_w);
+        auto down_w = read_model_w(ctx.m.merger.down_w);
+        auto norm_w = read_model_w(ctx.m.merger.norm_w);
+        auto norm_b = read_model_w(ctx.m.merger.norm_b);
+        int inter = ctx.m.merger.gate_w ? (int)ctx.m.merger.gate_w->ne[0] : out_D * 3;
+        for (int t = 0; t < n_merged; t++) {
+            std::vector<float> x_proj(out_D), g(inter), u(inter), gu(inter), ffn(out_D);
+            for (int j = 0; j < out_D; j++) { float s = 0; for (int i = 0; i < out_D; i++) s += proj_w[i + j * out_D] * ds_out[i + t * out_D]; x_proj[j] = s; }
+            for (int j = 0; j < inter; j++) { float s = 0; for (int i = 0; i < out_D; i++) s += gate_w[i + j * out_D] * x_proj[i]; g[j] = s / (1.0f + std::exp(-s)); }
+            for (int j = 0; j < inter; j++) { float s = 0; for (int i = 0; i < out_D; i++) s += up_w[i + j * out_D] * x_proj[i]; u[j] = s; }
+            for (int k = 0; k < inter; k++) gu[k] = g[k] * u[k];
+            for (int j = 0; j < out_D; j++) { float s = 0; for (int i = 0; i < inter; i++) s += down_w[i + j * inter] * gu[i]; ffn[j] = s; }
+            float mean = 0; for (int d = 0; d < out_D; d++) mean += ffn[d]; mean /= out_D;
+            float var = 0; for (int d = 0; d < out_D; d++) { float dd = ffn[d] - mean; var += dd * dd; } var /= out_D;
+            for (int d = 0; d < out_D; d++)
+                merger_out[d + t * out_D] = (ffn[d] - mean) / std::sqrt(var + 1e-6f) * norm_w[d] + (norm_b.empty() ? 0 : norm_b[d]);
+        }
+    } else {
+        // ── ggml graph: downsample conv + merger (proj + SwiGLU + LN) ──
+        // vis_out is (D, N) col-major = ggml (ne0=D, ne1=N). Reshape to (n_pw, n_ph, D) spatial.
+        // ggml conv2d expects input as (W, H, C).
+        // vis_out[d + tok*D] where tok = h*n_pw + w → need (W=n_pw, H=n_ph, C=D).
+        // ggml col-major (D, N) already has spatial flattened correctly if we just reshape.
+
+        size_t buf_sz = ggml_tensor_overhead() * 32 + ggml_graph_overhead_custom(256, false);
+        ggml_init_params mip{buf_sz, nullptr, true};
+        ggml_context *mg = ggml_init(mip);
+
+        // Input: vision encoder output as spatial (n_pw, n_ph, D)
+        ggml_tensor *x = ggml_new_tensor_3d(mg, GGML_TYPE_F32, n_pw, n_ph, D);
+        ggml_set_name(x, "vis_spatial"); ggml_set_input(x);
+
+        // Downsample: Conv2D(D→out_D, 2×2, stride=2, bias)
+        {
+            ggml_tensor *w = ctx.m.downsample_w;
+            // Reshape to 4D: (KW=2, KH=2, IC=D, OC=out_D)
+            if (ggml_n_dims(w) <= 2) w = ggml_reshape_4d(mg, w, 2, 2, D, out_D);
+            if (w->type != GGML_TYPE_F32) w = ggml_cast(mg, w, GGML_TYPE_F32);
+            x = ggml_conv_2d_direct(mg, w, x, 2, 2, 0, 0, 1, 1);
+            if (ctx.m.downsample_b) {
+                ggml_tensor *b = ctx.m.downsample_b;
+                if (b->type != GGML_TYPE_F32) b = ggml_cast(mg, b, GGML_TYPE_F32);
+                x = ggml_add(mg, x, ggml_reshape_3d(mg, b, 1, 1, out_D));
             }
         }
+        // x is now (out_w, out_h, out_D) = (12, 12, 1536)
+
+        // Flatten spatial to tokens: (out_D, n_merged) = (1536, 144)
+        x = ggml_cont(mg, ggml_permute(mg, x, 2, 0, 1, 3));  // (out_D, out_w, out_h)
+        x = ggml_reshape_2d(mg, x, out_D, n_merged);           // (1536, 144)
+
+        // Merger: proj → SwiGLU → LayerNorm (all batched matmuls)
+        // proj: (out_D, out_D) × (out_D, n_merged) → (out_D, n_merged)
+        x = ggml_mul_mat(mg, ctx.m.merger.proj_w, x);
+
+        // SwiGLU: gate = silu(gate_w @ x), up = up_w @ x, down_w @ (gate * up)
+        ggml_tensor *gate = ggml_silu(mg, ggml_mul_mat(mg, ctx.m.merger.gate_w, x));
+        ggml_tensor *up = ggml_mul_mat(mg, ctx.m.merger.up_w, x);
+        x = ggml_mul_mat(mg, ctx.m.merger.down_w, ggml_mul(mg, gate, up));
+
+        // LayerNorm (with bias — use ggml_norm + mul + add)
+        x = ggml_norm(mg, x, 1e-6f);
+        if (ctx.m.merger.norm_w) x = ggml_mul(mg, x, ctx.m.merger.norm_w);
+        if (ctx.m.merger.norm_b) x = ggml_add(mg, x, ctx.m.merger.norm_b);
+
+        ggml_set_name(x, "merger_out"); ggml_set_output(x);
+
+        ggml_cgraph *mgf = ggml_new_graph_custom(mg, 256, false);
+        ggml_build_forward_expand(mgf, x);
+
+        ggml_backend_sched_reset(ctx.sched);
+        if (!ggml_backend_sched_alloc_graph(ctx.sched, mgf)) {
+            fprintf(stderr, "glm_ocr: merger graph alloc failed\n");
+            ggml_free(mg);
+            return false;
+        }
+
+        // Set input: reshape vis_out (D, N) to spatial (n_pw, n_ph, D)
+        // vis_out is (D, N) flat. For ggml 3D (n_pw, n_ph, D), we need
+        // the data laid out as [w + h*n_pw + c*n_pw*n_ph] = pixel at (w,h) channel c.
+        // vis_out[d + tok*D] where tok = h*n_pw + w → vis_out[d + (h*n_pw+w)*D]
+        // This is (D, n_pw*n_ph) which reshaped to (D, n_pw, n_ph) is NOT (n_pw, n_ph, D).
+        // We need to permute: transpose vis_out from (D, N) to (N, D), then reshape to (n_pw, n_ph, D).
+        // But vis_out data is already in the right order for ggml: ne[0]=D stride 1,
+        // ne[1]=N stride D. Reshaped to (n_pw, n_ph, D): ne[0]=n_pw stride 1, ne[1]=n_ph stride n_pw,
+        // ne[2]=D stride n_pw*n_ph. This is WRONG — we need spatial dims first.
+        //
+        // Fix: permute on CPU to (n_pw, n_ph, D) layout before upload.
+        std::vector<float> spatial(D * n_ph * n_pw);
+        for (int h = 0; h < n_ph; h++)
+            for (int w = 0; w < n_pw; w++)
+                for (int c = 0; c < D; c++)
+                    spatial[c * n_ph * n_pw + h * n_pw + w] = vis_out[c + (h * n_pw + w) * D];
+
+        ggml_backend_tensor_set(ggml_graph_get_tensor(mgf, "vis_spatial"),
+                                spatial.data(), 0, D * n_ph * n_pw * sizeof(float));
+        ggml_backend_sched_graph_compute(ctx.sched, mgf);
+
+        ggml_backend_tensor_get(ggml_graph_get_tensor(mgf, "merger_out"),
+                                merger_out.data(), 0, out_D * n_merged * sizeof(float));
+        ggml_free(mg);
     }
 
     if (bench) {
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - t_ds).count();
-        fprintf(stderr, "[glm_ocr-bench] downsample: %lldms\n", (long long)ms);
-    }
-
-    // ── Merger: proj → SwiGLU → LayerNorm ──
-    // Read merger weights
-    auto t_merger = std::chrono::steady_clock::now();
-    auto proj_w = read_model_w(ctx.m.merger.proj_w);
-    auto gate_w = read_model_w(ctx.m.merger.gate_w);
-    auto up_w   = read_model_w(ctx.m.merger.up_w);
-    auto down_w = read_model_w(ctx.m.merger.down_w);
-    auto norm_w = read_model_w(ctx.m.merger.norm_w);
-    auto norm_b = read_model_w(ctx.m.merger.norm_b);
-    int inter = (int)vhp.out_hidden_size * 3;  // 4608 — check from config
-    // Actually merger inter = 4608 from the weight shapes
-    if (ctx.m.merger.gate_w) inter = (int)ctx.m.merger.gate_w->ne[0];
-
-    std::vector<float> merger_out(out_D * n_merged);
-    // ggml_mul_mat(A, B) = B × A^T.
-    // A has ne=(ne0, ne1). Output ne[0] = ne1 (columns of A).
-    // Host: out[j] = sum_i(x[i] * A_flat[i + j * ne0])
-    // where i ∈ [0, ne0) = inner/input dim, j ∈ [0, ne1) = output dim.
-    auto host_matmul = [](const float *w, int ne0, int ne1,
-                          const float *x, float *out) {
-        for (int j = 0; j < ne1; j++) {
-            float sum = 0;
-            for (int i = 0; i < ne0; i++) {
-                sum += w[i + j * ne0] * x[i];
-            }
-            out[j] = sum;
-        }
-    };
-
-    // Weight shapes (ggml ne): proj (1536,1536), gate (1536,4608), up (1536,4608), down (4608,1536)
-    // For host_matmul: ne0 = input dim, ne1 = output dim
-    int proj_ne0 = ctx.m.merger.proj_w ? (int)ctx.m.merger.proj_w->ne[0] : out_D;
-    int proj_ne1 = ctx.m.merger.proj_w ? (int)ctx.m.merger.proj_w->ne[1] : out_D;
-    int gate_ne0 = ctx.m.merger.gate_w ? (int)ctx.m.merger.gate_w->ne[0] : out_D;
-    int gate_ne1 = ctx.m.merger.gate_w ? (int)ctx.m.merger.gate_w->ne[1] : inter;
-    int down_ne0 = ctx.m.merger.down_w ? (int)ctx.m.merger.down_w->ne[0] : inter;
-    int down_ne1 = ctx.m.merger.down_w ? (int)ctx.m.merger.down_w->ne[1] : out_D;
-    inter = gate_ne1;  // output dim of gate projection
-
-    for (int t = 0; t < n_merged; t++) {
-        // proj: ne=(1536,1536), input=1536, output=1536
-        std::vector<float> x_proj(proj_ne1);
-        host_matmul(proj_w.data(), proj_ne0, proj_ne1, &ds_out[t * out_D], x_proj.data());
-
-        // SwiGLU: gate/up ne=(1536,4608), input=1536, output=4608
-        std::vector<float> g(gate_ne1), u(gate_ne1), ffn(down_ne1);
-        host_matmul(gate_w.data(), gate_ne0, gate_ne1, x_proj.data(), g.data());
-        host_matmul(up_w.data(), gate_ne0, gate_ne1, x_proj.data(), u.data());
-        for (int k = 0; k < inter; k++) {
-            g[k] = g[k] / (1.0f + std::exp(-g[k]));  // silu
-        }
-        // down: ne=(4608,1536), input=4608, output=1536
-        std::vector<float> gu(gate_ne1);
-        for (int k = 0; k < gate_ne1; k++) gu[k] = g[k] * u[k];
-        host_matmul(down_w.data(), down_ne0, down_ne1, gu.data(), ffn.data());
-        // LayerNorm (not RMSNorm — has bias)
-        float mean = 0;
-        for (int d = 0; d < out_D; d++) mean += ffn[d];
-        mean /= out_D;
-        float var = 0;
-        for (int d = 0; d < out_D; d++) var += (ffn[d] - mean) * (ffn[d] - mean);
-        var /= out_D;
-        for (int d = 0; d < out_D; d++) {
-            float normed = (ffn[d] - mean) / std::sqrt(var + 1e-6f);
-            merger_out[d + t * out_D] = normed * norm_w[d] + (norm_b.empty() ? 0 : norm_b[d]);
-        }
-    }
-
-    if (bench) {
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - t_merger).count();
-        fprintf(stderr, "[glm_ocr-bench] merger: %lldms\n", (long long)ms);
+        fprintf(stderr, "[glm_ocr-bench] downsample+merger: %lldms\n", (long long)ms);
     }
 
     out.n_tokens = n_merged;
@@ -601,12 +614,7 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
                     free(buf);
                 }
             }
-            // Downsample
-            if (ref.has("vis_downsample")) {
-                auto r = ref.compare("vis_downsample", ds_out.data(), ds_out.size());
-                printf("  vis_downsample: cos=%.6f max_abs=%.6f %s\n",
-                       r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
-            }
+            // Downsample intermediate (only available in scalar path)
             // Merger
             if (ref.has("vis_merger_output")) {
                 auto r = ref.compare("vis_merger_output", merger_out.data(), merger_out.size());
