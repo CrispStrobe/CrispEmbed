@@ -47,7 +47,39 @@ bool WordPieceTokenizer::load(const std::vector<std::string> & vocab,
     unk_id_ = unk_id;
     pad_id_ = pad_id;
     max_length_ = max_length;
+    build_trie();
     return !vocab.empty();
+}
+
+void WordPieceTokenizer::build_trie() {
+    trie_nodes_.clear();
+    // Create two roots: one for first-piece tokens, one for ## continuations
+    trie_nodes_.push_back(TrieNode()); trie_root_ = 0;
+    trie_nodes_.push_back(TrieNode()); trie_cont_ = 1;
+
+    for (auto &[tok, id] : token_to_id_) {
+        bool is_cont = (tok.size() >= 2 && tok[0] == '#' && tok[1] == '#');
+        int root = is_cont ? trie_cont_ : trie_root_;
+        const char *s = tok.c_str();
+        int slen = (int)tok.size();
+        if (is_cont) { s += 2; slen -= 2; }  // skip "##" prefix
+
+        int node = root;
+        for (int i = 0; i < slen; i++) {
+            char c = s[i];
+            auto it = trie_nodes_[node].children.find(c);
+            if (it == trie_nodes_[node].children.end()) {
+                int child = (int)trie_nodes_.size();
+                trie_nodes_.push_back(TrieNode());
+                trie_nodes_[node].children[c] = child;
+                node = child;
+            } else {
+                node = it->second;
+            }
+        }
+        trie_nodes_[node].token_id = id;
+    }
+    trie_built_ = true;
 }
 
 std::vector<int> WordPieceTokenizer::wordpiece(const std::string & word) const {
@@ -55,26 +87,52 @@ std::vector<int> WordPieceTokenizer::wordpiece(const std::string & word) const {
     int start = 0;
     int len = (int)word.size();
 
-    while (start < len) {
-        int end = len;
-        bool found = false;
-        while (start < end) {
-            std::string sub = word.substr(start, end - start);
-            if (start > 0) sub = "##" + sub;
-
-            auto it = token_to_id_.find(sub);
-            if (it != token_to_id_.end()) {
-                ids.push_back(it->second);
-                found = true;
-                break;
+    if (!trie_built_) {
+        // Fallback to original O(n²) if trie not built
+        while (start < len) {
+            int end = len;
+            bool found = false;
+            while (start < end) {
+                std::string sub = word.substr(start, end - start);
+                if (start > 0) sub = "##" + sub;
+                auto it = token_to_id_.find(sub);
+                if (it != token_to_id_.end()) {
+                    ids.push_back(it->second);
+                    found = true;
+                    break;
+                }
+                end--;
             }
-            end--;
+            if (!found) { ids.push_back(unk_id_); break; }
+            start = end;
         }
-        if (!found) {
+        return ids;
+    }
+
+    // Trie-based O(len) longest-match
+    while (start < len) {
+        int root = (start == 0) ? trie_root_ : trie_cont_;
+        int node = root;
+        int best_end = -1;
+        int best_id = -1;
+
+        for (int i = start; i < len; i++) {
+            auto it = trie_nodes_[node].children.find(word[i]);
+            if (it == trie_nodes_[node].children.end()) break;
+            node = it->second;
+            if (trie_nodes_[node].token_id >= 0) {
+                best_end = i + 1;
+                best_id = trie_nodes_[node].token_id;
+            }
+        }
+
+        if (best_id >= 0) {
+            ids.push_back(best_id);
+            start = best_end;
+        } else {
             ids.push_back(unk_id_);
             break;
         }
-        start = end;
     }
     return ids;
 }
