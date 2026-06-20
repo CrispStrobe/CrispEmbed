@@ -106,6 +106,20 @@ struct math_ocr_context {
     std::vector<std::vector<float>> cross_k_cache; // per layer [n_enc * D]
     std::vector<std::vector<float>> cross_v_cache;
 
+    // Cached encoder ggml graph (built once per T, reused for all crops of same size)
+    ggml_context * enc_graph_g = nullptr;
+    ggml_cgraph  * enc_graph   = nullptr;
+    int enc_graph_T = -1;
+
+    // Batched encoder graph (cached per T×B)
+    ggml_context * enc_batch_g = nullptr;
+    ggml_cgraph  * enc_batch   = nullptr;
+    int enc_batch_T = -1;
+    int enc_batch_B = -1;
+
+    // Per-crop encoder outputs from the last encode_batch call
+    std::vector<std::vector<float>> batch_enc_outs; // [n_crops][T * H]
+
     // Pre-allocated decoder scratch (avoids per-step heap allocs)
     struct dec_scratch {
         std::vector<float> x, normed, q, k, v, sa, sa_proj;
@@ -251,6 +265,68 @@ static ggml_tensor* g_mha(ggml_context* g, ggml_tensor* Q, ggml_tensor* K, ggml_
     return ggml_reshape_2d(g, attn, H, T);
 }
 
+// Multi-head self-attention with batch dimension.
+// Q, K, V: [H, T, B]; returns [H, T, B]
+static ggml_tensor* g_mha_batch(ggml_context* g, ggml_tensor* Q, ggml_tensor* K, ggml_tensor* V,
+                                  int n_heads, int T, int B) {
+    int H = (int)Q->ne[0];
+    int hd = H / n_heads;
+    // [H, T, B] → [hd, nh, T, B] → permute → [hd, T, nh, B]
+    Q = ggml_cont(g, ggml_permute(g, ggml_reshape_4d(g, Q, hd, n_heads, T, B), 0, 2, 1, 3));
+    K = ggml_cont(g, ggml_permute(g, ggml_reshape_4d(g, K, hd, n_heads, T, B), 0, 2, 1, 3));
+    V = ggml_cont(g, ggml_permute(g, ggml_reshape_4d(g, V, hd, n_heads, T, B), 0, 2, 1, 3));
+    // flash_attn: Q[hd,T,nh,B] → result[hd,nh,T,B] (permuted)
+    ggml_tensor* attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
+    // [hd,nh,T,B] → permute → [hd,T,nh,B] → reshape → [H,T,B]
+    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+    return ggml_reshape_3d(g, attn, H, T, B);
+}
+
+// Batched encoder graph: processes B images simultaneously.
+// Input: [H, T, B] pre-embedded patches; output: [H, T, B] encoder features.
+static ggml_cgraph* build_encoder_graph_batch(math_ocr_context* ctx, ggml_context* g, int T, int B) {
+    const auto& hp = ctx->hparams;
+    const int H = hp.enc_hidden;
+
+    ggml_cgraph* gf = ggml_new_graph_custom(g, hp.enc_layers * 80 + 512, false);
+
+    ggml_tensor* inp = ggml_new_tensor_3d(g, GGML_TYPE_F32, H, T, B);
+    ggml_set_name(inp, "enc_batch_input");
+    ggml_set_input(inp);
+
+    ggml_tensor* cur = inp;
+
+    for (int il = 0; il < hp.enc_layers; il++) {
+        const auto& L = ctx->enc_layers[il];
+        if (!L.q_w) continue;
+
+        ggml_tensor* residual = cur;
+        cur = g_ln(g, cur, L.ln1_w, L.ln1_b);
+
+        ggml_tensor* Q = g_linear(g, cur, L.q_w, L.q_b);
+        ggml_tensor* K = g_linear(g, cur, L.k_w, L.k_b);
+        ggml_tensor* V = g_linear(g, cur, L.v_w, L.v_b);
+        ggml_tensor* attn = g_mha_batch(g, Q, K, V, hp.enc_heads, T, B);
+        attn = g_linear(g, attn, L.attn_out_w, L.attn_out_b);
+        cur = ggml_add(g, residual, attn);
+
+        residual = cur;
+        cur = g_ln(g, cur, L.ln2_w, L.ln2_b);
+        ggml_tensor* up = g_linear(g, cur, L.ff_up_w, L.ff_up_b);
+        up = ggml_gelu(g, up);
+        cur = g_linear(g, up, L.ff_down_w, L.ff_down_b);
+        cur = ggml_add(g, residual, cur);
+    }
+
+    if (ctx->enc_ln_w)
+        cur = g_ln(g, cur, ctx->enc_ln_w, ctx->enc_ln_b);
+
+    ggml_set_name(cur, "enc_batch_output");
+    ggml_set_output(cur);
+    ggml_build_forward_expand(gf, cur);
+    return gf;
+}
+
 // Multi-head attention with single-token query vs multi-token K/V (asymmetric).
 // Q: [D, 1], K: [D, n_kv], V: [D, n_kv]
 // Returns: [D, 1]
@@ -335,6 +411,75 @@ static ggml_cgraph* build_encoder_graph(math_ocr_context* ctx, ggml_context* g, 
 }
 
 // ---------------------------------------------------------------------------
+// Cross-attention K/V precomputation helper
+// (shared by single-image recognize and batch decode paths)
+// ---------------------------------------------------------------------------
+
+static void precompute_cross_kv(math_ocr_context* ctx) {
+    const int n_enc = ctx->n_enc_tokens;
+    const int D = ctx->hparams.dec_d_model;
+    const int E = ctx->hparams.enc_hidden;
+    const int n_dec = ctx->hparams.dec_layers;
+
+    ctx->cross_k_cache.resize(n_dec);
+    ctx->cross_v_cache.resize(n_dec);
+
+    size_t meta_sz = 64 * 1024 * 1024;
+    std::vector<uint8_t> meta(meta_sz);
+    ggml_init_params ip = { meta_sz, meta.data(), true };
+    ggml_context* g = ggml_init(ip);
+    ggml_cgraph* gf = ggml_new_graph_custom(g, n_dec * 6 + 16, false);
+
+    ggml_tensor* enc_inp = ggml_new_tensor_2d(g, GGML_TYPE_F32, E, n_enc);
+    ggml_set_name(enc_inp, "enc_for_cross");
+    ggml_set_input(enc_inp);
+
+    for (int li = 0; li < n_dec; li++) {
+        const auto& l = ctx->dec_layers[li];
+        char name[64];
+
+        ggml_tensor* k = ggml_mul_mat(g, l.cross_k_w, enc_inp);
+        if (l.cross_k_b) k = ggml_add(g, k, ensure_f32(g, l.cross_k_b));
+        snprintf(name, sizeof(name), "cross_k_%d", li);
+        ggml_set_name(k, name);
+        ggml_set_output(k);
+
+        ggml_tensor* v = ggml_mul_mat(g, l.cross_v_w, enc_inp);
+        if (l.cross_v_b) v = ggml_add(g, v, ensure_f32(g, l.cross_v_b));
+        snprintf(name, sizeof(name), "cross_v_%d", li);
+        ggml_set_name(v, name);
+        ggml_set_output(v);
+
+        ggml_build_forward_expand(gf, k);
+        ggml_build_forward_expand(gf, v);
+    }
+
+    ggml_backend_sched_reset(ctx->sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
+        fprintf(stderr, "math_ocr: cross K/V alloc failed\n");
+        ggml_free(g);
+        return;
+    }
+
+    ggml_tensor* inp_t = ggml_graph_get_tensor(gf, "enc_for_cross");
+    if (inp_t) ggml_backend_tensor_set(inp_t, ctx->enc_out.data(), 0, n_enc * E * sizeof(float));
+    ggml_backend_sched_graph_compute(ctx->sched, gf);
+
+    for (int li = 0; li < n_dec; li++) {
+        ctx->cross_k_cache[li].resize(n_enc * D);
+        ctx->cross_v_cache[li].resize(n_enc * D);
+        char name[64];
+        snprintf(name, sizeof(name), "cross_k_%d", li);
+        ggml_tensor* kt = ggml_graph_get_tensor(gf, name);
+        if (kt) ggml_backend_tensor_get(kt, ctx->cross_k_cache[li].data(), 0, n_enc * D * sizeof(float));
+        snprintf(name, sizeof(name), "cross_v_%d", li);
+        ggml_tensor* vt = ggml_graph_get_tensor(gf, name);
+        if (vt) ggml_backend_tensor_get(vt, ctx->cross_v_cache[li].data(), 0, n_enc * D * sizeof(float));
+    }
+    ggml_free(g);
+}
+
+// ---------------------------------------------------------------------------
 // Run encoder
 // ---------------------------------------------------------------------------
 
@@ -397,54 +542,45 @@ static void run_encoder(math_ocr_context* ctx, const float* pixels_rgb, int img_
         for (int i = 0; i < n; i++) embedded[i] += pe[i];
     }
 
-    // Step 2: Build and run ggml graph for transformer layers
-    fprintf(stderr, "math_ocr: encoder start (T=%d, H=%d, %d layers)\n", T, H, hp.enc_layers);
-    size_t meta_size = 16 * 1024 * 1024; // 16 MB metadata buffer
-    std::vector<uint8_t> meta(meta_size);
-    ggml_init_params ip = { meta_size, meta.data(), true };
-    ggml_context* g = ggml_init(ip);
+    // Step 2: Build (or reuse) ggml graph for transformer layers
+    if (ctx->enc_graph_T != T) {
+        // Free old cached graph if T changed (different image size)
+        if (ctx->enc_graph_g) { ggml_free(ctx->enc_graph_g); ctx->enc_graph_g = nullptr; }
+        ctx->enc_graph = nullptr;
 
-    ggml_cgraph* gf = build_encoder_graph(ctx, g, T);
+        size_t meta_size = 16 * 1024 * 1024;
+        std::vector<uint8_t> meta(meta_size);
+        ggml_init_params ip = { meta_size, meta.data(), true };
+        ggml_context* g = ggml_init(ip);
+        ctx->enc_graph = build_encoder_graph(ctx, g, T);
+        ctx->enc_graph_g = g;
+        ctx->enc_graph_T = T;
 
-    // Allocate + set input
-    fprintf(stderr, "math_ocr: graph built (%d nodes), allocating...\n", ggml_graph_n_nodes(gf));
-    ggml_backend_sched_reset(ctx->sched);
-    if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
-        fprintf(stderr, "math_ocr: encoder alloc failed\n");
-        ggml_free(g);
-        return;
+        ggml_backend_sched_reset(ctx->sched);
+        if (!ggml_backend_sched_alloc_graph(ctx->sched, ctx->enc_graph)) {
+            fprintf(stderr, "math_ocr: encoder alloc failed\n");
+            ggml_free(ctx->enc_graph_g);
+            ctx->enc_graph_g = nullptr; ctx->enc_graph = nullptr; ctx->enc_graph_T = -1;
+            return;
+        }
+    } else {
+        ggml_backend_sched_reset(ctx->sched);
+        if (!ggml_backend_sched_alloc_graph(ctx->sched, ctx->enc_graph)) {
+            fprintf(stderr, "math_ocr: encoder realloc failed\n");
+            return;
+        }
     }
 
-    ggml_tensor* inp = ggml_graph_get_tensor(gf, "enc_input");
+    ggml_tensor* inp = ggml_graph_get_tensor(ctx->enc_graph, "enc_input");
     if (inp) ggml_backend_tensor_set(inp, embedded.data(), 0, T * H * sizeof(float));
 
-    // Compute
-    fprintf(stderr, "math_ocr: computing encoder...\n");
-    ggml_backend_sched_graph_compute(ctx->sched, gf);
-    fprintf(stderr, "math_ocr: encoder done\n");
+    ggml_backend_sched_graph_compute(ctx->sched, ctx->enc_graph);
 
-    // Read output
-    ggml_tensor* out = ggml_graph_get_tensor(gf, "enc_output");
+    ggml_tensor* out = ggml_graph_get_tensor(ctx->enc_graph, "enc_output");
     ctx->enc_out.resize(T * H);
     if (out) ggml_backend_tensor_get(out, ctx->enc_out.data(), 0, T * H * sizeof(float));
 
     ctx->n_enc_tokens = T;
-
-    // Debug: dump first few encoder output values for comparison with ONNX ref
-    fprintf(stderr, "math_ocr: enc_out token 0 first 5: ");
-    for (int i = 0; i < 5 && i < H; i++) fprintf(stderr, "%.6f ", ctx->enc_out[0 * H + i]);
-    fprintf(stderr, "\nmath_ocr: enc_out token 2 first 5: ");
-    for (int i = 0; i < 5 && i < H; i++) fprintf(stderr, "%.6f ", ctx->enc_out[2 * H + i]);
-    fprintf(stderr, "\n");
-
-    // Also dump pre-transformer embedded values for debugging
-    fprintf(stderr, "math_ocr: embedded (pre-graph) token 0 first 5: ");
-    for (int i = 0; i < 5 && i < H; i++) fprintf(stderr, "%.6f ", embedded[0 * H + i]);
-    fprintf(stderr, "\nmath_ocr: embedded (pre-graph) token 2 first 5: ");
-    for (int i = 0; i < 5 && i < H; i++) fprintf(stderr, "%.6f ", embedded[2 * H + i]);
-    fprintf(stderr, "\n");
-
-    ggml_free(g);
 }
 
 // ---------------------------------------------------------------------------
@@ -607,6 +743,106 @@ static std::vector<float> decoder_step_scalar(math_ocr_context* ctx,
     std::vector<float> logits(V, 0.0f);
     linear_cpu(ctx, ds.x.data(), logits.data(), D, V, ctx->lm_head_w, ctx->lm_head_b);
     return logits;
+}
+
+// ---------------------------------------------------------------------------
+// Beam search decoder (scalar — reuses decoder_step_scalar per beam)
+// ---------------------------------------------------------------------------
+
+struct MathOcrBeam {
+    std::vector<int> tokens;
+    float score;
+    int prev_token;
+    bool finished;
+    std::vector<std::vector<float>> kv_k;
+    std::vector<std::vector<float>> kv_v;
+};
+
+static std::vector<int> run_decoder_beam_scalar(math_ocr_context* ctx, int beam_width) {
+    const auto& hp = ctx->hparams;
+    const int V = hp.vocab_size;
+    const int n_dec = hp.dec_layers;
+    const int max_steps = std::min(hp.max_seq_len, 200);
+
+    ctx->ds.allocated = false;
+    ensure_dec_scratch(ctx, hp.max_seq_len);
+
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, 1);
+
+    std::vector<MathOcrBeam> beams(1);
+    beams[0].score = 0.0f;
+    beams[0].prev_token = hp.decoder_start_token;
+    beams[0].finished = false;
+    beams[0].kv_k.resize(n_dec);
+    beams[0].kv_v.resize(n_dec);
+
+    std::vector<MathOcrBeam> completed;
+
+    for (int step = 0; step < max_steps; step++) {
+        struct Cand { int bi; int tok; float score; };
+        std::vector<Cand> cands;
+
+        for (int bi = 0; bi < (int)beams.size(); bi++) {
+            if (beams[bi].finished) continue;
+            auto logits = decoder_step_scalar(ctx, beams[bi].prev_token, step,
+                                              beams[bi].kv_k, beams[bi].kv_v);
+            float max_l = *std::max_element(logits.begin(), logits.end());
+            float sum_e = 0.0f;
+            for (int v = 0; v < V; v++) { logits[v] = expf(logits[v] - max_l); sum_e += logits[v]; }
+            float log_sum = logf(sum_e) + max_l;
+            for (int v = 0; v < V; v++) {
+                float log_p = logits[v] > 0 ? logf(logits[v]) + max_l - log_sum : -100.0f;
+                cands.push_back({bi, v, beams[bi].score + log_p});
+            }
+        }
+
+        if (cands.empty()) break;
+
+        int keep = std::min(beam_width, (int)cands.size());
+        std::partial_sort(cands.begin(), cands.begin() + keep, cands.end(),
+                          [](const Cand& a, const Cand& b) { return a.score > b.score; });
+
+        std::vector<MathOcrBeam> new_beams;
+        new_beams.reserve(keep);
+        for (int i = 0; i < keep; i++) {
+            const auto& c = cands[i];
+            MathOcrBeam nb;
+            nb.tokens   = beams[c.bi].tokens;
+            nb.kv_k     = beams[c.bi].kv_k;
+            nb.kv_v     = beams[c.bi].kv_v;
+            nb.score    = c.score;
+            if (c.tok == hp.eos_token || c.tok == hp.pad_token) {
+                nb.finished = true;
+                nb.prev_token = c.tok;
+                float len = (float)nb.tokens.size();
+                nb.score /= len > 0 ? len : 1.0f;
+                completed.push_back(std::move(nb));
+            } else {
+                nb.tokens.push_back(c.tok);
+                nb.prev_token = c.tok;
+                nb.finished = false;
+                new_beams.push_back(std::move(nb));
+            }
+        }
+
+        beams = std::move(new_beams);
+        if (beams.empty()) break;
+    }
+
+    for (auto& b : beams) {
+        float len = (float)b.tokens.size();
+        b.score /= len > 0 ? len : 1.0f;
+        completed.push_back(std::move(b));
+    }
+
+    if (ggml_backend_is_cpu(ctx->backend))
+        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+
+    if (completed.empty()) return {};
+    auto best = std::max_element(completed.begin(), completed.end(),
+                                  [](const MathOcrBeam& a, const MathOcrBeam& b) { return a.score < b.score; });
+    return best->tokens;
 }
 
 // ---------------------------------------------------------------------------
@@ -1042,6 +1278,8 @@ math_ocr_context* math_ocr_init(const char* model_path, int n_threads) {
 
 void math_ocr_free(math_ocr_context* ctx) {
     if (!ctx) return;
+    if (ctx->enc_graph_g) ggml_free(ctx->enc_graph_g);
+    if (ctx->enc_batch_g) ggml_free(ctx->enc_batch_g);
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
     if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);
     if (ctx->backend) ggml_backend_free(ctx->backend);
@@ -1100,84 +1338,9 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
     fprintf(stderr, "math_ocr: encoder done, n_enc=%d\n", ctx->n_enc_tokens);
 
     // Precompute cross-attention K/V via ggml graph (SIMD, fast)
-    {
-        const int n_enc = ctx->n_enc_tokens;
-        const int D = ctx->hparams.dec_d_model;
-        const int E = ctx->hparams.enc_hidden;
-        const int n_dec = ctx->hparams.dec_layers;
-
-        ctx->cross_k_cache.resize(n_dec);
-        ctx->cross_v_cache.resize(n_dec);
-
-        // Build a ggml graph that projects encoder output for all layers
-        size_t meta_sz = 64 * 1024 * 1024;
-        std::vector<uint8_t> meta(meta_sz);
-        ggml_init_params ip = { meta_sz, meta.data(), true };
-        ggml_context* g = ggml_init(ip);
-        ggml_cgraph* gf = ggml_new_graph_custom(g, n_dec * 6 + 16, false);
-
-        // Input: encoder output [E, n_enc]
-        ggml_tensor* enc_inp = ggml_new_tensor_2d(g, GGML_TYPE_F32, E, n_enc);
-        ggml_set_name(enc_inp, "enc_for_cross");
-        ggml_set_input(enc_inp);
-
-        // For each decoder layer, project K and V
-        std::vector<ggml_tensor*> k_outs(n_dec), v_outs(n_dec);
-        for (int li = 0; li < n_dec; li++) {
-            const auto& l = ctx->dec_layers[li];
-            char name[64];
-
-            // K = enc @ cross_k_w + cross_k_b
-            ggml_tensor* k = ggml_mul_mat(g, l.cross_k_w, enc_inp);
-            if (l.cross_k_b) k = ggml_add(g, k, ensure_f32(g, l.cross_k_b));
-            snprintf(name, sizeof(name), "cross_k_%d", li);
-            ggml_set_name(k, name);
-            ggml_set_output(k);
-            k_outs[li] = k;
-
-            // V = enc @ cross_v_w + cross_v_b
-            ggml_tensor* v = ggml_mul_mat(g, l.cross_v_w, enc_inp);
-            if (l.cross_v_b) v = ggml_add(g, v, ensure_f32(g, l.cross_v_b));
-            snprintf(name, sizeof(name), "cross_v_%d", li);
-            ggml_set_name(v, name);
-            ggml_set_output(v);
-            v_outs[li] = v;
-
-            ggml_build_forward_expand(gf, k);
-            ggml_build_forward_expand(gf, v);
-        }
-
-        // Allocate + compute
-        ggml_backend_sched_reset(ctx->sched);
-        if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
-            fprintf(stderr, "math_ocr: cross K/V alloc failed\n");
-            ggml_free(g);
-        } else {
-            ggml_tensor* inp_t = ggml_graph_get_tensor(gf, "enc_for_cross");
-            if (inp_t) ggml_backend_tensor_set(inp_t, ctx->enc_out.data(), 0,
-                                                 n_enc * E * sizeof(float));
-            ggml_backend_sched_graph_compute(ctx->sched, gf);
-
-            // Read results
-            for (int li = 0; li < n_dec; li++) {
-                ctx->cross_k_cache[li].resize(n_enc * D);
-                ctx->cross_v_cache[li].resize(n_enc * D);
-                char name[64];
-                snprintf(name, sizeof(name), "cross_k_%d", li);
-                ggml_tensor* kt = ggml_graph_get_tensor(gf, name);
-                if (kt) ggml_backend_tensor_get(kt, ctx->cross_k_cache[li].data(),
-                                                  0, n_enc * D * sizeof(float));
-                snprintf(name, sizeof(name), "cross_v_%d", li);
-                ggml_tensor* vt = ggml_graph_get_tensor(gf, name);
-                if (vt) ggml_backend_tensor_get(vt, ctx->cross_v_cache[li].data(),
-                                                  0, n_enc * D * sizeof(float));
-            }
-            ggml_free(g);
-        }
-
-        fprintf(stderr, "math_ocr: cross K/V cached (%d enc tokens × %d layers)\n",
-                n_enc, n_dec);
-    }
+    precompute_cross_kv(ctx);
+    fprintf(stderr, "math_ocr: cross K/V cached (%d enc tokens × %d layers)\n",
+            ctx->n_enc_tokens, ctx->hparams.dec_layers);
 
     // Decoder (ggml graph — SIMD-accelerated, with scalar fallback)
     fprintf(stderr, "math_ocr: starting decoder (vocab=%d, start_tok=%d) [graph mode]\n",
@@ -1263,6 +1426,77 @@ const char* math_ocr_recognize_raw(math_ocr_context* ctx, const uint8_t* bytes,
     return math_ocr_recognize(ctx, gray.data(), w, h, out_len);
 }
 
+const char* math_ocr_recognize_beam(math_ocr_context* ctx, const float* pixels,
+                                     int width, int height,
+                                     int beam_width, int* out_len) {
+    if (!ctx || !pixels) return nullptr;
+    if (beam_width <= 1)
+        return math_ocr_recognize(ctx, pixels, width, height, out_len);
+
+    const int S = ctx->hparams.image_size;
+
+    // Preprocess: resize + gray→3ch + normalize (mean=0.5, std=0.5)
+    std::vector<float> rgb(3 * S * S);
+    float fsx = (float)width / S, fsy = (float)height / S;
+    for (int y = 0; y < S; y++) {
+        float fy = y * fsy;
+        int y0 = (int)fy, y1 = std::min(y0 + 1, height - 1);
+        float wy = fy - y0;
+        for (int x = 0; x < S; x++) {
+            float fx = x * fsx;
+            int x0 = (int)fx, x1 = std::min(x0 + 1, width - 1);
+            float wx = fx - x0;
+            float v = (1 - wy) * ((1 - wx) * pixels[y0*width+x0] + wx * pixels[y0*width+x1])
+                    +      wy  * ((1 - wx) * pixels[y1*width+x0] + wx * pixels[y1*width+x1]);
+            v = (v - 0.5f) / 0.5f;
+            rgb[0*S*S + y*S + x] = rgb[1*S*S + y*S + x] = rgb[2*S*S + y*S + x] = v;
+        }
+    }
+
+    run_encoder(ctx, rgb.data(), S, S);
+
+    // Precompute cross-attention K/V
+    precompute_cross_kv(ctx);
+
+    std::vector<int> tokens = run_decoder_beam_scalar(ctx, beam_width);
+
+    ctx->result_buf.clear();
+    for (size_t i = 1; i < tokens.size(); i++) {
+        int tok = tokens[i];
+        if (tok >= 0 && tok < (int)ctx->vocab.size()) {
+            const auto& piece = ctx->vocab[tok];
+            for (size_t j = 0; j < piece.size(); ) {
+                if (j + 2 < piece.size() &&
+                    (uint8_t)piece[j] == 0xE2 && (uint8_t)piece[j+1] == 0x96 && (uint8_t)piece[j+2] == 0x81) {
+                    ctx->result_buf += ' '; j += 3;
+                } else if (j + 1 < piece.size() &&
+                           (uint8_t)piece[j] == 0xC4 && (uint8_t)piece[j+1] == 0xA0) {
+                    ctx->result_buf += ' '; j += 2;
+                } else { ctx->result_buf += piece[j]; j++; }
+            }
+        }
+    }
+    while (!ctx->result_buf.empty() && ctx->result_buf.front() == ' ')
+        ctx->result_buf.erase(ctx->result_buf.begin());
+    while (!ctx->result_buf.empty() && ctx->result_buf.back() == ' ')
+        ctx->result_buf.pop_back();
+
+    if (out_len) *out_len = (int)ctx->result_buf.size();
+    return ctx->result_buf.c_str();
+}
+
+const char* math_ocr_recognize_raw_beam(math_ocr_context* ctx, const uint8_t* bytes,
+                                          int w, int h, int ch,
+                                          int beam_width, int* out_len) {
+    if (!ctx || !bytes) return nullptr;
+    std::vector<float> gray(w * h);
+    for (int i = 0; i < w * h; i++) {
+        if (ch == 1) gray[i] = bytes[i] / 255.0f;
+        else { int b = i * ch; gray[i] = (0.299f*bytes[b] + 0.587f*bytes[b+1] + 0.114f*bytes[b+2]) / 255.0f; }
+    }
+    return math_ocr_recognize_beam(ctx, gray.data(), w, h, beam_width, out_len);
+}
+
 const float * math_ocr_confidences(const math_ocr_context * ctx, int * n_chars) {
     if (!ctx || ctx->char_confidences.empty()) {
         if (n_chars) *n_chars = 0;
@@ -1277,4 +1511,212 @@ float math_ocr_mean_confidence(const math_ocr_context * ctx) {
     double sum = 0;
     for (float c : ctx->char_confidences) sum += c;
     return (float)(sum / ctx->char_confidences.size());
+}
+
+// ---------------------------------------------------------------------------
+// Batch encoder API
+// ---------------------------------------------------------------------------
+
+bool math_ocr_encode_batch_raw(
+    math_ocr_context* ctx,
+    const uint8_t* const* crops,
+    const int* widths, const int* heights,
+    int n_crops)
+{
+    if (!ctx || !crops || n_crops <= 0) return false;
+
+    const int S = ctx->hparams.image_size;
+    const int P = ctx->hparams.patch_size;
+    const int H = ctx->hparams.enc_hidden;
+    const int npw = S / P, nph = S / P;
+    const int n_patches = npw * nph;
+    const int T = n_patches + 2;  // patches + CLS + dist tokens
+    const int B = n_crops;
+
+    // --- Step 1: preprocess all crops and compute patch embeddings ---
+    // Stacked layout: embedded[b * T * H + t * H + h]  (batch-major)
+    std::vector<float> embedded(B * T * H, 0.0f);
+
+    auto cls_f32  = to_f32(ctx->cls_token);
+    auto dist_f32 = to_f32(ctx->dist_token);
+    auto pe_f32   = to_f32(ctx->pos_embed);
+
+    std::vector<float> rgb(3 * S * S);
+    for (int b = 0; b < B; b++) {
+        const uint8_t* src = crops[b];
+        int sw = widths[b], sh = heights[b];
+
+        // Bilinear resize + gray→3ch CHW + normalize (mean=0.5, std=0.5)
+        float fsx = (float)sw / S, fsy = (float)sh / S;
+        for (int y = 0; y < S; y++) {
+            float fy = y * fsy;
+            int y0 = (int)fy, y1 = std::min(y0 + 1, sh - 1);
+            float wy = fy - y0;
+            for (int x = 0; x < S; x++) {
+                float fx = x * fsx;
+                int x0 = (int)fx, x1 = std::min(x0 + 1, sw - 1);
+                float wx = fx - x0;
+                // Assume 3-channel RGB; convert to grayscale-replicated CHW
+                int p00 = (y0*sw + x0)*3, p01 = (y0*sw + x1)*3;
+                int p10 = (y1*sw + x0)*3, p11 = (y1*sw + x1)*3;
+                auto luma = [&](int p) {
+                    return (0.299f*src[p] + 0.587f*src[p+1] + 0.114f*src[p+2]) / 255.0f;
+                };
+                float v = (1-wy)*((1-wx)*luma(p00) + wx*luma(p01))
+                        +    wy *((1-wx)*luma(p10) + wx*luma(p11));
+                v = (v - 0.5f) / 0.5f;
+                rgb[0*S*S + y*S + x] = v;
+                rgb[1*S*S + y*S + x] = v;
+                rgb[2*S*S + y*S + x] = v;
+            }
+        }
+
+        float* emb = embedded.data() + b * T * H;
+
+        // CLS + dist tokens
+        if (!cls_f32.empty())
+            for (int h = 0; h < H && h < (int)cls_f32.size();  h++) emb[0*H+h] = cls_f32[h];
+        if (!dist_f32.empty())
+            for (int h = 0; h < H && h < (int)dist_f32.size(); h++) emb[1*H+h] = dist_f32[h];
+
+        // Patch embeddings
+        if (ctx->patch_proj_w) {
+            const int patch_dim = 3 * P * P;
+            auto W_buf = to_f32(ctx->patch_proj_w);
+            auto B_buf = to_f32(ctx->patch_proj_b);
+            const float* W = W_buf.data();
+            const float* Bv = B_buf.empty() ? nullptr : B_buf.data();
+            for (int py = 0; py < nph; py++) {
+                for (int px = 0; px < npw; px++) {
+                    int t = py * npw + px + 2;
+                    for (int h = 0; h < H; h++) {
+                        float sum = Bv ? Bv[h] : 0.0f;
+                        for (int c = 0; c < 3; c++)
+                            for (int dy = 0; dy < P; dy++)
+                                for (int dx = 0; dx < P; dx++) {
+                                    int sy = py*P+dy, sx = px*P+dx;
+                                    float v = rgb[(c * S + sy) * S + sx];
+                                    sum += v * W[h * patch_dim + c*P*P + dy*P + dx];
+                                }
+                        emb[t*H+h] = sum;
+                    }
+                }
+            }
+        }
+
+        // Add positional embeddings
+        if (!pe_f32.empty()) {
+            int n = std::min(T * H, (int)pe_f32.size());
+            for (int i = 0; i < n; i++) emb[i] += pe_f32[i];
+        }
+    }
+
+    // --- Step 2: build/reuse batched encoder graph ---
+    if (ctx->enc_batch_T != T || ctx->enc_batch_B != B) {
+        if (ctx->enc_batch_g) { ggml_free(ctx->enc_batch_g); ctx->enc_batch_g = nullptr; }
+        ctx->enc_batch = nullptr;
+
+        size_t meta_size = (size_t)(ctx->hparams.enc_layers * 80 + 512) * ggml_tensor_overhead()
+                           + ggml_graph_overhead_custom(ctx->hparams.enc_layers * 80 + 512, false)
+                           + 4 * 1024 * 1024;
+        std::vector<uint8_t> meta(meta_size);
+        ggml_init_params ip = { meta_size, meta.data(), true };
+        ggml_context* g = ggml_init(ip);
+        ctx->enc_batch   = build_encoder_graph_batch(ctx, g, T, B);
+        ctx->enc_batch_g = g;
+        ctx->enc_batch_T = T;
+        ctx->enc_batch_B = B;
+    }
+
+    // --- Step 3: run the batch encoder graph ---
+    // Input tensor layout for ggml: [H, T, B] — innermost dim H, then T, outermost B.
+    // Our `embedded` is [B, T, H] (B-major) — need to transpose to [H, T, B].
+    std::vector<float> inp_ggml(H * T * B);
+    for (int b = 0; b < B; b++)
+        for (int t = 0; t < T; t++)
+            for (int h = 0; h < H; h++)
+                inp_ggml[h + t*H + b*T*H] = embedded[b*T*H + t*H + h];
+
+    ggml_backend_sched_reset(ctx->sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->sched, ctx->enc_batch)) {
+        fprintf(stderr, "math_ocr: batch encoder alloc failed\n");
+        return false;
+    }
+
+    ggml_tensor* inp_t = ggml_graph_get_tensor(ctx->enc_batch, "enc_batch_input");
+    if (inp_t)
+        ggml_backend_tensor_set(inp_t, inp_ggml.data(), 0, H * T * B * sizeof(float));
+
+    ggml_backend_sched_graph_compute(ctx->sched, ctx->enc_batch);
+
+    // --- Step 4: extract per-crop encoder outputs ---
+    ggml_tensor* out_t = ggml_graph_get_tensor(ctx->enc_batch, "enc_batch_output");
+    if (!out_t) {
+        fprintf(stderr, "math_ocr: batch encoder output tensor missing\n");
+        return false;
+    }
+
+    // Output shape: [H, T, B] (ggml layout) → read and split
+    std::vector<float> out_ggml(H * T * B);
+    ggml_backend_tensor_get(out_t, out_ggml.data(), 0, H * T * B * sizeof(float));
+
+    ctx->batch_enc_outs.resize(B);
+    for (int b = 0; b < B; b++) {
+        ctx->batch_enc_outs[b].resize(T * H);
+        for (int t = 0; t < T; t++)
+            for (int h = 0; h < H; h++)
+                ctx->batch_enc_outs[b][t*H + h] = out_ggml[h + t*H + b*T*H];
+    }
+
+    if (ctx->bench)
+        fprintf(stderr, "[math_ocr-bench] batch encode: B=%d T=%d H=%d\n", B, T, H);
+
+    return true;
+}
+
+const char* math_ocr_decode_batch_crop(math_ocr_context* ctx, int crop_idx, int* out_len)
+{
+    if (!ctx || crop_idx < 0 || crop_idx >= (int)ctx->batch_enc_outs.size()) {
+        if (out_len) *out_len = 0;
+        return nullptr;
+    }
+
+    // Restore encoder output for this crop
+    ctx->enc_out = ctx->batch_enc_outs[crop_idx];
+    ctx->n_enc_tokens = (int)(ctx->enc_out.size() / ctx->hparams.enc_hidden);
+
+    // Precompute cross-attention K/V for this crop's encoder output
+    precompute_cross_kv(ctx);
+
+    // Run decoder
+    std::vector<int> tokens = run_decoder_graph(ctx);
+
+    ctx->result_buf.clear();
+    for (size_t i = 1; i < tokens.size(); i++) {
+        int tok = tokens[i];
+        if (tok >= 0 && tok < (int)ctx->vocab.size()) {
+            const auto& piece = ctx->vocab[tok];
+            for (size_t j = 0; j < piece.size(); ) {
+                if (j + 2 < piece.size() &&
+                    (uint8_t)piece[j] == 0xE2 &&
+                    (uint8_t)piece[j+1] == 0x96 &&
+                    (uint8_t)piece[j+2] == 0x81) {
+                    ctx->result_buf += ' '; j += 3;
+                } else if (j + 1 < piece.size() &&
+                           (uint8_t)piece[j] == 0xC4 &&
+                           (uint8_t)piece[j+1] == 0xA0) {
+                    ctx->result_buf += ' '; j += 2;
+                } else {
+                    ctx->result_buf += piece[j]; j++;
+                }
+            }
+        }
+    }
+    while (!ctx->result_buf.empty() && ctx->result_buf.front() == ' ')
+        ctx->result_buf.erase(ctx->result_buf.begin());
+    while (!ctx->result_buf.empty() && ctx->result_buf.back() == ' ')
+        ctx->result_buf.pop_back();
+
+    if (out_len) *out_len = (int)ctx->result_buf.size();
+    return ctx->result_buf.c_str();
 }

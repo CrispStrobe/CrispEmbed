@@ -678,7 +678,7 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     const int n_heads  = ctx->llm_heads;
     const int n_kv     = ctx->llm_kv_heads;
     const int d_head   = D / n_heads;
-    const int kv_rep   = n_heads / n_kv;
+    // kv_rep not needed: ggml_flash_attn_ext handles GQA natively
     const int Lk       = n_past + T;
     const float eps    = ctx->rms_eps;
     const float res_mul = ctx->residual_multiplier;
@@ -689,8 +689,9 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     ggml_cgraph  * gf = ggml_new_graph_custom(g, kLlmGraphCap, false);
 
     // ── Inputs ──
-    ggml_tensor * x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
-    ggml_set_name(x, "llm_in"); ggml_set_input(x);
+    ggml_tensor * x_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+    ggml_set_name(x_in, "llm_in"); ggml_set_input(x_in);
+    ggml_tensor * x = x_in;  // working variable; x_in preserved for data upload
 
     ggml_tensor * rope_pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
     ggml_set_name(rope_pos, "rope_pos"); ggml_set_input(rope_pos);
@@ -778,18 +779,8 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
         ggml_tensor * Kfull = ggml_cont(g, k_lay);  // [d_head, Lk, n_kv]
         ggml_tensor * Vfull = ggml_cont(g, v_lay);
 
-        // GQA expansion: repeat KV heads kv_rep times → [d_head, Lk, n_heads]
-        if (kv_rep > 1) {
-            Kfull = ggml_reshape_4d(g, Kfull, d_head, Lk, 1, n_kv);
-            ggml_tensor * Kt = ggml_new_tensor_4d(g, Kfull->type, d_head, Lk, kv_rep, n_kv);
-            Kfull = ggml_reshape_3d(g, ggml_repeat(g, Kfull, Kt), d_head, Lk, n_heads);
-
-            Vfull = ggml_reshape_4d(g, Vfull, d_head, Lk, 1, n_kv);
-            ggml_tensor * Vt = ggml_new_tensor_4d(g, Vfull->type, d_head, Lk, kv_rep, n_kv);
-            Vfull = ggml_reshape_3d(g, ggml_repeat(g, Vfull, Vt), d_head, Lk, n_heads);
-        }
-
-        // flash_attn_ext: Q [d_head, T, n_heads], K [d_head, Lk, n_heads]
+        // flash_attn_ext handles GQA natively via rk2=n_heads/n_kv broadcast —
+        // no explicit KV head repeat needed. Q [d_head, T, n_heads], K/V [d_head, Lk, n_kv]
         Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));  // [d_head, T, n_heads]
         ggml_tensor * attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, mask, attn_mul, 0.0f, 0.0f);
         // Output: [d_head, n_heads, T] → reshape → [D, T]
@@ -821,7 +812,7 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
         ggml_free(g); return false;
     }
 
-    ggml_backend_tensor_set(x, embeds, 0, (size_t)T * D * sizeof(float));
+    ggml_backend_tensor_set(x_in, embeds, 0, (size_t)T * D * sizeof(float));
 
     // Position IDs: [n_past, n_past+1, ..., n_past+T-1]
     std::vector<int32_t> pos(T);
@@ -1040,7 +1031,8 @@ void granite_vision_dump_vision(granite_vision_context * ctx,
 static void gv_llm_decode_step(granite_vision_context * ctx,
                                 const float * token_embed, int n_past,
                                 float * logits,
-                                gv_dump_cb dump_cb = nullptr, void * dump_ud = nullptr) {
+                                gv_dump_cb dump_cb = nullptr, void * dump_ud = nullptr,
+                                bool want_logits = true) {
     int D = ctx->llm_dim;
     int n_heads = ctx->llm_heads;
     int n_kv = ctx->llm_kv_heads;
@@ -1132,8 +1124,9 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
     if (!lm_w && ctx->tie_word_embeddings)
         lm_w = ctx->get("llm.embed.weight");
 
-    if (lm_w) {
-        // SIMD-accelerated LM head matmul (49156 × 2048)
+    if (lm_w && (want_logits || dump_cb)) {
+        // SIMD-accelerated LM head matmul (49156 × 2048). Skipped during scalar
+        // prefill for all but the last token — only the final position seeds generation.
         core_cpu::linear_cpu(x.data(), logits, D, ctx->vocab_size, lm_w, nullptr);
         float inv_scale = 1.0f / ctx->logits_scaling;
         for (int v = 0; v < ctx->vocab_size; v++) logits[v] *= inv_scale;
@@ -1322,17 +1315,21 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
                              (D / ctx->llm_heads), 0.0f);
         ctx->kv_allocated = max_seq;
         ctx->n_past = 0;
-        for (int id : prompt_ids) {
+        for (size_t pi = 0; pi < prompt_ids.size(); pi++) {
+            int id = prompt_ids[pi];
+            bool last_prompt = (pi + 1 == prompt_ids.size());
             if (id == ctx->image_token_index) {
                 for (int t = 0; t < n_vis_tokens; t++) {
                     const float * vr = proj_features.data() + (size_t)t * D;
                     for (int d = 0; d < D; d++) emb[d] = vr[d] * emb_mul;
-                    gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
+                    gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data(),
+                                       nullptr, nullptr, /*want_logits=*/false);
                     ctx->n_past++;
                 }
             } else {
                 for (int d = 0; d < D; d++) emb[d] = embed_w[(size_t)id * D + d] * emb_mul;
-                gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
+                gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data(),
+                                   nullptr, nullptr, /*want_logits=*/last_prompt);
                 ctx->n_past++;
             }
         }

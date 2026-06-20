@@ -118,15 +118,17 @@ std::vector<ocr_result> run_file(context* ctx, const char* image_path,
         return {};
     }
 
-    // Step 3: For each box, crop and recognize
-    std::vector<ocr_result> results;
-    results.reserve(boxes.size());
+    // Step 3: Collect valid crops, batch-encode, then decode sequentially.
+    struct crop_entry {
+        std::vector<uint8_t> data;
+        int w, h;
+        size_t box_idx;
+    };
+    std::vector<crop_entry> crop_entries;
+    crop_entries.reserve(boxes.size());
 
-    double rec_total_ms = 0.0;
     for (size_t i = 0; i < boxes.size(); i++) {
         auto& b = boxes[i];
-
-        // Crop with some padding
         int pad = 2;
         int cx = std::max(0, (int)b.x - pad);
         int cy = std::max(0, (int)b.y - pad);
@@ -136,40 +138,79 @@ std::vector<ocr_result> run_file(context* ctx, const char* image_path,
         auto crop = crop_image(img, img_w, img_h, cx, cy, cw, ch);
         if (crop.empty()) continue;
 
-        // Actual crop dimensions after clamping
         int actual_w = std::min(cw, img_w - cx);
         int actual_h = std::min(ch, img_h - cy);
         if (actual_w <= 0 || actual_h <= 0) continue;
 
-        // Run recognition on the crop
-        auto t_rec = std::chrono::steady_clock::now();
-        int out_len = 0;
-        const char* text = math_ocr_recognize_raw(ctx->rec,
-                                                    crop.data(),
-                                                    actual_w, actual_h, 3,
-                                                    &out_len);
-        if (bench) {
-            rec_total_ms += std::chrono::duration<double, std::milli>(
-                std::chrono::steady_clock::now() - t_rec).count();
-        }
-
-        ocr_result r;
-        r.box = b;
-        r.confidence = b.score;
-        r.text = text ? std::string(text, out_len) : "";
-
-        if (!r.text.empty()) {
-            results.push_back(std::move(r));
-        }
+        crop_entries.push_back({std::move(crop), actual_w, actual_h, i});
     }
 
     stbi_image_free(img);
 
-    if (bench) {
-        double total_ms = std::chrono::duration<double, std::milli>(
-            std::chrono::steady_clock::now() - t_total).count();
-        fprintf(stderr, "[ocr_pipeline-bench] recognize (all boxes): %.1f ms\n", rec_total_ms);
-        fprintf(stderr, "[ocr_pipeline-bench] total: %.1f ms\n", total_ms);
+    std::vector<ocr_result> results;
+    results.reserve(crop_entries.size());
+
+    if (!crop_entries.empty()) {
+        // Batch-encode all crops in a single encoder pass
+        std::vector<const uint8_t*> ptrs(crop_entries.size());
+        std::vector<int> cws(crop_entries.size()), chs(crop_entries.size());
+        for (size_t i = 0; i < crop_entries.size(); i++) {
+            ptrs[i] = crop_entries[i].data.data();
+            cws[i]  = crop_entries[i].w;
+            chs[i]  = crop_entries[i].h;
+        }
+
+        auto t_enc = std::chrono::steady_clock::now();
+        bool enc_ok = math_ocr_encode_batch_raw(ctx->rec, ptrs.data(), cws.data(), chs.data(),
+                                                 (int)crop_entries.size());
+        if (bench) {
+            double ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t_enc).count();
+            fprintf(stderr, "[ocr_pipeline-bench] batch encode (%zu crops): %.1f ms\n",
+                    crop_entries.size(), ms);
+        }
+
+        double rec_total_ms = 0.0;
+        if (enc_ok) {
+            for (size_t i = 0; i < crop_entries.size(); i++) {
+                auto t_rec = std::chrono::steady_clock::now();
+                int out_len = 0;
+                const char* text = math_ocr_decode_batch_crop(ctx->rec, (int)i, &out_len);
+                if (bench)
+                    rec_total_ms += std::chrono::duration<double, std::milli>(
+                        std::chrono::steady_clock::now() - t_rec).count();
+
+                if (text && out_len > 0) {
+                    ocr_result r;
+                    r.box        = boxes[crop_entries[i].box_idx];
+                    r.confidence = r.box.score;
+                    r.text       = std::string(text, out_len);
+                    results.push_back(std::move(r));
+                }
+            }
+        } else {
+            // Fallback: sequential single-crop path
+            for (size_t i = 0; i < crop_entries.size(); i++) {
+                int out_len = 0;
+                const char* text = math_ocr_recognize_raw(ctx->rec,
+                    crop_entries[i].data.data(), crop_entries[i].w, crop_entries[i].h,
+                    3, &out_len);
+                if (text && out_len > 0) {
+                    ocr_result r;
+                    r.box        = boxes[crop_entries[i].box_idx];
+                    r.confidence = r.box.score;
+                    r.text       = std::string(text, out_len);
+                    results.push_back(std::move(r));
+                }
+            }
+        }
+
+        if (bench) {
+            double total_ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t_total).count();
+            fprintf(stderr, "[ocr_pipeline-bench] recognize (all boxes): %.1f ms\n", rec_total_ms);
+            fprintf(stderr, "[ocr_pipeline-bench] total: %.1f ms\n", total_ms);
+        }
     }
 
     fprintf(stderr, "ocr_pipeline: recognized %zu/%zu regions\n",
