@@ -78,6 +78,23 @@ const char * ppformulanet_l_ocr_recognize_raw(
     int * out_len
 );
 
+/// Beam search decoding (beam_width > 1) or greedy (beam_width <= 1).
+const char * ppformulanet_l_ocr_recognize_beam(
+    ppformulanet_l_ocr_context * ctx,
+    const float * pixels,
+    int width, int height,
+    int beam_width,
+    int * out_len
+);
+
+const char * ppformulanet_l_ocr_recognize_raw_beam(
+    ppformulanet_l_ocr_context * ctx,
+    const uint8_t * pixel_bytes,
+    int width, int height, int channels,
+    int beam_width,
+    int * out_len
+);
+
 /// Run OCR on pre-processed CHW float tensor.
 const char * ppformulanet_l_ocr_recognize_chw(
     ppformulanet_l_ocr_context * ctx,

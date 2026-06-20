@@ -104,6 +104,26 @@ const char * math_ocr_recognize_raw(
     int * out_len
 );
 
+/// Beam search decoding (beam_width > 1) or greedy (beam_width <= 1).
+const char * math_ocr_recognize_beam(
+    math_ocr_context * ctx,
+    const float * pixels,
+    int width,
+    int height,
+    int beam_width,
+    int * out_len
+);
+
+const char * math_ocr_recognize_raw_beam(
+    math_ocr_context * ctx,
+    const uint8_t * pixel_bytes,
+    int width,
+    int height,
+    int channels,
+    int beam_width,
+    int * out_len
+);
+
 /// After a successful recognize call, returns the encoder output.
 /// Shape: (*out_n_tokens, *out_hidden). Valid until the next call.
 const float * math_ocr_get_encoder_output(
