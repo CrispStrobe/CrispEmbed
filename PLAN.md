@@ -608,8 +608,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **mel.cpp: OpenMP on STFT loop** — each frame's FFT is independent
   (line 73-84). `#pragma omp parallel for` on the `t` loop.
 
-- [ ] **mel.cpp: SIMD/BLAS for mel projection** — naive triple-loop matmul
-  (T*128*201 ≈ 38M scalar MACs). BLAS or SIMD inner loop.
+- [x] **mel.cpp: SIMD for mel projection** — DONE. Float MelsFreqs layout uses
+  `core_cpu::dot_product()` (AVX2+FMA/NEON). Double-precision path kept scalar.
 
 - [x] **gguf_loader: `madvise(MADV_SEQUENTIAL)`** — already done (line 244).
   Also has MADV_WILLNEED (line 247).
@@ -630,8 +630,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `scan_cleanup`, `face_align` all accept `n_threads` but run single-threaded
   pixel loops.
 
-- [ ] **pcs: cache FC weights at load** — weight dequant via
-  `ggml_backend_tensor_get` every inference call (lines 508-519, 557-568).
+- [x] **pcs: cache FC weights at load** — DONE. All 17 FC head tensors cached
+  in `fc_cache` struct at init. No per-call `ggml_backend_tensor_get`.
 
 - [x] **restormer: dead `rst_gdfn()` stub** — DONE (`06b3190`). Removed.
 - [x] **restormer: `rst_layernorm_bf` computes variance twice** — DONE
@@ -704,12 +704,11 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [x] **ppformulanet_l: ggml meta buffer reuse across layers** — DONE
   (`b7bc237`). Hoisted 8MB meta_buf before 12-layer loop.
 
-- [ ] **math_ocr: global dequant cache → per-context** — global static
-  `unordered_map` at line 455 is thread-unsafe. Move to per-context.
+- [x] **math_ocr: global dequant cache → per-context** — already done.
+  Uses `core_cpu::DequantCache dcache` per-context (line 93).
 
-- [ ] **Remove dead scalar fallback encoder in ppformulanet_l** — lines
-  716-962 (~250 lines) are kept for debugging but never used in production.
-  Guard with `#ifdef DEBUG`.
+- [x] **Remove dead scalar fallback encoder in ppformulanet_l** — DONE
+  (`c7bd92c`). Removed 370 lines of unused scalar encoder code.
 
 ---
 
