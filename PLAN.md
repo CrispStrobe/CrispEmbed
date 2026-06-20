@@ -422,7 +422,7 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   Migrated: smoldocling_ocr (replaced wbufs), granite_vision_ocr (replaced
   wcache). Remaining runtimes still need migration.
 
-- [ ] **Adopt F16 ggml KV cache** — Port to: deepseek_ocr2 (F32 std::vector).
+- [x] **Adopt F16 ggml KV cache** — deepseek_ocr2: **DONE** (`fe0d8d6`).
   pix2struct: **DONE** (`088d359`) — F32 std::vector KV cache + cross-attn pre-compute.
   lightonocr: **DONE** (`485cb97`, branch `lighton-perf`) — 2.09x total speedup.
   granite_vision_ocr: **DONE** (`66b8de2`).
@@ -489,12 +489,12 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   - `lightonocr.cpp`: default since this session
   - `internvl2_ocr.cpp`, `got_ocr.cpp`, `glm_ocr.cpp`: already had it
   - `lilt_kie.cpp`: SKIPPED (BiACM incompatible with fused kernel)
-  - `deepseek_ocr2.cpp`: pending (no q4_k model to test)
+  - `deepseek_ocr2.cpp`: **DONE** (`fe0d8d6`)
 
 - [ ] **Move remaining scalar encoders to ggml graphs**:
   - `deepseek_ocr2` Qwen2 encoder: **DONE** (`910d036`). 24-layer single graph.
   - `hmer_ocr` DenseNet encoder: **DONE** (`273969d`). ggml graph, 3x speedup.
-  - `bttr_ocr` / `posformer_ocr` DenseNet: pending (share architecture with hmer).
+  - `bttr_ocr` / `posformer_ocr` DenseNet encoders: **DONE** (`7c6d8e1`). ~2x speedup.
   - `mixtex_ocr` Swin encoder: pending (12500-token window attention).
   - `ppformulanet_ocr` HGNetv2 CNN: pending (57M-param at 384x384).
 
