@@ -456,9 +456,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   Eliminates `powf` per-element. Migrated: smoldocling_ocr (NEGHALF),
   granite_vision_ocr (NEGHALF). Remaining `core_vlm` users still on `apply_rope()`.
 
-- [ ] **Batch linear → GEMM in SR/restoration attention** — dat_sr, swinir_sr,
-  hat_sr, scunet, mixtex call `linear_cpu` per-token for QKV projection.
-  Batch N tokens into one `[N, D] × [D, 3D]` matmul instead.
+- [x] **Batch linear → GEMM in SR/restoration attention** — DONE. dat_sr
+  (`a71c123`), swinir_sr (`dcf6556`), hat_sr (`b199741`), scunet (`52250ef`),
+  mixtex (`816a88a`): replaced per-token scalar linear with
+  linear_batch_cpu (SIMD), SIMD dot_product in attention.
 
 - [ ] **Sequential region recognition → batched** — `ocr_pipeline.cpp` (line 112)
   and `table_parse.cpp` (line 337) recognize each detected text region one at a
