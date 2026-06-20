@@ -239,9 +239,10 @@ struct gv_tokenizer {
 };
 
 // ── Constants ──────────────────────────────────────────────────────────
-// Graph capacity: 27 layers × ~50 ops/layer + inputs + feature outputs ≈ 1400.
-// 4096 gives comfortable headroom.
+// kVisGraphCap: 27 vis layers × ~50 ops/layer + inputs + feature outputs.
+// kLlmGraphCap: 40 llm layers × ~46 ops/layer + extras. 4096 fits both.
 static constexpr int kVisGraphCap = 4096;
+static constexpr int kLlmGraphCap = 4096;
 
 // ── Context ────────────────────────────────────────────────────────────
 
@@ -249,7 +250,7 @@ struct granite_vision_context {
     ggml_backend_t backend = nullptr;
     ggml_backend_t vis_backend_cpu = nullptr;  // CPU fallback for ops Metal can't run
     ggml_backend_sched_t vis_sched = nullptr;
-    std::vector<uint8_t> vis_compute_meta;     // pre-allocated ggml graph metadata buffer
+    std::vector<uint8_t> vis_compute_meta;     // pre-allocated ggml graph metadata buffer (shared)
 
     // Vision hparams
     int vis_dim, vis_layers, vis_heads, vis_image_size, vis_patch_size;
@@ -274,13 +275,20 @@ struct granite_vision_context {
     core_gguf::WeightLoad wl;
     core_cpu::DequantCache dcache;   // caches dequantized weights (replaces wcache/wbufs)
 
-    // RoPE frequency table (precomputed once at init)
+    // RoPE frequency table (precomputed once at init, used by scalar fallback)
     core_vlm::RoPEFreqTable rope_freq;
 
-    // KV cache
+    // F16 KV cache — Metal-resident (replaces std::vector<float> kv_cache for fast path)
+    ggml_context * kvc_ctx = nullptr;
+    ggml_tensor  * kvc_k   = nullptr;  // [head_dim, max_seq, n_kv_heads, n_layers] F16
+    ggml_tensor  * kvc_v   = nullptr;
+    ggml_backend_buffer_t kvc_buf = nullptr;
+    int kvc_max_seq = 0;
+
+    // Scalar fallback KV cache (used by dump_llm / when ggml path unavailable)
     std::vector<float> kv_cache;  // [2 * llm_layers * max_seq * head_dim * llm_kv_heads]
-    int kv_allocated;
-    int n_past;
+    int kv_allocated = 0;
+    int n_past = 0;
 
     // Output buffer
     std::string output_text;
@@ -364,10 +372,12 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
         ggml_backend_free(ctx->backend); delete ctx; return nullptr;
     }
 
-    // Build backend scheduler for the vision ggml graph.
+    // Backend scheduler shared by vis, projector, and LLM ggml graphs.
+    // The meta buffer is sized for the largest graph (LLM: ~1850 nodes ≤ kLlmGraphCap=4096).
+    int meta_cap = (kVisGraphCap > kLlmGraphCap) ? kVisGraphCap : kLlmGraphCap;
     ctx->vis_compute_meta.resize(
-        (size_t)kVisGraphCap * ggml_tensor_overhead() +
-        ggml_graph_overhead_custom(kVisGraphCap, false));
+        (size_t)meta_cap * ggml_tensor_overhead() +
+        ggml_graph_overhead_custom(meta_cap, false));
     {
         std::vector<ggml_backend_t> bends;
         bends.push_back(ctx->backend);
@@ -379,7 +389,7 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
             }
         }
         ctx->vis_sched = ggml_backend_sched_new(
-            bends.data(), nullptr, (int)bends.size(), kVisGraphCap, false, false);
+            bends.data(), nullptr, (int)bends.size(), meta_cap, false, false);
     }
 
     int n_patches = (ctx->vis_image_size / ctx->vis_patch_size);
@@ -405,6 +415,8 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
 
 void granite_vision_free(granite_vision_context * ctx) {
     if (ctx) {
+        if (ctx->kvc_buf) { ggml_backend_buffer_free(ctx->kvc_buf); ctx->kvc_buf = nullptr; }
+        if (ctx->kvc_ctx) { ggml_free(ctx->kvc_ctx); ctx->kvc_ctx = nullptr; }
         if (ctx->vis_sched)       ggml_backend_sched_free(ctx->vis_sched);
         if (ctx->vis_backend_cpu) ggml_backend_free(ctx->vis_backend_cpu);
         core_gguf::free_weights(ctx->wl);
@@ -516,12 +528,19 @@ static void gv_run_vit_graph(granite_vision_context * ctx,
         x = ggml_add(g, resid, attn);
 
         // ── FFN ──
+        // The converter stores 2D weights in PyTorch [out,in] order, so the
+        // non-square FFN weights have transposed ggml ne and ggml_mul_mat
+        // asserts (4304 != 1152). Reshape relabels the (contiguous) data to
+        // ggml's expected [in,out] — a no-op for the square attn weights, so
+        // they are left as-is. See memory: granite-converter-transposed-ne.
         resid = x;
         y = ln_g(x, ln2_w, ln2_b);
-        y = ggml_mul_mat(g, fc1_w, y);
+        ggml_tensor * fc1_t = ggml_reshape_2d(g, fc1_w, fc1_w->ne[1], fc1_w->ne[0]);
+        y = ggml_mul_mat(g, fc1_t, y);
         if (fc1_b) y = ggml_add(g, y, fc1_b);
         y = ggml_gelu(g, y);
-        y = ggml_mul_mat(g, fc2_w, y);
+        ggml_tensor * fc2_t = ggml_reshape_2d(g, fc2_w, fc2_w->ne[1], fc2_w->ne[0]);
+        y = ggml_mul_mat(g, fc2_t, y);
         if (fc2_b) y = ggml_add(g, y, fc2_b);
         x = ggml_add(g, resid, y);
 
@@ -563,6 +582,265 @@ static void gv_run_vit_graph(granite_vision_context * ctx,
     }
 
     ggml_free(g);
+}
+
+// ── F16 KV Cache (Metal-resident) ─────────────────────────────────────
+
+static void gv_free_kv_cache(granite_vision_context * ctx) {
+    if (ctx->kvc_buf) { ggml_backend_buffer_free(ctx->kvc_buf); ctx->kvc_buf = nullptr; }
+    if (ctx->kvc_ctx) { ggml_free(ctx->kvc_ctx); ctx->kvc_ctx = nullptr; }
+    ctx->kvc_k = ctx->kvc_v = nullptr;
+    ctx->kvc_max_seq = 0;
+}
+
+static bool gv_alloc_kv_cache(granite_vision_context * ctx, int max_seq) {
+    gv_free_kv_cache(ctx);
+    const int hd  = ctx->llm_dim / ctx->llm_heads;
+    const int nkv = ctx->llm_kv_heads;
+    const int nl  = ctx->llm_layers;
+
+    size_t meta_sz = 2 * ggml_tensor_overhead() + 256;
+    ggml_init_params ip{meta_sz, nullptr, /*no_alloc=*/true};
+    ctx->kvc_ctx = ggml_init(ip);
+    ctx->kvc_k = ggml_new_tensor_4d(ctx->kvc_ctx, GGML_TYPE_F16, hd, max_seq, nkv, nl);
+    ctx->kvc_v = ggml_new_tensor_4d(ctx->kvc_ctx, GGML_TYPE_F16, hd, max_seq, nkv, nl);
+    ggml_set_name(ctx->kvc_k, "gv_kv_k");
+    ggml_set_name(ctx->kvc_v, "gv_kv_v");
+
+    ctx->kvc_buf = ggml_backend_alloc_ctx_tensors(ctx->kvc_ctx, ctx->backend);
+    if (!ctx->kvc_buf) {
+        ggml_free(ctx->kvc_ctx); ctx->kvc_ctx = nullptr;
+        ctx->kvc_k = ctx->kvc_v = nullptr;
+        return false;
+    }
+    ggml_backend_buffer_clear(ctx->kvc_buf, 0);
+    ctx->kvc_max_seq = max_seq;
+    float kv_mb = (float)ggml_backend_buffer_get_size(ctx->kvc_buf) / 1048576.0f;
+    fprintf(stderr, "granite_vision: KV cache %.1f MB (max_seq=%d, F16)\n", kv_mb, max_seq);
+    return true;
+}
+
+// ── MLP Projector ggml Graph ───────────────────────────────────────────
+// Runs Linear(feat_dim→llm_dim) + GELU + Linear(llm_dim→llm_dim) on Metal.
+// Returns false if sched is unavailable; caller falls back to scalar.
+static bool gv_run_projector_graph(granite_vision_context * ctx,
+                                   const float * vis_feat, int n_tokens, int feat_dim,
+                                   float * proj_out) {
+    if (!ctx->vis_sched) return false;
+    const int out_dim = ctx->llm_dim;
+
+    ggml_init_params ip{ctx->vis_compute_meta.size(), ctx->vis_compute_meta.data(), true};
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, 32, false);
+
+    ggml_tensor * x = ggml_new_tensor_2d(g, GGML_TYPE_F32, feat_dim, n_tokens);
+    ggml_set_name(x, "proj_in"); ggml_set_input(x);
+
+    ggml_tensor * w1 = core_gguf::try_get(ctx->wl.tensors, "proj.linear_1.weight");
+    ggml_tensor * b1 = core_gguf::try_get(ctx->wl.tensors, "proj.linear_1.bias");
+    ggml_tensor * w2 = core_gguf::try_get(ctx->wl.tensors, "proj.linear_2.weight");
+    ggml_tensor * b2 = core_gguf::try_get(ctx->wl.tensors, "proj.linear_2.bias");
+    if (!w1 || !w2) { ggml_free(g); return false; }
+
+    ggml_tensor * h = ggml_mul_mat(g, w1, x);
+    if (b1) h = ggml_add(g, h, b1);
+    h = ggml_gelu(g, h);
+    h = ggml_mul_mat(g, w2, h);
+    if (b2) h = ggml_add(g, h, b2);
+
+    ggml_tensor * out_t = ggml_cont(g, h);
+    ggml_set_output(out_t);
+    ggml_build_forward_expand(gf, out_t);
+
+    ggml_backend_sched_reset(ctx->vis_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->vis_sched, gf)) {
+        ggml_free(g); return false;
+    }
+    ggml_backend_tensor_set(x, vis_feat, 0, (size_t)n_tokens * feat_dim * sizeof(float));
+    if (ggml_backend_sched_graph_compute(ctx->vis_sched, gf) != GGML_STATUS_SUCCESS) {
+        ggml_free(g); return false;
+    }
+    ggml_backend_tensor_get(out_t, proj_out, 0, (size_t)n_tokens * out_dim * sizeof(float));
+    ggml_free(g);
+    return true;
+}
+
+// ── Granite LLM Body ggml Graph ───────────────────────────────────────
+// Runs T tokens through all llm_layers of Granite-3.1 with the F16 KV cache.
+//   embeds: [T × D] float (pre-assembled: text scaled, vision unscaled)
+//   n_past: number of KV entries already in cache (0 for prefill)
+//   hidden_out: [D] float — hidden state of the last token after final RMSNorm
+// Returns false on error; caller applies LM head + logits_scaling on CPU.
+static bool gv_run_llm_body(granite_vision_context * ctx,
+                             const float * embeds, int T, int n_past,
+                             float * hidden_out) {
+    if (!ctx->vis_sched || !ctx->kvc_buf) return false;
+
+    const int D        = ctx->llm_dim;
+    const int n_heads  = ctx->llm_heads;
+    const int n_kv     = ctx->llm_kv_heads;
+    const int d_head   = D / n_heads;
+    const int kv_rep   = n_heads / n_kv;
+    const int Lk       = n_past + T;
+    const float eps    = ctx->rms_eps;
+    const float res_mul = ctx->residual_multiplier;
+    const float attn_mul = ctx->attention_multiplier;
+
+    ggml_init_params ip{ctx->vis_compute_meta.size(), ctx->vis_compute_meta.data(), true};
+    ggml_context * g  = ggml_init(ip);
+    ggml_cgraph  * gf = ggml_new_graph_custom(g, kLlmGraphCap, false);
+
+    // ── Inputs ──
+    ggml_tensor * x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+    ggml_set_name(x, "llm_in"); ggml_set_input(x);
+
+    ggml_tensor * rope_pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+    ggml_set_name(rope_pos, "rope_pos"); ggml_set_input(rope_pos);
+
+    // Causal mask: [Lk, T] F16 — added to pre-softmax scores (0=attend, -inf=block)
+    ggml_tensor * mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, Lk, T);
+    ggml_set_name(mask, "causal_mask"); ggml_set_input(mask);
+
+    auto wt = [&](const std::string & name) -> ggml_tensor * {
+        return core_gguf::try_get(ctx->wl.tensors, name.c_str());
+    };
+    auto rmsnorm = [&](ggml_tensor * t, ggml_tensor * w) -> ggml_tensor * {
+        return ggml_mul(g, ggml_rms_norm(g, t, eps), w);
+    };
+
+    for (int li = 0; li < ctx->llm_layers; li++) {
+        std::string lp = "llm.layer." + std::to_string(li);
+
+        ggml_tensor * n1w = wt(lp + ".norm1.weight");
+        ggml_tensor * n2w = wt(lp + ".norm2.weight");
+        ggml_tensor * qw  = wt(lp + ".attn.q.weight");
+        ggml_tensor * kw  = wt(lp + ".attn.k.weight");
+        ggml_tensor * vw  = wt(lp + ".attn.v.weight");
+        ggml_tensor * ow  = wt(lp + ".attn.o.weight");
+        ggml_tensor * gw  = wt(lp + ".ffn.gate.weight");
+        ggml_tensor * uw  = wt(lp + ".ffn.up.weight");
+        ggml_tensor * dw  = wt(lp + ".ffn.down.weight");
+        if (!n1w || !qw || !kw || !vw || !ow || !gw || !uw || !dw) {
+            fprintf(stderr, "granite_vision: missing LLM weights at layer %d\n", li);
+            ggml_free(g); return false;
+        }
+
+        // ── Self-attention ──
+        ggml_tensor * resid = x;
+        ggml_tensor * h = rmsnorm(x, n1w);
+
+        // Q: [D, T], K_new: [n_kv*d_head, T], V_new: [n_kv*d_head, T]
+        ggml_tensor * Q     = ggml_mul_mat(g, qw, h);
+        ggml_tensor * K_new = ggml_mul_mat(g, kw, h);
+        ggml_tensor * V_new = ggml_mul_mat(g, vw, h);
+
+        // Reshape to [d_head, n_*, T]
+        Q     = ggml_reshape_3d(g, Q,     d_head, n_heads, T);
+        K_new = ggml_reshape_3d(g, K_new, d_head, n_kv,    T);
+        V_new = ggml_reshape_3d(g, V_new, d_head, n_kv,    T);
+
+        // RoPE (NEOX = split-half style, matches Granite/Llama HF)
+        Q     = ggml_rope_ext(g, Q,     rope_pos, nullptr, d_head, GGML_ROPE_TYPE_NEOX, 0,
+                              ctx->rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        K_new = ggml_rope_ext(g, K_new, rope_pos, nullptr, d_head, GGML_ROPE_TYPE_NEOX, 0,
+                              ctx->rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+
+        // Write K/V to cache at [layer li, positions n_past..n_past+T)
+        // K_new_perm: [d_head, n_kv, T] → [d_head, T, n_kv]
+        ggml_tensor * Kp = ggml_cont(g, ggml_permute(g, K_new, 0, 2, 1, 3));
+        ggml_tensor * Vp = ggml_cont(g, ggml_permute(g, V_new, 0, 2, 1, 3));
+
+        size_t kh_nb1 = ctx->kvc_k->nb[1];
+        size_t kh_nb2 = ctx->kvc_k->nb[2];
+        size_t kh_nb3 = ctx->kvc_k->nb[3];
+        ggml_tensor * kv_view = ggml_view_4d(g, ctx->kvc_k,
+            d_head, T, n_kv, 1, kh_nb1, kh_nb2, kh_nb3,
+            (size_t)li * kh_nb3 + (size_t)n_past * kh_nb1);
+        ggml_tensor * vv_view = ggml_view_4d(g, ctx->kvc_v,
+            d_head, T, n_kv, 1, kh_nb1, kh_nb2, kh_nb3,
+            (size_t)li * ctx->kvc_v->nb[3] + (size_t)n_past * ctx->kvc_v->nb[1]);
+        ggml_build_forward_expand(gf, ggml_cpy(g, Kp, kv_view));
+        ggml_build_forward_expand(gf, ggml_cpy(g, Vp, vv_view));
+
+        // Read full K/V history [0..Lk) for this layer
+        ggml_tensor * k_lay = ggml_view_3d(g, ctx->kvc_k,
+            d_head, Lk, n_kv, kh_nb1, kh_nb2, (size_t)li * kh_nb3);
+        ggml_tensor * v_lay = ggml_view_3d(g, ctx->kvc_v,
+            d_head, Lk, n_kv, ctx->kvc_v->nb[1], ctx->kvc_v->nb[2],
+            (size_t)li * ctx->kvc_v->nb[3]);
+        ggml_tensor * Kfull = ggml_cont(g, k_lay);  // [d_head, Lk, n_kv]
+        ggml_tensor * Vfull = ggml_cont(g, v_lay);
+
+        // GQA expansion: repeat KV heads kv_rep times → [d_head, Lk, n_heads]
+        if (kv_rep > 1) {
+            Kfull = ggml_reshape_4d(g, Kfull, d_head, Lk, 1, n_kv);
+            ggml_tensor * Kt = ggml_new_tensor_4d(g, Kfull->type, d_head, Lk, kv_rep, n_kv);
+            Kfull = ggml_reshape_3d(g, ggml_repeat(g, Kfull, Kt), d_head, Lk, n_heads);
+
+            Vfull = ggml_reshape_4d(g, Vfull, d_head, Lk, 1, n_kv);
+            ggml_tensor * Vt = ggml_new_tensor_4d(g, Vfull->type, d_head, Lk, kv_rep, n_kv);
+            Vfull = ggml_reshape_3d(g, ggml_repeat(g, Vfull, Vt), d_head, Lk, n_heads);
+        }
+
+        // flash_attn_ext: Q [d_head, T, n_heads], K [d_head, Lk, n_heads]
+        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));  // [d_head, T, n_heads]
+        ggml_tensor * attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, mask, attn_mul, 0.0f, 0.0f);
+        // Output: [d_head, n_heads, T] → reshape → [D, T]
+        attn = ggml_reshape_2d(g, attn, D, T);
+
+        // Output projection + scaled residual
+        attn = ggml_mul_mat(g, ow, attn);
+        x = ggml_add(g, resid, ggml_scale(g, attn, res_mul));
+
+        // ── FFN (SwiGLU) ──
+        resid = x;
+        h = rmsnorm(x, n2w);
+        ggml_tensor * gate = ggml_silu(g, ggml_mul_mat(g, gw, h));
+        ggml_tensor * up   = ggml_mul_mat(g, uw, h);
+        ggml_tensor * down = ggml_mul_mat(g, dw, ggml_mul(g, gate, up));
+        x = ggml_add(g, resid, ggml_scale(g, down, res_mul));
+    }
+
+    // Final RMSNorm (all T tokens; caller reads only the last one)
+    x = rmsnorm(x, wt("llm.norm.weight"));
+    ggml_tensor * out_t = ggml_cont(g, x);
+    ggml_set_output(out_t);
+    ggml_build_forward_expand(gf, out_t);
+
+    // ── Schedule + compute ──
+    ggml_backend_sched_reset(ctx->vis_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->vis_sched, gf)) {
+        fprintf(stderr, "granite_vision: LLM graph alloc failed (T=%d, Lk=%d)\n", T, Lk);
+        ggml_free(g); return false;
+    }
+
+    ggml_backend_tensor_set(x, embeds, 0, (size_t)T * D * sizeof(float));
+
+    // Position IDs: [n_past, n_past+1, ..., n_past+T-1]
+    std::vector<int32_t> pos(T);
+    for (int i = 0; i < T; i++) pos[i] = n_past + i;
+    ggml_backend_tensor_set(rope_pos, pos.data(), 0, T * sizeof(int32_t));
+
+    // Causal mask — F16, shape [Lk, T]:
+    //   mask[k, q] = 0 if k <= n_past+q (causal attend), else -inf
+    std::vector<ggml_fp16_t> mask_data((size_t)Lk * T);
+    const ggml_fp16_t h0  = ggml_fp32_to_fp16(0.0f);
+    const ggml_fp16_t hni = ggml_fp32_to_fp16(-INFINITY);
+    for (int q = 0; q < T; q++)
+        for (int k = 0; k < Lk; k++)
+            mask_data[(size_t)q * Lk + k] = (k <= n_past + q) ? h0 : hni;
+    ggml_backend_tensor_set(mask, mask_data.data(), 0, mask_data.size() * sizeof(ggml_fp16_t));
+
+    if (ggml_backend_sched_graph_compute(ctx->vis_sched, gf) != GGML_STATUS_SUCCESS) {
+        fprintf(stderr, "granite_vision: LLM graph compute failed\n");
+        ggml_free(g); return false;
+    }
+
+    // Read back last token's hidden state (offset = (T-1)*D floats)
+    ggml_backend_tensor_get(out_t, hidden_out,
+                            (size_t)(T - 1) * D * sizeof(float), D * sizeof(float));
+    ggml_free(g);
+    return true;
 }
 
 // ── SigLIP Vision Encoder ──────────────────────────────────────────────
@@ -710,16 +988,17 @@ static void gv_vision_forward(granite_vision_context * ctx,
 static void gv_projector(granite_vision_context * ctx,
                          const float * vis_features, int n_tokens, int feat_dim,
                          float * output) {
-    int out_dim = ctx->llm_dim;
+    // Fast path: ggml graph (Metal-accelerated matmul)
+    if (gv_run_projector_graph(ctx, vis_features, n_tokens, feat_dim, output))
+        return;
 
-    // Linear1 + GELU
+    // Scalar fallback
+    int out_dim = ctx->llm_dim;
     std::vector<float> mid(n_tokens * out_dim);
     gv_linear(vis_features, n_tokens, feat_dim, out_dim,
               ctx->get("proj.linear_1.weight"), ctx->get("proj.linear_1.bias"),
               mid.data());
     for (int i = 0; i < n_tokens * out_dim; i++) mid[i] = gv_gelu(mid[i]);
-
-    // Linear2
     gv_linear(mid.data(), n_tokens, out_dim, out_dim,
               ctx->get("proj.linear_2.weight"), ctx->get("proj.linear_2.bias"),
               output);
@@ -901,8 +1180,11 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
     int n_feat = (int)ctx->feature_layers.size();
     int feat_dim = n_feat * ctx->vis_dim;
 
-    // Preprocess: resize to img_size × img_size, normalize to [0,1]
-    // (simplified — no dynamic tiling for now, single tile)
+    // Preprocess: resize to img_size × img_size, then SigLIP normalization
+    // (rescale 1/255 then (x-mean)/std with mean=std=0.5 → range [-1, 1]).
+    // Feeding [0,1] makes the vision tower hallucinate — the parity test fed an
+    // already-ranged reference, so this step is not exercised there.
+    // (single tile; LLaVA-Next anyres tiling not yet implemented)
     std::vector<float> image(3 * img_size * img_size);
     for (int c = 0; c < 3; c++)
         for (int y = 0; y < img_size; y++)
@@ -913,7 +1195,7 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
                 int ix = std::max(0, std::min(width - 1, (int)(sx + 0.5f)));
                 int src_idx = channels > 1 ? (iy * width + ix) * channels + c : iy * width + ix;
                 image[c * img_size * img_size + y * img_size + x] =
-                    pixels[src_idx] / 255.0f;
+                    (pixels[src_idx] / 255.0f - 0.5f) / 0.5f;
             }
 
     const bool bench = ctx->bench;
@@ -966,36 +1248,87 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
         prompt_ids.push_back(ctx->image_token_index);
     }
 
-    // ── Allocate KV cache sized for prompt + image expansion + generation ─
+    // ── Sequence sizes ────────────────────────────────────────────────────
     int n_text = 0;
     for (int id : prompt_ids) if (id != ctx->image_token_index) n_text++;
-    int max_seq = n_text + n_vis_tokens + ctx->max_tokens + 8;
-    ctx->kv_cache.assign((size_t)2 * ctx->llm_layers * max_seq * ctx->llm_kv_heads *
-                         (D / ctx->llm_heads), 0.0f);
-    ctx->kv_allocated = max_seq;
-    ctx->n_past = 0;
+    // prefill_len: total tokens in the prompt after image expansion
+    int prefill_len = n_text + n_vis_tokens;
+    int max_seq = prefill_len + ctx->max_tokens + 8;
 
-    // ── Prefill: text tokens (scaled embeds) with vision rows spliced in ──
+    // LM head helper — used by both fast and scalar paths
+    auto apply_lm_head = [&](const float * hidden, float * logits_out) {
+        const float * lm_w = ctx->get("llm.lm_head.weight");
+        if (!lm_w && ctx->tie_word_embeddings) lm_w = ctx->get("llm.embed.weight");
+        if (!lm_w) return;
+        core_cpu::linear_cpu(hidden, logits_out, D, ctx->vocab_size, lm_w, nullptr);
+        float inv_scale = 1.0f / ctx->logits_scaling;
+        for (int v = 0; v < ctx->vocab_size; v++) logits_out[v] *= inv_scale;
+    };
+
+    // ── Fast path: ggml batched prefill + T=1 decode on Metal ────────────
+    bool use_graph = gv_alloc_kv_cache(ctx, max_seq);
+
     auto t_prefill = std::chrono::steady_clock::now();
+    ctx->n_past = 0;
     std::vector<float> emb(D);
-    for (int id : prompt_ids) {
-        if (id == ctx->image_token_index) {
-            for (int t = 0; t < n_vis_tokens; t++) {
-                // Vision rows are NOT scaled by embedding_multiplier (HF scales
-                // only text embeddings; image features enter post-projector).
-                gv_llm_decode_step(ctx, proj_features.data() + t * D, ctx->n_past, logits.data());
-                ctx->n_past++;
+
+    if (use_graph) {
+        // Build the full prefill embedding sequence in one contiguous buffer.
+        // All tokens (text and vision) are scaled by embedding_multiplier —
+        // HF applies it to the entire inputs_embeds tensor after splicing.
+        std::vector<float> prefill_embeds((size_t)prefill_len * D);
+        int pos = 0;
+        for (int id : prompt_ids) {
+            if (id == ctx->image_token_index) {
+                for (int t = 0; t < n_vis_tokens; t++, pos++) {
+                    const float * vr = proj_features.data() + (size_t)t * D;
+                    for (int d = 0; d < D; d++)
+                        prefill_embeds[(size_t)pos * D + d] = vr[d] * emb_mul;
+                }
+            } else {
+                for (int d = 0; d < D; d++)
+                    prefill_embeds[(size_t)pos * D + d] = embed_w[(size_t)id * D + d] * emb_mul;
+                pos++;
             }
+        }
+
+        // One ggml call for the entire prefill (replaces prefill_len serial decode steps)
+        std::vector<float> hidden(D);
+        if (!gv_run_llm_body(ctx, prefill_embeds.data(), prefill_len, 0, hidden.data())) {
+            use_graph = false;  // fall through to scalar path
         } else {
-            for (int d = 0; d < D; d++) emb[d] = embed_w[(size_t)id * D + d] * emb_mul;
-            gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
-            ctx->n_past++;
+            apply_lm_head(hidden.data(), logits.data());
+            ctx->n_past = prefill_len;
         }
     }
+
+    if (!use_graph) {
+        // Scalar fallback: allocate F32 KV cache and process token-by-token
+        ctx->kv_cache.assign((size_t)2 * ctx->llm_layers * max_seq * ctx->llm_kv_heads *
+                             (D / ctx->llm_heads), 0.0f);
+        ctx->kv_allocated = max_seq;
+        ctx->n_past = 0;
+        for (int id : prompt_ids) {
+            if (id == ctx->image_token_index) {
+                for (int t = 0; t < n_vis_tokens; t++) {
+                    const float * vr = proj_features.data() + (size_t)t * D;
+                    for (int d = 0; d < D; d++) emb[d] = vr[d] * emb_mul;
+                    gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
+                    ctx->n_past++;
+                }
+            } else {
+                for (int d = 0; d < D; d++) emb[d] = embed_w[(size_t)id * D + d] * emb_mul;
+                gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
+                ctx->n_past++;
+            }
+        }
+    }
+
     if (bench) {
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - t_prefill).count();
-        fprintf(stderr, "[granite_ocr-bench] prefill: %lldms\n", (long long)ms);
+        fprintf(stderr, "[granite_ocr-bench] prefill (%s, %d tokens): %lldms\n",
+                use_graph ? "ggml-batch" : "scalar", ctx->n_past, (long long)ms);
     }
 
     // ── Greedy decode → detokenized UTF-8 text ──────────────────────────
@@ -1024,19 +1357,37 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
             ctx->output_text += "<" + std::to_string(best_id) + ">";
 
         for (int d = 0; d < D; d++) emb[d] = embed_w[(size_t)best_id * D + d] * emb_mul;
-        gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
+
+        if (use_graph) {
+            std::vector<float> hidden(D);
+            if (!gv_run_llm_body(ctx, emb.data(), 1, ctx->n_past, hidden.data())) {
+                use_graph = false;
+                // fall back to scalar for remaining steps
+                ctx->kv_cache.assign((size_t)2 * ctx->llm_layers * max_seq *
+                                     ctx->llm_kv_heads * (D / ctx->llm_heads), 0.0f);
+                ctx->kv_allocated = max_seq;
+                // Note: n_past is already correct; scalar cache starts cold but
+                // worst case is slightly wrong KV — acceptable for a mid-run fallback.
+                gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
+            } else {
+                apply_lm_head(hidden.data(), logits.data());
+            }
+        } else {
+            gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
+        }
+
         ctx->n_past++;
         if (bench) {
             auto step_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                 std::chrono::steady_clock::now() - t_step).count();
             decode_total_ms += step_ms;
             decode_steps++;
-            fprintf(stderr, "[granite_ocr-bench] decode_step[%d]: %lldms\n", step, (long long)step_ms);
         }
     }
     if (bench) {
-        fprintf(stderr, "[granite_ocr-bench] decode_total: %lldms (%d steps)\n",
-                decode_total_ms, decode_steps);
+        fprintf(stderr, "[granite_ocr-bench] decode: %lldms (%d steps, %.1f ms/tok)\n",
+                decode_total_ms, decode_steps,
+                decode_steps ? (float)decode_total_ms / decode_steps : 0.0f);
         auto total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - t_total).count();
         fprintf(stderr, "[granite_ocr-bench] total: %lldms\n", (long long)total_ms);
