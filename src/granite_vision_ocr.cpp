@@ -19,7 +19,9 @@
 #include "granite_vision_ocr.h"
 #include "core/gguf_loader.h"
 #include "core/vlm_attention.h"
+#include "core/cpu_ops.h"
 #include "ggml-cpu.h"
+#include "ggml-backend.h"
 
 #include <algorithm>
 #include <chrono>
@@ -32,18 +34,28 @@
 #include <unordered_map>
 #include <vector>
 
-// ── Helpers (same as other VLM engines) ────────────────────────────────
-
+// GPU-safe dequantization via ggml_backend_tensor_get (works for Metal too).
 static const float * gv_to_f32(const ggml_tensor * t, std::vector<float> & buf) {
-    if (t->type == GGML_TYPE_F32) return (const float *)t->data;
+    if (!t) return nullptr;
     int64_t n = ggml_nelements(t);
+    // Only take the zero-copy fast path when the buffer is a plain CPU buffer
+    // (t->data is a valid host pointer). For Metal buffers t->data is a GPU
+    // handle and must not be dereferenced directly.
+    if (t->type == GGML_TYPE_F32 && t->data && ggml_backend_buffer_is_host(t->buffer))
+        return (const float *)t->data;
     buf.resize(n);
-    if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t * src = (const ggml_fp16_t *)t->data;
-        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(src[i]);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+    } else if (t->type == GGML_TYPE_F16) {
+        std::vector<ggml_fp16_t> tmp(n);
+        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
+        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(tmp[i]);
     } else {
-        const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) traits->to_float(t->data, buf.data(), n);
+        size_t raw = ggml_nbytes(t);
+        std::vector<uint8_t> rb(raw);
+        ggml_backend_tensor_get(t, rb.data(), 0, raw);
+        const auto * tr = ggml_get_type_traits(t->type);
+        if (tr && tr->to_float) tr->to_float(rb.data(), buf.data(), n);
         else memset(buf.data(), 0, n * sizeof(float));
     }
     return buf.data();
@@ -229,6 +241,8 @@ struct gv_tokenizer {
 // ── Context ────────────────────────────────────────────────────────────
 
 struct granite_vision_context {
+    ggml_backend_t backend = nullptr;
+
     // Vision hparams
     int vis_dim, vis_layers, vis_heads, vis_image_size, vis_patch_size;
     std::vector<int> feature_layers;  // [-24, -20, -12, -1] → absolute indices
@@ -332,12 +346,15 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
 
     core_gguf::free_metadata(meta);
 
-    ggml_backend_t backend = ggml_backend_cpu_init();
-    if (!core_gguf::load_weights(model_path, backend, "granite_vision", ctx->wl)) {
-        fprintf(stderr, "granite_vision: failed to load weights\n");
-        ggml_backend_free(backend); delete ctx; return nullptr;
+    {
+        ggml_backend_dev_t gdev = ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_GPU);
+        ctx->backend = gdev ? ggml_backend_dev_init(gdev, nullptr) : nullptr;
+        if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     }
-    ggml_backend_free(backend);
+    if (!core_gguf::load_weights(model_path, ctx->backend, "granite_vision", ctx->wl)) {
+        fprintf(stderr, "granite_vision: failed to load weights\n");
+        ggml_backend_free(ctx->backend); delete ctx; return nullptr;
+    }
 
     int n_patches = (ctx->vis_image_size / ctx->vis_patch_size);
     n_patches *= n_patches;  // 27*27 = 729
@@ -363,6 +380,7 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
 void granite_vision_free(granite_vision_context * ctx) {
     if (ctx) {
         core_gguf::free_weights(ctx->wl);
+        if (ctx->backend) ggml_backend_free(ctx->backend);
         delete ctx;
     }
 }
@@ -456,23 +474,17 @@ static void gv_vision_forward(granite_vision_context * ctx,
                 float max_s = -1e9f;
                 std::vector<float> scores(T);
                 for (int k = 0; k < T; k++) {
-                    float s = 0;
-                    for (int d = 0; d < d_head; d++)
-                        s += Q[q * D + off + d] * K[k * D + off + d];
-                    s *= scale;
+                    float s = core_cpu::dot_product(Q.data() + q * D + off,
+                                                    K.data() + k * D + off, d_head) * scale;
                     scores[k] = s;
                     if (s > max_s) max_s = s;
                 }
                 float sum_e = 0;
-                for (int k = 0; k < T; k++) {
-                    scores[k] = expf(scores[k] - max_s);
-                    sum_e += scores[k];
-                }
+                for (int k = 0; k < T; k++) { scores[k] = expf(scores[k] - max_s); sum_e += scores[k]; }
                 float inv = 1.0f / sum_e;
                 for (int d = 0; d < d_head; d++) {
                     float val = 0;
-                    for (int k = 0; k < T; k++)
-                        val += scores[k] * inv * V[k * D + off + d];
+                    for (int k = 0; k < T; k++) val += scores[k] * inv * V[k * D + off + d];
                     attn_out[q * D + off + d] = val;
                 }
             }
