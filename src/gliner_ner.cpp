@@ -226,6 +226,11 @@ struct gliner_context {
     bool weights_cached = false;
     bool bench = false;
 
+    // DeBERTa relative position cache (avoids 117 MB alloc + expansion per call)
+    std::vector<float> rel_embd_norm;    // LN-normalized rel embeddings [max_pos, H]
+    int                rel_pos_T = -1;   // T for which rel_pos_expanded_cache is valid
+    std::vector<float> rel_pos_expanded_cache; // [T*T, H] expanded for last T
+
     // Output storage (valid until next call)
     std::vector<gliner_ner_entity> result_entities;
     std::vector<std::string>       result_texts;
@@ -754,68 +759,74 @@ static ggml_tensor * gliner_build_deberta_encoder(
     return cur;
 }
 
-// Expand DeBERTa relative position embeddings on CPU.
-// Fills the [H, T*T] tensor with bucketed position embeddings.
-static void fill_deberta_rel_pos(
-    const gliner_model & model, ggml_tensor * rpe_t, int T,
-    ggml_backend_t backend)
+// Expand DeBERTa relative position embeddings on CPU, with two-level caching:
+// 1. rel_embd_norm: LN-normalized embeddings, computed once per context lifetime.
+// 2. rel_pos_expanded_cache: expansion to [H, T*T], valid for a fixed T.
+// For typical NER workloads (fixed document window size), both levels hit.
+static void fill_deberta_rel_pos(gliner_context & gctx, ggml_tensor * rpe_t, int T)
 {
+    const gliner_model & model = gctx.model;
     const int H = (int)model.hparams.hidden_size;
     const int max_pos = (int)model.rel_embd_w->ne[1];
     const int pos_buckets = (int)model.hparams.position_buckets;
 
-    // Read rel_embd from backend (handles quantized types via dequant)
-    std::vector<float> embd_data = tensor_to_f32_backend(model.rel_embd_w, backend);
-
-    // Apply encoder LayerNorm to relative embeddings
-    if (model.encoder_ln_w && model.encoder_ln_b) {
-        std::vector<float> ln_w = tensor_to_f32_backend(model.encoder_ln_w, backend);
-        std::vector<float> ln_b = tensor_to_f32_backend(model.encoder_ln_b, backend);
-        const float ln_eps = model.hparams.layer_norm_eps;
-        for (int p = 0; p < max_pos; p++) {
-            float * row = &embd_data[(size_t)p * H];
-            double sum = 0.0, sum2 = 0.0;
-            for (int d = 0; d < H; d++) { sum += row[d]; sum2 += (double)row[d] * row[d]; }
-            float mean = (float)(sum / H);
-            float var  = (float)(sum2 / H) - mean * mean;
-            float inv_std = 1.0f / std::sqrt(var + ln_eps);
-            for (int d = 0; d < H; d++)
-                row[d] = (row[d] - mean) * inv_std * ln_w[d] + ln_b[d];
-        }
-    }
-
-    // Expand with log-bucket indices
-    std::vector<float> expanded((size_t)H * T * T);
-    for (int i = 0; i < T; i++) {
-        for (int j = 0; j < T; j++) {
-            int bucket;
-            if (pos_buckets > 0) {
-                int rel = i - j;
-                int sign_val = (rel > 0) ? 1 : ((rel < 0) ? -1 : 0);
-                int abs_rel = std::abs(rel);
-                int mid = pos_buckets / 2;
-                int abs_pos = (rel < mid && rel > -mid) ? (mid - 1) : abs_rel;
-                int signed_bucket;
-                if (abs_pos <= mid) {
-                    signed_bucket = rel;
-                } else {
-                    double log_ratio = std::log((double)abs_pos / mid)
-                                     / std::log((double)(max_pos - 1) / mid);
-                    int log_pos = (int)std::ceil(log_ratio * (mid - 1)) + mid;
-                    signed_bucket = log_pos * sign_val;
-                }
-                bucket = signed_bucket + pos_buckets;
-            } else {
-                bucket = i - j + max_pos / 2;
+    // Level 1: normalize rel_embd_w + encoder LN once per context lifetime.
+    if (gctx.rel_embd_norm.empty()) {
+        gctx.rel_embd_norm = tensor_to_f32_backend(model.rel_embd_w, gctx.backend);
+        if (model.encoder_ln_w && model.encoder_ln_b) {
+            std::vector<float> ln_w = tensor_to_f32_backend(model.encoder_ln_w, gctx.backend);
+            std::vector<float> ln_b = tensor_to_f32_backend(model.encoder_ln_b, gctx.backend);
+            const float ln_eps = model.hparams.layer_norm_eps;
+            for (int p = 0; p < max_pos; p++) {
+                float * row = &gctx.rel_embd_norm[(size_t)p * H];
+                double sum = 0.0, sum2 = 0.0;
+                for (int d = 0; d < H; d++) { sum += row[d]; sum2 += (double)row[d] * row[d]; }
+                float mean = (float)(sum / H);
+                float var  = (float)(sum2 / H) - mean * mean;
+                float inv_std = 1.0f / std::sqrt(var + ln_eps);
+                for (int d = 0; d < H; d++)
+                    row[d] = (row[d] - mean) * inv_std * ln_w[d] + ln_b[d];
             }
-            if (bucket < 0) bucket = 0;
-            if (bucket >= max_pos) bucket = max_pos - 1;
-            memcpy(&expanded[(size_t)(i * T + j) * H],
-                   &embd_data[(size_t)bucket * H],
-                   H * sizeof(float));
         }
     }
-    ggml_backend_tensor_set(rpe_t, expanded.data(), 0, expanded.size() * sizeof(float));
+
+    // Level 2: expand to [H, T*T] — reuse if T unchanged.
+    if (gctx.rel_pos_T != T) {
+        gctx.rel_pos_T = T;
+        gctx.rel_pos_expanded_cache.resize((size_t)H * T * T);
+        for (int i = 0; i < T; i++) {
+            for (int j = 0; j < T; j++) {
+                int bucket;
+                if (pos_buckets > 0) {
+                    int rel = i - j;
+                    int sign_val = (rel > 0) ? 1 : ((rel < 0) ? -1 : 0);
+                    int abs_rel = std::abs(rel);
+                    int mid = pos_buckets / 2;
+                    int abs_pos = (rel < mid && rel > -mid) ? (mid - 1) : abs_rel;
+                    int signed_bucket;
+                    if (abs_pos <= mid) {
+                        signed_bucket = rel;
+                    } else {
+                        double log_ratio = std::log((double)abs_pos / mid)
+                                         / std::log((double)(max_pos - 1) / mid);
+                        int log_pos = (int)std::ceil(log_ratio * (mid - 1)) + mid;
+                        signed_bucket = log_pos * sign_val;
+                    }
+                    bucket = signed_bucket + pos_buckets;
+                } else {
+                    bucket = i - j + max_pos / 2;
+                }
+                if (bucket < 0) bucket = 0;
+                if (bucket >= max_pos) bucket = max_pos - 1;
+                memcpy(&gctx.rel_pos_expanded_cache[(size_t)(i * T + j) * H],
+                       &gctx.rel_embd_norm[(size_t)bucket * H],
+                       H * sizeof(float));
+            }
+        }
+    }
+
+    ggml_backend_tensor_set(rpe_t, gctx.rel_pos_expanded_cache.data(), 0,
+                            gctx.rel_pos_expanded_cache.size() * sizeof(float));
 }
 
 // ============================================================================
@@ -1255,7 +1266,7 @@ int gliner_ner_extract(void * ptr,
 
         // Fill relative position embeddings
         ggml_tensor * rpe_t = ggml_graph_get_tensor(gf, "rel_pos_expanded");
-        if (rpe_t) fill_deberta_rel_pos(model, rpe_t, T, ctx->backend);
+        if (rpe_t) fill_deberta_rel_pos(*ctx, rpe_t, T);
 
         elapsed();
         ggml_backend_graph_compute(ctx->backend, gf);
