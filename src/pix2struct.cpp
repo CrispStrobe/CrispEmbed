@@ -121,6 +121,16 @@ struct pix2struct_context {
     // Dequantization cache (avoids re-dequantizing immutable weights)
     core_cpu::DequantCache dc;
 
+    // Pre-allocated decoder scratch buffers (avoid per-step/per-layer heap allocs)
+    struct dec_scratch {
+        std::vector<float> x, normed, attn_out, proj_out;
+        std::vector<float> q_proj, k_new, v_new;
+        std::vector<float> ffn_gate, ffn_up, ffn_hidden;
+        std::vector<float> attn_result, attn_scores;
+        std::vector<float> final_h;
+        bool allocated = false;
+    } ds;
+
     // Per-token confidence (softmax probability of greedy-selected token)
     std::vector<float> char_confidences;
 
@@ -447,6 +457,32 @@ static void precompute_cross_kv(pix2struct_context * ctx) {
     ggml_free(gc);
 }
 
+// ── Allocate decoder scratch buffers (once, reused across all decode steps) ──
+
+static void ensure_dec_scratch(pix2struct_context * ctx, int max_seq) {
+    if (ctx->ds.allocated) return;
+    const int H = ctx->hidden;
+    const int qkv_dim = ctx->n_heads * ctx->d_kv;
+    const int d_ff = ctx->d_ff;
+    const int n_enc = ctx->enc_cache_n;
+    int max_kv = std::max(max_seq, n_enc); // scores buffer must fit both
+
+    ctx->ds.x.resize(H);
+    ctx->ds.normed.resize(H);
+    ctx->ds.attn_out.resize(qkv_dim);
+    ctx->ds.proj_out.resize(H);
+    ctx->ds.q_proj.resize(qkv_dim);
+    ctx->ds.k_new.resize(qkv_dim);
+    ctx->ds.v_new.resize(qkv_dim);
+    ctx->ds.ffn_gate.resize(d_ff);
+    ctx->ds.ffn_up.resize(d_ff);
+    ctx->ds.ffn_hidden.resize(d_ff);
+    ctx->ds.attn_result.resize(qkv_dim);
+    ctx->ds.attn_scores.resize(max_kv);
+    ctx->ds.final_h.resize(H);
+    ctx->ds.allocated = true;
+}
+
 // ── Decoder: RMSNorm (CPU, single token) ──
 
 static void rms_norm(const float * x, int n, const float * w, float eps, float * out) {
@@ -466,44 +502,44 @@ static void t5_self_attn_1q(const float * q_proj,    // [qkv_dim]
                              const float * rel_bias,  // [n_buckets, n_heads]
                              int n_buckets, int max_dist,
                              int q_pos,               // current position
-                             float * out) {            // [qkv_dim]
+                             float * out,              // [qkv_dim]
+                             float * result_buf,       // [qkv_dim] pre-allocated
+                             float * scores_buf) {     // [>=n_kv] pre-allocated
     int D = n_heads * hd;
-    std::vector<float> result(D, 0.0f);
+    memset(result_buf, 0, D * sizeof(float));
 
     for (int h = 0; h < n_heads; h++) {
         int off = h * hd;
-        std::vector<float> scores(n_kv);
 
         // T5: no scaling, add relative bias
         for (int ki = 0; ki < n_kv; ki++) {
-            scores[ki] = core_cpu::dot_product(q_proj + off, k_cache + ki * D + off, hd);
+            scores_buf[ki] = core_cpu::dot_product(q_proj + off, k_cache + ki * D + off, hd);
             if (rel_bias) {
                 int bucket = t5_relative_bucket(q_pos - ki, false, n_buckets, max_dist);
-                scores[ki] += rel_bias[bucket * n_heads + h];
+                scores_buf[ki] += rel_bias[bucket * n_heads + h];
             }
-            // Causal mask: mask out future positions
-            if (ki > q_pos) scores[ki] = -1e30f;
+            if (ki > q_pos) scores_buf[ki] = -1e30f;
         }
 
         // Softmax
-        float maxs = *std::max_element(scores.begin(), scores.end());
+        float maxs = scores_buf[0];
+        for (int ki = 1; ki < n_kv; ki++) maxs = std::max(maxs, scores_buf[ki]);
         float sum = 0;
         for (int ki = 0; ki < n_kv; ki++) {
-            scores[ki] = expf(scores[ki] - maxs);
-            sum += scores[ki];
+            scores_buf[ki] = expf(scores_buf[ki] - maxs);
+            sum += scores_buf[ki];
         }
         float inv_sum = 1.0f / sum;
-        for (int ki = 0; ki < n_kv; ki++) scores[ki] *= inv_sum;
+        for (int ki = 0; ki < n_kv; ki++) scores_buf[ki] *= inv_sum;
 
-        // Weighted sum of values
         for (int d = 0; d < hd; d++) {
             float s = 0;
             for (int ki = 0; ki < n_kv; ki++)
-                s += scores[ki] * v_cache[ki * D + off + d];
-            result[off + d] = s;
+                s += scores_buf[ki] * v_cache[ki * D + off + d];
+            result_buf[off + d] = s;
         }
     }
-    memcpy(out, result.data(), D * sizeof(float));
+    memcpy(out, result_buf, D * sizeof(float));
 }
 
 // ── Decoder: T5 cross-attention (single query, pre-computed K/V) ──
@@ -513,51 +549,52 @@ static void t5_cross_attn_1q(const float * q_proj,    // [qkv_dim]
                               const float * k_cache,   // [n_enc, qkv_dim]
                               const float * v_cache,   // [n_enc, qkv_dim]
                               int n_enc, int n_heads, int hd,
-                              float * out) {            // [qkv_dim]
+                              float * out,              // [qkv_dim]
+                              float * result_buf,       // [qkv_dim] pre-allocated
+                              float * scores_buf) {     // [>=n_enc] pre-allocated
     int D = n_heads * hd;
-    std::vector<float> result(D, 0.0f);
+    memset(result_buf, 0, D * sizeof(float));
 
     for (int h = 0; h < n_heads; h++) {
         int off = h * hd;
-        std::vector<float> scores(n_enc);
 
         for (int ki = 0; ki < n_enc; ki++)
-            scores[ki] = core_cpu::dot_product(q_proj + off, k_cache + ki * D + off, hd);
+            scores_buf[ki] = core_cpu::dot_product(q_proj + off, k_cache + ki * D + off, hd);
 
-        float maxs = *std::max_element(scores.begin(), scores.end());
+        float maxs = scores_buf[0];
+        for (int ki = 1; ki < n_enc; ki++) maxs = std::max(maxs, scores_buf[ki]);
         float sum = 0;
         for (int ki = 0; ki < n_enc; ki++) {
-            scores[ki] = expf(scores[ki] - maxs);
-            sum += scores[ki];
+            scores_buf[ki] = expf(scores_buf[ki] - maxs);
+            sum += scores_buf[ki];
         }
         float inv_sum = 1.0f / sum;
-        for (int ki = 0; ki < n_enc; ki++) scores[ki] *= inv_sum;
+        for (int ki = 0; ki < n_enc; ki++) scores_buf[ki] *= inv_sum;
 
         for (int d = 0; d < hd; d++) {
             float s = 0;
             for (int ki = 0; ki < n_enc; ki++)
-                s += scores[ki] * v_cache[ki * D + off + d];
-            result[off + d] = s;
+                s += scores_buf[ki] * v_cache[ki * D + off + d];
+            result_buf[off + d] = s;
         }
     }
-    memcpy(out, result.data(), D * sizeof(float));
+    memcpy(out, result_buf, D * sizeof(float));
 }
 
 // ── Decoder: GeGLU FFN (single token, CPU) ──
 
 static void geglu_ffn_1t(const float * x, int H, int d_ff,
                           const float * wi_0, const float * wi_1, const float * wo,
-                          float * out) {
-    std::vector<float> gate(d_ff), up(d_ff), hidden(d_ff);
-    core_cpu::linear_cpu(x, gate.data(), H, d_ff, wi_0, nullptr);
-    core_cpu::linear_cpu(x, up.data(), H, d_ff, wi_1, nullptr);
+                          float * out,
+                          float * gate_buf, float * up_buf, float * hidden_buf) {
+    core_cpu::linear_cpu(x, gate_buf, H, d_ff, wi_0, nullptr);
+    core_cpu::linear_cpu(x, up_buf, H, d_ff, wi_1, nullptr);
     for (int i = 0; i < d_ff; i++) {
-        float g = gate[i];
-        // GELU (tanh approx): 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))
+        float g = gate_buf[i];
         float gelu = 0.5f * g * (1.0f + tanhf(0.7978845608028654f * (g + 0.044715f * g * g * g)));
-        hidden[i] = gelu * up[i];
+        hidden_buf[i] = gelu * up_buf[i];
     }
-    core_cpu::linear_cpu(hidden.data(), out, d_ff, H, wo, nullptr);
+    core_cpu::linear_cpu(hidden_buf, out, d_ff, H, wo, nullptr);
 }
 
 // ── Decoder step (single token, incremental KV cache) ──
@@ -567,78 +604,75 @@ static void decoder_step_cached(pix2struct_context * ctx, int step, int tok_id,
     const int H = ctx->hidden;
     const int qkv_dim = ctx->n_heads * ctx->d_kv;
     const int n_enc = ctx->enc_cache_n;
+    auto & ds = ctx->ds;
 
     // Get token embedding
     const float * emb_w = ctx->dc.get(ctx->tok_emb);
-    std::vector<float> x(H);
-    memcpy(x.data(), emb_w + tok_id * H, H * sizeof(float));
+    memcpy(ds.x.data(), emb_w + tok_id * H, H * sizeof(float));
 
     // Get shared relative bias from layer 0
     const float * rel_bias_w = ctx->dc.get(ctx->dec[0].sa_rel_bias);
-
-    std::vector<float> normed(H), attn_out(qkv_dim), proj_out(H);
 
     for (int li = 0; li < ctx->dec_layers; li++) {
         const auto & L = ctx->dec[li];
 
         // ── Self-attention with incremental KV cache ──
-        rms_norm(x.data(), H, ctx->dc.get(L.sa_norm), ctx->rms_eps, normed.data());
+        rms_norm(ds.x.data(), H, ctx->dc.get(L.sa_norm), ctx->rms_eps, ds.normed.data());
 
-        // Compute Q, K, V for current token only
-        std::vector<float> q_proj(qkv_dim), k_new(qkv_dim), v_new(qkv_dim);
-        core_cpu::linear_cpu(normed.data(), q_proj.data(), H, qkv_dim,
+        core_cpu::linear_cpu(ds.normed.data(), ds.q_proj.data(), H, qkv_dim,
                              ctx->dc.get(L.sa_q), nullptr);
-        core_cpu::linear_cpu(normed.data(), k_new.data(), H, qkv_dim,
+        core_cpu::linear_cpu(ds.normed.data(), ds.k_new.data(), H, qkv_dim,
                              ctx->dc.get(L.sa_k), nullptr);
-        core_cpu::linear_cpu(normed.data(), v_new.data(), H, qkv_dim,
+        core_cpu::linear_cpu(ds.normed.data(), ds.v_new.data(), H, qkv_dim,
                              ctx->dc.get(L.sa_v), nullptr);
 
         // Append K/V to cache
         auto & kc = ctx->sa_k_cache[li];
         auto & vc = ctx->sa_v_cache[li];
-        memcpy(&kc[step * qkv_dim], k_new.data(), qkv_dim * sizeof(float));
-        memcpy(&vc[step * qkv_dim], v_new.data(), qkv_dim * sizeof(float));
+        memcpy(&kc[step * qkv_dim], ds.k_new.data(), qkv_dim * sizeof(float));
+        memcpy(&vc[step * qkv_dim], ds.v_new.data(), qkv_dim * sizeof(float));
 
         // Attend to full cache (0..step)
-        t5_self_attn_1q(q_proj.data(), kc.data(), vc.data(),
+        t5_self_attn_1q(ds.q_proj.data(), kc.data(), vc.data(),
                         step + 1, ctx->n_heads, ctx->d_kv,
                         rel_bias_w, ctx->rel_buckets, ctx->rel_max_dist,
-                        step, attn_out.data());
+                        step, ds.attn_out.data(),
+                        ds.attn_result.data(), ds.attn_scores.data());
 
         // Output projection + residual
-        core_cpu::linear_cpu(attn_out.data(), proj_out.data(), qkv_dim, H,
+        core_cpu::linear_cpu(ds.attn_out.data(), ds.proj_out.data(), qkv_dim, H,
                              ctx->dc.get(L.sa_o), nullptr);
-        for (int i = 0; i < H; i++) x[i] += proj_out[i];
+        for (int i = 0; i < H; i++) ds.x[i] += ds.proj_out[i];
 
         // ── Cross-attention (pre-computed K/V) ──
-        rms_norm(x.data(), H, ctx->dc.get(L.ca_norm), ctx->rms_eps, normed.data());
+        rms_norm(ds.x.data(), H, ctx->dc.get(L.ca_norm), ctx->rms_eps, ds.normed.data());
 
-        // Only compute Q from decoder hidden state
-        core_cpu::linear_cpu(normed.data(), q_proj.data(), H, qkv_dim,
+        core_cpu::linear_cpu(ds.normed.data(), ds.q_proj.data(), H, qkv_dim,
                              ctx->dc.get(L.ca_q), nullptr);
 
-        t5_cross_attn_1q(q_proj.data(),
+        t5_cross_attn_1q(ds.q_proj.data(),
                          ctx->cross_k_cache[li].data(),
                          ctx->cross_v_cache[li].data(),
                          n_enc, ctx->n_heads, ctx->d_kv,
-                         attn_out.data());
+                         ds.attn_out.data(),
+                         ds.attn_result.data(), ds.attn_scores.data());
 
-        core_cpu::linear_cpu(attn_out.data(), proj_out.data(), qkv_dim, H,
+        core_cpu::linear_cpu(ds.attn_out.data(), ds.proj_out.data(), qkv_dim, H,
                              ctx->dc.get(L.ca_o), nullptr);
-        for (int i = 0; i < H; i++) x[i] += proj_out[i];
+        for (int i = 0; i < H; i++) ds.x[i] += ds.proj_out[i];
 
         // ── FFN ──
-        rms_norm(x.data(), H, ctx->dc.get(L.ffn_norm), ctx->rms_eps, normed.data());
-        geglu_ffn_1t(normed.data(), H, ctx->d_ff,
+        rms_norm(ds.x.data(), H, ctx->dc.get(L.ffn_norm), ctx->rms_eps, ds.normed.data());
+        geglu_ffn_1t(ds.normed.data(), H, ctx->d_ff,
                      ctx->dc.get(L.wi_0), ctx->dc.get(L.wi_1), ctx->dc.get(L.wo),
-                     proj_out.data());
-        for (int i = 0; i < H; i++) x[i] += proj_out[i];
+                     ds.proj_out.data(),
+                     ds.ffn_gate.data(), ds.ffn_up.data(), ds.ffn_hidden.data());
+        for (int i = 0; i < H; i++) ds.x[i] += ds.proj_out[i];
     }
 
     // Final norm + LM head
-    std::vector<float> final_h(H);
-    rms_norm(x.data(), H, ctx->dc.get(ctx->final_norm), ctx->rms_eps, final_h.data());
-    core_cpu::linear_cpu(final_h.data(), logits, H, ctx->vocab_size,
+    rms_norm(ds.x.data(), H, ctx->dc.get(ctx->final_norm), ctx->rms_eps, ds.final_h.data());
+    core_cpu::linear_cpu(ds.final_h.data(), logits, H, ctx->vocab_size,
                          ctx->dc.get(ctx->lm_head), nullptr);
 }
 
@@ -659,6 +693,10 @@ int pix2struct_decode_step0(pix2struct_context * ctx, float * out_logits) {
         ctx->sa_v_cache[li].resize(qkv_dim, 0.0f);
     }
     ctx->sa_cache_len = 0;
+
+    // Ensure decoder scratch buffers are allocated
+    ctx->ds.allocated = false; // force re-alloc in case n_enc changed
+    ensure_dec_scratch(ctx, 1);
 
     // Decode step 0: decoder_start_token_id = 0
     decoder_step_cached(ctx, 0, 0, out_logits);
@@ -686,6 +724,10 @@ static std::string greedy_decode(pix2struct_context * ctx, int max_tokens) {
         ctx->sa_v_cache[li].resize((max_tokens + 1) * qkv_dim, 0.0f);
     }
     ctx->sa_cache_len = 0;
+
+    // Pre-allocate decoder scratch buffers
+    ctx->ds.allocated = false;
+    ensure_dec_scratch(ctx, max_tokens + 1);
 
     std::vector<int32_t> generated = {0}; // start with decoder_start_token_id = 0
     std::vector<float> logits(ctx->vocab_size);
