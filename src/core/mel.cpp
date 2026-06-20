@@ -2,6 +2,7 @@
 // See src/core/mel.h for the interface contract.
 
 #include "mel.h"
+#include "cpu_ops.h"
 
 #include <algorithm>
 #include <cmath>
@@ -90,32 +91,42 @@ std::vector<float> compute(const float* samples, int n_samples, const float* win
     // -----------------------------------------------------------------
     std::vector<float> mel_tn((size_t)T * nmels, 0.0f);
 
-    auto do_matmul = [&](auto acc_zero) {
-        using Acc = decltype(acc_zero);
+    if (p.matmul == MatmulPrecision::Double) {
+        // Double-precision accumulation (for reference-matching models)
         for (int t = 0; t < T; t++) {
             const float* pp = power.data() + (size_t)t * n_freqs;
             float* mp = mel_tn.data() + (size_t)t * nmels;
             for (int m = 0; m < nmels; m++) {
-                Acc s = 0;
+                double s = 0;
                 if (p.fb_layout == FbLayout::MelsFreqs) {
                     const float* fb = mel_fb + (size_t)m * n_freqs;
-                    for (int k = 0; k < n_freqs; k++) {
-                        s += static_cast<Acc>(pp[k]) * static_cast<Acc>(fb[k]);
-                    }
+                    for (int k = 0; k < n_freqs; k++)
+                        s += (double)pp[k] * (double)fb[k];
                 } else {
-                    // FreqsMels: fb[k * nmels + m]
-                    for (int k = 0; k < n_freqs; k++) {
-                        s += static_cast<Acc>(pp[k]) * static_cast<Acc>(mel_fb[(size_t)k * nmels + m]);
-                    }
+                    for (int k = 0; k < n_freqs; k++)
+                        s += (double)pp[k] * (double)mel_fb[(size_t)k * nmels + m];
                 }
                 mp[m] = (float)s;
             }
         }
-    };
-    if (p.matmul == MatmulPrecision::Double)
-        do_matmul(double{0});
-    else
-        do_matmul(float{0.0f});
+    } else {
+        // Float precision — SIMD-accelerated for MelsFreqs layout
+        for (int t = 0; t < T; t++) {
+            const float* pp = power.data() + (size_t)t * n_freqs;
+            float* mp = mel_tn.data() + (size_t)t * nmels;
+            if (p.fb_layout == FbLayout::MelsFreqs) {
+                for (int m = 0; m < nmels; m++)
+                    mp[m] = core_cpu::dot_product(pp, mel_fb + (size_t)m * n_freqs, n_freqs);
+            } else {
+                for (int m = 0; m < nmels; m++) {
+                    float s = 0;
+                    for (int k = 0; k < n_freqs; k++)
+                        s += pp[k] * mel_fb[(size_t)k * nmels + m];
+                    mp[m] = s;
+                }
+            }
+        }
+    }
 
     // -----------------------------------------------------------------
     // 5. log with guard
