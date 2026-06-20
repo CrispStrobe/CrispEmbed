@@ -99,6 +99,11 @@ struct posformer_ocr_context {
     arm_weights arm;
 
     std::vector<std::string> vocab;
+
+    // 2D positional encoding cache
+    std::vector<float> pe_cache;  // (n_pos * D) — PE values to add to encoder output
+    int pe_cache_h = 0, pe_cache_w = 0;
+
     core_cpu::DequantCache dequant_cache;
 
     core_gguf::WeightLoad wl;
@@ -416,31 +421,43 @@ static void run_encoder(posformer_ocr_context * ctx, const float * gray, int W, 
             ctx->encoder_output[i * D + c] = proj[c * n_pos + i];
 
     // 2D positional encoding (DETR-style) — applied BEFORE LayerNorm
+    // Cache the PE buffer: it depends only on (cur_h, cur_w, D).
     {
-        const int half_d = D / 2;        // 128
-        const int quarter_d = half_d / 2; // 64
-        const float scale = 2.0f * (float)M_PI;
-        // 64 frequencies matching PyTorch's arange(0, half_d, 2)
-        std::vector<float> inv_freq(quarter_d);
-        for (int i = 0; i < quarter_d; i++)
-            inv_freq[i] = 1.0f / powf(10000.0f, (float)(2 * i) / (float)half_d);
-        for (int y = 0; y < cur_h; y++)
-            for (int x = 0; x < cur_w; x++) {
-                float y_norm = scale * (float)(y + 1) / (float)cur_h;
-                float x_norm = scale * (float)(x + 1) / (float)cur_w;
-                int pos_idx = y * cur_w + x;
-                float * enc = ctx->encoder_output.data() + pos_idx * D;
-                for (int i = 0; i < quarter_d; i++) {
-                    float freq = inv_freq[i];
-                    enc[2*i]     += sinf(x_norm * freq);
-                    enc[2*i + 1] += cosf(x_norm * freq);  // same freq for sin/cos pair
+        if (cur_h != ctx->pe_cache_h || cur_w != ctx->pe_cache_w) {
+            // Recompute and store PE into cache.
+            const int half_d = D / 2;        // 128
+            const int quarter_d = half_d / 2; // 64
+            const float scale = 2.0f * (float)M_PI;
+            // 64 frequencies matching PyTorch's arange(0, half_d, 2)
+            std::vector<float> inv_freq(quarter_d);
+            for (int i = 0; i < quarter_d; i++)
+                inv_freq[i] = 1.0f / powf(10000.0f, (float)(2 * i) / (float)half_d);
+
+            ctx->pe_cache.assign(n_pos * D, 0.0f);
+            for (int y = 0; y < cur_h; y++)
+                for (int x = 0; x < cur_w; x++) {
+                    float y_norm = scale * (float)(y + 1) / (float)cur_h;
+                    float x_norm = scale * (float)(x + 1) / (float)cur_w;
+                    int pos_idx = y * cur_w + x;
+                    float * pe = ctx->pe_cache.data() + pos_idx * D;
+                    for (int i = 0; i < quarter_d; i++) {
+                        float freq = inv_freq[i];
+                        pe[2*i]     = sinf(x_norm * freq);
+                        pe[2*i + 1] = cosf(x_norm * freq);  // same freq for sin/cos pair
+                    }
+                    for (int i = 0; i < quarter_d; i++) {
+                        float freq = inv_freq[i];
+                        pe[half_d + 2*i]     = sinf(y_norm * freq);
+                        pe[half_d + 2*i + 1] = cosf(y_norm * freq);  // same freq
+                    }
                 }
-                for (int i = 0; i < quarter_d; i++) {
-                    float freq = inv_freq[i];
-                    enc[half_d + 2*i]     += sinf(y_norm * freq);
-                    enc[half_d + 2*i + 1] += cosf(y_norm * freq);  // same freq
-                }
-            }
+            ctx->pe_cache_h = cur_h;
+            ctx->pe_cache_w = cur_w;
+        }
+
+        // Add cached PE to encoder output.
+        for (int i = 0; i < n_pos * D; i++)
+            ctx->encoder_output[i] += ctx->pe_cache[i];
     }
 
     // LayerNorm — applied AFTER positional encoding
