@@ -136,8 +136,11 @@ Input text / image / audio
     │               NaViT ViT + ERNIE-4.5-0.3B, 109 langs, Apache-2.0
     │               OmniDocBench SOTA 96.3% (1.6) / 0.9B variant
     │
-    ├─► Math  ──► Uni-MuMER-Qwen3-VL-2B (unimumer_ocr via qwen2vl_ocr.cpp)
+    ├─► Math  ──► Uni-MuMER-Qwen3-VL-2B (via qwen2vl_ocr.cpp)
     │               Handwritten math → LaTeX, 2.1B, Apache-2.0, 82% CROHME
+    │
+    ├─► Math  ──► Uni-MuMER-Qwen2.5-VL-3B (via qwen2vl_ocr.cpp)
+    │               Handwritten math → LaTeX, 3.4B, Apache-2.0, 82.25% CROHME
     │
     │   ── PLANNED ──
     │
@@ -307,7 +310,7 @@ all Apache-2.0 and would be a major accuracy upgrade.
 | # | Model | Params | CROHME 2014 | License | Architecture | Effort | Status |
 |---|-------|--------|-------------|---------|-------------|--------|--------|
 | 1 | **Uni-MuMER-Qwen3-VL-2B** | 2.1B | ~82% (3B variant) | Apache-2.0 | Qwen3-VL fine-tune (multi-task: recognition + symbol counting + position) | Low — reuses existing `qwen2vl_ocr.cpp` engine, same GGUF converter | **DONE**: Q4_K/Q8_0, auto-prompt, `<think>` stripping |
-| 2 | **Uni-MuMER-Qwen2.5-VL-3B** | 3.4B | 82.25% | Apache-2.0 | Qwen2.5-VL fine-tune | Low — same engine | [ ] Pending |
+| 2 | **Uni-MuMER-Qwen2.5-VL-3B** | 3.4B | 82.25% | Apache-2.0 | Qwen2.5-VL fine-tune | Low — same engine | **DONE**: Q4_K (2.6 GB) / Q8_0 (4.2 GB), streaming converter |
 | 3 | **TexTeller 3.0** | 0.3B | unknown | Apache-2.0 | ViT + Transformer decoder, 80M training pairs, supports handwritten | Medium — needs new GGUF converter (TrOCR-like arch but not identical) | [ ] Pending |
 | 4 | PP-FormulaNet-L | 181M | ~57% | Apache-2.0 | SAM-ViT + MBart | — | Already integrated (mostly printed math) |
 
@@ -332,13 +335,14 @@ all Apache-2.0 and would be a major accuracy upgrade.
    Source: [github.com/OleehyO/TexTeller](https://github.com/OleehyO/TexTeller)
    Weights: [huggingface.co/OleehyO/TexTeller](https://huggingface.co/OleehyO/TexTeller)
 
-3. **Uni-MuMER-Qwen2.5-VL-3B** (fallback) — if Qwen3-VL variant has
-   issues, the 3B Qwen2.5-VL variant has proven 82.25% accuracy and uses
-   the same engine. Slightly larger (3.4B) but still under 4B.
+3. **Uni-MuMER-Qwen2.5-VL-3B** — **DONE**. Pure fine-tune of Qwen2.5-VL-3B-Instruct
+   (phxember/Uni-MuMER-Qwen2.5-VL-3B, Apache-2.0). 82.25% CROHME. Converter
+   refactored to streaming mode (add_tensor_info + write_tensor_data) for 8 GB VPS.
+   GGUF: Q4_K (2.6 GB), Q8_0 (4.2 GB). Tested with tiny image — correct LaTeX output.
 
-**Impact**: replacing NC-licensed 57% models with Apache-2.0 82% models
-eliminates the license acceptance gate in the UI AND nearly doubles
-handwritten accuracy. This is the single highest-value remaining OCR task.
+**Impact**: Both Uni-MuMER variants are now ported. NC-licensed 57% models
+can be replaced with Apache-2.0 82% models — eliminates the license gate
+in the UI AND nearly doubles handwritten accuracy.
 
 ### Feature gaps vs fastembed-rs
 
