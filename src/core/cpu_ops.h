@@ -21,7 +21,15 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <unordered_map>
 #include <vector>
+
+#ifdef __AVX2__
+#include <immintrin.h>
+#endif
+#ifdef __ARM_NEON
+#include <arm_neon.h>
+#endif
 
 namespace core_cpu {
 
@@ -55,6 +63,72 @@ static inline std::vector<float> to_f32(const ggml_tensor* t) {
         }
     }
     return out;
+}
+
+// ---------------------------------------------------------------------------
+// Dequantization cache — avoids re-dequantizing the same immutable weights
+// ---------------------------------------------------------------------------
+// Per-context cache: call cache.get(tensor) instead of to_f32(tensor).
+// The returned pointer is valid for the lifetime of the cache. Thread-safety:
+// each inference context should own its own DequantCache instance.
+
+struct DequantCache {
+    std::unordered_map<const void*, std::vector<float>> cache_;
+
+    const float* get(const ggml_tensor* t) {
+        if (!t) return nullptr;
+        auto it = cache_.find(t->data);
+        if (it != cache_.end()) return it->second.data();
+        auto& v = cache_[t->data];
+        v = to_f32(t);
+        return v.data();
+    }
+
+    void clear() { cache_.clear(); }
+};
+
+// ---------------------------------------------------------------------------
+// Dot product helper (SIMD-accelerated)
+// ---------------------------------------------------------------------------
+// Used by linear_cpu and mha_1q_cpu. AVX2+FMA (x86-64), NEON (ARM), scalar fallback.
+
+static inline float dot_product(const float* a, const float* b, int n) {
+    float s = 0.0f;
+#if defined(__AVX2__) && defined(__FMA__)
+    __m256 acc0 = _mm256_setzero_ps();
+    __m256 acc1 = _mm256_setzero_ps();
+    int i = 0;
+    for (; i + 15 < n; i += 16) {
+        acc0 = _mm256_fmadd_ps(_mm256_loadu_ps(a + i),     _mm256_loadu_ps(b + i),     acc0);
+        acc1 = _mm256_fmadd_ps(_mm256_loadu_ps(a + i + 8), _mm256_loadu_ps(b + i + 8), acc1);
+    }
+    acc0 = _mm256_add_ps(acc0, acc1);
+    for (; i + 7 < n; i += 8)
+        acc0 = _mm256_fmadd_ps(_mm256_loadu_ps(a + i), _mm256_loadu_ps(b + i), acc0);
+    __m128 lo = _mm256_castps256_ps128(acc0);
+    __m128 hi = _mm256_extractf128_ps(acc0, 1);
+    lo = _mm_add_ps(lo, hi);
+    lo = _mm_add_ps(lo, _mm_movehl_ps(lo, lo));
+    lo = _mm_add_ss(lo, _mm_shuffle_ps(lo, lo, 1));
+    s = _mm_cvtss_f32(lo);
+    for (; i < n; i++) s += a[i] * b[i];
+#elif defined(__ARM_NEON)
+    float32x4_t acc0 = vdupq_n_f32(0.0f);
+    float32x4_t acc1 = vdupq_n_f32(0.0f);
+    int i = 0;
+    for (; i + 7 < n; i += 8) {
+        acc0 = vfmaq_f32(acc0, vld1q_f32(a + i),     vld1q_f32(b + i));
+        acc1 = vfmaq_f32(acc1, vld1q_f32(a + i + 4), vld1q_f32(b + i + 4));
+    }
+    acc0 = vaddq_f32(acc0, acc1);
+    for (; i + 3 < n; i += 4)
+        acc0 = vfmaq_f32(acc0, vld1q_f32(a + i), vld1q_f32(b + i));
+    s = vaddvq_f32(acc0);
+    for (; i < n; i++) s += a[i] * b[i];
+#else
+    for (int i = 0; i < n; i++) s += a[i] * b[i];
+#endif
+    return s;
 }
 
 // ---------------------------------------------------------------------------
@@ -139,10 +213,8 @@ static inline void rmsnorm_cpu(const float* in, float* out, int D,
 static inline void linear_cpu(const float* in, float* out, int in_dim, int out_dim,
                                const float* w, const float* b) {
     for (int o = 0; o < out_dim; o++) {
-        float s = b ? b[o] : 0.0f;
-        for (int i = 0; i < in_dim; i++)
-            s += in[i] * w[o * in_dim + i];
-        out[o] = s;
+        float s = dot_product(in, w + o * in_dim, in_dim);
+        out[o] = s + (b ? b[o] : 0.0f);
     }
 }
 
@@ -266,19 +338,17 @@ static inline void mha_1q_cpu(const float* q, const float* k, const float* v,
     for (int h = 0; h < n_heads; h++) {
         int off = h * hd;
         std::vector<float> scores(n_kv);
-        for (int ki = 0; ki < n_kv; ki++) {
-            float s = 0;
-            for (int d = 0; d < hd; d++)
-                s += q[off + d] * k[ki * D + off + d];
-            scores[ki] = s / sqrtf((float)hd);
-        }
+        float scale = 1.0f / sqrtf((float)hd);
+        for (int ki = 0; ki < n_kv; ki++)
+            scores[ki] = dot_product(q + off, k + ki * D + off, hd) * scale;
         float maxs = *std::max_element(scores.begin(), scores.end());
         float sum = 0;
         for (int ki = 0; ki < n_kv; ki++) {
             scores[ki] = expf(scores[ki] - maxs);
             sum += scores[ki];
         }
-        for (int ki = 0; ki < n_kv; ki++) scores[ki] /= sum;
+        float inv_sum = 1.0f / sum;
+        for (int ki = 0; ki < n_kv; ki++) scores[ki] *= inv_sum;
         for (int d = 0; d < hd; d++) {
             float s = 0;
             for (int ki = 0; ki < n_kv; ki++)
