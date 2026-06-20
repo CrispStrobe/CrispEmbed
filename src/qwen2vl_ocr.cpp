@@ -3051,6 +3051,8 @@ static void post_load_init(qwen2vl_ocr_context *ctx, const char *gguf_path) {
   for (char &c : model_path_lc)
     c = (char)std::tolower((unsigned char)c);
   const bool is_qari = model_path_lc.find("qari-ocr") != std::string::npos;
+  const bool is_unimumer = model_path_lc.find("uni-mumer") != std::string::npos ||
+                           model_path_lc.find("unimumer") != std::string::npos;
   // Qari-OCR's documented inference prompt (NAMAA-Space model card): standard
   // Qwen2-VL chat template (system "You are a helpful assistant." included by
   // the template) + this exact single-line instruction in the user turn.
@@ -3062,6 +3064,14 @@ static void post_load_init(qwen2vl_ocr_context *ctx, const char *gguf_path) {
         "textual content that was previously extracted for it. Just return "
         "the plain text representation of this document as if you were reading "
         "it naturally. Do not hallucinate.";
+  }
+  // Uni-MuMER handwritten math recognition prompt (from paper, Appendix A).
+  if (is_unimumer) {
+    ctx->prompt =
+        "I have an image of a handwritten mathematical expression. Please "
+        "write out the expression of the formula in the image using LaTeX "
+        "format.";
+    ctx->max_tokens = 2048;
   }
 
   // Load BPE tokenizer from GGUF metadata
@@ -3119,14 +3129,32 @@ static void post_load_init(qwen2vl_ocr_context *ctx, const char *gguf_path) {
         "qwen3vl.vision_end_token_id", "qwen2vl.vision_end_token_id",
         ctx->vision_end_id);
 
-    // Detect architecture and set OCR-appropriate prompt for Qwen3-VL
+    // Detect architecture and model name from GGUF metadata
     int arch_idx = gguf_find_key(g, "general.architecture");
     if (arch_idx >= 0) {
       std::string arch = gguf_get_val_str(g, arch_idx);
-      if (arch == "qwen3vl" && !is_qari) {
+      if (arch == "qwen3vl" && !is_qari && !is_unimumer) {
         ctx->prompt = "Read all the text in this image. Output the exact text content only.";
         if (ctx->inner.verbosity >= 1) {
           fprintf(stderr, "qwen2vl_ocr: detected qwen3vl architecture, using OCR prompt\n");
+        }
+      }
+    }
+
+    // Auto-detect Uni-MuMER from general.name (works even if filename differs)
+    if (!is_unimumer && !is_qari) {
+      std::string model_name = core_gguf::kv_str(g, "general.name", "");
+      std::string name_lc = model_name;
+      for (char &c : name_lc) c = (char)std::tolower((unsigned char)c);
+      if (name_lc.find("uni-mumer") != std::string::npos ||
+          name_lc.find("unimumer") != std::string::npos) {
+        ctx->prompt =
+            "I have an image of a handwritten mathematical expression. Please "
+            "write out the expression of the formula in the image using LaTeX "
+            "format.";
+        ctx->max_tokens = 2048;
+        if (ctx->inner.verbosity >= 1) {
+          fprintf(stderr, "qwen2vl_ocr: detected Uni-MuMER model, using math OCR prompt\n");
         }
       }
     }
@@ -3276,17 +3304,42 @@ static const char *run_pipeline(qwen2vl_ocr_context *ctx,
 
   ctx->char_confidences = std::move(gen.token_confidences);
 
-  // 4. Decode token IDs to text
+  // 4. Decode token IDs to text (strip EOS/special tokens first)
+  std::vector<int32_t> decode_ids;
+  decode_ids.reserve(gen.token_ids.size());
+  for (int32_t id : gen.token_ids) {
+    if (id == ctx->im_end_id || id == ctx->im_start_id)
+      continue;
+    decode_ids.push_back(id);
+  }
   if (ctx->has_tokenizer) {
     ctx->last_result =
-        gpt2_bpe_decode(gen.token_ids, ctx->tokenizer.get_vocab());
+        gpt2_bpe_decode(decode_ids, ctx->tokenizer.get_vocab());
   } else {
     // Fallback: raw token IDs as comma-separated string
     ctx->last_result.clear();
-    for (size_t i = 0; i < gen.token_ids.size(); i++) {
+    for (size_t i = 0; i < decode_ids.size(); i++) {
       if (i > 0)
         ctx->last_result += ",";
-      ctx->last_result += std::to_string(gen.token_ids[i]);
+      ctx->last_result += std::to_string(decode_ids[i]);
+    }
+  }
+
+  // Strip Qwen3 <think>...</think> blocks (nothink fine-tunes emit empty
+  // thinking tags; regular Qwen3 models may emit actual thinking content).
+  {
+    size_t think_start = ctx->last_result.find("<think>");
+    if (think_start != std::string::npos) {
+      size_t think_end = ctx->last_result.find("</think>", think_start);
+      if (think_end != std::string::npos) {
+        think_end += 8; // len("</think>")
+        // Skip whitespace after </think>
+        while (think_end < ctx->last_result.size() &&
+               (ctx->last_result[think_end] == '\n' ||
+                ctx->last_result[think_end] == ' '))
+          think_end++;
+        ctx->last_result.erase(think_start, think_end - think_start);
+      }
     }
   }
   stage_ms("decode_text");
