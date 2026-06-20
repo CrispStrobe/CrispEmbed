@@ -570,9 +570,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **gguf_loader: `madvise(MADV_SEQUENTIAL)`** after mmap (line 217) for
   better kernel readahead on cold model loads.
 
-- [ ] **gguf_loader: `std::unordered_map` for tensor lookup** — currently
-  `std::map` (O(log N)). ~2-5x faster lookups for models with thousands of
-  tensors.
+- [x] **gguf_loader: `std::unordered_map` for tensor lookup** — DONE (`f98358e`).
+  Changed WeightLoad::tensors and all 13 model struct fields from std::map
+  (O(log N)) to std::unordered_map (O(1) average). Also updated CrispASR's
+  audio_tower.cpp and lid_cld3.cpp for the same.
 
 - [ ] **instructir: SCA weight dequant inside per-channel loop** — lines
   162-163 re-dequant entire weight matrix C times. Hoist outside the loop.
