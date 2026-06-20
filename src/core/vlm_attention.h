@@ -179,7 +179,8 @@ static inline void gqa_attn_step(
         int n_heads, int n_kv_heads, int head_dim,
         int max_seq, int n_past,
         int layer_idx, int n_layers,
-        float* output) {
+        float* output,
+        float attn_scale = -1.0f) {
     int kv_dim = n_kv_heads * head_dim;
     int kv_repeat = n_heads / n_kv_heads;
     int Lk = n_past + 1;
@@ -193,8 +194,9 @@ static inline void gqa_attn_step(
     memcpy(kv_cache + v_base + (size_t)n_past * kv_dim,
            v_new, kv_dim * sizeof(float));
 
-    // Per-head attention
-    float scale = 1.0f / sqrtf((float)head_dim);
+    // Per-head attention. Most models use 1/sqrt(head_dim); Granite passes an
+    // explicit attention_multiplier via attn_scale.
+    float scale = attn_scale >= 0.0f ? attn_scale : 1.0f / sqrtf((float)head_dim);
 
     for (int h = 0; h < n_heads; h++) {
         int kv_h = h / kv_repeat;
