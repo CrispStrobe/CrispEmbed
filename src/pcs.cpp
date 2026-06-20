@@ -186,6 +186,16 @@ struct pcs_context {
     ggml_context* w_ctx = nullptr;
     ggml_backend_sched_t sched = nullptr;
     bool bench = false;
+
+    // Pre-cached FC weight floats (populated at init, avoids per-call GPU→CPU transfer)
+    struct fc_cache {
+        std::vector<float> post_fc1_w, post_fc1_b, post_fc2_w, post_fc2_b;
+        std::vector<float> pre_fc1_w, pre_fc1_b, pre_fc2_w, pre_fc2_b;
+        std::vector<float> sbd_fc1_w, sbd_fc1_b, sbd_fc2_w, sbd_fc2_b;
+        std::vector<float> tc_fc1_w, tc_fc1_b, tc_fc2_w, tc_fc2_b;
+        std::vector<float> post_emb_w;
+        bool valid = false;
+    } fc;
 };
 
 // ---------------------------------------------------------------------------
@@ -509,35 +519,20 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
     std::vector<float> hidden_buf(d * N);
     ggml_backend_tensor_get(hidden, hidden_buf.data(), 0, hidden_buf.size() * sizeof(float));
 
-    // Read post_emb weights for SBD conditioning
-    std::vector<float> post_emb_data;
-    int post_emb_dim = 0;
-    if (ctx.post_emb_w) {
-        post_emb_dim = (int)ctx.post_emb_w->ne[0]; // ne[0] = embedding_dim (4)
-        int n_emb = (int)ctx.post_emb_w->ne[1];    // ne[1] = n_labels (17)
-        post_emb_data.resize(n_emb * post_emb_dim);
-        ggml_backend_tensor_get(ctx.post_emb_w, post_emb_data.data(), 0, post_emb_data.size() * sizeof(float));
-    }
-
+    // Use pre-cached FC weights (populated at init — no per-call GPU→CPU transfer)
+    const auto& fc = ctx.fc;
+    int post_emb_dim = ctx.post_emb_w ? (int)ctx.post_emb_w->ne[0] : 0;
 
     // CPU forward for SBD and truecase heads
     // SBD: cat(hidden[768], post_emb[4]) → fc1(772→128, ReLU) → fc2(128→2)
     {
-        int sbd_in = d + post_emb_dim;           // 768 + 4 = 772
-        int sbd_mid = (int)ctx.sbd_fc1_w->ne[1]; // ne[1]=128 (ne[0]=772=input)
-
-        std::vector<float> sbd_fc1_w_data(sbd_in * sbd_mid);
-        ggml_backend_tensor_get(ctx.sbd_fc1_w, sbd_fc1_w_data.data(), 0, sbd_fc1_w_data.size() * sizeof(float));
-        std::vector<float> sbd_fc1_b_data(sbd_mid, 0.0f);
-        if (ctx.sbd_fc1_b)
-            ggml_backend_tensor_get(ctx.sbd_fc1_b, sbd_fc1_b_data.data(), 0, sbd_fc1_b_data.size() * sizeof(float));
-
+        int sbd_in = d + post_emb_dim;
+        int sbd_mid = (int)ctx.sbd_fc1_w->ne[1];
+        const float* sbd_fc1_w_data = fc.sbd_fc1_w.data();
+        const float* sbd_fc1_b_data = fc.sbd_fc1_b.empty() ? nullptr : fc.sbd_fc1_b.data();
         int sbd_out = 2;
-        std::vector<float> sbd_fc2_w_data(sbd_mid * sbd_out);
-        ggml_backend_tensor_get(ctx.sbd_fc2_w, sbd_fc2_w_data.data(), 0, sbd_fc2_w_data.size() * sizeof(float));
-        std::vector<float> sbd_fc2_b_data(sbd_out, 0.0f);
-        if (ctx.sbd_fc2_b)
-            ggml_backend_tensor_get(ctx.sbd_fc2_b, sbd_fc2_b_data.data(), 0, sbd_fc2_b_data.size() * sizeof(float));
+        const float* sbd_fc2_w_data = fc.sbd_fc2_w.data();
+        const float* sbd_fc2_b_data = fc.sbd_fc2_b.empty() ? nullptr : fc.sbd_fc2_b.data();
 
         for (int t = 0; t < N; t++) {
             // Build input: [hidden[t], post_emb[post_pred[t]]]
@@ -547,7 +542,7 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
             if (post_emb_dim > 0) {
                 int pred = result.post_preds[t];
                 for (int j = 0; j < post_emb_dim; j++)
-                    inp[d + j] = post_emb_data[pred * post_emb_dim + j];
+                    inp[d + j] = fc.post_emb_w[pred * post_emb_dim + j];
             }
 
             // fc1 + ReLU
@@ -571,21 +566,13 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
 
     // Truecase: cat(hidden[768], sbd[1]) → fc1(769→128, ReLU) → fc2(128→16)
     {
-        int tc_in = d + 1;                     // 769
-        int tc_mid = (int)ctx.tc_fc1_w->ne[1]; // ne[1]=128 (ne[0]=769=input)
+        int tc_in = d + 1;
+        int tc_mid = (int)ctx.tc_fc1_w->ne[1];
         int tc_out = 16;
-
-        std::vector<float> tc_fc1_w_data(tc_in * tc_mid);
-        ggml_backend_tensor_get(ctx.tc_fc1_w, tc_fc1_w_data.data(), 0, tc_fc1_w_data.size() * sizeof(float));
-        std::vector<float> tc_fc1_b_data(tc_mid, 0.0f);
-        if (ctx.tc_fc1_b)
-            ggml_backend_tensor_get(ctx.tc_fc1_b, tc_fc1_b_data.data(), 0, tc_fc1_b_data.size() * sizeof(float));
-
-        std::vector<float> tc_fc2_w_data(tc_mid * tc_out);
-        ggml_backend_tensor_get(ctx.tc_fc2_w, tc_fc2_w_data.data(), 0, tc_fc2_w_data.size() * sizeof(float));
-        std::vector<float> tc_fc2_b_data(tc_out, 0.0f);
-        if (ctx.tc_fc2_b)
-            ggml_backend_tensor_get(ctx.tc_fc2_b, tc_fc2_b_data.data(), 0, tc_fc2_b_data.size() * sizeof(float));
+        const float* tc_fc1_w_data = fc.tc_fc1_w.data();
+        const float* tc_fc1_b_data = fc.tc_fc1_b.empty() ? nullptr : fc.tc_fc1_b.data();
+        const float* tc_fc2_w_data = fc.tc_fc2_w.data();
+        const float* tc_fc2_b_data = fc.tc_fc2_b.empty() ? nullptr : fc.tc_fc2_b.data();
 
         for (int t = 0; t < N; t++) {
             std::vector<float> inp(tc_in);
@@ -629,6 +616,35 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
 // Public API
 // ---------------------------------------------------------------------------
 
+// Cache FC head weights at init (avoids per-call ggml_backend_tensor_get)
+static void cache_tensor(ggml_tensor* t, std::vector<float>& buf) {
+    if (!t) return;
+    int64_t n = ggml_nelements(t);
+    buf.resize(n);
+    ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+}
+
+static void pcs_cache_fc_weights(pcs_context& ctx) {
+    cache_tensor(ctx.post_fc1_w, ctx.fc.post_fc1_w);
+    cache_tensor(ctx.post_fc1_b, ctx.fc.post_fc1_b);
+    cache_tensor(ctx.post_fc2_w, ctx.fc.post_fc2_w);
+    cache_tensor(ctx.post_fc2_b, ctx.fc.post_fc2_b);
+    cache_tensor(ctx.pre_fc1_w,  ctx.fc.pre_fc1_w);
+    cache_tensor(ctx.pre_fc1_b,  ctx.fc.pre_fc1_b);
+    cache_tensor(ctx.pre_fc2_w,  ctx.fc.pre_fc2_w);
+    cache_tensor(ctx.pre_fc2_b,  ctx.fc.pre_fc2_b);
+    cache_tensor(ctx.sbd_fc1_w,  ctx.fc.sbd_fc1_w);
+    cache_tensor(ctx.sbd_fc1_b,  ctx.fc.sbd_fc1_b);
+    cache_tensor(ctx.sbd_fc2_w,  ctx.fc.sbd_fc2_w);
+    cache_tensor(ctx.sbd_fc2_b,  ctx.fc.sbd_fc2_b);
+    cache_tensor(ctx.tc_fc1_w,   ctx.fc.tc_fc1_w);
+    cache_tensor(ctx.tc_fc1_b,   ctx.fc.tc_fc1_b);
+    cache_tensor(ctx.tc_fc2_w,   ctx.fc.tc_fc2_w);
+    cache_tensor(ctx.tc_fc2_b,   ctx.fc.tc_fc2_b);
+    cache_tensor(ctx.post_emb_w, ctx.fc.post_emb_w);
+    ctx.fc.valid = true;
+}
+
 pcs_context* pcs_init(const char* model_path) {
     auto* ctx = new pcs_context();
     ctx->bench = (std::getenv("CRISPEMBED_PCS_BENCH") != nullptr);
@@ -636,6 +652,7 @@ pcs_context* pcs_init(const char* model_path) {
         delete ctx;
         return nullptr;
     }
+    pcs_cache_fc_weights(*ctx);
     return ctx;
 }
 
