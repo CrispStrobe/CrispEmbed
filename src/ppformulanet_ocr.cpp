@@ -101,6 +101,11 @@ struct ppformulanet_ocr_context {
     core_gguf::WeightLoad wl;
     ggml_backend_t backend = nullptr;
     int n_threads;
+
+    // ggml graph encoder
+    ggml_backend_t       enc_backend  = nullptr;
+    ggml_backend_sched_t enc_sched    = nullptr;
+    std::vector<uint8_t> enc_compute_meta;
     std::string result_buf;
     std::vector<float> char_confidences; // per-token softmax probabilities
 
@@ -306,7 +311,253 @@ static std::vector<float> apply_conv(const conv_layer& cl,
     return out;
 }
 
-// Run the HGNetv2 encoder on CHW float input
+// ---------------------------------------------------------------------------
+// ggml graph: HGNetv2 encoder
+// ---------------------------------------------------------------------------
+
+// Prep conv weight: reshape 2D→4D, cast to F16 for ggml_conv_2d.
+static ggml_tensor * ppfn_prep_conv(ggml_context * g, ggml_tensor * w,
+                                     int IC, int KH, int KW) {
+    if (!w) return nullptr;
+    if (ggml_n_dims(w) == 2) {
+        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
+            w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+        w = ggml_reshape_4d(g, w, KW, KH, IC, w->ne[1]);
+    }
+    if (w->type != GGML_TYPE_F16)
+        w = ggml_cast(g, w, GGML_TYPE_F16);
+    return w;
+}
+
+// Prep depthwise conv weight: reshape 2D→4D with IC=1.
+static ggml_tensor * ppfn_prep_dw(ggml_context * g, ggml_tensor * w,
+                                   int KH, int KW) {
+    if (!w) return nullptr;
+    if (ggml_n_dims(w) == 2) {
+        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
+            w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+        int64_t OC = w->ne[1];
+        w = ggml_reshape_4d(g, w, KW, KH, 1, OC);
+    }
+    if (w->type != GGML_TYPE_F16)
+        w = ggml_cast(g, w, GGML_TYPE_F16);
+    return w;
+}
+
+// Conv2D + bias + optional ReLU
+static ggml_tensor * ppfn_conv(ggml_context * g, ggml_tensor * x,
+                                const conv_layer & cl, int IC, int KH, int KW,
+                                int stride, bool relu) {
+    ggml_tensor * w = ppfn_prep_conv(g, cl.w, IC, KH, KW);
+    x = ggml_conv_2d(g, w, x, stride, stride, (KH-1)/2, (KW-1)/2, 1, 1);
+    if (cl.b) {
+        ggml_tensor * b = ggml_reshape_3d(g, cl.b, 1, 1, cl.b->ne[0]);
+        x = ggml_add(g, x, b);
+    }
+    if (relu) x = ggml_relu(g, x);
+    return x;
+}
+
+// Conv2D with explicit padding (for stem k=2 convs that need asymmetric pad)
+static ggml_tensor * ppfn_conv_nopad(ggml_context * g, ggml_tensor * x,
+                                      const conv_layer & cl, int IC, int KH, int KW,
+                                      int stride, bool relu) {
+    ggml_tensor * w = ppfn_prep_conv(g, cl.w, IC, KH, KW);
+    x = ggml_conv_2d(g, w, x, stride, stride, 0, 0, 1, 1);  // no auto-pad
+    if (cl.b) {
+        ggml_tensor * b = ggml_reshape_3d(g, cl.b, 1, 1, cl.b->ne[0]);
+        x = ggml_add(g, x, b);
+    }
+    if (relu) x = ggml_relu(g, x);
+    return x;
+}
+
+// Depthwise Conv2D + bias (no ReLU by default for downsample)
+static ggml_tensor * ppfn_dw_conv(ggml_context * g, ggml_tensor * x,
+                                   const conv_layer & cl, int CH, int KH, int KW,
+                                   int stride, bool relu) {
+    ggml_tensor * w = ppfn_prep_dw(g, cl.w, KH, KW);
+    x = ggml_conv_2d_dw(g, w, x, stride, stride, (KH-1)/2, (KW-1)/2, 1, 1);
+    if (cl.b) {
+        ggml_tensor * b = ggml_reshape_3d(g, cl.b, 1, 1, cl.b->ne[0]);
+        x = ggml_add(g, x, b);
+    }
+    if (relu) x = ggml_relu(g, x);
+    return x;
+}
+
+static ggml_cgraph * build_ppfn_encoder_graph(ppformulanet_ocr_context * ctx, int H, int W) {
+    // Estimate: 4 stages, up to 3 blocks × 6 layers × ~10 nodes + stem ~50
+    // Plus type casts for quantized weights (~5 nodes per conv)
+    int graph_size = 4000;
+    size_t buf_size = ggml_tensor_overhead() * (graph_size + 500)
+                    + ggml_graph_overhead_custom(graph_size, false);
+    ctx->enc_compute_meta.resize(buf_size);
+    ggml_init_params ip = { buf_size, ctx->enc_compute_meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, graph_size, false);
+
+    // Input: [W, H, 3] (ggml WHC = CHW in memory)
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, 3);
+    ggml_set_name(x, "pixel_input");
+    ggml_set_input(x);
+
+    // ---- Stem ----
+    // stem1: Conv(3→32, k=3, s=2, p=1) + ReLU
+    x = ppfn_conv(g, x, ctx->stem[0], 3, 3, 3, 2, true);
+    int cur_ch = 32;
+
+    // F.pad(x, (0,1,0,1)) — pad right + bottom by 1 pixel
+    // ggml_pad_ext: (lp0, rp0, lp1, rp1, ...) where dim0=W, dim1=H
+    x = ggml_pad_ext(g, x, 0, 1, 0, 1, 0, 0, 0, 0);
+
+    // stem2a: Conv(32→16, k=2, s=1, p=0) + ReLU
+    ggml_tensor * x2 = ppfn_conv_nopad(g, x, ctx->stem[1], 32, 2, 2, 1, true);
+
+    // F.pad(x2, (0,1,0,1))
+    x2 = ggml_pad_ext(g, x2, 0, 1, 0, 1, 0, 0, 0, 0);
+
+    // stem2b: Conv(16→32, k=2, s=1, p=0) + ReLU
+    x2 = ppfn_conv_nopad(g, x2, ctx->stem[2], 16, 2, 2, 1, true);
+
+    // MaxPool2d(k=2, s=1) on the padded stem1 output (x still has padding)
+    // Input is already padded by (0,1,0,1), so maxpool k=2 s=1 gives same spatial as stem2b
+    ggml_tensor * x1 = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 2, 2, 1, 1, 0, 0);
+
+    // Concat [x1, x2] → 64 channels
+    x = ggml_concat(g, x1, x2, 2);
+    cur_ch = 64;
+
+    // stem3: Conv(64→32, k=3, s=2) + ReLU
+    x = ppfn_conv(g, x, ctx->stem[3], 64, 3, 3, 2, true);
+    cur_ch = 32;
+
+    // stem4: Conv(32→48, k=1, s=1) + ReLU
+    x = ppfn_conv(g, x, ctx->stem[4], 32, 1, 1, 1, true);
+    cur_ch = 48;
+
+    // ---- 4 Stages ----
+    for (int si = 0; si < 4; si++) {
+        auto & st = ctx->stages[si];
+
+        // Depthwise downsample (3×3, s=2, no ReLU)
+        if (st.has_downsample) {
+            x = ppfn_dw_conv(g, x, st.downsample, cur_ch, 3, 3, 2, false);
+        }
+
+        // HG_Blocks
+        for (int bi = 0; bi < st.n_blocks; bi++) {
+            auto & blk = st.blocks[bi];
+            bool residual = (bi > 0);
+            ggml_tensor * identity = residual ? x : nullptr;
+
+            // Collect layer outputs for concat (input + N layers)
+            ggml_tensor * block_input = x;
+            int layer_in_ch = cur_ch;
+            int layer_out_ch = st.mid_ch;
+
+            for (int li = 0; li < st.n_layers; li++) {
+                auto & lay = blk.layers[li];
+                int in_c = (li == 0) ? layer_in_ch : layer_out_ch;
+
+                if (lay.is_light) {
+                    // LightConvBNAct: conv1 (1×1, no ReLU) + conv2 (depthwise + ReLU)
+                    x = ppfn_conv(g, x, lay.conv1, in_c, 1, 1, 1, false);
+                    x = ppfn_dw_conv(g, x, lay.conv2, layer_out_ch,
+                                      st.kernel_size, st.kernel_size, 1, true);
+                } else {
+                    // ConvBNAct: single conv + ReLU
+                    x = ppfn_conv(g, x, lay.conv, in_c,
+                                   st.kernel_size, st.kernel_size, 1, true);
+                }
+
+                // Concat this layer's output with running concat
+                // First iteration: concat = [block_input, layer0_out]
+                // Subsequent: concat = [prev_concat, layerN_out]
+                if (li == 0) {
+                    block_input = ggml_concat(g, block_input, x, 2);
+                } else {
+                    block_input = ggml_concat(g, block_input, x, 2);
+                }
+            }
+
+            // Aggregation: squeeze (1×1 + ReLU) → excite (1×1 + ReLU)
+            int total_ch = cur_ch + st.n_layers * layer_out_ch;
+            int squeeze_ch = st.out_ch / 2;
+            x = ppfn_conv(g, block_input, blk.agg_squeeze, total_ch, 1, 1, 1, true);
+            x = ppfn_conv(g, x, blk.agg_excite, squeeze_ch, 1, 1, 1, true);
+            cur_ch = st.out_ch;
+
+            // Residual
+            if (residual && identity) {
+                x = ggml_add(g, x, identity);
+            }
+        }
+    }
+
+    ggml_set_name(x, "encoder_out");
+    ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+    return gf;
+}
+
+static void run_encoder_ggml(ppformulanet_ocr_context * ctx,
+                              const float * rgb, int H, int W) {
+    auto t0 = std::chrono::steady_clock::now();
+
+    ggml_cgraph * gf = build_ppfn_encoder_graph(ctx, H, W);
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "ppfn: failed to allocate encoder graph\n");
+        return;
+    }
+
+    // Set input (3-channel RGB, CHW = ggml WHC memory order)
+    ggml_tensor * pixel_in = ggml_graph_get_tensor(gf, "pixel_input");
+    ggml_backend_tensor_set(pixel_in, rgb, 0, 3 * H * W * sizeof(float));
+
+    // Set threads and compute
+    for (int i = 0; i < ggml_backend_sched_get_n_backends(ctx->enc_sched); i++) {
+        ggml_backend_t be = ggml_backend_sched_get_backend(ctx->enc_sched, i);
+        ggml_backend_dev_t dev = ggml_backend_get_device(be);
+        ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
+        if (reg) {
+            auto * fn = (ggml_backend_set_n_threads_t)
+                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            if (fn) fn(be, ctx->n_threads);
+        }
+    }
+    if (ggml_backend_sched_graph_compute(ctx->enc_sched, gf) != GGML_STATUS_SUCCESS) {
+        fprintf(stderr, "ppfn: encoder graph compute failed\n");
+        return;
+    }
+
+    // Read output: (W', H', C) → transpose to (H'*W', C)
+    ggml_tensor * enc_out = ggml_graph_get_tensor(gf, "encoder_out");
+    int out_w = (int)enc_out->ne[0], out_h = (int)enc_out->ne[1];
+    int out_c = (int)enc_out->ne[2];
+    int N = out_h * out_w;
+
+    std::vector<float> chw(out_c * N);
+    ggml_backend_tensor_get(enc_out, chw.data(), 0, chw.size() * sizeof(float));
+
+    ctx->n_enc_tokens = N;
+    ctx->enc_out.resize(N * out_c);
+    for (int n = 0; n < N; n++) {
+        int y = n / out_w, xi = n % out_w;
+        for (int c = 0; c < out_c; c++)
+            ctx->enc_out[n * out_c + c] = chw[c * out_h * out_w + y * out_w + xi];
+    }
+
+    if (ctx->bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t0).count();
+        fprintf(stderr, "[ppfn-bench] encoder (ggml): %.1f ms\n", ms);
+    }
+    fprintf(stderr, "ppfn: encoder output (%d, %d)\n", N, out_c);
+}
+
+// Run the HGNetv2 encoder on CHW float input (scalar fallback)
 static void run_encoder(ppformulanet_ocr_context* ctx,
                          const float* rgb, int H, int W) {
     // rgb is [3, H, W] in CHW format, normalized
@@ -777,11 +1028,21 @@ ppformulanet_ocr_context* ppformulanet_ocr_init(const char* model_path, int n_th
 
     ctx->bench = (std::getenv("CRISPEMBED_PPFN_BENCH") != nullptr);
 
+    // ggml encoder backend + scheduler
+    ctx->enc_backend = ggml_backend_cpu_init();
+    if (ctx->enc_backend) {
+        ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads);
+        ggml_backend_t backends[] = { ctx->enc_backend };
+        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 8192, false, false);
+    }
+
     return ctx.release();
 }
 
 void ppformulanet_ocr_free(ppformulanet_ocr_context* ctx) {
     if (!ctx) return;
+    if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+    if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     core_gguf::free_weights(ctx->wl);
     delete ctx;
@@ -844,7 +1105,10 @@ const char* ppformulanet_ocr_recognize(ppformulanet_ocr_context* ctx,
 
     // Run encoder
     t0 = std::chrono::steady_clock::now();
-    run_encoder(ctx, rgb.data(), S, S);
+    if (ctx->enc_sched && !std::getenv("PPFN_SCALAR_ENCODER"))
+        run_encoder_ggml(ctx, rgb.data(), S, S);
+    else
+        run_encoder(ctx, rgb.data(), S, S);
     if (bench) fprintf(stderr, "[ppfn-bench] encoder: %.1f ms\n",
         std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
@@ -914,7 +1178,10 @@ const char* ppformulanet_ocr_recognize_chw(ppformulanet_ocr_context* ctx,
     const int S = ctx->hparams.image_size;
 
     // Input is already preprocessed CHW [3, S, S] normalized data
-    run_encoder(ctx, chw_data, S, S);
+    if (ctx->enc_sched && !std::getenv("PPFN_SCALAR_ENCODER"))
+        run_encoder_ggml(ctx, chw_data, S, S);
+    else
+        run_encoder(ctx, chw_data, S, S);
     project_encoder(ctx);
     precompute_cross_kv(ctx);
     auto tokens = greedy_decode(ctx);
