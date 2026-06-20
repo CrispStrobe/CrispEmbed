@@ -609,11 +609,14 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **cpu_ops.h: `layernorm2d_cpu` cache-hostile access** — iterates (y,x,c)
   but accesses stride-H*W across channels. NHWC layout or transpose first.
 
-- [ ] **vlm_attention.h: pre-allocate scores vector outside head loop** —
-  `std::vector<float> scores(n_kv)` at line 161 allocated per-head per-step.
-
-- [ ] **vlm_attention.h: pre-allocate `swiglu_ffn` intermediates** — two
-  `intermediate_dim`-sized vectors (line 207) allocated every call.
+- [x] **vlm_attention.h: pre-allocate scores vector outside head loop** —
+  DONE (`9172ba1`). Thread-local buffer replaces per-head std::vector.
+- [x] **vlm_attention.h: pre-allocate `swiglu_ffn` intermediates** — DONE
+  (`9172ba1`). Thread-local buffers for gate/up vectors.
+- [x] **cpu_ops.h mha_1q_cpu alloc elimination** — DONE (`9172ba1`).
+  Write directly to output, thread-local scores buffer, optional external buf.
+- [x] **parseq_ocr decoder alloc hoist** — DONE (`38177e2`). ~18 per-step
+  vectors moved to pre-allocated dec_scratch struct.
 
 - [ ] **Nearest-neighbor → bilinear resize** — 4 of 7 math OCR runtimes
   (math_ocr, mixtex, ppformulanet, ppformulanet_l) and several others
