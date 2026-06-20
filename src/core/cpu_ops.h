@@ -331,19 +331,35 @@ static inline void relu_inplace(float* data, int n) {
 
 // Multi-head attention (single query position)
 // q: [D], k: [n_kv, D], v: [n_kv, D], out: [D]
+// scores_buf: optional pre-allocated buffer [>=n_kv] to avoid per-head heap alloc.
+//             If nullptr, uses a thread-local buffer (safe, no per-call alloc).
 static inline void mha_1q_cpu(const float* q, const float* k, const float* v,
-                               float* out, int n_kv, int D, int n_heads) {
+                               float* out, int n_kv, int D, int n_heads,
+                               float* scores_buf = nullptr) {
     int hd = D / n_heads;
-    std::vector<float> result(D, 0.0f);
+    // Write directly to out (avoids separate result vector + memcpy)
+    memset(out, 0, D * sizeof(float));
+
+    // Scores buffer: use external if provided, else thread-local (no per-call alloc)
+    static thread_local std::vector<float> tl_scores;
+    float* scores;
+    if (scores_buf) {
+        scores = scores_buf;
+    } else {
+        if ((int)tl_scores.size() < n_kv) tl_scores.resize(n_kv);
+        scores = tl_scores.data();
+    }
+
+    float scale = 1.0f / sqrtf((float)hd);
     for (int h = 0; h < n_heads; h++) {
         int off = h * hd;
         // Q·K scores (SIMD via dot_product)
-        std::vector<float> scores(n_kv);
-        float scale = 1.0f / sqrtf((float)hd);
-        for (int ki = 0; ki < n_kv; ki++)
+        float maxs = -1e30f;
+        for (int ki = 0; ki < n_kv; ki++) {
             scores[ki] = dot_product(q + off, k + ki * D + off, hd) * scale;
+            if (scores[ki] > maxs) maxs = scores[ki];
+        }
         // Softmax
-        float maxs = *std::max_element(scores.begin(), scores.end());
         float sum = 0;
         for (int ki = 0; ki < n_kv; ki++) {
             scores[ki] = expf(scores[ki] - maxs);
@@ -351,9 +367,8 @@ static inline void mha_1q_cpu(const float* q, const float* k, const float* v,
         }
         float inv_sum = 1.0f / sum;
         for (int ki = 0; ki < n_kv; ki++) scores[ki] *= inv_sum;
-        // Weighted V accumulation: result[off:off+hd] = sum(scores[ki] * V[ki][off:off+hd])
-        // ki-outer loop for cache-friendly access (V row is contiguous).
-        float * dst = result.data() + off;
+        // Weighted V accumulation: out[off:off+hd] = sum(scores[ki] * V[ki][off:off+hd])
+        float * dst = out + off;
         for (int ki = 0; ki < n_kv; ki++) {
             float s = scores[ki];
             const float * vrow = v + ki * D + off;
@@ -375,7 +390,6 @@ static inline void mha_1q_cpu(const float* q, const float* k, const float* v,
 #endif
         }
     }
-    memcpy(out, result.data(), D * sizeof(float));
 }
 
 // ---------------------------------------------------------------------------
