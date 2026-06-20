@@ -483,10 +483,16 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 
 #### P2 — Moderate improvements
 
-- [ ] **Graph caching** — every runtime rebuilds the ggml graph on every call.
-  For fixed-architecture models (same seq_len), caching the graph structure and
-  only updating input data would eliminate per-call graph construction +
-  allocation overhead. Only `lfm2_embed` reuses its `ggml_gallocr`.
+- [x] **LFM2 sched + T-bucketing** — migrated `lfm2_embed` from raw
+  `ggml_gallocr` to `ggml_backend_sched` with sequence-length bucketing (same
+  pattern as encoder path in `crispembed.cpp`). Eliminates per-call allocation
+  overhead for same-bucket inputs (~2ms → ~0.7ms graph+alloc). Compute
+  dominates at ~700ms for the 350M Q8_0 model. Architecturally aligns LFM2
+  with the rest of the codebase and enables future GPU dispatch.
+
+- [ ] **Graph caching** — most runtimes still rebuild the ggml graph on every
+  call. Caching graph structure and only updating input data would eliminate
+  per-call graph construction + allocation overhead.
 
 - [ ] **`ggml_gallocr` reuse** — most runtimes create and free `ggml_gallocr`
   per call. Store on context and reuse across calls (as lfm2_embed does).
