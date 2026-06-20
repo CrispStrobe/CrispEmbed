@@ -46,6 +46,13 @@ void granite_vision_dump_llm(granite_vision_context * ctx,
                              const int * tokens, int n_tokens,
                              gv_dump_cb cb, void * ud);
 
+// Same parity dump but through the ggml LLM graph (gv_run_llm_body) instead of
+// the scalar decode — to localise where the (currently incorrect) ggml path
+// diverges from the reference.
+void granite_vision_dump_llm_graph(granite_vision_context * ctx,
+                                   const int * tokens, int n_tokens,
+                                   gv_dump_cb cb, void * ud);
+
 // Per-token confidence from the last recognition.
 const float * granite_vision_confidences(const granite_vision_context * ctx, int * n_tokens);
 float granite_vision_mean_confidence(const granite_vision_context * ctx);
