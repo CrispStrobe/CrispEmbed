@@ -588,7 +588,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   depends on spatial dims which change per tile — not precomputable.
 
 - [x] **Fuse BatchNorm into conv weights at model load** — TBSRN: fused 11
-  conv+BN pairs (2 per SRB × 5 + 1 final) at init. `dat_sr` still pending.
+  conv+BN pairs (2 per SRB × 5 + 1 final) at init. DAT: fused 54 conv+BN
+  pairs (3 per AIM block × 18 blocks) — dwconv, channel_interaction, spatial_interaction.
 
 - [x] **qwen2vl: token embedding via direct read** — DONE. Embed is now part of
   the main LLM graph (ggml_get_rows runs on GPU). lightonocr uses direct
