@@ -2880,13 +2880,32 @@ static void post_load_init(qwen2vl_ocr_context *ctx, const char *gguf_path) {
       }
     }
 
-    // Read special token IDs
-    ctx->vision_start_id = (int32_t)core_gguf::kv_u32(
-        g, "qwen2vl.vision_start_token_id", ctx->vision_start_id);
-    ctx->image_pad_id = (int32_t)core_gguf::kv_u32(g, "qwen2vl.image_token_id",
-                                                   ctx->image_pad_id);
-    ctx->vision_end_id = (int32_t)core_gguf::kv_u32(
-        g, "qwen2vl.vision_end_token_id", ctx->vision_end_id);
+    // Read special token IDs (try qwen3vl prefix first, then qwen2vl)
+    auto kv_u32_multi = [&](const char *key3, const char *key2, uint32_t def) -> uint32_t {
+      uint32_t v = core_gguf::kv_u32(g, key3, 0xFFFFFFFF);
+      return (v != 0xFFFFFFFF) ? v : core_gguf::kv_u32(g, key2, def);
+    };
+    ctx->vision_start_id = (int32_t)kv_u32_multi(
+        "qwen3vl.vision_start_token_id", "qwen2vl.vision_start_token_id",
+        ctx->vision_start_id);
+    ctx->image_pad_id = (int32_t)kv_u32_multi(
+        "qwen3vl.image_token_id", "qwen2vl.image_token_id",
+        ctx->image_pad_id);
+    ctx->vision_end_id = (int32_t)kv_u32_multi(
+        "qwen3vl.vision_end_token_id", "qwen2vl.vision_end_token_id",
+        ctx->vision_end_id);
+
+    // Detect architecture and set OCR-appropriate prompt for Qwen3-VL
+    int arch_idx = gguf_find_key(g, "general.architecture");
+    if (arch_idx >= 0) {
+      std::string arch = gguf_get_val_str(g, arch_idx);
+      if (arch == "qwen3vl" && !is_qari) {
+        ctx->prompt = "Read all the text in this image. Output the exact text content only.";
+        if (ctx->inner.verbosity >= 1) {
+          fprintf(stderr, "qwen2vl_ocr: detected qwen3vl architecture, using OCR prompt\n");
+        }
+      }
+    }
 
     core_gguf::free_metadata(g);
   }
