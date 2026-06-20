@@ -748,8 +748,13 @@ single-threaded, must not OOM.
 ### glm_ocr (CogVLM2 + GLM-4, 0.9B) — DONE
 - [x] Downsample + merger → ggml graph (conv2d_direct + batched SwiGLU + LayerNorm)
   Gated: CRISPEMBED_GLM_OCR_SCALAR_MERGER=1. Merger: 383ms on q4_k.
-### granite_vision — PENDING
-### smoldocling — PENDING
+### granite_vision — PENDING (LLM decoder ggml graph not yet validated)
+
+### smoldocling (SigLIP + SmolLM2, 256M) — IN PROGRESS
+- [x] F16 KV cache + batched prefill (done earlier, `bc329e4`)
+- [x] Patch embedding → ggml matmul (im2col + mul_mat, F16 bias cast)
+  Gated: CRISPEMBED_SMOLDOCLING_SCALAR_PATCH=1
+- [ ] LLM decoder → ggml graphs (currently CPU scalar via core_vlm, 30 layers)
 ### internvl2 — PENDING
 ### SR/denoise — PENDING
 ### Embedding — PENDING
