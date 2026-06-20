@@ -9,6 +9,7 @@
 // SwinBlock (odd index):  shifted-window-MSA (cyclic shift + attn_mask)
 
 #include "swinir_sr.h"
+#include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -28,26 +29,6 @@
 #include <vector>
 
 // ── Helpers ────────────────────────────────────────────────────────────
-
-static const float * sir_to_f32(const ggml_tensor * t, std::vector<float> & buf) {
-    int64_t n = ggml_nelements(t);
-    buf.resize(n);
-    if (t->type == GGML_TYPE_F32) {
-        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
-    } else if (t->type == GGML_TYPE_F16) {
-        std::vector<ggml_fp16_t> tmp(n);
-        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
-        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(tmp[i]);
-    } else {
-        size_t raw_sz = ggml_nbytes(t);
-        std::vector<uint8_t> raw(raw_sz);
-        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
-        const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
-        else memset(buf.data(), 0, n * sizeof(float));
-    }
-    return buf.data();
-}
 
 static void sir_conv2d(const float * in, int ic, int ih, int iw,
                        const float * w, const float * b,
@@ -315,14 +296,13 @@ struct swinir_sr_context {
     int n_threads;
     bool bench;
     core_gguf::WeightLoad wl;
-    std::vector<std::vector<float>> wbufs;
+    core_cpu::DequantCache dcache;  // caches dequantized weights across inference calls
     std::vector<std::vector<int32_t>> ibufs;
 
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t) { fprintf(stderr, "swinir_sr: missing %s\n", name.c_str()); return nullptr; }
-        wbufs.emplace_back();
-        return sir_to_f32(t, wbufs.back());
+        return dcache.get(t);
     }
     const int32_t * get_i32(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
@@ -458,8 +438,7 @@ static void swinir_forward_tile(swinir_sr_context * ctx,
             std::string mask_name = std::string(prefix) + ".attn_mask";
             auto * mask_t = core_gguf::try_get(ctx->wl.tensors, mask_name.c_str());
             if (mask_t && do_shift) {
-                ctx->wbufs.emplace_back();
-                wt.attn_mask = sir_to_f32(mask_t, ctx->wbufs.back());
+                wt.attn_mask = ctx->dcache.get(mask_t);
                 // attn_mask shape: [nWin, ws², ws²]
                 wt.n_attn_mask_wins = (int)(ggml_nelements(mask_t) / (ws * ws * ws * ws));
             } else {
