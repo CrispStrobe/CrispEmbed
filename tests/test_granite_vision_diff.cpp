@@ -62,10 +62,13 @@ int main(int argc, char ** argv) {
     // LLM decode parity (ref must contain "llm_logits"). The token sequence
     // MUST match tools/dump_granite_llm_reference.py.
     if (ref.has("llm_logits")) {
-        printf("\nRunning LLM decode (fixed token sequence)...\n");
+        bool use_graph = (argc > 3 && std::string(argv[3]) == "graph");
+        printf("\nRunning LLM decode (%s, fixed token sequence)...\n",
+               use_graph ? "ggml graph" : "scalar");
         const int tokens[] = {12, 345, 678, 901, 234, 56, 789};
-        granite_vision_dump_llm(ctx, tokens, (int)(sizeof(tokens) / sizeof(tokens[0])),
-                                dump_cb, nullptr);
+        const int n = (int)(sizeof(tokens) / sizeof(tokens[0]));
+        if (use_graph) granite_vision_dump_llm_graph(ctx, tokens, n, dump_cb, nullptr);
+        else           granite_vision_dump_llm(ctx, tokens, n, dump_cb, nullptr);
     }
 
     printf("\n%d passed, %d failed\n", g_pass, g_fail);
