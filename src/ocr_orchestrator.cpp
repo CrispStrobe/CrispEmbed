@@ -77,6 +77,7 @@ struct context {
     got_ocr_context*         got    = nullptr;   // GOT-OCR2 (single-shot VLM)
     glm_ocr_context*         glm    = nullptr;   // GLM-OCR (single-shot VLM)
     qwen2vl_ocr_context*     qwen   = nullptr;   // Qwen2.5-VL (single-shot VLM)
+    qwen2vl_ocr_context*     qwen3  = nullptr;   // Qwen3-VL (DeepStack + IMROPE)
     internvl2_ocr_context*   intern = nullptr;   // InternVL2 (single-shot VLM)
     deepseek_ocr2_context*   dsocr2 = nullptr;   // DeepSeek-OCR-2 (MoE VLM)
     pix2struct_context*      p2s    = nullptr;   // Pix2Struct (doc/chart understanding)
@@ -368,6 +369,25 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             int nconf = 0;
             const float* conf = qwen2vl_ocr_confidences(ctx->qwen, &nconf);
             auto out = wrap_fulltext(t, w, h, conf, nconf, qwen2vl_ocr_mean_confidence(ctx->qwen));
+            stbi_image_free(px);
+            return out;
+        }
+        case engine::qwen3vl: {
+            if (!ctx->qwen3) {
+                if (st.model_a.empty()) { fprintf(stderr, "ocr_orchestrator: qwen3vl stage missing model_a\n"); return {}; }
+                ctx->qwen3 = qwen2vl_ocr_init(st.model_a.c_str(), ctx->n_threads);
+                if (!ctx->qwen3) { fprintf(stderr, "ocr_orchestrator: qwen3vl load failed\n"); return {}; }
+            }
+            if (st.params.vlm_max_tokens > 0) qwen2vl_ocr_set_max_tokens(ctx->qwen3, st.params.vlm_max_tokens);
+            if (!st.params.vlm_prompt.empty()) qwen2vl_ocr_set_prompt(ctx->qwen3, st.params.vlm_prompt.c_str());
+            int w = 0, h = 0, c = 0;
+            unsigned char* px = stbi_load(path, &w, &h, &c, 3);
+            if (!px) return {};
+            int len = 0;
+            const char* t = qwen2vl_ocr_recognize_raw(ctx->qwen3, px, w, h, 3, &len);
+            int nconf = 0;
+            const float* conf = qwen2vl_ocr_confidences(ctx->qwen3, &nconf);
+            auto out = wrap_fulltext(t, w, h, conf, nconf, qwen2vl_ocr_mean_confidence(ctx->qwen3));
             stbi_image_free(px);
             return out;
         }
@@ -781,6 +801,7 @@ static const char * engine_name(engine e) {
         case engine::got:         return "got";
         case engine::glm:         return "glm";
         case engine::qwen2vl:     return "qwen2vl";
+        case engine::qwen3vl:     return "qwen3vl";
         case engine::internvl2:   return "internvl2";
         case engine::tesseract:      return "tesseract";
         case engine::deepseek_ocr2:  return "deepseek_ocr2";
@@ -914,6 +935,7 @@ void free(context* ctx) {
     if (ctx->got)    got_ocr_free(ctx->got);
     if (ctx->glm)    glm_ocr_free(ctx->glm);
     if (ctx->qwen)   qwen2vl_ocr_free(ctx->qwen);
+    if (ctx->qwen3)  qwen2vl_ocr_free(ctx->qwen3);
     if (ctx->intern) internvl2_ocr_free(ctx->intern);
     if (ctx->dsocr2) deepseek_ocr2_free(ctx->dsocr2);
     if (ctx->p2s)    pix2struct_free(ctx->p2s);

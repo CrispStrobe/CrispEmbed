@@ -49,6 +49,7 @@ enum class engine {
     pix2struct,    // pix2struct.cpp (document/chart understanding)
     granite_vision,// granite_vision_ocr.cpp (LLaVA-Next, OCRBench 852)
     lightonocr,    // lightonocr.cpp (Pixtral ViT + Qwen3 decoder)
+    qwen3vl,       // qwen2vl_ocr.cpp (Qwen3-VL, DeepStack + IMROPE)
 };
 
 // Image category used to pick a chain. `auto_detect` runs the classifier.
