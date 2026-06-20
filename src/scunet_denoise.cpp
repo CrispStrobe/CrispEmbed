@@ -13,6 +13,7 @@
 
 #include "scunet_denoise.h"
 #include "core/gguf_loader.h"
+#include "core/cpu_ops.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 
@@ -177,19 +178,9 @@ static void wmsa_forward(
                 }
         }
 
-    // QKV projection: (nW, N, C) → (nW, N, 3C)
+    // QKV projection: (nW*N, C) → (nW*N, 3C) — batched SIMD
     std::vector<float> qkv(nW * N * 3 * C);
-    for (int wi = 0; wi < nW; wi++)
-        for (int ni = 0; ni < N; ni++) {
-            const float * tok = &windows[wi * N * C + ni * C];
-            float * dst = &qkv[wi * N * 3 * C + ni * 3 * C];
-            for (int o = 0; o < 3 * C; o++) {
-                float sum = qkv_b[o];
-                for (int i = 0; i < C; i++)
-                    sum += qkv_w[o * C + i] * tok[i];
-                dst[o] = sum;
-            }
-        }
+    core_cpu::linear_batch_cpu(windows.data(), qkv.data(), nW * N, C, 3 * C, qkv_w, qkv_b);
 
     // Build relative position bias index
     std::vector<int> rpb_idx(N * N);
@@ -245,8 +236,7 @@ static void wmsa_forward(
                 const float * qi = &qkv[(wi * N + i) * 3 * C + hd * head_dim];
                 for (int j = 0; j < N; j++) {
                     const float * kj = &qkv[(wi * N + j) * 3 * C + C + hd * head_dim];
-                    float dot = 0;
-                    for (int d = 0; d < head_dim; d++) dot += qi[d] * kj[d];
+                    float dot = core_cpu::dot_product(qi, kj, head_dim);
                     float bias = rpb[rpb_idx[i * N + j]];
                     float mask_val = shift ? attn_mask[wi * N * N + i * N + j] : 0.0f;
                     scratch[i * N + j] = dot * scale + bias + mask_val;
@@ -276,19 +266,9 @@ static void wmsa_forward(
         }
     }
 
-    // Output projection: (nW, N, C) → (nW, N, C)
+    // Output projection: (nW*N, C) → (nW*N, C) — batched SIMD
     std::vector<float> proj_out(nW * N * C);
-    for (int wi = 0; wi < nW; wi++)
-        for (int ni = 0; ni < N; ni++) {
-            const float * tok = &attn_out[wi * N * C + ni * C];
-            float * dst = &proj_out[wi * N * C + ni * C];
-            for (int o = 0; o < C; o++) {
-                float sum = proj_b[o];
-                for (int i = 0; i < C; i++)
-                    sum += proj_w[o * C + i] * tok[i];
-                dst[o] = sum;
-            }
-        }
+    core_cpu::linear_batch_cpu(attn_out.data(), proj_out.data(), nW * N, C, C, proj_w, proj_b);
 
     // Window reverse → CHW
     std::vector<float> rev(C * Hp * Wp, 0.0f);

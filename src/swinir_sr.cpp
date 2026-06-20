@@ -30,6 +30,26 @@
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
+static const float * sir_to_f32(const ggml_tensor * t, std::vector<float> & buf) {
+    int64_t n = ggml_nelements(t);
+    buf.resize(n);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+    } else if (t->type == GGML_TYPE_F16) {
+        std::vector<ggml_fp16_t> tmp(n);
+        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
+        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(tmp[i]);
+    } else {
+        size_t raw_sz = ggml_nbytes(t);
+        std::vector<uint8_t> raw(raw_sz);
+        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
+        const auto * traits = ggml_get_type_traits(t->type);
+        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
+        else memset(buf.data(), 0, n * sizeof(float));
+    }
+    return buf.data();
+}
+
 static void sir_conv2d(const float * in, int ic, int ih, int iw,
                        const float * w, const float * b,
                        int oc, int kh, int kw, int pad, float * out) {
@@ -82,11 +102,7 @@ static void sir_softmax(float * data, int n) {
 
 static void sir_linear(const float * in, float * out, int in_d, int out_d,
                        const float * w, const float * b) {
-    for (int o = 0; o < out_d; o++) {
-        float s = b ? b[o] : 0.0f;
-        for (int i = 0; i < in_d; i++) s += in[i] * w[o * in_d + i];
-        out[o] = s;
-    }
+    core_cpu::linear_cpu(in, out, in_d, out_d, w, b);
 }
 
 // ── Swin window attention ──────────────────────────────────────────────
@@ -198,9 +214,7 @@ static void swin_block_forward(float * x, int H, int W, int D,
 
         // QKV projection: [ws², D] → [ws², 3D]
         std::vector<float> qkv(ws2 * 3 * D);
-        for (int t = 0; t < ws2; t++)
-            sir_linear(win_tokens + t * D, qkv.data() + t * 3 * D,
-                       D, 3 * D, wt.qkv_w, wt.qkv_b);
+        core_cpu::linear_batch_cpu(win_tokens, qkv.data(), ws2, D, 3 * D, wt.qkv_w, wt.qkv_b);
 
         // Attention per head
         std::vector<float> attn_out(ws2 * D, 0.0f);
@@ -213,9 +227,7 @@ static void swin_block_forward(float * x, int H, int W, int D,
                 const float * qi = qkv.data() + i * 3 * D + off;         // Q
                 for (int j = 0; j < ws2; j++) {
                     const float * kj = qkv.data() + j * 3 * D + D + off; // K
-                    float dot = 0;
-                    for (int d = 0; d < hd; d++) dot += qi[d] * kj[d];
-                    float s = dot * scale;
+                    float s = core_cpu::dot_product(qi, kj, hd) * scale;
 
                     // RPB
                     if (wt.rpb_table && wt.rpb_index) {
@@ -251,9 +263,7 @@ static void swin_block_forward(float * x, int H, int W, int D,
         }
 
         // Output projection
-        for (int t = 0; t < ws2; t++)
-            sir_linear(attn_out.data() + t * D, win_result + t * D,
-                       D, D, wt.proj_w, wt.proj_b);
+        core_cpu::linear_batch_cpu(attn_out.data(), win_result, ws2, D, D, wt.proj_w, wt.proj_b);
     }
 
     // Window reverse
@@ -277,14 +287,10 @@ static void swin_block_forward(float * x, int H, int W, int D,
     int mlp_dim = D * 2; // mlp_ratio=2
     std::vector<float> mlp_up(N * mlp_dim);
     std::vector<float> mlp_dn(N * D);
-    for (int i = 0; i < N; i++) {
-        sir_linear(tmp.data() + i * D, mlp_up.data() + i * mlp_dim,
-                   D, mlp_dim, wt.mlp_up_w, wt.mlp_up_b);
-        for (int j = 0; j < mlp_dim; j++)
-            mlp_up[i * mlp_dim + j] = sir_gelu(mlp_up[i * mlp_dim + j]);
-        sir_linear(mlp_up.data() + i * mlp_dim, mlp_dn.data() + i * D,
-                   mlp_dim, D, wt.mlp_dn_w, wt.mlp_dn_b);
-    }
+    core_cpu::linear_batch_cpu(tmp.data(), mlp_up.data(), N, D, mlp_dim, wt.mlp_up_w, wt.mlp_up_b);
+    for (int i = 0; i < N * mlp_dim; i++)
+        mlp_up[i] = sir_gelu(mlp_up[i]);
+    core_cpu::linear_batch_cpu(mlp_up.data(), mlp_dn.data(), N, mlp_dim, D, wt.mlp_dn_w, wt.mlp_dn_b);
 
     for (int i = 0; i < N * D; i++) x[i] += mlp_dn[i];
 }
@@ -296,7 +302,7 @@ struct swinir_sr_context {
     int n_threads;
     bool bench;
     core_gguf::WeightLoad wl;
-    core_cpu::DequantCache dcache;  // caches dequantized weights across inference calls
+    core_cpu::DequantCache dcache;
     std::vector<std::vector<int32_t>> ibufs;
 
     const float * get(const std::string & name) {

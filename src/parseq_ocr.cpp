@@ -87,6 +87,18 @@ struct parseq_ocr_context {
     // Dequant cache for quantized weights
     std::map<const void *, std::vector<float>> dequant_cache;
 
+    // Pre-allocated decoder scratch (avoids per-step heap allocs)
+    struct dec_scratch {
+        std::vector<float> ctx_emb, ctx_norm;      // [max_T * D]
+        std::vector<float> pq, pq_norm;             // [D]
+        std::vector<float> sa_Q, sa_K, sa_V;        // Q=[D], K/V=[max_T * D]
+        std::vector<float> sa_out, sa_proj, h;      // [D]
+        std::vector<float> h_norm, ca_Q, ca_out, ca_proj; // [D]
+        std::vector<float> h_norm2, ff_up, ff_down; // ff_up=[ffn]
+        std::vector<float> h_final, logits;         // logits=[V]
+        bool allocated = false;
+    } ds;
+
     bool bench;
 
     ggml_gallocr_t galloc = nullptr;
@@ -561,6 +573,32 @@ static std::string run_decoder_ar(parseq_ocr_context * ctx) {
     std::vector<int> tgt_in(num_steps, hp.pad_token);
     tgt_in[0] = bos_id;  // 95
 
+    // Pre-allocate decoder scratch buffers
+    {
+        auto & ds = ctx->ds;
+        ds.ctx_emb.resize(num_steps * D);
+        ds.ctx_norm.resize(num_steps * D);
+        ds.pq.resize(D);
+        ds.pq_norm.resize(D);
+        ds.sa_Q.resize(D);
+        ds.sa_K.resize(num_steps * D);
+        ds.sa_V.resize(num_steps * D);
+        ds.sa_out.resize(D);
+        ds.sa_proj.resize(D);
+        ds.h.resize(D);
+        ds.h_norm.resize(D);
+        ds.ca_Q.resize(D);
+        ds.ca_out.resize(D);
+        ds.ca_proj.resize(D);
+        ds.h_norm2.resize(D);
+        ds.ff_up.resize(ffn);
+        ds.ff_down.resize(D);
+        ds.h_final.resize(D);
+        ds.logits.resize(hp.vocab_size);
+        ds.allocated = true;
+    }
+    auto & ds = ctx->ds;
+
     // Pre-compute cross-attention K/V from memory (constant across steps)
     const bool bench = ctx->bench;
     auto t_dec_kv = std::chrono::steady_clock::now();
@@ -571,117 +609,75 @@ static std::string run_decoder_ar(parseq_ocr_context * ctx) {
         std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_dec_kv).count());
 
     for (int i = 0; i < num_steps; i++) {
-        const int j = i + 1;  // next token index
-        const int T = j;      // context length (tokens 0..i)
+        const int j = i + 1;
+        const int T = j;
 
-        // Build context embeddings following PARSeq decode():
-        //   ctx[0] = embed(BOS) (null context, no position query)
-        //   ctx[k] = pos_queries[k-1] + embed(tgt_in[k]) for k >= 1
-        std::vector<float> ctx_emb(T * D);
+        // Build context embeddings
         for (int t = 0; t < T; t++) {
             int tid = tgt_in[t];
             for (int d = 0; d < D; d++) {
                 float e = embed_w[tid * D + d] * embed_scale;
-                if (t > 0) {
-                    // Add position query (pos_queries row t-1)
-                    e += pos_q[(t - 1) * D + d];
-                }
-                ctx_emb[t * D + d] = e;
+                if (t > 0) e += pos_q[(t - 1) * D + d];
+                ds.ctx_emb[t * D + d] = e;
             }
         }
 
-        // Query: only position i (single query, efficient AR decoding)
-        // pos_queries row i → [1, D]
-        std::vector<float> pq(D);
+        // Query: position i
         for (int d = 0; d < D; d++)
-            pq[d] = pos_q[i * D + d];
+            ds.pq[d] = pos_q[i * D + d];
 
-        // --- Self-attention: Q from norm_q(pq), K/V from norm_c(ctx_emb) ---
-        std::vector<float> pq_norm(D);
-        layer_norm(pq.data(), nq_w, nq_b, D, 1, pq_norm.data());
+        // Self-attention: Q from norm_q(pq), K/V from norm_c(ctx_emb)
+        layer_norm(ds.pq.data(), nq_w, nq_b, D, 1, ds.pq_norm.data());
+        layer_norm(ds.ctx_emb.data(), nc_w, nc_b, D, T, ds.ctx_norm.data());
 
-        std::vector<float> ctx_norm(T * D);
-        layer_norm(ctx_emb.data(), nc_w, nc_b, D, T, ctx_norm.data());
+        linear_batch(ds.pq_norm.data(), sa_w, sa_b, 1, D, D, ds.sa_Q.data());
+        linear_batch(ds.ctx_norm.data(), sa_w + D * D, sa_b + D, T, D, D, ds.sa_K.data());
+        linear_batch(ds.ctx_norm.data(), sa_w + 2 * D * D, sa_b + 2 * D, T, D, D, ds.sa_V.data());
 
-        // Q from query (1 token), K/V from context (T tokens)
-        std::vector<float> sa_Q(D), sa_K(T * D), sa_V(T * D);
-        linear_batch(pq_norm.data(), sa_w, sa_b, 1, D, D, sa_Q.data());
-        linear_batch(ctx_norm.data(), sa_w + D * D, sa_b + D, T, D, D, sa_K.data());
-        linear_batch(ctx_norm.data(), sa_w + 2 * D * D, sa_b + 2 * D, T, D, D, sa_V.data());
+        mha_cpu(ds.sa_Q.data(), ds.sa_K.data(), ds.sa_V.data(), 1, T, D, dec_heads,
+                nullptr, ds.sa_out.data());
 
-        // Build query mask [1, T]: query at position i can see context 0..i
-        // mask[0, k] = 0 for k <= i, -inf for k > i
-        std::vector<float> mask(T, 0.0f);
-        // Since T = i+1, all context positions are 0..i, all visible. No masking needed.
-        // (The causal constraint is enforced by only providing context up to position i)
-
-        // Self-attention (Tq=1, Tk=T)
-        std::vector<float> sa_out(D);
-        mha_cpu(sa_Q.data(), sa_K.data(), sa_V.data(), 1, T, D, dec_heads,
-                nullptr, sa_out.data());
-
-        // Output projection
-        std::vector<float> sa_proj(D);
-        linear_batch(sa_out.data(), sa_ow, sa_ob, 1, D, D, sa_proj.data());
+        linear_batch(ds.sa_out.data(), sa_ow, sa_ob, 1, D, D, ds.sa_proj.data());
 
         // Residual: h = pq + sa_proj
-        std::vector<float> h(D);
-        for (int d = 0; d < D; d++) h[d] = pq[d] + sa_proj[d];
+        for (int d = 0; d < D; d++) ds.h[d] = ds.pq[d] + ds.sa_proj[d];
 
-        // --- Cross-attention: Q from norm1(h), K/V from memory ---
-        std::vector<float> h_norm(D);
-        layer_norm(h.data(), n1_w, n1_b, D, 1, h_norm.data());
+        // Cross-attention: Q from norm1(h), K/V from memory
+        layer_norm(ds.h.data(), n1_w, n1_b, D, 1, ds.h_norm.data());
+        linear_batch(ds.h_norm.data(), ca_w, ca_b, 1, D, D, ds.ca_Q.data());
 
-        std::vector<float> ca_Q_dec(D);
-        linear_batch(h_norm.data(), ca_w, ca_b, 1, D, D, ca_Q_dec.data());
+        mha_cpu(ds.ca_Q.data(), ca_K.data(), ca_V.data(), 1, N, D, dec_heads,
+                nullptr, ds.ca_out.data());
 
-        std::vector<float> ca_out(D);
-        mha_cpu(ca_Q_dec.data(), ca_K.data(), ca_V.data(), 1, N, D, dec_heads,
-                nullptr, ca_out.data());
+        linear_batch(ds.ca_out.data(), ca_ow, ca_ob, 1, D, D, ds.ca_proj.data());
+        for (int d = 0; d < D; d++) ds.h[d] += ds.ca_proj[d];
 
-        std::vector<float> ca_proj(D);
-        linear_batch(ca_out.data(), ca_ow, ca_ob, 1, D, D, ca_proj.data());
+        // FFN: norm2 → linear1 → GELU → linear2
+        layer_norm(ds.h.data(), n2_w, n2_b, D, 1, ds.h_norm2.data());
+        linear_batch(ds.h_norm2.data(), ff1_w, ff1_b, 1, D, ffn, ds.ff_up.data());
+        for (int f = 0; f < ffn; f++) ds.ff_up[f] = gelu_scalar(ds.ff_up[f]);
+        linear_batch(ds.ff_up.data(), ff2_w, ff2_b, 1, ffn, D, ds.ff_down.data());
+        for (int d = 0; d < D; d++) ds.h[d] += ds.ff_down[d];
 
-        // Residual: h = h + ca_proj
-        for (int d = 0; d < D; d++) h[d] += ca_proj[d];
+        // Final norm + head
+        layer_norm(ds.h.data(), dn_w, dn_b, D, 1, ds.h_final.data());
+        linear_batch(ds.h_final.data(), hd_w, hd_b, 1, D, hp.vocab_size, ds.logits.data());
 
-        // --- FFN: norm2 → linear1 → GELU → linear2 ---
-        std::vector<float> h_norm2(D);
-        layer_norm(h.data(), n2_w, n2_b, D, 1, h_norm2.data());
-
-        std::vector<float> ff_up(ffn);
-        linear_batch(h_norm2.data(), ff1_w, ff1_b, 1, D, ffn, ff_up.data());
-        for (int f = 0; f < ffn; f++) ff_up[f] = gelu_scalar(ff_up[f]);
-
-        std::vector<float> ff_down(D);
-        linear_batch(ff_up.data(), ff2_w, ff2_b, 1, ffn, D, ff_down.data());
-
-        // Residual: h = h + ff_down
-        for (int d = 0; d < D; d++) h[d] += ff_down[d];
-
-        // --- Final norm + head ---
-        std::vector<float> h_final(D);
-        layer_norm(h.data(), dn_w, dn_b, D, 1, h_final.data());
-
-        // Head: logits[95] = h_final @ head_w^T + head_b
-        std::vector<float> logits(hp.vocab_size);
-        linear_batch(h_final.data(), hd_w, hd_b, 1, D, hp.vocab_size, logits.data());
-
-        // Softmax + argmax (for both prediction and confidence)
-        float max_logit = logits[0];
+        // Softmax + argmax
+        float max_logit = ds.logits[0];
         for (int k = 1; k < hp.vocab_size; k++)
-            if (logits[k] > max_logit) max_logit = logits[k];
+            if (ds.logits[k] > max_logit) max_logit = ds.logits[k];
         float sum_exp = 0;
         for (int k = 0; k < hp.vocab_size; k++) {
-            logits[k] = expf(logits[k] - max_logit);
-            sum_exp += logits[k];
+            ds.logits[k] = expf(ds.logits[k] - max_logit);
+            sum_exp += ds.logits[k];
         }
-        for (int k = 0; k < hp.vocab_size; k++) logits[k] /= sum_exp;
+        for (int k = 0; k < hp.vocab_size; k++) ds.logits[k] /= sum_exp;
 
         int pred = 0;
-        float best_prob = logits[0];
+        float best_prob = ds.logits[0];
         for (int k = 1; k < hp.vocab_size; k++) {
-            if (logits[k] > best_prob) { best_prob = logits[k]; pred = k; }
+            if (ds.logits[k] > best_prob) { best_prob = ds.logits[k]; pred = k; }
         }
 
         // Head output: 0=EOS, 1..94=chars

@@ -1,17 +1,24 @@
-// pix2struct.cpp -- Pix2Struct image-to-text (CPU-scalar).
+// pix2struct.cpp -- Pix2Struct image-to-text (optimized).
+//
+// Phase 1: Encoder as ggml graph (SIMD / GPU-ready via ggml_backend_sched).
+// Phase 2: Decoder KV cache — incremental single-token decode with cached
+//          self-attn K/V and pre-computed cross-attn K/V.
+// Phase 3: DequantCache for all remaining CPU-scalar weight access.
 //
 // Encoder: patch_projection + row/col embeddings → 12 T5-style layers
-//   (Pre-RMSNorm → QKVO self-attn → Pre-RMSNorm → SwiGLU FFN)
+//   (Pre-RMSNorm → QKVO self-attn → Pre-RMSNorm → GeGLU FFN)
 //   No relative attention bias in encoder; position from row/col embeddings.
 //
 // Decoder: token embed → 12 T5-style layers
 //   (Pre-RMSNorm → causal self-attn + T5 relative bias →
-//    Pre-RMSNorm → cross-attn → Pre-RMSNorm → SwiGLU FFN)
-//   → final norm → LM head → greedy/beam decode.
+//    Pre-RMSNorm → cross-attn → Pre-RMSNorm → GeGLU FFN)
+//   → final norm → LM head → greedy decode.
 
 #include "pix2struct.h"
 #include "core/gguf_loader.h"
+#include "core/cpu_ops.h"
 #include "ggml-backend.h"
+#include "ggml-cpu.h"
 
 #include <algorithm>
 #include <chrono>
@@ -22,41 +29,8 @@
 #include <string>
 #include <vector>
 
-// ── Helpers ──
+// ── T5 relative position bias ──
 
-static const float * to_f32(const ggml_tensor * t, std::vector<float> & buf) {
-    if (!t) return nullptr;
-    if (t->type == GGML_TYPE_F32) return (const float *)t->data;
-    int64_t n = ggml_nelements(t);
-    buf.resize(n);
-    if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t * s = (const ggml_fp16_t *)t->data;
-        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(s[i]);
-    } else {
-        const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) traits->to_float(t->data, buf.data(), n);
-        else memset(buf.data(), 0, n * sizeof(float));
-    }
-    return buf.data();
-}
-
-static void rms_norm(const float * x, int n, const float * w, float eps, float * out) {
-    float sum_sq = 0;
-    for (int i = 0; i < n; i++) sum_sq += x[i] * x[i];
-    float inv = 1.0f / sqrtf(sum_sq / n + eps);
-    for (int i = 0; i < n; i++) out[i] = x[i] * inv * w[i];
-}
-
-// Linear: out[o] = sum_i(w[o*ic + i] * x[i])
-static void linear(const float * x, int ic, const float * w, int oc, float * out) {
-    for (int o = 0; o < oc; o++) {
-        float s = 0;
-        for (int i = 0; i < ic; i++) s += w[o * ic + i] * x[i];
-        out[o] = s;
-    }
-}
-
-// T5 relative position bias: maps distance → bucket → bias per head
 static int t5_relative_bucket(int rel_pos, bool bidirectional, int n_buckets, int max_distance) {
     int bucket = 0;
     int n = -rel_pos;
@@ -83,7 +57,7 @@ struct enc_layer_wt {
     ggml_tensor * pre_attn_norm;
     ggml_tensor * q_w, * k_w, * v_w, * o_w;
     ggml_tensor * pre_mlp_norm;
-    ggml_tensor * wi_0, * wi_1, * wo; // SwiGLU
+    ggml_tensor * wi_0, * wi_1, * wo; // GeGLU
 };
 
 struct dec_layer_wt {
@@ -102,21 +76,27 @@ struct dec_layer_wt {
 // ── Model context ──
 
 struct pix2struct_context {
-    ggml_context * gguf_ctx;
-    ggml_backend_buffer_t gguf_buf;
+    // Weight storage
+    core_gguf::WeightLoad wl;
+
+    // ggml backend (CPU, kept alive for graph compute)
+    ggml_backend_t backend;
+
+    // Encoder scheduler (reusable)
+    ggml_backend_sched_t enc_sched;
 
     int enc_layers, dec_layers, hidden, n_heads, d_kv, d_ff;
     int vocab_size, patch_size, max_patches;
     int rel_buckets, rel_max_dist;
     float rms_eps;
 
-    // Encoder
+    // Encoder weights
     ggml_tensor * patch_proj_w, * patch_proj_b;
     ggml_tensor * row_emb, * col_emb;
     std::vector<enc_layer_wt> enc;
     ggml_tensor * enc_final_norm;
 
-    // Decoder
+    // Decoder weights
     ggml_tensor * tok_emb;
     std::vector<dec_layer_wt> dec;
     ggml_tensor * final_norm;
@@ -125,15 +105,46 @@ struct pix2struct_context {
     // Tokenizer
     int eos_id, pad_id;
 
-    // Cached encoder output
+    // Cached encoder output [n_patches, hidden]
     std::vector<float> enc_cache;
     int enc_cache_n;
+
+    // Pre-computed cross-attn K/V per decoder layer [n_patches, qkv_dim]
+    std::vector<std::vector<float>> cross_k_cache;
+    std::vector<std::vector<float>> cross_v_cache;
+
+    // Self-attention KV cache per decoder layer [max_seq, qkv_dim]
+    std::vector<std::vector<float>> sa_k_cache;
+    std::vector<std::vector<float>> sa_v_cache;
+    int sa_cache_len; // number of cached positions
+
+    // Dequantization cache (avoids re-dequantizing immutable weights)
+    core_cpu::DequantCache dc;
+
+    // Pre-allocated decoder scratch buffers (avoid per-step/per-layer heap allocs)
+    struct dec_scratch {
+        std::vector<float> x, normed, attn_out, proj_out;
+        std::vector<float> q_proj, k_new, v_new;
+        std::vector<float> ffn_gate, ffn_up, ffn_hidden;
+        std::vector<float> attn_result, attn_scores;
+        std::vector<float> final_h;
+        bool allocated = false;
+    } ds;
 
     // Per-token confidence (softmax probability of greedy-selected token)
     std::vector<float> char_confidences;
 
     bool bench;
 };
+
+// ── Helper: cast ggml tensor to f32 in graph ──
+
+static ggml_tensor * cast_f32(ggml_context * g, ggml_tensor * t) {
+    if (!t || t->type == GGML_TYPE_F32) return t;
+    return ggml_cast(g, t, GGML_TYPE_F32);
+}
+
+// ── Init ──
 
 pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
     (void)n_threads;
@@ -143,6 +154,9 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
     if (!meta) return nullptr;
 
     auto * ctx = new pix2struct_context;
+    ctx->backend = nullptr;
+    ctx->enc_sched = nullptr;
+
     ctx->enc_layers = (int)core_gguf::kv_u32(meta, "pix2struct.enc_layers", 12);
     ctx->dec_layers = (int)core_gguf::kv_u32(meta, "pix2struct.dec_layers", 12);
     ctx->hidden = (int)core_gguf::kv_u32(meta, "pix2struct.hidden_size", 768);
@@ -159,17 +173,14 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
     ctx->rms_eps = 1e-6f;
     core_gguf::free_metadata(meta);
 
-    ggml_backend_t backend = ggml_backend_init_by_type(GGML_BACKEND_DEVICE_TYPE_CPU, nullptr);
-    if (!backend) { delete ctx; return nullptr; }
-    core_gguf::WeightLoad wl;
-    if (!core_gguf::load_weights(model_path, backend, "pix2struct", wl)) {
-        ggml_backend_free(backend); delete ctx; return nullptr;
+    // Keep backend alive for ggml graph compute
+    ctx->backend = ggml_backend_cpu_init();
+    if (!ctx->backend) { delete ctx; return nullptr; }
+    if (!core_gguf::load_weights(model_path, ctx->backend, "pix2struct", ctx->wl)) {
+        ggml_backend_free(ctx->backend); delete ctx; return nullptr;
     }
-    ggml_backend_free(backend);
-    ctx->gguf_ctx = wl.ctx;
-    ctx->gguf_buf = wl.buf;
 
-    auto g = [&](const char * name) { return core_gguf::try_get(wl.tensors, name); };
+    auto g = [&](const char * name) { return core_gguf::try_get(ctx->wl.tensors, name); };
 
     ctx->patch_proj_w = g("enc_emb.patch_proj.weight");
     ctx->patch_proj_b = g("enc_emb.patch_proj.bias");
@@ -218,163 +229,28 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
     }
 
     ctx->enc_cache_n = 0;
+    ctx->sa_cache_len = 0;
+
+    // Create encoder scheduler (reusable across calls)
+    {
+        int max_nodes = ctx->enc_layers * 40 + 64;
+        ggml_backend_t backends[1] = { ctx->backend };
+        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, max_nodes, false, false);
+    }
+
     ctx->bench = (std::getenv("CRISPEMBED_PIX2STRUCT_BENCH") != nullptr);
     return ctx;
 }
 
 void pix2struct_free(pix2struct_context * ctx) {
     if (!ctx) return;
-    core_gguf::WeightLoad wl;
-    wl.ctx = ctx->gguf_ctx; wl.buf = ctx->gguf_buf;
-    core_gguf::free_weights(wl);
+    if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+    core_gguf::free_weights(ctx->wl);
+    if (ctx->backend) ggml_backend_free(ctx->backend);
     delete ctx;
 }
 
-// ── Self-attention (multi-head, no causal mask for encoder) ──
-
-static void self_attn(const float * x, int T, int H, int n_heads, int d_kv,
-                       const float * q_w, const float * k_w,
-                       const float * v_w, const float * o_w,
-                       const float * rel_bias, int n_buckets, int max_dist,
-                       bool bidirectional, bool causal,
-                       float * out, std::vector<float> & scratch) {
-    int head_dim = d_kv;
-    int qkv_dim = n_heads * head_dim;
-
-    // Q, K, V projections
-    std::vector<float> Q(T * qkv_dim), K(T * qkv_dim), V(T * qkv_dim);
-    for (int t = 0; t < T; t++) {
-        linear(x + t * H, H, q_w, qkv_dim, Q.data() + t * qkv_dim);
-        linear(x + t * H, H, k_w, qkv_dim, K.data() + t * qkv_dim);
-        linear(x + t * H, H, v_w, qkv_dim, V.data() + t * qkv_dim);
-    }
-
-    // Compute attention per head
-    std::vector<float> attn_out(T * qkv_dim, 0.0f);
-    float scale = 1.0f; // T5 doesn't scale by sqrt(d_k) — it uses the raw dot product
-
-    for (int h = 0; h < n_heads; h++) {
-        // Attention scores
-        scratch.resize(T * T);
-        for (int i = 0; i < T; i++) {
-            for (int j = 0; j < T; j++) {
-                float dot = 0;
-                for (int d = 0; d < head_dim; d++)
-                    dot += Q[i * qkv_dim + h * head_dim + d] *
-                           K[j * qkv_dim + h * head_dim + d];
-
-                // Add relative bias
-                if (rel_bias) {
-                    int bucket = t5_relative_bucket(i - j, bidirectional, n_buckets, max_dist);
-                    dot += rel_bias[bucket * n_heads + h];
-                }
-
-                // Causal mask
-                if (causal && j > i) dot = -1e30f;
-
-                scratch[i * T + j] = dot;
-            }
-        }
-
-        // Softmax
-        for (int i = 0; i < T; i++) {
-            float mx = -1e30f;
-            for (int j = 0; j < T; j++) mx = std::max(mx, scratch[i * T + j]);
-            float sum = 0;
-            for (int j = 0; j < T; j++) {
-                scratch[i * T + j] = expf(scratch[i * T + j] - mx);
-                sum += scratch[i * T + j];
-            }
-            for (int j = 0; j < T; j++) scratch[i * T + j] /= sum;
-        }
-
-        // attn @ V
-        for (int i = 0; i < T; i++)
-            for (int d = 0; d < head_dim; d++) {
-                float s = 0;
-                for (int j = 0; j < T; j++)
-                    s += scratch[i * T + j] * V[j * qkv_dim + h * head_dim + d];
-                attn_out[i * qkv_dim + h * head_dim + d] = s;
-            }
-    }
-
-    // Output projection
-    for (int t = 0; t < T; t++)
-        linear(attn_out.data() + t * qkv_dim, qkv_dim, o_w, H, out + t * H);
-}
-
-// ── Cross-attention ──
-
-static void cross_attn(const float * x, int T_q, int H,
-                        const float * enc, int T_kv,
-                        int n_heads, int d_kv,
-                        const float * q_w, const float * k_w,
-                        const float * v_w, const float * o_w,
-                        float * out, std::vector<float> & scratch) {
-    int head_dim = d_kv;
-    int qkv_dim = n_heads * head_dim;
-
-    std::vector<float> Q(T_q * qkv_dim), K(T_kv * qkv_dim), V(T_kv * qkv_dim);
-    for (int t = 0; t < T_q; t++)
-        linear(x + t * H, H, q_w, qkv_dim, Q.data() + t * qkv_dim);
-    for (int t = 0; t < T_kv; t++) {
-        linear(enc + t * H, H, k_w, qkv_dim, K.data() + t * qkv_dim);
-        linear(enc + t * H, H, v_w, qkv_dim, V.data() + t * qkv_dim);
-    }
-
-    std::vector<float> attn_out(T_q * qkv_dim, 0.0f);
-    for (int h = 0; h < n_heads; h++) {
-        scratch.resize(T_q * T_kv);
-        for (int i = 0; i < T_q; i++)
-            for (int j = 0; j < T_kv; j++) {
-                float dot = 0;
-                for (int d = 0; d < head_dim; d++)
-                    dot += Q[i * qkv_dim + h * head_dim + d] *
-                           K[j * qkv_dim + h * head_dim + d];
-                scratch[i * T_kv + j] = dot;
-            }
-        for (int i = 0; i < T_q; i++) {
-            float mx = -1e30f;
-            for (int j = 0; j < T_kv; j++) mx = std::max(mx, scratch[i * T_kv + j]);
-            float sum = 0;
-            for (int j = 0; j < T_kv; j++) {
-                scratch[i * T_kv + j] = expf(scratch[i * T_kv + j] - mx);
-                sum += scratch[i * T_kv + j];
-            }
-            for (int j = 0; j < T_kv; j++) scratch[i * T_kv + j] /= sum;
-        }
-        for (int i = 0; i < T_q; i++)
-            for (int d = 0; d < head_dim; d++) {
-                float s = 0;
-                for (int j = 0; j < T_kv; j++)
-                    s += scratch[i * T_kv + j] * V[j * qkv_dim + h * head_dim + d];
-                attn_out[i * qkv_dim + h * head_dim + d] = s;
-            }
-    }
-    for (int t = 0; t < T_q; t++)
-        linear(attn_out.data() + t * qkv_dim, qkv_dim, o_w, H, out + t * H);
-}
-
-// ── SwiGLU FFN ──
-
-static void swiglu_ffn(const float * x, int H, int d_ff,
-                        const float * wi_0, const float * wi_1, const float * wo,
-                        float * out) {
-    std::vector<float> gate(d_ff), up(d_ff);
-    linear(x, H, wi_0, d_ff, gate.data());
-    linear(x, H, wi_1, d_ff, up.data());
-    // GELU_new(gate) * up
-    std::vector<float> hidden(d_ff);
-    for (int i = 0; i < d_ff; i++) {
-        // gelu_new = 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))
-        float x = gate[i];
-        float g = 0.5f * x * (1.0f + tanhf(0.7978845608028654f * (x + 0.044715f * x * x * x)));
-        hidden[i] = g * up[i];
-    }
-    linear(hidden.data(), d_ff, wo, H, out);
-}
-
-// ── Encoder forward ──
+// ── Phase 1: Encoder as ggml graph ──
 
 const float * pix2struct_encode_patches(pix2struct_context * ctx,
                                          const float * patches, int n_patches,
@@ -383,173 +259,498 @@ const float * pix2struct_encode_patches(pix2struct_context * ctx,
 
     const int H = ctx->hidden;
     const int patch_dim = ctx->patch_size * ctx->patch_size * 3; // 768
-    std::vector<float> dq1, dq2, scratch;
+    const int n_heads = ctx->n_heads;
+    const int hd = ctx->d_kv;  // 64
+    const int d_ff = ctx->d_ff;
+    const float eps = ctx->rms_eps;
 
-    // Embed patches: projection(pixel_values) + row_emb(row_id) + col_emb(col_id)
-    std::vector<float> x(n_patches * H);
-    const float * proj_w = to_f32(ctx->patch_proj_w, dq1);
-    const float * proj_b = to_f32(ctx->patch_proj_b, dq2);
-    const float * row_w = to_f32(ctx->row_emb, dq1);
-    const float * col_w = to_f32(ctx->col_emb, dq2);
+    // Step 1: Prepare pixel data + position embeddings on CPU
+    // Extract pixels into contiguous [patch_dim, n_patches] matrix
+    // Gather row/col embeddings into [H, n_patches] matrix
+    std::vector<float> pixels_flat(patch_dim * n_patches);
+    std::vector<float> pos_emb(H * n_patches);
+    {
+        const float * row_w = ctx->dc.get(ctx->row_emb);
+        const float * col_w = ctx->dc.get(ctx->col_emb);
 
-    for (int p = 0; p < n_patches; p++) {
-        int row_id = (int)patches[p * (patch_dim + 2) + 0];
-        int col_id = (int)patches[p * (patch_dim + 2) + 1];
-        const float * pixels = &patches[p * (patch_dim + 2) + 2];
+        for (int p = 0; p < n_patches; p++) {
+            int row_id = (int)patches[p * (patch_dim + 2) + 0];
+            int col_id = (int)patches[p * (patch_dim + 2) + 1];
+            const float * px = &patches[p * (patch_dim + 2) + 2];
 
-        // Linear projection of pixel values
-        linear(pixels, patch_dim, proj_w, H, &x[p * H]);
-        // Add bias
-        if (proj_b) for (int i = 0; i < H; i++) x[p * H + i] += proj_b[i];
-        // Add row/col embeddings (clamp to embedding table size)
-        row_id = std::max(0, std::min(row_id, 4095));
-        col_id = std::max(0, std::min(col_id, 4095));
-        for (int i = 0; i < H; i++) {
-            x[p * H + i] += row_w[row_id * H + i];
-            x[p * H + i] += col_w[col_id * H + i];
+            // Copy pixel values into contiguous column
+            memcpy(&pixels_flat[p * patch_dim], px, patch_dim * sizeof(float));
+
+            // Gather row + col embeddings
+            row_id = std::max(0, std::min(row_id, 4095));
+            col_id = std::max(0, std::min(col_id, 4095));
+            for (int i = 0; i < H; i++)
+                pos_emb[p * H + i] = row_w[row_id * H + i] + col_w[col_id * H + i];
         }
     }
 
+    // Step 2: Build ggml graph: patch_proj + pos_emb + 12 encoder layers
+    int max_nodes = ctx->enc_layers * 40 + 80;
+    size_t meta_sz = ggml_tensor_overhead() * (max_nodes + 64)
+                   + ggml_graph_overhead_custom(max_nodes, false);
+    std::vector<uint8_t> meta_buf(meta_sz);
+    ggml_init_params ip = { meta_sz, meta_buf.data(), true };
+    ggml_context * gc = ggml_init(ip);
 
-    // Encoder layers
-    std::vector<float> normed(n_patches * H), attn_out(n_patches * H), ffn_out(n_patches * H);
+    // Patch projection: pixels [patch_dim, n_patches] @ proj_w → [H, n_patches]
+    ggml_tensor * px_inp = ggml_new_tensor_2d(gc, GGML_TYPE_F32, patch_dim, n_patches);
+    ggml_set_name(px_inp, "pixels");
+    ggml_set_input(px_inp);
+
+    ggml_tensor * x = ggml_mul_mat(gc, ctx->patch_proj_w, px_inp);
+    if (ctx->patch_proj_b)
+        x = ggml_add(gc, x, cast_f32(gc, ctx->patch_proj_b));
+
+    // Add position embeddings (pre-gathered row+col on CPU)
+    ggml_tensor * pe_inp = ggml_new_tensor_2d(gc, GGML_TYPE_F32, H, n_patches);
+    ggml_set_name(pe_inp, "pos_emb");
+    ggml_set_input(pe_inp);
+    x = ggml_add(gc, x, pe_inp);
+    ggml_set_name(x, "enc_input");
+    ggml_set_input(x);
+
     for (int li = 0; li < ctx->enc_layers; li++) {
         const auto & L = ctx->enc[li];
+        ggml_tensor * residual = x;
 
         // Pre-attention RMSNorm
-        for (int t = 0; t < n_patches; t++)
-            rms_norm(&x[t * H], H, to_f32(L.pre_attn_norm, dq1), ctx->rms_eps, &normed[t * H]);
+        ggml_tensor * normed = ggml_rms_norm(gc, x, eps);
+        normed = ggml_mul(gc, normed, cast_f32(gc, L.pre_attn_norm));
 
-        // Self-attention (no relative bias, no causal)
-        self_attn(normed.data(), n_patches, H, ctx->n_heads, ctx->d_kv,
-                  to_f32(L.q_w, dq1), to_f32(L.k_w, dq1),
-                  to_f32(L.v_w, dq1), to_f32(L.o_w, dq1),
-                  nullptr, 0, 0, true, false,
-                  attn_out.data(), scratch);
+        // QKV projections: [H, T] → [qkv_dim, T]
+        ggml_tensor * Q = ggml_mul_mat(gc, L.q_w, normed);
+        ggml_tensor * K = ggml_mul_mat(gc, L.k_w, normed);
+        ggml_tensor * V = ggml_mul_mat(gc, L.v_w, normed);
 
-        for (int i = 0; i < n_patches * H; i++) x[i] += attn_out[i];
+        // Reshape to [hd, nh, T] → permute to [hd, T, nh]
+        Q = ggml_reshape_3d(gc, Q, hd, n_heads, n_patches);
+        K = ggml_reshape_3d(gc, K, hd, n_heads, n_patches);
+        V = ggml_reshape_3d(gc, V, hd, n_heads, n_patches);
+        Q = ggml_permute(gc, Q, 0, 2, 1, 3);
+        K = ggml_permute(gc, K, 0, 2, 1, 3);
+        V = ggml_permute(gc, V, 0, 2, 1, 3);
 
+        // Flash attention: T5 encoder uses scale=1.0 (no 1/sqrt(d) scaling)
+        // No causal mask, no relative bias in encoder
+        ggml_tensor * attn = ggml_flash_attn_ext(gc, Q, K, V, nullptr, 1.0f, 0.0f, 0.0f);
+        attn = ggml_reshape_2d(gc, attn, H, n_patches);
+
+        // Output projection + residual
+        ggml_tensor * attn_proj = ggml_mul_mat(gc, L.o_w, attn);
+        x = ggml_add(gc, residual, attn_proj);
 
         // Pre-MLP RMSNorm
-        for (int t = 0; t < n_patches; t++)
-            rms_norm(&x[t * H], H, to_f32(L.pre_mlp_norm, dq1), ctx->rms_eps, &normed[t * H]);
+        residual = x;
+        normed = ggml_rms_norm(gc, x, eps);
+        normed = ggml_mul(gc, normed, cast_f32(gc, L.pre_mlp_norm));
 
-        // SwiGLU FFN
-        for (int t = 0; t < n_patches; t++)
-            swiglu_ffn(&normed[t * H], H, ctx->d_ff,
-                       to_f32(L.wi_0, dq1), to_f32(L.wi_1, dq1), to_f32(L.wo, dq1),
-                       &ffn_out[t * H]);
+        // GeGLU FFN: gate = GELU(x @ wi_0), up = x @ wi_1, out = (gate * up) @ wo
+        ggml_tensor * gate = ggml_mul_mat(gc, L.wi_0, normed);
+        gate = ggml_gelu(gc, gate);
+        ggml_tensor * up = ggml_mul_mat(gc, L.wi_1, normed);
+        ggml_tensor * ffn_hidden = ggml_mul(gc, gate, up);
+        ggml_tensor * ffn_out = ggml_mul_mat(gc, L.wo, ffn_hidden);
 
-        for (int i = 0; i < n_patches * H; i++) x[i] += ffn_out[i];
+        x = ggml_add(gc, residual, ffn_out);
     }
 
     // Final encoder RMSNorm
     if (ctx->enc_final_norm) {
-        const float * fn_w = to_f32(ctx->enc_final_norm, dq1);
-        for (int t = 0; t < n_patches; t++)
-            rms_norm(&x[t * H], H, fn_w, ctx->rms_eps, &x[t * H]);
+        x = ggml_rms_norm(gc, x, eps);
+        x = ggml_mul(gc, x, cast_f32(gc, ctx->enc_final_norm));
     }
 
-    // Cache encoder output
-    ctx->enc_cache = std::move(x);
+    ggml_set_name(x, "enc_output");
+    ggml_set_output(x);
+
+    ggml_cgraph * gf = ggml_new_graph_custom(gc, max_nodes, false);
+    ggml_build_forward_expand(gf, x);
+
+    // Execute via backend scheduler
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "pix2struct: encoder graph alloc failed\n");
+        ggml_free(gc);
+        return nullptr;
+    }
+
+    // Feed pixel data and position embeddings
+    ggml_tensor * px_t = ggml_graph_get_tensor(gf, "pixels");
+    ggml_backend_tensor_set(px_t, pixels_flat.data(), 0, patch_dim * n_patches * sizeof(float));
+    ggml_tensor * pe_t = ggml_graph_get_tensor(gf, "pos_emb");
+    ggml_backend_tensor_set(pe_t, pos_emb.data(), 0, H * n_patches * sizeof(float));
+
+    ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
+
+    // Read output
+    ctx->enc_cache.resize(n_patches * H);
+    ggml_tensor * out_t = ggml_graph_get_tensor(gf, "enc_output");
+    ggml_backend_tensor_get(out_t, ctx->enc_cache.data(), 0, n_patches * H * sizeof(float));
     ctx->enc_cache_n = n_patches;
+
+    ggml_free(gc);
 
     if (out_dim) *out_dim = H;
     return ctx->enc_cache.data();
 }
 
-// ── Decoder step (single token) ──
+// ── Phase 2: Pre-compute cross-attention K/V ──
 
-static void decoder_step(pix2struct_context * ctx,
-                          const std::vector<std::vector<float>> & past_tokens,
-                          int step, float * logits,
-                          std::vector<float> & dq1, std::vector<float> & scratch) {
+static void precompute_cross_kv(pix2struct_context * ctx) {
+    const int n_enc = ctx->enc_cache_n;
     const int H = ctx->hidden;
-    const int T = step + 1; // number of tokens so far
+    const int qkv_dim = ctx->n_heads * ctx->d_kv;
+    const int n_dec = ctx->dec_layers;
 
-    // Token embedding for current token
-    const float * emb_w = to_f32(ctx->tok_emb, dq1);
-    int tok_id = (step == 0) ? ctx->pad_id : 0; // decoder_start_token
-    // Actually use the last generated token
-    // past_tokens[step] has the embedding
+    ctx->cross_k_cache.resize(n_dec);
+    ctx->cross_v_cache.resize(n_dec);
 
-    // Build full sequence of embeddings
-    std::vector<float> x(T * H);
-    for (int t = 0; t < T; t++)
-        memcpy(&x[t * H], past_tokens[t].data(), H * sizeof(float));
+    // Build ggml graph: project encoder output through cross-attn K/V for all layers
+    int max_nodes = n_dec * 6 + 16;
+    size_t meta_sz = ggml_tensor_overhead() * (max_nodes + 16)
+                   + ggml_graph_overhead_custom(max_nodes, false);
+    std::vector<uint8_t> meta_buf(meta_sz);
+    ggml_init_params ip = { meta_sz, meta_buf.data(), true };
+    ggml_context * gc = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(gc, max_nodes, false);
 
-    std::vector<float> normed(T * H), attn_out(T * H), ffn_out(T * H);
+    ggml_tensor * enc_inp = ggml_new_tensor_2d(gc, GGML_TYPE_F32, H, n_enc);
+    ggml_set_name(enc_inp, "enc_for_cross");
+    ggml_set_input(enc_inp);
+
+    for (int li = 0; li < n_dec; li++) {
+        const auto & L = ctx->dec[li];
+        char name[64];
+
+        ggml_tensor * k = ggml_mul_mat(gc, L.ca_k, enc_inp);
+        snprintf(name, sizeof(name), "cross_k_%d", li);
+        ggml_set_name(k, name);
+        ggml_set_output(k);
+        ggml_build_forward_expand(gf, k);
+
+        ggml_tensor * v = ggml_mul_mat(gc, L.ca_v, enc_inp);
+        snprintf(name, sizeof(name), "cross_v_%d", li);
+        ggml_set_name(v, name);
+        ggml_set_output(v);
+        ggml_build_forward_expand(gf, v);
+    }
+
+    // Execute
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "pix2struct: cross K/V alloc failed\n");
+        ggml_free(gc);
+        return;
+    }
+
+    ggml_tensor * inp_t = ggml_graph_get_tensor(gf, "enc_for_cross");
+    ggml_backend_tensor_set(inp_t, ctx->enc_cache.data(), 0, n_enc * H * sizeof(float));
+    ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
+
+    for (int li = 0; li < n_dec; li++) {
+        ctx->cross_k_cache[li].resize(n_enc * qkv_dim);
+        ctx->cross_v_cache[li].resize(n_enc * qkv_dim);
+        char name[64];
+
+        snprintf(name, sizeof(name), "cross_k_%d", li);
+        ggml_tensor * kt = ggml_graph_get_tensor(gf, name);
+        if (kt) ggml_backend_tensor_get(kt, ctx->cross_k_cache[li].data(),
+                                        0, n_enc * qkv_dim * sizeof(float));
+
+        snprintf(name, sizeof(name), "cross_v_%d", li);
+        ggml_tensor * vt = ggml_graph_get_tensor(gf, name);
+        if (vt) ggml_backend_tensor_get(vt, ctx->cross_v_cache[li].data(),
+                                        0, n_enc * qkv_dim * sizeof(float));
+    }
+
+    ggml_free(gc);
+}
+
+// ── Allocate decoder scratch buffers (once, reused across all decode steps) ──
+
+static void ensure_dec_scratch(pix2struct_context * ctx, int max_seq) {
+    if (ctx->ds.allocated) return;
+    const int H = ctx->hidden;
+    const int qkv_dim = ctx->n_heads * ctx->d_kv;
+    const int d_ff = ctx->d_ff;
+    const int n_enc = ctx->enc_cache_n;
+    int max_kv = std::max(max_seq, n_enc); // scores buffer must fit both
+
+    ctx->ds.x.resize(H);
+    ctx->ds.normed.resize(H);
+    ctx->ds.attn_out.resize(qkv_dim);
+    ctx->ds.proj_out.resize(H);
+    ctx->ds.q_proj.resize(qkv_dim);
+    ctx->ds.k_new.resize(qkv_dim);
+    ctx->ds.v_new.resize(qkv_dim);
+    ctx->ds.ffn_gate.resize(d_ff);
+    ctx->ds.ffn_up.resize(d_ff);
+    ctx->ds.ffn_hidden.resize(d_ff);
+    ctx->ds.attn_result.resize(qkv_dim);
+    ctx->ds.attn_scores.resize(max_kv);
+    ctx->ds.final_h.resize(H);
+    ctx->ds.allocated = true;
+}
+
+// ── Decoder: RMSNorm (CPU, single token) ──
+
+static void rms_norm(const float * x, int n, const float * w, float eps, float * out) {
+    float sum_sq = 0;
+    for (int i = 0; i < n; i++) sum_sq += x[i] * x[i];
+    float inv = 1.0f / sqrtf(sum_sq / n + eps);
+    for (int i = 0; i < n; i++) out[i] = x[i] * inv * w[i];
+}
+
+// ── Decoder: T5 self-attention (single query, cached K/V) ──
+// T5 uses raw dot products (no 1/sqrt(d) scaling).
+
+static void t5_self_attn_1q(const float * q_proj,    // [qkv_dim]
+                             const float * k_cache,   // [n_past+1, qkv_dim]
+                             const float * v_cache,   // [n_past+1, qkv_dim]
+                             int n_kv, int n_heads, int hd,
+                             const float * rel_bias,  // [n_buckets, n_heads]
+                             int n_buckets, int max_dist,
+                             int q_pos,               // current position
+                             float * out,              // [qkv_dim]
+                             float * result_buf,       // [qkv_dim] pre-allocated
+                             float * scores_buf) {     // [>=n_kv] pre-allocated
+    int D = n_heads * hd;
+    memset(result_buf, 0, D * sizeof(float));
+
+    for (int h = 0; h < n_heads; h++) {
+        int off = h * hd;
+
+        // T5: no scaling, add relative bias
+        for (int ki = 0; ki < n_kv; ki++) {
+            scores_buf[ki] = core_cpu::dot_product(q_proj + off, k_cache + ki * D + off, hd);
+            if (rel_bias) {
+                int bucket = t5_relative_bucket(q_pos - ki, false, n_buckets, max_dist);
+                scores_buf[ki] += rel_bias[bucket * n_heads + h];
+            }
+            if (ki > q_pos) scores_buf[ki] = -1e30f;
+        }
+
+        // Softmax
+        float maxs = scores_buf[0];
+        for (int ki = 1; ki < n_kv; ki++) maxs = std::max(maxs, scores_buf[ki]);
+        float sum = 0;
+        for (int ki = 0; ki < n_kv; ki++) {
+            scores_buf[ki] = expf(scores_buf[ki] - maxs);
+            sum += scores_buf[ki];
+        }
+        float inv_sum = 1.0f / sum;
+        for (int ki = 0; ki < n_kv; ki++) scores_buf[ki] *= inv_sum;
+
+        for (int d = 0; d < hd; d++) {
+            float s = 0;
+            for (int ki = 0; ki < n_kv; ki++)
+                s += scores_buf[ki] * v_cache[ki * D + off + d];
+            result_buf[off + d] = s;
+        }
+    }
+    memcpy(out, result_buf, D * sizeof(float));
+}
+
+// ── Decoder: T5 cross-attention (single query, pre-computed K/V) ──
+// T5: no 1/sqrt(d) scaling.
+
+static void t5_cross_attn_1q(const float * q_proj,    // [qkv_dim]
+                              const float * k_cache,   // [n_enc, qkv_dim]
+                              const float * v_cache,   // [n_enc, qkv_dim]
+                              int n_enc, int n_heads, int hd,
+                              float * out,              // [qkv_dim]
+                              float * result_buf,       // [qkv_dim] pre-allocated
+                              float * scores_buf) {     // [>=n_enc] pre-allocated
+    int D = n_heads * hd;
+    memset(result_buf, 0, D * sizeof(float));
+
+    for (int h = 0; h < n_heads; h++) {
+        int off = h * hd;
+
+        for (int ki = 0; ki < n_enc; ki++)
+            scores_buf[ki] = core_cpu::dot_product(q_proj + off, k_cache + ki * D + off, hd);
+
+        float maxs = scores_buf[0];
+        for (int ki = 1; ki < n_enc; ki++) maxs = std::max(maxs, scores_buf[ki]);
+        float sum = 0;
+        for (int ki = 0; ki < n_enc; ki++) {
+            scores_buf[ki] = expf(scores_buf[ki] - maxs);
+            sum += scores_buf[ki];
+        }
+        float inv_sum = 1.0f / sum;
+        for (int ki = 0; ki < n_enc; ki++) scores_buf[ki] *= inv_sum;
+
+        for (int d = 0; d < hd; d++) {
+            float s = 0;
+            for (int ki = 0; ki < n_enc; ki++)
+                s += scores_buf[ki] * v_cache[ki * D + off + d];
+            result_buf[off + d] = s;
+        }
+    }
+    memcpy(out, result_buf, D * sizeof(float));
+}
+
+// ── Decoder: GeGLU FFN (single token, CPU) ──
+
+static void geglu_ffn_1t(const float * x, int H, int d_ff,
+                          const float * wi_0, const float * wi_1, const float * wo,
+                          float * out,
+                          float * gate_buf, float * up_buf, float * hidden_buf) {
+    core_cpu::linear_cpu(x, gate_buf, H, d_ff, wi_0, nullptr);
+    core_cpu::linear_cpu(x, up_buf, H, d_ff, wi_1, nullptr);
+    for (int i = 0; i < d_ff; i++) {
+        float g = gate_buf[i];
+        float gelu = 0.5f * g * (1.0f + tanhf(0.7978845608028654f * (g + 0.044715f * g * g * g)));
+        hidden_buf[i] = gelu * up_buf[i];
+    }
+    core_cpu::linear_cpu(hidden_buf, out, d_ff, H, wo, nullptr);
+}
+
+// ── Decoder step (single token, incremental KV cache) ──
+
+static void decoder_step_cached(pix2struct_context * ctx, int step, int tok_id,
+                                 float * logits) {
+    const int H = ctx->hidden;
+    const int qkv_dim = ctx->n_heads * ctx->d_kv;
+    const int n_enc = ctx->enc_cache_n;
+    auto & ds = ctx->ds;
+
+    // Get token embedding
+    const float * emb_w = ctx->dc.get(ctx->tok_emb);
+    memcpy(ds.x.data(), emb_w + tok_id * H, H * sizeof(float));
 
     // Get shared relative bias from layer 0
-    const float * rel_bias_w = to_f32(ctx->dec[0].sa_rel_bias, dq1);
+    const float * rel_bias_w = ctx->dc.get(ctx->dec[0].sa_rel_bias);
 
     for (int li = 0; li < ctx->dec_layers; li++) {
         const auto & L = ctx->dec[li];
 
-        // Self-attention with causal mask + relative bias (shared from layer 0)
-        for (int t = 0; t < T; t++)
-            rms_norm(&x[t * H], H, to_f32(L.sa_norm, dq1), ctx->rms_eps, &normed[t * H]);
+        // ── Self-attention with incremental KV cache ──
+        rms_norm(ds.x.data(), H, ctx->dc.get(L.sa_norm), ctx->rms_eps, ds.normed.data());
 
-        self_attn(normed.data(), T, H, ctx->n_heads, ctx->d_kv,
-                  to_f32(L.sa_q, dq1), to_f32(L.sa_k, dq1),
-                  to_f32(L.sa_v, dq1), to_f32(L.sa_o, dq1),
-                  rel_bias_w, ctx->rel_buckets, ctx->rel_max_dist,
-                  false, true,
-                  attn_out.data(), scratch);
-        for (int i = 0; i < T * H; i++) x[i] += attn_out[i];
+        core_cpu::linear_cpu(ds.normed.data(), ds.q_proj.data(), H, qkv_dim,
+                             ctx->dc.get(L.sa_q), nullptr);
+        core_cpu::linear_cpu(ds.normed.data(), ds.k_new.data(), H, qkv_dim,
+                             ctx->dc.get(L.sa_k), nullptr);
+        core_cpu::linear_cpu(ds.normed.data(), ds.v_new.data(), H, qkv_dim,
+                             ctx->dc.get(L.sa_v), nullptr);
 
-        // Cross-attention to encoder output
-        for (int t = 0; t < T; t++)
-            rms_norm(&x[t * H], H, to_f32(L.ca_norm, dq1), ctx->rms_eps, &normed[t * H]);
+        // Append K/V to cache
+        auto & kc = ctx->sa_k_cache[li];
+        auto & vc = ctx->sa_v_cache[li];
+        memcpy(&kc[step * qkv_dim], ds.k_new.data(), qkv_dim * sizeof(float));
+        memcpy(&vc[step * qkv_dim], ds.v_new.data(), qkv_dim * sizeof(float));
 
-        cross_attn(normed.data(), T, H,
-                   ctx->enc_cache.data(), ctx->enc_cache_n,
-                   ctx->n_heads, ctx->d_kv,
-                   to_f32(L.ca_q, dq1), to_f32(L.ca_k, dq1),
-                   to_f32(L.ca_v, dq1), to_f32(L.ca_o, dq1),
-                   attn_out.data(), scratch);
-        for (int i = 0; i < T * H; i++) x[i] += attn_out[i];
+        // Attend to full cache (0..step)
+        t5_self_attn_1q(ds.q_proj.data(), kc.data(), vc.data(),
+                        step + 1, ctx->n_heads, ctx->d_kv,
+                        rel_bias_w, ctx->rel_buckets, ctx->rel_max_dist,
+                        step, ds.attn_out.data(),
+                        ds.attn_result.data(), ds.attn_scores.data());
 
-        // FFN
-        for (int t = 0; t < T; t++)
-            rms_norm(&x[t * H], H, to_f32(L.ffn_norm, dq1), ctx->rms_eps, &normed[t * H]);
-        for (int t = 0; t < T; t++)
-            swiglu_ffn(&normed[t * H], H, ctx->d_ff,
-                       to_f32(L.wi_0, dq1), to_f32(L.wi_1, dq1), to_f32(L.wo, dq1),
-                       &ffn_out[t * H]);
-        for (int i = 0; i < T * H; i++) x[i] += ffn_out[i];
+        // Output projection + residual
+        core_cpu::linear_cpu(ds.attn_out.data(), ds.proj_out.data(), qkv_dim, H,
+                             ctx->dc.get(L.sa_o), nullptr);
+        for (int i = 0; i < H; i++) ds.x[i] += ds.proj_out[i];
+
+        // ── Cross-attention (pre-computed K/V) ──
+        rms_norm(ds.x.data(), H, ctx->dc.get(L.ca_norm), ctx->rms_eps, ds.normed.data());
+
+        core_cpu::linear_cpu(ds.normed.data(), ds.q_proj.data(), H, qkv_dim,
+                             ctx->dc.get(L.ca_q), nullptr);
+
+        t5_cross_attn_1q(ds.q_proj.data(),
+                         ctx->cross_k_cache[li].data(),
+                         ctx->cross_v_cache[li].data(),
+                         n_enc, ctx->n_heads, ctx->d_kv,
+                         ds.attn_out.data(),
+                         ds.attn_result.data(), ds.attn_scores.data());
+
+        core_cpu::linear_cpu(ds.attn_out.data(), ds.proj_out.data(), qkv_dim, H,
+                             ctx->dc.get(L.ca_o), nullptr);
+        for (int i = 0; i < H; i++) ds.x[i] += ds.proj_out[i];
+
+        // ── FFN ──
+        rms_norm(ds.x.data(), H, ctx->dc.get(L.ffn_norm), ctx->rms_eps, ds.normed.data());
+        geglu_ffn_1t(ds.normed.data(), H, ctx->d_ff,
+                     ctx->dc.get(L.wi_0), ctx->dc.get(L.wi_1), ctx->dc.get(L.wo),
+                     ds.proj_out.data(),
+                     ds.ffn_gate.data(), ds.ffn_up.data(), ds.ffn_hidden.data());
+        for (int i = 0; i < H; i++) ds.x[i] += ds.proj_out[i];
     }
 
-    // Final norm + LM head on last token
-    std::vector<float> final_h(H);
-    rms_norm(&x[(T - 1) * H], H, to_f32(ctx->final_norm, dq1), ctx->rms_eps, final_h.data());
-    linear(final_h.data(), H, to_f32(ctx->lm_head, dq1), ctx->vocab_size, logits);
+    // Final norm + LM head
+    rms_norm(ds.x.data(), H, ctx->dc.get(ctx->final_norm), ctx->rms_eps, ds.final_h.data());
+    core_cpu::linear_cpu(ds.final_h.data(), logits, H, ctx->vocab_size,
+                         ctx->dc.get(ctx->lm_head), nullptr);
 }
 
-// ── Greedy decode from pre-encoded patches ──
+// ── Public decode API for parity testing ──
+
+int pix2struct_decode_step0(pix2struct_context * ctx, float * out_logits) {
+    if (!ctx || ctx->enc_cache_n <= 0 || !out_logits) return -1;
+
+    // Pre-compute cross-attn K/V if not done
+    if (ctx->cross_k_cache.empty()) precompute_cross_kv(ctx);
+
+    // Allocate self-attn KV cache for single step
+    const int qkv_dim = ctx->n_heads * ctx->d_kv;
+    ctx->sa_k_cache.resize(ctx->dec_layers);
+    ctx->sa_v_cache.resize(ctx->dec_layers);
+    for (int li = 0; li < ctx->dec_layers; li++) {
+        ctx->sa_k_cache[li].resize(qkv_dim, 0.0f);
+        ctx->sa_v_cache[li].resize(qkv_dim, 0.0f);
+    }
+    ctx->sa_cache_len = 0;
+
+    // Ensure decoder scratch buffers are allocated
+    ctx->ds.allocated = false; // force re-alloc in case n_enc changed
+    ensure_dec_scratch(ctx, 1);
+
+    // Decode step 0: decoder_start_token_id = 0
+    decoder_step_cached(ctx, 0, 0, out_logits);
+    ctx->sa_cache_len = 1;
+    return 0;
+}
+
+// ── Greedy decode (incremental) ──
 
 static std::string greedy_decode(pix2struct_context * ctx, int max_tokens) {
     if (!ctx || ctx->enc_cache_n <= 0) return "";
     if (max_tokens <= 0) max_tokens = 256;
 
     const int H = ctx->hidden;
-    std::vector<float> dq1, scratch;
-    const float * emb_w = to_f32(ctx->tok_emb, dq1);
+    const int qkv_dim = ctx->n_heads * ctx->d_kv;
 
-    // Start with decoder_start_token_id = 0
-    std::vector<int32_t> generated = {0};
-    std::vector<std::vector<float>> token_embs;
+    // Pre-compute cross-attn K/V (once per encoder call)
+    precompute_cross_kv(ctx);
 
-    // Embed start token
-    std::vector<float> emb(H);
-    for (int i = 0; i < H; i++) emb[i] = emb_w[0 * H + i]; // token 0
-    token_embs.push_back(emb);
+    // Allocate self-attn KV cache
+    ctx->sa_k_cache.resize(ctx->dec_layers);
+    ctx->sa_v_cache.resize(ctx->dec_layers);
+    for (int li = 0; li < ctx->dec_layers; li++) {
+        ctx->sa_k_cache[li].resize((max_tokens + 1) * qkv_dim, 0.0f);
+        ctx->sa_v_cache[li].resize((max_tokens + 1) * qkv_dim, 0.0f);
+    }
+    ctx->sa_cache_len = 0;
 
+    // Pre-allocate decoder scratch buffers
+    ctx->ds.allocated = false;
+    ensure_dec_scratch(ctx, max_tokens + 1);
+
+    std::vector<int32_t> generated = {0}; // start with decoder_start_token_id = 0
     std::vector<float> logits(ctx->vocab_size);
     ctx->char_confidences.clear();
 
     for (int step = 0; step < max_tokens; step++) {
-        decoder_step(ctx, token_embs, step, logits.data(), dq1, scratch);
+        int tok_id = generated.back();
+        decoder_step_cached(ctx, step, tok_id, logits.data());
+        ctx->sa_cache_len = step + 1;
 
         // Argmax
         int best = 0;
@@ -560,16 +761,14 @@ static std::string greedy_decode(pix2struct_context * ctx, int max_tokens) {
 
         if (best == ctx->eos_id) break;
         generated.push_back(best);
-        { float se = 0; for (int i = 0; i < ctx->vocab_size; i++) se += expf(logits[i] - best_val); ctx->char_confidences.push_back(1.0f / se); }
 
-        // Embed new token
-        std::vector<float> new_emb(H);
-        for (int i = 0; i < H; i++) new_emb[i] = emb_w[best * H + i];
-        token_embs.push_back(new_emb);
+        // Confidence
+        float se = 0;
+        for (int i = 0; i < ctx->vocab_size; i++) se += expf(logits[i] - best_val);
+        ctx->char_confidences.push_back(1.0f / se);
     }
 
-    // TODO: decode token ids to text using tokenizer
-    // For now, return token ids as comma-separated string
+    // Token ids as comma-separated string (same as original — no tokenizer yet)
     std::string result;
     for (size_t i = 1; i < generated.size(); i++) {
         if (i > 1) result += ",";
@@ -578,27 +777,7 @@ static std::string greedy_decode(pix2struct_context * ctx, int max_tokens) {
     return result;
 }
 
-// ── Public decode API for parity testing ──
-
-int pix2struct_decode_step0(pix2struct_context * ctx, float * out_logits) {
-    if (!ctx || ctx->enc_cache_n <= 0 || !out_logits) return -1;
-
-    const int H = ctx->hidden;
-    std::vector<float> dq1, scratch;
-    const float * emb_w = to_f32(ctx->tok_emb, dq1);
-
-    // Single token: decoder_start_token_id = 0
-    std::vector<std::vector<float>> token_embs;
-    std::vector<float> emb(H);
-    for (int i = 0; i < H; i++) emb[i] = emb_w[0 * H + i];
-    token_embs.push_back(emb);
-
-    decoder_step(ctx, token_embs, 0, out_logits, dq1, scratch);
-    return 0;
-}
-
 // ── Image preprocessing: variable-resolution patching ──
-// Mirrors HF Pix2StructImageProcessor.extract_flattened_patches
 
 static std::vector<float> image_to_patches(const uint8_t * rgb, int W, int H,
                                             int max_patches, int patch_size,

@@ -548,31 +548,67 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
     int ws = (int)v.window_size;
     int imgS = (int)v.image_size;
 
-    // Patch embedding on CPU
-    auto pe_w = to_f32(ctx.m.patch_embed_w);
-    auto pe_b = to_f32(ctx.m.patch_embed_b);
-    auto pos = to_f32(ctx.m.pos_embed);
-
+    // Patch embedding: im2col + ggml matmul (gated: CRISPEMBED_GOT_OCR_SCALAR_PATCH=1 for fallback)
     int patch_dim = 3 * PS * PS;
     std::vector<float> hidden(N * C);
 
-    for (int py = 0; py < nP; py++) {
+    // im2col: extract non-overlapping patches → [N, patch_dim]
+    std::vector<float> im2col(N * patch_dim);
+    for (int py = 0; py < nP; py++)
         for (int px = 0; px < nP; px++) {
             int tok = py * nP + px;
-            std::vector<float> patch(patch_dim);
             for (int c = 0; c < 3; c++)
                 for (int ky = 0; ky < PS; ky++)
                     for (int kx = 0; kx < PS; kx++)
-                        patch[c * PS * PS + ky * PS + kx] =
+                        im2col[tok * patch_dim + c * PS * PS + ky * PS + kx] =
                             pixels[c * imgS * imgS + (py * PS + ky) * imgS + (px * PS + kx)];
+        }
+
+    static const bool scalar_patch = (std::getenv("CRISPEMBED_GOT_OCR_SCALAR_PATCH") != nullptr);
+    if (scalar_patch) {
+        auto pe_w = to_f32(ctx.m.patch_embed_w);
+        auto pe_b = to_f32(ctx.m.patch_embed_b);
+        for (int t = 0; t < N; t++)
             for (int o = 0; o < C; o++) {
                 float s = pe_b.empty() ? 0.0f : pe_b[o];
                 for (int i = 0; i < patch_dim; i++)
-                    s += pe_w[o * patch_dim + i] * patch[i];
-                hidden[tok * C + o] = s + (pos.empty() ? 0.0f : pos[tok * C + o]);
+                    s += pe_w[o * patch_dim + i] * im2col[t * patch_dim + i];
+                hidden[t * C + o] = s;
             }
+    } else {
+        // ggml graph: matmul weight × im2col → [C, N]
+        // patch_embed_w: [PS, PS, 3, C] in ggml → reshape to [patch_dim, C]
+        size_t buf_sz = ggml_tensor_overhead() * 10 + ggml_graph_overhead();
+        ggml_init_params eip{buf_sz, nullptr, true};
+        ggml_context *eg = ggml_init(eip);
+
+        ggml_tensor *w = ggml_reshape_2d(eg, ctx.m.patch_embed_w, patch_dim, C);
+        ggml_tensor *inp = ggml_new_tensor_2d(eg, GGML_TYPE_F32, patch_dim, N);
+        ggml_set_name(inp, "im2col"); ggml_set_input(inp);
+        ggml_tensor *out = ggml_mul_mat(eg, w, inp);  // [C, N]
+        // Add bias if present
+        if (ctx.m.patch_embed_b) {
+            out = ggml_add(eg, out, ctx.m.patch_embed_b);
         }
+        ggml_set_name(out, "pe_out"); ggml_set_output(out);
+
+        ggml_cgraph *egf = ggml_new_graph(eg);
+        ggml_build_forward_expand(egf, out);
+
+        ggml_backend_sched_reset(ctx.sched);
+        ggml_backend_sched_alloc_graph(ctx.sched, egf);
+        ggml_backend_tensor_set(ggml_graph_get_tensor(egf, "im2col"),
+                                im2col.data(), 0, N * patch_dim * sizeof(float));
+        ggml_backend_sched_graph_compute(ctx.sched, egf);
+        ggml_backend_tensor_get(ggml_graph_get_tensor(egf, "pe_out"),
+                                hidden.data(), 0, N * C * sizeof(float));
+        ggml_free(eg);
     }
+
+    // Add position embedding
+    auto pos = to_f32(ctx.m.pos_embed);
+    if (!pos.empty())
+        for (int i = 0; i < N * C; i++) hidden[i] += pos[i];
 
     if (ctx.verbosity >= 2)
         fprintf(stderr, "got_ocr: patch_embed done (%d, %d)\n", N, C);
@@ -705,10 +741,22 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
         fprintf(stderr, "[got_ocr-bench] vision_encoder: %lldms\n", (long long)vit_ms);
     }
 
-    // ── Neck (CPU) ──────────────────────────────────────────────
+    // ── Neck + Downsample + Projector ────────────────────────────
+    // Gated: CRISPEMBED_GOT_OCR_SCALAR_NECK=1 for CPU-scalar fallback
     int nC = (int)v.neck_out_channels;
+    int ds1_out_ch = 512;
+    int ds1_H = (nP + 2 * 1 - 3) / 2 + 1;  // 32
+    int ds1_W = ds1_H;
+    int ds2_out_ch = 1024;
+    int ds2_H = (ds1_H + 2 * 1 - 3) / 2 + 1;  // 16
+    int ds2_W = ds2_H;
+    int n_vis_tokens = ds2_H * ds2_W;  // 256
+    int vis_D = ds2_out_ch;             // 1024
+    std::vector<float> proj_out(n_vis_tokens * vis_D);
 
-    // Permute to NCHW: [N, C] = [nP*nP, 768] → [768, nP, nP]
+    static const bool scalar_neck = (std::getenv("CRISPEMBED_GOT_OCR_SCALAR_NECK") != nullptr);
+
+    // Permute to CHW: [N, C] = [nP*nP, 768] → [nP, nP, 768] in ggml = (W, H, C)
     std::vector<float> chw(C * nP * nP);
     for (int tok = 0; tok < N; tok++) {
         int y = tok / nP, x = tok % nP;
@@ -716,68 +764,128 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
             chw[c * nP * nP + y * nP + x] = hidden[tok * C + c];
     }
 
-    // Conv1 (768→256, 1×1)
-    auto nc1_w = to_f32(ctx.m.neck_conv1_w);
-    std::vector<float> neck1(nC * nP * nP);
-    conv2d_cpu(chw.data(), neck1.data(), nc1_w.data(), nullptr,
-               C, nC, nP, nP, 1, 1, 1, 0);
+    if (scalar_neck) {
+        // ── Scalar CPU fallback ──
+        auto nc1_w = to_f32(ctx.m.neck_conv1_w);
+        std::vector<float> neck1(nC * nP * nP);
+        conv2d_cpu(chw.data(), neck1.data(), nc1_w.data(), nullptr,
+                   C, nC, nP, nP, 1, 1, 1, 0);
+        auto nln1_w = to_f32(ctx.m.neck_ln1_w);
+        auto nln1_b = to_f32(ctx.m.neck_ln1_b);
+        std::vector<float> neck1_ln(nC * nP * nP);
+        layernorm2d_cpu(neck1.data(), neck1_ln.data(), nC, nP, nP,
+                        nln1_w.data(), nln1_b.data(), 1e-6f);
+        auto nc2_w = to_f32(ctx.m.neck_conv2_w);
+        std::vector<float> neck2(nC * nP * nP);
+        conv2d_cpu(neck1_ln.data(), neck2.data(), nc2_w.data(), nullptr,
+                   nC, nC, nP, nP, 3, 3, 1, 1);
+        auto nln2_w = to_f32(ctx.m.neck_ln2_w);
+        auto nln2_b = to_f32(ctx.m.neck_ln2_b);
+        std::vector<float> neck2_ln(nC * nP * nP);
+        layernorm2d_cpu(neck2.data(), neck2_ln.data(), nC, nP, nP,
+                        nln2_w.data(), nln2_b.data(), 1e-6f);
+        auto n2_w = to_f32(ctx.m.net_2_w);
+        std::vector<float> ds1(ds1_out_ch * ds1_H * ds1_W);
+        conv2d_cpu(neck2_ln.data(), ds1.data(), n2_w.data(), nullptr,
+                   nC, ds1_out_ch, nP, nP, 3, 3, 2, 1);
+        auto n3_w = to_f32(ctx.m.net_3_w);
+        std::vector<float> ds2(ds2_out_ch * ds2_H * ds2_W);
+        conv2d_cpu(ds1.data(), ds2.data(), n3_w.data(), nullptr,
+                   ds1_out_ch, ds2_out_ch, ds1_H, ds1_W, 3, 3, 2, 1);
+        std::vector<float> vis_flat(n_vis_tokens * vis_D);
+        for (int tok = 0; tok < n_vis_tokens; tok++) {
+            int y = tok / ds2_W, x = tok % ds2_W;
+            for (int c = 0; c < vis_D; c++)
+                vis_flat[tok * vis_D + c] = ds2[c * ds2_H * ds2_W + y * ds2_W + x];
+        }
+        auto pw = to_f32(ctx.m.projector_w);
+        auto pb = to_f32(ctx.m.projector_b);
+        for (int tok = 0; tok < n_vis_tokens; tok++)
+            linear_cpu(vis_flat.data() + tok * vis_D,
+                       proj_out.data() + tok * vis_D,
+                       vis_D, vis_D, pw.data(),
+                       pb.empty() ? nullptr : pb.data());
+    } else {
+        // ── ggml graph: conv + LN2d + downsample + projector ──
+        // Build a single graph for the entire neck+projector pipeline.
+        // LN2d = permute to (C,W,H) → ggml_norm along ne[0]=C → mul+add → permute back.
+        auto prep_conv_w = [](ggml_context *g, ggml_tensor *w, int IC, int KH, int KW) -> ggml_tensor* {
+            if (ggml_n_dims(w) <= 2) {
+                int64_t OC = w->ne[1];
+                w = ggml_reshape_4d(g, w, KW, KH, IC, OC);
+            }
+            if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
+            return w;
+        };
+        auto g_ln2d = [](ggml_context *g, ggml_tensor *x, ggml_tensor *w, ggml_tensor *b, float eps) -> ggml_tensor* {
+            // x: (W, H, C). LN2d normalizes along C for each (w,h).
+            // Permute to (C, W, H) → norm along ne[0]=C → mul weight → add bias → permute back
+            int W_ = (int)x->ne[0], H_ = (int)x->ne[1], C_ = (int)x->ne[2];
+            ggml_tensor *xp = ggml_cont(g, ggml_permute(g, x, 2, 0, 1, 3));  // (C, W, H)
+            xp = ggml_norm(g, xp, eps);
+            if (w) xp = ggml_mul(g, xp, w);  // w is (C,) broadcast along ne[1,2]
+            if (b) xp = ggml_add(g, xp, b);
+            return ggml_cont(g, ggml_permute(g, xp, 1, 2, 0, 3));  // back to (W, H, C)
+        };
 
-    // LN2d 1
-    auto nln1_w = to_f32(ctx.m.neck_ln1_w);
-    auto nln1_b = to_f32(ctx.m.neck_ln1_b);
-    std::vector<float> neck1_ln(nC * nP * nP);
-    layernorm2d_cpu(neck1.data(), neck1_ln.data(), nC, nP, nP,
-                    nln1_w.data(), nln1_b.data(), 1e-6f);
+        size_t buf_sz = ggml_tensor_overhead() * 64 + ggml_graph_overhead_custom(512, false);
+        ggml_init_params nip{buf_sz, nullptr, true};
+        ggml_context *ng = ggml_init(nip);
 
-    // Conv2 (256→256, 3×3, pad=1)
-    auto nc2_w = to_f32(ctx.m.neck_conv2_w);
-    std::vector<float> neck2(nC * nP * nP);
-    conv2d_cpu(neck1_ln.data(), neck2.data(), nc2_w.data(), nullptr,
-               nC, nC, nP, nP, 3, 3, 1, 1);
+        // Input: CHW as (W, H, C) in ggml
+        ggml_tensor *x = ggml_new_tensor_3d(ng, GGML_TYPE_F32, nP, nP, C);
+        ggml_set_name(x, "neck_in"); ggml_set_input(x);
 
-    // LN2d 2
-    auto nln2_w = to_f32(ctx.m.neck_ln2_w);
-    auto nln2_b = to_f32(ctx.m.neck_ln2_b);
-    std::vector<float> neck2_ln(nC * nP * nP);
-    layernorm2d_cpu(neck2.data(), neck2_ln.data(), nC, nP, nP,
-                    nln2_w.data(), nln2_b.data(), 1e-6f);
+        // Conv1: 1×1, 768→256
+        x = ggml_conv_2d_direct(ng, prep_conv_w(ng, ctx.m.neck_conv1_w, C, 1, 1),
+                                 x, 1, 1, 0, 0, 1, 1);
+        // LN2d 1
+        x = g_ln2d(ng, x, ctx.m.neck_ln1_w, ctx.m.neck_ln1_b, 1e-6f);
+        // Conv2: 3×3, 256→256, pad=1
+        x = ggml_conv_2d_direct(ng, prep_conv_w(ng, ctx.m.neck_conv2_w, nC, 3, 3),
+                                 x, 1, 1, 1, 1, 1, 1);
+        // LN2d 2
+        x = g_ln2d(ng, x, ctx.m.neck_ln2_w, ctx.m.neck_ln2_b, 1e-6f);
+        // Downsample conv1: 3×3, 256→512, stride=2, pad=1
+        x = ggml_conv_2d_direct(ng, prep_conv_w(ng, ctx.m.net_2_w, nC, 3, 3),
+                                 x, 2, 2, 1, 1, 1, 1);
+        // Downsample conv2: 3×3, 512→1024, stride=2, pad=1
+        x = ggml_conv_2d_direct(ng, prep_conv_w(ng, ctx.m.net_3_w, ds1_out_ch, 3, 3),
+                                 x, 2, 2, 1, 1, 1, 1);
+        // x is now (ds2_W, ds2_H, 1024) in ggml
 
-    // ── Downsample (CPU): Conv(256→512, 3×3, s2, p1) → Conv(512→1024, 3×3, s2, p1) ──
-    int ds1_out_ch = 512;
-    int ds1_H = (nP + 2 * 1 - 3) / 2 + 1;  // (64+2-3)/2+1 = 32
-    int ds1_W = ds1_H;
-    auto n2_w = to_f32(ctx.m.net_2_w);
-    std::vector<float> ds1(ds1_out_ch * ds1_H * ds1_W);
-    conv2d_cpu(neck2_ln.data(), ds1.data(), n2_w.data(), nullptr,
-               nC, ds1_out_ch, nP, nP, 3, 3, 2, 1);
+        // Flatten + permute to (vis_D, n_vis_tokens) = (1024, 256)
+        // CHW (W,H,C) → (C, W*H) → this is what ggml_reshape_2d gives us directly
+        x = ggml_cont(ng, ggml_permute(ng, x, 2, 0, 1, 3));  // (C, W, H) → (1024, ds2_W, ds2_H)
+        x = ggml_reshape_2d(ng, x, vis_D, n_vis_tokens);      // (1024, 256)
 
-    int ds2_out_ch = 1024;
-    int ds2_H = (ds1_H + 2 * 1 - 3) / 2 + 1;  // (32+2-3)/2+1 = 16
-    int ds2_W = ds2_H;
-    auto n3_w = to_f32(ctx.m.net_3_w);
-    std::vector<float> ds2(ds2_out_ch * ds2_H * ds2_W);
-    conv2d_cpu(ds1.data(), ds2.data(), n3_w.data(), nullptr,
-               ds1_out_ch, ds2_out_ch, ds1_H, ds1_W, 3, 3, 2, 1);
+        // Projector: Linear(1024, 1024) with bias
+        // projector_w is [1024, 1024] in ggml. mul_mat(w, x) → [1024, 256]
+        x = ggml_mul_mat(ng, ctx.m.projector_w, x);
+        if (ctx.m.projector_b)
+            x = ggml_add(ng, x, ctx.m.projector_b);
 
-    // flatten(2).permute(0,2,1) → [256, 1024] (16*16=256 tokens, 1024 dim)
-    int n_vis_tokens = ds2_H * ds2_W;
-    int vis_D = ds2_out_ch;
-    std::vector<float> vis_flat(n_vis_tokens * vis_D);
-    for (int tok = 0; tok < n_vis_tokens; tok++) {
-        int y = tok / ds2_W, x = tok % ds2_W;
-        for (int c = 0; c < vis_D; c++)
-            vis_flat[tok * vis_D + c] = ds2[c * ds2_H * ds2_W + y * ds2_W + x];
-    }
+        ggml_set_name(x, "proj_out"); ggml_set_output(x);
 
-    // ── Projector (CPU): Linear(1024, 1024) ──
-    auto proj_w = to_f32(ctx.m.projector_w);
-    auto proj_b = to_f32(ctx.m.projector_b);
-    std::vector<float> proj_out(n_vis_tokens * vis_D);
-    for (int tok = 0; tok < n_vis_tokens; tok++) {
-        linear_cpu(vis_flat.data() + tok * vis_D,
-                   proj_out.data() + tok * vis_D,
-                   vis_D, vis_D, proj_w.data(),
-                   proj_b.empty() ? nullptr : proj_b.data());
+        ggml_cgraph *ngf = ggml_new_graph_custom(ng, 512, false);
+        ggml_build_forward_expand(ngf, x);
+
+        ggml_backend_sched_reset(ctx.sched);
+        if (!ggml_backend_sched_alloc_graph(ctx.sched, ngf)) {
+            fprintf(stderr, "got_ocr: neck graph alloc failed, falling back to scalar\n");
+            ggml_free(ng);
+            // Fall through to error — shouldn't happen
+            return false;
+        }
+
+        ggml_backend_tensor_set(ggml_graph_get_tensor(ngf, "neck_in"),
+                                chw.data(), 0, C * nP * nP * sizeof(float));
+        ggml_backend_sched_graph_compute(ctx.sched, ngf);
+
+        // Read output: (vis_D, n_vis_tokens) = (1024, 256)
+        ggml_backend_tensor_get(ggml_graph_get_tensor(ngf, "proj_out"),
+                                proj_out.data(), 0, n_vis_tokens * vis_D * sizeof(float));
+        ggml_free(ng);
     }
 
     // Diff: projector output
@@ -790,25 +898,8 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
                         r.cos_min, r.max_abs,
                         r.cos_min >= 0.999 ? "PASS" : "FAIL");
             }
-            if (ref.has("vis_neck_output")) {
-                // Compare neck output (before downsample)
-                std::vector<float> neck_hwc(N * nC);
-                for (int tok = 0; tok < N; tok++) {
-                    int y = tok / nP, x = tok % nP;
-                    for (int c = 0; c < nC; c++)
-                        neck_hwc[tok * nC + c] = neck2_ln[c * nP * nP + y * nP + x];
-                }
-                auto r = ref.compare("vis_neck_output", neck_hwc.data(), N * nC);
-                fprintf(stderr, "  vis_neck_output: cos_min=%.6f max_abs=%.6f %s\n",
-                        r.cos_min, r.max_abs,
-                        r.cos_min >= 0.999 ? "PASS" : "FAIL");
-            }
-            if (ref.has("vis_downsample_output")) {
-                auto r = ref.compare("vis_downsample_output", vis_flat.data(), n_vis_tokens * vis_D);
-                fprintf(stderr, "  vis_downsample_output: cos_min=%.6f max_abs=%.6f %s\n",
-                        r.cos_min, r.max_abs,
-                        r.cos_min >= 0.999 ? "PASS" : "FAIL");
-            }
+            // Intermediate diff comparisons only available in scalar neck path
+            // (ggml path fuses all ops into one graph)
         }
     }
 
