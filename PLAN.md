@@ -295,6 +295,48 @@ safmn_sr, esrgan_sr, restormer, tps_locnet, scunet_denoise, swinir_sr.
 *InternVL2.5-2B not on the original leaderboard slice but scores higher than
 InternVL2-2B (768).
 
+### Handwritten math OCR — permissive-license models to port
+
+Current handwritten math models (PosFormer/BTTR/HMER) are CC BY-NC-SA 3.0
+(non-commercial). Best accuracy: 57% on CROHME 2014. These candidates are
+all Apache-2.0 and would be a major accuracy upgrade.
+
+| # | Model | Params | CROHME 2014 | License | Architecture | Effort | Status |
+|---|-------|--------|-------------|---------|-------------|--------|--------|
+| 1 | **Uni-MuMER-Qwen3-VL-2B** | 2.1B | ~82% (3B variant) | Apache-2.0 | Qwen3-VL fine-tune (multi-task: recognition + symbol counting + position) | Low — reuses existing `qwen2vl_ocr.cpp` engine, same GGUF converter | [ ] Pending |
+| 2 | **Uni-MuMER-Qwen2.5-VL-3B** | 3.4B | 82.25% | Apache-2.0 | Qwen2.5-VL fine-tune | Low — same engine | [ ] Pending |
+| 3 | **TexTeller 3.0** | 0.3B | unknown | Apache-2.0 | ViT + Transformer decoder, 80M training pairs, supports handwritten | Medium — needs new GGUF converter (TrOCR-like arch but not identical) | [ ] Pending |
+| 4 | PP-FormulaNet-L | 181M | ~57% | Apache-2.0 | SAM-ViT + MBart | — | Already integrated (mostly printed math) |
+
+**Recommended priority:**
+
+1. **Uni-MuMER-Qwen3-VL-2B** (best ROI) — same Qwen3-VL base we already
+   support. Convert via `convert-qwen3vl-to-gguf.py` → quantize Q4_K/Q8_0
+   → add to CrispCalc catalog as "Handwritten Math (82%, Apache-2.0)".
+   The fine-tune adds handwriting-specific LoRA/full weights on top of the
+   base Qwen3-VL architecture — the GGUF converter should work as-is since
+   the architecture key is still `qwen3vl`. Verify with CROHME 2014 test.
+
+   Source: [github.com/BFlameSwift/Uni-MuMER](https://github.com/BFlameSwift/Uni-MuMER)
+   Weights: HuggingFace (released 2025-06-02), also Google Drive
+
+2. **TexTeller 3.0** (lightweight option) — at 300M params, small enough
+   for mobile. Architecture is ViT encoder + Transformer decoder (similar
+   to pix2tex but trained on 80M pairs including handwritten). Would need
+   a new converter or adaptation of `convert-pix2tex-to-gguf.py`. Benchmark
+   on CROHME before committing to full integration.
+
+   Source: [github.com/OleehyO/TexTeller](https://github.com/OleehyO/TexTeller)
+   Weights: [huggingface.co/OleehyO/TexTeller](https://huggingface.co/OleehyO/TexTeller)
+
+3. **Uni-MuMER-Qwen2.5-VL-3B** (fallback) — if Qwen3-VL variant has
+   issues, the 3B Qwen2.5-VL variant has proven 82.25% accuracy and uses
+   the same engine. Slightly larger (3.4B) but still under 4B.
+
+**Impact**: replacing NC-licensed 57% models with Apache-2.0 82% models
+eliminates the license acceptance gate in the UI AND nearly doubles
+handwritten accuracy. This is the single highest-value remaining OCR task.
+
 ### Feature gaps vs fastembed-rs
 
 | Gap | Impact | Effort | Notes |
