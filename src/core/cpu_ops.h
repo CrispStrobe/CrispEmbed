@@ -234,23 +234,20 @@ static inline void layernorm_cpu(const float* in, float* out, int D,
 static inline void layernorm2d_cpu(const float* in, float* out,
                                    int C, int H, int W,
                                    const float* w, const float* b, float eps) {
+    // Gather C values per spatial position into contiguous buffer for
+    // cache-friendly norm computation (original does 3×C strided accesses
+    // with stride H*W per position — cache-hostile for large spatial dims).
+    std::vector<float> buf(C);
+    int HW = H * W;
     for (int y = 0; y < H; y++) {
         for (int x = 0; x < W; x++) {
-            double mean = 0;
-            for (int c = 0; c < C; c++)
-                mean += in[c * H * W + y * W + x];
-            mean /= C;
-            double var = 0;
-            for (int c = 0; c < C; c++) {
-                double d = in[c * H * W + y * W + x] - mean;
-                var += d * d;
-            }
-            var /= C;
-            float s = 1.0f / sqrtf((float)var + eps);
-            for (int c = 0; c < C; c++) {
-                float v = (in[c * H * W + y * W + x] - (float)mean) * s;
-                out[c * H * W + y * W + x] = v * (w ? w[c] : 1.0f) + (b ? b[c] : 0.0f);
-            }
+            int pos = y * W + x;
+            // Gather: strided → contiguous
+            for (int c = 0; c < C; c++) buf[c] = in[c * HW + pos];
+            // Compute layernorm on contiguous buffer
+            layernorm_cpu(buf.data(), buf.data(), C, w, b, eps);
+            // Scatter: contiguous → strided
+            for (int c = 0; c < C; c++) out[c * HW + pos] = buf[c];
         }
     }
 }
@@ -410,13 +407,45 @@ static inline void silu_inplace(float* data, int n) {
     for (int i = 0; i < n; i++) data[i] = data[i] / (1.0f + expf(-data[i]));
 }
 
-// In-place softmax
+// In-place softmax (SIMD-accelerated max, normalize)
 static inline void softmax(float* data, int n) {
+    // Max (SIMD-accelerated)
     float mx = data[0];
+#if defined(__AVX2__)
+    if (n >= 8) {
+        __m256 vmx = _mm256_loadu_ps(data);
+        int i = 8;
+        for (; i + 7 < n; i += 8)
+            vmx = _mm256_max_ps(vmx, _mm256_loadu_ps(data + i));
+        __m128 lo = _mm256_castps256_ps128(vmx);
+        __m128 hi = _mm256_extractf128_ps(vmx, 1);
+        lo = _mm_max_ps(lo, hi);
+        lo = _mm_max_ps(lo, _mm_movehl_ps(lo, lo));
+        lo = _mm_max_ss(lo, _mm_shuffle_ps(lo, lo, 1));
+        mx = _mm_cvtss_f32(lo);
+        for (; i < n; i++) if (data[i] > mx) mx = data[i];
+    } else {
+        for (int i = 1; i < n; i++) if (data[i] > mx) mx = data[i];
+    }
+#else
     for (int i = 1; i < n; i++) if (data[i] > mx) mx = data[i];
+#endif
+    // Exp + sum (expf is not SIMD-friendly, keep scalar)
     float sum = 0;
     for (int i = 0; i < n; i++) { data[i] = expf(data[i] - mx); sum += data[i]; }
-    for (int i = 0; i < n; i++) data[i] /= sum;
+    // Normalize (SIMD-accelerated)
+    float inv_sum = 1.0f / sum;
+#if defined(__AVX2__)
+    {
+        __m256 vs = _mm256_set1_ps(inv_sum);
+        int i = 0;
+        for (; i + 7 < n; i += 8)
+            _mm256_storeu_ps(data + i, _mm256_mul_ps(_mm256_loadu_ps(data + i), vs));
+        for (; i < n; i++) data[i] *= inv_sum;
+    }
+#else
+    for (int i = 0; i < n; i++) data[i] *= inv_sum;
+#endif
 }
 
 // HardSwish: x * min(max(x+3, 0), 6) / 6
