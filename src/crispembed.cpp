@@ -3308,6 +3308,7 @@ if (arch == "granite_vision") return OCR_MODEL_GRANITE_VISION;
 if (arch == "lightonocr") return OCR_MODEL_LIGHTONOCR;
 if (arch == "deepseek_ocr2") return OCR_MODEL_DEEPSEEK_OCR2;
 if (arch == "smoldocling") return OCR_MODEL_SMOLDOCLING;
+if (arch == "math_ocr") return OCR_MODEL_PIX2TEX;
     return OCR_MODEL_PIX2TEX;
 }
 
