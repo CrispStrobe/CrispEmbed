@@ -72,6 +72,8 @@ struct context {
     core_gguf::WeightLoad wl;
     int n_threads = 4;
     bool bench = false;
+
+    ggml_gallocr_t galloc = nullptr;
 };
 
 bool load(context** out, const char* path, int n_threads) {
@@ -230,6 +232,9 @@ bool load(context** out, const char* path, int n_threads) {
     }
 
     fprintf(stderr, "clip_text: loaded %d layers\n", ctx->n_layers);
+
+    ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+
     return true;
 }
 
@@ -386,8 +391,7 @@ std::vector<float> encode(context* ctx, const char* text) {
     ggml_cgraph* gf = ggml_new_graph_custom(g, total_nodes, false);
     ggml_build_forward_expand(gf, pooled);
 
-    ggml_gallocr_t alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
-    ggml_gallocr_alloc_graph(alloc, gf);
+    ggml_gallocr_alloc_graph(ctx->galloc, gf);
 
     if (bench) {
         auto t_pre1 = std::chrono::steady_clock::now();
@@ -444,7 +448,6 @@ std::vector<float> encode(context* ctx, const char* text) {
                 std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
     }
 
-    ggml_gallocr_free(alloc);
     ggml_free(g);
     return result;
 }
@@ -455,6 +458,7 @@ int dim(const context* ctx) {
 
 void free(context* ctx) {
     if (ctx) {
+        if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
         if (ctx->backend) ggml_backend_free(ctx->backend);
         delete ctx;
     }

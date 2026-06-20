@@ -84,6 +84,7 @@ struct context {
 
     // Backend
     ggml_backend_t backend = nullptr;
+    ggml_gallocr_t galloc = nullptr;
     core_gguf::WeightLoad wl;
     int n_threads = 4;
 
@@ -192,6 +193,8 @@ bool load(context** out, const char* path, int n_threads) {
     // Verify critical weights
     if (!ctx->stem.w) { fprintf(stderr, "ocr_detect: missing stem conv\n"); return false; }
     if (!ctx->head_deconv2.w) { fprintf(stderr, "ocr_detect: missing head deconv2\n"); return false; }
+
+    ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
 
     fprintf(stderr, "ocr_detect: loaded %zu tensors\n", ctx->wl.tensors.size());
     ctx->bench = (std::getenv("CRISPEMBED_OCR_DETECT_BENCH") != nullptr);
@@ -465,11 +468,8 @@ static std::vector<float> forward(context* ctx, const float* pixels, int H, int 
     ggml_cgraph* gf = ggml_new_graph_custom(g, max_nodes, false);
     ggml_build_forward_expand(gf, x);
 
-    ggml_gallocr_t alloc = ggml_gallocr_new(
-        ggml_backend_get_default_buffer_type(ctx->backend));
-    if (!ggml_gallocr_alloc_graph(alloc, gf)) {
+    if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
         fprintf(stderr, "ocr_detect: graph allocation failed\n");
-        ggml_gallocr_free(alloc);
         ggml_free(g);
         return {};
     }
@@ -496,7 +496,6 @@ static std::vector<float> forward(context* ctx, const float* pixels, int H, int 
     ctx->last_prob_h = prob_h;
     ctx->last_prob_w = prob_w;
 
-    ggml_gallocr_free(alloc);
     ggml_free(g);
     return prob_map;
 }
@@ -956,6 +955,7 @@ const float* get_prob_map(const context* ctx, int* out_h, int* out_w) {
 
 void free(context* ctx) {
     if (!ctx) return;
+    if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     core_gguf::free_weights(ctx->wl);
     delete ctx;

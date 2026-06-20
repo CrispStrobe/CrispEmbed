@@ -78,6 +78,7 @@ struct context {
     // Backend
     ggml_backend_t backend = nullptr;
     core_gguf::WeightLoad wl;
+    ggml_gallocr_t galloc = nullptr;  // persistent graph allocator (reused across calls)
     int n_threads = 4;
     bool bench = false;
 };
@@ -268,6 +269,9 @@ bool load(context** out, const char* path, int n_threads) {
             }
         }
     }
+
+    // Create persistent graph allocator (reused across encode calls)
+    ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
 
     fprintf(stderr, "vit_embed: loaded %d layers, %s pooling%s%s\n",
             ctx->n_layers,
@@ -544,8 +548,11 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     ggml_build_forward_expand(gf, pooled);
 
     // Allocate
-    ggml_gallocr_t alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
-    ggml_gallocr_alloc_graph(alloc, gf);
+    if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
+        fprintf(stderr, "vit_embed: graph allocation failed\n");
+        ggml_free(g);
+        return {};
+    }
 
     // Set input pixels
     if (bench) { auto t0 = std::chrono::steady_clock::now(); (void)t0; }
@@ -609,7 +616,6 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
                 std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
     }
 
-    ggml_gallocr_free(alloc);
     ggml_free(g);
 
     return result;
@@ -625,6 +631,7 @@ int image_size(const context* ctx) {
 
 void free(context* ctx) {
     if (ctx) {
+        if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
         if (ctx->backend) ggml_backend_free(ctx->backend);
         delete ctx;
     }

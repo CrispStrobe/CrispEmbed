@@ -68,6 +68,7 @@ struct context {
 
     // Backend
     ggml_backend_t backend = nullptr;
+    ggml_gallocr_t galloc = nullptr;
     core_gguf::WeightLoad wl;
     int n_threads = 4;
     bool bench = false;
@@ -204,6 +205,8 @@ bool load(context** out, const char* path, int n_threads) {
     // Preprocessing constants (SFace: subtract 127.5, multiply 1/128)
     ctx->sub_val = 127.5f;
     ctx->mul_val = 1.0f / 128.0f;
+
+    ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
 
     fprintf(stderr, "cnn_embed: loaded %zu conv blocks + FC(%d)\n",
             ctx->blocks.size(), ctx->embed_dim);
@@ -397,10 +400,8 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     ggml_build_forward_expand(gf, x);
 
     // Allocate
-    ggml_gallocr_t alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
-    if (!ggml_gallocr_alloc_graph(alloc, gf)) {
+    if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
         fprintf(stderr, "cnn_embed: graph allocation failed\n");
-        ggml_gallocr_free(alloc);
         ggml_free(g);
         return {};
     }
@@ -456,7 +457,6 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
                 std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
     }
 
-    ggml_gallocr_free(alloc);
     ggml_free(g);
     return emb;
 }
@@ -542,9 +542,8 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
     }
     ggml_build_forward_expand(gf, last);
 
-    ggml_gallocr_t alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
-    if (!ggml_gallocr_alloc_graph(alloc, gf)) {
-        ggml_gallocr_free(alloc); ggml_free(g); return {};
+    if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
+        ggml_free(g); return {};
     }
 
     ggml_tensor* inp = ggml_graph_get_tensor(gf, "input");
@@ -774,7 +773,6 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
         }
     }
 
-    ggml_gallocr_free(alloc);
     ggml_free(g);
 
     // NMS
@@ -1026,6 +1024,7 @@ const char* model_type(const context* ctx) { return ctx ? ctx->type.c_str() : ""
 
 void free(context* ctx) {
     if (ctx) {
+        if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
         if (ctx->backend) ggml_backend_free(ctx->backend);
         delete ctx;
     }
