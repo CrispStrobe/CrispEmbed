@@ -1439,6 +1439,27 @@ static bool stack_moe_experts(ds_ocr2_ctx &ctx) {
     return true;
 }
 
+// Persistent T=1 decode graph: built once after prefill, reused for every
+// generation step. All tensor shapes are fixed (max_kv = n_prompt+max_new).
+// The scheduler's is_alloc flag stays true after the one-time sched_alloc_graph
+// call, so subsequent sched_graph_compute calls skip the alloc step entirely.
+// Gate with DS_DECODE_REBUILD=1 to revert to the old per-step rebuild path.
+struct PdGraph {
+    std::vector<uint8_t> meta;
+    ggml_context* gctx = nullptr;
+    ggml_cgraph*  gf   = nullptr;
+    // Direct tensor pointers for fast per-step set/get (no name lookup needed).
+    ggml_tensor* t_cur_tok_id = nullptr;   // [1] I32
+    ggml_tensor* t_pos_ids    = nullptr;   // [1] I32
+    ggml_tensor* t_mask       = nullptr;   // [max_kv, 1] F16
+    std::vector<ggml_tensor*> t_k_cache;   // [n_layers], each [kv_dim, max_kv-1] F32
+    std::vector<ggml_tensor*> t_v_cache;
+    ggml_tensor* t_logits = nullptr;       // [V, 1] F32
+    std::vector<ggml_tensor*> t_k_new;    // [n_layers], each [kv_dim, 1] F32
+    std::vector<ggml_tensor*> t_v_new;
+    int max_kv = 0;
+};
+
 struct llm_attn_graph {
     ggml_cgraph *gf{};
     ggml_context *gctx{};
@@ -1449,6 +1470,168 @@ struct llm_attn_graph {
     // (graph) qwen2 encoder let the decoder prefill actually run.
     std::vector<uint8_t> meta;
 };
+
+// Build a single persistent T=1 decode graph covering all 12 LLM layers + LM head.
+// All tensor shapes are fixed so the graph can be allocated once and reused.
+// KV cache slots: k_cache_in [kv_dim, max_kv-1] holds past tokens 0..n_past-1;
+// current-step K/V are computed inside the graph and concatenated onto the cache.
+// The mask [max_kv, 1] controls which positions participate (0 = attend, -INF = mask).
+static PdGraph build_persistent_decode_graph(ds_ocr2_ctx &ctx, int max_kv) {
+    auto &lhp = ctx.m.lhp;
+    int D = lhp.hidden, V = lhp.vocab_size;
+    int nh = lhp.heads, nkv = lhp.kv_heads, hd = lhp.head_dim;
+    int n_layers = lhp.n_layers, kv_dim = nkv * hd;
+    float eps = lhp.rms_eps;
+    int max_kv_in = max_kv - 1;  // past-token slots (current step is the concat tail)
+
+    PdGraph pd;
+    pd.max_kv = max_kv;
+    pd.t_k_cache.resize(n_layers); pd.t_v_cache.resize(n_layers);
+    pd.t_k_new.resize(n_layers);   pd.t_v_new.resize(n_layers);
+
+    pd.meta.resize(8 * 1024 * 1024);
+    ggml_init_params ip = {pd.meta.size(), pd.meta.data(), true};
+    pd.gctx = ggml_init(ip);
+    auto* g = pd.gctx;
+    pd.gf = ggml_new_graph_custom(g, 8192, false);
+
+    auto rmsnorm = [&](ggml_tensor* t, ggml_tensor* w) -> ggml_tensor* {
+        return ggml_mul(g, ggml_rms_norm(g, t, eps), ensure_f32(g, w));
+    };
+
+    // Token embedding: look up on the backend (dequants quantized embed_tokens in-graph).
+    pd.t_cur_tok_id = ggml_new_tensor_1d(g, GGML_TYPE_I32, 1);
+    ggml_set_name(pd.t_cur_tok_id, "pd_tok"); ggml_set_input(pd.t_cur_tok_id);
+    ggml_tensor* x = ggml_get_rows(g, ctx.m.embed_tokens, pd.t_cur_tok_id);  // [D, 1]
+
+    pd.t_pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, 1);
+    ggml_set_name(pd.t_pos_ids, "pd_pos"); ggml_set_input(pd.t_pos_ids);
+
+    // Shared causal mask for all layers: [max_kv, 1] F16.
+    // Layout: Kfull = concat(k_cache_in[0..max_kv-2], K_new[max_kv-1]).
+    // Positions 0..n_past-1 attend (0.0), n_past..max_kv-2 are garbage (-INF),
+    // max_kv-1 is the current step's K (0.0). Caller updates incrementally.
+    pd.t_mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, max_kv, 1);
+    ggml_set_name(pd.t_mask, "pd_mask"); ggml_set_input(pd.t_mask);
+
+    for (int li = 0; li < n_layers; li++) {
+        bool is_dense      = (li == 0);
+        bool moe_in_graph  = ctx.moe_metal && !is_dense;
+        auto& ly = ctx.m.llm_layers[li];
+
+        char kn[16], vn[16], kon[16], von[16];
+        snprintf(kn,  sizeof(kn),  "pd_kc%d", li);
+        snprintf(vn,  sizeof(vn),  "pd_vc%d", li);
+        snprintf(kon, sizeof(kon), "pd_kn%d", li);
+        snprintf(von, sizeof(von), "pd_vn%d", li);
+
+        pd.t_k_cache[li] = ggml_new_tensor_2d(g, GGML_TYPE_F32, kv_dim, max_kv_in);
+        ggml_set_name(pd.t_k_cache[li], kn); ggml_set_input(pd.t_k_cache[li]);
+        pd.t_v_cache[li] = ggml_new_tensor_2d(g, GGML_TYPE_F32, kv_dim, max_kv_in);
+        ggml_set_name(pd.t_v_cache[li], vn); ggml_set_input(pd.t_v_cache[li]);
+
+        // Pre-attention norm + Q/K/V
+        ggml_tensor* h = rmsnorm(x, ly.in_ln_w);
+        ggml_tensor* Q = ggml_mul_mat(g, ly.q_w, h);
+        ggml_tensor* K = ggml_mul_mat(g, ly.k_w, h);
+        ggml_tensor* V = ggml_mul_mat(g, ly.v_w, h);
+
+        Q = ggml_reshape_3d(g, Q, hd, nh, 1);
+        K = ggml_reshape_3d(g, K, hd, nkv, 1);
+        V = ggml_reshape_3d(g, V, hd, nkv, 1);
+
+        Q = ggml_rope_ext(g, Q, pd.t_pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0,
+                          lhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        K = ggml_rope_ext(g, K, pd.t_pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0,
+                          lhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+
+        ggml_tensor* Kc = ggml_cont(g, K);  // [hd, nkv, 1]
+        ggml_tensor* Vc = ggml_cont(g, V);
+
+        // Cache outputs — independent cont so the attention path can't trample them.
+        pd.t_k_new[li] = ggml_cont(g, ggml_reshape_2d(g, Kc, kv_dim, 1));
+        ggml_set_name(pd.t_k_new[li], kon); ggml_set_output(pd.t_k_new[li]);
+        pd.t_v_new[li] = ggml_cont(g, ggml_reshape_2d(g, Vc, kv_dim, 1));
+        ggml_set_name(pd.t_v_new[li], von); ggml_set_output(pd.t_v_new[li]);
+
+        // Full K/V: concat(past_cache[max_kv-1], current[1]) → [hd, nkv, max_kv]
+        ggml_tensor* kp    = ggml_reshape_3d(g, pd.t_k_cache[li], hd, nkv, max_kv_in);
+        ggml_tensor* Kfull = ggml_concat(g, kp, Kc, 2);
+        ggml_tensor* vp    = ggml_reshape_3d(g, pd.t_v_cache[li], hd, nkv, max_kv_in);
+        ggml_tensor* Vfull = ggml_concat(g, vp, Vc, 2);
+
+        // GQA expand (for this model nh==nkv so the block is skipped)
+        int kv_repeat = nh / nkv;
+        if (kv_repeat > 1) {
+            Kfull = ggml_reshape_4d(g, Kfull, hd, 1, nkv, max_kv);
+            Kfull = ggml_reshape_3d(g, ggml_repeat(g, Kfull,
+                        ggml_new_tensor_4d(g, Kfull->type, hd, kv_repeat, nkv, max_kv)),
+                        hd, nh, max_kv);
+            Vfull = ggml_reshape_4d(g, Vfull, hd, 1, nkv, max_kv);
+            Vfull = ggml_reshape_3d(g, ggml_repeat(g, Vfull,
+                        ggml_new_tensor_4d(g, Vfull->type, hd, kv_repeat, nkv, max_kv)),
+                        hd, nh, max_kv);
+        }
+
+        // Attention
+        Q     = ggml_cont(g, ggml_permute(g, Q,     0, 2, 1, 3));  // [hd, 1,      nh]
+        Kfull = ggml_cont(g, ggml_permute(g, Kfull, 0, 2, 1, 3));  // [hd, max_kv, nh]
+        Vfull = ggml_cont(g, ggml_permute(g, Vfull, 0, 2, 1, 3));
+
+        ggml_tensor* scores = ggml_mul_mat(g, Kfull, Q);  // [max_kv, nh, 1]
+        scores = ggml_soft_max_ext(g, scores, pd.t_mask, 1.0f / sqrtf((float)hd), 0.0f);
+
+        ggml_tensor* Vt   = ggml_cont(g, ggml_permute(g, Vfull, 1, 0, 2, 3));
+        ggml_tensor* attn = ggml_mul_mat(g, Vt, scores);
+        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        attn = ggml_reshape_2d(g, attn, D, 1);
+        attn = ggml_mul_mat(g, ly.o_w, attn);
+        x = ggml_add(g, x, attn);
+
+        if (is_dense) {
+            ggml_tensor* res  = x;
+            h = rmsnorm(x, ly.post_ln_w);
+            ggml_tensor* gate = ggml_silu(g, ggml_mul_mat(g, ly.ffn_gate_w, h));
+            ggml_tensor* up   = ggml_mul_mat(g, ly.ffn_up_w, h);
+            x = ggml_add(g, res, ggml_mul_mat(g, ly.ffn_down_w, ggml_mul(g, gate, up)));
+        } else if (moe_in_graph) {
+            int n_exp = lhp.n_experts, Kk = lhp.n_experts_top;
+            ggml_tensor* res = x;
+            ggml_tensor* hn  = rmsnorm(x, ly.post_ln_w);
+            ggml_tensor* lgt = ggml_mul_mat(g, ly.router_w, hn);
+            ggml_tensor* prb = ggml_soft_max(g, lgt);
+            ggml_tensor* ids = ggml_top_k(g, prb, Kk);
+            ggml_tensor* p3  = ggml_reshape_3d(g, prb, 1, n_exp, 1);
+            ggml_tensor* tw  = ggml_reshape_2d(g, ggml_get_rows(g, p3, ids), Kk, 1);
+            tw  = ggml_scale(g, tw, lhp.routed_scaling_factor);
+            ggml_tensor* hn3 = ggml_reshape_3d(g, hn, D, 1, 1);
+            ggml_tensor* hnK = ggml_repeat(g, hn3, ggml_new_tensor_3d(g, hn->type, D, Kk, 1));
+            ggml_tensor* gt  = ggml_silu(g, ggml_mul_mat_id(g, ly.gate_exps, hnK, ids));
+            ggml_tensor* up  = ggml_mul_mat_id(g, ly.up_exps, hnK, ids);
+            ggml_tensor* dn  = ggml_mul_mat_id(g, ly.down_exps, ggml_mul(g, gt, up), ids);
+            ggml_tensor* dnp = ggml_cont(g, ggml_permute(g, dn, 1, 0, 2, 3));
+            ggml_tensor* wc  = ggml_reshape_3d(g, tw, Kk, 1, 1);
+            ggml_tensor* rt  = ggml_reshape_2d(g, ggml_mul_mat(g, wc, dnp), D, 1);
+            ggml_tensor* sg  = ggml_silu(g, ggml_mul_mat(g, ly.shared_gate_w, hn));
+            ggml_tensor* su  = ggml_mul_mat(g, ly.shared_up_w, hn);
+            ggml_tensor* sh  = ggml_mul_mat(g, ly.shared_down_w, ggml_mul(g, sg, su));
+            x = ggml_add(g, res, ggml_add(g, rt, sh));
+        }
+    }
+
+    // Output norm + LM head (in-graph so we avoid a separate per-token graph)
+    ggml_tensor* normed = rmsnorm(x, ctx.m.output_norm_w);
+    ggml_tensor* lm_w = ctx.m.lm_head_w ? ctx.m.lm_head_w : ctx.m.embed_tokens;
+    pd.t_logits = ggml_mul_mat(g, lm_w, normed);  // [V, 1]
+    ggml_set_name(pd.t_logits, "pd_logits"); ggml_set_output(pd.t_logits);
+
+    ggml_build_forward_expand(pd.gf, pd.t_logits);
+    for (int li = 0; li < n_layers; li++) {
+        ggml_build_forward_expand(pd.gf, pd.t_k_new[li]);
+        ggml_build_forward_expand(pd.gf, pd.t_v_new[li]);
+    }
+    return pd;
+}
 
 // Build attention-only graph for one LLM layer (no FFN — MoE done on CPU)
 // For layer 0 (dense), includes the FFN in the graph.
@@ -1789,157 +1972,288 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
     std::vector<int32_t> cur_tokens;  // tokens generated so far (single-token steps)
     int n_past = 0;
 
+    // Persistent T=1 decode graph: allocate once after prefill, reuse every gen step.
+    // DS_DECODE_REBUILD=1 forces the old per-step build path (useful for bisection).
+    // Cap the graph window: attending over n_prompt+max_new positions when only n_prompt
+    // are valid at the first step wastes 5× compute. We limit the extension so the
+    // fixed-size attention overhead stays ≤1.4× of the actual n_past. Steps beyond
+    // this cap fall back to the per-step rebuild path.
+    static constexpr int PD_GEN_CAP = 96;
+    bool use_pd  = !getenv("DS_DECODE_REBUILD") && ctx.moe_metal && !no_kv && !lmhead_cpu;
+    int  pd_max_kv = use_pd ? std::min(n_prompt + std::min(max_new, PD_GEN_CAP),
+                                        lhp.max_position_embeddings) : 0;
+    PdGraph pd;
+    std::vector<ggml_fp16_t> pd_mask;
+    std::vector<float> pd_k_tmp(kv_dim), pd_v_tmp(kv_dim);
+    bool pd_ready = false;
+    if (use_pd && pd_max_kv > n_prompt) {
+        pd = build_persistent_decode_graph(ctx, pd_max_kv);
+        // Mask init: all -INF; position max_kv-1 (current token's K slot) is always 0.
+        pd_mask.assign(pd_max_kv, ggml_fp32_to_fp16(-INFINITY));
+        pd_mask[pd_max_kv - 1] = ggml_fp32_to_fp16(0.0f);
+    } else {
+        use_pd = false;
+    }
+
+    auto _decode_t0 = std::chrono::steady_clock::now();
+    int _decode_gen_steps = 0;
     while (n_generated < max_new) {
         // Prefill (n_past==0) processes the whole assembled prompt; subsequent
         // steps process one freshly-generated token at a time. In no_kv mode the
         // whole sequence is reprocessed every step.
         int T = no_kv ? (int)(full_emb.size() / D) : ((n_past == 0) ? n_prompt : (int)cur_tokens.size());
         if (getenv("DS_DBG"))
-            fprintf(stderr, "  [dbg] decode step gen=%d n_past=%d T=%d\n", n_generated, n_past, T);
+            fprintf(stderr, "  [dbg] decode step gen=%d n_past=%d T=%d pd=%d\n",
+                    n_generated, n_past, T, (int)use_pd);
 
-        // Build input embeddings
-        std::vector<float> input_emb(T * D);
-        if (no_kv) {
-            memcpy(input_emb.data(), full_emb.data(), (size_t)T * D * sizeof(float));
-        } else if (n_past == 0) {
-            memcpy(input_emb.data(), prompt_embeds, (size_t)T * D * sizeof(float));
-        } else {
-            for (int t = 0; t < T; t++)
-                get_embedding(cur_tokens[t], input_emb.data() + t * D);
+        bool did_pd = false;
+        std::vector<float> logits(V, 0.0f);
+
+        // === Persistent decode path for T=1 generation steps ===
+        if (use_pd && n_past > 0) {
+            // Fall back once the KV cache window is full (n_past == pd_max_kv would
+            // need pd_max_kv past entries but k_cache_in only holds pd_max_kv-1).
+            if (n_past >= pd_max_kv) {
+                if (getenv("DS_DBG"))
+                    fprintf(stderr, "  [pd] KV full (n_past=%d >= max_kv=%d), fall back\n",
+                            n_past, pd_max_kv);
+                use_pd = false;
+            }
         }
-
-        // Process each layer
-        std::vector<float> hidden(input_emb);
-
-        for (int li = 0; li < n_layers; li++) {
-            bool is_dense = (li == 0);
-            // MoE in-graph (Metal) when experts were stacked; else CPU fallback.
-            bool moe_in_graph = ctx.moe_metal && !is_dense;
-
-            // Build and run attention graph
-            auto lag = build_llm_layer_attn(ctx, li, T, n_past, is_dense, moe_in_graph);
-            ggml_backend_sched_reset(ctx.sched);
-            if (!ggml_backend_sched_alloc_graph(ctx.sched, lag.gf)) {
-                ggml_free(lag.gctx);
-                return false;
-            }
-
-            // Set inputs
-            ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "layer_input"),
-                                    hidden.data(), 0, T * D * sizeof(float));
-
-            std::vector<int32_t> pos(T);
-            for (int t = 0; t < T; t++) pos[t] = n_past + t;
-            ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "pos_ids"),
-                                    pos.data(), 0, T * sizeof(int32_t));
-
-            // KV cache
-            if (n_past > 0) {
-                ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "k_cache_in"),
-                                        ctx.kvc.k_cache[li].data(), 0,
-                                        kv_dim * n_past * sizeof(float));
-                ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "v_cache_in"),
-                                        ctx.kvc.v_cache[li].data(), 0,
-                                        kv_dim * n_past * sizeof(float));
-            }
-
-            // Causal mask
-            int Lk = n_past + T;
-            std::vector<ggml_fp16_t> mask(Lk * T);
-            for (int qi = 0; qi < T; qi++)
-                for (int ki = 0; ki < Lk; ki++)
-                    mask[qi * Lk + ki] = ggml_fp32_to_fp16(ki > n_past + qi ? -INFINITY : 0.0f);
-            ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "mask"),
-                                    mask.data(), 0, Lk * T * sizeof(ggml_fp16_t));
-
-            auto _t0 = std::chrono::steady_clock::now();
-            ggml_backend_sched_graph_compute(ctx.sched, lag.gf);
-            auto _t1 = std::chrono::steady_clock::now();
-
-            // Read outputs
-            ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "layer_output"),
-                                    hidden.data(), 0, T * D * sizeof(float));
-
-            // Update KV cache
-            std::vector<float> k_new(kv_dim * T), v_new(kv_dim * T);
-            ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "k_out"),
-                                    k_new.data(), 0, kv_dim * T * sizeof(float));
-            ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "v_out"),
-                                    v_new.data(), 0, kv_dim * T * sizeof(float));
-
-            if (!no_kv) {
-                ctx.kvc.k_cache[li].insert(ctx.kvc.k_cache[li].end(), k_new.begin(), k_new.end());
-                ctx.kvc.v_cache[li].insert(ctx.kvc.v_cache[li].end(), v_new.begin(), v_new.end());
-            }
-
-            ggml_free(lag.gctx);
-
-            // MoE FFN (layers 1-11): in-graph on Metal (done above) or CPU here.
-            auto _t2 = std::chrono::steady_clock::now();
-            if (!is_dense && !moe_in_graph) {
-                moe_ffn_cpu(ctx, li, hidden.data(), T);
-            }
-            auto _t3 = std::chrono::steady_clock::now();
-            if (getenv("DS_DBG"))
-                fprintf(stderr, "  [dbg] llm li=%d attn=%lldms moe=%lldms (n_threads=%d)\n", li,
-                        (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_t1-_t0).count(),
-                        (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_t3-_t2).count(),
-                        ctx.n_threads);
-
-            // Diff comparison
-            if (!ctx.diff_ref_path.empty() && n_past == 0) {
-                char name[64];
-                snprintf(name, sizeof(name), "llm_layer_%d", li);
-                crispembed_diff::Ref ref;
-                if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(name)) {
-                    auto r = ref.compare(name, hidden.data(), T * D);
-                    fprintf(stderr, "  %s: cos_min=%.6f max_abs=%.6f %s\n",
-                            name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+        if (use_pd && n_past > 0) {
+            if (!pd_ready) {
+                // First gen step: allocate the persistent graph then upload prefill KV.
+                // Prefill's last sched_compute left is_alloc=true; reset to permit alloc.
+                ggml_backend_sched_reset(ctx.sched);
+                auto _pa_t0 = std::chrono::steady_clock::now();
+                if (!ggml_backend_sched_alloc_graph(ctx.sched, pd.gf)) {
+                    fprintf(stderr, "[ds_ocr2] pd alloc failed — falling back to per-step rebuild\n");
+                    use_pd = false;
+                } else {
+                    if (getenv("DS_DBG_VERBOSE")) {
+                        auto _pa_t1 = std::chrono::steady_clock::now();
+                        fprintf(stderr, "  [pd] initial alloc=%lldms max_kv=%d\n",
+                                (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_pa_t1-_pa_t0).count(),
+                                pd_max_kv);
+                    }
+                    // Unlock all prefill positions in the mask.
+                    for (int ki = 0; ki < n_past; ki++)
+                        pd_mask[ki] = ggml_fp32_to_fp16(0.0f);
+                    ggml_backend_tensor_set(pd.t_mask, pd_mask.data(), 0,
+                                            (size_t)pd_max_kv * sizeof(ggml_fp16_t));
+                    // Upload prefill KV cache (valid positions 0..n_past-1).
+                    size_t kv_b = (size_t)n_past * kv_dim * sizeof(float);
+                    for (int li = 0; li < n_layers; li++) {
+                        ggml_backend_tensor_set(pd.t_k_cache[li],
+                                                ctx.kvc.k_cache[li].data(), 0, kv_b);
+                        ggml_backend_tensor_set(pd.t_v_cache[li],
+                                                ctx.kvc.v_cache[li].data(), 0, kv_b);
+                    }
+                    pd_ready = true;
+                }
+            } else {
+                // Subsequent gen steps: incrementally unlock the slot for the token
+                // appended to the KV cache last step (position n_past-1 in the cache,
+                // which maps to Kfull position n_past-1 via k_cache_in[0..max_kv-2]).
+                int prev = n_past - 1;
+                if (prev < pd_max_kv - 1) {
+                    pd_mask[prev] = ggml_fp32_to_fp16(0.0f);
+                    ggml_backend_tensor_set(pd.t_mask, &pd_mask[prev],
+                                            (size_t)prev * sizeof(ggml_fp16_t),
+                                            sizeof(ggml_fp16_t));
+                }
+                // Upload the one new KV entry appended last step at cache index n_past-1.
+                size_t off = (size_t)(n_past - 1) * kv_dim * sizeof(float);
+                size_t sz  = (size_t)kv_dim * sizeof(float);
+                for (int li = 0; li < n_layers; li++) {
+                    ggml_backend_tensor_set(pd.t_k_cache[li],
+                        ctx.kvc.k_cache[li].data() + (n_past - 1) * kv_dim, off, sz);
+                    ggml_backend_tensor_set(pd.t_v_cache[li],
+                        ctx.kvc.v_cache[li].data() + (n_past - 1) * kv_dim, off, sz);
                 }
             }
-        }
 
-        if (!no_kv) n_past += T;
+            if (use_pd) {
+                int32_t tok_id = cur_tokens[0];
+                ggml_backend_tensor_set(pd.t_cur_tok_id, &tok_id, 0, sizeof(int32_t));
+                int32_t pos_id = n_past;
+                ggml_backend_tensor_set(pd.t_pos_ids, &pos_id, 0, sizeof(int32_t));
 
-        // Final norm + LM head (CPU)
-        std::vector<float> last_hidden(D);
-        rmsnorm_cpu(hidden.data() + (T - 1) * D, last_hidden.data(), D, norm_w.data(), lhp.rms_eps);
+                // is_alloc=true from the one-time sched_alloc above → compute skips alloc.
+                auto _pd_t0 = std::chrono::steady_clock::now();
+                ggml_backend_sched_graph_compute(ctx.sched, pd.gf);
+                if (getenv("DS_DBG_VERBOSE")) {
+                    auto _pd_t1 = std::chrono::steady_clock::now();
+                    fprintf(stderr, "  [pd] gen=%d n_past=%d compute=%lldms\n", n_generated, n_past,
+                            (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_pd_t1 - _pd_t0).count());
+                }
 
-        std::vector<float> logits(V);
-        if (lmhead_cpu) {
-            linear_cpu(last_hidden.data(), logits.data(), D, V, head_w.data(), nullptr);
-        } else {
-            // logits = lm_w @ last_hidden on Metal (quantized; ~165M mults/token
-            // off the scalar path). Build+run+free in scope (no dangling graph).
-            size_t meta_sz = 1 * 1024 * 1024;
-            std::vector<uint8_t> mb(meta_sz);
-            ggml_init_params ip = { meta_sz, mb.data(), true };
-            ggml_context* gc = ggml_init(ip);
-            ggml_cgraph* gf = ggml_new_graph(gc);
-            ggml_tensor* in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, 1);
-            ggml_set_name(in, "lmh_in"); ggml_set_input(in);
-            ggml_tensor* out = ggml_mul_mat(gc, lm_w, in);  // [V, 1]
-            ggml_set_name(out, "lmh_out"); ggml_set_output(out);
-            ggml_build_forward_expand(gf, out);
-            ggml_backend_sched_reset(ctx.sched);
-            ggml_backend_sched_alloc_graph(ctx.sched, gf);
-            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "lmh_in"),
-                                    last_hidden.data(), 0, (size_t)D * sizeof(float));
-            ggml_backend_sched_graph_compute(ctx.sched, gf);
-            ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "lmh_out"),
-                                    logits.data(), 0, (size_t)V * sizeof(float));
-            ggml_free(gc);
-        }
+                ggml_backend_tensor_get(pd.t_logits, logits.data(), 0, (size_t)V * sizeof(float));
 
-        // Diff: logits
-        if (!ctx.diff_ref_path.empty() && n_generated == 0) {
-            crispembed_diff::Ref ref;
-            if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("logits")) {
-                auto r = ref.compare("logits", logits.data(), V);
-                fprintf(stderr, "  logits: cos_min=%.6f max_abs=%.6f %s\n",
-                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                for (int li = 0; li < n_layers; li++) {
+                    ggml_backend_tensor_get(pd.t_k_new[li], pd_k_tmp.data(), 0, kv_dim * sizeof(float));
+                    ggml_backend_tensor_get(pd.t_v_new[li], pd_v_tmp.data(), 0, kv_dim * sizeof(float));
+                    ctx.kvc.k_cache[li].insert(ctx.kvc.k_cache[li].end(),
+                                               pd_k_tmp.begin(), pd_k_tmp.end());
+                    ctx.kvc.v_cache[li].insert(ctx.kvc.v_cache[li].end(),
+                                               pd_v_tmp.begin(), pd_v_tmp.end());
+                }
+                n_past++;
+                did_pd = true;
             }
         }
+
+        if (!did_pd) {
+            // === Original per-step rebuild path (prefill + fallback gen) ===
+
+            // Build input embeddings
+            std::vector<float> input_emb(T * D);
+            if (no_kv) {
+                memcpy(input_emb.data(), full_emb.data(), (size_t)T * D * sizeof(float));
+            } else if (n_past == 0) {
+                memcpy(input_emb.data(), prompt_embeds, (size_t)T * D * sizeof(float));
+            } else {
+                for (int t = 0; t < T; t++)
+                    get_embedding(cur_tokens[t], input_emb.data() + t * D);
+            }
+
+            // Process each layer
+            std::vector<float> hidden(input_emb);
+
+            for (int li = 0; li < n_layers; li++) {
+                bool is_dense = (li == 0);
+                // MoE in-graph (Metal) when experts were stacked; else CPU fallback.
+                bool moe_in_graph = ctx.moe_metal && !is_dense;
+
+                // Build and run attention graph
+                auto _rb_t0 = std::chrono::steady_clock::now();
+                auto lag = build_llm_layer_attn(ctx, li, T, n_past, is_dense, moe_in_graph);
+                auto _rb_t1 = std::chrono::steady_clock::now();
+                ggml_backend_sched_reset(ctx.sched);
+                auto _rb_t2 = std::chrono::steady_clock::now();
+                if (!ggml_backend_sched_alloc_graph(ctx.sched, lag.gf)) {
+                    ggml_free(lag.gctx);
+                    return false;
+                }
+
+                // Set inputs
+                ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "layer_input"),
+                                        hidden.data(), 0, T * D * sizeof(float));
+
+                std::vector<int32_t> pos(T);
+                for (int t = 0; t < T; t++) pos[t] = n_past + t;
+                ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "pos_ids"),
+                                        pos.data(), 0, T * sizeof(int32_t));
+
+                // KV cache
+                if (n_past > 0) {
+                    ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "k_cache_in"),
+                                            ctx.kvc.k_cache[li].data(), 0,
+                                            kv_dim * n_past * sizeof(float));
+                    ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "v_cache_in"),
+                                            ctx.kvc.v_cache[li].data(), 0,
+                                            kv_dim * n_past * sizeof(float));
+                }
+
+                // Causal mask
+                int Lk = n_past + T;
+                std::vector<ggml_fp16_t> mask(Lk * T);
+                for (int qi = 0; qi < T; qi++)
+                    for (int ki = 0; ki < Lk; ki++)
+                        mask[qi * Lk + ki] = ggml_fp32_to_fp16(ki > n_past + qi ? -INFINITY : 0.0f);
+                ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "mask"),
+                                        mask.data(), 0, Lk * T * sizeof(ggml_fp16_t));
+
+                auto _t0 = std::chrono::steady_clock::now();
+                ggml_backend_sched_graph_compute(ctx.sched, lag.gf);
+                auto _t1 = std::chrono::steady_clock::now();
+
+                // Read outputs
+                ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "layer_output"),
+                                        hidden.data(), 0, T * D * sizeof(float));
+
+                // Update KV cache
+                std::vector<float> k_new(kv_dim * T), v_new(kv_dim * T);
+                ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "k_out"),
+                                        k_new.data(), 0, kv_dim * T * sizeof(float));
+                ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "v_out"),
+                                        v_new.data(), 0, kv_dim * T * sizeof(float));
+
+                if (!no_kv) {
+                    ctx.kvc.k_cache[li].insert(ctx.kvc.k_cache[li].end(), k_new.begin(), k_new.end());
+                    ctx.kvc.v_cache[li].insert(ctx.kvc.v_cache[li].end(), v_new.begin(), v_new.end());
+                }
+
+                ggml_free(lag.gctx);
+
+                // MoE FFN (layers 1-11): in-graph on Metal (done above) or CPU here.
+                auto _t2 = std::chrono::steady_clock::now();
+                if (!is_dense && !moe_in_graph) {
+                    moe_ffn_cpu(ctx, li, hidden.data(), T);
+                }
+                auto _t3 = std::chrono::steady_clock::now();
+                if (getenv("DS_DBG_VERBOSE"))
+                    fprintf(stderr, "  [dbg] llm li=%d T=%d build=%lldms alloc=%lldms attn=%lldms moe=%lldms\n",
+                            li, T,
+                            (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_rb_t1-_rb_t0).count(),
+                            (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_t0-_rb_t2).count(),
+                            (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_t1-_t0).count(),
+                            (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_t3-_t2).count());
+
+                // Diff comparison
+                if (!ctx.diff_ref_path.empty() && n_past == 0) {
+                    char name[64];
+                    snprintf(name, sizeof(name), "llm_layer_%d", li);
+                    crispembed_diff::Ref ref;
+                    if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(name)) {
+                        auto r = ref.compare(name, hidden.data(), T * D);
+                        fprintf(stderr, "  %s: cos_min=%.6f max_abs=%.6f %s\n",
+                                name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                    }
+                }
+            }
+
+            if (!no_kv) n_past += T;
+
+            // Final norm + LM head
+            std::vector<float> last_hidden(D);
+            rmsnorm_cpu(hidden.data() + (T - 1) * D, last_hidden.data(), D, norm_w.data(), lhp.rms_eps);
+
+            if (lmhead_cpu) {
+                linear_cpu(last_hidden.data(), logits.data(), D, V, head_w.data(), nullptr);
+            } else {
+                // logits = lm_w @ last_hidden on Metal (quantized; ~165M mults/token
+                // off the scalar path). Build+run+free in scope (no dangling graph).
+                size_t meta_sz = 1 * 1024 * 1024;
+                std::vector<uint8_t> mb(meta_sz);
+                ggml_init_params ip = { meta_sz, mb.data(), true };
+                ggml_context* gc = ggml_init(ip);
+                ggml_cgraph* gf = ggml_new_graph(gc);
+                ggml_tensor* in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, 1);
+                ggml_set_name(in, "lmh_in"); ggml_set_input(in);
+                ggml_tensor* out = ggml_mul_mat(gc, lm_w, in);  // [V, 1]
+                ggml_set_name(out, "lmh_out"); ggml_set_output(out);
+                ggml_build_forward_expand(gf, out);
+                ggml_backend_sched_reset(ctx.sched);
+                ggml_backend_sched_alloc_graph(ctx.sched, gf);
+                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "lmh_in"),
+                                        last_hidden.data(), 0, (size_t)D * sizeof(float));
+                ggml_backend_sched_graph_compute(ctx.sched, gf);
+                ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "lmh_out"),
+                                        logits.data(), 0, (size_t)V * sizeof(float));
+                ggml_free(gc);
+            }
+
+            // Diff: logits
+            if (!ctx.diff_ref_path.empty() && n_generated == 0) {
+                crispembed_diff::Ref ref;
+                if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("logits")) {
+                    auto r = ref.compare("logits", logits.data(), V);
+                    fprintf(stderr, "  logits: cos_min=%.6f max_abs=%.6f %s\n",
+                            r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                }
+            }
+        } // end !did_pd
 
         // Argmax
         int next = (int)(std::max_element(logits.begin(), logits.end()) - logits.begin());
@@ -1958,6 +2272,7 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
             fprintf(stderr, "  [gen %d] id=%d piece=%s\n", n_generated - 1, next, pc);
         }
 
+        _decode_gen_steps++;
         if (next == lhp.eos_token_id) break;
 
         // Next step: single token (or, in no_kv mode, append to the full sequence)
@@ -1969,6 +2284,14 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
         }
     }
 
+    if (getenv("DS_DBG")) {
+        auto _decode_t1 = std::chrono::steady_clock::now();
+        long long _decode_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                   _decode_t1 - _decode_t0).count();
+        fprintf(stderr, "  [decode] total=%lldms steps=%d prefill+gen use_pd=%d\n",
+                _decode_ms, _decode_gen_steps, (int)(n_past > 0 && !getenv("DS_DECODE_REBUILD")));
+    }
+    if (pd.gctx) ggml_free(pd.gctx);
     return true;
 }
 
