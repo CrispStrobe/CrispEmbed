@@ -369,8 +369,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [x] **Dequantized weight caching** — Added `DequantCache` struct to
   `cpu_ops.h`: `unordered_map<void*, vector<float>>` keyed on tensor data
   pointer, dequantizes on first access, returns cached F32 thereafter.
-  Runtimes can now use `cache.get(tensor)` instead of `to_f32(tensor)`.
-  Individual runtimes still need to be migrated to use it (separate TODOs).
+  Migrated: smoldocling_ocr (replaced wbufs), granite_vision_ocr (replaced
+  wcache). Remaining runtimes still need migration.
 
 - [ ] **Adopt F16 ggml KV cache** — internvl2_ocr (lines 706-753) implements
   the gold-standard pattern: persistent F16 ggml backend tensors with
@@ -394,10 +394,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   graphs, no KV cache, O(T^2) recompute per decode step. No cross-attention K/V
   caching either (re-projects all encoder outputs every step).
 
-- [ ] **scunet per-pixel heap allocations** — `scunet_denoise.cpp` lines 362-367
-  and 403-423 allocate `std::vector<float>` per spatial position in LayerNorm
-  and MLP. For 256x256 at 64ch, that is 65536 × 2 vector allocations in LN alone,
-  plus 65536 × 3 in MLP. Pre-allocate scratch buffers outside the loop.
+- [x] **scunet per-pixel heap allocations** — Hoisted `std::vector<float>` pix,
+  pix_out, pix_norm, h allocations outside the spatial loops. Also cached LN2
+  weights outside the MLP per-pixel loop (was re-dequantizing 65536 times).
+  Eliminates 100K+ heap allocs per swin block for 256×256 images.
 
 #### P1 — High-impact targeted improvements
 
@@ -423,8 +423,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 
 - [x] **Pre-compute RoPE frequency tables** — Added `RoPEFreqTable` struct to
   `vlm_attention.h` with `precompute(head_dim, theta)` and `apply()` methods.
-  Eliminates `powf` per-element. Runtimes still need to be migrated from
-  `apply_rope()` to `RoPEFreqTable::apply()` (separate TODOs).
+  Eliminates `powf` per-element. Migrated: smoldocling_ocr (NEGHALF),
+  granite_vision_ocr (NEGHALF). Remaining `core_vlm` users still on `apply_rope()`.
 
 - [ ] **Batch linear → GEMM in SR/restoration attention** — dat_sr, swinir_sr,
   hat_sr, scunet, mixtex call `linear_cpu` per-token for QKV projection.
