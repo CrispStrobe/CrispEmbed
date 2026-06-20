@@ -436,9 +436,16 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   qwen2vl_ocr: **DONE** — already had F16 kvc; fixed CPU round-trip in seeding
   (`48948a6`, branch `feat/qwen2vl-kvcache`).
 
-- [x] **Move granite_vision_ocr vision encoder to ggml graphs** — DONE
-  (feat/granite-vision-ggml-graph). SigLIP ViT (27 layers, T=729,
-  D=1152, n_heads=16) as a single ggml graph with Metal backend.
+- [~] **Move granite_vision_ocr vision encoder to ggml graphs** — BUILT but
+  NUMERICALLY BROKEN (feat/granite-vision-ggml-graph). SigLIP ViT (27 layers,
+  T=729, D=1152, n_heads=16) as a single ggml graph with Metal backend.
+  **`gv_run_vit_graph` produces garbage** — HF-blueprint crispembed-diff cos
+  **0.05** vs HF (NaN / residual blow-up on the CPU backend; broken from the
+  first encoder layer). The compute does not land correctly in the read-back
+  tensors — the same ggml-alloc in-place buffer-reuse defect that breaks the
+  Metal LLM graph. NOW GATED behind `CRISPEMBED_GRANITE_VIS_GRAPH=1`; the
+  default is the diff-validated **scalar** ViT (cos 1.0→0.96 on the random ref,
+  ~0.9999 on real images). See `handover-prompts/granite-vision-graph-fix.md`.
 
 - [x] **granite_vision projector + LLM decoder → ggml graphs** — DONE
   (`66b8de2`). `gv_run_projector_graph` (2-layer MLP on Metal) and
@@ -451,11 +458,19 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
     weights in PyTorch `[out,in]` order, so non-square weights need a
     `ggml_reshape_2d(w, ne[1], ne[0])` before `ggml_mul_mat` (the vision FFN
     already did this). Applied to projector linear_1 and LLM k/v/gate/up/down.
-  - **ggml LLM decode is NOT yet validated**: it runs but produces wrong
-    tokens (decode runs away to max_tokens). Gated behind
-    `CRISPEMBED_GRANITE_LLM_GRAPH=1`; default is the diff-validated scalar
-    decode (`gv_llm_decode_step`, crispembed-diff cos=1.0). Vision + projector
-    ggml graphs are correct and stay on Metal.
+  - **ggml LLM decode: correct on CPU, BROKEN on Metal.** `d116394` fixed an
+    input-tensor bug (was uploading to the post-loop scratch node) and
+    `b579345` switched to native GQA. With those, the LLM graph is correct on
+    the **ggml CPU backend** but on **Metal** still emits EOS immediately
+    (0 decode steps → "recognition failed") — the unfixed ggml-alloc
+    buffer-reuse bug. Gated behind `CRISPEMBED_GRANITE_LLM_GRAPH=1`; default is
+    the diff-validated scalar decode (`gv_llm_decode_step`, crispembed-diff
+    cos=1.0). **Verified-correct end-to-end OCR** = scalar vision +
+    `CRISPEMBED_GRANITE_CPU=1 CRISPEMBED_GRANITE_LLM_GRAPH=1` (CPU LLM graph) →
+    "The quick brown fox jumps over 1234." See the graph-fix handover.
+  - **The projector ggml graph shares the same Metal risk**; only the scalar
+    projector is exercised in the validated path. (Projector GELU was tanh but
+    `projector_hidden_act="gelu"`=erf — fixed to `ggml_gelu_erf`.)
   - **Memory**: the scalar fallback's DequantCache materializes ~9 GB of F32
     weights (swaps on a 16 GB machine). Q4_K vec_dot would keep it bounded
     (~2 GB); see `tools/dump_granite_llm_reference.py` for the parity harness.
