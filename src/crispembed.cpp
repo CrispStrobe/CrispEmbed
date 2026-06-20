@@ -2501,11 +2501,6 @@ static float crispembed_apply_classifier(crispembed_context * ctx,
         for (int h = 0; h < H; h++) score += cls_vec[h] * ctx->rerank_ow[h];
         if (ctx->rerank_out_has_bias) score += ctx->rerank_out_bias;
     }
-    if (ctx->bench) {
-        double ms = std::chrono::duration<double, std::milli>(
-            std::chrono::steady_clock::now() - t_rerank_start).count();
-        fprintf(stderr, "[crispembed-bench] crispembed_rerank total: %.1f ms\n", ms);
-    }
     return score;
 }
 
