@@ -431,8 +431,8 @@ static void rst_conv2d_ggml(restormer_context * ctx,
                              ggml_tensor * wt, ggml_tensor * bt,
                              int oc, int kh, int kw, int pad, int groups,
                              float * output) {
-    if (!ctx->enc_sched || !wt) {
-        // scalar fallback via dequant
+    if (!ctx->enc_sched || !wt || ggml_n_dims(wt) >= 4) {
+        // scalar fallback via dequant (4D weights need permute which adds overhead)
         rst_conv2d(input, ic, h, w,
                    ctx->dcache.get(wt), bt ? ctx->dcache.get(bt) : nullptr,
                    oc, kh, kw, pad, groups, output);
@@ -450,21 +450,26 @@ static void rst_conv2d_ggml(restormer_context * ctx,
     ggml_set_name(x, "x"); ggml_set_input(x);
 
     ggml_tensor * ww = wt;
-    if (groups > 1 && groups == ic) {
-        if (ggml_n_dims(ww) == 2) {
-            if (ww->type != GGML_TYPE_F32 && ww->type != GGML_TYPE_F16)
-                ww = ggml_cont(g, ggml_cast(g, ww, GGML_TYPE_F32));
-            ww = ggml_reshape_4d(g, ww, kw, kh, 1, ww->ne[1]);
+    if (ww->type != GGML_TYPE_F32)
+        ww = ggml_cast(g, ww, GGML_TYPE_F32);
+    int ic_g = (groups > 1 && groups == ic) ? 1 : ic;
+    if (ggml_n_dims(ww) == 2) {
+        int64_t ik = (int64_t)ic_g * kh * kw;
+        if (ww->ne[0] == ik) {
+            ww = ggml_reshape_4d(g, ww, kw, kh, ic_g, ww->ne[1]);
+        } else if (ww->ne[1] == ik) {
+            ww = ggml_cont(g, ggml_transpose(g, ww));
+            ww = ggml_reshape_4d(g, ww, kw, kh, ic_g, ww->ne[1]);
+        } else {
+            ww = ggml_reshape_4d(g, ww, kw, kh, ic_g, oc);
         }
-        if (ww->type != GGML_TYPE_F16) ww = ggml_cast(g, ww, GGML_TYPE_F16);
+    } else if (ggml_n_dims(ww) >= 4) {
+        ww = ggml_cont(g, ggml_permute(g, ww, 3, 2, 1, 0));
+    }
+    ww = ggml_cast(g, ww, GGML_TYPE_F16);
+    if (groups > 1 && groups == ic) {
         x = ggml_conv_2d_dw(g, ww, x, 1, 1, pad, pad, 1, 1);
     } else {
-        if (ggml_n_dims(ww) == 2) {
-            if (ww->type != GGML_TYPE_F32 && ww->type != GGML_TYPE_F16)
-                ww = ggml_cont(g, ggml_cast(g, ww, GGML_TYPE_F32));
-            ww = ggml_reshape_4d(g, ww, kw, kh, ic, ww->ne[1]);
-        }
-        if (ww->type != GGML_TYPE_F16) ww = ggml_cast(g, ww, GGML_TYPE_F16);
         x = ggml_conv_2d(g, ww, x, 1, 1, pad, pad, 1, 1);
     }
     if (bt) {
