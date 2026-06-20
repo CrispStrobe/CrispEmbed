@@ -700,9 +700,11 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   Replaced scalar linear_cpu with core_cpu::linear_cpu (SIMD), SIMD dot_product
   in mha_1q, pre-allocated scalar decoder scratch.
 
-- [ ] **Add beam search to math OCR runtimes** — only bttr_ocr has it.
-  mixtex, math_ocr, hmer, posformer, ppformulanet, ppformulanet_l are
-  greedy-only. Beam width=3 typically helps math OCR accuracy.
+- [x] **Add beam search to math OCR runtimes** — `bttr_ocr` already had it.
+  Added `*_recognize_beam` / `*_recognize_raw_beam` API variants (`1f58e83`)
+  to math_ocr (scalar MathOcrBeam via decoder_step_scalar), ppformulanet_ocr,
+  and ppformulanet_l_ocr. Remaining greedy-only: hmer (GRU decoder, different
+  state), posformer (ARM coverage complicates beam copies), mixtex.
 
 - [x] **morph_fast: decomposed dilation** — DONE (`825db30`). Power-of-2
   horizontal dilation replaces O(hsize) naive loop for hsize > 16.
