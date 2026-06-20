@@ -688,22 +688,24 @@ static std::vector<float> preprocess_image(const uint8_t* pixels, int w, int h, 
     const float mean[3] = {0.485f, 0.456f, 0.406f};
     const float std_[3] = {0.229f, 0.224f, 0.225f};
 
-    // Simple nearest-neighbor resize + normalize
-    // (Surya uses LANCZOS but for parity testing we start simple)
+    // Bilinear resize + normalize
     std::vector<float> out(3 * target_h * target_w);
     for (int c = 0; c < 3; c++) {
         for (int oy = 0; oy < target_h; oy++) {
-            int iy = oy * h / target_h;
+            float fy = (float)oy * h / target_h;
+            int y0 = (int)fy, y1 = std::min(y0 + 1, h - 1);
+            float wy = fy - y0;
             for (int ox = 0; ox < target_w; ox++) {
-                int ix = ox * w / target_w;
-                float pixel;
-                if (ch == 1) {
-                    pixel = pixels[iy * w + ix] / 255.0f;
-                } else {
-                    pixel = pixels[(iy * w + ix) * ch + c] / 255.0f;
-                }
-                out[c * target_h * target_w + oy * target_w + ox] =
-                    (pixel - mean[c]) / std_[c];
+                float fx = (float)ox * w / target_w;
+                int x0 = (int)fx, x1 = std::min(x0 + 1, w - 1);
+                float wx = fx - x0;
+                auto px = [&](int y, int x) -> float {
+                    if (ch == 1) return pixels[y * w + x] / 255.0f;
+                    return pixels[(y * w + x) * ch + c] / 255.0f;
+                };
+                float pixel = (1 - wy) * ((1 - wx) * px(y0, x0) + wx * px(y0, x1))
+                            +      wy  * ((1 - wx) * px(y1, x0) + wx * px(y1, x1));
+                out[c * target_h * target_w + oy * target_w + ox] = (pixel - mean[c]) / std_[c];
             }
         }
     }
