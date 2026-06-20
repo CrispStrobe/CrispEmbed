@@ -4,6 +4,7 @@
 // Self-contained C++, no Leptonica types. Uses morph_fast.h for 1-bit ops.
 
 #include "classical_preproc.h"
+#include "core/cpu_ops.h"
 #include "morph_fast.h"
 
 #include <algorithm>
@@ -25,29 +26,7 @@
 
 static uint8_t otsu_single(const uint8_t * data, int n) {
     if (n <= 0) return 128;
-    int hist[256] = {};
-    for (int i = 0; i < n; i++) hist[data[i]]++;
-
-    double sum = 0;
-    for (int i = 0; i < 256; i++) sum += (double)i * hist[i];
-
-    double sumB = 0;
-    int wB = 0;
-    double max_var = 0;
-    int best = 128;
-
-    for (int t = 0; t < 256; t++) {
-        wB += hist[t];
-        if (wB == 0) continue;
-        int wF = n - wB;
-        if (wF == 0) break;
-        sumB += (double)t * hist[t];
-        double mB = sumB / wB;
-        double mF = (sum - sumB) / wF;
-        double var = (double)wB * wF * (mB - mF) * (mB - mF);
-        if (var > max_var) { max_var = var; best = t; }
-    }
-    return (uint8_t)best;
+    return core_cpu::otsu_threshold(data, n);
 }
 
 void adaptive_otsu(const uint8_t * gray, int w, int h,
