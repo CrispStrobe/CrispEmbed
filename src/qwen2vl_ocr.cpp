@@ -1181,10 +1181,9 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
     if (ctx.position_embed_cache.size() != (size_t)num_pos * H) {
       ctx.position_embed_cache.assign((size_t)num_pos * H, 0.0f);
       if (ctx.m.position_embed_w->type == GGML_TYPE_F32) {
-        ggml_backend_tensor_get(ctx.m.position_embed_w,
-                                ctx.position_embed_cache.data(), 0,
-                                ctx.position_embed_cache.size() *
-                                    sizeof(float));
+        ggml_backend_tensor_get(
+            ctx.m.position_embed_w, ctx.position_embed_cache.data(), 0,
+            ctx.position_embed_cache.size() * sizeof(float));
       } else {
         size_t qsz = ggml_nbytes(ctx.m.position_embed_w);
         std::vector<uint8_t> qbuf(qsz);
@@ -1892,8 +1891,8 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
   if (lm_head) {
     ggml_tensor *logit_input = x;
     if (logits_last_only && n_tokens > 1) {
-      logit_input = ggml_view_2d(g, x, D, 1, x->nb[1],
-                                 (size_t)(n_tokens - 1) * x->nb[1]);
+      logit_input =
+          ggml_view_2d(g, x, D, 1, x->nb[1], (size_t)(n_tokens - 1) * x->nb[1]);
       logit_input = ggml_cont(g, logit_input);
     }
     ggml_tensor *logits = ggml_mul_mat(g, lm_head, logit_input);
@@ -1924,8 +1923,8 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
   ggml_backend_tensor_set(ids_t, token_ids, 0, n_tokens * sizeof(int32_t));
 
   // Build causal mask on CPU
-  std::vector<ggml_fp16_t> mask_data(
-      (size_t)n_tokens * n_tokens, ggml_fp32_to_fp16(-INFINITY));
+  std::vector<ggml_fp16_t> mask_data((size_t)n_tokens * n_tokens,
+                                     ggml_fp32_to_fp16(-INFINITY));
   for (int i = 0; i < n_tokens; i++) {
     for (int j = 0; j <= i; j++) {
       mask_data[(size_t)i * n_tokens + j] = ggml_fp32_to_fp16(0.0f);
@@ -2253,11 +2252,21 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
 
 // ── Decode-step graph (single token, with KV cache) ──────────────────
 
-static ggml_cgraph *build_decode_step_graph(
-    context &ctx, ggml_context *g,
-    int n_kv,  // number of cached KV tokens (0 on first step)
-    int pos) { // position of the new token
-
+// Build a single-token decode graph.
+//
+// Key differences from the original approach:
+//   - tok_id (I32[1]) input replaces the pre-computed tok_emb tensor; the
+//     embedding lookup runs as the first graph op on the GPU, eliminating the
+//     separate embed mini-graph (and its sched_reset/sched_alloc overhead).
+//   - kv_mask (F16[max_seq,1]) is a new input; values are 0.0 for valid
+//     cached slots and -INF for empty slots.  The mask is passed to
+//     flash_attn_ext so the attention sees only the populated prefix.
+//   - KV read views always span [0..max_seq-1] (constant shape), while KV
+//     writes still use ggml_cpy into a position-specific view.  Constant
+//     tensor shapes across all decode steps let ggml_backend_sched_alloc_graph
+//     take the fast path (no reallocation) from step 2 onwards.
+static ggml_cgraph *build_decode_step_graph(context &ctx, ggml_context *g,
+                                            int n_kv, int pos, int max_seq) {
   const auto &lhp = ctx.m.lhp;
   const int D = (int)lhp.hidden_size;
   const int n_heads = (int)lhp.num_attention_heads;
@@ -2266,19 +2275,30 @@ static ggml_cgraph *build_decode_step_graph(
   const int n_layers = (int)lhp.num_hidden_layers;
   const float rms_eps = lhp.rms_norm_eps;
   const float attn_scale = 1.0f / std::sqrt((float)head_dim);
-  const int kv_dim = head_dim * n_kv_heads; // KV projection dim
+  const int kv_dim = head_dim * n_kv_heads;
 
   ggml_cgraph *gf = ggml_new_graph_custom(g, 16384, false);
 
-  // Input: token embedding (pre-computed, D × 1)
-  ggml_tensor *x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, 1);
-  ggml_set_name(x, "tok_emb");
-  ggml_set_input(x);
+  // Input: token ID — embedding lookup runs on GPU, no separate mini-graph.
+  ggml_tensor *tok_id = ggml_new_tensor_1d(g, GGML_TYPE_I32, 1);
+  ggml_set_name(tok_id, "tok_id");
+  ggml_set_input(tok_id);
+
+  // Embedding lookup (shape: D × 1)
+  ggml_tensor *x =
+      ggml_reshape_2d(g, ggml_get_rows(g, ctx.m.embed_tokens, tok_id), D, 1);
 
   // mRoPE position IDs for this single token (4 values: t, h, w, 0)
   ggml_tensor *pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, 4);
   ggml_set_name(pos_ids, "pos_ids");
   ggml_set_input(pos_ids);
+
+  // Attention mask: F16[max_seq, 1].  0.0 for attended slots, -INF for empty.
+  // Caller sets mask[n_kv]=0.0 before each step so the newly-written KV slot
+  // is included; mask[n_kv+1..max_seq-1] stay -INF.
+  ggml_tensor *kv_mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, max_seq, 1);
+  ggml_set_name(kv_mask, "kv_mask");
+  ggml_set_input(kv_mask);
 
   int sections[4] = {
       lhp.rope_sections[0],
@@ -2335,75 +2355,41 @@ static ggml_cgraph *build_decode_step_graph(
     K_new = ggml_cont(g, K_new);
     V_new = ggml_cont(g, V_new);
 
-    ggml_tensor *K_full, *V_full;
-    if (ctx.kvc.allocated) {
-      ggml_tensor *K_flat = ggml_reshape_2d(g, K_new, kv_dim, 1);
-      ggml_tensor *V_flat = ggml_reshape_2d(g, V_new, kv_dim, 1);
+    ggml_tensor *K_flat = ggml_reshape_2d(g, K_new, kv_dim, 1);
+    ggml_tensor *V_flat = ggml_reshape_2d(g, V_new, kv_dim, 1);
 
-      ggml_tensor *k_view =
-          ggml_view_2d(g, ctx.kvc.k, kv_dim, 1, ctx.kvc.k->nb[1],
-                       (size_t)il * ctx.kvc.k->nb[2] +
-                           (size_t)n_kv * ctx.kvc.k->nb[1]);
-      ggml_tensor *v_view =
-          ggml_view_2d(g, ctx.kvc.v, kv_dim, 1, ctx.kvc.v->nb[1],
-                       (size_t)il * ctx.kvc.v->nb[2] +
-                           (size_t)n_kv * ctx.kvc.v->nb[1]);
-      ggml_build_forward_expand(gf, ggml_cpy(g, K_flat, k_view));
-      ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_view));
+    // Write K_new/V_new into the backend KV cache at slot n_kv.
+    // view_offs varies per step but shape (kv_dim,1) is constant →
+    // sched_alloc compatibility check passes → fast-path from step 2 on.
+    ggml_tensor *k_write = ggml_view_2d(
+        g, ctx.kvc.k, kv_dim, 1, ctx.kvc.k->nb[1],
+        (size_t)il * ctx.kvc.k->nb[2] + (size_t)n_kv * ctx.kvc.k->nb[1]);
+    ggml_tensor *v_write = ggml_view_2d(
+        g, ctx.kvc.v, kv_dim, 1, ctx.kvc.v->nb[1],
+        (size_t)il * ctx.kvc.v->nb[2] + (size_t)n_kv * ctx.kvc.v->nb[1]);
+    ggml_build_forward_expand(gf, ggml_cpy(g, K_flat, k_write));
+    ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_write));
 
-      const int seq_len = n_kv + 1;
-      ggml_tensor *k_layer =
-          ggml_view_2d(g, ctx.kvc.k, kv_dim, seq_len, ctx.kvc.k->nb[1],
-                       (size_t)il * ctx.kvc.k->nb[2]);
-      ggml_tensor *v_layer =
-          ggml_view_2d(g, ctx.kvc.v, kv_dim, seq_len, ctx.kvc.v->nb[1],
-                       (size_t)il * ctx.kvc.v->nb[2]);
-      K_full = ggml_reshape_3d(g, k_layer, head_dim, n_kv_heads, seq_len);
-      V_full = ggml_reshape_3d(g, v_layer, head_dim, n_kv_heads, seq_len);
-    } else if (n_kv > 0) {
-      // Host-backed fallback: upload the current KV cache as graph inputs.
-      std::snprintf(name, sizeof(name), "k_out_%d", il);
-      ggml_set_name(K_new, name);
-      ggml_set_output(K_new);
-      std::snprintf(name, sizeof(name), "v_out_%d", il);
-      ggml_set_name(V_new, name);
-      ggml_set_output(V_new);
-
-      ggml_tensor *k_cache = ggml_new_tensor_2d(g, GGML_TYPE_F32, kv_dim, n_kv);
-      std::snprintf(name, sizeof(name), "k_in_%d", il);
-      ggml_set_name(k_cache, name);
-      ggml_set_input(k_cache);
-
-      ggml_tensor *v_cache = ggml_new_tensor_2d(g, GGML_TYPE_F32, kv_dim, n_kv);
-      std::snprintf(name, sizeof(name), "v_in_%d", il);
-      ggml_set_name(v_cache, name);
-      ggml_set_input(v_cache);
-
-      // Reshape cache to 3D for concat
-      k_cache = ggml_reshape_3d(g, k_cache, head_dim, n_kv_heads, n_kv);
-      v_cache = ggml_reshape_3d(g, v_cache, head_dim, n_kv_heads, n_kv);
-
-      K_full = ggml_concat(g, k_cache, K_new, 2); // concat on seq dim
-      V_full = ggml_concat(g, v_cache, V_new, 2);
-    } else {
-      std::snprintf(name, sizeof(name), "k_out_%d", il);
-      ggml_set_name(K_new, name);
-      ggml_set_output(K_new);
-      std::snprintf(name, sizeof(name), "v_out_%d", il);
-      ggml_set_name(V_new, name);
-      ggml_set_output(V_new);
-      K_full = K_new;
-      V_full = V_new;
-    }
+    // Fixed-size KV read view — constant shape across all steps.
+    // kv_mask (0.0 / -INF) ensures only the populated prefix is attended to.
+    ggml_tensor *k_layer =
+        ggml_view_2d(g, ctx.kvc.k, kv_dim, max_seq, ctx.kvc.k->nb[1],
+                     (size_t)il * ctx.kvc.k->nb[2]);
+    ggml_tensor *v_layer =
+        ggml_view_2d(g, ctx.kvc.v, kv_dim, max_seq, ctx.kvc.v->nb[1],
+                     (size_t)il * ctx.kvc.v->nb[2]);
+    ggml_tensor *K_full =
+        ggml_reshape_3d(g, k_layer, head_dim, n_kv_heads, max_seq);
+    ggml_tensor *V_full =
+        ggml_reshape_3d(g, v_layer, head_dim, n_kv_heads, max_seq);
 
     // Attention: Q(hd, nh, 1) @ K_full^T(hd, nh, seq) → scores(seq, 1, nh)
     Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));           // (hd, 1, nh)
     K_full = ggml_permute(g, K_full, 0, 2, 1, 3); // (hd, seq, nkv)
     V_full = ggml_permute(g, V_full, 0, 2, 1, 3);
 
-    // No causal mask needed — single query always attends to all cached KV.
-    ggml_tensor *attn_out = ggml_flash_attn_ext(
-        g, Q, K_full, V_full, nullptr, attn_scale, 0.0f, 0.0f);
+    ggml_tensor *attn_out = ggml_flash_attn_ext(g, Q, K_full, V_full, kv_mask,
+                                                attn_scale, 0.0f, 0.0f);
     ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
     attn_out = ggml_reshape_2d(g, attn_out, D, 1);
 
@@ -2559,8 +2545,10 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
         size_t sz = (size_t)kv_dim * n_prompt_tokens;
         k_cache[il].resize(sz);
         v_cache[il].resize(sz);
-        k_cache[il].reserve((size_t)kv_dim * (n_prompt_tokens + max_new_tokens));
-        v_cache[il].reserve((size_t)kv_dim * (n_prompt_tokens + max_new_tokens));
+        k_cache[il].reserve((size_t)kv_dim *
+                            (n_prompt_tokens + max_new_tokens));
+        v_cache[il].reserve((size_t)kv_dim *
+                            (n_prompt_tokens + max_new_tokens));
         ggml_backend_tensor_get(kt, k_cache[il].data(), 0, sz * sizeof(float));
         ggml_backend_tensor_get(vt, v_cache[il].data(), 0, sz * sizeof(float));
       }
@@ -2616,12 +2604,27 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
     return true;
 
   // ── Decode: single-token steps with KV cache ──
-  int n_kv = n_prompt_tokens; // KV cache size grows each step
+  int n_kv = n_prompt_tokens; // grows each step
   const int rope_delta = prefill.rope_delta;
 
+  // Attention mask shared across steps: F16[max_seq_kv, 1].
+  // Slots [0..n_prompt_tokens-1] are pre-populated by prefill.
+  // Each decode step sets mask[n_kv]=0.0 before compute so the just-written
+  // KV slot is visible to flash_attn; slots beyond are kept at -INF.
+  int max_seq_kv = ctx.kvc.max_seq;
+  std::vector<ggml_fp16_t> kv_mask_data((size_t)max_seq_kv,
+                                        ggml_fp32_to_fp16(-INFINITY));
+  if (backend_kv_ok) {
+    for (int i = 0; i < n_prompt_tokens; i++)
+      kv_mask_data[i] = ggml_fp32_to_fp16(0.0f);
+  }
+
+  // Logits buffer reused every step.
+  std::vector<float> logits_data(V);
+
   for (int gen = 1; gen < max_new_tokens; gen++) {
-    if (!kv_ok) {
-      // Fallback: recompute full sequence (no KV cache)
+    if (!kv_ok || !backend_kv_ok) {
+      // Fallback: full recompute (no KV cache available).
       std::vector<int32_t> all_tokens(prompt_token_ids,
                                       prompt_token_ids + n_prompt_tokens);
       for (auto id : out.token_ids)
@@ -2657,45 +2660,19 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
         free(fwd.hidden);
       free(fwd.logits);
     } else {
-      // KV-cached decode step
+      // ── KV-cached decode step ──
       auto t_decode = qwen_clock::now();
-      int pos = n_kv; // cache position of the new token
+      int pos = n_kv;
       int rope_pos = pos + rope_delta;
 
-      // Look up token embedding BEFORE building the decode graph so we
-      // never reset the scheduler after graph allocation.  Resetting after
-      // alloc left stale buffer pointers on graph tensors; the second alloc
-      // then aborted when the scheduler found pre-allocated tensors in a
-      // buffer it could no longer associate with a backend.
-      std::vector<float> tok_emb(D);
-      {
-        ggml_init_params eip{ggml_graph_overhead() + 8 * ggml_tensor_overhead(),
-                             nullptr, true};
-        ggml_context *eg = ggml_init(eip);
-        ggml_tensor *idx = ggml_new_tensor_1d(eg, GGML_TYPE_I32, 1);
-        ggml_set_input(idx);
-        ggml_tensor *emb = ggml_get_rows(eg, ctx.m.embed_tokens, idx);
-        ggml_set_output(emb);
-        ggml_cgraph *egf = ggml_new_graph(eg);
-        ggml_build_forward_expand(egf, emb);
-        ggml_backend_sched_reset(ctx.sched);
-        ggml_backend_sched_alloc_graph(ctx.sched, egf);
-        ggml_backend_tensor_set(ggml_graph_get_tensor(egf, idx->name), &best_id,
-                                0, sizeof(int32_t));
-        ggml_backend_sched_graph_compute(ctx.sched, egf);
-        ggml_backend_tensor_get(emb, tok_emb.data(), 0, D * sizeof(float));
-        ggml_free(eg);
-      }
-      long long embed_ms = qwen_ms_since(t_decode);
-      auto t_part = qwen_clock::now();
+      // Unmask this step's write slot before building the graph so the
+      // ggml_cpy → flash_attn_ext ordering in the graph is correct.
+      kv_mask_data[n_kv] = ggml_fp32_to_fp16(0.0f);
 
-      ggml_init_params ip{
-          ctx.compute_meta.size(),
-          ctx.compute_meta.data(),
-          true,
-      };
+      ggml_init_params ip{ctx.compute_meta.size(), ctx.compute_meta.data(),
+                          true};
       ggml_context *g = ggml_init(ip);
-      ggml_cgraph *gf = build_decode_step_graph(ctx, g, n_kv, pos);
+      ggml_cgraph *gf = build_decode_step_graph(ctx, g, n_kv, pos, max_seq_kv);
 
       ggml_backend_sched_reset(ctx.sched);
       if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
@@ -2703,38 +2680,23 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
         ggml_free(g);
         return false;
       }
-      long long build_ms = qwen_ms_since(t_part);
-      t_part = qwen_clock::now();
+      long long build_ms = qwen_ms_since(t_decode);
+      auto t_part = qwen_clock::now();
 
-      ggml_tensor *te = ggml_graph_get_tensor(gf, "tok_emb");
-      ggml_backend_tensor_set(te, tok_emb.data(), 0, D * sizeof(float));
+      // Set inputs: tok_id replaces the old tok_emb (embedding runs on GPU).
+      ggml_tensor *tid = ggml_graph_get_tensor(gf, "tok_id");
+      ggml_backend_tensor_set(tid, &best_id, 0, sizeof(int32_t));
 
-      // Set mRoPE position (HF uses cache_position + rope_delta after image
-      // prefill)
       int32_t pos_data[4] = {rope_pos, rope_pos, rope_pos, 0};
       ggml_tensor *pi = ggml_graph_get_tensor(gf, "pos_ids");
       ggml_backend_tensor_set(pi, pos_data, 0, 4 * sizeof(int32_t));
 
-      // Set KV cache inputs for the host-backed fallback path.
-      char name[64];
-      for (int il = 0; il < n_layers && !backend_kv_ok; il++) {
-        if (n_kv > 0) {
-          std::snprintf(name, sizeof(name), "k_in_%d", il);
-          ggml_tensor *ki = ggml_graph_get_tensor(gf, name);
-          if (ki)
-            ggml_backend_tensor_set(ki, k_cache[il].data(), 0,
-                                    k_cache[il].size() * sizeof(float));
-          std::snprintf(name, sizeof(name), "v_in_%d", il);
-          ggml_tensor *vi = ggml_graph_get_tensor(gf, name);
-          if (vi)
-            ggml_backend_tensor_set(vi, v_cache[il].data(), 0,
-                                    v_cache[il].size() * sizeof(float));
-        }
-      }
+      ggml_tensor *km = ggml_graph_get_tensor(gf, "kv_mask");
+      ggml_backend_tensor_set(km, kv_mask_data.data(), 0,
+                              (size_t)max_seq_kv * sizeof(ggml_fp16_t));
       long long upload_ms = qwen_ms_since(t_part);
       t_part = qwen_clock::now();
 
-      // Compute
       if (ggml_backend_sched_graph_compute(ctx.sched, gf) !=
           GGML_STATUS_SUCCESS) {
         fprintf(stderr, "qwen2vl_ocr: decode step compute failed\n");
@@ -2744,12 +2706,10 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
       long long compute_ms = qwen_ms_since(t_part);
       t_part = qwen_clock::now();
 
-      // Read logits
+      // Read logits + greedy argmax.
       ggml_tensor *logits_t = ggml_graph_get_tensor(gf, "logits");
-      std::vector<float> logits_data(V);
       ggml_backend_tensor_get(logits_t, logits_data.data(), 0,
                               V * sizeof(float));
-
       best_id = 0;
       best_score = -INFINITY;
       for (int v = 0; v < V; v++) {
@@ -2758,7 +2718,6 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
           best_id = v;
         }
       }
-
       {
         float max_l = best_score;
         float sum_exp = 0.0f;
@@ -2767,34 +2726,13 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
         out.token_confidences.push_back(expf(best_score - max_l) / sum_exp);
       }
 
-      if (!backend_kv_ok) {
-        // Append new K/V to host cache.
-        for (int il = 0; il < n_layers; il++) {
-          std::snprintf(name, sizeof(name), "k_out_%d", il);
-          ggml_tensor *ko = ggml_graph_get_tensor(gf, name);
-          size_t k_old = k_cache[il].size();
-          k_cache[il].resize(k_old + (size_t)kv_dim);
-          if (ko) {
-            ggml_backend_tensor_get(ko, k_cache[il].data() + k_old, 0,
-                                    kv_dim * sizeof(float));
-          }
-          std::snprintf(name, sizeof(name), "v_out_%d", il);
-          ggml_tensor *vo = ggml_graph_get_tensor(gf, name);
-          size_t v_old = v_cache[il].size();
-          v_cache[il].resize(v_old + (size_t)kv_dim);
-          if (vo) {
-            ggml_backend_tensor_get(vo, v_cache[il].data() + v_old, 0,
-                                    kv_dim * sizeof(float));
-          }
-        }
-      }
       n_kv++;
       long long read_ms = qwen_ms_since(t_part);
       if (dbg_t) {
         fprintf(stderr,
-                "  [time] llm.decode gen=%d embed=%lldms build=%lldms "
-                "upload=%lldms compute=%lldms read=%lldms total=%lldms\n",
-                gen, embed_ms, build_ms, upload_ms, compute_ms, read_ms,
+                "  [time] llm.decode gen=%d build=%lldms upload=%lldms "
+                "compute=%lldms read=%lldms total=%lldms\n",
+                gen, build_ms, upload_ms, compute_ms, read_ms,
                 qwen_ms_since(t_decode));
       }
 
