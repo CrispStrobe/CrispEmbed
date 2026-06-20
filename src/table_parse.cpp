@@ -15,6 +15,7 @@
 #include "tesseract_lstm.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -239,11 +240,13 @@ struct table_parse_context {
     table_cell_ocr_fn ocr_fn = nullptr;
     void * ocr_user_data = nullptr;
     int n_threads = 2;
+    bool bench = false;
 };
 
 table_parse_context * table_parse_init(const char * ocr_model_path, int n_threads) {
     auto * ctx = new table_parse_context;
     ctx->n_threads = n_threads > 0 ? n_threads : 2;
+    ctx->bench = (std::getenv("CRISPEMBED_TABLE_PARSE_BENCH") != nullptr);
 
     if (ocr_model_path && *ocr_model_path) {
         ctx->tess = tesseract_lstm_init(ocr_model_path, ctx->n_threads);
@@ -337,7 +340,17 @@ char * table_parse_to_html(table_parse_context * ctx,
                            const uint8_t * gray, int width, int height) {
     if (!ctx || !gray || width <= 0 || height <= 0) return nullptr;
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
+    auto t_grid = std::chrono::steady_clock::now();
     Grid grid = detect_grid(gray, width, height);
+    if (bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_grid).count();
+        fprintf(stderr, "[table_parse-bench] grid detect: %.1f ms\n", ms);
+    }
+
     if (grid.n_rows() < 1 || grid.n_cols() < 1) {
         fprintf(stderr, "table_parse: no grid detected (%dx%d)\n", width, height);
         return nullptr;
@@ -346,6 +359,7 @@ char * table_parse_to_html(table_parse_context * ctx,
     fprintf(stderr, "table_parse: %d rows × %d cols grid\n",
             grid.n_rows(), grid.n_cols());
 
+    auto t_ocr = std::chrono::steady_clock::now();
     std::ostringstream html;
     html << "<table>\n";
 
@@ -370,12 +384,24 @@ char * table_parse_to_html(table_parse_context * ctx,
     }
 
     html << "</table>\n";
+    if (bench) {
+        double ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_ocr).count();
+        fprintf(stderr, "[table_parse-bench] cell OCR: %.1f ms\n", ms);
+    }
 
     std::string result = html.str();
     char * out = (char *)malloc(result.size() + 1);
     if (out) {
         memcpy(out, result.c_str(), result.size() + 1);
     }
+
+    if (bench) {
+        double total_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_total).count();
+        fprintf(stderr, "[table_parse-bench] total: %.1f ms\n", total_ms);
+    }
+
     return out;
 }
 

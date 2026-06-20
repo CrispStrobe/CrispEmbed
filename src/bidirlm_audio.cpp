@@ -16,6 +16,7 @@
 
 #ifdef CRISPEMBED_HAS_CRISP_AUDIO
 #include "crisp_audio.h"
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -28,6 +29,7 @@ struct context {
     crisp_audio_context* ca = nullptr;
     int output_dim = 0;
     std::vector<float> last_pooled;  // owned buffer returned to caller
+    bool bench = false;
 
     ~context() {
         if (ca) crisp_audio_free(ca);
@@ -52,6 +54,7 @@ context* open(const char* gguf_path, int n_threads, bool use_gpu) {
     auto* ctx = new context();
     ctx->ca = ca;
     ctx->output_dim = crisp_audio_output_dim(ca);
+    ctx->bench = (std::getenv("CRISPEMBED_BIDIRLM_AUDIO_BENCH") != nullptr);
     return ctx;
 }
 
@@ -66,15 +69,30 @@ const float* encode(context* ctx, const float* pcm, int n_samples,
                     int* out_dim) {
     if (!ctx || !ctx->ca || !pcm || n_samples <= 0) return nullptr;
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     int n_mels = 0, T_mel = 0;
+    auto t_mel0 = std::chrono::steady_clock::now();
     float* mel = crisp_audio_compute_mel(ctx->ca, pcm, n_samples,
                                          &n_mels, &T_mel);
+    if (bench) {
+        auto t_mel1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[bidirlm-audio-bench] mel: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_mel1 - t_mel0).count());
+    }
     if (!mel) return nullptr;
 
     int n_frames_padded = 0, dim = 0;
+    auto t_enc0 = std::chrono::steady_clock::now();
     float* enc = crisp_audio_encode(ctx->ca, mel, n_mels, T_mel,
                                     &n_frames_padded, &dim);
     std::free(mel);
+    if (bench) {
+        auto t_enc1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[bidirlm-audio-bench] encode: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_enc1 - t_enc0).count());
+    }
     if (!enc || n_frames_padded <= 0 || dim <= 0) {
         std::free(enc);
         return nullptr;
@@ -87,6 +105,7 @@ const float* encode(context* ctx, const float* pcm, int n_samples,
     // BEFORE the encoder runs (line 353 of modeling_bidirlm_omni.py), so
     // the cleanest mid-graph alignment is unattainable from here, but
     // skipping them in the pooling loop catches the dominant error term.
+    auto t_pool0 = std::chrono::steady_clock::now();
     const int n_window = crisp_audio_n_window(ctx->ca);
     const int chunk_T = n_window > 0 ? n_window * 2 : 200;  // BidirLM default
     const int num_chunks = (T_mel + chunk_T - 1) / chunk_T;
@@ -115,6 +134,15 @@ const float* encode(context* ctx, const float* pcm, int n_samples,
     }
     const float norm = std::sqrt(std::max(norm_sq, 1e-12f));
     for (int i = 0; i < dim; i++) ctx->last_pooled[i] /= norm;
+
+    if (bench) {
+        auto t_pool1 = std::chrono::steady_clock::now();
+        auto t_total1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[bidirlm-audio-bench] pool+norm: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_pool1 - t_pool0).count());
+        fprintf(stderr, "[bidirlm-audio-bench] total: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
+    }
 
     std::free(enc);
     if (out_dim) *out_dim = dim;

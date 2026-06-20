@@ -31,6 +31,7 @@ extern "C" {
 }
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -89,6 +90,8 @@ struct context {
     // Last prob map (for debugging)
     std::vector<float> last_prob_map;
     int last_prob_h = 0, last_prob_w = 0;
+
+    bool bench = false;
 };
 
 // ---------------------------------------------------------------------------
@@ -191,6 +194,7 @@ bool load(context** out, const char* path, int n_threads) {
     if (!ctx->head_deconv2.w) { fprintf(stderr, "ocr_detect: missing head deconv2\n"); return false; }
 
     fprintf(stderr, "ocr_detect: loaded %zu tensors\n", ctx->wl.tensors.size());
+    ctx->bench = (std::getenv("CRISPEMBED_OCR_DETECT_BENCH") != nullptr);
     return true;
 }
 
@@ -833,7 +837,13 @@ std::vector<text_box> detect(context* ctx, const float* pixels, int H, int W,
                               float unclip_ratio) {
     if (!ctx || !pixels) return {};
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
+    auto t0 = std::chrono::steady_clock::now();
     std::vector<float> prob_map = forward(ctx, pixels, H, W);
+    if (bench) fprintf(stderr, "[ocr-detect-bench] graph compute: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
     if (prob_map.empty()) return {};
 
     // The prob map may be at a different resolution than the input
@@ -842,9 +852,17 @@ std::vector<text_box> detect(context* ctx, const float* pixels, int H, int W,
     float scale_x = (float)W / ctx->last_prob_w;
     float scale_y = (float)H / ctx->last_prob_h;
 
-    return extract_boxes(prob_map.data(), ctx->last_prob_w, ctx->last_prob_h,
+    t0 = std::chrono::steady_clock::now();
+    auto result = extract_boxes(prob_map.data(), ctx->last_prob_w, ctx->last_prob_h,
                          prob_threshold, box_threshold, unclip_ratio,
                          ctx->min_area, scale_x, scale_y);
+    if (bench) fprintf(stderr, "[ocr-detect-bench] postprocess: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+
+    if (bench) fprintf(stderr, "[ocr-detect-bench] total: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
+
+    return result;
 }
 
 std::vector<text_box> detect_file(context* ctx, const char* path,

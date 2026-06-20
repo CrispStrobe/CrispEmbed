@@ -7,12 +7,14 @@
 #include "scan_cleanup.h"
 #include "nafnet_denoise.h"
 
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
 #include <vector>
 #include <cstdio>
+#include <cstdlib>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -23,6 +25,7 @@
 struct scan_cleanup_ctx {
     int n_threads;
     nafnet_context * nafnet = nullptr;  // Tier 2: learned denoising (optional)
+    bool bench = false;
 };
 
 scan_cleanup_params scan_cleanup_defaults(void) {
@@ -43,6 +46,7 @@ scan_cleanup_params scan_cleanup_defaults(void) {
 scan_cleanup_ctx * scan_cleanup_init(const char * model_path, int n_threads) {
     auto * ctx = new scan_cleanup_ctx;
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
+    ctx->bench = (std::getenv("CRISPEMBED_SCAN_CLEANUP_BENCH") != nullptr);
     if (model_path) {
         ctx->nafnet = nafnet_init(model_path, n_threads);
         if (!ctx->nafnet) {
@@ -471,11 +475,12 @@ int scan_cleanup_process(scan_cleanup_ctx * ctx,
                          const uint8_t * pixels, int width, int height, int channels,
                          scan_cleanup_params params,
                          uint8_t ** out_pixels, int * out_width, int * out_height) {
-    (void)ctx;
-
     if (!pixels || width <= 0 || height <= 0 || !out_pixels || !out_width || !out_height) {
         return -1;
     }
+
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
 
     // Convert to grayscale float [0,1]
     std::vector<float> gray = to_gray_f32(pixels, width, height, channels);
@@ -483,6 +488,7 @@ int scan_cleanup_process(scan_cleanup_ctx * ctx,
 
     // 1. Deskew
     if (params.deskew) {
+        auto t0 = std::chrono::steady_clock::now();
         float angle = scan_cleanup_detect_angle(gray.data(), w, h,
                                                 params.deskew_max_angle);
         if (fabsf(angle) > 0.1f) {
@@ -496,10 +502,16 @@ int scan_cleanup_process(scan_cleanup_ctx * ctx,
                 free(rotated);
             }
         }
+        if (bench) {
+            double ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t0).count();
+            fprintf(stderr, "[scan_cleanup-bench] deskew: %.1f ms\n", ms);
+        }
     }
 
     // 2. Border crop
     if (params.crop_borders) {
+        auto t0 = std::chrono::steady_clock::now();
         int x0, y0, x1, y1;
         scan_cleanup_find_content_rect(gray.data(), w, h,
                                        params.border_threshold,
@@ -516,17 +528,29 @@ int scan_cleanup_process(scan_cleanup_ctx * ctx,
             w = cw;
             h = ch;
         }
+        if (bench) {
+            double ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t0).count();
+            fprintf(stderr, "[scan_cleanup-bench] crop: %.1f ms\n", ms);
+        }
     }
 
     // 3. Background whitening
     if (params.whiten_background) {
+        auto t0 = std::chrono::steady_clock::now();
         std::vector<float> whitened(w * h);
         scan_cleanup_whiten(gray.data(), w, h, params.morph_kernel, whitened.data());
         gray = std::move(whitened);
+        if (bench) {
+            double ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t0).count();
+            fprintf(stderr, "[scan_cleanup-bench] whiten: %.1f ms\n", ms);
+        }
     }
 
     // 4. Learned denoising (tier 2, if model loaded)
     if (ctx->nafnet) {
+        auto t0 = std::chrono::steady_clock::now();
         // Convert gray to RGB uint8 for NAFNet
         uint8_t * rgb_in = gray_to_rgb_u8(gray.data(), w, h);
         if (rgb_in) {
@@ -542,10 +566,16 @@ int scan_cleanup_process(scan_cleanup_ctx * ctx,
             }
             free(rgb_in);
         }
+        if (bench) {
+            double ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t0).count();
+            fprintf(stderr, "[scan_cleanup-bench] denoise (NAFNet): %.1f ms\n", ms);
+        }
     }
 
     // 5. Binarization (optional, last step)
     if (params.binarize) {
+        auto t0 = std::chrono::steady_clock::now();
         if (params.binarize_method == 1) {
             // Sauvola adaptive
             std::vector<float> bin(w * h);
@@ -560,12 +590,23 @@ int scan_cleanup_process(scan_cleanup_ctx * ctx,
                 gray[i] = gray[i] > t ? 1.0f : 0.0f;
             }
         }
+        if (bench) {
+            double ms = std::chrono::duration<double, std::milli>(
+                std::chrono::steady_clock::now() - t0).count();
+            fprintf(stderr, "[scan_cleanup-bench] binarize: %.1f ms\n", ms);
+        }
     }
 
     // Convert back to RGB uint8
     *out_pixels = gray_to_rgb_u8(gray.data(), w, h);
     *out_width = w;
     *out_height = h;
+
+    if (bench) {
+        double total_ms = std::chrono::duration<double, std::milli>(
+            std::chrono::steady_clock::now() - t_total).count();
+        fprintf(stderr, "[scan_cleanup-bench] total: %.1f ms\n", total_ms);
+    }
 
     return *out_pixels ? 0 : -1;
 }

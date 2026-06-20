@@ -18,6 +18,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -190,6 +191,7 @@ struct safmn_context {
     ggml_backend_buffer_t gguf_buf;
 
     int scale, dim, n_blocks, n_levels;
+    bool bench;
 
     ggml_tensor * to_feat_w, * to_feat_b;
     std::vector<attblock_weights> blocks;
@@ -261,6 +263,7 @@ safmn_context * safmn_init(const char * model_path, int n_threads) {
         b.ccm.conv2_b = k("ccm.ccm.2.bias");
     }
 
+    ctx->bench = (std::getenv("CRISPEMBED_SAFMN_SR_BENCH") != nullptr);
     return ctx;
 }
 
@@ -291,6 +294,10 @@ int safmn_process_float(safmn_context * ctx,
     if (!ctx || !input_chw || !output_chw || width <= 0 || height <= 0)
         return -1;
 
+    const bool bench = ctx->bench;
+    using ms_f = std::chrono::duration<double, std::milli>;
+    auto t_total = std::chrono::steady_clock::now();
+
     const int C = ctx->dim;
     const int H = height, W = width;
     const int hw = H * W;
@@ -314,6 +321,7 @@ int safmn_process_float(safmn_context * ctx,
 
     // 8 AttBlocks
     for (int bi = 0; bi < ctx->n_blocks; bi++) {
+        auto t_blk = std::chrono::steady_clock::now();
         const auto & blk = ctx->blocks[bi];
 
         // ── SAFM branch ──
@@ -383,6 +391,11 @@ int safmn_process_float(safmn_context * ctx,
 
         for (int i = 0; i < C * hw; i++)
             x[i] += norm_buf[i];
+        if (bench) {
+            auto t_blk_end = std::chrono::steady_clock::now();
+            fprintf(stderr, "[safmn_sr-bench] block %d: %.1f ms\n",
+                    bi, ms_f(t_blk_end - t_blk).count());
+        }
     }
 
     // Global skip
@@ -399,6 +412,11 @@ int safmn_process_float(safmn_context * ctx,
     int out_h = H * ctx->scale, out_w = W * ctx->scale;
     pixel_shuffle(pre_shuffle.data(), out_ch, H, W, ctx->scale, output_chw);
 
+    if (bench) {
+        auto t_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[safmn_sr-bench] total: %.1f ms\n",
+                ms_f(t_end - t_total).count());
+    }
     return 0;
 }
 
