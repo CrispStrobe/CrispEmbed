@@ -23,6 +23,13 @@
 #include <unordered_map>
 #include <vector>
 
+#ifndef _WIN32
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 namespace {
 
 // ---------------------------------------------------------------------------
@@ -30,25 +37,56 @@ namespace {
 // ---------------------------------------------------------------------------
 
 struct PdfFile {
-    std::vector<uint8_t> data;
+    const uint8_t * mmap_base = nullptr;
+    size_t mmap_size = 0;
+    std::vector<uint8_t> fallback_data; // used on Windows or if mmap fails
 
     bool load(const char * path) {
+#ifndef _WIN32
+        int fd = ::open(path, O_RDONLY);
+        if (fd >= 0) {
+            struct stat st;
+            if (fstat(fd, &st) == 0 && st.st_size > 0 && st.st_size <= 500LL * 1024 * 1024) {
+                void * p = ::mmap(nullptr, (size_t)st.st_size, PROT_READ, MAP_SHARED, fd, 0);
+                ::close(fd);
+                if (p != MAP_FAILED) {
+                    mmap_base = (const uint8_t *)p;
+                    mmap_size = (size_t)st.st_size;
+#ifdef MADV_SEQUENTIAL
+                    ::madvise(p, mmap_size, MADV_SEQUENTIAL);
+#endif
+                    return true;
+                }
+            } else {
+                ::close(fd);
+            }
+        }
+#endif
+        // Fallback: fread into memory
         FILE * f = fopen(path, "rb");
         if (!f) return false;
         fseek(f, 0, SEEK_END);
         long sz = ftell(f);
-        if (sz <= 0 || sz > 500 * 1024 * 1024) { fclose(f); return false; } // 500 MB limit
+        if (sz <= 0 || sz > 500 * 1024 * 1024) { fclose(f); return false; }
         fseek(f, 0, SEEK_SET);
-        data.resize((size_t)sz);
-        size_t rd = fread(data.data(), 1, (size_t)sz, f);
+        fallback_data.resize((size_t)sz);
+        size_t rd = fread(fallback_data.data(), 1, (size_t)sz, f);
         fclose(f);
         return rd == (size_t)sz;
     }
 
-    size_t size() const { return data.size(); }
-    const char * ptr() const { return (const char *)data.data(); }
+    ~PdfFile() {
+#ifndef _WIN32
+        if (mmap_base) ::munmap((void *)mmap_base, mmap_size);
+#endif
+    }
+
+    size_t size() const { return mmap_base ? mmap_size : fallback_data.size(); }
+    const char * ptr() const {
+        return mmap_base ? (const char *)mmap_base : (const char *)fallback_data.data();
+    }
     const char * ptr_at(size_t off) const {
-        return off < data.size() ? (const char *)data.data() + off : nullptr;
+        return off < size() ? ptr() + off : nullptr;
     }
 };
 
