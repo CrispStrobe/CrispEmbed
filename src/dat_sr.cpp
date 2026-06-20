@@ -13,6 +13,7 @@
 
 #include "dat_sr.h"
 #include "core/gguf_loader.h"
+#include "core/cpu_ops.h"
 #include "ggml.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -57,12 +58,7 @@ static const float * to_f32(const ggml_tensor * t, std::vector<float> & buf) {
 
 static void linear_cpu(const float * x, int n_in, const float * w, const float * b,
                         int n_out, float * y) {
-    for (int o = 0; o < n_out; o++) {
-        float sum = b ? b[o] : 0.0f;
-        const float * wr = w + o * n_in;
-        for (int i = 0; i < n_in; i++) sum += wr[i] * x[i];
-        y[o] = sum;
-    }
+    core_cpu::linear_cpu(x, y, n_in, n_out, w, b);
 }
 
 static void layernorm_cpu(const float * x, int d, const float * g, const float * b,
@@ -394,8 +390,7 @@ static void dynamic_pos_bias(dat_sr_context * ctx, int rg, int blk, int branch,
 
     // Compute pos = pos_proj(rpe_biases): (rpe_len, pos_dim)
     std::vector<float> pos(rpe_len * pos_dim);
-    for (int i = 0; i < rpe_len; i++)
-        linear_cpu(rpe + i*2, 2, pp_w, pp_b, pos_dim, pos.data() + i*pos_dim);
+    core_cpu::linear_batch_cpu(rpe, pos.data(), rpe_len, 2, pos_dim, pp_w, pp_b);
 
     // pos1: LN → ReLU → Linear (residual=false, so sequential not residual)
     auto apply_pos_block = [&](const char * block_name, float * data, int len, int in_dim, int out_dim) {
@@ -410,13 +405,10 @@ static void dynamic_pos_bias(dat_sr_context * ctx, int rg, int blk, int branch,
         const float * fc_b = get_w(ctx, n4);
         if (!ln_w || !fc_w) return;
         std::vector<float> tmp(len * out_dim);
+        std::vector<float> normed(in_dim);
         for (int i = 0; i < len; i++) {
-            // LayerNorm
-            std::vector<float> normed(in_dim);
             layernorm_cpu(data + i*in_dim, in_dim, ln_w, ln_b, normed.data());
-            // ReLU
             for (int j = 0; j < in_dim; j++) normed[j] = std::max(0.0f, normed[j]);
-            // Linear
             linear_cpu(normed.data(), in_dim, fc_w, fc_b, out_dim, tmp.data() + i*out_dim);
         }
         memcpy(data, tmp.data(), len * out_dim * sizeof(float));
@@ -440,8 +432,8 @@ static void dynamic_pos_bias(dat_sr_context * ctx, int rg, int blk, int branch,
         const float * fc_w = get_w(ctx, n3);
         const float * fc_b = get_w(ctx, n4);
         if (ln_w && fc_w) {
+            std::vector<float> normed(pos_dim);
             for (int i = 0; i < rpe_len; i++) {
-                std::vector<float> normed(pos_dim);
                 layernorm_cpu(pos.data() + i*pos_dim, pos_dim, ln_w, ln_b, normed.data());
                 for (int j = 0; j < pos_dim; j++) normed[j] = std::max(0.0f, normed[j]);
                 linear_cpu(normed.data(), pos_dim, fc_w, fc_b, num_heads_branch, pos_final.data() + i*num_heads_branch);
@@ -557,8 +549,7 @@ static void adaptive_spatial_attention(dat_sr_context * ctx, float * x, int H, i
     if (!qkv_w) return;
 
     std::vector<float> qkv(N * 3 * C);
-    for (int i = 0; i < N; i++)
-        linear_cpu(x + i*C, C, qkv_w, qkv_b, 3*C, qkv.data() + i*3*C);
+    core_cpu::linear_batch_cpu(x, qkv.data(), N, C, 3*C, qkv_w, qkv_b);
 
     // V (full, unpartitioned) for DWConv branch — reshape to CHW
     std::vector<float> v_chw(C * H * W);
@@ -777,9 +768,7 @@ static void adaptive_spatial_attention(dat_sr_context * ctx, float * x, int H, i
     const float * proj_b = get_w(ctx, attn_pfx + ".proj.bias");
     if (proj_w) {
         std::vector<float> projected(N * C);
-        for (int i = 0; i < N; i++)
-            linear_cpu(attn_out.data() + i*C, C, proj_w, proj_b, C, projected.data() + i*C);
-        // Residual
+        core_cpu::linear_batch_cpu(attn_out.data(), projected.data(), N, C, C, proj_w, proj_b);
         for (int i = 0; i < N*C; i++) x[i] += projected[i];
     }
 }
@@ -802,8 +791,7 @@ static void adaptive_channel_attention(dat_sr_context * ctx, float * x, int H, i
     if (!qkv_w) return;
 
     std::vector<float> qkv(N * 3 * C);
-    for (int i = 0; i < N; i++)
-        linear_cpu(x + i*C, C, qkv_w, qkv_b, 3*C, qkv.data() + i*3*C);
+    core_cpu::linear_batch_cpu(x, qkv.data(), N, C, 3*C, qkv_w, qkv_b);
 
     // Reshape to per-head: Q, K, V each (nh, N, hd) → transpose to (nh, hd, N)
     // Then L2-normalize Q, K over last dim (N)
@@ -917,8 +905,7 @@ static void adaptive_channel_attention(dat_sr_context * ctx, float * x, int H, i
     const float * proj_b = get_w(ctx, attn_pfx + ".proj.bias");
     if (proj_w) {
         std::vector<float> projected(N * C);
-        for (int i = 0; i < N; i++)
-            linear_cpu(attn_out_nc.data() + i*C, C, proj_w, proj_b, C, projected.data() + i*C);
+        core_cpu::linear_batch_cpu(attn_out_nc.data(), projected.data(), N, C, C, proj_w, proj_b);
         for (int i = 0; i < N*C; i++) x[i] += projected[i];
     }
 }
@@ -942,14 +929,11 @@ static void sgfn_forward(dat_sr_context * ctx, float * x, int H, int W,
 
     int half_hidden = hidden / 2;
 
-    // fc1: (N, C) → (N, hidden)
+    // fc1: (N, C) → (N, hidden) + GELU
     std::vector<float> h(N * hidden);
-    for (int i = 0; i < N; i++) {
-        linear_cpu(x + i*C, C, fc1_w, fc1_b, hidden, h.data() + i*hidden);
-        // GELU activation
-        for (int j = 0; j < hidden; j++)
-            h[i*hidden + j] = gelu_f(h[i*hidden + j]);
-    }
+    core_cpu::linear_batch_cpu(x, h.data(), N, C, hidden, fc1_w, fc1_b);
+    for (int i = 0; i < N * hidden; i++)
+        h[i] = gelu_f(h[i]);
 
     // SpatialGate: split into x1(half_hidden), x2(half_hidden)
     // x2 → LN → reshape to CHW → DWConv → reshape back → multiply with x1
@@ -993,8 +977,7 @@ static void sgfn_forward(dat_sr_context * ctx, float * x, int H, int W,
 
     // fc2: (N, half_hidden) → (N, C)
     std::vector<float> out(N * C);
-    for (int i = 0; i < N; i++)
-        linear_cpu(gated.data() + i*half_hidden, half_hidden, fc2_w, fc2_b, C, out.data() + i*C);
+    core_cpu::linear_batch_cpu(gated.data(), out.data(), N, half_hidden, C, fc2_w, fc2_b);
 
     // Residual
     for (int i = 0; i < N*C; i++) x[i] += out[i];
