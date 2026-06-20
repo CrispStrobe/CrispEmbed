@@ -389,7 +389,7 @@ runtime category. "Existing" means the optimization is already implemented;
 | 2 | **glm_ocr** | ggml flash_attn (monolithic graph) | ggml flash_attn | F16 ggml tensor | Yes |
 | 3 | **got_ocr** | ggml per-layer graphs | ggml flash_attn | F16 ggml tensor | Yes |
 | 4 | **qwen2vl_ocr** | ggml graph (mul_mat) | ggml graph (no flash) | F32 CPU vectors, re-uploaded each step | Yes |
-| 5 | **lightonocr** | ggml flash_attn (monolithic) | ggml flash_attn | F32 CPU vectors, re-uploaded each step | No |
+| 5 | **lightonocr** | ggml flash_attn (monolithic) | ggml flash_attn | F16 ggml persistent (ggml_cpy) | No |
 | 6 | **deepseek_ocr2** | ggml per-layer (SAM only) | ggml per-layer graphs | F32 CPU vectors, re-uploaded each step | Yes |
 | 7 | **smoldocling_ocr** | ggml flash_attn | CPU scalar (core_vlm) | F32 CPU flat vector | No |
 | 8 | **granite_vision_ocr** | CPU scalar loops | CPU scalar (core_vlm) | F32 CPU flat vector | No |
@@ -400,7 +400,7 @@ runtime category. "Existing" means the optimization is already implemented;
 | Technique | Where | Notes |
 |-----------|-------|-------|
 | Flash attention (`ggml_flash_attn_ext`) | internvl2, glm, got, lightonocr, smoldocling (vision) | Fused Q@K+softmax+V in single op |
-| F16 KV cache in ggml tensors | internvl2, glm, got | Zero-copy view+cpy writes, halves memory |
+| F16 KV cache in ggml tensors | internvl2, glm, got, lightonocr | Zero-copy view+cpy writes, halves memory |
 | Prefill/decode separation | qwen2vl, internvl2, deepseek, got, glm, lightonocr | Full-sequence prefill, single-token decode |
 | Fused QKV projection | qwen2vl | Single matmul for Q/K/V |
 | `ggml_backend_sched` GPU dispatch | qwen2vl, internvl2, deepseek, got, glm | Automatic CPU/GPU placement |
@@ -415,7 +415,7 @@ runtime category. "Existing" means the optimization is already implemented;
 
 | Priority | Issue | Affected runtimes | Impact |
 |----------|-------|-------------------|--------|
-| **P0** | Adopt F16 ggml KV cache (internvl2 pattern) | qwen2vl, deepseek, lightonocr, smoldocling, granite | Eliminates O(seq_len) per-step re-upload; halves memory |
+| **P0** | Adopt F16 ggml KV cache (internvl2 pattern) | qwen2vl, deepseek, smoldocling, granite | Eliminates O(seq_len) per-step re-upload; halves memory |
 | **P0** | Use `ggml_flash_attn_ext` for LLM decode | qwen2vl, deepseek | qwen2vl uses manual Q@K+softmax+V; deepseek uses per-layer graphs |
 | **P0** | Move granite to ggml graphs | granite_vision_ocr | Entire engine is CPU-scalar — 10-50x potential speedup |
 | **P0** | Implement batched prefill for smoldocling/granite | smoldocling, granite | Token-at-a-time through 30-40 LLM layers is catastrophic |
@@ -427,8 +427,8 @@ runtime category. "Existing" means the optimization is already implemented;
 | **P1** | Scalar CPU downsample/merger → ggml | glm, got | Conv+matmul neck/projector still scalar |
 | **P2** | InternVl2: native GQA in flash_attn (skip ggml_repeat) | internvl2 | Avoids duplicating KV heads before attention |
 | **P2** | Vision tiles: batch multiple tiles in one graph | internvl2 | Currently sequential per-tile graph allocation |
-| **P2** | Token embed via direct read (not mini-graph) | qwen2vl, lightonocr | Building a full ggml graph for one `ggml_get_rows` |
-| **P2** | Decode graph reuse (not rebuild per step) | lightonocr, deepseek | Graph structure is identical across steps |
+| **P2** | Token embed via direct read (not mini-graph) | qwen2vl | Building a full ggml graph for one `ggml_get_rows` |
+| **P2** | Decode graph reuse (not rebuild per step) | deepseek | Graph structure is identical across steps |
 | **P2** | Windowed attention in qwen2vl vision | qwen2vl | window_size=112 declared but unused in graph |
 | **P3** | LM head on CPU → ggml for deepseek final norm+head | deepseek | (D=1280, V=129280) scalar matmul for lm_head |
 | **P3** | F32 causal mask → F16 | qwen2vl | internvl2 already uses F16 mask |
