@@ -151,10 +151,10 @@ struct ds_ocr2_ctx {
     std::unordered_map<std::string, int32_t> merge_rank;
     int tok_vocab_size = 0;
 
-    // KV cache for LLM decoder
+    // KV cache for LLM decoder — stored as F16 (half the memory vs F32)
     struct {
-        std::vector<std::vector<float>> k_cache;  // [layer][kv_heads * head_dim * n_past]
-        std::vector<std::vector<float>> v_cache;
+        std::vector<std::vector<ggml_fp16_t>> k_cache;  // [layer][kv_heads * head_dim * n_past]
+        std::vector<std::vector<ggml_fp16_t>> v_cache;
         int n_past = 0;
     } kvc;
 
@@ -1565,9 +1565,9 @@ static PdGraph build_persistent_decode_graph(ds_ocr2_ctx &ctx, int max_kv) {
         snprintf(kon, sizeof(kon), "pd_kn%d", li);
         snprintf(von, sizeof(von), "pd_vn%d", li);
 
-        pd.t_k_cache[li] = ggml_new_tensor_2d(g, GGML_TYPE_F32, kv_dim, max_kv_in);
+        pd.t_k_cache[li] = ggml_new_tensor_2d(g, GGML_TYPE_F16, kv_dim, max_kv_in);
         ggml_set_name(pd.t_k_cache[li], kn); ggml_set_input(pd.t_k_cache[li]);
-        pd.t_v_cache[li] = ggml_new_tensor_2d(g, GGML_TYPE_F32, kv_dim, max_kv_in);
+        pd.t_v_cache[li] = ggml_new_tensor_2d(g, GGML_TYPE_F16, kv_dim, max_kv_in);
         ggml_set_name(pd.t_v_cache[li], vn); ggml_set_input(pd.t_v_cache[li]);
 
         // Pre-attention norm + Q/K/V
@@ -1595,9 +1595,10 @@ static PdGraph build_persistent_decode_graph(ds_ocr2_ctx &ctx, int max_kv) {
         ggml_set_name(pd.t_v_new[li], von); ggml_set_output(pd.t_v_new[li]);
 
         // Full K/V: concat(past_cache[max_kv-1], current[1]) → [hd, nkv, max_kv]
-        ggml_tensor* kp    = ggml_reshape_3d(g, pd.t_k_cache[li], hd, nkv, max_kv_in);
+        // Cache is F16; cast to F32 so concat type matches the new F32 K/V from rope.
+        ggml_tensor* kp    = ggml_cast(g, ggml_reshape_3d(g, pd.t_k_cache[li], hd, nkv, max_kv_in), GGML_TYPE_F32);
         ggml_tensor* Kfull = ggml_concat(g, kp, Kc, 2);
-        ggml_tensor* vp    = ggml_reshape_3d(g, pd.t_v_cache[li], hd, nkv, max_kv_in);
+        ggml_tensor* vp    = ggml_cast(g, ggml_reshape_3d(g, pd.t_v_cache[li], hd, nkv, max_kv_in), GGML_TYPE_F32);
         ggml_tensor* Vfull = ggml_concat(g, vp, Vc, 2);
 
         // flash_attn_ext handles GQA natively (Q.ne[2] % K.ne[2] == 0)
@@ -2047,7 +2048,8 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
                     ggml_backend_tensor_set(pd.t_mask, pd_mask.data(), 0,
                                             (size_t)pd_max_kv * sizeof(ggml_fp16_t));
                     // Upload prefill KV cache (valid positions 0..n_past-1).
-                    size_t kv_b = (size_t)n_past * kv_dim * sizeof(float);
+                    // ctx.kvc and pd.t_k_cache are both F16 — direct copy.
+                    size_t kv_b = (size_t)n_past * kv_dim * sizeof(ggml_fp16_t);
                     for (int li = 0; li < n_layers; li++) {
                         ggml_backend_tensor_set(pd.t_k_cache[li],
                                                 ctx.kvc.k_cache[li].data(), 0, kv_b);
@@ -2068,8 +2070,9 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
                                             sizeof(ggml_fp16_t));
                 }
                 // Upload the one new KV entry appended last step at cache index n_past-1.
-                size_t off = (size_t)(n_past - 1) * kv_dim * sizeof(float);
-                size_t sz  = (size_t)kv_dim * sizeof(float);
+                // ctx.kvc and pd.t_k_cache are both F16.
+                size_t off = (size_t)(n_past - 1) * kv_dim * sizeof(ggml_fp16_t);
+                size_t sz  = (size_t)kv_dim * sizeof(ggml_fp16_t);
                 for (int li = 0; li < n_layers; li++) {
                     ggml_backend_tensor_set(pd.t_k_cache[li],
                         ctx.kvc.k_cache[li].data() + (n_past - 1) * kv_dim, off, sz);
@@ -2096,12 +2099,16 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
                 ggml_backend_tensor_get(pd.t_logits, logits.data(), 0, (size_t)V * sizeof(float));
 
                 for (int li = 0; li < n_layers; li++) {
+                    // pd.t_k_new is F32; convert to F16 before appending to F16 ctx.kvc.
                     ggml_backend_tensor_get(pd.t_k_new[li], pd_k_tmp.data(), 0, kv_dim * sizeof(float));
                     ggml_backend_tensor_get(pd.t_v_new[li], pd_v_tmp.data(), 0, kv_dim * sizeof(float));
-                    ctx.kvc.k_cache[li].insert(ctx.kvc.k_cache[li].end(),
-                                               pd_k_tmp.begin(), pd_k_tmp.end());
-                    ctx.kvc.v_cache[li].insert(ctx.kvc.v_cache[li].end(),
-                                               pd_v_tmp.begin(), pd_v_tmp.end());
+                    size_t base = ctx.kvc.k_cache[li].size();
+                    ctx.kvc.k_cache[li].resize(base + kv_dim);
+                    ctx.kvc.v_cache[li].resize(base + kv_dim);
+                    for (int i = 0; i < kv_dim; i++) {
+                        ctx.kvc.k_cache[li][base + i] = ggml_fp32_to_fp16(pd_k_tmp[i]);
+                        ctx.kvc.v_cache[li][base + i] = ggml_fp32_to_fp16(pd_v_tmp[i]);
+                    }
                 }
                 n_past++;
                 did_pd = true;
@@ -2150,14 +2157,18 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
                 ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "pos_ids"),
                                         pos.data(), 0, T * sizeof(int32_t));
 
-                // KV cache
+                // KV cache — ctx.kvc is F16 but k_cache_in tensor is F32; convert on upload.
                 if (n_past > 0) {
+                    int kv_n = kv_dim * n_past;
+                    std::vector<float> k_f32(kv_n), v_f32(kv_n);
+                    for (int i = 0; i < kv_n; i++) {
+                        k_f32[i] = ggml_fp16_to_fp32(ctx.kvc.k_cache[li][i]);
+                        v_f32[i] = ggml_fp16_to_fp32(ctx.kvc.v_cache[li][i]);
+                    }
                     ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "k_cache_in"),
-                                            ctx.kvc.k_cache[li].data(), 0,
-                                            kv_dim * n_past * sizeof(float));
+                                            k_f32.data(), 0, kv_n * sizeof(float));
                     ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "v_cache_in"),
-                                            ctx.kvc.v_cache[li].data(), 0,
-                                            kv_dim * n_past * sizeof(float));
+                                            v_f32.data(), 0, kv_n * sizeof(float));
                 }
 
                 // Causal mask
@@ -2177,16 +2188,22 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
                 ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "layer_output"),
                                         hidden.data(), 0, T * D * sizeof(float));
 
-                // Update KV cache
-                std::vector<float> k_new(kv_dim * T), v_new(kv_dim * T);
+                // Update KV cache — read F32 from graph, convert to F16 for ctx.kvc.
+                int kv_nt = kv_dim * T;
+                std::vector<float> k_new(kv_nt), v_new(kv_nt);
                 ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "k_out"),
-                                        k_new.data(), 0, kv_dim * T * sizeof(float));
+                                        k_new.data(), 0, kv_nt * sizeof(float));
                 ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "v_out"),
-                                        v_new.data(), 0, kv_dim * T * sizeof(float));
+                                        v_new.data(), 0, kv_nt * sizeof(float));
 
                 if (!no_kv) {
-                    ctx.kvc.k_cache[li].insert(ctx.kvc.k_cache[li].end(), k_new.begin(), k_new.end());
-                    ctx.kvc.v_cache[li].insert(ctx.kvc.v_cache[li].end(), v_new.begin(), v_new.end());
+                    size_t base = ctx.kvc.k_cache[li].size();
+                    ctx.kvc.k_cache[li].resize(base + kv_nt);
+                    ctx.kvc.v_cache[li].resize(base + kv_nt);
+                    for (int i = 0; i < kv_nt; i++) {
+                        ctx.kvc.k_cache[li][base + i] = ggml_fp32_to_fp16(k_new[i]);
+                        ctx.kvc.v_cache[li][base + i] = ggml_fp32_to_fp16(v_new[i]);
+                    }
                 }
 
                 ggml_free(lag.gctx);
