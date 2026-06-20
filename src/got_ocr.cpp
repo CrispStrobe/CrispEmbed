@@ -548,31 +548,67 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
     int ws = (int)v.window_size;
     int imgS = (int)v.image_size;
 
-    // Patch embedding on CPU
-    auto pe_w = to_f32(ctx.m.patch_embed_w);
-    auto pe_b = to_f32(ctx.m.patch_embed_b);
-    auto pos = to_f32(ctx.m.pos_embed);
-
+    // Patch embedding: im2col + ggml matmul (gated: CRISPEMBED_GOT_OCR_SCALAR_PATCH=1 for fallback)
     int patch_dim = 3 * PS * PS;
     std::vector<float> hidden(N * C);
 
-    for (int py = 0; py < nP; py++) {
+    // im2col: extract non-overlapping patches → [N, patch_dim]
+    std::vector<float> im2col(N * patch_dim);
+    for (int py = 0; py < nP; py++)
         for (int px = 0; px < nP; px++) {
             int tok = py * nP + px;
-            std::vector<float> patch(patch_dim);
             for (int c = 0; c < 3; c++)
                 for (int ky = 0; ky < PS; ky++)
                     for (int kx = 0; kx < PS; kx++)
-                        patch[c * PS * PS + ky * PS + kx] =
+                        im2col[tok * patch_dim + c * PS * PS + ky * PS + kx] =
                             pixels[c * imgS * imgS + (py * PS + ky) * imgS + (px * PS + kx)];
+        }
+
+    static const bool scalar_patch = (std::getenv("CRISPEMBED_GOT_OCR_SCALAR_PATCH") != nullptr);
+    if (scalar_patch) {
+        auto pe_w = to_f32(ctx.m.patch_embed_w);
+        auto pe_b = to_f32(ctx.m.patch_embed_b);
+        for (int t = 0; t < N; t++)
             for (int o = 0; o < C; o++) {
                 float s = pe_b.empty() ? 0.0f : pe_b[o];
                 for (int i = 0; i < patch_dim; i++)
-                    s += pe_w[o * patch_dim + i] * patch[i];
-                hidden[tok * C + o] = s + (pos.empty() ? 0.0f : pos[tok * C + o]);
+                    s += pe_w[o * patch_dim + i] * im2col[t * patch_dim + i];
+                hidden[t * C + o] = s;
             }
+    } else {
+        // ggml graph: matmul weight × im2col → [C, N]
+        // patch_embed_w: [PS, PS, 3, C] in ggml → reshape to [patch_dim, C]
+        size_t buf_sz = ggml_tensor_overhead() * 10 + ggml_graph_overhead();
+        ggml_init_params eip{buf_sz, nullptr, true};
+        ggml_context *eg = ggml_init(eip);
+
+        ggml_tensor *w = ggml_reshape_2d(eg, ctx.m.patch_embed_w, patch_dim, C);
+        ggml_tensor *inp = ggml_new_tensor_2d(eg, GGML_TYPE_F32, patch_dim, N);
+        ggml_set_name(inp, "im2col"); ggml_set_input(inp);
+        ggml_tensor *out = ggml_mul_mat(eg, w, inp);  // [C, N]
+        // Add bias if present
+        if (ctx.m.patch_embed_b) {
+            out = ggml_add(eg, out, ctx.m.patch_embed_b);
         }
+        ggml_set_name(out, "pe_out"); ggml_set_output(out);
+
+        ggml_cgraph *egf = ggml_new_graph(eg);
+        ggml_build_forward_expand(egf, out);
+
+        ggml_backend_sched_reset(ctx.sched);
+        ggml_backend_sched_alloc_graph(ctx.sched, egf);
+        ggml_backend_tensor_set(ggml_graph_get_tensor(egf, "im2col"),
+                                im2col.data(), 0, N * patch_dim * sizeof(float));
+        ggml_backend_sched_graph_compute(ctx.sched, egf);
+        ggml_backend_tensor_get(ggml_graph_get_tensor(egf, "pe_out"),
+                                hidden.data(), 0, N * C * sizeof(float));
+        ggml_free(eg);
     }
+
+    // Add position embedding
+    auto pos = to_f32(ctx.m.pos_embed);
+    if (!pos.empty())
+        for (int i = 0; i < N * C; i++) hidden[i] += pos[i];
 
     if (ctx.verbosity >= 2)
         fprintf(stderr, "got_ocr: patch_embed done (%d, %d)\n", N, C);
