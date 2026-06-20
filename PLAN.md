@@ -497,12 +497,30 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   - `lilt_kie.cpp`: SKIPPED (BiACM incompatible with fused kernel)
   - `deepseek_ocr2.cpp`: pending (no q4_k model to test)
 
-- [ ] **Move remaining scalar encoders to ggml graphs**:
+- [x] **Move remaining scalar encoders to ggml graphs**:
   - `deepseek_ocr2` Qwen2 encoder: **DONE** (`910d036`). 24-layer single graph.
   - `hmer_ocr` DenseNet encoder: **DONE** (`273969d`). ggml graph, 3x speedup.
-  - `bttr_ocr` / `posformer_ocr` DenseNet: pending (share architecture with hmer).
-  - `mixtex_ocr` Swin encoder: pending (12500-token window attention).
+  - `bttr_ocr` / `posformer_ocr` DenseNet: **DONE** (`7c6d8e1`). ggml graph, ~2x speedup.
+  - `mixtex_ocr` Swin encoder: **DONE** (`2453e04`). Batched matmuls via ggml, 1.5x encoder speedup.
   - `ppformulanet_ocr` HGNetv2 CNN: **DONE** (`c058099`). ggml conv2d graph, 12x speedup.
+
+- [ ] **Move SR/restoration engines from scalar conv to ggml graphs**:
+  Engines still using scalar `conv2d_cpu` + per-token `linear_cpu` loops.
+  Same pattern as DenseNet/HGNetv2 conversions: replace with ggml_conv_2d,
+  ggml_pool_2d, ggml_mul_mat, ggml_norm. Ordered by ease × impact:
+  - [ ] `nafnet_denoise.cpp` — U-Net + NAFBlock (conv+norm+SCA), ~70-100G, trivial conversion
+  - [ ] `esrgan_sr.cpp` — 17× Conv+PReLU stack, ~20-30G, trivial conversion
+  - [ ] `safmn_sr.cpp` — 8× SAFM + CCM (multi-scale DW conv), ~15-25G, easy
+  - [ ] `restormer.cpp` — U-Net + transposed attention + GDFN, ~80-120G, easy
+  - [ ] `instructir.cpp` — NAFNet U-Net + text conditioning (ICB), ~80-120G, medium
+  - [ ] `pan_sr.cpp` — 16× SCPA + pixel shuffle, ~40-60G, medium
+  - [ ] `dat_sr.cpp` — 18× dual attention (spatial+channel), ~60-90G, medium
+  - [ ] `scunet_denoise.cpp` — U-Net + Swin branches + ConvTranspose2d, ~50-80G, medium
+  - [ ] `swinir_sr.cpp` — RSTB + Swin window attention, ~60-90G, medium (batched matmul like mixtex)
+  - [ ] `hat_sr.cpp` — HAB + OCAB (unfold needed), ~70-100G, hard
+  - [ ] `tbsrn_sr.cpp` — RecurrentResidual + FeatureEnhancer MHA, ~15-25G, medium
+  - [ ] `text_sr.cpp` — NAFNet variant + PixelShuffle + bicubic, ~40-60G, easy
+  - [ ] `adair.cpp` — U-Net + AFLB + FFT, ~100-150G, hard (needs FFT wrapping)
 
 - [x] **Patch embedding conv → ggml matmul** — Most VLM runtimes now use ggml
   graph (internvl2, granite, smoldocling, qwen2vl) or im2col+matmul (got,
