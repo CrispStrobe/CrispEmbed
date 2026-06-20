@@ -733,24 +733,22 @@ std::vector<float> decoder_encode_tokens(
                                layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
         }
 
-        // Attention: permute → scores → mask → softmax → value
-        Q = ggml_cont(gctx, ggml_permute(gctx, Q, 0, 2, 1, 3));
-        K = ggml_cont(gctx, ggml_permute(gctx, K, 0, 2, 1, 3));
-        V = ggml_cont(gctx, ggml_permute(gctx, V, 0, 2, 1, 3));
+        // Attention: flash_attn_ext (fused QKV, lower memory)
+        Q = ggml_permute(gctx, Q, 0, 2, 1, 3);
+        K = ggml_permute(gctx, K, 0, 2, 1, 3);
+        V = ggml_permute(gctx, V, 0, 2, 1, 3);
 
         float scale = (m.attn_scale > 0.0f)
                         ? (1.0f / sqrtf(m.attn_scale))
                         : (1.0f / sqrtf((float)head_dim));
-        ggml_tensor * scores = ggml_mul_mat(gctx, K, Q);
-        scores = ggml_scale(gctx, scores, scale);
+        // Bidirectional: no mask. Causal: build F16 causal mask for flash_attn.
+        ggml_tensor * mask = nullptr;
         if (!m.is_bidirectional) {
-            scores = ggml_diag_mask_inf(gctx, scores, 0);
+            mask = ggml_new_tensor_2d(gctx, GGML_TYPE_F16, T, T);
+            ggml_set_name(mask, "causal_mask");
+            ggml_set_input(mask);
         }
-        scores = ggml_soft_max(gctx, scores);
-
-        ggml_tensor * V_perm = ggml_cont(gctx, ggml_permute(gctx, V, 1, 0, 2, 3));
-        ggml_tensor * attn = ggml_mul_mat(gctx, V_perm, scores);
-        attn = ggml_cont(gctx, ggml_permute(gctx, attn, 0, 2, 1, 3));
+        ggml_tensor * attn = ggml_flash_attn_ext(gctx, Q, K, V, mask, scale, 0.0f, 0.0f);
         attn = ggml_reshape_2d(gctx, attn, q_dim, T);
 
         attn = ggml_mul_mat(gctx, L.o_w, attn);
@@ -897,6 +895,19 @@ std::vector<float> decoder_encode_tokens(
                 ggml_backend_tensor_set(ggml_graph_get_tensor(gf, nm),
                                         ds_patch_data[k].data(), 0,
                                         (size_t)H * T * sizeof(float));
+            }
+        }
+
+        // Fill causal mask if needed (F16, lower triangle = 0, upper = -inf)
+        if (!m.is_bidirectional) {
+            ggml_tensor * cm = ggml_graph_get_tensor(gf, "causal_mask");
+            if (cm) {
+                std::vector<ggml_fp16_t> mask_data(T * T);
+                ggml_fp16_t neg_inf = ggml_fp32_to_fp16(-INFINITY);
+                for (int i = 0; i < T; i++)
+                    for (int j = 0; j < T; j++)
+                        mask_data[i * T + j] = (j <= i) ? 0 : neg_inf;
+                ggml_backend_tensor_set(cm, mask_data.data(), 0, T * T * sizeof(ggml_fp16_t));
             }
         }
 
@@ -1459,21 +1470,15 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
                            head_dim, rope_mode, 0,
                            layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-        // Manual attention with mask (no ggml_diag_mask_inf — we use explicit mask)
-        Q = ggml_cont(gctx, ggml_permute(gctx, Q, 0, 2, 1, 3));
-        K = ggml_cont(gctx, ggml_permute(gctx, K, 0, 2, 1, 3));
-        V = ggml_cont(gctx, ggml_permute(gctx, V, 0, 2, 1, 3));
+        // Flash attention with explicit mask
+        Q = ggml_permute(gctx, Q, 0, 2, 1, 3);
+        K = ggml_permute(gctx, K, 0, 2, 1, 3);
+        V = ggml_permute(gctx, V, 0, 2, 1, 3);
 
         float scale = (m.attn_scale > 0.0f)
                         ? (1.0f / sqrtf(m.attn_scale))
                         : (1.0f / sqrtf((float)head_dim));
-        ggml_tensor * scores = ggml_mul_mat(gctx, K, Q);
-        // Fused scale + mask + softmax (mask is F16, halves memory)
-        scores = ggml_soft_max_ext(gctx, scores, attn_mask, scale, 0.0f);
-
-        ggml_tensor * V_perm = ggml_cont(gctx, ggml_permute(gctx, V, 1, 0, 2, 3));
-        ggml_tensor * attn = ggml_mul_mat(gctx, V_perm, scores);
-        attn = ggml_cont(gctx, ggml_permute(gctx, attn, 0, 2, 1, 3));
+        ggml_tensor * attn = ggml_flash_attn_ext(gctx, Q, K, V, attn_mask, scale, 0.0f, 0.0f);
         attn = ggml_reshape_2d(gctx, attn, q_dim, T_total);
 
         attn = ggml_mul_mat(gctx, L.o_w, attn);
