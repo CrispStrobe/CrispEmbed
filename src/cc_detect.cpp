@@ -12,6 +12,7 @@
 //   6. Filter by minimum size → return sorted regions
 
 #include "cc_detect.h"
+#include "core/cpu_ops.h"
 #include "morph_fast.h"
 
 #include <algorithm>
@@ -26,34 +27,7 @@
 // ---------------------------------------------------------------------------
 
 static uint8_t otsu_threshold(const uint8_t * gray, int w, int h) {
-    int hist[256] = {};
-    int n = w * h;
-    for (int i = 0; i < n; i++) hist[gray[i]]++;
-
-    int total = n;
-    double sum = 0;
-    for (int i = 0; i < 256; i++) sum += i * hist[i];
-
-    double sumB = 0;
-    int wB = 0;
-    double max_var = 0;
-    int best_t = 128;
-
-    for (int t = 0; t < 256; t++) {
-        wB += hist[t];
-        if (wB == 0) continue;
-        int wF = total - wB;
-        if (wF == 0) break;
-        sumB += t * hist[t];
-        double mB = sumB / wB;
-        double mF = (sum - sumB) / wF;
-        double var = (double)wB * wF * (mB - mF) * (mB - mF);
-        if (var > max_var) {
-            max_var = var;
-            best_t = t;
-        }
-    }
-    return (uint8_t)best_t;
+    return core_cpu::otsu_threshold(gray, w * h);
 }
 
 // ---------------------------------------------------------------------------
