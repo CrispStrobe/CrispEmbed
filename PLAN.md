@@ -722,9 +722,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   Pre-computes displacement on 8-px grid (O((W/8)*(H/8)*N)) then bilinearly
   interpolates per pixel. All 19 unit tests pass.
 
-- [x] **Debug fprintf gating (layout_detect)** — DONE (`614132e`). ~30
-  unconditional printfs converted to LDBG() macro (gated behind LAYOUT_DEBUG).
-  Remaining files (surya_det, ocr_detect) still have some unconditional prints.
+- [x] **Debug fprintf gating (layout_detect, surya_det, ocr_detect)** — DONE.
+  layout_detect: ~30 unconditional printfs → LDBG() macro (`614132e`).
+  surya_det: backend-selection print gated behind `dump` (SURYA_DET_DUMP).
+  ocr_detect: per-call resize print gated behind `bench` (CRISPEMBED_OCR_DETECT_BENCH).
 
 - [x] **hmer coverage conv per step** — conv2d(256, 256, 3x3) is the Bahdanau
   coverage attention mechanism; cannot be eliminated without changing the
