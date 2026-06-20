@@ -696,8 +696,9 @@ runtime category. "Existing" means the optimization is already implemented;
 4. **Migrate remaining duplicated helpers**: bttr, hmer, and posformer each have ~300
    lines of duplicated conv2d/relu/layernorm/linear. Migrate to `core/cpu_ops.h`.
 
-5. **Add `ggml_gallocr` reuse**: Only lfm2_embed stores the allocator on context. All
-   other runtimes create and free it per call.
+5. **`ggml_gallocr` reuse** — DONE. Persistent gallocr on context for 7 engines
+   (vit_embed, clip_text_embed, parseq_ocr, cnn_embed, ocr_detect, surya_det,
+   layout_detect). LFM2 migrated to `ggml_backend_sched` + T-bucketing.
 
 ---
 

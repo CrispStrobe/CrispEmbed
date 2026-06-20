@@ -590,7 +590,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   depends on spatial dims which change per tile — not precomputable.
 
 - [x] **Fuse BatchNorm into conv weights at model load** — TBSRN: fused 11
-  conv+BN pairs (2 per SRB × 5 + 1 final) at init. `dat_sr` still pending.
+  conv+BN pairs (2 per SRB × 5 + 1 final) at init. DAT: fused 54 conv+BN
+  pairs (3 per AIM block × 18 blocks) — dwconv, channel_interaction, spatial_interaction.
 
 - [x] **qwen2vl: token embedding via direct read** — DONE. Embed is now part of
   the main LLM graph (ggml_get_rows runs on GPU). lightonocr uses direct
@@ -613,7 +614,7 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   16×64 dims, reused across 5 SRB blocks). BTTR/PosFormer: cached for
   last-used (h, w) — skips ~327K sinf/cosf evals on repeated calls.
 
-- [ ] **mel.cpp: OpenMP on STFT loop** — each frame's FFT is independent
+- [x] **mel.cpp: OpenMP on STFT loop** — DONE (`8242a67`). Each frame's FFT is independent
   (line 73-84). `#pragma omp parallel for` on the `t` loop.
 
 - [x] **mel.cpp: SIMD for mel projection** — DONE. Float MelsFreqs layout uses
@@ -716,6 +717,16 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 
 - [x] **Remove dead scalar fallback encoder in ppformulanet_l** — DONE
   (`c7bd92c`). Removed 370 lines of unused scalar encoder code.
+
+- [x] **cpu_ops.h: SIMD layernorm_cpu** — AVX2+FMA for mean/var/scale+shift.
+  Used by 12 engines. 99/99 unit tests pass.
+- [x] **cpu_ops.h: SIMD rmsnorm_cpu** — AVX2+FMA for sum-of-squares + scale.
+  Used by 12 engines. 99/99 unit tests pass.
+- [x] **cpu_ops.h: SIMD softmax** — AVX2 max-reduction + normalization.
+  99/99 unit tests pass.
+- [x] **cpu_ops.h: mha_1q_cpu cache-friendly V accumulation + SIMD** —
+  ki-outer loop (sequential V row) + AVX2+FMA 8-wide fmadd.
+  99/99 unit tests pass.
 
 ---
 

@@ -198,6 +198,20 @@ static void l2_normalize_rows(float * data, int rows, int cols) {
 // Context
 // ---------------------------------------------------------------------------
 
+// Fuse Conv+BN: new_W = bn_scale * conv_W, new_b = bn_scale * conv_b + bn_shift
+static void fuse_conv_bn(float * conv_w, float * conv_b,
+                          const float * bn_w, const float * bn_b,
+                          const float * bn_mean, const float * bn_var,
+                          int oc, int kernel_elems, float eps = 1e-5f) {
+    for (int o = 0; o < oc; o++) {
+        float scale = bn_w[o] / sqrtf(bn_var[o] + eps);
+        float shift = bn_b[o] - bn_mean[o] * scale;
+        for (int k = 0; k < kernel_elems; k++)
+            conv_w[o * kernel_elems + k] *= scale;
+        conv_b[o] = conv_b[o] * scale + shift;
+    }
+}
+
 struct dat_sr_context {
     int embed_dim;
     int upscale;
@@ -211,6 +225,8 @@ struct dat_sr_context {
     std::unordered_map<std::string, ggml_tensor *> tensors;
 
     std::map<const void *, std::vector<float>> dequant_cache;
+    // Fused conv+BN weights (populated at init, keyed by tensor name)
+    std::unordered_map<std::string, std::vector<float>> fused;
 
     float mean[3];
     float img_range;
@@ -218,6 +234,9 @@ struct dat_sr_context {
 };
 
 static const float * get_w(dat_sr_context * ctx, const std::string & name) {
+    // Check fused conv+BN weights first
+    auto fit = ctx->fused.find(name);
+    if (fit != ctx->fused.end()) return fit->second.data();
     auto it = ctx->tensors.find(name);
     if (it == ctx->tensors.end()) return nullptr;
     auto cit = ctx->dequant_cache.find(it->second->data);
@@ -463,17 +482,11 @@ static void dynamic_pos_bias(dat_sr_context * ctx, int rg, int blk, int branch,
 // Apply DWConv + BN + GELU branch
 static void aim_dwconv_branch(dat_sr_context * ctx, const float * v_chw, int C, int H, int W,
                                const std::string & prefix, float * conv_out) {
-    // dwconv: DWConv3x3 → BN → GELU
+    // dwconv: DWConv3x3 → GELU (BN fused into conv weights at load time)
     const float * dw_w = get_w(ctx, prefix + ".dwconv.0.weight");
     const float * dw_b = get_w(ctx, prefix + ".dwconv.0.bias");
     if (!dw_w) { memcpy(conv_out, v_chw, C*H*W*sizeof(float)); return; }
     dwconv2d_3x3(v_chw, C, H, W, dw_w, dw_b, conv_out);
-    // BN
-    const float * bn_w = get_w(ctx, prefix + ".dwconv.1.weight");
-    const float * bn_b = get_w(ctx, prefix + ".dwconv.1.bias");
-    const float * bn_m = get_w(ctx, prefix + ".dwconv.1.running_mean");
-    const float * bn_v = get_w(ctx, prefix + ".dwconv.1.running_var");
-    if (bn_w) batchnorm_eval(conv_out, C, H, W, bn_w, bn_b, bn_m, bn_v);
     // GELU
     for (int i = 0; i < C*H*W; i++) conv_out[i] = gelu_f(conv_out[i]);
 }
@@ -486,17 +499,11 @@ static void aim_channel_map(dat_sr_context * ctx, const float * in_chw, int C, i
     // AdaptiveAvgPool2d(1)
     std::vector<float> pooled(C);
     adaptive_avg_pool_1x1(in_chw, C, H*W, pooled.data());
-    // Conv1x1 (C → mid) — applied to (C, 1, 1) which is just linear
+    // Conv1x1 (C → mid) — BN fused into linear weights at load time
     const float * w1 = get_w(ctx, prefix + ".channel_interaction.1.weight");
     const float * b1 = get_w(ctx, prefix + ".channel_interaction.1.bias");
     std::vector<float> t1(mid);
     if (w1) linear_cpu(pooled.data(), C, w1, b1, mid, t1.data());
-    // BN on (mid, 1, 1) — simplified since H=W=1
-    const float * bn_w = get_w(ctx, prefix + ".channel_interaction.2.weight");
-    const float * bn_b = get_w(ctx, prefix + ".channel_interaction.2.bias");
-    const float * bn_m = get_w(ctx, prefix + ".channel_interaction.2.running_mean");
-    const float * bn_v = get_w(ctx, prefix + ".channel_interaction.2.running_var");
-    if (bn_w) batchnorm_eval(t1.data(), mid, 1, 1, bn_w, bn_b, bn_m, bn_v);
     // GELU
     for (int i = 0; i < mid; i++) t1[i] = gelu_f(t1[i]);
     // Conv1x1 (mid → C)
@@ -510,17 +517,11 @@ static void aim_channel_map(dat_sr_context * ctx, const float * in_chw, int C, i
 static void aim_spatial_map(dat_sr_context * ctx, const float * in_chw, int C, int H, int W,
                              const std::string & prefix, float * out_hw) {
     int mid = C / 16;
-    // Conv1x1 (C → mid)
+    // Conv1x1 (C → mid) — BN fused into conv weights at load time
     std::vector<float> t1(mid * H * W);
     const float * w1 = get_w(ctx, prefix + ".spatial_interaction.0.weight");
     const float * b1 = get_w(ctx, prefix + ".spatial_interaction.0.bias");
     if (w1) conv1x1(in_chw, C, H, W, w1, b1, mid, t1.data());
-    // BN
-    const float * bn_w = get_w(ctx, prefix + ".spatial_interaction.1.weight");
-    const float * bn_b = get_w(ctx, prefix + ".spatial_interaction.1.bias");
-    const float * bn_m = get_w(ctx, prefix + ".spatial_interaction.1.running_mean");
-    const float * bn_v = get_w(ctx, prefix + ".spatial_interaction.1.running_var");
-    if (bn_w) batchnorm_eval(t1.data(), mid, H, W, bn_w, bn_b, bn_m, bn_v);
     // GELU
     for (int i = 0; i < mid*H*W; i++) t1[i] = gelu_f(t1[i]);
     // Conv1x1 (mid → 1)
@@ -1240,6 +1241,74 @@ dat_sr_context * dat_sr_init(const char * model_path, int n_threads) {
 
     int total_blocks = 0;
     for (int d : ctx->depth) total_blocks += d;
+
+    // Fuse BatchNorm into conv/linear weights at load time.
+    // 3 BN patterns per AIM block: dwconv.1, channel_interaction.2, spatial_interaction.1
+    {
+        auto dequant = [&](const std::string & name) -> std::vector<float> {
+            auto it = ctx->tensors.find(name);
+            if (it == ctx->tensors.end()) return {};
+            std::vector<float> buf;
+            to_f32(it->second, buf);
+            return buf;
+        };
+        int fused_count = 0;
+        for (int rg = 0; rg < (int)ctx->depth.size(); rg++) {
+            for (int blk = 0; blk < ctx->depth[rg]; blk++) {
+                char b[128];
+                snprintf(b, sizeof(b), "layers.%d.blocks.%d.attn", rg, blk);
+                std::string a(b);
+                // dwconv.0 + dwconv.1(BN) — depthwise conv, kernel [C,1,3,3]
+                auto cw = dequant(a + ".dwconv.0.weight");
+                auto cb = dequant(a + ".dwconv.0.bias");
+                auto bw = dequant(a + ".dwconv.1.weight");
+                auto bb = dequant(a + ".dwconv.1.bias");
+                auto bm = dequant(a + ".dwconv.1.running_mean");
+                auto bv = dequant(a + ".dwconv.1.running_var");
+                if (!cw.empty() && !bw.empty()) {
+                    int oc = (int)bw.size();
+                    fuse_conv_bn(cw.data(), cb.data(), bw.data(), bb.data(),
+                                 bm.data(), bv.data(), oc, (int)cw.size() / oc);
+                    ctx->fused[a + ".dwconv.0.weight"] = std::move(cw);
+                    ctx->fused[a + ".dwconv.0.bias"]   = std::move(cb);
+                    fused_count++;
+                }
+                // channel_interaction.1(linear) + .2(BN)
+                cw = dequant(a + ".channel_interaction.1.weight");
+                cb = dequant(a + ".channel_interaction.1.bias");
+                bw = dequant(a + ".channel_interaction.2.weight");
+                bb = dequant(a + ".channel_interaction.2.bias");
+                bm = dequant(a + ".channel_interaction.2.running_mean");
+                bv = dequant(a + ".channel_interaction.2.running_var");
+                if (!cw.empty() && !bw.empty()) {
+                    int oc = (int)bw.size();
+                    fuse_conv_bn(cw.data(), cb.data(), bw.data(), bb.data(),
+                                 bm.data(), bv.data(), oc, (int)cw.size() / oc);
+                    ctx->fused[a + ".channel_interaction.1.weight"] = std::move(cw);
+                    ctx->fused[a + ".channel_interaction.1.bias"]   = std::move(cb);
+                    fused_count++;
+                }
+                // spatial_interaction.0(conv1x1) + .1(BN)
+                cw = dequant(a + ".spatial_interaction.0.weight");
+                cb = dequant(a + ".spatial_interaction.0.bias");
+                bw = dequant(a + ".spatial_interaction.1.weight");
+                bb = dequant(a + ".spatial_interaction.1.bias");
+                bm = dequant(a + ".spatial_interaction.1.running_mean");
+                bv = dequant(a + ".spatial_interaction.1.running_var");
+                if (!cw.empty() && !bw.empty()) {
+                    int oc = (int)bw.size();
+                    fuse_conv_bn(cw.data(), cb.data(), bw.data(), bb.data(),
+                                 bm.data(), bv.data(), oc, (int)cw.size() / oc);
+                    ctx->fused[a + ".spatial_interaction.0.weight"] = std::move(cw);
+                    ctx->fused[a + ".spatial_interaction.0.bias"]   = std::move(cb);
+                    fused_count++;
+                }
+            }
+        }
+        if (fused_count > 0)
+            fprintf(stderr, "dat_sr: fused %d conv+BN pairs at load time\n", fused_count);
+    }
+
     fprintf(stderr, "dat_sr: loaded embed=%d, heads=%d, depth=%d blocks, "
             "split=[%d,%d], upscale=%dx, %s+%s\n",
             ctx->embed_dim, ctx->num_heads, total_blocks,
