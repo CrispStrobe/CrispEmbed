@@ -120,7 +120,7 @@ struct math_ocr_context {
 // Tensor lookup
 // ---------------------------------------------------------------------------
 
-static ggml_tensor* F(const std::map<std::string, ggml_tensor*>& m, const char* n) {
+static ggml_tensor* F(const std::unordered_map<std::string, ggml_tensor*>& m, const char* n) {
     auto it = m.find(n);
     if (it != m.end()) return it->second;
     std::string alt(n);
