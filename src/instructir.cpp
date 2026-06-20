@@ -473,26 +473,90 @@ int instructir_process_float(instructir_context * ctx, int task,
     return 0;
 }
 
-int instructir_process(instructir_context * ctx, int task,
-                       const uint8_t * input, int width, int height,
-                       uint8_t * output) {
-    if (!ctx || !input || !output) return -1;
+static int instructir_process_tile(instructir_context * ctx, int task,
+                                   const uint8_t * input, int width, int height,
+                                   uint8_t * output) {
     int hw = width * height;
     std::vector<float> in_chw(3 * hw);
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
             for (int c = 0; c < 3; c++)
                 in_chw[c * hw + y * width + x] = (float)input[(y * width + x) * 3 + c] / 255.0f;
-
     std::vector<float> out_chw(3 * hw);
     int ret = instructir_process_float(ctx, task, in_chw.data(), width, height, out_chw.data());
     if (ret != 0) return ret;
-
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
             for (int c = 0; c < 3; c++) {
                 float v = out_chw[c * hw + y * width + x] * 255.0f;
                 output[(y * width + x) * 3 + c] = (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));
             }
+    return 0;
+}
+
+static void iir_blend_win(int ts, int ov, std::vector<float> & w) {
+    w.resize(ts * ts);
+    for (int y = 0; y < ts; y++) {
+        float wy = 1.0f;
+        if (y < ov) wy = 0.5f - 0.5f * cosf((float)M_PI * y / ov);
+        else if (y >= ts - ov) wy = 0.5f - 0.5f * cosf((float)M_PI * (ts - 1 - y) / ov);
+        for (int x = 0; x < ts; x++) {
+            float wx = 1.0f;
+            if (x < ov) wx = 0.5f - 0.5f * cosf((float)M_PI * x / ov);
+            else if (x >= ts - ov) wx = 0.5f - 0.5f * cosf((float)M_PI * (ts - 1 - x) / ov);
+            w[y * ts + x] = wy * wx;
+        }
+    }
+}
+
+int instructir_process(instructir_context * ctx, int task,
+                       const uint8_t * input, int width, int height,
+                       uint8_t * output) {
+    if (!ctx || !input || !output) return -1;
+    int tile_size = 256;
+    int tile_overlap = 32;
+    const char * ts_env = std::getenv("CRISPEMBED_INSTRUCTIR_TILE");
+    if (ts_env) tile_size = std::max(64, (atoi(ts_env) / 8) * 8);
+    tile_overlap = std::min(tile_overlap, tile_size / 4);
+
+    if (width <= tile_size && height <= tile_size)
+        return instructir_process_tile(ctx, task, input, width, height, output);
+
+    std::vector<float> accum(3 * height * width, 0.0f);
+    std::vector<float> wmap(height * width, 0.0f);
+    std::vector<float> bwin;
+    iir_blend_win(tile_size, tile_overlap, bwin);
+    int step = tile_size - tile_overlap;
+    int ntx = std::max(1, (width + step - 1) / step);
+    int nty = std::max(1, (height + step - 1) / step);
+    fprintf(stderr, "instructir: %dx%d, tiles=%dx%d (size=%d)\n", width, height, ntx, nty, tile_size);
+    for (int ty = 0; ty < nty; ty++)
+        for (int tx = 0; tx < ntx; tx++) {
+            int x0 = std::min(tx*step, std::max(0, width-tile_size));
+            int y0 = std::min(ty*step, std::max(0, height-tile_size));
+            int tw = std::min(tile_size, width-x0), th = std::min(tile_size, height-y0);
+            std::vector<uint8_t> ti(tw*th*3), to(tw*th*3);
+            for (int y=0;y<th;y++) memcpy(ti.data()+y*tw*3, input+((y0+y)*width+x0)*3, tw*3);
+            if (instructir_process_tile(ctx, task, ti.data(), tw, th, to.data()) != 0) return -1;
+            for (int y=0;y<th;y++)
+                for (int x=0;x<tw;x++) {
+                    float w = (tw==tile_size&&th==tile_size) ? bwin[y*tile_size+x] : 1.0f;
+                    if (tw!=tile_size||th!=tile_size) {
+                        if (x0>0&&x<tile_overlap) w*=0.5f-0.5f*cosf((float)M_PI*x/tile_overlap);
+                        if (y0>0&&y<tile_overlap) w*=0.5f-0.5f*cosf((float)M_PI*y/tile_overlap);
+                    }
+                    int dy=y0+y, dx=x0+x;
+                    for (int c=0;c<3;c++) accum[c*height*width+dy*width+dx]+=to[(y*tw+x)*3+c]*w;
+                    wmap[dy*width+dx]+=w;
+                }
+        }
+    for (int y=0;y<height;y++)
+        for (int x=0;x<width;x++) {
+            float wt=wmap[y*width+x]; if(wt<=0)wt=1;
+            for (int c=0;c<3;c++) {
+                float v=accum[c*height*width+y*width+x]/wt;
+                output[(y*width+x)*3+c]=(uint8_t)std::max(0.f,std::min(255.f,v+0.5f));
+            }
+        }
     return 0;
 }
