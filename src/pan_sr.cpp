@@ -105,6 +105,10 @@ struct pan_sr_context {
     core_gguf::WeightLoad wl;
     core_cpu::DequantCache dcache;
 
+    // ggml conv infrastructure
+    ggml_backend_t       enc_backend  = nullptr;
+    ggml_backend_sched_t enc_sched    = nullptr;
+
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t) { fprintf(stderr, "pan_sr: missing %s\n", name.c_str()); return nullptr; }
@@ -136,11 +140,21 @@ pan_sr_context * pan_sr_init(const char * model_path, int n_threads) {
     fprintf(stderr, "pan_sr: nf=%d unf=%d nb=%d scale=%dx, %d tensors\n",
             ctx->nf, ctx->unf, ctx->nb, ctx->scale, (int)ctx->wl.tensors.size());
     ctx->bench = (std::getenv("CRISPEMBED_PAN_SR_BENCH") != nullptr);
+
+    ctx->enc_backend = ggml_backend_cpu_init();
+    if (ctx->enc_backend) {
+        ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads > 0 ? ctx->n_threads : 1);
+        ggml_backend_t backends[] = { ctx->enc_backend };
+        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+    }
     return ctx;
 }
 
 void pan_sr_free(pan_sr_context * ctx) {
-    if (ctx) { core_gguf::free_weights(ctx->wl); delete ctx; }
+    if (ctx) {
+    if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+    if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
+ core_gguf::free_weights(ctx->wl); delete ctx; }
 }
 
 int pan_sr_scale(const pan_sr_context * ctx) { return ctx ? ctx->scale : 0; }

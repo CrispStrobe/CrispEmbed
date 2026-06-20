@@ -265,6 +265,10 @@ struct text_sr_context {
     std::string model_path;
     core_cpu::DequantCache dcache;
 
+    // ggml conv infrastructure
+    ggml_backend_t       enc_backend  = nullptr;
+    ggml_backend_sched_t enc_sched    = nullptr;
+
     const float * get_tensor(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t) {
@@ -322,12 +326,22 @@ text_sr_context * text_sr_init(const char * model_path, int n_threads) {
     fprintf(stderr, "], %d tensors\n", (int)ctx->wl.tensors.size());
 
     ctx->bench = (std::getenv("CRISPEMBED_TEXT_SR_BENCH") != nullptr);
+
+    ctx->enc_backend = ggml_backend_cpu_init();
+    if (ctx->enc_backend) {
+        ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads > 0 ? ctx->n_threads : 1);
+        ggml_backend_t backends[] = { ctx->enc_backend };
+        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+    }
     return ctx;
 }
 
 void text_sr_free(text_sr_context * ctx) {
     if (ctx) {
         core_gguf::free_weights(ctx->wl);
+    if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+    if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
+
         delete ctx;
     }
 }
