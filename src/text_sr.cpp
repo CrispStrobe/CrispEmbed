@@ -8,6 +8,7 @@
 // cosine (Hann) window to avoid seam artifacts.
 
 #include "text_sr.h"
+#include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -27,27 +28,7 @@
 #include <string>
 #include <vector>
 
-// ── Helpers (shared with nafnet_denoise.cpp — kept static to avoid ODR) ────
-
-static const float * tsr_to_f32(const ggml_tensor * t, std::vector<float> & buf) {
-    int64_t n = ggml_nelements(t);
-    buf.resize(n);
-    if (t->type == GGML_TYPE_F32) {
-        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
-    } else if (t->type == GGML_TYPE_F16) {
-        std::vector<ggml_fp16_t> tmp(n);
-        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
-        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(tmp[i]);
-    } else {
-        size_t raw_sz = ggml_nbytes(t);
-        std::vector<uint8_t> raw(raw_sz);
-        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
-        const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
-        else memset(buf.data(), 0, n * sizeof(float));
-    }
-    return buf.data();
-}
+// ── Helpers ────────────────────────────────────────────────────────────
 
 static void tsr_conv2d(const float * input, int ic, int ih, int iw,
                        const float * weight, const float * bias,
@@ -282,7 +263,7 @@ struct text_sr_context {
 
     core_gguf::WeightLoad wl;
     std::string model_path;
-    std::vector<std::vector<float>> weight_bufs;
+    core_cpu::DequantCache dcache;
 
     const float * get_tensor(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
@@ -290,8 +271,7 @@ struct text_sr_context {
             fprintf(stderr, "text_sr: missing tensor %s\n", name.c_str());
             return nullptr;
         }
-        weight_bufs.emplace_back();
-        return tsr_to_f32(t, weight_bufs.back());
+        return dcache.get(t);
     }
 };
 
