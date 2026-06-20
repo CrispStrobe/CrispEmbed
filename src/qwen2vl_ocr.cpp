@@ -3328,6 +3328,10 @@ const char *qwen2vl_ocr_recognize_raw(qwen2vl_ocr_context *ctx,
   cfg.merge_size = (int)vhp.spatial_merge_size;           // 2
   cfg.min_pixels = (int)vhp.min_pixels;
   cfg.max_pixels = (int)vhp.max_pixels;
+  // Allow runtime override of max_pixels for CPU-friendly inference
+  if (const char *mp = getenv("CRISPEMBED_MAX_PIXELS")) {
+    cfg.max_pixels = atoi(mp);
+  }
   for (int i = 0; i < 3; i++) {
     cfg.mean[i] = vhp.image_mean[i];
     cfg.std[i] = vhp.image_std[i];
