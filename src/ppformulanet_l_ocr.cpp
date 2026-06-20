@@ -900,6 +900,97 @@ static void detokenize(ppformulanet_l_ocr_context* ctx, const std::vector<int>& 
 }
 
 // ---------------------------------------------------------------------------
+// Beam search decoder
+// ---------------------------------------------------------------------------
+
+struct PpfnlBeam {
+    std::vector<int> tokens;
+    float score;
+    int prev_token;
+    bool finished;
+    std::vector<std::vector<float>> kv_k;
+    std::vector<std::vector<float>> kv_v;
+};
+
+static std::vector<int> beam_decode(ppformulanet_l_ocr_context* ctx, int beam_width) {
+    const auto& hp = ctx->hparams;
+    const int V = hp.vocab_size;
+    const int n_dec = hp.dec_layers;
+    const int max_steps = std::min(hp.max_seq_len, 512);
+
+    std::vector<PpfnlBeam> beams(1);
+    beams[0].score = 0.0f;
+    beams[0].prev_token = hp.decoder_start_token;
+    beams[0].finished = false;
+    beams[0].kv_k.resize(n_dec);
+    beams[0].kv_v.resize(n_dec);
+
+    std::vector<PpfnlBeam> completed;
+
+    for (int step = 0; step < max_steps; step++) {
+        struct Cand { int bi; int tok; float score; };
+        std::vector<Cand> cands;
+
+        for (int bi = 0; bi < (int)beams.size(); bi++) {
+            if (beams[bi].finished) continue;
+            auto logits = decoder_step(ctx, beams[bi].prev_token, step,
+                                       beams[bi].kv_k, beams[bi].kv_v);
+            float max_l = *std::max_element(logits.begin(), logits.end());
+            float sum_e = 0.0f;
+            for (int v = 0; v < V; v++) { logits[v] = expf(logits[v] - max_l); sum_e += logits[v]; }
+            float log_sum = logf(sum_e) + max_l;
+            for (int v = 0; v < V; v++) {
+                float log_p = logits[v] > 0 ? logf(logits[v]) + max_l - log_sum : -100.0f;
+                cands.push_back({bi, v, beams[bi].score + log_p});
+            }
+        }
+
+        if (cands.empty()) break;
+
+        int keep = std::min(beam_width, (int)cands.size());
+        std::partial_sort(cands.begin(), cands.begin() + keep, cands.end(),
+                          [](const Cand& a, const Cand& b) { return a.score > b.score; });
+
+        std::vector<PpfnlBeam> new_beams;
+        new_beams.reserve(keep);
+        for (int i = 0; i < keep; i++) {
+            const auto& c = cands[i];
+            PpfnlBeam nb;
+            nb.tokens   = beams[c.bi].tokens;
+            nb.kv_k     = beams[c.bi].kv_k;
+            nb.kv_v     = beams[c.bi].kv_v;
+            nb.score    = c.score;
+            if (c.tok == hp.eos_token || c.tok == hp.pad_token) {
+                nb.finished = true;
+                nb.prev_token = c.tok;
+                float len = (float)nb.tokens.size();
+                nb.score /= len > 0 ? len : 1.0f;
+                completed.push_back(std::move(nb));
+            } else {
+                nb.tokens.push_back(c.tok);
+                nb.prev_token = c.tok;
+                nb.finished = false;
+                new_beams.push_back(std::move(nb));
+            }
+        }
+
+        beams = std::move(new_beams);
+        if (beams.empty()) break;
+    }
+
+    for (auto& b : beams) {
+        float len = (float)b.tokens.size();
+        b.score /= len > 0 ? len : 1.0f;
+        completed.push_back(std::move(b));
+    }
+
+    if (completed.empty()) return {};
+    auto best = std::max_element(completed.begin(), completed.end(),
+                                  [](const PpfnlBeam& a, const PpfnlBeam& b) { return a.score < b.score; });
+    return best->tokens;
+}
+
+// ---------------------------------------------------------------------------
 // Init / Free / API
 // ---------------------------------------------------------------------------
 
@@ -1102,6 +1193,66 @@ const char* ppformulanet_l_ocr_recognize_chw(ppformulanet_l_ocr_context* ctx,
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
+}
+
+const char* ppformulanet_l_ocr_recognize_beam(ppformulanet_l_ocr_context* ctx,
+                                               const float* pixels,
+                                               int width, int height,
+                                               int beam_width, int* out_len) {
+    if (!ctx || !pixels) return nullptr;
+    if (beam_width <= 1)
+        return ppformulanet_l_ocr_recognize(ctx, pixels, width, height, out_len);
+
+    const int S = ctx->hparams.image_size;
+    const float MEAN = 0.7931f, STD = 0.1738f;
+    float scale = std::min((float)S / width, (float)S / height);
+    int new_w = std::min((int)(width * scale), S);
+    int new_h = std::min((int)(height * scale), S);
+    int pad_left = (S - new_w) / 2, pad_top = (S - new_h) / 2;
+    float black_norm = (0.0f - MEAN) / STD;
+    std::vector<float> rgb(3 * S * S, black_norm);
+    for (int y = 0; y < new_h; y++) {
+        float fy = (float)y / scale;
+        int y0 = (int)fy, y1 = std::min(y0 + 1, height - 1);
+        float wy = fy - y0;
+        for (int x = 0; x < new_w; x++) {
+            float fx = (float)x / scale;
+            int x0 = (int)fx, x1 = std::min(x0 + 1, width - 1);
+            float wx = fx - x0;
+            float v = (1-wy)*((1-wx)*pixels[y0*width+x0] + wx*pixels[y0*width+x1])
+                    +    wy *((1-wx)*pixels[y1*width+x0] + wx*pixels[y1*width+x1]);
+            float normed = (v - MEAN) / STD;
+            int dx = pad_left + x;
+            for (int c = 0; c < 3; c++)
+                rgb[c * S * S + (pad_top + y) * S + dx] = normed;
+        }
+    }
+
+    run_encoder_graph(ctx, rgb.data(), S, S);
+    precompute_cross_kv(ctx);
+    auto tokens = beam_decode(ctx, beam_width);
+    detokenize(ctx, tokens);
+    if (out_len) *out_len = (int)ctx->result_buf.size();
+    return ctx->result_buf.c_str();
+}
+
+const char* ppformulanet_l_ocr_recognize_raw_beam(ppformulanet_l_ocr_context* ctx,
+                                                   const uint8_t* pixel_bytes,
+                                                   int width, int height, int channels,
+                                                   int beam_width, int* out_len) {
+    if (!ctx || !pixel_bytes) return nullptr;
+    std::vector<float> gray(width * height);
+    for (int i = 0; i < width * height; i++) {
+        if (channels == 1)
+            gray[i] = pixel_bytes[i] / 255.0f;
+        else if (channels == 3)
+            gray[i] = (0.299f*pixel_bytes[i*3] + 0.587f*pixel_bytes[i*3+1]
+                     + 0.114f*pixel_bytes[i*3+2]) / 255.0f;
+        else if (channels == 4)
+            gray[i] = (0.299f*pixel_bytes[i*4] + 0.587f*pixel_bytes[i*4+1]
+                     + 0.114f*pixel_bytes[i*4+2]) / 255.0f;
+    }
+    return ppformulanet_l_ocr_recognize_beam(ctx, gray.data(), width, height, beam_width, out_len);
 }
 
 const float * ppformulanet_l_ocr_confidences(const ppformulanet_l_ocr_context * ctx, int * n_chars) {

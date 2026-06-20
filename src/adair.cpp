@@ -14,6 +14,7 @@
 // TransformerBlock = LN → MDTA (transposed channel attention) → LN → GDFN
 
 #include "adair.h"
+#include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -32,28 +33,6 @@
 #endif
 
 // ── Helpers ──
-
-// GPU-safe: uses ggml_backend_tensor_get instead of direct tensor->data
-static const float * to_f32(const ggml_tensor * t, std::vector<float> & buf) {
-    if (!t) return nullptr;
-    int64_t n = ggml_nelements(t);
-    buf.resize(n);
-    if (t->type == GGML_TYPE_F32) {
-        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
-    } else if (t->type == GGML_TYPE_F16) {
-        std::vector<ggml_fp16_t> tmp(n);
-        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
-        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(tmp[i]);
-    } else {
-        size_t raw_sz = ggml_nbytes(t);
-        std::vector<uint8_t> raw(raw_sz);
-        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
-        const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
-        else memset(buf.data(), 0, n * sizeof(float));
-    }
-    return buf.data();
-}
 
 static void conv2d(const float * in, int ic, int h, int w,
                    const float * wt, const float * bi,
@@ -115,13 +94,13 @@ struct mdta_wt {
 static void mdta_forward(const float * x, int C, int H, int W,
                           const mdta_wt & wt, int n_heads,
                           float * out,
-                          std::vector<float> & dq1, std::vector<float> & dq2) {
+                          core_cpu::DequantCache & dqc) {
     int hw = H * W, hd = C / n_heads;
 
     // Fused QKV: Conv1x1(C→3C) + DWConv3x3(3C), then split
     std::vector<float> qkv(3 * C * hw), qkv_dw(3 * C * hw);
-    conv2d(x, C, H, W, to_f32(wt.qkv_w, dq1), nullptr, 3 * C, 1, 1, 0, 1, 1, qkv.data());
-    conv2d(qkv.data(), 3 * C, H, W, to_f32(wt.qkv_dw, dq1), nullptr, 3 * C, 3, 3, 1, 1, 3 * C, qkv_dw.data());
+    conv2d(x, C, H, W, dqc.get(wt.qkv_w), nullptr, 3 * C, 1, 1, 0, 1, 1, qkv.data());
+    conv2d(qkv.data(), 3 * C, H, W, dqc.get(wt.qkv_dw), nullptr, 3 * C, 3, 3, 1, 1, 3 * C, qkv_dw.data());
 
     std::vector<float> q(C * hw), q_tmp(C * hw), k(C * hw), v(C * hw);
     memcpy(q.data(), qkv_dw.data(), C * hw * sizeof(float));
@@ -140,7 +119,7 @@ static void mdta_forward(const float * x, int C, int H, int W,
     l2norm(q.data());
     l2norm(k.data());
 
-    const float * temp = to_f32(wt.temp, dq1);
+    const float * temp = dqc.get(wt.temp);
 
     // Transposed attention: [B, h, C/h, HW] @ [B, h, HW, C/h] → [h, C/h, C/h]
     // Then [h, C/h, C/h] @ [h, C/h, HW] → [h, C/h, HW]
@@ -181,7 +160,7 @@ static void mdta_forward(const float * x, int C, int H, int W,
     }
 
     // Project out
-    conv2d(attn_out.data(), C, H, W, to_f32(wt.proj_w, dq1), nullptr,
+    conv2d(attn_out.data(), C, H, W, dqc.get(wt.proj_w), nullptr,
            C, 1, 1, 0, 1, 1, out);
 }
 
@@ -196,19 +175,19 @@ struct gdfn_wt {
 static void gdfn_forward(const float * x, int C, int H, int W,
                           const gdfn_wt & wt,
                           float * out,
-                          std::vector<float> & dq1, std::vector<float> & dq2) {
+                          core_cpu::DequantCache & dqc) {
     int hw = H * W;
     // Infer hidden dim from proj1 weight: ne[3] = hidden (output channels)
     int hidden = (int)wt.proj1_w->ne[3];
 
     // Conv1x1 expand (no bias)
     std::vector<float> h1(hidden * hw);
-    conv2d(x, C, H, W, to_f32(wt.proj1_w, dq1), nullptr,
+    conv2d(x, C, H, W, dqc.get(wt.proj1_w), nullptr,
            hidden, 1, 1, 0, 1, 1, h1.data());
 
     // DWConv3x3 (no bias)
     std::vector<float> h2(hidden * hw);
-    conv2d(h1.data(), hidden, H, W, to_f32(wt.dw_w, dq1), nullptr,
+    conv2d(h1.data(), hidden, H, W, dqc.get(wt.dw_w), nullptr,
            hidden, 3, 3, 1, 1, hidden, h2.data());
 
     // Gated: split in half, GELU(x1) * x2
@@ -222,7 +201,7 @@ static void gdfn_forward(const float * x, int C, int H, int W,
         }
 
     // Conv1x1 project (no bias)
-    conv2d(gated.data(), half, H, W, to_f32(wt.proj2_w, dq1), nullptr,
+    conv2d(gated.data(), half, H, W, dqc.get(wt.proj2_w), nullptr,
            C, 1, 1, 0, 1, 1, out);
 }
 
@@ -237,18 +216,18 @@ struct tb_wt {
 
 static void tb_forward(float * x, int C, int H, int W, int n_heads,
                         const tb_wt & wt,
-                        std::vector<float> & dq1, std::vector<float> & dq2) {
+                        core_cpu::DequantCache & dqc) {
     int hw = H * W;
     std::vector<float> normed(C * hw), out(C * hw);
 
     // LN → MDTA → residual
-    layernorm2d(x, C, H, W, to_f32(wt.norm1_w, dq1), to_f32(wt.norm1_b, dq2), normed.data());
-    mdta_forward(normed.data(), C, H, W, wt.attn, n_heads, out.data(), dq1, dq2);
+    layernorm2d(x, C, H, W, dqc.get(wt.norm1_w), dqc.get(wt.norm1_b), normed.data());
+    mdta_forward(normed.data(), C, H, W, wt.attn, n_heads, out.data(), dqc);
     for (int i = 0; i < C * hw; i++) x[i] += out[i];
 
     // LN → GDFN → residual
-    layernorm2d(x, C, H, W, to_f32(wt.norm2_w, dq1), to_f32(wt.norm2_b, dq2), normed.data());
-    gdfn_forward(normed.data(), C, H, W, wt.ffn, out.data(), dq1, dq2);
+    layernorm2d(x, C, H, W, dqc.get(wt.norm2_w), dqc.get(wt.norm2_b), normed.data());
+    gdfn_forward(normed.data(), C, H, W, wt.ffn, out.data(), dqc);
     for (int i = 0; i < C * hw; i++) x[i] += out[i];
 }
 
@@ -352,17 +331,17 @@ static void cross_attn_forward(const float * q_in, const float * kv_in,
                                 int C, int H, int W, int n_heads,
                                 const cross_attn_wt & wt,
                                 float * out,
-                                std::vector<float> & dq1, std::vector<float> & dq2) {
+                                core_cpu::DequantCache & dqc) {
     int hw = H * W, hd = C / n_heads;
 
     std::vector<float> q(C * hw), q_tmp(C * hw), k(C * hw), v(C * hw);
     // Q from q_in
-    conv2d(q_in, C, H, W, to_f32(wt.q_w, dq1), nullptr, C, 1, 1, 0, 1, 1, q_tmp.data());
-    conv2d(q_tmp.data(), C, H, W, to_f32(wt.q_dw, dq1), nullptr, C, 3, 3, 1, 1, C, q.data());
+    conv2d(q_in, C, H, W, dqc.get(wt.q_w), nullptr, C, 1, 1, 0, 1, 1, q_tmp.data());
+    conv2d(q_tmp.data(), C, H, W, dqc.get(wt.q_dw), nullptr, C, 3, 3, 1, 1, C, q.data());
     // KV from kv_in
     std::vector<float> kv(2 * C * hw), kv_dw_buf(2 * C * hw);
-    conv2d(kv_in, C, H, W, to_f32(wt.kv_w, dq1), nullptr, 2 * C, 1, 1, 0, 1, 1, kv.data());
-    conv2d(kv.data(), 2 * C, H, W, to_f32(wt.kv_dw, dq1), nullptr, 2 * C, 3, 3, 1, 1, 2 * C, kv_dw_buf.data());
+    conv2d(kv_in, C, H, W, dqc.get(wt.kv_w), nullptr, 2 * C, 1, 1, 0, 1, 1, kv.data());
+    conv2d(kv.data(), 2 * C, H, W, dqc.get(wt.kv_dw), nullptr, 2 * C, 3, 3, 1, 1, 2 * C, kv_dw_buf.data());
     memcpy(k.data(), kv_dw_buf.data(), C * hw * sizeof(float));
     memcpy(v.data(), kv_dw_buf.data() + C * hw, C * hw * sizeof(float));
 
@@ -377,7 +356,7 @@ static void cross_attn_forward(const float * q_in, const float * kv_in,
     };
     l2norm(q.data()); l2norm(k.data());
 
-    const float * temp = to_f32(wt.temp, dq1);
+    const float * temp = dqc.get(wt.temp);
     std::vector<float> attn_out(C * hw, 0.0f);
     for (int head = 0; head < n_heads; head++) {
         float t_val = temp[head];
@@ -404,7 +383,7 @@ static void cross_attn_forward(const float * q_in, const float * kv_in,
                 attn_out[(co + i) * hw + p] = s;
             }
     }
-    conv2d(attn_out.data(), C, H, W, to_f32(wt.proj_w, dq1), nullptr,
+    conv2d(attn_out.data(), C, H, W, dqc.get(wt.proj_w), nullptr,
            C, 1, 1, 0, 1, 1, out);
 }
 
@@ -429,7 +408,7 @@ static void fre_forward(const float * inp_img_3ch, int img_h, int img_w,
                          int n_heads,
                          const fre_wt & wt,
                          float * out, // [C, H, W]
-                         std::vector<float> & dq1, std::vector<float> & dq2) {
+                         core_cpu::DequantCache & dqc) {
     int hw = H * W;
 
     // Save dec_feat in case out aliases it (caller passes x.data() for both)
@@ -461,7 +440,7 @@ static void fre_forward(const float * inp_img_3ch, int img_h, int img_w,
 
     // Project img to C channels: conv1(3→C)
     std::vector<float> projected(C * hw);
-    conv2d(img_resized.data(), 3, H, W, to_f32(wt.conv1_w, dq1), nullptr,
+    conv2d(img_resized.data(), 3, H, W, dqc.get(wt.conv1_w), nullptr,
            C, 3, 3, 1, 1, 1, projected.data());
 
     // FFT on projected features
@@ -478,7 +457,7 @@ static void fre_forward(const float * inp_img_3ch, int img_h, int img_w,
         pool[c] /= hw;
     }
     int rc_hidden = (int)wt.rate_w1->ne[3]; // C/8
-    const float * rw1 = to_f32(wt.rate_w1, dq1);
+    const float * rw1 = dqc.get(wt.rate_w1);
     std::vector<float> rc_h(rc_hidden);
     for (int o = 0; o < rc_hidden; o++) {
         float s = 0;
@@ -486,7 +465,7 @@ static void fre_forward(const float * inp_img_3ch, int img_h, int img_w,
         s = s * 0.5f * (1.0f + erff(s * 0.7071067811865476f)); // GELU
         rc_h[o] = s;
     }
-    const float * rw2 = to_f32(wt.rate_w2, dq1);
+    const float * rw2 = dqc.get(wt.rate_w2);
     float thresh[2];
     for (int o = 0; o < 2; o++) {
         float s = 0;
@@ -555,8 +534,8 @@ static void fre_forward(const float * inp_img_3ch, int img_h, int img_w,
 
     // Cross-attention: high guided by dec_feat, low guided by dec_feat
     std::vector<float> ca_h(C * hw), ca_l(C * hw);
-    cross_attn_forward(hi_feat.data(), dec_feat, C, H, W, n_heads, wt.cross_l, ca_h.data(), dq1, dq2);
-    cross_attn_forward(lo_feat.data(), dec_feat, C, H, W, n_heads, wt.cross_h, ca_l.data(), dq1, dq2);
+    cross_attn_forward(hi_feat.data(), dec_feat, C, H, W, n_heads, wt.cross_l, ca_h.data(), dqc);
+    cross_attn_forward(lo_feat.data(), dec_feat, C, H, W, n_heads, wt.cross_h, ca_l.data(), dqc);
 
     // FreRefine: SpatialGate(H→L) + ChannelGate(L→H)
     // SpatialGate: max+mean pool → conv7x7 → sigmoid → scale low by spatial gate
@@ -569,7 +548,7 @@ static void fre_forward(const float * inp_img_3ch, int img_h, int img_w,
         sg_in[i] = mx; sg_in[hw + i] = mn / C;
     }
     std::vector<float> sg_out(hw);
-    conv2d(sg_in.data(), 2, H, W, to_f32(wt.sg_w, dq1), nullptr, 1, 7, 7, 3, 1, 1, sg_out.data());
+    conv2d(sg_in.data(), 2, H, W, dqc.get(wt.sg_w), nullptr, 1, 7, 7, 3, 1, 1, sg_out.data());
     for (int i = 0; i < hw; i++) sg_out[i] = 1.0f / (1.0f + expf(-sg_out[i]));
     std::vector<float> lo_gated(C * hw);
     for (int c = 0; c < C; c++)
@@ -582,8 +561,8 @@ static void fre_forward(const float * inp_img_3ch, int img_h, int img_w,
         cg_pool[c] /= hw;
     }
     int cg_hidden = (int)wt.cg_w1->ne[3];
-    const float * cg1 = to_f32(wt.cg_w1, dq1);
-    const float * cg2 = to_f32(wt.cg_w2, dq1);
+    const float * cg1 = dqc.get(wt.cg_w1);
+    const float * cg2 = dqc.get(wt.cg_w2);
     std::vector<float> cg_h(cg_hidden), cg_out_v(C);
     for (int o = 0; o < cg_hidden; o++) {
         float s = 0;
@@ -602,16 +581,16 @@ static void fre_forward(const float * inp_img_3ch, int img_h, int img_w,
     // Sum and project
     std::vector<float> refined(C * hw);
     for (int i = 0; i < C * hw; i++) refined[i] = lo_gated[i] + hi_gated[i];
-    conv2d(refined.data(), C, H, W, to_f32(wt.proj_w, dq1), to_f32(wt.proj_b, dq2),
+    conv2d(refined.data(), C, H, W, dqc.get(wt.proj_w), dqc.get(wt.proj_b),
            C, 1, 1, 0, 1, 1, out);
 
     // Aggregate cross-attention of dec_feat with refined
     std::vector<float> ca_agg(C * hw);
-    cross_attn_forward(dec_feat, out, C, H, W, n_heads, wt.cross_agg, ca_agg.data(), dq1, dq2);
+    cross_attn_forward(dec_feat, out, C, H, W, n_heads, wt.cross_agg, ca_agg.data(), dqc);
 
     // Final: out = ca_agg * para1 + dec_feat * para2
-    const float * p1 = to_f32(wt.para1, dq1);
-    const float * p2 = to_f32(wt.para2, dq2);
+    const float * p1 = dqc.get(wt.para1);
+    const float * p2 = dqc.get(wt.para2);
     for (int c = 0; c < C; c++)
         for (int i = 0; i < hw; i++)
             out[c * hw + i] = ca_agg[c * hw + i] * p1[c] + dec_feat[c * hw + i] * p2[c];
@@ -668,6 +647,8 @@ struct adair_context {
 
     // FreModules
     fre_wt fre1, fre2, fre3;
+
+    core_cpu::DequantCache dqc;
 };
 
 static void load_cross_attn(core_gguf::WeightLoad & wl, const char * pfx, cross_attn_wt & ca) {
@@ -800,19 +781,19 @@ int adair_process_float(adair_context * ctx,
     auto t_total = std::chrono::steady_clock::now();
 
     int H = height, W = width;
-    std::vector<float> dq1, dq2;
+    auto & dqc = ctx->dqc;
 
     // Patch embed: Conv3x3(3→48)
     int ch = 48;
     std::vector<float> x(ch * H * W);
-    conv2d(input_chw, 3, H, W, to_f32(ctx->patch_embed_w, dq1),
-           to_f32(ctx->patch_embed_b, dq2), ch, 3, 3, 1, 1, 1, x.data());
+    conv2d(input_chw, 3, H, W, dqc.get(ctx->patch_embed_w),
+           dqc.get(ctx->patch_embed_b), ch, 3, 3, 1, 1, 1, x.data());
 
     // Encoder level 1: 4 TB at 48ch
     int heads[] = {1, 2, 4, 8};
     int cur_h = H, cur_w = W;
     auto t_enc1 = std::chrono::steady_clock::now();
-    for (auto & tb : ctx->enc1) tb_forward(x.data(), ch, cur_h, cur_w, heads[0], tb, dq1, dq2);
+    for (auto & tb : ctx->enc1) tb_forward(x.data(), ch, cur_h, cur_w, heads[0], tb, dqc);
     std::vector<float> skip1(x.begin(), x.end());
     if (bench) {
         auto t_enc1_end = std::chrono::steady_clock::now();
@@ -822,7 +803,7 @@ int adair_process_float(adair_context * ctx,
 
     // Downsample 1→2: Conv3x3 + PixelUnshuffle(2)
     std::vector<float> ds(ch / 2 * cur_h * cur_w);
-    conv2d(x.data(), ch, cur_h, cur_w, to_f32(ctx->down12.w, dq1), to_f32(ctx->down12.b, dq2),
+    conv2d(x.data(), ch, cur_h, cur_w, dqc.get(ctx->down12.w), dqc.get(ctx->down12.b),
            ch / 2, 3, 3, 1, 1, 1, ds.data());
     ch = ch * 2; cur_h /= 2; cur_w /= 2; // after pixel_unshuffle: ch/2 * 4 = ch*2
     x.resize(ch * cur_h * cur_w);
@@ -830,7 +811,7 @@ int adair_process_float(adair_context * ctx,
 
     // Encoder level 2: 6 TB at 96ch
     auto t_enc2 = std::chrono::steady_clock::now();
-    for (auto & tb : ctx->enc2) tb_forward(x.data(), ch, cur_h, cur_w, heads[1], tb, dq1, dq2);
+    for (auto & tb : ctx->enc2) tb_forward(x.data(), ch, cur_h, cur_w, heads[1], tb, dqc);
     std::vector<float> skip2(x.begin(), x.end());
     if (bench) {
         auto t_enc2_end = std::chrono::steady_clock::now();
@@ -840,7 +821,7 @@ int adair_process_float(adair_context * ctx,
 
     // Downsample 2→3
     ds.resize(ch / 2 * cur_h * cur_w);
-    conv2d(x.data(), ch, cur_h, cur_w, to_f32(ctx->down23.w, dq1), to_f32(ctx->down23.b, dq2),
+    conv2d(x.data(), ch, cur_h, cur_w, dqc.get(ctx->down23.w), dqc.get(ctx->down23.b),
            ch / 2, 3, 3, 1, 1, 1, ds.data());
     ch *= 2; cur_h /= 2; cur_w /= 2;
     x.resize(ch * cur_h * cur_w);
@@ -848,7 +829,7 @@ int adair_process_float(adair_context * ctx,
 
     // Encoder level 3: 6 TB at 192ch
     auto t_enc3 = std::chrono::steady_clock::now();
-    for (auto & tb : ctx->enc3) tb_forward(x.data(), ch, cur_h, cur_w, heads[2], tb, dq1, dq2);
+    for (auto & tb : ctx->enc3) tb_forward(x.data(), ch, cur_h, cur_w, heads[2], tb, dqc);
     std::vector<float> skip3(x.begin(), x.end());
     if (bench) {
         auto t_enc3_end = std::chrono::steady_clock::now();
@@ -858,7 +839,7 @@ int adair_process_float(adair_context * ctx,
 
     // Downsample 3→4
     ds.resize(ch / 2 * cur_h * cur_w);
-    conv2d(x.data(), ch, cur_h, cur_w, to_f32(ctx->down34.w, dq1), to_f32(ctx->down34.b, dq2),
+    conv2d(x.data(), ch, cur_h, cur_w, dqc.get(ctx->down34.w), dqc.get(ctx->down34.b),
            ch / 2, 3, 3, 1, 1, 1, ds.data());
     ch *= 2; cur_h /= 2; cur_w /= 2;
     x.resize(ch * cur_h * cur_w);
@@ -867,7 +848,7 @@ int adair_process_float(adair_context * ctx,
     // Latent: 8 TB at 384ch
     auto t_latent = std::chrono::steady_clock::now();
     for (int bi = 0; bi < (int)ctx->latent.size(); bi++) {
-        tb_forward(x.data(), ch, cur_h, cur_w, heads[3], ctx->latent[bi], dq1, dq2);
+        tb_forward(x.data(), ch, cur_h, cur_w, heads[3], ctx->latent[bi], dqc);
     }
     if (bench) {
         auto t_latent_end = std::chrono::steady_clock::now();
@@ -878,7 +859,7 @@ int adair_process_float(adair_context * ctx,
     // fre1(inp_img, latent): refine latent BEFORE upsample
     auto t_fre1 = std::chrono::steady_clock::now();
     fre_forward(input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2],
-                ctx->fre1, x.data(), dq1, dq2);
+                ctx->fre1, x.data(), dqc);
     if (bench) {
         auto t_fre1_end = std::chrono::steady_clock::now();
         fprintf(stderr, "[adair-bench] fre1: %.1f ms\n",
@@ -888,7 +869,7 @@ int adair_process_float(adair_context * ctx,
     // Upsample 4→3 + cat(skip3) + reduce
     int up_ch = ch * 2;
     std::vector<float> us(up_ch * cur_h * cur_w);
-    conv2d(x.data(), ch, cur_h, cur_w, to_f32(ctx->up43.w, dq1), to_f32(ctx->up43.b, dq2),
+    conv2d(x.data(), ch, cur_h, cur_w, dqc.get(ctx->up43.w), dqc.get(ctx->up43.b),
            up_ch, 3, 3, 1, 1, 1, us.data());
     ch /= 2; cur_h *= 2; cur_w *= 2;
     x.resize(ch * cur_h * cur_w);
@@ -897,16 +878,16 @@ int adair_process_float(adair_context * ctx,
     std::vector<float> cat(2 * ch * cur_h * cur_w);
     memcpy(cat.data(), x.data(), ch * cur_h * cur_w * sizeof(float));
     memcpy(cat.data() + ch * cur_h * cur_w, skip3.data(), ch * cur_h * cur_w * sizeof(float));
-    conv2d(cat.data(), 2 * ch, cur_h, cur_w, to_f32(ctx->reduce3_w, dq1), to_f32(ctx->reduce3_b, dq2),
+    conv2d(cat.data(), 2 * ch, cur_h, cur_w, dqc.get(ctx->reduce3_w), dqc.get(ctx->reduce3_b),
            ch, 1, 1, 0, 1, 1, x.data());
 
     // Decoder level 3: 6 TB
     auto t_dec3 = std::chrono::steady_clock::now();
-    for (auto & tb : ctx->dec3) tb_forward(x.data(), ch, cur_h, cur_w, heads[2], tb, dq1, dq2);
+    for (auto & tb : ctx->dec3) tb_forward(x.data(), ch, cur_h, cur_w, heads[2], tb, dqc);
 
     // fre2(inp_img, out_dec3): replace dec3 output
     fre_forward(input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2],
-                ctx->fre2, x.data(), dq1, dq2);
+                ctx->fre2, x.data(), dqc);
     if (bench) {
         auto t_dec3_end = std::chrono::steady_clock::now();
         fprintf(stderr, "[adair-bench] dec3+fre2: %.1f ms\n",
@@ -916,7 +897,7 @@ int adair_process_float(adair_context * ctx,
     // Upsample 3→2 + cat(skip2) + reduce
     up_ch = ch * 2;
     us.resize(up_ch * cur_h * cur_w);
-    conv2d(x.data(), ch, cur_h, cur_w, to_f32(ctx->up32.w, dq1), to_f32(ctx->up32.b, dq2),
+    conv2d(x.data(), ch, cur_h, cur_w, dqc.get(ctx->up32.w), dqc.get(ctx->up32.b),
            up_ch, 3, 3, 1, 1, 1, us.data());
     ch /= 2; cur_h *= 2; cur_w *= 2;
     x.resize(ch * cur_h * cur_w);
@@ -924,16 +905,16 @@ int adair_process_float(adair_context * ctx,
     cat.resize(2 * ch * cur_h * cur_w);
     memcpy(cat.data(), x.data(), ch * cur_h * cur_w * sizeof(float));
     memcpy(cat.data() + ch * cur_h * cur_w, skip2.data(), ch * cur_h * cur_w * sizeof(float));
-    conv2d(cat.data(), 2 * ch, cur_h, cur_w, to_f32(ctx->reduce2_w, dq1), to_f32(ctx->reduce2_b, dq2),
+    conv2d(cat.data(), 2 * ch, cur_h, cur_w, dqc.get(ctx->reduce2_w), dqc.get(ctx->reduce2_b),
            ch, 1, 1, 0, 1, 1, x.data());
 
     // Decoder level 2: 6 TB
     auto t_dec2 = std::chrono::steady_clock::now();
-    for (auto & tb : ctx->dec2) tb_forward(x.data(), ch, cur_h, cur_w, heads[1], tb, dq1, dq2);
+    for (auto & tb : ctx->dec2) tb_forward(x.data(), ch, cur_h, cur_w, heads[1], tb, dqc);
 
     // fre3(inp_img, out_dec2): replace dec2 output
     fre_forward(input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2],
-                ctx->fre3, x.data(), dq1, dq2);
+                ctx->fre3, x.data(), dqc);
     if (bench) {
         auto t_dec2_end = std::chrono::steady_clock::now();
         fprintf(stderr, "[adair-bench] dec2+fre3: %.1f ms\n",
@@ -943,7 +924,7 @@ int adair_process_float(adair_context * ctx,
     // Upsample 2→1 + cat(skip1) → 96ch (no reduce, dec1 is 96ch)
     up_ch = ch * 2;
     us.resize(up_ch * cur_h * cur_w);
-    conv2d(x.data(), ch, cur_h, cur_w, to_f32(ctx->up21.w, dq1), to_f32(ctx->up21.b, dq2),
+    conv2d(x.data(), ch, cur_h, cur_w, dqc.get(ctx->up21.w), dqc.get(ctx->up21.b),
            up_ch, 3, 3, 1, 1, 1, us.data());
     ch /= 2; cur_h *= 2; cur_w *= 2;
     x.resize(ch * cur_h * cur_w);
@@ -956,13 +937,13 @@ int adair_process_float(adair_context * ctx,
 
     // Decoder level 1: 4 TB at 96ch
     auto t_dec1 = std::chrono::steady_clock::now();
-    for (auto & tb : ctx->dec1) tb_forward(x.data(), ch, cur_h, cur_w, heads[0], tb, dq1, dq2);
+    for (auto & tb : ctx->dec1) tb_forward(x.data(), ch, cur_h, cur_w, heads[0], tb, dqc);
 
     // Refinement: 4 TB at 96ch
-    for (auto & tb : ctx->refinement) tb_forward(x.data(), ch, cur_h, cur_w, heads[0], tb, dq1, dq2);
+    for (auto & tb : ctx->refinement) tb_forward(x.data(), ch, cur_h, cur_w, heads[0], tb, dqc);
 
     // Output: Conv3x3(96→3) + residual
-    conv2d(x.data(), ch, cur_h, cur_w, to_f32(ctx->output_w, dq1), to_f32(ctx->output_b, dq2),
+    conv2d(x.data(), ch, cur_h, cur_w, dqc.get(ctx->output_w), dqc.get(ctx->output_b),
            3, 3, 3, 1, 1, 1, output_chw);
     for (int i = 0; i < 3 * H * W; i++) output_chw[i] += input_chw[i];
 

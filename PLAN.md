@@ -136,8 +136,11 @@ Input text / image / audio
     │               NaViT ViT + ERNIE-4.5-0.3B, 109 langs, Apache-2.0
     │               OmniDocBench SOTA 96.3% (1.6) / 0.9B variant
     │
-    ├─► Math  ──► Uni-MuMER-Qwen3-VL-2B (unimumer_ocr via qwen2vl_ocr.cpp)
+    ├─► Math  ──► Uni-MuMER-Qwen3-VL-2B (via qwen2vl_ocr.cpp)
     │               Handwritten math → LaTeX, 2.1B, Apache-2.0, 82% CROHME
+    │
+    ├─► Math  ──► Uni-MuMER-Qwen2.5-VL-3B (via qwen2vl_ocr.cpp)
+    │               Handwritten math → LaTeX, 3.4B, Apache-2.0, 82.25% CROHME
     │
     │   ── PLANNED ──
     │
@@ -279,9 +282,9 @@ safmn_sr, esrgan_sr, restormer, tps_locnet, scunet_denoise, swinir_sr.
 | ~~4~~ | ~~MinerU2.5-Pro~~ | ~~1.2B~~ | ~~90.7%~~ | ~~NOT pure Apache~~ | — | REJECTED: commercial thresholds, mandatory attribution, gated HF |
 | 5 | **SmolDocling** | 256M | — | Apache-2.0 | Idefics3/SmolVLM, IBM Research | DONE: engine + parity cos=0.9999, HF `cstr/smoldocling-GGUF` |
 | ~~6~~ | ~~Hunyuan-OCR~~ | ~~1B~~ | — | ~~Custom Tencent~~ | — | REJECTED: excludes EU/UK/South Korea |
-| 7 | **Qari-OCR** | 4B | Apache-2.0 | Qwen2-VL fine-tune (Arabic only) | Pending (4B = large, Arabic-only, parity bug) |
+| 7 | **Qari-OCR** | 4B | Apache-2.0 | Qwen2-VL fine-tune (Arabic only) | Vision parity fixed; LLM Q4_K floor expected. Prompt: direct "output only text" instruction; general.name detection added (filename-independent). |
 
-**Remaining**: Qari-OCR (Arabic-only, 4B, parity bug). FireRed-OCR (Qwen3-VL 2B) and german-ocr-3 reuse the qwen2vl_ocr engine; runtime ne-fix handles GGUF converters that store weights in PyTorch (out, in) order.
+**Remaining**: FireRed-OCR (Qwen3-VL 2B) and german-ocr-3 reuse the qwen2vl_ocr engine; runtime ne-fix handles GGUF converters that store weights in PyTorch (out, in) order.
 
 #### OCRBench leaderboard reference (small VLMs, ≤3B)
 
@@ -307,8 +310,8 @@ all Apache-2.0 and would be a major accuracy upgrade.
 | # | Model | Params | CROHME 2014 | License | Architecture | Effort | Status |
 |---|-------|--------|-------------|---------|-------------|--------|--------|
 | 1 | **Uni-MuMER-Qwen3-VL-2B** | 2.1B | ~82% (3B variant) | Apache-2.0 | Qwen3-VL fine-tune (multi-task: recognition + symbol counting + position) | Low — reuses existing `qwen2vl_ocr.cpp` engine, same GGUF converter | **DONE**: Q4_K/Q8_0, auto-prompt, `<think>` stripping |
-| 2 | **Uni-MuMER-Qwen2.5-VL-3B** | 3.4B | 82.25% | Apache-2.0 | Qwen2.5-VL fine-tune | Low — same engine | [ ] Pending |
-| 3 | **TexTeller 3.0** | 0.3B | unknown | Apache-2.0 | ViT + Transformer decoder, 80M training pairs, supports handwritten | Medium — needs new GGUF converter (TrOCR-like arch but not identical) | [ ] Pending |
+| 2 | **Uni-MuMER-Qwen2.5-VL-3B** | 3.4B | 82.25% | Apache-2.0 | Qwen2.5-VL fine-tune | Low — same engine | **DONE**: Q4_K (2.6 GB) / Q8_0 (4.2 GB), streaming converter |
+| 3 | **TexTeller 3.0** | 0.3B | unknown | Apache-2.0 | ViT-12 (768d) + TrOCR-12 (1024d), 15K vocab, 448px grayscale | Low — reuses existing `math_ocr.cpp` + `convert-trocr-safetensors-to-gguf.py` | **DONE**: F16/Q8_0/Q4_K, manual matmul attention |
 | 4 | PP-FormulaNet-L | 181M | ~57% | Apache-2.0 | SAM-ViT + MBart | — | Already integrated (mostly printed math) |
 
 **Recommended priority:**
@@ -323,22 +326,27 @@ all Apache-2.0 and would be a major accuracy upgrade.
    Source: [github.com/BFlameSwift/Uni-MuMER](https://github.com/BFlameSwift/Uni-MuMER)
    Weights: [huggingface.co/phxember/Uni-MuMER-Qwen3-VL-2B](https://huggingface.co/phxember/Uni-MuMER-Qwen3-VL-2B)
 
-2. **TexTeller 3.0** (lightweight option) — at 300M params, small enough
-   for mobile. Architecture is ViT encoder + Transformer decoder (similar
-   to pix2tex but trained on 80M pairs including handwritten). Would need
-   a new converter or adaptation of `convert-pix2tex-to-gguf.py`. Benchmark
-   on CROHME before committing to full integration.
+2. **TexTeller 3.0** — **DONE**. Standard VisionEncoderDecoderModel: ViT (12L, 768d,
+   448px grayscale) + TrOCR decoder (12L, 1024d, 15K vocab). Reuses existing
+   `math_ocr.cpp` engine and `convert-trocr-safetensors-to-gguf.py` converter.
+   Converter fixed: added_tokens.json merge, scale_embedding metadata.
+   Engine fixed: dynamic channel count (1ch grayscale), ViT CLS-only (no DeiT
+   distillation token), tied embeddings as LM head, GELU decoder FFN,
+   manual matmul attention for encoder (>512 tokens).
+   GGUF: F16 (568 MB), Q8_0 (302 MB), Q4_K (169 MB).
+   Tested: `x+y` → `\mathrm{x}+\mathrm{x}`, `a+b=c` → `a+b=0` (partially correct).
 
    Source: [github.com/OleehyO/TexTeller](https://github.com/OleehyO/TexTeller)
    Weights: [huggingface.co/OleehyO/TexTeller](https://huggingface.co/OleehyO/TexTeller)
 
-3. **Uni-MuMER-Qwen2.5-VL-3B** (fallback) — if Qwen3-VL variant has
-   issues, the 3B Qwen2.5-VL variant has proven 82.25% accuracy and uses
-   the same engine. Slightly larger (3.4B) but still under 4B.
+3. **Uni-MuMER-Qwen2.5-VL-3B** — **DONE**. Pure fine-tune of Qwen2.5-VL-3B-Instruct
+   (phxember/Uni-MuMER-Qwen2.5-VL-3B, Apache-2.0). 82.25% CROHME. Converter
+   refactored to streaming mode (add_tensor_info + write_tensor_data) for 8 GB VPS.
+   GGUF: Q4_K (2.6 GB), Q8_0 (4.2 GB). Tested with tiny image — correct LaTeX output.
 
-**Impact**: replacing NC-licensed 57% models with Apache-2.0 82% models
-eliminates the license acceptance gate in the UI AND nearly doubles
-handwritten accuracy. This is the single highest-value remaining OCR task.
+**Impact**: Both Uni-MuMER variants are now ported. NC-licensed 57% models
+can be replaced with Apache-2.0 82% models — eliminates the license gate
+in the UI AND nearly doubles handwritten accuracy.
 
 ### Feature gaps vs fastembed-rs
 
@@ -410,7 +418,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   and NEON (ARM) inner loops. `linear_cpu` and `mha_1q_cpu` now use it.
   737 `vfmadd231ps` instructions emitted in libcrispembed.so. `-march=native`
   enabled via `CRISPEMBED_NATIVE` cmake option (ON by default).
-  `conv2d_cpu` still scalar — requires im2col restructure (separate TODO).
+  `conv2d_cpu` SIMD: gather each spatial patch into a `thread_local` buffer then
+  call `dot_product` (AVX2+FMA/NEON) per output channel. Boundary check hoisted
+  above gather so interior positions skip per-element if-guards. 99/99 unit tests pass.
 
 - [x] **Dequantized weight caching** — Added `DequantCache` struct to
   `cpu_ops.h`: `unordered_map<void*, vector<float>>` keyed on tensor data
@@ -487,13 +497,30 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   - `lilt_kie.cpp`: SKIPPED (BiACM incompatible with fused kernel)
   - `deepseek_ocr2.cpp`: pending (no q4_k model to test)
 
-- [ ] **Move remaining scalar encoders to ggml graphs**:
-  - `deepseek_ocr2` Qwen2 encoder (lines 777-931): 24-layer bidirectional
-    transformer, all scalar. O(T^2 * heads * head_dim) attention loops.
-  - `bttr_ocr` / `posformer_ocr` / `hmer_ocr` DenseNet encoders: 7-nested-loop
-    scalar convolutions dominate runtime.
-  - `mixtex_ocr` Swin encoder: 12500-token window attention, scalar.
-  - `ppformulanet_ocr` HGNetv2 CNN: 57M-param CNN at 384x384, scalar `conv2d_cpu`.
+- [x] **Move remaining scalar encoders to ggml graphs**:
+  - `deepseek_ocr2` Qwen2 encoder: **DONE** (`910d036`). 24-layer single graph.
+  - `hmer_ocr` DenseNet encoder: **DONE** (`273969d`). ggml graph, 3x speedup.
+  - `bttr_ocr` / `posformer_ocr` DenseNet: **DONE** (`7c6d8e1`). ggml graph, ~2x speedup.
+  - `mixtex_ocr` Swin encoder: **DONE** (`2453e04`). Batched matmuls via ggml, 1.5x encoder speedup.
+  - `ppformulanet_ocr` HGNetv2 CNN: **DONE** (`c058099`). ggml conv2d graph, 12x speedup.
+
+- [ ] **Move SR/restoration engines from scalar conv to ggml graphs**:
+  Engines still using scalar `conv2d_cpu` + per-token `linear_cpu` loops.
+  Same pattern as DenseNet/HGNetv2 conversions: replace with ggml_conv_2d,
+  ggml_pool_2d, ggml_mul_mat, ggml_norm. Ordered by ease × impact:
+  - [x] `nafnet_denoise.cpp` — **DONE** (`b580e5c`). conv2d_ggml replaces all scalar convs.
+  - [x] `esrgan_sr.cpp` — **DONE** (`4f1d052`). Full conv chain ggml graph, 6x speedup.
+  - [ ] `safmn_sr.cpp` — 8× SAFM + CCM (multi-scale DW conv), ~15-25G, easy
+  - [ ] `restormer.cpp` — U-Net + transposed attention + GDFN, ~80-120G, easy (infra added `a167136`)
+  - [ ] `instructir.cpp` — NAFNet U-Net + text conditioning (ICB), ~80-120G, medium
+  - [ ] `pan_sr.cpp` — 16× SCPA + pixel shuffle, ~40-60G, medium
+  - [ ] `dat_sr.cpp` — 18× dual attention (spatial+channel), ~60-90G, medium
+  - [ ] `scunet_denoise.cpp` — U-Net + Swin branches + ConvTranspose2d, ~50-80G, medium
+  - [ ] `swinir_sr.cpp` — RSTB + Swin window attention, ~60-90G, medium (batched matmul like mixtex)
+  - [ ] `hat_sr.cpp` — HAB + OCAB (unfold needed), ~70-100G, hard
+  - [ ] `tbsrn_sr.cpp` — RecurrentResidual + FeatureEnhancer MHA, ~15-25G, medium
+  - [ ] `text_sr.cpp` — NAFNet variant + PixelShuffle + bicubic, ~40-60G, easy
+  - [ ] `adair.cpp` — U-Net + AFLB + FFT, ~100-150G, hard (needs FFT wrapping)
 
 - [x] **Patch embedding conv → ggml matmul** — Most VLM runtimes now use ggml
   graph (internvl2, granite, smoldocling, qwen2vl) or im2col+matmul (got,
@@ -503,15 +530,19 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `vlm_attention.h` with `precompute(head_dim, theta)` and `apply()` methods.
   Eliminates `powf` per-element. Migrated: smoldocling_ocr (NEGHALF),
   granite_vision_ocr (NEGHALF). Remaining `core_vlm` users still on `apply_rope()`.
+  Unit tests: 4 cases covering identity, NEGHALF/INTERLEAVED parity, reuse (`65c282d`).
 
 - [x] **Batch linear → GEMM in SR/restoration attention** — DONE. dat_sr
   (`a71c123`), swinir_sr (`dcf6556`), hat_sr (`b199741`), scunet (`52250ef`),
   mixtex (`816a88a`): replaced per-token scalar linear with
   linear_batch_cpu (SIMD), SIMD dot_product in attention.
 
-- [ ] **Sequential region recognition → batched** — `ocr_pipeline.cpp` (line 112)
-  and `table_parse.cpp` (line 337) recognize each detected text region one at a
-  time. Batch crops into a single encoder pass for PARSeq/TrOCR.
+- [x] **Sequential region recognition → batched** — `ocr_pipeline.cpp` now
+  batch-encodes all detected crops in one ggml graph call
+  (`math_ocr_encode_batch_raw`), then decodes sequentially
+  (`math_ocr_decode_batch_crop`). Single [H, T, B] encoder graph replaces
+  N×[H, T] invocations; fallback to sequential path if batch alloc fails.
+  `table_parse` uses Tesseract/callback — not batchable; closed for now.
 
 - [x] **Eliminate redundant image loading in orchestrator** — Pre-load image once
   per stage in the accept-gate loop, pass pixel buffer to all 9 VLM engines.
@@ -525,10 +556,11 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `scan_cleanup.cpp` with monotonic deque sliding window — O(1) amortized per
   pixel. For K=51 this is ~50x fewer comparisons.
 
-- [x] **Weight dequant caching in SR runtimes** — Migrated 7 Pattern-A runtimes
-  (hat_sr, swinir_sr, pan_sr, text_sr, nafnet_denoise, restormer, tbsrn_sr)
-  from `wbufs` append to `core_cpu::DequantCache`. 4 Pattern-B runtimes
-  (instructir, adair, esrgan, safmn) use inline dequant — separate TODO.
+- [x] **Weight dequant caching in SR runtimes** — ALL DONE. Pattern-A (7 runtimes:
+  hat_sr, swinir_sr, pan_sr, text_sr, nafnet_denoise, restormer, tbsrn_sr)
+  migrated from `wbufs` to `core_cpu::DequantCache`. Pattern-B (instructir,
+  adair) now use persistent `DequantCache` on context as well (`0c87d93`).
+  esrgan and safmn already cache via their ggml graph (no scalar path).
 
 - [x] **Migrate duplicated helpers to `core/cpu_ops.h`** — bttr_ocr, hmer_ocr,
   posformer_ocr: replaced duplicated conv2d/relu/layernorm/linear with
@@ -565,9 +597,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   dominates at ~700ms for the 350M Q8_0 model. Architecturally aligns LFM2
   with the rest of the codebase and enables future GPU dispatch.
 
-- [x] **Graph caching** — parseq_ocr encoder graph now built once and reused
-  across calls (`c171c14`). Eliminates per-call ggml_init + 12-layer tensor
-  creation + graph build. Remaining runtimes: TrOCR (variable-length decoder),
+- [x] **Graph caching** — parseq_ocr encoder graph built once and reused
+  across calls (`c171c14`); math_ocr DeiT encoder graph cached per unique
+  token-count T (`31e0c0e`). Eliminates per-call ggml_init + tensor creation +
+  graph build. Remaining runtimes: TrOCR (variable-length decoder),
   VLMs (variable token counts).
 
 - [x] **`ggml_gallocr` reuse** — moved gallocr from per-call to per-context
@@ -580,9 +613,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   lightonocr, got_ocr, glm_ocr (`fbae7ba`). flash_attn handles GQA via
   broadcast factors (rk2 = neq2/nek2). -76 lines total.
 
-- [ ] **internvl2: batch vision tiles** — `encode_vision()` (line 1200-1226)
-  processes tiles one at a time with separate graph allocations per tile.
-  Batch multiple tiles into one graph.
+- [x] **internvl2: cache vision graph across tiles** — DONE (`c714758`).
+  Vision encoder graph built once on first tile, reused for all subsequent
+  tiles. Eliminates per-tile graph build + sched alloc overhead.
 
 - [x] **Eliminate redundant CHW↔HWC layout conversions** — post SIMD
   linear_batch refactor the remaining layout switches in `dat_sr.cpp` are
@@ -696,9 +729,11 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   Replaced scalar linear_cpu with core_cpu::linear_cpu (SIMD), SIMD dot_product
   in mha_1q, pre-allocated scalar decoder scratch.
 
-- [ ] **Add beam search to math OCR runtimes** — only bttr_ocr has it.
-  mixtex, math_ocr, hmer, posformer, ppformulanet, ppformulanet_l are
-  greedy-only. Beam width=3 typically helps math OCR accuracy.
+- [x] **Add beam search to math OCR runtimes** — `bttr_ocr` already had it.
+  Added `*_recognize_beam` / `*_recognize_raw_beam` API variants (`1f58e83`)
+  to math_ocr (scalar MathOcrBeam via decoder_step_scalar), ppformulanet_ocr,
+  and ppformulanet_l_ocr. Remaining greedy-only: hmer (GRU decoder, different
+  state), posformer (ARM coverage complicates beam copies), mixtex.
 
 - [x] **morph_fast: decomposed dilation** — DONE (`825db30`). Power-of-2
   horizontal dilation replaces O(hsize) naive loop for hsize > 16.
@@ -711,9 +746,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   Pre-computes displacement on 8-px grid (O((W/8)*(H/8)*N)) then bilinearly
   interpolates per pixel. All 19 unit tests pass.
 
-- [x] **Debug fprintf gating (layout_detect)** — DONE (`614132e`). ~30
-  unconditional printfs converted to LDBG() macro (gated behind LAYOUT_DEBUG).
-  Remaining files (surya_det, ocr_detect) still have some unconditional prints.
+- [x] **Debug fprintf gating (layout_detect, surya_det, ocr_detect)** — DONE.
+  layout_detect: ~30 unconditional printfs → LDBG() macro (`614132e`).
+  surya_det: backend-selection print gated behind `dump` (SURYA_DET_DUMP).
+  ocr_detect: per-call resize print gated behind `bench` (CRISPEMBED_OCR_DETECT_BENCH).
 
 - [x] **hmer coverage conv per step** — conv2d(256, 256, 3x3) is the Bahdanau
   coverage attention mechanism; cannot be eliminated without changing the
@@ -776,9 +812,14 @@ single-threaded, must not OOM.
 ### glm_ocr (CogVLM2 + GLM-4, 0.9B) — DONE
 - [x] Downsample + merger → ggml graph (conv2d_direct + batched SwiGLU + LayerNorm)
   Gated: CRISPEMBED_GLM_OCR_SCALAR_MERGER=1. Merger: 383ms on q4_k.
-### granite_vision — PENDING (LLM decoder ggml graph not yet validated)
+### granite_vision — PARTIAL
+- [x] Weight reshape fix: `sw()` helper in `gv_run_llm_body` corrects PyTorch [out,in]→ggml [in,out] for K/V/gate/up/down
+- [x] Skip LM head matmul during scalar prefill: `want_logits` parameter cuts ~99.8% of prefill LM head work (`55ed5be`)
+- [x] Fix ggml LLM graph input tensor: `x` after the layer loop was the final output node, not the input; saved as `x_in` before the loop (`d116394`). Was the root cause of "decode runs away" with `CRISPEMBED_GRANITE_LLM_GRAPH=1`. Pending runtime validation.
+- [x] Native GQA in flash_attn: removed explicit ggml_repeat for KV heads, pass K/V with n_kv heads directly to flash_attn_ext (`b579345`). Saves ~10 lines and avoids materialization of repeated heads.
+- [ ] Persistent decode graph (reuse across T=1 decode steps, like lightonocr `27b650a`)
 
-### smoldocling (SigLIP + SmolLM2, 256M) — IN PROGRESS
+### smoldocling (SigLIP + SmolLM2, 256M) — DONE
 - [x] F16 KV cache + batched prefill (done earlier, `bc329e4`)
 - [x] Patch embedding → ggml matmul (im2col + mul_mat, F16 bias cast)
   Gated: CRISPEMBED_SMOLDOCLING_SCALAR_PATCH=1
@@ -787,7 +828,7 @@ single-threaded, must not OOM.
   Tested: prefill=2.3s, decode=62s (128 steps).
 ### internvl2 — DONE (already optimized)
   F16 KV cache, flash attn, ggml patch embed, ggml vision graph — all done.
-  Remaining: native GQA in flash_attn (skip ggml_repeat), batch vision tiles.
+  Native GQA (`7cffe56`) and batch vision tiles (`c714758`) completed.
 ### SR/denoise — DONE (SIMD + batched linear)
 - [x] dat_sr: `linear_batch_cpu` + SIMD `linear_cpu`, batch QKV/proj/FFN (`a71c123`)
 - [x] swinir_sr: batch per-token linear + SIMD dot product (`dcf6556`)

@@ -217,7 +217,7 @@ surya_det_context * surya_det_init(const char * model_path, int n_threads) {
     if (ggml_backend_is_cpu(ctx->backend)) {
         ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
     }
-    {
+    if (ctx->dump) {
         ggml_backend_dev_t dev = ggml_backend_get_device(ctx->backend);
         fprintf(stderr, "surya_det: backend = %s\n",
                 dev ? ggml_backend_dev_name(dev) : ggml_backend_name(ctx->backend));

@@ -343,6 +343,12 @@ static inline void linear_cpu(const float* in, float* out, int in_dim, int out_d
 // Conv2d (NCHW layout) with groups, padding, stride
 // ---------------------------------------------------------------------------
 // Weights: [OC, IC/groups, KH, KW]. groups=1 for standard convolution.
+//
+// Gather each spatial patch into a contiguous buffer then call dot_product
+// (AVX2+FMA / NEON) for each output channel. This keeps the inner loop
+// SIMD-friendly without a full im2col allocation (only one patch at a time).
+// Boundary check is hoisted above the gather: most interior positions take
+// the fast path that avoids per-element range tests.
 
 static inline void conv2d_cpu(const float* in, float* out,
                                const float* weight, const float* bias,
@@ -351,32 +357,54 @@ static inline void conv2d_cpu(const float* in, float* out,
                                int groups = 1) {
     int out_H = (H + 2 * pad - kh) / stride + 1;
     int out_W = (W + 2 * pad - kw) / stride + 1;
-    int ch_per_group_in = in_ch / groups;
+    int ch_per_group_in  = in_ch  / groups;
     int ch_per_group_out = out_ch / groups;
+    int kernel_size = ch_per_group_in * kh * kw;
 
-    for (int oc = 0; oc < out_ch; oc++) {
-        int g = oc / ch_per_group_out;
-        float b = bias ? bias[oc] : 0.0f;
+    static thread_local std::vector<float> patch_buf;
+    if ((int)patch_buf.size() < kernel_size) patch_buf.resize(kernel_size);
+    float* patch = patch_buf.data();
+
+    for (int g = 0; g < groups; g++) {
+        int ic_off = g * ch_per_group_in;
+        int oc_off = g * ch_per_group_out;
+        const float* w_g = weight + oc_off * kernel_size;
 
         for (int oy = 0; oy < out_H; oy++) {
             for (int ox = 0; ox < out_W; ox++) {
-                float sum = b;
-                for (int ic = 0; ic < ch_per_group_in; ic++) {
-                    int actual_ic = g * ch_per_group_in + ic;
-                    for (int ky = 0; ky < kh; ky++) {
-                        for (int kx = 0; kx < kw; kx++) {
-                            int iy = oy * stride - pad + ky;
-                            int ix = ox * stride - pad + kx;
-                            if (iy >= 0 && iy < H && ix >= 0 && ix < W) {
-                                float pixel = in[actual_ic * H * W + iy * W + ix];
-                                int w_idx = oc * (ch_per_group_in * kh * kw)
-                                            + ic * kh * kw + ky * kw + kx;
-                                sum += pixel * weight[w_idx];
+                // Gather [ch_per_group_in, kh, kw] input patch into patch[].
+                // Hoist boundary check: if the entire kernel window fits inside
+                // the input, skip per-element if-guards.
+                int top  = oy * stride - pad;
+                int left = ox * stride - pad;
+                bool full = (top >= 0 && top + kh <= H && left >= 0 && left + kw <= W);
+                int k = 0;
+                if (full) {
+                    for (int ic = 0; ic < ch_per_group_in; ic++) {
+                        const float* src = in + (ic_off + ic) * H * W + top * W + left;
+                        for (int ky = 0; ky < kh; ky++)
+                            for (int kx = 0; kx < kw; kx++)
+                                patch[k++] = src[ky * W + kx];
+                    }
+                } else {
+                    for (int ic = 0; ic < ch_per_group_in; ic++) {
+                        for (int ky = 0; ky < kh; ky++) {
+                            for (int kx = 0; kx < kw; kx++) {
+                                int iy = top + ky, ix = left + kx;
+                                patch[k++] = (iy >= 0 && iy < H && ix >= 0 && ix < W)
+                                    ? in[(ic_off + ic) * H * W + iy * W + ix] : 0.0f;
                             }
                         }
                     }
                 }
-                out[oc * out_H * out_W + oy * out_W + ox] = sum;
+
+                // SIMD dot product with each output-channel filter row.
+                int p = oy * out_W + ox;
+                for (int oc = 0; oc < ch_per_group_out; oc++) {
+                    float b = bias ? bias[oc_off + oc] : 0.0f;
+                    out[(oc_off + oc) * out_H * out_W + p] =
+                        b + dot_product(patch, w_g + oc * kernel_size, kernel_size);
+                }
             }
         }
     }
