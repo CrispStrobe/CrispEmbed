@@ -512,13 +512,8 @@ static void gv_run_vit_graph(granite_vision_context * ctx,
         K = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, K, d_head, n_heads, T), 0, 2, 1, 3));
         V = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, V, d_head, n_heads, T), 0, 2, 1, 3));
 
-        // scores = K^T @ Q → [T_k, T_q, n_heads]; softmax scales by 1/sqrt(d_head)
-        ggml_tensor * scores = ggml_mul_mat(g, K, Q);
-        scores = ggml_soft_max_ext(g, scores, nullptr, scale, 0.0f);
-
-        // weighted values: V_perm=[T,d_head,n_heads], attn=[d_head,T,n_heads]
-        ggml_tensor * V_perm = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
-        ggml_tensor * attn   = ggml_mul_mat(g, V_perm, scores);
+        // Full (unmasked) attention via flash_attn_ext — nullptr mask = no causal masking.
+        ggml_tensor * attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
         // [d_head, T, n_heads] → [d_head, n_heads, T] → [D, T]
         attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
         attn = ggml_reshape_2d(g, attn, D, T);

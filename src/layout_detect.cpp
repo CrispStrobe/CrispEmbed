@@ -657,15 +657,8 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
         V = ggml_reshape_3d(g, V, hd, heads, N_tok);
         V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-        // Scores: K^T @ Q → [N, N, heads], scaled
-        auto* scores = ggml_mul_mat(g, K, Q);
-        scores = ggml_soft_max_ext(g, scores, nullptr, 1.0f/sqrtf((float)hd), 0.0f);
-
-        // Attn output: V^T @ scores → [hd, N, heads]
-        auto* Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
-        auto* attn = ggml_mul_mat(g, Vt, scores);
-
-        // Reshape back: [hd, N, heads] → [hd, heads, N] → [D, N]
+        auto* attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, 1.0f/sqrtf((float)hd), 0.0f, 0.0f);
+        // [hd, N, heads] → [hd, heads, N] → [D, N]
         attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
         attn = ggml_reshape_2d(g, attn, D_a, N_tok);
 
@@ -1377,13 +1370,8 @@ std::vector<region> detect(context* ctx, const float* pixels,
             V = ggml_reshape_3d(gc, V, hd, N_heads, N_queries);
             V = ggml_cont(gc, ggml_permute(gc, V, 0, 2, 1, 3));
 
-            // Attention
-            auto* scores = ggml_mul_mat(gc, K, Q); // [N, N, heads]
-            scores = ggml_soft_max_ext(gc, scores, nullptr, 1.0f/sqrtf((float)hd), 0.0f);
-            auto* Vt = ggml_cont(gc, ggml_permute(gc, V, 1, 0, 2, 3));
-            auto* attn = ggml_mul_mat(gc, Vt, scores); // [hd, N, heads]
-
-            // Reshape back: [hd, N, heads] → [hd, heads, N] → [D, N]
+            auto* attn = ggml_flash_attn_ext(gc, Q, K, V, nullptr, 1.0f/sqrtf((float)hd), 0.0f, 0.0f);
+            // [hd, N, heads] → [hd, heads, N] → [D, N]
             attn = ggml_cont(gc, ggml_permute(gc, attn, 0, 2, 1, 3));
             attn = ggml_reshape_2d(gc, attn, D, N_queries);
 
