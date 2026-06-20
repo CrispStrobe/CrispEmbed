@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
+#include <deque>
 #include <vector>
 #include <cstdio>
 #include <cstdlib>
@@ -386,65 +387,52 @@ void scan_cleanup_find_content_rect(const float * gray, int w, int h,
 
 // ── 4. Background whitening ─────────────────────────────────────────
 
-// Min-pool (erode): sliding window minimum
-static void min_pool_2d(const float * src, int w, int h, int k, float * dst) {
+// Monotonic deque 1D sliding-window extremum — O(n) total instead of O(n*k).
+// is_min=true for min-pool (erode), false for max-pool (dilate).
+static void slide_1d(const float * in, float * out, int len, int k, bool is_min) {
     int half = k / 2;
-    std::vector<float> tmp(w * h);
-
-    // Horizontal pass
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            float mn = 1.0f;
-            int x0 = std::max(0, x - half);
-            int x1 = std::min(w - 1, x + half);
-            for (int xx = x0; xx <= x1; xx++) {
-                mn = std::min(mn, src[y * w + xx]);
-            }
-            tmp[y * w + x] = mn;
+    std::deque<int> dq;  // indices of candidates
+    for (int i = 0; i < len; i++) {
+        // Remove elements outside the window
+        while (!dq.empty() && dq.front() < i - half) dq.pop_front();
+        // Maintain monotonicity
+        if (is_min) {
+            while (!dq.empty() && in[dq.back()] >= in[i]) dq.pop_back();
+        } else {
+            while (!dq.empty() && in[dq.back()] <= in[i]) dq.pop_back();
         }
-    }
-    // Vertical pass
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            float mn = 1.0f;
-            int y0 = std::max(0, y - half);
-            int y1 = std::min(h - 1, y + half);
-            for (int yy = y0; yy <= y1; yy++) {
-                mn = std::min(mn, tmp[yy * w + x]);
-            }
-            dst[y * w + x] = mn;
-        }
+        dq.push_back(i);
+        out[i] = in[dq.front()];
     }
 }
 
-// Max-pool (dilate): sliding window maximum
-static void max_pool_2d(const float * src, int w, int h, int k, float * dst) {
-    int half = k / 2;
+// Min-pool (erode): separable 2-pass with monotonic deque — O(w*h) total
+static void min_pool_2d(const float * src, int w, int h, int k, float * dst) {
     std::vector<float> tmp(w * h);
-
     // Horizontal pass
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            float mx = 0.0f;
-            int x0 = std::max(0, x - half);
-            int x1 = std::min(w - 1, x + half);
-            for (int xx = x0; xx <= x1; xx++) {
-                mx = std::max(mx, src[y * w + xx]);
-            }
-            tmp[y * w + x] = mx;
-        }
+    for (int y = 0; y < h; y++)
+        slide_1d(src + y * w, tmp.data() + y * w, w, k, true);
+    // Vertical pass (column-wise via transposed access)
+    std::vector<float> col(h), col_out(h);
+    for (int x = 0; x < w; x++) {
+        for (int y = 0; y < h; y++) col[y] = tmp[y * w + x];
+        slide_1d(col.data(), col_out.data(), h, k, true);
+        for (int y = 0; y < h; y++) dst[y * w + x] = col_out[y];
     }
+}
+
+// Max-pool (dilate): separable 2-pass with monotonic deque — O(w*h) total
+static void max_pool_2d(const float * src, int w, int h, int k, float * dst) {
+    std::vector<float> tmp(w * h);
+    // Horizontal pass
+    for (int y = 0; y < h; y++)
+        slide_1d(src + y * w, tmp.data() + y * w, w, k, false);
     // Vertical pass
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            float mx = 0.0f;
-            int y0 = std::max(0, y - half);
-            int y1 = std::min(h - 1, y + half);
-            for (int yy = y0; yy <= y1; yy++) {
-                mx = std::max(mx, tmp[yy * w + x]);
-            }
-            dst[y * w + x] = mx;
-        }
+    std::vector<float> col(h), col_out(h);
+    for (int x = 0; x < w; x++) {
+        for (int y = 0; y < h; y++) col[y] = tmp[y * w + x];
+        slide_1d(col.data(), col_out.data(), h, k, false);
+        for (int y = 0; y < h; y++) dst[y * w + x] = col_out[y];
     }
 }
 

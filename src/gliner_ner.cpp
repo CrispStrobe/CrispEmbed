@@ -9,6 +9,7 @@
 
 #include "gliner_ner.h"
 
+#include "core/cpu_ops.h"
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
@@ -875,14 +876,11 @@ static void lstm_forward_one_dir(
         int t = reverse ? (T - 1 - step) : step;
         const float * xt = input + t * input_size;
 
-        // gates = W_ih @ x + b_ih + W_hh @ h + b_hh
+        // gates = W_ih @ x + b_ih + W_hh @ h + b_hh (SIMD-accelerated)
         for (int g = 0; g < gate_size; g++) {
-            float val = b_ih[g] + b_hh[g];
-            for (int j = 0; j < input_size; j++)
-                val += W_ih[g * input_size + j] * xt[j];
-            for (int j = 0; j < hidden_size; j++)
-                val += W_hh[g * hidden_size + j] * h[j];
-            gates[g] = val;
+            gates[g] = b_ih[g] + b_hh[g]
+                     + core_cpu::dot_product(W_ih + g * input_size, xt, input_size)
+                     + core_cpu::dot_product(W_hh + g * hidden_size, h.data(), hidden_size);
         }
 
         // Split into i, f, g, o gates
