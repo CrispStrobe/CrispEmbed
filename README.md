@@ -255,6 +255,7 @@ kept as deprecated aliases). Available through CLI (`--ocr`), HTTP server
 | **Qari-OCR** | Qwen2-VL-2B + LoRA | 2B | ~1.3 GB | Arabic OCR with diacritics | Apache-2.0 |
 | **PP-FormulaNet-L** | SAM-ViT + MBart | 181M | 100 MB | Printed math (best) | Apache-2.0 |
 | **Qwen2.5-VL-3B** | 32L ViT + 36L Qwen2.5 LLM | 3.6B | 2.6 GB | German/multilingual VLM OCR | Apache-2.0 |
+| **Qwen3-VL-2B** | 24L ViT + DeepStack + 28L Qwen3 (IMROPE) | 2.4B | 1.5 GB | General VLM OCR | Apache-2.0 |
 | **Texo-Distill** | HGNetv2 + MBart | 20M | 14 MB | Printed math (small) | AGPL-3.0 |
 
 **PP-FormulaNet-L** (recommended for printed math): SAM-ViT encoder with
@@ -278,6 +279,20 @@ latex = ocr.recognize("formula.png")
 void *ctx = crispembed_ocr_model_init("ppformulanet-l-q8_0.gguf", 4);
 const char *latex = crispembed_ocr_model_recognize(ctx, pixels, w, h, ch, &len);
 ```
+
+**Qwen3-VL-2B** (general VLM OCR): Smallest Qwen3-VL model with DeepStack
+multi-scale vision features and interleaved mRoPE. Full parity cos≥0.999.
+
+```bash
+# Auto-downloads q4_k from HuggingFace
+./build/crispembed -m qwen3vl-2b --ocr document.png
+
+# Faster on CPU: reduce resolution (1.6x speedup, minor quality loss)
+CRISPEMBED_MAX_PIXELS=65536 ./build/crispembed -m qwen3vl-2b --ocr document.png
+```
+
+`CRISPEMBED_MAX_PIXELS` works with all variable-resolution VLM engines
+(Qwen2.5-VL, Qwen3-VL, InternVL2, LightOnOCR).
 
 **Flutter integration**: The `flutter/crispembed/` plugin provides `CrispEmbedOcr`
 for Dart FFI access. Used by [CrispCalc](https://github.com/CrispStrobe/CrispCalc)
