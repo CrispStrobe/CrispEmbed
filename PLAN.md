@@ -565,9 +565,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   dominates at ~700ms for the 350M Q8_0 model. Architecturally aligns LFM2
   with the rest of the codebase and enables future GPU dispatch.
 
-- [ ] **Graph caching** — most runtimes still rebuild the ggml graph on every
-  call. Caching graph structure and only updating input data would eliminate
-  per-call graph construction + allocation overhead.
+- [x] **Graph caching** — parseq_ocr encoder graph now built once and reused
+  across calls (`c171c14`). Eliminates per-call ggml_init + 12-layer tensor
+  creation + graph build. Remaining runtimes: TrOCR (variable-length decoder),
+  VLMs (variable token counts).
 
 - [x] **`ggml_gallocr` reuse** — moved gallocr from per-call to per-context
   for 7 engines: vit_embed, clip_text_embed, parseq_ocr, cnn_embed,
