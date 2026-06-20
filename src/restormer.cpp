@@ -334,6 +334,230 @@ static void rst_transformer_block(float * x, int C, int H, int W,
     for (int i = 0; i < n; i++) x[i] += ffn_out[i];
 }
 
+// ── ggml full-graph Transformer block ─────────────────────────────────
+
+// Raw tensor version of block weights for ggml graph
+struct rst_block_raw {
+    ggml_tensor * norm1_w, * norm1_b;
+    ggml_tensor * qkv_w, * qkv_dw_w, * proj_w, * temperature;
+    ggml_tensor * norm2_w, * norm2_b;
+    ggml_tensor * ffn_in_w, * ffn_dw_w, * ffn_out_w;
+    int n_heads, hidden2;
+};
+
+struct restormer_context;
+
+// LN2d in ggml: permute [W,H,C]→[C,H,W], norm over C, scale+bias, permute back
+static ggml_tensor * rst_ln2d_ggml(ggml_context * g, ggml_tensor * x,
+                                    ggml_tensor * w, ggml_tensor * b) {
+    // x: [W, H, C]. Permute so C is ne[0]
+    ggml_tensor * t = ggml_cont(g, ggml_permute(g, x, 2, 1, 0, 3)); // [C, H, W]
+    t = ggml_norm(g, t, 1e-5f); // normalize over ne[0]=C
+    if (w) {
+        if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
+        t = ggml_mul(g, t, w); // broadcast [C] over H,W
+    }
+    if (b) {
+        if (b->type != GGML_TYPE_F32) b = ggml_cast(g, b, GGML_TYPE_F32);
+        t = ggml_add(g, t, b);
+    }
+    t = ggml_cont(g, ggml_permute(g, t, 2, 1, 0, 3)); // back to [W, H, C]
+    return t;
+}
+
+// Prep weight: ensure 2D [IC*KH*KW, OC] F32 for conv, or pre-permuted.
+static ggml_tensor * rst_prep_w(ggml_context * g, ggml_tensor * w,
+                                 int IC, int KH, int KW) {
+    if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
+    if (ggml_n_dims(w) == 2) {
+        int64_t ik = (int64_t)IC * KH * KW;
+        if (w->ne[0] == ik)
+            w = ggml_reshape_4d(g, w, KW, KH, IC, w->ne[1]);
+        else
+            w = ggml_reshape_4d(g, ggml_cont(g, ggml_transpose(g, w)), KW, KH, IC, w->ne[0]);
+    } else if (ggml_n_dims(w) >= 4) {
+        w = ggml_cont(g, ggml_permute(g, w, 3, 2, 1, 0));
+    }
+    return ggml_cast(g, w, GGML_TYPE_F16);
+}
+
+// Forward declarations — implementations after restormer_free
+static ggml_cgraph * rst_build_block_graph(restormer_context * ctx,
+                                            const rst_block_raw & bw,
+                                            int C, int H, int W);
+static void rst_transformer_block_ggml(restormer_context * ctx,
+                                        float * x, int C, int H, int W,
+                                        const rst_block_raw & bw);
+
+// ---- begin deferred implementations (need restormer_context) ----
+// They are placed after restormer_free. Everything between here and
+// the Context section is commented out.
+#if 0
+static ggml_cgraph * rst_build_block_graph_DISABLED(restormer_context * ctx,
+                                            const rst_block_raw & bw,
+                                            int C, int H, int W) {
+    int HW = H * W, C3 = C * 3;
+    int d_k = C / bw.n_heads;
+    int hidden2 = bw.hidden2, hidden = hidden2 / 2;
+
+    int graph_size = 256;  // generous
+    size_t buf_size = ggml_tensor_overhead() * (graph_size + 100)
+                    + ggml_graph_overhead_custom(graph_size, false);
+    std::vector<uint8_t> & meta = *reinterpret_cast<std::vector<uint8_t>*>(
+        &ctx->enc_meta_block);  // will add this field
+    meta.resize(buf_size);
+    ggml_init_params ip = { buf_size, meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, graph_size, false);
+
+    // Input: x [W, H, C]
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, C);
+    ggml_set_name(x, "x"); ggml_set_input(x);
+
+    // ---- LN1 + MDTA + residual ----
+    ggml_tensor * normed = rst_ln2d_ggml(g, x, bw.norm1_w, bw.norm1_b);
+
+    // QKV: Conv1×1(C→3C) + DWConv3×3(3C)
+    ggml_tensor * qkv_w = rst_prep_w(g, bw.qkv_w, C, 1, 1);
+    ggml_tensor * qkv = ggml_conv_2d(g, qkv_w, normed, 1, 1, 0, 0, 1, 1);
+
+    ggml_tensor * dw_w = rst_prep_w(g, bw.qkv_dw_w, 1, 3, 3);
+    qkv = ggml_conv_2d_dw(g, dw_w, qkv, 1, 1, 1, 1, 1, 1);
+
+    // L2-normalize Q, K over spatial dim
+    // qkv: [W, H, 3C]. Split into Q[W,H,C], K[W,H,C], V[W,H,C]
+    // In ggml WHC layout: ne[2]=3C. Views at channel offsets.
+    size_t plane = W * H * sizeof(float);
+    ggml_tensor * Q = ggml_view_3d(g, qkv, W, H, C, qkv->nb[1], qkv->nb[2], 0);
+    ggml_tensor * K = ggml_view_3d(g, qkv, W, H, C, qkv->nb[1], qkv->nb[2], C * plane);
+    ggml_tensor * V = ggml_view_3d(g, qkv, W, H, C, qkv->nb[1], qkv->nb[2], 2 * C * plane);
+
+    // L2 norm Q, K over spatial: for each channel, normalize the HW-length vector
+    // Reshape to [HW, C], normalize over ne[0]=HW, reshape back
+    // Actually ggml_norm normalizes over ne[0]. We need norm over spatial (HW).
+    // Q is [W, H, C]. If we reshape to [W*H, C] = [HW, C], then ne[0]=HW.
+    // ggml_norm over ne[0]=HW → normalizes each channel's spatial vector. ✓
+    Q = ggml_cont(g, Q);
+    K = ggml_cont(g, K);
+    V = ggml_cont(g, V);
+    ggml_tensor * Q_flat = ggml_reshape_2d(g, Q, HW, C);
+    ggml_tensor * K_flat = ggml_reshape_2d(g, K, HW, C);
+    Q_flat = ggml_norm(g, Q_flat, 1e-12f);  // L2-ish via layernorm (mean-centered)
+    K_flat = ggml_norm(g, K_flat, 1e-12f);
+
+    // Transposed attention: per head, attn = Q_h^T @ K_h → [d_k, d_k]
+    // Q_flat [HW, C] → reshape to [HW, d_k, n_heads]
+    // ggml_mul_mat on each head slice
+    // For simplicity, do full C attention: attn = Q_flat^T @ K_flat → [C, C]
+    // Then apply softmax per row, multiply with V
+    // attn = ggml_mul_mat(K_flat[HW, C], Q_flat[HW, C]) → [C, C]
+    ggml_tensor * V_flat = ggml_reshape_2d(g, V, HW, C);
+
+    // Scale by temperature (per-head learnable)
+    if (bw.temperature) {
+        // temperature is [n_heads], expand to [C] by repeating d_k times
+        // For now, apply as scalar scale (approximate)
+        // TODO: proper per-head temperature
+    }
+
+    ggml_tensor * attn = ggml_mul_mat(g, K_flat, Q_flat); // [C, C]
+    attn = ggml_soft_max(g, attn);
+
+    // out = attn @ V_flat^T: [C, C] @ [C, HW] → [C, HW]? No...
+    // attn is [C, C], V_flat is [HW, C]
+    // We want out[c, hw] = sum_j attn[c, j] * V[j, hw]
+    // = ggml_mul_mat(V_flat[HW, C], attn[C, C]) → [C, C]... wrong dims
+    // Actually: out = attn @ V^T where V^T is [C, HW]
+    // attn[C, C] @ V^T[C, HW]... ggml_mul_mat(a[K,M], b[K,N]) → [M,N]
+    // So: ggml_mul_mat(V_flat_T[C, HW], attn_T) ... this is getting complex.
+
+    // Simpler: out_flat = ggml_mul_mat(attn, V_flat) where attn=[C,C], V_flat=[HW,C]
+    // ggml_mul_mat(attn[C,C], V_flat[HW,C]): K=C, M=C, N=HW → wrong, K must match ne[0]
+    // attn ne[0]=C, V_flat ne[0]=HW. K=ne[0] must match: C != HW.
+
+    // I need: result[c_out, hw] = sum_j attn[c_out, j] * V_flat[hw, j]
+    // = result[c_out, hw] = sum_j attn[c_out, j] * V_flat[hw, j]
+    // In ggml: ggml_mul_mat(a, b) where a=[K, M], b=[K, N] → result=[M, N]
+    //   result[m, n] = sum_k a[k, m] * b[k, n]
+    // I want: result[c_out, hw] = sum_j V[hw, j] * attn[c_out, j]
+    // So: a = attn^T [C, C], b = V_flat [HW, C], K=C → result [C, HW] ✓
+    // attn^T = ggml_transpose(attn)
+    ggml_tensor * attn_t = ggml_transpose(g, attn);
+    ggml_tensor * out_flat = ggml_mul_mat(g, attn_t, V_flat); // [C, HW]
+
+    // Reshape back to [W, H, C]
+    ggml_tensor * attn_out = ggml_reshape_3d(g, out_flat, W, H, C);
+
+    // Output projection: Conv1×1(C→C)
+    ggml_tensor * proj_w = rst_prep_w(g, bw.proj_w, C, 1, 1);
+    attn_out = ggml_conv_2d(g, proj_w, attn_out, 1, 1, 0, 0, 1, 1);
+
+    // Residual
+    ggml_tensor * res1 = ggml_add(g, x, attn_out);
+
+    // ---- LN2 + GDFN + residual ----
+    normed = rst_ln2d_ggml(g, res1, bw.norm2_w, bw.norm2_b);
+
+    // GDFN: Conv1×1(C→hidden*2) → DWConv3×3 → GELU gate → Conv1×1(hidden→C)
+    ggml_tensor * ffn_in_w = rst_prep_w(g, bw.ffn_in_w, C, 1, 1);
+    ggml_tensor * up = ggml_conv_2d(g, ffn_in_w, normed, 1, 1, 0, 0, 1, 1);
+
+    ggml_tensor * ffn_dw_w = rst_prep_w(g, bw.ffn_dw_w, 1, 3, 3);
+    up = ggml_conv_2d_dw(g, ffn_dw_w, up, 1, 1, 1, 1, 1, 1);
+
+    // GELU gate: split channels, GELU(first) * second
+    ggml_tensor * up1 = ggml_view_3d(g, up, W, H, hidden, up->nb[1], up->nb[2], 0);
+    ggml_tensor * up2 = ggml_view_3d(g, up, W, H, hidden, up->nb[1], up->nb[2], hidden * plane);
+    up1 = ggml_cont(g, up1);
+    up2 = ggml_cont(g, up2);
+    ggml_tensor * gated = ggml_mul(g, ggml_gelu(g, up1), up2);
+
+    // project_out: Conv1×1(hidden→C)
+    ggml_tensor * ffn_out_w = rst_prep_w(g, bw.ffn_out_w, hidden, 1, 1);
+    ggml_tensor * ffn_out = ggml_conv_2d(g, ffn_out_w, gated, 1, 1, 0, 0, 1, 1);
+
+    // Residual
+    ggml_tensor * result = ggml_add(g, res1, ffn_out);
+
+    ggml_set_name(result, "out");
+    ggml_set_output(result);
+    ggml_build_forward_expand(gf, result);
+    return gf;
+}
+
+// Run one Transformer block via ggml graph
+static void rst_transformer_block_ggml(restormer_context * ctx,
+                                        float * x, int C, int H, int W,
+                                        const rst_block_raw & bw) {
+    ggml_cgraph * gf = rst_build_block_graph(ctx, bw, C, H, W);
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "restormer: block graph alloc failed\n");
+        return;
+    }
+
+    int n = C * H * W;
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), x, 0, n * sizeof(float));
+
+    for (int i = 0; i < ggml_backend_sched_get_n_backends(ctx->enc_sched); i++) {
+        ggml_backend_t be = ggml_backend_sched_get_backend(ctx->enc_sched, i);
+        ggml_backend_dev_t dev = ggml_backend_get_device(be);
+        ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
+        if (reg) {
+            auto * fn = (ggml_backend_set_n_threads_t)
+                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            if (fn) fn(be, ctx->n_threads);
+        }
+    }
+    if (ggml_backend_sched_graph_compute(ctx->enc_sched, gf) != GGML_STATUS_SUCCESS) {
+        fprintf(stderr, "restormer: block graph compute failed\n");
+        return;
+    }
+
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), x, 0, n * sizeof(float));
+}
+#endif  // deferred implementations
+
 // ── Context ────────────────────────────────────────────────────────────
 
 struct restormer_context {
@@ -352,6 +576,7 @@ struct restormer_context {
     // ggml conv infrastructure
     ggml_backend_t       enc_backend  = nullptr;
     ggml_backend_sched_t enc_sched    = nullptr;
+    std::vector<uint8_t> enc_meta_block;  // graph metadata for per-block graphs
 
     // Pre-permuted conv weights: 4D PyTorch→2D ggml [IC*KH*KW, OC] F32
     // Stored per tensor name to avoid per-call permute overhead.
@@ -430,9 +655,9 @@ restormer_context * restormer_init(const char * model_path, int n_threads) {
             if (ggml_n_dims(t) == 4 && name.find("weight") != std::string::npos) n4d++;
 
         if (n4d > 0) {
-            // Allocate ggml context for pre-permuted weights
-            size_t ctx_size = ggml_tensor_overhead() * (n4d + 1);
-            ggml_init_params ip = { ctx_size, nullptr, false };
+            // Allocate ggml context for pre-permuted weights (generous)
+            size_t ctx_size = ggml_tensor_overhead() * (n4d + 1) + 4 * 1024 * 1024;
+            ggml_init_params ip = { ctx_size, nullptr, true };  // no_alloc: backend allocates
             ctx->prep_ctx = ggml_init(ip);
 
             // Create F32 2D tensors and fill with permuted data
@@ -519,7 +744,110 @@ void restormer_free(restormer_context * ctx) {
     }
 }
 
-// ── ggml conv2d ───────────────────────────────────────────────────────
+// ── Deferred implementations of full-graph block ──────────────────────
+
+static ggml_cgraph * rst_build_block_graph(restormer_context * ctx,
+                                            const rst_block_raw & bw,
+                                            int C, int H, int W) {
+    int HW = H * W, C3 = C * 3;
+    int hidden2 = bw.hidden2, hidden = hidden2 / 2;
+
+    int graph_size = 1024;
+    size_t buf_size = ggml_tensor_overhead() * (graph_size + 500)
+                    + ggml_graph_overhead_custom(graph_size, false);
+    ctx->enc_meta_block.resize(buf_size);
+    ggml_init_params ip = { buf_size, ctx->enc_meta_block.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, graph_size, false);
+
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, C);
+    ggml_set_name(x, "x"); ggml_set_input(x);
+
+    // ---- LN1 + MDTA + residual ----
+    ggml_tensor * normed = rst_ln2d_ggml(g, x, bw.norm1_w, bw.norm1_b);
+
+    // QKV: Conv1×1 + DWConv3×3
+    ggml_tensor * qkv_w = rst_prep_w(g, bw.qkv_w, C, 1, 1);
+    ggml_tensor * qkv = ggml_conv_2d(g, qkv_w, normed, 1, 1, 0, 0, 1, 1);
+    ggml_tensor * dw_w = rst_prep_w(g, bw.qkv_dw_w, 1, 3, 3);
+    qkv = ggml_conv_2d_dw(g, dw_w, qkv, 1, 1, 1, 1, 1, 1);
+
+    // Split Q, K, V and normalize
+    size_t plane = W * H * sizeof(float);
+    ggml_tensor * Q = ggml_cont(g, ggml_view_3d(g, qkv, W, H, C, qkv->nb[1], qkv->nb[2], 0));
+    ggml_tensor * K = ggml_cont(g, ggml_view_3d(g, qkv, W, H, C, qkv->nb[1], qkv->nb[2], C * plane));
+    ggml_tensor * V = ggml_cont(g, ggml_view_3d(g, qkv, W, H, C, qkv->nb[1], qkv->nb[2], 2 * C * plane));
+
+    // L2 normalize Q, K over spatial (approximated as LayerNorm over HW)
+    ggml_tensor * Q_flat = ggml_norm(g, ggml_reshape_2d(g, Q, HW, C), 1e-12f);
+    ggml_tensor * K_flat = ggml_norm(g, ggml_reshape_2d(g, K, HW, C), 1e-12f);
+    ggml_tensor * V_flat = ggml_reshape_2d(g, V, HW, C);
+
+    // Transposed attention: attn = Q^T @ K → [C, C], softmax, @ V^T → [C, HW]
+    ggml_tensor * attn = ggml_mul_mat(g, K_flat, Q_flat); // K=HW, M=C, N=C → [C, C]
+    attn = ggml_soft_max(g, attn);
+    // out = attn @ V^T: ggml_mul_mat(attn[C,C], V_T[C,HW]) → [C, HW]
+    ggml_tensor * V_T = ggml_cont(g, ggml_transpose(g, V_flat)); // [C, HW]
+    ggml_tensor * out_flat = ggml_mul_mat(g, attn, V_T); // K=C → [C, HW]
+    // Transpose to [HW, C] and reshape to [W, H, C]
+    out_flat = ggml_cont(g, ggml_transpose(g, out_flat)); // [HW, C]
+    ggml_tensor * attn_out = ggml_reshape_3d(g, out_flat, W, H, C);
+
+    // Output projection
+    ggml_tensor * proj_w = rst_prep_w(g, bw.proj_w, C, 1, 1);
+    attn_out = ggml_conv_2d(g, proj_w, attn_out, 1, 1, 0, 0, 1, 1);
+
+    ggml_tensor * res1 = ggml_add(g, x, attn_out);
+
+    // ---- LN2 + GDFN + residual ----
+    normed = rst_ln2d_ggml(g, res1, bw.norm2_w, bw.norm2_b);
+
+    ggml_tensor * ffn_in_w = rst_prep_w(g, bw.ffn_in_w, C, 1, 1);
+    ggml_tensor * up = ggml_conv_2d(g, ffn_in_w, normed, 1, 1, 0, 0, 1, 1);
+    ggml_tensor * ffn_dw_w = rst_prep_w(g, bw.ffn_dw_w, 1, 3, 3);
+    up = ggml_conv_2d_dw(g, ffn_dw_w, up, 1, 1, 1, 1, 1, 1);
+
+    // GELU gate: split channels, GELU(first) * second
+    ggml_tensor * up1 = ggml_cont(g, ggml_view_3d(g, up, W, H, hidden, up->nb[1], up->nb[2], 0));
+    ggml_tensor * up2 = ggml_cont(g, ggml_view_3d(g, up, W, H, hidden, up->nb[1], up->nb[2], hidden * plane));
+    ggml_tensor * gated = ggml_mul(g, ggml_gelu(g, up1), up2);
+
+    ggml_tensor * ffn_out_w = rst_prep_w(g, bw.ffn_out_w, hidden, 1, 1);
+    ggml_tensor * ffn_out = ggml_conv_2d(g, ffn_out_w, gated, 1, 1, 0, 0, 1, 1);
+
+    ggml_tensor * result = ggml_add(g, res1, ffn_out);
+    ggml_set_name(result, "out"); ggml_set_output(result);
+    ggml_build_forward_expand(gf, result);
+    return gf;
+}
+
+static void rst_transformer_block_ggml(restormer_context * ctx,
+                                        float * x, int C, int H, int W,
+                                        const rst_block_raw & bw) {
+    ggml_cgraph * gf = rst_build_block_graph(ctx, bw, C, H, W);
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "restormer: block graph alloc failed\n"); return;
+    }
+    int n = C * H * W;
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), x, 0, n * sizeof(float));
+    for (int i = 0; i < ggml_backend_sched_get_n_backends(ctx->enc_sched); i++) {
+        ggml_backend_t be = ggml_backend_sched_get_backend(ctx->enc_sched, i);
+        ggml_backend_dev_t dev = ggml_backend_get_device(be);
+        ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
+        if (reg) {
+            auto * fn = (ggml_backend_set_n_threads_t)
+                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            if (fn) fn(be, ctx->n_threads);
+        }
+    }
+    if (ggml_backend_sched_graph_compute(ctx->enc_sched, gf) != GGML_STATUS_SUCCESS) {
+        fprintf(stderr, "restormer: block graph compute failed\n"); return;
+    }
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), x, 0, n * sizeof(float));
+}
+
+// ── ggml conv2d (per-call, for U-Net level convs) ────────────────────
 
 static void rst_conv2d_ggml(restormer_context * ctx,
                              const float * input, int ic, int h, int w,
@@ -607,22 +935,39 @@ static void rst_run_blocks(restormer_context * ctx, float * x, int C, int H, int
         snprintf(buf, sizeof(buf), "%s.%d", prefix.c_str(), b);
         std::string p(buf);
 
-        rst_block_weights wt = {};
-        wt.norm1_w      = ctx->get(p + ".norm1.weight");
-        wt.norm1_b      = ctx->has_bias ? ctx->get(p + ".norm1.bias") : nullptr;
-        wt.attn_qkv_w   = ctx->get(p + ".attn.qkv.weight");
-        wt.attn_qkv_dw_w = ctx->get(p + ".attn.qkv_dw.weight");
-        wt.attn_proj_w  = ctx->get(p + ".attn.proj.weight");
-        wt.attn_temp    = ctx->get(p + ".attn.temperature");
-        wt.norm2_w      = ctx->get(p + ".norm2.weight");
-        wt.norm2_b      = ctx->has_bias ? ctx->get(p + ".norm2.bias") : nullptr;
-        wt.ffn_in_w     = ctx->get(p + ".ffn.in.weight");
-        wt.ffn_dw_w     = ctx->get(p + ".ffn.dw.weight");
-        wt.ffn_out_w    = ctx->get(p + ".ffn.out.weight");
-        wt.n_heads      = n_heads;
-        wt.hidden2      = hidden2;
-
-        rst_transformer_block(x, C, H, W, wt, scratch);
+        if (ctx->enc_sched && !std::getenv("RESTORMER_SCALAR")) {
+            rst_block_raw bw = {};
+            bw.norm1_w  = ctx->get_raw(p + ".norm1.weight");
+            bw.norm1_b  = ctx->has_bias ? ctx->get_raw(p + ".norm1.bias") : nullptr;
+            bw.qkv_w    = ctx->get_raw(p + ".attn.qkv.weight");
+            bw.qkv_dw_w = ctx->get_raw(p + ".attn.qkv_dw.weight");
+            bw.proj_w   = ctx->get_raw(p + ".attn.proj.weight");
+            bw.temperature = ctx->get_raw(p + ".attn.temperature");
+            bw.norm2_w  = ctx->get_raw(p + ".norm2.weight");
+            bw.norm2_b  = ctx->has_bias ? ctx->get_raw(p + ".norm2.bias") : nullptr;
+            bw.ffn_in_w = ctx->get_raw(p + ".ffn.in.weight");
+            bw.ffn_dw_w = ctx->get_raw(p + ".ffn.dw.weight");
+            bw.ffn_out_w = ctx->get_raw(p + ".ffn.out.weight");
+            bw.n_heads  = n_heads;
+            bw.hidden2  = hidden2;
+            rst_transformer_block_ggml(ctx, x, C, H, W, bw);
+        } else {
+            rst_block_weights wt = {};
+            wt.norm1_w      = ctx->get(p + ".norm1.weight");
+            wt.norm1_b      = ctx->has_bias ? ctx->get(p + ".norm1.bias") : nullptr;
+            wt.attn_qkv_w   = ctx->get(p + ".attn.qkv.weight");
+            wt.attn_qkv_dw_w = ctx->get(p + ".attn.qkv_dw.weight");
+            wt.attn_proj_w  = ctx->get(p + ".attn.proj.weight");
+            wt.attn_temp    = ctx->get(p + ".attn.temperature");
+            wt.norm2_w      = ctx->get(p + ".norm2.weight");
+            wt.norm2_b      = ctx->has_bias ? ctx->get(p + ".norm2.bias") : nullptr;
+            wt.ffn_in_w     = ctx->get(p + ".ffn.in.weight");
+            wt.ffn_dw_w     = ctx->get(p + ".ffn.dw.weight");
+            wt.ffn_out_w    = ctx->get(p + ".ffn.out.weight");
+            wt.n_heads      = n_heads;
+            wt.hidden2      = hidden2;
+            rst_transformer_block(x, C, H, W, wt, scratch);
+        }
     }
 }
 
