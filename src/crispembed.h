@@ -734,7 +734,7 @@ typedef struct crispembed_ocr_pipeline_params {
     const char * nafnet_model;  // NAFNet denoise GGUF for tier-2 (NULL/"" = classical only)
     const char * sr_model;      // text SR GGUF for low-DPI upscaling (NULL/"" = off)
     const char * vlm_model;     // optional single-shot VLM escalation GGUF (NULL/"" = none)
-    int          vlm_engine;    // VLM engine when vlm_model set: 0=GOT 1=GLM 2=Qwen2-VL 3=InternVL2
+    int          vlm_engine;    // VLM engine when vlm_model set: 0=GOT 1=GLM 2=Qwen2-VL 3=InternVL2 4=Qwen3-VL
     const char * punct_model;   // optional post-OCR punctuation/spacing restorer (FireRedPunc/PCS); NULL/"" = off
     const char * lid_model;     // optional text LID GGUF for language detection (NULL/"" = off)
     const char * truecase_model; // optional truecaser GGUF for post-OCR truecasing (NULL/"" = off)
@@ -1212,7 +1212,7 @@ CRISPEMBED_API int crispembed_scan_cleanup_process_simple(
 /// One pipeline stage: engine + models + cleanup + engine params + accept-gate.
 typedef struct crispembed_ocr_stage {
     int   source_type;   // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    int   engine;        // 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl(+PaddleOCR-VL) 5=internvl2 6=tesseract 7=parseq 8=deepseek_ocr2 9=pix2struct 10=granite_vision 11=lightonocr (matches map_engine)
+    int   engine;        // 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl(+PaddleOCR-VL) 5=internvl2 6=tesseract 7=parseq 8=deepseek_ocr2 9=pix2struct 10=granite_vision 11=lightonocr 12=qwen3vl (matches map_engine)
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
     int   cleanup_enabled;

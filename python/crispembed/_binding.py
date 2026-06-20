@@ -1599,7 +1599,8 @@ class CrispOcrModel:
     PP-FormulaNet-L (printed math, best), Texo-Distill (printed math, small),
     HMER (handwritten math), BTTR (handwritten math), PosFormer (handwritten),
     MixTex (Chinese+English LaTeX), PARSeq (scene text),
-    Qwen2.5-VL (VLM, German docs), InternVL2.5/2-1B (VLM, EN+DE),
+    Qwen2.5-VL (VLM, German docs), Qwen3-VL-2B (VLM, DeepStack),
+    InternVL2.5/2-1B (VLM, EN+DE),
     GLM-OCR (VLM, 8 langs, OmniDocBench #1).
     Auto-detects architecture from GGUF metadata.
 
@@ -3716,7 +3717,7 @@ class CrispOcrOrchestrator:
                  min_chars: int = 8, min_confidence: float = 0.5,
                  nafnet_model: Optional[str] = None,
                  sr_model: Optional[str] = None,
-                 vlm_model: Optional[str] = None, vlm_engine: int = 0,  # 0=GOT 1=GLM 2=Qwen2-VL/PaddleOCR-VL 3=InternVL2
+                 vlm_model: Optional[str] = None, vlm_engine: int = 0,  # 0=GOT 1=GLM 2=Qwen2-VL/PaddleOCR-VL 3=InternVL2 4=Qwen3-VL
                  punct_model: Optional[str] = None,
                  n_threads: int = 4, lib_path: Optional[str] = None):
         self._lib = _load_library(lib_path)
