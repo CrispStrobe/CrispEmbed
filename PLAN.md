@@ -465,10 +465,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   and `table_parse.cpp` (line 337) recognize each detected text region one at a
   time. Batch crops into a single encoder pass for PARSeq/TrOCR.
 
-- [ ] **Eliminate redundant image loading in orchestrator** — `ocr_orchestrator.cpp`
-  calls `stbi_load` for the same image N times across N engine attempts. Load once,
-  pass pixel buffer. Also: `clean_to_temp` (line 212) writes a cleaned image to
-  temp PNG then re-loads it — pass the buffer directly.
+- [x] **Eliminate redundant image loading in orchestrator** — Pre-load image once
+  per stage in the accept-gate loop, pass pixel buffer to all 9 VLM engines.
+  Eliminates N-1 redundant JPEG/PNG decodes per multi-stage run.
 
 - [x] **LSTM gate SIMD** — `tesseract_lstm.cpp` inner dot-product loops in both
   `lstm_forward` and `summ_lstm_forward` now use `core_cpu::dot_product()`.
@@ -504,9 +503,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `g_litemla` returns nullptr, the graph-accelerated LiteMLA is stubbed out.
   Currently falls back to CPU-scalar attention.
 
-- [ ] **Add tiling to SR runtimes without it** — `esrgan_sr`, `safmn_sr`,
-  `nafnet_denoise`, `scunet_denoise`, `instructir`, `adair` process entire
-  images with no tiling. OOM or poor cache behavior for images >512px.
+- [ ] **Add tiling to SR runtimes without it** — `safmn_sr`, `nafnet_denoise`,
+  `scunet_denoise`, `instructir`, `adair` process entire images with no tiling.
+  OOM or poor cache behavior for images >512px. (`esrgan_sr` DONE — Hann tiling.)
 
 #### P2 — Moderate improvements
 
