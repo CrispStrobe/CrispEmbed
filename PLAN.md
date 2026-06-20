@@ -574,8 +574,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `std::map` (O(log N)). ~2-5x faster lookups for models with thousands of
   tensors.
 
-- [ ] **instructir: SCA weight dequant inside per-channel loop** — lines
-  162-163 re-dequant entire weight matrix C times. Hoist outside the loop.
+- [x] **instructir: SCA weight dequant inside per-channel loop** — DONE
+  (`06b3190`). Hoisted sca_w/sca_b dequant outside per-channel loop.
 
 - [x] **Otsu threshold: extract shared utility** — Added
   `core_cpu::otsu_threshold()` to `cpu_ops.h`. Replaced duplicated
@@ -589,12 +589,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **pcs: cache FC weights at load** — weight dequant via
   `ggml_backend_tensor_get` every inference call (lines 508-519, 557-568).
 
-- [ ] **restormer: dead `rst_gdfn()` stub** — lines 262-280 are a stub with
-  all `(void)` casts. Remove dead code.
-
-- [ ] **restormer: `rst_layernorm_bf` computes variance twice** — first
-  sum-of-squares pass (lines 100-104) is dead work; only the mean-subtracted
-  pass (lines 108-114) is used.
+- [x] **restormer: dead `rst_gdfn()` stub** — DONE (`06b3190`). Removed.
+- [x] **restormer: `rst_layernorm_bf` computes variance twice** — DONE
+  (`06b3190`). Removed dead first-pass sum-of-squares.
 
 #### P3 — Nice-to-have / minor
 
