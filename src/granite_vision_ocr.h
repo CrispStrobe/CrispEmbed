@@ -39,6 +39,13 @@ void granite_vision_dump_vision(granite_vision_context * ctx,
                                  const float * image_f32, int img_h, int img_w,
                                  gv_dump_cb cb, void * ud);
 
+// Run a fixed text-only token sequence through the LLM decoder and emit
+// per-layer hidden states + final-token logits (for crispembed-diff parity
+// against tools/dump_granite_llm_reference.py).
+void granite_vision_dump_llm(granite_vision_context * ctx,
+                             const int * tokens, int n_tokens,
+                             gv_dump_cb cb, void * ud);
+
 // Per-token confidence from the last recognition.
 const float * granite_vision_confidences(const granite_vision_context * ctx, int * n_tokens);
 float granite_vision_mean_confidence(const granite_vision_context * ctx);
