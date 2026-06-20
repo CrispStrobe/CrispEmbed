@@ -305,6 +305,8 @@ struct tbsrn_sr_context {
     core_cpu::DequantCache dcache;
     // Fused conv+BN weights (populated at init, keyed by tensor name)
     std::unordered_map<std::string, std::vector<float>> fused;
+    // Cached 2D positional encoding (same for every SRB block)
+    std::vector<float> pe_cache;
 
     const float * get(const std::string & name) {
         // Check fused weights first (conv weights with BN folded in)
@@ -408,6 +410,13 @@ tbsrn_sr_context * tbsrn_sr_init(const char * model_path, int n_threads) {
         fprintf(stderr, "tbsrn_sr: fused %d conv+BN pairs at load time\n", fused_count);
     }
 
+    // Pre-compute 2D positional encoding (fixed 64×16×64, reused every SRB block)
+    {
+        int LR_H = 16, LR_W = 64;
+        ctx->pe_cache.resize(64 * LR_H * LR_W);
+        tbsrn_pe2d(64, LR_H, LR_W, ctx->pe_cache.data());
+    }
+
     fprintf(stderr, "tbsrn_sr: srb_nums=%d, channels=%d, upscale=%dx, %d tensors\n",
             ctx->srb_nums, C, ctx->upscale_factor, (int)ctx->wl.tensors.size());
     ctx->bench = (std::getenv("CRISPEMBED_TBSRN_SR_BENCH") != nullptr);
@@ -492,13 +501,10 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
 
         // FeatureEnhancer
         // res2 is [C, H, W] → reshape to [C, T] where T = H*W = 1024
-        // Concat with PE2D → [128, T]
-        std::vector<float> pe(64 * LR_H * LR_W);
-        tbsrn_pe2d(64, LR_H, LR_W, pe.data());
-
+        // Concat with PE2D → [128, T]  (PE cached at init)
         std::vector<float> feat(D_fe * T);  // [128, T]
         memcpy(feat.data(), res2.data(), C * T * sizeof(float));
-        memcpy(feat.data() + C * T, pe.data(), 64 * T * sizeof(float));
+        memcpy(feat.data() + C * T, ctx->pe_cache.data(), 64 * T * sizeof(float));
 
         // Transpose [128, T] → [T, 128]
         std::vector<float> feat_t(T * D_fe);
