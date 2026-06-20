@@ -159,6 +159,7 @@ struct context {
     ggml_backend_t backend = nullptr;
     ggml_backend_t backend_cpu = nullptr;  // CPU fallback when primary is GPU
     ggml_backend_sched_t sched = nullptr;
+    ggml_gallocr_t galloc = nullptr;
     core_gguf::WeightLoad wl;
     int n_threads = 4;
     bool bench = false;
@@ -359,6 +360,8 @@ bool load(context** out, const char* path, int n_threads) {
         fprintf(stderr, "layout_detect: failed to create scheduler\n");
         return false;
     }
+
+    ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
 
     fprintf(stderr, "layout_detect: loaded %zu tensors (%d missing)\n",
             ctx->wl.tensors.size(), missing);
@@ -856,11 +859,8 @@ std::vector<region> detect(context* ctx, const float* pixels,
     ggml_build_forward_expand(gf, s4);
     ggml_build_forward_expand(gf, s5);
 
-    ggml_gallocr_t alloc = ggml_gallocr_new(
-        ggml_backend_get_default_buffer_type(ctx->backend));
-    if (!ggml_gallocr_alloc_graph(alloc, gf)) {
+    if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
         fprintf(stderr, "layout_detect: backbone graph alloc failed\n");
-        ggml_gallocr_free(alloc);
         ggml_free(g);
         return {};
     }
@@ -965,7 +965,6 @@ std::vector<region> detect(context* ctx, const float* pixels,
         }
     }
 
-    ggml_gallocr_free(alloc);
     ggml_free(g);
     if (bench) {
         double ms = std::chrono::duration<double, std::milli>(
@@ -1396,8 +1395,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
             ggml_set_name(out, "sa_out"); ggml_set_output(out);
             ggml_cgraph* gf = ggml_new_graph_custom(gc, 64, false);
             ggml_build_forward_expand(gf, out);
-            ggml_gallocr_t sa = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
-            ggml_gallocr_alloc_graph(sa, gf);
+            ggml_gallocr_alloc_graph(ctx->galloc, gf);
 
             // Transpose CPU [D,N] (d*N+q) → ggml [D,N] (d+q*D) for activations
             std::vector<float> tq(D*N_queries), tp(D*N_queries), tr(D*N_queries);
@@ -1442,7 +1440,6 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 for (int q = 0; q < N_queries; q++)
                     queries[d*N_queries + q] = to[d + q*D];
 
-            ggml_gallocr_free(sa);
             ggml_free(gc);
         }
         { float mn=1e9,mx=-1e9; for(auto v:queries){mn=std::min(mn,v);mx=std::max(mx,v);} fprintf(stderr,"  dec%d_after_sa: [%.4f,%.4f]\n",li,mn,mx); }
@@ -1665,8 +1662,7 @@ std::vector<region> detect(context* ctx, const float* pixels,
 
             ggml_cgraph* gf = ggml_new_graph_custom(gc, 32, false);
             ggml_build_forward_expand(gf, out);
-            ggml_gallocr_t fa = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
-            ggml_gallocr_alloc_graph(fa, gf);
+            ggml_gallocr_alloc_graph(ctx->galloc, gf);
 
             // Transpose CPU [D, N] (d*N+q) → ggml [D, N] (d+q*D)
             std::vector<float> tq(D * N_queries), tr(D * N_queries);
@@ -1687,7 +1683,6 @@ std::vector<region> detect(context* ctx, const float* pixels,
                 for (int q = 0; q < N_queries; q++)
                     queries[d * N_queries + q] = to[d + q*D];
 
-            ggml_gallocr_free(fa);
             ggml_free(gc);
         }
 
@@ -1889,6 +1884,7 @@ std::vector<region> detect_file(context* ctx, const char* path,
 
 void free(context* ctx) {
     if (!ctx) return;
+    if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
     if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);
     if (ctx->backend) ggml_backend_free(ctx->backend);

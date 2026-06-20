@@ -88,6 +88,8 @@ struct parseq_ocr_context {
     std::map<const void *, std::vector<float>> dequant_cache;
 
     bool bench;
+
+    ggml_gallocr_t galloc = nullptr;
 };
 
 // ---------------------------------------------------------------------------
@@ -335,11 +337,14 @@ parseq_ocr_context * parseq_ocr_init(const char * model_path, int n_threads) {
 
     ctx->bench = (std::getenv("CRISPEMBED_PARSEQ_BENCH") != nullptr);
 
+    ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+
     return ctx;
 }
 
 void parseq_ocr_free(parseq_ocr_context * ctx) {
     if (!ctx) return;
+    if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
     core_gguf::free_weights(ctx->wl);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     delete ctx;
@@ -483,9 +488,7 @@ static bool run_encoder(parseq_ocr_context * ctx, const float * pixels) {
     ggml_cgraph * gf_graph = ggml_new_graph_custom(g, 4096, false);
     ggml_build_forward_expand(gf_graph, x);
 
-    ggml_gallocr_t alloc = ggml_gallocr_new(
-        ggml_backend_get_default_buffer_type(ctx->backend));
-    ggml_gallocr_alloc_graph(alloc, gf_graph);
+    ggml_gallocr_alloc_graph(ctx->galloc, gf_graph);
 
     // Set input
     ggml_tensor * inp = ggml_graph_get_tensor(gf_graph, "enc_input");
@@ -500,7 +503,6 @@ static bool run_encoder(parseq_ocr_context * ctx, const float * pixels) {
     ctx->encoder_output.resize(N * D);
     ggml_backend_tensor_get(out, ctx->encoder_output.data(), 0, N * D * sizeof(float));
 
-    ggml_gallocr_free(alloc);
     ggml_free(g);
     return true;
 }

@@ -158,6 +158,9 @@ struct surya_det_context {
     int heatmap_h, heatmap_w;
     std::vector<surya_det_bbox> boxes;
 
+    // Persistent allocator
+    ggml_gallocr_t galloc = nullptr;
+
     // Debug
     bool dump;
     bool bench;
@@ -321,12 +324,15 @@ surya_det_context * surya_det_init(const char * model_path, int n_threads) {
     ctx->dec_fuse       = { F("dec.fuse.weight"), F("dec.fuse.bias") };
     ctx->dec_classifier = { F("dec.classifier.weight"), F("dec.classifier.bias") };
 
+    ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+
     fprintf(stderr, "surya_det: loaded %s (%d threads)\n", model_path, n_threads);
     return ctx;
 }
 
 void surya_det_free(surya_det_context * ctx) {
     if (ctx) {
+        if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
         core_gguf::free_weights(ctx->wl);
         if (ctx->backend) ggml_backend_free(ctx->backend);
         delete ctx;
@@ -892,11 +898,8 @@ static const float * run_forward_graph(surya_det_context * ctx,
     ggml_build_forward_expand(gf, s0);
     ggml_build_forward_expand(gf, s1);
 
-    ggml_gallocr_t alloc = ggml_gallocr_new(
-        ggml_backend_get_default_buffer_type(ctx->backend));
-    if (!ggml_gallocr_alloc_graph(alloc, gf)) {
+    if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
         fprintf(stderr, "surya_det: graph allocation failed\n");
-        ggml_gallocr_free(alloc);
         ggml_free(g);
         return nullptr;
     }
@@ -932,7 +935,6 @@ static const float * run_forward_graph(surya_det_context * ctx,
     ggml_backend_tensor_get(s1_out, s1_data.data(), 0, s1_data.size() * sizeof(float));
     ggml_backend_tensor_get(s2_out, s2_data.data(), 0, s2_data.size() * sizeof(float));
 
-    ggml_gallocr_free(alloc);
     ggml_free(g);
 
     if (ctx->dump) {
@@ -958,11 +960,8 @@ static const float * run_forward_graph(surya_det_context * ctx,
         ggml_cgraph* gf2 = ggml_new_graph_custom(g2, 256, false);
         ggml_build_forward_expand(gf2, s3_out);
 
-        ggml_gallocr_t alloc2 = ggml_gallocr_new(
-            ggml_backend_get_default_buffer_type(ctx->backend));
-        if (!ggml_gallocr_alloc_graph(alloc2, gf2)) {
+        if (!ggml_gallocr_alloc_graph(ctx->galloc, gf2)) {
             fprintf(stderr, "surya_det: stage3 block0 graph alloc failed\n");
-            ggml_gallocr_free(alloc2);
             ggml_free(g2);
             return nullptr;
         }
@@ -983,7 +982,6 @@ static const float * run_forward_graph(surya_det_context * ctx,
         std::vector<float> s3_data(s3_ch * sH * sW);
         ggml_backend_tensor_get(s3_t, s3_data.data(), 0, s3_data.size() * sizeof(float));
 
-        ggml_gallocr_free(alloc2);
         ggml_free(g2);
 
         // Continue with scalar LiteMLA blocks
