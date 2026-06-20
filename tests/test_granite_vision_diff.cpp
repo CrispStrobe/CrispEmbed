@@ -18,7 +18,9 @@ static int g_pass = 0, g_fail = 0;
 
 static void dump_cb(const char * name, const float * data, int n, void * ud) {
     (void)ud;
-    printf("  C++ stage: %s (%d elements)\n", name, n);
+    double l2 = 0; for (int i = 0; i < n; i++) l2 += (double)data[i] * data[i];
+    printf("  C++ stage: %s (%d elements) v0=%.5f v1=%.5f v2=%.5f L2=%.4f\n",
+           name, n, n>0?data[0]:0.0f, n>1?data[1]:0.0f, n>2?data[2]:0.0f, sqrt(l2));
     if (g_ref && g_ref->has(name)) {
         auto r = g_ref->compare(name, data, n);
         bool pass = r.cos_min >= 0.99f;  // lower threshold for Q4_K

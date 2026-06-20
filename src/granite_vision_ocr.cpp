@@ -800,7 +800,16 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     // Weight ne is corrected to standard [in,out] at load time (see init), so
     // ggml_mul_mat takes the weights directly — no per-op reshape needed.
 
-    for (int li = 0; li < ctx->llm_layers; li++) {
+    // DEBUG: CRISPEMBED_GRANITE_NLAYERS caps the layer count to test whether the
+    // Metal garbage is a graph-size/capacity issue (correct for few layers,
+    // garbage for 40) vs a per-layer compute bug.
+    int n_layers_run = ctx->llm_layers;
+    if (const char * e = std::getenv("CRISPEMBED_GRANITE_NLAYERS")) {
+        int v = atoi(e);
+        if (v >= 0 && v < n_layers_run) n_layers_run = v;
+    }
+    bool identity = (n_layers_run == 0);
+    for (int li = 0; li < n_layers_run; li++) {
         std::string lp = "llm.layer." + std::to_string(li);
 
         ggml_tensor * n1w = wt(lp + ".norm1.weight");
@@ -921,7 +930,7 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     }
 
     // Final RMSNorm (all T tokens; caller reads only the last one)
-    x = rmsnorm(x, wt("llm.norm.weight"));
+    if (!identity) x = rmsnorm(x, wt("llm.norm.weight"));
     ggml_tensor * out_t = ggml_cont(g, x);
     ggml_set_output(out_t);
     ggml_build_forward_expand(gf, out_t);
