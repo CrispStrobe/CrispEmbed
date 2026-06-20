@@ -26,6 +26,7 @@
 #endif
 #include <cstring>
 #include <map>
+#include <unordered_map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -205,7 +206,7 @@ static void linear(const float * x, int in_d,
 // Tensor mapping
 // ---------------------------------------------------------------------------
 
-static struct ggml_tensor * find(const std::map<std::string, ggml_tensor*> & m,
+static struct ggml_tensor * find(const std::unordered_map<std::string, ggml_tensor*> & m,
                                  const char * name) {
     auto it = m.find(name);
     return it != m.end() ? it->second : nullptr;
