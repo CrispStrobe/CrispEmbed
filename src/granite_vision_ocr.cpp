@@ -94,6 +94,57 @@ static float gv_gelu(float x) {
 
 static float gv_silu(float x) { return x / (1.0f + expf(-x)); }
 
+// Native quantized linear: out[o] = dot(W[o,:], in) + bias[o], computed
+// directly on the (possibly Q4_K / F16) weight via ggml's SIMD vec_dot — no
+// F32 weight materialization. The activation is quantized once to the weight's
+// vec_dot_type (Q8_K for Q4_K), then reused across all output rows.
+//
+// W: weight tensor, ne[0]=in (id), ne[1]=out (od). Single input row.
+static void gv_linear_q(const ggml_tensor * W, const float * in,
+                        int id, int od, const float * bias, float * out) {
+    const auto * wtr = ggml_get_type_traits_cpu(W->type);
+    enum ggml_type vdt = wtr->vec_dot_type;
+    const auto * qtr = ggml_get_type_traits_cpu(vdt);
+
+    static thread_local std::vector<char> qbuf;
+    size_t need = ggml_row_size(vdt, id);
+    if (qbuf.size() < need) qbuf.resize(need);
+    qtr->from_float(in, qbuf.data(), id);
+
+    const char * wdata = (const char *) W->data;
+    // NOTE: do NOT trust W->nb[1] here. This repo's converter writes weight
+    // dims in PyTorch [out,in] order (un-reversed), so ggml's ne/nb describe a
+    // transposed view. Output row o is `id` contiguous quantized elements at
+    // o*row_size — matching the F32 scalar path that was validated at cos=1.0.
+    size_t row_stride = ggml_row_size(W->type, id);
+    for (int o = 0; o < od; o++) {
+        float s = 0.0f;
+        wtr->vec_dot(id, &s, 0, wdata + (size_t)o * row_stride, 0, qbuf.data(), 0, 1);
+        out[o] = s + (bias ? bias[o] : 0.0f);
+    }
+}
+
+// Read a single embedding row (F16 tensor) → F32, on the fly (avoids caching
+// the full ~400 MB F32 embedding matrix).
+static void gv_embed_row(const ggml_tensor * W, int id, int D, float scale, float * out) {
+    // Row stride from D (the logical embedding dim), not W->nb[1] — see the
+    // transposed-ne note in gv_linear_q.
+    const char * row = (const char *) W->data + (size_t)id * ggml_row_size(W->type, D);
+    if (W->type == GGML_TYPE_F16) {
+        const ggml_fp16_t * h = (const ggml_fp16_t *) row;
+        for (int d = 0; d < D; d++) out[d] = ggml_fp16_to_fp32(h[d]) * scale;
+    } else if (W->type == GGML_TYPE_F32) {
+        const float * f = (const float *) row;
+        for (int d = 0; d < D; d++) out[d] = f[d] * scale;
+    } else {
+        // Quantized embedding: dequantize the whole row via type traits.
+        const auto * tr = ggml_get_type_traits(W->type);
+        std::vector<float> tmp(D);
+        tr->to_float(row, tmp.data(), D);
+        for (int d = 0; d < D; d++) out[d] = tmp[d] * scale;
+    }
+}
+
 // ── GPT-2 byte-level BPE tokenizer ──────────────────────────────────────
 // Granite uses the StarCoder byte-level BPE (same byte<->unicode mapping as
 // GPT-2). Mirrors the proven smoldocling_ocr.cpp implementation.
@@ -269,6 +320,10 @@ struct granite_vision_context {
     // Output buffer
     std::string output_text;
     std::vector<float> char_confidences;
+
+    const ggml_tensor * get_tensor(const std::string & name) {
+        return core_gguf::try_get(wl.tensors, name.c_str());
+    }
 
     const float * get(const std::string & name) {
         auto it = wcache.find(name);
@@ -591,7 +646,8 @@ void granite_vision_dump_vision(granite_vision_context * ctx,
 static void gv_llm_decode_step(granite_vision_context * ctx,
                                 const float * token_embed, int n_past,
                                 float * logits,
-                                gv_dump_cb dump_cb = nullptr, void * dump_ud = nullptr) {
+                                gv_dump_cb dump_cb = nullptr, void * dump_ud = nullptr,
+                                bool want_logits = true) {
     int D = ctx->llm_dim;
     int n_heads = ctx->llm_heads;
     int n_kv = ctx->llm_kv_heads;
@@ -620,9 +676,9 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
 
         // GQA Self-Attention with KV cache
         std::vector<float> Q(D), K_new(n_kv * d_head), V_new(n_kv * d_head);
-        gv_linear(normed.data(), 1, D, D, ctx->get(lp + ".attn.q.weight"), nullptr, Q.data());
-        gv_linear(normed.data(), 1, D, n_kv * d_head, ctx->get(lp + ".attn.k.weight"), nullptr, K_new.data());
-        gv_linear(normed.data(), 1, D, n_kv * d_head, ctx->get(lp + ".attn.v.weight"), nullptr, V_new.data());
+        gv_linear_q(ctx->get_tensor(lp + ".attn.q.weight"), normed.data(), D, D, nullptr, Q.data());
+        gv_linear_q(ctx->get_tensor(lp + ".attn.k.weight"), normed.data(), D, n_kv * d_head, nullptr, K_new.data());
+        gv_linear_q(ctx->get_tensor(lp + ".attn.v.weight"), normed.data(), D, n_kv * d_head, nullptr, V_new.data());
 
         // RoPE on Q and K. Granite (like HF Llama) uses rotate_half =
         // split-half rotation, which this codebase calls NEGHALF. The previous
@@ -647,7 +703,7 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
 
         // Output projection
         std::vector<float> proj(D);
-        gv_linear(attn_out.data(), 1, D, D, ctx->get(lp + ".attn.o.weight"), nullptr, proj.data());
+        gv_linear_q(ctx->get_tensor(lp + ".attn.o.weight"), attn_out.data(), D, D, nullptr, proj.data());
 
         // Residual with multiplier
         for (int d = 0; d < D; d++) x[d] += proj[d] * res_mul;
@@ -657,11 +713,11 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
         gv_rmsnorm(normed.data(), 1, D, ctx->get(lp + ".norm2.weight"), eps);
 
         int ffn = ctx->llm_ffn_dim;
-        std::vector<float> down(D);
-        core_vlm::swiglu_ffn(normed.data(), down.data(), D, ffn,
-                             ctx->get(lp + ".ffn.gate.weight"),
-                             ctx->get(lp + ".ffn.up.weight"),
-                             ctx->get(lp + ".ffn.down.weight"));
+        std::vector<float> gate(ffn), up(ffn), down(D);
+        gv_linear_q(ctx->get_tensor(lp + ".ffn.gate.weight"), normed.data(), D, ffn, nullptr, gate.data());
+        gv_linear_q(ctx->get_tensor(lp + ".ffn.up.weight"),   normed.data(), D, ffn, nullptr, up.data());
+        for (int i = 0; i < ffn; i++) gate[i] = gv_silu(gate[i]) * up[i];
+        gv_linear_q(ctx->get_tensor(lp + ".ffn.down.weight"), gate.data(), ffn, D, nullptr, down.data());
 
         for (int d = 0; d < D; d++) x[d] += down[d] * res_mul;
 
@@ -672,21 +728,23 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
         }
     }
 
+    // During prefill only the final token's logits seed generation, so the
+    // expensive lm_head (2048×49156) is skipped for all earlier positions.
+    if (!want_logits && !dump_cb) return;
+
     // Final RMSNorm
     gv_rmsnorm(x.data(), 1, D, ctx->get("llm.norm.weight"), eps);
     if (dump_cb) dump_cb("llm_final_norm", x.data(), D, dump_ud);
 
-    // LM head (may be tied to embeddings)
-    const float * lm_w = ctx->get("llm.lm_head.weight");
+    // LM head (may be tied to embeddings) — native quantized matmul.
+    const ggml_tensor * lm_w = ctx->get_tensor("llm.lm_head.weight");
     if (!lm_w && ctx->tie_word_embeddings)
-        lm_w = ctx->get("llm.embed.weight");
+        lm_w = ctx->get_tensor("llm.embed.weight");
 
     if (lm_w) {
-        for (int v = 0; v < ctx->vocab_size; v++) {
-            float sum = 0;
-            for (int d = 0; d < D; d++) sum += x[d] * lm_w[v * D + d];
-            logits[v] = sum / ctx->logits_scaling;
-        }
+        gv_linear_q(lm_w, x.data(), D, ctx->vocab_size, nullptr, logits);
+        float inv = 1.0f / ctx->logits_scaling;
+        for (int v = 0; v < ctx->vocab_size; v++) logits[v] *= inv;
     }
     if (dump_cb) dump_cb("llm_logits", logits, ctx->vocab_size, dump_ud);
 }
@@ -707,14 +765,13 @@ void granite_vision_dump_llm(granite_vision_context * ctx,
     ctx->kv_allocated = max_seq;
     ctx->n_past = 0;
 
-    const float * embed_w = ctx->get("llm.embed.weight");
+    const ggml_tensor * embed_w = ctx->get_tensor("llm.embed.weight");
     float emb_mul = ctx->embedding_multiplier;
     std::vector<float> logits(ctx->vocab_size);
     std::vector<float> emb(D);
 
     for (int t = 0; t < n_tokens; t++) {
-        int id = tokens[t];
-        for (int d = 0; d < D; d++) emb[d] = embed_w[(size_t)id * D + d] * emb_mul;
+        gv_embed_row(embed_w, tokens[t], D, emb_mul, emb.data());
         bool last = (t == n_tokens - 1);
         gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data(),
                            last ? cb : nullptr, last ? ud : nullptr);
@@ -737,8 +794,11 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
     int n_feat = (int)ctx->feature_layers.size();
     int feat_dim = n_feat * ctx->vis_dim;
 
-    // Preprocess: resize to img_size × img_size, normalize to [0,1]
-    // (simplified — no dynamic tiling for now, single tile)
+    // Preprocess: resize to img_size × img_size, then SigLIP normalization
+    // (rescale 1/255 then (x-mean)/std with mean=std=0.5 → range [-1, 1]).
+    // Feeding [0,1] here makes the vision tower hallucinate — its parity test
+    // fed an already-ranged reference image, so this step was never exercised.
+    // (single tile; LLaVA-Next anyres tiling not yet implemented)
     std::vector<float> image(3 * img_size * img_size);
     for (int c = 0; c < 3; c++)
         for (int y = 0; y < img_size; y++)
@@ -749,7 +809,7 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
                 int ix = std::max(0, std::min(width - 1, (int)(sx + 0.5f)));
                 int src_idx = channels > 1 ? (iy * width + ix) * channels + c : iy * width + ix;
                 image[c * img_size * img_size + y * img_size + x] =
-                    pixels[src_idx] / 255.0f;
+                    (pixels[src_idx] / 255.0f - 0.5f) / 0.5f;
             }
 
     // Vision encoder
@@ -761,7 +821,12 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
     std::vector<float> proj_features(n_vis_tokens * D);
     gv_projector(ctx, vis_features.data(), n_vis_tokens, feat_dim, proj_features.data());
 
-    const float * embed_w = ctx->get("llm.embed.weight");
+    // The vision tower cached its (F16) weights as F32 in wcache; they are not
+    // reused during the LLM decode, so release them before the long decode to
+    // keep peak memory low (the LLM runs natively on the quantized weights).
+    ctx->wcache.clear();
+
+    const ggml_tensor * embed_w = ctx->get_tensor("llm.embed.weight");
     float emb_mul = ctx->embedding_multiplier;
     std::vector<float> logits(ctx->vocab_size);
 
@@ -797,18 +862,29 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
     ctx->n_past = 0;
 
     // ── Prefill: text tokens (scaled embeds) with vision rows spliced in ──
+    // The chat prompt always ends with text (…<|assistant|>\n), so logits are
+    // only computed on the very last prefill token (which seeds generation).
     std::vector<float> emb(D);
-    for (int id : prompt_ids) {
+    for (size_t pi = 0; pi < prompt_ids.size(); pi++) {
+        int id = prompt_ids[pi];
+        bool last_prompt = (pi + 1 == prompt_ids.size());
         if (id == ctx->image_token_index) {
             for (int t = 0; t < n_vis_tokens; t++) {
-                // Vision rows are NOT scaled by embedding_multiplier (HF scales
-                // only text embeddings; image features enter post-projector).
-                gv_llm_decode_step(ctx, proj_features.data() + t * D, ctx->n_past, logits.data());
+                // HF scatters raw projector features into inputs_embeds, then
+                // the Granite LM scales the WHOLE tensor (text + image) by
+                // embedding_multiplier — so vision rows must be ×emb_mul too.
+                // Without this they are 12× too weak and the LM ignores the
+                // image (it hallucinates a plausible document instead).
+                const float * vr = proj_features.data() + (size_t)t * D;
+                for (int d = 0; d < D; d++) emb[d] = vr[d] * emb_mul;
+                gv_llm_decode_step(ctx, emb.data(), ctx->n_past,
+                                   logits.data(), nullptr, nullptr, /*want_logits=*/false);
                 ctx->n_past++;
             }
         } else {
-            for (int d = 0; d < D; d++) emb[d] = embed_w[(size_t)id * D + d] * emb_mul;
-            gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
+            gv_embed_row(embed_w, id, D, emb_mul, emb.data());
+            gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data(),
+                               nullptr, nullptr, /*want_logits=*/last_prompt);
             ctx->n_past++;
         }
     }
@@ -835,7 +911,7 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
         else
             ctx->output_text += "<" + std::to_string(best_id) + ">";
 
-        for (int d = 0; d < D; d++) emb[d] = embed_w[(size_t)best_id * D + d] * emb_mul;
+        gv_embed_row(embed_w, best_id, D, emb_mul, emb.data());
         gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
         ctx->n_past++;
     }
