@@ -492,12 +492,11 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   - `deepseek_ocr2.cpp`: pending (no q4_k model to test)
 
 - [ ] **Move remaining scalar encoders to ggml graphs**:
-  - `deepseek_ocr2` Qwen2 encoder (lines 777-931): 24-layer bidirectional
-    transformer, all scalar. O(T^2 * heads * head_dim) attention loops.
-  - `bttr_ocr` / `posformer_ocr` / `hmer_ocr` DenseNet encoders: 7-nested-loop
-    scalar convolutions dominate runtime.
-  - `mixtex_ocr` Swin encoder: 12500-token window attention, scalar.
-  - `ppformulanet_ocr` HGNetv2 CNN: 57M-param CNN at 384x384, scalar `conv2d_cpu`.
+  - `deepseek_ocr2` Qwen2 encoder: **DONE** (`910d036`). 24-layer single graph.
+  - `hmer_ocr` DenseNet encoder: **DONE** (`273969d`). ggml graph, 3x speedup.
+  - `bttr_ocr` / `posformer_ocr` DenseNet: pending (share architecture with hmer).
+  - `mixtex_ocr` Swin encoder: pending (12500-token window attention).
+  - `ppformulanet_ocr` HGNetv2 CNN: pending (57M-param at 384x384).
 
 - [x] **Patch embedding conv → ggml matmul** — Most VLM runtimes now use ggml
   graph (internvl2, granite, smoldocling, qwen2vl) or im2col+matmul (got,
