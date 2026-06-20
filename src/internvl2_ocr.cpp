@@ -905,10 +905,11 @@ llm_graph build_llm_graph(context &ctx, int n_tokens, int n_past,
             Kfull = ggml_cont(g, k_layer);  // (hd, Lk, nkv)
             Vfull = ggml_cont(g, v_layer);
 
-            // flash_attn_ext handles GQA natively: pass (hd, Lk, nkv) directly.
+            // flash_attn_ext handles GQA natively (rk2 = neq2/nek2 broadcast)
+            // — no need to ggml_repeat K/V heads to match Q head count
         } else {
             // ── No KV cache: use current K/V directly ──
-            // Permute from (hd, nkv, T) → (hd, T, nkv) for flash_attn_ext (GQA native).
+            // Permute to (hd, T, nkv) for flash_attn — GQA handled internally
             Kfull = ggml_cont(g, ggml_permute(g, K_new, 0, 2, 1, 3));
             Vfull = ggml_cont(g, ggml_permute(g, V_new, 0, 2, 1, 3));
         }

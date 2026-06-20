@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <climits>
 #include <cstring>
+#include <queue>
 #include <string>
 #include <vector>
 
@@ -60,23 +61,44 @@ std::vector<int32_t> BPETokenizer::bpe_merge(const std::string & text) const {
         i += len;
     }
 
-    // Iteratively merge the highest-priority pair
-    while (symbols.size() > 1) {
-        int best_rank = INT_MAX;
-        int best_idx = -1;
-        for (int j = 0; j < (int)symbols.size() - 1; j++) {
-            std::string pair = symbols[j] + " " + symbols[j + 1];
-            auto it = merge_rank_.find(pair);
-            if (it != merge_rank_.end() && it->second < best_rank) {
-                best_rank = it->second;
-                best_idx = j;
-            }
+    // Priority-queue BPE: O(N log N) instead of O(N²)
+    if (symbols.size() >= 2) {
+        struct Node { std::string text; int prev, next; };
+        int n = (int)symbols.size();
+        std::vector<Node> nodes(n);
+        for (int i = 0; i < n; i++) {
+            nodes[i].text = std::move(symbols[i]);
+            nodes[i].prev = i - 1;
+            nodes[i].next = i < n - 1 ? i + 1 : -1;
         }
-        if (best_idx < 0) break;  // no more merges possible
-
-        // Merge symbols[best_idx] and symbols[best_idx+1]
-        symbols[best_idx] = symbols[best_idx] + symbols[best_idx + 1];
-        symbols.erase(symbols.begin() + best_idx + 1);
+        using PQE = std::pair<int, int>;
+        auto cmp = [](const PQE& a, const PQE& b) { return a.first > b.first; };
+        std::priority_queue<PQE, std::vector<PQE>, decltype(cmp)> pq(cmp);
+        auto try_add = [&](int i) {
+            int j = nodes[i].next;
+            if (j < 0) return;
+            std::string pair = nodes[i].text + " " + nodes[j].text;
+            auto it = merge_rank_.find(pair);
+            if (it != merge_rank_.end()) pq.push({it->second, i});
+        };
+        for (int i = 0; i < n; i++) try_add(i);
+        while (!pq.empty()) {
+            auto [rank, left] = pq.top(); pq.pop();
+            int right = nodes[left].next;
+            if (right < 0) continue;
+            std::string pair = nodes[left].text + " " + nodes[right].text;
+            auto it = merge_rank_.find(pair);
+            if (it == merge_rank_.end() || it->second != rank) continue;
+            nodes[left].text += nodes[right].text;
+            nodes[left].next = nodes[right].next;
+            if (nodes[right].next >= 0) nodes[nodes[right].next].prev = left;
+            nodes[right].next = -1; nodes[right].prev = -1;
+            if (nodes[left].prev >= 0) try_add(nodes[left].prev);
+            try_add(left);
+        }
+        symbols.clear();
+        for (int i = 0; i >= 0; i = nodes[i].next)
+            symbols.push_back(nodes[i].text);
     }
 
     // Convert symbols to token IDs

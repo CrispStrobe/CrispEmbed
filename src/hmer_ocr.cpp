@@ -145,7 +145,8 @@ struct hmer_ocr_context {
 // ---------------------------------------------------------------------------
 
 static struct ggml_tensor * find(
-    const std::unordered_map<std::string, ggml_tensor*> & m,
+    const std::unordered_map<std::string, ggml_tensor *> & m,
+
     const char * name
 ) {
     auto it = m.find(name);
