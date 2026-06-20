@@ -14,6 +14,7 @@
 
 #include "safmn_sr.h"
 #include "core/gguf_loader.h"
+#include "core/cpu_ops.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 
@@ -25,28 +26,6 @@
 #include <cstring>
 #include <string>
 #include <vector>
-
-// ── Helpers ────────────────────────────────────────────────────────
-
-static const float * to_f32(const ggml_tensor * t, std::vector<float> & buf) {
-    int64_t n = ggml_nelements(t);
-    buf.resize(n);
-    if (t->type == GGML_TYPE_F32) {
-        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
-    } else if (t->type == GGML_TYPE_F16) {
-        std::vector<ggml_fp16_t> tmp(n);
-        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
-        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(tmp[i]);
-    } else {
-        size_t raw_sz = ggml_nbytes(t);
-        std::vector<uint8_t> raw(raw_sz);
-        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
-        const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
-        else memset(buf.data(), 0, n * sizeof(float));
-    }
-    return buf.data();
-}
 
 // Conv2d: [OC, IC/groups, KH, KW] weights. Input/output [C, H, W] planar.
 static void conv2d(const float * input, int ic, int ih, int iw,
@@ -192,6 +171,7 @@ struct safmn_context {
 
     int scale, dim, n_blocks, n_levels;
     bool bench;
+    core_cpu::DequantCache dcache;
 
     ggml_tensor * to_feat_w, * to_feat_b;
     std::vector<attblock_weights> blocks;
@@ -301,12 +281,11 @@ int safmn_process_float(safmn_context * ctx,
     const int C = ctx->dim;
     const int H = height, W = width;
     const int hw = H * W;
-    std::vector<float> dq1, dq2;
 
     // to_feat: Conv3x3(3→C, pad=1)
     std::vector<float> x(C * hw);
     conv2d(input_chw, 3, H, W,
-           to_f32(ctx->to_feat_w, dq1), to_f32(ctx->to_feat_b, dq2),
+           ctx->dcache.get(ctx->to_feat_w), ctx->dcache.get(ctx->to_feat_b),
            C, 3, 3, 1, 1, x.data());
 
     // Save global residual
@@ -327,15 +306,15 @@ int safmn_process_float(safmn_context * ctx,
         // ── SAFM branch ──
         // LayerNorm
         layernorm_chw(x.data(), C, H, W,
-                      to_f32(blk.norm1_w, dq1), to_f32(blk.norm1_b, dq2),
+                      ctx->dcache.get(blk.norm1_w), ctx->dcache.get(blk.norm1_b),
                       norm_buf.data());
 
         // Multi-scale feature modulation
         for (int lv = 0; lv < ctx->n_levels; lv++) {
             const float * chunk_in = norm_buf.data() + lv * chunk_dim * hw;
             float * chunk_out = safm_cat.data() + lv * chunk_dim * hw;
-            const float * mfr_w = to_f32(blk.safm.mfr_w[lv], dq1);
-            const float * mfr_b = to_f32(blk.safm.mfr_b[lv], dq2);
+            const float * mfr_w = ctx->dcache.get(blk.safm.mfr_w[lv]);
+            const float * mfr_b = ctx->dcache.get(blk.safm.mfr_b[lv]);
 
             if (lv == 0) {
                 // Full resolution DW-Conv3x3
@@ -361,7 +340,7 @@ int safmn_process_float(safmn_context * ctx,
         // 1x1 conv (aggr) + GELU + element-wise gate
         safm_buf.resize(C * hw);
         conv2d(safm_cat.data(), C, H, W,
-               to_f32(blk.safm.aggr_w, dq1), to_f32(blk.safm.aggr_b, dq2),
+               ctx->dcache.get(blk.safm.aggr_w), ctx->dcache.get(blk.safm.aggr_b),
                C, 1, 1, 0, 1, safm_buf.data());
         gelu_inplace(safm_buf.data(), C * hw);
 
@@ -375,18 +354,18 @@ int safmn_process_float(safmn_context * ctx,
 
         // ── CCM branch ──
         layernorm_chw(x.data(), C, H, W,
-                      to_f32(blk.norm2_w, dq1), to_f32(blk.norm2_b, dq2),
+                      ctx->dcache.get(blk.norm2_w), ctx->dcache.get(blk.norm2_b),
                       norm_buf.data());
 
         int hidden = C * 2; // ffn_scale=2
         ccm_buf.resize(hidden * hw);
         conv2d(norm_buf.data(), C, H, W,
-               to_f32(blk.ccm.conv1_w, dq1), to_f32(blk.ccm.conv1_b, dq2),
+               ctx->dcache.get(blk.ccm.conv1_w), ctx->dcache.get(blk.ccm.conv1_b),
                hidden, 3, 3, 1, 1, ccm_buf.data());
         gelu_inplace(ccm_buf.data(), hidden * hw);
 
         conv2d(ccm_buf.data(), hidden, H, W,
-               to_f32(blk.ccm.conv2_w, dq1), to_f32(blk.ccm.conv2_b, dq2),
+               ctx->dcache.get(blk.ccm.conv2_w), ctx->dcache.get(blk.ccm.conv2_b),
                C, 1, 1, 0, 1, norm_buf.data());
 
         for (int i = 0; i < C * hw; i++)
@@ -406,7 +385,7 @@ int safmn_process_float(safmn_context * ctx,
     int out_ch = 3 * ctx->scale * ctx->scale;
     std::vector<float> pre_shuffle(out_ch * hw);
     conv2d(x.data(), C, H, W,
-           to_f32(ctx->to_img_w, dq1), to_f32(ctx->to_img_b, dq2),
+           ctx->dcache.get(ctx->to_img_w), ctx->dcache.get(ctx->to_img_b),
            out_ch, 3, 3, 1, 1, pre_shuffle.data());
 
     int out_h = H * ctx->scale, out_w = W * ctx->scale;

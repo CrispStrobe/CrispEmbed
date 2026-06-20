@@ -8,6 +8,7 @@
 
 #include "esrgan_sr.h"
 #include "core/gguf_loader.h"
+#include "core/cpu_ops.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 
@@ -19,26 +20,6 @@
 #include <cstring>
 #include <string>
 #include <vector>
-
-static const float * to_f32(const ggml_tensor * t, std::vector<float> & buf) {
-    int64_t n = ggml_nelements(t);
-    buf.resize(n);
-    if (t->type == GGML_TYPE_F32) {
-        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
-    } else if (t->type == GGML_TYPE_F16) {
-        std::vector<ggml_fp16_t> tmp(n);
-        ggml_backend_tensor_get(t, tmp.data(), 0, n * sizeof(ggml_fp16_t));
-        for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(tmp[i]);
-    } else {
-        size_t raw_sz = ggml_nbytes(t);
-        std::vector<uint8_t> raw(raw_sz);
-        ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
-        const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
-        else memset(buf.data(), 0, n * sizeof(float));
-    }
-    return buf.data();
-}
 
 static void conv2d(const float * input, int ic, int ih, int iw,
                    const float * weight, const float * bias,
@@ -110,6 +91,7 @@ struct esrgan_context {
     ggml_backend_buffer_t gguf_buf;
     int scale, num_feat, num_conv;
     bool bench;
+    core_cpu::DequantCache dcache;
     // body.0=conv, body.1=prelu, body.2=conv, ..., body.34=conv
     std::vector<conv_layer> convs;   // 18 convolutions
     std::vector<prelu_layer> prelus; // 17 PReLU layers
@@ -186,7 +168,6 @@ int esrgan_process_float(esrgan_context * ctx,
     auto t_total = std::chrono::steady_clock::now();
 
     const int H = height, W = width, hw = H * W;
-    std::vector<float> dq1, dq2;
 
     // Two ping-pong buffers
     std::vector<float> buf_a(input_chw, input_chw + 3 * hw);
@@ -202,14 +183,14 @@ int esrgan_process_float(esrgan_context * ctx,
         int oc = (ci == n_convs - 1) ? 3 * ctx->scale * ctx->scale : ctx->num_feat;
         buf_b.resize(oc * hw);
         conv2d(buf_a.data(), ic, H, W,
-               to_f32(ctx->convs[ci].w, dq1),
-               to_f32(ctx->convs[ci].b, dq2),
+               ctx->dcache.get(ctx->convs[ci].w),
+               ctx->dcache.get(ctx->convs[ci].b),
                oc, buf_b.data());
 
         // PReLU after every conv except the last
         if (ci < n_convs - 1 && prelu_idx < (int)ctx->prelus.size()) {
             prelu(buf_b.data(), oc, hw,
-                  to_f32(ctx->prelus[prelu_idx].slope, dq1));
+                  ctx->dcache.get(ctx->prelus[prelu_idx].slope));
             prelu_idx++;
         }
 
