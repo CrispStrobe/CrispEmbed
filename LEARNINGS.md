@@ -1,5 +1,27 @@
 # CrispEmbed — Technical Learnings
 
+## ggml_flash_attn_ext accepts non-contiguous Q/K/V (2026-06)
+
+`ggml_flash_attn_ext` on both Metal and CUDA handles non-contiguous inputs
+natively — it does NOT require `ggml_cont` wrappers around `ggml_permute` on
+Q, K, or V before the flash attention call. Adding `ggml_cont` is redundant
+and forces an extra allocation + copy at the Metal side. The correct pattern:
+
+```cpp
+Q = ggml_permute(gctx, Q, 0, 2, 1, 3);   // [hd, T, H, 1] — non-contiguous OK
+K = ggml_permute(gctx, K, 0, 2, 1, 3);
+V = ggml_permute(gctx, V, 0, 2, 1, 3);
+ggml_tensor * attn = ggml_flash_attn_ext(gctx, Q, K, V, mask, scale, 0.f, 0.f);
+```
+
+Previously the code had `ggml_cont(ggml_permute(...))` — removed in
+`decoder_embed.cpp` (`29d8a08`) and `bidirlm_vision.cpp` (`fd8cd09`).
+
+Note: for KV-cache *outputs* that you `ggml_set_output` and read back via
+`ggml_backend_tensor_get`, you DO still need `ggml_cont` (see the cross-
+backend KV-cache audit entry below) — the non-contiguous exception only
+applies to flash_attn *inputs*.
+
 ## SIMD dot_product as the universal optimization lever (2026-06)
 
 A single `dot_product()` function with AVX2+FMA/NEON in `core/cpu_ops.h`
