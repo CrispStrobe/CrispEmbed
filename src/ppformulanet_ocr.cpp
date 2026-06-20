@@ -823,15 +823,17 @@ const char* ppformulanet_ocr_recognize(ppformulanet_ocr_context* ctx,
 
     // Bilinear resize + normalize into the center of the padded image
     for (int y = 0; y < new_h; y++) {
+        float fy = (float)y / scale;
+        int y0 = (int)fy, y1 = std::min(y0 + 1, height - 1);
+        float wy = fy - y0;
+        int dy = pad_top + y;
         for (int x = 0; x < new_w; x++) {
-            // Map back to source coordinates
-            float src_x = (float)x / scale;
-            float src_y = (float)y / scale;
-            int ox = std::min((int)src_x, width - 1);
-            int oy = std::min((int)src_y, height - 1);
-            float v = pixels[oy * width + ox];  // grayscale [0, 1]
+            float fx = (float)x / scale;
+            int x0 = (int)fx, x1 = std::min(x0 + 1, width - 1);
+            float wx = fx - x0;
+            float v = (1 - wy) * ((1 - wx) * pixels[y0*width+x0] + wx * pixels[y0*width+x1])
+                    +      wy  * ((1 - wx) * pixels[y1*width+x0] + wx * pixels[y1*width+x1]);
             float normed = (v - MEAN) / STD;
-            int dy = pad_top + y;
             int dx = pad_left + x;
             for (int c = 0; c < 3; c++)
                 rgb[c * S * S + dy * S + dx] = normed;

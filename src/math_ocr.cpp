@@ -1043,16 +1043,23 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
     auto tb0 = std::chrono::steady_clock::now();
     std::vector<float> rgb(3 * S * S);
     fprintf(stderr, "math_ocr: rgb allocated\n");
-    float sx = (float)width / S, sy_f = (float)height / S;
-    for (int y = 0; y < S; y++)
+    float fsx = (float)width / S, fsy = (float)height / S;
+    for (int y = 0; y < S; y++) {
+        float fy = y * fsy;
+        int y0 = (int)fy, y1 = std::min(y0 + 1, height - 1);
+        float wy = fy - y0;
         for (int x = 0; x < S; x++) {
-            int ox = std::min((int)(x * sx), width - 1);
-            int oy = std::min((int)(y * sy_f), height - 1);
-            float v = (pixels[oy * width + ox] - 0.5f) / 0.5f;
+            float fx = x * fsx;
+            int x0 = (int)fx, x1 = std::min(x0 + 1, width - 1);
+            float wx = fx - x0;
+            float v = (1 - wy) * ((1 - wx) * pixels[y0*width+x0] + wx * pixels[y0*width+x1])
+                    +      wy  * ((1 - wx) * pixels[y1*width+x0] + wx * pixels[y1*width+x1]);
+            v = (v - 0.5f) / 0.5f;
             rgb[0*S*S + y*S + x] = v;
             rgb[1*S*S + y*S + x] = v;
             rgb[2*S*S + y*S + x] = v;
         }
+    }
     if (bench) fprintf(stderr, "[math_ocr-bench] preprocess: %.1f ms\n",
         std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-tb0).count());
 
