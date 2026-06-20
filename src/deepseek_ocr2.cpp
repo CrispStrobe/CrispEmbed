@@ -1113,6 +1113,69 @@ static ggml_cgraph* build_qwen2_enc_layer_graph(ggml_context* g, ds_ocr2_ctx* ct
     return gf;
 }
 
+// Builds all n_layers in one ggml graph — eliminates n_layers-1 GPU round-trips.
+// pos_ids and mask are shared inputs (same for every layer). layer_input is the
+// initial hidden state; subsequent layers consume each other's output in-graph.
+static ggml_cgraph* build_qwen2_enc_full_graph(ggml_context* g, ds_ocr2_ctx* ctx, int T) {
+    auto &qhp = ctx->m.qhp;
+    int D = qhp.hidden, nh = qhp.heads, nkv = qhp.kv_heads;
+    int hd = D / nh;
+    float eps = qhp.rms_eps;
+    int n_layers = qhp.depth;
+
+    ggml_cgraph* gf = ggml_new_graph_custom(g, 4096, false);
+    auto rmsnorm = [&](ggml_tensor* t, ggml_tensor* w) {
+        return ggml_mul(g, ggml_rms_norm(g, t, eps), ensure_f32(g, w));
+    };
+
+    ggml_tensor* x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+    ggml_set_name(x, "layer_input"); ggml_set_input(x);
+    ggml_tensor* pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+    ggml_set_name(pos_ids, "pos_ids"); ggml_set_input(pos_ids);
+    ggml_tensor* mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, T, T);
+    ggml_set_name(mask, "mask"); ggml_set_input(mask);
+
+    for (int li = 0; li < n_layers; li++) {
+        auto &ly = ctx->m.qwen2_layers[li];
+
+        ggml_tensor* h = rmsnorm(x, ly.in_ln_w);
+        ggml_tensor* Q = ggml_mul_mat(g, ly.q_w, h);
+        ggml_tensor* K = ggml_mul_mat(g, ly.k_w, h);
+        ggml_tensor* V = ggml_mul_mat(g, ly.v_w, h);
+        if (ly.q_b) Q = ggml_add(g, Q, ensure_f32(g, ly.q_b));
+        if (ly.k_b) K = ggml_add(g, K, ensure_f32(g, ly.k_b));
+        if (ly.v_b) V = ggml_add(g, V, ensure_f32(g, ly.v_b));
+
+        Q = ggml_reshape_3d(g, Q, hd, nh, T);
+        K = ggml_reshape_3d(g, K, hd, nkv, T);
+        V = ggml_reshape_3d(g, V, hd, nkv, T);
+        Q = ggml_rope_ext(g, Q, pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0,
+                          qhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        K = ggml_rope_ext(g, K, pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0,
+                          qhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+
+        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
+        ggml_tensor* Kp = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
+        ggml_tensor* Vp = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
+        ggml_tensor* attn = ggml_flash_attn_ext(g, Q, Kp, Vp, mask,
+                                                 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
+        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        attn = ggml_reshape_2d(g, attn, D, T);
+        attn = ggml_mul_mat(g, ly.o_w, attn);
+        x = ggml_add(g, x, attn);
+
+        ggml_tensor* res = x;
+        h = rmsnorm(x, ly.post_ln_w);
+        ggml_tensor* gate = ggml_silu(g, ggml_mul_mat(g, ly.gate_w, h));
+        ggml_tensor* up   = ggml_mul_mat(g, ly.up_w, h);
+        x = ggml_add(g, res, ggml_mul_mat(g, ly.down_w, ggml_mul(g, gate, up)));
+    }
+
+    ggml_set_name(x, "layer_output"); ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+    return gf;
+}
+
 static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis, int vis_dim,
                           std::vector<float> &out_enc, int &out_n_tokens, int &out_dim) {
     auto &qhp = ctx.m.qhp;
@@ -1166,35 +1229,25 @@ static bool encode_qwen2(ds_ocr2_ctx &ctx, const float *vis_features, int n_vis,
                 emask[(size_t)qi * T + ki] = ok ? z : ninf;
             }
         }
-        for (int li = 0; li < qhp.depth; li++) {
-            size_t meta_sz = 16 * 1024 * 1024;
-            std::vector<uint8_t> mb(meta_sz);
-            ggml_init_params ip = { meta_sz, mb.data(), true };
-            ggml_context* gc = ggml_init(ip);
-            ggml_cgraph* gf = build_qwen2_enc_layer_graph(gc, &ctx, li, T);
-            ggml_backend_sched_reset(ctx.sched);
-            ggml_backend_sched_alloc_graph(ctx.sched, gf);
-            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "layer_input"),
-                                    hidden.data(), 0, (size_t)T * D * sizeof(float));
-            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
-                                    pos.data(), 0, (size_t)T * sizeof(int32_t));
-            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "mask"),
-                                    emask.data(), 0, (size_t)T * T * sizeof(ggml_fp16_t));
-            ggml_backend_sched_graph_compute(ctx.sched, gf);
-            ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "layer_output"),
-                                    hidden.data(), 0, (size_t)T * D * sizeof(float));
-            ggml_free(gc);
-
-            if (!ctx.diff_ref_path.empty()) {
-                char nm[32]; snprintf(nm, sizeof(nm), "qwen2_layer_%d", li);
-                crispembed_diff::Ref ref;
-                if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(nm)) {
-                    auto r = ref.compare(nm, hidden.data(), (size_t)T * D);
-                    fprintf(stderr, "  %s: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
-                            nm, r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
-                }
-            }
-        }
+        // Build all layers in one graph — eliminates n_layers-1 GPU↔CPU round-trips.
+        // (Per-layer diff checks are only available via DS_QWEN2_SCALAR=1.)
+        size_t meta_sz = 32 * 1024 * 1024;
+        std::vector<uint8_t> mb(meta_sz);
+        ggml_init_params ip = { meta_sz, mb.data(), true };
+        ggml_context* gc = ggml_init(ip);
+        ggml_cgraph* gf = build_qwen2_enc_full_graph(gc, &ctx, T);
+        ggml_backend_sched_reset(ctx.sched);
+        ggml_backend_sched_alloc_graph(ctx.sched, gf);
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "layer_input"),
+                                hidden.data(), 0, (size_t)T * D * sizeof(float));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
+                                pos.data(), 0, (size_t)T * sizeof(int32_t));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "mask"),
+                                emask.data(), 0, (size_t)T * T * sizeof(ggml_fp16_t));
+        ggml_backend_sched_graph_compute(ctx.sched, gf);
+        ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "layer_output"),
+                                hidden.data(), 0, (size_t)T * D * sizeof(float));
+        ggml_free(gc);
     } else
     // Run bidirectional transformer layers (CPU-scalar reference path)
     for (int li = 0; li < qhp.depth; li++) {
