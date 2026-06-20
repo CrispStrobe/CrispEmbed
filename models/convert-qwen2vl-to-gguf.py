@@ -210,8 +210,8 @@ def main():
     writer.add_float32("qwen2vl.rope_theta", float(tcv("rope_theta", 1000000.0)))
     writer.add_bool("qwen2vl.tie_word_embeddings", bool(tcv("tie_word_embeddings", True)))
 
-    # mRoPE sections
-    rope_scaling = tcv("rope_scaling")
+    # mRoPE sections (transformers >=5.x uses "rope_parameters")
+    rope_scaling = tcv("rope_scaling") or tcv("rope_parameters")
     if rope_scaling and "mrope_section" in rope_scaling:
         sections = rope_scaling["mrope_section"]
         writer.add_array("qwen2vl.rope_sections", [int(x) for x in sections])
