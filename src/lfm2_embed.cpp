@@ -94,10 +94,24 @@ struct lfm2_embed_model {
 // Context
 // ============================================================================
 
+// Bucket sequence length to reduce scheduler re-reserves (same as encoder path)
+static int lfm2_bucket_seq_len(int T) {
+    if (T <= 8)   return 8;
+    if (T <= 16)  return 16;
+    if (T <= 32)  return 32;
+    if (T <= 64)  return 64;
+    if (T <= 128) return 128;
+    if (T <= 256) return 256;
+    if (T <= 512) return 512;
+    return T;
+}
+
 struct lfm2_embed_ctx {
     lfm2_embed_model model;
     ggml_backend_t   backend = nullptr;
-    ggml_gallocr_t   galloc = nullptr;
+    ggml_backend_sched_t sched = nullptr;
+    int reserved_T = 0;          // dense encode path bucket
+    int reserved_T_colbert = 0;  // ColBERT path bucket
     std::vector<int32_t> pos_cache;
     bool bench = false;
 };
@@ -174,7 +188,7 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
     core_gguf::WeightLoad wl;
     if (!core_gguf::load_weights(path, backend, "lfm2", wl)) {
         fprintf(stderr, "[lfm2_embed] failed to load weights: %s\n", path);
-        if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
+        if (ctx->sched) ggml_backend_sched_free(ctx->sched);
         delete ctx;
         return nullptr;
     }
@@ -226,9 +240,9 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
                 hp.hidden_size, ctx->model.colbert_dim);
     }
 
-    ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
-    if (!ctx->galloc) {
-        fprintf(stderr, "[lfm2_embed] failed to create graph allocator\n");
+    ctx->sched = ggml_backend_sched_new(&ctx->backend, nullptr, 1, 4096, false, false);
+    if (!ctx->sched) {
+        fprintf(stderr, "[lfm2_embed] failed to create backend scheduler\n");
         ggml_backend_buffer_free(ctx->model.buf);
         ggml_free(ctx->model.ctx);
         delete ctx;
@@ -245,7 +259,7 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
 
 void lfm2_embed_free(lfm2_embed_ctx * ctx) {
     if (!ctx) return;
-    if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
+    if (ctx->sched) ggml_backend_sched_free(ctx->sched);
     if (ctx->model.buf) ggml_backend_buffer_free(ctx->model.buf);
     if (ctx->model.ctx) ggml_free(ctx->model.ctx);
     // backend is owned by crispembed_context — do not free here
@@ -444,7 +458,36 @@ bool lfm2_embed_encode_to(lfm2_embed_ctx * ctx, const char * text, float * out) 
     ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
     ggml_build_forward_expand(gf, cls);
 
-    if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
+    // Reserve scheduler for this T bucket (reuse across same-length inputs)
+    const int T_bucket = lfm2_bucket_seq_len(T);
+    if (ctx->reserved_T != T_bucket) {
+        ggml_backend_sched_reserve(ctx->sched, gf);
+        ctx->reserved_T = T_bucket;
+        ctx->reserved_T_colbert = 0;  // invalidate ColBERT reservation
+        // Rebuild graph for actual T (reserve used the bucket graph)
+        ggml_free(g);
+        g = ggml_init(ip);
+        if (!g) return false;
+        inp = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+        ggml_set_name(inp, "input_ids"); ggml_set_input(inp);
+        cur = ggml_get_rows(g, ctx->model.embed_tokens_w, inp);
+        pos = nullptr;
+        if (hp.layer_types.find('a') != std::string::npos) {
+            pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+            ggml_set_name(pos, "positions"); ggml_set_input(pos);
+        }
+        for (uint32_t il = 0; il < hp.n_layers; il++)
+            cur = lfm2_layer_fwd(g, cur, ctx->model.layers[il],
+                                 H, nh, nkv, hd, T, eps, theta, pos);
+        cur = lfm2_rms_norm(g, cur, ctx->model.embedding_norm_w, eps);
+        cls = ggml_cont(g, ggml_view_1d(g, cur, H, 0));
+        ggml_set_name(cls, "cls"); ggml_set_output(cls);
+        gf = ggml_new_graph_custom(g, max_nodes, false);
+        ggml_build_forward_expand(gf, cls);
+    }
+
+    ggml_backend_sched_reset(ctx->sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
         fprintf(stderr, "[lfm2_embed] graph allocation failed (T=%d)\n", T);
         ggml_free(g);
         return false;
@@ -460,7 +503,7 @@ bool lfm2_embed_encode_to(lfm2_embed_ctx * ctx, const char * text, float * out) 
 
     {
         auto t_comp0 = std::chrono::steady_clock::now();
-        ggml_backend_graph_compute(ctx->backend, gf);
+        ggml_backend_sched_graph_compute(ctx->sched, gf);
         if (bench) {
             auto t_comp1 = std::chrono::steady_clock::now();
             fprintf(stderr, "[lfm2_embed-bench] graph compute: %.3f ms\n",
@@ -564,7 +607,16 @@ int lfm2_embed_encode_multivec(lfm2_embed_ctx * ctx, const char * text,
     ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
     ggml_build_forward_expand(gf, projected);
 
-    if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
+    // Reserve scheduler for ColBERT bucket
+    const int T_bucket = lfm2_bucket_seq_len(T);
+    if (ctx->reserved_T_colbert != T_bucket) {
+        ggml_backend_sched_reserve(ctx->sched, gf);
+        ctx->reserved_T_colbert = T_bucket;
+        ctx->reserved_T = 0;  // invalidate dense reservation
+    }
+
+    ggml_backend_sched_reset(ctx->sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
         fprintf(stderr, "[lfm2_embed] ColBERT graph allocation failed (T=%d)\n", T);
         ggml_free(g);
         return 0;
@@ -578,7 +630,7 @@ int lfm2_embed_encode_multivec(lfm2_embed_ctx * ctx, const char * text,
         ggml_backend_tensor_set(pos, ctx->pos_cache.data(), 0, T * sizeof(int32_t));
     }
 
-    ggml_backend_graph_compute(ctx->backend, gf);
+    ggml_backend_sched_graph_compute(ctx->sched, gf);
 
     // Read projected output: [cd, T] in ggml → read as [T, cd] row-major
     std::vector<float> raw(cd * T);
