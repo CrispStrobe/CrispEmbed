@@ -71,6 +71,7 @@ def main():
     eos = dec_cfg.get("eos_token_id", 2)
     pad = dec_cfg.get("pad_token_id", 1)
     dec_start = dec_cfg.get("decoder_start_token_id", eos)
+    scale_embedding = dec_cfg.get("scale_embedding", True)
 
     print(f"Encoder: {enc_layers}L/{enc_heads}H/{enc_hidden}d, image={image_size}, patch={patch_size}")
     print(f"Decoder: {dec_layers}L/{dec_heads}H/{dec_d_model}d, vocab={vocab_size}, ffn={dec_ffn_dim}")
@@ -82,6 +83,9 @@ def main():
         with open(tok_path) as f:
             tok = json.load(f)
         vocab_map = tok.get("model", {}).get("vocab", {})
+        # Also include added_tokens from tokenizer.json
+        for at in tok.get("added_tokens", []):
+            vocab_map[at["content"]] = at["id"]
         if vocab_map:
             tokens = [""] * (max(vocab_map.values()) + 1)
             for word, idx in vocab_map.items():
@@ -99,6 +103,19 @@ def main():
                 if idx < len(tokens):
                     tokens[idx] = word
             print(f"Tokenizer: {len(tokens)} tokens from vocab.json")
+
+    # Merge added_tokens.json (separate file, e.g. TexTeller Chinese chars)
+    added_tok_path = model_dir / "added_tokens.json"
+    if added_tok_path.exists():
+        with open(added_tok_path) as f:
+            added = json.load(f)
+        max_id = max(added.values()) if added else 0
+        if max_id >= len(tokens):
+            tokens.extend([""] * (max_id + 1 - len(tokens)))
+        for word, idx in added.items():
+            if idx < len(tokens):
+                tokens[idx] = word
+        print(f"  + {len(added)} added tokens (total {len(tokens)})")
 
     # ---- Load safetensors weights ----
     st_path = model_dir / "model.safetensors"
@@ -298,6 +315,7 @@ def main():
     writer.add_uint32("decoder.eos_token_id", eos)
     writer.add_uint32("decoder.pad_token_id", pad)
     writer.add_uint32("decoder.decoder_start_token_id", dec_start)
+    writer.add_bool("decoder.scale_embedding", scale_embedding)
 
     # Tokenizer — use the same key as pix2tex GGUF ("tokenizer.tokens")
     # NOT add_token_list() which writes "tokenizer.ggml.tokens"

@@ -98,6 +98,8 @@ struct math_ocr_context {
     std::string result_buf;
     std::vector<float> char_confidences; // per-token softmax probabilities
 
+    bool scale_embedding = true; // TrOCR: scale tok embed by sqrt(d_model)
+
     // Cached encoder output + cross-attention K/V (precomputed once)
     std::vector<float> enc_out;
     int n_enc_tokens = 0;
@@ -166,6 +168,9 @@ static void map_tensors(math_ocr_context* ctx) {
     ctx->dec_final_ln_b = D2("dec.d.layer_norm.bias", "dec.decoder.model.decoder.layer_norm.bias");
     ctx->lm_head_w = F(m, "dec.lm_head.weight");
     ctx->lm_head_b = F(m, "dec.lm_head.bias");
+    // Tied embeddings: lm_head shares embed_tokens weight
+    if (!ctx->lm_head_w && ctx->tok_embed)
+        ctx->lm_head_w = ctx->tok_embed;
 
     ctx->dec_layers.resize(hp.dec_layers);
     for (int i = 0; i < hp.dec_layers; i++) {
@@ -232,7 +237,15 @@ static ggml_tensor* g_mha(ggml_context* g, ggml_tensor* Q, ggml_tensor* K, ggml_
     Q = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, Q, hd, n_heads, T), 0, 2, 1, 3));
     K = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, K, hd, n_heads, T), 0, 2, 1, 3));
     V = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, V, hd, n_heads, T), 0, 2, 1, 3));
-    ggml_tensor* attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
+    // Q,K,V: [hd, T, nh]
+
+    ggml_tensor* attn;
+    // Manual matmul attention (more reliable than flash_attn_ext for some models)
+    ggml_tensor* scores = ggml_mul_mat(g, K, Q); // [T, T, nh]
+    scores = ggml_soft_max_ext(g, scores, nullptr, 1.0f / sqrtf((float)hd), 0.0f);
+    ggml_tensor* V_t = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3)); // [T, hd, nh]
+    attn = ggml_mul_mat(g, V_t, scores); // [hd, T, nh]
+
     // Output: [hd, T, nh] → [hd, nh, T] → [H, T]
     attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
     return ggml_reshape_2d(g, attn, H, T);
@@ -330,12 +343,18 @@ static void run_encoder(math_ocr_context* ctx, const float* pixels_rgb, int img_
     const int P = hp.patch_size, H = hp.enc_hidden;
     const int npw = img_w / P, nph = img_h / P;
     const int n_patches = npw * nph;
-    const int T = n_patches + 2;
+    // DeiT has CLS + distillation = +2; ViT has only CLS = +1
+    const int n_special = (ctx->dist_token != nullptr) ? 2 : 1;
+    const int T = n_patches + n_special;
 
     // Step 1: CPU-side patch embedding (conv projection)
     // This is a small op — keep on CPU, feed result to graph as input
     std::vector<float> embedded(T * H, 0.0f);
-    const int patch_dim = 3 * P * P;
+
+    // Derive channel count from patch embedding weight: shape [H, C*P*P]
+    const int patch_weight_dim = ctx->patch_proj_w
+        ? (int)(ggml_nelements(ctx->patch_proj_w) / H) : 3 * P * P;
+    const int n_channels = patch_weight_dim / (P * P);
 
     if (ctx->patch_proj_w) {
         auto W_buf = to_f32(ctx->patch_proj_w);
@@ -345,15 +364,15 @@ static void run_encoder(math_ocr_context* ctx, const float* pixels_rgb, int img_
         for (int py = 0; py < nph; py++) {
             for (int px = 0; px < npw; px++) {
                 // ggml stores in column-major: tensor[H, T] → data[t * H + h]
-                int t = py * npw + px + 2;
+                int t = py * npw + px + n_special;
                 for (int h = 0; h < H; h++) {
                     float sum = B ? B[h] : 0.0f;
-                    for (int c = 0; c < 3; c++)
+                    for (int c = 0; c < n_channels; c++)
                         for (int dy = 0; dy < P; dy++)
                             for (int dx = 0; dx < P; dx++) {
                                 int sy = py * P + dy, sx = px * P + dx;
                                 float v = pixels_rgb[(c * img_h + sy) * img_w + sx];
-                                sum += v * W[h * patch_dim + c * P * P + dy * P + dx];
+                                sum += v * W[h * patch_weight_dim + c * P * P + dy * P + dx];
                             }
                     embedded[t * H + h] = sum;
                 }
@@ -701,11 +720,11 @@ static ggml_cgraph* build_decoder_step_graph(math_ocr_context* ctx, ggml_context
             cur = g_ln(g, cur, l.cross_ln_w, l.cross_ln_b);
         }
 
-        // ---- FFN (ReLU) ----
+        // ---- FFN (GELU) ----
         if (l.ff_up_w) {
             residual = cur;
             ggml_tensor* up = g_linear(g, cur, l.ff_up_w, l.ff_up_b);
-            up = ggml_relu(g, up);
+            up = ggml_gelu(g, up);
             ggml_tensor* down = g_linear(g, up, l.ff_down_w, l.ff_down_b);
 
             // Residual + post-LN
@@ -793,7 +812,7 @@ static std::vector<int> run_decoder_graph(math_ocr_context* ctx) {
         //    Uses pre-cached dequantized tables (Optimization 1)
         std::vector<float> emb(D, 0.0f);
         if (!tok_emb_f32.empty() && tok >= 0 && tok < V) {
-            float sc = sqrtf((float)D);
+            float sc = ctx->scale_embedding ? sqrtf((float)D) : 1.0f;
             for (int i = 0; i < D; i++) emb[i] = tok_emb_f32[tok * D + i] * sc;
         }
         if (!pos_emb_f32.empty()) {
@@ -971,6 +990,10 @@ math_ocr_context* math_ocr_init(const char* model_path, int n_threads) {
     hp.eos_token        = core_gguf::kv_u32(gctx, "decoder.eos_token_id", 2);
     hp.pad_token        = core_gguf::kv_u32(gctx, "decoder.pad_token_id", 1);
     hp.decoder_start_token = core_gguf::kv_u32(gctx, "decoder.decoder_start_token_id", 2);
+    {
+        int idx = gguf_find_key(gctx, "decoder.scale_embedding");
+        ctx->scale_embedding = (idx < 0) ? true : gguf_get_val_bool(gctx, idx);
+    }
     ctx->vocab = core_gguf::kv_str_array(gctx, "tokenizer.tokens");
     core_gguf::free_metadata(gctx);
 
@@ -1038,11 +1061,17 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
     const bool bench = ctx->bench;
     auto t_total = std::chrono::steady_clock::now();
 
-    fprintf(stderr, "math_ocr: image_size S=%d, allocating rgb(%d)\n", S, 3*S*S);
-    // Resize + expand gray→3ch CHW + normalize (mean=0.5, std=0.5)
+    // Derive channel count from patch embedding weight
+    const int n_channels = ctx->patch_proj_w
+        ? (int)(ggml_nelements(ctx->patch_proj_w) / ctx->hparams.enc_hidden)
+              / (ctx->hparams.patch_size * ctx->hparams.patch_size)
+        : 3;
+    fprintf(stderr, "math_ocr: image_size S=%d, channels=%d, allocating buf(%d)\n",
+            S, n_channels, n_channels*S*S);
+    // Resize + expand gray→CHW + normalize (mean=0.5, std=0.5)
     auto tb0 = std::chrono::steady_clock::now();
-    std::vector<float> rgb(3 * S * S);
-    fprintf(stderr, "math_ocr: rgb allocated\n");
+    std::vector<float> rgb(n_channels * S * S);
+    fprintf(stderr, "math_ocr: buf allocated\n");
     float fsx = (float)width / S, fsy = (float)height / S;
     for (int y = 0; y < S; y++) {
         float fy = y * fsy;
@@ -1055,9 +1084,8 @@ const char* math_ocr_recognize(math_ocr_context* ctx, const float* pixels,
             float v = (1 - wy) * ((1 - wx) * pixels[y0*width+x0] + wx * pixels[y0*width+x1])
                     +      wy  * ((1 - wx) * pixels[y1*width+x0] + wx * pixels[y1*width+x1]);
             v = (v - 0.5f) / 0.5f;
-            rgb[0*S*S + y*S + x] = v;
-            rgb[1*S*S + y*S + x] = v;
-            rgb[2*S*S + y*S + x] = v;
+            for (int c = 0; c < n_channels; c++)
+                rgb[c*S*S + y*S + x] = v;
         }
     }
     if (bench) fprintf(stderr, "[math_ocr-bench] preprocess: %.1f ms\n",
