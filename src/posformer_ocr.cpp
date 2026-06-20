@@ -14,6 +14,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gguf_loader.h"
+#include "core/cpu_ops.h"
 
 #include <algorithm>
 #include <cassert>
@@ -140,92 +141,29 @@ static const float * tf32(posformer_ocr_context * ctx, struct ggml_tensor * t) {
 static void conv2d(const float * in, int ic, int ih, int iw,
                    const float * W, const float * B,
                    int oc, int kH, int kW, int stride, int pad,
-                   float * out, int oh, int ow) {
-    for (int o = 0; o < oc; o++) {
-        float b = B ? B[o] : 0.0f;
-        for (int y = 0; y < oh; y++)
-            for (int x = 0; x < ow; x++) {
-                float sum = b;
-                for (int c = 0; c < ic; c++)
-                    for (int ky = 0; ky < kH; ky++)
-                        for (int kx = 0; kx < kW; kx++) {
-                            int iy = y * stride - pad + ky;
-                            int ix = x * stride - pad + kx;
-                            if (iy >= 0 && iy < ih && ix >= 0 && ix < iw)
-                                sum += in[c*ih*iw + iy*iw + ix] *
-                                       W[o*ic*kH*kW + c*kH*kW + ky*kW + kx];
-                        }
-                out[o*oh*ow + y*ow + x] = sum;
-            }
-    }
+                   float * out, int /*oh*/, int /*ow*/) {
+    core_cpu::conv2d_cpu(in, out, W, B, ic, oc, ih, iw, kH, kW, stride, pad);
 }
-
-static void relu_ip(float * d, int n) {
-    for (int i = 0; i < n; i++) if (d[i] < 0) d[i] = 0;
-}
-
+static void relu_ip(float * d, int n) { core_cpu::relu_inplace(d, n); }
 static void maxpool2d_ceil(const float * in, int ch, int ih, int iw,
                            int k, int s, float * out, int oh, int ow) {
-    for (int c = 0; c < ch; c++)
-        for (int y = 0; y < oh; y++)
-            for (int x = 0; x < ow; x++) {
-                float mx = -1e30f;
-                for (int ky = 0; ky < k; ky++)
-                    for (int kx = 0; kx < k; kx++) {
-                        int iy = y*s + ky, ix = x*s + kx;
-                        if (iy < ih && ix < iw) {
-                            float v = in[c*ih*iw + iy*iw + ix];
-                            if (v > mx) mx = v;
-                        }
-                    }
-                out[c*oh*ow + y*ow + x] = mx;
-            }
+    core_cpu::maxpool2d_cpu(in, ch, ih, iw, k, s, out, oh, ow);
 }
-
 static void avgpool2d_ceil(const float * in, int ch, int ih, int iw,
                            int k, int s, float * out, int oh, int ow) {
-    for (int c = 0; c < ch; c++)
-        for (int y = 0; y < oh; y++)
-            for (int x = 0; x < ow; x++) {
-                float sum = 0; int cnt = 0;
-                for (int ky = 0; ky < k; ky++)
-                    for (int kx = 0; kx < k; kx++) {
-                        int iy = y*s + ky, ix = x*s + kx;
-                        if (iy < ih && ix < iw) {
-                            sum += in[c*ih*iw + iy*iw + ix];
-                            cnt++;
-                        }
-                    }
-                out[c*oh*ow + y*ow + x] = cnt > 0 ? sum / cnt : 0;
-            }
+    core_cpu::avgpool2d_cpu(in, ch, ih, iw, k, s, out, oh, ow);
 }
-
 static void apply_bn(float * d, int ch, int sp,
                      const float * scale, const float * offset) {
-    for (int c = 0; c < ch; c++) {
-        float s = scale[c], o = offset[c];
-        for (int i = 0; i < sp; i++) d[c*sp + i] = d[c*sp + i] * s + o;
-    }
+    core_cpu::apply_bn_cpu(d, ch, sp, scale, offset);
 }
-
 static void layernorm(float * x, int d, const float * w, const float * b) {
-    float mean = 0, var = 0;
-    for (int i = 0; i < d; i++) mean += x[i];
-    mean /= d;
-    for (int i = 0; i < d; i++) { float v = x[i] - mean; var += v*v; }
-    var /= d;
-    float inv = 1.0f / sqrtf(var + 1e-5f);
-    for (int i = 0; i < d; i++) x[i] = (x[i] - mean) * inv * w[i] + b[i];
+    core_cpu::layernorm_cpu(x, x, d, w, b, 1e-5f);
 }
-
 static void linear(const float * x, int in_d,
                    const float * W, const float * B, int out_d,
                    float * out) {
-    for (int o = 0; o < out_d; o++) {
-        float s = B ? B[o] : 0.0f;
-        for (int i = 0; i < in_d; i++) s += x[i] * W[o*in_d + i];
-        out[o] = s;
-    }
+    core_cpu::linear_cpu(x, out, in_d, out_d, W, B);
 }
 
 // ---------------------------------------------------------------------------

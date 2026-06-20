@@ -17,6 +17,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gguf_loader.h"
+#include "core/cpu_ops.h"
 
 #include <algorithm>
 #include <cassert>
@@ -356,25 +357,10 @@ static void linear(const float * x, int in_dim,
 
 static void apply_bn_scale(float * data, int channels, int spatial,
                            const float * scale, const float * offset) {
-    // data layout: (channels, spatial) = CHW flattened
-    for (int c = 0; c < channels; c++) {
-        float s = scale[c], o = offset[c];
-        float * row = data + c * spatial;
-        for (int i = 0; i < spatial; i++) {
-            row[i] = row[i] * s + o;
-        }
-    }
+    core_cpu::apply_bn_cpu(data, channels, spatial, scale, offset);
 }
 
-// ---------------------------------------------------------------------------
-// Helper: ReLU in-place
-// ---------------------------------------------------------------------------
-
-static void relu_inplace(float * data, int n) {
-    for (int i = 0; i < n; i++) {
-        if (data[i] < 0) data[i] = 0;
-    }
-}
+static void relu_inplace(float * data, int n) { core_cpu::relu_inplace(data, n); }
 
 // ---------------------------------------------------------------------------
 // Helper: Conv2d (no stride, with padding)
