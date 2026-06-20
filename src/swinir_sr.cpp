@@ -9,6 +9,7 @@
 // SwinBlock (odd index):  shifted-window-MSA (cyclic shift + attn_mask)
 
 #include "swinir_sr.h"
+#include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -315,14 +316,13 @@ struct swinir_sr_context {
     int n_threads;
     bool bench;
     core_gguf::WeightLoad wl;
-    std::vector<std::vector<float>> wbufs;
+    core_cpu::DequantCache dcache;
     std::vector<std::vector<int32_t>> ibufs;
 
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t) { fprintf(stderr, "swinir_sr: missing %s\n", name.c_str()); return nullptr; }
-        wbufs.emplace_back();
-        return sir_to_f32(t, wbufs.back());
+        return dcache.get(t);
     }
     const int32_t * get_i32(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
@@ -458,8 +458,7 @@ static void swinir_forward_tile(swinir_sr_context * ctx,
             std::string mask_name = std::string(prefix) + ".attn_mask";
             auto * mask_t = core_gguf::try_get(ctx->wl.tensors, mask_name.c_str());
             if (mask_t && do_shift) {
-                ctx->wbufs.emplace_back();
-                wt.attn_mask = sir_to_f32(mask_t, ctx->wbufs.back());
+                wt.attn_mask = ctx->dcache.get(mask_t);
                 // attn_mask shape: [nWin, ws², ws²]
                 wt.n_attn_mask_wins = (int)(ggml_nelements(mask_t) / (ws * ws * ws * ws));
             } else {

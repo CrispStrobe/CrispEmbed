@@ -11,9 +11,10 @@
 
 #include "tesseract_lstm.h"
 
+#include "core/cpu_ops.h"
+#include "core/gguf_loader.h"
 #include "ggml.h"
 #include "ggml-backend.h"
-#include "core/gguf_loader.h"
 
 #include <algorithm>
 #include <cassert>
@@ -236,16 +237,11 @@ static void lstm_forward(
         int t = reverse ? (T - 1 - step) : step;
         const float * xt = input + t * ni;
 
-        // gates = W_ih @ x + W_hh @ h + bias
+        // gates = W_ih @ x + W_hh @ h + bias (SIMD-accelerated dot products)
         for (int g = 0; g < gs; g++) {
-            float val = bias[g];
-            const float * wih_row = W_ih + g * ni;
-            for (int j = 0; j < ni; j++)
-                val += wih_row[j] * xt[j];
-            const float * whh_row = W_hh + g * ns;
-            for (int j = 0; j < ns; j++)
-                val += whh_row[j] * h[j];
-            gates[g] = val;
+            gates[g] = bias[g]
+                     + core_cpu::dot_product(W_ih + g * ni, xt, ni)
+                     + core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
         }
 
         for (int j = 0; j < ns; j++) {
@@ -292,15 +288,11 @@ static void summ_lstm_forward(
         for (int col = 0; col < width; col++) {
             const float * xt = input + (row * width + col) * channels;
 
+            // SIMD-accelerated gate computation
             for (int g = 0; g < gs; g++) {
-                float val = bias[g];
-                const float * wih_row = W_ih + g * channels;
-                for (int j = 0; j < channels; j++)
-                    val += wih_row[j] * xt[j];
-                const float * whh_row = W_hh + g * ns;
-                for (int j = 0; j < ns; j++)
-                    val += whh_row[j] * h[j];
-                gates[g] = val;
+                gates[g] = bias[g]
+                         + core_cpu::dot_product(W_ih + g * channels, xt, channels)
+                         + core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
             }
 
             for (int j = 0; j < ns; j++) {
