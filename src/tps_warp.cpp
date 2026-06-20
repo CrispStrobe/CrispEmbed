@@ -185,47 +185,65 @@ void tps_map_point(const tps_model * model,
     if (out_y) *out_y = fy;
 }
 
+// Grid step for coarse displacement field. TPS is smooth so 8-pixel bilinear
+// interpolation introduces < 0.5px error in practice.
+static constexpr int TPS_GRID_STEP = 8;
+
 void tps_warp(const uint8_t * src, int src_w, int src_h,
               const tps_model * model,
               uint8_t * dst, int dst_w, int dst_h,
               uint8_t bg) {
     if (!src || !model || !dst) return;
 
-    for (int yo = 0; yo < dst_h; yo++) {
-        for (int xo = 0; xo < dst_w; xo++) {
-            // Map output pixel back to input coordinates (inverse warp)
+    // Pre-compute displacement on a coarse grid to avoid O(W*H*N) TPS evaluations.
+    // Grid covers [0..dst_w] × [0..dst_h] with step TPS_GRID_STEP.
+    int gw = (dst_w  + TPS_GRID_STEP - 1) / TPS_GRID_STEP + 1;
+    int gh = (dst_h  + TPS_GRID_STEP - 1) / TPS_GRID_STEP + 1;
+    std::vector<float> gdx(gw * gh), gdy(gw * gh);
+    for (int gy = 0; gy < gh; gy++) {
+        float wy = (float)(gy * TPS_GRID_STEP);
+        for (int gx = 0; gx < gw; gx++) {
+            float wx = (float)(gx * TPS_GRID_STEP);
             float sx, sy;
-            tps_map_point(model, (float)xo, (float)yo, &sx, &sy);
+            tps_map_point(model, wx, wy, &sx, &sy);
+            gdx[gy * gw + gx] = sx;
+            gdy[gy * gw + gx] = sy;
+        }
+    }
 
-            // Out-of-bounds check (with 0.5px margin for rounding)
+    // Render: bilinearly interpolate the coarse grid for each output pixel.
+    for (int yo = 0; yo < dst_h; yo++) {
+        float gy_f = (float)yo / TPS_GRID_STEP;
+        int   gy0  = (int)gy_f;
+        int   gy1  = std::min(gy0 + 1, gh - 1);
+        float gy_t = gy_f - gy0;
+
+        for (int xo = 0; xo < dst_w; xo++) {
+            float gx_f = (float)xo / TPS_GRID_STEP;
+            int   gx0  = (int)gx_f;
+            int   gx1  = std::min(gx0 + 1, gw - 1);
+            float gx_t = gx_f - gx0;
+
+            float sx = (1.0f - gy_t) * ((1.0f - gx_t) * gdx[gy0*gw + gx0] + gx_t * gdx[gy0*gw + gx1])
+                     +         gy_t  * ((1.0f - gx_t) * gdx[gy1*gw + gx0] + gx_t * gdx[gy1*gw + gx1]);
+            float sy = (1.0f - gy_t) * ((1.0f - gx_t) * gdy[gy0*gw + gx0] + gx_t * gdy[gy0*gw + gx1])
+                     +         gy_t  * ((1.0f - gx_t) * gdy[gy1*gw + gx0] + gx_t * gdy[gy1*gw + gx1]);
+
             if (sx < -0.5f || sy < -0.5f ||
                 sx > src_w - 0.5f || sy > src_h - 0.5f) {
                 dst[yo * dst_w + xo] = bg;
                 continue;
             }
 
-            // Bilinear interpolation with clamped indices
-            int x0 = (int)std::floor(sx);
-            int y0 = (int)std::floor(sy);
-            int x1 = x0 + 1;
-            int y1 = y0 + 1;
-
-            x0 = std::max(0, std::min(x0, src_w - 1));
-            x1 = std::max(0, std::min(x1, src_w - 1));
-            y0 = std::max(0, std::min(y0, src_h - 1));
-            y1 = std::max(0, std::min(y1, src_h - 1));
-
+            int x0 = std::max(0, std::min((int)std::floor(sx), src_w - 1));
+            int x1 = std::max(0, std::min(x0 + 1,             src_w - 1));
+            int y0 = std::max(0, std::min((int)std::floor(sy), src_h - 1));
+            int y1 = std::max(0, std::min(y0 + 1,             src_h - 1));
             float fx = sx - std::floor(sx);
             float fy = sy - std::floor(sy);
 
-            float v00 = (float)src[y0 * src_w + x0];
-            float v10 = (float)src[y0 * src_w + x1];
-            float v01 = (float)src[y1 * src_w + x0];
-            float v11 = (float)src[y1 * src_w + x1];
-
-            float v = (1.0f - fy) * ((1.0f - fx) * v00 + fx * v10)
-                    +         fy  * ((1.0f - fx) * v01 + fx * v11);
-
+            float v = (1.0f - fy) * ((1.0f - fx) * src[y0*src_w + x0] + fx * src[y0*src_w + x1])
+                    +         fy  * ((1.0f - fx) * src[y1*src_w + x0] + fx * src[y1*src_w + x1]);
             dst[yo * dst_w + xo] = (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));
         }
     }
