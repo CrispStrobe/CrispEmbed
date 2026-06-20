@@ -535,9 +535,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `tbsrn_sr` apply BN as a separate pass after conv. Fold scale/shift into
   conv weight + bias at init time.
 
-- [ ] **qwen2vl: token embedding via direct read** — lines 1867-1885 build
-  and run a full ggml graph just to do `ggml_get_rows` for one token ID.
-  Same issue in lightonocr (lines 736-754). Direct tensor read instead.
+- [x] **qwen2vl: token embedding via direct read** — already done: the
+  persistent decode graph (`build_decode_step_graph`, line 2386) uses
+  `ggml_get_rows` as the first graph op, eliminating the separate embed
+  mini-graph and its sched_reset/sched_alloc overhead. Item was stale.
 
 - [x] **lightonocr: decode graph reuse** — DONE (`27b650a`). `LocPdGraph`
   struct + `build_locr_pd_graph(ctx, max_kv)`: fixed-size KV tensors
@@ -549,8 +550,11 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [x] **qwen2vl: F32 causal mask → F16** — already F16 (line 1788,
   `GGML_TYPE_F16`). Item was stale.
 
-- [ ] **gliner_ner: DeBERTa relative position expansion** — creates [H, T*T]
-  F32 tensor on CPU every call. T=200 → 117MB. Cache or compute incrementally.
+- [x] **gliner_ner: DeBERTa relative position expansion** — DONE (`39f7bf5`).
+  `precompute_deberta_rel_embd()` at init caches LN-normalized rel_embd
+  (eliminates per-call dequant+LN). Per-T expansion cached in
+  `ctx->rel_pos_expanded_cache`; reused on repeated T (common in batch
+  processing), saving the full T*T×H re-expansion + 120MB alloc per hit.
 
 - [ ] **Pre-compute 2D positional encoding** — `bttr_ocr` and `posformer_ocr`
   recompute sinf/cosf/powf for every spatial position on every inference call.
