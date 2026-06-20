@@ -72,25 +72,18 @@ static void gv_rmsnorm(float * data, int n, int d, const float * weight, float e
     }
 }
 
+// gv_linear: delegate to SIMD-accelerated core_cpu::linear_cpu
 static void gv_linear(const float * input, int n, int id, int od,
                       const float * weight, const float * bias, float * output) {
-    for (int i = 0; i < n; i++) {
-        const float * in_row = input + i * id;
-        float * out_row = output + i * od;
-        for (int o = 0; o < od; o++) {
-            float sum = bias ? bias[o] : 0.0f;
-            for (int j = 0; j < id; j++) sum += in_row[j] * weight[o * id + j];
-            out_row[o] = sum;
-        }
-    }
+    for (int i = 0; i < n; i++)
+        core_cpu::linear_cpu(input + i * id, output + i * od, id, od, weight, bias);
 }
 
 static float gv_gelu(float x) {
-    // gelu_pytorch_tanh: 0.5*x*(1+tanh(sqrt(2/pi)*(x+0.044715*x^3)))
-    return 0.5f * x * (1.0f + tanhf(0.7978845608f * (x + 0.044715f * x * x * x)));
+    return core_cpu::gelu(x);
 }
 
-static float gv_silu(float x) { return x / (1.0f + expf(-x)); }
+static float gv_silu(float x) { return core_cpu::silu(x); }
 
 // ── Context ────────────────────────────────────────────────────────────
 
@@ -110,7 +103,10 @@ struct granite_vision_context {
 
     // Weight storage
     core_gguf::WeightLoad wl;
-    std::vector<std::vector<float>> wbufs;
+    core_cpu::DequantCache dcache;   // caches dequantized weights (replaces wbufs)
+
+    // RoPE frequency table (precomputed once at init)
+    core_vlm::RoPEFreqTable rope_freq;
 
     // KV cache
     std::vector<float> kv_cache;  // [2 * llm_layers * max_seq * head_dim * llm_kv_heads]
@@ -124,8 +120,7 @@ struct granite_vision_context {
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t) return nullptr;
-        wbufs.emplace_back();
-        return gv_to_f32(t, wbufs.back());
+        return dcache.get(t);
     }
 };
 
@@ -170,6 +165,8 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
     ctx->logits_scaling = idx >= 0 ? gguf_get_val_f32(meta, idx) : 8.0f;
     idx = gguf_find_key(meta, "granite_vision.rope_theta");
     ctx->rope_theta = idx >= 0 ? gguf_get_val_f32(meta, idx) : 300000.0f;
+    int head_dim = ctx->llm_dim / ctx->llm_heads;
+    ctx->rope_freq.precompute(head_dim, ctx->rope_theta);
 
     core_gguf::free_metadata(meta);
 
@@ -432,8 +429,8 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
 
         // RMSNorm1
         std::vector<float> normed(D);
-        memcpy(normed.data(), x.data(), D * sizeof(float));
-        gv_rmsnorm(normed.data(), 1, D, ctx->get(lp + ".norm1.weight"), eps);
+        core_cpu::rmsnorm_cpu(x.data(), normed.data(), D,
+                              ctx->get(lp + ".norm1.weight"), eps);
 
         // GQA Self-Attention with KV cache
         std::vector<float> Q(D), K_new(n_kv * d_head), V_new(n_kv * d_head);
@@ -441,11 +438,10 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
         gv_linear(normed.data(), 1, D, n_kv * d_head, ctx->get(lp + ".attn.k.weight"), nullptr, K_new.data());
         gv_linear(normed.data(), 1, D, n_kv * d_head, ctx->get(lp + ".attn.v.weight"), nullptr, V_new.data());
 
-        // RoPE on Q and K (interleaved / Llama style)
-        float theta = ctx->rope_theta;
-        core_vlm::apply_rope(Q.data(), n_heads, d_head, n_past, theta,
+        // RoPE on Q and K — uses precomputed frequency table (no powf per element)
+        ctx->rope_freq.apply(Q.data(), n_heads, n_past,
                              core_vlm::RoPEStyle::INTERLEAVED);
-        core_vlm::apply_rope(K_new.data(), n_kv, d_head, n_past, theta,
+        ctx->rope_freq.apply(K_new.data(), n_kv, n_past,
                              core_vlm::RoPEStyle::INTERLEAVED);
 
         // GQA attention with KV cache
@@ -465,8 +461,8 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
         for (int d = 0; d < D; d++) x[d] += proj[d] * res_mul;
 
         // RMSNorm2 + SiLU MLP
-        memcpy(normed.data(), x.data(), D * sizeof(float));
-        gv_rmsnorm(normed.data(), 1, D, ctx->get(lp + ".norm2.weight"), eps);
+        core_cpu::rmsnorm_cpu(x.data(), normed.data(), D,
+                              ctx->get(lp + ".norm2.weight"), eps);
 
         int ffn = ctx->llm_ffn_dim;
         std::vector<float> down(D);
@@ -479,7 +475,12 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
     }
 
     // Final RMSNorm
-    gv_rmsnorm(x.data(), 1, D, ctx->get("llm.norm.weight"), eps);
+    {
+        std::vector<float> tmp(D);
+        core_cpu::rmsnorm_cpu(x.data(), tmp.data(), D,
+                              ctx->get("llm.norm.weight"), eps);
+        memcpy(x.data(), tmp.data(), D * sizeof(float));
+    }
 
     // LM head (may be tied to embeddings)
     const float * lm_w = ctx->get("llm.lm_head.weight");
@@ -487,11 +488,10 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
         lm_w = ctx->get("llm.embed.weight");
 
     if (lm_w) {
-        for (int v = 0; v < ctx->vocab_size; v++) {
-            float sum = 0;
-            for (int d = 0; d < D; d++) sum += x[d] * lm_w[v * D + d];
-            logits[v] = sum / ctx->logits_scaling;
-        }
+        // SIMD-accelerated LM head matmul (49156 × 2048)
+        core_cpu::linear_cpu(x.data(), logits, D, ctx->vocab_size, lm_w, nullptr);
+        float inv_scale = 1.0f / ctx->logits_scaling;
+        for (int v = 0; v < ctx->vocab_size; v++) logits[v] *= inv_scale;
     }
 }
 
