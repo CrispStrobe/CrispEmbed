@@ -540,9 +540,8 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `swinir_sr` rebuild shift masks per tile, `dat_sr` rebuilds dynamic position
   bias per block. All deterministic for a given tile size.
 
-- [ ] **Fuse BatchNorm into conv weights at model load** — `dat_sr` and
-  `tbsrn_sr` apply BN as a separate pass after conv. Fold scale/shift into
-  conv weight + bias at init time.
+- [x] **Fuse BatchNorm into conv weights at model load** — TBSRN: fused 11
+  conv+BN pairs (2 per SRB × 5 + 1 final) at init. `dat_sr` still pending.
 
 - [ ] **qwen2vl: token embedding via direct read** — lines 1867-1885 build
   and run a full ggml graph just to do `ggml_get_rows` for one token ID.
@@ -557,9 +556,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **gliner_ner: DeBERTa relative position expansion** — creates [H, T*T]
   F32 tensor on CPU every call. T=200 → 117MB. Cache or compute incrementally.
 
-- [ ] **Pre-compute 2D positional encoding** — `bttr_ocr` and `posformer_ocr`
-  recompute sinf/cosf/powf for every spatial position on every inference call.
-  Cache at init since dimensions are fixed.
+- [x] **Pre-compute 2D positional encoding** — TBSRN: cached at init (fixed
+  16×64 dims, reused across 5 SRB blocks). BTTR/PosFormer: cached for
+  last-used (h, w) — skips ~327K sinf/cosf evals on repeated calls.
 
 - [ ] **mel.cpp: OpenMP on STFT loop** — each frame's FFT is independent
   (line 73-84). `#pragma omp parallel for` on the `t` loop.
