@@ -372,33 +372,28 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   Migrated: smoldocling_ocr (replaced wbufs), granite_vision_ocr (replaced
   wcache). Remaining runtimes still need migration.
 
-- [ ] **Adopt F16 ggml KV cache** — internvl2_ocr (lines 706-753) implements
-  the gold-standard pattern: persistent F16 ggml backend tensors with
-  `ggml_view_4d` + `ggml_cpy` writes. Zero CPU-GPU transfer, half the memory.
-  Port to: qwen2vl_ocr (currently F32 std::vector, re-uploads entire cache each
-  step), deepseek_ocr2 (same), lightonocr (same + O(n^2) total transfer),
-  smoldocling_ocr (F32 flat vector), granite_vision_ocr (F32 flat vector),
+- [ ] **Adopt F16 ggml KV cache** — Port to: qwen2vl_ocr (F32 std::vector,
+  re-uploads entire cache each step), deepseek_ocr2 (same), lightonocr
+  (same + O(n^2) total transfer), smoldocling_ocr (F32 flat vector),
   pix2struct (no KV cache at all).
+  granite_vision_ocr: **DONE** (`66b8de2`).
 
 - [x] **Move granite_vision_ocr vision encoder to ggml graphs** — DONE
-  (feat/granite-vision-ggml-graph, `0d8ef74`). SigLIP ViT (27 layers,
-  T=729, D=1152, n_heads=16) now runs as a single ggml graph with Metal
-  backend: LN+QKV+softmax+V-weighted+outproj+FFN per layer, feature
-  extraction via `ggml_set_output` at feature_layers[] indices. Scalar
-  fallback retained. `gv_linear` also switched to `core_cpu::dot_product`
-  (SIMD). **Projector and LLM decoder still scalar — see remaining P0
-  items below.**
+  (feat/granite-vision-ggml-graph). SigLIP ViT (27 layers, T=729,
+  D=1152, n_heads=16) as a single ggml graph with Metal backend.
 
-- [ ] **granite_vision projector + LLM decoder → ggml graphs** — the MLP
-  projector (`gv_projector`, 2 linear layers) and all 40 LLM decode layers
-  (`gv_llm_decode_step`) are still CPU-scalar. The LM head (vocab=49156)
-  is a 2048×49156 SIMD matmul now, but still CPU. The decoder is the second
-  major bottleneck after the vision encoder.
+- [x] **granite_vision projector + LLM decoder → ggml graphs** — DONE
+  (`66b8de2`). `gv_run_projector_graph` (2-layer MLP on Metal) and
+  `gv_run_llm_body` (40-layer Granite-3.1: RMSNorm + GQA with
+  ggml_rope_ext NEOX + F16 KV cache + ggml_flash_attn_ext + SwiGLU FFN,
+  scaled residuals). LM head stays CPU (linear_cpu, SIMD). Scalar fallback
+  preserved in `gv_llm_decode_step` (used by dump_llm parity).
 
-- [ ] **Batched prefill for smoldocling + granite** — both process vision tokens
-  one-at-a-time through 30-40 LLM layers. smoldocling: lines 873-893.
-  granite: lines 808-822. For 729 vision tokens this means 729 sequential
-  full-model forward passes instead of 1.
+- [x] **Batched prefill for granite** — DONE (`66b8de2`). All prompt tokens
+  (vision + text, 759 total) assembled into one buffer and passed to
+  `gv_run_llm_body` as a single T=759 call. Replaces 759 serial decode
+  steps with 1 batched ggml graph invocation.
+  smoldocling: still scalar prefill (separate TODO).
 
 - [ ] **Move pix2struct to ggml graphs + add KV cache** — fully scalar, no ggml
   graphs, no KV cache, O(T^2) recompute per decode step. No cross-attention K/V
