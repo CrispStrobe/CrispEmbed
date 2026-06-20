@@ -2956,7 +2956,7 @@ struct qwen2vl_ocr_context {
   bool use_qari_default_prompt = false;
   std::string prompt = "Describe this image.";
   std::vector<int32_t> prompt_ids; // cached tokenized prompt
-  int max_tokens = 512;
+  int max_tokens = 2048;
   std::string last_result;
   std::vector<float> char_confidences;
 
