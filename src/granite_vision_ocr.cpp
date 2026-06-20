@@ -689,8 +689,9 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     ggml_cgraph  * gf = ggml_new_graph_custom(g, kLlmGraphCap, false);
 
     // ── Inputs ──
-    ggml_tensor * x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
-    ggml_set_name(x, "llm_in"); ggml_set_input(x);
+    ggml_tensor * x_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+    ggml_set_name(x_in, "llm_in"); ggml_set_input(x_in);
+    ggml_tensor * x = x_in;  // working variable; x_in preserved for data upload
 
     ggml_tensor * rope_pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
     ggml_set_name(rope_pos, "rope_pos"); ggml_set_input(rope_pos);
@@ -821,7 +822,7 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
         ggml_free(g); return false;
     }
 
-    ggml_backend_tensor_set(x, embeds, 0, (size_t)T * D * sizeof(float));
+    ggml_backend_tensor_set(x_in, embeds, 0, (size_t)T * D * sizeof(float));
 
     // Position IDs: [n_past, n_past+1, ..., n_past+T-1]
     std::vector<int32_t> pos(T);
