@@ -206,12 +206,13 @@ def main():
     writer.add_bool(f"{ARCH}.tie_word_embeddings", tie_embeddings)
 
     # mRoPE sections + interleaved flag
-    rope_scaling = tc.get("rope_scaling", {})
-    if "mrope_section" in rope_scaling:
-        sections = rope_scaling["mrope_section"]
+    # transformers >=5.x uses "rope_parameters"; older uses "rope_scaling"
+    rope_cfg = tc.get("rope_scaling", tc.get("rope_parameters", {}))
+    if "mrope_section" in rope_cfg:
+        sections = rope_cfg["mrope_section"]
         writer.add_array(f"{ARCH}.rope_sections", [int(x) for x in sections])
         print(f"  mRoPE sections: {sections}")
-    mrope_interleaved = rope_scaling.get("mrope_interleaved", True)
+    mrope_interleaved = rope_cfg.get("mrope_interleaved", True)
     writer.add_bool(f"{ARCH}.mrope_interleaved", mrope_interleaved)
     print(f"  mRoPE interleaved: {mrope_interleaved}")
 
@@ -253,11 +254,17 @@ def main():
           f"patch={vc_patch}, merge={vc_merge}, out={vc_out}")
     print(f"  DeepStack indexes: {vc_deepstack}")
 
-    # Image preprocessor config
+    # Image preprocessor config (preprocessor_config.json or processor_config.json)
     try:
-        pp_path = resolve_file("preprocessor_config.json")
+        try:
+            pp_path = resolve_file("preprocessor_config.json")
+        except Exception:
+            pp_path = resolve_file("processor_config.json")
         with open(pp_path) as fp:
             pp_cfg = json.load(fp)
+        # Qwen3-VL uses nested "image_processor" dict inside processor_config.json
+        if "image_processor" in pp_cfg:
+            pp_cfg = pp_cfg["image_processor"]
         pp_mean = list(pp_cfg.get("image_mean", [0.5, 0.5, 0.5]))[:3]
         pp_std = list(pp_cfg.get("image_std", [0.5, 0.5, 0.5]))[:3]
         pp_size = pp_cfg.get("size", {})
@@ -270,10 +277,11 @@ def main():
         print(f"  Image: mean={pp_mean}, std={pp_std}, "
               f"min_px={pp_min}, max_px={pp_max}")
     except Exception as e:
-        print(f"  preprocessor_config.json unavailable ({e}); using defaults")
+        print(f"  preprocessor config unavailable ({e}); using defaults")
 
     # ── Tokenizer ────────────────────────────────────────────────────
 
+    tok_ok = False
     try:
         from transformers import AutoTokenizer
         tok = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
@@ -283,38 +291,64 @@ def main():
         for token_str, token_id in vocab.items():
             if token_id < n_vocab:
                 tokens[token_id] = token_str
+        tok_ok = True
+        eos_id = getattr(tok, "eos_token_id", None)
+        pad_id = getattr(tok, "pad_token_id", None)
+    except Exception as e:
+        print(f"  AutoTokenizer failed ({e}), falling back to tokenizer.json")
 
+    if not tok_ok:
+        try:
+            tok_json_file = resolve_file("tokenizer.json")
+            with open(tok_json_file, "r", encoding="utf-8") as jf:
+                tok_json = json.load(jf)
+            # Extract vocab from tokenizer.json model section
+            vocab_dict = tok_json.get("model", {}).get("vocab", {})
+            # Also include added_tokens
+            for at in tok_json.get("added_tokens", []):
+                vocab_dict[at["content"]] = at["id"]
+            n_vocab = int(tc.get("vocab_size", max(vocab_dict.values()) + 1))
+            tokens = [""] * n_vocab
+            for token_str, token_id in vocab_dict.items():
+                if token_id < n_vocab:
+                    tokens[token_id] = token_str
+            tok_ok = True
+            eos_id = rc.get("eos_token_id", None)
+            pad_id = rc.get("pad_token_id", None)
+        except Exception as e2:
+            print(f"  tokenizer.json fallback also failed: {e2}")
+
+    if tok_ok:
         writer.add_array("tokenizer.ggml.tokens", tokens)
         writer.add_string("tokenizer.ggml.model", "gpt2")
         writer.add_uint32("tokenizer.ggml.type", 1)
 
+        # Merges: try merges.txt first, then tokenizer.json
+        raw_merges = []
         try:
             merges_file = resolve_file("merges.txt")
             with open(merges_file) as mf:
                 raw_merges = [l.strip() for l in mf if l.strip() and not l.startswith("#")]
-            writer.add_array("tokenizer.ggml.merges", raw_merges)
-            print(f"  Merges: {len(raw_merges)}")
         except Exception:
             try:
-                tok_json_file = resolve_file("tokenizer.json")
-                with open(tok_json_file, "r", encoding="utf-8") as jf:
-                    tok_json = json.load(jf)
-                raw_merges = []
+                if 'tok_json' not in dir():
+                    tok_json_file = resolve_file("tokenizer.json")
+                    with open(tok_json_file, "r", encoding="utf-8") as jf:
+                        tok_json = json.load(jf)
                 for merge in tok_json.get("model", {}).get("merges", []):
                     if isinstance(merge, str):
                         raw_merges.append(merge)
                     elif isinstance(merge, list) and len(merge) == 2:
                         raw_merges.append(f"{merge[0]} {merge[1]}")
-                if raw_merges:
-                    writer.add_array("tokenizer.ggml.merges", raw_merges)
-                    print(f"  Merges: {len(raw_merges)} (from tokenizer.json)")
             except Exception as e2:
                 print(f"  Merges not found: {e2}")
 
-        eos_id = getattr(tok, "eos_token_id", None)
+        if raw_merges:
+            writer.add_array("tokenizer.ggml.merges", raw_merges)
+            print(f"  Merges: {len(raw_merges)}")
+
         if eos_id is not None:
             writer.add_uint32("tokenizer.ggml.eos_token_id", int(eos_id))
-        pad_id = getattr(tok, "pad_token_id", None)
         if pad_id is not None:
             writer.add_uint32("tokenizer.ggml.padding_token_id", int(pad_id))
 
@@ -327,8 +361,6 @@ def main():
                 print(f"  {special_name}: {val}")
 
         print(f"  Tokenizer: {n_vocab} tokens")
-    except Exception as e:
-        print(f"  Tokenizer export failed: {e}")
 
     # ── Vision encoder tensors ───────────────────────────────────────
 
