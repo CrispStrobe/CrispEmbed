@@ -279,7 +279,7 @@ static ggml_tensor* find(const std::unordered_map<std::string, ggml_tensor*>& m,
 
 mixtex_ocr_context * mixtex_ocr_init(const char * model_path, int n_threads) {
     auto* ctx = new mixtex_ocr_context{};
-    ctx->n_threads = n_threads > 0 ? n_threads : 4;
+    ctx->n_threads = n_threads > 0 ? n_threads : 1;
     ctx->dump = (getenv("MIXTEX_DUMP") != nullptr);
 
     // Pass 1: metadata

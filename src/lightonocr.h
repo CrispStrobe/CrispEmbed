@@ -21,7 +21,7 @@ namespace lightonocr {
 
 struct context;
 
-bool load(context &ctx, const char *gguf_path, int n_threads = 4);
+bool load(context &ctx, const char *gguf_path, int n_threads = 1);
 void free_(context &ctx);
 
 // Recognize text from a raw RGB image (uint8, row-major).

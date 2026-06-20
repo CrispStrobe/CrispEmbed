@@ -32,7 +32,7 @@ struct text_box {
 struct context;
 
 // Load DBNet GGUF. Returns true on success.
-bool load(context** ctx, const char* path, int n_threads = 4);
+bool load(context** ctx, const char* path, int n_threads = 1);
 
 // Detect text regions from preprocessed pixels [3, H, W] CHW float32
 // (already normalized with ImageNet mean/std and padded to multiple of 32).

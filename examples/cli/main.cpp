@@ -61,7 +61,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "Options:\n");
     fprintf(stderr, "  -m MODEL         path to GGUF model or model name (auto-download)\n");
     fprintf(stderr, "  -f FILE          read texts from file (one per line)\n");
-    fprintf(stderr, "  -t N             number of threads (default: 4)\n");
+    fprintf(stderr, "  -t N             number of threads (default: 1)\n");
     fprintf(stderr, "  -d N             output dimension (Matryoshka truncation)\n");
     fprintf(stderr, "  --prefix TEXT    prepend a prefix to all inputs before tokenization\n");
     fprintf(stderr, "  --json           output as JSON array\n");
@@ -161,7 +161,7 @@ int main(int argc, char ** argv) {
     std::string rerank_query;
     std::string biencoder_query;
     std::vector<std::string> texts;
-    int n_threads = 4;
+    int n_threads = 1;
     int output_dim = 0;  // 0 = model default
     int top_n = 0;       // 0 = all
     bool json_output = false;

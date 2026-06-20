@@ -17,7 +17,7 @@ namespace clip_text {
 
 struct context;
 
-bool load(context** ctx, const char* path, int n_threads = 4);
+bool load(context** ctx, const char* path, int n_threads = 1);
 int dim(const context* ctx);
 
 // Encode text to CLIP embedding. Returns L2-normalized vector.

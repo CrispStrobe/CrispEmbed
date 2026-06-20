@@ -26,7 +26,7 @@ namespace vit_embed {
 struct context;
 
 // Load ViT GGUF. Returns true on success.
-bool load(context** ctx, const char* path, int n_threads = 4);
+bool load(context** ctx, const char* path, int n_threads = 1);
 
 // Encode an image. pixels is [3, H, W] in CHW order, already normalized
 // (subtract image_mean, divide by image_std). H and W must match the

@@ -38,6 +38,7 @@ option(GGML_CUDA        "Enable CUDA GPU acceleration" OFF)
 option(GGML_VULKAN      "Enable Vulkan GPU acceleration" OFF)
 option(GGML_METAL       "Enable Metal GPU acceleration (macOS)" OFF)
 option(GGML_LLAMAFILE   "Enable llamafile optimized SGEMM" ON)
+option(GGML_OPENMP      "Enable OpenMP threading in ggml (OFF uses lighter pthreads pool)" OFF)
 option(CRISPEMBED_BUILD_SHARED "Build shared library for Python" ON)
 option(CRISPEMBED_NATIVE       "Use -march=native for CPU SIMD (AVX2/NEON)" ON)
 

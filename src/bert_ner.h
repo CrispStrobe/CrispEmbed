@@ -32,7 +32,7 @@ struct context;
 
 // Load BERT/XLM-R NER model from GGUF.
 // The GGUF must contain ner.classifier.weight and ner.labels metadata.
-bool load(context** ctx, const char* model_path, int n_threads = 4);
+bool load(context** ctx, const char* model_path, int n_threads = 1);
 
 // Extract named entities. Returns entity spans with character offsets.
 std::vector<entity> extract(context* ctx, const char* text);

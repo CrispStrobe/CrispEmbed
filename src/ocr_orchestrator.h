@@ -20,7 +20,7 @@
 // Usage:
 //   ocr_orchestrator::config cfg = ocr_orchestrator::default_config();
 //   ocr_orchestrator::context* ctx;
-//   ocr_orchestrator::load(&ctx, cfg, /*n_threads=*/4);
+//   ocr_orchestrator::load(&ctx, cfg, /*n_threads=*/1);
 //   auto res = ocr_orchestrator::run_file(ctx, "scan.png");
 //   printf("%s\n", res.full_text.c_str());   // joined reading-order text
 //   ocr_orchestrator::free(ctx);
@@ -135,7 +135,7 @@ struct context;
 
 // Build a pipeline context. Engines/models are lazily loaded on first use so an
 // absent GGUF for one stage just skips that stage rather than failing load.
-bool load(context** ctx, const config& cfg, int n_threads = 4);
+bool load(context** ctx, const config& cfg, int n_threads = 1);
 
 // Run the full pipeline on an image file.
 result run_file(context* ctx, const char* image_path);

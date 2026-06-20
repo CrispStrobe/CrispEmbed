@@ -98,7 +98,7 @@ int main(int argc, char ** argv) {
     std::string adair_model_path;     // AdaIR restoration model (--adair-model)
     std::string pix2struct_model_path; // Pix2Struct document understanding model (--pix2struct)
     int port = 8080;
-    int n_threads = 4;
+    int n_threads = 1;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-m") == 0 && i + 1 < argc) model_path = argv[++i];

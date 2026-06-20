@@ -161,7 +161,7 @@ struct context {
     ggml_backend_sched_t sched = nullptr;
     ggml_gallocr_t galloc = nullptr;
     core_gguf::WeightLoad wl;
-    int n_threads = 4;
+    int n_threads = 1;
     bool bench = false;
 };
 
