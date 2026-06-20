@@ -755,7 +755,9 @@ single-threaded, must not OOM.
 - [x] Patch embedding → ggml matmul (im2col + mul_mat, F16 bias cast)
   Gated: CRISPEMBED_SMOLDOCLING_SCALAR_PATCH=1
 - [ ] LLM decoder → ggml graphs (currently CPU scalar via core_vlm, 30 layers)
-### internvl2 — PENDING
+### internvl2 — DONE (already optimized)
+  F16 KV cache, flash attn, ggml patch embed, ggml vision graph — all done.
+  Remaining: native GQA in flash_attn (skip ggml_repeat), batch vision tiles.
 ### SR/denoise — PENDING
 ### Embedding — PENDING
 
