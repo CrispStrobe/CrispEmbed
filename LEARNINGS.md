@@ -2305,3 +2305,50 @@ heap allocation per inference. Same pattern as `bidirlm_vision.cpp`.
 at entry. If the graph fails (alloc fails, compute fails, missing weights),
 it returns early with all feat_outs empty. The caller checks
 `n_feat > 0 && layer_outputs[0].empty()` to trigger the scalar path.
+
+## granite_vision: converter writes weights transposed — reshape before ggml_mul_mat
+
+`models/convert-granite-vision-to-gguf.py` writes 2D weights with their
+PyTorch `[out, in]` shape **un-reversed**, so the GGUF `ne` is transposed
+relative to ggml's convention (ne[0] = the fast/contraction = `in` dim). The
+CPU-scalar path (`gv_linear` + DequantCache) is immune — it dequantizes the
+raw bytes and indexes with explicit `id`/`od`. But **`ggml_mul_mat` asserts**
+`GGML_ASSERT(ggml_can_mul_mat(a, b))` for every non-square weight (k/v:
+512×2048, gate/up: 8192×2048, down: 2048×8192, projector linear_1:
+2048×4608, vision fc1/fc2). Square weights (q/o, linear_2) happen to pass.
+
+Fix: relabel the contiguous data with a reshape before the matmul —
+`ggml_mul_mat(g, ggml_reshape_2d(g, w, w->ne[1], w->ne[0]), x)`. This is a
+no-op for square weights and a pure view (no copy) otherwise. It is correct
+for Q4_K too: the quantizer made 256-element blocks along the stored-fast
+(`in`) axis, so the 8 blocks of an output row stay contiguous after the
+reshape. The vision FFN had this from the start; the projector and LLM
+graphs (`gv_run_projector_graph`, `gv_run_llm_body`) were missing it and
+crashed until `feat/granite-vision-ne-fix`.
+
+Beware: a *systemic* load-time `ne` swap would double-correct the vision FFN
+(which already reshapes per-site) — pick one approach, not both.
+
+## granite_vision OCR: the two image-path bugs (vision parity passed but OCR hallucinated)
+
+The vision tower passed crispembed-diff at cos≈0.99999, yet end-to-end OCR
+produced a fluent but wrong document (`<doc>…indd…</doc>`). Two bugs, both in
+the *inference* path the parity test never exercised (it feeds an already-
+ranged reference image and skips the LLM):
+
+1. **SigLIP normalization**: feed `(pixel/255 - 0.5)/0.5` → `[-1, 1]`
+   (preprocessor_config: mean=std=0.5), not `[0,1]`. Wrong range → garbage
+   features → hallucination.
+2. **Image features ×embedding_multiplier**: HF `LlavaNextForConditionalGeneration`
+   scatters raw projector features into `inputs_embeds`, then the Granite LM
+   multiplies the *whole* tensor (text + image) by `embedding_multiplier`
+   (12.0). So spliced vision rows must be ×12 too — otherwise they are 12×
+   weaker than text and the LM ignores the image. The one-space difference
+   between two runs (with vs without the normalization change) was the tell:
+   the image *was* reaching the LM but far too weakly to matter.
+
+The Granite LLM decode itself (RoPE = HF `rotate_half` / ggml NEOX, attention
+scaled by `attention_multiplier` = 1/64 not 1/√d, embedding/residual/logits
+multipliers, tied lm_head) is validated layer-by-layer by
+`tools/dump_granite_llm_reference.py` (builds the reference straight from the
+dequantized GGUF — no 5 GB HF checkout needed) at cos=1.0.

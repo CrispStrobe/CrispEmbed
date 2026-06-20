@@ -582,7 +582,7 @@ int lfm2_embed_encode_multivec(lfm2_embed_ctx * ctx, const char * text,
     ggml_tensor * inp = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
     ggml_set_name(inp, "input_ids"); ggml_set_input(inp);
     ggml_tensor * pos = nullptr;
-    if (ctx->model.layers[0].is_attention) {
+    if (hp.layer_types.find('a') != std::string::npos) {
         pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
         ggml_set_name(pos, "pos_ids"); ggml_set_input(pos);
     }

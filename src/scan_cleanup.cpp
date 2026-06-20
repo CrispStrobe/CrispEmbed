@@ -387,83 +387,52 @@ void scan_cleanup_find_content_rect(const float * gray, int w, int h,
 
 // ── 4. Background whitening ─────────────────────────────────────────
 
-// Min-pool (erode): sliding window minimum — O(w*h) via monotone deque.
-static void min_pool_2d(const float * src, int w, int h, int k, float * dst) {
+// Monotonic deque 1D sliding-window extremum — O(n) total instead of O(n*k).
+// is_min=true for min-pool (erode), false for max-pool (dilate).
+static void slide_1d(const float * in, float * out, int len, int k, bool is_min) {
     int half = k / 2;
-    std::vector<float> tmp(w * h);
-    std::deque<int> dq;
-
-    // Horizontal pass: for each row, slide window [out_x-half, out_x+half].
-    for (int y = 0; y < h; y++) {
-        dq.clear();
-        for (int right = 0; right < w + half; right++) {
-            if (right < w) {
-                while (!dq.empty() && src[y*w + dq.back()] >= src[y*w + right])
-                    dq.pop_back();
-                dq.push_back(right);
-            }
-            int out_x = right - half;
-            if (out_x < 0 || out_x >= w) continue;
-            while (!dq.empty() && dq.front() < std::max(0, out_x - half))
-                dq.pop_front();
-            tmp[y*w + out_x] = dq.empty() ? 1.0f : src[y*w + dq.front()];
+    std::deque<int> dq;  // indices of candidates
+    for (int i = 0; i < len; i++) {
+        // Remove elements outside the window
+        while (!dq.empty() && dq.front() < i - half) dq.pop_front();
+        // Maintain monotonicity
+        if (is_min) {
+            while (!dq.empty() && in[dq.back()] >= in[i]) dq.pop_back();
+        } else {
+            while (!dq.empty() && in[dq.back()] <= in[i]) dq.pop_back();
         }
-    }
-    // Vertical pass: same logic transposed.
-    for (int x = 0; x < w; x++) {
-        dq.clear();
-        for (int right = 0; right < h + half; right++) {
-            if (right < h) {
-                while (!dq.empty() && tmp[dq.back()*w + x] >= tmp[right*w + x])
-                    dq.pop_back();
-                dq.push_back(right);
-            }
-            int out_y = right - half;
-            if (out_y < 0 || out_y >= h) continue;
-            while (!dq.empty() && dq.front() < std::max(0, out_y - half))
-                dq.pop_front();
-            dst[out_y*w + x] = dq.empty() ? 1.0f : tmp[dq.front()*w + x];
-        }
+        dq.push_back(i);
+        out[i] = in[dq.front()];
     }
 }
 
-// Max-pool (dilate): sliding window maximum — O(w*h) via monotone deque.
-static void max_pool_2d(const float * src, int w, int h, int k, float * dst) {
-    int half = k / 2;
+// Min-pool (erode): separable 2-pass with monotonic deque — O(w*h) total
+static void min_pool_2d(const float * src, int w, int h, int k, float * dst) {
     std::vector<float> tmp(w * h);
-    std::deque<int> dq;
-
-    // Horizontal pass.
-    for (int y = 0; y < h; y++) {
-        dq.clear();
-        for (int right = 0; right < w + half; right++) {
-            if (right < w) {
-                while (!dq.empty() && src[y*w + dq.back()] <= src[y*w + right])
-                    dq.pop_back();
-                dq.push_back(right);
-            }
-            int out_x = right - half;
-            if (out_x < 0 || out_x >= w) continue;
-            while (!dq.empty() && dq.front() < std::max(0, out_x - half))
-                dq.pop_front();
-            tmp[y*w + out_x] = dq.empty() ? 0.0f : src[y*w + dq.front()];
-        }
-    }
-    // Vertical pass.
+    // Horizontal pass
+    for (int y = 0; y < h; y++)
+        slide_1d(src + y * w, tmp.data() + y * w, w, k, true);
+    // Vertical pass (column-wise via transposed access)
+    std::vector<float> col(h), col_out(h);
     for (int x = 0; x < w; x++) {
-        dq.clear();
-        for (int right = 0; right < h + half; right++) {
-            if (right < h) {
-                while (!dq.empty() && tmp[dq.back()*w + x] <= tmp[right*w + x])
-                    dq.pop_back();
-                dq.push_back(right);
-            }
-            int out_y = right - half;
-            if (out_y < 0 || out_y >= h) continue;
-            while (!dq.empty() && dq.front() < std::max(0, out_y - half))
-                dq.pop_front();
-            dst[out_y*w + x] = dq.empty() ? 0.0f : tmp[dq.front()*w + x];
-        }
+        for (int y = 0; y < h; y++) col[y] = tmp[y * w + x];
+        slide_1d(col.data(), col_out.data(), h, k, true);
+        for (int y = 0; y < h; y++) dst[y * w + x] = col_out[y];
+    }
+}
+
+// Max-pool (dilate): separable 2-pass with monotonic deque — O(w*h) total
+static void max_pool_2d(const float * src, int w, int h, int k, float * dst) {
+    std::vector<float> tmp(w * h);
+    // Horizontal pass
+    for (int y = 0; y < h; y++)
+        slide_1d(src + y * w, tmp.data() + y * w, w, k, false);
+    // Vertical pass
+    std::vector<float> col(h), col_out(h);
+    for (int x = 0; x < w; x++) {
+        for (int y = 0; y < h; y++) col[y] = tmp[y * w + x];
+        slide_1d(col.data(), col_out.data(), h, k, false);
+        for (int y = 0; y < h; y++) dst[y * w + x] = col_out[y];
     }
 }
 

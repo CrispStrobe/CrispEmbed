@@ -11,10 +11,10 @@
 
 #include "tesseract_lstm.h"
 
-#include "ggml.h"
-#include "ggml-backend.h"
 #include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
+#include "ggml.h"
+#include "ggml-backend.h"
 
 #include <algorithm>
 #include <cassert>
@@ -232,17 +232,17 @@ static void lstm_forward(
     std::vector<float> h(ns, 0.0f);
     std::vector<float> c(ns, 0.0f);
     std::vector<float> gates(gs);
-    std::vector<float> hh_out(gs);  // W_hh @ h scratch (hoisted out of step loop)
 
     for (int step = 0; step < T; step++) {
         int t = reverse ? (T - 1 - step) : step;
         const float * xt = input + t * ni;
 
-        // gates = W_ih @ x + bias  (SIMD GEMV via linear_cpu)
-        core_cpu::linear_cpu(xt, gates.data(), ni, gs, W_ih, bias);
-        // gates += W_hh @ h
-        core_cpu::linear_cpu(h.data(), hh_out.data(), ns, gs, W_hh, nullptr);
-        for (int g = 0; g < gs; g++) gates[g] += hh_out[g];
+        // gates = W_ih @ x + W_hh @ h + bias (SIMD-accelerated dot products)
+        for (int g = 0; g < gs; g++) {
+            gates[g] = bias[g]
+                     + core_cpu::dot_product(W_ih + g * ni, xt, ni)
+                     + core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
+        }
 
         for (int j = 0; j < ns; j++) {
             float i_gate = 1.0f / (1.0f + expf(-gates[0*ns + j]));
@@ -288,15 +288,11 @@ static void summ_lstm_forward(
         for (int col = 0; col < width; col++) {
             const float * xt = input + (row * width + col) * channels;
 
+            // SIMD-accelerated gate computation
             for (int g = 0; g < gs; g++) {
-                float val = bias[g];
-                const float * wih_row = W_ih + g * channels;
-                for (int j = 0; j < channels; j++)
-                    val += wih_row[j] * xt[j];
-                const float * whh_row = W_hh + g * ns;
-                for (int j = 0; j < ns; j++)
-                    val += whh_row[j] * h[j];
-                gates[g] = val;
+                gates[g] = bias[g]
+                         + core_cpu::dot_product(W_ih + g * channels, xt, channels)
+                         + core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
             }
 
             for (int j = 0; j < ns; j++) {
