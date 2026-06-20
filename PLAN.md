@@ -494,8 +494,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   call. Caching graph structure and only updating input data would eliminate
   per-call graph construction + allocation overhead.
 
-- [ ] **`ggml_gallocr` reuse** — most runtimes create and free `ggml_gallocr`
-  per call. Store on context and reuse across calls (as lfm2_embed does).
+- [x] **`ggml_gallocr` reuse** — moved gallocr from per-call to per-context
+  for 7 engines: vit_embed, clip_text_embed, parseq_ocr, cnn_embed,
+  ocr_detect, surya_det, layout_detect. Eliminates ~1-3ms malloc/free
+  overhead per call; significant for small/fast models (DBNet 12M, PARSeq 24M).
 
 - [ ] **internvl2: native GQA in flash_attn** — currently `ggml_repeat` tiles
   KV heads before passing to flash_attn (lines 909-919). Modern
