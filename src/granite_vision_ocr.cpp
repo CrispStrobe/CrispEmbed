@@ -74,25 +74,18 @@ static void gv_rmsnorm(float * data, int n, int d, const float * weight, float e
     }
 }
 
+// gv_linear: delegate to SIMD-accelerated core_cpu::linear_cpu
 static void gv_linear(const float * input, int n, int id, int od,
                       const float * weight, const float * bias, float * output) {
-    for (int i = 0; i < n; i++) {
-        const float * in_row = input + i * id;
-        float * out_row = output + i * od;
-        for (int o = 0; o < od; o++) {
-            float sum = bias ? bias[o] : 0.0f;
-            for (int j = 0; j < id; j++) sum += in_row[j] * weight[o * id + j];
-            out_row[o] = sum;
-        }
-    }
+    for (int i = 0; i < n; i++)
+        core_cpu::linear_cpu(input + i * id, output + i * od, id, od, weight, bias);
 }
 
 static float gv_gelu(float x) {
-    // gelu_pytorch_tanh: 0.5*x*(1+tanh(sqrt(2/pi)*(x+0.044715*x^3)))
-    return 0.5f * x * (1.0f + tanhf(0.7978845608f * (x + 0.044715f * x * x * x)));
+    return core_cpu::gelu(x);
 }
 
-static float gv_silu(float x) { return x / (1.0f + expf(-x)); }
+static float gv_silu(float x) { return core_cpu::silu(x); }
 
 // ── GPT-2 byte-level BPE tokenizer ──────────────────────────────────────
 // Granite uses the StarCoder byte-level BPE (same byte<->unicode mapping as
@@ -255,11 +248,10 @@ struct granite_vision_context {
 
     // Weight storage
     core_gguf::WeightLoad wl;
-    // Dequantized-weight cache, keyed by tensor name. Critical: without this
-    // the per-token decode re-dequantizes every weight on every step (the
-    // lm_head/embed alone is ~400 MB) and leaks each copy — that was the
-    // ~20 GB OOM-kill. Cache once; reuse across all layers and steps.
-    std::unordered_map<std::string, std::vector<float>> wcache;
+    core_cpu::DequantCache dcache;   // caches dequantized weights (replaces wcache/wbufs)
+
+    // RoPE frequency table (precomputed once at init)
+    core_vlm::RoPEFreqTable rope_freq;
 
     // KV cache
     std::vector<float> kv_cache;  // [2 * llm_layers * max_seq * head_dim * llm_kv_heads]
@@ -271,23 +263,9 @@ struct granite_vision_context {
     std::vector<float> char_confidences;
 
     const float * get(const std::string & name) {
-        auto it = wcache.find(name);
-        if (it != wcache.end()) return it->second.data();
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t) return nullptr;
-        // F32 tensors point straight at mmap'd data; cache an empty marker is
-        // unnecessary — but to keep a stable pointer across calls we still
-        // memoize the (possibly trivial) conversion result.
-        std::vector<float> buf;
-        const float * p = gv_to_f32(t, buf);
-        if (buf.empty()) {
-            // tensor was already F32: stash a non-owning view by copying the
-            // pointer into the cache via an alias vector is wasteful, so just
-            // return the direct pointer (stable for the model's lifetime).
-            return p;
-        }
-        auto & slot = wcache.emplace(name, std::move(buf)).first->second;
-        return slot.data();
+        return dcache.get(t);
     }
 };
 
@@ -340,6 +318,10 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
     idx = gguf_find_key(meta, "granite_vision.rms_eps");
     ctx->rms_eps = idx >= 0 ? gguf_get_val_f32(meta, idx) : 1e-5f;
     ctx->eos_id = core_gguf::kv_u32(meta, "granite_vision.eos_token_id", 0);
+
+    // Pre-compute RoPE frequency table (eliminates powf per element per step)
+    int head_dim = ctx->llm_dim / ctx->llm_heads;
+    ctx->rope_freq.precompute(head_dim, ctx->rope_theta);
 
     // Tokenizer (optional: older GGUFs have none → engine falls back to
     // emitting raw token-id markers so it still runs).
@@ -615,8 +597,8 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
 
         // RMSNorm1
         std::vector<float> normed(D);
-        memcpy(normed.data(), x.data(), D * sizeof(float));
-        gv_rmsnorm(normed.data(), 1, D, ctx->get(lp + ".norm1.weight"), eps);
+        core_cpu::rmsnorm_cpu(x.data(), normed.data(), D,
+                              ctx->get(lp + ".norm1.weight"), eps);
 
         // GQA Self-Attention with KV cache
         std::vector<float> Q(D), K_new(n_kv * d_head), V_new(n_kv * d_head);
@@ -624,14 +606,11 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
         gv_linear(normed.data(), 1, D, n_kv * d_head, ctx->get(lp + ".attn.k.weight"), nullptr, K_new.data());
         gv_linear(normed.data(), 1, D, n_kv * d_head, ctx->get(lp + ".attn.v.weight"), nullptr, V_new.data());
 
-        // RoPE on Q and K. Granite (like HF Llama) uses rotate_half =
-        // split-half rotation, which this codebase calls NEGHALF. The previous
-        // INTERLEAVED choice was wrong and was never validated against a LLM
-        // reference (only the vision tower had parity).
-        float theta = ctx->rope_theta;
-        core_vlm::apply_rope(Q.data(), n_heads, d_head, n_past, theta,
+        // RoPE on Q and K — precomputed frequency table, NEGHALF style
+        // (Granite uses rotate_half = split-half, same as HF Llama)
+        ctx->rope_freq.apply(Q.data(), n_heads, n_past,
                              core_vlm::RoPEStyle::NEGHALF);
-        core_vlm::apply_rope(K_new.data(), n_kv, d_head, n_past, theta,
+        ctx->rope_freq.apply(K_new.data(), n_kv, n_past,
                              core_vlm::RoPEStyle::NEGHALF);
 
         // GQA attention with KV cache. Granite scales scores by
@@ -653,8 +632,8 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
         for (int d = 0; d < D; d++) x[d] += proj[d] * res_mul;
 
         // RMSNorm2 + SiLU MLP
-        memcpy(normed.data(), x.data(), D * sizeof(float));
-        gv_rmsnorm(normed.data(), 1, D, ctx->get(lp + ".norm2.weight"), eps);
+        core_cpu::rmsnorm_cpu(x.data(), normed.data(), D,
+                              ctx->get(lp + ".norm2.weight"), eps);
 
         int ffn = ctx->llm_ffn_dim;
         std::vector<float> down(D);
@@ -673,7 +652,12 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
     }
 
     // Final RMSNorm
-    gv_rmsnorm(x.data(), 1, D, ctx->get("llm.norm.weight"), eps);
+    {
+        std::vector<float> tmp(D);
+        core_cpu::rmsnorm_cpu(x.data(), tmp.data(), D,
+                              ctx->get("llm.norm.weight"), eps);
+        memcpy(x.data(), tmp.data(), D * sizeof(float));
+    }
     if (dump_cb) dump_cb("llm_final_norm", x.data(), D, dump_ud);
 
     // LM head (may be tied to embeddings)
@@ -682,11 +666,10 @@ static void gv_llm_decode_step(granite_vision_context * ctx,
         lm_w = ctx->get("llm.embed.weight");
 
     if (lm_w) {
-        for (int v = 0; v < ctx->vocab_size; v++) {
-            float sum = 0;
-            for (int d = 0; d < D; d++) sum += x[d] * lm_w[v * D + d];
-            logits[v] = sum / ctx->logits_scaling;
-        }
+        // SIMD-accelerated LM head matmul (49156 × 2048)
+        core_cpu::linear_cpu(x.data(), logits, D, ctx->vocab_size, lm_w, nullptr);
+        float inv_scale = 1.0f / ctx->logits_scaling;
+        for (int v = 0; v < ctx->vocab_size; v++) logits[v] *= inv_scale;
     }
     if (dump_cb) dump_cb("llm_logits", logits, ctx->vocab_size, dump_ud);
 }
