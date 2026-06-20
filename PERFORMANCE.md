@@ -671,14 +671,16 @@ runtime category. "Existing" means the optimization is already implemented;
 |---|------------|-------|--------|
 | 1 | **SIMD in `core/cpu_ops.h` helpers** | 30+ runtimes | **DONE** — `dot_product()` AVX2+FMA/NEON, 710 FMA instructions |
 | 2 | **Dequantized weight caching** | ~40 runtimes | **DONE** — `DequantCache` in core; migrated smoldocling + granite |
-| 3 | **Adopt F16 ggml KV cache** (internvl2 pattern) | 6 VLM decoders | Pending |
-| 4 | **Flash attention everywhere** | 5 runtimes | Pending |
-| 5 | **Move remaining scalar encoders to ggml graphs** | 7 encoders | Pending |
-| 6 | **Batched prefill for VLM decoders** | smoldocling, granite | Pending |
-| 7 | **Graph caching** | All 60+ runtimes | Pending |
+| 3 | **Adopt F16 ggml KV cache** (internvl2 pattern) | 6 VLM decoders | Partial — pix2struct (F32 vector), lightonocr, granite, smoldocling, qwen2vl done |
+| 4 | **Flash attention everywhere** | 5 runtimes | **DONE** (3/5) — decoder_embed, bidirlm_vision, pix2struct. lilt_kie incompatible (BiACM). deepseek pending. |
+| 5 | **Move remaining scalar encoders to ggml graphs** | 7 encoders | **DONE** (pix2struct). DenseNet (bttr/posformer/hmer) and Swin (mixtex) remain. |
+| 6 | **Batched prefill for VLM decoders** | smoldocling, granite | **DONE** — smoldocling F16 KV + batched prefill, granite projector+LLM graphs |
+| 7 | **Graph caching** | All 60+ runtimes | Pending (architectural) |
 | 8 | **Pre-compute RoPE frequency tables** | core_vlm users | **DONE** — `RoPEFreqTable`; migrated smoldocling + granite |
-| 9 | **Batch linear → GEMM** in SR attention | 5 SR runtimes | Pending |
-| 10 | **Eliminate per-pixel/per-head heap allocations** | scunet, dat_sr, got_ocr | **DONE** (scunet) — hoisted per-pixel allocs outside loops |
+| 9 | **Batch linear → GEMM** in SR attention | 5 SR runtimes | **DONE** — dat_sr, swinir_sr, hat_sr, scunet, mixtex via `linear_batch_cpu` |
+| 10 | **Eliminate per-step heap allocations** | 12 runtimes | **DONE** — pix2struct, bttr, posformer, hmer, math, parseq, mha_1q_cpu, vlm_attention, layernorm2d |
+| 11 | **BPE tokenizer O(N²) → O(N log N)** | bpe.h + tokenizer_bpe | **DONE** — linked list + priority queue |
+| 12 | **`std::unordered_map` for tensor lookup** | gguf_loader + 14 files | **DONE** — O(1) avg lookups |
 
 #### Architectural recommendations
 
