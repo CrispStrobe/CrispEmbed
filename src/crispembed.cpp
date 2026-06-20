@@ -254,6 +254,16 @@ struct crispembed_context {
     // Per-mode scheduler reservation buckets
     int reserved_T_sparse  = 0;
     int reserved_T_colbert = 0;
+    // Reranker classifier weight cache (avoids 4MB GPU→CPU transfer per call)
+    bool rerank_cache_valid = false;
+    std::vector<float> rerank_dw;   // dense_w [H*H]
+    std::vector<float> rerank_db;   // dense_b [H]
+    std::vector<float> rerank_ow;   // out_w [H]
+    float rerank_out_bias = 0.0f;
+    bool rerank_out_has_bias = false;
+    std::vector<float> rerank_pw;   // pooler_w [H*H] (DeBERTa)
+    std::vector<float> rerank_pb;   // pooler_b [H]
+    bool rerank_has_pooler = false;
     // Audio path — opaque pointer into bidirlm_audio.cpp (lazily inited on
     // first crispembed_encode_audio call). Built only when CRISPEMBED_HAS_CRISP_AUDIO.
     void * audio_ctx = nullptr;
@@ -2389,6 +2399,11 @@ extern "C" int crispembed_tokenizer_kind(const crispembed_context * ctx) {
 // Reranker (cross-encoder score)
 // ---------------------------------------------------------------------------
 
+// Forward declaration — defined below, shared by single + batch rerank.
+static float crispembed_apply_classifier(crispembed_context * ctx,
+                                          const float * encoder_out,
+                                          int T);
+
 extern "C" float crispembed_rerank(crispembed_context * ctx,
                                     const char         * query,
                                     const char         * document) {
@@ -2413,37 +2428,59 @@ extern "C" float crispembed_rerank(crispembed_context * ctx,
     tokens.attn_mask.resize(T);
 
     int raw_T = 0;
-    // Run dense encoder (mode=0), we read CLS token ourselves
     std::vector<float> raw = run_encoder_raw(ctx, tokens, 0, &raw_T);
     if (raw.empty()) return 0.0f;
 
-    const int H = ctx->model.hparams.n_embd;
-    // CLS token is position 0 in encoder_out [H, T]
-    const float * cls_vec = raw.data();  // first H floats = token 0
+    return crispembed_apply_classifier(ctx, raw.data(), raw_T);
+}
 
-    // Debug: dump CLS vector when CRISPEMBED_DEBUG_CLS=1
-    if (const char * dcls = std::getenv("CRISPEMBED_DEBUG_CLS")) {
-        if (dcls[0] && dcls[0] != '0') {
-            fprintf(stderr, "CLS[0:8]:");
-            for (int i = 0; i < std::min(8, H); i++) fprintf(stderr, " %.4f", cls_vec[i]);
-            fprintf(stderr, "\n");
+// Apply classifier head to CLS vector (shared between single + batch rerank).
+// Uses cached weights to avoid GPU→CPU transfer per call.
+static float crispembed_apply_classifier(crispembed_context * ctx,
+                                          const float * encoder_out,
+                                          int T) {
+    const int H = ctx->model.hparams.n_embd;
+    const float * cls_vec = encoder_out;  // first H floats = token 0
+
+    // Cache classifier weights on first call (avoids 4MB transfer per rerank)
+    if (!ctx->rerank_cache_valid) {
+        if (ctx->model.classifier_2layer) {
+            ctx->rerank_dw.resize(H * H);
+            ctx->rerank_db.resize(H);
+            ctx->rerank_ow.resize(H);
+            ggml_backend_tensor_get(ctx->model.classifier_dense_w, ctx->rerank_dw.data(), 0, H*H*sizeof(float));
+            ggml_backend_tensor_get(ctx->model.classifier_dense_b, ctx->rerank_db.data(), 0, H*sizeof(float));
+            ggml_backend_tensor_get(ctx->model.classifier_out_w,   ctx->rerank_ow.data(), 0, H*sizeof(float));
+            ctx->rerank_out_has_bias = ctx->model.classifier_out_b != nullptr;
+            if (ctx->rerank_out_has_bias) {
+                ggml_backend_tensor_get(ctx->model.classifier_out_b, &ctx->rerank_out_bias, 0, sizeof(float));
+            }
+        } else if (ctx->model.classifier_w) {
+            ctx->rerank_ow.resize(H);
+            ggml_backend_tensor_get(ctx->model.classifier_w, ctx->rerank_ow.data(), 0, H*sizeof(float));
+            ctx->rerank_out_has_bias = ctx->model.classifier_b != nullptr;
+            if (ctx->rerank_out_has_bias) {
+                ggml_backend_tensor_get(ctx->model.classifier_b, &ctx->rerank_out_bias, 0, sizeof(float));
+            }
         }
+        // Pooler (DeBERTa)
+        ctx->rerank_has_pooler = ctx->model.pooler_w && ctx->model.pooler_b;
+        if (ctx->rerank_has_pooler) {
+            ctx->rerank_pw.resize(H * H);
+            ctx->rerank_pb.resize(H);
+            ggml_backend_tensor_get(ctx->model.pooler_w, ctx->rerank_pw.data(), 0, H*H*sizeof(float));
+            ggml_backend_tensor_get(ctx->model.pooler_b, ctx->rerank_pb.data(), 0, H*sizeof(float));
+        }
+        ctx->rerank_cache_valid = true;
     }
 
-    // Apply ContextPooler if present (DeBERTa-v2 reranker):
-    //   pooled = GELU(dense_w @ cls + dense_b)
-    // The classifier then operates on pooled rather than raw CLS.
+    // Apply ContextPooler if present (DeBERTa-v2 reranker)
     std::vector<float> pooled_buf;
-    if (ctx->model.pooler_w && ctx->model.pooler_b) {
-        std::vector<float> pw(H * H), pb(H);
-        ggml_backend_tensor_get(ctx->model.pooler_w, pw.data(), 0, H*H*sizeof(float));
-        ggml_backend_tensor_get(ctx->model.pooler_b, pb.data(), 0, H*sizeof(float));
+    if (ctx->rerank_has_pooler) {
         pooled_buf.resize(H);
         for (int i = 0; i < H; i++) {
-            float acc = pb[i];
-            for (int j = 0; j < H; j++) acc += cls_vec[j] * pw[i * H + j];
-            // GELU activation (standard pooler_hidden_act for DeBERTa)
-            // Using the same polynomial approximation as ggml_gelu
+            float acc = ctx->rerank_pb[i];
+            for (int j = 0; j < H; j++) acc += cls_vec[j] * ctx->rerank_pw[i * H + j];
             const float x = acc;
             pooled_buf[i] = 0.5f * x * (1.0f + std::tanh(0.7978845608f * (x + 0.044715f * x * x * x)));
         }
@@ -2452,33 +2489,17 @@ extern "C" float crispembed_rerank(crispembed_context * ctx,
 
     float score = 0.0f;
     if (ctx->model.classifier_2layer) {
-        // 2-layer RobertaClassificationHead: cls → dense[H,H] → tanh → out_proj[1,H]
-        std::vector<float> dw(H * H), db(H), ow(H);
-        ggml_backend_tensor_get(ctx->model.classifier_dense_w, dw.data(), 0, H*H*sizeof(float));
-        ggml_backend_tensor_get(ctx->model.classifier_dense_b, db.data(), 0, H*sizeof(float));
-        ggml_backend_tensor_get(ctx->model.classifier_out_w,   ow.data(), 0, H*sizeof(float));
         std::vector<float> hidden(H);
         for (int i = 0; i < H; i++) {
-            float acc = db[i];
-            for (int j = 0; j < H; j++) acc += cls_vec[j] * dw[i * H + j];
+            float acc = ctx->rerank_db[i];
+            for (int j = 0; j < H; j++) acc += cls_vec[j] * ctx->rerank_dw[i * H + j];
             hidden[i] = std::tanh(acc);
         }
-        for (int i = 0; i < H; i++) score += hidden[i] * ow[i];
-        if (ctx->model.classifier_out_b) {
-            float bias = 0.0f;
-            ggml_backend_tensor_get(ctx->model.classifier_out_b, &bias, 0, sizeof(float));
-            score += bias;
-        }
+        for (int i = 0; i < H; i++) score += hidden[i] * ctx->rerank_ow[i];
+        if (ctx->rerank_out_has_bias) score += ctx->rerank_out_bias;
     } else {
-        // 1-layer: score = cls_vec · classifier_w + bias
-        std::vector<float> cw(H);
-        ggml_backend_tensor_get(ctx->model.classifier_w, cw.data(), 0, H * sizeof(float));
-        for (int h = 0; h < H; h++) score += cls_vec[h] * cw[h];
-        if (ctx->model.classifier_b) {
-            float bias = 0.0f;
-            ggml_backend_tensor_get(ctx->model.classifier_b, &bias, 0, sizeof(float));
-            score += bias;
-        }
+        for (int h = 0; h < H; h++) score += cls_vec[h] * ctx->rerank_ow[h];
+        if (ctx->rerank_out_has_bias) score += ctx->rerank_out_bias;
     }
     if (ctx->bench) {
         double ms = std::chrono::duration<double, std::milli>(
@@ -2486,6 +2507,80 @@ extern "C" float crispembed_rerank(crispembed_context * ctx,
         fprintf(stderr, "[crispembed-bench] crispembed_rerank total: %.1f ms\n", ms);
     }
     return score;
+}
+
+// Batch rerank: score multiple documents against the same query.
+// Runs the encoder for each pair sequentially (same as single rerank)
+// but caches classifier weights so only the encoder forward pass repeats.
+extern "C" int crispembed_rerank_batch(crispembed_context * ctx,
+                                        const char         * query,
+                                        const char        ** documents,
+                                        int                  n_docs,
+                                        float              * out_scores) {
+    if (!ctx || !query || !documents || !out_scores || n_docs <= 0)
+        return 0;
+    if (!ctx->model.is_reranker || ctx->is_decoder)
+        return 0;
+
+    // Warm the classifier cache with a dummy call
+    // (actual encoding happens per-doc below)
+    if (!ctx->rerank_cache_valid) {
+        // Force cache population by reading weights directly
+        const int H = ctx->model.hparams.n_embd;
+        if (ctx->model.classifier_2layer) {
+            ctx->rerank_dw.resize(H * H);
+            ctx->rerank_db.resize(H);
+            ctx->rerank_ow.resize(H);
+            ggml_backend_tensor_get(ctx->model.classifier_dense_w, ctx->rerank_dw.data(), 0, H*H*sizeof(float));
+            ggml_backend_tensor_get(ctx->model.classifier_dense_b, ctx->rerank_db.data(), 0, H*sizeof(float));
+            ggml_backend_tensor_get(ctx->model.classifier_out_w,   ctx->rerank_ow.data(), 0, H*sizeof(float));
+            ctx->rerank_out_has_bias = ctx->model.classifier_out_b != nullptr;
+            if (ctx->rerank_out_has_bias)
+                ggml_backend_tensor_get(ctx->model.classifier_out_b, &ctx->rerank_out_bias, 0, sizeof(float));
+        } else if (ctx->model.classifier_w) {
+            ctx->rerank_ow.resize(H);
+            ggml_backend_tensor_get(ctx->model.classifier_w, ctx->rerank_ow.data(), 0, H*sizeof(float));
+            ctx->rerank_out_has_bias = ctx->model.classifier_b != nullptr;
+            if (ctx->rerank_out_has_bias)
+                ggml_backend_tensor_get(ctx->model.classifier_b, &ctx->rerank_out_bias, 0, sizeof(float));
+        }
+        ctx->rerank_has_pooler = ctx->model.pooler_w && ctx->model.pooler_b;
+        if (ctx->rerank_has_pooler) {
+            ctx->rerank_pw.resize(H * H);
+            ctx->rerank_pb.resize(H);
+            ggml_backend_tensor_get(ctx->model.pooler_w, ctx->rerank_pw.data(), 0, H*H*sizeof(float));
+            ggml_backend_tensor_get(ctx->model.pooler_b, ctx->rerank_pb.data(), 0, H*sizeof(float));
+        }
+        ctx->rerank_cache_valid = true;
+    }
+
+    int scored = 0;
+    for (int d = 0; d < n_docs; d++) {
+        if (!documents[d]) { out_scores[d] = 0.0f; scored++; continue; }
+
+        embed_tokens tokens;
+        if (ctx->use_sentencepiece)
+            tokens = ctx->sp_tokenizer.encode_pair(query, documents[d]);
+        else
+            tokens = ctx->wp_tokenizer.encode_pair(query, documents[d]);
+
+        int T = 0;
+        for (int i = (int)tokens.attn_mask.size() - 1; i >= 0; i--) {
+            if (tokens.attn_mask[i]) { T = i + 1; break; }
+        }
+        if (T == 0) { out_scores[d] = 0.0f; scored++; continue; }
+        tokens.ids.resize(T);
+        tokens.type_ids.resize(T);
+        tokens.attn_mask.resize(T);
+
+        int raw_T = 0;
+        std::vector<float> raw = run_encoder_raw(ctx, tokens, 0, &raw_T);
+        if (raw.empty()) { out_scores[d] = 0.0f; scored++; continue; }
+
+        out_scores[d] = crispembed_apply_classifier(ctx, raw.data(), raw_T);
+        scored++;
+    }
+    return scored;
 }
 
 // ---------------------------------------------------------------------------
