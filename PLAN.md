@@ -414,7 +414,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   and NEON (ARM) inner loops. `linear_cpu` and `mha_1q_cpu` now use it.
   737 `vfmadd231ps` instructions emitted in libcrispembed.so. `-march=native`
   enabled via `CRISPEMBED_NATIVE` cmake option (ON by default).
-  `conv2d_cpu` still scalar — requires im2col restructure (separate TODO).
+  `conv2d_cpu` SIMD: gather each spatial patch into a `thread_local` buffer then
+  call `dot_product` (AVX2+FMA/NEON) per output channel. Boundary check hoisted
+  above gather so interior positions skip per-element if-guards. 99/99 unit tests pass.
 
 - [x] **Dequantized weight caching** — Added `DequantCache` struct to
   `cpu_ops.h`: `unordered_map<void*, vector<float>>` keyed on tensor data
