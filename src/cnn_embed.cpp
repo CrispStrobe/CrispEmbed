@@ -260,7 +260,7 @@ struct graph_node {
     std::string output;
 };
 static std::vector<graph_node> parse_graph(const std::string& graph_str);
-static ggml_tensor* replay_graph(ggml_context* g, context* ctx, ggml_tensor* input, const std::vector<graph_node>& nodes, std::vector<ggml_tensor*>& output_tensors, std::map<std::string, ggml_tensor*>* tensor_map_out = nullptr);
+static ggml_tensor* replay_graph(ggml_context* g, context* ctx, ggml_tensor* input, const std::vector<graph_node>& nodes, std::vector<ggml_tensor*>& output_tensors, std::unordered_map<std::string, ggml_tensor*>* tensor_map_out = nullptr);
 
 std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     if (!ctx || H != ctx->input_h || W != ctx->input_w) return {};
@@ -482,7 +482,7 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
     ggml_set_input(x);
 
     // Run graph replay — get tensor map for output reading
-    std::map<std::string, ggml_tensor*> tensor_map;
+    std::unordered_map<std::string, ggml_tensor*> tensor_map;
     std::vector<ggml_tensor*> output_tensors;
     ggml_tensor* last = replay_graph(g, ctx, x, nodes, output_tensors, &tensor_map);
     if (!last) { ggml_free(g); return {}; }
@@ -1085,10 +1085,10 @@ static ggml_tensor* replay_graph(
     ggml_tensor* input,
     const std::vector<graph_node>& nodes,
     std::vector<ggml_tensor*>& output_tensors,
-    std::map<std::string, ggml_tensor*>* tensor_map_out)
+    std::unordered_map<std::string, ggml_tensor*>* tensor_map_out)
 {
     // Map from ONNX tensor name → ggml tensor
-    std::map<std::string, ggml_tensor*> tensors;
+    std::unordered_map<std::string, ggml_tensor*> tensors;
 
     // Register input
     if (!nodes.empty() && !nodes[0].inputs.empty()) {

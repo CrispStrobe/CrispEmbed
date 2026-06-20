@@ -20,7 +20,7 @@
 //   * Opens the GGUF file in two passes (metadata, then tensor alloc).
 //   * Provides scalar / string / array reader helpers with defaults.
 //   * Allocates the backend buffer and mmap-copies the weight data.
-//   * Builds the std::map<std::string, ggml_tensor *> tensor
+//   * Builds the std::unordered_map<std::string, ggml_tensor *> tensor
 //     lookup map and returns it in a WeightLoad struct.
 //   * Provides require() / try_get() tensor lookup helpers that log a
 //     sensible error message when a required tensor is missing.
@@ -95,7 +95,7 @@ std::vector<int> kv_i32_array(gguf_context* gctx, const char* key);
 struct WeightLoad {
     ggml_context* ctx = nullptr;
     ggml_backend_buffer_t buf = nullptr;
-    std::map<std::string, ggml_tensor*> tensors;
+    std::unordered_map<std::string, ggml_tensor*> tensors;
     // Set only on the no-copy mmap path: the file stays mapped for the buffer's
     // lifetime (the buffer points directly at these pages). free_weights() unmaps.
     void* mmap_addr = nullptr;
