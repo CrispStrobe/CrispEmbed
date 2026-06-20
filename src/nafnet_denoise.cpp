@@ -406,22 +406,36 @@ static void conv2d_ggml(nafnet_context * ctx,
     ggml_set_name(x, "x");
     ggml_set_input(x);
 
+    // Prepare weight for ggml_conv_2d: needs [KW, KH, IC_g, OC] in ggml order.
+    // GGUF may store as 2D [OC, IC_g*KH*KW] or 4D [OC, IC_g, KH, KW] (PyTorch).
     ggml_tensor * w = weight_t;
-    if (groups > 1) {
-        if (ggml_n_dims(w) == 2) {
-            if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
-                w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
-            w = ggml_reshape_4d(g, w, kw, kh, 1, w->ne[1]);
+    if (w->type != GGML_TYPE_F32)
+        w = ggml_cast(g, w, GGML_TYPE_F32);
+    int ic_g = (groups > 1) ? 1 : ic;
+    if (ggml_n_dims(w) == 2) {
+        // 2D weight: could be [IC*KH*KW, OC] or [OC, IC*KH*KW] depending on converter.
+        // Detect: if ne[0] == ic_g*kh*kw → standard; if ne[1] == ic_g*kh*kw → transposed.
+        int64_t ik = (int64_t)ic_g * kh * kw;
+        if (w->ne[0] == ik) {
+            w = ggml_reshape_4d(g, w, kw, kh, ic_g, w->ne[1]);
+        } else if (w->ne[1] == ik) {
+            // Transposed: [OC, IC*KH*KW] — transpose then reshape
+            w = ggml_cont(g, ggml_transpose(g, w));
+            w = ggml_reshape_4d(g, w, kw, kh, ic_g, w->ne[1]);
+        } else {
+            // Element count matches but layout unclear — try flat reshape
+            w = ggml_reshape_4d(g, w, kw, kh, ic_g, oc);
         }
-        if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
+    } else if (ggml_n_dims(w) >= 4) {
+        // PyTorch 4D: ne[0]=OC, ne[1]=IC_g, ne[2]=KH, ne[3]=KW
+        // ggml order: ne[0]=KW, ne[1]=KH, ne[2]=IC_g, ne[3]=OC
+        w = ggml_cont(g, ggml_permute(g, w, 3, 2, 1, 0));
+    }
+    if (w->type != GGML_TYPE_F16)
+        w = ggml_cast(g, w, GGML_TYPE_F16);
+    if (groups > 1) {
         x = ggml_conv_2d_dw(g, w, x, stride, stride, pad, pad, 1, 1);
     } else {
-        if (ggml_n_dims(w) == 2) {
-            if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
-                w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
-            w = ggml_reshape_4d(g, w, kw, kh, ic, w->ne[1]);
-        }
-        if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
         x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
     }
 
