@@ -234,10 +234,9 @@ static inline void layernorm_cpu(const float* in, float* out, int D,
 static inline void layernorm2d_cpu(const float* in, float* out,
                                    int C, int H, int W,
                                    const float* w, const float* b, float eps) {
-    // Gather C values per spatial position into contiguous buffer for
-    // cache-friendly norm computation (original does 3×C strided accesses
-    // with stride H*W per position — cache-hostile for large spatial dims).
-    std::vector<float> buf(C);
+    // Thread-local gather buffer (avoids per-call heap alloc)
+    static thread_local std::vector<float> buf;
+    if ((int)buf.size() < C) buf.resize(C);
     int HW = H * W;
     for (int y = 0; y < H; y++) {
         for (int x = 0; x < W; x++) {

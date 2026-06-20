@@ -1040,6 +1040,7 @@ void free(context* ctx) {
 
 #include <sstream>
 #include <map>
+#include <unordered_map>
 
 namespace cnn_embed {
 

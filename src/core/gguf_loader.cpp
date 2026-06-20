@@ -395,6 +395,25 @@ void free_weights(WeightLoad& wl) {
     wl.tensors.clear();
 }
 
+// ---------------------------------------------------------------------------
+// Tensor lookup helpers
+// ---------------------------------------------------------------------------
+
+ggml_tensor* try_get(const std::unordered_map<std::string, ggml_tensor*>& tensors, const char* name) {
+    auto it = tensors.find(name);
+    return it != tensors.end() ? it->second : nullptr;
+}
+
+ggml_tensor* require(const std::unordered_map<std::string, ggml_tensor*>& tensors, const char* name, const char* model_tag) {
+    auto it = tensors.find(name);
+    if (it == tensors.end()) {
+        fprintf(stderr, "%s: required tensor '%s' not found in GGUF\n", model_tag ? model_tag : "core_gguf", name);
+        return nullptr;
+    }
+    return it->second;
+}
+
+
 std::string format_layer_name(const char* fmt, int i) {
     char buf[256];
     snprintf(buf, sizeof(buf), fmt, i);
