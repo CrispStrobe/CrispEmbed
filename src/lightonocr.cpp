@@ -30,13 +30,12 @@ static bool env_flag(const char *name) {
 #define LOCR_DEBUG env_flag("CRISPEMBED_LIGHTONOCR_DEBUG")
 #define LOCR_NO_KV env_flag("CRISPEMBED_LIGHTONOCR_NO_KV")
 
-// Env var gating: CRISPEMBED_LIGHTONOCR_FLASH_ATTN=1 to use flash attention
-// Default: manual attention (confirmed working output)
+// Flash attention: enabled by default, disable with CRISPEMBED_LIGHTONOCR_NO_FLASH=1
 static bool use_flash_attn() {
     static int cached = -1;
     if (cached < 0) {
-        const char *v = std::getenv("CRISPEMBED_LIGHTONOCR_FLASH_ATTN");
-        cached = (v && (v[0] == '1' || v[0] == 'y' || v[0] == 'Y')) ? 1 : 0;
+        const char *v = std::getenv("CRISPEMBED_LIGHTONOCR_NO_FLASH");
+        cached = (v && (v[0] == '1' || v[0] == 'y' || v[0] == 'Y')) ? 0 : 1;
     }
     return cached != 0;
 }
@@ -745,24 +744,27 @@ static bool run_decoder_prefill(context &ctx,
     int n_suffix = (int)suffix_ids.size();
     int n_prompt = n_prefix + n_image_tokens + n_suffix;
 
-    // Embed prefix and suffix tokens via embed_tokens on CPU
+    // Embed tokens via direct weight read — avoids ggml graph overhead per call.
+    // embed_tokens is stored as [D, vocab] in ggml (row-major: row i = token i).
+    // For quantized weights, dequantize the needed rows on the fly.
     auto embed_tokens_cpu = [&](const std::vector<int32_t> &ids) -> std::vector<float> {
         int n = (int)ids.size();
-        ggml_init_params eip{ggml_tensor_overhead() * 16 + ggml_graph_overhead(), nullptr, true};
-        ggml_context *eg = ggml_init(eip);
-        ggml_tensor *idx = ggml_new_tensor_1d(eg, GGML_TYPE_I32, n);
-        ggml_set_input(idx);
-        ggml_tensor *emb = ggml_get_rows(eg, m.embed_tokens, idx);
-        ggml_set_output(emb);
-        ggml_cgraph *egf = ggml_new_graph(eg);
-        ggml_build_forward_expand(egf, emb);
-        ggml_backend_sched_reset(ctx.sched);
-        ggml_backend_sched_alloc_graph(ctx.sched, egf);
-        ggml_backend_tensor_set(idx, ids.data(), 0, n * sizeof(int32_t));
-        ggml_backend_sched_graph_compute(ctx.sched, egf);
         std::vector<float> result(D * n);
-        ggml_backend_tensor_get(emb, result.data(), 0, result.size() * sizeof(float));
-        ggml_free(eg);
+        const size_t row_size = ggml_row_size(m.embed_tokens->type, D);
+        for (int i = 0; i < n; i++) {
+            int id = ids[i];
+            if (m.embed_tokens->type == GGML_TYPE_F32) {
+                ggml_backend_tensor_get(m.embed_tokens, result.data() + i * D,
+                                        (size_t)id * row_size, D * sizeof(float));
+            } else {
+                // Quantized: read raw row, dequantize
+                std::vector<uint8_t> raw(row_size);
+                ggml_backend_tensor_get(m.embed_tokens, raw.data(),
+                                        (size_t)id * row_size, row_size);
+                const auto * traits = ggml_get_type_traits(m.embed_tokens->type);
+                traits->to_float(raw.data(), result.data() + i * D, D);
+            }
+        }
         return result;
     };
 
