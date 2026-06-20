@@ -475,10 +475,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 #### P1 — High-impact targeted improvements
 
 - [ ] **Flash attention everywhere** — use `ggml_flash_attn_ext` in:
-  - `decoder_embed.cpp` single-text path (lines 731-748, manual Q@K+softmax+V)
+  - `decoder_embed.cpp`: **DONE** (`29d8a08`) — both single-text and batch paths
   - `bidirlm_vision.cpp` (block-diagonal mask — flash_attn accepts masks)
   - `lilt_kie.cpp` (BiACM score combination may need adaptation)
-  - `qwen2vl_ocr.cpp` LLM decode (lines 1294-1306)
+  - `qwen2vl_ocr.cpp`: already uses flash_attn
   - `deepseek_ocr2.cpp` all attention paths
 
 - [ ] **Move remaining scalar encoders to ggml graphs**:
@@ -758,8 +758,17 @@ single-threaded, must not OOM.
 ### internvl2 — DONE (already optimized)
   F16 KV cache, flash attn, ggml patch embed, ggml vision graph — all done.
   Remaining: native GQA in flash_attn (skip ggml_repeat), batch vision tiles.
-### SR/denoise — PENDING
-### Embedding — PENDING
+### SR/denoise — DONE (SIMD + batched linear)
+- [x] dat_sr: `linear_batch_cpu` + SIMD `linear_cpu`, batch QKV/proj/FFN (`a71c123`)
+- [x] swinir_sr: batch per-token linear + SIMD dot product (`dcf6556`)
+- [x] hat_sr: SIMD dot product in SA/OCA + SIMD channel attention (`b199741`)
+- [x] scunet_denoise: batch QKV/proj via `linear_batch_cpu` + SIMD dot (`52250ef`)
+- [x] mixtex_ocr: SIMD dot product in Swin attention (`816a88a`)
+- [x] instructir: SCA dequant hoist (`06b3190`)
+- [x] restormer: dead code removal + variance fix (`06b3190`)
+
+### Embedding — DONE (flash attention)
+- [x] decoder_embed: `ggml_flash_attn_ext` in single-text + batch paths (`29d8a08`)
 
 ---
 
