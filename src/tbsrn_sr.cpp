@@ -15,6 +15,7 @@
 //   → transpose → [64, T]
 
 #include "tbsrn_sr.h"
+#include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -26,6 +27,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // ── Helpers ────────────────────────────────────────────────────────────
@@ -278,6 +280,20 @@ static void tbsrn_resize(const float * src, int c, int h_in, int w_in,
 
 // ── Context ────────────────────────────────────────────────────────────
 
+// Fuse Conv+BN: new_W[o] = bn_scale[o] * conv_W[o], new_b[o] = bn_scale[o] * conv_b[o] + bn_shift[o]
+static void fuse_conv_bn(float * conv_w, float * conv_b,
+                          const float * bn_w, const float * bn_b,
+                          const float * bn_mean, const float * bn_var,
+                          int oc, int kernel_elems) {
+    for (int o = 0; o < oc; o++) {
+        float scale = bn_w[o] / sqrtf(bn_var[o] + 1e-5f);
+        float shift = bn_b[o] - bn_mean[o] * scale;
+        for (int k = 0; k < kernel_elems; k++)
+            conv_w[o * kernel_elems + k] *= scale;
+        conv_b[o] = conv_b[o] * scale + shift;
+    }
+}
+
 struct tbsrn_sr_context {
     int srb_nums;
     int hidden_units;  // 32 → 2*hidden_units = 64 channels
@@ -286,16 +302,20 @@ struct tbsrn_sr_context {
     bool bench;
 
     core_gguf::WeightLoad wl;
-    std::vector<std::vector<float>> weight_bufs;
+    core_cpu::DequantCache dcache;
+    // Fused conv+BN weights (populated at init, keyed by tensor name)
+    std::unordered_map<std::string, std::vector<float>> fused;
 
     const float * get(const std::string & name) {
+        // Check fused weights first (conv weights with BN folded in)
+        auto it = fused.find(name);
+        if (it != fused.end()) return it->second.data();
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t) {
             fprintf(stderr, "tbsrn_sr: missing tensor %s\n", name.c_str());
             return nullptr;
         }
-        weight_bufs.emplace_back();
-        return tbsrn_to_f32(t, weight_bufs.back());
+        return dcache.get(t);
     }
 };
 
@@ -327,6 +347,67 @@ tbsrn_sr_context * tbsrn_sr_init(const char * model_path, int n_threads) {
     ggml_backend_free(backend);
 
     int C = 2 * ctx->hidden_units;
+
+    // Fuse BatchNorm into conv weights at load time.
+    // Eliminates all 11 BN calls (2 per SRB × 5 + 1 final) from the forward pass.
+    {
+        auto dequant = [&](const std::string & name) -> std::vector<float> {
+            auto * t = core_gguf::try_get(ctx->wl.tensors, name.c_str());
+            if (!t) return {};
+            int64_t n = ggml_nelements(t);
+            std::vector<float> buf(n);
+            if (t->type == GGML_TYPE_F32)
+                memcpy(buf.data(), t->data, n * sizeof(float));
+            else {
+                // Use the static helper already in this file
+                std::vector<float> tmp;
+                tbsrn_to_f32(t, tmp);
+                buf = std::move(tmp);
+            }
+            return buf;
+        };
+
+        int fused_count = 0;
+        for (int i = 0; i < ctx->srb_nums; i++) {
+            char pfx[32]; snprintf(pfx, sizeof(pfx), "srb.%d", i);
+            std::string p(pfx);
+            // conv1 + bn1
+            auto cw = dequant(p + ".conv1.weight"), cb = dequant(p + ".conv1.bias");
+            auto bw = dequant(p + ".bn1.weight"),   bb = dequant(p + ".bn1.bias");
+            auto bm = dequant(p + ".bn1.running_mean"), bv = dequant(p + ".bn1.running_var");
+            if (!cw.empty() && !bw.empty()) {
+                fuse_conv_bn(cw.data(), cb.data(), bw.data(), bb.data(),
+                             bm.data(), bv.data(), C, (int)cw.size() / C);
+                ctx->fused[p + ".conv1.weight"] = std::move(cw);
+                ctx->fused[p + ".conv1.bias"]   = std::move(cb);
+                fused_count++;
+            }
+            // conv2 + bn2
+            cw = dequant(p + ".conv2.weight"); cb = dequant(p + ".conv2.bias");
+            bw = dequant(p + ".bn2.weight");   bb = dequant(p + ".bn2.bias");
+            bm = dequant(p + ".bn2.running_mean"); bv = dequant(p + ".bn2.running_var");
+            if (!cw.empty() && !bw.empty()) {
+                fuse_conv_bn(cw.data(), cb.data(), bw.data(), bb.data(),
+                             bm.data(), bv.data(), C, (int)cw.size() / C);
+                ctx->fused[p + ".conv2.weight"] = std::move(cw);
+                ctx->fused[p + ".conv2.bias"]   = std::move(cb);
+                fused_count++;
+            }
+        }
+        // final_conv + final_bn
+        auto cw = dequant("final_conv.weight"), cb = dequant("final_conv.bias");
+        auto bw = dequant("final_bn.weight"),   bb = dequant("final_bn.bias");
+        auto bm = dequant("final_bn.running_mean"), bv = dequant("final_bn.running_var");
+        if (!cw.empty() && !bw.empty()) {
+            fuse_conv_bn(cw.data(), cb.data(), bw.data(), bb.data(),
+                         bm.data(), bv.data(), C, (int)cw.size() / C);
+            ctx->fused["final_conv.weight"] = std::move(cw);
+            ctx->fused["final_conv.bias"]   = std::move(cb);
+            fused_count++;
+        }
+        fprintf(stderr, "tbsrn_sr: fused %d conv+BN pairs at load time\n", fused_count);
+    }
+
     fprintf(stderr, "tbsrn_sr: srb_nums=%d, channels=%d, upscale=%dx, %d tensors\n",
             ctx->srb_nums, C, ctx->upscale_factor, (int)ctx->wl.tensors.size());
     ctx->bench = (std::getenv("CRISPEMBED_TBSRN_SR_BENCH") != nullptr);
@@ -396,24 +477,18 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
         snprintf(prefix, sizeof(prefix), "srb.%d", i);
         std::string p(prefix);
 
-        // Conv1 + BN1 + mish
+        // Conv1 + mish (BN fused into conv weights at load time)
         std::vector<float> residual(C * LR_H * LR_W);
         tbsrn_conv2d(x.data(), C, LR_H, LR_W,
                      ctx->get(p + ".conv1.weight"), ctx->get(p + ".conv1.bias"),
                      C, 3, 3, 1, residual.data());
-        tbsrn_batchnorm2d(residual.data(), C, LR_H, LR_W,
-                          ctx->get(p + ".bn1.weight"), ctx->get(p + ".bn1.bias"),
-                          ctx->get(p + ".bn1.running_mean"), ctx->get(p + ".bn1.running_var"));
         tbsrn_mish(residual.data(), C * LR_H * LR_W);
 
-        // Conv2 + BN2
+        // Conv2 (BN fused into conv weights at load time)
         std::vector<float> res2(C * LR_H * LR_W);
         tbsrn_conv2d(residual.data(), C, LR_H, LR_W,
                      ctx->get(p + ".conv2.weight"), ctx->get(p + ".conv2.bias"),
                      C, 3, 3, 1, res2.data());
-        tbsrn_batchnorm2d(res2.data(), C, LR_H, LR_W,
-                          ctx->get(p + ".bn2.weight"), ctx->get(p + ".bn2.bias"),
-                          ctx->get(p + ".bn2.running_mean"), ctx->get(p + ".bn2.running_var"));
 
         // FeatureEnhancer
         // res2 is [C, H, W] → reshape to [C, T] where T = H*W = 1024
@@ -490,14 +565,11 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
         }
     }
 
-    // block7: Conv3(64→64) + BN on block6 output (= x)
+    // block7: Conv3(64→64) on block6 output (BN fused at load time)
     std::vector<float> final_out(C * LR_H * LR_W);
     tbsrn_conv2d(x.data(), C, LR_H, LR_W,
                  ctx->get("final_conv.weight"), ctx->get("final_conv.bias"),
                  C, 3, 3, 1, final_out.data());
-    tbsrn_batchnorm2d(final_out.data(), C, LR_H, LR_W,
-                      ctx->get("final_bn.weight"), ctx->get("final_bn.bias"),
-                      ctx->get("final_bn.running_mean"), ctx->get("final_bn.running_var"));
 
     // block8 input: block1 + block7
     std::vector<float> up_input(C * LR_H * LR_W);
