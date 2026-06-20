@@ -1666,6 +1666,13 @@ const char * internvl2_ocr_recognize_raw(
     cfg.image_size        = (int)vhp.image_size;   // 448
     cfg.min_dynamic_patch = 1;
     cfg.max_dynamic_patch = 12;
+    // Allow runtime override for CPU-friendly inference (fewer tiles = faster)
+    if (const char *mp = getenv("CRISPEMBED_MAX_PIXELS")) {
+        int max_px = atoi(mp);
+        int tile_px = cfg.image_size * cfg.image_size;  // 448*448 = 200704
+        int max_tiles = std::max(1, max_px / tile_px);
+        cfg.max_dynamic_patch = std::min(cfg.max_dynamic_patch, max_tiles);
+    }
     cfg.use_thumbnail     = true;
     for (int i = 0; i < 3; i++) {
         cfg.mean[i] = vhp.image_mean[i];
