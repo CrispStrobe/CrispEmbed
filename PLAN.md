@@ -650,7 +650,7 @@ Systematic per-backend optimization pass. Every change is A/B benchmarked
 using `CRISPEMBED_<MODULE>_BENCH=1` on Q4_K models. Constraint: 8GB VPS,
 single-threaded, must not OOM.
 
-### lightonocr (Pixtral ViT 24L + Qwen3 28L, 1B) — IN PROGRESS
+### lightonocr (Pixtral ViT 24L + Qwen3 28L, 1B) — 2.09x done
 
 **Baseline** (400×100 image, 240 patches, q4_k, CPU 4-thread):
   vision=64.5s, projection=0.2s, prefill=36.4s, decode(6tok)=123.6s, total=245.2s
@@ -658,15 +658,14 @@ single-threaded, must not OOM.
 **Done:**
 - [x] Flash attention default — 1.5x vision, 1.4x prefill
 - [x] Direct embed lookup (no ggml graph per token) — eliminates per-step overhead
+- [x] F16 ggml KV cache — persistent F16 backend tensors, ggml_view + ggml_cpy,
+      zero CPU↔backend transfer per step. Halves KV memory.
 
-**After optimizations**: total=205.9s (1.19x). Per-step decode ~18-20s.
+**After all optimizations**: vision=20.6s, prefill=14.0s, decode=69.5s, total=117.5s (**2.09x**)
 
 **Remaining:**
-- [ ] **F16 ggml KV cache** — internvl2 pattern: persistent F16 backend tensors,
-      `ggml_view_4d` + `ggml_cpy` writes, zero CPU↔backend transfer per step.
-      Currently F32 std::vector re-uploaded via `ggml_backend_tensor_set` every step.
-- [ ] **Decode graph reuse** — graph structure identical across steps if KV cache
-      is fixed-size. Build once, reuse, only update inputs.
+- [ ] **Decode graph reuse** — graph still rebuilt per step (tensor shapes change
+      with Lk). Need fixed-max-KV graph with ggml_view variable-length reads.
 - [ ] **Patch embedding → ggml matmul** — scalar 6-deep nested conv loops.
 
 ### qwen2vl — PENDING
