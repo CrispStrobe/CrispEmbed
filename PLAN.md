@@ -754,7 +754,9 @@ single-threaded, must not OOM.
 - [x] F16 KV cache + batched prefill (done earlier, `bc329e4`)
 - [x] Patch embedding → ggml matmul (im2col + mul_mat, F16 bias cast)
   Gated: CRISPEMBED_SMOLDOCLING_SCALAR_PATCH=1
-- [ ] LLM decoder → ggml graphs (currently CPU scalar via core_vlm, 30 layers)
+- [x] LLM decoder → ggml graphs — DONE. Was already implemented but blocked by
+  F16 norm weight type mismatch on Q4_K models. Fixed with ggml_cast (`91b1f89`).
+  Tested: prefill=2.3s, decode=62s (128 steps).
 ### internvl2 — DONE (already optimized)
   F16 KV cache, flash attn, ggml patch embed, ggml vision graph — all done.
   Remaining: native GQA in flash_attn (skip ggml_repeat), batch vision tiles.
