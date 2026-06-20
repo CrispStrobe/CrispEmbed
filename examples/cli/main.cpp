@@ -79,6 +79,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --face FILE      encode face from image (recognition model)\n");
     fprintf(stderr, "  --detect FILE    detect faces in image (detection model)\n");
     fprintf(stderr, "  --ocr FILE       OCR → text (auto-detect: pix2tex/texteller/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/parseq/qwen2vl/qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr)\n");
+    fprintf(stderr, "  --ocr-max-tokens N  max tokens for VLM OCR engines (default: 2048; no-op for formula OCR)\n");
     fprintf(stderr, "  --pix2struct FILE  Pix2Struct document understanding → text (needs -m pix2struct.gguf)\n");
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
@@ -224,6 +225,7 @@ int main(int argc, char ** argv) {
     std::string adair_path;             // --adair FILE: standalone AdaIR processing
     std::string pix2struct_path;         // --pix2struct FILE: Pix2Struct document understanding
     int pix2struct_max_tokens = 256;     // --pix2struct-max-tokens N
+    int ocr_max_tokens = 0;              // --ocr-max-tokens N (0 = engine default)
     std::string pipeline_vlm_model;     // --vlm-model NAME: VLM escalation engine GGUF
     int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
     int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
@@ -287,6 +289,8 @@ int main(int argc, char ** argv) {
             detect_path = argv[++i];
         } else if (strcmp(argv[i], "--ocr") == 0 && i + 1 < argc) {
             ocr_path = argv[++i];
+        } else if (strcmp(argv[i], "--ocr-max-tokens") == 0 && i + 1 < argc) {
+            ocr_max_tokens = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--hmer") == 0 && i + 1 < argc) {
             hmer_path = argv[++i];
         } else if (strcmp(argv[i], "--bttr") == 0 && i + 1 < argc) {
@@ -1443,6 +1447,7 @@ int main(int argc, char ** argv) {
     if (!ocr_path.empty()) {
         void* octx = crispembed_ocr_model_init(model_path.c_str(), n_threads);
         if (!octx) { fprintf(stderr, "error: failed to load OCR model\n"); return 1; }
+        if (ocr_max_tokens > 0) crispembed_ocr_model_set_max_tokens(octx, ocr_max_tokens);
         int w, h, ch;
         unsigned char* data = stbi_load(ocr_path.c_str(), &w, &h, &ch, 0);
         if (!data) { fprintf(stderr, "error: cannot load %s\n", ocr_path.c_str()); crispembed_ocr_model_free(octx); return 1; }
