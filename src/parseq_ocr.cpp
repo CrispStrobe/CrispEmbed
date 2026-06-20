@@ -707,31 +707,26 @@ static std::string run_decoder_ar(parseq_ocr_context * ctx) {
 static void preprocess_rgb_to_input(const uint8_t * rgb, int w, int h, int ch,
                                     int target_w, int target_h,
                                     std::vector<float> & out) {
-    // Resize to target_w × target_h, normalize to [-1, 1]
+    // Bilinear resize + normalize to [-1, 1]
     out.resize(3 * target_h * target_w);
 
     for (int c = 0; c < 3; c++) {
         for (int ty = 0; ty < target_h; ty++) {
+            float fy = (float)ty * h / target_h;
+            int y0 = (int)fy, y1 = std::min(y0 + 1, h - 1);
+            float wy = fy - y0;
             for (int tx = 0; tx < target_w; tx++) {
-                // Nearest-neighbor resize
-                int sy = ty * h / target_h;
-                int sx = tx * w / target_w;
-                if (sy >= h) sy = h - 1;
-                if (sx >= w) sx = w - 1;
-
-                uint8_t val;
-                if (ch == 1) {
-                    val = rgb[sy * w + sx];
-                } else if (ch == 3) {
-                    val = rgb[(sy * w + sx) * 3 + c];
-                } else if (ch == 4) {
-                    val = rgb[(sy * w + sx) * 4 + c];
-                } else {
-                    val = 128;
-                }
-
-                // Normalize to [-1, 1]
-                float f = (float)val / 255.0f;
+                float fx = (float)tx * w / target_w;
+                int x0 = (int)fx, x1 = std::min(x0 + 1, w - 1);
+                float wx = fx - x0;
+                auto pix = [&](int y, int x) -> float {
+                    if (ch == 1) return rgb[y * w + x] / 255.0f;
+                    if (ch == 3) return rgb[(y * w + x) * 3 + c] / 255.0f;
+                    if (ch == 4) return rgb[(y * w + x) * 4 + c] / 255.0f;
+                    return 128.0f / 255.0f;
+                };
+                float f = (1 - wy) * ((1 - wx) * pix(y0, x0) + wx * pix(y0, x1))
+                        +      wy  * ((1 - wx) * pix(y1, x0) + wx * pix(y1, x1));
                 out[c * target_h * target_w + ty * target_w + tx] = f * 2.0f - 1.0f;
             }
         }
@@ -741,18 +736,21 @@ static void preprocess_rgb_to_input(const uint8_t * rgb, int w, int h, int ch,
 static void preprocess_gray_to_input(const float * gray, int w, int h,
                                      int target_w, int target_h,
                                      std::vector<float> & out) {
-    // gray is [0,1]. Resize and replicate to 3 channels, normalize to [-1,1].
+    // Bilinear resize, replicate to 3 channels, normalize to [-1, 1].
     out.resize(3 * target_h * target_w);
-    for (int c = 0; c < 3; c++) {
-        for (int ty = 0; ty < target_h; ty++) {
-            for (int tx = 0; tx < target_w; tx++) {
-                int sy = ty * h / target_h;
-                int sx = tx * w / target_w;
-                if (sy >= h) sy = h - 1;
-                if (sx >= w) sx = w - 1;
-                float val = gray[sy * w + sx];
-                out[c * target_h * target_w + ty * target_w + tx] = val * 2.0f - 1.0f;
-            }
+    for (int ty = 0; ty < target_h; ty++) {
+        float fy = (float)ty * h / target_h;
+        int y0 = (int)fy, y1 = std::min(y0 + 1, h - 1);
+        float wy = fy - y0;
+        for (int tx = 0; tx < target_w; tx++) {
+            float fx = (float)tx * w / target_w;
+            int x0 = (int)fx, x1 = std::min(x0 + 1, w - 1);
+            float wx = fx - x0;
+            float val = (1 - wy) * ((1 - wx) * gray[y0*w+x0] + wx * gray[y0*w+x1])
+                      +      wy  * ((1 - wx) * gray[y1*w+x0] + wx * gray[y1*w+x1]);
+            float f = val * 2.0f - 1.0f;
+            for (int c = 0; c < 3; c++)
+                out[c * target_h * target_w + ty * target_w + tx] = f;
         }
     }
 }
