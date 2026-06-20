@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -111,6 +112,8 @@ struct bttr_ocr_context {
     std::vector<float> char_confidences; // per-token softmax probabilities
     std::vector<float> encoder_output; // (n_pos, d_model)
     int n_enc_pos;
+
+    bool bench;
 };
 
 // ---------------------------------------------------------------------------
@@ -356,6 +359,8 @@ bttr_ocr_context * bttr_ocr_init(const char * model_path, int n_threads) {
         return nullptr;
     }
     if (!map_tensors(ctx.get())) return nullptr;
+
+    ctx->bench = (std::getenv("CRISPEMBED_BTTR_BENCH") != nullptr);
 
     return ctx.release();
 }
@@ -1035,7 +1040,11 @@ const char * bttr_ocr_recognize(
 ) {
     if (!ctx || !pixels || width <= 0 || height <= 0) return nullptr;
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     // Auto-invert if needed
+    auto t0 = std::chrono::steady_clock::now();
     const int n = width * height;
     float mean = 0;
     for (int i = 0; i < n; i++) mean += pixels[i];
@@ -1057,9 +1066,21 @@ const char * bttr_ocr_recognize(
         input = scaled.data();
         fprintf(stderr, "bttr_ocr: scaled %dx%d → %dx%d\n", width, height, w, h);
     }
+    if (bench) fprintf(stderr, "[bttr-bench] preprocess: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
+    t0 = std::chrono::steady_clock::now();
     run_encoder(ctx, input, w, h);
+    if (bench) fprintf(stderr, "[bttr-bench] encoder: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+
+    t0 = std::chrono::steady_clock::now();
     ctx->result_buf = greedy_decode(ctx);
+    if (bench) fprintf(stderr, "[bttr-bench] decoder greedy: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+
+    if (bench) fprintf(stderr, "[bttr-bench] total: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
@@ -1074,6 +1095,10 @@ const char * bttr_ocr_recognize_beam(
     if (!ctx || !pixels || width <= 0 || height <= 0) return nullptr;
     if (beam_width <= 1) return bttr_ocr_recognize(ctx, pixels, width, height, out_len);
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
+    auto t0 = std::chrono::steady_clock::now();
     const int n = width * height;
     float mean = 0;
     for (int i = 0; i < n; i++) mean += pixels[i];
@@ -1092,9 +1117,21 @@ const char * bttr_ocr_recognize_beam(
     if (scale_to_fit(input, width, height, scaled, w, h)) {
         input = scaled.data();
     }
+    if (bench) fprintf(stderr, "[bttr-bench] preprocess: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
+    t0 = std::chrono::steady_clock::now();
     run_encoder(ctx, input, w, h);
+    if (bench) fprintf(stderr, "[bttr-bench] encoder: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+
+    t0 = std::chrono::steady_clock::now();
     ctx->result_buf = beam_decode(ctx, beam_width);
+    if (bench) fprintf(stderr, "[bttr-bench] decoder beam: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+
+    if (bench) fprintf(stderr, "[bttr-bench] total: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();

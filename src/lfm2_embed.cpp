@@ -16,6 +16,7 @@
 #include "core/bpe.h"
 
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -98,6 +99,7 @@ struct lfm2_embed_ctx {
     ggml_backend_t   backend = nullptr;
     ggml_gallocr_t   galloc = nullptr;
     std::vector<int32_t> pos_cache;
+    bool bench = false;
 };
 
 // ============================================================================
@@ -113,6 +115,7 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
 
     auto * ctx = new lfm2_embed_ctx;
     ctx->backend  = backend;
+    ctx->bench = (std::getenv("CRISPEMBED_LFM2_EMBED_BENCH") != nullptr);
     auto & hp = ctx->model.hparams;
 
     hp.hidden_size = core_gguf::kv_u32(gctx, "lfm2.hidden_size", 1024);
@@ -378,6 +381,10 @@ static ggml_tensor * lfm2_layer_fwd(ggml_context * g, ggml_tensor * x,
 bool lfm2_embed_encode_to(lfm2_embed_ctx * ctx, const char * text, float * out) {
     if (!ctx || !text || !out) return false;
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+    auto t_tok0  = std::chrono::steady_clock::now();
+
     const auto & hp = ctx->model.hparams;
     const int  H   = (int)hp.hidden_size;
     const int  nh  = (int)hp.n_heads;
@@ -389,6 +396,12 @@ bool lfm2_embed_encode_to(lfm2_embed_ctx * ctx, const char * text, float * out) 
     std::vector<int32_t> ids = lfm2_tokenize(ctx->model, text);
     if (ids.empty()) return false;
     const int T = (int)ids.size();
+
+    if (bench) {
+        auto t_tok1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[lfm2_embed-bench] tokenize: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_tok1 - t_tok0).count());
+    }
 
     // Build graph (no-alloc metadata context from a small heap buffer)
     // ~50 nodes/layer (ShortConv ~20 + GQA ~30, plus cast + cont nodes)
@@ -445,9 +458,18 @@ bool lfm2_embed_encode_to(lfm2_embed_ctx * ctx, const char * text, float * out) 
         ggml_backend_tensor_set(pos, ctx->pos_cache.data(), 0, T * sizeof(int32_t));
     }
 
-    ggml_backend_graph_compute(ctx->backend, gf);
+    {
+        auto t_comp0 = std::chrono::steady_clock::now();
+        ggml_backend_graph_compute(ctx->backend, gf);
+        if (bench) {
+            auto t_comp1 = std::chrono::steady_clock::now();
+            fprintf(stderr, "[lfm2_embed-bench] graph compute: %.3f ms\n",
+                    std::chrono::duration<double, std::milli>(t_comp1 - t_comp0).count());
+        }
+    }
 
     // Read CLS embedding
+    auto t_post0 = std::chrono::steady_clock::now();
     ggml_backend_tensor_get(cls, out, 0, H * sizeof(float));
 
     ggml_free(g);
@@ -457,6 +479,15 @@ bool lfm2_embed_encode_to(lfm2_embed_ctx * ctx, const char * text, float * out) 
     for (int i = 0; i < H; i++) norm += out[i] * out[i];
     norm = sqrtf(std::max(norm, 1e-12f));
     for (int i = 0; i < H; i++) out[i] /= norm;
+
+    if (bench) {
+        auto t_post1 = std::chrono::steady_clock::now();
+        auto t_total1 = std::chrono::steady_clock::now();
+        fprintf(stderr, "[lfm2_embed-bench] postprocess: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_post1 - t_post0).count());
+        fprintf(stderr, "[lfm2_embed-bench] total: %.3f ms\n",
+                std::chrono::duration<double, std::milli>(t_total1 - t_total).count());
+    }
 
     return true;
 }

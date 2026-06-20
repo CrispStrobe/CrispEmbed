@@ -17,7 +17,9 @@
 
 #include <algorithm>
 #include <cassert>
+#include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -74,6 +76,8 @@ struct tesseract_lstm_context {
     // Diff mode: capture per-stage intermediates
     bool dump_mode = false;
     std::map<std::string, std::vector<float>> captures;
+
+    bool bench = false;
 
     // GGUF loader state
     core_gguf::WeightLoad wl;
@@ -544,6 +548,7 @@ tesseract_lstm_context * tesseract_lstm_init(const char * model_path, int n_thre
         delete ctx;
         return nullptr;
     }
+    ctx->bench = (std::getenv("CRISPEMBED_TESSERACT_BENCH") != nullptr);
     return ctx;
 }
 
@@ -565,11 +570,15 @@ const char * tesseract_lstm_recognize(
         return "";
     }
 
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
     // Tesseract's LSTM is trained on lines normalized to a fixed height
     // (input_height, typically 36); the conv/maxpool + SummLSTM stack assumes
     // it (H2 = H/3). Resize the input line to input_height (bilinear,
     // aspect-preserving) before normalization — otherwise a differently-sized
     // line produces garbage. (recognize() is documented to do this.)
+    auto t0 = std::chrono::steady_clock::now();
     const uint8_t * src = pixels;
     int W = width, H = height;
     std::vector<uint8_t> resized;
@@ -607,9 +616,17 @@ const char * tesseract_lstm_recognize(
     // Normalize image (Tesseract-style ComputeBlackWhite + SetPixel)
     std::vector<float> normalized((size_t)W * H);
     normalize_image(src, W, H, normalized.data());
+    if (bench) fprintf(stderr, "[tesseract-bench] preprocess: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
-    // Run forward pass
+    // Run forward pass (LSTM layers + softmax)
+    t0 = std::chrono::steady_clock::now();
     forward(ctx, normalized.data(), H, W);
+    if (bench) fprintf(stderr, "[tesseract-bench] LSTM layers: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+
+    if (bench) fprintf(stderr, "[tesseract-bench] total: %.1f ms\n",
+        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
