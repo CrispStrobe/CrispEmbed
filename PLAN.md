@@ -492,7 +492,7 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   separate ggml graphs per decode token (line 1288-1295). A single graph
   covering all attention layers would reduce graph construction cost by 12x.
 
-- [ ] **glm_ocr / got_ocr: scalar downsample/merger → ggml** — glm `host_matmul`
+- [x] **glm_ocr / got_ocr: scalar downsample/merger → ggml** — DONE. glm `host_matmul`
   (lines 493-502) and got neck (lines 699-773) use scalar CPU for Conv+matmul
   projectors. Should be ggml graph ops.
 
@@ -570,9 +570,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [ ] **gguf_loader: `madvise(MADV_SEQUENTIAL)`** after mmap (line 217) for
   better kernel readahead on cold model loads.
 
-- [ ] **gguf_loader: `std::unordered_map` for tensor lookup** — currently
-  `std::map` (O(log N)). ~2-5x faster lookups for models with thousands of
-  tensors.
+- [x] **gguf_loader: `std::unordered_map` for tensor lookup** — DONE
+  (`0777f30`). Replaced std::map with std::unordered_map in WeightLoad
+  and all 14 model files. O(1) avg lookups.
 
 - [x] **instructir: SCA weight dequant inside per-channel loop** — DONE
   (`06b3190`). Hoisted sca_w/sca_b dequant outside per-channel loop.
