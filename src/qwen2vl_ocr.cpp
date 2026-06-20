@@ -270,10 +270,40 @@ bool load_tensors(context &ctx, const char *path) {
   m.patch_embed_w = get2("v.patch_embed.weight", "v.patch_embd.weight");
   m.patch_embed_b = get("v.patch_embed.bias");
 
+  // Some converters store patch_embed as a 4D conv weight (out, in*T, H, W)
+  // rather than the flattened 2D (flat_in, out) that ggml_mul_mat needs.
+  // The data is in C (numpy row-major) order: out varies slowest, W fastest.
+  // Flattening dims [1..] into ne[0] and keeping ne[0] as ne[1] gives the
+  // correct interpretation because ggml_mul_mat(W, x) treats W as (K, M)
+  // where W[k,m] = data[m*K + k], matching the (out, flat_in) C-order layout.
+  if (m.patch_embed_w && ggml_n_dims(m.patch_embed_w) > 2) {
+    int ndims = ggml_n_dims(m.patch_embed_w);
+    int64_t out_ch  = m.patch_embed_w->ne[0];
+    int64_t flat_in = 1;
+    for (int d = 1; d < ndims; d++) flat_in *= m.patch_embed_w->ne[d];
+    m.patch_embed_w->ne[0] = flat_in;
+    m.patch_embed_w->ne[1] = out_ch;
+    m.patch_embed_w->ne[2] = 1;
+    m.patch_embed_w->ne[3] = 1;
+    m.patch_embed_w->nb[1] = flat_in * ggml_type_size(m.patch_embed_w->type);
+    m.patch_embed_w->nb[2] = m.patch_embed_w->nb[1] * out_ch;
+    m.patch_embed_w->nb[3] = m.patch_embed_w->nb[2];
+    int P = (int)m.vhp.spatial_patch_size;
+    if (P > 0) {
+      if (flat_in == (int64_t)(3 * 1 * P * P))
+        m.vhp.temporal_patch_size = 1;
+      else if (flat_in == (int64_t)(3 * 2 * P * P))
+        m.vhp.temporal_patch_size = 2;
+    }
+    if (ctx.verbosity >= 1)
+      fprintf(stderr, "  patch_embed: flattened 4D→2D (flat_in=%lld, out=%lld, T=%u)\n",
+              (long long)flat_in, (long long)out_ch, m.vhp.temporal_patch_size);
+  }
+
   // Learned position embeddings (PaddleOCR-VL or Qwen3-VL)
   m.position_embed_w = get("v.position_embed.weight");
-  if (!m.position_embed_w)
-    m.position_embed_w = get("v.pos_embed.weight");
+  if (!m.position_embed_w) m.position_embed_w = get("v.pos_embed.weight");
+  if (!m.position_embed_w) m.position_embed_w = get("v.pos_embed"); // no .weight suffix
   m.packing_pos_embed_w = get("v.packing_pos_embed.weight");
   m.post_layernorm_w = get("v.post_layernorm.weight");
   m.post_layernorm_b = get("v.post_layernorm.bias");
@@ -293,30 +323,32 @@ bool load_tensors(context &ctx, const char *path) {
     blk.norm1_b = get2(p + "norm1.bias", p + "ln1.bias");
     blk.norm2_w = get2(p + "norm2.weight", p + "ln2.weight");
     blk.norm2_b = get2(p + "norm2.bias", p + "ln2.bias");
-    // Attention: fused QKV or separate Q/K/V (mmproj uses separate)
-    blk.qkv_w = get(p + "attn_qkv.weight");
-    blk.qkv_b = get(p + "attn_qkv.bias");
-    blk.q_w = get(p + "attn_q.weight");
-    blk.q_b = get(p + "attn_q.bias");
-    blk.k_w = get(p + "attn_k.weight");
-    blk.k_b = get(p + "attn_k.bias");
-    blk.v_w = get(p + "attn_v.weight");
-    blk.v_b = get(p + "attn_v.bias");
-    blk.proj_w = get2(p + "attn_proj.weight", p + "attn_out.weight");
-    blk.proj_b = get2(p + "attn_proj.bias", p + "attn_out.bias");
-    // SwiGLU FFN (Qwen2.5-VL)
-    blk.ffn_gate_w = get(p + "ffn_gate.weight");
-    blk.ffn_gate_b = get(p + "ffn_gate.bias");
-    blk.ffn_up_w = get(p + "ffn_up.weight");
-    blk.ffn_up_b = get(p + "ffn_up.bias");
-    blk.ffn_down_w = get(p + "ffn_down.weight");
-    blk.ffn_down_b = get(p + "ffn_down.bias");
-    // GELU fc1/fc2 FFN (Qwen2-VL)
-    blk.ffn_fc1_w = get(p + "ffn_fc1.weight");
-    blk.ffn_fc1_b = get(p + "ffn_fc1.bias");
-    blk.ffn_fc2_w = get(p + "ffn_fc2.weight");
-    blk.ffn_fc2_b = get(p + "ffn_fc2.bias");
-    // mmproj uses ffn_up/ffn_down for GELU too — map to fc1/fc2 if needed
+    // Attention: fused QKV (underscore or dot notation) or separate Q/K/V
+    blk.qkv_w = get2(p + "attn_qkv.weight", p + "attn.qkv.weight");
+    blk.qkv_b = get2(p + "attn_qkv.bias",   p + "attn.qkv.bias");
+    blk.q_w   = get2(p + "attn_q.weight",   p + "attn.q.weight");
+    blk.q_b   = get2(p + "attn_q.bias",     p + "attn.q.bias");
+    blk.k_w   = get2(p + "attn_k.weight",   p + "attn.k.weight");
+    blk.k_b   = get2(p + "attn_k.bias",     p + "attn.k.bias");
+    blk.v_w   = get2(p + "attn_v.weight",   p + "attn.v.weight");
+    blk.v_b   = get2(p + "attn_v.bias",     p + "attn.v.bias");
+    blk.proj_w = get(p + "attn_proj.weight");
+    if (!blk.proj_w) blk.proj_w = get2(p + "attn_out.weight", p + "attn.proj.weight");
+    blk.proj_b = get(p + "attn_proj.bias");
+    if (!blk.proj_b) blk.proj_b = get2(p + "attn_out.bias", p + "attn.proj.bias");
+    // SwiGLU FFN (Qwen2.5-VL) — underscore or dot notation
+    blk.ffn_gate_w = get2(p + "ffn_gate.weight", p + "ffn.gate.weight");
+    blk.ffn_gate_b = get2(p + "ffn_gate.bias",   p + "ffn.gate.bias");
+    blk.ffn_up_w   = get2(p + "ffn_up.weight",   p + "ffn.up.weight");
+    blk.ffn_up_b   = get2(p + "ffn_up.bias",     p + "ffn.up.bias");
+    blk.ffn_down_w = get2(p + "ffn_down.weight", p + "ffn.down.weight");
+    blk.ffn_down_b = get2(p + "ffn_down.bias",   p + "ffn.down.bias");
+    // GELU fc1/fc2 FFN (Qwen2-VL / Qwen3-VL) — underscore or dot notation
+    blk.ffn_fc1_w = get2(p + "ffn_fc1.weight", p + "ffn.fc1.weight");
+    blk.ffn_fc1_b = get2(p + "ffn_fc1.bias",   p + "ffn.fc1.bias");
+    blk.ffn_fc2_w = get2(p + "ffn_fc2.weight", p + "ffn.fc2.weight");
+    blk.ffn_fc2_b = get2(p + "ffn_fc2.bias",   p + "ffn.fc2.bias");
+    // mmproj or dot-notation ffn_up/ffn_down used for GELU — map to fc1/fc2
     if (!blk.ffn_fc1_w && !blk.ffn_gate_w && blk.ffn_up_w) {
       blk.ffn_fc1_w = blk.ffn_up_w;
       blk.ffn_fc1_b = blk.ffn_up_b;
@@ -342,9 +374,13 @@ bool load_tensors(context &ctx, const char *path) {
   m.merger.norm_w = get("v.merger.norm.weight");
   m.merger.norm_b = get("v.merger.norm.bias");
   m.merger.fc1_w = get2("v.merger.fc1.weight", "mm.0.weight");
+  if (!m.merger.fc1_w) m.merger.fc1_w = get("v.merger.linear_fc1.weight");
   m.merger.fc1_b = get2("v.merger.fc1.bias", "mm.0.bias");
+  if (!m.merger.fc1_b) m.merger.fc1_b = get("v.merger.linear_fc1.bias");
   m.merger.fc2_w = get2("v.merger.fc2.weight", "mm.2.weight");
+  if (!m.merger.fc2_w) m.merger.fc2_w = get("v.merger.linear_fc2.weight");
   m.merger.fc2_b = get2("v.merger.fc2.bias", "mm.2.bias");
+  if (!m.merger.fc2_b) m.merger.fc2_b = get("v.merger.linear_fc2.bias");
 
   // Qwen3-VL: deepstack mergers
   if (!m.vhp.deepstack_indexes.empty()) {
@@ -352,13 +388,14 @@ bool load_tensors(context &ctx, const char *path) {
     m.deepstack_mergers.resize(n_ds);
     for (int ds = 0; ds < n_ds; ds++) {
       auto &dm = m.deepstack_mergers[ds];
-      std::string dp = "v.deepstack." + std::to_string(ds) + ".";
-      dm.norm_w = get(dp + "norm.weight");
-      dm.norm_b = get(dp + "norm.bias");
-      dm.fc1_w = get(dp + "fc1.weight");
-      dm.fc1_b = get(dp + "fc1.bias");
-      dm.fc2_w = get(dp + "fc2.weight");
-      dm.fc2_b = get(dp + "fc2.bias");
+      std::string dp  = "v.deepstack." + std::to_string(ds) + ".";
+      std::string dp2 = "v.deepstack_merger_list." + std::to_string(ds) + ".";
+      dm.norm_w = get2(dp + "norm.weight", dp2 + "norm.weight");
+      dm.norm_b = get2(dp + "norm.bias",   dp2 + "norm.bias");
+      dm.fc1_w  = get2(dp + "fc1.weight",  dp2 + "linear_fc1.weight");
+      dm.fc1_b  = get2(dp + "fc1.bias",    dp2 + "linear_fc1.bias");
+      dm.fc2_w  = get2(dp + "fc2.weight",  dp2 + "linear_fc2.weight");
+      dm.fc2_b  = get2(dp + "fc2.bias",    dp2 + "linear_fc2.bias");
     }
     if (ctx.verbosity >= 1) {
       fprintf(stderr, "  deepstack: %d mergers at layers [", n_ds);
@@ -370,6 +407,7 @@ bool load_tensors(context &ctx, const char *path) {
 
   // LLM decoder (CrispEmbed "l.blk.*" or llama.cpp "blk.*")
   m.embed_tokens = get2("l.embed_tokens.weight", "token_embd.weight");
+  if (!m.embed_tokens) m.embed_tokens = get("llm.embed.weight");
 
   m.llm_layers.resize(m.lhp.num_hidden_layers);
   for (uint32_t i = 0; i < m.lhp.num_hidden_layers; i++) {
@@ -431,6 +469,58 @@ bool load_tensors(context &ctx, const char *path) {
     m.lm_head_w = get("llm.lm_head.weight");
   if (!m.lm_head_w)
     m.lm_head_w = get("llm.embed.weight"); // tied
+
+  // Some GGUF converters store every 2-D weight in PyTorch (out, in) row-major
+  // order instead of ggml's (in, out) convention. ggml_mul_mat(W, x) requires
+  // W->ne[0] == x->ne[0] (the contraction dim), so a weight with ne[0]=out
+  // would fail the ggml_can_mul_mat assertion. Swapping ne[0]<->ne[1] and
+  // recalculating nb fixes this: the byte offset of element [k,m] is
+  // (k + m*ne[0])*nb[0], which equals the C-order offset (m*old_ne[0]+k)*nb[0]
+  // — same value. For quantised dtypes, ggml quantises along ne[0] and PyTorch
+  // quantises along dim=-1 (in-features), so after the swap the Q-blocks are
+  // also correctly aligned. Square tensors (ne[0]==ne[1]) are no-ops.
+  auto fix_ne = [](ggml_tensor *t) {
+    if (!t || ggml_n_dims(t) != 2 || t->ne[0] == t->ne[1]) return;
+    std::swap(t->ne[0], t->ne[1]);
+    t->nb[1] = t->nb[0] * (t->ne[0] / ggml_blck_size(t->type));
+    t->nb[2] = t->nb[1] * t->ne[1];
+    t->nb[3] = t->nb[2];
+  };
+
+  // Vision blocks: detect by qkv_w.ne[0]. Correct (CrispEmbed): ne[0]=H.
+  // Wrong order: ne[0]=3*H (fused QKV stored out-first).
+  const int64_t H = (int64_t)m.vhp.hidden_size;
+  if (H > 0 && m.vhp.depth > 0 && m.vis_blocks[0].qkv_w &&
+      m.vis_blocks[0].qkv_w->ne[0] != H) {
+    if (ctx.verbosity >= 1)
+      fprintf(stderr, "  vision: fixing transposed weights (PyTorch→ggml)\n");
+    for (uint32_t i = 0; i < m.vhp.depth; i++) {
+      auto &blk = m.vis_blocks[i];
+      fix_ne(blk.qkv_w);
+      fix_ne(blk.q_w);  fix_ne(blk.k_w);  fix_ne(blk.v_w);
+      fix_ne(blk.proj_w);
+      fix_ne(blk.ffn_gate_w); fix_ne(blk.ffn_up_w); fix_ne(blk.ffn_down_w);
+      fix_ne(blk.ffn_fc1_w);  fix_ne(blk.ffn_fc2_w);
+    }
+    // patch_embed_w already re-shaped 4D→2D with correct (flat_in, out) order.
+    fix_ne(m.merger.fc1_w); fix_ne(m.merger.fc2_w);
+    for (auto &dm : m.deepstack_mergers) { fix_ne(dm.fc1_w); fix_ne(dm.fc2_w); }
+  }
+
+  // LLM layers: detect by ffn_gate_w.ne[0]. Correct: ne[0]=D. Wrong: ne[0]=inter.
+  const int64_t D = (int64_t)m.lhp.hidden_size;
+  if (D > 0 && m.lhp.num_hidden_layers > 0 && m.llm_layers[0].ffn_gate_w &&
+      m.llm_layers[0].ffn_gate_w->ne[0] != D) {
+    if (ctx.verbosity >= 1)
+      fprintf(stderr, "  llm: fixing transposed weights (PyTorch→ggml)\n");
+    for (uint32_t i = 0; i < m.lhp.num_hidden_layers; i++) {
+      auto &ly = m.llm_layers[i];
+      fix_ne(ly.q_w);  fix_ne(ly.k_w);  fix_ne(ly.v_w);  fix_ne(ly.o_w);
+      fix_ne(ly.ffn_gate_w); fix_ne(ly.ffn_up_w); fix_ne(ly.ffn_down_w);
+    }
+    fix_ne(m.embed_tokens);
+    if (m.lm_head_w && m.lm_head_w != m.embed_tokens) fix_ne(m.lm_head_w);
+  }
 
   return true;
 }

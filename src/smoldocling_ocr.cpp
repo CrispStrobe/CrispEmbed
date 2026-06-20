@@ -49,50 +49,12 @@ static const float * sd_to_f32(const ggml_tensor * t, std::vector<float> & buf) 
     return buf.data();
 }
 
-static void sd_layernorm(float * data, int n, int d,
-                         const float * weight, const float * bias, float eps) {
-    for (int i = 0; i < n; i++) {
-        float * row = data + i * d;
-        float mean = 0;
-        for (int j = 0; j < d; j++) mean += row[j];
-        mean /= d;
-        float var = 0;
-        for (int j = 0; j < d; j++) { float x = row[j] - mean; var += x * x; }
-        var /= d;
-        float inv = 1.0f / sqrtf(var + eps);
-        for (int j = 0; j < d; j++)
-            row[j] = (row[j] - mean) * inv * weight[j] + (bias ? bias[j] : 0.0f);
-    }
-}
-
-static void sd_rmsnorm(float * data, int n, int d, const float * weight, float eps) {
-    for (int i = 0; i < n; i++) {
-        float * row = data + i * d;
-        float ss = 0;
-        for (int j = 0; j < d; j++) ss += row[j] * row[j];
-        float inv = 1.0f / sqrtf(ss / d + eps);
-        for (int j = 0; j < d; j++) row[j] = row[j] * inv * weight[j];
-    }
-}
-
+// sd_linear: delegate to SIMD-accelerated core_cpu::linear_cpu
 static void sd_linear(const float * input, int n, int id, int od,
                       const float * weight, const float * bias, float * output) {
-    for (int i = 0; i < n; i++) {
-        const float * in_row = input + i * id;
-        float * out_row = output + i * od;
-        for (int o = 0; o < od; o++) {
-            float sum = bias ? bias[o] : 0.0f;
-            for (int j = 0; j < id; j++) sum += in_row[j] * weight[o * id + j];
-            out_row[o] = sum;
-        }
-    }
+    for (int i = 0; i < n; i++)
+        core_cpu::linear_cpu(input + i * id, output + i * od, id, od, weight, bias);
 }
-
-static float sd_gelu(float x) {
-    return 0.5f * x * (1.0f + tanhf(0.7978845608f * (x + 0.044715f * x * x * x)));
-}
-
-static float sd_silu(float x) { return x / (1.0f + expf(-x)); }
 
 // ── GPT-2 byte-level BPE tables ──────────────────────────────────────
 // Same as CrispASR core/bpe.h — maps raw bytes ↔ printable unicode
@@ -286,10 +248,13 @@ struct smoldocling_context {
 
     // Weight storage
     core_gguf::WeightLoad wl;
-    std::vector<std::vector<float>> wbufs;
+    core_cpu::DequantCache dcache;   // caches dequantized weights (replaces wbufs)
 
     // ggml backend for vision encoder (BLAS-accelerated)
     ggml_backend_t backend = nullptr;
+
+    // RoPE frequency table (precomputed once at init)
+    core_vlm::RoPEFreqTable rope_freq;
 
     // KV cache
     std::vector<float> kv_cache;
@@ -302,8 +267,7 @@ struct smoldocling_context {
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t) return nullptr;
-        wbufs.emplace_back();
-        return sd_to_f32(t, wbufs.back());
+        return dcache.get(t);
     }
 };
 
@@ -348,6 +312,7 @@ smoldocling_context * smoldocling_init(const char * model_path, int n_threads) {
     ctx->rms_eps = idx >= 0 ? gguf_get_val_f32(meta, idx) : 1e-5f;
     idx = gguf_find_key(meta, "smoldocling.rope_theta");
     ctx->rope_theta = idx >= 0 ? gguf_get_val_f32(meta, idx) : 100000.0f;
+    ctx->rope_freq.precompute(ctx->head_dim, ctx->rope_theta);
 
     // Tokenizer
     if (!ctx->tokenizer.load(meta)) {
@@ -693,10 +658,10 @@ static void sd_llm_decode_step(smoldocling_context * ctx,
         snprintf(buf, sizeof(buf), "llm.layers.%d", li);
         std::string lp(buf);
 
-        // RMSNorm (attention)
+        // RMSNorm (attention) — uses core_cpu for SIMD-benefitting downstream
         std::vector<float> normed(D);
-        memcpy(normed.data(), x.data(), D * sizeof(float));
-        sd_rmsnorm(normed.data(), 1, D, ctx->get(lp + ".attn_norm.weight"), eps);
+        core_cpu::rmsnorm_cpu(x.data(), normed.data(), D,
+                              ctx->get(lp + ".attn_norm.weight"), eps);
 
         // GQA: Q [n_heads * d_head], K [n_kv * d_head], V [n_kv * d_head]
         int q_dim = n_heads * d_head;
@@ -709,11 +674,10 @@ static void sd_llm_decode_step(smoldocling_context * ctx,
         sd_linear(normed.data(), 1, D, kv_dim,
                   ctx->get(lp + ".attn.v.weight"), nullptr, V_new.data());
 
-        // RoPE (neghalf / non-interleaved)
-        float theta = ctx->rope_theta;
-        core_vlm::apply_rope(Q.data(), n_heads, d_head, n_past, theta,
+        // RoPE (neghalf) — uses precomputed frequency table (no powf per element)
+        ctx->rope_freq.apply(Q.data(), n_heads, n_past,
                              core_vlm::RoPEStyle::NEGHALF);
-        core_vlm::apply_rope(K_new.data(), n_kv, d_head, n_past, theta,
+        ctx->rope_freq.apply(K_new.data(), n_kv, n_past,
                              core_vlm::RoPEStyle::NEGHALF);
 
         // GQA attention with KV cache
@@ -734,8 +698,8 @@ static void sd_llm_decode_step(smoldocling_context * ctx,
         for (int d = 0; d < D; d++) x[d] += proj[d];
 
         // RMSNorm (FFN)
-        memcpy(normed.data(), x.data(), D * sizeof(float));
-        sd_rmsnorm(normed.data(), 1, D, ctx->get(lp + ".ffn_norm.weight"), eps);
+        core_cpu::rmsnorm_cpu(x.data(), normed.data(), D,
+                              ctx->get(lp + ".ffn_norm.weight"), eps);
 
         // SwiGLU FFN
         int ffn = ctx->llm_ffn_dim;
@@ -748,23 +712,23 @@ static void sd_llm_decode_step(smoldocling_context * ctx,
         // Residual
         for (int d = 0; d < D; d++) x[d] += down[d];
 
-        // Free dequant buffers after each layer
-        ctx->wbufs.clear();
+        // DequantCache: weights stay cached across layers and calls
     }
 
     // Final RMSNorm
-    sd_rmsnorm(x.data(), 1, D, ctx->get("llm.norm.weight"), eps);
+    {
+        std::vector<float> tmp(D);
+        core_cpu::rmsnorm_cpu(x.data(), tmp.data(), D,
+                              ctx->get("llm.norm.weight"), eps);
+        memcpy(x.data(), tmp.data(), D * sizeof(float));
+    }
 
     // LM head (separate, NOT tied) — skip during prefill for speed
+    // Uses SIMD-accelerated linear_cpu for the (49280 × 576) matmul
     if (!skip_logits) {
         const float * lm_w = ctx->get("llm.lm_head.weight");
-        if (lm_w) {
-            for (int v = 0; v < ctx->vocab_size; v++) {
-                float sum = 0;
-                for (int d = 0; d < D; d++) sum += x[d] * lm_w[v * D + d];
-                logits[v] = sum;
-            }
-        }
+        if (lm_w)
+            core_cpu::linear_cpu(x.data(), logits, D, ctx->vocab_size, lm_w, nullptr);
     }
 }
 
@@ -869,19 +833,11 @@ const char * smoldocling_recognize_raw(smoldocling_context * ctx,
     ctx->kv_allocated = max_seq;
     ctx->n_past = 0;
 
-    // Clear weight buffers to avoid unbounded growth during prefill
-    ctx->wbufs.clear();
-
     fprintf(stderr, "smoldocling: KV cache allocated: %d max_seq, %.1f MB\n",
             max_seq, (float)(ctx->kv_cache.size() * 4) / 1e6f);
 
-    // Get embedding weights — copy to a persistent buffer since ctx->get()
-    // returns pointers into wbufs which get invalidated by later get() calls.
-    const float * embed_w_tmp = ctx->get("llm.embed.weight");
-    std::vector<float> embed_buf(ctx->vocab_size * D);
-    memcpy(embed_buf.data(), embed_w_tmp, ctx->vocab_size * D * sizeof(float));
-    ctx->wbufs.clear();  // free the dequant buffer
-    const float * embed_w = embed_buf.data();
+    // Get embedding weights — DequantCache keeps the pointer stable across calls
+    const float * embed_w = ctx->get("llm.embed.weight");
     fprintf(stderr, "smoldocling: starting prefill of %d tokens...\n",
             (int)input_ids.size());
 
@@ -908,8 +864,7 @@ const char * smoldocling_recognize_raw(smoldocling_context * ctx,
                            /*skip_logits=*/!is_last);
         ctx->n_past++;
 
-        // Periodically clear weight buffers to avoid memory bloat
-        if (t % 64 == 63) ctx->wbufs.clear();
+        // DequantCache: no periodic clear needed (each weight cached once)
     }
     if (bench) {
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -947,22 +902,15 @@ const char * smoldocling_recognize_raw(smoldocling_context * ctx,
         sd_llm_decode_step(ctx, next_embed.data(), ctx->n_past, logits.data());
         ctx->n_past++;
 
-        // Periodically clear weight buffers
-        if (step % 64 == 63) ctx->wbufs.clear();
-        if (bench) {
-            auto step_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-                std::chrono::steady_clock::now() - t_step).count();
-            decode_total_ms += step_ms;
-            decode_steps++;
-            fprintf(stderr, "[smoldocling-bench] decode_step[%d]: %lldms\n", step, (long long)step_ms);
-        }
+        // DequantCache: no periodic clear needed
     }
     if (bench) {
-        fprintf(stderr, "[smoldocling-bench] decode_total: %lldms (%d steps)\n",
-                decode_total_ms, decode_steps);
-        auto total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - t_total).count();
-        fprintf(stderr, "[smoldocling-bench] total: %lldms\n", (long long)total_ms);
+        auto t_decode_end = std::chrono::steady_clock::now();
+        fprintf(stderr, "[smoldocling-bench] decode (%d steps): %.1f ms\n",
+                (int)output_ids.size(),
+                std::chrono::duration<double, std::milli>(t_decode_end - t_decode).count());
+        fprintf(stderr, "[smoldocling-bench] total: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(t_decode_end - t_total).count());
     }
 
     // Detokenize
