@@ -530,6 +530,10 @@ static void run_encoder_graph(ppformulanet_l_ocr_context* ctx,
     // ---------------------------------------------------------------
     auto t_start = std::chrono::steady_clock::now();
 
+    // Reusable metadata buffer for ggml contexts (hoisted from per-layer loop)
+    const size_t meta_size = 8 * 1024 * 1024;
+    std::vector<uint8_t> meta_buf(meta_size);
+
     // Dequant LN weights once (used for CPU LN on windowed layers)
     auto ln1_ws = std::vector<std::vector<float>>(hp.enc_layers);
     auto ln1_bs = std::vector<std::vector<float>>(hp.enc_layers);
@@ -592,9 +596,7 @@ static void run_encoder_graph(ppformulanet_l_ocr_context* ctx,
         reformat_rp_table(ctx->rp_h_per_layer[li].data(), rp_h_ggml.data(), aH, hd);
         reformat_rp_table(ctx->rp_w_per_layer[li].data(), rp_w_ggml.data(), aW, hd);
 
-        // Build and execute graph
-        size_t meta_size = 8 * 1024 * 1024;
-        std::vector<uint8_t> meta_buf(meta_size);
+        // Build and execute graph (meta_buf reused across layers)
         ggml_init_params ip = { meta_size, meta_buf.data(), true };
         ggml_context* gc = ggml_init(ip);
 
