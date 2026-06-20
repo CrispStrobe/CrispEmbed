@@ -93,10 +93,31 @@ std::vector<int> kv_i32_array(gguf_context* gctx, const char* key);
 // Pass 2: tensor allocation + weight data copy.
 // ---------------------------------------------------------------------------
 
+// CROSS-REPO TENSOR-MAP CONTRACT (read before changing the map type!)
+// ------------------------------------------------------------------
+// `core/gguf_loader.{h,cpp}` exists in BOTH CrispEmbed and CrispASR. When
+// CrispEmbed builds, it pulls in CrispASR's `crisp_audio`/`crisp_lid` sources,
+// and those compile against THIS header (crisp_audio links `crispembed-core`
+// and uses its includes). CrispEmbed prefers `std::unordered_map` for tensor
+// lookup (faster); CrispASR's standalone build prefers `std::map`.
+//
+// A consumer that does `ctx.tensors = std::move(wl.tensors)` therefore needs
+// its own `tensors` field to be the SAME type as `WeightLoad::tensors` — but
+// that type differs per repo. Hard-coding either type in the consumer breaks
+// the other build, which is what caused the std::map<->unordered_map flip-flop
+// war (CrispASR commits e6693b23/ad869798/d1bd3b91/1e4f1184/844f89d3, …).
+//
+// FIX: expose the type as a single alias `core_gguf::tensor_map`. Each repo's
+// header defines it as its own choice; consumers (e.g. crisp_audio/audio_tower,
+// crisp_lid/lid_cld3) declare their field as `core_gguf::tensor_map tensors;`
+// so it AUTOMATICALLY matches whichever gguf_loader.h is compiled. Do not
+// hard-code std::map / std::unordered_map in those consumer structs again.
+using tensor_map = std::unordered_map<std::string, ggml_tensor*>;
+
 struct WeightLoad {
     ggml_context* ctx = nullptr;
     ggml_backend_buffer_t buf = nullptr;
-    std::unordered_map<std::string, ggml_tensor*> tensors;
+    tensor_map tensors;
     // Set only on the no-copy mmap path: the file stays mapped for the buffer's
     // lifetime (the buffer points directly at these pages). free_weights() unmaps.
     void* mmap_addr = nullptr;
@@ -129,12 +150,14 @@ void free_weights(WeightLoad& wl);
 // ---------------------------------------------------------------------------
 
 // Look up a tensor by name. Returns nullptr (silently) if missing.
-ggml_tensor* try_get(const std::unordered_map<std::string, ggml_tensor*>& tensors, const char* name);
+// Uses `tensor_map` (see the cross-repo contract note above) so the signature
+// tracks the per-repo map choice automatically.
+ggml_tensor* try_get(const tensor_map& tensors, const char* name);
 
 // Look up a tensor by name. Prints an error to stderr if missing but
 // still returns nullptr — the caller decides whether a missing tensor
 // is fatal.
-ggml_tensor* require(const std::unordered_map<std::string, ggml_tensor*>& tensors, const char* name, const char* model_tag);
+ggml_tensor* require(const tensor_map& tensors, const char* name, const char* model_tag);
 
 // Build a shell command that produces the formatted tensor name for a
 // per-layer lookup. Avoids the snprintf(buf, sizeof(buf), "...", i) line
