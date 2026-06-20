@@ -2352,3 +2352,40 @@ scaled by `attention_multiplier` = 1/64 not 1/√d, embedding/residual/logits
 multipliers, tied lm_head) is validated layer-by-layer by
 `tools/dump_granite_llm_reference.py` (builds the reference straight from the
 dequantized GGUF — no 5 GB HF checkout needed) at cos=1.0.
+
+## granite_vision: ggml LLM decode is correct on CPU, garbage on the mixed Metal scheduler
+
+After fixing the transposed-`ne` crashes, the ggml LLM graph (`gv_run_llm_body`)
+still produced wrong tokens (decode ran away to max_tokens). The per-layer diff
+harness (`granite_vision_dump_llm_graph` + `test-granite-vision-diff … graph`,
+compared to `tools/dump_granite_llm_reference.py`) localised it precisely:
+
+- `llm_embed_in` cos=1.0, then `llm_layer_0_out` cos=0.0 — garbage from the
+  first transformer layer's compute.
+- **On a CPU-only backend the SAME graph is bit-correct** (7/7 stages,
+  logits cos=0.999). It only fails on the Metal backend.
+
+Root cause is NOT the math and NOT `flash_attn_ext` (correct on Metal — see
+CrispASR upstream-prs/19). It is the **ggml scheduler's cross-backend copy
+insertion** corrupting a mixed Metal+CPU graph — CrispASR upstream-prs/11
+("mixed CPU+GPU op pinning → NaN/garbage at larger dims") and /16
+("cross-backend copy insertion for small mixed-backend graphs"). `vis_sched`
+is necessarily `[Metal, CPU]` because `ggml_backend_sched_new` asserts the last
+backend is CPU, so a homogeneous Metal sched is not allowed. The vision/projector
+graphs flood-fill onto Metal and are fine; the LLM graph does not and is
+corrupted.
+
+Also note: the transposed-weight fix should be done **physically at load time**
+(swap `ne`/`nb` so each 2D weight is a standard contiguous `[in,out]` tensor),
+not via a per-op `ggml_reshape_2d` view — though that turned out not to be the
+Metal failure here, a reshaped quantized view is the kind of thing Metal kernels
+mishandle, and the load-time fix is cleaner (no per-call reshape).
+
+**Fix path (not yet implemented):** the documented reliable workaround is
+homogeneous weight residency — keep vision/projector weights on Metal but load
+the LLM weights on the CPU backend, so the LLM sub-graph routes entirely to CPU
+(correct, and memory-bounded: Q4_K-direct, no ~9 GB F32 DequantCache that swaps
+on 16 GB). Needs split-residency loading in `core_gguf` (CrispASR has it,
+CrispEmbed does not yet). Full-CPU is not viable: Metal vision is ~3 s vs ~125 s
+on CPU ggml. Until then the ggml LLM stays behind `CRISPEMBED_GRANITE_LLM_GRAPH`
+and the default decode is the diff-validated scalar path.

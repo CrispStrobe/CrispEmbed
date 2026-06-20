@@ -364,12 +364,39 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
 
     {
         ggml_backend_dev_t gdev = ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_GPU);
+        if (std::getenv("CRISPEMBED_GRANITE_CPU")) gdev = nullptr;  // debug: force CPU backend
         ctx->backend = gdev ? ggml_backend_dev_init(gdev, nullptr) : nullptr;
         if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     }
     if (!core_gguf::load_weights(model_path, ctx->backend, "granite_vision", ctx->wl)) {
         fprintf(stderr, "granite_vision: failed to load weights\n");
         ggml_backend_free(ctx->backend); delete ctx; return nullptr;
+    }
+
+    // The converter writes 2D weights in PyTorch [out,in] order, so ggml's ne is
+    // transposed vs what ggml_mul_mat expects (ne[0] = the contraction/in dim).
+    // Relabel each 2D matrix weight to a STANDARD contiguous [in,out] tensor by
+    // swapping ne and recomputing nb. The underlying bytes already match this
+    // layout (the quantizer blocked along the in axis), so this is a pure
+    // metadata fix — no data move. This must be done physically (not via a
+    // per-op ggml_reshape view): the Metal mul_mat/flash kernels mishandle a
+    // reshaped quantized view (CPU tolerates it, Metal returns garbage), which
+    // is why the ggml LLM decode produced cos=0 on Metal but cos=1 on CPU.
+    // Scalar paths index by explicit dims (gv_linear / dcache read raw bytes)
+    // and are unaffected. Embedding / patch / pos tensors are consumed by
+    // scalar lookups with their own [rows,cols] convention — leave them.
+    for (auto & kv : ctx->wl.tensors) {
+        ggml_tensor * t = kv.second;
+        const std::string & nm = kv.first;
+        if (ggml_n_dims(t) != 2 || t->ne[0] <= 1 || t->ne[1] <= 1) continue;
+        if (nm.find("embed") != std::string::npos ||
+            nm.find("patch") != std::string::npos ||
+            nm.find("pos")   != std::string::npos) continue;
+        std::swap(t->ne[0], t->ne[1]);
+        t->nb[0] = ggml_type_size(t->type);
+        t->nb[1] = ggml_row_size(t->type, t->ne[0]);
+        t->nb[2] = t->nb[1] * t->ne[1];
+        t->nb[3] = t->nb[2];
     }
 
     // Backend scheduler shared by vis, projector, and LLM ggml graphs.
@@ -381,6 +408,13 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
     {
         std::vector<ggml_backend_t> bends;
         bends.push_back(ctx->backend);
+        // ggml_backend_sched requires the last backend to be CPU, so vis_sched
+        // is necessarily cross-backend on Metal. The vision/projector graphs
+        // flood-fill onto Metal and are correct, but the LLM decode graph hits
+        // the cross-backend copy-insertion bug (CrispASR upstream-prs 11/16):
+        // bit-correct on a homogeneous CPU sched, garbage on the mixed Metal
+        // sched. Until that's fixed (homogeneous weight residency / a ggml-sched
+        // patch), the ggml LLM stays gated and the default decode is scalar.
         if (!ggml_backend_is_cpu(ctx->backend)) {
             ctx->vis_backend_cpu = ggml_backend_cpu_init();
             if (ctx->vis_backend_cpu) {
@@ -527,20 +561,13 @@ static void gv_run_vit_graph(granite_vision_context * ctx,
         if (o_b) attn = ggml_add(g, attn, o_b);
         x = ggml_add(g, resid, attn);
 
-        // ── FFN ──
-        // The converter stores 2D weights in PyTorch [out,in] order, so the
-        // non-square FFN weights have transposed ggml ne and ggml_mul_mat
-        // asserts (4304 != 1152). Reshape relabels the (contiguous) data to
-        // ggml's expected [in,out] — a no-op for the square attn weights, so
-        // they are left as-is. See memory: granite-converter-transposed-ne.
+        // ── FFN ── (weight ne corrected to [in,out] at load time)
         resid = x;
         y = ln_g(x, ln2_w, ln2_b);
-        ggml_tensor * fc1_t = ggml_reshape_2d(g, fc1_w, fc1_w->ne[1], fc1_w->ne[0]);
-        y = ggml_mul_mat(g, fc1_t, y);
+        y = ggml_mul_mat(g, fc1_w, y);
         if (fc1_b) y = ggml_add(g, y, fc1_b);
         y = ggml_gelu(g, y);
-        ggml_tensor * fc2_t = ggml_reshape_2d(g, fc2_w, fc2_w->ne[1], fc2_w->ne[0]);
-        y = ggml_mul_mat(g, fc2_t, y);
+        y = ggml_mul_mat(g, fc2_w, y);
         if (fc2_b) y = ggml_add(g, y, fc2_b);
         x = ggml_add(g, resid, y);
 
@@ -642,13 +669,11 @@ static bool gv_run_projector_graph(granite_vision_context * ctx,
     ggml_tensor * b2 = core_gguf::try_get(ctx->wl.tensors, "proj.linear_2.bias");
     if (!w1 || !w2) { ggml_free(g); return false; }
 
-    // Reshape weights from the converter's [out,in] ggml ne to ggml_mul_mat's
-    // expected [in,out] (no-op for the square w2). See granite-converter-
-    // transposed-ne; mirrors the vision/LLM graph fix.
-    ggml_tensor * h = ggml_mul_mat(g, ggml_reshape_2d(g, w1, w1->ne[1], w1->ne[0]), x);
+    // Weight ne corrected to [in,out] at load time — direct mul_mat.
+    ggml_tensor * h = ggml_mul_mat(g, w1, x);
     if (b1) h = ggml_add(g, h, b1);
     h = ggml_gelu(g, h);
-    h = ggml_mul_mat(g, ggml_reshape_2d(g, w2, w2->ne[1], w2->ne[0]), h);
+    h = ggml_mul_mat(g, w2, h);
     if (b2) h = ggml_add(g, h, b2);
 
     ggml_tensor * out_t = ggml_cont(g, h);
@@ -676,8 +701,11 @@ static bool gv_run_projector_graph(granite_vision_context * ctx,
 // Returns false on error; caller applies LM head + logits_scaling on CPU.
 static bool gv_run_llm_body(granite_vision_context * ctx,
                              const float * embeds, int T, int n_past,
-                             float * hidden_out) {
+                             float * hidden_out,
+                             gv_dump_cb dump_cb = nullptr, void * dump_ud = nullptr) {
     if (!ctx->vis_sched || !ctx->kvc_buf) return false;
+    // For crispembed-diff: collect per-layer last-token hidden states.
+    std::vector<std::pair<int, ggml_tensor *>> dbg_layers;
 
     const int D        = ctx->llm_dim;
     const int n_heads  = ctx->llm_heads;
@@ -710,15 +738,8 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     auto rmsnorm = [&](ggml_tensor * t, ggml_tensor * w) -> ggml_tensor * {
         return ggml_mul(g, ggml_rms_norm(g, t, eps), w);
     };
-    // The converter stores 2D weights in PyTorch [out,in] order, so non-square
-    // weights have transposed ggml ne and ggml_mul_mat asserts (ne[0] mismatch).
-    // Reshape relabels the contiguous data to ggml's expected [in,out] — a no-op
-    // for the square q/o weights, valid for Q4_K because its 256-blocks lie along
-    // the in axis. Mirrors the existing vision FFN fix; see the
-    // granite-converter-transposed-ne note.
-    auto sw = [&](ggml_tensor * w) -> ggml_tensor * {
-        return ggml_reshape_2d(g, w, w->ne[1], w->ne[0]);
-    };
+    // Weight ne is corrected to standard [in,out] at load time (see init), so
+    // ggml_mul_mat takes the weights directly — no per-op reshape needed.
 
     for (int li = 0; li < ctx->llm_layers; li++) {
         std::string lp = "llm.layer." + std::to_string(li);
@@ -743,8 +764,8 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
 
         // Q: [D, T], K_new: [n_kv*d_head, T], V_new: [n_kv*d_head, T]
         ggml_tensor * Q     = ggml_mul_mat(g, qw, h);
-        ggml_tensor * K_new = ggml_mul_mat(g, sw(kw), h);
-        ggml_tensor * V_new = ggml_mul_mat(g, sw(vw), h);
+        ggml_tensor * K_new = ggml_mul_mat(g, kw, h);
+        ggml_tensor * V_new = ggml_mul_mat(g, vw, h);
 
         // Reshape to [d_head, n_*, T]
         Q     = ggml_reshape_3d(g, Q,     d_head, n_heads, T);
@@ -807,10 +828,18 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
         // ── FFN (SwiGLU) ──
         resid = x;
         h = rmsnorm(x, n2w);
-        ggml_tensor * gate = ggml_silu(g, ggml_mul_mat(g, sw(gw), h));
-        ggml_tensor * up   = ggml_mul_mat(g, sw(uw), h);
-        ggml_tensor * down = ggml_mul_mat(g, sw(dw), ggml_mul(g, gate, up));
+        ggml_tensor * gate = ggml_silu(g, ggml_mul_mat(g, gw, h));
+        ggml_tensor * up   = ggml_mul_mat(g, uw, h);
+        ggml_tensor * down = ggml_mul_mat(g, dw, ggml_mul(g, gate, up));
         x = ggml_add(g, resid, ggml_scale(g, down, res_mul));
+
+        if (dump_cb && (li == 0 || li == 1 || li == ctx->llm_layers / 2 ||
+                        li == ctx->llm_layers - 1)) {
+            ggml_tensor * dbg = ggml_cont(g, x);
+            ggml_set_output(dbg);
+            ggml_build_forward_expand(gf, dbg);
+            dbg_layers.emplace_back(li, dbg);
+        }
     }
 
     // Final RMSNorm (all T tokens; caller reads only the last one)
@@ -851,6 +880,19 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     // Read back last token's hidden state (offset = (T-1)*D floats)
     ggml_backend_tensor_get(out_t, hidden_out,
                             (size_t)(T - 1) * D * sizeof(float), D * sizeof(float));
+
+    if (dump_cb) {
+        std::vector<float> buf(D);
+        for (auto & [li, dbg] : dbg_layers) {
+            ggml_backend_tensor_get(dbg, buf.data(),
+                                    (size_t)(T - 1) * D * sizeof(float), D * sizeof(float));
+            char nm[48];
+            snprintf(nm, sizeof(nm), "llm_layer_%d_out", li);
+            dump_cb(nm, buf.data(), D, dump_ud);
+        }
+        dump_cb("llm_final_norm", hidden_out, D, dump_ud);
+    }
+
     ggml_free(g);
     return true;
 }
@@ -1174,6 +1216,45 @@ void granite_vision_dump_llm(granite_vision_context * ctx,
         gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data(),
                            last ? cb : nullptr, last ? ud : nullptr);
         ctx->n_past++;
+    }
+}
+
+// Same fixed-token parity dump, but through the ggml LLM graph
+// (gv_run_llm_body, batched T=n_tokens prefill) instead of the scalar decode.
+// Lets crispembed-diff localise where the ggml path diverges from the reference.
+void granite_vision_dump_llm_graph(granite_vision_context * ctx,
+                                   const int * tokens, int n_tokens,
+                                   gv_dump_cb cb, void * ud) {
+    if (!ctx || !tokens || n_tokens <= 0 || !cb) return;
+    int D = ctx->llm_dim;
+    if (!gv_alloc_kv_cache(ctx, n_tokens + 4)) {
+        fprintf(stderr, "granite_vision: dump_llm_graph — kv alloc failed\n");
+        return;
+    }
+
+    const float * embed_w = ctx->get("llm.embed.weight");
+    float emb_mul = ctx->embedding_multiplier;
+    std::vector<float> embeds((size_t)n_tokens * D);
+    for (int t = 0; t < n_tokens; t++)
+        for (int d = 0; d < D; d++)
+            embeds[(size_t)t * D + d] = embed_w[(size_t)tokens[t] * D + d] * emb_mul;
+
+    cb("llm_embed_in", embeds.data() + (size_t)(n_tokens - 1) * D, D, ud);
+
+    std::vector<float> hidden(D);
+    if (!gv_run_llm_body(ctx, embeds.data(), n_tokens, 0, hidden.data(), cb, ud)) {
+        fprintf(stderr, "granite_vision: dump_llm_graph — gv_run_llm_body failed\n");
+        return;
+    }
+
+    const float * lm_w = ctx->get("llm.lm_head.weight");
+    if (!lm_w && ctx->tie_word_embeddings) lm_w = ctx->get("llm.embed.weight");
+    if (lm_w) {
+        std::vector<float> logits(ctx->vocab_size);
+        core_cpu::linear_cpu(hidden.data(), logits.data(), D, ctx->vocab_size, lm_w, nullptr);
+        float inv = 1.0f / ctx->logits_scaling;
+        for (int v = 0; v < ctx->vocab_size; v++) logits[v] *= inv;
+        cb("llm_logits", logits.data(), ctx->vocab_size, ud);
     }
 }
 
