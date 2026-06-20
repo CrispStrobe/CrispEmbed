@@ -701,10 +701,14 @@ single-threaded, must not OOM.
 
 ### deepseek_ocr2 — PENDING (needs q4_k model, 3.4B too large for 8GB VPS f16-only)
 
-### got_ocr (SAM ViT-B + Qwen2-0.5B, 0.7B) — IN PROGRESS
+### got_ocr (SAM ViT-B + Qwen2-0.5B, 0.7B) — DONE
 - [x] Patch embedding → ggml matmul (same im2col pattern, scalar fallback gated)
-- [ ] Scalar neck/merger → ggml (Conv2d 1x1/3x3 + LN2d + projector)
-### glm_ocr — PENDING
+- [x] Neck+downsample+projector → ggml graph (conv2d_direct + LN2d via permute+norm + mul_mat)
+  Gated: CRISPEMBED_GOT_OCR_SCALAR_NECK=1 / CRISPEMBED_GOT_OCR_SCALAR_PATCH=1
+
+### glm_ocr (CogVLM2 + GLM-4, 0.9B) — DONE
+- [x] Downsample + merger → ggml graph (conv2d_direct + batched SwiGLU + LayerNorm)
+  Gated: CRISPEMBED_GLM_OCR_SCALAR_MERGER=1. Merger: 383ms on q4_k.
 ### granite_vision — PENDING
 ### smoldocling — PENDING
 ### internvl2 — PENDING
