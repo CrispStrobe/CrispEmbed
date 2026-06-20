@@ -447,10 +447,9 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   - `mixtex_ocr` Swin encoder: 12500-token window attention, scalar.
   - `ppformulanet_ocr` HGNetv2 CNN: 57M-param CNN at 384x384, scalar `conv2d_cpu`.
 
-- [ ] **Patch embedding conv → ggml matmul** — every VLM runtime (all 9) uses
-  scalar 6-deep nested loops for patch embedding. Since it's a strided conv,
-  it's equivalent to im2col + single matmul. Affects: qwen2vl, internvl2,
-  deepseek, granite, got, glm, lightonocr, smoldocling, pix2struct.
+- [x] **Patch embedding conv → ggml matmul** — Most VLM runtimes now use ggml
+  graph (internvl2, granite, smoldocling, qwen2vl) or im2col+matmul (got,
+  lightonocr, pix2struct). Remaining: glm, deepseek (minor, scalar fallback).
 
 - [x] **Pre-compute RoPE frequency tables** — Added `RoPEFreqTable` struct to
   `vlm_attention.h` with `precompute(head_dim, theta)` and `apply()` methods.
@@ -544,14 +543,14 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
 - [x] **Fuse BatchNorm into conv weights at model load** — TBSRN: fused 11
   conv+BN pairs (2 per SRB × 5 + 1 final) at init. `dat_sr` still pending.
 
-- [ ] **qwen2vl: token embedding via direct read** — lines 1867-1885 build
-  and run a full ggml graph just to do `ggml_get_rows` for one token ID.
-  Same issue in lightonocr (lines 736-754). Direct tensor read instead.
+- [x] **qwen2vl: token embedding via direct read** — DONE. Embed is now part of
+  the main LLM graph (ggml_get_rows runs on GPU). lightonocr uses direct
+  tensor read (embed_tokens_cpu).
 
 - [ ] **lightonocr / deepseek: decode graph reuse** — graph structure is
   identical across decode steps. Build once, update input data only.
 
-- [ ] **qwen2vl: F32 causal mask → F16** — internvl2 already uses F16 mask
+- [x] **qwen2vl: F32 causal mask → F16** — already F16 (GGML_TYPE_F16)
   (half the memory).
 
 - [ ] **gliner_ner: DeBERTa relative position expansion** — creates [H, T*T]
