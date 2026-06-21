@@ -436,16 +436,26 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   qwen2vl_ocr: **DONE** — already had F16 kvc; fixed CPU round-trip in seeding
   (`48948a6`, branch `feat/qwen2vl-kvcache`).
 
-- [~] **Move granite_vision_ocr vision encoder to ggml graphs** — BUILT but
-  NUMERICALLY BROKEN (feat/granite-vision-ggml-graph). SigLIP ViT (27 layers,
-  T=729, D=1152, n_heads=16) as a single ggml graph with Metal backend.
-  **`gv_run_vit_graph` produces garbage** — HF-blueprint crispembed-diff cos
-  **0.05** vs HF (NaN / residual blow-up on the CPU backend; broken from the
-  first encoder layer). The compute does not land correctly in the read-back
-  tensors — the same ggml-alloc in-place buffer-reuse defect that breaks the
-  Metal LLM graph. NOW GATED behind `CRISPEMBED_GRANITE_VIS_GRAPH=1`; the
-  default is the diff-validated **scalar** ViT (cos 1.0→0.96 on the random ref,
-  ~0.9999 on real images). See `handover-prompts/granite-vision-graph-fix.md`.
+- [x] **Move granite_vision_ocr to full Metal ggml graphs (vision + LLM)** —
+  **DONE** (`fix/granite-vision-real`). The whole OCR pipeline now runs on the
+  Metal GPU by default: SigLIP ViT (27L), projector, and the Granite-3.1-2B LLM
+  body. Default OCR returns the correct text in **~22 s** (vision ~3 s, 784-tok
+  prefill ~12 s, decode ~5 s) vs the scalar path's ~100 s vision + ~8 min prefill.
+  Two bugs fixed (both mis-diagnosed in the prior handover, which claimed a
+  shared "ggml-alloc in-place buffer-reuse defect"):
+  - **ViT (`gv_run_vit_graph`)**: `ggml_reshape_2d` on the Q8_0 `ffn.down` weight
+    to a non-block-aligned `ne[0]` (4304 % 32 ≠ 0) corrupted dequant from layer 0.
+    Fix: cast quantized FFN weights to F32 before the reshape. Per-layer parity
+    with scalar (cos 0.9996–0.99987).
+  - **LLM (`gv_run_llm_body`)**: Metal's batched `mul_mm` casts activations to
+    F16; the ×12-scaled image-feature "massive activations" overflow F16 in the
+    SwiGLU `gate*up`→down matmul (NaN from layer 8). Fix: lossless activation
+    scaling (÷256 before, ×256 after the down matmul).
+  Both graphs DEFAULT ON for GPU backends (`CRISPEMBED_GRANITE_VIS_SCALAR` /
+  `_LLM_SCALAR` to opt out). Scalar stays default on the ggml-CPU backend, where
+  the ViT still drifts at late layers (cos ~0.84) — CPU graph parity is the one
+  remaining follow-up. The LLM diff now exercises the graph (7/7 cos 0.9999).
+  See LEARNINGS "Q8_0 reshape" + "Metal mul_mm F16 activation overflow".
 
 - [x] **granite_vision projector + LLM decoder → ggml graphs** — DONE
   (`66b8de2`). `gv_run_projector_graph` (2-layer MLP on Metal) and
