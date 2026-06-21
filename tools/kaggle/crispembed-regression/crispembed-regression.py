@@ -135,7 +135,10 @@ with kh.build_heartbeat("cmake.build"):
 #   kaggle datasets version -p <dir-with-ccache.tar> -m "refresh crispembed ccache"
 try:
     kh.sh("ccache -s | grep -E 'cache hit|cache miss|files in cache' || true")
-    kh.sh(f"cd {WORK} && tar cf ccache.tar .ccache/ && ls -la ccache.tar")
+    # Pack the CONTENTS of .ccache (hash dirs at top level), NOT the .ccache dir
+    # itself — the harness extracts into /kaggle/working/.ccache, so a tar of
+    # `.ccache/` would double-nest and stay unrecognized (the CrispASR bug).
+    kh.sh(f"tar -C {WORK}/.ccache -cf {WORK}/ccache.tar . && ls -la {WORK}/ccache.tar")
     step("ccache.exported")
 except Exception as _e:
     print(f"  ccache export skipped: {_e}", flush=True)
