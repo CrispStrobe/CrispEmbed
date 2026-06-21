@@ -69,6 +69,34 @@ down-proj ÷256/×256 F16-overflow guard for T=1 (it only matters for the prefil
 (~12 s) is ~100 % GPU compute + one-time Metal pipeline compilation (a persistent
 server amortizes the latter); not fixable by graph management.
 
+## June 21, 2026 — Backend audit: no other broken engines; esrgan/restormer/hat_sr
+
+Swept all `src/` engines for broken / wrong-output / gated-off-because-broken
+paths (distinct from "correct but not yet on ggml graphs"). **Granite was the only
+backend the docs called broken, and it's now fixed** — every other `*_SCALAR` /
+`*_FORCE_CPU` gate is "graph is the validated default, scalar is the opt-out." Two
+real *accuracy* defects and one verification gap found and closed:
+
+- **esrgan_sr** (`70afc70`): the default ggml graph approximated the body
+  per-channel **PReLU with plain `ggml_relu`**, dropping the slope — so the GPU
+  path was *less accurate than its own scalar fallback*. Implemented true PReLU
+  from primitives (`relu(x) + slope·min(0,x)`, slope broadcast `[1,1,oc]`, F32
+  cast for Metal). ggml has no PReLU op.
+- **restormer** (`89a1955`): removed a 167-line `#if 0` block with a
+  `_DISABLED` graph builder + a stale duplicate function — misleading dead scaffold.
+- **hat_sr** (`a8d8676`): the OCAB had a "simplified, may not match" comment and
+  `test_hat_diff.cpp` existed but was **never registered in CMake** → HAT had never
+  actually been diffed. Wired up `test-hat-diff`, built a **self-consistent
+  reference from the gguf weights** (new `tools/dump_hat_reference_from_gguf.py`:
+  reverse the converter name map → load into the torch HAT arch → forward → ref;
+  no original `.pth` needed), and verified: C++ vs torch **output cos 0.999968**.
+  The OCAB + full pipeline are correct; the hedge was wrong. `hat-ref.gguf`
+  uploaded to HF `cstr/text-super-resolution-gguf`.
+
+Also scrubbed stale PLAN.md text (granite "BROKEN on Metal", and the GPU roster
+that still listed restormer/nafnet/esrgan/safmn/mixtex as scalar though they have
+ggml graphs).
+
 ## June 20, 2026 — Granite Vision OCR: root-caused via HF-blueprint diff, scalar restored
 
 End-to-end Granite-Vision 3.3-2B OCR was producing garbage. A prior handover
