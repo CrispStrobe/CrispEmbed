@@ -650,7 +650,15 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
     near-zero edge triple tanks it); the test now gates on the image-level
     (global + per-channel) cosine. Self-consistent ref (erf-GELU) generator at
     `tools/dump_swinir_reference_from_gguf.py`. Conv→ggml port still TODO.
-  - [ ] `hat_sr.cpp` — HAB + OCAB (unfold needed), ~70-100G, hard
+  - [x] `hat_sr.cpp` — HAB + OCAB (unfold needed), ~70-100G, hard. **conv→ggml
+    DONE** (default on, `HAT_SR_SCALAR=1` opts out). The six top-level convs
+    (conv_first, per-layer `.conv`, conv_after_body, conv_before_upsample,
+    upsample.*, conv_last) dispatch through `hat_conv` → `ggml_conv_2d` on a CPU
+    sched (lazy name-keyed persistent F32 kernels, shape from the call-site dims,
+    F16-cast in-graph). Window/OCAB attention + the small per-block CAB convs stay
+    scalar. **Net ~1.3× (11.8s vs 15.3s/tile)** — the upsample/conv_last convs run
+    at 4× resolution, so unlike attention-bound DAT the convs matter. Output cos
+    0.999965 (ggml) vs 0.999968 (scalar) vs the validated HF `hat-ref.gguf`.
   - [x] `tbsrn_sr.cpp` — **conv→ggml DONE**. The six conv sites (block1 conv9,
     srb conv1/conv2 ×5, final_conv, upsample.conv, output_conv) dispatch through
     `tbsrn_conv` → `ggml_conv_2d` on a CPU sched with persistent reversed-ne F32
