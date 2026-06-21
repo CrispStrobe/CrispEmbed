@@ -1,5 +1,5 @@
 {
-  "_comment": "Per-engine regression pins for CrispEmbed. Each entry pins (a) the GGUF under test to a specific HF revision SHA so an upstream re-quantise can't silently regress us, and (b) for diff-tier entries the frozen reference archive (also a pinned repo+path+revision). See tests/regression/README.md. Two tiers: `diff` runs test-<engine>-diff and asserts per-stage cos_min >= threshold; `smoke` runs the crispembed CLI and asserts the output is sane (or matches a captured golden) — the confirmation tier for engines without a ref yet. Re-run tools/audit_diff_coverage.py --probe-hf after editing.",
+  "_comment": "Per-engine regression pins for CrispEmbed. Each entry pins (a) the GGUF under test to a specific HF revision SHA so an upstream re-quantise can't silently regress us, and (b) for diff-tier entries the frozen reference archive (also a pinned repo+path+revision). See tests/regression/README.md. Two tiers: `diff` runs test-<engine>-diff and asserts per-stage cos_min >= threshold; `smoke` runs the crispembed CLI and asserts the output is sane (or matches a captured golden) \u2014 the confirmation tier for engines without a ref yet. Re-run tools/audit_diff_coverage.py --probe-hf after editing.",
   "version": 1,
   "progress": {
     "repo": "cstr/crispembed-kaggle-progress",
@@ -25,7 +25,9 @@
         "revision": "05b43ddb17bb",
         "path": "instructir-ref.gguf"
       },
-      "diff_thresholds": { "*": 0.999 },
+      "diff_thresholds": {
+        "*": 0.999
+      },
       "diff_thresholds_note": "Self-consistent torch ref; verified cos=1.000000 max_abs=6.6e-4 on f32 (PLAN.md)."
     },
     {
@@ -44,9 +46,13 @@
         "repo": "cstr/granite-vision-crispembed-GGUF",
         "revision": "1ee7bc087880",
         "path": "granite-vision-ref.gguf",
-        "companion_paths": ["granite-llm-ref.gguf"]
+        "companion_paths": [
+          "granite-llm-ref.gguf"
+        ]
       },
-      "diff_thresholds": { "*": 0.95 },
+      "diff_thresholds": {
+        "*": 0.95
+      },
       "diff_thresholds_note": "q8_0 vision tower diverges progressively with ViT depth (Kaggle CPU v3: patch_embed 1.000 -> vis_layer_15 0.9958 -> vis_layer_26 0.9584 -> vis_features_concat 0.9634 -> projector 0.9557). This is the accepted q8_0 deep-layer floor (NOT a uniform quant floor); gate set to 0.95 to catch real regressions below it. The deep-ViT divergence is tracked as a parity gap in PLAN.md. Harness loads both granite-vision-ref + granite-llm-ref."
     },
     {
@@ -66,7 +72,9 @@
         "revision": "0d618eb7e310",
         "path": "hat-ref.gguf"
       },
-      "diff_thresholds": { "*": 0.99 },
+      "diff_thresholds": {
+        "*": 0.99
+      },
       "diff_thresholds_note": "Self-consistent torch ref; HAT harness built-in pass gate is 0.99."
     },
     {
@@ -86,11 +94,14 @@
         "revision": "0d618eb7e310",
         "path": "pan-ref.gguf"
       },
-      "diff_thresholds": { "output": 0.999 },
-      "require_stages": ["output"],
+      "diff_thresholds": {
+        "output": 0.999
+      },
+      "require_stages": [
+        "output"
+      ],
       "diff_thresholds_note": "Verified cos_min=0.999997 vs self-consistent torch ref (PLAN.md)."
     },
-
     {
       "name": "all-MiniLM-L6-v2",
       "engine_id": "minilm_l6",
@@ -102,8 +113,16 @@
         "approx_size_mb": 24
       },
       "smoke": {
-        "args": ["--json", "{model}", "Hello world, this is a regression smoke test."],
-        "expect": { "kind": "embedding", "dim": 384 }
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "Hello world, this is a regression smoke test."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 384
+        }
       },
       "smoke_note": "Confirmation tier: no ref yet. Asserts the engine loads and emits a finite, correctly-shaped 384-d embedding. Promote to a diff entry once a per-layer ref is baked (tests/parity_layers_bert.py covers BERT layers)."
     },
@@ -118,8 +137,16 @@
         "approx_size_mb": 33
       },
       "smoke": {
-        "args": ["--json", "{model}", "Hello world, this is a regression smoke test."],
-        "expect": { "kind": "embedding", "dim": 384 }
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "Hello world, this is a regression smoke test."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 384
+        }
       }
     },
     {
@@ -133,9 +160,3807 @@
         "approx_size_mb": 33
       },
       "smoke": {
-        "args": ["--json", "{model}", "query: regression smoke test for multilingual e5"],
-        "expect": { "kind": "embedding", "dim": 384 }
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "query: regression smoke test for multilingual e5"
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 384
+        }
+      }
+    },
+    {
+      "name": "gte-small",
+      "engine_id": "gte_small",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/gte-small-GGUF",
+        "revision": "190756222d86030c22ab2e5af144485bcab94d76",
+        "file": "gte-small.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 384
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "arctic-embed-xs",
+      "engine_id": "arctic_embed_xs",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/arctic-embed-xs-GGUF",
+        "revision": "e6f7a693ec4744b674c2e6c935b2239b8277f251",
+        "file": "arctic-embed-xs.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 384
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "pixie-rune-v1",
+      "engine_id": "pixie_rune_v1",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/pixie-rune-v1-GGUF",
+        "revision": "3385c94cc0833d6adc8f848dad09e9cabbc6f1c5",
+        "file": "pixie-rune-v1.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 1024
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "arctic-embed-l-v2",
+      "engine_id": "arctic_embed_l_v2",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/arctic-embed-l-v2-GGUF",
+        "revision": "10ff59b3915aa19b7f33eb511d596182f65d5856",
+        "file": "arctic-embed-l-v2.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 1024
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "octen-0.6b",
+      "engine_id": "octen_0.6b",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/octen-0.6b-GGUF",
+        "revision": "d5bb957bffcfa905bf043f41d214e56e5a97918f",
+        "file": "octen-0.6b-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 1024
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "octen-4b",
+      "engine_id": "octen_4b",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/octen-4b-GGUF",
+        "revision": "190dc64c8465bfd3a0b87ef4ef31826daf85328d",
+        "file": "octen-4b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 2560
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "octen-8b",
+      "engine_id": "octen_8b",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/octen-8b-GGUF",
+        "revision": "e7617b2c7654fc6ff1f788782fe4e3da437bb526",
+        "file": "octen-8b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 4096
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "f2llm-v2-0.6b",
+      "engine_id": "f2llm_v2_0.6b",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/f2llm-v2-0.6b-GGUF",
+        "revision": "4655b524906e3be9133b4c5a5f1732b9f34efb55",
+        "file": "f2llm-v2-0.6b-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 1024
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "jina-v5-nano",
+      "engine_id": "jina_v5_nano",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/jina-v5-nano-GGUF",
+        "revision": "b10ca16d6339a8401247f6215d8ed17f9e8e3630",
+        "file": "jina-v5-nano-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 1024
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "jina-v5-small",
+      "engine_id": "jina_v5_small",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/jina-v5-small-GGUF",
+        "revision": "9a834b4b4fc6da05fc1c1710740b0424b882d2cb",
+        "file": "jina-v5-small-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 1024
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "harrier-0.6b",
+      "engine_id": "harrier_0.6b",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/harrier-0.6b-GGUF",
+        "revision": "94f0820bae8a91024121c414e997c10139f30093",
+        "file": "harrier-0.6b-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 1024
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "harrier-270m",
+      "engine_id": "harrier_270m",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/harrier-270m-GGUF",
+        "revision": "128eafd7a6c0556ecfb974a284d0214098fd6521",
+        "file": "harrier-270m-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 640
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "qwen3-embed-0.6b",
+      "engine_id": "qwen3_embed_0.6b",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/qwen3-embed-0.6b-GGUF",
+        "revision": "6fb71c0f6c45126a674a495e965295aa752ec05f",
+        "file": "qwen3-embed-0.6b-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 1024
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "qwen3-embed-4b",
+      "engine_id": "qwen3_embed_4b",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/qwen3-embed-4b-GGUF",
+        "revision": "b9b8c89e0e7424aeb6eed6af53061ef9090c599a",
+        "file": "qwen3-embed-4b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 2560
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "qwen3-embed-8b",
+      "engine_id": "qwen3_embed_8b",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/qwen3-embed-8b-GGUF",
+        "revision": "780e07f99b8f582b67edaf67166bc1676c79d4f3",
+        "file": "qwen3-embed-8b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 4096
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "bidirlm-omni-2.5b",
+      "engine_id": "bidirlm_omni_2.5b",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/bidirlm-omni-2.5b-GGUF",
+        "revision": "e5072220361f6fa8147fa12616333bbb279cc7d6",
+        "file": "bidirlm-omni-2.5b-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 2048
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "bidirlm-omni-2.5b-textonly",
+      "engine_id": "bidirlm_omni_2.5b_textonly",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/bidirlm-omni-2.5b-textonly-GGUF",
+        "revision": "474eadf3341fde9732a820638c0798fcad4817e3",
+        "file": "bidirlm-omni-2.5b-textonly-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 2048
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "bge-base-en-v1.5",
+      "engine_id": "bge_base_en_v1.5",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/bge-base-en-v1.5-GGUF",
+        "revision": "00c080b3424651af0011ff932f4b10c5e10643fe",
+        "file": "bge-base-en-v1.5.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 768
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "bge-large-en-v1.5",
+      "engine_id": "bge_large_en_v1.5",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/bge-large-en-v1.5-GGUF",
+        "revision": "153a11425c15fd78d0bdd453a2af3d1ddc9e18c0",
+        "file": "bge-large-en-v1.5.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 1024
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "nomic-embed-text-v1.5",
+      "engine_id": "nomic_embed_text_v1.5",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/nomic-embed-text-v1.5-GGUF",
+        "revision": "ea571fc0dce5bc361c871217278a6046f268e5c6",
+        "file": "nomic-embed-text-v1.5.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 768
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "nomic-embed-text-v2-moe",
+      "engine_id": "nomic_embed_text_v2_moe",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/nomic-embed-text-v2-moe-GGUF",
+        "revision": "403b5996820337126383669bcb52a184026f7187",
+        "file": "nomic-v2-moe-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 768
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "all-mpnet-base-v2",
+      "engine_id": "all_mpnet_base_v2",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/all-mpnet-base-v2-GGUF",
+        "revision": "eb2f6256d8b439d8dce863c5bab49c7228dca59d",
+        "file": "all-mpnet-base-v2.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 768
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "mxbai-embed-large-v1",
+      "engine_id": "mxbai_embed_large_v1",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/mxbai-embed-large-v1-GGUF",
+        "revision": "fb590b7f6205f7918994f0fb351485ae3411ba53",
+        "file": "mxbai-embed-large-v1.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 1024
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "snowflake-arctic-embed-m",
+      "engine_id": "snowflake_arctic_embed_m",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/snowflake-arctic-embed-m-GGUF",
+        "revision": "ce15d15f11f370256ec6c0c5b6dbc91e69823ef7",
+        "file": "snowflake-arctic-embed-m.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 768
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "snowflake-arctic-embed-l",
+      "engine_id": "snowflake_arctic_embed_l",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/snowflake-arctic-embed-l-GGUF",
+        "revision": "49c4d6cb52b7b22a13512c778b07908f56e7118b",
+        "file": "snowflake-arctic-embed-l.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 1024
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "bge-m3",
+      "engine_id": "bge_m3",
+      "modality": "colbert",
+      "gguf": {
+        "repo": "cstr/bge-m3-GGUF",
+        "revision": "ff9f077eb42d41cf8c14d72fe92639f2e661c6d0",
+        "file": "bge-m3-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--colbert",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--colbert",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "bge-reranker-v2-m3",
+      "engine_id": "bge_reranker_v2_m3",
+      "modality": "reranker",
+      "gguf": {
+        "repo": "cstr/bge-reranker-v2-m3-GGUF",
+        "revision": "d22321da423767922fc7cabd493a6c4a8ac3efa0",
+        "file": "bge-reranker-v2-m3.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--rerank",
+          "what is a fox?",
+          "a fox is an animal",
+          "the sky is blue"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--rerank",
+          "what is a fox?",
+          "a fox is an animal",
+          "the sky is blue"
+        ]
+      }
+    },
+    {
+      "name": "bge-reranker-base",
+      "engine_id": "bge_reranker_base",
+      "modality": "reranker",
+      "gguf": {
+        "repo": "cstr/bge-reranker-base-GGUF",
+        "revision": "8a4ee157154aa0f1f70a9d6e0d6fc918a43fa068",
+        "file": "bge-reranker-base.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--rerank",
+          "what is a fox?",
+          "a fox is an animal",
+          "the sky is blue"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--rerank",
+          "what is a fox?",
+          "a fox is an animal",
+          "the sky is blue"
+        ]
+      }
+    },
+    {
+      "name": "jina-reranker-v2-base-multilingual",
+      "engine_id": "jina_reranker_v2_base_multilingual",
+      "modality": "reranker",
+      "gguf": {
+        "repo": "cstr/jina-reranker-v2-base-multilingual-GGUF",
+        "revision": "34c1f191db464940ae050e3ccefec2081391801d",
+        "file": "jina-reranker-v2-base-multilingual.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--rerank",
+          "what is a fox?",
+          "a fox is an animal",
+          "the sky is blue"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--rerank",
+          "what is a fox?",
+          "a fox is an animal",
+          "the sky is blue"
+        ]
+      }
+    },
+    {
+      "name": "mxbai-rerank-xsmall-v1",
+      "engine_id": "mxbai_rerank_xsmall_v1",
+      "modality": "reranker",
+      "gguf": {
+        "repo": "cstr/mxbai-rerank-xsmall-v1-GGUF",
+        "revision": "c0ebf29993210e5cf5b9133261e119f7350c1426",
+        "file": "mxbai-rerank-xsmall-v1.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--rerank",
+          "what is a fox?",
+          "a fox is an animal",
+          "the sky is blue"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--rerank",
+          "what is a fox?",
+          "a fox is an animal",
+          "the sky is blue"
+        ]
+      }
+    },
+    {
+      "name": "mxbai-rerank-base-v1",
+      "engine_id": "mxbai_rerank_base_v1",
+      "modality": "reranker",
+      "gguf": {
+        "repo": "cstr/mxbai-rerank-base-v1-GGUF",
+        "revision": "8eb465c502e5b83d87ed430aaccc8a2205bb8e81",
+        "file": "mxbai-rerank-base-v1.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--rerank",
+          "what is a fox?",
+          "a fox is an animal",
+          "the sky is blue"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--rerank",
+          "what is a fox?",
+          "a fox is an animal",
+          "the sky is blue"
+        ]
+      }
+    },
+    {
+      "name": "multilingual-e5-base",
+      "engine_id": "multilingual_e5_base",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/multilingual-e5-base-GGUF",
+        "revision": "e481c8ccffc984bb26882be1c3d1e65def33d78e",
+        "file": "multilingual-e5-base.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 768
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "multilingual-e5-large",
+      "engine_id": "multilingual_e5_large",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/multilingual-e5-large-GGUF",
+        "revision": "5162db5214b2111354f5ed10e61d9a58d2e8e777",
+        "file": "multilingual-e5-large.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 1024
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "granite-embedding-278m",
+      "engine_id": "granite_embedding_278m",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/granite-embedding-278m-multilingual-GGUF",
+        "revision": "40e35f349ed2bea41f4db08913232cd262f5aa51",
+        "file": "granite-embedding-278m-multilingual.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 768
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "granite-embedding-107m",
+      "engine_id": "granite_embedding_107m",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/granite-embedding-107m-multilingual-GGUF",
+        "revision": "1a0caedc4406c1bc34cfd0264bfcce8c24bb397f",
+        "file": "granite-embedding-107m-multilingual.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 384
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "splade-pp-en-v1",
+      "engine_id": "splade_pp_en_v1",
+      "modality": "sparse",
+      "gguf": {
+        "repo": "cstr/splade-pp-en-v1-GGUF",
+        "revision": "334e2c223b2e3280dba23cea11a3c74fc946c34f",
+        "file": "splade-pp-en-v1.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--sparse",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--sparse",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "gte-base-en-v1.5",
+      "engine_id": "gte_base_en_v1.5",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/gte-base-en-v1.5-GGUF",
+        "revision": "f0b0833f48a827c29298b50803b671b2b1aa181a",
+        "file": "gte-base-en-v1.5.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 768
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "gte-large-en-v1.5",
+      "engine_id": "gte_large_en_v1.5",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/gte-large-en-v1.5-GGUF",
+        "revision": "31b89df50c3cb3c4174c3baa027adaeaf6e3a967",
+        "file": "gte-large-en-v1.5.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 1024
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "embeddinggemma-300m",
+      "engine_id": "embeddinggemma_300m",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/embeddinggemma-300m-GGUF",
+        "revision": "1e4601e187f3f3138f173c09a9fce9b26b8f4225",
+        "file": "embeddinggemma-300m.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 768
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "yunet",
+      "engine_id": "yunet",
+      "modality": "detect-face",
+      "gguf": {
+        "repo": "cstr/yunet-GGUF",
+        "revision": "1d9400d17bc59ce6361536fd26a3358f498fd68d",
+        "file": "yunet.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--detect",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--detect",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "clip-vit-base-patch16",
+      "engine_id": "clip_vit_base_patch16",
+      "modality": "vision-embed",
+      "gguf": {
+        "repo": "cstr/clip-vit-base-patch16-GGUF",
+        "revision": "c3cb7d103e82541ab7b586058495420bbaab646c",
+        "file": "clip-vit-base-patch16.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--image",
+          "{sample}",
+          "--json"
+        ],
+        "expect": {
+          "kind": "embedding"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--image",
+          "{sample}",
+          "--json"
+        ]
+      }
+    },
+    {
+      "name": "clip-vit-large-patch14",
+      "engine_id": "clip_vit_large_patch14",
+      "modality": "vision-embed",
+      "gguf": {
+        "repo": "cstr/clip-vit-large-patch14-GGUF",
+        "revision": "3401d7a2158948e159ef37564cf38bdca087f41d",
+        "file": "clip-vit-large-patch14.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--image",
+          "{sample}",
+          "--json"
+        ],
+        "expect": {
+          "kind": "embedding"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--image",
+          "{sample}",
+          "--json"
+        ]
+      }
+    },
+    {
+      "name": "clip-text-base",
+      "engine_id": "clip_text_base",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/clip-text-base-GGUF",
+        "revision": "fbe3b892f8908ea76ba53ebb7657f44d4c3254a2",
+        "file": "clip-text-base.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 512
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "clip-text-large",
+      "engine_id": "clip_text_large",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/clip-text-large-GGUF",
+        "revision": "fb6362b1f287475e2ec6975d6686744a914e5f3d",
+        "file": "clip-text-large.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 768
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "siglip-large-256",
+      "engine_id": "siglip_large_256",
+      "modality": "vision-embed",
+      "gguf": {
+        "repo": "cstr/siglip-large-256-GGUF",
+        "revision": "235a0b89d46acfa8442fdb44ef591a9931daa4ef",
+        "file": "siglip-large-256.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--image",
+          "{sample}",
+          "--json"
+        ],
+        "expect": {
+          "kind": "embedding"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--image",
+          "{sample}",
+          "--json"
+        ]
+      }
+    },
+    {
+      "name": "siglip-so400m-patch14-384",
+      "engine_id": "siglip_so400m_patch14_384",
+      "modality": "vision-embed",
+      "gguf": {
+        "repo": "cstr/siglip-so400m-patch14-384-GGUF",
+        "revision": "3ea0c741ce275613ffea25236a1363b5342a36c5",
+        "file": "siglip-so400m-patch14-384.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--image",
+          "{sample}",
+          "--json"
+        ],
+        "expect": {
+          "kind": "embedding"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--image",
+          "{sample}",
+          "--json"
+        ]
+      }
+    },
+    {
+      "name": "clip-vit-large-patch14-336",
+      "engine_id": "clip_vit_large_patch14_336",
+      "modality": "vision-embed",
+      "gguf": {
+        "repo": "cstr/clip-vit-large-patch14-336-GGUF",
+        "revision": "1baedc3a681eb0915774ba56ee2ba4edc5c0835f",
+        "file": "clip-vit-large-patch14-336.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--image",
+          "{sample}",
+          "--json"
+        ],
+        "expect": {
+          "kind": "embedding"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--image",
+          "{sample}",
+          "--json"
+        ]
+      }
+    },
+    {
+      "name": "siglip-base",
+      "engine_id": "siglip_base",
+      "modality": "vision-embed",
+      "gguf": {
+        "repo": "cstr/siglip-base-GGUF",
+        "revision": "9b2830eed4b165995c53ff13be017618e269daae",
+        "file": "siglip-base.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--image",
+          "{sample}",
+          "--json"
+        ],
+        "expect": {
+          "kind": "embedding"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--image",
+          "{sample}",
+          "--json"
+        ]
+      }
+    },
+    {
+      "name": "siglip-text-base",
+      "engine_id": "siglip_text_base",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/siglip-text-base-GGUF",
+        "revision": "ef05618701c2103f63c23241e72996e7b27117c8",
+        "file": "siglip-text-base.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 768
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "scrfd-det-10g",
+      "engine_id": "scrfd_det_10g",
+      "modality": "detect-face",
+      "gguf": {
+        "repo": "cstr/scrfd-det-10g-GGUF",
+        "revision": "eea43e14f54b71843dff640950aa57999babedf7",
+        "file": "scrfd-det-10g.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--detect",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--detect",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "auraface-v1",
+      "engine_id": "auraface_v1",
+      "modality": "face",
+      "gguf": {
+        "repo": "cstr/auraface-v1-GGUF",
+        "revision": "103ffb607132068f72a4547bf446897e3f4a873f",
+        "file": "auraface-v1.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--face",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--face",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "sface",
+      "engine_id": "sface",
+      "modality": "face",
+      "gguf": {
+        "repo": "cstr/sface-GGUF",
+        "revision": "e4cec0ce2210609561674e9e38d94b7800e6d6d8",
+        "file": "sface.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--face",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--face",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "hmer-hw",
+      "engine_id": "hmer_hw",
+      "modality": "math-ocr",
+      "gguf": {
+        "repo": "cstr/hmer-handwritten-math-gguf",
+        "revision": "4579b7e140c2c242b688790877a1ecda9ee39511",
+        "file": "hmer-hw-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "bttr-hw",
+      "engine_id": "bttr_hw",
+      "modality": "math-ocr",
+      "gguf": {
+        "repo": "cstr/bttr-handwritten-math-gguf",
+        "revision": "2576c9c43c4a58a61b4b383e4c3b4dbea96e6fbd",
+        "file": "bttr-hw-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "ppformulanet-l",
+      "engine_id": "ppformulanet_l",
+      "modality": "math-ocr",
+      "gguf": {
+        "repo": "cstr/ppformulanet-l-gguf",
+        "revision": "b34fb177eb6bef90cf99cec93fcd808734ea770e",
+        "file": "ppformulanet-l-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "posformer-crohme",
+      "engine_id": "posformer_crohme",
+      "modality": "math-ocr",
+      "gguf": {
+        "repo": "cstr/posformer-crohme-GGUF",
+        "revision": "11d9c1f0b0de1effc7b7758e04ac5cae4a98d912",
+        "file": "posformer-crohme-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "pix2tex-mfr",
+      "engine_id": "pix2tex_mfr",
+      "modality": "math-ocr",
+      "gguf": {
+        "repo": "cstr/pix2tex-mfr-gguf",
+        "revision": "f6cf4b31078151ba04273fd0fd95820027d18f3c",
+        "file": "pix2tex-mfr-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "texo-distill",
+      "engine_id": "texo_distill",
+      "modality": "math-ocr",
+      "gguf": {
+        "repo": "cstr/texo-distill-gguf",
+        "revision": "c28c64819b4ddf621d0c77c8c31c0fafb0c28b7a",
+        "file": "texo-distill-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "parseq",
+      "engine_id": "parseq",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/parseq-GGUF",
+        "revision": "576b1ab5975d2c00e8bf98d017c3eb643c50147d",
+        "file": "parseq-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "parseq-tiny",
+      "engine_id": "parseq_tiny",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/parseq-GGUF",
+        "revision": "576b1ab5975d2c00e8bf98d017c3eb643c50147d",
+        "file": "parseq-tiny-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "dbnet-det",
+      "engine_id": "dbnet_det",
+      "modality": "detect-text",
+      "gguf": {
+        "repo": "cstr/dbnet-ic15-GGUF",
+        "revision": "d7a815d8b99af6009c1957b8bb7b2e767f8f0ea0",
+        "file": "dbnet-ic15-q4_k.gguf"
+      },
+      "tier": "skip",
+      "skip_reason": "text detector needs a paired recognizer (--ocr-det/--ocr-rec)"
+    },
+    {
+      "name": "surya-det",
+      "engine_id": "surya_det",
+      "modality": "detect-text",
+      "gguf": {
+        "repo": "cstr/surya-det-GGUF",
+        "revision": "9c4c9e74a21768060d0d90363995e75adf6bc41c",
+        "file": "surya-det-f16.gguf"
+      },
+      "tier": "skip",
+      "skip_reason": "text detector needs a paired recognizer (--ocr-det/--ocr-rec)"
+    },
+    {
+      "name": "trocr-printed",
+      "engine_id": "trocr_printed",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/trocr-small-printed-GGUF",
+        "revision": "7e4a6d7d3beba175f013d59c6f07be18d57d7bf7",
+        "file": "trocr-small-printed-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "layout-heron",
+      "engine_id": "layout_heron",
+      "modality": "layout",
+      "gguf": {
+        "repo": "cstr/layout-heron-gguf",
+        "revision": "8737b593760840d0ee7777ab14367578ace2c890",
+        "file": "layout-heron-f32.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--layout",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--layout",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "qari-ocr",
+      "engine_id": "qari_ocr",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/qari-ocr-crispembed-GGUF",
+        "revision": "1c39e8395dfe982d6624bf3d4a1317285ba5b2b6",
+        "file": "qari-ocr-2b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "granite-vision-q4k",
+      "engine_id": "granite_vision_q4k",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/granite-vision-crispembed-GGUF",
+        "revision": "1ee7bc087880ce25306ef7f51c616344485cbbc5",
+        "file": "granite-vision-3.3-2b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "firered-ocr",
+      "engine_id": "firered_ocr",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/firered-ocr-crispembed-GGUF",
+        "revision": "71b1020095fd243a442ceb7150f4346f946a6ba9",
+        "file": "firered-ocr-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "firered-ocr-q4k",
+      "engine_id": "firered_ocr_q4k",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/firered-ocr-crispembed-GGUF",
+        "revision": "71b1020095fd243a442ceb7150f4346f946a6ba9",
+        "file": "firered-ocr-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "nafnet-denoise",
+      "engine_id": "nafnet_denoise",
+      "modality": "denoise",
+      "gguf": {
+        "repo": "cstr/nafnet-sidd-GGUF",
+        "revision": "3285861bec21fd8e8ff16fc30612d5889ca6e9da",
+        "file": "nafnet-sidd-w32-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--restormer",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--restormer",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "safmn-x4",
+      "engine_id": "safmn_x4",
+      "modality": "sr:safmn",
+      "gguf": {
+        "repo": "cstr/safmn-sr-GGUF",
+        "revision": "324e4efb3dcb47eeff579de72644a26ce17faa09",
+        "file": "safmn-x4-f32.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "--safmn-sr",
+          "{sample}",
+          "--safmn-model",
+          "{model}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "--safmn-sr",
+          "{sample}",
+          "--safmn-model",
+          "{model}"
+        ]
+      }
+    },
+    {
+      "name": "esrgan-x4",
+      "engine_id": "esrgan_x4",
+      "modality": "sr:esrgan",
+      "gguf": {
+        "repo": "cstr/esrgan-sr-GGUF",
+        "revision": "7444f05df17058d981375bb10a7aea41f692531d",
+        "file": "esrgan-x4-f32.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "--esrgan-sr",
+          "{sample}",
+          "--esrgan-model",
+          "{model}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "--esrgan-sr",
+          "{sample}",
+          "--esrgan-model",
+          "{model}"
+        ]
+      }
+    },
+    {
+      "name": "tps-loc",
+      "engine_id": "tps_loc",
+      "modality": "skip",
+      "gguf": {
+        "repo": "cstr/tps-loc-GGUF",
+        "revision": "15132543096ded9107a2d8c538d467cd14fe1673",
+        "file": "tps-loc-f32.gguf"
+      },
+      "tier": "skip",
+      "skip_reason": "utility/sub-model, no standalone smoke"
+    },
+    {
+      "name": "tbsrn-telescope",
+      "engine_id": "tbsrn_telescope",
+      "modality": "sr:tbsrn",
+      "gguf": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "revision": "c1d0c9db94c75ab03edae15e077ab780ac8668fb",
+        "file": "tbsrn-telescope-f16.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "--tbsrn-sr",
+          "{sample}",
+          "--tbsrn-model",
+          "{model}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "--tbsrn-sr",
+          "{sample}",
+          "--tbsrn-model",
+          "{model}"
+        ]
+      }
+    },
+    {
+      "name": "pan-x4",
+      "engine_id": "pan_x4",
+      "modality": "sr:pan",
+      "gguf": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "revision": "c1d0c9db94c75ab03edae15e077ab780ac8668fb",
+        "file": "pan-x4-f16.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "--pan-sr",
+          "{sample}",
+          "--pan-model",
+          "{model}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "--pan-sr",
+          "{sample}",
+          "--pan-model",
+          "{model}"
+        ]
+      }
+    },
+    {
+      "name": "hat-sr-x4",
+      "engine_id": "hat_sr_x4",
+      "modality": "sr:hat",
+      "gguf": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "revision": "c1d0c9db94c75ab03edae15e077ab780ac8668fb",
+        "file": "hat-sr-x4-f16.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "--hat-sr",
+          "{sample}",
+          "--hat-model",
+          "{model}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "--hat-sr",
+          "{sample}",
+          "--hat-model",
+          "{model}"
+        ]
+      }
+    },
+    {
+      "name": "swinir-sr-x4",
+      "engine_id": "swinir_sr_x4",
+      "modality": "sr:swinir",
+      "gguf": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "revision": "c1d0c9db94c75ab03edae15e077ab780ac8668fb",
+        "file": "swinir-sr-x4-f16.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "--swinir-sr",
+          "{sample}",
+          "--swinir-model",
+          "{model}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "--swinir-sr",
+          "{sample}",
+          "--swinir-model",
+          "{model}"
+        ]
+      }
+    },
+    {
+      "name": "dat-sr-x2",
+      "engine_id": "dat_sr_x2",
+      "modality": "sr:dat",
+      "gguf": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "revision": "c1d0c9db94c75ab03edae15e077ab780ac8668fb",
+        "file": "dat-light-x2-f16.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "--dat-sr",
+          "{sample}",
+          "--dat-model",
+          "{model}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "--dat-sr",
+          "{sample}",
+          "--dat-model",
+          "{model}"
+        ]
+      }
+    },
+    {
+      "name": "restormer-denoise",
+      "engine_id": "restormer_denoise",
+      "modality": "restore",
+      "gguf": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "revision": "c1d0c9db94c75ab03edae15e077ab780ac8668fb",
+        "file": "restormer-denoise-f16.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--restormer",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--restormer",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "scunet-color",
+      "engine_id": "scunet_color",
+      "modality": "denoise",
+      "gguf": {
+        "repo": "cstr/scunet-GGUF",
+        "revision": "e34675b3243262a9dea7f264ea79c33a305e05d5",
+        "file": "scunet-color-f32.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--restormer",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--restormer",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "adair-5d",
+      "engine_id": "adair_5d",
+      "modality": "restore",
+      "gguf": {
+        "repo": "cstr/AdaIR-GGUF",
+        "revision": "0183168db1bcb02b008c5c3b9e53b2b0c7099658",
+        "file": "adair-5d-f16.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--adair",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--adair",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "qwen2vl-3b",
+      "engine_id": "qwen2vl_3b",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/qwen2.5-vl-3b-crispembed-GGUF",
+        "revision": "94a50f3cce8b2ba3a49b133f902327dc06ac682b",
+        "file": "qwen2.5-vl-3b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "qwen3vl-2b",
+      "engine_id": "qwen3vl_2b",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/qwen3-vl-2b-crispembed-gguf",
+        "revision": "747c8aa753650759060587f9ca820c168a42706a",
+        "file": "qwen3-vl-2b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "german-ocr-3.1",
+      "engine_id": "german_ocr_3.1",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/german-ocr-3.1-crispembed-GGUF",
+        "revision": "main",
+        "file": "german-ocr-3.1-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "nanonets-ocr-s",
+      "engine_id": "nanonets_ocr_s",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/nanonets-ocr-s-crispembed-GGUF",
+        "revision": "45c97be422813586c3db5e347995fbe8a9b3d9aa",
+        "file": "nanonets-ocr-s-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "nanonets-ocr2-1.5b",
+      "engine_id": "nanonets_ocr2_1.5b",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/nanonets-ocr2-1.5b-crispembed-GGUF",
+        "revision": "main",
+        "file": "nanonets-ocr2-1.5b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "h2ovl-mississippi-2b",
+      "engine_id": "h2ovl_mississippi_2b",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/h2ovl-mississippi-2b-crispembed-GGUF",
+        "revision": "main",
+        "file": "h2ovl-mississippi-2b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "h2ovl-mississippi-800m",
+      "engine_id": "h2ovl_mississippi_800m",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/h2ovl-800m-crispembed-GGUF",
+        "revision": "main",
+        "file": "h2ovl-800m-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "internvl2-2b",
+      "engine_id": "internvl2_2b",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/internvl2.5-2b-crispembed-GGUF",
+        "revision": "9b973b88967a56994ac76e858d93b960e15b58db",
+        "file": "internvl2.5-2b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "internvl2-1b",
+      "engine_id": "internvl2_1b",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/internvl2-1b-crispembed-GGUF",
+        "revision": "2546c0669b08c13959cf52f36442adc26677f4db",
+        "file": "internvl2-1b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "glm-ocr",
+      "engine_id": "glm_ocr",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/glm-ocr-crispembed-GGUF",
+        "revision": "d9c881b37dfe94e6f87d0972d71bc40f1f7e0eb2",
+        "file": "glm-ocr-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "got-ocr2",
+      "engine_id": "got_ocr2",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/got-ocr2-crispembed-GGUF",
+        "revision": "cc6904144182db275487f503c7cdf31f01db6c33",
+        "file": "got-ocr2-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "pix2struct-base",
+      "engine_id": "pix2struct_base",
+      "modality": "pix2struct",
+      "gguf": {
+        "repo": "cstr/pix2struct-GGUF",
+        "revision": "6c4054b120b810c3459466cb4c851c848451884c",
+        "file": "pix2struct-base-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--pix2struct",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--pix2struct",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "deepseek-ocr2",
+      "engine_id": "deepseek_ocr2",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/deepseek-ocr2-crispembed-GGUF",
+        "revision": "fa590b6b287310dc632abd2b24ea9c135766fcc7",
+        "file": "deepseek-ocr2-f16.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "paddleocr-vl",
+      "engine_id": "paddleocr_vl",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/paddleocr-vl-0.9b-GGUF",
+        "revision": "24a0765055a11a733a5429ba0585855d98ba1f2e",
+        "file": "paddleocr-vl-0.9b-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "paddleocr-vl-q4k",
+      "engine_id": "paddleocr_vl_q4k",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/paddleocr-vl-0.9b-GGUF",
+        "revision": "24a0765055a11a733a5429ba0585855d98ba1f2e",
+        "file": "paddleocr-vl-0.9b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "paddleocr-vl-1.6",
+      "engine_id": "paddleocr_vl_1.6",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/paddleocr-vl-1.6-GGUF",
+        "revision": "e615d283b3b619ab97e7d36270f8aeb3b20ed96b",
+        "file": "paddleocr-vl-1.6-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "paddleocr-vl-1.6-q4k",
+      "engine_id": "paddleocr_vl_1.6_q4k",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/paddleocr-vl-1.6-GGUF",
+        "revision": "e615d283b3b619ab97e7d36270f8aeb3b20ed96b",
+        "file": "paddleocr-vl-1.6-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "lfm2-embed",
+      "engine_id": "lfm2_embed",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/lfm2-embed-GGUF",
+        "revision": "7022ab563cb93a4b52a28d20919c672fc8c06c8c",
+        "file": "lfm2-embed-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 1024
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "lfm2-embed-q4k",
+      "engine_id": "lfm2_embed_q4k",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/lfm2-embed-GGUF",
+        "revision": "7022ab563cb93a4b52a28d20919c672fc8c06c8c",
+        "file": "lfm2-embed-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding",
+          "dim": 1024
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "lfm2-colbert",
+      "engine_id": "lfm2_colbert",
+      "modality": "colbert",
+      "gguf": {
+        "repo": "cstr/lfm2-colbert-GGUF",
+        "revision": "8e5b812ccf9592ed70f2dc2e7da7a4cd07d0744d",
+        "file": "lfm2-colbert-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--colbert",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--colbert",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "lfm2-colbert-q4k",
+      "engine_id": "lfm2_colbert_q4k",
+      "modality": "colbert",
+      "gguf": {
+        "repo": "cstr/lfm2-colbert-GGUF",
+        "revision": "8e5b812ccf9592ed70f2dc2e7da7a4cd07d0744d",
+        "file": "lfm2-colbert-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--colbert",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--colbert",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "gliner-lfm",
+      "engine_id": "gliner_lfm",
+      "modality": "ner",
+      "gguf": {
+        "repo": "cstr/sauerkraut-gliner-lfm-GGUF",
+        "revision": "ddac30223d23b86f6c55faefb23c5b0faef6caf0",
+        "file": "gliner-lfm-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ner",
+          "Barack Obama visited Paris last week."
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ner",
+          "Barack Obama visited Paris last week."
+        ]
+      }
+    },
+    {
+      "name": "gliner-lfm-q4k",
+      "engine_id": "gliner_lfm_q4k",
+      "modality": "ner",
+      "gguf": {
+        "repo": "cstr/sauerkraut-gliner-lfm-GGUF",
+        "revision": "ddac30223d23b86f6c55faefb23c5b0faef6caf0",
+        "file": "gliner-lfm-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ner",
+          "Barack Obama visited Paris last week."
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ner",
+          "Barack Obama visited Paris last week."
+        ]
+      }
+    },
+    {
+      "name": "gliner-deberta",
+      "engine_id": "gliner_deberta",
+      "modality": "ner",
+      "gguf": {
+        "repo": "cstr/gliner-deberta-GGUF",
+        "revision": "43ec40412a734409f48d8243d2857d0160f3dd4e",
+        "file": "gliner-deberta-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ner",
+          "Barack Obama visited Paris last week."
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ner",
+          "Barack Obama visited Paris last week."
+        ]
+      }
+    },
+    {
+      "name": "gliner-deberta-q4k",
+      "engine_id": "gliner_deberta_q4k",
+      "modality": "ner",
+      "gguf": {
+        "repo": "cstr/gliner-deberta-GGUF",
+        "revision": "43ec40412a734409f48d8243d2857d0160f3dd4e",
+        "file": "gliner-deberta-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ner",
+          "Barack Obama visited Paris last week."
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ner",
+          "Barack Obama visited Paris last week."
+        ]
+      }
+    },
+    {
+      "name": "lilt-funsd",
+      "engine_id": "lilt_funsd",
+      "modality": "lilt",
+      "gguf": {
+        "repo": "cstr/lilt-funsd-GGUF",
+        "revision": "0feb154bf5114064af882656da3af9a3627bd116",
+        "file": "lilt-funsd-f32.gguf"
+      },
+      "tier": "skip",
+      "skip_reason": "needs a bespoke LiLT JSON input, not a plain image"
+    },
+    {
+      "name": "lilt-base",
+      "engine_id": "lilt_base",
+      "modality": "lilt",
+      "gguf": {
+        "repo": "cstr/lilt-base-GGUF",
+        "revision": "4df7580845dc2ab390c8fce890b941f2b23d7438",
+        "file": "lilt-base-f32.gguf"
+      },
+      "tier": "skip",
+      "skip_reason": "needs a bespoke LiLT JSON input, not a plain image"
+    },
+    {
+      "name": "bert-base-ner",
+      "engine_id": "bert_base_ner",
+      "modality": "ner",
+      "gguf": {
+        "repo": "cstr/bert-base-NER-GGUF",
+        "revision": "a3c98e7682407b8db66e8e09784e4db015c66a10",
+        "file": "bert-base-ner-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ner",
+          "Barack Obama visited Paris last week."
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ner",
+          "Barack Obama visited Paris last week."
+        ]
+      }
+    },
+    {
+      "name": "xlmr-ner-hrl",
+      "engine_id": "xlmr_ner_hrl",
+      "modality": "ner",
+      "gguf": {
+        "repo": "cstr/xlmr-ner-hrl-GGUF",
+        "revision": "8478d0d1e543f1cd0632cb60ca74bf066370999a",
+        "file": "xlmr-ner-hrl-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ner",
+          "Barack Obama visited Paris last week."
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ner",
+          "Barack Obama visited Paris last week."
+        ]
+      }
+    },
+    {
+      "name": "cld3",
+      "engine_id": "cld3",
+      "modality": "lid",
+      "gguf": {
+        "repo": "cstr/cld3-GGUF",
+        "revision": "ce295cc04e4796be10b7a45e82b1513b5d9cc225",
+        "file": "cld3-f16.gguf"
+      },
+      "tier": "skip",
+      "skip_reason": "no standalone LID CLI (only via --ocr-pipeline --lid-model)"
+    },
+    {
+      "name": "glotlid",
+      "engine_id": "glotlid",
+      "modality": "lid",
+      "gguf": {
+        "repo": "cstr/glotlid-GGUF",
+        "revision": "846630153a3ec7aa25cf76c2b9bfbc3b539e170f",
+        "file": "lid-glotlid-f16.gguf"
+      },
+      "tier": "skip",
+      "skip_reason": "no standalone LID CLI (only via --ocr-pipeline --lid-model)"
+    },
+    {
+      "name": "lightonocr",
+      "engine_id": "lightonocr",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/lightonocr-GGUF",
+        "revision": "915edd07fc5631a2c9a089ac9d03f255b61cfd48",
+        "file": "lightonocr-1b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "tesseract-eng",
+      "engine_id": "tesseract_eng",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "revision": "750bce51d37012239f6bceba615df3247762683c",
+        "file": "tesseract-eng-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "tesseract-deu",
+      "engine_id": "tesseract_deu",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "revision": "750bce51d37012239f6bceba615df3247762683c",
+        "file": "tesseract-deu-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "tesseract-fra",
+      "engine_id": "tesseract_fra",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "revision": "750bce51d37012239f6bceba615df3247762683c",
+        "file": "tesseract-fra-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "tesseract-spa",
+      "engine_id": "tesseract_spa",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "revision": "750bce51d37012239f6bceba615df3247762683c",
+        "file": "tesseract-spa-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "tesseract-ita",
+      "engine_id": "tesseract_ita",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "revision": "750bce51d37012239f6bceba615df3247762683c",
+        "file": "tesseract-ita-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "tesseract-por",
+      "engine_id": "tesseract_por",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "revision": "750bce51d37012239f6bceba615df3247762683c",
+        "file": "tesseract-por-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "tesseract-nld",
+      "engine_id": "tesseract_nld",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "revision": "750bce51d37012239f6bceba615df3247762683c",
+        "file": "tesseract-nld-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "tesseract-rus",
+      "engine_id": "tesseract_rus",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "revision": "750bce51d37012239f6bceba615df3247762683c",
+        "file": "tesseract-rus-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "tesseract-ara",
+      "engine_id": "tesseract_ara",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "revision": "750bce51d37012239f6bceba615df3247762683c",
+        "file": "tesseract-ara-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "tesseract-chi-sim",
+      "engine_id": "tesseract_chi_sim",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "revision": "750bce51d37012239f6bceba615df3247762683c",
+        "file": "tesseract-chi_sim-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "tesseract-jpn",
+      "engine_id": "tesseract_jpn",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "revision": "750bce51d37012239f6bceba615df3247762683c",
+        "file": "tesseract-jpn-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "tesseract-kor",
+      "engine_id": "tesseract_kor",
+      "modality": "ocr",
+      "gguf": {
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "revision": "750bce51d37012239f6bceba615df3247762683c",
+        "file": "tesseract-kor-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
+      }
+    },
+    {
+      "name": "fireredpunc",
+      "engine_id": "fireredpunc",
+      "modality": "punct",
+      "gguf": {
+        "repo": "cstr/fireredpunc-GGUF",
+        "revision": "bece686367d5733bac394f7b50eb928f4c861b87",
+        "file": "fireredpunc-q4_k.gguf"
+      },
+      "tier": "skip",
+      "skip_reason": "no standalone punctuation CLI (only via --ocr-pipeline --punct-model)"
+    },
+    {
+      "name": "fullstop-punc",
+      "engine_id": "fullstop_punc",
+      "modality": "punct",
+      "gguf": {
+        "repo": "cstr/fullstop-punc-multilang-GGUF",
+        "revision": "e5c8ffabc59749e028c7f43f2e6f9877a22ad8f6",
+        "file": "fullstop-punc-q4_k.gguf"
+      },
+      "tier": "skip",
+      "skip_reason": "no standalone punctuation CLI (only via --ocr-pipeline --punct-model)"
+    },
+    {
+      "name": "pcs",
+      "engine_id": "pcs",
+      "modality": "punct",
+      "gguf": {
+        "repo": "cstr/pcs-xlmr-base-GGUF",
+        "revision": "451631cbace2f52ba7965e328d9b6d786b44d1b6",
+        "file": "pcs-xlmr-base-q4_k.gguf"
+      },
+      "tier": "skip",
+      "skip_reason": "no standalone punctuation CLI (only via --ocr-pipeline --punct-model)"
+    },
+    {
+      "name": "uni-mumer-qwen3-vl-2b",
+      "engine_id": "uni_mumer_qwen3_vl_2b",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/uni-mumer-qwen3-vl-2b-GGUF",
+        "revision": "17bea44d1aac10738baefdfd69c1e429f4ed91c8",
+        "file": "uni-mumer-qwen3-vl-2b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "uni-mumer-qwen2.5-vl-3b",
+      "engine_id": "uni_mumer_qwen2.5_vl_3b",
+      "modality": "embedding",
+      "gguf": {
+        "repo": "cstr/uni-mumer-qwen2.5-vl-3b-GGUF",
+        "revision": "594dfae71d1cc51a8f4514f26934341cea93bde6",
+        "file": "uni-mumer-qwen2.5-vl-3b-q4_k.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ],
+        "expect": {
+          "kind": "embedding"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--json",
+          "The quick brown fox jumps over the lazy dog."
+        ]
+      }
+    },
+    {
+      "name": "texteller-3",
+      "engine_id": "texteller_3",
+      "modality": "math-ocr",
+      "gguf": {
+        "repo": "cstr/texteller-3-GGUF",
+        "revision": "e2a93095be359472880682a9dda5c36101c37353",
+        "file": "texteller-3-q8_0.gguf"
+      },
+      "tier": "smoke",
+      "smoke": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ],
+        "expect": {
+          "kind": "nonempty"
+        }
+      },
+      "bench": {
+        "args": [
+          "-m",
+          "{model}",
+          "--ocr",
+          "{sample}"
+        ]
       }
     }
-  ]
+  ],
+  "_generated_note": "Entries below the curated set are generated by tools/gen_manifest_entries.py from examples/cli/model_mgr.cpp. smoke = best-effort CLI invocation + exit-0/non-empty (or embedding) check; the Kaggle sweep empirically validates which invocations are correct. tier=skip entries have no standalone CLI mode."
 }
