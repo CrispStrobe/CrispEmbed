@@ -61,6 +61,9 @@ if tok:
     os.environ["HUGGING_FACE_HUB_TOKEN"] = tok
 
 kh.step("toolchain")
+os.environ["CCACHE_BASEDIR"] = str(WORK)
+os.environ.setdefault("CCACHE_SLOPPINESS",
+                      "locale,time_macros,include_file_ctime,include_file_mtime")
 kh.install_build_toolchain()
 flags = kh.cache_and_link_flags()
 flags += kh.cuda_build_flags(kh.detect_cuda_arch()) if FLAVOUR == "cuda" else ["-DGGML_BLAS=ON"]
@@ -72,6 +75,12 @@ with kh.build_heartbeat("cmake.configure"):
 with kh.build_heartbeat("cmake.build"):
     kh.sh_with_progress(f"stdbuf -oL -eL cmake --build {BUILD} --target crispembed-cli "
                         f"-j{kh.safe_build_jobs(gpu=(FLAVOUR == 'cuda'))}")
+# Export the populated ccache to seed/refresh chr1s4/crispembed-ccache.
+try:
+    kh.sh(f"cd {WORK} && tar cf ccache.tar .ccache/ && ls -la ccache.tar")
+    kh.step("ccache.exported")
+except Exception as _e:
+    print(f"  ccache export skipped: {_e}", flush=True)
 
 MANIFEST = json.loads((REPO / "tests" / "regression" / "manifest.json").read_text())
 backends = [b["name"] for b in MANIFEST["backends"] if not FILTER or b["name"] in FILTER]
