@@ -80,6 +80,7 @@ try:
     # Pack .ccache CONTENTS (top-level hash dirs); a tar of `.ccache/` would
     # double-nest on extract and stay unrecognized (the CrispASR ccache bug).
     kh.sh(f"tar -C {WORK}/.ccache -cf {WORK}/ccache.tar . && ls -la {WORK}/ccache.tar")
+    kh.sh(f"rm -rf {WORK}/.ccache")  # keep kernel output to just ccache.tar
     kh.step("ccache.exported")
 except Exception as _e:
     print(f"  ccache export skipped: {_e}", flush=True)

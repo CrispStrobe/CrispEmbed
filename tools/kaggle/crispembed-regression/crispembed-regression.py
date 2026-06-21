@@ -139,6 +139,9 @@ try:
     # itself — the harness extracts into /kaggle/working/.ccache, so a tar of
     # `.ccache/` would double-nest and stay unrecognized (the CrispASR bug).
     kh.sh(f"tar -C {WORK}/.ccache -cf {WORK}/ccache.tar . && ls -la {WORK}/ccache.tar")
+    # Remove the loose .ccache tree from /kaggle/working so the kernel OUTPUT is
+    # just ccache.tar (one-page download to seed chr1s4/crispembed-ccache).
+    kh.sh(f"rm -rf {WORK}/.ccache")
     step("ccache.exported")
 except Exception as _e:
     print(f"  ccache export skipped: {_e}", flush=True)
