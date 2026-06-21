@@ -2474,14 +2474,47 @@ blocked on the LLM Metal graph.
 
 **Separately on the LLM Metal graph:** the same handover called it "broken on
 Metal (emits EOS immediately)". The 7-token self-consistent diff
-(`granite-llm-ref`) actually **passes on Metal at cos 0.9999 through logits**, so
-the LLM math/weights/reshape are correct. But a full 784-token prefill (with
-spliced image features) on Metal still yields **0 decode steps** (first token =
-EOS), while the *same* prefill on the ggml-CPU backend decodes correctly (the
-handover's working baseline). So the residual LLM bug is a Metal
-**flash-attention-at-large-T** issue, not logic — the short diff can't surface
-it. Next step: try manual attention (`mul_mat`+`soft_max_ext`) for the prefill,
-or KV/mask padding, and diff a long-sequence prefill on Metal vs CPU.
+(`granite-llm-ref`) **passes on Metal at cos 0.9999 through logits**, so the LLM
+math/weights/reshape are correct. But a full 784-token prefill with spliced image
+features yielded **0 decode steps** (first token = EOS) on Metal while the same
+prefill on ggml-CPU decoded correctly. Root cause was NOT attention/length — see
+the dedicated "Metal mul_mm F16 activation overflow" entry below.
+
+## Metal mul_mm F16 activation overflow on massive activations (2026-06-21)
+
+The Granite LLM Metal graph (`gv_run_llm_body`) produced correct logits for text
+tokens at any length, and correct results on the ggml-CPU backend, but cascaded
+to **NaN from layer 9** during the real OCR prefill on Metal — yielding 0 decode
+steps. Localized by dumping per-layer max-abs over all tokens: the residual
+stream carries a **massive activation** (~1.1e4 — a few outlier dims, amplified
+~×12 by the `embedding_multiplier` applied to the spliced image features), held
+fine through layer 7, then exactly 2 elements overflow to `inf` at layer 8.
+
+Root cause: Apple's batched matmul kernel `kernel_mul_mm_*` (selected when
+`ne11 > ne11_mm_min`, hardcoded 8, i.e. the T=784 **prefill**; T=1 **decode** uses
+`mul_mv`) casts activations to **F16** for the simdgroup matrix units. The SwiGLU
+`silu(gate)*up` product for the massive dimension exceeds F16 range (65504) at
+the first layer whose FFN weights are large enough → `inf` → NaN. This is the
+same phenomenon `ggml_mul_mat_set_prec(GGML_PREC_F32)` targets "for phi-2" — but
+on Metal that flag does NOT change `mul_mm` (the kernel name has no prec variant),
+so it does not help here. F32 KV cache, disabling fusion/concurrency, and manual
+attention all leave the overflow (it is in the FFN matmul, not attention/KV).
+
+Fix (`gv_run_llm_body` FFN): scale the down-projection activation down before the
+matmul and back up after — a **lossless exponent shift** (F16 is floating-point,
+so scaling preserves relative precision) that keeps the F16 cast in range:
+`down = scale(mul_mat(Wd, scale(silu(gate)*up, 1/256)), 256)`. 256 gives headroom
+to ~1.6e7. Result: full Metal OCR (vision graph + LLM graph) returns the correct
+text in ~22 s (vision ~3 s, 784-tok prefill ~12 s, decode ~5 s) vs the scalar
+path's ~100 s vision + ~8 min prefill. Both graphs now DEFAULT ON for GPU
+backends; scalar stays default on ggml-CPU (where the ViT still drifts).
+
+Diagnostic lesson: the LLM diff originally exercised only the scalar
+`gv_llm_decode_step`, NOT the ggml graph — so "LLM diff passes" said nothing
+about `gv_run_llm_body`. Threading a dump_cb through `gv_run_llm_body` and running
+it under `granite_vision_dump_llm` when `CRISPEMBED_GRANITE_LLM_GRAPH=1` is what
+finally put the graph under the harness. Always confirm the diff drives the path
+you think it does.
 
 ## granite_vision OCR: the two image-path bugs (vision parity passed but OCR hallucinated)
 
