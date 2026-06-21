@@ -268,6 +268,19 @@ Sweep + regression infrastructure, mirroring CrispASR's stack:
   results.
 - `tools/benchmark_all_engines.py` — local perf sweep (load/encode latency via
   the CLI's `--dim`/`--json` paths) → JSON + markdown.
+- `tools/gen_manifest_entries.py` — generates the bulk of the manifest from the
+  `examples/cli/model_mgr.cpp` registry, classified by modality, so smoke +
+  benchmark cover ~all CLI-runnable backends without hand-writing them.
+
+Docs: `tests/regression/README.md` (suite usage), `tests/regression/BAKING_REFS.md`
+(bake a ref + promote smoke→diff), `docs/diff-harness-coverage.md` (generated).
+
+**Breadth (2026-06-21):** the manifest is now **137 entries** — 4 `diff`
+(parity), 123 `smoke` (all modalities: embedding/reranker/sparse/colbert/ner/
+vision-embed/ocr/math-ocr/sr/denoise/restore/face/detect/layout/pix2struct), 10
+`skip` (LID/punct/LiLT/text-detect have no standalone CLI). Generated smoke
+invocations are best-effort; the Kaggle sweep validates them empirically and
+errors are fixed in the generator's modality dispatch.
 
 **Coverage snapshot (2026-06-21, HF-probed):** 29 diff harnesses, **6 HF repos
 carry a `*-ref.gguf`**, **4 engines fully wired** (harness + ref): `instructir`,
