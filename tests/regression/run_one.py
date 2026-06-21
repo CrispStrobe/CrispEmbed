@@ -43,7 +43,9 @@ _ANSI = re.compile(r"\x1b\[[0-9;]*m")
 # A line carrying a comparison metric, e.g.
 #   "  output  cos_min=0.999997  max_abs=6.6e-04  PASS"       (pan)
 #   "    cos_min=0.998903  max_abs=1.2e-03  PASS"             (granite, name above)
-_COS = re.compile(r"cos_min=([0-9.eE+\-]+)")
+# Harnesses are inconsistent: pan/granite/scunet print `cos_min=`, instructir/
+# hat/esrgan/… print `cos=`. Match both (but not `cos_mean=`).
+_COS = re.compile(r"cos(?:_min)?=([0-9.eE+\-]+)")
 _MAXABS = re.compile(r"max_abs=([0-9.eE+\-]+)")
 # Stage-label lines that precede a metric line without a leading name:
 #   "  C++ stage: vision_out (1234 elements)"   (granite dump_cb)
@@ -122,8 +124,10 @@ def parse_diff_stdout(stdout: str) -> dict[str, dict]:
         if mv:
             name = mv.group(2)
         elif head:
-            tok = head.split()[0]
-            if _IDENT.match(tok) and tok != "cos_min":
+            # token immediately before cos=/cos_min=, minus a trailing colon
+            # ("output:" -> "output", "output" -> "output").
+            tok = head.split()[-1].rstrip(":")
+            if _IDENT.match(tok) and tok not in ("cos", "cos_min"):
                 name = tok
         if not name:
             name = last_label or f"stage_{idx}"
@@ -270,9 +274,23 @@ def regression_for(name: str, manifest: dict, work_dir: Path,
         stages = run_diff(diff_bin, entry.get("argv", "{model} {ref}"), gguf, ref)
         passes, fails, missing = evaluate_diff(
             stages, entry.get("diff_thresholds", {}), entry.get("require_stages"))
-        ok = not fails and not missing
+        graded = len(passes) + len(fails)
+        verdicts = stages.get("_verdicts", {})
+        note = None
+        if graded > 0:
+            ok = not fails and not missing
+        elif verdicts:
+            # No cos lines parsed but the harness printed [PASS]/[FAIL] verdicts.
+            ok = all(verdicts.values()) and not missing
+            note = "graded via PASS/FAIL verdicts (no cos values parsed)"
+        else:
+            # Nothing comparable was parsed — fail closed rather than green on
+            # an empty set (the cos=/cos_min= format mismatch caused this).
+            ok = False
+            note = "no comparable stages parsed — check the diff output format"
         return {"backend": name, "tier": tier, "ok": ok,
                 "passes": len(passes), "fails": fails, "missing": missing,
+                "note": note,
                 "stages": {k: v["cos_min"] for k, v in stages.items()
                            if k != "_verdicts"}}
 
