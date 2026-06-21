@@ -587,7 +587,20 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
     graph (nearest upscale + bilinear ILR via ggml_interpolate). Verified
     test-pan-diff cos_min=0.999997 vs self-consistent torch ref; ref on HF
     `cstr/text-super-resolution-gguf/pan-ref.gguf`. `PAN_SR_SCALAR=1` opts out.
-  - [ ] `dat_sr.cpp` — 18× dual attention (spatial+channel), ~60-90G, medium
+  - [ ] `dat_sr.cpp` — 18× dual attention (spatial+channel), ~60-90G, medium.
+    **VERIFIED + bug fixed** (conv→ggml port still TODO). Built a *genuine* ref by
+    running the real PyTorch DAT-light (`dat_arch.py`, timm/basicsr mocked) on
+    weights reconstructed from `dat-light-x2-f32.gguf`
+    (`tools/dump_dat_reference_from_gguf.py`). Found+fixed a real bug: Conv+BN
+    fusion was silently **skipped on F32 models** — the init dequant lambda used
+    `to_f32`, which returns `t->data` directly for F32 tensors and leaves its
+    out-buffer empty, so the `!cw.empty()` fusion guard never fired and the BN in
+    the AIM dwconv/channel/spatial-interaction branches was dropped (output cos
+    0.9906 → **0.999995** vs genuine ref; all 20 stages — conv_first, block_0..17,
+    output — now ≥0.99998). `test-dat-diff` (CMake-registered) compares the
+    uint8 output against the ref clamped to [0,1]. Ref on HF
+    `cstr/text-super-resolution-gguf/dat-ref.gguf`. The conv→ggml port is the
+    easy instructir pattern (official 2D-flattened writer) + a dwconv → conv_2d_dw.
   - [x] `scunet_denoise.cpp` — **conv→ggml DONE**. All conv2d sites (head, tail,
     stride-2 downsample, and the conv1_1/conv1_2/conv_block.0/.2 inside every
     ConvTransBlock) plus the decoder ConvTranspose2d upsamples now dispatch

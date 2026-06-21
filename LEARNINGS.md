@@ -1,5 +1,29 @@
 # CrispEmbed — Technical Learnings
 
+## DAT: Conv+BN fusion silently skipped on F32 models (to_f32 returns t->data) (2026-06)
+
+`dat_sr.cpp` parity vs a *genuine* reference (the real PyTorch DAT-light run on
+weights reconstructed from the f32 GGUF — `tools/dump_dat_reference_from_gguf.py`)
+was only cos 0.9906 (vs the other SR engines' 0.999+). Root cause: the init-time
+Conv+BN fusion dequantized weights with the file's `to_f32(t, buf)` helper, which
+— like several `*_to_f32` helpers in this repo — **returns `t->data` directly for
+GGML_TYPE_F32 tensors and leaves the passed `buf` empty** (only the quantized/F16
+paths fill `buf`). The fusion code then read `cw = dequant(...)` and guarded with
+`if (!cw.empty() && !bw.empty())`, so on an **F32 model** every conv's `cw` was
+empty, fusion was skipped, and the BatchNorm in the AIM dwconv / channel- and
+spatial-interaction branches was **dropped entirely** (there is no separate BN
+application — fusion is the only BN path). On F16 models the bug is hidden because
+`to_f32` fills `buf`. Fix: in the dequant lambda, when `to_f32` returns a pointer
+≠ `buf.data()`, copy it in (`buf.assign(p, p + ggml_nelements(t))`). Output cos
+0.9906 → 0.999995; all 20 captured stages ≥0.99998.
+
+**Lesson:** when a `*_to_f32(t, buf)` helper has a fast F32 path that returns
+`t->data` without touching `buf`, never use `buf.empty()`/`buf.size()` as a
+proxy for "did I get the data" — use the returned pointer. This silently
+miscompiles only on F32 (not F16/quant) models, so it survives F16-only testing.
+Genuine ground truth (real model run) was needed to catch it: a self-consistent
+ref reverse-engineered from the same engine would have hidden it.
+
 ## SwinIR shifted-window: shift sign must match the precomputed attn_mask (2026-06)
 
 SwinIR's `swinir_sr.cpp` produced an output whose `test-swinir-diff` cosine read
