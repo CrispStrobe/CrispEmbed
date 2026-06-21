@@ -619,7 +619,6 @@ jobs:
           name: CrispEmbed ${{ github.ref_name }}
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
-          generate_release_notes: true
           fail_on_unmatched_files: false
           files: |
             dist/linux-x86_64/*.tar.gz
