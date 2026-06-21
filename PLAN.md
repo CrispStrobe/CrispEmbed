@@ -594,7 +594,16 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
     shared dequant buffers `dq1/dq2`, so attention/MLP ran on garbage weights
     (output parity ~0.93). Now all stages cos=1.000000. Conv→ggml port still TODO;
     self-consistent ref at `cstr/scunet-GGUF/scunet-ref.gguf`.
-  - [ ] `swinir_sr.cpp` — RSTB + Swin window attention, ~60-90G, medium (batched matmul like mixtex)
+  - [x] `swinir_sr.cpp` — **conv→ggml DONE**. The seven nested-loop conv sites
+    (conv_first, 4× RSTB conv, conv_after_body, upsample) now dispatch through
+    `swinir_conv` → `ggml_conv_2d` on a dedicated CPU sched with persistent
+    CPU-resident F32 kernels (custom-writer GGUF stores PyTorch [OC,IC,KH,KW];
+    reverse the 4 axes for ggml ne=[KW,KH,IC,OC], like pan). Swin window
+    attention / norms / pixel-shuffle stay SIMD-scalar. ~1.9× faster per tile
+    (5.5s → 2.85s on the 64×64 parity tile), output cos unchanged (0.999996 vs
+    self-consistent ref; ggml vs scalar max-diff ~1e-5). `SWINIR_SR_SCALAR=1`
+    opts out. RSTB + Swin window attention batched-matmul port still possible
+    (the attention, not the convs, dominates the residual ~60-90G).
     **NOTE**: while validating the reference, found+fixed a real pre-existing bug
     — `cyclic_shift` used the wrong sign convention, so the forward shift was
     `roll(+ws/2)` while the precomputed `attn_mask` (and the reference) assume
