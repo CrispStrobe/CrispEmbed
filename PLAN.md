@@ -671,7 +671,16 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
     (ggml == scalar; no correctness bug — the engine was already correct). The
     FeatureEnhancer MHA, not the convs, dominates the residual ~15-25G.
   - [ ] `text_sr.cpp` — NAFNet variant + PixelShuffle + bicubic, ~40-60G, easy
-  - [ ] `adair.cpp` — U-Net + AFLB + FFT, ~100-150G, hard (needs FFT wrapping)
+  - [ ] `adair.cpp` — U-Net + AFLB + FFT, ~100-150G, hard (needs FFT wrapping).
+    **VERIFIED correct** (conv→ggml port still TODO). Built a *genuine* ref by
+    running the real PyTorch AdaIR (upstream `c-yn/AdaIR/net/model.py`, torch+einops
+    only) on weights reconstructed from `adair-5d-f32.gguf`
+    (`tools/dump_adair_reference_from_gguf.py` — all 587 params load, names are
+    `net.<param>`). `test-adair-diff` output cos **0.999379** vs the genuine ref —
+    no bug. Ref on HF `cstr/text-super-resolution-gguf/adair-ref.gguf`. Conv port:
+    Restormer-style — many 1×1/3×3/depthwise convs pointer-passed via DequantCache
+    through the attention/FFN/FreModule helpers; the 2D FFT (AFLB) stays scalar.
+    Likely a win (15.6s/64² inference is conv+attention-heavy) but a sizable port.
 
 - [x] **Patch embedding conv → ggml matmul** — Most VLM runtimes now use ggml
   graph (internvl2, granite, smoldocling, qwen2vl) or im2col+matmul (got,
