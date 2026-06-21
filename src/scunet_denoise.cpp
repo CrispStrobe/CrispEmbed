@@ -333,6 +333,12 @@ static void swin_block_forward(
     int hw = H * W;
     int cur_block = g_swin_block_counter++;
 
+    // Distinct dequant buffers — qkv_w/proj_w/rpb (and the MLP weights) are all
+    // live simultaneously, so they must NOT share a buffer. Reusing dq1/dq2 for
+    // all of them (the old code) left every pointer aliasing the last dequant,
+    // silently feeding garbage weights to attention + MLP.
+    std::vector<float> dqA, dqB, dqC, dqD;
+
     // LN1 + WMSA
     std::vector<float> normed(C * hw);
     // Cache the weight pointers before the per-pixel loop
@@ -354,9 +360,9 @@ static void swin_block_forward(
     // Cache all weight pointers before passing to wmsa
     const float * qkv_w_ptr = to_f32(wt.qkv_w, dq1);
     const float * qkv_b_ptr = to_f32(wt.qkv_b, dq2);
-    const float * proj_w_ptr = to_f32(wt.proj_w, dq1);
-    const float * proj_b_ptr = to_f32(wt.proj_b, dq2);
-    const float * rpb_ptr = to_f32(wt.rpb, dq1);
+    const float * proj_w_ptr = to_f32(wt.proj_w, dqA);
+    const float * proj_b_ptr = to_f32(wt.proj_b, dqB);
+    const float * rpb_ptr = to_f32(wt.rpb, dqC);
 
     std::vector<float> attn_out(C * hw);
     wmsa_forward(normed.data(), C, H, W,
@@ -378,11 +384,11 @@ static void swin_block_forward(
     const float * m0w = to_f32(wt.mlp0_w, dq1);
     const float * m0b = to_f32(wt.mlp0_b, dq2);
     int mlp_hidden = (int)wt.mlp0_b->ne[0];
-    const float * m2w = to_f32(wt.mlp2_w, dq1);
-    const float * m2b = to_f32(wt.mlp2_b, dq2);
+    const float * m2w = to_f32(wt.mlp2_w, dqA);
+    const float * m2b = to_f32(wt.mlp2_b, dqB);
     // Cache LN2 weights outside the per-pixel loop (was re-dequantized per pixel!)
-    const float * ln2_w_ptr = to_f32(wt.ln2_w, dq1);
-    const float * ln2_b_ptr = to_f32(wt.ln2_b, dq2);
+    const float * ln2_w_ptr = to_f32(wt.ln2_w, dqC);
+    const float * ln2_b_ptr = to_f32(wt.ln2_b, dqD);
 
     // Pre-allocate buffers outside the pixel loop (was per-pixel before —
     // 65536+ heap allocs per swin block for a 256x256 image)
