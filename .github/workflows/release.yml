@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build ${{ matrix.name }}
@@ -206,6 +209,15 @@ jobs:
           name: ${{ matrix.name }}
           path: ${{ matrix.archive }}
 
+      - name: Upload to release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: CrispEmbed ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: false
+          files: ${{ matrix.archive }}
+
   # ─── Linux x86_64 + CUDA ──────────────────────────────────────────────
   # Self-contained tarball with libcrispembed.so + libggml-cuda.so + the
   # standard CPU backend libs. End users must have a matching CUDA driver
@@ -287,6 +299,15 @@ jobs:
         with:
           name: linux-x86_64-cuda
           path: crispembed-linux-x86_64-cuda.tar.gz
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: CrispEmbed ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: false
+          files: crispembed-linux-x86_64-cuda.tar.gz
 
   # ─── Windows x86_64 + CUDA ────────────────────────────────────────────
   # Bundles cudart64_12.dll + cublas64_12.dll alongside the CrispEmbed
@@ -415,6 +436,15 @@ jobs:
           name: windows-x86_64-cuda
           path: crispembed-windows-x86_64-cuda.zip
 
+      - name: Upload to release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: CrispEmbed ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: false
+          files: crispembed-windows-x86_64-cuda.zip
+
   # ─── Windows x86_64 + Vulkan ──────────────────────────────────────────
   # Lighter-weight than CUDA — uses the system Vulkan loader, no CUDA
   # toolchain required. Mirrors CrispASR's libcrispasr-*-vulkan layout.
@@ -478,6 +508,15 @@ jobs:
           name: windows-x86_64-vulkan
           path: crispembed-windows-x86_64-vulkan.zip
 
+      - name: Upload to release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: CrispEmbed ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: false
+          files: crispembed-windows-x86_64-vulkan.zip
+
   build-android:
     name: Build android-${{ matrix.abi }}
     runs-on: ubuntu-latest
@@ -503,6 +542,15 @@ jobs:
         with:
           name: android-${{ matrix.abi }}
           path: crispembed-android-${{ matrix.abi }}.tar.gz
+
+      - name: Upload to release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: CrispEmbed ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: false
+          files: crispembed-android-${{ matrix.abi }}.tar.gz
 
   build-ios:
     name: Build ios-arm64
@@ -530,6 +578,15 @@ jobs:
           name: ios-arm64
           path: crispembed-ios-arm64.tar.gz
 
+      - name: Upload to release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: CrispEmbed ${{ github.ref_name }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: false
+          files: crispembed-ios-arm64.tar.gz
+
   create-release:
     name: Create GitHub Release
     # GPU variants (cuda/vulkan) are best-effort: if a CUDA runner or
@@ -546,8 +603,6 @@ jobs:
       - build-ios
     if: always() && !cancelled()
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - uses: actions/checkout@v6
