@@ -617,9 +617,9 @@ static const ModelEntry k_registry[] = {
      "https://huggingface.co/cstr/text-super-resolution-gguf"},
 
     {"swinir-sr-x4",
-     "swinir-sr-x4-f16.gguf",
-     "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/swinir-sr-x4-f16.gguf",
-     "SwinIR-light 4x SR (930K params)", "2 MB", "Apache-2.0",
+     "swinir-light-x4-f16.gguf",
+     "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/swinir-light-x4-f16.gguf",
+     "SwinIR-light 4x SR (930K params)", "15 MB", "Apache-2.0",
      "https://huggingface.co/cstr/text-super-resolution-gguf"},
 
     {"dat-sr-x2",
