@@ -28,6 +28,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -109,10 +110,23 @@ struct pan_sr_context {
     ggml_backend_t       enc_backend  = nullptr;
     ggml_backend_sched_t enc_sched    = nullptr;
 
+    // Persistent F32 graph weights (conv kernels + biases), keyed by tensor name.
+    ggml_context *        gw_ctx = nullptr;
+    ggml_backend_buffer_t gw_buf = nullptr;
+    std::map<std::string, ggml_tensor *> gw;
+    std::vector<uint8_t>  graph_meta;   // reused metadata buffer for the forward graph
+
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
         if (!t) { fprintf(stderr, "pan_sr: missing %s\n", name.c_str()); return nullptr; }
         return dcache.get(t);
+    }
+
+    // Fetch a persistent F32 graph-weight tensor by name (must exist).
+    ggml_tensor * gwt(const std::string & name) {
+        auto it = gw.find(name);
+        if (it == gw.end()) { fprintf(stderr, "pan_sr: missing graph weight %s\n", name.c_str()); return nullptr; }
+        return it->second;
     }
 };
 
@@ -147,11 +161,48 @@ pan_sr_context * pan_sr_init(const char * model_path, int n_threads) {
         ggml_backend_t backends[] = { ctx->enc_backend };
         ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
     }
+
+    // Build persistent F32 graph weights for the ggml_conv_2d forward path.
+    // Each conv kernel keeps its native ggml layout ne=[KW,KH,IC,OC] (the GGUF
+    // already stores it that way — see pan_conv2d's [o*ic*kh*kw + c*kh*kw + ky*kw + kx]
+    // indexing, which is row-major [OC][IC][KH][KW] == that ne). No permute needed.
+    {
+        size_t n_t = ctx->wl.tensors.size();
+        ggml_init_params ip = { ggml_tensor_overhead() * (n_t + 4), nullptr, true };
+        ctx->gw_ctx = ggml_init(ip);
+        auto ends_with = [](const std::string & s, const char * suf) {
+            size_t n = strlen(suf);
+            return s.size() >= n && s.compare(s.size() - n, n, suf) == 0;
+        };
+        std::vector<std::pair<std::string, ggml_tensor *>> to_fill;
+        for (auto & [name, t] : ctx->wl.tensors) {
+            ggml_tensor * w;
+            if (ends_with(name, ".weight")) {
+                // Conv kernel: GGUF stores ne in PyTorch order [OC,IC,KH,KW] but the
+                // data is KW-innermost. ggml_conv_2d wants ne=[KW,KH,IC,OC] over those
+                // same bytes — reverse the 4 axes, copy the raw buffer unchanged.
+                int64_t ne[4] = { t->ne[3], t->ne[2], t->ne[1], t->ne[0] };
+                w = ggml_new_tensor(ctx->gw_ctx, GGML_TYPE_F32, 4, ne);
+            } else {
+                w = ggml_new_tensor(ctx->gw_ctx, GGML_TYPE_F32, ggml_n_dims(t), t->ne);
+            }
+            ggml_set_name(w, name.c_str());
+            ctx->gw[name] = w;
+            to_fill.push_back({name, w});
+        }
+        ctx->gw_buf = ggml_backend_alloc_ctx_tensors(ctx->gw_ctx, ctx->enc_backend);
+        for (auto & [name, w] : to_fill) {
+            const float * src = ctx->get(name);   // dequantized F32, native memory order
+            if (src) ggml_backend_tensor_set(w, src, 0, ggml_nbytes(w));
+        }
+    }
     return ctx;
 }
 
 void pan_sr_free(pan_sr_context * ctx) {
     if (ctx) {
+    if (ctx->gw_buf) ggml_backend_buffer_free(ctx->gw_buf);
+    if (ctx->gw_ctx) ggml_free(ctx->gw_ctx);
     if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
     if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
  core_gguf::free_weights(ctx->wl); delete ctx; }
@@ -159,9 +210,112 @@ void pan_sr_free(pan_sr_context * ctx) {
 
 int pan_sr_scale(const pan_sr_context * ctx) { return ctx ? ctx->scale : 0; }
 
-// ── Single-tile forward ───────────────────────────────────────────────
+// ── Single-tile forward (ggml graph) ──────────────────────────────────
+//
+// Full-image PAN forward as one ggml_conv_2d graph, run on enc_sched. Mirrors
+// the scalar pan_forward_tile op-for-op so the parity test exercises identical
+// math. Conv kernels keep native ggml layout (see gw prep in pan_sr_init).
 
-static void pan_forward_tile(pan_sr_context * ctx,
+static void pan_forward_tile_ggml(pan_sr_context * ctx,
+                                  const float * input, int W, int H,
+                                  float * output) {
+    const int scale = ctx->scale;
+    const int graph_size = 2048;
+    size_t buf_size = ggml_tensor_overhead() * (graph_size + 64)
+                    + ggml_graph_overhead_custom(graph_size, false);
+    ctx->graph_meta.resize(buf_size);
+    ggml_init_params ip = { buf_size, ctx->graph_meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, graph_size, false);
+
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, 3);
+    ggml_set_name(x, "x"); ggml_set_input(x);
+
+    // conv with optional per-output-channel bias; pad applied symmetrically.
+    auto conv = [&](ggml_tensor * in, const char * wn, const char * bn, int pad) -> ggml_tensor * {
+        ggml_tensor * w = ctx->gwt(wn);
+        ggml_tensor * y = ggml_conv_2d(g, w, in, 1, 1, pad, pad, 1, 1);
+        if (bn) {
+            ggml_tensor * b = ggml_reshape_4d(g, ctx->gwt(bn), 1, 1, w->ne[3], 1);
+            y = ggml_add(g, y, b);
+        }
+        return y;
+    };
+    auto lrelu = [&](ggml_tensor * t) { return ggml_leaky_relu(g, t, 0.2f, false); };
+
+    ggml_tensor * fea = conv(x, "conv_first.weight", "conv_first.bias", 1);
+    ggml_tensor * fea_skip = fea;
+
+    for (int i = 0; i < ctx->nb; i++) {
+        char wn[80]; std::string p = "scpa." + std::to_string(i);
+        ggml_tensor * residual = fea;
+
+        auto nm = [&](const char * s) { snprintf(wn, sizeof(wn), "%s.%s", p.c_str(), s); return wn; };
+
+        // Branch A: conv1_a(1×1) → LReLU → k1(3×3) → LReLU
+        std::string a_w = nm("conv1_a.weight");
+        ggml_tensor * a = lrelu(conv(fea, a_w.c_str(), nullptr, 0));
+        std::string k1_w = nm("k1.weight");
+        a = lrelu(conv(a, k1_w.c_str(), nullptr, 1));
+
+        // Branch B: conv1_b(1×1) → LReLU → PAConv → LReLU
+        std::string b_w = nm("conv1_b.weight");
+        ggml_tensor * b = lrelu(conv(fea, b_w.c_str(), nullptr, 0));
+        std::string k2_w = nm("paconv.k2.weight"), k2_b = nm("paconv.k2.bias");
+        ggml_tensor * attn = ggml_sigmoid(g, conv(b, k2_w.c_str(), k2_b.c_str(), 0));
+        std::string k3_w = nm("paconv.k3.weight");
+        ggml_tensor * k3 = ggml_mul(g, conv(b, k3_w.c_str(), nullptr, 1), attn);
+        std::string k4_w = nm("paconv.k4.weight");
+        ggml_tensor * b2 = lrelu(conv(k3, k4_w.c_str(), nullptr, 1));
+
+        ggml_tensor * cat = ggml_concat(g, a, b2, 2);   // channel dim
+        std::string c3_w = nm("conv3.weight");
+        fea = ggml_add(g, conv(cat, c3_w.c_str(), nullptr, 0), residual);
+    }
+
+    ggml_tensor * trunk = conv(fea, "trunk_conv.weight", "trunk_conv.bias", 1);
+    fea = ggml_add(g, fea_skip, trunk);
+
+    // Upsample stage 1
+    fea = ggml_upscale(g, fea, 2, GGML_SCALE_MODE_NEAREST);
+    fea = conv(fea, "upconv1.weight", "upconv1.bias", 1);
+    {
+        ggml_tensor * pa = ggml_sigmoid(g, conv(fea, "att1.weight", "att1.bias", 0));
+        fea = lrelu(ggml_mul(g, fea, pa));
+    }
+    fea = lrelu(conv(fea, "hrconv1.weight", "hrconv1.bias", 1));
+
+    // Upsample stage 2 (4×)
+    if (scale == 4) {
+        fea = ggml_upscale(g, fea, 2, GGML_SCALE_MODE_NEAREST);
+        fea = conv(fea, "upconv2.weight", "upconv2.bias", 1);
+        ggml_tensor * pa = ggml_sigmoid(g, conv(fea, "att2.weight", "att2.bias", 0));
+        fea = lrelu(ggml_mul(g, fea, pa));
+        fea = lrelu(conv(fea, "hrconv2.weight", "hrconv2.bias", 1));
+    }
+
+    ggml_tensor * out = conv(fea, "conv_last.weight", "conv_last.bias", 1);
+    int oh = H * scale, ow = W * scale;
+    ggml_tensor * ilr = ggml_interpolate(g, x, ow, oh, 3, 1, GGML_SCALE_MODE_BILINEAR);
+    out = ggml_add(g, out, ilr);
+    ggml_set_name(out, "out"); ggml_set_output(out);
+
+    ggml_build_forward_expand(gf, out);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "pan_sr: sched_alloc_graph failed\n"); ggml_free(g); return;
+    }
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), input, 0, (size_t)3 * H * W * sizeof(float));
+    if (ggml_backend_sched_graph_compute(ctx->enc_sched, gf) != GGML_STATUS_SUCCESS) {
+        fprintf(stderr, "pan_sr: graph_compute failed\n"); ggml_free(g); return;
+    }
+    ggml_backend_tensor_get(out, output, 0, (size_t)3 * oh * ow * sizeof(float));
+    ggml_backend_sched_reset(ctx->enc_sched);
+    ggml_free(g);
+}
+
+// ── Single-tile forward (scalar reference) ────────────────────────────
+
+static void pan_forward_tile_scalar(pan_sr_context * ctx,
                              const float * input, int W, int H,
                              float * output) {
     int nf = ctx->nf, unf = ctx->unf, scale = ctx->scale;
@@ -277,6 +431,17 @@ static void pan_forward_tile(pan_sr_context * ctx,
     std::vector<float> ilr(3 * oh * ow);
     pan_bilinear(input, 3, H, W, scale, ilr.data());
     for (int j = 0; j < 3 * oh * ow; j++) output[j] = out[j] + ilr[j];
+}
+
+// Dispatch: ggml graph by default; PAN_SR_SCALAR=1 forces the scalar reference.
+static void pan_forward_tile(pan_sr_context * ctx,
+                             const float * input, int W, int H,
+                             float * output) {
+    static const bool use_scalar = (getenv("PAN_SR_SCALAR") && atoi(getenv("PAN_SR_SCALAR")));
+    if (use_scalar || !ctx->enc_sched)
+        pan_forward_tile_scalar(ctx, input, W, H, output);
+    else
+        pan_forward_tile_ggml(ctx, input, W, H, output);
 }
 
 // ── Tiled processing ──────────────────────────────────────────────────
