@@ -21,6 +21,14 @@ CrispEmbed C++ engine vs PyTorch reference:
 cos = 1.000000
 ```
 
+## Performance
+
+The convolution and ConvTranspose2d sites run as `ggml_conv_2d` /
+`ggml_conv_transpose_2d_p0` graphs on a dedicated CPU backend scheduler (the Swin
+window attention stays SIMD-scalar) — **~6.7× faster per tile**. Set
+`SCUNET_SCALAR=1` to fall back to the scalar nested-loop convs. Parity is
+unchanged (all stages cos = 1.000000).
+
 ## API
 
 ### C
