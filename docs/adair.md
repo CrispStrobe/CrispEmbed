@@ -31,8 +31,20 @@ Verified against a *genuine* reference — the real PyTorch AdaIR model (upstrea
 `adair-5d-f32.gguf` (all 587 params load). The `test-adair-diff` harness reports
 **cos = 0.999379** on a 64×64 seeded-random input (a harsher test than a natural
 image). Reproduce with `tools/dump_adair_reference_from_gguf.py`; ref is on HF at
-`cstr/text-super-resolution-gguf/adair-ref.gguf`. The convolution path is still
-SIMD-scalar (conv→ggml port pending; the 2D FFT in the AFLB stays scalar).
+`cstr/text-super-resolution-gguf/adair-ref.gguf`.
+
+## Performance
+
+All convolution sites — the U-Net down/up/reduce/output convs plus the
+1×1/3×3/depthwise convs inside MDTA attention, the GDFN feed-forward, the
+cross-attentions, and the FreModule — run via `ggml_conv_2d` /
+`ggml_conv_2d_dw` on a dedicated CPU-backend scheduler. Persistent F32 kernels
+are cached and keyed by the dequantized weight pointer, and F16-cast in-graph
+(conv expands to im2col(F16)+mul_mat, which the CPU scheduler can't place
+against an F32 kernel). This is **~5.2× faster per tile** (≈15.4 s → ≈3.0 s on a
+64×64 tile, Apple M1) at cos 0.999385 vs 0.999379 scalar — no accuracy
+regression. The 2D FFT in the AFLB (`fft1d`/`fft2d`) and the attention softmax
+stay SIMD-scalar. Default ON; set `ADAIR_SCALAR=1` to force the scalar path.
 
 ## Usage
 
