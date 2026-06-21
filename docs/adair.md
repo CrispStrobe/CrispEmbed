@@ -26,6 +26,14 @@ ICLR 2025.  It handles five degradation types with a single set of weights:
 Cosine similarity between reference PyTorch output and CrispEmbed GGUF
 engine output: **cos = 0.999924**.
 
+Verified against a *genuine* reference — the real PyTorch AdaIR model (upstream
+[c-yn/AdaIR](https://github.com/c-yn/AdaIR)) run on weights reconstructed from
+`adair-5d-f32.gguf` (all 587 params load). The `test-adair-diff` harness reports
+**cos = 0.999379** on a 64×64 seeded-random input (a harsher test than a natural
+image). Reproduce with `tools/dump_adair_reference_from_gguf.py`; ref is on HF at
+`cstr/text-super-resolution-gguf/adair-ref.gguf`. The convolution path is still
+SIMD-scalar (conv→ggml port pending; the 2D FFT in the AFLB stays scalar).
+
 ## Usage
 
 ### CLI
