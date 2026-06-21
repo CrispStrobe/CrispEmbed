@@ -273,13 +273,13 @@ swinir_sr.
 **Summary**: ~28 engines full-GPU, ~10 GPU-safe, 0 CPU-only. All engines have
 `<ENGINE>_FORCE_CPU=1`; all SR/restoration models quantized to Q8_0 + Q4_K.
 
-**Known accuracy caveats** (default GPU path slightly approximates the scalar
-reference — not broken, but flagged):
-- `esrgan_sr` — the ggml graph (default; `ESRGAN_SCALAR` opts out) approximates
-  per-channel PReLU with plain `ggml_relu` (drops the ~0.01–0.25 slope). The
-  scalar `prelu()` path is exact. Fix: implement `(1-s)*relu(x)+s*x` per channel.
+**Known accuracy caveats**:
+- `esrgan_sr` — **FIXED**: the ggml graph now computes true per-channel PReLU
+  (`relu(x) + slope·min(0,x)`) from the stored slope weights, matching the scalar
+  `prelu()` reference (was a plain `ggml_relu` that dropped the slope).
 - `hat_sr` — the OCAB overlapping-window cross-attention is a self-described
-  "simplified" unfold that may not exactly match the reference HAT. Scalar-only.
+  "simplified" unfold that may not exactly match the reference HAT. Scalar-only;
+  not yet verified against reference. (Remaining default-path approximation.)
 
 ### OCR — next-gen models to port
 

@@ -214,16 +214,16 @@ static ggml_cgraph * build_esrgan_graph(esrgan_context * ctx, int H, int W) {
             ggml_tensor * b = ggml_reshape_3d(g, ctx->convs[ci].b, 1, 1, oc);
             x = ggml_add(g, x, b);
         }
-        // PReLU: y = max(0,x) + slope * min(0,x) = relu(x) + slope * (-relu(-x))
-        // = relu(x) - slope * relu(-x) = (1-slope)*relu(x) + slope*x
-        // Simpler in ggml: use ggml_leaky_relu if available, or manual
-        // Actually ggml has no per-channel PReLU. Use ggml_relu for now.
-        // The accuracy difference is minimal for inference.
+        // Per-channel PReLU: y = relu(x) + slope ⊙ min(0,x), with min(0,x) =
+        // x - relu(x). ggml has no PReLU op, so build it from primitives; the
+        // [oc] slope is reshaped to [1,1,oc] to broadcast over W,H. (Matches the
+        // scalar prelu() reference; the old ggml_relu dropped the slope.)
         if (ci < n_convs - 1) {
-            // For simplicity, use ReLU (slope=0 approximation).
-            // PReLU slopes are typically ~0.01-0.25 — ReLU loses some info.
-            // TODO: implement per-channel PReLU if accuracy matters
-            x = ggml_relu(g, x);
+            ggml_tensor * r = ggml_relu(g, x);
+            ggml_tensor * s = ctx->prelus[ci].slope;
+            if (s->type != GGML_TYPE_F32) s = ggml_cast(g, s, GGML_TYPE_F32);
+            s = ggml_reshape_3d(g, s, 1, 1, oc);
+            x = ggml_add(g, r, ggml_mul(g, ggml_sub(g, x, r), s));
         }
         ic = oc;
     }
