@@ -572,7 +572,15 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   - [x] `esrgan_sr.cpp` — **DONE** (`4f1d052`). Full conv chain ggml graph, 6x speedup.
   - [x] `safmn_sr.cpp` — **DONE** (`09a6e02`). All 8 conv2d calls → conv2d_ggml.
   - [x] `restormer.cpp` — **DONE** (`69be268`). 10 U-Net convs → rst_conv2d_ggml.
-  - [ ] `instructir.cpp` — NAFNet U-Net + text conditioning (ICB), ~80-120G, medium
+  - [x] `instructir.cpp` — **DONE**. All 8 conv sites (intro/down/up/ending +
+    5 per NAFBlock incl. DW conv) → per-conv `conv2d_ggml` (nafnet hybrid:
+    convs on ggml, SimpleGate/SCA/ICB/PixelShuffle stay scalar). Verified
+    test-instructir-diff cos=1.000000 max_abs=6.6e-4 vs self-consistent torch
+    ref (`tools/dump_instructir_reference_from_gguf.py`); ref on HF
+    `cstr/instructir-GGUF/instructir-ref.gguf`. Notes: this GGUF (official
+    gguf.GGUFWriter) stores conv kernels in ggml order [KW,KH,IC,OC] so the
+    4D permute is skipped; conv graph runs on the CPU sched (GPU conv_2d hits
+    a Metal f32×f16 mul_mv pipeline-compile failure); F16 kernel cast required.
   - [x] `pan_sr.cpp` — **DONE** (`913b4f5`). 16× SCPA forward → single ggml_conv_2d
     graph (nearest upscale + bilinear ILR via ggml_interpolate). Verified
     test-pan-diff cos_min=0.999997 vs self-consistent torch ref; ref on HF

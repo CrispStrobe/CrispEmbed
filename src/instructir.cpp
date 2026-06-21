@@ -114,6 +114,15 @@ static void pixel_shuffle(const float * in, int c_in, int h, int w,
             }
 }
 
+// conv2d_ggml: per-conv ggml_conv_2d dispatch (defined after instructir_context).
+// Drop-in for the scalar conv2d above — same arg order, weights as ggml tensors.
+struct instructir_context;
+static void conv2d_ggml(instructir_context * ctx,
+                        const float * in, int ic, int h, int w,
+                        ggml_tensor * wt, ggml_tensor * bi,
+                        int oc, int kh, int kw, int pad, int stride, int groups,
+                        float * out);
+
 // ── NAFBlock forward ──
 
 struct nafblock_wt {
@@ -128,7 +137,7 @@ struct nafblock_wt {
     ggml_tensor * conv5_w, * conv5_b; // 1x1, C→C
 };
 
-static void nafblock_forward(float * x, int c, int h, int w,
+static void nafblock_forward(instructir_context * ctx, float * x, int c, int h, int w,
                               const nafblock_wt & wt,
                               core_cpu::DequantCache & dqc) {
     int hw = h * w, c2 = c * 2;
@@ -146,11 +155,11 @@ static void nafblock_forward(float * x, int c, int h, int w,
     // Spatial mixing
     std::vector<float> t1(c * hw), t2(c2 * hw), t3(c * hw);
     layernorm2d(x, c, h, w, dqc.get(wt.norm1_w), dqc.get(wt.norm1_b), t1.data());
-    conv2d(t1.data(), c, h, w, dqc.get(wt.conv1_w), dqc.get(wt.conv1_b),
+    conv2d_ggml(ctx, t1.data(), c, h, w, wt.conv1_w, wt.conv1_b,
            c2, 1, 1, 0, 1, 1, t2.data());
     // DW conv outputs c2 channels — need a c2-sized buffer
     std::vector<float> dw_out(c2 * hw);
-    conv2d(t2.data(), c2, h, w, dqc.get(wt.conv2_w), dqc.get(wt.conv2_b),
+    conv2d_ggml(ctx, t2.data(), c2, h, w, wt.conv2_w, wt.conv2_b,
            c2, 3, 3, 1, 1, c2, dw_out.data());
     simple_gate(dw_out.data(), c2, hw, t3.data());
     // SCA
@@ -171,7 +180,7 @@ static void nafblock_forward(float * x, int c, int h, int w,
     }
     for (int ch = 0; ch < c; ch++)
         for (int i = 0; i < hw; i++) t3[ch * hw + i] *= sca[ch];
-    conv2d(t3.data(), c, h, w, dqc.get(wt.conv3_w), dqc.get(wt.conv3_b),
+    conv2d_ggml(ctx, t3.data(), c, h, w, wt.conv3_w, wt.conv3_b,
            c, 1, 1, 0, 1, 1, t1.data());
     for (int ch = 0; ch < c; ch++)
         for (int i = 0; i < hw; i++)
@@ -179,10 +188,10 @@ static void nafblock_forward(float * x, int c, int h, int w,
 
     // Channel mixing
     layernorm2d(x, c, h, w, dqc.get(wt.norm2_w), dqc.get(wt.norm2_b), t1.data());
-    conv2d(t1.data(), c, h, w, dqc.get(wt.conv4_w), dqc.get(wt.conv4_b),
+    conv2d_ggml(ctx, t1.data(), c, h, w, wt.conv4_w, wt.conv4_b,
            c2, 1, 1, 0, 1, 1, t2.data());
     simple_gate(t2.data(), c2, hw, t3.data());
-    conv2d(t3.data(), c, h, w, dqc.get(wt.conv5_w), dqc.get(wt.conv5_b),
+    conv2d_ggml(ctx, t3.data(), c, h, w, wt.conv5_w, wt.conv5_b,
            c, 1, 1, 0, 1, 1, t1.data());
     for (int ch = 0; ch < c; ch++)
         for (int i = 0; i < hw; i++)
@@ -197,7 +206,7 @@ struct icb_wt {
     nafblock_wt block;
 };
 
-static void icb_forward(float * x, int c, int h, int w,
+static void icb_forward(instructir_context * ctx, float * x, int c, int h, int w,
                          const float * text_embd, int emb_dim,
                          const icb_wt & wt,
                          core_cpu::DequantCache & dqc) {
@@ -222,7 +231,7 @@ static void icb_forward(float * x, int c, int h, int w,
             y[ch * hw + i] = (x[ch * hw + i] * gamma[ch] + beta[ch]) * gate[ch];
 
     // NAFBlock refinement
-    nafblock_forward(y.data(), c, h, w, wt.block, dqc);
+    nafblock_forward(ctx, y.data(), c, h, w, wt.block, dqc);
 
     // Residual
     for (int i = 0; i < c * hw; i++) x[i] += y[i];
@@ -261,6 +270,11 @@ struct instructir_context {
         icb_wt cond;
     } dec[4];
     int dec_n_blocks[4];
+
+    // ggml conv infrastructure (per-conv graph dispatch, nafnet pattern)
+    ggml_backend_t       enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched   = nullptr;
+    int n_threads = 1;
 };
 
 static void load_nafblock(core_gguf::WeightLoad & wl, const char * pfx, nafblock_wt & b) {
@@ -290,8 +304,81 @@ static void load_icb(core_gguf::WeightLoad & wl, const char * pfx, icb_wt & ic) 
     load_nafblock(wl, blk, ic.block);
 }
 
+// ── ggml per-conv dispatch (nafnet pattern; F32 kernels for tight parity) ──
+static void conv2d_ggml(instructir_context * ctx,
+                        const float * input, int ic, int ih, int iw,
+                        ggml_tensor * weight_t, ggml_tensor * bias_t,
+                        int oc, int kh, int kw, int pad, int stride, int groups,
+                        float * output) {
+    if (!ctx->enc_sched || !weight_t) {  // scalar fallback
+        std::vector<float> wf_buf, bf_buf;
+        const float * wf = weight_t ? to_f32(weight_t, wf_buf) : nullptr;
+        const float * bf = bias_t ? to_f32(bias_t, bf_buf) : nullptr;
+        if (wf) conv2d(input, ic, ih, iw, wf, bf, oc, kh, kw, pad, stride, groups, output);
+        return;
+    }
+
+    int max_nodes = 32;
+    size_t buf_size = ggml_tensor_overhead() * max_nodes
+                    + ggml_graph_overhead_custom(max_nodes, false);
+    std::vector<uint8_t> meta(buf_size);
+    ggml_init_params ip = { buf_size, meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, iw, ih, ic);
+    ggml_set_name(x, "x"); ggml_set_input(x);
+
+    // Kernel → ggml conv layout [KW,KH,IC_g,OC]. GGUF stores either 2D
+    // [IC*KH*KW,OC] / [OC,IC*KH*KW] or 4D PyTorch [OC,IC,KH,KW]; detect + reorder.
+    ggml_tensor * w = weight_t;
+    if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
+    int ic_g = (groups > 1) ? 1 : ic;
+    if (ggml_n_dims(w) == 2) {
+        int64_t ik = (int64_t)ic_g * kh * kw;
+        if (w->ne[0] == ik) {
+            w = ggml_reshape_4d(g, w, kw, kh, ic_g, w->ne[1]);
+        } else if (w->ne[1] == ik) {
+            w = ggml_cont(g, ggml_transpose(g, w));
+            w = ggml_reshape_4d(g, w, kw, kh, ic_g, w->ne[1]);
+        } else {
+            w = ggml_reshape_4d(g, w, kw, kh, ic_g, oc);
+        }
+    } else if (ggml_n_dims(w) >= 4) {
+        // Detect axis order. Official gguf.GGUFWriter stores ggml order
+        // [KW,KH,IC,OC] (ne[3]==OC); a hand-rolled writer may keep PyTorch
+        // [OC,IC,KH,KW] (ne[0]==OC). Only permute the latter.
+        if (w->ne[0] == oc && w->ne[3] != oc)
+            w = ggml_cont(g, ggml_permute(g, w, 3, 2, 1, 0));
+    }
+
+    if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);  // ggml_conv_2d kernel
+    if (groups > 1) x = ggml_conv_2d_dw(g, w, x, stride, stride, pad, pad, 1, 1);
+    else            x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
+
+    if (bias_t) {
+        ggml_tensor * b = ggml_reshape_3d(g, bias_t, 1, 1, oc);
+        x = ggml_add(g, x, b);
+    }
+    ggml_set_name(x, "out"); ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "instructir: conv2d_ggml alloc failed\n"); ggml_free(g); return;
+    }
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), input, 0,
+                            (size_t)ic * ih * iw * sizeof(float));
+    ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
+
+    int oh = (ih + 2 * pad - kh) / stride + 1;
+    int ow = (iw + 2 * pad - kw) / stride + 1;
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), output, 0,
+                            (size_t)oc * oh * ow * sizeof(float));
+    ggml_free(g);
+}
+
 instructir_context * instructir_init(const char * model_path, int n_threads) {
-    (void)n_threads;
     if (!model_path) return nullptr;
 
     gguf_context * meta = core_gguf::open_metadata(model_path);
@@ -300,9 +387,12 @@ instructir_context * instructir_init(const char * model_path, int n_threads) {
     int emb_dim = (int)core_gguf::kv_u32(meta, "instructir.emb_dim", 256);
     core_gguf::free_metadata(meta);
 
-    bool force_cpu = (getenv("INSTRUCTIR_FORCE_CPU") && atoi(getenv("INSTRUCTIR_FORCE_CPU")));
-    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
-    if (!backend) backend = ggml_backend_cpu_init();
+    // Weights load on CPU: the conv graph runs on the CPU sched (GPU conv_2d
+    // hits a Metal pipeline-compile issue for the f32×f16 mul_mv variant), and
+    // the sched needs the weight tensors resident on a backend it owns. The
+    // dequant cache reads to host floats regardless of backend, so the scalar
+    // helpers (SCA, layernorm) are unaffected.
+    ggml_backend_t backend = ggml_backend_cpu_init();
     if (!backend) return nullptr;
     core_gguf::WeightLoad wl;
     if (!core_gguf::load_weights(model_path, backend, "instructir", wl)) {
@@ -358,11 +448,29 @@ instructir_context * instructir_init(const char * model_path, int n_threads) {
     }
 
     ctx->bench = (std::getenv("CRISPEMBED_INSTRUCTIR_BENCH") != nullptr);
+
+    // ggml conv infrastructure: schedule over the weight backend so resident
+    // weights can run conv ops directly. ggml_backend_sched requires a CPU
+    // backend as the LAST entry, so add an owned CPU fallback when the weight
+    // backend is a GPU. enc_backend holds that owned CPU aux (nullptr if none).
+    ctx->n_threads = n_threads > 0 ? n_threads : 1;
+    ggml_backend_t backends[2]; int nb = 0;
+    backends[nb++] = ctx->backend;
+    if (ggml_backend_is_cpu(ctx->backend)) {
+        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    } else {
+        ctx->enc_backend = ggml_backend_cpu_init();      // owned CPU fallback
+        ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads);
+        backends[nb++] = ctx->enc_backend;               // CPU must be last
+    }
+    ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, nb, 4096, false, false);
     return ctx;
 }
 
 void instructir_free(instructir_context * ctx) {
     if (!ctx) return;
+    if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+    if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);  // owned CPU aux
     core_gguf::WeightLoad wl;
     wl.ctx = ctx->gguf_ctx; wl.buf = ctx->gguf_buf;
     core_gguf::free_weights(wl);
@@ -394,7 +502,7 @@ int instructir_process_float(instructir_context * ctx, int task,
     // Intro conv
     int ch = 32;
     std::vector<float> x(ch * H * W);
-    conv2d(input_chw, 3, H, W, dqc.get(ctx->intro_w), dqc.get(ctx->intro_b),
+    conv2d_ggml(ctx, input_chw, 3, H, W, ctx->intro_w, ctx->intro_b,
            ch, 3, 3, 1, 1, 1, x.data());
 
     // Encoder
@@ -404,17 +512,17 @@ int instructir_process_float(instructir_context * ctx, int task,
     for (int lvl = 0; lvl < 4; lvl++) {
         auto t_enc = std::chrono::steady_clock::now();
         for (int i = 0; i < ctx->enc_n_blocks[lvl]; i++) {
-            nafblock_forward(x.data(), ch, cur_h, cur_w, ctx->enc[lvl].blocks[i], dqc);
+            nafblock_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->enc[lvl].blocks[i], dqc);
         }
-        icb_forward(x.data(), ch, cur_h, cur_w, text_embd, ctx->emb_dim,
+        icb_forward(ctx, x.data(), ch, cur_h, cur_w, text_embd, ctx->emb_dim,
                     ctx->enc[lvl].cond, dqc);
         skips.push_back(std::vector<float>(x.begin(), x.end()));
         // Downsample: Conv2d(C→2C, k=2, s=2)
         int next_ch = ch * 2;
         int nh = cur_h / 2, nw = cur_w / 2;
         std::vector<float> ds(next_ch * nh * nw);
-        conv2d(x.data(), ch, cur_h, cur_w,
-               dqc.get(ctx->enc[lvl].down_w), dqc.get(ctx->enc[lvl].down_b),
+        conv2d_ggml(ctx, x.data(), ch, cur_h, cur_w,
+               ctx->enc[lvl].down_w, ctx->enc[lvl].down_b,
                next_ch, 2, 2, 0, 2, 1, ds.data());
         x = std::move(ds);
         ch = next_ch; cur_h = nh; cur_w = nw;
@@ -428,7 +536,7 @@ int instructir_process_float(instructir_context * ctx, int task,
     // Middle
     auto t_mid = std::chrono::steady_clock::now();
     for (int i = 0; i < 4; i++)
-        nafblock_forward(x.data(), ch, cur_h, cur_w, ctx->middle[i], dqc);
+        nafblock_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->middle[i], dqc);
     if (bench) {
         auto t_mid_end = std::chrono::steady_clock::now();
         fprintf(stderr, "[instructir-bench] middle: %.1f ms\n",
@@ -442,8 +550,8 @@ int instructir_process_float(instructir_context * ctx, int task,
         int next_ch = ch / 2;
         int up_ch = next_ch * 4; // after conv1x1, before shuffle
         std::vector<float> up(up_ch * cur_h * cur_w);
-        conv2d(x.data(), ch, cur_h, cur_w,
-               dqc.get(ctx->dec[lvl].up_w), dqc.get(ctx->dec[lvl].up_b),
+        conv2d_ggml(ctx, x.data(), ch, cur_h, cur_w,
+               ctx->dec[lvl].up_w, ctx->dec[lvl].up_b,
                up_ch, 1, 1, 0, 1, 1, up.data());
         int nh = cur_h * 2, nw = cur_w * 2;
         x.resize(next_ch * nh * nw);
@@ -455,8 +563,8 @@ int instructir_process_float(instructir_context * ctx, int task,
         for (int i = 0; i < ch * cur_h * cur_w; i++) x[i] += sk[i];
 
         for (int i = 0; i < ctx->dec_n_blocks[lvl]; i++)
-            nafblock_forward(x.data(), ch, cur_h, cur_w, ctx->dec[lvl].blocks[i], dqc);
-        icb_forward(x.data(), ch, cur_h, cur_w, text_embd, ctx->emb_dim,
+            nafblock_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->dec[lvl].blocks[i], dqc);
+        icb_forward(ctx, x.data(), ch, cur_h, cur_w, text_embd, ctx->emb_dim,
                     ctx->dec[lvl].cond, dqc);
         if (bench) {
             auto t_dec_end = std::chrono::steady_clock::now();
@@ -466,8 +574,8 @@ int instructir_process_float(instructir_context * ctx, int task,
     }
 
     // Ending conv + global residual
-    conv2d(x.data(), ch, cur_h, cur_w,
-           dqc.get(ctx->ending_w), dqc.get(ctx->ending_b),
+    conv2d_ggml(ctx, x.data(), ch, cur_h, cur_w,
+           ctx->ending_w, ctx->ending_b,
            3, 3, 3, 1, 1, 1, output_chw);
     for (int i = 0; i < 3 * H * W; i++) output_chw[i] += input_chw[i];
 
