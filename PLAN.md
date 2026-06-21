@@ -262,15 +262,24 @@ crispembed (BERT/XLM-R/etc.), decoder_embed (Qwen3/Gemma3), bidirlm_vision,
 fireredpunc, pcs, gliner_ner, got_ocr, surya_det, tesseract_lstm, vit_embed,
 clip_text_embed, cnn_embed, ocr_detect, parseq_ocr, layout_detect,
 internvl2_ocr, qwen2vl_ocr, glm_ocr, math_ocr, ppformulanet_l_ocr, lilt_kie,
-bert_ner.
+bert_ner, granite_vision (ViT + projector + LLM, Metal + ggml-CPU),
+restormer, nafnet_denoise, esrgan_sr, safmn_sr, mixtex_ocr.
 
 **GPU-SAFE** — weights on GPU, scalar CPU forward pass (depthwise conv /
 PixelShuffle not yet in ggml graph): hmer_ocr, bttr_ocr, posformer_ocr,
-nafnet_denoise, mixtex_ocr, ppformulanet_ocr, pan_sr, tbsrn_sr, text_sr,
-safmn_sr, esrgan_sr, restormer, tps_locnet, scunet_denoise, swinir_sr.
+ppformulanet_ocr, pan_sr, tbsrn_sr, text_sr, tps_locnet, scunet_denoise,
+swinir_sr.
 
-**Summary**: ~22 engines full-GPU, ~15 GPU-safe, 0 CPU-only. All engines have
+**Summary**: ~28 engines full-GPU, ~10 GPU-safe, 0 CPU-only. All engines have
 `<ENGINE>_FORCE_CPU=1`; all SR/restoration models quantized to Q8_0 + Q4_K.
+
+**Known accuracy caveats** (default GPU path slightly approximates the scalar
+reference — not broken, but flagged):
+- `esrgan_sr` — the ggml graph (default; `ESRGAN_SCALAR` opts out) approximates
+  per-channel PReLU with plain `ggml_relu` (drops the ~0.01–0.25 slope). The
+  scalar `prelu()` path is exact. Fix: implement `(1-s)*relu(x)+s*x` per channel.
+- `hat_sr` — the OCAB overlapping-window cross-attention is a self-described
+  "simplified" unfold that may not exactly match the reference HAT. Scalar-only.
 
 ### OCR — next-gen models to port
 
@@ -478,19 +487,20 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
     weights in PyTorch `[out,in]` order, so non-square weights need a
     `ggml_reshape_2d(w, ne[1], ne[0])` before `ggml_mul_mat` (the vision FFN
     already did this). Applied to projector linear_1 and LLM k/v/gate/up/down.
-  - **ggml LLM decode: correct on CPU, BROKEN on Metal.** `d116394` fixed an
-    input-tensor bug (was uploading to the post-loop scratch node) and
-    `b579345` switched to native GQA. With those, the LLM graph is correct on
-    the **ggml CPU backend** but on **Metal** still emits EOS immediately
-    (0 decode steps → "recognition failed") — the unfixed ggml-alloc
-    buffer-reuse bug. Gated behind `CRISPEMBED_GRANITE_LLM_GRAPH=1`; default is
-    the diff-validated scalar decode (`gv_llm_decode_step`, crispembed-diff
-    cos=1.0). **Verified-correct end-to-end OCR** = scalar vision +
-    `CRISPEMBED_GRANITE_CPU=1 CRISPEMBED_GRANITE_LLM_GRAPH=1` (CPU LLM graph) →
-    "The quick brown fox jumps over 1234." See the graph-fix handover.
-  - **The projector ggml graph shares the same Metal risk**; only the scalar
-    projector is exercised in the validated path. (Projector GELU was tanh but
-    `projector_hidden_act="gelu"`=erf — fixed to `ggml_gelu_erf`.)
+  - **ggml LLM decode: now CORRECT on Metal AND ggml-CPU (2026-06-21).** The
+    earlier "emits EOS immediately on Metal" was NOT an alloc-reuse bug — it was
+    Metal's batched `mul_mm` casting activations to F16, overflowing on the
+    ×12-scaled image-feature massive activations (fixed via a lossless ÷256/×256
+    exponent shift on the SwiGLU down activation). Combined with the ViT Q8_0-
+    reshape fix and the ggml-CPU gelu/quant precision fixes, the full graph path
+    (vision + projector + LLM) is now DEFAULT ON on both backends and produces
+    "The quick brown fox jumps over 1234." `CRISPEMBED_GRANITE_VIS_SCALAR` /
+    `_LLM_SCALAR` opt out. LLM-graph diff 7/7 cos 0.9999; decode optimized to
+    ~139 ms/tok (in-graph Metal LM head + KV-cont removal + T=1 FFN-scale skip).
+    See LEARNINGS "Q8_0 reshape", "Metal mul_mm F16 activation overflow",
+    "ggml-CPU ViT precision", "VLM/OCR decoder perf".
+  - Projector ggml graph is also correct on both backends (default on). Projector
+    GELU is erf (`projector_hidden_act="gelu"`) → `ggml_gelu_erf`.
   - **Memory**: the scalar fallback's DequantCache materializes ~9 GB of F32
     weights (swaps on a 16 GB machine). Q4_K vec_dot would keep it bounded
     (~2 GB); see `tools/dump_granite_llm_reference.py` for the parity harness.
@@ -847,12 +857,16 @@ single-threaded, must not OOM.
 ### glm_ocr (CogVLM2 + GLM-4, 0.9B) — DONE
 - [x] Downsample + merger → ggml graph (conv2d_direct + batched SwiGLU + LayerNorm)
   Gated: CRISPEMBED_GLM_OCR_SCALAR_MERGER=1. Merger: 383ms on q4_k.
-### granite_vision — PARTIAL
+### granite_vision — DONE (full ggml graph path, Metal + ggml-CPU)
 - [x] Weight reshape fix: `sw()` helper in `gv_run_llm_body` corrects PyTorch [out,in]→ggml [in,out] for K/V/gate/up/down
 - [x] Skip LM head matmul during scalar prefill: `want_logits` parameter cuts ~99.8% of prefill LM head work (`55ed5be`)
-- [x] Fix ggml LLM graph input tensor: `x` after the layer loop was the final output node, not the input; saved as `x_in` before the loop (`d116394`). Was the root cause of "decode runs away" with `CRISPEMBED_GRANITE_LLM_GRAPH=1`. Pending runtime validation.
-- [x] Native GQA in flash_attn: removed explicit ggml_repeat for KV heads, pass K/V with n_kv heads directly to flash_attn_ext (`b579345`). Saves ~10 lines and avoids materialization of repeated heads.
-- [ ] Persistent decode graph (reuse across T=1 decode steps, like lightonocr `27b650a`)
+- [x] Native GQA in flash_attn: pass K/V with n_kv heads directly to flash_attn_ext (`b579345`)
+- [x] **ViT graph fix**: Q8_0 `ffn.down` reshape to non-block-aligned ne[0] corrupted dequant → cast quantized FFN weights to F32 before reshape (`a5b527f`)
+- [x] **LLM Metal fix**: batched `mul_mm` F16-cast overflow on ×12 image-feature massive activations → ÷256/×256 exponent shift on SwiGLU down (`52400a6`). The old "alloc-reuse / EOS on Metal" diagnosis was wrong.
+- [x] **ggml-CPU ViT precision**: F16-table gelu + Q8_0-quantized activations → explicit F32 tanh-gelu + CPU-only F32 weight casts (`2dc3b79`). CPU now at parity (layer 26 cos 0.958).
+- [x] **Default ON both backends**; graphs validated (LLM diff 7/7 cos 0.9999), end-to-end OCR correct on Metal AND CPU.
+- [x] **Decode perf** (`bfe3ad2`/`f42b737`): in-graph Metal LM head + KV-cont removal + T=1 FFN-scale skip → 270 → 139 ms/tok (~1.9×).
+- [ ] Persistent decode graph — investigated and **declined**: profiling shows a T=1 token is ~95% GPU compute (build+alloc ~5ms of ~140ms), so it's not the bottleneck. See LEARNINGS "VLM/OCR decoder perf".
 
 ### smoldocling (SigLIP + SmolLM2, 256M) — DONE
 - [x] F16 KV cache + batched prefill (done earlier, `bc329e4`)
