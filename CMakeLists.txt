@@ -550,6 +550,9 @@ target_link_libraries(test-table-parse PRIVATE crispembed)
 add_executable(test-swinir-diff tests/test_swinir_diff.cpp)
 target_link_libraries(test-swinir-diff PRIVATE crispembed)
 
+add_executable(test-dat-diff tests/test_dat_diff.cpp)
+target_link_libraries(test-dat-diff PRIVATE crispembed)
+
 add_executable(test-granite-vision-diff tests/test_granite_vision_diff.cpp)
 target_link_libraries(test-granite-vision-diff PRIVATE crispembed)
 
