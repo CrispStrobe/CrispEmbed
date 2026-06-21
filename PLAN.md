@@ -586,7 +586,12 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
     test-pan-diff cos_min=0.999997 vs self-consistent torch ref; ref on HF
     `cstr/text-super-resolution-gguf/pan-ref.gguf`. `PAN_SR_SCALAR=1` opts out.
   - [ ] `dat_sr.cpp` — 18× dual attention (spatial+channel), ~60-90G, medium
-  - [ ] `scunet_denoise.cpp` — U-Net + Swin branches + ConvTranspose2d, ~50-80G, medium
+  - [ ] `scunet_denoise.cpp` — U-Net + Swin branches + ConvTranspose2d, ~50-80G, medium.
+    **NOTE**: while validating the reference, found+fixed a real pre-existing bug
+    (`4318f33`) — swin_block_forward aliased qkv_w/proj_w/rpb (+ MLP weights) into
+    shared dequant buffers `dq1/dq2`, so attention/MLP ran on garbage weights
+    (output parity ~0.93). Now all stages cos=1.000000. Conv→ggml port still TODO;
+    self-consistent ref at `cstr/scunet-GGUF/scunet-ref.gguf`.
   - [ ] `swinir_sr.cpp` — RSTB + Swin window attention, ~60-90G, medium (batched matmul like mixtex)
   - [ ] `hat_sr.cpp` — HAB + OCAB (unfold needed), ~70-100G, hard
   - [ ] `tbsrn_sr.cpp` — RecurrentResidual + FeatureEnhancer MHA, ~15-25G, medium
