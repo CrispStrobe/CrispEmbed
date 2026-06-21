@@ -451,11 +451,15 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
     F16; the ×12-scaled image-feature "massive activations" overflow F16 in the
     SwiGLU `gate*up`→down matmul (NaN from layer 8). Fix: lossless activation
     scaling (÷256 before, ×256 after the down matmul).
-  Both graphs DEFAULT ON for GPU backends (`CRISPEMBED_GRANITE_VIS_SCALAR` /
-  `_LLM_SCALAR` to opt out). Scalar stays default on the ggml-CPU backend, where
-  the ViT still drifts at late layers (cos ~0.84) — CPU graph parity is the one
-  remaining follow-up. The LLM diff now exercises the graph (7/7 cos 0.9999).
-  See LEARNINGS "Q8_0 reshape" + "Metal mul_mm F16 activation overflow".
+  - **ggml-CPU ViT drift** (cos ~0.84 late layers): CPU `gelu` uses an F16 lookup
+    table, and CPU `mul_mat` quantizes activations to the Q8_0 weight type — both
+    accumulate over 27 layers. Fix: explicit F32 tanh-gelu + cast attention/up
+    weights to F32 on the CPU backend only. CPU ViT now matches Metal/scalar
+    (layer 26 cos 0.958) and CPU end-to-end OCR is correct.
+  Both graphs now DEFAULT ON for **all** backends (Metal + ggml-CPU);
+  `CRISPEMBED_GRANITE_VIS_SCALAR` / `_LLM_SCALAR` opt out. The LLM diff now
+  exercises the graph (7/7 cos 0.9999). See LEARNINGS "Q8_0 reshape",
+  "Metal mul_mm F16 activation overflow", and "ggml-CPU ViT precision".
 
 - [x] **granite_vision projector + LLM decoder → ggml graphs** — DONE
   (`66b8de2`). `gv_run_projector_graph` (2-layer MLP on Metal) and

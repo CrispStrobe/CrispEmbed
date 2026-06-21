@@ -34,13 +34,23 @@ distinct, real bugs:
   manual attention all leave it. Fix: scale the down activation ÷256 before the
   matmul and ×256 after — a lossless exponent shift. (`52400a6`)
 
+- **ggml-CPU ViT drift** — with the Metal path working, the ggml-CPU ViT graph
+  still drifted to cos ~0.84 at late layers (vs Metal/scalar 0.96). Two CPU-only
+  precision losses accumulate over 27 layers: ggml's CPU tanh-`gelu` routes
+  through an **F16 lookup table** (input quantized to F16), and CPU `mul_mat`
+  against a **Q8_0 weight quantizes the F32 activation to Q8_0** for the dot
+  product (coarser than Metal's F16 `mul_mm`). Fix: explicit F32 tanh-gelu (via
+  `ggml_tanh` = direct `tanhf`) + dequantize the square attention weights and the
+  F16 FFN up to F32 on the CPU backend only (no-op on GPU). CPU ViT now matches
+  Metal/scalar (layer 26 cos 0.844 → 0.958) and CPU end-to-end OCR is correct.
+  (`2dc3b79`)
+
 Also: threaded a `dump_cb` through `gv_run_llm_body` so the LLM diff actually
 exercises the ggml graph (it previously only ran the scalar decode — which is why
-the bug stayed hidden); LLM-graph diff now 7/7 cos 0.9999. Flipped both graphs to
-DEFAULT ON for GPU backends (`CRISPEMBED_GRANITE_VIS_SCALAR` / `_LLM_SCALAR` opt
-out); scalar stays default on ggml-CPU, where the ViT still drifts at late layers
-(cos ~0.84) — the one remaining follow-up. See LEARNINGS "Q8_0 reshape" and
-"Metal mul_mm F16 activation overflow".
+the bug stayed hidden); LLM-graph diff now 7/7 cos 0.9999. Both graphs are now
+DEFAULT ON for **all** backends (Metal + ggml-CPU); `CRISPEMBED_GRANITE_VIS_SCALAR`
+/ `_LLM_SCALAR` opt out. See LEARNINGS "Q8_0 reshape", "Metal mul_mm F16 activation
+overflow", and "ggml-CPU ViT precision".
 
 ## June 20, 2026 — Granite Vision OCR: root-caused via HF-blueprint diff, scalar restored
 
