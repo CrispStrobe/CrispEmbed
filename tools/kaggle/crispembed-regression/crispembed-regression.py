@@ -32,10 +32,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-# ── bundled-harness bootstrap (works before the repo clone) ──────────────────
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import kaggle_harness as kh  # bundled copy; rebound to the repo copy after clone
-
+# ── workspace + config (no kaggle_harness yet; it ships in the repo we clone) ─
 WORK = Path("/kaggle/working")
 REPO = WORK / "CrispEmbed"
 BUILD = WORK / "build"
@@ -49,11 +46,6 @@ os.environ["HF_HOME"] = str(HF_CACHE)
 os.environ["HUGGINGFACE_HUB_CACHE"] = str(HF_CACHE)
 
 PROGRESS_REPO = "cstr/crispembed-kaggle-progress"
-kh.init_progress(progress_path=str(WORK / "progress.jsonl"),
-                 hf_progress_repo=PROGRESS_REPO)
-step = kh.step
-kh.step("script.start")
-
 MODE = os.environ.get("CRISPEMBED_REGRESSION_MODE", "validate")
 UPLOAD = os.environ.get("CRISPEMBED_REGRESSION_UPLOAD", "0") == "1"
 BACKEND_FILTER = os.environ.get("CRISPEMBED_REGRESSION_BACKENDS", "").strip()
@@ -67,7 +59,27 @@ CRISPEMBED_URL = "https://github.com/CrispStrobe/CrispEmbed.git"
 print(f"crispembed-regression {datetime.now().strftime('%Y-%m-%d %H:%M')}")
 print(f"  MODE={MODE}  BUILD={BUILD_FLAVOUR}  REF={CRISPEMBED_REF}  "
       f"BACKENDS={BACKEND_FILTER or '(all)'}  TIER={TIER_FILTER or '(all)'}  "
-      f"UPLOAD={UPLOAD}")
+      f"UPLOAD={UPLOAD}", flush=True)
+
+# ── clone the repo FIRST, then import kaggle_harness from it ──────────────────
+# A Kaggle `script` kernel only ships its code_file at runtime — sibling .py
+# files in the push dir are NOT importable. So kaggle_harness must come from the
+# clone, and the pre-clone phase uses a plain inline shell helper.
+def _sh(cmd, cwd=None):
+    print(f"$ {cmd}", flush=True)
+    subprocess.check_call(cmd, shell=True, cwd=str(cwd) if cwd else None)
+
+if not REPO.exists():
+    _sh(f"git clone --recursive {CRISPEMBED_URL} {REPO}")
+_sh(f"git fetch origin && git checkout {CRISPEMBED_REF}", cwd=REPO)
+_sh("git submodule update --init --recursive", cwd=REPO)
+
+sys.path.insert(0, str(REPO / "tools" / "kaggle" / "crispembed-regression"))
+import kaggle_harness as kh  # noqa: E402 — from the cloned repo
+kh.init_progress(progress_path=str(WORK / "progress.jsonl"),
+                 hf_progress_repo=PROGRESS_REPO)
+step = kh.step
+step("script.start", ref=CRISPEMBED_REF)
 
 # ── HF auth ──────────────────────────────────────────────────────────────────
 step("auth")
@@ -81,16 +93,6 @@ if hf_token:
 else:
     print("HF auth: anonymous (validate reads public repos OK; rebake+upload "
           "needs a write-scoped token via chr1s4/crispasr-hf-token).")
-
-# ── clone + build ────────────────────────────────────────────────────────────
-step("clone")
-if not REPO.exists():
-    kh.sh(f"git clone --recursive {CRISPEMBED_URL} {REPO}")
-kh.sh(f"git fetch origin && git checkout {CRISPEMBED_REF}", cwd=REPO)
-kh.sh("git submodule update --init --recursive", cwd=REPO)
-
-# Rebind to the repo's harness copy (auto-detects CUDA arch, etc.).
-sys.path.insert(0, str(REPO / "tools" / "kaggle" / "crispembed-regression"))
 
 step("toolchain")
 tc = kh.install_build_toolchain()

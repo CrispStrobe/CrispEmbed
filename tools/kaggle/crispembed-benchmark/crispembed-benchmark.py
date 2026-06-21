@@ -18,9 +18,6 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-import kaggle_harness as kh
-
 WORK = Path("/kaggle/working")
 REPO = WORK / "CrispEmbed"
 BUILD = WORK / "build"
@@ -32,10 +29,6 @@ os.environ["HF_HOME"] = str(HF_CACHE)
 os.environ["HUGGINGFACE_HUB_CACHE"] = str(HF_CACHE)
 
 PROGRESS_REPO = "cstr/crispembed-kaggle-progress"
-kh.init_progress(progress_path=str(WORK / "progress.jsonl"),
-                 hf_progress_repo=PROGRESS_REPO)
-kh.step("script.start")
-
 # Defaults to the regression-suite branch (where this suite lives) until merged.
 REF = os.environ.get("CRISPEMBED_REF", "regression-suite")
 FILTER = {b.strip() for b in os.environ.get("CRISPEMBED_BENCH_BACKENDS", "").split(",") if b.strip()}
@@ -43,18 +36,29 @@ FLAVOUR = os.environ.get("CRISPEMBED_BENCH_BUILD", "cpu")
 REPEAT = os.environ.get("CRISPEMBED_BENCH_REPEAT", "3")
 URL = "https://github.com/CrispStrobe/CrispEmbed.git"
 
+# Clone FIRST, then import kaggle_harness from the clone — a Kaggle `script`
+# kernel doesn't ship sibling .py files at runtime.
+def _sh(cmd, cwd=None):
+    print(f"$ {cmd}", flush=True)
+    subprocess.check_call(cmd, shell=True, cwd=str(cwd) if cwd else None)
+
+if not REPO.exists():
+    _sh(f"git clone --recursive {URL} {REPO}")
+_sh(f"git fetch origin && git checkout {REF}", cwd=REPO)
+_sh("git submodule update --init --recursive", cwd=REPO)
+
+sys.path.insert(0, str(REPO / "tools" / "kaggle" / "crispembed-benchmark"))
+import kaggle_harness as kh  # noqa: E402 — from the cloned repo
+kh.init_progress(progress_path=str(WORK / "progress.jsonl"),
+                 hf_progress_repo=PROGRESS_REPO)
+kh.step("script.start", ref=REF)
+
 kh.step("auth")
 subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet", "huggingface_hub"])
 tok = kh.resolve_hf_token("HF_TOKEN")
 if tok:
     os.environ["HF_TOKEN"] = tok
     os.environ["HUGGING_FACE_HUB_TOKEN"] = tok
-
-kh.step("clone")
-if not REPO.exists():
-    kh.sh(f"git clone --recursive {URL} {REPO}")
-kh.sh(f"git fetch origin && git checkout {REF}", cwd=REPO)
-kh.sh("git submodule update --init --recursive", cwd=REPO)
 
 kh.step("toolchain")
 kh.install_build_toolchain()
