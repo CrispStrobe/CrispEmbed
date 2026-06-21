@@ -253,7 +253,7 @@ target_include_directories(crispembed PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/examples/cli
 )
 # Enable SIMD intrinsics in cpu_ops.h (AVX2/FMA on x86, NEON on ARM)
-if(CRISPEMBED_NATIVE AND NOT EMSCRIPTEN AND NOT MSVC)
+if(CRISPEMBED_NATIVE AND NOT EMSCRIPTEN AND NOT MSVC AND NOT CMAKE_CROSSCOMPILING)
     target_compile_options(crispembed PRIVATE -march=native)
 endif()
 # Avoid name clash with the DLL import lib (both would be crispembed.lib on Windows)
@@ -613,7 +613,7 @@ if(CRISPEMBED_BUILD_SHARED)
     if(CRISPEMBED_HAS_CRISP_AUDIO)
         target_compile_definitions(crispembed-shared PRIVATE CRISPEMBED_HAS_CRISP_AUDIO)
     endif()
-    if(CRISPEMBED_NATIVE AND NOT EMSCRIPTEN AND NOT MSVC)
+    if(CRISPEMBED_NATIVE AND NOT EMSCRIPTEN AND NOT MSVC AND NOT CMAKE_CROSSCOMPILING)
         target_compile_options(crispembed-shared PRIVATE -march=native)
     endif()
     # All ggml + crisp_audio + crispembed-core are STATIC libs baked into the
