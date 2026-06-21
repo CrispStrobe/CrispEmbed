@@ -241,6 +241,15 @@ struct dat_sr_context {
     float mean[3];
     float img_range;
     bool bench;
+
+    // ggml conv infrastructure (convs on a CPU sched; attention stays scalar).
+    bool use_ggml_conv = false;
+    ggml_backend_t       enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched   = nullptr;
+    std::unordered_map<std::string, ggml_tensor *> gw;   // persistent F32 kernels by weight name
+    std::vector<ggml_context *> gw_ctxs;
+    std::vector<ggml_backend_buffer_t> gw_bufs;
+    std::vector<uint8_t> graph_meta;
 };
 
 static const float * get_w(dat_sr_context * ctx, const std::string & name) {
@@ -264,6 +273,80 @@ static int64_t get_dim(dat_sr_context * ctx, const std::string & name, int axis)
     auto it = ctx->tensors.find(name);
     if (it == ctx->tensors.end()) return 0;
     return it->second->ne[axis];
+}
+
+// ── ggml conv dispatch (DAT convs → ggml_conv_2d / _dw on a CPU sched) ─────
+// Lazily builds a persistent CPU-resident F32 kernel per conv weight, keyed by
+// name. The official gguf writer flattened 4D convs to 2D [OC, IC*KH*KW]; get_w
+// still returns torch [OC,IC,KH,KW] C-order bytes (BN-fused where present), so
+// the kernel reverses ne to ggml [KW,KH,IC,OC] (regular) / [KW,KH,1,C] (dw).
+// All DAT convs ported here are 3×3 (kh=kw=3).
+static ggml_tensor * dat_kernel(dat_sr_context * ctx, const std::string & base, bool dw) {
+    std::string wn = base + ".weight";
+    auto it = ctx->gw.find(wn);
+    if (it != ctx->gw.end()) return it->second;
+    auto tit = ctx->tensors.find(wn);
+    if (tit == ctx->tensors.end()) return nullptr;
+    int64_t ne0 = tit->second->ne[0], ne1 = tit->second->ne[1];  // [IC*9 or 9, OC or C]
+    int64_t oc = ne1;
+    int64_t ic = dw ? 1 : ne0 / 9;
+    int64_t kne[4] = { 3, 3, ic, oc };
+    ggml_init_params ip = { ggml_tensor_overhead() + 256, nullptr, true };
+    ggml_context * kctx = ggml_init(ip);
+    ggml_tensor * k = ggml_new_tensor(kctx, GGML_TYPE_F32, 4, kne);
+    ggml_set_name(k, wn.c_str());
+    ggml_backend_buffer_t kbuf = ggml_backend_alloc_ctx_tensors(kctx, ctx->enc_backend);
+    const float * src = get_w(ctx, wn);
+    if (src) ggml_backend_tensor_set(k, src, 0, ggml_nbytes(k));
+    ctx->gw_ctxs.push_back(kctx);
+    ctx->gw_bufs.push_back(kbuf);
+    ctx->gw[wn] = k;
+    return k;
+}
+
+// CHW [C,H,W] in/out. `base` names the conv ("conv_first", "...dwconv.0", …);
+// stride 1, pad 1, 3×3. dw=true uses depthwise conv. Scalar fallback otherwise.
+static void dat_conv(dat_sr_context * ctx, const float * in, int ic, int ih, int iw,
+                     const std::string & base, int oc, bool dw, float * out) {
+    if (!ctx->use_ggml_conv) {
+        if (dw) dwconv2d_3x3(in, ic, ih, iw, get_w(ctx, base + ".weight"), get_w(ctx, base + ".bias"), out);
+        else    conv2d_3x3(in, ic, ih, iw, get_w(ctx, base + ".weight"), get_w(ctx, base + ".bias"), oc, out);
+        return;
+    }
+    ggml_tensor * k = dat_kernel(ctx, base, dw);
+
+    const int max_nodes = 16;
+    size_t buf_size = ggml_tensor_overhead() * max_nodes
+                    + ggml_graph_overhead_custom(max_nodes, false);
+    ctx->graph_meta.resize(buf_size);
+    ggml_init_params ip = { buf_size, ctx->graph_meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, iw, ih, ic);
+    ggml_set_name(x, "x"); ggml_set_input(x);
+    // conv expands to im2col(F16) + mul_mat; the CPU sched can't place a
+    // mul_mat with an F32 kernel against the F16 im2col (esp. the dw path), so
+    // cast the kernel to F16 (im2col is F16 anyway — no extra precision loss).
+    ggml_tensor * kf = ggml_cast(g, k, GGML_TYPE_F16);
+    ggml_tensor * y = dw ? ggml_conv_2d_dw(g, kf, x, 1, 1, 1, 1, 1, 1)
+                         : ggml_conv_2d   (g, kf, x, 1, 1, 1, 1, 1, 1);
+    ggml_set_name(y, "out"); ggml_set_output(y);
+    ggml_build_forward_expand(gf, y);
+
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "dat_sr: conv alloc failed (%s)\n", base.c_str());
+        ggml_free(g); return;
+    }
+    ggml_backend_tensor_set(x, in, 0, (size_t)ic * ih * iw * sizeof(float));
+    ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
+    ggml_backend_tensor_get(y, out, 0, (size_t)oc * ih * iw * sizeof(float));
+    ggml_free(g);
+
+    // Bias (host add; pad-1 3×3 keeps oh×ow == ih×iw).
+    const float * b = get_w(ctx, base + ".bias");
+    if (b) for (int o = 0; o < oc; o++) { float bo = b[o]; for (int i = 0; i < ih * iw; i++) out[(size_t)o*ih*iw + i] += bo; }
 }
 
 // Helper to build prefixed weight name
@@ -494,9 +577,8 @@ static void aim_dwconv_branch(dat_sr_context * ctx, const float * v_chw, int C, 
                                const std::string & prefix, float * conv_out) {
     // dwconv: DWConv3x3 → GELU (BN fused into conv weights at load time)
     const float * dw_w = get_w(ctx, prefix + ".dwconv.0.weight");
-    const float * dw_b = get_w(ctx, prefix + ".dwconv.0.bias");
     if (!dw_w) { memcpy(conv_out, v_chw, C*H*W*sizeof(float)); return; }
-    dwconv2d_3x3(v_chw, C, H, W, dw_w, dw_b, conv_out);
+    dat_conv(ctx, v_chw, C, H, W, prefix + ".dwconv.0", C, true, conv_out);
     // GELU
     for (int i = 0; i < C*H*W; i++) conv_out[i] = gelu_f(conv_out[i]);
 }
@@ -954,7 +1036,6 @@ static void sgfn_forward(dat_sr_context * ctx, float * x, int H, int W,
     const float * sg_ln_w = get_w(ctx, ffn + ".sg.norm.weight");
     const float * sg_ln_b = get_w(ctx, ffn + ".sg.norm.bias");
     const float * sg_dw_w = get_w(ctx, ffn + ".sg.conv.weight");
-    const float * sg_dw_b = get_w(ctx, ffn + ".sg.conv.bias");
 
     std::vector<float> gated(N * half_hidden);
     if (sg_ln_w && sg_dw_w) {
@@ -973,7 +1054,7 @@ static void sgfn_forward(dat_sr_context * ctx, float * x, int H, int W,
 
         // DWConv
         std::vector<float> x2_conv(half_hidden * H * W);
-        dwconv2d_3x3(x2_chw.data(), half_hidden, H, W, sg_dw_w, sg_dw_b, x2_conv.data());
+        dat_conv(ctx, x2_chw.data(), half_hidden, H, W, ffn + ".sg.conv", half_hidden, true, x2_conv.data());
 
         // Reshape back to NHW and multiply with x1
         for (int y = 0; y < H; y++)
@@ -1057,9 +1138,7 @@ static void dat_forward(dat_sr_context * ctx, const float * rgb_in, int H, int W
 
     // 2. Shallow feature extraction: conv_first (3 → embed_dim)
     std::vector<float> shallow(C * H * W);
-    conv2d_3x3(input.data(), 3, H, W,
-               get_w(ctx, "conv_first.weight"), get_w(ctx, "conv_first.bias"),
-               C, shallow.data());
+    dat_conv(ctx, input.data(), 3, H, W, "conv_first", C, false, shallow.data());
     dat_dump("conv_first", shallow.data(), (size_t)C * H * W);
 
     // 3. before_RG: rearrange (B,C,H,W) → (B,HW,C), then LayerNorm
@@ -1101,23 +1180,19 @@ static void dat_forward(dat_sr_context * ctx, const float * rgb_in, int H, int W
         if (ctx->resi_connection == "3conv") {
             int mid = C / 4;
             std::vector<float> t1(mid * H * W), t2(mid * H * W), t3(C * H * W);
-            snprintf(buf, sizeof(buf), "layers.%d.conv.0.weight", rg);
-            conv2d_3x3(x_chw.data(), C, H, W, get_w(ctx, buf),
-                       get_w(ctx, std::string(buf).replace(strlen(buf)-6, 6, "bias")), mid, t1.data());
+            std::string lp = "layers." + std::to_string(rg) + ".conv.";
+            dat_conv(ctx, x_chw.data(), C, H, W, lp + "0", mid, false, t1.data());
             leaky_relu(t1.data(), mid * H * W);
             snprintf(buf, sizeof(buf), "layers.%d.conv.2.weight", rg);
             conv1x1(t1.data(), mid, H, W, get_w(ctx, buf),
                      get_w(ctx, std::string(buf).replace(strlen(buf)-6, 6, "bias")), mid, t2.data());
             leaky_relu(t2.data(), mid * H * W);
-            snprintf(buf, sizeof(buf), "layers.%d.conv.4.weight", rg);
-            conv2d_3x3(t2.data(), mid, H, W, get_w(ctx, buf),
-                       get_w(ctx, std::string(buf).replace(strlen(buf)-6, 6, "bias")), C, t3.data());
+            dat_conv(ctx, t2.data(), mid, H, W, lp + "4", C, false, t3.data());
             x_chw = std::move(t3);
         } else {
             std::vector<float> conv_out(C * H * W);
-            snprintf(buf, sizeof(buf), "layers.%d.conv.weight", rg);
-            conv2d_3x3(x_chw.data(), C, H, W, get_w(ctx, buf),
-                       get_w(ctx, std::string(buf).replace(strlen(buf)-6, 6, "bias")), C, conv_out.data());
+            dat_conv(ctx, x_chw.data(), C, H, W,
+                     "layers." + std::to_string(rg) + ".conv", C, false, conv_out.data());
             x_chw = std::move(conv_out);
         }
 
@@ -1150,21 +1225,15 @@ static void dat_forward(dat_sr_context * ctx, const float * rgb_in, int H, int W
     if (ctx->resi_connection == "3conv") {
         int mid = C / 4;
         std::vector<float> t1(mid * H * W), t2(mid * H * W);
-        conv2d_3x3(deep.data(), C, H, W,
-                   get_w(ctx, "conv_after_body.0.weight"),
-                   get_w(ctx, "conv_after_body.0.bias"), mid, t1.data());
+        dat_conv(ctx, deep.data(), C, H, W, "conv_after_body.0", mid, false, t1.data());
         leaky_relu(t1.data(), mid * H * W);
         conv1x1(t1.data(), mid, H, W,
                 get_w(ctx, "conv_after_body.2.weight"),
                 get_w(ctx, "conv_after_body.2.bias"), mid, t2.data());
         leaky_relu(t2.data(), mid * H * W);
-        conv2d_3x3(t2.data(), mid, H, W,
-                   get_w(ctx, "conv_after_body.4.weight"),
-                   get_w(ctx, "conv_after_body.4.bias"), C, cab.data());
+        dat_conv(ctx, t2.data(), mid, H, W, "conv_after_body.4", C, false, cab.data());
     } else {
-        conv2d_3x3(deep.data(), C, H, W,
-                   get_w(ctx, "conv_after_body.weight"),
-                   get_w(ctx, "conv_after_body.bias"), C, cab.data());
+        dat_conv(ctx, deep.data(), C, H, W, "conv_after_body", C, false, cab.data());
     }
 
     // Global skip: cab + shallow
@@ -1176,17 +1245,13 @@ static void dat_forward(dat_sr_context * ctx, const float * rgb_in, int H, int W
     if (ctx->upsampler == "pixelshuffledirect") {
         int up_ch = 3 * r * r;
         std::vector<float> up(up_ch * H * W);
-        conv2d_3x3(deep.data(), C, H, W,
-                   get_w(ctx, "upsample.0.weight"),
-                   get_w(ctx, "upsample.0.bias"), up_ch, up.data());
+        dat_conv(ctx, deep.data(), C, H, W, "upsample.0", up_ch, false, up.data());
         pixel_shuffle(up.data(), up_ch, H, W, r, rgb_out);
     } else {
         // pixelshuffle: conv_before_upsample → upsample → conv_last
         int num_feat = 64;
         std::vector<float> t1(num_feat * H * W);
-        conv2d_3x3(deep.data(), C, H, W,
-                   get_w(ctx, "conv_before_upsample.0.weight"),
-                   get_w(ctx, "conv_before_upsample.0.bias"), num_feat, t1.data());
+        dat_conv(ctx, deep.data(), C, H, W, "conv_before_upsample.0", num_feat, false, t1.data());
         leaky_relu(t1.data(), num_feat * H * W);
         // Upsample blocks (2x each for power-of-2 scale)
         int cur_h = H, cur_w = W;
@@ -1195,20 +1260,15 @@ static void dat_forward(dat_sr_context * ctx, const float * rgb_in, int H, int W
             int up_ch2 = 4 * num_feat;
             std::vector<float> t2(up_ch2 * cur_h * cur_w);
             char uname[64];
-            snprintf(uname, sizeof(uname), "upsample.%d.weight", u*2);
-            conv2d_3x3(t1.data(), num_feat, cur_h, cur_w,
-                       get_w(ctx, uname),
-                       get_w(ctx, std::string(uname).replace(strlen(uname)-6, 6, "bias")),
-                       up_ch2, t2.data());
+            snprintf(uname, sizeof(uname), "upsample.%d", u*2);
+            dat_conv(ctx, t1.data(), num_feat, cur_h, cur_w, uname, up_ch2, false, t2.data());
             std::vector<float> t3(num_feat * cur_h*2 * cur_w*2);
             pixel_shuffle(t2.data(), up_ch2, cur_h, cur_w, 2, t3.data());
             cur_h *= 2; cur_w *= 2;
             t1.resize(num_feat * cur_h * cur_w);
             t1 = std::move(t3);
         }
-        conv2d_3x3(t1.data(), num_feat, oH, oW,
-                   get_w(ctx, "conv_last.weight"),
-                   get_w(ctx, "conv_last.bias"), 3, rgb_out);
+        dat_conv(ctx, t1.data(), num_feat, oH, oW, "conv_last", 3, false, rgb_out);
     }
 
     // 9. Denormalize
@@ -1334,6 +1394,26 @@ dat_sr_context * dat_sr_init(const char * model_path, int n_threads) {
             ctx->split_size[0], ctx->split_size[1],
             ctx->upscale, ctx->resi_connection.c_str(), ctx->upsampler.c_str());
     ctx->bench = (std::getenv("CRISPEMBED_DAT_SR_BENCH") != nullptr);
+
+    // ggml conv path: conv_first, RG/body 3×3 convs, upsample, and the AIM/SGFN
+    // depthwise convs run on a CPU sched (ggml_conv_2d / _dw); the dual attention
+    // / SGFN / 1×1 convs stay SIMD-scalar. The path is verified pixel-perfect
+    // (output cos 0.999995 == scalar), BUT it is a NET SLOWDOWN on DAT: the engine
+    // is attention-bound and the ~42 small scattered convs (mostly 36 depthwise
+    // across the 18 blocks) each pay per-conv graph build + sched_alloc overhead
+    // that exceeds the conv speedup (≈1.56s vs 1.48s/tile). So default to SCALAR
+    // and gate the ggml path behind DAT_SR_GGML_CONV=1 (opt-in for benchmarking /
+    // a future batched-graph rewrite). Contrast swinir/scunet (conv-heavy → wins).
+    if (getenv("DAT_SR_GGML_CONV") && atoi(getenv("DAT_SR_GGML_CONV"))) {
+        ctx->enc_backend = ggml_backend_cpu_init();
+        if (ctx->enc_backend) {
+            ggml_backend_cpu_set_n_threads(ctx->enc_backend, n_threads > 0 ? n_threads : 1);
+            ggml_backend_t backends[] = { ctx->enc_backend };
+            ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+            ctx->use_ggml_conv = (ctx->enc_sched != nullptr);
+        }
+    }
+    fprintf(stderr, "dat_sr: conv path = %s\n", ctx->use_ggml_conv ? "ggml_conv_2d (CPU sched)" : "scalar");
     return ctx;
 }
 
@@ -1496,6 +1576,10 @@ void dat_sr_free_image(uint8_t * pixels) { free(pixels); }
 
 void dat_sr_free(dat_sr_context * ctx) {
     if (ctx) {
+        for (auto * b : ctx->gw_bufs) if (b) ggml_backend_buffer_free(b);
+        for (auto * c : ctx->gw_ctxs) if (c) ggml_free(c);
+        if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+        if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
         core_gguf::free_weights(ctx->wl);
         delete ctx;
     }
