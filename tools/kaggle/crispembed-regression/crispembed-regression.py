@@ -183,6 +183,22 @@ def _publish_result(rec: dict) -> None:
             print(f"  (results upload skipped: {type(exc).__name__})", flush=True)
 
 
+def _free_cache(name: str) -> None:
+    """Wipe the HF download cache after each engine so a 130+ model sweep fits
+    Kaggle's ~20 GB scratch (granite/VLM GGUFs are multi-GB; without this the
+    cumulative downloads exhaust disk mid-sweep). Models aren't shared across
+    engines, so this loses no reuse."""
+    import shutil
+    for d in (HF_CACHE, Path.home() / ".cache" / "huggingface"):
+        if d.exists():
+            shutil.rmtree(d, ignore_errors=True)
+    HF_CACHE.mkdir(parents=True, exist_ok=True)
+    try:
+        step("cache.freed", backend=name, free_gb=kh.free_gb(str(WORK)))
+    except Exception:
+        pass
+
+
 # ── validate ─────────────────────────────────────────────────────────────────
 def run_validate() -> list[dict]:
     results = []
@@ -208,6 +224,7 @@ def run_validate() -> list[dict]:
         results.append(r)
         print(f"  -> {r}")
         _publish_result(r)
+        _free_cache(name)
     return results
 
 
@@ -252,6 +269,7 @@ def run_rebake() -> list[dict]:
         results.append(r)
         print(f"  -> {r}")
         _publish_result(r)
+        _free_cache(name)
 
     if UPLOAD and os.environ.get("HF_TOKEN"):
         from huggingface_hub import HfApi

@@ -137,6 +137,12 @@ for name in backends:
     rec["wall_s"] = round(time.time() - t0, 1)
     all_results.append(rec)
     publish(rec)
+    # Free the HF cache after each model so a 130+ model sweep fits ~20 GB.
+    import shutil
+    for d in (HF_CACHE, Path.home() / ".cache" / "huggingface"):
+        if d.exists():
+            shutil.rmtree(d, ignore_errors=True)
+    HF_CACHE.mkdir(parents=True, exist_ok=True)
 
 n_ok = sum(1 for r in all_results if r.get("ok"))
 print(f"\nSUMMARY  benchmarked {n_ok}/{len(all_results)} OK")
