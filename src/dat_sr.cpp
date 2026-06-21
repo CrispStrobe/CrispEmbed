@@ -62,6 +62,16 @@ static void linear_cpu(const float * x, int n_in, const float * w, const float *
     core_cpu::linear_cpu(x, y, n_in, n_out, w, b);
 }
 
+// Env-gated parity dump (DAT_DUMP_DIR): write a raw f32 blob for one stage.
+static void dat_dump(const char * stage, const float * data, size_t n) {
+    const char * dir = getenv("DAT_DUMP_DIR");
+    if (!dir) return;
+    char path[512];
+    snprintf(path, sizeof(path), "%s/%s.bin", dir, stage);
+    FILE * f = fopen(path, "wb");
+    if (f) { fwrite(data, sizeof(float), n, f); fclose(f); }
+}
+
 static void layernorm_cpu(const float * x, int d, const float * g, const float * b,
                            float * y, float eps = 1e-5f) {
     float mean = 0;
@@ -730,6 +740,7 @@ static void adaptive_spatial_attention(dat_sr_context * ctx, float * x, int H, i
                     attn_out[(y*W + xi)*C + c_off + c] = branch_out[(y*pW + xi)*C_half + c];
     }
 
+
     // --- AIM: merge attention and conv branches ---
     std::string aim_pfx = attn_pfx;
 
@@ -1049,6 +1060,7 @@ static void dat_forward(dat_sr_context * ctx, const float * rgb_in, int H, int W
     conv2d_3x3(input.data(), 3, H, W,
                get_w(ctx, "conv_first.weight"), get_w(ctx, "conv_first.bias"),
                C, shallow.data());
+    dat_dump("conv_first", shallow.data(), (size_t)C * H * W);
 
     // 3. before_RG: rearrange (B,C,H,W) → (B,HW,C), then LayerNorm
     std::vector<float> x(N * C);
@@ -1073,6 +1085,8 @@ static void dat_forward(dat_sr_context * ctx, const float * rgb_in, int H, int W
         // Run DATB blocks
         for (int blk = 0; blk < ctx->depth[rg]; blk++) {
             datb_forward(ctx, x.data(), H, W, rg, blk);
+            char st[32]; snprintf(st, sizeof(st), "block_%d", blk);
+            dat_dump(st, x.data(), (size_t)N * C);
         }
 
         // Rearrange to CHW for conv
@@ -1201,6 +1215,8 @@ static void dat_forward(dat_sr_context * ctx, const float * rgb_in, int H, int W
     for (int c = 0; c < 3; c++)
         for (int i = 0; i < oH * oW; i++)
             rgb_out[c*oH*oW + i] = rgb_out[c*oH*oW + i] / ctx->img_range + ctx->mean[c];
+
+    dat_dump("output", rgb_out, (size_t)3 * oH * oW);
 }
 
 // ---------------------------------------------------------------------------
@@ -1249,7 +1265,10 @@ dat_sr_context * dat_sr_init(const char * model_path, int n_threads) {
             auto it = ctx->tensors.find(name);
             if (it == ctx->tensors.end()) return {};
             std::vector<float> buf;
-            to_f32(it->second, buf);
+            const float * p = to_f32(it->second, buf);
+            // to_f32 returns t->data directly for F32 tensors and leaves buf
+            // empty; copy it in so BN fusion works on F32 models too.
+            if (p != buf.data()) buf.assign(p, p + ggml_nelements(it->second));
             return buf;
         };
         int fused_count = 0;
