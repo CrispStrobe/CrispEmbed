@@ -287,7 +287,7 @@ bool load_weights(const char* path, ggml_backend_t backend, const char* model_ta
             if (mf.ok && mf.size > data_off) {
                 size_t max_ts = 0;
                 for (ggml_tensor* t = ggml_get_first_tensor(out.ctx); t; t = ggml_get_next_tensor(out.ctx, t))
-                    max_ts = std::max(max_ts, ggml_nbytes(t));
+                    max_ts = (std::max)(max_ts, ggml_nbytes(t));
                 void* host_base = (char*)mf.base + data_off;
                 ggml_backend_buffer_t buf =
                     ggml_backend_dev_buffer_from_host_ptr(dev, host_base, mf.size - data_off, max_ts);
