@@ -112,7 +112,7 @@ static inline float dot_product(const float* a, const float* b, int n) {
     lo = _mm_add_ss(lo, _mm_shuffle_ps(lo, lo, 1));
     s = _mm_cvtss_f32(lo);
     for (; i < n; i++) s += a[i] * b[i];
-#elif defined(__ARM_NEON)
+#elif defined(__aarch64__)
     float32x4_t acc0 = vdupq_n_f32(0.0f);
     float32x4_t acc1 = vdupq_n_f32(0.0f);
     int i = 0;
@@ -606,7 +606,7 @@ static inline void mha_1q_cpu(const float* q, const float* k, const float* v,
                 _mm256_storeu_ps(dst + d, _mm256_fmadd_ps(vs, _mm256_loadu_ps(vrow + d),
                                                            _mm256_loadu_ps(dst + d)));
             for (; d < hd; d++) dst[d] += s * vrow[d];
-#elif defined(__ARM_NEON)
+#elif defined(__aarch64__)
             float32x4_t vs = vdupq_n_f32(s);
             int d = 0;
             for (; d + 3 < hd; d += 4)
