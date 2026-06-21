@@ -560,6 +560,12 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   for a ggml graph. A `[ ]` here means "works but still CPU-scalar" (each file's
   header says `(CPU-scalar)`), NOT "missing". Verify every port with the
   crispembed-diff harness (`test-<engine>-diff`, cos ≥ 0.99) before checking off.
+  **The harness already exists** (`tests/test_<engine>_diff.cpp` +
+  `tools/dump_<engine>_reference.py`, CMake-registered) for instructir, scunet,
+  swinir, tbsrn, hat, adair — these scalar engines shipped already verified vs
+  the real HF checkpoint (e.g. instructir cos=1.000000, hat cos=0.999968), so a
+  port just has to keep that gate green. `dat` and `text_sr` have the reference
+  dumper but still need the `test_diff.cpp` + a CMake line added.
   Same pattern as DenseNet/HGNetv2 conversions: replace with ggml_conv_2d,
   ggml_pool_2d, ggml_mul_mat, ggml_norm. Ordered by ease × impact:
   - [x] `nafnet_denoise.cpp` — **DONE** (`b580e5c`). conv2d_ggml replaces all scalar convs.
