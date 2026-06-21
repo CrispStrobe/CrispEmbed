@@ -277,9 +277,13 @@ swinir_sr.
 - `esrgan_sr` — **FIXED**: the ggml graph now computes true per-channel PReLU
   (`relu(x) + slope·min(0,x)`) from the stored slope weights, matching the scalar
   `prelu()` reference (was a plain `ggml_relu` that dropped the slope).
-- `hat_sr` — the OCAB overlapping-window cross-attention is a self-described
-  "simplified" unfold that may not exactly match the reference HAT. Scalar-only;
-  not yet verified against reference. (Remaining default-path approximation.)
+- `hat_sr` — OCAB overlapping-window cross-attention: reviewed against the HAT
+  reference algorithm and found to be a faithful port (exact overlap unfold
+  `kernel=ows/stride=ws/pad=(ows-ws)/2` + row-major kernel order + RPB; image
+  pre-padded to a ws multiple). The old "simplified, may not match" comment was
+  over-cautious. Not numerically re-verified this session — `test_hat_diff` exists
+  but compares only the final output, and generating a HAT reference gguf needs
+  the torch HAT arch + pretrain `.pth` (not provisioned). No known defect.
 
 ### OCR — next-gen models to port
 
