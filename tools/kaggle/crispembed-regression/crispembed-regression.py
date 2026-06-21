@@ -95,6 +95,12 @@ else:
           "needs a write-scoped token via chr1s4/crispasr-hf-token).")
 
 step("toolchain")
+# Relocatable ccache hashes: rewrite /kaggle/working/* absolute paths to
+# relative so a saved chr1s4/crispembed-ccache seed hits across runs (and even
+# across the CrispASR/CrispEmbed dir split for shared ggml TUs).
+os.environ["CCACHE_BASEDIR"] = str(WORK)
+os.environ.setdefault("CCACHE_SLOPPINESS",
+                      "locale,time_macros,include_file_ctime,include_file_mtime")
 tc = kh.install_build_toolchain()
 print(f"  toolchain: {tc}")
 
@@ -123,6 +129,16 @@ with kh.build_heartbeat("cmake.build"):
     kh.sh_with_progress(
         f"stdbuf -oL -eL cmake --build {BUILD} --target {targets} "
         f"-j{kh.safe_build_jobs(gpu=(BUILD_FLAVOUR == 'cuda'))}")
+
+# Export the populated ccache as a downloadable output so it can seed
+# chr1s4/crispembed-ccache (warm subsequent builds). Refresh the dataset with:
+#   kaggle datasets version -p <dir-with-ccache.tar> -m "refresh crispembed ccache"
+try:
+    kh.sh("ccache -s | grep -E 'cache hit|cache miss|files in cache' || true")
+    kh.sh(f"cd {WORK} && tar cf ccache.tar .ccache/ && ls -la ccache.tar")
+    step("ccache.exported")
+except Exception as _e:
+    print(f"  ccache export skipped: {_e}", flush=True)
 
 # ── import the in-repo runner library ────────────────────────────────────────
 sys.path.insert(0, str(REPO / "tests" / "regression"))
