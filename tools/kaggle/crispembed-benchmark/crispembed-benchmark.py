@@ -77,7 +77,9 @@ with kh.build_heartbeat("cmake.build"):
                         f"-j{kh.safe_build_jobs(gpu=(FLAVOUR == 'cuda'))}")
 # Export the populated ccache to seed/refresh chr1s4/crispembed-ccache.
 try:
-    kh.sh(f"cd {WORK} && tar cf ccache.tar .ccache/ && ls -la ccache.tar")
+    # Pack .ccache CONTENTS (top-level hash dirs); a tar of `.ccache/` would
+    # double-nest on extract and stay unrecognized (the CrispASR ccache bug).
+    kh.sh(f"tar -C {WORK}/.ccache -cf {WORK}/ccache.tar . && ls -la {WORK}/ccache.tar")
     kh.step("ccache.exported")
 except Exception as _e:
     print(f"  ccache export skipped: {_e}", flush=True)
