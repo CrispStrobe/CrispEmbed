@@ -23,6 +23,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -419,6 +420,13 @@ static void swin_block_forward(
 
 // ── ConvTransBlock ──
 
+// Forward decls: ctb_forward (below) dispatches its convs through scunet_conv,
+// which is defined after the context struct.
+struct scunet_context;
+static void scunet_conv(scunet_context * ctx, const float * in, int ic, int ih, int iw,
+                        const ggml_tensor * w, const ggml_tensor * b,
+                        int oc, int kh, int kw, int pad, int stride, float * out);
+
 struct ctb_weights {
     ggml_tensor * conv1_1_w, * conv1_1_b; // 1x1 split
     ggml_tensor * conv_blk_0, * conv_blk_2; // 3x3 residual conv (no bias)
@@ -426,7 +434,7 @@ struct ctb_weights {
     ggml_tensor * conv1_2_w, * conv1_2_b; // 1x1 fuse
 };
 
-static void ctb_forward(float * x, int C, int H, int W,
+static void ctb_forward(scunet_context * ctx, float * x, int C, int H, int W,
                          const ctb_weights & wt,
                          int n_heads, int win_size, bool shift,
                          std::vector<float> & dq1, std::vector<float> & dq2,
@@ -436,20 +444,19 @@ static void ctb_forward(float * x, int C, int H, int W,
 
     // 1x1 conv split
     std::vector<float> split(C * hw);
-    conv2d(x, C, H, W, to_f32(wt.conv1_1_w, dq1), to_f32(wt.conv1_1_b, dq2),
-           C, 1, 1, 0, 1, split.data());
+    scunet_conv(ctx, x, C, H, W, wt.conv1_1_w, wt.conv1_1_b, C, 1, 1, 0, 1, split.data());
 
     // Conv branch (first half)
     std::vector<float> conv_in(half * hw);
     memcpy(conv_in.data(), split.data(), half * hw * sizeof(float));
 
     std::vector<float> conv_tmp(half * hw);
-    conv2d(conv_in.data(), half, H, W, to_f32(wt.conv_blk_0, dq1), nullptr,
-           half, 3, 3, 1, 1, conv_tmp.data());
+    scunet_conv(ctx, conv_in.data(), half, H, W, wt.conv_blk_0, nullptr,
+                half, 3, 3, 1, 1, conv_tmp.data());
     for (int i = 0; i < half * hw; i++) conv_tmp[i] = std::max(0.0f, conv_tmp[i]); // ReLU
     std::vector<float> conv_out(half * hw);
-    conv2d(conv_tmp.data(), half, H, W, to_f32(wt.conv_blk_2, dq1), nullptr,
-           half, 3, 3, 1, 1, conv_out.data());
+    scunet_conv(ctx, conv_tmp.data(), half, H, W, wt.conv_blk_2, nullptr,
+                half, 3, 3, 1, 1, conv_out.data());
     for (int i = 0; i < half * hw; i++) conv_out[i] += conv_in[i]; // residual
 
     // Trans branch (second half)
@@ -464,9 +471,8 @@ static void ctb_forward(float * x, int C, int H, int W,
     memcpy(cat_buf.data() + half * hw, trans_buf.data(), half * hw * sizeof(float));
 
     std::vector<float> fused(C * hw);
-    const float * f_w = to_f32(wt.conv1_2_w, dq1);
-    const float * f_b = to_f32(wt.conv1_2_b, dq2);
-    conv2d(cat_buf.data(), C, H, W, f_w, f_b, C, 1, 1, 0, 1, fused.data());
+    scunet_conv(ctx, cat_buf.data(), C, H, W, wt.conv1_2_w, wt.conv1_2_b,
+                C, 1, 1, 0, 1, fused.data());
 
     // Residual
     for (int i = 0; i < C * hw; i++) x[i] += fused[i];
@@ -492,6 +498,19 @@ struct scunet_context {
     scunet_stage body;
     scunet_stage dec[3]; // up3, up2, up1
     ggml_tensor * tail_w, * tail_b;
+
+    // ggml conv path: convs/deconvs run via ggml_conv_2d /
+    // ggml_conv_transpose_2d_p0 on a dedicated CPU sched (GPU conv_2d hits a
+    // Metal f32×f16 mul_mv pipeline-compile failure). The Swin window attention,
+    // layernorms and MLP stay SIMD-scalar. Persistent CPU-resident F32 kernels
+    // are keyed by the original gguf weight tensor pointer.
+    bool use_ggml_conv = false;
+    ggml_backend_t        enc_backend = nullptr;
+    ggml_backend_sched_t  enc_sched   = nullptr;
+    ggml_context *        gw_ctx = nullptr;
+    ggml_backend_buffer_t gw_buf = nullptr;
+    std::map<const ggml_tensor *, ggml_tensor *> gw;
+    std::vector<uint8_t>  graph_meta;
 };
 
 static void load_ctb(core_gguf::WeightLoad & wl, const char * prefix, ctb_weights & ctb) {
@@ -581,16 +600,139 @@ scunet_context * scunet_init(const char * model_path, int n_threads) {
     }
 
     ctx->bench = (std::getenv("CRISPEMBED_SCUNET_BENCH") != nullptr);
+
+    // ── ggml conv path (opt out with SCUNET_SCALAR=1) ────────────────────
+    // Build persistent CPU-resident F32 conv/deconv kernels. SCUNet's GGUF
+    // already stores conv kernels in ggml-native order — Conv2d as
+    // [KW,KH,IC,OC] and ConvTranspose2d as [KW,KH,OC,IC] (verified against the
+    // file) — so the kernel is t->ne copied verbatim, no axis reversal (unlike
+    // pan/swinir's PyTorch-order writer). We register by the conv weight
+    // POINTERS held in the context — not by shape, which can't tell a 1×1 conv
+    // (ne=[1,1,IC,OC]) from a 2D linear.
+    bool want_ggml = !(getenv("SCUNET_SCALAR") && atoi(getenv("SCUNET_SCALAR")));
+    if (want_ggml) {
+        ctx->enc_backend = ggml_backend_cpu_init();
+        if (ctx->enc_backend) {
+            ggml_backend_cpu_set_n_threads(ctx->enc_backend, n_threads > 0 ? n_threads : 2);
+            ggml_backend_t backends[] = { ctx->enc_backend };
+            ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+        }
+    }
+    if (ctx->enc_sched) {
+        std::vector<const ggml_tensor *> conv_w;
+        conv_w.push_back(ctx->head_w);
+        conv_w.push_back(ctx->tail_w);
+        for (int s = 0; s < 3; s++) conv_w.push_back(ctx->enc[s].ds_w);
+        for (int s = 0; s < 3; s++) conv_w.push_back(ctx->dec[s].us_w);
+        auto add_ctb = [&](const ctb_weights & c) {
+            conv_w.push_back(c.conv1_1_w); conv_w.push_back(c.conv1_2_w);
+            conv_w.push_back(c.conv_blk_0); conv_w.push_back(c.conv_blk_2);
+        };
+        for (int s = 0; s < 3; s++) for (auto & b : ctx->enc[s].blocks) add_ctb(b);
+        for (auto & b : ctx->body.blocks) add_ctb(b);
+        for (int s = 0; s < 3; s++) for (auto & b : ctx->dec[s].blocks) add_ctb(b);
+
+        ggml_init_params ip = { ggml_tensor_overhead() * (conv_w.size() + 8), nullptr, true };
+        ctx->gw_ctx = ggml_init(ip);
+        std::vector<std::pair<const ggml_tensor *, ggml_tensor *>> to_fill;
+        for (const ggml_tensor * t : conv_w) {
+            if (!t || ctx->gw.count(t)) continue;          // skip missing / dups
+            int64_t ne[4] = { t->ne[0], t->ne[1], t->ne[2], t->ne[3] };  // ggml-native, as-is
+            ggml_tensor * w = ggml_new_tensor(ctx->gw_ctx, GGML_TYPE_F32, 4, ne);
+            ctx->gw[t] = w; to_fill.push_back({t, w});
+        }
+        if (!ctx->gw.empty()) {
+            ctx->gw_buf = ggml_backend_alloc_ctx_tensors(ctx->gw_ctx, ctx->enc_backend);
+            std::vector<float> tmp;
+            for (auto & [t, w] : to_fill) {
+                const float * src = to_f32(t, tmp);
+                if (src) ggml_backend_tensor_set(w, src, 0, ggml_nbytes(w));
+            }
+            ctx->use_ggml_conv = true;
+        }
+    }
+    fprintf(stderr, "scunet: conv path = %s\n",
+            ctx->use_ggml_conv ? "ggml_conv_2d/conv_transpose (CPU sched)" : "scalar");
     return ctx;
 }
 
 void scunet_free(scunet_context * ctx) {
     if (!ctx) return;
+    if (ctx->gw_buf) ggml_backend_buffer_free(ctx->gw_buf);
+    if (ctx->gw_ctx) ggml_free(ctx->gw_ctx);
+    if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+    if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
     core_gguf::WeightLoad wl;
     wl.ctx = ctx->gguf_ctx; wl.buf = ctx->gguf_buf;
     core_gguf::free_weights(wl);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     delete ctx;
+}
+
+// ── Conv dispatch: ggml on the CPU sched, or scalar fallback ──────────────
+// Input/output are CHW [C,H,W], matching the scalar conv2d/conv_transpose2d.
+static void scunet_run_conv(scunet_context * ctx, bool transpose,
+                            const float * in, int ic, int ih, int iw,
+                            const ggml_tensor * weight_t, const ggml_tensor * bias_t,
+                            int oc, int kh, int kw, int pad, int stride, float * out) {
+    if (!ctx->use_ggml_conv || !ctx->gw.count(weight_t)) {  // scalar fallback
+        std::vector<float> wbuf, bbuf;
+        const float * wf = to_f32(weight_t, wbuf);
+        const float * bf = bias_t ? to_f32(bias_t, bbuf) : nullptr;
+        if (transpose) conv_transpose2d(in, ic, ih, iw, wf, bf, oc, kh, kw, stride, out);
+        else           conv2d(in, ic, ih, iw, wf, bf, oc, kh, kw, pad, stride, out);
+        return;
+    }
+
+    const int max_nodes = 16;
+    size_t buf_size = ggml_tensor_overhead() * max_nodes
+                    + ggml_graph_overhead_custom(max_nodes, false);
+    ctx->graph_meta.resize(buf_size);
+    ggml_init_params ip = { buf_size, ctx->graph_meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, iw, ih, ic);
+    ggml_set_name(x, "x"); ggml_set_input(x);
+    ggml_tensor * w = ctx->gw[weight_t];
+    ggml_tensor * y = transpose ? ggml_conv_transpose_2d_p0(g, w, x, stride)
+                                : ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
+    ggml_tensor * bin = nullptr;
+    if (bias_t) {
+        bin = ggml_new_tensor_1d(g, GGML_TYPE_F32, oc);
+        ggml_set_name(bin, "b"); ggml_set_input(bin);
+        y = ggml_add(g, y, ggml_reshape_4d(g, bin, 1, 1, oc, 1));
+    }
+    ggml_set_name(y, "out"); ggml_set_output(y);
+    ggml_build_forward_expand(gf, y);
+
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "scunet: conv alloc failed\n"); ggml_free(g); return;
+    }
+    ggml_backend_tensor_set(x, in, 0, (size_t)ic * ih * iw * sizeof(float));
+    std::vector<float> bbuf;
+    if (bias_t) {
+        const float * bf = to_f32(bias_t, bbuf);
+        ggml_backend_tensor_set(bin, bf, 0, (size_t)oc * sizeof(float));
+    }
+    ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
+
+    int oh = transpose ? (ih - 1) * stride + kh : (ih + 2 * pad - kh) / stride + 1;
+    int ow = transpose ? (iw - 1) * stride + kw : (iw + 2 * pad - kw) / stride + 1;
+    ggml_backend_tensor_get(y, out, 0, (size_t)oc * oh * ow * sizeof(float));
+    ggml_free(g);
+}
+
+static inline void scunet_conv(scunet_context * ctx, const float * in, int ic, int ih, int iw,
+                               const ggml_tensor * w, const ggml_tensor * b,
+                               int oc, int kh, int kw, int pad, int stride, float * out) {
+    scunet_run_conv(ctx, false, in, ic, ih, iw, w, b, oc, kh, kw, pad, stride, out);
+}
+static inline void scunet_deconv(scunet_context * ctx, const float * in, int ic, int ih, int iw,
+                                 const ggml_tensor * w, const ggml_tensor * b,
+                                 int oc, int kh, int kw, int stride, float * out) {
+    scunet_run_conv(ctx, true, in, ic, ih, iw, w, b, oc, kh, kw, 0, stride, out);
 }
 
 int scunet_process_float(scunet_context * ctx,
@@ -607,8 +749,8 @@ int scunet_process_float(scunet_context * ctx,
 
     // Head
     std::vector<float> x(ctx->dim * H * W);
-    conv2d(input_chw, 3, H, W, to_f32(ctx->head_w, dq1), to_f32(ctx->head_b, dq2),
-           ctx->dim, 3, 3, 1, 1, x.data());
+    scunet_conv(ctx, input_chw, 3, H, W, ctx->head_w, ctx->head_b,
+                ctx->dim, 3, 3, 1, 1, x.data());
 
     // Save skips
     std::vector<float> skip_head(x.begin(), x.end());
@@ -629,16 +771,16 @@ int scunet_process_float(scunet_context * ctx,
             if (!blk.trans.qkv_w) fprintf(stderr, "  WARNING: qkv_w is null!\n");
             if (!blk.trans.rpb) fprintf(stderr, "  WARNING: rpb is null!\n");
             bool shift = (i % 2 == 1);
-            ctb_forward(x.data(), ch, cur_h, cur_w, ctx->enc[s].blocks[i],
+            ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->enc[s].blocks[i],
                         n_heads, ctx->win_size, shift, dq1, dq2, scratch);
         }
         // Downsample
         int next_ch = ch * 2;
         int nh = cur_h / 2, nw = cur_w / 2;
         std::vector<float> ds(next_ch * nh * nw);
-        conv2d(x.data(), ch, cur_h, cur_w,
-               to_f32(ctx->enc[s].ds_w, dq1), to_f32(ctx->enc[s].ds_b, dq2),
-               next_ch, 2, 2, 0, 2, ds.data());
+        scunet_conv(ctx, x.data(), ch, cur_h, cur_w,
+                    ctx->enc[s].ds_w, ctx->enc[s].ds_b,
+                    next_ch, 2, 2, 0, 2, ds.data());
         skips.push_back(std::move(ds));
         x = skips.back(); // copy
         ch = next_ch; cur_h = nh; cur_w = nw;
@@ -654,7 +796,7 @@ int scunet_process_float(scunet_context * ctx,
     int body_heads = std::max(1, (ch / 2) / ctx->head_dim);
     for (int i = 0; i < 4; i++) {
         bool shift = (i % 2 == 1);
-        ctb_forward(x.data(), ch, cur_h, cur_w, ctx->body.blocks[i],
+        ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->body.blocks[i],
                     body_heads, ctx->win_size, shift, dq1, dq2, scratch);
     }
     if (bench) {
@@ -675,16 +817,16 @@ int scunet_process_float(scunet_context * ctx,
         int next_ch = ch / 2;
         int nh = cur_h * 2, nw = cur_w * 2;
         std::vector<float> us(next_ch * nh * nw);
-        conv_transpose2d(x.data(), ch, cur_h, cur_w,
-                         to_f32(ctx->dec[s].us_w, dq1), to_f32(ctx->dec[s].us_b, dq2),
-                         next_ch, 2, 2, 2, us.data());
+        scunet_deconv(ctx, x.data(), ch, cur_h, cur_w,
+                      ctx->dec[s].us_w, ctx->dec[s].us_b,
+                      next_ch, 2, 2, 2, us.data());
         x = std::move(us);
         ch = next_ch; cur_h = nh; cur_w = nw;
 
         int n_heads = std::max(1, (ch / 2) / ctx->head_dim);
         for (int i = 0; i < 4; i++) {
             bool shift = (i % 2 == 1);
-            ctb_forward(x.data(), ch, cur_h, cur_w, ctx->dec[s].blocks[i],
+            ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->dec[s].blocks[i],
                         n_heads, ctx->win_size, shift, dq1, dq2, scratch);
         }
         if (bench) {
@@ -696,9 +838,8 @@ int scunet_process_float(scunet_context * ctx,
 
     // Final skip + tail
     for (int i = 0; i < ch * cur_h * cur_w; i++) x[i] += skip_head[i];
-    conv2d(x.data(), ch, cur_h, cur_w,
-           to_f32(ctx->tail_w, dq1), to_f32(ctx->tail_b, dq2),
-           3, 3, 3, 1, 1, output_chw);
+    scunet_conv(ctx, x.data(), ch, cur_h, cur_w, ctx->tail_w, ctx->tail_b,
+                3, 3, 3, 1, 1, output_chw);
 
     if (bench) {
         auto t_end = std::chrono::steady_clock::now();
@@ -722,8 +863,8 @@ int scunet_process_float_debug(scunet_context * ctx,
     g_swin_block_counter = 0;
 
     std::vector<float> x(ctx->dim * H * W);
-    conv2d(input_chw, 3, H, W, to_f32(ctx->head_w, dq1), to_f32(ctx->head_b, dq2),
-           ctx->dim, 3, 3, 1, 1, x.data());
+    scunet_conv(ctx, input_chw, 3, H, W, ctx->head_w, ctx->head_b,
+                ctx->dim, 3, 3, 1, 1, x.data());
     if (cb) cb("head", x.data(), ctx->dim * H * W);
 
     std::vector<float> skip_head(x.begin(), x.end());
@@ -735,14 +876,14 @@ int scunet_process_float_debug(scunet_context * ctx,
         int n_heads = std::max(1, (ch / 2) / ctx->head_dim);
         for (int i = 0; i < 4; i++) {
             bool shift = (i % 2 == 1);
-            ctb_forward(x.data(), ch, cur_h, cur_w, ctx->enc[s].blocks[i],
+            ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->enc[s].blocks[i],
                         n_heads, ctx->win_size, shift, dq1, dq2, scratch);
         }
         int next_ch = ch * 2, nh = cur_h / 2, nw = cur_w / 2;
         std::vector<float> ds(next_ch * nh * nw);
-        conv2d(x.data(), ch, cur_h, cur_w,
-               to_f32(ctx->enc[s].ds_w, dq1), to_f32(ctx->enc[s].ds_b, dq2),
-               next_ch, 2, 2, 0, 2, ds.data());
+        scunet_conv(ctx, x.data(), ch, cur_h, cur_w,
+                    ctx->enc[s].ds_w, ctx->enc[s].ds_b,
+                    next_ch, 2, 2, 0, 2, ds.data());
         skips.push_back(std::move(ds));
         x = skips.back();
         ch = next_ch; cur_h = nh; cur_w = nw;
@@ -752,7 +893,7 @@ int scunet_process_float_debug(scunet_context * ctx,
     int body_heads = std::max(1, (ch / 2) / ctx->head_dim);
     for (int i = 0; i < 4; i++) {
         bool shift = (i % 2 == 1);
-        ctb_forward(x.data(), ch, cur_h, cur_w, ctx->body.blocks[i],
+        ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->body.blocks[i],
                     body_heads, ctx->win_size, shift, dq1, dq2, scratch);
     }
     if (cb) cb("body", x.data(), ch * cur_h * cur_w);
@@ -763,24 +904,23 @@ int scunet_process_float_debug(scunet_context * ctx,
         for (int i = 0; i < ch * cur_h * cur_w; i++) x[i] += sk[i];
         int next_ch = ch / 2, nh = cur_h * 2, nw = cur_w * 2;
         std::vector<float> us(next_ch * nh * nw);
-        conv_transpose2d(x.data(), ch, cur_h, cur_w,
-                         to_f32(ctx->dec[s].us_w, dq1), to_f32(ctx->dec[s].us_b, dq2),
-                         next_ch, 2, 2, 2, us.data());
+        scunet_deconv(ctx, x.data(), ch, cur_h, cur_w,
+                      ctx->dec[s].us_w, ctx->dec[s].us_b,
+                      next_ch, 2, 2, 2, us.data());
         x = std::move(us);
         ch = next_ch; cur_h = nh; cur_w = nw;
         int n_heads = std::max(1, (ch / 2) / ctx->head_dim);
         for (int i = 0; i < 4; i++) {
             bool shift = (i % 2 == 1);
-            ctb_forward(x.data(), ch, cur_h, cur_w, ctx->dec[s].blocks[i],
+            ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->dec[s].blocks[i],
                         n_heads, ctx->win_size, shift, dq1, dq2, scratch);
         }
         if (cb) cb(dec_names[s], x.data(), ch * cur_h * cur_w);
     }
 
     for (int i = 0; i < ch * cur_h * cur_w; i++) x[i] += skip_head[i];
-    conv2d(x.data(), ch, cur_h, cur_w,
-           to_f32(ctx->tail_w, dq1), to_f32(ctx->tail_b, dq2),
-           3, 3, 3, 1, 1, output_chw);
+    scunet_conv(ctx, x.data(), ch, cur_h, cur_w, ctx->tail_w, ctx->tail_b,
+                3, 3, 3, 1, 1, output_chw);
     return 0;
 }
 

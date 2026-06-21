@@ -588,12 +588,24 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
     test-pan-diff cos_min=0.999997 vs self-consistent torch ref; ref on HF
     `cstr/text-super-resolution-gguf/pan-ref.gguf`. `PAN_SR_SCALAR=1` opts out.
   - [ ] `dat_sr.cpp` — 18× dual attention (spatial+channel), ~60-90G, medium
-  - [ ] `scunet_denoise.cpp` — U-Net + Swin branches + ConvTranspose2d, ~50-80G, medium.
+  - [x] `scunet_denoise.cpp` — **conv→ggml DONE**. All conv2d sites (head, tail,
+    stride-2 downsample, and the conv1_1/conv1_2/conv_block.0/.2 inside every
+    ConvTransBlock) plus the decoder ConvTranspose2d upsamples now dispatch
+    through `scunet_conv`/`scunet_deconv` → `ggml_conv_2d` / `ggml_conv_transpose_2d_p0`
+    on a dedicated CPU sched with persistent CPU-resident F32 kernels. The Swin
+    window attention / layernorm / MLP stay SIMD-scalar. **6.7× faster**
+    (5.15s → 0.77s on the 64×64 ref tile), all stages cos=1.000000 (incl. the
+    `m_up*` deconv stages) vs the self-consistent ref. `SCUNET_SCALAR=1` opts out.
+    Gotcha: unlike pan/swinir's PyTorch-order custom writer, SCUNet's GGUF stores
+    conv kernels already in ggml-native order (Conv2d `[KW,KH,IC,OC]`,
+    ConvTranspose2d `[KW,KH,OC,IC]`) — copy `t->ne` verbatim, NO axis reversal.
+    Kernels are registered by the conv weight pointers held in the context (1×1
+    convs have trailing ne=1 and are indistinguishable from 2D linears by shape).
     **NOTE**: while validating the reference, found+fixed a real pre-existing bug
     (`4318f33`) — swin_block_forward aliased qkv_w/proj_w/rpb (+ MLP weights) into
     shared dequant buffers `dq1/dq2`, so attention/MLP ran on garbage weights
-    (output parity ~0.93). Now all stages cos=1.000000. Conv→ggml port still TODO;
-    self-consistent ref at `cstr/scunet-GGUF/scunet-ref.gguf`.
+    (output parity ~0.93). Now all stages cos=1.000000. Self-consistent ref at
+    `cstr/scunet-GGUF/scunet-ref.gguf`.
   - [x] `swinir_sr.cpp` — **conv→ggml DONE**. The seven nested-loop conv sites
     (conv_first, 4× RSTB conv, conv_after_body, upsample) now dispatch through
     `swinir_conv` → `ggml_conv_2d` on a dedicated CPU sched with persistent
