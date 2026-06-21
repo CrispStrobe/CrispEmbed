@@ -473,6 +473,16 @@ static void gv_run_vit_graph(granite_vision_context * ctx,
     auto wt = [&](const std::string & name) -> ggml_tensor * {
         return core_gguf::try_get(ctx->wl.tensors, name.c_str());
     };
+    // On the ggml-CPU backend, mul_mat against a Q8_0 weight quantizes the F32
+    // activation to Q8_0 for the dot product — lower precision than Metal's mul_mm
+    // (which casts activations to F16) — and that error accumulates over the 27
+    // ViT layers (cos ~0.90 vs Metal's 0.96). Dequantizing the (square) attention
+    // weights to F32 on CPU forces an F32 activation dot. No-op on GPU (raw Q8_0 +
+    // mul_mm is already accurate and faster, and avoids the extra F32 weight copy).
+    const bool cpu_backend = ggml_backend_is_cpu(ctx->backend);
+    auto castw = [&](ggml_tensor * w) -> ggml_tensor * {
+        return (cpu_backend && w && ggml_is_quantized(w->type)) ? ggml_cast(g, w, GGML_TYPE_F32) : w;
+    };
 
     std::vector<ggml_tensor *> feat_ptrs(n_feat, nullptr);
 
@@ -507,9 +517,9 @@ static void gv_run_vit_graph(granite_vision_context * ctx,
         ggml_tensor * y = ln_g(x, ln1_w, ln1_b);
 
         // QKV projections: [D, T]
-        ggml_tensor * Q = ggml_mul_mat(g, q_w, y); if (q_b) Q = ggml_add(g, Q, q_b);
-        ggml_tensor * K = ggml_mul_mat(g, k_w, y); if (k_b) K = ggml_add(g, K, k_b);
-        ggml_tensor * V = ggml_mul_mat(g, v_w, y); if (v_b) V = ggml_add(g, V, v_b);
+        ggml_tensor * Q = ggml_mul_mat(g, castw(q_w), y); if (q_b) Q = ggml_add(g, Q, q_b);
+        ggml_tensor * K = ggml_mul_mat(g, castw(k_w), y); if (k_b) K = ggml_add(g, K, k_b);
+        ggml_tensor * V = ggml_mul_mat(g, castw(v_w), y); if (v_b) V = ggml_add(g, V, v_b);
 
         // [D, T] → [d_head, n_heads, T] → permute → [d_head, T, n_heads]
         Q = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, Q, d_head, n_heads, T), 0, 2, 1, 3));
@@ -524,7 +534,7 @@ static void gv_run_vit_graph(granite_vision_context * ctx,
         ggml_tensor * attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
         attn = ggml_reshape_2d(g, attn, D, T);
 
-        attn = ggml_mul_mat(g, o_w, attn);
+        attn = ggml_mul_mat(g, castw(o_w), attn);
         if (o_b) attn = ggml_add(g, attn, o_b);
         x = ggml_add(g, resid, attn);
 
@@ -540,14 +550,30 @@ static void gv_run_vit_graph(granite_vision_context * ctx,
         // plain element relabel. F16/F32 weights reshape safely as-is.
         // See LEARNINGS "granite_vision: ggml graph divergence was a Q8_0 reshape".
         auto reshape_w = [&](ggml_tensor * w) -> ggml_tensor * {
-            ggml_tensor * t = ggml_is_quantized(w->type) ? ggml_cast(g, w, GGML_TYPE_F32) : w;
+            // Cast to F32 when quantized (required: the Q8_0 down reshape is only
+            // valid in F32) or, on the CPU backend, when F16 (for dot precision —
+            // see castw). Then reshape to ggml_mul_mat's [in,out].
+            const bool need_cast = ggml_is_quantized(w->type) ||
+                                   (cpu_backend && w->type != GGML_TYPE_F32);
+            ggml_tensor * t = need_cast ? ggml_cast(g, w, GGML_TYPE_F32) : w;
             return ggml_reshape_2d(g, t, w->ne[1], w->ne[0]);
         };
         resid = x;
         y = ln_g(x, ln2_w, ln2_b);
         y = ggml_mul_mat(g, reshape_w(fc1_w), y);
         if (fc1_b) y = ggml_add(g, y, fc1_b);
-        y = ggml_gelu(g, y);
+        // tanh-GELU (gelu_pytorch_tanh) in explicit F32 ops. ggml_gelu routes
+        // through an F16 lookup table on the ggml-CPU backend (input quantized to
+        // F16); over the 27 ViT layers that drifts to cos ~0.84 vs scalar, while
+        // Metal computes gelu in F32. ggml_tanh is direct tanhf, so this keeps
+        // the CPU graph at parity. 0.5*x*(1 + tanh(√(2/π)*(x + 0.044715*x³))).
+        {
+            ggml_tensor * x3 = ggml_mul(g, ggml_mul(g, y, y), y);
+            ggml_tensor * inner = ggml_scale(g, ggml_add(g, y, ggml_scale(g, x3, 0.044715f)),
+                                             0.7978845608028654f);
+            ggml_tensor * th = ggml_tanh(g, inner);
+            y = ggml_scale(g, ggml_add(g, y, ggml_mul(g, y, th)), 0.5f);
+        }
         y = ggml_mul_mat(g, reshape_w(fc2_w), y);
         if (fc2_b) y = ggml_add(g, y, fc2_b);
         x = ggml_add(g, resid, y);
@@ -976,18 +1002,15 @@ static void gv_vision_forward(granite_vision_context * ctx,
     int n_feat = (int)ctx->feature_layers.size();
     std::vector<std::vector<float>> layer_outputs(n_feat);
 
-    // The ggml ViT graph (gv_run_vit_graph) is NUMERICALLY CORRECT on the Metal
-    // backend after the Q8_0-FFN-reshape fix: per-layer crispembed-diff matches
-    // the scalar ViT to 3-4 decimals (layer 3/7/15 cos 0.9996-0.99987; late
-    // layers track the scalar's 0.96 ref-eps artifact) and it runs ~3 s vs ~100 s.
-    // DEFAULT ON for GPU backends. The ggml-CPU backend still drifts at late
-    // layers (cos ~0.84), so on CPU the scalar ViT (diff-validated cos ~0.9999 on
-    // real images, OCRBench 852) stays the default. Force with
-    // CRISPEMBED_GRANITE_VIS_GRAPH=1 / CRISPEMBED_GRANITE_VIS_SCALAR=1.
-    const bool on_gpu = !ggml_backend_is_cpu(ctx->backend);
-    const bool use_vis_graph =
-        (std::getenv("CRISPEMBED_GRANITE_VIS_GRAPH") || on_gpu) &&
-        !std::getenv("CRISPEMBED_GRANITE_VIS_SCALAR");
+    // The ggml ViT graph (gv_run_vit_graph) is NUMERICALLY CORRECT on both Metal
+    // and the ggml-CPU backend: per-layer crispembed-diff matches the scalar ViT
+    // to 3-4 decimals on each (layer 3/7/15 cos 0.9996-0.99987; layer 26 cos 0.958
+    // = the scalar's eps ref-artifact, not a bug). Metal runs ~3 s vs ~100 s
+    // scalar; the CPU graph is also faster than the scalar loop. DEFAULT ON;
+    // opt out with CRISPEMBED_GRANITE_VIS_SCALAR=1. (The CPU late-layer drift —
+    // F16-table gelu + Q8_0-quantized activations in the attn matmuls — is fixed
+    // inside gv_run_vit_graph via explicit F32 gelu + CPU F32 weight casts.)
+    const bool use_vis_graph = !std::getenv("CRISPEMBED_GRANITE_VIS_SCALAR");
     if (ctx->vis_sched && use_vis_graph) {
         gv_run_vit_graph(ctx, x.data(), T, D, layer_outputs);
     }
@@ -1397,17 +1420,15 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
         for (int v = 0; v < ctx->vocab_size; v++) logits_out[v] *= inv_scale;
     };
 
-    // ── Fast path: ggml batched prefill + T=1 decode on Metal ────────────
+    // ── Fast path: ggml batched prefill + T=1 decode ────────────────────
     // gv_run_llm_body is diff-validated against granite-llm-ref (cos 0.9999
-    // through logits) AND end-to-end on Metal (correct OCR). DEFAULT ON for GPU
-    // backends — ~22 s total vs the scalar decode's ~8 min prefill. The scalar
-    // decode (gv_llm_decode_step, cos=1.0) stays the default on CPU and as the
-    // fallback if KV alloc fails. Force with CRISPEMBED_GRANITE_LLM_GRAPH=1 /
-    // CRISPEMBED_GRANITE_LLM_SCALAR=1.
-    const bool llm_on_gpu = !ggml_backend_is_cpu(ctx->backend);
+    // through logits) AND end-to-end correct on both Metal and ggml-CPU. DEFAULT
+    // ON — ~22 s total on Metal vs the scalar decode's ~8 min prefill; the CPU
+    // graph is likewise far faster than the per-call-dequantizing scalar decode.
+    // The scalar decode (gv_llm_decode_step, cos=1.0) is the opt-out / fallback if
+    // KV alloc fails. Force with CRISPEMBED_GRANITE_LLM_SCALAR=1.
     bool use_graph = false;
-    if ((std::getenv("CRISPEMBED_GRANITE_LLM_GRAPH") || llm_on_gpu) &&
-        !std::getenv("CRISPEMBED_GRANITE_LLM_SCALAR"))
+    if (!std::getenv("CRISPEMBED_GRANITE_LLM_SCALAR"))
         use_graph = gv_alloc_kv_cache(ctx, max_seq);
 
     auto t_prefill = std::chrono::steady_clock::now();
