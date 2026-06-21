@@ -26,6 +26,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #ifndef M_PI
@@ -33,6 +34,17 @@
 #endif
 
 // ── Helpers ──
+
+// Forward decl: ggml-backed conv dispatcher (defined after adair_context).
+// `wptr` is the dequantized F32 weight pointer (dqc.get(...)); it is stable per
+// tensor so it doubles as the persistent-kernel cache key. When the ggml path
+// is disabled (ctx==nullptr or scalar opt-out) it falls back to scalar conv2d.
+struct adair_context;
+static void adair_conv(adair_context * ctx,
+                       const float * in, int ic, int h, int w,
+                       const float * wt, const float * bi,
+                       int oc, int kh, int kw, int pad, int stride, int groups,
+                       float * out);
 
 static void conv2d(const float * in, int ic, int h, int w,
                    const float * wt, const float * bi,
@@ -91,7 +103,7 @@ struct mdta_wt {
     ggml_tensor * temp; // [n_heads, 1, 1]
 };
 
-static void mdta_forward(const float * x, int C, int H, int W,
+static void mdta_forward(adair_context * ctx, const float * x, int C, int H, int W,
                           const mdta_wt & wt, int n_heads,
                           float * out,
                           core_cpu::DequantCache & dqc) {
@@ -99,8 +111,8 @@ static void mdta_forward(const float * x, int C, int H, int W,
 
     // Fused QKV: Conv1x1(C→3C) + DWConv3x3(3C), then split
     std::vector<float> qkv(3 * C * hw), qkv_dw(3 * C * hw);
-    conv2d(x, C, H, W, dqc.get(wt.qkv_w), nullptr, 3 * C, 1, 1, 0, 1, 1, qkv.data());
-    conv2d(qkv.data(), 3 * C, H, W, dqc.get(wt.qkv_dw), nullptr, 3 * C, 3, 3, 1, 1, 3 * C, qkv_dw.data());
+    adair_conv(ctx, x, C, H, W, dqc.get(wt.qkv_w), nullptr, 3 * C, 1, 1, 0, 1, 1, qkv.data());
+    adair_conv(ctx, qkv.data(), 3 * C, H, W, dqc.get(wt.qkv_dw), nullptr, 3 * C, 3, 3, 1, 1, 3 * C, qkv_dw.data());
 
     std::vector<float> q(C * hw), q_tmp(C * hw), k(C * hw), v(C * hw);
     memcpy(q.data(), qkv_dw.data(), C * hw * sizeof(float));
@@ -160,7 +172,7 @@ static void mdta_forward(const float * x, int C, int H, int W,
     }
 
     // Project out
-    conv2d(attn_out.data(), C, H, W, dqc.get(wt.proj_w), nullptr,
+    adair_conv(ctx, attn_out.data(), C, H, W, dqc.get(wt.proj_w), nullptr,
            C, 1, 1, 0, 1, 1, out);
 }
 
@@ -172,7 +184,7 @@ struct gdfn_wt {
     ggml_tensor * proj2_w; // Conv1x1(hidden/2→C) — no bias
 };
 
-static void gdfn_forward(const float * x, int C, int H, int W,
+static void gdfn_forward(adair_context * ctx, const float * x, int C, int H, int W,
                           const gdfn_wt & wt,
                           float * out,
                           core_cpu::DequantCache & dqc) {
@@ -182,12 +194,12 @@ static void gdfn_forward(const float * x, int C, int H, int W,
 
     // Conv1x1 expand (no bias)
     std::vector<float> h1(hidden * hw);
-    conv2d(x, C, H, W, dqc.get(wt.proj1_w), nullptr,
+    adair_conv(ctx, x, C, H, W, dqc.get(wt.proj1_w), nullptr,
            hidden, 1, 1, 0, 1, 1, h1.data());
 
     // DWConv3x3 (no bias)
     std::vector<float> h2(hidden * hw);
-    conv2d(h1.data(), hidden, H, W, dqc.get(wt.dw_w), nullptr,
+    adair_conv(ctx, h1.data(), hidden, H, W, dqc.get(wt.dw_w), nullptr,
            hidden, 3, 3, 1, 1, hidden, h2.data());
 
     // Gated: split in half, GELU(x1) * x2
@@ -201,7 +213,7 @@ static void gdfn_forward(const float * x, int C, int H, int W,
         }
 
     // Conv1x1 project (no bias)
-    conv2d(gated.data(), half, H, W, dqc.get(wt.proj2_w), nullptr,
+    adair_conv(ctx, gated.data(), half, H, W, dqc.get(wt.proj2_w), nullptr,
            C, 1, 1, 0, 1, 1, out);
 }
 
@@ -214,7 +226,7 @@ struct tb_wt {
     gdfn_wt ffn;
 };
 
-static void tb_forward(float * x, int C, int H, int W, int n_heads,
+static void tb_forward(adair_context * ctx, float * x, int C, int H, int W, int n_heads,
                         const tb_wt & wt,
                         core_cpu::DequantCache & dqc) {
     int hw = H * W;
@@ -222,12 +234,12 @@ static void tb_forward(float * x, int C, int H, int W, int n_heads,
 
     // LN → MDTA → residual
     layernorm2d(x, C, H, W, dqc.get(wt.norm1_w), dqc.get(wt.norm1_b), normed.data());
-    mdta_forward(normed.data(), C, H, W, wt.attn, n_heads, out.data(), dqc);
+    mdta_forward(ctx, normed.data(), C, H, W, wt.attn, n_heads, out.data(), dqc);
     for (int i = 0; i < C * hw; i++) x[i] += out[i];
 
     // LN → GDFN → residual
     layernorm2d(x, C, H, W, dqc.get(wt.norm2_w), dqc.get(wt.norm2_b), normed.data());
-    gdfn_forward(normed.data(), C, H, W, wt.ffn, out.data(), dqc);
+    gdfn_forward(ctx, normed.data(), C, H, W, wt.ffn, out.data(), dqc);
     for (int i = 0; i < C * hw; i++) x[i] += out[i];
 }
 
@@ -327,7 +339,7 @@ struct cross_attn_wt {
     ggml_tensor * temp;
 };
 
-static void cross_attn_forward(const float * q_in, const float * kv_in,
+static void cross_attn_forward(adair_context * ctx, const float * q_in, const float * kv_in,
                                 int C, int H, int W, int n_heads,
                                 const cross_attn_wt & wt,
                                 float * out,
@@ -336,12 +348,12 @@ static void cross_attn_forward(const float * q_in, const float * kv_in,
 
     std::vector<float> q(C * hw), q_tmp(C * hw), k(C * hw), v(C * hw);
     // Q from q_in
-    conv2d(q_in, C, H, W, dqc.get(wt.q_w), nullptr, C, 1, 1, 0, 1, 1, q_tmp.data());
-    conv2d(q_tmp.data(), C, H, W, dqc.get(wt.q_dw), nullptr, C, 3, 3, 1, 1, C, q.data());
+    adair_conv(ctx, q_in, C, H, W, dqc.get(wt.q_w), nullptr, C, 1, 1, 0, 1, 1, q_tmp.data());
+    adair_conv(ctx, q_tmp.data(), C, H, W, dqc.get(wt.q_dw), nullptr, C, 3, 3, 1, 1, C, q.data());
     // KV from kv_in
     std::vector<float> kv(2 * C * hw), kv_dw_buf(2 * C * hw);
-    conv2d(kv_in, C, H, W, dqc.get(wt.kv_w), nullptr, 2 * C, 1, 1, 0, 1, 1, kv.data());
-    conv2d(kv.data(), 2 * C, H, W, dqc.get(wt.kv_dw), nullptr, 2 * C, 3, 3, 1, 1, 2 * C, kv_dw_buf.data());
+    adair_conv(ctx, kv_in, C, H, W, dqc.get(wt.kv_w), nullptr, 2 * C, 1, 1, 0, 1, 1, kv.data());
+    adair_conv(ctx, kv.data(), 2 * C, H, W, dqc.get(wt.kv_dw), nullptr, 2 * C, 3, 3, 1, 1, 2 * C, kv_dw_buf.data());
     memcpy(k.data(), kv_dw_buf.data(), C * hw * sizeof(float));
     memcpy(v.data(), kv_dw_buf.data() + C * hw, C * hw * sizeof(float));
 
@@ -383,7 +395,7 @@ static void cross_attn_forward(const float * q_in, const float * kv_in,
                 attn_out[(co + i) * hw + p] = s;
             }
     }
-    conv2d(attn_out.data(), C, H, W, dqc.get(wt.proj_w), nullptr,
+    adair_conv(ctx, attn_out.data(), C, H, W, dqc.get(wt.proj_w), nullptr,
            C, 1, 1, 0, 1, 1, out);
 }
 
@@ -403,7 +415,7 @@ struct fre_wt {
 
 // fre_forward: inp_img (3ch) + decoder feature → refined feature
 // The FFT operates on inp_img projected to C channels, not on intermediate features.
-static void fre_forward(const float * inp_img_3ch, int img_h, int img_w,
+static void fre_forward(adair_context * ctx, const float * inp_img_3ch, int img_h, int img_w,
                          const float * dec_feat, int C, int H, int W,
                          int n_heads,
                          const fre_wt & wt,
@@ -440,7 +452,7 @@ static void fre_forward(const float * inp_img_3ch, int img_h, int img_w,
 
     // Project img to C channels: conv1(3→C)
     std::vector<float> projected(C * hw);
-    conv2d(img_resized.data(), 3, H, W, dqc.get(wt.conv1_w), nullptr,
+    adair_conv(ctx, img_resized.data(), 3, H, W, dqc.get(wt.conv1_w), nullptr,
            C, 3, 3, 1, 1, 1, projected.data());
 
     // FFT on projected features
@@ -534,8 +546,8 @@ static void fre_forward(const float * inp_img_3ch, int img_h, int img_w,
 
     // Cross-attention: high guided by dec_feat, low guided by dec_feat
     std::vector<float> ca_h(C * hw), ca_l(C * hw);
-    cross_attn_forward(hi_feat.data(), dec_feat, C, H, W, n_heads, wt.cross_l, ca_h.data(), dqc);
-    cross_attn_forward(lo_feat.data(), dec_feat, C, H, W, n_heads, wt.cross_h, ca_l.data(), dqc);
+    cross_attn_forward(ctx, hi_feat.data(), dec_feat, C, H, W, n_heads, wt.cross_l, ca_h.data(), dqc);
+    cross_attn_forward(ctx, lo_feat.data(), dec_feat, C, H, W, n_heads, wt.cross_h, ca_l.data(), dqc);
 
     // FreRefine: SpatialGate(H→L) + ChannelGate(L→H)
     // SpatialGate: max+mean pool → conv7x7 → sigmoid → scale low by spatial gate
@@ -548,7 +560,7 @@ static void fre_forward(const float * inp_img_3ch, int img_h, int img_w,
         sg_in[i] = mx; sg_in[hw + i] = mn / C;
     }
     std::vector<float> sg_out(hw);
-    conv2d(sg_in.data(), 2, H, W, dqc.get(wt.sg_w), nullptr, 1, 7, 7, 3, 1, 1, sg_out.data());
+    adair_conv(ctx, sg_in.data(), 2, H, W, dqc.get(wt.sg_w), nullptr, 1, 7, 7, 3, 1, 1, sg_out.data());
     for (int i = 0; i < hw; i++) sg_out[i] = 1.0f / (1.0f + expf(-sg_out[i]));
     std::vector<float> lo_gated(C * hw);
     for (int c = 0; c < C; c++)
@@ -581,12 +593,12 @@ static void fre_forward(const float * inp_img_3ch, int img_h, int img_w,
     // Sum and project
     std::vector<float> refined(C * hw);
     for (int i = 0; i < C * hw; i++) refined[i] = lo_gated[i] + hi_gated[i];
-    conv2d(refined.data(), C, H, W, dqc.get(wt.proj_w), dqc.get(wt.proj_b),
+    adair_conv(ctx, refined.data(), C, H, W, dqc.get(wt.proj_w), dqc.get(wt.proj_b),
            C, 1, 1, 0, 1, 1, out);
 
     // Aggregate cross-attention of dec_feat with refined
     std::vector<float> ca_agg(C * hw);
-    cross_attn_forward(dec_feat, out, C, H, W, n_heads, wt.cross_agg, ca_agg.data(), dqc);
+    cross_attn_forward(ctx, dec_feat, out, C, H, W, n_heads, wt.cross_agg, ca_agg.data(), dqc);
 
     // Final: out = ca_agg * para1 + dec_feat * para2
     const float * p1 = dqc.get(wt.para1);
@@ -649,7 +661,95 @@ struct adair_context {
     fre_wt fre1, fre2, fre3;
 
     core_cpu::DequantCache dqc;
+
+    int n_threads = 1;
+
+    // ggml conv infrastructure (all conv sites on a dedicated CPU sched; the 2D
+    // FFT/AFLB and attention softmax stay SIMD-scalar). Persistent F32 kernels
+    // are keyed by the dequantized weight POINTER (dqc.get(...) is stable per
+    // tensor), and F16-cast in-graph (conv = im2col(F16)+mul_mat; the CPU sched
+    // can't place a mul_mat with an F32 kernel).
+    bool use_ggml_conv = false;
+    ggml_backend_t       enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched   = nullptr;
+    std::unordered_map<const void *, ggml_tensor *> gw;  // persistent kernels by weight ptr
+    std::vector<ggml_context *> gw_ctxs;
+    std::vector<ggml_backend_buffer_t> gw_bufs;
+    std::vector<uint8_t> graph_meta;
 };
+
+// ── ggml conv dispatch (all adair conv sites → ggml_conv_2d / _dw on a CPU
+// sched) ──
+// Lazily builds a persistent CPU-resident F32 kernel per conv weight, keyed by
+// the dequantized weight pointer `wptr` (dqc.get(...) returns a pointer that is
+// stable per tensor). The pointer carries [OC,IC,KH,KW] C-order F32 bytes
+// (regardless of gguf storage); the 4D kernel shape comes from the call-site
+// dims. Depthwise (groups==oc) uses ggml_conv_2d_dw with kernel ne=[KW,KH,1,OC]
+// and OC*KH*KW data; regular uses ne=[KW,KH,IC,OC] with OC*IC*KH*KW. The kernel
+// is F16-cast in-graph. Bias is added on the host afterward.
+static ggml_tensor * adair_kernel(adair_context * ctx, const float * wptr,
+                                  int ic, int oc, int kh, int kw, bool dw) {
+    auto it = ctx->gw.find((const void *)wptr);
+    if (it != ctx->gw.end()) return it->second;
+    int64_t kic = dw ? 1 : ic;
+    int64_t kne[4] = { kw, kh, kic, oc };
+    ggml_init_params ip = { ggml_tensor_overhead() + 256, nullptr, true };
+    ggml_context * kctx = ggml_init(ip);
+    ggml_tensor * k = ggml_new_tensor(kctx, GGML_TYPE_F32, 4, kne);
+    ggml_backend_buffer_t kbuf = ggml_backend_alloc_ctx_tensors(kctx, ctx->enc_backend);
+    if (wptr) ggml_backend_tensor_set(k, wptr, 0, ggml_nbytes(k));
+    ctx->gw_ctxs.push_back(kctx);
+    ctx->gw_bufs.push_back(kbuf);
+    ctx->gw[(const void *)wptr] = k;
+    return k;
+}
+
+static void adair_conv(adair_context * ctx,
+                       const float * in, int ic, int h, int w,
+                       const float * wt, const float * bi,
+                       int oc, int kh, int kw, int pad, int stride, int groups,
+                       float * out) {
+    if (!ctx || !ctx->use_ggml_conv) {
+        conv2d(in, ic, h, w, wt, bi, oc, kh, kw, pad, stride, groups, out);
+        return;
+    }
+    bool dw = (groups == oc && groups == ic);
+    ggml_tensor * k = adair_kernel(ctx, wt, ic, oc, kh, kw, dw);
+
+    const int max_nodes = 16;
+    size_t buf_size = ggml_tensor_overhead() * max_nodes
+                    + ggml_graph_overhead_custom(max_nodes, false);
+    ctx->graph_meta.resize(buf_size);
+    ggml_init_params ip = { buf_size, ctx->graph_meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, w, h, ic);
+    ggml_set_name(x, "x"); ggml_set_input(x);
+    ggml_tensor * kf = ggml_cast(g, k, GGML_TYPE_F16);
+    ggml_tensor * y = dw ? ggml_conv_2d_dw(g, kf, x, stride, stride, pad, pad, 1, 1)
+                         : ggml_conv_2d   (g, kf, x, stride, stride, pad, pad, 1, 1);
+    ggml_set_name(y, "out"); ggml_set_output(y);
+    ggml_build_forward_expand(gf, y);
+
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "adair: conv alloc failed\n");
+        ggml_free(g);
+        // Fall back to scalar so we never emit garbage.
+        conv2d(in, ic, h, w, wt, bi, oc, kh, kw, pad, stride, groups, out);
+        return;
+    }
+    ggml_backend_tensor_set(x, in, 0, (size_t)ic * h * w * sizeof(float));
+    ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
+    int oh = (h + 2 * pad - kh) / stride + 1;
+    int ow = (w + 2 * pad - kw) / stride + 1;
+    ggml_backend_tensor_get(y, out, 0, (size_t)oc * oh * ow * sizeof(float));
+    ggml_free(g);
+
+    // Bias (host add).
+    if (bi) for (int o = 0; o < oc; o++) { float bo = bi[o]; for (int i = 0; i < oh * ow; i++) out[(size_t)o*oh*ow + i] += bo; }
+}
 
 static void load_cross_attn(core_gguf::WeightLoad & wl, const char * pfx, cross_attn_wt & ca) {
     auto g = [&](const char * s) { char b[256]; snprintf(b, sizeof(b), "%s.%s", pfx, s); return core_gguf::try_get(wl.tensors, b); };
@@ -691,7 +791,6 @@ static void load_fre(core_gguf::WeightLoad & wl, const char * pfx, fre_wt & f) {
 }
 
 adair_context * adair_init(const char * model_path, int n_threads) {
-    (void)n_threads;
     if (!model_path) return nullptr;
 
     bool force_cpu = (getenv("ADAIR_FORCE_CPU") && atoi(getenv("ADAIR_FORCE_CPU")));
@@ -759,11 +858,32 @@ adair_context * adair_init(const char * model_path, int n_threads) {
     load_fre(wl, "net.fre3", ctx->fre3);
 
     ctx->bench = (std::getenv("CRISPEMBED_ADAIR_BENCH") != nullptr);
+    ctx->n_threads = n_threads > 0 ? n_threads : 1;
+
+    // ggml conv path for ALL conv sites (MDTA/GDFN/cross-attn/FreModule + the
+    // U-Net down/up/reduce convs). AdaIR is Restormer-style (conv+attention
+    // heavy), so the convs dominate the forward — default ON, opt out with
+    // ADAIR_SCALAR=1. The 2D FFT (AFLB) and attention softmax stay SIMD-scalar.
+    if (!(getenv("ADAIR_SCALAR") && atoi(getenv("ADAIR_SCALAR")))) {
+        ctx->enc_backend = ggml_backend_cpu_init();
+        if (ctx->enc_backend) {
+            ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads);
+            ggml_backend_t backends[] = { ctx->enc_backend };
+            ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+            ctx->use_ggml_conv = (ctx->enc_sched != nullptr);
+        }
+    }
+    fprintf(stderr, "adair: conv path = %s\n",
+            ctx->use_ggml_conv ? "ggml_conv_2d (CPU sched)" : "scalar");
     return ctx;
 }
 
 void adair_free(adair_context * ctx) {
     if (!ctx) return;
+    for (auto * b : ctx->gw_bufs) if (b) ggml_backend_buffer_free(b);
+    for (auto * c : ctx->gw_ctxs) if (c) ggml_free(c);
+    if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+    if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
     core_gguf::WeightLoad wl;
     wl.ctx = ctx->gguf_ctx; wl.buf = ctx->gguf_buf;
     core_gguf::free_weights(wl);
@@ -786,14 +906,14 @@ int adair_process_float(adair_context * ctx,
     // Patch embed: Conv3x3(3→48)
     int ch = 48;
     std::vector<float> x(ch * H * W);
-    conv2d(input_chw, 3, H, W, dqc.get(ctx->patch_embed_w),
+    adair_conv(ctx, input_chw, 3, H, W, dqc.get(ctx->patch_embed_w),
            dqc.get(ctx->patch_embed_b), ch, 3, 3, 1, 1, 1, x.data());
 
     // Encoder level 1: 4 TB at 48ch
     int heads[] = {1, 2, 4, 8};
     int cur_h = H, cur_w = W;
     auto t_enc1 = std::chrono::steady_clock::now();
-    for (auto & tb : ctx->enc1) tb_forward(x.data(), ch, cur_h, cur_w, heads[0], tb, dqc);
+    for (auto & tb : ctx->enc1) tb_forward(ctx, x.data(), ch, cur_h, cur_w, heads[0], tb, dqc);
     std::vector<float> skip1(x.begin(), x.end());
     if (bench) {
         auto t_enc1_end = std::chrono::steady_clock::now();
@@ -803,7 +923,7 @@ int adair_process_float(adair_context * ctx,
 
     // Downsample 1→2: Conv3x3 + PixelUnshuffle(2)
     std::vector<float> ds(ch / 2 * cur_h * cur_w);
-    conv2d(x.data(), ch, cur_h, cur_w, dqc.get(ctx->down12.w), dqc.get(ctx->down12.b),
+    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->down12.w), dqc.get(ctx->down12.b),
            ch / 2, 3, 3, 1, 1, 1, ds.data());
     ch = ch * 2; cur_h /= 2; cur_w /= 2; // after pixel_unshuffle: ch/2 * 4 = ch*2
     x.resize(ch * cur_h * cur_w);
@@ -811,7 +931,7 @@ int adair_process_float(adair_context * ctx,
 
     // Encoder level 2: 6 TB at 96ch
     auto t_enc2 = std::chrono::steady_clock::now();
-    for (auto & tb : ctx->enc2) tb_forward(x.data(), ch, cur_h, cur_w, heads[1], tb, dqc);
+    for (auto & tb : ctx->enc2) tb_forward(ctx, x.data(), ch, cur_h, cur_w, heads[1], tb, dqc);
     std::vector<float> skip2(x.begin(), x.end());
     if (bench) {
         auto t_enc2_end = std::chrono::steady_clock::now();
@@ -821,7 +941,7 @@ int adair_process_float(adair_context * ctx,
 
     // Downsample 2→3
     ds.resize(ch / 2 * cur_h * cur_w);
-    conv2d(x.data(), ch, cur_h, cur_w, dqc.get(ctx->down23.w), dqc.get(ctx->down23.b),
+    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->down23.w), dqc.get(ctx->down23.b),
            ch / 2, 3, 3, 1, 1, 1, ds.data());
     ch *= 2; cur_h /= 2; cur_w /= 2;
     x.resize(ch * cur_h * cur_w);
@@ -829,7 +949,7 @@ int adair_process_float(adair_context * ctx,
 
     // Encoder level 3: 6 TB at 192ch
     auto t_enc3 = std::chrono::steady_clock::now();
-    for (auto & tb : ctx->enc3) tb_forward(x.data(), ch, cur_h, cur_w, heads[2], tb, dqc);
+    for (auto & tb : ctx->enc3) tb_forward(ctx, x.data(), ch, cur_h, cur_w, heads[2], tb, dqc);
     std::vector<float> skip3(x.begin(), x.end());
     if (bench) {
         auto t_enc3_end = std::chrono::steady_clock::now();
@@ -839,7 +959,7 @@ int adair_process_float(adair_context * ctx,
 
     // Downsample 3→4
     ds.resize(ch / 2 * cur_h * cur_w);
-    conv2d(x.data(), ch, cur_h, cur_w, dqc.get(ctx->down34.w), dqc.get(ctx->down34.b),
+    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->down34.w), dqc.get(ctx->down34.b),
            ch / 2, 3, 3, 1, 1, 1, ds.data());
     ch *= 2; cur_h /= 2; cur_w /= 2;
     x.resize(ch * cur_h * cur_w);
@@ -848,7 +968,7 @@ int adair_process_float(adair_context * ctx,
     // Latent: 8 TB at 384ch
     auto t_latent = std::chrono::steady_clock::now();
     for (int bi = 0; bi < (int)ctx->latent.size(); bi++) {
-        tb_forward(x.data(), ch, cur_h, cur_w, heads[3], ctx->latent[bi], dqc);
+        tb_forward(ctx, x.data(), ch, cur_h, cur_w, heads[3], ctx->latent[bi], dqc);
     }
     if (bench) {
         auto t_latent_end = std::chrono::steady_clock::now();
@@ -858,7 +978,7 @@ int adair_process_float(adair_context * ctx,
 
     // fre1(inp_img, latent): refine latent BEFORE upsample
     auto t_fre1 = std::chrono::steady_clock::now();
-    fre_forward(input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2],
+    fre_forward(ctx, input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2],
                 ctx->fre1, x.data(), dqc);
     if (bench) {
         auto t_fre1_end = std::chrono::steady_clock::now();
@@ -869,7 +989,7 @@ int adair_process_float(adair_context * ctx,
     // Upsample 4→3 + cat(skip3) + reduce
     int up_ch = ch * 2;
     std::vector<float> us(up_ch * cur_h * cur_w);
-    conv2d(x.data(), ch, cur_h, cur_w, dqc.get(ctx->up43.w), dqc.get(ctx->up43.b),
+    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->up43.w), dqc.get(ctx->up43.b),
            up_ch, 3, 3, 1, 1, 1, us.data());
     ch /= 2; cur_h *= 2; cur_w *= 2;
     x.resize(ch * cur_h * cur_w);
@@ -878,15 +998,15 @@ int adair_process_float(adair_context * ctx,
     std::vector<float> cat(2 * ch * cur_h * cur_w);
     memcpy(cat.data(), x.data(), ch * cur_h * cur_w * sizeof(float));
     memcpy(cat.data() + ch * cur_h * cur_w, skip3.data(), ch * cur_h * cur_w * sizeof(float));
-    conv2d(cat.data(), 2 * ch, cur_h, cur_w, dqc.get(ctx->reduce3_w), dqc.get(ctx->reduce3_b),
+    adair_conv(ctx, cat.data(), 2 * ch, cur_h, cur_w, dqc.get(ctx->reduce3_w), dqc.get(ctx->reduce3_b),
            ch, 1, 1, 0, 1, 1, x.data());
 
     // Decoder level 3: 6 TB
     auto t_dec3 = std::chrono::steady_clock::now();
-    for (auto & tb : ctx->dec3) tb_forward(x.data(), ch, cur_h, cur_w, heads[2], tb, dqc);
+    for (auto & tb : ctx->dec3) tb_forward(ctx, x.data(), ch, cur_h, cur_w, heads[2], tb, dqc);
 
     // fre2(inp_img, out_dec3): replace dec3 output
-    fre_forward(input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2],
+    fre_forward(ctx, input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2],
                 ctx->fre2, x.data(), dqc);
     if (bench) {
         auto t_dec3_end = std::chrono::steady_clock::now();
@@ -897,7 +1017,7 @@ int adair_process_float(adair_context * ctx,
     // Upsample 3→2 + cat(skip2) + reduce
     up_ch = ch * 2;
     us.resize(up_ch * cur_h * cur_w);
-    conv2d(x.data(), ch, cur_h, cur_w, dqc.get(ctx->up32.w), dqc.get(ctx->up32.b),
+    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->up32.w), dqc.get(ctx->up32.b),
            up_ch, 3, 3, 1, 1, 1, us.data());
     ch /= 2; cur_h *= 2; cur_w *= 2;
     x.resize(ch * cur_h * cur_w);
@@ -905,15 +1025,15 @@ int adair_process_float(adair_context * ctx,
     cat.resize(2 * ch * cur_h * cur_w);
     memcpy(cat.data(), x.data(), ch * cur_h * cur_w * sizeof(float));
     memcpy(cat.data() + ch * cur_h * cur_w, skip2.data(), ch * cur_h * cur_w * sizeof(float));
-    conv2d(cat.data(), 2 * ch, cur_h, cur_w, dqc.get(ctx->reduce2_w), dqc.get(ctx->reduce2_b),
+    adair_conv(ctx, cat.data(), 2 * ch, cur_h, cur_w, dqc.get(ctx->reduce2_w), dqc.get(ctx->reduce2_b),
            ch, 1, 1, 0, 1, 1, x.data());
 
     // Decoder level 2: 6 TB
     auto t_dec2 = std::chrono::steady_clock::now();
-    for (auto & tb : ctx->dec2) tb_forward(x.data(), ch, cur_h, cur_w, heads[1], tb, dqc);
+    for (auto & tb : ctx->dec2) tb_forward(ctx, x.data(), ch, cur_h, cur_w, heads[1], tb, dqc);
 
     // fre3(inp_img, out_dec2): replace dec2 output
-    fre_forward(input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2],
+    fre_forward(ctx, input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2],
                 ctx->fre3, x.data(), dqc);
     if (bench) {
         auto t_dec2_end = std::chrono::steady_clock::now();
@@ -924,7 +1044,7 @@ int adair_process_float(adair_context * ctx,
     // Upsample 2→1 + cat(skip1) → 96ch (no reduce, dec1 is 96ch)
     up_ch = ch * 2;
     us.resize(up_ch * cur_h * cur_w);
-    conv2d(x.data(), ch, cur_h, cur_w, dqc.get(ctx->up21.w), dqc.get(ctx->up21.b),
+    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->up21.w), dqc.get(ctx->up21.b),
            up_ch, 3, 3, 1, 1, 1, us.data());
     ch /= 2; cur_h *= 2; cur_w *= 2;
     x.resize(ch * cur_h * cur_w);
@@ -937,13 +1057,13 @@ int adair_process_float(adair_context * ctx,
 
     // Decoder level 1: 4 TB at 96ch
     auto t_dec1 = std::chrono::steady_clock::now();
-    for (auto & tb : ctx->dec1) tb_forward(x.data(), ch, cur_h, cur_w, heads[0], tb, dqc);
+    for (auto & tb : ctx->dec1) tb_forward(ctx, x.data(), ch, cur_h, cur_w, heads[0], tb, dqc);
 
     // Refinement: 4 TB at 96ch
-    for (auto & tb : ctx->refinement) tb_forward(x.data(), ch, cur_h, cur_w, heads[0], tb, dqc);
+    for (auto & tb : ctx->refinement) tb_forward(ctx, x.data(), ch, cur_h, cur_w, heads[0], tb, dqc);
 
     // Output: Conv3x3(96→3) + residual
-    conv2d(x.data(), ch, cur_h, cur_w, dqc.get(ctx->output_w), dqc.get(ctx->output_b),
+    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->output_w), dqc.get(ctx->output_b),
            3, 3, 3, 1, 1, 1, output_chw);
     for (int i = 0; i < 3 * H * W; i++) output_chw[i] += input_chw[i];
 
