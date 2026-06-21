@@ -2547,6 +2547,29 @@ backends. Takeaway: ggml's CPU backend silently trades precision for speed
 (F16-table activations, activation requantization to the weight type); when a
 graph drifts on CPU but not GPU, suspect those before the math.
 
+## Self-consistent crispembed-diff reference from the GGUF — no original weights needed (2026-06-21)
+
+To numerically validate a backend you don't have the original framework checkpoint
+for, build the diff reference from the **GGUF the runtime already loads**: reverse
+the converter's name map (every `convert-*-to-gguf.py` has an explicit
+`add(gguf_name, torch_name)` table), dequantize each gguf tensor, build the torch
+`state_dict`, `load_state_dict(strict=False)` into the original arch, run the
+forward, and dump input+stages+output as the `-ref.gguf`. This proves
+**C++ runtime == framework on identical weights** (catches algorithm bugs; not
+weight-conversion bugs — for those use the real checkpoint). It's the granite-llm
+-ref pattern generalized; used to verify hat_sr's OCAB at output cos 0.999968 with
+no HAT `.pth`. See `tools/dump_hat_reference_from_gguf.py`. Gotchas: computed
+buffers (`relative_position_index`, `attn_mask`, `mean`) aren't in the gguf —
+`strict=False` keeps the arch's `__init__`-computed ones; assert that no *weight*
+keys are missing. Pick a small input size (e.g. 32) so the scalar C++ forward in
+the diff harness finishes quickly. Refs get uploaded to the model's HF repo.
+
+Corollary methodology trap: **a diff test that exists in `tests/` but isn't wired
+into CMake was never actually run.** `tests/test_hat_diff.cpp` was present for
+months but had no `add_executable` — so "there's a test for HAT" was false. When a
+backend is "validated," confirm the harness target is built and the reference
+exists, not just that the `.cpp` is in the tree.
+
 ## VLM/OCR decoder perf: keep the LM head on-GPU; don't re-copy KV history (2026-06-21)
 
 A cross-backend audit of the OCR decoders (granite_vision vs qwen2vl_ocr,
