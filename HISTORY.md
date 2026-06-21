@@ -57,11 +57,17 @@ overflow", and "ggml-CPU ViT precision".
 tied-embedding LM head **in-graph on Metal** for the last token (gv_run_llm_body's
 new `logits_out`) instead of a per-token `core_cpu::linear_cpu` matmul + hidden
 readback; (2) drop the per-layer `ggml_cont` of the full KV history — pass the
-cache views straight to `flash_attn_ext`. Decode **270 → 165 ms/tok (~1.6×)**, OCR
-still correct on both backends. The one-shot total is still dominated by the
-784-token prefill + Metal pipeline compilation; decode is now Metal-kernel-launch
-bound (~1840 tiny T=1 ops/token), so the next lever is a persistent decode graph
-(deepseek_ocr2's `build_persistent_decode_graph` pattern) — not yet done.
+cache views straight to `flash_attn_ext`. Decode **270 → 165 ms/tok (~1.6×)**, OCR still
+correct on both backends. Then profiled the decode call (env-gated timers): it is
+**~95 % GPU `graph_compute`** (~135 ms) — graph build (~0.8 ms) + `sched_alloc`
+(~5 ms) are negligible, so a persistent decode graph (deepseek's
+`build_persistent_decode_graph`) would NOT help. Decode is **dispatch-bound on
+~800 tiny T=1 kernels**, so the win is cutting kernel count: skip the SwiGLU
+down-proj ÷256/×256 F16-overflow guard for T=1 (it only matters for the prefill
+`mul_mm` F16 cast; T=1 `mul_mv` is F32-safe). That took decode **165 → 139 ms/tok**
+— **270 → 139 ms/tok (~1.9×) cumulative**, parity intact (LLM diff 7/7). Prefill
+(~12 s) is ~100 % GPU compute + one-time Metal pipeline compilation (a persistent
+server amortizes the latter); not fixable by graph management.
 
 ## June 20, 2026 — Granite Vision OCR: root-caused via HF-blueprint diff, scalar restored
 
