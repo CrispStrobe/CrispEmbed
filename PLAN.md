@@ -587,8 +587,16 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
     graph (nearest upscale + bilinear ILR via ggml_interpolate). Verified
     test-pan-diff cos_min=0.999997 vs self-consistent torch ref; ref on HF
     `cstr/text-super-resolution-gguf/pan-ref.gguf`. `PAN_SR_SCALAR=1` opts out.
-  - [ ] `dat_sr.cpp` — 18× dual attention (spatial+channel), ~60-90G, medium.
-    **VERIFIED + bug fixed** (conv→ggml port still TODO). Built a *genuine* ref by
+  - [x] `dat_sr.cpp` — 18× dual attention (spatial+channel), ~60-90G, medium.
+    **VERIFIED + bug fixed; conv→ggml DONE but gated opt-in** (`DAT_SR_GGML_CONV=1`).
+    The ggml conv path (conv_first, RG/body 3×3, upsample, AIM/SGFN depthwise via
+    `ggml_conv_2d`/`_dw` on a CPU sched, kernel F16-cast so the im2col+mul_mat
+    places on CPU) is verified pixel-perfect (output cos 0.999995 == scalar), but
+    it's a **net slowdown** here (~1.56s vs ~1.48s/tile): DAT is attention-bound
+    and its ~42 small scattered convs (mostly 36 depthwise across the 18 blocks)
+    each pay per-conv graph-build + sched_alloc overhead. So the scalar conv path
+    stays default; ggml is opt-in for benchmarking / a future batched-graph
+    rewrite. (Contrast swinir/scunet — conv-heavy → ggml wins.) Built a *genuine* ref by
     running the real PyTorch DAT-light (`dat_arch.py`, timm/basicsr mocked) on
     weights reconstructed from `dat-light-x2-f32.gguf`
     (`tools/dump_dat_reference_from_gguf.py`). Found+fixed a real bug: Conv+BN
