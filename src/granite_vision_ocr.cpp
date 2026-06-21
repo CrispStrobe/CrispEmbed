@@ -711,8 +711,11 @@ static bool gv_run_projector_graph(granite_vision_context * ctx,
 // Returns false on error; caller applies LM head + logits_scaling on CPU.
 static bool gv_run_llm_body(granite_vision_context * ctx,
                              const float * embeds, int T, int n_past,
-                             float * hidden_out) {
+                             float * hidden_out,
+                             gv_dump_cb dump_cb = nullptr, void * dump_ud = nullptr) {
     if (!ctx->vis_sched || !ctx->kvc_buf) return false;
+    // Per-layer last-token capture for crispembed-diff (only when dumping).
+    std::vector<std::pair<std::string, ggml_tensor*>> dbg_dumps;
 
     const int D        = ctx->llm_dim;
     const int n_heads  = ctx->llm_heads;
@@ -831,12 +834,31 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
         x = ggml_add(g, resid, ggml_scale(g, attn, res_mul));
 
         // ── FFN (SwiGLU) ──
+        // Metal's batched matmul (mul_mm, used for T>8 prefill) casts activations
+        // to F16 for the simdgroup matrix units. Granite carries "massive
+        // activations" (a few residual dims ~1e4, amplified ~×12 by the image
+        // feature embeddings), so the SwiGLU gate*up product can exceed F16 range
+        // (65504) → inf → NaN cascade from the first layer whose weights are large
+        // enough (empirically layer 8). Scale the down-projection activation down
+        // before the matmul and back up after: a lossless exponent shift that keeps
+        // the F16 cast in range. (mul_mv / T=1 decode and the CPU backend use F32
+        // and are unaffected.) See LEARNINGS "Metal mul_mm F16 activation overflow".
         resid = x;
         h = rmsnorm(x, n2w);
         ggml_tensor * gate = ggml_silu(g, ggml_mul_mat(g, sw(gw), h));
         ggml_tensor * up   = ggml_mul_mat(g, sw(uw), h);
-        ggml_tensor * down = ggml_mul_mat(g, sw(dw), ggml_mul(g, gate, up));
+        ggml_tensor * act  = ggml_scale(g, ggml_mul(g, gate, up), 1.0f / 256.0f);
+        ggml_tensor * down = ggml_scale(g, ggml_mul_mat(g, sw(dw), act), 256.0f);
         x = ggml_add(g, resid, ggml_scale(g, down, res_mul));
+
+        if (dump_cb) {
+            ggml_tensor * col = ggml_cont(g, ggml_view_2d(g, x, D, 1, x->nb[1],
+                                          (size_t)(T - 1) * x->nb[1]));
+            char nm[32]; snprintf(nm, sizeof(nm), "llm_layer_%d_out", li);
+            ggml_set_name(col, nm); ggml_set_output(col);
+            ggml_build_forward_expand(gf, col);
+            dbg_dumps.emplace_back(nm, col);
+        }
     }
 
     // Final RMSNorm (all T tokens; caller reads only the last one)
@@ -844,6 +866,13 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     ggml_tensor * out_t = ggml_cont(g, x);
     ggml_set_output(out_t);
     ggml_build_forward_expand(gf, out_t);
+    if (dump_cb) {
+        ggml_tensor * col = ggml_cont(g, ggml_view_2d(g, out_t, D, 1, out_t->nb[1],
+                                      (size_t)(T - 1) * out_t->nb[1]));
+        ggml_set_name(col, "llm_final_norm"); ggml_set_output(col);
+        ggml_build_forward_expand(gf, col);
+        dbg_dumps.emplace_back("llm_final_norm", col);
+    }
 
     // ── Schedule + compute ──
     ggml_backend_sched_reset(ctx->vis_sched);
@@ -877,6 +906,14 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     // Read back last token's hidden state (offset = (T-1)*D floats)
     ggml_backend_tensor_get(out_t, hidden_out,
                             (size_t)(T - 1) * D * sizeof(float), D * sizeof(float));
+
+    if (dump_cb) {
+        std::vector<float> tmp(D);
+        for (auto & pr : dbg_dumps) {
+            ggml_backend_tensor_get(pr.second, tmp.data(), 0, D * sizeof(float));
+            dump_cb(pr.first.c_str(), tmp.data(), D, dump_ud);
+        }
+    }
     ggml_free(g);
     return true;
 }
@@ -939,18 +976,18 @@ static void gv_vision_forward(granite_vision_context * ctx,
     int n_feat = (int)ctx->feature_layers.size();
     std::vector<std::vector<float>> layer_outputs(n_feat);
 
-    // The ggml ViT graph (gv_run_vit_graph) is now NUMERICALLY CORRECT on the
-    // Metal backend after the Q8_0-FFN-reshape fix (see gv_run_vit_graph): per
-    // -layer crispembed-diff matches the scalar ViT to 3-4 decimals (layer 3/7/15
-    // cos 0.9996-0.99987; late layers track the scalar's 0.96 ref-eps artifact)
-    // and it runs ~3 s vs ~100 s scalar. It stays opt-in (not yet the DEFAULT)
-    // for two reasons: (a) the ggml-CPU backend still drifts at late layers
-    // (cos ~0.84) so only Metal is validated, and (b) the full Metal OCR path is
-    // still gated on the LLM Metal graph (0 decode steps at 784-token prefill).
-    // The scalar ViT below is diff-validated (cos ~0.9999 on real images,
-    // OCRBench 852) and remains the DEFAULT. Enable the graph (Metal) with
-    // CRISPEMBED_GRANITE_VIS_GRAPH=1.
-    static const bool use_vis_graph = std::getenv("CRISPEMBED_GRANITE_VIS_GRAPH") != nullptr;
+    // The ggml ViT graph (gv_run_vit_graph) is NUMERICALLY CORRECT on the Metal
+    // backend after the Q8_0-FFN-reshape fix: per-layer crispembed-diff matches
+    // the scalar ViT to 3-4 decimals (layer 3/7/15 cos 0.9996-0.99987; late
+    // layers track the scalar's 0.96 ref-eps artifact) and it runs ~3 s vs ~100 s.
+    // DEFAULT ON for GPU backends. The ggml-CPU backend still drifts at late
+    // layers (cos ~0.84), so on CPU the scalar ViT (diff-validated cos ~0.9999 on
+    // real images, OCRBench 852) stays the default. Force with
+    // CRISPEMBED_GRANITE_VIS_GRAPH=1 / CRISPEMBED_GRANITE_VIS_SCALAR=1.
+    const bool on_gpu = !ggml_backend_is_cpu(ctx->backend);
+    const bool use_vis_graph =
+        (std::getenv("CRISPEMBED_GRANITE_VIS_GRAPH") || on_gpu) &&
+        !std::getenv("CRISPEMBED_GRANITE_VIS_SCALAR");
     if (ctx->vis_sched && use_vis_graph) {
         gv_run_vit_graph(ctx, x.data(), T, D, layer_outputs);
     }
@@ -1224,6 +1261,32 @@ void granite_vision_dump_llm(granite_vision_context * ctx,
     std::vector<float> logits(ctx->vocab_size);
     std::vector<float> emb(D);
 
+    // Graph path: validate gv_run_llm_body (the Metal/ggml LLM body) against the
+    // same reference. Runs all n_tokens as one batched prefill and dumps the
+    // last token's per-layer hidden states — the gv_llm_decode_step scalar path
+    // does NOT exercise the graph, so this is the only way to diff it.
+    if (std::getenv("CRISPEMBED_GRANITE_LLM_GRAPH") && gv_alloc_kv_cache(ctx, n_tokens + 4)) {
+        std::vector<float> embeds((size_t)n_tokens * D);
+        for (int t = 0; t < n_tokens; t++)
+            for (int d = 0; d < D; d++)
+                embeds[(size_t)t * D + d] = embed_w[(size_t)tokens[t] * D + d] * emb_mul;
+        // llm_embed_in = last token's scaled embedding (matches the scalar dump).
+        cb("llm_embed_in", embeds.data() + (size_t)(n_tokens - 1) * D, D, ud);
+        std::vector<float> hidden(D);
+        if (gv_run_llm_body(ctx, embeds.data(), n_tokens, 0, hidden.data(), cb, ud)) {
+            const float * lm_w = ctx->get("llm.lm_head.weight");
+            if (!lm_w && ctx->tie_word_embeddings) lm_w = embed_w;
+            if (lm_w) {
+                core_cpu::linear_cpu(hidden.data(), logits.data(), D, ctx->vocab_size, lm_w, nullptr);
+                float inv = 1.0f / ctx->logits_scaling;
+                for (int v = 0; v < ctx->vocab_size; v++) logits[v] *= inv;
+                cb("llm_logits", logits.data(), ctx->vocab_size, ud);
+            }
+            return;
+        }
+        fprintf(stderr, "granite_vision: LLM graph dump failed, falling back to scalar\n");
+    }
+
     for (int t = 0; t < n_tokens; t++) {
         int id = tokens[t];
         for (int d = 0; d < D; d++) emb[d] = embed_w[(size_t)id * D + d] * emb_mul;
@@ -1335,13 +1398,16 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
     };
 
     // ── Fast path: ggml batched prefill + T=1 decode on Metal ────────────
-    // The ggml LLM decode (gv_run_llm_body) is not yet numerically validated —
-    // it currently produces incorrect tokens (decode runs away to max_tokens).
-    // Vision + projector ggml graphs ARE correct, so they stay on Metal; the
-    // LLM falls back to the diff-validated scalar decode (cos=1.0) by default.
-    // Opt into the experimental ggml LLM graph with CRISPEMBED_GRANITE_LLM_GRAPH=1.
+    // gv_run_llm_body is diff-validated against granite-llm-ref (cos 0.9999
+    // through logits) AND end-to-end on Metal (correct OCR). DEFAULT ON for GPU
+    // backends — ~22 s total vs the scalar decode's ~8 min prefill. The scalar
+    // decode (gv_llm_decode_step, cos=1.0) stays the default on CPU and as the
+    // fallback if KV alloc fails. Force with CRISPEMBED_GRANITE_LLM_GRAPH=1 /
+    // CRISPEMBED_GRANITE_LLM_SCALAR=1.
+    const bool llm_on_gpu = !ggml_backend_is_cpu(ctx->backend);
     bool use_graph = false;
-    if (std::getenv("CRISPEMBED_GRANITE_LLM_GRAPH"))
+    if ((std::getenv("CRISPEMBED_GRANITE_LLM_GRAPH") || llm_on_gpu) &&
+        !std::getenv("CRISPEMBED_GRANITE_LLM_SCALAR"))
         use_graph = gv_alloc_kv_cache(ctx, max_seq);
 
     auto t_prefill = std::chrono::steady_clock::now();
