@@ -734,11 +734,16 @@ static bool gv_run_projector_graph(granite_vision_context * ctx,
 //   embeds: [T × D] float (pre-assembled: text scaled, vision unscaled)
 //   n_past: number of KV entries already in cache (0 for prefill)
 //   hidden_out: [D] float — hidden state of the last token after final RMSNorm
-// Returns false on error; caller applies LM head + logits_scaling on CPU.
+//   logits_out: if non-null, the LM head (tied embedding) + logits_scaling is run
+//     IN-GRAPH on Metal for the last token and read back as [vocab_size] — avoids
+//     the per-token CPU vocab matmul + hidden GPU→CPU readback. Pass null (diff
+//     path) to keep just hidden_out and apply the LM head on CPU.
+// Returns false on error.
 static bool gv_run_llm_body(granite_vision_context * ctx,
                              const float * embeds, int T, int n_past,
                              float * hidden_out,
-                             gv_dump_cb dump_cb = nullptr, void * dump_ud = nullptr) {
+                             gv_dump_cb dump_cb = nullptr, void * dump_ud = nullptr,
+                             float * logits_out = nullptr) {
     if (!ctx->vis_sched || !ctx->kvc_buf) return false;
     // Per-layer last-token capture for crispembed-diff (only when dumping).
     std::vector<std::pair<std::string, ggml_tensor*>> dbg_dumps;
@@ -840,18 +845,19 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
         ggml_build_forward_expand(gf, ggml_cpy(g, Vp, vv_view));
 
         // Read full K/V history [0..Lk) for this layer
+        // K/V history views [d_head, Lk, n_kv] straight into the cache — passed to
+        // flash_attn_ext as-is (it reads via nb strides), avoiding a full-history
+        // ggml_cont copy on every layer/step (was ~64 MB/step at len ~800).
         ggml_tensor * k_lay = ggml_view_3d(g, ctx->kvc_k,
             d_head, Lk, n_kv, kh_nb1, kh_nb2, (size_t)li * kh_nb3);
         ggml_tensor * v_lay = ggml_view_3d(g, ctx->kvc_v,
             d_head, Lk, n_kv, ctx->kvc_v->nb[1], ctx->kvc_v->nb[2],
             (size_t)li * ctx->kvc_v->nb[3]);
-        ggml_tensor * Kfull = ggml_cont(g, k_lay);  // [d_head, Lk, n_kv]
-        ggml_tensor * Vfull = ggml_cont(g, v_lay);
 
         // flash_attn_ext handles GQA natively via rk2=n_heads/n_kv broadcast —
         // no explicit KV head repeat needed. Q [d_head, T, n_heads], K/V [d_head, Lk, n_kv]
         Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));  // [d_head, T, n_heads]
-        ggml_tensor * attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, mask, attn_mul, 0.0f, 0.0f);
+        ggml_tensor * attn = ggml_flash_attn_ext(g, Q, k_lay, v_lay, mask, attn_mul, 0.0f, 0.0f);
         // Output: [d_head, n_heads, T] → reshape → [D, T]
         attn = ggml_reshape_2d(g, attn, D, T);
 
@@ -892,6 +898,31 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     ggml_tensor * out_t = ggml_cont(g, x);
     ggml_set_output(out_t);
     ggml_build_forward_expand(gf, out_t);
+
+    // In-graph LM head (tied embedding) for the last token — keeps the ~49156×2048
+    // vocab projection on the GPU instead of a per-token CPU matmul + hidden
+    // readback. The last-token hidden is normalized (O(1)) so the T=1 mul_mv is
+    // F32-safe. logits = (W_lm · h_last) / logits_scaling.
+    ggml_tensor * logit_t = nullptr;
+    if (logits_out) {
+        ggml_tensor * lm_w = wt("llm.lm_head.weight");
+        if (!lm_w && ctx->tie_word_embeddings) lm_w = wt("llm.embed.weight");
+        if (lm_w) {
+            // Converter stores embed/lm_head with transposed ne (ne[0]=vocab);
+            // relabel to mul_mat's [in=D, out=vocab] (cast quantized first so the
+            // reshape stays block-valid — see reshape_w in the ViT).
+            if (lm_w->ne[0] != D) {
+                ggml_tensor * t = ggml_is_quantized(lm_w->type) ? ggml_cast(g, lm_w, GGML_TYPE_F32) : lm_w;
+                lm_w = ggml_reshape_2d(g, t, lm_w->ne[1], lm_w->ne[0]);
+            }
+            ggml_tensor * h_last = ggml_view_2d(g, out_t, D, 1, out_t->nb[1],
+                                                (size_t)(T - 1) * out_t->nb[1]);
+            logit_t = ggml_mul_mat(g, lm_w, ggml_cont(g, h_last));   // [vocab, 1]
+            logit_t = ggml_scale(g, logit_t, 1.0f / ctx->logits_scaling);
+            ggml_set_output(logit_t);
+            ggml_build_forward_expand(gf, logit_t);
+        }
+    }
     if (dump_cb) {
         ggml_tensor * col = ggml_cont(g, ggml_view_2d(g, out_t, D, 1, out_t->nb[1],
                                       (size_t)(T - 1) * out_t->nb[1]));
@@ -932,6 +963,8 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
     // Read back last token's hidden state (offset = (T-1)*D floats)
     ggml_backend_tensor_get(out_t, hidden_out,
                             (size_t)(T - 1) * D * sizeof(float), D * sizeof(float));
+    if (logit_t)
+        ggml_backend_tensor_get(logit_t, logits_out, 0, (size_t)ctx->vocab_size * sizeof(float));
 
     if (dump_cb) {
         std::vector<float> tmp(D);
@@ -1410,16 +1443,6 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
     int prefill_len = n_text + n_vis_tokens;
     int max_seq = prefill_len + ctx->max_tokens + 8;
 
-    // LM head helper — used by both fast and scalar paths
-    auto apply_lm_head = [&](const float * hidden, float * logits_out) {
-        const float * lm_w = ctx->get("llm.lm_head.weight");
-        if (!lm_w && ctx->tie_word_embeddings) lm_w = ctx->get("llm.embed.weight");
-        if (!lm_w) return;
-        core_cpu::linear_cpu(hidden, logits_out, D, ctx->vocab_size, lm_w, nullptr);
-        float inv_scale = 1.0f / ctx->logits_scaling;
-        for (int v = 0; v < ctx->vocab_size; v++) logits_out[v] *= inv_scale;
-    };
-
     // ── Fast path: ggml batched prefill + T=1 decode ────────────────────
     // gv_run_llm_body is diff-validated against granite-llm-ref (cos 0.9999
     // through logits) AND end-to-end correct on both Metal and ggml-CPU. DEFAULT
@@ -1455,12 +1478,13 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
             }
         }
 
-        // One ggml call for the entire prefill (replaces prefill_len serial decode steps)
+        // One ggml call for the entire prefill (replaces prefill_len serial decode
+        // steps). LM head runs in-graph → logits filled directly (no CPU matmul).
         std::vector<float> hidden(D);
-        if (!gv_run_llm_body(ctx, prefill_embeds.data(), prefill_len, 0, hidden.data())) {
+        if (!gv_run_llm_body(ctx, prefill_embeds.data(), prefill_len, 0, hidden.data(),
+                             nullptr, nullptr, logits.data())) {
             use_graph = false;  // fall through to scalar path
         } else {
-            apply_lm_head(hidden.data(), logits.data());
             ctx->n_past = prefill_len;
         }
     }
@@ -1527,7 +1551,8 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
 
         if (use_graph) {
             std::vector<float> hidden(D);
-            if (!gv_run_llm_body(ctx, emb.data(), 1, ctx->n_past, hidden.data())) {
+            if (!gv_run_llm_body(ctx, emb.data(), 1, ctx->n_past, hidden.data(),
+                                 nullptr, nullptr, logits.data())) {
                 use_graph = false;
                 // fall back to scalar for remaining steps
                 ctx->kv_cache.assign((size_t)2 * ctx->llm_layers * max_seq *
@@ -1536,9 +1561,8 @@ const char * granite_vision_recognize(granite_vision_context * ctx,
                 // Note: n_past is already correct; scalar cache starts cold but
                 // worst case is slightly wrong KV — acceptable for a mid-run fallback.
                 gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
-            } else {
-                apply_lm_head(hidden.data(), logits.data());
             }
+            // else: logits filled in-graph by the LM head
         } else {
             gv_llm_decode_step(ctx, emb.data(), ctx->n_past, logits.data());
         }
