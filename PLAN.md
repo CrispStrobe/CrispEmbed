@@ -670,7 +670,11 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
     converter rename + un-transposes the Linear weights): output cos 0.999362
     (ggml == scalar; no correctness bug — the engine was already correct). The
     FeatureEnhancer MHA, not the convs, dominates the residual ~15-25G.
-  - [ ] `text_sr.cpp` — NAFNet variant + PixelShuffle + bicubic, ~40-60G, easy
+  - [ ] `text_sr.cpp` — NAFNet variant + PixelShuffle + bicubic, ~40-60G, easy.
+    **Blocked on a model, not code** — no public NAFNet text-SR checkpoint (registry
+    URL empty; the Apache-2.0 `tbsrn` already covers text-SR). To train one with
+    clean (Apache/MIT) data + a Kaggle-staged plan modeled on PosFormer, see
+    [docs/text_sr_training_data.md](docs/text_sr_training_data.md).
   - [x] `adair.cpp` — U-Net + AFLB + FFT, ~100-150G, hard. **conv→ggml DONE
     (~5.2× per tile).** All conv sites (patch_embed, down/up/reduce, output, and
     the MDTA/GDFN/cross-attn/FreModule convs threaded through the block helpers)
