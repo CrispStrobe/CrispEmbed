@@ -17,6 +17,10 @@ on:
       - 'CMakeLists.txt'
   workflow_dispatch:
 
+concurrency:
+  group: build-wasm-embed-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
