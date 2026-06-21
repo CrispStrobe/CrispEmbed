@@ -1,5 +1,38 @@
 # CrispEmbed — Technical Learnings
 
+## Porting a scalar conv engine to ggml_conv_2d: reverse the kernel ne (2026-06)
+
+When converting an SR/restoration engine from scalar conv nested loops to a
+`ggml_conv_2d` graph (pan_sr was the latest), the recurring trap is the conv
+kernel's `ne`. The Python converters write each PyTorch weight `[OC,IC,KH,KW]`
+with a plain `astype` — no permute — so in the GGUF the *data* is KW-innermost
+(row-major `[OC][IC][KH][KW]`, exactly what the scalar `weight[o*ic*kh*kw +
+c*kh*kw + ky*kw + kx]` indexing assumes) but the stored `ne` is `[OC,IC,KH,KW]`.
+
+`ggml_conv_2d(ctx, kernel, input, ...)` wants the kernel as `ne=[KW,KH,IC,OC]`
+over that same byte layout. So at weight-prep time **reverse the four ne axes
+and copy the raw dequantized buffer unchanged** — do not permute the data:
+
+```cpp
+// src ne = [OC,IC,KH,KW] (PyTorch order), data KW-innermost
+int64_t ne[4] = { t->ne[3], t->ne[2], t->ne[1], t->ne[0] }; // -> [KW,KH,IC,OC]
+ggml_tensor * w = ggml_new_tensor(gw_ctx, GGML_TYPE_F32, 4, ne);
+ggml_backend_tensor_set(w, dequantized_src, 0, ggml_nbytes(w)); // bytes as-is
+```
+
+Feeding the native ne instead aborts in `ggml_im2col` with `GGML_ASSERT(OW>0)`
+because it reads `OC` as the kernel width (e.g. 40 > input W=32 → negative OW).
+Do **not** use `ggml_n_dims` to detect conv kernels — a 1×1 weight `[OC,IC,1,1]`
+reports 2 dims and would be left un-reversed. Key off the `.weight` name suffix
+and always treat those as 4D. Biases (`.bias`, 1-D) are copied as-is.
+
+Verification corollary: the diff harness feeds the C++ engine a uint8-quantized
+input (`round(x*255)/255`), so the torch reference generator must snap its input
+to the same 1/255 grid. Skip this and a ±1/255 input perturbation amplifies
+through a 4× SR network to ~0.4 max-abs, dropping one image row to cos ≈0.9959
+even though the math is correct. Matched, pan's graph and scalar both reach
+cos_min 0.999997. See `tools/dump_pan_reference_from_gguf.py`.
+
 ## ggml_flash_attn_ext accepts non-contiguous Q/K/V (2026-06)
 
 `ggml_flash_attn_ext` on both Metal and CUDA handles non-contiguous inputs

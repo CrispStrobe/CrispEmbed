@@ -4,6 +4,40 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 21, 2026 — PAN super-resolution: scalar conv loops → ggml_conv_2d graph
+
+`pan_sr.cpp`'s per-tile forward, previously hand-rolled scalar convolution
+nested loops, now runs as a single `ggml_conv_2d` graph on the `enc_sched`
+backend — the same pattern restormer/esrgan/safmn/nafnet already use. The
+16× SCPA trunk (conv1_a/k1/conv1_b/PAConv/conv3 + residual), trunk_conv skip,
+two nearest-2× upsample stages with pixel attention, and the bilinear input
+skip all map directly to ggml ops: `ggml_conv_2d`, `ggml_leaky_relu(0.2)`,
+`ggml_sigmoid`, `ggml_mul`, `ggml_concat` (channel dim), `ggml_upscale(NEAREST)`,
+and `ggml_interpolate(BILINEAR)` (default half-pixel == torch `align_corners=False`).
+
+Two gotchas worth recording:
+
+- **Transposed conv ne.** The PAN GGUF stores conv weights in PyTorch axis
+  order `[OC,IC,KH,KW]` (the converter does a plain `astype`, no permute), but
+  the *data* is KW-innermost. `ggml_conv_2d` wants `ne=[KW,KH,IC,OC]` over those
+  exact bytes, so the graph-weight prep **reverses the four ne axes** while
+  copying the raw dequantized buffer unchanged. Feeding the native ne tripped
+  `ggml_im2col: OW>0` (it read OC=40 as the kernel width). `ggml_n_dims` can't
+  identify conv kernels (1×1 weights report 2 dims), so the prep keys off the
+  `.weight` name suffix and always treats them as 4D.
+- **Reference input quantization.** The diff harness feeds the engine a
+  uint8-quantized input (`round(x*255)/255`); the torch reference must snap its
+  input to the same 1/255 grid or a ±1/255 perturbation amplifies through the
+  4× network to ~0.4 max-abs and one image row drops to cos 0.9959. With the
+  matched input, graph and scalar both hit **cos_min=0.999997** vs the
+  self-consistent torch reference (`tools/dump_pan_reference_from_gguf.py`),
+  the residual being pure uint8 output rounding (max-abs 1.96e-3).
+
+`test-pan-diff` is the gate; `PAN_SR_SCALAR=1` keeps the scalar path for A/B.
+Reference uploaded to `cstr/text-super-resolution-gguf/pan-ref.gguf`. (`913b4f5`)
+
+---
+
 ## June 21, 2026 — Granite Vision OCR: full Metal graph path (vision + LLM) now works
 
 The whole Granite-Vision 3.3-2B OCR pipeline now runs on the Metal GPU **by
