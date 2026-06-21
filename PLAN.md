@@ -630,7 +630,17 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
     (global + per-channel) cosine. Self-consistent ref (erf-GELU) generator at
     `tools/dump_swinir_reference_from_gguf.py`. Conv→ggml port still TODO.
   - [ ] `hat_sr.cpp` — HAB + OCAB (unfold needed), ~70-100G, hard
-  - [ ] `tbsrn_sr.cpp` — RecurrentResidual + FeatureEnhancer MHA, ~15-25G, medium
+  - [x] `tbsrn_sr.cpp` — **conv→ggml DONE**. The six conv sites (block1 conv9,
+    srb conv1/conv2 ×5, final_conv, upsample.conv, output_conv) dispatch through
+    `tbsrn_conv` → `ggml_conv_2d` on a CPU sched with persistent reversed-ne F32
+    kernels (custom-writer PyTorch [OC,IC,KH,KW] → ggml [KW,KH,IC,OC]; BN is
+    already folded into the fused conv weights, so the kernel copies
+    `ctx->get(...)`). PReLU/mish/FeatureEnhancer-MHA/LN/PixelShuffle/tanh stay
+    scalar. `TBSRN_SR_SCALAR=1` opts out. Verified vs a self-consistent ref built
+    from the GGUF (`tools/dump_tbsrn_reference_from_gguf.py`, reverses the
+    converter rename + un-transposes the Linear weights): output cos 0.999362
+    (ggml == scalar; no correctness bug — the engine was already correct). The
+    FeatureEnhancer MHA, not the convs, dominates the residual ~15-25G.
   - [ ] `text_sr.cpp` — NAFNet variant + PixelShuffle + bicubic, ~40-60G, easy
   - [ ] `adair.cpp` — U-Net + AFLB + FFT, ~100-150G, hard (needs FFT wrapping)
 

@@ -304,13 +304,24 @@ struct tbsrn_sr_context {
     core_gguf::WeightLoad wl;
     core_cpu::DequantCache dcache;
 
-    // ggml conv infrastructure
+    // ggml conv infrastructure (convs on a CPU sched; attention stays scalar).
     ggml_backend_t       enc_backend  = nullptr;
     ggml_backend_sched_t enc_sched    = nullptr;
+    bool use_ggml_conv = false;
+    ggml_context *        gw_ctx = nullptr;       // persistent F32 conv kernels
+    ggml_backend_buffer_t gw_buf = nullptr;
+    std::unordered_map<std::string, ggml_tensor *> gw;
+    std::vector<uint8_t>  graph_meta;
     // Fused conv+BN weights (populated at init, keyed by tensor name)
     std::unordered_map<std::string, std::vector<float>> fused;
     // Cached 2D positional encoding (same for every SRB block)
     std::vector<float> pe_cache;
+
+    ggml_tensor * gwt(const std::string & name) {
+        auto it = gw.find(name);
+        if (it == gw.end()) { fprintf(stderr, "tbsrn_sr: missing graph weight %s\n", name.c_str()); return nullptr; }
+        return it->second;
+    }
 
     const float * get(const std::string & name) {
         // Check fused weights first (conv weights with BN folded in)
@@ -425,26 +436,114 @@ tbsrn_sr_context * tbsrn_sr_init(const char * model_path, int n_threads) {
             ctx->srb_nums, C, ctx->upscale_factor, (int)ctx->wl.tensors.size());
     ctx->bench = (std::getenv("CRISPEMBED_TBSRN_SR_BENCH") != nullptr);
 
-    ctx->enc_backend = ggml_backend_cpu_init();
-    if (ctx->enc_backend) {
-        ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads > 0 ? ctx->n_threads : 1);
-        ggml_backend_t backends[] = { ctx->enc_backend };
-        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+    // ── ggml conv path (opt out with TBSRN_SR_SCALAR=1) ───────────────────
+    // Replace the six tbsrn_conv2d sites (block1, srb conv1/conv2 ×5,
+    // final_conv, upsample.conv, output_conv) with ggml_conv_2d on a CPU sched.
+    // PReLU/mish/MHA/LN/PixelShuffle/tanh stay scalar. BN is already folded into
+    // the fused conv weights, so the persistent kernel copies ctx->get(...) (the
+    // fused data where present). Kernels are custom-writer PyTorch [OC,IC,KH,KW];
+    // reverse the 4 ne axes to ggml [KW,KH,IC,OC] over the same bytes.
+    bool want_ggml = !(getenv("TBSRN_SR_SCALAR") && atoi(getenv("TBSRN_SR_SCALAR")));
+    if (want_ggml) {
+        ctx->enc_backend = ggml_backend_cpu_init();
+        if (ctx->enc_backend) {
+            ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads > 0 ? ctx->n_threads : 1);
+            ggml_backend_t backends[] = { ctx->enc_backend };
+            ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+        }
     }
+    if (ctx->enc_sched) {
+        std::vector<std::string> conv_w;
+        conv_w.push_back("block1.conv");
+        for (int i = 0; i < ctx->srb_nums; i++) {
+            conv_w.push_back("srb." + std::to_string(i) + ".conv1");
+            conv_w.push_back("srb." + std::to_string(i) + ".conv2");
+        }
+        conv_w.push_back("final_conv");
+        conv_w.push_back("upsample.conv");
+        conv_w.push_back("output_conv");
+
+        ggml_init_params ip = { ggml_tensor_overhead() * (conv_w.size() * 2 + 4), nullptr, true };
+        ctx->gw_ctx = ggml_init(ip);
+        std::vector<std::pair<std::string, ggml_tensor *>> to_fill;
+        for (auto & base : conv_w) {
+            std::string wn = base + ".weight", bn = base + ".bias";
+            auto * wt = core_gguf::try_get(ctx->wl.tensors, wn.c_str());
+            auto * bt = core_gguf::try_get(ctx->wl.tensors, bn.c_str());
+            if (!wt || !bt) { fprintf(stderr, "tbsrn_sr: conv weight %s missing, scalar fallback\n", wn.c_str()); ctx->gw.clear(); break; }
+            int64_t ne[4] = { wt->ne[3], wt->ne[2], wt->ne[1], wt->ne[0] };
+            ggml_tensor * w = ggml_new_tensor(ctx->gw_ctx, GGML_TYPE_F32, 4, ne);
+            ggml_set_name(w, wn.c_str()); ctx->gw[wn] = w; to_fill.push_back({wn, w});
+            ggml_tensor * b = ggml_new_tensor_1d(ctx->gw_ctx, GGML_TYPE_F32, bt->ne[0]);
+            ggml_set_name(b, bn.c_str()); ctx->gw[bn] = b; to_fill.push_back({bn, b});
+        }
+        if (!ctx->gw.empty()) {
+            ctx->gw_buf = ggml_backend_alloc_ctx_tensors(ctx->gw_ctx, ctx->enc_backend);
+            for (auto & [name, w] : to_fill) {
+                const float * src = ctx->get(name);   // fused (BN-folded) where present
+                if (src) ggml_backend_tensor_set(w, src, 0, ggml_nbytes(w));
+            }
+            ctx->use_ggml_conv = true;
+        }
+    }
+    fprintf(stderr, "tbsrn_sr: conv path = %s\n", ctx->use_ggml_conv ? "ggml_conv_2d (CPU sched)" : "scalar");
     return ctx;
 }
 
 void tbsrn_sr_free(tbsrn_sr_context * ctx) {
     if (ctx) {
+        if (ctx->gw_buf) ggml_backend_buffer_free(ctx->gw_buf);
+        if (ctx->gw_ctx) ggml_free(ctx->gw_ctx);
+        if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+        if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
         core_gguf::free_weights(ctx->wl);
-    if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
-    if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
-
         delete ctx;
     }
 }
 
 // ── Forward pass ───────────────────────────────────────────────────────
+
+// Conv dispatch: ggml_conv_2d on the CPU sched, or scalar tbsrn_conv2d fallback.
+// `base` names the conv ("block1.conv", "srb.0.conv1", …); persistent F32 kernel
+// + bias live in ctx->gw. CHW [C,H,W] in/out. All tbsrn convs are stride 1.
+static void tbsrn_conv(tbsrn_sr_context * ctx,
+                       const float * in, int ic, int ih, int iw,
+                       const std::string & base,
+                       int oc, int kh, int kw, int pad, float * out) {
+    if (!ctx->use_ggml_conv) {
+        tbsrn_conv2d(in, ic, ih, iw, ctx->get(base + ".weight"), ctx->get(base + ".bias"),
+                     oc, kh, kw, pad, out);
+        return;
+    }
+
+    const int max_nodes = 16;
+    size_t buf_size = ggml_tensor_overhead() * max_nodes
+                    + ggml_graph_overhead_custom(max_nodes, false);
+    ctx->graph_meta.resize(buf_size);
+    ggml_init_params ip = { buf_size, ctx->graph_meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, iw, ih, ic);
+    ggml_set_name(x, "x"); ggml_set_input(x);
+    ggml_tensor * w = ctx->gwt(base + ".weight");
+    ggml_tensor * y = ggml_conv_2d(g, w, x, 1, 1, pad, pad, 1, 1);
+    ggml_tensor * b = ggml_reshape_4d(g, ctx->gwt(base + ".bias"), 1, 1, oc, 1);
+    y = ggml_add(g, y, b);
+    ggml_set_name(y, "out"); ggml_set_output(y);
+    ggml_build_forward_expand(gf, y);
+
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "tbsrn_sr: conv alloc failed (%s)\n", base.c_str());
+        ggml_free(g); return;
+    }
+    ggml_backend_tensor_set(x, in, 0, (size_t)ic * ih * iw * sizeof(float));
+    ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
+    int oh = ih + 2 * pad - kh + 1, ow = iw + 2 * pad - kw + 1;
+    ggml_backend_tensor_get(y, out, 0, (size_t)oc * oh * ow * sizeof(float));
+    ggml_free(g);
+}
 
 int tbsrn_sr_process(tbsrn_sr_context * ctx,
                      const uint8_t * input, int width, int height,
@@ -482,9 +581,7 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
 
     // block1: Conv9(3→64, p=4) + PReLU
     std::vector<float> x(C * LR_H * LR_W);
-    tbsrn_conv2d(lr.data(), 3, LR_H, LR_W,
-                 ctx->get("block1.conv.weight"), ctx->get("block1.conv.bias"),
-                 C, 9, 9, 4, x.data());
+    tbsrn_conv(ctx, lr.data(), 3, LR_H, LR_W, "block1.conv", C, 9, 9, 4, x.data());
     tbsrn_prelu(x.data(), C, LR_H * LR_W, ctx->get("block1.prelu.weight"));
     std::vector<float> block1_out = x;
 
@@ -502,16 +599,12 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
 
         // Conv1 + mish (BN fused into conv weights at load time)
         std::vector<float> residual(C * LR_H * LR_W);
-        tbsrn_conv2d(x.data(), C, LR_H, LR_W,
-                     ctx->get(p + ".conv1.weight"), ctx->get(p + ".conv1.bias"),
-                     C, 3, 3, 1, residual.data());
+        tbsrn_conv(ctx, x.data(), C, LR_H, LR_W, p + ".conv1", C, 3, 3, 1, residual.data());
         tbsrn_mish(residual.data(), C * LR_H * LR_W);
 
         // Conv2 (BN fused into conv weights at load time)
         std::vector<float> res2(C * LR_H * LR_W);
-        tbsrn_conv2d(residual.data(), C, LR_H, LR_W,
-                     ctx->get(p + ".conv2.weight"), ctx->get(p + ".conv2.bias"),
-                     C, 3, 3, 1, res2.data());
+        tbsrn_conv(ctx, residual.data(), C, LR_H, LR_W, p + ".conv2", C, 3, 3, 1, res2.data());
 
         // FeatureEnhancer
         // res2 is [C, H, W] → reshape to [C, T] where T = H*W = 1024
@@ -587,9 +680,7 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
 
     // block7: Conv3(64→64) on block6 output (BN fused at load time)
     std::vector<float> final_out(C * LR_H * LR_W);
-    tbsrn_conv2d(x.data(), C, LR_H, LR_W,
-                 ctx->get("final_conv.weight"), ctx->get("final_conv.bias"),
-                 C, 3, 3, 1, final_out.data());
+    tbsrn_conv(ctx, x.data(), C, LR_H, LR_W, "final_conv", C, 3, 3, 1, final_out.data());
 
     // block8 input: block1 + block7
     std::vector<float> up_input(C * LR_H * LR_W);
@@ -599,9 +690,7 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
     // UpsampleBlock: Conv(64→256, k=3, p=1) + PixelShuffle(2) + mish
     int up_oc = C * ctx->upscale_factor * ctx->upscale_factor;  // 256
     std::vector<float> up_conv(up_oc * LR_H * LR_W);
-    tbsrn_conv2d(up_input.data(), C, LR_H, LR_W,
-                 ctx->get("upsample.conv.weight"), ctx->get("upsample.conv.bias"),
-                 up_oc, 3, 3, 1, up_conv.data());
+    tbsrn_conv(ctx, up_input.data(), C, LR_H, LR_W, "upsample.conv", up_oc, 3, 3, 1, up_conv.data());
 
     std::vector<float> up_ps(C * HR_H * HR_W);
     tbsrn_pixel_shuffle(up_conv.data(), up_oc, LR_H, LR_W, ctx->upscale_factor, up_ps.data());
@@ -609,9 +698,7 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
 
     // Final conv: Conv(64→3, k=9, p=4) + tanh
     std::vector<float> sr_out(3 * HR_H * HR_W);
-    tbsrn_conv2d(up_ps.data(), C, HR_H, HR_W,
-                 ctx->get("output_conv.weight"), ctx->get("output_conv.bias"),
-                 3, 9, 9, 4, sr_out.data());
+    tbsrn_conv(ctx, up_ps.data(), C, HR_H, HR_W, "output_conv", 3, 9, 9, 4, sr_out.data());
     for (int j = 0; j < 3 * HR_H * HR_W; j++)
         sr_out[j] = tanhf(sr_out[j]);
 
