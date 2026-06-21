@@ -1,0 +1,14 @@
+{
+  "id": "chr1s4/crispembed-benchmark-sweep",
+  "title": "CrispEmbed Benchmark Sweep",
+  "code_file": "crispembed-benchmark.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "false",
+  "enable_internet": "true",
+  "competition_sources": [],
+  "dataset_sources": ["chr1s4/crispasr-hf-token", "chr1s4/crispasr-ccache"],
+  "kernel_sources": [],
+  "model_sources": []
+}

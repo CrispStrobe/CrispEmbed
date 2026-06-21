@@ -1,0 +1,141 @@
+{
+  "_comment": "Per-engine regression pins for CrispEmbed. Each entry pins (a) the GGUF under test to a specific HF revision SHA so an upstream re-quantise can't silently regress us, and (b) for diff-tier entries the frozen reference archive (also a pinned repo+path+revision). See tests/regression/README.md. Two tiers: `diff` runs test-<engine>-diff and asserts per-stage cos_min >= threshold; `smoke` runs the crispembed CLI and asserts the output is sane (or matches a captured golden) — the confirmation tier for engines without a ref yet. Re-run tools/audit_diff_coverage.py --probe-hf after editing.",
+  "version": 1,
+  "progress": {
+    "repo": "cstr/crispembed-kaggle-progress",
+    "repo_type": "dataset",
+    "_note": "Kaggle kernels push the rolling progress.jsonl AND each completed engine's result record here after EVERY step, so a crashed/timed-out kernel still leaves every finished verdict on HF."
+  },
+  "ref_convention": "Reference archives live in each model's own HF GGUF repo under diff-harness-ref/<engine>-ref.gguf (qari-ocr already follows this). Legacy refs at the repo root (instructir-ref.gguf, hat-ref.gguf, pan-ref.gguf, granite-*-ref.gguf) are pinned as-is below.",
+  "backends": [
+    {
+      "name": "instructir",
+      "engine_id": "instructir",
+      "tier": "diff",
+      "diff_bin": "test-instructir-diff",
+      "argv": "{model} {ref}",
+      "gguf": {
+        "repo": "cstr/InstructIR-GGUF",
+        "revision": "05b43ddb17bb",
+        "file": "instructir-f32.gguf",
+        "approx_size_mb": 70
+      },
+      "ref": {
+        "repo": "cstr/InstructIR-GGUF",
+        "revision": "05b43ddb17bb",
+        "path": "instructir-ref.gguf"
+      },
+      "diff_thresholds": { "*": 0.999 },
+      "diff_thresholds_note": "Self-consistent torch ref; verified cos=1.000000 max_abs=6.6e-4 on f32 (PLAN.md)."
+    },
+    {
+      "name": "granite-vision",
+      "engine_id": "granite_vision",
+      "tier": "diff",
+      "diff_bin": "test-granite-vision-diff",
+      "argv": "{model} {ref}",
+      "gguf": {
+        "repo": "cstr/granite-vision-crispembed-GGUF",
+        "revision": "1ee7bc087880",
+        "file": "granite-vision-3.3-2b-q8_0.gguf",
+        "approx_size_mb": 2700
+      },
+      "ref": {
+        "repo": "cstr/granite-vision-crispembed-GGUF",
+        "revision": "1ee7bc087880",
+        "path": "granite-vision-ref.gguf",
+        "companion_paths": ["granite-llm-ref.gguf"]
+      },
+      "diff_thresholds": { "*": 0.99 },
+      "diff_thresholds_note": "q8_0 (q4_k floors near 0.99 per memory metal-mul-mm note). Harness loads both granite-vision-ref + granite-llm-ref from the same repo."
+    },
+    {
+      "name": "hat",
+      "engine_id": "hat",
+      "tier": "diff",
+      "diff_bin": "test-hat-diff",
+      "argv": "{model} {ref}",
+      "gguf": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "revision": "0d618eb7e310",
+        "file": "hat-sr-x4-f16.gguf",
+        "approx_size_mb": 80
+      },
+      "ref": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "revision": "0d618eb7e310",
+        "path": "hat-ref.gguf"
+      },
+      "diff_thresholds": { "*": 0.99 },
+      "diff_thresholds_note": "Self-consistent torch ref; HAT harness built-in pass gate is 0.99."
+    },
+    {
+      "name": "pan",
+      "engine_id": "pan",
+      "tier": "diff",
+      "diff_bin": "test-pan-diff",
+      "argv": "{model} {ref}",
+      "gguf": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "revision": "0d618eb7e310",
+        "file": "pan-x4-f16.gguf",
+        "approx_size_mb": 5
+      },
+      "ref": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "revision": "0d618eb7e310",
+        "path": "pan-ref.gguf"
+      },
+      "diff_thresholds": { "output": 0.999 },
+      "require_stages": ["output"],
+      "diff_thresholds_note": "Verified cos_min=0.999997 vs self-consistent torch ref (PLAN.md)."
+    },
+
+    {
+      "name": "all-MiniLM-L6-v2",
+      "engine_id": "minilm_l6",
+      "tier": "smoke",
+      "gguf": {
+        "repo": "cstr/all-MiniLM-L6-v2-GGUF",
+        "revision": "aee7349888e3",
+        "file": "all-MiniLM-L6-v2-q8_0.gguf",
+        "approx_size_mb": 24
+      },
+      "smoke": {
+        "args": ["--json", "{model}", "Hello world, this is a regression smoke test."],
+        "expect": { "kind": "embedding", "dim": 384 }
+      },
+      "smoke_note": "Confirmation tier: no ref yet. Asserts the engine loads and emits a finite, correctly-shaped 384-d embedding. Promote to a diff entry once a per-layer ref is baked (tests/parity_layers_bert.py covers BERT layers)."
+    },
+    {
+      "name": "bge-small-en-v1.5",
+      "engine_id": "bge_small",
+      "tier": "smoke",
+      "gguf": {
+        "repo": "cstr/bge-small-en-v1.5-GGUF",
+        "revision": "b9017c0b00de",
+        "file": "bge-small-en-v1.5-q8_0.gguf",
+        "approx_size_mb": 33
+      },
+      "smoke": {
+        "args": ["--json", "{model}", "Hello world, this is a regression smoke test."],
+        "expect": { "kind": "embedding", "dim": 384 }
+      }
+    },
+    {
+      "name": "multilingual-e5-small",
+      "engine_id": "e5_small",
+      "tier": "smoke",
+      "gguf": {
+        "repo": "cstr/multilingual-e5-small-GGUF",
+        "revision": "98d7a31f1c61",
+        "file": "multilingual-e5-small-q8_0.gguf",
+        "approx_size_mb": 33
+      },
+      "smoke": {
+        "args": ["--json", "{model}", "query: regression smoke test for multilingual e5"],
+        "expect": { "kind": "embedding", "dim": 384 }
+      }
+    }
+  ]
+}

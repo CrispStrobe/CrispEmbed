@@ -249,6 +249,59 @@ CrispEmbed/
 └── tests/                      parity + benchmark scripts
 ```
 
+## Regression & diff-harness coverage
+
+Sweep + regression infrastructure, mirroring CrispASR's stack:
+
+- `tools/audit_diff_coverage.py` → `docs/diff-harness-coverage.md` — crosses the
+  `tests/test_*_diff.cpp` harnesses × `tools/dump_*_reference*.py` dumpers ×
+  the HF `*-ref.gguf` archives (`--probe-hf` for a live check). **Re-run after
+  adding a harness/ref.**
+- `tests/regression/{manifest.json,run_one.py,README.md}` — pinned per-engine
+  checks in two tiers: **diff** (`test-<e>-diff` vs a frozen ref, per-stage
+  `cos_min ≥ threshold`) and **smoke** (CLI emits a sane embedding — the
+  "confirmation that it works" tier for engines without a ref).
+- `tools/kaggle/crispembed-regression/` (validate/rebake) and
+  `tools/kaggle/crispembed-benchmark/` — full sweeps on Kaggle (chr1s4); both
+  push every completed engine's verdict to the `cstr/crispembed-kaggle-progress`
+  HF dataset **after each step**, so a crashed kernel still leaves partial
+  results.
+- `tools/benchmark_all_engines.py` — local perf sweep (load/encode latency via
+  the CLI's `--dim`/`--json` paths) → JSON + markdown.
+
+**Coverage snapshot (2026-06-21, HF-probed):** 29 diff harnesses, **6 HF repos
+carry a `*-ref.gguf`**, **4 engines fully wired** (harness + ref): `instructir`,
+`granite-vision`, `hat`, `pan`. The remaining 25 harnesses have no ref yet, and
+3 uploaded refs have no harness. Run `tools/audit_diff_coverage.py --probe-hf`
+for the current table.
+
+### Diff-harness gaps (todo as capabilities land)
+
+- **Ref uploaded but NO C++ harness** (3) — wire `test-<e>-diff` + a CMake
+  target so the existing ref is usable:
+  - `firered-ocr` — ref `cstr/firered-ocr-crispembed-GGUF/firered-ocr-ref.gguf`
+  - `qari-ocr` — ref `cstr/qari-ocr-crispembed-GGUF/diff-harness-ref/qari-ocr-ref.gguf`
+  - `qwen3vl` — ref `cstr/qwen3-vl-2b-crispembed-gguf/qwen3-vl-2b-diff-ref.gguf`
+    (a `dump_qwen3vl_reference.py` dumper already exists)
+- **Harness but NO ref** (25) — bake + upload `*-ref.gguf` to each model's repo
+  under `diff-harness-ref/`. **Quick win:** `scunet` already has a self-consistent
+  `dump_scunet_reference_from_gguf.py` — bake from the GGUF and upload to promote
+  it to fully-wired. Then extend the `*_from_gguf` self-consistent dumpers to the
+  other SR archs (`esrgan`, `safmn`, `swinir`, `restormer`, `adair`, `tbsrn`),
+  and bake refs for the encoder/OCR harnesses (`bert_ner`, `gliner`, `lfm2`,
+  `lfm2_colbert`, `lilt`, `layout`, `ocr_detect`, `surya_det`, `math_ocr`,
+  `mixtex`, `glm_ocr`, `got_ocr`, `internvl2`, `paddleocr_vl`, `pix2struct`,
+  `qwen2vl`, `smoldocling`, `tesseract_lstm`).
+- **Parameterize the `*_from_gguf` dumpers** to accept `{model} {out}` argv so
+  the Kaggle `rebake` path can regenerate refs unattended (they currently hard-
+  code `/private/tmp/...` paths). Then add a `rebake` recipe to each manifest
+  entry.
+- **The ~50+ GGUF repos with no ref** — 104 of the 114 `cstr/*-GGUF` repos carry
+  no `*-ref.gguf` at all, and 4 referenced repos 404 (`german-ocr-3.1`,
+  `h2ovl-800m`, `h2ovl-mississippi-2b`, `nanonets-ocr2-1.5b`). Standing task: add
+  a diff harness + bake + upload a ref to each, working down the audit's gap
+  list, until every shippable engine has a pinned regression check.
+
 ## Pending roadmap
 
 ### GPU + quantization audit (2026-06-16)
