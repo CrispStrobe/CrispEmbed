@@ -52,6 +52,17 @@ DEFAULT ON for **all** backends (Metal + ggml-CPU); `CRISPEMBED_GRANITE_VIS_SCAL
 / `_LLM_SCALAR` opt out. See LEARNINGS "Q8_0 reshape", "Metal mul_mm F16 activation
 overflow", and "ggml-CPU ViT precision".
 
+**Decode perf** — compared the decoder hot paths against the sibling OCR backends
+(qwen2vl/internvl2/deepseek) and adopted two wins they already had: (1) run the
+tied-embedding LM head **in-graph on Metal** for the last token (gv_run_llm_body's
+new `logits_out`) instead of a per-token `core_cpu::linear_cpu` matmul + hidden
+readback; (2) drop the per-layer `ggml_cont` of the full KV history — pass the
+cache views straight to `flash_attn_ext`. Decode **270 → 165 ms/tok (~1.6×)**, OCR
+still correct on both backends. The one-shot total is still dominated by the
+784-token prefill + Metal pipeline compilation; decode is now Metal-kernel-launch
+bound (~1840 tiny T=1 ops/token), so the next lever is a persistent decode graph
+(deepseek_ocr2's `build_persistent_decode_graph` pattern) — not yet done.
+
 ## June 20, 2026 — Granite Vision OCR: root-caused via HF-blueprint diff, scalar restored
 
 End-to-end Granite-Vision 3.3-2B OCR was producing garbage. A prior handover
