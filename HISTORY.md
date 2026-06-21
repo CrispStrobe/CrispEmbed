@@ -4,6 +4,37 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 21, 2026 — SR roster: full verification + conv→ggml sweep (scunet/tbsrn/dat/hat/adair)
+
+Verified every non-blocked SR/restoration engine against an independent reference
+and ported the conv path to ggml where it pays off. Each port is benchmarked and
+gated by the result — default-on where it wins, opt-in where it's a wash/slowdown.
+
+- **scunet** (`1b66701`) — conv + ConvTranspose2d → `ggml_conv_2d` / `_p0` on a CPU
+  sched, **~6.7×/tile**, all stages cos=1.0. Gotcha: scunet stores conv kernels in
+  ggml-native order (no ne-reversal, unlike pan/swinir).
+- **tbsrn** (`0e30df2`) — 6 conv sites → ggml; verified vs a new self-consistent
+  ref (`dump_tbsrn_reference_from_gguf.py`, reverses the converter rename +
+  un-transposes Linear weights), output cos 0.999362. Attention-bound → modest.
+- **dat** (`c70af4c` fix, `be79546` perf) — built a *genuine* ref (real PyTorch
+  DAT-light on gguf-reconstructed weights) and found+fixed a real bug: **Conv+BN
+  fusion silently skipped on F32 models** (`to_f32` returns `t->data`, leaves buf
+  empty → fusion guard never fired → BN dropped). Output cos 0.9906 → **0.999995**.
+  conv→ggml done but **gated opt-in** (`DAT_SR_GGML_CONV=1`) — net slowdown on this
+  attention-bound engine (per-conv graph overhead > conv speedup).
+- **hat** (`4d5cdc4`) — 6 top-level convs → ggml, **~1.3×/tile** (upsample/conv_last
+  run at 4× resolution so convs matter); window/OCAB attention + CAB convs stay
+  scalar. Output cos 0.999965 vs the validated hat-ref.
+- **adair** (`a7bd61f`) — verified correct via a genuine real-AdaIR ref (upstream
+  `c-yn/AdaIR`, weights reconstructed from `adair-5d-f32.gguf`, all 587 params
+  load), output cos **0.999379**. Conv→ggml port still TODO (Restormer-style
+  pointer-passed convs + scalar FFT).
+
+Refs uploaded to HF (`cstr/text-super-resolution-gguf`): swinir, tbsrn, dat, adair.
+Methodology note in LEARNINGS: genuine ground truth (real model run), not a
+self-consistent ref derived from the engine, was required to catch the dat bug.
+`text_sr` remains permanently blocked (no public model).
+
 ## June 21, 2026 — SwinIR-light: shifted-window mask sign bug (output −0.91 → ~1.0)
 
 `swinir_sr.cpp`'s shifted (odd-index) Swin blocks rolled the feature map with the
