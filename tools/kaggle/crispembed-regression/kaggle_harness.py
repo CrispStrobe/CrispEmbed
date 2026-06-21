@@ -226,7 +226,12 @@ def _warm_ccache_from_dataset(ccache_dir: Path) -> None:
         "dataset_sources": ["${KAGGLE_ACCOUNT}/crispasr-ccache", ...]
     Shaves ~15 min off incremental CUDA builds."""
     import tarfile
+    # Prefer a CrispEmbed-specific ccache (real cross-build hits); the CrispASR
+    # seed shares only ggml and its source paths differ, so it rarely hits here.
     search_paths = [
+        Path("/kaggle/input/crispembed-ccache"),
+        Path("/kaggle/input/datasets/${KAGGLE_ACCOUNT}/crispembed-ccache"),
+        Path("/kaggle/input/datasets/${KAGGLE_ACCOUNT}/crispembed-ccache"),
         Path("/kaggle/input/crispasr-ccache"),
         Path("/kaggle/input/datasets/${KAGGLE_ACCOUNT}/crispasr-ccache"),
         Path("/kaggle/input/datasets/${KAGGLE_ACCOUNT}/crispasr-ccache"),
