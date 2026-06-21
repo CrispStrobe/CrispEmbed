@@ -139,10 +139,20 @@ try:
     # itself — the harness extracts into /kaggle/working/.ccache, so a tar of
     # `.ccache/` would double-nest and stay unrecognized (the CrispASR bug).
     kh.sh(f"tar -C {WORK}/.ccache -cf {WORK}/ccache.tar . && ls -la {WORK}/ccache.tar")
-    # Remove the loose .ccache tree from /kaggle/working so the kernel OUTPUT is
-    # just ccache.tar (one-page download to seed chr1s4/crispembed-ccache).
-    kh.sh(f"rm -rf {WORK}/.ccache")
+    kh.sh(f"rm -rf {WORK}/.ccache")  # drop loose tree (Kaggle output bloat)
     step("ccache.exported")
+    # Push ccache.tar to the HF progress dataset so it can seed
+    # chr1s4/crispembed-ccache with a single targeted fetch (the Kaggle kernel
+    # output is multi-GB — repo clone + hf_cache — so a one-file download from
+    # HF is the practical path).
+    if os.environ.get("HF_TOKEN"):
+        from huggingface_hub import HfApi
+        HfApi(token=os.environ["HF_TOKEN"]).upload_file(
+            path_or_fileobj=str(WORK / "ccache.tar"),
+            path_in_repo="ccache/ccache.tar",
+            repo_id=PROGRESS_REPO, repo_type="dataset",
+            commit_message=f"ccache seed ({CRISPEMBED_REF})")
+        step("ccache.uploaded_hf")
 except Exception as _e:
     print(f"  ccache export skipped: {_e}", flush=True)
 
