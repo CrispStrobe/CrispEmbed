@@ -460,6 +460,12 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   `CRISPEMBED_GRANITE_VIS_SCALAR` / `_LLM_SCALAR` opt out. The LLM diff now
   exercises the graph (7/7 cos 0.9999). See LEARNINGS "Q8_0 reshape",
   "Metal mul_mm F16 activation overflow", and "ggml-CPU ViT precision".
+  - **Decode perf**: LM head moved in-graph (Metal) + KV-history `ggml_cont`
+    dropped → decode **270 → 165 ms/tok (~1.6×)**. Decode is now Metal-kernel
+    -launch bound; one-shot total dominated by the 784-tok prefill + pipeline
+    compilation. **Next lever (not done):** persistent T=1 decode graph
+    (deepseek_ocr2's `build_persistent_decode_graph` + constant-shape KV views).
+    See LEARNINGS "VLM/OCR decoder perf".
 
 - [x] **granite_vision projector + LLM decoder → ggml graphs** — DONE
   (`66b8de2`). `gv_run_projector_graph` (2-layer MLP on Metal) and
