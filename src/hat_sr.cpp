@@ -301,12 +301,17 @@ static void hat_ocab(float * x, int HW, int C, int H, int W, int ws, int n_heads
     std::vector<float> qkv(HW * 3 * C);
     hat_linear(normed.data(), HW, C, 3 * C, qkv_w, qkv_b, qkv.data());
 
-    // Q from windows, KV from overlapping unfold
-    // Q: partition normed into windows → [nw, ws2, C]
-    // For simplicity, we'll use Q from window partition of the normed input
-    // and KV from the full-image QKV with overlapping windows (unfold).
-    // This is a simplified implementation — exact unfold matching requires
-    // careful index computation.
+    // HAT OCAB cross-attention: Q from the non-overlapping ws×ws window partition;
+    // K/V from an overlapping unfold (kernel=overlap_ws, stride=ws, padding=
+    // (overlap_ws-ws)/2) so each Q window attends to its surrounding ows×ows
+    // region. This is the exact HAT unfold — kernel positions are flattened
+    // row-major to match nn.Unfold and the relative_position_index_OCA below;
+    // out-of-bounds positions are zero-padded, and the image is pre-padded to a
+    // multiple of ws in hat_forward_tile so nH=H/ws is exact. NOTE: the scalar
+    // OCAB is verified by review against the HAT reference algorithm but not by a
+    // per-stage parity test — test_hat_diff compares only the final SR output and
+    // no HAT reference gguf is provisioned (generating one needs the HAT torch
+    // arch + pretrain .pth).
 
     // Q windows: partition the Q portion
     // Reshape QKV to [H, W, 3, C] first
