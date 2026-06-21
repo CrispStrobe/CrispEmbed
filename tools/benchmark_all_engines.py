@@ -41,6 +41,7 @@ MANIFEST_PATH = REPO_ROOT / "tests" / "regression" / "manifest.json"
 sys.path.insert(0, str(REPO_ROOT / "tests" / "regression"))
 
 DEFAULT_TEXT = "The quick brown fox jumps over the lazy dog. Benchmark sentence for embedding latency."
+SAMPLE = REPO_ROOT / "tests" / "regression" / "sample.bmp"
 
 
 def cli_bin(build_dir: Path) -> Path:
@@ -51,31 +52,35 @@ def cli_bin(build_dir: Path) -> Path:
 
 
 def _time(cmd: list[str], repeat: int) -> tuple[float | None, str]:
-    """Median wall time (ms) over `repeat` runs, or (None, err) on failure."""
+    """Median wall time (ms) over `repeat` runs, or (None, err) on failure.
+    Captures bytes (SR/image engines emit binary to stdout)."""
     times = []
-    last_err = ""
     for _ in range(repeat):
         t0 = time.perf_counter()
-        p = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
+        p = subprocess.run(cmd, capture_output=True, timeout=900)
         dt = (time.perf_counter() - t0) * 1000.0
         if p.returncode != 0:
-            last_err = p.stderr.strip()[-200:]
-            return None, last_err
+            return None, (p.stderr or b"").decode("utf-8", "replace").strip()[-200:]
         times.append(dt)
     return statistics.median(times), ""
 
 
-def bench_one(cli: Path, gguf: Path, text: str, repeat: int) -> dict:
-    load_ms, err = _time([str(cli), "--dim", "-m", str(gguf)], repeat)
-    if load_ms is None:
-        return {"ok": False, "stage": "load", "error": err}
-    total_ms, err = _time([str(cli), "--json", "-m", str(gguf), text], repeat)
+def bench_one(cli: Path, entry: dict, gguf: Path, sample: Path, repeat: int) -> dict:
+    """Time the entry's bench invocation. For embeddings, also time --dim
+    (load only) and report the encode delta; other modalities report total."""
+    spec = entry.get("bench") or entry.get("smoke") or {}
+    args = [a.format(model=str(gguf), sample=str(sample))
+            for a in spec["args"]]
+    total_ms, err = _time([str(cli), *args], repeat)
     if total_ms is None:
-        return {"ok": False, "stage": "encode", "error": err,
-                "load_ms": round(load_ms, 1)}
-    encode_ms = max(0.0, total_ms - load_ms)
-    return {"ok": True, "load_ms": round(load_ms, 1),
-            "total_ms": round(total_ms, 1), "encode_ms": round(encode_ms, 1)}
+        return {"ok": False, "error": err}
+    out = {"ok": True, "total_ms": round(total_ms, 1)}
+    if entry.get("modality") == "embedding":
+        load_ms, lerr = _time([str(cli), "-m", str(gguf), "--dim"], repeat)
+        if load_ms is not None:
+            out["load_ms"] = round(load_ms, 1)
+            out["encode_ms"] = round(max(0.0, total_ms - load_ms), 1)
+    return out
 
 
 def resolve_gguf(entry: dict, gguf_dir: Path | None, work_dir: Path) -> Path | None:
@@ -95,12 +100,12 @@ def resolve_gguf(entry: dict, gguf_dir: Path | None, work_dir: Path) -> Path | N
 
 
 def benchable(entry: dict) -> bool:
-    """Text/embedding entries are benchable via the --dim/--json path; others
-    need an explicit `bench` block (not yet wired)."""
-    if "bench" in entry:
-        return True
-    return entry.get("tier") == "smoke" and \
-        entry.get("smoke", {}).get("expect", {}).get("kind") == "embedding"
+    """Benchable if it has a `bench` block (generated entries) or a `smoke`
+    block (curated entries) to time. tier=skip / diff-only entries have neither."""
+    for k in ("bench", "smoke"):
+        if isinstance(entry.get(k), dict) and "args" in entry[k]:
+            return True
+    return False
 
 
 def main() -> int:
@@ -132,8 +137,7 @@ def main() -> int:
             name = entry["name"]
             if not benchable(entry):
                 rec = {"backend": name, "ok": False, "skipped": True,
-                       "reason": "no bench path (add a `bench` block for "
-                                 "image/OCR/SR engines)"}
+                       "reason": f"tier={entry.get('tier')} (no bench block)"}
                 print(f"  ⊘ {name:24s} skipped ({rec['reason']})")
                 results.append(rec); fout.write(json.dumps(rec) + "\n"); fout.flush()
                 continue
@@ -141,14 +145,16 @@ def main() -> int:
             if gguf is None:
                 rec = {"backend": name, "ok": False, "error": "gguf unavailable"}
             else:
-                r = bench_one(cli, gguf, args.text, args.repeat)
+                r = bench_one(cli, entry, gguf, SAMPLE, args.repeat)
                 rec = {"backend": name, "engine_id": entry.get("engine_id"),
+                       "modality": entry.get("modality"),
                        "gguf": entry["gguf"]["file"], **r}
             results.append(rec)
             fout.write(json.dumps(rec) + "\n"); fout.flush()  # crash-survivable
             if rec.get("ok"):
-                print(f"  ✓ {name:24s} load={rec['load_ms']:7.1f}ms  "
-                      f"encode={rec['encode_ms']:7.1f}ms  total={rec['total_ms']:7.1f}ms")
+                extra = (f"load={rec['load_ms']:.0f} encode={rec['encode_ms']:.0f} "
+                         if "load_ms" in rec else "")
+                print(f"  ✓ {name:24s} {extra}total={rec['total_ms']:.0f}ms")
             elif not rec.get("skipped"):
                 print(f"  ✗ {name:24s} {rec.get('error','')}")
 
@@ -157,16 +163,17 @@ def main() -> int:
              f"`crispembed` CLI, median of {args.repeat} runs. "
              "`load` = model load+init (`--dim`); `encode` = marginal encode "
              "(`total - load`).", "",
-             "| engine | gguf | load (ms) | encode (ms) | total (ms) |",
-             "|---|---|---:|---:|---:|"]
+             "| engine | modality | gguf | load (ms) | encode (ms) | total (ms) |",
+             "|---|---|---|---:|---:|---:|"]
     for r in results:
         if r.get("ok"):
-            lines.append(f"| `{r['backend']}` | `{r['gguf']}` | {r['load_ms']} | "
-                         f"{r['encode_ms']} | {r['total_ms']} |")
+            lines.append(f"| `{r['backend']}` | {r.get('modality','')} | "
+                         f"`{r['gguf']}` | {r.get('load_ms','')} | "
+                         f"{r.get('encode_ms','')} | {r['total_ms']} |")
         elif r.get("skipped"):
-            lines.append(f"| `{r['backend']}` | — | _skipped_ | | |")
+            lines.append(f"| `{r['backend']}` | — | — | _skipped_ | | |")
         else:
-            lines.append(f"| `{r['backend']}` | — | _error_ | | |")
+            lines.append(f"| `{r['backend']}` | — | — | _error_ | | |")
     md.write_text("\n".join(lines) + "\n")
 
     n_ok = sum(1 for r in results if r.get("ok"))

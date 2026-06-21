@@ -192,24 +192,30 @@ def parse_embedding(stdout: str) -> list[float] | None:
     return None
 
 
-def run_smoke(cli_bin: Path, args: list[str], model: Path, expect: dict) -> dict:
+def run_smoke(cli_bin: Path, args: list[str], model: Path, expect: dict,
+              sample: Path | None = None) -> dict:
     """Run the crispembed CLI and validate the output against `expect`.
 
-    expect.kind:
-      * "embedding" — JSON embedding of length `dim`, all finite, non-zero norm.
+    args use {model} (the GGUF) and {sample} (a test image) placeholders and
+    must include their own model flag (-m / --<eng>-model). expect.kind:
+      * "embedding" — JSON embedding of length `dim` (optional), finite, norm>0.
       * "golden"    — stdout (stripped) equals `value`.
-      * "nonempty"  — any non-empty stdout (engine loaded + produced output).
+      * "nonempty"  — exit 0 + any non-empty stdout (engine ran, produced output).
     Returns {ok, detail, ...}.
     """
-    argv = [a.format(model=str(model)) for a in args]
-    proc = subprocess.run([str(cli_bin), *_with_model(argv, model)],
-                          capture_output=True, text=True, check=False, timeout=600)
-    if proc.returncode != 0 and not proc.stdout.strip():
-        return {"ok": False, "detail": f"exit={proc.returncode} "
-                f"stderr={proc.stderr[-300:]}"}
+    argv = [a.format(model=str(model), sample=str(sample) if sample else "")
+            for a in args]
+    # Capture BYTES — SR/image engines write binary PGM/PPM to stdout, which a
+    # text-mode pipe can't decode. Decode defensively only when we need text.
+    proc = subprocess.run([str(cli_bin), *argv],
+                          capture_output=True, check=False, timeout=600)
+    out_b = proc.stdout or b""
+    err_t = (proc.stderr or b"").decode("utf-8", "replace")
+    if proc.returncode != 0 and not out_b.strip():
+        return {"ok": False, "detail": f"exit={proc.returncode} stderr={err_t[-300:]}"}
     kind = expect.get("kind", "nonempty")
     if kind == "embedding":
-        emb = parse_embedding(proc.stdout)
+        emb = parse_embedding(out_b.decode("utf-8", "replace"))
         if emb is None:
             return {"ok": False, "detail": "no parseable embedding in stdout"}
         dim = expect.get("dim")
@@ -222,28 +228,14 @@ def run_smoke(cli_bin: Path, args: list[str], model: Path, expect: dict) -> dict
             return {"ok": False, "detail": "zero-norm embedding"}
         return {"ok": True, "detail": f"dim={len(emb)} norm={norm:.4f}"}
     if kind == "golden":
-        ok = proc.stdout.strip() == expect.get("value", "").strip()
-        return {"ok": ok, "detail": "golden match" if ok else
-                f"stdout!=golden: {proc.stdout.strip()[:120]!r}"}
-    # nonempty
-    ok = bool(proc.stdout.strip())
-    return {"ok": ok, "detail": "non-empty stdout" if ok else "empty stdout"}
-
-
-def _with_model(argv: list[str], model: Path) -> list[str]:
-    """If the smoke args already contain the model path (via {model}), pass
-    them through; otherwise the CLI takes the model via `-m <gguf>`. The
-    manifest's `--json {model} "text"` form positions {model} as a bare arg,
-    but crispembed wants `-m`; rewrite a lone {model}-substituted gguf to
-    `-m <gguf>`."""
-    out: list[str] = []
-    mstr = str(model)
-    for a in argv:
-        if a == mstr:
-            out += ["-m", mstr]
-        else:
-            out.append(a)
-    return out
+        ok = out_b.decode("utf-8", "replace").strip() == expect.get("value", "").strip()
+        return {"ok": ok, "detail": "golden match" if ok else "stdout != golden"}
+    # nonempty: the engine must exit 0 AND emit some output (text or binary).
+    ok = proc.returncode == 0 and bool(out_b.strip())
+    if ok:
+        return {"ok": True, "detail": f"ran, {len(out_b)} bytes stdout"}
+    return {"ok": False, "detail": f"exit={proc.returncode}, "
+            f"stdout={len(out_b)}B; stderr={err_t[-200:]}"}
 
 
 # ── per-entry driver ─────────────────────────────────────────────────────────
@@ -253,6 +245,10 @@ def regression_for(name: str, manifest: dict, work_dir: Path,
     if entry is None:
         die(f"backend '{name}' not in manifest")
     tier = entry.get("tier", "diff")
+
+    if tier == "skip":
+        return {"backend": name, "tier": "skip", "ok": True, "skipped": True,
+                "detail": entry.get("skip_reason", "skipped")}
 
     gguf = hf_download(entry["gguf"]["repo"], entry["gguf"]["file"],
                        entry["gguf"]["revision"], work_dir)
@@ -300,8 +296,11 @@ def regression_for(name: str, manifest: dict, work_dir: Path,
         cli_bin = build_dir / "bin" / "crispembed"
     if not cli_bin.exists():
         die(f"crispembed CLI not built in {build_dir}")
-    res = run_smoke(cli_bin, entry["smoke"]["args"], gguf, entry["smoke"]["expect"])
-    return {"backend": name, "tier": tier, "ok": res["ok"], "detail": res["detail"]}
+    sample = HERE / "sample.bmp"
+    res = run_smoke(cli_bin, entry["smoke"]["args"], gguf,
+                    entry["smoke"]["expect"], sample=sample)
+    return {"backend": name, "tier": tier, "ok": res["ok"],
+            "modality": entry.get("modality"), "detail": res["detail"]}
 
 
 def dry_run(manifest: dict, tier: str | None) -> int:
