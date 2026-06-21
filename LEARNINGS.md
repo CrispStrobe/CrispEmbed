@@ -2547,6 +2547,45 @@ backends. Takeaway: ggml's CPU backend silently trades precision for speed
 (F16-table activations, activation requantization to the weight type); when a
 graph drifts on CPU but not GPU, suspect those before the math.
 
+## VLM/OCR decoder perf: keep the LM head on-GPU; don't re-copy KV history (2026-06-21)
+
+A cross-backend audit of the OCR decoders (granite_vision vs qwen2vl_ocr,
+internvl2_ocr, smoldocling_ocr, deepseek_ocr2) surfaced two cheap decode wins
+granite was missing — both worth checking on any ggml decoder:
+
+1. **Run the LM head (vocab projection) IN-GRAPH, not on CPU.** Granite computed
+   the ~`vocab×dim` logits with `core_cpu::linear_cpu` every token, which also
+   forces a hidden-state GPU→CPU readback. qwen2vl/internvl2/deepseek append
+   `ggml_mul_mat` for the last token to the graph and read back `[vocab]`. Moving
+   it on-GPU (`gv_run_llm_body`'s optional `logits_out`) cut granite decode
+   270→165 ms/tok (~1.6×). Gotchas: the last-token hidden is post-final-norm so
+   it's O(1) → the T=1 `mul_mv` is F32-safe (no massive-activation overflow); and
+   Granite's tied embedding weight has the transposed `ne` (`ne[0]=vocab`), so
+   relabel it to `[in=dim, out=vocab]` (cast quantized first) before `mul_mat` —
+   same pattern as the FFN weights.
+
+2. **Don't `ggml_cont` the KV history every step.** `flash_attn_ext` reads K/V via
+   `nb` strides, so pass the `[d_head, Lk, n_kv]` cache *views* straight in. The
+   `cont` was copying the entire history each layer each token (~64 MB/step at
+   len ~800). Writing new K/V into the cache still uses `ggml_cpy` into the
+   persistent buffer (correct); only the read-side full-history copy was waste.
+
+**Cross-backend reference** (who does what, as of 2026-06): LM head on-GPU —
+qwen2vl, internvl2, deepseek (granite now too); LM head on CPU — smoldocling.
+**Decode-graph reuse**: only `deepseek_ocr2` builds a *persistent* T=1 decode
+graph once (`build_persistent_decode_graph`) and just sets inputs + recomputes
+per step; everyone else (incl. granite) rebuilds the graph per token. qwen2vl's
+cheaper half-measure: keep KV-read views + mask at constant `[0..max_seq]` shape
+so `ggml_backend_sched_alloc_graph` takes the no-realloc fast path. KV cache is
+F16/Metal-resident across all. No OCR decoder uses `sched_reserve` yet.
+
+**What's left on granite** (diminishing returns, not done): after the LM-head fix
+decode is **Metal-kernel-launch bound** (~1840 tiny T=1 ops/token), so the next
+lever is the deepseek persistent-decode-graph (+ constant-shape views) — a real
+refactor for ~5–15% more. The one-shot *total* is dominated by the 784-token
+prefill (~13 s) + Metal pipeline compilation (paid once per process; a persistent
+server amortizes it), neither of which the decode wins touch.
+
 ## granite_vision OCR: the two image-path bugs (vision parity passed but OCR hallucinated)
 
 The vision tower passed crispembed-diff at cos≈0.99999, yet end-to-end OCR
