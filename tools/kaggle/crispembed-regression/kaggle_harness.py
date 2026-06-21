@@ -219,9 +219,11 @@ def _warm_ccache_from_dataset(ccache_dir: Path) -> None:
     ccache dir) or a bare `crispasr-ccache/.ccache/` tree at the standard
     Kaggle mount paths. Silently no-ops if no dataset is attached.
 
-    To create/update the dataset:
-        cd /kaggle/working && tar cf ccache.tar .ccache/
-        # then upload as chr1s4/crispasr-ccache
+    To create/update the dataset (pack the CONTENTS of .ccache, not the dir —
+    this is extracted INTO ccache_dir, so a `tar cf ccache.tar .ccache/` would
+    double-nest and never be recognized):
+        tar -C /kaggle/working/.ccache -cf /kaggle/working/ccache.tar .
+        # then upload as chr1s4/crispembed-ccache (or crispasr-ccache)
     Attach via kernel-metadata.json:
         "dataset_sources": ["chr1s4/crispasr-ccache", ...]
     Shaves ~15 min off incremental CUDA builds."""
