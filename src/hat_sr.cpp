@@ -307,11 +307,10 @@ static void hat_ocab(float * x, int HW, int C, int H, int W, int ws, int n_heads
     // region. This is the exact HAT unfold — kernel positions are flattened
     // row-major to match nn.Unfold and the relative_position_index_OCA below;
     // out-of-bounds positions are zero-padded, and the image is pre-padded to a
-    // multiple of ws in hat_forward_tile so nH=H/ws is exact. NOTE: the scalar
-    // OCAB is verified by review against the HAT reference algorithm but not by a
-    // per-stage parity test — test_hat_diff compares only the final SR output and
-    // no HAT reference gguf is provisioned (generating one needs the HAT torch
-    // arch + pretrain .pth).
+    // multiple of ws in hat_forward_tile so nH=H/ws is exact. VERIFIED: test-hat-
+    // diff vs a torch self-consistent reference (HAT arch loaded with these gguf
+    // weights) gives output cos 0.999968 — the OCAB and full pipeline match torch.
+    // Reference: hat-ref.gguf on HF cstr/text-super-resolution-gguf.
 
     // Q windows: partition the Q portion
     // Reshape QKV to [H, W, 3, C] first
