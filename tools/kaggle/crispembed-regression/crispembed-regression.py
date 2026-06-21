@@ -178,7 +178,10 @@ def run_validate() -> list[dict]:
         print(f"\n========== validate :: {name} ({entry.get('tier')}) ==========")
         t0 = time.time()
         try:
-            r = run_one.regression_for(name, MANIFEST, HF_CACHE, BUILD)
+            # Heartbeat so multi-GB downloads + heavy diffs (e.g. granite q8_0
+            # ~2.7 GB) keep emitting liveness instead of a silent log freeze.
+            with kh.build_heartbeat(f"validate.{name}"):
+                r = run_one.regression_for(name, MANIFEST, HF_CACHE, BUILD)
             r["elapsed_s"] = round(time.time() - t0, 2)
             r["mode"] = "validate"
         except SystemExit as exc:
@@ -216,6 +219,7 @@ def run_rebake() -> list[dict]:
             _publish_result(results[-1])
             continue
         try:
+          with kh.build_heartbeat(f"rebake.{name}"):
             model = run_one.hf_download(entry["gguf"]["repo"], entry["gguf"]["file"],
                                         entry["gguf"]["revision"], HF_CACHE) \
                 if recipe.get("needs_gguf") else ""
