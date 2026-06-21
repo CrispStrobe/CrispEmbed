@@ -879,8 +879,13 @@ static bool gv_run_llm_body(granite_vision_context * ctx,
         h = rmsnorm(x, n2w);
         ggml_tensor * gate = ggml_silu(g, ggml_mul_mat(g, sw(gw), h));
         ggml_tensor * up   = ggml_mul_mat(g, sw(uw), h);
-        ggml_tensor * act  = ggml_scale(g, ggml_mul(g, gate, up), 1.0f / 256.0f);
-        ggml_tensor * down = ggml_scale(g, ggml_mul_mat(g, sw(dw), act), 256.0f);
+        ggml_tensor * gu   = ggml_mul(g, gate, up);
+        // The ÷256/×256 exponent shift only guards the F16 mul_mm cast used for the
+        // batched prefill (T > ne11_mm_min = 8). T=1 decode uses mul_mv in F32, so
+        // skip the two scale kernels entirely — saves ~2 dispatches/layer/token.
+        ggml_tensor * down = (T > 8)
+            ? ggml_scale(g, ggml_mul_mat(g, sw(dw), ggml_scale(g, gu, 1.0f / 256.0f)), 256.0f)
+            : ggml_mul_mat(g, sw(dw), gu);
         x = ggml_add(g, resid, ggml_scale(g, down, res_mul));
 
         if (dump_cb) {
