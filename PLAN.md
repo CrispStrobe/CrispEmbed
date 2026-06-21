@@ -562,7 +562,10 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   - [x] `safmn_sr.cpp` — **DONE** (`09a6e02`). All 8 conv2d calls → conv2d_ggml.
   - [x] `restormer.cpp` — **DONE** (`69be268`). 10 U-Net convs → rst_conv2d_ggml.
   - [ ] `instructir.cpp` — NAFNet U-Net + text conditioning (ICB), ~80-120G, medium
-  - [ ] `pan_sr.cpp` — 16× SCPA + pixel shuffle, ~40-60G, medium
+  - [x] `pan_sr.cpp` — **DONE** (`913b4f5`). 16× SCPA forward → single ggml_conv_2d
+    graph (nearest upscale + bilinear ILR via ggml_interpolate). Verified
+    test-pan-diff cos_min=0.999997 vs self-consistent torch ref; ref on HF
+    `cstr/text-super-resolution-gguf/pan-ref.gguf`. `PAN_SR_SCALAR=1` opts out.
   - [ ] `dat_sr.cpp` — 18× dual attention (spatial+channel), ~60-90G, medium
   - [ ] `scunet_denoise.cpp` — U-Net + Swin branches + ConvTranspose2d, ~50-80G, medium
   - [ ] `swinir_sr.cpp` — RSTB + Swin window attention, ~60-90G, medium (batched matmul like mixtex)
