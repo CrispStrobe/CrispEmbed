@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <map>
 
 // MSVC's <cmath> doesn't define M_PI without _USE_MATH_DEFINES.
 #ifndef M_PI
@@ -301,9 +302,26 @@ struct swinir_sr_context {
     int embed_dim, n_rstb, n_blocks, n_heads, window_size, mlp_ratio, upscale;
     int n_threads;
     bool bench;
+    bool use_ggml_conv = false;
     core_gguf::WeightLoad wl;
     core_cpu::DequantCache dcache;
     std::vector<std::vector<int32_t>> ibufs;
+
+    // ggml conv infrastructure (convs on a CPU sched; Swin attention stays
+    // SIMD-scalar). GPU conv_2d hits a Metal f32×f16 mul_mv pipeline-compile
+    // failure, so the conv sched is pinned to CPU with CPU-resident weights.
+    ggml_backend_t        enc_backend = nullptr;
+    ggml_backend_sched_t  enc_sched   = nullptr;
+    ggml_context *        gw_ctx = nullptr;       // persistent F32 conv kernels
+    ggml_backend_buffer_t gw_buf = nullptr;
+    std::map<std::string, ggml_tensor *> gw;
+    std::vector<uint8_t>  graph_meta;
+
+    ggml_tensor * gwt(const std::string & name) {
+        auto it = gw.find(name);
+        if (it == gw.end()) { fprintf(stderr, "swinir_sr: missing graph weight %s\n", name.c_str()); return nullptr; }
+        return it->second;
+    }
 
     const float * get(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
@@ -360,15 +378,115 @@ swinir_sr_context * swinir_sr_init(const char * model_path, int n_threads) {
             ctx->embed_dim, ctx->n_rstb, ctx->n_blocks, ctx->n_heads,
             ctx->window_size, ctx->upscale, (int)ctx->wl.tensors.size());
     ctx->bench = (std::getenv("CRISPEMBED_SWINIR_SR_BENCH") != nullptr);
+
+    // ── ggml conv path (opt out with SWINIR_SR_SCALAR=1) ──────────────────
+    // Replace the seven nested-loop sir_conv2d sites (conv_first, 4× RSTB conv,
+    // conv_after_body, upsample) with ggml_conv_2d on a dedicated CPU sched.
+    // The Swin window attention / norms / pixel-shuffle stay scalar.
+    bool want_ggml = !(getenv("SWINIR_SR_SCALAR") && atoi(getenv("SWINIR_SR_SCALAR")));
+    if (want_ggml) {
+        ctx->enc_backend = ggml_backend_cpu_init();
+        if (ctx->enc_backend) {
+            ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads);
+            ggml_backend_t backends[] = { ctx->enc_backend };
+            ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+        }
+    }
+    if (ctx->enc_sched) {
+        // Persistent CPU-resident F32 conv kernels. The GGUF (custom struct
+        // writer, like pan) stores conv kernels in PyTorch order [OC,IC,KH,KW]
+        // with KW innermost; ggml_conv_2d wants ne=[KW,KH,IC,OC] over the same
+        // bytes — reverse the four axes, copy the dequantized buffer unchanged.
+        std::vector<std::string> conv_w;
+        conv_w.push_back("conv_first");
+        for (int r = 0; r < ctx->n_rstb; r++) conv_w.push_back("rstb." + std::to_string(r) + ".conv");
+        conv_w.push_back("conv_after_body");
+        conv_w.push_back("upsample");
+
+        ggml_init_params ip = { ggml_tensor_overhead() * (conv_w.size() * 2 + 4), nullptr, true };
+        ctx->gw_ctx = ggml_init(ip);
+        std::vector<std::pair<std::string, ggml_tensor *>> to_fill;
+        for (auto & base : conv_w) {
+            std::string wn = base + ".weight", bn = base + ".bias";
+            auto * wt = core_gguf::try_get(ctx->wl.tensors, wn.c_str());
+            auto * bt = core_gguf::try_get(ctx->wl.tensors, bn.c_str());
+            if (!wt || !bt) { fprintf(stderr, "swinir_sr: conv weight %s missing, falling back to scalar\n", wn.c_str()); ctx->gw.clear(); break; }
+            int64_t ne[4] = { wt->ne[3], wt->ne[2], wt->ne[1], wt->ne[0] };
+            ggml_tensor * w = ggml_new_tensor(ctx->gw_ctx, GGML_TYPE_F32, 4, ne);
+            ggml_set_name(w, wn.c_str()); ctx->gw[wn] = w; to_fill.push_back({wn, w});
+            ggml_tensor * b = ggml_new_tensor_1d(ctx->gw_ctx, GGML_TYPE_F32, bt->ne[0]);
+            ggml_set_name(b, bn.c_str()); ctx->gw[bn] = b; to_fill.push_back({bn, b});
+        }
+        if (!ctx->gw.empty()) {
+            ctx->gw_buf = ggml_backend_alloc_ctx_tensors(ctx->gw_ctx, ctx->enc_backend);
+            for (auto & [name, w] : to_fill) {
+                const float * src = ctx->get(name);
+                if (src) ggml_backend_tensor_set(w, src, 0, ggml_nbytes(w));
+            }
+            ctx->use_ggml_conv = true;
+        }
+    }
+    fprintf(stderr, "swinir_sr: conv path = %s\n", ctx->use_ggml_conv ? "ggml_conv_2d (CPU sched)" : "scalar");
     return ctx;
 }
 
 void swinir_sr_free(swinir_sr_context * ctx) {
-    if (ctx) { core_gguf::free_weights(ctx->wl); delete ctx; }
+    if (ctx) {
+        if (ctx->gw_buf) ggml_backend_buffer_free(ctx->gw_buf);
+        if (ctx->gw_ctx) ggml_free(ctx->gw_ctx);
+        if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+        if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
+        core_gguf::free_weights(ctx->wl);
+        delete ctx;
+    }
 }
 
 int swinir_sr_scale(const swinir_sr_context * ctx) {
     return ctx ? ctx->upscale : 0;
+}
+
+// ── Conv dispatch: ggml_conv_2d on the CPU sched, or scalar fallback ──────
+//
+// `base` names the conv (e.g. "conv_first", "rstb.0.conv"); the persistent F32
+// kernel/bias live in ctx->gw under "<base>.weight"/".bias". Input/output are
+// CHW [C,H,W], matching the scalar sir_conv2d. All swinir convs are stride 1.
+static void swinir_conv(swinir_sr_context * ctx,
+                        const float * in, int ic, int ih, int iw,
+                        const std::string & base,
+                        int oc, int kh, int kw, int pad, float * out) {
+    if (!ctx->use_ggml_conv) {
+        sir_conv2d(in, ic, ih, iw, ctx->get(base + ".weight"), ctx->get(base + ".bias"),
+                   oc, kh, kw, pad, out);
+        return;
+    }
+
+    const int max_nodes = 16;
+    size_t buf_size = ggml_tensor_overhead() * max_nodes
+                    + ggml_graph_overhead_custom(max_nodes, false);
+    ctx->graph_meta.resize(buf_size);
+    ggml_init_params ip = { buf_size, ctx->graph_meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, iw, ih, ic);
+    ggml_set_name(x, "x"); ggml_set_input(x);
+    ggml_tensor * w = ctx->gwt(base + ".weight");
+    ggml_tensor * y = ggml_conv_2d(g, w, x, 1, 1, pad, pad, 1, 1);
+    ggml_tensor * b = ggml_reshape_4d(g, ctx->gwt(base + ".bias"), 1, 1, oc, 1);
+    y = ggml_add(g, y, b);
+    ggml_set_name(y, "out"); ggml_set_output(y);
+    ggml_build_forward_expand(gf, y);
+
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        fprintf(stderr, "swinir_sr: conv alloc failed (%s)\n", base.c_str());
+        ggml_free(g); return;
+    }
+    ggml_backend_tensor_set(x, in, 0, (size_t)ic * ih * iw * sizeof(float));
+    ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
+    int oh = ih + 2 * pad - kh + 1, ow = iw + 2 * pad - kw + 1;
+    ggml_backend_tensor_get(y, out, 0, (size_t)oc * oh * ow * sizeof(float));
+    ggml_free(g);
 }
 
 // ── Single-tile forward ───────────────────────────────────────────────
@@ -394,9 +512,7 @@ static void swinir_forward_tile(swinir_sr_context * ctx,
 
     // conv_first: 3 → D
     std::vector<float> shallow(D * pH * pW);
-    sir_conv2d(img.data(), 3, pH, pW,
-               ctx->get("conv_first.weight"), ctx->get("conv_first.bias"),
-               D, 3, 3, 1, shallow.data());
+    swinir_conv(ctx, img.data(), 3, pH, pW, "conv_first", D, 3, 3, 1, shallow.data());
 
     // Save for global residual
     std::vector<float> shallow_save = shallow;
@@ -464,13 +580,9 @@ static void swinir_forward_tile(swinir_sr_context * ctx,
                     spatial[c * pH * pW + y * pW + x] = tokens[(y * pW + x) * D + c];
 
         // RSTB conv + residual
-        char rconv_w[64], rconv_b[64];
-        snprintf(rconv_w, sizeof(rconv_w), "rstb.%d.conv.weight", r);
-        snprintf(rconv_b, sizeof(rconv_b), "rstb.%d.conv.bias", r);
         std::vector<float> conv_out(D * pH * pW);
-        sir_conv2d(spatial.data(), D, pH, pW,
-                   ctx->get(rconv_w), ctx->get(rconv_b),
-                   D, 3, 3, 1, conv_out.data());
+        swinir_conv(ctx, spatial.data(), D, pH, pW,
+                    "rstb." + std::to_string(r) + ".conv", D, 3, 3, 1, conv_out.data());
 
         // Add RSTB residual (in token layout)
         for (int i = 0; i < N * D; i++) {
@@ -530,18 +642,14 @@ static void swinir_forward_tile(swinir_sr_context * ctx,
 
     // conv_after_body + global residual
     std::vector<float> body_out(D * pH * pW);
-    sir_conv2d(features.data(), D, pH, pW,
-               ctx->get("conv_after_body.weight"), ctx->get("conv_after_body.bias"),
-               D, 3, 3, 1, body_out.data());
+    swinir_conv(ctx, features.data(), D, pH, pW, "conv_after_body", D, 3, 3, 1, body_out.data());
     for (int i = 0; i < D * pH * pW; i++)
         body_out[i] += shallow_save[i];
 
     // Upsample: Conv(D → 3*scale², 3×3) + PixelShuffle
     int up_oc = 3 * scale * scale;
     std::vector<float> up_conv(up_oc * pH * pW);
-    sir_conv2d(body_out.data(), D, pH, pW,
-               ctx->get("upsample.weight"), ctx->get("upsample.bias"),
-               up_oc, 3, 3, 1, up_conv.data());
+    swinir_conv(ctx, body_out.data(), D, pH, pW, "upsample", up_oc, 3, 3, 1, up_conv.data());
 
     int out_h = pH * scale, out_w = pW * scale;
     std::vector<float> ps_out(3 * out_h * out_w);
