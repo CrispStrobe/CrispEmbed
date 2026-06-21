@@ -80,8 +80,16 @@ try:
     # Pack .ccache CONTENTS (top-level hash dirs); a tar of `.ccache/` would
     # double-nest on extract and stay unrecognized (the CrispASR ccache bug).
     kh.sh(f"tar -C {WORK}/.ccache -cf {WORK}/ccache.tar . && ls -la {WORK}/ccache.tar")
-    kh.sh(f"rm -rf {WORK}/.ccache")  # keep kernel output to just ccache.tar
+    kh.sh(f"rm -rf {WORK}/.ccache")
     kh.step("ccache.exported")
+    if os.environ.get("HF_TOKEN"):
+        from huggingface_hub import HfApi
+        HfApi(token=os.environ["HF_TOKEN"]).upload_file(
+            path_or_fileobj=str(WORK / "ccache.tar"),
+            path_in_repo="ccache/ccache.tar",
+            repo_id=PROGRESS_REPO, repo_type="dataset",
+            commit_message=f"ccache seed ({REF})")
+        kh.step("ccache.uploaded_hf")
 except Exception as _e:
     print(f"  ccache export skipped: {_e}", flush=True)
 
