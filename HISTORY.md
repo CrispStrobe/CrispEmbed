@@ -25,10 +25,15 @@ gated by the result — default-on where it wins, opt-in where it's a wash/slowd
 - **hat** (`4d5cdc4`) — 6 top-level convs → ggml, **~1.3×/tile** (upsample/conv_last
   run at 4× resolution so convs matter); window/OCAB attention + CAB convs stay
   scalar. Output cos 0.999965 vs the validated hat-ref.
-- **adair** (`a7bd61f`) — verified correct via a genuine real-AdaIR ref (upstream
-  `c-yn/AdaIR`, weights reconstructed from `adair-5d-f32.gguf`, all 587 params
-  load), output cos **0.999379**. Conv→ggml port still TODO (Restormer-style
-  pointer-passed convs + scalar FFT).
+- **adair** (`a7bd61f` verify, perf follow-up) — verified correct via a genuine
+  real-AdaIR ref (upstream `c-yn/AdaIR`, weights reconstructed from
+  `adair-5d-f32.gguf`, all 587 params load), output cos **0.999379**. conv→ggml
+  done, **~5.2×/tile** (15441 → 2951 ms on 64²): all conv sites (U-Net
+  down/up/reduce/output + the MDTA/GDFN/cross-attn/FreModule convs threaded
+  through the block helpers) → `ggml_conv_2d` / `_dw` on a CPU sched, kernel
+  cache keyed by the dequantized weight POINTER (drop-in for the pointer-passed
+  `conv2d`), F16-cast in-graph; the 2D FFT (AFLB) + attention softmax stay
+  scalar. Default ON, opt out `ADAIR_SCALAR=1`. cos 0.999385 ggml — no regression.
 
 Refs uploaded to HF (`cstr/text-super-resolution-gguf`): swinir, tbsrn, dat, adair.
 Methodology note in LEARNINGS: genuine ground truth (real model run), not a

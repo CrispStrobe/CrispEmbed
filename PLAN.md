@@ -671,16 +671,22 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
     (ggml == scalar; no correctness bug — the engine was already correct). The
     FeatureEnhancer MHA, not the convs, dominates the residual ~15-25G.
   - [ ] `text_sr.cpp` — NAFNet variant + PixelShuffle + bicubic, ~40-60G, easy
-  - [ ] `adair.cpp` — U-Net + AFLB + FFT, ~100-150G, hard (needs FFT wrapping).
-    **VERIFIED correct** (conv→ggml port still TODO). Built a *genuine* ref by
-    running the real PyTorch AdaIR (upstream `c-yn/AdaIR/net/model.py`, torch+einops
-    only) on weights reconstructed from `adair-5d-f32.gguf`
-    (`tools/dump_adair_reference_from_gguf.py` — all 587 params load, names are
-    `net.<param>`). `test-adair-diff` output cos **0.999379** vs the genuine ref —
-    no bug. Ref on HF `cstr/text-super-resolution-gguf/adair-ref.gguf`. Conv port:
-    Restormer-style — many 1×1/3×3/depthwise convs pointer-passed via DequantCache
-    through the attention/FFN/FreModule helpers; the 2D FFT (AFLB) stays scalar.
-    Likely a win (15.6s/64² inference is conv+attention-heavy) but a sizable port.
+  - [x] `adair.cpp` — U-Net + AFLB + FFT, ~100-150G, hard. **conv→ggml DONE
+    (~5.2× per tile).** All conv sites (patch_embed, down/up/reduce, output, and
+    the MDTA/GDFN/cross-attn/FreModule convs threaded through the block helpers)
+    now run via `ggml_conv_2d` / `ggml_conv_2d_dw` on a dedicated CPU-backend
+    scheduler. Kernel cache is keyed by the **dequantized weight pointer**
+    (`dqc.get(...)` is stable per tensor), so `adair_conv` is a near-drop-in for
+    the old `conv2d`; depthwise (`groups==oc==ic`) → `ggml_conv_2d_dw`. Kernels
+    are F16-cast in-graph (conv = im2col(F16)+mul_mat; the CPU sched can't place a
+    mul_mat with an F32 kernel). The 2D FFT (AFLB/FreModule `fft1d`/`fft2d`) and
+    the attention softmax **stay SIMD-scalar**. Default ON; opt out with
+    `ADAIR_SCALAR=1`. Measured on 64² tile: scalar 15441 ms → ggml 2951 ms; cos
+    0.999379 (scalar) / 0.999385 (ggml) vs the genuine PyTorch-AdaIR ref — F16
+    residual only, no regression. Ref built by running upstream
+    `c-yn/AdaIR/net/model.py` (torch+einops) on weights reconstructed from
+    `adair-5d-f32.gguf` (`tools/dump_adair_reference_from_gguf.py`); ref on HF
+    `cstr/text-super-resolution-gguf/adair-ref.gguf`.
 
 - [x] **Patch embedding conv → ggml matmul** — Most VLM runtimes now use ggml
   graph (internvl2, granite, smoldocling, qwen2vl) or im2col+matmul (got,
