@@ -275,6 +275,16 @@ carry a `*-ref.gguf`**, **4 engines fully wired** (harness + ref): `instructir`,
 3 uploaded refs have no harness. Run `tools/audit_diff_coverage.py --probe-hf`
 for the current table.
 
+### Known parity gaps (tracked, not blocking)
+
+- **granite-vision q8_0 vision tower diverges with ViT depth.** Validated on
+  Kaggle CPU (regression v3): `vis_patch_embed` 1.000 → `vis_layer_15` 0.9958 →
+  `vis_layer_26` 0.9584 → `vis_features_concat` 0.9634 → `projector` 0.9557.
+  Monotonic depth degradation, so it's accumulating numerical error in the deep
+  layers rather than a uniform q8_0 floor. Accepted as the q8_0 deep-layer floor
+  for now (manifest gate at 0.95); worth a future f16-vs-q8_0 diff to confirm
+  it's quantization (f16 should hold ~0.999 through depth) and not a graph bug.
+
 ### Diff-harness gaps (todo as capabilities land)
 
 - **Ref uploaded but NO C++ harness** (3) — wire `test-<e>-diff` + a CMake
