@@ -4,6 +4,44 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 21, 2026 — Granite Vision OCR: full Metal graph path (vision + LLM) now works
+
+The whole Granite-Vision 3.3-2B OCR pipeline now runs on the Metal GPU **by
+default** and returns the correct text in **~22 s** (vision ~3 s, 784-tok prefill
+~12 s, decode ~5 s) vs the scalar path's ~100 s vision + ~8 min prefill. The
+June-20 handover (`handover-prompts/granite-vision-graph-fix.md`) attributed both
+the broken ViT and the broken LLM Metal graph to one "ggml-alloc in-place
+buffer-reuse defect" — that was wrong on both counts (the input tensor was intact
+after compute; no NaN from alloc). Re-verifying each claim independently found two
+distinct, real bugs:
+
+- **ViT graph (`gv_run_vit_graph`)** — `ggml_reshape_2d` applied to the **Q8_0
+  `vis.ffn.down` weight** whose reshaped `ne[0]=4304` is not a multiple of the
+  32-element Q8_0 block → mis-strided dequant → garbage from layer 0 (the
+  "explosion" that looked like an alloc smash). Fix: dequantize quantized FFN
+  weights to F32 before the reshape. The square Q8_0 attention weights (used raw)
+  and the F16 `up` weight were always fine. Per-layer parity with the scalar ViT
+  (cos 0.9996–0.99987; late layers track the scalar's 0.96 eps ref-artifact).
+  (`a5b527f`)
+- **LLM graph (`gv_run_llm_body`)** — correct for text at any length and on the
+  ggml-CPU backend, but cascaded to NaN from layer 8 in the real OCR prefill on
+  Metal. Localized via per-layer max-abs dumps: the residual carries a **massive
+  activation** (~1.1e4 — outlier dims amplified ×12 by `embedding_multiplier` on
+  the spliced image features). Apple's batched matmul `kernel_mul_mm_*` (T>8
+  prefill; T=1 decode uses `mul_mv`) casts activations to **F16**, so the SwiGLU
+  `silu(gate)*up` product overflows F16 (65504) in the down projection.
+  `ggml_mul_mat_set_prec(F32)`, F32 KV cache, disabling fusion/concurrency, and
+  manual attention all leave it. Fix: scale the down activation ÷256 before the
+  matmul and ×256 after — a lossless exponent shift. (`52400a6`)
+
+Also: threaded a `dump_cb` through `gv_run_llm_body` so the LLM diff actually
+exercises the ggml graph (it previously only ran the scalar decode — which is why
+the bug stayed hidden); LLM-graph diff now 7/7 cos 0.9999. Flipped both graphs to
+DEFAULT ON for GPU backends (`CRISPEMBED_GRANITE_VIS_SCALAR` / `_LLM_SCALAR` opt
+out); scalar stays default on ggml-CPU, where the ViT still drifts at late layers
+(cos ~0.84) — the one remaining follow-up. See LEARNINGS "Q8_0 reshape" and
+"Metal mul_mm F16 activation overflow".
+
 ## June 20, 2026 — Granite Vision OCR: root-caused via HF-blueprint diff, scalar restored
 
 End-to-end Granite-Vision 3.3-2B OCR was producing garbage. A prior handover
