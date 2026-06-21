@@ -2579,12 +2579,24 @@ cheaper half-measure: keep KV-read views + mask at constant `[0..max_seq]` shape
 so `ggml_backend_sched_alloc_graph` takes the no-realloc fast path. KV cache is
 F16/Metal-resident across all. No OCR decoder uses `sched_reserve` yet.
 
-**What's left on granite** (diminishing returns, not done): after the LM-head fix
-decode is **Metal-kernel-launch bound** (~1840 tiny T=1 ops/token), so the next
-lever is the deepseek persistent-decode-graph (+ constant-shape views) — a real
-refactor for ~5–15% more. The one-shot *total* is dominated by the 784-token
-prefill (~13 s) + Metal pipeline compilation (paid once per process; a persistent
-server amortizes it), neither of which the decode wins touch.
+**Profile before chasing graph reuse.** Env-gated timers around granite's
+`gv_run_llm_body` showed a T=1 decode token is **~95 % GPU `graph_compute`**
+(~135 ms); `ggml_init`+graph build ≈ 0.8 ms and `sched_reset`+`sched_alloc_graph`
+≈ 5 ms are noise. So a persistent decode graph / `sched_reserve` would save ~5 ms
+of ~140 ms — **not worth the refactor here** (contrast the LEARNINGS note above
+where alloc *was* the bottleneck for a 16-layer 350 M model; for a 2 B/40-layer
+model the GPU compute dominates). Decode is **dispatch-bound on ~800 tiny T=1
+kernels** (each `mul_mv` etc. underutilizes the GPU), so the lever is **fewer
+kernels per token**, not graph management. Concrete win: the SwiGLU down-proj
+F16-overflow guard (÷256/×256 exponent shift) only matters for the prefill
+`mul_mm` F16 cast — skip it for T ≤ 8 (decode `mul_mv` is F32-safe), cutting 2
+dispatches/layer → decode 165 → 139 ms/tok. Cumulative 270 → 139 (~1.9×).
+
+The one-shot *total* is still dominated by the 784-token prefill (~12 s, ~100 %
+GPU compute) + Metal **pipeline compilation** (compiled lazily on first kernel
+use, so it lands inside the first vision/prefill `graph_compute` and inflates
+one-shot timings by seconds; a persistent server pays it once). The decode wins
+compound for long (multi-hundred-token) document OCR, which is the real workload.
 
 ## granite_vision OCR: the two image-path bugs (vision parity passed but OCR hallucinated)
 
