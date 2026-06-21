@@ -198,7 +198,7 @@ static void swin_block_forward(float * x, int H, int W, int D,
     std::vector<float> shifted;
     if (do_shift) {
         shifted.resize(N * D);
-        cyclic_shift(spatial.data(), shifted.data(), H, W, D, -ws / 2, -ws / 2);
+        cyclic_shift(spatial.data(), shifted.data(), H, W, D, ws / 2, ws / 2);
     }
     float * to_partition = do_shift ? shifted.data() : spatial.data();
 
@@ -273,7 +273,7 @@ static void swin_block_forward(float * x, int H, int W, int D,
     // Reverse cyclic shift
     if (do_shift) {
         std::vector<float> unshifted(N * D);
-        cyclic_shift(merged.data(), unshifted.data(), H, W, D, ws / 2, ws / 2);
+        cyclic_shift(merged.data(), unshifted.data(), H, W, D, -ws / 2, -ws / 2);
         merged = std::move(unshifted);
     }
 
@@ -487,6 +487,13 @@ static void swinir_forward_tile(swinir_sr_context * ctx,
         for (int i = 0; i < D * pH * pW; i++)
             conv_out[i] += rstb_chw[i];
 
+        if (const char * dd = getenv("SWINIR_DUMP_DIR")) {
+            char fn[256];
+            snprintf(fn, sizeof(fn), "%s/rstb_%d.bin", dd, r);
+            FILE * fp = fopen(fn, "wb");
+            if (fp) { fwrite(conv_out.data(), sizeof(float), (size_t)D * pH * pW, fp); fclose(fp); }
+        }
+
         // Convert back to HWC for next RSTB's patch_embed
         for (int y = 0; y < pH; y++)
             for (int x = 0; x < pW; x++)
@@ -539,6 +546,13 @@ static void swinir_forward_tile(swinir_sr_context * ctx,
     int out_h = pH * scale, out_w = pW * scale;
     std::vector<float> ps_out(3 * out_h * out_w);
     sir_pixel_shuffle(up_conv.data(), up_oc, pH, pW, scale, ps_out.data());
+
+    if (const char * dd = getenv("SWINIR_DUMP_DIR")) {
+        char fn[256];
+        snprintf(fn, sizeof(fn), "%s/output.bin", dd);
+        FILE * fp = fopen(fn, "wb");
+        if (fp) { fwrite(ps_out.data(), sizeof(float), (size_t)3 * out_h * out_w, fp); fclose(fp); }
+    }
 
     // Crop to actual output size and write
     int crop_h = th * scale, crop_w = tw * scale;

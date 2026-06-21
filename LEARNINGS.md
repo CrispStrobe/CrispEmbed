@@ -1,5 +1,41 @@
 # CrispEmbed — Technical Learnings
 
+## SwinIR shifted-window: shift sign must match the precomputed attn_mask (2026-06)
+
+SwinIR's `swinir_sr.cpp` produced an output whose `test-swinir-diff` cosine read
+−0.91 (looked anti-correlated). Two distinct issues were tangled together:
+
+1. **The real bug — `cyclic_shift` sign convention.** The shifted (odd-index)
+   Swin blocks roll the feature map by `ws/2`, partition into windows, and add a
+   *precomputed* `attn_mask` (loaded from the GGUF) that blocks attention between
+   the regions that wrap around at the bottom/right edges. That mask is built for
+   `torch.roll(-ws/2)` (= numpy `np.roll(x, -ws/2)`, i.e. `out[y]=in[(y+ws/2)%H]`).
+   The engine's `cyclic_shift(..., -ws/2)` computed `in[(y-ws/2)%H]` — the
+   **opposite** roll. Forward and reverse shifts still cancelled (the round-trip
+   was self-consistent), so the bug was invisible except where it interacts with
+   the mask: the **edge / wrap-around windows** got the mask meant for the other
+   convention, mixing token regions that should be blocked. Result: divergence
+   localised at image edges in the shifted blocks, compounding through the four
+   RSTBs (rstb_0 cos 0.9994 → rstb_3 max_abs 147, engine ≈ 2× ref at edges).
+   **Fix:** forward shift `+ws/2`, reverse `−ws/2` so partition order and mask
+   align. All stages then cos ≥ 0.99997, output (pre-clamp float) cos 0.999996.
+   Lesson: when a precomputed mask encodes a geometric convention, the shift /
+   partition / reverse must all match *that* convention end-to-end; a self-
+   consistent-but-opposite round trip silently corrupts only the masked windows.
+
+2. **A red-herring test metric.** `crispembed_diff::Ref::compare` reports
+   `cos_min` = the worst per-row cosine, where row size = `shape.back()`. For the
+   SR output stored CHW with gguf-reversed shape `[256,256,3]`, that "row" is **3
+   horizontally-adjacent pixels in one channel**, and the C++ side is uint8-
+   clamped to `[0,1]` while the ref is raw float (can be negative). A single
+   near-zero edge triple where clamping disagrees in sign drives `cos_min` to
+   −0.91 even when the image is essentially identical (global cos 0.999996). The
+   previous session correctly flipped the shift, saw `cos_min` go −0.91 → −0.001,
+   and wrongly concluded the flip "wasn't the fix." Always sanity-check a diff
+   harness's reduction (worst-row vs global) before trusting a single scalar —
+   especially on quantized/clamped outputs. `test_swinir_diff.cpp` now gates on
+   the image-level (global + per-RGB-channel) cosine.
+
 ## Porting a scalar conv engine to ggml_conv_2d: reverse the kernel ne (2026-06)
 
 When converting an SR/restoration engine from scalar conv nested loops to a

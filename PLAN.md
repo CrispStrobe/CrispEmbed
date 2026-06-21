@@ -562,9 +562,11 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   crispembed-diff harness (`test-<engine>-diff`, cos ≥ 0.99) before checking off.
   **The harness already exists** (`tests/test_<engine>_diff.cpp` +
   `tools/dump_<engine>_reference.py`, CMake-registered) for instructir, scunet,
-  swinir, tbsrn, hat, adair — these scalar engines shipped already verified vs
+  swinir, tbsrn, hat, adair — most scalar engines shipped already verified vs
   the real HF checkpoint (e.g. instructir cos=1.000000, hat cos=0.999968), so a
-  port just has to keep that gate green. `dat` and `text_sr` have the reference
+  port just has to keep that gate green. (Exceptions found while validating refs:
+  scunet had a dequant-aliasing bug `4318f33`; swinir had a shifted-window mask
+  sign bug — both fixed, see notes below.) `dat` and `text_sr` have the reference
   dumper but still need the `test_diff.cpp` + a CMake line added.
   Same pattern as DenseNet/HGNetv2 conversions: replace with ggml_conv_2d,
   ggml_pool_2d, ggml_mul_mat, ggml_norm. Ordered by ease × impact:
@@ -593,6 +595,19 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
     (output parity ~0.93). Now all stages cos=1.000000. Conv→ggml port still TODO;
     self-consistent ref at `cstr/scunet-GGUF/scunet-ref.gguf`.
   - [ ] `swinir_sr.cpp` — RSTB + Swin window attention, ~60-90G, medium (batched matmul like mixtex)
+    **NOTE**: while validating the reference, found+fixed a real pre-existing bug
+    — `cyclic_shift` used the wrong sign convention, so the forward shift was
+    `roll(+ws/2)` while the precomputed `attn_mask` (and the reference) assume
+    `roll(-ws/2)`. The mask then blocked the wrong token pairs in the wrap-around
+    (edge) windows, so the shifted (odd-index) Swin blocks diverged at the image
+    edges and compounded through the RSTBs (rstb_3 max_abs 147, engine ≈ 2× ref
+    at edges). Fix: forward shift `+ws/2`, reverse `−ws/2` so partition+mask align.
+    All stages now cos ≥ 0.99997, output (float) cos 0.999996. The earlier
+    "−0.91 anti-correlated output" was an artifact of `test_swinir_diff.cpp`'s
+    worst-row-of-3-adjacent-pixels metric on a uint8-clamped image (a single
+    near-zero edge triple tanks it); the test now gates on the image-level
+    (global + per-channel) cosine. Self-consistent ref (erf-GELU) generator at
+    `tools/dump_swinir_reference_from_gguf.py`. Conv→ggml port still TODO.
   - [ ] `hat_sr.cpp` — HAB + OCAB (unfold needed), ~70-100G, hard
   - [ ] `tbsrn_sr.cpp` — RecurrentResidual + FeatureEnhancer MHA, ~15-25G, medium
   - [ ] `text_sr.cpp` — NAFNet variant + PixelShuffle + bicubic, ~40-60G, easy

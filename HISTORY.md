@@ -4,6 +4,27 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 21, 2026 — SwinIR-light: shifted-window mask sign bug (output −0.91 → ~1.0)
+
+`swinir_sr.cpp`'s shifted (odd-index) Swin blocks rolled the feature map with the
+wrong sign in `cyclic_shift`, so the forward shift was `roll(+ws/2)` while the
+precomputed `attn_mask` (and the numpy reference) assume `roll(-ws/2)`. Forward
+and reverse shifts cancelled, so the round trip looked fine — but the wrap-around
+(edge) windows got the mask for the opposite convention, mixing token regions
+that should be blocked. The error localised at image edges in the shifted blocks
+and compounded through the four RSTBs (rstb_3 max_abs 147, engine ≈ 2× ref at
+edges). Fix: forward `+ws/2`, reverse `−ws/2`. All stages now cos ≥ 0.99997,
+output (float) cos 0.999996.
+
+The reported "−0.91 anti-correlated output" was a separate red herring:
+`test_swinir_diff.cpp` used `crispembed_diff`'s worst-per-row cosine with row
+size = `shape.back()` = 3, i.e. 3 horizontally-adjacent pixels of a uint8-clamped
+CHW image vs the raw-float ref — one near-zero edge triple tanks it. The test now
+gates on the image-level (global + per-channel) cosine, and the reference dumper
+(`tools/dump_swinir_reference.py`) now uses exact erf-GELU to match `nn.GELU()`.
+Self-consistent gguf-fed ref generator saved as
+`tools/dump_swinir_reference_from_gguf.py`. Conv→ggml port still TODO.
+
 ## June 21, 2026 — PAN super-resolution: scalar conv loops → ggml_conv_2d graph
 
 `pan_sr.cpp`'s per-tile forward, previously hand-rolled scalar convolution

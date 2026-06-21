@@ -50,7 +50,11 @@ def layer_norm(x, weight, bias, eps=1e-5):
 
 
 def gelu(x):
-    return 0.5 * x * (1.0 + np.tanh(np.sqrt(2.0 / np.pi) * (x + 0.044715 * x ** 3)))
+    # Exact (erf) GELU — matches torch.nn.GELU() default (approximate='none'),
+    # which is what SwinIR's MLP uses. Not the tanh approximation.
+    from math import sqrt
+    from scipy.special import erf
+    return 0.5 * x * (1.0 + erf(x / sqrt(2.0)))
 
 
 def pixel_shuffle(x, scale):
