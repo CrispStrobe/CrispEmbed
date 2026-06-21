@@ -2516,6 +2516,37 @@ it under `granite_vision_dump_llm` when `CRISPEMBED_GRANITE_LLM_GRAPH=1` is what
 finally put the graph under the harness. Always confirm the diff drives the path
 you think it does.
 
+## ggml-CPU ViT precision: F16-table gelu + Q8_0-quantized activations (2026-06-21)
+
+After the Metal Granite ViT graph reached scalar parity, the **ggml-CPU** backend
+of the same graph still drifted to cos ~0.84 at late layers (vs Metal's 0.96),
+accumulating over the 27 encoder layers. Two CPU-only precision losses, both
+absent on Metal (which runs these in F32):
+
+1. **`ggml_gelu` (tanh) on CPU is a precomputed F16 lookup table.**
+   `ggml_vec_gelu_f32` (ggml-cpu/vec.h) does `ggml_table_gelu_f16[fp32_to_fp16(x)]`
+   — the input is quantized to F16 and the result is an F16 table value. `silu`
+   (the LLM FFN) is computed directly in F32, which is why the LLM CPU graph never
+   showed this. `ggml_tanh`/`ggml_gelu_erf` on CPU are also direct F32. Fix:
+   compute tanh-gelu from primitives —
+   `0.5*x*(1 + tanh(√(2/π)*(x + 0.044715*x³)))` with `ggml_tanh`/`ggml_mul`/
+   `ggml_scale` (all F32). Closed about half the gap (0.84 → 0.90).
+
+2. **CPU `mul_mat` against a Q8_0 weight quantizes the F32 activation to Q8_0**
+   for the dot product (its `vec_dot_type`), coarser than Metal's `mul_mm` F16
+   activation cast. The square attention q/k/v/o weights were used raw (Q8_0), so
+   on CPU every attention projection ran an int8 activation dot → drift. Fix:
+   `ggml_cast` the (square) attention weights — and the F16 FFN up — to F32 **on
+   the CPU backend only** (`ggml_backend_is_cpu(ctx->backend)`), forcing an F32
+   activation dot. No-op on GPU, where raw Q8_0 + `mul_mm` is already accurate and
+   faster, and avoids the extra F32 weight copy. Closed the rest (0.90 → 0.958 =
+   scalar parity); CPU end-to-end OCR then returns the correct text.
+
+Both Granite graphs are now correct on Metal AND ggml-CPU and default ON for all
+backends. Takeaway: ggml's CPU backend silently trades precision for speed
+(F16-table activations, activation requantization to the weight type); when a
+graph drifts on CPU but not GPU, suspect those before the math.
+
 ## granite_vision OCR: the two image-path bugs (vision parity passed but OCR hallucinated)
 
 The vision tower passed crispembed-diff at cos≈0.99999, yet end-to-end OCR
