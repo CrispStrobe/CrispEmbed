@@ -3872,6 +3872,7 @@ static ocr_orchestrator::engine map_engine(int e) {
         case 10: return E::granite_vision;
         case 11: return E::lightonocr;
         case 12: return E::qwen3vl;
+        case 13: return E::unlimited_ocr;
         default: return E::dbnet_trocr;
     }
 }
