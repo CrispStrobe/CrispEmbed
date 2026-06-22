@@ -737,6 +737,12 @@ static const ModelEntry k_registry[] = {
      "DeepSeek-OCR-2 (SAM + Qwen2-enc + MoE decoder, 3.4B, grounding)", "6.5 GB", "apache-2.0",
      "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF"},
 
+    {"unlimited-ocr",
+     "unlimited-ocr-q4_k.gguf",
+     "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF/resolve/main/unlimited-ocr-q4_k.gguf",
+     "Unlimited-OCR (SAM + CLIP + MoE decoder, 3.3B, full-page OCR)", "1.8 GB", "mit",
+     "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF"},
+
     // PaddleOCR-VL-0.9B — NaViT ViT + ERNIE-4.5 LLM, 109 languages
     // License: Apache-2.0
     {"paddleocr-vl",
