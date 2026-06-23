@@ -2872,3 +2872,52 @@ was LOSSLESS (max_abs_diff=0.000000 for all SAM weights checked).
 
 Rule: when crispembed-diff shows cos < 0.95, always bisect with the diff
 harness. Never accept "quantization noise" as an explanation.
+
+## Unlimited-OCR decoder: prefill attention output was scrambled (2026-06)
+
+The MoE decoder produced pure garbage ("by", or open-ended text collapsing
+to multilingual noise) even though SAM/CLIP vision parity was fine. Root
+cause was in the LLM self-attention output reshape:
+
+```cpp
+attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, mask, scale, 0, 0); // [hd, nh, T]
+attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));            // BUG → [hd, T, nh]
+attn = ggml_reshape_2d(g, attn, D, T);
+```
+
+`flash_attn_ext` returns `[hd, nh, T]`; the llama.cpp idiom is to
+`reshape_2d` that **directly** to `[D, T]`. The extra `permute(0,2,1,3)`
+turns it into `[hd, T, nh]`, so the subsequent `reshape_2d` interleaves the
+head and token axes — *unless T==1*, where the permute is a no-op. That is
+why the bug was invisible during single-token decode (the persistent-decode
+path) but corrupted every multi-token **prefill**: a scrambled attention
+output feeds the residual stream → next layer's input → the whole KV cache
+is built from corrupted hidden states. Fix: delete the permute, reshape the
+flash output straight to `[D, T]` (see `build_llm_layer_attn` and
+`build_persistent_decode_graph`). After the fix the pure-text decoder is
+coherent and the OCR path reads the first text region correctly
+(`<|det|>text [x1,y1,x2,y2]<|/det|>Hello World`).
+
+Two related gotchas found alongside it:
+
+- **Persistent-decode KV cache must be zero-initialized.** The PD graph
+  pre-allocates `max_kv` cache slots but fills only `n_past`; flash_attn
+  reads the unused slots *before* the (-inf) mask is applied, and on the
+  shared scheduler they hold leftover garbage from the vision graphs.
+  `NaN + (-inf) = NaN`, which poisons every logit (→ endless `<bos>`). The
+  short text-only test didn't trip it because its buffers were clean. Zero
+  the whole `t_k_cache`/`t_v_cache` on the first PD step. (The PD path still
+  drifts from the rebuild path after the first decode token on vision-heavy
+  prefills — a residual Metal flash_attn numerics issue with the padded KV
+  layout — so the verified-correct per-step rebuild path is the default;
+  PD is opt-in via `UOCR_PD=1`.)
+
+- **Instruction tokenization.** `"\nFree OCR."` byte-level-BPEs to
+  `[Ċ=201, Free=21431, ĠOCR=126041, .=16]` (verified against the model's
+  own tokenizer.json). Feeding the leading newline `Ċ=201` makes this port
+  emit EOS immediately — a sensitivity that points at a small residual
+  mismatch in the image-block embeddings (`image_newline`/`view_separator`)
+  vs HF. The no-newline form reproduces correct first-region OCR. The grid
+  is row-major and correct (a transpose wrongly maps the bottom image line
+  to the top). Full multi-line parity still needs a diff-harness reference
+  to bisect the vision pipeline.
