@@ -289,6 +289,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // quantizing it to Q4_K measurably hurt parity (HF-blueprint projector
         // cos 0.929 at Q4_K vs ~0.95 at Q8_0) for negligible size.
         bool is_vision_weight = sname.rfind("v.", 0) == 0 ||
+                                sname.rfind("c.", 0) == 0 ||
                                 sname.rfind("qe.", 0) == 0 ||
                                 sname.rfind("vis.", 0) == 0 ||
                                 sname.rfind("proj.", 0) == 0;

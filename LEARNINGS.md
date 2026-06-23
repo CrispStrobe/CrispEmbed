@@ -2823,3 +2823,52 @@ Converting DenseNet encoders to ggml graphs requires careful handling of:
 hmer_ocr's ggml encoder is the working reference (`273969d`).
 bttr/posformer share the same architecture but need separate
 implementation due to different BN handling (folded vs separate).
+
+## flash_attn_ext requires non-contiguous (permuted) inputs (2026-06)
+
+`ggml_flash_attn_ext` reads Q/K/V strides from the tensor metadata to
+handle multi-head layout. The standard pattern (from `vit_embed.cpp`):
+
+```cpp
+Q = ggml_permute(g, Q, 0, 2, 1, 3);  // [hd, T, nh] — non-contiguous view
+// do NOT ggml_cont()!
+attn = ggml_flash_attn_ext(g, Q, K, V, mask, scale, 0, 0);
+attn = ggml_reshape_2d(g, attn, D, T);  // output [hd, nh, T] → [D, T]
+```
+
+Adding `ggml_cont()` before `flash_attn_ext` copies the data into a new
+contiguous layout where the head/token axes are transposed from what
+`flash_attn_ext` expects. This produces completely wrong attention output
+(cos=0.56 vs reference). The fix: remove `ggml_cont()` and pass the
+permuted views directly. Output is `[hd, nh, T]`, `reshape_2d(D, T)`
+works directly without an extra permute.
+
+## PIL ImageOps.pad: bicubic + clamp (2026-06)
+
+PIL's `ImageOps.pad` calls `Image.resize(BICUBIC)` then pastes centered.
+To match exactly in C++:
+
+1. **Bicubic kernel**: Catmull-Rom (`a = -0.5`), NOT Keys (`a = -1`).
+2. **Coordinate mapping**: `sx = (x + 0.5) / scale - 0.5` (center-to-center).
+3. **Clamp output to [0, 1]**: Catmull-Rom overshoots at sharp edges (text
+   boundaries produce values > 1.0 or < 0.0). PIL clips internally to
+   [0, 255] before returning uint8. Without clamping, cos_min drops from
+   0.9999 to 0.991 at the patch embedding stage.
+4. **Padding value**: `int(mean * 255) / 255.0`, NOT `mean` directly.
+   `int(0.5 * 255) = 127`, `127/255 = 0.498039 ≠ 0.5`.
+
+## Never blame quantization for parity failures (2026-06)
+
+Quantization (F16, Q8_0, even Q4_K) explains at most ~5% cosine
+deviation from the F32 reference (cos_min ≥ 0.95). If parity is worse
+than that, there IS a structural bug — a wrong resize method, a missing
+ggml_cont, a wrong weight mapping, a wrong activation function, etc.
+
+During the Unlimited-OCR port, hours were wasted blaming "F16 quantization
+noise cascading through 24 CLIP layers" when the actual bugs were:
+(1) `ggml_cont()` before `flash_attn_ext`, (2) bilinear vs bicubic resize,
+(3) missing pixel clamp, (4) wrong BPE token ID. The BF16→F16 conversion
+was LOSSLESS (max_abs_diff=0.000000 for all SAM weights checked).
+
+Rule: when crispembed-diff shows cos < 0.95, always bisect with the diff
+harness. Never accept "quantization noise" as an explanation.
