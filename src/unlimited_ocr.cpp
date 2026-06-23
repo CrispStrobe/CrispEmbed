@@ -1787,7 +1787,8 @@ static void moe_ffn_cpu(uocr_ctx &ctx, int li, float *hidden, int T) {
 // ---------------------------------------------------------------------------
 
 static bool run_llm_decoder(uocr_ctx &ctx, const float *prompt_embeds, int n_prompt, int max_new,
-                            std::vector<int32_t> &out_ids, std::vector<float> &out_confs) {
+                            std::vector<int32_t> &out_ids, std::vector<float> &out_confs,
+                            const std::vector<int32_t> &prompt_ids = {}) {
     auto &lhp = ctx.m.lhp;
     int D = lhp.hidden, V = lhp.vocab_size;
     int nh = lhp.heads, nkv = lhp.kv_heads, hd = lhp.head_dim;
@@ -2084,21 +2085,33 @@ static bool run_llm_decoder(uocr_ctx &ctx, const float *prompt_embeds, int n_pro
             }
         } // end !did_pd
 
-        // no_repeat_ngram_size logits processor (matches HF infer()'s option).
-        // Greedy on the heavily-quantized q4_k decoder gets stuck repeating a
-        // partial detection box; blocking already-seen n-grams lets it advance.
-        int nrng = 0;
+        // Sliding-window no_repeat_ngram logits processor — REQUIRED by this model
+        // (the HF model card calls infer() with no_repeat_ngram_size=35,
+        // ngram_window=128). Mirrors SlidingWindowNoRepeatNgramProcessor over the
+        // full input_ids (prompt placeholders + generated). Without it the
+        // detection-box decode gets stuck repeating a partial box.
+        int nrng = 35, nwin = 128;
         if (const char *e = getenv("UOCR_NO_REPEAT_NGRAM")) nrng = atoi(e);
-        if (nrng > 1 && (int)out_ids.size() >= nrng - 1) {
-            int k = nrng - 1;
-            const int32_t *suffix = out_ids.data() + (out_ids.size() - k);
-            for (int i = 0; i + nrng <= (int)out_ids.size(); i++) {
-                bool match = true;
-                for (int j = 0; j < k; j++)
-                    if (out_ids[i + j] != suffix[j]) { match = false; break; }
-                if (match) {
-                    int banned = out_ids[i + k];
-                    if (banned >= 0 && banned < V) logits[banned] = -INFINITY;
+        if (const char *e = getenv("UOCR_NGRAM_WINDOW")) nwin = atoi(e);
+        if (nrng > 1) {
+            // full sequence so far = prompt_ids + generated out_ids
+            int n_pre = (int)prompt_ids.size();
+            int seq_len = n_pre + (int)out_ids.size();
+            auto at = [&](int i) -> int32_t {
+                return i < n_pre ? prompt_ids[i] : out_ids[i - n_pre];
+            };
+            if (seq_len >= nrng) {
+                int k = nrng - 1;
+                int search_start = std::max(0, seq_len - nwin);
+                int search_end = seq_len - nrng + 1;  // exclusive
+                for (int idx = search_start; idx < search_end; idx++) {
+                    bool match = true;
+                    for (int j = 0; j < k; j++)
+                        if (at(idx + j) != at(seq_len - k + j)) { match = false; break; }
+                    if (match) {
+                        int banned = at(idx + k);
+                        if (banned >= 0 && banned < V) logits[banned] = -INFINITY;
+                    }
                 }
             }
         }
@@ -2481,15 +2494,13 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
     const size_t emb_row_bytes = ggml_row_size(emb_t->type, D);
     std::vector<uint8_t> emb_row_buf(emb_row_bytes);
 
-    // Instruction text "\nFree OCR." tokenizes (verified against the model's own
-    // tokenizer.json byte-level BPE) to [Ċ=201, Free=21431, ĠOCR=126041, .=16].
-    // KNOWN DISCREPANCY: feeding the leading newline token (Ċ=201) — which HF's
-    // text_encode does include — makes this port emit EOS immediately, so we drop
-    // it here. That sensitivity points to a small residual mismatch in the image
-    // block embeddings (image_newline / view_separator) vs HF; the no-newline
-    // form below reproduces correct first-region OCR. Override with UOCR_INSTR for
-    // experiments. ("OCR"=119316 vs "ĠOCR"=126041 makes no observed difference.)
-    std::vector<int32_t> instr_ids = {21431, 126041, 16};
+    // Instruction: the model's prompt is "<image>document parsing." (per the HF
+    // model card — NOT "Free OCR.", which is a different DeepSeek-OCR checkpoint's
+    // prompt and makes this model emit its training-instruction boilerplate). No
+    // leading newline: "document parsing." directly follows the <image> block.
+    // "document parsing." → [document=34030, Ġparsing=76466, .=16] (verified
+    // against the model's tokenizer.json). Override with UOCR_INSTR.
+    std::vector<int32_t> instr_ids = {34030, 76466, 16};
     if (const char *ov = getenv("UOCR_INSTR")) {
         instr_ids.clear();
         const char *p = ov;
@@ -2516,14 +2527,21 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
         }
         row++;
     };
+    // Token-id view of the prompt, for the no_repeat_ngram processor (HF runs it
+    // over the full input_ids incl. the image placeholders). Vision rows map to
+    // the <image> placeholder id (128815).
+    std::vector<int32_t> prompt_ids;
+    prompt_ids.reserve(n_prompt);
+    prompt_ids.push_back(0);  // bos
     put_tok(0);  // bos = <|begin_of_sentence|>
 
     // Vision features (already includes image_newline per row + view_separator)
     memcpy(prompt_embeds.data() + (size_t)row * D, vis_features.data(),
            (size_t)n_vis_total * D * sizeof(float));
     row += n_vis_total;
+    for (int i = 0; i < n_vis_total; i++) prompt_ids.push_back(128815);  // <image>
 
-    for (int32_t id : instr_ids) put_tok(id);
+    for (int32_t id : instr_ids) { put_tok(id); prompt_ids.push_back(id); }
 
     if (getenv("UOCR_DBG")) {
         fprintf(stderr, "  [dbg] prompt: bos + %d vis + %zu instr = %d tokens; instr_ids:",
@@ -2539,7 +2557,7 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
     int max_new = 1024;
     if (const char* mn = getenv("UOCR_MAX_NEW")) max_new = atoi(mn);
     if (!run_llm_decoder(ctx->inner, prompt_embeds.data(), n_prompt, max_new,
-                         gen_ids, gen_confs)) {
+                         gen_ids, gen_confs, prompt_ids)) {
         fprintf(stderr, "unlimited_ocr: LLM decode failed\n");
         if (out_len) *out_len = 0; return "";
     }
