@@ -2930,24 +2930,28 @@ stages `sam_patch_embed` … `vision_features`) and `UOCR_REF=`:
   near-zero vectors whose cosine is pure noise, dragging `cos_min` to ~0 even
   when the tensor is fine. `crispembed_diff::Report` already computes
   `cos_mean`; the engine now prints it.
-- **The SAM encoder is the real vision bug.** `cos_mean` degrades
-  monotonically: `sam_patch_embed` 0.980 → `sam_output` 0.734 →
-  `clip_output` 0.61 → `vision_features` 0.71. Injecting the reference's
-  `sam_output` (`UOCR_INJECT_REF=1`) snaps every downstream stage to **0.998**
-  — so CLIP, the fusion concat, the projector and `assemble_vision_features`
-  are all correct; the error is entirely inside SAM (preprocessing input is
-  ~0.98, then the ViT layers accumulate error). Individual content patch
-  embeddings match the reference to the digit; the divergence is broad-but-
-  small, consistent with the windowed/global attention + relative-position
-  path, not a single catastrophic op. Not yet root-caused.
-- **SAM FFN used the wrong GELU.** `build_sam_layer_graph` called
-  `ggml_gelu` (tanh approximation); HF SAM's `MLPBlock` uses `nn.GELU`
-  (exact erf). Fixed to `ggml_gelu_erf`. (CLIP correctly uses
-  `ggml_gelu_quick`; the projector is `projector_type: "linear"`, no GELU.)
-  This alone barely moved the per-layer cosine, so the dominant SAM error is
-  in the windowed/global **decomposed relative-position attention**
-  (`precompute_rpe_tables` + the in-graph `rel_h`/`rel_w` path) — still to be
-  root-caused; the per-layer ref outputs (`sam_layer_0..11`) bracket it.
+- **CAUTION: this published ref GGUF was dumped on a DIFFERENT image than
+  `test_ocr.png`, so its vision-stage diffs are NOT valid for that image.**
+  Tell-tale: `sam_patch_embed` differs at token 1000 (grid row 15), which is
+  pure gray letterbox *padding* for a 400×200 image (content starts at padded
+  row 256 = grid row 16) — identical padding would match to the digit, so a
+  mismatch there means a different aspect ratio / different image. Confirming
+  it: feeding the ref's `vision_features` straight to the decoder
+  (`UOCR_INJECT_VIS=1`) makes the model hallucinate about "a single, solid
+  horizontal line" — a different picture's content. So the "SAM cos 0.98→0.73"
+  decay was an artifact of comparing two different images; the C++ SAM is
+  actually fine (the real pipeline reads 3/4 lines of `test_ocr.png`). Lesson:
+  before trusting any diff, prove the reference was generated on the SAME input
+  (check a padding token, or inject the ref features and see if they decode to
+  the expected content). Re-dump the ref on `test_ocr.png` to debug it for real.
+- **`cos_mean`, not `cos_min`.** Letterbox-padding tokens are near-zero
+  vectors whose cosine is noise, dragging `cos_min` to ~0 even on a good
+  tensor. `crispembed_diff::Report` already computes `cos_mean`; the engine
+  now prints it.
+- **SAM FFN GELU.** `build_sam_layer_graph` called `ggml_gelu` (tanh approx);
+  HF SAM's `MLPBlock` uses `nn.GELU` (exact erf). Changed to `ggml_gelu_erf`
+  for correctness (CLIP correctly uses `ggml_gelu_quick`; projector is
+  `projector_type: "linear"`, no GELU). Effect is small.
 
 - **The "decode failure" was the WRONG PROMPT + a missing logits processor —
   bad code, not quantization (q8/f16 were never the answer).** The port hard-
@@ -2963,8 +2967,12 @@ stages `sam_patch_embed` … `vision_features`) and `UOCR_REF=`:
   and the sliding-window processor (`SlidingWindowNoRepeatNgramProcessor` over
   the full input_ids incl. the `<image>`=128815 placeholders), the q4_k decoder
   reads 3 of 4 lines on the test image straight away
-  (`HelloWorld` / `CrispEmbed OCR` / `2024-06-22`). The remaining mid-line
-  garble tracks the SAM rel-pos error above, not the decoder.
+  (`HelloWorld` / `CrispEmbed OCR` / `2024-06-22`), then EOS. The one missing
+  line ("This is a test") has its box detected (`[58,416,…]`) but no text
+  emitted — even with the ngram off it just loops on that box. With no
+  same-image reference it can't be bisected; it may be a resolution/model
+  limit on this sparse synthetic image (real document pages are in-distribution
+  and likely fare better). Re-dump the ref on `test_ocr.png` to chase it.
 
   Lesson (again): when a VLM emits coherent-but-off-task text, suspect the
   prompt/template and the sampling config first — read the model card's exact
