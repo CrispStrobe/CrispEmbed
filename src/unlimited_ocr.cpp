@@ -1104,11 +1104,15 @@ static ggml_cgraph* build_clip_enc_full_graph(ggml_context* g, uocr_ctx* ctx, in
         V = ggml_reshape_3d(g, V, hd, nh, T);
         V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-        // SDPA (no mask — bidirectional)
-        ggml_tensor* attn = ggml_flash_attn_ext(g, Q, K, V, nullptr,
-                                                 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
-        // [hd, T, nh] → permute back to [hd, nh, T] → reshape [D, T]
-        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        // SDPA via mul_mat (bidirectional, no mask).
+        // ggml_flash_attn_ext with mask=nullptr has a bug on CPU — use manual path.
+        // Q, K, V are [hd, T, nh] after permute.
+        ggml_tensor* scores = ggml_mul_mat(g, K, Q);  // [T, T, nh]
+        scores = ggml_scale(g, scores, 1.0f / sqrtf((float)hd));
+        scores = ggml_soft_max(g, scores);
+        ggml_tensor* Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));  // [T, hd, nh]
+        ggml_tensor* attn = ggml_mul_mat(g, Vt, scores);  // [hd, T, nh]
+        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));  // [hd, nh, T]
         attn = ggml_reshape_2d(g, attn, D, T);
 
         // Output projection
