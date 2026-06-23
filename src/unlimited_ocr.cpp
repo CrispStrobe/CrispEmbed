@@ -2434,7 +2434,9 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
     auto t_llm = std::chrono::steady_clock::now();
     std::vector<int32_t> gen_ids;
     std::vector<float> gen_confs;
-    if (!run_llm_decoder(ctx->inner, prompt_embeds.data(), n_prompt, 1024,
+    int max_new = 1024;
+    if (const char* mn = getenv("UOCR_MAX_NEW")) max_new = atoi(mn);
+    if (!run_llm_decoder(ctx->inner, prompt_embeds.data(), n_prompt, max_new,
                          gen_ids, gen_confs)) {
         fprintf(stderr, "unlimited_ocr: LLM decode failed\n");
         if (out_len) *out_len = 0; return "";
