@@ -2283,16 +2283,37 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
                     // int(0.5*255)=127, 127/255.0=0.498039 (NOT exactly 0.5)
                     val = (float)((int)(s.image_mean[c] * 255.0f)) / 255.0f;
                 } else {
+                    // Bicubic interpolation (matches PIL Image.BICUBIC / ImageOps.pad)
                     float sx = (x - ox + 0.5f) / scale - 0.5f;
                     float sy = (y - oy + 0.5f) / scale - 0.5f;
-                    int x0 = (int)floorf(sx), y0 = (int)floorf(sy);
-                    float dx = sx - x0, dy = sy - y0;
-                    int x1 = std::min(x0 + 1, w - 1), y1 = std::min(y0 + 1, h - 1);
-                    x0 = std::min(std::max(x0, 0), w - 1);
-                    y0 = std::min(std::max(y0, 0), h - 1);
-                    auto P = [&](int xx, int yy) { return (float)px[(yy * w + xx) * ch + ci] / 255.0f; };
-                    val = P(x0,y0)*(1-dx)*(1-dy) + P(x1,y0)*dx*(1-dy)
-                        + P(x0,y1)*(1-dx)*dy     + P(x1,y1)*dx*dy;
+                    int ix = (int)floorf(sx), iy = (int)floorf(sy);
+                    float fx = sx - ix, fy = sy - iy;
+
+                    auto P = [&](int xx, int yy) -> float {
+                        xx = std::min(std::max(xx, 0), w - 1);
+                        yy = std::min(std::max(yy, 0), h - 1);
+                        return (float)px[(yy * w + xx) * ch + ci] / 255.0f;
+                    };
+                    // PIL Keys bicubic kernel (a=-1): matches PIL Image.BICUBIC
+                    // k(t) = (a+2)|t|^3 - (a+3)|t|^2 + 1         for |t|<=1
+                    //         a|t|^3 - 5a|t|^2 + 8a|t| - 4a      for 1<|t|<2
+                    auto cubic = [](float t) -> float {
+                        constexpr float a = -0.5f;  // PIL BICUBIC = Catmull-Rom
+                        t = fabsf(t);
+                        if (t <= 1.0f) return ((a + 2.0f)*t - (a + 3.0f))*t*t + 1.0f;
+                        if (t < 2.0f) return ((a*t - 5.0f*a)*t + 8.0f*a)*t - 4.0f*a;
+                        return 0.0f;
+                    };
+                    float sum = 0, wsum = 0;
+                    for (int ky = -1; ky <= 2; ky++) {
+                        float wy = cubic(fy - ky);
+                        for (int kx = -1; kx <= 2; kx++) {
+                            float ww = wy * cubic(fx - kx);
+                            sum += ww * P(ix + kx, iy + ky);
+                            wsum += ww;
+                        }
+                    }
+                    val = (wsum > 0) ? sum / wsum : 0.0f;
                 }
                 pixels[c * imgS * imgS + y * imgS + x] = (val - s.image_mean[c]) / s.image_std[c];
             }
