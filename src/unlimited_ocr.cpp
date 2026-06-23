@@ -1096,23 +1096,19 @@ static ggml_cgraph* build_clip_enc_full_graph(ggml_context* g, uocr_ctx* ctx, in
         ggml_tensor* K = ggml_cont(g, ggml_view_2d(g, qkv, D, T, qkv->nb[1], (size_t)D * sizeof(float)));
         ggml_tensor* V = ggml_cont(g, ggml_view_2d(g, qkv, D, T, qkv->nb[1], (size_t)2 * D * sizeof(float)));
 
-        // Reshape to multi-head: [hd, nh, T] → permute to [hd, T, nh]
+        // Reshape to multi-head [hd, nh, T] → permute to [hd, T, nh]
+        // Do NOT ggml_cont() — flash_attn_ext uses strides natively.
         Q = ggml_reshape_3d(g, Q, hd, nh, T);
-        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));  // [hd, T, nh]
+        Q = ggml_permute(g, Q, 0, 2, 1, 3);  // [hd, T, nh] (non-contiguous view)
         K = ggml_reshape_3d(g, K, hd, nh, T);
-        K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
+        K = ggml_permute(g, K, 0, 2, 1, 3);
         V = ggml_reshape_3d(g, V, hd, nh, T);
-        V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
+        V = ggml_permute(g, V, 0, 2, 1, 3);
 
-        // SDPA via mul_mat (bidirectional, no mask).
-        // ggml_flash_attn_ext with mask=nullptr has a bug on CPU — use manual path.
-        // Q, K, V are [hd, T, nh] after permute.
-        ggml_tensor* scores = ggml_mul_mat(g, K, Q);  // [T, T, nh]
-        scores = ggml_scale(g, scores, 1.0f / sqrtf((float)hd));
-        scores = ggml_soft_max(g, scores);
-        ggml_tensor* Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));  // [T, hd, nh]
-        ggml_tensor* attn = ggml_mul_mat(g, Vt, scores);  // [hd, T, nh]
-        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));  // [hd, nh, T]
+        // SDPA — bidirectional, no mask (same pattern as vit_embed.cpp)
+        ggml_tensor* attn = ggml_flash_attn_ext(g, Q, K, V, nullptr,
+                                                 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
+        // flash_attn_ext output: [hd, nh, T] — reshape directly to [D, T]
         attn = ggml_reshape_2d(g, attn, D, T);
 
         // Output projection
