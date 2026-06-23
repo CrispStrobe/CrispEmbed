@@ -2919,5 +2919,35 @@ Two related gotchas found alongside it:
   mismatch in the image-block embeddings (`image_newline`/`view_separator`)
   vs HF. The no-newline form reproduces correct first-region OCR. The grid
   is row-major and correct (a transpose wrongly maps the bottom image line
-  to the top). Full multi-line parity still needs a diff-harness reference
-  to bisect the vision pipeline.
+  to the top).
+
+### Diff-harness findings vs `unlimited-ocr-ref.gguf` (vision stages)
+
+With the reference GGUF (`cstr/unlimited-ocr-crispembed-GGUF/unlimited-ocr-ref.gguf`,
+stages `sam_patch_embed` … `vision_features`) and `UOCR_REF=`:
+
+- **Use `cos_mean`, not `cos_min`.** The letterboxed-gray padding tokens are
+  near-zero vectors whose cosine is pure noise, dragging `cos_min` to ~0 even
+  when the tensor is fine. `crispembed_diff::Report` already computes
+  `cos_mean`; the engine now prints it.
+- **The SAM encoder is the real vision bug.** `cos_mean` degrades
+  monotonically: `sam_patch_embed` 0.980 → `sam_output` 0.734 →
+  `clip_output` 0.61 → `vision_features` 0.71. Injecting the reference's
+  `sam_output` (`UOCR_INJECT_REF=1`) snaps every downstream stage to **0.998**
+  — so CLIP, the fusion concat, the projector and `assemble_vision_features`
+  are all correct; the error is entirely inside SAM (preprocessing input is
+  ~0.98, then the ViT layers accumulate error). Individual content patch
+  embeddings match the reference to the digit; the divergence is broad-but-
+  small, consistent with the windowed/global attention + relative-position
+  path, not a single catastrophic op. Not yet root-caused.
+- **q4_k decode is the hard ceiling for multi-line OCR.** Even with the
+  reference vision injected (cos 0.998), `flash_attn` forced to F32
+  (`UOCR_FA_F32=1`), and `no_repeat_ngram` enabled
+  (`UOCR_NO_REPEAT_NGRAM=3`), the q4_k decoder reads the first region
+  perfectly then garbles the rest (it *does* surface "is a test" / the date,
+  but mangled). So multi-line correctness is gated on the q4_k expert/
+  attention weights, not on vision or sampling. q8_0 reads further on the
+  text-only probe ("…the city of Paris") but its OCR path OOMs the 16 GB
+  machine (>6 GB). Full multi-line OCR realistically needs q8_0/f16 weights
+  (more RAM) plus the SAM fix. `no_repeat_ngram` only helps the decoder
+  *advance* past the stuck-box loop; it cannot fix wrong-token generation.
