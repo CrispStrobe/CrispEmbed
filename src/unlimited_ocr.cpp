@@ -1336,7 +1336,8 @@ static bool assemble_vision_features(uocr_ctx &ctx, const float *proj_features,
     vis_features.resize((size_t)n_total * D);
 
     for (int row = 0; row < side; row++) {
-        // Copy the row's features
+        // Copy the row's features (row-major grid; verified correct — a transposed
+        // grid wrongly maps the bottom image line to the top position).
         memcpy(vis_features.data() + (size_t)(row * features_per_row) * D,
                proj_features + (size_t)(row * side) * D,
                (size_t)side * D * sizeof(float));
@@ -1517,7 +1518,8 @@ static PdGraph build_persistent_decode_graph(uocr_ctx &ctx, int max_kv) {
 
         ggml_tensor* attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull,
                                                  pd.t_mask, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
-        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        // [hd, nh, 1] → [D, 1]; reshape directly (T=1 so the permute was a no-op,
+        // dropped here to match the prefill path in build_llm_layer_attn).
         attn = ggml_reshape_2d(g, attn, D, 1);
         attn = ggml_mul_mat(g, ly.o_w, attn);
         x = ggml_add(g, x, attn);
@@ -1643,7 +1645,9 @@ static llm_attn_graph build_llm_layer_attn(uocr_ctx &ctx, int li, int T, int n_p
 
     float attn_scale = 1.0f / sqrtf((float)hd);
     ggml_tensor *attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, mask, attn_scale, 0.0f, 0.0f);
-    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+    // flash_attn_ext output is [hd, nh, T]; reshape directly to [D, T] (llama.cpp
+    // pattern). An intervening permute(0,2,1,3) scrambles head/token data whenever
+    // T>1 (it is only a no-op for the T=1 decode step), corrupting the prefill.
     attn = ggml_reshape_2d(g, attn, D, T);
     attn = ggml_mul_mat(g, ly.o_w, attn);
     x = ggml_add(g, x, attn);
@@ -1827,7 +1831,14 @@ static bool run_llm_decoder(uocr_ctx &ctx, const float *prompt_embeds, int n_pro
     int n_past = 0;
 
     static constexpr int PD_GEN_CAP = 96;
-    bool use_pd  = !getenv("UOCR_DECODE_REBUILD") && ctx.moe_metal && !no_kv && !lmhead_cpu;
+    // The persistent-decode (PD) graph is a speed optimization but still diverges
+    // from the per-step rebuild path on vision-heavy prefills (its first decode
+    // token matches after the KV zero-init fix, but later steps drift — a residual
+    // Metal flash_attn numerics issue with the zero-padded KV layout). The rebuild
+    // path is verified correct (byte-identical to the CPU-MoE reference), so it is
+    // the default. Opt into PD with UOCR_PD=1 once the divergence is fixed.
+    bool use_pd  = getenv("UOCR_PD") && !getenv("UOCR_DECODE_REBUILD") &&
+                   ctx.moe_metal && !no_kv && !lmhead_cpu;
     int  pd_max_kv = use_pd ? std::min(n_prompt + std::min(max_new, PD_GEN_CAP),
                                         lhp.max_position_embeddings) : 0;
     PdGraph pd;
@@ -1873,8 +1884,20 @@ static bool run_llm_decoder(uocr_ctx &ctx, const float *prompt_embeds, int n_pro
                         pd_mask[ki] = ggml_fp32_to_fp16(0.0f);
                     ggml_backend_tensor_set(pd.t_mask, pd_mask.data(), 0,
                                             (size_t)pd_max_kv * sizeof(ggml_fp16_t));
+                    // Zero the entire KV cache first. The graph allocates max_kv_in
+                    // slots but only n_past are valid; the remaining slots are read
+                    // by flash_attn before the (-inf) mask is applied, and on the
+                    // shared scheduler they hold leftover garbage from the vision
+                    // graphs. NaN/Inf garbage survives the mask (NaN + -inf = NaN)
+                    // and corrupts every logit. Zeroing makes masked slots inert.
+                    size_t kv_full = (size_t)(pd_max_kv - 1) * kv_dim;
+                    std::vector<ggml_fp16_t> kv_zero(kv_full, ggml_fp32_to_fp16(0.0f));
                     size_t kv_b = (size_t)n_past * kv_dim * sizeof(ggml_fp16_t);
                     for (int li = 0; li < n_layers; li++) {
+                        ggml_backend_tensor_set(pd.t_k_cache[li], kv_zero.data(), 0,
+                                                kv_full * sizeof(ggml_fp16_t));
+                        ggml_backend_tensor_set(pd.t_v_cache[li], kv_zero.data(), 0,
+                                                kv_full * sizeof(ggml_fp16_t));
                         ggml_backend_tensor_set(pd.t_k_cache[li],
                                                 ctx.kvc.k_cache[li].data(), 0, kv_b);
                         ggml_backend_tensor_set(pd.t_v_cache[li],
@@ -2417,10 +2440,25 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
     const size_t emb_row_bytes = ggml_row_size(emb_t->type, D);
     std::vector<uint8_t> emb_row_buf(emb_row_bytes);
 
-    // Instruction text: "\nFree OCR." → [Free=21431, OCR=119316, .=16]
-    // Hardcoded to match HF tokenizer output (core_bpe produces wrong merge
-    // for this specific string: "ĠOCR"=126041 instead of "OCR"=119316).
-    std::vector<int32_t> instr_ids = {21431, 119316, 16};
+    // Instruction text "\nFree OCR." tokenizes (verified against the model's own
+    // tokenizer.json byte-level BPE) to [Ċ=201, Free=21431, ĠOCR=126041, .=16].
+    // KNOWN DISCREPANCY: feeding the leading newline token (Ċ=201) — which HF's
+    // text_encode does include — makes this port emit EOS immediately, so we drop
+    // it here. That sensitivity points to a small residual mismatch in the image
+    // block embeddings (image_newline / view_separator) vs HF; the no-newline
+    // form below reproduces correct first-region OCR. Override with UOCR_INSTR for
+    // experiments. ("OCR"=119316 vs "ĠOCR"=126041 makes no observed difference.)
+    std::vector<int32_t> instr_ids = {21431, 126041, 16};
+    if (const char *ov = getenv("UOCR_INSTR")) {
+        instr_ids.clear();
+        const char *p = ov;
+        while (*p) {
+            char *end; long v = strtol(p, &end, 10);
+            if (end == p) { p++; continue; }
+            instr_ids.push_back((int32_t)v);
+            p = (*end == ',') ? end + 1 : end;
+        }
+    }
 
     int n_prompt = 1 /*bos*/ + n_vis_total + (int)instr_ids.size();
     std::vector<float> prompt_embeds((size_t)n_prompt * D);
