@@ -2930,24 +2930,21 @@ stages `sam_patch_embed` … `vision_features`) and `UOCR_REF=`:
   near-zero vectors whose cosine is pure noise, dragging `cos_min` to ~0 even
   when the tensor is fine. `crispembed_diff::Report` already computes
   `cos_mean`; the engine now prints it.
-- **CAUTION: this published ref GGUF was dumped on a DIFFERENT image than
-  `test_ocr.png`, so its vision-stage diffs are NOT valid for that image.**
-  Tell-tale: `sam_patch_embed` differs at token 1000 (grid row 15), which is
-  pure gray letterbox *padding* for a 400×200 image (content starts at padded
-  row 256 = grid row 16) — identical padding would match to the digit, so a
-  mismatch there means a different aspect ratio / different image. Confirming
-  it: feeding the ref's `vision_features` straight to the decoder
-  (`UOCR_INJECT_VIS=1`) makes the model hallucinate about "a single, solid
-  horizontal line" — a different picture's content. So the "SAM cos 0.98→0.73"
-  decay was an artifact of comparing two different images; the C++ SAM is
-  actually fine (the real pipeline reads 3/4 lines of `test_ocr.png`). Lesson:
-  before trusting any diff, prove the reference was generated on the SAME input
-  (check a padding token, or inject the ref features and see if they decode to
-  the expected content). Re-dump the ref on `test_ocr.png` to debug it for real.
-- **`cos_mean`, not `cos_min`.** Letterbox-padding tokens are near-zero
-  vectors whose cosine is noise, dragging `cos_min` to ~0 even on a good
-  tensor. `crispembed_diff::Report` already computes `cos_mean`; the engine
-  now prints it.
+- **THE REAL VISION BUG WAS THE PIPELINE SCAN-CLEANUP, not SAM.** The
+  `--ocr-pipeline` path ran classical scan-cleanup (deskew/crop) on the image
+  *before* the VLM engine, so the engine received e.g. **414×229 instead of the
+  original 400×200** — a distorted aspect ratio that shifts content into the
+  wrong vision-grid cells. That distortion was the entire `sam_patch_embed`
+  0.98 / `sam_output` 0.73 "divergence". Disabling cleanup for VLM engines
+  (`main.cpp`: `st.cleanup_enabled = is_vlm ? 0 : 1`) makes the engine receive
+  the original image and the vision matches HF essentially perfectly:
+  `sam_patch_embed` cos_mean **0.999999**, all SAM layers ≥0.9999,
+  `vision_features` cos_mean **0.99981**. It also markedly improves real-page
+  OCR (a book title page now yields title/author/degree/affiliation lines).
+  VLMs do their own resize+letterbox; never pre-clean their input. (My earlier
+  "the ref is a different image" guess was WRONG — re-dumping the ref on
+  `test_ocr.png` on this M1 gave byte-identical numbers, proving the ref IS
+  that image and the divergence was the cleanup-distorted *input*.)
 - **SAM FFN GELU.** `build_sam_layer_graph` called `ggml_gelu` (tanh approx);
   HF SAM's `MLPBlock` uses `nn.GELU` (exact erf). Changed to `ggml_gelu_erf`
   for correctness (CLIP correctly uses `ggml_gelu_quick`; projector is
@@ -2966,16 +2963,35 @@ stages `sam_patch_embed` … `vision_features`) and `UOCR_REF=`:
   correct prompt (`[document=34030, Ġparsing=76466, .=16]`, no leading newline)
   and the sliding-window processor (`SlidingWindowNoRepeatNgramProcessor` over
   the full input_ids incl. the `<image>`=128815 placeholders), the q4_k decoder
-  reads 3 of 4 lines on the test image straight away
-  (`HelloWorld` / `CrispEmbed OCR` / `2024-06-22`), then EOS. The one missing
-  line ("This is a test") was a **resolution limit, not a bug**: at 400×200 the
-  text is too small for the 16×16 vision grid, so the model detects line 2's box
-  but reads no text. CONFIRMED by upscaling the same image to 800×400 — then all
-  four lines read, including "This is a test". So the port is functionally
-  correct; the original miss is just the tiny synthetic input (real document
-  pages are in-distribution and fare better). Minor greedy doublings
-  ("HelloWorldWorld") remain, expected from greedy + this small model.
+  reads region 1 (`HelloWorld`) byte-for-byte like HF.
+
+- **GROUND TRUTH: the real HF model reads `test_ocr.png` 4/4.** Ran the actual
+  `baidu/Unlimited-OCR` via `AutoModel` on this M1 — **bf16 on CPU** (the fp32
+  load is ~13 GB and *crashes* the 16 GB machine; bf16 ≈ 6.6 GB fits, with
+  `.cuda()`/`autocast("cuda")` monkey-patched to CPU). Output:
+  `<|det|>title [47,152,188,202]<|/det|>Hello World` … `This is a test` …
+  `CrispEmbed OCR` … `2024-06-22` — all four lines. So the model + prompt +
+  config are correct and the original image is the right input.
+
+- **The remaining gap is the q4_k DECODER quant floor, localized with a
+  decoder reference.** Extended the dumper (`dump_decoder.py`) to hook the
+  HF decoder layers + `lm_head` and emit `llm_layer_0..11` + `logits`; the C++
+  already diffs those stages under `UOCR_REF`. With the now-correct vision, the
+  C++ prefill matches HF closely at the **dense** layer 0
+  (cos_mean 0.9988, max_abs 0.34) but the **MoE** layers jump to max_abs ~7
+  (cos_mean 0.997→0.979) and the final `logits` land at cos **0.926** — enough
+  to flip a borderline greedy pick (line 2). This is NOT a code bug in the MoE:
+  the math matches HF (verified op-by-op), CPU-MoE and Metal-MoE are
+  byte-identical, the router/gate are Q8_0. It is the **q4_k quant of the
+  experts AND the `lm_head` (both Q4_K in this file)** compounding over 12
+  layers — the lm_head alone drops the logits from ~0.979 (hidden) to 0.926.
+  The honest fix is a **quantize-recipe** change (keep `lm_head`, and ideally
+  the experts, at Q8_0 like the router/vision/projector already are) — i.e.
+  still code (the recipe), not "use an f16 model". Until then q4_k reads
+  most lines and occasionally drops a borderline one; q8_0/f16 read all.
 
   Lesson (again): when a VLM emits coherent-but-off-task text, suspect the
-  prompt/template and the sampling config first — read the model card's exact
-  `infer()` call — not the numerics, and never the quantization.
+  prompt/template, the sampling config, and the *input pipeline* (don't pre-
+  clean a VLM's image) first — read the model card's exact `infer()` call — not
+  the numerics. And prove a diff reference is on the SAME input before trusting
+  it (re-dump it yourself; bf16 on CPU is enough — fp32 OOMs a 16 GB box).
