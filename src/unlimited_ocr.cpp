@@ -2314,6 +2314,7 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
                         }
                     }
                     val = (wsum > 0) ? sum / wsum : 0.0f;
+                    val = std::min(std::max(val, 0.0f), 1.0f);  // clamp like PIL
                 }
                 pixels[c * imgS * imgS + y * imgS + x] = (val - s.image_mean[c]) / s.image_std[c];
             }
