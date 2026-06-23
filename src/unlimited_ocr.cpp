@@ -1123,8 +1123,8 @@ static ggml_cgraph* build_clip_enc_full_graph(ggml_context* g, uocr_ctx* ctx, in
         ggml_tensor* down = g_linear(g, up, blk.ffn_down_w, blk.ffn_down_b);
         x = ggml_add(g, res, down);
 
-        // Per-layer output for diff bisection
-        if (clip_debug) {
+        // Per-layer output for diff bisection (only first 2 layers to avoid OOM)
+        if (clip_debug && li < 2) {
             char nm[32]; snprintf(nm, sizeof(nm), "clip_layer_%d", li);
             ggml_set_name(x, nm); ggml_set_output(x);
         }
@@ -1214,6 +1214,19 @@ static bool encode_clip(uocr_ctx &ctx, const float *sam_features, int n_vis, int
 
     // Per-layer CLIP diff (when UOCR_CLIP_DBG=1)
     if (getenv("UOCR_CLIP_DBG") && !ctx.diff_ref_path.empty()) {
+        // Print C++ layer 0 first values for manual comparison
+        {
+            ggml_tensor* l0 = ggml_graph_get_tensor(gf, "clip_layer_0");
+            if (l0) {
+                std::vector<float> l0d(T * D);
+                ggml_backend_tensor_get(l0, l0d.data(), 0, T * D * sizeof(float));
+                fprintf(stderr, "  [dbg] C++ clip_layer_0 tok0[0:8]:");
+                for (int i = 0; i < 8; i++) fprintf(stderr, " %.7f", l0d[i]);
+                fprintf(stderr, "\n  [dbg] C++ clip_layer_0 tok1[0:8]:");
+                for (int i = 0; i < 8; i++) fprintf(stderr, " %.7f", l0d[D+i]);
+                fprintf(stderr, "\n");
+            }
+        }
         for (int li = 0; li < chp.depth; li++) {
             char nm[32]; snprintf(nm, sizeof(nm), "clip_layer_%d", li);
             ggml_tensor* lt = ggml_graph_get_tensor(gf, nm);
@@ -2311,6 +2324,19 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - t_sam).count();
         fprintf(stderr, "[unlimited_ocr-bench] sam_encoder: %lldms\n", (long long)ms);
+    }
+
+    // UOCR_INJECT_REF: replace C++ SAM output with Python reference SAM output
+    // to isolate CLIP encoder bugs from SAM quantization noise.
+    if (getenv("UOCR_INJECT_REF") && !ctx->inner.diff_ref_path.empty()) {
+        crispembed_diff::Ref ref;
+        if (ref.load(ctx->inner.diff_ref_path.c_str())) {
+            auto [ref_data, ref_n] = ref.get_f32("sam_output");
+            if (ref_data && ref_n == (size_t)n_sam_tokens * sam_dim) {
+                memcpy(sam_features.data(), ref_data, ref_n * sizeof(float));
+                fprintf(stderr, "  [INJECT] replaced SAM output with reference (%zu floats)\n", ref_n);
+            }
+        }
     }
 
     // 2. CLIP-L/14 encoder — receives SAM features as patch embeddings
