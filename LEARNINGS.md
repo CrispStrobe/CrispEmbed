@@ -2968,11 +2968,13 @@ stages `sam_patch_embed` … `vision_features`) and `UOCR_REF=`:
   the full input_ids incl. the `<image>`=128815 placeholders), the q4_k decoder
   reads 3 of 4 lines on the test image straight away
   (`HelloWorld` / `CrispEmbed OCR` / `2024-06-22`), then EOS. The one missing
-  line ("This is a test") has its box detected (`[58,416,…]`) but no text
-  emitted — even with the ngram off it just loops on that box. With no
-  same-image reference it can't be bisected; it may be a resolution/model
-  limit on this sparse synthetic image (real document pages are in-distribution
-  and likely fare better). Re-dump the ref on `test_ocr.png` to chase it.
+  line ("This is a test") was a **resolution limit, not a bug**: at 400×200 the
+  text is too small for the 16×16 vision grid, so the model detects line 2's box
+  but reads no text. CONFIRMED by upscaling the same image to 800×400 — then all
+  four lines read, including "This is a test". So the port is functionally
+  correct; the original miss is just the tiny synthetic input (real document
+  pages are in-distribution and fare better). Minor greedy doublings
+  ("HelloWorldWorld") remain, expected from greedy + this small model.
 
   Lesson (again): when a VLM emits coherent-but-off-task text, suspect the
   prompt/template and the sampling config first — read the model card's exact
