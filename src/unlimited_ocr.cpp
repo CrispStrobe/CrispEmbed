@@ -690,7 +690,7 @@ static ggml_cgraph* build_sam_layer_graph(ggml_context* g, uocr_ctx* ctx,
     ggml_tensor* residual = cur;
     cur = g_ln(g, cur, layer.ln2_w, layer.ln2_b, 1e-6f);
     ggml_tensor* up = g_linear(g, cur, layer.ffn_up_w, layer.ffn_up_b);
-    up = ggml_gelu(g, up);
+    up = ggml_gelu_erf(g, up);  // SAM MLPBlock uses nn.GELU (exact erf), not tanh approx
     cur = g_linear(g, up, layer.ffn_down_w, layer.ffn_down_b);
     cur = ggml_add(g, residual, cur);
 
@@ -2376,6 +2376,30 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
         _ts = now;
     };
 
+    auto &lhp = ctx->inner.m.lhp;
+    int D = lhp.hidden;
+    std::vector<float> vis_features;
+    int n_vis_total = 0;
+
+    // UOCR_INJECT_VIS: skip the SAM/CLIP towers entirely and feed the decoder
+    // the reference's assembled vision_features directly. Isolates the decoder
+    // (perfect, HF-equal vision input) AND avoids the vision Metal buffers so
+    // f16/q8_0 fit in memory. Used to prove decode bugs are not "quantization".
+    if (getenv("UOCR_INJECT_VIS") && !ctx->inner.diff_ref_path.empty()) {
+        crispembed_diff::Ref ref;
+        if (ref.load(ctx->inner.diff_ref_path.c_str())) {
+            auto [vd, vn] = ref.get_f32("vision_features");
+            if (vd && vn % D == 0) {
+                vis_features.assign(vd, vd + vn);
+                n_vis_total = (int)(vn / D);
+                fprintf(stderr, "  [INJECT_VIS] using reference vision_features (%d tokens)\n",
+                        n_vis_total);
+            }
+        }
+        if (n_vis_total == 0) { fprintf(stderr, "unlimited_ocr: INJECT_VIS failed\n");
+                                if (out_len) *out_len = 0; return ""; }
+    } else {
+
     // 1. SAM vision encoder
     auto t_sam = std::chrono::steady_clock::now();
     std::vector<float> sam_features;
@@ -2430,10 +2454,6 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
     stage_ms("fuse_project");
 
     // 4. Vision features assembly (with image_newline)
-    auto &lhp = ctx->inner.m.lhp;
-    int D = lhp.hidden;
-    std::vector<float> vis_features;
-    int n_vis_total;
     if (!assemble_vision_features(ctx->inner, proj_out.data(), n_sam_tokens, D,
                                    vis_features, n_vis_total)) {
         fprintf(stderr, "unlimited_ocr: vision features assembly failed\n");
@@ -2449,6 +2469,7 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
     fprintf(stderr, "unlimited_ocr: stages done — sam=%d/%d clip=%d/%d proj=%d vis=%d\n",
             n_sam_tokens, sam_dim, (int)clip_out.size() / clip_dim, clip_dim,
             n_sam_tokens, n_vis_total);
+    } // end else (real vision path)
 
     // 5. Assemble the LLM prompt embeddings
     //    [bos] + [n_vis_total vision features] + tokenize("\nFree OCR.")
