@@ -812,6 +812,7 @@ int main(int argc, char ** argv) {
             if (n == "tesseract")  return 6;
             if (n == "lightonocr") return 11;
             if (n == "qwen3vl")   return 12;
+            if (n == "unlimited_ocr") return 13;
             return 0; // dbnet_trocr
         };
         std::string nafnet, vlm, punct;
@@ -827,13 +828,14 @@ int main(int argc, char ** argv) {
         if (!pipeline_engine.empty()) {
             // Explicit primary engine → single-stage pipeline via the builder.
             const int eid = eng_id(pipeline_engine);
-            const bool is_vlm = (eid >= 2 && eid <= 5) || eid == 11 || eid == 12;
+            const bool is_vlm = (eid >= 2 && eid <= 5) || eid == 11 || eid == 12 || eid == 13;
             if (is_vlm) {
                 const char * dflt = (eid == 2) ? "got-ocr2"
                                   : (eid == 3) ? "glm-ocr"
                                   : (eid == 5) ? "internvl2-ocr"
                                   : (eid == 11) ? "lightonocr"
-                                  : (eid == 12) ? "qwen3vl-2b" : "qwen2vl-ocr";
+                                  : (eid == 12) ? "qwen3vl-2b"
+                                  : (eid == 13) ? "unlimited-ocr" : "qwen2vl-ocr";
                 ma = resolve(!ocr_rec_path.empty() ? ocr_rec_path : dflt);
             } else {
                 ma = resolve(ocr_det_path.empty() ? "dbnet-det" : ocr_det_path);
