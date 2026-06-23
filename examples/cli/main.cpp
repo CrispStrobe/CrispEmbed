@@ -848,8 +848,13 @@ int main(int argc, char ** argv) {
             st.engine             = eid;
             st.model_a            = ma.c_str();
             st.model_b            = mb.empty() ? nullptr : mb.c_str();
-            st.cleanup_enabled    = 1;
-            st.denoise            = pipeline_denoise ? 1 : 0;
+            // VLM OCR engines (GOT/GLM/InternVL2/LightOnOCR/Qwen3VL/Unlimited-OCR)
+            // ingest the original image and do their own resize/letterbox; the
+            // classical scan-cleanup (deskew/crop/binarize) distorts the input and
+            // shifts content into the wrong vision-grid cells. Only clean up for the
+            // detection+recognition path.
+            st.cleanup_enabled    = is_vlm ? 0 : 1;
+            st.denoise            = (pipeline_denoise && !is_vlm) ? 1 : 0;
             st.cleanup            = crispembed_scan_cleanup_defaults();
             st.det_prob_threshold = 0.3f;
             st.det_box_threshold  = 0.5f;
