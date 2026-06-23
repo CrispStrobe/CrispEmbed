@@ -4,6 +4,51 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## June 23, 2026 — Unlimited-OCR port (Baidu, SAM + CLIP + DeepSeek-V2 MoE)
+
+Ported `baidu/Unlimited-OCR` (MIT, 3.3B params) as a new OCR engine.
+
+**Architecture**: SAM ViT-B (12L, 768d) → CLIP-L/14 (24L, 1024d, receives SAM
+features as patch embeddings — dual-encoder "DeepLIP") → fusion concat(CLIP[:,1:],
+SAM.flatten) → Linear(2048,1280) → DeepSeek-V2 MoE decoder (12L, 1280d, 64
+routed experts top-6, 2 shared, layer 0 dense).
+
+**Files added**:
+- `src/unlimited_ocr.{h,cpp}` — 2358-line C++ engine
+- `models/convert-unlimited-ocr-to-gguf.py` — GGUF converter (2710 tensors)
+- `tools/dump_unlimited_ocr_reference.py` — reference dumper (45 stages)
+- `tools/kaggle/unlimited-ocr-parity/` — Kaggle parity kernel
+- `tools/kaggle/unlimited-ocr-gpu-test/` — Kaggle GPU kernel
+
+**Integration**: CMakeLists, `ocr_orchestrator.{h,cpp}` (enum + dispatch + free),
+`crispembed.cpp` (`map_engine` case 13), `main.cpp` (CLI `--ocr-engine unlimited_ocr`),
+`model_mgr.cpp` (model registry), `quantize.cpp` (`c.*` vision guard for CLIP→Q8_0).
+
+**4 bugs found and fixed**:
+1. **`ggml_cont()` before `flash_attn_ext`** — `flash_attn_ext` handles
+   non-contiguous (permuted) tensors via strides. Adding `ggml_cont()` creates a
+   contiguous copy with a different data layout than `flash_attn_ext` expects.
+   Fix: pass permuted tensors directly (matches `vit_embed.cpp` pattern).
+2. **Bilinear resize** — PIL `ImageOps.pad` uses BICUBIC (Catmull-Rom, a=-0.5).
+   The C++ used bilinear interpolation. Every image pixel differed.
+3. **Missing clamp [0,1]** — Catmull-Rom produces overshoots at sharp edges (text
+   boundaries). PIL clips to [0,255] internally. Without clamping, cos_min=0.991
+   at patch_embed. With: cos_min=0.9999.
+4. **Wrong BPE token** — `core_bpe::tokenize_simple` produces `ĠOCR`=126041
+   (with space prefix) instead of `OCR`=119316 for the instruction "\nFree OCR.".
+   Wrong token caused LLM to hallucinate "Freeware" instead of performing OCR.
+   Hardcoded correct IDs pending core_bpe fix.
+
+**Parity (F16, Kaggle 30GB RAM)**:
+- SAM all 12 layers: cos ≥ 0.999 PASS
+- CLIP layer 0-1: cos ≥ 0.999 PASS
+- clip_output: cos=0.997, vision_features: cos=0.998
+- Model outputs structured OCR with bounding boxes (text quality needs more work)
+
+**GGUF models**: `cstr/unlimited-ocr-crispembed-GGUF` (F16 6.4GB, Q8_0 3.4GB, Q4_K 2.1GB)
+
+---
+
 ## June 21, 2026 — SR roster: full verification + conv→ggml sweep (scunet/tbsrn/dat/hat/adair)
 
 Verified every non-blocked SR/restoration engine against an independent reference

@@ -19,6 +19,7 @@
 #include "pix2struct.h"
 #include "granite_vision_ocr.h"
 #include "lightonocr.h"
+#include "unlimited_ocr.h"
 // Tesseract-LSTM line recognizer + DBNet detection (the tesseract engine pairs
 // detection with per-line tesseract recognition).
 #include "tesseract_lstm.h"
@@ -84,6 +85,7 @@ struct context {
     pix2struct_context*      p2s    = nullptr;   // Pix2Struct (doc/chart understanding)
     granite_vision_context*  gv     = nullptr;   // Granite Vision (LLaVA-Next)
     lightonocr_context*      locr   = nullptr;   // LightOnOCR (Pixtral ViT + Qwen3)
+    unlimited_ocr_context*   uocr   = nullptr;   // Unlimited-OCR (SAM + CLIP + MoE)
     ocr_detect::context*     tess_det = nullptr; // DBNet detection for the tesseract engine
     tesseract_lstm_context*  tess   = nullptr;   // Tesseract-LSTM line recognizer
     ocr_detect::context*     parseq_det = nullptr; // DBNet detection for the parseq engine
@@ -659,6 +661,25 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context* ctx,
             if (loaded) stbi_image_free(loaded);
             return out;
         }
+        case engine::unlimited_ocr: {
+            if (!ctx->uocr) {
+                if (st.model_a.empty()) { fprintf(stderr, "ocr_orchestrator: unlimited_ocr stage missing model_a\n"); return {}; }
+                ctx->uocr = unlimited_ocr_init(st.model_a.c_str(), ctx->n_threads);
+                if (!ctx->uocr) { fprintf(stderr, "ocr_orchestrator: unlimited_ocr load failed\n"); return {}; }
+            }
+            int w = pw, h = ph;
+            unsigned char* loaded = nullptr;
+            const unsigned char* img = px;
+            if (!img) { int c = 0; loaded = stbi_load(path, &w, &h, &c, 3); img = loaded; }
+            if (!img) return {};
+            int len = 0;
+            const char* t = unlimited_ocr_recognize_raw(ctx->uocr, img, w, h, 3, &len);
+            int nconf = 0;
+            const float* conf = unlimited_ocr_confidences(ctx->uocr, &nconf);
+            auto out = wrap_fulltext(t, w, h, conf, nconf, unlimited_ocr_mean_confidence(ctx->uocr));
+            if (loaded) stbi_image_free(loaded);
+            return out;
+        }
         default:
             fprintf(stderr, "ocr_orchestrator: engine %d not wired\n", (int)st.eng);
             return {};
@@ -832,6 +853,7 @@ static const char * engine_name(engine e) {
         case engine::pix2struct:     return "pix2struct";
         case engine::granite_vision: return "granite_vision";
         case engine::lightonocr:     return "lightonocr";
+        case engine::unlimited_ocr: return "unlimited_ocr";
         default: return "unknown";
     }
 }
@@ -1024,6 +1046,7 @@ void free(context* ctx) {
     if (ctx->p2s)    pix2struct_free(ctx->p2s);
     if (ctx->gv)     granite_vision_free(ctx->gv);
     if (ctx->locr)   lightonocr_free(ctx->locr);
+    if (ctx->uocr)   unlimited_ocr_free(ctx->uocr);
     if (ctx->tess_det) ocr_detect::free(ctx->tess_det);
     if (ctx->tess)   tesseract_lstm_free(ctx->tess);
     if (ctx->parseq_det) ocr_detect::free(ctx->parseq_det);
