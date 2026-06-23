@@ -2417,9 +2417,10 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
     const size_t emb_row_bytes = ggml_row_size(emb_t->type, D);
     std::vector<uint8_t> emb_row_buf(emb_row_bytes);
 
-    // Instruction text: "\nFree OCR."
-    std::vector<int32_t> instr_ids =
-        core_bpe::tokenize_simple(ctx->inner.token_to_id, ctx->inner.merge_rank, "\nFree OCR.");
+    // Instruction text: "\nFree OCR." → [Free=21431, OCR=119316, .=16]
+    // Hardcoded to match HF tokenizer output (core_bpe produces wrong merge
+    // for this specific string: "ĠOCR"=126041 instead of "OCR"=119316).
+    std::vector<int32_t> instr_ids = {21431, 119316, 16};
 
     int n_prompt = 1 /*bos*/ + n_vis_total + (int)instr_ids.size();
     std::vector<float> prompt_embeds((size_t)n_prompt * D);
