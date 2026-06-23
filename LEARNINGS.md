@@ -2940,14 +2940,25 @@ stages `sam_patch_embed` … `vision_features`) and `UOCR_REF=`:
   embeddings match the reference to the digit; the divergence is broad-but-
   small, consistent with the windowed/global attention + relative-position
   path, not a single catastrophic op. Not yet root-caused.
-- **q4_k decode is the hard ceiling for multi-line OCR.** Even with the
-  reference vision injected (cos 0.998), `flash_attn` forced to F32
-  (`UOCR_FA_F32=1`), and `no_repeat_ngram` enabled
-  (`UOCR_NO_REPEAT_NGRAM=3`), the q4_k decoder reads the first region
-  perfectly then garbles the rest (it *does* surface "is a test" / the date,
-  but mangled). So multi-line correctness is gated on the q4_k expert/
-  attention weights, not on vision or sampling. q8_0 reads further on the
-  text-only probe ("…the city of Paris") but its OCR path OOMs the 16 GB
-  machine (>6 GB). Full multi-line OCR realistically needs q8_0/f16 weights
-  (more RAM) plus the SAM fix. `no_repeat_ngram` only helps the decoder
-  *advance* past the stuck-box loop; it cannot fix wrong-token generation.
+- **SAM FFN used the wrong GELU.** `build_sam_layer_graph` called
+  `ggml_gelu` (tanh approximation); HF SAM's `MLPBlock` uses `nn.GELU`
+  (exact erf). Fixed to `ggml_gelu_erf`. (CLIP correctly uses
+  `ggml_gelu_quick`; the projector is `projector_type: "linear"`, no GELU.)
+  This alone barely moved the per-layer cosine, so the dominant SAM error is
+  in the windowed/global **decomposed relative-position attention**
+  (`precompute_rpe_tables` + the in-graph `rel_h`/`rel_w` path) — still to be
+  root-caused; the per-layer ref outputs (`sam_layer_0..11`) bracket it.
+
+- **The decode failure is a code bug, NOT quantization.** With the reference
+  `vision_features` injected verbatim (`UOCR_INJECT_VIS=1`, skips SAM/CLIP) —
+  i.e. a byte-for-byte HF-equal vision input — the q4_k decoder still fails:
+  with the no-newline instruction it reads region 1 then loops; with the
+  HF-exact newline instruction it emits a coherent but *wrong* continuation
+  ("Do NOT use any punctuation. Treat all tabular layout as plain"). Forcing
+  F32 flash_attn changes nothing. Per this repo's own rule, quantization
+  explains ≤5% cosine, never coherent-but-wrong generation — so there is a
+  real decoder bug. It could not be bisected here because the Mac has no
+  torch/transformers and the published ref GGUF carries **vision stages
+  only**. Next step: regenerate the reference on the torch box with the dumper
+  extended to emit `llm_layer_0..11` + `logits`, then bisect the decoder the
+  same way the vision tower was bisected.
