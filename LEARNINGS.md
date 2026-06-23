@@ -2949,16 +2949,23 @@ stages `sam_patch_embed` … `vision_features`) and `UOCR_REF=`:
   (`precompute_rpe_tables` + the in-graph `rel_h`/`rel_w` path) — still to be
   root-caused; the per-layer ref outputs (`sam_layer_0..11`) bracket it.
 
-- **The decode failure is a code bug, NOT quantization.** With the reference
-  `vision_features` injected verbatim (`UOCR_INJECT_VIS=1`, skips SAM/CLIP) —
-  i.e. a byte-for-byte HF-equal vision input — the q4_k decoder still fails:
-  with the no-newline instruction it reads region 1 then loops; with the
-  HF-exact newline instruction it emits a coherent but *wrong* continuation
-  ("Do NOT use any punctuation. Treat all tabular layout as plain"). Forcing
-  F32 flash_attn changes nothing. Per this repo's own rule, quantization
-  explains ≤5% cosine, never coherent-but-wrong generation — so there is a
-  real decoder bug. It could not be bisected here because the Mac has no
-  torch/transformers and the published ref GGUF carries **vision stages
-  only**. Next step: regenerate the reference on the torch box with the dumper
-  extended to emit `llm_layer_0..11` + `logits`, then bisect the decoder the
-  same way the vision tower was bisected.
+- **The "decode failure" was the WRONG PROMPT + a missing logits processor —
+  bad code, not quantization (q8/f16 were never the answer).** The port hard-
+  coded the prompt as "Free OCR.", but this checkpoint's prompt (per the HF
+  model card) is **"<image>document parsing."** ("Free OCR." belongs to a
+  different DeepSeek-OCR checkpoint and makes this model emit its training-
+  instruction boilerplate — "Do NOT use any punctuation. Treat all tabular
+  layout as plain text…" — which is what looked like a decode bug). The card
+  also calls `infer()` with **`no_repeat_ngram_size=35, ngram_window=128`**;
+  that sliding-window n-gram block is *required*, not optional — without it the
+  greedy detection-box decode gets stuck repeating a partial box. With the
+  correct prompt (`[document=34030, Ġparsing=76466, .=16]`, no leading newline)
+  and the sliding-window processor (`SlidingWindowNoRepeatNgramProcessor` over
+  the full input_ids incl. the `<image>`=128815 placeholders), the q4_k decoder
+  reads 3 of 4 lines on the test image straight away
+  (`HelloWorld` / `CrispEmbed OCR` / `2024-06-22`). The remaining mid-line
+  garble tracks the SAM rel-pos error above, not the decoder.
+
+  Lesson (again): when a VLM emits coherent-but-off-task text, suspect the
+  prompt/template and the sampling config first — read the model card's exact
+  `infer()` call — not the numerics, and never the quantization.
