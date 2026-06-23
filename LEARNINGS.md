@@ -2985,13 +2985,28 @@ stages `sam_patch_embed` … `vision_features`) and `UOCR_REF=`:
   byte-identical, the router/gate are Q8_0. It is the **q4_k quant of the
   experts AND the `lm_head` (both Q4_K in this file)** compounding over 12
   layers — the lm_head alone drops the logits from ~0.979 (hidden) to 0.926.
-  The honest fix is a **quantize-recipe** change (keep `lm_head`, and ideally
-  the experts, at Q8_0 like the router/vision/projector already are) — i.e.
-  still code (the recipe), not "use an f16 model". Until then q4_k reads
-  most lines and occasionally drops a borderline one; q8_0/f16 read all.
+  **FIXED via the quantize recipe — and it was code, not "use f16".** The
+  `lm_head` was being Q4_K'd; `tools/quantize.cpp` now keeps it at Q8_0
+  (alongside the embeddings / vision / projector / MoE-router it already
+  protected). Re-quantized from a fresh f16 (converted on this M1 with the
+  refvenv; the converter output is byte-size-identical to the published f16)
+  and the q4_k model now reads `test_ocr.png` **4/4, identical to HF**
+  (`Hello World` / `This is a test` / `CrispEmbed OCR` / `2024-06-22`) and the
+  real Maréchal book title page **near-perfectly** (full title, sub-title,
+  author, degree, publisher block, year — only stray char errors). Cost: +90 MB
+  (lm_head 82→168 MB) on a 2.1 GB file.
+
+  Subtlety: the prefill `logits` cos barely moved (0.926→0.928) yet the OUTPUT
+  went from cascade-hallucination to perfect — because the failure was a single
+  borderline greedy flip early in generation that then snowballed; nudging the
+  lm_head precision tipped that one decision. **The cos metric understated the
+  fix; the OCR text is the real test.** (The experts stay Q4_K — bumping them
+  too is unnecessary and would bloat the file.)
 
   Lesson (again): when a VLM emits coherent-but-off-task text, suspect the
-  prompt/template, the sampling config, and the *input pipeline* (don't pre-
-  clean a VLM's image) first — read the model card's exact `infer()` call — not
-  the numerics. And prove a diff reference is on the SAME input before trusting
-  it (re-dump it yourself; bf16 on CPU is enough — fp32 OOMs a 16 GB box).
+  prompt/template, the sampling config, the *input pipeline* (don't pre-clean a
+  VLM's image), and the *quantize recipe* (protect the lm_head / router /
+  vision) — read the model card's exact `infer()` call — not the numerics, and
+  never reach for a bigger-precision model. Prove a diff reference is on the
+  SAME input before trusting it (re-dump it yourself; bf16 on CPU is enough —
+  fp32 OOMs a 16 GB box). And judge by decoded text, not just cosine.

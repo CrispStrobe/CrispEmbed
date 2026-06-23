@@ -312,6 +312,23 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             printf("(moe-router→Q8_0) ");
         }
 
+        // LM head / output projection: produces the token logits over a large
+        // vocabulary, so Q4_K error here directly perturbs the softmax and flips
+        // borderline greedy picks (measured: Unlimited-OCR decoder logits cos vs
+        // HF was only 0.926 with a Q4_K lm_head, dropping from ~0.979 at the last
+        // hidden state). Keep it at Q8_0 minimum — cheap relative to the experts
+        // (~+90 MB on a 2 GB model). Matches "lm_head.weight" (this model) and
+        // the generic llama.cpp "output.weight" (but NOT "output_norm.weight").
+        bool is_lm_head = sname.find("lm_head.weight") != std::string::npos ||
+                          sname == "output.weight" ||
+                          sname.find(".output.weight") != std::string::npos;
+        if (quantize && is_lm_head &&
+            qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 &&
+            qtype != GGML_TYPE_Q6_K && qtype != GGML_TYPE_Q5_K) {
+            qtype_used = GGML_TYPE_Q8_0;
+            printf("(lm-head→Q8_0) ");
+        }
+
         int64_t qk = ggml_blck_size(qtype_used);
 
         // Fallback chain for K-quants: if row width isn't 256-aligned,
