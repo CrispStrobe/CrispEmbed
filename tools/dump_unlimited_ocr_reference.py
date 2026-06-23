@@ -130,6 +130,20 @@ def main():
             captures[name] = as_numpy(out)
         return fn
 
+    # ---- Hook per-layer SAM hidden states ----
+    # SAM blocks produce (B, H, W, C) spatial tensors. Hook each block to
+    # capture intermediate hidden states for bisection debugging.
+    # Use a pre-hook on blocks[0] to get hidden state AFTER patch_embed + pos_embed.
+    def pre_hook_input(name):
+        def fn(module, args):
+            captures[name] = as_numpy(args[0])
+        return fn
+    sam.blocks[0].register_forward_pre_hook(pre_hook_input("sam_patch_embed"))
+    for i, blk in enumerate(sam.blocks):
+        blk.register_forward_hook(hook(f"sam_layer_{i}"))
+    # Hook neck components
+    sam.neck.register_forward_hook(hook("sam_neck"))
+
     # ---- Hook per-layer CLIP hidden states ----
     for i, layer in enumerate(clip.transformer.layers):
         layer.register_forward_hook(hook(f"clip_layer_{i}"))
@@ -181,6 +195,21 @@ def main():
         so = so.transpose(1, 2, 0).reshape(-1, so.shape[0])  # (256, 1024)
     captures["sam_output"] = so
     del captures["sam_output_raw"]
+
+    # Convert SAM per-layer captures to token-major [N, C] format.
+    # SAM blocks output (B, H, W, C) — squeeze batch, flatten spatial to (H*W, C).
+    # patch_embed output is (B, H, W, C) too. Neck output is (B, C, H, W).
+    for key in list(captures.keys()):
+        if key.startswith("sam_layer_") or key == "sam_patch_embed":
+            v = np.squeeze(captures[key])  # drop batch
+            if v.ndim == 3:  # (H, W, C) → (H*W, C) token-major
+                H, W, C = v.shape
+                captures[key] = v.reshape(H * W, C)
+        elif key == "sam_neck":
+            v = np.squeeze(captures[key])  # (C, H, W)
+            if v.ndim == 3:
+                C, H, W = v.shape
+                captures[key] = v.transpose(1, 2, 0).reshape(H * W, C)
 
     # ---- Write GGUF ----
     print(f"Writing reference GGUF to {args.output}...", flush=True)
