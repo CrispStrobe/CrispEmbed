@@ -815,6 +815,16 @@ static bool encode_sam(uocr_ctx &ctx, const float *pixels,
                                 patch[c * PS * PS + ky * PS + kx] =
                                     pixels[c * s.image_size * s.image_size
                                            + (py * PS + ky) * s.image_size + (px * PS + kx)];
+                    if (tok == 1000 && getenv("UOCR_DBG")) {
+                        fprintf(stderr, "  [dbg] tok1000 patch[0..3]: %.6f %.6f %.6f %.6f\n",
+                                patch[0], patch[1], patch[2], patch[3]);
+                        fprintf(stderr, "  [dbg] tok1000 pixel[240,640]: %.6f\n",
+                                pixels[0 * s.image_size * s.image_size + 240 * s.image_size + 640]);
+                    }
+                    if (tok == 0 && getenv("UOCR_DBG")) {
+                        fprintf(stderr, "  [dbg] tok0 patch[0..3]: %.6f %.6f %.6f %.6f\n",
+                                patch[0], patch[1], patch[2], patch[3]);
+                    }
                     for (int o = 0; o < C; o++) {
                         float sv = pe_b.empty() ? 0.0f : pe_b[o];
                         for (int i = 0; i < patch_dim; i++) sv += pe_w[o * patch_dim + i] * patch[i];
@@ -836,6 +846,29 @@ static bool encode_sam(uocr_ctx &ctx, const float *pixels,
     }
 
     sam_mark("patch_embed");
+
+    // Diff: patch embedding output (before any transformer layers)
+    if (!ctx.diff_ref_path.empty()) {
+        crispembed_diff::Ref ref;
+        if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("sam_patch_embed")) {
+            auto r = ref.compare("sam_patch_embed", hidden.data(), N * C);
+            fprintf(stderr, "  sam_patch_embed: cos_min=%.6f max_abs=%.6f %s\n",
+                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+        }
+    }
+    if (getenv("UOCR_DBG")) {
+        fprintf(stderr, "  [dbg] sam_patch_embed[0..7]:");
+        for (int i = 0; i < std::min(8, N * C); i++) fprintf(stderr, " %.4f", hidden[i]);
+        fprintf(stderr, "\n");
+        int toks[] = {0, 1, 100, 1000, 2048, 4000};
+        for (int ti = 0; ti < 6; ti++) {
+            int tok = toks[ti];
+            if (tok < N)
+                fprintf(stderr, "  [dbg] tok%4d[0:4]: %.7f %.7f %.7f %.7f\n", tok,
+                        hidden[tok*C], hidden[tok*C+1], hidden[tok*C+2], hidden[tok*C+3]);
+        }
+    }
+
     // Pre-dequant LN weights for windowed layers
     std::vector<std::vector<float>> ln1_ws(s.depth), ln1_bs(s.depth);
     for (int li = 0; li < s.depth; li++)
@@ -911,6 +944,16 @@ static bool encode_sam(uocr_ctx &ctx, const float *pixels,
         if (is_global) memcpy(hidden.data(), graph_output.data(), N * C * sizeof(float));
         else window_unpartition(graph_output.data(), hidden.data(), nP, ws, C);
 
+        // Per-layer SAM diff check
+        if (!ctx.diff_ref_path.empty()) {
+            char nm[32]; snprintf(nm, sizeof(nm), "sam_layer_%d", li);
+            crispembed_diff::Ref ref;
+            if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(nm)) {
+                auto r = ref.compare(nm, hidden.data(), N * C);
+                fprintf(stderr, "  %s: cos_min=%.6f max_abs=%.6f %s\n",
+                        nm, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
+        }
         if (ctx.verbosity >= 2)
             fprintf(stderr, "unlimited_ocr: sam_layer_%d done (%s, T=%d)\n",
                     li, is_global ? "global" : "window", T);
@@ -1023,7 +1066,8 @@ static ggml_cgraph* build_clip_enc_full_graph(ggml_context* g, uocr_ctx* ctx, in
     int hd = D / nh;
     int n_layers = chp.depth;
 
-    ggml_cgraph* gf = ggml_new_graph_custom(g, 4096, false);
+    bool clip_debug = (getenv("UOCR_CLIP_DBG") != nullptr);
+    ggml_cgraph* gf = ggml_new_graph_custom(g, clip_debug ? 8192 : 4096, false);
 
     // Input: [D, T] — CLS prepended + pos embed + pre_layernorm already done by caller?
     // No — we do it in-graph for performance.
@@ -1032,6 +1076,10 @@ static ggml_cgraph* build_clip_enc_full_graph(ggml_context* g, uocr_ctx* ctx, in
 
     // Pre-LayerNorm (applies to the full sequence after CLS + pos_embed)
     x = g_ln(g, x, ctx->m.clip_pre_ln_w, ctx->m.clip_pre_ln_b, 1e-5f);
+
+    if (clip_debug) {
+        ggml_set_name(x, "clip_pre_ln_out"); ggml_set_output(x);
+    }
 
     for (int li = 0; li < n_layers; li++) {
         auto &blk = ctx->m.clip_blocks[li];
@@ -1074,6 +1122,12 @@ static ggml_cgraph* build_clip_enc_full_graph(ggml_context* g, uocr_ctx* ctx, in
         up = ggml_gelu_quick(g, up);
         ggml_tensor* down = g_linear(g, up, blk.ffn_down_w, blk.ffn_down_b);
         x = ggml_add(g, res, down);
+
+        // Per-layer output for diff bisection
+        if (clip_debug) {
+            char nm[32]; snprintf(nm, sizeof(nm), "clip_layer_%d", li);
+            ggml_set_name(x, nm); ggml_set_output(x);
+        }
     }
 
     ggml_set_name(x, "clip_output"); ggml_set_output(x);
@@ -1112,6 +1166,17 @@ static bool encode_clip(uocr_ctx &ctx, const float *sam_features, int n_vis, int
                 input[(1 + t) * D + d] = (d < sam_dim) ? sam_features[t * sam_dim + d] : 0.0f;
     }
 
+    if (getenv("UOCR_CLIP_DBG")) {
+        fprintf(stderr, "  [dbg] clip input (before pos) tok0[0:4]: %.6f %.6f %.6f %.6f\n",
+                input[0], input[1], input[2], input[3]);
+        fprintf(stderr, "  [dbg] clip input (before pos) tok1[0:4]: %.6f %.6f %.6f %.6f\n",
+                input[D], input[D+1], input[D+2], input[D+3]);
+        fprintf(stderr, "  [dbg] sam_features[0:4]: %.6f %.6f %.6f %.6f\n",
+                sam_features[0], sam_features[1], sam_features[2], sam_features[3]);
+        fprintf(stderr, "  [dbg] pos_embed tok1[0:4]: %.6f %.6f %.6f %.6f\n",
+                pos[D], pos[D+1], pos[D+2], pos[D+3]);
+    }
+
     // Add position embeddings
     for (int t = 0; t < T; t++)
         for (int d = 0; d < D; d++)
@@ -1133,6 +1198,36 @@ static bool encode_clip(uocr_ctx &ctx, const float *sam_features, int n_vis, int
     std::vector<float> full_output(T * D);
     ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "clip_output"),
                             full_output.data(), 0, (size_t)T * D * sizeof(float));
+
+    // Pre-LN output check
+    if (getenv("UOCR_CLIP_DBG")) {
+        ggml_tensor* pln = ggml_graph_get_tensor(gf, "clip_pre_ln_out");
+        if (pln) {
+            std::vector<float> pln_data(T * D);
+            ggml_backend_tensor_get(pln, pln_data.data(), 0, (size_t)T * D * sizeof(float));
+            fprintf(stderr, "  [dbg] clip_pre_ln tok0[0:4]: %.6f %.6f %.6f %.6f\n",
+                    pln_data[0], pln_data[1], pln_data[2], pln_data[3]);
+            fprintf(stderr, "  [dbg] clip_pre_ln tok1[0:4]: %.6f %.6f %.6f %.6f\n",
+                    pln_data[D], pln_data[D+1], pln_data[D+2], pln_data[D+3]);
+        }
+    }
+
+    // Per-layer CLIP diff (when UOCR_CLIP_DBG=1)
+    if (getenv("UOCR_CLIP_DBG") && !ctx.diff_ref_path.empty()) {
+        for (int li = 0; li < chp.depth; li++) {
+            char nm[32]; snprintf(nm, sizeof(nm), "clip_layer_%d", li);
+            ggml_tensor* lt = ggml_graph_get_tensor(gf, nm);
+            if (!lt) continue;
+            std::vector<float> layer_out(T * D);
+            ggml_backend_tensor_get(lt, layer_out.data(), 0, (size_t)T * D * sizeof(float));
+            crispembed_diff::Ref ref;
+            if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(nm)) {
+                auto r = ref.compare(nm, layer_out.data(), (size_t)T * D);
+                fprintf(stderr, "  %s: cos_min=%.6f max_abs=%.6f %s\n",
+                        nm, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
+        }
+    }
     ggml_free(gc);
 
     // Diff: full CLIP output (257x1024, including CLS)
@@ -2130,6 +2225,9 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
     const uint8_t * px, int w, int h, int ch, int * out_len) {
     if (!ctx || !px) { if (out_len) *out_len = 0; return ""; }
 
+    if (getenv("UOCR_DBG"))
+        fprintf(stderr, "unlimited_ocr: recognize_raw input: %dx%d ch=%d\n", w, h, ch);
+
     // Isolation test: UOCR_TEXT_TEST runs the LLM decoder as a pure language model
     if (const char *tt = getenv("UOCR_TEXT_TEST")) {
         auto &mdl = ctx->inner.m;
@@ -2168,7 +2266,9 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
             for (int x = 0; x < imgS; x++) {
                 float val;
                 if (x < ox || x >= ox + rw || y < oy || y >= oy + rh) {
-                    val = s.image_mean[c];
+                    // Match Python ImageOps.pad: color=tuple(int(x*255) for x in mean)
+                    // int(0.5*255)=127, 127/255.0=0.498039 (NOT exactly 0.5)
+                    val = (float)((int)(s.image_mean[c] * 255.0f)) / 255.0f;
                 } else {
                     float sx = (x - ox + 0.5f) / scale - 0.5f;
                     float sy = (y - oy + 0.5f) / scale - 0.5f;
