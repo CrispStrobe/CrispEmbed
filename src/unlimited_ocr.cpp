@@ -852,8 +852,8 @@ static bool encode_sam(uocr_ctx &ctx, const float *pixels,
         crispembed_diff::Ref ref;
         if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("sam_patch_embed")) {
             auto r = ref.compare("sam_patch_embed", hidden.data(), N * C);
-            fprintf(stderr, "  sam_patch_embed: cos_min=%.6f max_abs=%.6f %s\n",
-                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            fprintf(stderr, "  sam_patch_embed: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                    r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
         }
     }
     if (getenv("UOCR_DBG")) {
@@ -950,8 +950,8 @@ static bool encode_sam(uocr_ctx &ctx, const float *pixels,
             crispembed_diff::Ref ref;
             if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(nm)) {
                 auto r = ref.compare(nm, hidden.data(), N * C);
-                fprintf(stderr, "  %s: cos_min=%.6f max_abs=%.6f %s\n",
-                        nm, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "  %s: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                        nm, r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
             }
         }
         if (ctx.verbosity >= 2)
@@ -964,8 +964,8 @@ static bool encode_sam(uocr_ctx &ctx, const float *pixels,
         crispembed_diff::Ref ref;
         if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("sam_vit_output")) {
             auto r = ref.compare("sam_vit_output", hidden.data(), N * C);
-            fprintf(stderr, "  sam_vit_output: cos_min=%.6f max_abs=%.6f %s\n",
-                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            fprintf(stderr, "  sam_vit_output: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                    r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
         }
     }
 
@@ -1043,8 +1043,8 @@ static bool encode_sam(uocr_ctx &ctx, const float *pixels,
         if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("sam_output")) {
             auto r = ref.compare("sam_output", out_features.data(),
                                  (size_t)out_n_tokens * out_dim);
-            fprintf(stderr, "  sam_output: cos_min=%.6f max_abs=%.6f %s\n",
-                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            fprintf(stderr, "  sam_output: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                    r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
         }
     }
     return true;
@@ -1236,8 +1236,8 @@ static bool encode_clip(uocr_ctx &ctx, const float *sam_features, int n_vis, int
             crispembed_diff::Ref ref;
             if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(nm)) {
                 auto r = ref.compare(nm, layer_out.data(), (size_t)T * D);
-                fprintf(stderr, "  %s: cos_min=%.6f max_abs=%.6f %s\n",
-                        nm, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "  %s: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                        nm, r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
             }
         }
     }
@@ -1248,8 +1248,8 @@ static bool encode_clip(uocr_ctx &ctx, const float *sam_features, int n_vis, int
         crispembed_diff::Ref ref;
         if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("clip_output")) {
             auto r = ref.compare("clip_output", full_output.data(), (size_t)T * D);
-            fprintf(stderr, "  clip_output: cos_min=%.6f max_abs=%.6f %s\n",
-                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            fprintf(stderr, "  clip_output: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                    r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
         }
     }
 
@@ -1283,8 +1283,8 @@ static bool fuse_and_project(uocr_ctx &ctx, const float *clip_features,
         crispembed_diff::Ref ref;
         if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("fused_features")) {
             auto r = ref.compare("fused_features", fused.data(), (size_t)n_tokens * fused_dim);
-            fprintf(stderr, "  fused_features: cos_min=%.6f max_abs=%.6f %s\n",
-                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            fprintf(stderr, "  fused_features: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                    r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
         }
     }
 
@@ -1304,8 +1304,8 @@ static bool fuse_and_project(uocr_ctx &ctx, const float *clip_features,
         crispembed_diff::Ref ref;
         if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("projector_output")) {
             auto r = ref.compare("projector_output", proj_out.data(), (size_t)n_tokens * out_dim);
-            fprintf(stderr, "  projector_output: cos_min=%.6f max_abs=%.6f %s\n",
-                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            fprintf(stderr, "  projector_output: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                    r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
         }
     }
 
@@ -1357,8 +1357,8 @@ static bool assemble_vision_features(uocr_ctx &ctx, const float *proj_features,
         crispembed_diff::Ref ref;
         if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("vision_features")) {
             auto r = ref.compare("vision_features", vis_features.data(), (size_t)n_total * D);
-            fprintf(stderr, "  vision_features: cos_min=%.6f max_abs=%.6f %s\n",
-                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            fprintf(stderr, "  vision_features: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                    r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
         }
     }
 
@@ -1645,6 +1645,7 @@ static llm_attn_graph build_llm_layer_attn(uocr_ctx &ctx, int li, int T, int n_p
 
     float attn_scale = 1.0f / sqrtf((float)hd);
     ggml_tensor *attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, mask, attn_scale, 0.0f, 0.0f);
+    if (getenv("UOCR_FA_F32")) ggml_flash_attn_ext_set_prec(attn, GGML_PREC_F32);  // debug
     // flash_attn_ext output is [hd, nh, T]; reshape directly to [D, T] (llama.cpp
     // pattern). An intervening permute(0,2,1,3) scrambles head/token data whenever
     // T>1 (it is only a no-op for the T=1 decode step), corrupting the prefill.
@@ -2038,8 +2039,8 @@ static bool run_llm_decoder(uocr_ctx &ctx, const float *prompt_embeds, int n_pro
                     crispembed_diff::Ref ref;
                     if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(name)) {
                         auto r = ref.compare(name, hidden.data(), T * D);
-                        fprintf(stderr, "  %s: cos_min=%.6f max_abs=%.6f %s\n",
-                                name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                        fprintf(stderr, "  %s: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                                name, r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
                     }
                 }
             }
@@ -2077,11 +2078,30 @@ static bool run_llm_decoder(uocr_ctx &ctx, const float *prompt_embeds, int n_pro
                 crispembed_diff::Ref ref;
                 if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("logits")) {
                     auto r = ref.compare("logits", logits.data(), V);
-                    fprintf(stderr, "  logits: cos_min=%.6f max_abs=%.6f %s\n",
-                            r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                    fprintf(stderr, "  logits: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n",
+                            r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
                 }
             }
         } // end !did_pd
+
+        // no_repeat_ngram_size logits processor (matches HF infer()'s option).
+        // Greedy on the heavily-quantized q4_k decoder gets stuck repeating a
+        // partial detection box; blocking already-seen n-grams lets it advance.
+        int nrng = 0;
+        if (const char *e = getenv("UOCR_NO_REPEAT_NGRAM")) nrng = atoi(e);
+        if (nrng > 1 && (int)out_ids.size() >= nrng - 1) {
+            int k = nrng - 1;
+            const int32_t *suffix = out_ids.data() + (out_ids.size() - k);
+            for (int i = 0; i + nrng <= (int)out_ids.size(); i++) {
+                bool match = true;
+                for (int j = 0; j < k; j++)
+                    if (out_ids[i + j] != suffix[j]) { match = false; break; }
+                if (match) {
+                    int banned = out_ids[i + k];
+                    if (banned >= 0 && banned < V) logits[banned] = -INFINITY;
+                }
+            }
+        }
 
         // Argmax
         int next = (int)(std::max_element(logits.begin(), logits.end()) - logits.begin());
