@@ -740,7 +740,7 @@ static const ModelEntry k_registry[] = {
     {"unlimited-ocr",
      "unlimited-ocr-q4_k.gguf",
      "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF/resolve/main/unlimited-ocr-q4_k.gguf",
-     "Unlimited-OCR (SAM + CLIP + MoE decoder, 3.3B, full-page OCR)", "1.8 GB", "mit",
+     "Unlimited-OCR (SAM + CLIP + MoE decoder, 3.3B, full-page OCR)", "2.0 GB", "mit",
      "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF"},
 
     // PaddleOCR-VL-0.9B — NaViT ViT + ERNIE-4.5 LLM, 109 languages
