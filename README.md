@@ -234,7 +234,7 @@ curl -X POST http://localhost:8080/ner/extract \
 
 ## OCR
 
-Fourteen engines for image → text, all auto-detected from GGUF metadata via
+More than a dozen engines for image → text, most auto-detected from GGUF metadata via
 the unified `crispembed_ocr_model_*` C API (formerly `crispembed_math_ocr_*`,
 kept as deprecated aliases). Available through CLI (`--ocr`), HTTP server
 (`POST /ocr/model`, alias `POST /math/ocr`), Python (`CrispOcrModel`), Rust
@@ -257,6 +257,7 @@ kept as deprecated aliases). Available through CLI (`--ocr`), HTTP server
 | **Qwen2.5-VL-3B** | 32L ViT + 36L Qwen2.5 LLM | 3.6B | 2.6 GB | German/multilingual VLM OCR | Apache-2.0 |
 | **Qwen3-VL-2B** | 24L ViT + DeepStack + 28L Qwen3 (IMROPE) | 2.4B | 1.5 GB | General VLM OCR | Apache-2.0 |
 | **Texo-Distill** | HGNetv2 + MBart | 20M | 14 MB | Printed math (small) | AGPL-3.0 |
+| **Unlimited-OCR** | SAM ViT-B + CLIP-L/14 + DeepSeek-V2 MoE | 3.3B | 2.0 GB | Full-page document OCR with layout grounding | MIT |
 
 **PP-FormulaNet-L** (recommended for printed math): SAM-ViT encoder with
 windowed + global attention and decomposed relative position bias, full ggml
@@ -293,6 +294,26 @@ CRISPEMBED_MAX_PIXELS=65536 ./build/crispembed -m qwen3vl-2b --ocr document.png
 
 `CRISPEMBED_MAX_PIXELS` works with all variable-resolution VLM engines
 (Qwen2.5-VL, Qwen3-VL, InternVL2, LightOnOCR).
+
+**Unlimited-OCR** (full-page document OCR with layout grounding): a dual vision
+encoder (SAM ViT-B → CLIP-L/14, "DeepLIP") feeding a DeepSeek-V2 MoE decoder
+(64 routed experts top-6 + 2 shared). It emits grounded regions —
+`<|det|>x1 y1 x2 y2<|/det|>text` per line. The model's own prompt is
+`<image>document parsing.` and it requires a sliding-window `no_repeat_ngram`
+(size 35, window 128); both are applied automatically. Run it through the OCR
+orchestrator:
+
+```bash
+# Auto-downloads q4_k from HuggingFace (cstr/unlimited-ocr-crispembed-GGUF)
+./build/crispembed --ocr-pipeline document.png \
+    --ocr-engine unlimited_ocr --ocr-rec unlimited-ocr
+
+# Tunables (defaults match the model card): UOCR_NO_REPEAT_NGRAM, UOCR_NGRAM_WINDOW
+```
+
+VLM engines ingest the original image and letterbox internally, so the pipeline
+skips scan-cleanup (deskew/crop/whiten) for them — cleaning the input distorts
+the page and shifts content out of the vision grid.
 
 **Flutter integration**: The `flutter/crispembed/` plugin provides `CrispEmbedOcr`
 for Dart FFI access. Used by [CrispCalc](https://github.com/CrispStrobe/CrispCalc)
