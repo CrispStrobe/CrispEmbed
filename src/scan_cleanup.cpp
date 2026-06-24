@@ -164,24 +164,45 @@ float scan_cleanup_detect_angle(const float * gray, int w, int h,
         }
     }
 
-    // 4. Find peak angle
+    // 4. Find the skew angle by rho-projection *concentration* (energy), not the
+    //    single highest (angle,rho) bin. The single-max-bin peak is noise-fragile
+    //    and false-positives on sparse / already-aligned text (e.g. it reported
+    //    ~4.2 deg on perfectly horizontal rendered text, rotating a clean page and
+    //    distorting downstream OCR). At the true orientation, edges collapse into a
+    //    few strong rho bins (high sum-of-squares); a wrong tilt smears them across
+    //    many bins (low sum-of-squares).
     int best_ai = 0;
-    int best_votes = 0;
+    double best_energy = -1.0;
+    int best_peak = 0;
     for (int ai = 0; ai < n_angles; ai++) {
+        const int * row = &accum[(size_t)ai * n_rho];
+        double energy = 0.0;
+        int peak = 0;
         for (int ri = 0; ri < n_rho; ri++) {
-            if (accum[ai * n_rho + ri] > best_votes) {
-                best_votes = accum[ai * n_rho + ri];
-                best_ai = ai;
-            }
+            energy += (double)row[ri] * (double)row[ri];
+            if (row[ri] > peak) peak = row[ri];
         }
+        if (energy > best_energy) { best_energy = energy; best_ai = ai; best_peak = peak; }
     }
 
     float best_angle = -max_angle_deg + best_ai * angle_step;
 
-    // Require at least some votes to be meaningful
-    if (best_votes < (int)(0.01f * w)) {
+    // Require a meaningful line peak to trust the estimate at all.
+    if (best_peak < (int)(0.01f * w)) {
         return 0.0f;
     }
+
+    // Confidence gate: only deskew if the best angle's concentration clearly
+    // beats the 0-degree (horizontal) baseline, otherwise assume the page is
+    // already aligned and leave it untouched (no spurious rotation).
+    int zero_ai = (int)(max_angle_deg / angle_step + 0.5f);
+    if (zero_ai >= 0 && zero_ai < n_angles) {
+        const int * zrow = &accum[(size_t)zero_ai * n_rho];
+        double zero_energy = 0.0;
+        for (int ri = 0; ri < n_rho; ri++) zero_energy += (double)zrow[ri] * (double)zrow[ri];
+        if (best_energy < zero_energy * 1.10) return 0.0f;
+    }
+    if (fabsf(best_angle) < 0.3f) return 0.0f;  // negligible skew
 
     return best_angle;
 }
