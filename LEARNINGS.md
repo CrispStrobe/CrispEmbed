@@ -2872,3 +2872,141 @@ was LOSSLESS (max_abs_diff=0.000000 for all SAM weights checked).
 
 Rule: when crispembed-diff shows cos < 0.95, always bisect with the diff
 harness. Never accept "quantization noise" as an explanation.
+
+## Unlimited-OCR decoder: prefill attention output was scrambled (2026-06)
+
+The MoE decoder produced pure garbage ("by", or open-ended text collapsing
+to multilingual noise) even though SAM/CLIP vision parity was fine. Root
+cause was in the LLM self-attention output reshape:
+
+```cpp
+attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, mask, scale, 0, 0); // [hd, nh, T]
+attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));            // BUG → [hd, T, nh]
+attn = ggml_reshape_2d(g, attn, D, T);
+```
+
+`flash_attn_ext` returns `[hd, nh, T]`; the llama.cpp idiom is to
+`reshape_2d` that **directly** to `[D, T]`. The extra `permute(0,2,1,3)`
+turns it into `[hd, T, nh]`, so the subsequent `reshape_2d` interleaves the
+head and token axes — *unless T==1*, where the permute is a no-op. That is
+why the bug was invisible during single-token decode (the persistent-decode
+path) but corrupted every multi-token **prefill**: a scrambled attention
+output feeds the residual stream → next layer's input → the whole KV cache
+is built from corrupted hidden states. Fix: delete the permute, reshape the
+flash output straight to `[D, T]` (see `build_llm_layer_attn` and
+`build_persistent_decode_graph`). After the fix the pure-text decoder is
+coherent and the OCR path reads the first text region correctly
+(`<|det|>text [x1,y1,x2,y2]<|/det|>Hello World`).
+
+Two related gotchas found alongside it:
+
+- **Persistent-decode KV cache must be zero-initialized.** The PD graph
+  pre-allocates `max_kv` cache slots but fills only `n_past`; flash_attn
+  reads the unused slots *before* the (-inf) mask is applied, and on the
+  shared scheduler they hold leftover garbage from the vision graphs.
+  `NaN + (-inf) = NaN`, which poisons every logit (→ endless `<bos>`). The
+  short text-only test didn't trip it because its buffers were clean. Zero
+  the whole `t_k_cache`/`t_v_cache` on the first PD step. (The PD path still
+  drifts from the rebuild path after the first decode token on vision-heavy
+  prefills — a residual Metal flash_attn numerics issue with the padded KV
+  layout — so the verified-correct per-step rebuild path is the default;
+  PD is opt-in via `UOCR_PD=1`.)
+
+- **Instruction tokenization.** `"\nFree OCR."` byte-level-BPEs to
+  `[Ċ=201, Free=21431, ĠOCR=126041, .=16]` (verified against the model's
+  own tokenizer.json). Feeding the leading newline `Ċ=201` makes this port
+  emit EOS immediately — a sensitivity that points at a small residual
+  mismatch in the image-block embeddings (`image_newline`/`view_separator`)
+  vs HF. The no-newline form reproduces correct first-region OCR. The grid
+  is row-major and correct (a transpose wrongly maps the bottom image line
+  to the top).
+
+### Diff-harness findings vs `unlimited-ocr-ref.gguf` (vision stages)
+
+With the reference GGUF (`cstr/unlimited-ocr-crispembed-GGUF/unlimited-ocr-ref.gguf`,
+stages `sam_patch_embed` … `vision_features`) and `UOCR_REF=`:
+
+- **Use `cos_mean`, not `cos_min`.** The letterboxed-gray padding tokens are
+  near-zero vectors whose cosine is pure noise, dragging `cos_min` to ~0 even
+  when the tensor is fine. `crispembed_diff::Report` already computes
+  `cos_mean`; the engine now prints it.
+- **THE REAL VISION BUG WAS THE PIPELINE SCAN-CLEANUP, not SAM.** The
+  `--ocr-pipeline` path ran classical scan-cleanup (deskew/crop) on the image
+  *before* the VLM engine, so the engine received e.g. **414×229 instead of the
+  original 400×200** — a distorted aspect ratio that shifts content into the
+  wrong vision-grid cells. That distortion was the entire `sam_patch_embed`
+  0.98 / `sam_output` 0.73 "divergence". Disabling cleanup for VLM engines
+  (`main.cpp`: `st.cleanup_enabled = is_vlm ? 0 : 1`) makes the engine receive
+  the original image and the vision matches HF essentially perfectly:
+  `sam_patch_embed` cos_mean **0.999999**, all SAM layers ≥0.9999,
+  `vision_features` cos_mean **0.99981**. It also markedly improves real-page
+  OCR (a book title page now yields title/author/degree/affiliation lines).
+  VLMs do their own resize+letterbox; never pre-clean their input. (My earlier
+  "the ref is a different image" guess was WRONG — re-dumping the ref on
+  `test_ocr.png` on this M1 gave byte-identical numbers, proving the ref IS
+  that image and the divergence was the cleanup-distorted *input*.)
+- **SAM FFN GELU.** `build_sam_layer_graph` called `ggml_gelu` (tanh approx);
+  HF SAM's `MLPBlock` uses `nn.GELU` (exact erf). Changed to `ggml_gelu_erf`
+  for correctness (CLIP correctly uses `ggml_gelu_quick`; projector is
+  `projector_type: "linear"`, no GELU). Effect is small.
+
+- **The "decode failure" was the WRONG PROMPT + a missing logits processor —
+  bad code, not quantization (q8/f16 were never the answer).** The port hard-
+  coded the prompt as "Free OCR.", but this checkpoint's prompt (per the HF
+  model card) is **"<image>document parsing."** ("Free OCR." belongs to a
+  different DeepSeek-OCR checkpoint and makes this model emit its training-
+  instruction boilerplate — "Do NOT use any punctuation. Treat all tabular
+  layout as plain text…" — which is what looked like a decode bug). The card
+  also calls `infer()` with **`no_repeat_ngram_size=35, ngram_window=128`**;
+  that sliding-window n-gram block is *required*, not optional — without it the
+  greedy detection-box decode gets stuck repeating a partial box. With the
+  correct prompt (`[document=34030, Ġparsing=76466, .=16]`, no leading newline)
+  and the sliding-window processor (`SlidingWindowNoRepeatNgramProcessor` over
+  the full input_ids incl. the `<image>`=128815 placeholders), the q4_k decoder
+  reads region 1 (`HelloWorld`) byte-for-byte like HF.
+
+- **GROUND TRUTH: the real HF model reads `test_ocr.png` 4/4.** Ran the actual
+  `baidu/Unlimited-OCR` via `AutoModel` on this M1 — **bf16 on CPU** (the fp32
+  load is ~13 GB and *crashes* the 16 GB machine; bf16 ≈ 6.6 GB fits, with
+  `.cuda()`/`autocast("cuda")` monkey-patched to CPU). Output:
+  `<|det|>title [47,152,188,202]<|/det|>Hello World` … `This is a test` …
+  `CrispEmbed OCR` … `2024-06-22` — all four lines. So the model + prompt +
+  config are correct and the original image is the right input.
+
+- **The remaining gap is the q4_k DECODER quant floor, localized with a
+  decoder reference.** Extended the dumper (`dump_decoder.py`) to hook the
+  HF decoder layers + `lm_head` and emit `llm_layer_0..11` + `logits`; the C++
+  already diffs those stages under `UOCR_REF`. With the now-correct vision, the
+  C++ prefill matches HF closely at the **dense** layer 0
+  (cos_mean 0.9988, max_abs 0.34) but the **MoE** layers jump to max_abs ~7
+  (cos_mean 0.997→0.979) and the final `logits` land at cos **0.926** — enough
+  to flip a borderline greedy pick (line 2). This is NOT a code bug in the MoE:
+  the math matches HF (verified op-by-op), CPU-MoE and Metal-MoE are
+  byte-identical, the router/gate are Q8_0. It is the **q4_k quant of the
+  experts AND the `lm_head` (both Q4_K in this file)** compounding over 12
+  layers — the lm_head alone drops the logits from ~0.979 (hidden) to 0.926.
+  **FIXED via the quantize recipe — and it was code, not "use f16".** The
+  `lm_head` was being Q4_K'd; `tools/quantize.cpp` now keeps it at Q8_0
+  (alongside the embeddings / vision / projector / MoE-router it already
+  protected). Re-quantized from a fresh f16 (converted on this M1 with the
+  refvenv; the converter output is byte-size-identical to the published f16)
+  and the q4_k model now reads `test_ocr.png` **4/4, identical to HF**
+  (`Hello World` / `This is a test` / `CrispEmbed OCR` / `2024-06-22`) and the
+  real Maréchal book title page **near-perfectly** (full title, sub-title,
+  author, degree, publisher block, year — only stray char errors). Cost: +90 MB
+  (lm_head 82→168 MB) on a 2.1 GB file.
+
+  Subtlety: the prefill `logits` cos barely moved (0.926→0.928) yet the OUTPUT
+  went from cascade-hallucination to perfect — because the failure was a single
+  borderline greedy flip early in generation that then snowballed; nudging the
+  lm_head precision tipped that one decision. **The cos metric understated the
+  fix; the OCR text is the real test.** (The experts stay Q4_K — bumping them
+  too is unnecessary and would bloat the file.)
+
+  Lesson (again): when a VLM emits coherent-but-off-task text, suspect the
+  prompt/template, the sampling config, the *input pipeline* (don't pre-clean a
+  VLM's image), and the *quantize recipe* (protect the lm_head / router /
+  vision) — read the model card's exact `infer()` call — not the numerics, and
+  never reach for a bigger-precision model. Prove a diff reference is on the
+  SAME input before trusting it (re-dump it yourself; bf16 on CPU is enough —
+  fp32 OOMs a 16 GB box). And judge by decoded text, not just cosine.
