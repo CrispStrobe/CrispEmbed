@@ -106,7 +106,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --cleanup        preprocess scan before OCR (deskew, crop borders, whiten background)\n");
     fprintf(stderr, "  --cleanup-only F process scan and write cleaned image to stdout (no OCR)\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
-    fprintf(stderr, "       --ocr-engine N  primary engine (dbnet_trocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr)\n");
+    fprintf(stderr, "       --ocr-engine N  primary engine (dbnet_trocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen3vl|unlimited_ocr)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
     fprintf(stderr, "       --truecase-model M  post-OCR truecasing (BiLSTM)\n");
