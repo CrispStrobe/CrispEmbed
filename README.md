@@ -251,7 +251,7 @@ kept as deprecated aliases). Available through CLI (`--ocr`), HTTP server
 | **InternVL2-1B** | InternViT-300M + Qwen2-0.5B | 0.9B | 724 MB | Edge/WASM VLM OCR (OCRBench 779) | MIT |
 | **InternVL2.5-2B** | InternViT-300M + InternLM2.5-1.8B | 2.1B | 1.4 GB | EN+DE VLM OCR (OCRBench ~830) | MIT |
 | **MixTeX** | Swin-Tiny + RoBERTa | 86M | — | Chinese+English LaTeX | Apache-2.0 |
-| **PosFormer** | DenseNet + Transformer+ARM | 6.5M | 10 MB | Handwritten math (60.5%) | Academic |
+| **PosFormer** | DenseNet + Transformer+ARM | 6.5M | 10 MB | Handwritten math (60.5%) | [ours](https://huggingface.co/cstr/posformer-hw-GGUF): CC-BY-NC, orig: Academic |
 | **Qari-OCR** | Qwen2-VL-2B + LoRA | 2B | ~1.3 GB | Arabic OCR with diacritics | Apache-2.0 |
 | **PP-FormulaNet-L** | SAM-ViT + MBart | 181M | 100 MB | Printed math (best) | Apache-2.0 |
 | **Qwen2.5-VL-3B** | 32L ViT + 36L Qwen2.5 LLM | 3.6B | 2.6 GB | German/multilingual VLM OCR | Apache-2.0 |
