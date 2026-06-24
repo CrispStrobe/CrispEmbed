@@ -184,6 +184,25 @@ static void test_deskew() {
     float detected = scan_cleanup_detect_angle(gray.data(), w, h, 15.0f);
     printf("  Applied skew: %.1f deg, detected: %.1f deg\n", test_angle, detected);
     CHECK(fabsf(detected - test_angle) < 2.0f, "detected angle within 2 degrees");
+
+    // Regression: axis-aligned (un-skewed) text must NOT trigger a spurious
+    // rotation. The old single-max-bin Hough reported ~4 deg on clean
+    // horizontal text, which deskew then "corrected" — distorting the page and
+    // shifting content into the wrong VLM vision-grid cells.
+    auto flat = make_text_image(w, h);
+    std::vector<float> fgray(w * h);
+    for (int i = 0; i < w * h; i++) fgray[i] = flat[i] / 255.0f;
+    float flat_angle = scan_cleanup_detect_angle(fgray.data(), w, h, 15.0f);
+    printf("  Axis-aligned text detected: %.2f deg (expect ~0)\n", flat_angle);
+    CHECK(fabsf(flat_angle) < 1.0f, "no spurious skew on axis-aligned text");
+
+    // And a larger genuine skew is still detected/corrected.
+    auto img8 = make_skewed_image(w, h, 8.0f);
+    std::vector<float> g8(w * h);
+    for (int i = 0; i < w * h; i++) g8[i] = img8[i] / 255.0f;
+    float d8 = scan_cleanup_detect_angle(g8.data(), w, h, 15.0f);
+    printf("  Applied skew: 8.0 deg, detected: %.1f deg\n", d8);
+    CHECK(fabsf(d8 - 8.0f) < 2.0f, "8 deg skew still detected");
 }
 
 static void test_background_whiten() {
