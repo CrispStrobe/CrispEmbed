@@ -3278,9 +3278,10 @@ extern "C" int crispembed_colbert_score_batch(
 #include "lightonocr.h"
 #include "deepseek_ocr2.h"
 #include "smoldocling_ocr.h"
+#include "unlimited_ocr.h"
 #include "core/gguf_loader.h"
 
-enum ocr_model_type { OCR_MODEL_PIX2TEX, OCR_MODEL_HMER, OCR_MODEL_BTTR, OCR_MODEL_PPFORMULANET, OCR_MODEL_PPFORMULANET_L, OCR_MODEL_POSFORMER, OCR_MODEL_MIXTEX, OCR_MODEL_QWEN2VL, OCR_MODEL_INTERNVL2, OCR_MODEL_PARSEQ, OCR_MODEL_GLM_OCR, OCR_MODEL_GOT_OCR, OCR_MODEL_TESSERACT_LSTM, OCR_MODEL_GRANITE_VISION, OCR_MODEL_LIGHTONOCR, OCR_MODEL_DEEPSEEK_OCR2, OCR_MODEL_SMOLDOCLING };
+enum ocr_model_type { OCR_MODEL_PIX2TEX, OCR_MODEL_HMER, OCR_MODEL_BTTR, OCR_MODEL_PPFORMULANET, OCR_MODEL_PPFORMULANET_L, OCR_MODEL_POSFORMER, OCR_MODEL_MIXTEX, OCR_MODEL_QWEN2VL, OCR_MODEL_INTERNVL2, OCR_MODEL_PARSEQ, OCR_MODEL_GLM_OCR, OCR_MODEL_GOT_OCR, OCR_MODEL_TESSERACT_LSTM, OCR_MODEL_GRANITE_VISION, OCR_MODEL_LIGHTONOCR, OCR_MODEL_DEEPSEEK_OCR2, OCR_MODEL_SMOLDOCLING, OCR_MODEL_UNLIMITED_OCR };
 
 struct ocr_model {
     ocr_model_type type;
@@ -3309,6 +3310,7 @@ if (arch == "lightonocr") return OCR_MODEL_LIGHTONOCR;
 if (arch == "deepseek_ocr2") return OCR_MODEL_DEEPSEEK_OCR2;
 if (arch == "smoldocling") return OCR_MODEL_SMOLDOCLING;
 if (arch == "math_ocr") return OCR_MODEL_PIX2TEX;
+if (arch == "unlimited_ocr") return OCR_MODEL_UNLIMITED_OCR;
     return OCR_MODEL_PIX2TEX;
 }
 
@@ -3333,6 +3335,7 @@ case OCR_MODEL_GRANITE_VISION: inner = granite_vision_init(path, n_threads); bre
 case OCR_MODEL_LIGHTONOCR:     inner = lightonocr_init(path, n_threads); break;
 case OCR_MODEL_DEEPSEEK_OCR2:  inner = deepseek_ocr2_init(path, n_threads); break;
 case OCR_MODEL_SMOLDOCLING:    inner = smoldocling_init(path, n_threads); break;
+case OCR_MODEL_UNLIMITED_OCR:  inner = unlimited_ocr_init(path, n_threads); break;
     }
     if (!inner) return nullptr;
     auto * u = new ocr_model{type, inner};
@@ -3360,6 +3363,7 @@ case OCR_MODEL_GRANITE_VISION: granite_vision_free((granite_vision_context *)u->
 case OCR_MODEL_LIGHTONOCR:     lightonocr_free((lightonocr_context *)u->ctx); break;
 case OCR_MODEL_DEEPSEEK_OCR2:  deepseek_ocr2_free((deepseek_ocr2_context *)u->ctx); break;
 case OCR_MODEL_SMOLDOCLING:    smoldocling_free((smoldocling_context *)u->ctx); break;
+case OCR_MODEL_UNLIMITED_OCR:  unlimited_ocr_free((unlimited_ocr_context *)u->ctx); break;
     }
     delete u;
 }
@@ -3398,6 +3402,7 @@ case OCR_MODEL_GRANITE_VISION: return granite_vision_recognize((granite_vision_c
 case OCR_MODEL_LIGHTONOCR:     return lightonocr_recognize_raw((lightonocr_context *)u->ctx, px, w, h, ch, ol);
 case OCR_MODEL_DEEPSEEK_OCR2:  return deepseek_ocr2_recognize_raw((deepseek_ocr2_context *)u->ctx, px, w, h, ch, ol);
 case OCR_MODEL_SMOLDOCLING:    return smoldocling_recognize_raw((smoldocling_context *)u->ctx, px, w, h, ch, ol);
+case OCR_MODEL_UNLIMITED_OCR:  return unlimited_ocr_recognize_raw((unlimited_ocr_context *)u->ctx, px, w, h, ch, ol);
     }
     return nullptr;
 }
