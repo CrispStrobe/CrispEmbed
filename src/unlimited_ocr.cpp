@@ -163,8 +163,10 @@ struct uocr_ctx {
         int n_past = 0;
     } kvc;
 
-    // Precomputed RPE tables
+    // Precomputed RPE tables (raw = get_rel_pos output)
     std::vector<std::vector<float>> rp_h_per_layer, rp_w_per_layer;
+    // Precomputed RPE tables (ggml-formatted = after reformat_rp_table)
+    std::vector<std::vector<float>> rp_h_ggml_per_layer, rp_w_ggml_per_layer;
 
     int n_threads = 1, verbosity = 1;
     bool bench = false;
@@ -599,6 +601,8 @@ static void precompute_rpe_tables(uocr_ctx &ctx) {
     int hd = s.head_dim, nP = s.image_size / s.patch_size, ws = s.window_size;
     ctx.rp_h_per_layer.resize(s.depth);
     ctx.rp_w_per_layer.resize(s.depth);
+    ctx.rp_h_ggml_per_layer.resize(s.depth);
+    ctx.rp_w_ggml_per_layer.resize(s.depth);
     for (int li = 0; li < s.depth; li++) {
         auto &blk = ctx.m.sam_blocks[li];
         if (!blk.rel_pos_h || !blk.rel_pos_w) continue;
@@ -607,6 +611,11 @@ static void precompute_rpe_tables(uocr_ctx &ctx) {
         int aH = blk.is_global ? nP : ws, aW = aH;
         ctx.rp_h_per_layer[li] = get_rel_pos(aH, aH, rph.data(), L_h, hd);
         ctx.rp_w_per_layer[li] = get_rel_pos(aW, aW, rpw.data(), L_w, hd);
+        // Pre-reformat for ggml layout (UOCR_OPT_RPE_CACHE path)
+        ctx.rp_h_ggml_per_layer[li].resize((size_t)aH * aH * hd);
+        ctx.rp_w_ggml_per_layer[li].resize((size_t)aW * aW * hd);
+        reformat_rp_table(ctx.rp_h_per_layer[li].data(), ctx.rp_h_ggml_per_layer[li].data(), aH, hd);
+        reformat_rp_table(ctx.rp_w_per_layer[li].data(), ctx.rp_w_ggml_per_layer[li].data(), aW, hd);
     }
 }
 
@@ -765,10 +774,43 @@ static ggml_cgraph* build_sam_neck_graph(ggml_context* g, int nP, int C, int nC,
     return gf;
 }
 
-static bool encode_sam(uocr_ctx &ctx, const float *pixels,
+// Bilinear interpolation of 2D position embedding grid.
+// pos_in: [nP_in*nP_in, C], pos_out: [nP_out*nP_out, C]
+static void interpolate_pos_embed_2d(const float* pos_in, float* pos_out,
+                                      int nP_in, int nP_out, int C) {
+    float scale = (float)nP_in / nP_out;
+    for (int oy = 0; oy < nP_out; oy++) {
+        float sy = (oy + 0.5f) * scale - 0.5f;
+        int iy = (int)floorf(sy);
+        float fy = sy - iy;
+        int iy0 = std::max(0, std::min(iy, nP_in - 1));
+        int iy1 = std::max(0, std::min(iy + 1, nP_in - 1));
+        for (int ox = 0; ox < nP_out; ox++) {
+            float sx = (ox + 0.5f) * scale - 0.5f;
+            int ix = (int)floorf(sx);
+            float fx = sx - ix;
+            int ix0 = std::max(0, std::min(ix, nP_in - 1));
+            int ix1 = std::max(0, std::min(ix + 1, nP_in - 1));
+            int out_idx = (oy * nP_out + ox) * C;
+            int i00 = (iy0 * nP_in + ix0) * C;
+            int i01 = (iy0 * nP_in + ix1) * C;
+            int i10 = (iy1 * nP_in + ix0) * C;
+            int i11 = (iy1 * nP_in + ix1) * C;
+            float w00 = (1 - fy) * (1 - fx), w01 = (1 - fy) * fx;
+            float w10 = fy * (1 - fx), w11 = fy * fx;
+            for (int c = 0; c < C; c++)
+                pos_out[out_idx + c] = w00 * pos_in[i00 + c] + w01 * pos_in[i01 + c]
+                                     + w10 * pos_in[i10 + c] + w11 * pos_in[i11 + c];
+        }
+    }
+}
+
+static bool encode_sam(uocr_ctx &ctx, const float *pixels, int sam_img_size,
                        std::vector<float> &out_features, int &out_n_tokens, int &out_dim) {
     auto &s = ctx.m.shp;
-    int C = s.hidden, PS = s.patch_size, nP = s.image_size / PS;
+    int C = s.hidden, PS = s.patch_size;
+    int nP_orig = s.image_size / PS;
+    int nP = sam_img_size / PS;
     int N = nP * nP, hd = s.head_dim, ws = s.window_size;
     auto _sam_t = std::chrono::steady_clock::now();
     auto sam_mark = [&](const char *w) {
@@ -782,7 +824,15 @@ static bool encode_sam(uocr_ctx &ctx, const float *pixels,
     // Patch embedding
     auto pe_w = to_f32(ctx.m.patch_embed_w);
     auto pe_b = to_f32(ctx.m.patch_embed_b);
-    auto pos = to_f32(ctx.m.pos_embed);
+    auto pos_orig = to_f32(ctx.m.pos_embed);
+    // Interpolate position embedding if running at reduced resolution
+    std::vector<float> pos;
+    if (nP != nP_orig) {
+        pos.resize((size_t)N * C);
+        interpolate_pos_embed_2d(pos_orig.data(), pos.data(), nP_orig, nP, C);
+    } else {
+        pos = std::move(pos_orig);
+    }
     int patch_dim = 3 * PS * PS;
     std::vector<float> hidden(N * C);
 
@@ -791,11 +841,11 @@ static bool encode_sam(uocr_ctx &ctx, const float *pixels,
         std::vector<uint8_t> mb(meta_sz);
         ggml_init_params ip = { meta_sz, mb.data(), true };
         ggml_context* gc = ggml_init(ip);
-        ggml_cgraph* gf = build_sam_patch_graph(gc, s.image_size, PS, C, nP);
+        ggml_cgraph* gf = build_sam_patch_graph(gc, sam_img_size, PS, C, nP);
         ggml_backend_sched_reset(ctx.sched);
         ggml_backend_sched_alloc_graph(ctx.sched, gf);
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "px"), pixels, 0,
-                                (size_t)3 * s.image_size * s.image_size * sizeof(float));
+                                (size_t)3 * sam_img_size * sam_img_size * sizeof(float));
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "w_patch"), pe_w.data(), 0, pe_w.size() * sizeof(float));
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pe_b"), pe_b.data(), 0, pe_b.size() * sizeof(float));
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos"), pos.data(), 0, pos.size() * sizeof(float));
@@ -877,6 +927,10 @@ static bool encode_sam(uocr_ctx &ctx, const float *pixels,
             ln1_bs[li] = to_f32(ctx.m.sam_blocks[li].ln1_b);
         }
 
+    // Hoist ggml metadata buffer outside the per-layer loop (UOCR_OPT_REUSE_CTX)
+    size_t meta_sz = 8 * 1024 * 1024;
+    std::vector<uint8_t> mb(meta_sz);
+
     // Per-layer ggml graph
     for (int li = 0; li < s.depth; li++) {
         auto _slt = std::chrono::steady_clock::now();
@@ -890,7 +944,9 @@ static bool encode_sam(uocr_ctx &ctx, const float *pixels,
             nW = ((nP + ph) / ws) * ((nP + pw) / ws); T = wN * nW;
         }
 
-        bool skip_ln1 = !is_global;
+        // UOCR_OPT_GRAPH_LN: do LN inside the ggml graph (no CPU LN + separate residual)
+        bool graph_ln = getenv("UOCR_OPT_GRAPH_LN") != nullptr;
+        bool skip_ln1 = !is_global && !graph_ln;
         std::vector<float> ln1_hidden;
         if (skip_ln1) {
             ln1_hidden.resize(N * C);
@@ -901,21 +957,42 @@ static bool encode_sam(uocr_ctx &ctx, const float *pixels,
 
         std::vector<float> graph_input, residual_input;
         if (is_global) graph_input.assign(hidden.begin(), hidden.end());
-        else {
+        else if (skip_ln1) {
             graph_input.resize(T * C, 0.0f);
             window_partition(ln1_hidden.data(), graph_input.data(), nP, ws, C);
             residual_input.resize(T * C, 0.0f);
             window_partition(hidden.data(), residual_input.data(), nP, ws, C);
+        } else {
+            // graph_ln path: partition raw data, graph does LN internally
+            graph_input.resize(T * C, 0.0f);
+            window_partition(hidden.data(), graph_input.data(), nP, ws, C);
         }
 
         if (getenv("UOCR_DBG")) fprintf(stderr, "  [dbg] sam li=%d is_global=%d aH=%d nW=%d T=%d rp_h.sz=%zu\n",
                 li, is_global, aH, nW, T, ctx.rp_h_per_layer[li].size());
-        std::vector<float> rp_h_ggml(aH * aH * hd), rp_w_ggml(aW * aW * hd);
-        reformat_rp_table(ctx.rp_h_per_layer[li].data(), rp_h_ggml.data(), aH, hd);
-        reformat_rp_table(ctx.rp_w_per_layer[li].data(), rp_w_ggml.data(), aW, hd);
+        // RPE tables: use precomputed if sizes match, else recompute for reduced resolution
+        const float *rp_h_ptr, *rp_w_ptr;
+        std::vector<float> rp_h_recomp, rp_w_recomp, rp_h_ggml_rc, rp_w_ggml_rc;
+        bool rpe_size_match = !ctx.rp_h_ggml_per_layer[li].empty() &&
+            (int)ctx.rp_h_ggml_per_layer[li].size() == aH * aH * hd;
+        if (rpe_size_match) {
+            rp_h_ptr = ctx.rp_h_ggml_per_layer[li].data();
+            rp_w_ptr = ctx.rp_w_ggml_per_layer[li].data();
+        } else {
+            // Recompute RPE for reduced resolution (global layers change from nP_orig to nP)
+            auto &blk2 = ctx.m.sam_blocks[li];
+            auto rph = to_f32(blk2.rel_pos_h), rpw = to_f32(blk2.rel_pos_w);
+            int L_h = (int)blk2.rel_pos_h->ne[1], L_w = (int)blk2.rel_pos_w->ne[1];
+            rp_h_recomp = get_rel_pos(aH, aH, rph.data(), L_h, hd);
+            rp_w_recomp = get_rel_pos(aW, aW, rpw.data(), L_w, hd);
+            rp_h_ggml_rc.resize((size_t)aH * aH * hd);
+            rp_w_ggml_rc.resize((size_t)aW * aW * hd);
+            reformat_rp_table(rp_h_recomp.data(), rp_h_ggml_rc.data(), aH, hd);
+            reformat_rp_table(rp_w_recomp.data(), rp_w_ggml_rc.data(), aW, hd);
+            rp_h_ptr = rp_h_ggml_rc.data();
+            rp_w_ptr = rp_w_ggml_rc.data();
+        }
 
-        size_t meta_sz = 8 * 1024 * 1024;
-        std::vector<uint8_t> mb(meta_sz);
         ggml_init_params ip = { meta_sz, mb.data(), true };
         ggml_context* gc = ggml_init(ip);
 
@@ -930,9 +1007,9 @@ static bool encode_sam(uocr_ctx &ctx, const float *pixels,
             ggml_backend_tensor_set(res_t, residual_input.data(), 0, (size_t)T * C * sizeof(float));
         }
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "rp_h"),
-                                rp_h_ggml.data(), 0, (size_t)aH * aH * hd * sizeof(float));
+                                rp_h_ptr, 0, (size_t)aH * aH * hd * sizeof(float));
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "rp_w"),
-                                rp_w_ggml.data(), 0, (size_t)aW * aW * hd * sizeof(float));
+                                rp_w_ptr, 0, (size_t)aW * aW * hd * sizeof(float));
 
         ggml_backend_sched_graph_compute(ctx.sched, gf);
 
@@ -1034,6 +1111,46 @@ static bool encode_sam(uocr_ctx &ctx, const float *pixels,
     }
 
     sam_mark("neck_downsample");
+
+    // SAM reduced res: upsample from reduced spatial grid to match 1024 output
+    // At 1024: ds2_H=16, n_vis=256. At 512: ds2_H=8, n_vis=64.
+    // CLIP expects 256 tokens. Bilinear upsample 8×8 → 16×16.
+    int target_nvis = (s.image_size / s.patch_size / 2 / 2);  // = 16 for 1024
+    target_nvis = target_nvis * target_nvis;  // = 256
+    if (n_vis < target_nvis && nP != nP_orig) {
+        int src_h = ds2_H, src_w = ds2_W;
+        int dst_h = s.image_size / s.patch_size / 2 / 2;
+        int dst_w = dst_h;
+        int dst_n = dst_h * dst_w;
+        std::vector<float> upsampled((size_t)dst_n * vis_D);
+        float scale_y = (float)src_h / dst_h;
+        float scale_x = (float)src_w / dst_w;
+        for (int dy = 0; dy < dst_h; dy++) {
+            float sy = (dy + 0.5f) * scale_y - 0.5f;
+            int iy = (int)floorf(sy); float fy = sy - iy;
+            int iy0 = std::max(0, std::min(iy, src_h - 1));
+            int iy1 = std::max(0, std::min(iy + 1, src_h - 1));
+            for (int dx = 0; dx < dst_w; dx++) {
+                float sx = (dx + 0.5f) * scale_x - 0.5f;
+                int ix = (int)floorf(sx); float fx = sx - ix;
+                int ix0 = std::max(0, std::min(ix, src_w - 1));
+                int ix1 = std::max(0, std::min(ix + 1, src_w - 1));
+                float w00 = (1-fy)*(1-fx), w01 = (1-fy)*fx, w10 = fy*(1-fx), w11 = fy*fx;
+                int di = (dy * dst_w + dx) * vis_D;
+                int s00 = (iy0*src_w+ix0)*vis_D, s01 = (iy0*src_w+ix1)*vis_D;
+                int s10 = (iy1*src_w+ix0)*vis_D, s11 = (iy1*src_w+ix1)*vis_D;
+                for (int c = 0; c < vis_D; c++)
+                    upsampled[di+c] = w00*out_features[s00+c] + w01*out_features[s01+c]
+                                    + w10*out_features[s10+c] + w11*out_features[s11+c];
+            }
+        }
+        out_features = std::move(upsampled);
+        n_vis = dst_n;
+        if (getenv("UOCR_DBG"))
+            fprintf(stderr, "  [opt] SAM reduced res: upsampled %dx%d → %dx%d (%d tokens)\n",
+                    src_h, src_w, dst_h, dst_w, dst_n);
+    }
+
     out_n_tokens = n_vis;
     out_dim = vis_D;
 
@@ -1426,6 +1543,7 @@ struct PdGraph {
     std::vector<ggml_tensor*> t_v_cache;
     ggml_tensor* t_logits = nullptr;
     std::vector<ggml_tensor*> t_k_new;
+    std::vector<ggml_tensor*> t_layer_out;  // per-layer hidden state for debugging
     std::vector<ggml_tensor*> t_v_new;
     int max_kv = 0;
 };
@@ -1459,9 +1577,10 @@ static PdGraph build_persistent_decode_graph(uocr_ctx &ctx, int max_kv) {
         return ggml_mul(g, ggml_rms_norm(g, t, eps), ensure_f32(g, w));
     };
 
-    pd.t_cur_tok_id = ggml_new_tensor_1d(g, GGML_TYPE_I32, 1);
-    ggml_set_name(pd.t_cur_tok_id, "pd_tok"); ggml_set_input(pd.t_cur_tok_id);
-    ggml_tensor* x = ggml_get_rows(g, ctx.m.embed_tokens, pd.t_cur_tok_id);
+    // Use pre-dequanted F32 embedding as input (matches rebuild path's get_embedding)
+    pd.t_cur_tok_id = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, 1);
+    ggml_set_name(pd.t_cur_tok_id, "pd_emb"); ggml_set_input(pd.t_cur_tok_id);
+    ggml_tensor* x = pd.t_cur_tok_id;
 
     pd.t_pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, 1);
     ggml_set_name(pd.t_pos_ids, "pd_pos"); ggml_set_input(pd.t_pos_ids);
@@ -1480,9 +1599,11 @@ static PdGraph build_persistent_decode_graph(uocr_ctx &ctx, int max_kv) {
         snprintf(kon, sizeof(kon), "pd_kn%d", li);
         snprintf(von, sizeof(von), "pd_vn%d", li);
 
-        pd.t_k_cache[li] = ggml_new_tensor_2d(g, GGML_TYPE_F16, kv_dim, max_kv_in);
+        // Use F32 for PD KV cache when UOCR_OPT_PD_F32=1 to avoid F16 precision issues
+        ggml_type kv_type = getenv("UOCR_OPT_PD_F32") ? GGML_TYPE_F32 : GGML_TYPE_F16;
+        pd.t_k_cache[li] = ggml_new_tensor_2d(g, kv_type, kv_dim, max_kv_in);
         ggml_set_name(pd.t_k_cache[li], kn); ggml_set_input(pd.t_k_cache[li]);
-        pd.t_v_cache[li] = ggml_new_tensor_2d(g, GGML_TYPE_F16, kv_dim, max_kv_in);
+        pd.t_v_cache[li] = ggml_new_tensor_2d(g, kv_type, kv_dim, max_kv_in);
         ggml_set_name(pd.t_v_cache[li], vn); ggml_set_input(pd.t_v_cache[li]);
 
         ggml_tensor* h = rmsnorm(x, ly.in_ln_w);
@@ -1507,19 +1628,21 @@ static PdGraph build_persistent_decode_graph(uocr_ctx &ctx, int max_kv) {
         pd.t_v_new[li] = ggml_cont(g, ggml_reshape_2d(g, Vc, kv_dim, 1));
         ggml_set_name(pd.t_v_new[li], von); ggml_set_output(pd.t_v_new[li]);
 
-        ggml_tensor* kp    = ggml_cast(g, ggml_reshape_3d(g, pd.t_k_cache[li], hd, nkv, max_kv_in), GGML_TYPE_F32);
+        ggml_tensor* kp_3d = ggml_reshape_3d(g, pd.t_k_cache[li], hd, nkv, max_kv_in);
+        ggml_tensor* kp    = kp_3d->type == GGML_TYPE_F32 ? kp_3d : ggml_cast(g, kp_3d, GGML_TYPE_F32);
         ggml_tensor* Kfull = ggml_concat(g, kp, Kc, 2);
-        ggml_tensor* vp    = ggml_cast(g, ggml_reshape_3d(g, pd.t_v_cache[li], hd, nkv, max_kv_in), GGML_TYPE_F32);
+        ggml_tensor* vp_3d = ggml_reshape_3d(g, pd.t_v_cache[li], hd, nkv, max_kv_in);
+        ggml_tensor* vp    = vp_3d->type == GGML_TYPE_F32 ? vp_3d : ggml_cast(g, vp_3d, GGML_TYPE_F32);
         ggml_tensor* Vfull = ggml_concat(g, vp, Vc, 2);
 
         Q     = ggml_cont(g, ggml_permute(g, Q,     0, 2, 1, 3));
         Kfull = ggml_cont(g, ggml_permute(g, Kfull, 0, 2, 1, 3));
         Vfull = ggml_cont(g, ggml_permute(g, Vfull, 0, 2, 1, 3));
 
+        float attn_scale = 1.0f / sqrtf((float)hd);
         ggml_tensor* attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull,
-                                                 pd.t_mask, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
-        // [hd, nh, 1] → [D, 1]; reshape directly (T=1 so the permute was a no-op,
-        // dropped here to match the prefill path in build_llm_layer_attn).
+                                                 pd.t_mask, attn_scale, 0.0f, 0.0f);
+        ggml_flash_attn_ext_set_prec(attn, GGML_PREC_F32);
         attn = ggml_reshape_2d(g, attn, D, 1);
         attn = ggml_mul_mat(g, ly.o_w, attn);
         x = ggml_add(g, x, attn);
@@ -1553,6 +1676,14 @@ static PdGraph build_persistent_decode_graph(uocr_ctx &ctx, int max_kv) {
             ggml_tensor* sh  = ggml_mul_mat(g, ly.shared_down_w, ggml_mul(g, sg, su));
             x = ggml_add(g, res, ggml_add(g, rt, sh));
         }
+
+        // Debug: mark per-layer output for comparison
+        if (getenv("UOCR_PD_DBG")) {
+            char ln[16]; snprintf(ln, sizeof(ln), "pd_l%d", li);
+            ggml_tensor* xd = ggml_cont(g, x);
+            ggml_set_name(xd, ln); ggml_set_output(xd);
+            pd.t_layer_out.push_back(xd);
+        }
     }
 
     ggml_tensor* normed = rmsnorm(x, ctx.m.output_norm_w);
@@ -1565,6 +1696,8 @@ static PdGraph build_persistent_decode_graph(uocr_ctx &ctx, int max_kv) {
         ggml_build_forward_expand(pd.gf, pd.t_k_new[li]);
         ggml_build_forward_expand(pd.gf, pd.t_v_new[li]);
     }
+    for (auto* lo : pd.t_layer_out)
+        ggml_build_forward_expand(pd.gf, lo);
     return pd;
 }
 
@@ -1783,6 +1916,169 @@ static void moe_ffn_cpu(uocr_ctx &ctx, int li, float *hidden, int T) {
 }
 
 // ---------------------------------------------------------------------------
+// Fused multi-layer decode graph (UOCR_OPT_FUSED_DECODE)
+// Builds all 12 LLM layers in one ggml graph, eliminating 11 graph builds per step.
+// ---------------------------------------------------------------------------
+
+struct fused_decode_graph {
+    ggml_cgraph *gf{};
+    ggml_context *gctx{};
+    std::vector<uint8_t> meta;
+    ggml_tensor *t_input{};    // [D, T]
+    ggml_tensor *t_pos{};      // [T]
+    ggml_tensor *t_mask{};     // [Lk, T] F16
+    std::vector<ggml_tensor*> t_k_in;   // per-layer [kv_dim, n_past]
+    std::vector<ggml_tensor*> t_v_in;   // per-layer [kv_dim, n_past]
+    std::vector<ggml_tensor*> t_k_out;  // per-layer [kv_dim, T]
+    std::vector<ggml_tensor*> t_v_out;  // per-layer [kv_dim, T]
+    ggml_tensor *t_output{};   // [D, T]
+};
+
+static fused_decode_graph build_fused_decode(uocr_ctx &ctx, int T, int n_past) {
+    auto &lhp = ctx.m.lhp;
+    int D = lhp.hidden, nh = lhp.heads, nkv = lhp.kv_heads;
+    int hd = lhp.head_dim, n_layers = lhp.n_layers;
+    int Lk = n_past + T, kv_dim = nkv * hd;
+    float eps = lhp.rms_eps;
+
+    fused_decode_graph fd;
+    fd.t_k_in.resize(n_layers); fd.t_v_in.resize(n_layers);
+    fd.t_k_out.resize(n_layers); fd.t_v_out.resize(n_layers);
+
+    // Large metadata buffer for all 12 layers
+    size_t meta_sz = 32 * 1024 * 1024;
+    fd.meta.resize(meta_sz);
+    ggml_init_params ip = {meta_sz, fd.meta.data(), true};
+    fd.gctx = ggml_init(ip);
+    auto *g = fd.gctx;
+    fd.gf = ggml_new_graph_custom(g, 16384, false);
+
+    auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor* {
+        return ggml_mul(g, ggml_rms_norm(g, t, eps), ensure_f32(g, w));
+    };
+
+    fd.t_input = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+    ggml_set_name(fd.t_input, "fd_input"); ggml_set_input(fd.t_input);
+
+    fd.t_pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+    ggml_set_name(fd.t_pos, "fd_pos"); ggml_set_input(fd.t_pos);
+
+    fd.t_mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, Lk, T);
+    ggml_set_name(fd.t_mask, "fd_mask"); ggml_set_input(fd.t_mask);
+
+    ggml_tensor *x = fd.t_input;
+
+    for (int li = 0; li < n_layers; li++) {
+        auto &ly = ctx.m.llm_layers[li];
+        bool is_dense = (li == 0);
+        bool moe_in_graph = ctx.moe_metal && !is_dense;
+
+        // Per-layer KV cache inputs
+        char kn[16], vn[16], kon[16], von[16];
+        snprintf(kn, sizeof(kn), "fd_ki%d", li);
+        snprintf(vn, sizeof(vn), "fd_vi%d", li);
+        snprintf(kon, sizeof(kon), "fd_ko%d", li);
+        snprintf(von, sizeof(von), "fd_vo%d", li);
+
+        ggml_tensor *k_cache_in = nullptr, *v_cache_in = nullptr;
+        if (n_past > 0) {
+            k_cache_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, kv_dim, n_past);
+            ggml_set_name(k_cache_in, kn); ggml_set_input(k_cache_in);
+            fd.t_k_in[li] = k_cache_in;
+            v_cache_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, kv_dim, n_past);
+            ggml_set_name(v_cache_in, vn); ggml_set_input(v_cache_in);
+            fd.t_v_in[li] = v_cache_in;
+        }
+
+        // Attention
+        ggml_tensor *h = rmsnorm(x, ly.in_ln_w);
+        ggml_tensor *Q = ggml_mul_mat(g, ly.q_w, h);
+        ggml_tensor *K = ggml_mul_mat(g, ly.k_w, h);
+        ggml_tensor *V = ggml_mul_mat(g, ly.v_w, h);
+
+        Q = ggml_reshape_3d(g, Q, hd, nh, T);
+        K = ggml_reshape_3d(g, K, hd, nkv, T);
+        V = ggml_reshape_3d(g, V, hd, nkv, T);
+
+        Q = ggml_rope_ext(g, Q, fd.t_pos, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0,
+                          lhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        K = ggml_rope_ext(g, K, fd.t_pos, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0,
+                          lhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+
+        ggml_tensor *Kc = ggml_cont(g, K);
+        ggml_tensor *Vc = ggml_cont(g, V);
+
+        // Output new K/V for cache update
+        fd.t_k_out[li] = ggml_cont(g, ggml_reshape_2d(g, Kc, kv_dim, T));
+        ggml_set_name(fd.t_k_out[li], kon); ggml_set_output(fd.t_k_out[li]);
+        fd.t_v_out[li] = ggml_cont(g, ggml_reshape_2d(g, Vc, kv_dim, T));
+        ggml_set_name(fd.t_v_out[li], von); ggml_set_output(fd.t_v_out[li]);
+
+        // Concatenate with KV cache
+        ggml_tensor *Kfull, *Vfull;
+        if (n_past > 0) {
+            Kfull = ggml_concat(g, ggml_reshape_3d(g, k_cache_in, hd, nkv, n_past), Kc, 2);
+            Vfull = ggml_concat(g, ggml_reshape_3d(g, v_cache_in, hd, nkv, n_past), Vc, 2);
+        } else {
+            Kfull = Kc; Vfull = Vc;
+        }
+
+        Q     = ggml_cont(g, ggml_permute(g, Q,     0, 2, 1, 3));
+        Kfull = ggml_cont(g, ggml_permute(g, Kfull, 0, 2, 1, 3));
+        Vfull = ggml_cont(g, ggml_permute(g, Vfull, 0, 2, 1, 3));
+
+        float attn_scale = 1.0f / sqrtf((float)hd);
+        ggml_tensor *attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, fd.t_mask, attn_scale, 0.0f, 0.0f);
+        attn = ggml_reshape_2d(g, attn, D, T);
+        attn = ggml_mul_mat(g, ly.o_w, attn);
+        x = ggml_add(g, x, attn);
+
+        // FFN
+        if (is_dense) {
+            ggml_tensor *residual = x;
+            h = rmsnorm(x, ly.post_ln_w);
+            ggml_tensor *gate = ggml_silu(g, ggml_mul_mat(g, ly.ffn_gate_w, h));
+            ggml_tensor *up = ggml_mul_mat(g, ly.ffn_up_w, h);
+            ggml_tensor *ffn = ggml_mul_mat(g, ly.ffn_down_w, ggml_mul(g, gate, up));
+            x = ggml_add(g, residual, ffn);
+        } else if (moe_in_graph) {
+            int n_exp = lhp.n_experts, Kk = lhp.n_experts_top;
+            ggml_tensor *residual = x;
+            ggml_tensor *hn = rmsnorm(x, ly.post_ln_w);
+            ggml_tensor *lgt = ggml_mul_mat(g, ly.router_w, hn);
+            ggml_tensor *prb = ggml_soft_max(g, lgt);
+            ggml_tensor *ids = ggml_top_k(g, prb, Kk);
+            ggml_tensor *p3  = ggml_reshape_3d(g, prb, 1, n_exp, T);
+            ggml_tensor *tw  = ggml_reshape_2d(g, ggml_get_rows(g, p3, ids), Kk, T);
+            tw = ggml_scale(g, tw, lhp.routed_scaling_factor);
+            ggml_tensor *hn3 = ggml_reshape_3d(g, hn, D, 1, T);
+            ggml_tensor *hnK = ggml_repeat(g, hn3, ggml_new_tensor_3d(g, hn->type, D, Kk, T));
+            ggml_tensor *gt  = ggml_silu(g, ggml_mul_mat_id(g, ly.gate_exps, hnK, ids));
+            ggml_tensor *up  = ggml_mul_mat_id(g, ly.up_exps, hnK, ids);
+            ggml_tensor *dn  = ggml_mul_mat_id(g, ly.down_exps, ggml_mul(g, gt, up), ids);
+            ggml_tensor *dnp = ggml_cont(g, ggml_permute(g, dn, 1, 0, 2, 3));
+            ggml_tensor *wc  = ggml_reshape_3d(g, tw, Kk, 1, T);
+            ggml_tensor *rt  = ggml_reshape_2d(g, ggml_mul_mat(g, wc, dnp), D, T);
+            ggml_tensor *sg  = ggml_silu(g, ggml_mul_mat(g, ly.shared_gate_w, hn));
+            ggml_tensor *su  = ggml_mul_mat(g, ly.shared_up_w, hn);
+            ggml_tensor *sh  = ggml_mul_mat(g, ly.shared_down_w, ggml_mul(g, sg, su));
+            x = ggml_add(g, residual, ggml_add(g, rt, sh));
+        }
+        // Note: if !is_dense && !moe_in_graph, MoE is done on CPU after graph eval
+    }
+
+    fd.t_output = x;
+    ggml_set_name(fd.t_output, "fd_output"); ggml_set_output(fd.t_output);
+
+    ggml_build_forward_expand(fd.gf, fd.t_output);
+    for (int li = 0; li < n_layers; li++) {
+        ggml_build_forward_expand(fd.gf, fd.t_k_out[li]);
+        ggml_build_forward_expand(fd.gf, fd.t_v_out[li]);
+    }
+    return fd;
+}
+
+// ---------------------------------------------------------------------------
 // Full LLM decoder forward
 // ---------------------------------------------------------------------------
 
@@ -1826,6 +2122,7 @@ static bool run_llm_decoder(uocr_ctx &ctx, const float *prompt_embeds, int n_pro
     if (lmhead_cpu) head_w = to_f32(lm_w);
 
     bool no_kv = getenv("UOCR_NO_KV") != nullptr;
+    bool fused_decode = getenv("UOCR_OPT_FUSED_DECODE") != nullptr;
     std::vector<float> full_emb(prompt_embeds, prompt_embeds + (size_t)n_prompt * D);
 
     int n_generated = 0;
@@ -1892,18 +2189,33 @@ static bool run_llm_decoder(uocr_ctx &ctx, const float *prompt_embeds, int n_pro
                     // shared scheduler they hold leftover garbage from the vision
                     // graphs. NaN/Inf garbage survives the mask (NaN + -inf = NaN)
                     // and corrupts every logit. Zeroing makes masked slots inert.
+                    size_t kv_elem_sz = ggml_type_size(pd.t_k_cache[0]->type);
+                    bool pd_f32 = (pd.t_k_cache[0]->type == GGML_TYPE_F32);
                     size_t kv_full = (size_t)(pd_max_kv - 1) * kv_dim;
-                    std::vector<ggml_fp16_t> kv_zero(kv_full, ggml_fp32_to_fp16(0.0f));
-                    size_t kv_b = (size_t)n_past * kv_dim * sizeof(ggml_fp16_t);
+                    std::vector<uint8_t> kv_zero(kv_full * kv_elem_sz, 0);
+                    size_t kv_b_src = (size_t)n_past * kv_dim * sizeof(ggml_fp16_t);
+                    size_t kv_b_dst = (size_t)n_past * kv_dim * kv_elem_sz;
+                    // If PD is F32, convert the F16 KV cache to F32 for upload
+                    std::vector<float> kv_f32_tmp;
+                    if (pd_f32) kv_f32_tmp.resize((size_t)n_past * kv_dim);
                     for (int li = 0; li < n_layers; li++) {
                         ggml_backend_tensor_set(pd.t_k_cache[li], kv_zero.data(), 0,
-                                                kv_full * sizeof(ggml_fp16_t));
+                                                kv_full * kv_elem_sz);
                         ggml_backend_tensor_set(pd.t_v_cache[li], kv_zero.data(), 0,
-                                                kv_full * sizeof(ggml_fp16_t));
-                        ggml_backend_tensor_set(pd.t_k_cache[li],
-                                                ctx.kvc.k_cache[li].data(), 0, kv_b);
-                        ggml_backend_tensor_set(pd.t_v_cache[li],
-                                                ctx.kvc.v_cache[li].data(), 0, kv_b);
+                                                kv_full * kv_elem_sz);
+                        if (pd_f32) {
+                            for (int i = 0; i < n_past * kv_dim; i++)
+                                kv_f32_tmp[i] = ggml_fp16_to_fp32(ctx.kvc.k_cache[li][i]);
+                            ggml_backend_tensor_set(pd.t_k_cache[li], kv_f32_tmp.data(), 0, kv_b_dst);
+                            for (int i = 0; i < n_past * kv_dim; i++)
+                                kv_f32_tmp[i] = ggml_fp16_to_fp32(ctx.kvc.v_cache[li][i]);
+                            ggml_backend_tensor_set(pd.t_v_cache[li], kv_f32_tmp.data(), 0, kv_b_dst);
+                        } else {
+                            ggml_backend_tensor_set(pd.t_k_cache[li],
+                                                    ctx.kvc.k_cache[li].data(), 0, kv_b_src);
+                            ggml_backend_tensor_set(pd.t_v_cache[li],
+                                                    ctx.kvc.v_cache[li].data(), 0, kv_b_src);
+                        }
                     }
                     pd_ready = true;
                 }
@@ -1915,23 +2227,48 @@ static bool run_llm_decoder(uocr_ctx &ctx, const float *prompt_embeds, int n_pro
                                             (size_t)prev * sizeof(ggml_fp16_t),
                                             sizeof(ggml_fp16_t));
                 }
-                size_t off = (size_t)(n_past - 1) * kv_dim * sizeof(ggml_fp16_t);
-                size_t sz  = (size_t)kv_dim * sizeof(ggml_fp16_t);
+                size_t kv_el = ggml_type_size(pd.t_k_cache[0]->type);
+                bool pd_f32_inc = (pd.t_k_cache[0]->type == GGML_TYPE_F32);
+                size_t off = (size_t)(n_past - 1) * kv_dim * kv_el;
+                size_t sz  = (size_t)kv_dim * kv_el;
+                std::vector<float> kv_inc_f32;
+                if (pd_f32_inc) kv_inc_f32.resize(kv_dim);
                 for (int li = 0; li < n_layers; li++) {
-                    ggml_backend_tensor_set(pd.t_k_cache[li],
-                        ctx.kvc.k_cache[li].data() + (n_past - 1) * kv_dim, off, sz);
-                    ggml_backend_tensor_set(pd.t_v_cache[li],
-                        ctx.kvc.v_cache[li].data() + (n_past - 1) * kv_dim, off, sz);
+                    if (pd_f32_inc) {
+                        for (int i = 0; i < kv_dim; i++)
+                            kv_inc_f32[i] = ggml_fp16_to_fp32(ctx.kvc.k_cache[li][(n_past-1)*kv_dim + i]);
+                        ggml_backend_tensor_set(pd.t_k_cache[li], kv_inc_f32.data(), off, sz);
+                        for (int i = 0; i < kv_dim; i++)
+                            kv_inc_f32[i] = ggml_fp16_to_fp32(ctx.kvc.v_cache[li][(n_past-1)*kv_dim + i]);
+                        ggml_backend_tensor_set(pd.t_v_cache[li], kv_inc_f32.data(), off, sz);
+                    } else {
+                        ggml_backend_tensor_set(pd.t_k_cache[li],
+                            ctx.kvc.k_cache[li].data() + (n_past - 1) * kv_dim, off, sz);
+                        ggml_backend_tensor_set(pd.t_v_cache[li],
+                            ctx.kvc.v_cache[li].data() + (n_past - 1) * kv_dim, off, sz);
+                    }
                 }
             }
 
             if (use_pd) {
-                int32_t tok_id = cur_tokens[0];
-                ggml_backend_tensor_set(pd.t_cur_tok_id, &tok_id, 0, sizeof(int32_t));
+                // Populate embedding via CPU dequant (matches rebuild path)
+                std::vector<float> pd_emb(D);
+                get_embedding(cur_tokens[0], pd_emb.data());
+                ggml_backend_tensor_set(pd.t_cur_tok_id, pd_emb.data(), 0, D * sizeof(float));
                 int32_t pos_id = n_past;
                 ggml_backend_tensor_set(pd.t_pos_ids, &pos_id, 0, sizeof(int32_t));
 
                 ggml_backend_sched_graph_compute(ctx.sched, pd.gf);
+
+                // Dump per-layer hidden state for divergence debugging
+                if (getenv("UOCR_PD_DBG") && n_generated >= 2 && n_generated <= 3) {
+                    for (size_t i = 0; i < pd.t_layer_out.size(); i++) {
+                        float buf[4];
+                        ggml_backend_tensor_get(pd.t_layer_out[i], buf, 0, 4*sizeof(float));
+                        fprintf(stderr, "  [pd_dbg] gen=%d layer=%zu: %.7f %.7f %.7f %.7f\n",
+                                n_generated, i, buf[0], buf[1], buf[2], buf[3]);
+                    }
+                }
 
                 ggml_backend_tensor_get(pd.t_logits, logits.data(), 0, (size_t)V * sizeof(float));
 
@@ -1951,6 +2288,102 @@ static bool run_llm_decoder(uocr_ctx &ctx, const float *prompt_embeds, int n_pro
             }
         }
 
+        if (!did_pd && fused_decode && ctx.moe_metal) {
+            // === Fused multi-layer decode path (UOCR_OPT_FUSED_DECODE) ===
+            std::vector<float> input_emb(T * D);
+            if (no_kv) {
+                memcpy(input_emb.data(), full_emb.data(), (size_t)T * D * sizeof(float));
+            } else if (n_past == 0) {
+                memcpy(input_emb.data(), prompt_embeds, (size_t)T * D * sizeof(float));
+            } else {
+                for (int t = 0; t < T; t++)
+                    get_embedding(cur_tokens[t], input_emb.data() + t * D);
+            }
+
+            auto fd = build_fused_decode(ctx, T, n_past);
+            ggml_backend_sched_reset(ctx.sched);
+            if (ggml_backend_sched_alloc_graph(ctx.sched, fd.gf)) {
+                ggml_backend_tensor_set(fd.t_input, input_emb.data(), 0, T * D * sizeof(float));
+
+                std::vector<int32_t> pos(T);
+                for (int t = 0; t < T; t++) pos[t] = n_past + t;
+                ggml_backend_tensor_set(fd.t_pos, pos.data(), 0, T * sizeof(int32_t));
+
+                int Lk = n_past + T;
+                std::vector<ggml_fp16_t> mask(Lk * T);
+                for (int qi = 0; qi < T; qi++)
+                    for (int ki = 0; ki < Lk; ki++)
+                        mask[qi * Lk + ki] = ggml_fp32_to_fp16(ki > n_past + qi ? -INFINITY : 0.0f);
+                ggml_backend_tensor_set(fd.t_mask, mask.data(), 0, Lk * T * sizeof(ggml_fp16_t));
+
+                // Set per-layer KV caches
+                if (n_past > 0) {
+                    int kv_n = kv_dim * n_past;
+                    std::vector<float> k_f32(kv_n), v_f32(kv_n);
+                    for (int li = 0; li < n_layers; li++) {
+                        for (int i = 0; i < kv_n; i++) {
+                            k_f32[i] = ggml_fp16_to_fp32(ctx.kvc.k_cache[li][i]);
+                            v_f32[i] = ggml_fp16_to_fp32(ctx.kvc.v_cache[li][i]);
+                        }
+                        ggml_backend_tensor_set(fd.t_k_in[li], k_f32.data(), 0, kv_n * sizeof(float));
+                        ggml_backend_tensor_set(fd.t_v_in[li], v_f32.data(), 0, kv_n * sizeof(float));
+                    }
+                }
+
+                ggml_backend_sched_graph_compute(ctx.sched, fd.gf);
+
+                // Read output hidden state
+                std::vector<float> hidden(T * D);
+                ggml_backend_tensor_get(fd.t_output, hidden.data(), 0, T * D * sizeof(float));
+
+                // Store new K/V in cache
+                int kv_nt = kv_dim * T;
+                std::vector<float> k_new(kv_nt), v_new(kv_nt);
+                for (int li = 0; li < n_layers; li++) {
+                    ggml_backend_tensor_get(fd.t_k_out[li], k_new.data(), 0, kv_nt * sizeof(float));
+                    ggml_backend_tensor_get(fd.t_v_out[li], v_new.data(), 0, kv_nt * sizeof(float));
+                    if (!no_kv) {
+                        size_t base = ctx.kvc.k_cache[li].size();
+                        ctx.kvc.k_cache[li].resize(base + kv_nt);
+                        ctx.kvc.v_cache[li].resize(base + kv_nt);
+                        for (int i = 0; i < kv_nt; i++) {
+                            ctx.kvc.k_cache[li][base + i] = ggml_fp32_to_fp16(k_new[i]);
+                            ctx.kvc.v_cache[li][base + i] = ggml_fp32_to_fp16(v_new[i]);
+                        }
+                    }
+                }
+
+                if (!no_kv) n_past += T;
+
+                // LM head
+                std::vector<float> last_hidden(D);
+                rmsnorm_cpu(hidden.data() + (T - 1) * D, last_hidden.data(), D, norm_w.data(), lhp.rms_eps);
+                if (lmhead_cpu) {
+                    linear_cpu(last_hidden.data(), logits.data(), D, V, head_w.data(), nullptr);
+                } else {
+                    size_t meta_sz2 = 1024 * 1024;
+                    std::vector<uint8_t> mb2(meta_sz2);
+                    ggml_init_params ip2 = {meta_sz2, mb2.data(), true};
+                    ggml_context* gc2 = ggml_init(ip2);
+                    ggml_tensor* lh_in = ggml_new_tensor_2d(gc2, GGML_TYPE_F32, D, 1);
+                    ggml_set_name(lh_in, "lh_in"); ggml_set_input(lh_in);
+                    ggml_tensor* lh_out = ggml_mul_mat(gc2, lm_w, lh_in);
+                    ggml_set_name(lh_out, "lh_out"); ggml_set_output(lh_out);
+                    ggml_cgraph* gf2 = ggml_new_graph(gc2);
+                    ggml_build_forward_expand(gf2, lh_out);
+                    ggml_backend_sched_reset(ctx.sched);
+                    ggml_backend_sched_alloc_graph(ctx.sched, gf2);
+                    ggml_backend_tensor_set(lh_in, last_hidden.data(), 0, D * sizeof(float));
+                    ggml_backend_sched_graph_compute(ctx.sched, gf2);
+                    ggml_backend_tensor_get(lh_out, logits.data(), 0, V * sizeof(float));
+                    ggml_free(gc2);
+                }
+
+                did_pd = true;  // skip the per-layer rebuild path below
+            }
+            ggml_free(fd.gctx);
+        }
+
         if (!did_pd) {
             // === Original per-step rebuild path ===
             std::vector<float> input_emb(T * D);
@@ -1965,10 +2398,13 @@ static bool run_llm_decoder(uocr_ctx &ctx, const float *prompt_embeds, int n_pro
 
             std::vector<float> hidden(input_emb);
 
+            auto _rb_t0 = std::chrono::steady_clock::now();
+            long long _rb_build_ms = 0, _rb_set_ms = 0, _rb_compute_ms = 0;
             for (int li = 0; li < n_layers; li++) {
                 bool is_dense = (li == 0);
                 bool moe_in_graph = ctx.moe_metal && !is_dense;
 
+                auto _t1 = std::chrono::steady_clock::now();
                 auto lag = build_llm_layer_attn(ctx, li, T, n_past, is_dense, moe_in_graph);
                 ggml_backend_sched_reset(ctx.sched);
                 if (!ggml_backend_sched_alloc_graph(ctx.sched, lag.gf)) {
@@ -2005,10 +2441,22 @@ static bool run_llm_decoder(uocr_ctx &ctx, const float *prompt_embeds, int n_pro
                 ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "mask"),
                                         mask.data(), 0, Lk * T * sizeof(ggml_fp16_t));
 
+                auto _t2 = std::chrono::steady_clock::now();
+                _rb_build_ms += std::chrono::duration_cast<std::chrono::milliseconds>(_t2 - _t1).count();
+
                 ggml_backend_sched_graph_compute(ctx.sched, lag.gf);
+
+                auto _t3 = std::chrono::steady_clock::now();
+                _rb_compute_ms += std::chrono::duration_cast<std::chrono::milliseconds>(_t3 - _t2).count();
 
                 ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "layer_output"),
                                         hidden.data(), 0, T * D * sizeof(float));
+
+                // Dump per-layer hidden state for divergence debugging
+                if (getenv("UOCR_PD_DBG") && n_generated >= 2 && n_generated <= 3) {
+                    fprintf(stderr, "  [rb_dbg] gen=%d layer=%d: %.7f %.7f %.7f %.7f\n",
+                            n_generated, li, hidden[0], hidden[1], hidden[2], hidden[3]);
+                }
 
                 int kv_nt = kv_dim * T;
                 std::vector<float> k_new(kv_nt), v_new(kv_nt);
@@ -2044,6 +2492,11 @@ static bool run_llm_decoder(uocr_ctx &ctx, const float *prompt_embeds, int n_pro
                                 name, r.cos_min, r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
                     }
                 }
+            }
+
+            if (getenv("UOCR_DECODE_TIMING") && n_generated <= 2) {
+                fprintf(stderr, "  [rb_timing] gen=%d T=%d build=%lldms compute=%lldms\n",
+                        n_generated, T, _rb_build_ms, _rb_compute_ms);
             }
 
             if (!no_kv) n_past += T;
@@ -2320,6 +2773,16 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
 
     auto &s = ctx->inner.m.shp;
     int imgS = s.image_size;
+    // UOCR_OPT_SAM_RES=N: process SAM at reduced resolution for speedup
+    // Must be a multiple of patch_size (16). Examples: 512 (~5x), 768 (~2.5x)
+    if (const char* sr = getenv("UOCR_OPT_SAM_RES")) {
+        int res = atoi(sr);
+        if (res > 0 && res % s.patch_size == 0 && res < s.image_size) {
+            imgS = res;
+            if (getenv("UOCR_DBG"))
+                fprintf(stderr, "  [opt] SAM reduced res: %d → %d\n", s.image_size, imgS);
+        }
+    }
 
     // Preprocess: ImageOps.pad → resize preserving aspect ratio, center, pad with gray
     float scale = std::min((float)imgS / w, (float)imgS / h);
@@ -2417,7 +2880,7 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx,
     auto t_sam = std::chrono::steady_clock::now();
     std::vector<float> sam_features;
     int n_sam_tokens, sam_dim;
-    if (!encode_sam(ctx->inner, pixels.data(), sam_features, n_sam_tokens, sam_dim)) {
+    if (!encode_sam(ctx->inner, pixels.data(), imgS, sam_features, n_sam_tokens, sam_dim)) {
         fprintf(stderr, "unlimited_ocr: SAM encoding failed\n");
         if (out_len) *out_len = 0; return "";
     }
