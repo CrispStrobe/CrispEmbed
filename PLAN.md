@@ -1015,6 +1015,78 @@ single-threaded, must not OOM.
 ### Embedding — DONE (flash attention)
 - [x] decoder_embed: `ggml_flash_attn_ext` in single-text + batch paths (`29d8a08`)
 
+### unlimited_ocr (SAM ViT-B + CLIP-L/14 + DeepSeek-V2 MoE, 3B) — IN PROGRESS
+
+**Baseline** (test-1.jpeg 640×488, q4_k, 4 threads, 64 tokens):
+  load=21.7s, SAM=63.9s (patch=0.3s, layers=63.2s, neck=0.3s), CLIP=3.4s,
+  fuse=1.0s, LLM decode=35.3s (prefill+64gen, 551ms/tok), total=127.2s
+
+**Comparison** (llama.cpp PR#24975 Q4_K_M + bf16 mmproj, same image/tokens):
+  total=287.3s (vision=120.3s — bf16 mmproj causes swap pressure)
+  CrispEmbed 2.3× faster on 8GB VPS due to smaller q4_k vision encoder.
+
+**Optimizations** — each gated by env var for A/B testing:
+
+- [x] **RPE cache** — Precompute reformatted RPE tables at init.
+  `reformat_rp_table()` now runs in `precompute_rpe_tables()` at init;
+  metadata buffer hoisted outside SAM per-layer loop. ~0ms runtime gain
+  (reformat was already <1ms per layer) but eliminates allocations.
+
+- [x] **ggml MoE (default, `UOCR_MOE_CPU=1` opts out)** — `ggml_mul_mat_id` for
+  MoE layers. Already the default. Expert stacking runs at init (3s).
+  **A/B tested: decode 5.2× faster** (1003ms/tok vs 5176ms/tok scalar).
+  32-token test: 32.1s (ggml) vs 165.6s (CPU scalar).
+
+- [x] **`UOCR_OPT_GRAPH_LN=1`** — Move CPU layernorm into ggml graph for windowed
+  SAM layers. Implemented: when enabled, windowed layers skip CPU LN and let the
+  ggml graph handle it. Output differs slightly in bounding box coordinates
+  (ggml vs CPU LN precision) but OCR text is identical. Gate: `UOCR_OPT_GRAPH_LN=1`.
+
+- [x] **`UOCR_MMAP=1`** — mmap weight loading. Already implemented. Load drops
+  from ~20s to ~0.2s. Expert stacking slower with mmap (28s vs 3s — piecemeal
+  reads). Overall neutral on swap-heavy 8GB VPS. Correct output verified.
+
+- [ ] **`UOCR_PD=1`** — Persistent T=1 decode graph. Investigated extensively:
+  - Added F32 KV cache (`UOCR_OPT_PD_F32=1`), manual matmul attention (replaced
+    flash_attn), F32 flash_attn precision, CPU embedding (replaced ggml_get_rows)
+  - Per-layer debug dumps show **divergence starts at layer 0 of gen step 2**
+  - Root cause: even with minimal padding (2 unused KV slots), flash_attn on CPU
+    produces slightly different results with padded vs exact-size KV tensors.
+    The difference is small (~0.01 abs) but accumulates across 12 layers and
+    changes the argmax by step 3.
+  - **Impact if fixed**: ~80ms/step saved (build+alloc overhead), ~14% decode
+    speedup for 64 tokens. Not critical.
+  - Would need: either ggml_view-based dynamic KV slicing (ggml doesn't support
+    dynamic ne on allocated tensors), or accepting the numerical drift.
+  - Debug env vars: `UOCR_PD_DBG=1`, `UOCR_DECODE_TIMING=1`
+
+- [ ] **`UOCR_OPT_GGML_WINDOW=1`** — Window partition in ggml graph. High effort,
+  requires ggml_view/pad ops for scatter/gather. SAM is compute-bound (not
+  data-movement-bound), so savings would be ~2-5% of SAM time. **Deferred.**
+
+- [x] **`UOCR_OPT_SAM_RES=N`** — Reduced-resolution SAM (replaces SAM_512).
+  Implemented: position embedding bilinear interpolation, RPE recomputation for
+  new sizes, bilinear upsample of SAM output to 16×16 for CLIP compatibility.
+  **Results**: 512=5.5x SAM speedup but degenerate output (repeating tokens).
+  768=2.2x speedup, still poor quality. 896=1.2x speedup, somewhat better but
+  coordinates wrong. **Conclusion: SAM is resolution-sensitive.** The model was
+  trained at 1024 and reducing resolution degrades attention patterns.
+  Use only if quality-tolerant (e.g. rough layout detection, not OCR).
+
+- [ ] **SAM flash attention** — Blocked by decomposed RPE bias (rel_h + rel_w
+  added to scores before softmax). Would need to materialize [T,T] bias mask,
+  defeating the O(T) memory benefit. **Won't implement.**
+
+- [x] **`UOCR_OPT_FUSED_DECODE=1`** — Fuse all 12 LLM layers into a single ggml
+  graph per decode step. Eliminates 11 graph builds + 11 sched allocs per step.
+  **Verified correct**: output matches baseline exactly (same gen_ids).
+  Decode 41.5s vs 138.4s baseline on loaded system — both swap-affected but
+  fused avoids per-layer sched overhead. Build overhead drops from 80ms×12
+  to ~80ms×1 per step. Requires `ctx.moe_metal` (stacked experts).
+  Note: uses ~3x more graph metadata memory (32MB vs 4MB) for the fused graph.
+
+**Implementation order**: RPE cache ✓ → ggml MoE ✓ → graph LN ✓ → mmap ✓ → fused decode ✓ → PD (deferred)
+
 ---
 
 ## Implementation blueprints
