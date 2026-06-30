@@ -270,10 +270,14 @@ Metal, ggml 0.10.0.
 - **Model downloader** didn't create the cache dir before writing `.tmp`. (PR #24)
 
 **Still open:**
-- **got-ocr2 vision-encoder correctness** — runs but emits garbage; the SAM
-  neck/projector/image-splice was never validated end-to-end (always crashed
-  before). Needs reference-activation diff (`diff_ref` path). The `got_ocr —
-  DONE` note below refers to perf, not output correctness.
+- **got-ocr2 vision-encoder correctness** — 4 bugs fixed (LN2d permute #27,
+  q8_0 conv reshape #27, neck-LN F16×F32 CPU abort ba74093, neck flatten permute
+  7f43e4d); now runs on CPU+Metal but STILL emits garbage → >=1 more vision bug
+  (patch embed / ViT rel-pos+window attn / neck convs / conv-weight prep). Now
+  CPU-reproducible+deterministic. Localize via numpy-reference diff (no download:
+  compare encode_vision vs tools/dump_got_ocr_reference.py; or generate ref.gguf
+  for tests/test-got-ocr-diff). The `got_ocr — DONE` note below is perf, not
+  correctness.
 - **DBNet detector on Metal** — `unsupported op 'CPY'` abort; `OCR_DETECT_FORCE_CPU=1`
   works around it but per-region TrOCR on CPU is slow. Want a Metal CPY path or a
   CPU-default detector.
