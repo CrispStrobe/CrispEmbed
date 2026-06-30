@@ -810,22 +810,29 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
         // Build a single graph for the entire neck+projector pipeline.
         // LN2d = permute to (C,W,H) → ggml_norm along ne[0]=C → mul+add → permute back.
         auto prep_conv_w = [](ggml_context *g, ggml_tensor *w, int IC, int KH, int KW) -> ggml_tensor* {
+            // Dequantize BEFORE reshaping. A quantized (e.g. q8_0) weight reshaped
+            // to ne0=KW (1 for a 1x1 conv) breaks the block alignment and aborts
+            // the Metal CPY used by ggml_cast (ne00 % blck_size != 0). Casting the
+            // un-reshaped weight (ne0 = a multiple of the block) avoids that.
+            if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
             if (ggml_n_dims(w) <= 2) {
                 int64_t OC = w->ne[1];
                 w = ggml_reshape_4d(g, w, KW, KH, IC, OC);
             }
-            if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
             return w;
         };
         auto g_ln2d = [](ggml_context *g, ggml_tensor *x, ggml_tensor *w, ggml_tensor *b, float eps) -> ggml_tensor* {
             // x: (W, H, C). LN2d normalizes along C for each (w,h).
             // Permute to (C, W, H) → norm along ne[0]=C → mul weight → add bias → permute back
             int W_ = (int)x->ne[0], H_ = (int)x->ne[1], C_ = (int)x->ne[2];
-            ggml_tensor *xp = ggml_cont(g, ggml_permute(g, x, 2, 0, 1, 3));  // (C, W, H)
+            // Bring channels to ne[0] so ggml_norm normalizes along C and the
+            // (C,) weight/bias broadcast correctly. permute(1,2,0,3): src axis2
+            // (C) -> dest0, src axis0 (W) -> dest1, src axis1 (H) -> dest2.
+            ggml_tensor *xp = ggml_cont(g, ggml_permute(g, x, 1, 2, 0, 3));  // (W,H,C) -> (C, W, H)
             xp = ggml_norm(g, xp, eps);
             if (w) xp = ggml_mul(g, xp, w);  // w is (C,) broadcast along ne[1,2]
             if (b) xp = ggml_add(g, xp, b);
-            return ggml_cont(g, ggml_permute(g, xp, 1, 2, 0, 3));  // back to (W, H, C)
+            return ggml_cont(g, ggml_permute(g, xp, 2, 0, 1, 3));  // (C,W,H) -> back to (W, H, C)
         };
 
         size_t buf_sz = ggml_tensor_overhead() * 64 + ggml_graph_overhead_custom(512, false);
@@ -1030,6 +1037,7 @@ static llm_graph build_llm_graph(got_ocr::context &ctx, int n_tokens, int n_past
         ggml_set_name(lg.splice_mask, "splice_mask");
         ggml_set_input(lg.splice_mask);
 
+
         x = ggml_add(g, ggml_mul(g, x, lg.splice_mask), lg.img_embeds);
     }
 
@@ -1045,6 +1053,7 @@ static llm_graph build_llm_graph(got_ocr::context &ctx, int n_tokens, int n_past
 
     // Transformer layers
     auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor * {
+
         return ggml_mul(g, ggml_rms_norm(g, t, eps), w);
     };
 
@@ -1131,6 +1140,7 @@ static llm_graph build_llm_graph(got_ocr::context &ctx, int n_tokens, int n_past
         h = rmsnorm(x, ly.post_attention_layernorm_w);
         ggml_tensor *gate = ggml_silu(g, ggml_mul_mat(g, ly.ffn_gate_w, h));
         ggml_tensor *up = ggml_mul_mat(g, ly.ffn_up_w, h);
+
         ggml_tensor *ffn = ggml_mul_mat(g, ly.ffn_down_w, ggml_mul(g, gate, up));
         x = ggml_add(g, x, ffn);
 
