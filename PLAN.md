@@ -251,6 +251,36 @@ CrispEmbed/
 
 ## Pending roadmap
 
+### OCR engine correctness/stability fixes (2026-06-30, issue #25)
+
+Found while integrating the OCR engines downstream (BiblioForge). macOS arm64,
+Metal, ggml 0.10.0.
+
+**Fixed:**
+- **VLM OCR repetition (internvl2, qwen2vl)** — greedy argmax with no repetition
+  control looped forever on document text. Added `argmax_no_repeat_ngram` (n=3)
+  to both decode loops. (PR #26)
+- **got-ocr2 two graph crashes** — (1) `g_ln2d` permute was reversed
+  (`(2,0,1,3)` → `(H,C,W)`), so `ggml_norm` used the wrong axis and the `(C,)`
+  weight failed `ggml_can_repeat`; fixed to put C at `ne[0]`. (2) `prep_conv_w`
+  reshaped a q8_0 conv weight to `ne0=1` before dequantizing → Metal CPY block
+  assert; cast to F32 first. got-ocr2 now runs end-to-end without aborting. (PR #27)
+- **CI artifacts** were not self-contained (missing ggml libs, absolute runner
+  rpaths) — `cmake --install` bundle with `@loader_path`/`$ORIGIN`. (PR #23)
+- **Model downloader** didn't create the cache dir before writing `.tmp`. (PR #24)
+
+**Still open:**
+- **got-ocr2 vision-encoder correctness** — runs but emits garbage; the SAM
+  neck/projector/image-splice was never validated end-to-end (always crashed
+  before). Needs reference-activation diff (`diff_ref` path). The `got_ocr —
+  DONE` note below refers to perf, not output correctness.
+- **DBNet detector on Metal** — `unsupported op 'CPY'` abort; `OCR_DETECT_FORCE_CPU=1`
+  works around it but per-region TrOCR on CPU is slow. Want a Metal CPY path or a
+  CPU-default detector.
+- **No `GOT_OCR_FORCE_CPU`** env (other engines have one) — add for parity.
+- **ggml Metal device-teardown abort** at process exit when loaded alongside
+  PyTorch MPS (downstream works around it with `os._exit`).
+
 ### GPU + quantization audit (2026-06-16)
 
 All inference engines are GPU-enabled (zero CPU-only gaps). Every engine uses
