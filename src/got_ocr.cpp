@@ -870,8 +870,13 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
 
         // Flatten + permute to (vis_D, n_vis_tokens) = (1024, 256)
         // CHW (W,H,C) → (C, W*H) → this is what ggml_reshape_2d gives us directly
-        x = ggml_cont(ng, ggml_permute(ng, x, 2, 0, 1, 3));  // (C, W, H) → (1024, ds2_W, ds2_H)
-        x = ggml_reshape_2d(ng, x, vis_D, n_vis_tokens);      // (1024, 256)
+        // Bring channels to ne[0] then flatten spatial into tokens. ggml input is
+        // (W,H,C); permute(1,2,0,3) -> (C,W,H), and reshape_2d(C, W*H) then yields
+        // token = h*W + w, matching the numpy reference (x_chw.reshape(C,-1).T).
+        // NOTE: the previous (2,0,1,3) produced (H,C,W), scrambling the projector
+        // input — that was the got-ocr2 garbage-output bug.
+        x = ggml_cont(ng, ggml_permute(ng, x, 1, 2, 0, 3));  // (W,H,C) → (C, W, H)
+        x = ggml_reshape_2d(ng, x, vis_D, n_vis_tokens);      // (1024, 256) = (channel, token)
 
         // Projector: Linear(1024, 1024) with bias
         // projector_w is [1024, 1024] in ggml. mul_mat(w, x) → [1024, 256]
