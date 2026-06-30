@@ -833,8 +833,12 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
             // (C) -> dest0, src axis0 (W) -> dest1, src axis1 (H) -> dest2.
             ggml_tensor *xp = ggml_cont(g, ggml_permute(g, x, 1, 2, 0, 3));  // (W,H,C) -> (C, W, H)
             xp = ggml_norm(g, xp, eps);
-            if (w) xp = ggml_mul(g, xp, w);  // w is (C,) broadcast along ne[1,2]
-            if (b) xp = ggml_add(g, xp, b);
+            // Cast LN weight/bias to F32: they are stored F16 in the GGUF, and a
+            // binary op with an F32 tensor + F16 operand has no CPU kernel
+            // ((f32,f16) is the one unsupported combo) — aborts under
+            // GOT_OCR_FORCE_CPU and is implicit-converted on Metal. Mirrors g_ln().
+            if (w) xp = ggml_mul(g, xp, ensure_f32(g, w));  // w is (C,) broadcast along ne[1,2]
+            if (b) xp = ggml_add(g, xp, ensure_f32(g, b));
             return ggml_cont(g, ggml_permute(g, xp, 2, 0, 1, 3));  // (C,W,H) -> back to (W, H, C)
         };
 
