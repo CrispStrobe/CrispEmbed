@@ -363,12 +363,15 @@ bool got_ocr::load(context &ctx, const char *gguf_path, int n_threads, int verbo
         return false;
     }
 
-    ctx.backend = ggml_backend_init_best();
-    if (!ctx.backend) {
-        ctx.backend = ggml_backend_cpu_init();
-        if (ctx.backend) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
-    }
+    // GOT_OCR_FORCE_CPU=1 forces the CPU backend (parity with the other engines).
+    // Useful to sidestep Metal op gaps and to A/B Metal-vs-CPU outputs while
+    // debugging vision-encoder correctness (issue #25).
+    bool force_cpu = (std::getenv("GOT_OCR_FORCE_CPU") &&
+                      atoi(std::getenv("GOT_OCR_FORCE_CPU")));
+    ctx.backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx.backend) ctx.backend = ggml_backend_cpu_init();  // fallback if init_best failed
     if (!ctx.backend) return false;
+    if (ggml_backend_is_cpu(ctx.backend)) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
 
     // Scheduler. ggml_backend_sched_new asserts the LAST backend is CPU, so
     // when the best backend is a GPU (Metal/CUDA/Vulkan) append a CPU backend
