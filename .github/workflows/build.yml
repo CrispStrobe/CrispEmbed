@@ -55,13 +55,21 @@ jobs:
         run: .\build\Release\crispembed.exe --help 2>&1 || true
         shell: pwsh
 
-      - name: Upload shared library
+      # Install into a staging prefix so the shared library is bundled with its
+      # ggml runtime dylibs/sos and rewritten to a relocatable @loader_path /
+      # $ORIGIN rpath. The build-tree library bakes in absolute runner paths and
+      # ships without ggml, so it can't load on a consumer machine — the install
+      # tree can. lib/ holds *.so / *.dylib; bin/ holds *.dll (Windows).
+      - name: Install (bundle native libs)
+        run: cmake --install build --config Release --prefix dist
+
+      - name: Upload shared library bundle
         uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.name }}
           path: |
-            build/${{ matrix.lib_name }}
-            build/Release/${{ matrix.lib_name }}
+            dist/lib/
+            dist/bin/
           if-no-files-found: warn
 
   build-android:
@@ -146,19 +154,21 @@ jobs:
           set +e  # don't abort on missing artifacts
           PLUGIN=flutter/crispembed
 
-          # Linux
-          cp artifacts/linux-x86_64/libcrispembed.so \
-             $PLUGIN/linux/lib/libcrispembed.so 2>/dev/null || echo "SKIP: linux"
+          # Desktop artifacts are now self-contained install bundles: the shared
+          # library plus its ggml runtime libs live under lib/ (Unix) or bin/
+          # (Windows). Copy the whole set so the plugin ships every dependency.
 
-          # macOS
-          cp artifacts/macos-arm64/libcrispembed.dylib \
-             $PLUGIN/macos/Libs/libcrispembed.dylib 2>/dev/null || echo "SKIP: macos"
+          # Linux (lib/*.so + ggml *.so siblings)
+          cp artifacts/linux-x86_64/lib/*.so* \
+             $PLUGIN/linux/lib/ 2>/dev/null || echo "SKIP: linux"
 
-          # Windows — artifact may be in Release/ subdirectory
-          cp artifacts/windows-x86_64/crispembed.dll \
-             $PLUGIN/windows/lib/crispembed.dll 2>/dev/null || \
-          cp artifacts/windows-x86_64/Release/crispembed.dll \
-             $PLUGIN/windows/lib/crispembed.dll 2>/dev/null || echo "SKIP: windows"
+          # macOS (lib/*.dylib + ggml *.dylib siblings)
+          cp artifacts/macos-arm64/lib/*.dylib \
+             $PLUGIN/macos/Libs/ 2>/dev/null || echo "SKIP: macos"
+
+          # Windows (bin/*.dll: crispembed.dll + ggml DLLs)
+          cp artifacts/windows-x86_64/bin/*.dll \
+             $PLUGIN/windows/lib/ 2>/dev/null || echo "SKIP: windows"
 
           # iOS
           cp artifacts/ios-arm64/libcrispembed-static.a \
