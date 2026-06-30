@@ -277,7 +277,9 @@ Metal, ggml 0.10.0.
 - **DBNet detector on Metal** — `unsupported op 'CPY'` abort; `OCR_DETECT_FORCE_CPU=1`
   works around it but per-region TrOCR on CPU is slow. Want a Metal CPY path or a
   CPU-default detector.
-- **No `GOT_OCR_FORCE_CPU`** env (other engines have one) — add for parity.
+- ~~No `GOT_OCR_FORCE_CPU` env~~ → **added** (commit 718a73e). Also a debug lever:
+  A/B got-ocr2 output on CPU vs Metal — if CPU is also garbage the vision bug is
+  logic, not Metal-specific; if CPU is correct, it's a Metal op issue.
 - **ggml Metal device-teardown abort** at process exit when loaded alongside
   PyTorch MPS (downstream works around it with `os._exit`).
 
