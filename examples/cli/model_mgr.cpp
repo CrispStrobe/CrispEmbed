@@ -1051,6 +1051,15 @@ static bool download_file(const std::string & source_url, const std::string & de
 #else
     std::string tmp = dest_path + ".tmp";
 
+    // Ensure the destination directory exists — curl/wget will not create it,
+    // and a missing cache dir otherwise fails with an opaque "No such file or
+    // directory" while writing the .tmp.
+    {
+        std::error_code mkdir_ec;
+        std::filesystem::path parent = std::filesystem::path(dest_path).parent_path();
+        if (!parent.empty()) std::filesystem::create_directories(parent, mkdir_ec);
+    }
+
     // Resume-aware: if a previous attempt left a partial .tmp, log the
     // recovery and pass `-C -` / `-c` to curl / wget so we resume from
     // there instead of starting over. Hours of bandwidth saved on flaky
