@@ -265,6 +265,25 @@ Metal, ggml 0.10.0.
   weight failed `ggml_can_repeat`; fixed to put C at `ne[0]`. (2) `prep_conv_w`
   reshaped a q8_0 conv weight to `ne0=1` before dequantizing → Metal CPY block
   assert; cast to F32 first. got-ocr2 now runs end-to-end without aborting. (PR #27)
+- **DBNet detector on Metal `unsupported op 'CPY'` abort** — fix paths **a + c**.
+  `dbnet-ic15-q4_k` stores 16 conv/deconv weights as **Q4_K** (a k-quant);
+  `prep_conv_weight`/`prep_deconv_weight` dequantized them with `ggml_cast(w, F32)`,
+  which emits a CPY node — but Metal's cpy kernels cover **no k-quant source type**
+  (only F16/BF16/Q4_0/Q4_1/Q5_0/Q5_1/Q8_0/I32), so the graph aborted at the first
+  Q4_K weight. (a) Replaced the cast with a Metal-safe `ggml_get_rows`
+  identity-select dequant (`dequant_rows_f32()`): GET_ROWS is supported for every
+  quant type and yields F32; row indices are generated in-graph via `arange`+cast,
+  so no extra graph input. The rest of the graph (conv_2d / conv_transpose_2d /
+  upscale / pool / concat) is already Metal-supported, so the GPU path now runs
+  correctly end to end (opt in with `OCR_DETECT_USE_GPU=1`). (c) DBNet is tiny and
+  conv-heavy and Metal's `conv_transpose_2d` at full resolution is ~13× **slower**
+  than CPU (≈139 s GPU vs ≈10 s CPU graph-compute on M1 for a 1472×736 prob map),
+  and the pipeline's real cost is per-box TrOCR — so the detector now **defaults to
+  CPU**, which is faster and avoids the abort by default. `OCR_DETECT_FORCE_CPU=1`
+  still forces CPU. CPU detection output is byte-identical to before; boxes
+  localize accurately on a real English page. (Note: the separate TrOCR/math_ocr
+  recognizer still emits repeated-token garbage on clean printed text — a
+  pre-existing recognizer issue, unrelated to detection.)
 - **CI artifacts** were not self-contained (missing ggml libs, absolute runner
   rpaths) — `cmake --install` bundle with `@loader_path`/`$ORIGIN`. (PR #23)
 - **Model downloader** didn't create the cache dir before writing `.tmp`. (PR #24)
@@ -294,9 +313,6 @@ Metal, ggml 0.10.0.
   "color" (not OCR text) for any image — the `stepfun-ai/GOT-OCR2_0`
   weights may be incomplete. Need to re-convert GGUF from `GOT-OCR-2.0-hf`
   (has conv_upsampler projector, different architecture).
-- **DBNet detector on Metal** — `unsupported op 'CPY'` abort; `OCR_DETECT_FORCE_CPU=1`
-  works around it but per-region TrOCR on CPU is slow. Want a Metal CPY path or a
-  CPU-default detector.
 - ~~No `GOT_OCR_FORCE_CPU` env~~ → **added** (commit 718a73e). Also a debug lever:
   A/B got-ocr2 output on CPU vs Metal — if CPU is also garbage the vision bug is
   logic, not Metal-specific; if CPU is correct, it's a Metal op issue.
