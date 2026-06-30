@@ -3306,7 +3306,6 @@ impl CrispPix2Struct {
         }
         unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
     }
-}
 
     /// Per-token softmax confidences from the last `generate` call.
     pub fn confidences(&self) -> Vec<f32> {
