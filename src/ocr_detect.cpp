@@ -142,9 +142,21 @@ bool load(context** out, const char* path, int n_threads) {
     fprintf(stderr, "  prob_thresh=%.2f box_thresh=%.2f unclip=%.2f\n",
             ctx->prob_thresh, ctx->box_thresh, ctx->unclip_ratio);
 
-    // Load weights — prefer GPU backend when available
+    // Backend selection. DBNet is a tiny (~7 MB) but conv-heavy net: its
+    // forward is dominated by Conv2d / ConvTranspose2d at large spatial
+    // resolution, and those kernels are dramatically slower on Metal than on
+    // CPU (measured ~139 s GPU vs ~10 s CPU graph-compute on an M1 for a 1472×736
+    // prob map). The per-box TrOCR recognizer — not detection — is the
+    // pipeline's real cost. So default to CPU (issue #25): it is both faster and
+    // sidesteps the Metal "unsupported op 'CPY'" k-quant dequant path entirely.
+    //
+    // The GPU path is still correct (k-quant weights are dequantized via
+    // get_rows, which Metal supports — see dequant_rows_f32) and can be opted
+    // into with OCR_DETECT_USE_GPU=1, e.g. for benchmarking or a future faster
+    // conv-transpose kernel. OCR_DETECT_FORCE_CPU=1 forces CPU and overrides it.
     bool force_cpu = (getenv("OCR_DETECT_FORCE_CPU") && atoi(getenv("OCR_DETECT_FORCE_CPU")));
-    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    bool use_gpu   = (getenv("OCR_DETECT_USE_GPU") && atoi(getenv("OCR_DETECT_USE_GPU")));
+    ctx->backend = (use_gpu && !force_cpu) ? ggml_backend_init_best() : ggml_backend_cpu_init();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx->backend))
         ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
@@ -205,6 +217,23 @@ bool load(context** out, const char* path, int n_threads) {
 // Graph building helpers
 // ---------------------------------------------------------------------------
 
+// Dequantize a 2D-flattened quantized weight [rows*?, n_rows] to contiguous F32.
+//
+// We must NOT use ggml_cast() here: ggml_cast emits a CPY node, and the Metal
+// backend has no cpy kernel for k-quant source types (Q4_K/Q5_K/...) — only
+// Q4_0/Q4_1/Q5_0/Q5_1/Q8_0 — so a Q4_K weight aborts with
+// "unsupported op 'CPY'" (issue #25). ggml_get_rows, by contrast, is supported
+// on Metal for every quant type and dequantizes to F32. We select all rows in
+// order (identity dequant) using an index vector generated in-graph via
+// arange+cast (F32->I32 cpy is Metal-supported), so no extra graph input is
+// needed. On CPU this path is equally correct.
+static ggml_tensor* dequant_rows_f32(ggml_context* g, ggml_tensor* w) {
+    int64_t n_rows = w->ne[1];  // ne[1] = number of rows get_rows selects along
+    ggml_tensor* idx = ggml_cast(g, ggml_arange(g, 0.0f, (float)n_rows, 1.0f),
+                                 GGML_TYPE_I32);
+    return ggml_get_rows(g, w, idx);  // -> contiguous F32 [w->ne[0], n_rows]
+}
+
 // Prepare a conv weight for ggml_conv_2d: handle 2D-flattened quantized
 // weights and cast to F16 (required by ggml_conv_2d).
 static ggml_tensor* prep_conv_weight(ggml_context* g, ggml_tensor* w,
@@ -213,7 +242,7 @@ static ggml_tensor* prep_conv_weight(ggml_context* g, ggml_tensor* w,
     if (ggml_n_dims(w) == 2) {
         // Flattened: [IC*KH*KW, OC] — dequant + reshape
         if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16) {
-            w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+            w = dequant_rows_f32(g, w);
         }
         int64_t OC = w->ne[1];
         w = ggml_reshape_4d(g, w, KW, KH, IC, OC);
@@ -298,7 +327,7 @@ static ggml_tensor* prep_deconv_weight(ggml_context* g, ggml_tensor* w,
     if (ggml_n_dims(w) == 2) {
         // Flattened: ne[0]=OC*KH*KW, ne[1]=IC
         if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16) {
-            w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+            w = dequant_rows_f32(g, w);  // get_rows: Metal-safe k-quant dequant
         }
         int64_t IC = w->ne[1];
         w = ggml_reshape_4d(g, w, KW, KH, OC, IC);
@@ -346,8 +375,9 @@ static ggml_tensor* sigmoid_op(ggml_context* g, ggml_tensor* x) {
 // pixels: [3, H, W] CHW float32, already preprocessed.
 // Returns prob_map as [H, W] in [0, 1].
 static std::vector<float> forward(context* ctx, const float* pixels, int H, int W) {
-    // Estimate graph size: ~200 nodes for ResNet-18 + FPNC + head
-    int max_nodes = 512;
+    // Estimate graph size: ~200 nodes for ResNet-18 + FPNC + head, plus up to
+    // ~3 extra nodes (arange + cast + get_rows) per quantized weight dequant.
+    int max_nodes = 1024;
     size_t buf_size = ggml_tensor_overhead() * (max_nodes + 100)
                     + ggml_graph_overhead_custom(max_nodes, false);
     std::vector<uint8_t> buf(buf_size);
