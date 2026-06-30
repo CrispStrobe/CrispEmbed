@@ -40,6 +40,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 namespace internvl2_ocr {
 
@@ -1438,6 +1439,36 @@ static bool run_cached_step(context &ctx, const int32_t *token_ids, int n_tokens
     return true;
 }
 
+// Greedy argmax with no-repeat-ngram blocking. Greedy decoding on repetitive
+// document text degenerates into loops ("...Two co Two co Two co..."); banning
+// any token that would complete an already-seen n-gram of size `ngram` breaks
+// those loops deterministically without needing sampling. ngram <= 1 disables.
+static int argmax_no_repeat_ngram(const float *logits, int V,
+                                  const std::vector<int> &hist, int ngram) {
+    std::unordered_set<int> banned;
+    const int k = ngram - 1;
+    const int n = (int)hist.size();
+    if (ngram > 1 && n >= k && k > 0) {
+        for (int i = 0; i + k < n; i++) {  // hist[i..i+k-1] is a k-gram, hist[i+k] follows it
+            bool match = true;
+            for (int j = 0; j < k; j++) {
+                if (hist[i + j] != hist[n - k + j]) { match = false; break; }
+            }
+            if (match) banned.insert(hist[i + k]);
+        }
+    }
+    int best_id = -1;
+    float best = -INFINITY;
+    for (int v = 0; v < V; v++) {
+        if (!banned.empty() && banned.count(v)) continue;
+        if (logits[v] > best) { best = logits[v]; best_id = v; }
+    }
+    if (best_id < 0) {  // everything banned (pathological) — fall back to plain argmax
+        for (int v = 0; v < V; v++) if (logits[v] > best) { best = logits[v]; best_id = v; }
+    }
+    return best_id;
+}
+
 bool generate(context &ctx,
               const float *image_embeds, int n_image_tokens, int embed_dim,
               const int32_t *prompt_token_ids, int n_prompt_tokens,
@@ -1499,16 +1530,11 @@ bool generate(context &ctx,
         fprintf(stderr, "[internvl2-bench] prefill: %lldms\n", (long long)ms);
     }
 
-    // Greedy argmax on prefill logits (last token)
+    // Greedy argmax with no-repeat-ngram blocking on prefill logits (last token)
     out.token_confidences.clear();
-    int best_id = 0;
-    float best_score = -INFINITY;
-    for (int v = 0; v < V; v++) {
-        if (logits[v] > best_score) {
-            best_score = logits[v];
-            best_id = v;
-        }
-    }
+    const int no_repeat_ngram = 3;
+    int best_id = argmax_no_repeat_ngram(logits.data(), V, out.token_ids, no_repeat_ngram);
+    float best_score = logits[best_id];
 
     // Confidence: numerically-stable softmax for winning token
     {
@@ -1548,14 +1574,8 @@ bool generate(context &ctx,
             fprintf(stderr, "[internvl2-bench] decode_step[%d]: %lldms\n", gen, (long long)step_ms);
         }
 
-        best_id = 0;
-        best_score = -INFINITY;
-        for (int v = 0; v < V; v++) {
-            if (logits[v] > best_score) {
-                best_score = logits[v];
-                best_id = v;
-            }
-        }
+        best_id = argmax_no_repeat_ngram(logits.data(), V, out.token_ids, no_repeat_ngram);
+        best_score = logits[best_id];
 
         {
             float max_l = best_score;

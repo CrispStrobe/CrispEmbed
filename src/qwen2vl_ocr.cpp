@@ -41,6 +41,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 namespace qwen2vl_ocr {
 
@@ -2543,6 +2544,36 @@ static ggml_cgraph *build_decode_step_graph(context &ctx, ggml_context *g,
   return gf;
 }
 
+// Greedy argmax with no-repeat-ngram blocking. Plain greedy decoding loops on
+// repetitive document text; banning any token that would complete an already-
+// seen n-gram of size `ngram` breaks those loops deterministically. ngram<=1
+// disables. Mirrors the helper in internvl2_ocr.cpp.
+static int argmax_no_repeat_ngram(const float *logits, int V,
+                                  const std::vector<int> &hist, int ngram) {
+  std::unordered_set<int> banned;
+  const int k = ngram - 1;
+  const int n = (int)hist.size();
+  if (ngram > 1 && n >= k && k > 0) {
+    for (int i = 0; i + k < n; i++) {
+      bool match = true;
+      for (int j = 0; j < k; j++) {
+        if (hist[i + j] != hist[n - k + j]) { match = false; break; }
+      }
+      if (match) banned.insert(hist[i + k]);
+    }
+  }
+  int best_id = -1;
+  float best = -INFINITY;
+  for (int v = 0; v < V; v++) {
+    if (!banned.empty() && banned.count(v)) continue;
+    if (logits[v] > best) { best = logits[v]; best_id = v; }
+  }
+  if (best_id < 0) {
+    for (int v = 0; v < V; v++) if (logits[v] > best) { best = logits[v]; best_id = v; }
+  }
+  return best_id;
+}
+
 bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
               int embed_dim,
               const int32_t *grid_thw, // actual image grid (t,h,w) for mRoPE
@@ -2664,14 +2695,9 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
   const int prefill_logit_row =
       (prefill.n_logits == n_prompt_tokens) ? (n_prompt_tokens - 1) : 0;
   const float *last_logits = prefill.logits + (size_t)prefill_logit_row * V;
-  int best_id = 0;
-  float best_score = -INFINITY;
-  for (int v = 0; v < V; v++) {
-    if (last_logits[v] > best_score) {
-      best_score = last_logits[v];
-      best_id = v;
-    }
-  }
+  const int no_repeat_ngram = 3;
+  int best_id = argmax_no_repeat_ngram(last_logits, V, out.token_ids, no_repeat_ngram);
+  float best_score = last_logits[best_id];
 
   // Confidence: numerically-stable softmax for winning token
   {
@@ -2809,14 +2835,8 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
       ggml_tensor *logits_t = ggml_graph_get_tensor(gf, "logits");
       ggml_backend_tensor_get(logits_t, logits_data.data(), 0,
                               V * sizeof(float));
-      best_id = 0;
-      best_score = -INFINITY;
-      for (int v = 0; v < V; v++) {
-        if (logits_data[v] > best_score) {
-          best_score = logits_data[v];
-          best_id = v;
-        }
-      }
+      best_id = argmax_no_repeat_ngram(logits_data.data(), V, out.token_ids, no_repeat_ngram);
+      best_score = logits_data[best_id];
       {
         float max_l = best_score;
         float sum_exp = 0.0f;
