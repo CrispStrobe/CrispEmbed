@@ -722,7 +722,7 @@ static const ModelEntry k_registry[] = {
     {"got-ocr2",
      "got-ocr2-q8_0.gguf",
      "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/main/got-ocr2-q8_0.gguf",
-     "GOT-OCR2 document OCR (SAM-ViT-B + Qwen2-0.5B, 0.7B, text/LaTeX/tables)", "750 MB", "apache-2.0",
+     "GOT-OCR2 document OCR (SAM-ViT-B + Qwen2-0.5B, 0.7B, text/LaTeX/tables)", "1.03 GB", "apache-2.0",
      "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF"},
 
     {"pix2struct-base",
