@@ -79,7 +79,7 @@
       "engine": "paddleocr-vl",
       "gguf": {"repo": "cstr/paddleocr-vl-0.9b-GGUF", "file": "paddleocr-vl-0.9b-q8_0.gguf", "revision": "main", "approx_size_mb": 700},
       "sample": "tests/regression/images/fox.png",
-      "expected_text": null,
+      "expected_text": "The quick brown fox jumps over the lazy dog.",
       "match": {"max_cer": 0.12},
       "diff": {"binary": "test-paddleocr-vl-diff", "ref": {"repo": "cstr/paddleocr-vl-0.9b-GGUF", "file": "paddleocr-vl-ref.gguf"}, "thresholds": {"*": 0.995}}
     }
