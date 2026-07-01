@@ -16,7 +16,7 @@ independent bugs. Ground truth came from running the **real model** (transformer
 `main` + the ~1.8 GB checkpoint) and diffing every stage.
 
 **Result**: fox.png → `The quick brown fox jumps over the lazy dog. 12345` on
-**f16 and q8_0, CPU and Metal**, matching the real model token-for-token.
+**f16, q8_0, and q4_k, CPU and Metal**, matching the real model token-for-token.
 
 **5 bugs fixed** (all verified against the real transformers-`main` model):
 1. **Missing vision 2D RoPE** — Qwen2-VL-style, `dim=head_dim/2`, θ=10000, per-patch
@@ -41,7 +41,7 @@ independent bugs. Ground truth came from running the **real model** (transformer
    dropped `[gMASK]` + instruction, added a spurious `<|system|>`); stop on both
    eos ids `[59246, 59253]`; GPT-2 byte-level decode (was emitting `Ġ`/`Ċ`).
 
-**q8_0** (both backends): dequantize weights **before** reshaping. The downsample
+**q8_0 and q4_k** (both backends): dequantize weights **before** reshaping. The downsample
 weight was reshaped to leading dim 2 before `ggml_cast` to F32, splitting q8_0's
 32-element blocks → CPU garbage + the Metal `GGML_ASSERT(ne00 % blck)` abort. Same
 class as got-ocr `11c2bc7`. q8_0 weights themselves were fine (not corrupt).
