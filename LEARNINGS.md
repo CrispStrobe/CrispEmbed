@@ -1,5 +1,32 @@
 # CrispEmbed — Technical Learnings
 
+## GOT-OCR2: a wrong-axis parity cosine faked "decoder can't be quantized" (2026-07)
+
+`tests/test_got_ocr_diff.cpp`'s `compare()` reduced the cosine over the wrong
+tensor dimension — it used the **token count** (5) as the row length instead of
+the **feature dim** (1024). On the got-ocr2 Qwen2-0.5B decoder this reported
+`llm_layer_0` cos ≈ **0.936** for Q8_0 weights, which read as catastrophic
+quantization sensitivity and drove a real, wasteful workaround: shipping an
+F16-only decoder (`--decoder-f16`) at 1.03 GB, ~2× slower per-token than Q4_K.
+The same wrong-axis harness had earlier produced a bogus "bf16 compute is the
+bug" theory.
+
+With the axis fixed (`row_dim=0`) the plain Q8_0 decoder matches the f32
+reference at cos ≥ **0.99996** across all layers, and Q4_K / Q8_0 / F16 produce
+byte-identical OCR. Two independent cross-checks would have caught the false
+alarm immediately: (1) the decoder graph is functionally identical to
+`internvl2_ocr`'s Qwen2-0.5B path, and (2) `internvl2-1b` already ships that
+exact decoder at Q4_K. got-ocr2 now defaults to Q4_K (445 MB, ~20 ms/tok on M1).
+Full writeup: [`docs/got-ocr2.md`](docs/got-ocr2.md).
+
+**Lesson:** a parity harness is only as trustworthy as its reduction axis — a
+cosine taken over the wrong stride can masquerade as model sensitivity and
+justify a precision workaround that isn't needed. Before believing "this small
+model can't be quantized," sanity-check against a sibling model that ships the
+same architecture at that quant. (Separately, this investigation surfaced that
+Q8_0 `mul_mv` is anomalously slow on M1 — see
+[`docs/metal-q8_0-mul_mv-slow-m1.md`](docs/metal-q8_0-mul_mv-slow-m1.md).)
+
 ## DAT: Conv+BN fusion silently skipped on F32 models (to_f32 returns t->data) (2026-06)
 
 `dat_sr.cpp` parity vs a *genuine* reference (the real PyTorch DAT-light run on

@@ -50,6 +50,21 @@ CrispEmbed Python wrapper (ctypes, Metal) matches or beats fastembed-rs for
 single-text latency. Batch throughput gap is due to per-text Python loop --
 a C-level batch API would close it.
 
+### VLM OCR decode — GOT-OCR2 (Qwen2-0.5B decoder), per token
+
+| Decoder weights | Decode / token | Size |
+|-----------------|----------------|------|
+| **Q4_K** | **~20 ms** | 445 MB |
+| F16  | ~38 ms | 1.44 GB |
+| Q8_0 | ~42 ms | 599 MB |
+
+Q4_K is fastest **and** smallest — prefer it over Q8_0 for autoregressive
+decode on M1. Q8_0 being slower than F16 here is a Metal `mul_mv` (single-token
+mat-vec) kernel issue, not a bandwidth effect; see
+[`docs/metal-q8_0-mul_mv-slow-m1.md`](docs/metal-q8_0-mul_mv-slow-m1.md). Correctness
+is unaffected (all three quants: cos ≥ 0.99996 vs f32, identical OCR — see
+[`docs/got-ocr2.md`](docs/got-ocr2.md)).
+
 ## Ollama Integration (Q8_0, Apple M1)
 
 All CrispEmbed models verified in Ollama fork with Ollama-compatible GGUF export.
