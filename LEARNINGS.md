@@ -76,6 +76,47 @@ actual output (rendered pixels / read transcript) caught them:
   `expected_text` was `null` (never baked), so this may also be a never-validated
   path; either way qwen2vl-3b OCR is currently broken. Not yet tested at q8_0.
 
+### qwen2vl-3b hallucinated OCR — RESOLVED (2026-07-01): never-worked path, 4 bugs, NOT the ggml wave
+
+The `null` `expected_text` was the tell: qwen2.5-vl-3b OCR **never worked** —
+this was a never-validated path, not a scalar→ggml-wave regression (the wave
+theory above was wrong). Four independent Qwen2.5-VL-specific bugs, all fixed in
+`src/qwen2vl_ocr.cpp`; after the fix both Metal and CPU read
+`The quick brown fox jumps over the lazy dog. 12345` (cer≈0) at q4_k.
+
+1. **Vision RoPE built in raster order, but patches are merge-block ordered.**
+   The preprocessor (`image_preprocess.cpp`) *always* emits patches in
+   `(h//m,w//m,m,m)` merge-block order, and HF's `rot_pos_emb` applies the same
+   permutation to the position ids. `compute_vision_rope`'s `merge_order` arg was
+   `is_qwen2_vl` → **false** for Qwen2.5-VL (RMSNorm variant) → rope in raster
+   order → every patch rotated with a neighbour's position → scrambled spatial
+   structure. This is the dominant bug (fixing it alone flips pure hallucination
+   into reading real words). Fix: `merge_order = deepstack_indexes.empty()`.
+2. **Merger grouped patches by the wrong branch.** The CPU spatial merge keyed
+   the consecutive-vs-raster grouping off `is_qwen2_vl`, sending Qwen2.5-VL
+   through a raster gather (`normed_data[row*w_p+col]`) that mis-groups
+   merge-block-ordered data (the deepstack path already assumed consecutive —
+   the tell). Fix: gate on `deepstack_indexes.empty()` (consecutive).
+3. **Windowed attention was entirely unimplemented.** Qwen2.5-VL's ViT does
+   window attention on all but `fullatt_block_indexes` ([7,15,23,31]); the loaded
+   `window_size`/`fullatt` fields were never used — every block did full
+   attention. Implemented as an equivalent **in-place additive mask** (0 within a
+   window, -inf across) applied via `soft_max_ext` on windowed blocks — no
+   physical reorder/reverse-permute needed, because window attention only
+   restricts the *set* a patch attends to, which is storage-order-independent.
+   Full-attn blocks keep the fused `flash_attn_ext`. Opt-out: `QWEN2VL_OCR_NO_WINDOW=1`.
+4. **No OCR prompt for arch `qwen2vl`.** Only `qwen3vl` got the transcription
+   prompt; `qwen2vl` fell back to `"Describe this image."` → verbose prose
+   (fails a bare-text CER match). Fix: apply the OCR prompt to both archs.
+
+Blast radius is Qwen2.5-VL only: all four gates (`deepstack_indexes.empty()`,
+`!is_qwen2_vl`, arch string) preserve the exact prior values for Qwen2-VL,
+PaddleOCR-VL (`is_qwen2_vl=true`), and Qwen3-VL (deepstack non-empty). NB the
+qwen3vl merger still uses the raster branch yet its deepstack extract assumes
+consecutive — likely the same latent bug, left untouched here (unverifiable in
+this env). Per-stage HF ref (`tools/dump_qwen2vl_reference.py`) not regenerated
+here — end-to-end transcript on both backends was the verification.
+
 **Methodology lesson — a "non-degenerate output" numeric guard is not an output
 check.** restormer's noise has high std, so a std>1 guard *passes* it; the
 garbage was only visible by rendering the pixels. Likewise paddleocr's crash is

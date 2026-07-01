@@ -611,6 +611,44 @@ void compute_vision_rope(host_rope &out, const int32_t *grid_thw, int n_patches,
 
 // ── Vision encoder graph ─────────────────────────────────────────────
 
+// Qwen2.5-VL alternates windowed and full attention in the ViT: only the
+// blocks in fullatt_block_indexes attend globally; the rest attend within
+// square windows of window_size pixels (= window_size/patch_size patches per
+// side). Qwen2-VL and PaddleOCR-VL are full-attention (is_qwen2_vl); Qwen3-VL
+// dropped window attention (deepstack). Gate purely on architecture so a
+// missing gguf field can't silently disable it for a real Qwen2.5-VL model.
+bool vision_uses_window(const vision_hparams &vhp) {
+  if (getenv("QWEN2VL_OCR_NO_WINDOW"))
+    return false;
+  return !vhp.is_qwen2_vl && vhp.deepstack_indexes.empty() &&
+         !vhp.fullatt_block_indexes.empty() && vhp.window_size > 0;
+}
+
+// Per-patch window id (raster grid). Two patches attend to each other in a
+// windowed block iff they share a window id. Patches are stored in merge-block
+// order, so patch p belongs to merged unit p/merge² whose raster (row,col) is
+// (u/llm_w, u%llm_w); the window is that unit's (row,col) divided by the window
+// size measured in merged units. Frames never share a window.
+void compute_window_ids(const int32_t *grid_thw, int merge, int patch_size,
+                        int window_size, std::vector<int32_t> &win_id) {
+  const int t = grid_thw[0], gh = grid_thw[1], gw = grid_thw[2];
+  const int llm_w = gw / merge;
+  // window_size is in pixels; convert to merged units.
+  const int win_merged = std::max(1, window_size / patch_size / merge);
+  const int nww = (llm_w + win_merged - 1) / win_merged;
+  const int units_per_frame = (gh / merge) * (gw / merge);
+  win_id.resize((size_t)t * gh * gw);
+  int p = 0;
+  for (int f = 0; f < t; f++) {
+    for (int u = 0; u < units_per_frame; u++) {
+      const int r = u / llm_w, c = u % llm_w;
+      const int wid = f * 1000000 + (r / win_merged) * nww + (c / win_merged);
+      for (int k = 0; k < merge * merge; k++)
+        win_id[p++] = wid;
+    }
+  }
+}
+
 struct vision_graph_result {
   ggml_cgraph *gf = nullptr;
   ggml_tensor *output = nullptr;
@@ -658,6 +696,18 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
   ggml_set_input(cos_in);
   ggml_set_name(sin_in, "sin_in");
   ggml_set_input(sin_in);
+
+  // Windowed attention (Qwen2.5-VL): a (n_patches, n_patches) additive mask
+  // (0 within a window, -inf across windows), applied on non-fullatt blocks.
+  const bool use_window = vision_uses_window(vhp);
+  std::unordered_set<int> fullatt(vhp.fullatt_block_indexes.begin(),
+                                  vhp.fullatt_block_indexes.end());
+  ggml_tensor *window_mask = nullptr;
+  if (use_window) {
+    window_mask = ggml_new_tensor_2d(g, GGML_TYPE_F32, n_patches, n_patches);
+    ggml_set_name(window_mask, "window_mask");
+    ggml_set_input(window_mask);
+  }
 
   // ── Patch embedding ──
   // Use model tensor directly — no reshape (already ne=(patch_flat_dim, H))
@@ -777,13 +827,26 @@ vision_graph_result build_vision_graph(context &ctx, int n_patches,
     K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
     V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-    // Attention. Use ggml's fused flash-attention op instead of materializing
-    // the full scores tensor. Q/K/V are (head_dim, n_patches, n_heads), which
-    // is exactly the layout ggml_flash_attn_ext expects.
-    ggml_tensor *attn_out =
-        ggml_flash_attn_ext(g, Q, K, V, nullptr, attn_scale, 0.0f, 0.0f);
-    ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
-    attn_out = ggml_reshape_2d(g, attn_out, H, n_patches);
+    // Attention. Q/K/V are (head_dim, n_patches, n_heads).
+    ggml_tensor *attn_out;
+    if (use_window && !fullatt.count((int)il)) {
+      // Windowed block: manual masked attention. flash_attn_ext's mask layout
+      // is finicky (F16, padded); soft_max_ext takes a plain F32 mask that
+      // broadcasts over heads, which is what we need for the block-diagonal
+      // window mask.
+      ggml_tensor *scores = ggml_mul_mat(g, K, Q); // (n_kv, n_q, n_heads)
+      scores = ggml_soft_max_ext(g, scores, window_mask, attn_scale, 0.0f);
+      ggml_tensor *Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
+      attn_out = ggml_mul_mat(g, Vt, scores); // (head_dim, n_q, n_heads)
+      attn_out = ggml_cont(g, ggml_permute(g, attn_out, 0, 2, 1, 3));
+      attn_out = ggml_reshape_2d(g, attn_out, H, n_patches);
+    } else {
+      // Full-attention block: fused flash attention (no mask).
+      attn_out =
+          ggml_flash_attn_ext(g, Q, K, V, nullptr, attn_scale, 0.0f, 0.0f);
+      ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
+      attn_out = ggml_reshape_2d(g, attn_out, H, n_patches);
+    }
 
     attn_out = ggml_mul_mat(g, blk.proj_w, attn_out);
     if (blk.proj_b)
@@ -1220,11 +1283,24 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
             w5[0], w5[1], w5[2], w5[3], w5[4]);
   }
 
-  // Compute 2D RoPE tables
+  // Compute 2D RoPE tables.
+  //
+  // The image preprocessor (image_preprocess.cpp) always emits patches in
+  // merge-block-permuted order — (h//m, w//m, m, m) — for every Qwen2VL-family
+  // model, and the CPU spatial merge below groups consecutive merge² patches on
+  // that assumption. HF's VisionTransformer.rot_pos_emb applies the *same*
+  // permutation to the rotary position ids, so the rope table must be built in
+  // merge-block order too, otherwise each patch is rotated with a neighbour's
+  // position and the spatial structure is scrambled (garbled features → the LLM
+  // hallucinates over them). This previously keyed off is_qwen2_vl, which left
+  // Qwen2.5-VL (RMSNorm variant, is_qwen2_vl=false) computing rope in raster
+  // order — the root cause of its hallucinated OCR. Qwen3-VL (deepstack) is
+  // gated out to preserve its existing, separately-validated behavior.
   const int head_dim = (int)ctx.m.vhp.hidden_size / (int)ctx.m.vhp.num_heads;
+  const bool rope_merge_order = ctx.m.vhp.deepstack_indexes.empty();
   host_rope rope;
   compute_vision_rope(rope, grid_thw, n_patches, head_dim,
-                      (int)ctx.m.vhp.spatial_merge_size, ctx.m.vhp.is_qwen2_vl);
+                      (int)ctx.m.vhp.spatial_merge_size, rope_merge_order);
   stage_ms("rope");
 
   // Build graph
@@ -1265,6 +1341,29 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
   if (!set_in("sin_in", rope.sin_buf.data(),
               rope.sin_buf.size() * sizeof(float)))
     return false;
+
+  // Qwen2.5-VL windowed attention mask (0 within a window, -inf across).
+  if (vision_uses_window(ctx.m.vhp)) {
+    std::vector<int32_t> win_id;
+    compute_window_ids(grid_thw, (int)ctx.m.vhp.spatial_merge_size,
+                       (int)ctx.m.vhp.spatial_patch_size,
+                       (int)ctx.m.vhp.window_size, win_id);
+    std::vector<float> mask((size_t)n_patches * n_patches);
+    const float ninf = -INFINITY;
+    for (int q = 0; q < n_patches; q++) {
+      float *row = mask.data() + (size_t)q * n_patches;
+      for (int k = 0; k < n_patches; k++)
+        row[k] = (win_id[q] == win_id[k]) ? 0.0f : ninf;
+    }
+    if (!set_in("window_mask", mask.data(), mask.size() * sizeof(float)))
+      return false;
+    if (ctx.verbosity >= 1) {
+      std::unordered_set<int32_t> uniq(win_id.begin(), win_id.end());
+      fprintf(stderr,
+              "  windowed attention: %zu windows, full-attn blocks=%zu\n",
+              uniq.size(), ctx.m.vhp.fullatt_block_indexes.size());
+    }
+  }
 
   // PaddleOCR-VL: packing position IDs (sequential 0..n_patches-1)
   if (ctx.m.packing_pos_embed_w) {
@@ -1624,10 +1723,16 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
   // Patch index = row * w_p + col
   std::vector<float> merged_data((size_t)n_merged * merger_in_dim);
 
-  if (ctx.m.vhp.is_qwen2_vl) {
-    // Qwen2-VL image preprocessing already orders patches by merge groups:
-    // (merged_h, merged_w, merge_h, merge_w). PyTorch merger then uses
-    // ln_q(x).view(-1, merge*merge*H), so each group is consecutive.
+  if (ctx.m.vhp.deepstack_indexes.empty()) {
+    // Qwen2-VL / Qwen2.5-VL / PaddleOCR-VL: the image preprocessor
+    // (image_preprocess.cpp) always orders patches by merge groups —
+    // (merged_h, merged_w, merge_h, merge_w) — so each 2×2 spatial block is
+    // merge² consecutive patches. HF's PatchMerger then does
+    // ln_q(x).view(-1, merge*merge*H), i.e. exactly this consecutive grouping.
+    // (This previously keyed off is_qwen2_vl, which incorrectly sent Qwen2.5-VL
+    // through the raster else-branch below and mis-grouped every merger token —
+    // a second cause of its garbled OCR alongside the rope-order bug.) Qwen3-VL
+    // keeps the raster path to preserve its separately-validated behavior.
     for (int midx = 0; midx < n_merged; midx++) {
       float *dst = merged_data.data() + (size_t)midx * merger_in_dim;
       const float *src = normed_data.data() + (size_t)midx * merge * merge * H;
@@ -3249,10 +3354,19 @@ static void post_load_init(qwen2vl_ocr_context *ctx, const char *gguf_path) {
     int arch_idx = gguf_find_key(g, "general.architecture");
     if (arch_idx >= 0) {
       std::string arch = gguf_get_val_str(g, arch_idx);
-      if (arch == "qwen3vl" && !is_qari && !is_unimumer) {
-        ctx->prompt = "Read all the text in this image. Output the exact text content only.";
+      if ((arch == "qwen3vl" || arch == "qwen2vl") && !is_qari &&
+          !is_unimumer) {
+        // Both Qwen2.5-VL (arch "qwen2vl") and Qwen3-VL are instruct VLMs whose
+        // default "Describe this image." prompt yields a verbose description
+        // instead of a transcription. Use an explicit OCR prompt so --ocr
+        // returns the bare text.
+        ctx->prompt =
+            "Read all the text in this image. Output the exact text content "
+            "only.";
         if (ctx->inner.verbosity >= 1) {
-          fprintf(stderr, "qwen2vl_ocr: detected qwen3vl architecture, using OCR prompt\n");
+          fprintf(stderr,
+                  "qwen2vl_ocr: detected %s architecture, using OCR prompt\n",
+                  arch.c_str());
         }
       }
     }
