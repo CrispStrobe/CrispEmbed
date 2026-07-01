@@ -545,7 +545,13 @@ bool encode_vision(context &ctx, const float *pixels, int H, int W,
         ggml_tensor *px_in = ggml_new_tensor_2d(pe_ctx, GGML_TYPE_F32, patch_flat, n_patches);
         ggml_set_name(px_in, "px_in"); ggml_set_input(px_in);
 
-        ggml_tensor *pe_out = ggml_mul_mat(pe_ctx, ctx.m.patch_embed_w, px_in);
+        // patch_embed leading dim is 1176 (3*2*14*14), not a multiple of the
+        // q8_0 block size (32) — the quantized matmul path can't handle it, so
+        // dequantize to F32 first. (F16/F32 weights pass through unchanged.)
+        ggml_tensor *pe_w = ctx.m.patch_embed_w;
+        if (pe_w->type != GGML_TYPE_F32 && pe_w->type != GGML_TYPE_F16)
+            pe_w = ggml_cast(pe_ctx, pe_w, GGML_TYPE_F32);
+        ggml_tensor *pe_out = ggml_mul_mat(pe_ctx, pe_w, px_in);
         if (ctx.m.patch_embed_b) pe_out = ggml_add(pe_ctx, pe_out, ctx.m.patch_embed_b);
         ggml_set_name(pe_out, "pe_out"); ggml_set_output(pe_out);
 
@@ -763,6 +769,10 @@ bool encode_vision(context &ctx, const float *pixels, int H, int W,
         // Downsample: Conv2D(D→out_D, 2×2, stride=2, bias)
         {
             ggml_tensor *w = ctx.m.downsample_w;
+            // Dequantize BEFORE reshaping: reshaping a quantized (q8_0) tensor to
+            // leading dim 2 would split its 32-element blocks and corrupt it.
+            if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
+                w = ggml_cast(mg, w, GGML_TYPE_F32);
             // Reshape to 4D: (KW=2, KH=2, IC=D, OC=out_D)
             if (ggml_n_dims(w) <= 2) w = ggml_reshape_4d(mg, w, 2, 2, D, out_D);
             if (w->type != GGML_TYPE_F32) w = ggml_cast(mg, w, GGML_TYPE_F32);
@@ -781,16 +791,23 @@ bool encode_vision(context &ctx, const float *pixels, int H, int W,
 
         // GlmOcrVisionPatchMerger: proj -> post_projection_norm(LayerNorm) ->
         //   act1(GELU erf) -> down( silu(gate(h)) * up(h) ). NO trailing norm.
-        x = ggml_mul_mat(mg, ctx.m.merger.proj_w, x);
+        // Dequantize merger weights to F32 (quantized matmul on the small merger
+        // graph mis-handles these dims; F32 also keeps precision — the merger
+        // input still carries the ViT's large activations).
+        auto mmw = [&](ggml_tensor *w) -> ggml_tensor * {
+            return (w->type == GGML_TYPE_F32 || w->type == GGML_TYPE_F16)
+                       ? w : ggml_cast(mg, w, GGML_TYPE_F32);
+        };
+        x = ggml_mul_mat(mg, mmw(ctx.m.merger.proj_w), x);
         x = ggml_norm(mg, x, 1e-5f);   // LayerNorm (eps 1e-5, nn.LayerNorm default)
         if (ctx.m.merger.norm_w) x = ggml_mul(mg, x, ctx.m.merger.norm_w);
         if (ctx.m.merger.norm_b) x = ggml_add(mg, x, ctx.m.merger.norm_b);
         x = ggml_gelu_erf(mg, x);      // act1 = nn.GELU() (exact/erf)
 
         // SwiGLU: down( silu(gate(x)) * up(x) )
-        ggml_tensor *gate = ggml_silu(mg, ggml_mul_mat(mg, ctx.m.merger.gate_w, x));
-        ggml_tensor *up = ggml_mul_mat(mg, ctx.m.merger.up_w, x);
-        x = ggml_mul_mat(mg, ctx.m.merger.down_w, ggml_mul(mg, gate, up));
+        ggml_tensor *gate = ggml_silu(mg, ggml_mul_mat(mg, mmw(ctx.m.merger.gate_w), x));
+        ggml_tensor *up = ggml_mul_mat(mg, mmw(ctx.m.merger.up_w), x);
+        x = ggml_mul_mat(mg, mmw(ctx.m.merger.down_w), ggml_mul(mg, gate, up));
 
         ggml_set_name(x, "merger_out"); ggml_set_output(x);
 
