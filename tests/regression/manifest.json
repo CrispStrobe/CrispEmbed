@@ -35,9 +35,8 @@
       "engine": "glm-ocr",
       "gguf": {"repo": "cstr/glm-ocr-crispembed-GGUF", "file": "glm-ocr-q8_0.gguf", "revision": "main", "approx_size_mb": 950},
       "sample": "tests/regression/images/fox.png",
-      "expected_text": null,
-      "match": {"max_cer": 0.12},
-      "diff": {"binary": "test-glm-ocr-diff", "ref": {"repo": "cstr/glm-ocr-crispembed-GGUF", "file": "glm-ocr-ref.gguf"}, "thresholds": {"*": 0.995}}
+      "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
+      "match": {"max_cer": 0.12}
     },
     {
       "name": "internvl2-1b",
