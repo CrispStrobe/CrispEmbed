@@ -269,15 +269,31 @@ Metal, ggml 0.10.0.
   rpaths) — `cmake --install` bundle with `@loader_path`/`$ORIGIN`. (PR #23)
 - **Model downloader** didn't create the cache dir before writing `.tmp`. (PR #24)
 
+- **got-ocr2 additional C++ fixes** (2026-07-01):
+  - Neck flatten permute: `(2,0,1,3)` produced `(H,C,W)` not `(C,W,H)`;
+    fixed to `(1,2,0,3)`. Verified correct token ordering with numpy test.
+  - LN2d ensure_f32: neck LN weight ggml_mul crashed on F16×F32 mismatch
+    in quantized models; added `ensure_f32()` cast.
+  - Prompt template: added correct Qwen2/MPT ChatML template (system +
+    `<img><imgpad>*256</img>\nOCR: ` + assistant). No `\n` between
+    `<|im_end|>` and `<|im_start|>` — matches original conversation.py.
+  - no_repeat_ngram: ported from internvl2_ocr.cpp (ngram=3).
+  - Stop tokens: added `<|im_end|>` (151645) alongside eos.
+  - Debug env: `CRISPEMBED_GOT_OCR_DEBUG=1` sets verbosity=2.
+  - Per-layer diff test passes ALL layers (cos_min≥0.999999 with f16).
+  - **Model weights issue**: Python reference (F32 safetensors, full 12-layer
+    ViT + 24-layer LLM, correct prompt, real text image) also produces
+    "color" (token 3423) as first token — confirmed NOT a C++ bug.
+    The `stepfun-ai/GOT-OCR2_0` weights may need `GOT-OCR-2.0-hf` (HF
+    transformers version) which has a different projector architecture
+    (conv_upsamplers). Need to re-convert GGUF from the HF version.
+
 **Still open:**
-- **got-ocr2 vision-encoder correctness** — 4 bugs fixed (LN2d permute #27,
-  q8_0 conv reshape #27, neck-LN F16×F32 CPU abort ba74093, neck flatten permute
-  7f43e4d); now runs on CPU+Metal but STILL emits garbage → >=1 more vision bug
-  (patch embed / ViT rel-pos+window attn / neck convs / conv-weight prep). Now
-  CPU-reproducible+deterministic. Localize via numpy-reference diff (no download:
-  compare encode_vision vs tools/dump_got_ocr_reference.py; or generate ref.gguf
-  for tests/test-got-ocr-diff). The `got_ocr — DONE` note below is perf, not
-  correctness.
+- **got-ocr2 model weights** — per-layer diff passes ALL stages
+  (cos_min≥0.999999 with f16). Pure-Python F32 reference also produces
+  "color" (not OCR text) for any image — the `stepfun-ai/GOT-OCR2_0`
+  weights may be incomplete. Need to re-convert GGUF from `GOT-OCR-2.0-hf`
+  (has conv_upsampler projector, different architecture).
 - **DBNet detector on Metal** — `unsupported op 'CPY'` abort; `OCR_DETECT_FORCE_CPU=1`
   works around it but per-region TrOCR on CPU is slow. Want a Metal CPY path or a
   CPU-default detector.

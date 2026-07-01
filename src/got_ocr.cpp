@@ -22,6 +22,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 using core_cpu::to_f32;
@@ -1334,6 +1335,32 @@ static bool run_cached_step(got_ocr::context &ctx,
 // Generate
 // ---------------------------------------------------------------------------
 
+static int argmax_no_repeat_ngram(const float *logits, int V,
+                                  const std::vector<int32_t> &hist, int ngram) {
+    std::unordered_set<int> banned;
+    const int k = ngram - 1;
+    const int n = (int)hist.size();
+    if (ngram > 1 && n >= k && k > 0) {
+        for (int i = 0; i + k < n; i++) {
+            bool match = true;
+            for (int j = 0; j < k; j++) {
+                if (hist[i + j] != hist[n - k + j]) { match = false; break; }
+            }
+            if (match) banned.insert(hist[i + k]);
+        }
+    }
+    int best_id = -1;
+    float best = -INFINITY;
+    for (int v = 0; v < V; v++) {
+        if (!banned.empty() && banned.count(v)) continue;
+        if (logits[v] > best) { best = logits[v]; best_id = v; }
+    }
+    if (best_id < 0) {
+        for (int v = 0; v < V; v++) if (logits[v] > best) { best = logits[v]; best_id = v; }
+    }
+    return best_id;
+}
+
 bool got_ocr::generate(context &ctx,
                        const float *image_embeds, int n_image_tokens, int embed_dim,
                        const int32_t *prompt_ids, int n_prompt,
@@ -1400,6 +1427,7 @@ bool got_ocr::generate(context &ctx,
     ggml_backend_tensor_set(lg.img_embeds, img_data.data(), 0, D * T * sizeof(float));
 
     ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
+
     if (bench) {
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - t_gen_total).count();
@@ -1412,9 +1440,10 @@ bool got_ocr::generate(context &ctx,
     ggml_backend_tensor_get(lg.logits_out, last_logits.data(), offset, V * sizeof(float));
     ggml_free(lg.gctx);
 
-    // Argmax
+    // Argmax with no-repeat-ngram blocking (ngram=3)
+    const int no_repeat_ngram = 3;
     out.token_confidences.clear();
-    int next_token = (int)(std::max_element(last_logits.begin(), last_logits.end()) - last_logits.begin());
+    int next_token = argmax_no_repeat_ngram(last_logits.data(), V, out.token_ids, no_repeat_ngram);
 
     // Confidence: numerically-stable softmax for winning token
     {
@@ -1427,7 +1456,17 @@ bool got_ocr::generate(context &ctx,
     out.token_ids.push_back(next_token);
     ctx.kvc.n_past = T;
 
-    if (next_token == (int)l.eos_token_id) {
+    if (ctx.verbosity >= 2) {
+        fprintf(stderr, "got_ocr: prefill %d tokens, %zu image spliced, first=%d\n",
+                T, sd.token_to_image.size(), next_token);
+    }
+
+    // Stop tokens: <|endoftext|> (eos) and <|im_end|> (151645)
+    auto is_stop = [&](int tok_id) {
+        return tok_id == (int)l.eos_token_id || tok_id == 151645;
+    };
+
+    if (is_stop(next_token)) {
         out.text = ctx.tok.decode(out.token_ids.data(), (int)out.token_ids.size());
         return true;
     }
@@ -1443,7 +1482,8 @@ bool got_ocr::generate(context &ctx,
             break;
         ctx.kvc.n_past += 1;
 
-        next_token = (int)(std::max_element(logits.begin(), logits.end()) - logits.begin());
+        next_token = argmax_no_repeat_ngram(logits.data(), (int)logits.size(),
+                                             out.token_ids, no_repeat_ngram);
 
         {
             float max_l = logits[next_token];
@@ -1462,7 +1502,7 @@ bool got_ocr::generate(context &ctx,
             fprintf(stderr, "[got_ocr-bench] decode_step[%d]: %lldms\n", step + 1, (long long)step_ms);
         }
 
-        if (next_token == (int)l.eos_token_id) break;
+        if (is_stop(next_token)) break;
     }
 
     if (bench) {
@@ -1488,7 +1528,8 @@ struct got_ocr_context {
 
 got_ocr_context * got_ocr_init(const char * model_path, int n_threads) {
     auto *c = new got_ocr_context;
-    if (!got_ocr::load(c->inner, model_path, n_threads, 1)) {
+    int verbosity = std::getenv("CRISPEMBED_GOT_OCR_DEBUG") ? 2 : 1;
+    if (!got_ocr::load(c->inner, model_path, n_threads, verbosity)) {
         delete c;
         return nullptr;
     }
@@ -1537,12 +1578,54 @@ const char * got_ocr_recognize_raw(got_ocr_context * ctx,
         return "";
     }
 
-    // Build prompt: [image_token_id] * image_token_len
+    // Build prompt with Qwen2 chat template:
+    //   <|im_start|>system\n{system_msg}<|im_end|>\n
+    //   <|im_start|>user\n<img><imgpad>*256</img>\nOCR: <|im_end|>\n
+    //   <|im_start|>assistant\n
     int n_img_tokens = vr.n_tokens;
-    int prompt_len = (int)l.image_token_len;
-    std::vector<int32_t> prompt(prompt_len);
-    for (int i = 0; i < prompt_len; i++)
-        prompt[i] = (int32_t)l.image_token_id;
+    const int32_t im_start = 151644;   // <|im_start|>
+    const int32_t im_end   = 151645;   // <|im_end|>
+    const int32_t newline  = 198;      // \n
+    const int32_t img_open = (int32_t)l.image_start_token_id;  // <img>
+    const int32_t img_close = (int32_t)l.image_end_token_id;   // </img>
+    const int32_t imgpad   = (int32_t)l.image_token_id;        // <imgpad>
+    int n_imgpad = (int)l.image_token_len;
+
+    // System message tokens: "system" + \n + "You should follow the instructions carefully and explain your answers in detail."
+    // Pre-encoded from Qwen2 tiktoken (these are stable BPE token IDs).
+    const int32_t sys_role[] = {8948};
+    const int32_t sys_text[] = {2610, 1265, 1795, 279, 11221, 15516, 323, 10339, 697, 11253, 304, 7716, 13};
+    const int32_t user_role[] = {872};
+    const int32_t ocr_task[] = {93495, 25, 220};  // "OCR: "
+    const int32_t asst_role[] = {77091};
+
+    std::vector<int32_t> prompt;
+    prompt.reserve(n_imgpad + 50);
+
+    // System turn (MPT/ChatML: no \n between <|im_end|> and <|im_start|>)
+    prompt.push_back(im_start);
+    prompt.insert(prompt.end(), std::begin(sys_role), std::end(sys_role));
+    prompt.push_back(newline);
+    prompt.insert(prompt.end(), std::begin(sys_text), std::end(sys_text));
+    prompt.push_back(im_end);
+
+    // User turn
+    prompt.push_back(im_start);
+    prompt.insert(prompt.end(), std::begin(user_role), std::end(user_role));
+    prompt.push_back(newline);
+    prompt.push_back(img_open);
+    for (int i = 0; i < n_imgpad; i++) prompt.push_back(imgpad);
+    prompt.push_back(img_close);
+    prompt.push_back(newline);
+    prompt.insert(prompt.end(), std::begin(ocr_task), std::end(ocr_task));
+    prompt.push_back(im_end);
+
+    // Assistant turn
+    prompt.push_back(im_start);
+    prompt.insert(prompt.end(), std::begin(asst_role), std::end(asst_role));
+    prompt.push_back(newline);
+
+    int prompt_len = (int)prompt.size();
 
     // Generate
     got_ocr::generate_result gen;
