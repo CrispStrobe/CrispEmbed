@@ -4,6 +4,69 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 1, 2026 — GLM-OCR: garbage OCR fixed (5 bugs + q8_0), verified vs real model
+
+`glm-ocr` (zai-org/GLM-OCR, 0.9B) produced garbage OCR on every backend. The
+prior handover (`handover-prompts/glm-ocr-vision-rope-fix.md`) blamed a single
+missing vision RoPE — **wrong on two counts**: it read `glm4v` modeling code
+(GLM-OCR is the distinct `glm_ocr` / `glm_ocr_vision` arch, only in transformers
+`main`), and its "confirmed" reference dumps were the **stale no-rope** ones, so
+"matches ref without rope" validated nothing. RoPE was needed, but was 1 of **5**
+independent bugs. Ground truth came from running the **real model** (transformers
+`main` + the ~1.8 GB checkpoint) and diffing every stage.
+
+**Result**: fox.png → `The quick brown fox jumps over the lazy dog. 12345` on
+**f16 and q8_0, CPU and Metal**, matching the real model token-for-token.
+
+**5 bugs fixed** (all verified against the real transformers-`main` model):
+1. **Missing vision 2D RoPE** — Qwen2-VL-style, `dim=head_dim/2`, θ=10000, per-patch
+   `[h·f, w·f]` freqs, `emb=cat(rot,rot)`, NEOX split-half. Raster patch order +
+   per-patch `(row,col)` is equivalent to HF merge-window order under full
+   attention. On by default; `GLM_OCR_VISION_ROPE=0` disables. Q/K match at 0.99999.
+2. **Wrong merger structure** — `GlmOcrVisionPatchMerger` is
+   `proj → LayerNorm(1e-5) → GELU(erf) → down(silu(gate)·up)` (no trailing norm);
+   code had `proj → SwiGLU → LayerNorm`. This made image embeds uncorrelated
+   (cos ≈ 0); after the fix they match the real `vis.merger` at mean cos 0.99.
+3. **Fixed 336² instead of dynamic resolution** — processor is
+   `Glm46VImageProcessor` (Qwen2-VL smart-resize, min/max pixels, dims ×28), not a
+   fixed square. Squashing fox.png (800×200, 4:1) destroyed it. Added smart-resize
+   + a variable grid flowing through patchify → rope → merger → prompt image-token
+   count → LLM image mRoPE. fox.png → 812×196, grid 14×58 = ref `image_grid_thw`.
+4. **LLM image mRoPE positions** — matched `get_rope_index`/`get_vision_position_ids`:
+   image patch `(row,col)` → `temporal=start, h=start+row, w=start+col`; text resumes
+   at `start+max(gh,gw)`; decode continues from the *compressed* position
+   (`ctx.mrope_next_pos`), since image tokens compress positions.
+5. **Prompt / EOS / decode** — correct template
+   `[gMASK]<sop><|user|>\n<image>Text Recognition:<|assistant|>\n` (old prompt
+   dropped `[gMASK]` + instruction, added a spurious `<|system|>`); stop on both
+   eos ids `[59246, 59253]`; GPT-2 byte-level decode (was emitting `Ġ`/`Ċ`).
+
+**q8_0** (both backends): dequantize weights **before** reshaping. The downsample
+weight was reshaped to leading dim 2 before `ggml_cast` to F32, splitting q8_0's
+32-element blocks → CPU garbage + the Metal `GGML_ASSERT(ne00 % blck)` abort. Same
+class as got-ocr `11c2bc7`. q8_0 weights themselves were fine (not corrupt).
+
+**Sink-token / diff-gate finding**: this ViT has massive outlier activations
+(`max_abs`→~1900). On the synthetic-gradient diff image a few "sink" tokens' cos
+collapses in C++ (ggml) but not in numpy — verified it's **not** weight precision
+(numpy f16-weights stays 0.9999) nor compute precision (f32-vs-f64 stays 0.9999),
+but ggml-vs-BLAS **reduction order** on catastrophic-cancellation tokens. It's a
+test-image artifact: on real images C++ vs the real model is median 1.000 (OCR
+exact). So the per-token `cos_min` diff gate can't hold for glm-ocr — the diff
+block was removed from the regression (opt-in per model; affects only glm-ocr) and
+`expected_text` guards correctness.
+
+**Files**: `src/glm_ocr.{cpp,h}`, `tools/dump_glm_ocr_reference.py` (added rope +
+corrected merger), `tests/regression/manifest.json` (expected_text; diff removed),
+`tests/test_glm_ocr_{diff,image}.cpp` (new `encode_vision(H,W)` signature). Reference
+`glm-ocr-ref-full.gguf` regenerated (rope + merger) and re-uploaded to
+`cstr/glm-ocr-crispembed-GGUF`. Commits `cb681e0`, `908c667`, `4f3a392`, `0e914a3`.
+Deep-dive: `LEARNINGS.md` → "glm-ocr: five real bugs". Meta-lesson: independently
+reproduce a handover's root-cause claim before building on it — and know your
+reference (`get_image_features` ≠ the merger hook; stale gguf refs ≠ the model).
+
+---
+
 ## June 23, 2026 — Unlimited-OCR port (Baidu, SAM + CLIP + DeepSeek-V2 MoE)
 
 Ported `baidu/Unlimited-OCR` (MIT, 3.3B params) as a new OCR engine.
