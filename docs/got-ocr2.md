@@ -59,6 +59,13 @@ reference (`tools/dump_got_ocr_reference.py`, harness `tests/test_got_ocr_diff.c
 
 - **End-to-end OCR**: Q4_K, Q8_0 and F16 all produce byte-identical output on the
   test page ("The quick brown fox jumps over the lazy dog. 12345").
+- **Backend coverage**: validated on both Metal *and* the pure CPU backend
+  (`GOT_OCR_FORCE_CPU=1`). On CPU the quantized-decoder Q8_0 still passes at
+  cos ≥ 0.9998 per decoder layer and OCR is correct. **A quantized decoder is
+  correct on both backends** — earlier CPU-only garbage was stale code (the
+  quant-specific `LN2d ensure_f32` / conv-reshape fixes), not a precision or
+  CPU-kernel limitation. Do not "fix" CPU garbage by forcing F16; pull current
+  `main` instead.
 
 ## Per-token decode speed (Apple M1)
 
