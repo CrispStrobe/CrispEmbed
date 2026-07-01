@@ -171,210 +171,95 @@ bool load_tensors(context &ctx, const char *path) {
 
 // ── Vision encoder graph ────────────────────────────────────────────
 
+// Build the monolithic vision encoder graph (24 CogViT layers + post-norm).
+// The graph computes correctly internally — ggml_gallocr reuses input tensor
+// memory after first consumer, but the computation reads inputs before freeing.
+// Only the FINAL output tensor (vis_output) is reliable for readback.
 struct vision_graph {
     ggml_cgraph *gf = nullptr;
     ggml_context *gctx = nullptr;
-    ggml_tensor *pixel_in = nullptr;      // raw pixels (unused when patch_embed_in is set)
-    ggml_tensor *patch_embed_in = nullptr; // pre-computed patch embeddings
-    ggml_tensor *output = nullptr;
-    std::vector<ggml_tensor *> layer_outputs;
+    ggml_tensor *embed_in = nullptr;   // pre-computed patch embeddings input
+    ggml_tensor *output = nullptr;     // final post-norm output
 };
 
-// Build and run a single CogViT transformer layer as a small ggml graph.
-// Returns the layer output in `io_data` (in-place, size D * n_patches).
-static bool run_vis_layer(context &ctx, int layer_idx, int n_patches,
-                          std::vector<float> &io_data) {
+static vision_graph build_vision_graph(context &ctx, int n_patches) {
+    vision_graph vg;
     const auto &vhp = ctx.m.vhp;
     const int D = (int)vhp.hidden_size;
     const int nh = (int)vhp.num_heads;
     const int hd = D / nh;
+    const int n_layers = (int)vhp.depth;
     const float eps = vhp.rms_norm_eps;
     const int T = n_patches;
 
-    size_t meta = ggml_tensor_overhead() * 60 + ggml_graph_overhead_custom(512, false);
-    ggml_init_params ip{meta, nullptr, true};
+    size_t meta_size = (size_t)(n_layers * 40 + 200) * ggml_tensor_overhead()
+                       + ggml_graph_overhead_custom(16384, false);
+    ctx.compute_meta.resize(meta_size);
+    ggml_init_params ip{meta_size, ctx.compute_meta.data(), true};
     ggml_context *g = ggml_init(ip);
+    vg.gctx = g;
 
-    ggml_tensor *x_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
-    ggml_set_name(x_in, "layer_in"); ggml_set_input(x_in);
+    ggml_cgraph *gf = ggml_new_graph_custom(g, 16384, false);
+
+    // Input: pre-computed patch embeddings (D, n_patches)
+    ggml_tensor *x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+    ggml_set_name(x, "vis_embed_in");
+    ggml_set_input(x);
+    vg.embed_in = x;
 
     auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor * {
         return ggml_mul(g, ggml_rms_norm(g, t, eps), w);
     };
 
-    auto &blk = ctx.m.vis_blocks[layer_idx];
-    ggml_tensor *x = x_in;
+    for (int i = 0; i < n_layers; i++) {
+        auto &blk = ctx.m.vis_blocks[i];
 
-    // Pre-norm
-    ggml_tensor *h = rmsnorm(x, blk.norm1_w);
-    ggml_set_name(h, "after_norm1"); ggml_set_output(h);
+        ggml_tensor *h = rmsnorm(x, blk.norm1_w);
+        ggml_tensor *qkv = ggml_mul_mat(g, blk.qkv_w, h);
+        if (blk.qkv_b) qkv = ggml_add(g, qkv, blk.qkv_b);
 
-    // Cast F16 weights to F32 before mul_mat to test if F16 matmul path
-    // has precision issues. Gated: GLM_OCR_F32_CAST=1
-    static const bool f32_cast = (std::getenv("GLM_OCR_F32_CAST") != nullptr);
-    auto maybe_cast = [&](ggml_tensor *w) -> ggml_tensor * {
-        if (f32_cast && w && w->type != GGML_TYPE_F32)
-            return ggml_cast(g, w, GGML_TYPE_F32);
-        return w;
-    };
+        ggml_tensor *Q = ggml_view_2d(g, qkv, D, T, qkv->nb[1], 0);
+        ggml_tensor *K = ggml_view_2d(g, qkv, D, T, qkv->nb[1], D * sizeof(float));
+        ggml_tensor *V = ggml_view_2d(g, qkv, D, T, qkv->nb[1], 2 * D * sizeof(float));
+        Q = ggml_reshape_3d(g, ggml_cont(g, Q), hd, nh, T);
+        K = ggml_reshape_3d(g, ggml_cont(g, K), hd, nh, T);
+        V = ggml_reshape_3d(g, ggml_cont(g, V), hd, nh, T);
+        if (blk.q_norm_w) Q = ggml_mul(g, ggml_rms_norm(g, Q, eps), blk.q_norm_w);
+        if (blk.k_norm_w) K = ggml_mul(g, ggml_rms_norm(g, K, eps), blk.k_norm_w);
 
-    // Fused QKV
-    ggml_tensor *qkv = ggml_mul_mat(g, maybe_cast(blk.qkv_w), h);
-    if (blk.qkv_b) qkv = ggml_add(g, qkv, blk.qkv_b);
-    ggml_set_name(qkv, "qkv"); ggml_set_output(qkv);
+        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
+        K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
+        V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-    ggml_tensor *Q = ggml_view_2d(g, qkv, D, T, qkv->nb[1], 0);
-    ggml_tensor *K = ggml_view_2d(g, qkv, D, T, qkv->nb[1], D * sizeof(float));
-    ggml_tensor *V = ggml_view_2d(g, qkv, D, T, qkv->nb[1], 2 * D * sizeof(float));
-
-    Q = ggml_reshape_3d(g, ggml_cont(g, Q), hd, nh, T);
-    K = ggml_reshape_3d(g, ggml_cont(g, K), hd, nh, T);
-    V = ggml_reshape_3d(g, ggml_cont(g, V), hd, nh, T);
-
-    if (blk.q_norm_w) Q = ggml_mul(g, ggml_rms_norm(g, Q, eps), blk.q_norm_w);
-    if (blk.k_norm_w) K = ggml_mul(g, ggml_rms_norm(g, K, eps), blk.k_norm_w);
-
-    // Save Q before permute for diff (reshape to 2D for comparison)
-    ggml_tensor *Q_flat = ggml_reshape_2d(g, ggml_cont(g, Q), D, T);
-    ggml_set_name(Q_flat, "Q_normed"); ggml_set_output(Q_flat);
-
-    Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));  // (hd, T, nh)
-    K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
-    V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
-
-    float scale = 1.0f / std::sqrt((float)hd);
-
-    // Use manual attention instead of flash_attn_ext for precision testing.
-    // Gated: GLM_OCR_MANUAL_ATTN=1
-    static const bool manual_attn = (std::getenv("GLM_OCR_MANUAL_ATTN") != nullptr);
-    ggml_tensor *attn;
-    if (manual_attn) {
-        // scores = K^T @ Q * scale → (T, T, nh)
-        ggml_tensor *scores = ggml_mul_mat(g, K, Q);  // (T, T, nh)
-        scores = ggml_scale(g, scores, scale);
-        scores = ggml_soft_max(g, scores);  // softmax over ne[0]=T (key dim)
-        // V_t = V transposed to (T, hd, nh) for matmul
-        ggml_tensor *V_t = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
-        attn = ggml_mul_mat(g, V_t, scores);  // (hd, T, nh)
-        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));  // (hd, nh, T)
+        float scale = 1.0f / std::sqrt((float)hd);
+        ggml_tensor *attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
         attn = ggml_reshape_2d(g, attn, D, T);
-    } else {
-        attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
-        attn = ggml_reshape_2d(g, attn, D, T);
+        attn = ggml_mul_mat(g, blk.proj_w, attn);
+        if (blk.proj_b) attn = ggml_add(g, attn, blk.proj_b);
+        x = ggml_add(g, x, attn);
+
+        h = rmsnorm(x, blk.norm2_w);
+        ggml_tensor *gate = ggml_mul_mat(g, blk.ffn_gate_w, h);
+        if (blk.ffn_gate_b) gate = ggml_add(g, gate, blk.ffn_gate_b);
+        gate = ggml_silu(g, gate);
+        ggml_tensor *up = ggml_mul_mat(g, blk.ffn_up_w, h);
+        if (blk.ffn_up_b) up = ggml_add(g, up, blk.ffn_up_b);
+        ggml_tensor *ffn = ggml_mul_mat(g, blk.ffn_down_w, ggml_mul(g, gate, up));
+        if (blk.ffn_down_b) ffn = ggml_add(g, ffn, blk.ffn_down_b);
+        x = ggml_add(g, x, ffn);
     }
 
-    attn = ggml_mul_mat(g, maybe_cast(blk.proj_w), attn);
-    if (blk.proj_b) attn = ggml_add(g, attn, blk.proj_b);
-    x = ggml_add(g, x, attn);
-    ggml_set_name(x, "after_attn"); ggml_set_output(x);
+    // Post-layernorm
+    if (ctx.m.post_layernorm_w) {
+        x = rmsnorm(x, ctx.m.post_layernorm_w);
+    }
 
-    // SwiGLU FFN
-    h = rmsnorm(x, blk.norm2_w);
-    ggml_set_name(h, "after_norm2"); ggml_set_output(h);
-    ggml_tensor *gate = ggml_mul_mat(g, maybe_cast(blk.ffn_gate_w), h);
-    if (blk.ffn_gate_b) gate = ggml_add(g, gate, blk.ffn_gate_b);
-    gate = ggml_silu(g, gate);
-    ggml_tensor *up = ggml_mul_mat(g, maybe_cast(blk.ffn_up_w), h);
-    if (blk.ffn_up_b) up = ggml_add(g, up, blk.ffn_up_b);
-    ggml_tensor *ffn = ggml_mul_mat(g, maybe_cast(blk.ffn_down_w), ggml_mul(g, gate, up));
-    if (blk.ffn_down_b) ffn = ggml_add(g, ffn, blk.ffn_down_b);
-    x = ggml_add(g, x, ffn);
-
-    ggml_set_name(x, "layer_out"); ggml_set_output(x);
-
-    ggml_cgraph *gf = ggml_new_graph_custom(g, 512, false);
+    ggml_set_name(x, "vis_output");
+    ggml_set_output(x);
     ggml_build_forward_expand(gf, x);
-
-    ggml_backend_sched_reset(ctx.sched);
-    if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
-        fprintf(stderr, "glm_ocr: vis layer %d graph alloc failed\n", layer_idx);
-        ggml_free(g);
-        return false;
-    }
-    ggml_backend_tensor_set(x_in, io_data.data(), 0, D * T * sizeof(float));
-    ggml_backend_sched_graph_compute(ctx.sched, gf);
-
-    // Per-op diff comparison (when GLM_OCR_LAYER_REF + GLM_OCR_LAYER_IDX are set)
-    static const char *layer_ref = std::getenv("GLM_OCR_LAYER_REF");
-    static int dbg_layer = std::getenv("GLM_OCR_LAYER_IDX") ? atoi(std::getenv("GLM_OCR_LAYER_IDX")) : 12;
-    if (layer_ref && layer_idx == dbg_layer) {
-        crispembed_diff::Ref lref;
-        if (lref.load(layer_ref)) {
-            auto cmp = [&](const char *name) {
-                ggml_tensor *t = ggml_graph_get_tensor(gf, name);
-                if (!t || !lref.has(name)) return;
-                size_t n = ggml_nelements(t);
-                std::vector<float> buf(n);
-                ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
-                auto r = lref.compare(name, buf.data(), n);
-                printf("    [L12] %s: cos=%.6f max_abs=%.6f %s\n",
-                       name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
-            };
-            // Compare the input we fed
-            {
-                auto r = lref.compare("layer12_input", io_data.data(), D * T);
-                printf("    [L12] input: cos=%.6f max_abs=%.6f %s\n",
-                       r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
-            }
-            cmp("after_norm1");    // → layer12_after_norm1
-            cmp("qkv");           // → layer12_qkv
-            cmp("Q_normed");      // → layer12_Q_normed
-            cmp("after_attn");    // → layer12_after_attn
-            cmp("after_norm2");   // → layer12_after_norm2
-            cmp("layer_out");     // → layer12_output
-
-            // Also compare using the ref's naming convention
-            auto cmp2 = [&](const char *graph_name, const char *ref_name) {
-                ggml_tensor *t = ggml_graph_get_tensor(gf, graph_name);
-                if (!t || !lref.has(ref_name)) return;
-                size_t n = ggml_nelements(t);
-                std::vector<float> buf(n);
-                ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
-                auto r = lref.compare(ref_name, buf.data(), n);
-                printf("    [L12] %s vs %s: cos=%.6f max_abs=%.6f %s\n",
-                       graph_name, ref_name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
-            };
-            cmp2("after_norm1", "layer12_after_norm1");
-            cmp2("qkv", "layer12_qkv");
-            cmp2("Q_normed", "layer12_Q_normed");
-            cmp2("after_attn", "layer12_after_attn");
-            cmp2("after_norm2", "layer12_after_norm2");
-            cmp2("layer_out", "layer12_output");
-        }
-    }
-
-    ggml_backend_tensor_get(x, io_data.data(), 0, D * T * sizeof(float));
-    ggml_free(g);
-    return true;
-}
-
-// Run post-layernorm as a small graph.
-static bool run_vis_post_norm(context &ctx, int n_patches, std::vector<float> &io_data) {
-    if (!ctx.m.post_layernorm_w) return true;
-    const int D = (int)ctx.m.vhp.hidden_size;
-    const float eps = ctx.m.vhp.rms_norm_eps;
-
-    size_t meta = ggml_tensor_overhead() * 8 + ggml_graph_overhead();
-    ggml_init_params ip{meta, nullptr, true};
-    ggml_context *g = ggml_init(ip);
-
-    ggml_tensor *x_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_patches);
-    ggml_set_name(x_in, "norm_in"); ggml_set_input(x_in);
-    ggml_tensor *x = ggml_mul(g, ggml_rms_norm(g, x_in, eps), ctx.m.post_layernorm_w);
-    ggml_set_name(x, "norm_out"); ggml_set_output(x);
-
-    ggml_cgraph *gf = ggml_new_graph(g);
-    ggml_build_forward_expand(gf, x);
-
-    ggml_backend_sched_reset(ctx.sched);
-    if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
-        ggml_free(g); return false;
-    }
-    ggml_backend_tensor_set(x_in, io_data.data(), 0, D * n_patches * sizeof(float));
-    ggml_backend_sched_graph_compute(ctx.sched, gf);
-    ggml_backend_tensor_get(x, io_data.data(), 0, D * n_patches * sizeof(float));
-    ggml_free(g);
-    return true;
+    vg.gf = gf;
+    vg.output = x;
+    return vg;
 }
 
 }  // anonymous namespace
@@ -516,32 +401,28 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
         ggml_free(pe_ctx);
     }
 
-    // Phase 2: Run transformer layers one at a time (per-layer graphs).
-    // A single monolithic graph causes ggml_gallocr to reuse input buffers
-    // for compute tensors, corrupting the data mid-graph.
-    std::vector<float> layer_data = patch_embed_data;  // working buffer (D, n_patches)
-    const int n_layers = (int)vhp.depth;
-    for (int i = 0; i < n_layers; i++) {
-        if (!run_vis_layer(ctx, i, n_patches, layer_data)) {
-            return false;
-        }
-        // Diff comparison for this layer
-        if (!ctx.diff_ref_path.empty()) {
-            crispembed_diff::Ref ref_l;
-            if (ref_l.load(ctx.diff_ref_path.c_str())) {
-                char name[64];
-                snprintf(name, sizeof(name), "vis_layer_%d", i);
-                auto r = ref_l.compare(name, layer_data.data(), layer_data.size());
-                printf("  %s: cos=%.6f max_abs=%.6f %s\n",
-                       name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
-            }
-        }
-    }
+    // Phase 2: Run all 24 CogViT layers + post-norm in one monolithic graph.
+    // The graph computes correctly internally (ggml_gallocr reuses input
+    // tensor memory after first consumer, but ops read before the reuse).
+    // Only the final output is read back.
+    vision_graph vg = build_vision_graph(ctx, n_patches);
 
-    // Post-layernorm
-    if (!run_vis_post_norm(ctx, n_patches, layer_data)) {
+    ggml_backend_sched_reset(ctx.sched);
+    if (!ggml_backend_sched_alloc_graph(ctx.sched, vg.gf)) {
+        fprintf(stderr, "glm_ocr: vision graph alloc failed\n");
+        ggml_free(vg.gctx);
         return false;
     }
+
+    ggml_backend_tensor_set(vg.embed_in, patch_embed_data.data(), 0,
+                            vis_D * n_patches * sizeof(float));
+    ggml_backend_sched_graph_compute(ctx.sched, vg.gf);
+
+    // Read only the final output (vis_output)
+    std::vector<float> layer_data(vis_D * n_patches);
+    ggml_backend_tensor_get(vg.output, layer_data.data(), 0,
+                            vis_D * n_patches * sizeof(float));
+    ggml_free(vg.gctx);
     if (bench) {
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - t_vis).count();
@@ -749,9 +630,9 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
                 printf("  vis_patch_embed: cos=%.6f max_abs=%.6f %s\n",
                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
             }
-            // Post-norm (now in layer_data after run_vis_post_norm)
+            // Post-norm (final vision output after all 24 layers + LN)
             if (ref.has("vis_post_norm")) {
-                auto r = ref.compare("vis_post_norm", vis_out.data(), vis_out.size());
+                auto r = ref.compare("vis_post_norm", layer_data.data(), layer_data.size());
                 printf("  vis_post_norm: cos=%.6f max_abs=%.6f %s\n",
                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
             }
@@ -1013,12 +894,30 @@ static bool run_cached_step(context &ctx, const int32_t *token_ids, int n_tokens
 
     ggml_backend_tensor_set(lg.token_in, token_ids, 0, T * sizeof(int32_t));
 
-    // mRoPE positions
+    // mRoPE positions: text tokens use sequential, image tokens use 2D spatial
+    // Image grid is merge_h × merge_w (12×12 for 336px/14px/2 spatial_merge)
+    const int merge_size = (int)ctx.m.vhp.spatial_merge_size;
+    const int img_h = (int)ctx.m.vhp.image_size / (int)ctx.m.vhp.patch_size / merge_size;
+    const int img_w = img_h;
+    const int img_token_id = (int)ctx.m.lhp.image_token_id;
+
     std::vector<int32_t> pos_data(T * 4, 0);
+    int text_pos = n_past;
+    int img_idx = 0;
     for (int j = 0; j < T; j++) {
-        pos_data[j]       = n_past + j;
-        pos_data[T + j]   = n_past + j;
-        pos_data[2*T + j] = n_past + j;
+        if (token_ids[j] == img_token_id && img_idx < img_h * img_w) {
+            int ih = img_idx / img_w;
+            int iw = img_idx % img_w;
+            pos_data[j]       = n_past + text_pos;  // temporal: same for all
+            pos_data[T + j]   = n_past + ih;         // height
+            pos_data[2*T + j] = n_past + iw;         // width
+            img_idx++;
+        } else {
+            pos_data[j]       = n_past + text_pos;
+            pos_data[T + j]   = n_past + text_pos;
+            pos_data[2*T + j] = n_past + text_pos;
+            text_pos++;
+        }
     }
     ggml_backend_tensor_set(ggml_graph_get_tensor(lg.gf, "pos_ids"),
                             pos_data.data(), 0, T * 4 * sizeof(int32_t));
@@ -1344,7 +1243,7 @@ const char * glm_ocr_recognize_raw(glm_ocr_context *ctx,
     const int32_t boi_id   = 59256;
     const int32_t eoi_id   = 59257;
     const int32_t img_id   = (int32_t)l.image_token_id;  // 59280
-    const int32_t nl_id    = 198;    // '\n' in GPT-2 BPE
+    const int32_t nl_id    = 10;     // '\n' in chatglm-bpe tokenizer
 
     std::vector<int32_t> prompt;
     // <sop>
