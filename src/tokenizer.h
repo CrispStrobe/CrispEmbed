@@ -124,7 +124,8 @@ public:
               int eos_id, int pad_id, int suffix_id,
               int bos_id = -1,  // -1 = no BOS
               bool spm_style = false,  // true for SentencePiece BPE (Gemma)
-              int max_length = 8192);
+              int max_length = 8192,
+              bool spm_dummy_prefix = false); // add_dummy_prefix (ERNIE/SPM)
 
     embed_tokens encode(const std::string & text) const;
 
@@ -143,6 +144,7 @@ private:
     int suffix_id_ = 151643;  // token appended after text (model-specific)
     int bos_id_ = -1;         // BOS token (-1 = none)
     bool spm_style_ = false;  // SentencePiece BPE mode
+    bool spm_dummy_prefix_ = false; // SentencePiece add_dummy_prefix
     int max_length_ = 8192;
 
     // SentencePiece BPE: merge-based tokenization on ▁-prefixed text
