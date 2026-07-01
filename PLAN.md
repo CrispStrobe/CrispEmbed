@@ -300,25 +300,25 @@ Metal, ggml 0.10.0.
   - Stop tokens: added `<|im_end|>` (151645) alongside eos.
   - Debug env: `CRISPEMBED_GOT_OCR_DEBUG=1` sets verbosity=2.
   - Per-layer diff test passes ALL layers (cos_min≥0.999999 with f16).
-  - **Model weights issue**: Python reference (F32 safetensors, full 12-layer
-    ViT + 24-layer LLM, correct prompt, real text image) also produces
-    "color" (token 3423) as first token — confirmed NOT a C++ bug.
-    The `stepfun-ai/GOT-OCR2_0` weights may need `GOT-OCR-2.0-hf` (HF
-    transformers version) which has a different projector architecture
-    (conv_upsamplers). Need to re-convert GGUF from the HF version.
+  - **Vision precision issue** (root cause identified 2026-07-01):
+    Per-layer diff passes (cos≥0.999999 with f16), LLM logic is correct
+    (verified: HF bf16 vision features → our f32 LLM → correct "Hello"
+    output). The bug is in the VISION ENCODER intermediate precision:
+    our f32 vision features are cos_min=0.991 vs HF's bf16 features.
+    This small difference flips the 0.5B LLM from correct OCR to garbage
+    ("color" token). The model was trained in bf16 so the learned weights
+    are adapted to bf16 intermediate rounding in the vision encoder.
+    WIP fix: bf16 roundtrip casts in the vision encoder to match HF's
+    bf16 intermediate precision. See `feat/got-ocr-bf16-fix` branch.
 
 **Still open:**
-- **got-ocr2 bf16-sensitivity** — per-layer diff passes ALL stages
-  (cos_min≥0.999999 with f16). Root cause identified: the 0.5B Qwen2 LLM
-  was fine-tuned in bf16 and produces correct OCR text ONLY when the LLM
-  computation runs in bf16 (verified via HF transformers bf16 pipeline →
-  "Hello World" correct). ggml always dequantizes to f32 for compute, so
-  the learned bf16-adapted attention patterns break → outputs "color".
-  The weights are verified identical between GOT-OCR2_0 and GOT-OCR-2.0-hf
-  (cos≈1.0). Both bf16 and f16 GGUF storage produce the same broken
-  output because storage type doesn't affect ggml's f32 compute path.
-  Fix requires either bf16 compute support in ggml, or a different
-  (larger) GOT-OCR model that is f32-robust.
+- **got-ocr2 vision bf16 precision** — the 0.5B Qwen2 LLM is sensitive
+  to vision feature precision: our f32 features (cos 0.991 vs HF bf16)
+  produce "color" instead of correct OCR. The fix requires bf16 roundtrip
+  casts at every intermediate operation in the ViT graph (not just layer
+  boundaries). Partially implemented in `feat/got-ocr-bf16-fix` branch.
+  The LLM itself is verified correct — with HF's bf16 vision features
+  our f32 LLM produces token 9707 ("Hello") correctly.
 - **DBNet detector on Metal** — `unsupported op 'CPY'` abort; `OCR_DETECT_FORCE_CPU=1`
   works around it but per-region TrOCR on CPU is slow. Want a Metal CPY path or a
   CPU-default detector.
