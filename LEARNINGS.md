@@ -37,6 +37,38 @@ debug binary (the Release SIGSEGV is a ggml_reshape assert under `-O0`):
 cause were both red herrings. A debug/-O0 build turned an opaque `memmove`
 SIGSEGV into an exact reshape assert in one step; the fastest path was to read
 the real tensor dims out of the GGUF, not to reason about the suspected commit.
+## restormer — RESOLVED (2026-07): broken ggml conv-weight layout + fake-attention block graph
+
+The restormer garbage (below) is fixed in `src/restormer.cpp`. Two independent
+bugs, both now corrected and validated against a PyTorch ground-truth value and
+an end-to-end denoise test (mid-gray σ=25 noise: mean|err| 19.84 → **2.15**;
+CPU==Metal to 0; scalar path==ggml path):
+
+1. **Conv-weight layout was scrambled for EVERY conv (the real garbage source).**
+   The GGUF converter writes conv weights raw as numpy `(OC,IC,KH,KW)` C-order and
+   the loader keeps `ne` = the stored dims (NOT reversed). The correct transform to
+   a `ggml_conv_2d` kernel is therefore a **plain reshape of the contiguous bytes to
+   ggml `[KW,KH,IC,OC]`** — no permute, no transpose, no shuffle. The old load-time
+   pre-permute (an oc-fastest shuffle) + the `rst_prep_w`/`rst_conv2d_ggml`
+   2D-reshape heuristics all mis-laid-out the kernels. Proof: PyTorch
+   `patch_embed[0,0,0]` ground truth = **0.645721**; the old ggml conv produced
+   0.161163. **Correction to the prior handover/notes:** `RESTORMER_SCALAR=1` was
+   NOT a clean reference — `rst_forward_tile` runs the U-Net convs (patch_embed,
+   down/up, reduce, output) through `rst_conv2d_ggml` in *both* modes, so the
+   scalar-blocks path was *also* garbage (100px crop: mean 168.9). The
+   "convs are fine, bug is only in the block graph" theory was wrong; convs were
+   the primary bug. The load-time pre-permute is now deleted entirely.
+
+2. **The ggml MDTA block graph was a fake single-head attention.** It used
+   `ggml_norm` (mean-subtract + std) as a stand-in for L2-normalize, did a single
+   full `C×C` attention (no per-head split — wrong for the 2/4/8-head levels),
+   and **dropped the learned per-head `temperature` entirely**. Rewrote it to match
+   the scalar reference: reshape `[HW, d_k, n_heads]`, `ggml_rms_norm` over spatial
+   (= L2normalize·√HW, with the √HW² folded into a `temperature/HW` scale),
+   per-head batched `mul_mat`, softmax over the key axis. Also `rst_ln2d_ggml`
+   used `ggml_norm` for the BiasFree LayerNorm (denoise model is BiasFree,
+   `has_bias=0`) — that wrongly subtracts the mean; now computes `x/sqrt(var+eps)·w`
+   with no mean-centering, matching `rst_layernorm_bf`.
 
 ## June-2026 scalar→ggml wave audit: 3 new regressions, all invisible to numerical guards (2026-07)
 
