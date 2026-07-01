@@ -180,6 +180,10 @@ struct context {
   int verbosity = 1;
   bool bench = false;
 
+  // Generation stop token. Qwen2/2.5/3-VL use <|im_end|> (151645); ERNIE-4.5
+  // (PaddleOCR-VL) uses <|end_of_sentence|> (100272). Set at load time.
+  int eos_token_id = 151645;
+
   // Optional diff harness path (set before encode to enable comparison)
   std::string diff_ref_path;
 
