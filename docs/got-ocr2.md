@@ -62,10 +62,21 @@ reference (`tools/dump_got_ocr_reference.py`, harness `tests/test_got_ocr_diff.c
 - **Backend coverage**: validated on both Metal *and* the pure CPU backend
   (`GOT_OCR_FORCE_CPU=1`). On CPU the quantized-decoder Q8_0 still passes at
   cos ≥ 0.9998 per decoder layer and OCR is correct. **A quantized decoder is
-  correct on both backends** — earlier CPU-only garbage was stale code (the
-  quant-specific `LN2d ensure_f32` / conv-reshape fixes), not a precision or
-  CPU-kernel limitation. Do not "fix" CPU garbage by forcing F16; pull current
-  `main` instead.
+  correct on both backends.**
+
+### What actually caused the "colorcolor…" garbage
+
+Proven by bisection (build pre-fix commit `ba74093` against the current,
+known-good q8_0 GGUF — GGUF held constant, only runtime code varied): the
+garbage was the **vision-neck final-flatten permute** (commit `7f43e4d`), which
+used `(2,0,1,3)` → `(H,C,W)` instead of `(1,2,0,3)` → `(C,W,H)`, scrambling the
+256 vision tokens fed to the projector. It is **independent of decoder precision
+and backend** — old code garbles F16, Q8_0 and Q4_K identically on both Metal
+and CPU. The "F16 decoder fixes it" belief was a confound: on the reporting VPS
+the F16 build ran with newer (post-`7f43e4d`) code while the quantized build was
+a stale download run with older code, so a code fix and a GGUF swap were varied
+together. `--decoder-f16` never fixed the garbage. Do not "fix" CPU garbage by
+forcing F16; pull current `main`.
 
 ## Per-token decode speed (Apple M1)
 

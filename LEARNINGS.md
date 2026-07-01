@@ -1,5 +1,43 @@
 # CrispEmbed — Technical Learnings
 
+## GOT-OCR2: the "colorcolor…" garbage was a vision-neck permute, not quantization (2026-07)
+
+The got-ocr2 garbage output (`colorcolorcolor…` repeated forever) and the
+belief that "F16 decoder fixes it, quantized decoder breaks it" were **two
+different bugs tangled by a confound**. The actual garbage root cause is a
+single wrong axis-permutation in the vision neck's final flatten
+(`src/got_ocr.cpp`, commit **7f43e4d**):
+
+```
+- x = ggml_cont(ng, ggml_permute(ng, x, 2, 0, 1, 3));  // (C,W,H) → produced (H,C,W)  ✗
++ x = ggml_cont(ng, ggml_permute(ng, x, 1, 2, 0, 3));  // (W,H,C) → (C,W,H)            ✓
+  x = ggml_reshape_2d(ng, x, vis_D, n_vis_tokens);      // (1024, 256) = (channel, token)
+```
+
+The old `(2,0,1,3)` produced `(H,C,W)` instead of `(C,W,H)`, so the 256 vision
+tokens handed to the projector were scrambled. The decoder then received
+meaningless image embeddings and degenerated into a repeated token.
+
+**Proven by bisection, not asserted.** Building the pre-fix commit (`ba74093`,
+old permute) against the *current, known-good* q8_0 GGUF — GGUF held constant,
+only the runtime code varied — reproduced the exact `colorcolor…` garbage on
+the CPU backend. The same old code garbles **f16 too**, so the bug is
+independent of decoder precision and of backend (Metal/CPU alike).
+
+**The confound:** a colleague on a CPU-only VPS saw an F16-decoder GGUF work and
+a quantized-decoder GGUF produce garbage, and concluded "the decoder must stay
+F16." In reality the F16 build was run with newer (post-7f43e4d) code while the
+quantized build was a stale download run with older code — a code change and a
+GGUF swap were varied together. `--decoder-f16` never fixed anything; it only
+correlated with the real fix. (This is the *same* wrong conclusion the
+diff-harness artifact produced from the other direction — see next entry.)
+
+**Lesson:** when two things change between a "broken" and a "working" run
+(here: local code version *and* the GGUF), you have not isolated the cause —
+hold one constant and vary the other. A backend-/precision-agnostic bug
+(a graph-shape error) can masquerade as a precision-sensitivity bug when the
+code version silently rides along with the weight file.
+
 ## GOT-OCR2: a wrong-axis parity cosine faked "decoder can't be quantized" (2026-07)
 
 `tests/test_got_ocr_diff.cpp`'s `compare()` reduced the cosine over the wrong
