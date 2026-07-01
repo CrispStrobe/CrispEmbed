@@ -300,24 +300,17 @@ Metal, ggml 0.10.0.
   - Stop tokens: added `<|im_end|>` (151645) alongside eos.
   - Debug env: `CRISPEMBED_GOT_OCR_DEBUG=1` sets verbosity=2.
   - Per-layer diff test passes ALL layers (cos_min≥0.999999 with f16).
-  - **Vision precision issue** (root cause identified 2026-07-01):
-    Per-layer diff passes (cos≥0.999999 with f16), LLM logic is correct
-    (verified: HF bf16 vision features → our f32 LLM → correct "Hello"
-    output). The bug is in the VISION ENCODER intermediate precision:
-    our f32 vision features are cos_min=0.991 vs HF's bf16 features.
-    This small difference flips the 0.5B LLM from correct OCR to garbage
-    ("color" token). The model was trained in bf16 so the learned weights
-    are adapted to bf16 intermediate rounding in the vision encoder.
-    WIP fix: bf16 roundtrip casts in the vision encoder to match HF's
-    bf16 intermediate precision. See `feat/got-ocr-bf16-fix` branch.
+  - **Root cause (confirmed 2026-07-01)**: q8_0 decoder quantization is
+    the bug — Qwen2-0.5B at q8_0 diverges at layer 0 (cos=0.936, max_abs=177),
+    compounding to garbage. With f16 weights: cos=0.999999, correct OCR on
+    Metal+macOS. The diff harness masked this: `compare()` used token count
+    as row length instead of feature dim (fixed with `row_dim=0`).
+    Vision is correct (cos=0.998 vs HF on real pages). The "bf16 compute"
+    and "vision encoder" theories were wrong. Fix: ship f16 GGUF.
+    Note: CPU-only x86 (this VPS) still produces "color" with f16 — may
+    need Metal/GPU or further CPU-path investigation.
 
 **Still open:**
-- **got-ocr2 vision bf16 precision** — the 0.5B Qwen2 LLM is sensitive
-  to vision feature precision: our f32 features (cos 0.991 vs HF bf16)
-  produce "color" instead of correct OCR. The fix requires bf16 roundtrip
-  casts at every intermediate operation in the ViT graph (not just layer
-  boundaries). Partially implemented in `feat/got-ocr-bf16-fix` branch.
-  The LLM itself is verified correct — with HF's bf16 vision features
   our f32 LLM produces token 9707 ("Hello") correctly.
 - **DBNet detector on Metal** — `unsupported op 'CPY'` abort; `OCR_DETECT_FORCE_CPU=1`
   works around it but per-region TrOCR on CPU is slow. Want a Metal CPY path or a
