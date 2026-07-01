@@ -347,37 +347,51 @@ struct rst_block_raw {
 
 struct restormer_context;
 
-// LN2d in ggml: permute [W,H,C]→[C,H,W], norm over C, scale+bias, permute back
+// LN2d in ggml: permute [W,H,C]→[C,H,W], norm over C, scale(+bias), permute back.
+// b != null → WithBias LayerNorm (subtract mean, divide std, scale, shift).
+// b == null → BiasFree LayerNorm: x / sqrt(var) * w with NO mean subtraction —
+// matches Restormer's BiasFree_LayerNorm and the scalar rst_layernorm_bf path.
+// Using ggml_norm() here would be WRONG for the BiasFree case: it subtracts the
+// per-position channel mean, which the trained model never does.
 static ggml_tensor * rst_ln2d_ggml(ggml_context * g, ggml_tensor * x,
                                     ggml_tensor * w, ggml_tensor * b) {
     // x: [W, H, C]. Permute so C is ne[0]
     ggml_tensor * t = ggml_cont(g, ggml_permute(g, x, 2, 1, 0, 3)); // [C, H, W]
-    t = ggml_norm(g, t, 1e-5f); // normalize over ne[0]=C
-    if (w) {
-        if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
-        t = ggml_mul(g, t, w); // broadcast [C] over H,W
-    }
+    if (w && w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
+    if (b && b->type != GGML_TYPE_F32) b = ggml_cast(g, b, GGML_TYPE_F32);
     if (b) {
-        if (b->type != GGML_TYPE_F32) b = ggml_cast(g, b, GGML_TYPE_F32);
+        t = ggml_norm(g, t, 1e-5f); // (x-mean)/sqrt(var+eps) over ne[0]=C
+        if (w) t = ggml_mul(g, t, w);
         t = ggml_add(g, t, b);
+    } else {
+        // BiasFree: variance uses the mean, but x itself is NOT mean-centered.
+        const float C = (float) t->ne[0];
+        ggml_tensor * mean = ggml_scale(g, ggml_sum_rows(g, t), 1.0f / C);          // [1,H,W]
+        ggml_tensor * dt   = ggml_sub(g, t, mean);                                  // broadcast
+        ggml_tensor * var  = ggml_scale(g, ggml_sum_rows(g, ggml_sqr(g, dt)), 1.0f / C);
+        ggml_tensor * sd   = ggml_sqrt(g, ggml_scale_bias(g, var, 1.0f, 1e-5f));    // sqrt(var+eps), [1,H,W]
+        if (w) t = ggml_mul(g, t, w);                                               // broadcast [C]
+        t = ggml_div(g, t, sd);                                                     // broadcast [1,H,W]
     }
     t = ggml_cont(g, ggml_permute(g, t, 2, 1, 0, 3)); // back to [W, H, C]
     return t;
 }
 
-// Prep weight: ensure 2D [IC*KH*KW, OC] F32 for conv, or pre-permuted.
+// Prep a conv weight for ggml_conv_2d / _dw.
+//
+// The GGUF converter writes conv weights RAW as numpy (OC,IC,KH,KW) C-order
+// (see convert-restormer-to-gguf.py::add → state[key].float().numpy()), and the
+// gguf loader keeps ne = the stored dims (NOT reversed). A numpy (OC,IC,KH,KW)
+// C-order buffer, reinterpreted as a ggml column-major [KW,KH,IC,OC] tensor, is
+// *exactly* the kernel ggml_conv_2d expects — so the correct transform is a plain
+// reshape of the contiguous bytes to [KW,KH,IC,OC], with NO permute/transpose.
+// (The old pre-permute + transpose heuristics scrambled every kernel — verified
+// against the PyTorch reference: patch_embed[0,0,0] ground truth 0.645721.)
 static ggml_tensor * rst_prep_w(ggml_context * g, ggml_tensor * w,
                                  int IC, int KH, int KW) {
-    if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
-    if (ggml_n_dims(w) == 2) {
-        int64_t ik = (int64_t)IC * KH * KW;
-        if (w->ne[0] == ik)
-            w = ggml_reshape_4d(g, w, KW, KH, IC, w->ne[1]);
-        else
-            w = ggml_reshape_4d(g, ggml_cont(g, ggml_transpose(g, w)), KW, KH, IC, w->ne[0]);
-    } else if (ggml_n_dims(w) >= 4) {
-        w = ggml_cont(g, ggml_permute(g, w, 3, 2, 1, 0));
-    }
+    int64_t OC = ggml_nelements(w) / ((int64_t) IC * KH * KW);
+    if (!ggml_is_contiguous(w)) w = ggml_cont(g, w);
+    w = ggml_reshape_4d(g, w, KW, KH, IC, OC);
     return ggml_cast(g, w, GGML_TYPE_F16);
 }
 
@@ -478,89 +492,12 @@ restormer_context * restormer_init(const char * model_path, int n_threads) {
         ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
     }
 
-    // Pre-permute 4D conv weights → 2D [IC*KH*KW, OC] F32 for ggml_conv_2d.
-    // This avoids per-call permute overhead (4D→F32→permute→cont→F16 on every conv).
-    {
-        // Count 4D conv weights to size the context
-        int n4d = 0;
-        for (auto & [name, t] : ctx->wl.tensors)
-            if (ggml_n_dims(t) == 4 && name.find("weight") != std::string::npos) n4d++;
-
-        if (n4d > 0) {
-            // Allocate ggml context for pre-permuted weights (generous)
-            size_t ctx_size = ggml_tensor_overhead() * (n4d + 1) + 4 * 1024 * 1024;
-            ggml_init_params ip = { ctx_size, nullptr, true };  // no_alloc: backend allocates
-            ctx->prep_ctx = ggml_init(ip);
-
-            // Create F32 2D tensors and fill with permuted data
-            size_t total_bytes = 0;
-            std::vector<std::pair<std::string, ggml_tensor *>> to_fill;
-            for (auto & [name, t] : ctx->wl.tensors) {
-                if (ggml_n_dims(t) != 4 || name.find("weight") == std::string::npos) continue;
-                // t: ne[0]=OC, ne[1]=IC, ne[2]=KH, ne[3]=KW (PyTorch order)
-                int64_t OC = t->ne[0], IC = t->ne[1], KH = t->ne[2], KW = t->ne[3];
-                // Create 2D: [IC*KH*KW, OC] — ggml conv_2d reshape format
-                ggml_tensor * w2d = ggml_new_tensor_2d(ctx->prep_ctx, GGML_TYPE_F32, IC*KH*KW, OC);
-                ggml_set_name(w2d, name.c_str());
-                total_bytes += ggml_nbytes(w2d);
-                to_fill.push_back({name, w2d});
-            }
-
-            ctx->prep_buf = ggml_backend_alloc_ctx_tensors(ctx->prep_ctx, ctx->enc_backend);
-
-            // Fill: dequant source → permute → write to new tensor
-            for (auto & [name, w2d] : to_fill) {
-                ggml_tensor * src = ctx->wl.tensors[name];
-                int64_t OC = src->ne[0], IC = src->ne[1], KH = src->ne[2], KW = src->ne[3];
-                int64_t n = ggml_nelements(src);
-
-                // Dequant source to F32
-                std::vector<float> f32_src(n);
-                if (src->type == GGML_TYPE_F32) {
-                    ggml_backend_tensor_get(src, f32_src.data(), 0, n * sizeof(float));
-                } else if (src->type == GGML_TYPE_F16) {
-                    std::vector<ggml_fp16_t> tmp(n);
-                    ggml_backend_tensor_get(src, tmp.data(), 0, n * sizeof(ggml_fp16_t));
-                    for (int64_t i = 0; i < n; i++) f32_src[i] = ggml_fp16_to_fp32(tmp[i]);
-                } else {
-                    size_t raw_sz = ggml_nbytes(src);
-                    std::vector<uint8_t> raw(raw_sz);
-                    ggml_backend_tensor_get(src, raw.data(), 0, raw_sz);
-                    auto * traits = ggml_get_type_traits(src->type);
-                    if (traits && traits->to_float) traits->to_float(raw.data(), f32_src.data(), n);
-                }
-
-                // Permute: src[oc][ic][kh][kw] → dst[ic*kh*kw][oc]
-                // src memory: for kw, for kh, for ic, for oc → src[oc*IC*KH*KW + ic*KH*KW + kh*KW + kw]
-                // dst memory: for oc, for (ic*kh*kw) → dst[oc * IC*KH*KW + ic*KH*KW + kh*KW + kw]
-                // Wait — ggml ne[0] is innermost. src ne[0]=OC means OC is fastest.
-                // src layout: src[kw * OC*IC*KH + kh * OC*IC + ic * OC + oc]
-                // Actually in ggml: element at (i0,i1,i2,i3) = data[i3*nb3 + i2*nb2 + i1*nb1 + i0*nb0]
-                // For src: nb0=sizeof(type), nb1=ne[0]*nb0, nb2=ne[0]*ne[1]*nb0, nb3=ne[0]*ne[1]*ne[2]*nb0
-                // So src[oc, ic, kh, kw] = data[kw*OC*IC*KH + kh*OC*IC + ic*OC + oc]
-                // (oc=i0 fastest, kw=i3 slowest)
-                //
-                // For dst 2D [IC*KH*KW, OC]: element at (ikw, oc) = data[oc * IC*KH*KW + ikw]
-                // where ikw = ic*KH*KW + kh*KW + kw
-
-                std::vector<float> f32_dst(n);
-                for (int64_t oc = 0; oc < OC; oc++)
-                    for (int64_t ic = 0; ic < IC; ic++)
-                        for (int64_t kh = 0; kh < KH; kh++)
-                            for (int64_t kw = 0; kw < KW; kw++) {
-                                int64_t src_idx = kw*OC*IC*KH + kh*OC*IC + ic*OC + oc;
-                                int64_t ikw = ic*KH*KW + kh*KW + kw;
-                                int64_t dst_idx = oc * IC*KH*KW + ikw;
-                                f32_dst[dst_idx] = f32_src[src_idx];
-                            }
-
-                ggml_backend_tensor_set(w2d, f32_dst.data(), 0, n * sizeof(float));
-                ctx->prep_weights[name] = w2d;
-            }
-            fprintf(stderr, "restormer: pre-permuted %d conv weights (%.1f MB)\n",
-                    n4d, total_bytes / (1024.0 * 1024.0));
-        }
-    }
+    // NOTE: no conv-weight pre-permute. Conv weights are consumed directly from
+    // their raw numpy (OC,IC,KH,KW) C-order buffers via a plain reshape to ggml
+    // [KW,KH,IC,OC] (see rst_prep_w / rst_conv2d_ggml). The previous pre-permute
+    // applied an oc-fastest shuffle that scrambled every kernel (garbage output on
+    // BOTH the ggml and "scalar" paths, since the U-Net convs are always ggml).
+    // get_raw() therefore returns the raw tensors (prep_weights stays empty).
 
     return ctx;
 }
@@ -581,7 +518,7 @@ void restormer_free(restormer_context * ctx) {
 static ggml_cgraph * rst_build_block_graph(restormer_context * ctx,
                                             const rst_block_raw & bw,
                                             int C, int H, int W) {
-    int HW = H * W, C3 = C * 3;
+    int HW = H * W;
     int hidden2 = bw.hidden2, hidden = hidden2 / 2;
 
     int graph_size = 1024;
@@ -604,26 +541,43 @@ static ggml_cgraph * rst_build_block_graph(restormer_context * ctx,
     ggml_tensor * dw_w = rst_prep_w(g, bw.qkv_dw_w, 1, 3, 3);
     qkv = ggml_conv_2d_dw(g, dw_w, qkv, 1, 1, 1, 1, 1, 1);
 
-    // Split Q, K, V and normalize
+    // Split Q, K, V — each [W, H, C]
     size_t plane = W * H * sizeof(float);
     ggml_tensor * Q = ggml_cont(g, ggml_view_3d(g, qkv, W, H, C, qkv->nb[1], qkv->nb[2], 0));
     ggml_tensor * K = ggml_cont(g, ggml_view_3d(g, qkv, W, H, C, qkv->nb[1], qkv->nb[2], C * plane));
     ggml_tensor * V = ggml_cont(g, ggml_view_3d(g, qkv, W, H, C, qkv->nb[1], qkv->nb[2], 2 * C * plane));
 
-    // L2 normalize Q, K over spatial (approximated as LayerNorm over HW)
-    ggml_tensor * Q_flat = ggml_norm(g, ggml_reshape_2d(g, Q, HW, C), 1e-12f);
-    ggml_tensor * K_flat = ggml_norm(g, ggml_reshape_2d(g, K, HW, C), 1e-12f);
-    ggml_tensor * V_flat = ggml_reshape_2d(g, V, HW, C);
+    // Multi-head transposed attention (MDTA). Channels form contiguous head
+    // blocks: c = h*d_k + dk. Reshape [W,H,C] → [HW, d_k, n_heads] (head = ne[2]).
+    const int n_heads = bw.n_heads;
+    const int d_k     = C / n_heads;
+    ggml_tensor * Q_h = ggml_reshape_3d(g, Q, HW, d_k, n_heads);
+    ggml_tensor * K_h = ggml_reshape_3d(g, K, HW, d_k, n_heads);
+    ggml_tensor * V_h = ggml_reshape_3d(g, V, HW, d_k, n_heads);
 
-    // Transposed attention: attn = Q^T @ K → [C, C], softmax, @ V^T → [C, HW]
-    ggml_tensor * attn = ggml_mul_mat(g, K_flat, Q_flat); // K=HW, M=C, N=C → [C, C]
-    attn = ggml_soft_max(g, attn);
-    // out = attn @ V^T: ggml_mul_mat(attn[C,C], V_T[C,HW]) → [C, HW]
-    ggml_tensor * V_T = ggml_cont(g, ggml_transpose(g, V_flat)); // [C, HW]
-    ggml_tensor * out_flat = ggml_mul_mat(g, attn, V_T); // K=C → [C, HW]
-    // Transpose to [HW, C] and reshape to [W, H, C]
-    out_flat = ggml_cont(g, ggml_transpose(g, out_flat)); // [HW, C]
-    ggml_tensor * attn_out = ggml_reshape_3d(g, out_flat, W, H, C);
+    // L2-normalize Q,K over spatial (ne[0]=HW). rms_norm gives x/sqrt(mean(x²)+eps)
+    // = L2normalize(x)·sqrt(HW); the extra sqrt(HW) on both Q and K is folded into
+    // the attention scale (·1/HW) below so the result equals torch.nn.functional
+    // .normalize(dim=-1) exactly.
+    Q_h = ggml_rms_norm(g, Q_h, 1e-12f);
+    K_h = ggml_rms_norm(g, K_h, 1e-12f);
+
+    // Per-head transposed attention: attn[k,q,h] = Σ_hw K[hw,k,h]·Q[hw,q,h] → [d_k,d_k,n_heads]
+    ggml_tensor * attn = ggml_mul_mat(g, K_h, Q_h);
+
+    // Scale by temperature[h]/HW (per-head; 1/HW undoes rms_norm's sqrt(HW)² factor)
+    ggml_tensor * temp = bw.temperature;
+    if (temp->type != GGML_TYPE_F32) temp = ggml_cast(g, temp, GGML_TYPE_F32);
+    temp = ggml_scale(g, ggml_reshape_3d(g, temp, 1, 1, n_heads), 1.0f / (float) HW);
+    attn = ggml_mul(g, attn, temp);                 // broadcast [1,1,n_heads]
+    attn = ggml_soft_max(g, attn);                  // over ne[0] = key channel
+
+    // out[q,hw,h] = Σ_k attn[k,q,h]·V[k,hw,h]; V reshaped to [d_k, HW, n_heads]
+    ggml_tensor * V_t = ggml_cont(g, ggml_permute(g, V_h, 1, 0, 2, 3)); // [d_k, HW, n_heads]
+    ggml_tensor * out_h = ggml_mul_mat(g, attn, V_t);                   // [d_k, HW, n_heads]
+    // → [HW, d_k, n_heads] (contiguous [HW, C]) → [W, H, C]
+    out_h = ggml_cont(g, ggml_permute(g, out_h, 1, 0, 2, 3));
+    ggml_tensor * attn_out = ggml_reshape_3d(g, out_h, W, H, C);
 
     // Output projection
     ggml_tensor * proj_w = rst_prep_w(g, bw.proj_w, C, 1, 1);
@@ -704,23 +658,12 @@ static void rst_conv2d_ggml(restormer_context * ctx,
     ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, w, h, ic);
     ggml_set_name(x, "x"); ggml_set_input(x);
 
-    ggml_tensor * ww = wt;
-    if (ww->type != GGML_TYPE_F32)
-        ww = ggml_cast(g, ww, GGML_TYPE_F32);
+    // Raw numpy (OC,IC,KH,KW) C-order buffer → ggml [KW,KH,IC,OC] via plain
+    // reshape (see rst_prep_w). Depthwise convs store (C,1,KH,KW) → [KW,KH,1,C].
     int ic_g = (groups > 1 && groups == ic) ? 1 : ic;
-    if (ggml_n_dims(ww) == 2) {
-        int64_t ik = (int64_t)ic_g * kh * kw;
-        if (ww->ne[0] == ik) {
-            ww = ggml_reshape_4d(g, ww, kw, kh, ic_g, ww->ne[1]);
-        } else if (ww->ne[1] == ik) {
-            ww = ggml_cont(g, ggml_transpose(g, ww));
-            ww = ggml_reshape_4d(g, ww, kw, kh, ic_g, ww->ne[1]);
-        } else {
-            ww = ggml_reshape_4d(g, ww, kw, kh, ic_g, oc);
-        }
-    } else if (ggml_n_dims(ww) >= 4) {
-        ww = ggml_cont(g, ggml_permute(g, ww, 3, 2, 1, 0));
-    }
+    ggml_tensor * ww = wt;
+    if (!ggml_is_contiguous(ww)) ww = ggml_cont(g, ww);
+    ww = ggml_reshape_4d(g, ww, kw, kh, ic_g, oc);
     ww = ggml_cast(g, ww, GGML_TYPE_F16);
     if (groups > 1 && groups == ic) {
         x = ggml_conv_2d_dw(g, ww, x, 1, 1, pad, pad, 1, 1);
