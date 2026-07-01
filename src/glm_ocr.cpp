@@ -169,6 +169,70 @@ bool load_tensors(context &ctx, const char *path) {
     return true;
 }
 
+// ── 2D vision RoPE (host-side cos/sin) ──────────────────────────────
+//
+// GLM-4V's ViT applies 2D rotary position embedding to Q/K in every vision
+// layer (transformers Glm4vVisionAttention.apply_rotary_pos_emb_vision). This
+// is the identical scheme used by Qwen2-VL vision (see qwen2vl_ocr.cpp
+// compute_vision_rope): a Glm4vVisionRotaryEmbedding of dim=head_dim/2 with
+// theta=10000, producing per-patch h/w frequencies concatenated to head_dim/2
+// and duplicated (emb = cat(rot, rot)) to head_dim. The rotate is NEOX
+// (split-half) style: rotate_half(x) = cat(-x[d/2:], x[:d/2]).
+//
+// Layout of each per-patch row (length head_dim, quart = head_dim/4):
+//   [ h_freqs(quart), w_freqs(quart), h_freqs(quart), w_freqs(quart) ]
+// so the first/second halves are identical (cat(rot,rot)), which is what the
+// split-half rotate expects.
+//
+// Patch order: CrispEmbed's encode_vision extracts patches in raster order
+// (token = row*n_pw + col), and the downsample/merger consumes that same
+// raster order, so the rope positions are assigned in raster order too. HF's
+// spatial-merge-windowed pos ordering is only needed when the patch sequence
+// itself is windowed; set merge_order=true (GLM_OCR_ROPE_MERGE_ORDER=1) to
+// match that ordering if ever needed.
+static void compute_glm_vision_rope(std::vector<float> &cos_buf,
+                                    std::vector<float> &sin_buf,
+                                    int n_ph, int n_pw, int head_dim,
+                                    int spatial_merge, bool merge_order,
+                                    float theta) {
+    const int n_patches = n_ph * n_pw;
+    cos_buf.resize((size_t)n_patches * head_dim);
+    sin_buf.resize((size_t)n_patches * head_dim);
+
+    const int quart = head_dim / 4;
+    const float rot_dim = (float)(head_dim / 2);
+    std::vector<float> inv_freq(quart);
+    for (int j = 0; j < quart; j++)
+        inv_freq[j] = 1.0f / std::pow(theta, (float)(2 * j) / rot_dim);
+
+    int tok = 0;
+    auto fill_one = [&](int row, int col) {
+        float *cr = cos_buf.data() + (size_t)tok * head_dim;
+        float *sr = sin_buf.data() + (size_t)tok * head_dim;
+        for (int j = 0; j < quart; j++) {
+            float vr = (float)row * inv_freq[j];
+            float vc = (float)col * inv_freq[j];
+            cr[j]             = std::cos(vr); sr[j]             = std::sin(vr);
+            cr[j + quart]     = std::cos(vc); sr[j + quart]     = std::sin(vc);
+            cr[j + 2 * quart] = std::cos(vr); sr[j + 2 * quart] = std::sin(vr);
+            cr[j + 3 * quart] = std::cos(vc); sr[j + 3 * quart] = std::sin(vc);
+        }
+        tok++;
+    };
+
+    if (merge_order && spatial_merge > 1) {
+        for (int mh = 0; mh < n_ph / spatial_merge; mh++)
+            for (int mw = 0; mw < n_pw / spatial_merge; mw++)
+                for (int ir = 0; ir < spatial_merge; ir++)
+                    for (int ic = 0; ic < spatial_merge; ic++)
+                        fill_one(mh * spatial_merge + ir, mw * spatial_merge + ic);
+    } else {
+        for (int row = 0; row < n_ph; row++)
+            for (int col = 0; col < n_pw; col++)
+                fill_one(row, col);
+    }
+}
+
 // ── Vision encoder graph ────────────────────────────────────────────
 
 // Build the monolithic vision encoder graph (24 CogViT layers + post-norm).
@@ -179,7 +243,12 @@ struct vision_graph {
     ggml_cgraph *gf = nullptr;
     ggml_context *gctx = nullptr;
     ggml_tensor *embed_in = nullptr;   // pre-computed patch embeddings input
+    ggml_tensor *cos_in = nullptr;     // 2D RoPE cos (head_dim, 1, n_patches)
+    ggml_tensor *sin_in = nullptr;     // 2D RoPE sin (head_dim, 1, n_patches)
     ggml_tensor *output = nullptr;     // final post-norm output
+    ggml_tensor *dbg_q_rope0 = nullptr;
+    ggml_tensor *dbg_k_rope0 = nullptr;
+    std::vector<ggml_tensor *> layer_outputs;  // per-layer (diff only)
 };
 
 static vision_graph build_vision_graph(context &ctx, int n_patches) {
@@ -192,12 +261,25 @@ static vision_graph build_vision_graph(context &ctx, int n_patches) {
     const float eps = vhp.rms_norm_eps;
     const int T = n_patches;
 
-    size_t meta_size = (size_t)(n_layers * 40 + 200) * ggml_tensor_overhead()
+    size_t meta_size = (size_t)(n_layers * 64 + 200) * ggml_tensor_overhead()
                        + ggml_graph_overhead_custom(16384, false);
     ctx.compute_meta.resize(meta_size);
     ggml_init_params ip{meta_size, ctx.compute_meta.data(), true};
     ggml_context *g = ggml_init(ip);
     vg.gctx = g;
+
+    const bool diff_mode = !ctx.diff_ref_path.empty();
+    // GLM-OCR's glm_ocr_vision tower applies 2D RoPE to Q/K in every layer
+    // (authoritative: transformers modeling_glm_ocr.py). ON by default;
+    // GLM_OCR_VISION_ROPE=0 disables for A/B testing. NOTE: the uploaded
+    // reference dumps were generated by the STALE no-rope dump script, so they
+    // do NOT validate the rope path — regenerate refs with rope before using
+    // per-layer diff as a gate.
+    const char *rope_env = std::getenv("GLM_OCR_VISION_ROPE");
+    const bool use_vision_rope = !(rope_env && atoi(rope_env) == 0);
+    // Explicit F32 attention by default (flash-attn's F16 K/V loses precision on
+    // this ViT's massive activations); GLM_OCR_VISION_FLASH=1 to A/B the flash path.
+    const bool use_flash_attn = (std::getenv("GLM_OCR_VISION_FLASH") != nullptr);
 
     ggml_cgraph *gf = ggml_new_graph_custom(g, 16384, false);
 
@@ -207,15 +289,51 @@ static vision_graph build_vision_graph(context &ctx, int n_patches) {
     ggml_set_input(x);
     vg.embed_in = x;
 
+    // 2D RoPE cos/sin inputs: (head_dim, 1, n_patches) — broadcast over heads.
+    // Only materialized when the (opt-in, off-by-default) rope path is active,
+    // so they never become unallocated dangling graph inputs.
+    ggml_tensor *cos_in = nullptr, *sin_in = nullptr;
+    if (use_vision_rope) {
+        cos_in = ggml_new_tensor_3d(g, GGML_TYPE_F32, hd, 1, T);
+        sin_in = ggml_new_tensor_3d(g, GGML_TYPE_F32, hd, 1, T);
+        ggml_set_name(cos_in, "vis_cos_in"); ggml_set_input(cos_in);
+        ggml_set_name(sin_in, "vis_sin_in"); ggml_set_input(sin_in);
+        vg.cos_in = cos_in;
+        vg.sin_in = sin_in;
+    }
+
     auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor * {
         return ggml_mul(g, ggml_rms_norm(g, t, eps), w);
+    };
+
+    // ggml_mul_mat with an F16 weight converts the F32 activation to F16 for the
+    // vec_dot. This ViT's residual stream has "massive activation" outliers
+    // (max_abs ~1900 in late layers); the F16 round-trip destroys them and the
+    // cosine collapses. Cast quantized/F16 weights to F32 so matmuls stay F32.
+    // GLM_OCR_VISION_F16MM=1 restores the old (lossy) behavior for A/B testing.
+    const bool f32_matmul = !(std::getenv("GLM_OCR_VISION_F16MM"));
+    auto mm = [&](ggml_tensor *w, ggml_tensor *x) -> ggml_tensor * {
+        if (f32_matmul && w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
+        return ggml_mul_mat(g, w, x);
+    };
+
+    // NEOX split-half rotate: result = t*cos + rotate_half(t)*sin,
+    // rotate_half(t) = [-t[hd/2:], t[:hd/2]].  t: (hd, nh, T) contiguous.
+    auto apply_rope = [&](ggml_tensor *t) -> ggml_tensor * {
+        const int half = hd / 2;
+        ggml_tensor *h1 = ggml_view_3d(g, t, half, nh, T, t->nb[1], t->nb[2], 0);
+        ggml_tensor *h2 = ggml_view_3d(g, t, half, nh, T, t->nb[1], t->nb[2],
+                                       (size_t)half * t->nb[0]);
+        ggml_tensor *h2_neg = ggml_scale(g, ggml_cont(g, h2), -1.0f);
+        ggml_tensor *rot = ggml_concat(g, h2_neg, ggml_cont(g, h1), 0);
+        return ggml_add(g, ggml_mul(g, t, cos_in), ggml_mul(g, rot, sin_in));
     };
 
     for (int i = 0; i < n_layers; i++) {
         auto &blk = ctx.m.vis_blocks[i];
 
         ggml_tensor *h = rmsnorm(x, blk.norm1_w);
-        ggml_tensor *qkv = ggml_mul_mat(g, blk.qkv_w, h);
+        ggml_tensor *qkv = mm(blk.qkv_w, h);
         if (blk.qkv_b) qkv = ggml_add(g, qkv, blk.qkv_b);
 
         ggml_tensor *Q = ggml_view_2d(g, qkv, D, T, qkv->nb[1], 0);
@@ -227,26 +345,70 @@ static vision_graph build_vision_graph(context &ctx, int n_patches) {
         if (blk.q_norm_w) Q = ggml_mul(g, ggml_rms_norm(g, Q, eps), blk.q_norm_w);
         if (blk.k_norm_w) K = ggml_mul(g, ggml_rms_norm(g, K, eps), blk.k_norm_w);
 
-        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
+        // 2D vision RoPE (after QK-norm, before the attention permute), matching
+        // transformers glm_ocr apply_rotary_pos_emb_vision. ON by default;
+        // GLM_OCR_VISION_ROPE=0 disables for A/B testing.
+        if (use_vision_rope) {
+            Q = apply_rope(ggml_cont(g, Q));
+            K = apply_rope(ggml_cont(g, K));
+        }
+
+        if (diff_mode && i == 0) {
+            ggml_set_name(Q, "dbg_q_rope0");
+            ggml_set_output(Q);
+            vg.dbg_q_rope0 = Q;
+            ggml_set_name(K, "dbg_k_rope0");
+            ggml_set_output(K);
+            vg.dbg_k_rope0 = K;
+        }
+
+        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));  // (hd, T, nh)
         K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
         V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
         float scale = 1.0f / std::sqrt((float)hd);
-        ggml_tensor *attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
-        attn = ggml_reshape_2d(g, attn, D, T);
-        attn = ggml_mul_mat(g, blk.proj_w, attn);
+        ggml_tensor *attn;
+        if (use_flash_attn) {
+            attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
+            ggml_flash_attn_ext_set_prec(attn, GGML_PREC_F32);
+            attn = ggml_reshape_2d(g, attn, D, T);
+        } else {
+            // Explicit F32 attention. This ViT has large "massive activation"
+            // outliers (V/residual max_abs grows to ~1900 by the last layer);
+            // flash-attn converts K/V to F16 and the resulting precision loss
+            // makes the late-layer cosine collapse (verified: f32 numpy stays
+            // 0.99999 to layer 23, C++ flash-attn drops to <0 at layer 15).
+            // Keep everything F32 via explicit matmul + softmax.
+            ggml_tensor *scores = ggml_mul_mat(g, K, Q);  // (T_k, T_q, nh)
+            scores = ggml_soft_max_ext(g, scores, nullptr, scale, 0.0f);
+            ggml_tensor *Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));  // (T, hd, nh)
+            attn = ggml_mul_mat(g, Vt, scores);              // (hd, T_q, nh)
+            attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));  // (hd, nh, T)
+            attn = ggml_reshape_2d(g, attn, D, T);
+        }
+        attn = mm(blk.proj_w, attn);
         if (blk.proj_b) attn = ggml_add(g, attn, blk.proj_b);
         x = ggml_add(g, x, attn);
 
         h = rmsnorm(x, blk.norm2_w);
-        ggml_tensor *gate = ggml_mul_mat(g, blk.ffn_gate_w, h);
+        ggml_tensor *gate = mm(blk.ffn_gate_w, h);
         if (blk.ffn_gate_b) gate = ggml_add(g, gate, blk.ffn_gate_b);
         gate = ggml_silu(g, gate);
-        ggml_tensor *up = ggml_mul_mat(g, blk.ffn_up_w, h);
+        ggml_tensor *up = mm(blk.ffn_up_w, h);
         if (blk.ffn_up_b) up = ggml_add(g, up, blk.ffn_up_b);
-        ggml_tensor *ffn = ggml_mul_mat(g, blk.ffn_down_w, ggml_mul(g, gate, up));
+        ggml_tensor *ffn = mm(blk.ffn_down_w, ggml_mul(g, gate, up));
         if (blk.ffn_down_b) ffn = ggml_add(g, ffn, blk.ffn_down_b);
         x = ggml_add(g, x, ffn);
+
+        // Per-layer readback for diff bisection (diff mode only — set_output
+        // keeps the tensor live, which costs memory in the monolithic graph).
+        if (diff_mode) {
+            char nm[32];
+            snprintf(nm, sizeof(nm), "vis_layer_%d", i);
+            ggml_set_name(x, nm);
+            ggml_set_output(x);
+            vg.layer_outputs.push_back(x);
+        }
     }
 
     // Post-layernorm
@@ -416,12 +578,75 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
 
     ggml_backend_tensor_set(vg.embed_in, patch_embed_data.data(), 0,
                             vis_D * n_patches * sizeof(float));
+
+    // 2D vision RoPE (opt-in, off by default — glm_ocr_vision is a plain ViT).
+    if (vg.cos_in && vg.sin_in) {
+        const int hd_v = D / (int)vhp.num_heads;
+        const bool rope_merge_order =
+            (std::getenv("GLM_OCR_ROPE_MERGE_ORDER") != nullptr);
+        std::vector<float> rope_cos, rope_sin;
+        compute_glm_vision_rope(rope_cos, rope_sin, n_ph, n_pw, hd_v,
+                                (int)vhp.spatial_merge_size, rope_merge_order,
+                                10000.0f);
+        if (std::getenv("GLM_OCR_ROPE_DEBUG")) {
+            fprintf(stderr, "[rope] hd_v=%d n_ph=%d n_pw=%d size=%zu\n",
+                    hd_v, n_ph, n_pw, rope_cos.size());
+            fprintf(stderr, "[rope] tok0: cos[0,1,16,17]=%.4f %.4f %.4f %.4f\n",
+                    rope_cos[0], rope_cos[1], rope_cos[16], rope_cos[17]);
+            fprintf(stderr, "[rope] tok100(row=%d,col=%d): cos[0,1,16,17]=%.4f %.4f %.4f %.4f sin=%.4f %.4f\n",
+                    100/n_pw, 100%n_pw,
+                    rope_cos[100*hd_v+0], rope_cos[100*hd_v+1],
+                    rope_cos[100*hd_v+16], rope_cos[100*hd_v+17],
+                    rope_sin[100*hd_v+0], rope_sin[100*hd_v+16]);
+        }
+        ggml_backend_tensor_set(vg.cos_in, rope_cos.data(), 0,
+                                rope_cos.size() * sizeof(float));
+        ggml_backend_tensor_set(vg.sin_in, rope_sin.data(), 0,
+                                rope_sin.size() * sizeof(float));
+    }
     ggml_backend_sched_graph_compute(ctx.sched, vg.gf);
+
+    if (std::getenv("GLM_OCR_ROPE_DEBUG") && vg.dbg_q_rope0) {
+        std::vector<float> qd(64 * 16 * n_patches);
+        ggml_backend_tensor_get(vg.dbg_q_rope0, qd.data(), 0, qd.size() * sizeof(float));
+        FILE *f = fopen("/tmp/glm_cpp_q_rope0.bin", "wb");
+        if (f) { fwrite(qd.data(), sizeof(float), qd.size(), f); fclose(f); }
+        if (vg.dbg_k_rope0) {
+            std::vector<float> kd(64 * 16 * n_patches);
+            ggml_backend_tensor_get(vg.dbg_k_rope0, kd.data(), 0, kd.size() * sizeof(float));
+            FILE *fk = fopen("/tmp/glm_cpp_k_rope0.bin", "wb");
+            if (fk) { fwrite(kd.data(), sizeof(float), kd.size(), fk); fclose(fk); }
+        }
+        fprintf(stderr, "[rope] dumped layer0 Q/K-after-rope\n");
+    }
+
+    // Per-layer diff bisection (before the graph context is freed).
+    if (!ctx.diff_ref_path.empty() && !vg.layer_outputs.empty()) {
+        crispembed_diff::Ref lref;
+        if (lref.load(ctx.diff_ref_path.c_str())) {
+            std::vector<float> lbuf(vis_D * n_patches);
+            for (size_t li = 0; li < vg.layer_outputs.size(); li++) {
+                char nm[32];
+                snprintf(nm, sizeof(nm), "vis_layer_%zu", li);
+                if (!lref.has(nm)) continue;
+                ggml_backend_tensor_get(vg.layer_outputs[li], lbuf.data(), 0,
+                                        vis_D * n_patches * sizeof(float));
+                auto r = lref.compare(nm, lbuf.data(), (size_t)vis_D * n_patches);
+                printf("  %s: cos=%.6f max_abs=%.6f %s\n", nm, r.cos_min,
+                       r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
+        }
+    }
 
     // Read only the final output (vis_output)
     std::vector<float> layer_data(vis_D * n_patches);
     ggml_backend_tensor_get(vg.output, layer_data.data(), 0,
                             vis_D * n_patches * sizeof(float));
+    if (std::getenv("GLM_OCR_ROPE_DEBUG")) {
+        FILE *f = fopen("/tmp/glm_cpp_postnorm.bin", "wb");
+        if (f) { fwrite(layer_data.data(), sizeof(float), layer_data.size(), f); fclose(f); }
+        fprintf(stderr, "[rope] dumped post_norm (%d x %d)\n", vis_D, n_patches);
+    }
     ggml_free(vg.gctx);
     if (bench) {
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -894,30 +1119,54 @@ static bool run_cached_step(context &ctx, const int32_t *token_ids, int n_tokens
 
     ggml_backend_tensor_set(lg.token_in, token_ids, 0, T * sizeof(int32_t));
 
-    // mRoPE positions: text tokens use sequential, image tokens use 2D spatial
-    // Image grid is merge_h × merge_w (12×12 for 336px/14px/2 spatial_merge)
+    // mRoPE positions — must match transformers glm_ocr get_rope_index /
+    // get_vision_position_ids exactly:
+    //   text token: all 3 dims = current_pos; current_pos++
+    //   image block (t=1, h=gh, w=gw after spatial_merge): for patch k
+    //     (row = k/gw, col = k%gw), temporal = start, height = start+row,
+    //     width = start+col, where start = current_pos at the block's first
+    //     image token; after the block current_pos += max(gh, gw).
+    // Because the image block advances current_pos by only max(gh,gw) (not by
+    // the number of image tokens), the mRoPE position after prefill differs from
+    // the token count — decode steps continue from ctx.mrope_next_pos.
     const int merge_size = (int)ctx.m.vhp.spatial_merge_size;
     const int img_h = (int)ctx.m.vhp.image_size / (int)ctx.m.vhp.patch_size / merge_size;
     const int img_w = img_h;
     const int img_token_id = (int)ctx.m.lhp.image_token_id;
 
     std::vector<int32_t> pos_data(T * 4, 0);
-    int text_pos = n_past;
-    int img_idx = 0;
-    for (int j = 0; j < T; j++) {
-        if (token_ids[j] == img_token_id && img_idx < img_h * img_w) {
-            int ih = img_idx / img_w;
-            int iw = img_idx % img_w;
-            pos_data[j]       = n_past + text_pos;  // temporal: same for all
-            pos_data[T + j]   = n_past + ih;         // height
-            pos_data[2*T + j] = n_past + iw;         // width
-            img_idx++;
-        } else {
-            pos_data[j]       = n_past + text_pos;
-            pos_data[T + j]   = n_past + text_pos;
-            pos_data[2*T + j] = n_past + text_pos;
-            text_pos++;
+    if (n_past == 0) {
+        int current_pos = 0;
+        int img_idx = 0;
+        for (int j = 0; j < T; j++) {
+            if (token_ids[j] == img_token_id) {
+                int start = current_pos;              // block start (same for all patches)
+                int row = img_idx / img_w;
+                int col = img_idx % img_w;
+                pos_data[j]       = start;            // temporal (t grid = 1)
+                pos_data[T + j]   = start + row;      // height
+                pos_data[2*T + j] = start + col;      // width
+                img_idx++;
+                // Advance current_pos once the block ends (next token is text).
+                if (j + 1 >= T || token_ids[j + 1] != img_token_id) {
+                    current_pos = start + std::max(img_h, img_w);
+                    img_idx = 0;
+                }
+            } else {
+                pos_data[j]       = current_pos;
+                pos_data[T + j]   = current_pos;
+                pos_data[2*T + j] = current_pos;
+                current_pos++;
+            }
         }
+        ctx.mrope_next_pos = current_pos;
+    } else {
+        // Decode: single (or few) new text tokens continue from mrope_next_pos.
+        for (int j = 0; j < T; j++) {
+            int p = ctx.mrope_next_pos + j;
+            pos_data[j] = p; pos_data[T + j] = p; pos_data[2*T + j] = p;
+        }
+        ctx.mrope_next_pos += T;
     }
     ggml_backend_tensor_set(ggml_graph_get_tensor(lg.gf, "pos_ids"),
                             pos_data.data(), 0, T * 4 * sizeof(int32_t));
@@ -1232,26 +1481,30 @@ const char * glm_ocr_recognize_raw(glm_ocr_context *ctx,
         return "";
     }
 
-    // Build prompt with GLM chat template:
-    // <sop><|system|>\n你是一个OCR模型。请提取图片中的所有文字。\n<|user|>\n
-    // <|begin_of_image|><|image|>*N<|end_of_image|>\n<|assistant|>\n
+    // Build prompt from GLM-OCR's chat template (chat_template.jinja) applied to
+    // the recommended single-turn OCR message
+    //   [{role:user, content:[{image}, {text:"Text Recognition:"}]}]
+    // with add_generation_prompt=True. Rendered (trim/lstrip blocks) as:
+    //   [gMASK]<sop><|user|>\n<|begin_of_image|><|image|>*N<|end_of_image|>Text Recognition:<|assistant|>\n
+    // NOTE: there is NO system turn, the leading [gMASK] is required, and the
+    // instruction text sits between <|end_of_image|> and <|assistant|> with no
+    // surrounding newlines. (The previous prompt dropped [gMASK] and the
+    // instruction and injected a spurious empty <|system|> block → garbage.)
     int n_img_tokens = vr.n_tokens;
+    const int32_t gmask_id = 59248;
     const int32_t sop_id   = 59250;
-    const int32_t sys_id   = 59252;
     const int32_t user_id  = 59253;
     const int32_t asst_id  = 59254;
     const int32_t boi_id   = 59256;
     const int32_t eoi_id   = 59257;
     const int32_t img_id   = (int32_t)l.image_token_id;  // 59280
-    const int32_t nl_id    = 10;     // '\n' in chatglm-bpe tokenizer
+    const int32_t nl_id    = 10;     // '\n' ('Ċ') in chatglm-bpe tokenizer
+    // "Text Recognition:" → BPE ids (Text / ĠRec / ognition / :)
+    const int32_t instr_ids[] = {3649, 7404, 49600, 58};
 
     std::vector<int32_t> prompt;
-    // <sop>
+    prompt.push_back(gmask_id);
     prompt.push_back(sop_id);
-    // <|system|>\n  (system prompt — minimal OCR instruction)
-    prompt.push_back(sys_id);
-    prompt.push_back(nl_id);
-    // <|user|>\n
     prompt.push_back(user_id);
     prompt.push_back(nl_id);
     // <|begin_of_image|> <|image|>*N <|end_of_image|>
@@ -1259,8 +1512,9 @@ const char * glm_ocr_recognize_raw(glm_ocr_context *ctx,
     for (int i = 0; i < n_img_tokens; i++)
         prompt.push_back(img_id);
     prompt.push_back(eoi_id);
-    // \n<|assistant|>\n
-    prompt.push_back(nl_id);
+    // Instruction text (no surrounding newlines)
+    for (int32_t t : instr_ids) prompt.push_back(t);
+    // <|assistant|>\n
     prompt.push_back(asst_id);
     prompt.push_back(nl_id);
 
