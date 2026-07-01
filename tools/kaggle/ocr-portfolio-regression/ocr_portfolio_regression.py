@@ -158,28 +158,32 @@ def _warm_crispembed_ccache():
 
 _warm_crispembed_ccache()
 extra_flags = kh.cache_and_link_flags()      # -DCMAKE_*_COMPILER_LAUNCHER=ccache, mold
-cuda_flags = []
-if has_gpu:
-    import glob
-    cuda_flags = ["-DGGML_CUDA=ON",
-                  f"-DCMAKE_CUDA_ARCHITECTURES={kh.detect_cuda_arch()}"]
-    stubs = glob.glob("/usr/local/cuda/targets/*/lib/stubs/libcuda.so")
-    if stubs:
-        cuda_flags.append(f"-DCMAKE_LIBRARY_PATH={os.path.dirname(stubs[0])}")
+# kh.cuda_build_flags() = GGML_CUDA + NO_VMM + pinned arch + explicit nvcc, and
+# puts /usr/local/cuda/lib64/stubs on LIBRARY_PATH so CUDA::cuda_driver resolves
+# (the exact stub-target error that killed v1/v2 on P100).
+cuda_flags = kh.cuda_build_flags() if has_gpu else []
 
 os.chdir(str(BUILD_DIR))
 gen = "-G Ninja" if kh.sh("which ninja", check=False) == 0 else "-G 'Unix Makefiles'"
-cmake = f"cmake {EMBED_DIR} {gen} -DCMAKE_BUILD_TYPE=Release " + \
-        " ".join(cuda_flags + extra_flags)
+
+
+def configure(flags):
+    run(f"cmake {EMBED_DIR} {gen} -DCMAKE_BUILD_TYPE=Release " + " ".join(flags))
+
+
 try:
-    run(cmake)
+    configure(cuda_flags + extra_flags)
 except subprocess.CalledProcessError:
     print("CUDA cmake failed → CPU-only build", flush=True)
-    run(f"cmake {EMBED_DIR} {gen} -DCMAKE_BUILD_TYPE=Release " + " ".join(extra_flags))
+    # wipe the cache so the retry doesn't inherit GGML_CUDA=ON from the
+    # failed configure (a stale CMakeCache.txt is why v2's fallback re-failed).
+    run("rm -f CMakeCache.txt && rm -rf CMakeFiles")
+    configure(extra_flags)
 
 manifest = json.loads((EMBED_DIR / "tests/regression/manifest.json").read_text())
 diff_targets = sorted({m["diff"]["binary"] for m in manifest["models"] if "diff" in m})
-run(f"cmake --build . -j$(nproc) --target crispembed-cli " + " ".join(diff_targets))
+jobs = kh.safe_build_jobs(has_gpu)   # -j2 for CUDA (nvcc TUs are RAM-heavy), else -j$(nproc)
+run(f"cmake --build . -j{jobs} --target crispembed-cli " + " ".join(diff_targets))
 
 # ── Step 2: run the portfolio through the shared driver ──────────────
 print("\n" + "=" * 60, "\nStep 2: portfolio regression\n", "=" * 60)
