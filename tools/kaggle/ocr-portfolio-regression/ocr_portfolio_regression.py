@@ -22,9 +22,49 @@ import os
 import subprocess
 import sys
 import time
+import traceback
 from pathlib import Path
 
 WORK = Path("/kaggle/working")
+
+# ── Always-persisted log (Kaggle's kernels_output does NOT include the
+#    stderr/stdout log — gotcha #15 — so tee everything to a working file
+#    that IS downloadable, and dump any fatal traceback there too). ──
+WORK.mkdir(parents=True, exist_ok=True)
+_LOG = open(WORK / "run.log", "w", buffering=1)
+
+
+class _Tee:
+    def __init__(self, *streams):
+        self.streams = streams
+
+    def write(self, s):
+        for st in self.streams:
+            try:
+                st.write(s)
+            except Exception:
+                pass
+
+    def flush(self):
+        for st in self.streams:
+            try:
+                st.flush()
+            except Exception:
+                pass
+
+
+sys.stdout = _Tee(sys.__stdout__, _LOG)
+sys.stderr = _Tee(sys.__stderr__, _LOG)
+
+
+def _excepthook(exc_type, exc, tb):
+    _LOG.write("\n=== FATAL ===\n")
+    traceback.print_exception(exc_type, exc, tb, file=_LOG)
+    _LOG.flush()
+    traceback.print_exception(exc_type, exc, tb, file=sys.__stderr__)
+
+
+sys.excepthook = _excepthook
 REPO_URL = "https://github.com/CrispStrobe/CrispEmbed.git"
 CRISPASR_URL = "https://github.com/CrispStrobe/CrispASR.git"
 BRANCH = os.environ.get("CRISPEMBED_BRANCH", "main")
@@ -65,8 +105,16 @@ if tok:
 
 
 def run(cmd, **kw):
+    # Capture + echo so subprocess output lands in run.log (it writes to the
+    # OS fd, which bypasses the Python-level Tee otherwise).
     print(f"$ {cmd}", flush=True)
-    return subprocess.run(cmd, shell=True, check=True, **kw)
+    p = subprocess.run(cmd, shell=True, capture_output=True, text=True, **kw)
+    if p.stdout:
+        print(p.stdout)
+    if p.returncode != 0:
+        print(f"[exit {p.returncode}] stderr:\n{p.stderr}")
+        raise subprocess.CalledProcessError(p.returncode, cmd, p.stdout, p.stderr)
+    return p
 
 
 # ── Step 1: clone + build with CUDA (ccache-warmed) ──────────────────
