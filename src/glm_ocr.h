@@ -141,6 +141,9 @@ struct context {
     int verbosity = 1;
     bool bench = false;
     std::string diff_ref_path;
+    // Next mRoPE position after the prefill (image tokens compress positions, so
+    // this is NOT the token count). Decode steps advance from here.
+    int mrope_next_pos = 0;
 };
 
 bool load(context &ctx, const char *gguf_path, int n_threads = 1, int verbosity = 1);
