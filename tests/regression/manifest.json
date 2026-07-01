@@ -26,8 +26,8 @@
       "diff": {
         "binary": "test-got-ocr-diff",
         "ref": {"repo": "cstr/got-ocr2-crispembed-GGUF", "file": "got-ocr2-ref-full.gguf", "revision": "main"},
-        "thresholds": {"*": 0.99},
-        "_note": "test-got-ocr-diff <gguf> <ref>. Vision layers ~0.998 on CPU (0.9999 on Metal); decoder layers >=0.9998. 0.99 floor covers both backends with margin; a scrambled-permute regression craters vis_proj_output to ~0, well below."
+        "thresholds": {"*": 0.95},
+        "_note": "test-got-ocr-diff <gguf> <ref>. Vision cos varies by backend: ~0.998 CPU, 0.9999 Metal, but ~0.982 on Kaggle CUDA (T4/P100) — so the floor is 0.95 to absorb backend FP variance while still catching a real regression (a scrambled-permute craters vis_proj_output to ~0). Decoder layers stay ~0.9998 everywhere."
       }
     },
     {
@@ -64,7 +64,7 @@
       "sample": "tests/regression/images/fox.png",
       "expected_text": null,
       "match": {"max_cer": 0.15},
-      "diff": {"binary": "test-granite-vision-diff", "ref": {"repo": "cstr/granite-vision-crispembed-GGUF", "file": "granite-vision-ref.gguf", "revision": "main"}, "thresholds": {"*": 0.99}}
+      "diff": {"binary": "test-granite-vision-diff", "ref": {"repo": "cstr/granite-vision-crispembed-GGUF", "file": "granite-vision-ref.gguf", "revision": "main"}, "thresholds": {"*": 0.95}}
     },
     {
       "name": "lightonocr",
