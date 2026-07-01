@@ -1,5 +1,64 @@
 # CrispEmbed — Technical Learnings
 
+## June-2026 scalar→ggml wave audit: 2 new regressions, both invisible to numerical guards (2026-07)
+
+Systematic re-audit of the ~15-engine June scalar→`ggml_conv_2d` refactor wave
+(handover `june20-ggml-refactor-regression-audit.md`), each engine on **both**
+Metal and CPU. Result: the wave broke **more than the 3 known** engines. Two
+*new* regressions, and both slipped every automated guard except looking at the
+actual output:
+
+- **restormer — garbage output, both backends.** `restormer-denoise-f16` on a
+  clean image emits blocky rainbow noise (mean 147 / std 120 vs a clean ~242),
+  **bit-identical on Metal and CPU** → a both-backend `ggml_conv_2d` conversion
+  bug (not the usual Metal-only failure mode). Garbage blocks align with the
+  128px tiling; the suspect is the per-conv weight-reshape heuristic in
+  `rst_conv2d_ggml` (`src/restormer.cpp:707-724`) / transposed-conv path that
+  `ab3e278`/`bf26905` were still patching. A/B gate exists: `RESTORMER_SCALAR=1`
+  (old scalar path) at `src/restormer.cpp:770`.
+- **paddleocr-vl — SIGSEGV, both backends.** `paddleocr-vl-0.9b` loads via the
+  shared **`qwen2vl_ocr`** engine (vision 27L merge=2, llm 18L, **16/2 GQA =
+  8:1**) then crashes `EXC_BAD_ACCESS` in `_platform_memmove` during forward —
+  exit 139, zero output, reproducible in isolation on Metal AND CPU. The 8:1
+  head/kv ratio is exactly the "native-GQA broadcast wrong for specific ratios"
+  hazard `fbae7ba` introduced. Bad memmove ⇒ a tensor-size mismatch overrun.
+
+**Methodology lesson — a "non-degenerate output" numeric guard is not an output
+check.** restormer's noise has high std, so a std>1 guard *passes* it; the
+garbage was only visible by rendering the pixels. Likewise paddleocr's crash is
+invisible to a per-stage cos diff (no reference was ever uploaded, and the engine
+dies before producing one). The regression suite's exit-code + garbage-guard is
+necessary but not sufficient for the SR/restoration engines — they need a golden
+image + PSNR/SSIM (or a per-stage ref with the *output* tensor), and the VLMs
+need a real transcript baked (not `expected_text: null`).
+
+**Manifest ref bugs found while (re-)verifying the "no ref on HF" claim** — the
+refs mostly *do* exist, the manifest just pointed at wrong names/repos:
+`glm-ocr-ref.gguf`→`glm-ocr-ref-full.gguf`; qwen2vl ref repo
+`cstr/qwen2vl-3b-crispembed-GGUF` (nonexistent)→`cstr/qwen2.5-vl-3b-crispembed-GGUF`;
+paddleocr ref repo `cstr/paddleocr-vl-GGUF`→`cstr/paddleocr-vl-0.9b-GGUF`. Fixed
+in `tests/regression/manifest.json`. (glm's ref exists and enables its per-stage
+diff; qwen2vl/internvl2/paddleocr per-stage refs still need generating from the
+VPS torch dumpers.)
+
+**`fbae7ba` correction:** it removed GQA head-expansion in **lightonocr / got_ocr /
+glm_ocr**, NOT qwen2vl (handover table was wrong). got_ocr was a no-op (MHA,
+nh==nkv); lightonocr + glm now rely on native GQA broadcast. Verified clean:
+lightonocr decodes correctly both backends (minor cosmetic `ĠĊ` BPE-marker leak).
+
+**Verified CLEAN, both backends (no regression):** SR per-stage diff —
+swinir, dat (scalar + `DAT_SR_GGML_CONV`), hat, pan, tbsrn, adair, scunet,
+instructir; output+Metal==CPU — safmn, esrgan, (restormer is the exception);
+OCR — got-ocr2 (full 20-stage diff, cer 0.000), internvl2, lightonocr.
+**nafnet_denoise = coverage gap** (no diff harness, no standalone CLI output —
+only reachable via the `--denoise` OCR pipeline).
+
+**HF download gotcha (this box, 2026-07):** the `huggingface_hub` client wedged on
+the Xet CDN (`cas-bridge.xethub.hf.co`) with 10s read-timeouts even with
+`HF_HUB_DISABLE_XET=1`, while the HF *API* stayed fast. Plain
+`curl -L https://huggingface.co/<repo>/resolve/main/<file>` (AWS CDN redirect,
+`--retry 6`) is the reliable fallback for the diff/regression harnesses.
+
 ## InternVL2: caching a ggml graph on a SHARED scheduler is unsafe; "re-alloc" fixes it on CPU but not Metal (2026-07)
 
 `c714758` ("cache vision encoder graph across tile invocations") built the
