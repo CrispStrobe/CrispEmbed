@@ -66,7 +66,12 @@ def main():
     w = gguf.GGUFWriter(out_path, arch)
 
     GT = gguf.GGUFValueType
-    skip = {"general.architecture", "general.name"}
+    # Skip arch/name (writer sets them) + every key we re-add below, so
+    # re-patching an already-patched GGUF stays idempotent (no duplicate KVs).
+    skip = {"general.architecture", "general.name",
+            "tokenizer.tokens", "tokenizer.merges",
+            "granite_vision.attention_multiplier", "granite_vision.rms_eps",
+            "granite_vision.bos_token_id", "granite_vision.eos_token_id"}
     # Copy every existing KV (except arch/name, which the writer sets) verbatim.
     for name, fld in r.fields.items():
         if name.startswith("GGUF.") or name in skip:
