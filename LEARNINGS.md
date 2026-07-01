@@ -1,5 +1,39 @@
 # CrispEmbed — Technical Learnings
 
+## InternVL2: caching a ggml graph on a SHARED scheduler is unsafe; "re-alloc" fixes it on CPU but not Metal (2026-07)
+
+`c714758` ("cache vision encoder graph across tile invocations") built the
+InternViT graph once and reused the `ggml_context` + `ggml_cgraph` + input/output
+tensors for every dynamic tile, only re-uploading input data. This crashed:
+InternVL2 dynamic-tiles an image into 1–5 tiles, and within each tile
+`encode_vision_tile` and `project_vision` share the **same** `ctx.sched`
+(`ggml_backend_sched`). `project_vision` calls `ggml_backend_sched_reset` between
+tiles, which invalidates the vision graph's allocation. From the 2nd tile on,
+vision compute read freed/realloc'd scheduler buffers → `EXC_BAD_ACCESS`
+(SIGSEGV/SIGBUS) on Metal, and a non-terminating decode (87-min "hang") on CUDA.
+Bisected: the parent `f0df10c` OCRs the exact 5-tile page correctly.
+
+**The subtle part — the fix that only works on one backend.** A first, tempting
+fix (shipped in parallel as `f0ddbf9`) keeps the built graph cached but calls
+`ggml_backend_sched_reset` + `ggml_backend_sched_alloc_graph` *before each tile*
+to "re-establish" the allocation. That **works on the CPU backend but still
+SIGSEGVs on Metal** (verified head-to-head on the same 5-tile page, M1): ggml
+frees the graph's input-tensor memory after its first consumer, and re-allocating
+the *same* cgraph object doesn't restore a valid input buffer on Metal's
+residency-set/shared-buffer allocator, though CPU tolerates it. The only fix that
+holds on **both** backends is a full **fresh build per tile**
+(`build_vision_graph` → `sched_reset` → `alloc` → compute → `ggml_free`) — the
+pre-`c714758` behaviour.
+
+**Lessons:**
+1. Don't cache a ggml graph (context/cgraph/tensors) that is computed on a
+   scheduler shared with other graphs — the other graphs' `sched_reset`/`alloc`
+   invalidate it. Cache the *weights*, not the graph.
+2. A memory-lifetime fix that passes on one backend can still crash another —
+   ggml's CPU and Metal allocators have different free/reuse semantics. Validate
+   allocator-sensitive fixes on **every** backend you ship (the re-alloc fix was
+   green on a CPU-only VPS and would have shipped the Metal crash).
+
 ## GOT-OCR2: the "colorcolor…" garbage was a vision-neck permute, not quantization (2026-07)
 
 The got-ocr2 garbage output (`colorcolorcolor…` repeated forever) and the
