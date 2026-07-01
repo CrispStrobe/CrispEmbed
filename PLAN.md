@@ -1058,8 +1058,8 @@ single-threaded, must not OOM.
 - [x] Downsample + merger → ggml graph (conv2d_direct + batched SwiGLU + LayerNorm)
   Gated: CRISPEMBED_GLM_OCR_SCALAR_MERGER=1. Merger: 383ms on q4_k.
 - [x] **OCR correctness (2026-07-01)**: was garbage; fixed 5 bugs + q8_0.
-  fox.png → "The quick brown fox jumps over the lazy dog. 12345" on f16 AND q8_0,
-  CPU AND Metal, verified vs the real transformers-`main` `glm_ocr` model.
+  fox.png → "The quick brown fox jumps over the lazy dog. 12345" on f16, q8_0 AND
+  q4_k, CPU AND Metal, verified vs the real transformers-`main` `glm_ocr` model.
   1. Missing vision 2D RoPE (raster order, dim=hd/2, θ=10000, NEOX). On by default;
      `GLM_OCR_VISION_ROPE=0` to disable.
   2. Merger structure: was `proj→SwiGLU→LN`; real is
@@ -1069,8 +1069,8 @@ single-threaded, must not OOM.
   4. LLM image mRoPE positions (start-offset h/w; decode from compressed pos).
   5. Prompt (`[gMASK]…Text Recognition:…`), EOS on `<|user|>`(59253), GPT-2
      byte-level decode.
-  - q8_0: dequantize weights BEFORE any reshape (downsample/patch_embed/merger) —
-     fixes CPU garbage + Metal block-align assert.
+  - q8_0 & q4_k: dequantize weights BEFORE any reshape (downsample/patch_embed/
+     merger) — fixes CPU garbage + Metal block-align assert.
   - Regression uses `expected_text` (per-token cos_min diff gate unsuitable — see
      LEARNINGS "glm-ocr: five real bugs" for the sink-token analysis).
   - History: HISTORY.md (July 1, 2026).
