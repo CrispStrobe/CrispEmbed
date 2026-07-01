@@ -17,7 +17,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cstdint>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace glm_ocr {
@@ -491,14 +493,14 @@ void free_(context &ctx) {
     if (ctx.backend) { ggml_backend_free(ctx.backend); ctx.backend = nullptr; }
 }
 
-bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
+bool encode_vision(context &ctx, const float *pixels, int H, int W,
+                   vision_result &out) {
     const auto &vhp = ctx.m.vhp;
     const int D = (int)vhp.hidden_size;
     const int P = (int)vhp.patch_size;
     const int T_p = (int)vhp.temporal_patch_size;
-    const int img_size = (int)vhp.image_size;
-    const int n_ph = img_size / P;
-    const int n_pw = n_ph;
+    const int n_ph = H / P;   // dynamic-resolution grid (H, W multiples of P)
+    const int n_pw = W / P;
     const int n_patches = n_ph * n_pw;
     const int patch_flat = 3 * T_p * P * P;
 
@@ -515,7 +517,7 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
                             int y = ph * P + py;
                             int x = pw * P + px;
                             patches[idx * patch_flat + t * 3 * P * P + c * P * P + py * P + px] =
-                                pixels[c * img_size * img_size + y * img_size + x];
+                                pixels[c * H * W + y * W + x];
                         }
                     }
                 }
@@ -724,17 +726,24 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
         auto norm_w = read_model_w(ctx.m.merger.norm_w);
         auto norm_b = read_model_w(ctx.m.merger.norm_b);
         int inter = ctx.m.merger.gate_w ? (int)ctx.m.merger.gate_w->ne[0] : out_D * 3;
+        // GlmOcrVisionPatchMerger: proj -> LayerNorm -> GELU(erf) ->
+        //   down( silu(gate(h)) * up(h) ).  NO final norm.
+        auto gelu_erf = [](float x) { return 0.5f * x * (1.0f + std::erf(x * 0.70710678f)); };
         for (int t = 0; t < n_merged; t++) {
-            std::vector<float> x_proj(out_D), g(inter), u(inter), gu(inter), ffn(out_D);
+            std::vector<float> x_proj(out_D), h(out_D), g(inter), u(inter), gu(inter), ffn(out_D);
             for (int j = 0; j < out_D; j++) { float s = 0; for (int i = 0; i < out_D; i++) s += proj_w[i + j * out_D] * ds_out[i + t * out_D]; x_proj[j] = s; }
-            for (int j = 0; j < inter; j++) { float s = 0; for (int i = 0; i < out_D; i++) s += gate_w[i + j * out_D] * x_proj[i]; g[j] = s / (1.0f + std::exp(-s)); }
-            for (int j = 0; j < inter; j++) { float s = 0; for (int i = 0; i < out_D; i++) s += up_w[i + j * out_D] * x_proj[i]; u[j] = s; }
+            // post_projection_norm (LayerNorm) then GELU
+            float mean = 0; for (int d = 0; d < out_D; d++) mean += x_proj[d]; mean /= out_D;
+            float var = 0; for (int d = 0; d < out_D; d++) { float dd = x_proj[d] - mean; var += dd * dd; } var /= out_D;
+            for (int d = 0; d < out_D; d++) {
+                float ln = (x_proj[d] - mean) / std::sqrt(var + 1e-5f) * norm_w[d] + (norm_b.empty() ? 0 : norm_b[d]);
+                h[d] = gelu_erf(ln);
+            }
+            for (int j = 0; j < inter; j++) { float s = 0; for (int i = 0; i < out_D; i++) s += gate_w[i + j * out_D] * h[i]; g[j] = s / (1.0f + std::exp(-s)); }
+            for (int j = 0; j < inter; j++) { float s = 0; for (int i = 0; i < out_D; i++) s += up_w[i + j * out_D] * h[i]; u[j] = s; }
             for (int k = 0; k < inter; k++) gu[k] = g[k] * u[k];
             for (int j = 0; j < out_D; j++) { float s = 0; for (int i = 0; i < inter; i++) s += down_w[i + j * inter] * gu[i]; ffn[j] = s; }
-            float mean = 0; for (int d = 0; d < out_D; d++) mean += ffn[d]; mean /= out_D;
-            float var = 0; for (int d = 0; d < out_D; d++) { float dd = ffn[d] - mean; var += dd * dd; } var /= out_D;
-            for (int d = 0; d < out_D; d++)
-                merger_out[d + t * out_D] = (ffn[d] - mean) / std::sqrt(var + 1e-6f) * norm_w[d] + (norm_b.empty() ? 0 : norm_b[d]);
+            for (int d = 0; d < out_D; d++) merger_out[d + t * out_D] = ffn[d];
         }
     } else {
         // ── ggml graph: downsample conv + merger (proj + SwiGLU + LN) ──
@@ -770,19 +779,18 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
         x = ggml_cont(mg, ggml_permute(mg, x, 1, 2, 0, 3));  // (out_D, out_w, out_h)
         x = ggml_reshape_2d(mg, x, out_D, n_merged);           // (1536, 144)
 
-        // Merger: proj → SwiGLU → LayerNorm (all batched matmuls)
-        // proj: (out_D, out_D) × (out_D, n_merged) → (out_D, n_merged)
+        // GlmOcrVisionPatchMerger: proj -> post_projection_norm(LayerNorm) ->
+        //   act1(GELU erf) -> down( silu(gate(h)) * up(h) ). NO trailing norm.
         x = ggml_mul_mat(mg, ctx.m.merger.proj_w, x);
+        x = ggml_norm(mg, x, 1e-5f);   // LayerNorm (eps 1e-5, nn.LayerNorm default)
+        if (ctx.m.merger.norm_w) x = ggml_mul(mg, x, ctx.m.merger.norm_w);
+        if (ctx.m.merger.norm_b) x = ggml_add(mg, x, ctx.m.merger.norm_b);
+        x = ggml_gelu_erf(mg, x);      // act1 = nn.GELU() (exact/erf)
 
-        // SwiGLU: gate = silu(gate_w @ x), up = up_w @ x, down_w @ (gate * up)
+        // SwiGLU: down( silu(gate(x)) * up(x) )
         ggml_tensor *gate = ggml_silu(mg, ggml_mul_mat(mg, ctx.m.merger.gate_w, x));
         ggml_tensor *up = ggml_mul_mat(mg, ctx.m.merger.up_w, x);
         x = ggml_mul_mat(mg, ctx.m.merger.down_w, ggml_mul(mg, gate, up));
-
-        // LayerNorm (with bias — use ggml_norm + mul + add)
-        x = ggml_norm(mg, x, 1e-6f);
-        if (ctx.m.merger.norm_w) x = ggml_mul(mg, x, ctx.m.merger.norm_w);
-        if (ctx.m.merger.norm_b) x = ggml_add(mg, x, ctx.m.merger.norm_b);
 
         ggml_set_name(x, "merger_out"); ggml_set_output(x);
 
@@ -841,6 +849,10 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
 
     out.n_tokens = n_merged;
     out.hidden_dim = out_D;
+    out.grid_h = out_h;
+    out.grid_w = out_w;
+    ctx.img_grid_h = out_h;
+    ctx.img_grid_w = out_w;
     out.hidden = (float *)malloc(out_D * n_merged * sizeof(float));
     std::memcpy(out.hidden, merger_out.data(), out_D * n_merged * sizeof(float));
 
@@ -876,18 +888,52 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
 // ── Tokenizer decode ─────────────────────────────────────────────────
 
 std::string tokenizer::decode(const int32_t *ids, int n) const {
-    // GLM-OCR uses GPT-2 BPE via chatglm-bpe tokenizer.
-    // For now, simple concatenation with byte-decode via core_bpe.
+    // GLM-OCR uses GPT-2 byte-level BPE: token pieces store each raw byte as a
+    // printable Unicode codepoint (bytes_to_unicode). Decode reverses that map:
+    // gather codepoints across pieces, translate each back to its byte, then the
+    // byte stream is the UTF-8 output text.
+    static const std::unordered_map<uint32_t, uint8_t> byte_decoder = [] {
+        std::unordered_map<uint32_t, uint8_t> m;
+        auto in_kept = [](int b) {
+            return (b >= '!' && b <= '~') || (b >= 0xA1 && b <= 0xAC) || (b >= 0xAE && b <= 0xFF);
+        };
+        int n_extra = 0;
+        for (int b = 0; b < 256; b++) {
+            if (in_kept(b)) m[(uint32_t)b] = (uint8_t)b;
+            else m[(uint32_t)(256 + n_extra++)] = (uint8_t)b;
+        }
+        return m;
+    }();
+
+    auto decode_utf8_cp = [](const std::string &s, size_t &i) -> uint32_t {
+        unsigned char c = s[i];
+        uint32_t cp; int extra;
+        if (c < 0x80) { cp = c; extra = 0; }
+        else if ((c >> 5) == 0x6) { cp = c & 0x1F; extra = 1; }
+        else if ((c >> 4) == 0xE) { cp = c & 0x0F; extra = 2; }
+        else if ((c >> 3) == 0x1E) { cp = c & 0x07; extra = 3; }
+        else { cp = c; extra = 0; }
+        for (int k = 0; k < extra && i + 1 < s.size(); k++) cp = (cp << 6) | (s[++i] & 0x3F);
+        i++;
+        return cp;
+    };
+
     std::string result;
     for (int i = 0; i < n; i++) {
         int id = ids[i];
         if (id < 0 || id >= vocab_size) continue;
-        if (id == eos_id) break;
+        if (id == eos_id || id == 59253) break;  // <|endoftext|> / <|user|>
         const std::string &piece = id_to_piece[id];
         if (piece.empty()) continue;
+        // Skip special/control tokens (<|...|>, [gMASK], <sop>, ...).
         if (piece[0] == '<' && piece.back() == '>' && piece.find("0x") == std::string::npos) continue;
         if (piece[0] == '[' && piece.back() == ']') continue;
-        result += piece;
+        for (size_t j = 0; j < piece.size(); ) {
+            uint32_t cp = decode_utf8_cp(piece, j);
+            auto it = byte_decoder.find(cp);
+            if (it != byte_decoder.end()) result += (char)it->second;
+            else result += (char)cp;  // fallback
+        }
     }
     return result;
 }
@@ -1129,9 +1175,10 @@ static bool run_cached_step(context &ctx, const int32_t *token_ids, int n_tokens
     // Because the image block advances current_pos by only max(gh,gw) (not by
     // the number of image tokens), the mRoPE position after prefill differs from
     // the token count — decode steps continue from ctx.mrope_next_pos.
-    const int merge_size = (int)ctx.m.vhp.spatial_merge_size;
-    const int img_h = (int)ctx.m.vhp.image_size / (int)ctx.m.vhp.patch_size / merge_size;
-    const int img_w = img_h;
+    // Merged image grid from the dynamic-resolution vision encode.
+    const int img_h = ctx.img_grid_h > 0 ? ctx.img_grid_h
+        : (int)ctx.m.vhp.image_size / (int)ctx.m.vhp.patch_size / (int)ctx.m.vhp.spatial_merge_size;
+    const int img_w = ctx.img_grid_w > 0 ? ctx.img_grid_w : img_h;
     const int img_token_id = (int)ctx.m.lhp.image_token_id;
 
     std::vector<int32_t> pos_data(T * 4, 0);
@@ -1226,6 +1273,9 @@ bool generate(context &ctx,
     const auto &lhp = ctx.m.lhp;
     const int V = (int)lhp.vocab_size;
     const int eos_id = (int)lhp.eos_token_id;
+    // generation_config eos_token_id = [59246 <|endoftext|>, 59253 <|user|>].
+    // The model ends an OCR turn with <|user|>, so stop on either.
+    auto is_eos = [&](int id) { return id == eos_id || id == 59253; };
     const int max_seq = n_prompt + max_new_tokens + 16;
     const int img_token_id = (int)lhp.image_token_id;
 
@@ -1286,7 +1336,7 @@ bool generate(context &ctx,
     out.token_ids.push_back(best_id);
     if (ctx.verbosity >= 1)
         fprintf(stderr, "  gen[0]: token=%d score=%.2f (prefill %d)\n", best_id, best_score, n_prompt);
-    if (best_id == eos_id) { out.text = ctx.tok.decode(out.token_ids.data(), (int)out.token_ids.size()); return true; }
+    if (is_eos(best_id)) { out.text = ctx.tok.decode(out.token_ids.data(), (int)out.token_ids.size()); return true; }
 
     // Decode
     long long decode_total_ms = 0;
@@ -1318,7 +1368,7 @@ bool generate(context &ctx,
         out.token_ids.push_back(best_id);
         if (ctx.verbosity >= 1)
             fprintf(stderr, "  gen[%d]: token=%d score=%.2f\n", gen, best_id, best_score);
-        if (best_id == eos_id) break;
+        if (is_eos(best_id)) break;
     }
 
     out.text = ctx.tok.decode(out.token_ids.data(), (int)out.token_ids.size());
@@ -1454,31 +1504,74 @@ const char * glm_ocr_recognize_raw(glm_ocr_context *ctx,
 
     auto &v = ctx->ctx.m.vhp;
     auto &l = ctx->ctx.m.lhp;
-    int imgS = (int)v.image_size; // 336
 
-    // Resize to (imgS, imgS) with bilinear interpolation + CLIP normalize
-    std::vector<float> pixels(3 * imgS * imgS);
+    // Qwen2VL-style "smart resize" (Glm46VImageProcessor): resize preserving
+    // aspect ratio to dims that are multiples of factor = patch_size*merge_size,
+    // with total pixels clamped to [min_pixels, max_pixels]. GLM-OCR is a
+    // dynamic-resolution model — NOT fixed image_size×image_size.
+    const int factor = (int)v.patch_size * (int)v.spatial_merge_size;  // 28
+    const double min_pixels = 12544.0;      // preprocessor_config shortest_edge
+    const double max_pixels = 9633792.0;    // preprocessor_config longest_edge
+    auto round_by = [&](double x) {
+        int r = (int)std::lround(x / factor) * factor;
+        return std::max(r, factor);
+    };
+    int H = round_by((double)h), W = round_by((double)w);
+    double area = (double)h * (double)w;
+    if ((double)H * W > max_pixels) {
+        double beta = std::sqrt(area / max_pixels);
+        H = std::max(factor, (int)std::floor(h / beta / factor) * factor);
+        W = std::max(factor, (int)std::floor(w / beta / factor) * factor);
+    } else if ((double)H * W < min_pixels) {
+        double beta = std::sqrt(min_pixels / area);
+        H = (int)std::ceil(h * beta / factor) * factor;
+        W = (int)std::ceil(w * beta / factor) * factor;
+    }
+
+    // Bilinear resize to (H, W) + CLIP normalize; layout (3, H, W).
+    std::vector<float> pixels(3 * H * W);
     for (int c = 0; c < 3; c++) {
-        for (int y = 0; y < imgS; y++) {
-            float fy = (float)y * h / imgS;
-            int iy = std::min((int)fy, h - 1);
-            for (int x = 0; x < imgS; x++) {
-                float fx = (float)x * w / imgS;
-                int ix = std::min((int)fx, w - 1);
-                int ci = std::min(c, ch - 1);
-                float val = (float)px[(iy * w + ix) * ch + ci] / 255.0f;
-                pixels[c * imgS * imgS + y * imgS + x] =
-                    (val - v.image_mean[c]) / v.image_std[c];
+        int ci = std::min(c, ch - 1);
+        for (int y = 0; y < H; y++) {
+            float fy = ((float)y + 0.5f) * h / H - 0.5f;
+            int y0 = (int)std::floor(fy);
+            float wy = fy - y0;
+            int y0c = std::min(std::max(y0, 0), h - 1);
+            int y1c = std::min(std::max(y0 + 1, 0), h - 1);
+            for (int x = 0; x < W; x++) {
+                float fx = ((float)x + 0.5f) * w / W - 0.5f;
+                int x0 = (int)std::floor(fx);
+                float wx = fx - x0;
+                int x0c = std::min(std::max(x0, 0), w - 1);
+                int x1c = std::min(std::max(x0 + 1, 0), w - 1);
+                float p00 = (float)px[(y0c * w + x0c) * ch + ci];
+                float p01 = (float)px[(y0c * w + x1c) * ch + ci];
+                float p10 = (float)px[(y1c * w + x0c) * ch + ci];
+                float p11 = (float)px[(y1c * w + x1c) * ch + ci];
+                float top = p00 + (p01 - p00) * wx;
+                float bot = p10 + (p11 - p10) * wx;
+                float val = (top + (bot - top) * wy) / 255.0f;
+                pixels[c * H * W + y * W + x] = (val - v.image_mean[c]) / v.image_std[c];
             }
         }
     }
+    if (ctx->ctx.verbosity >= 1)
+        fprintf(stderr, "  smart-resize %dx%d -> %dx%d (grid %dx%d)\n",
+                w, h, W, H, W / (int)v.patch_size, H / (int)v.patch_size);
 
     // Vision encode
     glm_ocr::vision_result vr;
-    if (!glm_ocr::encode_vision(ctx->ctx, pixels.data(), vr)) {
+    if (!glm_ocr::encode_vision(ctx->ctx, pixels.data(), H, W, vr)) {
         fprintf(stderr, "glm_ocr: vision encoding failed\n");
         if (out_len) *out_len = 0;
         return "";
+    }
+
+    if (std::getenv("GLM_OCR_DUMP_EMBEDS")) {
+        FILE *f = fopen("/tmp/glm_cpp_embeds.bin", "wb");
+        if (f) { fwrite(vr.hidden, sizeof(float), (size_t)vr.n_tokens * vr.hidden_dim, f); fclose(f); }
+        fprintf(stderr, "[embeds] dumped %d x %d (grid %dx%d) to /tmp/glm_cpp_embeds.bin\n",
+                vr.n_tokens, vr.hidden_dim, vr.grid_h, vr.grid_w);
     }
 
     // Build prompt from GLM-OCR's chat template (chat_template.jinja) applied to

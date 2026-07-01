@@ -144,6 +144,10 @@ struct context {
     // Next mRoPE position after the prefill (image tokens compress positions, so
     // this is NOT the token count). Decode steps advance from here.
     int mrope_next_pos = 0;
+    // Merged image-grid dims of the most recent vision encode (dynamic
+    // resolution) — used to build the LLM image mRoPE positions.
+    int img_grid_h = 0;
+    int img_grid_w = 0;
 };
 
 bool load(context &ctx, const char *gguf_path, int n_threads = 1, int verbosity = 1);
@@ -153,9 +157,14 @@ struct vision_result {
     float *hidden = nullptr;
     int n_tokens = 0;
     int hidden_dim = 0;
+    int grid_h = 0;   // merged-grid height (n_ph / spatial_merge)
+    int grid_w = 0;   // merged-grid width  (n_pw / spatial_merge)
 };
 
-bool encode_vision(context &ctx, const float *pixels, vision_result &out);
+// pixels: (3, H, W) CLIP-normalized. H, W must be multiples of patch_size
+// (dynamic resolution via Qwen2VL-style smart resize done by the caller).
+bool encode_vision(context &ctx, const float *pixels, int H, int W,
+                   vision_result &out);
 
 struct llm_result {
     float *hidden = nullptr;
