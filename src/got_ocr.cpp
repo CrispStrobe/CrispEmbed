@@ -1285,10 +1285,13 @@ static bool run_cached_step(got_ocr::context &ctx,
     int D = (int)l.hidden_size;
     int V = (int)l.vocab_size;
 
+    auto _t0 = std::chrono::steady_clock::now();
     llm_graph lg = build_llm_graph(ctx, T, n_past, true);
+    auto _t1 = std::chrono::steady_clock::now();
 
     ggml_backend_sched_reset(ctx.sched);
     if (!ggml_backend_sched_alloc_graph(ctx.sched, lg.gf)) return false;
+    auto _t2 = std::chrono::steady_clock::now();
 
     // Token IDs
     ggml_backend_tensor_set(lg.token_in, token_ids, 0, T * sizeof(int32_t));
@@ -1327,14 +1330,22 @@ static bool run_cached_step(got_ocr::context &ctx,
         ggml_backend_tensor_set(lg.img_embeds, img_data.data(), 0, D * T * sizeof(float));
     }
 
+    auto _t3 = std::chrono::steady_clock::now();
     ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
+    auto _t4 = std::chrono::steady_clock::now();
 
     // Read last token's logits
     last_logits_out.resize(V);
     size_t offset = (size_t)(T - 1) * V * sizeof(float);
     ggml_backend_tensor_get(lg.logits_out, last_logits_out.data(), offset, V * sizeof(float));
+    auto _t5 = std::chrono::steady_clock::now();
 
     ggml_free(lg.gctx);
+    if (std::getenv("GOT_OCR_STEP_PROFILE")) {
+        auto ms=[](auto a, auto b){return std::chrono::duration_cast<std::chrono::microseconds>(b-a).count()/1000.0;};
+        fprintf(stderr, "[step] build=%.2f alloc=%.2f setinput=%.2f compute=%.2f readback=%.2f\n",
+                ms(_t0,_t1), ms(_t1,_t2), ms(_t2,_t3), ms(_t3,_t4), ms(_t4,_t5));
+    }
     return true;
 }
 

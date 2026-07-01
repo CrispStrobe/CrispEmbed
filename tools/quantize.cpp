@@ -336,9 +336,11 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         }
 
         // LLM decoder weights (prefix "l.": attn_*, ffn_*, embed_tokens): keep at
-        // F16 when --decoder-f16 is set. A tiny 0.5B Qwen2 decoder loses too much
-        // to q8_0/k-quants (llm_layer_0 cos 0.936 → garbage OCR); F16 restores
-        // cos 0.9999 and correct output. Norms/biases are 1-D and already copied.
+        // F16 when --decoder-f16 is set. This is OPTIONAL and not needed for
+        // correctness — the 0.5B Qwen2 decoder quantizes cleanly to q8_0/q4_k
+        // (llm_layer_0 cos ≥ 0.99996 vs f32, identical OCR). The earlier "cos
+        // 0.936 → garbage" that motivated this flag was a per-row diff-harness
+        // artifact, not real sensitivity (see #25). Flag kept for diagnostics.
         if (quantize && g_decoder_f16 && sname.rfind("l.", 0) == 0 &&
             qtype_used != GGML_TYPE_F16 && qtype_used != GGML_TYPE_F32) {
             qtype_used = GGML_TYPE_F16;
@@ -465,7 +467,9 @@ int main(int argc, char ** argv) {
     if (pos.size() != 3) {
         fprintf(stderr, "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16]\n\n", argv[0]);
         fprintf(stderr, "  --decoder-f16  keep LLM decoder weights (prefix 'l.') at F16\n");
-        fprintf(stderr, "                 (required for small decoders like GOT-OCR2's 0.5B; see #25)\n\n");
+        fprintf(stderr, "                 (optional; NOT required for correctness — small decoders\n");
+        fprintf(stderr, "                  like GOT-OCR2's 0.5B quantize cleanly to q4_k/q8_0.\n");
+        fprintf(stderr, "                  Retained for diagnostic/comparison use; see #25)\n\n");
         fprintf(stderr, "Supported types:\n");
         for (auto & [name, _] : FTYPE_MAP) {
             fprintf(stderr, "  %s\n", name.c_str());
