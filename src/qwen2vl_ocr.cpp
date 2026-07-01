@@ -2986,6 +2986,43 @@ std::string gpt2_bpe_decode(const std::vector<int32_t> &ids,
   return result;
 }
 
+// SentencePiece-style decode (ERNIE-4.5 / PaddleOCR-VL). Tokens are raw UTF-8
+// with ▁ (U+2581) as the space marker and <0xXX> byte tokens for raw bytes.
+std::string spm_decode(const std::vector<int32_t> &ids,
+                       const std::vector<std::string> &vocab) {
+  std::string merged;
+  for (int32_t id : ids) {
+    if (id < 0 || id >= (int32_t)vocab.size()) continue;
+    const std::string &t = vocab[id];
+    // <0xXX> byte token -> the raw byte
+    if (t.size() == 6 && t[0] == '<' && t[1] == '0' && t[2] == 'x' &&
+        t[5] == '>') {
+      int hi = t[3], lo = t[4];
+      auto hexv = [](int c) -> int {
+        if (c >= '0' && c <= '9') return c - '0';
+        if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+        if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+        return 0;
+      };
+      merged += (char)((hexv(hi) << 4) | hexv(lo));
+    } else {
+      merged += t;
+    }
+  }
+  // Replace ▁ (U+2581, bytes e2 96 81) with a space.
+  std::string out;
+  for (size_t i = 0; i < merged.size();) {
+    if (i + 3 <= merged.size() && (uint8_t)merged[i] == 0xe2 &&
+        (uint8_t)merged[i + 1] == 0x96 && (uint8_t)merged[i + 2] == 0x81) {
+      out += ' ';
+      i += 3;
+    } else {
+      out += merged[i++];
+    }
+  }
+  return out;
+}
+
 } // namespace
 
 // ── C ABI wrapper ────────────────────────────────────────────────────
@@ -3049,10 +3086,12 @@ struct qwen2vl_ocr_context {
       for (int i = 0; i < n_image_tokens; i++)
         ids.push_back(image_pad_id);
       ids.push_back(vision_end_id);
-      auto mid = tokenize("\n" + prompt + "\n");
-      ids.insert(ids.end(), mid.begin(), mid.end());
-      auto asst = tokenize("Assistant:");
-      ids.insert(ids.end(), asst.begin(), asst.end());
+      // Faithful to chat_template.jinja: the image block is immediately
+      // followed by the user text ("OCR:"), a newline, then the generation
+      // prompt "Assistant: " (WITH a trailing space — dropping it makes the
+      // model emit </s> before any text). All one BPE segment.
+      auto tail = tokenize(prompt + "\nAssistant: ");
+      ids.insert(ids.end(), tail.begin(), tail.end());
       return ids;
     }
 
@@ -3167,8 +3206,19 @@ static void post_load_init(qwen2vl_ocr_context *ctx, const char *gguf_path) {
       int pad_id = (int)core_gguf::kv_u32(g, "tokenizer.ggml.padding_token_id",
                                           ctx->im_end_id);
 
-      // GPT-2 BPE: no BOS, no suffix, not SPM style
-      ctx->tokenizer.load(vocab, merges, eos_id, pad_id, -1, -1, false, 8192);
+      // Detect a SentencePiece-style vocab (ERNIE-4.5 / PaddleOCR-VL uses ▁
+      // for spaces, not GPT-2's Ġ). Loading such a vocab as byte-level BPE
+      // silently drops all prompt whitespace, corrupting the chat template.
+      bool spm_vocab = false;
+      for (const auto &t : vocab) {
+        if (t == "\xe2\x96\x81" || t == "\xe2\x96\x81The") {
+          spm_vocab = true;
+          break;
+        }
+      }
+      // GPT-2 BPE for Qwen (Ġ); SentencePiece BPE + add_dummy_prefix for ERNIE.
+      ctx->tokenizer.load(vocab, merges, eos_id, pad_id, -1, -1, spm_vocab, 8192,
+                          /*spm_dummy_prefix=*/spm_vocab);
       ctx->has_tokenizer = true;
       ctx->tokenizer_can_encode = !merges.empty();
       fprintf(stderr,
@@ -3228,7 +3278,7 @@ static void post_load_init(qwen2vl_ocr_context *ctx, const char *gguf_path) {
       if (name_lc.find("paddleocr") != std::string::npos ||
           ctx->image_pad_id == 100295) {
         ctx->is_paddleocr = true;
-        ctx->inner.eos_token_id = 100272; // <|end_of_sentence|>
+        ctx->inner.eos_token_id = 2; // </s> (PaddleOCR-VL generation_config)
         if (!getenv("CRISPEMBED_PADDLEOCR_STD_PROMPT"))
           ctx->prompt = "OCR:";
         if (ctx->inner.verbosity >= 1)
@@ -3391,7 +3441,9 @@ static const char *run_pipeline(qwen2vl_ocr_context *ctx,
   }
   if (ctx->has_tokenizer) {
     ctx->last_result =
-        gpt2_bpe_decode(decode_ids, ctx->tokenizer.get_vocab());
+        ctx->is_paddleocr
+            ? spm_decode(decode_ids, ctx->tokenizer.get_vocab())
+            : gpt2_bpe_decode(decode_ids, ctx->tokenizer.get_vocab());
   } else {
     // Fallback: raw token IDs as comma-separated string
     ctx->last_result.clear();
