@@ -209,8 +209,17 @@ static bool run_vis_layer(context &ctx, int layer_idx, int n_patches,
     ggml_tensor *h = rmsnorm(x, blk.norm1_w);
     ggml_set_name(h, "after_norm1"); ggml_set_output(h);
 
+    // Cast F16 weights to F32 before mul_mat to test if F16 matmul path
+    // has precision issues. Gated: GLM_OCR_F32_CAST=1
+    static const bool f32_cast = (std::getenv("GLM_OCR_F32_CAST") != nullptr);
+    auto maybe_cast = [&](ggml_tensor *w) -> ggml_tensor * {
+        if (f32_cast && w && w->type != GGML_TYPE_F32)
+            return ggml_cast(g, w, GGML_TYPE_F32);
+        return w;
+    };
+
     // Fused QKV
-    ggml_tensor *qkv = ggml_mul_mat(g, blk.qkv_w, h);
+    ggml_tensor *qkv = ggml_mul_mat(g, maybe_cast(blk.qkv_w), h);
     if (blk.qkv_b) qkv = ggml_add(g, qkv, blk.qkv_b);
     ggml_set_name(qkv, "qkv"); ggml_set_output(qkv);
 
@@ -229,15 +238,32 @@ static bool run_vis_layer(context &ctx, int layer_idx, int n_patches,
     ggml_tensor *Q_flat = ggml_reshape_2d(g, ggml_cont(g, Q), D, T);
     ggml_set_name(Q_flat, "Q_normed"); ggml_set_output(Q_flat);
 
-    Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
+    Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));  // (hd, T, nh)
     K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
     V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
     float scale = 1.0f / std::sqrt((float)hd);
-    ggml_tensor *attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
-    attn = ggml_reshape_2d(g, attn, D, T);
 
-    attn = ggml_mul_mat(g, blk.proj_w, attn);
+    // Use manual attention instead of flash_attn_ext for precision testing.
+    // Gated: GLM_OCR_MANUAL_ATTN=1
+    static const bool manual_attn = (std::getenv("GLM_OCR_MANUAL_ATTN") != nullptr);
+    ggml_tensor *attn;
+    if (manual_attn) {
+        // scores = K^T @ Q * scale → (T, T, nh)
+        ggml_tensor *scores = ggml_mul_mat(g, K, Q);  // (T, T, nh)
+        scores = ggml_scale(g, scores, scale);
+        scores = ggml_soft_max(g, scores);  // softmax over ne[0]=T (key dim)
+        // V_t = V transposed to (T, hd, nh) for matmul
+        ggml_tensor *V_t = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
+        attn = ggml_mul_mat(g, V_t, scores);  // (hd, T, nh)
+        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));  // (hd, nh, T)
+        attn = ggml_reshape_2d(g, attn, D, T);
+    } else {
+        attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
+        attn = ggml_reshape_2d(g, attn, D, T);
+    }
+
+    attn = ggml_mul_mat(g, maybe_cast(blk.proj_w), attn);
     if (blk.proj_b) attn = ggml_add(g, attn, blk.proj_b);
     x = ggml_add(g, x, attn);
     ggml_set_name(x, "after_attn"); ggml_set_output(x);
@@ -245,12 +271,12 @@ static bool run_vis_layer(context &ctx, int layer_idx, int n_patches,
     // SwiGLU FFN
     h = rmsnorm(x, blk.norm2_w);
     ggml_set_name(h, "after_norm2"); ggml_set_output(h);
-    ggml_tensor *gate = ggml_mul_mat(g, blk.ffn_gate_w, h);
+    ggml_tensor *gate = ggml_mul_mat(g, maybe_cast(blk.ffn_gate_w), h);
     if (blk.ffn_gate_b) gate = ggml_add(g, gate, blk.ffn_gate_b);
     gate = ggml_silu(g, gate);
-    ggml_tensor *up = ggml_mul_mat(g, blk.ffn_up_w, h);
+    ggml_tensor *up = ggml_mul_mat(g, maybe_cast(blk.ffn_up_w), h);
     if (blk.ffn_up_b) up = ggml_add(g, up, blk.ffn_up_b);
-    ggml_tensor *ffn = ggml_mul_mat(g, blk.ffn_down_w, ggml_mul(g, gate, up));
+    ggml_tensor *ffn = ggml_mul_mat(g, maybe_cast(blk.ffn_down_w), ggml_mul(g, gate, up));
     if (blk.ffn_down_b) ffn = ggml_add(g, ffn, blk.ffn_down_b);
     x = ggml_add(g, x, ffn);
 
@@ -268,9 +294,10 @@ static bool run_vis_layer(context &ctx, int layer_idx, int n_patches,
     ggml_backend_tensor_set(x_in, io_data.data(), 0, D * T * sizeof(float));
     ggml_backend_sched_graph_compute(ctx.sched, gf);
 
-    // Per-op diff comparison for layer 12 (when GLM_OCR_LAYER_REF is set)
+    // Per-op diff comparison (when GLM_OCR_LAYER_REF + GLM_OCR_LAYER_IDX are set)
     static const char *layer_ref = std::getenv("GLM_OCR_LAYER_REF");
-    if (layer_ref && layer_idx == 12) {
+    static int dbg_layer = std::getenv("GLM_OCR_LAYER_IDX") ? atoi(std::getenv("GLM_OCR_LAYER_IDX")) : 12;
+    if (layer_ref && layer_idx == dbg_layer) {
         crispembed_diff::Ref lref;
         if (lref.load(layer_ref)) {
             auto cmp = [&](const char *name) {
@@ -522,6 +549,16 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
     }
 
     // Vision encoder output is now in layer_data (vis_D × n_patches)
+    // Debug: inject Python reference vision output if GLM_OCR_INJECT_VIS is set
+    static const char *inject_vis = std::getenv("GLM_OCR_INJECT_VIS");
+    if (inject_vis) {
+        FILE *f = fopen(inject_vis, "rb");
+        if (f) {
+            fread(layer_data.data(), sizeof(float), layer_data.size(), f);
+            fclose(f);
+            fprintf(stderr, "[DEBUG] Injected reference vision output from %s\n", inject_vis);
+        }
+    }
     std::vector<float> &vis_out = layer_data;
     int vis_N = n_patches;
 
@@ -683,6 +720,17 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - t_ds).count();
         fprintf(stderr, "[glm_ocr-bench] downsample+merger: %lldms\n", (long long)ms);
+    }
+
+    // Debug: inject Python reference merger output if GLM_OCR_INJECT_MERGER is set
+    static const char *inject_merger = std::getenv("GLM_OCR_INJECT_MERGER");
+    if (inject_merger) {
+        FILE *f = fopen(inject_merger, "rb");
+        if (f) {
+            fread(merger_out.data(), sizeof(float), merger_out.size(), f);
+            fclose(f);
+            fprintf(stderr, "[DEBUG] Injected reference merger output from %s\n", inject_merger);
+        }
     }
 
     out.n_tokens = n_merged;
@@ -1285,9 +1333,37 @@ const char * glm_ocr_recognize_raw(glm_ocr_context *ctx,
         return "";
     }
 
-    // Build prompt: [image_token_id] * n_image_tokens
+    // Build prompt with GLM chat template:
+    // <sop><|system|>\n你是一个OCR模型。请提取图片中的所有文字。\n<|user|>\n
+    // <|begin_of_image|><|image|>*N<|end_of_image|>\n<|assistant|>\n
     int n_img_tokens = vr.n_tokens;
-    std::vector<int32_t> prompt(n_img_tokens, (int32_t)l.image_token_id);
+    const int32_t sop_id   = 59250;
+    const int32_t sys_id   = 59252;
+    const int32_t user_id  = 59253;
+    const int32_t asst_id  = 59254;
+    const int32_t boi_id   = 59256;
+    const int32_t eoi_id   = 59257;
+    const int32_t img_id   = (int32_t)l.image_token_id;  // 59280
+    const int32_t nl_id    = 198;    // '\n' in GPT-2 BPE
+
+    std::vector<int32_t> prompt;
+    // <sop>
+    prompt.push_back(sop_id);
+    // <|system|>\n  (system prompt — minimal OCR instruction)
+    prompt.push_back(sys_id);
+    prompt.push_back(nl_id);
+    // <|user|>\n
+    prompt.push_back(user_id);
+    prompt.push_back(nl_id);
+    // <|begin_of_image|> <|image|>*N <|end_of_image|>
+    prompt.push_back(boi_id);
+    for (int i = 0; i < n_img_tokens; i++)
+        prompt.push_back(img_id);
+    prompt.push_back(eoi_id);
+    // \n<|assistant|>\n
+    prompt.push_back(nl_id);
+    prompt.push_back(asst_id);
+    prompt.push_back(nl_id);
 
     // Generate
     glm_ocr::generate_result gen;
