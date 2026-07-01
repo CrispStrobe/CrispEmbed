@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """CrispEmbed OCR portfolio regression — GPU (Kaggle).
 
-Builds CrispEmbed from `main` with CUDA (ccache-warmed), then runs the whole
-OCR portfolio through the shared driver `tests/regression/run_one.py` — one
-model per subprocess for isolation — and prints a pass/fail summary. GPU
-counterpart to the CPU-subset nightly in .github/workflows/regression.yml.
+Builds CrispEmbed `main` with CUDA (ccache-warmed) and runs the whole OCR
+portfolio through the shared driver `tests/regression/run_one.py`, one model
+per subprocess, then prints a pass/fail summary + writes results.json. GPU
+counterpart to the CPU nightly in .github/workflows/regression.yml.
 
-Per model (see tests/regression/README.md): (1) no-garbage guard (the
-colorcolor… degeneration 3fb1f8e shipped), (2) lenient CER text match vs
-manifest expected_text, (3) optional diff-harness cos vs <model>-ref.gguf
-if that ref is on HF.
+Per model (tests/regression/README.md): no-garbage guard (the colorcolor…
+degeneration 3fb1f8e shipped), lenient CER text match vs expected_text, and an
+optional diff-harness cos vs <model>-ref.gguf if that ref is on HF.
 
-Modes: default = validate; `--rebake` = print captured OCR text (never fails)
-so you can eyeball + paste expected_text into the manifest.
-
-Follows kaggle_usage.md: chr1s4 account, kaggle_harness auth + ccache toolchain
-(chr1s4/crispasr-hf-token + chr1s4/crispasr-ccache attached). Runs on P100/T4.
+Follows tools/kaggle regime (../kaggle_usage.md): chr1s4 account; clone CrispASR
++ import kaggle_harness (bundled fallback); kh.init_progress; kh.resolve_hf_token
+(3-tier: env→Secret→dataset); kh.install_build_toolchain + kh.cuda_build_flags +
+kh.cache_and_link_flags + kh.safe_build_jobs; kh.build_heartbeat +
+kh.sh_with_progress around long steps; warm chr1s4/crispembed-ccache. Datasets
+attached: chr1s4/crispasr-hf-token + chr1s4/crispembed-ccache.
 """
 import json
 import os
@@ -26,11 +26,10 @@ import traceback
 from pathlib import Path
 
 WORK = Path("/kaggle/working")
-
-# ── Always-persisted log (Kaggle's kernels_output does NOT include the
-#    stderr/stdout log — gotcha #15 — so tee everything to a working file
-#    that IS downloadable, and dump any fatal traceback there too). ──
 WORK.mkdir(parents=True, exist_ok=True)
+
+# ── run.log tee (kernels_output does NOT expose stderr — gotcha #15 — so tee
+#    everything to a downloadable working file, incl. any fatal traceback). ──
 _LOG = open(WORK / "run.log", "w", buffering=1)
 
 
@@ -65,16 +64,16 @@ def _excepthook(exc_type, exc, tb):
 
 
 sys.excepthook = _excepthook
+
 REPO_URL = "https://github.com/CrispStrobe/CrispEmbed.git"
 CRISPASR_URL = "https://github.com/CrispStrobe/CrispASR.git"
 BRANCH = os.environ.get("CRISPEMBED_BRANCH", "main")
 REBAKE = "--rebake" in sys.argv
-
 EMBED_DIR = WORK / "CrispEmbed"
 BUILD_DIR = EMBED_DIR / "build"
 
-# ── Auth + toolchain via kaggle_harness (regime: clone CrispASR + import;
-#    bundled kaggle_harness.py is the CPU-worker/no-internet fallback) ──
+# ── Clone CrispASR + import kaggle_harness (canonical snippet from
+#    kaggle_usage.md); bundled kaggle_harness.py is the fallback. ──
 _CRISPASR_DIR = WORK / "CrispASR"
 if not _CRISPASR_DIR.exists():
     try:
@@ -82,45 +81,43 @@ if not _CRISPASR_DIR.exists():
                                CRISPASR_URL, str(_CRISPASR_DIR)])
         sys.path.insert(0, str(_CRISPASR_DIR / "tools" / "kaggle"))
     except Exception:
-        pass
+        pass  # fall through to bundled copy
 if str(_CRISPASR_DIR / "tools" / "kaggle") not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kaggle_harness as kh  # noqa: E402
 
 kh.init_progress()
 
-# HF token: env → Kaggle secret → attached dataset (harness handles all three)
-try:
-    tok = kh.hf_token() if hasattr(kh, "hf_token") else None
-except Exception:
-    tok = None
-if not tok:
-    for p in ["/kaggle/input/crispasr-hf-token/hf_token.txt",
-              "/kaggle/input/datasets/chr1s4/crispasr-hf-token/hf_token.txt"]:
-        if Path(p).exists():
-            tok = Path(p).read_text().strip()
-            break
-if tok:
-    os.environ["HF_TOKEN"] = tok
+
+def _mask(t):
+    return f"{t[:3]}…{t[-3:]} (len={len(t)})" if t else "<none>"  # never print full token (#14)
 
 
-def run(cmd, **kw):
-    # Capture + echo so subprocess output lands in run.log (it writes to the
-    # OS fd, which bypasses the Python-level Tee otherwise).
-    print(f"$ {cmd}", flush=True)
-    p = subprocess.run(cmd, shell=True, capture_output=True, text=True, **kw)
-    if p.stdout:
-        print(p.stdout)
-    if p.returncode != 0:
-        print(f"[exit {p.returncode}] stderr:\n{p.stderr}")
-        raise subprocess.CalledProcessError(p.returncode, cmd, p.stdout, p.stderr)
-    return p
+# ── Resolve HF token (reference pattern: kh.step + kh.resolve_hf_token),
+#    and show up front IF and HOW it was obtained (masked). Cheap probes only
+#    — no separate kaggle_secret() call (it ConnectionErrors + retries, #13). ──
+kh.step("resolve HF token")
+print("=" * 60, "\nHF token resolution (env → Kaggle Secret → dataset)\n", "=" * 60, flush=True)
+_env_present = bool(os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN"))
+_ds_paths = ["/kaggle/input/crispasr-hf-token/hf_token.txt",
+             "/kaggle/input/datasets/chr1s4/crispasr-hf-token/hf_token.txt"]
+_ds_found = next((p for p in _ds_paths if Path(p).exists()), None)
+print(f"  env HF_TOKEN present : {_env_present}", flush=True)
+print(f"  dataset token file   : {_ds_found or 'absent (' + ', '.join(_ds_paths) + ')'}", flush=True)
 
+HF_TOKEN = kh.resolve_hf_token()   # env → Kaggle Secret(retry) → dataset; sets env + HF_TRANSFER
+if HF_TOKEN:
+    src = "env" if _env_present else (f"dataset {_ds_found}" if _ds_found else "Kaggle Secret")
+    print(f"  ==> HF_TOKEN resolved via {src}: {_mask(HF_TOKEN)}  "
+          f"[HF_HUB_ENABLE_HF_TRANSFER={os.environ.get('HF_HUB_ENABLE_HF_TRANSFER','')}]", flush=True)
+else:
+    print("  ==> no HF_TOKEN resolved — cstr/* repos are public so downloads "
+          "should still work; gated repos would fail", flush=True)
 
-# ── Step 1: clone + build with CUDA (ccache-warmed) ──────────────────
-print("=" * 60, "\nStep 1: clone CrispEmbed + build (CUDA, ccache)\n", "=" * 60)
+# ── Step 1: clone CrispEmbed + build (CUDA, ccache, heartbeat) ──
+kh.step("clone.crispembed")
 if not EMBED_DIR.exists():
-    run(f"git clone --depth 1 --recursive -b {BRANCH} {REPO_URL} {EMBED_DIR}")
+    kh.sh(f"git clone --depth 1 --recursive -b {BRANCH} {REPO_URL} {EMBED_DIR}")
 BUILD_DIR.mkdir(exist_ok=True)
 
 gpu = subprocess.run("nvidia-smi --query-gpu=name --format=csv,noheader",
@@ -128,16 +125,18 @@ gpu = subprocess.run("nvidia-smi --query-gpu=name --format=csv,noheader",
 has_gpu = gpu.returncode == 0 and len(gpu.stdout.strip()) > 3
 print(f"GPU: {gpu.stdout.strip() or 'none'}", flush=True)
 
-run("pip install -q gguf safetensors huggingface_hub pillow")
+# small deps only (gotcha #11: never pip install torch). hf_transfer is needed
+# because resolve_hf_token enabled HF_HUB_ENABLE_HF_TRANSFER.
+kh.sh("pip install -q huggingface_hub hf_transfer gguf safetensors pillow || true",
+      check=False)
 
-kh.install_build_toolchain()                 # ninja + ccache + mold; sets CCACHE_DIR
+kh.install_build_toolchain()           # ninja + ccache + mold; sets CCACHE_DIR
 
 
 def _warm_crispembed_ccache():
-    """Warm the ccache from the attached chr1s4/crispembed-ccache dataset.
-    kaggle_harness only knows the crispasr-ccache paths, so do our own —
-    CrispEmbed keeps its own ccache seed (kaggle_usage.md: per-project,
-    per-account). Falls back silently to a cold build if absent."""
+    """Warm ccache from the attached chr1s4/crispembed-ccache dataset. The
+    harness only knows the crispasr-ccache paths, so CrispEmbed warms its own
+    per-project seed (kaggle_usage.md #17). Cold build if absent."""
     import tarfile
     ccache_dir = Path(os.environ.get("CCACHE_DIR", str(WORK / ".ccache")))
     ccache_dir.mkdir(parents=True, exist_ok=True)
@@ -157,36 +156,36 @@ def _warm_crispembed_ccache():
 
 
 _warm_crispembed_ccache()
-extra_flags = kh.cache_and_link_flags()      # -DCMAKE_*_COMPILER_LAUNCHER=ccache, mold
-# kh.cuda_build_flags() = GGML_CUDA + NO_VMM + pinned arch + explicit nvcc, and
-# puts /usr/local/cuda/lib64/stubs on LIBRARY_PATH so CUDA::cuda_driver resolves
-# (the exact stub-target error that killed v1/v2 on P100).
-cuda_flags = kh.cuda_build_flags() if has_gpu else []
 
-os.chdir(str(BUILD_DIR))
-gen = "-G Ninja" if kh.sh("which ninja", check=False) == 0 else "-G 'Unix Makefiles'"
-
-
-def configure(flags):
-    run(f"cmake {EMBED_DIR} {gen} -DCMAKE_BUILD_TYPE=Release " + " ".join(flags))
-
-
-try:
-    configure(cuda_flags + extra_flags)
-except subprocess.CalledProcessError:
-    print("CUDA cmake failed → CPU-only build", flush=True)
-    # wipe the cache so the retry doesn't inherit GGML_CUDA=ON from the
-    # failed configure (a stale CMakeCache.txt is why v2's fallback re-failed).
-    run("rm -f CMakeCache.txt && rm -rf CMakeFiles")
-    configure(extra_flags)
+arch = kh.detect_cuda_arch()
+build_flags = (kh.cuda_build_flags(arch) if has_gpu else []) + kh.cache_and_link_flags()
 
 manifest = json.loads((EMBED_DIR / "tests/regression/manifest.json").read_text())
 diff_targets = sorted({m["diff"]["binary"] for m in manifest["models"] if "diff" in m})
-jobs = kh.safe_build_jobs(has_gpu)   # -j2 for CUDA (nvcc TUs are RAM-heavy), else -j$(nproc)
-run(f"cmake --build . -j{jobs} --target crispembed-cli " + " ".join(diff_targets))
+targets = "crispembed-cli " + " ".join(diff_targets)
 
-# ── Step 2: run the portfolio through the shared driver ──────────────
-print("\n" + "=" * 60, "\nStep 2: portfolio regression\n", "=" * 60)
+os.chdir(str(BUILD_DIR))
+kh.step("cmake.configure")
+with kh.build_heartbeat("cmake.configure"):
+    try:
+        kh.sh_with_progress(
+            f"cmake {EMBED_DIR} -G Ninja -DCMAKE_BUILD_TYPE=Release "
+            + " ".join(build_flags))
+    except subprocess.CalledProcessError:
+        print("CUDA/ninja configure failed → CPU-only reconfigure", flush=True)
+        kh.sh("rm -f CMakeCache.txt && rm -rf CMakeFiles", check=False)
+        kh.sh_with_progress(
+            f"cmake {EMBED_DIR} -G Ninja -DCMAKE_BUILD_TYPE=Release "
+            + " ".join(kh.cache_and_link_flags()))
+
+kh.step("cmake.build")
+with kh.build_heartbeat("cmake.build"):
+    kh.sh_with_progress(
+        f"stdbuf -oL -eL cmake --build . --target {targets} "
+        f"-j{kh.safe_build_jobs(gpu=has_gpu)}")
+
+# ── Step 2: portfolio through the shared driver ──
+print("\n" + "=" * 60, "\nStep 2: portfolio regression\n", "=" * 60, flush=True)
 env = dict(os.environ)
 env["BUILD_DIR"] = str(BUILD_DIR)
 env["LD_LIBRARY_PATH"] = f"{BUILD_DIR}:{env.get('LD_LIBRARY_PATH','')}"
@@ -198,13 +197,14 @@ for m in manifest["models"]:
     name = m["name"]
     cmd = [sys.executable, driver, "--name", name] + (["--rebake"] if REBAKE else [])
     print(f"\n----- {name} -----", flush=True)
-    kh.step(f"model:{name}")
+    kh.step(f"model.{name}")
     t0 = time.time()
-    proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+    with kh.build_heartbeat(f"model.{name}", rss=True):
+        proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
     dt = time.time() - t0
     sys.stdout.write(proc.stdout)
     if proc.returncode != 0:
-        sys.stderr.write(proc.stderr[-1500:])
+        sys.stderr.write(proc.stderr[-2000:])
     results[name] = {
         "exit": proc.returncode,
         "time_s": round(dt, 1),
@@ -212,7 +212,7 @@ for m in manifest["models"]:
         "tail": (proc.stdout.strip().splitlines() or [""])[-1],
     }
 
-# ── Step 3: summary ──────────────────────────────────────────────────
+# ── Step 3: summary ──
 print("\n" + "=" * 60, "\nStep 3: summary\n", "=" * 60)
 print(f"{'Model':<18} {'Time':>7} {'Status':>7}")
 print("-" * 36)
@@ -223,7 +223,7 @@ for name, r in results.items():
 (WORK / "results.json").write_text(json.dumps(results, indent=2))
 print(f"\n{len(results)} models, {n_fail} FAIL", flush=True)
 
-# refresh ccache tar as a downloadable output (per kaggle_usage.md)
+# refresh ccache.tar as a downloadable output for dataset versioning (#17)
 try:
     os.chdir(str(WORK))
     subprocess.run("tar cf ccache.tar .ccache/ 2>/dev/null", shell=True, check=False)
