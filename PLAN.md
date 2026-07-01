@@ -1073,7 +1073,7 @@ single-threaded, must not OOM.
      fixes CPU garbage + Metal block-align assert.
   - Regression uses `expected_text` (per-token cos_min diff gate unsuitable — see
      LEARNINGS "glm-ocr: five real bugs" for the sink-token analysis).
-  - History: `handover-prompts/glm-ocr-fix-history.md`.
+  - History: HISTORY.md (July 1, 2026).
   - The handover `handover-prompts/glm-ocr-vision-rope-fix.md` was partly wrong
     (named glm4v; its refs were stale no-rope dumps).
 ### granite_vision — DONE (full ggml graph path, Metal + ggml-CPU)
