@@ -157,6 +157,8 @@ bool load_hparams(context &ctx, const char *path) {
   lhp.num_key_value_heads =
       u32("qwen2vl.num_key_value_heads",
           u32("qwen2vl.attention.head_count_kv", lhp.num_key_value_heads));
+  lhp.head_dim = u32("qwen2vl.attention.head_dim",
+                     u32("qwen2vl.attention.key_length", lhp.head_dim));
   lhp.max_position_embeddings =
       u32("qwen2vl.max_position_embeddings",
           u32("qwen2vl.context_length", lhp.max_position_embeddings));
@@ -228,6 +230,8 @@ bool load_hparams(context &ctx, const char *path) {
       u32_3("qwen3vl.num_attention_heads", lhp.num_attention_heads);
   lhp.num_key_value_heads =
       u32_3("qwen3vl.num_key_value_heads", lhp.num_key_value_heads);
+  lhp.head_dim = u32_3("qwen3vl.attention.head_dim",
+                       u32_3("qwen3vl.attention.key_length", lhp.head_dim));
   lhp.image_token_id = u32_3("qwen3vl.image_token_id", lhp.image_token_id);
 
   auto f32_3 = [&](const char *k, float d) {
@@ -522,6 +526,20 @@ bool load_tensors(context &ctx, const char *path) {
     fix_ne(m.embed_tokens);
     if (m.lm_head_w && m.lm_head_w != m.embed_tokens) fix_ne(m.lm_head_w);
   }
+
+  // Derive per-head dim from the q_proj output width when the GGUF omits an
+  // explicit head_dim/key_length key. After fix_ne, q_w is (in=hidden, out) so
+  // ne[1] is the total query width = num_attention_heads * head_dim. ERNIE-4.5
+  // (PaddleOCR-VL) has head_dim=128 while hidden/heads=64 — assuming the latter
+  // reshapes the wrong element count and crashes (SIGSEGV in Release, a reshape
+  // assert in a debug build).
+  if (m.lhp.head_dim == 0 && m.lhp.num_hidden_layers > 0 &&
+      m.llm_layers[0].q_w && m.lhp.num_attention_heads > 0) {
+    m.lhp.head_dim = (uint32_t)(m.llm_layers[0].q_w->ne[1] /
+                                (int64_t)m.lhp.num_attention_heads);
+  }
+  if (m.lhp.head_dim == 0)
+    m.lhp.head_dim = m.lhp.hidden_size / m.lhp.num_attention_heads;
 
   return true;
 }
@@ -1104,7 +1122,7 @@ static bool alloc_kv_cache(context &ctx, int max_seq) {
   const auto &lhp = ctx.m.lhp;
   const int n_layers = (int)lhp.num_hidden_layers;
   const int n_kv_heads = (int)lhp.num_key_value_heads;
-  const int head_dim = (int)lhp.hidden_size / (int)lhp.num_attention_heads;
+  const int head_dim = (int)lhp.head_dim;
   const int kv_dim = head_dim * n_kv_heads;
 
   ggml_init_params ip{2 * ggml_tensor_overhead() + 256, nullptr, true};
@@ -1738,7 +1756,10 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
   const int D = (int)lhp.hidden_size;
   const int n_heads = (int)lhp.num_attention_heads;
   const int n_kv_heads = (int)lhp.num_key_value_heads;
-  const int head_dim = D / n_heads;
+  const int head_dim = (int)lhp.head_dim;
+  // Total attention width = n_heads * head_dim. Equals D for standard Qwen but
+  // NOT for ERNIE-4.5 (PaddleOCR-VL): head_dim=128 -> q_dim=2048 while D=1024.
+  const int q_dim = head_dim * n_heads;
   const int n_layers = (int)lhp.num_hidden_layers;
   const float rms_eps = lhp.rms_norm_eps;
   const float attn_scale = 1.0f / std::sqrt((float)head_dim);
@@ -1954,7 +1975,7 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
     ggml_tensor *attn_out =
         ggml_flash_attn_ext(g, Q, K, V, causal_mask, attn_scale, 0.0f, 0.0f);
     ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
-    attn_out = ggml_reshape_2d(g, attn_out, D, n_tokens);
+    attn_out = ggml_reshape_2d(g, attn_out, q_dim, n_tokens);
 
     // Output projection
     attn_out = ggml_mul_mat(g, ly.o_w, attn_out);
@@ -2390,7 +2411,8 @@ static ggml_cgraph *build_decode_step_graph(context &ctx, ggml_context *g,
   const int D = (int)lhp.hidden_size;
   const int n_heads = (int)lhp.num_attention_heads;
   const int n_kv_heads = (int)lhp.num_key_value_heads;
-  const int head_dim = D / n_heads;
+  const int head_dim = (int)lhp.head_dim;
+  const int q_dim = head_dim * n_heads; // != D when head_dim != D/n_heads
   const int n_layers = (int)lhp.num_hidden_layers;
   const float rms_eps = lhp.rms_norm_eps;
   const float attn_scale = 1.0f / std::sqrt((float)head_dim);
@@ -2510,7 +2532,7 @@ static ggml_cgraph *build_decode_step_graph(context &ctx, ggml_context *g,
     ggml_tensor *attn_out = ggml_flash_attn_ext(g, Q, K_full, V_full, kv_mask,
                                                 attn_scale, 0.0f, 0.0f);
     ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
-    attn_out = ggml_reshape_2d(g, attn_out, D, 1);
+    attn_out = ggml_reshape_2d(g, attn_out, q_dim, 1);
 
     attn_out = ggml_mul_mat(g, ly.o_w, attn_out);
     if (ly.o_b)
@@ -2599,7 +2621,7 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
   const int V = (int)lhp.vocab_size;
   const int n_layers = (int)lhp.num_hidden_layers;
   const int n_kv_heads = (int)lhp.num_key_value_heads;
-  const int head_dim = D / (int)lhp.num_attention_heads;
+  const int head_dim = (int)lhp.head_dim;
   const int kv_dim = head_dim * n_kv_heads;
 
   // ── Step 1: Prefill — full forward pass to get logits + KV cache ──
