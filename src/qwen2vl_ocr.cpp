@@ -2743,7 +2743,7 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
             best_score);
   }
 
-  int eos_id = 151645;
+  int eos_id = ctx.eos_token_id;
   if (best_id == eos_id || max_new_tokens <= 1)
     return true;
 
@@ -3013,6 +3013,12 @@ struct qwen2vl_ocr_context {
   int32_t image_pad_id = 151655;
   int32_t vision_end_id = 151653;
 
+  // PaddleOCR-VL (ERNIE-4.5) uses a different chat template with no <|im_*|>
+  // tokens; it wraps the turn as "<|begin_of_sentence|>User: <image>\nOCR:\n
+  // Assistant:". Detected at load time from general.name / image token.
+  bool is_paddleocr = false;
+  int32_t begin_of_sentence_id = 100273; // <|begin_of_sentence|>
+
   // Tokenize a text string via BPE. Falls back to hardcoded IDs if no
   // tokenizer.
   std::vector<int32_t> tokenize(const std::string &text) {
@@ -3029,6 +3035,26 @@ struct qwen2vl_ocr_context {
   // Build full chat-format token sequence with image placeholders
   std::vector<int32_t> build_token_ids(int n_image_tokens) {
     std::vector<int32_t> ids;
+
+    // PaddleOCR-VL (ERNIE-4.5) template:
+    //   <|begin_of_sentence|>User: <|IMAGE_START|><|IMAGE_PLACEHOLDER|>...
+    //   <|IMAGE_END|>\nOCR:\nAssistant:
+    // The <|im_*|> ids (151644/151645) are out of range for the 103424-row
+    // ERNIE embedding table, so this path must NOT use the Qwen chat format.
+    if (is_paddleocr) {
+      ids.push_back(begin_of_sentence_id);
+      auto up = tokenize("User: ");
+      ids.insert(ids.end(), up.begin(), up.end());
+      ids.push_back(vision_start_id);
+      for (int i = 0; i < n_image_tokens; i++)
+        ids.push_back(image_pad_id);
+      ids.push_back(vision_end_id);
+      auto mid = tokenize("\n" + prompt + "\n");
+      ids.insert(ids.end(), mid.begin(), mid.end());
+      auto asst = tokenize("Assistant:");
+      ids.insert(ids.end(), asst.begin(), asst.end());
+      return ids;
+    }
 
     // <|im_start|>system\nYou are a helpful assistant.<|im_end|>\n
     // Qari-OCR is used WITHOUT a system message (just the user turn with
@@ -3196,6 +3222,19 @@ static void post_load_init(qwen2vl_ocr_context *ctx, const char *gguf_path) {
         if (ctx->inner.verbosity >= 1)
           fprintf(stderr, "qwen2vl_ocr: detected Qari-OCR from general.name, using OCR prompt\n");
       }
+      // PaddleOCR-VL: ERNIE-4.5 text decoder. Its chat tokens differ from
+      // Qwen's (which are out of range for the 103424-row embed table), so
+      // switch the template, stop token and default OCR prompt.
+      if (name_lc.find("paddleocr") != std::string::npos ||
+          ctx->image_pad_id == 100295) {
+        ctx->is_paddleocr = true;
+        ctx->inner.eos_token_id = 100272; // <|end_of_sentence|>
+        if (!getenv("CRISPEMBED_PADDLEOCR_STD_PROMPT"))
+          ctx->prompt = "OCR:";
+        if (ctx->inner.verbosity >= 1)
+          fprintf(stderr, "qwen2vl_ocr: detected PaddleOCR-VL (ERNIE-4.5), "
+                          "using ERNIE chat template + OCR prompt\n");
+      }
       if (!is_unimumer &&
           (name_lc.find("uni-mumer") != std::string::npos ||
            name_lc.find("unimumer") != std::string::npos)) {
@@ -3345,7 +3384,8 @@ static const char *run_pipeline(qwen2vl_ocr_context *ctx,
   std::vector<int32_t> decode_ids;
   decode_ids.reserve(gen.token_ids.size());
   for (int32_t id : gen.token_ids) {
-    if (id == ctx->im_end_id || id == ctx->im_start_id)
+    if (id == ctx->im_end_id || id == ctx->im_start_id ||
+        id == ctx->inner.eos_token_id || id == ctx->begin_of_sentence_id)
       continue;
     decode_ids.push_back(id);
   }
