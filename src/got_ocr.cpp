@@ -477,10 +477,10 @@ static ggml_cgraph* build_vis_layer_graph(ggml_context* g,
     ggml_set_input(rp_w_in);
 
     // Pre-LN (LayerNorm, not RMSNorm)
-    ggml_tensor* cur = skip_ln1 ? inp : g_ln(g, inp, layer.ln1_w, layer.ln1_b, 1e-6f);
+    ggml_tensor* cur = skip_ln1 ? inp : bf16_round(g, g_ln(g, inp, layer.ln1_w, layer.ln1_b, 1e-6f));
 
-    // Fused QKV
-    ggml_tensor* qkv = g_linear(g, cur, layer.qkv_w, layer.qkv_b);
+    // Fused QKV — bf16 round after projection (matches HF bf16 intermediate storage)
+    ggml_tensor* qkv = bf16_round(g, g_linear(g, cur, layer.qkv_w, layer.qkv_b));
 
     // Split Q, K, V
     ggml_tensor* Q = ggml_cont(g, ggml_view_2d(g, qkv, C, T, qkv->nb[1], 0));
@@ -504,52 +504,52 @@ static ggml_cgraph* build_vis_layer_graph(ggml_context* g,
 
     // Attention scores
     ggml_tensor* scores = ggml_mul_mat(g, K, Q);
-    scores = ggml_scale(g, scores, attn_scale);
+    scores = bf16_round(g, ggml_scale(g, scores, attn_scale));
 
     // Decomposed RPE
     ggml_tensor* Q_4d = ggml_reshape_4d(g, Q, hd, aW, aH, batch);
     ggml_tensor* rp_h_4d = ggml_reshape_4d(g, rp_h_in, hd, aH, aH, 1);
-    ggml_tensor* rel_h = ggml_mul_mat(g, rp_h_4d, Q_4d);
+    ggml_tensor* rel_h = bf16_round(g, ggml_mul_mat(g, rp_h_4d, Q_4d));
     rel_h = ggml_reshape_3d(g, rel_h, aH, wN, batch);
     rel_h = ggml_reshape_4d(g, rel_h, 1, aH, wN, batch);
 
     ggml_tensor* Q_w = ggml_cont(g, ggml_permute(g, Q_4d, 0, 2, 1, 3));
     ggml_tensor* rp_w_4d = ggml_reshape_4d(g, rp_w_in, hd, aW, aW, 1);
-    ggml_tensor* rel_w = ggml_mul_mat(g, rp_w_4d, Q_w);
+    ggml_tensor* rel_w = bf16_round(g, ggml_mul_mat(g, rp_w_4d, Q_w));
     rel_w = ggml_cont(g, ggml_permute(g, rel_w, 0, 2, 1, 3));
     rel_w = ggml_reshape_3d(g, rel_w, aW, wN, batch);
     rel_w = ggml_reshape_4d(g, rel_w, aW, 1, wN, batch);
 
     scores = ggml_reshape_4d(g, scores, aW, aH, wN, batch);
-    scores = ggml_add(g, scores, rel_h);
-    scores = ggml_add(g, scores, rel_w);
+    scores = bf16_round(g, ggml_add(g, scores, rel_h));
+    scores = bf16_round(g, ggml_add(g, scores, rel_w));
     scores = ggml_reshape_3d(g, scores, wN, wN, batch);
 
     // Softmax
-    scores = ggml_soft_max_ext(g, scores, nullptr, 1.0f, 0.0f);
+    scores = bf16_round(g, ggml_soft_max_ext(g, scores, nullptr, 1.0f, 0.0f));
 
     // Attention output
     ggml_tensor* Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
-    ggml_tensor* attn = ggml_mul_mat(g, Vt, scores);
+    ggml_tensor* attn = bf16_round(g, ggml_mul_mat(g, Vt, scores));
 
     attn = ggml_reshape_4d(g, attn, hd, wN, n_heads, nW);
     attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
     attn = ggml_reshape_2d(g, attn, C, T);
 
     // Output projection
-    attn = g_linear(g, attn, layer.proj_w, layer.proj_b);
+    attn = bf16_round(g, g_linear(g, attn, layer.proj_w, layer.proj_b));
 
     // Residual
     ggml_tensor* res_base = skip_ln1 ? res_inp : inp;
-    cur = ggml_add(g, res_base, attn);
+    cur = bf16_round(g, ggml_add(g, res_base, attn));
 
     // Pre-LN + GELU MLP
     ggml_tensor* residual = cur;
-    cur = g_ln(g, cur, layer.ln2_w, layer.ln2_b, 1e-6f);
-    ggml_tensor* up = g_linear(g, cur, layer.ffn_up_w, layer.ffn_up_b);
-    up = ggml_gelu(g, up);
-    cur = g_linear(g, up, layer.ffn_down_w, layer.ffn_down_b);
-    cur = ggml_add(g, residual, cur);
+    cur = bf16_round(g, g_ln(g, cur, layer.ln2_w, layer.ln2_b, 1e-6f));
+    ggml_tensor* up = bf16_round(g, g_linear(g, cur, layer.ffn_up_w, layer.ffn_up_b));
+    up = bf16_round(g, ggml_gelu(g, up));
+    cur = bf16_round(g, g_linear(g, up, layer.ffn_down_w, layer.ffn_down_b));
+    cur = bf16_round(g, ggml_add(g, residual, cur));
 
     // BF16 roundtrip: the model was trained with bf16 intermediates; without
     // this, f32 accumulation drift across 12 layers produces vision features
@@ -1017,8 +1017,12 @@ static bool alloc_kv_cache(got_ocr::context &ctx, int max_seq) {
     int hd = (int)l.head_dim;
     int nkv = (int)l.num_key_value_heads;
     int nl = (int)l.num_hidden_layers;
-    ctx.kvc.k = ggml_new_tensor_4d(ctx.kvc.ctx, GGML_TYPE_F16, hd, max_seq, nkv, nl);
-    ctx.kvc.v = ggml_new_tensor_4d(ctx.kvc.ctx, GGML_TYPE_F16, hd, max_seq, nkv, nl);
+    // F32 KV cache: the 0.5B model is sensitive to F16 precision loss in the
+    // KV cache. With 286-token prefill, F16 truncation of K/V causes the model
+    // to produce garbage output (tested: Python f32 produces correct "Hello"
+    // with the same features; ggml F16 KV produces "color").
+    ctx.kvc.k = ggml_new_tensor_4d(ctx.kvc.ctx, GGML_TYPE_F32, hd, max_seq, nkv, nl);
+    ctx.kvc.v = ggml_new_tensor_4d(ctx.kvc.ctx, GGML_TYPE_F32, hd, max_seq, nkv, nl);
 
     ctx.kvc.buf = ggml_backend_alloc_ctx_tensors(ctx.kvc.ctx, ctx.backend);
     if (!ctx.kvc.buf) return false;
@@ -1174,12 +1178,16 @@ static llm_graph build_llm_graph(got_ocr::context &ctx, int n_tokens, int n_past
             Vfull = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
         }
 
-        // flash_attn_ext handles GQA natively; GOT-OCR2 is MHA (nh==nkv)
-
-        // Flash attention
-        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
-        ggml_tensor *attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, lg.mask_in,
-                                                 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
+        // Standard attention (Q@K^T → scale → mask → softmax → @V)
+        // flash_attn_ext produces different numerical results on this 0.5B model.
+        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));  // (hd, T, nh)
+        // K is already (hd, Lk, nkv) — need K^T for Q@K^T
+        ggml_tensor *scores = ggml_mul_mat(g, Kfull, Q);  // (Lk, T, nh)
+        scores = ggml_scale(g, scores, 1.0f / sqrtf((float)hd));
+        scores = ggml_soft_max_ext(g, scores, lg.mask_in, 1.0f, 0.0f);
+        // V is (hd, Lk, nkv); need V^T = (Lk, hd, nkv) for scores@V
+        ggml_tensor *Vt = ggml_cont(g, ggml_permute(g, Vfull, 1, 0, 2, 3)); // (Lk, hd, nkv)
+        ggml_tensor *attn = ggml_mul_mat(g, Vt, scores);  // (hd, T, nh)
         attn = ggml_reshape_2d(g, attn, D, T);
 
         // Output projection
@@ -1609,9 +1617,26 @@ const char * got_ocr_recognize_raw(got_ocr_context * ctx,
         }
     }
 
-    // Vision encode
+    // Vision encode (or load from file for debugging)
     got_ocr::vision_result vr;
-    if (!got_ocr::encode_vision(ctx->inner, pixels.data(), vr)) {
+    const char *inject_path = std::getenv("CRISPEMBED_GOT_OCR_INJECT_VISION");
+    if (inject_path) {
+        FILE *f = fopen(inject_path, "rb");
+        if (f) {
+            int n_tok = (int)l.image_token_len;
+            int dim = 1024;
+            vr.hidden = (float*)malloc(n_tok * dim * sizeof(float));
+            fread(vr.hidden, sizeof(float), n_tok * dim, f);
+            fclose(f);
+            vr.n_tokens = n_tok;
+            vr.hidden_dim = dim;
+            fprintf(stderr, "got_ocr: injected vision from %s (%d tokens)\n", inject_path, n_tok);
+        } else {
+            fprintf(stderr, "got_ocr: failed to open %s\n", inject_path);
+            if (out_len) *out_len = 0;
+            return "";
+        }
+    } else if (!got_ocr::encode_vision(ctx->inner, pixels.data(), vr)) {
         fprintf(stderr, "got_ocr: vision encoding failed\n");
         if (out_len) *out_len = 0;
         return "";
