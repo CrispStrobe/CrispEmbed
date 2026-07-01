@@ -204,6 +204,35 @@ def main():
 
     ref.add("vis_patch_embed", x)
 
+    # 2D vision RoPE (authoritative: transformers modeling_glm_ocr.py).
+    #   VisionRotaryEmbedding(dim=head_dim//2, theta=10000):
+    #     inv_freq = 1/theta**(arange(0,dim,2)/dim)
+    #   per-patch rotary_pos_emb = [h*inv_freq, w*inv_freq]  (len head_dim//2)
+    #   emb = cat(rotary_pos_emb, rotary_pos_emb)            (len head_dim)
+    #   cos/sin = emb.cos()/emb.sin(); apply neox rotate_half.
+    # Patches here are raster-ordered, so patch (ph,pw) gets position (ph,pw);
+    # for full (unmasked) attention this is equivalent to the merge-window
+    # ordering used by the HF image processor.
+    vis_head_dim_rope = vis_head_dim
+    _quart = vis_head_dim_rope // 4
+    _rot_dim = vis_head_dim_rope / 2.0
+    _inv = 1.0 / (10000.0 ** (np.arange(_quart, dtype=np.float32) * 2.0 / _rot_dim))
+    _cos = np.zeros((n_patches, vis_head_dim_rope), dtype=np.float32)
+    _sin = np.zeros((n_patches, vis_head_dim_rope), dtype=np.float32)
+    _tok = 0
+    for _ph in range(n_ph):
+        for _pw in range(n_pw):
+            _vr = _ph * _inv
+            _vw = _pw * _inv
+            _emb = np.concatenate([_vr, _vw, _vr, _vw])
+            _cos[_tok] = np.cos(_emb)
+            _sin[_tok] = np.sin(_emb)
+            _tok += 1
+
+    def _rotate_half(t):
+        h2 = t.shape[-1] // 2
+        return np.concatenate([-t[..., h2:], t[..., :h2]], axis=-1)
+
     # Transformer layers (CogViT: RMSNorm + fused QKV + Q/K norm + SwiGLU)
     for i in range(n_vis):
         p = f"model.visual.blocks.{i}."
@@ -240,6 +269,12 @@ def main():
             Q[:, head, :] = Q[:, head, :] / np.sqrt(q_ms + vis_rms_eps) * q_norm_w
             k_ms = (K[:, head, :] ** 2).mean(axis=-1, keepdims=True)
             K[:, head, :] = K[:, head, :] / np.sqrt(k_ms + vis_rms_eps) * k_norm_w
+
+        # 2D vision RoPE (per-patch cos/sin broadcast over heads).
+        _cb = _cos[:, None, :]
+        _sb = _sin[:, None, :]
+        Q = Q * _cb + _rotate_half(Q) * _sb
+        K = K * _cb + _rotate_half(K) * _sb
 
         Q = Q.transpose(1, 0, 2)  # [nh, T, hd]
         K = K.transpose(1, 0, 2)
