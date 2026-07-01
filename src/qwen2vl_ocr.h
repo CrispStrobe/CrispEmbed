@@ -73,6 +73,11 @@ struct llm_hparams {
   uint32_t num_hidden_layers = 36;
   uint32_t num_attention_heads = 16;
   uint32_t num_key_value_heads = 2;
+  // Per-head dimension. 0 = derive at load time from the q_proj output width
+  // (head_dim = q_w->ne[1] / num_attention_heads). ERNIE-4.5 (PaddleOCR-VL)
+  // uses head_dim=128 while hidden_size/num_heads=64, so head_dim must NOT be
+  // assumed equal to hidden_size / num_attention_heads.
+  uint32_t head_dim = 0;
   uint32_t max_position_embeddings = 128000;
   float rms_norm_eps = 1e-6f;
   float rope_theta = 1000000.0f;
