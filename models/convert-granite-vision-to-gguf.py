@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Minimal Granite Vision GGUF converter — lazy safetensors loading."""
+"""Minimal Granite Vision GGUF converter — lazy safetensors loading.
+
+Emits a *complete* GGUF: vision/LLM tensors + config scalars + the BPE
+tokenizer (tokenizer.tokens / tokenizer.merges) + attention_multiplier /
+rms_eps / bos/eos. The runtime (src/granite_vision_ocr.cpp) needs the tokenizer
+to detokenize; without it OCR emits raw token ids. This folds in what
+patch-granite-gguf-tokenizer.py used to add after the fact.
+"""
 import json, os, struct, sys, numpy as np
 from safetensors import safe_open
 
@@ -13,6 +20,25 @@ def wks(f,k,v): ws(f,k); f.write(struct.pack("<I",GGUF_TYPE_STRING)); ws(f,v)
 def wku(f,k,v): ws(f,k); f.write(struct.pack("<I",GGUF_TYPE_UINT32)); f.write(struct.pack("<I",v))
 def wkf(f,k,v): ws(f,k); f.write(struct.pack("<I",GGUF_TYPE_FLOAT32)); f.write(struct.pack("<f",v))
 def wka(f,k,a): ws(f,k); f.write(struct.pack("<I",GGUF_TYPE_ARRAY)); f.write(struct.pack("<I",GGUF_TYPE_INT32)); f.write(struct.pack("<Q",len(a)));[f.write(struct.pack("<i",v)) for v in a]
+def wkas(f,k,a):  # array<string>
+    ws(f,k); f.write(struct.pack("<I",GGUF_TYPE_ARRAY)); f.write(struct.pack("<I",GGUF_TYPE_STRING)); f.write(struct.pack("<Q",len(a)))
+    for v in a: ws(f,v)
+
+def load_tokenizer(model_dir):
+    """Return (tokens, merges) mirroring patch-granite-gguf-tokenizer.py so the
+    runtime's tokenizer.tokens / tokenizer.merges reads succeed. Returns
+    (None, None) if tokenizer.json is absent."""
+    tp = os.path.join(model_dir, "tokenizer.json")
+    if not os.path.exists(tp): return None, None
+    with open(tp) as f: tj = json.load(f)
+    m = tj["model"]
+    inv = {i: tok for tok, i in m["vocab"].items()}   # id -> token (base)
+    for a in tj.get("added_tokens", []):              # specials + <image>
+        inv[a["id"]] = a["content"]
+    n = max(inv) + 1
+    tokens = [inv.get(i, f"<unused{i}>") for i in range(n)]
+    merges = [mm if isinstance(mm, str) else f"{mm[0]} {mm[1]}" for mm in m.get("merges", [])]
+    return tokens, merges
 
 model_dir = sys.argv[1]
 output = sys.argv[2]
@@ -26,6 +52,10 @@ tie = cfg.get("tie_word_embeddings", False)
 st_files = sorted(os.path.join(model_dir,f) for f in os.listdir(model_dir) if f.endswith(".safetensors"))
 print(f"Vision: dim={vc['hidden_size']}, layers={vc['num_hidden_layers']}")
 print(f"LLM: dim={tc['hidden_size']}, layers={tc['num_hidden_layers']}")
+
+tokens, merges = load_tokenizer(model_dir)
+if tokens is not None:
+    print(f"Tokenizer: {len(tokens)} tokens, {len(merges)} merges")
 
 # Map tensor names
 def map_name(key):
@@ -78,7 +108,19 @@ for gn, (sk, sp) in tmap.items():
         tinfo[gn] = (shape, nb, dt)
         del t
 
-n_kv = 20
+# Tokenizer + late-added scalars the runtime reads (kept in sync with
+# patch-granite-gguf-tokenizer.py). Without tokenizer.tokens/merges the engine
+# can't detokenize and OCR emits raw token ids. (tokens/merges loaded above.)
+have_tok = tokens is not None
+if not have_tok:
+    print("WARNING: no tokenizer.json in model dir — GGUF will lack a tokenizer "
+          "(OCR will emit raw token ids). Add tokenizer.json and re-convert.")
+attn_mul = float(tc.get("attention_multiplier", 0.015625))
+rms_eps  = float(tc.get("rms_norm_eps", 1e-5))
+bos_id   = int(tc.get("bos_token_id", 0))
+eos_id   = int(tc.get("eos_token_id", 0))
+
+n_kv = 24 + (2 if have_tok else 0)   # 20 base + attn_mul/rms_eps/bos/eos (+tokens/merges)
 with open(output, "wb") as f:
     f.write(struct.pack("<I",GGUF_MAGIC)); f.write(struct.pack("<I",GGUF_VERSION))
     f.write(struct.pack("<Q",len(tinfo))); f.write(struct.pack("<Q",n_kv))
@@ -102,6 +144,13 @@ with open(output, "wb") as f:
     wkf(f,"granite_vision.rope_theta",tc.get("rope_theta",10000.0))
     wku(f,"granite_vision.image_token_index",cfg.get("image_token_index",49155))
     wku(f,"granite_vision.tie_word_embeddings",1 if tie else 0)
+    wkf(f,"granite_vision.attention_multiplier",attn_mul)
+    wkf(f,"granite_vision.rms_eps",rms_eps)
+    wku(f,"granite_vision.bos_token_id",bos_id)
+    wku(f,"granite_vision.eos_token_id",eos_id)
+    if have_tok:
+        wkas(f,"tokenizer.tokens",tokens)
+        wkas(f,"tokenizer.merges",merges)
 
     off = 0
     order = list(tinfo.keys())
