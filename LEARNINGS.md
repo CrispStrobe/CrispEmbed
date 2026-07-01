@@ -67,10 +67,17 @@ instructir; output+Metal==CPU — safmn, esrgan, (restormer is the exception);
 OCR — got-ocr2 (full 20-stage diff, cer 0.000), internvl2, lightonocr.
 **nafnet_denoise = coverage gap** (no diff harness, no standalone CLI output —
 only reachable via the `--denoise` OCR pipeline).
-**Not completed:** granite-vision (loads — `vis 27L`, `llm 40L`, but flags
-`tokenizer=MISSING (0 tokens)`; the OCR run was OOM-killed on a disk-full /
-load-100 box before producing output — retry on an idle box with a per-stage diff
-vs the cached `granite-vision-ref.gguf`).
+**granite-vision — NOT a wave regression, but OCR broken by a packaging bug.**
+Per-stage diff vs `granite-vision-ref.gguf` is **healthy and identical on both
+backends**: `vis_patch_embed` cos 1.000 → gradual accumulation → `vis_layer_26`
+0.958 / `projector` 0.956 (max_abs ~2.7–4.3). That's expected q8_0-vs-f32 drift —
+all within granite's calibrated manifest threshold **0.95** (only the harness's
+strict 0.99 default flags them; the decay is gradual, not a crater, so no scramble
+regression). BUT end-to-end OCR degenerates to raw token IDs `<322><322>…` because
+the gguf ships **`tokenizer=MISSING (0 tokens)`** → prompt encode + output decode
+both fail. That's a **converter/packaging bug** (re-embed the tokenizer), separate
+from the ggml wave; `expected_text` was `null` so granite OCR was likely never
+validated end-to-end.
 
 **Fix notes.** restormer's fix is a **3-site weight-layout unification** (load-time
 pre-permute + `rst_prep_w` + `rst_conv2d_ggml`), not a one-liner — a single-site
