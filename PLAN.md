@@ -300,18 +300,23 @@ Metal, ggml 0.10.0.
   - Stop tokens: added `<|im_end|>` (151645) alongside eos.
   - Debug env: `CRISPEMBED_GOT_OCR_DEBUG=1` sets verbosity=2.
   - Per-layer diff test passes ALL layers (cos_min≥0.999999 with f16).
-  - **Root cause (confirmed 2026-07-01)**: q8_0 decoder quantization is
-    the bug — Qwen2-0.5B at q8_0 diverges at layer 0 (cos=0.936, max_abs=177),
-    compounding to garbage. With f16 weights: cos=0.999999, correct OCR on
-    Metal+macOS. The diff harness masked this: `compare()` used token count
-    as row length instead of feature dim (fixed with `row_dim=0`).
-    Vision is correct (cos=0.998 vs HF on real pages). The "bf16 compute"
-    and "vision encoder" theories were wrong. Fix: ship f16 GGUF.
-    Note: CPU-only x86 (this VPS) still produces "color" with f16 — may
-    need Metal/GPU or further CPU-path investigation.
+  - **Root cause & resolution (CORRECTED 2026-07-01, on M1)**: the earlier
+    "q8_0 decoder is catastrophically sensitive (llm_layer_0 cos=0.936 →
+    garbage)" conclusion was itself a **diff-harness artifact**, not real
+    sensitivity. Re-running the *corrected* harness (row_dim=0) on a plain
+    q8_0 decoder gives llm_layer_0..5 cos ≥ 0.99996 (PASS), and end-to-end
+    OCR is correct at q4_k, q8_0 AND f16 (all identical output). The
+    decoder graph is functionally identical to internvl2's Qwen2-0.5B
+    (same NEOX RoPE θ=1M, rmsnorm, flash_attn scale, KV layout, SwiGLU),
+    and internvl2-1b already ships that same decoder at q4_k. Vision is
+    correct (cos≥0.998 vs HF). The "bf16 compute", "vision encoder", AND
+    "decoder must be f16" theories were ALL wrong.
+    **Ship q4_k as default**: on M1 per-token decode is q4_k ~20ms <
+    f16 ~38ms < q8_0 ~42ms (q8_0 mul_mv is a slow Metal path on M1), and
+    q4_k is 3× smaller (445 MB vs 1.03 GB) with identical OCR. The
+    `--decoder-f16` quantizer flag is kept but is optional/diagnostic only.
 
 **Still open:**
-  our f32 LLM produces token 9707 ("Hello") correctly.
 - **DBNet detector on Metal** — `unsupported op 'CPY'` abort; `OCR_DETECT_FORCE_CPU=1`
   works around it but per-region TrOCR on CPU is slow. Want a Metal CPY path or a
   CPU-default detector.
