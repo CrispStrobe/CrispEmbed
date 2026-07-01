@@ -44,7 +44,8 @@
       "engine": "internvl2",
       "gguf": {"repo": "cstr/internvl2-1b-crispembed-GGUF", "file": "internvl2-1b-q4_k.gguf", "revision": "main", "approx_size_mb": 600},
       "sample": "tests/regression/images/fox.png",
-      "expected_text": null,
+      "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
+      "expected_text_source": "captured 2026-07-01 on M1 Metal after reverting the c714758 vision-graph cache to fresh-build-per-tile. fox.png dynamic-tiles to 5 tiles, so this entry is the regression guard for the cross-tile SIGSEGV/hang — a re-crash makes crispembed --ocr exit non-zero and FAILs here.",
       "match": {"max_cer": 0.12},
       "diff": {"binary": "test-internvl2-diff", "ref": {"repo": "cstr/internvl2-1b-crispembed-GGUF", "file": "internvl2-1b-ref.gguf"}, "thresholds": {"*": 0.995}}
     },

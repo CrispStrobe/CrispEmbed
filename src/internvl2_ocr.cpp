@@ -1071,41 +1071,41 @@ bool encode_vision_tile(context &ctx, const float *pixels, vision_result &out) {
         }
     }
 
-    // Build vision graph once, reuse graph structure across tiles.
-    // Re-alloc the scheduler before EACH tile — ggml_gallocr frees input
-    // tensor memory after first consumer, so reusing tile-1's allocation
-    // for tile-2 would write input data into freed/reused memory.
-    if (!ctx.vis_graph_cached) {
-        vision_graph vg = build_vision_graph(ctx);
-        ctx.vis_graph_ctx = vg.gctx;
-        ctx.vis_graph = vg.gf;
-        ctx.vis_input = vg.pixel_in;
-        ctx.vis_output = vg.output;
-        ctx.vis_graph_cached = true;
-    }
+    // Build + compute the vision graph FRESH per tile, and free it. Do NOT
+    // cache the graph across tiles: encode_vision_tile and project_vision share
+    // the same ggml_backend_sched (ctx.sched), and project_vision calls
+    // ggml_backend_sched_reset between tiles — which invalidates any allocation
+    // (and any reused cgraph) belonging to the vision graph. c714758 cached the
+    // built graph + its tensors and reused them across tiles; from the 2nd tile
+    // on that read freed/realloc'd scheduler buffers → SIGSEGV/SIGBUS on Metal,
+    // non-terminating decode on CUDA (#25). Fresh-build-per-tile is the proven
+    // correct path (matches the pre-c714758 behaviour verified by bisection).
+    vision_graph vg = build_vision_graph(ctx);
+
     ggml_backend_sched_reset(ctx.sched);
-    if (!ggml_backend_sched_alloc_graph(ctx.sched, ctx.vis_graph)) {
+    if (!ggml_backend_sched_alloc_graph(ctx.sched, vg.gf)) {
         fprintf(stderr, "internvl2_ocr: vision graph alloc failed\n");
+        ggml_free(vg.gctx);
         return false;
     }
 
-    // Set input and compute (reusing cached graph structure, fresh allocation)
-    ggml_backend_tensor_set(ctx.vis_input, patches.data(), 0,
+    // Set input and compute
+    ggml_backend_tensor_set(vg.pixel_in, patches.data(), 0,
                             n_patches * patch_flat * sizeof(float));
-    ggml_backend_sched_graph_compute(ctx.sched, ctx.vis_graph);
+    ggml_backend_sched_graph_compute(ctx.sched, vg.gf);
 
     // Read output: (D, n_pos)
     out.n_tokens = n_pos;
     out.hidden_dim = D;
     out.hidden = (float *)malloc(n_pos * D * sizeof(float));
-    ggml_backend_tensor_get(ctx.vis_output, out.hidden, 0,
+    ggml_backend_tensor_get(vg.output, out.hidden, 0,
                             n_pos * D * sizeof(float));
 
-    // Diff comparison if enabled (uses cached graph tensors)
+    // Diff comparison if enabled
     if (!ctx.diff_ref_path.empty()) {
         crispembed_diff::Ref ref;
         if (ref.load(ctx.diff_ref_path.c_str())) {
-            ggml_tensor *pe_t = ggml_graph_get_tensor(ctx.vis_graph, "vis_patch_embed");
+            ggml_tensor *pe_t = ggml_graph_get_tensor(vg.gf, "vis_patch_embed");
             if (pe_t) {
                 float *vis_pe = (float *)malloc(n_pos * D * sizeof(float));
                 ggml_backend_tensor_get(pe_t, vis_pe, 0, n_pos * D * sizeof(float));
@@ -1117,7 +1117,7 @@ bool encode_vision_tile(context &ctx, const float *pixels, vision_result &out) {
         }
     }
 
-    // Graph context kept alive for reuse (freed in free_)
+    ggml_free(vg.gctx);
     return true;
 }
 
