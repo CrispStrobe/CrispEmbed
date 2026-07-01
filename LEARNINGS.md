@@ -1,12 +1,13 @@
 # CrispEmbed — Technical Learnings
 
-## June-2026 scalar→ggml wave audit: 2 new regressions, both invisible to numerical guards (2026-07)
+## June-2026 scalar→ggml wave audit: 3 new regressions, all invisible to numerical guards (2026-07)
 
 Systematic re-audit of the ~15-engine June scalar→`ggml_conv_2d` refactor wave
 (handover `june20-ggml-refactor-regression-audit.md`), each engine on **both**
-Metal and CPU. Result: the wave broke **more than the 3 known** engines. Two
-*new* regressions, and both slipped every automated guard except looking at the
-actual output:
+Metal and CPU. Result: the wave broke **well more than the 3 known** engines —
+**three** *new* regressions (restormer, paddleocr-vl, qwen2vl-3b), all
+both-backend, and every one slipped the automated guards. Only looking at the
+actual output (rendered pixels / read transcript) caught them:
 
 - **restormer — garbage output, both backends.** `restormer-denoise-f16` on a
   clean image emits blocky rainbow noise (mean 147 / std 120 vs a clean ~242),
@@ -22,6 +23,20 @@ actual output:
   exit 139, zero output, reproducible in isolation on Metal AND CPU. The 8:1
   head/kv ratio is exactly the "native-GQA broadcast wrong for specific ratios"
   hazard `fbae7ba` introduced. Bad memmove ⇒ a tensor-size mismatch overrun.
+  **qwen2vl-3b (the primary user of this shared engine) does NOT crash** → the
+  SIGSEGV is a PaddleOCR-VL-specific branch, not the common path.
+- **qwen2vl-3b — hallucinated OCR, both backends.** `qwen2.5-vl-3b-q4_k` on the
+  clean fox image outputs a fabricated description ("mathematical symbols and
+  equations, Greek letters α/β/γ, summations, derivatives or integrals, the text
+  is distorted…") instead of reading "The quick brown fox…". **Identical on Metal
+  and CPU** → both-backend engine bug; the garbled-vision → LLM-hallucination
+  signature matches the `got_ocr` neck-permute regression. got/internvl2/lightonocr
+  read the same image correctly through the *same* `--ocr` path, so it's the
+  qwen2vl vision pathway, not the harness/prompt. `patch_embed` is stored 2D here
+  so `5c8cb1b`'s 4D-flatten branch does not fire (ruled out); exact site needs a
+  per-stage ref (none on HF — generate via `tools/dump_qwen2vl_reference.py`).
+  `expected_text` was `null` (never baked), so this may also be a never-validated
+  path; either way qwen2vl-3b OCR is currently broken. Not yet tested at q8_0.
 
 **Methodology lesson — a "non-degenerate output" numeric guard is not an output
 check.** restormer's noise has high std, so a std>1 guard *passes* it; the
@@ -52,6 +67,17 @@ instructir; output+Metal==CPU — safmn, esrgan, (restormer is the exception);
 OCR — got-ocr2 (full 20-stage diff, cer 0.000), internvl2, lightonocr.
 **nafnet_denoise = coverage gap** (no diff harness, no standalone CLI output —
 only reachable via the `--denoise` OCR pipeline).
+**Not completed:** granite-vision (loads — `vis 27L`, `llm 40L`, but flags
+`tokenizer=MISSING (0 tokens)`; the OCR run was OOM-killed on a disk-full /
+load-100 box before producing output — retry on an idle box with a per-stage diff
+vs the cached `granite-vision-ref.gguf`).
+
+**Fix notes.** restormer's fix is a **3-site weight-layout unification** (load-time
+pre-permute + `rst_prep_w` + `rst_conv2d_ggml`), not a one-liner — a single-site
+fix compiles but aborts on the oddly-flattened `qkv_dw` weight (`ne=[432,3]`); see
+`handover-prompts/restormer-ggml-conv-weight-permute-fix.md`. paddleocr + qwen2vl
+fixes need per-stage references generated from the torch dumpers; handovers in
+`handover-prompts/{paddleocr-vl-sigsegv,restormer-ggml-conv-weight-permute}-fix.md`.
 
 **HF download gotcha (this box, 2026-07):** the `huggingface_hub` client wedged on
 the Xet CDN (`cas-bridge.xethub.hf.co`) with 10s read-timeouts even with
