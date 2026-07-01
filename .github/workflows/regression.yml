@@ -1,0 +1,99 @@
+# OCR portfolio regression suite. See tests/regression/README.md.
+#
+# Motivated by 3fb1f8e: a vision-neck permute shipped garbage OCR
+# (colorcolor…) that a pure exit-code smoke test could not catch. This
+# suite asserts OUTPUT correctness (no-garbage guard + lenient CER match
+# + optional per-layer diff-harness cos), not just that the process ran.
+#
+# Tiers:
+#   Tier 0 smoke     (PR + push, <2s, no net):  manifest schema + parser +
+#                                                CER/normalise + garbage guard
+#   Tier 1 preflight (PR + push, ~5s, HF HEAD):  every pinned GGUF reachable
+#   Tier 2 full      (nightly + dispatch):       build CPU + run got-ocr2
+#                                                end-to-end (garbage + text +
+#                                                diff-harness cos)
+#
+# The full GPU portfolio (all models) runs on Kaggle:
+# tools/kaggle/ocr-portfolio-regression/.
+
+name: OCR regression
+
+on:
+  schedule:
+    - cron: '0 4 * * *'   # 04:00 UTC nightly — Tier 2
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/got_ocr.cpp'
+      - 'src/**ocr**'
+      - 'tests/regression/**'
+      - '.github/workflows/regression.yml'
+  pull_request:
+    paths:
+      - 'src/got_ocr.cpp'
+      - 'src/**ocr**'
+      - 'tests/regression/**'
+      - '.github/workflows/regression.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Tier 0: schema + parser + guard unit tests. No binary, no network.
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Driver smoke test
+        run: python tests/regression/test_driver_smoke.py
+
+  # Tier 1: HEAD-check every pinned HF artifact the manifest references.
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: smoke
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Preflight pinned artifacts
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python tests/regression/preflight.py
+
+  # Tier 2: full end-to-end on the CPU backend. Nightly / manual only —
+  # PRs stop at smoke + preflight so they don't burn build+download time.
+  full-cpu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: preflight
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential
+          pip install huggingface_hub
+      - name: Build (CPU)
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target crispembed-cli test-got-ocr-diff -j"$(nproc)"
+      - name: Run got-ocr2 regression (CPU)
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          BUILD_DIR: build
+          GOT_OCR_FORCE_CPU: '1'
+          LD_LIBRARY_PATH: build
+        run: python tests/regression/run_one.py --name got-ocr2

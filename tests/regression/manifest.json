@@ -1,0 +1,87 @@
+{
+  "_comment": "CrispEmbed OCR portfolio regression manifest. Each model entry pins the GGUF under test (repo/file/revision), a fixture image, a proven-correct expected_text (lenient CER match), and an OPTIONAL diff block. The diff block runs test-<model>-diff against a reference GGUF downloaded from HF; if that ref is absent on HF the diff step is SKIPPED (opt-in by ref presence). expected_text=null means 'not captured yet' — run with --rebake on the GPU portfolio kernel, verify the output by eye, and paste it in. See README.md. This suite exists because a vision-neck permute regression (3fb1f8e) shipped garbage OCR that a pure exit-code smoke test could not catch.",
+  "version": 1,
+  "match_defaults": {
+    "max_cer": 0.10,
+    "_note": "lenient char-error-rate after normalising case/punctuation/whitespace; OCR is not byte-exact across builds"
+  },
+  "diff_defaults": {
+    "thresholds": {"*": 0.999},
+    "_note": "global per-stage cos_min floor; override per-stage inside a model's diff.thresholds"
+  },
+  "models": [
+    {
+      "name": "got-ocr2",
+      "engine": "got-ocr2",
+      "gguf": {
+        "repo": "cstr/got-ocr2-crispembed-GGUF",
+        "file": "got-ocr2-q4_k.gguf",
+        "revision": "a74647673f7bf988756fa813766501284d0507c9",
+        "approx_size_mb": 445
+      },
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
+      "expected_text_source": "captured 2026-07-01 on main (post-7f43e4d neck-permute fix), verified correct on both Metal and CPU (GOT_OCR_FORCE_CPU=1) at q4_k/q8_0/f16.",
+      "match": {"max_cer": 0.10},
+      "diff": {
+        "binary": "test-got-ocr-diff",
+        "ref": {"repo": "cstr/got-ocr2-crispembed-GGUF", "file": "got-ocr2-ref-full.gguf", "revision": "main"},
+        "thresholds": {"*": 0.99},
+        "_note": "test-got-ocr-diff <gguf> <ref>. Vision layers ~0.998 on CPU (0.9999 on Metal); decoder layers >=0.9998. 0.99 floor covers both backends with margin; a scrambled-permute regression craters vis_proj_output to ~0, well below."
+      }
+    },
+    {
+      "name": "glm-ocr",
+      "engine": "glm-ocr",
+      "gguf": {"repo": "cstr/glm-ocr-crispembed-GGUF", "file": "glm-ocr-q8_0.gguf", "revision": "main", "approx_size_mb": 950},
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": null,
+      "match": {"max_cer": 0.12},
+      "diff": {"binary": "test-glm-ocr-diff", "ref": {"repo": "cstr/glm-ocr-crispembed-GGUF", "file": "glm-ocr-ref.gguf"}, "thresholds": {"*": 0.995}}
+    },
+    {
+      "name": "internvl2-1b",
+      "engine": "internvl2",
+      "gguf": {"repo": "cstr/internvl2-1b-crispembed-GGUF", "file": "internvl2-1b-q4_k.gguf", "revision": "main", "approx_size_mb": 600},
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": null,
+      "match": {"max_cer": 0.12},
+      "diff": {"binary": "test-internvl2-diff", "ref": {"repo": "cstr/internvl2-1b-crispembed-GGUF", "file": "internvl2-1b-ref.gguf"}, "thresholds": {"*": 0.995}}
+    },
+    {
+      "name": "qwen2vl-3b",
+      "engine": "qwen2vl",
+      "gguf": {"repo": "cstr/qwen2.5-vl-3b-crispembed-GGUF", "file": "qwen2.5-vl-3b-q4_k.gguf", "revision": "main", "approx_size_mb": 2200},
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": null,
+      "match": {"max_cer": 0.12},
+      "diff": {"binary": "test-qwen2vl-diff", "ref": {"repo": "cstr/qwen2vl-3b-crispembed-GGUF", "file": "qwen2vl-3b-ref.gguf"}, "thresholds": {"*": 0.995}}
+    },
+    {
+      "name": "granite-vision",
+      "engine": "granite-vision",
+      "gguf": {"repo": "cstr/granite-vision-crispembed-GGUF", "file": "granite-vision-3.3-2b-q8_0.gguf", "revision": "main", "approx_size_mb": 1800},
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": null,
+      "match": {"max_cer": 0.15},
+      "diff": {"binary": "test-granite-vision-diff", "ref": {"repo": "cstr/granite-vision-crispembed-GGUF", "file": "granite-vision-ref.gguf", "revision": "main"}, "thresholds": {"*": 0.99}}
+    },
+    {
+      "name": "lightonocr",
+      "engine": "lightonocr",
+      "gguf": {"repo": "cstr/lightonocr-GGUF", "file": "lightonocr-1b-q4_k.gguf", "revision": "main", "approx_size_mb": 622},
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": null,
+      "match": {"max_cer": 0.12}
+    },
+    {
+      "name": "paddleocr-vl",
+      "engine": "paddleocr-vl",
+      "gguf": {"repo": "cstr/paddleocr-vl-0.9b-GGUF", "file": "paddleocr-vl-0.9b-q8_0.gguf", "revision": "main", "approx_size_mb": 700},
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": null,
+      "match": {"max_cer": 0.12},
+      "diff": {"binary": "test-paddleocr-vl-diff", "ref": {"repo": "cstr/paddleocr-vl-GGUF", "file": "paddleocr-vl-ref.gguf"}, "thresholds": {"*": 0.995}}
+    }
+  ]
+}
