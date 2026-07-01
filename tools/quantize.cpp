@@ -33,6 +33,12 @@ static const std::map<std::string, enum ggml_ftype> FTYPE_MAP = {
     {"q6_k", GGML_FTYPE_MOSTLY_Q6_K},
 };
 
+// When set, LLM decoder weight matrices (prefix "l.") are kept at F16 instead of
+// being quantized. Small decoders (e.g. GOT-OCR2's 0.5B Qwen2) are catastrophically
+// sensitive to q8_0/k-quant weights — llm_layer_0 cos drops to ~0.936 (vs 0.9999 at
+// F16) and the OCR output degenerates. Enable with --decoder-f16. See issue #25.
+static bool g_decoder_f16 = false;
+
 static bool quantize_model(const std::string & fname_inp, const std::string & fname_out, ggml_ftype ftype) {
     ggml_type qtype = GGML_TYPE_F32;
 
@@ -329,6 +335,16 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             printf("(lm-head→Q8_0) ");
         }
 
+        // LLM decoder weights (prefix "l.": attn_*, ffn_*, embed_tokens): keep at
+        // F16 when --decoder-f16 is set. A tiny 0.5B Qwen2 decoder loses too much
+        // to q8_0/k-quants (llm_layer_0 cos 0.936 → garbage OCR); F16 restores
+        // cos 0.9999 and correct output. Norms/biases are 1-D and already copied.
+        if (quantize && g_decoder_f16 && sname.rfind("l.", 0) == 0 &&
+            qtype_used != GGML_TYPE_F16 && qtype_used != GGML_TYPE_F32) {
+            qtype_used = GGML_TYPE_F16;
+            printf("(decoder→F16) ");
+        }
+
         int64_t qk = ggml_blck_size(qtype_used);
 
         // Fallback chain for K-quants: if row width isn't 256-aligned,
@@ -439,8 +455,17 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
 }
 
 int main(int argc, char ** argv) {
-    if (argc != 4) {
-        fprintf(stderr, "usage: %s <input.gguf> <output.gguf> <type>\n\n", argv[0]);
+    // Collect positional args, allowing an optional --decoder-f16 flag anywhere.
+    std::vector<std::string> pos;
+    for (int i = 1; i < argc; i++) {
+        std::string a = argv[i];
+        if (a == "--decoder-f16") g_decoder_f16 = true;
+        else pos.push_back(a);
+    }
+    if (pos.size() != 3) {
+        fprintf(stderr, "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16]\n\n", argv[0]);
+        fprintf(stderr, "  --decoder-f16  keep LLM decoder weights (prefix 'l.') at F16\n");
+        fprintf(stderr, "                 (required for small decoders like GOT-OCR2's 0.5B; see #25)\n\n");
         fprintf(stderr, "Supported types:\n");
         for (auto & [name, _] : FTYPE_MAP) {
             fprintf(stderr, "  %s\n", name.c_str());
@@ -448,9 +473,9 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
-    const std::string fname_inp = argv[1];
-    const std::string fname_out = argv[2];
-    const char * type_str = argv[3];
+    const std::string fname_inp = pos[0];
+    const std::string fname_out = pos[1];
+    const char * type_str = pos[2].c_str();
 
     auto it = FTYPE_MAP.find(type_str);
     if (it == FTYPE_MAP.end()) {
