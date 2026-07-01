@@ -53,7 +53,8 @@
       "engine": "qwen2vl",
       "gguf": {"repo": "cstr/qwen2.5-vl-3b-crispembed-GGUF", "file": "qwen2.5-vl-3b-q4_k.gguf", "revision": "main", "approx_size_mb": 2200},
       "sample": "tests/regression/images/fox.png",
-      "expected_text": null,
+      "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
+      "expected_text_source": "captured 2026-07-01 on M4 Metal + CPU (CRISPEMBED_FORCE_CPU=1) at q4_k after the vision RoPE merge-block-order + merger consecutive-grouping + windowed-attention + OCR-prompt fixes. Previously null (never validated end-to-end); the engine hallucinated a math description over garbled vision tokens.",
       "match": {"max_cer": 0.12},
       "diff": {"binary": "test-qwen2vl-diff", "ref": {"repo": "cstr/qwen2.5-vl-3b-crispembed-GGUF", "file": "qwen2.5-vl-3b-ref.gguf"}, "thresholds": {"*": 0.995}}
     },
