@@ -174,120 +174,180 @@ bool load_tensors(context &ctx, const char *path) {
 struct vision_graph {
     ggml_cgraph *gf = nullptr;
     ggml_context *gctx = nullptr;
-    ggml_tensor *pixel_in = nullptr;
+    ggml_tensor *pixel_in = nullptr;      // raw pixels (unused when patch_embed_in is set)
+    ggml_tensor *patch_embed_in = nullptr; // pre-computed patch embeddings
     ggml_tensor *output = nullptr;
     std::vector<ggml_tensor *> layer_outputs;
 };
 
-vision_graph build_vision_graph(context &ctx, int n_patches) {
-    vision_graph vg;
+// Build and run a single CogViT transformer layer as a small ggml graph.
+// Returns the layer output in `io_data` (in-place, size D * n_patches).
+static bool run_vis_layer(context &ctx, int layer_idx, int n_patches,
+                          std::vector<float> &io_data) {
     const auto &vhp = ctx.m.vhp;
     const int D = (int)vhp.hidden_size;
     const int nh = (int)vhp.num_heads;
     const int hd = D / nh;
-    const int n_layers = (int)vhp.depth;
     const float eps = vhp.rms_norm_eps;
-    const int P = (int)vhp.patch_size;
-    const int T_p = (int)vhp.temporal_patch_size;
-    const int patch_flat = 3 * T_p * P * P;
+    const int T = n_patches;
 
-    size_t meta_size = (size_t)(n_layers * 40 + 200) * ggml_tensor_overhead()
-                       + ggml_graph_overhead_custom(16384, false);
-    ctx.compute_meta.resize(meta_size);
-    ggml_init_params ip{meta_size, ctx.compute_meta.data(), true};
+    size_t meta = ggml_tensor_overhead() * 60 + ggml_graph_overhead_custom(512, false);
+    ggml_init_params ip{meta, nullptr, true};
     ggml_context *g = ggml_init(ip);
-    vg.gctx = g;
 
-    ggml_cgraph *gf = ggml_new_graph_custom(g, 16384, false);
-
-    // Input: (patch_flat, n_patches)
-    ggml_tensor *pixel_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, patch_flat, n_patches);
-    ggml_set_name(pixel_in, "pixel_in");
-    ggml_set_input(pixel_in);
-    vg.pixel_in = pixel_in;
-
-    // Patch embedding
-    ggml_tensor *x = ggml_mul_mat(g, ctx.m.patch_embed_w, pixel_in);
-    if (ctx.m.patch_embed_b) x = ggml_add(g, x, ctx.m.patch_embed_b);
-
-    ggml_set_name(x, "vis_patch_embed");
-    ggml_set_output(x);
+    ggml_tensor *x_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+    ggml_set_name(x_in, "layer_in"); ggml_set_input(x_in);
 
     auto rmsnorm = [&](ggml_tensor *t, ggml_tensor *w) -> ggml_tensor * {
         return ggml_mul(g, ggml_rms_norm(g, t, eps), w);
     };
 
-    // CogViT transformer layers
-    for (int i = 0; i < n_layers; i++) {
-        auto &blk = ctx.m.vis_blocks[i];
-        int T = n_patches;
+    auto &blk = ctx.m.vis_blocks[layer_idx];
+    ggml_tensor *x = x_in;
 
-        // Pre-norm
-        ggml_tensor *h = rmsnorm(x, blk.norm1_w);
+    // Pre-norm
+    ggml_tensor *h = rmsnorm(x, blk.norm1_w);
+    ggml_set_name(h, "after_norm1"); ggml_set_output(h);
 
-        // Fused QKV
-        ggml_tensor *qkv = ggml_mul_mat(g, blk.qkv_w, h);
-        if (blk.qkv_b) qkv = ggml_add(g, qkv, blk.qkv_b);
+    // Fused QKV
+    ggml_tensor *qkv = ggml_mul_mat(g, blk.qkv_w, h);
+    if (blk.qkv_b) qkv = ggml_add(g, qkv, blk.qkv_b);
+    ggml_set_name(qkv, "qkv"); ggml_set_output(qkv);
 
-        ggml_tensor *Q = ggml_view_2d(g, qkv, D, T, qkv->nb[1], 0);
-        ggml_tensor *K = ggml_view_2d(g, qkv, D, T, qkv->nb[1], D * sizeof(float));
-        ggml_tensor *V = ggml_view_2d(g, qkv, D, T, qkv->nb[1], 2 * D * sizeof(float));
+    ggml_tensor *Q = ggml_view_2d(g, qkv, D, T, qkv->nb[1], 0);
+    ggml_tensor *K = ggml_view_2d(g, qkv, D, T, qkv->nb[1], D * sizeof(float));
+    ggml_tensor *V = ggml_view_2d(g, qkv, D, T, qkv->nb[1], 2 * D * sizeof(float));
 
-        Q = ggml_reshape_3d(g, ggml_cont(g, Q), hd, nh, T);
-        K = ggml_reshape_3d(g, ggml_cont(g, K), hd, nh, T);
-        V = ggml_reshape_3d(g, ggml_cont(g, V), hd, nh, T);
+    Q = ggml_reshape_3d(g, ggml_cont(g, Q), hd, nh, T);
+    K = ggml_reshape_3d(g, ggml_cont(g, K), hd, nh, T);
+    V = ggml_reshape_3d(g, ggml_cont(g, V), hd, nh, T);
 
-        // Q/K RMSNorm (per-head, weight is (hd,))
-        if (blk.q_norm_w) {
-            Q = ggml_mul(g, ggml_rms_norm(g, Q, eps), blk.q_norm_w);
-        }
-        if (blk.k_norm_w) {
-            K = ggml_mul(g, ggml_rms_norm(g, K, eps), blk.k_norm_w);
-        }
+    if (blk.q_norm_w) Q = ggml_mul(g, ggml_rms_norm(g, Q, eps), blk.q_norm_w);
+    if (blk.k_norm_w) K = ggml_mul(g, ggml_rms_norm(g, K, eps), blk.k_norm_w);
 
-        // Flash attention (bidirectional — no mask)
-        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
-        K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
-        V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
+    // Save Q before permute for diff (reshape to 2D for comparison)
+    ggml_tensor *Q_flat = ggml_reshape_2d(g, ggml_cont(g, Q), D, T);
+    ggml_set_name(Q_flat, "Q_normed"); ggml_set_output(Q_flat);
 
-        float scale = 1.0f / std::sqrt((float)hd);
-        ggml_tensor *attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
-        attn = ggml_reshape_2d(g, attn, D, T);
+    Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
+    K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
+    V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-        // Output projection
-        attn = ggml_mul_mat(g, blk.proj_w, attn);
-        if (blk.proj_b) attn = ggml_add(g, attn, blk.proj_b);
-        x = ggml_add(g, x, attn);
+    float scale = 1.0f / std::sqrt((float)hd);
+    ggml_tensor *attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
+    attn = ggml_reshape_2d(g, attn, D, T);
 
-        // Pre-norm SwiGLU FFN
-        h = rmsnorm(x, blk.norm2_w);
-        ggml_tensor *gate = ggml_mul_mat(g, blk.ffn_gate_w, h);
-        if (blk.ffn_gate_b) gate = ggml_add(g, gate, blk.ffn_gate_b);
-        gate = ggml_silu(g, gate);
-        ggml_tensor *up = ggml_mul_mat(g, blk.ffn_up_w, h);
-        if (blk.ffn_up_b) up = ggml_add(g, up, blk.ffn_up_b);
-        ggml_tensor *ffn = ggml_mul_mat(g, blk.ffn_down_w, ggml_mul(g, gate, up));
-        if (blk.ffn_down_b) ffn = ggml_add(g, ffn, blk.ffn_down_b);
-        x = ggml_add(g, x, ffn);
+    attn = ggml_mul_mat(g, blk.proj_w, attn);
+    if (blk.proj_b) attn = ggml_add(g, attn, blk.proj_b);
+    x = ggml_add(g, x, attn);
+    ggml_set_name(x, "after_attn"); ggml_set_output(x);
 
-        char name[64];
-        snprintf(name, sizeof(name), "vis_layer_%d", i);
-        ggml_set_name(x, name);
-        ggml_set_output(x);
-        vg.layer_outputs.push_back(x);
-    }
+    // SwiGLU FFN
+    h = rmsnorm(x, blk.norm2_w);
+    ggml_set_name(h, "after_norm2"); ggml_set_output(h);
+    ggml_tensor *gate = ggml_mul_mat(g, blk.ffn_gate_w, h);
+    if (blk.ffn_gate_b) gate = ggml_add(g, gate, blk.ffn_gate_b);
+    gate = ggml_silu(g, gate);
+    ggml_tensor *up = ggml_mul_mat(g, blk.ffn_up_w, h);
+    if (blk.ffn_up_b) up = ggml_add(g, up, blk.ffn_up_b);
+    ggml_tensor *ffn = ggml_mul_mat(g, blk.ffn_down_w, ggml_mul(g, gate, up));
+    if (blk.ffn_down_b) ffn = ggml_add(g, ffn, blk.ffn_down_b);
+    x = ggml_add(g, x, ffn);
 
-    // Post-layernorm
-    if (ctx.m.post_layernorm_w) {
-        x = rmsnorm(x, ctx.m.post_layernorm_w);
-        ggml_set_name(x, "vis_post_norm");
-        ggml_set_output(x);
-    }
+    ggml_set_name(x, "layer_out"); ggml_set_output(x);
 
+    ggml_cgraph *gf = ggml_new_graph_custom(g, 512, false);
     ggml_build_forward_expand(gf, x);
-    vg.gf = gf;
-    vg.output = x;
-    return vg;
+
+    ggml_backend_sched_reset(ctx.sched);
+    if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
+        fprintf(stderr, "glm_ocr: vis layer %d graph alloc failed\n", layer_idx);
+        ggml_free(g);
+        return false;
+    }
+    ggml_backend_tensor_set(x_in, io_data.data(), 0, D * T * sizeof(float));
+    ggml_backend_sched_graph_compute(ctx.sched, gf);
+
+    // Per-op diff comparison for layer 12 (when GLM_OCR_LAYER_REF is set)
+    static const char *layer_ref = std::getenv("GLM_OCR_LAYER_REF");
+    if (layer_ref && layer_idx == 12) {
+        crispembed_diff::Ref lref;
+        if (lref.load(layer_ref)) {
+            auto cmp = [&](const char *name) {
+                ggml_tensor *t = ggml_graph_get_tensor(gf, name);
+                if (!t || !lref.has(name)) return;
+                size_t n = ggml_nelements(t);
+                std::vector<float> buf(n);
+                ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+                auto r = lref.compare(name, buf.data(), n);
+                printf("    [L12] %s: cos=%.6f max_abs=%.6f %s\n",
+                       name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            };
+            // Compare the input we fed
+            {
+                auto r = lref.compare("layer12_input", io_data.data(), D * T);
+                printf("    [L12] input: cos=%.6f max_abs=%.6f %s\n",
+                       r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
+            cmp("after_norm1");    // → layer12_after_norm1
+            cmp("qkv");           // → layer12_qkv
+            cmp("Q_normed");      // → layer12_Q_normed
+            cmp("after_attn");    // → layer12_after_attn
+            cmp("after_norm2");   // → layer12_after_norm2
+            cmp("layer_out");     // → layer12_output
+
+            // Also compare using the ref's naming convention
+            auto cmp2 = [&](const char *graph_name, const char *ref_name) {
+                ggml_tensor *t = ggml_graph_get_tensor(gf, graph_name);
+                if (!t || !lref.has(ref_name)) return;
+                size_t n = ggml_nelements(t);
+                std::vector<float> buf(n);
+                ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+                auto r = lref.compare(ref_name, buf.data(), n);
+                printf("    [L12] %s vs %s: cos=%.6f max_abs=%.6f %s\n",
+                       graph_name, ref_name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            };
+            cmp2("after_norm1", "layer12_after_norm1");
+            cmp2("qkv", "layer12_qkv");
+            cmp2("Q_normed", "layer12_Q_normed");
+            cmp2("after_attn", "layer12_after_attn");
+            cmp2("after_norm2", "layer12_after_norm2");
+            cmp2("layer_out", "layer12_output");
+        }
+    }
+
+    ggml_backend_tensor_get(x, io_data.data(), 0, D * T * sizeof(float));
+    ggml_free(g);
+    return true;
+}
+
+// Run post-layernorm as a small graph.
+static bool run_vis_post_norm(context &ctx, int n_patches, std::vector<float> &io_data) {
+    if (!ctx.m.post_layernorm_w) return true;
+    const int D = (int)ctx.m.vhp.hidden_size;
+    const float eps = ctx.m.vhp.rms_norm_eps;
+
+    size_t meta = ggml_tensor_overhead() * 8 + ggml_graph_overhead();
+    ggml_init_params ip{meta, nullptr, true};
+    ggml_context *g = ggml_init(ip);
+
+    ggml_tensor *x_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_patches);
+    ggml_set_name(x_in, "norm_in"); ggml_set_input(x_in);
+    ggml_tensor *x = ggml_mul(g, ggml_rms_norm(g, x_in, eps), ctx.m.post_layernorm_w);
+    ggml_set_name(x, "norm_out"); ggml_set_output(x);
+
+    ggml_cgraph *gf = ggml_new_graph(g);
+    ggml_build_forward_expand(gf, x);
+
+    ggml_backend_sched_reset(ctx.sched);
+    if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
+        ggml_free(g); return false;
+    }
+    ggml_backend_tensor_set(x_in, io_data.data(), 0, D * n_patches * sizeof(float));
+    ggml_backend_sched_graph_compute(ctx.sched, gf);
+    ggml_backend_tensor_get(x, io_data.data(), 0, D * n_patches * sizeof(float));
+    ggml_free(g);
+    return true;
 }
 
 }  // anonymous namespace
@@ -394,30 +454,76 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
     auto t_total = std::chrono::steady_clock::now();
 
     auto t_vis = std::chrono::steady_clock::now();
-    vision_graph vg = build_vision_graph(ctx, n_patches);
 
-    ggml_backend_sched_reset(ctx.sched);
-    if (!ggml_backend_sched_alloc_graph(ctx.sched, vg.gf)) {
-        fprintf(stderr, "glm_ocr: vision graph alloc failed\n");
-        ggml_free(vg.gctx);
-        return false;
+    // Phase 1: Compute patch embedding in a separate small graph.
+    // The main vision graph (24 transformer layers) is too large for the
+    // scheduler's allocator — it reuses the pixel_in buffer for compute
+    // tensors after the first op consumes it, corrupting the input.
+    const int vis_D = (int)vhp.hidden_size;
+    std::vector<float> patch_embed_data(vis_D * n_patches);
+    {
+        size_t pe_meta = ggml_tensor_overhead() * 8 + ggml_graph_overhead();
+        ggml_init_params pe_ip{pe_meta, nullptr, true};
+        ggml_context *pe_ctx = ggml_init(pe_ip);
+
+        ggml_tensor *px_in = ggml_new_tensor_2d(pe_ctx, GGML_TYPE_F32, patch_flat, n_patches);
+        ggml_set_name(px_in, "px_in"); ggml_set_input(px_in);
+
+        ggml_tensor *pe_out = ggml_mul_mat(pe_ctx, ctx.m.patch_embed_w, px_in);
+        if (ctx.m.patch_embed_b) pe_out = ggml_add(pe_ctx, pe_out, ctx.m.patch_embed_b);
+        ggml_set_name(pe_out, "pe_out"); ggml_set_output(pe_out);
+
+        ggml_cgraph *pe_gf = ggml_new_graph(pe_ctx);
+        ggml_build_forward_expand(pe_gf, pe_out);
+
+        ggml_backend_sched_reset(ctx.sched);
+        if (!ggml_backend_sched_alloc_graph(ctx.sched, pe_gf)) {
+            fprintf(stderr, "glm_ocr: patch_embed graph alloc failed\n");
+            ggml_free(pe_ctx);
+            return false;
+        }
+        ggml_backend_tensor_set(px_in, patches.data(), 0, n_patches * patch_flat * sizeof(float));
+        ggml_backend_sched_graph_compute(ctx.sched, pe_gf);
+        ggml_backend_tensor_get(pe_out, patch_embed_data.data(), 0,
+                                vis_D * n_patches * sizeof(float));
+        ggml_free(pe_ctx);
     }
 
-    ggml_backend_tensor_set(vg.pixel_in, patches.data(), 0,
-                            n_patches * patch_flat * sizeof(float));
-    ggml_backend_sched_graph_compute(ctx.sched, vg.gf);
+    // Phase 2: Run transformer layers one at a time (per-layer graphs).
+    // A single monolithic graph causes ggml_gallocr to reuse input buffers
+    // for compute tensors, corrupting the data mid-graph.
+    std::vector<float> layer_data = patch_embed_data;  // working buffer (D, n_patches)
+    const int n_layers = (int)vhp.depth;
+    for (int i = 0; i < n_layers; i++) {
+        if (!run_vis_layer(ctx, i, n_patches, layer_data)) {
+            return false;
+        }
+        // Diff comparison for this layer
+        if (!ctx.diff_ref_path.empty()) {
+            crispembed_diff::Ref ref_l;
+            if (ref_l.load(ctx.diff_ref_path.c_str())) {
+                char name[64];
+                snprintf(name, sizeof(name), "vis_layer_%d", i);
+                auto r = ref_l.compare(name, layer_data.data(), layer_data.size());
+                printf("  %s: cos=%.6f max_abs=%.6f %s\n",
+                       name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            }
+        }
+    }
+
+    // Post-layernorm
+    if (!run_vis_post_norm(ctx, n_patches, layer_data)) {
+        return false;
+    }
     if (bench) {
         auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - t_vis).count();
         fprintf(stderr, "[glm_ocr-bench] vision_encoder: %lldms\n", (long long)ms);
     }
 
-    // Read vision encoder output: (D=1024, N=576)
-    int vis_D = (int)vg.output->ne[0];
-    int vis_N = (int)vg.output->ne[1];
-    std::vector<float> vis_out(vis_D * vis_N);
-    ggml_backend_tensor_get(vg.output, vis_out.data(), 0,
-                            vis_D * vis_N * sizeof(float));
+    // Vision encoder output is now in layer_data (vis_D × n_patches)
+    std::vector<float> &vis_out = layer_data;
+    int vis_N = n_patches;
 
     // ── Downsample + Merger via ggml graph ──────────────────────
     // Gated: CRISPEMBED_GLM_OCR_SCALAR_MERGER=1 for CPU-scalar fallback
@@ -518,7 +624,7 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
         // x is now (out_w, out_h, out_D) = (12, 12, 1536)
 
         // Flatten spatial to tokens: (out_D, n_merged) = (1536, 144)
-        x = ggml_cont(mg, ggml_permute(mg, x, 2, 0, 1, 3));  // (out_D, out_w, out_h)
+        x = ggml_cont(mg, ggml_permute(mg, x, 1, 2, 0, 3));  // (out_D, out_w, out_h)
         x = ggml_reshape_2d(mg, x, out_D, n_merged);           // (1536, 144)
 
         // Merger: proj → SwiGLU → LayerNorm (all batched matmuls)
@@ -590,53 +696,26 @@ bool encode_vision(context &ctx, const float *pixels, vision_result &out) {
         if (ref.load(ctx.diff_ref_path.c_str())) {
             // Patch embed
             {
-                ggml_tensor *pe = ggml_graph_get_tensor(vg.gf, "vis_patch_embed");
-                if (pe) {
-                    size_t n = ggml_nelements(pe);
-                    float *buf = (float *)malloc(n * sizeof(float));
-                    ggml_backend_tensor_get(pe, buf, 0, n * sizeof(float));
-                    auto r = ref.compare("vis_patch_embed", buf, n);
-                    printf("  vis_patch_embed: cos=%.6f max_abs=%.6f %s\n",
-                           r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
-                    free(buf);
-                }
+                auto r = ref.compare("vis_patch_embed", patch_embed_data.data(),
+                                     patch_embed_data.size());
+                printf("  vis_patch_embed: cos=%.6f max_abs=%.6f %s\n",
+                       r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
             }
-            // Post-norm
-            {
-                ggml_tensor *pn = ggml_graph_get_tensor(vg.gf, "vis_post_norm");
-                if (pn && ref.has("vis_post_norm")) {
-                    size_t n = ggml_nelements(pn);
-                    float *buf = (float *)malloc(n * sizeof(float));
-                    ggml_backend_tensor_get(pn, buf, 0, n * sizeof(float));
-                    auto r = ref.compare("vis_post_norm", buf, n);
-                    printf("  vis_post_norm: cos=%.6f max_abs=%.6f %s\n",
-                           r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
-                    free(buf);
-                }
+            // Post-norm (now in layer_data after run_vis_post_norm)
+            if (ref.has("vis_post_norm")) {
+                auto r = ref.compare("vis_post_norm", vis_out.data(), vis_out.size());
+                printf("  vis_post_norm: cos=%.6f max_abs=%.6f %s\n",
+                       r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
             }
-            // Downsample intermediate (only available in scalar path)
             // Merger
             if (ref.has("vis_merger_output")) {
                 auto r = ref.compare("vis_merger_output", merger_out.data(), merger_out.size());
                 printf("  vis_merger_output: cos=%.6f max_abs=%.6f %s\n",
                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
             }
-            // Layers
-            for (size_t i = 0; i < vg.layer_outputs.size(); i++) {
-                char name[64];
-                snprintf(name, sizeof(name), "vis_layer_%zu", i);
-                size_t n = ggml_nelements(vg.layer_outputs[i]);
-                float *buf = (float *)malloc(n * sizeof(float));
-                ggml_backend_tensor_get(vg.layer_outputs[i], buf, 0, n * sizeof(float));
-                auto r = ref.compare(name, buf, n);
-                printf("  %s: cos=%.6f max_abs=%.6f %s\n",
-                       name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
-                free(buf);
-            }
+            // Per-layer comparisons already printed in per-layer loop above
         }
     }
-
-    ggml_free(vg.gctx);
     return true;
 }
 
