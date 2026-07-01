@@ -39,6 +39,11 @@ def f32(t):
 def f16(t):
     return t.detach().float().cpu().numpy().astype(np.float16)
 
+def bf16(t):
+    """Convert to bf16 via torch (numpy has no native bf16)."""
+    import torch
+    return t.detach().to(torch.bfloat16).cpu().view(torch.uint16).numpy()
+
 def is_norm_or_bias(name):
     """Tensors that must stay F32."""
     return any(k in name for k in [
@@ -50,6 +55,9 @@ def add_tensor(writer, name, data, wt_func):
     if isinstance(data, np.ndarray):
         if data.dtype == np.float16:
             writer.add_tensor(name, data, raw_dtype=gguf.GGMLQuantizationType.F16)
+        elif data.dtype == np.uint16:
+            # bf16 stored as uint16
+            writer.add_tensor(name, data, raw_dtype=gguf.GGMLQuantizationType.BF16)
         else:
             writer.add_tensor(name, data, raw_dtype=gguf.GGMLQuantizationType.F32)
     else:
@@ -60,7 +68,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True, help="HF model ID or local path")
     parser.add_argument("--output", required=True, help="Output GGUF path")
-    parser.add_argument("--dtype", choices=["f16", "f32"], default="f32")
+    parser.add_argument("--dtype", choices=["f16", "f32", "bf16"], default="f32")
     parser.add_argument("--vision-only", action="store_true")
     parser.add_argument("--llm-only", action="store_true")
     parser.add_argument("--max-vis-layers", type=int, default=None)
@@ -70,7 +78,7 @@ def main():
     import torch
     from safetensors import safe_open
 
-    wt = f16 if args.dtype == "f16" else f32
+    wt = f16 if args.dtype == "f16" else (bf16 if args.dtype == "bf16" else f32)
 
     # Resolve model
     model_path = Path(args.model)
