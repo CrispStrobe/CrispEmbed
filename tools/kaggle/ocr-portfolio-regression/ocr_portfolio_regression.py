@@ -199,18 +199,26 @@ for m in manifest["models"]:
     print(f"\n----- {name} -----", flush=True)
     kh.step(f"model.{name}")
     t0 = time.time()
-    with kh.build_heartbeat(f"model.{name}", rss=True):
-        proc = subprocess.run(cmd, env=env, capture_output=True, text=True)
+    # Hard per-model timeout so one hung model (e.g. a non-terminating decode
+    # or a stalled HF download) can't stall the whole portfolio / burn quota.
+    timeout_s = int(m.get("timeout_s", 900))
+    try:
+        with kh.build_heartbeat(f"model.{name}", rss=True):
+            proc = subprocess.run(cmd, env=env, capture_output=True, text=True,
+                                  timeout=timeout_s)
+        sys.stdout.write(proc.stdout)
+        if proc.returncode != 0:
+            sys.stderr.write(proc.stderr[-2000:])
+        rc, status, tail = (proc.returncode,
+                            "PASS" if proc.returncode == 0 else "FAIL",
+                            (proc.stdout.strip().splitlines() or [""])[-1])
+    except subprocess.TimeoutExpired as e:
+        print(f"[{name}] TIMEOUT after {timeout_s}s — killed", flush=True)
+        if e.stdout:
+            sys.stdout.write(e.stdout if isinstance(e.stdout, str) else e.stdout.decode("utf-8", "replace"))
+        rc, status, tail = 124, "TIMEOUT", f"timeout after {timeout_s}s"
     dt = time.time() - t0
-    sys.stdout.write(proc.stdout)
-    if proc.returncode != 0:
-        sys.stderr.write(proc.stderr[-2000:])
-    results[name] = {
-        "exit": proc.returncode,
-        "time_s": round(dt, 1),
-        "status": "PASS" if proc.returncode == 0 else "FAIL",
-        "tail": (proc.stdout.strip().splitlines() or [""])[-1],
-    }
+    results[name] = {"exit": rc, "time_s": round(dt, 1), "status": status, "tail": tail}
 
 # ── Step 3: summary ──
 print("\n" + "=" * 60, "\nStep 3: summary\n", "=" * 60)
@@ -218,7 +226,7 @@ print(f"{'Model':<18} {'Time':>7} {'Status':>7}")
 print("-" * 36)
 n_fail = 0
 for name, r in results.items():
-    n_fail += r["status"] == "FAIL"
+    n_fail += r["status"] != "PASS"
     print(f"{name:<18} {r['time_s']:>6.1f}s {r['status']:>7}")
 (WORK / "results.json").write_text(json.dumps(results, indent=2))
 print(f"\n{len(results)} models, {n_fail} FAIL", flush=True)
