@@ -929,6 +929,13 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
     out.n_tokens = n_vis_tokens;
     out.hidden_dim = vis_D;
 
+    // Diagnostic: dump final vision features (n_vis_tokens x vis_D) for HF diff.
+    if (const char *dp = std::getenv("GOT_OCR_DUMP_VIS")) {
+        FILE *f = fopen(dp, "wb");
+        if (f) { fwrite(proj_out.data(), sizeof(float), (size_t)n_vis_tokens * vis_D, f); fclose(f);
+                 fprintf(stderr, "[got_ocr] dumped %d x %d vis features to %s\n", n_vis_tokens, vis_D, dp); }
+    }
+
     if (bench) {
         auto np_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - t_end).count();
@@ -1248,7 +1255,7 @@ bool got_ocr::run_llm_forward(context &ctx, const int32_t *token_ids, int n_toke
                     std::vector<float> layer_out(D * T);
                     ggml_backend_tensor_get(lg.layer_outputs[i], layer_out.data(),
                                             0, D * T * sizeof(float));
-                    auto r = ref.compare(name, layer_out.data(), D * T);
+                    auto r = ref.compare(name, layer_out.data(), D * T, 0);
                     fprintf(stderr, "  %s: cos_min=%.6f max_abs=%.6f %s\n",
                             name, r.cos_min, r.max_abs,
                             r.cos_min >= 0.999 ? "PASS" : "FAIL");
@@ -1397,6 +1404,52 @@ bool got_ocr::generate(context &ctx,
             mask_f[tok_pos * D + d] = 0.0f;
             img_data[tok_pos * D + d] = image_embeds[img_idx * embed_dim + d];
         }
+    }
+
+    // Diagnostic: GOT_OCR_NO_KV_CACHE=1 decodes with a full no-cache recompute
+    // every step (build_llm_graph use_kv_cache=false). Slow (O(n^2)) but exercises
+    // the SAME graph the per-layer parity diff validates — isolates whether the
+    // KV-cache path (write/read views, cached RoPE/mask) is what corrupts output.
+    if (std::getenv("GOT_OCR_NO_KV_CACHE") && atoi(std::getenv("GOT_OCR_NO_KV_CACHE"))) {
+        const int no_repeat_ngram = 3;
+        const int V = (int)l.vocab_size;
+        out.token_confidences.clear();
+        std::vector<int32_t> seq(prompt_ids, prompt_ids + n_prompt);
+        int nc_max = max_new_tokens;
+        if (std::getenv("GOT_OCR_NC_MAX")) nc_max = atoi(std::getenv("GOT_OCR_NC_MAX"));
+        for (int step = 0; step < nc_max; step++) {
+            int Tn = (int)seq.size();
+            auto lg = build_llm_graph(ctx, Tn, 0, false);  // NO cache
+            ggml_backend_sched_reset(ctx.sched);
+            if (!ggml_backend_sched_alloc_graph(ctx.sched, lg.gf)) { ggml_free(lg.gctx); return false; }
+            ggml_backend_tensor_set(lg.token_in, seq.data(), 0, Tn * sizeof(int32_t));
+            std::vector<int32_t> pos(Tn);
+            for (int j = 0; j < Tn; j++) pos[j] = j;
+            ggml_backend_tensor_set(lg.pos_in, pos.data(), 0, Tn * sizeof(int32_t));
+            std::vector<ggml_fp16_t> mk(Tn * Tn);
+            for (int qi = 0; qi < Tn; qi++)
+                for (int ki = 0; ki < Tn; ki++)
+                    mk[qi * Tn + ki] = ggml_fp32_to_fp16(ki > qi ? -INFINITY : 0.0f);
+            ggml_backend_tensor_set(lg.mask_in, mk.data(), 0, Tn * Tn * sizeof(ggml_fp16_t));
+            std::vector<float> im(D * Tn, 0.0f), sm(D * Tn, 1.0f);
+            for (auto &kv : sd.token_to_image)
+                for (int d = 0; d < D; d++) {
+                    sm[kv.first * D + d] = 0.0f;
+                    im[kv.first * D + d] = image_embeds[kv.second * embed_dim + d];
+                }
+            ggml_backend_tensor_set(lg.splice_mask, sm.data(), 0, D * Tn * sizeof(float));
+            ggml_backend_tensor_set(lg.img_embeds, im.data(), 0, D * Tn * sizeof(float));
+            ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
+            std::vector<float> ll(V);
+            ggml_backend_tensor_get(lg.logits_out, ll.data(), (size_t)(Tn - 1) * V * sizeof(float), V * sizeof(float));
+            ggml_free(lg.gctx);
+            int nt = argmax_no_repeat_ngram(ll.data(), V, out.token_ids, no_repeat_ngram);
+            out.token_ids.push_back(nt);
+            seq.push_back(nt);
+            if (nt == (int)l.eos_token_id || nt == 151645) break;
+        }
+        out.text = ctx.tok.decode(out.token_ids.data(), (int)out.token_ids.size());
+        return true;
     }
 
     // Prefill
