@@ -308,11 +308,20 @@ Metal, ggml 0.10.0.
     (conv_upsamplers). Need to re-convert GGUF from the HF version.
 
 **Still open:**
-- **got-ocr2 model weights** — per-layer diff passes ALL stages
-  (cos_min≥0.999999 with f16). Pure-Python F32 reference also produces
-  "color" (not OCR text) for any image — the `stepfun-ai/GOT-OCR2_0`
-  weights may be incomplete. Need to re-convert GGUF from `GOT-OCR-2.0-hf`
-  (has conv_upsampler projector, different architecture).
+- **got-ocr2 bf16-sensitivity** — per-layer diff passes ALL stages
+  (cos_min≥0.999999 with f16). Root cause identified: the 0.5B Qwen2 LLM
+  was fine-tuned in bf16 and produces correct OCR text ONLY when the LLM
+  computation runs in bf16 (verified via HF transformers bf16 pipeline →
+  "Hello World" correct). ggml always dequantizes to f32 for compute, so
+  the learned bf16-adapted attention patterns break → outputs "color".
+  The weights are verified identical between GOT-OCR2_0 and GOT-OCR-2.0-hf
+  (cos≈1.0). Both bf16 and f16 GGUF storage produce the same broken
+  output because storage type doesn't affect ggml's f32 compute path.
+  Fix requires either bf16 compute support in ggml, or a different
+  (larger) GOT-OCR model that is f32-robust.
+- **DBNet detector on Metal** — `unsupported op 'CPY'` abort; `OCR_DETECT_FORCE_CPU=1`
+  works around it but per-region TrOCR on CPU is slow. Want a Metal CPY path or a
+  CPU-default detector.
 - ~~No `GOT_OCR_FORCE_CPU` env~~ → **added** (commit 718a73e). Also a debug lever:
   A/B got-ocr2 output on CPU vs Metal — if CPU is also garbage the vision bug is
   logic, not Metal-specific; if CPU is correct, it's a Metal op issue.
