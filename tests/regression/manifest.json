@@ -62,7 +62,7 @@
       "engine": "granite-vision",
       "gguf": {"repo": "cstr/granite-vision-crispembed-GGUF", "file": "granite-vision-3.3-2b-q8_0.gguf", "revision": "main", "approx_size_mb": 1800},
       "sample": "tests/regression/images/fox.png",
-      "expected_text": null,
+      "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
       "match": {"max_cer": 0.15},
       "diff": {"binary": "test-granite-vision-diff", "ref": {"repo": "cstr/granite-vision-crispembed-GGUF", "file": "granite-vision-ref.gguf", "revision": "main"}, "thresholds": {"*": 0.95}}
     },
