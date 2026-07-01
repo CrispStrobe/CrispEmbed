@@ -1054,9 +1054,28 @@ single-threaded, must not OOM.
 - [x] Neck+downsample+projector → ggml graph (conv2d_direct + LN2d via permute+norm + mul_mat)
   Gated: CRISPEMBED_GOT_OCR_SCALAR_NECK=1 / CRISPEMBED_GOT_OCR_SCALAR_PATCH=1
 
-### glm_ocr (CogVLM2 + GLM-4, 0.9B) — DONE
+### glm_ocr (glm_ocr_vision ViT + GLM-0.5B decoder, 0.9B) — DONE (OCR correct 2026-07-01)
 - [x] Downsample + merger → ggml graph (conv2d_direct + batched SwiGLU + LayerNorm)
   Gated: CRISPEMBED_GLM_OCR_SCALAR_MERGER=1. Merger: 383ms on q4_k.
+- [x] **OCR correctness (2026-07-01)**: was garbage; fixed 5 bugs + q8_0.
+  fox.png → "The quick brown fox jumps over the lazy dog. 12345" on f16 AND q8_0,
+  CPU AND Metal, verified vs the real transformers-`main` `glm_ocr` model.
+  1. Missing vision 2D RoPE (raster order, dim=hd/2, θ=10000, NEOX). On by default;
+     `GLM_OCR_VISION_ROPE=0` to disable.
+  2. Merger structure: was `proj→SwiGLU→LN`; real is
+     `proj→LayerNorm→GELU(erf)→down(silu(gate)·up)` (no trailing norm).
+  3. Dynamic resolution (Glm46VImageProcessor smart-resize, min/max pixels, dims
+     ×28) — NOT fixed 336². Variable grid flows to rope/merger/prompt/LLM mRoPE.
+  4. LLM image mRoPE positions (start-offset h/w; decode from compressed pos).
+  5. Prompt (`[gMASK]…Text Recognition:…`), EOS on `<|user|>`(59253), GPT-2
+     byte-level decode.
+  - q8_0: dequantize weights BEFORE any reshape (downsample/patch_embed/merger) —
+     fixes CPU garbage + Metal block-align assert.
+  - Regression uses `expected_text` (per-token cos_min diff gate unsuitable — see
+     LEARNINGS "glm-ocr: five real bugs" for the sink-token analysis).
+  - History: `handover-prompts/glm-ocr-fix-history.md`.
+  - The handover `handover-prompts/glm-ocr-vision-rope-fix.md` was partly wrong
+    (named glm4v; its refs were stale no-rope dumps).
 ### granite_vision — DONE (full ggml graph path, Metal + ggml-CPU)
 - [x] Weight reshape fix: `sw()` helper in `gv_run_llm_body` corrects PyTorch [out,in]→ggml [in,out] for K/V/gate/up/down
 - [x] Skip LM head matmul during scalar prefill: `want_logits` parameter cuts ~99.8% of prefill LM head work (`55ed5be`)
