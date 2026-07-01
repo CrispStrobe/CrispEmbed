@@ -31,6 +31,17 @@ using core_cpu::layernorm2d_cpu;
 using core_cpu::linear_cpu;
 using core_cpu::conv2d_cpu;
 
+// CPU-side BF16 roundtrip: truncate f32 mantissa to bf16 precision.
+// GOT-OCR2's 0.5B model was trained in bf16 and only produces correct OCR
+// when intermediate activations have bf16 precision.
+static void bf16_round_cpu(float *data, size_t n) {
+    uint32_t *u = reinterpret_cast<uint32_t*>(data);
+    for (size_t i = 0; i < n; i++) {
+        // Round to nearest bf16: add 0x8000 (half of truncated bits) then truncate
+        u[i] = (u[i] + 0x8000u) & 0xFFFF0000u;
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Window partition / unpartition (SAM ViT pattern)
 // ---------------------------------------------------------------------------
@@ -137,6 +148,13 @@ static void reformat_rp_table(const float* rp_in, float* rp_out, int aH, int hd)
 static ggml_tensor* ensure_f32(ggml_context* g, ggml_tensor* t) {
     if (!t || t->type == GGML_TYPE_F32) return t;
     return ggml_cast(g, t, GGML_TYPE_F32);
+}
+
+// BF16 roundtrip: cast f32 → bf16 → f32 to simulate bf16 intermediate precision.
+// GOT-OCR2's 0.5B Qwen2 was trained in bf16; the model only produces correct OCR
+// when vision and LLM intermediates match bf16 precision.
+static ggml_tensor* bf16_round(ggml_context* g, ggml_tensor* t) {
+    return ggml_cast(g, ggml_cast(g, t, GGML_TYPE_BF16), GGML_TYPE_F32);
 }
 
 static ggml_tensor* g_ln(ggml_context* g, ggml_tensor* x,
@@ -533,6 +551,12 @@ static ggml_cgraph* build_vis_layer_graph(ggml_context* g,
     cur = g_linear(g, up, layer.ffn_down_w, layer.ffn_down_b);
     cur = ggml_add(g, residual, cur);
 
+    // BF16 roundtrip: the model was trained with bf16 intermediates; without
+    // this, f32 accumulation drift across 12 layers produces vision features
+    // that are cos~0.996 vs the bf16 reference — enough to flip the 0.5B LLM
+    // from correct OCR to garbage ("color" token).
+    cur = bf16_round(g, cur);
+
     ggml_set_name(cur, "layer_output");
     ggml_set_output(cur);
     ggml_build_forward_expand(gf, cur);
@@ -614,6 +638,13 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
     if (!pos.empty())
         for (int i = 0; i < N * C; i++) hidden[i] += pos[i];
 
+    // BF16 roundtrip: match the bf16 precision from training. The HF model
+    // stores patch_embed + pos_embed in bf16, so every downstream operation
+    // sees bf16-precision activations. Without this, f32 accumulation drift
+    // across 12 ViT layers produces vision features that are cos~0.996 vs the
+    // bf16 reference — enough to flip the 0.5B LLM from correct OCR to garbage.
+    bf16_round_cpu(hidden.data(), N * C);
+
     if (ctx.verbosity >= 2)
         fprintf(stderr, "got_ocr: patch_embed done (%d, %d)\n", N, C);
 
@@ -658,6 +689,7 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
             for (int n = 0; n < N; n++)
                 layernorm_cpu(hidden.data() + n * C, ln1_hidden.data() + n * C, C,
                               ln1_ws[li].data(), ln1_bs[li].data(), 1e-6f);
+            bf16_round_cpu(ln1_hidden.data(), N * C);
         }
 
         std::vector<float> graph_input;
@@ -716,6 +748,9 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
         } else {
             window_unpartition(graph_output.data(), hidden.data(), nP, ws, C);
         }
+
+        // BF16 roundtrip: match the bf16 precision of the HF training pipeline.
+        bf16_round_cpu(hidden.data(), N * C);
 
         // Per-layer diff comparison (must happen here, before hidden is overwritten)
         if (!ctx.diff_ref_path.empty()) {
@@ -856,17 +891,21 @@ bool got_ocr::encode_vision(context &ctx, const float *pixels, vision_result &ou
                                  x, 1, 1, 0, 0, 1, 1);
         // LN2d 1
         x = g_ln2d(ng, x, ctx.m.neck_ln1_w, ctx.m.neck_ln1_b, 1e-6f);
+        x = bf16_round(ng, x);
         // Conv2: 3×3, 256→256, pad=1
         x = ggml_conv_2d_direct(ng, prep_conv_w(ng, ctx.m.neck_conv2_w, nC, 3, 3),
                                  x, 1, 1, 1, 1, 1, 1);
         // LN2d 2
         x = g_ln2d(ng, x, ctx.m.neck_ln2_w, ctx.m.neck_ln2_b, 1e-6f);
+        x = bf16_round(ng, x);
         // Downsample conv1: 3×3, 256→512, stride=2, pad=1
         x = ggml_conv_2d_direct(ng, prep_conv_w(ng, ctx.m.net_2_w, nC, 3, 3),
                                  x, 2, 2, 1, 1, 1, 1);
+        x = bf16_round(ng, x);
         // Downsample conv2: 3×3, 512→1024, stride=2, pad=1
         x = ggml_conv_2d_direct(ng, prep_conv_w(ng, ctx.m.net_3_w, ds1_out_ch, 3, 3),
                                  x, 2, 2, 1, 1, 1, 1);
+        x = bf16_round(ng, x);
         // x is now (ds2_W, ds2_H, 1024) in ggml
 
         // Flatten + permute to (vis_D, n_vis_tokens) = (1024, 256)
