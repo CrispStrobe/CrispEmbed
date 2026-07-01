@@ -324,7 +324,9 @@ def main():
     ref.add("vis_downsample", x_ds)
     print(f"  Downsample: {x.shape} → {x_ds.shape}")
 
-    # Merger: proj → SwiGLU → LayerNorm
+    # Merger (GlmOcrVisionPatchMerger):
+    #   proj -> post_projection_norm(LayerNorm) -> act1(GELU erf) ->
+    #   down( silu(gate(h)) * up(h) )   — NO trailing norm.
     merger_proj_w = require("model.visual.merger.proj.weight")
     merger_gate_w = require("model.visual.merger.gate_proj.weight")
     merger_up_w = require("model.visual.merger.up_proj.weight")
@@ -332,16 +334,20 @@ def main():
     merger_norm_w = require("model.visual.merger.post_projection_norm.weight")
     merger_norm_b = get_tensor("model.visual.merger.post_projection_norm.bias")
 
+    def gelu_erf(v):
+        return 0.5 * v * (1.0 + np.vectorize(math.erf)(v / math.sqrt(2.0)))
+
     x_m = linear(x_ds, merger_proj_w)
+    # post_projection_norm: LayerNorm (has bias), eps 1e-5 (nn.LayerNorm default)
+    mean = x_m.mean(axis=-1, keepdims=True)
+    var = ((x_m - mean) ** 2).mean(axis=-1, keepdims=True)
+    x_m = (x_m - mean) / np.sqrt(var + 1e-5) * merger_norm_w
+    if merger_norm_b is not None:
+        x_m += merger_norm_b
+    x_m = gelu_erf(x_m)
     gate = silu(linear(x_m, merger_gate_w))
     up = linear(x_m, merger_up_w)
     x_m = linear(gate * up, merger_down_w)
-    # LayerNorm (not RMSNorm — has bias)
-    mean = x_m.mean(axis=-1, keepdims=True)
-    var = ((x_m - mean) ** 2).mean(axis=-1, keepdims=True)
-    x_m = (x_m - mean) / np.sqrt(var + 1e-6) * merger_norm_w
-    if merger_norm_b is not None:
-        x_m += merger_norm_b
     ref.add("vis_merger_output", x_m)
     print(f"  Merger output: {x_m.shape}")
 
