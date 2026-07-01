@@ -37,7 +37,7 @@
       "sample": "tests/regression/images/fox.png",
       "expected_text": null,
       "match": {"max_cer": 0.12},
-      "diff": {"binary": "test-glm-ocr-diff", "ref": {"repo": "cstr/glm-ocr-crispembed-GGUF", "file": "glm-ocr-ref.gguf"}, "thresholds": {"*": 0.995}}
+      "diff": {"binary": "test-glm-ocr-diff", "ref": {"repo": "cstr/glm-ocr-crispembed-GGUF", "file": "glm-ocr-ref-full.gguf"}, "thresholds": {"*": 0.995}}
     },
     {
       "name": "internvl2-1b",
@@ -56,7 +56,7 @@
       "sample": "tests/regression/images/fox.png",
       "expected_text": null,
       "match": {"max_cer": 0.12},
-      "diff": {"binary": "test-qwen2vl-diff", "ref": {"repo": "cstr/qwen2vl-3b-crispembed-GGUF", "file": "qwen2vl-3b-ref.gguf"}, "thresholds": {"*": 0.995}}
+      "diff": {"binary": "test-qwen2vl-diff", "ref": {"repo": "cstr/qwen2.5-vl-3b-crispembed-GGUF", "file": "qwen2.5-vl-3b-ref.gguf"}, "thresholds": {"*": 0.995}}
     },
     {
       "name": "granite-vision",
@@ -82,7 +82,7 @@
       "sample": "tests/regression/images/fox.png",
       "expected_text": null,
       "match": {"max_cer": 0.12},
-      "diff": {"binary": "test-paddleocr-vl-diff", "ref": {"repo": "cstr/paddleocr-vl-GGUF", "file": "paddleocr-vl-ref.gguf"}, "thresholds": {"*": 0.995}}
+      "diff": {"binary": "test-paddleocr-vl-diff", "ref": {"repo": "cstr/paddleocr-vl-0.9b-GGUF", "file": "paddleocr-vl-ref.gguf"}, "thresholds": {"*": 0.995}}
     }
   ]
 }
