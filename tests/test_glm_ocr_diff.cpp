@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
     // Run vision
     printf("\nRunning vision encoder...\n");
     glm_ocr::vision_result vr;
-    if (!glm_ocr::encode_vision(ctx, pixels.data(), vr)) {
+    if (!glm_ocr::encode_vision(ctx, pixels.data(), img_size, img_size, vr)) {
         fprintf(stderr, "Vision encode failed\n");
         glm_ocr::free_(ctx);
         return 1;
