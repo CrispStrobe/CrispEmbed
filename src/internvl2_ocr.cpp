@@ -1071,23 +1071,25 @@ bool encode_vision_tile(context &ctx, const float *pixels, vision_result &out) {
         }
     }
 
-    // Build vision graph once, reuse across tiles (fixed input dimensions)
+    // Build vision graph once, reuse graph structure across tiles.
+    // Re-alloc the scheduler before EACH tile — ggml_gallocr frees input
+    // tensor memory after first consumer, so reusing tile-1's allocation
+    // for tile-2 would write input data into freed/reused memory.
     if (!ctx.vis_graph_cached) {
         vision_graph vg = build_vision_graph(ctx);
-        ggml_backend_sched_reset(ctx.sched);
-        if (!ggml_backend_sched_alloc_graph(ctx.sched, vg.gf)) {
-            fprintf(stderr, "internvl2_ocr: vision graph alloc failed\n");
-            ggml_free(vg.gctx);
-            return false;
-        }
         ctx.vis_graph_ctx = vg.gctx;
         ctx.vis_graph = vg.gf;
         ctx.vis_input = vg.pixel_in;
         ctx.vis_output = vg.output;
         ctx.vis_graph_cached = true;
     }
+    ggml_backend_sched_reset(ctx.sched);
+    if (!ggml_backend_sched_alloc_graph(ctx.sched, ctx.vis_graph)) {
+        fprintf(stderr, "internvl2_ocr: vision graph alloc failed\n");
+        return false;
+    }
 
-    // Set input and compute (reusing cached graph)
+    // Set input and compute (reusing cached graph structure, fresh allocation)
     ggml_backend_tensor_set(ctx.vis_input, patches.data(), 0,
                             n_patches * patch_flat * sizeof(float));
     ggml_backend_sched_graph_compute(ctx.sched, ctx.vis_graph);
