@@ -307,8 +307,15 @@ code expression is. Never read/paste unpaper's code into ours.
   on top would add code + anti-aliased-text-erosion risk for ~0 benefit, so it is
   deliberately skipped. (Dark *stains* — near-black, not faint gray — are a
   separate case handled by blackfilter/despeckle, not grayfilter.)
-- [ ] **5. 2-up page splitting (layout detection)** — split double-page book spreads
-  into two pages (biggest strategic win for book scans; we have nothing).
+- [x] **5. 2-up page splitting — DONE** (clean-room projection-profile gutter
+  detector: `scan_cleanup_detect_page_split()` + CLI `--detect-split FILE` →
+  JSON `{pages,split_x}`). Wide aspect + emptiest central column that is a true
+  near-empty gutter with substantial text on BOTH sides. A/B: a two-page spread
+  OCRs at CER **1.002** whole (tesseract reads across both pages) but **0.000 /
+  0.001** per half after splitting at the detected gutter (split_x exact). No
+  false-split on portrait single pages or a wide gutterless image (astronaut).
+  Biggest win for book scans. BiblioForge: call `--detect-split`, crop at
+  `split_x`, then `--cleanup-only` each half.
 - [ ] **6. content-mask detection + centering / border alignment** — normalize page
   geometry (detect printed area, center, align borders).
 

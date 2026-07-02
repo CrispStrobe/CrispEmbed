@@ -120,6 +120,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --cc-detect FILE   detect text lines via connected components (model-free)\n");
     fprintf(stderr, "  --cleanup        preprocess scan before OCR (deskew, crop borders, whiten background)\n");
     fprintf(stderr, "  --cleanup-only F process scan and write cleaned image to stdout (no OCR)\n");
+    fprintf(stderr, "  --detect-split F detect a two-up book spread; print JSON {pages,split_x} (no OCR)\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
     fprintf(stderr, "       --ocr-engine N  primary engine "
                     "(dbnet_trocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen3vl|unlimited_ocr)\n");
@@ -218,6 +219,7 @@ int main(int argc, char ** argv) {
     std::string ocr_rec_path;        // general OCR: text recognition model (TrOCR)
     bool cleanup_mode = false;       // --cleanup: preprocess before OCR
     std::string cleanup_only_path;   // --cleanup-only FILE: standalone cleanup
+    std::string detect_split_path;   // --detect-split FILE: report two-up page split
     std::string ocr_pipeline_path;   // --ocr-pipeline FILE: full orchestrator
     bool pipeline_denoise = false;   // --denoise: NAFNet tier-2 in the pipeline
     std::string sr_model;            // --sr-model: text super-resolution GGUF
@@ -363,6 +365,8 @@ int main(int argc, char ** argv) {
             output_format = argv[++i];
         } else if (strcmp(argv[i], "--cleanup-only") == 0 && i + 1 < argc) {
             cleanup_only_path = argv[++i];
+        } else if (strcmp(argv[i], "--detect-split") == 0 && i + 1 < argc) {
+            detect_split_path = argv[++i];
         } else if (strcmp(argv[i], "--ocr-pipeline") == 0 && i + 1 < argc) {
             ocr_pipeline_path = argv[++i];
         } else if (strcmp(argv[i], "--ocr-engine") == 0 && i + 1 < argc) {
@@ -943,10 +947,27 @@ int main(int argc, char ** argv) {
         return 0;
     }
 
-    if (model_arg.empty() && cleanup_only_path.empty() && ocr_pipeline_path.empty()) {
+    if (model_arg.empty() && cleanup_only_path.empty() && ocr_pipeline_path.empty() && detect_split_path.empty()) {
         fprintf(stderr, "error: no model specified (-m)\n");
         print_usage(argv[0]);
         return 1;
+    }
+
+    // Two-up page-split detection (--detect-split FILE): prints JSON to stdout.
+    if (!detect_split_path.empty()) {
+        int w, h, ch;
+        unsigned char * data = stbi_load(detect_split_path.c_str(), &w, &h, &ch, 0);
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", detect_split_path.c_str());
+            return 1;
+        }
+        int sx = scan_cleanup_detect_page_split(data, w, h, ch);
+        stbi_image_free(data);
+        if (sx < 0)
+            printf("{\"pages\":1,\"width\":%d,\"height\":%d}\n", w, h);
+        else
+            printf("{\"pages\":2,\"split_x\":%d,\"width\":%d,\"height\":%d}\n", sx, w, h);
+        return 0;
     }
 
     int mode_count = 0;
