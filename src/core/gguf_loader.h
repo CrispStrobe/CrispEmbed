@@ -89,6 +89,9 @@ std::vector<std::string> kv_str_array(gguf_context * gctx, const char * key);
 // Read an int32 array. Returns empty vector when missing.
 std::vector<int> kv_i32_array(gguf_context * gctx, const char * key);
 
+// Read a float32 array (e.g. tokenizer.ggml.scores). Empty when missing/mistyped.
+std::vector<float> kv_f32_array(gguf_context * gctx, const char * key);
+
 // ---------------------------------------------------------------------------
 // Pass 2: tensor allocation + weight data copy.
 // ---------------------------------------------------------------------------

@@ -1146,6 +1146,11 @@ static const ModelEntry k_registry[] = {
       "PCS punct+caps+segmentation (XLM-R-base, multilingual)", "170 MB", "mit",
       "https://huggingface.co/cstr/pcs-xlmr-base-GGUF" },
 
+    { "pcs-q8", "pcs-xlmr-base-q8_0.gguf",
+      "https://huggingface.co/cstr/pcs-xlmr-base-GGUF/resolve/main/pcs-xlmr-base-q8_0.gguf",
+      "PCS punct+caps+segmentation (XLM-R-base, q8_0 — exact ONNX parity)", "287 MB", "mit",
+      "https://huggingface.co/cstr/pcs-xlmr-base-GGUF" },
+
     // Uni-MuMER handwritten math OCR (Qwen3-VL / Qwen2.5-VL fine-tunes)
     { "uni-mumer-qwen3-vl-2b", "uni-mumer-qwen3-vl-2b-q4_k.gguf",
       "https://huggingface.co/cstr/uni-mumer-qwen3-vl-2b-GGUF/resolve/main/uni-mumer-qwen3-vl-2b-q4_k.gguf",
