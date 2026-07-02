@@ -38,20 +38,19 @@
 #include <string>
 #include <vector>
 
-using core_cpu::to_f32;
+using core_cpu::gelu_erf;
 using core_cpu::layernorm_cpu;
 using core_cpu::linear_cpu;
-using core_cpu::softmax;
 using core_cpu::mha_1q_cpu;
-using core_cpu::gelu_erf;
+using core_cpu::softmax;
+using core_cpu::to_f32;
 
 // ---------------------------------------------------------------------------
 // Swin window attention helpers
 // ---------------------------------------------------------------------------
 
 // Window partition: [H, W, C] → [nWindows, window_size², C]
-static void window_partition(const float* x, float* out,
-                              int H, int W, int C, int ws) {
+static void window_partition(const float * x, float * out, int H, int W, int C, int ws) {
     int nH = H / ws, nW = W / ws;
     // out shape: [nH*nW, ws*ws, C]
     for (int wh = 0; wh < nH; wh++) {
@@ -62,9 +61,7 @@ static void window_partition(const float* x, float* out,
                     int src_y = wh * ws + y;
                     int src_x = ww * ws + x_pos;
                     int token_idx = y * ws + x_pos;
-                    memcpy(out + (win_idx * ws * ws + token_idx) * C,
-                           x + (src_y * W + src_x) * C,
-                           C * sizeof(float));
+                    memcpy(out + (win_idx * ws * ws + token_idx) * C, x + (src_y * W + src_x) * C, C * sizeof(float));
                 }
             }
         }
@@ -72,8 +69,7 @@ static void window_partition(const float* x, float* out,
 }
 
 // Window reverse: [nWindows, window_size², C] → [H, W, C]
-static void window_reverse(const float* windows, float* out,
-                            int H, int W, int C, int ws) {
+static void window_reverse(const float * windows, float * out, int H, int W, int C, int ws) {
     int nH = H / ws, nW = W / ws;
     for (int wh = 0; wh < nH; wh++) {
         for (int ww = 0; ww < nW; ww++) {
@@ -83,8 +79,7 @@ static void window_reverse(const float* windows, float* out,
                     int dst_y = wh * ws + y;
                     int dst_x = ww * ws + x_pos;
                     int token_idx = y * ws + x_pos;
-                    memcpy(out + (dst_y * W + dst_x) * C,
-                           windows + (win_idx * ws * ws + token_idx) * C,
+                    memcpy(out + (dst_y * W + dst_x) * C, windows + (win_idx * ws * ws + token_idx) * C,
                            C * sizeof(float));
                 }
             }
@@ -93,29 +88,21 @@ static void window_reverse(const float* windows, float* out,
 }
 
 // Cyclic shift: shift [H, W, C] by (shift_h, shift_w) with wrap-around
-static void cyclic_shift(const float* in, float* out,
-                          int H, int W, int C, int shift_h, int shift_w) {
+static void cyclic_shift(const float * in, float * out, int H, int W, int C, int shift_h, int shift_w) {
     for (int y = 0; y < H; y++) {
         int src_y = (y + shift_h + H) % H;
         for (int x = 0; x < W; x++) {
             int src_x = (x + shift_w + W) % W;
-            memcpy(out + (y * W + x) * C,
-                   in + (src_y * W + src_x) * C,
-                   C * sizeof(float));
+            memcpy(out + (y * W + x) * C, in + (src_y * W + src_x) * C, C * sizeof(float));
         }
     }
 }
 
 // Window multi-head self-attention with relative position bias
-static void window_mhsa(const float* tokens, float* out,
-                         int n_tokens, int D, int n_heads,
-                         const float* q_w, const float* q_b,
-                         const float* k_w, const float* k_b,
-                         const float* v_w, const float* v_b,
-                         const float* out_w, const float* out_b,
-                         const float* rpb_table, const float* rpb_index,
-                         int rpb_table_len,
-                         const float* attn_mask = nullptr) {
+static void window_mhsa(const float * tokens, float * out, int n_tokens, int D, int n_heads, const float * q_w,
+                        const float * q_b, const float * k_w, const float * k_b, const float * v_w, const float * v_b,
+                        const float * out_w, const float * out_b, const float * rpb_table, const float * rpb_index,
+                        int rpb_table_len, const float * attn_mask = nullptr) {
     int hd = D / n_heads;
     float scale = 1.0f / sqrtf((float)hd);
 
@@ -142,25 +129,21 @@ static void window_mhsa(const float* tokens, float* out,
                 // Add relative position bias
                 if (rpb_table && rpb_index) {
                     int idx = (int)rpb_index[i * n_tokens + j];
-                    if (idx >= 0 && idx < rpb_table_len)
-                        scores[i * n_tokens + j] += rpb_table[idx * n_heads + h];
+                    if (idx >= 0 && idx < rpb_table_len) scores[i * n_tokens + j] += rpb_table[idx * n_heads + h];
                 }
                 // Add attention mask (shifted window: -100 for cross-region)
-                if (attn_mask)
-                    scores[i * n_tokens + j] += attn_mask[i * n_tokens + j];
+                if (attn_mask) scores[i * n_tokens + j] += attn_mask[i * n_tokens + j];
             }
         }
 
         // Softmax per row
-        for (int i = 0; i < n_tokens; i++)
-            softmax(scores.data() + i * n_tokens, n_tokens);
+        for (int i = 0; i < n_tokens; i++) softmax(scores.data() + i * n_tokens, n_tokens);
 
         // Weighted sum of V
         for (int i = 0; i < n_tokens; i++) {
             for (int d = 0; d < hd; d++) {
                 float sum = 0;
-                for (int j = 0; j < n_tokens; j++)
-                    sum += scores[i * n_tokens + j] * V[j * D + off + d];
+                for (int j = 0; j < n_tokens; j++) sum += scores[i * n_tokens + j] * V[j * D + off + d];
                 attn_out[i * D + off + d] = sum;
             }
         }
@@ -176,21 +159,21 @@ static void window_mhsa(const float* tokens, float* out,
 // Weight structures
 // ---------------------------------------------------------------------------
 struct swin_block_weights {
-    ggml_tensor *ln1_w, *ln1_b;     // pre-attention LayerNorm
-    ggml_tensor *q_w, *q_b;         // Q projection
-    ggml_tensor *k_w, *k_b;         // K projection
-    ggml_tensor *v_w, *v_b;         // V projection
-    ggml_tensor *out_w, *out_b;     // output projection
-    ggml_tensor *rpb_table;          // relative position bias [169, n_heads]
-    ggml_tensor *rpb_index;          // relative position index [49, 49]
-    ggml_tensor *ln2_w, *ln2_b;     // pre-FFN LayerNorm
-    ggml_tensor *ffn_up_w, *ffn_up_b;   // FFN up [4*D, D]
+    ggml_tensor *ln1_w, *ln1_b;           // pre-attention LayerNorm
+    ggml_tensor *q_w, *q_b;               // Q projection
+    ggml_tensor *k_w, *k_b;               // K projection
+    ggml_tensor *v_w, *v_b;               // V projection
+    ggml_tensor *out_w, *out_b;           // output projection
+    ggml_tensor * rpb_table;              // relative position bias [169, n_heads]
+    ggml_tensor * rpb_index;              // relative position index [49, 49]
+    ggml_tensor *ln2_w, *ln2_b;           // pre-FFN LayerNorm
+    ggml_tensor *ffn_up_w, *ffn_up_b;     // FFN up [4*D, D]
     ggml_tensor *ffn_down_w, *ffn_down_b; // FFN down [D, 4*D]
 };
 
 struct swin_downsample_weights {
-    ggml_tensor *norm_w, *norm_b;    // LayerNorm
-    ggml_tensor *reduction_w;        // Linear [2*C, 4*C] (no bias)
+    ggml_tensor *norm_w, *norm_b; // LayerNorm
+    ggml_tensor * reduction_w;    // Linear [2*C, 4*C] (no bias)
 };
 
 struct dec_layer_weights {
@@ -226,15 +209,15 @@ struct mixtex_ocr_context {
 
     // Encoder: stages
     std::vector<swin_block_weights> stage_blocks[4]; // [stage][block]
-    swin_downsample_weights downsample[3]; // between stages 0-1, 1-2, 2-3
+    swin_downsample_weights downsample[3];           // between stages 0-1, 1-2, 2-3
 
     // Encoder: final LayerNorm
     ggml_tensor *enc_final_norm_w, *enc_final_norm_b;
 
     // Decoder: embeddings
-    ggml_tensor *word_embed_w;
-    ggml_tensor *pos_embed_w;
-    ggml_tensor *type_embed_w;
+    ggml_tensor * word_embed_w;
+    ggml_tensor * pos_embed_w;
+    ggml_tensor * type_embed_w;
     ggml_tensor *embed_ln_w, *embed_ln_b;
 
     // Decoder: layers
@@ -243,7 +226,7 @@ struct mixtex_ocr_context {
     // Decoder: LM head
     ggml_tensor *lm_dense_w, *lm_dense_b;
     ggml_tensor *lm_ln_w, *lm_ln_b;
-    ggml_tensor *lm_bias; // output bias [vocab]
+    ggml_tensor * lm_bias; // output bias [vocab]
 
     // Tokenizer
     std::vector<std::string> vocab;
@@ -257,15 +240,15 @@ struct mixtex_ocr_context {
     std::vector<std::vector<float>> kv_cache_v;
 
     // ggml batched-matmul infrastructure for encoder
-    ggml_backend_t       enc_backend  = nullptr;
-    ggml_backend_sched_t enc_sched    = nullptr;
+    ggml_backend_t enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched = nullptr;
     std::vector<uint8_t> enc_meta;
 
     bool bench = false;
 };
 
 // Debug helper
-static void dump_stats(const char* name, const float* data, int n) {
+static void dump_stats(const char * name, const float * data, int n) {
     float mn = data[0], mx = data[0];
     double sum = 0;
     for (int i = 0; i < n; i++) {
@@ -273,27 +256,29 @@ static void dump_stats(const char* name, const float* data, int n) {
         if (data[i] > mx) mx = data[i];
         sum += data[i];
     }
-    fprintf(stderr, "  %-30s: min=%8.4f max=%8.4f mean=%8.4f  [n=%d]\n",
-            name, mn, mx, (float)(sum / n), n);
+    fprintf(stderr, "  %-30s: min=%8.4f max=%8.4f mean=%8.4f  [n=%d]\n", name, mn, mx, (float)(sum / n), n);
 }
 
 // ---------------------------------------------------------------------------
 // Init
 // ---------------------------------------------------------------------------
-static ggml_tensor* find(const std::unordered_map<std::string, ggml_tensor*>& m, const char* name) {
+static ggml_tensor * find(const std::unordered_map<std::string, ggml_tensor *> & m, const char * name) {
     return core_gguf::try_get(m, name);
 }
 
 mixtex_ocr_context * mixtex_ocr_init(const char * model_path, int n_threads) {
-    auto* ctx = new mixtex_ocr_context{};
+    auto * ctx = new mixtex_ocr_context{};
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
     ctx->dump = (getenv("MIXTEX_DUMP") != nullptr);
 
     // Pass 1: metadata
-    gguf_context* gctx = core_gguf::open_metadata(model_path);
-    if (!gctx) { delete ctx; return nullptr; }
+    gguf_context * gctx = core_gguf::open_metadata(model_path);
+    if (!gctx) {
+        delete ctx;
+        return nullptr;
+    }
 
-    auto& hp = ctx->hp;
+    auto & hp = ctx->hp;
     hp.patch_size = core_gguf::kv_u32(gctx, "mixtex.encoder.patch_size", 4);
     hp.window_size = core_gguf::kv_u32(gctx, "mixtex.encoder.window_size", 7);
     hp.embed_dim = core_gguf::kv_u32(gctx, "mixtex.encoder.embed_dim", 96);
@@ -315,15 +300,20 @@ mixtex_ocr_context * mixtex_ocr_init(const char * model_path, int n_threads) {
     hp.eos_token = core_gguf::kv_u32(gctx, "mixtex.decoder.eos_token", 25678);
 
     // Depths/heads arrays
-    hp.enc_depths[0] = 2; hp.enc_depths[1] = 2; hp.enc_depths[2] = 6; hp.enc_depths[3] = 2;
-    hp.enc_heads[0] = 3; hp.enc_heads[1] = 6; hp.enc_heads[2] = 12; hp.enc_heads[3] = 24;
+    hp.enc_depths[0] = 2;
+    hp.enc_depths[1] = 2;
+    hp.enc_depths[2] = 6;
+    hp.enc_depths[3] = 2;
+    hp.enc_heads[0] = 3;
+    hp.enc_heads[1] = 6;
+    hp.enc_heads[2] = 12;
+    hp.enc_heads[3] = 24;
 
     ctx->vocab = core_gguf::kv_str_array(gctx, "tokenizer.tokens");
     core_gguf::free_metadata(gctx);
 
-    fprintf(stderr, "mixtex_ocr: patch=%d win=%d embed=%d hidden=%d vocab=%d(%zu)\n",
-            hp.patch_size, hp.window_size, hp.embed_dim, hp.enc_hidden,
-            hp.vocab_size, ctx->vocab.size());
+    fprintf(stderr, "mixtex_ocr: patch=%d win=%d embed=%d hidden=%d vocab=%d(%zu)\n", hp.patch_size, hp.window_size,
+            hp.embed_dim, hp.enc_hidden, hp.vocab_size, ctx->vocab.size());
 
     // Pass 2: weights — prefer GPU backend (weights read via ggml_backend_tensor_get)
     // Residency: all compute runs on the CPU enc_sched; ctx->backend only holds
@@ -333,17 +323,16 @@ mixtex_ocr_context * mixtex_ocr_init(const char * model_path, int n_threads) {
     // is now a no-op.)
     ctx->backend = ggml_backend_cpu_init();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
-    if (ggml_backend_is_cpu(ctx->backend))
-        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
     if (!core_gguf::load_weights(model_path, ctx->backend, "mixtex_ocr", ctx->wl)) {
         ggml_backend_free(ctx->backend);
         delete ctx;
         return nullptr;
     }
 
-    const auto& m = ctx->wl.tensors;
+    const auto & m = ctx->wl.tensors;
     char buf[256];
-    auto T = [&](const char* fmt, ...) -> ggml_tensor* {
+    auto T = [&](const char * fmt, ...) -> ggml_tensor * {
         va_list args;
         va_start(args, fmt);
         vsnprintf(buf, sizeof(buf), fmt, args);
@@ -361,7 +350,7 @@ mixtex_ocr_context * mixtex_ocr_init(const char * model_path, int n_threads) {
     for (int s = 0; s < 4; s++) {
         ctx->stage_blocks[s].resize(hp.enc_depths[s]);
         for (int b = 0; b < hp.enc_depths[s]; b++) {
-            auto& blk = ctx->stage_blocks[s][b];
+            auto & blk = ctx->stage_blocks[s][b];
             blk.ln1_w = T("enc.stage%d.block%d.ln1.weight", s, b);
             blk.ln1_b = T("enc.stage%d.block%d.ln1.bias", s, b);
             blk.q_w = T("enc.stage%d.block%d.attn.q.weight", s, b);
@@ -408,14 +397,13 @@ mixtex_ocr_context * mixtex_ocr_init(const char * model_path, int n_threads) {
     if (ctx->word_embed_w) {
         int lm_vocab = (int)ctx->word_embed_w->ne[1];
         if (lm_vocab != hp.vocab_size) {
-            fprintf(stderr, "mixtex_ocr: vocab_size %d -> %d (from dec.word_embed)\n",
-                    hp.vocab_size, lm_vocab);
+            fprintf(stderr, "mixtex_ocr: vocab_size %d -> %d (from dec.word_embed)\n", hp.vocab_size, lm_vocab);
             hp.vocab_size = lm_vocab;
         }
     }
 
     for (int i = 0; i < 4; i++) {
-        auto& l = ctx->dec_layers[i];
+        auto & l = ctx->dec_layers[i];
         l.self_ln_w = T("dec.layers.%d.self_ln.weight", i);
         l.self_ln_b = T("dec.layers.%d.self_ln.bias", i);
         l.self_q_w = T("dec.layers.%d.self_q.weight", i);
@@ -483,22 +471,18 @@ const mixtex_ocr_hparams * mixtex_ocr_get_hparams(const mixtex_ocr_context * ctx
 
 // Batched: output[N, out_D] = input[N, in_D] @ weight^T + bias
 // Uses a tiny ggml graph with ggml_mul_mat for AVX-512 acceleration.
-static void batch_linear(mixtex_ocr_context * ctx,
-                          const float * input, int N, int in_D,
-                          ggml_tensor * weight, ggml_tensor * bias, int out_D,
-                          float * output) {
+static void batch_linear(mixtex_ocr_context * ctx, const float * input, int N, int in_D, ggml_tensor * weight,
+                         ggml_tensor * bias, int out_D, float * output) {
     if (!ctx->enc_sched) {
         // fallback: per-row scalar
         auto wf = to_f32(weight);
         auto bf = bias ? to_f32(bias) : std::vector<float>();
         for (int i = 0; i < N; i++)
-            linear_cpu(input + i * in_D, output + i * out_D, in_D, out_D,
-                       wf.data(), bf.empty() ? nullptr : bf.data());
+            linear_cpu(input + i * in_D, output + i * out_D, in_D, out_D, wf.data(), bf.empty() ? nullptr : bf.data());
         return;
     }
     int max_nodes = 32;
-    size_t buf_size = ggml_tensor_overhead() * max_nodes
-                    + ggml_graph_overhead_custom(max_nodes, false);
+    size_t buf_size = ggml_tensor_overhead() * max_nodes + ggml_graph_overhead_custom(max_nodes, false);
     ctx->enc_meta.resize(std::max(ctx->enc_meta.size(), buf_size));
     ggml_init_params ip = { buf_size, ctx->enc_meta.data(), true };
     ggml_context * g = ggml_init(ip);
@@ -526,16 +510,13 @@ static void batch_linear(mixtex_ocr_context * ctx,
         fprintf(stderr, "mixtex: batch_linear alloc failed\n");
         return;
     }
-    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), input, 0,
-                             N * in_D * sizeof(float));
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), input, 0, N * in_D * sizeof(float));
     if (bias) {
         // Fill bias buffer: repeat bias vector N times
         auto bv = to_f32(bias);
         std::vector<float> b_data(N * out_D);
-        for (int i = 0; i < N; i++)
-            memcpy(b_data.data() + i * out_D, bv.data(), out_D * sizeof(float));
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "b"), b_data.data(), 0,
-                                 N * out_D * sizeof(float));
+        for (int i = 0; i < N; i++) memcpy(b_data.data() + i * out_D, bv.data(), out_D * sizeof(float));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "b"), b_data.data(), 0, N * out_D * sizeof(float));
     }
 
     for (int i = 0; i < ggml_backend_sched_get_n_backends(ctx->enc_sched); i++) {
@@ -543,31 +524,25 @@ static void batch_linear(mixtex_ocr_context * ctx,
         ggml_backend_dev_t dev = ggml_backend_get_device(be);
         ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
         if (reg) {
-            auto * fn = (ggml_backend_set_n_threads_t)
-                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            auto * fn =
+                (ggml_backend_set_n_threads_t)ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
             if (fn) fn(be, ctx->n_threads);
         }
     }
     ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
-    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), output, 0,
-                             N * out_D * sizeof(float));
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), output, 0, N * out_D * sizeof(float));
 }
 
 // Batched LayerNorm via ggml: [N, D] → [N, D]
-static void batch_layernorm(mixtex_ocr_context * ctx,
-                             const float * input, int N, int D,
-                             ggml_tensor * w_t, ggml_tensor * b_t,
-                             float * output) {
+static void batch_layernorm(mixtex_ocr_context * ctx, const float * input, int N, int D, ggml_tensor * w_t,
+                            ggml_tensor * b_t, float * output) {
     if (!ctx->enc_sched) {
         auto wf = to_f32(w_t), bf = to_f32(b_t);
-        for (int i = 0; i < N; i++)
-            layernorm_cpu(input + i * D, output + i * D, D,
-                          wf.data(), bf.data(), 1e-5f);
+        for (int i = 0; i < N; i++) layernorm_cpu(input + i * D, output + i * D, D, wf.data(), bf.data(), 1e-5f);
         return;
     }
     int max_nodes = 32;
-    size_t buf_size = ggml_tensor_overhead() * max_nodes
-                    + ggml_graph_overhead_custom(max_nodes, false);
+    size_t buf_size = ggml_tensor_overhead() * max_nodes + ggml_graph_overhead_custom(max_nodes, false);
     ctx->enc_meta.resize(std::max(ctx->enc_meta.size(), buf_size));
     ggml_init_params ip = { buf_size, ctx->enc_meta.data(), true };
     ggml_context * g = ggml_init(ip);
@@ -587,28 +562,24 @@ static void batch_layernorm(mixtex_ocr_context * ctx,
 
     ggml_backend_sched_reset(ctx->enc_sched);
     if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) return;
-    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), input, 0,
-                             N * D * sizeof(float));
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), input, 0, N * D * sizeof(float));
     ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
-    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), output, 0,
-                             N * D * sizeof(float));
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), output, 0, N * D * sizeof(float));
 }
 
 // ---------------------------------------------------------------------------
 // Swin encoder forward pass (scalar fallback)
 // ---------------------------------------------------------------------------
-static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
-                                            const float* pixels_chw,
-                                            int img_h, int img_w) {
-    auto& hp = ctx->hp;
-    int D = hp.embed_dim; // 96
+static std::vector<float> run_swin_encoder(mixtex_ocr_context * ctx, const float * pixels_chw, int img_h, int img_w) {
+    auto & hp = ctx->hp;
+    int D = hp.embed_dim;    // 96
     int ws = hp.window_size; // 7
-    int ps = hp.patch_size; // 4
+    int ps = hp.patch_size;  // 4
 
     // Patch embedding: Conv2d(3, 96, 4×4, stride=4) — manual implementation
     int pH = img_h / ps; // 100
     int pW = img_w / ps; // 125
-    int N = pH * pW; // 12500
+    int N = pH * pW;     // 12500
 
     auto patch_w = to_f32(ctx->patch_w); // [96, 3, 4, 4]
     auto patch_b = to_f32(ctx->patch_b); // [96]
@@ -636,8 +607,7 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
     }
 
     // LayerNorm after patch embedding (batched via ggml)
-    batch_layernorm(ctx, patches.data(), N, D,
-                    ctx->patch_norm_w, ctx->patch_norm_b, patches.data());
+    batch_layernorm(ctx, patches.data(), N, D, ctx->patch_norm_w, ctx->patch_norm_b, patches.data());
 
     if (ctx->dump) dump_stats("enc_embed", patches.data(), N * D);
 
@@ -647,8 +617,8 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
     bool has_diff = diff_ref && diff.load(diff_ref);
     if (has_diff) {
         auto r = diff.compare("enc_embed", patches.data(), N * D);
-        fprintf(stderr, "[mixtex-diff] enc_embed: cos=%.6f max_abs=%.2e %s\n",
-                r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+        fprintf(stderr, "[mixtex-diff] enc_embed: cos=%.6f max_abs=%.2e %s\n", r.cos_min, r.max_abs,
+                r.is_pass() ? "PASS" : "FAIL");
     }
 
     // Process each stage
@@ -660,21 +630,20 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
         int n_heads = hp.enc_heads[stage];
 
         for (int bi = 0; bi < n_blocks; bi++) {
-            auto& blk = ctx->stage_blocks[stage][bi];
+            auto & blk = ctx->stage_blocks[stage][bi];
             int HW = H * W;
 
             // Pre-attention LayerNorm (batched via ggml)
             std::vector<float> normed(HW * D);
-            batch_layernorm(ctx, x.data(), HW, D,
-                            blk.ln1_w, blk.ln1_b, normed.data());
+            batch_layernorm(ctx, x.data(), HW, D, blk.ln1_w, blk.ln1_b, normed.data());
 
             // Diff: compare LN1 output
             if (has_diff && stage == 0) {
                 char name[32];
                 snprintf(name, sizeof(name), "s0_b%d_ln1", bi);
                 auto r = diff.compare(name, normed.data(), HW * D);
-                fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n",
-                        name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n", name, r.cos_min, r.max_abs,
+                        r.is_pass() ? "PASS" : "FAIL");
             }
 
             // Shifted window attention
@@ -710,8 +679,8 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             // Diff: compare shifted data
             if (has_diff && stage == 0 && bi == 1) {
                 auto r = diff.compare("s0_b1_shifted", shifted_x.data(), pH2 * pW2 * D);
-                fprintf(stderr, "[mixtex-diff] s0_b1_shifted: cos=%.6f max_abs=%.2e %s\n",
-                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[mixtex-diff] s0_b1_shifted: cos=%.6f max_abs=%.2e %s\n", r.cos_min, r.max_abs,
+                        r.is_pass() ? "PASS" : "FAIL");
             }
 
             // Compute attention mask for shifted windows
@@ -721,14 +690,13 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                 std::vector<float> img_mask(pH2 * pW2, 0.0f);
                 // height slices: [0, -ws), [-ws, -shift), [-shift, end)
                 // width slices: same
-                int h_cuts[4] = {0, pH2 - ws, pH2 - shift, pH2};
-                int w_cuts[4] = {0, pW2 - ws, pW2 - shift, pW2};
+                int h_cuts[4] = { 0, pH2 - ws, pH2 - shift, pH2 };
+                int w_cuts[4] = { 0, pW2 - ws, pW2 - shift, pW2 };
                 int region = 0;
                 for (int hi = 0; hi < 3; hi++)
                     for (int wi = 0; wi < 3; wi++) {
-                        for (int y = h_cuts[hi]; y < h_cuts[hi+1]; y++)
-                            for (int x = w_cuts[wi]; x < w_cuts[wi+1]; x++)
-                                img_mask[y * pW2 + x] = (float)region;
+                        for (int y = h_cuts[hi]; y < h_cuts[hi + 1]; y++)
+                            for (int x = w_cuts[wi]; x < w_cuts[wi + 1]; x++) img_mask[y * pW2 + x] = (float)region;
                         region++;
                     }
                 // Window partition the mask → [nW, ws*ws]
@@ -739,8 +707,7 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                         int win = wh * nW_m + ww;
                         for (int y = 0; y < ws; y++)
                             for (int x = 0; x < ws; x++)
-                                mask_windows[win * ws * ws + y * ws + x] =
-                                    img_mask[(wh * ws + y) * pW2 + ww * ws + x];
+                                mask_windows[win * ws * ws + y * ws + x] = img_mask[(wh * ws + y) * pW2 + ww * ws + x];
                     }
                 // Build mask: [nW, ws*ws, ws*ws]
                 // mask[w, i, j] = -100 if region[i] != region[j], else 0
@@ -772,21 +739,12 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
 
             std::vector<float> attn_out(n_windows * tokens_per_win * D);
             for (int w = 0; w < n_windows; w++) {
-                const float* win_mask = (!attn_mask_all.empty())
-                    ? attn_mask_all.data() + w * tokens_per_win * tokens_per_win
-                    : nullptr;
-                window_mhsa(
-                    windows.data() + w * tokens_per_win * D,
-                    attn_out.data() + w * tokens_per_win * D,
-                    tokens_per_win, D, n_heads,
-                    q_w.data(), q_b.data(),
-                    k_w.data(), k_b.data(),
-                    v_w.data(), v_b.data(),
-                    out_w.data(), out_b.data(),
-                    rpb_t.empty() ? nullptr : rpb_t.data(),
-                    rpb_i.empty() ? nullptr : rpb_i.data(),
-                    rpb_len,
-                    win_mask);
+                const float * win_mask =
+                    (!attn_mask_all.empty()) ? attn_mask_all.data() + w * tokens_per_win * tokens_per_win : nullptr;
+                window_mhsa(windows.data() + w * tokens_per_win * D, attn_out.data() + w * tokens_per_win * D,
+                            tokens_per_win, D, n_heads, q_w.data(), q_b.data(), k_w.data(), k_b.data(), v_w.data(),
+                            v_b.data(), out_w.data(), out_b.data(), rpb_t.empty() ? nullptr : rpb_t.data(),
+                            rpb_i.empty() ? nullptr : rpb_i.data(), rpb_len, win_mask);
             }
 
             // Diff: compare windowed attention output BEFORE window_reverse
@@ -794,15 +752,15 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                 char name[64];
                 snprintf(name, sizeof(name), "s0_b%d_attn_out_windowed", bi);
                 auto r = diff.compare(name, attn_out.data(), n_windows * tokens_per_win * D);
-                fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n",
-                        name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n", name, r.cos_min, r.max_abs,
+                        r.is_pass() ? "PASS" : "FAIL");
             }
 
             // Diff: compare window-partitioned input
             if (has_diff && stage == 0 && bi == 1) {
                 auto r = diff.compare("s0_b1_windows", windows.data(), n_windows * tokens_per_win * D);
-                fprintf(stderr, "[mixtex-diff] s0_b1_windows: cos=%.6f max_abs=%.2e %s\n",
-                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[mixtex-diff] s0_b1_windows: cos=%.6f max_abs=%.2e %s\n", r.cos_min, r.max_abs,
+                        r.is_pass() ? "PASS" : "FAIL");
             }
 
             // Window reverse
@@ -828,8 +786,8 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             // Diff: compare attention output after reverse (before residual)
             if (has_diff && stage == 0 && bi == 1) {
                 auto r = diff.compare("s0_b1_attn_merged", merged.data(), HW * D);
-                fprintf(stderr, "[mixtex-diff] s0_b1_attn_merged: cos=%.6f max_abs=%.2e %s\n",
-                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[mixtex-diff] s0_b1_attn_merged: cos=%.6f max_abs=%.2e %s\n", r.cos_min, r.max_abs,
+                        r.is_pass() ? "PASS" : "FAIL");
             }
 
             // Residual
@@ -840,8 +798,8 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                 char name[32];
                 snprintf(name, sizeof(name), "s0_b%d_attn_res", bi);
                 auto r = diff.compare(name, x.data(), HW * D);
-                fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n",
-                        name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n", name, r.cos_min, r.max_abs,
+                        r.is_pass() ? "PASS" : "FAIL");
             }
 
             // FFN: LN → up → GELU → down → residual
@@ -866,8 +824,8 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
                 char name[32];
                 snprintf(name, sizeof(name), "s0_b%d_out", bi);
                 auto r = diff.compare(name, x.data(), HW * D);
-                fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n",
-                        name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n", name, r.cos_min, r.max_abs,
+                        r.is_pass() ? "PASS" : "FAIL");
             }
         }
 
@@ -879,7 +837,7 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
 
         // Downsample (patch merging) between stages
         if (stage < 3) {
-            auto& ds = ctx->downsample[stage];
+            auto & ds = ctx->downsample[stage];
             auto norm_w = to_f32(ds.norm_w), norm_b = to_f32(ds.norm_b);
             auto red_w = to_f32(ds.reduction_w); // [2*D, 4*D]
             int new_D = D * 2;
@@ -888,7 +846,7 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             int padH = H + (H % 2);
             int padW = W + (W % 2);
             std::vector<float> padded;
-            const float* merge_src = x.data();
+            const float * merge_src = x.data();
             if (padH != H || padW != W) {
                 padded.resize(padH * padW * D, 0.0f);
                 for (int y = 0; y < H; y++)
@@ -905,10 +863,10 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             for (int y = 0; y < newH; y++) {
                 for (int xi = 0; xi < newW; xi++) {
                     int dst = y * newW + xi;
-                    int s0 = (2*y)   * padW + (2*xi);     // top-left
-                    int s1 = (2*y+1) * padW + (2*xi);     // bottom-left
-                    int s2 = (2*y)   * padW + (2*xi+1);   // top-right
-                    int s3 = (2*y+1) * padW + (2*xi+1);   // bottom-right
+                    int s0 = (2 * y) * padW + (2 * xi);         // top-left
+                    int s1 = (2 * y + 1) * padW + (2 * xi);     // bottom-left
+                    int s2 = (2 * y) * padW + (2 * xi + 1);     // top-right
+                    int s3 = (2 * y + 1) * padW + (2 * xi + 1); // bottom-right
                     memcpy(merged.data() + dst * 4 * D + 0 * D, merge_src + s0 * D, D * sizeof(float));
                     memcpy(merged.data() + dst * 4 * D + 1 * D, merge_src + s1 * D, D * sizeof(float));
                     memcpy(merged.data() + dst * 4 * D + 2 * D, merge_src + s2 * D, D * sizeof(float));
@@ -917,16 +875,16 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             }
 
             // LayerNorm on 4*D (batched via ggml)
-            batch_layernorm(ctx, merged.data(), newN, 4 * D,
-                            ds.norm_w, ds.norm_b, merged.data());
+            batch_layernorm(ctx, merged.data(), newN, 4 * D, ds.norm_w, ds.norm_b, merged.data());
 
             // Linear reduction: [newN, 4*D] → [newN, 2*D] (batched via ggml)
             std::vector<float> reduced(newN * new_D);
-            batch_linear(ctx, merged.data(), newN, 4 * D,
-                          ds.reduction_w, nullptr, new_D, reduced.data());
+            batch_linear(ctx, merged.data(), newN, 4 * D, ds.reduction_w, nullptr, new_D, reduced.data());
 
             x = std::move(reduced);
-            H = newH; W = newW; D = new_D;
+            H = newH;
+            W = newW;
+            D = new_D;
         }
 
         // Diff: per-stage output (AFTER downsample, matching HF SwinStage hook)
@@ -934,29 +892,27 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
             char sname[64];
             snprintf(sname, sizeof(sname), "enc_stage_%d", stage);
             auto r = diff.compare(sname, x.data(), H * W * D);
-            fprintf(stderr, "[mixtex-diff] %s (%dx%dx%d=%d): cos=%.6f max_abs=%.2e %s\n",
-                    sname, H, W, D, H*W, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            fprintf(stderr, "[mixtex-diff] %s (%dx%dx%d=%d): cos=%.6f max_abs=%.2e %s\n", sname, H, W, D, H * W,
+                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
         }
     }
 
     // Final LayerNorm
     if (ctx->enc_final_norm_w) {
         int N_out = H * W;
-        batch_layernorm(ctx, x.data(), N_out, D,
-                        ctx->enc_final_norm_w, ctx->enc_final_norm_b, x.data());
+        batch_layernorm(ctx, x.data(), N_out, D, ctx->enc_final_norm_w, ctx->enc_final_norm_b, x.data());
     }
 
     // Diff: per-stage encoder output
-    const char* enc_stage_ref = std::getenv("MIXTEX_ENC_STAGE_REF");
+    const char * enc_stage_ref = std::getenv("MIXTEX_ENC_STAGE_REF");
     if (enc_stage_ref) {
         crispembed_diff::Ref sr;
         if (sr.load(enc_stage_ref)) {
             // Try both names: reference may use "enc_layernorm" or "enc_output"
-            auto r = sr.has("enc_layernorm")
-                   ? sr.compare("enc_layernorm", x.data(), H * W * D)
-                   : sr.compare("enc_output", x.data(), H * W * D);
-            fprintf(stderr, "[mixtex-diff] enc_output (full): cos=%.6f max_abs=%.2e %s\n",
-                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            auto r = sr.has("enc_layernorm") ? sr.compare("enc_layernorm", x.data(), H * W * D)
+                                             : sr.compare("enc_output", x.data(), H * W * D);
+            fprintf(stderr, "[mixtex-diff] enc_output (full): cos=%.6f max_abs=%.2e %s\n", r.cos_min, r.max_abs,
+                    r.is_pass() ? "PASS" : "FAIL");
         }
     }
 
@@ -968,15 +924,14 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context* ctx,
 // ---------------------------------------------------------------------------
 // Decoder forward pass (autoregressive greedy)
 // ---------------------------------------------------------------------------
-static std::string run_decoder(mixtex_ocr_context* ctx,
-                                const float* enc_output, int enc_len, int enc_dim) {
+static std::string run_decoder(mixtex_ocr_context * ctx, const float * enc_output, int enc_len, int enc_dim) {
     ctx->char_confidences.clear();
-    auto& hp = ctx->hp;
+    auto & hp = ctx->hp;
     int D = hp.dec_hidden;
     int n_layers = hp.dec_layers;
 
     // Decoder diff harness
-    const char* dec_ref_path = std::getenv("MIXTEX_DEC_REF");
+    const char * dec_ref_path = std::getenv("MIXTEX_DEC_REF");
     crispembed_diff::Ref dec_diff;
     bool has_dec_diff = false;
     if (dec_ref_path) {
@@ -985,14 +940,14 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
             fprintf(stderr, "[mixtex-diff] loaded decoder ref: %s\n", dec_ref_path);
             // Verify encoder output matches
             auto r = dec_diff.compare("enc_output", enc_output, enc_len * enc_dim);
-            fprintf(stderr, "[mixtex-diff] enc_output: cos=%.6f max_abs=%.2e %s\n",
-                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            fprintf(stderr, "[mixtex-diff] enc_output: cos=%.6f max_abs=%.2e %s\n", r.cos_min, r.max_abs,
+                    r.is_pass() ? "PASS" : "FAIL");
         }
     }
 
-    auto word_w = to_f32(ctx->word_embed_w);   // [vocab, D]
-    auto pos_w = to_f32(ctx->pos_embed_w);     // [max_pos, D]
-    auto type_w = to_f32(ctx->type_embed_w);   // [1, D]
+    auto word_w = to_f32(ctx->word_embed_w); // [vocab, D]
+    auto pos_w = to_f32(ctx->pos_embed_w);   // [max_pos, D]
+    auto type_w = to_f32(ctx->type_embed_w); // [1, D]
     auto eln_w = to_f32(ctx->embed_ln_w);
     auto eln_b = to_f32(ctx->embed_ln_b);
 
@@ -1002,28 +957,24 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
     };
     std::vector<cross_kv> cross_kvs(n_layers);
     for (int li = 0; li < n_layers; li++) {
-        auto& l = ctx->dec_layers[li];
+        auto & l = ctx->dec_layers[li];
         auto ck_w = to_f32(l.cross_k_w), ck_b = to_f32(l.cross_k_b);
         auto cv_w = to_f32(l.cross_v_w), cv_b = to_f32(l.cross_v_b);
         cross_kvs[li].K.resize(enc_len * D);
         cross_kvs[li].V.resize(enc_len * D);
 
         if (has_dec_diff && li == 0) {
-            fprintf(stderr, "[mixtex-diff] cross_k_w ne: [%lld, %lld] type=%d\n",
-                    (long long)l.cross_k_w->ne[0], (long long)l.cross_k_w->ne[1],
-                    l.cross_k_w->type);
+            fprintf(stderr, "[mixtex-diff] cross_k_w ne: [%lld, %lld] type=%d\n", (long long)l.cross_k_w->ne[0],
+                    (long long)l.cross_k_w->ne[1], l.cross_k_w->type);
             fprintf(stderr, "[mixtex-diff] enc_dim=%d D=%d enc_len=%d\n", enc_dim, D, enc_len);
-            fprintf(stderr, "[mixtex-diff] ck_w[0..3]: %.6f %.6f %.6f %.6f\n",
-                    ck_w[0], ck_w[1], ck_w[2], ck_w[3]);
-            fprintf(stderr, "[mixtex-diff] enc[0..3]: %.6f %.6f %.6f %.6f\n",
-                    enc_output[0], enc_output[1], enc_output[2], enc_output[3]);
+            fprintf(stderr, "[mixtex-diff] ck_w[0..3]: %.6f %.6f %.6f %.6f\n", ck_w[0], ck_w[1], ck_w[2], ck_w[3]);
+            fprintf(stderr, "[mixtex-diff] enc[0..3]: %.6f %.6f %.6f %.6f\n", enc_output[0], enc_output[1],
+                    enc_output[2], enc_output[3]);
         }
 
         for (int t = 0; t < enc_len; t++) {
-            linear_cpu(enc_output + t * enc_dim, cross_kvs[li].K.data() + t * D,
-                       enc_dim, D, ck_w.data(), ck_b.data());
-            linear_cpu(enc_output + t * enc_dim, cross_kvs[li].V.data() + t * D,
-                       enc_dim, D, cv_w.data(), cv_b.data());
+            linear_cpu(enc_output + t * enc_dim, cross_kvs[li].K.data() + t * D, enc_dim, D, ck_w.data(), ck_b.data());
+            linear_cpu(enc_output + t * enc_dim, cross_kvs[li].V.data() + t * D, enc_dim, D, cv_w.data(), cv_b.data());
         }
     }
 
@@ -1053,9 +1004,7 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
         // Token embedding: word + position + type + LN
         std::vector<float> hidden(D);
         for (int d = 0; d < D; d++) {
-            hidden[d] = word_w[token_id * D + d]
-                      + pos_w[pos * D + d]
-                      + type_w[d]; // type_vocab_size=1, always type 0
+            hidden[d] = word_w[token_id * D + d] + pos_w[pos * D + d] + type_w[d]; // type_vocab_size=1, always type 0
         }
         std::vector<float> ln_out(D);
         layernorm_cpu(hidden.data(), ln_out.data(), D, eln_w.data(), eln_b.data(), 1e-12f);
@@ -1063,20 +1012,19 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
 
         // Diff: compare embedding output (step 0 only)
         if (has_dec_diff && step == 0) {
-            fprintf(stderr, "[mixtex-diff] embed: tok=%d pos=%d hidden[0..3]=%.4f %.4f %.4f %.4f\n",
-                    token_id, pos, hidden[0], hidden[1], hidden[2], hidden[3]);
+            fprintf(stderr, "[mixtex-diff] embed: tok=%d pos=%d hidden[0..3]=%.4f %.4f %.4f %.4f\n", token_id, pos,
+                    hidden[0], hidden[1], hidden[2], hidden[3]);
             fprintf(stderr, "[mixtex-diff] word[0..3]=%.4f %.4f  pos[0..3]=%.4f %.4f  type[0..3]=%.4f %.4f\n",
-                    word_w[token_id * D], word_w[token_id * D + 1],
-                    pos_w[pos * D], pos_w[pos * D + 1],
-                    type_w[0], type_w[1]);
+                    word_w[token_id * D], word_w[token_id * D + 1], pos_w[pos * D], pos_w[pos * D + 1], type_w[0],
+                    type_w[1]);
             auto r = dec_diff.compare("dec_embed", hidden.data(), D);
-            fprintf(stderr, "[mixtex-diff] dec_embed: cos=%.6f max_abs=%.2e %s\n",
-                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            fprintf(stderr, "[mixtex-diff] dec_embed: cos=%.6f max_abs=%.2e %s\n", r.cos_min, r.max_abs,
+                    r.is_pass() ? "PASS" : "FAIL");
         }
 
         // Decoder layers
         for (int li = 0; li < n_layers; li++) {
-            auto& l = ctx->dec_layers[li];
+            auto & l = ctx->dec_layers[li];
 
             // Self-attention
             auto sq_w = to_f32(l.self_q_w), sq_b = to_f32(l.self_q_b);
@@ -1096,9 +1044,8 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
 
             int n_kv = step + 1;
             std::vector<float> attn_out(D);
-            mha_1q_cpu(q.data(), ctx->kv_cache_k[li].data(),
-                       ctx->kv_cache_v[li].data(), attn_out.data(),
-                       n_kv, D, hp.dec_heads);
+            mha_1q_cpu(q.data(), ctx->kv_cache_k[li].data(), ctx->kv_cache_v[li].data(), attn_out.data(), n_kv, D,
+                       hp.dec_heads);
 
             // Output projection + residual + LN
             std::vector<float> proj(D);
@@ -1110,17 +1057,15 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
 
             // Diff: after self-attention (step 0, layer 0)
             if (has_dec_diff && step == 0 && li == 0 && std::getenv("CRISPEMBED_MIXTEX_DEBUG")) {
-                fprintf(stderr, "[mixtex-diff] Q[:4]: %.4f %.4f %.4f %.4f\n",
-                        q[0], q[1], q[2], q[3]);
-                fprintf(stderr, "[mixtex-diff] V[:4]: %.4f %.4f %.4f %.4f\n",
-                        attn_out[0], attn_out[1], attn_out[2], attn_out[3]);
-                fprintf(stderr, "[mixtex-diff] proj[:4]: %.4f %.4f %.4f %.4f\n",
-                        proj[0], proj[1], proj[2], proj[3]);
-                fprintf(stderr, "[mixtex-diff] h2[:4]: %.4f %.4f %.4f %.4f\n",
-                        hidden[0], hidden[1], hidden[2], hidden[3]);
+                fprintf(stderr, "[mixtex-diff] Q[:4]: %.4f %.4f %.4f %.4f\n", q[0], q[1], q[2], q[3]);
+                fprintf(stderr, "[mixtex-diff] V[:4]: %.4f %.4f %.4f %.4f\n", attn_out[0], attn_out[1], attn_out[2],
+                        attn_out[3]);
+                fprintf(stderr, "[mixtex-diff] proj[:4]: %.4f %.4f %.4f %.4f\n", proj[0], proj[1], proj[2], proj[3]);
+                fprintf(stderr, "[mixtex-diff] h2[:4]: %.4f %.4f %.4f %.4f\n", hidden[0], hidden[1], hidden[2],
+                        hidden[3]);
                 auto r = dec_diff.compare("L0_after_self_attn", hidden.data(), D);
-                fprintf(stderr, "[mixtex-diff] L0_after_self_attn: cos=%.6f max_abs=%.2e %s\n",
-                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[mixtex-diff] L0_after_self_attn: cos=%.6f max_abs=%.2e %s\n", r.cos_min, r.max_abs,
+                        r.is_pass() ? "PASS" : "FAIL");
             }
 
             // Cross-attention
@@ -1134,28 +1079,27 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
             // Diff: cross-attention Q, K, V (step 0, layer 0)
             if (has_dec_diff && step == 0 && li == 0) {
                 auto rq = dec_diff.compare("L0_cross_Q", cq.data(), D);
-                fprintf(stderr, "[mixtex-diff] L0_cross_Q: cos=%.6f max_abs=%.2e %s\n",
-                        rq.cos_min, rq.max_abs, rq.is_pass() ? "PASS" : "FAIL");
-                fprintf(stderr, "[mixtex-diff] cross_K[0,:4]: %.6f %.6f %.6f %.6f\n",
-                        cross_kvs[li].K[0], cross_kvs[li].K[1], cross_kvs[li].K[2], cross_kvs[li].K[3]);
+                fprintf(stderr, "[mixtex-diff] L0_cross_Q: cos=%.6f max_abs=%.2e %s\n", rq.cos_min, rq.max_abs,
+                        rq.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[mixtex-diff] cross_K[0,:4]: %.6f %.6f %.6f %.6f\n", cross_kvs[li].K[0],
+                        cross_kvs[li].K[1], cross_kvs[li].K[2], cross_kvs[li].K[3]);
                 auto rk = dec_diff.compare("L0_cross_K", cross_kvs[li].K.data(), enc_len * D);
-                fprintf(stderr, "[mixtex-diff] L0_cross_K: cos=%.6f max_abs=%.2e %s\n",
-                        rk.cos_min, rk.max_abs, rk.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[mixtex-diff] L0_cross_K: cos=%.6f max_abs=%.2e %s\n", rk.cos_min, rk.max_abs,
+                        rk.is_pass() ? "PASS" : "FAIL");
                 auto rv = dec_diff.compare("L0_cross_V", cross_kvs[li].V.data(), enc_len * D);
-                fprintf(stderr, "[mixtex-diff] L0_cross_V: cos=%.6f max_abs=%.2e %s\n",
-                        rv.cos_min, rv.max_abs, rv.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[mixtex-diff] L0_cross_V: cos=%.6f max_abs=%.2e %s\n", rv.cos_min, rv.max_abs,
+                        rv.is_pass() ? "PASS" : "FAIL");
             }
 
             std::vector<float> cross_out(D);
-            mha_1q_cpu(cq.data(), cross_kvs[li].K.data(),
-                       cross_kvs[li].V.data(), cross_out.data(),
-                       enc_len, D, hp.dec_heads);
+            mha_1q_cpu(cq.data(), cross_kvs[li].K.data(), cross_kvs[li].V.data(), cross_out.data(), enc_len, D,
+                       hp.dec_heads);
 
             // Diff: cross-attention self output (before output proj)
             if (has_dec_diff && step == 0 && li == 0) {
                 auto r = dec_diff.compare("L0_cross_self_out", cross_out.data(), D);
-                fprintf(stderr, "[mixtex-diff] L0_cross_self_out: cos=%.6f max_abs=%.2e %s\n",
-                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[mixtex-diff] L0_cross_self_out: cos=%.6f max_abs=%.2e %s\n", r.cos_min, r.max_abs,
+                        r.is_pass() ? "PASS" : "FAIL");
             }
 
             std::vector<float> cproj(D);
@@ -1166,11 +1110,11 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
             // Diff: after cross-attention (step 0, layer 0)
             if (has_dec_diff && step == 0 && li == 0) {
                 if (std::getenv("CRISPEMBED_MIXTEX_DEBUG"))
-                    fprintf(stderr, "[mixtex-diff] after_xattn[:4]: %.6f %.6f %.6f %.6f\n",
-                            hidden[0], hidden[1], hidden[2], hidden[3]);
+                    fprintf(stderr, "[mixtex-diff] after_xattn[:4]: %.6f %.6f %.6f %.6f\n", hidden[0], hidden[1],
+                            hidden[2], hidden[3]);
                 auto r = dec_diff.compare("L0_after_cross_attn", hidden.data(), D);
-                fprintf(stderr, "[mixtex-diff] L0_after_cross_attn: cos=%.6f max_abs=%.2e %s\n",
-                        r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[mixtex-diff] L0_after_cross_attn: cos=%.6f max_abs=%.2e %s\n", r.cos_min, r.max_abs,
+                        r.is_pass() ? "PASS" : "FAIL");
             }
 
             // FFN
@@ -1188,13 +1132,13 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
             // Diff: compare layer output (step 0 only)
             if (has_dec_diff && step == 0) {
                 if (std::getenv("CRISPEMBED_MIXTEX_DEBUG"))
-                    fprintf(stderr, "[mixtex-diff] after_ffn[:4]: %.6f %.6f %.6f %.6f\n",
-                            hidden[0], hidden[1], hidden[2], hidden[3]);
+                    fprintf(stderr, "[mixtex-diff] after_ffn[:4]: %.6f %.6f %.6f %.6f\n", hidden[0], hidden[1],
+                            hidden[2], hidden[3]);
                 char name[32];
                 snprintf(name, sizeof(name), "dec_layer_%d", li);
                 auto r = dec_diff.compare(name, hidden.data(), D);
-                fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n",
-                        name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[mixtex-diff] %s: cos=%.6f max_abs=%.2e %s\n", name, r.cos_min, r.max_abs,
+                        r.is_pass() ? "PASS" : "FAIL");
             }
         }
 
@@ -1208,27 +1152,27 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
         std::vector<float> logits(vocab);
         for (int v = 0; v < vocab; v++) {
             float sum = lm_bias.empty() ? 0.0f : lm_bias[v];
-            for (int d = 0; d < D; d++)
-                sum += lm_h[d] * word_w[v * D + d];
+            for (int d = 0; d < D; d++) sum += lm_h[d] * word_w[v * D + d];
             logits[v] = sum;
         }
 
         // Diff: compare logits (step 0 only)
         if (has_dec_diff && step == 0) {
             auto r = dec_diff.compare("dec_step0_logits", logits.data(), vocab);
-            fprintf(stderr, "[mixtex-diff] dec_step0_logits: cos=%.6f max_abs=%.2e %s\n",
-                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            fprintf(stderr, "[mixtex-diff] dec_step0_logits: cos=%.6f max_abs=%.2e %s\n", r.cos_min, r.max_abs,
+                    r.is_pass() ? "PASS" : "FAIL");
             // Print top-5
-            int top[5] = {0};
+            int top[5] = { 0 };
             for (int v = 1; v < vocab; v++)
                 for (int t = 0; t < 5; t++)
                     if (logits[v] > logits[top[t]]) {
-                        for (int s = 4; s > t; s--) top[s] = top[s-1];
-                        top[t] = v; break;
+                        for (int s = 4; s > t; s--) top[s] = top[s - 1];
+                        top[t] = v;
+                        break;
                     }
-            fprintf(stderr, "[mixtex-diff] top5: %d(%.2f) %d(%.2f) %d(%.2f) %d(%.2f) %d(%.2f)\n",
-                    top[0], logits[top[0]], top[1], logits[top[1]],
-                    top[2], logits[top[2]], top[3], logits[top[3]], top[4], logits[top[4]]);
+            fprintf(stderr, "[mixtex-diff] top5: %d(%.2f) %d(%.2f) %d(%.2f) %d(%.2f) %d(%.2f)\n", top[0],
+                    logits[top[0]], top[1], logits[top[1]], top[2], logits[top[2]], top[3], logits[top[3]], top[4],
+                    logits[top[4]]);
         }
 
         // Greedy: argmax
@@ -1237,15 +1181,15 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
             if (logits[v] > logits[best]) best = v;
 
         if (std::getenv("CRISPEMBED_MIXTEX_TRACE"))
-            fprintf(stderr, "[mixtex-trace] step=%d in=%d -> best=%d (%.3f)\n",
-                    step, token_id, best, logits[best]);
+            fprintf(stderr, "[mixtex-trace] step=%d in=%d -> best=%d (%.3f)\n", step, token_id, best, logits[best]);
 
         if (best == hp.eos_token) break;
 
         // Confidence: softmax of winning token
         {
             float max_l = logits[0];
-            for (int v = 1; v < vocab; v++) if (logits[v] > max_l) max_l = logits[v];
+            for (int v = 1; v < vocab; v++)
+                if (logits[v] > max_l) max_l = logits[v];
             float sum_e = 0;
             for (int v = 0; v < vocab; v++) sum_e += expf(logits[v] - max_l);
             ctx->char_confidences.push_back(expf(logits[best] - max_l) / sum_e);
@@ -1264,10 +1208,8 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
     for (size_t i = 1; i < tokens.size(); i++) { // skip seeded SOS
         int tid = tokens[i];
         if (tid < 0 || tid >= (int)ctx->vocab.size()) continue;
-        const std::string& piece = ctx->vocab[tid];
-        if (piece == "<s>" || piece == "</s>" || piece == "<pad>" ||
-            piece == "<unk>" || piece == "<mask>")
-            continue;
+        const std::string & piece = ctx->vocab[tid];
+        if (piece == "<s>" || piece == "</s>" || piece == "<pad>" || piece == "<unk>" || piece == "<mask>") continue;
         core_bpe::unicode_to_bytes(piece, result);
     }
     return result;
@@ -1276,8 +1218,7 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
 // ---------------------------------------------------------------------------
 // Image preprocessing
 // ---------------------------------------------------------------------------
-static std::vector<float> preprocess_mixtex(const uint8_t* pixels, int w, int h, int ch,
-                                             int target_h, int target_w) {
+static std::vector<float> preprocess_mixtex(const uint8_t * pixels, int w, int h, int ch, int target_h, int target_w) {
     // Output is CHW float32, normalized with mean=std=0.5 (ViTImageProcessor).
     std::vector<float> out(3 * target_h * target_w);
 
@@ -1298,8 +1239,8 @@ static std::vector<float> preprocess_mixtex(const uint8_t* pixels, int w, int h,
                         if (ch == 1) return pixels[y * w + x] / 255.0f;
                         return pixels[(y * w + x) * ch + c] / 255.0f;
                     };
-                    float pixel = (1 - wy) * ((1 - wx) * px(y0, x0) + wx * px(y0, x1))
-                                +      wy  * ((1 - wx) * px(y1, x0) + wx * px(y1, x1));
+                    float pixel = (1 - wy) * ((1 - wx) * px(y0, x0) + wx * px(y0, x1)) +
+                                  wy * ((1 - wx) * px(y1, x0) + wx * px(y1, x1));
                     out[c * target_h * target_w + oy * target_w + ox] = (pixel - 0.5f) / 0.5f;
                 }
             }
@@ -1313,15 +1254,19 @@ static std::vector<float> preprocess_mixtex(const uint8_t* pixels, int w, int h,
     std::vector<uint8_t> rgb((size_t)h * w * 3);
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
-            const uint8_t* s = pixels + (size_t)(y * w + x) * ch;
-            uint8_t* d = rgb.data() + (size_t)(y * w + x) * 3;
-            if (ch == 1) { d[0] = d[1] = d[2] = s[0]; }
-            else { d[0] = s[0]; d[1] = s[1]; d[2] = s[2]; }  // ch>=3, ignore alpha
+            const uint8_t * s = pixels + (size_t)(y * w + x) * ch;
+            uint8_t * d = rgb.data() + (size_t)(y * w + x) * 3;
+            if (ch == 1) {
+                d[0] = d[1] = d[2] = s[0];
+            } else {
+                d[0] = s[0];
+                d[1] = s[1];
+                d[2] = s[2];
+            } // ch>=3, ignore alpha
         }
     }
     std::vector<float> resized((size_t)target_h * target_w * 3);
-    image_preproc::resize_bicubic_u8_hwc(rgb.data(), h, w,
-                                         resized.data(), target_h, target_w, 3);
+    image_preproc::resize_bicubic_u8_hwc(rgb.data(), h, w, resized.data(), target_h, target_w, 3);
     for (int c = 0; c < 3; c++)
         for (int oy = 0; oy < target_h; oy++)
             for (int ox = 0; ox < target_w; ox++) {
@@ -1334,21 +1279,22 @@ static std::vector<float> preprocess_mixtex(const uint8_t* pixels, int w, int h,
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
-const char * mixtex_ocr_recognize(mixtex_ocr_context * ctx,
-                                   const uint8_t * pixels,
-                                   int width, int height, int channels,
-                                   int * out_len) {
-    if (!ctx || !pixels) { if (out_len) *out_len = 0; return nullptr; }
+const char * mixtex_ocr_recognize(mixtex_ocr_context * ctx, const uint8_t * pixels, int width, int height, int channels,
+                                  int * out_len) {
+    if (!ctx || !pixels) {
+        if (out_len) *out_len = 0;
+        return nullptr;
+    }
 
     const bool bench = ctx->bench;
     auto t_total = std::chrono::steady_clock::now();
 
-    auto& hp = ctx->hp;
+    auto & hp = ctx->hp;
     auto tb0 = std::chrono::steady_clock::now();
-    auto input = preprocess_mixtex(pixels, width, height, channels,
-                                    hp.image_h, hp.image_w);
-    if (bench) fprintf(stderr, "[mixtex-bench] preprocess: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-tb0).count());
+    auto input = preprocess_mixtex(pixels, width, height, channels, hp.image_h, hp.image_w);
+    if (bench)
+        fprintf(stderr, "[mixtex-bench] preprocess: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - tb0).count());
 
     if (ctx->dump) dump_stats("input", input.data(), 3 * hp.image_h * hp.image_w);
 
@@ -1358,8 +1304,7 @@ const char * mixtex_ocr_recognize(mixtex_ocr_context * ctx,
     double enc_ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
 
     int enc_len = (int)enc_out.size() / hp.enc_hidden;
-    fprintf(stderr, "mixtex_ocr: encoder %d tokens × %d dim (%.1f ms)\n",
-            enc_len, hp.enc_hidden, enc_ms);
+    fprintf(stderr, "mixtex_ocr: encoder %d tokens × %d dim (%.1f ms)\n", enc_len, hp.enc_hidden, enc_ms);
     if (bench) fprintf(stderr, "[mixtex-bench] encoder: %.1f ms\n", enc_ms);
 
     auto t2 = std::chrono::steady_clock::now();
@@ -1367,22 +1312,23 @@ const char * mixtex_ocr_recognize(mixtex_ocr_context * ctx,
     auto t3 = std::chrono::steady_clock::now();
     double dec_ms = std::chrono::duration<double, std::milli>(t3 - t2).count();
 
-    fprintf(stderr, "mixtex_ocr: decoded \"%s\" (%.1f ms)\n",
-            ctx->output_text.c_str(), dec_ms);
+    fprintf(stderr, "mixtex_ocr: decoded \"%s\" (%.1f ms)\n", ctx->output_text.c_str(), dec_ms);
     if (bench) fprintf(stderr, "[mixtex-bench] decoder: %.1f ms\n", dec_ms);
 
-    if (bench) fprintf(stderr, "[mixtex-bench] total: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
+    if (bench)
+        fprintf(stderr, "[mixtex-bench] total: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_total).count());
 
     if (out_len) *out_len = (int)ctx->output_text.size();
     return ctx->output_text.c_str();
 }
 
-const char * mixtex_ocr_recognize_gray(mixtex_ocr_context * ctx,
-                                        const float * pixels,
-                                        int width, int height,
-                                        int * out_len) {
-    if (!ctx || !pixels) { if (out_len) *out_len = 0; return nullptr; }
+const char * mixtex_ocr_recognize_gray(mixtex_ocr_context * ctx, const float * pixels, int width, int height,
+                                       int * out_len) {
+    if (!ctx || !pixels) {
+        if (out_len) *out_len = 0;
+        return nullptr;
+    }
 
     // Convert gray float [0..1] to uint8 RGB
     std::vector<uint8_t> rgb(width * height * 3);

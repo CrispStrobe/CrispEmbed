@@ -30,10 +30,8 @@ dat_sr_context * dat_sr_init(const char * model_path, int n_threads);
 /// [pixels]: RGB uint8 row-major, [w]×[h].
 /// [out_w], [out_h]: receive output dimensions.
 /// Returns NULL on failure. Caller frees with dat_sr_free_image().
-int dat_sr_process(dat_sr_context * ctx,
-                   const uint8_t * pixels, int w, int h,
-                   int tile_w, int tile_h,
-                   uint8_t ** out, int * out_w, int * out_h);
+int dat_sr_process(dat_sr_context * ctx, const uint8_t * pixels, int w, int h, int tile_w, int tile_h, uint8_t ** out,
+                   int * out_w, int * out_h);
 
 void dat_sr_free_image(uint8_t * pixels);
 void dat_sr_free(dat_sr_context * ctx);

@@ -44,27 +44,27 @@ struct vision_hparams {
     uint32_t hidden_size = 1024;
     uint32_t intermediate_size = 4096;
     uint32_t num_attention_heads = 16;
-    uint32_t head_dim = 64;            // = hidden_size / num_attention_heads
+    uint32_t head_dim = 64; // = hidden_size / num_attention_heads
     uint32_t patch_size = 14;
     uint32_t image_size = 448;
     float layer_norm_eps = 1e-6f;
     bool qkv_bias = true;
 
     // Derived
-    uint32_t n_patches_per_side = 32;  // = image_size / patch_size
-    uint32_t n_patches = 1024;         // = n_patches_per_side^2
-    uint32_t n_positions = 1025;       // = n_patches + 1 (CLS)
+    uint32_t n_patches_per_side = 32; // = image_size / patch_size
+    uint32_t n_patches = 1024;        // = n_patches_per_side^2
+    uint32_t n_positions = 1025;      // = n_patches + 1 (CLS)
 
     // Image preprocessor
-    float image_mean[3] = {0.485f, 0.456f, 0.406f};
-    float image_std[3]  = {0.229f, 0.224f, 0.225f};
+    float image_mean[3] = { 0.485f, 0.456f, 0.406f };
+    float image_std[3] = { 0.229f, 0.224f, 0.225f };
 };
 
 struct projector_hparams {
     float downsample_ratio = 0.5f;
-    uint32_t n_merged_tokens = 256;    // = n_patches * downsample_ratio^2
-    uint32_t merge_dim = 4096;         // = hidden_size / downsample_ratio^2
-    uint32_t output_dim = 2048;        // = llm hidden_size
+    uint32_t n_merged_tokens = 256; // = n_patches * downsample_ratio^2
+    uint32_t merge_dim = 4096;      // = hidden_size / downsample_ratio^2
+    uint32_t output_dim = 2048;     // = llm hidden_size
 };
 
 struct llm_hparams {
@@ -74,7 +74,7 @@ struct llm_hparams {
     uint32_t num_hidden_layers = 24;
     uint32_t num_attention_heads = 16;
     uint32_t num_key_value_heads = 8;
-    uint32_t head_dim = 128;           // = hidden_size / num_attention_heads
+    uint32_t head_dim = 128; // = hidden_size / num_attention_heads
     uint32_t max_position_embeddings = 32768;
     float rms_norm_eps = 1e-5f;
     float rope_theta = 1000000.0f;
@@ -89,7 +89,7 @@ struct llm_hparams {
     // Special tokens
     uint32_t bos_token_id = 1;
     uint32_t eos_token_id = 2;
-    uint32_t image_token_id = 0;       // <IMG_CONTEXT> placeholder
+    uint32_t image_token_id = 0; // <IMG_CONTEXT> placeholder
 };
 
 // ── Weight structures ────────────────────────────────────────────────
@@ -99,8 +99,8 @@ struct vision_block {
     ggml_tensor *norm1_w = nullptr, *norm1_b = nullptr;
     ggml_tensor *norm2_w = nullptr, *norm2_b = nullptr;
     // LayerScale
-    ggml_tensor *ls1 = nullptr;
-    ggml_tensor *ls2 = nullptr;
+    ggml_tensor * ls1 = nullptr;
+    ggml_tensor * ls2 = nullptr;
     // Fused QKV attention (with bias)
     ggml_tensor *qkv_w = nullptr, *qkv_b = nullptr;
     ggml_tensor *proj_w = nullptr, *proj_b = nullptr;
@@ -119,17 +119,17 @@ struct vision_projector {
 };
 
 struct llm_layer {
-    ggml_tensor *attn_norm_w = nullptr;  // RMSNorm (no bias)
-    ggml_tensor *ffn_norm_w = nullptr;
+    ggml_tensor * attn_norm_w = nullptr; // RMSNorm (no bias)
+    ggml_tensor * ffn_norm_w = nullptr;
     // Separate Q/K/V (InternLM2: no bias; Qwen2: with bias)
     ggml_tensor *q_w = nullptr, *q_b = nullptr;
     ggml_tensor *k_w = nullptr, *k_b = nullptr;
     ggml_tensor *v_w = nullptr, *v_b = nullptr;
-    ggml_tensor *o_w = nullptr;
+    ggml_tensor * o_w = nullptr;
     // SwiGLU FFN (no bias)
-    ggml_tensor *ffn_gate_w = nullptr;
-    ggml_tensor *ffn_up_w = nullptr;
-    ggml_tensor *ffn_down_w = nullptr;
+    ggml_tensor * ffn_gate_w = nullptr;
+    ggml_tensor * ffn_up_w = nullptr;
+    ggml_tensor * ffn_down_w = nullptr;
 };
 
 struct model {
@@ -139,18 +139,18 @@ struct model {
 
     // Vision encoder
     ggml_tensor *patch_embed_w = nullptr, *patch_embed_b = nullptr;
-    ggml_tensor *class_embedding = nullptr;    // [1, 1, 1024]
-    ggml_tensor *position_embedding = nullptr; // [1, 1025, 1024]
+    ggml_tensor * class_embedding = nullptr;    // [1, 1, 1024]
+    ggml_tensor * position_embedding = nullptr; // [1, 1025, 1024]
     std::vector<vision_block> vis_blocks;
 
     // MLP projector (mlp1)
     vision_projector proj;
 
     // LLM decoder
-    ggml_tensor *embed_tokens = nullptr;
+    ggml_tensor * embed_tokens = nullptr;
     std::vector<llm_layer> llm_layers;
-    ggml_tensor *output_norm_w = nullptr;
-    ggml_tensor *lm_head_w = nullptr;
+    ggml_tensor * output_norm_w = nullptr;
+    ggml_tensor * lm_head_w = nullptr;
 };
 
 // ── Context ──────────────────────────────────────────────────────────
@@ -158,48 +158,47 @@ struct model {
 // ── Tokenizer (decode only) ──────────────────────────────────────────
 
 struct tokenizer {
-    std::vector<std::string> id_to_piece;  // vocab: id → string
-    std::unordered_map<std::string, int32_t> piece_to_id;  // reverse map
+    std::vector<std::string> id_to_piece;                 // vocab: id → string
+    std::unordered_map<std::string, int32_t> piece_to_id; // reverse map
     int vocab_size = 0;
     int bos_id = 1;
     int eos_id = 2;
-    int im_start_id = -1;  // <|im_start|>
-    int im_end_id = -1;    // <|im_end|>
+    int im_start_id = -1; // <|im_start|>
+    int im_end_id = -1;   // <|im_end|>
     int image_token_id = 0;
-    int newline_id = -1;   // '\n' token
+    int newline_id = -1; // '\n' token
 
     // Build reverse map (call after loading vocab)
     void build_reverse_map();
 
     // Encode text to token IDs (greedy longest-match, not full BPE)
-    std::vector<int32_t> encode(const std::string &text) const;
+    std::vector<int32_t> encode(const std::string & text) const;
 
     // Build InternVL2 chat prompt: system + user(image + text) + assistant
-    std::vector<int32_t> build_prompt(const std::string &user_text,
-                                       int n_image_tokens) const;
+    std::vector<int32_t> build_prompt(const std::string & user_text, int n_image_tokens) const;
 
     // Decode token IDs to UTF-8 text.
-    std::string decode(const std::vector<int32_t> &ids) const;
-    std::string decode(const int32_t *ids, int n) const;
+    std::string decode(const std::vector<int32_t> & ids) const;
+    std::string decode(const int32_t * ids, int n) const;
 };
 
 // ── KV cache ─────────────────────────────────────────────────────────
 
 struct kv_cache {
     // Persistent KV cache: (hd, max_seq, n_kv_heads, n_layers) F16
-    ggml_tensor *k = nullptr;  // all layers K
-    ggml_tensor *v = nullptr;  // all layers V
-    ggml_context *ctx = nullptr;
+    ggml_tensor * k = nullptr; // all layers K
+    ggml_tensor * v = nullptr; // all layers V
+    ggml_context * ctx = nullptr;
     ggml_backend_buffer_t buf = nullptr;
 
-    int max_seq = 0;      // allocated capacity
-    int n_past = 0;       // tokens already in cache
+    int max_seq = 0; // allocated capacity
+    int n_past = 0;  // tokens already in cache
     bool allocated = false;
 };
 
 struct context {
     model m;
-    ggml_context *model_ctx = nullptr;
+    ggml_context * model_ctx = nullptr;
     ggml_backend_buffer_t model_buf = nullptr;
 
     ggml_backend_t backend = nullptr;
@@ -221,78 +220,73 @@ struct context {
     std::string diff_ref_path;
 
     // Cached vision encoder graph (built once, reused across tiles)
-    ggml_context *vis_graph_ctx = nullptr;
-    ggml_cgraph *vis_graph = nullptr;
-    ggml_tensor *vis_input = nullptr;
-    ggml_tensor *vis_output = nullptr;
+    ggml_context * vis_graph_ctx = nullptr;
+    ggml_cgraph * vis_graph = nullptr;
+    ggml_tensor * vis_input = nullptr;
+    ggml_tensor * vis_output = nullptr;
     bool vis_graph_cached = false;
 };
 
 // ── API ──────────────────────────────────────────────────────────────
 
 // Load model from GGUF file.
-bool load(context &ctx, const char *gguf_path, int n_threads = 1, int verbosity = 1);
+bool load(context & ctx, const char * gguf_path, int n_threads = 1, int verbosity = 1);
 
 // Free model resources.
-void free_(context &ctx);
+void free_(context & ctx);
 
 // Run vision encoder on a single 448×448 tile.
 // pixels: (3, 448, 448) normalized float, planar RGB
 // Returns (n_positions, hidden_size) hidden states.
 struct vision_result {
-    float *hidden = nullptr;     // malloc'd, caller frees
+    float * hidden = nullptr; // malloc'd, caller frees
     int n_tokens = 0;
     int hidden_dim = 0;
 };
 
-bool encode_vision_tile(context &ctx,
-                        const float *pixels,  // [3, 448, 448] normalized
-                        vision_result &out);
+bool encode_vision_tile(context & ctx,
+                        const float * pixels, // [3, 448, 448] normalized
+                        vision_result & out);
 
 // Run pixel unshuffle + MLP projector on vision hidden states.
 // input: (n_patches, vis_hidden) from encode_vision_tile (CLS removed)
 // Returns (n_merged, llm_hidden) projected embeddings.
 struct project_result {
-    float *embeds = nullptr;     // malloc'd, caller frees
+    float * embeds = nullptr; // malloc'd, caller frees
     int n_tokens = 0;
     int embed_dim = 0;
 };
 
-bool project_vision(context &ctx,
-                    const float *vis_hidden, int n_patches,
-                    project_result &out);
+bool project_vision(context & ctx, const float * vis_hidden, int n_patches, project_result & out);
 
 // Run full vision pipeline: tiles → ViT → unshuffle → project → concat
 // For multi-tile input (dynamic resolution).
 struct vision_pipeline_result {
-    float *image_embeds = nullptr;   // malloc'd, (total_tokens, llm_hidden)
+    float * image_embeds = nullptr; // malloc'd, (total_tokens, llm_hidden)
     int n_image_tokens = 0;
     int embed_dim = 0;
 };
 
-bool encode_vision(context &ctx,
-                   const float *tiles,  // [n_tiles, 3, 448, 448]
-                   int n_tiles,
-                   vision_pipeline_result &out);
+bool encode_vision(context & ctx,
+                   const float * tiles, // [n_tiles, 3, 448, 448]
+                   int n_tiles, vision_pipeline_result & out);
 
 // Run LLM decoder forward pass (for parity testing).
 struct llm_result {
-    float *hidden = nullptr;
-    float *logits = nullptr;
+    float * hidden = nullptr;
+    float * logits = nullptr;
     int n_tokens = 0;
     int hidden_dim = 0;
     int vocab_size = 0;
 };
 
 struct image_input {
-    const float *image_embeds = nullptr;
+    const float * image_embeds = nullptr;
     int n_image_tokens = 0;
 };
 
-bool run_llm_forward(context &ctx,
-                     const int32_t *token_ids, int n_tokens,
-                     llm_result &out,
-                     const image_input *img = nullptr);
+bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm_result & out,
+                     const image_input * img = nullptr);
 
 // Generate text from image + prompt.
 struct generate_result {
@@ -301,13 +295,10 @@ struct generate_result {
     std::vector<float> token_confidences;
 };
 
-bool generate(context &ctx,
-              const float *image_embeds, int n_image_tokens, int embed_dim,
-              const int32_t *prompt_token_ids, int n_prompt_tokens,
-              int max_new_tokens,
-              generate_result &out);
+bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int embed_dim,
+              const int32_t * prompt_token_ids, int n_prompt_tokens, int max_new_tokens, generate_result & out);
 
-}  // namespace internvl2_ocr
+} // namespace internvl2_ocr
 
 // ── C ABI (for crispembed.cpp dispatch) ──────────────────────────────
 
@@ -323,17 +314,11 @@ void internvl2_ocr_free(internvl2_ocr_context * ctx);
 void internvl2_ocr_set_prompt(internvl2_ocr_context * ctx, const char * prompt);
 void internvl2_ocr_set_max_tokens(internvl2_ocr_context * ctx, int max_tokens);
 
-const char * internvl2_ocr_recognize_raw(
-    internvl2_ocr_context * ctx,
-    const uint8_t * pixel_bytes,
-    int width, int height, int channels,
-    int * out_len);
+const char * internvl2_ocr_recognize_raw(internvl2_ocr_context * ctx, const uint8_t * pixel_bytes, int width,
+                                         int height, int channels, int * out_len);
 
-const char * internvl2_ocr_recognize(
-    internvl2_ocr_context * ctx,
-    const float * pixels,
-    int width, int height,
-    int * out_len);
+const char * internvl2_ocr_recognize(internvl2_ocr_context * ctx, const float * pixels, int width, int height,
+                                     int * out_len);
 
 const float * internvl2_ocr_confidences(const internvl2_ocr_context * ctx, int * n_tokens);
 float internvl2_ocr_mean_confidence(const internvl2_ocr_context * ctx);

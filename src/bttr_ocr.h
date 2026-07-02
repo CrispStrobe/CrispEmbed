@@ -16,9 +16,9 @@ typedef struct bttr_ocr_context bttr_ocr_context;
 
 typedef struct bttr_ocr_hparams {
     // Encoder (DenseNet)
-    int32_t growth_rate;        // 24
-    int32_t num_layers;         // 16 (per block)
-    int32_t input_channels;     // 1
+    int32_t growth_rate;    // 24
+    int32_t num_layers;     // 16 (per block)
+    int32_t input_channels; // 1
 
     // Decoder (Transformer)
     int32_t d_model;            // 256
@@ -33,26 +33,18 @@ typedef struct bttr_ocr_hparams {
 } bttr_ocr_hparams;
 
 bttr_ocr_context * bttr_ocr_init(const char * model_path, int n_threads);
-void               bttr_ocr_free(bttr_ocr_context * ctx);
+void bttr_ocr_free(bttr_ocr_context * ctx);
 const bttr_ocr_hparams * bttr_ocr_get_hparams(const bttr_ocr_context * ctx);
 
 /// Recognize with greedy decoding (beam_width=1) or beam search.
 /// beam_width <= 1 uses fast greedy decoding; >1 uses beam search.
-const char * bttr_ocr_recognize(
-    bttr_ocr_context * ctx,
-    const float * pixels, int width, int height,
-    int * out_len);
+const char * bttr_ocr_recognize(bttr_ocr_context * ctx, const float * pixels, int width, int height, int * out_len);
 
-const char * bttr_ocr_recognize_beam(
-    bttr_ocr_context * ctx,
-    const float * pixels, int width, int height,
-    int beam_width,
-    int * out_len);
+const char * bttr_ocr_recognize_beam(bttr_ocr_context * ctx, const float * pixels, int width, int height,
+                                     int beam_width, int * out_len);
 
-const char * bttr_ocr_recognize_raw(
-    bttr_ocr_context * ctx,
-    const uint8_t * pixel_bytes, int width, int height, int channels,
-    int * out_len);
+const char * bttr_ocr_recognize_raw(bttr_ocr_context * ctx, const uint8_t * pixel_bytes, int width, int height,
+                                    int channels, int * out_len);
 
 /// Get per-character confidence scores from the last recognition.
 /// Returns array of length *n_chars (one per output token).

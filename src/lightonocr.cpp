@@ -15,17 +15,16 @@
 // instead of including stb_image.h — `#define STB_IMAGE_STATIC` + include declared
 // them static-without-definition in this TU → undefined-internal link error.
 extern "C" {
-unsigned char* stbi_load(const char* filename, int* x, int* y, int* channels_in_file,
-                         int desired_channels);
-void stbi_image_free(void* retval_from_stbi_load);
+unsigned char * stbi_load(const char * filename, int * x, int * y, int * channels_in_file, int desired_channels);
+void stbi_image_free(void * retval_from_stbi_load);
 }
 
 #include <algorithm>
 #include <chrono>
 
 // Env var helpers for gating debug prints and feature paths
-static bool env_flag(const char *name) {
-    const char *v = std::getenv(name);
+static bool env_flag(const char * name) {
+    const char * v = std::getenv(name);
     return v && (v[0] == '1' || v[0] == 'y' || v[0] == 'Y');
 }
 #define LOCR_DEBUG env_flag("CRISPEMBED_LIGHTONOCR_DEBUG")
@@ -35,7 +34,7 @@ static bool env_flag(const char *name) {
 static bool use_flash_attn() {
     static int cached = -1;
     if (cached < 0) {
-        const char *v = std::getenv("CRISPEMBED_LIGHTONOCR_NO_FLASH");
+        const char * v = std::getenv("CRISPEMBED_LIGHTONOCR_NO_FLASH");
         cached = (v && (v[0] == '1' || v[0] == 'y' || v[0] == 'Y')) ? 0 : 1;
     }
     return cached != 0;
@@ -55,18 +54,18 @@ namespace lightonocr {
 // ---------------------------------------------------------------------------
 
 struct vis_layer {
-    ggml_tensor *q_w, *k_w, *v_w, *o_w;        // 1024×1024 each
-    ggml_tensor *attn_norm_w;                     // RMSNorm
-    ggml_tensor *gate_w, *up_w, *down_w;         // SiLU FFN
-    ggml_tensor *ffn_norm_w;                      // RMSNorm
+    ggml_tensor *q_w, *k_w, *v_w, *o_w;  // 1024×1024 each
+    ggml_tensor * attn_norm_w;           // RMSNorm
+    ggml_tensor *gate_w, *up_w, *down_w; // SiLU FFN
+    ggml_tensor * ffn_norm_w;            // RMSNorm
 };
 
 struct lm_layer {
-    ggml_tensor *q_w, *k_w, *v_w, *o_w;         // Q: 2048×1024, KV: 1024×1024
-    ggml_tensor *q_norm_w, *k_norm_w;            // QK norm (head_dim)
-    ggml_tensor *attn_norm_w;                     // RMSNorm
-    ggml_tensor *gate_w, *up_w, *down_w;         // SwiGLU FFN
-    ggml_tensor *ffn_norm_w;                      // RMSNorm
+    ggml_tensor *q_w, *k_w, *v_w, *o_w;  // Q: 2048×1024, KV: 1024×1024
+    ggml_tensor *q_norm_w, *k_norm_w;    // QK norm (head_dim)
+    ggml_tensor * attn_norm_w;           // RMSNorm
+    ggml_tensor *gate_w, *up_w, *down_w; // SwiGLU FFN
+    ggml_tensor * ffn_norm_w;            // RMSNorm
 };
 
 struct model {
@@ -86,27 +85,27 @@ struct model {
     int image_token_id, eos_token_id, pad_token_id;
 
     // Vision weights
-    ggml_tensor *patch_conv_w;          // [1024, 3, 14, 14]
-    ggml_tensor *ln_pre_w;             // [1024]
+    ggml_tensor * patch_conv_w; // [1024, 3, 14, 14]
+    ggml_tensor * ln_pre_w;     // [1024]
     std::vector<vis_layer> vis;
 
     // Projection
-    ggml_tensor *proj_merger_w;         // [1024, 4096]
-    ggml_tensor *proj_linear1_w;        // [1024, 1024]
-    ggml_tensor *proj_linear2_w;        // [1024, 1024]
-    ggml_tensor *proj_norm_w;           // [1024]
+    ggml_tensor * proj_merger_w;  // [1024, 4096]
+    ggml_tensor * proj_linear1_w; // [1024, 1024]
+    ggml_tensor * proj_linear2_w; // [1024, 1024]
+    ggml_tensor * proj_norm_w;    // [1024]
 
     // LM decoder
-    ggml_tensor *embed_tokens;          // [vocab, dim]
-    ggml_tensor *lm_norm_w;            // [dim]
+    ggml_tensor * embed_tokens; // [vocab, dim]
+    ggml_tensor * lm_norm_w;    // [dim]
     std::vector<lm_layer> lm;
 };
 
 struct kv_cache_state {
-    ggml_context *ctx = nullptr;
+    ggml_context * ctx = nullptr;
     ggml_backend_buffer_t buf = nullptr;
-    ggml_tensor *k = nullptr;   // (head_dim, max_seq, n_kv_heads, n_layers) F16
-    ggml_tensor *v = nullptr;   // same shape
+    ggml_tensor * k = nullptr; // (head_dim, max_seq, n_kv_heads, n_layers) F16
+    ggml_tensor * v = nullptr; // same shape
     int max_seq = 0;
     int n_past = 0;
     bool allocated = false;
@@ -138,14 +137,14 @@ struct context {
 // KV cache management
 // ---------------------------------------------------------------------------
 
-static bool alloc_kv_cache(context &ctx, int max_seq) {
-    auto &m = ctx.m;
+static bool alloc_kv_cache(context & ctx, int max_seq) {
+    auto & m = ctx.m;
     int hd = m.lm_head_dim;
     int nkv = m.lm_kv_heads;
     int nl = m.lm_layers;
 
     size_t ctx_size = 2 * ggml_tensor_overhead() + 256;
-    ggml_init_params ip{ctx_size, nullptr, true};
+    ggml_init_params ip{ ctx_size, nullptr, true };
     ctx.kvc.ctx = ggml_init(ip);
 
     ctx.kvc.k = ggml_new_tensor_4d(ctx.kvc.ctx, GGML_TYPE_F16, hd, max_seq, nkv, nl);
@@ -167,14 +166,20 @@ static bool alloc_kv_cache(context &ctx, int max_seq) {
     ctx.kvc.allocated = true;
 
     size_t kv_bytes = ggml_backend_buffer_get_size(ctx.kvc.buf);
-    fprintf(stderr, "lightonocr: KV cache: %d layers, max_seq=%d, %.1f MB (F16)\n",
-            nl, max_seq, (float)kv_bytes / 1024 / 1024);
+    fprintf(stderr, "lightonocr: KV cache: %d layers, max_seq=%d, %.1f MB (F16)\n", nl, max_seq,
+            (float)kv_bytes / 1024 / 1024);
     return true;
 }
 
-static void free_kv_cache(context &ctx) {
-    if (ctx.kvc.buf) { ggml_backend_buffer_free(ctx.kvc.buf); ctx.kvc.buf = nullptr; }
-    if (ctx.kvc.ctx) { ggml_free(ctx.kvc.ctx); ctx.kvc.ctx = nullptr; }
+static void free_kv_cache(context & ctx) {
+    if (ctx.kvc.buf) {
+        ggml_backend_buffer_free(ctx.kvc.buf);
+        ctx.kvc.buf = nullptr;
+    }
+    if (ctx.kvc.ctx) {
+        ggml_free(ctx.kvc.ctx);
+        ctx.kvc.ctx = nullptr;
+    }
     ctx.kvc.allocated = false;
     ctx.kvc.n_past = 0;
 }
@@ -183,48 +188,47 @@ static void free_kv_cache(context &ctx) {
 // Loading
 // ---------------------------------------------------------------------------
 
-bool load(context &ctx, const char *gguf_path, int n_threads) {
+bool load(context & ctx, const char * gguf_path, int n_threads) {
     ctx.n_threads = n_threads;
 
     // Pass 1: metadata
-    gguf_context *gctx = core_gguf::open_metadata(gguf_path);
+    gguf_context * gctx = core_gguf::open_metadata(gguf_path);
     if (!gctx) return false;
 
-    auto &m = ctx.m;
-    m.vis_layers    = core_gguf::kv_u32(gctx, "lightonocr.vision.num_hidden_layers", 24);
-    m.vis_dim       = core_gguf::kv_u32(gctx, "lightonocr.vision.hidden_size", 1024);
-    m.vis_heads     = core_gguf::kv_u32(gctx, "lightonocr.vision.num_attention_heads", 16);
-    m.vis_head_dim  = core_gguf::kv_u32(gctx, "lightonocr.vision.head_dim", 64);
-    m.vis_inter     = core_gguf::kv_u32(gctx, "lightonocr.vision.intermediate_size", 4096);
-    m.patch_size    = core_gguf::kv_u32(gctx, "lightonocr.vision.patch_size", 14);
-    m.image_size    = core_gguf::kv_u32(gctx, "lightonocr.vision.image_size", 1540);
+    auto & m = ctx.m;
+    m.vis_layers = core_gguf::kv_u32(gctx, "lightonocr.vision.num_hidden_layers", 24);
+    m.vis_dim = core_gguf::kv_u32(gctx, "lightonocr.vision.hidden_size", 1024);
+    m.vis_heads = core_gguf::kv_u32(gctx, "lightonocr.vision.num_attention_heads", 16);
+    m.vis_head_dim = core_gguf::kv_u32(gctx, "lightonocr.vision.head_dim", 64);
+    m.vis_inter = core_gguf::kv_u32(gctx, "lightonocr.vision.intermediate_size", 4096);
+    m.patch_size = core_gguf::kv_u32(gctx, "lightonocr.vision.patch_size", 14);
+    m.image_size = core_gguf::kv_u32(gctx, "lightonocr.vision.image_size", 1540);
     m.vis_rope_theta = core_gguf::kv_f32(gctx, "lightonocr.vision.rope_theta", 10000.0f);
 
-    m.lm_layers     = core_gguf::kv_u32(gctx, "lightonocr.text.num_hidden_layers", 28);
-    m.lm_dim        = core_gguf::kv_u32(gctx, "lightonocr.text.hidden_size", 1024);
-    m.lm_heads      = core_gguf::kv_u32(gctx, "lightonocr.text.num_attention_heads", 16);
-    m.lm_kv_heads   = core_gguf::kv_u32(gctx, "lightonocr.text.num_key_value_heads", 8);
-    m.lm_head_dim   = core_gguf::kv_u32(gctx, "lightonocr.text.head_dim", 128);
-    m.lm_inter      = core_gguf::kv_u32(gctx, "lightonocr.text.intermediate_size", 3072);
-    m.vocab_size    = core_gguf::kv_u32(gctx, "lightonocr.text.vocab_size", 151936);
-    m.lm_rms_eps    = core_gguf::kv_f32(gctx, "lightonocr.text.rms_norm_eps", 1e-6f);
+    m.lm_layers = core_gguf::kv_u32(gctx, "lightonocr.text.num_hidden_layers", 28);
+    m.lm_dim = core_gguf::kv_u32(gctx, "lightonocr.text.hidden_size", 1024);
+    m.lm_heads = core_gguf::kv_u32(gctx, "lightonocr.text.num_attention_heads", 16);
+    m.lm_kv_heads = core_gguf::kv_u32(gctx, "lightonocr.text.num_key_value_heads", 8);
+    m.lm_head_dim = core_gguf::kv_u32(gctx, "lightonocr.text.head_dim", 128);
+    m.lm_inter = core_gguf::kv_u32(gctx, "lightonocr.text.intermediate_size", 3072);
+    m.vocab_size = core_gguf::kv_u32(gctx, "lightonocr.text.vocab_size", 151936);
+    m.lm_rms_eps = core_gguf::kv_f32(gctx, "lightonocr.text.rms_norm_eps", 1e-6f);
     m.lm_rope_theta = core_gguf::kv_f32(gctx, "lightonocr.text.rope_theta", 1000000.0f);
-    m.use_qk_norm   = core_gguf::kv_bool(gctx, "lightonocr.text.use_qk_norm", true);
+    m.use_qk_norm = core_gguf::kv_bool(gctx, "lightonocr.text.use_qk_norm", true);
 
     m.spatial_merge_size = core_gguf::kv_u32(gctx, "lightonocr.spatial_merge_size", 2);
     m.image_token_id = core_gguf::kv_u32(gctx, "lightonocr.image_token_id", 151655);
-    m.eos_token_id   = core_gguf::kv_u32(gctx, "lightonocr.eos_token_id", 151645);
-    m.pad_token_id   = core_gguf::kv_u32(gctx, "lightonocr.pad_token_id", 151643);
+    m.eos_token_id = core_gguf::kv_u32(gctx, "lightonocr.eos_token_id", 151645);
+    m.pad_token_id = core_gguf::kv_u32(gctx, "lightonocr.pad_token_id", 151643);
 
     // Read tokenizer vocab
     ctx.vocab = core_gguf::kv_str_array(gctx, "tokenizer.ggml.tokens");
-    for (int i = 0; i < (int)ctx.vocab.size(); i++)
-        ctx.token_to_id[ctx.vocab[i]] = i;
+    for (int i = 0; i < (int)ctx.vocab.size(); i++) ctx.token_to_id[ctx.vocab[i]] = i;
 
     core_gguf::free_metadata(gctx);
 
-    fprintf(stderr, "lightonocr: vis=%dL/%dd, lm=%dL/%dd, vocab=%d\n",
-            m.vis_layers, m.vis_dim, m.lm_layers, m.lm_dim, m.vocab_size);
+    fprintf(stderr, "lightonocr: vis=%dL/%dd, lm=%dL/%dd, vocab=%d\n", m.vis_layers, m.vis_dim, m.lm_layers, m.lm_dim,
+            m.vocab_size);
 
     // Pass 2: weights
     ctx.backend = ggml_backend_cpu_init();
@@ -234,45 +238,52 @@ bool load(context &ctx, const char *gguf_path, int n_threads) {
         return false;
     }
 
-    auto get = [&](const char *name) -> ggml_tensor* {
-        return core_gguf::try_get(ctx.wl.tensors, name);
-    };
+    auto get = [&](const char * name) -> ggml_tensor * { return core_gguf::try_get(ctx.wl.tensors, name); };
 
     // Vision
     m.patch_conv_w = get("vis.patch_conv.weight");
-    m.ln_pre_w     = get("vis.ln_pre.weight");
+    m.ln_pre_w = get("vis.ln_pre.weight");
     m.vis.resize(m.vis_layers);
     for (int i = 0; i < m.vis_layers; i++) {
-        char pfx[32]; snprintf(pfx, sizeof(pfx), "vis.blk.%d.", i);
-        auto k = [&](const char *s) { return get((std::string(pfx) + s).c_str()); };
-        auto &L = m.vis[i];
-        L.q_w = k("attn.q_proj.weight"); L.k_w = k("attn.k_proj.weight");
-        L.v_w = k("attn.v_proj.weight"); L.o_w = k("attn.o_proj.weight");
+        char pfx[32];
+        snprintf(pfx, sizeof(pfx), "vis.blk.%d.", i);
+        auto k = [&](const char * s) { return get((std::string(pfx) + s).c_str()); };
+        auto & L = m.vis[i];
+        L.q_w = k("attn.q_proj.weight");
+        L.k_w = k("attn.k_proj.weight");
+        L.v_w = k("attn.v_proj.weight");
+        L.o_w = k("attn.o_proj.weight");
         L.attn_norm_w = k("attn_norm.weight");
-        L.gate_w = k("ffn.gate_proj.weight"); L.up_w = k("ffn.up_proj.weight");
+        L.gate_w = k("ffn.gate_proj.weight");
+        L.up_w = k("ffn.up_proj.weight");
         L.down_w = k("ffn.down_proj.weight");
         L.ffn_norm_w = k("ffn_norm.weight");
     }
 
     // Projection
-    m.proj_merger_w  = get("proj.patch_merger.merging_layer.weight");
+    m.proj_merger_w = get("proj.patch_merger.merging_layer.weight");
     m.proj_linear1_w = get("proj.linear_1.weight");
     m.proj_linear2_w = get("proj.linear_2.weight");
-    m.proj_norm_w    = get("proj.norm.weight");
+    m.proj_norm_w = get("proj.norm.weight");
 
     // LM decoder
     m.embed_tokens = get("lm.embed.weight");
-    m.lm_norm_w    = get("lm.norm.weight");
+    m.lm_norm_w = get("lm.norm.weight");
     m.lm.resize(m.lm_layers);
     for (int i = 0; i < m.lm_layers; i++) {
-        char pfx[32]; snprintf(pfx, sizeof(pfx), "lm.blk.%d.", i);
-        auto k = [&](const char *s) { return get((std::string(pfx) + s).c_str()); };
-        auto &L = m.lm[i];
-        L.q_w = k("attn.q_proj.weight"); L.k_w = k("attn.k_proj.weight");
-        L.v_w = k("attn.v_proj.weight"); L.o_w = k("attn.o_proj.weight");
-        L.q_norm_w = k("attn.q_norm.weight"); L.k_norm_w = k("attn.k_norm.weight");
+        char pfx[32];
+        snprintf(pfx, sizeof(pfx), "lm.blk.%d.", i);
+        auto k = [&](const char * s) { return get((std::string(pfx) + s).c_str()); };
+        auto & L = m.lm[i];
+        L.q_w = k("attn.q_proj.weight");
+        L.k_w = k("attn.k_proj.weight");
+        L.v_w = k("attn.v_proj.weight");
+        L.o_w = k("attn.o_proj.weight");
+        L.q_norm_w = k("attn.q_norm.weight");
+        L.k_norm_w = k("attn.k_norm.weight");
         L.attn_norm_w = k("attn_norm.weight");
-        L.gate_w = k("ffn.gate_proj.weight"); L.up_w = k("ffn.up_proj.weight");
+        L.gate_w = k("ffn.gate_proj.weight");
+        L.up_w = k("ffn.up_proj.weight");
         L.down_w = k("ffn.down_proj.weight");
         L.ffn_norm_w = k("ffn_norm.weight");
     }
@@ -291,7 +302,7 @@ bool load(context &ctx, const char *gguf_path, int n_threads) {
     return true;
 }
 
-void free_(context &ctx) {
+void free_(context & ctx) {
     free_kv_cache(ctx);
     if (ctx.sched) ggml_backend_sched_free(ctx.sched);
     core_gguf::free_weights(ctx.wl);
@@ -302,12 +313,11 @@ void free_(context &ctx) {
 // Image preprocessing (simplified — resize + normalize + patchify)
 // ---------------------------------------------------------------------------
 
-static std::vector<float> preprocess_image(const uint8_t *rgb, int w, int h,
-                                             int patch_size, int max_size,
-                                             int *out_ph, int *out_pw) {
+static std::vector<float> preprocess_image(const uint8_t * rgb, int w, int h, int patch_size, int max_size,
+                                           int * out_ph, int * out_pw) {
     // Allow runtime override of effective max_size for CPU-friendly inference
     int eff_max = max_size;
-    if (const char *mp = getenv("CRISPEMBED_MAX_PIXELS")) {
+    if (const char * mp = getenv("CRISPEMBED_MAX_PIXELS")) {
         int max_px = atoi(mp);
         // Derive max_side from max_pixels assuming square aspect
         int max_side = (int)std::sqrt((float)max_px);
@@ -315,7 +325,7 @@ static std::vector<float> preprocess_image(const uint8_t *rgb, int w, int h,
     }
     // Resize to fit max_size while preserving aspect ratio, then pad to patch grid
     float scale = std::min((float)eff_max / w, (float)eff_max / h);
-    if (scale > 1.0f) scale = 1.0f;  // don't upscale
+    if (scale > 1.0f) scale = 1.0f; // don't upscale
     int rw = (int)(w * scale);
     int rh = (int)(h * scale);
     // Round up to patch grid
@@ -333,8 +343,8 @@ static std::vector<float> preprocess_image(const uint8_t *rgb, int w, int h,
     // Bilinear resize to (tw, th) + normalize (ImageNet mean/std).
     // The image must fill the entire target grid — Pixtral processor does
     // img.resize((tw, th), BILINEAR) which stretches the input to fit.
-    const float mean[3] = {0.48145466f, 0.4578275f, 0.40821073f};
-    const float std_[3] = {0.26862954f, 0.26130258f, 0.27577711f};
+    const float mean[3] = { 0.48145466f, 0.4578275f, 0.40821073f };
+    const float std_[3] = { 0.26862954f, 0.26130258f, 0.27577711f };
 
     std::vector<float> pixels(3 * th * tw, 0.0f);
     for (int y = 0; y < th; y++) {
@@ -353,7 +363,7 @@ static std::vector<float> preprocess_image(const uint8_t *rgb, int w, int h,
                 float v01 = rgb[(y0 * w + x1) * 3 + c] / 255.0f;
                 float v10 = rgb[(y1 * w + x0) * 3 + c] / 255.0f;
                 float v11 = rgb[(y1 * w + x1) * 3 + c] / 255.0f;
-                float val = (1-fy)*((1-fx)*v00 + fx*v01) + fy*((1-fx)*v10 + fx*v11);
+                float val = (1 - fy) * ((1 - fx) * v00 + fx * v01) + fy * ((1 - fx) * v10 + fx * v11);
                 pixels[c * th * tw + y * tw + x] = (val - mean[c]) / std_[c];
             }
         }
@@ -368,12 +378,11 @@ static std::vector<float> preprocess_image(const uint8_t *rgb, int w, int h,
 // 2D RoPE: compute cos/sin for Pixtral's interleaved h/w frequencies
 // ---------------------------------------------------------------------------
 
-static void compute_2d_rope(int ph, int pw, int head_dim, float theta,
-                             std::vector<float> &cos_out,
-                             std::vector<float> &sin_out) {
+static void compute_2d_rope(int ph, int pw, int head_dim, float theta, std::vector<float> & cos_out,
+                            std::vector<float> & sin_out) {
     int T = ph * pw;
-    int half = head_dim / 2;     // rotate-half pair stride
-    int quarter = head_dim / 4;  // # of h freqs = # of w freqs
+    int half = head_dim / 2;    // rotate-half pair stride
+    int quarter = head_dim / 4; // # of h freqs = # of w freqs
     cos_out.resize(head_dim * T);
     sin_out.resize(head_dim * T);
 
@@ -384,17 +393,16 @@ static void compute_2d_rope(int ph, int pw, int head_dim, float theta,
     // angle vector across the two halves: idx j and j+half share the same angle.
     //   freqs[k] = 1 / theta^(2k/dim),  h_freq[j] = freqs[2j], w_freq[j] = freqs[2j+1]
     std::vector<float> freqs(half);
-    for (int k = 0; k < half; k++)
-        freqs[k] = 1.0f / powf(theta, (float)(2 * k) / head_dim);
+    for (int k = 0; k < half; k++) freqs[k] = 1.0f / powf(theta, (float)(2 * k) / head_dim);
 
     for (int y = 0; y < ph; y++) {
         for (int x = 0; x < pw; x++) {
             int t = y * pw + x;
-            float *cr = cos_out.data() + (size_t)t * head_dim;
-            float *sr = sin_out.data() + (size_t)t * head_dim;
+            float * cr = cos_out.data() + (size_t)t * head_dim;
+            float * sr = sin_out.data() + (size_t)t * head_dim;
             for (int j = 0; j < quarter; j++) {
-                float ah = y * freqs[2 * j];      // height, freqs[::2]
-                float aw = x * freqs[2 * j + 1];  // width,  freqs[1::2]
+                float ah = y * freqs[2 * j];     // height, freqs[::2]
+                float aw = x * freqs[2 * j + 1]; // width,  freqs[1::2]
                 // first half: [h_angles | w_angles]; second half repeats it
                 cr[j] = cr[j + half] = cosf(ah);
                 sr[j] = sr[j + half] = sinf(ah);
@@ -412,14 +420,13 @@ static void compute_2d_rope(int ph, int pw, int head_dim, float theta,
 // Apply patch_conv via ggml matmul (im2col + BLAS-backed mul_mat).
 // Conv2d 14×14 stride 14 with no overlap = extract each patch as flat vector,
 // then matmul with weight. Env: CRISPEMBED_LIGHTONOCR_SCALAR_PATCH=1 for fallback.
-static std::vector<float> apply_patch_conv(context &ctx,
-                                             const std::vector<float> &pixels,
-                                             int th, int tw, int ph, int pw) {
-    const auto &m = ctx.m;
+static std::vector<float> apply_patch_conv(context & ctx, const std::vector<float> & pixels, int th, int tw, int ph,
+                                           int pw) {
+    const auto & m = ctx.m;
     int D = m.vis_dim;    // 1024
     int P = m.patch_size; // 14
     int T = ph * pw;
-    int patch_len = 3 * P * P;  // 588
+    int patch_len = 3 * P * P; // 588
 
     // im2col: extract non-overlapping patches → [T, patch_len] F32
     std::vector<float> im2col(T * patch_len, 0.0f);
@@ -433,8 +440,7 @@ static std::vector<float> apply_patch_conv(context &ctx,
                     for (int kx = 0; kx < P; kx++) {
                         int ix = px * P + kx;
                         if (ix >= tw) continue;
-                        im2col[t * patch_len + c * P * P + ky * P + kx] =
-                            pixels[c * th * tw + iy * tw + ix];
+                        im2col[t * patch_len + c * P * P + ky * P + kx] = pixels[c * th * tw + iy * tw + ix];
                     }
                 }
             }
@@ -451,8 +457,7 @@ static std::vector<float> apply_patch_conv(context &ctx,
         for (int t = 0; t < T; t++)
             for (int d = 0; d < D; d++) {
                 float s = 0;
-                for (int k = 0; k < patch_len; k++)
-                    s += im2col[t * patch_len + k] * w[d * patch_len + k];
+                for (int k = 0; k < patch_len; k++) s += im2col[t * patch_len + k] * w[d * patch_len + k];
                 result[t * D + d] = s;
             }
         return result;
@@ -463,19 +468,21 @@ static std::vector<float> apply_patch_conv(context &ctx,
     // For ggml_mul_mat(A, B) = A^T × B, we need A=[patch_len, D], B=[patch_len, T]
     // Result: [D, T]
     size_t buf_sz = ggml_tensor_overhead() * 8 + ggml_graph_overhead();
-    ggml_init_params ip{buf_sz, nullptr, true};
-    ggml_context *g = ggml_init(ip);
+    ggml_init_params ip{ buf_sz, nullptr, true };
+    ggml_context * g = ggml_init(ip);
 
     // Reshape weight: [P, P, 3, D] → [patch_len, D] (same data, just metadata)
-    ggml_tensor *w = ggml_reshape_2d(g, m.patch_conv_w, patch_len, D);
+    ggml_tensor * w = ggml_reshape_2d(g, m.patch_conv_w, patch_len, D);
 
-    ggml_tensor *inp = ggml_new_tensor_2d(g, GGML_TYPE_F32, patch_len, T);
-    ggml_set_name(inp, "im2col"); ggml_set_input(inp);
+    ggml_tensor * inp = ggml_new_tensor_2d(g, GGML_TYPE_F32, patch_len, T);
+    ggml_set_name(inp, "im2col");
+    ggml_set_input(inp);
 
-    ggml_tensor *out = ggml_mul_mat(g, w, inp);  // [D, T]
-    ggml_set_name(out, "patch_out"); ggml_set_output(out);
+    ggml_tensor * out = ggml_mul_mat(g, w, inp); // [D, T]
+    ggml_set_name(out, "patch_out");
+    ggml_set_output(out);
 
-    ggml_cgraph *gf = ggml_new_graph(g);
+    ggml_cgraph * gf = ggml_new_graph(g);
     ggml_build_forward_expand(gf, out);
 
     ggml_backend_sched_reset(ctx.sched);
@@ -489,52 +496,49 @@ static std::vector<float> apply_patch_conv(context &ctx,
         for (int t = 0; t < T; t++)
             for (int d = 0; d < D; d++) {
                 float s = 0;
-                for (int k = 0; k < patch_len; k++)
-                    s += im2col[t * patch_len + k] * wf[d * patch_len + k];
+                for (int k = 0; k < patch_len; k++) s += im2col[t * patch_len + k] * wf[d * patch_len + k];
                 result[t * D + d] = s;
             }
         return result;
     }
 
-    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "im2col"),
-                            im2col.data(), 0, T * patch_len * sizeof(float));
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "im2col"), im2col.data(), 0, T * patch_len * sizeof(float));
 
     ggml_backend_cpu_set_n_threads(ctx.backend, ctx.n_threads);
     ggml_backend_sched_graph_compute(ctx.sched, gf);
 
     std::vector<float> result(T * D);
-    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "patch_out"),
-                            result.data(), 0, T * D * sizeof(float));
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "patch_out"), result.data(), 0, T * D * sizeof(float));
     ggml_free(g);
     return result;
 }
 
 // Build vision encoder ggml graph (24 transformer layers)
-static bool run_vision_encoder(context &ctx,
-                                const std::vector<float> &patch_embeds,
-                                const std::vector<float> &rope_cos,
-                                const std::vector<float> &rope_sin,
-                                int n_patches,
-                                std::vector<float> &out) {
-    auto &m = ctx.m;
+static bool run_vision_encoder(context & ctx, const std::vector<float> & patch_embeds,
+                               const std::vector<float> & rope_cos, const std::vector<float> & rope_sin, int n_patches,
+                               std::vector<float> & out) {
+    auto & m = ctx.m;
     const int D = m.vis_dim;
     const int NH = m.vis_heads;
     const int HD = m.vis_head_dim;
     const float attn_scale = 1.0f / sqrtf((float)HD);
 
-    ggml_init_params ip{ctx.compute_meta.size(), ctx.compute_meta.data(), true};
-    ggml_context *g = ggml_init(ip);
-    ggml_cgraph *gf = ggml_new_graph_custom(g, 16384, false);
+    ggml_init_params ip{ ctx.compute_meta.size(), ctx.compute_meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, 16384, false);
 
     // Inputs
-    ggml_tensor *x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_patches);
-    ggml_set_name(x, "vis_input"); ggml_set_input(x);
+    ggml_tensor * x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_patches);
+    ggml_set_name(x, "vis_input");
+    ggml_set_input(x);
 
     // cos/sin for 2D RoPE, broadcast over heads: (HD, 1, n_patches)
-    ggml_tensor *cos_in = ggml_new_tensor_3d(g, GGML_TYPE_F32, HD, 1, n_patches);
-    ggml_tensor *sin_in = ggml_new_tensor_3d(g, GGML_TYPE_F32, HD, 1, n_patches);
-    ggml_set_name(cos_in, "cos_in"); ggml_set_input(cos_in);
-    ggml_set_name(sin_in, "sin_in"); ggml_set_input(sin_in);
+    ggml_tensor * cos_in = ggml_new_tensor_3d(g, GGML_TYPE_F32, HD, 1, n_patches);
+    ggml_tensor * sin_in = ggml_new_tensor_3d(g, GGML_TYPE_F32, HD, 1, n_patches);
+    ggml_set_name(cos_in, "cos_in");
+    ggml_set_input(cos_in);
+    ggml_set_name(sin_in, "sin_in");
+    ggml_set_input(sin_in);
 
     // ln_pre (RMSNorm before transformer blocks)
     if (m.ln_pre_w) {
@@ -543,42 +547,39 @@ static bool run_vision_encoder(context &ctx,
     }
 
     bool debug = LOCR_DEBUG;
-    std::vector<ggml_tensor *> dbg_outputs;  // side outputs to expand into graph
+    std::vector<ggml_tensor *> dbg_outputs; // side outputs to expand into graph
 
     // Debug: mark ln_pre output for readback
     if (debug && m.ln_pre_w) {
-        ggml_tensor *ln_pre_dbg = ggml_cont(g, x);
+        ggml_tensor * ln_pre_dbg = ggml_cont(g, x);
         ggml_set_name(ln_pre_dbg, "dbg_ln_pre");
         ggml_set_output(ln_pre_dbg);
         dbg_outputs.push_back(ln_pre_dbg);
     }
 
     // RoPE helper (rotate-half) — broadcasts cos/sin (HD, 1, T) over NH heads
-    auto apply_rope = [&](ggml_tensor *t) -> ggml_tensor * {
+    auto apply_rope = [&](ggml_tensor * t) -> ggml_tensor * {
         int half = HD / 2;
-        ggml_tensor *h1 = ggml_view_3d(g, t, half, NH, n_patches,
-                                         t->nb[1], t->nb[2], 0);
-        ggml_tensor *h2 = ggml_view_3d(g, t, half, NH, n_patches,
-                                         t->nb[1], t->nb[2],
-                                         (size_t)half * t->nb[0]);
-        ggml_tensor *h2_neg = ggml_scale(g, ggml_cont(g, h2), -1.0f);
-        ggml_tensor *rot = ggml_concat(g, h2_neg, ggml_cont(g, h1), 0);
+        ggml_tensor * h1 = ggml_view_3d(g, t, half, NH, n_patches, t->nb[1], t->nb[2], 0);
+        ggml_tensor * h2 = ggml_view_3d(g, t, half, NH, n_patches, t->nb[1], t->nb[2], (size_t)half * t->nb[0]);
+        ggml_tensor * h2_neg = ggml_scale(g, ggml_cont(g, h2), -1.0f);
+        ggml_tensor * rot = ggml_concat(g, h2_neg, ggml_cont(g, h1), 0);
         return ggml_add(g, ggml_mul(g, t, cos_in), ggml_mul(g, rot, sin_in));
     };
 
     // Transformer layers
     for (int il = 0; il < m.vis_layers; il++) {
-        auto &L = m.vis[il];
-        ggml_tensor *residual = x;
+        auto & L = m.vis[il];
+        ggml_tensor * residual = x;
 
         // Pre-attn RMSNorm
-        ggml_tensor *y = ggml_rms_norm(g, x, 1e-6f);
+        ggml_tensor * y = ggml_rms_norm(g, x, 1e-6f);
         y = ggml_mul(g, y, L.attn_norm_w);
 
         // Separate Q/K/V projections
-        ggml_tensor *Q = ggml_mul_mat(g, L.q_w, y);
-        ggml_tensor *K = ggml_mul_mat(g, L.k_w, y);
-        ggml_tensor *V = ggml_mul_mat(g, L.v_w, y);
+        ggml_tensor * Q = ggml_mul_mat(g, L.q_w, y);
+        ggml_tensor * K = ggml_mul_mat(g, L.k_w, y);
+        ggml_tensor * V = ggml_mul_mat(g, L.v_w, y);
 
         Q = ggml_reshape_3d(g, Q, HD, NH, n_patches);
         K = ggml_reshape_3d(g, K, HD, NH, n_patches);
@@ -593,29 +594,30 @@ static bool run_vision_encoder(context &ctx,
         // Debug: mark Q/K after RoPE and V for readback (before permute)
         if (debug && il == 0) {
             char nm[32];
-            ggml_tensor *q_dbg = ggml_cont(g, ggml_reshape_2d(g, Q, D, n_patches));
+            ggml_tensor * q_dbg = ggml_cont(g, ggml_reshape_2d(g, Q, D, n_patches));
             snprintf(nm, sizeof(nm), "dbg_q_rope_%d", il);
-            ggml_set_name(q_dbg, nm); ggml_set_output(q_dbg);
+            ggml_set_name(q_dbg, nm);
+            ggml_set_output(q_dbg);
             dbg_outputs.push_back(q_dbg);
 
-            ggml_tensor *k_dbg = ggml_cont(g, ggml_reshape_2d(g, K, D, n_patches));
+            ggml_tensor * k_dbg = ggml_cont(g, ggml_reshape_2d(g, K, D, n_patches));
             snprintf(nm, sizeof(nm), "dbg_k_rope_%d", il);
-            ggml_set_name(k_dbg, nm); ggml_set_output(k_dbg);
+            ggml_set_name(k_dbg, nm);
+            ggml_set_output(k_dbg);
             dbg_outputs.push_back(k_dbg);
-
         }
 
         Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3)); // (HD, T, NH)
         K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
         V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-        ggml_tensor *attn;
+        ggml_tensor * attn;
         if (use_flash_attn()) {
             attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, attn_scale, 0.0f, 0.0f);
         } else {
-            ggml_tensor *scores = ggml_mul_mat(g, K, Q);
+            ggml_tensor * scores = ggml_mul_mat(g, K, Q);
             scores = ggml_soft_max_ext(g, scores, nullptr, attn_scale, 0.0f);
-            ggml_tensor *V_perm = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
+            ggml_tensor * V_perm = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
             attn = ggml_mul_mat(g, V_perm, scores);
             attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
         }
@@ -632,9 +634,9 @@ static bool run_vision_encoder(context &ctx,
         y = ggml_mul(g, y, L.ffn_norm_w);
 
         // SiLU FFN (SwiGLU): gate * silu(up) → down
-        ggml_tensor *gate = ggml_silu(g, ggml_mul_mat(g, L.gate_w, y));
-        ggml_tensor *up = ggml_mul_mat(g, L.up_w, y);
-        ggml_tensor *ffn = ggml_mul(g, gate, up);
+        ggml_tensor * gate = ggml_silu(g, ggml_mul_mat(g, L.gate_w, y));
+        ggml_tensor * up = ggml_mul_mat(g, L.up_w, y);
+        ggml_tensor * ffn = ggml_mul(g, gate, up);
         ffn = ggml_mul_mat(g, L.down_w, ffn);
 
         x = ggml_add(g, residual, ffn);
@@ -646,10 +648,10 @@ static bool run_vision_encoder(context &ctx,
         }
     }
 
-    ggml_set_name(x, "vis_out"); ggml_set_output(x);
+    ggml_set_name(x, "vis_out");
+    ggml_set_output(x);
     ggml_build_forward_expand(gf, x);
-    for (auto *dbg_t : dbg_outputs)
-        ggml_build_forward_expand(gf, dbg_t);
+    for (auto * dbg_t : dbg_outputs) ggml_build_forward_expand(gf, dbg_t);
 
     // Allocate and compute
     ggml_backend_sched_reset(ctx.sched);
@@ -660,11 +662,11 @@ static bool run_vision_encoder(context &ctx,
     }
 
     // Set inputs
-    ggml_tensor *t_in = ggml_graph_get_tensor(gf, "vis_input");
+    ggml_tensor * t_in = ggml_graph_get_tensor(gf, "vis_input");
     ggml_backend_tensor_set(t_in, patch_embeds.data(), 0, D * n_patches * sizeof(float));
-    ggml_tensor *t_cos = ggml_graph_get_tensor(gf, "cos_in");
+    ggml_tensor * t_cos = ggml_graph_get_tensor(gf, "cos_in");
     ggml_backend_tensor_set(t_cos, rope_cos.data(), 0, HD * n_patches * sizeof(float));
-    ggml_tensor *t_sin = ggml_graph_get_tensor(gf, "sin_in");
+    ggml_tensor * t_sin = ggml_graph_get_tensor(gf, "sin_in");
     ggml_backend_tensor_set(t_sin, rope_sin.data(), 0, HD * n_patches * sizeof(float));
 
     ggml_backend_cpu_set_n_threads(ctx.backend, ctx.n_threads);
@@ -675,14 +677,14 @@ static bool run_vision_encoder(context &ctx,
     }
 
     // Read output
-    ggml_tensor *t_out = ggml_graph_get_tensor(gf, "vis_out");
+    ggml_tensor * t_out = ggml_graph_get_tensor(gf, "vis_out");
     out.resize(D * n_patches);
     ggml_backend_tensor_get(t_out, out.data(), 0, out.size() * sizeof(float));
 
     // Debug: read named debug tensors for parity comparison
     if (LOCR_DEBUG) {
-        auto dump_dbg = [&](const char *name) {
-            ggml_tensor *t = ggml_graph_get_tensor(gf, name);
+        auto dump_dbg = [&](const char * name) {
+            ggml_tensor * t = ggml_graph_get_tensor(gf, name);
             if (!t) return;
             size_t nel = ggml_nelements(t);
             std::vector<float> d(nel);
@@ -705,13 +707,11 @@ static bool run_vision_encoder(context &ctx,
 // Projection: spatial merge (2×2) + MLP + RMSNorm
 // ---------------------------------------------------------------------------
 
-static bool run_projection(context &ctx,
-                             const std::vector<float> &vis_out,
-                             int ph, int pw,
-                             std::vector<float> &proj_out) {
-    auto &m = ctx.m;
+static bool run_projection(context & ctx, const std::vector<float> & vis_out, int ph, int pw,
+                           std::vector<float> & proj_out) {
+    auto & m = ctx.m;
     int D = m.vis_dim;
-    int merge = m.spatial_merge_size;  // 2
+    int merge = m.spatial_merge_size; // 2
     int mh = ph / merge;
     int mw = pw / merge;
     int n_merged = mh * mw;
@@ -724,11 +724,11 @@ static bool run_projection(context &ctx,
     {
         std::vector<float> nw(D);
         ggml_backend_tensor_get(m.proj_norm_w, nw.data(), 0, D * sizeof(float));
-        const float eps = ctx.m.lm_rms_eps;  // text_config.rms_norm_eps
+        const float eps = ctx.m.lm_rms_eps; // text_config.rms_norm_eps
         int n_patches = ph * pw;
         for (int p = 0; p < n_patches; p++) {
-            const float *src = vis_out.data() + (size_t)p * D;
-            float *dst = vis_normed.data() + (size_t)p * D;
+            const float * src = vis_out.data() + (size_t)p * D;
+            float * dst = vis_normed.data() + (size_t)p * D;
             double ss = 0.0;
             for (int i = 0; i < D; i++) ss += (double)src[i] * src[i];
             float scale = 1.0f / std::sqrt((float)(ss / D) + eps);
@@ -741,31 +741,31 @@ static bool run_projection(context &ctx,
     // CHANNEL-major: [c0·(k00,k01,k10,k11), c1·(...), ...] — i.e. for each of
     // the D channels, the merge*merge kernel positions. (NOT patch-major.)
     int msq = merge * merge;
-    int merge_dim = D * msq;  // 4096
+    int merge_dim = D * msq; // 4096
     std::vector<float> merged(merge_dim * n_merged, 0.0f);
     for (int my = 0; my < mh; my++) {
         for (int mx = 0; mx < mw; mx++) {
             int out_idx = my * mw + mx;
-            float *dst = merged.data() + (size_t)out_idx * merge_dim;
+            float * dst = merged.data() + (size_t)out_idx * merge_dim;
             for (int dy = 0; dy < merge; dy++) {
                 for (int dx = 0; dx < merge; dx++) {
                     int src_idx = (my * merge + dy) * pw + (mx * merge + dx);
                     int kpos = dy * merge + dx;
-                    const float *src = vis_normed.data() + (size_t)src_idx * D;
-                    for (int c = 0; c < D; c++)
-                        dst[c * msq + kpos] = src[c];
+                    const float * src = vis_normed.data() + (size_t)src_idx * D;
+                    for (int c = 0; c < D; c++) dst[c * msq + kpos] = src[c];
                 }
             }
         }
     }
 
     // Build projection graph: merger → linear1 → GELU → linear2 → RMSNorm
-    ggml_init_params ip{ctx.compute_meta.size(), ctx.compute_meta.data(), true};
-    ggml_context *g = ggml_init(ip);
-    ggml_cgraph *gf = ggml_new_graph_custom(g, 256, false);
+    ggml_init_params ip{ ctx.compute_meta.size(), ctx.compute_meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, 256, false);
 
-    ggml_tensor *x = ggml_new_tensor_2d(g, GGML_TYPE_F32, merge_dim, n_merged);
-    ggml_set_name(x, "merge_in"); ggml_set_input(x);
+    ggml_tensor * x = ggml_new_tensor_2d(g, GGML_TYPE_F32, merge_dim, n_merged);
+    ggml_set_name(x, "merge_in");
+    ggml_set_input(x);
 
     // patch_merger: (merge_dim → D)
     x = ggml_mul_mat(g, m.proj_merger_w, x);
@@ -776,23 +776,26 @@ static bool run_projection(context &ctx,
     // BEFORE the merge above, matching Mistral3MultiModalProjector — not here.)
     x = ggml_mul_mat(g, m.proj_linear2_w, x);
 
-    ggml_set_name(x, "proj_out"); ggml_set_output(x);
+    ggml_set_name(x, "proj_out");
+    ggml_set_output(x);
     ggml_build_forward_expand(gf, x);
 
     ggml_backend_sched_reset(ctx.sched);
     if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
-        ggml_free(g); return false;
+        ggml_free(g);
+        return false;
     }
 
-    ggml_tensor *t_in = ggml_graph_get_tensor(gf, "merge_in");
+    ggml_tensor * t_in = ggml_graph_get_tensor(gf, "merge_in");
     ggml_backend_tensor_set(t_in, merged.data(), 0, merged.size() * sizeof(float));
 
     ggml_backend_cpu_set_n_threads(ctx.backend, ctx.n_threads);
     if (ggml_backend_sched_graph_compute(ctx.sched, gf) != GGML_STATUS_SUCCESS) {
-        ggml_free(g); return false;
+        ggml_free(g);
+        return false;
     }
 
-    ggml_tensor *t_out = ggml_graph_get_tensor(gf, "proj_out");
+    ggml_tensor * t_out = ggml_graph_get_tensor(gf, "proj_out");
     proj_out.resize(D * n_merged);
     ggml_backend_tensor_get(t_out, proj_out.data(), 0, proj_out.size() * sizeof(float));
 
@@ -806,14 +809,11 @@ static bool run_projection(context &ctx,
 
 // Build prefill graph for the full input sequence (text + image tokens).
 // Returns logits for the last token + K/V cache tensors.
-static bool run_decoder_prefill(context &ctx,
-                                 const std::vector<float> &image_embeds,
-                                 int n_image_tokens,
-                                 int max_new_tokens,
-                                 std::string &out_text) {
+static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_embeds, int n_image_tokens,
+                                int max_new_tokens, std::string & out_text) {
     const bool bench = ctx.bench;
     auto t_prefill_start = std::chrono::steady_clock::now();
-    auto &m = ctx.m;
+    auto & m = ctx.m;
     const int D = m.lm_dim;
     const int V = m.vocab_size;
     const int n_layers = m.lm_layers;
@@ -843,11 +843,11 @@ static bool run_decoder_prefill(context &ctx,
     // Qwen3 chat template token IDs (verified with AutoTokenizer):
     //   <|im_start|>user\n  [IMAGE]  OCR this document.<|im_end|>\n<|im_start|>assistant\n
     // Prefix: before image. Suffix: after image + assistant trigger.
-    std::vector<int32_t> prefix_ids = {151644, 872, 198};  // <|im_start|> user \n
+    std::vector<int32_t> prefix_ids = { 151644, 872, 198 }; // <|im_start|> user \n
     std::vector<int32_t> suffix_ids = {
-        93495, 419, 2197, 13,  // OCR this document.
-        151645, 198,           // <|im_end|> \n
-        151644, 77091, 198     // <|im_start|> assistant \n
+        93495,  419,   2197, 13, // OCR this document.
+        151645, 198,             // <|im_end|> \n
+        151644, 77091, 198       // <|im_start|> assistant \n
     };
 
     int n_prefix = (int)prefix_ids.size();
@@ -857,20 +857,19 @@ static bool run_decoder_prefill(context &ctx,
     // Embed tokens via direct weight read — avoids ggml graph overhead per call.
     // embed_tokens is stored as [D, vocab] in ggml (row-major: row i = token i).
     // For quantized weights, dequantize the needed rows on the fly.
-    auto embed_tokens_cpu = [&](const std::vector<int32_t> &ids) -> std::vector<float> {
+    auto embed_tokens_cpu = [&](const std::vector<int32_t> & ids) -> std::vector<float> {
         int n = (int)ids.size();
         std::vector<float> result(D * n);
         const size_t row_size = ggml_row_size(m.embed_tokens->type, D);
         for (int i = 0; i < n; i++) {
             int id = ids[i];
             if (m.embed_tokens->type == GGML_TYPE_F32) {
-                ggml_backend_tensor_get(m.embed_tokens, result.data() + i * D,
-                                        (size_t)id * row_size, D * sizeof(float));
+                ggml_backend_tensor_get(m.embed_tokens, result.data() + i * D, (size_t)id * row_size,
+                                        D * sizeof(float));
             } else {
                 // Quantized: read raw row, dequantize
                 std::vector<uint8_t> raw(row_size);
-                ggml_backend_tensor_get(m.embed_tokens, raw.data(),
-                                        (size_t)id * row_size, row_size);
+                ggml_backend_tensor_get(m.embed_tokens, raw.data(), (size_t)id * row_size, row_size);
                 const auto * traits = ggml_get_type_traits(m.embed_tokens->type);
                 traits->to_float(raw.data(), result.data() + i * D, D);
             }
@@ -887,8 +886,8 @@ static bool run_decoder_prefill(context &ctx,
     memcpy(full_emb.data() + D * n_prefix, image_embeds.data(), D * n_image_tokens * sizeof(float));
     memcpy(full_emb.data() + D * (n_prefix + n_image_tokens), suffix_emb.data(), D * n_suffix * sizeof(float));
 
-    fprintf(stderr, "lightonocr: prompt = %d prefix + %d image + %d suffix = %d total\n",
-            n_prefix, n_image_tokens, n_suffix, n_prompt);
+    fprintf(stderr, "lightonocr: prompt = %d prefix + %d image + %d suffix = %d total\n", n_prefix, n_image_tokens,
+            n_suffix, n_prompt);
 
     // Allocate persistent F16 KV cache
     int max_seq = n_prompt + ctx.max_tokens + 16;
@@ -899,39 +898,42 @@ static bool run_decoder_prefill(context &ctx,
     }
 
     // Prefill: build decoder graph for n_prompt tokens
-    ggml_init_params ip{ctx.compute_meta.size(), ctx.compute_meta.data(), true};
-    ggml_context *g = ggml_init(ip);
-    ggml_cgraph *gf = ggml_new_graph_custom(g, 16384, false);
+    ggml_init_params ip{ ctx.compute_meta.size(), ctx.compute_meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, 16384, false);
 
     // Input: pre-embedded sequence (D, n_prompt)
-    ggml_tensor *x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_prompt);
-    ggml_set_name(x, "lm_input"); ggml_set_input(x);
+    ggml_tensor * x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_prompt);
+    ggml_set_name(x, "lm_input");
+    ggml_set_input(x);
 
     // Causal mask: F16 for flash_attn, F32 for manual attention
     ggml_type mask_type = use_flash_attn() ? GGML_TYPE_F16 : GGML_TYPE_F32;
-    ggml_tensor *mask = ggml_new_tensor_2d(g, mask_type, n_prompt, n_prompt);
-    ggml_set_name(mask, "causal_mask"); ggml_set_input(mask);
+    ggml_tensor * mask = ggml_new_tensor_2d(g, mask_type, n_prompt, n_prompt);
+    ggml_set_name(mask, "causal_mask");
+    ggml_set_input(mask);
 
     // Position IDs: [0, 1, 2, ..., n_prompt-1]
-    ggml_tensor *pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, n_prompt);
-    ggml_set_name(pos_ids, "pos_ids"); ggml_set_input(pos_ids);
+    ggml_tensor * pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, n_prompt);
+    ggml_set_name(pos_ids, "pos_ids");
+    ggml_set_input(pos_ids);
 
-    auto rmsnorm = [&rms_eps](ggml_context *gc, ggml_tensor *t, ggml_tensor *w) -> ggml_tensor* {
+    auto rmsnorm = [&rms_eps](ggml_context * gc, ggml_tensor * t, ggml_tensor * w) -> ggml_tensor * {
         return ggml_mul(gc, ggml_rms_norm(gc, t, rms_eps), w);
     };
 
     // Decoder layers
     for (int il = 0; il < n_layers; il++) {
-        auto &L = m.lm[il];
-        ggml_tensor *residual = x;
+        auto & L = m.lm[il];
+        ggml_tensor * residual = x;
 
         // Pre-attn RMSNorm
-        ggml_tensor *normed = rmsnorm(g, x, L.attn_norm_w);
+        ggml_tensor * normed = rmsnorm(g, x, L.attn_norm_w);
 
         // Q/K/V (no bias)
-        ggml_tensor *Q = ggml_mul_mat(g, L.q_w, normed);
-        ggml_tensor *K = ggml_mul_mat(g, L.k_w, normed);
-        ggml_tensor *V = ggml_mul_mat(g, L.v_w, normed);
+        ggml_tensor * Q = ggml_mul_mat(g, L.q_w, normed);
+        ggml_tensor * K = ggml_mul_mat(g, L.k_w, normed);
+        ggml_tensor * V = ggml_mul_mat(g, L.v_w, normed);
 
         // Reshape: Q (head_dim, n_heads, T), K/V (head_dim, n_kv, T)
         Q = ggml_reshape_3d(g, Q, head_dim, n_heads, n_prompt);
@@ -954,28 +956,22 @@ static bool run_decoder_prefill(context &ctx,
         }
 
         // RoPE (standard 1D, not mRoPE)
-        Q = ggml_rope_ext(g, Q, pos_ids, nullptr,
-                          head_dim, GGML_ROPE_TYPE_NEOX, 0,
-                          rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-        K = ggml_rope_ext(g, K, pos_ids, nullptr,
-                          head_dim, GGML_ROPE_TYPE_NEOX, 0,
-                          rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        Q = ggml_rope_ext(g, Q, pos_ids, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0, rope_theta, 1.0f, 0.0f, 1.0f, 0.0f,
+                          0.0f);
+        K = ggml_rope_ext(g, K, pos_ids, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0, rope_theta, 1.0f, 0.0f, 1.0f, 0.0f,
+                          0.0f);
 
         // Write post-RoPE K/V into persistent F16 cache via ggml_cpy.
         // K/V are (head_dim, n_kv_heads, n_prompt) F32 → cache is (head_dim, max_seq, n_kv_heads, n_layers) F16.
         // We permute to (head_dim, n_prompt, n_kv_heads) then cpy into a view at layer il, offset 0.
         {
-            ggml_tensor *K_perm = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3)); // (hd, T, nkv)
-            ggml_tensor *V_perm = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
+            ggml_tensor * K_perm = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3)); // (hd, T, nkv)
+            ggml_tensor * V_perm = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-            ggml_tensor *k_view = ggml_view_4d(g, ctx.kvc.k,
-                head_dim, n_prompt, n_kv_heads, 1,
-                ctx.kvc.k->nb[1], ctx.kvc.k->nb[2], ctx.kvc.k->nb[3],
-                (size_t)il * ctx.kvc.k->nb[3]);
-            ggml_tensor *v_view = ggml_view_4d(g, ctx.kvc.v,
-                head_dim, n_prompt, n_kv_heads, 1,
-                ctx.kvc.v->nb[1], ctx.kvc.v->nb[2], ctx.kvc.v->nb[3],
-                (size_t)il * ctx.kvc.v->nb[3]);
+            ggml_tensor * k_view = ggml_view_4d(g, ctx.kvc.k, head_dim, n_prompt, n_kv_heads, 1, ctx.kvc.k->nb[1],
+                                                ctx.kvc.k->nb[2], ctx.kvc.k->nb[3], (size_t)il * ctx.kvc.k->nb[3]);
+            ggml_tensor * v_view = ggml_view_4d(g, ctx.kvc.v, head_dim, n_prompt, n_kv_heads, 1, ctx.kvc.v->nb[1],
+                                                ctx.kvc.v->nb[2], ctx.kvc.v->nb[3], (size_t)il * ctx.kvc.v->nb[3]);
 
             ggml_build_forward_expand(gf, ggml_cpy(g, K_perm, k_view));
             ggml_build_forward_expand(gf, ggml_cpy(g, V_perm, v_view));
@@ -986,7 +982,7 @@ static bool run_decoder_prefill(context &ctx,
         K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3)); // (hd, T, nkv)
         V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-        ggml_tensor *attn;
+        ggml_tensor * attn;
         if (use_flash_attn()) {
             // flash_attn_ext handles GQA natively (broadcast rk2 = nh/nkv)
             attn = ggml_flash_attn_ext(g, Q, K, V, mask, scale, 0.0f, 0.0f);
@@ -1001,9 +997,9 @@ static bool run_decoder_prefill(context &ctx,
                 V = ggml_repeat(g, V, ggml_new_tensor_4d(g, V->type, head_dim, n_prompt, repeat, n_kv_heads));
                 V = ggml_reshape_3d(g, V, head_dim, n_prompt, n_heads);
             }
-            ggml_tensor *scores = ggml_mul_mat(g, K, Q);
+            ggml_tensor * scores = ggml_mul_mat(g, K, Q);
             scores = ggml_soft_max_ext(g, scores, mask, scale, 0.0f);
-            ggml_tensor *V_perm = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
+            ggml_tensor * V_perm = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
             attn = ggml_mul_mat(g, V_perm, scores);
             attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
         }
@@ -1019,9 +1015,9 @@ static bool run_decoder_prefill(context &ctx,
         residual = x;
         normed = rmsnorm(g, x, L.ffn_norm_w);
 
-        ggml_tensor *gate = ggml_silu(g, ggml_mul_mat(g, L.gate_w, normed));
-        ggml_tensor *up = ggml_mul_mat(g, L.up_w, normed);
-        ggml_tensor *ffn = ggml_mul(g, gate, up);
+        ggml_tensor * gate = ggml_silu(g, ggml_mul_mat(g, L.gate_w, normed));
+        ggml_tensor * up = ggml_mul_mat(g, L.up_w, normed);
+        ggml_tensor * ffn = ggml_mul(g, gate, up);
         ffn = ggml_mul_mat(g, L.down_w, ffn);
 
         x = ggml_add(g, residual, ffn);
@@ -1032,11 +1028,12 @@ static bool run_decoder_prefill(context &ctx,
 
     // LM head: tied weights (embed_tokens transposed)
     // Only decode last token to save memory
-    ggml_tensor *last_x = ggml_view_2d(g, x, D, 1, x->nb[1], (size_t)(n_prompt - 1) * x->nb[1]);
+    ggml_tensor * last_x = ggml_view_2d(g, x, D, 1, x->nb[1], (size_t)(n_prompt - 1) * x->nb[1]);
     last_x = ggml_cont(g, last_x);
-    ggml_tensor *last_logits = ggml_mul_mat(g, m.embed_tokens, last_x);
+    ggml_tensor * last_logits = ggml_mul_mat(g, m.embed_tokens, last_x);
     last_logits = ggml_reshape_1d(g, last_logits, V);
-    ggml_set_name(last_logits, "last_logits"); ggml_set_output(last_logits);
+    ggml_set_name(last_logits, "last_logits");
+    ggml_set_output(last_logits);
     ggml_build_forward_expand(gf, last_logits);
 
     // K/V outputs are named k_out_N/v_out_N — extracted after compute via ggml_graph_get_tensor
@@ -1050,11 +1047,11 @@ static bool run_decoder_prefill(context &ctx,
     }
 
     // Set inputs
-    ggml_tensor *t_in = ggml_graph_get_tensor(gf, "lm_input");
+    ggml_tensor * t_in = ggml_graph_get_tensor(gf, "lm_input");
     ggml_backend_tensor_set(t_in, full_emb.data(), 0, D * n_prompt * sizeof(float));
 
     // Build causal mask (-inf above diagonal)
-    ggml_tensor *t_mask = ggml_graph_get_tensor(gf, "causal_mask");
+    ggml_tensor * t_mask = ggml_graph_get_tensor(gf, "causal_mask");
     if (use_flash_attn()) {
         std::vector<ggml_fp16_t> mask_data(n_prompt * n_prompt);
         for (int i = 0; i < n_prompt; i++)
@@ -1064,15 +1061,14 @@ static bool run_decoder_prefill(context &ctx,
     } else {
         std::vector<float> mask_data(n_prompt * n_prompt);
         for (int i = 0; i < n_prompt; i++)
-            for (int j = 0; j < n_prompt; j++)
-                mask_data[i * n_prompt + j] = (j <= i) ? 0.0f : -INFINITY;
+            for (int j = 0; j < n_prompt; j++) mask_data[i * n_prompt + j] = (j <= i) ? 0.0f : -INFINITY;
         ggml_backend_tensor_set(t_mask, mask_data.data(), 0, mask_data.size() * sizeof(float));
     }
 
     // Position IDs: [0, 1, 2, ..., n_prompt-1]
     std::vector<int32_t> pos_data(n_prompt);
     for (int i = 0; i < n_prompt; i++) pos_data[i] = i;
-    ggml_tensor *t_pos = ggml_graph_get_tensor(gf, "pos_ids");
+    ggml_tensor * t_pos = ggml_graph_get_tensor(gf, "pos_ids");
     ggml_backend_tensor_set(t_pos, pos_data.data(), 0, n_prompt * sizeof(int32_t));
 
     ggml_backend_cpu_set_n_threads(ctx.backend, ctx.n_threads);
@@ -1084,33 +1080,40 @@ static bool run_decoder_prefill(context &ctx,
 
     // Read last logits
     std::vector<float> logits_data(V);
-    ggml_tensor *t_logits = ggml_graph_get_tensor(gf, "last_logits");
+    ggml_tensor * t_logits = ggml_graph_get_tensor(gf, "last_logits");
     ggml_backend_tensor_get(t_logits, logits_data.data(), 0, V * sizeof(float));
 
     // KV cache was written directly into persistent F16 tensors by ggml_cpy
     ggml_free(g);
     ctx.kvc.n_past = n_prompt;
     bool kv_ok = ctx.kvc.allocated && !LOCR_NO_KV;
-    fprintf(stderr, "lightonocr: KV cache: %s (F16, %d tokens cached)\n",
-            kv_ok ? "OK" : "DISABLED", n_prompt);
+    fprintf(stderr, "lightonocr: KV cache: %s (F16, %d tokens cached)\n", kv_ok ? "OK" : "DISABLED", n_prompt);
 
     ctx.char_confidences.clear();
     std::vector<int32_t> generated;
     int best = 0;
     float best_score = -INFINITY;
     for (int v = 0; v < V; v++)
-        if (logits_data[v] > best_score) { best_score = logits_data[v]; best = v; }
+        if (logits_data[v] > best_score) {
+            best_score = logits_data[v];
+            best = v;
+        }
     generated.push_back(best);
-    { float se = 0; for (int v = 0; v < V; v++) se += expf(logits_data[v] - best_score); ctx.char_confidences.push_back(1.0f / se); }
+    {
+        float se = 0;
+        for (int v = 0; v < V; v++) se += expf(logits_data[v] - best_score);
+        ctx.char_confidences.push_back(1.0f / se);
+    }
 
     if (bench) {
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - t_prefill_start).count();
+        auto ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_prefill_start)
+                .count();
         fprintf(stderr, "[lightonocr-bench] prefill: %lldms\n", (long long)ms);
     }
     fprintf(stderr, "lightonocr: prefill done, first token=%d (score=%.2f)\n", best, best_score);
-    fprintf(stderr, "lightonocr: logits[0..4] = [%.3f, %.3f, %.3f, %.3f, %.3f]\n",
-            logits_data[0], logits_data[1], logits_data[2], logits_data[3], logits_data[4]);
+    fprintf(stderr, "lightonocr: logits[0..4] = [%.3f, %.3f, %.3f, %.3f, %.3f]\n", logits_data[0], logits_data[1],
+            logits_data[2], logits_data[3], logits_data[4]);
     fprintf(stderr, "lightonocr: logits[eos=%d] = %.3f\n", eos_id, logits_data[eos_id]);
 
     if (best == eos_id) {
@@ -1128,30 +1131,32 @@ static bool run_decoder_prefill(context &ctx,
 
         auto t_step_start = std::chrono::steady_clock::now();
         int n_past = ctx.kvc.n_past;
-        int Lk = n_past + 1;  // total KV length after this step
+        int Lk = n_past + 1; // total KV length after this step
 
         // Embed new token
-        auto tok_emb = embed_tokens_cpu({(int32_t)best});
+        auto tok_emb = embed_tokens_cpu({ (int32_t)best });
 
         // Build single-token decode graph with persistent KV cache
-        ggml_init_params ip2{ctx.compute_meta.size(), ctx.compute_meta.data(), true};
-        ggml_context *g2 = ggml_init(ip2);
-        ggml_cgraph *gf2 = ggml_new_graph_custom(g2, 16384, false);
+        ggml_init_params ip2{ ctx.compute_meta.size(), ctx.compute_meta.data(), true };
+        ggml_context * g2 = ggml_init(ip2);
+        ggml_cgraph * gf2 = ggml_new_graph_custom(g2, 16384, false);
 
-        ggml_tensor *x2 = ggml_new_tensor_2d(g2, GGML_TYPE_F32, D, 1);
-        ggml_set_name(x2, "tok_emb"); ggml_set_input(x2);
-        ggml_tensor *pos2 = ggml_new_tensor_1d(g2, GGML_TYPE_I32, 1);
-        ggml_set_name(pos2, "pos_ids"); ggml_set_input(pos2);
+        ggml_tensor * x2 = ggml_new_tensor_2d(g2, GGML_TYPE_F32, D, 1);
+        ggml_set_name(x2, "tok_emb");
+        ggml_set_input(x2);
+        ggml_tensor * pos2 = ggml_new_tensor_1d(g2, GGML_TYPE_I32, 1);
+        ggml_set_name(pos2, "pos_ids");
+        ggml_set_input(pos2);
 
-        ggml_tensor *cur = x2;
+        ggml_tensor * cur = x2;
         for (int il = 0; il < n_layers; il++) {
-            auto &L = m.lm[il];
-            ggml_tensor *res = cur;
-            ggml_tensor *normed = rmsnorm(g2, cur, L.attn_norm_w);
+            auto & L = m.lm[il];
+            ggml_tensor * res = cur;
+            ggml_tensor * normed = rmsnorm(g2, cur, L.attn_norm_w);
 
-            ggml_tensor *Q = ggml_mul_mat(g2, L.q_w, normed);
-            ggml_tensor *K_new = ggml_mul_mat(g2, L.k_w, normed);
-            ggml_tensor *V_new = ggml_mul_mat(g2, L.v_w, normed);
+            ggml_tensor * Q = ggml_mul_mat(g2, L.q_w, normed);
+            ggml_tensor * K_new = ggml_mul_mat(g2, L.k_w, normed);
+            ggml_tensor * V_new = ggml_mul_mat(g2, L.v_w, normed);
 
             Q = ggml_reshape_3d(g2, Q, head_dim, n_heads, 1);
             K_new = ggml_reshape_3d(g2, K_new, head_dim, n_kv_heads, 1);
@@ -1160,50 +1165,46 @@ static bool run_decoder_prefill(context &ctx,
             // QK norm
             if (m.use_qk_norm && L.q_norm_w && L.k_norm_w) {
                 Q = ggml_cont(g2, ggml_reshape_2d(g2, Q, head_dim, n_heads));
-                Q = ggml_rms_norm(g2, Q, rms_eps); Q = ggml_mul(g2, Q, L.q_norm_w);
+                Q = ggml_rms_norm(g2, Q, rms_eps);
+                Q = ggml_mul(g2, Q, L.q_norm_w);
                 Q = ggml_cont(g2, ggml_reshape_3d(g2, Q, head_dim, n_heads, 1));
                 K_new = ggml_cont(g2, ggml_reshape_2d(g2, K_new, head_dim, n_kv_heads));
-                K_new = ggml_rms_norm(g2, K_new, rms_eps); K_new = ggml_mul(g2, K_new, L.k_norm_w);
+                K_new = ggml_rms_norm(g2, K_new, rms_eps);
+                K_new = ggml_mul(g2, K_new, L.k_norm_w);
                 K_new = ggml_cont(g2, ggml_reshape_3d(g2, K_new, head_dim, n_kv_heads, 1));
             }
 
             // RoPE
-            Q = ggml_rope_ext(g2, Q, pos2, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0,
-                              rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-            K_new = ggml_rope_ext(g2, K_new, pos2, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0,
-                                  rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+            Q = ggml_rope_ext(g2, Q, pos2, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0, rope_theta, 1.0f, 0.0f, 1.0f,
+                              0.0f, 0.0f);
+            K_new = ggml_rope_ext(g2, K_new, pos2, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0, rope_theta, 1.0f, 0.0f,
+                                  1.0f, 0.0f, 0.0f);
 
             // Write new K/V into persistent cache at n_past
-            ggml_tensor *K_new_perm = ggml_cont(g2, ggml_permute(g2, K_new, 0, 2, 1, 3)); // (hd, 1, nkv)
-            ggml_tensor *V_new_perm = ggml_cont(g2, ggml_permute(g2, V_new, 0, 2, 1, 3));
+            ggml_tensor * K_new_perm = ggml_cont(g2, ggml_permute(g2, K_new, 0, 2, 1, 3)); // (hd, 1, nkv)
+            ggml_tensor * V_new_perm = ggml_cont(g2, ggml_permute(g2, V_new, 0, 2, 1, 3));
 
-            ggml_tensor *k_dst = ggml_view_4d(g2, ctx.kvc.k,
-                head_dim, 1, n_kv_heads, 1,
-                ctx.kvc.k->nb[1], ctx.kvc.k->nb[2], ctx.kvc.k->nb[3],
-                (size_t)il * ctx.kvc.k->nb[3] + (size_t)n_past * ctx.kvc.k->nb[1]);
-            ggml_tensor *v_dst = ggml_view_4d(g2, ctx.kvc.v,
-                head_dim, 1, n_kv_heads, 1,
-                ctx.kvc.v->nb[1], ctx.kvc.v->nb[2], ctx.kvc.v->nb[3],
-                (size_t)il * ctx.kvc.v->nb[3] + (size_t)n_past * ctx.kvc.v->nb[1]);
+            ggml_tensor * k_dst =
+                ggml_view_4d(g2, ctx.kvc.k, head_dim, 1, n_kv_heads, 1, ctx.kvc.k->nb[1], ctx.kvc.k->nb[2],
+                             ctx.kvc.k->nb[3], (size_t)il * ctx.kvc.k->nb[3] + (size_t)n_past * ctx.kvc.k->nb[1]);
+            ggml_tensor * v_dst =
+                ggml_view_4d(g2, ctx.kvc.v, head_dim, 1, n_kv_heads, 1, ctx.kvc.v->nb[1], ctx.kvc.v->nb[2],
+                             ctx.kvc.v->nb[3], (size_t)il * ctx.kvc.v->nb[3] + (size_t)n_past * ctx.kvc.v->nb[1]);
 
             ggml_build_forward_expand(gf2, ggml_cpy(g2, K_new_perm, k_dst));
             ggml_build_forward_expand(gf2, ggml_cpy(g2, V_new_perm, v_dst));
 
             // Read full KV history [0..Lk) from cache
-            ggml_tensor *Kfull = ggml_cont(g2, ggml_view_3d(g2, ctx.kvc.k,
-                head_dim, Lk, n_kv_heads,
-                ctx.kvc.k->nb[1], ctx.kvc.k->nb[2],
-                (size_t)il * ctx.kvc.k->nb[3]));
-            ggml_tensor *Vfull = ggml_cont(g2, ggml_view_3d(g2, ctx.kvc.v,
-                head_dim, Lk, n_kv_heads,
-                ctx.kvc.v->nb[1], ctx.kvc.v->nb[2],
-                (size_t)il * ctx.kvc.v->nb[3]));
+            ggml_tensor * Kfull = ggml_cont(g2, ggml_view_3d(g2, ctx.kvc.k, head_dim, Lk, n_kv_heads, ctx.kvc.k->nb[1],
+                                                             ctx.kvc.k->nb[2], (size_t)il * ctx.kvc.k->nb[3]));
+            ggml_tensor * Vfull = ggml_cont(g2, ggml_view_3d(g2, ctx.kvc.v, head_dim, Lk, n_kv_heads, ctx.kvc.v->nb[1],
+                                                             ctx.kvc.v->nb[2], (size_t)il * ctx.kvc.v->nb[3]));
 
             // Kfull/Vfull are (hd, Lk, nkv). Q is (hd, nh, 1).
             float sc = 1.0f / sqrtf((float)head_dim);
             Q = ggml_cont(g2, ggml_permute(g2, Q, 0, 2, 1, 3));
 
-            ggml_tensor *attn;
+            ggml_tensor * attn;
             if (use_flash_attn()) {
                 // flash_attn_ext handles GQA natively (broadcast rk2 = nh/nkv)
                 attn = ggml_flash_attn_ext(g2, Q, Kfull, Vfull, nullptr, sc, 0.0f, 0.0f);
@@ -1212,18 +1213,18 @@ static bool run_decoder_prefill(context &ctx,
                 if (kv_repeat > 1) {
                     Kfull = ggml_reshape_4d(g2, Kfull, head_dim, Lk, 1, n_kv_heads);
                     Kfull = ggml_repeat(g2, Kfull,
-                        ggml_new_tensor_4d(g2, Kfull->type, head_dim, Lk, kv_repeat, n_kv_heads));
+                                        ggml_new_tensor_4d(g2, Kfull->type, head_dim, Lk, kv_repeat, n_kv_heads));
                     Kfull = ggml_reshape_3d(g2, Kfull, head_dim, Lk, n_heads);
                     Vfull = ggml_reshape_4d(g2, Vfull, head_dim, Lk, 1, n_kv_heads);
                     Vfull = ggml_repeat(g2, Vfull,
-                        ggml_new_tensor_4d(g2, Vfull->type, head_dim, Lk, kv_repeat, n_kv_heads));
+                                        ggml_new_tensor_4d(g2, Vfull->type, head_dim, Lk, kv_repeat, n_kv_heads));
                     Vfull = ggml_reshape_3d(g2, Vfull, head_dim, Lk, n_heads);
                 }
                 Kfull = ggml_cont(g2, ggml_permute(g2, Kfull, 0, 2, 1, 3));
                 Vfull = ggml_cont(g2, ggml_permute(g2, Vfull, 0, 2, 1, 3));
-                ggml_tensor *scores = ggml_mul_mat(g2, Kfull, Q);
+                ggml_tensor * scores = ggml_mul_mat(g2, Kfull, Q);
                 scores = ggml_soft_max_ext(g2, scores, nullptr, sc, 0.0f);
-                ggml_tensor *Vp = ggml_cont(g2, ggml_permute(g2, Vfull, 1, 0, 2, 3));
+                ggml_tensor * Vp = ggml_cont(g2, ggml_permute(g2, Vfull, 1, 0, 2, 3));
                 attn = ggml_mul_mat(g2, Vp, scores);
                 attn = ggml_cont(g2, ggml_permute(g2, attn, 0, 2, 1, 3));
             }
@@ -1234,43 +1235,53 @@ static bool run_decoder_prefill(context &ctx,
             // FFN
             res = cur;
             normed = rmsnorm(g2, cur, L.ffn_norm_w);
-            ggml_tensor *gate = ggml_silu(g2, ggml_mul_mat(g2, L.gate_w, normed));
-            ggml_tensor *up = ggml_mul_mat(g2, L.up_w, normed);
+            ggml_tensor * gate = ggml_silu(g2, ggml_mul_mat(g2, L.gate_w, normed));
+            ggml_tensor * up = ggml_mul_mat(g2, L.up_w, normed);
             cur = ggml_add(g2, res, ggml_mul_mat(g2, L.down_w, ggml_mul(g2, gate, up)));
         }
 
         cur = rmsnorm(g2, cur, m.lm_norm_w);
-        ggml_tensor *ll = ggml_reshape_1d(g2, ggml_mul_mat(g2, m.embed_tokens, cur), V);
-        ggml_set_name(ll, "last_logits"); ggml_set_output(ll);
+        ggml_tensor * ll = ggml_reshape_1d(g2, ggml_mul_mat(g2, m.embed_tokens, cur), V);
+        ggml_set_name(ll, "last_logits");
+        ggml_set_output(ll);
         ggml_build_forward_expand(gf2, ll);
 
         ggml_backend_sched_reset(ctx.sched);
-        if (!ggml_backend_sched_alloc_graph(ctx.sched, gf2)) { ggml_free(g2); break; }
+        if (!ggml_backend_sched_alloc_graph(ctx.sched, gf2)) {
+            ggml_free(g2);
+            break;
+        }
 
         // Set inputs
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf2, "tok_emb"),
-                                tok_emb.data(), 0, D * sizeof(float));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf2, "tok_emb"), tok_emb.data(), 0, D * sizeof(float));
         int32_t pos_val = n_past;
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf2, "pos_ids"),
-                                &pos_val, 0, sizeof(int32_t));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf2, "pos_ids"), &pos_val, 0, sizeof(int32_t));
 
         ggml_backend_cpu_set_n_threads(ctx.backend, ctx.n_threads);
         if (ggml_backend_sched_graph_compute(ctx.sched, gf2) != GGML_STATUS_SUCCESS) {
-            ggml_free(g2); break;
+            ggml_free(g2);
+            break;
         }
 
-        ggml_backend_tensor_get(ggml_graph_get_tensor(gf2, "last_logits"),
-                                logits_data.data(), 0, V * sizeof(float));
+        ggml_backend_tensor_get(ggml_graph_get_tensor(gf2, "last_logits"), logits_data.data(), 0, V * sizeof(float));
 
         ctx.kvc.n_past++;
         ggml_free(g2);
 
-        best = 0; best_score = -INFINITY;
+        best = 0;
+        best_score = -INFINITY;
         for (int v = 0; v < V; v++)
-            if (logits_data[v] > best_score) { best_score = logits_data[v]; best = v; }
+            if (logits_data[v] > best_score) {
+                best_score = logits_data[v];
+                best = v;
+            }
         if (best == eos_id) break;
         generated.push_back(best);
-        { float se = 0; for (int v = 0; v < V; v++) se += expf(logits_data[v] - best_score); ctx.char_confidences.push_back(1.0f / se); }
+        {
+            float se = 0;
+            for (int v = 0; v < V; v++) se += expf(logits_data[v] - best_score);
+            ctx.char_confidences.push_back(1.0f / se);
+        }
         auto t_step_end = std::chrono::steady_clock::now();
         double step_ms = std::chrono::duration<double, std::milli>(t_step_end - t_step_start).count();
         if (bench) {
@@ -1293,8 +1304,7 @@ static bool run_decoder_prefill(context &ctx,
     out_text = "";
     for (int id : generated) {
         if (id == eos_id) break;
-        if (id >= 0 && id < (int)ctx.vocab.size())
-            core_bpe::unicode_to_bytes(ctx.vocab[id], out_text);
+        if (id >= 0 && id < (int)ctx.vocab.size()) core_bpe::unicode_to_bytes(ctx.vocab[id], out_text);
     }
 
     return true;
@@ -1304,18 +1314,15 @@ static bool run_decoder_prefill(context &ctx,
 // Full inference: vision → projection → decoder (greedy)
 // ---------------------------------------------------------------------------
 
-std::string recognize_raw(context &ctx,
-                           const uint8_t *pixels, int width, int height, int channels,
-                           int max_tokens) {
+std::string recognize_raw(context & ctx, const uint8_t * pixels, int width, int height, int channels, int max_tokens) {
     const bool bench = ctx.bench;
     auto t_total = std::chrono::steady_clock::now();
     // Convert to RGB
     std::vector<uint8_t> rgb;
-    const uint8_t *rgb_data = pixels;
+    const uint8_t * rgb_data = pixels;
     if (channels == 1) {
         rgb.resize(width * height * 3);
-        for (int i = 0; i < width * height; i++)
-            rgb[i * 3 + 0] = rgb[i * 3 + 1] = rgb[i * 3 + 2] = pixels[i];
+        for (int i = 0; i < width * height; i++) rgb[i * 3 + 0] = rgb[i * 3 + 1] = rgb[i * 3 + 2] = pixels[i];
         rgb_data = rgb.data();
     } else if (channels == 4) {
         rgb.resize(width * height * 3);
@@ -1328,31 +1335,28 @@ std::string recognize_raw(context &ctx,
     }
 
     int ph = 0, pw = 0;
-    auto img = preprocess_image(rgb_data, width, height,
-                                 ctx.m.patch_size, ctx.m.image_size, &ph, &pw);
+    auto img = preprocess_image(rgb_data, width, height, ctx.m.patch_size, ctx.m.image_size, &ph, &pw);
     int n_patches = ph * pw;
-    fprintf(stderr, "lightonocr: image %dx%d → %dx%d patches (%d total)\n",
-            width, height, pw, ph, n_patches);
+    fprintf(stderr, "lightonocr: image %dx%d → %dx%d patches (%d total)\n", width, height, pw, ph, n_patches);
 
     // Step 1: patch conv on CPU
     int th = ph * ctx.m.patch_size;
     int tw = pw * ctx.m.patch_size;
     auto patch_embeds = apply_patch_conv(ctx, img, th, tw, ph, pw);
-    fprintf(stderr, "lightonocr: patch_conv done (%d patches × %d dim)\n",
-            n_patches, ctx.m.vis_dim);
+    fprintf(stderr, "lightonocr: patch_conv done (%d patches × %d dim)\n", n_patches, ctx.m.vis_dim);
     // Debug: print first patch values for parity check
-    fprintf(stderr, "lightonocr: patch[0,:5] = [%.8f, %.8f, %.8f, %.8f, %.8f]\n",
-            patch_embeds[0], patch_embeds[1], patch_embeds[2], patch_embeds[3], patch_embeds[4]);
+    fprintf(stderr, "lightonocr: patch[0,:5] = [%.8f, %.8f, %.8f, %.8f, %.8f]\n", patch_embeds[0], patch_embeds[1],
+            patch_embeds[2], patch_embeds[3], patch_embeds[4]);
     // (patch[7] debug removed — was used for image resize parity debugging)
 
     // Step 2: 2D RoPE
     std::vector<float> rope_cos, rope_sin;
     compute_2d_rope(ph, pw, ctx.m.vis_head_dim, ctx.m.vis_rope_theta, rope_cos, rope_sin);
     if (LOCR_DEBUG) {
-        fprintf(stderr, "lightonocr: rope_cos[0,:5] = [%.6f, %.6f, %.6f, %.6f, %.6f]\n",
-                rope_cos[0], rope_cos[1], rope_cos[2], rope_cos[3], rope_cos[4]);
-        fprintf(stderr, "lightonocr: rope_sin[0,:5] = [%.6f, %.6f, %.6f, %.6f, %.6f]\n",
-                rope_sin[0], rope_sin[1], rope_sin[2], rope_sin[3], rope_sin[4]);
+        fprintf(stderr, "lightonocr: rope_cos[0,:5] = [%.6f, %.6f, %.6f, %.6f, %.6f]\n", rope_cos[0], rope_cos[1],
+                rope_cos[2], rope_cos[3], rope_cos[4]);
+        fprintf(stderr, "lightonocr: rope_sin[0,:5] = [%.6f, %.6f, %.6f, %.6f, %.6f]\n", rope_sin[0], rope_sin[1],
+                rope_sin[2], rope_sin[3], rope_sin[4]);
     }
 
     // Step 3: vision encoder
@@ -1362,14 +1366,14 @@ std::string recognize_raw(context &ctx,
         return "";
     }
     if (bench) {
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - t_vis).count();
+        auto ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_vis).count();
         fprintf(stderr, "[lightonocr-bench] vision_encoder: %lldms\n", (long long)ms);
     }
     fprintf(stderr, "lightonocr: vision encoder done\n");
     if (LOCR_DEBUG) {
-        fprintf(stderr, "lightonocr: vis_out[0,:5] = [%.6f, %.6f, %.6f, %.6f, %.6f]\n",
-                vis_out[0], vis_out[1], vis_out[2], vis_out[3], vis_out[4]);
+        fprintf(stderr, "lightonocr: vis_out[0,:5] = [%.6f, %.6f, %.6f, %.6f, %.6f]\n", vis_out[0], vis_out[1],
+                vis_out[2], vis_out[3], vis_out[4]);
     }
 
     // Step 4: projection (spatial merge + MLP)
@@ -1380,17 +1384,20 @@ std::string recognize_raw(context &ctx,
     }
     int n_image_tokens = (ph / ctx.m.spatial_merge_size) * (pw / ctx.m.spatial_merge_size);
     if (bench) {
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - t_proj).count();
+        auto ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_proj).count();
         fprintf(stderr, "[lightonocr-bench] projection: %lldms\n", (long long)ms);
     }
     fprintf(stderr, "lightonocr: projection done → %d image tokens\n", n_image_tokens);
 
-    if (const char *dp = getenv("CRISPEMBED_LIGHTON_DUMP")) {
-        auto wr = [&](const char *suf, const std::vector<float> &v) {
+    if (const char * dp = getenv("CRISPEMBED_LIGHTON_DUMP")) {
+        auto wr = [&](const char * suf, const std::vector<float> & v) {
             std::string p = std::string(dp) + suf;
-            FILE *f = fopen(p.c_str(), "wb");
-            if (f) { fwrite(v.data(), sizeof(float), v.size(), f); fclose(f); }
+            FILE * f = fopen(p.c_str(), "wb");
+            if (f) {
+                fwrite(v.data(), sizeof(float), v.size(), f);
+                fclose(f);
+            }
             fprintf(stderr, "lighton dump %s: %zu floats\n", suf, v.size());
         };
         wr("_vis.bin", vis_out);
@@ -1404,8 +1411,8 @@ std::string recognize_raw(context &ctx,
         return "";
     }
     if (bench) {
-        auto total_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::steady_clock::now() - t_total).count();
+        auto total_ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_total).count();
         fprintf(stderr, "[lightonocr-bench] total: %lldms\n", (long long)total_ms);
     }
     fprintf(stderr, "lightonocr: generated: %s\n", gen_text.c_str());
@@ -1414,9 +1421,9 @@ std::string recognize_raw(context &ctx,
     return ctx.last_text;
 }
 
-std::string recognize_file(context &ctx, const char *image_path, int max_tokens) {
+std::string recognize_file(context & ctx, const char * image_path, int max_tokens) {
     int w, h, ch;
-    unsigned char *data = stbi_load(image_path, &w, &h, &ch, 3);
+    unsigned char * data = stbi_load(image_path, &w, &h, &ch, 3);
     if (!data) {
         fprintf(stderr, "lightonocr: cannot load %s\n", image_path);
         return "";
@@ -1436,7 +1443,7 @@ struct lightonocr_context {
 };
 
 extern "C" lightonocr_context * lightonocr_init(const char * model_path, int n_threads) {
-    auto *c = new lightonocr_context;
+    auto * c = new lightonocr_context;
     if (!lightonocr::load(c->ctx, model_path, n_threads)) {
         delete c;
         return nullptr;
@@ -1454,19 +1461,15 @@ extern "C" void lightonocr_set_max_tokens(lightonocr_context * c, int max_tokens
     if (c) c->max_tokens = max_tokens;
 }
 
-extern "C" const char * lightonocr_recognize_raw(
-        lightonocr_context * c,
-        const uint8_t * pixels, int width, int height, int channels,
-        int * out_len) {
+extern "C" const char * lightonocr_recognize_raw(lightonocr_context * c, const uint8_t * pixels, int width, int height,
+                                                 int channels, int * out_len) {
     if (!c) return nullptr;
-    c->ctx.last_text = lightonocr::recognize_raw(c->ctx, pixels, width, height, channels,
-                                                   c->max_tokens);
+    c->ctx.last_text = lightonocr::recognize_raw(c->ctx, pixels, width, height, channels, c->max_tokens);
     if (out_len) *out_len = (int)c->ctx.last_text.size();
     return c->ctx.last_text.c_str();
 }
 
-extern "C" const char * lightonocr_recognize_file(
-        lightonocr_context * c, const char * image_path, int * out_len) {
+extern "C" const char * lightonocr_recognize_file(lightonocr_context * c, const char * image_path, int * out_len) {
     if (!c || !image_path) return nullptr;
     c->ctx.last_text = lightonocr::recognize_file(c->ctx, image_path, c->max_tokens);
     if (out_len) *out_len = (int)c->ctx.last_text.size();
@@ -1474,13 +1477,17 @@ extern "C" const char * lightonocr_recognize_file(
 }
 
 extern "C" const float * lightonocr_confidences(const lightonocr_context * c, int * n) {
-    if (!c || c->ctx.char_confidences.empty()) { if (n) *n = 0; return nullptr; }
+    if (!c || c->ctx.char_confidences.empty()) {
+        if (n) *n = 0;
+        return nullptr;
+    }
     if (n) *n = (int)c->ctx.char_confidences.size();
     return c->ctx.char_confidences.data();
 }
 
 extern "C" float lightonocr_mean_confidence(const lightonocr_context * c) {
     if (!c || c->ctx.char_confidences.empty()) return 0.0f;
-    double s = 0; for (float v : c->ctx.char_confidences) s += v;
+    double s = 0;
+    for (float v : c->ctx.char_confidences) s += v;
     return (float)(s / c->ctx.char_confidences.size());
 }

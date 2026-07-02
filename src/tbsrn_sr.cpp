@@ -46,17 +46,17 @@ static const float * tbsrn_to_f32(const ggml_tensor * t, std::vector<float> & bu
         std::vector<uint8_t> raw(raw_sz);
         ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
         const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
-        else memset(buf.data(), 0, n * sizeof(float));
+        if (traits && traits->to_float)
+            traits->to_float(raw.data(), buf.data(), n);
+        else
+            memset(buf.data(), 0, n * sizeof(float));
     }
     return buf.data();
 }
 
 // Conv2D: [OC, IC, KH, KW] weights, [OC] bias, planar [C, H, W]
-static void tbsrn_conv2d(const float * input, int ic, int ih, int iw,
-                         const float * weight, const float * bias,
-                         int oc, int kh, int kw, int pad,
-                         float * output) {
+static void tbsrn_conv2d(const float * input, int ic, int ih, int iw, const float * weight, const float * bias, int oc,
+                         int kh, int kw, int pad, float * output) {
     int oh = ih + 2 * pad - kh + 1;
     int ow = iw + 2 * pad - kw + 1;
     for (int o = 0; o < oc; o++) {
@@ -70,8 +70,8 @@ static void tbsrn_conv2d(const float * input, int ic, int ih, int iw,
                             int iy = oy + ky - pad;
                             int ix = ox + kx - pad;
                             if (iy < 0 || iy >= ih || ix < 0 || ix >= iw) continue;
-                            sum += input[c * ih * iw + iy * iw + ix]
-                                 * weight[o * ic * kh * kw + c * kh * kw + ky * kw + kx];
+                            sum += input[c * ih * iw + iy * iw + ix] *
+                                   weight[o * ic * kh * kw + c * kh * kw + ky * kw + kx];
                         }
                     }
                 }
@@ -82,23 +82,20 @@ static void tbsrn_conv2d(const float * input, int ic, int ih, int iw,
 }
 
 // BatchNorm2D eval: y = weight * (x - mean) / sqrt(var + eps) + bias
-static void tbsrn_batchnorm2d(float * data, int c, int h, int w,
-                               const float * weight, const float * bias,
-                               const float * running_mean, const float * running_var) {
+static void tbsrn_batchnorm2d(float * data, int c, int h, int w, const float * weight, const float * bias,
+                              const float * running_mean, const float * running_var) {
     int hw = h * w;
     for (int ch = 0; ch < c; ch++) {
         float scale = weight[ch] / sqrtf(running_var[ch] + 1e-5f);
         float shift = bias[ch] - running_mean[ch] * scale;
-        for (int i = 0; i < hw; i++)
-            data[ch * hw + i] = data[ch * hw + i] * scale + shift;
+        for (int i = 0; i < hw; i++) data[ch * hw + i] = data[ch * hw + i] * scale + shift;
     }
 }
 
 static void tbsrn_prelu(float * data, int c, int hw, const float * slope) {
     // slope shape (1,) → shared across channels
     float a = slope[0];
-    for (int i = 0; i < c * hw; i++)
-        data[i] = data[i] > 0 ? data[i] : data[i] * a;
+    for (int i = 0; i < c * hw; i++) data[i] = data[i] > 0 ? data[i] : data[i] * a;
 }
 
 static void tbsrn_mish(float * data, int n) {
@@ -109,8 +106,7 @@ static void tbsrn_mish(float * data, int n) {
     }
 }
 
-static void tbsrn_pixel_shuffle(const float * input, int c_in, int h, int w,
-                                int r, float * output) {
+static void tbsrn_pixel_shuffle(const float * input, int c_in, int h, int w, int r, float * output) {
     int c_out = c_in / (r * r);
     int oh = h * r, ow = w * r;
     for (int c = 0; c < c_out; c++)
@@ -123,46 +119,41 @@ static void tbsrn_pixel_shuffle(const float * input, int c_in, int h, int w,
 }
 
 // LayerNorm on last dimension: data [T, D] in-place
-static void tbsrn_layernorm(float * data, int T, int D,
-                             const float * weight, const float * bias) {
+static void tbsrn_layernorm(float * data, int T, int D, const float * weight, const float * bias) {
     for (int t = 0; t < T; t++) {
         float * row = data + t * D;
         float mean = 0;
         for (int d = 0; d < D; d++) mean += row[d];
         mean /= D;
         float var = 0;
-        for (int d = 0; d < D; d++) { float x = row[d] - mean; var += x * x; }
+        for (int d = 0; d < D; d++) {
+            float x = row[d] - mean;
+            var += x * x;
+        }
         var /= D;
         float inv = 1.0f / sqrtf(var + 1e-6f);
-        for (int d = 0; d < D; d++)
-            row[d] = (row[d] - mean) * inv * weight[d] + bias[d];
+        for (int d = 0; d < D; d++) row[d] = (row[d] - mean) * inv * weight[d] + bias[d];
     }
 }
 
 // Linear: out[..., OD] = in[..., ID] @ W^T + b, W=[OD, ID]
-static void tbsrn_linear(const float * input, int n, int id, int od,
-                         const float * weight, const float * bias,
+static void tbsrn_linear(const float * input, int n, int id, int od, const float * weight, const float * bias,
                          float * output) {
     for (int i = 0; i < n; i++) {
         const float * in_row = input + i * id;
         float * out_row = output + i * od;
         for (int o = 0; o < od; o++) {
             float sum = bias[o];
-            for (int j = 0; j < id; j++)
-                sum += in_row[j] * weight[o * id + j];
+            for (int j = 0; j < id; j++) sum += in_row[j] * weight[o * id + j];
             out_row[o] = sum;
         }
     }
 }
 
 // Multi-head self-attention: Q=K=V=input [T, D], output [T, D]
-static void tbsrn_mha(const float * input, int T, int D, int n_heads,
-                       const float * Wq, const float * Bq,
-                       const float * Wk, const float * Bk,
-                       const float * Wv, const float * Bv,
-                       const float * Wo, const float * Bo,
-                       float * output,
-                       std::vector<float> & scratch) {
+static void tbsrn_mha(const float * input, int T, int D, int n_heads, const float * Wq, const float * Bq,
+                      const float * Wk, const float * Bk, const float * Wv, const float * Bv, const float * Wo,
+                      const float * Bo, float * output, std::vector<float> & scratch) {
     int d_k = D / n_heads;
     int batch_T_D = T * D;
 
@@ -193,8 +184,7 @@ static void tbsrn_mha(const float * input, int T, int D, int n_heads,
             float max_score = -1e9f;
             for (int t2 = 0; t2 < T; t2++) {
                 float s = 0;
-                for (int d = 0; d < d_k; d++)
-                    s += Q[t1 * D + h * d_k + d] * K[t2 * D + h * d_k + d];
+                for (int d = 0; d < d_k; d++) s += Q[t1 * D + h * d_k + d] * K[t2 * D + h * d_k + d];
                 s *= scale;
                 scores[t1 * T + t2] = s;
                 if (s > max_score) max_score = s;
@@ -205,14 +195,12 @@ static void tbsrn_mha(const float * input, int T, int D, int n_heads,
                 scores[t1 * T + t2] = expf(scores[t1 * T + t2] - max_score);
                 sum_exp += scores[t1 * T + t2];
             }
-            for (int t2 = 0; t2 < T; t2++)
-                scores[t1 * T + t2] /= sum_exp;
+            for (int t2 = 0; t2 < T; t2++) scores[t1 * T + t2] /= sum_exp;
 
             // Weighted sum of V
             for (int d = 0; d < d_k; d++) {
                 float val = 0;
-                for (int t2 = 0; t2 < T; t2++)
-                    val += scores[t1 * T + t2] * V[t2 * D + h * d_k + d];
+                for (int t2 = 0; t2 < T; t2++) val += scores[t1 * T + t2] * V[t2 * D + h * d_k + d];
                 attn_out[t1 * D + h * d_k + d] = val;
             }
         }
@@ -227,8 +215,7 @@ static void tbsrn_pe2d(int d_model, int H, int W, float * pe) {
     memset(pe, 0, d_model * H * W * sizeof(float));
     int d_half = d_model / 2;
     std::vector<float> div_term(d_half / 2);
-    for (int i = 0; i < d_half / 2; i++)
-        div_term[i] = expf(i * 2.0f * -(logf(10000.0f) / d_half));
+    for (int i = 0; i < d_half / 2; i++) div_term[i] = expf(i * 2.0f * -(logf(10000.0f) / d_half));
 
     // Width encoding: first d_half channels
     for (int x = 0; x < W; x++) {
@@ -255,8 +242,7 @@ static void tbsrn_pe2d(int d_model, int H, int W, float * pe) {
 }
 
 // Bilinear resize: [C, H_in, W_in] → [C, H_out, W_out]
-static void tbsrn_resize(const float * src, int c, int h_in, int w_in,
-                         int h_out, int w_out, float * dst) {
+static void tbsrn_resize(const float * src, int c, int h_in, int w_in, int h_out, int w_out, float * dst) {
     for (int ch = 0; ch < c; ch++) {
         for (int oy = 0; oy < h_out; oy++) {
             float sy = (oy + 0.5f) * h_in / h_out - 0.5f;
@@ -268,10 +254,10 @@ static void tbsrn_resize(const float * src, int c, int h_in, int w_in,
                 int ix = (int)floorf(sx);
                 float fx = sx - ix;
                 int ix0 = std::max(0, ix), ix1 = std::min(w_in - 1, ix + 1);
-                float v = (1 - fy) * ((1 - fx) * src[ch * h_in * w_in + iy0 * w_in + ix0]
-                                    + fx * src[ch * h_in * w_in + iy0 * w_in + ix1])
-                        + fy * ((1 - fx) * src[ch * h_in * w_in + iy1 * w_in + ix0]
-                              + fx * src[ch * h_in * w_in + iy1 * w_in + ix1]);
+                float v = (1 - fy) * ((1 - fx) * src[ch * h_in * w_in + iy0 * w_in + ix0] +
+                                      fx * src[ch * h_in * w_in + iy0 * w_in + ix1]) +
+                          fy * ((1 - fx) * src[ch * h_in * w_in + iy1 * w_in + ix0] +
+                                fx * src[ch * h_in * w_in + iy1 * w_in + ix1]);
                 dst[ch * h_out * w_out + oy * w_out + ox] = v;
             }
         }
@@ -281,22 +267,19 @@ static void tbsrn_resize(const float * src, int c, int h_in, int w_in,
 // ── Context ────────────────────────────────────────────────────────────
 
 // Fuse Conv+BN: new_W[o] = bn_scale[o] * conv_W[o], new_b[o] = bn_scale[o] * conv_b[o] + bn_shift[o]
-static void fuse_conv_bn(float * conv_w, float * conv_b,
-                          const float * bn_w, const float * bn_b,
-                          const float * bn_mean, const float * bn_var,
-                          int oc, int kernel_elems) {
+static void fuse_conv_bn(float * conv_w, float * conv_b, const float * bn_w, const float * bn_b, const float * bn_mean,
+                         const float * bn_var, int oc, int kernel_elems) {
     for (int o = 0; o < oc; o++) {
         float scale = bn_w[o] / sqrtf(bn_var[o] + 1e-5f);
         float shift = bn_b[o] - bn_mean[o] * scale;
-        for (int k = 0; k < kernel_elems; k++)
-            conv_w[o * kernel_elems + k] *= scale;
+        for (int k = 0; k < kernel_elems; k++) conv_w[o * kernel_elems + k] *= scale;
         conv_b[o] = conv_b[o] * scale + shift;
     }
 }
 
 struct tbsrn_sr_context {
     int srb_nums;
-    int hidden_units;  // 32 → 2*hidden_units = 64 channels
+    int hidden_units; // 32 → 2*hidden_units = 64 channels
     int upscale_factor;
     int n_threads;
     bool bench;
@@ -305,13 +288,13 @@ struct tbsrn_sr_context {
     core_cpu::DequantCache dcache;
 
     // ggml conv infrastructure (convs on a CPU sched; attention stays scalar).
-    ggml_backend_t       enc_backend  = nullptr;
-    ggml_backend_sched_t enc_sched    = nullptr;
+    ggml_backend_t enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched = nullptr;
     bool use_ggml_conv = false;
-    ggml_context *        gw_ctx = nullptr;       // persistent F32 conv kernels
+    ggml_context * gw_ctx = nullptr; // persistent F32 conv kernels
     ggml_backend_buffer_t gw_buf = nullptr;
     std::unordered_map<std::string, ggml_tensor *> gw;
-    std::vector<uint8_t>  graph_meta;
+    std::vector<uint8_t> graph_meta;
     // Fused conv+BN weights (populated at init, keyed by tensor name)
     std::unordered_map<std::string, std::vector<float>> fused;
     // Cached 2D positional encoding (same for every SRB block)
@@ -319,7 +302,10 @@ struct tbsrn_sr_context {
 
     ggml_tensor * gwt(const std::string & name) {
         auto it = gw.find(name);
-        if (it == gw.end()) { fprintf(stderr, "tbsrn_sr: missing graph weight %s\n", name.c_str()); return nullptr; }
+        if (it == gw.end()) {
+            fprintf(stderr, "tbsrn_sr: missing graph weight %s\n", name.c_str());
+            return nullptr;
+        }
         return it->second;
     }
 
@@ -347,9 +333,9 @@ tbsrn_sr_context * tbsrn_sr_init(const char * model_path, int n_threads) {
         return nullptr;
     }
 
-    ctx->srb_nums       = core_gguf::kv_u32(meta, "tbsrn.srb_nums", 5);
-    ctx->hidden_units    = core_gguf::kv_u32(meta, "tbsrn.hidden_units", 32);
-    ctx->upscale_factor  = core_gguf::kv_u32(meta, "tbsrn.upscale_factor", 2);
+    ctx->srb_nums = core_gguf::kv_u32(meta, "tbsrn.srb_nums", 5);
+    ctx->hidden_units = core_gguf::kv_u32(meta, "tbsrn.hidden_units", 32);
+    ctx->upscale_factor = core_gguf::kv_u32(meta, "tbsrn.upscale_factor", 2);
     core_gguf::free_metadata(meta);
 
     bool force_cpu = (getenv("TBSRN_SR_FORCE_CPU") && atoi(getenv("TBSRN_SR_FORCE_CPU")));
@@ -386,40 +372,41 @@ tbsrn_sr_context * tbsrn_sr_init(const char * model_path, int n_threads) {
 
         int fused_count = 0;
         for (int i = 0; i < ctx->srb_nums; i++) {
-            char pfx[32]; snprintf(pfx, sizeof(pfx), "srb.%d", i);
+            char pfx[32];
+            snprintf(pfx, sizeof(pfx), "srb.%d", i);
             std::string p(pfx);
             // conv1 + bn1
             auto cw = dequant(p + ".conv1.weight"), cb = dequant(p + ".conv1.bias");
-            auto bw = dequant(p + ".bn1.weight"),   bb = dequant(p + ".bn1.bias");
+            auto bw = dequant(p + ".bn1.weight"), bb = dequant(p + ".bn1.bias");
             auto bm = dequant(p + ".bn1.running_mean"), bv = dequant(p + ".bn1.running_var");
             if (!cw.empty() && !bw.empty()) {
-                fuse_conv_bn(cw.data(), cb.data(), bw.data(), bb.data(),
-                             bm.data(), bv.data(), C, (int)cw.size() / C);
+                fuse_conv_bn(cw.data(), cb.data(), bw.data(), bb.data(), bm.data(), bv.data(), C, (int)cw.size() / C);
                 ctx->fused[p + ".conv1.weight"] = std::move(cw);
-                ctx->fused[p + ".conv1.bias"]   = std::move(cb);
+                ctx->fused[p + ".conv1.bias"] = std::move(cb);
                 fused_count++;
             }
             // conv2 + bn2
-            cw = dequant(p + ".conv2.weight"); cb = dequant(p + ".conv2.bias");
-            bw = dequant(p + ".bn2.weight");   bb = dequant(p + ".bn2.bias");
-            bm = dequant(p + ".bn2.running_mean"); bv = dequant(p + ".bn2.running_var");
+            cw = dequant(p + ".conv2.weight");
+            cb = dequant(p + ".conv2.bias");
+            bw = dequant(p + ".bn2.weight");
+            bb = dequant(p + ".bn2.bias");
+            bm = dequant(p + ".bn2.running_mean");
+            bv = dequant(p + ".bn2.running_var");
             if (!cw.empty() && !bw.empty()) {
-                fuse_conv_bn(cw.data(), cb.data(), bw.data(), bb.data(),
-                             bm.data(), bv.data(), C, (int)cw.size() / C);
+                fuse_conv_bn(cw.data(), cb.data(), bw.data(), bb.data(), bm.data(), bv.data(), C, (int)cw.size() / C);
                 ctx->fused[p + ".conv2.weight"] = std::move(cw);
-                ctx->fused[p + ".conv2.bias"]   = std::move(cb);
+                ctx->fused[p + ".conv2.bias"] = std::move(cb);
                 fused_count++;
             }
         }
         // final_conv + final_bn
         auto cw = dequant("final_conv.weight"), cb = dequant("final_conv.bias");
-        auto bw = dequant("final_bn.weight"),   bb = dequant("final_bn.bias");
+        auto bw = dequant("final_bn.weight"), bb = dequant("final_bn.bias");
         auto bm = dequant("final_bn.running_mean"), bv = dequant("final_bn.running_var");
         if (!cw.empty() && !bw.empty()) {
-            fuse_conv_bn(cw.data(), cb.data(), bw.data(), bb.data(),
-                         bm.data(), bv.data(), C, (int)cw.size() / C);
+            fuse_conv_bn(cw.data(), cb.data(), bw.data(), bb.data(), bm.data(), bv.data(), C, (int)cw.size() / C);
             ctx->fused["final_conv.weight"] = std::move(cw);
-            ctx->fused["final_conv.bias"]   = std::move(cb);
+            ctx->fused["final_conv.bias"] = std::move(cb);
             fused_count++;
         }
         fprintf(stderr, "tbsrn_sr: fused %d conv+BN pairs at load time\n", fused_count);
@@ -432,8 +419,8 @@ tbsrn_sr_context * tbsrn_sr_init(const char * model_path, int n_threads) {
         tbsrn_pe2d(64, LR_H, LR_W, ctx->pe_cache.data());
     }
 
-    fprintf(stderr, "tbsrn_sr: srb_nums=%d, channels=%d, upscale=%dx, %d tensors\n",
-            ctx->srb_nums, C, ctx->upscale_factor, (int)ctx->wl.tensors.size());
+    fprintf(stderr, "tbsrn_sr: srb_nums=%d, channels=%d, upscale=%dx, %d tensors\n", ctx->srb_nums, C,
+            ctx->upscale_factor, (int)ctx->wl.tensors.size());
     ctx->bench = (std::getenv("CRISPEMBED_TBSRN_SR_BENCH") != nullptr);
 
     // ── ggml conv path (opt out with TBSRN_SR_SCALAR=1) ───────────────────
@@ -470,17 +457,25 @@ tbsrn_sr_context * tbsrn_sr_init(const char * model_path, int n_threads) {
             std::string wn = base + ".weight", bn = base + ".bias";
             auto * wt = core_gguf::try_get(ctx->wl.tensors, wn.c_str());
             auto * bt = core_gguf::try_get(ctx->wl.tensors, bn.c_str());
-            if (!wt || !bt) { fprintf(stderr, "tbsrn_sr: conv weight %s missing, scalar fallback\n", wn.c_str()); ctx->gw.clear(); break; }
+            if (!wt || !bt) {
+                fprintf(stderr, "tbsrn_sr: conv weight %s missing, scalar fallback\n", wn.c_str());
+                ctx->gw.clear();
+                break;
+            }
             int64_t ne[4] = { wt->ne[3], wt->ne[2], wt->ne[1], wt->ne[0] };
             ggml_tensor * w = ggml_new_tensor(ctx->gw_ctx, GGML_TYPE_F32, 4, ne);
-            ggml_set_name(w, wn.c_str()); ctx->gw[wn] = w; to_fill.push_back({wn, w});
+            ggml_set_name(w, wn.c_str());
+            ctx->gw[wn] = w;
+            to_fill.push_back({ wn, w });
             ggml_tensor * b = ggml_new_tensor_1d(ctx->gw_ctx, GGML_TYPE_F32, bt->ne[0]);
-            ggml_set_name(b, bn.c_str()); ctx->gw[bn] = b; to_fill.push_back({bn, b});
+            ggml_set_name(b, bn.c_str());
+            ctx->gw[bn] = b;
+            to_fill.push_back({ bn, b });
         }
         if (!ctx->gw.empty()) {
             ctx->gw_buf = ggml_backend_alloc_ctx_tensors(ctx->gw_ctx, ctx->enc_backend);
             for (auto & [name, w] : to_fill) {
-                const float * src = ctx->get(name);   // fused (BN-folded) where present
+                const float * src = ctx->get(name); // fused (BN-folded) where present
                 if (src) ggml_backend_tensor_set(w, src, 0, ggml_nbytes(w));
             }
             ctx->use_ggml_conv = true;
@@ -506,37 +501,36 @@ void tbsrn_sr_free(tbsrn_sr_context * ctx) {
 // Conv dispatch: ggml_conv_2d on the CPU sched, or scalar tbsrn_conv2d fallback.
 // `base` names the conv ("block1.conv", "srb.0.conv1", …); persistent F32 kernel
 // + bias live in ctx->gw. CHW [C,H,W] in/out. All tbsrn convs are stride 1.
-static void tbsrn_conv(tbsrn_sr_context * ctx,
-                       const float * in, int ic, int ih, int iw,
-                       const std::string & base,
+static void tbsrn_conv(tbsrn_sr_context * ctx, const float * in, int ic, int ih, int iw, const std::string & base,
                        int oc, int kh, int kw, int pad, float * out) {
     if (!ctx->use_ggml_conv) {
-        tbsrn_conv2d(in, ic, ih, iw, ctx->get(base + ".weight"), ctx->get(base + ".bias"),
-                     oc, kh, kw, pad, out);
+        tbsrn_conv2d(in, ic, ih, iw, ctx->get(base + ".weight"), ctx->get(base + ".bias"), oc, kh, kw, pad, out);
         return;
     }
 
     const int max_nodes = 16;
-    size_t buf_size = ggml_tensor_overhead() * max_nodes
-                    + ggml_graph_overhead_custom(max_nodes, false);
+    size_t buf_size = ggml_tensor_overhead() * max_nodes + ggml_graph_overhead_custom(max_nodes, false);
     ctx->graph_meta.resize(buf_size);
     ggml_init_params ip = { buf_size, ctx->graph_meta.data(), true };
     ggml_context * g = ggml_init(ip);
     ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
 
     ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, iw, ih, ic);
-    ggml_set_name(x, "x"); ggml_set_input(x);
+    ggml_set_name(x, "x");
+    ggml_set_input(x);
     ggml_tensor * w = ctx->gwt(base + ".weight");
     ggml_tensor * y = ggml_conv_2d(g, w, x, 1, 1, pad, pad, 1, 1);
     ggml_tensor * b = ggml_reshape_4d(g, ctx->gwt(base + ".bias"), 1, 1, oc, 1);
     y = ggml_add(g, y, b);
-    ggml_set_name(y, "out"); ggml_set_output(y);
+    ggml_set_name(y, "out");
+    ggml_set_output(y);
     ggml_build_forward_expand(gf, y);
 
     ggml_backend_sched_reset(ctx->enc_sched);
     if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
         fprintf(stderr, "tbsrn_sr: conv alloc failed (%s)\n", base.c_str());
-        ggml_free(g); return;
+        ggml_free(g);
+        return;
     }
     ggml_backend_tensor_set(x, in, 0, (size_t)ic * ih * iw * sizeof(float));
     ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
@@ -545,16 +539,15 @@ static void tbsrn_conv(tbsrn_sr_context * ctx,
     ggml_free(g);
 }
 
-int tbsrn_sr_process(tbsrn_sr_context * ctx,
-                     const uint8_t * input, int width, int height,
-                     uint8_t ** output, int * out_width, int * out_height) {
+int tbsrn_sr_process(tbsrn_sr_context * ctx, const uint8_t * input, int width, int height, uint8_t ** output,
+                     int * out_width, int * out_height) {
     if (!ctx || !input || !output || width <= 0 || height <= 0) return -1;
 
     const bool bench = ctx->bench;
     using ms_f = std::chrono::duration<double, std::milli>;
     auto t_total = std::chrono::steady_clock::now();
 
-    int C = 2 * ctx->hidden_units;  // 64
+    int C = 2 * ctx->hidden_units; // 64
     int LR_H = 16, LR_W = 64;
     int HR_H = LR_H * ctx->upscale_factor;
     int HR_W = LR_W * ctx->upscale_factor;
@@ -564,8 +557,7 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
             for (int c = 0; c < 3; c++)
-                input_f[c * height * width + y * width + x] =
-                    input[(y * width + x) * 3 + c] / 255.0f;
+                input_f[c * height * width + y * width + x] = input[(y * width + x) * 3 + c] / 255.0f;
 
     // Resize to LR size (16×64) if needed
     std::vector<float> lr(3 * LR_H * LR_W);
@@ -587,7 +579,7 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
 
     // Scratch for FeatureEnhancer
     std::vector<float> mha_scratch;
-    int T = LR_H * LR_W;  // 1024
+    int T = LR_H * LR_W; // 1024
     int D_fe = 128;
 
     // 5× RecurrentResidualBlock
@@ -609,15 +601,14 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
         // FeatureEnhancer
         // res2 is [C, H, W] → reshape to [C, T] where T = H*W = 1024
         // Concat with PE2D → [128, T]  (PE cached at init)
-        std::vector<float> feat(D_fe * T);  // [128, T]
+        std::vector<float> feat(D_fe * T); // [128, T]
         memcpy(feat.data(), res2.data(), C * T * sizeof(float));
         memcpy(feat.data() + C * T, ctx->pe_cache.data(), 64 * T * sizeof(float));
 
         // Transpose [128, T] → [T, 128]
         std::vector<float> feat_t(T * D_fe);
         for (int t = 0; t < T; t++)
-            for (int d = 0; d < D_fe; d++)
-                feat_t[t * D_fe + d] = feat[d * T + t];
+            for (int d = 0; d < D_fe; d++) feat_t[t * D_fe + d] = feat[d * T + t];
 
         // Save for residual
         std::vector<float> origin = feat_t;
@@ -625,56 +616,46 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
         // MHA self-attention
         std::string fe = p + ".fe";
         std::vector<float> mha_out(T * D_fe);
-        tbsrn_mha(feat_t.data(), T, D_fe, 4,
-                  ctx->get(fe + ".mha.linear0.weight"), ctx->get(fe + ".mha.linear0.bias"),
+        tbsrn_mha(feat_t.data(), T, D_fe, 4, ctx->get(fe + ".mha.linear0.weight"), ctx->get(fe + ".mha.linear0.bias"),
                   ctx->get(fe + ".mha.linear1.weight"), ctx->get(fe + ".mha.linear1.bias"),
                   ctx->get(fe + ".mha.linear2.weight"), ctx->get(fe + ".mha.linear2.bias"),
-                  ctx->get(fe + ".mha.linear3.weight"), ctx->get(fe + ".mha.linear3.bias"),
-                  mha_out.data(), mha_scratch);
+                  ctx->get(fe + ".mha.linear3.weight"), ctx->get(fe + ".mha.linear3.bias"), mha_out.data(),
+                  mha_scratch);
 
         // LN1(origin + mha_out)
         for (int j = 0; j < T * D_fe; j++) feat_t[j] = origin[j] + mha_out[j];
-        tbsrn_layernorm(feat_t.data(), T, D_fe,
-                        ctx->get(fe + ".ln1.weight"), ctx->get(fe + ".ln1.bias"));
+        tbsrn_layernorm(feat_t.data(), T, D_fe, ctx->get(fe + ".ln1.weight"), ctx->get(fe + ".ln1.bias"));
 
         std::vector<float> origin2 = feat_t;
 
         // FFN: Linear(128→128) + ReLU + Linear(128→128)
         std::vector<float> ffn_tmp(T * D_fe);
-        tbsrn_linear(feat_t.data(), T, D_fe, D_fe,
-                     ctx->get(fe + ".ffn.w1.weight"), ctx->get(fe + ".ffn.w1.bias"),
+        tbsrn_linear(feat_t.data(), T, D_fe, D_fe, ctx->get(fe + ".ffn.w1.weight"), ctx->get(fe + ".ffn.w1.bias"),
                      ffn_tmp.data());
-        for (int j = 0; j < T * D_fe; j++)
-            ffn_tmp[j] = ffn_tmp[j] > 0 ? ffn_tmp[j] : 0;  // ReLU
+        for (int j = 0; j < T * D_fe; j++) ffn_tmp[j] = ffn_tmp[j] > 0 ? ffn_tmp[j] : 0; // ReLU
         std::vector<float> ffn_out(T * D_fe);
-        tbsrn_linear(ffn_tmp.data(), T, D_fe, D_fe,
-                     ctx->get(fe + ".ffn.w2.weight"), ctx->get(fe + ".ffn.w2.bias"),
+        tbsrn_linear(ffn_tmp.data(), T, D_fe, D_fe, ctx->get(fe + ".ffn.w2.weight"), ctx->get(fe + ".ffn.w2.bias"),
                      ffn_out.data());
 
         // LN3(origin2 + ffn_out)
         for (int j = 0; j < T * D_fe; j++) feat_t[j] = origin2[j] + ffn_out[j];
-        tbsrn_layernorm(feat_t.data(), T, D_fe,
-                        ctx->get(fe + ".ln3.weight"), ctx->get(fe + ".ln3.bias"));
+        tbsrn_layernorm(feat_t.data(), T, D_fe, ctx->get(fe + ".ln3.weight"), ctx->get(fe + ".ln3.bias"));
 
         // Output linear (128→64)
         std::vector<float> fe_out(T * C);
-        tbsrn_linear(feat_t.data(), T, D_fe, C,
-                     ctx->get(fe + ".linear.weight"), ctx->get(fe + ".linear.bias"),
+        tbsrn_linear(feat_t.data(), T, D_fe, C, ctx->get(fe + ".linear.weight"), ctx->get(fe + ".linear.bias"),
                      fe_out.data());
 
         // Transpose [T, 64] → [64, T] → reshape [64, H, W]
         std::vector<float> fe_spatial(C * T);
         for (int t = 0; t < T; t++)
-            for (int d = 0; d < C; d++)
-                fe_spatial[d * T + t] = fe_out[t * C + d];
+            for (int d = 0; d < C; d++) fe_spatial[d * T + t] = fe_out[t * C + d];
 
         // Residual: x = x + fe_spatial
-        for (int j = 0; j < C * T; j++)
-            x[j] += fe_spatial[j];
+        for (int j = 0; j < C * T; j++) x[j] += fe_spatial[j];
         if (bench) {
             auto t_blk_end = std::chrono::steady_clock::now();
-            fprintf(stderr, "[tbsrn_sr-bench] block %d: %.1f ms\n",
-                    i, ms_f(t_blk_end - t_blk).count());
+            fprintf(stderr, "[tbsrn_sr-bench] block %d: %.1f ms\n", i, ms_f(t_blk_end - t_blk).count());
         }
     }
 
@@ -684,11 +665,10 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
 
     // block8 input: block1 + block7
     std::vector<float> up_input(C * LR_H * LR_W);
-    for (int j = 0; j < C * LR_H * LR_W; j++)
-        up_input[j] = block1_out[j] + final_out[j];
+    for (int j = 0; j < C * LR_H * LR_W; j++) up_input[j] = block1_out[j] + final_out[j];
 
     // UpsampleBlock: Conv(64→256, k=3, p=1) + PixelShuffle(2) + mish
-    int up_oc = C * ctx->upscale_factor * ctx->upscale_factor;  // 256
+    int up_oc = C * ctx->upscale_factor * ctx->upscale_factor; // 256
     std::vector<float> up_conv(up_oc * LR_H * LR_W);
     tbsrn_conv(ctx, up_input.data(), C, LR_H, LR_W, "upsample.conv", up_oc, 3, 3, 1, up_conv.data());
 
@@ -699,8 +679,7 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
     // Final conv: Conv(64→3, k=9, p=4) + tanh
     std::vector<float> sr_out(3 * HR_H * HR_W);
     tbsrn_conv(ctx, up_ps.data(), C, HR_H, HR_W, "output_conv", 3, 9, 9, 4, sr_out.data());
-    for (int j = 0; j < 3 * HR_H * HR_W; j++)
-        sr_out[j] = tanhf(sr_out[j]);
+    for (int j = 0; j < 3 * HR_H * HR_W; j++) sr_out[j] = tanhf(sr_out[j]);
 
     // Convert tanh output [-1, 1] → uint8 [0, 255]
     uint8_t * out_buf = (uint8_t *)malloc(3 * HR_H * HR_W);
@@ -718,8 +697,7 @@ int tbsrn_sr_process(tbsrn_sr_context * ctx,
     fprintf(stderr, "tbsrn_sr: done %dx%d → %dx%d\n", width, height, HR_W, HR_H);
     if (bench) {
         auto t_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[tbsrn_sr-bench] total: %.1f ms\n",
-                ms_f(t_end - t_total).count());
+        fprintf(stderr, "[tbsrn_sr-bench] total: %.1f ms\n", ms_f(t_end - t_total).count());
     }
     return 0;
 }

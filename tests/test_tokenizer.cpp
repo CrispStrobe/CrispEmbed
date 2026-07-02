@@ -16,14 +16,15 @@
 static int g_pass = 0;
 static int g_fail = 0;
 
-#define CHECK(cond, msg) do { \
-    if (!(cond)) { \
-        fprintf(stderr, "  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \
-        g_fail++; \
-    } else { \
-        g_pass++; \
-    } \
-} while (0)
+#define CHECK(cond, msg)                                                                                               \
+    do {                                                                                                               \
+        if (!(cond)) {                                                                                                 \
+            fprintf(stderr, "  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__);                                          \
+            g_fail++;                                                                                                  \
+        } else {                                                                                                       \
+            g_pass++;                                                                                                  \
+        }                                                                                                              \
+    } while (0)
 
 // ===========================================================================
 // WordPieceTokenizer
@@ -33,9 +34,9 @@ static void test_wordpiece_basic() {
     printf("test_wordpiece_basic...\n");
 
     // Minimal vocab: [PAD]=0 [UNK]=1 [CLS]=2 [SEP]=3 hello=4 world=5
-    std::vector<std::string> vocab = {"[PAD]","[UNK]","[CLS]","[SEP]","hello","world"};
+    std::vector<std::string> vocab = { "[PAD]", "[UNK]", "[CLS]", "[SEP]", "hello", "world" };
     WordPieceTokenizer tok;
-    tok.load(vocab, /*cls*/2, /*sep*/3, /*unk*/1, /*pad*/0, /*max_len*/8);
+    tok.load(vocab, /*cls*/ 2, /*sep*/ 3, /*unk*/ 1, /*pad*/ 0, /*max_len*/ 8);
 
     auto r = tok.encode("hello world");
     // The implementation pads to seq_len (not max_length) when seq_len <= max_length.
@@ -57,7 +58,7 @@ static void test_wordpiece_subword() {
 
     // Vocab includes a subword continuation
     // good=4  ##bye=5  →  "goodbye" → [good, ##bye]
-    std::vector<std::string> vocab = {"[PAD]","[UNK]","[CLS]","[SEP]","good","##bye"};
+    std::vector<std::string> vocab = { "[PAD]", "[UNK]", "[CLS]", "[SEP]", "good", "##bye" };
     WordPieceTokenizer tok;
     tok.load(vocab, 2, 3, 1, 0, 8);
 
@@ -70,7 +71,7 @@ static void test_wordpiece_subword() {
 static void test_wordpiece_unk() {
     printf("test_wordpiece_unk...\n");
 
-    std::vector<std::string> vocab = {"[PAD]","[UNK]","[CLS]","[SEP]","hello"};
+    std::vector<std::string> vocab = { "[PAD]", "[UNK]", "[CLS]", "[SEP]", "hello" };
     WordPieceTokenizer tok;
     tok.load(vocab, 2, 3, 1, 0, 8);
 
@@ -84,9 +85,9 @@ static void test_wordpiece_unk() {
 static void test_wordpiece_lowercase() {
     printf("test_wordpiece_lowercase...\n");
 
-    std::vector<std::string> vocab = {"[PAD]","[UNK]","[CLS]","[SEP]","hello"};
+    std::vector<std::string> vocab = { "[PAD]", "[UNK]", "[CLS]", "[SEP]", "hello" };
     WordPieceTokenizer tok;
-    tok.load(vocab, 2, 3, 1, 0, 8, /*do_lower_case*/true);
+    tok.load(vocab, 2, 3, 1, 0, 8, /*do_lower_case*/ true);
 
     // "Hello" with do_lower_case=true should map to hello=4
     auto r = tok.encode("Hello");
@@ -94,7 +95,7 @@ static void test_wordpiece_lowercase() {
 
     // With do_lower_case=false: "Hello" not in vocab → UNK
     WordPieceTokenizer tok2;
-    tok2.load(vocab, 2, 3, 1, 0, 8, /*do_lower_case*/false);
+    tok2.load(vocab, 2, 3, 1, 0, 8, /*do_lower_case*/ false);
     auto r2 = tok2.encode("Hello");
     CHECK(r2.ids[1] == 1, "no-lowercase: Hello not found → UNK");
 }
@@ -103,7 +104,7 @@ static void test_wordpiece_punctuation() {
     printf("test_wordpiece_punctuation...\n");
 
     // Punctuation splits into its own token
-    std::vector<std::string> vocab = {"[PAD]","[UNK]","[CLS]","[SEP]","hello","world",","};
+    std::vector<std::string> vocab = { "[PAD]", "[UNK]", "[CLS]", "[SEP]", "hello", "world", "," };
     WordPieceTokenizer tok;
     tok.load(vocab, 2, 3, 1, 0, 16);
 
@@ -117,7 +118,7 @@ static void test_wordpiece_punctuation() {
 static void test_wordpiece_encode_pair() {
     printf("test_wordpiece_encode_pair...\n");
 
-    std::vector<std::string> vocab = {"[PAD]","[UNK]","[CLS]","[SEP]","hello","world"};
+    std::vector<std::string> vocab = { "[PAD]", "[UNK]", "[CLS]", "[SEP]", "hello", "world" };
     WordPieceTokenizer tok;
     tok.load(vocab, 2, 3, 1, 0, 16);
 
@@ -139,15 +140,15 @@ static void test_wordpiece_ollama_vocab() {
 
     // Ollama format: whole-word tokens prefixed with ▁, subwords have no ##
     // ▁hello → hello, ing → ##ing (conversion happens in load)
-    static const std::string SP = "\xe2\x96\x81";  // ▁ (U+2581)
+    static const std::string SP = "\xe2\x96\x81"; // ▁ (U+2581)
     std::vector<std::string> vocab = {
-        "[PAD]",  // 0
-        "[UNK]",  // 1
-        "[CLS]",  // 2
-        "[SEP]",  // 3
-        SP + "hello",   // 4 → should become "hello"
-        SP + "world",   // 5 → should become "world"
-        "ing",    // 6 → should become "##ing"
+        "[PAD]",      // 0
+        "[UNK]",      // 1
+        "[CLS]",      // 2
+        "[SEP]",      // 3
+        SP + "hello", // 4 → should become "hello"
+        SP + "world", // 5 → should become "world"
+        "ing",        // 6 → should become "##ing"
     };
     WordPieceTokenizer tok;
     tok.load(vocab, 2, 3, 1, 0, 16);
@@ -166,9 +167,9 @@ static void test_wordpiece_ollama_vocab() {
 static void test_wordpiece_maxlength_truncation() {
     printf("test_wordpiece_maxlength_truncation...\n");
 
-    std::vector<std::string> vocab = {"[PAD]","[UNK]","[CLS]","[SEP]","a","b","c","d","e"};
+    std::vector<std::string> vocab = { "[PAD]", "[UNK]", "[CLS]", "[SEP]", "a", "b", "c", "d", "e" };
     WordPieceTokenizer tok;
-    tok.load(vocab, 2, 3, 1, 0, /*max_length*/5);
+    tok.load(vocab, 2, 3, 1, 0, /*max_length*/ 5);
 
     // "a b c d e" → 5 ids: [CLS, a, b, c, SEP] (d,e truncated to fit max_length=5)
     auto r = tok.encode("a b c d e");
@@ -188,18 +189,18 @@ static void test_spm_basic() {
     printf("test_spm_basic...\n");
 
     // SPM vocab: ▁ markers on word-start tokens
-    static const std::string SP = "\xe2\x96\x81";  // ▁ (U+2581)
+    static const std::string SP = "\xe2\x96\x81"; // ▁ (U+2581)
     std::vector<std::string> vocab = {
-        "<pad>",        // 0
-        "<s>",          // 1  (BOS)
-        "</s>",         // 2  (EOS)
-        "<unk>",        // 3
-        SP + "hello",   // 4
-        SP + "world",   // 5
+        "<pad>",      // 0
+        "<s>",        // 1  (BOS)
+        "</s>",       // 2  (EOS)
+        "<unk>",      // 3
+        SP + "hello", // 4
+        SP + "world", // 5
     };
     std::vector<float> scores(vocab.size(), 0.0f);
     SentencePieceTokenizer tok;
-    tok.load(vocab, scores, /*bos*/1, /*eos*/2, /*unk*/3, /*pad*/0, /*max_len*/16);
+    tok.load(vocab, scores, /*bos*/ 1, /*eos*/ 2, /*unk*/ 3, /*pad*/ 0, /*max_len*/ 16);
 
     auto r = tok.encode("hello world");
     // Expected: [BOS=1, ▁hello=4, ▁world=5, EOS=2, PAD=0, ...]
@@ -215,7 +216,7 @@ static void test_spm_unk() {
     printf("test_spm_unk...\n");
 
     static const std::string SP = "\xe2\x96\x81";
-    std::vector<std::string> vocab = {"<pad>","<s>","</s>","<unk>", SP + "hello"};
+    std::vector<std::string> vocab = { "<pad>", "<s>", "</s>", "<unk>", SP + "hello" };
     std::vector<float> scores(vocab.size(), 0.0f);
     SentencePieceTokenizer tok;
     tok.load(vocab, scores, 1, 2, 3, 0, 16);
@@ -227,7 +228,11 @@ static void test_spm_unk() {
     CHECK(r.ids[1] == 3, "spm unk: ids[1] == UNK (byte fallback)");
     // EOS should appear somewhere after the UNK run
     bool has_eos = false;
-    for (int id : r.ids) if (id == 2) { has_eos = true; break; }
+    for (int id : r.ids)
+        if (id == 2) {
+            has_eos = true;
+            break;
+        }
     CHECK(has_eos, "spm unk: EOS present after UNK byte-fallback tokens");
 }
 
@@ -238,13 +243,13 @@ static void test_spm_subword() {
     // In SPM (unigram), subwords don't have ## prefix; they just don't have ▁
     static const std::string SP = "\xe2\x96\x81";
     std::vector<std::string> vocab = {
-        "<pad>","<s>","</s>","<unk>",
-        SP + "good",   // 4
-        SP + "go",     // 5
-        "od",          // 6  (subword without ▁ = continuation)
-        SP + "world",  // 7
+        "<pad>",      "<s>", "</s>", "<unk>",
+        SP + "good",  // 4
+        SP + "go",    // 5
+        "od",         // 6  (subword without ▁ = continuation)
+        SP + "world", // 7
     };
-    std::vector<float> scores = {0.0f, 0.0f, 0.0f, 0.0f, -1.0f, -2.0f, -3.0f, -1.0f};
+    std::vector<float> scores = { 0.0f, 0.0f, 0.0f, 0.0f, -1.0f, -2.0f, -3.0f, -1.0f };
     SentencePieceTokenizer tok;
     tok.load(vocab, scores, 1, 2, 3, 0, 16);
 
@@ -265,13 +270,13 @@ static void test_bpe_spm_basic() {
     // Vocab: individual chars + merged forms
     // hello: h e l l o  → merge h+e → he, he+l → hel, hel+l → hell, hell+o → hello
     std::vector<std::string> vocab = {
-        "<pad>",           // 0
-        "<bos>",           // 1
-        "<eos>",           // 2
-        SP,                // 3  (space marker alone)
-        "h", "e", "l", "o",   // 4 5 6 7
-        "he", "hel", "hell", "hello",  // 8 9 10 11
-        SP + "w", SP + "wo", SP + "wor", SP + "worl", SP + "world",  // 12..16
+        "<pad>",                                                    // 0
+        "<bos>",                                                    // 1
+        "<eos>",                                                    // 2
+        SP,                                                         // 3  (space marker alone)
+        "h",      "e",       "l",        "o",                       // 4 5 6 7
+        "he",     "hel",     "hell",     "hello",                   // 8 9 10 11
+        SP + "w", SP + "wo", SP + "wor", SP + "worl", SP + "world", // 12..16
     };
     std::vector<std::string> merges = {
         "h e",
@@ -287,8 +292,8 @@ static void test_bpe_spm_basic() {
 
     BPETokenizer tok;
     // spm_style=true, bos_id=1, suffix_id (EOS)=2
-    tok.load(vocab, merges, /*eos*/2, /*pad*/0, /*suffix*/2,
-             /*bos*/1, /*spm_style*/true, /*max_len*/16);
+    tok.load(vocab, merges, /*eos*/ 2, /*pad*/ 0, /*suffix*/ 2,
+             /*bos*/ 1, /*spm_style*/ true, /*max_len*/ 16);
 
     auto r = tok.encode("hello");
     // Expected: BOS + hello + EOS = [1, 11, 2, 0, ...]

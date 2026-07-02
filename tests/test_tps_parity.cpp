@@ -17,14 +17,19 @@
 #include <vector>
 
 #define GREEN "\033[32m"
-#define RED   "\033[31m"
+#define RED "\033[31m"
 #define RESET "\033[0m"
 
 static int n_pass = 0, n_fail = 0;
 
 static void check(const char * name, bool cond) {
-    if (cond) { printf("  %s[PASS]%s %s\n", GREEN, RESET, name); n_pass++; }
-    else      { printf("  %s[FAIL]%s %s\n", RED, RESET, name); n_fail++; }
+    if (cond) {
+        printf("  %s[PASS]%s %s\n", GREEN, RESET, name);
+        n_pass++;
+    } else {
+        printf("  %s[FAIL]%s %s\n", RED, RESET, name);
+        n_fail++;
+    }
 }
 
 int main(int argc, char ** argv) {
@@ -90,8 +95,8 @@ int main(int argc, char ** argv) {
 
         auto r = ref.compare("points_pixel", cpp_pts.data(), F * 2);
         // cos_min= format so tests/regression/run_one.py's _DIFF_LINE parser picks it up.
-        printf("  points_pixel: cos_min=%.6f max_abs=%.4f  %s\n",
-               r.cos_min, r.max_abs, r.is_pass(0.999f) ? "PASS" : "FAIL");
+        printf("  points_pixel: cos_min=%.6f max_abs=%.4f  %s\n", r.cos_min, r.max_abs,
+               r.is_pass(0.999f) ? "PASS" : "FAIL");
         check("points_pixel cos >= 0.999", r.is_pass(0.999f));
 
         // Also report per-point max error
@@ -117,8 +122,7 @@ int main(int argc, char ** argv) {
             raw_pts[i * 2 + 1] = py[i] / (0.5f * (H - 1)) - 1.0f;
         }
         auto r = ref.compare("fc2_out", raw_pts.data(), F * 2);
-        printf("  fc2_out: cos_min=%.6f max_abs=%.6f  %s\n",
-               r.cos_min, r.max_abs, r.is_pass(0.999f) ? "PASS" : "FAIL");
+        printf("  fc2_out: cos_min=%.6f max_abs=%.6f  %s\n", r.cos_min, r.max_abs, r.is_pass(0.999f) ? "PASS" : "FAIL");
         check("fc2_out cos >= 0.999", r.is_pass(0.999f));
     }
 
@@ -143,8 +147,7 @@ int main(int argc, char ** argv) {
     int diff_count = 0;
     for (int i = 0; i < W * H; i++)
         if (gray[i] != out[i]) diff_count++;
-    printf("  Pixels changed: %d / %d (%.1f%%)\n",
-           diff_count, W * H, 100.0f * diff_count / (W * H));
+    printf("  Pixels changed: %d / %d (%.1f%%)\n", diff_count, W * H, 100.0f * diff_count / (W * H));
     check("warp modifies pixels", diff_count > 0);
 
     tps_locnet_free(net);

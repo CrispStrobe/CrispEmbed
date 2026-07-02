@@ -30,10 +30,8 @@
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
-static void tsr_conv2d(const float * input, int ic, int ih, int iw,
-                       const float * weight, const float * bias,
-                       int oc, int kh, int kw, int stride, int pad,
-                       int groups, float * output) {
+static void tsr_conv2d(const float * input, int ic, int ih, int iw, const float * weight, const float * bias, int oc,
+                       int kh, int kw, int stride, int pad, int groups, float * output) {
     int oh = (ih + 2 * pad - kh) / stride + 1;
     int ow = (iw + 2 * pad - kw) / stride + 1;
     int ic_per_group = ic / groups;
@@ -52,9 +50,8 @@ static void tsr_conv2d(const float * input, int ic, int ih, int iw,
                                 int iy = oy * stride + ky - pad;
                                 int ix = ox * stride + kx - pad;
                                 if (iy < 0 || iy >= ih || ix < 0 || ix >= iw) continue;
-                                sum += input[ic_abs * ih * iw + iy * iw + ix]
-                                     * weight[oc_abs * ic_per_group * kh * kw
-                                              + ic_i * kh * kw + ky * kw + kx];
+                                sum += input[ic_abs * ih * iw + iy * iw + ix] *
+                                       weight[oc_abs * ic_per_group * kh * kw + ic_i * kh * kw + ky * kw + kx];
                             }
                         }
                     }
@@ -65,15 +62,13 @@ static void tsr_conv2d(const float * input, int ic, int ih, int iw,
     }
 }
 
-static void tsr_layernorm2d(const float * input, int c, int h, int w,
-                            const float * weight, const float * bias,
+static void tsr_layernorm2d(const float * input, int c, int h, int w, const float * weight, const float * bias,
                             float * output) {
     float eps = 1e-6f;
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
             float mean = 0;
-            for (int ch = 0; ch < c; ch++)
-                mean += input[ch * h * w + y * w + x];
+            for (int ch = 0; ch < c; ch++) mean += input[ch * h * w + y * w + x];
             mean /= c;
             float var = 0;
             for (int ch = 0; ch < c; ch++) {
@@ -94,12 +89,10 @@ static void tsr_simple_gate(const float * input, int c2, int h, int w, float * o
     int c = c2 / 2;
     int hw = h * w;
     for (int ch = 0; ch < c; ch++)
-        for (int i = 0; i < hw; i++)
-            output[ch * hw + i] = input[ch * hw + i] * input[(ch + c) * hw + i];
+        for (int i = 0; i < hw; i++) output[ch * hw + i] = input[ch * hw + i] * input[(ch + c) * hw + i];
 }
 
-static void tsr_sca(const float * input, int c, int h, int w,
-                    const float * sca_weight, const float * sca_bias,
+static void tsr_sca(const float * input, int c, int h, int w, const float * sca_weight, const float * sca_bias,
                     float * output) {
     int hw = h * w;
     std::vector<float> pooled(c, 0.0f);
@@ -111,17 +104,14 @@ static void tsr_sca(const float * input, int c, int h, int w,
     std::vector<float> attn(c);
     for (int oc = 0; oc < c; oc++) {
         float sum = sca_bias[oc];
-        for (int ic = 0; ic < c; ic++)
-            sum += sca_weight[oc * c + ic] * pooled[ic];
+        for (int ic = 0; ic < c; ic++) sum += sca_weight[oc * c + ic] * pooled[ic];
         attn[oc] = sum;
     }
     for (int ch = 0; ch < c; ch++)
-        for (int i = 0; i < hw; i++)
-            output[ch * hw + i] = input[ch * hw + i] * attn[ch];
+        for (int i = 0; i < hw; i++) output[ch * hw + i] = input[ch * hw + i] * attn[ch];
 }
 
-static void tsr_pixel_shuffle(const float * input, int c_in, int h, int w,
-                              int r, float * output) {
+static void tsr_pixel_shuffle(const float * input, int c_in, int h, int w, int r, float * output) {
     int c_out = c_in / (r * r);
     int oh = h * r, ow = w * r;
     for (int c = 0; c < c_out; c++) {
@@ -141,21 +131,18 @@ static void tsr_pixel_shuffle(const float * input, int c_in, int h, int w,
 struct tsr_nafblock_weights {
     const float * beta;
     const float * gamma;
-    const float * conv1_w, * conv1_b;
-    const float * conv2_w, * conv2_b;
-    const float * conv3_w, * conv3_b;
-    const float * sca_w, * sca_b;
-    const float * conv4_w, * conv4_b;
-    const float * conv5_w, * conv5_b;
-    const float * norm1_w, * norm1_b;
-    const float * norm2_w, * norm2_b;
+    const float *conv1_w, *conv1_b;
+    const float *conv2_w, *conv2_b;
+    const float *conv3_w, *conv3_b;
+    const float *sca_w, *sca_b;
+    const float *conv4_w, *conv4_b;
+    const float *conv5_w, *conv5_b;
+    const float *norm1_w, *norm1_b;
+    const float *norm2_w, *norm2_b;
 };
 
-static void tsr_nafblock_forward(const float * input, int c, int h, int w,
-                                 const tsr_nafblock_weights & wt,
-                                 float * output,
-                                 std::vector<float> & tmp1,
-                                 std::vector<float> & tmp2,
+static void tsr_nafblock_forward(const float * input, int c, int h, int w, const tsr_nafblock_weights & wt,
+                                 float * output, std::vector<float> & tmp1, std::vector<float> & tmp2,
                                  std::vector<float> & tmp3) {
     int hw = h * w;
     int c2 = c * 2;
@@ -183,8 +170,7 @@ static void tsr_nafblock_forward(const float * input, int c, int h, int w,
     tmp2.resize(c * hw);
     for (int ch = 0; ch < c; ch++) {
         float b = wt.beta[ch];
-        for (int i = 0; i < hw; i++)
-            tmp2[ch * hw + i] = input[ch * hw + i] + tmp1[ch * hw + i] * b;
+        for (int i = 0; i < hw; i++) tmp2[ch * hw + i] = input[ch * hw + i] + tmp1[ch * hw + i] * b;
     }
 
     // Part 2: channel mixing
@@ -203,8 +189,7 @@ static void tsr_nafblock_forward(const float * input, int c, int h, int w,
     // Residual + gamma
     for (int ch = 0; ch < c; ch++) {
         float g = wt.gamma[ch];
-        for (int i = 0; i < hw; i++)
-            output[ch * hw + i] = tmp2[ch * hw + i] + tmp3[ch * hw + i] * g;
+        for (int i = 0; i < hw; i++) output[ch * hw + i] = tmp2[ch * hw + i] + tmp3[ch * hw + i] * g;
     }
 }
 
@@ -219,8 +204,7 @@ static float cubic_weight(float x) {
 }
 
 // Bicubic upscale: [C, H, W] → [C, H*r, W*r]  (planar float)
-static void bicubic_upscale(const float * src, int c, int h, int w,
-                            int r, float * dst) {
+static void bicubic_upscale(const float * src, int c, int h, int w, int r, float * dst) {
     int oh = h * r, ow = w * r;
     for (int ch = 0; ch < c; ch++) {
         const float * s = src + ch * h * w;
@@ -266,8 +250,8 @@ struct text_sr_context {
     core_cpu::DequantCache dcache;
 
     // ggml conv infrastructure
-    ggml_backend_t       enc_backend  = nullptr;
-    ggml_backend_sched_t enc_sched    = nullptr;
+    ggml_backend_t enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched = nullptr;
 
     const float * get_tensor(const std::string & name) {
         auto * t = core_gguf::try_get(wl.tensors, name.c_str());
@@ -291,17 +275,16 @@ text_sr_context * text_sr_init(const char * model_path, int n_threads) {
         return nullptr;
     }
 
-    ctx->width          = core_gguf::kv_u32(meta, "text_sr.width", 32);
-    ctx->n_stages       = core_gguf::kv_u32(meta, "text_sr.n_stages", 4);
+    ctx->width = core_gguf::kv_u32(meta, "text_sr.width", 32);
+    ctx->n_stages = core_gguf::kv_u32(meta, "text_sr.n_stages", 4);
     ctx->middle_blk_num = core_gguf::kv_u32(meta, "text_sr.middle_blk_num", 12);
     ctx->upscale_factor = core_gguf::kv_u32(meta, "text_sr.upscale_factor", 2);
-    ctx->enc_blk_nums   = core_gguf::kv_i32_array(meta, "text_sr.enc_blk_nums");
-    ctx->dec_blk_nums   = core_gguf::kv_i32_array(meta, "text_sr.dec_blk_nums");
+    ctx->enc_blk_nums = core_gguf::kv_i32_array(meta, "text_sr.enc_blk_nums");
+    ctx->dec_blk_nums = core_gguf::kv_i32_array(meta, "text_sr.dec_blk_nums");
     core_gguf::free_metadata(meta);
 
     if (ctx->upscale_factor != 2 && ctx->upscale_factor != 4) {
-        fprintf(stderr, "text_sr: unsupported upscale_factor=%d (must be 2 or 4)\n",
-                ctx->upscale_factor);
+        fprintf(stderr, "text_sr: unsupported upscale_factor=%d (must be 2 or 4)\n", ctx->upscale_factor);
         delete ctx;
         return nullptr;
     }
@@ -318,11 +301,9 @@ text_sr_context * text_sr_init(const char * model_path, int n_threads) {
     ggml_backend_free(backend);
 
     fprintf(stderr, "text_sr: width=%d, upscale=%dx, enc=[", ctx->width, ctx->upscale_factor);
-    for (int i = 0; i < (int)ctx->enc_blk_nums.size(); i++)
-        fprintf(stderr, "%s%d", i ? "," : "", ctx->enc_blk_nums[i]);
+    for (int i = 0; i < (int)ctx->enc_blk_nums.size(); i++) fprintf(stderr, "%s%d", i ? "," : "", ctx->enc_blk_nums[i]);
     fprintf(stderr, "], mid=%d, dec=[", ctx->middle_blk_num);
-    for (int i = 0; i < (int)ctx->dec_blk_nums.size(); i++)
-        fprintf(stderr, "%s%d", i ? "," : "", ctx->dec_blk_nums[i]);
+    for (int i = 0; i < (int)ctx->dec_blk_nums.size(); i++) fprintf(stderr, "%s%d", i ? "," : "", ctx->dec_blk_nums[i]);
     fprintf(stderr, "], %d tensors\n", (int)ctx->wl.tensors.size());
 
     ctx->bench = (std::getenv("CRISPEMBED_TEXT_SR_BENCH") != nullptr);
@@ -339,8 +320,8 @@ text_sr_context * text_sr_init(const char * model_path, int n_threads) {
 void text_sr_free(text_sr_context * ctx) {
     if (ctx) {
         core_gguf::free_weights(ctx->wl);
-    if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
-    if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
+        if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
+        if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
 
         delete ctx;
     }
@@ -355,12 +336,10 @@ int text_sr_upscale_factor(const text_sr_context * ctx) {
 // Process one tile through the U-Net + PixelShuffle ending.
 // Input:  [3, th, tw] float [0,1]
 // Output: [3, th*r, tw*r] float [0,1]
-static void sr_forward_tile(text_sr_context * ctx,
-                            const float * tile_in, int tw, int th,
-                            float * tile_out) {
-    int W  = ctx->width;
+static void sr_forward_tile(text_sr_context * ctx, const float * tile_in, int tw, int th, float * tile_out) {
+    int W = ctx->width;
     int ns = ctx->n_stages;
-    int r  = ctx->upscale_factor;
+    int r = ctx->upscale_factor;
 
     // Pad to multiple of 2^n_stages
     int pad_mult = 1 << ns;
@@ -386,16 +365,16 @@ static void sr_forward_tile(text_sr_context * ctx,
 
     auto load_block = [&](const std::string & prefix) -> tsr_nafblock_weights {
         tsr_nafblock_weights wt;
-        wt.beta    = ctx->get_tensor(prefix + ".beta");
-        wt.gamma   = ctx->get_tensor(prefix + ".gamma");
+        wt.beta = ctx->get_tensor(prefix + ".beta");
+        wt.gamma = ctx->get_tensor(prefix + ".gamma");
         wt.conv1_w = ctx->get_tensor(prefix + ".conv1.weight");
         wt.conv1_b = ctx->get_tensor(prefix + ".conv1.bias");
         wt.conv2_w = ctx->get_tensor(prefix + ".conv2.weight");
         wt.conv2_b = ctx->get_tensor(prefix + ".conv2.bias");
         wt.conv3_w = ctx->get_tensor(prefix + ".conv3.weight");
         wt.conv3_b = ctx->get_tensor(prefix + ".conv3.bias");
-        wt.sca_w   = ctx->get_tensor(prefix + ".sca.weight");
-        wt.sca_b   = ctx->get_tensor(prefix + ".sca.bias");
+        wt.sca_w = ctx->get_tensor(prefix + ".sca.weight");
+        wt.sca_b = ctx->get_tensor(prefix + ".sca.bias");
         wt.conv4_w = ctx->get_tensor(prefix + ".conv4.weight");
         wt.conv4_b = ctx->get_tensor(prefix + ".conv4.bias");
         wt.conv5_w = ctx->get_tensor(prefix + ".conv5.weight");
@@ -476,8 +455,7 @@ static void sr_forward_tile(text_sr_context * ctx,
         }
 
         auto & skip = skip_connections[ns - 1 - s];
-        for (int i = 0; i < next_c * next_h * next_w; i++)
-            img[i] += skip[i];
+        for (int i = 0; i < next_c * next_h * next_w; i++) img[i] += skip[i];
 
         cur_c = next_c;
         cur_h = next_h;
@@ -513,8 +491,7 @@ static void sr_forward_tile(text_sr_context * ctx,
         int out_h = ph * r, out_w = pw * r;
         std::vector<float> bicubic(3 * out_h * out_w);
         bicubic_upscale(input_save.data(), 3, ph, pw, r, bicubic.data());
-        for (int i = 0; i < 3 * out_h * out_w; i++)
-            img[i] += bicubic[i];
+        for (int i = 0; i < 3 * out_h * out_w; i++) img[i] += bicubic[i];
     }
 
     // Crop to [3, th*r, tw*r] and write output
@@ -523,8 +500,7 @@ static void sr_forward_tile(text_sr_context * ctx,
     for (int c = 0; c < 3; c++) {
         for (int y = 0; y < out_h; y++) {
             for (int x = 0; x < out_w; x++) {
-                tile_out[c * out_h * out_w + y * out_w + x] =
-                    img[c * full_h * full_w + y * full_w + x];
+                tile_out[c * out_h * out_w + y * out_w + x] = img[c * full_h * full_w + y * full_w + x];
             }
         }
     }
@@ -552,10 +528,8 @@ static void build_blend_window(int tile_size, int overlap, std::vector<float> & 
     }
 }
 
-int text_sr_process(text_sr_context * ctx,
-                    const uint8_t * input, int width, int height,
-                    int tile_size, int tile_overlap,
-                    uint8_t ** output, int * out_width, int * out_height) {
+int text_sr_process(text_sr_context * ctx, const uint8_t * input, int width, int height, int tile_size,
+                    int tile_overlap, uint8_t ** output, int * out_width, int * out_height) {
     if (!ctx || !input || !output || width <= 0 || height <= 0) return -1;
 
     const bool bench = ctx->bench;
@@ -585,15 +559,14 @@ int text_sr_process(text_sr_context * ctx,
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
             for (int c = 0; c < 3; c++)
-                full_input[c * height * width + y * width + x] =
-                    input[(y * width + x) * 3 + c] / 255.0f;
+                full_input[c * height * width + y * width + x] = input[(y * width + x) * 3 + c] / 255.0f;
 
     int step = tile_size - tile_overlap;
     int n_tiles_x = std::max(1, (width + step - 1) / step);
     int n_tiles_y = std::max(1, (height + step - 1) / step);
 
-    fprintf(stderr, "text_sr: %dx%d -> %dx%d (%dx), tiles=%dx%d (size=%d, overlap=%d)\n",
-            width, height, ow, oh, r, n_tiles_x, n_tiles_y, tile_size, tile_overlap);
+    fprintf(stderr, "text_sr: %dx%d -> %dx%d (%dx), tiles=%dx%d (size=%d, overlap=%d)\n", width, height, ow, oh, r,
+            n_tiles_x, n_tiles_y, tile_size, tile_overlap);
 
     for (int ty = 0; ty < n_tiles_y; ty++) {
         for (int tx = 0; tx < n_tiles_x; tx++) {
@@ -617,8 +590,7 @@ int text_sr_process(text_sr_context * ctx,
             sr_forward_tile(ctx, tile_in.data(), tw, th, tile_out.data());
             if (bench) {
                 auto t_tile_end = std::chrono::steady_clock::now();
-                fprintf(stderr, "[text_sr-bench] tile %d,%d: %.1f ms\n",
-                        ty, tx, ms_f(t_tile_end - t_tile).count());
+                fprintf(stderr, "[text_sr-bench] tile %d,%d: %.1f ms\n", ty, tx, ms_f(t_tile_end - t_tile).count());
             }
 
             // Blend into accumulator
@@ -631,10 +603,8 @@ int text_sr_process(text_sr_context * ctx,
                         w = blend_win[y * out_tile + x];
                     else {
                         // Partial tile at image edge — apply Hann ramp at overlapping edges
-                        if (x0 > 0 && x < out_overlap)
-                            w *= 0.5f - 0.5f * cosf((float)M_PI * x / out_overlap);
-                        if (y0 > 0 && y < out_overlap)
-                            w *= 0.5f - 0.5f * cosf((float)M_PI * y / out_overlap);
+                        if (x0 > 0 && x < out_overlap) w *= 0.5f - 0.5f * cosf((float)M_PI * x / out_overlap);
+                        if (y0 > 0 && y < out_overlap) w *= 0.5f - 0.5f * cosf((float)M_PI * y / out_overlap);
                     }
 
                     int dy = oy0 + y, dx = ox0 + x;
@@ -670,8 +640,7 @@ int text_sr_process(text_sr_context * ctx,
     fprintf(stderr, "text_sr: done (%dx%d)\n", ow, oh);
     if (bench) {
         auto t_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[text_sr-bench] total: %.1f ms\n",
-                ms_f(t_end - t_total).count());
+        fprintf(stderr, "[text_sr-bench] total: %.1f ms\n", ms_f(t_end - t_total).count());
     }
     return 0;
 }

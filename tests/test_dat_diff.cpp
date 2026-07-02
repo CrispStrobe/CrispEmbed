@@ -25,32 +25,47 @@ int main(int argc, char ** argv) {
     }
 
     crispembed_diff::Ref ref;
-    if (!ref.load(argv[2])) { printf("Failed to load reference %s\n", argv[2]); return 1; }
+    if (!ref.load(argv[2])) {
+        printf("Failed to load reference %s\n", argv[2]);
+        return 1;
+    }
 
-    auto in_shape = ref.shape("input");          // [W,H,3] (gguf-reversed of [3,H,W])
-    if (in_shape.size() != 3) { printf("Reference missing 'input'\n"); return 1; }
+    auto in_shape = ref.shape("input"); // [W,H,3] (gguf-reversed of [3,H,W])
+    if (in_shape.size() != 3) {
+        printf("Reference missing 'input'\n");
+        return 1;
+    }
     int W = (int)in_shape[0], H = (int)in_shape[1];
     printf("Reference input: %dx%d\n", W, H);
 
     auto [ref_input, ref_n] = ref.get_f32("input");
-    if (!ref_input || ref_n == 0) { printf("Reference missing 'input' data\n"); return 1; }
+    if (!ref_input || ref_n == 0) {
+        printf("Reference missing 'input' data\n");
+        return 1;
+    }
 
     // [3,H,W] float [0,1] → uint8 RGB interleaved
     std::vector<uint8_t> input_u8((size_t)W * H * 3);
     for (int y = 0; y < H; y++)
         for (int x = 0; x < W; x++)
             for (int c = 0; c < 3; c++)
-                input_u8[(y * W + x) * 3 + c] =
-                    (uint8_t)(ref_input[c * H * W + y * W + x] * 255.0f + 0.5f);
+                input_u8[(y * W + x) * 3 + c] = (uint8_t)(ref_input[c * H * W + y * W + x] * 255.0f + 0.5f);
 
     printf("Loading DAT model: %s\n", argv[1]);
     dat_sr_context * ctx = dat_sr_init(argv[1], 2);
-    if (!ctx) { printf("Failed to load model\n"); return 1; }
+    if (!ctx) {
+        printf("Failed to load model\n");
+        return 1;
+    }
 
     uint8_t * output = nullptr;
     int ow = 0, oh = 0;
     int rc = dat_sr_process(ctx, input_u8.data(), W, H, 256, 256, &output, &ow, &oh);
-    if (rc != 0 || !output) { printf("dat_sr_process failed\n"); dat_sr_free(ctx); return 1; }
+    if (rc != 0 || !output) {
+        printf("dat_sr_process failed\n");
+        dat_sr_free(ctx);
+        return 1;
+    }
     printf("Output: %dx%d\n", ow, oh);
 
     int n_fail = 0;
@@ -61,8 +76,7 @@ int main(int argc, char ** argv) {
             for (int y = 0; y < oh; y++)
                 for (int x = 0; x < ow; x++)
                     for (int c = 0; c < 3; c++)
-                        cpp_out[c * oh * ow + y * ow + x] =
-                            output[(y * ow + x) * 3 + c] / 255.0f;
+                        cpp_out[c * oh * ow + y * ow + x] = output[(y * ow + x) * 3 + c] / 255.0f;
 
             // The public API clamps to uint8 [0,1]; the DAT ref is raw float and
             // ~19% of pixels fall outside [0,1] on the seeded-random input (clamp
@@ -75,20 +89,24 @@ int main(int argc, char ** argv) {
 
             auto cosine = [](const float * a, const float * b, size_t n) {
                 double dot = 0, na = 0, nb = 0;
-                for (size_t i = 0; i < n; i++) { dot += (double)a[i]*b[i]; na += (double)a[i]*a[i]; nb += (double)b[i]*b[i]; }
-                return (na > 1e-18 && nb > 1e-18) ? dot / (std::sqrt(na)*std::sqrt(nb)) : 0.0;
+                for (size_t i = 0; i < n; i++) {
+                    dot += (double)a[i] * b[i];
+                    na += (double)a[i] * a[i];
+                    nb += (double)b[i] * b[i];
+                }
+                return (na > 1e-18 && nb > 1e-18) ? dot / (std::sqrt(na) * std::sqrt(nb)) : 0.0;
             };
             size_t chan = (size_t)oh * ow;
             double cos_global = cosine(cpp_out.data(), ref_out, 3 * chan);
             double cos_min_ch = 1.0, max_abs = 0;
             for (int c = 0; c < 3; c++)
-                cos_min_ch = std::min(cos_min_ch, cosine(cpp_out.data() + c*chan, ref_out + c*chan, chan));
+                cos_min_ch = std::min(cos_min_ch, cosine(cpp_out.data() + c * chan, ref_out + c * chan, chan));
             for (size_t i = 0; i < 3 * chan; i++)
                 max_abs = std::max(max_abs, (double)std::fabs(cpp_out[i] - ref_out[i]));
 
             bool pass = cos_global >= 0.99 && cos_min_ch >= 0.99;
-            printf("  %-22s  cos=%.6f  cos_ch_min=%.6f  max_abs=%.2e  %s\n",
-                   "output", cos_global, cos_min_ch, max_abs, pass ? "PASS" : "FAIL");
+            printf("  %-22s  cos=%.6f  cos_ch_min=%.6f  max_abs=%.2e  %s\n", "output", cos_global, cos_min_ch, max_abs,
+                   pass ? "PASS" : "FAIL");
             printf("    (note: engine uint8 vs DAT ref clamped to [0,1]; residual is uint8 quant)\n");
             if (!pass) n_fail++;
         } else {

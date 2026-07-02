@@ -32,17 +32,13 @@ typedef struct tps_model tps_model;
 ///
 /// Returns a tps_model on success, NULL on failure (singular system,
 /// fewer than 3 points, etc.).
-tps_model * tps_solve(const float * src_x, const float * src_y,
-                      const float * dst_x, const float * dst_y,
-                      int n);
+tps_model * tps_solve(const float * src_x, const float * src_y, const float * dst_x, const float * dst_y, int n);
 
 /// Map a single point through the TPS transform.
 ///
 /// Given a point (x, y) in the source coordinate system, compute the
 /// corresponding point (out_x, out_y) in the target coordinate system.
-void tps_map_point(const tps_model * model,
-                   float x, float y,
-                   float * out_x, float * out_y);
+void tps_map_point(const tps_model * model, float x, float y, float * out_x, float * out_y);
 
 /// Warp a grayscale image using a solved TPS model.
 ///
@@ -56,19 +52,14 @@ void tps_map_point(const tps_model * model,
 /// [dst]       — output: warped uint8 grayscale. Caller allocates dst_w * dst_h.
 /// [dst_w/h]   — output image dimensions (may differ from input).
 /// [bg]        — background value for out-of-bounds samples (typically 255).
-void tps_warp(const uint8_t * src, int src_w, int src_h,
-              const tps_model * model,
-              uint8_t * dst, int dst_w, int dst_h,
+void tps_warp(const uint8_t * src, int src_w, int src_h, const tps_model * model, uint8_t * dst, int dst_w, int dst_h,
               uint8_t bg);
 
 /// Warp a grayscale image given raw control point arrays (convenience).
 /// Internally calls tps_solve() + tps_warp() + tps_free().
 /// Returns 0 on success, 1 on failure.
-int tps_warp_points(const uint8_t * src, int src_w, int src_h,
-                    const float * src_x, const float * src_y,
-                    const float * dst_x, const float * dst_y,
-                    int n_points,
-                    uint8_t * dst, int dst_w, int dst_h,
+int tps_warp_points(const uint8_t * src, int src_w, int src_h, const float * src_x, const float * src_y,
+                    const float * dst_x, const float * dst_y, int n_points, uint8_t * dst, int dst_w, int dst_h,
                     uint8_t bg);
 
 /// Free a TPS model allocated by tps_solve().
@@ -106,9 +97,7 @@ tps_locnet * tps_locnet_load(const char * gguf_path);
 ///
 /// Coordinates are in image pixel space (not normalized).
 /// Returns the number of fiducial points, or 0 on failure.
-int tps_locnet_predict(tps_locnet * net,
-                       const uint8_t * gray, int w, int h,
-                       float * out_x, float * out_y);
+int tps_locnet_predict(tps_locnet * net, const uint8_t * gray, int w, int h, float * out_x, float * out_y);
 
 /// Get the number of fiducial points this model predicts.
 int tps_locnet_num_fiducial(const tps_locnet * net);
@@ -127,9 +116,7 @@ void tps_locnet_free(tps_locnet * net);
 /// [out]        — output: dewarped uint8 grayscale. Caller allocates w * h.
 ///
 /// Returns 0 on success, 1 on failure.
-int tps_auto_dewarp(const uint8_t * gray, int w, int h,
-                    const char * gguf_path,
-                    uint8_t * out);
+int tps_auto_dewarp(const uint8_t * gray, int w, int h, const char * gguf_path, uint8_t * out);
 
 #ifdef __cplusplus
 }

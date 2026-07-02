@@ -44,16 +44,16 @@ static const float * to_f32(const ggml_tensor * t, std::vector<float> & buf) {
         std::vector<uint8_t> raw(raw_sz);
         ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
         const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
-        else memset(buf.data(), 0, n * sizeof(float));
+        if (traits && traits->to_float)
+            traits->to_float(raw.data(), buf.data(), n);
+        else
+            memset(buf.data(), 0, n * sizeof(float));
     }
     return buf.data();
 }
 
-static void conv2d(const float * in, int ic, int h, int w,
-                   const float * wt, const float * bi,
-                   int oc, int kh, int kw, int pad, int stride,
-                   float * out) {
+static void conv2d(const float * in, int ic, int h, int w, const float * wt, const float * bi, int oc, int kh, int kw,
+                   int pad, int stride, float * out) {
     int oh = (h + 2 * pad - kh) / stride + 1;
     int ow = (w + 2 * pad - kw) / stride + 1;
     for (int o = 0; o < oc; o++) {
@@ -67,8 +67,7 @@ static void conv2d(const float * in, int ic, int h, int w,
                             int iy = oy * stride + ky - pad;
                             int ix = ox * stride + kx - pad;
                             if (iy >= 0 && iy < h && ix >= 0 && ix < w)
-                                sum += in[c * h * w + iy * w + ix]
-                                     * wt[o * ic * kh * kw + c * kh * kw + ky * kw + kx];
+                                sum += in[c * h * w + iy * w + ix] * wt[o * ic * kh * kw + c * kh * kw + ky * kw + kx];
                         }
                 out[o * oh * ow + oy * ow + ox] = sum;
             }
@@ -76,10 +75,8 @@ static void conv2d(const float * in, int ic, int h, int w,
     }
 }
 
-static void conv_transpose2d(const float * in, int ic, int h, int w,
-                              const float * wt, const float * bi,
-                              int oc, int kh, int kw, int stride,
-                              float * out) {
+static void conv_transpose2d(const float * in, int ic, int h, int w, const float * wt, const float * bi, int oc, int kh,
+                             int kw, int stride, float * out) {
     int oh = (h - 1) * stride + kh;
     int ow = (w - 1) * stride + kw;
     memset(out, 0, oc * oh * ow * sizeof(float));
@@ -93,45 +90,38 @@ static void conv_transpose2d(const float * in, int ic, int h, int w,
                         for (int kx = 0; kx < kw; kx++) {
                             int oy = iy * stride + ky;
                             int ox = ix * stride + kx;
-                            out[o * oh * ow + oy * ow + ox] +=
-                                v * wt[c * oc * kh * kw + o * kh * kw + ky * kw + kx];
+                            out[o * oh * ow + oy * ow + ox] += v * wt[c * oc * kh * kw + o * kh * kw + ky * kw + kx];
                         }
             }
     if (bi)
         for (int o = 0; o < oc; o++)
-            for (int i = 0; i < oh * ow; i++)
-                out[o * oh * ow + i] += bi[o];
+            for (int i = 0; i < oh * ow; i++) out[o * oh * ow + i] += bi[o];
 }
 
-static void layer_norm(const float * in, int n, const float * w, const float * b,
-                       float * out) {
+static void layer_norm(const float * in, int n, const float * w, const float * b, float * out) {
     float mean = 0;
     for (int i = 0; i < n; i++) mean += in[i];
     mean /= n;
     float var = 0;
-    for (int i = 0; i < n; i++) { float d = in[i] - mean; var += d * d; }
+    for (int i = 0; i < n; i++) {
+        float d = in[i] - mean;
+        var += d * d;
+    }
     var /= n;
     float inv = 1.0f / sqrtf(var + 1e-5f);
-    for (int i = 0; i < n; i++)
-        out[i] = (in[i] - mean) * inv * w[i] + b[i];
+    for (int i = 0; i < n; i++) out[i] = (in[i] - mean) * inv * w[i] + b[i];
 }
 
 static void gelu_inplace(float * d, int n) {
-    for (int i = 0; i < n; i++)
-        d[i] = d[i] * 0.5f * (1.0f + erff(d[i] * 0.7071067811865476f));
+    for (int i = 0; i < n; i++) d[i] = d[i] * 0.5f * (1.0f + erff(d[i] * 0.7071067811865476f));
 }
 
 // ── Swin Window Multi-head Self-Attention ──
 
-static void wmsa_forward(
-    const float * x_chw, int C, int H, int W,
-    const float * qkv_w, const float * qkv_b,
-    const float * proj_w, const float * proj_b,
-    const float * rpb, // [1, 2*win-1, 2*win-1]
-    int n_heads, int win_size, bool shift,
-    float * out_chw,
-    std::vector<float> & scratch)
-{
+static void wmsa_forward(const float * x_chw, int C, int H, int W, const float * qkv_w, const float * qkv_b,
+                         const float * proj_w, const float * proj_b,
+                         const float * rpb, // [1, 2*win-1, 2*win-1]
+                         int n_heads, int win_size, bool shift, float * out_chw, std::vector<float> & scratch) {
     int head_dim = C / n_heads;
     int N = win_size * win_size;
     int rpb_side = 2 * win_size - 1;
@@ -146,8 +136,7 @@ static void wmsa_forward(
     std::vector<float> padded(C * Hp * Wp, 0.0f);
     for (int c = 0; c < C; c++)
         for (int y = 0; y < H; y++)
-            for (int x = 0; x < W; x++)
-                padded[c * Hp * Wp + y * Wp + x] = x_chw[c * H * W + y * W + x];
+            for (int x = 0; x < W; x++) padded[c * Hp * Wp + y * Wp + x] = x_chw[c * H * W + y * W + x];
 
     // Cyclic shift: torch.roll(shifts=(-sh, -sh), dims=(2,3))
     // shifted[y,x] = original[(y+sh)%H, (x+sh)%W]
@@ -173,9 +162,7 @@ static void wmsa_forward(
                 for (int px = 0; px < win_size; px++) {
                     int gy = wh * win_size + py, gx = ww * win_size + px;
                     int ni = py * win_size + px;
-                    for (int c = 0; c < C; c++)
-                        windows[wi * N * C + ni * C + c] =
-                            padded[c * Hp * Wp + gy * Wp + gx];
+                    for (int c = 0; c < C; c++) windows[wi * N * C + ni * C + c] = padded[c * Hp * Wp + gy * Wp + gx];
                 }
         }
 
@@ -201,13 +188,12 @@ static void wmsa_forward(
         std::vector<int> mask_area(Hp * Wp, 0);
         int sh = win_size / 2;
         int cnt = 0;
-        int h_cuts[] = {0, Hp - win_size, Hp - sh, Hp};
-        int w_cuts[] = {0, Wp - win_size, Wp - sh, Wp};
+        int h_cuts[] = { 0, Hp - win_size, Hp - sh, Hp };
+        int w_cuts[] = { 0, Wp - win_size, Wp - sh, Wp };
         for (int hi = 0; hi < 3; hi++)
             for (int wi_idx = 0; wi_idx < 3; wi_idx++) {
                 for (int y = h_cuts[hi]; y < h_cuts[hi + 1]; y++)
-                    for (int x = w_cuts[wi_idx]; x < w_cuts[wi_idx + 1]; x++)
-                        mask_area[y * Wp + x] = cnt;
+                    for (int x = w_cuts[wi_idx]; x < w_cuts[wi_idx + 1]; x++) mask_area[y * Wp + x] = cnt;
                 cnt++;
             }
         for (int wh = 0; wh < nWh; wh++)
@@ -280,9 +266,7 @@ static void wmsa_forward(
                 for (int px = 0; px < win_size; px++) {
                     int ni = py * win_size + px;
                     int gy = wh * win_size + py, gx = ww * win_size + px;
-                    for (int c = 0; c < C; c++)
-                        rev[c * Hp * Wp + gy * Wp + gx] =
-                            proj_out[wi * N * C + ni * C + c];
+                    for (int c = 0; c < C; c++) rev[c * Hp * Wp + gy * Wp + gx] = proj_out[wi * N * C + ni * C + c];
                 }
         }
 
@@ -303,20 +287,19 @@ static void wmsa_forward(
     // Crop to original size
     for (int c = 0; c < C; c++)
         for (int y = 0; y < H; y++)
-            for (int x = 0; x < W; x++)
-                out_chw[c * H * W + y * W + x] = rev[c * Hp * Wp + y * Wp + x];
+            for (int x = 0; x < W; x++) out_chw[c * H * W + y * W + x] = rev[c * Hp * Wp + y * Wp + x];
 }
 
 // ── Swin Block: LN → WMSA → residual → LN → MLP → residual ──
 
 struct swin_block_wt {
-    ggml_tensor * ln1_w, * ln1_b;
-    ggml_tensor * qkv_w, * qkv_b;
-    ggml_tensor * proj_w, * proj_b;
+    ggml_tensor *ln1_w, *ln1_b;
+    ggml_tensor *qkv_w, *qkv_b;
+    ggml_tensor *proj_w, *proj_b;
     ggml_tensor * rpb;
-    ggml_tensor * ln2_w, * ln2_b;
-    ggml_tensor * mlp0_w, * mlp0_b;
-    ggml_tensor * mlp2_w, * mlp2_b;
+    ggml_tensor *ln2_w, *ln2_b;
+    ggml_tensor *mlp0_w, *mlp0_b;
+    ggml_tensor *mlp2_w, *mlp2_b;
 };
 
 // Global debug callback for swin block internals (set by debug forward pass)
@@ -324,13 +307,9 @@ static scunet_stage_cb g_swin_debug_cb;
 static int g_swin_debug_block_id = -1;
 static int g_swin_block_counter = 0;
 
-static void swin_block_forward(
-    float * x, int C, int H, int W,
-    const swin_block_wt & wt,
-    int n_heads, int win_size, bool shift,
-    std::vector<float> & dq1, std::vector<float> & dq2,
-    std::vector<float> & scratch)
-{
+static void swin_block_forward(float * x, int C, int H, int W, const swin_block_wt & wt, int n_heads, int win_size,
+                               bool shift, std::vector<float> & dq1, std::vector<float> & dq2,
+                               std::vector<float> & scratch) {
     int hw = H * W;
     int cur_block = g_swin_block_counter++;
 
@@ -355,8 +334,7 @@ static void swin_block_forward(
             for (int c = 0; c < C; c++) normed[c * hw + y * W + xi] = pix_out[c];
         }
 
-    if (g_swin_debug_cb && cur_block == g_swin_debug_block_id)
-        g_swin_debug_cb("ln1_chw", normed.data(), C * hw);
+    if (g_swin_debug_cb && cur_block == g_swin_debug_block_id) g_swin_debug_cb("ln1_chw", normed.data(), C * hw);
 
     // Cache all weight pointers before passing to wmsa
     const float * qkv_w_ptr = to_f32(wt.qkv_w, dq1);
@@ -366,20 +344,14 @@ static void swin_block_forward(
     const float * rpb_ptr = to_f32(wt.rpb, dqC);
 
     std::vector<float> attn_out(C * hw);
-    wmsa_forward(normed.data(), C, H, W,
-                 qkv_w_ptr, qkv_b_ptr,
-                 proj_w_ptr, proj_b_ptr,
-                 rpb_ptr,
-                 n_heads, win_size, shift,
-                 attn_out.data(), scratch);
+    wmsa_forward(normed.data(), C, H, W, qkv_w_ptr, qkv_b_ptr, proj_w_ptr, proj_b_ptr, rpb_ptr, n_heads, win_size,
+                 shift, attn_out.data(), scratch);
 
-    if (g_swin_debug_cb && cur_block == g_swin_debug_block_id)
-        g_swin_debug_cb("wmsa_out", attn_out.data(), C * hw);
+    if (g_swin_debug_cb && cur_block == g_swin_debug_block_id) g_swin_debug_cb("wmsa_out", attn_out.data(), C * hw);
 
     for (int i = 0; i < C * hw; i++) x[i] += attn_out[i];
 
-    if (g_swin_debug_cb && cur_block == g_swin_debug_block_id)
-        g_swin_debug_cb("after_wmsa", x, C * hw);
+    if (g_swin_debug_cb && cur_block == g_swin_debug_block_id) g_swin_debug_cb("after_wmsa", x, C * hw);
 
     // LN2 + MLP
     const float * m0w = to_f32(wt.mlp0_w, dq1);
@@ -414,8 +386,7 @@ static void swin_block_forward(
             }
         }
 
-    if (g_swin_debug_cb && cur_block == g_swin_debug_block_id)
-        g_swin_debug_cb("full_swin", x, C * hw);
+    if (g_swin_debug_cb && cur_block == g_swin_debug_block_id) g_swin_debug_cb("full_swin", x, C * hw);
 }
 
 // ── ConvTransBlock ──
@@ -423,22 +394,19 @@ static void swin_block_forward(
 // Forward decls: ctb_forward (below) dispatches its convs through scunet_conv,
 // which is defined after the context struct.
 struct scunet_context;
-static void scunet_conv(scunet_context * ctx, const float * in, int ic, int ih, int iw,
-                        const ggml_tensor * w, const ggml_tensor * b,
-                        int oc, int kh, int kw, int pad, int stride, float * out);
+static void scunet_conv(scunet_context * ctx, const float * in, int ic, int ih, int iw, const ggml_tensor * w,
+                        const ggml_tensor * b, int oc, int kh, int kw, int pad, int stride, float * out);
 
 struct ctb_weights {
-    ggml_tensor * conv1_1_w, * conv1_1_b; // 1x1 split
-    ggml_tensor * conv_blk_0, * conv_blk_2; // 3x3 residual conv (no bias)
+    ggml_tensor *conv1_1_w, *conv1_1_b;   // 1x1 split
+    ggml_tensor *conv_blk_0, *conv_blk_2; // 3x3 residual conv (no bias)
     swin_block_wt trans;
-    ggml_tensor * conv1_2_w, * conv1_2_b; // 1x1 fuse
+    ggml_tensor *conv1_2_w, *conv1_2_b; // 1x1 fuse
 };
 
-static void ctb_forward(scunet_context * ctx, float * x, int C, int H, int W,
-                         const ctb_weights & wt,
-                         int n_heads, int win_size, bool shift,
-                         std::vector<float> & dq1, std::vector<float> & dq2,
-                         std::vector<float> & scratch) {
+static void ctb_forward(scunet_context * ctx, float * x, int C, int H, int W, const ctb_weights & wt, int n_heads,
+                        int win_size, bool shift, std::vector<float> & dq1, std::vector<float> & dq2,
+                        std::vector<float> & scratch) {
     int hw = H * W;
     int half = C / 2;
 
@@ -451,19 +419,16 @@ static void ctb_forward(scunet_context * ctx, float * x, int C, int H, int W,
     memcpy(conv_in.data(), split.data(), half * hw * sizeof(float));
 
     std::vector<float> conv_tmp(half * hw);
-    scunet_conv(ctx, conv_in.data(), half, H, W, wt.conv_blk_0, nullptr,
-                half, 3, 3, 1, 1, conv_tmp.data());
+    scunet_conv(ctx, conv_in.data(), half, H, W, wt.conv_blk_0, nullptr, half, 3, 3, 1, 1, conv_tmp.data());
     for (int i = 0; i < half * hw; i++) conv_tmp[i] = std::max(0.0f, conv_tmp[i]); // ReLU
     std::vector<float> conv_out(half * hw);
-    scunet_conv(ctx, conv_tmp.data(), half, H, W, wt.conv_blk_2, nullptr,
-                half, 3, 3, 1, 1, conv_out.data());
+    scunet_conv(ctx, conv_tmp.data(), half, H, W, wt.conv_blk_2, nullptr, half, 3, 3, 1, 1, conv_out.data());
     for (int i = 0; i < half * hw; i++) conv_out[i] += conv_in[i]; // residual
 
     // Trans branch (second half)
     std::vector<float> trans_buf(half * hw);
     memcpy(trans_buf.data(), split.data() + half * hw, half * hw * sizeof(float));
-    swin_block_forward(trans_buf.data(), half, H, W, wt.trans,
-                       n_heads, win_size, shift, dq1, dq2, scratch);
+    swin_block_forward(trans_buf.data(), half, H, W, wt.trans, n_heads, win_size, shift, dq1, dq2, scratch);
 
     // Fuse: cat → 1x1 conv
     std::vector<float> cat_buf(C * hw);
@@ -471,8 +436,7 @@ static void ctb_forward(scunet_context * ctx, float * x, int C, int H, int W,
     memcpy(cat_buf.data() + half * hw, trans_buf.data(), half * hw * sizeof(float));
 
     std::vector<float> fused(C * hw);
-    scunet_conv(ctx, cat_buf.data(), C, H, W, wt.conv1_2_w, wt.conv1_2_b,
-                C, 1, 1, 0, 1, fused.data());
+    scunet_conv(ctx, cat_buf.data(), C, H, W, wt.conv1_2_w, wt.conv1_2_b, C, 1, 1, 0, 1, fused.data());
 
     // Residual
     for (int i = 0; i < C * hw; i++) x[i] += fused[i];
@@ -482,8 +446,8 @@ static void ctb_forward(scunet_context * ctx, float * x, int C, int H, int W,
 
 struct scunet_stage {
     std::vector<ctb_weights> blocks;
-    ggml_tensor * ds_w = nullptr, * ds_b = nullptr; // downsample (encoder)
-    ggml_tensor * us_w = nullptr, * us_b = nullptr; // upsample (decoder)
+    ggml_tensor *ds_w = nullptr, *ds_b = nullptr; // downsample (encoder)
+    ggml_tensor *us_w = nullptr, *us_b = nullptr; // upsample (decoder)
 };
 
 struct scunet_context {
@@ -493,11 +457,11 @@ struct scunet_context {
 
     int dim, win_size, head_dim;
     bool bench;
-    ggml_tensor * head_w, * head_b;
+    ggml_tensor *head_w, *head_b;
     scunet_stage enc[3]; // down1, down2, down3
     scunet_stage body;
     scunet_stage dec[3]; // up3, up2, up1
-    ggml_tensor * tail_w, * tail_b;
+    ggml_tensor *tail_w, *tail_b;
 
     // ggml conv path: convs/deconvs run via ggml_conv_2d /
     // ggml_conv_transpose_2d_p0 on a dedicated CPU sched (GPU conv_2d hits a
@@ -505,12 +469,12 @@ struct scunet_context {
     // layernorms and MLP stay SIMD-scalar. Persistent CPU-resident F32 kernels
     // are keyed by the original gguf weight tensor pointer.
     bool use_ggml_conv = false;
-    ggml_backend_t        enc_backend = nullptr;
-    ggml_backend_sched_t  enc_sched   = nullptr;
-    ggml_context *        gw_ctx = nullptr;
+    ggml_backend_t enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched = nullptr;
+    ggml_context * gw_ctx = nullptr;
     ggml_backend_buffer_t gw_buf = nullptr;
     std::map<const ggml_tensor *, ggml_tensor *> gw;
-    std::vector<uint8_t>  graph_meta;
+    std::vector<uint8_t> graph_meta;
 };
 
 static void load_ctb(core_gguf::WeightLoad & wl, const char * prefix, ctb_weights & ctb) {
@@ -519,18 +483,25 @@ static void load_ctb(core_gguf::WeightLoad & wl, const char * prefix, ctb_weight
         snprintf(buf, sizeof(buf), "%s.%s", prefix, suffix);
         return core_gguf::try_get(wl.tensors, buf);
     };
-    ctb.conv1_1_w = g("conv1_1.weight"); ctb.conv1_1_b = g("conv1_1.bias");
-    ctb.conv1_2_w = g("conv1_2.weight"); ctb.conv1_2_b = g("conv1_2.bias");
-    ctb.conv_blk_0 = g("conv_block.0.weight"); ctb.conv_blk_2 = g("conv_block.2.weight");
-    ctb.trans.ln1_w = g("trans_block.ln1.weight"); ctb.trans.ln1_b = g("trans_block.ln1.bias");
+    ctb.conv1_1_w = g("conv1_1.weight");
+    ctb.conv1_1_b = g("conv1_1.bias");
+    ctb.conv1_2_w = g("conv1_2.weight");
+    ctb.conv1_2_b = g("conv1_2.bias");
+    ctb.conv_blk_0 = g("conv_block.0.weight");
+    ctb.conv_blk_2 = g("conv_block.2.weight");
+    ctb.trans.ln1_w = g("trans_block.ln1.weight");
+    ctb.trans.ln1_b = g("trans_block.ln1.bias");
     ctb.trans.qkv_w = g("trans_block.msa.embedding_layer.weight");
     ctb.trans.qkv_b = g("trans_block.msa.embedding_layer.bias");
     ctb.trans.proj_w = g("trans_block.msa.linear.weight");
     ctb.trans.proj_b = g("trans_block.msa.linear.bias");
     ctb.trans.rpb = g("trans_block.msa.relative_position_params");
-    ctb.trans.ln2_w = g("trans_block.ln2.weight"); ctb.trans.ln2_b = g("trans_block.ln2.bias");
-    ctb.trans.mlp0_w = g("trans_block.mlp.0.weight"); ctb.trans.mlp0_b = g("trans_block.mlp.0.bias");
-    ctb.trans.mlp2_w = g("trans_block.mlp.2.weight"); ctb.trans.mlp2_b = g("trans_block.mlp.2.bias");
+    ctb.trans.ln2_w = g("trans_block.ln2.weight");
+    ctb.trans.ln2_b = g("trans_block.ln2.bias");
+    ctb.trans.mlp0_w = g("trans_block.mlp.0.weight");
+    ctb.trans.mlp0_b = g("trans_block.mlp.0.bias");
+    ctb.trans.mlp2_w = g("trans_block.mlp.2.weight");
+    ctb.trans.mlp2_b = g("trans_block.mlp.2.bias");
 }
 
 scunet_context * scunet_init(const char * model_path, int n_threads) {
@@ -541,30 +512,33 @@ scunet_context * scunet_init(const char * model_path, int n_threads) {
     if (!meta) return nullptr;
     int dim = (int)core_gguf::kv_u32(meta, "scunet.dim", 64);
     int win = (int)core_gguf::kv_u32(meta, "scunet.win_size", 8);
-    int hd  = (int)core_gguf::kv_u32(meta, "scunet.head_dim", 32);
+    int hd = (int)core_gguf::kv_u32(meta, "scunet.head_dim", 32);
     core_gguf::free_metadata(meta);
 
     bool force_cpu = (getenv("SCUNET_FORCE_CPU") && atoi(getenv("SCUNET_FORCE_CPU")));
     ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
     if (!backend) backend = ggml_backend_cpu_init();
-    if (ggml_backend_is_cpu(backend))
-        ggml_backend_cpu_set_n_threads(backend, n_threads > 0 ? n_threads : 2);
+    if (ggml_backend_is_cpu(backend)) ggml_backend_cpu_set_n_threads(backend, n_threads > 0 ? n_threads : 2);
     core_gguf::WeightLoad wl;
     if (!core_gguf::load_weights(model_path, backend, "scunet", wl)) {
-        ggml_backend_free(backend); return nullptr;
+        ggml_backend_free(backend);
+        return nullptr;
     }
 
     auto * ctx = new scunet_context;
     ctx->backend = backend;
-    ctx->gguf_ctx = wl.ctx; ctx->gguf_buf = wl.buf;
-    ctx->dim = dim; ctx->win_size = win; ctx->head_dim = hd;
+    ctx->gguf_ctx = wl.ctx;
+    ctx->gguf_buf = wl.buf;
+    ctx->dim = dim;
+    ctx->win_size = win;
+    ctx->head_dim = hd;
 
     ctx->head_w = core_gguf::try_get(wl.tensors, "m_head.0.weight");
     ctx->head_b = core_gguf::try_get(wl.tensors, "m_head.0.bias");
     ctx->tail_w = core_gguf::try_get(wl.tensors, "m_tail.0.weight");
     ctx->tail_b = core_gguf::try_get(wl.tensors, "m_tail.0.bias");
 
-    const char * enc_names[] = {"m_down1", "m_down2", "m_down3"};
+    const char * enc_names[] = { "m_down1", "m_down2", "m_down3" };
     for (int s = 0; s < 3; s++) {
         ctx->enc[s].blocks.resize(4);
         for (int i = 0; i < 4; i++) {
@@ -581,11 +555,12 @@ scunet_context * scunet_init(const char * model_path, int n_threads) {
 
     ctx->body.blocks.resize(4);
     for (int i = 0; i < 4; i++) {
-        char pfx[64]; snprintf(pfx, sizeof(pfx), "m_body.%d", i);
+        char pfx[64];
+        snprintf(pfx, sizeof(pfx), "m_body.%d", i);
         load_ctb(wl, pfx, ctx->body.blocks[i]);
     }
 
-    const char * dec_names[] = {"m_up3", "m_up2", "m_up1"};
+    const char * dec_names[] = { "m_up3", "m_up2", "m_up1" };
     for (int s = 0; s < 3; s++) {
         char usw[64], usb[64];
         snprintf(usw, sizeof(usw), "%s.0.weight", dec_names[s]);
@@ -594,7 +569,8 @@ scunet_context * scunet_init(const char * model_path, int n_threads) {
         ctx->dec[s].us_b = core_gguf::try_get(wl.tensors, usb);
         ctx->dec[s].blocks.resize(4);
         for (int i = 0; i < 4; i++) {
-            char pfx[64]; snprintf(pfx, sizeof(pfx), "%s.%d", dec_names[s], i + 1);
+            char pfx[64];
+            snprintf(pfx, sizeof(pfx), "%s.%d", dec_names[s], i + 1);
             load_ctb(wl, pfx, ctx->dec[s].blocks[i]);
         }
     }
@@ -625,21 +601,26 @@ scunet_context * scunet_init(const char * model_path, int n_threads) {
         for (int s = 0; s < 3; s++) conv_w.push_back(ctx->enc[s].ds_w);
         for (int s = 0; s < 3; s++) conv_w.push_back(ctx->dec[s].us_w);
         auto add_ctb = [&](const ctb_weights & c) {
-            conv_w.push_back(c.conv1_1_w); conv_w.push_back(c.conv1_2_w);
-            conv_w.push_back(c.conv_blk_0); conv_w.push_back(c.conv_blk_2);
+            conv_w.push_back(c.conv1_1_w);
+            conv_w.push_back(c.conv1_2_w);
+            conv_w.push_back(c.conv_blk_0);
+            conv_w.push_back(c.conv_blk_2);
         };
-        for (int s = 0; s < 3; s++) for (auto & b : ctx->enc[s].blocks) add_ctb(b);
+        for (int s = 0; s < 3; s++)
+            for (auto & b : ctx->enc[s].blocks) add_ctb(b);
         for (auto & b : ctx->body.blocks) add_ctb(b);
-        for (int s = 0; s < 3; s++) for (auto & b : ctx->dec[s].blocks) add_ctb(b);
+        for (int s = 0; s < 3; s++)
+            for (auto & b : ctx->dec[s].blocks) add_ctb(b);
 
         ggml_init_params ip = { ggml_tensor_overhead() * (conv_w.size() + 8), nullptr, true };
         ctx->gw_ctx = ggml_init(ip);
         std::vector<std::pair<const ggml_tensor *, ggml_tensor *>> to_fill;
         for (const ggml_tensor * t : conv_w) {
-            if (!t || ctx->gw.count(t)) continue;          // skip missing / dups
-            int64_t ne[4] = { t->ne[0], t->ne[1], t->ne[2], t->ne[3] };  // ggml-native, as-is
+            if (!t || ctx->gw.count(t)) continue;                       // skip missing / dups
+            int64_t ne[4] = { t->ne[0], t->ne[1], t->ne[2], t->ne[3] }; // ggml-native, as-is
             ggml_tensor * w = ggml_new_tensor(ctx->gw_ctx, GGML_TYPE_F32, 4, ne);
-            ctx->gw[t] = w; to_fill.push_back({t, w});
+            ctx->gw[t] = w;
+            to_fill.push_back({ t, w });
         }
         if (!ctx->gw.empty()) {
             ctx->gw_buf = ggml_backend_alloc_ctx_tensors(ctx->gw_ctx, ctx->enc_backend);
@@ -663,7 +644,8 @@ void scunet_free(scunet_context * ctx) {
     if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
     if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
     core_gguf::WeightLoad wl;
-    wl.ctx = ctx->gguf_ctx; wl.buf = ctx->gguf_buf;
+    wl.ctx = ctx->gguf_ctx;
+    wl.buf = ctx->gguf_buf;
     core_gguf::free_weights(wl);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     delete ctx;
@@ -671,44 +653,49 @@ void scunet_free(scunet_context * ctx) {
 
 // ── Conv dispatch: ggml on the CPU sched, or scalar fallback ──────────────
 // Input/output are CHW [C,H,W], matching the scalar conv2d/conv_transpose2d.
-static void scunet_run_conv(scunet_context * ctx, bool transpose,
-                            const float * in, int ic, int ih, int iw,
-                            const ggml_tensor * weight_t, const ggml_tensor * bias_t,
-                            int oc, int kh, int kw, int pad, int stride, float * out) {
-    if (!ctx->use_ggml_conv || !ctx->gw.count(weight_t)) {  // scalar fallback
+static void scunet_run_conv(scunet_context * ctx, bool transpose, const float * in, int ic, int ih, int iw,
+                            const ggml_tensor * weight_t, const ggml_tensor * bias_t, int oc, int kh, int kw, int pad,
+                            int stride, float * out) {
+    if (!ctx->use_ggml_conv || !ctx->gw.count(weight_t)) { // scalar fallback
         std::vector<float> wbuf, bbuf;
         const float * wf = to_f32(weight_t, wbuf);
         const float * bf = bias_t ? to_f32(bias_t, bbuf) : nullptr;
-        if (transpose) conv_transpose2d(in, ic, ih, iw, wf, bf, oc, kh, kw, stride, out);
-        else           conv2d(in, ic, ih, iw, wf, bf, oc, kh, kw, pad, stride, out);
+        if (transpose)
+            conv_transpose2d(in, ic, ih, iw, wf, bf, oc, kh, kw, stride, out);
+        else
+            conv2d(in, ic, ih, iw, wf, bf, oc, kh, kw, pad, stride, out);
         return;
     }
 
     const int max_nodes = 16;
-    size_t buf_size = ggml_tensor_overhead() * max_nodes
-                    + ggml_graph_overhead_custom(max_nodes, false);
+    size_t buf_size = ggml_tensor_overhead() * max_nodes + ggml_graph_overhead_custom(max_nodes, false);
     ctx->graph_meta.resize(buf_size);
     ggml_init_params ip = { buf_size, ctx->graph_meta.data(), true };
     ggml_context * g = ggml_init(ip);
     ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
 
     ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, iw, ih, ic);
-    ggml_set_name(x, "x"); ggml_set_input(x);
+    ggml_set_name(x, "x");
+    ggml_set_input(x);
     ggml_tensor * w = ctx->gw[weight_t];
-    ggml_tensor * y = transpose ? ggml_conv_transpose_2d_p0(g, w, x, stride)
-                                : ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
+    ggml_tensor * y =
+        transpose ? ggml_conv_transpose_2d_p0(g, w, x, stride) : ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
     ggml_tensor * bin = nullptr;
     if (bias_t) {
         bin = ggml_new_tensor_1d(g, GGML_TYPE_F32, oc);
-        ggml_set_name(bin, "b"); ggml_set_input(bin);
+        ggml_set_name(bin, "b");
+        ggml_set_input(bin);
         y = ggml_add(g, y, ggml_reshape_4d(g, bin, 1, 1, oc, 1));
     }
-    ggml_set_name(y, "out"); ggml_set_output(y);
+    ggml_set_name(y, "out");
+    ggml_set_output(y);
     ggml_build_forward_expand(gf, y);
 
     ggml_backend_sched_reset(ctx->enc_sched);
     if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
-        fprintf(stderr, "scunet: conv alloc failed\n"); ggml_free(g); return;
+        fprintf(stderr, "scunet: conv alloc failed\n");
+        ggml_free(g);
+        return;
     }
     ggml_backend_tensor_set(x, in, 0, (size_t)ic * ih * iw * sizeof(float));
     std::vector<float> bbuf;
@@ -724,20 +711,16 @@ static void scunet_run_conv(scunet_context * ctx, bool transpose,
     ggml_free(g);
 }
 
-static inline void scunet_conv(scunet_context * ctx, const float * in, int ic, int ih, int iw,
-                               const ggml_tensor * w, const ggml_tensor * b,
-                               int oc, int kh, int kw, int pad, int stride, float * out) {
+static inline void scunet_conv(scunet_context * ctx, const float * in, int ic, int ih, int iw, const ggml_tensor * w,
+                               const ggml_tensor * b, int oc, int kh, int kw, int pad, int stride, float * out) {
     scunet_run_conv(ctx, false, in, ic, ih, iw, w, b, oc, kh, kw, pad, stride, out);
 }
-static inline void scunet_deconv(scunet_context * ctx, const float * in, int ic, int ih, int iw,
-                                 const ggml_tensor * w, const ggml_tensor * b,
-                                 int oc, int kh, int kw, int stride, float * out) {
+static inline void scunet_deconv(scunet_context * ctx, const float * in, int ic, int ih, int iw, const ggml_tensor * w,
+                                 const ggml_tensor * b, int oc, int kh, int kw, int stride, float * out) {
     scunet_run_conv(ctx, true, in, ic, ih, iw, w, b, oc, kh, kw, 0, stride, out);
 }
 
-int scunet_process_float(scunet_context * ctx,
-                         const float * input_chw, int width, int height,
-                         float * output_chw) {
+int scunet_process_float(scunet_context * ctx, const float * input_chw, int width, int height, float * output_chw) {
     if (!ctx || !input_chw || !output_chw) return -1;
 
     const bool bench = ctx->bench;
@@ -749,8 +732,7 @@ int scunet_process_float(scunet_context * ctx,
 
     // Head
     std::vector<float> x(ctx->dim * H * W);
-    scunet_conv(ctx, input_chw, 3, H, W, ctx->head_w, ctx->head_b,
-                ctx->dim, 3, 3, 1, 1, x.data());
+    scunet_conv(ctx, input_chw, 3, H, W, ctx->head_w, ctx->head_b, ctx->dim, 3, 3, 1, 1, x.data());
 
     // Save skips
     std::vector<float> skip_head(x.begin(), x.end());
@@ -759,7 +741,7 @@ int scunet_process_float(scunet_context * ctx,
     // Encoder
     int ch = ctx->dim;
     int cur_h = H, cur_w = W;
-    int enc_channels[] = {64, 128, 256};
+    int enc_channels[] = { 64, 128, 256 };
     for (int s = 0; s < 3; s++) {
         auto t_enc = std::chrono::steady_clock::now();
         int n_heads = std::max(1, (ch / 2) / ctx->head_dim);
@@ -771,23 +753,23 @@ int scunet_process_float(scunet_context * ctx,
             if (!blk.trans.qkv_w) fprintf(stderr, "  WARNING: qkv_w is null!\n");
             if (!blk.trans.rpb) fprintf(stderr, "  WARNING: rpb is null!\n");
             bool shift = (i % 2 == 1);
-            ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->enc[s].blocks[i],
-                        n_heads, ctx->win_size, shift, dq1, dq2, scratch);
+            ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->enc[s].blocks[i], n_heads, ctx->win_size, shift, dq1, dq2,
+                        scratch);
         }
         // Downsample
         int next_ch = ch * 2;
         int nh = cur_h / 2, nw = cur_w / 2;
         std::vector<float> ds(next_ch * nh * nw);
-        scunet_conv(ctx, x.data(), ch, cur_h, cur_w,
-                    ctx->enc[s].ds_w, ctx->enc[s].ds_b,
-                    next_ch, 2, 2, 0, 2, ds.data());
+        scunet_conv(ctx, x.data(), ch, cur_h, cur_w, ctx->enc[s].ds_w, ctx->enc[s].ds_b, next_ch, 2, 2, 0, 2,
+                    ds.data());
         skips.push_back(std::move(ds));
         x = skips.back(); // copy
-        ch = next_ch; cur_h = nh; cur_w = nw;
+        ch = next_ch;
+        cur_h = nh;
+        cur_w = nw;
         if (bench) {
             auto t_enc_end = std::chrono::steady_clock::now();
-            fprintf(stderr, "[scunet-bench] enc stage %d: %.1f ms\n",
-                    s, ms_f(t_enc_end - t_enc).count());
+            fprintf(stderr, "[scunet-bench] enc stage %d: %.1f ms\n", s, ms_f(t_enc_end - t_enc).count());
         }
     }
 
@@ -796,17 +778,16 @@ int scunet_process_float(scunet_context * ctx,
     int body_heads = std::max(1, (ch / 2) / ctx->head_dim);
     for (int i = 0; i < 4; i++) {
         bool shift = (i % 2 == 1);
-        ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->body.blocks[i],
-                    body_heads, ctx->win_size, shift, dq1, dq2, scratch);
+        ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->body.blocks[i], body_heads, ctx->win_size, shift, dq1, dq2,
+                    scratch);
     }
     if (bench) {
         auto t_body_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[scunet-bench] body: %.1f ms\n",
-                ms_f(t_body_end - t_body).count());
+        fprintf(stderr, "[scunet-bench] body: %.1f ms\n", ms_f(t_body_end - t_body).count());
     }
 
     // Decoder
-    int dec_channels[] = {256, 128, 64};
+    int dec_channels[] = { 256, 128, 64 };
     for (int s = 0; s < 3; s++) {
         auto t_dec = std::chrono::steady_clock::now();
         // Skip connection (add before upsample)
@@ -817,42 +798,37 @@ int scunet_process_float(scunet_context * ctx,
         int next_ch = ch / 2;
         int nh = cur_h * 2, nw = cur_w * 2;
         std::vector<float> us(next_ch * nh * nw);
-        scunet_deconv(ctx, x.data(), ch, cur_h, cur_w,
-                      ctx->dec[s].us_w, ctx->dec[s].us_b,
-                      next_ch, 2, 2, 2, us.data());
+        scunet_deconv(ctx, x.data(), ch, cur_h, cur_w, ctx->dec[s].us_w, ctx->dec[s].us_b, next_ch, 2, 2, 2, us.data());
         x = std::move(us);
-        ch = next_ch; cur_h = nh; cur_w = nw;
+        ch = next_ch;
+        cur_h = nh;
+        cur_w = nw;
 
         int n_heads = std::max(1, (ch / 2) / ctx->head_dim);
         for (int i = 0; i < 4; i++) {
             bool shift = (i % 2 == 1);
-            ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->dec[s].blocks[i],
-                        n_heads, ctx->win_size, shift, dq1, dq2, scratch);
+            ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->dec[s].blocks[i], n_heads, ctx->win_size, shift, dq1, dq2,
+                        scratch);
         }
         if (bench) {
             auto t_dec_end = std::chrono::steady_clock::now();
-            fprintf(stderr, "[scunet-bench] dec stage %d: %.1f ms\n",
-                    s, ms_f(t_dec_end - t_dec).count());
+            fprintf(stderr, "[scunet-bench] dec stage %d: %.1f ms\n", s, ms_f(t_dec_end - t_dec).count());
         }
     }
 
     // Final skip + tail
     for (int i = 0; i < ch * cur_h * cur_w; i++) x[i] += skip_head[i];
-    scunet_conv(ctx, x.data(), ch, cur_h, cur_w, ctx->tail_w, ctx->tail_b,
-                3, 3, 3, 1, 1, output_chw);
+    scunet_conv(ctx, x.data(), ch, cur_h, cur_w, ctx->tail_w, ctx->tail_b, 3, 3, 3, 1, 1, output_chw);
 
     if (bench) {
         auto t_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[scunet-bench] total: %.1f ms\n",
-                ms_f(t_end - t_total).count());
+        fprintf(stderr, "[scunet-bench] total: %.1f ms\n", ms_f(t_end - t_total).count());
     }
     return 0;
 }
 
-int scunet_process_float_debug(scunet_context * ctx,
-                                const float * input_chw, int width, int height,
-                                float * output_chw,
-                                scunet_stage_cb cb) {
+int scunet_process_float_debug(scunet_context * ctx, const float * input_chw, int width, int height, float * output_chw,
+                               scunet_stage_cb cb) {
     if (!ctx || !input_chw || !output_chw) return -1;
     int H = height, W = width;
     std::vector<float> dq1, dq2, scratch;
@@ -863,78 +839,73 @@ int scunet_process_float_debug(scunet_context * ctx,
     g_swin_block_counter = 0;
 
     std::vector<float> x(ctx->dim * H * W);
-    scunet_conv(ctx, input_chw, 3, H, W, ctx->head_w, ctx->head_b,
-                ctx->dim, 3, 3, 1, 1, x.data());
+    scunet_conv(ctx, input_chw, 3, H, W, ctx->head_w, ctx->head_b, ctx->dim, 3, 3, 1, 1, x.data());
     if (cb) cb("head", x.data(), ctx->dim * H * W);
 
     std::vector<float> skip_head(x.begin(), x.end());
     std::vector<std::vector<float>> skips;
 
-    const char * enc_names[] = {"m_down1", "m_down2", "m_down3"};
+    const char * enc_names[] = { "m_down1", "m_down2", "m_down3" };
     int ch = ctx->dim, cur_h = H, cur_w = W;
     for (int s = 0; s < 3; s++) {
         int n_heads = std::max(1, (ch / 2) / ctx->head_dim);
         for (int i = 0; i < 4; i++) {
             bool shift = (i % 2 == 1);
-            ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->enc[s].blocks[i],
-                        n_heads, ctx->win_size, shift, dq1, dq2, scratch);
+            ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->enc[s].blocks[i], n_heads, ctx->win_size, shift, dq1, dq2,
+                        scratch);
         }
         int next_ch = ch * 2, nh = cur_h / 2, nw = cur_w / 2;
         std::vector<float> ds(next_ch * nh * nw);
-        scunet_conv(ctx, x.data(), ch, cur_h, cur_w,
-                    ctx->enc[s].ds_w, ctx->enc[s].ds_b,
-                    next_ch, 2, 2, 0, 2, ds.data());
+        scunet_conv(ctx, x.data(), ch, cur_h, cur_w, ctx->enc[s].ds_w, ctx->enc[s].ds_b, next_ch, 2, 2, 0, 2,
+                    ds.data());
         skips.push_back(std::move(ds));
         x = skips.back();
-        ch = next_ch; cur_h = nh; cur_w = nw;
+        ch = next_ch;
+        cur_h = nh;
+        cur_w = nw;
         if (cb) cb(enc_names[s], x.data(), ch * cur_h * cur_w);
     }
 
     int body_heads = std::max(1, (ch / 2) / ctx->head_dim);
     for (int i = 0; i < 4; i++) {
         bool shift = (i % 2 == 1);
-        ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->body.blocks[i],
-                    body_heads, ctx->win_size, shift, dq1, dq2, scratch);
+        ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->body.blocks[i], body_heads, ctx->win_size, shift, dq1, dq2,
+                    scratch);
     }
     if (cb) cb("body", x.data(), ch * cur_h * cur_w);
 
-    const char * dec_names[] = {"m_up3", "m_up2", "m_up1"};
+    const char * dec_names[] = { "m_up3", "m_up2", "m_up1" };
     for (int s = 0; s < 3; s++) {
         auto & sk = skips[2 - s];
         for (int i = 0; i < ch * cur_h * cur_w; i++) x[i] += sk[i];
         int next_ch = ch / 2, nh = cur_h * 2, nw = cur_w * 2;
         std::vector<float> us(next_ch * nh * nw);
-        scunet_deconv(ctx, x.data(), ch, cur_h, cur_w,
-                      ctx->dec[s].us_w, ctx->dec[s].us_b,
-                      next_ch, 2, 2, 2, us.data());
+        scunet_deconv(ctx, x.data(), ch, cur_h, cur_w, ctx->dec[s].us_w, ctx->dec[s].us_b, next_ch, 2, 2, 2, us.data());
         x = std::move(us);
-        ch = next_ch; cur_h = nh; cur_w = nw;
+        ch = next_ch;
+        cur_h = nh;
+        cur_w = nw;
         int n_heads = std::max(1, (ch / 2) / ctx->head_dim);
         for (int i = 0; i < 4; i++) {
             bool shift = (i % 2 == 1);
-            ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->dec[s].blocks[i],
-                        n_heads, ctx->win_size, shift, dq1, dq2, scratch);
+            ctb_forward(ctx, x.data(), ch, cur_h, cur_w, ctx->dec[s].blocks[i], n_heads, ctx->win_size, shift, dq1, dq2,
+                        scratch);
         }
         if (cb) cb(dec_names[s], x.data(), ch * cur_h * cur_w);
     }
 
     for (int i = 0; i < ch * cur_h * cur_w; i++) x[i] += skip_head[i];
-    scunet_conv(ctx, x.data(), ch, cur_h, cur_w, ctx->tail_w, ctx->tail_b,
-                3, 3, 3, 1, 1, output_chw);
+    scunet_conv(ctx, x.data(), ch, cur_h, cur_w, ctx->tail_w, ctx->tail_b, 3, 3, 3, 1, 1, output_chw);
     return 0;
 }
 
 // Single-tile: uint8 HWC → float CHW → process → uint8 HWC
-static int scunet_process_tile(scunet_context * ctx,
-                               const uint8_t * input, int width, int height,
-                               uint8_t * output) {
+static int scunet_process_tile(scunet_context * ctx, const uint8_t * input, int width, int height, uint8_t * output) {
     int hw = width * height;
     std::vector<float> in_chw(3 * hw);
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
-            for (int c = 0; c < 3; c++)
-                in_chw[c * hw + y * width + x] =
-                    (float)input[(y * width + x) * 3 + c] / 255.0f;
+            for (int c = 0; c < 3; c++) in_chw[c * hw + y * width + x] = (float)input[(y * width + x) * 3 + c] / 255.0f;
     std::vector<float> out_chw(3 * hw);
     int ret = scunet_process_float(ctx, in_chw.data(), width, height, out_chw.data());
     if (ret != 0) return ret;
@@ -942,8 +913,7 @@ static int scunet_process_tile(scunet_context * ctx,
         for (int x = 0; x < width; x++)
             for (int c = 0; c < 3; c++) {
                 float v = out_chw[c * hw + y * width + x] * 255.0f;
-                output[(y * width + x) * 3 + c] =
-                    (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));
+                output[(y * width + x) * 3 + c] = (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));
             }
     return 0;
 }
@@ -952,20 +922,22 @@ static void build_blend_window_1x(int ts, int ov, std::vector<float> & w) {
     w.resize(ts * ts);
     for (int y = 0; y < ts; y++) {
         float wy = 1.0f;
-        if (y < ov) wy = 0.5f - 0.5f * cosf((float)M_PI * y / ov);
-        else if (y >= ts - ov) wy = 0.5f - 0.5f * cosf((float)M_PI * (ts - 1 - y) / ov);
+        if (y < ov)
+            wy = 0.5f - 0.5f * cosf((float)M_PI * y / ov);
+        else if (y >= ts - ov)
+            wy = 0.5f - 0.5f * cosf((float)M_PI * (ts - 1 - y) / ov);
         for (int x = 0; x < ts; x++) {
             float wx = 1.0f;
-            if (x < ov) wx = 0.5f - 0.5f * cosf((float)M_PI * x / ov);
-            else if (x >= ts - ov) wx = 0.5f - 0.5f * cosf((float)M_PI * (ts - 1 - x) / ov);
+            if (x < ov)
+                wx = 0.5f - 0.5f * cosf((float)M_PI * x / ov);
+            else if (x >= ts - ov)
+                wx = 0.5f - 0.5f * cosf((float)M_PI * (ts - 1 - x) / ov);
             w[y * ts + x] = wy * wx;
         }
     }
 }
 
-int scunet_process(scunet_context * ctx,
-                   const uint8_t * input, int width, int height,
-                   uint8_t * output) {
+int scunet_process(scunet_context * ctx, const uint8_t * input, int width, int height, uint8_t * output) {
     if (!ctx || !input || !output) return -1;
     // Tile must be multiple of 64 (win_size=8 × 2^3 downsample levels)
     int tile_size = 256;
@@ -974,8 +946,7 @@ int scunet_process(scunet_context * ctx,
     if (ts_env) tile_size = std::max(64, (atoi(ts_env) / 64) * 64);
     tile_overlap = std::min(tile_overlap, tile_size / 4);
 
-    if (width <= tile_size && height <= tile_size)
-        return scunet_process_tile(ctx, input, width, height, output);
+    if (width <= tile_size && height <= tile_size) return scunet_process_tile(ctx, input, width, height, output);
 
     std::vector<float> accum(3 * height * width, 0.0f);
     std::vector<float> wmap(height * width, 0.0f);
@@ -992,28 +963,29 @@ int scunet_process(scunet_context * ctx,
             int tw = std::min(tile_size, width - x0);
             int th = std::min(tile_size, height - y0);
             std::vector<uint8_t> ti(tw * th * 3), to(tw * th * 3);
-            for (int y = 0; y < th; y++)
-                memcpy(ti.data() + y * tw * 3, input + ((y0+y)*width+x0)*3, tw*3);
+            for (int y = 0; y < th; y++) memcpy(ti.data() + y * tw * 3, input + ((y0 + y) * width + x0) * 3, tw * 3);
             if (scunet_process_tile(ctx, ti.data(), tw, th, to.data()) != 0) return -1;
             for (int y = 0; y < th; y++)
                 for (int x = 0; x < tw; x++) {
-                    float w = (tw==tile_size && th==tile_size) ? bwin[y*tile_size+x] : 1.0f;
-                    if (tw!=tile_size || th!=tile_size) {
-                        if (x0>0 && x<tile_overlap) w *= 0.5f-0.5f*cosf((float)M_PI*x/tile_overlap);
-                        if (y0>0 && y<tile_overlap) w *= 0.5f-0.5f*cosf((float)M_PI*y/tile_overlap);
+                    float w = (tw == tile_size && th == tile_size) ? bwin[y * tile_size + x] : 1.0f;
+                    if (tw != tile_size || th != tile_size) {
+                        if (x0 > 0 && x < tile_overlap) w *= 0.5f - 0.5f * cosf((float)M_PI * x / tile_overlap);
+                        if (y0 > 0 && y < tile_overlap) w *= 0.5f - 0.5f * cosf((float)M_PI * y / tile_overlap);
                     }
-                    int dy=y0+y, dx=x0+x;
-                    for (int c=0;c<3;c++) accum[c*height*width+dy*width+dx]+=to[(y*tw+x)*3+c]*w;
-                    wmap[dy*width+dx] += w;
+                    int dy = y0 + y, dx = x0 + x;
+                    for (int c = 0; c < 3; c++)
+                        accum[c * height * width + dy * width + dx] += to[(y * tw + x) * 3 + c] * w;
+                    wmap[dy * width + dx] += w;
                 }
         }
     }
-    for (int y=0;y<height;y++)
-        for (int x=0;x<width;x++) {
-            float wt = wmap[y*width+x]; if (wt<=0) wt=1;
-            for (int c=0;c<3;c++) {
-                float v = accum[c*height*width+y*width+x]/wt;
-                output[(y*width+x)*3+c] = (uint8_t)std::max(0.f,std::min(255.f,v+0.5f));
+    for (int y = 0; y < height; y++)
+        for (int x = 0; x < width; x++) {
+            float wt = wmap[y * width + x];
+            if (wt <= 0) wt = 1;
+            for (int c = 0; c < 3; c++) {
+                float v = accum[c * height * width + y * width + x] / wt;
+                output[(y * width + x) * 3 + c] = (uint8_t)std::max(0.f, std::min(255.f, v + 0.5f));
             }
         }
     return 0;

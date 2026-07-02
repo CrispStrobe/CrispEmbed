@@ -36,8 +36,7 @@ static std::vector<int> h_projection(const uint32_t * bits, int w, int h, int wp
     for (int y = 0; y < h; y++) {
         const uint32_t * line = bits + y * wpl;
         for (int x = 0; x < w; x++) {
-            if ((line[x >> 5] >> (31 - (x & 31))) & 1)
-                proj[y]++;
+            if ((line[x >> 5] >> (31 - (x & 31))) & 1) proj[y]++;
         }
     }
     return proj;
@@ -49,16 +48,14 @@ static std::vector<int> v_projection(const uint32_t * bits, int w, int h, int wp
     for (int y = 0; y < h; y++) {
         const uint32_t * line = bits + y * wpl;
         for (int x = 0; x < w; x++) {
-            if ((line[x >> 5] >> (31 - (x & 31))) & 1)
-                proj[x]++;
+            if ((line[x >> 5] >> (31 - (x & 31))) & 1) proj[x]++;
         }
     }
     return proj;
 }
 
 // Find positions where projection exceeds threshold (line candidates)
-static std::vector<int> find_line_positions(const std::vector<int> & proj,
-                                             int length, float min_fraction) {
+static std::vector<int> find_line_positions(const std::vector<int> & proj, int length, float min_fraction) {
     int thresh = (int)(length * min_fraction);
     std::vector<int> positions;
     int i = 0;
@@ -76,8 +73,7 @@ static std::vector<int> find_line_positions(const std::vector<int> & proj,
 }
 
 // Find boundaries from projection valleys (for borderless tables)
-static std::vector<int> find_boundaries_from_valleys(const std::vector<int> & proj,
-                                                      int length, int min_gap) {
+static std::vector<int> find_boundaries_from_valleys(const std::vector<int> & proj, int length, int min_gap) {
     std::vector<int> bounds;
     bounds.push_back(0); // image edge
 
@@ -141,20 +137,16 @@ static Grid detect_grid(const uint8_t * gray, int w, int h) {
     auto col_lines = find_line_positions(v_proj, h, 0.15f);
 
     if (getenv("CRISPEMBED_TABLE_DEBUG")) {
-        fprintf(stderr, "table_parse: otsu=%d, bin=%d, h_se=%d, v_se=%d\n",
-                otsu_t, bin_thresh, h_se_w, v_se_h);
+        fprintf(stderr, "table_parse: otsu=%d, bin=%d, h_se=%d, v_se=%d\n", otsu_t, bin_thresh, h_se_w, v_se_h);
         fprintf(stderr, "table_parse: h_proj peaks (>%d):", (int)(w * 0.15f));
         for (int y = 0; y < h; y++)
-            if (h_proj[y] > (int)(w * 0.15f))
-                fprintf(stderr, " y=%d(%d)", y, h_proj[y]);
+            if (h_proj[y] > (int)(w * 0.15f)) fprintf(stderr, " y=%d(%d)", y, h_proj[y]);
         fprintf(stderr, "\n");
         fprintf(stderr, "table_parse: v_proj peaks (>%d):", (int)(h * 0.15f));
         for (int x = 0; x < w; x++)
-            if (v_proj[x] > (int)(h * 0.15f))
-                fprintf(stderr, " x=%d(%d)", x, v_proj[x]);
+            if (v_proj[x] > (int)(h * 0.15f)) fprintf(stderr, " x=%d(%d)", x, v_proj[x]);
         fprintf(stderr, "\n");
-        fprintf(stderr, "table_parse: row_lines=%zu, col_lines=%zu\n",
-                row_lines.size(), col_lines.size());
+        fprintf(stderr, "table_parse: row_lines=%zu, col_lines=%zu\n", row_lines.size(), col_lines.size());
     }
 
     morph_free(h_lines);
@@ -168,15 +160,11 @@ static Grid detect_grid(const uint8_t * gray, int w, int h) {
         grid.col_bounds = col_lines;
 
         // Ensure top and bottom edges are included
-        if (grid.row_bounds.front() > h / 20)
-            grid.row_bounds.insert(grid.row_bounds.begin(), 0);
-        if (grid.row_bounds.back() < h - h / 20)
-            grid.row_bounds.push_back(h);
+        if (grid.row_bounds.front() > h / 20) grid.row_bounds.insert(grid.row_bounds.begin(), 0);
+        if (grid.row_bounds.back() < h - h / 20) grid.row_bounds.push_back(h);
 
-        if (grid.col_bounds.front() > w / 20)
-            grid.col_bounds.insert(grid.col_bounds.begin(), 0);
-        if (grid.col_bounds.back() < w - w / 20)
-            grid.col_bounds.push_back(w);
+        if (grid.col_bounds.front() > w / 20) grid.col_bounds.insert(grid.col_bounds.begin(), 0);
+        if (grid.col_bounds.back() < w - w / 20) grid.col_bounds.push_back(w);
     } else {
         // Borderless table: use projection-based splitting
         // Dilate text to merge characters, then project
@@ -240,17 +228,15 @@ void table_parse_free(table_parse_context * ctx) {
     delete ctx;
 }
 
-void table_parse_set_ocr(table_parse_context * ctx,
-                         table_cell_ocr_fn fn, void * user_data) {
+void table_parse_set_ocr(table_parse_context * ctx, table_cell_ocr_fn fn, void * user_data) {
     if (!ctx) return;
     ctx->ocr_fn = fn;
     ctx->ocr_user_data = user_data;
 }
 
 // OCR a cell crop
-static std::string ocr_cell(table_parse_context * ctx,
-                            const uint8_t * gray, int w, int h,
-                            int x0, int y0, int x1, int y1) {
+static std::string ocr_cell(table_parse_context * ctx, const uint8_t * gray, int w, int h, int x0, int y0, int x1,
+                            int y1) {
     int cw = x1 - x0;
     int ch = y1 - y0;
     if (cw <= 2 || ch <= 2) return "";
@@ -291,11 +277,21 @@ static std::string html_escape(const std::string & s) {
     out.reserve(s.size());
     for (char c : s) {
         switch (c) {
-            case '<': out += "&lt;"; break;
-            case '>': out += "&gt;"; break;
-            case '&': out += "&amp;"; break;
-            case '"': out += "&quot;"; break;
-            default:  out += c; break;
+        case '<':
+            out += "&lt;";
+            break;
+        case '>':
+            out += "&gt;";
+            break;
+        case '&':
+            out += "&amp;";
+            break;
+        case '"':
+            out += "&quot;";
+            break;
+        default:
+            out += c;
+            break;
         }
     }
     return out;
@@ -311,8 +307,7 @@ static std::string trim(const std::string & s) {
 
 // ── Public API ────────────────────────────────────────────────────────
 
-char * table_parse_to_html(table_parse_context * ctx,
-                           const uint8_t * gray, int width, int height) {
+char * table_parse_to_html(table_parse_context * ctx, const uint8_t * gray, int width, int height) {
     if (!ctx || !gray || width <= 0 || height <= 0) return nullptr;
 
     const bool bench = ctx->bench;
@@ -321,8 +316,7 @@ char * table_parse_to_html(table_parse_context * ctx,
     auto t_grid = std::chrono::steady_clock::now();
     Grid grid = detect_grid(gray, width, height);
     if (bench) {
-        double ms = std::chrono::duration<double, std::milli>(
-            std::chrono::steady_clock::now() - t_grid).count();
+        double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_grid).count();
         fprintf(stderr, "[table_parse-bench] grid detect: %.1f ms\n", ms);
     }
 
@@ -331,8 +325,7 @@ char * table_parse_to_html(table_parse_context * ctx,
         return nullptr;
     }
 
-    fprintf(stderr, "table_parse: %d rows × %d cols grid\n",
-            grid.n_rows(), grid.n_cols());
+    fprintf(stderr, "table_parse: %d rows × %d cols grid\n", grid.n_rows(), grid.n_cols());
 
     auto t_ocr = std::chrono::steady_clock::now();
     std::ostringstream html;
@@ -346,22 +339,18 @@ char * table_parse_to_html(table_parse_context * ctx,
             int x1 = grid.col_bounds[c + 1];
             int y1 = grid.row_bounds[r + 1];
 
-            std::string text = trim(ocr_cell(ctx, gray, width, height,
-                                             x0, y0, x1, y1));
+            std::string text = trim(ocr_cell(ctx, gray, width, height, x0, y0, x1, y1));
 
             // Use <th> for first row (likely header)
             const char * tag = (r == 0) ? "th" : "td";
-            html << "    <" << tag << ">"
-                 << html_escape(text)
-                 << "</" << tag << ">\n";
+            html << "    <" << tag << ">" << html_escape(text) << "</" << tag << ">\n";
         }
         html << "  </tr>\n";
     }
 
     html << "</table>\n";
     if (bench) {
-        double ms = std::chrono::duration<double, std::milli>(
-            std::chrono::steady_clock::now() - t_ocr).count();
+        double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_ocr).count();
         fprintf(stderr, "[table_parse-bench] cell OCR: %.1f ms\n", ms);
     }
 
@@ -372,8 +361,7 @@ char * table_parse_to_html(table_parse_context * ctx,
     }
 
     if (bench) {
-        double total_ms = std::chrono::duration<double, std::milli>(
-            std::chrono::steady_clock::now() - t_total).count();
+        double total_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_total).count();
         fprintf(stderr, "[table_parse-bench] total: %.1f ms\n", total_ms);
     }
 
@@ -384,8 +372,7 @@ void table_parse_free_string(char * str) {
     free(str);
 }
 
-int table_parse_detect_grid(const uint8_t * gray, int width, int height,
-                            int * out_n_rows, int * out_n_cols) {
+int table_parse_detect_grid(const uint8_t * gray, int width, int height, int * out_n_rows, int * out_n_cols) {
     Grid grid = detect_grid(gray, width, height);
     if (out_n_rows) *out_n_rows = grid.n_rows();
     if (out_n_cols) *out_n_cols = grid.n_cols();

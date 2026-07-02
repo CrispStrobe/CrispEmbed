@@ -27,20 +27,21 @@ int main(int argc, char ** argv) {
     }
 
     printf("Reference stages:\n");
-    for (auto & name : {"input", "conv_first", "rstb_0", "rstb_1",
-                         "rstb_2", "rstb_3", "output"}) {
+    for (auto & name : { "input", "conv_first", "rstb_0", "rstb_1", "rstb_2", "rstb_3", "output" }) {
         if (ref.has(name)) {
             auto shape = ref.shape(name);
             printf("  %s: [", name);
-            for (size_t i = 0; i < shape.size(); i++)
-                printf("%s%lld", i ? "," : "", (long long)shape[i]);
+            for (size_t i = 0; i < shape.size(); i++) printf("%s%lld", i ? "," : "", (long long)shape[i]);
             printf("]\n");
         }
     }
 
     printf("\nLoading SwinIR model: %s\n", argv[1]);
     swinir_sr_context * ctx = swinir_sr_init(argv[1], 2);
-    if (!ctx) { printf("Failed to load model\n"); return 1; }
+    if (!ctx) {
+        printf("Failed to load model\n");
+        return 1;
+    }
 
     int scale = swinir_sr_scale(ctx);
     printf("Scale: %dx\n", scale);
@@ -49,7 +50,8 @@ int main(int argc, char ** argv) {
     auto [ref_input, ref_n] = ref.get_f32("input");
     if (!ref_input || ref_n == 0) {
         printf("Reference missing 'input'\n");
-        swinir_sr_free(ctx); return 1;
+        swinir_sr_free(ctx);
+        return 1;
     }
 
     // Input is [3, 64, 64] float [0,1]
@@ -71,7 +73,8 @@ int main(int argc, char ** argv) {
     int rc = swinir_sr_process(ctx, input_u8.data(), W, H, 256, 1, &output, &ow, &oh);
     if (rc != 0 || !output) {
         printf("swinir_sr_process failed\n");
-        swinir_sr_free(ctx); return 1;
+        swinir_sr_free(ctx);
+        return 1;
     }
     printf("Output: %dx%d\n", ow, oh);
 
@@ -92,18 +95,16 @@ int main(int argc, char ** argv) {
             for (int y = 0; y < oh; y++)
                 for (int x = 0; x < ow; x++)
                     for (int c = 0; c < 3; c++)
-                        cpp_out[c * oh * ow + y * ow + x] =
-                            output[(y * ow + x) * 3 + c] / 255.0f;
+                        cpp_out[c * oh * ow + y * ow + x] = output[(y * ow + x) * 3 + c] / 255.0f;
 
             auto cosine = [](const float * a, const float * b, size_t n) {
                 double dot = 0, na = 0, nb = 0;
                 for (size_t i = 0; i < n; i++) {
                     dot += (double)a[i] * b[i];
-                    na  += (double)a[i] * a[i];
-                    nb  += (double)b[i] * b[i];
+                    na += (double)a[i] * a[i];
+                    nb += (double)b[i] * b[i];
                 }
-                return (na > 1e-18 && nb > 1e-18)
-                    ? dot / (std::sqrt(na) * std::sqrt(nb)) : 0.0;
+                return (na > 1e-18 && nb > 1e-18) ? dot / (std::sqrt(na) * std::sqrt(nb)) : 0.0;
             };
 
             size_t chan = (size_t)oh * ow;
@@ -117,12 +118,14 @@ int main(int argc, char ** argv) {
                 max_abs = std::max(max_abs, (double)std::fabs(cpp_out[i] - ref_out[i]));
 
             bool pass = cos_global >= 0.99 && cos_min_ch >= 0.99;
-            printf("  %-25s  cos=%.6f  cos_ch_min=%.6f  max_abs=%.2e  %s\n",
-                   "output", cos_global, cos_min_ch, max_abs,
+            printf("  %-25s  cos=%.6f  cos_ch_min=%.6f  max_abs=%.2e  %s\n", "output", cos_global, cos_min_ch, max_abs,
                    pass ? "PASS" : "FAIL");
             printf("    (note: uint8-clamped output vs float ref; max_abs is a "
                    "single near-zero edge pixel)\n");
-            if (pass) n_pass++; else n_fail++;
+            if (pass)
+                n_pass++;
+            else
+                n_fail++;
         }
     }
 

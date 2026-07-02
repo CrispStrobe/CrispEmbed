@@ -8,16 +8,24 @@
 #include <vector>
 
 #define GREEN "\033[32m"
-#define RED   "\033[31m"
+#define RED "\033[31m"
 #define RESET "\033[0m"
 static int n_pass = 0, n_fail = 0;
 static void check(const char * n, bool c) {
-    if (c) { printf("  %s[PASS]%s %s\n", GREEN, RESET, n); n_pass++; }
-    else   { printf("  %s[FAIL]%s %s\n", RED, RESET, n); n_fail++; }
+    if (c) {
+        printf("  %s[PASS]%s %s\n", GREEN, RESET, n);
+        n_pass++;
+    } else {
+        printf("  %s[FAIL]%s %s\n", RED, RESET, n);
+        n_fail++;
+    }
 }
 
 int main(int argc, char ** argv) {
-    if (argc < 3) { fprintf(stderr, "Usage: %s model.gguf ref.gguf\n", argv[0]); return 1; }
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s model.gguf ref.gguf\n", argv[0]);
+        return 1;
+    }
     printf("LFM2.5-ColBERT — parity test\n");
     printf("  Model: %s\n  Ref:   %s\n\n", argv[1], argv[2]);
 
@@ -36,8 +44,7 @@ int main(int argc, char ** argv) {
     // Encode the same text as the reference
     const char * text = "query: The quick brown fox";
     int n_tokens = 0, colbert_dim = 0;
-    const float * multivec = crispembed_encode_multivec(
-        ctx, text, &n_tokens, &colbert_dim);
+    const float * multivec = crispembed_encode_multivec(ctx, text, &n_tokens, &colbert_dim);
 
     check("encode_multivec returns non-null", multivec != nullptr);
     printf("  Tokens: %d, ColBERT dim: %d\n", n_tokens, colbert_dim);
@@ -45,8 +52,8 @@ int main(int argc, char ** argv) {
     if (multivec && n_tokens > 0) {
         // Compare with reference
         auto r = ref.compare("colbert_output", multivec, n_tokens * colbert_dim);
-        printf("  colbert_output: cos=%.6f max_abs=%.6f  %s\n",
-               r.cos_min, r.max_abs, r.is_pass(0.99f) ? "PASS" : "FAIL");
+        printf("  colbert_output: cos=%.6f max_abs=%.6f  %s\n", r.cos_min, r.max_abs,
+               r.is_pass(0.99f) ? "PASS" : "FAIL");
         // 0.99 floor: the ref is f32 (AutoModel) but the shipped GGUF is q8_0 -> ~0.998
         // colbert_output; a real scramble craters to ~0. (Set the ref+model both f32 for 0.999.)
         check("colbert cos >= 0.99", r.is_pass(0.99f));

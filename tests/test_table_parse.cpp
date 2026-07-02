@@ -14,45 +14,46 @@
 
 static int n_pass = 0, n_fail = 0;
 
-#define CHECK(cond, msg) do { \
-    if (cond) { printf("  PASS: %s\n", msg); n_pass++; } \
-    else      { printf("  FAIL: %s\n", msg); n_fail++; } \
-} while(0)
+#define CHECK(cond, msg)                                                                                               \
+    do {                                                                                                               \
+        if (cond) {                                                                                                    \
+            printf("  PASS: %s\n", msg);                                                                               \
+            n_pass++;                                                                                                  \
+        } else {                                                                                                       \
+            printf("  FAIL: %s\n", msg);                                                                               \
+            n_fail++;                                                                                                  \
+        }                                                                                                              \
+    } while (0)
 
 // Generate a synthetic table image with ruled lines.
 // nrows × ncols grid, white background, dark grid lines.
-static std::vector<uint8_t> make_ruled_table(int w, int h,
-                                              int nrows, int ncols,
-                                              int line_width = 2) {
+static std::vector<uint8_t> make_ruled_table(int w, int h, int nrows, int ncols, int line_width = 2) {
     std::vector<uint8_t> img(w * h, 240); // light gray bg
 
     // Horizontal lines
     for (int r = 0; r <= nrows; r++) {
         int y = r * h / nrows;
         for (int dy = 0; dy < line_width && y + dy < h; dy++)
-            for (int x = 0; x < w; x++)
-                img[(y + dy) * w + x] = 20;
+            for (int x = 0; x < w; x++) img[(y + dy) * w + x] = 20;
     }
 
     // Vertical lines
     for (int c = 0; c <= ncols; c++) {
         int x = c * w / ncols;
         for (int dx = 0; dx < line_width && x + dx < w; dx++)
-            for (int y = 0; y < h; y++)
-                img[y * w + (x + dx)] = 20;
+            for (int y = 0; y < h; y++) img[y * w + (x + dx)] = 20;
     }
 
     return img;
 }
 
 // Generate a borderless table: rows of text with wide column spacing.
-static std::vector<uint8_t> make_borderless_table(int w, int h,
-                                                    int nrows, int ncols) {
+static std::vector<uint8_t> make_borderless_table(int w, int h, int nrows, int ncols) {
     std::vector<uint8_t> img(w * h, 255); // white bg
 
     int row_h = h / nrows;
     int col_w = w / ncols;
-    int text_h = 4; // text-like lines
+    int text_h = 4;   // text-like lines
     int gap = w / 10; // wide gap between columns (needs to survive dilation)
 
     for (int r = 0; r < nrows; r++) {
@@ -62,8 +63,7 @@ static std::vector<uint8_t> make_borderless_table(int w, int h,
             int x1 = (c + 1) * col_w - gap;
             // Draw dark text-like marks
             for (int dy = 0; dy < text_h && y0 + dy < h; dy++)
-                for (int x = x0; x < x1 && x < w; x++)
-                    img[(y0 + dy) * w + x] = 30;
+                for (int x = x0; x < x1 && x < w; x++) img[(y0 + dy) * w + x] = 30;
         }
     }
 
@@ -122,7 +122,10 @@ static void test_html_output() {
         // Count rows
         int tr_count = 0;
         const char * p = html;
-        while ((p = strstr(p, "<tr>")) != nullptr) { tr_count++; p++; }
+        while ((p = strstr(p, "<tr>")) != nullptr) {
+            tr_count++;
+            p++;
+        }
         printf("  rows in HTML: %d\n", tr_count);
         CHECK(tr_count == 3, "HTML has 3 rows");
 

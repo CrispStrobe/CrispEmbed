@@ -67,7 +67,10 @@ struct PdfFile {
         if (!f) return false;
         fseek(f, 0, SEEK_END);
         long sz = ftell(f);
-        if (sz <= 0 || sz > 500 * 1024 * 1024) { fclose(f); return false; }
+        if (sz <= 0 || sz > 500 * 1024 * 1024) {
+            fclose(f);
+            return false;
+        }
         fseek(f, 0, SEEK_SET);
         fallback_data.resize((size_t)sz);
         size_t rd = fread(fallback_data.data(), 1, (size_t)sz, f);
@@ -82,12 +85,8 @@ struct PdfFile {
     }
 
     size_t size() const { return mmap_base ? mmap_size : fallback_data.size(); }
-    const char * ptr() const {
-        return mmap_base ? (const char *)mmap_base : (const char *)fallback_data.data();
-    }
-    const char * ptr_at(size_t off) const {
-        return off < size() ? ptr() + off : nullptr;
-    }
+    const char * ptr() const { return mmap_base ? (const char *)mmap_base : (const char *)fallback_data.data(); }
+    const char * ptr_at(size_t off) const { return off < size() ? ptr() + off : nullptr; }
 };
 
 // ---------------------------------------------------------------------------
@@ -108,12 +107,17 @@ static void skip_ws(const char * buf, size_t len, size_t & pos) {
     }
 }
 
-static bool is_digit(char c) { return c >= '0' && c <= '9'; }
+static bool is_digit(char c) {
+    return c >= '0' && c <= '9';
+}
 
 static int read_int(const char * buf, size_t len, size_t & pos) {
     skip_ws(buf, len, pos);
     bool neg = false;
-    if (pos < len && buf[pos] == '-') { neg = true; pos++; }
+    if (pos < len && buf[pos] == '-') {
+        neg = true;
+        pos++;
+    }
     int val = 0;
     while (pos < len && is_digit(buf[pos])) {
         val = val * 10 + (buf[pos] - '0');
@@ -126,10 +130,8 @@ static float read_float(const char * buf, size_t len, size_t & pos) {
     skip_ws(buf, len, pos);
     char tmp[64] = {};
     int i = 0;
-    if (pos < len && (buf[pos] == '-' || buf[pos] == '+'))
-        tmp[i++] = buf[pos++];
-    while (pos < len && (is_digit(buf[pos]) || buf[pos] == '.') && i < 62)
-        tmp[i++] = buf[pos++];
+    if (pos < len && (buf[pos] == '-' || buf[pos] == '+')) tmp[i++] = buf[pos++];
+    while (pos < len && (is_digit(buf[pos]) || buf[pos] == '.') && i < 62) tmp[i++] = buf[pos++];
     return (float)atof(tmp);
 }
 
@@ -141,9 +143,8 @@ static std::string read_name(const char * buf, size_t len, size_t & pos) {
     std::string name;
     while (pos < len) {
         char c = buf[pos];
-        if (c == ' ' || c == '\t' || c == '\r' || c == '\n' ||
-            c == '/' || c == '<' || c == '>' || c == '[' || c == ']' ||
-            c == '(' || c == ')' || c == '{' || c == '}')
+        if (c == ' ' || c == '\t' || c == '\r' || c == '\n' || c == '/' || c == '<' || c == '>' || c == '[' ||
+            c == ']' || c == '(' || c == ')' || c == '{' || c == '}')
             break;
         name += c;
         pos++;
@@ -183,24 +184,21 @@ struct XrefEntry {
     bool in_use;
 };
 
-static bool parse_xref_table(const PdfFile & pdf, long xref_off,
-                              std::unordered_map<int, XrefEntry> & xref,
-                              int & trailer_root_id) {
+static bool parse_xref_table(const PdfFile & pdf, long xref_off, std::unordered_map<int, XrefEntry> & xref,
+                             int & trailer_root_id) {
     const char * buf = pdf.ptr();
     size_t sz = pdf.size();
     size_t pos = (size_t)xref_off;
 
     // Skip "xref" keyword
     skip_ws(buf, sz, pos);
-    if (pos + 4 > sz || memcmp(buf + pos, "xref", 4) != 0)
-        return false;
+    if (pos + 4 > sz || memcmp(buf + pos, "xref", 4) != 0) return false;
     pos += 4;
 
     // Read subsections: "start_id count" then count entries
     while (pos < sz) {
         skip_ws(buf, sz, pos);
-        if (pos + 7 <= sz && memcmp(buf + pos, "trailer", 7) == 0)
-            break;
+        if (pos + 7 <= sz && memcmp(buf + pos, "trailer", 7) == 0) break;
 
         int start_id = read_int(buf, sz, pos);
         int count = read_int(buf, sz, pos);
@@ -238,7 +236,7 @@ static bool parse_xref_table(const PdfFile & pdf, long xref_off,
             if (type == 'n') {
                 int obj_id = start_id + i;
                 if (xref.find(obj_id) == xref.end()) {
-                    xref[obj_id] = {offset, gen, true};
+                    xref[obj_id] = { offset, gen, true };
                 }
             }
         }
@@ -281,8 +279,7 @@ static bool parse_xref_table(const PdfFile & pdf, long xref_off,
 
 // Find the position of a key in a dict starting at `pos`.
 // Returns the position right after the key, or 0 if not found.
-static size_t find_dict_key(const char * buf, size_t sz, size_t dict_start,
-                             const char * key) {
+static size_t find_dict_key(const char * buf, size_t sz, size_t dict_start, const char * key) {
     size_t key_len = strlen(key);
     // Search within ~8 KB from dict start
     size_t limit = std::min(dict_start + 8192, sz);
@@ -290,8 +287,8 @@ static size_t find_dict_key(const char * buf, size_t sz, size_t dict_start,
         if (buf[i] == '/' && memcmp(buf + i + 1, key, key_len) == 0) {
             // Verify next char is not alphanumeric (full match)
             char next = (i + 1 + key_len < sz) ? buf[i + 1 + key_len] : ' ';
-            if (next == ' ' || next == '\n' || next == '\r' || next == '/'
-                || next == '<' || next == '[' || next == '(') {
+            if (next == ' ' || next == '\n' || next == '\r' || next == '/' || next == '<' || next == '[' ||
+                next == '(') {
                 return i + 1 + key_len;
             }
         }
@@ -316,8 +313,7 @@ static int read_ref(const char * buf, size_t sz, size_t & pos) {
 }
 
 // Read a /MediaBox [x0 y0 x1 y1] array. Returns true if found.
-static bool read_media_box(const char * buf, size_t sz, size_t obj_start,
-                            float & w, float & h) {
+static bool read_media_box(const char * buf, size_t sz, size_t obj_start, float & w, float & h) {
     size_t kp = find_dict_key(buf, sz, obj_start, "MediaBox");
     if (!kp) return false;
     skip_ws(buf, sz, kp);
@@ -333,8 +329,7 @@ static bool read_media_box(const char * buf, size_t sz, size_t obj_start,
 }
 
 // Read an integer value for a key. Returns -1 if not found.
-static int read_dict_int(const char * buf, size_t sz, size_t obj_start,
-                          const char * key) {
+static int read_dict_int(const char * buf, size_t sz, size_t obj_start, const char * key) {
     size_t kp = find_dict_key(buf, sz, obj_start, key);
     if (!kp) return -1;
     return read_int(buf, sz, kp);
@@ -349,10 +344,8 @@ struct ImageXObj {
     std::string name; // e.g. "Im1"
 };
 
-static std::vector<ImageXObj> find_page_images(
-    const char * buf, size_t sz, size_t page_start,
-    const std::unordered_map<int, XrefEntry> & xref)
-{
+static std::vector<ImageXObj> find_page_images(const char * buf, size_t sz, size_t page_start,
+                                               const std::unordered_map<int, XrefEntry> & xref) {
     std::vector<ImageXObj> images;
 
     // Find /Resources — either inline dict or indirect ref
@@ -377,7 +370,7 @@ static std::vector<ImageXObj> find_page_images(
 
     skip_ws(buf, sz, xp);
     if (xp >= sz || buf[xp] != '<') return images;
-    xp++; // skip first <
+    xp++;                                // skip first <
     if (xp < sz && buf[xp] == '<') xp++; // skip second <
 
     // Parse the XObject dict: /Name N 0 R pairs
@@ -398,7 +391,7 @@ static std::vector<ImageXObj> find_page_images(
                     if (sp) {
                         std::string subtype = read_name(buf, sz, sp);
                         if (subtype == "Image") {
-                            images.push_back({ref_id, name});
+                            images.push_back({ ref_id, name });
                         }
                     }
                 }
@@ -421,10 +414,8 @@ struct ImageCTM {
     float scale_y; // display height in points
 };
 
-static std::vector<ImageCTM> parse_content_stream_ctm(
-    const char * buf, size_t sz, size_t page_start,
-    const std::unordered_map<int, XrefEntry> & xref)
-{
+static std::vector<ImageCTM> parse_content_stream_ctm(const char * buf, size_t sz, size_t page_start,
+                                                      const std::unordered_map<int, XrefEntry> & xref) {
     std::vector<ImageCTM> ctms;
 
     // Find /Contents ref
@@ -478,8 +469,8 @@ static std::vector<ImageCTM> parse_content_stream_ctm(
     size_t i = 0;
     while (i < slen) {
         // Skip whitespace
-        while (i < slen && (stream_start[i] == ' ' || stream_start[i] == '\n' ||
-                            stream_start[i] == '\r' || stream_start[i] == '\t'))
+        while (i < slen && (stream_start[i] == ' ' || stream_start[i] == '\n' || stream_start[i] == '\r' ||
+                            stream_start[i] == '\t'))
             i++;
         if (i >= slen) break;
 
@@ -513,8 +504,7 @@ static std::vector<ImageCTM> parse_content_stream_ctm(
                         size_t np = j;
                         std::string nm;
                         np++; // skip /
-                        while (np < i && stream_start[np] != ' ' && stream_start[np] != '\n')
-                            nm += stream_start[np++];
+                        while (np < i && stream_start[np] != ' ' && stream_start[np] != '\n') nm += stream_start[np++];
                         c.name = nm;
                     }
                 }
@@ -523,29 +513,24 @@ static std::vector<ImageCTM> parse_content_stream_ctm(
             num_stack.clear();
             have_ctm = false;
             i += 2;
-        } else if (stream_start[i] == '/' || stream_start[i] == 'q' ||
-                   stream_start[i] == 'Q' || stream_start[i] == 'B' ||
-                   stream_start[i] == 'E') {
+        } else if (stream_start[i] == '/' || stream_start[i] == 'q' || stream_start[i] == 'Q' ||
+                   stream_start[i] == 'B' || stream_start[i] == 'E') {
             // Other operators or names — skip token
-            while (i < slen && stream_start[i] != ' ' && stream_start[i] != '\n' &&
-                   stream_start[i] != '\r')
-                i++;
-        } else if (is_digit(stream_start[i]) || stream_start[i] == '-' ||
-                   stream_start[i] == '+' || stream_start[i] == '.') {
+            while (i < slen && stream_start[i] != ' ' && stream_start[i] != '\n' && stream_start[i] != '\r') i++;
+        } else if (is_digit(stream_start[i]) || stream_start[i] == '-' || stream_start[i] == '+' ||
+                   stream_start[i] == '.') {
             // Number
             char tmp[64] = {};
             int ti = 0;
             while (i < slen && ti < 62 &&
-                   (is_digit(stream_start[i]) || stream_start[i] == '.' ||
-                    stream_start[i] == '-' || stream_start[i] == '+')) {
+                   (is_digit(stream_start[i]) || stream_start[i] == '.' || stream_start[i] == '-' ||
+                    stream_start[i] == '+')) {
                 tmp[ti++] = stream_start[i++];
             }
             num_stack.push_back((float)atof(tmp));
         } else {
             // Unknown token — skip
-            while (i < slen && stream_start[i] != ' ' && stream_start[i] != '\n' &&
-                   stream_start[i] != '\r')
-                i++;
+            while (i < slen && stream_start[i] != ' ' && stream_start[i] != '\n' && stream_start[i] != '\r') i++;
         }
     }
 
@@ -556,10 +541,8 @@ static std::vector<ImageCTM> parse_content_stream_ctm(
 // Find page object offsets from the Pages tree
 // ---------------------------------------------------------------------------
 
-static void collect_pages(const char * buf, size_t sz,
-                           const std::unordered_map<int, XrefEntry> & xref,
-                           int pages_id,
-                           std::vector<size_t> & page_offsets) {
+static void collect_pages(const char * buf, size_t sz, const std::unordered_map<int, XrefEntry> & xref, int pages_id,
+                          std::vector<size_t> & page_offsets) {
     auto it = xref.find(pages_id);
     if (it == xref.end()) return;
     size_t off = (size_t)it->second.offset;
@@ -597,10 +580,8 @@ static void collect_pages(const char * buf, size_t sz,
 // Compute page DPI
 // ---------------------------------------------------------------------------
 
-static bool compute_page_dpi(const PdfFile & pdf,
-                              const std::unordered_map<int, XrefEntry> & xref,
-                              size_t page_off,
-                              pdf_page_dpi_result & result) {
+static bool compute_page_dpi(const PdfFile & pdf, const std::unordered_map<int, XrefEntry> & xref, size_t page_off,
+                             pdf_page_dpi_result & result) {
     const char * buf = pdf.ptr();
     size_t sz = pdf.size();
 
@@ -613,8 +594,7 @@ static bool compute_page_dpi(const PdfFile & pdf,
             int parent_id = read_ref(buf, sz, pp);
             if (parent_id > 0) {
                 auto it = xref.find(parent_id);
-                if (it != xref.end())
-                    read_media_box(buf, sz, (size_t)it->second.offset, page_w, page_h);
+                if (it != xref.end()) read_media_box(buf, sz, (size_t)it->second.offset, page_w, page_h);
             }
         }
     }
@@ -691,8 +671,7 @@ static bool compute_page_dpi(const PdfFile & pdf,
 // Public API
 // ---------------------------------------------------------------------------
 
-int pdf_page_dpi(const char * pdf_path, int page,
-                 pdf_page_dpi_result * result) {
+int pdf_page_dpi(const char * pdf_path, int page, pdf_page_dpi_result * result) {
     if (!pdf_path || !result || page < 0) return 1;
     memset(result, 0, sizeof(*result));
 

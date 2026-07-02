@@ -22,8 +22,7 @@
 #include <string>
 #include <vector>
 
-bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
-                         const char * path, ggml_backend_t backend) {
+bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl, const char * path, ggml_backend_t backend) {
     gguf_init_params gp = { true, nullptr };
     gguf_context * g = gguf_init_from_file(path, gp);
     if (!g) return false;
@@ -61,8 +60,7 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
         int64_t ki = gguf_find_key(g, "general.architecture");
         if (ki >= 0) {
             std::string arch = gguf_get_val_str(g, ki);
-            if (arch == "gemma3" || arch == "qwen3" || arch == "llama")
-                arch_pfx = arch;
+            if (arch == "gemma3" || arch == "qwen3" || arch == "llama") arch_pfx = arch;
         }
     }
     auto a_u32 = [&](const char * suffix, int def) -> int {
@@ -82,42 +80,30 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
         return k >= 0 ? gguf_get_val_f32(g, k) : def;
     };
 
-    m.n_vocab = a_u32("vocab_size", 0);  // inferred from tensor if 0
-    m.n_embd = a_u32("hidden_size",
-               a_u32("embedding_length", 1024));
-    m.n_head = a_u32("num_attention_heads",
-               a_u32("attention.head_count", 16));
-    m.n_kv_head = a_u32("num_key_value_heads",
-                  a_u32("attention.head_count_kv", m.n_head));
-    m.n_layer = a_u32("num_hidden_layers",
-                a_u32("block_count", 28));
-    m.n_intermediate = a_u32("intermediate_size",
-                      a_u32("feed_forward_length", 3072));
-    m.n_max_pos = a_u32("max_position_embeddings",
-                  a_u32("context_length", 8192));
-    m.rms_norm_eps = a_f32("rms_norm_eps",
-                    a_f32("attention.layer_norm_rms_epsilon", 1e-6f));
-    m.rope_theta = a_f32("rope_theta",
-                   a_f32("rope.freq_base", 10000.0f));
+    m.n_vocab = a_u32("vocab_size", 0); // inferred from tensor if 0
+    m.n_embd = a_u32("hidden_size", a_u32("embedding_length", 1024));
+    m.n_head = a_u32("num_attention_heads", a_u32("attention.head_count", 16));
+    m.n_kv_head = a_u32("num_key_value_heads", a_u32("attention.head_count_kv", m.n_head));
+    m.n_layer = a_u32("num_hidden_layers", a_u32("block_count", 28));
+    m.n_intermediate = a_u32("intermediate_size", a_u32("feed_forward_length", 3072));
+    m.n_max_pos = a_u32("max_position_embeddings", a_u32("context_length", 8192));
+    m.rms_norm_eps = a_f32("rms_norm_eps", a_f32("attention.layer_norm_rms_epsilon", 1e-6f));
+    m.rope_theta = a_f32("rope_theta", a_f32("rope.freq_base", 10000.0f));
     // Sliding-window alternating rope_theta (Gemma3-style): local layers use a shorter theta.
     // Stored as decoder.rope_theta_local (crisp) or {arch}.rope.freq_base_local (Ollama).
-    m.rope_theta_local = a_f32("rope_theta_local",
-                         a_f32("rope.freq_base_local", 0.0f));
-    m.global_attn_every_n = a_u32("global_attn_every_n_layers",
-                            a_u32("attention.sliding_window_layer_period", 0));
+    m.rope_theta_local = a_f32("rope_theta_local", a_f32("rope.freq_base_local", 0.0f));
+    m.global_attn_every_n = a_u32("global_attn_every_n_layers", a_u32("attention.sliding_window_layer_period", 0));
     m.is_bidirectional = a_u32("is_bidirectional", 0) != 0;
     // Pooling: decoder.pooling_method or {arch}.pooling_type (Ollama: 3=last)
     m.pooling_method = a_u32("pooling_method", -1);
     if (m.pooling_method < 0) {
-        int pt = a_u32("pooling_type", 3);  // Ollama default: 3=last
+        int pt = a_u32("pooling_type", 3); // Ollama default: 3=last
         // Ollama {1=mean,2=cls,3=last} → internal {1=mean,1=cls(?),2=last}
         m.pooling_method = (pt == 3) ? 2 : (pt == 1) ? 1 : 2;
     }
     m.activation = a_u32("activation", 0);
-    m.head_dim = a_u32("head_dim",
-                 a_u32("attention.key_length", 0));
-    m.attn_scale = a_f32("attn_scale",
-                   a_f32("attention.key_length_scale", 0.0f));
+    m.head_dim = a_u32("head_dim", a_u32("attention.key_length", 0));
+    m.attn_scale = a_f32("attn_scale", a_f32("attention.key_length_scale", 0.0f));
     m.embed_scale = a_f32("embed_scale", 1.0f);
     // Detect Gemma3 from architecture.
     // gemma_norm=true  → runtime applies (1+w)*rms_norm(x); use for CrispEmbed-native
@@ -145,9 +131,9 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
         }
     }
     m.vision_start_token_id = u32("decoder.vision_start_token_id", -1);
-    m.vision_end_token_id   = u32("decoder.vision_end_token_id",   -1);
-    m.image_token_id        = u32("decoder.image_token_id",        -1);
-    m.spatial_merge_size    = u32("decoder.spatial_merge_size",     1);
+    m.vision_end_token_id = u32("decoder.vision_end_token_id", -1);
+    m.image_token_id = u32("decoder.image_token_id", -1);
+    m.spatial_merge_size = u32("decoder.spatial_merge_size", 1);
 
     // ---- Fallbacks for older GGUFs (pre-b277c3d) that lack the decoder.*
     // multimodal keys but ship a vision tower in `bidirlm.vision.*`. We
@@ -161,22 +147,18 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
         m.spatial_merge_size = u32("bidirlm.vision.spatial_merge_size", 1);
         fprintf(stderr,
                 "decoder_embed: stale GGUF — recovered spatial_merge_size=%d "
-                "from bidirlm.vision.spatial_merge_size.\n", m.spatial_merge_size);
+                "from bidirlm.vision.spatial_merge_size.\n",
+                m.spatial_merge_size);
     }
-    if (has_vision && m.mrope_section[0] == 0
-                   && m.mrope_section[1] == 0
-                   && m.mrope_section[2] == 0) {
+    if (has_vision && m.mrope_section[0] == 0 && m.mrope_section[1] == 0 && m.mrope_section[2] == 0) {
         m.mrope_section[0] = 24;
         m.mrope_section[1] = 20;
         m.mrope_section[2] = 20;
-        fprintf(stderr,
-                "decoder_embed: stale GGUF — defaulting mrope_section to [24,20,20] "
-                "(BidirLM-Omni reference). Re-export with the latest converter for "
-                "explicit metadata.\n");
+        fprintf(stderr, "decoder_embed: stale GGUF — defaulting mrope_section to [24,20,20] "
+                        "(BidirLM-Omni reference). Re-export with the latest converter for "
+                        "explicit metadata.\n");
     }
-    if (has_vision &&
-        (m.image_token_id < 0 || m.vision_start_token_id < 0
-         || m.vision_end_token_id < 0)) {
+    if (has_vision && (m.image_token_id < 0 || m.vision_start_token_id < 0 || m.vision_end_token_id < 0)) {
         const int tok_key = gguf_find_key(g, "tokenizer.ggml.tokens");
         if (tok_key >= 0) {
             const int nv = (int)gguf_get_arr_n(g, tok_key);
@@ -201,10 +183,9 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
             }
             if (m.image_token_id >= 0) {
                 fprintf(stderr,
-                    "decoder_embed: stale GGUF — recovered image_token_id=%d, "
-                    "vision_start=%d, vision_end=%d by token-string lookup.\n",
-                    m.image_token_id, m.vision_start_token_id,
-                    m.vision_end_token_id);
+                        "decoder_embed: stale GGUF — recovered image_token_id=%d, "
+                        "vision_start=%d, vision_end=%d by token-string lookup.\n",
+                        m.image_token_id, m.vision_start_token_id, m.vision_end_token_id);
             }
         }
     }
@@ -212,8 +193,7 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
     // NOTE: do NOT free g here — it is used later for LoRA metadata reads.
     // g is freed after the LoRA loading block below.
 
-    if (!core_gguf::load_weights(path, backend, "decoder_embed", wl))
-        return false;
+    if (!core_gguf::load_weights(path, backend, "decoder_embed", wl)) return false;
 
     auto get = [&](const std::string & n) -> ggml_tensor * {
         auto it = wl.tensors.find(n);
@@ -229,13 +209,11 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
         int64_t te_embd = m.token_embd->ne[0];
         int64_t te_vocab = m.token_embd->ne[1];
         if (m.n_vocab == 0 || m.n_vocab != (int)te_vocab) {
-            fprintf(stderr, "decoder_embed: n_vocab %d → %d (from token_embd)\n",
-                    m.n_vocab, (int)te_vocab);
+            fprintf(stderr, "decoder_embed: n_vocab %d → %d (from token_embd)\n", m.n_vocab, (int)te_vocab);
             m.n_vocab = (int)te_vocab;
         }
         if (te_embd != m.n_embd) {
-            fprintf(stderr, "decoder_embed: n_embd %d → %d (from token_embd)\n",
-                    m.n_embd, (int)te_embd);
+            fprintf(stderr, "decoder_embed: n_embd %d → %d (from token_embd)\n", m.n_embd, (int)te_embd);
             m.n_embd = (int)te_embd;
         }
     }
@@ -243,15 +221,14 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
     // Count actual layers from loaded tensors
     {
         int counted = 0;
-        for (const auto& kv : wl.tensors) {
+        for (const auto & kv : wl.tensors) {
             int layer_id = -1;
             if (sscanf(kv.first.c_str(), "dec.%d.", &layer_id) == 1) {
                 if (layer_id + 1 > counted) counted = layer_id + 1;
             }
         }
         if (counted > 0 && counted != m.n_layer) {
-            fprintf(stderr, "decoder_embed: n_layer %d → %d (from tensors)\n",
-                    m.n_layer, counted);
+            fprintf(stderr, "decoder_embed: n_layer %d → %d (from tensors)\n", m.n_layer, counted);
             m.n_layer = counted;
         }
     }
@@ -262,7 +239,7 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
         auto p = "dec." + std::to_string(i) + ".";
         auto b = "blk." + std::to_string(i) + ".";
         auto & L = m.layers[i];
-        auto get2 = [&](const char* s1, const char* s2) -> ggml_tensor* {
+        auto get2 = [&](const char * s1, const char * s2) -> ggml_tensor * {
             auto t = get(p + s1);
             return t ? t : get(b + s2);
         };
@@ -287,17 +264,17 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
     }
 
     // Load optional post-pooling Dense projection layers (dense.0.weight, dense.1.weight, ...)
-    for (int di = 0; ; di++) {
+    for (int di = 0;; di++) {
         std::string key = "dense." + std::to_string(di) + ".weight";
         auto it = wl.tensors.find(key);
         if (it == wl.tensors.end()) break;
         ggml_tensor * t = it->second;
         // Shape: [out_features, in_features] in ggml (ne[0]=in, ne[1]=out)
-        int in_dim  = (int)t->ne[0];
+        int in_dim = (int)t->ne[0];
         int out_dim = (int)t->ne[1];
         size_t n_elem = (size_t)in_dim * out_dim;
         dec_model::DenseLayer dl;
-        dl.in_dim  = in_dim;
+        dl.in_dim = in_dim;
         dl.out_dim = out_dim;
         dl.weight.resize(n_elem);
         // Copy from backend tensor to CPU float vector
@@ -328,60 +305,54 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
 
             // Build projection suffix list that matches the GGUF tensor naming
             // Detect naming from first adapter's tensors
-            std::string LP_detected = "blk";  // default
+            std::string LP_detected = "blk"; // default
             for (auto & kv : wl.tensors) {
                 if (kv.first.substr(0, 5) == "lora.") {
                     // e.g. "lora.retrieval.blk.0.attn_q.A.weight" → LP = "blk"
                     // or   "lora.retrieval.dec.0.attn.q.A.weight" → LP = "dec"
-                    size_t dot2 = kv.first.find('.', 5);  // after "lora.ADAPTER."
+                    size_t dot2 = kv.first.find('.', 5); // after "lora.ADAPTER."
                     if (dot2 != std::string::npos) {
                         size_t dot3 = kv.first.find('.', dot2 + 1);
-                        if (dot3 != std::string::npos)
-                            LP_detected = kv.first.substr(dot2 + 1, dot3 - dot2 - 1);
+                        if (dot3 != std::string::npos) LP_detected = kv.first.substr(dot2 + 1, dot3 - dot2 - 1);
                     }
                     break;
                 }
             }
 
             // Projection suffixes to scan (both Ollama and CrispEmbed naming)
-            struct ProjMap { const char * suffix; lora_pair lora_layer::* field; };
+            struct ProjMap {
+                const char * suffix;
+                lora_pair lora_layer::*field;
+            };
             std::vector<ProjMap> proj_maps;
             if (LP_detected == "blk") {
                 proj_maps = {
-                    {"attn_q",      &lora_layer::q},
-                    {"attn_k",      &lora_layer::k},
-                    {"attn_v",      &lora_layer::v},
-                    {"attn_output", &lora_layer::o},
-                    {"ffn_gate",    &lora_layer::gate},
-                    {"ffn_up",      &lora_layer::up},
-                    {"ffn_down",    &lora_layer::down},
+                    { "attn_q", &lora_layer::q },      { "attn_k", &lora_layer::k },      { "attn_v", &lora_layer::v },
+                    { "attn_output", &lora_layer::o }, { "ffn_gate", &lora_layer::gate }, { "ffn_up", &lora_layer::up },
+                    { "ffn_down", &lora_layer::down },
                 };
             } else {
                 proj_maps = {
-                    {"attn.q",   &lora_layer::q},
-                    {"attn.k",   &lora_layer::k},
-                    {"attn.v",   &lora_layer::v},
-                    {"attn.o",   &lora_layer::o},
-                    {"ffn.gate", &lora_layer::gate},
-                    {"ffn.up",   &lora_layer::up},
-                    {"ffn.down", &lora_layer::down},
+                    { "attn.q", &lora_layer::q },      { "attn.k", &lora_layer::k },      { "attn.v", &lora_layer::v },
+                    { "attn.o", &lora_layer::o },      { "ffn.gate", &lora_layer::gate }, { "ffn.up", &lora_layer::up },
+                    { "ffn.down", &lora_layer::down },
                 };
             }
 
             for (const auto & aname : adapter_names) {
                 lora_adapter adapter;
-                adapter.name  = aname;
-                adapter.rank  = lora_rank;
+                adapter.name = aname;
+                adapter.rank = lora_rank;
                 adapter.alpha = lora_alpha;
                 adapter.layers.resize(m.n_layer);
 
                 int loaded = 0;
                 for (int li = 0; li < m.n_layer; li++) {
                     for (auto & pm : proj_maps) {
-                        std::string a_key = "lora." + aname + "." + LP_detected + "." +
-                                            std::to_string(li) + "." + pm.suffix + ".A.weight";
-                        std::string b_key = "lora." + aname + "." + LP_detected + "." +
-                                            std::to_string(li) + "." + pm.suffix + ".B.weight";
+                        std::string a_key = "lora." + aname + "." + LP_detected + "." + std::to_string(li) + "." +
+                                            pm.suffix + ".A.weight";
+                        std::string b_key = "lora." + aname + "." + LP_detected + "." + std::to_string(li) + "." +
+                                            pm.suffix + ".B.weight";
                         auto it_a = wl.tensors.find(a_key);
                         auto it_b = wl.tensors.find(b_key);
                         if (it_a == wl.tensors.end() || it_b == wl.tensors.end()) continue;
@@ -389,9 +360,9 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
                         ggml_tensor * ta = it_a->second;
                         ggml_tensor * tb = it_b->second;
                         lora_pair & lp = adapter.layers[li].*pm.field;
-                        lp.rank    = (int)ta->ne[1];  // A is [rank, in_dim] → ne[0]=in_dim, ne[1]=rank
-                        lp.in_dim  = (int)ta->ne[0];
-                        lp.out_dim = (int)tb->ne[1];  // B is [out_dim, rank] → ne[0]=rank, ne[1]=out_dim
+                        lp.rank = (int)ta->ne[1]; // A is [rank, in_dim] → ne[0]=in_dim, ne[1]=rank
+                        lp.in_dim = (int)ta->ne[0];
+                        lp.out_dim = (int)tb->ne[1]; // B is [out_dim, rank] → ne[0]=rank, ne[1]=out_dim
 
                         // Read tensor data → F32
                         size_t na = (size_t)lp.rank * lp.in_dim;
@@ -430,14 +401,16 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
         }
     }
 
-    gguf_free(g);  // Free metadata context (was kept open for LoRA metadata reads)
+    gguf_free(g); // Free metadata context (was kept open for LoRA metadata reads)
 
     const char * pool_str = (m.pooling_method == 1) ? "mean" : "last-token";
-    fprintf(stderr, "decoder_embed: loaded %d layers, %d dims, %d vocab, %d heads (%d kv), rope_theta=%.0f%s, pool=%s%s%s\n",
+    fprintf(stderr,
+            "decoder_embed: loaded %d layers, %d dims, %d vocab, %d heads (%d kv), rope_theta=%.0f%s, pool=%s%s%s\n",
             m.n_layer, m.n_embd, m.n_vocab, m.n_head, m.n_kv_head, m.rope_theta,
             (m.rope_theta_local > 0.0f && m.global_attn_every_n > 0)
-                ? (" (local=" + std::to_string((int)m.rope_theta_local)
-                   + " every " + std::to_string(m.global_attn_every_n) + ")").c_str()
+                ? (" (local=" + std::to_string((int)m.rope_theta_local) + " every " +
+                   std::to_string(m.global_attn_every_n) + ")")
+                      .c_str()
                 : "",
             pool_str, m.is_bidirectional ? ", bidirectional" : "",
             m.lora_adapters.empty() ? "" : (", " + std::to_string(m.lora_adapters.size()) + " LoRA adapters").c_str());
@@ -455,11 +428,8 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl,
 // does not cover the full head_dim/2 — for BidirLM sections=[24,20,20] those
 // are sectors 61, 62 of the 64-pair head; pinning e=t makes ggml IMROPE
 // numerically agree with HF's apply_interleaved_mrope at those sectors).
-static void build_mrope_positions_3d(
-        const dec_model & m,
-        const embed_tokens & tokens,
-        const dec_image_input * img,
-        std::vector<int32_t> & pos_thw) {
+static void build_mrope_positions_3d(const dec_model & m, const embed_tokens & tokens, const dec_image_input * img,
+                                     std::vector<int32_t> & pos_thw) {
     const int T = (int)tokens.ids.size();
     pos_thw.assign((size_t)4 * T, 0);
     int32_t * pos_t = pos_thw.data();
@@ -469,9 +439,8 @@ static void build_mrope_positions_3d(
 
     const int spatial_merge = std::max(1, m.spatial_merge_size);
     const int img_tok = m.image_token_id;
-    const bool has_image = (img && img->image_embeds && img->n_image_tokens > 0
-                             && img->grid_thw && img->n_images > 0
-                             && img_tok >= 0);
+    const bool has_image =
+        (img && img->image_embeds && img->n_image_tokens > 0 && img->grid_thw && img->n_images > 0 && img_tok >= 0);
 
     int last_max = -1;
     int img_idx = 0;
@@ -534,7 +503,7 @@ static void build_mrope_positions_3d(
                 }
             }
         }
-        last_max = img_st + std::max({t_grid, h_grid, w_grid}) - 1;
+        last_max = img_st + std::max({ t_grid, h_grid, w_grid }) - 1;
         img_idx++;
         st = ed + n_img_tok;
     }
@@ -543,13 +512,9 @@ static void build_mrope_positions_3d(
     for (int t = 0; t < T; t++) pos_e[t] = pos_t[t];
 }
 
-std::vector<float> decoder_encode_tokens(
-    const dec_model & m, ggml_backend_t backend,
-    const embed_tokens & tokens, int n_threads,
-    ggml_backend_sched_t sched,
-    std::vector<uint8_t> * compute_meta,
-    const dec_image_input * img) {
-
+std::vector<float> decoder_encode_tokens(const dec_model & m, ggml_backend_t backend, const embed_tokens & tokens,
+                                         int n_threads, ggml_backend_sched_t sched, std::vector<uint8_t> * compute_meta,
+                                         const dec_image_input * img) {
     const bool bench = (std::getenv("CRISPEMBED_DECODER_EMBED_BENCH") != nullptr);
     auto t_total = std::chrono::steady_clock::now();
     auto t_build0 = std::chrono::steady_clock::now();
@@ -563,21 +528,17 @@ std::vector<float> decoder_encode_tokens(
     q_dim = n_heads * head_dim;
     const float eps = m.rms_norm_eps;
 
-    const bool has_image = (img && img->image_embeds && img->n_image_tokens > 0
-                             && m.image_token_id >= 0);
+    const bool has_image = (img && img->image_embeds && img->n_image_tokens > 0 && m.image_token_id >= 0);
     // Switch to ggml_rope_multi (3D interleaved MRoPE) only when image input
     // is present. For text-only inputs the t/h/w channels are all equal, so
     // standard NEOX rope_ext is mathematically equivalent and keeps the
     // existing text-only parity tests bit-identical.
-    const bool use_mrope = has_image
-                           && (m.mrope_section[0] + m.mrope_section[1]
-                               + m.mrope_section[2]) > 0;
+    const bool use_mrope = has_image && (m.mrope_section[0] + m.mrope_section[1] + m.mrope_section[2]) > 0;
     // Diagnostic: skip DeepStack injection while keeping the image-embed
     // splice + 3D MRoPE. If parity improves with DEEPSTACK_OFF=1, the bug is
     // in the deepstack hook; otherwise look at splice / MRoPE.
     const bool skip_deepstack = std::getenv("CRISPEMBED_SKIP_DEEPSTACK") != nullptr;
-    const int n_ds = (has_image && !skip_deepstack)
-                     ? std::min(img->n_deepstack, m.n_layer) : 0;
+    const int n_ds = (has_image && !skip_deepstack) ? std::min(img->n_deepstack, m.n_layer) : 0;
 
     // Graph context: no_alloc=true when using scheduler, false otherwise
     bool use_sched = (sched != nullptr && compute_meta != nullptr);
@@ -591,14 +552,10 @@ std::vector<float> decoder_encode_tokens(
         mem = compute_meta->size();
         buf_ptr = compute_meta->data();
     } else {
-        size_t per_layer = (size_t)H * T * 4 * 30
-                         + (size_t)T * T * n_heads * 4 * 2
-                         + (size_t)m.n_intermediate * T * 4 * 3;
-        mem = per_layer * m.n_layer
-            + (size_t)H * T * 4 * 10
-            + ggml_tensor_overhead() * (size_t)(m.n_layer * 50 + 200)
-            + ggml_graph_overhead_custom(graph_size, false)
-            + 64 * 1024 * 1024;
+        size_t per_layer =
+            (size_t)H * T * 4 * 30 + (size_t)T * T * n_heads * 4 * 2 + (size_t)m.n_intermediate * T * 4 * 3;
+        mem = per_layer * m.n_layer + (size_t)H * T * 4 * 10 + ggml_tensor_overhead() * (size_t)(m.n_layer * 50 + 200) +
+              ggml_graph_overhead_custom(graph_size, false) + 64 * 1024 * 1024;
         local_buf.resize(mem);
         buf_ptr = local_buf.data();
     }
@@ -624,7 +581,7 @@ std::vector<float> decoder_encode_tokens(
     // an (H, T) patch tensor (image_embeds at image positions, 0 elsewhere).
     // Equivalent to HF's `inputs_embeds.masked_scatter(image_mask, image_embeds)`.
     ggml_tensor * input_keep_mask = nullptr;
-    ggml_tensor * input_patch     = nullptr;
+    ggml_tensor * input_patch = nullptr;
     if (has_image) {
         input_keep_mask = ggml_new_tensor_2d(gctx, GGML_TYPE_F32, 1, T);
         ggml_set_name(input_keep_mask, "in_keep_mask");
@@ -656,7 +613,7 @@ std::vector<float> decoder_encode_tokens(
     if (m.gemma_norm) {
         ones_h = ggml_new_tensor_1d(gctx, GGML_TYPE_F32, H);
         ggml_set_name(ones_h, "ones_h");
-        ggml_set_input(ones_h);  // will set to 1.0f
+        ggml_set_input(ones_h); // will set to 1.0f
         if (m.layers[0].q_norm_w) {
             ones_hd = ggml_new_tensor_1d(gctx, GGML_TYPE_F32, head_dim);
             ggml_set_name(ones_hd, "ones_hd");
@@ -724,23 +681,22 @@ std::vector<float> decoder_encode_tokens(
 
         if (use_mrope) {
             int sections[GGML_MROPE_SECTIONS] = {
-                m.mrope_section[0], m.mrope_section[1], m.mrope_section[2], 0,
+                m.mrope_section[0],
+                m.mrope_section[1],
+                m.mrope_section[2],
+                0,
             };
             const int rope_mode = GGML_ROPE_TYPE_IMROPE;
-            Q = ggml_rope_multi(gctx, Q, pos, nullptr,
-                                head_dim, sections, rope_mode, 0,
-                                layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-            K = ggml_rope_multi(gctx, K, pos, nullptr,
-                                head_dim, sections, rope_mode, 0,
-                                layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+            Q = ggml_rope_multi(gctx, Q, pos, nullptr, head_dim, sections, rope_mode, 0, layer_rope_theta, 1.0f, 0.0f,
+                                1.0f, 0.0f, 0.0f);
+            K = ggml_rope_multi(gctx, K, pos, nullptr, head_dim, sections, rope_mode, 0, layer_rope_theta, 1.0f, 0.0f,
+                                1.0f, 0.0f, 0.0f);
         } else {
             int rope_mode = 2;
-            Q = ggml_rope_ext(gctx, Q, pos, nullptr,
-                               head_dim, rope_mode, 0,
-                               layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-            K = ggml_rope_ext(gctx, K, pos, nullptr,
-                               head_dim, rope_mode, 0,
-                               layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+            Q = ggml_rope_ext(gctx, Q, pos, nullptr, head_dim, rope_mode, 0, layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f,
+                              0.0f);
+            K = ggml_rope_ext(gctx, K, pos, nullptr, head_dim, rope_mode, 0, layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f,
+                              0.0f);
         }
 
         // Attention: flash_attn_ext (fused QKV, lower memory)
@@ -748,9 +704,7 @@ std::vector<float> decoder_encode_tokens(
         K = ggml_permute(gctx, K, 0, 2, 1, 3);
         V = ggml_permute(gctx, V, 0, 2, 1, 3);
 
-        float scale = (m.attn_scale > 0.0f)
-                        ? (1.0f / sqrtf(m.attn_scale))
-                        : (1.0f / sqrtf((float)head_dim));
+        float scale = (m.attn_scale > 0.0f) ? (1.0f / sqrtf(m.attn_scale)) : (1.0f / sqrtf((float)head_dim));
         ggml_tensor * attn = ggml_flash_attn_ext(gctx, Q, K, V, fa_mask, scale, 0.0f, 0.0f);
         attn = ggml_reshape_2d(gctx, attn, q_dim, T);
 
@@ -826,32 +780,27 @@ std::vector<float> decoder_encode_tokens(
 
         const int img_tok = m.image_token_id;
         const int n_image_tokens = img->n_image_tokens;
-        const float * src_img = img->image_embeds;             // (n_image, H)
-        const float * src_ds = img->deepstack;                 // (n_ds, n_image, H)
+        const float * src_img = img->image_embeds; // (n_image, H)
+        const float * src_ds = img->deepstack;     // (n_ds, n_image, H)
         int img_idx = 0;
         for (int t = 0; t < T && img_idx < n_image_tokens; t++) {
             if (tokens.ids[t] != img_tok) continue;
             in_keep_data[t] = 0.0f;
-            std::memcpy(in_patch_data.data() + (size_t)t * H,
-                        src_img + (size_t)img_idx * H,
-                        (size_t)H * sizeof(float));
+            std::memcpy(in_patch_data.data() + (size_t)t * H, src_img + (size_t)img_idx * H, (size_t)H * sizeof(float));
             for (int k = 0; k < n_ds; k++) {
                 if (!src_ds) break;
-                const float * srow = src_ds
-                    + (size_t)k * n_image_tokens * H
-                    + (size_t)img_idx * H;
-                std::memcpy(ds_patch_data[k].data() + (size_t)t * H,
-                            srow, (size_t)H * sizeof(float));
+                const float * srow = src_ds + (size_t)k * n_image_tokens * H + (size_t)img_idx * H;
+                std::memcpy(ds_patch_data[k].data() + (size_t)t * H, srow, (size_t)H * sizeof(float));
             }
             img_idx++;
         }
         if (img_idx != n_image_tokens) {
             fprintf(stderr,
-                "decoder: image token count mismatch — input has %d "
-                "image_token_id placeholders, vision tower produced %d "
-                "merged tokens (image_token_id=%d). Encoding will likely "
-                "be wrong.\n",
-                img_idx, n_image_tokens, img_tok);
+                    "decoder: image token count mismatch — input has %d "
+                    "image_token_id placeholders, vision tower produced %d "
+                    "merged tokens (image_token_id=%d). Encoding will likely "
+                    "be wrong.\n",
+                    img_idx, n_image_tokens, img_tok);
         }
     }
 
@@ -866,37 +815,30 @@ std::vector<float> decoder_encode_tokens(
 
         // Set input data
         std::vector<int32_t> tok_data(tokens.ids.begin(), tokens.ids.end());
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"),
-                                tok_data.data(), 0, T * sizeof(int32_t));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"), tok_data.data(), 0, T * sizeof(int32_t));
 
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
-                                pos_data.data(),
-                                0,
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"), pos_data.data(), 0,
                                 pos_data.size() * sizeof(int32_t));
 
         if (m.gemma_norm) {
             std::vector<float> ones(H, 1.0f);
-            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_h"),
-                                    ones.data(), 0, H * sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_h"), ones.data(), 0, H * sizeof(float));
             if (ones_hd) {
                 std::vector<float> ones_hd_data(head_dim, 1.0f);
-                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_hd"),
-                                        ones_hd_data.data(), 0, head_dim * sizeof(float));
+                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_hd"), ones_hd_data.data(), 0,
+                                        head_dim * sizeof(float));
             }
         }
 
         if (has_image) {
-            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "in_keep_mask"),
-                                    in_keep_data.data(), 0,
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "in_keep_mask"), in_keep_data.data(), 0,
                                     (size_t)T * sizeof(float));
-            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "in_patch"),
-                                    in_patch_data.data(), 0,
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "in_patch"), in_patch_data.data(), 0,
                                     (size_t)H * T * sizeof(float));
             for (int k = 0; k < n_ds; k++) {
                 char nm[24];
                 std::snprintf(nm, sizeof(nm), "ds_patch_%d", k);
-                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, nm),
-                                        ds_patch_data[k].data(), 0,
+                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, nm), ds_patch_data[k].data(), 0,
                                         (size_t)H * T * sizeof(float));
             }
         }
@@ -908,8 +850,7 @@ std::vector<float> decoder_encode_tokens(
                 std::vector<ggml_fp16_t> mask_data(T * T);
                 ggml_fp16_t neg_inf = ggml_fp32_to_fp16(-INFINITY);
                 for (int i = 0; i < T; i++)
-                    for (int j = 0; j < T; j++)
-                        mask_data[i * T + j] = (j <= i) ? 0 : neg_inf;
+                    for (int j = 0; j < T; j++) mask_data[i * T + j] = (j <= i) ? 0 : neg_inf;
                 ggml_backend_tensor_set(cm, mask_data.data(), 0, T * T * sizeof(ggml_fp16_t));
             }
         }
@@ -944,18 +885,14 @@ std::vector<float> decoder_encode_tokens(
         if (fa_mask) {
             auto * md = (ggml_fp16_t *)fa_mask->data;
             for (int q = 0; q < T; q++)
-                for (int k = 0; k < T; k++)
-                    md[(size_t)q * T + k] = ggml_fp32_to_fp16(k <= q ? 0.0f : -INFINITY);
+                for (int k = 0; k < T; k++) md[(size_t)q * T + k] = ggml_fp32_to_fp16(k <= q ? 0.0f : -INFINITY);
         }
 
         if (has_image) {
-            std::memcpy(input_keep_mask->data, in_keep_data.data(),
-                        (size_t)T * sizeof(float));
-            std::memcpy(input_patch->data, in_patch_data.data(),
-                        (size_t)H * T * sizeof(float));
+            std::memcpy(input_keep_mask->data, in_keep_data.data(), (size_t)T * sizeof(float));
+            std::memcpy(input_patch->data, in_patch_data.data(), (size_t)H * T * sizeof(float));
             for (int k = 0; k < n_ds; k++) {
-                std::memcpy(ds_patches[k]->data, ds_patch_data[k].data(),
-                            (size_t)H * T * sizeof(float));
+                std::memcpy(ds_patches[k]->data, ds_patch_data[k].data(), (size_t)H * T * sizeof(float));
             }
         }
 
@@ -1007,7 +944,10 @@ std::vector<float> decoder_encode_tokens(
         // Last-token pooling (Qwen3/Gemma3)
         int last_t = 0;
         for (int t = T - 1; t >= 0; t--) {
-            if (tokens.attn_mask[t]) { last_t = t; break; }
+            if (tokens.attn_mask[t]) {
+                last_t = t;
+                break;
+            }
         }
         memcpy(pooled.data(), hidden.data() + (size_t)last_t * H, H * sizeof(float));
     }
@@ -1096,8 +1036,7 @@ static void write_tensor_f32(ggml_tensor * t, const float * data) {
 
 // Helper: CPU matmul C = B @ A where B is [M, K] and A is [K, N], result C is [M, N]
 // (row-major convention: C[i,j] = sum_k B[i,k] * A[k,j])
-static void matmul_f32(const float * B, const float * A,
-                        float * C, int M, int K, int N) {
+static void matmul_f32(const float * B, const float * A, float * C, int M, int K, int N) {
     for (int i = 0; i < M; i++) {
         for (int j = 0; j < N; j++) {
             float acc = 0.0f;
@@ -1109,15 +1048,17 @@ static void matmul_f32(const float * B, const float * A,
     }
 }
 
-bool decoder_set_lora(dec_model & m, ggml_backend_t backend,
-                      const std::string & adapter_name) {
+bool decoder_set_lora(dec_model & m, ggml_backend_t backend, const std::string & adapter_name) {
     (void)backend;
 
     // Empty name = unmerge
     if (adapter_name.empty()) {
-        if (m.active_lora.empty()) return true;  // already base
+        if (m.active_lora.empty()) return true; // already base
         // Restore all base weights
-        struct TensorRef { ggml_tensor ** ptrs[7]; const char * names[7]; };
+        struct TensorRef {
+            ggml_tensor ** ptrs[7];
+            const char * names[7];
+        };
         for (int li = 0; li < m.n_layer; li++) {
             dec_layer & L = m.layers[li];
             ggml_tensor * tensors[] = { L.q_w, L.k_w, L.v_w, L.o_w, L.gate_w, L.up_w, L.down_w };
@@ -1142,7 +1083,10 @@ bool decoder_set_lora(dec_model & m, ggml_backend_t backend,
     // Find adapter
     const lora_adapter * adapter = nullptr;
     for (const auto & a : m.lora_adapters) {
-        if (a.name == adapter_name) { adapter = &a; break; }
+        if (a.name == adapter_name) {
+            adapter = &a;
+            break;
+        }
     }
     if (!adapter) {
         fprintf(stderr, "decoder_embed: LoRA adapter '%s' not found\n", adapter_name.c_str());
@@ -1168,8 +1112,7 @@ bool decoder_set_lora(dec_model & m, ggml_backend_t backend,
                 m.base_weights_f32[key] = dequant_tensor(tensors[pi]);
             }
         }
-        fprintf(stderr, "decoder_embed: base weight snapshot taken (%zu tensors)\n",
-                m.base_weights_f32.size());
+        fprintf(stderr, "decoder_embed: base weight snapshot taken (%zu tensors)\n", m.base_weights_f32.size());
     }
 
     // Merge: W' = W_base + (alpha/rank) * B @ A
@@ -1196,8 +1139,7 @@ bool decoder_set_lora(dec_model & m, ggml_backend_t backend,
             // Compute delta = B @ A  (B is [out, rank], A is [rank, in])
             // Result is [out, in] — same shape as the weight
             std::vector<float> delta(lp.out_dim * lp.in_dim);
-            matmul_f32(lp.B.data(), lp.A.data(), delta.data(),
-                       lp.out_dim, lp.rank, lp.in_dim);
+            matmul_f32(lp.B.data(), lp.A.data(), delta.data(), lp.out_dim, lp.rank, lp.in_dim);
 
             // W' = W_base + scale * delta
             for (size_t k = 0; k < merged_w.size(); k++) {
@@ -1211,8 +1153,8 @@ bool decoder_set_lora(dec_model & m, ggml_backend_t backend,
     }
 
     m.active_lora = adapter_name;
-    fprintf(stderr, "decoder_embed: LoRA '%s' merged (%d projections, scale=%.3f)\n",
-            adapter_name.c_str(), merged, scale);
+    fprintf(stderr, "decoder_embed: LoRA '%s' merged (%d projections, scale=%.3f)\n", adapter_name.c_str(), merged,
+            scale);
     return true;
 }
 
@@ -1223,15 +1165,17 @@ bool decoder_set_lora(dec_model & m, ggml_backend_t backend,
 static int detect_common_prefix(const std::vector<embed_tokens> & batch) {
     if (batch.size() < 2) return 0;
     int min_len = (int)batch[0].ids.size();
-    for (size_t i = 1; i < batch.size(); i++)
-        min_len = std::min(min_len, (int)batch[i].ids.size());
+    for (size_t i = 1; i < batch.size(); i++) min_len = std::min(min_len, (int)batch[i].ids.size());
 
     int prefix_len = 0;
     for (int t = 0; t < min_len; t++) {
         int32_t ref = batch[0].ids[t];
         bool match = true;
         for (size_t i = 1; i < batch.size(); i++) {
-            if (batch[i].ids[t] != ref) { match = false; break; }
+            if (batch[i].ids[t] != ref) {
+                match = false;
+                break;
+            }
         }
         if (!match) break;
         prefix_len++;
@@ -1243,20 +1187,17 @@ static int detect_common_prefix(const std::vector<embed_tokens> & batch) {
 // Batched decoder encoding
 // ---------------------------------------------------------------------------
 
-std::vector<std::vector<float>> decoder_encode_tokens_batch(
-    const dec_model & m, ggml_backend_t backend,
-    const std::vector<embed_tokens> & batch, int n_threads,
-    ggml_backend_sched_t sched,
-    std::vector<uint8_t> * compute_meta) {
-
+std::vector<std::vector<float>> decoder_encode_tokens_batch(const dec_model & m, ggml_backend_t backend,
+                                                            const std::vector<embed_tokens> & batch, int n_threads,
+                                                            ggml_backend_sched_t sched,
+                                                            std::vector<uint8_t> * compute_meta) {
     const int B = (int)batch.size();
 
     // For B<=1, use the single-text path (avoid mask overhead)
     if (B <= 1) {
         std::vector<std::vector<float>> results;
         for (const auto & tokens : batch) {
-            results.push_back(decoder_encode_tokens(m, backend, tokens, n_threads,
-                                                     sched, compute_meta));
+            results.push_back(decoder_encode_tokens(m, backend, tokens, n_threads, sched, compute_meta));
         }
         return results;
     }
@@ -1269,7 +1210,7 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
     // causally to the shared prefix + its own suffix.
     // This saves ~(B-1)*P tokens of redundant compute.
     const int P = detect_common_prefix(batch);
-    const int MIN_PREFIX = 4;  // not worth the mask complexity for tiny prefixes
+    const int MIN_PREFIX = 4; // not worth the mask complexity for tiny prefixes
 
     // Compute per-text suffix lengths and S_max
     std::vector<int> lens(B);
@@ -1288,7 +1229,8 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
     const int T_total = use_prefix ? (P + S_max * B) : (T_max * B);
 
     if (use_prefix) {
-        fprintf(stderr, "decoder_batch: prefix sharing — P=%d, B=%d, S_max=%d, "
+        fprintf(stderr,
+                "decoder_batch: prefix sharing — P=%d, B=%d, S_max=%d, "
                 "T_total=%d (was %d, saved %d tokens)\n",
                 P, B, S_max, T_total, T_max * B, T_max * B - T_total);
     }
@@ -1317,7 +1259,7 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
             for (int s = 0; s < suffix_lens[b]; s++) {
                 int idx = P + b * S_max + s;
                 tok_data[idx] = batch[b].ids[P + s];
-                pos_data[idx] = P + s;  // absolute position continues from prefix
+                pos_data[idx] = P + s; // absolute position continues from prefix
             }
         }
     } else {
@@ -1335,8 +1277,7 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
     if (use_prefix) {
         // Prefix tokens: causal within prefix
         for (int q = 0; q < P; q++)
-            for (int k = 0; k <= q; k++)
-                mask_data[(size_t)q * T_total + k] = 0.0f;
+            for (int k = 0; k <= q; k++) mask_data[(size_t)q * T_total + k] = 0.0f;
 
         // Suffix blocks: each text attends to prefix + own suffix (causal)
         for (int b = 0; b < B; b++) {
@@ -1344,11 +1285,9 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
             for (int sq = 0; sq < suffix_lens[b]; sq++) {
                 int q_idx = base + sq;
                 // Attend to all prefix tokens
-                for (int k = 0; k < P; k++)
-                    mask_data[(size_t)q_idx * T_total + k] = 0.0f;
+                for (int k = 0; k < P; k++) mask_data[(size_t)q_idx * T_total + k] = 0.0f;
                 // Attend to own suffix tokens up to current position (causal)
-                for (int sk = 0; sk <= sq; sk++)
-                    mask_data[(size_t)q_idx * T_total + (base + sk)] = 0.0f;
+                for (int sk = 0; sk <= sq; sk++) mask_data[(size_t)q_idx * T_total + (base + sk)] = 0.0f;
             }
             // Padding positions: self-attend
             for (int sp = suffix_lens[b]; sp < S_max; sp++) {
@@ -1363,12 +1302,10 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
                     for (int k = 0; k < lens[b]; k++)
                         mask_data[(size_t)(b * T_max + q) * T_total + (b * T_max + k)] = 0.0f;
                 } else {
-                    for (int k = 0; k <= q; k++)
-                        mask_data[(size_t)(b * T_max + q) * T_total + (b * T_max + k)] = 0.0f;
+                    for (int k = 0; k <= q; k++) mask_data[(size_t)(b * T_max + q) * T_total + (b * T_max + k)] = 0.0f;
                 }
             }
-            for (int p = lens[b]; p < T_max; p++)
-                mask_data[(size_t)(b * T_max + p) * T_total + (b * T_max + p)] = 0.0f;
+            for (int p = lens[b]; p < T_max; p++) mask_data[(size_t)(b * T_max + p) * T_total + (b * T_max + p)] = 0.0f;
         }
     }
 
@@ -1384,14 +1321,11 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
         mem = compute_meta->size();
         buf_ptr = compute_meta->data();
     } else {
-        size_t per_layer = (size_t)H * T_total * 4 * 30
-                         + (size_t)T_total * T_total * n_heads * 4 * 2
-                         + (size_t)m.n_intermediate * T_total * 4 * 3;
-        mem = per_layer * m.n_layer
-            + (size_t)H * T_total * 4 * 10
-            + ggml_tensor_overhead() * (size_t)(m.n_layer * 50 + 200)
-            + ggml_graph_overhead_custom(graph_size, false)
-            + 64 * 1024 * 1024;
+        size_t per_layer = (size_t)H * T_total * 4 * 30 + (size_t)T_total * T_total * n_heads * 4 * 2 +
+                           (size_t)m.n_intermediate * T_total * 4 * 3;
+        mem = per_layer * m.n_layer + (size_t)H * T_total * 4 * 10 +
+              ggml_tensor_overhead() * (size_t)(m.n_layer * 50 + 200) + ggml_graph_overhead_custom(graph_size, false) +
+              64 * 1024 * 1024;
         local_buf.resize(mem);
         buf_ptr = local_buf.data();
     }
@@ -1472,22 +1406,18 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
             layer_rope_theta = is_global ? m.rope_theta : m.rope_theta_local;
         }
 
-        int rope_mode = 2;  // NEOX
-        Q = ggml_rope_ext(gctx, Q, pos, nullptr,
-                           head_dim, rope_mode, 0,
-                           layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
-        K = ggml_rope_ext(gctx, K, pos, nullptr,
-                           head_dim, rope_mode, 0,
-                           layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        int rope_mode = 2; // NEOX
+        Q = ggml_rope_ext(gctx, Q, pos, nullptr, head_dim, rope_mode, 0, layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f,
+                          0.0f);
+        K = ggml_rope_ext(gctx, K, pos, nullptr, head_dim, rope_mode, 0, layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f,
+                          0.0f);
 
         // Flash attention with explicit mask
         Q = ggml_permute(gctx, Q, 0, 2, 1, 3);
         K = ggml_permute(gctx, K, 0, 2, 1, 3);
         V = ggml_permute(gctx, V, 0, 2, 1, 3);
 
-        float scale = (m.attn_scale > 0.0f)
-                        ? (1.0f / sqrtf(m.attn_scale))
-                        : (1.0f / sqrtf((float)head_dim));
+        float scale = (m.attn_scale > 0.0f) ? (1.0f / sqrtf(m.attn_scale)) : (1.0f / sqrtf((float)head_dim));
         ggml_tensor * attn = ggml_flash_attn_ext(gctx, Q, K, V, attn_mask, scale, 0.0f, 0.0f);
         attn = ggml_reshape_2d(gctx, attn, q_dim, T_total);
 
@@ -1539,32 +1469,26 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
             // Fall back to sequential
             std::vector<std::vector<float>> results;
             for (const auto & tokens : batch) {
-                results.push_back(decoder_encode_tokens(m, backend, tokens, n_threads,
-                                                         sched, compute_meta));
+                results.push_back(decoder_encode_tokens(m, backend, tokens, n_threads, sched, compute_meta));
             }
             return results;
         }
 
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"),
-                                tok_data.data(), 0, T_total * sizeof(int32_t));
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"),
-                                pos_data.data(), 0, T_total * sizeof(int32_t));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"), tok_data.data(), 0, T_total * sizeof(int32_t));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"), pos_data.data(), 0, T_total * sizeof(int32_t));
         // Convert F32 mask to F16 for upload
         size_t mask_n = (size_t)T_total * T_total;
         std::vector<ggml_fp16_t> mask_f16(mask_n);
-        for (size_t j = 0; j < mask_n; j++)
-            mask_f16[j] = ggml_fp32_to_fp16(mask_data[j]);
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "attn_mask"),
-                                mask_f16.data(), 0,
+        for (size_t j = 0; j < mask_n; j++) mask_f16[j] = ggml_fp32_to_fp16(mask_data[j]);
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "attn_mask"), mask_f16.data(), 0,
                                 mask_n * sizeof(ggml_fp16_t));
         if (m.gemma_norm) {
             std::vector<float> ones(H, 1.0f);
-            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_h"),
-                                    ones.data(), 0, H * sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_h"), ones.data(), 0, H * sizeof(float));
             if (ones_hd) {
                 std::vector<float> ones_hd_data(head_dim, 1.0f);
-                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_hd"),
-                                        ones_hd_data.data(), 0, head_dim * sizeof(float));
+                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_hd"), ones_hd_data.data(), 0,
+                                        head_dim * sizeof(float));
             }
         }
 
@@ -1576,8 +1500,7 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
         {
             size_t mask_n = (size_t)T_total * T_total;
             ggml_fp16_t * dst = (ggml_fp16_t *)attn_mask->data;
-            for (size_t j = 0; j < mask_n; j++)
-                dst[j] = ggml_fp32_to_fp16(mask_data[j]);
+            for (size_t j = 0; j < mask_n; j++) dst[j] = ggml_fp32_to_fp16(mask_data[j]);
         }
 
         if (ones_h) {
@@ -1651,17 +1574,14 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(
                 int last_s = suffix_lens[b] - 1;
                 if (last_s < 0) {
                     // Text is entirely prefix — take last prefix token
-                    memcpy(pooled.data(), hidden.data() + (size_t)(P - 1) * H,
-                           H * sizeof(float));
+                    memcpy(pooled.data(), hidden.data() + (size_t)(P - 1) * H, H * sizeof(float));
                 } else {
-                    memcpy(pooled.data(), hidden.data() + (size_t)(base + last_s) * H,
-                           H * sizeof(float));
+                    memcpy(pooled.data(), hidden.data() + (size_t)(base + last_s) * H, H * sizeof(float));
                 }
             } else {
                 int last_t = lens[b] - 1;
                 if (last_t < 0) last_t = 0;
-                memcpy(pooled.data(), hidden.data() + (size_t)(b * T_max + last_t) * H,
-                       H * sizeof(float));
+                memcpy(pooled.data(), hidden.data() + (size_t)(b * T_max + last_t) * H, H * sizeof(float));
             }
         }
 

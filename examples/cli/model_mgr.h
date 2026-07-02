@@ -33,9 +33,9 @@ const char * model_name(int i);
 const char * model_desc(int i);
 const char * model_filename(int i);
 const char * model_size(int i);
-const char * model_license(int i);       // SPDX-style tag, e.g. "apache-2.0",
-                                          // "mit", "cc-by-nc-4.0", "gemma", "lfm1.0"
-const char * model_card_url(int i);       // upstream HuggingFace model card
+const char * model_license(int i);  // SPDX-style tag, e.g. "apache-2.0",
+                                    // "mit", "cc-by-nc-4.0", "gemma", "lfm1.0"
+const char * model_card_url(int i); // upstream HuggingFace model card
 
 // Returns true if the given SPDX tag designates a restricted license that
 // the user must explicitly accept before redistribution / download.
@@ -47,4 +47,4 @@ bool license_requires_acceptance(const char * spdx);
 const char * get_query_prefix(const char * model_name);
 const char * get_passage_prefix(const char * model_name);
 
-}  // namespace crispembed_mgr
+} // namespace crispembed_mgr

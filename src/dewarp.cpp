@@ -31,9 +31,7 @@
 
 struct cubic_poly {
     double a[4]; // a0, a1, a2, a3
-    double eval(double x) const {
-        return a[0] + x * (a[1] + x * (a[2] + x * a[3]));
-    }
+    double eval(double x) const { return a[0] + x * (a[1] + x * (a[2] + x * a[3])); }
 };
 
 static bool fit_cubic(const float * xs, const float * ys, int n, cubic_poly & out) {
@@ -43,11 +41,11 @@ static bool fit_cubic(const float * xs, const float * ys, int n, cubic_poly & ou
     double M[4][5] = {}; // augmented matrix [4x5]
     for (int i = 0; i < n; i++) {
         double x = xs[i], y = ys[i];
-        double xp[7]; xp[0] = 1;
-        for (int k = 1; k < 7; k++) xp[k] = xp[k-1] * x;
+        double xp[7];
+        xp[0] = 1;
+        for (int k = 1; k < 7; k++) xp[k] = xp[k - 1] * x;
         for (int r = 0; r < 4; r++) {
-            for (int c = 0; c < 4; c++)
-                M[r][c] += xp[r + c];
+            for (int c = 0; c < 4; c++) M[r][c] += xp[r + c];
             M[r][4] += xp[r] * y;
         }
     }
@@ -85,10 +83,8 @@ struct baseline {
     bool valid;
 };
 
-static std::vector<baseline> extract_baselines(
-    const uint8_t * gray, int w, int h,
-    const cc_text_region * regions, int n_regions, int sampling)
-{
+static std::vector<baseline> extract_baselines(const uint8_t * gray, int w, int h, const cc_text_region * regions,
+                                               int n_regions, int sampling) {
     // Binarize for scanning
     uint8_t best = core_cpu::otsu_threshold(gray, w * h);
     uint8_t thresh = (uint8_t)(best < 255 ? best + 1 : best);
@@ -144,10 +140,7 @@ static std::vector<baseline> extract_baselines(
 // the text. The shift is interpolated between the nearest baselines above
 // and below.
 
-static void build_disparity_map(
-    const std::vector<baseline> & baselines,
-    int w, int h, float * disparity)
-{
+static void build_disparity_map(const std::vector<baseline> & baselines, int w, int h, float * disparity) {
     if (baselines.empty()) {
         memset(disparity, 0, w * h * sizeof(float));
         return;
@@ -192,10 +185,8 @@ static void build_disparity_map(
 // Apply disparity map via bilinear interpolation
 // ---------------------------------------------------------------------------
 
-static void apply_warp(const uint8_t * src, int w, int h,
-                        const float * disparity,
-                        uint8_t * dst) {
-    #pragma omp parallel for schedule(static) if(h > 32)
+static void apply_warp(const uint8_t * src, int w, int h, const float * disparity, uint8_t * dst) {
+#pragma omp parallel for schedule(static) if (h > 32)
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
             float dy = disparity[y * w + x];
@@ -229,9 +220,8 @@ dewarp_params dewarp_defaults(void) {
     return p;
 }
 
-int dewarp_page_params(const uint8_t * gray, int w, int h,
-                       dewarp_params params,
-                       uint8_t * out, int * out_w, int * out_h) {
+int dewarp_page_params(const uint8_t * gray, int w, int h, dewarp_params params, uint8_t * out, int * out_w,
+                       int * out_h) {
     if (!gray || w < 100 || h < 100 || !out) {
         if (out && gray) memcpy(out, gray, w * h);
         if (out_w) *out_w = w;
@@ -327,7 +317,6 @@ int dewarp_page_params(const uint8_t * gray, int w, int h,
     return 0;
 }
 
-int dewarp_page(const uint8_t * gray, int w, int h,
-                uint8_t * out, int * out_w, int * out_h) {
+int dewarp_page(const uint8_t * gray, int w, int h, uint8_t * out, int * out_w, int * out_h) {
     return dewarp_page_params(gray, w, h, dewarp_defaults(), out, out_w, out_h);
 }

@@ -7,7 +7,7 @@
 #include <cmath>
 #include <vector>
 
-int main(int argc, char **argv) {
+int main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <model.gguf> [max_tokens]\n", argv[0]);
         return 1;
@@ -40,50 +40,46 @@ int main(int argc, char **argv) {
 
     // Build chat prompt:
     // [gMASK]<sop>\n<|user|>\n<|begin_of_image|><|image|>*N<|end_of_image|>\nOCR this image\n<|assistant|>\n
-    int32_t img_token_id = (int32_t)ctx.m.lhp.image_token_id;  // 59280
+    int32_t img_token_id = (int32_t)ctx.m.lhp.image_token_id; // 59280
     std::vector<int32_t> prompt;
 
     // [gMASK]=59248, <sop>=59250
-    prompt.push_back(59248);  // [gMASK]
-    prompt.push_back(59250);  // <sop>
+    prompt.push_back(59248); // [gMASK]
+    prompt.push_back(59250); // <sop>
     // \n<|user|>\n
-    prompt.push_back(198);    // \n (approximate — GLM tokenizer)
-    prompt.push_back(59253);  // <|user|>
-    prompt.push_back(198);    // \n
+    prompt.push_back(198);   // \n (approximate — GLM tokenizer)
+    prompt.push_back(59253); // <|user|>
+    prompt.push_back(198);   // \n
     // <|begin_of_image|>
-    prompt.push_back(59256);  // <|begin_of_image|>
+    prompt.push_back(59256); // <|begin_of_image|>
     // <|image|> * n_vision_tokens
-    for (int i = 0; i < vr.n_tokens; i++)
-        prompt.push_back(img_token_id);
+    for (int i = 0; i < vr.n_tokens; i++) prompt.push_back(img_token_id);
     // <|end_of_image|>
-    prompt.push_back(59257);  // <|end_of_image|>
+    prompt.push_back(59257); // <|end_of_image|>
     // \nOCR this image\n<|assistant|>\n
-    prompt.push_back(198);    // \n
+    prompt.push_back(198); // \n
     // "OCR this image" — approximate token IDs
-    prompt.push_back(42555);  // OCR
-    prompt.push_back(1917);   // this
-    prompt.push_back(4656);   // image
-    prompt.push_back(198);    // \n
-    prompt.push_back(59254);  // <|assistant|>
-    prompt.push_back(198);    // \n
+    prompt.push_back(42555); // OCR
+    prompt.push_back(1917);  // this
+    prompt.push_back(4656);  // image
+    prompt.push_back(198);   // \n
+    prompt.push_back(59254); // <|assistant|>
+    prompt.push_back(198);   // \n
 
     printf("Prompt: %zu tokens (%d image)\n", prompt.size(), vr.n_tokens);
 
     // Generate
     printf("\nGenerating (max %d tokens)...\n", max_tokens);
     glm_ocr::generate_result gen;
-    if (!glm_ocr::generate(ctx,
-            vr.hidden, vr.n_tokens, vr.hidden_dim,
-            prompt.data(), (int)prompt.size(),
-            max_tokens, gen)) {
+    if (!glm_ocr::generate(ctx, vr.hidden, vr.n_tokens, vr.hidden_dim, prompt.data(), (int)prompt.size(), max_tokens,
+                           gen)) {
         fprintf(stderr, "Generation failed\n");
         free(vr.hidden);
         glm_ocr::free_(ctx);
         return 1;
     }
 
-    printf("\n=== Output (%zu tokens) ===\n%s\n=== End ===\n",
-           gen.token_ids.size(), gen.text.c_str());
+    printf("\n=== Output (%zu tokens) ===\n%s\n=== End ===\n", gen.token_ids.size(), gen.text.c_str());
 
     free(vr.hidden);
     glm_ocr::free_(ctx);

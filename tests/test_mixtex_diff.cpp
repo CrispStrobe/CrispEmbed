@@ -10,13 +10,13 @@
 #include <cstdio>
 #include <cstdlib>
 
-int main(int argc, char **argv) {
+int main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <model.gguf> <ref.gguf>\n", argv[0]);
         return 1;
     }
 
-    const char *ref_path = argv[2];
+    const char * ref_path = argv[2];
 
     // Verify the reference file loads
     printf("Loading reference: %s\n", ref_path);
@@ -26,11 +26,10 @@ int main(int argc, char **argv) {
         return 1;
     }
     printf("Reference tensors:\n");
-    for (auto &name : ref.tensor_names()) {
+    for (auto & name : ref.tensor_names()) {
         auto s = ref.shape(name);
         printf("  %s [", name.c_str());
-        for (size_t i = 0; i < s.size(); i++)
-            printf("%s%lld", i ? "," : "", (long long)s[i]);
+        for (size_t i = 0; i < s.size(); i++) printf("%s%lld", i ? "," : "", (long long)s[i]);
         printf("]\n");
     }
 
@@ -48,36 +47,36 @@ int main(int argc, char **argv) {
 
     // Load model
     printf("\nLoading model: %s\n", argv[1]);
-    mixtex_ocr_context *ctx = mixtex_ocr_init(argv[1], 4);
+    mixtex_ocr_context * ctx = mixtex_ocr_init(argv[1], 4);
     if (!ctx) {
         fprintf(stderr, "Failed to load model\n");
         return 1;
     }
 
     // Run on synthetic image (same as ref dumper's default)
-    const mixtex_ocr_hparams *hp = mixtex_ocr_get_hparams(ctx);
+    const mixtex_ocr_hparams * hp = mixtex_ocr_get_hparams(ctx);
     int w = hp->image_w, h = hp->image_h;
     printf("\nSynthetic image: %dx%d\n", w, h);
 
     // Generate same synthetic image as Python dumper:
     // White background with black lines (simple "x^2" shape)
-    std::vector<uint8_t> img(w * h * 3, 255);  // white
+    std::vector<uint8_t> img(w * h * 3, 255); // white
     // Horizontal line
-    for (int y = h/2-2; y < h/2+2; y++)
-        for (int x = w/4; x < 3*w/4; x++)
-            img[(y*w+x)*3+0] = img[(y*w+x)*3+1] = img[(y*w+x)*3+2] = 0;
+    for (int y = h / 2 - 2; y < h / 2 + 2; y++)
+        for (int x = w / 4; x < 3 * w / 4; x++)
+            img[(y * w + x) * 3 + 0] = img[(y * w + x) * 3 + 1] = img[(y * w + x) * 3 + 2] = 0;
     // Vertical bar
-    for (int y = h/3; y < 2*h/3; y++)
-        for (int x = w/2-2; x < w/2+2; x++)
-            img[(y*w+x)*3+0] = img[(y*w+x)*3+1] = img[(y*w+x)*3+2] = 0;
+    for (int y = h / 3; y < 2 * h / 3; y++)
+        for (int x = w / 2 - 2; x < w / 2 + 2; x++)
+            img[(y * w + x) * 3 + 0] = img[(y * w + x) * 3 + 1] = img[(y * w + x) * 3 + 2] = 0;
     // Small superscript
-    for (int y = h/3-5; y < h/3+5; y++)
-        for (int x = w/2+20; x < w/2+30; x++)
-            img[(y*w+x)*3+0] = img[(y*w+x)*3+1] = img[(y*w+x)*3+2] = 0;
+    for (int y = h / 3 - 5; y < h / 3 + 5; y++)
+        for (int x = w / 2 + 20; x < w / 2 + 30; x++)
+            img[(y * w + x) * 3 + 0] = img[(y * w + x) * 3 + 1] = img[(y * w + x) * 3 + 2] = 0;
 
     int out_len;
     printf("\nRunning OCR...\n");
-    const char *result = mixtex_ocr_recognize(ctx, img.data(), w, h, 3, &out_len);
+    const char * result = mixtex_ocr_recognize(ctx, img.data(), w, h, 3, &out_len);
     printf("Result (%d chars): %s\n", out_len, result ? result : "(null)");
 
     mixtex_ocr_free(ctx);

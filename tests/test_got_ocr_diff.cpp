@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include <vector>
 
-int main(int argc, char **argv) {
+int main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <model.gguf> <ref.gguf>\n", argv[0]);
         return 1;
@@ -23,11 +23,10 @@ int main(int argc, char **argv) {
         return 1;
     }
     printf("Reference tensors:\n");
-    for (auto &name : ref.tensor_names()) {
+    for (auto & name : ref.tensor_names()) {
         auto s = ref.shape(name);
         printf("  %s [", name.c_str());
-        for (size_t i = 0; i < s.size(); i++)
-            printf("%s%lld", i ? "," : "", (long long)s[i]);
+        for (size_t i = 0; i < s.size(); i++) printf("%s%lld", i ? "," : "", (long long)s[i]);
         printf("]\n");
     }
 
@@ -69,7 +68,7 @@ int main(int argc, char **argv) {
         ref2.load(argv[2]);
         if (ref2.has("llm_embed")) {
             printf("\nRunning LLM decoder...\n");
-            int32_t test_tokens[] = {1, 100, 200, 300, 400};
+            int32_t test_tokens[] = { 1, 100, 200, 300, 400 };
             got_ocr::llm_result lr;
             if (got_ocr::run_llm_forward(ctx, test_tokens, 5, lr)) {
                 printf("LLM output: %d tokens, %d dim\n", lr.n_tokens, lr.hidden_dim);
