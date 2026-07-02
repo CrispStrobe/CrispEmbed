@@ -588,10 +588,48 @@ of bounds`). Fix: use `tensor_to_f32()` helper that reads raw bytes via
 
 ## DeepSeek-OCR-2: from a never-run port to character-perfect OCR (2026-06)
 
-> **Status: WORKING.** Character-perfect OCR on Metal + q4_k. The history below
-> is preserved because the failure modes (stub converter, scrambled/aliased KV
-> cache, missing instruction prompt, wrong normalization) are instructive — jump
-> to "RESOLVED (2026-06)" for the fixes that landed it.
+> **Status: WORKING again after a perf-sweep regression (fixed 2026-07-02).**
+> The Jun-20 "perf sweep" silently regressed OCR to garbage on BOTH backends —
+> see "Perf-sweep regression" below. Fixed by restoring `deepseek_ocr2.cpp` to
+> the last-known-good-AND-fast commit `c58913c` (Metal vision graphs, correct
+> output), reverting the post-`c58913c` perf commits. Character-perfect OCR on
+> Metal + q4_k confirmed on the recovered Jun-19 q4_k. The 2026-06 history below
+> is preserved for its instructive failure modes.
+
+### Perf-sweep regression — garbled OCR, both backends, no A/B gate (found + fixed 2026-07-02)
+
+`qwen2.5`-style symptom (garbled multilingual tokens `章的 flix Bailly …` / decode
+repetition `&# &#`) on **both** Metal and CPU (deterministic), on the recovered
+character-perfect Jun-19 q4_k. Not the q4_k (the exact character-perfect model
+garbled), not Metal (CPU byte-identical), not the engine *file* per se — ggml SHA
+and the converter were unchanged. **Bisect (`git bisect ... -- src/deepseek_ocr2.cpp`,
+range `38e3801..e803e9f`) pinned it to the Jun-20 perf sweep**, which introduced
+MULTIPLE regressions with **no env gate and no A/B test**:
+- `c75b95d` "flash_attn_ext + remove GQA repeat in Qwen2 encoder": replaced the
+  encoder's manual masked GQA attention with `ggml_flash_attn_ext` but kept the
+  manual path's trailing `ggml_permute(attn, 0,2,1,3)`. **`ggml_flash_attn_ext`
+  already returns `[hd, nh, T]` (permuted internally), so that trailing permute
+  is spurious and scrambles the features** (see memory [[flashattn-ext-already-permutes]];
+  the Jun-2026 flash wave left the same spurious permute in layout/math/deepseek).
+  The precise perf re-add fix is therefore a one-liner: keep flash_attn, drop the
+  trailing permute, reshape `[hd,nh,T]→[D,T]` directly — but verify per the A/B
+  rule before flipping the default. (Reverting *only* this wasn't enough —
+  `910d036` had also rebuilt the encoder as a single graph, and even the
+  `DS_QWEN2_SCALAR` fallback garbled on the post-sweep tree, i.e. the regression
+  was spread across several commits.)
+- decode degeneration (repetition) appeared between the good `c58913c` and
+  `402b38d`/`e65e73c` (flash_attn LLM / persistent decode) — HF `infer()` uses
+  `no_repeat_ngram_size=20`; the greedy decoder had no repetition blocking.
+
+Last-fully-good commit = **`c58913c`** (Jun-19): after the Metal vision-graph
+speedups (~15×) yet before the regressions; reads a document verbatim on Metal.
+**Fix = restore `deepseek_ocr2.cpp` to `c58913c`.** The reverted perf paths
+(persistent decode, F16 KV, flash_attn encoder/LLM, single-graph encoder) must be
+re-added ONE AT A TIME behind an env gate, each A/B-tested against decoded output
+before flipping the default — see the new rule in `crispasr-crispembed-dev.md`
+("A/B-test every perf optimization"). deepseek had **zero** regression coverage,
+which is why a broken default shipped unseen; add a golden entry when a stable
+test image is chosen (fox.png's 800×200 strip is a weak-signal global-view case).
 
 `deepseek_ocr2.cpp` + `convert-deepseek-ocr2-to-gguf.py` were committed in a
 single feat commit and **never ran end-to-end** — the published GGUF
