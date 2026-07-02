@@ -851,8 +851,14 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
   byte-identical CUDA numbers (set_output can't change computed values) — reverted. Real cause is
   graph-structural (extra projection output / `sched_reserve` / shared `ctx->sched` between the
   dense and colbert paths); needs per-layer CUDA localization. Handover updated
-  `handover-prompts/lfm2-colbert-cuda-multivec-divergence.md`. **NOTE the wired 0.99 guardrail would
-  fail on CUDA CI** until fixed. (Also: a codebase-wide sweep found ~9 engines with the same
+  `handover-prompts/lfm2-colbert-cuda-multivec-divergence.md`. **RESOLVED 2026-07 (branch
+  `fix/lfm2-colbert-cuda-multivec`)**: the graph-structural cause was `encode_multivec`
+  re-allocating the SAME graph it passed to `ggml_backend_sched_reserve` (stale `tensor->buffer`
+  after `sched_reset`); the dense path already rebuilds a fresh graph after reserve, ours did not.
+  Fix = rebuild after reserve (mirror the dense path). Verified by an on-P100 A/B (same Tesla P100,
+  compute 6.0): **main colbert_output cos 0.571643 (FAIL, backbone hidden −0.702160) → fix cos
+  0.995885 (PASS ≥0.99, hidden +0.922054)** — baseline reproduces the handover numbers to 6 decimals,
+  the guardrail now passes on CUDA. (Also: a codebase-wide sweep found ~9 engines with the same
   set_output-on-live-intermediate pattern — got_ocr/glm_ocr/internvl2/qwen2vl/math_ocr/pcs — but
   since that pattern was REFUTED as lfm2_colbert's cause, they are NOT confirmed bugs; do not
   mass-apply a cont fix.) **lilt** = FALSE verify_failed (encoder

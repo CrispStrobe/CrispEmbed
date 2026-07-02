@@ -39,8 +39,11 @@ reserve** — which is exactly why the same backbone passes 20/20 in the dense g
 the ColBERT graph on the same device. Fix: factor ColBERT graph construction into a `build_graph()`
 lambda and rebuild a fresh graph after the bucket-change reserve, mirroring the dense path. General
 rule (already stated below for graph reuse): **the graph you hand to `sched_reserve` is dead — never
-`sched_alloc_graph` it; build a fresh one for alloc+compute.** Verify on a CUDA build:
-`test-lfm2-colbert-diff` `colbert_output` cos ≥ 0.99.
+`sched_alloc_graph` it; build a fresh one for alloc+compute.** **Confirmed on a Tesla P100 (compute
+6.0) A/B** — same GPU, same q8_0 model + HF-f32 ref, github `main` vs the fix branch built side by
+side: `main` `colbert_output` cos **0.571643** (FAIL, backbone `hidden` −0.702160, reproducing the
+handover to 6 decimals) → fix cos **0.995885** (PASS, `hidden` +0.922054). The 0.99 regression
+guardrail now passes on CUDA.
 
 ## Reading a QUANTIZED weight to CPU: size the copy by `ggml_nbytes(t)`, not `n_elem * 4` (2026-07)
 
