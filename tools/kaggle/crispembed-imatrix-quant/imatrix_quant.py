@@ -17,7 +17,8 @@ Select the model with the MODEL constant below or the MODEL env var. Per run it:
   3. calibration pass (CRISPEMBED_IMATRIX_OUT) over calib_corpus.txt,
   4. for each quant spec: quantize (+imatrix where flagged) → A/B cosine vs the
      f16 gold on eval_corpus.txt → upload → rm the quant,
-  5. uploads the f16 + .imatrix, then removes everything local.
+  5. uploads imatrix variants under DISTINCT names (never overwriting the
+     canonical q8_0/q4_k baselines) + the .imatrix artifact, then cleans up.
 """
 import os, sys, json, math, time, subprocess
 from pathlib import Path
@@ -45,46 +46,55 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))   # bundled fallback
 import kaggle_harness as kh
 
 # ── model registry (converters take --model <dir> --output <f16> --dtype f16) ──
-# quants: (qtype, use_imatrix). q8_0 barely benefits; 4-bit types do. The tool
-# auto-keeps vision/lm-head/embedding tensors at Q8_0.
 # hf_src + hf_out (existing GGUF repos) + filename prefixes are the canonical
 # values from examples/cli/model_mgr.cpp k_registry[]. Imatrix quants upload into
-# the SAME repos users already download from (registry URLs stay valid).
+# the SAME repos users already download from.
+#
+# QSPECS: (qtype, use_imatrix, upload_name_template | None). upload_name None
+# means DO NOT upload (a baseline of that type already exists in the repo — never
+# overwrite it). imatrix variants get DISTINCT names so they never clobber the
+# canonical q8_0/q4_k baselines: q4_k+imatrix → *-q4_k-imatrix.gguf, iq4_xs → *-iq4_xs.gguf.
+QSPECS = [
+    ("q8_0",   False, None),                          # A/B reference only; baseline exists
+    ("q4_k",   True,  "{prefix}-q4_k-imatrix.gguf"),  # new file, does not touch *-q4_k.gguf
+    ("iq4_xs", True,  "{prefix}-iq4_xs.gguf"),         # new file
+]
+
 MODELS = {
     "lfm2-embed": dict(
         hf_src="LiquidAI/LFM2.5-Embedding-350M",
         converter="models/convert-lfm2-embed-to-gguf.py",
         conv_args=["--dtype", "f16"],
         hf_out="cstr/lfm2-embed-GGUF", prefix="lfm2-embed",
-        quants=[("q8_0", False), ("q4_k", True), ("iq4_xs", True)],
+        quants=QSPECS,
     ),
     "jina-v5-nano": dict(
         hf_src="jinaai/jina-embeddings-v5-text-nano",
         converter="models/convert-decoder-embed-to-gguf.py",
         conv_args=["--dtype", "f16", "--crisp"],
         hf_out="cstr/jina-v5-nano-GGUF", prefix="jina-v5-nano",
-        quants=[("q8_0", False), ("q4_k", True), ("iq4_xs", True)],
+        quants=QSPECS,
     ),
     "jina-v5-small": dict(
         hf_src="jinaai/jina-embeddings-v5-text-small",
         converter="models/convert-decoder-embed-to-gguf.py",
         conv_args=["--dtype", "f16", "--crisp"],
         hf_out="cstr/jina-v5-small-GGUF", prefix="jina-v5-small",
-        quants=[("q8_0", False), ("q4_k", True), ("iq4_xs", True)],
+        quants=QSPECS,
     ),
     "bge-m3": dict(
         hf_src="BAAI/bge-m3",
         converter="models/convert-bert-to-gguf.py",
         conv_args=["--dtype", "f16", "--crisp"],
         hf_out="cstr/bge-m3-GGUF", prefix="bge-m3",
-        quants=[("q8_0", False), ("q4_k", True), ("iq4_xs", True)],
+        quants=QSPECS,
     ),
     "e5-large": dict(
         hf_src="intfloat/multilingual-e5-large",
         converter="models/convert-bert-to-gguf.py",
         conv_args=["--dtype", "f16", "--crisp"],
         hf_out="cstr/multilingual-e5-large-GGUF", prefix="multilingual-e5-large",
-        quants=[("q8_0", False), ("q4_k", True), ("iq4_xs", True)],
+        quants=QSPECS,
     ),
     # BidirLM-Omni: multimodal, no single-file converter in models/ yet — TODO.
 }
@@ -212,8 +222,8 @@ def main():
 
     # 4. per-quant: quantize -> A/B -> upload -> rm
     report = []
-    for qtype, use_im in cfg["quants"]:
-        out = WORK / f"{cfg['prefix']}-{qtype}.gguf"
+    for qtype, use_im, up_tmpl in cfg["quants"]:
+        out = WORK / f"{cfg['prefix']}-{qtype}.gguf"       # local temp name
         cmd = [str(quant), str(f16), str(out), qtype]
         if use_im:
             cmd += ["--imatrix", str(imat)]
@@ -222,22 +232,28 @@ def main():
         vecs, dt = embed(cli, out, eval_)
         cos, n = mean_cos(vecs, gold)
         mb = out.stat().st_size / 1e6
+        upname = up_tmpl.format(prefix=cfg["prefix"]) if up_tmpl else "(no upload)"
         kh.step(f"ab.{qtype}", imatrix=use_im, cos_vs_f16=round(cos, 6),
-                size_mb=round(mb, 1), embed_s=round(dt, 2), n=n)
-        report.append(f"{qtype:7s} imatrix={int(use_im)}  cos_vs_f16={cos:.6f}  {mb:7.1f}MB")
-        if api:
+                size_mb=round(mb, 1), embed_s=round(dt, 2), n=n, upload=upname)
+        report.append(f"{qtype:7s} imatrix={int(use_im)}  cos_vs_f16={cos:.6f}  {mb:7.1f}MB  -> {upname}")
+        # Upload ONLY imatrix variants, under DISTINCT names — never overwrite the
+        # canonical q8_0/q4_k baselines already in the repo (up_tmpl is None for those).
+        if api and up_tmpl:
             with kh.build_heartbeat(f"upload.{qtype}"):
-                api.upload_file(path_or_fileobj=str(out), path_in_repo=out.name,
+                api.upload_file(path_or_fileobj=str(out), path_in_repo=upname,
                     repo_id=cfg["hf_out"], repo_type="model",
-                    commit_message=f"{qtype}{' +imatrix' if use_im else ''} (cos_vs_f16={cos:.4f})")
+                    commit_message=f"{qtype} +imatrix (cos_vs_f16={cos:.4f})")
+            print(f"[upload] {upname}", flush=True)
         out.unlink(missing_ok=True)   # free space before next quant
 
-    # 5. upload f16 + imatrix, then rm everything
+    # 5. upload the imatrix artifact only (small; reproducibility). Do NOT upload
+    #    f16 — it would risk clobbering and is large. Then rm everything local.
     if api:
-        for p, msg in [(f16, "f16 source"), (imat, "importance matrix (calibration)")]:
-            with kh.build_heartbeat(f"upload.{p.name}"):
-                api.upload_file(path_or_fileobj=str(p), path_in_repo=p.name,
-                    repo_id=cfg["hf_out"], repo_type="model", commit_message=msg)
+        with kh.build_heartbeat("upload.imatrix"):
+            api.upload_file(path_or_fileobj=str(imat), path_in_repo=imat.name,
+                repo_id=cfg["hf_out"], repo_type="model",
+                commit_message="importance matrix (calibration)")
+        print(f"[upload] {imat.name}", flush=True)
     f16.unlink(missing_ok=True); imat.unlink(missing_ok=True)
 
     kh.step("all_done", **{f"q{i}": r for i, r in enumerate(report)})
