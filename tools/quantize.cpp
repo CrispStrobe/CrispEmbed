@@ -31,6 +31,8 @@ static const std::map<std::string, enum ggml_ftype> FTYPE_MAP = {
     {"q4_k", GGML_FTYPE_MOSTLY_Q4_K},
     {"q5_k", GGML_FTYPE_MOSTLY_Q5_K},
     {"q6_k", GGML_FTYPE_MOSTLY_Q6_K},
+    {"iq4_nl", GGML_FTYPE_MOSTLY_IQ4_NL},
+    {"iq4_xs", GGML_FTYPE_MOSTLY_IQ4_XS},
 };
 
 // When set, LLM decoder weight matrices (prefix "l.") are kept at F16 instead of
@@ -93,6 +95,8 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         case GGML_FTYPE_MOSTLY_Q4_K: qtype = GGML_TYPE_Q4_K; break;
         case GGML_FTYPE_MOSTLY_Q5_K: qtype = GGML_TYPE_Q5_K; break;
         case GGML_FTYPE_MOSTLY_Q6_K: qtype = GGML_TYPE_Q6_K; break;
+        case GGML_FTYPE_MOSTLY_IQ4_NL: qtype = GGML_TYPE_IQ4_NL; break;
+        case GGML_FTYPE_MOSTLY_IQ4_XS: qtype = GGML_TYPE_IQ4_XS; break;
         default:
             fprintf(stderr, "unsupported quantization type %d\n", ftype);
             return false;
@@ -398,6 +402,10 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                 case GGML_TYPE_Q4_K: fallback = GGML_TYPE_Q4_0; break;
                 case GGML_TYPE_Q5_K: fallback = GGML_TYPE_Q5_0; break;
                 case GGML_TYPE_Q6_K: fallback = GGML_TYPE_Q8_0; break;
+                // IQ4_XS uses 256-wide super-blocks; fall back to IQ4_NL (32-wide,
+                // same 4-bit non-linear codebook) when the row isn't 256-aligned.
+                case GGML_TYPE_IQ4_XS: fallback = GGML_TYPE_IQ4_NL; break;
+                case GGML_TYPE_IQ4_NL: fallback = GGML_TYPE_Q4_0; break;
                 default: break;
             }
             if (fallback != GGML_TYPE_COUNT && ncols % ggml_blck_size(fallback) == 0) {
