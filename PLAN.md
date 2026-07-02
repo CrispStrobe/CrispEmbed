@@ -339,9 +339,28 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   IQ4_XS+imatrix wins on **both** quality and size vs q4_k+imatrix. Identical
   0.62 s embed. Verified on Metal. VERDICT: PASS. `iq4_xs`/`iq4_nl` are wired in
   the quantizer (IQ4_XS→IQ4_NL→Q4_0 fallback for non-256-aligned rows).
-- TODO (follow-ons): wire the remaining engines' schedulers; per-model Kaggle
-  harness (calibrate→quant+imatrix→A/B→upload→rm) for LFM2.5-Embedding, jina-v5,
-  bge-m3/e5, BidirLM-Omni; domain-matched calibration corpora; retrieval A/B via
+- **Kaggle rollout (2026-07, `tools/kaggle/crispembed-imatrix-quant/`):** batch
+  harness sources each model's existing full-precision GGUF from its `cstr/*-GGUF`
+  repo (auto-detected), calibrates, quantizes q4_k/iq4_xs +imatrix, A/B vs the
+  gold, uploads under DISTINCT names (never clobbering baselines) + `.imatrix` +
+  `-imatrix-ab.txt`. First 5 (cos vs full-precision gold, Kaggle CPU):
+
+  | model | q4_k base | q4_k+im | iq4_xs+im | default now |
+  |---|---|---|---|---|
+  | lfm2-embed    | —      | 0.9912 | 0.9889 | q4_k-imatrix |
+  | jina-v5-nano  | —      | 0.9903 | 0.9887 | q4_k-imatrix |
+  | jina-v5-small | 0.9792 | 0.9901 | 0.9887 | q4_k-imatrix |
+  | bge-m3        | 0.9702 | 0.9702 | **0.9811** | iq4_xs |
+  | e5-large      | 0.9813 | 0.9836 | **0.9896** | iq4_xs |
+
+  imatrix reliably lifts 4-bit (largest gain where the model is most
+  quant-sensitive, e.g. jina-small q4_k +0.0109); IQ4_XS+imatrix is best-small on
+  the XLM-R encoders. **Registry defaults repointed to the per-model A/B winner**
+  (`model_mgr.cpp`; `-q4k` now serves the imatrix build; `-iq4xs`/`-q8` aliases
+  added; e5-large's old 2.2 GB F32 default → `-f32`).
+- TODO (follow-ons): wire the remaining engines' schedulers (C8); extend the batch
+  to the rest of the embedding roster (bge/e5/nomic/gte/arctic/octen/qwen3-embed/
+  embeddinggemma/…); domain-matched calibration corpora; retrieval A/B via
   `tests/bench_rag.py`.
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,

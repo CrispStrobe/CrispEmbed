@@ -1650,6 +1650,28 @@ fallback chain`, which currently drops small-dim tensors to Q4_0). MXFP4/ternary
 are model-specific (FP4-trained / BitNet-QAT), not general q4 replacements. This
 should lift LFM2 (~0.982) and BidirLM (~0.93–0.95) toward their q8_0 floor.
 
+**Implemented as C1** (`src/imatrix.{h,cpp}` collector via eval-callback gated by
+`CRISPEMBED_IMATRIX_OUT`; `crispembed-quantize --imatrix`). Rollout gotchas from
+the Kaggle batch (`tools/kaggle/crispembed-imatrix-quant/`):
+- **Source from the existing repo GGUF, not HF re-conversion.** Each `cstr/*-GGUF`
+  repo already hosts a full-precision base (F32; base/q8 size ratio ~3.7). Using
+  it sidesteps converter-arg guesswork — jina-v5's HF repo ships task LoRA
+  adapters (`-classification/-clustering/-text-matching`); re-converting would
+  pick the wrong weights. Auto-detect the base = largest non-quant `.gguf`.
+- **Never overwrite baselines.** imatrix outputs upload under DISTINCT names
+  (`*-q4_k-imatrix.gguf`, `*-iq4_xs.gguf`); q8_0/q4_k baselines are A/B-reference
+  only. The registry default repoints to the A/B winner; `-q4k` serves imatrix.
+- **CPU build, GPU only for internet.** A CUDA build compiles ggml-cuda's ~254
+  `mmq-instance-*.cu` TUs (~15 min; the CrispASR ccache barely hits them) for
+  kernels these ≤600M embedders never use. `-DGGML_CUDA=OFF`; keep `enable_gpu`
+  true only because Kaggle CPU workers have no internet (kaggle_usage.md #3).
+- **`kernels_output` only captures `/kaggle/working` files (not stdout, and in
+  practice only `.ccache`)** — upload the A/B summary + `.imatrix` TO THE HF REPO
+  for reliable retrieval.
+- **Per-model winner varies.** q4_k+imatrix wins on the decoder embedders (lfm2,
+  jina), IQ4_XS+imatrix on the XLM-R encoders (bge-m3, e5) — smaller AND higher
+  cos. Always A/B; don't assume one flavor. Numbers table in `PLAN.md → C1`.
+
 ### Metal mul_mm F16 kernel selection (why set_prec doesn't help)
 
 `ggml/src/ggml-metal/` picks the matmul kernel by **operand type + shape**, never
