@@ -497,6 +497,47 @@ void scan_cleanup_whiten(const float * gray, int w, int h, int kernel_size, floa
     }
 }
 
+// ── Page split (Port 5 of the unpaper feature set) ──────────────────
+// Detect a two-up (double-page) book spread and return the gutter column to split
+// at, or -1 for a single page. Clean-room, projection-profile based: a spread is
+// wide, and its column dark-pixel density has two content humps separated by a
+// near-empty vertical gutter near the centre. Find the emptiest central column;
+// accept it only if it is a real gutter (nearly no text) with substantial text on
+// BOTH sides — so single pages, blank pages, and centred figures never false-split.
+int scan_cleanup_detect_page_split(const uint8_t * pixels, int w, int h, int channels) {
+    if (w <= 8 || h <= 8) return -1;
+    if ((float)w / (float)h < 1.15f) return -1; // spreads are landscape; portrait = single
+
+    std::vector<float> gray = to_gray_f32(pixels, w, h, channels);
+    const float text_thresh = 0.5f;
+    std::vector<int> content(w, 0);
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++)
+            if (gray[(size_t)y * w + x] < text_thresh) content[x]++;
+
+    std::vector<int> srt(content);
+    std::sort(srt.begin(), srt.end());
+    int med = srt[w / 2];    // typical column's text density
+    if (med <= 0) return -1; // blank
+
+    int lo = (int)(0.30f * w), hi = (int)(0.70f * w);
+    int gx = lo, gmin = content[lo];
+    for (int x = lo; x <= hi; x++)
+        if (content[x] < gmin) {
+            gmin = content[x];
+            gx = x;
+        }
+    if (gmin > (int)(0.15f * med)) return -1; // no clear (near-empty) gutter
+
+    long lsum = 0, rsum = 0;
+    for (int x = 0; x < gx; x++) lsum += content[x];
+    for (int x = gx + 1; x < w; x++) rsum += content[x];
+    float lmean = gx > 0 ? (float)lsum / gx : 0.0f;
+    float rmean = (w - gx - 1) > 0 ? (float)rsum / (w - gx - 1) : 0.0f;
+    if (lmean < 0.4f * med || rmean < 0.4f * med) return -1; // one side is empty → not a spread
+    return gx;
+}
+
 // ── Despeckle (Port 1 of the unpaper feature set) ───────────────────
 // Remove isolated dark specks (scanner dust, salt-and-pepper) with a
 // decision-based 3x3 median: a pixel is replaced by its local median ONLY when it
