@@ -478,7 +478,7 @@
       "name": "layout-heron",
       "engine": "layout-detect",
       "diff_only": true,
-      "_comment": "RT-DETRv2 (docling-project/docling-layout-heron) layout detector guardrail (no --ocr). Ref = tools/dump_layout_reference.py; input/backbone/encoder stages (ip3..enc_output) cos 1.0 on Metal AND CPU. Guards the encoder-scramble class: the dc0861b flash_attn swap kept the old manual permute(0,2,1,3) after ggml_flash_attn_ext (which already permutes internally), scrambling s3..enc_output to negative cos. dec_0_cross_out rides the deformable cross-attention CPU bilinear-sampling floor (~0.977 cos_min on one boundary query, ~0.999 mean) — pre-existing, backend-independent, unrelated to the encoder path.",
+      "_comment": "RT-DETRv2 (docling-project/docling-layout-heron) layout detector guardrail (no --ocr). Ref = tools/dump_layout_reference.py; input/backbone/encoder stages (ip3..enc_output) cos 1.0 on Metal AND CPU. Guards the encoder-scramble class: the dc0861b flash_attn swap kept the old manual permute(0,2,1,3) after ggml_flash_attn_ext (which already permutes internally), scrambling s3..enc_output to negative cos. dec_0_cross_out rides the deformable cross-attention CPU bilinear-sampling floor (~0.977 cos_min on one boundary query, ~0.999 mean) \u2014 pre-existing, backend-independent, unrelated to the encoder path.",
       "gguf": {
         "repo": "cstr/layout-heron-gguf",
         "file": "layout-heron-f32.gguf",
@@ -494,6 +494,20 @@
           "*": 0.99,
           "dec_0_cross_out": 0.97
         }
+      }
+    },
+    {
+      "name": "gliner",
+      "engine": "gliner",
+      "_comment": "GLiNER (LFM2 backbone) guarded by an INDEPENDENT entity-output check (its per-stage dumper ref is broken: Lfm2BiModel replacement yields a dead 0-entity model). test-gliner-diff asserts Barack Obama->person + Hawaii->location on the default text.",
+      "gguf": {
+        "repo": "cstr/sauerkraut-gliner-lfm-GGUF",
+        "file": "gliner-lfm-q8_0.gguf",
+        "revision": "main"
+      },
+      "run_check": {
+        "binary": "test-gliner-diff",
+        "expect_exit": 0
       }
     }
   ]
