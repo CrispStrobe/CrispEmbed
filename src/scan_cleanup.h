@@ -27,18 +27,21 @@ extern "C" {
 typedef struct scan_cleanup_ctx scan_cleanup_ctx;
 
 typedef struct {
-    int deskew;             // 1 = detect and correct skew (default: 1)
-    int crop_borders;       // 1 = remove dark scanner borders (default: 1)
-    int whiten_background;  // 1 = flatten uneven lighting (default: 1)
-    int binarize;           // 1 = adaptive binarization (default: 0)
-    int binarize_method;    // 0 = Otsu (global), 1 = Sauvola (adaptive)
-    float sauvola_k;        // Sauvola sensitivity, default 0.2
-    int sauvola_window;     // Sauvola window size (odd), default 25
-    int morph_kernel;       // background whitening kernel size, default 51
-    float border_threshold; // border darkness threshold 0..1, default 0.15
-    float deskew_max_angle; // max correction angle in degrees, default 15.0
-    int despeckle;          // 1 = remove isolated dark specks/dust (default: 1)
-    float despeckle_thresh; // speck vs local-median darkness gap 0..1, default 0.25
+    int deskew;               // 1 = detect and correct skew (default: 1)
+    int crop_borders;         // 1 = remove dark scanner borders (default: 1)
+    int whiten_background;    // 1 = flatten uneven lighting (default: 1)
+    int binarize;             // 1 = adaptive binarization (default: 0)
+    int binarize_method;      // 0 = Otsu (global), 1 = Sauvola (adaptive)
+    float sauvola_k;          // Sauvola sensitivity, default 0.2
+    int sauvola_window;       // Sauvola window size (odd), default 25
+    int morph_kernel;         // background whitening kernel size, default 51
+    float border_threshold;   // border darkness threshold 0..1, default 0.15
+    float deskew_max_angle;   // max correction angle in degrees, default 15.0
+    int despeckle;            // 1 = remove isolated dark specks/dust (default: 1)
+    float despeckle_thresh;   // speck vs local-median darkness gap 0..1, default 0.25
+    int blackfilter;          // 1 = clear large SOLID dark regions (scanner-edge
+                              //     shadow, photocopy edge, blobs) (default: 1)
+    float blackfilter_thresh; // dark-pixel threshold 0..1, default 0.20
 } scan_cleanup_params;
 
 // Returns default params (deskew + crop + whiten enabled, binarize disabled)

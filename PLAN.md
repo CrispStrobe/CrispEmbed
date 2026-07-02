@@ -281,9 +281,13 @@ code expression is. Never read/paste unpaper's code into ours.
   shadow unaffected. Visual: speckle gone, text intact. `p.despeckle` (default on),
   `p.despeckle_thresh` (0.25). Runs first (before deskew/whiten). Salt-pepper is a
   case unpaper's cluster noisefilter does NOT handle.
-- [ ] **2. blackfilter** — clear large dark regions/edges (scanner-bed shadow,
-  photocopy edges) beyond the rectangular crop — with a **guard so it can never
-  blank the page** (unpaper's failure mode).
+- [x] **2. blackfilter — DONE** (clean-room 8-connected-component labelling of
+  very-dark pixels; whiten a component only if LARGE *and* SOLID (bbox fill ≥ 0.5)
+  so text strokes/glyphs are kept; **hard guard: never clear > 40% of the page** —
+  the exact case where unpaper blanked a whole page). A/B: clears the dark blob +
+  edge shadow visually with **no CER regression** (shadow 0.071, hspeckle 0.030,
+  uneven 0.007 — no misfire on text), and the guard holds where unpaper produced
+  CER 1.000. `p.blackfilter` (default on), `p.blackfilter_thresh` (0.20).
 - [ ] **3. deskew sheet-background fill** — fill rotation corners with the detected
   paper color instead of the gray wedges the current deskew leaves.
 - [ ] **4. grayfilter / blurfilter** — clear faint gray haze / light smudges to white.
