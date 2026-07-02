@@ -589,7 +589,12 @@ int lfm2_embed_encode_multivec(lfm2_embed_ctx * ctx, const char * text, float * 
 
     // Final norm
     cur = lfm2_rms_norm(g, cur, ctx->model.embedding_norm_w, eps);
-    ggml_tensor * hidden = cur; // pre-projection backbone hidden
+    // Output a ggml_cont COPY of the backbone hidden, not `cur` itself. Marking `cur`
+    // (an intermediate that also feeds the projection mul_mat below) as a graph output
+    // makes the CUDA scheduler mis-place/cross-copy it and corrupt the backbone compute
+    // (hidden cos -0.70, colbert_output 0.57 on CUDA; fine on CPU/Metal). The dense-encode
+    // path avoids this by cont-copying `cls`; mirror that here so `cur` stays a pure intermediate.
+    ggml_tensor * hidden = ggml_cont(g, cur); // pre-projection backbone hidden (independent copy)
     ggml_set_name(hidden, "hidden_states");
     ggml_set_output(hidden);
 
