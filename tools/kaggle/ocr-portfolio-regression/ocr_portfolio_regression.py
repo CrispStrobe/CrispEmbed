@@ -201,7 +201,7 @@ for m in manifest["models"]:
     t0 = time.time()
     # Hard per-model timeout so one hung model (e.g. a non-terminating decode
     # or a stalled HF download) can't stall the whole portfolio / burn quota.
-    timeout_s = int(m.get("timeout_s", 900))
+    timeout_s = int(m.get("timeout_s", 300))
     try:
         with kh.build_heartbeat(f"model.{name}", rss=True):
             proc = subprocess.run(cmd, env=env, capture_output=True, text=True,
