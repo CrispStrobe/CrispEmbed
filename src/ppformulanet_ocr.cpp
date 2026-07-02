@@ -10,6 +10,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/bpe.h"
 #include "core/gguf_loader.h"
 #include "core/cpu_ops.h"
 
@@ -1219,21 +1220,12 @@ const char* ppformulanet_ocr_recognize(ppformulanet_ocr_context* ctx,
     if (bench) fprintf(stderr, "[ppfn-bench] decoder: %.1f ms\n",
         std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
 
-    // Detokenize: replace GPT-2 BPE Ġ (U+0120, bytes C4 A0) with space
+    // Detokenize GPT-2 byte-level BPE pieces to text via the shared decoder
+    // (inverse of byte_encoder(): "Ġ" -> space, "Ċ" -> newline, all bytes).
     ctx->result_buf.clear();
     for (int tok : tokens) {
         if (tok < 0 || tok >= (int)ctx->vocab.size()) continue;
-        const auto& s = ctx->vocab[tok];
-        for (size_t i = 0; i < s.size(); ) {
-            if (i + 1 < s.size() &&
-                (unsigned char)s[i] == 0xC4 && (unsigned char)s[i+1] == 0xA0) {
-                ctx->result_buf += ' ';
-                i += 2;
-            } else {
-                ctx->result_buf += s[i];
-                i++;
-            }
-        }
+        core_bpe::unicode_to_bytes(ctx->vocab[tok], ctx->result_buf);
     }
 
     if (bench) fprintf(stderr, "[ppfn-bench] total: %.1f ms\n",
@@ -1281,21 +1273,12 @@ const char* ppformulanet_ocr_recognize_chw(ppformulanet_ocr_context* ctx,
     precompute_cross_kv(ctx);
     auto tokens = greedy_decode(ctx);
 
-    // Detokenize: replace GPT-2 BPE Ġ (U+0120, bytes C4 A0) with space
+    // Detokenize GPT-2 byte-level BPE pieces to text via the shared decoder
+    // (inverse of byte_encoder(): "Ġ" -> space, "Ċ" -> newline, all bytes).
     ctx->result_buf.clear();
     for (int tok : tokens) {
         if (tok < 0 || tok >= (int)ctx->vocab.size()) continue;
-        const auto& s = ctx->vocab[tok];
-        for (size_t i = 0; i < s.size(); ) {
-            if (i + 1 < s.size() &&
-                (unsigned char)s[i] == 0xC4 && (unsigned char)s[i+1] == 0xA0) {
-                ctx->result_buf += ' ';
-                i += 2;
-            } else {
-                ctx->result_buf += s[i];
-                i++;
-            }
-        }
+        core_bpe::unicode_to_bytes(ctx->vocab[tok], ctx->result_buf);
     }
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
@@ -1347,13 +1330,7 @@ const char* ppformulanet_ocr_recognize_beam(ppformulanet_ocr_context* ctx,
     ctx->result_buf.clear();
     for (int tok : tokens) {
         if (tok < 0 || tok >= (int)ctx->vocab.size()) continue;
-        const auto& s = ctx->vocab[tok];
-        for (size_t i = 0; i < s.size(); ) {
-            if (i + 1 < s.size() &&
-                (unsigned char)s[i] == 0xC4 && (unsigned char)s[i+1] == 0xA0) {
-                ctx->result_buf += ' '; i += 2;
-            } else { ctx->result_buf += s[i]; i++; }
-        }
+        core_bpe::unicode_to_bytes(ctx->vocab[tok], ctx->result_buf);
     }
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();

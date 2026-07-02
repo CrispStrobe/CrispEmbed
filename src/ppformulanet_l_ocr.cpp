@@ -9,6 +9,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/bpe.h"
 #include "core/gguf_loader.h"
 #include "core/cpu_ops.h"
 
@@ -882,20 +883,12 @@ static std::vector<int> greedy_decode(ppformulanet_l_ocr_context* ctx) {
 
 // Detokenize: concatenate vocab strings, replacing GPT-2 BPE Ġ (U+0120) with space
 static void detokenize(ppformulanet_l_ocr_context* ctx, const std::vector<int>& tokens) {
+    // GPT-2 byte-level BPE detok via the shared core_bpe decoder (inverse of
+    // byte_encoder(): "Ġ" -> space, "Ċ" -> newline, all bytes).
     ctx->result_buf.clear();
     for (int tok : tokens) {
         if (tok < 0 || tok >= (int)ctx->vocab.size()) continue;
-        const auto& s = ctx->vocab[tok];
-        for (size_t i = 0; i < s.size(); ) {
-            if (i + 1 < s.size() &&
-                (unsigned char)s[i] == 0xC4 && (unsigned char)s[i+1] == 0xA0) {
-                ctx->result_buf += ' ';
-                i += 2;
-            } else {
-                ctx->result_buf += s[i];
-                i++;
-            }
-        }
+        core_bpe::unicode_to_bytes(ctx->vocab[tok], ctx->result_buf);
     }
 }
 
