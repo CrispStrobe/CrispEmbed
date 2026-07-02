@@ -87,6 +87,36 @@ class TestEncoderBatchParity(unittest.TestCase):
 
 
 @unittest.skipUnless(HAVE_MODEL, "set CRISPEMBED_ENCODER_MODEL")
+class TestEncoder4DBatchParity(unittest.TestCase):
+    """Rectangular 4D per-item-mask batch (CRISPEMBED_ENCODER_4D=1): sequences kept
+    as separate 4D batch items padded to T_max, per-item padding mask. Attention is
+    O(B·T²) (vs packing's O((B·T)²)) — the recommended throughput path. Must be
+    bit-parity with per-sequence encoding (padded keys masked to −inf; padded query
+    rows discarded in pooling)."""
+
+    def _parity(self, group):
+        m = _load()
+        os.environ.pop("CRISPEMBED_ENCODER_PACKED", None)
+        os.environ.pop("CRISPEMBED_ENCODER_4D", None)
+        ref = np.asarray(m.encode(TEXTS))
+        os.environ["CRISPEMBED_ENCODER_4D"] = "1"
+        os.environ["CRISPEMBED_ENCODER_4D_GROUP"] = str(group)
+        got = np.asarray(m.encode(TEXTS))
+        self.assertEqual(ref.shape, got.shape)
+        worst = min(cosine(ref[i], got[i]) for i in range(len(TEXTS)))
+        print(f"  4D group={group}: worst cos(4D, sequential) = {worst:.7f}")
+        self.assertGreaterEqual(worst, 0.9999)
+
+    def test_parity_single_group(self):
+        # Large group -> all texts padded together in one 4D graph.
+        self._parity(group=100)
+
+    def test_parity_multi_group(self):
+        # Small group -> length-sorted, multiple padded chunks + single-item groups.
+        self._parity(group=2)
+
+
+@unittest.skipUnless(HAVE_MODEL, "set CRISPEMBED_ENCODER_MODEL")
 class TestEncoderBatchThroughput(unittest.TestCase):
     """Informational only (no assertion) — packing is backend/size dependent."""
 
