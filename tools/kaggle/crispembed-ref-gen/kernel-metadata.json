@@ -1,5 +1,5 @@
 {
-  "id": "chr1s4/crispembed-ref-gen",
+  "id": "chr1s4/crispembed-reference-generation-batch",
   "title": "CrispEmbed Reference Generation Batch",
   "code_file": "crispembed_ref_gen.py",
   "language": "python",
@@ -9,7 +9,10 @@
   "enable_tpu": "false",
   "enable_internet": "true",
   "competition_sources": [],
-  "dataset_sources": ["chr1s4/crispasr-hf-token", "chr1s4/crispembed-ccache"],
+  "dataset_sources": [
+    "chr1s4/crispasr-hf-token",
+    "chr1s4/crispembed-ccache"
+  ],
   "kernel_sources": [],
   "model_sources": []
 }
