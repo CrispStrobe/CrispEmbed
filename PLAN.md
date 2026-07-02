@@ -288,8 +288,15 @@ code expression is. Never read/paste unpaper's code into ours.
   edge shadow visually with **no CER regression** (shadow 0.071, hspeckle 0.030,
   uneven 0.007 — no misfire on text), and the guard holds where unpaper produced
   CER 1.000. `p.blackfilter` (default on), `p.blackfilter_thresh` (0.20).
-- [ ] **3. deskew sheet-background fill** — fill rotation corners with the detected
-  paper color instead of the gray wedges the current deskew leaves.
+- [x] **3. deskew sheet-background fill — DONE (already correct; no functional
+  change).** Investigated: `scan_cleanup_rotate` already fills corners with pure
+  white (1.0), and the earlier gray-wedge symptom was actually caused by the
+  pre-fix whitening OPENING, resolved by the closing fix (6fdd1b5). A/B image
+  inspection confirms deskew now yields clean white corners (skew CER 1.000 →
+  0.030). Tried the "detected paper-gray fill" idea — it REGRESSED (visible gray
+  wedges at corner boundaries after whitening; CER unchanged so only the image
+  caught it), so reverted. Pure-white fill is the robust choice (1.0 = max, can't
+  brighten → stays uniform through whitening); documented in-code.
 - [ ] **4. grayfilter / blurfilter** — clear faint gray haze / light smudges to white.
 - [ ] **5. 2-up page splitting (layout detection)** — split double-page book spreads
   into two pages (biggest strategic win for book scans; we have nothing).
