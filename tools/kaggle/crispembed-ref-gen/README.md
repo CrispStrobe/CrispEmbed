@@ -29,13 +29,14 @@ python -m kaggle kernels push -p .
 python -m kaggle kernels status chr1s4/crispembed-ref-gen
 ```
 
-## Engine coverage
-- **Enabled (HF-loadable sources):** gliner, lilt, lfm2, lfm2_colbert, layout.
-- **Needs a `.pth` URL** (set `PTH_URLS` in the script — docs give only the GitHub
-  repo, not the exact release asset, so they're left blank rather than guessed):
-  esrgan (xinntao/Real-ESRGAN realesr-general-x4v3), safmn (sunny2109/SAFMN),
-  nafnet (megvii-research/NAFNet NAFNet-SIDD-width32).
-- **bert_ner:** no `tools/dump_bert_ner_reference.py` exists — write one first.
+## Engine coverage (all sources found + wired 2026-07)
+- **HF model id** (dumper loads directly): gliner, lilt, lfm2, lfm2_colbert, layout.
+- **HF-hosted `.pth`** (`hf_hub_download`):
+  - safmn → `Meloo/SAFMN` / `SAFMN_DF2K_x4.pth` (author's mirror)
+  - nafnet → `mikestealth/nafnet-models` / `NAFNet-SIDD-width32.pth`
+- **Release URL** (`wget`):
+  - esrgan → `github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-animevideov3.pth`
+- **bert_ner:** no `tools/dump_bert_ner_reference.py` exists — write one first (not in this batch).
 
 ## After refs land on HF
 Add a `diff_only` entry per engine to `tests/regression/manifest.json` (mirror the
