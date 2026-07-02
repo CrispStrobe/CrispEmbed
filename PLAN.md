@@ -826,9 +826,18 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
 - **Kaggle ref-gen kernel drift (investigated 2026-07, run v8):** the batch re-runs pre-closed
   engines too; findings — **lfm2 = ok** (was a FALSE verify_failed: it prints `PASS: 20 FAIL: 0`
   which tripped the kernel's `"FAIL" in out` heuristic; fixed to accept `fail: 0`). **lfm2_colbert =
-  cos 0.57 on CUDA** (0.998 on CPU/Metal) — a REAL CUDA bug in the ColBERT multivec tail (base lfm2
-  passes 20/20 on the same CUDA); handover `handover-prompts/lfm2-colbert-cuda-multivec-divergence.md`
-  — note the wired guardrail (0.99) would fail on CUDA CI. **lilt** = FALSE verify_failed (encoder
+  cos 0.57 on CUDA** (0.998 on CPU/Metal) — a REAL CUDA bug. Localizer (LFM2_COLBERT_DIFF_REF on
+  P100) shows the backbone `cur` itself is corrupted (hidden cos −0.70) in the ColBERT graph while
+  the identical dense-graph backbone passes 20/20 on the same CUDA → a compute-time divergence.
+  FIRST FIX ATTEMPT DISPROVEN: `hidden=ggml_cont(cur)` (set_output-on-live-intermediate theory) gave
+  byte-identical CUDA numbers (set_output can't change computed values) — reverted. Real cause is
+  graph-structural (extra projection output / `sched_reserve` / shared `ctx->sched` between the
+  dense and colbert paths); needs per-layer CUDA localization. Handover updated
+  `handover-prompts/lfm2-colbert-cuda-multivec-divergence.md`. **NOTE the wired 0.99 guardrail would
+  fail on CUDA CI** until fixed. (Also: a codebase-wide sweep found ~9 engines with the same
+  set_output-on-live-intermediate pattern — got_ocr/glm_ocr/internvl2/qwen2vl/math_ocr/pcs — but
+  since that pattern was REFUTED as lfm2_colbert's cause, they are NOT confirmed bugs; do not
+  mass-apply a cont fix.) **lilt** = FALSE verify_failed (encoder
   6 PASS/0 FAIL; the "Label match 0/16" untrained-head red herring trips the harness exit + kernel
   heuristic). **layout** = dump_failed on `RTDetrV2 embed_dim 256 not divisible by num_heads 12`
   (model-config, not transformers-version). **gliner** = known dead reference. All of these have LIVE
