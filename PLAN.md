@@ -298,6 +298,32 @@ have no compiled diff test; add one (or wire the Python parity into CI). **text_
 blocked (no public checkpoint). **tps_locnet/tps_warp, pcs, fireredpunc,
 bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
 
+**Trace outcomes (local, 2026-07 — empirical, disambiguated):**
+- **lilt — CLEAN, CLOSED.** 24/24 encoder stages cos 1.000000; ref uploaded to
+  `cstr/lilt-base-GGUF`, wired `diff_only`. (The harness's "Label match 0/16" is a red
+  herring — base checkpoint ships an untrained classifier head.) Not a regression.
+- **lfm2 — CLEAN, CLOSED.** 20/20 stages cos ≥0.9997; ref uploaded to `cstr/lfm2-embed-GGUF`,
+  wired. Blocker was a dumper bug (duplicate `general.architecture` key), now fixed. Not a regression.
+- **layout — REGRESSION.** Encoder craters (`s3` cos −0.146…`dec_0_cross` −0.344; early
+  stages cos 1.0). Wave `dc0861b` (flash_attn_ext). Handover:
+  `handover-prompts/layout-detect-encoder-regression-fix.md`. (2 agents assigned.)
+- **nafnet — output cos 0.538, NOT yet disambiguated** (engine vs stale dumper). Handover:
+  `handover-prompts/nafnet-denoise-output-mismatch-fix.md`. New `test-nafnet-diff` added.
+- **gliner — NOT a regression** (pre-wave, verified cos 1.0 06-13). Local ref-gen blocked by a
+  `gliner`-pkg ↔ transformers conflict (`TFPreTrainedModel` removed in current transformers).
+  Fixed 2 dumper VPS-path bugs (`--cache-dir` default, `tempfile.mkdtemp(dir=/mnt/volume1)`);
+  generate the ref on Kaggle (older transformers) or a pinned venv, then upload+wire.
+- **lfm2_colbert — NOT a regression** (pre-wave). `dump_lfm2_colbert_reference.py` assumes a
+  top-level `model.safetensors`, but LFM2.5-ColBERT keeps the backbone in the base model (the
+  repo has only `1_Dense/` + custom code). Dumper needs reworking to load the base transformer
+  + the Dense head before a ref can be generated.
+- **bert_ner — no dumper exists.** Write `tools/dump_bert_ner_reference.py` (mirrors the BERT
+  encoder; pre-wave, not a regression), then generate+upload+wire.
+
+Net: SR/restoration (11) + esrgan/safmn + lilt + lfm2 auto-guarded. Two NEW wave regressions
+found by tracing (layout, nafnet) — handovers written. Remaining ref-gen (gliner, lfm2_colbert,
+bert_ner) is blocked on env/dumper reworks, NOT engine defects.
+
 ### OCR engine correctness/stability fixes (2026-06-30, issue #25)
 
 Found while integrating the OCR engines downstream (BiblioForge). macOS arm64,
