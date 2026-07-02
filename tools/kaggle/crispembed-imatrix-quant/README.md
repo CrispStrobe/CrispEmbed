@@ -28,14 +28,14 @@ Uses `kaggle_harness` (kh): `init_progress` (JSONL progress pushed to HF),
 `install_build_toolchain` + ccache warmed from the `crispasr-ccache` dataset, and
 `build_heartbeat` (30 s) around every long step so the kernel never idles out.
 
-Runs under the **chr1s4** account (CrispEmbed convention; it owns both datasets —
+Runs under the **chr1str** account (CrispEmbed convention; it owns both datasets —
 cross-account attach is blocked, see kaggle_usage.md #13). Attaches **both**
-(in `kernel-metadata.json`): `chr1s4/crispasr-hf-token` (token) and
-`chr1s4/crispasr-ccache` (ccache seed — warms the shared ggml-cuda build).
+(in `kernel-metadata.json`): `chr1str/crispasr-hf-token` (token) and
+`chr1str/crispasr-ccache` (ccache seed — warms the shared ggml-cuda build).
 GPU build by default (`enable_gpu:true`, `-DGGML_CUDA=ON`; set `CRISP_GPU=0` to
 force CPU). `kaggle_harness.py` is bundled (also cloned from CrispASR at runtime).
 
-Push (default token is chr1s4):
+Push (chr1str is the active CLI account):
 ```
 cd tools/kaggle/crispembed-imatrix-quant && python -m kaggle kernels push -p .
 ```
