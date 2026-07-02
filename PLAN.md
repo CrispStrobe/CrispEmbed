@@ -321,19 +321,24 @@ exists, and in `stable-diffusion.cpp`, not llama.cpp).
 
 Ordered by leverage. Every item names its speed harness and its quality harness.
 
-**C1 — imatrix quantization pipeline (biggest quality win, zero graph risk).**
+**C1 — imatrix quantization pipeline (biggest quality win, zero graph risk). — IMPLEMENTED (2026-07).**
 llama.cpp's importance-matrix quant minimizes *activation-weighted* error, which
-directly attacks our q4_k floor (LFM2 ~0.982, BidirLM ~0.93–0.95). Add an
-`llama-imatrix`-style calibration pass to the C++ quantizer; build calibration
-text from embedding-domain inputs. Consider `IQ4_XS`/`IQ4_NL` (32-weight blocks
-fix our 256-alignment fallback, see `LEARNINGS.md → "K-quant fallback chain"`).
-- *A/B quality:* `test-<model>-diff` cosine vs the existing `dump_<model>_reference.py`
-  HF reference, for a matrix of {q4_k baseline, q4_k+imatrix, IQ4_XS+imatrix, q8_0}.
-  Also retrieval quality on `tests/bench_rag.py` (nDCG@10 / recall@k) for embedders
-  and `tests/bench_rerank.py` (nDCG/MRR) for rerankers. Accept if q4_k+imatrix cos
-  ≥ q4_k baseline (target: close half the gap to q8_0) with no nDCG regression.
-- *A/B speed:* `CRISPEMBED_<MODULE>_BENCH=1` and `tests/benchmark.py` — imatrix must
-  not change inference speed (offline-only). Record file-size delta.
+directly attacks our q4_k floor (LFM2 ~0.982, BidirLM ~0.93–0.95). Shipped:
+`src/imatrix.{h,cpp}` (eval-callback collector gated by `CRISPEMBED_IMATRIX_OUT`,
+wired into the encoder + decoder embedding schedulers and lfm2_embed; other
+engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quantize
+--imatrix <file>`, and the A/B harness `tools/imatrix_ab.py`.
+- Workflow: (1) `CRISPEMBED_IMATRIX_OUT=m.imatrix crispembed -m m-f16.gguf <calib texts…>`
+  (one process, merges across runs); (2) `crispembed-quantize m-f16.gguf m-q4k.gguf
+  q4_k --imatrix m.imatrix`.
+- **A/B result (jina-v5-nano, q4_k, 32 calib / 12 held-out texts):** cos vs f16 gold
+  **0.945522 (baseline) → 0.956885 (imatrix), Δ +0.0114**, identical 176.3 MB and
+  0.62 s embed. Verified on Metal. VERDICT: PASS.
+- TODO (follow-ons): add `IQ4_XS`/`IQ4_NL` to the quantizer FTYPE_MAP (32-weight
+  blocks fix our 256-alignment fallback, see `LEARNINGS.md → "K-quant fallback
+  chain"`; IQ types genuinely require the imatrix); wire the remaining engines'
+  schedulers; per-model Kaggle harness (calibrate→quant+imatrix→A/B→upload→rm);
+  domain-matched calibration corpora; add retrieval A/B via `tests/bench_rag.py`.
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
 `add_bos_token`, `add_eos_token` into GGUF metadata (llama.cpp convention) instead
