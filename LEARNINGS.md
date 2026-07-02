@@ -79,14 +79,16 @@ Metal and CPU. Result: the wave broke **well more than the 3 known** engines —
 both-backend, and every one slipped the automated guards. Only looking at the
 actual output (rendered pixels / read transcript) caught them:
 
-- **restormer — garbage output, both backends.** `restormer-denoise-f16` on a
-  clean image emits blocky rainbow noise (mean 147 / std 120 vs a clean ~242),
+- **restormer — garbage output, both backends. [RESOLVED 2026-07 — see the
+  dedicated section at the top of this file.]** `restormer-denoise-f16` on a
+  clean image emitted blocky rainbow noise (mean 147 / std 120 vs a clean ~242),
   **bit-identical on Metal and CPU** → a both-backend `ggml_conv_2d` conversion
-  bug (not the usual Metal-only failure mode). Garbage blocks align with the
-  128px tiling; the suspect is the per-conv weight-reshape heuristic in
-  `rst_conv2d_ggml` (`src/restormer.cpp:707-724`) / transposed-conv path that
-  `ab3e278`/`bf26905` were still patching. A/B gate exists: `RESTORMER_SCALAR=1`
-  (old scalar path) at `src/restormer.cpp:770`.
+  bug (not the usual Metal-only failure mode). The garbage aligned with the 128px
+  tiling. Correct call on the site (`rst_conv2d_ggml` weight-reshape heuristic),
+  wrong scope: the reshape was scrambled for **every** conv (not a
+  transposed-conv edge case), so `RESTORMER_SCALAR=1` was *not* a clean reference
+  either — the U-Net convs run through ggml in both modes. Also a second bug in
+  the ggml MDTA block graph (fake single-head attention, no temperature). Fixed.
 - **paddleocr-vl — SIGSEGV, both backends.** `paddleocr-vl-0.9b` loads via the
   shared **`qwen2vl_ocr`** engine (vision 27L merge=2, llm 18L, **16/2 GQA =
   8:1**) then crashes `EXC_BAD_ACCESS` in `_platform_memmove` during forward —
@@ -174,7 +176,7 @@ lightonocr decodes correctly both backends (minor cosmetic `ĠĊ` BPE-marker lea
 
 **Verified CLEAN, both backends (no regression):** SR per-stage diff —
 swinir, dat (scalar + `DAT_SR_GGML_CONV`), hat, pan, tbsrn, adair, scunet,
-instructir; output+Metal==CPU — safmn, esrgan, (restormer is the exception);
+instructir; output+Metal==CPU — safmn, esrgan, restormer (now fixed, CPU==Metal);
 OCR — got-ocr2 (full 20-stage diff, cer 0.000), internvl2, lightonocr.
 **nafnet_denoise = coverage gap** (no diff harness, no standalone CLI output —
 only reachable via the `--denoise` OCR pipeline).
@@ -190,12 +192,14 @@ both fail. That's a **converter/packaging bug** (re-embed the tokenizer), separa
 from the ggml wave; `expected_text` was `null` so granite OCR was likely never
 validated end-to-end.
 
-**Fix notes.** restormer's fix is a **3-site weight-layout unification** (load-time
-pre-permute + `rst_prep_w` + `rst_conv2d_ggml`), not a one-liner — a single-site
-fix compiles but aborts on the oddly-flattened `qkv_dw` weight (`ne=[432,3]`); see
-`handover-prompts/restormer-ggml-conv-weight-permute-fix.md`. paddleocr + qwen2vl
-fixes need per-stage references generated from the torch dumpers; handovers in
-`handover-prompts/{paddleocr-vl-sigsegv,restormer-ggml-conv-weight-permute}-fix.md`.
+**Fix notes.** restormer is **DONE** (see the RESOLVED section at the top): the
+"3-site weight-layout unification" framing was a red herring — the converter
+stores conv weights raw as numpy `(OC,IC,KH,KW)`, so the correct kernel is a
+*plain* reshape of the contiguous bytes to ggml `[KW,KH,IC,OC]` at each site (no
+permute/transpose), and the load-time pre-permute was deleted outright. paddleocr
++ qwen2vl are also fixed (see their own RESOLVED sections / HISTORY). The
+`ne=[432,3]` abort was self-inflicted by a half-applied fix, not a real second
+weight bug; the real second bug was the ggml MDTA block graph.
 
 **HF download gotcha (this box, 2026-07):** the `huggingface_hub` client wedged on
 the Xet CDN (`cas-bridge.xethub.hf.co`) with 10s read-timeouts even with
