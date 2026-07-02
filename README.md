@@ -311,6 +311,15 @@ orchestrator:
 # Tunables (defaults match the model card): UOCR_NO_REPEAT_NGRAM, UOCR_NGRAM_WINDOW
 ```
 
+The unified `--ocr FILE` path also auto-detects `unlimited-ocr` from the GGUF
+metadata and runs it whole-image (no region cropping) — appropriate since the
+model does its own layout grounding. The prompt and `no_repeat_ngram` decode
+config are applied by the engine on every entry path:
+
+```bash
+./build/crispembed -m unlimited-ocr-q4_k.gguf --ocr document.png
+```
+
 VLM engines ingest the original image and letterbox internally, so the pipeline
 skips scan-cleanup (deskew/crop/whiten) for them — cleaning the input distorts
 the page and shifts content out of the vision grid.
