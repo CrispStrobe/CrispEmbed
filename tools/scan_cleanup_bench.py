@@ -7,6 +7,12 @@ battery of realistic scan degradations (the artifacts each tool targets), runs
 each tool, and reports OCR CER vs. the ground truth — plus a clean|degraded|
 CrispEmbed|unpaper contact sheet per degradation for human + visual-model review.
 
+Do-no-harm guard (a preprocessor must never make OCR worse): --fail-on-harm exits
+1 if any case's cleanup CER exceeds the degraded input's by more than --eps. A
+--baseline JSON + --check-baseline additionally catches regressions where cleanup
+is worse than a known-good build even if it still beats the degraded input (e.g.
+the darkvignette black-smear, whose CER was below the very-degraded input's).
+
 Requires: miniconda python (PIL, numpy, pytesseract), a crispembed binary, and
 unpaper on PATH (optional — skipped if absent).
 
@@ -171,6 +177,14 @@ def main():
     ap.add_argument("--seed", type=int, default=3)
     ap.add_argument("--gt-text", help="ground-truth text file (default: tesseract on the clean page)")
     ap.add_argument("--no-unpaper", action="store_true")
+    ap.add_argument("--fail-on-harm", action="store_true",
+                    help="exit 1 if cleanup makes any case worse than the degraded input "
+                         "(cleanup CER > degraded CER + --eps): a preprocessor must not harm OCR")
+    ap.add_argument("--baseline", help="JSON of {degradation: expected cleanup CER}. With "
+                    "--check-baseline, fail if any cleanup CER exceeds baseline+eps (catches "
+                    "regressions even where cleanup still beats the degraded input); else written.")
+    ap.add_argument("--check-baseline", action="store_true", help="assert against --baseline (exit 1 on regress)")
+    ap.add_argument("--eps", type=float, default=0.03, help="CER tolerance for the guards (default 0.03)")
     args = ap.parse_args()
     if pytesseract is None:
         sys.exit("pytesseract required (miniconda python)")
@@ -222,6 +236,39 @@ def main():
         print(f"{name:12} {c_deg:9.3f} {c_cc:11.3f} {c_up:9.3f}   {win}")
 
     print(f"\nsheets + images in {args.out_dir}/ (panels: clean | degraded | crispembed | unpaper)")
+
+    failures = []
+
+    # do-no-harm: cleanup must never make a case worse than the degraded input.
+    if args.fail_on_harm:
+        for name, c_deg, c_cc, c_up, _ in rows:
+            if c_cc == c_cc and c_cc > c_deg + args.eps:
+                failures.append(f"HARM {name}: cleanup {c_cc:.3f} > degraded {c_deg:.3f} (+{args.eps})")
+
+    # baseline regression: catches a worse cleanup even when it still beats the
+    # degraded input (e.g. the darkvignette black-smear, which was < degraded CER).
+    if args.baseline:
+        import json
+        cur = {name: c_cc for name, _, c_cc, _, _ in rows if c_cc == c_cc}
+        if args.check_baseline and os.path.exists(args.baseline):
+            base = json.load(open(args.baseline))
+            for name, cc in cur.items():
+                if name in base and cc > base[name] + args.eps:
+                    failures.append(f"REGRESS {name}: cleanup {cc:.3f} > baseline {base[name]:.3f} (+{args.eps})")
+            for name in base:
+                if name not in cur:
+                    failures.append(f"REGRESS {name}: missing from this run")
+        else:
+            json.dump(cur, open(args.baseline, "w"), indent=2, sort_keys=True)
+            print(f"wrote baseline: {args.baseline}")
+
+    if failures:
+        print("\nFAILED do-no-harm / baseline guard:")
+        for f in failures:
+            print("  " + f)
+        sys.exit(1)
+    if args.fail_on_harm or args.check_baseline:
+        print("\nOK: no-harm / baseline guard passed")
 
 
 if __name__ == "__main__":
