@@ -1414,6 +1414,141 @@ were essential for diagnosing the PRE-LN bug. Gate them behind
 `getenv("PPFN_DEBUG")` rather than deleting. The crispembed-diff harness only
 validates the encoder — decoder bugs require manual layer-by-layer tracing.
 
+## llama.cpp implementation reference — what to borrow (2026-07)
+
+Audit of `ggml-org/llama.cpp` @ ~`4fc4ec5` (July 2026). The support matrix and the
+A/B-gated convergence backlog live in `PLAN.md → "llama.cpp parity, convergence &
+A/B plan"`. This section is the technical deep-dive behind those steps. Verify any
+file:line against the pinned ggml submodule before trusting it — upstream drifts.
+
+### How llama.cpp structures encoders (one graph, GGUF-driven)
+
+BERT / RoBERTa / XLM-R / NomicBERT / Nomic-MoE all share **one** builder
+(`src/models/bert.cpp`); behavior is selected from GGUF metadata written at
+convert time: `pooling_type`, `causal_attention=false` (→ bidirectional, no KV
+cache, `build_attn_inp_no_cache`), RoPE presence, `moe_every_n_layers`. **Lesson:
+make behavior data-driven in the GGUF, not hardcoded in the dispatcher** (our
+`PLAN.md` C2 step). ModernBERT adds symmetric sliding-window attention
+(`swa_type`, `set_swa_pattern`) + per-layer RoPE θ (global vs `rope_freq_base_
+train_swa`) — a clean reference if we ever add it.
+
+### Pooling & the RANK (reranker) head
+
+`build_pooling()` (`src/llama-graph.cpp`) runs only when `cparams.embeddings`:
+- NONE = pass-through per-token (late-interaction/ColBERT consumers pool client-side);
+  MEAN = matmul with a normalized averaging matrix; CLS/LAST = `ggml_get_rows` of
+  first/last token index.
+- **RANK** = pooled vector → `cls` matmul(+b) → activation → optional `cls_norm`
+  LayerNorm → `cls_out` matmul(+b). The activation is **GELU for ModernBERT, tanh
+  otherwise**; ModernBERT pools MEAN, others CLS; Qwen3 rerankers softmax + LAST.
+  Worth diffing against our reranker heads (cf. `LEARNINGS.md → "GELU variant
+  matters for token classification"`).
+- Qwen3-Embedding is trained **causal** (last-token/EOS pooling) — llama.cpp runs
+  it causal and is *correct*. EmbeddingGemma and the LFM2.5 retrievers are
+  bidirectional. Don't assume "decoder embedder ⇒ force non-causal".
+
+### LFM2 ShortConv rides ggml_ssm_conv
+
+LFM2 (`lfm2`, PR #14620) implements the short-conv block on the SSM path:
+`in_proj` (3× expand) → chunk into 3 → causal shift → gated depthwise Conv1d
+(kernel=3) → `out_proj`. Tensors `blk.N.shortconv.{in_proj,conv,out_proj}`; the
+**conv weight stays F32** (special quant handling) — matches our own F32-cast
+requirement for `ggml_mul` src[1] on Metal (see CLAUDE.md LFM2 note). If our LFM2
+engine hand-rolls the conv, moving to `ggml_ssm_conv` gets better Metal kernel
+coverage. Constraint: conv/recurrent state can't be partially erased, so KV/prefix
+reuse must copy whole prefixes (upstream #19041) — relevant to `PLAN.md` C4.
+
+### Qwen3-VL DeepStack + IMROPE = a reference for BidirLM-Omni
+
+`tools/mtmd/models/qwen3vl.cpp` builds DeepStack exactly like our BidirLM-Omni
+injection: per selected level, tensors `v.deepstack.%d.{norm,fc1,fc2}` →
+reshape `[n_embd*merge, n_pos/merge, batch]` → norm → GELU-FFN → `ggml_concat`
+across levels → concat onto the merger; final mmproj dim = base × (1 +
+n_deepstack). Vision position encoding is **IMROPE** (interleaved M-RoPE) — the
+same family we pin per-token (`pos_e = pos_t`) in `decoder_embed.cpp` (see CLAUDE.md
+IMROPE landmine). This is a directly comparable implementation to diff our
+DeepStack/MRoPE against. Distinguish from the **generic feature-layer concat**
+(Granite/Gemma4: `clip.vision.feature_layer`, concatenates chosen intermediate
+hidden states) — that's additive-vs-selective, two different mechanisms.
+
+### mtmd image preprocessing internals (the Qwen2VLImageProcessor reference)
+
+All preprocessing is C++ in `tools/mtmd/mtmd-image.cpp` (`struct img_tool`):
+- Kernels: `resize_bilinear`, `resize_bicubic` (Catmull-Rom), and
+  **`resize_bicubic_pillow`** — separable, precomputed coefficients, fixed-point
+  `PRECISION_BITS=22`, filter **`a=-0.5`** (PIL-exact). In-code comment warns
+  **GGML/PyTorch use `a=-0.75`** — this parity gotcha is very likely our observed
+  sub-pixel resize residual (cos 0.999984). Test both when porting.
+- `calc_size_preserved_ratio(inp, align_size, min_px, max_px)` = transformers
+  `smart_resize`; `align_size = patch_size * n_merge`; `beta = sqrt(H*W/max_px)`
+  rescales to the pixel budget. Budgets from `image_{min,max}_pixels` GGUF keys.
+- `mtmd_image_preprocessor_llava_uhd`: `select_best_resolution` against
+  `image_grid_pinpoints` (LLaVA-Next/Granite) or MiniCPM dynamic grid; per-model
+  subclasses `_lfm2/_idefics3/_internvl/_granite/_deepseekocr`.
+- Normalize: `(px - mean[c]) / std[c]` after u8→[0,1], mean/std from GGUF.
+- Media injection: single `<__media__>` marker; `mtmd_tokenize` splits into
+  TEXT/IMAGE chunks, wraps with begin/end vision tokens, emits grid nx/ny + pos
+  type (NORMAL/MROPE/HUNYUANVL).
+
+**Do not link libmtmd** — it PUBLIC-links all of `llama` and is oriented around
+feeding a llama decoder. Align on formats (`mmproj-*.gguf` keys, `<__media__>`),
+use the file as a spec, keep our own implementation. (Its resize is itself not yet
+HF-byte-exact — open #16842/#17345/#17801.)
+
+### imatrix quantization — the fix for our q4_k floor
+
+The single highest-leverage quality lever, and offline-only (no graph risk).
+`llama-imatrix` collects per-column sum-of-squared-activations (importance) over a
+calibration corpus; `llama-quantize --imatrix` then minimizes **activation-
+weighted** L2 error instead of unweighted, steering bits to weights actually
+exercised (typ. 10–30% ppl reduction, largest at 2–4 bpw). Build the calibration
+set from text resembling embedding-domain inputs. `IQ4_XS` (~4.46 bpw) needs a
+good imatrix but is smaller/faster than `Q4_K_M`; `IQ4_NL` uses 32-weight blocks —
+useful for our 256-alignment fallback (see `## Quantization notes → K-quant
+fallback chain`, which currently drops small-dim tensors to Q4_0). MXFP4/ternary
+are model-specific (FP4-trained / BitNet-QAT), not general q4 replacements. This
+should lift LFM2 (~0.982) and BidirLM (~0.93–0.95) toward their q8_0 floor.
+
+### Metal mul_mm F16 kernel selection (why set_prec doesn't help)
+
+`ggml/src/ggml-metal/` picks the matmul kernel by **operand type + shape**, never
+a precision flag: `mul_mv` (vector, small `ne11`) vs **`mul_mm` (simdgroup GEMM)
+when `ne11 > 8`**. `mul_mm` casts activations to half → values >65504 → Inf/NaN
+(our ×12 image-embed overflow). `ggml_mul_mat_set_prec(GGML_PREC_F32)` is a no-op
+for Metal GEMM (only consulted for `flash_attn_ext`). Fix = scale ×1/256 before,
+×256 after (memory `metal-mul-mm-f16-overflow`); same bug class on Vulkan (#18969).
+Diagnostic: NaN only with many tokens, clean single-token ⇒ you're on `mul_mm`.
+Confirm Metal is active (not CPU fallback): stderr `using embedded metal library`
++ `using device Metal`.
+
+### Flash attention contract (cross-ref)
+
+See `## ggml_flash_attn_ext accepts non-contiguous Q/K/V` and memory
+`flashattn-ext-already-permutes`: output is `[hd, nh, T]` — already permuted —
+reshape directly, **never** add a trailing `permute(0,2,1,3)` (that was the
+`6027b56` RT-DETR crater). GQA: `n_head % n_head_kv == 0`, don't repeat K/V
+(broadcast is internal). Pad the mask token dim to `GGML_KQ_MASK_PAD` (64 on
+master, historically 32; verify against pinned ggml); padded rows must be `-INF`.
+
+### GGUF / tokenizer conventions to align with (cross-ref)
+
+See `## llama.cpp GGUF ≠ CrispEmbed GGUF`. Additionally: honor `general.alignment`
+(default **32**), namespaced `{arch}.*` hparams, and tokenizer behavior flags
+`add_bos_token`/`add_eos_token` (encode our LFM2 BOS-only rule as data, not code).
+Use the `mmproj-*.gguf` sidecar convention for vision projectors so downstream
+tooling recognizes them. (Landmine reminder: read every metadata string/array
+*before* `gguf_free`.)
+
+### What llama.cpp does NOT have that we do (differentiation)
+
+MPNet, GTE-v1.5 (`NewModel`), DeBERTa-v2, SPLADE, bge-m3 sparse+ColBERT tri-head,
+standalone CLIP/SigLIP text **and** image embeddings, GOT-OCR2, all specialized
+math OCR (pix2tex/TrOCR/HMER/BTTR/PosFormer/MixTex/PP-FormulaNet/PARSeq/Tesseract/
+Pix2Struct), and the entire face / detection-layout / NER-KIE / LID / punctuation
+/ image-restoration surface. Only ESRGAN/RRDBNet exists in ggml (via
+`stable-diffusion.cpp`), not the other SR models. These are genuine moat — keep
+their guardrails green.
+
 ## Quantization notes
 
 ### Python gguf vs C++ quantizer
