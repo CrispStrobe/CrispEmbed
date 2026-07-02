@@ -46,12 +46,16 @@ jobs:
         # No submodules: the format scope never touches ggml/, so skip the
         # (slow) recursive checkout.
 
-      - name: Install clang-format-18
+      - name: Install clang-format 18.1.8 (pinned)
+        # Pin the EXACT patch via pip, not apt: ubuntu's `clang-format-18` is
+        # 18.1.3, which wraps a few long lines differently from the 18.1.8 that
+        # macOS `brew install llvm@18` provides — so an apt-based check rejects a
+        # brew-formatted tree (and vice-versa). The pip package ships the same
+        # 18.1.8 binary on Linux and macOS, so CI and local agree exactly.
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends clang-format-18
-          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-18 100
-          clang-format --version
+          python3 -m pip install --quiet --user 'clang-format==18.1.8'
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/clang-format" --version
 
       - name: Check formatting (tools/format.sh --check)
         # Single source of truth for scope + version pinning. Exits non-zero and
