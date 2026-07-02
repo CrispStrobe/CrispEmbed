@@ -1,5 +1,5 @@
 {
-  "id": "chr1s4/crispembed-imatrix-quant",
+  "id": "chr1str/crispembed-imatrix-quant",
   "title": "crispembed-imatrix-quant",
   "code_file": "imatrix_quant.py",
   "language": "python",
@@ -8,7 +8,7 @@
   "enable_gpu": "true",
   "enable_internet": "true",
   "competition_sources": [],
-  "dataset_sources": ["chr1s4/crispasr-hf-token", "chr1s4/crispasr-ccache"],
+  "dataset_sources": ["chr1str/crispasr-hf-token", "chr1str/crispasr-ccache"],
   "kernel_sources": [],
   "model_sources": []
 }
