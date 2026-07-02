@@ -4,6 +4,35 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 2, 2026 — DeepSeek-OCR-2: perf-sweep regression fixed (restore c58913c), + mandatory A/B rule
+
+deepseek_ocr2 OCR produced garbled output (`章的 flix Bailly …` / `&# &#`
+repetition) on **both** Metal and CPU (byte-identical, deterministic) — even on
+the recovered character-perfect Jun-19 q4_k. Ruled out: my edits, Metal (CPU
+matches), the q4_k data, ggml (SHA unchanged), the converter (unchanged). A
+git-bisect over `src/deepseek_ocr2.cpp` (`38e3801..e803e9f`) pinned it to the
+**Jun-20 "perf sweep"**, which introduced MULTIPLE regressions with **no env gate
+and no A/B test**: `c75b95d` swapped the Qwen2 vision-encoder's manual masked GQA
+attention for `ggml_flash_attn_ext` (mishandles the custom bidirectional mask →
+garbled vision); the flash_attn-LLM / persistent-decode commits added a decode
+repetition-degeneration (HF `infer()` uses `no_repeat_ngram_size=20`; the greedy
+decoder had none). The last-fully-good commit is **`c58913c`** (Jun-19) — *after*
+the ~15× Metal vision-graph speedups yet *before* the regressions.
+
+**Fix (Option A): restore `deepseek_ocr2.cpp` to `c58913c`** — reverts the
+regressing perf commits while keeping the Metal vision speedups. Verified on M4
+Metal at q4_k (Jun-19 model, rev `a465ab6cf4b5`): fox.png → "The quick brown fox
+jumps over the lazy dog. 12345"; a 6-line document page → verbatim. Recovered the
+character-perfect q4_k from HF commit history (`resolve/<rev>/…`) after the HF
+f16/q4_k were clobbered by a bad 04:00 reconvert. Added a `deepseek-ocr2`
+regression-manifest entry (rev-pinned) — the model had zero regression coverage,
+which is why the broken default shipped unseen. The reverted perf paths must be
+re-added one-at-a-time behind env gates, each A/B-tested vs decoded output before
+flipping the default — codified as a new mandatory rule in
+`crispasr-crispembed-dev.md` (dev guide) and `LEARNINGS.md`. Meta-lesson: a "perf"
+change isn't done when it's fast — only when its decoded output equals a trusted
+reference; `expected_text: null` == never validated.
+
 ## July 2, 2026 — Granite-Vision OCR: missing-tokenizer packaging bug fixed + GGUFs re-uploaded; release infra ported
 
 Granite-Vision 3.3-2B OCR emitted raw token IDs (`<322><322>…`) on both backends

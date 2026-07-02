@@ -190,6 +190,15 @@
       }
     },
     {
+      "name": "deepseek-ocr2",
+      "engine": "deepseek-ocr2",
+      "gguf": {"repo": "cstr/deepseek-ocr2-crispembed-GGUF", "file": "deepseek-ocr2-q4_k.gguf", "revision": "a465ab6cf4b5", "approx_size_mb": 2225},
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
+      "expected_text_source": "captured 2026-07-02 on M4 Metal at q4_k after reverting the Jun-20 perf-sweep regression (restored deepseek_ocr2.cpp to c58913c). Revision pinned to a465ab6cf4b5 — the character-perfect Jun-19 q4_k (the newer 04:00 HF q4_k has lm_head→Q8_0 but was not re-verified against the fixed engine). Guards the perf-sweep regression class: any flash_attn_ext / graph-restructure that garbles the Qwen2 vision encoder makes this crater.",
+      "match": {"max_cer": 0.12}
+    },
+    {
       "name": "restormer",
       "engine": "restormer",
       "diff_only": true,
