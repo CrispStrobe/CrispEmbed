@@ -1387,11 +1387,43 @@ single-threaded, must not OOM.
   `deepseek_ocr2.cpp` to the last-good-and-fast commit `c58913c` (keeps the Metal
   vision speedups). Regression-manifest entry added (rev-pinned). Deep-dive:
   LEARNINGS "Perf-sweep regression". HISTORY: July 2, 2026.
-- **Remaining (opt-in re-adds, per the A/B rule)**: re-introduce the reverted
-  perf paths (persistent T=1 decode, F16 KV, flash_attn encoder/LLM, single-graph
-  encoder) one at a time behind env gates, each A/B-tested vs decoded output
-  before flipping the default. Multi-view preprocessing (global + dynamic crops)
-  is still unimplemented (single global view only) — a known simplification.
+- **Perf re-adds — MEASURED NOT WORTH IT (2026-07-02), branch
+  `perf/deepseek-ocr2-gated-readd`.** Profiled (`DS_PROFILE=1`) on M4 Metal: the
+  decode is **98% compute-bound** — graph build+alloc = 35 ms vs compute = 2270 ms
+  over 31 tokens (build is **2%**). So the reverted sweep's overhead-reduction
+  paths yield ≤~1.5% here:
+  - **flash_attn** (encoder+LLM): re-added behind `DS_QWEN2_ENC_FLASH` /
+    `DS_LLM_FLASH`, A/B byte-identical but **~20% SLOWER** on Metal (small T) →
+    kept opt-in, NOT default.
+  - **persistent single-graph decode** (patterns 2+3 from qwen2vl/qwen3vl): would
+    save the 2% graph-build → ~1.5% end-to-end. Not worth the refactor+risk.
+  - **backend F16 KV**: ≤63 MB even at max context; no speed win (compute-bound).
+  The real perf lever is the **MoE compute** (expert dispatch / quantization),
+  not graph/upload overhead — the sweep optimized the wrong thing. Conclusion:
+  keep the correct c58913c baseline + the verified flash opt-in gates; do NOT
+  re-add the rest. `DS_PROFILE` instrumentation retained for future profiling.
+  Multi-view preprocessing (global + dynamic crops) is still unimplemented
+  (single global view only) — a known simplification, orthogonal to perf.
+- **MoE compute optimization — PENDING (the only real deepseek perf lever).**
+  Profiling proved decode is ~98% compute-bound, dominated by the DeepSeek-V2 MoE
+  (12 layers, 64 routed experts top-6 + 2 shared, `moe_intermediate_size` 896).
+  Decode ≈ 2270 ms / 31 tokens ≈ 73 ms/token on M4 Metal. Optimize the MoE math
+  itself, each behind an env gate + A/B (decoded output) + timing before default:
+  - [ ] **Faster expert dispatch.** Current path is `ggml_mul_mat_id` on Metal
+    (`ctx.moe_metal`) with a CPU-scalar fallback (`moe_ffn_cpu`). Profile
+    `mul_mat_id` vs a gather+batched-`mul_mat` over the top-6 selected experts;
+    ensure only the 6 (+2 shared) experts per token are computed, not all 64.
+  - [ ] **Quantize experts more aggressively.** Experts are the bulk of the
+    weights; check the quantize recipe keeps only the router/norms/lm_head high
+    and lets expert FFNs go Q4_K (they already should — verify, and test Q4_K vs
+    Q5_K/Q6_K on decoded OCR quality vs speed).
+  - [ ] **Batch/fuse the shared-expert + routed-expert FFNs** to cut per-layer
+    dispatches; and confirm the router softmax/top-k isn't a serial CPU hop.
+  - [ ] **Metal residency / activation-scaling** — check the MoE `mul_mat_id`
+    against the known Metal F16-overflow class (scale activations 1/256) and the
+    residency-abort class (see the Metal-residency LEARNINGS entry).
+  Only pursue if decode latency becomes a real concern; the graph-overhead paths
+  (persistent decode / F16 KV / single-graph) are NOT the lever (measured ~2%).
 
 ### got_ocr (SAM ViT-B + Qwen2-0.5B, 0.7B) — DONE
 - [x] Patch embedding → ggml matmul (same im2col pattern, scalar fallback gated)
