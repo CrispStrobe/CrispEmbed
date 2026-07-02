@@ -150,6 +150,12 @@ def main():
     except Exception as e:
         log(f"BUILD FAILED: {e}"); RESULTS.write_text(json.dumps({"build_error": str(e)}, indent=2)); return
 
+    # Pin transformers: the Kaggle image ships a build whose tokenizer path crashes loading
+    # Qwen2-family tokenizers (BidirLM: _patch_mistral_regex kwarg clash) and drifts on the
+    # LiLT processor / DiT config. 4.57.6 is verified to load all of these; it accepts the
+    # image's existing torch so this does NOT reinstall torch.
+    kh.sh("pip install -q 'transformers==4.57.6'", check=False)
+
     for e in ENGINES:
         name = e["name"]
         try:
@@ -167,9 +173,18 @@ def main():
                 log(f"[{name}] verify: {' '.join(argv)} env={env}")
                 r = subprocess.run(argv, cwd=str(REPO), env={**os.environ, **env}, capture_output=True, text=True)
                 out = r.stdout + r.stderr
-                tail = out.strip().splitlines()[-3:] if out.strip() else ["<no output>"]
-                log(f"[{name}] diff tail: {tail}")
-                if not (("0 failed" in out) or ("PASS" in out and "FAIL" not in out)):
+                # Capture a generous tail so a crash (GGML_ASSERT text + backtrace) is diagnosable
+                # from the log — the 3-line default hid lfm2_colbert's CUDA SIGSEGV site.
+                lines = out.strip().splitlines()
+                tail = lines[-30:] if lines else ["<no output>"]
+                log(f"[{name}] diff tail (rc={r.returncode}):\n" + "\n".join(tail))
+                # Accept both harness output styles: "=== Results: N passed, 0 failed ==="
+                # and lfm2's "PASS: 20  FAIL: 0" (the old check mis-flagged the latter as failed
+                # because it contains the substring "FAIL"). "fail: 0" won't match "fail: 10".
+                low = out.lower()
+                ok = ("0 failed" in low) or ("fail: 0" in low) or ("fail:0" in low) \
+                    or ("PASS" in out and "FAIL" not in out)
+                if not ok:
                     log(f"[{name}] verify_failed"); results[name] = "verify_failed"; continue
                 hf_put(ref_path, e["upload_repo"], e["ref"])
                 log(f"[{name}] UPLOADED {e['ref']} -> {e['upload_repo']}"); results[name] = "ok"
