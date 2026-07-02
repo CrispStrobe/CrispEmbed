@@ -3,6 +3,7 @@
 // Reads all .bmp files from image_dir, outputs TSV: filename\tresult
 
 #include "posformer_ocr.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -53,7 +54,7 @@ static bool load_bmp_gray(const char * path, std::vector<float> & gray, int & w,
     return true;
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <model.gguf> <image_dir>\n", argv[0]);
         return 1;
@@ -101,4 +102,8 @@ int main(int argc, char ** argv) {
 
     posformer_ocr_free(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

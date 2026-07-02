@@ -5,6 +5,7 @@
 // free_weights() cleans up (incl. the mmap) without crashing.
 
 #include "core/gguf_loader.h"
+#include "core/clean_exit.h"
 #include "ggml.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -54,7 +55,7 @@ static std::vector<float> read_tensor(core_gguf::WeightLoad & wl, const char * n
     return out;
 }
 
-int main() {
+static int crispembed_test_main() {
     if (!write_test_gguf(kPath)) {
         fprintf(stderr, "FAIL: could not write %s\n", kPath);
         return 1;
@@ -111,4 +112,8 @@ int main() {
     }
     printf("PASS: gguf_loader no-copy mmap == copy\n");
     return 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

@@ -2,11 +2,12 @@
 // Usage: ./test-bttr-beam model.gguf image.f32 WxH [beam_width]
 
 #include "bttr_ocr.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 4) {
         fprintf(stderr, "Usage: %s <model.gguf> <image.f32> <WxH> [beam_width]\n", argv[0]);
         return 1;
@@ -42,4 +43,8 @@ int main(int argc, char ** argv) {
 
     bttr_ocr_free(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

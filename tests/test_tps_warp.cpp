@@ -1,5 +1,6 @@
 // tests/test_tps_warp.cpp — unit tests for TPS spatial transformer
 #include "tps_warp.h"
+#include "core/clean_exit.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -236,7 +237,7 @@ static void test_tps_dewarp_api() {
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
-int main() {
+static int crispembed_test_main() {
     printf("TPS Spatial Transformer — unit tests\n");
 
     test_identity();
@@ -247,4 +248,8 @@ int main() {
 
     printf("\n=== Results: %d passed, %d failed ===\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

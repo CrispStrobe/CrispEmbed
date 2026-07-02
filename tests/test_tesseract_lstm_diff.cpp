@@ -14,6 +14,7 @@
 //   ./test-tesseract-lstm-diff model.gguf ref.gguf test.png
 
 #include "tesseract_lstm.h"
+#include "core/clean_exit.h"
 #include "crispembed_diff.h"
 
 #include <cstdio>
@@ -25,7 +26,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 4) {
         fprintf(stderr,
                 "Usage: %s <model.gguf> <reference.gguf> <image.png>\n\n"
@@ -139,4 +140,8 @@ int main(int argc, char ** argv) {
     tesseract_lstm_free(ctx);
 
     return n_fail > 0 ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

@@ -1,12 +1,13 @@
 // tests/test_cc_detect.cpp — test CC-based text line detector
 #include "cc_detect.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <chrono>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     const char * path = argc > 1 ? argv[1] : nullptr;
 
     int w, h;
@@ -54,4 +55,8 @@ int main(int argc, char ** argv) {
     else
         free(gray);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

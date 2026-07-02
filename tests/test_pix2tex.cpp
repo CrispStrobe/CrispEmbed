@@ -1,11 +1,12 @@
 // test_pix2tex.cpp — Test pix2tex math OCR on raw f32 images.
 // Usage: ./test-pix2tex model.gguf image.f32 WxH
 #include "math_ocr.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 4) {
         fprintf(stderr, "Usage: %s model.gguf image.f32 WxH\n", argv[0]);
         return 1;
@@ -37,4 +38,8 @@ int main(int argc, char ** argv) {
 
     math_ocr_free(ctx);
     return result ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

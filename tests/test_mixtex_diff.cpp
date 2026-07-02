@@ -5,12 +5,13 @@
 // engine's inline diff_compare calls fire during the forward pass.
 
 #include "mixtex_ocr.h"
+#include "core/clean_exit.h"
 #include "crispembed_diff.h"
 
 #include <cstdio>
 #include <cstdlib>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <model.gguf> <ref.gguf>\n", argv[0]);
         return 1;
@@ -94,4 +95,8 @@ int main(int argc, char ** argv) {
 
     printf("\nDone.\n");
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

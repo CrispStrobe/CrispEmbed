@@ -2,6 +2,7 @@
 // Usage: test-parseq <model.gguf> [image.png]
 
 #include "../src/parseq_ocr.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -12,7 +13,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../ggml/examples/stb_image.h"
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <model.gguf> [image.png]\n", argv[0]);
         return 1;
@@ -70,4 +71,8 @@ int main(int argc, char ** argv) {
     parseq_ocr_free(ctx);
     printf("\nPARSeq test PASSED (model loads and runs)\n");
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

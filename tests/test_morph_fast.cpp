@@ -1,5 +1,6 @@
 // tests/test_morph_fast.cpp — benchmark 1-bit morph vs float morph
 #include "morph_fast.h"
+#include "core/clean_exit.h"
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -45,7 +46,7 @@ static void max_pool_2d(const float * src, int w, int h, int k, float * dst) {
         }
 }
 
-int main() {
+static int crispembed_test_main() {
     // Simulate a 2000x3000 document image (typical A4 at 300dpi)
     const int W = 2000, H = 3000;
     const int K = 51; // typical background whitening kernel
@@ -97,4 +98,8 @@ int main() {
     morph_free(bits);
     morph_free(opened);
     return 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

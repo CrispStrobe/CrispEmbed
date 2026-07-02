@@ -7,6 +7,7 @@
 //   crispembed --list-models
 
 #include "crispembed.h"
+#include "core/clean_exit.h"
 #include "model_mgr.h"
 #include "vit_embed.h"
 #include "clip_text_embed.h"
@@ -179,7 +180,11 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "\n");
 }
 
-int main(int argc, char ** argv) {
+// Real CLI body. Wrapped by main() below so every return routes through
+// core_util::clean_exit — skipping ggml's global GPU-device static-dtor teardown
+// (Metal residency assert / CUDA use-after-free) after results are printed. Any
+// crispembed_free()/engine free() inside this body still runs first.
+static int cli_main(int argc, char ** argv) {
     std::string model_arg;
     std::string file_path;
     std::string prefix;
@@ -2331,4 +2336,8 @@ int main(int argc, char ** argv) {
 
     crispembed_free(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(cli_main(argc, argv));
 }

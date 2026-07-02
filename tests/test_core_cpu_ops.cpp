@@ -7,6 +7,7 @@
 // Exit 0 = all pass, non-zero = failure.
 
 #include "core/cpu_ops.h"
+#include "core/clean_exit.h"
 #include "ggml-cpu.h"
 
 #include <cassert>
@@ -590,7 +591,7 @@ static void test_dequant_cache() {
 // ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
-int main() {
+static int crispembed_test_main() {
     printf("=== core_cpu unit tests ===\n\n");
 
     test_to_f32();
@@ -612,4 +613,8 @@ int main() {
 
     printf("\n=== Results: %d passed, %d failed ===\n", g_pass, g_fail);
     return g_fail > 0 ? 1 : 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

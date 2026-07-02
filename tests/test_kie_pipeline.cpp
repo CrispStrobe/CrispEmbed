@@ -7,11 +7,12 @@
 // Prints extracted fields with bounding boxes and confidence scores.
 
 #include "crispembed.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 5) {
         fprintf(stderr, "Usage: %s <ner.gguf> <det.gguf> <rec.gguf> <image> [labels]\n", argv[0]);
         fprintf(stderr, "  labels: comma-separated field names (default: total,date,vendor)\n");
@@ -67,4 +68,8 @@ int main(int argc, char ** argv) {
     crispembed_kie_free(ctx);
     printf("\nDone.\n");
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

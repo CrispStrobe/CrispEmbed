@@ -6,6 +6,7 @@
 //   test-table-parse <tesseract.gguf> img.png (real image + OCR)
 
 #include "table_parse.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -169,7 +170,7 @@ static void test_with_ocr(const char * model_path) {
     table_parse_free(ctx);
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     // Synthetic tests (no model needed)
     test_grid_detection_ruled();
     test_grid_detection_borderless();
@@ -182,4 +183,8 @@ int main(int argc, char ** argv) {
 
     printf("\n%d passed, %d failed\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

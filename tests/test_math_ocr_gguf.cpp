@@ -1,10 +1,11 @@
 // tests/test_math_ocr_gguf.cpp — smoke test for math_ocr GGUF loading + inference.
 #include "math_ocr.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <model.gguf>\n", argv[0]);
         return 1;
@@ -42,4 +43,8 @@ int main(int argc, char ** argv) {
     math_ocr_free(ctx);
     printf("Done.\n");
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

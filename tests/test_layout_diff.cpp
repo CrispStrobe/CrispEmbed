@@ -5,6 +5,7 @@
 // tensors against the reference GGUF at each stage using crispembed_diff.
 
 #include "layout_detect.h"
+#include "core/clean_exit.h"
 #include "crispembed_diff.h"
 #include <cstdio>
 #include <cstring>
@@ -12,7 +13,7 @@
 #include <cmath>
 #include <algorithm>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <layout.gguf> <ref.gguf> [image.png]\n", argv[0]);
         return 1;
@@ -136,4 +137,8 @@ int main(int argc, char ** argv) {
     }
     printf("DIFF PASSED\n");
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

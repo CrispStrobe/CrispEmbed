@@ -1,6 +1,7 @@
 // tests/test_surya_det.cpp — basic load + forward pass test for surya detector
 // Supports PNG/JPG/BMP via stb_image, or uses synthetic if no image given.
 #include "surya_det.h"
+#include "core/clean_exit.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -14,7 +15,7 @@ stbi_uc * stbi_load(char const * filename, int * x, int * y, int * ch, int desir
 void stbi_image_free(void * p);
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <surya-det.gguf> [image.png|jpg|bmp]\n", argv[0]);
         return 1;
@@ -105,4 +106,8 @@ int main(int argc, char ** argv) {
     surya_det_free(ctx);
     printf("PASS\n");
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

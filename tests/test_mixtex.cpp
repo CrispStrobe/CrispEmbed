@@ -1,6 +1,7 @@
 // tests/test_mixtex.cpp — basic MixTex load + recognize test
 // Usage: ./test-mixtex <mixtex.gguf> [image.png|jpg|bmp]
 #include "mixtex_ocr.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -13,7 +14,7 @@ stbi_uc * stbi_load(char const * filename, int * x, int * y, int * ch, int desir
 void stbi_image_free(void * p);
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <mixtex.gguf> [image.png|jpg|bmp]\n", argv[0]);
         return 1;
@@ -64,4 +65,8 @@ int main(int argc, char ** argv) {
     mixtex_ocr_free(ctx);
     printf("PASS\n");
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

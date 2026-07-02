@@ -2,11 +2,12 @@
 // Usage: ./test-bert-ner-diff bert-base-ner-f32.gguf bert-ner-ref.gguf
 
 #include "crispembed.h"
+#include "core/clean_exit.h"
 #include "crispembed_diff.h"
 #include <cstdio>
 #include <cmath>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <model.gguf> <ref.gguf>\n", argv[0]);
         return 1;
@@ -57,4 +58,8 @@ int main(int argc, char ** argv) {
 
     crispembed_free(ctx);
     return r.is_pass(0.99f) ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

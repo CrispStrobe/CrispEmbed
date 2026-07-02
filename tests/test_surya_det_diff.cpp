@@ -9,13 +9,14 @@
 //   SURYA_DET_DUMP=1 ./test-surya-det-diff surya-det-f32.gguf ref.gguf
 
 #include "surya_det.h"
+#include "core/clean_exit.h"
 #include "crispembed_diff.h"
 
 #include <cmath>
 #include <cstdio>
 #include <vector>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <surya-det.gguf> <reference.gguf>\n", argv[0]);
         fprintf(stderr, "\nGenerate reference with:\n");
@@ -129,4 +130,8 @@ int main(int argc, char ** argv) {
     surya_det_free(ctx);
     printf("\nDone.\n");
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }
