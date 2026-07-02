@@ -1123,6 +1123,7 @@ single-threaded, must not OOM.
 - [x] **Default ON both backends**; graphs validated (LLM diff 7/7 cos 0.9999), end-to-end OCR correct on Metal AND CPU.
 - [x] **Decode perf** (`bfe3ad2`/`f42b737`): in-graph Metal LM head + KV-cont removal + T=1 FFN-scale skip → 270 → 139 ms/tok (~1.9×).
 - [ ] Persistent decode graph — investigated and **declined**: profiling shows a T=1 token is ~95% GPU compute (build+alloc ~5ms of ~140ms), so it's not the bottleneck. See LEARNINGS "VLM/OCR decoder perf".
+- [x] **Tokenizer packaging fix (2026-07-02)**: uploaded GGUFs shipped `tokenizer=MISSING (0 tokens)` → OCR emitted raw token IDs. Folded the BPE tokenizer + scalars into `convert-granite-vision-to-gguf.py` (complete-gguf converts), made `patch-granite-gguf-tokenizer.py` idempotent, and re-patched/re-uploaded q4_k/q8_0/f16 to `cstr/granite-vision-crispembed-GGUF`. Banner now `tokenizer=embedded (49156 tokens)`; OCR readable on CPU+Metal; regression `expected_text` baked (max_cer 0.15).
 
 ### smoldocling (SigLIP + SmolLM2, 256M) — DONE
 - [x] F16 KV cache + batched prefill (done earlier, `bc329e4`)

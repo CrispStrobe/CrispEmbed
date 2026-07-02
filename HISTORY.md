@@ -4,6 +4,29 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 2, 2026 — Granite-Vision OCR: missing-tokenizer packaging bug fixed + GGUFs re-uploaded; release infra ported
+
+Granite-Vision 3.3-2B OCR emitted raw token IDs (`<322><322>…`) on both backends
+because the uploaded GGUFs carried **no tokenizer** (`tokenizer=MISSING (0 tokens)`)
+— a converter/packaging bug, not a ggml regression (per-stage diff vs the ref was
+healthy). Fix folds the BPE tokenizer + late-added scalars into
+`models/convert-granite-vision-to-gguf.py` (new `array<string>` KV writer +
+`load_tokenizer()` writing `tokenizer.tokens`/`tokenizer.merges` +
+`attention_multiplier`/`rms_eps`/`bos`/`eos`) so a fresh convert is complete, and
+makes `patch-granite-gguf-tokenizer.py` idempotent. All three published GGUFs
+(q4_k/q8_0/f16) in `cstr/granite-vision-crispembed-GGUF` were re-patched and
+re-uploaded via Xet (~84 MB new data each — the rest deduped). Verified end-to-end:
+banner now `tokenizer=embedded (49156 tokens)`; `--ocr fox.png` returns readable
+text on **CPU and Metal** (q8_0 exact match `The quick brown fox jumps over the
+lazy dog. 12345`). Baked that `expected_text` into the regression manifest.
+See `LEARNINGS.md → "granite-vision — … packaging bug"` (RESOLVED note).
+
+Also ported CrispASR's release tooling: `scripts/bump-version.sh` +
+`scripts/sync-version.py` (retargeted to CrispEmbed's crates/packages) so a single
+`scripts/bump-version.sh X.Y.Z` writes VERSION, propagates it to
+Cargo.toml/pyproject.toml/pubspec.yaml, commits, and tags — fixing the long-standing
+drift (VERSION 0.7.0 vs Cargo 0.4.0 vs pyproject 0.3.2 vs tags at v0.12.0).
+
 ## July 2, 2026 — PaddleOCR-VL: SIGSEGV fixed, OCR working end-to-end (CPU + Metal)
 
 `paddleocr-vl-0.9b` crashed with `EXC_BAD_ACCESS` in `_platform_memmove` during
