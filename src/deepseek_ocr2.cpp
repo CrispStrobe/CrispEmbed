@@ -1096,7 +1096,8 @@ static ggml_cgraph* build_qwen2_enc_layer_graph(ggml_context* g, ds_ocr2_ctx* ct
     ggml_tensor* Kfull = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));  // [hd, T, nkv]
     ggml_tensor* Vfull = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));  // [hd, T, nkv]
     ggml_tensor* attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, mask, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
-    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));  // [hd, nh, T]
+    // flash_attn_ext already permutes internally: output is [hd, nh, T]. Reshape
+    // straight to [D, T]; the retained manual-path permute scrambled it (T>1).
     attn = ggml_reshape_2d(g, attn, D, T);
     attn = ggml_mul_mat(g, ly.o_w, attn);
     x = ggml_add(g, x, attn);
@@ -1159,7 +1160,7 @@ static ggml_cgraph* build_qwen2_enc_full_graph(ggml_context* g, ds_ocr2_ctx* ctx
         ggml_tensor* Vp = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
         ggml_tensor* attn = ggml_flash_attn_ext(g, Q, Kp, Vp, mask,
                                                  1.0f / sqrtf((float)hd), 0.0f, 0.0f);
-        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        // flash_attn_ext output is already [hd, nh, T]; reshape straight to [D, T].
         attn = ggml_reshape_2d(g, attn, D, T);
         attn = ggml_mul_mat(g, ly.o_w, attn);
         x = ggml_add(g, x, attn);
@@ -1608,7 +1609,7 @@ static PdGraph build_persistent_decode_graph(ds_ocr2_ctx &ctx, int max_kv) {
 
         ggml_tensor* attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull,
                                                  pd.t_mask, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
-        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));  // [hd, nh, 1]
+        // flash_attn_ext output is already [hd, nh, 1]; reshape straight to [D, 1].
         attn = ggml_reshape_2d(g, attn, D, 1);
         attn = ggml_mul_mat(g, ly.o_w, attn);
         x = ggml_add(g, x, attn);
@@ -1764,7 +1765,8 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx &ctx, int li, int T, int 
 
     float attn_scale = 1.0f / sqrtf((float)hd);
     ggml_tensor *attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, mask, attn_scale, 0.0f, 0.0f);
-    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));  // [hd, nh, T]
+    // flash_attn_ext already permutes internally: output is [hd, nh, T]. Reshape
+    // straight to [D, T]; the retained manual-path permute scrambled it (T>1).
     attn = ggml_reshape_2d(g, attn, D, T);
 
     attn = ggml_mul_mat(g, ly.o_w, attn);
