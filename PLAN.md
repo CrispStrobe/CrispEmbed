@@ -452,25 +452,51 @@ interop; **do not link libmtmd** (it PUBLIC-links all of `llama`).
   transcript match on both `a=-0.5` and `a=-0.75` kernels; pick the one matching HF.
 - *A/B speed:* `CRISPEMBED_QWEN2VL_BENCH=1` vision-stage ms (in-process vs current).
 
-**C6 — flash-attn epilogue audit (correctness sweep).** Codify the rule from
-memory `flashattn-ext-already-permutes` / commit `6027b56`: `ggml_flash_attn_ext`
-returns `[hd,nh,T]` already permuted — reshape directly, never trailing
-`permute(0,2,1,3)`. Sweep every FA call site (layout, math, deepseek, encoders).
+**C6 — flash-attn epilogue audit (correctness sweep). — IMPLEMENTED (2026-07).**
+Codify the rule from memory `flashattn-ext-already-permutes` / commit `6027b56`:
+`ggml_flash_attn_ext` returns `[hd,nh,T]` already permuted — reshape directly,
+never trailing `permute(0,2,1,3)`. Sweep every FA call site (layout, math,
+deepseek, encoders).
 - *A/B quality:* the relevant `test-<model>-diff` for each FA site must hold cos
   1.0 vs reference with FA on. Add a per-site guard so a spurious permute craters
   the diff test (not silent).
 - *A/B speed:* `CRISPEMBED_<MODULE>_BENCH=1` FA-on vs FA-off (`*_NO_FLASH`) — FA must
   win on long sequences, and we keep the non-FA fallback for uncovered head dims.
   Verify `GGML_KQ_MASK_PAD` (64 on master vs historical 32) against our pinned ggml.
+- **Shipped:** audited all 39 `ggml_flash_attn_ext` call sites across 22 engines
+  — every one already reshapes the FA result directly; **no surviving
+  double-permute** (the June-2026 wave cleanup is in, with warning comments in
+  layout/math/unlimited/deepseek). Codified the rule as a reusable graph guard
+  `core_ggml::assert_fa_layout(attn, head_dim, n_heads)` in
+  `src/core/ggml_metal_guard.h`: it validates the invariant a spurious
+  `permute(0,2,1,3)` violates (`ne[0]==head_dim && ne[1]==n_heads`) via
+  `GGML_ASSERT` and returns the tensor unchanged, so it composes with any
+  downstream reshape (2D/3D/batched `[.,.,T,B]`) and craters at graph-build time
+  instead of shipping silent garbage. Wired into the guarded sites: bidirlm_vision,
+  lfm2_embed, vit_embed (×2), clip_text_embed. **Runtime-proven** on a real
+  flash_attn_ext node: assert passes at `ne=[64,8,5]` (`[hd,nh,T]`) and aborts
+  when a trailing `permute(0,2,1,3)` makes it `[64,5,8]`. The remaining ~34 sites
+  are a mechanical drop-in as each engine's diff test is next touched.
 
-**C7 — generalize the Metal mul_mm F16 guard.** Turn the ×1/256-before / ×256-after
-trick (memory `metal-mul-mm-f16-overflow`) into a reusable helper + a diagnostic
-("NaN with many tokens, clean single-token ⇒ you're on `mul_mm`"). Metal picks
-`mul_mm` purely by shape (`ne11 > 8`) and ignores `set_prec(F32)` for GEMM.
+**C7 — generalize the Metal mul_mm F16 guard. — IMPLEMENTED (2026-07).** Turn the
+×1/256-before / ×256-after trick (memory `metal-mul-mm-f16-overflow`) into a
+reusable helper + a diagnostic ("NaN with many tokens, clean single-token ⇒
+you're on `mul_mm`"). Metal picks `mul_mm` purely by shape (`ne11 > 8`) and
+ignores `set_prec(F32)` for GEMM.
 - *A/B quality:* Metal-vs-CPU cos on the image path (many patches) for every VLM
   engine via `<ENGINE>_FORCE_CPU=1`; target Metal cos == CPU cos (no NaN).
 - *A/B speed:* `CRISPEMBED_<MODULE>_BENCH=1` — the scale helper must be negligible
   vs the matmul it protects.
+- **Shipped:** `core/ggml_metal_guard.h` provides `mul_mat_f16_guarded(g, w, act,
+  n_tokens, guard=256)` — applies the lossless exponent shift only when Metal
+  would pick the F16-casting `mul_mm`, predicate `metal_mul_mm_f16_cast_active(
+  ne11, ne00)` = `ne11 > 8 && ne00 >= 64` (verified against
+  `ggml-metal-ops.cpp:2050` `ne11_mm_min = 8` + the `ne00 >= 64` mul_mm guard at
+  line 2158) — else a plain `ggml_mul_mat`. The diagnostic is codified in the
+  header comment. `granite_vision_ocr` now calls the helper (graph-identical to
+  the old inline ternary). **Clean same-commit / same-backend A/B** (granite
+  q4_k OCR on fox.png, both on the Metal `mul_mm` path, T≈750 ≫ 8): inline-ternary
+  output == helper output, **token-identical greedy decode** → behavior-preserving.
 
 **C8 — cheap coverage wins (borrow upstream where clean).** ModernBERT, Nomic-v2-
 MoE, and EmbeddingGemma's Dense/Matryoshka projection are cleanly solved upstream

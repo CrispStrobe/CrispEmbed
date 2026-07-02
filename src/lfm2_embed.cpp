@@ -13,6 +13,7 @@
 #include "gguf.h"
 
 #include "core/gguf_loader.h"
+#include "core/ggml_metal_guard.h"
 #include "core/bpe.h"
 #include "crispembed_diff.h"
 #include "imatrix.h"
@@ -349,7 +350,8 @@ static ggml_tensor * lfm2_gqa(ggml_context * g, ggml_tensor * x, const lfm2_laye
     V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
     const float scale = 1.0f / sqrtf((float)hd);
-    ggml_tensor * attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
+    ggml_tensor * attn =
+        core_ggml::assert_fa_layout(ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f), hd, nh);
     attn = ggml_reshape_2d(g, attn, H, T);
     return ggml_mul_mat(g, w.attn_out_proj_w, attn);
 }
