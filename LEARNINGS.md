@@ -39,10 +39,13 @@ SIGSEGV into an exact reshape assert in one step; the fastest path was to read
 the real tensor dims out of the GGUF, not to reason about the suspected commit.
 ## restormer — RESOLVED (2026-07): broken ggml conv-weight layout + fake-attention block graph
 
-The restormer garbage (below) is fixed in `src/restormer.cpp`. Two independent
-bugs, both now corrected and validated against a PyTorch ground-truth value and
-an end-to-end denoise test (mid-gray σ=25 noise: mean|err| 19.84 → **2.15**;
-CPU==Metal to 0; scalar path==ggml path):
+The restormer garbage (below) is fixed in `src/restormer.cpp`. Two layout/graph
+bugs, both corrected and validated against a PyTorch ground-truth value and an
+end-to-end denoise test (mid-gray σ=25 noise: mean|err| 19.84 → **2.15**; scalar
+path==ggml path). **NB (2026-07-02): the original "CPU==Metal to 0" claim held only
+on CPU** — a third, residency bug still aborted restormer on Metal until 2026-07-02
+(weights on init_best vs a CPU conv sched; see the June-audit section's Fix-notes
+Correction below). Now genuinely CPU==Metal.
 
 1. **Conv-weight layout was scrambled for EVERY conv (the real garbage source).**
    The GGUF converter writes conv weights raw as numpy `(OC,IC,KH,KW)` C-order and
@@ -69,6 +72,44 @@ CPU==Metal to 0; scalar path==ggml path):
    used `ggml_norm` for the BiasFree LayerNorm (denoise model is BiasFree,
    `has_bias=0`) — that wrongly subtracts the mean; now computes `x/sqrt(var+eps)·w`
    with no mean-centering, matching `rst_layernorm_bf`.
+
+## nafnet_denoise — RESOLVED (2026-07-02): scrambled conv kernels + Metal/CUDA residency abort
+
+nafnet was the `--denoise` tier-2 engine and the one conv→ggml-wave engine with **no
+diff harness** (only reachable via the OCR pipeline), so its regression shipped
+unseen. Added `test-nafnet-diff` (mirrors test-restormer-diff; feeds the ref input,
+compares the 64×64 output) + a `diff_only` regression-manifest entry (ref
+`cstr/nafnet-sidd-GGUF/nafnet-ref.gguf` from `tools/dump_nafnet_reference.py` on
+`NAFNet-SIDD-width32.pth`). Disambiguated engine-vs-dumper with a new `NAFNET_SCALAR=1`
+A/B gate: scalar conv path scored **0.999998** vs the ref, ggml path **0.538** →
+engine bug, dumper faithful. Three sub-bugs in `conv2d_ggml`, all now fixed
+(ggml==scalar==ref, cos **0.999998** on Metal AND CPU):
+
+1. **Kernel layout scramble (the 0.538 crater).** Same root cause as restormer: the
+   hand-rolled converter writes conv weights as numpy `[OC,IC,KH,KW]` row-major, so
+   ggml loads `ne=[OC,IC,KH,KW]` over bytes whose true fastest axis is KW. The old
+   4D branch did `ggml_permute(w,3,2,1,0)+cont`, which *physically reorders* the
+   bytes as if OC were innermost → every kernel scrambled. The fix copies the
+   dequant bytes UNCHANGED into an explicit `ne=[KW,KH,IC,OC]` tensor (mirrors
+   swinir/hat/restormer). **Subtlety that wasted a first attempt:** a bare reshape
+   only moved 0.538→0.588, because 1×1 convs (conv1/3/4/5, ups) collapse to
+   `ggml_n_dims()==2` and were silently taking a *second* (also wrong) 2D branch.
+   Building the kernel from the known `oc/ic_g/kh/kw` args sidesteps the dim-collapse
+   entirely.
+2. **Depthwise needs an F16 kernel.** `ggml_conv_2d_dw` hardcodes its im2col to F16,
+   so a F32 depthwise kernel makes `mul_mat(F32 kernel, F16 im2col)` — an unsupported
+   type combo that trips `GGML_ASSERT(cur_backend_id != -1)` in sched split (the CPU
+   backend can't place the node). Depthwise (conv2) kernels are now F16; regular
+   convs stay F32 for best parity (ggml_conv_2d derives im2col from the kernel type).
+3. **Metal/CUDA residency abort** (same class as restormer's third bug): weights on
+   `init_best` (Metal) referenced from the CPU conv sched aborted graph alloc on
+   Metal / segfaulted on CUDA. Fixed by dequantizing each conv weight once into an
+   `enc_backend`-resident tensor (cached per source pointer) — which also avoids
+   re-dequantizing on every per-block conv call.
+
+Verified end-to-end: `crispembed --ocr --denoise` (got-ocr2 q4_k + nafnet q4_k) on
+Metal reads the fox line cleanly; `run_one.py --name nafnet` passes with the diff
+live (worst cos 0.999998).
 
 ## June-2026 scalar→ggml wave audit: 3 new regressions, all invisible to numerical guards (2026-07)
 
@@ -188,10 +229,18 @@ lightonocr decodes correctly both backends (minor cosmetic `ĠĊ` BPE-marker lea
 
 **Verified CLEAN, both backends (no regression):** SR per-stage diff —
 swinir, dat (scalar + `DAT_SR_GGML_CONV`), hat, pan, tbsrn, adair, scunet,
-instructir; output+Metal==CPU — safmn, esrgan, restormer (now fixed, CPU==Metal);
-OCR — got-ocr2 (full 20-stage diff, cer 0.000), internvl2, lightonocr.
-**nafnet_denoise = coverage gap** (no diff harness, no standalone CLI output —
-only reachable via the `--denoise` OCR pipeline).
+instructir; output+Metal==CPU — safmn, esrgan; OCR — got-ocr2 (full 20-stage
+diff, cer 0.000), internvl2, lightonocr.
+**nafnet_denoise + restormer = the two conv→ggml regressions still open after the
+first audit; both RESOLVED 2026-07-02** (see the dedicated sections at the top of
+this file). nafnet was the coverage gap (no diff harness, no standalone CLI output
+— only reachable via `--denoise`); it had the same scrambled-kernel bug **plus** a
+Metal/CUDA residency abort. restormer's earlier "CPU==Metal fixed" claim was wrong:
+its **layout** fix was real, but a **second, independent residency bug** (weights
+loaded on the freed init_best backend, referenced from the CPU conv sched) meant it
+still *aborted on Metal* and segfaulted on CUDA — it only ever passed under
+`RESTORMER_FORCE_CPU=1` / CPU-only builds, which is how the audit missed it. Both
+now verified Metal==CPU (nafnet output cos 0.999998, restormer 0.999997).
 **granite-vision — NOT a wave regression, but OCR broken by a packaging bug.**
 Per-stage diff vs `granite-vision-ref.gguf` is **healthy and identical on both
 backends**: `vis_patch_embed` cos 1.000 → gradual accumulation → `vis_layer_26`
@@ -219,14 +268,21 @@ and `--ocr fox.png` returns readable text on **both CPU and Metal**: q4_k reads
 0.15). Validation detail: token count 49156 == `vocab_size`, `token[49155]` ==
 `<image>` (the runtime's `image_token_index`), no vocab gaps.
 
-**Fix notes.** restormer is **DONE** (see the RESOLVED section at the top): the
-"3-site weight-layout unification" framing was a red herring — the converter
+**Fix notes.** restormer's **layout** is DONE (see the RESOLVED section at the top):
+the "3-site weight-layout unification" framing was a red herring — the converter
 stores conv weights raw as numpy `(OC,IC,KH,KW)`, so the correct kernel is a
 *plain* reshape of the contiguous bytes to ggml `[KW,KH,IC,OC]` at each site (no
 permute/transpose), and the load-time pre-permute was deleted outright. paddleocr
 + qwen2vl are also fixed (see their own RESOLVED sections / HISTORY). The
 `ne=[432,3]` abort was self-inflicted by a half-applied fix, not a real second
 weight bug; the real second bug was the ggml MDTA block graph.
+**Correction (2026-07-02):** restormer had a *third* bug the layout work never
+touched — it loaded weights on `ggml_backend_init_best()` (Metal/CUDA) but runs
+every graph on a CPU `enc_sched`, so referencing those GPU-buffer leaves aborted on
+Metal (`pre-allocated tensor (patch_embed.weight) in a buffer (MTL0) that cannot
+run`) and segfaulted on CUDA. Fixed by loading restormer's weights on CPU (the
+convs run on CPU regardless of where the weights live). Now passes on Metal in both
+default and `RESTORMER_SCALAR=1` paths.
 
 **HF download gotcha (this box, 2026-07):** the `huggingface_hub` client wedged on
 the Xet CDN (`cas-bridge.xethub.hf.co`) with 10s read-timeouts even with
