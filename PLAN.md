@@ -307,22 +307,40 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
 - **layout — REGRESSION.** Encoder craters (`s3` cos −0.146…`dec_0_cross` −0.344; early
   stages cos 1.0). Wave `dc0861b` (flash_attn_ext). Handover:
   `handover-prompts/layout-detect-encoder-regression-fix.md`. (2 agents assigned.)
-- **nafnet — output cos 0.538, NOT yet disambiguated** (engine vs stale dumper). Handover:
-  `handover-prompts/nafnet-denoise-output-mismatch-fix.md`. New `test-nafnet-diff` added.
-- **gliner — NOT a regression** (pre-wave, verified cos 1.0 06-13). Local ref-gen blocked by a
-  `gliner`-pkg ↔ transformers conflict (`TFPreTrainedModel` removed in current transformers).
-  Fixed 2 dumper VPS-path bugs (`--cache-dir` default, `tempfile.mkdtemp(dir=/mnt/volume1)`);
-  generate the ref on Kaggle (older transformers) or a pinned venv, then upload+wire.
-- **lfm2_colbert — NOT a regression** (pre-wave). `dump_lfm2_colbert_reference.py` assumes a
-  top-level `model.safetensors`, but LFM2.5-ColBERT keeps the backbone in the base model (the
-  repo has only `1_Dense/` + custom code). Dumper needs reworking to load the base transformer
-  + the Dense head before a ref can be generated.
-- **bert_ner — no dumper exists.** Write `tools/dump_bert_ner_reference.py` (mirrors the BERT
-  encoder; pre-wave, not a regression), then generate+upload+wire.
+- **nafnet — REGRESSION, FIXED (other agent).** Disambiguated ENGINE (not dumper):
+  ref is trustworthy — cos(ref_input, ref_output)=0.86, output properly denoised. Root cause
+  = conv-kernel layout (ggml loads numpy [OC,IC,KH,KW] bytes but the old permute(3,2,1,0)+cont
+  mis-declared the view → scrambled kernels; 1×1 convs took a 2nd wrong branch) + conv-sched
+  backend residency (kernels lived on Metal/CUDA, conv sched is CPU). Fixed by copying dequant
+  bytes into an explicit `ne=[KW,KH,IC,OC]` tensor (like swinir) + parking kernels on the conv
+  sched's backend (dw F16 for `ggml_conv_2d_dw` im2col, regular F32). `test-nafnet-diff` added.
+- **gliner — NOT a regression; the REFERENCE is broken.** Engine extracts the right entities
+  ("Barack Obama"→person, "Hawaii"→location); the PyTorch ref extracts **0 entities** and its
+  activations are anti-correlated from layer_0 (all cos ≈ −0.55). So `dump_gliner_reference.py`'s
+  LFM2 path (Lfm2BiModel bidirectional-replacement / tokenizer patch) yields a DEAD model.
+  Caught by the new multi-stage diff added to the LFM2 branch (`gliner_ner.cpp`) + the entity
+  output check. Do NOT wire this ref; fix the dumper's bidirectional replacement, or use
+  entity-output as the guardrail. (Also fixed 3 dumper bugs to make it run: TFPreTrainedModel
+  shim, VPS `/mnt` tmp/cache paths, duplicate `general.architecture`.)
+- **lfm2_colbert — NOT a backbone regression.** Backbone is the same LFM2 that passes 20/20
+  (lfm2), and the dumper ref is sane (colbert_output rows L2-normalized, std≈1/√128). The
+  cos 0.506 is a localized **ColBERT-head** discrepancy (the `1_Dense` linear proj + per-token
+  L2-norm), engine-side or a convention diff. Next: also diff the ref's `hidden_states`
+  (present in the ref) by exposing the engine's pre-projection hidden to localize head-vs-backbone.
+  Dumper now generates a ref (needs a complete snapshot incl. root `model.safetensors`).
+- **bert_ner — dumper written** (`tools/dump_bert_ner_reference.py`, input_ids + final_hidden);
+  local run blocked on the flaky source download (dslim/bert-base-NER). Complete the snapshot, run.
 
-Net: SR/restoration (11) + esrgan/safmn + lilt + lfm2 auto-guarded. Two NEW wave regressions
-found by tracing (layout, nafnet) — handovers written. Remaining ref-gen (gliner, lfm2_colbert,
-bert_ner) is blocked on env/dumper reworks, NOT engine defects.
+**Methodology lesson (reinforced): a single-stage diff cannot tell a dumper bug from an engine
+bug.** gliner's `lstm_out`-only check looked like a BiLSTM regression; multi-stage + the entity
+output check proved the engine is fine and the *reference* is dead. Harnesses that check one
+stage (nafnet output-only, lfm2_colbert colbert_output-only) MUST be extended to all ref stages
+and/or add an independent task-output check before their cos is trusted.
+
+Net: SR/restoration (11) + esrgan/safmn + lilt + lfm2 auto-guarded. Wave regressions found by
+tracing: **layout** (encoder, flash_attn) + **nafnet** (conv layout, now fixed). gliner =
+broken reference (engine fine); lfm2_colbert = ColBERT-head discrepancy; bert_ner = dumper
+written, download-blocked. None of gliner/lfm2/lfm2_colbert backbones are regressions.
 
 ### OCR engine correctness/stability fixes (2026-06-30, issue #25)
 
