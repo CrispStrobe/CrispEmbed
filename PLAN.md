@@ -1044,8 +1044,31 @@ single-threaded, must not OOM.
 
 **Remaining:** none — all major optimizations complete. Decode graph reuse done (`27b650a`).
 
-### qwen2vl — DONE (already optimized)
+### qwen2vl — DONE (perf optimized; OCR correctness fixed 2026-07-02)
   F16 KV cache, flash attn, ggml patch embed, direct embed lookup, F16 mask — all done.
+- [x] **OCR correctness (2026-07-02)**: Qwen2.5-VL (`qwen2.5-vl-3b`) hallucinated a
+  fabricated description instead of reading the image; `expected_text` was `null`
+  (a never-validated path, not a ggml-wave regression). fox.png → "The quick brown
+  fox jumps over the lazy dog. 12345", CPU AND Metal, q4_k. Four bugs:
+  1. Vision 2D RoPE built in raster order while the preprocessor always emits
+     patches in merge-block order (HF `rot_pos_emb` permutes ids identically) —
+     the `merge_order` flag keyed off `is_qwen2_vl` (false for the RMSNorm 2.5
+     variant). Now gated on `deepstack_indexes.empty()`. Dominant bug.
+  2. CPU spatial merge grouped patches via the raster else-branch for Qwen2.5-VL
+     (mis-groups merge-block data; deepstack already assumed consecutive). Same gate.
+  3. Windowed attention was unimplemented — `window_size`/`fullatt_block_indexes`
+     loaded but never used. Added as an in-place additive mask (0 within a window,
+     -inf across) via `soft_max_ext` on non-fullatt blocks; full blocks keep
+     flash_attn. Opt-out `QWEN2VL_OCR_NO_WINDOW=1`.
+  4. arch `qwen2vl` got no OCR prompt (only `qwen3vl` did) → default "Describe this
+     image." → verbose prose. OCR prompt now applied to both archs.
+  - Blast radius = Qwen2.5-VL only; every gate preserves prior behavior for
+    Qwen2-VL / PaddleOCR-VL (`is_qwen2_vl`) and Qwen3-VL (deepstack).
+  - Per-stage HF ref (`qwen2.5-vl-3b-ref.gguf`) not yet regenerated/uploaded —
+    verified end-to-end transcript on both backends. Latent qwen3vl merger/deepstack
+    grouping inconsistency (raster merger vs consecutive deepstack) left untouched.
+  - History: HISTORY.md (July 2, 2026). Deep-dive: LEARNINGS "qwen2vl-3b
+    hallucinated OCR — RESOLVED".
 
 ### deepseek_ocr2 — PENDING (needs q4_k model, 3.4B too large for 8GB VPS f16-only)
 
