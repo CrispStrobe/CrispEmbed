@@ -1,5 +1,43 @@
 # CrispEmbed — Technical Learnings
 
+## PaddleOCR-VL SIGSEGV was ERNIE head_dim≠D/n_heads + an SPM tokenizer loaded as GPT-2 BPE — NOT a GQA-broadcast bug (2026-07)
+
+RESOLVED. `paddleocr-vl-0.9b` crashed in the shared `qwen2vl_ocr` engine on
+both backends. The audit entry below guessed the "8:1 GQA broadcast" hazard from
+`fbae7ba`; that was wrong. Two independent, unrelated bugs, found by building a
+debug binary (the Release SIGSEGV is a ggml_reshape assert under `-O0`):
+
+1. **The crash: ERNIE-4.5 uses `head_dim=128` while `hidden_size/n_heads =
+   1024/16 = 64`.** The engine assumed `head_dim = D/n_heads` everywhere, so the
+   Q/K/V reshapes (`attn_q.weight` is `[1024, 2048]` → q_dim=2048, not 1024) and
+   the post-attention reshape-to-D overran the tensor → `memmove` SIGSEGV in
+   Release, `GGML_ASSERT(nelements(a)==ne0*ne1*ne2)` in debug. Corroborated by
+   the mRoPE sections `[16,24,24]` summing to 64 = head_dim/2. Fix: add
+   `llm_hparams.head_dim`, read from an explicit `*.attention.head_dim` /
+   `key_length` key or derive from `q_w->ne[1] / n_heads` at load time; reshape
+   attention output to `q_dim = head_dim*n_heads`, not `D`. No-op for Qwen where
+   head_dim == D/n_heads.
+
+2. **End-to-end: the ERNIE vocab is SentencePiece-style (`▁` for spaces,
+   `<0xXX>` byte tokens) but was loaded as byte-level GPT-2 BPE.** That silently
+   dropped every space/newline in the chat template, so the model saw
+   `OCR:Assistant:` and greedily emitted `</s>` (token 2) as the *first* token.
+   Plus the chat tokens were hardcoded to Qwen's `<|im_*|>` (151644/5) which are
+   out of range for the 103424-row ERNIE embed table → a second `get_rows`
+   assert. Fix: detect PaddleOCR-VL, emit the ERNIE template
+   `<|begin_of_sentence|>User: <image>OCR:\nAssistant: ` (trailing space is
+   load-bearing — dropping it makes the model emit `</s>` immediately), stop on
+   `</s>`=2 (per `generation_config.json`, **not** `<|end_of_sentence|>`=100272),
+   auto-detect the `▁` vocab → load SPM + add_dummy_prefix, and decode with a
+   `▁`→space / `<0xXX>`→byte SPM decoder. fox.png → "The quick brown fox jumps
+   over the lazy dog." on CPU+Metal, stops cleanly. qwen2.5-vl-3b (same engine)
+   unaffected.
+
+**Meta-lesson (again):** the handover's suspected commit + "GQA broadcast" root
+cause were both red herrings. A debug/-O0 build turned an opaque `memmove`
+SIGSEGV into an exact reshape assert in one step; the fastest path was to read
+the real tensor dims out of the GGUF, not to reason about the suspected commit.
+
 ## June-2026 scalar→ggml wave audit: 3 new regressions, all invisible to numerical guards (2026-07)
 
 Systematic re-audit of the ~15-engine June scalar→`ggml_conv_2d` refactor wave
