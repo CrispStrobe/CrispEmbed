@@ -89,7 +89,8 @@ int main(int argc, char ** argv) {
         }
 
         auto r = ref.compare("points_pixel", cpp_pts.data(), F * 2);
-        printf("  points_pixel: cos=%.6f max_abs=%.4f  %s\n",
+        // cos_min= format so tests/regression/run_one.py's _DIFF_LINE parser picks it up.
+        printf("  points_pixel: cos_min=%.6f max_abs=%.4f  %s\n",
                r.cos_min, r.max_abs, r.is_pass(0.999f) ? "PASS" : "FAIL");
         check("points_pixel cos >= 0.999", r.is_pass(0.999f));
 
@@ -116,7 +117,7 @@ int main(int argc, char ** argv) {
             raw_pts[i * 2 + 1] = py[i] / (0.5f * (H - 1)) - 1.0f;
         }
         auto r = ref.compare("fc2_out", raw_pts.data(), F * 2);
-        printf("  fc2_out: cos=%.6f max_abs=%.6f  %s\n",
+        printf("  fc2_out: cos_min=%.6f max_abs=%.6f  %s\n",
                r.cos_min, r.max_abs, r.is_pass(0.999f) ? "PASS" : "FAIL");
         check("fc2_out cos >= 0.999", r.is_pass(0.999f));
     }

@@ -486,6 +486,26 @@ have no compiled diff test; add one (or wire the Python parity into CI). **text_
 blocked (no public checkpoint). **tps_locnet/tps_warp, pcs, fireredpunc,
 bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
 
+**Gap-4 wave-risk triage (2026-07, by *nature* of the wave-window edit, not just churn):**
+- **text_sr — HIGH risk, UNTESTABLE.** Got `09a6e02 perf: replace scalar conv2d with
+  ggml_conv_2d` (the exact refactor family that scrambled nafnet's kernels). But NO public
+  checkpoint and NO shipped GGUF anywhere (no cstr repo, no local file, no converter) → no
+  parity ref possible. Mitigant: text_sr is a NAFNet variant sharing the conv paths that are
+  now guarded by the `nafnet` entry; the PixelShuffle/bicubic tail remains unguarded. Blocked
+  until a checkpoint exists.
+- **pcs — MEDIUM.** `4a498d1 perf(pcs): cache FC head weights at init` (caching refactor).
+  XLM-R-base; GGUF `cstr/pcs-xlmr-base-GGUF` + HF source available → closeable.
+- **decoder_embed — MEDIUM, believed covered.** 5 wave commits incl. flash_attn; PLAN marks
+  the flash_attn work DONE/verified (`29d8a08`). Only `tests/test_decoder_batch.py` (python),
+  no compiled guardrail. Assess / add standing test (large model → Kaggle).
+- **vit_embed / clip_text / cnn_embed / bidirlm_vision — LOW (perf-only).** Last wave edit was
+  `632b4c1 perf: disable OpenMP / default 1 thread` (threading, not numeric). Standing
+  guardrails nonetheless; GGUFs + HF sources available → closeable locally.
+- **fireredpunc / bidirlm_audio — LOW.** Only `402b38d feat: benchmark instrumentation` (no
+  numeric change). fireredpunc GGUF + BERT source available → closeable.
+- **tps_warp — covered.** Pure-math warp; `test_tps_warp.cpp` self-contained. tps_locnet CNN
+  now guarded (see Trace outcomes).
+
 **Trace outcomes (local, 2026-07 — empirical, disambiguated):**
 - **lilt — CLEAN, CLOSED.** 24/24 encoder stages cos 1.000000; ref uploaded to
   `cstr/lilt-base-GGUF`, wired `diff_only`. (The harness's "Label match 0/16" is a red
@@ -520,6 +540,12 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
   TEXT mismatch (dumper used a different sentence than the harness's hardcoded "Barack Obama…").
   Aligned the text → all token ids match, final_hidden cos 0.995. Ref uploaded; wired `diff_only`
   (final_hidden floor 0.99 for q8_0-vs-f32). PASS.
+- **tps_locnet — CLEAN, CLOSED (Gap 4).** C++ engine matches an independent pure-numpy forward
+  cos 1.000000 (points_pixel + fc2_out); no wave regression. The parity harness
+  `test_tps_parity.cpp` already existed — aligned its output to `cos_min=` so run_one parses it,
+  wrote `dump_tps_reference_from_gguf.py` (source .pdparams geo-blocked on bcebos → from_gguf like
+  the SR engines), uploaded `tps-ref.gguf` to `cstr/tps-loc-GGUF`, wired `diff_only`. End-to-end
+  `run_one --name tps_locnet` → 2 stages worst cos_min=1.000000 PASS.
 
 **Methodology lesson (reinforced): a single-stage diff cannot tell a dumper bug from an engine
 bug.** gliner's `lstm_out`-only check looked like a BiLSTM regression; multi-stage + the entity
