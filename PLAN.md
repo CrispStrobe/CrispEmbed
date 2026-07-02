@@ -251,6 +251,36 @@ CrispEmbed/
 
 ## Pending roadmap
 
+### scan_cleanup — features to port from unpaper (2026-07)
+
+`scan_cleanup` (classical, no model — BiblioForge's `--scan-cleanup`) currently has
+deskew, rectangular border-crop, background-whitening (morphological closing, fixed
+`6fdd1b5`), and Otsu/Sauvola binarize. Benchmarked vs `unpaper 7.0.0` with the
+ground-truth OCR-CER harness `tools/scan_cleanup_bench.py` (clean page → degrade →
+run each tool → CER vs known text + contact sheets). Finding: CrispEmbed already
+wins on uneven lighting (unpaper has no illumination correction) and never fails
+destructively, whereas unpaper's default mask/blackfilter **blanked a whole page**
+on an out-of-domain dark-shadow input — but unpaper has real features we lack.
+Port them, each **behind an OCR-CER A/B with saved output images** for visual
+review (run `scan_cleanup_bench.py` before/after every step; never merge a step
+that regresses CER or looks worse by eye):
+
+- [ ] **1. noisefilter / despeckle** — remove isolated multi-pixel dark blobs
+  (dust, punch-hole marks); add a median pass for salt-pepper (which unpaper does
+  NOT handle). New `p.despeckle` param.
+- [ ] **2. blackfilter** — clear large dark regions/edges (scanner-bed shadow,
+  photocopy edges) beyond the rectangular crop — with a **guard so it can never
+  blank the page** (unpaper's failure mode).
+- [ ] **3. deskew sheet-background fill** — fill rotation corners with the detected
+  paper color instead of the gray wedges the current deskew leaves.
+- [ ] **4. grayfilter / blurfilter** — clear faint gray haze / light smudges to white.
+- [ ] **5. 2-up page splitting (layout detection)** — split double-page book spreads
+  into two pages (biggest strategic win for book scans; we have nothing).
+- [ ] **6. content-mask detection + centering / border alignment** — normalize page
+  geometry (detect printed area, center, align borders).
+
+Harness: `tools/scan_cleanup_bench.py --image clean.png --bin build/crispembed`.
+
 ### llama.cpp parity, convergence & A/B plan (2026-07)
 
 A full audit of which CrispEmbed architectures llama.cpp now supports (upstream
