@@ -33,7 +33,9 @@ except ImportError:
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", default="dslim/bert-base-NER")
-    ap.add_argument("--text", default="George Washington went to Washington")
+    # MUST match the text hardcoded in tests/test_bert_ner_diff.cpp (the engine encodes
+    # this string; the ref is compared against it).
+    ap.add_argument("--text", default="Barack Obama was born in Hawaii")
     ap.add_argument("--output", required=True)
     args = ap.parse_args()
 

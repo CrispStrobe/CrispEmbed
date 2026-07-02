@@ -559,6 +559,27 @@
           "colbert_output": 0.99
         }
       }
+    },
+    {
+      "name": "bert_ner",
+      "engine": "bert_ner",
+      "diff_only": true,
+      "_comment": "BERT-NER encoder guardrail. Ref = dump_bert_ner_reference.py (AutoModel from .bin \u2014 safetensors SIGBUSes on M1) on the harness's fixed text. q8_0 model vs f32 ref -> final_hidden ~0.995, floor 0.99.",
+      "gguf": {
+        "repo": "cstr/bert-base-NER-GGUF",
+        "file": "bert-base-ner-q8_0.gguf",
+        "revision": "main"
+      },
+      "diff": {
+        "binary": "test-bert-ner-diff",
+        "ref": {
+          "repo": "cstr/bert-base-NER-GGUF",
+          "file": "bert-ner-ref.gguf"
+        },
+        "thresholds": {
+          "final_hidden": 0.99
+        }
+      }
     }
   ]
 }

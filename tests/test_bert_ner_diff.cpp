@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     // Compare final hidden state
     auto r = ref.compare("final_hidden", raw, (size_t)n_tok * dim, dim);
     printf("\n%-20s %10.6f %10.2e %s\n", "final_hidden", r.cos_min, r.max_abs,
-           r.is_pass() ? "PASS" : "FAIL");
+           r.is_pass(0.99f) ? "PASS" : "FAIL");  // 0.99: q8_0 model vs f32 ref (~0.995); scramble craters to ~0
 
     // Also check embedding stage if Python tokens match
     auto [ref_ids, ref_n] = ref.get_f32("input_ids");
@@ -52,5 +52,5 @@ int main(int argc, char** argv) {
     }
 
     crispembed_free(ctx);
-    return r.is_pass() ? 0 : 1;
+    return r.is_pass(0.99f) ? 0 : 1;
 }
