@@ -501,14 +501,17 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
   output check. Do NOT wire this ref; fix the dumper's bidirectional replacement, or use
   entity-output as the guardrail. (Also fixed 3 dumper bugs to make it run: TFPreTrainedModel
   shim, VPS `/mnt` tmp/cache paths, duplicate `general.architecture`.)
-- **lfm2_colbert — NOT a backbone regression.** Backbone is the same LFM2 that passes 20/20
-  (lfm2), and the dumper ref is sane (colbert_output rows L2-normalized, std≈1/√128). The
-  cos 0.506 is a localized **ColBERT-head** discrepancy (the `1_Dense` linear proj + per-token
-  L2-norm), engine-side or a convention diff. Next: also diff the ref's `hidden_states`
-  (present in the ref) by exposing the engine's pre-projection hidden to localize head-vs-backbone.
-  Dumper now generates a ref (needs a complete snapshot incl. root `model.safetensors`).
-- **bert_ner — dumper written** (`tools/dump_bert_ner_reference.py`, input_ids + final_hidden);
-  local run blocked on the flaky source download (dslim/bert-base-NER). Complete the snapshot, run.
+- **lfm2_colbert — NOT a regression; the DUMPER is wrong** (confirmed via a hidden_states
+  localizer added to `lfm2_embed.cpp`, LFM2_COLBERT_DIFF_REF). The engine's ColBERT backbone is
+  the SAME `lfm2_layer_fwd`+final-norm that passes 20/20 in the lfm2 embedding path, yet the ref's
+  `hidden_states` diffs cos=−0.54 → the reference is wrong. Cause: `dump_lfm2_colbert_reference.py`
+  does a MANUAL safetensors backbone forward (vs the lfm2 embedding dumper which uses `AutoModel`
+  and passes). FIX: rewrite the colbert dumper's backbone to `AutoModel(trust_remote_code)` + the
+  `1_Dense` projection, then re-diff; or guard with an independent ColBERT-similarity output check.
+- **bert_ner — dumper written** (`tools/dump_bert_ner_reference.py`, input_ids + final_hidden),
+  but the local dump **crashes (exit 138 / SIGBUS)** after loading dslim/bert-base-NER (no
+  captured traceback). Investigate (AutoModel load / output_hidden_states), then generate+wire.
+  Pre-wave BERT encoder — not a regression.
 
 **Methodology lesson (reinforced): a single-stage diff cannot tell a dumper bug from an engine
 bug.** gliner's `lstm_out`-only check looked like a BiLSTM regression; multi-stage + the entity
