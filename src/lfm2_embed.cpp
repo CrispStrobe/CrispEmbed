@@ -567,48 +567,86 @@ int lfm2_embed_encode_multivec(lfm2_embed_ctx * ctx, const char * text, float * 
 
     ggml_init_params gp = { ggml_tensor_overhead() * max_nodes + ggml_graph_overhead_custom(max_nodes, false), nullptr,
                             true };
-    ggml_context * g = ggml_init(gp);
 
-    ggml_tensor * inp = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
-    ggml_set_name(inp, "input_ids");
-    ggml_set_input(inp);
-    ggml_tensor * pos = nullptr;
-    if (hp.layer_types.find('a') != std::string::npos) {
-        pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
-        ggml_set_name(pos, "pos_ids");
-        ggml_set_input(pos);
-    }
+    // Build the ColBERT graph. Factored into a lambda because, on a scheduler
+    // bucket change, the graph must be built TWICE: once to feed
+    // ggml_backend_sched_reserve, then a FRESH graph for alloc+compute. Never
+    // re-alloc the same graph object that was just passed to sched_reserve:
+    // ggml_backend_sched_reset does NOT null tensor->buffer pointers, so the
+    // stale buffer/residency assignment left by the reserve pass is reused.
+    // On Metal that aborts (or happens to work); on CUDA (Tesla P100) it
+    // silently corrupts compute — the backbone `hidden_states` came back at
+    // cos −0.70 and colbert_output at 0.57, while the dense encode path (which
+    // already rebuilds after reserve) passes 20/20 on the same device. Mirror
+    // the dense path exactly.
+    struct colbert_graph {
+        ggml_context * g = nullptr;
+        ggml_cgraph * gf = nullptr;
+        ggml_tensor * inp = nullptr;
+        ggml_tensor * pos = nullptr;
+        ggml_tensor * hidden = nullptr;
+        ggml_tensor * projected = nullptr;
+    };
+    auto build_graph = [&]() -> colbert_graph {
+        colbert_graph cg;
+        cg.g = ggml_init(gp);
+        if (!cg.g) return cg;
 
-    // Token embedding
-    ggml_tensor * cur = ggml_get_rows(g, ctx->model.embed_tokens_w, inp);
+        cg.inp = ggml_new_tensor_1d(cg.g, GGML_TYPE_I32, T);
+        ggml_set_name(cg.inp, "input_ids");
+        ggml_set_input(cg.inp);
+        if (hp.layer_types.find('a') != std::string::npos) {
+            cg.pos = ggml_new_tensor_1d(cg.g, GGML_TYPE_I32, T);
+            ggml_set_name(cg.pos, "pos_ids");
+            ggml_set_input(cg.pos);
+        }
 
-    // Encoder layers
-    for (uint32_t il = 0; il < hp.n_layers; il++) {
-        cur = lfm2_layer_fwd(g, cur, ctx->model.layers[il], H, nh, nkv, hd, T, eps, theta, pos);
-    }
+        // Token embedding
+        ggml_tensor * cur = ggml_get_rows(cg.g, ctx->model.embed_tokens_w, cg.inp);
 
-    // Final norm
-    cur = lfm2_rms_norm(g, cur, ctx->model.embedding_norm_w, eps);
-    ggml_tensor * hidden = cur; // pre-projection backbone hidden
-    ggml_set_name(hidden, "hidden_states");
-    ggml_set_output(hidden);
+        // Encoder layers
+        for (uint32_t il = 0; il < hp.n_layers; il++) {
+            cur = lfm2_layer_fwd(cg.g, cur, ctx->model.layers[il], H, nh, nkv, hd, T, eps, theta, cg.pos);
+        }
 
-    // ColBERT projection: [H, T] → matmul with proj [cd, H] → [cd, T]
-    ggml_tensor * projected = ggml_mul_mat(g, ctx->model.colbert_proj_w, cur);
-    ggml_set_name(projected, "colbert_out");
-    ggml_set_output(projected);
+        // Final norm
+        cur = lfm2_rms_norm(cg.g, cur, ctx->model.embedding_norm_w, eps);
+        cg.hidden = cur; // pre-projection backbone hidden
+        ggml_set_name(cg.hidden, "hidden_states");
+        ggml_set_output(cg.hidden);
 
-    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
-    ggml_build_forward_expand(gf, projected);
-    ggml_build_forward_expand(gf, hidden);
+        // ColBERT projection: [H, T] → matmul with proj [cd, H] → [cd, T]
+        cg.projected = ggml_mul_mat(cg.g, ctx->model.colbert_proj_w, cur);
+        ggml_set_name(cg.projected, "colbert_out");
+        ggml_set_output(cg.projected);
 
-    // Reserve scheduler for ColBERT bucket
+        cg.gf = ggml_new_graph_custom(cg.g, max_nodes, false);
+        ggml_build_forward_expand(cg.gf, cg.projected);
+        ggml_build_forward_expand(cg.gf, cg.hidden);
+        return cg;
+    };
+
+    colbert_graph cg = build_graph();
+    if (!cg.g) return 0;
+
+    // Reserve scheduler for ColBERT bucket, then rebuild a fresh graph (see above)
     const int T_bucket = lfm2_bucket_seq_len(T);
     if (ctx->reserved_T_colbert != T_bucket) {
-        ggml_backend_sched_reserve(ctx->sched, gf);
+        ggml_backend_sched_reserve(ctx->sched, cg.gf);
         ctx->reserved_T_colbert = T_bucket;
         ctx->reserved_T = 0; // invalidate dense reservation
+        // Rebuild for actual T — never alloc the graph we just reserved.
+        ggml_free(cg.g);
+        cg = build_graph();
+        if (!cg.g) return 0;
     }
+
+    ggml_tensor * inp = cg.inp;
+    ggml_tensor * pos = cg.pos;
+    ggml_tensor * hidden = cg.hidden;
+    ggml_tensor * projected = cg.projected;
+    ggml_cgraph * gf = cg.gf;
+    ggml_context * g = cg.g;
 
     ggml_backend_sched_reset(ctx->sched);
     if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
