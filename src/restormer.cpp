@@ -468,9 +468,14 @@ restormer_context * restormer_init(const char * model_path, int n_threads) {
 
     core_gguf::free_metadata(meta);
 
-    bool force_cpu = (getenv("RESTORMER_FORCE_CPU") && atoi(getenv("RESTORMER_FORCE_CPU")));
-    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
-    if (!backend) backend = ggml_backend_cpu_init();
+    // Restormer runs ALL compute on the CPU enc_sched (created below); ctx->backend
+    // only holds weights and is freed immediately after load. Loading them on a GPU
+    // backend (init_best) leaves them in a Metal/CUDA buffer that the CPU conv sched
+    // then cannot read — aborting with "pre-allocated tensor (patch_embed.weight) in
+    // a buffer (MTL0) that cannot run" on Metal, and segfaulting on CUDA. The convs
+    // run on CPU regardless of where weights live, so load them on CPU. (Same class
+    // as the nafnet conv→ggml residency bug; RESTORMER_FORCE_CPU is now a no-op.)
+    ggml_backend_t backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, backend, "restormer", ctx->wl)) {
         fprintf(stderr, "restormer: failed to load weights\n");
         ggml_backend_free(backend); delete ctx; return nullptr;
