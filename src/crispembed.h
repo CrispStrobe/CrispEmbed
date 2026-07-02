@@ -875,6 +875,10 @@ typedef struct {
     int morph_kernel;
     float border_threshold;
     float deskew_max_angle;
+    int despeckle;            // 1 = remove isolated dark specks/dust (default: 1)
+    float despeckle_thresh;   // speck vs local-median darkness gap 0..1, default 0.25
+    int blackfilter;          // 1 = clear large SOLID dark regions (default: 1)
+    float blackfilter_thresh; // dark-pixel threshold 0..1, default 0.20
 } crispembed_scan_cleanup_params;
 
 CRISPEMBED_API crispembed_scan_cleanup_params crispembed_scan_cleanup_defaults(void);
@@ -891,6 +895,17 @@ CRISPEMBED_API int crispembed_scan_cleanup_process(void * ctx, const uint8_t * p
                                                    uint8_t ** out_pixels, int * out_width, int * out_height);
 
 CRISPEMBED_API void crispembed_scan_cleanup_free_image(uint8_t * pixels);
+
+/// Detect a two-up (double-page) book spread. Returns the gutter column to split
+/// at (0..width), or -1 for a single page. Input: RGB/grayscale uint8 (channels 1/3).
+CRISPEMBED_API int crispembed_scan_cleanup_detect_page_split(const uint8_t * pixels, int width, int height,
+                                                             int channels);
+
+/// Detect the printed content bounding box (tight box around ink, trimming blank
+/// margins), for centering / border alignment. Writes [x0,y0,x1,y1) (x1/y1
+/// exclusive). Returns 0 on success, -1 on a blank page.
+CRISPEMBED_API int crispembed_scan_cleanup_content_bbox(const uint8_t * pixels, int width, int height, int channels,
+                                                        int * x0, int * y0, int * x1, int * y1);
 
 // ---------------------------------------------------------------------------
 // Text Super-Resolution — upscale low-DPI text images before OCR.

@@ -40,6 +40,14 @@ typedef _ProcessSimpleDart = int Function(
 typedef _FreeImageC = Void Function(Pointer<Uint8>);
 typedef _FreeImageDart = void Function(Pointer<Uint8>);
 
+typedef _DetectSplitC = Int32 Function(Pointer<Uint8>, Int32, Int32, Int32);
+typedef _DetectSplitDart = int Function(Pointer<Uint8>, int, int, int);
+
+typedef _ContentBboxC = Int32 Function(Pointer<Uint8>, Int32, Int32, Int32,
+    Pointer<Int32>, Pointer<Int32>, Pointer<Int32>, Pointer<Int32>);
+typedef _ContentBboxDart = int Function(Pointer<Uint8>, int, int, int,
+    Pointer<Int32>, Pointer<Int32>, Pointer<Int32>, Pointer<Int32>);
+
 // ---------------------------------------------------------------------------
 // Result type
 // ---------------------------------------------------------------------------
@@ -71,6 +79,8 @@ class CrispScanCleanup {
   late final _FreeDart _free;
   late final _FreeImageDart _freeImage;
   late final _ProcessSimpleDart _processSimple;
+  late final _DetectSplitDart _detectSplit;
+  late final _ContentBboxDart _contentBbox;
 
   CrispScanCleanup({String? modelPath, int nThreads = 4, String? libPath}) {
     _lib = DynamicLibrary.open(libPath ?? _defaultLibPath());
@@ -83,6 +93,10 @@ class CrispScanCleanup {
         'crispembed_scan_cleanup_free_image');
     _processSimple = _lib.lookupFunction<_ProcessSimpleC, _ProcessSimpleDart>(
         'crispembed_scan_cleanup_process_simple');
+    _detectSplit = _lib.lookupFunction<_DetectSplitC, _DetectSplitDart>(
+        'crispembed_scan_cleanup_detect_page_split');
+    _contentBbox = _lib.lookupFunction<_ContentBboxC, _ContentBboxDart>(
+        'crispembed_scan_cleanup_content_bbox');
 
     final pathPtr = modelPath != null
         ? modelPath.toNativeUtf8()
@@ -141,6 +155,37 @@ class CrispScanCleanup {
     calloc.free(outH);
 
     return ScanCleanupResult(pixels: resultPixels, width: ow, height: oh);
+  }
+
+  /// Detect a two-up (double-page) book spread. Returns the gutter column to
+  /// split at, or null for a single page.
+  int? detectPageSplit(Uint8List pixels, int width, int height,
+      {int channels = 3}) {
+    final px = calloc<Uint8>(pixels.length);
+    px.asTypedList(pixels.length).setAll(0, pixels);
+    final sx = _detectSplit(px, width, height, channels);
+    calloc.free(px);
+    return sx < 0 ? null : sx;
+  }
+
+  /// Detect the printed content bounding box (trims blank margins). Returns
+  /// [x0, y0, x1, y1] with x1/y1 exclusive, or null for a blank page.
+  List<int>? contentBbox(Uint8List pixels, int width, int height,
+      {int channels = 3}) {
+    final px = calloc<Uint8>(pixels.length);
+    px.asTypedList(pixels.length).setAll(0, pixels);
+    final x0 = calloc<Int32>(), y0 = calloc<Int32>();
+    final x1 = calloc<Int32>(), y1 = calloc<Int32>();
+    final rc = _contentBbox(px, width, height, channels, x0, y0, x1, y1);
+    final result = rc != 0
+        ? null
+        : [x0.value, y0.value, x1.value, y1.value];
+    calloc.free(px);
+    calloc.free(x0);
+    calloc.free(y0);
+    calloc.free(x1);
+    calloc.free(y1);
+    return result;
   }
 
   void dispose() {

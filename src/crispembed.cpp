@@ -4454,7 +4454,8 @@ static ocr_orchestrator::source_type map_source(int s) {
 // crispembed_scan_cleanup_params (C API) and scan_cleanup_params (internal)
 // share the same field layout; copy field-by-field across the type boundary.
 static scan_cleanup_params to_cleanup(const crispembed_scan_cleanup_params & p) {
-    scan_cleanup_params o;
+    scan_cleanup_params o = scan_cleanup_defaults(); // start from defaults so any
+                                                     // fields not in the C API struct are sane
     o.deskew = p.deskew;
     o.crop_borders = p.crop_borders;
     o.whiten_background = p.whiten_background;
@@ -4465,6 +4466,10 @@ static scan_cleanup_params to_cleanup(const crispembed_scan_cleanup_params & p) 
     o.morph_kernel = p.morph_kernel;
     o.border_threshold = p.border_threshold;
     o.deskew_max_angle = p.deskew_max_angle;
+    o.despeckle = p.despeckle;
+    o.despeckle_thresh = p.despeckle_thresh;
+    o.blackfilter = p.blackfilter;
+    o.blackfilter_thresh = p.blackfilter_thresh;
     return o;
 }
 
@@ -5046,7 +5051,20 @@ extern "C" crispembed_scan_cleanup_params crispembed_scan_cleanup_defaults(void)
     cp.morph_kernel = p.morph_kernel;
     cp.border_threshold = p.border_threshold;
     cp.deskew_max_angle = p.deskew_max_angle;
+    cp.despeckle = p.despeckle;
+    cp.despeckle_thresh = p.despeckle_thresh;
+    cp.blackfilter = p.blackfilter;
+    cp.blackfilter_thresh = p.blackfilter_thresh;
     return cp;
+}
+
+extern "C" int crispembed_scan_cleanup_detect_page_split(const uint8_t * pixels, int width, int height, int channels) {
+    return scan_cleanup_detect_page_split(pixels, width, height, channels);
+}
+
+extern "C" int crispembed_scan_cleanup_content_bbox(const uint8_t * pixels, int width, int height, int channels,
+                                                    int * x0, int * y0, int * x1, int * y1) {
+    return scan_cleanup_content_bbox(pixels, width, height, channels, x0, y0, x1, y1);
 }
 
 extern "C" void * crispembed_scan_cleanup_init(const char * model_path, int n_threads) {
@@ -5060,17 +5078,7 @@ extern "C" void crispembed_scan_cleanup_free(void * ctx) {
 extern "C" int crispembed_scan_cleanup_process(void * ctx, const uint8_t * pixels, int width, int height, int channels,
                                                crispembed_scan_cleanup_params params, uint8_t ** out_pixels,
                                                int * out_width, int * out_height) {
-    scan_cleanup_params p;
-    p.deskew = params.deskew;
-    p.crop_borders = params.crop_borders;
-    p.whiten_background = params.whiten_background;
-    p.binarize = params.binarize;
-    p.binarize_method = params.binarize_method;
-    p.sauvola_k = params.sauvola_k;
-    p.sauvola_window = params.sauvola_window;
-    p.morph_kernel = params.morph_kernel;
-    p.border_threshold = params.border_threshold;
-    p.deskew_max_angle = params.deskew_max_angle;
+    scan_cleanup_params p = to_cleanup(params);
     return scan_cleanup_process((scan_cleanup_ctx *)ctx, pixels, width, height, channels, p, out_pixels, out_width,
                                 out_height);
 }

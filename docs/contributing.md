@@ -295,11 +295,25 @@ Utility libraries (not model backends) follow a lighter pattern.
 8. **Server** — add endpoints to `examples/server/server.cpp` if appropriate
 9. **Unit tests** — `tests/test_*.cpp` with synthetic images
 
+> **ABI gotcha — a params struct is mirrored in FIVE places.** Adding a field to a
+> C++ params struct (e.g. `scan_cleanup_params`) is not enough — the struct is
+> passed by value across the C ABI, so every mirror must gain the SAME field in the
+> SAME order or you get silent garbage / memory corruption:
+> 1. `src/<lib>.h` (internal struct) and its `scan_cleanup_defaults()`.
+> 2. `src/crispembed.h` — the C-API mirror struct (`crispembed_scan_cleanup_params`).
+> 3. `src/crispembed.cpp` — the `to_*()` / `_defaults()` conversions must copy the
+>    new field, and **must start from `<lib>_defaults()`** (not an uninitialised
+>    struct) so any field the C API doesn't expose is still sane.
+> 4. `crispembed-sys/src/lib.rs` (`#[repr(C)]` struct).
+> 5. `python/crispembed/_binding.py` (`ctypes.Structure._fields_`).
+> Dart uses `*_process_simple` (int args, no struct) so it is exempt from the struct
+> mirror, but new *functions* still need Dart FFI typedefs + a method.
+
 ### Currently implemented utility libraries
 
 | Library | C API | CLI | Rust | Python | Dart | Server |
 |---------|-------|-----|------|--------|------|--------|
-| Classical preproc (skew, bg norm, despeckle) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Classical preproc (skew, bg norm, despeckle, blackfilter, page-split, content-bbox) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | 1-bit DWA morphology | header | — | — | — | — | — |
 | CC text line detection | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
 | Page dewarping | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
