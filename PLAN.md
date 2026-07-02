@@ -739,8 +739,11 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
 - **decoder_embed — CLEAN, CLOSED (Gap 4).** `test_decoder_embed_diff.cpp` (crispembed_encode,
   last-token pool) vs independent Qwen3-Embedding-0.6B HF ref: cos 0.9993 (q8_0-vs-f32). Ref
   uploaded to `cstr/qwen3-embed-0.6b-GGUF`, wired `diff_only`, run_one PASS. Added to Kaggle kernel.
-- **bidirlm (text) — QUEUED on Kaggle (Gap 4).** 2.5B; added to `crispembed_ref_gen.py` reusing
-  test-decoder-embed-diff (--pooling mean). Runs async on a GPU worker (dump→verify→upload-on-PASS).
+- **bidirlm (text) — Kaggle run 1: dump_failed → fixed, re-queued (Gap 4).** 2.5B; added to
+  `crispembed_ref_gen.py` reusing test-decoder-embed-diff (--pooling mean). First GPU run (chr1s4,
+  v5) failed at dump on `Do you wish to run the custom code? [y/N]` — BidirLM-Omni ships custom
+  modeling code; added `trust_remote_code=True` to the dumper. Re-pushed to retry. (Same run:
+  decoder_embed dumped+verified+uploaded OK on CUDA — double-confirms the local cos 0.9993.)
 - **fireredpunc — CLEAN, CLOSED (Gap 4).** No hidden/logits accessor in the punct C API → golden
   text-match `run_check` (new generic `test_punct_diff.cpp`). q4_k engine restores
   "hello world how are you today i am fine thanks" → "Hello world. How are you today? I am fine.
