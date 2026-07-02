@@ -51,6 +51,11 @@ if tok:
     os.environ.setdefault("HUGGING_FACE_HUB_TOKEN", tok)
 os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "0"
 
+# The reference dumpers import `gguf` to write the ref (nafnet's has its own writer).
+# Kaggle doesn't ship it -> install once up front (the v3 run failed every dumper on
+# ModuleNotFoundError: No module named 'gguf').
+subprocess.run("pip install -q gguf", shell=True)
+
 def log(msg):
     print(msg, flush=True)
     with open(PROGRESS, "a") as f:
