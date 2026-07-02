@@ -4162,6 +4162,10 @@ extern "C" const char * crispembed_lightonocr_recognize(crispembed_lightonocr_co
 
 extern "C" void crispembed_free(crispembed_context * ctx) {
     if (!ctx) return;
+    // Flush the importance matrix here (not just at atexit): one-shot binaries
+    // exit via core_util::clean_exit() -> _exit(), which bypasses atexit handlers.
+    // No-op unless CRISPEMBED_IMATRIX_OUT is set; idempotent within a process.
+    crispembed_imatrix_flush();
 #ifdef CRISPEMBED_HAS_CRISP_AUDIO
     if (ctx->audio_ctx) {
         bidirlm_audio::close((bidirlm_audio::context *)ctx->audio_ctx);

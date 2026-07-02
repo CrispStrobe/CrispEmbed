@@ -27,6 +27,7 @@ std::mutex g_mu;
 bool g_checked = false;
 bool g_active = false;
 bool g_atexit = false;
+bool g_flushed = false;  // guard: write the imatrix at most once per process
 std::string g_path;
 // weight name -> running sum of squares (double for numerical stability)
 std::map<std::string, std::vector<double>> g_sumsq;
@@ -137,7 +138,10 @@ void crispembed_imatrix_install(ggml_backend_sched_t sched) {
 
 void crispembed_imatrix_flush(void) {
     std::lock_guard<std::mutex> lk(g_mu);
-    if (!g_active || g_sumsq.empty()) return;
+    // clean_exit() in one-shot binaries bypasses atexit, so crispembed_free()
+    // also calls this explicitly; guard against writing twice per process.
+    if (g_flushed || !g_active || g_sumsq.empty()) return;
+    g_flushed = true;
 
     merge_existing();
 
