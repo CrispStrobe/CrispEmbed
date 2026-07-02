@@ -264,24 +264,26 @@ def main():
             print(f"[upload] {upname}", flush=True)
         out.unlink(missing_ok=True)   # free space before next quant
 
-    # 5. upload the imatrix artifact only (small; reproducibility). Do NOT upload
-    #    f16 — it would risk clobbering and is large. Then rm everything local.
-    if api:
-        with kh.build_heartbeat("upload.imatrix"):
-            api.upload_file(path_or_fileobj=str(imat), path_in_repo=imat.name,
-                repo_id=cfg["hf_out"], repo_type="model",
-                commit_message="importance matrix (calibration)")
-        print(f"[upload] {imat.name}", flush=True)
-    f16.unlink(missing_ok=True); imat.unlink(missing_ok=True)
-
-    # Write a downloadable A/B summary to /kaggle/working (kernels_output captures
-    # working-dir files but NOT stdout — kaggle_usage.md #15).
-    summary = (f"imatrix A/B — {MODEL} ({cfg['hf_out']}), cos vs f16 gold, n={len(eval_)}\n"
-               + "\n".join(report) + "\n")
+    # 5. write the A/B summary, then upload it + the imatrix artifact (small; for
+    #    reproducibility and so the baseline-vs-imatrix delta is retrievable — the
+    #    Kaggle stdout log is not captured and kernels_output only has .ccache).
+    #    Do NOT upload f16 (large, and would risk clobbering). Then rm local.
+    summary = (f"imatrix A/B — {MODEL} ({cfg['hf_out']}), cos vs f{'16/32'} gold, "
+               f"n={len(eval_)}, calib={len(calib)}\n" + "\n".join(report) + "\n")
+    summ_path = WORK / f"{cfg['prefix']}-imatrix-ab.txt"
     try:
-        (WORK / f"{cfg['prefix']}-imatrix-ab.txt").write_text(summary)
+        summ_path.write_text(summary)
     except Exception as e:
         print(f"summary write failed: {e}", flush=True)
+    if api:
+        for p, msg in [(summ_path, "A/B summary (cos vs gold)"),
+                       (imat, "importance matrix (calibration)")]:
+            if p.exists():
+                with kh.build_heartbeat(f"upload.{p.name}"):
+                    api.upload_file(path_or_fileobj=str(p), path_in_repo=p.name,
+                        repo_id=cfg["hf_out"], repo_type="model", commit_message=msg)
+                print(f"[upload] {p.name}", flush=True)
+    f16.unlink(missing_ok=True); imat.unlink(missing_ok=True)
 
     kh.step("all_done", **{f"q{i}": r for i, r in enumerate(report)})
     print("\n===== A/B SUMMARY (" + MODEL + ", cos vs f16 gold) =====")
