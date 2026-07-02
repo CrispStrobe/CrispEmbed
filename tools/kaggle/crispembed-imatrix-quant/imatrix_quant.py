@@ -56,6 +56,7 @@ import kaggle_harness as kh
 # canonical q8_0/q4_k baselines: q4_k+imatrix → *-q4_k-imatrix.gguf, iq4_xs → *-iq4_xs.gguf.
 QSPECS = [
     ("q8_0",   False, None),                          # A/B reference only; baseline exists
+    ("q4_k",   False, None),                          # A/B baseline (no imatrix) — shows the delta; not uploaded
     ("q4_k",   True,  "{prefix}-q4_k-imatrix.gguf"),  # new file, does not touch *-q4_k.gguf
     ("iq4_xs", True,  "{prefix}-iq4_xs.gguf"),         # new file
 ]
@@ -227,17 +228,18 @@ def main():
     # 4. per-quant: quantize -> A/B -> upload -> rm
     report = []
     for qtype, use_im, up_tmpl in cfg["quants"]:
-        out = WORK / f"{cfg['prefix']}-{qtype}.gguf"       # local temp name
+        tag = f"{qtype}{'-im' if use_im else ''}"
+        out = WORK / f"{cfg['prefix']}-{tag}.gguf"         # distinct local temp name
         cmd = [str(quant), str(f16), str(out), qtype]
         if use_im:
             cmd += ["--imatrix", str(imat)]
-        with kh.build_heartbeat(f"quantize.{qtype}"):
+        with kh.build_heartbeat(f"quantize.{tag}"):
             subprocess.check_call(cmd)
         vecs, dt = embed(cli, out, eval_)
         cos, n = mean_cos(vecs, gold)
         mb = out.stat().st_size / 1e6
-        upname = up_tmpl.format(prefix=cfg["prefix"]) if up_tmpl else "(no upload)"
-        kh.step(f"ab.{qtype}", imatrix=use_im, cos_vs_f16=round(cos, 6),
+        upname = up_tmpl.format(prefix=cfg["prefix"]) if up_tmpl else "(A/B only, not uploaded)"
+        kh.step(f"ab.{tag}", imatrix=use_im, cos_vs_f16=round(cos, 6),
                 size_mb=round(mb, 1), embed_s=round(dt, 2), n=n, upload=upname)
         report.append(f"{qtype:7s} imatrix={int(use_im)}  cos_vs_f16={cos:.6f}  {mb:7.1f}MB  -> {upname}")
         # Upload ONLY imatrix variants, under DISTINCT names — never overwrite the
@@ -259,6 +261,15 @@ def main():
                 commit_message="importance matrix (calibration)")
         print(f"[upload] {imat.name}", flush=True)
     f16.unlink(missing_ok=True); imat.unlink(missing_ok=True)
+
+    # Write a downloadable A/B summary to /kaggle/working (kernels_output captures
+    # working-dir files but NOT stdout — kaggle_usage.md #15).
+    summary = (f"imatrix A/B — {MODEL} ({cfg['hf_out']}), cos vs f16 gold, n={len(eval_)}\n"
+               + "\n".join(report) + "\n")
+    try:
+        (WORK / f"{cfg['prefix']}-imatrix-ab.txt").write_text(summary)
+    except Exception as e:
+        print(f"summary write failed: {e}", flush=True)
 
     kh.step("all_done", **{f"q{i}": r for i, r in enumerate(report)})
     print("\n===== A/B SUMMARY (" + MODEL + ", cos vs f16 gold) =====")
