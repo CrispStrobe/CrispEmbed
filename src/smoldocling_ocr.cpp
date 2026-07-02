@@ -12,6 +12,7 @@
 // Follows the same CPU-scalar pattern as granite_vision_ocr.cpp.
 
 #include "smoldocling_ocr.h"
+#include "core/bpe.h"
 #include "core/gguf_loader.h"
 #include "core/vlm_attention.h"
 #include "ggml-cpu.h"
@@ -57,72 +58,9 @@ static void sd_linear(const float * input, int n, int id, int od,
 }
 
 // ── GPT-2 byte-level BPE tables ──────────────────────────────────────
-// Same as CrispASR core/bpe.h — maps raw bytes ↔ printable unicode
-// codepoints so the BPE vocab can survive JSON roundtrips.
-
-static const std::vector<int> & sd_byte_encoder() {
-    static std::vector<int> bs(256, 0);
-    static bool init = false;
-    if (init) return bs;
-    std::vector<int> printable;
-    for (int b = 0x21; b <= 0x7e; b++) printable.push_back(b);
-    for (int b = 0xa1; b <= 0xac; b++) printable.push_back(b);
-    for (int b = 0xae; b <= 0xff; b++) printable.push_back(b);
-    int next = 256;
-    for (int b = 0; b < 256; b++) {
-        bool found = false;
-        for (int p : printable) if (p == b) { found = true; break; }
-        bs[b] = found ? b : next++;
-    }
-    init = true;
-    return bs;
-}
-
-static const std::unordered_map<uint32_t, uint8_t> & sd_byte_decoder() {
-    static std::unordered_map<uint32_t, uint8_t> table;
-    static bool init = false;
-    if (init) return table;
-    auto & enc = sd_byte_encoder();
-    for (int b = 0; b < 256; b++) table[(uint32_t)enc[b]] = (uint8_t)b;
-    init = true;
-    return table;
-}
-
-// Encode a codepoint as UTF-8
-static void sd_utf8_encode(uint32_t cp, std::string & out) {
-    if (cp < 0x80) { out.push_back((char)cp); }
-    else if (cp < 0x800) { out.push_back((char)(0xC0|(cp>>6))); out.push_back((char)(0x80|(cp&0x3F))); }
-    else if (cp < 0x10000) { out.push_back((char)(0xE0|(cp>>12))); out.push_back((char)(0x80|((cp>>6)&0x3F))); out.push_back((char)(0x80|(cp&0x3F))); }
-    else { out.push_back((char)(0xF0|(cp>>18))); out.push_back((char)(0x80|((cp>>12)&0x3F))); out.push_back((char)(0x80|((cp>>6)&0x3F))); out.push_back((char)(0x80|(cp&0x3F))); }
-}
-
-// Encode raw bytes → GPT-2 unicode string
-static std::string sd_bytes_to_unicode(const char * bytes, size_t n) {
-    auto & enc = sd_byte_encoder();
-    std::string out;
-    for (size_t i = 0; i < n; i++) sd_utf8_encode((uint32_t)enc[(unsigned char)bytes[i]], out);
-    return out;
-}
-
-// Decode a BPE token string (GPT-2 unicode codepoints) back to raw bytes
-static std::string sd_token_to_bytes(const std::string & token) {
-    auto & dec = sd_byte_decoder();
-    std::string out;
-    size_t i = 0;
-    while (i < token.size()) {
-        unsigned char c = (unsigned char)token[i];
-        uint32_t cp; size_t len;
-        if (c < 0x80) { cp = c; len = 1; }
-        else if ((c & 0xE0) == 0xC0 && i+1 < token.size()) { cp = ((c&0x1F)<<6)|((unsigned char)token[i+1]&0x3F); len = 2; }
-        else if ((c & 0xF0) == 0xE0 && i+2 < token.size()) { cp = ((c&0x0F)<<12)|(((unsigned char)token[i+1]&0x3F)<<6)|((unsigned char)token[i+2]&0x3F); len = 3; }
-        else if ((c & 0xF8) == 0xF0 && i+3 < token.size()) { cp = ((c&0x07)<<18)|(((unsigned char)token[i+1]&0x3F)<<12)|(((unsigned char)token[i+2]&0x3F)<<6)|((unsigned char)token[i+3]&0x3F); len = 4; }
-        else { i++; continue; }
-        i += len;
-        auto it = dec.find(cp);
-        if (it != dec.end()) out.push_back((char)it->second);
-    }
-    return out;
-}
+// GPT-2 byte-level BPE byte<->unicode mapping is shared in core/bpe.h
+// (core_bpe::bytes_to_unicode for encode, core_bpe::unicode_to_bytes for
+// decode) — this engine used to carry private copies (sd_byte_encoder etc.).
 
 // ── BPE Tokenizer ─────────────────────────────────────────────────────
 
@@ -161,7 +99,7 @@ struct sd_tokenizer {
         if (text.empty()) return {};
 
         // Step 1: convert raw bytes to GPT-2 unicode string
-        std::string unicode = sd_bytes_to_unicode(text.data(), text.size());
+        std::string unicode = core_bpe::bytes_to_unicode(text.data(), text.size());
 
         // Step 2: split into per-byte unicode symbols
         std::vector<std::string> symbols;
@@ -217,7 +155,7 @@ struct sd_tokenizer {
                 result += piece;
             } else {
                 // Base BPE vocab: reverse GPT-2 byte mapping
-                result += sd_token_to_bytes(piece);
+                result += core_bpe::unicode_to_bytes(piece);
             }
         }
         return result;

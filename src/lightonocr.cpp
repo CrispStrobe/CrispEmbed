@@ -4,6 +4,7 @@
 // Single GGUF, CPU-only via ggml_backend_sched.
 
 #include "lightonocr.h"
+#include "core/bpe.h"
 #include "core/gguf_loader.h"
 #include "ggml.h"
 #include "ggml-backend.h"
@@ -1286,20 +1287,14 @@ static bool run_decoder_prefill(context &ctx,
         fprintf(stderr, "[lightonocr-bench] decode_total: %lldms (%d steps)\n", decode_total_ms, decode_steps);
     }
 
-    // Decode generated token IDs to text using the vocab
+    // Decode generated token IDs to text via the shared GPT-2 byte-level
+    // decoder (inverse of byte_encoder(): "Ġ" -> space, "Ċ" -> newline, and
+    // all other bytes — the old code only stripped a single leading "Ġ").
     out_text = "";
     for (int id : generated) {
         if (id == eos_id) break;
-        if (id >= 0 && id < (int)ctx.vocab.size()) {
-            const std::string &tok = ctx.vocab[id];
-            // GPT-2 BPE: Ġ → space
-            if (!tok.empty() && tok[0] == '\xc4' && tok.size() >= 2 && tok[1] == '\xa0') {
-                out_text += ' ';
-                out_text += tok.substr(2);
-            } else {
-                out_text += tok;
-            }
-        }
+        if (id >= 0 && id < (int)ctx.vocab.size())
+            core_bpe::unicode_to_bytes(ctx.vocab[id], out_text);
     }
 
     return true;

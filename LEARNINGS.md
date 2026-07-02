@@ -148,12 +148,53 @@ diff harness run under FORCE_CPU is blind to this entire class. The math-OCR eng
 (bttr/hmer/posformer/mixtex/ppformulanet) had **zero** regression coverage, so the
 abort shipped unseen — same coverage-gap story as nafnet.
 
-**Caveat — mixtex_ocr has a *separate*, pre-existing decode bug:** it now runs on
-Metal, and its encoder is correct (recovers `\frac{-b\pm\sqrt{b^2-4ac}}{2a}` from a
-rendered formula), but greedy decode degenerates into runaway repetition (never hits
-EOS; raw `Ġ`/`Ċ` BPE markers leak) on both a formula and a document page. That is NOT
-the residency fix (residency can't change numerics) and NOT input-OOD — it's an
-unvalidated decode path (no repetition handling / detok). Tracked separately.
+## mixtex_ocr decode bugs — RESOLVED 2026-07-02 (two independent bugs + a wrong handover claim)
+
+mixtex_ocr "ran but produced garbage: correct formula start then runaway repetition,
+never stops." Two *independent* bugs, and one handover claim that was wrong:
+
+- **Bug A — detok leak (cosmetic).** The decode concatenated raw byte-level BPE piece
+  strings, so `Ġ`/`Ċ` leaked verbatim. Fixed by routing through the now-shared
+  `core_bpe::unicode_to_bytes` (see the DRY sweep note below).
+- **Bug B — never emits EOS (the real one).** `mixtex.decoder.vocab_size` in the GGUF
+  was **25678** (the base `tokenizer.tokens` count) but the tied LM head / word
+  embedding is **25681** rows. The decoder's argmax + logit loop used `vocab_size`, so
+  they only scored tokens 0..25677 — the EOS token **`</s>` = 25678** was **outside the
+  scored range and could never win** → decode ran to `max_len` and degenerated. Content
+  was always correct (all real tokens < 25678); only the *stop* token was excluded.
+  Fix: derive `vocab_size` from `dec.word_embed.weight->ne[1]` (authoritative LM-head
+  width), and fix the converter to write `word_embed.shape[0]`, not `len(tokens)`. This
+  is the sibling of the [[texteller-decoder-start-token]] trap: VisionEncoderDecoder
+  models split token bookkeeping between the base tokenizer, the nested decoder config,
+  and the added-special-tokens table, and converters routinely grab the wrong one.
+- **Wrong handover claim (verify independently).** The handover asserted "the encoder
+  is correct — it recovers `\frac{-b\pm\sqrt{b^2-4ac}}{2a}`." Running **HF itself** on
+  the same `formula.png` produced *different* garbage (`\bigvee\overline{...`) — the
+  image is out-of-domain / preprocessing-mismatched (HF resamples **bicubic**,
+  `resample:3`; the C++ port resizes **bilinear**), and the C++ formula-looking output
+  was a coincidental post-divergence hallucination, not evidence of a correct encoder.
+  A C++-vs-HF token trace matched exactly for 5 tokens then flipped at a low-confidence
+  step — expected from f16-vs-f32 + the resize mismatch, not a graph bug. On in-domain
+  formula images the port now decodes cleanly and terminates.
+- **Bicubic preprocessing (done).** Ported the resize from bilinear to the shared
+  `image_preproc::resize_bicubic_u8_hwc` (a=-0.5 Catmull-Rom + antialias, matching PIL
+  `resample:3` on uint8). Verified: C++ now matches HF's greedy token trace through
+  **9** tokens (incl. HF's `\bigvee`=12724) vs **5** with bilinear; the residual flip is
+  f16-vs-f32 (the GGUF is f16, HF f32), not preprocessing. Bilinear is retained behind
+  `MIXTEX_BILINEAR=1` for A/B bisection (dev-guide "keep both paths" rule).
+
+## DRY: byte-level BPE decode centralized in core/bpe.h (2026-07-02)
+
+Every OCR/VLM engine hand-rolled the *inverse* of `core_bpe::byte_encoder()`
+(`Ġ`→space, `Ċ`→newline, all 256 bytes). Three variants existed: full-correct-but-
+duplicated (deepseek/unlimited/glm/internvl2), full-but-re-implementing the byte table
+too (smoldocling/granite/qwen2vl), and partial `Ġ`-only that silently dropped `Ċ` and
+other bytes (ppformulanet ×2, lightonocr, mixtex=none). Centralized as
+`core_bpe::byte_decoder()` + `core_bpe::unicode_to_bytes(piece[, out])`; each engine
+keeps only its own *special-token skip policy* (which pieces to drop), since that
+genuinely varies. `math_ocr` is intentionally excluded — it's SentencePiece `▁`, whose
+codepoint isn't a byte-encoder output. Verified non-regressing by A/B on deepseek
+(Cat1), granite (Cat2, identical old-vs-new), ppformulanet-l (Cat3, now decodes `Ċ`).
 
 ## June-2026 scalar→ggml wave audit: 3 new regressions, all invisible to numerical guards (2026-07)
 
