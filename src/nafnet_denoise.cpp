@@ -22,6 +22,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -295,6 +296,17 @@ struct nafnet_context {
     ggml_backend_sched_t enc_sched    = nullptr;
     std::vector<uint8_t> enc_meta;
 
+    // Cache of conv kernels/biases dequantized to ggml order and made resident on
+    // enc_backend (the conv sched's own backend). Keyed by the source GGUF tensor,
+    // populated lazily on first use. Residency matters because the GGUF weights may
+    // live on a different backend (Metal/CUDA) than the CPU conv sched — referencing
+    // that foreign buffer in the CPU graph aborts sched_alloc ("pre-allocated tensor
+    // in a buffer that cannot run" on Metal; segfault on CUDA). Caching also avoids
+    // re-dequantizing the same weight on every one of the many per-block conv calls.
+    std::unordered_map<const ggml_tensor *, ggml_tensor *> gw_cache;
+    std::vector<ggml_context *>        gw_ctxs;
+    std::vector<ggml_backend_buffer_t> gw_bufs;
+
     // Weight data
     core_gguf::WeightLoad wl;
     std::string model_path;
@@ -370,6 +382,8 @@ nafnet_context * nafnet_init(const char * model_path, int n_threads) {
 
 void nafnet_free(nafnet_context * ctx) {
     if (ctx) {
+        for (auto * buf : ctx->gw_bufs) if (buf) ggml_backend_buffer_free(buf);
+        for (auto * c : ctx->gw_ctxs) if (c) ggml_free(c);
         if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
         if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
         core_gguf::free_weights(ctx->wl);
@@ -380,12 +394,51 @@ void nafnet_free(nafnet_context * ctx) {
 
 // ── ggml conv2d implementation ──────────────────────────────────────
 
+// Force the scalar conv2d_cpu path (pre-wave reference). Gated by NAFNET_SCALAR=1
+// so the ggml conv path can be A/B'd against it without recompiling.
+static bool nafnet_scalar_conv() {
+    static bool v = getenv("NAFNET_SCALAR") && atoi(getenv("NAFNET_SCALAR"));
+    return v;
+}
+
+// Dequantize a GGUF conv weight/bias once and park it on enc_backend with the
+// given ggml ne dims, so the conv sched sees a buffer-resident leaf. The GGUF
+// bytes (numpy [OC,IC_g,KH,KW] row-major, KW innermost) are copied UNCHANGED,
+// which is exactly a contiguous ne=[KW,KH,IC_g,OC] kernel — the layout
+// ggml_conv_2d expects. Cached by source pointer (stable for the model's life).
+static ggml_tensor * nafnet_resident(nafnet_context * ctx, const ggml_tensor * src,
+                                     ggml_type type,
+                                     int64_t ne0, int64_t ne1, int64_t ne2, int64_t ne3) {
+    auto it = ctx->gw_cache.find(src);
+    if (it != ctx->gw_cache.end()) return it->second;
+
+    std::vector<float> buf;
+    const float * data = to_f32(src, buf);
+
+    ggml_init_params ip = { ggml_tensor_overhead() + 64, nullptr, true };
+    ggml_context * kc = ggml_init(ip);
+    ggml_tensor * t = ggml_new_tensor_4d(kc, type, ne0, ne1, ne2, ne3);
+    ggml_backend_buffer_t kbuf = ggml_backend_alloc_ctx_tensors(kc, ctx->enc_backend);
+    if (type == GGML_TYPE_F16) {
+        std::vector<ggml_fp16_t> h((size_t)ne0 * ne1 * ne2 * ne3);
+        ggml_fp32_to_fp16_row(data, h.data(), (int64_t)h.size());
+        ggml_backend_tensor_set(t, h.data(), 0, ggml_nbytes(t));
+    } else {
+        ggml_backend_tensor_set(t, data, 0, ggml_nbytes(t));
+    }
+
+    ctx->gw_ctxs.push_back(kc);
+    ctx->gw_bufs.push_back(kbuf);
+    ctx->gw_cache[src] = t;
+    return t;
+}
+
 static void conv2d_ggml(nafnet_context * ctx,
                          const float * input, int ic, int ih, int iw,
                          ggml_tensor * weight_t, ggml_tensor * bias_t,
                          int oc, int kh, int kw, int stride, int pad,
                          int groups, float * output) {
-    if (!ctx->enc_sched || !weight_t) {
+    if (!ctx->enc_sched || !weight_t || nafnet_scalar_conv()) {
         // fallback to scalar
         std::vector<float> wf_buf, bf_buf;
         const float * wf = weight_t ? to_f32(weight_t, wf_buf) : nullptr;
@@ -406,33 +459,25 @@ static void conv2d_ggml(nafnet_context * ctx,
     ggml_set_name(x, "x");
     ggml_set_input(x);
 
-    // Prepare weight for ggml_conv_2d: needs [KW, KH, IC_g, OC] in ggml order.
-    // GGUF may store as 2D [OC, IC_g*KH*KW] or 4D [OC, IC_g, KH, KW] (PyTorch).
-    ggml_tensor * w = weight_t;
-    if (w->type != GGML_TYPE_F32)
-        w = ggml_cast(g, w, GGML_TYPE_F32);
     int ic_g = (groups > 1) ? 1 : ic;
-    if (ggml_n_dims(w) == 2) {
-        // 2D weight: could be [IC*KH*KW, OC] or [OC, IC*KH*KW] depending on converter.
-        // Detect: if ne[0] == ic_g*kh*kw → standard; if ne[1] == ic_g*kh*kw → transposed.
-        int64_t ik = (int64_t)ic_g * kh * kw;
-        if (w->ne[0] == ik) {
-            w = ggml_reshape_4d(g, w, kw, kh, ic_g, w->ne[1]);
-        } else if (w->ne[1] == ik) {
-            // Transposed: [OC, IC*KH*KW] — transpose then reshape
-            w = ggml_cont(g, ggml_transpose(g, w));
-            w = ggml_reshape_4d(g, w, kw, kh, ic_g, w->ne[1]);
-        } else {
-            // Element count matches but layout unclear — try flat reshape
-            w = ggml_reshape_4d(g, w, kw, kh, ic_g, oc);
-        }
-    } else if (ggml_n_dims(w) >= 4) {
-        // PyTorch 4D: ne[0]=OC, ne[1]=IC_g, ne[2]=KH, ne[3]=KW
-        // ggml order: ne[0]=KW, ne[1]=KH, ne[2]=IC_g, ne[3]=OC
-        w = ggml_cont(g, ggml_permute(g, w, 3, 2, 1, 0));
-    }
-    if (w->type != GGML_TYPE_F16)
-        w = ggml_cast(g, w, GGML_TYPE_F16);
+
+    // Conv kernel [KW,KH,IC_g,OC] and bias [OC], dequantized once and parked on
+    // enc_backend (see nafnet_resident). This fixes the conv→ggml wave-port
+    // regression (output cos 0.538): the old path reshaped/permuted the GGUF leaf
+    // trusting ggml's ne=[OC,IC_g,KH,KW] view, whose fastest axis (OC) disagrees
+    // with the real bytes (KW), so it scrambled the kernel — and 1x1 convs
+    // collapsed to ggml_n_dims()==2 into a second, also-wrong branch. Copying the
+    // dequant bytes unchanged into an explicit ne=[KW,KH,IC_g,OC] tensor is the
+    // layout ggml_conv_2d wants (mirrors swinir_sr.cpp). Resident leaves also keep
+    // the kernel on the conv sched's backend, so the GGUF weights can still live
+    // on Metal/CUDA without the CPU conv sched aborting on a foreign buffer.
+    // Depthwise (ggml_conv_2d_dw) hardcodes its im2col to F16, so its kernel must
+    // be F16 too (mul_mat needs matching operand types). Regular convs keep the
+    // kernel F32 — ggml_conv_2d derives im2col from the kernel type, and F32
+    // preserves parity with the scalar reference. Bias stays F32.
+    ggml_type wtype = (groups > 1) ? GGML_TYPE_F16 : GGML_TYPE_F32;
+    ggml_tensor * w = nafnet_resident(ctx, weight_t, wtype, kw, kh, ic_g, oc);
+
     if (groups > 1) {
         x = ggml_conv_2d_dw(g, w, x, stride, stride, pad, pad, 1, 1);
     } else {
@@ -440,8 +485,8 @@ static void conv2d_ggml(nafnet_context * ctx,
     }
 
     if (bias_t) {
-        ggml_tensor * b = ggml_reshape_3d(g, bias_t, 1, 1, oc);
-        x = ggml_add(g, x, b);
+        ggml_tensor * b = nafnet_resident(ctx, bias_t, GGML_TYPE_F32, oc, 1, 1, 1);
+        x = ggml_add(g, x, ggml_reshape_3d(g, b, 1, 1, oc));
     }
 
     ggml_set_name(x, "out");

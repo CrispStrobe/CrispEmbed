@@ -433,6 +433,28 @@
       }
     },
     {
+      "name": "nafnet",
+      "engine": "nafnet",
+      "diff_only": true,
+      "_comment": "NAFNet-SIDD denoise engine (no --ocr): diff harness is the only regression signal. Guards the 2026-06 scalar->ggml conv wave — the conv2d_ggml port had scrambled every kernel (declared ne=[OC,IC,KH,KW] but PyTorch-row-major bytes) so output cratered to cos 0.538; fixed by building [KW,KH,IC,OC] kernels from the dequant bytes unchanged (like swinir) + backend-resident kernels so Metal/CUDA weights don't abort the CPU conv sched. Ref = tools/dump_nafnet_reference.py on NAFNet-SIDD-width32.pth; scalar and ggml paths both cos 0.999998 vs it on Metal+CPU.",
+      "gguf": {
+        "repo": "cstr/nafnet-sidd-GGUF",
+        "file": "nafnet-sidd-w32-f16.gguf",
+        "revision": "main",
+        "approx_size_mb": 56
+      },
+      "diff": {
+        "binary": "test-nafnet-diff",
+        "ref": {
+          "repo": "cstr/nafnet-sidd-GGUF",
+          "file": "nafnet-ref.gguf"
+        },
+        "thresholds": {
+          "output": 0.99
+        }
+      }
+    },
+    {
       "name": "lilt",
       "engine": "lilt",
       "diff_only": true,
