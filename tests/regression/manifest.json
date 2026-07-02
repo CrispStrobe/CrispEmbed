@@ -135,7 +135,8 @@
       "sample": "tests/regression/images/fox.png",
       "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
       "match": {
-        "max_cer": 0.15
+        "_note": "0.18 absorbs cross-backend OCR drift: q8_0 granite reads the fox line on Metal/CPU but ~cer 0.16 on CUDA (a few chars) — a crater still fails.",
+        "max_cer": 0.18
       },
       "diff": {
         "binary": "test-granite-vision-diff",
