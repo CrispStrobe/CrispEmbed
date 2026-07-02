@@ -70,7 +70,17 @@ def main():
     bos = dec_cfg.get("bos_token_id", 0)
     eos = dec_cfg.get("eos_token_id", 2)
     pad = dec_cfg.get("pad_token_id", 1)
-    dec_start = dec_cfg.get("decoder_start_token_id", eos)
+    # HF VisionEncoderDecoderModel.generate() resolves decoder_start_token_id from
+    # the TOP-LEVEL model config, falling back to bos_token_id — it IGNORES the
+    # nested decoder.decoder_start_token_id. That nested field is often a leftover
+    # EOS (=2) from the standalone decoder checkpoint; reading it breaks models
+    # like TexTeller whose top-level leaves it unset (correct start is bos=0, not
+    # 2 — a wrong start poisons the position-0 KV and the decode repeats/degenerates).
+    # Flat (non-nested) configs are unaffected: config is dec_cfg, so this reads
+    # the same field as before.
+    dec_start = config.get("decoder_start_token_id")
+    if dec_start is None:
+        dec_start = config.get("bos_token_id", bos)
     scale_embedding = dec_cfg.get("scale_embedding", True)
 
     print(f"Encoder: {enc_layers}L/{enc_heads}H/{enc_hidden}d, image={image_size}, patch={patch_size}")
