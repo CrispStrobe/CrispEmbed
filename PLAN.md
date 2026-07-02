@@ -872,6 +872,12 @@ COMPLETE, PASSING cosines first (e.g. `swinir  output cos=0.998403 … PASS`,
 `swinir_sr: done (256x256)`) and only THEN `ERROR: diff harness died from signal N`.
 So this is a **teardown/atexit crash, not a correctness failure**; run_one currently
 marks it FAIL because `run_diff` treats `returncode < 0` as fatal *before* parsing.
+- **It is NON-DETERMINISTIC (a race).** Across two back-to-back CUDA runs (v6→v7),
+  `swinir` SIGSEGV'd once and passed once, while dat/hat/pan/tbsrn failed both. A
+  run-to-run teardown race points squarely at the residency-style **background
+  heartbeat thread** (or a CUDA stream/context) still touching a buffer while the
+  global device is being destroyed — i.e. the harness-tolerance fix below is the
+  right primary mitigation (you can't rely on the crash reproducing on any single run).
 - **NOT reproducible locally.** Dev box is macOS 26.2 (residency sets active) yet
   `./build/test-swinir-diff …` exits **0**. The crash is CUDA-exclusive; there is no
   local CUDA, so each fix attempt costs a ~50-min Kaggle round-trip (chr1s4 has a
