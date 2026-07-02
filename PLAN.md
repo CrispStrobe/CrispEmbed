@@ -251,6 +251,182 @@ CrispEmbed/
 
 ## Pending roadmap
 
+### llama.cpp parity, convergence & A/B plan (2026-07)
+
+A full audit of which CrispEmbed architectures llama.cpp now supports (upstream
+`ggml-org/llama.cpp` @ ~`4fc4ec5`, July 2026), how it implements them, and what
+we should borrow. Deep technical notes live in `LEARNINGS.md → "llama.cpp
+implementation reference"`. **Rule for every convergence step below: land it
+behind an A/B test that measures BOTH speed and quality (see "A/B protocol" at
+the end of this section). No step merges without a before/after on both axes,
+on CPU and Metal.**
+
+#### Support matrix (CrispEmbed arch → llama.cpp)
+
+Text-embedding encoders:
+
+| CrispEmbed | in llama.cpp | llama.cpp arch id | note |
+|---|---|---|---|
+| BERT | ✅ | `bert` | one shared `bert.cpp` graph, config from GGUF |
+| XLM-RoBERTa | ✅ | `bert` | RoBERTa/XLM-R fold into `bert`; pos-offset + SPM handled |
+| NomicBERT | ✅ | `nomic-bert` | SwiGLU + RoPE |
+| NomicBERT-MoE | ✅ | `nomic-bert-moe` | PR #12466; 8-expert top-2 |
+| ModernBERT | ✅ | `modern-bert` | SWA global/local + per-layer RoPE θ |
+| MPNet | ❌ | — | T5-style rel-attn bias unimplemented — **we are unique** |
+| GTE-v1.5 (`NewModel`) | ❌ | — | NTK-RoPE `NewModel` unsupported (#6821) — **we are unique** |
+| DeBERTa-v2 | ❌ | — | disentangled c2p/p2c has no ggml graph — **we are unique** |
+| SPLADE (sparse) | ❌ | — | MLM head dropped at convert — **we are unique** |
+| bge-m3 sparse+ColBERT | ❌ (dense only) | — | tri-head only in fork `iz0eyj/llama.cpp-mv` — **we are unique** |
+
+Decoder / hybrid embedders:
+
+| CrispEmbed | in llama.cpp | arch id | note |
+|---|---|---|---|
+| Qwen3-Embedding | ✅ | `qwen3` (embed mode) | last-token, **causal** (Qwen3-Emb is trained causal — correct); Instruct/Query prefix is caller-side |
+| EmbeddingGemma | ✅ | `gemma-embedding` | Dense/Matryoshka projection supported via `--sentence-transformers-dense-modules`; mean, non-causal |
+| LFM2 / LFM2.5 | ✅ | `lfm2` (+`lfm2moe`) | PR #14620; ShortConv via `ggml_ssm_conv`, conv tensors F32 |
+| LFM2.5-Embedding | ✅ | `lfm2` embed | official LiquidAI GGUFs, bidirectional |
+| LFM2.5-ColBERT | ⚠️ partial | `lfm2` + `--pooling none` | per-token out; MaxSim client-side |
+| BidirLM-Omni | ❌ | — | not present — **we are unique** |
+
+Reranking: `--pooling rank` (RANK=4), `/v1/rerank` (PR #9510). bge-reranker-v2-m3
+/ base, jina-v2, ms-marco-MiniLM ✅. Qwen3-Reranker ✅ (needs `cls.output.weight`
++ template). mxbai-rerank (DeBERTa-v2) ❌.
+
+Vision / VLM-OCR (via `libmtmd`, projector-id keyed):
+
+| CrispEmbed | in llama.cpp | projector id | note |
+|---|---|---|---|
+| Qwen2/2.5-VL | ✅ | `qwen2vl_merger` / `qwen2.5vl_merger` | 2D RoPE `build_rope_2d()`, window-attn |
+| Qwen3-VL (+MoE) | ✅ | `qwen3vl_merger` | **DeepStack + IMROPE** — same family as our BidirLM-Omni |
+| InternVL2/2.5/3 | ✅* | `internvl` | OpenGVLab (non-HF) checkpoints only |
+| GLM-4V / GLM-OCR | ✅ | `glm4v` | AIMv2 tower, **dynamic** resize (ours = fixed 336) |
+| Granite Vision 3.x | ✅ | `mlp` (LLaVA-Next) | multi-level feature concat + anyres |
+| SmolVLM/SmolDocling/Idefics3 | ✅ | `idefics3` | SigLIP + pixel-shuffle |
+| Pixtral / LightOnOCR-1B | ✅ | `pixtral` / `lightonocr` | LightOnOCR-2 declined (#18943) |
+| DeepSeek-OCR / Unlimited-OCR | ✅ | `deepseekocr` / `deepseekocr2` | hybrid SAM+CLIP DeepEncoder |
+| PaddleOCR-VL | ✅ | `paddleocr` | NaViT + M-RoPE (`ggml_rope_multi`) |
+| GOT-OCR2 | ❌ | — | SAM path exists only inside DeepSeek-OCR — **we are unique** |
+| CLIP/SigLIP standalone image **or** text embed | ❌ | — | mtmd is tower-only (per-patch, LLM-sized); no text tower — **we are unique** |
+| Math OCR (pix2tex/TrOCR/HMER/BTTR/PosFormer/MixTex/PP-FormulaNet/PARSeq/Tesseract/Pix2Struct) | ❌ | — | enc-dec/CTC out of llama.cpp's class — **we are unique** |
+
+Entirely outside the ggml ecosystem (CrispEmbed-only): **face** (YuNet/SCRFD/
+AuraFace/SFace), **detection/layout** (DBNet/RT-DETRv2/Surya-Det), **NER/KIE**
+(GLiNER/LiLT; BERT-NER only an *unmerged* PR #19725), **LID** (CLD3/GlotLID),
+**punctuation** (FireRedPunc/Fullstop/PCS), and **image restoration/SR** (NAFNet/
+SwinIR/HAT/Restormer/SCUNet/SAFMN/DAT/InstructIR/AdaIR — only ESRGAN/RRDBNet
+exists, and in `stable-diffusion.cpp`, not llama.cpp).
+
+#### Convergence backlog (each item = one A/B-gated step)
+
+Ordered by leverage. Every item names its speed harness and its quality harness.
+
+**C1 — imatrix quantization pipeline (biggest quality win, zero graph risk).**
+llama.cpp's importance-matrix quant minimizes *activation-weighted* error, which
+directly attacks our q4_k floor (LFM2 ~0.982, BidirLM ~0.93–0.95). Add an
+`llama-imatrix`-style calibration pass to the C++ quantizer; build calibration
+text from embedding-domain inputs. Consider `IQ4_XS`/`IQ4_NL` (32-weight blocks
+fix our 256-alignment fallback, see `LEARNINGS.md → "K-quant fallback chain"`).
+- *A/B quality:* `test-<model>-diff` cosine vs the existing `dump_<model>_reference.py`
+  HF reference, for a matrix of {q4_k baseline, q4_k+imatrix, IQ4_XS+imatrix, q8_0}.
+  Also retrieval quality on `tests/bench_rag.py` (nDCG@10 / recall@k) for embedders
+  and `tests/bench_rerank.py` (nDCG/MRR) for rerankers. Accept if q4_k+imatrix cos
+  ≥ q4_k baseline (target: close half the gap to q8_0) with no nDCG regression.
+- *A/B speed:* `CRISPEMBED_<MODULE>_BENCH=1` and `tests/benchmark.py` — imatrix must
+  not change inference speed (offline-only). Record file-size delta.
+
+**C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
+`add_bos_token`, `add_eos_token` into GGUF metadata (llama.cpp convention) instead
+of hardcoding in the dispatcher (e.g. our LFM2 "BOS-only" rule → `add_bos_token=
+true,add_eos_token=false`). Reduces per-arch branches; improves interop.
+- *A/B quality:* `test_all_parity.py` — outputs must be byte-identical before/after
+  (pure refactor). Cross-check a WordPiece, an SPM, and a BPE model.
+- *A/B speed:* `tests/benchmark.py` — expect neutral; guard against a metadata-read
+  regression (remember the `gguf_free` use-after-free landmine).
+
+**C3 — batched embedding throughput.** Adopt llama.cpp's pack-many-short-sequences
++ block-diagonal segment mask (`n_ubatch == n_batch` for bidirectional encoders).
+Feeds the open "true batched graph for decoder models" task.
+- *A/B speed:* `tests/benchmark.py` throughput (sequences/s) at batch sizes
+  {1,8,32,128} of short texts; target near-linear vs 1-at-a-time. `bench_head2head.py`
+  vs current path.
+- *A/B quality:* `test-<model>-diff` — every sequence in a packed batch must match
+  its single-sequence embedding (cos ≥ 0.9999); verifies the segment mask blocks
+  cross-`seq_id` attention.
+
+**C4 — KV prefix-sharing for the decoder-embedding path.** Port the `seq_cp`
+cell-copy idea (cells carry `{pos, set<seq_id>}`; compute shared prefix once, copy
+to each fork, decode only the divergent suffix). Note: LFM2 conv state can't be
+partially erased — copy *whole* prefixes only. (Blueprint "KV cache for
+prefix-shared decoder batches" is marked DONE — this extends/validates it.)
+- *A/B speed:* `test_decoder_batch.py` — time N prompts sharing a common instruction
+  prefix, with vs without prefix reuse; target ≈ (unique-suffix work) not (N × full).
+- *A/B quality:* `test-<model>-diff` — reused-prefix outputs identical to full
+  recompute (cos ≥ 0.9999) on Qwen3-Embedding and a Gemma3 embedder; separately
+  confirm on LFM2 (whole-prefix constraint).
+
+**C5 — mtmd preprocessing alignment (the open Qwen2VLImageProcessor port).**
+Use `tools/mtmd/mtmd-image.cpp` as the reference spec: `calc_size_preserved_ratio`
+(= HF `smart_resize`), `resize_bicubic_pillow` (fixed-point, PIL `a=-0.5` — note
+their comment that PyTorch uses `a=-0.75`; this is exactly our sub-pixel resize
+residual, cos 0.999984), and the `llava_uhd` multi-crop / `select_best_resolution`.
+Align on the `mmproj-*.gguf` metadata keys and `<__media__>` chunk convention for
+interop; **do not link libmtmd** (it PUBLIC-links all of `llama`).
+- *A/B quality:* per-stage `dump_qwen2vl_reference.py` / `dump_qwen3vl_reference.py`
+  → `test-qwen2vl-diff`/`-e2e`: preprocessed-tensor cos vs HF and end-to-end OCR
+  transcript match on both `a=-0.5` and `a=-0.75` kernels; pick the one matching HF.
+- *A/B speed:* `CRISPEMBED_QWEN2VL_BENCH=1` vision-stage ms (in-process vs current).
+
+**C6 — flash-attn epilogue audit (correctness sweep).** Codify the rule from
+memory `flashattn-ext-already-permutes` / commit `6027b56`: `ggml_flash_attn_ext`
+returns `[hd,nh,T]` already permuted — reshape directly, never trailing
+`permute(0,2,1,3)`. Sweep every FA call site (layout, math, deepseek, encoders).
+- *A/B quality:* the relevant `test-<model>-diff` for each FA site must hold cos
+  1.0 vs reference with FA on. Add a per-site guard so a spurious permute craters
+  the diff test (not silent).
+- *A/B speed:* `CRISPEMBED_<MODULE>_BENCH=1` FA-on vs FA-off (`*_NO_FLASH`) — FA must
+  win on long sequences, and we keep the non-FA fallback for uncovered head dims.
+  Verify `GGML_KQ_MASK_PAD` (64 on master vs historical 32) against our pinned ggml.
+
+**C7 — generalize the Metal mul_mm F16 guard.** Turn the ×1/256-before / ×256-after
+trick (memory `metal-mul-mm-f16-overflow`) into a reusable helper + a diagnostic
+("NaN with many tokens, clean single-token ⇒ you're on `mul_mm`"). Metal picks
+`mul_mm` purely by shape (`ne11 > 8`) and ignores `set_prec(F32)` for GEMM.
+- *A/B quality:* Metal-vs-CPU cos on the image path (many patches) for every VLM
+  engine via `<ENGINE>_FORCE_CPU=1`; target Metal cos == CPU cos (no NaN).
+- *A/B speed:* `CRISPEMBED_<MODULE>_BENCH=1` — the scale helper must be negligible
+  vs the matmul it protects.
+
+**C8 — cheap coverage wins (borrow upstream where clean).** ModernBERT, Nomic-v2-
+MoE, and EmbeddingGemma's Dense/Matryoshka projection are cleanly solved upstream
+and map to archs we nearly have. Each new arch = new `dump_*_reference.py` +
+`test-*-diff` before it ships.
+- *A/B quality:* new `test-<arch>-diff` cos ≥ 0.999 vs HF (q8_0) and the retrieval
+  bench for embedders.
+- *A/B speed:* `tests/benchmark.py` throughput sane vs a same-size existing arch.
+
+**C9 — preserve & document our differentiation.** MPNet, GTE-v1.5, DeBERTa-v2,
+SPLADE, bge-m3 tri-head (dense+sparse+ColBERT), standalone CLIP/SigLIP text+image
+embeddings, and the entire face/detection/NER/LID/punct/SR surface are things
+llama.cpp does **not** have. Keep them, keep their guardrails green, and note the
+gap in `README.md` as a selling point. No new A/B (these already have diff tests);
+the action is documentation + not regressing them.
+
+#### A/B protocol (applies to every C-item)
+
+- **Two axes, always.** Speed *and* quality, reported as before→after deltas.
+- **Quality harness:** the model's `test-<model>-diff` cosine vs a fixed
+  `dump_<model>_reference.py` HF reference (regenerate the ref only when the model
+  changes, never to "make it pass"). For OCR/VLM add an end-to-end transcript
+  match; for retrieval add `tests/bench_rag.py`/`bench_rerank.py` (nDCG/MRR/recall).
+- **Speed harness:** `CRISPEMBED_<MODULE>_BENCH=1` per-stage ms and/or
+  `tests/benchmark.py` throughput. Honor the 8GB-VPS single-thread constraint.
+- **Both backends:** run CPU (`<ENGINE>_FORCE_CPU=1`) and Metal; a change that
+  helps one must not crater the other.
+- **Gate:** accept only if quality does not regress beyond diff-test noise
+  (cos ≥ baseline − 0.0005) *and* speed does not regress (or the trade is explicit
+  and approved). Record both numbers in the commit body.
+
 ### Regression-guardrail gaps — trace + close methodically (2026-07)
 
 Context: the OCR/VLM engines and **11 SR/restoration engines** (restormer, swinir,
