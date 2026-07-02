@@ -87,6 +87,39 @@ the raster branch while its deepstack extract assumes consecutive) but left
 untouched (unverifiable here). Commit `86d0830`. Deep-dive: `LEARNINGS.md` →
 "qwen2vl-3b hallucinated OCR — RESOLVED". Meta-lesson (again): `expected_text:
 null` == never validated; verify handover root-cause claims independently.
+## July 2, 2026 — restormer: denoise working (ggml conv-weight layout + real MDTA)
+
+`restormer-denoise-f16` emitted blocky rainbow garbage (mean 147 / std 120 vs a
+clean ~242) on **both** Metal and CPU. The prior handover's "CORRECTED root
+cause" (convs are fine, bug only in the block graph) was itself wrong. Two
+independent bugs, both fixed and validated against a PyTorch ground-truth value
+and an end-to-end denoise test.
+
+1. **Conv-weight layout scrambled for EVERY conv — the primary garbage source.**
+   The GGUF converter writes conv weights raw as numpy `(OC,IC,KH,KW)` C-order
+   and the loader keeps `ne` unreversed, so the correct `ggml_conv_2d` kernel is a
+   **plain reshape of the contiguous bytes to ggml `[KW,KH,IC,OC]`** — no permute,
+   no transpose, no shuffle. The load-time pre-permute (oc-fastest shuffle) and the
+   `rst_prep_w` / `rst_conv2d_ggml` 2D-reshape heuristics all mis-laid-out the
+   kernels. Proof: PyTorch `patch_embed[0,0,0]` = **0.645721**; old ggml gave
+   0.161163, fixed ggml gives 0.645721. Deleted the pre-permute; both conv sites
+   now reshape the raw buffer directly. Note: `RESTORMER_SCALAR=1` was **not** a
+   clean reference — `rst_forward_tile` runs the U-Net convs through
+   `rst_conv2d_ggml` in both modes, so the scalar path was garbage too (168.9).
+
+2. **ggml MDTA block graph was a fake single-head attention.** It used `ggml_norm`
+   as a stand-in for L2-normalize, ran one full `C×C` attention (no per-head split
+   — wrong for the 2/4/8-head levels), and dropped the learned per-head
+   `temperature`. Rewrote to match the scalar reference: reshape
+   `[HW, d_k, n_heads]`, `rms_norm` over spatial (= L2normalize·√HW, folded into a
+   `temperature/HW` scale), per-head batched `mul_mat`, softmax over the key axis.
+   Also fixed `rst_ln2d_ggml`: the denoise model is BiasFree (`has_bias=0`), so
+   `ggml_norm`'s mean-subtraction was wrong — now `x/sqrt(var+eps)·w`, no centering.
+
+**Result**: gray σ=25 noise mean|err| 19.84 → **2.15** (~90% removed); CPU==Metal
+to 0; ggml path == scalar path (identical image); full 800×200 fox now clean
+(243.1/51.3, was 147/120). Commit `d54b304` (merged `67bbbb6`). Handover:
+`handover-prompts/restormer-ggml-conv-weight-permute-fix.md`.
 
 ## July 1, 2026 — GLM-OCR: garbage OCR fixed (5 bugs + q8_0), verified vs real model
 
