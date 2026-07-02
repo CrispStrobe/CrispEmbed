@@ -28,6 +28,20 @@ Two transferable rules:
    have been pure risk. (See also "independently reproduce a handover's root-cause claim before
    building on it" below.)
 
+**RESOLVED (2026-07, `fix/lfm2-colbert-cuda-multivec`).** The real cause was the third candidate
+above: `encode_multivec` **re-allocated the same graph object it had just passed to
+`ggml_backend_sched_reserve`**. `ggml_backend_sched_reset` does not null `tensor->buffer`, so the
+reserve pass's stale buffer/residency assignment was reused by the follow-up
+`ggml_backend_sched_alloc_graph` — mis-computing the backbone (`hidden` cos −0.70) and hence
+`colbert_output` (0.57). Metal tolerates it (0.998); CUDA corrupts silently. The **dense path
+(`lfm2_embed_encode_to`) never hits this because it frees `g` and rebuilds a fresh graph after
+reserve** — which is exactly why the same backbone passes 20/20 in the dense graph but fails in
+the ColBERT graph on the same device. Fix: factor ColBERT graph construction into a `build_graph()`
+lambda and rebuild a fresh graph after the bucket-change reserve, mirroring the dense path. General
+rule (already stated below for graph reuse): **the graph you hand to `sched_reserve` is dead — never
+`sched_alloc_graph` it; build a fresh one for alloc+compute.** Verify on a CUDA build:
+`test-lfm2-colbert-diff` `colbert_output` cos ≥ 0.99.
+
 ## Reading a QUANTIZED weight to CPU: size the copy by `ggml_nbytes(t)`, not `n_elem * 4` (2026-07)
 
 The shipped `pcs-xlmr-base-q4_k.gguf` (the CLI `pcs` entry) **crashes on every inference** —
