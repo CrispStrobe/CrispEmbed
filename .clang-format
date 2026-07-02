@@ -1,0 +1,52 @@
+# CrispEmbed .clang-format (ported from CrispASR, adjusted to CrispEmbed's style)
+# Existing CrispEmbed style: 4-space indent, 120-col limit, pointers/refs
+# attached to the NAME with spaces ("const std::string & s", "ggml_tensor * t"),
+# short if/loop bodies kept on one line.
+---
+Language:        Cpp
+BasedOnStyle:    LLVM
+
+# Indentation
+IndentWidth:           4
+ContinuationIndentWidth: 4
+TabWidth:              4
+UseTab:                Never
+AccessModifierOffset:  -4
+
+# Column limit — generous to avoid wrapping long ggml API call chains.
+ColumnLimit:     120
+
+# Brace / block style — K&R style (open brace on same line for functions).
+BreakBeforeBraces:    Attach
+
+# Pointer / reference alignment — matches the codebase ("const T & x", "T * p").
+PointerAlignment:     Middle
+ReferenceAlignment:   Middle
+
+# Namespace / include style
+NamespaceIndentation: None
+SortIncludes:         false    # don't reorder existing carefully-grouped includes
+
+# Function argument / initialiser alignment
+AlignAfterOpenBracket:    Align
+BinPackArguments:         true
+BinPackParameters:        true
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: WithoutElse   # codebase keeps `if (x) return;` inline
+AllowShortLoopsOnASingleLine: true                 # and `for (...) if (...) ...;` inline
+Cpp11BracedListStyle: false                        # codebase uses `{ a, b, c }` (spaces inside braces)
+
+# Trailing whitespace / empty lines
+MaxEmptyLinesToKeep: 2
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+# Comment style
+ReflowComments:  false    # don't reflow hand-written ASCII diagrams / tables
+
+# Penalty tuning — keep long ggml call chains on one line when they fit.
+PenaltyBreakBeforeFirstCallParameter: 19
+PenaltyReturnTypeOnItsOwnLine: 300
+
+# C++17 features present in the codebase
+Standard:  c++17
+...

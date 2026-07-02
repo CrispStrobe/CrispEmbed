@@ -304,7 +304,7 @@ struct nafnet_context {
     // in a buffer that cannot run" on Metal; segfault on CUDA). Caching also avoids
     // re-dequantizing the same weight on every one of the many per-block conv calls.
     std::unordered_map<const ggml_tensor *, ggml_tensor *> gw_cache;
-    std::vector<ggml_context *>        gw_ctxs;
+    std::vector<ggml_context *> gw_ctxs;
     std::vector<ggml_backend_buffer_t> gw_bufs;
 
     // Weight data
@@ -382,8 +382,10 @@ nafnet_context * nafnet_init(const char * model_path, int n_threads) {
 
 void nafnet_free(nafnet_context * ctx) {
     if (ctx) {
-        for (auto * buf : ctx->gw_bufs) if (buf) ggml_backend_buffer_free(buf);
-        for (auto * c : ctx->gw_ctxs) if (c) ggml_free(c);
+        for (auto * buf : ctx->gw_bufs)
+            if (buf) ggml_backend_buffer_free(buf);
+        for (auto * c : ctx->gw_ctxs)
+            if (c) ggml_free(c);
         if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
         if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
         core_gguf::free_weights(ctx->wl);
@@ -406,9 +408,8 @@ static bool nafnet_scalar_conv() {
 // bytes (numpy [OC,IC_g,KH,KW] row-major, KW innermost) are copied UNCHANGED,
 // which is exactly a contiguous ne=[KW,KH,IC_g,OC] kernel — the layout
 // ggml_conv_2d expects. Cached by source pointer (stable for the model's life).
-static ggml_tensor * nafnet_resident(nafnet_context * ctx, const ggml_tensor * src,
-                                     ggml_type type,
-                                     int64_t ne0, int64_t ne1, int64_t ne2, int64_t ne3) {
+static ggml_tensor * nafnet_resident(nafnet_context * ctx, const ggml_tensor * src, ggml_type type, int64_t ne0,
+                                     int64_t ne1, int64_t ne2, int64_t ne3) {
     auto it = ctx->gw_cache.find(src);
     if (it != ctx->gw_cache.end()) return it->second;
 
