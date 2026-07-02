@@ -4,6 +4,54 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 2, 2026 — C3 batched-encoder throughput (packed + 4D), ModernBERT validated E2E, EmbeddingGemma verified
+
+**C3 — batched embedding throughput (llama.cpp-parity item).** The encoder batch path
+was disabled (looped single-encodes; the previous fused path padded but never masked
+padding). Shipped two opt-in paths for absolute-position encoders (BERT/XLM-R/MiniLM/
+BGE/E5 — no MPNet rel-bias / DeBERTa rel-embd / RoPE):
+- **Packed block-diagonal** (`CRISPEMBED_ENCODER_PACKED=1`): B sequences packed end-to-end
+  into one graph with an F16 block-diagonal `seg_mask` → `flash_attn_ext` (the
+  `bidirlm_vision` pattern), positions restart per segment. Bit-parity (cos ≥ 0.9999) but
+  attention is **O(T_total²)** (the mask still computes masked cells) → backend/size
+  dependent (uncapped packing was a 3.7× loss); greedy token-budget grouping caps it;
+  kept opt-in.
+- **Rectangular 4D per-item mask** (`CRISPEMBED_ENCODER_4D=1`): sequences kept as separate
+  4D items `[hd,T,nh,B]` + per-item `pad_mask [T,T,1,B]` (−inf on padded keys) →
+  attention **O(B·T²)**. Length-sort + chunk (`CRISPEMBED_ENCODER_4D_GROUP`, default 32).
+  Parity cos **1.0 / 0.9999697**, **consistently faster than sequential AND packed**
+  (1.18×–1.48×). The real throughput fix; opt-in pending a real-Metal A/B (this box is
+  CPU-only, `GGML_METAL=OFF`). `tests/test_encoder_batch.py`.
+
+**ModernBERT (gte-modernbert-base) validated end-to-end** — structurally supported but never
+parity-checked, and broke three ways; now cos **0.999999** (short) / **0.999998** (113-tok
+doc) vs HF, **0.99976** q8_0. (1) *Local-path converter bug*: BPE-tokenizer, CLS-pooling and
+Unigram-score detection all called `hf_hub_download(repo_id=args.model)`, which throws on a
+local path and was silently caught → fell back to WordPiece + mean pooling (cos 0.46). Fixed
+with `_resolve_file()` at all three sites (convert with `--crisp`; ollama mode never runs BPE
+detection). (2) *Missing sliding-window local attention*: only the RoPE θ alternated
+global/local — the local layers' ±`local_attention`/2 window mask was absent, so they attended
+globally and long docs diverged (113-tok 0.9826 → 0.999998). Added a per-layer `swa_mask`;
+converter emits `bert.local_attention`; A/B lever `CRISPEMBED_ENCODER_NO_SWA=1`. Guards:
+`test_modernbert_parity.py` + a compiled `test-modernbert-diff` wired into the regression
+manifest (q8_0-vs-f32 0.9919, floor 0.99; SWA-off craters cos to −0.87). GGUFs + ref →
+`cstr/gte-modernbert-base-GGUF`; registry entry added.
+
+**Bug fixed en route:** `crispembed_encode_tokens_raw` (+ a sibling raw path) branched only
+SPM/WordPiece — **missing the BPE case** → BPE encoders (ModernBERT) were mis-tokenized via
+WordPiece in the raw API (113 → 103 tokens). Added the `use_bpe` branch.
+
+**EmbeddingGemma-300m** — the two-Dense (768→3072→768) + mean-pool + Matryoshka pipeline
+verified correct (~0.997 vs HF). The residual is **not precision** (identical at f16 and f32):
+it's a small Gemma3-backbone discrepancy amplified by the non-orthogonal Dense bottleneck
+(the Dense/pooling code and weights match HF exactly). Registry pooling label corrected to
+mean-pool (was "last-token").
+
+**CI hygiene:** fixed the two durably-red gates from concurrent work — **Lint** (clang-format
+`model_mgr.cpp` + `test_clip_tokenizer_parity.cpp`; whole tree now clean) and **OCR-regression**
+(`test_driver_smoke.py` wrongly required `sample`/`expected_text` on `diff_only` and `run_check`
+entries that legitimately have neither).
+
 ## July 2, 2026 — Metal residency-abort swept across all conv-front-end engines (9 fixed)
 
 Generalized the nafnet/restormer residency finding into a full audit and found the
