@@ -1755,8 +1755,14 @@ static void moe_ffn_cpu(ds_ocr2_ctx &ctx, int li, float *hidden, int T) {
 // Runs the MoE decoder. `prompt_embeds` is the fully-assembled prompt embedding
 // matrix [n_prompt x D] (bos + image features + view-separator + instruction
 // token embeddings), built by the caller. Generation continues until EOS.
+// DS_PROFILE=1 profiling accumulators: graph build+alloc vs compute time across
+// the whole decode. Used to decide whether the persistent-single-graph decode
+// port is worth it (overhead-bound → yes; compute/MoE-bound → marginal).
+static long long g_ds_build_us = 0, g_ds_compute_us = 0;
+
 static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_prompt, int max_new,
                             std::vector<int32_t> &out_ids, std::vector<float> &out_confs) {
+    g_ds_build_us = 0; g_ds_compute_us = 0;
     auto &lhp = ctx.m.lhp;
     int D = lhp.hidden, V = lhp.vocab_size;
     int nh = lhp.heads, nkv = lhp.kv_heads, hd = lhp.head_dim;
@@ -1838,12 +1844,15 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
             bool moe_in_graph = ctx.moe_metal && !is_dense;
 
             // Build and run attention graph
+            auto _tb0 = std::chrono::steady_clock::now();
             auto lag = build_llm_layer_attn(ctx, li, T, n_past, is_dense, moe_in_graph);
             ggml_backend_sched_reset(ctx.sched);
             if (!ggml_backend_sched_alloc_graph(ctx.sched, lag.gf)) {
                 ggml_free(lag.gctx);
                 return false;
             }
+            auto _tb1 = std::chrono::steady_clock::now();
+            g_ds_build_us += std::chrono::duration_cast<std::chrono::microseconds>(_tb1-_tb0).count();
 
             // Set inputs
             ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "layer_input"),
@@ -1876,6 +1885,7 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
             auto _t0 = std::chrono::steady_clock::now();
             ggml_backend_sched_graph_compute(ctx.sched, lag.gf);
             auto _t1 = std::chrono::steady_clock::now();
+            g_ds_compute_us += std::chrono::duration_cast<std::chrono::microseconds>(_t1-_t0).count();
 
             // Read outputs
             ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "layer_output"),
@@ -1989,6 +1999,13 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
             get_embedding(next, full_emb.data() + off);
         }
     }
+
+    if (getenv("DS_PROFILE"))
+        fprintf(stderr,
+                "[ds-profile] decode: %d tokens, graph-build+alloc=%lldms, compute=%lldms "
+                "(build is %.0f%% of build+compute)\n",
+                n_generated, g_ds_build_us / 1000, g_ds_compute_us / 1000,
+                100.0 * g_ds_build_us / (double)(g_ds_build_us + g_ds_compute_us + 1));
 
     return true;
 }
