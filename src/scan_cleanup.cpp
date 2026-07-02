@@ -244,7 +244,14 @@ void scan_cleanup_rotate(const float * gray, int w, int h, float angle_deg, floa
         return;
     }
 
-    // Fill with white (1.0) background
+    // Port 3 (verified): fill rotation corners with pure white (1.0). This is
+    // deliberately NOT the detected paper gray — after background-whitening the
+    // white corners stay white (1.0 = max, can't brighten), giving clean uniform
+    // corners; filling with paper-gray instead makes the whitening's local
+    // normalisation leave VISIBLE gray wedges at the corner boundaries (confirmed
+    // by A/B image inspection — CER unchanged but the page looked worse). The
+    // gray-wedge symptom was already resolved by the whitening closing fix
+    // (6fdd1b5); no further change is needed here.
     for (int i = 0; i < ow * oh; i++) dst[i] = 1.0f;
 
     // Inverse mapping with bilinear interpolation
