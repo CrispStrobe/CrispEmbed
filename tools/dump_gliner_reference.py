@@ -56,7 +56,7 @@ def main():
         tok_cfg = json.load(f)
     if tok_cfg.get("tokenizer_class") == "TokenizersBackend":
         # Create a temp copy with patched config
-        tmp_dir = tempfile.mkdtemp(dir="/mnt/volume1")
+        tmp_dir = tempfile.mkdtemp()  # was dir="/mnt/volume1" (VPS-only); use $TMPDIR default
         for fn in os.listdir(model_dir):
             src = os.path.join(model_dir, fn)
             dst = os.path.join(tmp_dir, fn)
