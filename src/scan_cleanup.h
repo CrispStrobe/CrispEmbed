@@ -93,6 +93,14 @@ void scan_cleanup_whiten(const float * gray, int w, int h, int kernel_size, floa
 // substantial text content on both sides (column dark-pixel projection profile).
 int scan_cleanup_detect_page_split(const uint8_t * pixels, int w, int h, int channels);
 
+// Detect the printed CONTENT bounding box (tight box around text/ink, trimming
+// blank margins of any colour), for centering / border alignment / normalized
+// output geometry. Writes [x0,y0,x1,y1) (x1/y1 exclusive) into the out pointers;
+// returns 0 on success, -1 on a blank page. Clean-room: row/column dark-pixel
+// projection profiles trimmed to where content density rises above a floor.
+int scan_cleanup_content_bbox(const uint8_t * pixels, int w, int h, int channels, int * x0, int * y0, int * x1,
+                              int * y1);
+
 #ifdef __cplusplus
 }
 #endif
