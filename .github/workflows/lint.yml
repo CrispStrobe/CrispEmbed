@@ -1,0 +1,59 @@
+name: Lint
+
+# clang-format style check (the CI analogue of black/ruff --check). Ported from
+# CrispASR. Pins clang-format-18 so the verdict matches `tools/format.sh` run
+# locally — v14/18/20/22 silently flip wrapping and cause "passed on my machine"
+# drift. Scope is defined ONCE in tools/format.sh (src + examples + tests, never
+# the vendored ggml/ submodule or bundled single-header libs); CI just calls it.
+#
+# Runs on every branch push and every PR so a feature branch is checked before
+# it merges. (clang-tidy / cppcheck like CrispASR's fuller lint can be added
+# later — they need a CMake tidy preset and are noisy on the not-yet-fully-clean
+# tree; this starts with the format gate.)
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - '**.cpp'
+      - '**.h'
+      - '**.hpp'
+      - '**.c'
+      - '.clang-format'
+      - 'tools/format.sh'
+      - '.github/workflows/lint.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - '**.cpp'
+      - '**.h'
+      - '**.hpp'
+      - '**.c'
+      - '.clang-format'
+      - 'tools/format.sh'
+      - '.github/workflows/lint.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clang-format:
+    name: clang-format (style)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        # No submodules: the format scope never touches ggml/, so skip the
+        # (slow) recursive checkout.
+
+      - name: Install clang-format-18
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends clang-format-18
+          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-18 100
+          clang-format --version
+
+      - name: Check formatting (tools/format.sh --check)
+        # Single source of truth for scope + version pinning. Exits non-zero and
+        # prints file:line locations if any in-scope file would be reformatted.
+        run: ./tools/format.sh --check
