@@ -43,6 +43,20 @@ def _load_st_config(model_id: str) -> dict:
     return {}
 
 
+def _resolve_file(model_id: str, filename: str):
+    """Return a local path to `filename`, whether `model_id` is a local dir or an
+    HF repo id. Returns None if unavailable. Fixes silent BPE-detection failure on
+    local-path conversion (hf_hub_download rejects a local path as repo_id)."""
+    local = Path(model_id) / filename
+    if local.is_file():
+        return str(local)
+    try:
+        from huggingface_hub import hf_hub_download
+        return hf_hub_download(repo_id=model_id, filename=filename)
+    except Exception:
+        return None
+
+
 def f32(t: torch.Tensor) -> np.ndarray:
     return t.detach().float().cpu().numpy().astype(np.float32)
 
@@ -318,8 +332,9 @@ def main():
     # Detect pooling method from sentence-transformers config
     pool_method_crisp = 0  # CrispEmbed: 0=mean, 1=CLS, 2=last
     try:
-        from huggingface_hub import hf_hub_download
-        pool_path = hf_hub_download(repo_id=args.model, filename="1_Pooling/config.json")
+        pool_path = _resolve_file(args.model, "1_Pooling/config.json")
+        if pool_path is None:
+            raise FileNotFoundError("1_Pooling/config.json not found")
         with open(pool_path, encoding="utf-8") as f:
             pool_cfg = json.load(f)
         if pool_cfg.get("pooling_mode_cls_token", False):
@@ -451,8 +466,9 @@ def main():
         # Method 2: from tokenizer.json Unigram vocab (HF fast tokenizer)
         if not scores_loaded:
             try:
-                from huggingface_hub import hf_hub_download
-                tok_json_path = hf_hub_download(repo_id=args.model, filename="tokenizer.json")
+                tok_json_path = _resolve_file(args.model, "tokenizer.json")
+                if tok_json_path is None:
+                    raise FileNotFoundError("tokenizer.json not found")
                 with open(tok_json_path, encoding="utf-8") as f:
                     tok_json = json.load(f)
                 tj_vocab = tok_json.get("model", {}).get("vocab", [])
@@ -508,8 +524,9 @@ def main():
             is_bpe_tokenizer = False
             scores = []
             try:
-                from huggingface_hub import hf_hub_download
-                tj_path = hf_hub_download(repo_id=args.model, filename="tokenizer.json")
+                tj_path = _resolve_file(args.model, "tokenizer.json")
+                if tj_path is None:
+                    raise FileNotFoundError("tokenizer.json not found")
                 with open(tj_path, encoding="utf-8") as f:
                     tj = json.load(f)
                 is_bpe_tokenizer = tj.get("model", {}).get("type") == "BPE"
@@ -670,15 +687,25 @@ def main():
 
     if is_modernbert:
         # ModernBERT: pre-LN, RoPE, GeGLU, fused QKV, fused gate+up, no biases
-        rope_cfg = getattr(config, "rope_scaling", {})
-        sliding_theta = rope_cfg.get("sliding_attention", {}).get("rope_theta", 10000.0)
-        global_theta = rope_cfg.get("full_attention", {}).get("rope_theta", 160000.0)
+        rope_cfg = getattr(config, "rope_scaling", {}) or {}
+        # Newer configs carry flat local_rope_theta / global_rope_theta; older ones
+        # nest under rope_scaling.{sliding,full}_attention. Prefer flat, then nested.
+        sliding_theta = getattr(config, "local_rope_theta", None)
+        if sliding_theta is None:
+            sliding_theta = rope_cfg.get("sliding_attention", {}).get("rope_theta", 10000.0)
+        global_theta = getattr(config, "global_rope_theta", None)
+        if global_theta is None:
+            global_theta = rope_cfg.get("full_attention", {}).get("rope_theta", 160000.0)
         global_every = getattr(config, "global_attn_every_n_layers", 3)
+        # Sliding-window size for local layers (HF: local_attention, window radius = /2).
+        local_attention = getattr(config, "local_attention", 128)
         writer.add_float32("bert.rope_theta", sliding_theta)
         writer.add_float32("bert.rope_theta_global", global_theta)
         writer.add_uint32("bert.global_attn_every_n", global_every)
+        writer.add_uint32("bert.local_attention", local_attention)
         writer.add_uint32("bert.pre_ln", 1)
-        print(f"  ModernBERT: sliding_theta={sliding_theta}, global_theta={global_theta}, every={global_every}, pre_ln=1")
+        print(f"  ModernBERT: sliding_theta={sliding_theta}, global_theta={global_theta}, "
+              f"every={global_every}, local_window={local_attention}, pre_ln=1")
         # Final norm (applied after all layers in pre-LN models)
         if "final_norm.weight" in sd:
             writer.add_tensor("final_norm.weight", f32(sd["final_norm.weight"]))
