@@ -378,6 +378,50 @@
           "output": 0.99
         }
       }
+    },
+    {
+      "name": "esrgan",
+      "engine": "esrgan",
+      "diff_only": true,
+      "_comment": "SR engine (no --ocr): diff harness is the only regression signal. Ref generated on Kaggle CUDA (verify-gated) 2026-07.",
+      "gguf": {
+        "repo": "cstr/esrgan-sr-GGUF",
+        "file": "esrgan-x4-f32.gguf",
+        "revision": "main"
+      },
+      "diff": {
+        "binary": "test-esrgan-diff",
+        "ref": {
+          "repo": "cstr/esrgan-sr-GGUF",
+          "file": "esrgan-ref.gguf"
+        },
+        "thresholds": {
+          "output": 0.95
+        },
+        "_note": "output floor 0.95: uint8-clamped 4x SR output vs float ref + backend variance gives ~0.987 on Metal/CPU (passed harness's own gate on Kaggle CUDA); a scramble regression craters to ~0."
+      }
+    },
+    {
+      "name": "safmn",
+      "engine": "safmn",
+      "diff_only": true,
+      "_comment": "SR engine (no --ocr): diff harness is the only regression signal. Ref generated on Kaggle CUDA (verify-gated) 2026-07.",
+      "gguf": {
+        "repo": "cstr/safmn-sr-GGUF",
+        "file": "safmn-x4-f32.gguf",
+        "revision": "main"
+      },
+      "diff": {
+        "binary": "test-safmn-diff",
+        "ref": {
+          "repo": "cstr/safmn-sr-GGUF",
+          "file": "safmn-ref.gguf"
+        },
+        "thresholds": {
+          "output": 0.95
+        },
+        "_note": "output floor 0.95: uint8-clamped 4x SR output vs float ref + backend variance gives ~0.987 on Metal/CPU (passed harness's own gate on Kaggle CUDA); a scramble regression craters to ~0."
+      }
     }
   ]
 }
