@@ -27,13 +27,17 @@ on:
     paths:
       - 'src/got_ocr.cpp'
       - 'src/**ocr**'
+      - 'src/scan_cleanup.*'
       - 'tests/regression/**'
+      - 'tools/scan_cleanup_bench.py'
       - '.github/workflows/regression.yml'
   pull_request:
     paths:
       - 'src/got_ocr.cpp'
       - 'src/**ocr**'
+      - 'src/scan_cleanup.*'
       - 'tests/regression/**'
+      - 'tools/scan_cleanup_bench.py'
       - '.github/workflows/regression.yml'
 
 permissions:
@@ -97,3 +101,36 @@ jobs:
           GOT_OCR_FORCE_CPU: '1'
           LD_LIBRARY_PATH: build
         run: python tests/regression/run_one.py --name got-ocr2
+
+  # scan_cleanup do-no-harm guard. Classical (tier-1) preprocessing needs no
+  # model and no network, so this runs on every PR/push that touches the
+  # cleanup code — unlike the OCR tiers it doesn't gate on HF reachability.
+  # It asserts the invariant that matters: cleanup must never make OCR-CER
+  # worse than the degraded input (measured with tesseract). See
+  # tools/scan_cleanup_bench.py --fail-on-harm.
+  scan-cleanup-noharm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: smoke
+    steps:
+      - uses: actions/checkout@v4
+        with: { submodules: recursive }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install deps (build + tesseract + python)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential tesseract-ocr
+          pip install pillow numpy pytesseract
+      - name: Build CLI (CPU)
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target crispembed-cli -j"$(nproc)"
+      - name: Do-no-harm guard on PD scan fixture
+        env:
+          LD_LIBRARY_PATH: build
+        run: |
+          python tools/scan_cleanup_bench.py \
+            --image tests/regression/images/scan_page_pd.png \
+            --bin build/crispembed \
+            --no-unpaper --fail-on-harm
