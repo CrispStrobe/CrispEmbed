@@ -181,17 +181,19 @@ def process(name, cli, quant, api, calib, eval_):
     srcdir = stage / "src" / name
     srcdir.mkdir(parents=True, exist_ok=True)
 
-    with kh.build_heartbeat(f"{name}.download.quant_src"):
-        qsrc = Path(hf_hub_download(hf_out, base_fn, token=api.token, local_dir=str(srcdir)))
-    if big:
-        calib_fn = f"{prefix}-q8_0.gguf" if f"{prefix}-q8_0.gguf" in ggs else base_fn
-        with kh.build_heartbeat(f"{name}.download.calib_src"):
-            csrc = Path(hf_hub_download(hf_out, calib_fn, token=api.token, local_dir=str(srcdir)))
-    else:
-        calib_fn, csrc = base_fn, qsrc
-    goldlabel = "q8_0" if (big and calib_fn != base_fn) else "full-precision"
-    kh.step("model.source", model=name, quant_src=base_fn, calib_src=calib_fn,
-            prefix=prefix, base_gb=round(base_sz/1e9, 2), big=big)
+    # For big bases (>10GB) download + quantize + calibrate all from the q8_0
+    # (4-8GB). crispembed-quantize dequantizes the q8 source before re-quantizing,
+    # and q8_0 is ~lossless (cos ~0.9998) so q4-from-q8 ≈ q4-from-f32 — while
+    # avoiding the 16-30GB f32 download that stalls on Kaggle nodes. Small models
+    # still use the f32 base directly.
+    q8_fn = f"{prefix}-q8_0.gguf"
+    src_fn = q8_fn if (big and q8_fn in ggs) else base_fn
+    with kh.build_heartbeat(f"{name}.download.src"):
+        qsrc = Path(hf_hub_download(hf_out, src_fn, token=api.token, local_dir=str(srcdir)))
+    csrc = qsrc
+    goldlabel = "q8_0" if src_fn.endswith("-q8_0.gguf") else "full-precision"
+    kh.step("model.source", model=name, src=src_fn, prefix=prefix,
+            src_gb=round(ggs.get(src_fn, 0)/1e9, 2), big=big)
 
     imat = stage / f"{prefix}.imatrix"; imat.unlink(missing_ok=True)
     env = dict(os.environ, CRISPEMBED_IMATRIX_OUT=str(imat))
