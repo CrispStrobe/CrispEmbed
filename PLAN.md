@@ -426,15 +426,33 @@ true,add_eos_token=false`). Reduces per-arch branches; improves interop.
 - *A/B speed:* `tests/benchmark.py` — expect neutral; guard against a metadata-read
   regression (remember the `gguf_free` use-after-free landmine).
 
-**C3 — batched embedding throughput.** Adopt llama.cpp's pack-many-short-sequences
-+ block-diagonal segment mask (`n_ubatch == n_batch` for bidirectional encoders).
-Feeds the open "true batched graph for decoder models" task.
-- *A/B speed:* `tests/benchmark.py` throughput (sequences/s) at batch sizes
-  {1,8,32,128} of short texts; target near-linear vs 1-at-a-time. `bench_head2head.py`
-  vs current path.
-- *A/B quality:* `test-<model>-diff` — every sequence in a packed batch must match
-  its single-sequence embedding (cos ≥ 0.9999); verifies the segment mask blocks
-  cross-`seq_id` attention.
+**C3 — batched embedding throughput. — ENCODER PATH IMPLEMENTED, OPT-IN (2026-07).**
+Adopt llama.cpp's pack-many-short-sequences + block-diagonal segment mask
+(`n_ubatch == n_batch` for bidirectional encoders). Feeds the open "true batched
+graph for decoder models" task. (The **decoder** batched graph already existed —
+`decoder_encode_tokens_batch`, block-diagonal + prefix-recompute layout.)
+- Shipped for the **encoder** (BERT/XLM-R/MiniLM/BGE/E5 — absolute-position, no
+  MPNet rel-bias / DeBERTa rel-embd / RoPE): `encode_tokens_packed` in
+  `src/crispembed.cpp` packs B sequences end-to-end into one graph with a host-built
+  block-diagonal F16 `seg_mask` fed to `flash_attn_ext`; positions restart per
+  segment. Greedy token-budget grouping (`CRISPEMBED_ENCODER_PACK_MAXTOK`, default
+  384) caps `T_total`. `build_encoder_graph(..., packed_mask=true)` reuses ~100% of
+  the existing graph.
+- *A/B quality:* PASS. `tests/test_encoder_batch.py` — packed vs per-sequence cos
+  **≥ 0.9999** (typically 1.0; worst 0.9999697) on all-MiniLM q8_0, Metal + CPU,
+  single- and multi-group. Bit-parity: each segment sees only its own tokens.
+- *A/B speed:* **INCONCLUSIVE on this dev box → kept OPT-IN** (`CRISPEMBED_ENCODER_PACKED=1`).
+  Packing amortizes per-graph overhead but makes attention **O(T_total²)** (the
+  block-diagonal mask still computes masked cells), so it is inherently NOT the
+  near-linear speedup hoped for on bidirectional encoders; medians swung 0.46×–2.07×
+  same-config on a 16 GB M1 under load; uncapped packing was a 3.7× loss. Real win
+  for the CPU-only VPS.
+- **NEXT (the real throughput fix): rectangular 4D per-item mask, O(B·T²).** Keep
+  sequences as separate 4D batch items `[hd,T,nh,B]` (already scaffolded in
+  `build_encoder_graph`) with a per-item padding mask so attention is O(B·T²) not
+  O((B·T)²) — the pinned ggml `flash_attn_ext` accepts a per-batch mask
+  (`q->ne[3] % mask->ne[3] == 0`); needs Metal 4D-mask verification. This is the
+  prioritized C3 follow-up (after C8 EmbeddingGemma coverage).
 
 **C4 — KV prefix-sharing for the decoder-embedding path.** Port the `seq_cp`
 cell-copy idea (cells carry `{pos, set<seq_id>}`; compute shared prefix once, copy
@@ -512,6 +530,29 @@ and map to archs we nearly have. Each new arch = new `dump_*_reference.py` +
 - *A/B quality:* new `test-<arch>-diff` cos ≥ 0.999 vs HF (q8_0) and the retrieval
   bench for embedders.
 - *A/B speed:* `tests/benchmark.py` throughput sane vs a same-size existing arch.
+
+**ModernBERT (gte-modernbert-base) — VALIDATED E2E (2026-07).** Was structurally
+supported but never parity-checked, and broke three ways; now **cos 0.999999**
+(short) / **0.999998** (113-tok doc) vs HF on Metal + CPU, **0.99976** at q8_0.
+- *Local-path converter (BPE tokenizer + CLS pooling + Unigram scores):* all three
+  detections called `hf_hub_download(repo_id=args.model)`, which throws on a local
+  path and was silently caught → fell back to WordPiece + mean pooling (cos 0.46).
+  Added `_resolve_file()` at all three sites. Convert with `--crisp` (ollama mode
+  never runs BPE detection).
+- *Missing sliding-window local attention:* only RoPE θ alternated; the local
+  layers' ±`local_attention`/2 window mask was absent → they attended globally and
+  long docs diverged (113-tok cos 0.9826 → 0.999998). Added per-layer `swa_mask` on
+  local layers; converter emits `bert.local_attention`, loader reads it. A/B lever
+  `CRISPEMBED_ENCODER_NO_SWA=1`. No effect on non-ModernBERT encoders.
+- GGUFs published to `cstr/gte-modernbert-base-GGUF` (f16 + q8_0); registry entry in
+  `examples/cli/model_mgr.cpp`. Guard: `tests/test_modernbert_parity.py`. TODO: wire
+  a compiled `test-modernbert-diff` into the regression manifest.
+
+**NEXT PRIORITIES (2026-07, ordered):** (1) **EmbeddingGemma Dense/Matryoshka parity
+coverage** — the projection + Matryoshka path ships with ZERO parity test; add a
+`dump_embeddinggemma_reference.py` + parity test (cos ≥ 0.999 vs HF, verify the
+Dense→L2→Matryoshka order). (2) **C3 rectangular 4D per-item-mask batch** (O(B·T²);
+see C3 above). Nomic-v2-MoE already covered (`test_moe_parity.py`).
 
 **C9 — preserve & document our differentiation.** MPNet, GTE-v1.5, DeBERTa-v2,
 SPLADE, bge-m3 tri-head (dense+sparse+ColBERT), standalone CLIP/SigLIP text+image
