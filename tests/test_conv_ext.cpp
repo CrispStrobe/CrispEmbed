@@ -2,6 +2,7 @@
 // This tests whether conv_2d works when the kernel is in a separate buffer.
 
 #include "core/gguf_loader.h"
+#include "core/clean_exit.h"
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
@@ -10,7 +11,7 @@
 #include <cmath>
 #include <vector>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <layout.gguf>\n", argv[0]);
         return 1;
@@ -101,4 +102,8 @@ int main(int argc, char ** argv) {
     core_gguf::free_weights(wl);
     ggml_backend_free(backend);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

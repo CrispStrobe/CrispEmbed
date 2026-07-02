@@ -2,6 +2,7 @@
 // Usage: ./test-posformer model.gguf [image.bmp|png|jpg]
 
 #include "posformer_ocr.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -93,7 +94,7 @@ static std::vector<float> create_test_image(int w, int h) {
     return img;
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <model.gguf> [image.bmp]\n", argv[0]);
         return 1;
@@ -145,4 +146,8 @@ int main(int argc, char ** argv) {
 
     posformer_ocr_free(ctx);
     return result ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

@@ -10,6 +10,7 @@
 //   ./test-hmer /mnt/storage/models/hmer-hw-f32.gguf
 
 #include "hmer_ocr.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -55,7 +56,7 @@ static std::vector<float> create_test_image(int width, int height) {
     return img;
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <model.gguf> [threads]\n", argv[0]);
         return 1;
@@ -104,4 +105,8 @@ int main(int argc, char ** argv) {
 
     hmer_ocr_free(ctx);
     return result ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

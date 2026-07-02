@@ -7,6 +7,7 @@
 // 4. Graceful failure on missing/bad model files
 
 #include "tps_warp.h"
+#include "core/clean_exit.h"
 #include "core/gguf_loader.h"
 #include "ggml.h"
 #include "gguf.h"
@@ -220,7 +221,7 @@ static void test_bad_model() {
     check("tps_locnet_free(NULL) does not crash", true);
 }
 
-int main() {
+static int crispembed_test_main() {
     printf("TPS Localization Network — tests\n");
 
     srand(42); // deterministic random weights
@@ -231,4 +232,8 @@ int main() {
 
     printf("\n=== Results: %d passed, %d failed ===\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

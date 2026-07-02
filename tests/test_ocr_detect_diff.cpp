@@ -7,11 +7,12 @@
 // the probability map using the crispembed_diff harness.
 
 #include "ocr_detect.h"
+#include "core/clean_exit.h"
 #include "crispembed_diff.h"
 #include <cstdio>
 #include <cmath>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <dbnet.gguf> <ref.gguf> [image.png]\n", argv[0]);
         return 1;
@@ -119,4 +120,8 @@ int main(int argc, char ** argv) {
 
     ocr_detect::free(ctx);
     return r.found && r.is_pass(0.95f) ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

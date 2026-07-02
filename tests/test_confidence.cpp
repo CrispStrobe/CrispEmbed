@@ -12,6 +12,7 @@
 //   test-confidence --all <models_dir>          (live test all engines)
 
 #include "parseq_ocr.h"
+#include "core/clean_exit.h"
 #include "math_ocr.h"
 #include "hmer_ocr.h"
 #include "bttr_ocr.h"
@@ -292,7 +293,7 @@ static void test_mixtex_live(const char * model_path) {
     mixtex_ocr_free(ctx);
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     // Always run unit tests
     test_null_safety();
 
@@ -315,4 +316,8 @@ int main(int argc, char ** argv) {
 
     printf("\n=== RESULTS: %d passed, %d failed ===\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

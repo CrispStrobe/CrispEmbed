@@ -2,6 +2,7 @@
 // reference GGUF, do matmul, compare first 5 values.
 
 #include "crispembed_diff.h"
+#include "core/clean_exit.h"
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
@@ -11,7 +12,7 @@
 #include <cstring>
 #include <vector>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <model.gguf> <ref.gguf>\n", argv[0]);
         return 1;
@@ -113,4 +114,8 @@ int main(int argc, char ** argv) {
     gguf_free(gctx);
 
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

@@ -1,5 +1,6 @@
 // tests/test_adair_diff.cpp — AdaIR parity via crispembed-diff.
 #include "adair.h"
+#include "core/clean_exit.h"
 #include "crispembed_diff.h"
 #include <chrono>
 #include <cstdio>
@@ -18,7 +19,7 @@ static void check(const char * n, bool c) {
         n_fail++;
     }
 }
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s model.gguf ref.gguf\n", argv[0]);
         return 1;
@@ -49,4 +50,8 @@ int main(int argc, char ** argv) {
     adair_free(ctx);
     printf("\n=== Results: %d passed, %d failed ===\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

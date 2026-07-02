@@ -2,12 +2,13 @@
 // Usage: test-glm-ocr-image <model.gguf> [max_tokens]
 
 #include "glm_ocr.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
 #include <vector>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <model.gguf> [max_tokens]\n", argv[0]);
         return 1;
@@ -84,4 +85,8 @@ int main(int argc, char ** argv) {
     free(vr.hidden);
     glm_ocr::free_(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

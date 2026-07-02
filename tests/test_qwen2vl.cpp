@@ -9,6 +9,7 @@
 //   ./test-qwen2vl <model.gguf> <ref.gguf>   # smoke + parity diff
 
 #include "qwen2vl_ocr.h"
+#include "core/clean_exit.h"
 #include "../ggml/examples/stb_image.h"
 #include <cstdio>
 #include <cstdlib>
@@ -27,7 +28,7 @@ static int n_pass = 0, n_fail = 0;
         }                                                                                                              \
     } while (0)
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     printf("=== Qwen2.5-VL unit tests ===\n\n");
 
     // Unit test 1: C ABI symbols link correctly
@@ -128,4 +129,8 @@ int main(int argc, char ** argv) {
 
     printf("\n=== Tests: %d pass, %d fail ===\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

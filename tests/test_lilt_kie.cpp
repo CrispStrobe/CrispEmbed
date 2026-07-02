@@ -4,10 +4,11 @@
 //   ./test-lilt-kie /path/to/lilt-funsd-f32.gguf
 
 #include "lilt_kie.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <cstdlib>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <lilt-model.gguf>\n", argv[0]);
         return 1;
@@ -60,4 +61,8 @@ int main(int argc, char ** argv) {
     lilt_kie::free(ctx);
     printf("\nDone.\n");
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

@@ -3,6 +3,7 @@
 // Usage: test-internvl2-image <model.gguf> <image.png> [max_tokens] [prompt]
 
 #include "internvl2_ocr.h"
+#include "core/clean_exit.h"
 #include "image_preprocess.h"
 
 #include <cstdio>
@@ -10,7 +11,7 @@
 #include <cstring>
 #include <vector>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <model.gguf> <image.png> [max_tokens] [prompt]\n", argv[0]);
         return 1;
@@ -106,4 +107,8 @@ int main(int argc, char ** argv) {
     free(vpr.image_embeds);
     internvl2_ocr::free_(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

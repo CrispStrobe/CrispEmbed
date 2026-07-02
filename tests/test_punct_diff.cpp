@@ -8,12 +8,13 @@
 // Without a golden it just prints the output (used to capture/verify the golden).
 
 #include "crispembed.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <string>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s model.gguf [\"input\"] [\"expected\"]\n", argv[0]);
         return 2;
@@ -46,4 +47,8 @@ int main(int argc, char ** argv) {
     }
     crispembed_punct_free(ctx);
     return rc;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }
