@@ -1977,17 +1977,9 @@ static bool run_llm_decoder(ds_ocr2_ctx &ctx, const float *prompt_embeds, int n_
 // ---------------------------------------------------------------------------
 
 static std::string decode_tokens(const ds_ocr2_ctx &ctx, const int32_t *ids, int n) {
-    // Inverse of the GPT-2 byte-level BPE byte_encoder(): codepoint -> raw byte.
-    // The vocab pieces live in "byte-encoded unicode" space (e.g. 'Ġ' = space),
-    // so we concatenate the pieces then map each UTF-8 codepoint back to its
-    // original byte to recover real text.
-    static std::unordered_map<uint32_t, uint8_t> byte_decoder = [] {
-        std::unordered_map<uint32_t, uint8_t> m;
-        const auto &enc = core_bpe::byte_encoder();
-        for (int b = 0; b < 256; b++) m[(uint32_t)enc[b]] = (uint8_t)b;
-        return m;
-    }();
-
+    // Concatenate the byte-encoded vocab pieces (skipping special markers),
+    // then map the utf-8 codepoints back to raw bytes via the shared
+    // core_bpe decoder (inverse of byte_encoder(); 'Ġ' -> space, etc.).
     std::string merged;
     for (int i = 0; i < n; i++) {
         int id = ids[i];
@@ -1999,24 +1991,7 @@ static std::string decode_tokens(const ds_ocr2_ctx &ctx, const int32_t *ids, int
         merged += piece;
     }
 
-    // Decode UTF-8 codepoints of `merged` back to raw bytes.
-    std::string result;
-    size_t i = 0;
-    while (i < merged.size()) {
-        unsigned char c = (unsigned char)merged[i];
-        size_t len = (c < 0x80) ? 1 : ((c & 0xE0) == 0xC0) ? 2 : ((c & 0xF0) == 0xE0) ? 3 : 4;
-        if (i + len > merged.size()) len = 1;
-        uint32_t cp = 0;
-        if (len == 1) cp = c;
-        else if (len == 2) cp = ((c & 0x1F) << 6) | (merged[i+1] & 0x3F);
-        else if (len == 3) cp = ((c & 0x0F) << 12) | ((merged[i+1] & 0x3F) << 6) | (merged[i+2] & 0x3F);
-        else cp = ((c & 0x07) << 18) | ((merged[i+1] & 0x3F) << 12) | ((merged[i+2] & 0x3F) << 6) | (merged[i+3] & 0x3F);
-        auto it = byte_decoder.find(cp);
-        if (it != byte_decoder.end()) result.push_back((char)it->second);
-        else result.append(merged, i, len);  // not in map: keep as-is
-        i += len;
-    }
-    return result;
+    return core_bpe::unicode_to_bytes(merged);
 }
 
 // ---------------------------------------------------------------------------

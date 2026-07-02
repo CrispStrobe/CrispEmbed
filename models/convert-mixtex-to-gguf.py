@@ -254,7 +254,15 @@ def main():
     writer.add_uint32("mixtex.decoder.num_layers", 4)
     writer.add_uint32("mixtex.decoder.num_heads", 12)
     writer.add_uint32("mixtex.decoder.ffn_dim", 3072)
-    writer.add_uint32("mixtex.decoder.vocab_size", len(tokens))
+    # vocab_size is the LM-head / word-embedding width, which includes the added
+    # special tokens (</s>=25678, …) that the base vocab.json omits — NOT
+    # len(tokens). Using len(tokens) (25678) caps the decoder's argmax below the
+    # EOS id (25678), so it could never emit EOS and would run to max_len and
+    # degenerate. Derive it from the embedding tensor so the value is authoritative.
+    lm_vocab = int(dec_tensors["dec.word_embed.weight"].shape[0])
+    if lm_vocab != len(tokens):
+        print(f"  vocab_size={lm_vocab} (word_embed rows) vs {len(tokens)} base tokens")
+    writer.add_uint32("mixtex.decoder.vocab_size", lm_vocab)
     writer.add_uint32("mixtex.decoder.max_position", 300)
     writer.add_uint32("mixtex.decoder.sos_token", 0)
     writer.add_uint32("mixtex.decoder.eos_token", config.get("eos_token_id", 25678))
