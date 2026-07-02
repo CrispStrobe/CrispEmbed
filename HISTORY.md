@@ -4,6 +4,46 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 2, 2026 — PaddleOCR-VL: SIGSEGV fixed, OCR working end-to-end (CPU + Metal)
+
+`paddleocr-vl-0.9b` crashed with `EXC_BAD_ACCESS` in `_platform_memmove` during
+the forward pass on **both** backends (exit 139, zero output) — it had never
+been validated end-to-end. The handover
+(`handover-prompts/paddleocr-vl-sigsegv-fix.md`) and the audit's LEARNINGS entry
+both blamed the "8:1 GQA broadcast" hazard from `fbae7ba`; **both were wrong**.
+A debug/`-O0` build turned the opaque `memmove` SIGSEGV into an exact
+`ggml_reshape` assert, and reading the real tensor dims out of the GGUF gave the
+answer immediately.
+
+**Result**: fox.png → `The quick brown fox jumps over the lazy dog.` on **q8_0,
+CPU and Metal**, stopping cleanly on `</s>`. qwen2.5-vl-3b (the primary user of
+the shared `qwen2vl_ocr` engine) is unaffected — no regression.
+
+**Two independent, unrelated bugs (+ tokenizer fallout):**
+1. **The crash — ERNIE-4.5 uses `head_dim=128` while `hidden/heads = 1024/16 =
+   64`.** The engine assumed `head_dim = D/n_heads` everywhere, so the Q/K/V
+   reshapes (`attn_q.weight` is `[1024, 2048]`) and the post-attention
+   reshape-to-`D` overran the tensors → SIGSEGV in Release, reshape assert in
+   debug. Corroborated by the mRoPE sections `[16,24,24]` summing to 64 =
+   head_dim/2. Fixed by adding `llm_hparams.head_dim` (from a config key or
+   derived from `q_w->ne[1]/n_heads`) and reshaping attention output to
+   `q_dim = head_dim*n_heads`, not `D`. No-op for Qwen (head_dim == D/n_heads).
+2. **Empty/garbage output — SentencePiece vocab loaded as GPT-2 BPE.** ERNIE's
+   vocab uses `▁` for spaces + `<0xXX>` byte tokens, but the OCR tokenizer loaded
+   every GGUF as byte-level BPE, silently dropping all prompt whitespace → the
+   model saw `OCR:Assistant:` and emitted `</s>` first. The chat tokens were also
+   hardcoded to Qwen's `<|im_*|>` (151644/5), out of range for the 103424-row
+   ERNIE embed table (a second `get_rows` assert). Fixed by detecting
+   PaddleOCR-VL, emitting the real ERNIE template
+   `<|begin_of_sentence|>User: <image>OCR:\nAssistant: ` (trailing space is
+   load-bearing), stopping on `</s>`=2 (per `generation_config.json`, **not**
+   `<|end_of_sentence|>`=100272), auto-detecting the `▁` vocab → SPM +
+   add_dummy_prefix, and decoding with a `▁`→space / `<0xXX>`→byte SPM decoder.
+
+`expected_text` for paddleocr-vl is now baked into the regression manifest.
+Remaining: generate/upload `paddleocr-vl-ref.gguf` to enable
+`test-paddleocr-vl-diff` (needs the HF model + upload).
+
 ## July 1, 2026 — GLM-OCR: garbage OCR fixed (5 bugs + q8_0), verified vs real model
 
 `glm-ocr` (zai-org/GLM-OCR, 0.9B) produced garbage OCR on every backend. The
