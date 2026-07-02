@@ -251,6 +251,53 @@ CrispEmbed/
 
 ## Pending roadmap
 
+### Regression-guardrail gaps — trace + close methodically (2026-07)
+
+Context: the OCR/VLM engines and **11 SR/restoration engines** (restormer, swinir,
+dat, hat, pan, tbsrn, adair, scunet, instructir, esrgan, safmn) now have auto-run
+`diff_only` guardrails in `tests/regression/manifest.json`. The engines below still
+lack a working, wired reference. **Method for each: trace LOCALLY first** (small
+models; use `/Volumes/backups` for HF cache to spare the main disk), get the ACTUAL
+per-stage cos from `test-<x>-diff`, then **disambiguate dumper-bug vs engine-regression
+before claiming a root cause** — do NOT write a fix-handover on assumption (the first
+restormer handover blamed the conv-weight pre-permute; the real bug was the MDTA
+block-graph — verify empirically). Only after the actual cause is confirmed: fix the
+engine or the dumper, (re)generate the ref, upload to HF, and wire the manifest entry.
+WAVE window = 2026-06-19..06-22 (scalar→ggml refactor).
+
+**Gap 1 — NER/embedding dumpers failed on Kaggle (env/dumper, NOT necessarily a regression).**
+`dump_failed` on Kaggle CUDA for gliner, lilt, lfm2_colbert, layout — tokenizer
+padding / `gliner` pkg / wrong source-id errors in the *dumper*, on Kaggle's
+transformers version. History: **gliner** (created 06-12, verified cos 1.0 06-13)
+and **lilt** (06-15, verified 25/25 cos 1.0 same day) are **pre-wave and untouched →
+almost certainly fine; the Kaggle failure is env**. Re-run the dumpers LOCALLY, confirm
+cos, upload refs, wire. `dump_layout_reference.py` source id was likely wrong
+(`cmarkea/dit-base-layout-detection`) — find the correct one (layout-heron / RT-DETR).
+
+**Gap 2 — verify mismatch: nafnet + lfm2 (engine-regression SUSPECTS).**
+Ref generated but ggml output ≠ ref. **nafnet**: created 06-14 scalar, **conv→ggml on
+06-20 (`b580e5c`) + 4D/transposed-conv fix `bf26905` 06-20 — inside the wave — and it
+NEVER had a diff harness**, so the conversion was never verified. Local `test-nafnet-diff`
+= **cos 0.538** (reproduced). Prime wave-regression suspect (same shape as restormer),
+BUT confirm `dump_nafnet_reference.py` faithfully rebuilds NAFNet-width32 first (rule
+out a stale dumper). **lfm2/lfm2_colbert**: created 06-18, heavily changed in the wave
+(gallocr→backend_sched `29176a0`, multivec segfault fix `a091283`, both 06-20).
+Disambiguate dumper vs engine; if engine, bisect against the pre-wave state.
+**layout**: wave-touched (`dc0861b` 06-20 replaced manual attention with
+`ggml_flash_attn_ext`) → also a regression risk even once its dumper is fixed.
+
+**Gap 3 — bert_ner: no dumper exists.** `test-bert-ner-diff` + `bert-base-NER-GGUF`
+exist, but there is no `tools/dump_bert_ner_reference.py`. It shares the BERT encoder
+(core parity 1.0 via `parity_layers_bert.py`), pre-wave. Write the dumper (mirror an
+existing transformers-based dumper), generate ref locally, upload, wire.
+
+**Gap 4 — no standing guardrail for embedding/face + tail engines.**
+vit_embed (cos 0.996), clip_text (0.997), decoder_embed (≥0.999), cnn_embed/face
+det-rec (0.9999 vs ONNX), face_align (MAE 0.0) — all verified once at conversion but
+have no compiled diff test; add one (or wire the Python parity into CI). **text_sr**
+blocked (no public checkpoint). **tps_locnet/tps_warp, pcs, fireredpunc,
+bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
+
 ### OCR engine correctness/stability fixes (2026-06-30, issue #25)
 
 Found while integrating the OCR engines downstream (BiblioForge). macOS arm64,
