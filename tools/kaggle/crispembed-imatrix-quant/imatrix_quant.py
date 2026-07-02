@@ -154,13 +154,19 @@ def main():
 
     kh.install_build_toolchain()
     build = repo / "build"; build.mkdir(exist_ok=True)
+    # GPU build: ggml-cuda is shared with CrispASR, so the crispasr-ccache seed
+    # warms the bulk of the CUDA compile; crispembed's CPU-side engines compile
+    # fast. crispembed-cli then runs calibration/A/B on the GPU (helps 2.5B+).
+    GPU = os.environ.get("CRISP_GPU", "1") != "0"
+    flags = (kh.cuda_build_flags(kh.detect_cuda_arch()) if GPU else ["-DGGML_CUDA=OFF"])
+    flags += kh.cache_and_link_flags()
     cfg_cmd = (f"cmake -G Ninja -S {repo} -B {build} -DCMAKE_BUILD_TYPE=Release "
-               f"-DGGML_CUDA=OFF " + " ".join(kh.cache_and_link_flags()))
+               + " ".join(flags))
     kh.sh_with_progress(cfg_cmd)
     with kh.build_heartbeat("cmake.build"):
         kh.sh_with_progress(f"cmake --build {build} "
                             f"--target crispembed-cli crispembed-quantize "
-                            f"-j{kh.safe_build_jobs(gpu=False)}")
+                            f"-j{kh.safe_build_jobs(gpu=GPU)}")
     cli   = build / "crispembed"
     quant = build / "crispembed-quantize"
     kh.step("built")
