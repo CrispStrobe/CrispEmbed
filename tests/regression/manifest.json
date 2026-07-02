@@ -843,6 +843,29 @@
           "*": 0.99
         }
       }
+    },
+    {
+      "name": "clip-text",
+      "engine": "clip-text",
+      "diff_only": true,
+      "_comment": "CLIP text encoder (openai/clip-vit-base-patch16). No OCR/text output — the only regression signal is the final pooled+projected text embedding (crispembed_clip_text_encode) vs an independent HF CLIPTextModel.get_text_features reference (tools/dump_clip_text_reference.py, text 'a photo of a fox'). Guards the CLIP-BPE </w> word-boundary tokenizer (fa66a02): a GPT-2-style byte-level regression that emits a standalone space token instead of appending </w> per word craters final_embedding cos from 1.000 to ~0.79. cosine is scale-invariant so an engine/ref L2-norm mismatch is harmless; the diagnostic pre_proj line (EOS hidden, no text_proj) is printed but NOT gated (it is ~0 by design, confirming text_proj IS applied).",
+      "gguf": {
+        "repo": "cstr/clip-text-base-GGUF",
+        "file": "clip-text-base.gguf",
+        "revision": "4e544b4ae5ce3ba19dd2c9aed4f6dee14a4a7cb2",
+        "approx_size_mb": 244
+      },
+      "diff": {
+        "binary": "test-clip-text-diff",
+        "ref": {
+          "repo": "cstr/clip-text-base-GGUF",
+          "file": "clip-text-ref.gguf",
+          "revision": "main"
+        },
+        "thresholds": {
+          "final_embedding": 0.99
+        }
+      }
     }
   ]
 }
