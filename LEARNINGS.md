@@ -1,5 +1,51 @@
 # CrispEmbed — Technical Learnings
 
+## ggml v0.10.0 (8be60f83) Metal regressions: residency-set teardown abort + sched CPU-fallback assert (2026-07)
+
+Two aborts appeared *only after* the ggml submodule bump to v0.10.0 (`8be60f83`),
+turning Metal runs that worked "two weeks ago" into crashes. Both are FIXED on
+`fix/metal-v0.10-regressions`. Neither is a CrispEmbed logic bug — v0.10.0 changed
+ggml's contract.
+
+**1. Metal residency-set teardown abort (`ggml-metal-device.m:612`).** v0.10.0 added
+Metal *residency sets*: a GPU keep-alive cache (default `keep_alive = 180 s`, a
+background heartbeat dispatch thread) that wires buffers resident to avoid OS
+eviction. It also added a hard teardown assert `GGML_ASSERT([rsets->data count]==0)`
+in `ggml_metal_device_free`. Buffers register a set on alloc and *deregister on
+free* (device.m:906/920) — so the assert only fires if a Metal buffer is still
+alive when the **process-global** device is torn down by a C++ static destructor at
+`exit()`. CrispEmbed's one-shot binaries (CLI, `test-*-diff`) leak their backend at
+exit (relying on process teardown), which was benign pre-v0.10.0 but now aborts
+(SIGABRT / exit 134) **after results are printed** — corrupting exit codes and
+making `tests/regression/run_one.py` report false "died from signal 6" on passing
+runs. Diagnostic: NaN/abort at *exit* with correct stdout ⇒ teardown, not compute.
+
+Fix (not a ggml patch): ggml exposes a kill-switch, `use_residency_sets =
+getenv("GGML_METAL_NO_RESIDENCY") == nil`. A library **constructor** in the
+always-linked core TU `src/core/gguf_loader.cpp` sets `GGML_METAL_NO_RESIDENCY` by
+default (overwrite=0), running at library load — before any ggml Metal device init.
+This restores pre-bump behavior and covers every entry point (CLI, engines, tests,
+and all bindings, which load `libcrispembed` as a shared lib so the constructor
+runs at dlopen). The residency cache only benefits a **long-lived** process (the
+server; a one-shot run is a fresh process, so it buys nothing there); such a host
+opts back in with **`CRISPEMBED_METAL_RESIDENCY=1`** and is safe because it frees
+its contexts via `crispembed_free` on shutdown (verified leak-clean with residency
+re-enabled — jina embed exits 0). Only dev `test-*-diff` binaries still leak under
+an explicit opt-in, and they never use residency.
+
+**2. Scheduler CPU-fallback assert (`ggml-backend.cpp:1736`).** v0.10.0's
+`ggml_backend_sched_new` now asserts the LAST backend is CPU. Engines that build a
+Metal-only sched abort at load. The modern multi-backend engines already append CPU
+(got-ocr/layout comment it, the "issue #68" pattern in `fireredpunc.cpp`), and the
+SR/OCR `n=1` engines use a dedicated CPU sched — both fine. Only `lfm2_embed` passed
+a GPU backend as its single sched backend. Fix: append a CPU fallback (owned+freed
+by the ctx). This finally let lfm2 run on Metal (test-lfm2-diff per-layer cos
+≥0.9999) — previously the abort masked it entirely.
+
+Takeaway: after any ggml submodule bump, re-run a **Metal** smoke of the one-shot
+CLI + a couple of `test-*-diff` binaries and check **exit codes**, not just stdout —
+teardown/scheduler contract changes are invisible to numerical parity.
+
 ## unlimited_ocr "CLI can't OCR" was a truncated download, NOT a routing/crash bug (2026-07-02)
 
 RESOLVED — no code change. A prior session reported that `crispembed --ocr FILE`

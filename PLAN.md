@@ -873,8 +873,26 @@ Metal, ggml 0.10.0.
 - ~~No `GOT_OCR_FORCE_CPU` env~~ → **added** (commit 718a73e). Also a debug lever:
   A/B got-ocr2 output on CPU vs Metal — if CPU is also garbage the vision bug is
   logic, not Metal-specific; if CPU is correct, it's a Metal op issue.
-- **ggml Metal device-teardown abort** at process exit when loaded alongside
-  PyTorch MPS (downstream works around it with `os._exit`).
+- ~~**ggml Metal device-teardown abort** at process exit when loaded alongside
+  PyTorch MPS~~ → **FIXED (2026-07, `fix/metal-v0.10-regressions`)**. Root cause was
+  the ggml v0.10.0 bump (`8be60f83`): it added Metal **residency sets** (a 180 s
+  GPU keep-alive cache) with a hard teardown assert `[rsets->data count]==0` in
+  `ggml_metal_device_free`, so any Metal buffer still alive when the process-global
+  device is freed by a C++ static dtor at exit aborts (SIGABRT / exit 134) *after*
+  results print — flipping exit codes and making passing one-shot CLI / `test-*-diff`
+  runs (and `run_one.py`) report false "signal 6" failures. Fix: a library
+  constructor in `src/core/gguf_loader.cpp` sets ggml's own kill-switch
+  `GGML_METAL_NO_RESIDENCY` by default (before any Metal init), restoring pre-bump
+  behavior. **Env `CRISPEMBED_METAL_RESIDENCY=1`** opts the cache back in for a
+  long-lived host (the server / a long-running binding process) — safe because
+  those free their contexts via `crispembed_free` on shutdown (verified leak-clean
+  with residency re-enabled). The one-shot CLI and all bindings (Python/Rust/Dart
+  load `libcrispembed` as a shared lib, so the constructor runs at load) get the
+  safe default automatically. The old `os._exit` PyTorch-MPS-coexistence workaround
+  is no longer needed.
+- **lfm2 Metal scheduler abort** — also a v0.10.0 regression: `ggml_backend_sched_new`
+  now asserts the last backend is CPU. **FIXED** same branch — `lfm2_embed_load`
+  appends a CPU fallback backend (fireredpunc issue-#68 pattern).
 
 ### GPU + quantization audit (2026-06-16)
 
