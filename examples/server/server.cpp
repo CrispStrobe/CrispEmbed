@@ -20,6 +20,8 @@
 //   POST /colbert/score   — {"query": "...", "documents": [...]} → ColBERT scoring
 //   POST /ner/extract     — {"text": "...", "labels": [...]} → NER entities
 //   POST /scan/cleanup    — {"image": "scan.png"} → cleaned image
+//   POST /scan/split      — {"image": "scan.png"} → {"pages":1|2,"split_x":X}
+//   POST /scan/content    — {"image": "scan.png"} → {"content":true,"x0":..,"y1":..}
 //   POST /pdf/dpi              — {"file": "path.pdf"} → per-page DPI info
 //   POST /preprocess/skew      — {"image": "..."} → {"angle": F, "confidence": F}
 //   POST /preprocess/dewarp    — {"image": "...", "output": "..."} → PGM image or JSON
@@ -1942,6 +1944,72 @@ int main(int argc, char ** argv) {
            << ", \"original_height\": " << h << ", \"ms\": " << std::setprecision(1) << std::fixed << ms << "}";
 
         fprintf(stderr, "crispembed-server: /scan/cleanup in %.1f ms (%dx%d -> %dx%d)\n", ms, w, h, ow, oh);
+        res.set_content(js.str(), "application/json");
+    });
+
+    // Shared helper: extract the "image" path from a JSON body.
+    auto extract_image_path = [](const std::string & body) -> std::string {
+        auto pos = body.find("\"image\"");
+        if (pos == std::string::npos) return "";
+        auto q1 = body.find('"', pos + 7);
+        auto q2 = (q1 == std::string::npos) ? std::string::npos : body.find('"', q1 + 1);
+        if (q1 == std::string::npos || q2 == std::string::npos) return "";
+        return body.substr(q1 + 1, q2 - q1 - 1);
+    };
+
+    // POST /scan/split — detect a two-up book spread (no model needed)
+    // Request:  {"image": "/path/to/scan.png"}
+    // Response: {"pages": 1|2, "split_x": X (if 2), "width": W, "height": H}
+    svr.Post("/scan/split", [&, extract_image_path](const httplib::Request & req, httplib::Response & res) {
+        std::string image_path = extract_image_path(req.body);
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 0);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+        int sx = scan_cleanup_detect_page_split(data, w, h, ch);
+        stbi_image_free(data);
+        std::ostringstream js;
+        if (sx < 0)
+            js << "{\"pages\": 1, \"width\": " << w << ", \"height\": " << h << "}";
+        else
+            js << "{\"pages\": 2, \"split_x\": " << sx << ", \"width\": " << w << ", \"height\": " << h << "}";
+        res.set_content(js.str(), "application/json");
+    });
+
+    // POST /scan/content — detect the printed content bounding box (no model needed)
+    // Request:  {"image": "/path/to/scan.png"}
+    // Response: {"content": true, "x0":.., "y0":.., "x1":.., "y1":..} | {"content": false}
+    svr.Post("/scan/content", [&, extract_image_path](const httplib::Request & req, httplib::Response & res) {
+        std::string image_path = extract_image_path(req.body);
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 0);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+        int x0, y0, x1, y1;
+        int rc = scan_cleanup_content_bbox(data, w, h, ch, &x0, &y0, &x1, &y1);
+        stbi_image_free(data);
+        std::ostringstream js;
+        if (rc != 0)
+            js << "{\"content\": false, \"width\": " << w << ", \"height\": " << h << "}";
+        else
+            js << "{\"content\": true, \"x0\": " << x0 << ", \"y0\": " << y0 << ", \"x1\": " << x1 << ", \"y1\": " << y1
+               << ", \"width\": " << w << ", \"height\": " << h << "}";
         res.set_content(js.str(), "application/json");
     });
 

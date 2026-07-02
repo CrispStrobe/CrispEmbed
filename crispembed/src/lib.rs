@@ -1623,6 +1623,42 @@ impl CrispScanCleanup {
 
         Ok((result, ow, oh))
     }
+
+    /// Detect a two-up (double-page) book spread. Returns the gutter column to
+    /// split at, or `None` for a single page.
+    pub fn detect_page_split(&self, pixels: &[u8], width: i32, height: i32, channels: i32) -> Option<i32> {
+        let sx = unsafe {
+            crispembed_sys::crispembed_scan_cleanup_detect_page_split(pixels.as_ptr(), width, height, channels)
+        };
+        if sx < 0 {
+            None
+        } else {
+            Some(sx)
+        }
+    }
+
+    /// Detect the printed content bounding box (trims blank margins). Returns
+    /// `(x0, y0, x1, y1)` with x1/y1 exclusive, or `None` for a blank page.
+    pub fn content_bbox(&self, pixels: &[u8], width: i32, height: i32, channels: i32) -> Option<(i32, i32, i32, i32)> {
+        let (mut x0, mut y0, mut x1, mut y1) = (0i32, 0i32, 0i32, 0i32);
+        let rc = unsafe {
+            crispembed_sys::crispembed_scan_cleanup_content_bbox(
+                pixels.as_ptr(),
+                width,
+                height,
+                channels,
+                &mut x0,
+                &mut y0,
+                &mut x1,
+                &mut y1,
+            )
+        };
+        if rc != 0 {
+            None
+        } else {
+            Some((x0, y0, x1, y1))
+        }
+    }
 }
 
 impl Drop for CrispScanCleanup {
