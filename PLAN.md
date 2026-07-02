@@ -329,6 +329,17 @@ All six evaluated. Implemented: despeckle (1), blackfilter (2), page-split (5),
 content-bbox (6). Verified-already-covered / deliberately-skipped with evidence:
 deskew fill (3, already correct), grayfilter (4, subsumed by our whitening).
 
+- [x] **Do-no-harm fix (blackfilter sharpness gate).** A heavy but still-readable
+  dark vignette/stain was being DESTROYED: blackfilter cleared the stain's solid
+  dark core to white and whitening smeared the leftover gradient edge to black
+  (`darkvignette` harness case, CER degraded 0.561 → cleanup **0.474 + a black
+  amoeba over the text**). Fix: blackfilter now clears a dark region only if it is
+  bordered by BRIGHT paper (a sharp-edged shadow/blob); a soft dark gradient is
+  bordered by more gradient, so it is left for the whitening step. Result:
+  darkvignette 0.561 → **0.006** (pristine), shadow still cleared (0.075 ≈ prior
+  0.071), all other cases unchanged. Added the `darkvignette` degradation to the
+  harness as a permanent do-no-harm guard.
+
 Harness: `tools/scan_cleanup_bench.py --image clean.png --bin build/crispembed`.
 
 ### llama.cpp parity, convergence & A/B plan (2026-07)
