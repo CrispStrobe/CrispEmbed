@@ -807,6 +807,104 @@ tracing: **layout** (encoder, flash_attn) + **nafnet** (conv layout, now fixed).
 broken reference (engine fine); lfm2_colbert = ColBERT-head discrepancy; bert_ner = dumper
 written, download-blocked. None of gliner/lfm2/lfm2_colbert backbones are regressions.
 
+### CUDA-backend gaps (2026-07-02, from the Kaggle GPU regression run)
+
+Ran the full 36-model manifest on **Kaggle CUDA** (T4/P100) via
+`tools/kaggle/ocr-portfolio-regression` — the GPU counterpart to the CPU
+`regression.yml`. This is the FIRST time most engines were exercised on CUDA
+(their `expected_text`/refs were all captured on Metal/CPU). Two distinct
+CUDA-only problem classes surfaced. **Neither is a regression** — proven: the
+2026-07-02 tree-wide clang-format commit is whitespace-only (its non-ws bytes are
+just `SortUsingDeclarations` re-ordering + `BreakStringLiterals` splitting, both
+semantics-preserving), and `got_ocr.cpp` was reformatted yet got-ocr2 still scores
+`cer=0.000` on CUDA.
+
+**How to reproduce (self-contained).** Account = **chr1s4** (NOT chr1str — see
+`../kaggle_usage.md`; `export KAGGLE_API_TOKEN=<chr1s4 token from that file>`).
+```
+kaggle kernels push -p tools/kaggle/ocr-portfolio-regression   # clones main, CUDA build, runs all models
+kaggle kernels status  chr1s4/crispembed-ocr-portfolio-regression
+kaggle kernels output  chr1s4/crispembed-ocr-portfolio-regression -p ./out   # log = <slug>.log
+```
+The `.log` is a JSON array of `{stream_name,time,data}`; reconstruct text with
+`"".join(e["data"] for e in json.load(open(log)))`. Per-model timeout is now 300s
+(`ocr_portfolio_regression.py`); the datasets `chr1s4/crispasr-hf-token` +
+`chr1s4/crispembed-ccache` must be attached (already in `kernel-metadata.json`).
+
+**Gap 5 — CUDA teardown crashes (correct output, then a crash on exit).**
+Affected: **swinir, dat, tbsrn** (SIGSEGV / signal 11) and **gliner, lfm2_colbert,
+layout-heron, lfm2_embed** (SIGABRT / signal 6). In every case the diff prints
+COMPLETE, PASSING cosines first (e.g. `swinir  output cos=0.998403 … PASS`,
+`swinir_sr: done (256x256)`) and only THEN `ERROR: diff harness died from signal N`.
+So this is a **teardown/atexit crash, not a correctness failure**; run_one currently
+marks it FAIL because `run_diff` treats `returncode < 0` as fatal *before* parsing.
+- **NOT reproducible locally.** Dev box is macOS 26.2 (residency sets active) yet
+  `./build/test-swinir-diff …` exits **0**. The crash is CUDA-exclusive; there is no
+  local CUDA, so each fix attempt costs a ~50-min Kaggle round-trip (chr1s4 has a
+  30h/week GPU quota).
+- **SIGSEGV root cause (swinir/dat/tbsrn), high-confidence by inspection:** they call
+  `ggml_backend_free(backend)` *immediately after* `load_weights` (swinir_sr.cpp:379,
+  dat_sr.cpp:1296, tbsrn_sr.cpp:350), leaving `ctx->wl`'s weight buffers on a
+  torn-down backend; `swinir_sr_free` → `core_gguf::free_weights(ctx->wl)` frees them
+  later. Harmless on Metal, a segfault against a dead CUDA device at teardown. The
+  engines I already moved to CPU weights (nafnet/restormer/esrgan/safmn) do NOT crash
+  — corroborating this. **Candidate fix:** keep the weight backend alive in `ctx` and
+  free it in the engine `*_free()` AFTER `free_weights` (mirror `gliner_ner.cpp` which
+  keeps `ctx->backend`, freed at :1024). Metal-verified-safe, but only CUDA-verifiable.
+- **SIGABRT cluster (gliner/lfm2_colbert/layout-heron) is a DIFFERENT bug:** gliner
+  already keeps+frees `ctx->backend`, so it is not the free-after-load issue — it is a
+  ggml `GGML_ASSERT` firing on CUDA teardown. Diagnose separately (get the assert
+  message: it's truncated in the JSON log's stderr; re-run with fewer models or grep
+  the full stderr blob). Likely the CUDA analogue of the Metal residency-set assert.
+- **The Metal analogue (context, do not conflate):** ggml v0.10.0 added Metal
+  *residency sets* — a keep-alive GPU-memory cache with `keep_alive_s = 3*60` and a
+  background heartbeat thread (`ggml-metal-device.m:536-588`), plus a STRICT teardown
+  `GGML_ASSERT([rsets->data count] == 0)` at `ggml-metal-device.m:612`. It fires if any
+  Metal buffer outlives the global device (macOS ≥15). Interim Metal workaround:
+  `GGML_METAL_NO_RESIDENCY=1` (`ggml-metal-device.m:775` disables `use_residency_sets`).
+  **This env var is Metal-only and does NOTHING for the CUDA crashes above.**
+- **Recommended path (what a fresh agent should do):**
+  1. **Harness-tolerance fix FIRST (reliable, locally verifiable):** in
+     `tests/regression/run_one.py::run_diff` (~line 255), parse stage lines BEFORE the
+     `returncode < 0` check; if the diff produced complete, passing stages, PASS with a
+     printed WARNING (`[<name>] WARN teardown signal N after valid results`) instead of
+     `die()`. This makes the suite honest — a correct-then-teardown-crash is green, a
+     crash-before-output stays red. It does NOT hide the crash (warning + still fixable).
+  2. Then attempt the SIGSEGV root fix (backend lifetime) on swinir/dat/tbsrn and
+     re-run the kernel to confirm empirically.
+  3. Diagnose the SIGABRT assert separately (capture the full assert string).
+
+**Gap 6 — CUDA-garbage VLMs (work on Metal/CPU, garbage/hang only on CUDA).**
+Affected: **glm-ocr** (`cer=4.245`), **internvl2-1b** (`cer=5.837`), **qwen2vl-3b**
+(TIMEOUT), **deepseek-ocr2** (FAIL; exact reason not yet captured — re-run and read its
+`model.deepseek-ocr2` block). `cer > 4` means the OCR text is total garbage (the
+no-garbage guard still passes because it's varied garbage, not repetition). These all
+read the fox line correctly on Metal/CPU (that's what their `expected_text` was captured
+on). **It is engine-specific, not blanket CUDA:** got-ocr2 (`cer 0.000`) and qwen3vl-2b
+both PASS on CUDA.
+- **Not the repetition bug (already fixed):** internvl2/qwen2vl got `argmax_no_repeat_ngram`
+  (n=3) in PR #26 (see "OCR engine correctness/stability fixes" below). So CUDA garbage is
+  either (a) the vision encoder producing garbage vision tokens on CUDA → the LLM then
+  hallucinates/loops, or (b) a separate CUDA decode issue. (a) is the likely culprit — the
+  vision towers use conv/attention/flash_attn paths that can diverge numerically on CUDA.
+- **Blocker for per-stage diagnosis:** the diff refs `internvl2-1b-ref.gguf`,
+  `qwen2.5-vl-3b-ref.gguf`, `paddleocr-vl-ref.gguf` are **NOT on HF** (only the model
+  GGUFs), so `run_one` SKIPs their per-layer diff. (glm-ocr DOES have `glm-ocr-ref-full.gguf`.)
+- **How a fresh agent should diagnose (on Kaggle CUDA, the only place it repro's):**
+  1. Confirm it's the CUDA *backend*, not the model: run the engine with
+     `CRISPEMBED_FORCE_CPU=1` (or the per-engine `<ENGINE>_FORCE_CPU`) on the SAME Kaggle
+     box — if CPU output is correct there, the CUDA backend is the cause (expected).
+  2. Localize with per-stage dumps: internvl2/qwen2vl/glm each have a `test-<eng>-diff`
+     binary. Generate the missing refs (add to `tools/kaggle/crispembed-ref-gen/crispembed_ref_gen.py`
+     and run its GPU kernel, OR dump CPU output as the "ref" and diff CUDA-vs-CPU on the
+     Kaggle box). First-diff the stages: a vision-encoder stage that craters on CUDA but is
+     ~1.0 on CPU pinpoints the op (likely a conv im2col, windowed attention, or
+     `ggml_flash_attn_ext` that misbehaves on CUDA). Fix at that op; got-ocr2/qwen3vl-2b are
+     the working-on-CUDA references to compare graph construction against.
+  3. qwen2vl-3b TIMEOUT specifically: it may be hanging (not just slow) on CUDA — check
+     whether it's stuck in the vision encoder or an infinite decode; the 300s timeout now
+     kills it fast for iteration.
+
 ### OCR engine correctness/stability fixes (2026-06-30, issue #25)
 
 Found while integrating the OCR engines downstream (BiblioForge). macOS arm64,
