@@ -46,8 +46,10 @@ int main(int argc, char ** argv) {
         // Compare with reference
         auto r = ref.compare("colbert_output", multivec, n_tokens * colbert_dim);
         printf("  colbert_output: cos=%.6f max_abs=%.6f  %s\n",
-               r.cos_min, r.max_abs, r.is_pass(0.999f) ? "PASS" : "FAIL");
-        check("colbert cos >= 0.999", r.is_pass(0.999f));
+               r.cos_min, r.max_abs, r.is_pass(0.99f) ? "PASS" : "FAIL");
+        // 0.99 floor: the ref is f32 (AutoModel) but the shipped GGUF is q8_0 -> ~0.998
+        // colbert_output; a real scramble craters to ~0. (Set the ref+model both f32 for 0.999.)
+        check("colbert cos >= 0.99", r.is_pass(0.99f));
     }
 
     crispembed_free(ctx);
