@@ -11,6 +11,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  guards:
+    name: Static guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Test mains route through clean_exit
+        run: bash tools/check_test_clean_exit.sh
+
   build:
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
