@@ -4,6 +4,52 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 2, 2026 — imatrix quantization (C1): 31 embedders re-quantized, registry defaults switched to best flavor
+
+Started from a **llama.cpp parity audit** (which of our architectures upstream now
+supports, and what to borrow — recorded in `PLAN.md` + `LEARNINGS.md → "llama.cpp
+implementation reference"`). Top convergence item was **C1: importance-matrix
+(imatrix) quantization** — the highest-leverage fix for our q4_k accuracy floor,
+and offline-only (no graph risk).
+
+**Implementation.**
+- `src/imatrix.{h,cpp}` — an eval-callback collector gated by `CRISPEMBED_IMATRIX_OUT`.
+  On every `ggml_mul_mat` whose src0 is a named model weight it accumulates the
+  per-column sum-of-squares of the activation (src1), keyed by the GGUF weight name,
+  merges with any prior file, and flushes a GGUF imatrix at exit. Wired into the
+  encoder + decoder + lfm2 embedding schedulers; zero overhead when unset.
+- `crispembed-quantize --imatrix <file>` feeds per-tensor importance to
+  `ggml_quantize_chunk`. Added **IQ4_XS + IQ4_NL** types (IQ4_XS→IQ4_NL→Q4_0 fallback
+  for non-256-aligned rows).
+- Local A/B harness `tools/imatrix_ab.py`; Kaggle batch harness
+  `tools/kaggle/crispembed-imatrix-quant/` (per-model → batch → idempotent-skip →
+  big-base path), full kh regime (heartbeat, dataset token, ccache), CPU build.
+
+**Rollout — 31 embedders** now carry imatrix quants (q4_k+imatrix, iq4_xs) with
+`-imatrix-ab.txt` A/B summaries, uploaded under DISTINCT names (baselines never
+overwritten). imatrix always lifts 4-bit; **IQ4_XS+imatrix wins on the XLM-R/BERT
+encoders** (smaller AND higher cos), **q4_k+imatrix on the Qwen3/LFM2 decoder
+embedders**. Examples (cos vs full-precision gold): jina-v5-small q4_k 0.979→0.990;
+bge-m3 iq4_xs 0.981; nomic-v1.5 iq4_xs 0.837→0.905. GTE `NewModel` and nomic-v2-MoE
+both worked. The 4B/8B decoder embedders (octen/qwen3-embed) use a **big-base path**:
+calibrate + A/B-gold on the q8_0 (fits Kaggle's ~13 GB RAM), quantize from the f32
+base (streaming), stage in `/tmp`.
+
+**Model registry** (`model_mgr.cpp`) — every covered model's auto-download default
+now resolves to its A/B-winning imatrix flavor, with `-q4k`(imatrix)/`-iq4xs`/`-q8`
+aliases; several bad old defaults fixed (encoders were serving 1–2 GB full-precision
+`.gguf`; e5-large was 2.2 GB F32). f2llm-v2-0.6b + nomic-embed-text-v1.5 keep q8_0
+(4-bit too lossy).
+
+**Quantizer bug found + fixed.** embeddinggemma-300m produced an unloadable GGUF —
+PROVEN (by diffing vs the working reference q8_0) to be `crispembed-quantize`
+quantizing the SentenceTransformer Dense/Matryoshka heads (`dense.0`/`dense.1`) to
+q8_0 where the loader needs F32. Fix: a `dense.*` keep-F32 guard; re-quantized output
+loads + embeds cleanly. Benefits any ST-Dense model. No models were ever actually
+broken — one quantizer bug (fixed), two poor-at-4bit models (defaulted to q8_0), and
+an early harness auto-detect bug that picked jina-v5's same-size LoRA task variant
+(fixed: prefer exact base name + exclude task variants).
+
 ## July 2, 2026 — C3 batched-encoder throughput (packed + 4D), ModernBERT validated E2E, EmbeddingGemma verified
 
 **C3 — batched embedding throughput (llama.cpp-parity item).** The encoder batch path

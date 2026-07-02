@@ -434,8 +434,12 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   harness sources each model's existing full-precision GGUF from its `cstr/*-GGUF`
   repo (auto-detected), calibrates, quantizes q4_k/iq4_xs +imatrix, A/B vs the
   gold, uploads under DISTINCT names (never clobbering baselines) + `.imatrix` +
-  `-imatrix-ab.txt`. **20 models done** (cos vs full-precision gold, Kaggle CPU;
-  q8_0 ~0.9998 reference for all). Winner = best-small; ★ = IQ4_XS wins:
+  `-imatrix-ab.txt`. **31 models done** (batch 1: 20 below; group 2: 10 more —
+  all-MiniLM-L6/L12, all-mpnet, gte-small, arctic-embed-xs, snowflake-arctic-m/l,
+  paraphrase-multilingual, harrier-270m/0.6b; + embeddinggemma once fixed). The 4B/8B
+  decoder embedders (octen/qwen3-embed) run via the **big-base path** (calibrate/gold
+  on the q8_0 that fits Kaggle RAM, quantize from the f32 base, stage in `/tmp`).
+  cos vs full-precision gold, Kaggle CPU; q8_0 ~0.9998 reference; ★ = IQ4_XS wins:
 
   | model | q4_k base | q4_k+im | iq4_xs+im | winner |
   |---|---|---|---|---|
@@ -466,11 +470,14 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   quantizer bug (`dense.*` ST projection quantized → unloadable GGUF), now **FIXED**
   with a `dense.*` keep-F32 guard (`tools/quantize.cpp`; see `LEARNINGS.md`) and
   re-enabled. f2llm/nomic-v1.5 quantize poorly at 4-bit even with imatrix → keep q8_0.
-- Registry defaults for the FIRST 5 already repointed to the A/B winner
-  (`model_mgr.cpp`; `-q4k`→imatrix, `-iq4xs`/`-q8` aliases). **TODO:** repoint the
-  other 15 (winner column above; keep q8_0 for f2llm/nomic-v1.5); a `dense.*`
-  quantizer guard to unblock embeddinggemma; C8 wire remaining engine schedulers;
-  domain-matched calibration; retrieval A/B via `tests/bench_rag.py`.
+- **Registry: DONE for all 31.** Every covered model's auto-download default now
+  resolves to its A/B winner (`model_mgr.cpp`), with `-q4k`(imatrix)/`-iq4xs`/`-q8`
+  aliases; f2llm-v2-0.6b + nomic-embed-text-v1.5 kept at q8_0 (poor at 4-bit). The
+  `dense.*` quantizer guard (unblocking embeddinggemma) is landed.
+- **TODO:** finish the 4B/8B big-base runs (octen-4b/8b, qwen3-embed-4b/8b) + repoint
+  their defaults; C8 wire remaining engine schedulers; domain-matched calibration
+  corpora; retrieval A/B via `tests/bench_rag.py`; rerankers (need a rank-score A/B,
+  not embedding cosine).
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
 `add_bos_token`, `add_eos_token` into GGUF metadata (llama.cpp convention) instead
