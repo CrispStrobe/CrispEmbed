@@ -108,7 +108,7 @@ actual output (rendered pixels / read transcript) caught them:
   `expected_text` was `null` (never baked), so this may also be a never-validated
   path; either way qwen2vl-3b OCR is currently broken. Not yet tested at q8_0.
 
-### qwen2vl-3b hallucinated OCR — RESOLVED (2026-07-01): never-worked path, 4 bugs, NOT the ggml wave
+### qwen2vl-3b hallucinated OCR — RESOLVED (2026-07-02): never-worked path, 4 bugs, NOT the ggml wave
 
 The `null` `expected_text` was the tell: qwen2.5-vl-3b OCR **never worked** —
 this was a never-validated path, not a scalar→ggml-wave regression (the wave
