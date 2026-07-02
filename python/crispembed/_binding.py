@@ -2431,6 +2431,10 @@ class _ScanCleanupParams(ctypes.Structure):
         ("morph_kernel", ctypes.c_int),
         ("border_threshold", ctypes.c_float),
         ("deskew_max_angle", ctypes.c_float),
+        ("despeckle", ctypes.c_int),
+        ("despeckle_thresh", ctypes.c_float),
+        ("blackfilter", ctypes.c_int),
+        ("blackfilter_thresh", ctypes.c_float),
     ]
 
 
@@ -2456,6 +2460,18 @@ def _setup_scan_cleanup_signatures(lib):
 
     lib.crispembed_scan_cleanup_free_image.argtypes = [ctypes.POINTER(ctypes.c_uint8)]
     lib.crispembed_scan_cleanup_free_image.restype = None
+
+    lib.crispembed_scan_cleanup_detect_page_split.argtypes = [
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int, ctypes.c_int,
+    ]
+    lib.crispembed_scan_cleanup_detect_page_split.restype = ctypes.c_int
+
+    lib.crispembed_scan_cleanup_content_bbox.argtypes = [
+        ctypes.POINTER(ctypes.c_uint8), ctypes.c_int, ctypes.c_int, ctypes.c_int,
+        ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),
+    ]
+    lib.crispembed_scan_cleanup_content_bbox.restype = ctypes.c_int
 
 
 class CrispScanCleanup:
@@ -2484,7 +2500,8 @@ class CrispScanCleanup:
                 whiten_background=True, binarize=False,
                 binarize_method=0, sauvola_k=0.2, sauvola_window=25,
                 morph_kernel=51, border_threshold=0.15,
-                deskew_max_angle=15.0):
+                deskew_max_angle=15.0, despeckle=True, despeckle_thresh=0.25,
+                blackfilter=True, blackfilter_thresh=0.20):
         """Process a scan image.
 
         Args:
@@ -2529,6 +2546,10 @@ class CrispScanCleanup:
         params.morph_kernel = morph_kernel
         params.border_threshold = border_threshold
         params.deskew_max_angle = deskew_max_angle
+        params.despeckle = int(despeckle)
+        params.despeckle_thresh = despeckle_thresh
+        params.blackfilter = int(blackfilter)
+        params.blackfilter_thresh = blackfilter_thresh
 
         out_ptr = ctypes.POINTER(ctypes.c_uint8)()
         out_w = ctypes.c_int(0)
@@ -2545,6 +2566,45 @@ class CrispScanCleanup:
         buf = np.ctypeslib.as_array(out_ptr, shape=(oh * ow * 3,)).copy()
         self._lib.crispembed_scan_cleanup_free_image(out_ptr)
         return buf.reshape(oh, ow, 3)
+
+    @staticmethod
+    def _load_px(image):
+        import numpy as np
+        if isinstance(image, str):
+            from PIL import Image
+            img = np.array(Image.open(image).convert("RGB"))
+        elif hasattr(image, "convert"):
+            img = np.array(image.convert("RGB"))
+        else:
+            img = np.asarray(image)
+        if img.ndim == 2:
+            h, w, ch = img.shape[0], img.shape[1], 1
+        else:
+            h, w, ch = img.shape
+        pixels = img.flatten().astype(np.uint8)
+        return pixels, w, h, ch
+
+    def detect_page_split(self, image):
+        """Detect a two-up (double-page) book spread.
+
+        Returns the gutter column to split at, or None for a single page.
+        """
+        pixels, w, h, ch = self._load_px(image)
+        px = pixels.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+        sx = self._lib.crispembed_scan_cleanup_detect_page_split(px, w, h, ch)
+        return None if sx < 0 else int(sx)
+
+    def content_bbox(self, image):
+        """Detect the printed content bounding box (trims blank margins).
+
+        Returns (x0, y0, x1, y1) with x1/y1 exclusive, or None for a blank page.
+        """
+        pixels, w, h, ch = self._load_px(image)
+        px = pixels.ctypes.data_as(ctypes.POINTER(ctypes.c_uint8))
+        x0, y0, x1, y1 = (ctypes.c_int(0) for _ in range(4))
+        rc = self._lib.crispembed_scan_cleanup_content_bbox(
+            px, w, h, ch, ctypes.byref(x0), ctypes.byref(y0), ctypes.byref(x1), ctypes.byref(y1))
+        return None if rc != 0 else (x0.value, y0.value, x1.value, y1.value)
 
     def __del__(self):
         if hasattr(self, '_ctx') and self._ctx:
