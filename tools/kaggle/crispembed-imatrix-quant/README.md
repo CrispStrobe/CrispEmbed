@@ -1,26 +1,24 @@
 # crispembed-imatrix-quant (Kaggle)
 
-Per-model importance-matrix (imatrix) quantization for CrispEmbed — the C1
-rollout. Runs **one model per invocation** so you can loop:
+Importance-matrix (imatrix) quantization for CrispEmbed — the C1 rollout.
+Processes a **batch of models in one kernel run** (build once, then per model:
+download → calibrate → quantize → A/B → upload → `rm` → next). Select models with
+the `MODELS` env var (comma list) or edit `DEFAULT_BATCH` in `imatrix_quant.py`.
 
-```
-run --model lfm2-embed   # calibrate → quant+imatrix → A/B → upload → rm
-run --model bge-m3
-run --model jina-v5-nano
-...
-```
-
-Each run (see `imatrix_quant.py`):
-1. builds `crispembed-cli` + `crispembed-quantize` from `origin/main` (C1 is merged),
-2. downloads the HF source and converts it to an f16 GGUF,
+Per model (see `imatrix_quant.py::process`):
+1. builds `crispembed-cli` + `crispembed-quantize` from `origin/main` once (C1 merged),
+2. **downloads the existing full-precision GGUF from that model's `cstr/<name>-GGUF`
+   repo** (auto-detected = largest non-quant `.gguf`) — no HF re-conversion, so
+   LoRA models (jina-v5) and odd namings just work,
 3. calibration pass with `CRISPEMBED_IMATRIX_OUT` over `calib_corpus.txt`
    (falls back to a builtin corpus),
-4. for each quant spec `q8_0` (no imatrix), `q4_k` (+imatrix), `iq4_xs` (+imatrix):
-   quantize → **A/B cosine vs the f16 gold** on `eval_corpus.txt` → upload → `rm`,
-5. uploads the f16 + `.imatrix`, then removes everything locally.
+4. quants: `q8_0` + `q4_k` (A/B reference, not uploaded), `q4_k`+imatrix, `iq4_xs`+imatrix
+   — each **A/B cosine vs the full-precision gold**, then imatrix variants upload
+   under DISTINCT names (`-q4_k-imatrix.gguf`, `-iq4_xs.gguf`) → `rm`,
+5. uploads `-imatrix-ab.txt` (A/B summary, incl. the baseline-vs-imatrix delta) +
+   `.imatrix` to the repo; **baselines are never overwritten**.
 
-Local validation reference (jina-v5-nano, cos vs f16 gold):
-`q4_k` 0.9455→0.9569 (+imatrix); `iq4_xs` 0.9584→0.9648 (+imatrix, 172.7 MB).
+Per-model failures are isolated (logged, skipped). Rollout table: `PLAN.md → C1`.
 
 ## Kaggle regime (same as crispembed-quant-upload)
 Uses `kaggle_harness` (kh): `init_progress` (JSONL progress pushed to HF),
