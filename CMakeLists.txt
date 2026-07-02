@@ -172,6 +172,7 @@ endif()
 # ---------------------------------------------------------------------------
 set(CRISPEMBED_SOURCES
     src/crispembed.cpp
+    src/imatrix.cpp
     src/decoder_embed.cpp
     src/tokenizer.cpp
     src/tokenizer_spm.cpp
