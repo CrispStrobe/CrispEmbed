@@ -2,12 +2,13 @@
 // Usage: test_math_ocr_image <model.gguf> <image.bin> <width> <height>
 //   image.bin: raw grayscale float32, row-major, [0..1]
 #include "math_ocr.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <vector>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 5) {
         fprintf(stderr, "Usage: %s <model.gguf> <image.bin> <width> <height>\n", argv[0]);
         return 1;
@@ -51,4 +52,8 @@ int main(int argc, char ** argv) {
 
     math_ocr_free(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

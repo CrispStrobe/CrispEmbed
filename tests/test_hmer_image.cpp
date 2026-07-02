@@ -1,6 +1,7 @@
 // tests/test_hmer_image.cpp — run HMER OCR on an external image file.
 // Usage: test-hmer-image <model.gguf> <image.bmp | image.f32 WxH>
 #include "hmer_ocr.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -55,7 +56,7 @@ static bool ends_with(const char * s, const char * suffix) {
     return sl >= sufl && strcmp(s + sl - sufl, suffix) == 0;
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <model.gguf> <image.bmp | image.f32 WxH>\n", argv[0]);
         return 1;
@@ -119,4 +120,8 @@ int main(int argc, char ** argv) {
 
     hmer_ocr_free(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

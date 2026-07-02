@@ -85,12 +85,12 @@ post-Dense). **Lesson: models with a post-pooling projection head amplify backbo
 localize.** (The gap was deemed acceptable and left open; per-stage backbone diff is the
 next step.)
 
-## ggml v0.10.0 (8be60f83) Metal regressions: residency-set teardown abort + sched CPU-fallback assert (2026-07)
+## ggml v0.10.0 (8be60f83) GPU-teardown regressions: Metal residency abort + CUDA use-after-free + sched CPU-fallback assert (2026-07)
 
-Two aborts appeared *only after* the ggml submodule bump to v0.10.0 (`8be60f83`),
-turning Metal runs that worked "two weeks ago" into crashes. Both are FIXED on
-`fix/metal-v0.10-regressions`. Neither is a CrispEmbed logic bug — v0.10.0 changed
-ggml's contract.
+Three aborts appeared *only after* the ggml submodule bump to v0.10.0 (`8be60f83`),
+turning GPU runs that worked "two weeks ago" into crashes. All FIXED on
+`fix/metal-v0.10-regressions`. None is a CrispEmbed logic bug — v0.10.0 changed
+ggml's contract (a stricter GPU-device teardown + scheduler requirement).
 
 **1. Metal residency-set teardown abort (`ggml-metal-device.m:612`).** v0.10.0 added
 Metal *residency sets*: a GPU keep-alive cache (default `keep_alive = 180 s`, a
@@ -115,8 +115,28 @@ runs at dlopen). The residency cache only benefits a **long-lived** process (the
 server; a one-shot run is a fresh process, so it buys nothing there); such a host
 opts back in with **`CRISPEMBED_METAL_RESIDENCY=1`** and is safe because it frees
 its contexts via `crispembed_free` on shutdown (verified leak-clean with residency
-re-enabled — jina embed exits 0). Only dev `test-*-diff` binaries still leak under
-an explicit opt-in, and they never use residency.
+re-enabled — jina embed exits 0). The one-shot binaries that *do* leak are handled
+by the universal backstop (#3).
+
+**1b. Same root cause on CUDA — use-after-free, no kill-switch.** The identical
+"GPU buffer outlives the process-global device static-dtor teardown" leak crashes
+CUDA too, as **SIGSEGV** (swinir/dat/tbsrn) or **SIGABRT** (gliner/lfm2_colbert/
+layout-heron/lfm2_embed) — correct output, then crash on exit. CUDA has no
+`NO_RESIDENCY` equivalent, so #1's Metal switch can't touch it. The fix is the
+backstop: skip the static-dtor teardown for one-shot binaries.
+
+**3. Universal backstop — `core_util::clean_exit(rc)`.** New header
+`src/core/clean_exit.h`: flush stdout/stderr then `std::_Exit(rc)`, terminating
+WITHOUT running static destructors (so ggml's global GPU-device teardown never
+runs) — the same os._exit trick downstream already used for the PyTorch-MPS case,
+generalized. Applied to the **one-shot** binaries only: the CLI's `main` (rename
+real body to `cli_main`, thin `main` routes through `clean_exit`; any
+`crispembed_free`/engine-free inside still runs first) and all 88 `tests/*.cpp`
+mains. Backend-agnostic: fixes Metal *and* CUDA teardown crashes and preserves the
+pass/fail exit code (missing-model still exits 1). Long-lived hosts (server,
+bindings) do NOT use it — they free via `crispembed_free`. Verified on Metal with
+residency force-enabled (which reproduces the leak crash): test-vit-embed-diff /
+test-lfm2-diff / CLI all exit 0 (were 134).
 
 **2. Scheduler CPU-fallback assert (`ggml-backend.cpp:1736`).** v0.10.0's
 `ggml_backend_sched_new` now asserts the LAST backend is CPU. Engines that build a

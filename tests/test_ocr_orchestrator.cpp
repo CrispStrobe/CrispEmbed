@@ -9,6 +9,7 @@
 // Usage: test-ocr-orchestrator   (exits non-zero on failure)
 
 #include "ocr_orchestrator.h"
+#include "core/clean_exit.h"
 #include "crispembed.h"
 
 // stbi_write_png is exported by the crispembed lib.
@@ -645,7 +646,7 @@ static void test_punctuation() {
     crispembed_punct_free(pctx);
 }
 
-int main() {
+static int crispembed_test_main() {
     test_default_config();
     test_classifier();
     test_accept_gate();
@@ -659,4 +660,8 @@ int main() {
 
     printf("\n%d passed, %d failed\n", n_pass, n_fail);
     return n_fail == 0 ? 0 : 1;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

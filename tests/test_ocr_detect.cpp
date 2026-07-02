@@ -3,10 +3,11 @@
 // Usage: test-ocr-detect model.gguf [image.png]
 
 #include "ocr_detect.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <cstdlib>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <dbnet.gguf> [image.png]\n", argv[0]);
         return 1;
@@ -51,4 +52,8 @@ int main(int argc, char ** argv) {
 
     ocr_detect::free(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

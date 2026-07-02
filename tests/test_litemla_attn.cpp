@@ -14,6 +14,7 @@
 // Exit 0 = all pass.
 
 #include "ggml.h"
+#include "core/clean_exit.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -279,11 +280,15 @@ static void test_linear_attn_uniform() {
     }
 }
 
-int main() {
+static int crispembed_test_main() {
     printf("=== LiteMLA Linear Attention Unit Tests ===\n\n");
     test_linear_attn_single_pixel();
     test_linear_attn_uniform();
     test_linear_attn_tiny();
     printf("\n=== Results: %d passed, %d failed ===\n", g_pass, g_fail);
     return g_fail > 0 ? 1 : 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

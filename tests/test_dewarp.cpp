@@ -1,5 +1,6 @@
 // tests/test_dewarp.cpp — unit + live tests for page dewarping
 #include "dewarp.h"
+#include "core/clean_exit.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -155,7 +156,7 @@ static void test_live_image(const char * path) {
     stbi_image_free(img);
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     printf("Page dewarping — unit tests\n");
 
     test_small_image();
@@ -168,4 +169,8 @@ int main(int argc, char ** argv) {
 
     printf("\n=== Results: %d passed, %d failed ===\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

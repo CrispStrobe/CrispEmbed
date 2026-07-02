@@ -6,6 +6,7 @@
 // backbone. Must match tools/dump_modernbert_reference.py TEXT exactly.
 
 #include "crispembed.h"
+#include "core/clean_exit.h"
 #include "crispembed_diff.h"
 #include <cmath>
 #include <cstdio>
@@ -19,7 +20,7 @@ static const char * TEXT = "Machine learning is a subset of artificial intellige
                            "Berlin is the capital of Germany and the Eiffel Tower stands in Paris while "
                            "water boils at one hundred degrees Celsius at sea level near the open ocean.";
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <model.gguf> <ref.gguf>\n", argv[0]);
         return 1;
@@ -65,4 +66,8 @@ int main(int argc, char ** argv) {
 
     crispembed_free(ctx);
     return r.is_pass(0.99f) ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

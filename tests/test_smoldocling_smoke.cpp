@@ -2,9 +2,10 @@
 // Usage: ./test-smoldocling-smoke model.gguf test.png
 
 #include "../src/smoldocling_ocr.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s model.gguf image.png\n", argv[0]);
         return 1;
@@ -29,4 +30,8 @@ int main(int argc, char ** argv) {
 
     smoldocling_free(ctx);
     return text ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

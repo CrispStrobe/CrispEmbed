@@ -9,12 +9,13 @@
 //   ./test-gliner-diff <model.gguf> [text]
 
 #include "gliner_ner.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <string>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <model.gguf> [text]\n", argv[0]);
         fprintf(stderr, "  Set GLINER_DIFF_REF=<ref.gguf> for per-layer comparison\n");
@@ -68,4 +69,8 @@ int main(int argc, char ** argv) {
     gliner_ner_free(ctx);
     printf("\nDone.\n");
     return rc;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

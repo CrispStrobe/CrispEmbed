@@ -8,6 +8,7 @@
 //   ./test-classical-preproc               (unit tests only)
 
 #include "classical_preproc.h"
+#include "core/clean_exit.h"
 #include "morph_fast.h"
 #include "cc_detect.h"
 
@@ -346,7 +347,7 @@ static void live_test(const char * path) {
 
 // ── Main ───────────────────────────────────────────────────────────
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     printf("Classical preprocessing — unit tests\n");
 
     test_morph_fast();
@@ -362,4 +363,8 @@ int main(int argc, char ** argv) {
 
     printf("\n=== Results: %d passed, %d failed ===\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

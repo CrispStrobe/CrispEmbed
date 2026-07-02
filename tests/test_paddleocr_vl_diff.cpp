@@ -6,6 +6,7 @@
 // Uses synthetic patches matching the reference grid_thw.
 
 #include "qwen2vl_ocr.h"
+#include "core/clean_exit.h"
 #include "crispembed_diff.h"
 
 #include <cstdio>
@@ -13,7 +14,7 @@
 #include <cmath>
 #include <vector>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <model.gguf> <ref.gguf>\n", argv[0]);
         return 1;
@@ -100,4 +101,8 @@ int main(int argc, char ** argv) {
 
     printf("\n=== Results: %d passed, %d failed ===\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

@@ -2,9 +2,10 @@
 // Usage: test-layout-detect model.gguf [image.png]
 
 #include "layout_detect.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <layout.gguf> [image.png]\n", argv[0]);
         return 1;
@@ -30,4 +31,8 @@ int main(int argc, char ** argv) {
 
     layout_detect::free(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

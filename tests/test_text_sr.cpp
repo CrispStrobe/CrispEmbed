@@ -5,6 +5,7 @@
 //   verifies output dimensions and pixel range.
 
 #include "text_sr.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -107,7 +108,7 @@ static void test_with_model(const char * model_path, const uint8_t * pixels, int
     text_sr_free(ctx);
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         printf("Usage: test-text-sr <model.gguf> [image.png]\n");
         printf("  Runs text super-resolution on a synthetic or provided image.\n");
@@ -138,4 +139,8 @@ int main(int argc, char ** argv) {
 
     printf("\n%d passed, %d failed\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

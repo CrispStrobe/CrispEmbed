@@ -1,5 +1,6 @@
 // tests/test_math_ocr_diff.cpp — compare C++ encoder output vs ONNX reference
 #include "math_ocr.h"
+#include "core/clean_exit.h"
 #include <cmath>
 #include <cstdio>
 #include <vector>
@@ -14,7 +15,7 @@ float cosine_sim(const float * a, const float * b, int n) {
     return (float)(dot / (sqrt(na) * sqrt(nb) + 1e-12));
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <model.gguf> <ref_enc_output.bin>\n", argv[0]);
         return 1;
@@ -77,4 +78,8 @@ int main(int argc, char ** argv) {
 
     math_ocr_free(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }
