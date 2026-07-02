@@ -4,6 +4,7 @@
 #include "model_mgr.h"
 #include "tokenizer.h"
 #include "core/gguf_loader.h"
+#include "imatrix.h"
 
 #include "ggml.h"
 #include "ggml-alloc.h"
@@ -460,6 +461,7 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     ctx->sched = ggml_backend_sched_new(
         ctx->backends.data(), nullptr, (int)ctx->backends.size(),
         graph_nodes, false, false);
+    crispembed_imatrix_install(ctx->sched);
 
     // Allocate metadata buffer for graph building (no_alloc=true pattern)
     ctx->compute_meta.resize(ggml_tensor_overhead() * graph_nodes
@@ -1640,6 +1642,7 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
         ctx->sched = ggml_backend_sched_new(
             ctx->backends.data(), nullptr, (int)ctx->backends.size(),
             graph_nodes, false, false);
+        crispembed_imatrix_install(ctx->sched);
         ctx->compute_meta.resize(ggml_tensor_overhead() * graph_nodes
                                + ggml_graph_overhead_custom(graph_nodes, false));
 

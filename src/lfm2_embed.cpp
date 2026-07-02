@@ -15,6 +15,7 @@
 #include "core/gguf_loader.h"
 #include "core/bpe.h"
 #include "crispembed_diff.h"
+#include "imatrix.h"
 
 #include <cassert>
 #include <chrono>
@@ -243,6 +244,7 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
     }
 
     ctx->sched = ggml_backend_sched_new(&ctx->backend, nullptr, 1, 4096, false, false);
+    crispembed_imatrix_install(ctx->sched);
     if (!ctx->sched) {
         fprintf(stderr, "[lfm2_embed] failed to create backend scheduler\n");
         ggml_backend_buffer_free(ctx->model.buf);

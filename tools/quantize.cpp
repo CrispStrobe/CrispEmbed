@@ -39,6 +39,45 @@ static const std::map<std::string, enum ggml_ftype> FTYPE_MAP = {
 // F16) and the OCR output degenerates. Enable with --decoder-f16. See issue #25.
 static bool g_decoder_f16 = false;
 
+// Per-tensor importance vectors loaded from a CrispEmbed imatrix file
+// (see src/imatrix.cpp). Keyed by weight name; value length == n_per_row.
+// importance[c] = sum_of_squares[c] / count. Passed to ggml_quantize_chunk,
+// which uses it to minimise activation-weighted error for k-quants / IQ-quants.
+static std::map<std::string, std::vector<float>> g_imatrix;
+
+static bool load_imatrix(const std::string & path) {
+    struct ggml_context * ctx = nullptr;
+    struct gguf_init_params p = { /*no_alloc*/ false, /*ctx*/ &ctx };
+    struct gguf_context * g = gguf_init_from_file(path.c_str(), p);
+    if (!g) {
+        fprintf(stderr, "imatrix: failed to open '%s'\n", path.c_str());
+        return false;
+    }
+    const int64_t nt = gguf_get_n_tensors(g);
+    int loaded = 0;
+    for (int64_t i = 0; i < nt; i++) {
+        const char * name = gguf_get_tensor_name(g, i);
+        struct ggml_tensor * t = ggml_get_tensor(ctx, name);
+        if (!t || t->type != GGML_TYPE_F32) continue;
+        const int64_t ne0 = t->ne[0];
+        const float * d = (const float *) t->data;
+        std::string ck = std::string("count.") + name;
+        int64_t kid = gguf_find_key(g, ck.c_str());
+        uint64_t count = (kid >= 0) ? gguf_get_val_u64(g, kid) : 0;
+        if (count == 0) continue;
+        std::vector<float> imp((size_t)ne0);
+        const double inv = 1.0 / (double)count;
+        for (int64_t c = 0; c < ne0; c++) imp[c] = (float)((double)d[c] * inv);
+        g_imatrix[name] = std::move(imp);
+        loaded++;
+    }
+    gguf_free(g);
+    ggml_free(ctx);
+    fprintf(stderr, "imatrix: loaded importance vectors for %d tensors from '%s'\n",
+            loaded, path.c_str());
+    return loaded > 0;
+}
+
 static bool quantize_model(const std::string & fname_inp, const std::string & fname_out, ggml_ftype ftype) {
     ggml_type qtype = GGML_TYPE_F32;
 
@@ -142,7 +181,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     std::vector<float>   f32_data;
     std::vector<uint8_t> q_data;
 
-    int n_quantized = 0, n_kept = 0;
+    int n_quantized = 0, n_kept = 0, n_imatrix = 0;
     size_t total_orig = 0, total_new = 0;
 
     for (int i = 0; i < n_tensors; i++) {
@@ -404,8 +443,25 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             const size_t max_q_size = ggml_row_size(qtype_used, t->ne[0]) * (nelements / t->ne[0]);
             q_data.resize(max_q_size);
 
+            // Importance matrix (if loaded and shape-matched): steers k-quant/IQ
+            // precision toward the columns the calibration data actually exercised.
+            const float * imatrix = nullptr;
+            if (!g_imatrix.empty()) {
+                auto it = g_imatrix.find(sname);
+                if (it != g_imatrix.end()) {
+                    if ((int64_t)it->second.size() == t->ne[0]) {
+                        imatrix = it->second.data();
+                        n_imatrix++;
+                        printf("(imatrix) ");
+                    } else {
+                        printf("(imatrix shape %zu!=%lld, skipped) ",
+                               it->second.size(), (long long)t->ne[0]);
+                    }
+                }
+            }
+
             size_t q_size = ggml_quantize_chunk(qtype_used, f32_data.data(), q_data.data(),
-                                                 0, nelements / t->ne[0], t->ne[0], nullptr);
+                                                 0, nelements / t->ne[0], t->ne[0], imatrix);
 
             fwrite(q_data.data(), 1, q_size, fout);
             gguf_set_tensor_type(ctx_out, name, qtype_used);
@@ -448,7 +504,9 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     gguf_free(ctx_out);
     ggml_free(ctx_in_ggml);
 
-    printf("\n%d quantized, %d kept\n", n_quantized, n_kept);
+    printf("\n%d quantized, %d kept", n_quantized, n_kept);
+    if (!g_imatrix.empty()) printf(", %d with imatrix", n_imatrix);
+    printf("\n");
     printf("%.0f MB -> %.0f MB (%.1fx compression)\n",
            total_orig / 1048576.0, total_new / 1048576.0,
            (double)total_orig / (total_new > 0 ? (double)total_new : 1.0));
@@ -459,13 +517,20 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
 int main(int argc, char ** argv) {
     // Collect positional args, allowing an optional --decoder-f16 flag anywhere.
     std::vector<std::string> pos;
+    std::string imatrix_path;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         if (a == "--decoder-f16") g_decoder_f16 = true;
+        else if (a == "--imatrix") {
+            if (i + 1 >= argc) { fprintf(stderr, "--imatrix requires a file path\n"); return 1; }
+            imatrix_path = argv[++i];
+        }
         else pos.push_back(a);
     }
     if (pos.size() != 3) {
-        fprintf(stderr, "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16]\n\n", argv[0]);
+        fprintf(stderr, "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16] [--imatrix <file>]\n\n", argv[0]);
+        fprintf(stderr, "  --imatrix <f> use a CrispEmbed importance matrix (from a calibration run\n");
+        fprintf(stderr, "                with CRISPEMBED_IMATRIX_OUT set) to improve k-quant/IQ accuracy\n");
         fprintf(stderr, "  --decoder-f16  keep LLM decoder weights (prefix 'l.') at F16\n");
         fprintf(stderr, "                 (optional; NOT required for correctness — small decoders\n");
         fprintf(stderr, "                  like GOT-OCR2's 0.5B quantize cleanly to q4_k/q8_0.\n");
@@ -485,6 +550,10 @@ int main(int argc, char ** argv) {
     if (it == FTYPE_MAP.end()) {
         fprintf(stderr, "Unknown quantization type: %s\n", type_str);
         return 1;
+    }
+
+    if (!imatrix_path.empty()) {
+        load_imatrix(imatrix_path);  // non-fatal: falls back to unweighted if empty
     }
 
     if (!quantize_model(fname_inp, fname_out, it->second)) {
