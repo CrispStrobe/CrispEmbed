@@ -542,6 +542,9 @@ target_link_libraries(test-pan-diff PRIVATE crispembed)
 add_executable(test-restormer-diff tests/test_restormer_diff.cpp)
 target_link_libraries(test-restormer-diff PRIVATE crispembed)
 
+add_executable(test-nafnet-diff tests/test_nafnet_diff.cpp)
+target_link_libraries(test-nafnet-diff PRIVATE crispembed)
+
 add_executable(test-pdf-info tests/test_pdf_info.cpp)
 target_link_libraries(test-pdf-info PRIVATE crispembed)
 
