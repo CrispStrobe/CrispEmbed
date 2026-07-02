@@ -462,6 +462,70 @@
       }
     },
     {
+      "name": "bttr",
+      "engine": "bttr",
+      "_comment": "Handwritten-math OCR (BTTR). Catastrophic-regression guard for the Metal/CUDA residency-abort class fixed 2026-07-02 (weights were on init_best but the conv sched is CPU — referencing the GPU leaf aborted graph alloc on Metal / segfaulted on CUDA). expected_text is null ON PURPOSE: the guard is (a) crispembed --ocr must exit 0 (a residency regression re-aborts -> non-zero -> FAIL) and (b) the no-garbage guard (a decode crater degenerates). Exact-LaTeX quality needs a diff harness (none exists yet). MUST run on a GPU build (Metal/CUDA) to exercise residency — the CPU CI cannot see this class. On the formula fixture it currently reads x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}.",
+      "gguf": {
+        "repo": "cstr/bttr-handwritten-math-gguf",
+        "file": "bttr-hw-q4_k.gguf",
+        "revision": "main",
+        "approx_size_mb": 4
+      },
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": null,
+      "match": {
+        "max_cer": 0.15
+      }
+    },
+    {
+      "name": "hmer",
+      "engine": "hmer",
+      "_comment": "Handwritten-math OCR (HMER). Same catastrophic-regression guard as bttr (Metal/CUDA residency-abort class, fixed 2026-07-02). expected_text null on purpose (crash + no-garbage guard). MUST run on a GPU build. Note: fed the printed formula fixture it is out-of-domain (structure right, \\sqrt garbled) — fine for a crash/crater guard, not an exact-text guard.",
+      "gguf": {
+        "repo": "cstr/hmer-handwritten-math-gguf",
+        "file": "hmer-hw-q4_k.gguf",
+        "revision": "main",
+        "approx_size_mb": 4
+      },
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": null,
+      "match": {
+        "max_cer": 0.15
+      }
+    },
+    {
+      "name": "posformer",
+      "engine": "posformer",
+      "_comment": "Handwritten-math OCR (PosFormer). Same catastrophic-regression guard (Metal/CUDA residency-abort class, fixed 2026-07-02). expected_text null on purpose (crash + no-garbage guard). MUST run on a GPU build. On the formula fixture it currently reads x=\\frac{-b\\pm\\sqrt{b^2-4ac}}{2a} (one extra trailing brace).",
+      "gguf": {
+        "repo": "cstr/posformer-crohme-GGUF",
+        "file": "posformer-crohme-q8_0.gguf",
+        "revision": "main",
+        "approx_size_mb": 15
+      },
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": null,
+      "match": {
+        "max_cer": 0.15
+      }
+    },
+    {
+      "name": "ppformulanet",
+      "engine": "ppformulanet",
+      "_comment": "Printed-formula OCR (PP-FormulaNet-L). Same catastrophic-regression guard (Metal/CUDA residency-abort class, fixed 2026-07-02). expected_text null on purpose (crash + no-garbage guard). MUST run on a GPU build. On the formula fixture it currently reads \\begin{array}{r}{ x = \\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}}\\end{array}. (mixtex_ocr is intentionally NOT guarded here — it runs post-fix but has a separate pre-existing decode-degeneration bug that would fail the no-garbage guard; add its entry once that is fixed.)",
+      "gguf": {
+        "repo": "cstr/ppformulanet-l-gguf",
+        "file": "ppformulanet-l-q8_0.gguf",
+        "revision": "main",
+        "approx_size_mb": 200
+      },
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": null,
+      "match": {
+        "max_cer": 0.15
+      }
+    },
+    {
       "name": "lilt",
       "engine": "lilt",
       "diff_only": true,
