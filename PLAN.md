@@ -1187,7 +1187,21 @@ single-threaded, must not OOM.
   - History: HISTORY.md (July 2, 2026). Deep-dive: LEARNINGS "qwen2vl-3b
     hallucinated OCR — RESOLVED".
 
-### deepseek_ocr2 — PENDING (needs q4_k model, 3.4B too large for 8GB VPS f16-only)
+### deepseek_ocr2 — DONE (OCR correct; perf-sweep regression reverted 2026-07-02)
+- [x] Character-perfect OCR on Metal + q4_k (SAM ViT-B → Qwen2 24L encoder →
+  linear projector → DeepSeek-V2 MoE decoder). Verified q4_k (HF rev
+  `a465ab6cf4b5`): fox.png + a document page read verbatim on M4 Metal.
+- [x] **Perf-sweep regression reverted (2026-07-02)**: the Jun-20 perf sweep
+  garbled OCR on both backends (bisected to `c75b95d` flash_attn-in-Qwen2-encoder
+  + decode-degeneration commits, all ungated/untested). Restored
+  `deepseek_ocr2.cpp` to the last-good-and-fast commit `c58913c` (keeps the Metal
+  vision speedups). Regression-manifest entry added (rev-pinned). Deep-dive:
+  LEARNINGS "Perf-sweep regression". HISTORY: July 2, 2026.
+- **Remaining (opt-in re-adds, per the A/B rule)**: re-introduce the reverted
+  perf paths (persistent T=1 decode, F16 KV, flash_attn encoder/LLM, single-graph
+  encoder) one at a time behind env gates, each A/B-tested vs decoded output
+  before flipping the default. Multi-view preprocessing (global + dynamic crops)
+  is still unimplemented (single global view only) — a known simplification.
 
 ### got_ocr (SAM ViT-B + Qwen2-0.5B, 0.7B) — DONE
 - [x] Patch embedding → ggml matmul (same im2col pattern, scalar fallback gated)
