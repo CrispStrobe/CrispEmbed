@@ -76,9 +76,22 @@ def deg_skew(a, rng, angle=-4):
     return np.asarray(im).astype(np.float32)
 
 
+def deg_haze(a, rng):
+    # faint gray haze/smudge over the paper: soft light-gray veil, never near-black
+    # (capped), applied once so it stays a light haze rather than a dark stain.
+    H, W = a.shape[:2]
+    yy, xx = np.mgrid[0:H, 0:W]
+    mask = np.zeros((H, W), np.float32)
+    for _ in range(4):
+        cy, cx = rng.randint(0, H), rng.randint(0, W)
+        r = rng.randint(H // 8, H // 3)
+        mask = np.maximum(mask, np.exp(-(((yy - cy) ** 2 + (xx - cx) ** 2) / (2.0 * r * r))))
+    return a * (1 - 0.32 * mask[..., None])     # <=32% darkening -> light gray, kept once
+
+
 DEGRADATIONS = {
     "uneven": deg_uneven, "speckle": deg_speckle, "hspeckle": deg_hspeckle,
-    "border": deg_border, "shadow": deg_shadow, "skew": deg_skew,
+    "border": deg_border, "shadow": deg_shadow, "skew": deg_skew, "haze": deg_haze,
 }
 
 
