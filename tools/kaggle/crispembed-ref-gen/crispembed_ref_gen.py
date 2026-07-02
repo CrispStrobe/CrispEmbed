@@ -81,7 +81,11 @@ ENGINES = [
          diff="test-lfm2-diff", upload_repo="cstr/lfm2-embed-GGUF", pip=[], verify=dv("test-lfm2-diff")),
     dict(name="lfm2_colbert", dumper="dump_lfm2_colbert_reference.py", source=("hf", "LiquidAI/LFM2.5-ColBERT-350M"),
          ref="lfm2-colbert-ref.gguf", model_repo="cstr/lfm2-colbert-GGUF", model_file="lfm2-colbert-q8_0.gguf",
-         diff="test-lfm2-colbert-diff", upload_repo="cstr/lfm2-colbert-GGUF", pip=[], verify=dv("test-lfm2-colbert-diff")),
+         diff="test-lfm2-colbert-diff", upload_repo="cstr/lfm2-colbert-GGUF", pip=[],
+         # Set LFM2_COLBERT_DIFF_REF so the in-engine localizer prints the pre-projection
+         # hidden_states cos on CUDA — pins whether the CUDA divergence (cos 0.57) is in the
+         # backbone or only the ColBERT projection head. See handover.
+         verify=lambda m, r: (["./build/test-lfm2-colbert-diff", m, r], {"LFM2_COLBERT_DIFF_REF": r})),
     dict(name="layout", dumper="dump_layout_reference.py", source=("hf", "cmarkea/dit-base-layout-detection"),
          ref="layout-ref.gguf", model_repo="cstr/layout-heron-gguf", model_file="layout-heron-f32.gguf",
          diff="test-layout-diff", upload_repo="cstr/layout-heron-gguf", pip=[], verify=dv("test-layout-diff"),
