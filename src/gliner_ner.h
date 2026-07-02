@@ -21,11 +21,11 @@ extern "C" {
 #endif
 
 typedef struct gliner_ner_entity {
-    int    start_char;    // character offset in input text
-    int    end_char;      // character offset (exclusive)
-    const char * text;    // extracted span (owned by ctx, valid until next call)
-    const char * label;   // entity label string (owned by ctx, valid until next call)
-    float  score;         // confidence [0, 1]
+    int start_char;     // character offset in input text
+    int end_char;       // character offset (exclusive)
+    const char * text;  // extracted span (owned by ctx, valid until next call)
+    const char * label; // entity label string (owned by ctx, valid until next call)
+    float score;        // confidence [0, 1]
 } gliner_ner_entity;
 
 // Load GLiNER model from GGUF.
@@ -39,10 +39,7 @@ void gliner_ner_free(void * ctx);
 // labels: array of entity type strings (e.g. "person", "organization")
 // n_labels: number of entity types
 // threshold: confidence threshold (0.0-1.0, recommended 0.5)
-int gliner_ner_extract(void * ctx,
-                       const char * text,
-                       const char ** labels, int n_labels,
-                       float threshold,
+int gliner_ner_extract(void * ctx, const char * text, const char ** labels, int n_labels, float threshold,
                        gliner_ner_entity ** out_entities);
 
 #ifdef __cplusplus

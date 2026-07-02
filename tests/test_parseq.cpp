@@ -29,8 +29,8 @@ int main(int argc, char ** argv) {
     }
 
     const auto * hp = parseq_ocr_get_hparams(ctx);
-    printf("  embed_dim=%d enc_layers=%d heads=%d patches=%d\n",
-           hp->embed_dim, hp->enc_layers, hp->enc_heads, hp->n_patches);
+    printf("  embed_dim=%d enc_layers=%d heads=%d patches=%d\n", hp->embed_dim, hp->enc_layers, hp->enc_heads,
+           hp->n_patches);
     printf("  vocab_size=%d max_label_len=%d\n", hp->vocab_size, hp->max_label_len);
 
     if (image_path) {

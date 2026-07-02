@@ -25,9 +25,8 @@ void granite_vision_free(granite_vision_context * ctx);
 
 // Recognize text from an image. Returns UTF-8 text (owned by ctx, valid
 // until next call or free). prompt can be NULL for default OCR prompt.
-const char * granite_vision_recognize(granite_vision_context * ctx,
-                                      const uint8_t * pixels, int width, int height, int channels,
-                                      const char * prompt, int * out_len);
+const char * granite_vision_recognize(granite_vision_context * ctx, const uint8_t * pixels, int width, int height,
+                                      int channels, const char * prompt, int * out_len);
 
 // Set max generation tokens (default: 2048).
 void granite_vision_set_max_tokens(granite_vision_context * ctx, int max_tokens);
@@ -35,16 +34,13 @@ void granite_vision_set_max_tokens(granite_vision_context * ctx, int max_tokens)
 // Run vision encoder + projector only (for crispembed-diff parity).
 // image_f32: [3, img_h, img_w] float [0,1]. Callback receives named stages.
 typedef void (*gv_dump_cb)(const char * name, const float * data, int n, void * ud);
-void granite_vision_dump_vision(granite_vision_context * ctx,
-                                 const float * image_f32, int img_h, int img_w,
-                                 gv_dump_cb cb, void * ud);
+void granite_vision_dump_vision(granite_vision_context * ctx, const float * image_f32, int img_h, int img_w,
+                                gv_dump_cb cb, void * ud);
 
 // Run a fixed text-only token sequence through the LLM decoder and emit
 // per-layer hidden states + final-token logits (for crispembed-diff parity
 // against tools/dump_granite_llm_reference.py).
-void granite_vision_dump_llm(granite_vision_context * ctx,
-                             const int * tokens, int n_tokens,
-                             gv_dump_cb cb, void * ud);
+void granite_vision_dump_llm(granite_vision_context * ctx, const int * tokens, int n_tokens, gv_dump_cb cb, void * ud);
 
 // Per-token confidence from the last recognition.
 const float * granite_vision_confidences(const granite_vision_context * ctx, int * n_tokens);

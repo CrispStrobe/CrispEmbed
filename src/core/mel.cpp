@@ -11,8 +11,8 @@
 
 namespace core_mel {
 
-std::vector<float> compute(const float* samples, int n_samples, const float* window_in, int win_length,
-                           const float* mel_fb, int n_freqs, FftR2C fft, const Params& p, int& T_out) {
+std::vector<float> compute(const float * samples, int n_samples, const float * window_in, int win_length,
+                           const float * mel_fb, int n_freqs, FftR2C fft, const Params & p, int & T_out) {
     const int n_fft = p.n_fft;
     const int hop = p.hop_length;
     const int nmels = p.n_mels;
@@ -21,7 +21,7 @@ std::vector<float> compute(const float* samples, int n_samples, const float* win
     // 1. Optional center-pad of the input by n_fft/2 on each side.
     // -----------------------------------------------------------------
     std::vector<float> padded_in;
-    const float* in_ptr;
+    const float * in_ptr;
     int in_len;
     if (p.center_pad) {
         const int pad = n_fft / 2;
@@ -44,16 +44,14 @@ std::vector<float> compute(const float* samples, int n_samples, const float* win
     {
         const int lpad = (n_fft - win_length) / 2;
         const int wn = std::min(win_length, n_fft);
-        for (int i = 0; i < wn; i++)
-            window[lpad + i] = window_in[i];
+        for (int i = 0; i < wn; i++) window[lpad + i] = window_in[i];
     }
 
     // -----------------------------------------------------------------
     // 3. STFT → power spectrum (stored [T, n_freqs] row-major).
     // -----------------------------------------------------------------
     int T = in_len >= n_fft ? (in_len - n_fft) / hop + 1 : 0;
-    if (p.drop_last_frame && T > 0)
-        T -= 1;
+    if (p.drop_last_frame && T > 0) T -= 1;
     // Optional even-T guarantee: when the remaining frame count is odd,
     // shift the window start by one hop to produce an even T. This is
     // what voxtral4b needs (it feeds the mel into a stride-2 conv).
@@ -69,15 +67,14 @@ std::vector<float> compute(const float* samples, int n_samples, const float* win
 
     std::vector<float> power((size_t)T * n_freqs, 0.0f);
     {
-        // Each frame's FFT is independent — parallelize across frames.
-        // Thread-local fft_in/fft_out buffers avoid data races.
-        #pragma omp parallel for schedule(static) if(T > 16)
+// Each frame's FFT is independent — parallelize across frames.
+// Thread-local fft_in/fft_out buffers avoid data races.
+#pragma omp parallel for schedule(static) if (T > 16)
         for (int t = 0; t < T; t++) {
             std::vector<float> fft_in((size_t)n_fft);
             std::vector<float> fft_out((size_t)n_fft * 2);
-            const float* frame = in_ptr + (size_t)(t + t_start) * hop;
-            for (int n = 0; n < n_fft; n++)
-                fft_in[n] = frame[n] * window[n];
+            const float * frame = in_ptr + (size_t)(t + t_start) * hop;
+            for (int n = 0; n < n_fft; n++) fft_in[n] = frame[n] * window[n];
             fft(fft_in.data(), n_fft, fft_out.data());
             for (int k = 0; k < n_freqs; k++) {
                 const float re = fft_out[2 * k];
@@ -97,17 +94,15 @@ std::vector<float> compute(const float* samples, int n_samples, const float* win
     if (p.matmul == MatmulPrecision::Double) {
         // Double-precision accumulation (for reference-matching models)
         for (int t = 0; t < T; t++) {
-            const float* pp = power.data() + (size_t)t * n_freqs;
-            float* mp = mel_tn.data() + (size_t)t * nmels;
+            const float * pp = power.data() + (size_t)t * n_freqs;
+            float * mp = mel_tn.data() + (size_t)t * nmels;
             for (int m = 0; m < nmels; m++) {
                 double s = 0;
                 if (p.fb_layout == FbLayout::MelsFreqs) {
-                    const float* fb = mel_fb + (size_t)m * n_freqs;
-                    for (int k = 0; k < n_freqs; k++)
-                        s += (double)pp[k] * (double)fb[k];
+                    const float * fb = mel_fb + (size_t)m * n_freqs;
+                    for (int k = 0; k < n_freqs; k++) s += (double)pp[k] * (double)fb[k];
                 } else {
-                    for (int k = 0; k < n_freqs; k++)
-                        s += (double)pp[k] * (double)mel_fb[(size_t)k * nmels + m];
+                    for (int k = 0; k < n_freqs; k++) s += (double)pp[k] * (double)mel_fb[(size_t)k * nmels + m];
                 }
                 mp[m] = (float)s;
             }
@@ -115,16 +110,15 @@ std::vector<float> compute(const float* samples, int n_samples, const float* win
     } else {
         // Float precision — SIMD-accelerated for MelsFreqs layout
         for (int t = 0; t < T; t++) {
-            const float* pp = power.data() + (size_t)t * n_freqs;
-            float* mp = mel_tn.data() + (size_t)t * nmels;
+            const float * pp = power.data() + (size_t)t * n_freqs;
+            float * mp = mel_tn.data() + (size_t)t * nmels;
             if (p.fb_layout == FbLayout::MelsFreqs) {
                 for (int m = 0; m < nmels; m++)
                     mp[m] = core_cpu::dot_product(pp, mel_fb + (size_t)m * n_freqs, n_freqs);
             } else {
                 for (int m = 0; m < nmels; m++) {
                     float s = 0;
-                    for (int k = 0; k < n_freqs; k++)
-                        s += pp[k] * mel_fb[(size_t)k * nmels + m];
+                    for (int k = 0; k < n_freqs; k++) s += pp[k] * mel_fb[(size_t)k * nmels + m];
                     mp[m] = s;
                 }
             }
@@ -136,8 +130,7 @@ std::vector<float> compute(const float* samples, int n_samples, const float* win
     // -----------------------------------------------------------------
     auto apply_log = [&](float v) -> float {
         if (p.log_guard == LogGuard::MaxClip) {
-            if (v < p.log_eps)
-                v = p.log_eps;
+            if (v < p.log_eps) v = p.log_eps;
             return (p.log_base == LogBase::Log10) ? std::log10(v) : std::log(v);
         } else { // AddEpsilon
             const float vv = v + p.log_eps;
@@ -163,8 +156,7 @@ std::vector<float> compute(const float* samples, int n_samples, const float* win
         std::memcpy(ext.data(), mel_tn.data(), (size_t)T * nmels * sizeof(float));
         // Fill trailing frames with pad_val.
         for (int t = T; t < T_final; t++) {
-            for (int m = 0; m < nmels; m++)
-                ext[(size_t)t * nmels + m] = pad_val;
+            for (int m = 0; m < nmels; m++) ext[(size_t)t * nmels + m] = pad_val;
         }
         mel_tn = std::move(ext);
     }
@@ -178,8 +170,7 @@ std::vector<float> compute(const float* samples, int n_samples, const float* win
         // Per-mel band z-score across time.
         for (int m = 0; m < nmels; m++) {
             double sum = 0.0, sq = 0.0;
-            for (int t = 0; t < T_final; t++)
-                sum += mel_tn[(size_t)t * nmels + m];
+            for (int t = 0; t < T_final; t++) sum += mel_tn[(size_t)t * nmels + m];
             const double mean = sum / T_final;
             for (int t = 0; t < T_final; t++) {
                 const double d = mel_tn[(size_t)t * nmels + m] - mean;
@@ -195,13 +186,11 @@ std::vector<float> compute(const float* samples, int n_samples, const float* win
     case Normalization::GlobalClipMax: {
         float mx = -1e30f;
         for (size_t i = 0; i < mel_tn.size(); i++)
-            if (mel_tn[i] > mx)
-                mx = mel_tn[i];
+            if (mel_tn[i] > mx) mx = mel_tn[i];
         const float floor_v = mx - 8.0f;
         for (size_t i = 0; i < mel_tn.size(); i++) {
             float v = mel_tn[i];
-            if (v < floor_v)
-                v = floor_v;
+            if (v < floor_v) v = floor_v;
             mel_tn[i] = (v + 4.0f) / 4.0f;
         }
         break;
@@ -210,8 +199,7 @@ std::vector<float> compute(const float* samples, int n_samples, const float* win
         const float floor_v = p.fixed_max - 8.0f;
         for (size_t i = 0; i < mel_tn.size(); i++) {
             float v = mel_tn[i];
-            if (v < floor_v)
-                v = floor_v;
+            if (v < floor_v) v = floor_v;
             mel_tn[i] = (v + 4.0f) / 4.0f;
         }
         break;

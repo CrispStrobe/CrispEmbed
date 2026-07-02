@@ -21,9 +21,8 @@
 #include <string>
 #include <vector>
 
-static void conv2d(const float * input, int ic, int ih, int iw,
-                   const float * weight, const float * bias,
-                   int oc, float * output) {
+static void conv2d(const float * input, int ic, int ih, int iw, const float * weight, const float * bias, int oc,
+                   float * output) {
     // 3×3, pad=1, stride=1, groups=1
     for (int o = 0; o < oc; o++) {
         float b = bias[o];
@@ -37,8 +36,7 @@ static void conv2d(const float * input, int ic, int ih, int iw,
                         for (int kx = 0; kx < 3; kx++) {
                             int ix = ox + kx - 1;
                             if (ix < 0 || ix >= iw) continue;
-                            sum += input[c * ih * iw + iy * iw + ix]
-                                 * weight[o * ic * 9 + c * 9 + ky * 3 + kx];
+                            sum += input[c * ih * iw + iy * iw + ix] * weight[o * ic * 9 + c * 9 + ky * 3 + kx];
                         }
                     }
                 }
@@ -59,32 +57,33 @@ static void prelu(float * data, int c, int hw, const float * slopes) {
     }
 }
 
-static void pixel_shuffle(const float * input, int c_in, int h, int w,
-                           int r, float * output) {
+static void pixel_shuffle(const float * input, int c_in, int h, int w, int r, float * output) {
     int c_out = c_in / (r * r), oh = h * r, ow = w * r;
     for (int c = 0; c < c_out; c++)
         for (int y = 0; y < oh; y++)
             for (int x = 0; x < ow; x++) {
                 int ic = c * r * r + (y % r) * r + (x % r);
-                output[c * oh * ow + y * ow + x] =
-                    input[ic * h * w + (y / r) * w + (x / r)];
+                output[c * oh * ow + y * ow + x] = input[ic * h * w + (y / r) * w + (x / r)];
             }
 }
 
-static void nearest_upsample(const float * input, int c, int h, int w,
-                              int scale, float * output) {
+static void nearest_upsample(const float * input, int c, int h, int w, int scale, float * output) {
     int oh = h * scale, ow = w * scale;
     for (int ch = 0; ch < c; ch++)
         for (int y = 0; y < oh; y++)
             for (int x = 0; x < ow; x++)
-                output[ch * oh * ow + y * ow + x] =
-                    input[ch * h * w + (y / scale) * w + (x / scale)];
+                output[ch * oh * ow + y * ow + x] = input[ch * h * w + (y / scale) * w + (x / scale)];
 }
 
 // ── Context ────────────────────────────────────────────────────────
 
-struct conv_layer { ggml_tensor * w; ggml_tensor * b; };
-struct prelu_layer { ggml_tensor * slope; };
+struct conv_layer {
+    ggml_tensor * w;
+    ggml_tensor * b;
+};
+struct prelu_layer {
+    ggml_tensor * slope;
+};
 
 struct esrgan_context {
     ggml_context * gguf_ctx;
@@ -97,8 +96,8 @@ struct esrgan_context {
     std::vector<prelu_layer> prelus; // 17 PReLU layers
 
     // ggml graph encoder
-    ggml_backend_t       enc_backend  = nullptr;
-    ggml_backend_sched_t enc_sched    = nullptr;
+    ggml_backend_t enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched = nullptr;
     std::vector<uint8_t> enc_meta;
 };
 
@@ -108,7 +107,7 @@ esrgan_context * esrgan_init(const char * model_path, int n_threads) {
 
     gguf_context * meta = core_gguf::open_metadata(model_path);
     if (!meta) return nullptr;
-    int scale    = (int)core_gguf::kv_u32(meta, "esrgan.scale", 4);
+    int scale = (int)core_gguf::kv_u32(meta, "esrgan.scale", 4);
     int num_feat = (int)core_gguf::kv_u32(meta, "esrgan.num_feat", 64);
     int num_conv = (int)core_gguf::kv_u32(meta, "esrgan.num_conv", 16);
     core_gguf::free_metadata(meta);
@@ -124,7 +123,8 @@ esrgan_context * esrgan_init(const char * model_path, int n_threads) {
     ggml_backend_t backend = ggml_backend_cpu_init();
     core_gguf::WeightLoad wl;
     if (!core_gguf::load_weights(model_path, backend, "esrgan", wl)) {
-        ggml_backend_free(backend); return nullptr;
+        ggml_backend_free(backend);
+        return nullptr;
     }
     ggml_backend_free(backend);
 
@@ -145,10 +145,10 @@ esrgan_context * esrgan_init(const char * model_path, int n_threads) {
         ggml_tensor * b = core_gguf::try_get(wl.tensors, bn);
         if (b) {
             // Conv layer (has bias)
-            ctx->convs.push_back({w, b});
+            ctx->convs.push_back({ w, b });
         } else if (w) {
             // PReLU layer (weight = slopes, no bias)
-            ctx->prelus.push_back({w});
+            ctx->prelus.push_back({ w });
         }
     }
 
@@ -186,12 +186,10 @@ int esrgan_get_scale(const esrgan_context * ctx) {
 static ggml_tensor * esrgan_prep_conv(ggml_context * g, ggml_tensor * w, int IC) {
     if (!w) return nullptr;
     if (ggml_n_dims(w) == 2) {
-        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
-            w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16) w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
         w = ggml_reshape_4d(g, w, 3, 3, IC, w->ne[1]);
     }
-    if (w->type != GGML_TYPE_F16)
-        w = ggml_cast(g, w, GGML_TYPE_F16);
+    if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
     return w;
 }
 
@@ -199,8 +197,7 @@ static ggml_cgraph * build_esrgan_graph(esrgan_context * ctx, int H, int W) {
     int n_convs = (int)ctx->convs.size();
     // Each conv: prep(~3 nodes) + conv2d + bias add + prelu(~3 nodes) ≈ 10 nodes
     int graph_size = n_convs * 12 + 100;
-    size_t buf_size = ggml_tensor_overhead() * (graph_size + 200)
-                    + ggml_graph_overhead_custom(graph_size, false);
+    size_t buf_size = ggml_tensor_overhead() * (graph_size + 200) + ggml_graph_overhead_custom(graph_size, false);
     ctx->enc_meta.resize(buf_size);
     ggml_init_params ip = { buf_size, ctx->enc_meta.data(), true };
     ggml_context * g = ggml_init(ip);
@@ -215,7 +212,7 @@ static ggml_cgraph * build_esrgan_graph(esrgan_context * ctx, int H, int W) {
     for (int ci = 0; ci < n_convs; ci++) {
         int oc = (ci == n_convs - 1) ? 3 * ctx->scale * ctx->scale : ctx->num_feat;
         ggml_tensor * w = esrgan_prep_conv(g, ctx->convs[ci].w, ic);
-        x = ggml_conv_2d(g, w, x, 1, 1, 1, 1, 1, 1);  // 3×3, pad=1
+        x = ggml_conv_2d(g, w, x, 1, 1, 1, 1, 1, 1); // 3×3, pad=1
         if (ctx->convs[ci].b) {
             ggml_tensor * b = ggml_reshape_3d(g, ctx->convs[ci].b, 1, 1, oc);
             x = ggml_add(g, x, b);
@@ -240,9 +237,8 @@ static ggml_cgraph * build_esrgan_graph(esrgan_context * ctx, int H, int W) {
     return gf;
 }
 
-static int esrgan_process_float_ggml(esrgan_context * ctx,
-                                      const float * input_chw, int width, int height,
-                                      float * output_chw) {
+static int esrgan_process_float_ggml(esrgan_context * ctx, const float * input_chw, int width, int height,
+                                     float * output_chw) {
     const bool bench = ctx->bench;
     using ms_f = std::chrono::duration<double, std::milli>;
     auto t_total = std::chrono::steady_clock::now();
@@ -265,8 +261,8 @@ static int esrgan_process_float_ggml(esrgan_context * ctx,
         ggml_backend_dev_t dev = ggml_backend_get_device(be);
         ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
         if (reg) {
-            auto * fn = (ggml_backend_set_n_threads_t)
-                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            auto * fn =
+                (ggml_backend_set_n_threads_t)ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
             if (fn) fn(be, 1);
         }
     }
@@ -292,8 +288,7 @@ static int esrgan_process_float_ggml(esrgan_context * ctx,
     std::vector<float> sr(3 * out_hw);
     pixel_shuffle(conv_data.data(), out_c, H, W, ctx->scale, sr.data());
     nearest_upsample(input_chw, 3, H, W, ctx->scale, output_chw);
-    for (int i = 0; i < 3 * out_hw; i++)
-        output_chw[i] += sr[i];
+    for (int i = 0; i < 3 * out_hw; i++) output_chw[i] += sr[i];
 
     if (bench) {
         fprintf(stderr, "[esrgan-bench] total (ggml): %.1f ms\n",
@@ -302,9 +297,7 @@ static int esrgan_process_float_ggml(esrgan_context * ctx,
     return 0;
 }
 
-int esrgan_process_float(esrgan_context * ctx,
-                         const float * input_chw, int width, int height,
-                         float * output_chw) {
+int esrgan_process_float(esrgan_context * ctx, const float * input_chw, int width, int height, float * output_chw) {
     if (!ctx || !input_chw || !output_chw) return -1;
 
     // Use ggml graph path if available
@@ -330,15 +323,12 @@ int esrgan_process_float(esrgan_context * ctx,
         auto t_conv = std::chrono::steady_clock::now();
         int oc = (ci == n_convs - 1) ? 3 * ctx->scale * ctx->scale : ctx->num_feat;
         buf_b.resize(oc * hw);
-        conv2d(buf_a.data(), ic, H, W,
-               ctx->dcache.get(ctx->convs[ci].w),
-               ctx->dcache.get(ctx->convs[ci].b),
-               oc, buf_b.data());
+        conv2d(buf_a.data(), ic, H, W, ctx->dcache.get(ctx->convs[ci].w), ctx->dcache.get(ctx->convs[ci].b), oc,
+               buf_b.data());
 
         // PReLU after every conv except the last
         if (ci < n_convs - 1 && prelu_idx < (int)ctx->prelus.size()) {
-            prelu(buf_b.data(), oc, hw,
-                  ctx->dcache.get(ctx->prelus[prelu_idx].slope));
+            prelu(buf_b.data(), oc, hw, ctx->dcache.get(ctx->prelus[prelu_idx].slope));
             prelu_idx++;
         }
 
@@ -346,8 +336,7 @@ int esrgan_process_float(esrgan_context * ctx,
         ic = oc;
         if (bench) {
             auto t_conv_end = std::chrono::steady_clock::now();
-            fprintf(stderr, "[esrgan-bench] conv %d: %.1f ms\n", ci,
-                    ms_f(t_conv_end - t_conv).count());
+            fprintf(stderr, "[esrgan-bench] conv %d: %.1f ms\n", ci, ms_f(t_conv_end - t_conv).count());
         }
     }
 
@@ -360,14 +349,11 @@ int esrgan_process_float(esrgan_context * ctx,
 
     // Global residual: nearest-upsample input + sr
     nearest_upsample(input_chw, 3, H, W, ctx->scale, output_chw);
-    for (int i = 0; i < 3 * out_hw; i++)
-        output_chw[i] += sr[i];
+    for (int i = 0; i < 3 * out_hw; i++) output_chw[i] += sr[i];
     if (bench) {
         auto t_ps_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[esrgan-bench] pixelshuffle+residual: %.1f ms\n",
-                ms_f(t_ps_end - t_ps).count());
-        fprintf(stderr, "[esrgan-bench] total: %.1f ms\n",
-                ms_f(t_ps_end - t_total).count());
+        fprintf(stderr, "[esrgan-bench] pixelshuffle+residual: %.1f ms\n", ms_f(t_ps_end - t_ps).count());
+        fprintf(stderr, "[esrgan-bench] total: %.1f ms\n", ms_f(t_ps_end - t_total).count());
     }
 
     return 0;
@@ -393,9 +379,7 @@ static void build_blend_window(int tile_size, int overlap, std::vector<float> & 
     }
 }
 
-int esrgan_process(esrgan_context * ctx,
-                   const uint8_t * input, int width, int height,
-                   uint8_t * output) {
+int esrgan_process(esrgan_context * ctx, const uint8_t * input, int width, int height, uint8_t * output) {
     if (!ctx || !input || !output) return -1;
 
     int r = ctx->scale;
@@ -412,8 +396,7 @@ int esrgan_process(esrgan_context * ctx,
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
             for (int c = 0; c < 3; c++)
-                full_input[c * hw + y * width + x] =
-                    (float)input[(y * width + x) * 3 + c] / 255.0f;
+                full_input[c * hw + y * width + x] = (float)input[(y * width + x) * 3 + c] / 255.0f;
 
     int ow = width * r, oh = height * r;
     int out_tile = tile_size * r;
@@ -428,8 +411,7 @@ int esrgan_process(esrgan_context * ctx,
             for (int x = 0; x < ow; x++)
                 for (int c = 0; c < 3; c++) {
                     float v = out_chw[c * oh * ow + y * ow + x] * 255.0f;
-                    output[(y * ow + x) * 3 + c] =
-                        (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));
+                    output[(y * ow + x) * 3 + c] = (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));
                 }
         return 0;
     }
@@ -445,8 +427,8 @@ int esrgan_process(esrgan_context * ctx,
     int n_tiles_x = std::max(1, (width + step - 1) / step);
     int n_tiles_y = std::max(1, (height + step - 1) / step);
 
-    fprintf(stderr, "esrgan: %dx%d -> %dx%d (%dx), tiles=%dx%d (size=%d, overlap=%d)\n",
-            width, height, ow, oh, r, n_tiles_x, n_tiles_y, tile_size, tile_overlap);
+    fprintf(stderr, "esrgan: %dx%d -> %dx%d (%dx), tiles=%dx%d (size=%d, overlap=%d)\n", width, height, ow, oh, r,
+            n_tiles_x, n_tiles_y, tile_size, tile_overlap);
 
     for (int ty = 0; ty < n_tiles_y; ty++) {
         for (int tx = 0; tx < n_tiles_x; tx++) {
@@ -477,16 +459,13 @@ int esrgan_process(esrgan_context * ctx,
                     if (tw == tile_size && th == tile_size)
                         w = blend_win[y * out_tile + x];
                     else {
-                        if (x0 > 0 && x < out_overlap)
-                            w *= 0.5f - 0.5f * cosf((float)M_PI * x / out_overlap);
-                        if (y0 > 0 && y < out_overlap)
-                            w *= 0.5f - 0.5f * cosf((float)M_PI * y / out_overlap);
+                        if (x0 > 0 && x < out_overlap) w *= 0.5f - 0.5f * cosf((float)M_PI * x / out_overlap);
+                        if (y0 > 0 && y < out_overlap) w *= 0.5f - 0.5f * cosf((float)M_PI * y / out_overlap);
                     }
                     int dy = oy0 + y, dx = ox0 + x;
                     if (dy >= oh || dx >= ow) continue;
                     for (int c = 0; c < 3; c++)
-                        accum[c * oh * ow + dy * ow + dx] +=
-                            tile_out[c * oth * otw + y * otw + x] * w;
+                        accum[c * oh * ow + dy * ow + dx] += tile_out[c * oth * otw + y * otw + x] * w;
                     weight_map[dy * ow + dx] += w;
                 }
             }
@@ -500,8 +479,7 @@ int esrgan_process(esrgan_context * ctx,
             if (wt <= 0.0f) wt = 1.0f;
             for (int c = 0; c < 3; c++) {
                 float v = accum[c * oh * ow + y * ow + x] / wt * 255.0f;
-                output[(y * ow + x) * 3 + c] =
-                    (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));
+                output[(y * ow + x) * 3 + c] = (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));
             }
         }
     return 0;

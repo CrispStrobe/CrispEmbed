@@ -11,14 +11,19 @@
 #include "stb_image.h"
 
 #define GREEN "\033[32m"
-#define RED   "\033[31m"
+#define RED "\033[31m"
 #define RESET "\033[0m"
 
 static int n_pass = 0, n_fail = 0;
 
 static void check(const char * name, bool cond) {
-    if (cond) { printf("  %s[PASS]%s %s\n", GREEN, RESET, name); n_pass++; }
-    else      { printf("  %s[FAIL]%s %s\n", RED, RESET, name); n_fail++; }
+    if (cond) {
+        printf("  %s[PASS]%s %s\n", GREEN, RESET, name);
+        n_pass++;
+    } else {
+        printf("  %s[FAIL]%s %s\n", RED, RESET, name);
+        n_fail++;
+    }
 }
 
 // Create a synthetic curved document: 5 textlines with sinusoidal warp
@@ -32,8 +37,7 @@ static std::vector<uint8_t> make_curved_doc(int w, int h, float amplitude) {
             int y = base_y + (int)curve;
             // Draw 8px-thick text line
             for (int dy = 0; dy < 8; dy++) {
-                if (y + dy >= 0 && y + dy < h)
-                    img[(y + dy) * w + x] = 20;
+                if (y + dy >= 0 && y + dy < h) img[(y + dy) * w + x] = 20;
             }
         }
     }
@@ -49,7 +53,7 @@ static float measure_straightness(const uint8_t * img, int w, int h, int thresho
         int dark_count = 0;
         for (int x = 0; x < w; x++)
             if (img[y * w + x] < threshold) dark_count++;
-        if (dark_count > w / 4)  // mostly dark row = text
+        if (dark_count > w / 4) // mostly dark row = text
             y_positions.push_back((float)y);
     }
 
@@ -57,10 +61,9 @@ static float measure_straightness(const uint8_t * img, int w, int h, int thresho
 
     // Group into textlines (gaps > 3px separate lines)
     std::vector<std::vector<float>> lines;
-    lines.push_back({y_positions[0]});
+    lines.push_back({ y_positions[0] });
     for (size_t i = 1; i < y_positions.size(); i++) {
-        if (y_positions[i] - y_positions[i-1] > 3)
-            lines.push_back({});
+        if (y_positions[i] - y_positions[i - 1] > 3) lines.push_back({});
         lines.back().push_back(y_positions[i]);
     }
 
@@ -128,7 +131,10 @@ static void test_live_image(const char * path) {
     printf("\n=== Live test: %s ===\n", path);
     int w, h, ch;
     uint8_t * img = stbi_load(path, &w, &h, &ch, 1);
-    if (!img) { printf("  Cannot load image\n"); return; }
+    if (!img) {
+        printf("  Cannot load image\n");
+        return;
+    }
     printf("  Image: %dx%d\n", w, h);
 
     std::vector<uint8_t> out(w * h);
@@ -157,8 +163,7 @@ int main(int argc, char ** argv) {
     test_curved_document();
 
     if (argc > 1) {
-        for (int i = 1; i < argc; i++)
-            test_live_image(argv[i]);
+        for (int i = 1; i < argc; i++) test_live_image(argv[i]);
     }
 
     printf("\n=== Results: %d passed, %d failed ===\n", n_pass, n_fail);

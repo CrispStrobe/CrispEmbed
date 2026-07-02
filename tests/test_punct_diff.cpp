@@ -19,16 +19,22 @@ int main(int argc, char ** argv) {
         return 2;
     }
     const char * model = argv[1];
-    const char * input = argc > 2 ? argv[2]
-        : "hello world how are you today i am fine thanks";
+    const char * input = argc > 2 ? argv[2] : "hello world how are you today i am fine thanks";
     const char * expected = argc > 3 ? argv[3] : nullptr;
 
     void * ctx = crispembed_punct_init(model, 0);
-    if (!ctx) { fprintf(stderr, "punct init failed: %s\n", model); return 1; }
+    if (!ctx) {
+        fprintf(stderr, "punct init failed: %s\n", model);
+        return 1;
+    }
 
     // Owned by ctx (valid until next call / free) — do NOT free.
     const char * out = crispembed_punct_process(ctx, input);
-    if (!out) { fprintf(stderr, "punct process returned null\n"); crispembed_punct_free(ctx); return 1; }
+    if (!out) {
+        fprintf(stderr, "punct process returned null\n");
+        crispembed_punct_free(ctx);
+        return 1;
+    }
 
     printf("input:    %s\n", input);
     printf("output:   %s\n", out);

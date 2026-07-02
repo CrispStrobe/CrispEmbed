@@ -26,16 +26,12 @@ unlimited_ocr_context * unlimited_ocr_init(const char * model_path, int n_thread
 
 /// Recognize text from raw RGB pixels.
 /// Returns pointer to UTF-8 text (owned by ctx, valid until next call).
-const char * unlimited_ocr_recognize_raw(
-    unlimited_ocr_context * ctx,
-    const uint8_t * pixels, int width, int height, int channels,
-    int * out_len);
+const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint8_t * pixels, int width, int height,
+                                         int channels, int * out_len);
 
 /// Recognize from pre-normalized float pixels (grayscale, [0,1]).
-const char * unlimited_ocr_recognize(
-    unlimited_ocr_context * ctx,
-    const float * pixels, int width, int height,
-    int * out_len);
+const char * unlimited_ocr_recognize(unlimited_ocr_context * ctx, const float * pixels, int width, int height,
+                                     int * out_len);
 
 /// Get per-token confidence scores from the last recognition.
 const float * unlimited_ocr_confidences(const unlimited_ocr_context * ctx, int * n_tokens);

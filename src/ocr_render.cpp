@@ -33,11 +33,11 @@ struct stored_page {
 
 struct ocr_renderer {
     ocr_render_format format;
-    std::string separator;     // page separator for text mode
-    std::string output;        // accumulated output
+    std::string separator; // page separator for text mode
+    std::string output;    // accumulated output
     int page_count;
-    std::vector<stored_page> pages;  // for PDF deferred rendering
-    bool pdfa = false;         // PDF/A-2b compliance
+    std::vector<stored_page> pages; // for PDF deferred rendering
+    bool pdfa = false;              // PDF/A-2b compliance
 
     ocr_renderer() : format(OCR_RENDER_TEXT), separator("\f"), page_count(0) {}
 };
@@ -51,11 +51,21 @@ static std::string xml_escape(const char * s) {
     if (!s) return out;
     for (; *s; s++) {
         switch (*s) {
-            case '&': out += "&amp;"; break;
-            case '<': out += "&lt;"; break;
-            case '>': out += "&gt;"; break;
-            case '"': out += "&quot;"; break;
-            default:  out += *s; break;
+        case '&':
+            out += "&amp;";
+            break;
+        case '<':
+            out += "&lt;";
+            break;
+        case '>':
+            out += "&gt;";
+            break;
+        case '"':
+            out += "&quot;";
+            break;
+        default:
+            out += *s;
+            break;
         }
     }
     return out;
@@ -68,15 +78,13 @@ static std::string xml_escape(const char * s) {
 static void text_begin(ocr_renderer *) {}
 
 static void text_add_page(ocr_renderer * r, const ocr_render_page * page) {
-    if (r->page_count > 0)
-        r->output += r->separator;
+    if (r->page_count > 0) r->output += r->separator;
 
     for (int i = 0; i < page->n_lines; i++) {
         const ocr_render_line * line = &page->lines[i];
         for (int j = 0; j < line->n_words; j++) {
             if (j > 0) r->output += ' ';
-            if (line->words[j].text)
-                r->output += line->words[j].text;
+            if (line->words[j].text) r->output += line->words[j].text;
         }
         r->output += '\n';
     }
@@ -107,29 +115,27 @@ static void hocr_add_page(ocr_renderer * r, const ocr_render_page * page) {
     int pid = r->page_count + 1;
 
     snprintf(buf, sizeof(buf),
-        "  <div class=\"ocr_page\" id=\"page_%d\" "
-        "title=\"bbox 0 0 %d %d; ppageno %d\">\n",
-        pid, page->page_width, page->page_height, r->page_count);
+             "  <div class=\"ocr_page\" id=\"page_%d\" "
+             "title=\"bbox 0 0 %d %d; ppageno %d\">\n",
+             pid, page->page_width, page->page_height, r->page_count);
     r->output += buf;
 
     for (int i = 0; i < page->n_lines; i++) {
         const ocr_render_line * line = &page->lines[i];
         int lid = i + 1;
         snprintf(buf, sizeof(buf),
-            "    <span class=\"ocr_line\" id=\"line_%d_%d\" "
-            "title=\"bbox %d %d %d %d\">\n",
-            pid, lid, line->x, line->y,
-            line->x + line->w, line->y + line->h);
+                 "    <span class=\"ocr_line\" id=\"line_%d_%d\" "
+                 "title=\"bbox %d %d %d %d\">\n",
+                 pid, lid, line->x, line->y, line->x + line->w, line->y + line->h);
         r->output += buf;
 
         for (int j = 0; j < line->n_words; j++) {
             const ocr_render_word * w = &line->words[j];
             int wid = j + 1;
             snprintf(buf, sizeof(buf),
-                "      <span class=\"ocrx_word\" id=\"word_%d_%d_%d\" "
-                "title=\"bbox %d %d %d %d; x_wconf %d\">",
-                pid, lid, wid, w->x, w->y, w->x + w->w, w->y + w->h,
-                (int)(w->confidence * 100));
+                     "      <span class=\"ocrx_word\" id=\"word_%d_%d_%d\" "
+                     "title=\"bbox %d %d %d %d; x_wconf %d\">",
+                     pid, lid, wid, w->x, w->y, w->x + w->w, w->y + w->h, (int)(w->confidence * 100));
             r->output += buf;
             r->output += xml_escape(w->text);
             r->output += "</span>\n";
@@ -171,29 +177,27 @@ static void alto_add_page(ocr_renderer * r, const ocr_render_page * page) {
     char buf[512];
     int pid = r->page_count;
     snprintf(buf, sizeof(buf),
-        "    <Page ID=\"page_%d\" WIDTH=\"%d\" HEIGHT=\"%d\">\n"
-        "      <PrintSpace>\n",
-        pid, page->page_width, page->page_height);
+             "    <Page ID=\"page_%d\" WIDTH=\"%d\" HEIGHT=\"%d\">\n"
+             "      <PrintSpace>\n",
+             pid, page->page_width, page->page_height);
     r->output += buf;
 
     // Each line becomes a TextBlock with a single TextLine
     for (int i = 0; i < page->n_lines; i++) {
         const ocr_render_line * line = &page->lines[i];
         snprintf(buf, sizeof(buf),
-            "        <TextBlock ID=\"block_%d_%d\" "
-            "HPOS=\"%d\" VPOS=\"%d\" WIDTH=\"%d\" HEIGHT=\"%d\">\n"
-            "          <TextLine HPOS=\"%d\" VPOS=\"%d\" WIDTH=\"%d\" HEIGHT=\"%d\">\n",
-            pid, i, line->x, line->y, line->w, line->h,
-            line->x, line->y, line->w, line->h);
+                 "        <TextBlock ID=\"block_%d_%d\" "
+                 "HPOS=\"%d\" VPOS=\"%d\" WIDTH=\"%d\" HEIGHT=\"%d\">\n"
+                 "          <TextLine HPOS=\"%d\" VPOS=\"%d\" WIDTH=\"%d\" HEIGHT=\"%d\">\n",
+                 pid, i, line->x, line->y, line->w, line->h, line->x, line->y, line->w, line->h);
         r->output += buf;
 
         for (int j = 0; j < line->n_words; j++) {
             const ocr_render_word * w = &line->words[j];
             snprintf(buf, sizeof(buf),
-                "            <String CONTENT=\"%s\" HPOS=\"%d\" VPOS=\"%d\" "
-                "WIDTH=\"%d\" HEIGHT=\"%d\" WC=\"%.2f\" />\n",
-                xml_escape(w->text).c_str(),
-                w->x, w->y, w->w, w->h, w->confidence);
+                     "            <String CONTENT=\"%s\" HPOS=\"%d\" VPOS=\"%d\" "
+                     "WIDTH=\"%d\" HEIGHT=\"%d\" WC=\"%.2f\" />\n",
+                     xml_escape(w->text).c_str(), w->x, w->y, w->w, w->h, w->confidence);
             r->output += buf;
 
             // Add space after word (except last)
@@ -201,9 +205,8 @@ static void alto_add_page(ocr_renderer * r, const ocr_render_page * page) {
                 int sp_x = w->x + w->w;
                 int next_x = line->words[j + 1].x;
                 int sp_w = next_x > sp_x ? next_x - sp_x : 4;
-                snprintf(buf, sizeof(buf),
-                    "            <SP WIDTH=\"%d\" HPOS=\"%d\" VPOS=\"%d\" />\n",
-                    sp_w, sp_x, w->y);
+                snprintf(buf, sizeof(buf), "            <SP WIDTH=\"%d\" HPOS=\"%d\" VPOS=\"%d\" />\n", sp_w, sp_x,
+                         w->y);
                 r->output += buf;
             }
         }
@@ -249,10 +252,13 @@ static void pdf_add_page(ocr_renderer * r, const ocr_render_page * page) {
     for (int i = 0; i < page->n_lines; i++) {
         const ocr_render_line * line = &page->lines[i];
         stored_line sl;
-        sl.x = line->x; sl.y = line->y; sl.w = line->w; sl.h = line->h;
+        sl.x = line->x;
+        sl.y = line->y;
+        sl.w = line->w;
+        sl.h = line->h;
         for (int j = 0; j < line->n_words; j++) {
             const ocr_render_word * w = &line->words[j];
-            sl.words.push_back({w->text ? w->text : "", w->x, w->y, w->w, w->h, w->confidence});
+            sl.words.push_back({ w->text ? w->text : "", w->x, w->y, w->w, w->h, w->confidence });
         }
         sp.lines.push_back(sl);
     }
@@ -284,7 +290,7 @@ static void pdf_end(ocr_renderer * r) {
     char buf[1024];
 
     auto obj_start = [&](int id) {
-        objects.push_back({id, (int)out.size()});
+        objects.push_back({ id, (int)out.size() });
         snprintf(buf, sizeof(buf), "%d 0 obj\n", id);
         out += buf;
     };
@@ -343,8 +349,7 @@ static void pdf_end(ocr_renderer * r) {
         if (!jpeg_data.empty()) {
             // Draw image as full-page background
             // cm = Coordinate Transform Matrix: scale to page size
-            snprintf(buf, sizeof(buf), "q\n%d 0 0 %d 0 0 cm\n/Im1 Do\nQ\n",
-                     sp.width, sp.height);
+            snprintf(buf, sizeof(buf), "q\n%d 0 0 %d 0 0 cm\n/Im1 Do\nQ\n", sp.width, sp.height);
             content += buf;
         }
 
@@ -365,20 +370,17 @@ static void pdf_end(ocr_renderer * r) {
                 // We want: text_length ≈ word_width_in_points
                 int n_chars = (int)sw.text.size();
                 double desired_width = (double)sw.w;
-                double font_size = (n_chars > 0)
-                    ? desired_width / (n_chars * 0.55)
-                    : (double)sw.h;
+                double font_size = (n_chars > 0) ? desired_width / (n_chars * 0.55) : (double)sw.h;
                 font_size = std::max(4.0, std::min(200.0, font_size));
 
                 // Use Tm (text matrix) for positioning.
                 // For horizontal text: a=1, b=0, c=0, d=1, e=x, f=y
                 // This allows easy extension to rotated text later.
                 snprintf(buf, sizeof(buf),
-                    "/F1 %.1f Tf\n"
-                    "1 0 0 1 %.1f %.1f Tm\n"
-                    "(%s) Tj\n",
-                    font_size, pdf_x, pdf_y,
-                    pdf_escape(sw.text).c_str());
+                         "/F1 %.1f Tf\n"
+                         "1 0 0 1 %.1f %.1f Tm\n"
+                         "(%s) Tj\n",
+                         font_size, pdf_x, pdf_y, pdf_escape(sw.text).c_str());
                 content += buf;
             }
         }
@@ -390,20 +392,19 @@ static void pdf_end(ocr_renderer * r) {
             obj_start(img_obj_id);
 
             // Detect if JPEG (starts with FF D8) or PNG
-            bool is_jpeg = jpeg_data.size() >= 2 &&
-                           jpeg_data[0] == 0xFF && jpeg_data[1] == 0xD8;
+            bool is_jpeg = jpeg_data.size() >= 2 && jpeg_data[0] == 0xFF && jpeg_data[1] == 0xD8;
             const char * filter = is_jpeg ? "/DCTDecode" : "/FlateDecode";
             // For simplicity, only JPEG is truly embedded; PNG would need
             // decompression + re-encoding. Just embed raw bytes with DCTDecode.
 
             snprintf(buf, sizeof(buf),
-                "<< /Type /XObject /Subtype /Image\n"
-                "   /Width %d /Height %d\n"
-                "   /ColorSpace /DeviceRGB\n"
-                "   /BitsPerComponent 8\n"
-                "   /Filter %s\n"
-                "   /Length %d >>\nstream\n",
-                sp.width, sp.height, filter, (int)jpeg_data.size());
+                     "<< /Type /XObject /Subtype /Image\n"
+                     "   /Width %d /Height %d\n"
+                     "   /ColorSpace /DeviceRGB\n"
+                     "   /BitsPerComponent 8\n"
+                     "   /Filter %s\n"
+                     "   /Length %d >>\nstream\n",
+                     sp.width, sp.height, filter, (int)jpeg_data.size());
             out += buf;
             out.append((const char *)jpeg_data.data(), jpeg_data.size());
             out += "\nendstream\nendobj\n";
@@ -424,17 +425,16 @@ static void pdf_end(ocr_renderer * r) {
 
         // Resources: font + optional image
         std::string resources = "<< /Font << /F1 " + std::to_string(font_id) + " 0 R >>";
-        if (img_obj_id > 0)
-            resources += " /XObject << /Im1 " + std::to_string(img_obj_id) + " 0 R >>";
+        if (img_obj_id > 0) resources += " /XObject << /Im1 " + std::to_string(img_obj_id) + " 0 R >>";
         resources += " >>";
 
         snprintf(buf, sizeof(buf),
-            "<< /Type /Page /Parent %d 0 R "
-            "/MediaBox [0 0 %d %d] "
-            "/Contents %d 0 R "
-            "/Resources %s "
-            ">>\nendobj\n",
-            pages_id, sp.width, sp.height, stream_id, resources.c_str());
+                 "<< /Type /Page /Parent %d 0 R "
+                 "/MediaBox [0 0 %d %d] "
+                 "/Contents %d 0 R "
+                 "/Resources %s "
+                 ">>\nendobj\n",
+                 pages_id, sp.width, sp.height, stream_id, resources.c_str());
         out += buf;
     }
 
@@ -480,9 +480,7 @@ static void pdf_end(ocr_renderer * r) {
 
         metadata_id = next_id++;
         obj_start(metadata_id);
-        snprintf(buf, sizeof(buf),
-            "<< /Type /Metadata /Subtype /XML /Length %d >>\nstream\n",
-            (int)xmp.size());
+        snprintf(buf, sizeof(buf), "<< /Type /Metadata /Subtype /XML /Length %d >>\nstream\n", (int)xmp.size());
         out += buf;
         out += xmp;
         out += "\nendstream\nendobj\n";
@@ -502,12 +500,9 @@ static void pdf_end(ocr_renderer * r) {
 
     // Patch the Catalog object
     {
-        std::string cat_body = "<< /Type /Catalog /Pages "
-            + std::to_string(pages_id) + " 0 R";
-        if (metadata_id > 0)
-            cat_body += " /Metadata " + std::to_string(metadata_id) + " 0 R";
-        if (output_intent_id > 0)
-            cat_body += " /OutputIntents [" + std::to_string(output_intent_id) + " 0 R]";
+        std::string cat_body = "<< /Type /Catalog /Pages " + std::to_string(pages_id) + " 0 R";
+        if (metadata_id > 0) cat_body += " /Metadata " + std::to_string(metadata_id) + " 0 R";
+        if (output_intent_id > 0) cat_body += " /OutputIntents [" + std::to_string(output_intent_id) + " 0 R]";
         cat_body += " >>";
         if ((int)cat_body.size() <= 512) {
             cat_body.resize(512, ' ');
@@ -559,30 +554,54 @@ void ocr_render_begin(ocr_renderer * r) {
     r->output.clear();
     r->page_count = 0;
     switch (r->format) {
-        case OCR_RENDER_TEXT: text_begin(r); break;
-        case OCR_RENDER_HOCR: hocr_begin(r); break;
-        case OCR_RENDER_ALTO: alto_begin(r); break;
-        case OCR_RENDER_PDF:  pdf_begin(r); break;
+    case OCR_RENDER_TEXT:
+        text_begin(r);
+        break;
+    case OCR_RENDER_HOCR:
+        hocr_begin(r);
+        break;
+    case OCR_RENDER_ALTO:
+        alto_begin(r);
+        break;
+    case OCR_RENDER_PDF:
+        pdf_begin(r);
+        break;
     }
 }
 
 void ocr_render_add_page(ocr_renderer * r, const ocr_render_page * page) {
     if (!r || !page) return;
     switch (r->format) {
-        case OCR_RENDER_TEXT: text_add_page(r, page); break;
-        case OCR_RENDER_HOCR: hocr_add_page(r, page); break;
-        case OCR_RENDER_ALTO: alto_add_page(r, page); break;
-        case OCR_RENDER_PDF:  pdf_add_page(r, page); break;
+    case OCR_RENDER_TEXT:
+        text_add_page(r, page);
+        break;
+    case OCR_RENDER_HOCR:
+        hocr_add_page(r, page);
+        break;
+    case OCR_RENDER_ALTO:
+        alto_add_page(r, page);
+        break;
+    case OCR_RENDER_PDF:
+        pdf_add_page(r, page);
+        break;
     }
 }
 
 void ocr_render_end(ocr_renderer * r) {
     if (!r) return;
     switch (r->format) {
-        case OCR_RENDER_TEXT: text_end(r); break;
-        case OCR_RENDER_HOCR: hocr_end(r); break;
-        case OCR_RENDER_ALTO: alto_end(r); break;
-        case OCR_RENDER_PDF:  pdf_end(r); break;
+    case OCR_RENDER_TEXT:
+        text_end(r);
+        break;
+    case OCR_RENDER_HOCR:
+        hocr_end(r);
+        break;
+    case OCR_RENDER_ALTO:
+        alto_end(r);
+        break;
+    case OCR_RENDER_PDF:
+        pdf_end(r);
+        break;
     }
 }
 

@@ -19,14 +19,14 @@
 
 static int n_pass = 0, n_fail = 0;
 
-static void check(crispembed_diff::Ref & ref, const char * name,
-                  const float * data, size_t n_elem) {
+static void check(crispembed_diff::Ref & ref, const char * name, const float * data, size_t n_elem) {
     auto r = ref.compare(name, data, n_elem);
     const char * status = r.is_pass() ? "PASS" : "FAIL";
-    printf("  %-25s  cos_min=%.6f  max_abs=%.2e  %s\n",
-           name, r.cos_min, r.max_abs, status);
-    if (r.is_pass()) n_pass++;
-    else n_fail++;
+    printf("  %-25s  cos_min=%.6f  max_abs=%.2e  %s\n", name, r.cos_min, r.max_abs, status);
+    if (r.is_pass())
+        n_pass++;
+    else
+        n_fail++;
 }
 
 int main(int argc, char ** argv) {
@@ -46,13 +46,11 @@ int main(int argc, char ** argv) {
     }
 
     printf("Reference stages:\n");
-    for (auto & name : {"input", "block1", "srb0", "srb1", "srb2", "srb3", "srb4",
-                         "block7", "upsample", "output"}) {
+    for (auto & name : { "input", "block1", "srb0", "srb1", "srb2", "srb3", "srb4", "block7", "upsample", "output" }) {
         if (ref.has(name)) {
             auto shape = ref.shape(name);
             printf("  %s: [", name);
-            for (size_t i = 0; i < shape.size(); i++)
-                printf("%s%lld", i ? "," : "", (long long)shape[i]);
+            for (size_t i = 0; i < shape.size(); i++) printf("%s%lld", i ? "," : "", (long long)shape[i]);
             printf("]\n");
         }
     }
@@ -109,8 +107,7 @@ int main(int argc, char ** argv) {
                     }
             check(ref, "output", cpp_out.data(), cpp_out.size());
         } else {
-            printf("  output: reference shape mismatch (ref=%zu, cpp=%d)\n",
-                   ref_on, 3 * oh * ow);
+            printf("  output: reference shape mismatch (ref=%zu, cpp=%d)\n", ref_on, 3 * oh * ow);
         }
     }
 

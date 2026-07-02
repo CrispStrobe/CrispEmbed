@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <cmath>
 
-int main(int argc, char** argv) {
+int main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <model.gguf> <ref.gguf>\n", argv[0]);
         return 1;
@@ -15,34 +15,38 @@ int main(int argc, char** argv) {
     crispembed_diff::Ref ref;
     if (!ref.load(argv[2])) return 1;
 
-    auto* ctx = crispembed_init(argv[1], 4);
-    if (!ctx) { fprintf(stderr, "Failed to load model\n"); return 1; }
+    auto * ctx = crispembed_init(argv[1], 4);
+    if (!ctx) {
+        fprintf(stderr, "Failed to load model\n");
+        return 1;
+    }
 
     // Get raw hidden states for comparison
     int n_tok = 0, dim = 0;
-    const float* raw = crispembed_encode_tokens_raw(ctx, "Barack Obama was born in Hawaii", &n_tok, &dim);
-    if (!raw) { fprintf(stderr, "encode failed\n"); return 1; }
+    const float * raw = crispembed_encode_tokens_raw(ctx, "Barack Obama was born in Hawaii", &n_tok, &dim);
+    if (!raw) {
+        fprintf(stderr, "encode failed\n");
+        return 1;
+    }
 
     printf("C++ tokens: %d, dim: %d\n", n_tok, dim);
-    printf("C++ first token first5: [%.6f, %.6f, %.6f, %.6f, %.6f]\n",
-           raw[0], raw[1], raw[2], raw[3], raw[4]);
+    printf("C++ first token first5: [%.6f, %.6f, %.6f, %.6f, %.6f]\n", raw[0], raw[1], raw[2], raw[3], raw[4]);
 
     // Compare final hidden state
     auto r = ref.compare("final_hidden", raw, (size_t)n_tok * dim, dim);
     printf("\n%-20s %10.6f %10.2e %s\n", "final_hidden", r.cos_min, r.max_abs,
-           r.is_pass(0.99f) ? "PASS" : "FAIL");  // 0.99: q8_0 model vs f32 ref (~0.995); scramble craters to ~0
+           r.is_pass(0.99f) ? "PASS" : "FAIL"); // 0.99: q8_0 model vs f32 ref (~0.995); scramble craters to ~0
 
     // Also check embedding stage if Python tokens match
     auto [ref_ids, ref_n] = ref.get_f32("input_ids");
     if (ref_ids && ref_n == (size_t)n_tok) {
         printf("\nToken count matches (both %d)\n", n_tok);
 
-        const int32_t* cpp_ids = crispembed_last_token_ids(ctx);
+        const int32_t * cpp_ids = crispembed_last_token_ids(ctx);
         bool ids_match = true;
         for (int i = 0; i < n_tok; i++) {
             if (cpp_ids[i] != (int32_t)ref_ids[i]) {
-                printf("  Token %d: C++=%d, Python=%d MISMATCH\n",
-                       i, cpp_ids[i], (int32_t)ref_ids[i]);
+                printf("  Token %d: C++=%d, Python=%d MISMATCH\n", i, cpp_ids[i], (int32_t)ref_ids[i]);
                 ids_match = false;
             }
         }

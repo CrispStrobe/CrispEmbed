@@ -30,9 +30,8 @@ void tbsrn_sr_free(tbsrn_sr_context * ctx);
 // Output: uint8 RGB pixels [32, 128, 3], allocated by this function.
 //         Caller frees with tbsrn_sr_free_image().
 // Returns 0 on success, -1 on error.
-int tbsrn_sr_process(tbsrn_sr_context * ctx,
-                     const uint8_t * input, int width, int height,
-                     uint8_t ** output, int * out_width, int * out_height);
+int tbsrn_sr_process(tbsrn_sr_context * ctx, const uint8_t * input, int width, int height, uint8_t ** output,
+                     int * out_width, int * out_height);
 
 void tbsrn_sr_free_image(uint8_t * pixels);
 

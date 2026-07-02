@@ -31,21 +31,19 @@ extern "C" {
 /// Returns 0 on success, 1 if dewarping could not be applied (too few
 /// textlines found, image too small, etc.). When it fails, out is
 /// a copy of the input.
-int dewarp_page(const uint8_t * gray, int w, int h,
-                uint8_t * out, int * out_w, int * out_h);
+int dewarp_page(const uint8_t * gray, int w, int h, uint8_t * out, int * out_w, int * out_h);
 
 /// Dewarp parameters for tuning.
 typedef struct dewarp_params {
-    int min_lines;       // minimum textlines to build model (default 4)
-    int sampling;        // horizontal sampling step for baselines (default 8)
-    float max_curve;     // maximum allowed curvature in pixels (default 100)
+    int min_lines;   // minimum textlines to build model (default 4)
+    int sampling;    // horizontal sampling step for baselines (default 8)
+    float max_curve; // maximum allowed curvature in pixels (default 100)
 } dewarp_params;
 
 dewarp_params dewarp_defaults(void);
 
-int dewarp_page_params(const uint8_t * gray, int w, int h,
-                       dewarp_params params,
-                       uint8_t * out, int * out_w, int * out_h);
+int dewarp_page_params(const uint8_t * gray, int w, int h, dewarp_params params, uint8_t * out, int * out_w,
+                       int * out_h);
 
 #ifdef __cplusplus
 }

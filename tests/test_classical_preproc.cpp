@@ -23,14 +23,19 @@
 
 // ANSI colors
 #define GREEN "\033[32m"
-#define RED   "\033[31m"
+#define RED "\033[31m"
 #define RESET "\033[0m"
 
 static int n_pass = 0, n_fail = 0;
 
 static void check(const char * name, bool cond) {
-    if (cond) { printf("  %s[PASS]%s %s\n", GREEN, RESET, name); n_pass++; }
-    else      { printf("  %s[FAIL]%s %s\n", RED, RESET, name); n_fail++; }
+    if (cond) {
+        printf("  %s[PASS]%s %s\n", GREEN, RESET, name);
+        n_pass++;
+    } else {
+        printf("  %s[FAIL]%s %s\n", RED, RESET, name);
+        n_fail++;
+    }
 }
 
 // ── Synthetic image helpers ────────────────────────────────────────
@@ -74,7 +79,8 @@ static void test_adaptive_otsu() {
     std::vector<uint8_t> out(w * h);
     adaptive_otsu(img.data(), w, h, 0, 0, 0, out.data());
     int dark = 0;
-    for (int i = 0; i < w*h; i++) if (out[i] == 0) dark++;
+    for (int i = 0; i < w * h; i++)
+        if (out[i] == 0) dark++;
     check("uniform: text detected", dark > 3000 && dark < 10000);
 
     // Test 2: gradient background → adaptive should still find text
@@ -98,7 +104,7 @@ static void test_find_skew() {
     auto img = make_white(w, h);
     for (int line = 0; line < 5; line++) {
         int y = 60 + line * 60;
-        for (int dy = 0; dy < 6; dy++)  // 6px thick to survive 4x reduction
+        for (int dy = 0; dy < 6; dy++) // 6px thick to survive 4x reduction
             draw_hline(img, w, y + dy, 50, 550, 10);
     }
     float angle = 0, conf = 0;
@@ -116,9 +122,9 @@ static void test_find_skew() {
     for (int line = 0; line < 5; line++) {
         int base_y = 60 + line * 60;
         for (int x = 50; x < 550; x++) {
-            int y = base_y + (int)(tanf(skew_rad) * (x - w/2));
+            int y = base_y + (int)(tanf(skew_rad) * (x - w / 2));
             for (int dy = 0; dy < 6; dy++)
-                if (y+dy >= 0 && y+dy < h) skewed[(y+dy) * w + x] = 10;
+                if (y + dy >= 0 && y + dy < h) skewed[(y + dy) * w + x] = 10;
         }
     }
     find_skew_angle(skewed.data(), w, h, &angle, &conf);
@@ -175,7 +181,9 @@ static void test_background_norm() {
     for (int y = 10; y < 120; y++) {
         for (int x = 10; x < w - 10; x++) {
             double v = out[y * w + x];
-            sum += v; sum2 += v * v; cnt++;
+            sum += v;
+            sum2 += v * v;
+            cnt++;
         }
     }
     double mean = sum / cnt;
@@ -185,10 +193,11 @@ static void test_background_norm() {
     for (int y = 10; y < 120; y++) {
         for (int x = 10; x < w - 10; x++) {
             double v = img[y * w + x];
-            orig_sum += v; orig_sum2 += v * v;
+            orig_sum += v;
+            orig_sum2 += v * v;
         }
     }
-    double orig_std = sqrt(orig_sum2 / cnt - (orig_sum/cnt) * (orig_sum/cnt));
+    double orig_std = sqrt(orig_sum2 / cnt - (orig_sum / cnt) * (orig_sum / cnt));
 
     printf("  Background std dev: before=%.1f, after=%.1f\n", orig_std, std_dev);
     check("background uniformity improved", std_dev < orig_std * 0.5);
@@ -205,8 +214,7 @@ static void test_cc_detect() {
         for (int cx = 40; cx < 560; cx += 15) {
             for (int dy = 0; dy < 14; dy++)
                 for (int dx = 0; dx < 8; dx++)
-                    if (y+dy < h && cx+dx < w)
-                        img[(y+dy) * w + (cx+dx)] = 30; // dark enough for Otsu
+                    if (y + dy < h && cx + dx < w) img[(y + dy) * w + (cx + dx)] = 30; // dark enough for Otsu
         }
     }
 
@@ -222,7 +230,7 @@ static void test_cc_detect() {
         // Verify regions are sorted top-to-bottom
         bool sorted = true;
         for (int i = 1; i < n; i++)
-            if (regions[i].y < regions[i-1].y) sorted = false;
+            if (regions[i].y < regions[i - 1].y) sorted = false;
         check("regions sorted top-to-bottom", sorted);
     }
     cc_detect_free(regions);
@@ -234,8 +242,7 @@ static void test_morph_fast() {
     auto img = make_white(w, h);
     // Dark rectangle
     for (int y = 80; y < 120; y++)
-        for (int x = 60; x < 140; x++)
-            img[y * w + x] = 0;
+        for (int x = 60; x < 140; x++) img[y * w + x] = 0;
 
     int wpl = 0;
     uint32_t * bits = morph_u8_to_1bit(img.data(), w, h, 128, &wpl);
@@ -296,7 +303,10 @@ static void live_test(const char * path) {
     printf("\n=== Live test: %s ===\n", path);
     int w, h, ch;
     uint8_t * img = stbi_load(path, &w, &h, &ch, 1);
-    if (!img) { printf("  Cannot load image\n"); return; }
+    if (!img) {
+        printf("  Cannot load image\n");
+        return;
+    }
     printf("  Image: %dx%d\n", w, h);
 
     // Deskew
@@ -312,11 +322,9 @@ static void live_test(const char * path) {
     t0 = std::chrono::high_resolution_clock::now();
     cc_text_region * regions = cc_detect_lines(img, w, h, &n);
     t1 = std::chrono::high_resolution_clock::now();
-    printf("  CC detect: %d regions (%.1f ms)\n", n,
-           std::chrono::duration<double, std::milli>(t1 - t0).count());
+    printf("  CC detect: %d regions (%.1f ms)\n", n, std::chrono::duration<double, std::milli>(t1 - t0).count());
     for (int i = 0; i < n && i < 10; i++)
-        printf("    [%d] (%d,%d) %dx%d\n", i, regions[i].x, regions[i].y,
-               regions[i].w, regions[i].h);
+        printf("    [%d] (%d,%d) %dx%d\n", i, regions[i].x, regions[i].y, regions[i].w, regions[i].h);
     cc_detect_free(regions);
 
     // Background norm
@@ -324,16 +332,14 @@ static void live_test(const char * path) {
     t0 = std::chrono::high_resolution_clock::now();
     background_norm(img, w, h, 0, 0, normed.data());
     t1 = std::chrono::high_resolution_clock::now();
-    printf("  Background norm: %.1f ms\n",
-           std::chrono::duration<double, std::milli>(t1 - t0).count());
+    printf("  Background norm: %.1f ms\n", std::chrono::duration<double, std::milli>(t1 - t0).count());
 
     // Adaptive Otsu
     std::vector<uint8_t> binarized(w * h);
     t0 = std::chrono::high_resolution_clock::now();
     adaptive_otsu(img, w, h, 0, 0, 0, binarized.data());
     t1 = std::chrono::high_resolution_clock::now();
-    printf("  Adaptive Otsu: %.1f ms\n",
-           std::chrono::duration<double, std::milli>(t1 - t0).count());
+    printf("  Adaptive Otsu: %.1f ms\n", std::chrono::duration<double, std::milli>(t1 - t0).count());
 
     stbi_image_free(img);
 }
@@ -351,8 +357,7 @@ int main(int argc, char ** argv) {
     test_cc_detect();
 
     if (argc > 1) {
-        for (int i = 1; i < argc; i++)
-            live_test(argv[i]);
+        for (int i = 1; i < argc; i++) live_test(argv[i]);
     }
 
     printf("\n=== Results: %d passed, %d failed ===\n", n_pass, n_fail);

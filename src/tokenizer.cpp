@@ -7,9 +7,8 @@
 #include <cstring>
 #include <sstream>
 
-bool WordPieceTokenizer::load(const std::vector<std::string> & vocab,
-                               int cls_id, int sep_id, int unk_id, int pad_id,
-                               int max_length, bool do_lower_case) {
+bool WordPieceTokenizer::load(const std::vector<std::string> & vocab, int cls_id, int sep_id, int unk_id, int pad_id,
+                              int max_length, bool do_lower_case) {
     do_lower_case_ = do_lower_case;
     // Ollama-format GGUFs store WordPiece vocab with SentencePiece-style
     // "▁" (U+2581, 3 bytes: 0xE2 0x96 0x81) prefix on whole-word tokens
@@ -18,8 +17,7 @@ bool WordPieceTokenizer::load(const std::vector<std::string> & vocab,
     static const std::string SP_PREFIX = "\xe2\x96\x81"; // ▁ (U+2581)
     bool has_sp_prefix = false;
     for (size_t i = 0; i < std::min(vocab.size(), (size_t)1000); i++) {
-        if (vocab[i].size() > 3 && vocab[i].compare(0, 3, SP_PREFIX) == 0
-            && vocab[i][3] != '[') {
+        if (vocab[i].size() > 3 && vocab[i].compare(0, 3, SP_PREFIX) == 0 && vocab[i][3] != '[') {
             has_sp_prefix = true;
             break;
         }
@@ -54,15 +52,20 @@ bool WordPieceTokenizer::load(const std::vector<std::string> & vocab,
 void WordPieceTokenizer::build_trie() {
     trie_nodes_.clear();
     // Create two roots: one for first-piece tokens, one for ## continuations
-    trie_nodes_.push_back(TrieNode()); trie_root_ = 0;
-    trie_nodes_.push_back(TrieNode()); trie_cont_ = 1;
+    trie_nodes_.push_back(TrieNode());
+    trie_root_ = 0;
+    trie_nodes_.push_back(TrieNode());
+    trie_cont_ = 1;
 
-    for (auto &[tok, id] : token_to_id_) {
+    for (auto & [tok, id] : token_to_id_) {
         bool is_cont = (tok.size() >= 2 && tok[0] == '#' && tok[1] == '#');
         int root = is_cont ? trie_cont_ : trie_root_;
-        const char *s = tok.c_str();
+        const char * s = tok.c_str();
         int slen = (int)tok.size();
-        if (is_cont) { s += 2; slen -= 2; }  // skip "##" prefix
+        if (is_cont) {
+            s += 2;
+            slen -= 2;
+        } // skip "##" prefix
 
         int node = root;
         for (int i = 0; i < slen; i++) {
@@ -103,7 +106,10 @@ std::vector<int> WordPieceTokenizer::wordpiece(const std::string & word) const {
                 }
                 end--;
             }
-            if (!found) { ids.push_back(unk_id_); break; }
+            if (!found) {
+                ids.push_back(unk_id_);
+                break;
+            }
             start = end;
         }
         return ids;
@@ -144,9 +150,15 @@ embed_tokens WordPieceTokenizer::encode(const std::string & text) const {
     for (size_t i = 0; i < text.size(); i++) {
         unsigned char c = text[i];
         if (std::isspace(c)) {
-            if (!current.empty()) { words.push_back(current); current.clear(); }
+            if (!current.empty()) {
+                words.push_back(current);
+                current.clear();
+            }
         } else if (std::ispunct(c)) {
-            if (!current.empty()) { words.push_back(current); current.clear(); }
+            if (!current.empty()) {
+                words.push_back(current);
+                current.clear();
+            }
             words.push_back(std::string(1, (char)c));
         } else {
             current += do_lower_case_ ? (char)std::tolower(c) : (char)c;
@@ -160,7 +172,7 @@ embed_tokens WordPieceTokenizer::encode(const std::string & text) const {
     for (const auto & w : words) {
         auto wp = wordpiece(w);
         for (int id : wp) {
-            if ((int)ids.size() >= max_length_ - 1) break;  // leave room for [SEP]
+            if ((int)ids.size() >= max_length_ - 1) break; // leave room for [SEP]
             ids.push_back(id);
         }
     }
@@ -183,8 +195,7 @@ embed_tokens WordPieceTokenizer::encode(const std::string & text) const {
     return result;
 }
 
-embed_tokens WordPieceTokenizer::encode_pair(const std::string & text_a,
-                                              const std::string & text_b) const {
+embed_tokens WordPieceTokenizer::encode_pair(const std::string & text_a, const std::string & text_b) const {
     // Tokenize a string to raw subword ids (no special tokens, no padding)
     auto tokenize_raw = [&](const std::string & text) -> std::vector<int32_t> {
         std::vector<std::string> words;
@@ -192,9 +203,15 @@ embed_tokens WordPieceTokenizer::encode_pair(const std::string & text_a,
         for (size_t i = 0; i < text.size(); i++) {
             unsigned char c = text[i];
             if (std::isspace(c)) {
-                if (!cur.empty()) { words.push_back(cur); cur.clear(); }
+                if (!cur.empty()) {
+                    words.push_back(cur);
+                    cur.clear();
+                }
             } else if (std::ispunct(c)) {
-                if (!cur.empty()) { words.push_back(cur); cur.clear(); }
+                if (!cur.empty()) {
+                    words.push_back(cur);
+                    cur.clear();
+                }
                 words.push_back(std::string(1, (char)c));
             } else {
                 cur += do_lower_case_ ? (char)std::tolower(c) : (char)c;
@@ -214,17 +231,28 @@ embed_tokens WordPieceTokenizer::encode_pair(const std::string & text_a,
     // Truncate longest-first to fit: [CLS] a [SEP] b [SEP] = n_a + n_b + 3 tokens
     int budget = max_length_ - 3;
     while ((int)(ids_a.size() + ids_b.size()) > budget) {
-        if (ids_a.size() >= ids_b.size()) ids_a.pop_back();
-        else ids_b.pop_back();
+        if (ids_a.size() >= ids_b.size())
+            ids_a.pop_back();
+        else
+            ids_b.pop_back();
     }
 
     // Build combined sequence with type_ids
     std::vector<int32_t> ids, types;
-    ids.push_back(cls_id_); types.push_back(0);
-    for (int id : ids_a)  { ids.push_back(id);     types.push_back(0); }
-    ids.push_back(sep_id_); types.push_back(0);
-    for (int id : ids_b)  { ids.push_back(id);     types.push_back(1); }
-    ids.push_back(sep_id_); types.push_back(1);
+    ids.push_back(cls_id_);
+    types.push_back(0);
+    for (int id : ids_a) {
+        ids.push_back(id);
+        types.push_back(0);
+    }
+    ids.push_back(sep_id_);
+    types.push_back(0);
+    for (int id : ids_b) {
+        ids.push_back(id);
+        types.push_back(1);
+    }
+    ids.push_back(sep_id_);
+    types.push_back(1);
 
     embed_tokens result;
     int seq_len = (int)ids.size();
@@ -232,7 +260,7 @@ embed_tokens WordPieceTokenizer::encode_pair(const std::string & text_a,
     result.type_ids.resize(max_length_, 0);
     result.attn_mask.resize(max_length_, 0);
     for (int i = 0; i < seq_len; i++) {
-        result.ids[i]      = ids[i];
+        result.ids[i] = ids[i];
         result.type_ids[i] = types[i];
         result.attn_mask[i] = 1;
     }

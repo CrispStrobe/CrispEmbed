@@ -24,18 +24,17 @@ namespace core_gguf {
 // Pass 1: metadata
 // ---------------------------------------------------------------------------
 
-gguf_context* open_metadata(const char* path) {
-    gguf_init_params gp = {/*.no_alloc=*/true, /*.ctx=*/nullptr};
-    gguf_context* g = gguf_init_from_file(path, gp);
+gguf_context * open_metadata(const char * path) {
+    gguf_init_params gp = { /*.no_alloc=*/true, /*.ctx=*/nullptr };
+    gguf_context * g = gguf_init_from_file(path, gp);
     if (!g) {
         fprintf(stderr, "core_gguf: failed to open '%s' for metadata read\n", path);
     }
     return g;
 }
 
-void free_metadata(gguf_context* gctx) {
-    if (gctx)
-        gguf_free(gctx);
+void free_metadata(gguf_context * gctx) {
+    if (gctx) gguf_free(gctx);
 }
 
 // Type-checked scalar readers. The GGUF format stores types explicitly so
@@ -43,10 +42,9 @@ void free_metadata(gguf_context* gctx) {
 // returns the default rather than crashing, matching the existing inline
 // helpers in each model.
 
-uint32_t kv_u32(gguf_context* gctx, const char* key, uint32_t default_val) {
+uint32_t kv_u32(gguf_context * gctx, const char * key, uint32_t default_val) {
     const int k = gguf_find_key(gctx, key);
-    if (k < 0)
-        return default_val;
+    if (k < 0) return default_val;
     const gguf_type t = gguf_get_kv_type(gctx, k);
     switch (t) {
     case GGUF_TYPE_UINT32:
@@ -70,10 +68,9 @@ uint32_t kv_u32(gguf_context* gctx, const char* key, uint32_t default_val) {
     }
 }
 
-int32_t kv_i32(gguf_context* gctx, const char* key, int32_t default_val) {
+int32_t kv_i32(gguf_context * gctx, const char * key, int32_t default_val) {
     const int k = gguf_find_key(gctx, key);
-    if (k < 0)
-        return default_val;
+    if (k < 0) return default_val;
     const gguf_type t = gguf_get_kv_type(gctx, k);
     switch (t) {
     case GGUF_TYPE_INT32:
@@ -89,46 +86,36 @@ int32_t kv_i32(gguf_context* gctx, const char* key, int32_t default_val) {
     }
 }
 
-float kv_f32(gguf_context* gctx, const char* key, float default_val) {
+float kv_f32(gguf_context * gctx, const char * key, float default_val) {
     const int k = gguf_find_key(gctx, key);
-    if (k < 0)
-        return default_val;
+    if (k < 0) return default_val;
     const gguf_type t = gguf_get_kv_type(gctx, k);
-    if (t == GGUF_TYPE_FLOAT32)
-        return gguf_get_val_f32(gctx, k);
-    if (t == GGUF_TYPE_FLOAT64)
-        return (float)gguf_get_val_f64(gctx, k);
+    if (t == GGUF_TYPE_FLOAT32) return gguf_get_val_f32(gctx, k);
+    if (t == GGUF_TYPE_FLOAT64) return (float)gguf_get_val_f64(gctx, k);
     return default_val;
 }
 
-bool kv_bool(gguf_context* gctx, const char* key, bool default_val) {
+bool kv_bool(gguf_context * gctx, const char * key, bool default_val) {
     const int k = gguf_find_key(gctx, key);
-    if (k < 0)
-        return default_val;
-    if (gguf_get_kv_type(gctx, k) != GGUF_TYPE_BOOL)
-        return default_val;
+    if (k < 0) return default_val;
+    if (gguf_get_kv_type(gctx, k) != GGUF_TYPE_BOOL) return default_val;
     return gguf_get_val_bool(gctx, k);
 }
 
-std::string kv_str(gguf_context* gctx, const char* key, const char* default_val) {
+std::string kv_str(gguf_context * gctx, const char * key, const char * default_val) {
     const int k = gguf_find_key(gctx, key);
-    if (k < 0)
-        return default_val ? default_val : "";
-    if (gguf_get_kv_type(gctx, k) != GGUF_TYPE_STRING)
-        return default_val ? default_val : "";
-    const char* s = gguf_get_val_str(gctx, k);
+    if (k < 0) return default_val ? default_val : "";
+    if (gguf_get_kv_type(gctx, k) != GGUF_TYPE_STRING) return default_val ? default_val : "";
+    const char * s = gguf_get_val_str(gctx, k);
     return s ? std::string(s) : std::string(default_val ? default_val : "");
 }
 
-std::vector<std::string> kv_str_array(gguf_context* gctx, const char* key) {
+std::vector<std::string> kv_str_array(gguf_context * gctx, const char * key) {
     std::vector<std::string> out;
     const int k = gguf_find_key(gctx, key);
-    if (k < 0)
-        return out;
-    if (gguf_get_kv_type(gctx, k) != GGUF_TYPE_ARRAY)
-        return out;
-    if (gguf_get_arr_type(gctx, k) != GGUF_TYPE_STRING)
-        return out;
+    if (k < 0) return out;
+    if (gguf_get_kv_type(gctx, k) != GGUF_TYPE_ARRAY) return out;
+    if (gguf_get_arr_type(gctx, k) != GGUF_TYPE_STRING) return out;
     const int n = gguf_get_arr_n(gctx, k);
     out.reserve((size_t)n);
     for (int i = 0; i < n; i++) {
@@ -137,24 +124,22 @@ std::vector<std::string> kv_str_array(gguf_context* gctx, const char* key) {
     return out;
 }
 
-std::vector<int> kv_i32_array(gguf_context* gctx, const char* key) {
+std::vector<int> kv_i32_array(gguf_context * gctx, const char * key) {
     std::vector<int> out;
     const int k = gguf_find_key(gctx, key);
-    if (k < 0)
-        return out;
-    if (gguf_get_kv_type(gctx, k) != GGUF_TYPE_ARRAY)
-        return out;
+    if (k < 0) return out;
+    if (gguf_get_kv_type(gctx, k) != GGUF_TYPE_ARRAY) return out;
     const int n = gguf_get_arr_n(gctx, k);
-    const void* data = gguf_get_arr_data(gctx, k);
+    const void * data = gguf_get_arr_data(gctx, k);
     auto arr_type = gguf_get_arr_type(gctx, k);
     out.resize(n);
     if (arr_type == GGUF_TYPE_INT32) {
         memcpy(out.data(), data, n * sizeof(int32_t));
     } else if (arr_type == GGUF_TYPE_UINT32) {
-        const uint32_t* p = (const uint32_t*)data;
+        const uint32_t * p = (const uint32_t *)data;
         for (int i = 0; i < n; i++) out[i] = (int)p[i];
     } else if (arr_type == GGUF_TYPE_INT64) {
-        const int64_t* p = (const int64_t*)data;
+        const int64_t * p = (const int64_t *)data;
         for (int i = 0; i < n; i++) out[i] = (int)p[i];
     } else {
         out.clear();
@@ -170,7 +155,7 @@ namespace {
 
 // Platform unmap, shared by MappedFile's destructor and free_weights() (the
 // no-copy path transfers the mapping into WeightLoad, which unmaps on free).
-void core_unmap(void* base, size_t size) {
+void core_unmap(void * base, size_t size) {
     if (!base) return;
 #if defined(__EMSCRIPTEN__)
     (void)size;
@@ -190,19 +175,18 @@ void core_unmap(void* base, size_t size) {
 // UNLESS release() is called (the no-copy path keeps it alive in WeightLoad).
 struct MappedFile {
     int fd = -1;
-    void* base = nullptr;
+    void * base = nullptr;
     size_t size = 0;
     bool ok = false;
 
-    explicit MappedFile(const char* path) {
+    explicit MappedFile(const char * path) {
 #if defined(__EMSCRIPTEN__)
         // Emscripten MEMFS: skip mmap, fall through to fread path.
         (void)path;
         return;
 #elif defined(_WIN32)
         HANDLE hFile = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, 0, nullptr);
-        if (hFile == INVALID_HANDLE_VALUE)
-            return;
+        if (hFile == INVALID_HANDLE_VALUE) return;
         LARGE_INTEGER fsize;
         if (!GetFileSizeEx(hFile, &fsize)) {
             CloseHandle(hFile);
@@ -211,17 +195,14 @@ struct MappedFile {
         size = (size_t)fsize.QuadPart;
         HANDLE hMap = CreateFileMappingA(hFile, nullptr, PAGE_READONLY, 0, 0, nullptr);
         CloseHandle(hFile);
-        if (!hMap)
-            return;
+        if (!hMap) return;
         base = MapViewOfFile(hMap, FILE_MAP_READ, 0, 0, 0);
         CloseHandle(hMap);
-        if (!base)
-            return;
+        if (!base) return;
         ok = true;
 #else
         fd = ::open(path, O_RDONLY);
-        if (fd < 0)
-            return;
+        if (fd < 0) return;
         struct stat st;
         if (fstat(fd, &st) != 0) {
             ::close(fd);
@@ -252,23 +233,24 @@ struct MappedFile {
     ~MappedFile() { core_unmap(base, size); }
     // Transfer ownership of the mapping out (the no-copy path stores it in
     // WeightLoad). After release() the destructor will not unmap.
-    void release() { base = nullptr; size = 0; }
-    MappedFile(const MappedFile&) = delete;
-    MappedFile& operator=(const MappedFile&) = delete;
+    void release() {
+        base = nullptr;
+        size = 0;
+    }
+    MappedFile(const MappedFile &) = delete;
+    MappedFile & operator=(const MappedFile &) = delete;
 };
 
 } // namespace
 
-bool load_weights(const char* path, ggml_backend_t backend, const char* model_tag,
-                  WeightLoad& out, bool try_mmap) {
-    const char* tag = model_tag ? model_tag : "core_gguf";
+bool load_weights(const char * path, ggml_backend_t backend, const char * model_tag, WeightLoad & out, bool try_mmap) {
+    const char * tag = model_tag ? model_tag : "core_gguf";
 
-    gguf_init_params gp = {/*.no_alloc=*/true, /*.ctx=*/&out.ctx};
-    gguf_context* gctx = gguf_init_from_file(path, gp);
+    gguf_init_params gp = { /*.no_alloc=*/true, /*.ctx=*/&out.ctx };
+    gguf_context * gctx = gguf_init_from_file(path, gp);
     if (!gctx || !out.ctx) {
         fprintf(stderr, "%s: failed to load tensor metadata from '%s'\n", tag, path);
-        if (gctx)
-            gguf_free(gctx);
+        if (gctx) gguf_free(gctx);
         return false;
     }
 
@@ -286,14 +268,14 @@ bool load_weights(const char* path, ggml_backend_t backend, const char* model_ta
             MappedFile mf(path);
             if (mf.ok && mf.size > data_off) {
                 size_t max_ts = 0;
-                for (ggml_tensor* t = ggml_get_first_tensor(out.ctx); t; t = ggml_get_next_tensor(out.ctx, t))
+                for (ggml_tensor * t = ggml_get_first_tensor(out.ctx); t; t = ggml_get_next_tensor(out.ctx, t))
                     max_ts = (std::max)(max_ts, ggml_nbytes(t));
-                void* host_base = (char*)mf.base + data_off;
+                void * host_base = (char *)mf.base + data_off;
                 ggml_backend_buffer_t buf =
                     ggml_backend_dev_buffer_from_host_ptr(dev, host_base, mf.size - data_off, max_ts);
                 bool ok = (buf != nullptr);
                 if (ok) {
-                    for (ggml_tensor* t = ggml_get_first_tensor(out.ctx); t; t = ggml_get_next_tensor(out.ctx, t)) {
+                    for (ggml_tensor * t = ggml_get_first_tensor(out.ctx); t; t = ggml_get_next_tensor(out.ctx, t)) {
                         out.tensors[ggml_get_name(t)] = t;
                         const int64_t tid = gguf_find_tensor(gctx, ggml_get_name(t));
                         if (tid < 0) continue;
@@ -302,14 +284,16 @@ bool load_weights(const char* path, ggml_backend_t backend, const char* model_ta
                         // must lie fully within the mapping, else host_base+off is
                         // out of bounds and the backend read segfaults.
                         if (data_off + off + ggml_nbytes(t) > mf.size) {
-                            fprintf(stderr, "%s: truncated/corrupt GGUF '%s' — tensor '%s' "
+                            fprintf(stderr,
+                                    "%s: truncated/corrupt GGUF '%s' — tensor '%s' "
                                     "extends past EOF (need %zu, file %zu)\n",
-                                    tag, path, ggml_get_name(t),
-                                    (size_t)(data_off + off + ggml_nbytes(t)), mf.size);
-                            ok = false; break;
+                                    tag, path, ggml_get_name(t), (size_t)(data_off + off + ggml_nbytes(t)), mf.size);
+                            ok = false;
+                            break;
                         }
-                        if (ggml_backend_tensor_alloc(buf, t, (char*)host_base + off) != GGML_STATUS_SUCCESS) {
-                            ok = false; break;
+                        if (ggml_backend_tensor_alloc(buf, t, (char *)host_base + off) != GGML_STATUS_SUCCESS) {
+                            ok = false;
+                            break;
                         }
                     }
                 }
@@ -318,12 +302,12 @@ bool load_weights(const char* path, ggml_backend_t backend, const char* model_ta
                     out.mmap_addr = mf.base;
                     out.mmap_len = mf.size;
                     out.used_mmap = true;
-                    mf.release();          // WeightLoad now owns the mapping
+                    mf.release(); // WeightLoad now owns the mapping
                     gguf_free(gctx);
                     return true;
                 }
                 if (buf) ggml_backend_buffer_free(buf);
-                out.tensors.clear();       // discard partial; mf dtor unmaps
+                out.tensors.clear(); // discard partial; mf dtor unmaps
             }
             // mmap unsupported here / failed → fall through to the copy path
         }
@@ -343,7 +327,7 @@ bool load_weights(const char* path, ggml_backend_t backend, const char* model_ta
         // Fallback: read via FILE* pread/fseek. This is the rare path —
         // most systems have working mmap. We implement it inline here so
         // models don't have to.
-        FILE* fp = fopen(path, "rb");
+        FILE * fp = fopen(path, "rb");
         if (!fp) {
             fprintf(stderr, "%s: cannot open '%s' for fread fallback\n", tag, path);
             gguf_free(gctx);
@@ -351,24 +335,28 @@ bool load_weights(const char* path, ggml_backend_t backend, const char* model_ta
         }
         std::vector<uint8_t> tbuf;
         bool trunc = false;
-        for (ggml_tensor* t = ggml_get_first_tensor(out.ctx); t; t = ggml_get_next_tensor(out.ctx, t)) {
+        for (ggml_tensor * t = ggml_get_first_tensor(out.ctx); t; t = ggml_get_next_tensor(out.ctx, t)) {
             out.tensors[ggml_get_name(t)] = t;
             const int64_t tid = gguf_find_tensor(gctx, ggml_get_name(t));
-            if (tid < 0)
-                continue;
+            if (tid < 0) continue;
             const size_t off = gguf_get_tensor_offset(gctx, tid);
             const size_t nbytes = ggml_nbytes(t);
-            if (tbuf.size() < nbytes)
-                tbuf.resize(nbytes);
+            if (tbuf.size() < nbytes) tbuf.resize(nbytes);
 #if defined(_WIN32)
-            if (_fseeki64(fp, (int64_t)(data_off + off), SEEK_SET) != 0)
-                { trunc = true; break; }
+            if (_fseeki64(fp, (int64_t)(data_off + off), SEEK_SET) != 0) {
+                trunc = true;
+                break;
+            }
 #else
-            if (fseeko(fp, (off_t)(data_off + off), SEEK_SET) != 0)
-                { trunc = true; break; }
+            if (fseeko(fp, (off_t)(data_off + off), SEEK_SET) != 0) {
+                trunc = true;
+                break;
+            }
 #endif
-            if (fread(tbuf.data(), 1, nbytes, fp) != nbytes)
-                { trunc = true; break; }
+            if (fread(tbuf.data(), 1, nbytes, fp) != nbytes) {
+                trunc = true;
+                break;
+            }
             ggml_backend_tensor_set(t, tbuf.data(), 0, nbytes);
         }
         fclose(fp);
@@ -379,25 +367,25 @@ bool load_weights(const char* path, ggml_backend_t backend, const char* model_ta
             return false;
         }
     } else {
-        for (ggml_tensor* t = ggml_get_first_tensor(out.ctx); t; t = ggml_get_next_tensor(out.ctx, t)) {
+        for (ggml_tensor * t = ggml_get_first_tensor(out.ctx); t; t = ggml_get_next_tensor(out.ctx, t)) {
             out.tensors[ggml_get_name(t)] = t;
             const int64_t tid = gguf_find_tensor(gctx, ggml_get_name(t));
-            if (tid < 0)
-                continue;
+            if (tid < 0) continue;
             const size_t off = gguf_get_tensor_offset(gctx, tid);
             const size_t nbytes = ggml_nbytes(t);
             // Guard against a truncated/corrupt file: reading past the mapping
             // segfaults inside the backend memmove (the historical crash mode for
             // partially-downloaded models). Fail cleanly instead.
             if (data_off + off + nbytes > mf.size) {
-                fprintf(stderr, "%s: truncated/corrupt GGUF '%s' — tensor '%s' extends "
+                fprintf(stderr,
+                        "%s: truncated/corrupt GGUF '%s' — tensor '%s' extends "
                         "past EOF (need %zu, file %zu)\n",
                         tag, path, ggml_get_name(t), (size_t)(data_off + off + nbytes), mf.size);
                 gguf_free(gctx);
                 free_weights(out);
                 return false;
             }
-            ggml_backend_tensor_set(t, (const char*)mf.base + data_off + off, 0, nbytes);
+            ggml_backend_tensor_set(t, (const char *)mf.base + data_off + off, 0, nbytes);
         }
     }
 
@@ -405,12 +393,12 @@ bool load_weights(const char* path, ggml_backend_t backend, const char* model_ta
     return true;
 }
 
-void free_weights(WeightLoad& wl) {
+void free_weights(WeightLoad & wl) {
     if (wl.buf) {
-        ggml_backend_buffer_free(wl.buf);   // no-copy buffer doesn't own the pages
+        ggml_backend_buffer_free(wl.buf); // no-copy buffer doesn't own the pages
         wl.buf = nullptr;
     }
-    if (wl.mmap_addr) {                      // unmap after the buffer is freed
+    if (wl.mmap_addr) { // unmap after the buffer is freed
         core_unmap(wl.mmap_addr, wl.mmap_len);
         wl.mmap_addr = nullptr;
         wl.mmap_len = 0;
@@ -428,12 +416,12 @@ void free_weights(WeightLoad& wl) {
 // ---------------------------------------------------------------------------
 
 // Signatures use `core_gguf::tensor_map` (see gguf_loader.h cross-repo contract).
-ggml_tensor* try_get(const tensor_map& tensors, const char* name) {
+ggml_tensor * try_get(const tensor_map & tensors, const char * name) {
     auto it = tensors.find(name);
     return it != tensors.end() ? it->second : nullptr;
 }
 
-ggml_tensor* require(const tensor_map& tensors, const char* name, const char* model_tag) {
+ggml_tensor * require(const tensor_map & tensors, const char * name, const char * model_tag) {
     auto it = tensors.find(name);
     if (it == tensors.end()) {
         fprintf(stderr, "%s: required tensor '%s' not found in GGUF\n", model_tag ? model_tag : "core_gguf", name);
@@ -443,13 +431,13 @@ ggml_tensor* require(const tensor_map& tensors, const char* name, const char* mo
 }
 
 
-std::string format_layer_name(const char* fmt, int i) {
+std::string format_layer_name(const char * fmt, int i) {
     char buf[256];
     snprintf(buf, sizeof(buf), fmt, i);
     return std::string(buf);
 }
 
-std::string format_layer_name(const char* fmt, int i, int j) {
+std::string format_layer_name(const char * fmt, int i, int j) {
     char buf[256];
     snprintf(buf, sizeof(buf), fmt, i, j);
     return std::string(buf);

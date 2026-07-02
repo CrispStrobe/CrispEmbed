@@ -29,15 +29,13 @@ static uint8_t otsu_single(const uint8_t * data, int n) {
     return core_cpu::otsu_threshold(data, n);
 }
 
-void adaptive_otsu(const uint8_t * gray, int w, int h,
-                   int tile_w, int tile_h, int smooth,
-                   uint8_t * out) {
+void adaptive_otsu(const uint8_t * gray, int w, int h, int tile_w, int tile_h, int smooth, uint8_t * out) {
     if (tile_w <= 0) tile_w = std::max(32, w / 10);
     if (tile_h <= 0) tile_h = std::max(32, h / 10);
     if (smooth <= 0) smooth = 3;
 
-    int tw = (w + tile_w - 1) / tile_w;  // tiles across
-    int th = (h + tile_h - 1) / tile_h;  // tiles down
+    int tw = (w + tile_w - 1) / tile_w; // tiles across
+    int th = (h + tile_h - 1) / tile_h; // tiles down
 
     // Compute per-tile Otsu thresholds
     std::vector<float> tmap(tw * th);
@@ -51,8 +49,7 @@ void adaptive_otsu(const uint8_t * gray, int w, int h,
             int y1 = std::min(y0 + tile_h, h);
             tile_buf.clear();
             for (int y = y0; y < y1; y++)
-                for (int x = x0; x < x1; x++)
-                    tile_buf.push_back(gray[y * w + x]);
+                for (int x = x0; x < x1; x++) tile_buf.push_back(gray[y * w + x]);
             tmap[ty * tw + tx] = (float)otsu_single(tile_buf.data(), (int)tile_buf.size());
         }
     }
@@ -63,12 +60,14 @@ void adaptive_otsu(const uint8_t * gray, int w, int h,
         std::vector<float> smoothed(tw * th);
         for (int ty = 0; ty < th; ty++) {
             for (int tx = 0; tx < tw; tx++) {
-                float sum = 0; int cnt = 0;
+                float sum = 0;
+                int cnt = 0;
                 for (int dy = -half; dy <= half; dy++) {
                     for (int dx = -half; dx <= half; dx++) {
                         int sy = ty + dy, sx = tx + dx;
                         if (sy >= 0 && sy < th && sx >= 0 && sx < tw) {
-                            sum += tmap[sy * tw + sx]; cnt++;
+                            sum += tmap[sy * tw + sx];
+                            cnt++;
                         }
                     }
                 }
@@ -95,10 +94,8 @@ void adaptive_otsu(const uint8_t * gray, int w, int h,
             wx = std::max(0.0f, std::min(1.0f, wx));
 
             // Bilinear interpolation of threshold
-            float t = tmap[ty0 * tw + tx0] * (1 - wx) * (1 - wy)
-                    + tmap[ty0 * tw + tx1] * wx * (1 - wy)
-                    + tmap[ty1 * tw + tx0] * (1 - wx) * wy
-                    + tmap[ty1 * tw + tx1] * wx * wy;
+            float t = tmap[ty0 * tw + tx0] * (1 - wx) * (1 - wy) + tmap[ty0 * tw + tx1] * wx * (1 - wy) +
+                      tmap[ty1 * tw + tx0] * (1 - wx) * wy + tmap[ty1 * tw + tx1] * wx * wy;
 
             out[y * w + x] = gray[y * w + x] < (uint8_t)(t + 0.5f) ? 0 : 255;
         }
@@ -118,8 +115,7 @@ void adaptive_otsu(const uint8_t * gray, int w, int h,
 // Vertical shear: for each column x, shift vertically by tan(angle)*(x - w/2).
 // This moves pixels between rows, changing row sums when text is misaligned.
 // At the correct deskew angle, row sums have the sharpest transitions.
-static void vshear_1bit(const uint32_t * src, uint32_t * dst,
-                         int w, int h, int wpl, float angle_rad) {
+static void vshear_1bit(const uint32_t * src, uint32_t * dst, int w, int h, int wpl, float angle_rad) {
     memset(dst, 0, (size_t)wpl * h * sizeof(uint32_t));
     float tan_a = tanf(angle_rad);
     for (int x = 0; x < w; x++) {
@@ -128,15 +124,13 @@ static void vshear_1bit(const uint32_t * src, uint32_t * dst,
             int sy = y - shift;
             if (sy < 0 || sy >= h) continue;
             // Copy bit at (x, sy) in src to (x, y) in dst
-            if ((src[sy * wpl + (x >> 5)] >> (31 - (x & 31))) & 1)
-                dst[y * wpl + (x >> 5)] |= (1u << (31 - (x & 31)));
+            if ((src[sy * wpl + (x >> 5)] >> (31 - (x & 31))) & 1) dst[y * wpl + (x >> 5)] |= (1u << (31 - (x & 31)));
         }
     }
 }
 
 // Count set bits per row
-static void row_sums(const uint32_t * bits, int w, int h, int wpl,
-                      int * sums) {
+static void row_sums(const uint32_t * bits, int w, int h, int wpl, int * sums) {
     for (int y = 0; y < h; y++) {
         const uint32_t * line = bits + y * wpl;
         int count = 0;
@@ -156,7 +150,7 @@ static void row_sums(const uint32_t * bits, int w, int h, int wpl,
 
 // Score: sum of squared differences between adjacent row sums
 static double diff_square_sum(const int * sums, int h) {
-    int skip = std::max(1, h / 20);  // skip 5% at top/bottom
+    int skip = std::max(1, h / 20); // skip 5% at top/bottom
     double score = 0;
     for (int i = skip; i < h - skip; i++) {
         double d = (double)(sums[i] - sums[i - 1]);
@@ -166,11 +160,12 @@ static double diff_square_sum(const int * sums, int h) {
 }
 
 // Reduce 1-bit image by 2x (every 2x2 block → 1 if any set)
-static uint32_t * reduce_2x(const uint32_t * src, int w, int h, int wpl,
-                              int * out_w, int * out_h, int * out_wpl) {
+static uint32_t * reduce_2x(const uint32_t * src, int w, int h, int wpl, int * out_w, int * out_h, int * out_wpl) {
     int rw = w / 2, rh = h / 2;
     int rwpl = (rw + 31) / 32;
-    *out_w = rw; *out_h = rh; *out_wpl = rwpl;
+    *out_w = rw;
+    *out_h = rh;
+    *out_wpl = rwpl;
     uint32_t * dst = (uint32_t *)calloc(rwpl * rh, sizeof(uint32_t));
     if (!dst) return nullptr;
     for (int y = 0; y < rh; y++) {
@@ -181,18 +176,15 @@ static uint32_t * reduce_2x(const uint32_t * src, int w, int h, int wpl,
             int sx = x * 2;
             // Check any of the 4 pixels in the 2x2 block
             int bit = 0;
-            auto get = [](const uint32_t *l, int px) {
-                return (l[px >> 5] >> (31 - (px & 31))) & 1;
-            };
-            if (get(r0, sx) || get(r0, sx+1) || get(r1, sx) || get(r1, sx+1))
+            auto get = [](const uint32_t * l, int px) { return (l[px >> 5] >> (31 - (px & 31))) & 1; };
+            if (get(r0, sx) || get(r0, sx + 1) || get(r1, sx) || get(r1, sx + 1))
                 dline[x >> 5] |= (1u << (31 - (x & 31)));
         }
     }
     return dst;
 }
 
-int find_skew_angle(const uint8_t * gray, int w, int h,
-                    float * out_angle, float * out_conf) {
+int find_skew_angle(const uint8_t * gray, int w, int h, float * out_angle, float * out_conf) {
     if (out_angle) *out_angle = 0;
     if (out_conf) *out_conf = 0;
     if (!gray || w < 100 || h < 50) return 1;
@@ -205,21 +197,29 @@ int find_skew_angle(const uint8_t * gray, int w, int h,
     uint8_t thresh = 128; // simple default
     {
         int hist[256] = {};
-        for (int i = 0; i < w*h; i++) hist[gray[i]]++;
+        for (int i = 0; i < w * h; i++) hist[gray[i]]++;
         double sum = 0;
         for (int i = 0; i < 256; i++) sum += (double)i * hist[i];
-        double sumB = 0; int wB = 0; double maxv = 0; int best = 128;
+        double sumB = 0;
+        int wB = 0;
+        double maxv = 0;
+        int best = 128;
         for (int t = 0; t < 256; t++) {
-            wB += hist[t]; if (!wB) continue;
-            int wF = w*h - wB; if (!wF) break;
-            sumB += (double)t*hist[t];
-            double d = sumB/wB - (sum-sumB)/wF;
-            double v = (double)wB*wF*d*d;
-            if (v > maxv) { maxv = v; best = t; }
+            wB += hist[t];
+            if (!wB) continue;
+            int wF = w * h - wB;
+            if (!wF) break;
+            sumB += (double)t * hist[t];
+            double d = sumB / wB - (sum - sumB) / wF;
+            double v = (double)wB * wF * d * d;
+            if (v > maxv) {
+                maxv = v;
+                best = t;
+            }
         }
         thresh = (uint8_t)best;
     }
-    if (thresh < 255) thresh++;  // include pixels AT the threshold
+    if (thresh < 255) thresh++; // include pixels AT the threshold
     morph_free(bits);
     bits = morph_u8_to_1bit(gray, w, h, thresh, &wpl);
     if (!bits) return 1;
@@ -244,7 +244,10 @@ int find_skew_angle(const uint8_t * gray, int w, int h,
     std::vector<double> scores(n_angles);
     std::vector<int> sums(rh2);
     uint32_t * sheared = (uint32_t *)calloc(rwpl2 * rh2, sizeof(uint32_t));
-    if (!sheared) { free(reduced); return 1; }
+    if (!sheared) {
+        free(reduced);
+        return 1;
+    }
 
     double max_score = 0, min_score = 1e30;
     int max_idx = 0;
@@ -254,7 +257,10 @@ int find_skew_angle(const uint8_t * gray, int w, int h,
         vshear_1bit(reduced, sheared, rw2, rh2, rwpl2, angles[i] * deg2rad);
         row_sums(sheared, rw2, rh2, rwpl2, sums.data());
         scores[i] = diff_square_sum(sums.data(), rh2);
-        if (scores[i] > max_score) { max_score = scores[i]; max_idx = i; }
+        if (scores[i] > max_score) {
+            max_score = scores[i];
+            max_idx = i;
+        }
         if (scores[i] < min_score) min_score = scores[i];
     }
 
@@ -277,11 +283,16 @@ int find_skew_angle(const uint8_t * gray, int w, int h,
         double score_hi = diff_square_sum(sums.data(), rh2);
 
         if (score_lo > best_score) {
-            hi = best_angle; best_angle = mid_lo; best_score = score_lo;
+            hi = best_angle;
+            best_angle = mid_lo;
+            best_score = score_lo;
         } else if (score_hi > best_score) {
-            lo = best_angle; best_angle = mid_hi; best_score = score_hi;
+            lo = best_angle;
+            best_angle = mid_hi;
+            best_score = score_hi;
         } else {
-            lo = mid_lo; hi = mid_hi;
+            lo = mid_lo;
+            hi = mid_hi;
         }
     }
 
@@ -310,8 +321,7 @@ static inline void set_bit(uint32_t * line, int x) {
     line[x >> 5] |= (1u << (31 - (x & 31)));
 }
 
-uint32_t * despeckle_cc(const uint32_t * bits, int w, int h, int wpl,
-                         int max_w, int max_h) {
+uint32_t * despeckle_cc(const uint32_t * bits, int w, int h, int wpl, int max_w, int max_h) {
     int n = wpl * h;
     uint32_t * out = (uint32_t *)malloc(n * sizeof(uint32_t));
     if (!out) return nullptr;
@@ -321,7 +331,9 @@ uint32_t * despeckle_cc(const uint32_t * bits, int w, int h, int wpl,
     std::vector<uint8_t> visited(w * h, 0);
 
     // Stack for flood fill
-    struct Pt { int x, y; };
+    struct Pt {
+        int x, y;
+    };
     std::vector<Pt> stack;
     std::vector<Pt> component;
 
@@ -333,12 +345,13 @@ uint32_t * despeckle_cc(const uint32_t * bits, int w, int h, int wpl,
             // Flood fill this component
             stack.clear();
             component.clear();
-            stack.push_back({x, y});
+            stack.push_back({ x, y });
             visited[y * w + x] = 1;
             int min_x = x, max_x = x, min_y = y, max_y = y;
 
             while (!stack.empty()) {
-                Pt p = stack.back(); stack.pop_back();
+                Pt p = stack.back();
+                stack.pop_back();
                 component.push_back(p);
                 if (p.x < min_x) min_x = p.x;
                 if (p.x > max_x) max_x = p.x;
@@ -346,15 +359,15 @@ uint32_t * despeckle_cc(const uint32_t * bits, int w, int h, int wpl,
                 if (p.y > max_y) max_y = p.y;
 
                 // 4-connected neighbors
-                const int dx[] = {-1, 1, 0, 0};
-                const int dy[] = {0, 0, -1, 1};
+                const int dx[] = { -1, 1, 0, 0 };
+                const int dy[] = { 0, 0, -1, 1 };
                 for (int d = 0; d < 4; d++) {
                     int nx = p.x + dx[d], ny = p.y + dy[d];
                     if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
                     if (visited[ny * w + nx]) continue;
                     if (!get_bit(out + ny * wpl, nx)) continue;
                     visited[ny * w + nx] = 1;
-                    stack.push_back({nx, ny});
+                    stack.push_back({ nx, ny });
                 }
             }
 
@@ -363,8 +376,7 @@ uint32_t * despeckle_cc(const uint32_t * bits, int w, int h, int wpl,
             int ch = max_y - min_y + 1;
             if (cw < max_w && ch < max_h) {
                 // Remove it
-                for (auto & p : component)
-                    clear_bit(out + p.y * wpl, p.x);
+                for (auto & p : component) clear_bit(out + p.y * wpl, p.x);
             }
         }
     }
@@ -372,26 +384,30 @@ uint32_t * despeckle_cc(const uint32_t * bits, int w, int h, int wpl,
     return out;
 }
 
-void despeckle_gray(const uint8_t * gray, int w, int h,
-                    int max_w, int max_h, uint8_t * out) {
+void despeckle_gray(const uint8_t * gray, int w, int h, int max_w, int max_h, uint8_t * out) {
     // Binarize: Otsu returns the optimal threshold; use thresh+1 so that
     // pixels AT the threshold value are treated as foreground (dark).
     uint8_t thresh = otsu_single(gray, w * h);
     if (thresh < 255) thresh++;
     int wpl = 0;
     uint32_t * bits = morph_u8_to_1bit(gray, w, h, thresh, &wpl);
-    if (!bits) { memcpy(out, gray, w * h); return; }
+    if (!bits) {
+        memcpy(out, gray, w * h);
+        return;
+    }
 
     // Despeckle
     uint32_t * cleaned = despeckle_cc(bits, w, h, wpl, max_w, max_h);
     morph_free(bits);
-    if (!cleaned) { memcpy(out, gray, w * h); return; }
+    if (!cleaned) {
+        memcpy(out, gray, w * h);
+        return;
+    }
 
     // Convert back: foreground (1) → 0, background (0) → 255
     for (int y = 0; y < h; y++) {
         const uint32_t * line = cleaned + y * wpl;
-        for (int x = 0; x < w; x++)
-            out[y * w + x] = get_bit(line, x) ? 0 : 255;
+        for (int x = 0; x < w; x++) out[y * w + x] = get_bit(line, x) ? 0 : 255;
     }
     morph_free(cleaned);
 }
@@ -405,14 +421,13 @@ void despeckle_gray(const uint8_t * gray, int w, int h,
 //   - Smooth the background map
 //   - Normalize: out = gray * target / background
 
-void background_norm(const uint8_t * gray, int w, int h,
-                     int tile_w, int tile_h, uint8_t * out) {
+void background_norm(const uint8_t * gray, int w, int h, int tile_w, int tile_h, uint8_t * out) {
     if (tile_w <= 0) tile_w = std::max(16, w / 20);
     if (tile_h <= 0) tile_h = std::max(16, h / 20);
 
     int tw = (w + tile_w - 1) / tile_w;
     int th = (h + tile_h - 1) / tile_h;
-    const uint8_t target = 200;  // target background level
+    const uint8_t target = 200; // target background level
 
     // Estimate background per tile (90th percentile)
     std::vector<float> bg_map(tw * th);
@@ -437,7 +452,10 @@ void background_norm(const uint8_t * gray, int w, int h,
             int thresh90 = (int)(cnt * 0.9f);
             for (int v = 0; v < 256; v++) {
                 acc += hist[v];
-                if (acc >= thresh90) { p90 = v; break; }
+                if (acc >= thresh90) {
+                    p90 = v;
+                    break;
+                }
             }
             bg_map[ty * tw + tx] = (float)std::max(1, p90);
         }
@@ -447,12 +465,14 @@ void background_norm(const uint8_t * gray, int w, int h,
     std::vector<float> bg_smooth(tw * th);
     for (int ty = 0; ty < th; ty++) {
         for (int tx = 0; tx < tw; tx++) {
-            float sum = 0; int cnt = 0;
+            float sum = 0;
+            int cnt = 0;
             for (int dy = -1; dy <= 1; dy++) {
                 for (int dx = -1; dx <= 1; dx++) {
                     int sy = ty + dy, sx = tx + dx;
                     if (sy >= 0 && sy < th && sx >= 0 && sx < tw) {
-                        sum += bg_map[sy * tw + sx]; cnt++;
+                        sum += bg_map[sy * tw + sx];
+                        cnt++;
                     }
                 }
             }
@@ -473,10 +493,8 @@ void background_norm(const uint8_t * gray, int w, int h,
             int tx1 = std::min(tw - 1, tx0 + 1);
             float wx = std::max(0.0f, std::min(1.0f, fx - tx0));
 
-            float bg = bg_smooth[ty0*tw+tx0] * (1-wx)*(1-wy)
-                      + bg_smooth[ty0*tw+tx1] * wx*(1-wy)
-                      + bg_smooth[ty1*tw+tx0] * (1-wx)*wy
-                      + bg_smooth[ty1*tw+tx1] * wx*wy;
+            float bg = bg_smooth[ty0 * tw + tx0] * (1 - wx) * (1 - wy) + bg_smooth[ty0 * tw + tx1] * wx * (1 - wy) +
+                       bg_smooth[ty1 * tw + tx0] * (1 - wx) * wy + bg_smooth[ty1 * tw + tx1] * wx * wy;
 
             float v = (float)gray[y * w + x] * target / bg;
             out[y * w + x] = (uint8_t)std::max(0.0f, std::min(255.0f, v));
@@ -488,8 +506,7 @@ void background_norm(const uint8_t * gray, int w, int h,
 // 5. Image downsampling calculator
 // =========================================================================
 
-float compute_downsample_factor(int w, int h, int current_dpi,
-                                 int target_dpi, int max_pixels) {
+float compute_downsample_factor(int w, int h, int current_dpi, int target_dpi, int max_pixels) {
     float factor = 1.0f;
 
     // DPI-based downsampling
@@ -516,8 +533,7 @@ float compute_downsample_factor(int w, int h, int current_dpi,
 // 6. OCR quality scoring
 // =========================================================================
 
-float ocr_quality_score(const char * text,
-                         const char ** dict, int n_dict) {
+float ocr_quality_score(const char * text, const char ** dict, int n_dict) {
     if (!text || !dict || n_dict <= 0) return 0.0f;
 
     int total_words = 0;
@@ -547,9 +563,14 @@ float ocr_quality_score(const char * text,
         while (lo <= hi) {
             int mid = (lo + hi) / 2;
             int cmp = word.compare(dict[mid]);
-            if (cmp == 0) { matched++; break; }
-            if (cmp < 0) hi = mid - 1;
-            else lo = mid + 1;
+            if (cmp == 0) {
+                matched++;
+                break;
+            }
+            if (cmp < 0)
+                hi = mid - 1;
+            else
+                lo = mid + 1;
         }
     }
 
@@ -569,8 +590,7 @@ float ocr_quality_score(const char * text,
 //    has more content near the top (headers, titles) than the bottom (margins).
 //    This is weaker but helps for non-Latin scripts.
 
-int detect_text_angle(const uint8_t * gray, int w, int h,
-                       float * confidence) {
+int detect_text_angle(const uint8_t * gray, int w, int h, float * confidence) {
     if (!gray || w < 20 || h < 20) {
         if (confidence) *confidence = 0;
         return 0;
@@ -578,14 +598,25 @@ int detect_text_angle(const uint8_t * gray, int w, int h,
 
     // Binarize (Otsu)
     int hist[256] = {};
-    for (int i = 0; i < w*h; i++) hist[gray[i]]++;
+    for (int i = 0; i < w * h; i++) hist[gray[i]]++;
     double sum = 0;
     for (int i = 0; i < 256; i++) sum += (double)i * hist[i];
-    double sumB = 0; int wB = 0; double maxv = 0; int best = 128;
+    double sumB = 0;
+    int wB = 0;
+    double maxv = 0;
+    int best = 128;
     for (int t = 0; t < 256; t++) {
-        wB += hist[t]; if (!wB) continue; int wF = w*h - wB; if (!wF) break;
-        sumB += (double)t*hist[t]; double d = sumB/wB - (sum-sumB)/wF;
-        double v = (double)wB*wF*d*d; if (v > maxv) { maxv = v; best = t; }
+        wB += hist[t];
+        if (!wB) continue;
+        int wF = w * h - wB;
+        if (!wF) break;
+        sumB += (double)t * hist[t];
+        double d = sumB / wB - (sum - sumB) / wF;
+        double v = (double)wB * wF * d * d;
+        if (v > maxv) {
+            maxv = v;
+            best = t;
+        }
     }
     uint8_t thresh = (uint8_t)(best < 255 ? best + 1 : best);
 
@@ -596,20 +627,20 @@ int detect_text_angle(const uint8_t * gray, int w, int h,
             if (gray[y * w + x] < thresh) row_dark[y]++;
 
     // Find text line regions (rows with significant dark pixel count)
-    int min_dark = w / 20; // at least 5% of row width
-    std::vector<std::pair<int,int>> text_bands; // (start_y, end_y)
+    int min_dark = w / 20;                       // at least 5% of row width
+    std::vector<std::pair<int, int>> text_bands; // (start_y, end_y)
     int band_start = -1;
     for (int y = 0; y < h; y++) {
         if (row_dark[y] >= min_dark) {
             if (band_start < 0) band_start = y;
         } else {
             if (band_start >= 0) {
-                text_bands.push_back({band_start, y - 1});
+                text_bands.push_back({ band_start, y - 1 });
                 band_start = -1;
             }
         }
     }
-    if (band_start >= 0) text_bands.push_back({band_start, h - 1});
+    if (band_start >= 0) text_bands.push_back({ band_start, h - 1 });
 
     if (text_bands.empty()) {
         if (confidence) *confidence = 0;
@@ -658,12 +689,8 @@ int detect_text_angle(const uint8_t * gray, int w, int h,
 
 #include "tps_warp.h"
 
-int tps_dewarp(const uint8_t * gray, int w, int h,
-               const float * src_x, const float * src_y,
-               const float * dst_x, const float * dst_y, int n,
-               uint8_t * out) {
+int tps_dewarp(const uint8_t * gray, int w, int h, const float * src_x, const float * src_y, const float * dst_x,
+               const float * dst_y, int n, uint8_t * out) {
     if (!gray || !out || w <= 0 || h <= 0) return 1;
-    return tps_warp_points(gray, w, h,
-                           src_x, src_y, dst_x, dst_y, n,
-                           out, w, h, 255);
+    return tps_warp_points(gray, w, h, src_x, src_y, dst_x, dst_y, n, out, w, h, 255);
 }

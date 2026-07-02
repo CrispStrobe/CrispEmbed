@@ -45,7 +45,8 @@ static int t5_relative_bucket(int rel_pos, bool bidirectional, int n_buckets, in
     if (n < max_exact) {
         bucket += n;
     } else {
-        bucket += max_exact + (int)(logf((float)n / max_exact) / logf((float)max_distance / max_exact) * (n_buckets - max_exact));
+        bucket += max_exact +
+                  (int)(logf((float)n / max_exact) / logf((float)max_distance / max_exact) * (n_buckets - max_exact));
         bucket = std::min(bucket, n_buckets - 1);
     }
     return bucket;
@@ -55,22 +56,22 @@ static int t5_relative_bucket(int rel_pos, bool bidirectional, int n_buckets, in
 
 struct enc_layer_wt {
     ggml_tensor * pre_attn_norm;
-    ggml_tensor * q_w, * k_w, * v_w, * o_w;
+    ggml_tensor *q_w, *k_w, *v_w, *o_w;
     ggml_tensor * pre_mlp_norm;
-    ggml_tensor * wi_0, * wi_1, * wo; // GeGLU
+    ggml_tensor *wi_0, *wi_1, *wo; // GeGLU
 };
 
 struct dec_layer_wt {
     // Self-attention
     ggml_tensor * sa_norm;
-    ggml_tensor * sa_q, * sa_k, * sa_v, * sa_o;
+    ggml_tensor *sa_q, *sa_k, *sa_v, *sa_o;
     ggml_tensor * sa_rel_bias; // only layer 0 (shared)
     // Cross-attention
     ggml_tensor * ca_norm;
-    ggml_tensor * ca_q, * ca_k, * ca_v, * ca_o;
+    ggml_tensor *ca_q, *ca_k, *ca_v, *ca_o;
     // FFN
     ggml_tensor * ffn_norm;
-    ggml_tensor * wi_0, * wi_1, * wo;
+    ggml_tensor *wi_0, *wi_1, *wo;
 };
 
 // ── Model context ──
@@ -91,8 +92,8 @@ struct pix2struct_context {
     float rms_eps;
 
     // Encoder weights
-    ggml_tensor * patch_proj_w, * patch_proj_b;
-    ggml_tensor * row_emb, * col_emb;
+    ggml_tensor *patch_proj_w, *patch_proj_b;
+    ggml_tensor *row_emb, *col_emb;
     std::vector<enc_layer_wt> enc;
     ggml_tensor * enc_final_norm;
 
@@ -175,9 +176,14 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
 
     // Keep backend alive for ggml graph compute
     ctx->backend = ggml_backend_cpu_init();
-    if (!ctx->backend) { delete ctx; return nullptr; }
+    if (!ctx->backend) {
+        delete ctx;
+        return nullptr;
+    }
     if (!core_gguf::load_weights(model_path, ctx->backend, "pix2struct", ctx->wl)) {
-        ggml_backend_free(ctx->backend); delete ctx; return nullptr;
+        ggml_backend_free(ctx->backend);
+        delete ctx;
+        return nullptr;
     }
 
     auto g = [&](const char * name) { return core_gguf::try_get(ctx->wl.tensors, name); };
@@ -190,7 +196,10 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
     ctx->enc.resize(ctx->enc_layers);
     for (int i = 0; i < ctx->enc_layers; i++) {
         char pfx[128];
-        auto k = [&](const char * s) { snprintf(pfx, sizeof(pfx), "enc.%d.%s", i, s); return g(pfx); };
+        auto k = [&](const char * s) {
+            snprintf(pfx, sizeof(pfx), "enc.%d.%s", i, s);
+            return g(pfx);
+        };
         ctx->enc[i].pre_attn_norm = k("pre_attn_ln.weight");
         ctx->enc[i].q_w = k("attention.query.weight");
         ctx->enc[i].k_w = k("attention.key.weight");
@@ -210,7 +219,10 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
     ctx->dec.resize(ctx->dec_layers);
     for (int i = 0; i < ctx->dec_layers; i++) {
         char pfx[128];
-        auto k = [&](const char * s) { snprintf(pfx, sizeof(pfx), "dec.%d.%s", i, s); return g(pfx); };
+        auto k = [&](const char * s) {
+            snprintf(pfx, sizeof(pfx), "dec.%d.%s", i, s);
+            return g(pfx);
+        };
         ctx->dec[i].sa_norm = k("sa_ln.weight");
         ctx->dec[i].sa_q = k("sattn.query.weight");
         ctx->dec[i].sa_k = k("sattn.key.weight");
@@ -252,15 +264,13 @@ void pix2struct_free(pix2struct_context * ctx) {
 
 // ── Phase 1: Encoder as ggml graph ──
 
-const float * pix2struct_encode_patches(pix2struct_context * ctx,
-                                         const float * patches, int n_patches,
-                                         int * out_dim) {
+const float * pix2struct_encode_patches(pix2struct_context * ctx, const float * patches, int n_patches, int * out_dim) {
     if (!ctx || !patches || n_patches <= 0) return nullptr;
 
     const int H = ctx->hidden;
     const int patch_dim = ctx->patch_size * ctx->patch_size * 3; // 768
     const int n_heads = ctx->n_heads;
-    const int hd = ctx->d_kv;  // 64
+    const int hd = ctx->d_kv; // 64
     const int d_ff = ctx->d_ff;
     const float eps = ctx->rms_eps;
 
@@ -284,15 +294,13 @@ const float * pix2struct_encode_patches(pix2struct_context * ctx,
             // Gather row + col embeddings
             row_id = std::max(0, std::min(row_id, 4095));
             col_id = std::max(0, std::min(col_id, 4095));
-            for (int i = 0; i < H; i++)
-                pos_emb[p * H + i] = row_w[row_id * H + i] + col_w[col_id * H + i];
+            for (int i = 0; i < H; i++) pos_emb[p * H + i] = row_w[row_id * H + i] + col_w[col_id * H + i];
         }
     }
 
     // Step 2: Build ggml graph: patch_proj + pos_emb + 12 encoder layers
     int max_nodes = ctx->enc_layers * 40 + 80;
-    size_t meta_sz = ggml_tensor_overhead() * (max_nodes + 64)
-                   + ggml_graph_overhead_custom(max_nodes, false);
+    size_t meta_sz = ggml_tensor_overhead() * (max_nodes + 64) + ggml_graph_overhead_custom(max_nodes, false);
     std::vector<uint8_t> meta_buf(meta_sz);
     ggml_init_params ip = { meta_sz, meta_buf.data(), true };
     ggml_context * gc = ggml_init(ip);
@@ -303,8 +311,7 @@ const float * pix2struct_encode_patches(pix2struct_context * ctx,
     ggml_set_input(px_inp);
 
     ggml_tensor * x = ggml_mul_mat(gc, ctx->patch_proj_w, px_inp);
-    if (ctx->patch_proj_b)
-        x = ggml_add(gc, x, cast_f32(gc, ctx->patch_proj_b));
+    if (ctx->patch_proj_b) x = ggml_add(gc, x, cast_f32(gc, ctx->patch_proj_b));
 
     // Add position embeddings (pre-gathered row+col on CPU)
     ggml_tensor * pe_inp = ggml_new_tensor_2d(gc, GGML_TYPE_F32, H, n_patches);
@@ -412,8 +419,7 @@ static void precompute_cross_kv(pix2struct_context * ctx) {
 
     // Build ggml graph: project encoder output through cross-attn K/V for all layers
     int max_nodes = n_dec * 6 + 16;
-    size_t meta_sz = ggml_tensor_overhead() * (max_nodes + 16)
-                   + ggml_graph_overhead_custom(max_nodes, false);
+    size_t meta_sz = ggml_tensor_overhead() * (max_nodes + 16) + ggml_graph_overhead_custom(max_nodes, false);
     std::vector<uint8_t> meta_buf(meta_sz);
     ggml_init_params ip = { meta_sz, meta_buf.data(), true };
     ggml_context * gc = ggml_init(ip);
@@ -459,13 +465,11 @@ static void precompute_cross_kv(pix2struct_context * ctx) {
 
         snprintf(name, sizeof(name), "cross_k_%d", li);
         ggml_tensor * kt = ggml_graph_get_tensor(gf, name);
-        if (kt) ggml_backend_tensor_get(kt, ctx->cross_k_cache[li].data(),
-                                        0, n_enc * qkv_dim * sizeof(float));
+        if (kt) ggml_backend_tensor_get(kt, ctx->cross_k_cache[li].data(), 0, n_enc * qkv_dim * sizeof(float));
 
         snprintf(name, sizeof(name), "cross_v_%d", li);
         ggml_tensor * vt = ggml_graph_get_tensor(gf, name);
-        if (vt) ggml_backend_tensor_get(vt, ctx->cross_v_cache[li].data(),
-                                        0, n_enc * qkv_dim * sizeof(float));
+        if (vt) ggml_backend_tensor_get(vt, ctx->cross_v_cache[li].data(), 0, n_enc * qkv_dim * sizeof(float));
     }
 
     ggml_free(gc);
@@ -509,16 +513,16 @@ static void rms_norm(const float * x, int n, const float * w, float eps, float *
 // ── Decoder: T5 self-attention (single query, cached K/V) ──
 // T5 uses raw dot products (no 1/sqrt(d) scaling).
 
-static void t5_self_attn_1q(const float * q_proj,    // [qkv_dim]
-                             const float * k_cache,   // [n_past+1, qkv_dim]
-                             const float * v_cache,   // [n_past+1, qkv_dim]
-                             int n_kv, int n_heads, int hd,
-                             const float * rel_bias,  // [n_buckets, n_heads]
-                             int n_buckets, int max_dist,
-                             int q_pos,               // current position
-                             float * out,              // [qkv_dim]
-                             float * result_buf,       // [qkv_dim] pre-allocated
-                             float * scores_buf) {     // [>=n_kv] pre-allocated
+static void t5_self_attn_1q(const float * q_proj,  // [qkv_dim]
+                            const float * k_cache, // [n_past+1, qkv_dim]
+                            const float * v_cache, // [n_past+1, qkv_dim]
+                            int n_kv, int n_heads, int hd,
+                            const float * rel_bias, // [n_buckets, n_heads]
+                            int n_buckets, int max_dist,
+                            int q_pos,            // current position
+                            float * out,          // [qkv_dim]
+                            float * result_buf,   // [qkv_dim] pre-allocated
+                            float * scores_buf) { // [>=n_kv] pre-allocated
     int D = n_heads * hd;
     memset(result_buf, 0, D * sizeof(float));
 
@@ -548,8 +552,7 @@ static void t5_self_attn_1q(const float * q_proj,    // [qkv_dim]
 
         for (int d = 0; d < hd; d++) {
             float s = 0;
-            for (int ki = 0; ki < n_kv; ki++)
-                s += scores_buf[ki] * v_cache[ki * D + off + d];
+            for (int ki = 0; ki < n_kv; ki++) s += scores_buf[ki] * v_cache[ki * D + off + d];
             result_buf[off + d] = s;
         }
     }
@@ -559,13 +562,13 @@ static void t5_self_attn_1q(const float * q_proj,    // [qkv_dim]
 // ── Decoder: T5 cross-attention (single query, pre-computed K/V) ──
 // T5: no 1/sqrt(d) scaling.
 
-static void t5_cross_attn_1q(const float * q_proj,    // [qkv_dim]
-                              const float * k_cache,   // [n_enc, qkv_dim]
-                              const float * v_cache,   // [n_enc, qkv_dim]
-                              int n_enc, int n_heads, int hd,
-                              float * out,              // [qkv_dim]
-                              float * result_buf,       // [qkv_dim] pre-allocated
-                              float * scores_buf) {     // [>=n_enc] pre-allocated
+static void t5_cross_attn_1q(const float * q_proj,  // [qkv_dim]
+                             const float * k_cache, // [n_enc, qkv_dim]
+                             const float * v_cache, // [n_enc, qkv_dim]
+                             int n_enc, int n_heads, int hd,
+                             float * out,          // [qkv_dim]
+                             float * result_buf,   // [qkv_dim] pre-allocated
+                             float * scores_buf) { // [>=n_enc] pre-allocated
     int D = n_heads * hd;
     memset(result_buf, 0, D * sizeof(float));
 
@@ -587,8 +590,7 @@ static void t5_cross_attn_1q(const float * q_proj,    // [qkv_dim]
 
         for (int d = 0; d < hd; d++) {
             float s = 0;
-            for (int ki = 0; ki < n_enc; ki++)
-                s += scores_buf[ki] * v_cache[ki * D + off + d];
+            for (int ki = 0; ki < n_enc; ki++) s += scores_buf[ki] * v_cache[ki * D + off + d];
             result_buf[off + d] = s;
         }
     }
@@ -597,10 +599,8 @@ static void t5_cross_attn_1q(const float * q_proj,    // [qkv_dim]
 
 // ── Decoder: GeGLU FFN (single token, CPU) ──
 
-static void geglu_ffn_1t(const float * x, int H, int d_ff,
-                          const float * wi_0, const float * wi_1, const float * wo,
-                          float * out,
-                          float * gate_buf, float * up_buf, float * hidden_buf) {
+static void geglu_ffn_1t(const float * x, int H, int d_ff, const float * wi_0, const float * wi_1, const float * wo,
+                         float * out, float * gate_buf, float * up_buf, float * hidden_buf) {
     core_cpu::linear_cpu(x, gate_buf, H, d_ff, wi_0, nullptr);
     core_cpu::linear_cpu(x, up_buf, H, d_ff, wi_1, nullptr);
     for (int i = 0; i < d_ff; i++) {
@@ -613,8 +613,7 @@ static void geglu_ffn_1t(const float * x, int H, int d_ff,
 
 // ── Decoder step (single token, incremental KV cache) ──
 
-static void decoder_step_cached(pix2struct_context * ctx, int step, int tok_id,
-                                 float * logits) {
+static void decoder_step_cached(pix2struct_context * ctx, int step, int tok_id, float * logits) {
     const int H = ctx->hidden;
     const int qkv_dim = ctx->n_heads * ctx->d_kv;
     const int n_enc = ctx->enc_cache_n;
@@ -633,12 +632,9 @@ static void decoder_step_cached(pix2struct_context * ctx, int step, int tok_id,
         // ── Self-attention with incremental KV cache ──
         rms_norm(ds.x.data(), H, ctx->dc.get(L.sa_norm), ctx->rms_eps, ds.normed.data());
 
-        core_cpu::linear_cpu(ds.normed.data(), ds.q_proj.data(), H, qkv_dim,
-                             ctx->dc.get(L.sa_q), nullptr);
-        core_cpu::linear_cpu(ds.normed.data(), ds.k_new.data(), H, qkv_dim,
-                             ctx->dc.get(L.sa_k), nullptr);
-        core_cpu::linear_cpu(ds.normed.data(), ds.v_new.data(), H, qkv_dim,
-                             ctx->dc.get(L.sa_v), nullptr);
+        core_cpu::linear_cpu(ds.normed.data(), ds.q_proj.data(), H, qkv_dim, ctx->dc.get(L.sa_q), nullptr);
+        core_cpu::linear_cpu(ds.normed.data(), ds.k_new.data(), H, qkv_dim, ctx->dc.get(L.sa_k), nullptr);
+        core_cpu::linear_cpu(ds.normed.data(), ds.v_new.data(), H, qkv_dim, ctx->dc.get(L.sa_v), nullptr);
 
         // Append K/V to cache
         auto & kc = ctx->sa_k_cache[li];
@@ -647,47 +643,35 @@ static void decoder_step_cached(pix2struct_context * ctx, int step, int tok_id,
         memcpy(&vc[step * qkv_dim], ds.v_new.data(), qkv_dim * sizeof(float));
 
         // Attend to full cache (0..step)
-        t5_self_attn_1q(ds.q_proj.data(), kc.data(), vc.data(),
-                        step + 1, ctx->n_heads, ctx->d_kv,
-                        rel_bias_w, ctx->rel_buckets, ctx->rel_max_dist,
-                        step, ds.attn_out.data(),
-                        ds.attn_result.data(), ds.attn_scores.data());
+        t5_self_attn_1q(ds.q_proj.data(), kc.data(), vc.data(), step + 1, ctx->n_heads, ctx->d_kv, rel_bias_w,
+                        ctx->rel_buckets, ctx->rel_max_dist, step, ds.attn_out.data(), ds.attn_result.data(),
+                        ds.attn_scores.data());
 
         // Output projection + residual
-        core_cpu::linear_cpu(ds.attn_out.data(), ds.proj_out.data(), qkv_dim, H,
-                             ctx->dc.get(L.sa_o), nullptr);
+        core_cpu::linear_cpu(ds.attn_out.data(), ds.proj_out.data(), qkv_dim, H, ctx->dc.get(L.sa_o), nullptr);
         for (int i = 0; i < H; i++) ds.x[i] += ds.proj_out[i];
 
         // ── Cross-attention (pre-computed K/V) ──
         rms_norm(ds.x.data(), H, ctx->dc.get(L.ca_norm), ctx->rms_eps, ds.normed.data());
 
-        core_cpu::linear_cpu(ds.normed.data(), ds.q_proj.data(), H, qkv_dim,
-                             ctx->dc.get(L.ca_q), nullptr);
+        core_cpu::linear_cpu(ds.normed.data(), ds.q_proj.data(), H, qkv_dim, ctx->dc.get(L.ca_q), nullptr);
 
-        t5_cross_attn_1q(ds.q_proj.data(),
-                         ctx->cross_k_cache[li].data(),
-                         ctx->cross_v_cache[li].data(),
-                         n_enc, ctx->n_heads, ctx->d_kv,
-                         ds.attn_out.data(),
-                         ds.attn_result.data(), ds.attn_scores.data());
+        t5_cross_attn_1q(ds.q_proj.data(), ctx->cross_k_cache[li].data(), ctx->cross_v_cache[li].data(), n_enc,
+                         ctx->n_heads, ctx->d_kv, ds.attn_out.data(), ds.attn_result.data(), ds.attn_scores.data());
 
-        core_cpu::linear_cpu(ds.attn_out.data(), ds.proj_out.data(), qkv_dim, H,
-                             ctx->dc.get(L.ca_o), nullptr);
+        core_cpu::linear_cpu(ds.attn_out.data(), ds.proj_out.data(), qkv_dim, H, ctx->dc.get(L.ca_o), nullptr);
         for (int i = 0; i < H; i++) ds.x[i] += ds.proj_out[i];
 
         // ── FFN ──
         rms_norm(ds.x.data(), H, ctx->dc.get(L.ffn_norm), ctx->rms_eps, ds.normed.data());
-        geglu_ffn_1t(ds.normed.data(), H, ctx->d_ff,
-                     ctx->dc.get(L.wi_0), ctx->dc.get(L.wi_1), ctx->dc.get(L.wo),
-                     ds.proj_out.data(),
-                     ds.ffn_gate.data(), ds.ffn_up.data(), ds.ffn_hidden.data());
+        geglu_ffn_1t(ds.normed.data(), H, ctx->d_ff, ctx->dc.get(L.wi_0), ctx->dc.get(L.wi_1), ctx->dc.get(L.wo),
+                     ds.proj_out.data(), ds.ffn_gate.data(), ds.ffn_up.data(), ds.ffn_hidden.data());
         for (int i = 0; i < H; i++) ds.x[i] += ds.proj_out[i];
     }
 
     // Final norm + LM head
     rms_norm(ds.x.data(), H, ctx->dc.get(ctx->final_norm), ctx->rms_eps, ds.final_h.data());
-    core_cpu::linear_cpu(ds.final_h.data(), logits, H, ctx->vocab_size,
-                         ctx->dc.get(ctx->lm_head), nullptr);
+    core_cpu::linear_cpu(ds.final_h.data(), logits, H, ctx->vocab_size, ctx->dc.get(ctx->lm_head), nullptr);
 }
 
 // ── Public decode API for parity testing ──
@@ -743,7 +727,7 @@ static std::string greedy_decode(pix2struct_context * ctx, int max_tokens) {
     ctx->ds.allocated = false;
     ensure_dec_scratch(ctx, max_tokens + 1);
 
-    std::vector<int32_t> generated = {0}; // start with decoder_start_token_id = 0
+    std::vector<int32_t> generated = { 0 }; // start with decoder_start_token_id = 0
     std::vector<float> logits(ctx->vocab_size);
     ctx->char_confidences.clear();
 
@@ -756,7 +740,10 @@ static std::string greedy_decode(pix2struct_context * ctx, int max_tokens) {
         int best = 0;
         float best_val = logits[0];
         for (int i = 1; i < ctx->vocab_size; i++) {
-            if (logits[i] > best_val) { best_val = logits[i]; best = i; }
+            if (logits[i] > best_val) {
+                best_val = logits[i];
+                best = i;
+            }
         }
 
         if (best == ctx->eos_id) break;
@@ -779,15 +766,17 @@ static std::string greedy_decode(pix2struct_context * ctx, int max_tokens) {
 
 // ── Image preprocessing: variable-resolution patching ──
 
-static std::vector<float> image_to_patches(const uint8_t * rgb, int W, int H,
-                                            int max_patches, int patch_size,
-                                            int * out_n_patches) {
+static std::vector<float> image_to_patches(const uint8_t * rgb, int W, int H, int max_patches, int patch_size,
+                                           int * out_n_patches) {
     const int pH = patch_size, pW = patch_size, C = 3;
     float scale = sqrtf((float)max_patches * ((float)pH / H) * ((float)pW / W));
     int n_rows = std::max(1, std::min((int)floorf(scale * H / pH), max_patches));
     int n_cols = std::max(1, std::min((int)floorf(scale * W / pW), max_patches));
     while (n_rows * n_cols > max_patches) {
-        if (n_rows > n_cols) n_rows--; else n_cols--;
+        if (n_rows > n_cols)
+            n_rows--;
+        else
+            n_cols--;
     }
     int rH = n_rows * pH, rW = n_cols * pW;
 
@@ -802,8 +791,9 @@ static std::vector<float> image_to_patches(const uint8_t * rgb, int W, int H,
                 int y0 = (int)sy, x0 = (int)sx;
                 int y1 = std::min(y0 + 1, H - 1), x1 = std::min(x0 + 1, W - 1);
                 float fy = sy - y0, fx = sx - x0;
-                float v = (1-fy)*((1-fx)*(float)rgb[(y0*W+x0)*C+c] + fx*(float)rgb[(y0*W+x1)*C+c])
-                        + fy*((1-fx)*(float)rgb[(y1*W+x0)*C+c] + fx*(float)rgb[(y1*W+x1)*C+c]);
+                float v =
+                    (1 - fy) * ((1 - fx) * (float)rgb[(y0 * W + x0) * C + c] + fx * (float)rgb[(y0 * W + x1) * C + c]) +
+                    fy * ((1 - fx) * (float)rgb[(y1 * W + x0) * C + c] + fx * (float)rgb[(y1 * W + x1) * C + c]);
                 resized[c * rH * rW + y * rW + x] = v / 255.0f;
             }
 
@@ -812,7 +802,10 @@ static std::vector<float> image_to_patches(const uint8_t * rgb, int W, int H,
     for (int i = 0; i < total; i++) mean += resized[i];
     mean /= total;
     float var = 0;
-    for (int i = 0; i < total; i++) { float d = resized[i] - mean; var += d * d; }
+    for (int i = 0; i < total; i++) {
+        float d = resized[i] - mean;
+        var += d * d;
+    }
     float adj_std = std::max(sqrtf(var / total), 1.0f / sqrtf((float)total));
     for (int i = 0; i < total; i++) resized[i] = (resized[i] - mean) / adj_std;
 
@@ -837,8 +830,7 @@ static std::vector<float> image_to_patches(const uint8_t * rgb, int W, int H,
 
 // ── Generate ──
 
-const char * pix2struct_generate(pix2struct_context * ctx,
-                                 const uint8_t * image, int width, int height,
+const char * pix2struct_generate(pix2struct_context * ctx, const uint8_t * image, int width, int height,
                                  int max_tokens) {
     if (!ctx || !image || width <= 0 || height <= 0) return nullptr;
 
@@ -847,26 +839,29 @@ const char * pix2struct_generate(pix2struct_context * ctx,
 
     auto t0 = std::chrono::steady_clock::now();
     int n_patches = 0;
-    auto patches = image_to_patches(image, width, height,
-                                     ctx->max_patches, ctx->patch_size, &n_patches);
+    auto patches = image_to_patches(image, width, height, ctx->max_patches, ctx->patch_size, &n_patches);
     if (n_patches <= 0) return nullptr;
-    if (bench) fprintf(stderr, "[pix2struct-bench] preprocess: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[pix2struct-bench] preprocess: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     t0 = std::chrono::steady_clock::now();
     int out_dim = 0;
     pix2struct_encode_patches(ctx, patches.data(), n_patches, &out_dim);
-    if (bench) fprintf(stderr, "[pix2struct-bench] encoder: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[pix2struct-bench] encoder: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     t0 = std::chrono::steady_clock::now();
     static std::string result;
     result = greedy_decode(ctx, max_tokens > 0 ? max_tokens : 256);
-    if (bench) fprintf(stderr, "[pix2struct-bench] decoder: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[pix2struct-bench] decoder: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
-    if (bench) fprintf(stderr, "[pix2struct-bench] total: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
+    if (bench)
+        fprintf(stderr, "[pix2struct-bench] total: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_total).count());
 
     return result.c_str();
 }
@@ -876,13 +871,17 @@ void pix2struct_free_text(const char * text) {
 }
 
 const float * pix2struct_confidences(const pix2struct_context * ctx, int * n_tokens) {
-    if (!ctx || ctx->char_confidences.empty()) { if (n_tokens) *n_tokens = 0; return nullptr; }
+    if (!ctx || ctx->char_confidences.empty()) {
+        if (n_tokens) *n_tokens = 0;
+        return nullptr;
+    }
     if (n_tokens) *n_tokens = (int)ctx->char_confidences.size();
     return ctx->char_confidences.data();
 }
 
 float pix2struct_mean_confidence(const pix2struct_context * ctx) {
     if (!ctx || ctx->char_confidences.empty()) return 0.0f;
-    double s = 0; for (float v : ctx->char_confidences) s += v;
+    double s = 0;
+    for (float v : ctx->char_confidences) s += v;
     return (float)(s / ctx->char_confidences.size());
 }

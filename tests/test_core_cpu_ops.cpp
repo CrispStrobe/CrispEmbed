@@ -20,14 +20,15 @@ using namespace core_cpu;
 static int g_pass = 0;
 static int g_fail = 0;
 
-#define CHECK(cond, msg) do { \
-    if (!(cond)) { \
-        fprintf(stderr, "  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \
-        g_fail++; \
-    } else { \
-        g_pass++; \
-    } \
-} while (0)
+#define CHECK(cond, msg)                                                                                               \
+    do {                                                                                                               \
+        if (!(cond)) {                                                                                                 \
+            fprintf(stderr, "  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__);                                          \
+            g_fail++;                                                                                                  \
+        } else {                                                                                                       \
+            g_pass++;                                                                                                  \
+        }                                                                                                              \
+    } while (0)
 
 #define CHECK_CLOSE(a, b, tol, msg) CHECK(fabsf((a) - (b)) < (tol), msg)
 
@@ -36,11 +37,9 @@ static int g_fail = 0;
 // ---------------------------------------------------------------------------
 // Helper: create a backend-allocated tensor, set its data, return it.
 // Caller owns the buffer (returned via buf_out) and must free it.
-static ggml_tensor* make_tensor(ggml_context* ctx, ggml_backend_t backend,
-                                ggml_type type, int n,
-                                const void* data, size_t data_bytes,
-                                ggml_backend_buffer_t* buf_out) {
-    ggml_tensor* t = ggml_new_tensor_1d(ctx, type, n);
+static ggml_tensor * make_tensor(ggml_context * ctx, ggml_backend_t backend, ggml_type type, int n, const void * data,
+                                 size_t data_bytes, ggml_backend_buffer_t * buf_out) {
+    ggml_tensor * t = ggml_new_tensor_1d(ctx, type, n);
     *buf_out = ggml_backend_alloc_buffer(backend, ggml_nbytes(t) + 64);
     struct ggml_tallocr alloc = ggml_tallocr_new(*buf_out);
     ggml_tallocr_alloc(&alloc, t);
@@ -53,17 +52,16 @@ static void test_to_f32() {
 
     // no_alloc=true so tensors don't get context-buffer data pointers
     struct ggml_init_params params = { 4 * 1024 * 1024, nullptr, true };
-    struct ggml_context* ctx = ggml_init(params);
+    struct ggml_context * ctx = ggml_init(params);
 
     ggml_backend_t backend = ggml_backend_cpu_init();
     assert(backend);
 
     // --- F32 tensor ---
     {
-        float data[] = {1.0f, -2.5f, 3.14f, 0.0f};
+        float data[] = { 1.0f, -2.5f, 3.14f, 0.0f };
         ggml_backend_buffer_t buf;
-        ggml_tensor* t = make_tensor(ctx, backend, GGML_TYPE_F32, 4,
-                                     data, sizeof(data), &buf);
+        ggml_tensor * t = make_tensor(ctx, backend, GGML_TYPE_F32, 4, data, sizeof(data), &buf);
 
         auto out = to_f32(t);
         CHECK(out.size() == 4, "to_f32 F32 size");
@@ -83,8 +81,7 @@ static void test_to_f32() {
         fp16_data[2] = ggml_fp32_to_fp16(2.25f);
 
         ggml_backend_buffer_t buf;
-        ggml_tensor* t = make_tensor(ctx, backend, GGML_TYPE_F16, 3,
-                                     fp16_data, sizeof(fp16_data), &buf);
+        ggml_tensor * t = make_tensor(ctx, backend, GGML_TYPE_F16, 3, fp16_data, sizeof(fp16_data), &buf);
 
         auto out = to_f32(t);
         CHECK(out.size() == 3, "to_f32 F16 size");
@@ -115,9 +112,9 @@ static void test_layernorm_cpu() {
     // With w=[1,1,1,1], b=[0,0,0,0], eps=0:
     //   inv_std = 1/sqrt(1.25) ≈ 0.894427
     //   out[i] = (x[i]-2.5) * inv_std
-    float in[] = {1.0f, 2.0f, 3.0f, 4.0f};
-    float w[]  = {1.0f, 1.0f, 1.0f, 1.0f};
-    float b[]  = {0.0f, 0.0f, 0.0f, 0.0f};
+    float in[] = { 1.0f, 2.0f, 3.0f, 4.0f };
+    float w[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    float b[] = { 0.0f, 0.0f, 0.0f, 0.0f };
     float out[4];
 
     layernorm_cpu(in, out, 4, w, b, 0.0f);
@@ -125,21 +122,21 @@ static void test_layernorm_cpu() {
     float inv_std = 1.0f / sqrtf(1.25f);
     CHECK_CLOSE(out[0], -1.5f * inv_std, 1e-5f, "layernorm [0]");
     CHECK_CLOSE(out[1], -0.5f * inv_std, 1e-5f, "layernorm [1]");
-    CHECK_CLOSE(out[2],  0.5f * inv_std, 1e-5f, "layernorm [2]");
-    CHECK_CLOSE(out[3],  1.5f * inv_std, 1e-5f, "layernorm [3]");
+    CHECK_CLOSE(out[2], 0.5f * inv_std, 1e-5f, "layernorm [2]");
+    CHECK_CLOSE(out[3], 1.5f * inv_std, 1e-5f, "layernorm [3]");
 
     // With scale and bias
-    float w2[] = {2.0f, 2.0f, 2.0f, 2.0f};
-    float b2[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    float w2[] = { 2.0f, 2.0f, 2.0f, 2.0f };
+    float b2[] = { 1.0f, 1.0f, 1.0f, 1.0f };
     layernorm_cpu(in, out, 4, w2, b2, 1e-5f);
     CHECK_CLOSE(out[2], 0.5f / sqrtf(1.25f + 1e-5f) * 2.0f + 1.0f, 1e-4f, "layernorm w/bias [2]");
 
     // With nullptr w and b (identity scale, zero bias)
-    layernorm_cpu(in, out, 4, (const float*)nullptr, (const float*)nullptr, 0.0f);
+    layernorm_cpu(in, out, 4, (const float *)nullptr, (const float *)nullptr, 0.0f);
     CHECK_CLOSE(out[0], -1.5f * inv_std, 1e-5f, "layernorm nullptr w/b [0]");
 
     // In-place (in == out)
-    float inplace[] = {1.0f, 2.0f, 3.0f, 4.0f};
+    float inplace[] = { 1.0f, 2.0f, 3.0f, 4.0f };
     layernorm_cpu(inplace, inplace, 4, w, b, 0.0f);
     CHECK_CLOSE(inplace[0], -1.5f * inv_std, 1e-5f, "layernorm in-place [0]");
 }
@@ -154,21 +151,21 @@ static void test_layernorm2d_cpu() {
     // Position (0,0): values [1, 3] over channels → mean=2, var=1
     // Position (0,1): values [2, 4] over channels → mean=3, var=1
     float in[] = {
-        1.0f, 2.0f,   // channel 0: [1, 2]
-        3.0f, 4.0f    // channel 1: [3, 4]
+        1.0f, 2.0f, // channel 0: [1, 2]
+        3.0f, 4.0f  // channel 1: [3, 4]
     };
-    float w[] = {1.0f, 1.0f};
-    float b[] = {0.0f, 0.0f};
+    float w[] = { 1.0f, 1.0f };
+    float b[] = { 0.0f, 0.0f };
     float out[4];
 
     layernorm2d_cpu(in, out, 2, 1, 2, w, b, 0.0f);
 
     // Position (0,0): (1-2)/1 = -1, (3-2)/1 = 1
     CHECK_CLOSE(out[0], -1.0f, 1e-5f, "layernorm2d c0 (0,0)");
-    CHECK_CLOSE(out[2],  1.0f, 1e-5f, "layernorm2d c1 (0,0)");
+    CHECK_CLOSE(out[2], 1.0f, 1e-5f, "layernorm2d c1 (0,0)");
     // Position (0,1): (2-3)/1 = -1, (4-3)/1 = 1
     CHECK_CLOSE(out[1], -1.0f, 1e-5f, "layernorm2d c0 (0,1)");
-    CHECK_CLOSE(out[3],  1.0f, 1e-5f, "layernorm2d c1 (0,1)");
+    CHECK_CLOSE(out[3], 1.0f, 1e-5f, "layernorm2d c1 (0,1)");
 }
 
 // ---------------------------------------------------------------------------
@@ -180,8 +177,8 @@ static void test_rmsnorm_cpu() {
     // Input: [3, 4], rms = sqrt((9+16)/2) = sqrt(12.5)
     // inv_rms = 1/sqrt(12.5)
     // With w=[1,1], out[i] = in[i] / sqrt(12.5)
-    float in[] = {3.0f, 4.0f};
-    float w[]  = {1.0f, 1.0f};
+    float in[] = { 3.0f, 4.0f };
+    float w[] = { 1.0f, 1.0f };
     float out[2];
 
     rmsnorm_cpu(in, out, 2, w, 0.0f);
@@ -191,7 +188,7 @@ static void test_rmsnorm_cpu() {
     CHECK_CLOSE(out[1], 4.0f * inv_rms, 1e-5f, "rmsnorm [1]");
 
     // With scale weights
-    float w2[] = {2.0f, 0.5f};
+    float w2[] = { 2.0f, 0.5f };
     rmsnorm_cpu(in, out, 2, w2, 1e-6f);
     float inv_rms2 = 1.0f / sqrtf(12.5f + 1e-6f);
     CHECK_CLOSE(out[0], 3.0f * inv_rms2 * 2.0f, 1e-5f, "rmsnorm w/ scale [0]");
@@ -207,9 +204,9 @@ static void test_linear_cpu() {
     // in=[1, 2], w=[[1, 3], [2, 4]] (row-major: w[o*in+i])
     // out[0] = 1*1 + 2*3 = 7
     // out[1] = 1*2 + 2*4 = 10
-    float in[] = {1.0f, 2.0f};
-    float w[]  = {1.0f, 3.0f, 2.0f, 4.0f};  // [out_dim=2, in_dim=2]
-    float b[]  = {0.5f, -0.5f};
+    float in[] = { 1.0f, 2.0f };
+    float w[] = { 1.0f, 3.0f, 2.0f, 4.0f }; // [out_dim=2, in_dim=2]
+    float b[] = { 0.5f, -0.5f };
     float out[2];
 
     linear_cpu(in, out, 2, 2, w, b);
@@ -222,12 +219,12 @@ static void test_linear_cpu() {
     CHECK_CLOSE(out[1], 10.0f, 1e-5f, "linear [1] no bias");
 
     // Rectangular: in_dim=3, out_dim=2
-    float in3[] = {1.0f, 2.0f, 3.0f};
-    float w32[] = {1.0f, 0.0f, -1.0f,   // row 0: 1*1 + 0*2 + (-1)*3 = -2
-                   0.0f, 1.0f,  1.0f};  // row 1: 0*1 + 1*2 + 1*3 = 5
+    float in3[] = { 1.0f, 2.0f, 3.0f };
+    float w32[] = { 1.0f, 0.0f, -1.0f,  // row 0: 1*1 + 0*2 + (-1)*3 = -2
+                    0.0f, 1.0f, 1.0f }; // row 1: 0*1 + 1*2 + 1*3 = 5
     linear_cpu(in3, out, 3, 2, w32, nullptr);
     CHECK_CLOSE(out[0], -2.0f, 1e-5f, "linear rect [0]");
-    CHECK_CLOSE(out[1],  5.0f, 1e-5f, "linear rect [1]");
+    CHECK_CLOSE(out[1], 5.0f, 1e-5f, "linear rect [1]");
 }
 
 // ---------------------------------------------------------------------------
@@ -239,9 +236,9 @@ static void test_conv2d_cpu() {
     // 1x1 conv, 1 channel in, 1 channel out, 3x3 input, no padding, stride=1
     // This is effectively linear per-pixel with a scalar weight
     {
-        float in[9] = {1,2,3, 4,5,6, 7,8,9};  // [1, 3, 3]
-        float w[1] = {2.0f};  // [1, 1, 1, 1]
-        float b[1] = {1.0f};
+        float in[9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 }; // [1, 3, 3]
+        float w[1] = { 2.0f };                       // [1, 1, 1, 1]
+        float b[1] = { 1.0f };
         float out[9];
 
         conv2d_cpu(in, out, w, b, 1, 1, 3, 3, 1, 1, 1, 0);
@@ -253,9 +250,9 @@ static void test_conv2d_cpu() {
     // 3x3 conv, 1 channel, 1 filter, 3x3 input, no padding, stride=1
     // Output: 1x1
     {
-        float in[9] = {1,2,3, 4,5,6, 7,8,9};
-        float w[9] = {1,0,0, 0,1,0, 0,0,1};  // diagonal filter
-        float b[1] = {0.0f};
+        float in[9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        float w[9] = { 1, 0, 0, 0, 1, 0, 0, 0, 1 }; // diagonal filter
+        float b[1] = { 0.0f };
         float out[1];
 
         conv2d_cpu(in, out, w, b, 1, 1, 3, 3, 3, 3, 1, 0);
@@ -265,10 +262,10 @@ static void test_conv2d_cpu() {
 
     // 3x3 conv with padding=1, stride=1 — output same size as input
     {
-        float in[4] = {1, 2, 3, 4};  // [1, 2, 2]
+        float in[4] = { 1, 2, 3, 4 }; // [1, 2, 2]
         // All-ones 3x3 kernel
-        float w[9] = {1,1,1, 1,1,1, 1,1,1};
-        float b[1] = {0.0f};
+        float w[9] = { 1, 1, 1, 1, 1, 1, 1, 1, 1 };
+        float b[1] = { 0.0f };
         float out[4];
 
         conv2d_cpu(in, out, w, b, 1, 1, 2, 2, 3, 3, 1, 1);
@@ -278,10 +275,10 @@ static void test_conv2d_cpu() {
 
     // Stride=2 test
     {
-        float in[16];  // [1, 4, 4]
+        float in[16]; // [1, 4, 4]
         for (int i = 0; i < 16; i++) in[i] = (float)(i + 1);
-        float w[1] = {1.0f};  // 1x1 conv
-        float out[4];  // [1, 2, 2]
+        float w[1] = { 1.0f }; // 1x1 conv
+        float out[4];          // [1, 2, 2]
 
         conv2d_cpu(in, out, w, nullptr, 1, 1, 4, 4, 1, 1, 2, 0);
         CHECK_CLOSE(out[0], 1.0f, 1e-5f, "conv2d stride2 [0]");
@@ -293,10 +290,10 @@ static void test_conv2d_cpu() {
     // Depthwise (groups=channels) test
     {
         // 2 channels, 2 groups (depthwise), 2x2 input, 1x1 kernel
-        float in[8] = {1, 2, 3, 4,   // ch0: [[1,2],[3,4]]
-                       5, 6, 7, 8};   // ch1: [[5,6],[7,8]]
-        float w[2] = {2.0f, 3.0f};   // [2, 1, 1, 1] — one scalar per channel
-        float b[2] = {0.0f, 0.0f};
+        float in[8] = { 1, 2, 3, 4,   // ch0: [[1,2],[3,4]]
+                        5, 6, 7, 8 }; // ch1: [[5,6],[7,8]]
+        float w[2] = { 2.0f, 3.0f };  // [2, 1, 1, 1] — one scalar per channel
+        float b[2] = { 0.0f, 0.0f };
         float out[8];
 
         conv2d_cpu(in, out, w, b, 2, 2, 2, 2, 1, 1, 1, 0, 2);
@@ -309,8 +306,8 @@ static void test_conv2d_cpu() {
 
     // No bias (nullptr)
     {
-        float in[4] = {1, 2, 3, 4};
-        float w[1] = {1.0f};
+        float in[4] = { 1, 2, 3, 4 };
+        float w[1] = { 1.0f };
         float out[4];
         conv2d_cpu(in, out, w, nullptr, 1, 1, 2, 2, 1, 1, 1, 0);
         CHECK_CLOSE(out[0], 1.0f, 1e-5f, "conv2d no bias [0]");
@@ -352,7 +349,7 @@ static void test_silu() {
     CHECK_CLOSE(silu(-1.0f), -0.2689f, 1e-3f, "silu(-1)");
 
     // In-place version
-    float data[] = {0.0f, 1.0f, -1.0f};
+    float data[] = { 0.0f, 1.0f, -1.0f };
     silu_inplace(data, 3);
     CHECK_CLOSE(data[0], 0.0f, 1e-6f, "silu_inplace [0]");
     CHECK_CLOSE(data[1], 0.7311f, 1e-3f, "silu_inplace [1]");
@@ -362,7 +359,7 @@ static void test_silu() {
 static void test_softmax() {
     printf("test_softmax...\n");
 
-    float data[] = {1.0f, 2.0f, 3.0f};
+    float data[] = { 1.0f, 2.0f, 3.0f };
     softmax(data, 3);
 
     // Check sums to 1
@@ -379,7 +376,7 @@ static void test_softmax() {
     CHECK_CLOSE(data[2], expected, 1e-5f, "softmax [2] value");
 
     // Single element
-    float single[] = {42.0f};
+    float single[] = { 42.0f };
     softmax(single, 1);
     CHECK_CLOSE(single[0], 1.0f, 1e-5f, "softmax single");
 }
@@ -387,7 +384,7 @@ static void test_softmax() {
 static void test_hardswish() {
     printf("test_hardswish...\n");
 
-    float data[] = {-4.0f, -3.0f, 0.0f, 3.0f, 5.0f};
+    float data[] = { -4.0f, -3.0f, 0.0f, 3.0f, 5.0f };
     hardswish_inplace(data, 5);
 
     CHECK_CLOSE(data[0], 0.0f, 1e-5f, "hardswish(-4) = 0");
@@ -397,7 +394,7 @@ static void test_hardswish() {
     CHECK_CLOSE(data[4], 5.0f, 1e-5f, "hardswish(5) = 5");
 
     // Middle range: hardswish(1) = 1*(1+3)/6 = 4/6 = 0.6667
-    float mid[] = {1.0f};
+    float mid[] = { 1.0f };
     hardswish_inplace(mid, 1);
     CHECK_CLOSE(mid[0], 4.0f / 6.0f, 1e-4f, "hardswish(1) = 2/3");
 }
@@ -405,7 +402,7 @@ static void test_hardswish() {
 static void test_relu6() {
     printf("test_relu6...\n");
 
-    float data[] = {-2.0f, 0.0f, 3.0f, 6.0f, 10.0f};
+    float data[] = { -2.0f, 0.0f, 3.0f, 6.0f, 10.0f };
     relu6_inplace(data, 5);
 
     CHECK_CLOSE(data[0], 0.0f, 1e-5f, "relu6(-2) = 0");
@@ -418,7 +415,7 @@ static void test_relu6() {
 static void test_relu() {
     printf("test_relu...\n");
 
-    float data[] = {-2.0f, 0.0f, 3.0f, 100.0f};
+    float data[] = { -2.0f, 0.0f, 3.0f, 100.0f };
     relu_inplace(data, 4);
 
     CHECK_CLOSE(data[0], 0.0f, 1e-5f, "relu(-2) = 0");
@@ -439,9 +436,9 @@ static void test_mha_1q_cpu() {
     // softmax of single score = 1.0
     // out = 1.0 * [3, 4] = [3, 4]
     {
-        float q[] = {1.0f, 0.0f};
-        float k[] = {1.0f, 0.0f};
-        float v[] = {3.0f, 4.0f};
+        float q[] = { 1.0f, 0.0f };
+        float k[] = { 1.0f, 0.0f };
+        float v[] = { 3.0f, 4.0f };
         float out[2];
 
         mha_1q_cpu(q, k, v, out, 1, 2, 1);
@@ -454,9 +451,9 @@ static void test_mha_1q_cpu() {
     // scores: [1/sqrt(2), 0/sqrt(2)] = [0.707, 0]
     // After softmax: some distribution favoring first KV
     {
-        float q[] = {1.0f, 0.0f};
-        float k[] = {1.0f, 0.0f, 0.0f, 1.0f};  // 2 KV pairs
-        float v[] = {10.0f, 0.0f, 0.0f, 10.0f};
+        float q[] = { 1.0f, 0.0f };
+        float k[] = { 1.0f, 0.0f, 0.0f, 1.0f }; // 2 KV pairs
+        float v[] = { 10.0f, 0.0f, 0.0f, 10.0f };
         float out[2];
 
         mha_1q_cpu(q, k, v, out, 2, 2, 1);
@@ -470,9 +467,9 @@ static void test_mha_1q_cpu() {
 
     // Multi-head: D=4, n_heads=2, n_kv=1
     {
-        float q[] = {1, 0, 0, 1};       // head0=[1,0], head1=[0,1]
-        float k[] = {1, 0, 0, 1};       // head0=[1,0], head1=[0,1]
-        float v[] = {5, 6, 7, 8};       // head0=[5,6], head1=[7,8]
+        float q[] = { 1, 0, 0, 1 }; // head0=[1,0], head1=[0,1]
+        float k[] = { 1, 0, 0, 1 }; // head0=[1,0], head1=[0,1]
+        float v[] = { 5, 6, 7, 8 }; // head0=[5,6], head1=[7,8]
         float out[4];
 
         mha_1q_cpu(q, k, v, out, 1, 4, 2);
@@ -492,8 +489,8 @@ static void test_dot_product() {
 
     // Small: 4 elements (scalar tail only on AVX2)
     {
-        float a[] = {1, 2, 3, 4};
-        float b[] = {5, 6, 7, 8};
+        float a[] = { 1, 2, 3, 4 };
+        float b[] = { 5, 6, 7, 8 };
         float r = dot_product(a, b, 4);
         CHECK_CLOSE(r, 70.0f, 1e-5f, "dot4");
     }
@@ -501,16 +498,23 @@ static void test_dot_product() {
     // 8 elements (one AVX2 iteration, one NEON pair)
     {
         float a[8], b[8];
-        for (int i = 0; i < 8; i++) { a[i] = (float)(i + 1); b[i] = (float)(i + 1); }
+        for (int i = 0; i < 8; i++) {
+            a[i] = (float)(i + 1);
+            b[i] = (float)(i + 1);
+        }
         float r = dot_product(a, b, 8);
-        CHECK_CLOSE(r, 204.0f, 1e-4f, "dot8");  // sum(i^2, i=1..8) = 204
+        CHECK_CLOSE(r, 204.0f, 1e-4f, "dot8"); // sum(i^2, i=1..8) = 204
     }
 
     // 17 elements (tests unrolled + tail)
     {
         float a[17], b[17];
         float expected = 0;
-        for (int i = 0; i < 17; i++) { a[i] = (float)i * 0.1f; b[i] = (float)(16 - i) * 0.1f; expected += a[i] * b[i]; }
+        for (int i = 0; i < 17; i++) {
+            a[i] = (float)i * 0.1f;
+            b[i] = (float)(16 - i) * 0.1f;
+            expected += a[i] * b[i];
+        }
         float r = dot_product(a, b, 17);
         CHECK_CLOSE(r, expected, 1e-4f, "dot17");
     }
@@ -549,32 +553,32 @@ static void test_dequant_cache() {
     printf("test_dequant_cache...\n");
 
     struct ggml_init_params params = { 4 * 1024 * 1024, nullptr, true };
-    struct ggml_context* ctx = ggml_init(params);
+    struct ggml_context * ctx = ggml_init(params);
     ggml_backend_t backend = ggml_backend_cpu_init();
 
-    float data[] = {1.0f, 2.0f, 3.0f, 4.0f};
+    float data[] = { 1.0f, 2.0f, 3.0f, 4.0f };
     ggml_backend_buffer_t buf;
-    ggml_tensor* t = make_tensor(ctx, backend, GGML_TYPE_F32, 4, data, sizeof(data), &buf);
+    ggml_tensor * t = make_tensor(ctx, backend, GGML_TYPE_F32, 4, data, sizeof(data), &buf);
 
     DequantCache cache;
 
     // First access dequantizes
-    const float* p1 = cache.get(t);
+    const float * p1 = cache.get(t);
     CHECK(p1 != nullptr, "cache first access non-null");
     CHECK_CLOSE(p1[0], 1.0f, 1e-6f, "cache val[0]");
     CHECK_CLOSE(p1[3], 4.0f, 1e-6f, "cache val[3]");
 
     // Second access returns same pointer (cached)
-    const float* p2 = cache.get(t);
+    const float * p2 = cache.get(t);
     CHECK(p1 == p2, "cache returns same pointer");
 
     // nullptr returns nullptr
-    const float* p3 = cache.get(nullptr);
+    const float * p3 = cache.get(nullptr);
     CHECK(p3 == nullptr, "cache nullptr -> nullptr");
 
     // clear invalidates
     cache.clear();
-    const float* p4 = cache.get(t);
+    const float * p4 = cache.get(t);
     CHECK(p4 != nullptr, "cache after clear non-null");
     // pointer may differ since it's a new vector
 

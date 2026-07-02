@@ -50,9 +50,7 @@ struct Report {
     float cos_mean = 1.0f;
     std::vector<int64_t> shape;
 
-    bool is_pass(float cos_threshold = 0.999f) const {
-        return found && cos_min >= cos_threshold;
-    }
+    bool is_pass(float cos_threshold = 0.999f) const { return found && cos_min >= cos_threshold; }
 };
 
 class Ref {
@@ -60,38 +58,35 @@ public:
     Ref() = default;
     ~Ref() { clear(); }
 
-    Ref(const Ref&) = delete;
-    Ref& operator=(const Ref&) = delete;
+    Ref(const Ref &) = delete;
+    Ref & operator=(const Ref &) = delete;
 
-    bool load(const std::string& path);
+    bool load(const std::string & path);
 
-    bool has(const std::string& name) const {
-        return tensors_.count(name) > 0;
-    }
+    bool has(const std::string & name) const { return tensors_.count(name) > 0; }
 
-    std::pair<const float*, size_t> get_f32(const std::string& name) const {
+    std::pair<const float *, size_t> get_f32(const std::string & name) const {
         auto it = tensors_.find(name);
-        if (it == tensors_.end()) return {nullptr, 0};
-        return {it->second.data.data(), it->second.data.size()};
+        if (it == tensors_.end()) return { nullptr, 0 };
+        return { it->second.data.data(), it->second.data.size() };
     }
 
-    std::vector<int64_t> shape(const std::string& name) const {
+    std::vector<int64_t> shape(const std::string & name) const {
         auto it = tensors_.find(name);
         if (it == tensors_.end()) return {};
         return it->second.shape;
     }
 
-    Report compare(const std::string& name, const float* data, size_t n_elem,
-                   int row_dim = -1) const;
+    Report compare(const std::string & name, const float * data, size_t n_elem, int row_dim = -1) const;
 
     std::vector<std::string> tensor_names() const {
         std::vector<std::string> names;
         names.reserve(tensors_.size());
-        for (auto& kv : tensors_) names.push_back(kv.first);
+        for (auto & kv : tensors_) names.push_back(kv.first);
         return names;
     }
 
-    std::string meta(const std::string& key) const {
+    std::string meta(const std::string & key) const {
         auto it = metadata_.find(key);
         return it != metadata_.end() ? it->second : "";
     }
@@ -105,15 +100,18 @@ private:
     std::unordered_map<std::string, TensorData> tensors_;
     std::unordered_map<std::string, std::string> metadata_;
 
-    void clear() { tensors_.clear(); metadata_.clear(); }
+    void clear() {
+        tensors_.clear();
+        metadata_.clear();
+    }
 };
 
 // ── Implementation (header-only for easy integration) ────────────────
 
-inline bool Ref::load(const std::string& path) {
+inline bool Ref::load(const std::string & path) {
     // Minimal GGUF reader — just enough to extract F32 tensors.
     // Uses the gguf C API from ggml.
-    FILE* f = fopen(path.c_str(), "rb");
+    FILE * f = fopen(path.c_str(), "rb");
     if (!f) {
         fprintf(stderr, "crispembed_diff: cannot open %s\n", path.c_str());
         return false;
@@ -154,42 +152,124 @@ inline bool Ref::load(const std::string& path) {
         uint32_t vtype = 0;
         fread(&vtype, 4, 1, f);
         switch (vtype) {
-            case 0: { uint8_t v; fread(&v, 1, 1, f); break; }   // UINT8
-            case 1: { int8_t v; fread(&v, 1, 1, f); break; }    // INT8
-            case 2: { uint16_t v; fread(&v, 2, 1, f); break; }  // UINT16
-            case 3: { int16_t v; fread(&v, 2, 1, f); break; }   // INT16
-            case 4: { uint32_t v; fread(&v, 4, 1, f); break; }  // UINT32
-            case 5: { int32_t v; fread(&v, 4, 1, f); break; }   // INT32
-            case 6: { float v; fread(&v, 4, 1, f); break; }     // FLOAT32
-            case 7: { uint8_t v; fread(&v, 1, 1, f); break; }   // BOOL
-            case 8: {                                             // STRING
-                std::string v = read_string();
-                metadata_[key] = v;
-                break;
-            }
-            case 9: {                                             // ARRAY
-                uint32_t arr_type; fread(&arr_type, 4, 1, f);
-                uint64_t arr_n; fread(&arr_n, 8, 1, f);
-                // Skip array elements
-                for (uint64_t j = 0; j < arr_n; j++) {
-                    switch (arr_type) {
-                        case 0: case 1: case 7: { uint8_t v; fread(&v, 1, 1, f); break; }
-                        case 2: case 3: { uint16_t v; fread(&v, 2, 1, f); break; }
-                        case 4: case 5: { uint32_t v; fread(&v, 4, 1, f); break; }
-                        case 6: { float v; fread(&v, 4, 1, f); break; }
-                        case 8: read_string(); break;
-                        case 10: { uint64_t v; fread(&v, 8, 1, f); break; }  // UINT64
-                        case 11: { int64_t v; fread(&v, 8, 1, f); break; }   // INT64
-                        case 12: { double v; fread(&v, 8, 1, f); break; }    // FLOAT64
-                        default: break;
-                    }
+        case 0: {
+            uint8_t v;
+            fread(&v, 1, 1, f);
+            break;
+        } // UINT8
+        case 1: {
+            int8_t v;
+            fread(&v, 1, 1, f);
+            break;
+        } // INT8
+        case 2: {
+            uint16_t v;
+            fread(&v, 2, 1, f);
+            break;
+        } // UINT16
+        case 3: {
+            int16_t v;
+            fread(&v, 2, 1, f);
+            break;
+        } // INT16
+        case 4: {
+            uint32_t v;
+            fread(&v, 4, 1, f);
+            break;
+        } // UINT32
+        case 5: {
+            int32_t v;
+            fread(&v, 4, 1, f);
+            break;
+        } // INT32
+        case 6: {
+            float v;
+            fread(&v, 4, 1, f);
+            break;
+        } // FLOAT32
+        case 7: {
+            uint8_t v;
+            fread(&v, 1, 1, f);
+            break;
+        } // BOOL
+        case 8: { // STRING
+            std::string v = read_string();
+            metadata_[key] = v;
+            break;
+        }
+        case 9: { // ARRAY
+            uint32_t arr_type;
+            fread(&arr_type, 4, 1, f);
+            uint64_t arr_n;
+            fread(&arr_n, 8, 1, f);
+            // Skip array elements
+            for (uint64_t j = 0; j < arr_n; j++) {
+                switch (arr_type) {
+                case 0:
+                case 1:
+                case 7: {
+                    uint8_t v;
+                    fread(&v, 1, 1, f);
+                    break;
                 }
-                break;
+                case 2:
+                case 3: {
+                    uint16_t v;
+                    fread(&v, 2, 1, f);
+                    break;
+                }
+                case 4:
+                case 5: {
+                    uint32_t v;
+                    fread(&v, 4, 1, f);
+                    break;
+                }
+                case 6: {
+                    float v;
+                    fread(&v, 4, 1, f);
+                    break;
+                }
+                case 8:
+                    read_string();
+                    break;
+                case 10: {
+                    uint64_t v;
+                    fread(&v, 8, 1, f);
+                    break;
+                } // UINT64
+                case 11: {
+                    int64_t v;
+                    fread(&v, 8, 1, f);
+                    break;
+                } // INT64
+                case 12: {
+                    double v;
+                    fread(&v, 8, 1, f);
+                    break;
+                } // FLOAT64
+                default:
+                    break;
+                }
             }
-            case 10: { uint64_t v; fread(&v, 8, 1, f); break; }  // UINT64
-            case 11: { int64_t v; fread(&v, 8, 1, f); break; }   // INT64
-            case 12: { double v; fread(&v, 8, 1, f); break; }    // FLOAT64
-            default: break;
+            break;
+        }
+        case 10: {
+            uint64_t v;
+            fread(&v, 8, 1, f);
+            break;
+        } // UINT64
+        case 11: {
+            int64_t v;
+            fread(&v, 8, 1, f);
+            break;
+        } // INT64
+        case 12: {
+            double v;
+            fread(&v, 8, 1, f);
+            break;
+        } // FLOAT64
+        default:
+            break;
         }
     }
 
@@ -222,7 +302,7 @@ inline bool Ref::load(const std::string& path) {
     long data_start = aligned;
 
     // Read tensor data
-    for (auto& ti : infos) {
+    for (auto & ti : infos) {
         size_t n_elem = 1;
         for (auto d : ti.dims) n_elem *= (size_t)d;
 
@@ -242,8 +322,7 @@ inline bool Ref::load(const std::string& path) {
             td.data.resize(n_elem);
             for (size_t j = 0; j < n_elem; j++) td.data[j] = (float)ibuf[j];
         } else {
-            fprintf(stderr, "crispembed_diff: skipping tensor '%s' (type %u, not F32/I32)\n",
-                    ti.name.c_str(), ti.type);
+            fprintf(stderr, "crispembed_diff: skipping tensor '%s' (type %u, not F32/I32)\n", ti.name.c_str(), ti.type);
             continue;
         }
 
@@ -251,13 +330,11 @@ inline bool Ref::load(const std::string& path) {
     }
 
     fclose(f);
-    fprintf(stderr, "crispembed_diff: loaded %zu tensors from %s\n",
-            tensors_.size(), path.c_str());
+    fprintf(stderr, "crispembed_diff: loaded %zu tensors from %s\n", tensors_.size(), path.c_str());
     return true;
 }
 
-inline Report Ref::compare(const std::string& name, const float* data,
-                           size_t n_elem, int row_dim) const {
+inline Report Ref::compare(const std::string & name, const float * data, size_t n_elem, int row_dim) const {
     Report r;
     auto it = tensors_.find(name);
     if (it == tensors_.end()) {
@@ -267,7 +344,7 @@ inline Report Ref::compare(const std::string& name, const float* data,
     r.found = true;
     r.shape = it->second.shape;
 
-    const float* ref = it->second.data.data();
+    const float * ref = it->second.data.data();
     size_t ref_n = it->second.data.size();
     size_t cmp_n = std::min(n_elem, ref_n);
     r.n_elem = cmp_n;
@@ -293,7 +370,7 @@ inline Report Ref::compare(const std::string& name, const float* data,
     if (row_dim >= 0 && row_dim < (int)r.shape.size()) {
         D = (size_t)r.shape[row_dim];
     } else if (!r.shape.empty()) {
-        D = (size_t)r.shape.back();  // last dim
+        D = (size_t)r.shape.back(); // last dim
     }
     if (D == 0) D = 1;
 
@@ -306,17 +383,15 @@ inline Report Ref::compare(const std::string& name, const float* data,
     double cos_sum = 0;
     float cos_worst = 2.0f;
     for (size_t row = 0; row < n_rows; row++) {
-        const float* a = data + row * D;
-        const float* b = ref + row * D;
+        const float * a = data + row * D;
+        const float * b = ref + row * D;
         double dot = 0, na = 0, nb = 0;
         for (size_t j = 0; j < D; j++) {
             dot += (double)a[j] * b[j];
             na += (double)a[j] * a[j];
             nb += (double)b[j] * b[j];
         }
-        float cos = (na > 1e-18 && nb > 1e-18)
-            ? (float)(dot / (std::sqrt(na) * std::sqrt(nb)))
-            : 0.0f;
+        float cos = (na > 1e-18 && nb > 1e-18) ? (float)(dot / (std::sqrt(na) * std::sqrt(nb))) : 0.0f;
         cos_sum += cos;
         if (cos < cos_worst) cos_worst = cos;
     }

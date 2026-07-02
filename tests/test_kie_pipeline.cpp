@@ -21,7 +21,7 @@ int main(int argc, char ** argv) {
     const char * ner_model = argv[1];
     const char * det_model = argv[2];
     const char * rec_model = argv[3];
-    const char * image     = argv[4];
+    const char * image = argv[4];
     const char * labels_str = argc > 5 ? argv[5] : "total,date,vendor";
 
     printf("KIE pipeline test\n");
@@ -51,8 +51,7 @@ int main(int argc, char ** argv) {
     }
 
     printf("Extracting fields...\n\n");
-    crispembed_kie_result res = crispembed_kie_extract(
-        ctx, image, labels, n_labels, 0.3f);
+    crispembed_kie_result res = crispembed_kie_extract(ctx, image, labels, n_labels, 0.3f);
 
     printf("OCR: %d regions, confidence=%.2f\n", res.n_ocr_regions, res.ocr_confidence);
     if (res.ocr_text && res.ocr_text[0]) {
@@ -61,11 +60,8 @@ int main(int argc, char ** argv) {
 
     printf("%d fields extracted:\n", res.n_fields);
     for (int i = 0; i < res.n_fields; i++) {
-        printf("  %s = \"%s\"  (score=%.3f, bbox=[%.0f,%.0f,%.0f,%.0f])\n",
-               res.fields[i].label, res.fields[i].value,
-               res.fields[i].score,
-               res.fields[i].x, res.fields[i].y,
-               res.fields[i].w, res.fields[i].h);
+        printf("  %s = \"%s\"  (score=%.3f, bbox=[%.0f,%.0f,%.0f,%.0f])\n", res.fields[i].label, res.fields[i].value,
+               res.fields[i].score, res.fields[i].x, res.fields[i].y, res.fields[i].w, res.fields[i].h);
     }
 
     crispembed_kie_free(ctx);

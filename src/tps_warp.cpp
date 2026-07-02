@@ -50,23 +50,23 @@ static inline float tps_basis(float r) {
 // A is row-major M x M, B is row-major M x nrhs.
 // On success, B is overwritten with the solution. Returns true on success.
 
-static bool solve_linear(std::vector<double> & A, std::vector<double> & B,
-                         int M, int nrhs) {
+static bool solve_linear(std::vector<double> & A, std::vector<double> & B, int M, int nrhs) {
     for (int col = 0; col < M; col++) {
         // Partial pivoting
         int pivot = col;
         double best = std::abs(A[col * M + col]);
         for (int r = col + 1; r < M; r++) {
             double v = std::abs(A[r * M + col]);
-            if (v > best) { best = v; pivot = r; }
+            if (v > best) {
+                best = v;
+                pivot = r;
+            }
         }
         if (best < 1e-12) return false; // singular
 
         if (pivot != col) {
-            for (int c = col; c < M; c++)
-                std::swap(A[col * M + c], A[pivot * M + c]);
-            for (int c = 0; c < nrhs; c++)
-                std::swap(B[col * nrhs + c], B[pivot * nrhs + c]);
+            for (int c = col; c < M; c++) std::swap(A[col * M + c], A[pivot * M + c]);
+            for (int c = 0; c < nrhs; c++) std::swap(B[col * nrhs + c], B[pivot * nrhs + c]);
         }
 
         double div = A[col * M + col];
@@ -77,10 +77,8 @@ static bool solve_linear(std::vector<double> & A, std::vector<double> & B,
             if (r == col) continue;
             double factor = A[r * M + col];
             if (factor == 0.0) continue;
-            for (int c = col; c < M; c++)
-                A[r * M + c] -= factor * A[col * M + c];
-            for (int c = 0; c < nrhs; c++)
-                B[r * nrhs + c] -= factor * B[col * nrhs + c];
+            for (int c = col; c < M; c++) A[r * M + c] -= factor * A[col * M + c];
+            for (int c = 0; c < nrhs; c++) B[r * nrhs + c] -= factor * B[col * nrhs + c];
         }
     }
     return true;
@@ -90,9 +88,7 @@ static bool solve_linear(std::vector<double> & A, std::vector<double> & B,
 // Public API
 // ---------------------------------------------------------------------------
 
-tps_model * tps_solve(const float * src_x, const float * src_y,
-                      const float * dst_x, const float * dst_y,
-                      int n) {
+tps_model * tps_solve(const float * src_x, const float * src_y, const float * dst_x, const float * dst_y, int n) {
     if (n < 3 || !src_x || !src_y || !dst_x || !dst_y) return nullptr;
 
     const int M = n + 3; // system size
@@ -153,7 +149,7 @@ tps_model * tps_solve(const float * src_x, const float * src_y,
         model->wx[i] = (float)B[i * 2 + 0];
         model->wy[i] = (float)B[i * 2 + 1];
     }
-    model->ax[0] = (float)B[n * 2 + 0]; // constant
+    model->ax[0] = (float)B[n * 2 + 0];       // constant
     model->ax[1] = (float)B[(n + 1) * 2 + 0]; // x coefficient
     model->ax[2] = (float)B[(n + 2) * 2 + 0]; // y coefficient
 
@@ -164,9 +160,7 @@ tps_model * tps_solve(const float * src_x, const float * src_y,
     return model;
 }
 
-void tps_map_point(const tps_model * model,
-                   float x, float y,
-                   float * out_x, float * out_y) {
+void tps_map_point(const tps_model * model, float x, float y, float * out_x, float * out_y) {
     if (!model) return;
 
     float fx = model->ax[0] + model->ax[1] * x + model->ax[2] * y;
@@ -189,16 +183,14 @@ void tps_map_point(const tps_model * model,
 // interpolation introduces < 0.5px error in practice.
 static constexpr int TPS_GRID_STEP = 8;
 
-void tps_warp(const uint8_t * src, int src_w, int src_h,
-              const tps_model * model,
-              uint8_t * dst, int dst_w, int dst_h,
+void tps_warp(const uint8_t * src, int src_w, int src_h, const tps_model * model, uint8_t * dst, int dst_w, int dst_h,
               uint8_t bg) {
     if (!src || !model || !dst) return;
 
     // Pre-compute displacement on a coarse grid to avoid O(W*H*N) TPS evaluations.
     // Grid covers [0..dst_w] × [0..dst_h] with step TPS_GRID_STEP.
-    int gw = (dst_w  + TPS_GRID_STEP - 1) / TPS_GRID_STEP + 1;
-    int gh = (dst_h  + TPS_GRID_STEP - 1) / TPS_GRID_STEP + 1;
+    int gw = (dst_w + TPS_GRID_STEP - 1) / TPS_GRID_STEP + 1;
+    int gh = (dst_h + TPS_GRID_STEP - 1) / TPS_GRID_STEP + 1;
     std::vector<float> gdx(gw * gh), gdy(gw * gh);
     for (int gy = 0; gy < gh; gy++) {
         float wy = (float)(gy * TPS_GRID_STEP);
@@ -214,46 +206,42 @@ void tps_warp(const uint8_t * src, int src_w, int src_h,
     // Render: bilinearly interpolate the coarse grid for each output pixel.
     for (int yo = 0; yo < dst_h; yo++) {
         float gy_f = (float)yo / TPS_GRID_STEP;
-        int   gy0  = (int)gy_f;
-        int   gy1  = std::min(gy0 + 1, gh - 1);
+        int gy0 = (int)gy_f;
+        int gy1 = std::min(gy0 + 1, gh - 1);
         float gy_t = gy_f - gy0;
 
         for (int xo = 0; xo < dst_w; xo++) {
             float gx_f = (float)xo / TPS_GRID_STEP;
-            int   gx0  = (int)gx_f;
-            int   gx1  = std::min(gx0 + 1, gw - 1);
+            int gx0 = (int)gx_f;
+            int gx1 = std::min(gx0 + 1, gw - 1);
             float gx_t = gx_f - gx0;
 
-            float sx = (1.0f - gy_t) * ((1.0f - gx_t) * gdx[gy0*gw + gx0] + gx_t * gdx[gy0*gw + gx1])
-                     +         gy_t  * ((1.0f - gx_t) * gdx[gy1*gw + gx0] + gx_t * gdx[gy1*gw + gx1]);
-            float sy = (1.0f - gy_t) * ((1.0f - gx_t) * gdy[gy0*gw + gx0] + gx_t * gdy[gy0*gw + gx1])
-                     +         gy_t  * ((1.0f - gx_t) * gdy[gy1*gw + gx0] + gx_t * gdy[gy1*gw + gx1]);
+            float sx = (1.0f - gy_t) * ((1.0f - gx_t) * gdx[gy0 * gw + gx0] + gx_t * gdx[gy0 * gw + gx1]) +
+                       gy_t * ((1.0f - gx_t) * gdx[gy1 * gw + gx0] + gx_t * gdx[gy1 * gw + gx1]);
+            float sy = (1.0f - gy_t) * ((1.0f - gx_t) * gdy[gy0 * gw + gx0] + gx_t * gdy[gy0 * gw + gx1]) +
+                       gy_t * ((1.0f - gx_t) * gdy[gy1 * gw + gx0] + gx_t * gdy[gy1 * gw + gx1]);
 
-            if (sx < -0.5f || sy < -0.5f ||
-                sx > src_w - 0.5f || sy > src_h - 0.5f) {
+            if (sx < -0.5f || sy < -0.5f || sx > src_w - 0.5f || sy > src_h - 0.5f) {
                 dst[yo * dst_w + xo] = bg;
                 continue;
             }
 
             int x0 = std::max(0, std::min((int)std::floor(sx), src_w - 1));
-            int x1 = std::max(0, std::min(x0 + 1,             src_w - 1));
+            int x1 = std::max(0, std::min(x0 + 1, src_w - 1));
             int y0 = std::max(0, std::min((int)std::floor(sy), src_h - 1));
-            int y1 = std::max(0, std::min(y0 + 1,             src_h - 1));
+            int y1 = std::max(0, std::min(y0 + 1, src_h - 1));
             float fx = sx - std::floor(sx);
             float fy = sy - std::floor(sy);
 
-            float v = (1.0f - fy) * ((1.0f - fx) * src[y0*src_w + x0] + fx * src[y0*src_w + x1])
-                    +         fy  * ((1.0f - fx) * src[y1*src_w + x0] + fx * src[y1*src_w + x1]);
+            float v = (1.0f - fy) * ((1.0f - fx) * src[y0 * src_w + x0] + fx * src[y0 * src_w + x1]) +
+                      fy * ((1.0f - fx) * src[y1 * src_w + x0] + fx * src[y1 * src_w + x1]);
             dst[yo * dst_w + xo] = (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));
         }
     }
 }
 
-int tps_warp_points(const uint8_t * src, int src_w, int src_h,
-                    const float * src_x, const float * src_y,
-                    const float * dst_x, const float * dst_y,
-                    int n_points,
-                    uint8_t * dst, int dst_w, int dst_h,
+int tps_warp_points(const uint8_t * src, int src_w, int src_h, const float * src_x, const float * src_y,
+                    const float * dst_x, const float * dst_y, int n_points, uint8_t * dst, int dst_w, int dst_h,
                     uint8_t bg) {
     tps_model * model = tps_solve(src_x, src_y, dst_x, dst_y, n_points);
     if (!model) return 1;
