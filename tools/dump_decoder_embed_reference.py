@@ -34,8 +34,11 @@ def main():
     from transformers import AutoModel, AutoTokenizer
 
     print(f"Loading {args.model} ...")
-    tok = AutoTokenizer.from_pretrained(args.model)
-    model = AutoModel.from_pretrained(args.model, dtype=torch.float32).eval()
+    # trust_remote_code: BidirLM-Omni ships custom modeling code and otherwise blocks on an
+    # interactive "run custom code? [y/N]" prompt in headless (Kaggle) runs. Qwen3-Embedding
+    # doesn't need it but is unaffected.
+    tok = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
+    model = AutoModel.from_pretrained(args.model, dtype=torch.float32, trust_remote_code=True).eval()
 
     # Qwen3-Embedding pools the LAST token; the tokenizer appends the EOS the model
     # pools. Encode the raw text (no instruction — crispembed_encode gets a plain string).
