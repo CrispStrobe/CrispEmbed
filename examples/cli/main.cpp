@@ -14,6 +14,7 @@
 #include "hmer_ocr.h"
 #include "bttr_ocr.h"
 #include "scan_cleanup.h"
+#include "nafnet_denoise.h"
 #include "pdf_info.h"
 
 // stb_image for --detect image loading
@@ -133,6 +134,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --tbsrn-sr FILE  standalone TBSRN text-line SR: upscale text crop, write PPM to stdout\n");
     fprintf(stderr, "                   (needs --tbsrn-model PATH: TBSRN GGUF, Telescope, fixed 4x)\n");
     fprintf(stderr, "  --tbsrn-model PATH TBSRN text-line super-resolution GGUF (used with --tbsrn-sr)\n");
+    fprintf(stderr, "  --nafnet-denoise FILE standalone NAFNet denoise (the --denoise pipeline engine): write PPM to stdout\n");
+    fprintf(stderr, "                   (needs --nafnet-model PATH: NAFNet-SIDD GGUF)\n");
+    fprintf(stderr, "  --nafnet-model PATH NAFNet denoising GGUF (used with --nafnet-denoise)\n");
     fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
     fprintf(stderr, "  --ocr-rec MODEL  general OCR: text recognition model (TrOCR, e.g. trocr-printed)\n");
     fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
@@ -218,6 +222,8 @@ int main(int argc, char ** argv) {
     std::string restormer_path;         // --restormer FILE: standalone Restormer processing
     std::string scunet_model;           // --scunet-model MODEL: SCUNet denoising GGUF
     std::string scunet_path;            // --scunet-denoise FILE: standalone SCUNet denoising
+    std::string nafnet_model;           // --nafnet-model MODEL: NAFNet denoising GGUF
+    std::string nafnet_path;            // --nafnet-denoise FILE: standalone NAFNet denoising
     std::string instructir_model;       // --instructir-model MODEL: InstructIR restoration GGUF
     std::string instructir_path;        // --instructir FILE: standalone InstructIR processing
     int instructir_task = 0;            // --instructir-task N: task 0-6
@@ -390,6 +396,10 @@ int main(int argc, char ** argv) {
             scunet_model = argv[++i];
         } else if (strcmp(argv[i], "--scunet-denoise") == 0 && i + 1 < argc) {
             scunet_path = argv[++i];
+        } else if (strcmp(argv[i], "--nafnet-model") == 0 && i + 1 < argc) {
+            nafnet_model = argv[++i];
+        } else if (strcmp(argv[i], "--nafnet-denoise") == 0 && i + 1 < argc) {
+            nafnet_path = argv[++i];
         } else if (strcmp(argv[i], "--instructir-model") == 0 && i + 1 < argc) {
             instructir_model = argv[++i];
         } else if (strcmp(argv[i], "--instructir") == 0 && i + 1 < argc) {
@@ -712,6 +722,28 @@ int main(int argc, char ** argv) {
         crispembed_scunet_free_image(out);
         return 0;
     }
+    if (!nafnet_path.empty()) {
+        // Standalone NAFNet denoiser (the same engine --denoise runs in the OCR
+        // pipeline), exposed here so its output image can be inspected/scored.
+        if (nafnet_model.empty()) {
+            fprintf(stderr, "error: --nafnet-denoise requires --nafnet-model <model>\n");
+            return 1;
+        }
+        int w, h, ch;
+        unsigned char * data = stbi_load(nafnet_path.c_str(), &w, &h, &ch, 3);
+        if (!data) { fprintf(stderr, "error: cannot load %s\n", nafnet_path.c_str()); return 1; }
+        nafnet_context * nctx = nafnet_init(nafnet_model.c_str(), n_threads);
+        if (!nctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load NAFNet model '%s'\n", nafnet_model.c_str()); return 1; }
+        std::vector<uint8_t> out((size_t)w * h * 3);
+        int rc = nafnet_process(nctx, data, w, h, out.data());
+        stbi_image_free(data);
+        nafnet_free(nctx);
+        if (rc != 0) { fprintf(stderr, "error: NAFNet denoising failed\n"); return 1; }
+        // Write result as PPM (RGB) to stdout
+        printf("P6\n%d %d\n255\n", w, h);
+        fwrite(out.data(), 1, out.size(), stdout);
+        return 0;
+    }
     if (!instructir_path.empty()) {
         if (instructir_model.empty()) {
             fprintf(stderr, "error: --instructir requires --instructir-model <model>\n");
@@ -788,9 +820,14 @@ int main(int argc, char ** argv) {
         scan_cleanup_free(sctx);
         if (rc != 0 || !out) { fprintf(stderr, "error: scan cleanup failed\n"); return 1; }
         if (json_output) {
+            // Programmatic: dims only on stdout (no image), preserves the JSON contract.
             printf("{\"width\":%d,\"height\":%d,\"original_width\":%d,\"original_height\":%d}\n", ow, oh, w, h);
         } else {
-            printf("cleaned: %dx%d -> %dx%d\n", w, h, ow, oh);
+            // Emit the cleaned image as PPM (RGB) to stdout, like the other
+            // preprocessors; human-readable info goes to stderr.
+            fprintf(stderr, "cleaned: %dx%d -> %dx%d\n", w, h, ow, oh);
+            printf("P6\n%d %d\n255\n", ow, oh);
+            fwrite(out, 1, (size_t)ow * oh * 3, stdout);
         }
         scan_cleanup_free_image(out);
         return 0;
