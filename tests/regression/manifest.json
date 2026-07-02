@@ -542,6 +542,29 @@
       }
     },
     {
+      "name": "face_detect",
+      "engine": "cnn_embed",
+      "diff_only": true,
+      "_comment": "SCRFD face detection (cnn_embed, no --ocr): parity vs an independent insightface-SCRFD reference (tools/dump_face_reference.py over det_10g.onnx). Guards the count + bbox/landmark pixel error; the harness emits a synthetic detection cos_min (1.0 pass / 0.0 fail) at a 12px tolerance (letterbox/resize differs slightly from insightface; engine matches within 2.45px). A graph-scramble regression yields wrong/zero detections. Fixture face.png is a FLUX-generated synthetic face (tests/regression/images/face.png), passed via diff.args.",
+      "gguf": {
+        "repo": "cstr/scrfd-det-10g-GGUF",
+        "file": "scrfd-det-10g.gguf",
+        "revision": "main",
+        "approx_size_mb": 16
+      },
+      "diff": {
+        "binary": "test-face-diff",
+        "args": ["tests/regression/images/face.png"],
+        "ref": {
+          "repo": "cstr/scrfd-det-10g-GGUF",
+          "file": "face-ref.gguf"
+        },
+        "thresholds": {
+          "detection": 0.5
+        }
+      }
+    },
+    {
       "name": "vit_embed",
       "engine": "vit_embed",
       "diff_only": true,

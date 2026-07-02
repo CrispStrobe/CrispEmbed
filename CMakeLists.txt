@@ -552,6 +552,9 @@ target_link_libraries(test-vit-embed-diff PRIVATE crispembed)
 add_executable(test-punct-diff tests/test_punct_diff.cpp)
 target_link_libraries(test-punct-diff PRIVATE crispembed)
 
+add_executable(test-face-diff tests/test_face_diff.cpp)
+target_link_libraries(test-face-diff PRIVATE crispembed)
+
 add_executable(test-pdf-info tests/test_pdf_info.cpp)
 target_link_libraries(test-pdf-info PRIVATE crispembed)
 
