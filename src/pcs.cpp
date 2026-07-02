@@ -598,12 +598,30 @@ static PCSResult pcs_run(pcs_context & ctx, const std::vector<int> & token_ids) 
 // Public API
 // ---------------------------------------------------------------------------
 
-// Cache FC head weights at init (avoids per-call ggml_backend_tensor_get)
+// Cache FC head weights at init (avoids per-call ggml_backend_tensor_get).
+//
+// Dequantizes if needed: the q4_k/q4_0 converter quantizes some head matrices
+// (head.{post,pre,sbd,tc}.fc*.weight), so a raw F32 read of `n*sizeof(float)`
+// bytes overruns `ggml_nbytes(t)` and asserts "tensor read out of bounds" (the
+// shipped-default q4_k crash). We read the tensor's native bytes and dequantize
+// per row via the type's `to_float` trait — correct for F32, F16, and any
+// block-quantized type. Rows are ne[0]-long and block-quantized independently in
+// GGUF, so the stride is ggml_row_size() (never t->nb[], wrong for quantized).
 static void cache_tensor(ggml_tensor * t, std::vector<float> & buf) {
     if (!t) return;
-    int64_t n = ggml_nelements(t);
+    const int64_t n = ggml_nelements(t);
     buf.resize(n);
-    ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
+        return;
+    }
+    const int64_t ne0 = t->ne[0];
+    const int64_t n_rows = ne0 > 0 ? n / ne0 : 0;
+    const size_t row_size = ggml_row_size(t->type, ne0);
+    std::vector<uint8_t> raw(ggml_nbytes(t));
+    ggml_backend_tensor_get(t, raw.data(), 0, raw.size());
+    const ggml_type_traits * tr = ggml_get_type_traits(t->type);
+    for (int64_t r = 0; r < n_rows; r++) tr->to_float(raw.data() + (size_t)r * row_size, buf.data() + r * ne0, ne0);
 }
 
 static void pcs_cache_fc_weights(pcs_context & ctx) {
