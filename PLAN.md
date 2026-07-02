@@ -297,7 +297,16 @@ code expression is. Never read/paste unpaper's code into ours.
   wedges at corner boundaries after whitening; CER unchanged so only the image
   caught it), so reverted. Pure-white fill is the robust choice (1.0 = max, can't
   brighten → stays uniform through whitening); documented in-code.
-- [ ] **4. grayfilter / blurfilter** — clear faint gray haze / light smudges to white.
+- [x] **4. grayfilter / blurfilter — NOT NEEDED (subsumed by our whitening).**
+  Evidence: the harness's faint-haze degradation (soft light-gray veil) is fully
+  cleaned by the existing morphological-CLOSING whitening — output background is
+  pristine white and OCR CER is 0.010 (degraded 0.008, i.e. faint haze doesn't
+  even hurt OCR). unpaper needs a separate grayfilter because it has no
+  illumination-correction; our closing-whitening already does illumination
+  flattening, which subsumes grayfilter AND blurfilter. Implementing a grayfilter
+  on top would add code + anti-aliased-text-erosion risk for ~0 benefit, so it is
+  deliberately skipped. (Dark *stains* — near-black, not faint gray — are a
+  separate case handled by blackfilter/despeckle, not grayfilter.)
 - [ ] **5. 2-up page splitting (layout detection)** — split double-page book spreads
   into two pages (biggest strategic win for book scans; we have nothing).
 - [ ] **6. content-mask detection + centering / border alignment** — normalize page
