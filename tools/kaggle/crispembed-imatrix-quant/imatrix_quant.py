@@ -53,7 +53,11 @@ DEFAULT_BATCH = [
     "mxbai-embed-large-v1", "multilingual-e5-base", "multilingual-e5-small",
     "nomic-embed-text-v1.5", "nomic-embed-text-v2-moe", "arctic-embed-l-v2",
     "gte-base-en-v1.5", "gte-large-en-v1.5", "octen-0.6b", "f2llm-v2-0.6b",
-    "qwen3-embed-0.6b", "embeddinggemma-300m", "pixie-rune-v1",
+    "qwen3-embed-0.6b", "pixie-rune-v1",
+    # embeddinggemma-300m EXCLUDED: crispembed-quantize corrupts its ST Dense
+    # projection (dense.0/dense.1 → q8_0) so the output GGUF fails to load
+    # ("tensor read out of bounds" in load_decoder_model). Needs a keep-F32 guard
+    # for dense.* in tools/quantize.cpp before it can be added back.
 ]
 RUN = [m.strip() for m in os.environ.get("MODELS", "").split(",") if m.strip()] or DEFAULT_BATCH
 

@@ -423,25 +423,43 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   harness sources each model's existing full-precision GGUF from its `cstr/*-GGUF`
   repo (auto-detected), calibrates, quantizes q4_k/iq4_xs +imatrix, A/B vs the
   gold, uploads under DISTINCT names (never clobbering baselines) + `.imatrix` +
-  `-imatrix-ab.txt`. First 5 (cos vs full-precision gold, Kaggle CPU):
+  `-imatrix-ab.txt`. **20 models done** (cos vs full-precision gold, Kaggle CPU;
+  q8_0 ~0.9998 reference for all). Winner = best-small; ★ = IQ4_XS wins:
 
-  | model | q4_k base | q4_k+im | iq4_xs+im | default now |
+  | model | q4_k base | q4_k+im | iq4_xs+im | winner |
   |---|---|---|---|---|
-  | lfm2-embed    | —      | 0.9912 | 0.9889 | q4_k-imatrix |
-  | jina-v5-nano  | —      | 0.9903 | 0.9887 | q4_k-imatrix |
-  | jina-v5-small | 0.9792 | 0.9901 | 0.9887 | q4_k-imatrix |
-  | bge-m3        | 0.9702 | 0.9702 | **0.9811** | iq4_xs |
-  | e5-large      | 0.9813 | 0.9836 | **0.9896** | iq4_xs |
+  | lfm2-embed             | 0.9869 | 0.9912 | 0.9889 | q4_k |
+  | jina-v5-nano           | 0.9868 | 0.9908 | 0.9893 | q4_k |
+  | jina-v5-small          | 0.9792 | 0.9901 | 0.9887 | q4_k |
+  | octen-0.6b             | 0.9553 | 0.9759 | 0.9751 | q4_k |
+  | qwen3-embed-0.6b       | 0.9491 | 0.9794 | 0.9758 | q4_k |
+  | f2llm-v2-0.6b          | 0.6831 | 0.8303 | 0.8150 | q4_k (poor — keep q8_0) |
+  | bge-m3                 | 0.9667 | 0.9702 | 0.9811 | ★iq4_xs |
+  | e5-large              | 0.9813 | 0.9836 | 0.9896 | ★iq4_xs |
+  | bge-large-en-v1.5      | 0.9883 | 0.9904 | 0.9899 | q4_k |
+  | bge-base-en-v1.5       | 0.9831 | 0.9876 | 0.9896 | ★iq4_xs |
+  | bge-small-en-v1.5      | 0.9844 | 0.9860 | 0.9901 | ★iq4_xs |
+  | mxbai-embed-large-v1   | 0.9879 | 0.9905 | 0.9906 | ★iq4_xs |
+  | multilingual-e5-base   | 0.9665 | 0.9726 | 0.9855 | ★iq4_xs |
+  | multilingual-e5-small  | 0.9886 | 0.9897 | 0.9923 | ★iq4_xs |
+  | nomic-embed-text-v1.5  | 0.8370 | 0.8443 | 0.9054 | ★iq4_xs (poor — keep q8_0) |
+  | nomic-embed-text-v2-moe| 0.9085 | 0.9085 | 0.9313 | ★iq4_xs |
+  | arctic-embed-l-v2      | 0.9395 | 0.9482 | 0.9671 | ★iq4_xs |
+  | gte-base-en-v1.5       | 0.9620 | 0.9654 | 0.9760 | ★iq4_xs |
+  | gte-large-en-v1.5      | 0.9778 | 0.9812 | 0.9826 | ★iq4_xs |
+  | pixie-rune-v1          | 0.9366 | 0.9480 | 0.9689 | ★iq4_xs |
 
-  imatrix reliably lifts 4-bit (largest gain where the model is most
-  quant-sensitive, e.g. jina-small q4_k +0.0109); IQ4_XS+imatrix is best-small on
-  the XLM-R encoders. **Registry defaults repointed to the per-model A/B winner**
-  (`model_mgr.cpp`; `-q4k` now serves the imatrix build; `-iq4xs`/`-q8` aliases
-  added; e5-large's old 2.2 GB F32 default → `-f32`).
-- TODO (follow-ons): wire the remaining engines' schedulers (C8); extend the batch
-  to the rest of the embedding roster (bge/e5/nomic/gte/arctic/octen/qwen3-embed/
-  embeddinggemma/…); domain-matched calibration corpora; retrieval A/B via
-  `tests/bench_rag.py`.
+  imatrix always lifts 4-bit; **IQ4_XS+imatrix wins on the XLM-R/BERT encoders**
+  (smaller AND higher cos), **q4_k+imatrix on the decoder embedders** (Qwen3/LFM2).
+  GTE `NewModel` arch and nomic-v2-MoE both worked. **embeddinggemma-300m EXCLUDED**
+  — `crispembed-quantize` corrupts its ST Dense projection (needs a `dense.*`
+  keep-F32 guard; see `LEARNINGS.md`). f2llm/nomic-v1.5 quantize poorly at 4-bit
+  even with imatrix → keep q8_0.
+- Registry defaults for the FIRST 5 already repointed to the A/B winner
+  (`model_mgr.cpp`; `-q4k`→imatrix, `-iq4xs`/`-q8` aliases). **TODO:** repoint the
+  other 15 (winner column above; keep q8_0 for f2llm/nomic-v1.5); a `dense.*`
+  quantizer guard to unblock embeddinggemma; C8 wire remaining engine schedulers;
+  domain-matched calibration; retrieval A/B via `tests/bench_rag.py`.
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
 `add_bos_token`, `add_eos_token` into GGUF metadata (llama.cpp convention) instead
