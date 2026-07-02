@@ -768,11 +768,17 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
 - **decoder_embed — CLEAN, CLOSED (Gap 4).** `test_decoder_embed_diff.cpp` (crispembed_encode,
   last-token pool) vs independent Qwen3-Embedding-0.6B HF ref: cos 0.9993 (q8_0-vs-f32). Ref
   uploaded to `cstr/qwen3-embed-0.6b-GGUF`, wired `diff_only`, run_one PASS. Added to Kaggle kernel.
-- **bidirlm (text) — Kaggle run 1: dump_failed → fixed, re-queued (Gap 4).** 2.5B; added to
-  `crispembed_ref_gen.py` reusing test-decoder-embed-diff (--pooling mean). First GPU run (chr1s4,
-  v5) failed at dump on `Do you wish to run the custom code? [y/N]` — BidirLM-Omni ships custom
-  modeling code; added `trust_remote_code=True` to the dumper. Re-pushed to retry. (Same run:
-  decoder_embed dumped+verified+uploaded OK on CUDA — double-confirms the local cos 0.9993.)
+- **bidirlm (text) — BLOCKED by a Kaggle-image transformers bug (Gap 4).** 2.5B; added to
+  `crispembed_ref_gen.py` reusing test-decoder-embed-diff (--pooling mean). Three GPU runs (chr1s4
+  v5/v6/v7): v5 blocked on the `run custom code? [y/N]` prompt → added `trust_remote_code=True`;
+  v6/v7 then hit a hard transformers bug in the Kaggle image loading BidirLM's Qwen2 tokenizer —
+  `TokenizersBackend._patch_mistral_regex() got multiple values for keyword argument
+  'fix_mistral_regex'` (both fast AND `use_fast=False` route through it). NOT our code/engine;
+  decoder_embed (also Qwen2-family) passes on the same image, so it's BidirLM-tokenizer-config +
+  this transformers build. Fix options: pin transformers in the kernel (risks a torch reinstall the
+  regime avoids), or dump bidirlm LOCALLY (local transformers 4.57.6 is unaffected) — 2.7GB gguf +
+  ~5GB HF model, borderline-local. Kaggle ref-gen infra is set up + committed; bidirlm left queued.
+  (Same runs: decoder_embed dumped+verified+uploaded OK on CUDA — double-confirms local cos 0.9993.)
 - **fireredpunc — CLEAN, CLOSED (Gap 4).** No hidden/logits accessor in the punct C API → golden
   text-match `run_check` (new generic `test_punct_diff.cpp`). q4_k engine restores
   "hello world how are you today i am fine thanks" → "Hello world. How are you today? I am fine.
