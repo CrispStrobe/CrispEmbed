@@ -4,6 +4,7 @@
 // then verifies that pdf_page_dpi() reports the correct DPI.
 
 #include "pdf_info.h"
+#include "core/clean_exit.h"
 
 #include <cmath>
 #include <cstdio>
@@ -267,7 +268,7 @@ static void test_all_pages() {
     remove(path.c_str());
 }
 
-int main() {
+static int crispembed_test_main() {
     printf("PDF DPI Profiling — unit tests\n");
 
     // Test various known DPIs:
@@ -299,4 +300,8 @@ int main() {
 
     printf("\n=== Results: %d passed, %d failed ===\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

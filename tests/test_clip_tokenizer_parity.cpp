@@ -23,6 +23,7 @@
 // Exit code 0 == all probes match HF; non-zero == a tokenizer regression.
 
 #include "tokenizer.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <fstream>
@@ -66,7 +67,7 @@ static std::string unescape(const std::string & s) {
     return out;
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 4) {
         fprintf(stderr, "usage: %s vocab.tsv merges.tsv expected.tsv\n", argv[0]);
         return 2;
@@ -113,4 +114,8 @@ int main(int argc, char ** argv) {
     }
     printf("\n=== %d passed, %d failed ===\n", pass, fail);
     return fail ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

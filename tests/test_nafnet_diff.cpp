@@ -8,6 +8,7 @@
 // (no upscale), and nafnet_process writes into a caller-allocated buffer.
 
 #include "nafnet_denoise.h"
+#include "core/clean_exit.h"
 #include "crispembed_diff.h"
 
 #include <algorithm>
@@ -16,7 +17,7 @@
 #include <cstring>
 #include <vector>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         printf("Usage: test-nafnet-diff <model.gguf> <ref.gguf>\n");
         return 1;
@@ -86,4 +87,8 @@ int main(int argc, char ** argv) {
     nafnet_free(ctx);
     printf("\n%d passed, %d failed\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

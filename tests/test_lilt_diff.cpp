@@ -4,11 +4,12 @@
 //   ./test-lilt-diff lilt-funsd-f32.gguf /tmp/lilt-funsd-ref-full.gguf
 
 #include "lilt_kie.h"
+#include "core/clean_exit.h"
 #include "crispembed_diff.h"
 #include <cstdio>
 #include <cstdlib>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <model.gguf> <ref.gguf>\n", argv[0]);
         return 1;
@@ -105,4 +106,8 @@ int main(int argc, char ** argv) {
 
     lilt_kie::free(ctx);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

@@ -1,11 +1,12 @@
 // tests/test_pix2struct_dec.cpp -- Pix2Struct decoder step 0 parity.
 #include "pix2struct.h"
+#include "core/clean_exit.h"
 #include "crispembed_diff.h"
 #include <cstdio>
 #include <cstring>
 #include <vector>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 4) {
         fprintf(stderr, "Usage: %s model.gguf enc-ref.gguf dec-ref.gguf\n", argv[0]);
         return 1;
@@ -38,4 +39,8 @@ int main(int argc, char ** argv) {
     printf("(Decoder test skeleton -- needs exposed decoder API)\n");
     pix2struct_free(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

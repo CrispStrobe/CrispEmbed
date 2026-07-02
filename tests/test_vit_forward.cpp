@@ -7,6 +7,7 @@
 // ref_embedding.bin: optional float32 [D] HF reference for cosine check
 
 #include "../src/vit_embed.h"
+#include "core/clean_exit.h"
 
 #include <cmath>
 #include <cstdio>
@@ -39,7 +40,7 @@ static float cosine(const float * a, const float * b, int n) {
     return (na > 1e-18 && nb > 1e-18) ? (float)(dot / (sqrt(na) * sqrt(nb))) : 0.0f;
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <gguf> <pixels.bin> [ref.bin]\n", argv[0]);
         return 1;
@@ -107,4 +108,8 @@ int main(int argc, char ** argv) {
 
     vit_embed::free(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

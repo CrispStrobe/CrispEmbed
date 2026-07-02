@@ -7,6 +7,7 @@
 // Exit 0 = all pass, non-zero = failure.
 
 #include "core/vlm_attention.h"
+#include "core/clean_exit.h"
 
 #include <cassert>
 #include <cmath>
@@ -636,7 +637,7 @@ static void test_rope_then_attn() {
 // ===========================================================================
 // main
 // ===========================================================================
-int main() {
+static int crispembed_test_main() {
     printf("=== core_vlm unit tests ===\n\n");
 
     // RoPE NEGHALF
@@ -684,4 +685,8 @@ int main() {
 
     printf("\n=== Results: %d passed, %d failed ===\n", g_pass, g_fail);
     return g_fail > 0 ? 1 : 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

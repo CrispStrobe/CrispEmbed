@@ -1,5 +1,6 @@
 // tests/test_ocr_render.cpp — unit tests for OCR result renderers.
 #include "ocr_render.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -196,7 +197,7 @@ static void test_xml_escaping() {
     ocr_render_free(r);
 }
 
-int main() {
+static int crispembed_test_main() {
     printf("OCR renderer — unit tests\n");
 
     test_text_renderer();
@@ -207,4 +208,8 @@ int main() {
 
     printf("\n=== Results: %d passed, %d failed ===\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

@@ -8,6 +8,7 @@
 //   ./test-ppformulanet-l <model.gguf>
 
 #include "ppformulanet_l_ocr.h"
+#include "core/clean_exit.h"
 #include "ggml.h"
 #include "gguf.h"
 #include <algorithm>
@@ -63,7 +64,7 @@ static std::vector<float> load_ref_tensor(gguf_context * gctx, ggml_context * mc
     return out;
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <model.gguf> [ref.gguf]\n", argv[0]);
         return 1;
@@ -134,4 +135,8 @@ int main(int argc, char ** argv) {
 
     ppformulanet_l_ocr_free(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

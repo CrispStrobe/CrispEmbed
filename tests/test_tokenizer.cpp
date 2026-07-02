@@ -7,6 +7,7 @@
 // Exit 0 = all pass, non-zero = failure.
 
 #include "tokenizer.h"
+#include "core/clean_exit.h"
 
 #include <cassert>
 #include <cstdio>
@@ -306,7 +307,7 @@ static void test_bpe_spm_basic() {
 // main
 // ===========================================================================
 
-int main() {
+static int crispembed_test_main() {
     printf("=== Tokenizer Unit Tests ===\n\n");
 
     test_wordpiece_basic();
@@ -326,4 +327,8 @@ int main() {
 
     printf("\n=== Results: %d passed, %d failed ===\n", g_pass, g_fail);
     return g_fail > 0 ? 1 : 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

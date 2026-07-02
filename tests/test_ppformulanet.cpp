@@ -8,6 +8,7 @@
 //   ./test-ppformulanet <model.gguf>
 
 #include "ppformulanet_ocr.h"
+#include "core/clean_exit.h"
 #include "ggml.h"
 #include "gguf.h"
 #include <algorithm>
@@ -35,7 +36,7 @@ static std::vector<float> create_test_image(int S) {
     return img;
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <model.gguf> [ref.gguf]\n", argv[0]);
         return 1;
@@ -175,4 +176,8 @@ int main(int argc, char ** argv) {
 
     ppformulanet_ocr_free(ctx);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

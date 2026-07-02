@@ -4,6 +4,7 @@
 // Usage: test-granite-vision-diff <model.gguf> <ref.gguf>
 
 #include "granite_vision_ocr.h"
+#include "core/clean_exit.h"
 #include "crispembed_diff.h"
 
 #include <cstdio>
@@ -32,7 +33,7 @@ static void dump_cb(const char * name, const float * data, int n, void * ud) {
     }
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         printf("Usage: test-granite-vision-diff <model.gguf> <ref.gguf>\n");
         return 1;
@@ -77,4 +78,8 @@ int main(int argc, char ** argv) {
     printf("\n%d passed, %d failed\n", g_pass, g_fail);
     granite_vision_free(ctx);
     return g_fail > 0 ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

@@ -10,6 +10,7 @@
 //   python tools/dump_tbsrn_reference.py --model sr_telescope_train/best_accuracy.pdparams --output ref.gguf
 
 #include "tbsrn_sr.h"
+#include "core/clean_exit.h"
 #include "crispembed_diff.h"
 
 #include <cstdio>
@@ -29,7 +30,7 @@ static void check(crispembed_diff::Ref & ref, const char * name, const float * d
         n_fail++;
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         printf("Usage: test-tbsrn-diff <model.gguf> <ref.gguf>\n");
         return 1;
@@ -116,4 +117,8 @@ int main(int argc, char ** argv) {
 
     printf("\n%d passed, %d failed\n", n_pass, n_fail);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

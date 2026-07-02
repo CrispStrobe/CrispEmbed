@@ -4,6 +4,7 @@
 // Usage: test-ocr-recognize <trocr.gguf> <image.png>
 
 #include "math_ocr.h"
+#include "core/clean_exit.h"
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
@@ -13,7 +14,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "../ggml/examples/stb_image.h"
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <trocr.gguf> <image.png>\n", argv[0]);
         return 1;
@@ -56,4 +57,8 @@ int main(int argc, char ** argv) {
 
     math_ocr_free(ctx);
     return text ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

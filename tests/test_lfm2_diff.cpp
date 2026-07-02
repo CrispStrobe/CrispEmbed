@@ -2,6 +2,7 @@
 // Usage: ./build/test-lfm2-diff lfm2-embed-q8_0.gguf /tmp/lfm2-ref.gguf ["text"]
 
 #include "lfm2_embed.h"
+#include "core/clean_exit.h"
 #include "crispembed_diff.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -29,7 +30,7 @@ static void check_cos(const char * label, float cos_min, float thresh = 0.999f) 
         n_fail++;
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s model.gguf ref.gguf [\"text\"]\n", argv[0]);
         return 1;
@@ -115,4 +116,8 @@ int main(int argc, char ** argv) {
     lfm2_embed_free(ctx);
     ggml_backend_free(backend);
     return n_fail > 0 ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

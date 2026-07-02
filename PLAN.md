@@ -1044,8 +1044,13 @@ Metal, ggml 0.10.0.
   those free their contexts via `crispembed_free` on shutdown (verified leak-clean
   with residency re-enabled). The one-shot CLI and all bindings (Python/Rust/Dart
   load `libcrispembed` as a shared lib, so the constructor runs at load) get the
-  safe default automatically. The old `os._exit` PyTorch-MPS-coexistence workaround
-  is no longer needed.
+  safe default automatically. **The same leak also crashes CUDA** (SIGSEGV/SIGABRT;
+  no `NO_RESIDENCY` switch there), so the real backstop is `core_util::clean_exit(rc)`
+  (`src/core/clean_exit.h`): flush + `std::_Exit`, skipping the static-dtor GPU-device
+  teardown for the **one-shot** binaries only (CLI `main` wrapper + all 88
+  `tests/*.cpp` mains). Backend-agnostic; preserves pass/fail exit codes. Long-lived
+  hosts keep `crispembed_free`. Generalizes (and retires) the old `os._exit`
+  PyTorch-MPS-coexistence workaround.
 - **lfm2 Metal scheduler abort** — also a v0.10.0 regression: `ggml_backend_sched_new`
   now asserts the last backend is CPU. **FIXED** same branch — `lfm2_embed_load`
   appends a CPU fallback backend (fireredpunc issue-#68 pattern).
