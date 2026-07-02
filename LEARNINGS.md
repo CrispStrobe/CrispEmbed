@@ -1,5 +1,47 @@
 # CrispEmbed — Technical Learnings
 
+## `ggml_set_output` cannot corrupt computed VALUES — verify a CUDA fix before believing a plausible pattern (2026-07)
+
+Chasing a CUDA-only bug in `lfm2_embed`'s ColBERT path (`colbert_output` cos **0.57** on a
+P100 vs **0.998** on CPU/Metal), the in-engine localizer showed the pre-projection backbone
+`hidden` itself is anti-correlated on CUDA (cos −0.70, max_abs 13) — while the *identical*
+backbone in the dense-encode graph passes 20/20 on the same CUDA. A tempting hypothesis: the
+ColBERT path does `hidden = cur; ggml_set_output(hidden)` while `cur` also feeds the projection
+`mul_mat`, so marking a live intermediate as an output "corrupts" it on the scheduler. **Wrong.**
+Cont-copying it (`hidden = ggml_cont(cur)`) produced **byte-identical** CUDA numbers to 6
+decimals, and mechanically it had to: **`ggml_set_output` only sets a flag that changes a
+tensor's BUFFER LIFETIME after compute — it never changes the tensor's computed values.** Since
+`colbert_output` is computed FROM `cur` during the graph, `cur` is being *computed* wrong on
+CUDA — a real compute-time divergence (graph-structural: the extra projection output, the
+conditional `ggml_backend_sched_reserve` absent in the dense path, or the two paths sharing one
+`ctx->sched`), not an output-flag or read-back artifact.
+
+Two transferable rules:
+1. **Distinguish compute-time corruption from read-back corruption.** If a *downstream* result
+   (here `colbert_output = mul_mat(proj, cur)`) is also wrong, the tensor is mis-*computed*;
+   output flags / view reads are irrelevant. Only if *just* a post-compute `tensor_get` is wrong
+   should you suspect buffer reuse / view residency.
+2. **Never mass-apply a statically-swept pattern before ONE empirical confirmation.** A codebase
+   sweep found ~9 engines with the same `set_output`-on-live-intermediate shape
+   (got_ocr/glm_ocr/internvl2/qwen2vl/math_ocr/pcs) — but since the pattern was *refuted* as the
+   cause here, none are confirmed bugs. Editing 9 core engines on an unvalidated theory would
+   have been pure risk. (See also "independently reproduce a handover's root-cause claim before
+   building on it" below.)
+
+## Reading a QUANTIZED weight to CPU: size the copy by `ggml_nbytes(t)`, not `n_elem * 4` (2026-07)
+
+The shipped `pcs-xlmr-base-q4_k.gguf` (the CLI `pcs` entry) **crashes on every inference** —
+`ggml-backend.cpp:349 GGML_ASSERT(offset + size <= ggml_nbytes(tensor))`. `pcs_process` pulls its
+SBD/truecase FC-head weights to CPU with `ggml_backend_tensor_get(t, buf, 0, n_elem*sizeof(float))`,
+assuming F32. But the q4_k converter **quantizes those head tensors** (`head.post.fc1/fc2` Q4_K,
+`head.sbd.fc2`/`head.tc.fc2` Q4_0), whose `ggml_nbytes` is ~0.56 B/elem ≪ `n_elem*4` → out of
+bounds. fireredpunc is immune because it computes its head **in-graph** via `ggml_mul_mat` (ggml
+dequantizes natively) with an F16 cls weight. Lessons: (a) any code that reads weights to CPU must
+size by `ggml_nbytes(t)` and dequantize (`ggml_get_rows` / a tiny F32 `ggml_cpy` graph), never
+assume F32; (b) prefer computing small heads **in-graph** so quantization is transparent; (c) a
+"perf: cache the head weights at init" refactor (wave commit `4a498d1`) is exactly where this class
+of assumption sneaks in. (Impl lives in sibling repo `CrispASR/crisp_punc/src/pcs.cpp`.)
+
 ## bidirlm-vision parity: gate on per-token MEAN cosine, not worst-row min (massive-activation deepstack) (2026-07)
 
 Building the bidirlm vision `-ref.gguf` guard surfaced a metric trap. The vision
