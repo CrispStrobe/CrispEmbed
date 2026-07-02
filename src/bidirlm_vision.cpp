@@ -24,6 +24,7 @@
 #include "bidirlm_vision.h"
 
 #include "core/gguf_loader.h"
+#include "core/ggml_metal_guard.h"
 
 #include "ggml.h"
 #include "ggml-alloc.h"
@@ -427,7 +428,8 @@ graph_outputs build_graph(context & ctx, int n_patches, bool include_deepstack) 
         V = ggml_permute(g, V, 0, 2, 1, 3);
 
         // Flash attention with block-diagonal mask (F16)
-        ggml_tensor * attn = ggml_flash_attn_ext(g, Q, K, V, mask_in, attn_scale, 0.0f, 0.0f);
+        ggml_tensor * attn = core_ggml::assert_fa_layout(
+            ggml_flash_attn_ext(g, Q, K, V, mask_in, attn_scale, 0.0f, 0.0f), head_dim, n_heads);
         attn = ggml_reshape_2d(g, attn, H, n_patches);
 
         attn = ggml_mul_mat(g, blk.proj_w, attn);

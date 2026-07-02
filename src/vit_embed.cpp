@@ -8,6 +8,7 @@
 
 #include "vit_embed.h"
 #include "core/gguf_loader.h"
+#include "core/ggml_metal_guard.h"
 
 #include "ggml.h"
 #include "ggml-alloc.h"
@@ -397,7 +398,8 @@ std::vector<float> encode(context * ctx, const float * pixels, int H, int W) {
 
         // Flash attention (no causal mask for ViT encoder)
         float scale = 1.0f / std::sqrt((float)hd);
-        ggml_tensor * attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
+        ggml_tensor * attn =
+            core_ggml::assert_fa_layout(ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f), hd, nh);
         // Result: [hd, nh, S] → reshape to [D, S]
         attn = ggml_reshape_2d(g, attn, D, S);
 
@@ -485,7 +487,8 @@ std::vector<float> encode(context * ctx, const float * pixels, int H, int W) {
 
         // Scaled dot-product attention
         float scale = 1.0f / std::sqrt((float)hd);
-        ggml_tensor * attn_out = ggml_flash_attn_ext(g, Qa, Ka, Va, nullptr, scale, 0.0f, 0.0f);
+        ggml_tensor * attn_out =
+            core_ggml::assert_fa_layout(ggml_flash_attn_ext(g, Qa, Ka, Va, nullptr, scale, 0.0f, 0.0f), hd, nh);
         ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
         // attn_out: [hd, nh, 1] → reshape to [D, 1]
         attn_out = ggml_reshape_2d(g, attn_out, D, 1);
