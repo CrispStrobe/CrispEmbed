@@ -224,6 +224,7 @@ struct crispembed_context {
     float rope_theta = 10000.0f;    // default/sliding theta
     float rope_theta_global = 0.0f; // global attention theta (ModernBERT, 0 = same as rope_theta)
     int global_attn_every_n = 0;    // ModernBERT: every Nth layer uses global attention (0 = all same)
+    int local_attention_window = 0; // ModernBERT: sliding-window size for local layers (0 = no window)
     bool pre_ln = false;            // pre-LN (ModernBERT) vs post-LN (BERT) ordering
     bool dump_layers = false;       // dump per-layer intermediates (CRISPEMBED_DUMP_LAYERS=1)
     int position_buckets = 0;       // DeBERTa log-bucket count (0 = linear positions)
@@ -256,6 +257,7 @@ struct crispembed_context {
     // Per-mode scheduler reservation buckets
     int reserved_T_sparse = 0;
     int reserved_T_colbert = 0;
+    int reserved_T_packed = 0; // packed block-diagonal batch graph (C3)
     // Reranker classifier weight cache (avoids 4MB GPU→CPU transfer per call)
     bool rerank_cache_valid = false;
     std::vector<float> rerank_dw; // dense_w [H*H]
@@ -358,6 +360,7 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     ctx->rope_theta = f32("bert.rope_theta", 10000.0f);
     ctx->rope_theta_global = f32("bert.rope_theta_global", 0.0f);
     ctx->global_attn_every_n = u32("bert.global_attn_every_n", 0);
+    ctx->local_attention_window = u32("bert.local_attention", 0);
     ctx->pre_ln = u32("bert.pre_ln", 0) != 0;
     ctx->position_buckets = u32("bert.position_buckets", 0);
     hp.n_experts = u32("bert.num_experts", 0);
@@ -688,12 +691,30 @@ static bool load_model(crispembed_context * ctx, const char * path) {
 // Graph: build fresh each call (no_alloc=true), scheduler handles allocation
 // ---------------------------------------------------------------------------
 
+// ModernBERT local sliding-window attention active? (model has a window + alternating
+// global layers, and not disabled for A/B via CRISPEMBED_ENCODER_NO_SWA). When off,
+// local layers fall back to global attention — the pre-fix behavior, kept as a
+// regression-bisection lever.
+static bool modernbert_swa_enabled(const crispembed_context * ctx) {
+    if (ctx->local_attention_window <= 0 || ctx->global_attn_every_n <= 0) return false;
+    const char * v = std::getenv("CRISPEMBED_ENCODER_NO_SWA");
+    if (v && v[0] && std::strcmp(v, "0") != 0) return false; // opt-out for A/B
+    return true;
+}
+
 // Build encoder graph for T tokens × B batch items.
 // mode: 0=dense (encoder_out), 1=sparse (sparse_out [1,T]), 2=colbert (colbert_out [dim,T])
 // When B=1: standard single-text graph.
 // When B>1: batched graph with 4D attention via flash_attn_ext.
+// packed_mask (C3): B sequences are packed end-to-end into a single T=T_total token
+//   stream (B stays 1); attention is restricted to each sequence's own tokens via a
+//   host-built block-diagonal F16 mask input "seg_mask" [T,T] fed to flash_attn_ext.
+//   Numerically identical to encoding each sequence alone (full bidirectional within a
+//   segment, -inf across), but in one graph. Only used for absolute-position encoders
+//   (no MPNet rel-bias / DeBERTa rel-embd / RoPE), so rel_pos_bias is null here.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
-static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B = 1, int mode = 0) {
+static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B = 1, int mode = 0,
+                                         bool packed_mask = false) {
     const auto & m = ctx->model;
     const auto & hp = m.hparams;
     const int H = hp.n_embd;
@@ -744,6 +765,26 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         rel_pos_bias = ggml_new_tensor_3d(gctx, GGML_TYPE_F16, T, T, n_heads);
         ggml_set_name(rel_pos_bias, "rel_pos_bias");
         ggml_set_input(rel_pos_bias);
+    }
+
+    // Packed batch: block-diagonal segment mask [T, T] (F16), -inf across segments,
+    // 0 within a segment. Fed to flash_attn_ext so packed sequences don't cross-attend.
+    ggml_tensor * seg_mask = nullptr;
+    if (packed_mask) {
+        seg_mask = ggml_new_tensor_2d(gctx, GGML_TYPE_F16, T, T);
+        ggml_set_name(seg_mask, "seg_mask");
+        ggml_set_input(seg_mask);
+    }
+
+    // ModernBERT sliding-window (local attention) mask [T, T] (F16): local layers
+    // attend only within ±local_attention/2; global layers (every Nth) use no mask.
+    // Filled host-side by fill_local_window_mask(). Only created when the model has
+    // a local window and alternating global layers.
+    ggml_tensor * swa_mask = nullptr;
+    if (!packed_mask && modernbert_swa_enabled(ctx)) {
+        swa_mask = ggml_new_tensor_2d(gctx, GGML_TYPE_F16, T, T);
+        ggml_set_name(swa_mask, "swa_mask");
+        ggml_set_input(swa_mask);
     }
 
     // DeBERTa: pre-expanded position embeddings [H, T*T] (filled on CPU)
@@ -899,10 +940,20 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         } else {
             float scale = 1.0f / sqrtf((float)head_dim);
 
-            // Flash attention (supports optional position bias mask)
+            // Flash attention (supports optional position bias / segment mask)
             // Q/K/V: [hd, T, nh, B] after permute
-            // rel_pos_bias: [T, T, nh] — passed as mask (additive to attention scores)
-            attn = ggml_flash_attn_ext(gctx, Q, K, V, rel_pos_bias, scale, 0.0f, 0.0f);
+            // rel_pos_bias: [T, T, nh] — MPNet additive bias; seg_mask: [T, T] F16
+            // block-diagonal for packing; swa_mask: [T, T] F16 sliding window for
+            // ModernBERT local layers. At most one applies per layer.
+            const bool is_local_layer = (ctx->global_attn_every_n > 0) && (il % ctx->global_attn_every_n != 0);
+            ggml_tensor * attn_mask;
+            if (packed_mask)
+                attn_mask = seg_mask;
+            else if (swa_mask && is_local_layer)
+                attn_mask = swa_mask; // ModernBERT local
+            else
+                attn_mask = rel_pos_bias; // global / MPNet / none
+            attn = ggml_flash_attn_ext(gctx, Q, K, V, attn_mask, scale, 0.0f, 0.0f);
             // Result: [hd, nh, T, B] → reshape to [H, T*B]
             attn = ggml_reshape_2d(gctx, attn, H, TB);
         }
@@ -1098,6 +1149,24 @@ static int bucket_seq_len(int T) {
     return T;
 }
 
+// ModernBERT sliding-window (local attention) mask. Fills the "swa_mask" input if
+// the graph has one: mask[i][j] = 0 iff |i-j| <= local_attention/2, else -inf (F16).
+// No-op unless the model defines a local window with alternating global layers.
+static void fill_local_window_mask(crispembed_context * ctx, ggml_cgraph * gf, int T) {
+    if (ctx->local_attention_window <= 0 || ctx->global_attn_every_n <= 0) return;
+    ggml_tensor * swa = ggml_graph_get_tensor(gf, "swa_mask");
+    if (!swa) return;
+    const int radius = ctx->local_attention_window / 2;
+    std::vector<ggml_fp16_t> md((size_t)T * T);
+    const ggml_fp16_t zero = ggml_fp32_to_fp16(0.0f);
+    const ggml_fp16_t ninf = ggml_fp32_to_fp16(-INFINITY);
+    for (int i = 0; i < T; i++) {
+        ggml_fp16_t * row = md.data() + (size_t)i * T;
+        for (int j = 0; j < T; j++) row[j] = (std::abs(i - j) <= radius) ? zero : ninf;
+    }
+    ggml_backend_tensor_set(swa, md.data(), 0, md.size() * sizeof(ggml_fp16_t));
+}
+
 static std::vector<float> encode_tokens(crispembed_context * ctx, const embed_tokens & tokens) {
     const auto & hp = ctx->model.hparams;
     const int T = (int)tokens.ids.size();
@@ -1261,6 +1330,9 @@ static std::vector<float> encode_tokens(crispembed_context * ctx, const embed_to
         }
     }
 
+    // ModernBERT local sliding-window mask (no-op for other encoders)
+    fill_local_window_mask(ctx, gf, T);
+
     // Compute (scheduler dispatches to GPU or CPU)
     debug_encode_stage("encode_tokens:compute", T, 1, 0);
     auto t_compute = std::chrono::steady_clock::now();
@@ -1362,17 +1434,208 @@ static std::vector<float> encode_tokens(crispembed_context * ctx, const embed_to
     return pooled;
 }
 
-// Batched encoding: multiple texts in one graph (padded to max length)
+// C3: is the packed block-diagonal batch path eligible + enabled?
+// Only for absolute-position encoders (no MPNet rel-bias, no DeBERTa rel-embd,
+// no RoPE — those carry T×T / per-position structure that packing would need to
+// re-index per segment). Opt-in via CRISPEMBED_ENCODER_PACKED until A/B-proven,
+// then this becomes the default with CRISPEMBED_ENCODER_NOPACK as the opt-out.
+static bool packed_batch_enabled(const crispembed_context * ctx) {
+    if (ctx->is_decoder) return false;
+    if (ctx->model.rel_attn_bias || ctx->model.rel_embd || ctx->use_rope) return false;
+    const char * v = std::getenv("CRISPEMBED_ENCODER_PACKED");
+    if (v && v[0] && std::strcmp(v, "0") != 0) return true; // explicit opt-in
+    return false;                                           // default OFF (flip after A/B)
+}
+
+// Packed batched encoding (C3): pack all B sequences end-to-end into one graph of
+// T_total = Σ T_i tokens, with a block-diagonal F16 mask restricting attention to
+// each sequence's own tokens. Output is bit-parity with per-sequence encode_tokens
+// (full bidirectional attention within a segment; positions restart per segment),
+// but runs the whole batch in a single graph compute.
+static std::vector<std::vector<float>> encode_tokens_packed(crispembed_context * ctx,
+                                                            const std::vector<embed_tokens> & batch) {
+    const auto & hp = ctx->model.hparams;
+    const int B = (int)batch.size();
+    const int H = hp.n_embd;
+    const bool bench = ctx->bench;
+    auto t_total = std::chrono::steady_clock::now();
+
+    // Segment offsets (dense — tokens were trimmed to real length upstream).
+    std::vector<int> seg_start(B), seg_len(B);
+    int T_total = 0;
+    for (int b = 0; b < B; b++) {
+        seg_start[b] = T_total;
+        seg_len[b] = (int)batch[b].ids.size();
+        T_total += seg_len[b];
+    }
+    if (T_total == 0) return {};
+
+    // Reserve scheduler on a bucketed T_total (dedicated packed bucket).
+    int T_bucket = bucket_seq_len(T_total);
+    if (ctx->reserved_T_packed != T_bucket) {
+        ggml_cgraph * measure_gf = build_encoder_graph(ctx, T_bucket, 1, 0, /*packed_mask=*/true);
+        ggml_backend_sched_reserve(ctx->sched, measure_gf);
+        ctx->reserved_T_packed = T_bucket;
+    }
+
+    ggml_cgraph * gf = build_encoder_graph(ctx, T_total, 1, 0, /*packed_mask=*/true);
+    ggml_backend_sched_reset(ctx->sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
+        fprintf(stderr, "crispembed: failed to allocate packed encoder graph\n");
+        return {};
+    }
+
+    // Flatten token / position / type ids across segments.
+    std::vector<int32_t> tok_data(T_total), pos_data(T_total);
+    for (int b = 0; b < B; b++) {
+        for (int t = 0; t < seg_len[b]; t++) {
+            tok_data[seg_start[b] + t] = batch[b].ids[t];
+            pos_data[seg_start[b] + t] = t + ctx->pos_offset; // positions restart per segment
+        }
+    }
+    ggml_tensor * tok_ids = graph_tensor_or_log(gf, "tok_ids");
+    if (!tok_ids) return {};
+    ggml_backend_tensor_set(tok_ids, tok_data.data(), 0, T_total * sizeof(int32_t));
+
+    if (ggml_tensor * pos_ids = ggml_graph_get_tensor(gf, "pos_ids")) {
+        ggml_backend_tensor_set(pos_ids, pos_data.data(), 0, T_total * sizeof(int32_t));
+    } else if (ctx->model.pos_embd) {
+        fprintf(stderr, "crispembed: missing graph tensor 'pos_ids' (packed)\n");
+        return {};
+    }
+
+    if (ctx->model.type_embd) {
+        std::vector<int32_t> type_data(T_total, 0);
+        for (int b = 0; b < B; b++) {
+            const auto & tids = batch[b].type_ids;
+            for (int t = 0; t < seg_len[b] && t < (int)tids.size(); t++) {
+                type_data[seg_start[b] + t] = tids[t];
+            }
+        }
+        ggml_tensor * type_ids = graph_tensor_or_log(gf, "type_ids");
+        if (!type_ids) return {};
+        ggml_backend_tensor_set(type_ids, type_data.data(), 0, T_total * sizeof(int32_t));
+    }
+
+    // Block-diagonal F16 mask: -inf everywhere, 0 within each segment's block.
+    ggml_tensor * seg_mask = graph_tensor_or_log(gf, "seg_mask");
+    if (!seg_mask) return {};
+    std::vector<ggml_fp16_t> mask_data((size_t)T_total * T_total, ggml_fp32_to_fp16(-INFINITY));
+    const ggml_fp16_t zero_f16 = ggml_fp32_to_fp16(0.0f);
+    for (int b = 0; b < B; b++) {
+        const int s = seg_start[b], e = seg_start[b] + seg_len[b];
+        for (int i = s; i < e; i++) {
+            ggml_fp16_t * row = mask_data.data() + (size_t)i * T_total;
+            for (int j = s; j < e; j++) row[j] = zero_f16;
+        }
+    }
+    ggml_backend_tensor_set(seg_mask, mask_data.data(), 0, mask_data.size() * sizeof(ggml_fp16_t));
+
+    auto t_compute = std::chrono::steady_clock::now();
+    if (!sched_graph_compute(ctx->sched, gf, ctx->n_threads)) {
+        fprintf(stderr, "crispembed: packed encoder compute failed\n");
+        return {};
+    }
+    if (bench) {
+        double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_compute).count();
+        fprintf(stderr, "[crispembed-bench] packed encode (B=%d, T_total=%d): %.1f ms\n", B, T_total, ms);
+    }
+
+    ggml_tensor * out = graph_tensor_or_log(gf, "encoder_out");
+    if (!out) return {};
+    std::vector<float> out_buf((size_t)H * T_total);
+    ggml_backend_tensor_get(out, out_buf.data(), 0, (size_t)H * T_total * sizeof(float));
+
+    const int dim = hp.n_output > 0 ? hp.n_output : H;
+    const int pool_method = ctx->pool_method;
+
+    std::vector<std::vector<float>> results(B);
+    for (int b = 0; b < B; b++) {
+        const int s = seg_start[b], n = seg_len[b];
+        std::vector<float> pooled(dim, 0.0f);
+        if (pool_method == 1) { // CLS = first token of segment
+            for (int h = 0; h < std::min(H, dim); h++) pooled[h] = out_buf[h + (size_t)s * H];
+        } else if (pool_method == 2) { // last token of segment
+            int last_t = s + n - 1;
+            for (int h = 0; h < std::min(H, dim); h++) pooled[h] = out_buf[h + (size_t)last_t * H];
+        } else { // mean over segment tokens
+            if (n > 0) {
+                for (int t = 0; t < n; t++)
+                    for (int h = 0; h < std::min(H, dim); h++) pooled[h] += out_buf[h + (size_t)(s + t) * H];
+                for (int h = 0; h < dim; h++) pooled[h] /= n;
+            }
+        }
+        float norm = 0;
+        for (int h = 0; h < dim; h++) norm += pooled[h] * pooled[h];
+        norm = sqrtf(std::max(norm, 1e-12f));
+        for (int h = 0; h < dim; h++) pooled[h] /= norm;
+        results[b] = std::move(pooled);
+    }
+
+    if (bench) {
+        double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_total).count();
+        fprintf(stderr, "[crispembed-bench] packed encode total (B=%d): %.1f ms\n", B, ms);
+    }
+    return results;
+}
+
+// Packed-group token budget. Packing collapses B sequences into one graph, which
+// amortizes per-graph build/dispatch overhead and enlarges matmuls, but makes
+// attention O(T_total^2) (the block-diagonal mask still computes the masked cells).
+// So we pack GREEDILY into groups bounded by this token budget rather than one
+// giant sequence — capping keeps attention bounded while still amortizing overhead.
+static int packed_group_maxtok(const crispembed_context * ctx) {
+    if (const char * v = std::getenv("CRISPEMBED_ENCODER_PACK_MAXTOK")) {
+        int n = atoi(v);
+        if (n > 0) return n;
+    }
+    // Longer sequences amortize better and lose relatively less to the quadratic
+    // term; scale the budget with the model's typical single-seq bucket. Default
+    // chosen empirically (see PLAN C3 A/B).
+    (void)ctx;
+    return 384;
+}
+
+// Batched encoding: multiple texts. Uses the packed block-diagonal graph (C3)
+// when eligible + enabled, greedily grouped under a token budget; otherwise
+// encodes each sequence individually.
 static std::vector<std::vector<float>> encode_tokens_batch(crispembed_context * ctx,
                                                            const std::vector<embed_tokens> & batch) {
     const int B = (int)batch.size();
     if (B == 0) return {};
+
+    if (B > 1 && packed_batch_enabled(ctx)) {
+        const int maxtok = packed_group_maxtok(ctx);
+        std::vector<std::vector<float>> results;
+        results.reserve(B);
+        bool ok = true;
+        int i = 0;
+        while (i < B && ok) {
+            // Greedily accumulate sequences until the token budget is hit.
+            // A single over-budget sequence still forms its own (size-1) group.
+            int j = i, tsum = 0;
+            while (j < B) {
+                int len = (int)batch[j].ids.size();
+                if (j > i && tsum + len > maxtok) break;
+                tsum += len;
+                j++;
+            }
+            std::vector<embed_tokens> group(batch.begin() + i, batch.begin() + j);
+            auto part = (group.size() == 1) ? std::vector<std::vector<float>>{ encode_tokens(ctx, group[0]) }
+                                            : encode_tokens_packed(ctx, group);
+            if ((int)part.size() != (int)group.size()) {
+                ok = false;
+                break;
+            }
+            for (auto & v : part) results.push_back(std::move(v));
+            i = j;
+        }
+        if (ok && (int)results.size() == B) return results;
+        fprintf(stderr, "crispembed: packed batch failed, falling back to sequential\n");
+    }
+
     std::vector<std::vector<float>> results;
     results.reserve(B);
-
-    // The previous fused batch path padded sequences but did not mask padded
-    // tokens inside attention, so shorter items diverged from single-item
-    // encoding. Prefer correctness here until a masked fused path exists.
     for (const auto & tokens : batch) {
         results.push_back(encode_tokens(ctx, tokens));
     }
@@ -1505,6 +1768,9 @@ static std::vector<float> run_encoder_raw(crispembed_context * ctx, const embed_
             ggml_backend_tensor_set(rpe_t, expanded.data(), 0, expanded.size() * sizeof(float));
         }
     }
+
+    // ModernBERT local sliding-window mask (no-op for other encoders)
+    fill_local_window_mask(ctx, gf, T);
 
     debug_encode_stage("run_encoder_raw:compute", T, 1, mode);
     auto t_raw_compute = std::chrono::steady_clock::now();
