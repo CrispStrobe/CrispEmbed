@@ -1441,23 +1441,26 @@ single-threaded, must not OOM.
 - **MoE compute optimization — PENDING (the only real deepseek perf lever).**
   Profiling proved decode is ~98% compute-bound, dominated by the DeepSeek-V2 MoE
   (12 layers, 64 routed experts top-6 + 2 shared, `moe_intermediate_size` 896).
-  Decode ≈ 2270 ms / 31 tokens ≈ 73 ms/token on M4 Metal. Optimize the MoE math
-  itself, each behind an env gate + A/B (decoded output) + timing before default:
-  - [ ] **Faster expert dispatch.** Current path is `ggml_mul_mat_id` on Metal
-    (`ctx.moe_metal`) with a CPU-scalar fallback (`moe_ffn_cpu`). Profile
-    `mul_mat_id` vs a gather+batched-`mul_mat` over the top-6 selected experts;
-    ensure only the 6 (+2 shared) experts per token are computed, not all 64.
-  - [ ] **Quantize experts more aggressively.** Experts are the bulk of the
-    weights; check the quantize recipe keeps only the router/norms/lm_head high
-    and lets expert FFNs go Q4_K (they already should — verify, and test Q4_K vs
-    Q5_K/Q6_K on decoded OCR quality vs speed).
-  - [ ] **Batch/fuse the shared-expert + routed-expert FFNs** to cut per-layer
-    dispatches; and confirm the router softmax/top-k isn't a serial CPU hop.
-  - [ ] **Metal residency / activation-scaling** — check the MoE `mul_mat_id`
-    against the known Metal F16-overflow class (scale activations 1/256) and the
-    residency-abort class (see the Metal-residency LEARNINGS entry).
-  Only pursue if decode latency becomes a real concern; the graph-overhead paths
+  Decode ≈ 2270 ms / 31 tokens ≈ 73 ms/token on M4 Metal. **Already efficient:**
+  both the Metal path (`ggml_mul_mat_id`) and the CPU fallback (`moe_ffn_cpu`)
+  dispatch/dequant ONLY the top-6 (+shared) experts per token, not all 64 — so the
+  obvious win is done and the ~73 ms/token is largely inherent. Remaining levers
+  are HARD/upstream (each behind an env gate + A/B on decoded OCR + timing on a
+  LONG-decode input before flipping the default):
+  - [ ] **Small-batch `mul_mat_id` on Metal (T=1).** 12 layers × 3 matmul_id ×
+    6 experts on a single token = many tiny matmuls, likely dispatch-overhead-
+    bound. First split MoE vs attention within the 2270 ms (`DS_DBG=1` prints
+    per-layer `attn`/`moe` ms). A fused/better MoE kernel is mostly upstream ggml.
+  - [ ] **Expert quantization knob** — confirm expert FFNs are Q4_K; test
+    Q4_K vs Q5_K/Q6_K on decoded OCR (CER) vs size/speed (size/quality, not a big
+    Metal speed win).
+  - [ ] **Fuse shared+routed FFN** dispatches; confirm router softmax/top-k isn't
+    a serial CPU hop between GPU dispatches.
+  - [ ] **Metal hazards** if touching the matmul — F16-overflow (scale 1/256) +
+    residency-abort classes (see those LEARNINGS entries).
+  Only pursue if decode latency is a real concern; the graph-overhead paths
   (persistent decode / F16 KV / single-graph) are NOT the lever (measured ~2%).
+  **Full self-contained handover: `handover-prompts/deepseek-ocr2-moe-perf.md`.**
 
 ### got_ocr (SAM ViT-B + Qwen2-0.5B, 0.7B) — DONE
 - [x] Patch embedding → ggml matmul (same im2col pattern, scalar fallback gated)
