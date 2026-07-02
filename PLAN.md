@@ -766,9 +766,11 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
   herring — base checkpoint ships an untrained classifier head.) Not a regression.
 - **lfm2 — CLEAN, CLOSED.** 20/20 stages cos ≥0.9997; ref uploaded to `cstr/lfm2-embed-GGUF`,
   wired. Blocker was a dumper bug (duplicate `general.architecture` key), now fixed. Not a regression.
-- **layout — REGRESSION.** Encoder craters (`s3` cos −0.146…`dec_0_cross` −0.344; early
-  stages cos 1.0). Wave `dc0861b` (flash_attn_ext). Handover:
-  `handover-prompts/layout-detect-encoder-regression-fix.md`. (2 agents assigned.)
+- **layout — REGRESSION, FIXED (other agent, `6027b56`).** Encoder cratered (`s3` cos −0.146…
+  `dec_0_cross` −0.344; early stages cos 1.0). Wave `dc0861b` swapped manual attention for
+  `ggml_flash_attn_ext`, which ALREADY applies `permute(0,2,1,3)` internally — the leftover manual
+  permute double-permuted the RT-DETR encoder output. Fix: drop the spurious post-flash_attn
+  permute. Same class fixed in math_ocr + deepseek (`dd4b4fd`).
 - **nafnet — REGRESSION, FIXED (other agent).** Disambiguated ENGINE (not dumper):
   ref is trustworthy — cos(ref_input, ref_output)=0.86, output properly denoised. Root cause
   = conv-kernel layout (ggml loads numpy [OC,IC,KH,KW] bytes but the old permute(3,2,1,0)+cont
