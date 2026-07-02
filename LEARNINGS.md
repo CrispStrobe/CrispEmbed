@@ -192,6 +192,21 @@ both fail. That's a **converter/packaging bug** (re-embed the tokenizer), separa
 from the ggml wave; `expected_text` was `null` so granite OCR was likely never
 validated end-to-end.
 
+**RESOLVED (2026-07-02).** The tokenizer is now folded into
+`models/convert-granite-vision-to-gguf.py` (new `array<string>` KV writer +
+`load_tokenizer()`, writing `tokenizer.tokens`/`tokenizer.merges` +
+`attention_multiplier`/`rms_eps`/`bos`/`eos`), so a fresh convert produces a
+complete gguf and the separate `patch-granite-gguf-tokenizer.py` step can't be
+forgotten (that patch script is now idempotent — it skips the KVs it re-adds).
+The three published GGUFs (q4_k/q8_0/f16) in `cstr/granite-vision-crispembed-GGUF`
+were re-patched + re-uploaded (Xet deduped each to ~84 MB of genuinely new data —
+the tokenizer strings). Load banner now reads `tokenizer=embedded (49156 tokens)`
+and `--ocr fox.png` returns readable text on **both CPU and Metal**: q4_k reads
+`The quick brown fox jumps over the lazy dog, 12345` and q8_0 is an exact match
+`… dog. 12345`. The regression manifest now bakes that `expected_text` (max_cer
+0.15). Validation detail: token count 49156 == `vocab_size`, `token[49155]` ==
+`<image>` (the runtime's `image_token_index`), no vocab gaps.
+
 **Fix notes.** restormer is **DONE** (see the RESOLVED section at the top): the
 "3-site weight-layout unification" framing was a red herring — the converter
 stores conv weights raw as numpy `(OC,IC,KH,KW)`, so the correct kernel is a
