@@ -1,12 +1,14 @@
 {
-  "_comment": "CrispEmbed OCR portfolio regression manifest. Each model entry pins the GGUF under test (repo/file/revision), a fixture image, a proven-correct expected_text (lenient CER match), and an OPTIONAL diff block. The diff block runs test-<model>-diff against a reference GGUF downloaded from HF; if that ref is absent on HF the diff step is SKIPPED (opt-in by ref presence). expected_text=null means 'not captured yet' — run with --rebake on the GPU portfolio kernel, verify the output by eye, and paste it in. See README.md. This suite exists because a vision-neck permute regression (3fb1f8e) shipped garbage OCR that a pure exit-code smoke test could not catch.",
+  "_comment": "CrispEmbed OCR portfolio regression manifest. Each model entry pins the GGUF under test (repo/file/revision), a fixture image, a proven-correct expected_text (lenient CER match), and an OPTIONAL diff block. The diff block runs test-<model>-diff against a reference GGUF downloaded from HF; if that ref is absent on HF the diff step is SKIPPED (opt-in by ref presence). expected_text=null means 'not captured yet' \u2014 run with --rebake on the GPU portfolio kernel, verify the output by eye, and paste it in. See README.md. This suite exists because a vision-neck permute regression (3fb1f8e) shipped garbage OCR that a pure exit-code smoke test could not catch.",
   "version": 1,
   "match_defaults": {
-    "max_cer": 0.10,
+    "max_cer": 0.1,
     "_note": "lenient char-error-rate after normalising case/punctuation/whitespace; OCR is not byte-exact across builds"
   },
   "diff_defaults": {
-    "thresholds": {"*": 0.999},
+    "thresholds": {
+      "*": 0.999
+    },
     "_note": "global per-stage cos_min floor; override per-stage inside a model's diff.thresholds"
   },
   "models": [
@@ -22,84 +24,360 @@
       "sample": "tests/regression/images/fox.png",
       "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
       "expected_text_source": "captured 2026-07-01 on main (post-7f43e4d neck-permute fix), verified correct on both Metal and CPU (GOT_OCR_FORCE_CPU=1) at q4_k/q8_0/f16.",
-      "match": {"max_cer": 0.10},
+      "match": {
+        "max_cer": 0.1
+      },
       "diff": {
         "binary": "test-got-ocr-diff",
-        "ref": {"repo": "cstr/got-ocr2-crispembed-GGUF", "file": "got-ocr2-ref-full.gguf", "revision": "main"},
-        "thresholds": {"*": 0.95},
-        "_note": "test-got-ocr-diff <gguf> <ref>. Vision cos varies by backend: ~0.998 CPU, 0.9999 Metal, but ~0.982 on Kaggle CUDA (T4/P100) — so the floor is 0.95 to absorb backend FP variance while still catching a real regression (a scrambled-permute craters vis_proj_output to ~0). Decoder layers stay ~0.9998 everywhere."
+        "ref": {
+          "repo": "cstr/got-ocr2-crispembed-GGUF",
+          "file": "got-ocr2-ref-full.gguf",
+          "revision": "main"
+        },
+        "thresholds": {
+          "*": 0.95
+        },
+        "_note": "test-got-ocr-diff <gguf> <ref>. Vision cos varies by backend: ~0.998 CPU, 0.9999 Metal, but ~0.982 on Kaggle CUDA (T4/P100) \u2014 so the floor is 0.95 to absorb backend FP variance while still catching a real regression (a scrambled-permute craters vis_proj_output to ~0). Decoder layers stay ~0.9998 everywhere."
       }
     },
     {
       "name": "glm-ocr",
       "engine": "glm-ocr",
-      "gguf": {"repo": "cstr/glm-ocr-crispembed-GGUF", "file": "glm-ocr-q8_0.gguf", "revision": "main", "approx_size_mb": 950},
+      "gguf": {
+        "repo": "cstr/glm-ocr-crispembed-GGUF",
+        "file": "glm-ocr-q8_0.gguf",
+        "revision": "main",
+        "approx_size_mb": 950
+      },
       "sample": "tests/regression/images/fox.png",
       "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
-      "match": {"max_cer": 0.12}
+      "match": {
+        "max_cer": 0.12
+      }
     },
     {
       "name": "internvl2-1b",
       "engine": "internvl2",
-      "gguf": {"repo": "cstr/internvl2-1b-crispembed-GGUF", "file": "internvl2-1b-q4_k.gguf", "revision": "main", "approx_size_mb": 600},
+      "gguf": {
+        "repo": "cstr/internvl2-1b-crispembed-GGUF",
+        "file": "internvl2-1b-q4_k.gguf",
+        "revision": "main",
+        "approx_size_mb": 600
+      },
       "sample": "tests/regression/images/fox.png",
       "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
-      "expected_text_source": "captured 2026-07-01 on M1 Metal after reverting the c714758 vision-graph cache to fresh-build-per-tile. fox.png dynamic-tiles to 5 tiles, so this entry is the regression guard for the cross-tile SIGSEGV/hang — a re-crash makes crispembed --ocr exit non-zero and FAILs here.",
-      "match": {"max_cer": 0.12},
-      "diff": {"binary": "test-internvl2-diff", "ref": {"repo": "cstr/internvl2-1b-crispembed-GGUF", "file": "internvl2-1b-ref.gguf"}, "thresholds": {"*": 0.995}}
+      "expected_text_source": "captured 2026-07-01 on M1 Metal after reverting the c714758 vision-graph cache to fresh-build-per-tile. fox.png dynamic-tiles to 5 tiles, so this entry is the regression guard for the cross-tile SIGSEGV/hang \u2014 a re-crash makes crispembed --ocr exit non-zero and FAILs here.",
+      "match": {
+        "max_cer": 0.12
+      },
+      "diff": {
+        "binary": "test-internvl2-diff",
+        "ref": {
+          "repo": "cstr/internvl2-1b-crispembed-GGUF",
+          "file": "internvl2-1b-ref.gguf"
+        },
+        "thresholds": {
+          "*": 0.995
+        }
+      }
     },
     {
       "name": "qwen2vl-3b",
       "engine": "qwen2vl",
-      "gguf": {"repo": "cstr/qwen2.5-vl-3b-crispembed-GGUF", "file": "qwen2.5-vl-3b-q4_k.gguf", "revision": "main", "approx_size_mb": 2200},
+      "gguf": {
+        "repo": "cstr/qwen2.5-vl-3b-crispembed-GGUF",
+        "file": "qwen2.5-vl-3b-q4_k.gguf",
+        "revision": "main",
+        "approx_size_mb": 2200
+      },
       "sample": "tests/regression/images/fox.png",
       "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
       "expected_text_source": "captured 2026-07-01 on M4 Metal + CPU (CRISPEMBED_FORCE_CPU=1) at q4_k after the vision RoPE merge-block-order + merger consecutive-grouping + windowed-attention + OCR-prompt fixes. Previously null (never validated end-to-end); the engine hallucinated a math description over garbled vision tokens.",
-      "match": {"max_cer": 0.12},
-      "diff": {"binary": "test-qwen2vl-diff", "ref": {"repo": "cstr/qwen2.5-vl-3b-crispembed-GGUF", "file": "qwen2.5-vl-3b-ref.gguf"}, "thresholds": {"*": 0.995}}
+      "match": {
+        "max_cer": 0.12
+      },
+      "diff": {
+        "binary": "test-qwen2vl-diff",
+        "ref": {
+          "repo": "cstr/qwen2.5-vl-3b-crispembed-GGUF",
+          "file": "qwen2.5-vl-3b-ref.gguf"
+        },
+        "thresholds": {
+          "*": 0.995
+        }
+      }
     },
     {
       "name": "qwen3vl-2b",
       "engine": "qwen2vl",
-      "gguf": {"repo": "cstr/qwen3-vl-2b-crispembed-gguf", "file": "qwen3-vl-2b-q4_k.gguf", "revision": "main", "approx_size_mb": 1590},
+      "gguf": {
+        "repo": "cstr/qwen3-vl-2b-crispembed-gguf",
+        "file": "qwen3-vl-2b-q4_k.gguf",
+        "revision": "main",
+        "approx_size_mb": 1590
+      },
       "sample": "tests/regression/images/fox.png",
       "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
-      "expected_text_source": "captured 2026-07-02 on M4 Metal + CPU (CRISPEMBED_FORCE_CPU=1) at q4_k. Guards the Qwen3-VL vision preprocessing-order path (shared qwen2vl_ocr engine, is_qwen2_vl=true + deepstack): rope + merger grouping must be unconditional merge-block/consecutive. A gate keyed off is_qwen2_vl or deepstack re-garbles this (T11123456789…).",
-      "match": {"max_cer": 0.12}
+      "expected_text_source": "captured 2026-07-02 on M4 Metal + CPU (CRISPEMBED_FORCE_CPU=1) at q4_k. Guards the Qwen3-VL vision preprocessing-order path (shared qwen2vl_ocr engine, is_qwen2_vl=true + deepstack): rope + merger grouping must be unconditional merge-block/consecutive. A gate keyed off is_qwen2_vl or deepstack re-garbles this (T11123456789\u2026).",
+      "match": {
+        "max_cer": 0.12
+      }
     },
     {
       "name": "granite-vision",
       "engine": "granite-vision",
-      "gguf": {"repo": "cstr/granite-vision-crispembed-GGUF", "file": "granite-vision-3.3-2b-q8_0.gguf", "revision": "main", "approx_size_mb": 1800},
+      "gguf": {
+        "repo": "cstr/granite-vision-crispembed-GGUF",
+        "file": "granite-vision-3.3-2b-q8_0.gguf",
+        "revision": "main",
+        "approx_size_mb": 1800
+      },
       "sample": "tests/regression/images/fox.png",
       "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
-      "match": {"max_cer": 0.15},
-      "diff": {"binary": "test-granite-vision-diff", "ref": {"repo": "cstr/granite-vision-crispembed-GGUF", "file": "granite-vision-ref.gguf", "revision": "main"}, "thresholds": {"*": 0.95}}
+      "match": {
+        "max_cer": 0.15
+      },
+      "diff": {
+        "binary": "test-granite-vision-diff",
+        "ref": {
+          "repo": "cstr/granite-vision-crispembed-GGUF",
+          "file": "granite-vision-ref.gguf",
+          "revision": "main"
+        },
+        "thresholds": {
+          "*": 0.95
+        }
+      }
     },
     {
       "name": "lightonocr",
       "engine": "lightonocr",
-      "gguf": {"repo": "cstr/lightonocr-GGUF", "file": "lightonocr-1b-q4_k.gguf", "revision": "main", "approx_size_mb": 622},
+      "gguf": {
+        "repo": "cstr/lightonocr-GGUF",
+        "file": "lightonocr-1b-q4_k.gguf",
+        "revision": "main",
+        "approx_size_mb": 622
+      },
       "sample": "tests/regression/images/fox.png",
       "expected_text": null,
-      "match": {"max_cer": 0.12}
+      "match": {
+        "max_cer": 0.12
+      }
     },
     {
       "name": "paddleocr-vl",
       "engine": "paddleocr-vl",
-      "gguf": {"repo": "cstr/paddleocr-vl-0.9b-GGUF", "file": "paddleocr-vl-0.9b-q8_0.gguf", "revision": "main", "approx_size_mb": 700},
+      "gguf": {
+        "repo": "cstr/paddleocr-vl-0.9b-GGUF",
+        "file": "paddleocr-vl-0.9b-q8_0.gguf",
+        "revision": "main",
+        "approx_size_mb": 700
+      },
       "sample": "tests/regression/images/fox.png",
       "expected_text": "The quick brown fox jumps over the lazy dog.",
-      "match": {"max_cer": 0.12},
-      "diff": {"binary": "test-paddleocr-vl-diff", "ref": {"repo": "cstr/paddleocr-vl-0.9b-GGUF", "file": "paddleocr-vl-ref.gguf"}, "thresholds": {"*": 0.995}}
+      "match": {
+        "max_cer": 0.12
+      },
+      "diff": {
+        "binary": "test-paddleocr-vl-diff",
+        "ref": {
+          "repo": "cstr/paddleocr-vl-0.9b-GGUF",
+          "file": "paddleocr-vl-ref.gguf"
+        },
+        "thresholds": {
+          "*": 0.995
+        }
+      }
     },
     {
       "name": "restormer",
       "engine": "restormer",
       "diff_only": true,
       "_comment": "Restoration/denoise engine: no --ocr path, so the only regression signal is the diff harness (golden 64x64 output vs a PyTorch reference reconstructed from the GGUF via tools/dump_restormer_reference_from_gguf.py). Catches the 2026-07 conv-weight-layout + MDTA scramble class that a std>1 non-degenerate guard passes.",
-      "gguf": {"repo": "cstr/text-super-resolution-gguf", "file": "restormer-denoise-f16.gguf", "revision": "main", "approx_size_mb": 50},
-      "diff": {"binary": "test-restormer-diff", "ref": {"repo": "cstr/text-super-resolution-gguf", "file": "restormer-ref.gguf"}, "thresholds": {"output": 0.99}}
+      "gguf": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "file": "restormer-denoise-f16.gguf",
+        "revision": "main",
+        "approx_size_mb": 50
+      },
+      "diff": {
+        "binary": "test-restormer-diff",
+        "ref": {
+          "repo": "cstr/text-super-resolution-gguf",
+          "file": "restormer-ref.gguf"
+        },
+        "thresholds": {
+          "output": 0.99
+        }
+      }
+    },
+    {
+      "name": "swinir",
+      "engine": "swinir",
+      "diff_only": true,
+      "_comment": "SR/restoration engine (no --ocr): diff harness is the only regression signal. Guards the 2026-06 scalar->ggml conv wave. Model+ref pinned to audit-verified (2026-07).",
+      "gguf": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "file": "swinir-light-x4-f16.gguf",
+        "revision": "main"
+      },
+      "diff": {
+        "binary": "test-swinir-diff",
+        "ref": {
+          "repo": "cstr/text-super-resolution-gguf",
+          "file": "swinir-ref.gguf"
+        },
+        "thresholds": {
+          "output": 0.99
+        }
+      }
+    },
+    {
+      "name": "dat",
+      "engine": "dat",
+      "diff_only": true,
+      "_comment": "SR/restoration engine (no --ocr): diff harness is the only regression signal. Guards the 2026-06 scalar->ggml conv wave. Model+ref pinned to audit-verified (2026-07).",
+      "gguf": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "file": "dat-light-x2-f32.gguf",
+        "revision": "main"
+      },
+      "diff": {
+        "binary": "test-dat-diff",
+        "ref": {
+          "repo": "cstr/text-super-resolution-gguf",
+          "file": "dat-ref.gguf"
+        },
+        "thresholds": {
+          "output": 0.99
+        }
+      }
+    },
+    {
+      "name": "hat",
+      "engine": "hat",
+      "diff_only": true,
+      "_comment": "SR/restoration engine (no --ocr): diff harness is the only regression signal. Guards the 2026-06 scalar->ggml conv wave. Model+ref pinned to audit-verified (2026-07).",
+      "gguf": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "file": "hat-sr-x4-f16.gguf",
+        "revision": "main"
+      },
+      "diff": {
+        "binary": "test-hat-diff",
+        "ref": {
+          "repo": "cstr/text-super-resolution-gguf",
+          "file": "hat-ref.gguf"
+        },
+        "thresholds": {
+          "output": 0.99
+        }
+      }
+    },
+    {
+      "name": "pan",
+      "engine": "pan",
+      "diff_only": true,
+      "_comment": "SR/restoration engine (no --ocr): diff harness is the only regression signal. Guards the 2026-06 scalar->ggml conv wave. Model+ref pinned to audit-verified (2026-07).",
+      "gguf": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "file": "pan-x4-f16.gguf",
+        "revision": "main"
+      },
+      "diff": {
+        "binary": "test-pan-diff",
+        "ref": {
+          "repo": "cstr/text-super-resolution-gguf",
+          "file": "pan-ref.gguf"
+        },
+        "thresholds": {
+          "output": 0.99
+        }
+      }
+    },
+    {
+      "name": "tbsrn",
+      "engine": "tbsrn",
+      "diff_only": true,
+      "_comment": "SR/restoration engine (no --ocr): diff harness is the only regression signal. Guards the 2026-06 scalar->ggml conv wave. Model+ref pinned to audit-verified (2026-07).",
+      "gguf": {
+        "repo": "cstr/text-super-resolution-gguf",
+        "file": "tbsrn-telescope-f16.gguf",
+        "revision": "main"
+      },
+      "diff": {
+        "binary": "test-tbsrn-diff",
+        "ref": {
+          "repo": "cstr/text-super-resolution-gguf",
+          "file": "tbsrn-ref.gguf"
+        },
+        "thresholds": {
+          "output": 0.99
+        }
+      }
+    },
+    {
+      "name": "adair",
+      "engine": "adair",
+      "diff_only": true,
+      "_comment": "SR/restoration engine (no --ocr): diff harness is the only regression signal. Guards the 2026-06 scalar->ggml conv wave. Model+ref pinned to audit-verified (2026-07).",
+      "gguf": {
+        "repo": "cstr/AdaIR-GGUF",
+        "file": "adair-5d-f32.gguf",
+        "revision": "main"
+      },
+      "diff": {
+        "binary": "test-adair-diff",
+        "ref": {
+          "repo": "cstr/text-super-resolution-gguf",
+          "file": "adair-ref.gguf"
+        },
+        "thresholds": {
+          "output": 0.99
+        }
+      }
+    },
+    {
+      "name": "scunet",
+      "engine": "scunet",
+      "diff_only": true,
+      "_comment": "SR/restoration engine (no --ocr): diff harness is the only regression signal. Guards the 2026-06 scalar->ggml conv wave. Model+ref pinned to audit-verified (2026-07).",
+      "gguf": {
+        "repo": "cstr/scunet-GGUF",
+        "file": "scunet-color-f32.gguf",
+        "revision": "main"
+      },
+      "diff": {
+        "binary": "test-scunet-diff",
+        "ref": {
+          "repo": "cstr/scunet-GGUF",
+          "file": "scunet-ref.gguf"
+        },
+        "thresholds": {
+          "output": 0.99
+        }
+      }
+    },
+    {
+      "name": "instructir",
+      "engine": "instructir",
+      "diff_only": true,
+      "_comment": "SR/restoration engine (no --ocr): diff harness is the only regression signal. Guards the 2026-06 scalar->ggml conv wave. Model+ref pinned to audit-verified (2026-07).",
+      "gguf": {
+        "repo": "cstr/InstructIR-GGUF",
+        "file": "instructir-f32.gguf",
+        "revision": "main"
+      },
+      "diff": {
+        "binary": "test-instructir-diff",
+        "ref": {
+          "repo": "cstr/InstructIR-GGUF",
+          "file": "instructir-ref.gguf"
+        },
+        "thresholds": {
+          "output": 0.99
+        }
+      }
     }
   ]
 }
