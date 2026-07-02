@@ -853,6 +853,10 @@ pub struct ScanCleanupParams {
     pub morph_kernel: c_int,
     pub border_threshold: c_float,
     pub deskew_max_angle: c_float,
+    pub despeckle: c_int,
+    pub despeckle_thresh: c_float,
+    pub blackfilter: c_int,
+    pub blackfilter_thresh: c_float,
 }
 
 extern "C" {
@@ -878,6 +882,24 @@ extern "C" {
     ) -> c_int;
 
     pub fn crispembed_scan_cleanup_free_image(pixels: *mut u8);
+
+    pub fn crispembed_scan_cleanup_detect_page_split(
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+    ) -> c_int;
+
+    pub fn crispembed_scan_cleanup_content_bbox(
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        x0: *mut c_int,
+        y0: *mut c_int,
+        x1: *mut c_int,
+        y1: *mut c_int,
+    ) -> c_int;
 
     // ── Text super-resolution ──
     pub fn crispembed_text_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
