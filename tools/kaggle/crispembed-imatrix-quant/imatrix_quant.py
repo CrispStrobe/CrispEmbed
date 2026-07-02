@@ -58,12 +58,11 @@ DEFAULT_BATCH = [
     "all-MiniLM-L6-v2", "all-MiniLM-L12-v2", "all-mpnet-base-v2", "gte-small",
     "arctic-embed-xs", "snowflake-arctic-embed-m", "snowflake-arctic-embed-l",
     "paraphrase-multilingual-MiniLM-L12-v2", "harrier-270m", "harrier-0.6b",
+    # embeddinggemma-300m re-enabled: the dense.* keep-F32 guard in
+    # tools/quantize.cpp fixes the "tensor read out of bounds" load failure.
+    "embeddinggemma-300m",
     # DEFERRED (f32 base 16-30GB > Kaggle ~13GB RAM for calibration; need a
     # calibrate-on-q8 / quantize-from-f16 path): octen-4b/8b, qwen3-embed-4b/8b.
-    # embeddinggemma-300m EXCLUDED: crispembed-quantize corrupts its ST Dense
-    # projection (dense.0/dense.1 → q8_0) so the output GGUF fails to load
-    # ("tensor read out of bounds" in load_decoder_model). Needs a keep-F32 guard
-    # for dense.* in tools/quantize.cpp before it can be added back.
 ]
 RUN = [m.strip() for m in os.environ.get("MODELS", "").split(",") if m.strip()] or DEFAULT_BATCH
 

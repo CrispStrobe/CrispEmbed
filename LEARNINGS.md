@@ -1704,13 +1704,13 @@ the Kaggle batch (`tools/kaggle/crispembed-imatrix-quant/`):
   `-clustering`/`-text-matching` adapter GGUFs at the SAME size as the base
   retrieval model, so "largest non-quant .gguf" picked one → quantized the wrong
   weights. Fix: prefer the exact `{name}.gguf` and exclude task-suffix variants.
-- **crispembed-quantize corrupts SentenceTransformer Dense projections.**
-  embeddinggemma-300m quantizes `dense.0/dense.1` (the ST Dense/Matryoshka heads)
-  to q8_0; the output GGUF then fails to load — `GGML_ASSERT(offset+size <=
-  ggml_nbytes) "tensor read out of bounds"` in `load_decoder_model`. The base
-  loads/embeds fine; only the quantized output breaks. Needs a keep-original
-  guard for `dense.*` in `tools/quantize.cpp` (like the norm/embedding guards)
-  before embeddinggemma (or any ST-Dense model) can be imatrix-quantized.
+- **crispembed-quantize + SentenceTransformer Dense projections — FIXED (2026-07).**
+  embeddinggemma-300m quantized `dense.0/dense.1` (ST Dense/Matryoshka heads) to
+  q8_0; the output GGUF then failed to load — `GGML_ASSERT(offset+size <=
+  ggml_nbytes) "tensor read out of bounds"` in `load_decoder_model`. PROVEN by
+  diffing vs the working reference q8_0 (only dense.* differed: F32 vs Q8_0). Fix:
+  a keep-F32 guard for `dense.*` in `tools/quantize.cpp`; re-quantized output
+  loads + embeds cleanly (verified locally). Applies to any ST-Dense model.
 - **Some models quantize poorly at 4-bit regardless of imatrix.** f2llm-v2-0.6b
   q4_k baseline 0.683 → +imatrix only 0.830; nomic-embed-text-v1.5 0.837 → 0.905.
   imatrix still helps, but for these keep q8_0 as the recommended flavor.

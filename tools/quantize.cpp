@@ -310,6 +310,15 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         if (is_add_operand) {
             is_tiny_embd = true;  // force copy-as-is
         }
+        // SentenceTransformer Dense / Matryoshka projection heads (dense.0/dense.1):
+        // the decoder_embed loader reads these as F32, so quantizing them makes the
+        // output GGUF fail to load ("tensor read out of bounds"). Keep at original
+        // precision. Verified on embeddinggemma-300m: only dense.* differed from the
+        // working reference q8_0 (F32 there, Q8_0 here → unloadable), and re-quantizing
+        // with this guard loads + embeds cleanly.
+        if (sname.rfind("dense.", 0) == 0 || sname.find(".dense.") != std::string::npos) {
+            is_tiny_embd = true;  // force copy-as-is (keep F32)
+        }
         bool quantize = (ggml_is_quantized(qtype) || qtype == GGML_TYPE_F16) &&
                         (type == GGML_TYPE_F32 || type == GGML_TYPE_F16) &&
                         (ggml_n_dims(t) >= 2) &&

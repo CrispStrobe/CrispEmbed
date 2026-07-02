@@ -451,10 +451,10 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
 
   imatrix always lifts 4-bit; **IQ4_XS+imatrix wins on the XLM-R/BERT encoders**
   (smaller AND higher cos), **q4_k+imatrix on the decoder embedders** (Qwen3/LFM2).
-  GTE `NewModel` arch and nomic-v2-MoE both worked. **embeddinggemma-300m EXCLUDED**
-  — `crispembed-quantize` corrupts its ST Dense projection (needs a `dense.*`
-  keep-F32 guard; see `LEARNINGS.md`). f2llm/nomic-v1.5 quantize poorly at 4-bit
-  even with imatrix → keep q8_0.
+  GTE `NewModel` arch and nomic-v2-MoE both worked. **embeddinggemma-300m** was a
+  quantizer bug (`dense.*` ST projection quantized → unloadable GGUF), now **FIXED**
+  with a `dense.*` keep-F32 guard (`tools/quantize.cpp`; see `LEARNINGS.md`) and
+  re-enabled. f2llm/nomic-v1.5 quantize poorly at 4-bit even with imatrix → keep q8_0.
 - Registry defaults for the FIRST 5 already repointed to the A/B winner
   (`model_mgr.cpp`; `-q4k`→imatrix, `-iq4xs`/`-q8` aliases). **TODO:** repoint the
   other 15 (winner column above; keep q8_0 for f2llm/nomic-v1.5); a `dense.*`
