@@ -658,8 +658,8 @@ static void encoder_forward(ggml_context* g, const hybrid_encoder& enc,
         V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
         auto* attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, 1.0f/sqrtf((float)hd), 0.0f, 0.0f);
-        // [hd, N, heads] → [hd, heads, N] → [D, N]
-        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        // flash_attn_ext already applies permute(0,2,1,3): output is [hd, heads, N].
+        // Reshape straight to [D, N] — the old manual path's extra permute scrambled it.
         attn = ggml_reshape_2d(g, attn, D_a, N_tok);
 
         // Output projection
@@ -1371,8 +1371,8 @@ std::vector<region> detect(context* ctx, const float* pixels,
             V = ggml_cont(gc, ggml_permute(gc, V, 0, 2, 1, 3));
 
             auto* attn = ggml_flash_attn_ext(gc, Q, K, V, nullptr, 1.0f/sqrtf((float)hd), 0.0f, 0.0f);
-            // [hd, N, heads] → [hd, heads, N] → [D, N]
-            attn = ggml_cont(gc, ggml_permute(gc, attn, 0, 2, 1, 3));
+            // flash_attn_ext already applies permute(0,2,1,3): output is [hd, heads, N].
+            // Reshape straight to [D, N] — the old manual path's extra permute scrambled it.
             attn = ggml_reshape_2d(gc, attn, D, N_queries);
 
             // Output projection + residual + norm
