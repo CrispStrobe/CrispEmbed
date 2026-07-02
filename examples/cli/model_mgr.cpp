@@ -364,8 +364,7 @@ static const ModelEntry k_registry[] = {
 
     { "gte-modernbert-base", "gte-modernbert-base-q8_0.gguf",
       "https://huggingface.co/cstr/gte-modernbert-base-GGUF/resolve/main/gte-modernbert-base-q8_0.gguf",
-      "ModernBERT 768d English CLS, alternating global/local SWA + per-layer RoPE (149M)",
-      "152 MB", "apache-2.0",
+      "ModernBERT 768d English CLS, alternating global/local SWA + per-layer RoPE (149M)", "152 MB", "apache-2.0",
       "https://huggingface.co/Alibaba-NLP/gte-modernbert-base" },
 
     { "embeddinggemma-300m", "embeddinggemma-300m.gguf",
