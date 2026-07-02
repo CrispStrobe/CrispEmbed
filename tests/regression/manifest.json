@@ -422,6 +422,27 @@
         },
         "_note": "output floor 0.95: uint8-clamped 4x SR output vs float ref + backend variance gives ~0.987 on Metal/CPU (passed harness's own gate on Kaggle CUDA); a scramble regression craters to ~0."
       }
+    },
+    {
+      "name": "lilt",
+      "engine": "lilt",
+      "diff_only": true,
+      "_comment": "LiLT KIE encoder guardrail (no --ocr). Ref = dump_lilt_reference.py all 12 layers; 24/24 encoder stages cos 1.0 locally. NOTE: label predictions are meaningless (base checkpoint ships an untrained classifier head) \u2014 the encoder stages are the signal.",
+      "gguf": {
+        "repo": "cstr/lilt-base-GGUF",
+        "file": "lilt-base-f32.gguf",
+        "revision": "main"
+      },
+      "diff": {
+        "binary": "test-lilt-diff",
+        "ref": {
+          "repo": "cstr/lilt-base-GGUF",
+          "file": "lilt-ref.gguf"
+        },
+        "thresholds": {
+          "*": 0.99
+        }
+      }
     }
   ]
 }
