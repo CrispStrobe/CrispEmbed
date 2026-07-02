@@ -1865,6 +1865,17 @@ the Kaggle batch (`tools/kaggle/crispembed-imatrix-quant/`):
 - **Some models quantize poorly at 4-bit regardless of imatrix.** f2llm-v2-0.6b
   q4_k baseline 0.683 → +imatrix only 0.830; nomic-embed-text-v1.5 0.837 → 0.905.
   imatrix still helps, but for these keep q8_0 as the recommended flavor.
+- **Big models: calibrate on the q8_0, quantize from the f32 base.** A 4B/8B f32
+  base (16/30 GB) can't be *loaded for inference* on Kaggle's ~13 GB RAM, which
+  calibration needs. But the imatrix is **activation statistics**, and q8_0 is
+  ~lossless (cos ~0.9998), so calibrating on the q8_0 (4.3/8 GB — fits RAM) yields
+  essentially the same imatrix. Quantization itself is fine on the f32 base:
+  `crispembed-quantize` reads it **tensor-by-tensor** (fseek+fread, no whole-model
+  load), so RAM stays low regardless of file size. So the big-base recipe is:
+  calibrate + A/B-gold on the q8_0, quantize from the f32 base, stage the big files
+  in `/tmp` (~70 GB) not `/kaggle/working` (~20 GB, kaggle_usage.md #18). A/B is then
+  cos-vs-q8 (the q8 is the practical gold). This avoids a CUDA build entirely — no
+  GPU needed just to fit the model, since we never load the full-precision weights.
 
 ### Metal mul_mm F16 kernel selection (why set_prec doesn't help)
 

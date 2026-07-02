@@ -142,11 +142,22 @@ from `hf-space/`.
 Q8_0 = all PASS (cos >= 0.995). Q4_K = most PASS; `--` = SwiGLU/GeGLU too sensitive for aggressive quants.
 Q4_K cosines for the 4B/8B decoder rows are min-cos vs **bf16** HF (the native training precision; full f32 would not fit in 16 GB RAM).
 
+### Quantization: imatrix defaults
+
+Text-embedding GGUFs are quantized with an **importance matrix** (imatrix,
+activation-weighted) — see `HISTORY.md`. `-m <model>` auto-downloads each model's
+best-tested small flavor (per-model A/B winner): **IQ4_XS+imatrix** on most
+XLM-R/BERT encoders, **Q4_K+imatrix** on the Qwen3/LFM2 decoder embedders. Every
+model also exposes `-q4k` (imatrix), `-iq4xs`, and `-q8` variants by name (e.g.
+`-m bge-m3-q8`). A couple that quantize poorly at 4-bit (f2llm, nomic-embed-text-v1.5)
+default to Q8_0.
+
 ### Known issues
 
 - **NomicBERT quantization**: SwiGLU gate/value projections are sensitive to
-  aggressive quantization. Q5_K (cos~0.95) and Q4_K (cos~0.85) degrade
-  significantly. **Use F32 or Q8_0 only** for this model.
+  aggressive quantization; plain Q4_K (cos~0.85) degrades significantly, though
+  **IQ4_XS+imatrix recovers most of it** (nomic-embed-text-v1.5 0.837 → 0.905).
+  For maximum fidelity use Q8_0 (`-m nomic-embed-text-v1.5` defaults to Q8_0).
 - **Jina v5 LoRA adapters**: Jina v5 models use task-specific LoRA adapters.
   GGUFs have the `retrieval` adapter merged. Other tasks (text-matching,
   clustering, classification) require separate GGUFs.
