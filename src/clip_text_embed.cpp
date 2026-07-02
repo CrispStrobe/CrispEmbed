@@ -10,6 +10,7 @@
 #include "clip_text_embed.h"
 #include "tokenizer.h"
 #include "core/gguf_loader.h"
+#include "core/ggml_metal_guard.h"
 
 #include "ggml.h"
 #include "ggml-alloc.h"
@@ -347,7 +348,8 @@ std::vector<float> encode(context * ctx, const char * text) {
 
         // Flash attention with causal mask
         float scale = 1.0f / std::sqrt((float)hd);
-        ggml_tensor * attn = ggml_flash_attn_ext(g, Q, K, V, causal_mask, scale, 0.0f, 0.0f);
+        ggml_tensor * attn =
+            core_ggml::assert_fa_layout(ggml_flash_attn_ext(g, Q, K, V, causal_mask, scale, 0.0f, 0.0f), hd, nh);
         attn = ggml_reshape_2d(g, attn, D, T);
 
         // Output projection

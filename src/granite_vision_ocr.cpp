@@ -21,6 +21,7 @@
 #include "core/gguf_loader.h"
 #include "core/vlm_attention.h"
 #include "core/cpu_ops.h"
+#include "core/ggml_metal_guard.h"
 #include "ggml-cpu.h"
 #include "ggml-backend.h"
 
@@ -845,9 +846,9 @@ static bool gv_run_llm_body(granite_vision_context * ctx, const float * embeds, 
         ggml_tensor * gu = ggml_mul(g, gate, up);
         // The ÷256/×256 exponent shift only guards the F16 mul_mm cast used for the
         // batched prefill (T > ne11_mm_min = 8). T=1 decode uses mul_mv in F32, so
-        // skip the two scale kernels entirely — saves ~2 dispatches/layer/token.
-        ggml_tensor * down = (T > 8) ? ggml_scale(g, ggml_mul_mat(g, sw(dw), ggml_scale(g, gu, 1.0f / 256.0f)), 256.0f)
-                                     : ggml_mul_mat(g, sw(dw), gu);
+        // the guard skips the two scale kernels entirely — saves ~2 dispatches/
+        // layer/token. Shared helper: core/ggml_metal_guard.h.
+        ggml_tensor * down = core_ggml::mul_mat_f16_guarded(g, sw(dw), gu, T);
         x = ggml_add(g, resid, ggml_scale(g, down, res_mul));
 
         if (dump_cb) {
