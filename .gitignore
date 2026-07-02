@@ -31,3 +31,6 @@ build-embed-wasm/
 # local model/blueprint downloads (this session)
 .models-tmp/
 .ds-blueprints/
+
+# scan_cleanup benchmark output
+scan-bench/
