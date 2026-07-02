@@ -739,6 +739,18 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
   Also: manual F32 attention (`PCS_FLASH_ATTN=1` restores flash). Guard `pcs` now pins the exact
   golden on **q8_0** (exact + backend-robust; q4_k has the 1-char quant flip). Registry adds `pcs-q8`.
   fireredpunc was unaffected (WordPiece + F16 cls head, in-graph mul_mat).
+- **encoder-parity audit (pcs follow-up) — CLOSED.** Swept both repos for the pcs bug classes.
+  Confirmed + fixed: **fullstop-punc** (XLM-R-large via the fireredpunc SP path) had the full set —
+  greedy tokenizer→Unigram Viterbi (needs `tokenizer.ggml.scores`; GGUFs re-converted+re-uploaded),
+  eps 1e-12→1e-5 (conditional on `is_sentencepiece`), tanh→erf GELU; verified exact vs HF
+  (oliverguhr/fullstop-punctuation-multilang-large), guard added. **GELU tanh→erf** (config-confirmed
+  `hidden_act="gelu"`=exact): `gliner_ner.cpp` (DeBERTa-v3), `lilt_kie.cpp` layout FFN (text was
+  already erf), `fireredpunc.cpp` (both BERT + XLM-R), `bert_encoder.cpp` (CrispASR/MeloTTS).
+  **Quant-read crash** (pcs class): `crispembed.cpp` MLM/SPLADE head read quantized `token_embd`
+  /`mlm_transform_w` as raw F32 → now `core_cpu::to_f32` (dequant-safe). Fused-QKV was already guarded.
+  The dead `src/{pcs,fireredpunc}.cpp` fallback duplicates (built only without crisp_punc) were
+  unified to the fixed crisp_punc copies. Not portable (pcs-specific): SBD 0.05 threshold, truecase
+  shifted conditioning, decode subtoken-count. m2m100 greedy-SP is a self-labeled placeholder (left).
 - **decoder_embed — CLEAN, CLOSED.** Added a compiled guardrail: `test_decoder_embed_diff.cpp`
   (crispembed_encode → final last-token-pooled embedding) vs an independent Qwen3-Embedding-0.6B
   HF ref (`dump_decoder_embed_reference.py`). Engine (q8_0) matches cos 0.9993; wired `diff_only`,

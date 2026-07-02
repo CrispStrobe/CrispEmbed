@@ -445,7 +445,8 @@ static ggml_cgraph * build_graph(context * ctx, int T, bool dump = false) {
         ggml_tensor * layout_ffn_inp = lcur;
         ggml_tensor * lffn = ggml_mul_mat(g, L.lfc1_w, lcur);
         if (L.lfc1_b) lffn = ggml_add(g, lffn, L.lfc1_b);
-        lffn = ggml_gelu(g, lffn);
+        // LiLT hidden_act="gelu" = exact (erf); match the text FFN above (was tanh here).
+        lffn = ggml_gelu_erf(g, lffn);
         lffn = ggml_mul_mat(g, L.lfc2_w, lffn);
         if (L.lfc2_b) lffn = ggml_add(g, lffn, L.lfc2_b);
         lcur = ggml_add(g, layout_ffn_inp, lffn);
