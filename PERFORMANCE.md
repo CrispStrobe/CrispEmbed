@@ -121,6 +121,20 @@ PyTorch's native batch parallelism (more mature GPU batching).
 Optimizations: graph caching, flash attention (fused QKV), buffer reuse,
 sorted batch processing (group by token count for graph cache hits).
 
+**True single-graph batching for bidirectional encoders (2026-07, opt-in).** The
+default path encodes each text in its own graph. Two fused batch paths are available
+for absolute-position encoders (BERT/XLM-R/MiniLM/BGE/E5), both bit-parity with
+per-sequence encoding (cos ≥ 0.9999):
+
+| Path | Env | Attention | Notes |
+|------|-----|-----------|-------|
+| Packed block-diagonal | `CRISPEMBED_ENCODER_PACKED=1` | O(T_total²) | one graph, block-diagonal mask; token-budget grouped (`CRISPEMBED_ENCODER_PACK_MAXTOK`, def 384). Size/backend dependent |
+| Rectangular 4D per-item | `CRISPEMBED_ENCODER_4D=1` | O(B·T²) | separate 4D items + per-item pad mask; length-sorted chunks (`CRISPEMBED_ENCODER_4D_GROUP`, def 32) |
+
+The 4D path is **consistently faster than both sequential and packed** (≈1.2×–1.5× at
+batch 8/32/128 of short texts, on M1 CPU) and is the recommended path; it stays opt-in
+pending a real-Metal A/B (measurements above are CPU-only). See PLAN.md § C3.
+
 ## Comparison with HuggingFace and fastembed (ONNX)
 
 Single-text latency, same hardware (CPU, 4 threads).
