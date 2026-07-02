@@ -1,8 +1,10 @@
 // tokenizer_bpe.cpp — BPE tokenizer for decoder models.
 //
-// Two modes:
+// Three modes:
 // - GPT-2 byte-level BPE (Qwen3): uses core_bpe from CrispASR
 // - SentencePiece BPE (Gemma): ▁ space marker, standard BPE merges
+// - CLIP text BPE (OpenAI CLIP): lowercase + whitespace-clean + regex
+//   pre-tokenize + byte-level encode + </w> end-of-word suffix
 
 #include "tokenizer.h"
 #include "core/bpe.h"
@@ -15,7 +17,8 @@
 #include <vector>
 
 bool BPETokenizer::load(const std::vector<std::string> & vocab, const std::vector<std::string> & merges, int eos_id,
-                        int pad_id, int suffix_id, int bos_id, bool spm_style, int max_length, bool spm_dummy_prefix) {
+                        int pad_id, int suffix_id, int bos_id, bool spm_style, int max_length, bool spm_dummy_prefix,
+                        bool clip_style) {
     id_to_token_ = vocab;
     token_to_id_.clear();
     token_to_id_.reserve(vocab.size());
@@ -35,8 +38,57 @@ bool BPETokenizer::load(const std::vector<std::string> & vocab, const std::vecto
     bos_id_ = bos_id;
     spm_style_ = spm_style;
     spm_dummy_prefix_ = spm_dummy_prefix;
+    clip_style_ = clip_style;
     max_length_ = max_length;
     return !vocab.empty();
+}
+
+// Rank-merge a list of initial symbols in place. Priority-queue BPE:
+// O(N log N) instead of O(N²). Symbol identity uses "left right" string
+// concatenation to match the textual merge table.
+void BPETokenizer::merge_symbols(std::vector<std::string> & symbols) const {
+    if (symbols.size() < 2) return;
+
+    struct Node {
+        std::string text;
+        int prev, next;
+    };
+    int n = (int)symbols.size();
+    std::vector<Node> nodes(n);
+    for (int i = 0; i < n; i++) {
+        nodes[i].text = std::move(symbols[i]);
+        nodes[i].prev = i - 1;
+        nodes[i].next = i < n - 1 ? i + 1 : -1;
+    }
+    using PQE = std::pair<int, int>;
+    auto cmp = [](const PQE & a, const PQE & b) { return a.first > b.first; };
+    std::priority_queue<PQE, std::vector<PQE>, decltype(cmp)> pq(cmp);
+    auto try_add = [&](int i) {
+        int j = nodes[i].next;
+        if (j < 0) return;
+        std::string pair = nodes[i].text + " " + nodes[j].text;
+        auto it = merge_rank_.find(pair);
+        if (it != merge_rank_.end()) pq.push({ it->second, i });
+    };
+    for (int i = 0; i < n; i++) try_add(i);
+    while (!pq.empty()) {
+        auto [rank, left] = pq.top();
+        pq.pop();
+        int right = nodes[left].next;
+        if (right < 0) continue;
+        std::string pair = nodes[left].text + " " + nodes[right].text;
+        auto it = merge_rank_.find(pair);
+        if (it == merge_rank_.end() || it->second != rank) continue;
+        nodes[left].text += nodes[right].text;
+        nodes[left].next = nodes[right].next;
+        if (nodes[right].next >= 0) nodes[nodes[right].next].prev = left;
+        nodes[right].next = -1;
+        nodes[right].prev = -1;
+        if (nodes[left].prev >= 0) try_add(nodes[left].prev);
+        try_add(left);
+    }
+    symbols.clear();
+    for (int i = 0; i >= 0; i = nodes[i].next) symbols.push_back(nodes[i].text);
 }
 
 // SentencePiece-style BPE: split into initial tokens, then merge by rank.
@@ -62,49 +114,7 @@ std::vector<int32_t> BPETokenizer::bpe_merge(const std::string & text) const {
         i += len;
     }
 
-    // Priority-queue BPE: O(N log N) instead of O(N²)
-    if (symbols.size() >= 2) {
-        struct Node {
-            std::string text;
-            int prev, next;
-        };
-        int n = (int)symbols.size();
-        std::vector<Node> nodes(n);
-        for (int i = 0; i < n; i++) {
-            nodes[i].text = std::move(symbols[i]);
-            nodes[i].prev = i - 1;
-            nodes[i].next = i < n - 1 ? i + 1 : -1;
-        }
-        using PQE = std::pair<int, int>;
-        auto cmp = [](const PQE & a, const PQE & b) { return a.first > b.first; };
-        std::priority_queue<PQE, std::vector<PQE>, decltype(cmp)> pq(cmp);
-        auto try_add = [&](int i) {
-            int j = nodes[i].next;
-            if (j < 0) return;
-            std::string pair = nodes[i].text + " " + nodes[j].text;
-            auto it = merge_rank_.find(pair);
-            if (it != merge_rank_.end()) pq.push({ it->second, i });
-        };
-        for (int i = 0; i < n; i++) try_add(i);
-        while (!pq.empty()) {
-            auto [rank, left] = pq.top();
-            pq.pop();
-            int right = nodes[left].next;
-            if (right < 0) continue;
-            std::string pair = nodes[left].text + " " + nodes[right].text;
-            auto it = merge_rank_.find(pair);
-            if (it == merge_rank_.end() || it->second != rank) continue;
-            nodes[left].text += nodes[right].text;
-            nodes[left].next = nodes[right].next;
-            if (nodes[right].next >= 0) nodes[nodes[right].next].prev = left;
-            nodes[right].next = -1;
-            nodes[right].prev = -1;
-            if (nodes[left].prev >= 0) try_add(nodes[left].prev);
-            try_add(left);
-        }
-        symbols.clear();
-        for (int i = 0; i >= 0; i = nodes[i].next) symbols.push_back(nodes[i].text);
-    }
+    merge_symbols(symbols);
 
     // Convert symbols to token IDs
     std::vector<int32_t> ids;
@@ -128,10 +138,125 @@ std::vector<int32_t> BPETokenizer::bpe_merge(const std::string & text) const {
     return ids;
 }
 
+namespace {
+// UTF-8 codepoint length from a leading byte (malformed → 1 for progress).
+inline size_t clip_utf8_len(unsigned char c) {
+    if (c < 0x80) return 1;
+    if ((c & 0xE0) == 0xC0) return 2;
+    if ((c & 0xF0) == 0xE0) return 3;
+    if ((c & 0xF8) == 0xF0) return 4;
+    return 1;
+}
+inline bool clip_is_space(unsigned char c) {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v';
+}
+inline bool clip_is_digit(unsigned char c) {
+    return c >= '0' && c <= '9';
+}
+// CLIP's regex \p{L}: ASCII letters plus any non-ASCII byte (a multi-byte
+// UTF-8 letter such as é/ï/CJK). Rare non-ASCII punctuation is approximated
+// as a letter, harmless for CLIP's short-caption domain.
+inline bool clip_is_letter(unsigned char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= 0x80);
+}
+} // namespace
+
+// OpenAI CLIP text pre-tokenizer. Reproduces:
+//   whitespace_clean(basic_clean(text)).lower() then re.findall(pat, text)
+// with pat = 's|'t|'re|'ve|'m|'ll|'d|[\p{L}]+|[\p{N}]|[^\s\p{L}\p{N}]+
+// (single space collapse + strip are implicit — whitespace is just skipped).
+std::vector<std::string> BPETokenizer::clip_pretokenize(const std::string & text) const {
+    std::string s;
+    s.reserve(text.size());
+    for (unsigned char c : text) s.push_back((c >= 'A' && c <= 'Z') ? (char)(c - 'A' + 'a') : (char)c);
+
+    std::vector<std::string> out;
+    const size_t n = s.size();
+    size_t i = 0;
+    while (i < n) {
+        unsigned char c = (unsigned char)s[i];
+        if (clip_is_space(c)) {
+            i++;
+            continue;
+        }
+        // Contractions: 're 've 'll (two-letter) then 's 't 'm 'd (one-letter).
+        if (c == '\'' && i + 1 < n) {
+            if (i + 2 < n) {
+                std::string two = s.substr(i + 1, 2);
+                if (two == "re" || two == "ve" || two == "ll") {
+                    out.push_back(s.substr(i, 3));
+                    i += 3;
+                    continue;
+                }
+            }
+            unsigned char d = (unsigned char)s[i + 1];
+            if (d == 's' || d == 't' || d == 'm' || d == 'd') {
+                out.push_back(s.substr(i, 2));
+                i += 2;
+                continue;
+            }
+        }
+        if (clip_is_letter(c)) { // [\p{L}]+
+            size_t j = i;
+            while (j < n && clip_is_letter((unsigned char)s[j])) j += clip_utf8_len((unsigned char)s[j]);
+            out.push_back(s.substr(i, j - i));
+            i = j;
+            continue;
+        }
+        if (clip_is_digit(c)) { // [\p{N}] — a single digit per token
+            out.push_back(s.substr(i, 1));
+            i++;
+            continue;
+        }
+        // [^\s\p{L}\p{N}]+ — a run of punctuation/symbols.
+        size_t j = i;
+        while (j < n) {
+            unsigned char e = (unsigned char)s[j];
+            if (clip_is_space(e) || clip_is_letter(e) || clip_is_digit(e)) break;
+            j++;
+        }
+        out.push_back(s.substr(i, j - i));
+        i = j;
+    }
+    return out;
+}
+
+// Byte-level encode one CLIP pre-token, append </w> to its final symbol,
+// rank-merge, and append the resulting vocab IDs.
+void BPETokenizer::clip_bpe_word(const std::string & pretoken, std::vector<int32_t> & out) const {
+    if (pretoken.empty()) return;
+    std::string enc = core_bpe::bytes_to_unicode(pretoken.data(), pretoken.size());
+
+    std::vector<std::string> symbols;
+    size_t i = 0;
+    while (i < enc.size()) {
+        size_t len = std::min(clip_utf8_len((unsigned char)enc[i]), enc.size() - i);
+        symbols.emplace_back(enc, i, len);
+        i += len;
+    }
+    if (symbols.empty()) return;
+    symbols.back() += "</w>"; // end-of-word marker on the last character
+
+    merge_symbols(symbols);
+
+    for (const auto & sym : symbols) {
+        auto it = token_to_id_.find(sym);
+        if (it != token_to_id_.end()) out.push_back(it->second);
+        // Unknown symbols cannot occur with a complete CLIP vocab (every
+        // byte-unicode char exists both plain and with </w>); skip if so.
+    }
+}
+
 embed_tokens BPETokenizer::encode(const std::string & text) const {
     std::vector<int32_t> ids;
 
-    if (spm_style_) {
+    if (clip_style_) {
+        // OpenAI CLIP text: regex pre-tokenize + byte-level BPE with </w>.
+        for (const auto & pt : clip_pretokenize(text)) clip_bpe_word(pt, ids);
+        // Wrap with <|startoftext|> (BOS) and <|endoftext|> (EOS).
+        if (bos_id_ >= 0) ids.insert(ids.begin(), bos_id_);
+        if (eos_id_ >= 0) ids.push_back(eos_id_);
+    } else if (spm_style_) {
         // SentencePiece normalization: optional add_dummy_prefix (a leading
         // space → ▁ at the very start, used by ERNIE-4.5/PaddleOCR-VL), then
         // every space → ▁ (U+2581). Newlines and other bytes fall through to
