@@ -746,6 +746,10 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
 - **vit_embed / clip_text / cnn_embed / bidirlm_vision — LOW (perf-only).** Last wave edit was
   `632b4c1 perf: disable OpenMP / default 1 thread` (threading, not numeric). Standing
   guardrails nonetheless; GGUFs + HF sources available → closeable locally.
+  **bidirlm_vision CLOSED (2026-07):** `test-bidirlm-vision-diff` +
+  `tools/dump_bidirlm_vision_reference.py` (HF BidirLMOmniVisionModel, visual.* only)
+  + `diff_only` manifest entry; ref on `cstr/bidirlm-omni-2.5b-GGUF`. q8_0 image_embeds
+  cos 0.997, deepstack 0.9998/0.9938 (per-token mean); run_one PASS. q4_k 0.97 quant floor.
 - **fireredpunc / bidirlm_audio — LOW.** Only `402b38d feat: benchmark instrumentation` (no
   numeric change). fireredpunc GGUF + BERT source available → closeable.
 - **bidirlm (text) — Kaggle-queued.** BidirLM-Omni-2.5B (2.5B, too large for local ref-gen) added

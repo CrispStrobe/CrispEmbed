@@ -4,6 +4,51 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 2, 2026 — ggml v0.10.0 GPU-teardown regressions fixed + bidirlm-vision parity harness
+
+A ggml submodule bump to **v0.10.0 (`8be60f83`)** silently changed two runtime
+contracts, crashing GPU runs that had worked days earlier. All fixed; neither was
+CrispEmbed logic. See `LEARNINGS.md → "ggml v0.10.0 … GPU-teardown regressions"`.
+
+**The regressions.**
+- **Metal residency-set teardown abort** (`ggml-metal-device.m:612`). v0.10.0 added
+  a Metal GPU keep-alive cache (180 s, background heartbeat) with a hard teardown
+  assert `[rsets->data count]==0` in `ggml_metal_device_free`. Any leaked GPU buffer
+  at process exit aborts (SIGABRT / exit 134) **after** results print — corrupting
+  exit codes and making passing one-shot CLI / `test-*-diff` runs report false
+  "signal 6" failures (and breaking `run_one.py` pass/fail).
+- **Scheduler CPU-fallback assert** (`ggml-backend.cpp:1736`). `ggml_backend_sched_new`
+  now requires the last backend to be CPU; `lfm2_embed` built a Metal-only sched and
+  aborted at load, masking lfm2 entirely.
+- **CUDA hits the same leak** as SIGSEGV/SIGABRT (swinir/dat/tbsrn, gliner/
+  lfm2_colbert/layout-heron/lfm2_embed) — no `NO_RESIDENCY` switch there.
+
+**Fixes.**
+- Library constructor in `core/gguf_loader.cpp` sets `GGML_METAL_NO_RESIDENCY` by
+  default (opt back in with `CRISPEMBED_METAL_RESIDENCY=1` for long-lived hosts,
+  which free via `crispembed_free` and are leak-clean). Restores pre-bump behavior.
+- `lfm2_embed` appends a CPU fallback backend (fireredpunc issue-#68 pattern) — lfm2
+  now runs on Metal, **test-lfm2-diff per-layer cos ≥ 0.9999**.
+- **`core_util::clean_exit(rc)`** (`src/core/clean_exit.h`): flush + `std::_Exit`,
+  skipping the static-dtor GPU-device teardown backend-agnostically. Applied to the
+  CLI + all 90 `tests/*.cpp` mains; long-lived hosts keep `crispembed_free`. Fixes
+  **both Metal and CUDA** teardown crashes, preserves pass/fail exit codes.
+- **CI guard** (`tools/check_test_clean_exit.sh` + a `build.yml` job) fails if any
+  test/CLI main bypasses `clean_exit`.
+- Server + all bindings (Python/Rust/Dart load `libcrispembed` as a shared lib, so
+  the constructor runs at load) get the safe default automatically — no changes.
+
+**bidirlm-vision parity + regression harness.** The cached bidirlm q4_k GGUF was a
+stale **text-only** export (0 vision tensors); re-downloaded the full HF q4_k (315
+`visual.*` tensors, +427 MB). Confirmed the tower is correct — live HF parity
+(`test_bidirlm_vision.py`) gives **image_embeds cos 0.997 (q8_0)**, deepstack
+0.9998/0.9938; q4_k's 0.97 is the quant floor on massive-activation deepstack dims.
+Added the standard `-ref.gguf` guard (`tools/dump_bidirlm_vision_reference.py` +
+`test-bidirlm-vision-diff` + manifest entry; ref on `cstr/bidirlm-omni-2.5b-GGUF`)
+so bidirlm vision now has the same CI-wired parity guard as the other engines —
+`run_one --name bidirlm-vision` PASSes. Also fixed `crispembed.image.preprocess_image`
+(`return_tensors="pt"` fallback for pt-only custom processors).
+
 ## July 2, 2026 — imatrix quantization (C1): 31 embedders re-quantized, registry defaults switched to best flavor
 
 Started from a **llama.cpp parity audit** (which of our architectures upstream now
