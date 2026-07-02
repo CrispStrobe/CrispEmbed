@@ -109,9 +109,11 @@ private:
 };
 
 // BPE tokenizer for decoder embedding models.
-// Supports two modes:
+// Supports three modes:
 //   GPT-2 style (Qwen3): byte-level encoding with Ġ space marker
 //   SentencePiece style (Gemma): ▁ space marker, BOS/EOS tokens
+//   CLIP style (OpenAI CLIP text): lowercase + whitespace-clean + regex
+//     pre-tokenize + byte-level encoding with </w> end-of-word suffix
 class BPETokenizer {
 public:
     bool load(const std::vector<std::string> & vocab, const std::vector<std::string> & merges, int eos_id, int pad_id,
@@ -119,7 +121,8 @@ public:
               int bos_id = -1,        // -1 = no BOS
               bool spm_style = false, // true for SentencePiece BPE (Gemma)
               int max_length = 8192,
-              bool spm_dummy_prefix = false); // add_dummy_prefix (ERNIE/SPM)
+              bool spm_dummy_prefix = false, // add_dummy_prefix (ERNIE/SPM)
+              bool clip_style = false);      // true for OpenAI CLIP text BPE (</w> end-of-word)
 
     embed_tokens encode(const std::string & text) const;
 
@@ -139,8 +142,22 @@ private:
     int bos_id_ = -1;               // BOS token (-1 = none)
     bool spm_style_ = false;        // SentencePiece BPE mode
     bool spm_dummy_prefix_ = false; // SentencePiece add_dummy_prefix
+    bool clip_style_ = false;       // OpenAI CLIP text BPE (</w> end-of-word suffix)
     int max_length_ = 8192;
 
     // SentencePiece BPE: merge-based tokenization on ▁-prefixed text
     std::vector<int32_t> bpe_merge(const std::string & text) const;
+
+    // Rank-merge a list of initial symbols in place (shared by bpe_merge and
+    // the CLIP path). Uses merge_rank_ with an O(N log N) priority queue.
+    void merge_symbols(std::vector<std::string> & symbols) const;
+
+    // OpenAI CLIP text pre-tokenizer: lowercase + whitespace-clean +
+    // regex split (contractions / letter runs / single digits / punctuation
+    // runs). Returns raw-byte pre-tokens (before byte-level encoding).
+    std::vector<std::string> clip_pretokenize(const std::string & text) const;
+
+    // Byte-encode one CLIP pre-token, append the </w> end-of-word marker to
+    // the final symbol, rank-merge, and append the resulting vocab IDs.
+    void clip_bpe_word(const std::string & pretoken, std::vector<int32_t> & out) const;
 };
