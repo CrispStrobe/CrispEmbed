@@ -75,6 +75,7 @@ ENGINES = {
     # denoisers / same-size restoration
     "restormer":  {"mode": "denoise", "argv": lambda m, i: ["--restormer", m, "--restormer-input", i],       "cpu_env": "RESTORMER_FORCE_CPU"},
     "scunet":     {"mode": "denoise", "argv": lambda m, i: ["--scunet-model", m, "--scunet-denoise", i],      "cpu_env": "SCUNET_FORCE_CPU"},
+    "nafnet":     {"mode": "denoise", "argv": lambda m, i: ["--nafnet-model", m, "--nafnet-denoise", i],      "cpu_env": "NAFNET_FORCE_CPU"},
     "instructir": {"mode": "denoise", "argv": lambda m, i: ["--instructir-model", m, "--instructir", i],      "cpu_env": "INSTRUCTIR_FORCE_CPU"},
     "adair":      {"mode": "denoise", "argv": lambda m, i: ["--adair-model", m, "--adair", i],                "cpu_env": "ADAIR_FORCE_CPU"},
     # super-resolution (default scale is the model's; override with --scale)
