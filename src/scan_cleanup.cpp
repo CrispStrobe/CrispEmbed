@@ -636,6 +636,8 @@ static void scan_cleanup_blackfilter(std::vector<float> & gray, int w, int h, fl
         label[s] = cur;
         std::vector<int> comp;
         int minx = w, maxx = 0, miny = h, maxy = 0;
+        double ring_sum = 0.0; // gray of the just-outside boundary ring
+        int64_t ring_cnt = 0;
         while (!stack.empty()) {
             int p = stack.back();
             stack.pop_back();
@@ -649,9 +651,14 @@ static void scan_cleanup_blackfilter(std::vector<float> & gray, int w, int h, fl
                 int nx = px + dx[k], ny = py + dy[k];
                 if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
                 int q = ny * w + nx;
-                if (dark[q] && !label[q]) {
-                    label[q] = cur;
-                    stack.push_back(q);
+                if (dark[q]) {
+                    if (!label[q]) {
+                        label[q] = cur;
+                        stack.push_back(q);
+                    }
+                } else {
+                    ring_sum += gray[q]; // a non-dark neighbour → the outside ring
+                    ring_cnt++;
                 }
             }
         }
@@ -660,6 +667,12 @@ static void scan_cleanup_blackfilter(std::vector<float> & gray, int w, int h, fl
         int64_t bbox = (int64_t)(maxx - minx + 1) * (maxy - miny + 1);
         float fill = bbox > 0 ? (float)area / (float)bbox : 0.0f;
         if (fill < min_fill) continue; // strokes/text, keep
+        // Sharpness gate: clear only if the region is bordered by BRIGHT paper (a
+        // sharp-edged shadow/blob). A soft dark gradient (vignette/stain) is
+        // bordered by more dark gradient — leave it for the whitening step, so we
+        // never carve a black-edged hole out of a readable illumination gradient.
+        float ring = ring_cnt > 0 ? (float)(ring_sum / ring_cnt) : 1.0f;
+        if (ring < 0.55f) continue;
         clear_total += area;
         for (int p : comp) to_clear.push_back(p);
     }
@@ -695,7 +708,11 @@ int scan_cleanup_process(scan_cleanup_ctx * ctx, const uint8_t * pixels, int wid
     }
 
     // 0b. Blackfilter: clear large solid dark shadows/blobs before deskew (a dark
-    //     edge otherwise biases the Hough angle) and before whiten.
+    //     edge otherwise biases the Hough angle) and before whiten. It only clears
+    //     SHARP-edged solid objects (real shadows/blobs), leaving SOFT dark
+    //     gradients (vignettes/stains) for the whitening step — otherwise clearing
+    //     a vignette's core would leave a gradient edge that whitening smears to
+    //     black, destroying readable text.
     if (params.blackfilter) {
         auto t0 = std::chrono::steady_clock::now();
         scan_cleanup_blackfilter(gray, w, h, params.blackfilter_thresh);
@@ -748,7 +765,8 @@ int scan_cleanup_process(scan_cleanup_ctx * ctx, const uint8_t * pixels, int wid
         }
     }
 
-    // 3. Background whitening
+    // 3. Background whitening (illumination correction: flattens uneven lighting
+    //    and soft dark vignettes/stains that blackfilter deliberately left alone).
     if (params.whiten_background) {
         auto t0 = std::chrono::steady_clock::now();
         std::vector<float> whitened(w * h);
