@@ -44,6 +44,50 @@ the shared `qwen2vl_ocr` engine) is unaffected — no regression.
 Remaining: generate/upload `paddleocr-vl-ref.gguf` to enable
 `test-paddleocr-vl-diff` (needs the HF model + upload).
 
+## July 2, 2026 — Qwen2.5-VL OCR: hallucinated description fixed (4 bugs), both backends
+
+`qwen2.5-vl-3b` (`qwen2vl_ocr` engine) fabricated a description ("mathematical
+symbols, Greek letters α/β/γ, summations, integrals…") instead of reading the
+image, identically on Metal and CPU. The `expected_text: null` in the regression
+manifest was the tell: this was a **never-validated path**, not the
+scalar→ggml-wave regression the handover/LEARNINGS suspected (and `fbae7ba` never
+touched qwen2vl — handover suspect #1 was a red herring). Four independent
+Qwen2.5-VL-specific bugs, all in `src/qwen2vl_ocr.cpp`; after the fix both
+backends read `The quick brown fox jumps over the lazy dog. 12345` (cer≈0) at q4_k:
+
+1. **Vision 2D RoPE built in raster order.** The preprocessor always emits patches
+   in `(h//m,w//m,m,m)` merge-block order and HF's `rot_pos_emb` permutes the
+   position ids the same way, but `compute_vision_rope`'s `merge_order` arg keyed
+   off `is_qwen2_vl` → false for the RMSNorm 2.5 variant → every patch rotated with
+   a neighbour's position, scrambling spatial structure. Dominant bug (fixing it
+   alone flips pure hallucination into reading real words). Gate on
+   `deepstack_indexes.empty()`.
+2. **Merger grouped the wrong patches.** The CPU spatial merge chose consecutive-vs
+   -raster grouping off `is_qwen2_vl`, sending Qwen2.5-VL through a raster gather
+   that mis-groups merge-block-ordered data (the deepstack extract already assumed
+   consecutive — the tell). Same gate.
+3. **Windowed attention was unimplemented.** `window_size` (112) and
+   `fullatt_block_indexes` ([7,15,23,31]) were loaded but never used — every ViT
+   block did full attention. Implemented as an equivalent in-place additive mask
+   (0 within a window, -inf across) via `soft_max_ext` on non-fullatt blocks; full
+   blocks keep `flash_attn_ext`. No physical reorder/reverse-permute needed —
+   window attention only restricts the *set* a patch attends to, which is
+   storage-order independent. Opt-out `QWEN2VL_OCR_NO_WINDOW=1`.
+4. **No OCR prompt for arch `qwen2vl`.** Only `qwen3vl` got the transcription
+   prompt; `qwen2vl` fell back to "Describe this image." → verbose prose (fails a
+   bare-text CER match). Applied the OCR prompt to both archs.
+
+Blast radius is Qwen2.5-VL only: every gate (`deepstack_indexes.empty()`,
+`!is_qwen2_vl`, arch string) preserves the exact prior behavior for Qwen2-VL,
+PaddleOCR-VL (`is_qwen2_vl=true`) and Qwen3-VL (deepstack non-empty). Baked
+`expected_text` into the regression manifest (was null). Per-stage HF ref not
+regenerated (needs the ~7 GB model + torch dumper) — verified end-to-end
+transcript on both backends. Latent qwen3vl inconsistency noted (its merger uses
+the raster branch while its deepstack extract assumes consecutive) but left
+untouched (unverifiable here). Commit `86d0830`. Deep-dive: `LEARNINGS.md` →
+"qwen2vl-3b hallucinated OCR — RESOLVED". Meta-lesson (again): `expected_text:
+null` == never validated; verify handover root-cause claims independently.
+
 ## July 1, 2026 — GLM-OCR: garbage OCR fixed (5 bugs + q8_0), verified vs real model
 
 `glm-ocr` (zai-org/GLM-OCR, 0.9B) produced garbage OCR on every backend. The
