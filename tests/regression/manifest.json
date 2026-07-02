@@ -804,6 +804,29 @@
       "match": {
         "max_cer": 0.12
       }
+    },
+    {
+      "name": "bidirlm-vision",
+      "engine": "bidirlm-vision",
+      "diff_only": true,
+      "_comment": "BidirLM-Omni vision tower (Qwen2VL ViT + DeepStack). Ref = tools/dump_bidirlm_vision_reference.py on BidirLM/BidirLM-Omni-2.5B-Embedding (HF BidirLMOmniVisionModel, visual.* weights only, lazy safe_open). The C API (crispembed_encode_image_raw) exposes image_embeds + deepstack slabs; the harness feeds the ref's stored pixel_values/grid so preprocessing is identical. Gated on per-token MEAN cosine (test_bidirlm_vision.py's validated metric; cos_min is tanked by a few massive-activation deepstack rows that quantize poorly, not a bug). q8_0 target: image_embeds 0.997, deepstack 0.9998/0.9938; q4_k sits at its ~0.97 quant floor. A graph-scramble regression craters the mean to ~0.",
+      "gguf": {
+        "repo": "cstr/bidirlm-omni-2.5b-GGUF",
+        "file": "bidirlm-omni-2.5b-q8_0.gguf",
+        "revision": "main",
+        "approx_size_mb": 2619
+      },
+      "diff": {
+        "binary": "test-bidirlm-vision-diff",
+        "args": [],
+        "ref": {
+          "repo": "cstr/bidirlm-omni-2.5b-GGUF",
+          "file": "bidirlm-vision-ref.gguf"
+        },
+        "thresholds": {
+          "*": 0.99
+        }
+      }
     }
   ]
 }
