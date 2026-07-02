@@ -1934,8 +1934,14 @@ the Kaggle batch (`tools/kaggle/crispembed-imatrix-quant/`):
   load), so RAM stays low regardless of file size. So the big-base recipe is:
   calibrate + A/B-gold on the q8_0, quantize from the f32 base, stage the big files
   in `/tmp` (~70 GB) not `/kaggle/working` (~20 GB, kaggle_usage.md #18). A/B is then
-  cos-vs-q8 (the q8 is the practical gold). This avoids a CUDA build entirely — no
-  GPU needed just to fit the model, since we never load the full-precision weights.
+  cos-vs-q8 (the q8 is the practical gold). This avoids a CUDA build entirely — no GPU needed just to fit the model, since
+  we never load the full-precision weights. **Caveat (measured):** quantizing
+  from q8_0 instead of f32 is NOT free — on embeddinggemma-300m,
+  cos(q4-from-q8, q4-from-f32) = **0.991** (double-quantization costs ~0.009).
+  The resulting q4 is still good (~0.978 vs f32), and for 4B/8B models whose
+  f32 base won't download (stalls at ~4 MB/s on Kaggle) it's the only viable
+  path — but don't claim q8-source ≈ f32-source. `crispembed-quantize`
+  dequantizes quantized sources (ggml `to_float`) before re-quantizing.
 
 ### Metal mul_mm F16 kernel selection (why set_prec doesn't help)
 
