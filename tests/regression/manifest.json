@@ -443,6 +443,27 @@
           "*": 0.99
         }
       }
+    },
+    {
+      "name": "lfm2",
+      "engine": "lfm2",
+      "diff_only": true,
+      "_comment": "LFM2.5-Embedding encoder guardrail (no --ocr). Ref = dump_lfm2_reference.py; 20/20 stages cos>=0.9997 locally. Pre-wave engine, not a regression.",
+      "gguf": {
+        "repo": "cstr/lfm2-embed-GGUF",
+        "file": "lfm2-embed-q8_0.gguf",
+        "revision": "main"
+      },
+      "diff": {
+        "binary": "test-lfm2-diff",
+        "ref": {
+          "repo": "cstr/lfm2-embed-GGUF",
+          "file": "lfm2-ref.gguf"
+        },
+        "thresholds": {
+          "*": 0.99
+        }
+      }
     }
   ]
 }

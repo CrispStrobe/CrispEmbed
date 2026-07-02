@@ -119,7 +119,8 @@ def main():
     # Write GGUF reference archive
     # ----------------------------------------------------------------
     writer = gguf.GGUFWriter(args.output, arch="lfm2_ref")
-    writer.add_string("general.architecture", "lfm2_ref")
+    # NB: GGUFWriter(arch=...) already writes general.architecture; adding it again
+    # raises "Duplicated key name 'general.architecture'" on newer gguf.
     writer.add_string("ref.text", args.text)
     writer.add_array("ref.input_ids", input_ids.tolist())
 
