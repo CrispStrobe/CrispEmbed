@@ -198,8 +198,16 @@ def process(name, cli, quant, api, calib, eval_):
     imat = stage / f"{prefix}.imatrix"; imat.unlink(missing_ok=True)
     env = dict(os.environ, CRISPEMBED_IMATRIX_OUT=str(imat))
     with kh.build_heartbeat(f"{name}.calibrate"):
-        subprocess.run([str(cli), "-m", str(csrc), "--json", *calib],
-                       env=env, check=True, capture_output=True, text=True)
+        cal = subprocess.run([str(cli), "-m", str(csrc), "--json", *calib],
+                             env=env, capture_output=True, text=True)
+    # Fail LOUDLY if calibration didn't produce the imatrix — otherwise the quantizer
+    # silently falls back to NON-imatrix and uploads mislabeled "-imatrix" quants
+    # (observed on qwen3-embed-8b). Surface the CLI stderr for diagnosis.
+    if cal.returncode != 0:
+        raise RuntimeError(f"calibration rc={cal.returncode} for {name}; stderr tail:\n{cal.stderr[-1200:]}")
+    if not imat.exists() or imat.stat().st_size == 0:
+        raise RuntimeError(f"calibration produced NO imatrix at {imat} for {name} "
+                           f"(rc=0); stdout {len(cal.stdout)}B; stderr tail:\n{cal.stderr[-1200:]}")
 
     gold, _ = embed(cli, csrc, eval_)   # gold = calib source (q8_0 for big, ~lossless)
 
