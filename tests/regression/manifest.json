@@ -542,6 +542,28 @@
       }
     },
     {
+      "name": "decoder_embed",
+      "engine": "decoder_embed",
+      "diff_only": true,
+      "_comment": "Decoder-embedding engine (Qwen3/Gemma3-Embedding via crispembed_encode, no --ocr): final last-token-pooled embedding parity. Ref = tools/dump_decoder_embed_reference.py on Qwen/Qwen3-Embedding-0.6B (independent HF AutoModel, last-token pool + L2). Single-stage; cosine is scale-invariant. Engine (q8_0) vs f32 HF ref = cos 0.9993; floor 0.98. Guards the wave flash_attn_ext work (29d8a08); a graph scramble craters cos to ~0.",
+      "gguf": {
+        "repo": "cstr/qwen3-embed-0.6b-GGUF",
+        "file": "qwen3-embed-0.6b-q8_0.gguf",
+        "revision": "main",
+        "approx_size_mb": 610
+      },
+      "diff": {
+        "binary": "test-decoder-embed-diff",
+        "ref": {
+          "repo": "cstr/qwen3-embed-0.6b-GGUF",
+          "file": "qwen3-embed-ref.gguf"
+        },
+        "thresholds": {
+          "final_embedding": 0.98
+        }
+      }
+    },
+    {
       "name": "face_detect",
       "engine": "cnn_embed",
       "diff_only": true,
