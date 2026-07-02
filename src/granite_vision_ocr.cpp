@@ -17,6 +17,7 @@
 // The key differences are documented inline.
 
 #include "granite_vision_ocr.h"
+#include "core/bpe.h"
 #include "core/gguf_loader.h"
 #include "core/vlm_attention.h"
 #include "core/cpu_ops.h"
@@ -102,68 +103,8 @@ static float gv_silu(float x) { return core_cpu::silu(x); }
 
 // ── GPT-2 byte-level BPE tokenizer ──────────────────────────────────────
 // Granite uses the StarCoder byte-level BPE (same byte<->unicode mapping as
-// GPT-2). Mirrors the proven smoldocling_ocr.cpp implementation.
-
-static const std::vector<int> & gv_byte_encoder() {
-    static std::vector<int> bs(256, 0);
-    static bool init = false;
-    if (init) return bs;
-    std::vector<int> printable;
-    for (int b = 0x21; b <= 0x7e; b++) printable.push_back(b);
-    for (int b = 0xa1; b <= 0xac; b++) printable.push_back(b);
-    for (int b = 0xae; b <= 0xff; b++) printable.push_back(b);
-    int next = 256;
-    for (int b = 0; b < 256; b++) {
-        bool found = false;
-        for (int p : printable) if (p == b) { found = true; break; }
-        bs[b] = found ? b : next++;
-    }
-    init = true;
-    return bs;
-}
-
-static const std::unordered_map<uint32_t, uint8_t> & gv_byte_decoder() {
-    static std::unordered_map<uint32_t, uint8_t> table;
-    static bool init = false;
-    if (init) return table;
-    auto & enc = gv_byte_encoder();
-    for (int b = 0; b < 256; b++) table[(uint32_t)enc[b]] = (uint8_t)b;
-    init = true;
-    return table;
-}
-
-static void gv_utf8_encode(uint32_t cp, std::string & out) {
-    if (cp < 0x80) { out.push_back((char)cp); }
-    else if (cp < 0x800) { out.push_back((char)(0xC0|(cp>>6))); out.push_back((char)(0x80|(cp&0x3F))); }
-    else if (cp < 0x10000) { out.push_back((char)(0xE0|(cp>>12))); out.push_back((char)(0x80|((cp>>6)&0x3F))); out.push_back((char)(0x80|(cp&0x3F))); }
-    else { out.push_back((char)(0xF0|(cp>>18))); out.push_back((char)(0x80|((cp>>12)&0x3F))); out.push_back((char)(0x80|((cp>>6)&0x3F))); out.push_back((char)(0x80|(cp&0x3F))); }
-}
-
-static std::string gv_bytes_to_unicode(const char * bytes, size_t n) {
-    auto & enc = gv_byte_encoder();
-    std::string out;
-    for (size_t i = 0; i < n; i++) gv_utf8_encode((uint32_t)enc[(unsigned char)bytes[i]], out);
-    return out;
-}
-
-static std::string gv_token_to_bytes(const std::string & token) {
-    auto & dec = gv_byte_decoder();
-    std::string out;
-    size_t i = 0;
-    while (i < token.size()) {
-        unsigned char c = (unsigned char)token[i];
-        uint32_t cp; size_t len;
-        if (c < 0x80) { cp = c; len = 1; }
-        else if ((c & 0xE0) == 0xC0 && i+1 < token.size()) { cp = ((c&0x1F)<<6)|((unsigned char)token[i+1]&0x3F); len = 2; }
-        else if ((c & 0xF0) == 0xE0 && i+2 < token.size()) { cp = ((c&0x0F)<<12)|(((unsigned char)token[i+1]&0x3F)<<6)|((unsigned char)token[i+2]&0x3F); len = 3; }
-        else if ((c & 0xF8) == 0xF0 && i+3 < token.size()) { cp = ((c&0x07)<<18)|(((unsigned char)token[i+1]&0x3F)<<12)|(((unsigned char)token[i+2]&0x3F)<<6)|((unsigned char)token[i+3]&0x3F); len = 4; }
-        else { i++; continue; }
-        i += len;
-        auto it = dec.find(cp);
-        if (it != dec.end()) out.push_back((char)it->second);
-    }
-    return out;
-}
+// GPT-2). The byte<->unicode transform is shared in core/bpe.h
+// (core_bpe::bytes_to_unicode / core_bpe::unicode_to_bytes).
 
 struct gv_tokenizer {
     std::vector<std::string> vocab;
@@ -185,7 +126,7 @@ struct gv_tokenizer {
     // Byte-level BPE on a raw substring (no special tokens inside).
     void encode_piece(const std::string & text, std::vector<int> & ids) const {
         if (text.empty()) return;
-        std::string uni = gv_bytes_to_unicode(text.data(), text.size());
+        std::string uni = core_bpe::bytes_to_unicode(text.data(), text.size());
         std::vector<std::string> syms;
         size_t i = 0;
         while (i < uni.size()) {
@@ -234,7 +175,7 @@ struct gv_tokenizer {
     std::string decode_one(int id) const {
         if (id < 0 || id >= (int)vocab.size()) return "";
         if (id <= 18 || id >= 49152) return "";   // <|end_of_text|>, <fim_*>, <image>, ...
-        return gv_token_to_bytes(vocab[id]);
+        return core_bpe::unicode_to_bytes(vocab[id]);
     }
 };
 
