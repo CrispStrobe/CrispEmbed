@@ -18,7 +18,9 @@
 // Debug: set env MIXTEX_DUMP=1 for per-layer stats.
 
 #include "mixtex_ocr.h"
+#include "core/bpe.h"
 #include "core/gguf_loader.h"
+#include "image_preprocess.h"
 #include "core/cpu_ops.h"
 #include "crispembed_diff.h"
 #include "ggml-backend.h"
@@ -306,6 +308,10 @@ mixtex_ocr_context * mixtex_ocr_init(const char * model_path, int n_threads) {
     hp.vocab_size = core_gguf::kv_u32(gctx, "mixtex.decoder.vocab_size", 25681);
     hp.max_position = core_gguf::kv_u32(gctx, "mixtex.decoder.max_position", 300);
     hp.sos_token = core_gguf::kv_u32(gctx, "mixtex.decoder.sos_token", 0);
+    // MixTeX's stop token is "</s>" = id 25678 (an added special token that
+    // lives beyond the 25678-entry base tokenizer.tokens array but is a valid
+    // index in the 25681-wide LM head, so it is a reachable argmax). Verified
+    // against HF: model.generate() halts on 25678.
     hp.eos_token = core_gguf::kv_u32(gctx, "mixtex.decoder.eos_token", 25678);
 
     // Depths/heads arrays
@@ -391,6 +397,22 @@ mixtex_ocr_context * mixtex_ocr_init(const char * model_path, int n_threads) {
     ctx->type_embed_w = find(m, "dec.type_embed.weight");
     ctx->embed_ln_w = find(m, "dec.embed_ln.weight");
     ctx->embed_ln_b = find(m, "dec.embed_ln.bias");
+
+    // The tied LM head width is dec.word_embed's row count (ne[1]) = 25681, the
+    // authoritative vocab size. It includes the added special tokens
+    // (</s>=25678, …) that the base 25678-entry tokenizer.tokens array and the
+    // stale mixtex.decoder.vocab_size hparam both omit. Using the hparam would
+    // cap the argmax / logit loop at token 25677, so the EOS token 25678 could
+    // never be scored or emitted and decode would run to max_len and degenerate.
+    // Trust the tensor dimension.
+    if (ctx->word_embed_w) {
+        int lm_vocab = (int)ctx->word_embed_w->ne[1];
+        if (lm_vocab != hp.vocab_size) {
+            fprintf(stderr, "mixtex_ocr: vocab_size %d -> %d (from dec.word_embed)\n",
+                    hp.vocab_size, lm_vocab);
+            hp.vocab_size = lm_vocab;
+        }
+    }
 
     for (int i = 0; i < 4; i++) {
         auto& l = ctx->dec_layers[i];
@@ -1214,6 +1236,10 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
         for (int v = 1; v < vocab; v++)
             if (logits[v] > logits[best]) best = v;
 
+        if (std::getenv("CRISPEMBED_MIXTEX_TRACE"))
+            fprintf(stderr, "[mixtex-trace] step=%d in=%d -> best=%d (%.3f)\n",
+                    step, token_id, best, logits[best]);
+
         if (best == hp.eos_token) break;
 
         // Confidence: softmax of winning token
@@ -1228,13 +1254,21 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
         tokens.push_back(best);
     }
 
-    // Decode tokens to string
+    // Decode tokens to string. MixTeX's decoder uses a GPT-2 byte-level BPE
+    // vocab (space -> "Ġ", newline -> "Ċ", …), so raw pieces must be mapped
+    // back to bytes via the shared core_bpe decoder rather than concatenated
+    // verbatim. RoBERTa special tokens (<s>/<pad>/</s>/<unk>/<mask>) are
+    // skipped by piece string, so a stray <s>/</s> emitted mid-stream is
+    // dropped too — not just the seeded SOS at index 0.
     std::string result;
-    for (size_t i = 1; i < tokens.size(); i++) { // skip SOS
+    for (size_t i = 1; i < tokens.size(); i++) { // skip seeded SOS
         int tid = tokens[i];
-        if (tid >= 0 && tid < (int)ctx->vocab.size()) {
-            result += ctx->vocab[tid];
-        }
+        if (tid < 0 || tid >= (int)ctx->vocab.size()) continue;
+        const std::string& piece = ctx->vocab[tid];
+        if (piece == "<s>" || piece == "</s>" || piece == "<pad>" ||
+            piece == "<unk>" || piece == "<mask>")
+            continue;
+        core_bpe::unicode_to_bytes(piece, result);
     }
     return result;
 }
@@ -1244,27 +1278,56 @@ static std::string run_decoder(mixtex_ocr_context* ctx,
 // ---------------------------------------------------------------------------
 static std::vector<float> preprocess_mixtex(const uint8_t* pixels, int w, int h, int ch,
                                              int target_h, int target_w) {
-    // Resize to target_h × target_w, normalize with mean=0.5, std=0.5
+    // Output is CHW float32, normalized with mean=std=0.5 (ViTImageProcessor).
     std::vector<float> out(3 * target_h * target_w);
-    for (int c = 0; c < 3; c++) {
-        for (int oy = 0; oy < target_h; oy++) {
-            float fy = (float)oy * h / target_h;
-            int y0 = (int)fy, y1 = std::min(y0 + 1, h - 1);
-            float wy = fy - y0;
-            for (int ox = 0; ox < target_w; ox++) {
-                float fx = (float)ox * w / target_w;
-                int x0 = (int)fx, x1 = std::min(x0 + 1, w - 1);
-                float wx = fx - x0;
-                auto px = [&](int y, int x) -> float {
-                    if (ch == 1) return pixels[y * w + x] / 255.0f;
-                    return pixels[(y * w + x) * ch + c] / 255.0f;
-                };
-                float pixel = (1 - wy) * ((1 - wx) * px(y0, x0) + wx * px(y0, x1))
-                            +      wy  * ((1 - wx) * px(y1, x0) + wx * px(y1, x1));
-                out[c * target_h * target_w + oy * target_w + ox] = (pixel - 0.5f) / 0.5f;
+
+    // Legacy bilinear path — kept behind an env gate for A/B bisection. HF's
+    // ViTImageProcessor uses bicubic (resample=3), so this diverges from HF at
+    // borderline greedy steps; the default below matches HF.
+    if (std::getenv("MIXTEX_BILINEAR")) {
+        for (int c = 0; c < 3; c++) {
+            for (int oy = 0; oy < target_h; oy++) {
+                float fy = (float)oy * h / target_h;
+                int y0 = (int)fy, y1 = std::min(y0 + 1, h - 1);
+                float wy = fy - y0;
+                for (int ox = 0; ox < target_w; ox++) {
+                    float fx = (float)ox * w / target_w;
+                    int x0 = (int)fx, x1 = std::min(x0 + 1, w - 1);
+                    float wx = fx - x0;
+                    auto px = [&](int y, int x) -> float {
+                        if (ch == 1) return pixels[y * w + x] / 255.0f;
+                        return pixels[(y * w + x) * ch + c] / 255.0f;
+                    };
+                    float pixel = (1 - wy) * ((1 - wx) * px(y0, x0) + wx * px(y0, x1))
+                                +      wy  * ((1 - wx) * px(y1, x0) + wx * px(y1, x1));
+                    out[c * target_h * target_w + oy * target_w + ox] = (pixel - 0.5f) / 0.5f;
+                }
             }
         }
+        return out;
     }
+
+    // HF-parity path: convert to RGB uint8 (HF does .convert("RGB")), bicubic
+    // (a=-0.5) resize with antialias to match ViTImageProcessor's uint8 resize,
+    // then rescale (/255) and normalize with mean=std=0.5, laid out CHW.
+    std::vector<uint8_t> rgb((size_t)h * w * 3);
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            const uint8_t* s = pixels + (size_t)(y * w + x) * ch;
+            uint8_t* d = rgb.data() + (size_t)(y * w + x) * 3;
+            if (ch == 1) { d[0] = d[1] = d[2] = s[0]; }
+            else { d[0] = s[0]; d[1] = s[1]; d[2] = s[2]; }  // ch>=3, ignore alpha
+        }
+    }
+    std::vector<float> resized((size_t)target_h * target_w * 3);
+    image_preproc::resize_bicubic_u8_hwc(rgb.data(), h, w,
+                                         resized.data(), target_h, target_w, 3);
+    for (int c = 0; c < 3; c++)
+        for (int oy = 0; oy < target_h; oy++)
+            for (int ox = 0; ox < target_w; ox++) {
+                float v = resized[((size_t)oy * target_w + ox) * 3 + c] / 255.0f;
+                out[c * target_h * target_w + oy * target_w + ox] = (v - 0.5f) / 0.5f;
+            }
     return out;
 }
 
