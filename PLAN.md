@@ -698,12 +698,20 @@ all Apache-2.0 and would be a major accuracy upgrade.
 2. **TexTeller 3.0** — **DONE**. Standard VisionEncoderDecoderModel: ViT (12L, 768d,
    448px grayscale) + TrOCR decoder (12L, 1024d, 15K vocab). Reuses existing
    `math_ocr.cpp` engine and `convert-trocr-safetensors-to-gguf.py` converter.
-   Converter fixed: added_tokens.json merge, scale_embedding metadata.
+   Converter fixed: added_tokens.json merge, scale_embedding metadata, and
+   decoder_start_token_id resolution (2026-07: was reading the nested
+   decoder.decoder_start_token_id=2 that HF's VisionEncoderDecoder IGNORES;
+   now reads top-level → bos=0 like HF. The wrong start=2 poisoned the
+   position-0 KV cache and made decode repeat/degenerate on anything past
+   trivial formulas — `\frac{a}{b}` looped `\frac{\frac{…`).
    Engine fixed: dynamic channel count (1ch grayscale), ViT CLS-only (no DeiT
    distillation token), tied embeddings as LM head, GELU decoder FFN,
    manual matmul attention for encoder (>512 tokens).
-   GGUF: F16 (568 MB), Q8_0 (302 MB), Q4_K (169 MB).
-   Tested: `x+y` → `\mathrm{x}+\mathrm{x}`, `a+b=c` → `a+b=0` (partially correct).
+   GGUF: F16 (568 MB), Q8_0 (302 MB), Q4_K (169 MB) — regenerate with the
+   fixed converter (start=0) to replace the broken start=2 uploads.
+   Verified vs HF TexTeller on identical images (exact match): `x+y`→`\[x+y\]`,
+   `\frac{a}{b}`→`\[\frac{a}{b}\]`, `E=mc^2+\int f(x)dx`, and the
+   `\int_0^\infty x^{s-1}/(e^x-1)dx=\Gamma(s)\zeta(s)` integral — all correct.
 
    Source: [github.com/OleehyO/TexTeller](https://github.com/OleehyO/TexTeller)
    Weights: [huggingface.co/OleehyO/TexTeller](https://huggingface.co/OleehyO/TexTeller)
