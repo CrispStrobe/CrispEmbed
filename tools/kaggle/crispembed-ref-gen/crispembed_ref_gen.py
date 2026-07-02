@@ -97,6 +97,17 @@ ENGINES = [
     dict(name="nafnet", dumper="dump_nafnet_reference.py", source=("pth_hf", "mikestealth/nafnet-models", "NAFNet-SIDD-width32.pth"),
          ref="nafnet-ref.gguf", model_repo="cstr/nafnet-sidd-GGUF", model_file="nafnet-sidd-w32-f16.gguf",
          diff="test-nafnet-diff", upload_repo="cstr/nafnet-sidd-GGUF", pip=[], verify=dv("test-nafnet-diff")),
+    # Decoder-embedding engines (crispembed_encode, last-token/mean pool + L2). test-decoder-embed-diff
+    # is model-agnostic; the dumper's --pooling must match the GGUF's declared pooling_type.
+    dict(name="decoder_embed", dumper="dump_decoder_embed_reference.py", source=("hf", "Qwen/Qwen3-Embedding-0.6B"),
+         ref="qwen3-embed-ref.gguf", model_repo="cstr/qwen3-embed-0.6b-GGUF", model_file="qwen3-embed-0.6b-q8_0.gguf",
+         diff="test-decoder-embed-diff", upload_repo="cstr/qwen3-embed-0.6b-GGUF", pip=[],
+         verify=dv("test-decoder-embed-diff")),
+    dict(name="bidirlm", dumper="dump_decoder_embed_reference.py", source=("hf", "BidirLM/BidirLM-Omni-2.5B-Embedding"),
+         ref="bidirlm-ref.gguf", model_repo="cstr/bidirlm-omni-2.5b-textonly-GGUF",
+         model_file="bidirlm-omni-2.5b-textonly-q8_0.gguf", diff="test-decoder-embed-diff",
+         upload_repo="cstr/bidirlm-omni-2.5b-textonly-GGUF", pip=[], dumper_args="--pooling mean",
+         verify=dv("test-decoder-embed-diff"), source_optional=True),
 ]
 
 def hf_get(repo, fname, dst_dir):
@@ -147,7 +158,7 @@ def main():
                     kh.sh(f"pip install -q {pkg}")
                 src = acquire_source(e)
                 ref_path = WORK / e["ref"]
-                cmd = f"python {tools / e['dumper']} --model {src} --output {ref_path}"
+                cmd = f"python {tools / e['dumper']} --model {src} --output {ref_path} {e.get('dumper_args', '')}"
                 log(f"[{name}] dump: {cmd}")
                 if kh.sh(cmd, check=False) != 0 or not ref_path.exists():
                     log(f"[{name}] dump_failed"); results[name] = "dump_failed"; continue

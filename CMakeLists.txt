@@ -555,6 +555,9 @@ target_link_libraries(test-punct-diff PRIVATE crispembed)
 add_executable(test-face-diff tests/test_face_diff.cpp)
 target_link_libraries(test-face-diff PRIVATE crispembed)
 
+add_executable(test-decoder-embed-diff tests/test_decoder_embed_diff.cpp)
+target_link_libraries(test-decoder-embed-diff PRIVATE crispembed)
+
 add_executable(test-pdf-info tests/test_pdf_info.cpp)
 target_link_libraries(test-pdf-info PRIVATE crispembed)
 

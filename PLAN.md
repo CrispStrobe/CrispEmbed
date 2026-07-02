@@ -563,14 +563,20 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
   lib replaces the local copy). Handover:
   `handover-prompts/pcs-q4k-head-weight-tensor-get-crash.md`. Not wired (a guard would be red until
   fixed). fireredpunc is unaffected (F16 cls head, in-graph mul_mat).
-- **decoder_embed — MEDIUM, believed covered.** 5 wave commits incl. flash_attn; PLAN marks
-  the flash_attn work DONE/verified (`29d8a08`). Only `tests/test_decoder_batch.py` (python),
-  no compiled guardrail. Assess / add standing test (large model → Kaggle).
+- **decoder_embed — CLEAN, CLOSED.** Added a compiled guardrail: `test_decoder_embed_diff.cpp`
+  (crispembed_encode → final last-token-pooled embedding) vs an independent Qwen3-Embedding-0.6B
+  HF ref (`dump_decoder_embed_reference.py`). Engine (q8_0) matches cos 0.9993; wired `diff_only`,
+  run_one PASS. Also added to the Kaggle ref-gen kernel. Confirms the wave flash_attn_ext work is fine.
 - **vit_embed / clip_text / cnn_embed / bidirlm_vision — LOW (perf-only).** Last wave edit was
   `632b4c1 perf: disable OpenMP / default 1 thread` (threading, not numeric). Standing
   guardrails nonetheless; GGUFs + HF sources available → closeable locally.
 - **fireredpunc / bidirlm_audio — LOW.** Only `402b38d feat: benchmark instrumentation` (no
   numeric change). fireredpunc GGUF + BERT source available → closeable.
+- **bidirlm (text) — Kaggle-queued.** BidirLM-Omni-2.5B (2.5B, too large for local ref-gen) added
+  to the ref-gen kernel reusing `test-decoder-embed-diff` with `--pooling mean` (bidirectional);
+  the kernel dumps→verifies→uploads on a GPU worker. `source_optional` so a pooling/format mismatch
+  just reports verify_failed rather than aborting the batch. bidirlm_audio/vision towers (image/
+  audio fixtures) not yet covered.
 - **tps_warp — covered.** Pure-math warp; `test_tps_warp.cpp` self-contained. tps_locnet CNN
   now guarded (see Trace outcomes).
 
@@ -626,6 +632,11 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
   `test_face_diff.cpp` emits a synthetic detection cos_min (1.0/0.0) at a 12px tolerance; ref
   uploaded to `cstr/scrfd-det-10g-GGUF`, wired `diff_only` (`face_detect`). run_one PASS. (Face
   recognition arcface/sface not guarded — no local rec GGUF; detection is the wave-touched path.)
+- **decoder_embed — CLEAN, CLOSED (Gap 4).** `test_decoder_embed_diff.cpp` (crispembed_encode,
+  last-token pool) vs independent Qwen3-Embedding-0.6B HF ref: cos 0.9993 (q8_0-vs-f32). Ref
+  uploaded to `cstr/qwen3-embed-0.6b-GGUF`, wired `diff_only`, run_one PASS. Added to Kaggle kernel.
+- **bidirlm (text) — QUEUED on Kaggle (Gap 4).** 2.5B; added to `crispembed_ref_gen.py` reusing
+  test-decoder-embed-diff (--pooling mean). Runs async on a GPU worker (dump→verify→upload-on-PASS).
 - **fireredpunc — CLEAN, CLOSED (Gap 4).** No hidden/logits accessor in the punct C API → golden
   text-match `run_check` (new generic `test_punct_diff.cpp`). q4_k engine restores
   "hello world how are you today i am fine thanks" → "Hello world. How are you today? I am fine.
