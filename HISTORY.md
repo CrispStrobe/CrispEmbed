@@ -100,16 +100,23 @@ backends read `The quick brown fox jumps over the lazy dog. 12345` (cer≈0) at 
    prompt; `qwen2vl` fell back to "Describe this image." → verbose prose (fails a
    bare-text CER match). Applied the OCR prompt to both archs.
 
-Blast radius is Qwen2.5-VL only: every gate (`deepstack_indexes.empty()`,
-`!is_qwen2_vl`, arch string) preserves the exact prior behavior for Qwen2-VL,
-PaddleOCR-VL (`is_qwen2_vl=true`) and Qwen3-VL (deepstack non-empty). Baked
-`expected_text` into the regression manifest (was null). Per-stage HF ref not
-regenerated (needs the ~7 GB model + torch dumper) — verified end-to-end
-transcript on both backends. Latent qwen3vl inconsistency noted (its merger uses
-the raster branch while its deepstack extract assumes consecutive) but left
-untouched (unverifiable here). Commit `86d0830`. Deep-dive: `LEARNINGS.md` →
+Baked `expected_text` into the regression manifest (was null). Per-stage HF ref
+not regenerated (needs the ~7 GB model + torch dumper) — verified end-to-end
+transcript on both backends. Commit `86d0830`. Deep-dive: `LEARNINGS.md` →
 "qwen2vl-3b hallucinated OCR — RESOLVED". Meta-lesson (again): `expected_text:
 null` == never validated; verify handover root-cause claims independently.
+
+**Follow-up (same day) — the `deepstack_indexes.empty()` gate regressed Qwen3-VL;
+fixed by making it unconditional.** `86d0830` gated rope order + merger grouping
+on `deepstack_indexes.empty()`, assuming Qwen3-VL was `is_qwen2_vl=false`. It's
+actually **`is_qwen2_vl=true`** (LayerNorm ViT) *with* deepstack, so it had been
+using the correct merge-block/consecutive path via the old `is_qwen2_vl` gate —
+the new gate flipped it to raster → garbage OCR (`qwen3-vl-2b` → `T11123456789…`).
+`patchify_qwen_layout` emits merge-block order for *every* family member, so both
+rope order and merger grouping are now **unconditional** (no gate). Verified
+`qwen3-vl-2b` and `qwen2.5-vl-3b` both read the fox line on CPU and Metal.
+Lesson: `is_qwen2_vl` is a ViT-norm flag (LayerNorm vs RMSNorm), not a family
+selector — don't repurpose it (or a proxy) for preprocessing-order decisions.
 ## July 2, 2026 — restormer: denoise working (ggml conv-weight layout + real MDTA)
 
 `restormer-denoise-f16` emitted blocky rainbow garbage (mean 147 / std 120 vs a

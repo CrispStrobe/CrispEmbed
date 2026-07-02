@@ -125,12 +125,13 @@ theory above was wrong). Four independent Qwen2.5-VL-specific bugs, all fixed in
    `is_qwen2_vl` → **false** for Qwen2.5-VL (RMSNorm variant) → rope in raster
    order → every patch rotated with a neighbour's position → scrambled spatial
    structure. This is the dominant bug (fixing it alone flips pure hallucination
-   into reading real words). Fix: `merge_order = deepstack_indexes.empty()`.
+   into reading real words). Fix: `merge_order = true` (unconditional — see the
+   gate correction below).
 2. **Merger grouped patches by the wrong branch.** The CPU spatial merge keyed
    the consecutive-vs-raster grouping off `is_qwen2_vl`, sending Qwen2.5-VL
    through a raster gather (`normed_data[row*w_p+col]`) that mis-groups
    merge-block-ordered data (the deepstack path already assumed consecutive —
-   the tell). Fix: gate on `deepstack_indexes.empty()` (consecutive).
+   the tell). Fix: unconditional consecutive grouping.
 3. **Windowed attention was entirely unimplemented.** Qwen2.5-VL's ViT does
    window attention on all but `fullatt_block_indexes` ([7,15,23,31]); the loaded
    `window_size`/`fullatt` fields were never used — every block did full
@@ -143,13 +144,24 @@ theory above was wrong). Four independent Qwen2.5-VL-specific bugs, all fixed in
    prompt; `qwen2vl` fell back to `"Describe this image."` → verbose prose
    (fails a bare-text CER match). Fix: apply the OCR prompt to both archs.
 
-Blast radius is Qwen2.5-VL only: all four gates (`deepstack_indexes.empty()`,
-`!is_qwen2_vl`, arch string) preserve the exact prior values for Qwen2-VL,
-PaddleOCR-VL (`is_qwen2_vl=true`), and Qwen3-VL (deepstack non-empty). NB the
-qwen3vl merger still uses the raster branch yet its deepstack extract assumes
-consecutive — likely the same latent bug, left untouched here (unverifiable in
-this env). Per-stage HF ref (`tools/dump_qwen2vl_reference.py`) not regenerated
-here — end-to-end transcript on both backends was the verification.
+Per-stage HF ref (`tools/dump_qwen2vl_reference.py`) not regenerated here —
+end-to-end transcript on both backends was the verification.
+
+**Gate correction — the `deepstack_indexes.empty()` gate regressed Qwen3-VL
+(caught + fixed 2026-07-02, same day).** The first fix (commit `86d0830`) gated
+rope order and merger grouping on `deepstack_indexes.empty()`, on the wrong
+assumption that Qwen3-VL is `is_qwen2_vl=false`. It is **`is_qwen2_vl=true`** (its
+ViT uses LayerNorm) *and* it has deepstack — so it was already reading the
+*correct* merge-block/consecutive path via the old `is_qwen2_vl` gate, and the
+new gate flipped it to raster → **garbage OCR** (`qwen3-vl-2b-q4_k` on fox.png
+emitted `T11123456789…`). Root truth: `patchify_qwen_layout` emits merge-block
+order for **every** Qwen2VL-family model, so rope order and merger grouping are
+**unconditionally** merge-block/consecutive — no gate. Final fix makes both
+unconditional; verified `qwen3-vl-2b` AND `qwen2.5-vl-3b` read the fox line on
+CPU and Metal. Lesson: `is_qwen2_vl` is a *ViT-norm* flag (LayerNorm vs RMSNorm),
+NOT a family selector — Qwen3-VL trips it true; don't repurpose it (or a proxy
+like deepstack) for preprocessing-order decisions. The window-attention gate
+(`!is_qwen2_vl && …`) is unaffected: Qwen3-VL correctly stays full-attention.
 
 **Methodology lesson — a "non-degenerate output" numeric guard is not an output
 check.** restormer's noise has high std, so a std>1 guard *passes* it; the

@@ -1292,12 +1292,14 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
   // permutation to the rotary position ids, so the rope table must be built in
   // merge-block order too, otherwise each patch is rotated with a neighbour's
   // position and the spatial structure is scrambled (garbled features → the LLM
-  // hallucinates over them). This previously keyed off is_qwen2_vl, which left
-  // Qwen2.5-VL (RMSNorm variant, is_qwen2_vl=false) computing rope in raster
-  // order — the root cause of its hallucinated OCR. Qwen3-VL (deepstack) is
-  // gated out to preserve its existing, separately-validated behavior.
+  // hallucinates over them). This is unconditional: it keyed off is_qwen2_vl
+  // (→ raster for Qwen2.5-VL, hallucinated OCR), then briefly off
+  // deepstack_indexes.empty() (→ raster for Qwen3-VL, which is is_qwen2_vl=true
+  // *and* has deepstack — that regressed Qwen3-VL to garbage). The preprocessor
+  // order is identical for every family member, so the answer is always
+  // merge-block; the merger grouping below matches.
   const int head_dim = (int)ctx.m.vhp.hidden_size / (int)ctx.m.vhp.num_heads;
-  const bool rope_merge_order = ctx.m.vhp.deepstack_indexes.empty();
+  const bool rope_merge_order = true;
   host_rope rope;
   compute_vision_rope(rope, grid_thw, n_patches, head_dim,
                       (int)ctx.m.vhp.spatial_merge_size, rope_merge_order);
@@ -1723,16 +1725,17 @@ bool encode_vision(context &ctx, const float *patches, int n_patches,
   // Patch index = row * w_p + col
   std::vector<float> merged_data((size_t)n_merged * merger_in_dim);
 
-  if (ctx.m.vhp.deepstack_indexes.empty()) {
-    // Qwen2-VL / Qwen2.5-VL / PaddleOCR-VL: the image preprocessor
-    // (image_preprocess.cpp) always orders patches by merge groups —
-    // (merged_h, merged_w, merge_h, merge_w) — so each 2×2 spatial block is
-    // merge² consecutive patches. HF's PatchMerger then does
-    // ln_q(x).view(-1, merge*merge*H), i.e. exactly this consecutive grouping.
-    // (This previously keyed off is_qwen2_vl, which incorrectly sent Qwen2.5-VL
-    // through the raster else-branch below and mis-grouped every merger token —
-    // a second cause of its garbled OCR alongside the rope-order bug.) Qwen3-VL
-    // keeps the raster path to preserve its separately-validated behavior.
+  // The image preprocessor (image_preprocess.cpp `patchify_qwen_layout`) always
+  // orders patches by merge groups — (merged_h, merged_w, merge_h, merge_w) — so
+  // each 2×2 spatial block is merge² *consecutive* patches for every Qwen2VL
+  // family member. HF's PatchMerger does ln_q(x).view(-1, merge*merge*H), i.e.
+  // exactly this consecutive grouping. Unconditional for the same reason as the
+  // rope order above: keying it off is_qwen2_vl mis-grouped Qwen2.5-VL, and off
+  // deepstack_indexes.empty() mis-grouped Qwen3-VL (garbage OCR). The raster
+  // else-branch is retained only for a hypothetical raster-order preprocessor;
+  // no current model reaches it.
+  const bool merge_block_order = true;
+  if (merge_block_order) {
     for (int midx = 0; midx < n_merged; midx++) {
       float *dst = merged_data.data() + (size_t)midx * merger_in_dim;
       const float *src = normed_data.data() + (size_t)midx * merge * merge * H;
