@@ -59,8 +59,9 @@ jobs:
         # which is what format.sh uses locally — verified identical output.
         run: |
           python3 -m pip install --quiet --user --break-system-packages 'clang-format==18.1.8'
-          echo "$(python3 -m site --user-base)/bin" >> "$GITHUB_PATH"
-          clang-format --version
+          CF_BIN="$(python3 -m site --user-base)/bin"
+          echo "$CF_BIN" >> "$GITHUB_PATH"   # for the next step
+          "$CF_BIN/clang-format" --version    # $GITHUB_PATH isn't live in THIS step
 
       - name: Check formatting (tools/format.sh --check)
         # Single source of truth for scope + version pinning. Exits non-zero and
