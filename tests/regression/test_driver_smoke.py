@@ -52,16 +52,24 @@ class TestManifest(unittest.TestCase):
     def test_model_entries(self):
         names = set()
         for e in self.m["models"]:
-            for k in ("name", "engine", "gguf", "sample"):
+            for k in ("name", "engine", "gguf"):
                 self.assertIn(k, e, f"{e.get('name','?')} missing {k}")
             self.assertNotIn(e["name"], names, f"duplicate name {e['name']}")
             names.add(e["name"])
             g = e["gguf"]
             for k in ("repo", "file"):
                 self.assertIn(k, g, f"{e['name']}.gguf missing {k}")
-            # expected_text may be null (not captured yet) but the key
-            # should be present so gaps are visible.
-            self.assertIn("expected_text", e, f"{e['name']} missing expected_text key")
+            # Three entry shapes: OCR (sample + expected_text), diff-harness
+            # (diff_only + diff block), and golden run_check (e.g. punctuation).
+            # Only OCR entries require an OCR sample + expected transcript.
+            if e.get("diff_only") or "run_check" in e:
+                self.assertTrue("diff" in e or "run_check" in e,
+                                f"{e['name']} has no diff/run_check harness")
+            else:
+                for k in ("sample", "expected_text"):
+                    # expected_text may be null (not captured yet) but the key
+                    # should be present so gaps are visible.
+                    self.assertIn(k, e, f"{e['name']} missing {k}")
             if "diff" in e:
                 d = e["diff"]
                 self.assertIn("binary", d)
@@ -70,8 +78,11 @@ class TestManifest(unittest.TestCase):
                 self.assertIn("file", d["ref"])
 
     def test_sample_paths_exist_or_hf(self):
-        # in-tree sample paths must exist; HF-hosted samples need a fixtures repo
+        # in-tree sample paths must exist; HF-hosted samples need a fixtures repo.
+        # diff_only entries have no sample (they use the diff harness).
         for e in self.m["models"]:
+            if "sample" not in e:
+                continue
             p = run_one.REPO_ROOT / e["sample"]
             if not p.exists():
                 self.assertIn("fixtures", self.m,
