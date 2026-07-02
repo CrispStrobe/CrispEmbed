@@ -279,6 +279,19 @@ def regression_for(name: str, manifest: dict, work_dir: Path,
     if entry.get("diff_only"):
         return _run_diff_block(name, entry, gguf, work_dir, g)
 
+    # run_check: an engine whose per-stage ref is unreliable (e.g. gliner's dumper
+    # produces a dead model) is guarded by an independent task-output assertion baked
+    # into its test binary — run `<binary> <gguf> [args]` and require the pinned exit.
+    rc_spec = entry.get("run_check")
+    if rc_spec:
+        argv = [str(diff_bin(rc_spec["binary"])), str(gguf), *rc_spec.get("args", [])]
+        print(f"[{name}] run_check: {' '.join(argv)}")
+        r = subprocess.run(argv, env={**os.environ, **rc_spec.get("env", {})})
+        exp = int(rc_spec.get("expect_exit", 0))
+        ok = r.returncode == exp
+        print(f"[{name}] {'PASS' if ok else 'FAIL'} (exit {r.returncode}, expect {exp})")
+        return 0 if ok else 1
+
     sample = REPO_ROOT / entry["sample"]
     if not sample.exists():
         # allow fixtures to live in an HF fixtures repo

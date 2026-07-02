@@ -12,6 +12,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <string>
 
 int main(int argc, char ** argv) {
     if (argc < 2) {
@@ -49,7 +50,25 @@ int main(int argc, char ** argv) {
                entities[i].text, entities[i].label, entities[i].score);
     }
 
+    // Independent output-check guardrail (used when the default text is run).
+    // The per-stage ref path (GLINER_DIFF_REF) can be misleading if the *reference*
+    // dumper is broken, so assert the ENGINE extracts the expected entities directly.
+    int rc = 0;
+    if (argc <= 2) {  // default text = "Barack Obama was born in Hawaii"
+        bool person = false, hawaii = false;
+        for (int i = 0; i < n; i++) {
+            std::string t = entities[i].text ? entities[i].text : "";
+            std::string l = entities[i].label ? entities[i].label : "";
+            if (l == "person" && t.find("Obama") != std::string::npos) person = true;
+            if (l == "location" && t.find("Hawaii") != std::string::npos) hawaii = true;
+        }
+        printf("[gliner-output-check] person(Obama)=%s location(Hawaii)=%s => %s\n",
+               person ? "yes" : "no", hawaii ? "yes" : "no",
+               (person && hawaii) ? "PASS" : "FAIL");
+        if (!(person && hawaii)) rc = 1;
+    }
+
     gliner_ner_free(ctx);
     printf("\nDone.\n");
-    return 0;
+    return rc;
 }
