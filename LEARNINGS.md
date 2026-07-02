@@ -1,5 +1,33 @@
 # CrispEmbed — Technical Learnings
 
+## unlimited_ocr "CLI can't OCR" was a truncated download, NOT a routing/crash bug (2026-07-02)
+
+RESOLVED — no code change. A prior session reported that `crispembed --ocr FILE`
+gave empty output / SIGSEGV on `unlimited-ocr` and concluded the CLI `--ocr`
+auto-detect path "doesn't handle unlimited (needs `--ocr-pipeline`)". That was
+**wrong on both counts**:
+
+1. **The `--ocr` path already handles unlimited.** `crispembed_ocr_model_init` →
+   `detect_arch()` maps `general.architecture == "unlimited_ocr"` to
+   `OCR_MODEL_UNLIMITED_OCR` (`crispembed.cpp:3316`), and init/recognize/free are
+   all wired to `unlimited_ocr_*`. The engine injects its own prompt
+   (`document parsing.`) and the **required sliding-window `no_repeat_ngram`
+   (35/128)** inside `run_llm_decoder` (`unlimited_ocr.cpp:2541`), so every entry
+   path — `--ocr` and `--ocr-pipeline` alike — gets the correct decode config.
+2. **The real cause was a truncated GGUF download** — 483 MB of a 2.25 GB q4_k
+   file. The loader now reports this cleanly (`core_gguf`: "truncated/corrupt
+   GGUF … tensor 'l.blk.1.attn_v.weight' extends past EOF"); an older binary
+   SIGSEGV'd reading past the short file, which is exactly what commit `dd9dd2e`
+   ("fail cleanly on truncated/corrupt GGUF instead of SIGSEGV") guards against.
+
+**Lesson (adds to [[verify-handover-claims-independently]] / [[dont-assume-env-capabilities]]):**
+before diagnosing a model load crash / empty output as a code bug, verify the
+GGUF's on-disk size against the HF `X-Linked-Size` (`curl -sIL … | grep -i
+x-linked-size`). A memmove/`ggml_backend_tensor_get` EXC_BAD_ACCESS reading a
+*bad source address* during load is the signature of either a truncated file or
+the quant-size class of bug (cf. the `pcs` q4_k `n_elem*4 >> ggml_nbytes`
+finding) — check file integrity first.
+
 ## PaddleOCR-VL SIGSEGV was ERNIE head_dim≠D/n_heads + an SPM tokenizer loaded as GPT-2 BPE — NOT a GQA-broadcast bug (2026-07)
 
 RESOLVED. `paddleocr-vl-0.9b` crashed in the shared `qwen2vl_ocr` engine on
