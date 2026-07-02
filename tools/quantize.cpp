@@ -319,8 +319,13 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         if (sname.rfind("dense.", 0) == 0 || sname.find(".dense.") != std::string::npos) {
             is_tiny_embd = true;  // force copy-as-is (keep F32)
         }
+        // Source may be F32/F16 OR already quantized (we dequantize it to F32
+        // first — see the read block below). Re-quantizing from q8_0 lets us skip
+        // the huge f32 base for large models: q8_0 is ~lossless (cos ~0.9998) so
+        // q8→f32→q4 ≈ f32→q4, and the q8_0 is a fraction of the f32 download.
+        bool src_ok = (type == GGML_TYPE_F32 || type == GGML_TYPE_F16 || ggml_is_quantized(type));
         bool quantize = (ggml_is_quantized(qtype) || qtype == GGML_TYPE_F16) &&
-                        (type == GGML_TYPE_F32 || type == GGML_TYPE_F16) &&
+                        src_ok &&
                         (ggml_n_dims(t) >= 2) &&
                         !is_tiny_embd;
         const int64_t ncols = t->ne[0];
@@ -427,6 +432,12 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             }
         }
 
+        // Source already at the target type (e.g. a q8_0 embedding kept at q8_0):
+        // copy the raw bytes as-is, no dequant/requant roundtrip.
+        if (quantize && type == qtype_used) {
+            quantize = false;
+        }
+
 #ifdef _WIN32
         _fseeki64(fin, (int64_t)offset, SEEK_SET);
 #else
@@ -445,7 +456,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                     fclose(fin); fclose(fout);
                     return false;
                 }
-            } else {
+            } else if (type == GGML_TYPE_F16) {
                 std::vector<ggml_fp16_t> f16_data(nelements);
                 if (fread(f16_data.data(), sizeof(ggml_fp16_t), nelements, fin) != (size_t)nelements) {
                     fprintf(stderr, "failed to read f16 data\n");
@@ -455,6 +466,23 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                 for (int64_t j = 0; j < nelements; j++) {
                     f32_data[j] = ggml_fp16_to_fp32(f16_data[j]);
                 }
+            } else {
+                // Quantized source: read the raw quantized bytes and dequantize to
+                // F32 via the type's traits, then re-quantize to the target below.
+                const size_t src_bytes = ggml_nbytes(t);
+                std::vector<uint8_t> qbuf(src_bytes);
+                if (fread(qbuf.data(), 1, src_bytes, fin) != src_bytes) {
+                    fprintf(stderr, "failed to read quantized source data\n");
+                    fclose(fin); fclose(fout);
+                    return false;
+                }
+                const ggml_type_traits * tr = ggml_get_type_traits(type);
+                if (!tr || !tr->to_float) {
+                    fprintf(stderr, "no dequantizer for source type %s\n", ggml_type_name(type));
+                    fclose(fin); fclose(fout);
+                    return false;
+                }
+                tr->to_float(qbuf.data(), f32_data.data(), nelements);
             }
 
             const size_t max_q_size = ggml_row_size(qtype_used, t->ne[0]) * (nelements / t->ne[0]);
