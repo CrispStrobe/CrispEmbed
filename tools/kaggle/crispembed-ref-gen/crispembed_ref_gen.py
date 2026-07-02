@@ -33,8 +33,10 @@ PROGRESS = WORK / "progress.txt"
 
 for url, dst in ((CRISPASR_URL, WORK / "CrispASR"), (CRISPEMBED_URL, REPO)):
     if not dst.exists():
+        # CrispEmbed needs the ggml submodule (CMakeLists.txt:70 aborts without it).
+        extra = ["--recursive", "--shallow-submodules"] if dst == REPO else []
         try:
-            subprocess.check_call(["git", "clone", "--depth", "1", url, str(dst)])
+            subprocess.check_call(["git", "clone", "--depth", "1", *extra, url, str(dst)])
         except Exception as e:
             print(f"clone {url} failed: {e}", flush=True)
 sys.path.insert(0, str(WORK / "CrispASR" / "tools" / "kaggle"))
