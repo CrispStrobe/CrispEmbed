@@ -17,12 +17,12 @@ namespace clip_text {
 
 struct context;
 
-bool load(context** ctx, const char* path, int n_threads = 1);
-int dim(const context* ctx);
+bool load(context ** ctx, const char * path, int n_threads = 1);
+int dim(const context * ctx);
 
 // Encode text to CLIP embedding. Returns L2-normalized vector.
-std::vector<float> encode(context* ctx, const char* text);
+std::vector<float> encode(context * ctx, const char * text);
 
-void free(context* ctx);
+void free(context * ctx);
 
 } // namespace clip_text

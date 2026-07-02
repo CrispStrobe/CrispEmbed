@@ -15,13 +15,19 @@ int main(int argc, char ** argv) {
     int beam_width = argc >= 5 ? atoi(argv[4]) : 5;
 
     bttr_ocr_context * ctx = bttr_ocr_init(argv[1], 4);
-    if (!ctx) { fprintf(stderr, "Failed to load\n"); return 1; }
+    if (!ctx) {
+        fprintf(stderr, "Failed to load\n");
+        return 1;
+    }
 
     int W = 0, H = 0;
     sscanf(argv[3], "%dx%d", &W, &H);
     std::vector<float> img(W * H);
     FILE * f = fopen(argv[2], "rb");
-    if (!f) { fprintf(stderr, "Can't open %s\n", argv[2]); return 1; }
+    if (!f) {
+        fprintf(stderr, "Can't open %s\n", argv[2]);
+        return 1;
+    }
     fread(img.data(), sizeof(float), W * H, f);
     fclose(f);
 

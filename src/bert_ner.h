@@ -21,29 +21,29 @@
 namespace bert_ner {
 
 struct entity {
-    int         start_char;  // character offset in input text
-    int         end_char;    // character offset (exclusive)
-    std::string text;        // extracted span
-    std::string label;       // entity label (e.g. "PER", "LOC")
-    float       score;       // mean softmax probability across span tokens
+    int start_char;    // character offset in input text
+    int end_char;      // character offset (exclusive)
+    std::string text;  // extracted span
+    std::string label; // entity label (e.g. "PER", "LOC")
+    float score;       // mean softmax probability across span tokens
 };
 
 struct context;
 
 // Load BERT/XLM-R NER model from GGUF.
 // The GGUF must contain ner.classifier.weight and ner.labels metadata.
-bool load(context** ctx, const char* model_path, int n_threads = 1);
+bool load(context ** ctx, const char * model_path, int n_threads = 1);
 
 // Extract named entities. Returns entity spans with character offsets.
-std::vector<entity> extract(context* ctx, const char* text);
+std::vector<entity> extract(context * ctx, const char * text);
 
 // Get number of labels.
-int num_labels(context* ctx);
+int num_labels(context * ctx);
 
 // Get label name by id.
-const char* label_name(context* ctx, int label_id);
+const char * label_name(context * ctx, int label_id);
 
 // Free all resources.
-void free(context* ctx);
+void free(context * ctx);
 
 } // namespace bert_ner

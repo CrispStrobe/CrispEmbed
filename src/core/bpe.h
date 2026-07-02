@@ -35,18 +35,14 @@ namespace core_bpe {
 // Maps each of the 256 raw bytes to a printable unicode codepoint that
 // can survive a roundtrip through json/utf-8 layers. Standard
 // definition from `bytes_to_unicode()` in OpenAI's GPT-2 tokenizer.
-inline const std::vector<int>& byte_encoder() {
+inline const std::vector<int> & byte_encoder() {
     static std::vector<int> bs(256, 0);
     static bool initialized = false;
-    if (initialized)
-        return bs;
+    if (initialized) return bs;
     std::vector<int> printable;
-    for (int b = 0x21; b <= 0x7e; b++)
-        printable.push_back(b);
-    for (int b = 0xa1; b <= 0xac; b++)
-        printable.push_back(b);
-    for (int b = 0xae; b <= 0xff; b++)
-        printable.push_back(b);
+    for (int b = 0x21; b <= 0x7e; b++) printable.push_back(b);
+    for (int b = 0xa1; b <= 0xac; b++) printable.push_back(b);
+    for (int b = 0xae; b <= 0xff; b++) printable.push_back(b);
     int next_extra = 256;
     for (int b = 0; b < 256; b++) {
         bool is_printable = false;
@@ -65,7 +61,7 @@ inline const std::vector<int>& byte_encoder() {
 }
 
 // Encode a single Unicode codepoint as a UTF-8 byte sequence.
-inline void utf8_encode(uint32_t cp, std::string& out) {
+inline void utf8_encode(uint32_t cp, std::string & out) {
     if (cp < 0x80) {
         out.push_back((char)cp);
     } else if (cp < 0x800) {
@@ -86,8 +82,8 @@ inline void utf8_encode(uint32_t cp, std::string& out) {
 // Apply the byte→unicode encoder to a raw byte buffer. Each input byte
 // becomes one Unicode codepoint via the GPT-2 byte_encoder() map, then
 // is encoded as UTF-8.
-inline std::string bytes_to_unicode(const char* bytes, size_t n) {
-    auto& enc = byte_encoder();
+inline std::string bytes_to_unicode(const char * bytes, size_t n) {
+    auto & enc = byte_encoder();
     std::string out;
     out.reserve(n);
     for (size_t i = 0; i < n; i++) {
@@ -99,12 +95,11 @@ inline std::string bytes_to_unicode(const char* bytes, size_t n) {
 // Inverse of byte_encoder(): unicode codepoint -> raw byte. Built lazily
 // once. This is the exact reverse permutation used by every GPT-2
 // byte-level tokenizer, so decode is model-agnostic (see unicode_to_bytes).
-inline const std::unordered_map<uint32_t, uint8_t>& byte_decoder() {
+inline const std::unordered_map<uint32_t, uint8_t> & byte_decoder() {
     static const std::unordered_map<uint32_t, uint8_t> dec = [] {
         std::unordered_map<uint32_t, uint8_t> m;
-        const auto& enc = byte_encoder();
-        for (int b = 0; b < 256; b++)
-            m[(uint32_t)enc[b]] = (uint8_t)b;
+        const auto & enc = byte_encoder();
+        for (int b = 0; b < 256; b++) m[(uint32_t)enc[b]] = (uint8_t)b;
         return m;
     }();
     return dec;
@@ -125,27 +120,34 @@ inline size_t utf8_len(unsigned char c) {
 // mapped through byte_decoder(); codepoints not in the table (shouldn't
 // happen for well-formed vocab pieces) are kept verbatim as their original
 // utf-8 bytes. Appends to `out`.
-inline void unicode_to_bytes(const std::string& piece, std::string& out) {
-    const auto& dec = byte_decoder();
+inline void unicode_to_bytes(const std::string & piece, std::string & out) {
+    const auto & dec = byte_decoder();
     size_t i = 0;
     while (i < piece.size()) {
         unsigned char c = (unsigned char)piece[i];
         size_t len = utf8_len(c);
         if (i + len > piece.size()) len = 1;
         uint32_t cp = 0;
-        if (len == 1) cp = c;
-        else if (len == 2) cp = ((c & 0x1F) << 6) | (piece[i+1] & 0x3F);
-        else if (len == 3) cp = ((c & 0x0F) << 12) | ((piece[i+1] & 0x3F) << 6) | (piece[i+2] & 0x3F);
-        else cp = ((c & 0x07) << 18) | ((piece[i+1] & 0x3F) << 12) | ((piece[i+2] & 0x3F) << 6) | (piece[i+3] & 0x3F);
+        if (len == 1)
+            cp = c;
+        else if (len == 2)
+            cp = ((c & 0x1F) << 6) | (piece[i + 1] & 0x3F);
+        else if (len == 3)
+            cp = ((c & 0x0F) << 12) | ((piece[i + 1] & 0x3F) << 6) | (piece[i + 2] & 0x3F);
+        else
+            cp = ((c & 0x07) << 18) | ((piece[i + 1] & 0x3F) << 12) | ((piece[i + 2] & 0x3F) << 6) |
+                 (piece[i + 3] & 0x3F);
         auto it = dec.find(cp);
-        if (it != dec.end()) out.push_back((char)it->second);
-        else out.append(piece, i, len);
+        if (it != dec.end())
+            out.push_back((char)it->second);
+        else
+            out.append(piece, i, len);
         i += len;
     }
 }
 
 // Convenience overload returning the decoded bytes for a single piece.
-inline std::string unicode_to_bytes(const std::string& piece) {
+inline std::string unicode_to_bytes(const std::string & piece) {
     std::string out;
     out.reserve(piece.size());
     unicode_to_bytes(piece, out);
@@ -160,11 +162,10 @@ inline std::string unicode_to_bytes(const std::string& piece) {
 // Symbol identity check uses string concatenation with a literal space
 // separator ("left right") to match the textual representation in the
 // merges table.
-inline void bpe_one(const std::unordered_map<std::string, int32_t>& token_to_id,
-                    const std::unordered_map<std::string, int32_t>& merge_rank, const std::string& word,
-                    std::vector<int32_t>& out) {
-    if (word.empty())
-        return;
+inline void bpe_one(const std::unordered_map<std::string, int32_t> & token_to_id,
+                    const std::unordered_map<std::string, int32_t> & merge_rank, const std::string & word,
+                    std::vector<int32_t> & out) {
+    if (word.empty()) return;
 
     // Split into UTF-8 codepoint substrings — each codepoint is one symbol.
     std::vector<std::string> symbols;
@@ -183,19 +184,20 @@ inline void bpe_one(const std::unordered_map<std::string, int32_t>& token_to_id,
                 len = 4;
             else
                 len = 1;
-            if (i + len > word.size())
-                len = 1;
+            if (i + len > word.size()) len = 1;
             symbols.emplace_back(word, i, len);
             i += len;
         }
     }
-    if (symbols.empty())
-        return;
+    if (symbols.empty()) return;
 
     if (!merge_rank.empty() && symbols.size() >= 2) {
         // Priority-queue BPE: O(N log N) instead of O(N²).
         // Linked list of symbol nodes + min-heap of (rank, left_node_id) pairs.
-        struct Node { std::string text; int prev, next; };
+        struct Node {
+            std::string text;
+            int prev, next;
+        };
         int n = (int)symbols.size();
         std::vector<Node> nodes(n);
         for (int i = 0; i < n; i++) {
@@ -206,7 +208,7 @@ inline void bpe_one(const std::unordered_map<std::string, int32_t>& token_to_id,
 
         // (rank, left_node_id) — lower rank = higher priority
         using PQEntry = std::pair<int32_t, int>;
-        auto cmp = [](const PQEntry& a, const PQEntry& b) { return a.first > b.first; };
+        auto cmp = [](const PQEntry & a, const PQEntry & b) { return a.first > b.first; };
         std::priority_queue<PQEntry, std::vector<PQEntry>, decltype(cmp)> pq(cmp);
 
         // Helper: try to add pair (i, nodes[i].next) to the queue
@@ -215,15 +217,15 @@ inline void bpe_one(const std::unordered_map<std::string, int32_t>& token_to_id,
             if (j < 0) return;
             std::string pair = nodes[i].text + " " + nodes[j].text;
             auto it = merge_rank.find(pair);
-            if (it != merge_rank.end())
-                pq.push({it->second, i});
+            if (it != merge_rank.end()) pq.push({ it->second, i });
         };
 
         // Seed queue with all initial adjacent pairs
         for (int i = 0; i < n; i++) try_add(i);
 
         while (!pq.empty()) {
-            auto [rank, left] = pq.top(); pq.pop();
+            auto [rank, left] = pq.top();
+            pq.pop();
             int right = nodes[left].next;
             if (right < 0) continue; // stale entry
 
@@ -235,9 +237,9 @@ inline void bpe_one(const std::unordered_map<std::string, int32_t>& token_to_id,
             // Merge: left absorbs right
             nodes[left].text += nodes[right].text;
             nodes[left].next = nodes[right].next;
-            if (nodes[right].next >= 0)
-                nodes[nodes[right].next].prev = left;
-            nodes[right].next = -1; nodes[right].prev = -1; // mark dead
+            if (nodes[right].next >= 0) nodes[nodes[right].next].prev = left;
+            nodes[right].next = -1;
+            nodes[right].prev = -1; // mark dead
 
             // Re-queue new adjacent pairs
             if (nodes[left].prev >= 0) try_add(nodes[left].prev);
@@ -246,11 +248,10 @@ inline void bpe_one(const std::unordered_map<std::string, int32_t>& token_to_id,
 
         // Collect surviving symbols (node 0 is always head — never absorbed)
         symbols.clear();
-        for (int i = 0; i >= 0; i = nodes[i].next)
-            symbols.push_back(nodes[i].text);
+        for (int i = 0; i >= 0; i = nodes[i].next) symbols.push_back(nodes[i].text);
     }
 
-    for (const auto& s : symbols) {
+    for (const auto & s : symbols) {
         auto it = token_to_id.find(s);
         if (it != token_to_id.end()) {
             out.push_back(it->second);
@@ -272,8 +273,7 @@ inline void bpe_one(const std::unordered_map<std::string, int32_t>& token_to_id,
                     len = 1;
                 std::string single(s, i, len);
                 auto jt = token_to_id.find(single);
-                if (jt != token_to_id.end())
-                    out.push_back(jt->second);
+                if (jt != token_to_id.end()) out.push_back(jt->second);
                 i += len;
             }
         }
@@ -288,23 +288,19 @@ inline void bpe_one(const std::unordered_map<std::string, int32_t>& token_to_id,
 // This is the simple pre-tokenizer good for prompt fragments. Models
 // that need full GPT-2 regex pre-tokenization (with letter / number /
 // punctuation runs split separately) should call bpe_one directly.
-inline std::vector<int32_t> tokenize_simple(const std::unordered_map<std::string, int32_t>& token_to_id,
-                                            const std::unordered_map<std::string, int32_t>& merge_rank,
-                                            const std::string& text) {
+inline std::vector<int32_t> tokenize_simple(const std::unordered_map<std::string, int32_t> & token_to_id,
+                                            const std::unordered_map<std::string, int32_t> & merge_rank,
+                                            const std::string & text) {
     std::vector<int32_t> result;
     size_t i = 0;
     bool first = true;
     while (i < text.size()) {
-        while (i < text.size() && (text[i] == ' ' || text[i] == '\t' || text[i] == '\n'))
-            i++;
-        if (i >= text.size())
-            break;
+        while (i < text.size() && (text[i] == ' ' || text[i] == '\t' || text[i] == '\n')) i++;
+        if (i >= text.size()) break;
         size_t j = i;
-        while (j < text.size() && text[j] != ' ' && text[j] != '\t' && text[j] != '\n')
-            j++;
+        while (j < text.size() && text[j] != ' ' && text[j] != '\t' && text[j] != '\n') j++;
         std::string word = text.substr(i, j - i);
-        if (!first)
-            word = std::string(" ") + word;
+        if (!first) word = std::string(" ") + word;
         first = false;
         std::string encoded = bytes_to_unicode(word.data(), word.size());
         bpe_one(token_to_id, merge_rank, encoded, result);

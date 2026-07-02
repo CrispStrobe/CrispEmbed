@@ -25,12 +25,12 @@
 #include <string>
 #include <vector>
 
-using core_cpu::to_f32;
+using core_cpu::conv2d_cpu;
 using core_cpu::layernorm_cpu;
 using core_cpu::linear_cpu;
 using core_cpu::mha_1q_cpu;
-using core_cpu::conv2d_cpu;
 using core_cpu::relu_inplace;
+using core_cpu::to_f32;
 
 // ---------------------------------------------------------------------------
 // Structs
@@ -38,8 +38,8 @@ using core_cpu::relu_inplace;
 
 // Conv layer: weight (2D flattened) + bias (from folded BN)
 struct conv_layer {
-    ggml_tensor* w = nullptr; // [out_ch, in_ch*kh*kw] flattened
-    ggml_tensor* b = nullptr; // [out_ch]
+    ggml_tensor * w = nullptr; // [out_ch, in_ch*kh*kw] flattened
+    ggml_tensor * b = nullptr; // [out_ch]
 };
 
 // HG_Block conv layers + aggregation
@@ -47,19 +47,19 @@ struct hg_block {
     // For regular blocks: layers[i] has one conv
     // For light blocks: layers[i] has conv1 (pointwise) + conv2 (depthwise)
     struct layer_t {
-        conv_layer conv;        // regular ConvBNAct
-        conv_layer conv1;       // light: pointwise 1×1
-        conv_layer conv2;       // light: depthwise
+        conv_layer conv;  // regular ConvBNAct
+        conv_layer conv1; // light: pointwise 1×1
+        conv_layer conv2; // light: depthwise
         bool is_light = false;
     };
     std::vector<layer_t> layers;
-    conv_layer agg_squeeze;  // 1×1 squeeze
-    conv_layer agg_excite;   // 1×1 excitation
+    conv_layer agg_squeeze; // 1×1 squeeze
+    conv_layer agg_excite;  // 1×1 excitation
 };
 
 // Stage: optional downsample + blocks
 struct hg_stage {
-    conv_layer downsample;      // depthwise conv (may be null)
+    conv_layer downsample; // depthwise conv (may be null)
     bool has_downsample = false;
     std::vector<hg_block> blocks;
     // Config
@@ -104,16 +104,16 @@ struct ppformulanet_ocr_context {
     int n_threads;
 
     // ggml graph encoder
-    ggml_backend_t       enc_backend  = nullptr;
-    ggml_backend_sched_t enc_sched    = nullptr;
+    ggml_backend_t enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched = nullptr;
     std::vector<uint8_t> enc_compute_meta;
     std::string result_buf;
     std::vector<float> char_confidences; // per-token softmax probabilities
 
     // Cached encoder output
-    std::vector<float> enc_out;      // [n_enc_tokens * enc_hidden]
+    std::vector<float> enc_out; // [n_enc_tokens * enc_hidden]
     int n_enc_tokens = 0;
-    std::vector<float> proj_out;     // [n_enc_tokens * dec_d_model]
+    std::vector<float> proj_out; // [n_enc_tokens * dec_d_model]
 
     // Cross-attention K/V cache (precomputed from projected encoder output)
     std::vector<std::vector<float>> cross_k_cache;
@@ -126,17 +126,17 @@ struct ppformulanet_ocr_context {
 // Tensor lookup
 // ---------------------------------------------------------------------------
 
-static ggml_tensor* F(const std::unordered_map<std::string, ggml_tensor*>& m, const char* n) {
+static ggml_tensor * F(const std::unordered_map<std::string, ggml_tensor *> & m, const char * n) {
     auto it = m.find(n);
     if (it != m.end()) return it->second;
     std::string alt(n);
-    for (auto& c : alt) if (c == '.') c = '_';
+    for (auto & c : alt)
+        if (c == '.') c = '_';
     it = m.find(alt);
     return it != m.end() ? it->second : nullptr;
 }
 
-static conv_layer map_conv(const std::unordered_map<std::string, ggml_tensor*>& m,
-                            const char* prefix) {
+static conv_layer map_conv(const std::unordered_map<std::string, ggml_tensor *> & m, const char * prefix) {
     char buf[256];
     conv_layer c;
     snprintf(buf, sizeof(buf), "%s.weight", prefix);
@@ -146,20 +146,19 @@ static conv_layer map_conv(const std::unordered_map<std::string, ggml_tensor*>& 
     return c;
 }
 
-static void map_tensors(ppformulanet_ocr_context* ctx) {
-    const auto& m = ctx->wl.tensors;
-    const auto& hp = ctx->hparams;
+static void map_tensors(ppformulanet_ocr_context * ctx) {
+    const auto & m = ctx->wl.tensors;
+    const auto & hp = ctx->hparams;
     char buf[256];
 
     // Stem
-    const char* stem_names[] = {"enc.stem.stem1", "enc.stem.stem2a", "enc.stem.stem2b",
-                                 "enc.stem.stem3", "enc.stem.stem4"};
-    for (int i = 0; i < 5; i++)
-        ctx->stem[i] = map_conv(m, stem_names[i]);
+    const char * stem_names[] = { "enc.stem.stem1", "enc.stem.stem2a", "enc.stem.stem2b", "enc.stem.stem3",
+                                  "enc.stem.stem4" };
+    for (int i = 0; i < 5; i++) ctx->stem[i] = map_conv(m, stem_names[i]);
 
     // Stages
     for (int si = 0; si < 4; si++) {
-        auto& st = ctx->stages[si];
+        auto & st = ctx->stages[si];
 
         // Downsample
         snprintf(buf, sizeof(buf), "enc.stage%d.downsample", si);
@@ -169,11 +168,11 @@ static void map_tensors(ppformulanet_ocr_context* ctx) {
         // Blocks
         st.blocks.resize(st.n_blocks);
         for (int bi = 0; bi < st.n_blocks; bi++) {
-            auto& blk = st.blocks[bi];
+            auto & blk = st.blocks[bi];
             blk.layers.resize(st.n_layers);
 
             for (int li = 0; li < st.n_layers; li++) {
-                auto& lay = blk.layers[li];
+                auto & lay = blk.layers[li];
                 if (st.light_block) {
                     lay.is_light = true;
                     snprintf(buf, sizeof(buf), "enc.stage%d.block%d.layer%d.conv1", si, bi, li);
@@ -199,35 +198,48 @@ static void map_tensors(ppformulanet_ocr_context* ctx) {
     ctx->proj_b = F(m, "enc.proj.bias");
 
     // Decoder
-    ctx->tok_embed   = F(m, "dec.embed_tokens.weight");
+    ctx->tok_embed = F(m, "dec.embed_tokens.weight");
     ctx->pos_embed_dec = F(m, "dec.embed_positions.weight");
-    ctx->embed_ln_w  = F(m, "dec.embed_ln.weight");
-    ctx->embed_ln_b  = F(m, "dec.embed_ln.bias");
-    ctx->final_ln_w  = F(m, "dec.final_ln.weight");
-    ctx->final_ln_b  = F(m, "dec.final_ln.bias");
-    ctx->lm_head_w   = F(m, "dec.lm_head.weight");
-    ctx->lm_head_b   = F(m, "dec.lm_head.bias");
+    ctx->embed_ln_w = F(m, "dec.embed_ln.weight");
+    ctx->embed_ln_b = F(m, "dec.embed_ln.bias");
+    ctx->final_ln_w = F(m, "dec.final_ln.weight");
+    ctx->final_ln_b = F(m, "dec.final_ln.bias");
+    ctx->lm_head_w = F(m, "dec.lm_head.weight");
+    ctx->lm_head_b = F(m, "dec.lm_head.bias");
 
     ctx->dec_layers.resize(hp.dec_layers);
     for (int i = 0; i < hp.dec_layers; i++) {
-        auto& l = ctx->dec_layers[i];
-        auto DL = [&](const char* s) {
+        auto & l = ctx->dec_layers[i];
+        auto DL = [&](const char * s) {
             snprintf(buf, sizeof(buf), "dec.layers.%d.%s", i, s);
             return F(m, buf);
         };
-        l.self_ln_w = DL("self_attn_ln.weight"); l.self_ln_b = DL("self_attn_ln.bias");
-        l.self_q_w = DL("self_attn.q.weight"); l.self_q_b = DL("self_attn.q.bias");
-        l.self_k_w = DL("self_attn.k.weight"); l.self_k_b = DL("self_attn.k.bias");
-        l.self_v_w = DL("self_attn.v.weight"); l.self_v_b = DL("self_attn.v.bias");
-        l.self_out_w = DL("self_attn.out.weight"); l.self_out_b = DL("self_attn.out.bias");
-        l.cross_ln_w = DL("cross_attn_ln.weight"); l.cross_ln_b = DL("cross_attn_ln.bias");
-        l.cross_q_w = DL("cross_attn.q.weight"); l.cross_q_b = DL("cross_attn.q.bias");
-        l.cross_k_w = DL("cross_attn.k.weight"); l.cross_k_b = DL("cross_attn.k.bias");
-        l.cross_v_w = DL("cross_attn.v.weight"); l.cross_v_b = DL("cross_attn.v.bias");
-        l.cross_out_w = DL("cross_attn.out.weight"); l.cross_out_b = DL("cross_attn.out.bias");
-        l.ff_ln_w = DL("ffn_ln.weight"); l.ff_ln_b = DL("ffn_ln.bias");
-        l.ff_up_w = DL("ffn.up.weight"); l.ff_up_b = DL("ffn.up.bias");
-        l.ff_down_w = DL("ffn.down.weight"); l.ff_down_b = DL("ffn.down.bias");
+        l.self_ln_w = DL("self_attn_ln.weight");
+        l.self_ln_b = DL("self_attn_ln.bias");
+        l.self_q_w = DL("self_attn.q.weight");
+        l.self_q_b = DL("self_attn.q.bias");
+        l.self_k_w = DL("self_attn.k.weight");
+        l.self_k_b = DL("self_attn.k.bias");
+        l.self_v_w = DL("self_attn.v.weight");
+        l.self_v_b = DL("self_attn.v.bias");
+        l.self_out_w = DL("self_attn.out.weight");
+        l.self_out_b = DL("self_attn.out.bias");
+        l.cross_ln_w = DL("cross_attn_ln.weight");
+        l.cross_ln_b = DL("cross_attn_ln.bias");
+        l.cross_q_w = DL("cross_attn.q.weight");
+        l.cross_q_b = DL("cross_attn.q.bias");
+        l.cross_k_w = DL("cross_attn.k.weight");
+        l.cross_k_b = DL("cross_attn.k.bias");
+        l.cross_v_w = DL("cross_attn.v.weight");
+        l.cross_v_b = DL("cross_attn.v.bias");
+        l.cross_out_w = DL("cross_attn.out.weight");
+        l.cross_out_b = DL("cross_attn.out.bias");
+        l.ff_ln_w = DL("ffn_ln.weight");
+        l.ff_ln_b = DL("ffn_ln.bias");
+        l.ff_up_w = DL("ffn.up.weight");
+        l.ff_up_b = DL("ffn.up.bias");
+        l.ff_down_w = DL("ffn.down.weight");
+        l.ff_down_b = DL("ffn.down.bias");
     }
 }
 
@@ -242,8 +254,7 @@ static void map_tensors(ppformulanet_ocr_context* ctx) {
 // to ggml graph later for SIMD acceleration.
 
 // MaxPool2d(kernel=2, stride=1, ceil_mode=True) on padded input
-static void maxpool2d_k2s1_ceil(const float* in, float* out,
-                                 int ch, int H, int W) {
+static void maxpool2d_k2s1_ceil(const float * in, float * out, int ch, int H, int W) {
     // With ceil_mode=True, output size = ceil((H - 2)/1) + 1 = H - 1
     // But since input is already padded (0,1,0,1), the effective H/W is H+1
     // Actually: MaxPool on the already-padded tensor.
@@ -256,7 +267,7 @@ static void maxpool2d_k2s1_ceil(const float* in, float* out,
     // PyTorch: out = floor((H + 2*pad - kh) / stride) + 1, but with ceil_mode
     // out = ceil((H + 2*pad - kh) / stride) + 1
     // For H=193, kh=2, stride=1, pad=0: out = ceil(191/1) + 1 = 192
-    out_H = (H - 2 + 1 - 1) / 1 + 1;  // ceil div
+    out_H = (H - 2 + 1 - 1) / 1 + 1; // ceil div
     out_W = (W - 2 + 1 - 1) / 1 + 1;
 
     for (int c = 0; c < ch; c++) {
@@ -280,34 +291,28 @@ static void maxpool2d_k2s1_ceil(const float* in, float* out,
 }
 
 // Pad tensor: add right_pad columns and bottom_pad rows (zero-pad)
-static std::vector<float> pad_tensor(const float* in, int ch, int H, int W,
-                                      int top, int bottom, int left, int right) {
+static std::vector<float> pad_tensor(const float * in, int ch, int H, int W, int top, int bottom, int left, int right) {
     int new_H = H + top + bottom;
     int new_W = W + left + right;
     std::vector<float> out(ch * new_H * new_W, 0.0f);
     for (int c = 0; c < ch; c++)
         for (int y = 0; y < H; y++)
             for (int x = 0; x < W; x++)
-                out[c * new_H * new_W + (y + top) * new_W + (x + left)] =
-                    in[c * H * W + y * W + x];
+                out[c * new_H * new_W + (y + top) * new_W + (x + left)] = in[c * H * W + y * W + x];
     return out;
 }
 
 // Apply ConvBNAct: conv (folded weights) + ReLU
 // Returns output dimensions via out_H, out_W
-static std::vector<float> apply_conv(const conv_layer& cl,
-                                      const float* in, int in_ch, int H, int W,
-                                      int out_ch, int kh, int kw, int stride,
-                                      int groups, bool use_relu,
-                                      int& out_H, int& out_W) {
+static std::vector<float> apply_conv(const conv_layer & cl, const float * in, int in_ch, int H, int W, int out_ch,
+                                     int kh, int kw, int stride, int groups, bool use_relu, int & out_H, int & out_W) {
     auto wv = to_f32(cl.w);
     auto bv = to_f32(cl.b);
     int pad = (kh - 1) / 2;
     out_H = (H + 2 * pad - kh) / stride + 1;
     out_W = (W + 2 * pad - kw) / stride + 1;
     std::vector<float> out(out_ch * out_H * out_W);
-    conv2d_cpu(in, out.data(), wv.data(), bv.data(),
-               in_ch, out_ch, H, W, kh, kw, stride, pad, groups);
+    conv2d_cpu(in, out.data(), wv.data(), bv.data(), in_ch, out_ch, H, W, kh, kw, stride, pad, groups);
     if (use_relu) relu_inplace(out.data(), (int)out.size());
     return out;
 }
@@ -317,40 +322,33 @@ static std::vector<float> apply_conv(const conv_layer& cl,
 // ---------------------------------------------------------------------------
 
 // Prep conv weight: reshape 2D→4D, cast to F16 for ggml_conv_2d.
-static ggml_tensor * ppfn_prep_conv(ggml_context * g, ggml_tensor * w,
-                                     int IC, int KH, int KW) {
+static ggml_tensor * ppfn_prep_conv(ggml_context * g, ggml_tensor * w, int IC, int KH, int KW) {
     if (!w) return nullptr;
     if (ggml_n_dims(w) == 2) {
-        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
-            w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16) w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
         w = ggml_reshape_4d(g, w, KW, KH, IC, w->ne[1]);
     }
-    if (w->type != GGML_TYPE_F16)
-        w = ggml_cast(g, w, GGML_TYPE_F16);
+    if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
     return w;
 }
 
 // Prep depthwise conv weight: reshape 2D→4D with IC=1.
-static ggml_tensor * ppfn_prep_dw(ggml_context * g, ggml_tensor * w,
-                                   int KH, int KW) {
+static ggml_tensor * ppfn_prep_dw(ggml_context * g, ggml_tensor * w, int KH, int KW) {
     if (!w) return nullptr;
     if (ggml_n_dims(w) == 2) {
-        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
-            w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16) w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
         int64_t OC = w->ne[1];
         w = ggml_reshape_4d(g, w, KW, KH, 1, OC);
     }
-    if (w->type != GGML_TYPE_F16)
-        w = ggml_cast(g, w, GGML_TYPE_F16);
+    if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
     return w;
 }
 
 // Conv2D + bias + optional ReLU
-static ggml_tensor * ppfn_conv(ggml_context * g, ggml_tensor * x,
-                                const conv_layer & cl, int IC, int KH, int KW,
-                                int stride, bool relu) {
+static ggml_tensor * ppfn_conv(ggml_context * g, ggml_tensor * x, const conv_layer & cl, int IC, int KH, int KW,
+                               int stride, bool relu) {
     ggml_tensor * w = ppfn_prep_conv(g, cl.w, IC, KH, KW);
-    x = ggml_conv_2d(g, w, x, stride, stride, (KH-1)/2, (KW-1)/2, 1, 1);
+    x = ggml_conv_2d(g, w, x, stride, stride, (KH - 1) / 2, (KW - 1) / 2, 1, 1);
     if (cl.b) {
         ggml_tensor * b = ggml_reshape_3d(g, cl.b, 1, 1, cl.b->ne[0]);
         x = ggml_add(g, x, b);
@@ -360,11 +358,10 @@ static ggml_tensor * ppfn_conv(ggml_context * g, ggml_tensor * x,
 }
 
 // Conv2D with explicit padding (for stem k=2 convs that need asymmetric pad)
-static ggml_tensor * ppfn_conv_nopad(ggml_context * g, ggml_tensor * x,
-                                      const conv_layer & cl, int IC, int KH, int KW,
-                                      int stride, bool relu) {
+static ggml_tensor * ppfn_conv_nopad(ggml_context * g, ggml_tensor * x, const conv_layer & cl, int IC, int KH, int KW,
+                                     int stride, bool relu) {
     ggml_tensor * w = ppfn_prep_conv(g, cl.w, IC, KH, KW);
-    x = ggml_conv_2d(g, w, x, stride, stride, 0, 0, 1, 1);  // no auto-pad
+    x = ggml_conv_2d(g, w, x, stride, stride, 0, 0, 1, 1); // no auto-pad
     if (cl.b) {
         ggml_tensor * b = ggml_reshape_3d(g, cl.b, 1, 1, cl.b->ne[0]);
         x = ggml_add(g, x, b);
@@ -374,11 +371,10 @@ static ggml_tensor * ppfn_conv_nopad(ggml_context * g, ggml_tensor * x,
 }
 
 // Depthwise Conv2D + bias (no ReLU by default for downsample)
-static ggml_tensor * ppfn_dw_conv(ggml_context * g, ggml_tensor * x,
-                                   const conv_layer & cl, int CH, int KH, int KW,
-                                   int stride, bool relu) {
+static ggml_tensor * ppfn_dw_conv(ggml_context * g, ggml_tensor * x, const conv_layer & cl, int CH, int KH, int KW,
+                                  int stride, bool relu) {
     ggml_tensor * w = ppfn_prep_dw(g, cl.w, KH, KW);
-    x = ggml_conv_2d_dw(g, w, x, stride, stride, (KH-1)/2, (KW-1)/2, 1, 1);
+    x = ggml_conv_2d_dw(g, w, x, stride, stride, (KH - 1) / 2, (KW - 1) / 2, 1, 1);
     if (cl.b) {
         ggml_tensor * b = ggml_reshape_3d(g, cl.b, 1, 1, cl.b->ne[0]);
         x = ggml_add(g, x, b);
@@ -391,8 +387,7 @@ static ggml_cgraph * build_ppfn_encoder_graph(ppformulanet_ocr_context * ctx, in
     // Estimate: 4 stages, up to 3 blocks × 6 layers × ~10 nodes + stem ~50
     // Plus type casts for quantized weights (~5 nodes per conv)
     int graph_size = 4000;
-    size_t buf_size = ggml_tensor_overhead() * (graph_size + 500)
-                    + ggml_graph_overhead_custom(graph_size, false);
+    size_t buf_size = ggml_tensor_overhead() * (graph_size + 500) + ggml_graph_overhead_custom(graph_size, false);
     ctx->enc_compute_meta.resize(buf_size);
     ggml_init_params ip = { buf_size, ctx->enc_compute_meta.data(), true };
     ggml_context * g = ggml_init(ip);
@@ -464,12 +459,10 @@ static ggml_cgraph * build_ppfn_encoder_graph(ppformulanet_ocr_context * ctx, in
                 if (lay.is_light) {
                     // LightConvBNAct: conv1 (1×1, no ReLU) + conv2 (depthwise + ReLU)
                     x = ppfn_conv(g, x, lay.conv1, in_c, 1, 1, 1, false);
-                    x = ppfn_dw_conv(g, x, lay.conv2, layer_out_ch,
-                                      st.kernel_size, st.kernel_size, 1, true);
+                    x = ppfn_dw_conv(g, x, lay.conv2, layer_out_ch, st.kernel_size, st.kernel_size, 1, true);
                 } else {
                     // ConvBNAct: single conv + ReLU
-                    x = ppfn_conv(g, x, lay.conv, in_c,
-                                   st.kernel_size, st.kernel_size, 1, true);
+                    x = ppfn_conv(g, x, lay.conv, in_c, st.kernel_size, st.kernel_size, 1, true);
                 }
 
                 // Concat this layer's output with running concat
@@ -502,8 +495,7 @@ static ggml_cgraph * build_ppfn_encoder_graph(ppformulanet_ocr_context * ctx, in
     return gf;
 }
 
-static void run_encoder_ggml(ppformulanet_ocr_context * ctx,
-                              const float * rgb, int H, int W) {
+static void run_encoder_ggml(ppformulanet_ocr_context * ctx, const float * rgb, int H, int W) {
     auto t0 = std::chrono::steady_clock::now();
 
     ggml_cgraph * gf = build_ppfn_encoder_graph(ctx, H, W);
@@ -523,8 +515,8 @@ static void run_encoder_ggml(ppformulanet_ocr_context * ctx,
         ggml_backend_dev_t dev = ggml_backend_get_device(be);
         ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
         if (reg) {
-            auto * fn = (ggml_backend_set_n_threads_t)
-                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            auto * fn =
+                (ggml_backend_set_n_threads_t)ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
             if (fn) fn(be, ctx->n_threads);
         }
     }
@@ -546,21 +538,18 @@ static void run_encoder_ggml(ppformulanet_ocr_context * ctx,
     ctx->enc_out.resize(N * out_c);
     for (int n = 0; n < N; n++) {
         int y = n / out_w, xi = n % out_w;
-        for (int c = 0; c < out_c; c++)
-            ctx->enc_out[n * out_c + c] = chw[c * out_h * out_w + y * out_w + xi];
+        for (int c = 0; c < out_c; c++) ctx->enc_out[n * out_c + c] = chw[c * out_h * out_w + y * out_w + xi];
     }
 
     if (ctx->bench) {
-        double ms = std::chrono::duration<double, std::milli>(
-            std::chrono::steady_clock::now() - t0).count();
+        double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
         fprintf(stderr, "[ppfn-bench] encoder (ggml): %.1f ms\n", ms);
     }
     fprintf(stderr, "ppfn: encoder output (%d, %d)\n", N, out_c);
 }
 
 // Run the HGNetv2 encoder on CHW float input (scalar fallback)
-static void run_encoder(ppformulanet_ocr_context* ctx,
-                         const float* rgb, int H, int W) {
+static void run_encoder(ppformulanet_ocr_context * ctx, const float * rgb, int H, int W) {
     // rgb is [3, H, W] in CHW format, normalized
 
     fprintf(stderr, "ppfn: encoder start (%dx%d)\n", W, H);
@@ -598,8 +587,7 @@ static void run_encoder(ppformulanet_ocr_context* ctx,
 
     // Verify sizes match
     if (pool_H != oH || pool_W != oW) {
-        fprintf(stderr, "ppfn: WARNING: pool (%d,%d) != stem2b (%d,%d), adjusting\n",
-                pool_H, pool_W, oH, oW);
+        fprintf(stderr, "ppfn: WARNING: pool (%d,%d) != stem2b (%d,%d), adjusting\n", pool_H, pool_W, oH, oW);
     }
 
     // Concatenate [pool, stem2b] on channel dim → [64, H, W]
@@ -609,30 +597,34 @@ static void run_encoder(ppformulanet_ocr_context* ctx,
     for (int c = 0; c < 32; c++)
         for (int y = 0; y < cat_H; y++)
             for (int xi = 0; xi < cat_W; xi++)
-                cat[c * cat_H * cat_W + y * cat_W + xi] =
-                    x1[c * pool_H * pool_W + y * pool_W + xi];
+                cat[c * cat_H * cat_W + y * cat_W + xi] = x1[c * pool_H * pool_W + y * pool_W + xi];
     for (int c = 0; c < 32; c++)
         for (int y = 0; y < cat_H; y++)
             for (int xi = 0; xi < cat_W; xi++)
-                cat[(c + 32) * cat_H * cat_W + y * cat_W + xi] =
-                    x2[c * oH * oW + y * oW + xi];
+                cat[(c + 32) * cat_H * cat_W + y * cat_W + xi] = x2[c * oH * oW + y * oW + xi];
 
-    cur_ch = 64; cur_H = cat_H; cur_W = cat_W;
+    cur_ch = 64;
+    cur_H = cat_H;
+    cur_W = cat_W;
     fprintf(stderr, "ppfn: concat -> (%d, %d, %d)\n", cur_ch, cur_H, cur_W);
 
     // stem3: Conv(64→32, k=3, s=2) + ReLU
     x = apply_conv(ctx->stem[3], cat.data(), 64, cur_H, cur_W, 32, 3, 3, 2, 1, true, oH, oW);
-    cur_ch = 32; cur_H = oH; cur_W = oW;
+    cur_ch = 32;
+    cur_H = oH;
+    cur_W = oW;
     fprintf(stderr, "ppfn: stem3 -> (%d, %d, %d)\n", cur_ch, cur_H, cur_W);
 
     // stem4: Conv(32→48, k=1, s=1) + ReLU
     x = apply_conv(ctx->stem[4], x.data(), 32, cur_H, cur_W, 48, 1, 1, 1, 1, true, oH, oW);
-    cur_ch = 48; cur_H = oH; cur_W = oW;
+    cur_ch = 48;
+    cur_H = oH;
+    cur_W = oW;
     fprintf(stderr, "ppfn: stem4 -> (%d, %d, %d)\n", cur_ch, cur_H, cur_W);
 
     // ---- Stages ----
     for (int si = 0; si < 4; si++) {
-        auto& st = ctx->stages[si];
+        auto & st = ctx->stages[si];
 
         // Downsample (depthwise conv, no ReLU)
         if (st.has_downsample) {
@@ -643,74 +635,72 @@ static void run_encoder(ppformulanet_ocr_context* ctx,
             int ds_oH = (cur_H + 2 * ds_pad - ds_kh) / 2 + 1;
             int ds_oW = (cur_W + 2 * ds_pad - ds_kw) / 2 + 1;
             std::vector<float> ds_out(cur_ch * ds_oH * ds_oW);
-            conv2d_cpu(x.data(), ds_out.data(), dw.data(), db.data(),
-                       cur_ch, cur_ch, cur_H, cur_W, ds_kh, ds_kw, 2, ds_pad, cur_ch);
+            conv2d_cpu(x.data(), ds_out.data(), dw.data(), db.data(), cur_ch, cur_ch, cur_H, cur_W, ds_kh, ds_kw, 2,
+                       ds_pad, cur_ch);
             // No ReLU for downsample (use_act=False)
             x = std::move(ds_out);
-            cur_H = ds_oH; cur_W = ds_oW;
+            cur_H = ds_oH;
+            cur_W = ds_oW;
             fprintf(stderr, "ppfn: stage%d downsample -> (%d, %d, %d)\n", si, cur_ch, cur_H, cur_W);
         }
 
         // HG_Blocks
         for (int bi = 0; bi < st.n_blocks; bi++) {
-            auto& blk = st.blocks[bi];
+            auto & blk = st.blocks[bi];
             bool residual = (bi > 0);
             std::vector<float> identity;
             if (residual) identity = x;
 
             // Collect outputs for concatenation
             std::vector<std::vector<float>> outputs;
-            outputs.push_back(x);  // input to block
+            outputs.push_back(x); // input to block
 
             int layer_in_ch = cur_ch;
             int layer_out_ch = st.mid_ch;
 
             for (int li = 0; li < st.n_layers; li++) {
-                auto& lay = blk.layers[li];
+                auto & lay = blk.layers[li];
                 int in_c = (li == 0) ? layer_in_ch : layer_out_ch;
 
                 if (lay.is_light) {
                     // LightConvBNAct: conv1 (1×1 pointwise, no ReLU) + conv2 (depthwise + ReLU)
-                    auto c1 = apply_conv(lay.conv1, x.data(), in_c, cur_H, cur_W,
-                                          layer_out_ch, 1, 1, 1, 1, false, oH, oW);
-                    x = apply_conv(lay.conv2, c1.data(), layer_out_ch, oH, oW,
-                                    layer_out_ch, st.kernel_size, st.kernel_size, 1,
-                                    layer_out_ch, true, oH, oW);
+                    auto c1 =
+                        apply_conv(lay.conv1, x.data(), in_c, cur_H, cur_W, layer_out_ch, 1, 1, 1, 1, false, oH, oW);
+                    x = apply_conv(lay.conv2, c1.data(), layer_out_ch, oH, oW, layer_out_ch, st.kernel_size,
+                                   st.kernel_size, 1, layer_out_ch, true, oH, oW);
                 } else {
                     // ConvBNAct: single conv + ReLU
-                    x = apply_conv(lay.conv, x.data(), in_c, cur_H, cur_W,
-                                    layer_out_ch, st.kernel_size, st.kernel_size, 1, 1, true, oH, oW);
+                    x = apply_conv(lay.conv, x.data(), in_c, cur_H, cur_W, layer_out_ch, st.kernel_size, st.kernel_size,
+                                   1, 1, true, oH, oW);
                 }
-                cur_H = oH; cur_W = oW;
+                cur_H = oH;
+                cur_W = oW;
                 outputs.push_back(x);
             }
 
             // Concatenate all outputs on channel dim
             int total_ch = 0;
-            for (auto& o : outputs) total_ch += (int)(o.size() / (cur_H * cur_W));
+            for (auto & o : outputs) total_ch += (int)(o.size() / (cur_H * cur_W));
             std::vector<float> concat(total_ch * cur_H * cur_W);
             int ch_offset = 0;
-            for (auto& o : outputs) {
+            for (auto & o : outputs) {
                 int och = (int)(o.size() / (cur_H * cur_W));
                 for (int c = 0; c < och; c++)
-                    memcpy(&concat[(ch_offset + c) * cur_H * cur_W],
-                           &o[c * cur_H * cur_W],
+                    memcpy(&concat[(ch_offset + c) * cur_H * cur_W], &o[c * cur_H * cur_W],
                            cur_H * cur_W * sizeof(float));
                 ch_offset += och;
             }
 
             // Aggregation: squeeze (1×1) + ReLU → excite (1×1) + ReLU
             int squeeze_ch = st.out_ch / 2;
-            x = apply_conv(blk.agg_squeeze, concat.data(), total_ch, cur_H, cur_W,
-                            squeeze_ch, 1, 1, 1, 1, true, oH, oW);
-            x = apply_conv(blk.agg_excite, x.data(), squeeze_ch, cur_H, cur_W,
-                            st.out_ch, 1, 1, 1, 1, true, oH, oW);
+            x = apply_conv(blk.agg_squeeze, concat.data(), total_ch, cur_H, cur_W, squeeze_ch, 1, 1, 1, 1, true, oH,
+                           oW);
+            x = apply_conv(blk.agg_excite, x.data(), squeeze_ch, cur_H, cur_W, st.out_ch, 1, 1, 1, 1, true, oH, oW);
             cur_ch = st.out_ch;
 
             // Residual
             if (residual && !identity.empty()) {
-                for (int i = 0; i < (int)x.size() && i < (int)identity.size(); i++)
-                    x[i] += identity[i];
+                for (int i = 0; i < (int)x.size() && i < (int)identity.size(); i++) x[i] += identity[i];
             }
 
             fprintf(stderr, "ppfn: stage%d block%d -> (%d, %d, %d)\n", si, bi, cur_ch, cur_H, cur_W);
@@ -726,8 +716,7 @@ static void run_encoder(ppformulanet_ocr_context* ctx,
     for (int n = 0; n < N; n++) {
         int y = n / cur_W;
         int xi = n % cur_W;
-        for (int c = 0; c < cur_ch; c++)
-            ctx->enc_out[n * cur_ch + c] = x[c * cur_H * cur_W + y * cur_W + xi];
+        for (int c = 0; c < cur_ch; c++) ctx->enc_out[n * cur_ch + c] = x[c * cur_H * cur_W + y * cur_W + xi];
     }
 
     fprintf(stderr, "ppfn: encoder output (%d, %d)\n", N, cur_ch);
@@ -737,7 +726,7 @@ static void run_encoder(ppformulanet_ocr_context* ctx,
 // Projection + decoder
 // ---------------------------------------------------------------------------
 
-static void project_encoder(ppformulanet_ocr_context* ctx) {
+static void project_encoder(ppformulanet_ocr_context * ctx) {
     // Linear projection: enc_out [N, 2048] → proj_out [N, 384]
     const int N = ctx->n_enc_tokens;
     const int E = ctx->hparams.enc_hidden;
@@ -750,8 +739,7 @@ static void project_encoder(ppformulanet_ocr_context* ctx) {
     for (int n = 0; n < N; n++) {
         for (int d = 0; d < D; d++) {
             float s = bv[d];
-            for (int e = 0; e < E; e++)
-                s += ctx->enc_out[n * E + e] * wv[d * E + e];
+            for (int e = 0; e < E; e++) s += ctx->enc_out[n * E + e] * wv[d * E + e];
             ctx->proj_out[n * D + d] = s;
         }
     }
@@ -759,7 +747,7 @@ static void project_encoder(ppformulanet_ocr_context* ctx) {
     fprintf(stderr, "ppfn: projected (%d, %d)\n", N, D);
 }
 
-static void precompute_cross_kv(ppformulanet_ocr_context* ctx) {
+static void precompute_cross_kv(ppformulanet_ocr_context * ctx) {
     const int N = ctx->n_enc_tokens;
     const int D = ctx->hparams.dec_d_model;
     const int n_dec = ctx->hparams.dec_layers;
@@ -772,21 +760,19 @@ static void precompute_cross_kv(ppformulanet_ocr_context* ctx) {
         ctx->cross_v_cache[li].resize(N * D);
 
         for (int n = 0; n < N; n++) {
-            linear_cpu(&ctx->proj_out[n * D], &ctx->cross_k_cache[li][n * D],
-                       D, D, ctx->dec_layers[li].cross_k_w, ctx->dec_layers[li].cross_k_b);
-            linear_cpu(&ctx->proj_out[n * D], &ctx->cross_v_cache[li][n * D],
-                       D, D, ctx->dec_layers[li].cross_v_w, ctx->dec_layers[li].cross_v_b);
+            linear_cpu(&ctx->proj_out[n * D], &ctx->cross_k_cache[li][n * D], D, D, ctx->dec_layers[li].cross_k_w,
+                       ctx->dec_layers[li].cross_k_b);
+            linear_cpu(&ctx->proj_out[n * D], &ctx->cross_v_cache[li][n * D], D, D, ctx->dec_layers[li].cross_v_w,
+                       ctx->dec_layers[li].cross_v_b);
         }
     }
 
     fprintf(stderr, "ppfn: cross K/V cached (%d layers, %d tokens)\n", n_dec, N);
 }
 
-static std::vector<float> decoder_step(ppformulanet_ocr_context* ctx,
-                                        int tok, int step,
-                                        std::vector<std::vector<float>>& kv_k,
-                                        std::vector<std::vector<float>>& kv_v) {
-    const auto& hp = ctx->hparams;
+static std::vector<float> decoder_step(ppformulanet_ocr_context * ctx, int tok, int step,
+                                       std::vector<std::vector<float>> & kv_k, std::vector<std::vector<float>> & kv_v) {
+    const auto & hp = ctx->hparams;
     const int D = hp.dec_d_model;
     const int V = hp.vocab_size;
     const int n_enc = ctx->n_enc_tokens;
@@ -795,36 +781,32 @@ static std::vector<float> decoder_step(ppformulanet_ocr_context* ctx,
 
     // Token embedding * sqrt(d_model) + position embedding
     auto emb = to_f32(ctx->tok_embed);
-    auto pe  = to_f32(ctx->pos_embed_dec);
+    auto pe = to_f32(ctx->pos_embed_dec);
     float scale = sqrtf((float)D);
 
     if (tok >= 0 && tok < V) {
-        for (int i = 0; i < D; i++)
-            x[i] = emb[tok * D + i] * scale;
+        for (int i = 0; i < D; i++) x[i] = emb[tok * D + i] * scale;
     }
 
     // MBart position offset: position_ids = step + 2
     int pos = step + 2;
     if (pos < (int)(pe.size() / D)) {
-        for (int i = 0; i < D; i++)
-            x[i] += pe[pos * D + i];
+        for (int i = 0; i < D; i++) x[i] += pe[pos * D + i];
     }
 
     // Embedding LayerNorm
     static const bool dbg = (std::getenv("PPFN_DEBUG") != nullptr);
     if (dbg && step == 0) {
-        fprintf(stderr, "ppfn: [dbg] tok_emb+pos first 5: %.5f %.5f %.5f %.5f %.5f\n",
-                x[0], x[1], x[2], x[3], x[4]);
+        fprintf(stderr, "ppfn: [dbg] tok_emb+pos first 5: %.5f %.5f %.5f %.5f %.5f\n", x[0], x[1], x[2], x[3], x[4]);
     }
     layernorm_cpu(x.data(), x.data(), D, ctx->embed_ln_w, ctx->embed_ln_b, 1e-5f);
     if (dbg && step == 0) {
-        fprintf(stderr, "ppfn: [dbg] after embed_ln first 5: %.5f %.5f %.5f %.5f %.5f\n",
-                x[0], x[1], x[2], x[3], x[4]);
+        fprintf(stderr, "ppfn: [dbg] after embed_ln first 5: %.5f %.5f %.5f %.5f %.5f\n", x[0], x[1], x[2], x[3], x[4]);
     }
 
     // Decoder layers (MBart PRE-LN: LN before attention, residual skips LN)
     for (int li = 0; li < hp.dec_layers; li++) {
-        const auto& l = ctx->dec_layers[li];
+        const auto & l = ctx->dec_layers[li];
 
         // --- Self-attention (PRE-LN) ---
         std::vector<float> residual(x.begin(), x.end());
@@ -841,12 +823,11 @@ static std::vector<float> decoder_step(ppformulanet_ocr_context* ctx,
         int n_kv = (int)(kv_k[li].size() / D);
 
         std::vector<float> sa(D);
-        mha_1q_cpu(q.data(), kv_k[li].data(), kv_v[li].data(),
-                   sa.data(), n_kv, D, hp.dec_heads);
+        mha_1q_cpu(q.data(), kv_k[li].data(), kv_v[li].data(), sa.data(), n_kv, D, hp.dec_heads);
 
         std::vector<float> sa_proj(D);
         linear_cpu(sa.data(), sa_proj.data(), D, D, l.self_out_w, l.self_out_b);
-        for (int i = 0; i < D; i++) x[i] = residual[i] + sa_proj[i];  // residual skips LN
+        for (int i = 0; i < D; i++) x[i] = residual[i] + sa_proj[i]; // residual skips LN
 
         // --- Cross-attention (PRE-LN) ---
         residual.assign(x.begin(), x.end());
@@ -856,13 +837,12 @@ static std::vector<float> decoder_step(ppformulanet_ocr_context* ctx,
         linear_cpu(x.data(), cq.data(), D, D, l.cross_q_w, l.cross_q_b);
 
         std::vector<float> ca(D);
-        mha_1q_cpu(cq.data(), ctx->cross_k_cache[li].data(),
-                   ctx->cross_v_cache[li].data(),
-                   ca.data(), n_enc, D, hp.dec_heads);
+        mha_1q_cpu(cq.data(), ctx->cross_k_cache[li].data(), ctx->cross_v_cache[li].data(), ca.data(), n_enc, D,
+                   hp.dec_heads);
 
         std::vector<float> ca_proj(D);
         linear_cpu(ca.data(), ca_proj.data(), D, D, l.cross_out_w, l.cross_out_b);
-        for (int i = 0; i < D; i++) x[i] = residual[i] + ca_proj[i];  // residual skips LN
+        for (int i = 0; i < D; i++) x[i] = residual[i] + ca_proj[i]; // residual skips LN
 
         // --- FFN (PRE-LN) ---
         residual.assign(x.begin(), x.end());
@@ -877,35 +857,34 @@ static std::vector<float> decoder_step(ppformulanet_ocr_context* ctx,
         }
         std::vector<float> ff_down(D);
         linear_cpu(ff_up.data(), ff_down.data(), hp.dec_ffn_dim, D, l.ff_down_w, l.ff_down_b);
-        for (int i = 0; i < D; i++) x[i] = residual[i] + ff_down[i];  // residual skips LN
+        for (int i = 0; i < D; i++) x[i] = residual[i] + ff_down[i]; // residual skips LN
     }
 
     // Final LayerNorm
     if (dbg && step == 0) {
-        fprintf(stderr, "ppfn: [dbg] before final_ln first 5: %.5f %.5f %.5f %.5f %.5f\n",
-                x[0], x[1], x[2], x[3], x[4]);
+        fprintf(stderr, "ppfn: [dbg] before final_ln first 5: %.5f %.5f %.5f %.5f %.5f\n", x[0], x[1], x[2], x[3],
+                x[4]);
     }
     layernorm_cpu(x.data(), x.data(), D, ctx->final_ln_w, ctx->final_ln_b, 1e-5f);
     if (dbg && step == 0) {
-        fprintf(stderr, "ppfn: [dbg] after final_ln first 5: %.5f %.5f %.5f %.5f %.5f\n",
-                x[0], x[1], x[2], x[3], x[4]);
+        fprintf(stderr, "ppfn: [dbg] after final_ln first 5: %.5f %.5f %.5f %.5f %.5f\n", x[0], x[1], x[2], x[3], x[4]);
     }
 
     // LM head
     std::vector<float> logits(V);
     linear_cpu(x.data(), logits.data(), D, V, ctx->lm_head_w, ctx->lm_head_b);
     if (dbg && step == 0) {
-        fprintf(stderr, "ppfn: [dbg] logits[0:5]: %.4f %.4f %.4f %.4f %.4f\n",
-                logits[0], logits[1], logits[2], logits[3], logits[4]);
+        fprintf(stderr, "ppfn: [dbg] logits[0:5]: %.4f %.4f %.4f %.4f %.4f\n", logits[0], logits[1], logits[2],
+                logits[3], logits[4]);
         if (V > 224) fprintf(stderr, "ppfn: [dbg] logits[91]=%f logits[224]=%f\n", logits[91], logits[224]);
     }
 
     return logits;
 }
 
-static std::vector<int> greedy_decode(ppformulanet_ocr_context* ctx) {
+static std::vector<int> greedy_decode(ppformulanet_ocr_context * ctx) {
     ctx->char_confidences.clear();
-    const auto& hp = ctx->hparams;
+    const auto & hp = ctx->hparams;
     const int max_steps = std::min(hp.max_seq_len, 512);
 
     std::vector<int> tokens;
@@ -922,11 +901,13 @@ static std::vector<int> greedy_decode(ppformulanet_ocr_context* ctx) {
         int best = 0;
         float best_s = logits[0];
         for (int v = 1; v < hp.vocab_size; v++)
-            if (logits[v] > best_s) { best_s = logits[v]; best = v; }
+            if (logits[v] > best_s) {
+                best_s = logits[v];
+                best = v;
+            }
 
         if (step < 5) {
-            fprintf(stderr, "ppfn: dec step %d: tok=%d best=%d (%.3f)\n",
-                    step, tok, best, best_s);
+            fprintf(stderr, "ppfn: dec step %d: tok=%d best=%d (%.3f)\n", step, tok, best, best_s);
         }
 
         if (best == hp.eos_token || best == hp.pad_token) break;
@@ -934,7 +915,8 @@ static std::vector<int> greedy_decode(ppformulanet_ocr_context* ctx) {
         // Confidence: softmax of winning token
         {
             float max_l = logits[0];
-            for (int v = 1; v < hp.vocab_size; v++) if (logits[v] > max_l) max_l = logits[v];
+            for (int v = 1; v < hp.vocab_size; v++)
+                if (logits[v] > max_l) max_l = logits[v];
             float sum_e = 0;
             for (int v = 0; v < hp.vocab_size; v++) sum_e += expf(logits[v] - max_l);
             ctx->char_confidences.push_back(expf(logits[best] - max_l) / sum_e);
@@ -960,8 +942,8 @@ struct PpfnBeam {
     std::vector<std::vector<float>> kv_v;
 };
 
-static std::vector<int> beam_decode(ppformulanet_ocr_context* ctx, int beam_width) {
-    const auto& hp = ctx->hparams;
+static std::vector<int> beam_decode(ppformulanet_ocr_context * ctx, int beam_width) {
+    const auto & hp = ctx->hparams;
     const int V = hp.vocab_size;
     const int n_dec = hp.dec_layers;
     const int max_steps = std::min(hp.max_seq_len, 512);
@@ -976,20 +958,26 @@ static std::vector<int> beam_decode(ppformulanet_ocr_context* ctx, int beam_widt
     std::vector<PpfnBeam> completed;
 
     for (int step = 0; step < max_steps; step++) {
-        struct Cand { int bi; int tok; float score; };
+        struct Cand {
+            int bi;
+            int tok;
+            float score;
+        };
         std::vector<Cand> cands;
 
         for (int bi = 0; bi < (int)beams.size(); bi++) {
             if (beams[bi].finished) continue;
-            auto logits = decoder_step(ctx, beams[bi].prev_token, step,
-                                       beams[bi].kv_k, beams[bi].kv_v);
+            auto logits = decoder_step(ctx, beams[bi].prev_token, step, beams[bi].kv_k, beams[bi].kv_v);
             float max_l = *std::max_element(logits.begin(), logits.end());
             float sum_e = 0.0f;
-            for (int v = 0; v < V; v++) { logits[v] = expf(logits[v] - max_l); sum_e += logits[v]; }
+            for (int v = 0; v < V; v++) {
+                logits[v] = expf(logits[v] - max_l);
+                sum_e += logits[v];
+            }
             float log_sum = logf(sum_e) + max_l;
             for (int v = 0; v < V; v++) {
                 float log_p = logits[v] > 0 ? logf(logits[v]) + max_l - log_sum : -100.0f;
-                cands.push_back({bi, v, beams[bi].score + log_p});
+                cands.push_back({ bi, v, beams[bi].score + log_p });
             }
         }
 
@@ -997,17 +985,17 @@ static std::vector<int> beam_decode(ppformulanet_ocr_context* ctx, int beam_widt
 
         int keep = std::min(beam_width, (int)cands.size());
         std::partial_sort(cands.begin(), cands.begin() + keep, cands.end(),
-                          [](const Cand& a, const Cand& b) { return a.score > b.score; });
+                          [](const Cand & a, const Cand & b) { return a.score > b.score; });
 
         std::vector<PpfnBeam> new_beams;
         new_beams.reserve(keep);
         for (int i = 0; i < keep; i++) {
-            const auto& c = cands[i];
+            const auto & c = cands[i];
             PpfnBeam nb;
-            nb.tokens   = beams[c.bi].tokens;
-            nb.kv_k     = beams[c.bi].kv_k;
-            nb.kv_v     = beams[c.bi].kv_v;
-            nb.score    = c.score;
+            nb.tokens = beams[c.bi].tokens;
+            nb.kv_k = beams[c.bi].kv_k;
+            nb.kv_v = beams[c.bi].kv_v;
+            nb.score = c.score;
             if (c.tok == hp.eos_token || c.tok == hp.pad_token) {
                 nb.finished = true;
                 nb.prev_token = c.tok;
@@ -1026,7 +1014,7 @@ static std::vector<int> beam_decode(ppformulanet_ocr_context* ctx, int beam_widt
         if (beams.empty()) break;
     }
 
-    for (auto& b : beams) {
+    for (auto & b : beams) {
         float len = (float)b.tokens.size();
         b.score /= len > 0 ? len : 1.0f;
         completed.push_back(std::move(b));
@@ -1034,7 +1022,7 @@ static std::vector<int> beam_decode(ppformulanet_ocr_context* ctx, int beam_widt
 
     if (completed.empty()) return {};
     auto best = std::max_element(completed.begin(), completed.end(),
-                                  [](const PpfnBeam& a, const PpfnBeam& b) { return a.score < b.score; });
+                                 [](const PpfnBeam & a, const PpfnBeam & b) { return a.score < b.score; });
     return best->tokens;
 }
 
@@ -1042,35 +1030,35 @@ static std::vector<int> beam_decode(ppformulanet_ocr_context* ctx, int beam_widt
 // Init / Free / API
 // ---------------------------------------------------------------------------
 
-ppformulanet_ocr_context* ppformulanet_ocr_init(const char* model_path, int n_threads) {
+ppformulanet_ocr_context * ppformulanet_ocr_init(const char * model_path, int n_threads) {
     auto ctx = std::make_unique<ppformulanet_ocr_context>();
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
 
-    gguf_context* gctx = core_gguf::open_metadata(model_path);
+    gguf_context * gctx = core_gguf::open_metadata(model_path);
     if (!gctx) {
         fprintf(stderr, "ppfn: can't open %s\n", model_path);
         return nullptr;
     }
 
-    auto& hp = ctx->hparams;
-    hp.image_size  = core_gguf::kv_u32(gctx, "ppfn.encoder.image_size", 384);
-    hp.enc_hidden  = core_gguf::kv_u32(gctx, "ppfn.encoder.hidden_size", 2048);
-    hp.dec_layers  = core_gguf::kv_u32(gctx, "ppfn.decoder.decoder_layers", 2);
-    hp.dec_heads   = core_gguf::kv_u32(gctx, "ppfn.decoder.decoder_attention_heads", 16);
+    auto & hp = ctx->hparams;
+    hp.image_size = core_gguf::kv_u32(gctx, "ppfn.encoder.image_size", 384);
+    hp.enc_hidden = core_gguf::kv_u32(gctx, "ppfn.encoder.hidden_size", 2048);
+    hp.dec_layers = core_gguf::kv_u32(gctx, "ppfn.decoder.decoder_layers", 2);
+    hp.dec_heads = core_gguf::kv_u32(gctx, "ppfn.decoder.decoder_attention_heads", 16);
     hp.dec_d_model = core_gguf::kv_u32(gctx, "ppfn.decoder.d_model", 384);
     hp.dec_ffn_dim = core_gguf::kv_u32(gctx, "ppfn.decoder.decoder_ffn_dim", 1536);
-    hp.vocab_size  = core_gguf::kv_u32(gctx, "ppfn.decoder.vocab_size", 50000);
+    hp.vocab_size = core_gguf::kv_u32(gctx, "ppfn.decoder.vocab_size", 50000);
     hp.max_seq_len = core_gguf::kv_u32(gctx, "ppfn.decoder.max_position_embeddings", 1027);
     hp.cross_attn_dim = hp.dec_d_model;
-    hp.bos_token   = core_gguf::kv_u32(gctx, "ppfn.decoder.bos_token_id", 0);
-    hp.eos_token   = core_gguf::kv_u32(gctx, "ppfn.decoder.eos_token_id", 2);
-    hp.pad_token   = core_gguf::kv_u32(gctx, "ppfn.decoder.pad_token_id", 1);
+    hp.bos_token = core_gguf::kv_u32(gctx, "ppfn.decoder.bos_token_id", 0);
+    hp.eos_token = core_gguf::kv_u32(gctx, "ppfn.decoder.eos_token_id", 2);
+    hp.pad_token = core_gguf::kv_u32(gctx, "ppfn.decoder.pad_token_id", 1);
     hp.decoder_start_token = core_gguf::kv_u32(gctx, "ppfn.decoder.decoder_start_token_id", 0);
 
     // Read stage configs
     for (int si = 0; si < 4; si++) {
         char buf[128];
-        auto& st = ctx->stages[si];
+        auto & st = ctx->stages[si];
         snprintf(buf, sizeof(buf), "ppfn.encoder.stage%d.in_channels", si);
         st.in_ch = core_gguf::kv_u32(gctx, buf, 48);
         snprintf(buf, sizeof(buf), "ppfn.encoder.stage%d.mid_channels", si);
@@ -1090,9 +1078,8 @@ ppformulanet_ocr_context* ppformulanet_ocr_init(const char* model_path, int n_th
     ctx->vocab = core_gguf::kv_str_array(gctx, "tokenizer.tokens");
     core_gguf::free_metadata(gctx);
 
-    fprintf(stderr, "ppfn: enc_hidden=%d dec=%dL/%dH/%d vocab=%d(%zu)\n",
-            hp.enc_hidden, hp.dec_layers, hp.dec_heads, hp.dec_d_model,
-            hp.vocab_size, ctx->vocab.size());
+    fprintf(stderr, "ppfn: enc_hidden=%d dec=%dL/%dH/%d vocab=%d(%zu)\n", hp.enc_hidden, hp.dec_layers, hp.dec_heads,
+            hp.dec_d_model, hp.vocab_size, ctx->vocab.size());
 
     // Prefer GPU backend — weights read via ggml_backend_tensor_get (GPU-safe).
     // Forward pass is scalar CPU; full GPU compute needs ggml graph rewrite.
@@ -1103,8 +1090,7 @@ ppformulanet_ocr_context* ppformulanet_ocr_init(const char* model_path, int n_th
     // is now a no-op.)
     ctx->backend = ggml_backend_cpu_init();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
-    if (ggml_backend_is_cpu(ctx->backend))
-        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
 
     if (!core_gguf::load_weights(model_path, ctx->backend, "ppfn", ctx->wl)) {
         ggml_backend_free(ctx->backend);
@@ -1119,8 +1105,7 @@ ppformulanet_ocr_context* ppformulanet_ocr_init(const char* model_path, int n_th
     for (int si = 0; si < 4; si++)
         for (int bi = 0; bi < ctx->stages[si].n_blocks; bi++)
             if (ctx->stages[si].blocks[bi].agg_squeeze.w) n_mapped++;
-    fprintf(stderr, "ppfn: %d blocks mapped, %d dec layers\n",
-            n_mapped, hp.dec_layers);
+    fprintf(stderr, "ppfn: %d blocks mapped, %d dec layers\n", n_mapped, hp.dec_layers);
 
     ctx->bench = (std::getenv("CRISPEMBED_PPFN_BENCH") != nullptr);
 
@@ -1135,7 +1120,7 @@ ppformulanet_ocr_context* ppformulanet_ocr_init(const char* model_path, int n_th
     return ctx.release();
 }
 
-void ppformulanet_ocr_free(ppformulanet_ocr_context* ctx) {
+void ppformulanet_ocr_free(ppformulanet_ocr_context * ctx) {
     if (!ctx) return;
     if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
     if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
@@ -1144,14 +1129,12 @@ void ppformulanet_ocr_free(ppformulanet_ocr_context* ctx) {
     delete ctx;
 }
 
-const ppformulanet_ocr_hparams* ppformulanet_ocr_get_hparams(
-    const ppformulanet_ocr_context* ctx) {
+const ppformulanet_ocr_hparams * ppformulanet_ocr_get_hparams(const ppformulanet_ocr_context * ctx) {
     return ctx ? &ctx->hparams : nullptr;
 }
 
-const char* ppformulanet_ocr_recognize(ppformulanet_ocr_context* ctx,
-                                        const float* pixels,
-                                        int width, int height, int* out_len) {
+const char * ppformulanet_ocr_recognize(ppformulanet_ocr_context * ctx, const float * pixels, int width, int height,
+                                        int * out_len) {
     if (!ctx || !pixels) return nullptr;
     const int S = ctx->hparams.image_size;
 
@@ -1165,14 +1148,14 @@ const char* ppformulanet_ocr_recognize(ppformulanet_ocr_context* ctx,
     // 4. Normalize: mean=0.7931, std=0.1738
     auto t0 = std::chrono::steady_clock::now();
     const float MEAN = 0.7931f;
-    const float STD  = 0.1738f;
+    const float STD = 0.1738f;
 
     // Compute scale to fit within S×S preserving aspect ratio
     float scale = std::min((float)S / width, (float)S / height);
     int new_w = std::min((int)(width * scale), S);
     int new_h = std::min((int)(height * scale), S);
     int pad_left = (S - new_w) / 2;
-    int pad_top  = (S - new_h) / 2;
+    int pad_top = (S - new_h) / 2;
 
     // Fill with normalized black: (0.0 - 0.7931) / 0.1738
     float black_norm = (0.0f - MEAN) / STD;
@@ -1188,16 +1171,16 @@ const char* ppformulanet_ocr_recognize(ppformulanet_ocr_context* ctx,
             float fx = (float)x / scale;
             int x0 = (int)fx, x1 = std::min(x0 + 1, width - 1);
             float wx = fx - x0;
-            float v = (1 - wy) * ((1 - wx) * pixels[y0*width+x0] + wx * pixels[y0*width+x1])
-                    +      wy  * ((1 - wx) * pixels[y1*width+x0] + wx * pixels[y1*width+x1]);
+            float v = (1 - wy) * ((1 - wx) * pixels[y0 * width + x0] + wx * pixels[y0 * width + x1]) +
+                      wy * ((1 - wx) * pixels[y1 * width + x0] + wx * pixels[y1 * width + x1]);
             float normed = (v - MEAN) / STD;
             int dx = pad_left + x;
-            for (int c = 0; c < 3; c++)
-                rgb[c * S * S + dy * S + dx] = normed;
+            for (int c = 0; c < 3; c++) rgb[c * S * S + dy * S + dx] = normed;
         }
     }
-    if (bench) fprintf(stderr, "[ppfn-bench] preprocess: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[ppfn-bench] preprocess: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     // Run encoder
     t0 = std::chrono::steady_clock::now();
@@ -1205,8 +1188,9 @@ const char* ppformulanet_ocr_recognize(ppformulanet_ocr_context* ctx,
         run_encoder_ggml(ctx, rgb.data(), S, S);
     else
         run_encoder(ctx, rgb.data(), S, S);
-    if (bench) fprintf(stderr, "[ppfn-bench] encoder: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[ppfn-bench] encoder: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     // Project to decoder dimension
     t0 = std::chrono::steady_clock::now();
@@ -1217,8 +1201,9 @@ const char* ppformulanet_ocr_recognize(ppformulanet_ocr_context* ctx,
 
     // Decode
     auto tokens = greedy_decode(ctx);
-    if (bench) fprintf(stderr, "[ppfn-bench] decoder: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[ppfn-bench] decoder: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     // Detokenize GPT-2 byte-level BPE pieces to text via the shared decoder
     // (inverse of byte_encoder(): "Ġ" -> space, "Ċ" -> newline, all bytes).
@@ -1228,17 +1213,16 @@ const char* ppformulanet_ocr_recognize(ppformulanet_ocr_context* ctx,
         core_bpe::unicode_to_bytes(ctx->vocab[tok], ctx->result_buf);
     }
 
-    if (bench) fprintf(stderr, "[ppfn-bench] total: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
+    if (bench)
+        fprintf(stderr, "[ppfn-bench] total: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
 }
 
-const char* ppformulanet_ocr_recognize_raw(ppformulanet_ocr_context* ctx,
-                                            const uint8_t* pixel_bytes,
-                                            int width, int height, int channels,
-                                            int* out_len) {
+const char * ppformulanet_ocr_recognize_raw(ppformulanet_ocr_context * ctx, const uint8_t * pixel_bytes, int width,
+                                            int height, int channels, int * out_len) {
     if (!ctx || !pixel_bytes) return nullptr;
 
     // Convert to grayscale float [0, 1]
@@ -1247,20 +1231,20 @@ const char* ppformulanet_ocr_recognize_raw(ppformulanet_ocr_context* ctx,
         if (channels == 1) {
             gray[i] = pixel_bytes[i] / 255.0f;
         } else if (channels == 3) {
-            gray[i] = (0.299f * pixel_bytes[i*3] + 0.587f * pixel_bytes[i*3+1]
-                       + 0.114f * pixel_bytes[i*3+2]) / 255.0f;
+            gray[i] =
+                (0.299f * pixel_bytes[i * 3] + 0.587f * pixel_bytes[i * 3 + 1] + 0.114f * pixel_bytes[i * 3 + 2]) /
+                255.0f;
         } else if (channels == 4) {
-            gray[i] = (0.299f * pixel_bytes[i*4] + 0.587f * pixel_bytes[i*4+1]
-                       + 0.114f * pixel_bytes[i*4+2]) / 255.0f;
+            gray[i] =
+                (0.299f * pixel_bytes[i * 4] + 0.587f * pixel_bytes[i * 4 + 1] + 0.114f * pixel_bytes[i * 4 + 2]) /
+                255.0f;
         }
     }
 
     return ppformulanet_ocr_recognize(ctx, gray.data(), width, height, out_len);
 }
 
-const char* ppformulanet_ocr_recognize_chw(ppformulanet_ocr_context* ctx,
-                                            const float* chw_data,
-                                            int* out_len) {
+const char * ppformulanet_ocr_recognize_chw(ppformulanet_ocr_context * ctx, const float * chw_data, int * out_len) {
     if (!ctx || !chw_data) return nullptr;
     const int S = ctx->hparams.image_size;
 
@@ -1285,13 +1269,10 @@ const char* ppformulanet_ocr_recognize_chw(ppformulanet_ocr_context* ctx,
     return ctx->result_buf.c_str();
 }
 
-const char* ppformulanet_ocr_recognize_beam(ppformulanet_ocr_context* ctx,
-                                             const float* pixels,
-                                             int width, int height,
-                                             int beam_width, int* out_len) {
+const char * ppformulanet_ocr_recognize_beam(ppformulanet_ocr_context * ctx, const float * pixels, int width,
+                                             int height, int beam_width, int * out_len) {
     if (!ctx || !pixels) return nullptr;
-    if (beam_width <= 1)
-        return ppformulanet_ocr_recognize(ctx, pixels, width, height, out_len);
+    if (beam_width <= 1) return ppformulanet_ocr_recognize(ctx, pixels, width, height, out_len);
 
     const int S = ctx->hparams.image_size;
     const float MEAN = 0.7931f, STD = 0.1738f;
@@ -1309,12 +1290,11 @@ const char* ppformulanet_ocr_recognize_beam(ppformulanet_ocr_context* ctx,
             float fx = (float)x / scale;
             int x0 = (int)fx, x1 = std::min(x0 + 1, width - 1);
             float wx = fx - x0;
-            float v = (1-wy)*((1-wx)*pixels[y0*width+x0] + wx*pixels[y0*width+x1])
-                    +    wy *((1-wx)*pixels[y1*width+x0] + wx*pixels[y1*width+x1]);
+            float v = (1 - wy) * ((1 - wx) * pixels[y0 * width + x0] + wx * pixels[y0 * width + x1]) +
+                      wy * ((1 - wx) * pixels[y1 * width + x0] + wx * pixels[y1 * width + x1]);
             float normed = (v - MEAN) / STD;
             int dx = pad_left + x;
-            for (int c = 0; c < 3; c++)
-                rgb[c * S * S + (pad_top + y) * S + dx] = normed;
+            for (int c = 0; c < 3; c++) rgb[c * S * S + (pad_top + y) * S + dx] = normed;
         }
     }
 
@@ -1336,21 +1316,21 @@ const char* ppformulanet_ocr_recognize_beam(ppformulanet_ocr_context* ctx,
     return ctx->result_buf.c_str();
 }
 
-const char* ppformulanet_ocr_recognize_raw_beam(ppformulanet_ocr_context* ctx,
-                                                 const uint8_t* pixel_bytes,
-                                                 int width, int height, int channels,
-                                                 int beam_width, int* out_len) {
+const char * ppformulanet_ocr_recognize_raw_beam(ppformulanet_ocr_context * ctx, const uint8_t * pixel_bytes, int width,
+                                                 int height, int channels, int beam_width, int * out_len) {
     if (!ctx || !pixel_bytes) return nullptr;
     std::vector<float> gray(width * height);
     for (int i = 0; i < width * height; i++) {
         if (channels == 1)
             gray[i] = pixel_bytes[i] / 255.0f;
         else if (channels == 3)
-            gray[i] = (0.299f*pixel_bytes[i*3] + 0.587f*pixel_bytes[i*3+1]
-                     + 0.114f*pixel_bytes[i*3+2]) / 255.0f;
+            gray[i] =
+                (0.299f * pixel_bytes[i * 3] + 0.587f * pixel_bytes[i * 3 + 1] + 0.114f * pixel_bytes[i * 3 + 2]) /
+                255.0f;
         else if (channels == 4)
-            gray[i] = (0.299f*pixel_bytes[i*4] + 0.587f*pixel_bytes[i*4+1]
-                     + 0.114f*pixel_bytes[i*4+2]) / 255.0f;
+            gray[i] =
+                (0.299f * pixel_bytes[i * 4] + 0.587f * pixel_bytes[i * 4 + 1] + 0.114f * pixel_bytes[i * 4 + 2]) /
+                255.0f;
     }
     return ppformulanet_ocr_recognize_beam(ctx, gray.data(), width, height, beam_width, out_len);
 }
@@ -1371,9 +1351,8 @@ float ppformulanet_ocr_mean_confidence(const ppformulanet_ocr_context * ctx) {
     return (float)(sum / ctx->char_confidences.size());
 }
 
-const float* ppformulanet_ocr_get_encoder_output(
-    const ppformulanet_ocr_context* ctx,
-    int* out_n_tokens, int* out_hidden) {
+const float * ppformulanet_ocr_get_encoder_output(const ppformulanet_ocr_context * ctx, int * out_n_tokens,
+                                                  int * out_hidden) {
     if (!ctx || ctx->enc_out.empty()) return nullptr;
     if (out_n_tokens) *out_n_tokens = ctx->n_enc_tokens;
     if (out_hidden) *out_hidden = ctx->hparams.enc_hidden;

@@ -56,7 +56,8 @@ struct UnionFind {
     }
 
     void unite(int a, int b) {
-        a = find(a); b = find(b);
+        a = find(a);
+        b = find(b);
         if (a == b) return;
         if (rank[a] < rank[b]) std::swap(a, b);
         parent[b] = a;
@@ -79,9 +80,7 @@ struct BBox {
     }
 };
 
-static std::vector<BBox> cc_label_boxes(
-    const uint32_t * bits, int w, int h, int wpl)
-{
+static std::vector<BBox> cc_label_boxes(const uint32_t * bits, int w, int h, int wpl) {
     // Two-pass labeling with union-find
     std::vector<int> labels(w * h, -1);
     UnionFind uf;
@@ -97,8 +96,7 @@ static std::vector<BBox> cc_label_boxes(
             int up = -1;
             if (y > 0) {
                 const uint32_t * prev_line = bits + (y - 1) * wpl;
-                if (get_bit(prev_line, x))
-                    up = labels[(y - 1) * w + x];
+                if (get_bit(prev_line, x)) up = labels[(y - 1) * w + x];
             }
 
             if (left == -1 && up == -1) {
@@ -177,10 +175,8 @@ cc_detect_params cc_detect_defaults(void) {
     return p;
 }
 
-cc_text_region * cc_detect_lines_params(
-    const uint8_t * gray, int width, int height,
-    cc_detect_params params, int * out_n)
-{
+cc_text_region * cc_detect_lines_params(const uint8_t * gray, int width, int height, cc_detect_params params,
+                                        int * out_n) {
     if (out_n) *out_n = 0;
     if (!gray || width <= 0 || height <= 0) return nullptr;
 
@@ -206,8 +202,7 @@ cc_text_region * cc_detect_lines_params(
 
     // 2. Horizontal close → merge characters into lines
     auto t_close0 = std::chrono::steady_clock::now();
-    uint32_t * closed = morph_close_brick(bits, width, height, wpl,
-                                           params.close_hsize, params.close_vsize);
+    uint32_t * closed = morph_close_brick(bits, width, height, wpl, params.close_hsize, params.close_vsize);
     morph_free(bits);
     if (!closed) return nullptr;
 
@@ -216,8 +211,7 @@ cc_text_region * cc_detect_lines_params(
 
     // 4. Small open → remove noise
     if (params.open_size > 1) {
-        uint32_t * opened = morph_open_brick(closed, width, height, wpl,
-                                              params.open_size, params.open_size);
+        uint32_t * opened = morph_open_brick(closed, width, height, wpl, params.open_size, params.open_size);
         morph_free(closed);
         if (!opened) return nullptr;
         closed = opened;
@@ -245,7 +239,7 @@ cc_text_region * cc_detect_lines_params(
         int rw = b.x1 - b.x0 + 1;
         int rh = b.y1 - b.y0 + 1;
         if (rw >= params.min_width && rh >= params.min_height) {
-            regions.push_back({b.x0, b.y0, rw, rh});
+            regions.push_back({ b.x0, b.y0, rw, rh });
         }
     }
 
@@ -276,9 +270,7 @@ cc_text_region * cc_detect_lines_params(
     return result;
 }
 
-cc_text_region * cc_detect_lines(
-    const uint8_t * gray, int width, int height, int * out_n)
-{
+cc_text_region * cc_detect_lines(const uint8_t * gray, int width, int height, int * out_n) {
     return cc_detect_lines_params(gray, width, height, cc_detect_defaults(), out_n);
 }
 

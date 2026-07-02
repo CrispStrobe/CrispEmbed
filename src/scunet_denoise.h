@@ -22,24 +22,18 @@ void scunet_free(scunet_context * ctx);
 
 /// Denoise RGB image. Input/output: uint8 RGB [h, w, 3].
 /// Caller allocates output (same size as input).
-int scunet_process(scunet_context * ctx,
-                   const uint8_t * input, int width, int height,
-                   uint8_t * output);
+int scunet_process(scunet_context * ctx, const uint8_t * input, int width, int height, uint8_t * output);
 
 /// Float CHW [0,1] in/out (for parity testing).
-int scunet_process_float(scunet_context * ctx,
-                         const float * input_chw, int width, int height,
-                         float * output_chw);
+int scunet_process_float(scunet_context * ctx, const float * input_chw, int width, int height, float * output_chw);
 
 #ifdef __cplusplus
 }
 
 /// Debug variant with per-stage callback for parity testing.
 using scunet_stage_cb = std::function<void(const char * name, const float * data, int n)>;
-int scunet_process_float_debug(scunet_context * ctx,
-                                const float * input_chw, int width, int height,
-                                float * output_chw,
-                                scunet_stage_cb cb);
+int scunet_process_float_debug(scunet_context * ctx, const float * input_chw, int width, int height, float * output_chw,
+                               scunet_stage_cb cb);
 #endif
 
 #endif

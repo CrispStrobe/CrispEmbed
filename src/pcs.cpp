@@ -46,16 +46,15 @@ struct SPTokenizer {
 
     void build_map() {
         token_to_id.clear();
-        for (int i = 0; i < (int)id_to_token.size(); i++)
-            token_to_id[id_to_token[i]] = i;
+        for (int i = 0; i < (int)id_to_token.size(); i++) token_to_id[id_to_token[i]] = i;
     }
 
-    int lookup(const std::string& tok) const {
+    int lookup(const std::string & tok) const {
         auto it = token_to_id.find(tok);
         return it != token_to_id.end() ? it->second : unk_id;
     }
 
-    std::vector<int> tokenize(const std::string& text) const {
+    std::vector<int> tokenize(const std::string & text) const {
         std::vector<int> ids;
         std::vector<std::string> words;
         std::string cur;
@@ -69,10 +68,9 @@ struct SPTokenizer {
                 cur += c;
             }
         }
-        if (!cur.empty())
-            words.push_back(cur);
+        if (!cur.empty()) words.push_back(cur);
 
-        for (const auto& word : words) {
+        for (const auto & word : words) {
             std::string w = "\xE2\x96\x81" + word; // ▁ prefix
             size_t start = 0;
             while (start < w.size()) {
@@ -86,8 +84,7 @@ struct SPTokenizer {
                         break;
                     }
                     end--;
-                    while (end > start && (w[end] & 0xC0) == 0x80)
-                        end--;
+                    while (end > start && (w[end] & 0xC0) == 0x80) end--;
                 }
                 if (best_id < 0) {
                     ids.push_back(unk_id);
@@ -108,22 +105,22 @@ struct SPTokenizer {
 // ---------------------------------------------------------------------------
 
 struct BertLayer {
-    ggml_tensor* attn_q_w = nullptr;
-    ggml_tensor* attn_q_b = nullptr;
-    ggml_tensor* attn_k_w = nullptr;
-    ggml_tensor* attn_k_b = nullptr;
-    ggml_tensor* attn_v_w = nullptr;
-    ggml_tensor* attn_v_b = nullptr;
-    ggml_tensor* attn_out_w = nullptr;
-    ggml_tensor* attn_out_b = nullptr;
-    ggml_tensor* attn_ln_w = nullptr;
-    ggml_tensor* attn_ln_b = nullptr;
-    ggml_tensor* ffn_up_w = nullptr;
-    ggml_tensor* ffn_up_b = nullptr;
-    ggml_tensor* ffn_down_w = nullptr;
-    ggml_tensor* ffn_down_b = nullptr;
-    ggml_tensor* ffn_ln_w = nullptr;
-    ggml_tensor* ffn_ln_b = nullptr;
+    ggml_tensor * attn_q_w = nullptr;
+    ggml_tensor * attn_q_b = nullptr;
+    ggml_tensor * attn_k_w = nullptr;
+    ggml_tensor * attn_k_b = nullptr;
+    ggml_tensor * attn_v_w = nullptr;
+    ggml_tensor * attn_v_b = nullptr;
+    ggml_tensor * attn_out_w = nullptr;
+    ggml_tensor * attn_out_b = nullptr;
+    ggml_tensor * attn_ln_w = nullptr;
+    ggml_tensor * attn_ln_b = nullptr;
+    ggml_tensor * ffn_up_w = nullptr;
+    ggml_tensor * ffn_up_b = nullptr;
+    ggml_tensor * ffn_down_w = nullptr;
+    ggml_tensor * ffn_down_b = nullptr;
+    ggml_tensor * ffn_ln_w = nullptr;
+    ggml_tensor * ffn_ln_b = nullptr;
 };
 
 struct pcs_context {
@@ -144,46 +141,46 @@ struct pcs_context {
     SPTokenizer tokenizer;
 
     // Embeddings
-    ggml_tensor* tok_emb_w = nullptr;
-    ggml_tensor* pos_emb_w = nullptr;
-    ggml_tensor* type_emb_w = nullptr;
-    ggml_tensor* emb_ln_w = nullptr;
-    ggml_tensor* emb_ln_b = nullptr;
+    ggml_tensor * tok_emb_w = nullptr;
+    ggml_tensor * pos_emb_w = nullptr;
+    ggml_tensor * type_emb_w = nullptr;
+    ggml_tensor * emb_ln_w = nullptr;
+    ggml_tensor * emb_ln_b = nullptr;
 
     std::vector<BertLayer> layers;
 
     // Post-punc head: Linear(768→256) + Linear(256→17)
-    ggml_tensor* post_fc1_w = nullptr;
-    ggml_tensor* post_fc1_b = nullptr;
-    ggml_tensor* post_fc2_w = nullptr;
-    ggml_tensor* post_fc2_b = nullptr;
+    ggml_tensor * post_fc1_w = nullptr;
+    ggml_tensor * post_fc1_b = nullptr;
+    ggml_tensor * post_fc2_w = nullptr;
+    ggml_tensor * post_fc2_b = nullptr;
 
     // Post-punc embedding (17→4) for conditioning SBD
-    ggml_tensor* post_emb_w = nullptr;
+    ggml_tensor * post_emb_w = nullptr;
 
     // Pre-punc head: Linear(768→256) + Linear(256→2)
-    ggml_tensor* pre_fc1_w = nullptr;
-    ggml_tensor* pre_fc1_b = nullptr;
-    ggml_tensor* pre_fc2_w = nullptr;
-    ggml_tensor* pre_fc2_b = nullptr;
+    ggml_tensor * pre_fc1_w = nullptr;
+    ggml_tensor * pre_fc1_b = nullptr;
+    ggml_tensor * pre_fc2_w = nullptr;
+    ggml_tensor * pre_fc2_b = nullptr;
 
     // SBD head: Linear(772→128) + Linear(128→2)
-    ggml_tensor* sbd_fc1_w = nullptr;
-    ggml_tensor* sbd_fc1_b = nullptr;
-    ggml_tensor* sbd_fc2_w = nullptr;
-    ggml_tensor* sbd_fc2_b = nullptr;
+    ggml_tensor * sbd_fc1_w = nullptr;
+    ggml_tensor * sbd_fc1_b = nullptr;
+    ggml_tensor * sbd_fc2_w = nullptr;
+    ggml_tensor * sbd_fc2_b = nullptr;
 
     // Truecase head: Linear(769→128) + Linear(128→16)
-    ggml_tensor* tc_fc1_w = nullptr;
-    ggml_tensor* tc_fc1_b = nullptr;
-    ggml_tensor* tc_fc2_w = nullptr;
-    ggml_tensor* tc_fc2_b = nullptr;
+    ggml_tensor * tc_fc1_w = nullptr;
+    ggml_tensor * tc_fc1_b = nullptr;
+    ggml_tensor * tc_fc2_w = nullptr;
+    ggml_tensor * tc_fc2_b = nullptr;
 
     // Backend
     ggml_backend_t backend = nullptr;
     ggml_backend_t backend_cpu = nullptr;
     ggml_backend_buffer_t buf = nullptr;
-    ggml_context* w_ctx = nullptr;
+    ggml_context * w_ctx = nullptr;
     ggml_backend_sched_t sched = nullptr;
     bool bench = false;
 
@@ -202,10 +199,9 @@ struct pcs_context {
 // Load
 // ---------------------------------------------------------------------------
 
-static bool pcs_load(pcs_context& ctx, const char* path) {
-    gguf_context* meta = core_gguf::open_metadata(path);
-    if (!meta)
-        return false;
+static bool pcs_load(pcs_context & ctx, const char * path) {
+    gguf_context * meta = core_gguf::open_metadata(path);
+    if (!meta) return false;
 
     ctx.d_model = (int)core_gguf::kv_u32(meta, "pcs.d_model", 768);
     ctx.d_ffn = (int)core_gguf::kv_u32(meta, "pcs.d_ffn", 3072);
@@ -233,19 +229,17 @@ static bool pcs_load(pcs_context& ctx, const char* path) {
 
     // Load weights
     ctx.backend = ggml_backend_init_best();
-    if (!ctx.backend)
-        ctx.backend = ggml_backend_cpu_init();
+    if (!ctx.backend) ctx.backend = ggml_backend_cpu_init();
     ctx.backend_cpu = ggml_backend_cpu_init();
 
     core_gguf::WeightLoad wl;
-    if (!core_gguf::load_weights(path, ctx.backend, "pcs", wl))
-        return false;
+    if (!core_gguf::load_weights(path, ctx.backend, "pcs", wl)) return false;
     ctx.w_ctx = wl.ctx;
     ctx.buf = wl.buf;
 
-    auto& T = wl.tensors;
-    auto req = [&](const char* n) { return core_gguf::require(T, n, "pcs"); };
-    auto opt = [&](const char* n) -> ggml_tensor* {
+    auto & T = wl.tensors;
+    auto req = [&](const char * n) { return core_gguf::require(T, n, "pcs"); };
+    auto opt = [&](const char * n) -> ggml_tensor * {
         auto it = T.find(n);
         return it != T.end() ? it->second : nullptr;
     };
@@ -258,8 +252,8 @@ static bool pcs_load(pcs_context& ctx, const char* path) {
 
     ctx.layers.resize(ctx.n_layers);
     for (int i = 0; i < ctx.n_layers; i++) {
-        auto ln = [&](const char* fmt) { return core_gguf::format_layer_name(fmt, i); };
-        auto& L = ctx.layers[i];
+        auto ln = [&](const char * fmt) { return core_gguf::format_layer_name(fmt, i); };
+        auto & L = ctx.layers[i];
         L.attn_q_w = req(ln("enc.%d.attn.q.weight").c_str());
         L.attn_q_b = req(ln("enc.%d.attn.q.bias").c_str());
         L.attn_k_w = req(ln("enc.%d.attn.k.weight").c_str());
@@ -301,7 +295,7 @@ static bool pcs_load(pcs_context& ctx, const char* path) {
     ctx.tc_fc2_b = opt("head.tc.fc2.bias");
 
     // Scheduler
-    ggml_backend_t backends[2] = {ctx.backend, nullptr};
+    ggml_backend_t backends[2] = { ctx.backend, nullptr };
     int n_backends = 1;
     if (ctx.backend_cpu && ctx.backend_cpu != ctx.backend) {
         backends[n_backends++] = ctx.backend_cpu;
@@ -322,10 +316,10 @@ struct PCSResult {
     std::vector<std::vector<bool>> cap_preds; // [N][max_chars] — per-char upper/lower
 };
 
-static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
+static PCSResult pcs_run(pcs_context & ctx, const std::vector<int> & token_ids) {
     const bool bench = ctx.bench;
     auto t_total = std::chrono::steady_clock::now();
-    auto t_pre0  = std::chrono::steady_clock::now();
+    auto t_pre0 = std::chrono::steady_clock::now();
 
     const int N = (int)token_ids.size();
     const int seq_len = N + 2; // CLS + tokens + SEP
@@ -334,40 +328,40 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
     const int nh = ctx.n_heads;
 
     size_t mem = ggml_tensor_overhead() * (ctx.n_layers * 40 + 100) + 2 * 1024 * 1024;
-    struct ggml_init_params gp = {mem, nullptr, true};
-    ggml_context* ctx0 = ggml_init(gp);
+    struct ggml_init_params gp = { mem, nullptr, true };
+    ggml_context * ctx0 = ggml_init(gp);
 
     // Inputs
-    ggml_tensor* inp_ids = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, seq_len);
+    ggml_tensor * inp_ids = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, seq_len);
     ggml_set_name(inp_ids, "inp_ids");
     ggml_set_input(inp_ids);
 
-    ggml_tensor* pos_ids = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, seq_len);
+    ggml_tensor * pos_ids = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, seq_len);
     ggml_set_name(pos_ids, "pos_ids");
     ggml_set_input(pos_ids);
 
-    ggml_tensor* type_ids = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, seq_len);
+    ggml_tensor * type_ids = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, seq_len);
     ggml_set_name(type_ids, "type_ids");
     ggml_set_input(type_ids);
 
     // Embeddings
-    ggml_tensor* tok_emb = ggml_get_rows(ctx0, ctx.tok_emb_w, inp_ids);
-    ggml_tensor* pos_emb = ggml_get_rows(ctx0, ctx.pos_emb_w, pos_ids);
-    ggml_tensor* type_emb = ggml_get_rows(ctx0, ctx.type_emb_w, type_ids);
+    ggml_tensor * tok_emb = ggml_get_rows(ctx0, ctx.tok_emb_w, inp_ids);
+    ggml_tensor * pos_emb = ggml_get_rows(ctx0, ctx.pos_emb_w, pos_ids);
+    ggml_tensor * type_emb = ggml_get_rows(ctx0, ctx.type_emb_w, type_ids);
 
-    ggml_tensor* emb = ggml_add(ctx0, ggml_add(ctx0, tok_emb, pos_emb), type_emb);
+    ggml_tensor * emb = ggml_add(ctx0, ggml_add(ctx0, tok_emb, pos_emb), type_emb);
     emb = ggml_norm(ctx0, emb, 1e-12f);
     emb = ggml_add(ctx0, ggml_mul(ctx0, emb, ctx.emb_ln_w), ctx.emb_ln_b);
 
     // Encoder
-    ggml_tensor* cur = emb;
+    ggml_tensor * cur = emb;
     for (int i = 0; i < ctx.n_layers; i++) {
-        const auto& L = ctx.layers[i];
-        ggml_tensor* residual = cur;
+        const auto & L = ctx.layers[i];
+        ggml_tensor * residual = cur;
 
-        ggml_tensor* Q = ggml_add(ctx0, ggml_mul_mat(ctx0, L.attn_q_w, cur), L.attn_q_b);
-        ggml_tensor* K = ggml_add(ctx0, ggml_mul_mat(ctx0, L.attn_k_w, cur), L.attn_k_b);
-        ggml_tensor* V = ggml_add(ctx0, ggml_mul_mat(ctx0, L.attn_v_w, cur), L.attn_v_b);
+        ggml_tensor * Q = ggml_add(ctx0, ggml_mul_mat(ctx0, L.attn_q_w, cur), L.attn_q_b);
+        ggml_tensor * K = ggml_add(ctx0, ggml_mul_mat(ctx0, L.attn_k_w, cur), L.attn_k_b);
+        ggml_tensor * V = ggml_add(ctx0, ggml_mul_mat(ctx0, L.attn_v_w, cur), L.attn_v_b);
 
         Q = ggml_reshape_3d(ctx0, Q, head_dim, nh, seq_len);
         K = ggml_reshape_3d(ctx0, K, head_dim, nh, seq_len);
@@ -378,7 +372,7 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
         V = ggml_permute(ctx0, V, 0, 2, 1, 3);
 
         const float scale = 1.0f / sqrtf((float)head_dim);
-        ggml_tensor* KQV = ggml_flash_attn_ext(ctx0, Q, K, V, nullptr, scale, 0.0f, 0.0f);
+        ggml_tensor * KQV = ggml_flash_attn_ext(ctx0, Q, K, V, nullptr, scale, 0.0f, 0.0f);
         KQV = ggml_reshape_2d(ctx0, KQV, d, seq_len);
 
         cur = ggml_add(ctx0, ggml_mul_mat(ctx0, L.attn_out_w, KQV), L.attn_out_b);
@@ -387,7 +381,7 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
         cur = ggml_add(ctx0, ggml_mul(ctx0, cur, L.attn_ln_w), L.attn_ln_b);
 
         residual = cur;
-        ggml_tensor* ffn = ggml_add(ctx0, ggml_mul_mat(ctx0, L.ffn_up_w, cur), L.ffn_up_b);
+        ggml_tensor * ffn = ggml_add(ctx0, ggml_mul_mat(ctx0, L.ffn_up_w, cur), L.ffn_up_b);
         ffn = ggml_gelu(ctx0, ffn);
         ffn = ggml_add(ctx0, ggml_mul_mat(ctx0, L.ffn_down_w, ffn), L.ffn_down_b);
 
@@ -397,27 +391,23 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
     }
 
     // Remove CLS: [d, seq_len] → [d, N] starting at position 1
-    ggml_tensor* hidden = ggml_view_2d(ctx0, cur, d, N, cur->nb[1], cur->nb[1]);
+    ggml_tensor * hidden = ggml_view_2d(ctx0, cur, d, N, cur->nb[1], cur->nb[1]);
 
     // --- Post-punc head: Linear(768→256, ReLU) → Linear(256→17) ---
-    ggml_tensor* post_h = ggml_mul_mat(ctx0, ctx.post_fc1_w, hidden);
-    if (ctx.post_fc1_b)
-        post_h = ggml_add(ctx0, post_h, ctx.post_fc1_b);
+    ggml_tensor * post_h = ggml_mul_mat(ctx0, ctx.post_fc1_w, hidden);
+    if (ctx.post_fc1_b) post_h = ggml_add(ctx0, post_h, ctx.post_fc1_b);
     post_h = ggml_relu(ctx0, post_h);
-    ggml_tensor* post_logits = ggml_mul_mat(ctx0, ctx.post_fc2_w, post_h);
-    if (ctx.post_fc2_b)
-        post_logits = ggml_add(ctx0, post_logits, ctx.post_fc2_b);
+    ggml_tensor * post_logits = ggml_mul_mat(ctx0, ctx.post_fc2_w, post_h);
+    if (ctx.post_fc2_b) post_logits = ggml_add(ctx0, post_logits, ctx.post_fc2_b);
     ggml_set_name(post_logits, "post_logits");
     ggml_set_output(post_logits);
 
     // --- Pre-punc head: Linear(768→256, ReLU) → Linear(256→2) ---
-    ggml_tensor* pre_h = ggml_mul_mat(ctx0, ctx.pre_fc1_w, hidden);
-    if (ctx.pre_fc1_b)
-        pre_h = ggml_add(ctx0, pre_h, ctx.pre_fc1_b);
+    ggml_tensor * pre_h = ggml_mul_mat(ctx0, ctx.pre_fc1_w, hidden);
+    if (ctx.pre_fc1_b) pre_h = ggml_add(ctx0, pre_h, ctx.pre_fc1_b);
     pre_h = ggml_relu(ctx0, pre_h);
-    ggml_tensor* pre_logits = ggml_mul_mat(ctx0, ctx.pre_fc2_w, pre_h);
-    if (ctx.pre_fc2_b)
-        pre_logits = ggml_add(ctx0, pre_logits, ctx.pre_fc2_b);
+    ggml_tensor * pre_logits = ggml_mul_mat(ctx0, ctx.pre_fc2_w, pre_h);
+    if (ctx.pre_fc2_b) pre_logits = ggml_add(ctx0, pre_logits, ctx.pre_fc2_b);
     ggml_set_name(pre_logits, "pre_logits");
     ggml_set_output(pre_logits);
 
@@ -433,7 +423,7 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
     ggml_set_output(hidden);
 
     // Build & compute
-    ggml_cgraph* gf = ggml_new_graph(ctx0);
+    ggml_cgraph * gf = ggml_new_graph(ctx0);
     ggml_build_forward_expand(gf, post_logits);
     ggml_build_forward_expand(gf, pre_logits);
     ggml_build_forward_expand(gf, hidden);
@@ -449,15 +439,13 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
     {
         std::vector<int32_t> ids(seq_len);
         ids[0] = ctx.cls_id;
-        for (int i = 0; i < N; i++)
-            ids[i + 1] = token_ids[i];
+        for (int i = 0; i < N; i++) ids[i + 1] = token_ids[i];
         ids[N + 1] = ctx.tokenizer.sep_id;
         ggml_backend_tensor_set(inp_ids, ids.data(), 0, seq_len * sizeof(int32_t));
 
         std::vector<int32_t> pos(seq_len);
         const int pos_offset = ctx.pad_id + 1; // RoBERTa: positions start at pad_id+1=2
-        for (int i = 0; i < seq_len; i++)
-            pos[i] = i + pos_offset;
+        for (int i = 0; i < seq_len; i++) pos[i] = i + pos_offset;
         ggml_backend_tensor_set(pos_ids, pos.data(), 0, seq_len * sizeof(int32_t));
 
         std::vector<int32_t> types(seq_len, 0);
@@ -520,7 +508,7 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
     ggml_backend_tensor_get(hidden, hidden_buf.data(), 0, hidden_buf.size() * sizeof(float));
 
     // Use pre-cached FC weights (populated at init — no per-call GPU→CPU transfer)
-    const auto& fc = ctx.fc;
+    const auto & fc = ctx.fc;
     int post_emb_dim = ctx.post_emb_w ? (int)ctx.post_emb_w->ne[0] : 0;
 
     // CPU forward for SBD and truecase heads
@@ -528,29 +516,26 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
     {
         int sbd_in = d + post_emb_dim;
         int sbd_mid = (int)ctx.sbd_fc1_w->ne[1];
-        const float* sbd_fc1_w_data = fc.sbd_fc1_w.data();
-        const float* sbd_fc1_b_data = fc.sbd_fc1_b.empty() ? nullptr : fc.sbd_fc1_b.data();
+        const float * sbd_fc1_w_data = fc.sbd_fc1_w.data();
+        const float * sbd_fc1_b_data = fc.sbd_fc1_b.empty() ? nullptr : fc.sbd_fc1_b.data();
         int sbd_out = 2;
-        const float* sbd_fc2_w_data = fc.sbd_fc2_w.data();
-        const float* sbd_fc2_b_data = fc.sbd_fc2_b.empty() ? nullptr : fc.sbd_fc2_b.data();
+        const float * sbd_fc2_w_data = fc.sbd_fc2_w.data();
+        const float * sbd_fc2_b_data = fc.sbd_fc2_b.empty() ? nullptr : fc.sbd_fc2_b.data();
 
         for (int t = 0; t < N; t++) {
             // Build input: [hidden[t], post_emb[post_pred[t]]]
             std::vector<float> inp(sbd_in);
-            for (int j = 0; j < d; j++)
-                inp[j] = hidden_buf[t * d + j];
+            for (int j = 0; j < d; j++) inp[j] = hidden_buf[t * d + j];
             if (post_emb_dim > 0) {
                 int pred = result.post_preds[t];
-                for (int j = 0; j < post_emb_dim; j++)
-                    inp[d + j] = fc.post_emb_w[pred * post_emb_dim + j];
+                for (int j = 0; j < post_emb_dim; j++) inp[d + j] = fc.post_emb_w[pred * post_emb_dim + j];
             }
 
             // fc1 + ReLU
             std::vector<float> mid(sbd_mid);
             for (int j = 0; j < sbd_mid; j++) {
                 float sum = sbd_fc1_b_data[j];
-                for (int k = 0; k < sbd_in; k++)
-                    sum += inp[k] * sbd_fc1_w_data[j * sbd_in + k];
+                for (int k = 0; k < sbd_in; k++) sum += inp[k] * sbd_fc1_w_data[j * sbd_in + k];
                 mid[j] = sum > 0 ? sum : 0; // ReLU
             }
 
@@ -569,30 +554,27 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
         int tc_in = d + 1;
         int tc_mid = (int)ctx.tc_fc1_w->ne[1];
         int tc_out = 16;
-        const float* tc_fc1_w_data = fc.tc_fc1_w.data();
-        const float* tc_fc1_b_data = fc.tc_fc1_b.empty() ? nullptr : fc.tc_fc1_b.data();
-        const float* tc_fc2_w_data = fc.tc_fc2_w.data();
-        const float* tc_fc2_b_data = fc.tc_fc2_b.empty() ? nullptr : fc.tc_fc2_b.data();
+        const float * tc_fc1_w_data = fc.tc_fc1_w.data();
+        const float * tc_fc1_b_data = fc.tc_fc1_b.empty() ? nullptr : fc.tc_fc1_b.data();
+        const float * tc_fc2_w_data = fc.tc_fc2_w.data();
+        const float * tc_fc2_b_data = fc.tc_fc2_b.empty() ? nullptr : fc.tc_fc2_b.data();
 
         for (int t = 0; t < N; t++) {
             std::vector<float> inp(tc_in);
-            for (int j = 0; j < d; j++)
-                inp[j] = hidden_buf[t * d + j];
+            for (int j = 0; j < d; j++) inp[j] = hidden_buf[t * d + j];
             inp[d] = result.sbd_preds[t] ? 1.0f : 0.0f;
 
             std::vector<float> mid(tc_mid);
             for (int j = 0; j < tc_mid; j++) {
                 float sum = tc_fc1_b_data[j];
-                for (int k = 0; k < tc_in; k++)
-                    sum += inp[k] * tc_fc1_w_data[j * tc_in + k];
+                for (int k = 0; k < tc_in; k++) sum += inp[k] * tc_fc1_w_data[j * tc_in + k];
                 mid[j] = sum > 0 ? sum : 0;
             }
 
             result.cap_preds[t].resize(tc_out);
             for (int c = 0; c < tc_out; c++) {
                 float logit = tc_fc2_b_data[c];
-                for (int k = 0; k < tc_mid; k++)
-                    logit += mid[k] * tc_fc2_w_data[c * tc_mid + k];
+                for (int k = 0; k < tc_mid; k++) logit += mid[k] * tc_fc2_w_data[c * tc_mid + k];
                 result.cap_preds[t][c] = logit > 0;
             }
         }
@@ -617,36 +599,36 @@ static PCSResult pcs_run(pcs_context& ctx, const std::vector<int>& token_ids) {
 // ---------------------------------------------------------------------------
 
 // Cache FC head weights at init (avoids per-call ggml_backend_tensor_get)
-static void cache_tensor(ggml_tensor* t, std::vector<float>& buf) {
+static void cache_tensor(ggml_tensor * t, std::vector<float> & buf) {
     if (!t) return;
     int64_t n = ggml_nelements(t);
     buf.resize(n);
     ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
 }
 
-static void pcs_cache_fc_weights(pcs_context& ctx) {
+static void pcs_cache_fc_weights(pcs_context & ctx) {
     cache_tensor(ctx.post_fc1_w, ctx.fc.post_fc1_w);
     cache_tensor(ctx.post_fc1_b, ctx.fc.post_fc1_b);
     cache_tensor(ctx.post_fc2_w, ctx.fc.post_fc2_w);
     cache_tensor(ctx.post_fc2_b, ctx.fc.post_fc2_b);
-    cache_tensor(ctx.pre_fc1_w,  ctx.fc.pre_fc1_w);
-    cache_tensor(ctx.pre_fc1_b,  ctx.fc.pre_fc1_b);
-    cache_tensor(ctx.pre_fc2_w,  ctx.fc.pre_fc2_w);
-    cache_tensor(ctx.pre_fc2_b,  ctx.fc.pre_fc2_b);
-    cache_tensor(ctx.sbd_fc1_w,  ctx.fc.sbd_fc1_w);
-    cache_tensor(ctx.sbd_fc1_b,  ctx.fc.sbd_fc1_b);
-    cache_tensor(ctx.sbd_fc2_w,  ctx.fc.sbd_fc2_w);
-    cache_tensor(ctx.sbd_fc2_b,  ctx.fc.sbd_fc2_b);
-    cache_tensor(ctx.tc_fc1_w,   ctx.fc.tc_fc1_w);
-    cache_tensor(ctx.tc_fc1_b,   ctx.fc.tc_fc1_b);
-    cache_tensor(ctx.tc_fc2_w,   ctx.fc.tc_fc2_w);
-    cache_tensor(ctx.tc_fc2_b,   ctx.fc.tc_fc2_b);
+    cache_tensor(ctx.pre_fc1_w, ctx.fc.pre_fc1_w);
+    cache_tensor(ctx.pre_fc1_b, ctx.fc.pre_fc1_b);
+    cache_tensor(ctx.pre_fc2_w, ctx.fc.pre_fc2_w);
+    cache_tensor(ctx.pre_fc2_b, ctx.fc.pre_fc2_b);
+    cache_tensor(ctx.sbd_fc1_w, ctx.fc.sbd_fc1_w);
+    cache_tensor(ctx.sbd_fc1_b, ctx.fc.sbd_fc1_b);
+    cache_tensor(ctx.sbd_fc2_w, ctx.fc.sbd_fc2_w);
+    cache_tensor(ctx.sbd_fc2_b, ctx.fc.sbd_fc2_b);
+    cache_tensor(ctx.tc_fc1_w, ctx.fc.tc_fc1_w);
+    cache_tensor(ctx.tc_fc1_b, ctx.fc.tc_fc1_b);
+    cache_tensor(ctx.tc_fc2_w, ctx.fc.tc_fc2_w);
+    cache_tensor(ctx.tc_fc2_b, ctx.fc.tc_fc2_b);
     cache_tensor(ctx.post_emb_w, ctx.fc.post_emb_w);
     ctx.fc.valid = true;
 }
 
-pcs_context* pcs_init(const char* model_path) {
-    auto* ctx = new pcs_context();
+pcs_context * pcs_init(const char * model_path) {
+    auto * ctx = new pcs_context();
     ctx->bench = (std::getenv("CRISPEMBED_PCS_BENCH") != nullptr);
     if (!pcs_load(*ctx, model_path)) {
         delete ctx;
@@ -656,14 +638,13 @@ pcs_context* pcs_init(const char* model_path) {
     return ctx;
 }
 
-char* pcs_process(pcs_context* ctx, const char* text) {
-    if (!ctx || !text)
-        return nullptr;
+char * pcs_process(pcs_context * ctx, const char * text) {
+    if (!ctx || !text) return nullptr;
 
     std::string input(text);
     std::vector<int> token_ids = ctx->tokenizer.tokenize(input);
     if (token_ids.empty()) {
-        char* out = (char*)malloc(strlen(text) + 1);
+        char * out = (char *)malloc(strlen(text) + 1);
         strcpy(out, text);
         return out;
     }
@@ -696,8 +677,7 @@ char* pcs_process(pcs_context* ctx, const char* text) {
                 cur += c;
             }
         }
-        if (!cur.empty())
-            words.push_back(cur);
+        if (!cur.empty()) words.push_back(cur);
     }
 
     // Map subtokens to words and apply truecasing + punctuation
@@ -722,8 +702,7 @@ char* pcs_process(pcs_context* ctx, const char* text) {
                         break;
                     }
                     end--;
-                    while (end > start && (sp_word[end] & 0xC0) == 0x80)
-                        end--;
+                    while (end > start && (sp_word[end] & 0xC0) == 0x80) end--;
                 }
                 if (!found) {
                     n_subtokens++;
@@ -736,9 +715,8 @@ char* pcs_process(pcs_context* ctx, const char* text) {
         if (tok_idx < (int)all_result.pre_preds.size()) {
             int pre = all_result.pre_preds[tok_idx];
             if (pre > 0 && pre < (int)ctx->pre_labels.size()) {
-                const std::string& label = ctx->pre_labels[pre];
-                if (label != "<NULL>")
-                    result += label;
+                const std::string & label = ctx->pre_labels[pre];
+                if (label != "<NULL>") result += label;
             }
         }
 
@@ -747,7 +725,7 @@ char* pcs_process(pcs_context* ctx, const char* text) {
         std::string cased_word;
         int char_idx = 0; // index into the original word's characters
         for (int st = 0; st < n_subtokens && tok_idx + st < (int)all_result.cap_preds.size(); st++) {
-            const auto& caps = all_result.cap_preds[tok_idx + st];
+            const auto & caps = all_result.cap_preds[tok_idx + st];
             // The subtoken text (without ▁ prefix for first)
             std::string subtoken_text;
             if (st == 0) {
@@ -759,8 +737,7 @@ char* pcs_process(pcs_context* ctx, const char* text) {
             // caps[c] = true means uppercase at char position c within this subtoken
             int sub_char = 0;
             // Skip ▁ in the first subtoken's prediction
-            if (st == 0)
-                sub_char = 0; // predictions start after ▁
+            if (st == 0) sub_char = 0; // predictions start after ▁
 
             // Get the actual text this subtoken represents
             // For simplicity, we process the original word chars sequentially
@@ -773,7 +750,7 @@ char* pcs_process(pcs_context* ctx, const char* text) {
             int global_char = 0; // character index within the word
             int sub_start = tok_idx;
             for (int st = 0; st < n_subtokens && sub_start + st < (int)all_result.cap_preds.size(); st++) {
-                const auto& caps = all_result.cap_preds[sub_start + st];
+                const auto & caps = all_result.cap_preds[sub_start + st];
                 // Determine how many chars this subtoken covers
                 // The SP token includes ▁ for the first subtoken of a word
                 std::string tok_text;
@@ -793,12 +770,9 @@ char* pcs_process(pcs_context* ctx, const char* text) {
                     // Get the UTF-8 character length
                     unsigned char c0 = (unsigned char)words[w][global_char];
                     int clen = 1;
-                    if (c0 >= 0xC0)
-                        clen = 2;
-                    if (c0 >= 0xE0)
-                        clen = 3;
-                    if (c0 >= 0xF0)
-                        clen = 4;
+                    if (c0 >= 0xC0) clen = 2;
+                    if (c0 >= 0xE0) clen = 3;
+                    if (c0 >= 0xF0) clen = 4;
 
                     // Apply case
                     bool should_upper = (cap_idx < (int)caps.size()) ? caps[cap_idx] : false;
@@ -822,8 +796,7 @@ char* pcs_process(pcs_context* ctx, const char* text) {
             }
         }
 
-        if (w > 0)
-            result += ' ';
+        if (w > 0) result += ' ';
         result += cased_word;
 
         // Apply post-punctuation from last subtoken
@@ -831,7 +804,7 @@ char* pcs_process(pcs_context* ctx, const char* text) {
         if (last_tok < (int)all_result.post_preds.size()) {
             int post = all_result.post_preds[last_tok];
             if (post > 0 && post < (int)ctx->post_labels.size()) {
-                const std::string& label = ctx->post_labels[post];
+                const std::string & label = ctx->post_labels[post];
                 if (label == "<ACRONYM>") {
                     // Insert period after each character — skip for now
                 } else if (label != "<NULL>") {
@@ -843,23 +816,17 @@ char* pcs_process(pcs_context* ctx, const char* text) {
         tok_idx += n_subtokens;
     }
 
-    char* out = (char*)malloc(result.size() + 1);
+    char * out = (char *)malloc(result.size() + 1);
     memcpy(out, result.c_str(), result.size() + 1);
     return out;
 }
 
-void pcs_free(pcs_context* ctx) {
-    if (!ctx)
-        return;
-    if (ctx->sched)
-        ggml_backend_sched_free(ctx->sched);
-    if (ctx->buf)
-        ggml_backend_buffer_free(ctx->buf);
-    if (ctx->w_ctx)
-        ggml_free(ctx->w_ctx);
-    if (ctx->backend_cpu && ctx->backend_cpu != ctx->backend)
-        ggml_backend_free(ctx->backend_cpu);
-    if (ctx->backend)
-        ggml_backend_free(ctx->backend);
+void pcs_free(pcs_context * ctx) {
+    if (!ctx) return;
+    if (ctx->sched) ggml_backend_sched_free(ctx->sched);
+    if (ctx->buf) ggml_backend_buffer_free(ctx->buf);
+    if (ctx->w_ctx) ggml_free(ctx->w_ctx);
+    if (ctx->backend_cpu && ctx->backend_cpu != ctx->backend) ggml_backend_free(ctx->backend_cpu);
+    if (ctx->backend) ggml_backend_free(ctx->backend);
     delete ctx;
 }

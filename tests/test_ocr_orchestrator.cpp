@@ -12,8 +12,7 @@
 #include "crispembed.h"
 
 // stbi_write_png is exported by the crispembed lib.
-extern "C" int stbi_write_png(char const* filename, int w, int h, int comp,
-                              const void* data, int stride_in_bytes);
+extern "C" int stbi_write_png(char const * filename, int w, int h, int comp, const void * data, int stride_in_bytes);
 
 #include <cstdio>
 #include <cstdlib>
@@ -22,14 +21,19 @@ extern "C" int stbi_write_png(char const* filename, int w, int h, int comp,
 #include <vector>
 
 static int n_pass = 0, n_fail = 0;
-#define CHECK(cond, msg) do { \
-    if (cond) { printf("  PASS: %s\n", msg); n_pass++; } \
-    else      { printf("  FAIL: %s\n", msg); n_fail++; } \
-} while(0)
+#define CHECK(cond, msg)                                                                                               \
+    do {                                                                                                               \
+        if (cond) {                                                                                                    \
+            printf("  PASS: %s\n", msg);                                                                               \
+            n_pass++;                                                                                                  \
+        } else {                                                                                                       \
+            printf("  FAIL: %s\n", msg);                                                                               \
+            n_fail++;                                                                                                  \
+        }                                                                                                              \
+    } while (0)
 
-static std::string write_temp(const std::vector<uint8_t>& px, int w, int h, int ch,
-                              const char* name) {
-    const char* dir = getenv("TMPDIR");
+static std::string write_temp(const std::vector<uint8_t> & px, int w, int h, int ch, const char * name) {
+    const char * dir = getenv("TMPDIR");
     if (!dir || !*dir) dir = "/tmp";
     std::string path = std::string(dir) + "/orch_test_" + name + ".png";
     stbi_write_png(path.c_str(), w, h, ch, px.data(), w * ch);
@@ -48,35 +52,30 @@ static void test_default_config() {
     CHECK(!cfg.chains.empty(), "has chains");
 
     bool has_auto = false, has_scan = false, has_photo = false, has_shot = false;
-    for (auto& c : cfg.chains) {
-        if (c.type == source_type::auto_detect)  has_auto = true;
-        if (c.type == source_type::scanned_doc)  has_scan = true;
-        if (c.type == source_type::photo)        has_photo = true;
-        if (c.type == source_type::screenshot)   has_shot = true;
+    for (auto & c : cfg.chains) {
+        if (c.type == source_type::auto_detect) has_auto = true;
+        if (c.type == source_type::scanned_doc) has_scan = true;
+        if (c.type == source_type::photo) has_photo = true;
+        if (c.type == source_type::screenshot) has_shot = true;
     }
-    CHECK(has_auto && has_scan && has_photo && has_shot,
-          "chains for auto/scan/photo/screenshot");
+    CHECK(has_auto && has_scan && has_photo && has_shot, "chains for auto/scan/photo/screenshot");
 
     // Per-source cleanup intent
-    for (auto& c : cfg.chains) {
+    for (auto & c : cfg.chains) {
         if (c.type == source_type::scanned_doc && !c.stages.empty())
-            CHECK(c.stages[0].cleanup.params.binarize == 1,
-                  "scanned_doc chain binarizes");
+            CHECK(c.stages[0].cleanup.params.binarize == 1, "scanned_doc chain binarizes");
         if (c.type == source_type::photo && !c.stages.empty())
-            CHECK(c.stages[0].cleanup.denoise,
-                  "photo chain denoises (NAFNet)");
+            CHECK(c.stages[0].cleanup.denoise, "photo chain denoises (NAFNet)");
         if (c.type == source_type::screenshot && !c.stages.empty())
             CHECK(!c.stages[0].cleanup.enabled || !c.stages[0].cleanup.params.binarize,
                   "screenshot chain does not binarize");
     }
 
     // Default accept-gate values
-    for (auto& c : cfg.chains) {
-        for (auto& s : c.stages) {
-            CHECK(s.accept.min_chars >= 1,
-                  "accept gate min_chars >= 1");
-            CHECK(s.accept.min_confidence >= 0.0f,
-                  "accept gate min_confidence >= 0");
+    for (auto & c : cfg.chains) {
+        for (auto & s : c.stages) {
+            CHECK(s.accept.min_chars >= 1, "accept gate min_chars >= 1");
+            CHECK(s.accept.min_confidence >= 0.0f, "accept gate min_confidence >= 0");
         }
     }
 }
@@ -92,11 +91,12 @@ static void test_classifier() {
     {
         std::vector<uint8_t> photo(64 * 64 * 3);
         for (int i = 0; i < 64 * 64; i++) {
-            photo[i*3+0] = 200; photo[i*3+1] = 30; photo[i*3+2] = 20;
+            photo[i * 3 + 0] = 200;
+            photo[i * 3 + 1] = 30;
+            photo[i * 3 + 2] = 20;
         }
         std::string p = write_temp(photo, 64, 64, 3, "photo");
-        CHECK(classify_file(p.c_str()) == source_type::photo,
-              "saturated red → photo");
+        CHECK(classify_file(p.c_str()) == source_type::photo, "saturated red → photo");
     }
 
     // White page with sparse black lines → scanned_doc
@@ -104,18 +104,16 @@ static void test_classifier() {
         std::vector<uint8_t> doc(80 * 80 * 3, 255);
         for (int y = 20; y < 80; y += 20)
             for (int x = 0; x < 80; x++)
-                for (int ch = 0; ch < 3; ch++) doc[(y*80+x)*3+ch] = 0;
+                for (int ch = 0; ch < 3; ch++) doc[(y * 80 + x) * 3 + ch] = 0;
         std::string d = write_temp(doc, 80, 80, 3, "doc");
-        CHECK(classify_file(d.c_str()) == source_type::scanned_doc,
-              "white page with lines → scanned_doc");
+        CHECK(classify_file(d.c_str()) == source_type::scanned_doc, "white page with lines → scanned_doc");
     }
 
     // Very wide grayscale strip → screenshot (aspect > 2.2)
     {
         std::vector<uint8_t> wide(300 * 50 * 3, 240);
         std::string w = write_temp(wide, 300, 50, 3, "wide");
-        CHECK(classify_file(w.c_str()) == source_type::screenshot,
-              "wide strip → screenshot");
+        CHECK(classify_file(w.c_str()) == source_type::screenshot, "wide strip → screenshot");
     }
 
     // All-white image → scanned_doc (high white fraction, low saturation)
@@ -123,36 +121,33 @@ static void test_classifier() {
         std::vector<uint8_t> white(100 * 100 * 3, 255);
         std::string p = write_temp(white, 100, 100, 3, "white");
         auto t = classify_file(p.c_str());
-        CHECK(t == source_type::scanned_doc || t == source_type::screenshot,
-              "all-white → scanned_doc or screenshot");
+        CHECK(t == source_type::scanned_doc || t == source_type::screenshot, "all-white → scanned_doc or screenshot");
     }
 
     // Very tall image → screenshot (aspect > 2.2 in either direction)
     {
         std::vector<uint8_t> tall(50 * 300 * 3, 200);
         std::string p = write_temp(tall, 50, 300, 3, "tall");
-        CHECK(classify_file(p.c_str()) == source_type::screenshot,
-              "tall strip → screenshot");
+        CHECK(classify_file(p.c_str()) == source_type::screenshot, "tall strip → screenshot");
     }
 
     // Green saturated → photo
     {
         std::vector<uint8_t> green(80 * 80 * 3);
         for (int i = 0; i < 80 * 80; i++) {
-            green[i*3+0] = 20; green[i*3+1] = 180; green[i*3+2] = 30;
+            green[i * 3 + 0] = 20;
+            green[i * 3 + 1] = 180;
+            green[i * 3 + 2] = 30;
         }
         std::string p = write_temp(green, 80, 80, 3, "green");
-        CHECK(classify_file(p.c_str()) == source_type::photo,
-              "saturated green → photo");
+        CHECK(classify_file(p.c_str()) == source_type::photo, "saturated green → photo");
     }
 
     // Missing file → fallback (no crash)
-    CHECK(classify_file("/no/such/file.png") == source_type::scanned_doc,
-          "missing file → scanned_doc fallback");
+    CHECK(classify_file("/no/such/file.png") == source_type::scanned_doc, "missing file → scanned_doc fallback");
 
     // NULL path → no crash
-    CHECK(classify_file(nullptr) == source_type::scanned_doc,
-          "null path → scanned_doc fallback");
+    CHECK(classify_file(nullptr) == source_type::scanned_doc, "null path → scanned_doc fallback");
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -184,7 +179,7 @@ static void test_accept_gate() {
         ch.stages.push_back(s);
         cfg.chains.push_back(ch);
 
-        context* ctx = nullptr;
+        context * ctx = nullptr;
         CHECK(load(&ctx, cfg), "load succeeds with no models");
         result r = run_file(ctx, path.c_str());
         CHECK(r.stages_tried == 1, "single stage tried");
@@ -213,12 +208,12 @@ static void test_accept_gate() {
         s1.accept.min_chars = 8;
         ch.stages.push_back(s1);
         stage s2;
-        s2.eng = engine::got;  // also no model → empty
+        s2.eng = engine::got; // also no model → empty
         s2.accept.min_chars = 8;
         ch.stages.push_back(s2);
         cfg.chains.push_back(ch);
 
-        context* ctx = nullptr;
+        context * ctx = nullptr;
         load(&ctx, cfg);
         result r = run_file(ctx, path.c_str());
         CHECK(r.stages_tried == 2, "two stages tried (both fail gate)");
@@ -240,7 +235,7 @@ static void test_accept_gate() {
         ch.stages.push_back(s2);
         cfg.chains.push_back(ch);
 
-        context* ctx = nullptr;
+        context * ctx = nullptr;
         load(&ctx, cfg);
         result r = run_file(ctx, path.c_str());
         CHECK(r.stages_tried == 1, "disabled stage skipped (only 1 tried)");
@@ -272,7 +267,7 @@ static void test_multi_stage() {
         }
         cfg.chains.push_back(ch);
 
-        context* ctx = nullptr;
+        context * ctx = nullptr;
         load(&ctx, cfg);
         result r = run_file(ctx, path.c_str());
         CHECK(r.stages_tried == 3, "all 3 stages tried");
@@ -286,15 +281,18 @@ static void test_multi_stage() {
         cfg.router = false;
         chain ch;
         ch.type = source_type::auto_detect;
-        stage s1; s1.eng = engine::dbnet_trocr;
-        stage s2; s2.eng = engine::tesseract;
-        stage s3; s3.eng = engine::got;
+        stage s1;
+        s1.eng = engine::dbnet_trocr;
+        stage s2;
+        s2.eng = engine::tesseract;
+        stage s3;
+        s3.eng = engine::got;
         ch.stages.push_back(s1);
         ch.stages.push_back(s2);
         ch.stages.push_back(s3);
         cfg.chains.push_back(ch);
 
-        context* ctx = nullptr;
+        context * ctx = nullptr;
         load(&ctx, cfg);
         result r = run_file(ctx, path.c_str());
         CHECK(r.stages_tried == 3, "3 different engines tried");
@@ -318,7 +316,7 @@ static void test_per_stage_config() {
 
         stage s1;
         s1.eng = engine::dbnet_trocr;
-        s1.accept.min_chars = 100;       // very high → will fail
+        s1.accept.min_chars = 100; // very high → will fail
         s1.accept.min_confidence = 0.9f;
         s1.cleanup.enabled = true;
         s1.cleanup.params.binarize = 1;
@@ -334,18 +332,12 @@ static void test_per_stage_config() {
         cfg.chains.push_back(ch);
 
         // Verify the config is stored correctly
-        CHECK(cfg.chains[0].stages[0].accept.min_chars == 100,
-              "stage 0: min_chars=100");
-        CHECK(cfg.chains[0].stages[1].accept.min_chars == 1,
-              "stage 1: min_chars=1");
-        CHECK(cfg.chains[0].stages[0].cleanup.params.binarize == 1,
-              "stage 0: binarize on");
-        CHECK(!cfg.chains[0].stages[1].cleanup.enabled,
-              "stage 1: cleanup off");
-        CHECK(cfg.chains[0].stages[0].accept.min_confidence == 0.9f,
-              "stage 0: min_confidence=0.9");
-        CHECK(cfg.chains[0].stages[1].accept.min_confidence == 0.0f,
-              "stage 1: min_confidence=0.0");
+        CHECK(cfg.chains[0].stages[0].accept.min_chars == 100, "stage 0: min_chars=100");
+        CHECK(cfg.chains[0].stages[1].accept.min_chars == 1, "stage 1: min_chars=1");
+        CHECK(cfg.chains[0].stages[0].cleanup.params.binarize == 1, "stage 0: binarize on");
+        CHECK(!cfg.chains[0].stages[1].cleanup.enabled, "stage 1: cleanup off");
+        CHECK(cfg.chains[0].stages[0].accept.min_confidence == 0.9f, "stage 0: min_confidence=0.9");
+        CHECK(cfg.chains[0].stages[1].accept.min_confidence == 0.0f, "stage 1: min_confidence=0.0");
     }
 
     // Verify different engine_params per stage
@@ -367,14 +359,10 @@ static void test_per_stage_config() {
 
         cfg.chains.push_back(ch);
 
-        CHECK(cfg.chains[0].stages[0].params.det_prob_threshold == 0.1f,
-              "stage 0: det_prob=0.1");
-        CHECK(cfg.chains[0].stages[1].params.det_prob_threshold == 0.5f,
-              "stage 1: det_prob=0.5");
-        CHECK(cfg.chains[0].stages[0].params.det_target_short == 512,
-              "stage 0: target_short=512");
-        CHECK(cfg.chains[0].stages[1].params.det_target_short == 1024,
-              "stage 1: target_short=1024");
+        CHECK(cfg.chains[0].stages[0].params.det_prob_threshold == 0.1f, "stage 0: det_prob=0.1");
+        CHECK(cfg.chains[0].stages[1].params.det_prob_threshold == 0.5f, "stage 1: det_prob=0.5");
+        CHECK(cfg.chains[0].stages[0].params.det_target_short == 512, "stage 0: target_short=512");
+        CHECK(cfg.chains[0].stages[1].params.det_target_short == 1024, "stage 1: target_short=1024");
     }
 }
 
@@ -392,29 +380,32 @@ static void test_chain_selection() {
 
         chain ch_auto;
         ch_auto.type = source_type::auto_detect;
-        stage s; s.eng = engine::dbnet_trocr;
+        stage s;
+        s.eng = engine::dbnet_trocr;
         ch_auto.stages.push_back(s);
         cfg.chains.push_back(ch_auto);
 
         chain ch_photo;
         ch_photo.type = source_type::photo;
-        stage sp; sp.eng = engine::got;
+        stage sp;
+        sp.eng = engine::got;
         ch_photo.stages.push_back(sp);
         cfg.chains.push_back(ch_photo);
 
         // Even with a colourful photo image, router=false → uses auto chain
         std::vector<uint8_t> photo(64 * 64 * 3);
         for (int i = 0; i < 64 * 64; i++) {
-            photo[i*3+0] = 200; photo[i*3+1] = 30; photo[i*3+2] = 20;
+            photo[i * 3 + 0] = 200;
+            photo[i * 3 + 1] = 30;
+            photo[i * 3 + 2] = 20;
         }
         std::string p = write_temp(photo, 64, 64, 3, "chain_photo");
 
-        context* ctx = nullptr;
+        context * ctx = nullptr;
         load(&ctx, cfg);
         result r = run_file(ctx, p.c_str());
         // Router off → source_type::auto_detect used → picks auto chain
-        CHECK(r.used_type == source_type::auto_detect,
-              "router off → auto_detect type");
+        CHECK(r.used_type == source_type::auto_detect, "router off → auto_detect type");
         ocr_orchestrator::free(ctx);
     }
 
@@ -425,28 +416,31 @@ static void test_chain_selection() {
 
         chain ch_auto;
         ch_auto.type = source_type::auto_detect;
-        stage sa; sa.eng = engine::dbnet_trocr;
+        stage sa;
+        sa.eng = engine::dbnet_trocr;
         ch_auto.stages.push_back(sa);
         cfg.chains.push_back(ch_auto);
 
         chain ch_photo;
         ch_photo.type = source_type::photo;
-        stage sp; sp.eng = engine::got;
+        stage sp;
+        sp.eng = engine::got;
         ch_photo.stages.push_back(sp);
         cfg.chains.push_back(ch_photo);
 
         // Colourful photo → classifier returns photo → picks photo chain
         std::vector<uint8_t> photo(64 * 64 * 3);
         for (int i = 0; i < 64 * 64; i++) {
-            photo[i*3+0] = 200; photo[i*3+1] = 30; photo[i*3+2] = 20;
+            photo[i * 3 + 0] = 200;
+            photo[i * 3 + 1] = 30;
+            photo[i * 3 + 2] = 20;
         }
         std::string p = write_temp(photo, 64, 64, 3, "chain_photo2");
 
-        context* ctx = nullptr;
+        context * ctx = nullptr;
         load(&ctx, cfg);
         result r = run_file(ctx, p.c_str());
-        CHECK(r.used_type == source_type::photo,
-              "router on + photo → photo type selected");
+        CHECK(r.used_type == source_type::photo, "router on + photo → photo type selected");
         ocr_orchestrator::free(ctx);
     }
 
@@ -454,7 +448,7 @@ static void test_chain_selection() {
     {
         config cfg;
         cfg.chains.clear();
-        context* ctx = nullptr;
+        context * ctx = nullptr;
         load(&ctx, cfg);
         result r = run_file(ctx, "/tmp/orch_test_white.png");
         CHECK(r.stages_tried == 0, "empty config → 0 stages tried");
@@ -480,7 +474,7 @@ static void test_c_api() {
     pp.nafnet_model = nullptr;
     pp.vlm_model = nullptr;
     pp.punct_model = nullptr;
-    void* ctx = crispembed_ocr_pipeline_init(&pp, 4);
+    void * ctx = crispembed_ocr_pipeline_init(&pp, 4);
     CHECK(ctx != nullptr, "C API init with NULL models succeeds");
 
     if (ctx) {
@@ -489,14 +483,13 @@ static void test_c_api() {
         std::string path = write_temp(img, 100, 100, 3, "capi_test");
 
         int n_res = 0;
-        const char* full_text = nullptr;
+        const char * full_text = nullptr;
         float mean_conf = 0.0f;
-        const crispembed_ocr_result* res = crispembed_ocr_pipeline_run(
-            ctx, path.c_str(), &n_res, &full_text, &mean_conf);
+        const crispembed_ocr_result * res =
+            crispembed_ocr_pipeline_run(ctx, path.c_str(), &n_res, &full_text, &mean_conf);
         CHECK(n_res == 0, "C API run with no models → 0 regions");
         // full_text may be NULL or empty
-        CHECK(!full_text || full_text[0] == '\0' || n_res == 0,
-              "C API run → empty text");
+        CHECK(!full_text || full_text[0] == '\0' || n_res == 0, "C API run → empty text");
 
         crispembed_ocr_pipeline_free(ctx);
     }
@@ -518,7 +511,7 @@ static void test_edge_cases() {
     // NULL image path → no crash
     {
         config cfg = default_config();
-        context* ctx = nullptr;
+        context * ctx = nullptr;
         load(&ctx, cfg);
         result r = run_file(ctx, nullptr);
         CHECK(r.full_text.empty(), "null path → empty result");
@@ -533,7 +526,7 @@ static void test_edge_cases() {
     {
         config cfg = default_config();
         cfg.verbose = true;
-        context* ctx = nullptr;
+        context * ctx = nullptr;
         CHECK(load(&ctx, cfg), "load with verbose=true succeeds");
         ocr_orchestrator::free(ctx);
     }
@@ -545,7 +538,7 @@ static void test_edge_cases() {
 static void test_tesseract_regression() {
     printf("── tesseract regression (model-gated) ──\n");
 
-    const char* models_dir = getenv("CRISPEMBED_MODELS_DIR");
+    const char * models_dir = getenv("CRISPEMBED_MODELS_DIR");
     if (!models_dir || !models_dir[0]) {
         printf("  SKIP: CRISPEMBED_MODELS_DIR not set\n");
         return;
@@ -555,15 +548,16 @@ static void test_tesseract_regression() {
     std::string tess_path = std::string(models_dir) + "/tesseract-eng-q8_0.gguf";
 
     // Check if models exist
-    FILE* f1 = fopen(det_path.c_str(), "r");
-    FILE* f2 = fopen(tess_path.c_str(), "r");
+    FILE * f1 = fopen(det_path.c_str(), "r");
+    FILE * f2 = fopen(tess_path.c_str(), "r");
     if (!f1 || !f2) {
         if (f1) fclose(f1);
         if (f2) fclose(f2);
         printf("  SKIP: tesseract models not found at %s\n", models_dir);
         return;
     }
-    fclose(f1); fclose(f2);
+    fclose(f1);
+    fclose(f2);
 
     using namespace ocr_orchestrator;
 
@@ -581,7 +575,7 @@ static void test_tesseract_regression() {
     ch.stages.push_back(s);
     cfg.chains.push_back(ch);
 
-    context* ctx = nullptr;
+    context * ctx = nullptr;
     if (!load(&ctx, cfg)) {
         printf("  SKIP: failed to load tesseract pipeline\n");
         return;
@@ -593,18 +587,17 @@ static void test_tesseract_regression() {
     // Draw a simple "T" shape
     for (int y = 5; y < 15; y++)
         for (int x = 20; x < 80; x++)
-            for (int c = 0; c < 3; c++) img[(y*400+x)*3+c] = 0;
+            for (int c = 0; c < 3; c++) img[(y * 400 + x) * 3 + c] = 0;
     for (int y = 15; y < 50; y++)
         for (int x = 45; x < 55; x++)
-            for (int c = 0; c < 3; c++) img[(y*400+x)*3+c] = 0;
+            for (int c = 0; c < 3; c++) img[(y * 400 + x) * 3 + c] = 0;
     std::string path = write_temp(img, 400, 60, 3, "tess_regr");
 
     result r = run_file(ctx, path.c_str());
     CHECK(r.stages_tried == 1, "tesseract stage ran");
     // Don't assert on text content — just verify no crash and non-negative confidence
     CHECK(r.mean_confidence >= 0.0f, "tesseract confidence >= 0");
-    printf("  INFO: tesseract output: \"%s\" (conf=%.2f)\n",
-           r.full_text.c_str(), r.mean_confidence);
+    printf("  INFO: tesseract output: \"%s\" (conf=%.2f)\n", r.full_text.c_str(), r.mean_confidence);
 
     free(ctx);
 }
@@ -615,14 +608,14 @@ static void test_tesseract_regression() {
 static void test_punctuation() {
     printf("── punctuation (model-gated) ──\n");
 
-    const char* models_dir = getenv("CRISPEMBED_MODELS_DIR");
+    const char * models_dir = getenv("CRISPEMBED_MODELS_DIR");
     if (!models_dir || !models_dir[0]) {
         printf("  SKIP: CRISPEMBED_MODELS_DIR not set\n");
         return;
     }
 
     std::string punct_path = std::string(models_dir) + "/fireredpunc-q8_0.gguf";
-    FILE* f = fopen(punct_path.c_str(), "r");
+    FILE * f = fopen(punct_path.c_str(), "r");
     if (!f) {
         printf("  SKIP: punct model not found at %s\n", punct_path.c_str());
         return;
@@ -630,14 +623,14 @@ static void test_punctuation() {
     fclose(f);
 
     // Test the C API directly
-    void* pctx = crispembed_punct_init(punct_path.c_str(), 4);
+    void * pctx = crispembed_punct_init(punct_path.c_str(), 4);
     if (!pctx) {
         printf("  SKIP: failed to load punct model\n");
         return;
     }
 
-    const char* input = "hello world this is a test";
-    const char* output = crispembed_punct_process(pctx, input);
+    const char * input = "hello world this is a test";
+    const char * output = crispembed_punct_process(pctx, input);
     CHECK(output != nullptr, "punct process returns non-null");
     if (output) {
         // Punctuation model should add at least some capitalization or punctuation

@@ -29,38 +29,48 @@ namespace layout_detect {
 
 // 17 document layout classes
 enum class label_id : int {
-    caption = 0, footnote, formula, list_item, page_footer,
-    page_header, picture, section_header, table, text,
-    title, document_index, code, checkbox_selected,
-    checkbox_unselected, form, key_value_region,
+    caption = 0,
+    footnote,
+    formula,
+    list_item,
+    page_footer,
+    page_header,
+    picture,
+    section_header,
+    table,
+    text,
+    title,
+    document_index,
+    code,
+    checkbox_selected,
+    checkbox_unselected,
+    form,
+    key_value_region,
     NUM_CLASSES
 };
 
-const char* label_name(label_id id);
+const char * label_name(label_id id);
 
 struct region {
-    float x1, y1, x2, y2;    // bbox in original image coordinates
+    float x1, y1, x2, y2; // bbox in original image coordinates
     float score;
     label_id label;
-    const char* label_name;   // pointer to static string
+    const char * label_name; // pointer to static string
 };
 
 struct context;
 
 // Load RT-DETRv2 GGUF model. Returns true on success.
-bool load(context** ctx, const char* path, int n_threads = 1);
+bool load(context ** ctx, const char * path, int n_threads = 1);
 
 // Detect layout regions from image file. Handles resize to 640×640,
 // normalize, and coordinate rescaling.
-std::vector<region> detect_file(context* ctx, const char* path,
-                                 float score_threshold = 0.3f);
+std::vector<region> detect_file(context * ctx, const char * path, float score_threshold = 0.3f);
 
 // Detect from preprocessed pixels [3, 640, 640] CHW float32.
-std::vector<region> detect(context* ctx, const float* pixels,
-                            int orig_h, int orig_w,
-                            float score_threshold = 0.3f);
+std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int orig_w, float score_threshold = 0.3f);
 
 // Free resources.
-void free(context* ctx);
+void free(context * ctx);
 
 } // namespace layout_detect

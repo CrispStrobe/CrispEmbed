@@ -30,10 +30,8 @@ void restormer_free(restormer_context * ctx);
 // tile_size: 0 = auto (128). tile_overlap: 0 = auto (16).
 // Caller frees with restormer_free_image().
 // Returns 0 on success, -1 on error.
-int restormer_process(restormer_context * ctx,
-                      const uint8_t * input, int width, int height,
-                      int tile_size, int tile_overlap,
-                      uint8_t ** output);
+int restormer_process(restormer_context * ctx, const uint8_t * input, int width, int height, int tile_size,
+                      int tile_overlap, uint8_t ** output);
 
 void restormer_free_image(uint8_t * pixels);
 

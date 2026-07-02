@@ -13,16 +13,24 @@
 #include <vector>
 
 #define GREEN "\033[32m"
-#define RED   "\033[31m"
+#define RED "\033[31m"
 #define RESET "\033[0m"
 static int n_pass = 0, n_fail = 0;
 static void check(const char * n, bool c) {
-    if (c) { printf("  %s[PASS]%s %s\n", GREEN, RESET, n); n_pass++; }
-    else   { printf("  %s[FAIL]%s %s\n", RED, RESET, n); n_fail++; }
+    if (c) {
+        printf("  %s[PASS]%s %s\n", GREEN, RESET, n);
+        n_pass++;
+    } else {
+        printf("  %s[FAIL]%s %s\n", RED, RESET, n);
+        n_fail++;
+    }
 }
 
 int main(int argc, char ** argv) {
-    if (argc < 3) { fprintf(stderr, "Usage: %s vit.gguf ref.gguf [image.png]\n", argv[0]); return 1; }
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s vit.gguf ref.gguf [image.png]\n", argv[0]);
+        return 1;
+    }
     // Image: argv[3], else the in-repo fox.png (run_one passes it via diff.args; the
     // fallbacks cover a plain manual invocation from the repo root or build/).
     const char * candidates[] = {
@@ -34,9 +42,16 @@ int main(int argc, char ** argv) {
     const char * image = nullptr;
     for (const char * c : candidates) {
         if (!c) continue;
-        if (FILE * f = fopen(c, "rb")) { fclose(f); image = c; break; }
+        if (FILE * f = fopen(c, "rb")) {
+            fclose(f);
+            image = c;
+            break;
+        }
     }
-    if (!image) { fprintf(stderr, "test image not found\n"); return 1; }
+    if (!image) {
+        fprintf(stderr, "test image not found\n");
+        return 1;
+    }
 
     printf("ViT (SigLIP/CLIP) — parity test\n");
     printf("  Model: %s\n  Ref:   %s\n  Image: %s\n\n", argv[1], argv[2], image);
@@ -58,8 +73,8 @@ int main(int argc, char ** argv) {
         // 0.98 floor: f16 GGUF vs f32 HF ref + slow-vs-engine image preprocessing
         // (resize/normalize) gives ~0.9915 on CPU; backend FP variance can shave a bit
         // more. A graph-scramble regression craters to ~0, so 0.98 still catches it.
-        printf("  final_embedding: cos_min=%.6f max_abs=%.6f  %s\n",
-               r.cos_min, r.max_abs, r.is_pass(0.98f) ? "PASS" : "FAIL");
+        printf("  final_embedding: cos_min=%.6f max_abs=%.6f  %s\n", r.cos_min, r.max_abs,
+               r.is_pass(0.98f) ? "PASS" : "FAIL");
         check("final_embedding cos >= 0.98", r.is_pass(0.98f));
     }
 

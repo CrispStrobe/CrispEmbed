@@ -23,7 +23,7 @@
 namespace ocr_pipeline {
 
 struct ocr_result {
-    ocr_detect::text_box box;    // bounding box in original image coords
+    ocr_detect::text_box box;     // bounding box in original image coords
     std::string text;             // recognized text
     float confidence;             // detection confidence (from DBNet score)
     float rec_confidence;         // recognition confidence (mean per-char softmax)
@@ -34,21 +34,18 @@ struct context;
 
 // Load both detection and recognition models.
 // det_path: DBNet GGUF, rec_path: TrOCR GGUF.
-bool load(context** ctx, const char* det_path, const char* rec_path,
-          int n_threads = 1);
+bool load(context ** ctx, const char * det_path, const char * rec_path, int n_threads = 1);
 
 // Run full pipeline on an image file.
 // Returns detected text regions sorted in reading order (top→bottom, left→right).
-std::vector<ocr_result> run_file(context* ctx, const char* image_path,
-                                  float prob_threshold = 0.3f,
-                                  float box_threshold = 0.5f,
-                                  int target_short_side = 736);
+std::vector<ocr_result> run_file(context * ctx, const char * image_path, float prob_threshold = 0.3f,
+                                 float box_threshold = 0.5f, int target_short_side = 736);
 
 // Run recognition only on a single crop (no detection).
 // Useful when you have pre-cropped text regions.
-std::string recognize_file(context* ctx, const char* image_path);
+std::string recognize_file(context * ctx, const char * image_path);
 
 // Free resources.
-void free(context* ctx);
+void free(context * ctx);
 
 } // namespace ocr_pipeline

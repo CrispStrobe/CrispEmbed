@@ -9,16 +9,24 @@
 #include <vector>
 
 #define GREEN "\033[32m"
-#define RED   "\033[31m"
+#define RED "\033[31m"
 #define RESET "\033[0m"
 static int n_pass = 0, n_fail = 0;
 static void check(const char * name, bool cond) {
-    if (cond) { printf("  %s[PASS]%s %s\n", GREEN, RESET, name); n_pass++; }
-    else      { printf("  %s[FAIL]%s %s\n", RED, RESET, name); n_fail++; }
+    if (cond) {
+        printf("  %s[PASS]%s %s\n", GREEN, RESET, name);
+        n_pass++;
+    } else {
+        printf("  %s[FAIL]%s %s\n", RED, RESET, name);
+        n_fail++;
+    }
 }
 
 int main(int argc, char ** argv) {
-    if (argc < 3) { fprintf(stderr, "Usage: %s <model.gguf> <ref.gguf>\n", argv[0]); return 1; }
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s <model.gguf> <ref.gguf>\n", argv[0]);
+        return 1;
+    }
     printf("InstructIR — parity test (task=denoise)\n");
     printf("  Model: %s\n  Ref:   %s\n\n", argv[1], argv[2]);
 
@@ -31,7 +39,10 @@ int main(int argc, char ** argv) {
     printf("  Tasks: %d\n\n", instructir_get_n_tasks(ctx));
 
     auto [ref_in, ref_n] = ref.get_f32("input");
-    if (!ref_in) { instructir_free(ctx); return 1; }
+    if (!ref_in) {
+        instructir_free(ctx);
+        return 1;
+    }
     auto sh = ref.shape("input");
     const int W = (int)sh[0], H = (int)sh[1];
     printf("  Input: %dx%d\n", W, H);
@@ -45,8 +56,8 @@ int main(int argc, char ** argv) {
     printf("  Inference: %.1f ms\n\n", ms);
 
     // Compare per-stage
-    const char * stage_names[] = {"intro", "enc_0", "enc_1", "enc_2", "enc_3",
-                                   "middle", "dec_0", "dec_1", "dec_2", "dec_3", "output"};
+    const char * stage_names[] = { "intro", "enc_0", "enc_1", "enc_2", "enc_3", "middle",
+                                   "dec_0", "dec_1", "dec_2", "dec_3", "output" };
     for (auto name : stage_names) {
         if (!ref.has(name)) continue;
         // We only have output from the full forward pass, not per-stage
@@ -55,8 +66,7 @@ int main(int argc, char ** argv) {
 
     printf("=== Output comparison ===\n");
     auto r = ref.compare("output", output.data(), 3 * H * W);
-    printf("  output: cos=%.6f max_abs=%.6f  %s\n",
-           r.cos_min, r.max_abs, r.is_pass(0.999f) ? "PASS" : "FAIL");
+    printf("  output: cos=%.6f max_abs=%.6f  %s\n", r.cos_min, r.max_abs, r.is_pass(0.999f) ? "PASS" : "FAIL");
     check("output cos >= 0.999", r.is_pass(0.999f));
 
     char msg[128];

@@ -48,13 +48,13 @@ struct WordPieceTokenizer {
         }
     }
 
-    int lookup(const std::string& tok) const {
+    int lookup(const std::string & tok) const {
         auto it = token_to_id.find(tok);
         return it != token_to_id.end() ? it->second : unk_id;
     }
 
     // SentencePiece tokenization: split on whitespace, prefix ▁, greedy longest match
-    std::vector<int> tokenize_sp(const std::string& text) const {
+    std::vector<int> tokenize_sp(const std::string & text) const {
         std::vector<int> ids;
         // Split on whitespace
         std::vector<std::string> words;
@@ -69,8 +69,7 @@ struct WordPieceTokenizer {
                 cur += c;
             }
         }
-        if (!cur.empty())
-            words.push_back(cur);
+        if (!cur.empty()) words.push_back(cur);
 
         for (size_t wi = 0; wi < words.size(); wi++) {
             // Prefix with ▁ (U+2581, 0xE2 0x96 0x81)
@@ -87,8 +86,7 @@ struct WordPieceTokenizer {
                         break;
                     }
                     end--;
-                    while (end > start && (word[end] & 0xC0) == 0x80)
-                        end--;
+                    while (end > start && (word[end] & 0xC0) == 0x80) end--;
                 }
                 if (best_id < 0) {
                     ids.push_back(unk_id);
@@ -102,9 +100,8 @@ struct WordPieceTokenizer {
     }
 
     // Basic BERT tokenization: lowercase, split on whitespace, WordPiece
-    std::vector<int> tokenize(const std::string& text) const {
-        if (is_sentencepiece)
-            return tokenize_sp(text);
+    std::vector<int> tokenize(const std::string & text) const {
+        if (is_sentencepiece) return tokenize_sp(text);
         std::vector<int> ids;
 
         // Split on whitespace
@@ -118,16 +115,14 @@ struct WordPieceTokenizer {
                 }
             } else {
                 // Lowercase ASCII
-                if (c >= 'A' && c <= 'Z')
-                    c = c - 'A' + 'a';
+                if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
                 cur += c;
             }
         }
-        if (!cur.empty())
-            words.push_back(cur);
+        if (!cur.empty()) words.push_back(cur);
 
         // WordPiece each word
-        for (const auto& word : words) {
+        for (const auto & word : words) {
             // Try to find the word as-is first
             auto it = token_to_id.find(word);
             if (it != token_to_id.end()) {
@@ -149,8 +144,7 @@ struct WordPieceTokenizer {
                     }
                     // Handle multi-byte UTF-8: don't split mid-character
                     end--;
-                    while (end > start && (word[end] & 0xC0) == 0x80)
-                        end--;
+                    while (end > start && (word[end] & 0xC0) == 0x80) end--;
                 }
                 if (best_id < 0) {
                     // Character not in vocab — use [UNK]
@@ -179,22 +173,22 @@ struct WordPieceTokenizer {
 // ---------------------------------------------------------------------------
 
 struct BertLayer {
-    ggml_tensor* attn_q_w = nullptr;
-    ggml_tensor* attn_q_b = nullptr;
-    ggml_tensor* attn_k_w = nullptr;
-    ggml_tensor* attn_k_b = nullptr;
-    ggml_tensor* attn_v_w = nullptr;
-    ggml_tensor* attn_v_b = nullptr;
-    ggml_tensor* attn_out_w = nullptr;
-    ggml_tensor* attn_out_b = nullptr;
-    ggml_tensor* attn_ln_w = nullptr;
-    ggml_tensor* attn_ln_b = nullptr;
-    ggml_tensor* ffn_up_w = nullptr;
-    ggml_tensor* ffn_up_b = nullptr;
-    ggml_tensor* ffn_down_w = nullptr;
-    ggml_tensor* ffn_down_b = nullptr;
-    ggml_tensor* ffn_ln_w = nullptr;
-    ggml_tensor* ffn_ln_b = nullptr;
+    ggml_tensor * attn_q_w = nullptr;
+    ggml_tensor * attn_q_b = nullptr;
+    ggml_tensor * attn_k_w = nullptr;
+    ggml_tensor * attn_k_b = nullptr;
+    ggml_tensor * attn_v_w = nullptr;
+    ggml_tensor * attn_v_b = nullptr;
+    ggml_tensor * attn_out_w = nullptr;
+    ggml_tensor * attn_out_b = nullptr;
+    ggml_tensor * attn_ln_w = nullptr;
+    ggml_tensor * attn_ln_b = nullptr;
+    ggml_tensor * ffn_up_w = nullptr;
+    ggml_tensor * ffn_up_b = nullptr;
+    ggml_tensor * ffn_down_w = nullptr;
+    ggml_tensor * ffn_down_b = nullptr;
+    ggml_tensor * ffn_ln_w = nullptr;
+    ggml_tensor * ffn_ln_b = nullptr;
 };
 
 struct fireredpunc_context {
@@ -216,16 +210,16 @@ struct fireredpunc_context {
     WordPieceTokenizer tokenizer;
 
     // Weights
-    ggml_tensor* tok_emb_w = nullptr;
-    ggml_tensor* pos_emb_w = nullptr;
-    ggml_tensor* type_emb_w = nullptr;
-    ggml_tensor* emb_ln_w = nullptr;
-    ggml_tensor* emb_ln_b = nullptr;
+    ggml_tensor * tok_emb_w = nullptr;
+    ggml_tensor * pos_emb_w = nullptr;
+    ggml_tensor * type_emb_w = nullptr;
+    ggml_tensor * emb_ln_w = nullptr;
+    ggml_tensor * emb_ln_b = nullptr;
 
     std::vector<BertLayer> layers;
 
-    ggml_tensor* cls_w = nullptr;
-    ggml_tensor* cls_b = nullptr;
+    ggml_tensor * cls_w = nullptr;
+    ggml_tensor * cls_b = nullptr;
 
     // Backend
     ggml_backend_t backend = nullptr;
@@ -237,7 +231,7 @@ struct fireredpunc_context {
     // to fit fully on GPU. Mirror of voxtral4b / mimo_asr / etc.
     ggml_backend_t backend_cpu = nullptr;
     ggml_backend_buffer_t buf = nullptr;
-    ggml_context* w_ctx = nullptr;
+    ggml_context * w_ctx = nullptr;
     ggml_backend_sched_t sched = nullptr;
     bool bench = false;
 };
@@ -246,11 +240,10 @@ struct fireredpunc_context {
 // Model loading
 // ---------------------------------------------------------------------------
 
-static bool fireredpunc_load(fireredpunc_context& ctx, const char* path) {
+static bool fireredpunc_load(fireredpunc_context & ctx, const char * path) {
     // Pass 1: metadata
-    gguf_context* meta = core_gguf::open_metadata(path);
-    if (!meta)
-        return false;
+    gguf_context * meta = core_gguf::open_metadata(path);
+    if (!meta) return false;
 
     ctx.d_model = (int)core_gguf::kv_u32(meta, "fireredpunc.d_model", 768);
     ctx.d_ffn = (int)core_gguf::kv_u32(meta, "fireredpunc.d_ffn", 3072);
@@ -276,7 +269,7 @@ static bool fireredpunc_load(fireredpunc_context& ctx, const char* path) {
     // Labels
     ctx.labels = core_gguf::kv_str_array(meta, "fireredpunc.labels");
     if (ctx.labels.empty()) {
-        ctx.labels = {" ", "\xef\xbc\x8c", "\xe3\x80\x82", "\xef\xbc\x9f", "\xef\xbc\x81"};
+        ctx.labels = { " ", "\xef\xbc\x8c", "\xe3\x80\x82", "\xef\xbc\x9f", "\xef\xbc\x81" };
     }
 
     core_gguf::free_metadata(meta);
@@ -288,24 +281,22 @@ static bool fireredpunc_load(fireredpunc_context& ctx, const char* path) {
     // FireRedPunc normally uses ggml's best backend. For investigation or a
     // local workaround, `FIREREDPUNC_BACKEND=cpu` forces CPU and
     // `FIREREDPUNC_BACKEND=gpu` forces `init_best()`.
-    const char* punc_backend = getenv("FIREREDPUNC_BACKEND");
+    const char * punc_backend = getenv("FIREREDPUNC_BACKEND");
     const bool force_cpu = punc_backend && strcmp(punc_backend, "cpu") == 0;
     const bool force_gpu = punc_backend && strcmp(punc_backend, "gpu") == 0;
     ctx.backend = (force_cpu && !force_gpu) ? ggml_backend_cpu_init() : ggml_backend_init_best();
-    if (!ctx.backend)
-        ctx.backend = ggml_backend_cpu_init();
+    if (!ctx.backend) ctx.backend = ggml_backend_cpu_init();
     // Always have a separate CPU backend on hand for ggml_backend_sched
     // to fall back to (issue #68). Even though the primary backend is
     // CPU here, we keep the two-backend shape uniform.
     ctx.backend_cpu = ggml_backend_cpu_init();
     core_gguf::WeightLoad wl;
-    if (!core_gguf::load_weights(path, ctx.backend, "fireredpunc", wl))
-        return false;
+    if (!core_gguf::load_weights(path, ctx.backend, "fireredpunc", wl)) return false;
     ctx.w_ctx = wl.ctx;
     ctx.buf = wl.buf;
 
-    auto& T = wl.tensors;
-    auto req = [&](const char* n) { return core_gguf::require(T, n, "fireredpunc"); };
+    auto & T = wl.tensors;
+    auto req = [&](const char * n) { return core_gguf::require(T, n, "fireredpunc"); };
 
     ctx.tok_emb_w = req("emb.tok_emb.weight");
     ctx.pos_emb_w = req("emb.pos_emb.weight");
@@ -315,8 +306,8 @@ static bool fireredpunc_load(fireredpunc_context& ctx, const char* path) {
 
     ctx.layers.resize(ctx.n_layers);
     for (int i = 0; i < ctx.n_layers; i++) {
-        auto ln = [&](const char* fmt) { return core_gguf::format_layer_name(fmt, i); };
-        auto& L = ctx.layers[i];
+        auto ln = [&](const char * fmt) { return core_gguf::format_layer_name(fmt, i); };
+        auto & L = ctx.layers[i];
         L.attn_q_w = req(ln("enc.%d.attn.q.weight").c_str());
         L.attn_q_b = req(ln("enc.%d.attn.q.bias").c_str());
         L.attn_k_w = req(ln("enc.%d.attn.k.weight").c_str());
@@ -342,7 +333,7 @@ static bool fireredpunc_load(fireredpunc_context& ctx, const char* path) {
     // backend is CPU when a GPU backend is present, otherwise the
     // process aborts with a stack trace. Pass the CPU backend last so
     // CUDA / Vulkan / Metal hosts don't crash.
-    ggml_backend_t backends[2] = {ctx.backend, nullptr};
+    ggml_backend_t backends[2] = { ctx.backend, nullptr };
     int n_backends = 1;
     if (ctx.backend_cpu && ctx.backend_cpu != ctx.backend) {
         backends[n_backends++] = ctx.backend_cpu;
@@ -356,10 +347,10 @@ static bool fireredpunc_load(fireredpunc_context& ctx, const char* path) {
 // Graph build: BERT encoder + classifier
 // ---------------------------------------------------------------------------
 
-static std::vector<int> fireredpunc_run(fireredpunc_context& ctx, const std::vector<int>& token_ids) {
+static std::vector<int> fireredpunc_run(fireredpunc_context & ctx, const std::vector<int> & token_ids) {
     const bool bench = ctx.bench;
     auto t_total = std::chrono::steady_clock::now();
-    auto t_pre0  = std::chrono::steady_clock::now();
+    auto t_pre0 = std::chrono::steady_clock::now();
 
     const int N = (int)token_ids.size();
     // Prepend CLS + append SEP
@@ -367,30 +358,30 @@ static std::vector<int> fireredpunc_run(fireredpunc_context& ctx, const std::vec
 
     // ggml context for compute graph
     size_t mem = ggml_tensor_overhead() * (ctx.n_layers * 40 + 50) + 1024 * 1024;
-    struct ggml_init_params gp = {mem, nullptr, true};
-    ggml_context* ctx0 = ggml_init(gp);
+    struct ggml_init_params gp = { mem, nullptr, true };
+    ggml_context * ctx0 = ggml_init(gp);
 
     // Input: token IDs [seq_len]
-    ggml_tensor* inp_ids = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, seq_len);
+    ggml_tensor * inp_ids = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, seq_len);
     ggml_set_name(inp_ids, "inp_ids");
     ggml_set_input(inp_ids);
 
     // Position IDs [seq_len]
-    ggml_tensor* pos_ids = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, seq_len);
+    ggml_tensor * pos_ids = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, seq_len);
     ggml_set_name(pos_ids, "pos_ids");
     ggml_set_input(pos_ids);
 
     // Token type IDs [seq_len] — all zeros
-    ggml_tensor* type_ids = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, seq_len);
+    ggml_tensor * type_ids = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, seq_len);
     ggml_set_name(type_ids, "type_ids");
     ggml_set_input(type_ids);
 
     // Embeddings: tok + pos + type
-    ggml_tensor* tok_emb = ggml_get_rows(ctx0, ctx.tok_emb_w, inp_ids);    // [seq_len, d]
-    ggml_tensor* pos_emb = ggml_get_rows(ctx0, ctx.pos_emb_w, pos_ids);    // [seq_len, d]
-    ggml_tensor* type_emb = ggml_get_rows(ctx0, ctx.type_emb_w, type_ids); // [seq_len, d]
+    ggml_tensor * tok_emb = ggml_get_rows(ctx0, ctx.tok_emb_w, inp_ids);    // [seq_len, d]
+    ggml_tensor * pos_emb = ggml_get_rows(ctx0, ctx.pos_emb_w, pos_ids);    // [seq_len, d]
+    ggml_tensor * type_emb = ggml_get_rows(ctx0, ctx.type_emb_w, type_ids); // [seq_len, d]
 
-    ggml_tensor* emb = ggml_add(ctx0, ggml_add(ctx0, tok_emb, pos_emb), type_emb);
+    ggml_tensor * emb = ggml_add(ctx0, ggml_add(ctx0, tok_emb, pos_emb), type_emb);
     emb = ggml_norm(ctx0, emb, 1e-12f);
     emb = ggml_add(ctx0, ggml_mul(ctx0, emb, ctx.emb_ln_w), ctx.emb_ln_b);
     // emb: [d_model, seq_len] (ggml column-major)
@@ -405,16 +396,16 @@ static std::vector<int> fireredpunc_run(fireredpunc_context& ctx, const std::vec
     const int head_dim = d / ctx.n_heads;
     const int nh = ctx.n_heads;
 
-    ggml_tensor* cur = emb;
+    ggml_tensor * cur = emb;
 
     for (int i = 0; i < ctx.n_layers; i++) {
-        const auto& L = ctx.layers[i];
-        ggml_tensor* residual = cur;
+        const auto & L = ctx.layers[i];
+        ggml_tensor * residual = cur;
 
         // Self-attention
-        ggml_tensor* Q = ggml_add(ctx0, ggml_mul_mat(ctx0, L.attn_q_w, cur), L.attn_q_b);
-        ggml_tensor* K = ggml_add(ctx0, ggml_mul_mat(ctx0, L.attn_k_w, cur), L.attn_k_b);
-        ggml_tensor* V = ggml_add(ctx0, ggml_mul_mat(ctx0, L.attn_v_w, cur), L.attn_v_b);
+        ggml_tensor * Q = ggml_add(ctx0, ggml_mul_mat(ctx0, L.attn_q_w, cur), L.attn_q_b);
+        ggml_tensor * K = ggml_add(ctx0, ggml_mul_mat(ctx0, L.attn_k_w, cur), L.attn_k_b);
+        ggml_tensor * V = ggml_add(ctx0, ggml_mul_mat(ctx0, L.attn_v_w, cur), L.attn_v_b);
 
         // Reshape for multi-head attention: [d, seq] -> [head_dim, nh, seq]
         Q = ggml_reshape_3d(ctx0, Q, head_dim, nh, seq_len);
@@ -428,7 +419,7 @@ static std::vector<int> fireredpunc_run(fireredpunc_context& ctx, const std::vec
 
         // Flash attention: handles QK^T, scale, softmax, V matmul
         const float scale = 1.0f / sqrtf((float)head_dim);
-        ggml_tensor* KQV = ggml_flash_attn_ext(ctx0, Q, K, V, nullptr, scale, 0.0f, 0.0f);
+        ggml_tensor * KQV = ggml_flash_attn_ext(ctx0, Q, K, V, nullptr, scale, 0.0f, 0.0f);
         KQV = ggml_reshape_2d(ctx0, KQV, d, seq_len);
 
         // Output projection
@@ -441,7 +432,7 @@ static std::vector<int> fireredpunc_run(fireredpunc_context& ctx, const std::vec
 
         // FFN
         residual = cur;
-        ggml_tensor* ffn = ggml_add(ctx0, ggml_mul_mat(ctx0, L.ffn_up_w, cur), L.ffn_up_b);
+        ggml_tensor * ffn = ggml_add(ctx0, ggml_mul_mat(ctx0, L.ffn_up_w, cur), L.ffn_up_b);
         ffn = ggml_gelu(ctx0, ffn);
         ffn = ggml_add(ctx0, ggml_mul_mat(ctx0, L.ffn_down_w, ffn), L.ffn_down_b);
 
@@ -455,12 +446,12 @@ static std::vector<int> fireredpunc_run(fireredpunc_context& ctx, const std::vec
     cur = ggml_view_2d(ctx0, cur, d, N, cur->nb[1], cur->nb[1]); // skip first column
 
     // Classifier: [n_classes, d] x [d, N] -> [n_classes, N]
-    ggml_tensor* logits = ggml_add(ctx0, ggml_mul_mat(ctx0, ctx.cls_w, cur), ctx.cls_b);
+    ggml_tensor * logits = ggml_add(ctx0, ggml_mul_mat(ctx0, ctx.cls_w, cur), ctx.cls_b);
     ggml_set_name(logits, "logits");
     ggml_set_output(logits);
 
     // Build & compute graph
-    ggml_cgraph* gf = ggml_new_graph(ctx0);
+    ggml_cgraph * gf = ggml_new_graph(ctx0);
     ggml_build_forward_expand(gf, logits);
 
     ggml_backend_sched_reset(ctx.sched);
@@ -474,8 +465,7 @@ static std::vector<int> fireredpunc_run(fireredpunc_context& ctx, const std::vec
     {
         std::vector<int32_t> ids(seq_len);
         ids[0] = ctx.cls_id;
-        for (int i = 0; i < N; i++)
-            ids[i + 1] = token_ids[i];
+        for (int i = 0; i < N; i++) ids[i + 1] = token_ids[i];
         // SEP token: 102 for BERT, 2 for RoBERTa
         ids[N + 1] = ctx.tokenizer.is_sentencepiece ? 2 : 102;
         ggml_backend_tensor_set(inp_ids, ids.data(), 0, seq_len * sizeof(int32_t));
@@ -484,8 +474,7 @@ static std::vector<int> fireredpunc_run(fireredpunc_context& ctx, const std::vec
         // RoBERTa: position IDs start at padding_idx+1 (=2 for XLM-R)
         // BERT: position IDs start at 0
         const int pos_offset = ctx.tokenizer.is_sentencepiece ? (ctx.pad_id + 1) : 0;
-        for (int i = 0; i < seq_len; i++)
-            pos[i] = i + pos_offset;
+        for (int i = 0; i < seq_len; i++) pos[i] = i + pos_offset;
         ggml_backend_tensor_set(pos_ids, pos.data(), 0, seq_len * sizeof(int32_t));
 
         std::vector<int32_t> types(seq_len, 0);
@@ -510,19 +499,17 @@ static std::vector<int> fireredpunc_run(fireredpunc_context& ctx, const std::vec
 
     // Dump embedding for diff-testing
     if (getenv("FIREREDPUNC_DEBUG")) {
-        ggml_tensor* emb_t = ggml_get_tensor(ctx0, "emb_out");
+        ggml_tensor * emb_t = ggml_get_tensor(ctx0, "emb_out");
         if (emb_t) {
             // emb is [d, seq_len], read values at position 15 (first "you")
             const int dump_pos = std::min(15, seq_len - 1);
             std::vector<float> emb_vals(d);
             ggml_backend_tensor_get(emb_t, emb_vals.data(), dump_pos * d * sizeof(float), d * sizeof(float));
             fprintf(stderr, "fireredpunc: emb[%d][:8] = [", dump_pos);
-            for (int j = 0; j < 8; j++)
-                fprintf(stderr, "%s%.6f", j ? ", " : "", emb_vals[j]);
+            for (int j = 0; j < 8; j++) fprintf(stderr, "%s%.6f", j ? ", " : "", emb_vals[j]);
             fprintf(stderr, "]\n");
             float norm = 0;
-            for (int j = 0; j < d; j++)
-                norm += emb_vals[j] * emb_vals[j];
+            for (int j = 0; j < d; j++) norm += emb_vals[j] * emb_vals[j];
             fprintf(stderr, "fireredpunc: emb[%d] norm = %.6f\n", dump_pos, sqrtf(norm));
         }
     }
@@ -576,8 +563,8 @@ static std::vector<int> fireredpunc_run(fireredpunc_context& ctx, const std::vec
 // Public API
 // ---------------------------------------------------------------------------
 
-fireredpunc_context* fireredpunc_init(const char* model_path) {
-    auto* ctx = new fireredpunc_context();
+fireredpunc_context * fireredpunc_init(const char * model_path) {
+    auto * ctx = new fireredpunc_context();
     ctx->bench = (std::getenv("CRISPEMBED_FIREREDPUNC_BENCH") != nullptr);
     if (!fireredpunc_load(*ctx, model_path)) {
         delete ctx;
@@ -586,15 +573,14 @@ fireredpunc_context* fireredpunc_init(const char* model_path) {
     return ctx;
 }
 
-char* fireredpunc_process(fireredpunc_context* ctx, const char* text) {
-    if (!ctx || !text)
-        return nullptr;
+char * fireredpunc_process(fireredpunc_context * ctx, const char * text) {
+    if (!ctx || !text) return nullptr;
 
     // Tokenize
     std::string input(text);
     std::vector<int> token_ids = ctx->tokenizer.tokenize(input);
     if (token_ids.empty()) {
-        char* out = (char*)malloc(strlen(text) + 1);
+        char * out = (char *)malloc(strlen(text) + 1);
         strcpy(out, text);
         return out;
     }
@@ -627,16 +613,14 @@ char* fireredpunc_process(fireredpunc_context* ctx, const char* text) {
                 cur += c;
             }
         }
-        if (!cur.empty())
-            words.push_back(cur);
+        if (!cur.empty()) words.push_back(cur);
     }
 
     // Map predictions back to words. Multiple token predictions per word
     // (from WordPiece splits) — take the prediction of the last subtoken.
     int tok_idx = 0;
     for (size_t w = 0; w < words.size(); w++) {
-        if (w > 0)
-            result += ' ';
+        if (w > 0) result += ' ';
         result += words[w];
 
         // Count how many subtokens this word consumed
@@ -669,8 +653,7 @@ char* fireredpunc_process(fireredpunc_context* ctx, const char* text) {
                         break;
                     }
                     end--;
-                    while (end > start && (sp_word[end] & 0xC0) == 0x80)
-                        end--;
+                    while (end > start && (sp_word[end] & 0xC0) == 0x80) end--;
                 }
                 if (!found) {
                     n_subtokens++;
@@ -698,8 +681,7 @@ char* fireredpunc_process(fireredpunc_context* ctx, const char* text) {
                             break;
                         }
                         end--;
-                        while (end > start && (lword[end] & 0xC0) == 0x80)
-                            end--;
+                        while (end > start && (lword[end] & 0xC0) == 0x80) end--;
                     }
                     if (!found) {
                         n_subtokens++;
@@ -811,23 +793,17 @@ char* fireredpunc_process(fireredpunc_context* ctx, const char* text) {
         }
     }
 
-    char* out = (char*)malloc(fixed.size() + 1);
+    char * out = (char *)malloc(fixed.size() + 1);
     memcpy(out, fixed.c_str(), fixed.size() + 1);
     return out;
 }
 
-void fireredpunc_free(fireredpunc_context* ctx) {
-    if (!ctx)
-        return;
-    if (ctx->sched)
-        ggml_backend_sched_free(ctx->sched);
-    if (ctx->buf)
-        ggml_backend_buffer_free(ctx->buf);
-    if (ctx->w_ctx)
-        ggml_free(ctx->w_ctx);
-    if (ctx->backend_cpu && ctx->backend_cpu != ctx->backend)
-        ggml_backend_free(ctx->backend_cpu);
-    if (ctx->backend)
-        ggml_backend_free(ctx->backend);
+void fireredpunc_free(fireredpunc_context * ctx) {
+    if (!ctx) return;
+    if (ctx->sched) ggml_backend_sched_free(ctx->sched);
+    if (ctx->buf) ggml_backend_buffer_free(ctx->buf);
+    if (ctx->w_ctx) ggml_free(ctx->w_ctx);
+    if (ctx->backend_cpu && ctx->backend_cpu != ctx->backend) ggml_backend_free(ctx->backend_cpu);
+    if (ctx->backend) ggml_backend_free(ctx->backend);
     delete ctx;
 }

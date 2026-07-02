@@ -29,9 +29,7 @@ int pan_sr_scale(const pan_sr_context * ctx);
 // tile_size: 0 = auto (128). tile_overlap: 0 = auto (16).
 // Caller frees with pan_sr_free_image().
 // Returns 0 on success, -1 on error.
-int pan_sr_process(pan_sr_context * ctx,
-                   const uint8_t * input, int width, int height,
-                   int tile_size, int tile_overlap,
+int pan_sr_process(pan_sr_context * ctx, const uint8_t * input, int width, int height, int tile_size, int tile_overlap,
                    uint8_t ** output, int * out_width, int * out_height);
 
 void pan_sr_free_image(uint8_t * pixels);

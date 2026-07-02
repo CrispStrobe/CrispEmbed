@@ -58,16 +58,16 @@ struct decoder_layer_pf {
     struct ggml_tensor * ff_up_b;
     struct ggml_tensor * ff_down_w;
     struct ggml_tensor * ff_down_b;
-    struct ggml_tensor * ln1_w, * ln1_b;
-    struct ggml_tensor * ln2_w, * ln2_b;
-    struct ggml_tensor * ln3_w, * ln3_b;
+    struct ggml_tensor *ln1_w, *ln1_b;
+    struct ggml_tensor *ln2_w, *ln2_b;
+    struct ggml_tensor *ln3_w, *ln3_b;
 };
 
 struct arm_weights {
-    struct ggml_tensor * conv_w;   // (dc, 2*nhead, 5, 5) flattened to (dc, 2*nhead*25)
-    struct ggml_tensor * conv_b;   // (dc,)
-    struct ggml_tensor * proj_w;   // (nhead, dc, 1, 1) flattened to (nhead, dc)
-    struct ggml_tensor * proj_b;   // (nhead,) — BN folded in
+    struct ggml_tensor * conv_w; // (dc, 2*nhead, 5, 5) flattened to (dc, 2*nhead*25)
+    struct ggml_tensor * conv_b; // (dc,)
+    struct ggml_tensor * proj_w; // (nhead, dc, 1, 1) flattened to (nhead, dc)
+    struct ggml_tensor * proj_b; // (nhead,) — BN folded in
 };
 
 struct posformer_ocr_context {
@@ -100,14 +100,14 @@ struct posformer_ocr_context {
     std::vector<std::string> vocab;
 
     // 2D positional encoding cache
-    std::vector<float> pe_cache;  // (n_pos * D) — PE values to add to encoder output
+    std::vector<float> pe_cache; // (n_pos * D) — PE values to add to encoder output
     int pe_cache_h = 0, pe_cache_w = 0;
 
     core_cpu::DequantCache dequant_cache;
 
     // ggml graph encoder
-    ggml_backend_t       enc_backend  = nullptr;
-    ggml_backend_sched_t enc_sched    = nullptr;
+    ggml_backend_t enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched = nullptr;
     std::vector<uint8_t> enc_compute_meta;
 
     core_gguf::WeightLoad wl;
@@ -117,7 +117,7 @@ struct posformer_ocr_context {
     std::vector<float> char_confidences; // per-token softmax probabilities
     std::vector<float> encoder_output;
     int n_enc_pos;
-    int enc_h, enc_w;  // spatial dims of encoder output (needed for ARM)
+    int enc_h, enc_w; // spatial dims of encoder output (needed for ARM)
 
     // Pre-allocated decoder scratch (avoids per-step/per-layer heap allocs)
     struct dec_scratch {
@@ -142,56 +142,54 @@ static const float * tf32(posformer_ocr_context * ctx, struct ggml_tensor * t) {
     return ctx->dequant_cache.get(t);
 }
 
-static void conv2d(const float * in, int ic, int ih, int iw,
-                   const float * W, const float * B,
-                   int oc, int kH, int kW, int stride, int pad,
-                   float * out, int /*oh*/, int /*ow*/) {
+static void conv2d(const float * in, int ic, int ih, int iw, const float * W, const float * B, int oc, int kH, int kW,
+                   int stride, int pad, float * out, int /*oh*/, int /*ow*/) {
     core_cpu::conv2d_cpu(in, out, W, B, ic, oc, ih, iw, kH, kW, stride, pad);
 }
 
-static void relu_ip(float * d, int n) { core_cpu::relu_inplace(d, n); }
+static void relu_ip(float * d, int n) {
+    core_cpu::relu_inplace(d, n);
+}
 
-static void maxpool2d_ceil(const float * in, int ch, int ih, int iw,
-                           int k, int s, float * out, int oh, int ow) {
+static void maxpool2d_ceil(const float * in, int ch, int ih, int iw, int k, int s, float * out, int oh, int ow) {
     for (int c = 0; c < ch; c++)
         for (int y = 0; y < oh; y++)
             for (int x = 0; x < ow; x++) {
                 float mx = -1e30f;
                 for (int ky = 0; ky < k; ky++)
                     for (int kx = 0; kx < k; kx++) {
-                        int iy = y*s + ky, ix = x*s + kx;
+                        int iy = y * s + ky, ix = x * s + kx;
                         if (iy < ih && ix < iw) {
-                            float v = in[c*ih*iw + iy*iw + ix];
+                            float v = in[c * ih * iw + iy * iw + ix];
                             if (v > mx) mx = v;
                         }
                     }
-                out[c*oh*ow + y*ow + x] = mx;
+                out[c * oh * ow + y * ow + x] = mx;
             }
 }
 
-static void avgpool2d_ceil(const float * in, int ch, int ih, int iw,
-                           int k, int s, float * out, int oh, int ow) {
+static void avgpool2d_ceil(const float * in, int ch, int ih, int iw, int k, int s, float * out, int oh, int ow) {
     for (int c = 0; c < ch; c++)
         for (int y = 0; y < oh; y++)
             for (int x = 0; x < ow; x++) {
-                float sum = 0; int cnt = 0;
+                float sum = 0;
+                int cnt = 0;
                 for (int ky = 0; ky < k; ky++)
                     for (int kx = 0; kx < k; kx++) {
-                        int iy = y*s + ky, ix = x*s + kx;
+                        int iy = y * s + ky, ix = x * s + kx;
                         if (iy < ih && ix < iw) {
-                            sum += in[c*ih*iw + iy*iw + ix];
+                            sum += in[c * ih * iw + iy * iw + ix];
                             cnt++;
                         }
                     }
-                out[c*oh*ow + y*ow + x] = cnt > 0 ? sum / cnt : 0;
+                out[c * oh * ow + y * ow + x] = cnt > 0 ? sum / cnt : 0;
             }
 }
 
-static void apply_bn(float * d, int ch, int sp,
-                     const float * scale, const float * offset) {
+static void apply_bn(float * d, int ch, int sp, const float * scale, const float * offset) {
     for (int c = 0; c < ch; c++) {
         float s = scale[c], o = offset[c];
-        for (int i = 0; i < sp; i++) d[c*sp + i] = d[c*sp + i] * s + o;
+        for (int i = 0; i < sp; i++) d[c * sp + i] = d[c * sp + i] * s + o;
     }
 }
 
@@ -199,9 +197,7 @@ static void layernorm(float * x, int d, const float * w, const float * b) {
     core_cpu::layernorm_cpu(x, x, d, w, b, 1e-5f);
 }
 
-static void linear(const float * x, int in_d,
-                   const float * W, const float * B, int out_d,
-                   float * out) {
+static void linear(const float * x, int in_d, const float * W, const float * B, int out_d, float * out) {
     core_cpu::linear_cpu(x, out, in_d, out_d, W, B);
 }
 
@@ -209,8 +205,7 @@ static void linear(const float * x, int in_d,
 // Tensor mapping
 // ---------------------------------------------------------------------------
 
-static struct ggml_tensor * find(const std::unordered_map<std::string, ggml_tensor*> & m,
-                                 const char * name) {
+static struct ggml_tensor * find(const std::unordered_map<std::string, ggml_tensor *> & m, const char * name) {
     auto it = m.find(name);
     return it != m.end() ? it->second : nullptr;
 }
@@ -231,8 +226,10 @@ static bool map_tensors(posformer_ocr_context * ctx) {
                 snprintf(buf, sizeof(buf), "enc.block%d.layer%d.%s", bi, li, s);
                 return find(m, buf);
             };
-            l.conv1_w = T("conv1.weight"); l.conv1_b = T("conv1.bias");
-            l.conv2_w = T("conv2.weight"); l.conv2_b = T("conv2.bias");
+            l.conv1_w = T("conv1.weight");
+            l.conv1_b = T("conv1.bias");
+            l.conv2_w = T("conv2.weight");
+            l.conv2_b = T("conv2.bias");
         }
     };
     map_block(1, ctx->block1);
@@ -244,20 +241,20 @@ static bool map_tensors(posformer_ocr_context * ctx) {
     ctx->trans2.conv_w = find(m, "enc.trans2.conv.weight");
     ctx->trans2.conv_b = find(m, "enc.trans2.conv.bias");
 
-    ctx->post_norm_scale  = find(m, "enc.post_norm.scale");
+    ctx->post_norm_scale = find(m, "enc.post_norm.scale");
     ctx->post_norm_offset = find(m, "enc.post_norm.offset");
 
     ctx->feat_proj_w = find(m, "enc.feature_proj.weight");
     ctx->feat_proj_b = find(m, "enc.feature_proj.bias");
-    ctx->enc_ln_w    = find(m, "enc.norm.weight");
-    ctx->enc_ln_b    = find(m, "enc.norm.bias");
+    ctx->enc_ln_w = find(m, "enc.norm.weight");
+    ctx->enc_ln_b = find(m, "enc.norm.bias");
 
-    ctx->word_embed_w    = find(m, "dec.word_embed.weight");
+    ctx->word_embed_w = find(m, "dec.word_embed.weight");
     ctx->word_embed_ln_w = find(m, "dec.word_embed_ln.weight");
     ctx->word_embed_ln_b = find(m, "dec.word_embed_ln.bias");
-    ctx->pos_enc         = find(m, "dec.pos_enc");
-    ctx->proj_w          = find(m, "dec.proj.weight");
-    ctx->proj_b          = find(m, "dec.proj.bias");
+    ctx->pos_enc = find(m, "dec.pos_enc");
+    ctx->proj_w = find(m, "dec.proj.weight");
+    ctx->proj_b = find(m, "dec.proj.bias");
 
     ctx->dec_layers.resize(hp.num_decoder_layers);
     for (int li = 0; li < hp.num_decoder_layers; li++) {
@@ -274,11 +271,16 @@ static bool map_tensors(posformer_ocr_context * ctx) {
         l.ca_qkv_b = T("cross_attn.in_proj_bias");
         l.ca_out_w = T("cross_attn.out_proj.weight");
         l.ca_out_b = T("cross_attn.out_proj.bias");
-        l.ff_up_w  = T("ffn.up.weight");  l.ff_up_b  = T("ffn.up.bias");
-        l.ff_down_w = T("ffn.down.weight"); l.ff_down_b = T("ffn.down.bias");
-        l.ln1_w = T("norm1.weight"); l.ln1_b = T("norm1.bias");
-        l.ln2_w = T("norm2.weight"); l.ln2_b = T("norm2.bias");
-        l.ln3_w = T("norm3.weight"); l.ln3_b = T("norm3.bias");
+        l.ff_up_w = T("ffn.up.weight");
+        l.ff_up_b = T("ffn.up.bias");
+        l.ff_down_w = T("ffn.down.weight");
+        l.ff_down_b = T("ffn.down.bias");
+        l.ln1_w = T("norm1.weight");
+        l.ln1_b = T("norm1.bias");
+        l.ln2_w = T("norm2.weight");
+        l.ln2_b = T("norm2.bias");
+        l.ln3_w = T("norm3.weight");
+        l.ln3_b = T("norm3.bias");
     }
 
     // ARM
@@ -306,26 +308,25 @@ posformer_ocr_context * posformer_ocr_init(const char * model_path, int n_thread
     if (!gctx) return nullptr;
 
     auto & hp = ctx->hparams;
-    hp.growth_rate        = core_gguf::kv_u32(gctx, "posformer.encoder.growth_rate", 24);
-    hp.num_layers         = core_gguf::kv_u32(gctx, "posformer.encoder.num_layers", 16);
-    hp.input_channels     = core_gguf::kv_u32(gctx, "posformer.encoder.input_channels", 1);
-    hp.d_model            = core_gguf::kv_u32(gctx, "posformer.decoder.d_model", 256);
-    hp.nhead              = core_gguf::kv_u32(gctx, "posformer.decoder.nhead", 8);
+    hp.growth_rate = core_gguf::kv_u32(gctx, "posformer.encoder.growth_rate", 24);
+    hp.num_layers = core_gguf::kv_u32(gctx, "posformer.encoder.num_layers", 16);
+    hp.input_channels = core_gguf::kv_u32(gctx, "posformer.encoder.input_channels", 1);
+    hp.d_model = core_gguf::kv_u32(gctx, "posformer.decoder.d_model", 256);
+    hp.nhead = core_gguf::kv_u32(gctx, "posformer.decoder.nhead", 8);
     hp.num_decoder_layers = core_gguf::kv_u32(gctx, "posformer.decoder.num_layers", 3);
-    hp.dim_feedforward    = core_gguf::kv_u32(gctx, "posformer.decoder.dim_feedforward", 1024);
-    hp.vocab_size         = core_gguf::kv_u32(gctx, "posformer.decoder.vocab_size", 113);
-    hp.max_len            = core_gguf::kv_u32(gctx, "posformer.decoder.max_len", 200);
-    hp.pad_token          = core_gguf::kv_u32(gctx, "posformer.decoder.pad_token", 0);
-    hp.sos_token          = core_gguf::kv_u32(gctx, "posformer.decoder.sos_token", 1);
-    hp.eos_token          = core_gguf::kv_u32(gctx, "posformer.decoder.eos_token", 2);
-    hp.arm_dc             = core_gguf::kv_u32(gctx, "posformer.arm.dc", 32);
+    hp.dim_feedforward = core_gguf::kv_u32(gctx, "posformer.decoder.dim_feedforward", 1024);
+    hp.vocab_size = core_gguf::kv_u32(gctx, "posformer.decoder.vocab_size", 113);
+    hp.max_len = core_gguf::kv_u32(gctx, "posformer.decoder.max_len", 200);
+    hp.pad_token = core_gguf::kv_u32(gctx, "posformer.decoder.pad_token", 0);
+    hp.sos_token = core_gguf::kv_u32(gctx, "posformer.decoder.sos_token", 1);
+    hp.eos_token = core_gguf::kv_u32(gctx, "posformer.decoder.eos_token", 2);
+    hp.arm_dc = core_gguf::kv_u32(gctx, "posformer.arm.dc", 32);
 
     ctx->vocab = core_gguf::kv_str_array(gctx, "tokenizer.tokens");
     core_gguf::free_metadata(gctx);
 
-    fprintf(stderr, "posformer_ocr: growth=%d layers=%d d=%d heads=%d dec=%d vocab=%d(%zu) dc=%d\n",
-            hp.growth_rate, hp.num_layers, hp.d_model, hp.nhead,
-            hp.num_decoder_layers, hp.vocab_size, ctx->vocab.size(), hp.arm_dc);
+    fprintf(stderr, "posformer_ocr: growth=%d layers=%d d=%d heads=%d dec=%d vocab=%d(%zu) dc=%d\n", hp.growth_rate,
+            hp.num_layers, hp.d_model, hp.nhead, hp.num_decoder_layers, hp.vocab_size, ctx->vocab.size(), hp.arm_dc);
 
     // Prefer GPU backend — weights read via ggml_backend_tensor_get (GPU-safe).
     // Residency: all compute runs on the CPU enc_sched; ctx->backend only holds
@@ -369,22 +370,18 @@ const posformer_ocr_hparams * posformer_ocr_get_hparams(const posformer_ocr_cont
 // ggml graph: DenseNet encoder (identical to BTTR except no ReLU after proj)
 // ---------------------------------------------------------------------------
 
-static ggml_tensor * pf_prep_conv(ggml_context * g, ggml_tensor * w,
-                                   int IC, int KH, int KW) {
+static ggml_tensor * pf_prep_conv(ggml_context * g, ggml_tensor * w, int IC, int KH, int KW) {
     if (!w) return nullptr;
     if (ggml_n_dims(w) == 2) {
-        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
-            w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16) w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
         w = ggml_reshape_4d(g, w, KW, KH, IC, w->ne[1]);
     }
-    if (w->type != GGML_TYPE_F16)
-        w = ggml_cast(g, w, GGML_TYPE_F16);
+    if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
     return w;
 }
 
-static ggml_tensor * pf_conv(ggml_context * g, ggml_tensor * x,
-                              ggml_tensor * w, ggml_tensor * bias,
-                              int IC, int KH, int KW, int stride, int pad) {
+static ggml_tensor * pf_conv(ggml_context * g, ggml_tensor * x, ggml_tensor * w, ggml_tensor * bias, int IC, int KH,
+                             int KW, int stride, int pad) {
     w = pf_prep_conv(g, w, IC, KH, KW);
     x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
     if (bias) {
@@ -394,9 +391,8 @@ static ggml_tensor * pf_conv(ggml_context * g, ggml_tensor * x,
     return x;
 }
 
-static ggml_tensor * pf_bn(ggml_context * g, ggml_tensor * x,
-                             ggml_tensor * scale, ggml_tensor * offset) {
-    ggml_tensor * s = ggml_reshape_3d(g, scale,  1, 1, scale->ne[0]);
+static ggml_tensor * pf_bn(ggml_context * g, ggml_tensor * x, ggml_tensor * scale, ggml_tensor * offset) {
+    ggml_tensor * s = ggml_reshape_3d(g, scale, 1, 1, scale->ne[0]);
     ggml_tensor * o = ggml_reshape_3d(g, offset, 1, 1, offset->ne[0]);
     return ggml_add(g, ggml_mul(g, x, s), o);
 }
@@ -406,8 +402,7 @@ static ggml_cgraph * build_pf_encoder_graph(posformer_ocr_context * ctx, int W, 
     const int gr = hp.growth_rate, bn_size = 4, init_ch = 2 * gr;
 
     int graph_size = 48 * 40 + 600;
-    size_t buf_size = ggml_tensor_overhead() * (graph_size + 200)
-                    + ggml_graph_overhead_custom(graph_size, false);
+    size_t buf_size = ggml_tensor_overhead() * (graph_size + 200) + ggml_graph_overhead_custom(graph_size, false);
     ctx->enc_compute_meta.resize(buf_size);
     ggml_init_params ip = { buf_size, ctx->enc_compute_meta.data(), true };
     ggml_context * g = ggml_init(ip);
@@ -427,7 +422,7 @@ static ggml_cgraph * build_pf_encoder_graph(posformer_ocr_context * ctx, int W, 
             if (!l.conv1_w) continue;
             ggml_tensor * bot = pf_conv(g, x, l.conv1_w, l.conv1_b, cur_ch, 1, 1, 1, 0);
             bot = ggml_relu(g, bot);
-            ggml_tensor * nf = pf_conv(g, bot, l.conv2_w, l.conv2_b, bn_size*gr, 3, 3, 1, 1);
+            ggml_tensor * nf = pf_conv(g, bot, l.conv2_w, l.conv2_b, bn_size * gr, 3, 3, 1, 1);
             nf = ggml_relu(g, nf);
             x = ggml_concat(g, x, nf, 2);
             cur_ch += gr;
@@ -441,8 +436,10 @@ static ggml_cgraph * build_pf_encoder_graph(posformer_ocr_context * ctx, int W, 
         cur_ch = out_ch;
     };
 
-    dense_block(ctx->block1); transition(ctx->trans1);
-    dense_block(ctx->block2); transition(ctx->trans2);
+    dense_block(ctx->block1);
+    transition(ctx->trans1);
+    dense_block(ctx->block2);
+    transition(ctx->trans2);
     dense_block(ctx->block3);
 
     x = pf_bn(g, x, ctx->post_norm_scale, ctx->post_norm_offset);
@@ -455,8 +452,7 @@ static ggml_cgraph * build_pf_encoder_graph(posformer_ocr_context * ctx, int W, 
     return gf;
 }
 
-static void run_encoder_ggml(posformer_ocr_context * ctx,
-                              const float * gray, int W, int H) {
+static void run_encoder_ggml(posformer_ocr_context * ctx, const float * gray, int W, int H) {
     ggml_cgraph * gf = build_pf_encoder_graph(ctx, W, H);
     ggml_backend_sched_reset(ctx->enc_sched);
     if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
@@ -472,8 +468,8 @@ static void run_encoder_ggml(posformer_ocr_context * ctx,
         ggml_backend_dev_t dev = ggml_backend_get_device(be);
         ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
         if (reg) {
-            auto * fn = (ggml_backend_set_n_threads_t)
-                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            auto * fn =
+                (ggml_backend_set_n_threads_t)ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
             if (fn) fn(be, ctx->n_threads);
         }
     }
@@ -491,8 +487,7 @@ static void run_encoder_ggml(posformer_ocr_context * ctx,
 
     ctx->encoder_output.resize(n_pos * D);
     for (int c = 0; c < D; c++)
-        for (int i = 0; i < n_pos; i++)
-            ctx->encoder_output[i * D + c] = chw[c * n_pos + i];
+        for (int i = 0; i < n_pos; i++) ctx->encoder_output[i * D + c] = chw[c * n_pos + i];
 
     // 2D PE (before LayerNorm for PosFormer)
     {
@@ -501,40 +496,36 @@ static void run_encoder_ggml(posformer_ocr_context * ctx,
             const int half_d = D / 2, quarter_d = half_d / 2;
             const float scale = 2.0f * (float)M_PI;
             std::vector<float> inv_freq(quarter_d);
-            for (int i = 0; i < quarter_d; i++)
-                inv_freq[i] = 1.0f / powf(10000.0f, (float)(2*i) / (float)half_d);
+            for (int i = 0; i < quarter_d; i++) inv_freq[i] = 1.0f / powf(10000.0f, (float)(2 * i) / (float)half_d);
             ctx->pe_cache.assign(n_pos * D, 0.0f);
             for (int y = 0; y < cur_h; y++)
                 for (int x = 0; x < cur_w; x++) {
-                    float y_norm = scale * (float)(y+1) / (float)cur_h;
-                    float x_norm = scale * (float)(x+1) / (float)cur_w;
+                    float y_norm = scale * (float)(y + 1) / (float)cur_h;
+                    float x_norm = scale * (float)(x + 1) / (float)cur_w;
                     float * pe = ctx->pe_cache.data() + (y * cur_w + x) * D;
                     for (int i = 0; i < quarter_d; i++) {
                         float freq = inv_freq[i];
-                        pe[2*i]          = sinf(x_norm * freq);
-                        pe[2*i + 1]      = cosf(x_norm * freq);
-                        pe[half_d + 2*i]     = sinf(y_norm * freq);
-                        pe[half_d + 2*i + 1] = cosf(y_norm * freq);
+                        pe[2 * i] = sinf(x_norm * freq);
+                        pe[2 * i + 1] = cosf(x_norm * freq);
+                        pe[half_d + 2 * i] = sinf(y_norm * freq);
+                        pe[half_d + 2 * i + 1] = cosf(y_norm * freq);
                     }
                 }
             ctx->pe_cache_h = cur_h;
             ctx->pe_cache_w = cur_w;
         }
-        for (int i = 0; i < n_pos * D; i++)
-            ctx->encoder_output[i] += ctx->pe_cache[i];
+        for (int i = 0; i < n_pos * D; i++) ctx->encoder_output[i] += ctx->pe_cache[i];
     }
 
     // LayerNorm per position (after PE for PosFormer)
     const float * ln_w = tf32(ctx, ctx->enc_ln_w);
     const float * ln_b = tf32(ctx, ctx->enc_ln_b);
-    for (int i = 0; i < n_pos; i++)
-        layernorm(ctx->encoder_output.data() + i * D, D, ln_w, ln_b);
+    for (int i = 0; i < n_pos; i++) layernorm(ctx->encoder_output.data() + i * D, D, ln_w, ln_b);
 
     ctx->n_enc_pos = n_pos;
     ctx->enc_h = out_h;
     ctx->enc_w = out_w;
-    fprintf(stderr, "posformer_ocr: encoder (ggml): (%d, %d, %d) → %d positions × %d\n",
-            D, out_h, out_w, n_pos, D);
+    fprintf(stderr, "posformer_ocr: encoder (ggml): (%d, %d, %d) → %d positions × %d\n", D, out_h, out_w, n_pos, D);
 }
 
 // ---------------------------------------------------------------------------
@@ -547,10 +538,10 @@ static void run_encoder(posformer_ocr_context * ctx, const float * gray, int W, 
     const int bn_size = 4;
     const int init_ch = 2 * gr;
 
-    int h1 = (H + 2*3 - 7) / 2 + 1, w1 = (W + 2*3 - 7) / 2 + 1;
+    int h1 = (H + 2 * 3 - 7) / 2 + 1, w1 = (W + 2 * 3 - 7) / 2 + 1;
     std::vector<float> feat(init_ch * h1 * w1);
-    conv2d(gray, 1, H, W, tf32(ctx, ctx->stem_conv_w), tf32(ctx, ctx->stem_conv_b),
-           init_ch, 7, 7, 2, 3, feat.data(), h1, w1);
+    conv2d(gray, 1, H, W, tf32(ctx, ctx->stem_conv_w), tf32(ctx, ctx->stem_conv_b), init_ch, 7, 7, 2, 3, feat.data(),
+           h1, w1);
     relu_ip(feat.data(), init_ch * h1 * w1);
 
     int h2 = (h1 + 1) / 2, w2 = (w1 + 1) / 2;
@@ -566,14 +557,12 @@ static void run_encoder(posformer_ocr_context * ctx, const float * gray, int W, 
             if (!l.conv1_w) continue;
             int bn_ch = bn_size * gr;
             std::vector<float> bot(bn_ch * sp);
-            conv2d(features.data(), cur_ch, cur_h, cur_w,
-                   tf32(ctx, l.conv1_w), tf32(ctx, l.conv1_b),
-                   bn_ch, 1, 1, 1, 0, bot.data(), cur_h, cur_w);
+            conv2d(features.data(), cur_ch, cur_h, cur_w, tf32(ctx, l.conv1_w), tf32(ctx, l.conv1_b), bn_ch, 1, 1, 1, 0,
+                   bot.data(), cur_h, cur_w);
             relu_ip(bot.data(), bn_ch * sp);
             std::vector<float> nf(gr * sp);
-            conv2d(bot.data(), bn_ch, cur_h, cur_w,
-                   tf32(ctx, l.conv2_w), tf32(ctx, l.conv2_b),
-                   gr, 3, 3, 1, 1, nf.data(), cur_h, cur_w);
+            conv2d(bot.data(), bn_ch, cur_h, cur_w, tf32(ctx, l.conv2_w), tf32(ctx, l.conv2_b), gr, 3, 3, 1, 1,
+                   nf.data(), cur_h, cur_w);
             relu_ip(nf.data(), gr * sp);
             features.resize((cur_ch + gr) * sp);
             memcpy(features.data() + cur_ch * sp, nf.data(), gr * sp * sizeof(float));
@@ -585,16 +574,16 @@ static void run_encoder(posformer_ocr_context * ctx, const float * gray, int W, 
         int sp = cur_h * cur_w;
         int out_ch = cur_ch / 2;
         std::vector<float> conv_out(out_ch * sp);
-        conv2d(features.data(), cur_ch, cur_h, cur_w,
-               tf32(ctx, t.conv_w), tf32(ctx, t.conv_b),
-               out_ch, 1, 1, 1, 0, conv_out.data(), cur_h, cur_w);
+        conv2d(features.data(), cur_ch, cur_h, cur_w, tf32(ctx, t.conv_w), tf32(ctx, t.conv_b), out_ch, 1, 1, 1, 0,
+               conv_out.data(), cur_h, cur_w);
         relu_ip(conv_out.data(), out_ch * sp);
         int oh = (cur_h + 1) / 2, ow = (cur_w + 1) / 2;
         std::vector<float> pool_out(out_ch * oh * ow);
-        avgpool2d_ceil(conv_out.data(), out_ch, cur_h, cur_w,
-                       2, 2, pool_out.data(), oh, ow);
+        avgpool2d_ceil(conv_out.data(), out_ch, cur_h, cur_w, 2, 2, pool_out.data(), oh, ow);
         features = std::move(pool_out);
-        cur_ch = out_ch; cur_h = oh; cur_w = ow;
+        cur_ch = out_ch;
+        cur_h = oh;
+        cur_w = ow;
     };
 
     run_block(ctx->block1);
@@ -604,35 +593,31 @@ static void run_encoder(posformer_ocr_context * ctx, const float * gray, int W, 
     run_block(ctx->block3);
 
     int sp = cur_h * cur_w;
-    apply_bn(features.data(), cur_ch, sp,
-             tf32(ctx, ctx->post_norm_scale), tf32(ctx, ctx->post_norm_offset));
+    apply_bn(features.data(), cur_ch, sp, tf32(ctx, ctx->post_norm_scale), tf32(ctx, ctx->post_norm_offset));
 
     const int D = hp.d_model;
     std::vector<float> proj(D * sp);
-    conv2d(features.data(), cur_ch, cur_h, cur_w,
-           tf32(ctx, ctx->feat_proj_w), tf32(ctx, ctx->feat_proj_b),
-           D, 1, 1, 1, 0, proj.data(), cur_h, cur_w);
+    conv2d(features.data(), cur_ch, cur_h, cur_w, tf32(ctx, ctx->feat_proj_w), tf32(ctx, ctx->feat_proj_b), D, 1, 1, 1,
+           0, proj.data(), cur_h, cur_w);
     // No ReLU here — PyTorch's feature_proj is a plain Conv2d
 
     int n_pos = cur_h * cur_w;
     ctx->encoder_output.resize(n_pos * D);
     // Transpose from [D, h*w] to [h*w, D]
     for (int c = 0; c < D; c++)
-        for (int i = 0; i < n_pos; i++)
-            ctx->encoder_output[i * D + c] = proj[c * n_pos + i];
+        for (int i = 0; i < n_pos; i++) ctx->encoder_output[i * D + c] = proj[c * n_pos + i];
 
     // 2D positional encoding (DETR-style) — applied BEFORE LayerNorm
     // Cache the PE buffer: it depends only on (cur_h, cur_w, D).
     {
         if (cur_h != ctx->pe_cache_h || cur_w != ctx->pe_cache_w) {
             // Recompute and store PE into cache.
-            const int half_d = D / 2;        // 128
+            const int half_d = D / 2;         // 128
             const int quarter_d = half_d / 2; // 64
             const float scale = 2.0f * (float)M_PI;
             // 64 frequencies matching PyTorch's arange(0, half_d, 2)
             std::vector<float> inv_freq(quarter_d);
-            for (int i = 0; i < quarter_d; i++)
-                inv_freq[i] = 1.0f / powf(10000.0f, (float)(2 * i) / (float)half_d);
+            for (int i = 0; i < quarter_d; i++) inv_freq[i] = 1.0f / powf(10000.0f, (float)(2 * i) / (float)half_d);
 
             ctx->pe_cache.assign(n_pos * D, 0.0f);
             for (int y = 0; y < cur_h; y++)
@@ -643,13 +628,13 @@ static void run_encoder(posformer_ocr_context * ctx, const float * gray, int W, 
                     float * pe = ctx->pe_cache.data() + pos_idx * D;
                     for (int i = 0; i < quarter_d; i++) {
                         float freq = inv_freq[i];
-                        pe[2*i]     = sinf(x_norm * freq);
-                        pe[2*i + 1] = cosf(x_norm * freq);  // same freq for sin/cos pair
+                        pe[2 * i] = sinf(x_norm * freq);
+                        pe[2 * i + 1] = cosf(x_norm * freq); // same freq for sin/cos pair
                     }
                     for (int i = 0; i < quarter_d; i++) {
                         float freq = inv_freq[i];
-                        pe[half_d + 2*i]     = sinf(y_norm * freq);
-                        pe[half_d + 2*i + 1] = cosf(y_norm * freq);  // same freq
+                        pe[half_d + 2 * i] = sinf(y_norm * freq);
+                        pe[half_d + 2 * i + 1] = cosf(y_norm * freq); // same freq
                     }
                 }
             ctx->pe_cache_h = cur_h;
@@ -657,21 +642,18 @@ static void run_encoder(posformer_ocr_context * ctx, const float * gray, int W, 
         }
 
         // Add cached PE to encoder output.
-        for (int i = 0; i < n_pos * D; i++)
-            ctx->encoder_output[i] += ctx->pe_cache[i];
+        for (int i = 0; i < n_pos * D; i++) ctx->encoder_output[i] += ctx->pe_cache[i];
     }
 
     // LayerNorm — applied AFTER positional encoding
     const float * ln_w = tf32(ctx, ctx->enc_ln_w);
     const float * ln_b = tf32(ctx, ctx->enc_ln_b);
-    for (int i = 0; i < n_pos; i++)
-        layernorm(ctx->encoder_output.data() + i * D, D, ln_w, ln_b);
+    for (int i = 0; i < n_pos; i++) layernorm(ctx->encoder_output.data() + i * D, D, ln_w, ln_b);
 
     ctx->n_enc_pos = n_pos;
     ctx->enc_h = cur_h;
     ctx->enc_w = cur_w;
-    fprintf(stderr, "posformer_ocr: encoder: (%d, %d, %d) → %d positions × %d\n",
-            cur_ch, cur_h, cur_w, n_pos, D);
+    fprintf(stderr, "posformer_ocr: encoder: (%d, %d, %d) → %d positions × %d\n", cur_ch, cur_h, cur_w, n_pos, D);
 
     // Dump encoder output if requested
     const char * dump_dir = getenv("POSFORMER_DUMP");
@@ -679,7 +661,10 @@ static void run_encoder(posformer_ocr_context * ctx, const float * gray, int W, 
         char path[256];
         snprintf(path, sizeof(path), "%s/cpp_enc_output.f32", dump_dir);
         FILE * f = fopen(path, "wb");
-        if (f) { fwrite(ctx->encoder_output.data(), sizeof(float), n_pos * D, f); fclose(f); }
+        if (f) {
+            fwrite(ctx->encoder_output.data(), sizeof(float), n_pos * D, f);
+            fclose(f);
+        }
         fprintf(stderr, "posformer_ocr: dumped encoder output to %s\n", path);
     }
 }
@@ -712,18 +697,15 @@ static bool is_structural_token(int token_id) {
 // token_id: current token being decoded (for vocab masking)
 // Returns coverage_bias [nhead * n_enc] to subtract from cross-attn logits.
 // Updates coverage_accum in place.
-static void compute_arm(posformer_ocr_context * ctx,
-                        float * coverage_accum,
-                        const float * prev_attn, const float * curr_attn,
-                        int token_id,
-                        float * coverage_bias) {
+static void compute_arm(posformer_ocr_context * ctx, float * coverage_accum, const float * prev_attn,
+                        const float * curr_attn, int token_id, float * coverage_bias) {
     const auto & hp = ctx->hparams;
     const int nhead = hp.nhead;
     const int n_enc = ctx->n_enc_pos;
     const int h = ctx->enc_h;
     const int w = ctx->enc_w;
     const int dc = hp.arm_dc;
-    const int in_ch = 2 * nhead;  // 16
+    const int in_ch = 2 * nhead; // 16
 
     // The coverage input is the accumulated attention from all previous steps.
     // We need it in spatial layout [2*nhead, h, w] for the conv.
@@ -734,24 +716,22 @@ static void compute_arm(posformer_ocr_context * ctx,
     const float * conv_w = tf32(ctx, ctx->arm.conv_w);
     const float * conv_b = tf32(ctx, ctx->arm.conv_b);
     std::vector<float> conv_out(dc * h * w);
-    conv2d(coverage_accum, in_ch, h, w, conv_w, conv_b,
-           dc, 5, 5, 1, 2, conv_out.data(), h, w);
+    conv2d(coverage_accum, in_ch, h, w, conv_w, conv_b, dc, 5, 5, 1, 2, conv_out.data(), h, w);
     relu_ip(conv_out.data(), dc * h * w);
 
     // Conv2d(dc=32, nhead=8, k=1) + BN-folded bias
     const float * proj_w = tf32(ctx, ctx->arm.proj_w);
     const float * proj_b = tf32(ctx, ctx->arm.proj_b);
     // Output is [nhead, h, w], flatten to [nhead, n_enc]
-    conv2d(conv_out.data(), dc, h, w, proj_w, proj_b,
-           nhead, 1, 1, 1, 0, coverage_bias, h, w);
+    conv2d(conv_out.data(), dc, h, w, proj_w, proj_b, nhead, 1, 1, 1, 0, coverage_bias, h, w);
 
     // Update coverage accumulator with current step's attention
     // Concat prev_attn and curr_attn into [2*nhead, n_enc]
     // Apply vocab mask (zero out if structural token)
     if (!is_structural_token(token_id)) {
         for (int i = 0; i < nhead * n_enc; i++) {
-            coverage_accum[i] += prev_attn[i];                  // prev_attn channels
-            coverage_accum[nhead * n_enc + i] += curr_attn[i];  // curr_attn channels
+            coverage_accum[i] += prev_attn[i];                 // prev_attn channels
+            coverage_accum[nhead * n_enc + i] += curr_attn[i]; // curr_attn channels
         }
     }
     // If structural token, don't accumulate (masking = zero contribution)
@@ -828,18 +808,15 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
         ca_ck[li].resize(n_enc * D);
         ca_cv[li].resize(n_enc * D);
         for (int p = 0; p < n_enc; p++) {
-            linear(ctx->encoder_output.data() + p * D, D,
-                   Wk, Bk, D, ca_ck[li].data() + p * D);
-            linear(ctx->encoder_output.data() + p * D, D,
-                   Wv, Bv, D, ca_cv[li].data() + p * D);
+            linear(ctx->encoder_output.data() + p * D, D, Wk, Bk, D, ca_ck[li].data() + p * D);
+            linear(ctx->encoder_output.data() + p * D, D, Wv, Bv, D, ca_cv[li].data() + p * D);
         }
     }
 
     // ARM coverage accumulators
     const int n_arm = hp.num_decoder_layers - 1;
     std::vector<std::vector<float>> arm_accum(n_arm);
-    for (int i = 0; i < n_arm; i++)
-        arm_accum[i].assign(2 * nhead * n_enc, 0.0f);
+    for (int i = 0; i < n_arm; i++) arm_accum[i].assign(2 * nhead * n_enc, 0.0f);
 
     std::vector<int> tokens;
     int prev_token = hp.sos_token;
@@ -851,9 +828,7 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
             const float * emb = tf32(ctx, ctx->word_embed_w);
             memcpy(ds.x.data(), emb + prev_token * D, D * sizeof(float));
         }
-        layernorm(ds.x.data(), D,
-                  tf32(ctx, ctx->word_embed_ln_w),
-                  tf32(ctx, ctx->word_embed_ln_b));
+        layernorm(ds.x.data(), D, tf32(ctx, ctx->word_embed_ln_w), tf32(ctx, ctx->word_embed_ln_b));
 
         if (ctx->pos_enc && step < 500) {
             const float * pe = tf32(ctx, ctx->pos_enc);
@@ -866,9 +841,8 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
             const auto & l = ctx->dec_layers[li];
 
             // --- Self-attention ---
-            linear(ds.x.data(), D, tf32(ctx, l.sa_qkv_w), tf32(ctx, l.sa_qkv_b),
-                   3 * D, ds.qkv.data());
-            float * q = ds.qkv.data(), * k = ds.qkv.data() + D, * v = ds.qkv.data() + 2*D;
+            linear(ds.x.data(), D, tf32(ctx, l.sa_qkv_w), tf32(ctx, l.sa_qkv_b), 3 * D, ds.qkv.data());
+            float *q = ds.qkv.data(), *k = ds.qkv.data() + D, *v = ds.qkv.data() + 2 * D;
 
             memcpy(&kv_k[li][step * D], k, D * sizeof(float));
             memcpy(&kv_v[li][step * D], v, D * sizeof(float));
@@ -879,8 +853,7 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
                 int off = h * head_dim;
                 float max_s = -1e9f;
                 for (int ki = 0; ki < n_past; ki++) {
-                    ds.scores[ki] = core_cpu::dot_product(
-                        q + off, &kv_k[li][ki * D + off], head_dim) * scale;
+                    ds.scores[ki] = core_cpu::dot_product(q + off, &kv_k[li][ki * D + off], head_dim) * scale;
                     if (ds.scores[ki] > max_s) max_s = ds.scores[ki];
                 }
                 float sum_exp = 0;
@@ -892,13 +865,11 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
                 for (int ki = 0; ki < n_past; ki++) ds.scores[ki] *= inv;
                 for (int d = 0; d < head_dim; d++) {
                     float s = 0;
-                    for (int ki = 0; ki < n_past; ki++)
-                        s += ds.scores[ki] * kv_v[li][ki*D + off + d];
+                    for (int ki = 0; ki < n_past; ki++) s += ds.scores[ki] * kv_v[li][ki * D + off + d];
                     ds.attn_out[off + d] = s;
                 }
             }
-            linear(ds.attn_out.data(), D, tf32(ctx, l.sa_out_w),
-                   tf32(ctx, l.sa_out_b), D, ds.sa_proj.data());
+            linear(ds.attn_out.data(), D, tf32(ctx, l.sa_out_w), tf32(ctx, l.sa_out_b), D, ds.sa_proj.data());
             for (int i = 0; i < D; i++) ds.x[i] += ds.sa_proj[i];
             layernorm(ds.x.data(), D, tf32(ctx, l.ln1_w), tf32(ctx, l.ln1_b));
 
@@ -916,26 +887,22 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
                     int off = h * head_dim;
                     float max_s = -1e9f;
                     for (int ki = 0; ki < n_enc; ki++) {
-                        ds.raw_scores[h*n_enc+ki] = core_cpu::dot_product(
-                            ds.cq.data() + off, &ck[ki*D + off], head_dim) * scale;
-                        if (ds.raw_scores[h*n_enc+ki] > max_s)
-                            max_s = ds.raw_scores[h*n_enc+ki];
+                        ds.raw_scores[h * n_enc + ki] =
+                            core_cpu::dot_product(ds.cq.data() + off, &ck[ki * D + off], head_dim) * scale;
+                        if (ds.raw_scores[h * n_enc + ki] > max_s) max_s = ds.raw_scores[h * n_enc + ki];
                     }
                     float sum_exp = 0;
                     for (int ki = 0; ki < n_enc; ki++) {
-                        ds.raw_scores[h*n_enc+ki] = expf(ds.raw_scores[h*n_enc+ki] - max_s);
-                        sum_exp += ds.raw_scores[h*n_enc+ki];
+                        ds.raw_scores[h * n_enc + ki] = expf(ds.raw_scores[h * n_enc + ki] - max_s);
+                        sum_exp += ds.raw_scores[h * n_enc + ki];
                     }
                     float inv = 1.0f / sum_exp;
-                    for (int ki = 0; ki < n_enc; ki++)
-                        ds.raw_scores[h*n_enc+ki] *= inv;
+                    for (int ki = 0; ki < n_enc; ki++) ds.raw_scores[h * n_enc + ki] *= inv;
                 }
 
                 if (li > 0) {
                     // Apply ARM
-                    compute_arm(ctx, arm_accum[li - 1].data(),
-                                ds.prev_layer_ca_weights.data(),
-                                ds.raw_scores.data(),
+                    compute_arm(ctx, arm_accum[li - 1].data(), ds.prev_layer_ca_weights.data(), ds.raw_scores.data(),
                                 prev_token, ds.cov_bias.data());
 
                     // Recompute attention with coverage bias
@@ -943,26 +910,24 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
                         int off = h * head_dim;
                         float max_s = -1e9f;
                         for (int ki = 0; ki < n_enc; ki++) {
-                            float logit = core_cpu::dot_product(
-                                ds.cq.data() + off, &ck[ki*D + off], head_dim) * scale
-                                - ds.cov_bias[h*n_enc+ki];
-                            ds.raw_scores[h*n_enc+ki] = logit;
+                            float logit =
+                                core_cpu::dot_product(ds.cq.data() + off, &ck[ki * D + off], head_dim) * scale -
+                                ds.cov_bias[h * n_enc + ki];
+                            ds.raw_scores[h * n_enc + ki] = logit;
                             if (logit > max_s) max_s = logit;
                         }
                         float sum_exp = 0;
                         for (int ki = 0; ki < n_enc; ki++) {
-                            ds.raw_scores[h*n_enc+ki] = expf(ds.raw_scores[h*n_enc+ki] - max_s);
-                            sum_exp += ds.raw_scores[h*n_enc+ki];
+                            ds.raw_scores[h * n_enc + ki] = expf(ds.raw_scores[h * n_enc + ki] - max_s);
+                            sum_exp += ds.raw_scores[h * n_enc + ki];
                         }
                         float inv = 1.0f / sum_exp;
-                        for (int ki = 0; ki < n_enc; ki++)
-                            ds.raw_scores[h*n_enc+ki] *= inv;
+                        for (int ki = 0; ki < n_enc; ki++) ds.raw_scores[h * n_enc + ki] *= inv;
                     }
                 }
 
                 // Save for next layer's ARM
-                memcpy(ds.prev_layer_ca_weights.data(), ds.raw_scores.data(),
-                       nhead * n_enc * sizeof(float));
+                memcpy(ds.prev_layer_ca_weights.data(), ds.raw_scores.data(), nhead * n_enc * sizeof(float));
 
                 // Weighted sum of values
                 memset(ds.ca_out.data(), 0, D * sizeof(float));
@@ -970,12 +935,11 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
                     for (int d = 0; d < head_dim; d++) {
                         float s = 0;
                         for (int ki = 0; ki < n_enc; ki++)
-                            s += ds.raw_scores[h*n_enc+ki] * cv[ki*D+h*head_dim+d];
-                        ds.ca_out[h*head_dim+d] = s;
+                            s += ds.raw_scores[h * n_enc + ki] * cv[ki * D + h * head_dim + d];
+                        ds.ca_out[h * head_dim + d] = s;
                     }
 
-                linear(ds.ca_out.data(), D, tf32(ctx, l.ca_out_w),
-                       tf32(ctx, l.ca_out_b), D, ds.ca_proj.data());
+                linear(ds.ca_out.data(), D, tf32(ctx, l.ca_out_w), tf32(ctx, l.ca_out_b), D, ds.ca_proj.data());
                 for (int i = 0; i < D; i++) ds.x[i] += ds.ca_proj[i];
                 layernorm(ds.x.data(), D, tf32(ctx, l.ln2_w), tf32(ctx, l.ln2_b));
             }
@@ -983,30 +947,30 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
             // --- FFN ---
             {
                 const int F = hp.dim_feedforward;
-                linear(ds.x.data(), D, tf32(ctx, l.ff_up_w),
-                       tf32(ctx, l.ff_up_b), F, ds.ffn_up.data());
+                linear(ds.x.data(), D, tf32(ctx, l.ff_up_w), tf32(ctx, l.ff_up_b), F, ds.ffn_up.data());
                 relu_ip(ds.ffn_up.data(), F);
-                linear(ds.ffn_up.data(), F, tf32(ctx, l.ff_down_w),
-                       tf32(ctx, l.ff_down_b), D, ds.ffn_down.data());
+                linear(ds.ffn_up.data(), F, tf32(ctx, l.ff_down_w), tf32(ctx, l.ff_down_b), D, ds.ffn_down.data());
                 for (int i = 0; i < D; i++) ds.x[i] += ds.ffn_down[i];
                 layernorm(ds.x.data(), D, tf32(ctx, l.ln3_w), tf32(ctx, l.ln3_b));
             }
         }
 
         // Output projection
-        linear(ds.x.data(), D, tf32(ctx, ctx->proj_w), tf32(ctx, ctx->proj_b),
-               V, ds.logits.data());
+        linear(ds.x.data(), D, tf32(ctx, ctx->proj_w), tf32(ctx, ctx->proj_b), V, ds.logits.data());
 
         int best = 0;
         float best_score = ds.logits[0];
         for (int v = 1; v < V; v++)
-            if (ds.logits[v] > best_score) { best_score = ds.logits[v]; best = v; }
+            if (ds.logits[v] > best_score) {
+                best_score = ds.logits[v];
+                best = v;
+            }
 
         // Debug: dump top-5 logits
         {
-            std::vector<std::pair<float,int>> scored(V);
-            for (int v = 0; v < V; v++) scored[v] = {ds.logits[v], v};
-            std::sort(scored.begin(), scored.end(), [](auto &a, auto &b){ return a.first > b.first; });
+            std::vector<std::pair<float, int>> scored(V);
+            for (int v = 0; v < V; v++) scored[v] = { ds.logits[v], v };
+            std::sort(scored.begin(), scored.end(), [](auto & a, auto & b) { return a.first > b.first; });
             fprintf(stderr, "  step %d: token=%d '%s' | top5:", step, best,
                     best < (int)ctx->vocab.size() ? ctx->vocab[best].c_str() : "?");
             for (int i = 0; i < 5 && i < V; i++)
@@ -1020,7 +984,10 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
                 char path[256];
                 snprintf(path, sizeof(path), "%s/cpp_step%03d_logits.f32", dump_dir, step);
                 FILE * f = fopen(path, "wb");
-                if (f) { fwrite(ds.logits.data(), sizeof(float), V, f); fclose(f); }
+                if (f) {
+                    fwrite(ds.logits.data(), sizeof(float), V, f);
+                    fclose(f);
+                }
             }
         }
 
@@ -1050,8 +1017,7 @@ static std::string greedy_decode(posformer_ocr_context * ctx) {
 // Public API
 // ---------------------------------------------------------------------------
 
-static bool scale_to_fit(const float * src, int sw, int sh,
-                         std::vector<float> & dst, int & dw, int & dh,
+static bool scale_to_fit(const float * src, int sw, int sh, std::vector<float> & dst, int & dw, int & dh,
                          int max_pixels = 100000) {
     if (sw * sh <= max_pixels) return false;
     float ratio = sqrtf((float)max_pixels / (sw * sh));
@@ -1068,19 +1034,15 @@ static bool scale_to_fit(const float * src, int sw, int sh,
             int x0 = std::max(0, std::min((int)sx, sw - 1));
             int x1 = std::min(x0 + 1, sw - 1);
             float fx = sx - x0;
-            dst[y * dw + x] =
-                src[y0*sw+x0]*(1-fx)*(1-fy) + src[y0*sw+x1]*fx*(1-fy) +
-                src[y1*sw+x0]*(1-fx)*fy     + src[y1*sw+x1]*fx*fy;
+            dst[y * dw + x] = src[y0 * sw + x0] * (1 - fx) * (1 - fy) + src[y0 * sw + x1] * fx * (1 - fy) +
+                              src[y1 * sw + x0] * (1 - fx) * fy + src[y1 * sw + x1] * fx * fy;
         }
     }
     return true;
 }
 
-const char * posformer_ocr_recognize(
-    posformer_ocr_context * ctx,
-    const float * pixels, int width, int height,
-    int * out_len
-) {
+const char * posformer_ocr_recognize(posformer_ocr_context * ctx, const float * pixels, int width, int height,
+                                     int * out_len) {
     if (!ctx || !pixels || width <= 0 || height <= 0) return nullptr;
 
     const bool bench = ctx->bench;
@@ -1107,41 +1069,43 @@ const char * posformer_ocr_recognize(
         input = scaled.data();
         fprintf(stderr, "posformer_ocr: scaled %dx%d → %dx%d\n", width, height, w, h);
     }
-    if (bench) fprintf(stderr, "[posformer-bench] preprocess: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[posformer-bench] preprocess: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     t0 = std::chrono::steady_clock::now();
     if (ctx->enc_sched && !std::getenv("POSFORMER_SCALAR_ENCODER"))
         run_encoder_ggml(ctx, input, w, h);
     else
         run_encoder(ctx, input, w, h);
-    if (bench) fprintf(stderr, "[posformer-bench] encoder: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[posformer-bench] encoder: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     t0 = std::chrono::steady_clock::now();
     ctx->result_buf = greedy_decode(ctx);
-    if (bench) fprintf(stderr, "[posformer-bench] decoder: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[posformer-bench] decoder: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
-    if (bench) fprintf(stderr, "[posformer-bench] total: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
+    if (bench)
+        fprintf(stderr, "[posformer-bench] total: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
 }
 
-const char * posformer_ocr_recognize_raw(
-    posformer_ocr_context * ctx,
-    const uint8_t * pixel_bytes, int width, int height, int channels,
-    int * out_len
-) {
+const char * posformer_ocr_recognize_raw(posformer_ocr_context * ctx, const uint8_t * pixel_bytes, int width,
+                                         int height, int channels, int * out_len) {
     if (!ctx || !pixel_bytes || width <= 0 || height <= 0) return nullptr;
     std::vector<float> gray(width * height);
     for (int i = 0; i < width * height; i++) {
-        if (channels == 1) gray[i] = pixel_bytes[i] / 255.0f;
+        if (channels == 1)
+            gray[i] = pixel_bytes[i] / 255.0f;
         else if (channels >= 3) {
             int b = i * channels;
-            gray[i] = (0.299f*pixel_bytes[b] + 0.587f*pixel_bytes[b+1] + 0.114f*pixel_bytes[b+2]) / 255.0f;
+            gray[i] = (0.299f * pixel_bytes[b] + 0.587f * pixel_bytes[b + 1] + 0.114f * pixel_bytes[b + 2]) / 255.0f;
         }
     }
     return posformer_ocr_recognize(ctx, gray.data(), width, height, out_len);

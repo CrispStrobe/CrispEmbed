@@ -37,29 +37,29 @@ namespace cnn_embed {
 
 // A conv block: conv weight + optional bias + optional PReLU slope
 struct conv_block {
-    ggml_tensor * w     = nullptr;  // [KW, KH, IC, OC] or [KW, KH, 1, OC] for dw
-    ggml_tensor * bias  = nullptr;  // [OC]
-    ggml_tensor * prelu = nullptr;  // [1, 1, OC] PReLU slopes
+    ggml_tensor * w = nullptr;     // [KW, KH, IC, OC] or [KW, KH, 1, OC] for dw
+    ggml_tensor * bias = nullptr;  // [OC]
+    ggml_tensor * prelu = nullptr; // [1, 1, OC] PReLU slopes
     int stride = 1;
     int pad = 0;
-    int group = 1;  // 1 = normal, OC = depthwise
+    int group = 1; // 1 = normal, OC = depthwise
 };
 
 struct context {
-    std::string type;  // "recognition" or "detection"
+    std::string type; // "recognition" or "detection"
     std::string name;
-    std::string graph_topology;  // ONNX graph nodes string
+    std::string graph_topology; // ONNX graph nodes string
     int embed_dim = 0;
     int input_h = 112, input_w = 112;
 
     // Weights
-    std::vector<conv_block> blocks;  // sequential conv blocks
+    std::vector<conv_block> blocks; // sequential conv blocks
 
     // Final layers (recognition)
-    ggml_tensor * fc_w = nullptr, * fc_b = nullptr;
+    ggml_tensor *fc_w = nullptr, *fc_b = nullptr;
 
     // Precomputed BN: scale * x + shift (computed at load time)
-    std::vector<float> bn1_scale, bn1_shift;   // before flatten, dim=1024
+    std::vector<float> bn1_scale, bn1_shift;     // before flatten, dim=1024
     std::vector<float> fc_bn_scale, fc_bn_shift; // after FC, dim=128
 
     // Preprocessing constants
@@ -74,22 +74,25 @@ struct context {
     bool bench = false;
 };
 
-bool load(context** out, const char* path, int n_threads) {
-    auto* ctx = new context();
+bool load(context ** out, const char * path, int n_threads) {
+    auto * ctx = new context();
     *out = ctx;
     ctx->n_threads = n_threads;
     ctx->bench = (std::getenv("CRISPEMBED_CNN_EMBED_BENCH") != nullptr);
 
     // Read metadata
-    gguf_context* g = core_gguf::open_metadata(path);
-    if (!g) { fprintf(stderr, "cnn_embed: cannot open %s\n", path); return false; }
+    gguf_context * g = core_gguf::open_metadata(path);
+    if (!g) {
+        fprintf(stderr, "cnn_embed: cannot open %s\n", path);
+        return false;
+    }
 
-    auto str_val = [&](const char* k, const char* d) -> std::string {
+    auto str_val = [&](const char * k, const char * d) -> std::string {
         int64_t i = gguf_find_key(g, k);
         if (i < 0) return d;
         return gguf_get_val_str(g, i);
     };
-    auto u32_val = [&](const char* k, int d) -> int {
+    auto u32_val = [&](const char * k, int d) -> int {
         int64_t i = gguf_find_key(g, k);
         return i >= 0 ? (int)gguf_get_val_u32(g, i) : d;
     };
@@ -105,23 +108,21 @@ bool load(context** out, const char* path, int n_threads) {
 
     core_gguf::free_metadata(g);
 
-    fprintf(stderr, "cnn_embed: %s (%s), embed_dim=%d, input=%dx%d\n",
-            ctx->name.c_str(), ctx->type.c_str(), ctx->embed_dim,
-            ctx->input_h, ctx->input_w);
+    fprintf(stderr, "cnn_embed: %s (%s), embed_dim=%d, input=%dx%d\n", ctx->name.c_str(), ctx->type.c_str(),
+            ctx->embed_dim, ctx->input_h, ctx->input_w);
 
     // Load weights — prefer GPU backend when available
     bool force_cpu = (getenv("CNN_EMBED_FORCE_CPU") && atoi(getenv("CNN_EMBED_FORCE_CPU")));
     ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
-    if (ggml_backend_is_cpu(ctx->backend))
-        ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
+    if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
 
     if (!core_gguf::load_weights(path, ctx->backend, "cnn", ctx->wl)) {
         fprintf(stderr, "cnn_embed: failed to load weights\n");
         return false;
     }
 
-    auto get = [&](const std::string& n) -> ggml_tensor* {
+    auto get = [&](const std::string & n) -> ggml_tensor * {
         auto it = ctx->wl.tensors.find(n);
         return it != ctx->wl.tensors.end() ? it->second : nullptr;
     };
@@ -132,7 +133,7 @@ bool load(context** out, const char* path, int n_threads) {
         auto pfx = "conv_" + std::to_string(i);
 
         // Depthwise conv (if exists)
-        ggml_tensor* dw_w = get(pfx + "_dw_conv2d_weight");
+        ggml_tensor * dw_w = get(pfx + "_dw_conv2d_weight");
         if (dw_w) {
             conv_block dw;
             dw.w = dw_w;
@@ -141,16 +142,18 @@ bool load(context** out, const char* path, int n_threads) {
             // Depthwise: group = OC. For 4D [KW,KH,1,OC], ne[3]=OC.
             // For 2D-flattened [KH*KW, OC], ne[1]=OC.
             dw.group = (ggml_n_dims(dw_w) == 2) ? (int)dw_w->ne[1] : (int)dw_w->ne[3];
-            dw.pad = 1;  // 3x3 with pad=1
+            dw.pad = 1; // 3x3 with pad=1
             // Detect stride from layer index (conv_3, conv_5, conv_7, conv_13 have stride 2)
             // This is SFace-specific — a more general approach would read from metadata
-            if (i == 3 || i == 5 || i == 7 || i == 13) dw.stride = 2;
-            else dw.stride = 1;
+            if (i == 3 || i == 5 || i == 7 || i == 13)
+                dw.stride = 2;
+            else
+                dw.stride = 1;
             ctx->blocks.push_back(dw);
         }
 
         // Pointwise conv
-        ggml_tensor* pw_w = get(pfx + "_conv2d_weight");
+        ggml_tensor * pw_w = get(pfx + "_conv2d_weight");
         if (pw_w) {
             conv_block pw;
             pw.w = pw_w;
@@ -167,7 +170,7 @@ bool load(context** out, const char* path, int n_threads) {
                 pw.pad = (pw_w->ne[0] > 1) ? 1 : 0;
             }
             pw.stride = 1;
-            if (i == 1) pw.stride = 1;  // first conv is always stride 1
+            if (i == 1) pw.stride = 1; // first conv is always stride 1
             ctx->blocks.push_back(pw);
         }
     }
@@ -177,11 +180,11 @@ bool load(context** out, const char* path, int n_threads) {
     ctx->fc_b = get("pre_fc1_bias");
 
     // Precompute BN as scale * x + shift (avoids sqrt/div in ggml graph)
-    auto precompute_bn = [&](const char* prefix, std::vector<float>& scale, std::vector<float>& shift) {
-        ggml_tensor* gamma = get(std::string(prefix) + "_gamma");
-        ggml_tensor* beta  = get(std::string(prefix) + "_beta");
-        ggml_tensor* mean  = get(std::string(prefix) + "_moving_mean");
-        ggml_tensor* var   = get(std::string(prefix) + "_moving_var");
+    auto precompute_bn = [&](const char * prefix, std::vector<float> & scale, std::vector<float> & shift) {
+        ggml_tensor * gamma = get(std::string(prefix) + "_gamma");
+        ggml_tensor * beta = get(std::string(prefix) + "_beta");
+        ggml_tensor * mean = get(std::string(prefix) + "_moving_mean");
+        ggml_tensor * var = get(std::string(prefix) + "_moving_var");
         if (!gamma || !beta || !mean || !var) return;
         int n = (int)gamma->ne[0];
         scale.resize(n);
@@ -208,48 +211,46 @@ bool load(context** out, const char* path, int n_threads) {
 
     ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
 
-    fprintf(stderr, "cnn_embed: loaded %zu conv blocks + FC(%d)\n",
-            ctx->blocks.size(), ctx->embed_dim);
+    fprintf(stderr, "cnn_embed: loaded %zu conv blocks + FC(%d)\n", ctx->blocks.size(), ctx->embed_dim);
     return true;
 }
 
 // PReLU: max(0, x) + slope * min(0, x) = relu(x) + slope * (x - relu(x))
-static ggml_tensor* prelu_op(ggml_context* g, ggml_tensor* x, ggml_tensor* slope) {
+static ggml_tensor * prelu_op(ggml_context * g, ggml_tensor * x, ggml_tensor * slope) {
     if (!slope) return ggml_relu(g, x);
     // PReLU: relu(x) + slope * (x - relu(x))
     // ggml_mul requires b.ne can repeat to match a.ne, so put larger tensor first
-    ggml_tensor* pos = ggml_relu(g, x);
-    ggml_tensor* neg = ggml_sub(g, x, pos);       // negative part (same shape as x)
-    ggml_tensor* scaled = ggml_mul(g, neg, slope);  // neg * slope (slope broadcasts)
+    ggml_tensor * pos = ggml_relu(g, x);
+    ggml_tensor * neg = ggml_sub(g, x, pos);        // negative part (same shape as x)
+    ggml_tensor * scaled = ggml_mul(g, neg, slope); // neg * slope (slope broadcasts)
     return ggml_add(g, pos, scaled);
 }
 
 // BatchNorm (inference): (x - mean) * gamma / sqrt(var + eps) + beta
-static ggml_tensor* bn_op(ggml_context* g, ggml_tensor* x,
-                          ggml_tensor* gamma, ggml_tensor* beta,
-                          ggml_tensor* mean, ggml_tensor* var, float eps = 1e-5f) {
+static ggml_tensor * bn_op(ggml_context * g, ggml_tensor * x, ggml_tensor * gamma, ggml_tensor * beta,
+                           ggml_tensor * mean, ggml_tensor * var, float eps = 1e-5f) {
     if (!gamma) return x;
     // x: [W, H, C], gamma/beta/mean/var: [C]
     // Reshape to [1, 1, C] for broadcast
     int C = (int)gamma->ne[0];
-    ggml_tensor* m = ggml_reshape_3d(g, mean, 1, 1, C);
-    ggml_tensor* v = ggml_reshape_3d(g, var, 1, 1, C);
-    ggml_tensor* gm = ggml_reshape_3d(g, gamma, 1, 1, C);
-    ggml_tensor* bt = ggml_reshape_3d(g, beta, 1, 1, C);
+    ggml_tensor * m = ggml_reshape_3d(g, mean, 1, 1, C);
+    ggml_tensor * v = ggml_reshape_3d(g, var, 1, 1, C);
+    ggml_tensor * gm = ggml_reshape_3d(g, gamma, 1, 1, C);
+    ggml_tensor * bt = ggml_reshape_3d(g, beta, 1, 1, C);
 
-    ggml_tensor* xn = ggml_sub(g, x, m);
+    ggml_tensor * xn = ggml_sub(g, x, m);
     // inv_std = gamma / sqrt(var + eps) — precompute as a scale tensor
     // Since BN params are constants, we can compute this once on the host side.
     // But in a graph we need ggml ops. Use ggml_scale for eps addition:
     // Actually, var + eps can be done with ggml_add of a constant tensor.
     // Simpler: just do element-wise division + mul + add
-    ggml_tensor* ve = ggml_add(g, v, ggml_new_tensor_1d(g, GGML_TYPE_F32, 1));  // placeholder
+    ggml_tensor * ve = ggml_add(g, v, ggml_new_tensor_1d(g, GGML_TYPE_F32, 1)); // placeholder
     // This is getting complex — let's precompute inv_std on host instead
     // For now, skip runtime BN (assume BN is folded by converter)
     // If BN tensors are present but not folded, the output will be wrong
     // TODO: precompute BN scale/shift as single tensors in converter
     (void)ve;
-    return x;  // skip BN for now
+    return x; // skip BN for now
 }
 
 // Graph replayer types + forward declarations
@@ -259,10 +260,12 @@ struct graph_node {
     std::vector<std::string> inputs;
     std::string output;
 };
-static std::vector<graph_node> parse_graph(const std::string& graph_str);
-static ggml_tensor* replay_graph(ggml_context* g, context* ctx, ggml_tensor* input, const std::vector<graph_node>& nodes, std::vector<ggml_tensor*>& output_tensors, std::unordered_map<std::string, ggml_tensor*>* tensor_map_out = nullptr);
+static std::vector<graph_node> parse_graph(const std::string & graph_str);
+static ggml_tensor * replay_graph(ggml_context * g, context * ctx, ggml_tensor * input,
+                                  const std::vector<graph_node> & nodes, std::vector<ggml_tensor *> & output_tensors,
+                                  std::unordered_map<std::string, ggml_tensor *> * tensor_map_out = nullptr);
 
-std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
+std::vector<float> encode(context * ctx, const float * pixels, int H, int W) {
     if (!ctx || H != ctx->input_h || W != ctx->input_w) return {};
 
     const bool bench = ctx->bench;
@@ -273,24 +276,22 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
 
     // Graph size estimate
     int max_nodes = use_graph_replay ? 2000 : (n_blocks * 12 + 200);
-    size_t buf_size = ggml_tensor_overhead() * (max_nodes + 100)
-                    + ggml_graph_overhead_custom(max_nodes, false);
+    size_t buf_size = ggml_tensor_overhead() * (max_nodes + 100) + ggml_graph_overhead_custom(max_nodes, false);
     std::vector<uint8_t> buf(buf_size);
     struct ggml_init_params p = { buf_size, buf.data(), true };
-    ggml_context* g = ggml_init(p);
+    ggml_context * g = ggml_init(p);
 
     // Input: [W, H, 3] in ggml layout
-    ggml_tensor* x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, 3);
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, 3);
     ggml_set_name(x, "input");
     ggml_set_input(x);
 
     if (use_graph_replay) {
         // Generic ONNX graph replay for models without hardcoded block structure
-        fprintf(stderr, "cnn_embed: using graph replay (%zu chars topology)\n",
-                ctx->graph_topology.size());
+        fprintf(stderr, "cnn_embed: using graph replay (%zu chars topology)\n", ctx->graph_topology.size());
         auto nodes = parse_graph(ctx->graph_topology);
         fprintf(stderr, "cnn_embed: parsed %zu graph nodes\n", nodes.size());
-        std::vector<ggml_tensor*> outputs;
+        std::vector<ggml_tensor *> outputs;
         x = replay_graph(g, ctx, x, nodes, outputs);
         if (!x) {
             fprintf(stderr, "cnn_embed: graph replay failed\n");
@@ -298,97 +299,94 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
             return {};
         }
     } else {
-    // Sequential conv blocks (SFace MobileNet hardcoded path)
-    for (int i = 0; i < n_blocks; i++) {
-        const auto& blk = ctx->blocks[i];
-        if (!blk.w) continue;
+        // Sequential conv blocks (SFace MobileNet hardcoded path)
+        for (int i = 0; i < n_blocks; i++) {
+            const auto & blk = ctx->blocks[i];
+            if (!blk.w) continue;
 
-        // Handle 2D-flattened conv weights (from quantized GGUF)
-        ggml_tensor* w = blk.w;
-        if (ggml_n_dims(w) == 2) {
-            int64_t OC = w->ne[1], flat = w->ne[0];
-            int64_t IC = (blk.group > 1) ? 1 : (int64_t)x->ne[2];
-            int64_t ka = flat / IC;
-            int64_t KH = (ka == 1) ? 1 : (ka == 9) ? 3 : (ka == 25) ? 5 : (int64_t)std::sqrt((double)ka);
-            // Dequant Q8/Q4 → F32 first, then reshape to 4D, then cast to F16
-            if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16) {
-                w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+            // Handle 2D-flattened conv weights (from quantized GGUF)
+            ggml_tensor * w = blk.w;
+            if (ggml_n_dims(w) == 2) {
+                int64_t OC = w->ne[1], flat = w->ne[0];
+                int64_t IC = (blk.group > 1) ? 1 : (int64_t)x->ne[2];
+                int64_t ka = flat / IC;
+                int64_t KH = (ka == 1) ? 1 : (ka == 9) ? 3 : (ka == 25) ? 5 : (int64_t)std::sqrt((double)ka);
+                // Dequant Q8/Q4 → F32 first, then reshape to 4D, then cast to F16
+                if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16) {
+                    w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+                }
+                w = ggml_reshape_4d(g, w, KH, KH, IC, OC);
             }
-            w = ggml_reshape_4d(g, w, KH, KH, IC, OC);
+            // ggml_conv_2d requires F16 kernel — cast if needed
+            if (w->type != GGML_TYPE_F16) {
+                w = ggml_cast(g, w, GGML_TYPE_F16);
+            }
+
+            if (blk.group > 1) {
+                x = ggml_conv_2d_dw(g, w, x, blk.stride, blk.stride, blk.pad, blk.pad, 1, 1);
+            } else {
+                x = ggml_conv_2d(g, w, x, blk.stride, blk.stride, blk.pad, blk.pad, 1, 1);
+            }
+
+            if (blk.bias) {
+                // Conv output: [OW, OH, OC]. Bias: [OC] → reshape to [1, 1, OC]
+                int OC = (int)blk.bias->ne[0];
+                fprintf(stderr, "  block %d: conv out [%lld,%lld,%lld] bias [%lld] OC=%d\n", i, (long long)x->ne[0],
+                        (long long)x->ne[1], (long long)x->ne[2], (long long)blk.bias->ne[0], OC);
+                ggml_tensor * bias3d = ggml_reshape_3d(g, blk.bias, 1, 1, OC);
+                x = ggml_add(g, x, bias3d);
+            }
+
+            // PReLU activation
+            if (blk.prelu) {
+                fprintf(stderr, "  block %d: prelu shape [%lld,%lld,%lld] x [%lld,%lld,%lld]\n", i,
+                        (long long)blk.prelu->ne[0], (long long)blk.prelu->ne[1], (long long)blk.prelu->ne[2],
+                        (long long)x->ne[0], (long long)x->ne[1], (long long)x->ne[2]);
+            }
+            x = prelu_op(g, x, blk.prelu);
         }
-        // ggml_conv_2d requires F16 kernel — cast if needed
-        if (w->type != GGML_TYPE_F16) {
-            w = ggml_cast(g, w, GGML_TYPE_F16);
+
+        // Final BN (bn1): scale * x + shift, applied per-channel [W, H, C]
+        if (!ctx->bn1_scale.empty()) {
+            int C = (int)ctx->bn1_scale.size();
+            ggml_tensor * sc = ggml_new_tensor_3d(g, GGML_TYPE_F32, 1, 1, C);
+            ggml_set_name(sc, "bn1_scale");
+            ggml_set_input(sc);
+            ggml_tensor * sh = ggml_new_tensor_3d(g, GGML_TYPE_F32, 1, 1, C);
+            ggml_set_name(sh, "bn1_shift");
+            ggml_set_input(sh);
+            x = ggml_add(g, ggml_mul(g, x, sc), sh);
         }
 
-        if (blk.group > 1) {
-            x = ggml_conv_2d_dw(g, w, x,
-                                blk.stride, blk.stride,
-                                blk.pad, blk.pad, 1, 1);
-        } else {
-            x = ggml_conv_2d(g, w, x,
-                             blk.stride, blk.stride,
-                             blk.pad, blk.pad, 1, 1);
+        // Flatten: [W', H', C] → [W'*H'*C]
+        int64_t total = ggml_nelements(x);
+        fprintf(stderr, "  flatten: [%lld,%lld,%lld] → [%lld]\n", (long long)x->ne[0], (long long)x->ne[1],
+                (long long)x->ne[2], (long long)total);
+        x = ggml_cont(g, x);
+        x = ggml_reshape_1d(g, x, total);
+
+        // FC: x = W * x + b
+        if (ctx->fc_w) {
+            fprintf(stderr, "  FC: w=[%lld,%lld] x=[%lld]\n", (long long)ctx->fc_w->ne[0], (long long)ctx->fc_w->ne[1],
+                    (long long)x->ne[0]);
+            x = ggml_mul_mat(g, ctx->fc_w, x);
+            if (ctx->fc_b) {
+                fprintf(stderr, "  FC bias: [%lld] x=[%lld]\n", (long long)ctx->fc_b->ne[0], (long long)x->ne[0]);
+                x = ggml_add(g, x, ctx->fc_b);
+            }
         }
 
-        if (blk.bias) {
-            // Conv output: [OW, OH, OC]. Bias: [OC] → reshape to [1, 1, OC]
-            int OC = (int)blk.bias->ne[0];
-            fprintf(stderr, "  block %d: conv out [%lld,%lld,%lld] bias [%lld] OC=%d\n",
-                    i, (long long)x->ne[0], (long long)x->ne[1], (long long)x->ne[2],
-                    (long long)blk.bias->ne[0], OC);
-            ggml_tensor* bias3d = ggml_reshape_3d(g, blk.bias, 1, 1, OC);
-            x = ggml_add(g, x, bias3d);
+        // Final BN on FC output: scale * x + shift
+        if (!ctx->fc_bn_scale.empty()) {
+            int D = (int)ctx->fc_bn_scale.size();
+            ggml_tensor * sc = ggml_new_tensor_1d(g, GGML_TYPE_F32, D);
+            ggml_set_name(sc, "fc_bn_scale");
+            ggml_set_input(sc);
+            ggml_tensor * sh = ggml_new_tensor_1d(g, GGML_TYPE_F32, D);
+            ggml_set_name(sh, "fc_bn_shift");
+            ggml_set_input(sh);
+            x = ggml_add(g, ggml_mul(g, x, sc), sh);
         }
-
-        // PReLU activation
-        if (blk.prelu) {
-            fprintf(stderr, "  block %d: prelu shape [%lld,%lld,%lld] x [%lld,%lld,%lld]\n",
-                    i, (long long)blk.prelu->ne[0], (long long)blk.prelu->ne[1],
-                    (long long)blk.prelu->ne[2],
-                    (long long)x->ne[0], (long long)x->ne[1], (long long)x->ne[2]);
-        }
-        x = prelu_op(g, x, blk.prelu);
-    }
-
-    // Final BN (bn1): scale * x + shift, applied per-channel [W, H, C]
-    if (!ctx->bn1_scale.empty()) {
-        int C = (int)ctx->bn1_scale.size();
-        ggml_tensor* sc = ggml_new_tensor_3d(g, GGML_TYPE_F32, 1, 1, C);
-        ggml_set_name(sc, "bn1_scale"); ggml_set_input(sc);
-        ggml_tensor* sh = ggml_new_tensor_3d(g, GGML_TYPE_F32, 1, 1, C);
-        ggml_set_name(sh, "bn1_shift"); ggml_set_input(sh);
-        x = ggml_add(g, ggml_mul(g, x, sc), sh);
-    }
-
-    // Flatten: [W', H', C] → [W'*H'*C]
-    int64_t total = ggml_nelements(x);
-    fprintf(stderr, "  flatten: [%lld,%lld,%lld] → [%lld]\n",
-            (long long)x->ne[0], (long long)x->ne[1], (long long)x->ne[2], (long long)total);
-    x = ggml_cont(g, x);
-    x = ggml_reshape_1d(g, x, total);
-
-    // FC: x = W * x + b
-    if (ctx->fc_w) {
-        fprintf(stderr, "  FC: w=[%lld,%lld] x=[%lld]\n",
-                (long long)ctx->fc_w->ne[0], (long long)ctx->fc_w->ne[1], (long long)x->ne[0]);
-        x = ggml_mul_mat(g, ctx->fc_w, x);
-        if (ctx->fc_b) {
-            fprintf(stderr, "  FC bias: [%lld] x=[%lld]\n",
-                    (long long)ctx->fc_b->ne[0], (long long)x->ne[0]);
-            x = ggml_add(g, x, ctx->fc_b);
-        }
-    }
-
-    // Final BN on FC output: scale * x + shift
-    if (!ctx->fc_bn_scale.empty()) {
-        int D = (int)ctx->fc_bn_scale.size();
-        ggml_tensor* sc = ggml_new_tensor_1d(g, GGML_TYPE_F32, D);
-        ggml_set_name(sc, "fc_bn_scale"); ggml_set_input(sc);
-        ggml_tensor* sh = ggml_new_tensor_1d(g, GGML_TYPE_F32, D);
-        ggml_set_name(sh, "fc_bn_shift"); ggml_set_input(sh);
-        x = ggml_add(g, ggml_mul(g, x, sc), sh);
-    }
 
     } // end of if/else (graph_replay vs hardcoded)
 
@@ -396,7 +394,7 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     ggml_set_output(x);
 
     // Build graph
-    ggml_cgraph* gf = ggml_new_graph_custom(g, max_nodes, false);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
     ggml_build_forward_expand(gf, x);
 
     // Allocate
@@ -408,14 +406,13 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
 
     // Set input pixels
     auto t_pre0 = bench ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
-    ggml_tensor* inp = ggml_graph_get_tensor(gf, "input");
+    ggml_tensor * inp = ggml_graph_get_tensor(gf, "input");
     ggml_backend_tensor_set(inp, pixels, 0, 3 * H * W * sizeof(float));
 
     // Set BN scale/shift inputs (precomputed at load time)
-    auto set_bn = [&](const char* name, const std::vector<float>& data) {
-        ggml_tensor* t = ggml_graph_get_tensor(gf, name);
-        if (t && !data.empty())
-            ggml_backend_tensor_set(t, data.data(), 0, data.size() * sizeof(float));
+    auto set_bn = [&](const char * name, const std::vector<float> & data) {
+        ggml_tensor * t = ggml_graph_get_tensor(gf, name);
+        if (t && !data.empty()) ggml_backend_tensor_set(t, data.data(), 0, data.size() * sizeof(float));
     };
     set_bn("bn1_scale", ctx->bn1_scale);
     set_bn("bn1_shift", ctx->bn1_shift);
@@ -438,7 +435,7 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
 
     // Read output
     auto t_post0 = bench ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point{};
-    ggml_tensor* out = ggml_graph_get_tensor(gf, "embedding");
+    ggml_tensor * out = ggml_graph_get_tensor(gf, "embedding");
     int d = (int)ggml_nelements(out);
     std::vector<float> emb(d);
     ggml_backend_tensor_get(out, emb.data(), 0, d * sizeof(float));
@@ -447,7 +444,8 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     float norm = 0;
     for (float v : emb) norm += v * v;
     norm = std::sqrt(norm);
-    if (norm > 1e-9f) for (float& v : emb) v /= norm;
+    if (norm > 1e-9f)
+        for (float & v : emb) v /= norm;
     if (bench) {
         auto t_post1 = std::chrono::steady_clock::now();
         auto t_total1 = std::chrono::steady_clock::now();
@@ -461,8 +459,7 @@ std::vector<float> encode(context* ctx, const float* pixels, int H, int W) {
     return emb;
 }
 
-std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int W,
-                                    float conf_threshold) {
+std::vector<face_detection> detect(context * ctx, const float * pixels, int H, int W, float conf_threshold) {
     if (!ctx || !pixels || ctx->graph_topology.empty()) return {};
 
     // Parse graph
@@ -471,65 +468,74 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
 
     // Large graph for detection
     int max_nodes = 2000;
-    size_t buf_size = ggml_tensor_overhead() * (max_nodes + 200)
-                    + ggml_graph_overhead_custom(max_nodes, false);
+    size_t buf_size = ggml_tensor_overhead() * (max_nodes + 200) + ggml_graph_overhead_custom(max_nodes, false);
     std::vector<uint8_t> buf(buf_size);
     struct ggml_init_params p = { buf_size, buf.data(), true };
-    ggml_context* g = ggml_init(p);
+    ggml_context * g = ggml_init(p);
 
-    ggml_tensor* x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, 3);
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, 3);
     ggml_set_name(x, "input");
     ggml_set_input(x);
 
     // Run graph replay — get tensor map for output reading
-    std::unordered_map<std::string, ggml_tensor*> tensor_map;
-    std::vector<ggml_tensor*> output_tensors;
-    ggml_tensor* last = replay_graph(g, ctx, x, nodes, output_tensors, &tensor_map);
-    if (!last) { ggml_free(g); return {}; }
+    std::unordered_map<std::string, ggml_tensor *> tensor_map;
+    std::vector<ggml_tensor *> output_tensors;
+    ggml_tensor * last = replay_graph(g, ctx, x, nodes, output_tensors, &tensor_map);
+    if (!last) {
+        ggml_free(g);
+        return {};
+    }
 
     // Mark detection output tensors and build forward graph
     bool is_yunet = ctx->name.find("yunet") != std::string::npos;
 
-    ggml_tensor* score_tensors[3] = {};
-    ggml_tensor* bbox_tensors[3] = {};
-    ggml_tensor* kps_tensors[3] = {};
+    ggml_tensor * score_tensors[3] = {};
+    ggml_tensor * bbox_tensors[3] = {};
+    ggml_tensor * kps_tensors[3] = {};
 
     if (is_yunet) {
         // YuNet: 12 outputs — cls/obj/bbox/kps at 3 strides
-        const char* cls_names[] = {"cls_8", "cls_16", "cls_32"};
-        const char* obj_names[] = {"obj_8", "obj_16", "obj_32"};
-        const char* bbox_names[] = {"bbox_8", "bbox_16", "bbox_32"};
-        const char* kps_names[] = {"kps_8", "kps_16", "kps_32"};
+        const char * cls_names[] = { "cls_8", "cls_16", "cls_32" };
+        const char * obj_names[] = { "obj_8", "obj_16", "obj_32" };
+        const char * bbox_names[] = { "bbox_8", "bbox_16", "bbox_32" };
+        const char * kps_names[] = { "kps_8", "kps_16", "kps_32" };
         for (int i = 0; i < 3; i++) {
-            for (const char* name : {cls_names[i], obj_names[i], bbox_names[i], kps_names[i]}) {
+            for (const char * name : { cls_names[i], obj_names[i], bbox_names[i], kps_names[i] }) {
                 auto it = tensor_map.find(name);
                 if (it != tensor_map.end()) ggml_set_output(it->second);
             }
         }
     } else {
         // SCRFD: 9 outputs — score/bbox/kps at 3 strides
-        const char* score_names[] = {"448", "471", "494"};
-        const char* bbox_names[] = {"451", "474", "497"};
-        const char* kps_names[] = {"454", "477", "500"};
+        const char * score_names[] = { "448", "471", "494" };
+        const char * bbox_names[] = { "451", "474", "497" };
+        const char * kps_names[] = { "454", "477", "500" };
         for (int i = 0; i < 3; i++) {
             auto it_s = tensor_map.find(score_names[i]);
             auto it_b = tensor_map.find(bbox_names[i]);
             auto it_k = tensor_map.find(kps_names[i]);
-            if (it_s != tensor_map.end()) { score_tensors[i] = it_s->second; ggml_set_output(it_s->second); }
-            if (it_b != tensor_map.end()) { bbox_tensors[i] = it_b->second; ggml_set_output(it_b->second); }
-            if (it_k != tensor_map.end()) { kps_tensors[i] = it_k->second; ggml_set_output(it_k->second); }
+            if (it_s != tensor_map.end()) {
+                score_tensors[i] = it_s->second;
+                ggml_set_output(it_s->second);
+            }
+            if (it_b != tensor_map.end()) {
+                bbox_tensors[i] = it_b->second;
+                ggml_set_output(it_b->second);
+            }
+            if (it_k != tensor_map.end()) {
+                kps_tensors[i] = it_k->second;
+                ggml_set_output(it_k->second);
+            }
         }
     }
     ggml_set_output(last);
 
     // Build graph — expand all output tensors
-    ggml_cgraph* gf = ggml_new_graph_custom(g, max_nodes, false);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
     if (is_yunet) {
-        const char* yunet_outs[] = {
-            "cls_8","cls_16","cls_32","obj_8","obj_16","obj_32",
-            "bbox_8","bbox_16","bbox_32","kps_8","kps_16","kps_32"
-        };
-        for (const char* name : yunet_outs) {
+        const char * yunet_outs[] = { "cls_8",  "cls_16",  "cls_32",  "obj_8", "obj_16", "obj_32",
+                                      "bbox_8", "bbox_16", "bbox_32", "kps_8", "kps_16", "kps_32" };
+        for (const char * name : yunet_outs) {
             auto it = tensor_map.find(name);
             if (it != tensor_map.end()) ggml_build_forward_expand(gf, it->second);
         }
@@ -543,51 +549,63 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
     ggml_build_forward_expand(gf, last);
 
     if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
-        ggml_free(g); return {};
+        ggml_free(g);
+        return {};
     }
 
-    ggml_tensor* inp = ggml_graph_get_tensor(gf, "input");
+    ggml_tensor * inp = ggml_graph_get_tensor(gf, "input");
     ggml_backend_tensor_set(inp, pixels, 0, 3 * H * W * sizeof(float));
 
     ggml_backend_graph_compute(ctx->backend, gf);
 
     // Debug: compare output tensors with ONNX reference (CNN_DEBUG=1)
     if (is_yunet && getenv("CNN_DEBUG")) {
-        const char* ref_dir = getenv("CNN_REF_DIR");
+        const char * ref_dir = getenv("CNN_REF_DIR");
         if (!ref_dir) ref_dir = "/tmp";
-        const char* det_names[] = {"cls_8","cls_16","cls_32","obj_8","obj_16","obj_32",
-            "bbox_8","bbox_16","bbox_32","kps_8","kps_16","kps_32"};
-        for (const char* name : det_names) {
+        const char * det_names[] = { "cls_8",  "cls_16",  "cls_32",  "obj_8", "obj_16", "obj_32",
+                                     "bbox_8", "bbox_16", "bbox_32", "kps_8", "kps_16", "kps_32" };
+        for (const char * name : det_names) {
             auto it = tensor_map.find(name);
             if (it == tensor_map.end()) continue;
-            ggml_tensor* t = it->second;
+            ggml_tensor * t = it->second;
             int nel = (int)ggml_nelements(t);
             std::vector<float> cpp(nel);
             ggml_backend_tensor_get(t, cpp.data(), 0, nel * 4);
             // Load reference binary
             char path[512];
             snprintf(path, sizeof(path), "%s/yunet_ref_%s.bin", ref_dir, name);
-            FILE* f = fopen(path, "rb");
-            if (!f) { fprintf(stderr, "  %s: no ref at %s\n", name, path); continue; }
-            fseek(f, 0, SEEK_END); int ref_n = (int)(ftell(f) / 4); fseek(f, 0, SEEK_SET);
+            FILE * f = fopen(path, "rb");
+            if (!f) {
+                fprintf(stderr, "  %s: no ref at %s\n", name, path);
+                continue;
+            }
+            fseek(f, 0, SEEK_END);
+            int ref_n = (int)(ftell(f) / 4);
+            fseek(f, 0, SEEK_SET);
             std::vector<float> ref(ref_n);
-            if ((int)fread(ref.data(), 4, ref_n, f) != ref_n) { fclose(f); continue; }
+            if ((int)fread(ref.data(), 4, ref_n, f) != ref_n) {
+                fclose(f);
+                continue;
+            }
             fclose(f);
             int n = std::min(nel, ref_n);
             double dot = 0, na = 0, nb = 0;
             float md = 0;
             for (int i = 0; i < n; i++) {
-                dot += cpp[i]*ref[i]; na += cpp[i]*cpp[i]; nb += ref[i]*ref[i];
-                float d = fabsf(cpp[i]-ref[i]); if (d > md) md = d;
+                dot += cpp[i] * ref[i];
+                na += cpp[i] * cpp[i];
+                nb += ref[i] * ref[i];
+                float d = fabsf(cpp[i] - ref[i]);
+                if (d > md) md = d;
             }
-            float cos = (float)(dot / (sqrt(na)*sqrt(nb) + 1e-12));
-            fprintf(stderr, "  %s: ne=[%lld,%lld] cos=%.6f max_diff=%.6f (n=%d vs %d)\n",
-                    name, (long long)t->ne[0], (long long)t->ne[1], cos, md, nel, ref_n);
+            float cos = (float)(dot / (sqrt(na) * sqrt(nb) + 1e-12));
+            fprintf(stderr, "  %s: ne=[%lld,%lld] cos=%.6f max_diff=%.6f (n=%d vs %d)\n", name, (long long)t->ne[0],
+                    (long long)t->ne[1], cos, md, nel, ref_n);
         }
     }
 
     // ── Post-processing: decode anchors ──
-    const int strides[] = {8, 16, 32};
+    const int strides[] = { 8, 16, 32 };
     std::vector<face_detection> dets;
 
     if (is_yunet) {
@@ -597,10 +615,10 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
         // Bbox: cx = col*stride + loc[0]*stride, w = stride * exp(loc[2])
         // Landmarks: lm_x = col*stride + kps[2k]*stride
         // Landmark order: right_eye, left_eye, nose, right_mouth, left_mouth
-        const char* cls_names[] = {"cls_8", "cls_16", "cls_32"};
-        const char* obj_names[] = {"obj_8", "obj_16", "obj_32"};
-        const char* bbox_yunet[] = {"bbox_8", "bbox_16", "bbox_32"};
-        const char* kps_yunet[] = {"kps_8", "kps_16", "kps_32"};
+        const char * cls_names[] = { "cls_8", "cls_16", "cls_32" };
+        const char * obj_names[] = { "obj_8", "obj_16", "obj_32" };
+        const char * bbox_yunet[] = { "bbox_8", "bbox_16", "bbox_32" };
+        const char * kps_yunet[] = { "kps_8", "kps_16", "kps_32" };
 
         for (int si = 0; si < 3; si++) {
             int stride = strides[si];
@@ -616,10 +634,10 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
                 continue;
             }
 
-            ggml_tensor* cls_t = it_c->second;
-            ggml_tensor* obj_t = (it_o != tensor_map.end()) ? it_o->second : nullptr;
-            ggml_tensor* bbox_t = it_b->second;
-            ggml_tensor* kps_t = (it_k != tensor_map.end()) ? it_k->second : nullptr;
+            ggml_tensor * cls_t = it_c->second;
+            ggml_tensor * obj_t = (it_o != tensor_map.end()) ? it_o->second : nullptr;
+            ggml_tensor * bbox_t = it_b->second;
+            ggml_tensor * kps_t = (it_k != tensor_map.end()) ? it_k->second : nullptr;
 
             int n = grid_h * grid_w;
             std::vector<float> cls_data(n), obj_data(n, 1.0f), bbox_data(n * 4);
@@ -676,17 +694,17 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
                     // kps: 3D passthrough, same layout as bbox
                     if (!kps_data.empty()) {
                         for (int k = 0; k < 5; k++) {
-                            int kx_idx = bbox_sp + (k * 2)     * plane;
+                            int kx_idx = bbox_sp + (k * 2) * plane;
                             int ky_idx = bbox_sp + (k * 2 + 1) * plane;
-                            det.landmarks[k * 2]     = prior_cx + kps_data[kx_idx] * stride;
+                            det.landmarks[k * 2] = prior_cx + kps_data[kx_idx] * stride;
                             det.landmarks[k * 2 + 1] = prior_cy + kps_data[ky_idx] * stride;
                         }
                     }
                     dets.push_back(det);
                 }
             }
-            fprintf(stderr, "cnn_embed: YuNet stride %d: %d cells, %zu dets above %.2f\n",
-                    stride, n, dets.size(), conf_threshold);
+            fprintf(stderr, "cnn_embed: YuNet stride %d: %d cells, %zu dets above %.2f\n", stride, n, dets.size(),
+                    conf_threshold);
         }
     } else {
         // ── SCRFD decode ──
@@ -696,9 +714,9 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
             int grid_h = H / stride;
             int grid_w = W / stride;
 
-            ggml_tensor* score_t = score_tensors[si];
-            ggml_tensor* bbox_t = bbox_tensors[si];
-            ggml_tensor* kps_t = kps_tensors[si];
+            ggml_tensor * score_t = score_tensors[si];
+            ggml_tensor * bbox_t = bbox_tensors[si];
+            ggml_tensor * kps_t = kps_tensors[si];
             if (!score_t || !bbox_t) {
                 fprintf(stderr, "cnn_embed: stride %d outputs not found\n", stride);
                 continue;
@@ -756,11 +774,11 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
                         if (!kps_data.empty()) {
                             int k_base = spatial + a * 10 * plane;
                             for (int k = 0; k < 5; k++) {
-                                int kx_idx = k_base + (k*2)   * plane;
-                                int ky_idx = k_base + (k*2+1) * plane;
+                                int kx_idx = k_base + (k * 2) * plane;
+                                int ky_idx = k_base + (k * 2 + 1) * plane;
                                 if (ky_idx < (int)kps_data.size()) {
-                                    det.landmarks[k*2]   = cx + kps_data[kx_idx] * stride;
-                                    det.landmarks[k*2+1] = cy + kps_data[ky_idx] * stride;
+                                    det.landmarks[k * 2] = cx + kps_data[kx_idx] * stride;
+                                    det.landmarks[k * 2 + 1] = cy + kps_data[ky_idx] * stride;
                                 }
                             }
                         }
@@ -768,8 +786,8 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
                     }
                 }
             }
-            fprintf(stderr, "cnn_embed: SCRFD stride %d: %d anchors, %zu dets above %.2f\n",
-                    stride, grid_h * grid_w * num_anchors_per_loc, dets.size(), conf_threshold);
+            fprintf(stderr, "cnn_embed: SCRFD stride %d: %d anchors, %zu dets above %.2f\n", stride,
+                    grid_h * grid_w * num_anchors_per_loc, dets.size(), conf_threshold);
         }
     }
 
@@ -778,9 +796,7 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
     // NMS
     if (dets.size() > 1) {
         std::sort(dets.begin(), dets.end(),
-                  [](const face_detection& a, const face_detection& b) {
-                      return a.confidence > b.confidence;
-                  });
+                  [](const face_detection & a, const face_detection & b) { return a.confidence > b.confidence; });
         std::vector<bool> suppressed(dets.size(), false);
         std::vector<face_detection> kept;
         for (size_t i = 0; i < dets.size(); i++) {
@@ -802,17 +818,19 @@ std::vector<face_detection> detect(context* ctx, const float* pixels, int H, int
         dets = kept;
     }
 
-    fprintf(stderr, "cnn_embed: %s detected %zu faces\n",
-            is_yunet ? "YuNet" : "SCRFD", dets.size());
+    fprintf(stderr, "cnn_embed: %s detected %zu faces\n", is_yunet ? "YuNet" : "SCRFD", dets.size());
     return dets;
 }
 
-std::vector<float> encode_file(context* ctx, const char* path) {
+std::vector<float> encode_file(context * ctx, const char * path) {
     if (!ctx || !path) return {};
 
     int w, h, ch;
-    unsigned char* data = stbi_load(path, &w, &h, &ch, 3);
-    if (!data) { fprintf(stderr, "cnn_embed: cannot load %s\n", path); return {}; }
+    unsigned char * data = stbi_load(path, &w, &h, &ch, 3);
+    if (!data) {
+        fprintf(stderr, "cnn_embed: cannot load %s\n", path);
+        return {};
+    }
 
     int sz_h = ctx->input_h, sz_w = ctx->input_w;
     std::vector<float> pixels(3 * sz_h * sz_w);
@@ -821,17 +839,16 @@ std::vector<float> encode_file(context* ctx, const char* path) {
     const float sx = (float)w / sz_w, sy = (float)h / sz_h;
     for (int y = 0; y < sz_h; y++) {
         float fy = (y + 0.5f) * sy - 0.5f;
-        int y0 = std::max(0, (int)fy), y1 = std::min(h-1, y0+1);
+        int y0 = std::max(0, (int)fy), y1 = std::min(h - 1, y0 + 1);
         float wy = std::max(0.0f, fy - y0);
         for (int x = 0; x < sz_w; x++) {
             float fx = (x + 0.5f) * sx - 0.5f;
-            int x0 = std::max(0, (int)fx), x1 = std::min(w-1, x0+1);
+            int x0 = std::max(0, (int)fx), x1 = std::min(w - 1, x0 + 1);
             float wx = std::max(0.0f, fx - x0);
             for (int c = 0; c < 3; c++) {
-                float v = data[(y0*w+x0)*3+c] * (1-wx)*(1-wy)
-                        + data[(y0*w+x1)*3+c] * wx*(1-wy)
-                        + data[(y1*w+x0)*3+c] * (1-wx)*wy
-                        + data[(y1*w+x1)*3+c] * wx*wy;
+                float v = data[(y0 * w + x0) * 3 + c] * (1 - wx) * (1 - wy) +
+                          data[(y0 * w + x1) * 3 + c] * wx * (1 - wy) + data[(y1 * w + x0) * 3 + c] * (1 - wx) * wy +
+                          data[(y1 * w + x1) * 3 + c] * wx * wy;
                 pixels[c * sz_h * sz_w + y * sz_w + x] = (v - ctx->sub_val) * ctx->mul_val;
             }
         }
@@ -843,18 +860,20 @@ std::vector<float> encode_file(context* ctx, const char* path) {
 // ── Letterbox detection from file ──────────────────────────────────────
 // Resizes to det_size while preserving aspect ratio (padding with gray),
 // runs detection, then scales coordinates back to original image space.
-std::vector<face_detection> detect_file(context* ctx, const char* path,
-                                         float conf_threshold, int det_size) {
+std::vector<face_detection> detect_file(context * ctx, const char * path, float conf_threshold, int det_size) {
     if (!ctx || !path) return {};
 
     int img_w, img_h, ch;
-    unsigned char* data = stbi_load(path, &img_w, &img_h, &ch, 3);
-    if (!data) { fprintf(stderr, "cnn_embed: cannot load %s\n", path); return {}; }
+    unsigned char * data = stbi_load(path, &img_w, &img_h, &ch, 3);
+    if (!data) {
+        fprintf(stderr, "cnn_embed: cannot load %s\n", path);
+        return {};
+    }
 
     // InsightFace-style resize: scale to fit, paste at top-left, zero-pad rest.
     // (NOT centered letterbox — InsightFace puts image at (0,0) and pads right/bottom.)
     float im_ratio = (float)img_h / img_w;
-    float model_ratio = 1.0f;  // det_size x det_size is square
+    float model_ratio = 1.0f; // det_size x det_size is square
     int new_w, new_h;
     if (im_ratio > model_ratio) {
         new_h = det_size;
@@ -885,12 +904,11 @@ std::vector<face_detection> detect_file(context* ctx, const char* path,
             for (int c = 0; c < 3; c++) {
                 // RGB→BGR: channel 0↔2 swap
                 int src_c = (c == 0) ? 2 : (c == 2) ? 0 : 1;
-                float v = data[(y0*img_w+x0)*3+src_c] * (1-wx)*(1-wy)
-                        + data[(y0*img_w+x1)*3+src_c] * wx*(1-wy)
-                        + data[(y1*img_w+x0)*3+src_c] * (1-wx)*wy
-                        + data[(y1*img_w+x1)*3+src_c] * wx*wy;
-                pixels[c * det_size * det_size + y * det_size + x] =
-                    is_yunet ? v : (v - 127.5f) / 128.0f;
+                float v = data[(y0 * img_w + x0) * 3 + src_c] * (1 - wx) * (1 - wy) +
+                          data[(y0 * img_w + x1) * 3 + src_c] * wx * (1 - wy) +
+                          data[(y1 * img_w + x0) * 3 + src_c] * (1 - wx) * wy +
+                          data[(y1 * img_w + x1) * 3 + src_c] * wx * wy;
+                pixels[c * det_size * det_size + y * det_size + x] = is_yunet ? v : (v - 127.5f) / 128.0f;
             }
         }
     }
@@ -899,14 +917,14 @@ std::vector<face_detection> detect_file(context* ctx, const char* path,
     auto dets = detect(ctx, pixels.data(), det_size, det_size, conf_threshold);
 
     // Scale coordinates back to original image (simple div by det_scale, no offset)
-    for (auto& d : dets) {
+    for (auto & d : dets) {
         d.x = d.x / det_scale;
         d.y = d.y / det_scale;
         d.w = d.w / det_scale;
         d.h = d.h / det_scale;
         for (int k = 0; k < 5; k++) {
-            d.landmarks[k*2]   = d.landmarks[k*2]   / det_scale;
-            d.landmarks[k*2+1] = d.landmarks[k*2+1] / det_scale;
+            d.landmarks[k * 2] = d.landmarks[k * 2] / det_scale;
+            d.landmarks[k * 2 + 1] = d.landmarks[k * 2 + 1] / det_scale;
         }
     }
 
@@ -917,9 +935,8 @@ std::vector<face_detection> detect_file(context* ctx, const char* path,
 // Takes raw uint8 RGB image + 5 landmarks, aligns to 112×112 via
 // similarity transform, normalizes, and encodes.
 
-std::vector<float> encode_aligned(context* ctx,
-                                   const unsigned char* image, int img_w, int img_h,
-                                   const float* landmarks_10) {
+std::vector<float> encode_aligned(context * ctx, const unsigned char * image, int img_w, int img_h,
+                                  const float * landmarks_10) {
     if (!ctx || !image || !landmarks_10) return {};
 
     int out_w = ctx->input_w, out_h = ctx->input_h;
@@ -930,45 +947,54 @@ std::vector<float> encode_aligned(context* ctx,
 
     // Re-normalize from ArcFace default (x-127.5)/127.5 to model's sub/mul
     // ArcFace models use sub=127.5, mul=1/127.5; some use sub=127.5, mul=1/128
-    if (std::abs(ctx->mul_val - 1.0f/127.5f) > 0.001f) {
-        for (float& v : aligned) {
-            float pixel = v * 127.5f + 127.5f;  // undo ArcFace norm
-            v = (pixel - ctx->sub_val) * ctx->mul_val;  // apply model norm
+    if (std::abs(ctx->mul_val - 1.0f / 127.5f) > 0.001f) {
+        for (float & v : aligned) {
+            float pixel = v * 127.5f + 127.5f;         // undo ArcFace norm
+            v = (pixel - ctx->sub_val) * ctx->mul_val; // apply model norm
         }
     }
 
     return encode(ctx, aligned.data(), out_h, out_w);
 }
 
-std::vector<float> encode_face_file(context* ctx, const char* image_path,
-                                     const float* landmarks_10) {
+std::vector<float> encode_face_file(context * ctx, const char * image_path, const float * landmarks_10) {
     if (!ctx || !image_path || !landmarks_10) return {};
     int w, h, ch;
-    unsigned char* data = stbi_load(image_path, &w, &h, &ch, 3);
-    if (!data) { fprintf(stderr, "cnn_embed: cannot load %s\n", image_path); return {}; }
+    unsigned char * data = stbi_load(image_path, &w, &h, &ch, 3);
+    if (!data) {
+        fprintf(stderr, "cnn_embed: cannot load %s\n", image_path);
+        return {};
+    }
     auto emb = encode_aligned(ctx, data, w, h, landmarks_10);
     stbi_image_free(data);
     return emb;
 }
 
 // ── Full pipeline: detect → align → encode ─────────────────────────────
-std::vector<face_result> face_pipeline(context* det_ctx, context* rec_ctx,
-                                        const char* image_path,
-                                        float conf_threshold, int det_size) {
+std::vector<face_result> face_pipeline(context * det_ctx, context * rec_ctx, const char * image_path,
+                                       float conf_threshold, int det_size) {
     if (!det_ctx || !rec_ctx || !image_path) return {};
 
     // Load image once for both detection and alignment
     int img_w, img_h, ch;
-    unsigned char* data = stbi_load(image_path, &img_w, &img_h, &ch, 3);
-    if (!data) { fprintf(stderr, "cnn_embed: cannot load %s\n", image_path); return {}; }
+    unsigned char * data = stbi_load(image_path, &img_w, &img_h, &ch, 3);
+    if (!data) {
+        fprintf(stderr, "cnn_embed: cannot load %s\n", image_path);
+        return {};
+    }
 
     // Step 1: Detect faces using detect_file (handles preprocessing + coord scaling)
     // We can't reuse detect_file directly since we already have the image loaded,
     // so replicate the InsightFace-style preprocessing inline.
     float im_ratio = (float)img_h / img_w;
     int new_w, new_h;
-    if (im_ratio > 1.0f) { new_h = det_size; new_w = (int)(new_h / im_ratio); }
-    else { new_w = det_size; new_h = (int)(new_w * im_ratio); }
+    if (im_ratio > 1.0f) {
+        new_h = det_size;
+        new_w = (int)(new_h / im_ratio);
+    } else {
+        new_w = det_size;
+        new_h = (int)(new_w * im_ratio);
+    }
     float det_scale = (float)new_h / img_h;
 
     bool is_yunet_p = det_ctx->name.find("yunet") != std::string::npos;
@@ -984,12 +1010,11 @@ std::vector<face_result> face_pipeline(context* det_ctx, context* rec_ctx,
             float wx = std::max(0.0f, ox - x0), wy = std::max(0.0f, oy - y0);
             for (int c = 0; c < 3; c++) {
                 int src_c = (c == 0) ? 2 : (c == 2) ? 0 : 1; // RGB→BGR
-                float v = data[(y0*img_w+x0)*3+src_c] * (1-wx)*(1-wy)
-                        + data[(y0*img_w+x1)*3+src_c] * wx*(1-wy)
-                        + data[(y1*img_w+x0)*3+src_c] * (1-wx)*wy
-                        + data[(y1*img_w+x1)*3+src_c] * wx*wy;
-                pixels[c * det_size * det_size + y * det_size + x] =
-                    is_yunet_p ? v : (v - 127.5f) / 128.0f;
+                float v = data[(y0 * img_w + x0) * 3 + src_c] * (1 - wx) * (1 - wy) +
+                          data[(y0 * img_w + x1) * 3 + src_c] * wx * (1 - wy) +
+                          data[(y1 * img_w + x0) * 3 + src_c] * (1 - wx) * wy +
+                          data[(y1 * img_w + x1) * 3 + src_c] * wx * wy;
+                pixels[c * det_size * det_size + y * det_size + x] = is_yunet_p ? v : (v - 127.5f) / 128.0f;
             }
         }
     }
@@ -997,18 +1022,20 @@ std::vector<face_result> face_pipeline(context* det_ctx, context* rec_ctx,
     auto dets = detect(det_ctx, pixels.data(), det_size, det_size, conf_threshold);
 
     // Scale coordinates back (no offset, InsightFace-style top-left placement)
-    for (auto& d : dets) {
-        d.x /= det_scale; d.y /= det_scale;
-        d.w /= det_scale; d.h /= det_scale;
+    for (auto & d : dets) {
+        d.x /= det_scale;
+        d.y /= det_scale;
+        d.w /= det_scale;
+        d.h /= det_scale;
         for (int k = 0; k < 5; k++) {
-            d.landmarks[k*2]   /= det_scale;
-            d.landmarks[k*2+1] /= det_scale;
+            d.landmarks[k * 2] /= det_scale;
+            d.landmarks[k * 2 + 1] /= det_scale;
         }
     }
 
     // Step 2+3: For each detected face, align and encode
     std::vector<face_result> results;
-    for (const auto& d : dets) {
+    for (const auto & d : dets) {
         face_result fr;
         fr.det = d;
         fr.embedding = encode_aligned(rec_ctx, data, img_w, img_h, d.landmarks);
@@ -1019,10 +1046,14 @@ std::vector<face_result> face_pipeline(context* det_ctx, context* rec_ctx,
     return results;
 }
 
-int dim(const context* ctx) { return ctx ? ctx->embed_dim : 0; }
-const char* model_type(const context* ctx) { return ctx ? ctx->type.c_str() : ""; }
+int dim(const context * ctx) {
+    return ctx ? ctx->embed_dim : 0;
+}
+const char * model_type(const context * ctx) {
+    return ctx ? ctx->type.c_str() : "";
+}
 
-void free(context* ctx) {
+void free(context * ctx) {
     if (ctx) {
         if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
         if (ctx->backend) ggml_backend_free(ctx->backend);
@@ -1045,7 +1076,7 @@ void free(context* ctx) {
 namespace cnn_embed {
 
 
-static std::vector<graph_node> parse_graph(const std::string& graph_str) {
+static std::vector<graph_node> parse_graph(const std::string & graph_str) {
     std::vector<graph_node> nodes;
     std::istringstream ss(graph_str);
     std::string node_str;
@@ -1061,12 +1092,12 @@ static std::vector<graph_node> parse_graph(const std::string& graph_str) {
         auto bracket = op_full.find('[');
         if (bracket != std::string::npos) {
             gn.op = op_full.substr(0, bracket);
-            gn.attrs = op_full.substr(bracket+1, op_full.size()-bracket-2);
+            gn.attrs = op_full.substr(bracket + 1, op_full.size() - bracket - 2);
         } else {
             gn.op = op_full;
         }
-        std::string inputs_str = node_str.substr(p1+1, p2-p1-1);
-        gn.output = node_str.substr(p2+1);
+        std::string inputs_str = node_str.substr(p1 + 1, p2 - p1 - 1);
+        gn.output = node_str.substr(p2 + 1);
 
         // Split inputs by comma
         std::istringstream iss(inputs_str);
@@ -1081,15 +1112,11 @@ static std::vector<graph_node> parse_graph(const std::string& graph_str) {
 
 // Execute the ONNX graph topology using ggml ops.
 // Returns the final output tensor(s).
-static ggml_tensor* replay_graph(
-    ggml_context* g, context* ctx,
-    ggml_tensor* input,
-    const std::vector<graph_node>& nodes,
-    std::vector<ggml_tensor*>& output_tensors,
-    std::unordered_map<std::string, ggml_tensor*>* tensor_map_out)
-{
+static ggml_tensor * replay_graph(ggml_context * g, context * ctx, ggml_tensor * input,
+                                  const std::vector<graph_node> & nodes, std::vector<ggml_tensor *> & output_tensors,
+                                  std::unordered_map<std::string, ggml_tensor *> * tensor_map_out) {
     // Map from ONNX tensor name → ggml tensor
-    std::unordered_map<std::string, ggml_tensor*> tensors;
+    std::unordered_map<std::string, ggml_tensor *> tensors;
 
     // Register input
     if (!nodes.empty() && !nodes[0].inputs.empty()) {
@@ -1097,13 +1124,21 @@ static ggml_tensor* replay_graph(
     }
 
     // Helper: get tensor by ONNX name (from computed or from weights)
-    auto get_t = [&](const std::string& name) -> ggml_tensor* {
+    auto get_t = [&](const std::string & name) -> ggml_tensor * {
         auto it = tensors.find(name);
         if (it != tensors.end()) return it->second;
         // Try loading from weights (conv/bn params)
         // Clean name for GGUF lookup
         std::string clean = name;
-        for (char& c : clean) { if (c == '(' || c == ')' || c == ',' || c == ' ') c = '_'; } std::string c2; for (size_t ci = 0; ci < clean.size(); ci++) { if (clean[ci] == '_' && ci + 1 < clean.size() && clean[ci+1] == '_') continue; c2 += clean[ci]; } clean = c2;
+        for (char & c : clean) {
+            if (c == '(' || c == ')' || c == ',' || c == ' ') c = '_';
+        }
+        std::string c2;
+        for (size_t ci = 0; ci < clean.size(); ci++) {
+            if (clean[ci] == '_' && ci + 1 < clean.size() && clean[ci + 1] == '_') continue;
+            c2 += clean[ci];
+        }
+        clean = c2;
         auto wit = ctx->wl.tensors.find(clean);
         if (wit != ctx->wl.tensors.end()) return wit->second;
         // Try with original name
@@ -1112,17 +1147,16 @@ static ggml_tensor* replay_graph(
         return nullptr;
     };
 
-    ggml_tensor* last = input;
+    ggml_tensor * last = input;
 
     for (size_t ni = 0; ni < nodes.size(); ni++) {
-        const auto& n = nodes[ni];
-        ggml_tensor* result = nullptr;
+        const auto & n = nodes[ni];
+        ggml_tensor * result = nullptr;
         if (n.op == "Conv") {
-            ggml_tensor* x = get_t(n.inputs[0]);
-            ggml_tensor* w = get_t(n.inputs[1]);
+            ggml_tensor * x = get_t(n.inputs[0]);
+            ggml_tensor * w = get_t(n.inputs[1]);
             if (!x || !w) {
-                fprintf(stderr, "  Conv[%zu] miss: x=%s(%s) w=%s(%s)\n", ni,
-                        n.inputs[0].c_str(), x ? "ok" : "MISS",
+                fprintf(stderr, "  Conv[%zu] miss: x=%s(%s) w=%s(%s)\n", ni, n.inputs[0].c_str(), x ? "ok" : "MISS",
                         n.inputs.size() > 1 ? n.inputs[1].c_str() : "?", w ? "ok" : "MISS");
                 continue;
             }
@@ -1140,7 +1174,7 @@ static ggml_tensor* replay_graph(
             // by checking that KW*KH*IC*OC == nelements before applying it.
             if (ggml_n_dims(w) <= 2) {
                 int64_t OC = w->ne[1];
-                int64_t flat = w->ne[0];  // IC * KH * KW
+                int64_t flat = w->ne[0]; // IC * KH * KW
                 // For depthwise convs (group > 1), weight is [OC, 1*KH*KW],
                 // so IC=1. For regular convs, IC = input channels.
                 int64_t IC = is_dw ? 1 : (int64_t)x->ne[2];
@@ -1150,11 +1184,22 @@ static ggml_tensor* replay_graph(
                 // weights like [3,3,1,1] that ggml reports as 2D.
                 if (IC > 0 && kernel_area > 0 && flat == IC * kernel_area) {
                     int64_t KH = 1, KW = 1;
-                    if (kernel_area == 9) { KH = 3; KW = 3; }
-                    else if (kernel_area == 1) { KH = 1; KW = 1; }
-                    else if (kernel_area == 25) { KH = 5; KW = 5; }
-                    else if (kernel_area == 49) { KH = 7; KW = 7; }
-                    else { KH = (int64_t)std::sqrt((double)kernel_area); KW = KH; }
+                    if (kernel_area == 9) {
+                        KH = 3;
+                        KW = 3;
+                    } else if (kernel_area == 1) {
+                        KH = 1;
+                        KW = 1;
+                    } else if (kernel_area == 25) {
+                        KH = 5;
+                        KW = 5;
+                    } else if (kernel_area == 49) {
+                        KH = 7;
+                        KW = 7;
+                    } else {
+                        KH = (int64_t)std::sqrt((double)kernel_area);
+                        KW = KH;
+                    }
                     // Verify element count before reshape
                     if (KW * KH * IC * OC == ggml_nelements(w)) {
                         // Dequant quantized types → F32 first (ggml only
@@ -1181,51 +1226,51 @@ static ggml_tensor* replay_graph(
             }
             // Add bias if present
             if (n.inputs.size() > 2) {
-                ggml_tensor* bias = get_t(n.inputs[2]);
+                ggml_tensor * bias = get_t(n.inputs[2]);
                 if (bias) {
                     int OC = (int)bias->ne[0];
                     result = ggml_add(g, result, ggml_reshape_3d(g, bias, 1, 1, OC));
                 }
             }
         } else if (n.op == "Relu") {
-            ggml_tensor* x = get_t(n.inputs[0]);
+            ggml_tensor * x = get_t(n.inputs[0]);
             if (x) result = ggml_relu(g, x);
         } else if (n.op == "PRelu") {
-            ggml_tensor* x = get_t(n.inputs[0]);
-            ggml_tensor* slope = get_t(n.inputs[1]);
+            ggml_tensor * x = get_t(n.inputs[0]);
+            ggml_tensor * slope = get_t(n.inputs[1]);
             if (x) result = prelu_op(g, x, slope);
         } else if (n.op == "Add") {
-            ggml_tensor* a = get_t(n.inputs[0]);
-            ggml_tensor* b = get_t(n.inputs[1]);
+            ggml_tensor * a = get_t(n.inputs[0]);
+            ggml_tensor * b = get_t(n.inputs[1]);
             if (a && b) result = ggml_add(g, a, b);
         } else if (n.op == "Mul") {
-            ggml_tensor* a = get_t(n.inputs[0]);
-            ggml_tensor* b = get_t(n.inputs[1]);
+            ggml_tensor * a = get_t(n.inputs[0]);
+            ggml_tensor * b = get_t(n.inputs[1]);
             if (a && b) result = ggml_mul(g, a, b);
         } else if (n.op == "Sigmoid") {
-            ggml_tensor* x = get_t(n.inputs[0]);
+            ggml_tensor * x = get_t(n.inputs[0]);
             if (x) result = ggml_sigmoid(g, x);
         } else if (n.op == "Flatten") {
-            ggml_tensor* x = get_t(n.inputs[0]);
+            ggml_tensor * x = get_t(n.inputs[0]);
             if (x) {
                 int64_t total = ggml_nelements(x);
                 result = ggml_reshape_1d(g, ggml_cont(g, x), total);
             }
         } else if (n.op == "Gemm") {
-            ggml_tensor* x = get_t(n.inputs[0]);
-            ggml_tensor* w = get_t(n.inputs[1]);
+            ggml_tensor * x = get_t(n.inputs[0]);
+            ggml_tensor * w = get_t(n.inputs[1]);
             if (x && w) {
                 result = ggml_mul_mat(g, w, x);
                 if (n.inputs.size() > 2) {
-                    ggml_tensor* bias = get_t(n.inputs[2]);
+                    ggml_tensor * bias = get_t(n.inputs[2]);
                     if (bias) result = ggml_add(g, result, bias);
                 }
             }
         } else if (n.op == "BNPrecomputed") {
             // Precomputed BN: scale * x + shift (stored as regular weight tensors)
-            ggml_tensor* x = get_t(n.inputs[0]);
-            ggml_tensor* scale = get_t(n.inputs[1]);
-            ggml_tensor* shift = get_t(n.inputs[2]);
+            ggml_tensor * x = get_t(n.inputs[0]);
+            ggml_tensor * scale = get_t(n.inputs[1]);
+            ggml_tensor * shift = get_t(n.inputs[2]);
             if (x && scale && shift) {
                 int ndim = ggml_n_dims(x);
                 if (ndim >= 3) {
@@ -1237,20 +1282,20 @@ static ggml_tensor* replay_graph(
             }
         } else if (n.op == "BatchNormalization") {
             // Precompute scale + shift on the fly
-            ggml_tensor* x = get_t(n.inputs[0]);
+            ggml_tensor * x = get_t(n.inputs[0]);
             if (x && n.inputs.size() >= 5) {
-                ggml_tensor* gamma = get_t(n.inputs[1]);
-                ggml_tensor* beta = get_t(n.inputs[2]);
-                ggml_tensor* mean = get_t(n.inputs[3]);
-                ggml_tensor* var = get_t(n.inputs[4]);
+                ggml_tensor * gamma = get_t(n.inputs[1]);
+                ggml_tensor * beta = get_t(n.inputs[2]);
+                ggml_tensor * mean = get_t(n.inputs[3]);
+                ggml_tensor * var = get_t(n.inputs[4]);
                 if (gamma && beta && mean && var) {
                     // Precompute on host, create input tensors
                     int C = (int)gamma->ne[0];
                     std::vector<float> sc(C), sh(C), gd(C), bd(C), md(C), vd(C);
-                    ggml_backend_tensor_get(gamma, gd.data(), 0, C*4);
-                    ggml_backend_tensor_get(beta, bd.data(), 0, C*4);
-                    ggml_backend_tensor_get(mean, md.data(), 0, C*4);
-                    ggml_backend_tensor_get(var, vd.data(), 0, C*4);
+                    ggml_backend_tensor_get(gamma, gd.data(), 0, C * 4);
+                    ggml_backend_tensor_get(beta, bd.data(), 0, C * 4);
+                    ggml_backend_tensor_get(mean, md.data(), 0, C * 4);
+                    ggml_backend_tensor_get(var, vd.data(), 0, C * 4);
                     for (int i = 0; i < C; i++) {
                         float inv = gd[i] / std::sqrt(vd[i] + 1e-5f);
                         sc[i] = inv;
@@ -1258,8 +1303,8 @@ static ggml_tensor* replay_graph(
                     }
                     // Create graph input tensors for scale/shift
                     int ndim = ggml_n_dims(x);
-                    ggml_tensor* scale_t;
-                    ggml_tensor* shift_t;
+                    ggml_tensor * scale_t;
+                    ggml_tensor * shift_t;
                     if (ndim >= 3) {
                         scale_t = ggml_new_tensor_3d(g, GGML_TYPE_F32, 1, 1, C);
                         shift_t = ggml_new_tensor_3d(g, GGML_TYPE_F32, 1, 1, C);
@@ -1270,8 +1315,10 @@ static ggml_tensor* replay_graph(
                     char sn[64], hn[64];
                     snprintf(sn, sizeof(sn), "bn_sc_%zu", ni);
                     snprintf(hn, sizeof(hn), "bn_sh_%zu", ni);
-                    ggml_set_name(scale_t, sn); ggml_set_input(scale_t);
-                    ggml_set_name(shift_t, hn); ggml_set_input(shift_t);
+                    ggml_set_name(scale_t, sn);
+                    ggml_set_input(scale_t);
+                    ggml_set_name(shift_t, hn);
+                    ggml_set_input(shift_t);
                     // Store for setting later
                     // TODO: need a way to set these after allocation
                     // For now, this won't work properly because we can't set
@@ -1279,9 +1326,9 @@ static ggml_tensor* replay_graph(
                     result = ggml_add(g, ggml_mul(g, x, scale_t), shift_t);
                 }
             }
-            if (!result) result = get_t(n.inputs[0]);  // fallback: pass through
+            if (!result) result = get_t(n.inputs[0]); // fallback: pass through
         } else if (n.op == "AveragePool" || n.op == "MaxPool") {
-            ggml_tensor* x = get_t(n.inputs[0]);
+            ggml_tensor * x = get_t(n.inputs[0]);
             if (x) {
                 int k = 3, s = 1, p = 0;
                 if (!n.attrs.empty()) sscanf(n.attrs.c_str(), "k%ds%dp%d", &k, &s, &p);
@@ -1289,25 +1336,25 @@ static ggml_tensor* replay_graph(
                 result = ggml_pool_2d(g, x, pool_op, k, k, s, s, p, p);
             }
         } else if (n.op == "Resize") {
-            ggml_tensor* x = get_t(n.inputs[0]);
+            ggml_tensor * x = get_t(n.inputs[0]);
             if (x) {
                 // Nearest-neighbor 2x upscale (FPN standard)
                 result = ggml_upscale(g, x, 2, GGML_SCALE_MODE_NEAREST);
             }
         } else if (n.op == "Concat") {
-            ggml_tensor* a = get_t(n.inputs[0]);
+            ggml_tensor * a = get_t(n.inputs[0]);
             if (a && ggml_n_dims(a) >= 3 && n.inputs.size() >= 2) {
-                ggml_tensor* b = get_t(n.inputs[1]);
+                ggml_tensor * b = get_t(n.inputs[1]);
                 if (b && ggml_n_dims(b) >= 3 && a->ne[0] == b->ne[0] && a->ne[1] == b->ne[1]) {
                     result = ggml_concat(g, a, b, 2);
                 } else {
-                    result = a;  // shape mismatch or shape tensor — passthrough
+                    result = a; // shape mismatch or shape tensor — passthrough
                 }
             } else {
-                if (a) result = a;  // shape tensor
+                if (a) result = a; // shape tensor
             }
         } else if (n.op == "Transpose") {
-            ggml_tensor* x = get_t(n.inputs[0]);
+            ggml_tensor * x = get_t(n.inputs[0]);
             if (x) {
                 // Default: swap last two dims. Most SCRFD transposes are [N,C]→[C,N]
                 if (ggml_n_dims(x) == 2) {
@@ -1317,19 +1364,19 @@ static ggml_tensor* replay_graph(
                 }
             }
         } else if (n.op == "Reshape") {
-            ggml_tensor* x = get_t(n.inputs[0]);
+            ggml_tensor * x = get_t(n.inputs[0]);
             if (x) {
                 // SCRFD reshapes are typically [1,C,H,W]→[H*W,C] or similar
                 // Without runtime shape inference, pass through
                 result = ggml_dup(g, x);
             }
         } else if (n.op == "Sub") {
-            ggml_tensor* a = get_t(n.inputs[0]);
-            ggml_tensor* b = get_t(n.inputs[1]);
+            ggml_tensor * a = get_t(n.inputs[0]);
+            ggml_tensor * b = get_t(n.inputs[1]);
             if (a && b) result = ggml_sub(g, a, b);
         } else if (n.op == "Dropout") {
             // Identity at inference
-            ggml_tensor* x = get_t(n.inputs[0]);
+            ggml_tensor * x = get_t(n.inputs[0]);
             if (x) result = x;
         } else if (n.op == "Shape" || n.op == "Gather" || n.op == "Unsqueeze" || n.op == "Slice") {
             // Shape computation ops produce scalar/1D shape tensors for Resize.

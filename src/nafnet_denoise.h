@@ -28,9 +28,7 @@ void nafnet_free(nafnet_context * ctx);
 // Input: uint8 RGB pixels [h, w, 3].
 // Output: uint8 RGB pixels [h, w, 3], allocated by caller (same size as input).
 // Returns 0 on success, -1 on error.
-int nafnet_process(nafnet_context * ctx,
-                   const uint8_t * input, int width, int height,
-                   uint8_t * output);
+int nafnet_process(nafnet_context * ctx, const uint8_t * input, int width, int height, uint8_t * output);
 
 #ifdef __cplusplus
 }

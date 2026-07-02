@@ -38,12 +38,24 @@ static std::string json_escape(const std::string & s) {
     out.reserve(s.size() + 8);
     for (char c : s) {
         switch (c) {
-            case '\\': out += "\\\\"; break;
-            case '"':  out += "\\\""; break;
-            case '\n': out += "\\n"; break;
-            case '\r': out += "\\r"; break;
-            case '\t': out += "\\t"; break;
-            default:   out += c; break;
+        case '\\':
+            out += "\\\\";
+            break;
+        case '"':
+            out += "\\\"";
+            break;
+        case '\n':
+            out += "\\n";
+            break;
+        case '\r':
+            out += "\\r";
+            break;
+        case '\t':
+            out += "\\t";
+            break;
+        default:
+            out += c;
+            break;
         }
     }
     return out;
@@ -79,7 +91,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --top-n N        limit rerank output to top N documents\n");
     fprintf(stderr, "  --face FILE      encode face from image (recognition model)\n");
     fprintf(stderr, "  --detect FILE    detect faces in image (detection model)\n");
-    fprintf(stderr, "  --ocr FILE       OCR → text (auto-detect: pix2tex/texteller/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/parseq/qwen2vl/qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr/unlimited-ocr)\n");
+    fprintf(stderr, "  --ocr FILE       OCR → text (auto-detect: "
+                    "pix2tex/texteller/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/parseq/qwen2vl/"
+                    "qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr/unlimited-ocr)\n");
     fprintf(stderr, "  --ocr-max-tokens N  max tokens for VLM OCR engines (default: 2048; no-op for formula OCR)\n");
     fprintf(stderr, "  --pix2struct FILE  Pix2Struct document understanding → text (needs -m pix2struct.gguf)\n");
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
@@ -107,7 +121,8 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --cleanup        preprocess scan before OCR (deskew, crop borders, whiten background)\n");
     fprintf(stderr, "  --cleanup-only F process scan and write cleaned image to stdout (no OCR)\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
-    fprintf(stderr, "       --ocr-engine N  primary engine (dbnet_trocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen3vl|unlimited_ocr)\n");
+    fprintf(stderr, "       --ocr-engine N  primary engine "
+                    "(dbnet_trocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen3vl|unlimited_ocr)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
     fprintf(stderr, "       --truecase-model M  post-OCR truecasing (BiLSTM)\n");
@@ -134,7 +149,8 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --tbsrn-sr FILE  standalone TBSRN text-line SR: upscale text crop, write PPM to stdout\n");
     fprintf(stderr, "                   (needs --tbsrn-model PATH: TBSRN GGUF, Telescope, fixed 4x)\n");
     fprintf(stderr, "  --tbsrn-model PATH TBSRN text-line super-resolution GGUF (used with --tbsrn-sr)\n");
-    fprintf(stderr, "  --nafnet-denoise FILE standalone NAFNet denoise (the --denoise pipeline engine): write PPM to stdout\n");
+    fprintf(stderr,
+            "  --nafnet-denoise FILE standalone NAFNet denoise (the --denoise pipeline engine): write PPM to stdout\n");
     fprintf(stderr, "                   (needs --nafnet-model PATH: NAFNet-SIDD GGUF)\n");
     fprintf(stderr, "  --nafnet-model PATH NAFNet denoising GGUF (used with --nafnet-denoise)\n");
     fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
@@ -143,7 +159,8 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --conf N         confidence threshold for detection (default: 0.5)\n");
     fprintf(stderr, "  --auto-download  download model automatically if not found\n");
     fprintf(stderr, "  --accept-license SPDX  pre-accept a restricted license (e.g. cc-by-nc-4.0, gemma)\n");
-    fprintf(stderr, "                          required for non-commercial / vendor-licensed models in non-TTY mode.\n");
+    fprintf(stderr,
+            "                          required for non-commercial / vendor-licensed models in non-TTY mode.\n");
     fprintf(stderr, "                          alternatively set the CRISPEMBED_ACCEPT_LICENSE env var.\n");
     fprintf(stderr, "  --list-models    list available models (license column marks * for restricted)\n");
     fprintf(stderr, "  --cache-dir DIR  set model cache directory\n");
@@ -164,94 +181,94 @@ int main(int argc, char ** argv) {
     std::string model_arg;
     std::string file_path;
     std::string prefix;
-    bool prefix_set = false;  // true if --prefix was explicitly provided
+    bool prefix_set = false; // true if --prefix was explicitly provided
     std::string rerank_query;
     std::string biencoder_query;
     std::vector<std::string> texts;
     int n_threads = 1;
-    int output_dim = 0;  // 0 = model default
-    int top_n = 0;       // 0 = all
+    int output_dim = 0; // 0 = model default
+    int top_n = 0;      // 0 = all
     bool json_output = false;
     bool print_dim = false;
     bool print_capabilities = false;
     bool auto_download = false;
-    std::string accepted_license;  // for cc-by-nc-*, gemma, etc.
+    std::string accepted_license; // for cc-by-nc-*, gemma, etc.
     bool sparse_mode = false;
     bool colbert_mode = false;
-    std::string audio_path;  // .raw float32 16 kHz mono PCM
-    std::string image_raw_path;  // preprocessed float32 patches, n_patches x 1536
+    std::string audio_path;     // .raw float32 16 kHz mono PCM
+    std::string image_raw_path; // preprocessed float32 patches, n_patches x 1536
     std::string grid_thw_arg;
-    std::string image_path;  // JPG/PNG/BMP — in-process preprocessor
-    std::string face_path;   // face image for CNN face recognition
-    std::string detect_path; // image for face detection
-    std::string ocr_path;    // image for unified math OCR (auto-detect arch)
-    std::string hmer_path;   // image for handwritten math OCR (HMER)
-    std::string bttr_path;   // image for handwritten math OCR (BTTR)
-    std::string layout_path; // image for layout detection
-    std::string table_path;  // image for table structure recognition
-    std::string ner_text;    // text for NER extraction
+    std::string image_path;                                  // JPG/PNG/BMP — in-process preprocessor
+    std::string face_path;                                   // face image for CNN face recognition
+    std::string detect_path;                                 // image for face detection
+    std::string ocr_path;                                    // image for unified math OCR (auto-detect arch)
+    std::string hmer_path;                                   // image for handwritten math OCR (HMER)
+    std::string bttr_path;                                   // image for handwritten math OCR (BTTR)
+    std::string layout_path;                                 // image for layout detection
+    std::string table_path;                                  // image for table structure recognition
+    std::string ner_text;                                    // text for NER extraction
     std::string ner_labels = "person,organization,location"; // comma-separated entity types
     float ner_threshold = 0.5f;
-    std::string kie_path;    // image for KIE extraction
-    std::string kie_labels;  // comma-separated field names (defaults to ner_labels)
+    std::string kie_path;   // image for KIE extraction
+    std::string kie_labels; // comma-separated field names (defaults to ner_labels)
     float kie_threshold = 0.5f;
-    std::string lilt_path;   // JSON file for LiLT token classification
-    std::string det_model;   // detection model for --face-pipeline
-    std::string ocr_det_path;  // general OCR: text detection model (DBNet)
-    std::string ocr_rec_path;  // general OCR: text recognition model (TrOCR)
-    bool cleanup_mode = false;          // --cleanup: preprocess before OCR
-    std::string cleanup_only_path;      // --cleanup-only FILE: standalone cleanup
-    std::string ocr_pipeline_path;      // --ocr-pipeline FILE: full orchestrator
-    bool pipeline_denoise = false;      // --denoise: NAFNet tier-2 in the pipeline
-    std::string sr_model;              // --sr-model: text super-resolution GGUF
-    std::string pan_model;             // --pan-model: PAN super-resolution GGUF
-    std::string pan_sr_path;           // --pan-sr FILE: standalone PAN upscaling
-    std::string dat_model;             // --dat-model: DAT super-resolution GGUF
-    std::string dat_sr_path;           // --dat-sr FILE: standalone DAT upscaling
-    std::string hat_model;             // --hat-model: HAT super-resolution GGUF
-    std::string hat_sr_path;           // --hat-sr FILE: standalone HAT upscaling
-    std::string safmn_model;           // --safmn-model: SAFMN super-resolution GGUF
-    std::string safmn_sr_path;         // --safmn-sr FILE: standalone SAFMN upscaling
-    std::string esrgan_model;          // --esrgan-model: Real-ESRGAN super-resolution GGUF
-    std::string esrgan_sr_path;        // --esrgan-sr FILE: standalone Real-ESRGAN upscaling
-    std::string swinir_model;          // --swinir-model: SwinIR super-resolution GGUF
-    std::string swinir_sr_path;        // --swinir-sr FILE: standalone SwinIR upscaling
-    std::string tbsrn_model;           // --tbsrn-model: TBSRN text-line SR GGUF
-    std::string tbsrn_sr_path;         // --tbsrn-sr FILE: standalone TBSRN upscaling
-    std::string restormer_model;        // --restormer MODEL: Restormer image restoration GGUF
-    std::string restormer_path;         // --restormer FILE: standalone Restormer processing
-    std::string scunet_model;           // --scunet-model MODEL: SCUNet denoising GGUF
-    std::string scunet_path;            // --scunet-denoise FILE: standalone SCUNet denoising
-    std::string nafnet_model;           // --nafnet-model MODEL: NAFNet denoising GGUF
-    std::string nafnet_path;            // --nafnet-denoise FILE: standalone NAFNet denoising
-    std::string instructir_model;       // --instructir-model MODEL: InstructIR restoration GGUF
-    std::string instructir_path;        // --instructir FILE: standalone InstructIR processing
-    int instructir_task = 0;            // --instructir-task N: task 0-6
-    std::string adair_model;            // --adair-model MODEL: AdaIR restoration GGUF
-    std::string adair_path;             // --adair FILE: standalone AdaIR processing
-    std::string pix2struct_path;         // --pix2struct FILE: Pix2Struct document understanding
-    int pix2struct_max_tokens = 256;     // --pix2struct-max-tokens N
-    int ocr_max_tokens = 0;              // --ocr-max-tokens N (0 = engine default)
-    std::string pipeline_vlm_model;     // --vlm-model NAME: VLM escalation engine GGUF
-    int pipeline_vlm_engine = 0;        // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
-    int pipeline_min_chars = -1;        // --ocr-min-chars: accept-gate override (-1 = default)
-    float pipeline_min_conf = -1.0f;    // --ocr-min-conf: accept-gate override (-1 = default)
-    std::string lid_model;              // --lid-model: text LID for language routing
-    std::string truecase_model;         // --truecase-model: post-OCR truecasing
-    std::string tess_model_dir;         // --tess-model-dir: tesseract models directory
-    std::string punct_model;    // --punct-model: post-process OCR with punctuation
-    std::string output_format;  // --output-format: text/hocr/alto
-    std::string pipeline_engine; // --ocr-engine NAME
-    std::string pdf_dpi_path;    // --pdf-dpi FILE
-    std::string find_skew_path;  // --find-skew FILE
-    std::string dewarp_path;     // --dewarp FILE
-    std::string tps_dewarp_model; // --tps-dewarp MODEL FILE
+    std::string lilt_path;           // JSON file for LiLT token classification
+    std::string det_model;           // detection model for --face-pipeline
+    std::string ocr_det_path;        // general OCR: text detection model (DBNet)
+    std::string ocr_rec_path;        // general OCR: text recognition model (TrOCR)
+    bool cleanup_mode = false;       // --cleanup: preprocess before OCR
+    std::string cleanup_only_path;   // --cleanup-only FILE: standalone cleanup
+    std::string ocr_pipeline_path;   // --ocr-pipeline FILE: full orchestrator
+    bool pipeline_denoise = false;   // --denoise: NAFNet tier-2 in the pipeline
+    std::string sr_model;            // --sr-model: text super-resolution GGUF
+    std::string pan_model;           // --pan-model: PAN super-resolution GGUF
+    std::string pan_sr_path;         // --pan-sr FILE: standalone PAN upscaling
+    std::string dat_model;           // --dat-model: DAT super-resolution GGUF
+    std::string dat_sr_path;         // --dat-sr FILE: standalone DAT upscaling
+    std::string hat_model;           // --hat-model: HAT super-resolution GGUF
+    std::string hat_sr_path;         // --hat-sr FILE: standalone HAT upscaling
+    std::string safmn_model;         // --safmn-model: SAFMN super-resolution GGUF
+    std::string safmn_sr_path;       // --safmn-sr FILE: standalone SAFMN upscaling
+    std::string esrgan_model;        // --esrgan-model: Real-ESRGAN super-resolution GGUF
+    std::string esrgan_sr_path;      // --esrgan-sr FILE: standalone Real-ESRGAN upscaling
+    std::string swinir_model;        // --swinir-model: SwinIR super-resolution GGUF
+    std::string swinir_sr_path;      // --swinir-sr FILE: standalone SwinIR upscaling
+    std::string tbsrn_model;         // --tbsrn-model: TBSRN text-line SR GGUF
+    std::string tbsrn_sr_path;       // --tbsrn-sr FILE: standalone TBSRN upscaling
+    std::string restormer_model;     // --restormer MODEL: Restormer image restoration GGUF
+    std::string restormer_path;      // --restormer FILE: standalone Restormer processing
+    std::string scunet_model;        // --scunet-model MODEL: SCUNet denoising GGUF
+    std::string scunet_path;         // --scunet-denoise FILE: standalone SCUNet denoising
+    std::string nafnet_model;        // --nafnet-model MODEL: NAFNet denoising GGUF
+    std::string nafnet_path;         // --nafnet-denoise FILE: standalone NAFNet denoising
+    std::string instructir_model;    // --instructir-model MODEL: InstructIR restoration GGUF
+    std::string instructir_path;     // --instructir FILE: standalone InstructIR processing
+    int instructir_task = 0;         // --instructir-task N: task 0-6
+    std::string adair_model;         // --adair-model MODEL: AdaIR restoration GGUF
+    std::string adair_path;          // --adair FILE: standalone AdaIR processing
+    std::string pix2struct_path;     // --pix2struct FILE: Pix2Struct document understanding
+    int pix2struct_max_tokens = 256; // --pix2struct-max-tokens N
+    int ocr_max_tokens = 0;          // --ocr-max-tokens N (0 = engine default)
+    std::string pipeline_vlm_model;  // --vlm-model NAME: VLM escalation engine GGUF
+    int pipeline_vlm_engine = 0;     // --vlm-engine: 0=got 1=glm 2=qwen2vl 3=internvl2
+    int pipeline_min_chars = -1;     // --ocr-min-chars: accept-gate override (-1 = default)
+    float pipeline_min_conf = -1.0f; // --ocr-min-conf: accept-gate override (-1 = default)
+    std::string lid_model;           // --lid-model: text LID for language routing
+    std::string truecase_model;      // --truecase-model: post-OCR truecasing
+    std::string tess_model_dir;      // --tess-model-dir: tesseract models directory
+    std::string punct_model;         // --punct-model: post-process OCR with punctuation
+    std::string output_format;       // --output-format: text/hocr/alto
+    std::string pipeline_engine;     // --ocr-engine NAME
+    std::string pdf_dpi_path;        // --pdf-dpi FILE
+    std::string find_skew_path;      // --find-skew FILE
+    std::string dewarp_path;         // --dewarp FILE
+    std::string tps_dewarp_model;    // --tps-dewarp MODEL FILE
     std::string tps_dewarp_path;
-    std::string cc_detect_path;  // --cc-detect FILE
+    std::string cc_detect_path; // --cc-detect FILE
     bool face_pipeline_mode = false;
     float conf_threshold = 0.5f;
-    std::string lora_adapter;   // LoRA adapter name (--lora)
-    bool list_lora = false;     // --list-lora
+    std::string lora_adapter; // LoRA adapter name (--lora)
+    bool list_lora = false;   // --list-lora
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-m") == 0 && i + 1 < argc) {
@@ -335,7 +352,7 @@ int main(int argc, char ** argv) {
             dewarp_path = argv[++i];
         } else if (strcmp(argv[i], "--tps-dewarp") == 0 && i + 2 < argc) {
             tps_dewarp_model = argv[++i];
-            tps_dewarp_path  = argv[++i];
+            tps_dewarp_path = argv[++i];
         } else if (strcmp(argv[i], "--cc-detect") == 0 && i + 1 < argc) {
             cc_detect_path = argv[++i];
         } else if (strcmp(argv[i], "--cleanup") == 0) {
@@ -462,8 +479,8 @@ int main(int argc, char ** argv) {
             if (i > 0) printf(",");
             printf("{\"page\":%d,\"dpi\":%.1f,\"dpi_min\":%.1f,\"dpi_max\":%.1f,"
                    "\"n_images\":%d,\"page_width_pt\":%.1f,\"page_height_pt\":%.1f}",
-                   i, results[i].dpi, results[i].dpi_min, results[i].dpi_max,
-                   results[i].n_images, results[i].page_width_pt, results[i].page_height_pt);
+                   i, results[i].dpi, results[i].dpi_min, results[i].dpi_max, results[i].n_images,
+                   results[i].page_width_pt, results[i].page_height_pt);
         }
         printf("]}\n");
         pdf_dpi_free(results);
@@ -472,23 +489,34 @@ int main(int argc, char ** argv) {
     if (!find_skew_path.empty()) {
         int w, h, ch;
         unsigned char * data = stbi_load(find_skew_path.c_str(), &w, &h, &ch, 1);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", find_skew_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", find_skew_path.c_str());
+            return 1;
+        }
         float angle = 0, conf = 0;
         crispembed_find_skew(data, w, h, &angle, &conf);
         stbi_image_free(data);
-        if (json_output) printf("{\"angle\":%.3f,\"confidence\":%.3f}\n", angle, conf);
-        else printf("angle=%.3f deg  confidence=%.3f\n", angle, conf);
+        if (json_output)
+            printf("{\"angle\":%.3f,\"confidence\":%.3f}\n", angle, conf);
+        else
+            printf("angle=%.3f deg  confidence=%.3f\n", angle, conf);
         return 0;
     }
     if (!dewarp_path.empty()) {
         int w, h, ch;
         unsigned char * data = stbi_load(dewarp_path.c_str(), &w, &h, &ch, 1);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", dewarp_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", dewarp_path.c_str());
+            return 1;
+        }
         std::vector<uint8_t> out(w * h);
         int ow = 0, oh = 0;
         int ret = crispembed_dewarp(data, w, h, out.data(), &ow, &oh);
         stbi_image_free(data);
-        if (ret != 0) { fprintf(stderr, "dewarp failed (too few textlines?)\n"); return 1; }
+        if (ret != 0) {
+            fprintf(stderr, "dewarp failed (too few textlines?)\n");
+            return 1;
+        }
         // Write result as PGM to stdout
         printf("P5\n%d %d\n255\n", ow, oh);
         fwrite(out.data(), 1, ow * oh, stdout);
@@ -497,11 +525,17 @@ int main(int argc, char ** argv) {
     if (!tps_dewarp_path.empty()) {
         int w, h, ch;
         unsigned char * data = stbi_load(tps_dewarp_path.c_str(), &w, &h, &ch, 1);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", tps_dewarp_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", tps_dewarp_path.c_str());
+            return 1;
+        }
         std::vector<uint8_t> out(w * h);
         int ret = crispembed_tps_auto_dewarp(data, w, h, tps_dewarp_model.c_str(), out.data());
         stbi_image_free(data);
-        if (ret != 0) { fprintf(stderr, "tps-dewarp failed\n"); return 1; }
+        if (ret != 0) {
+            fprintf(stderr, "tps-dewarp failed\n");
+            return 1;
+        }
         printf("P5\n%d %d\n255\n", w, h);
         fwrite(out.data(), 1, w * h, stdout);
         return 0;
@@ -509,7 +543,10 @@ int main(int argc, char ** argv) {
     if (!cc_detect_path.empty()) {
         int w, h, ch;
         unsigned char * data = stbi_load(cc_detect_path.c_str(), &w, &h, &ch, 1);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", cc_detect_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", cc_detect_path.c_str());
+            return 1;
+        }
         int n = 0;
         crispembed_ocr_result * regions = crispembed_cc_detect(data, w, h, &n);
         stbi_image_free(data);
@@ -517,15 +554,14 @@ int main(int argc, char ** argv) {
             printf("[");
             for (int i = 0; i < n; i++) {
                 if (i > 0) printf(",");
-                printf("{\"x\":%.0f,\"y\":%.0f,\"w\":%.0f,\"h\":%.0f}",
-                       regions[i].x, regions[i].y, regions[i].w, regions[i].h);
+                printf("{\"x\":%.0f,\"y\":%.0f,\"w\":%.0f,\"h\":%.0f}", regions[i].x, regions[i].y, regions[i].w,
+                       regions[i].h);
             }
             printf("]\n");
         } else {
             printf("detected %d text regions\n", n);
             for (int i = 0; i < n; i++)
-                printf("  [%d] (%.0f, %.0f) %.0fx%.0f\n", i,
-                       regions[i].x, regions[i].y, regions[i].w, regions[i].h);
+                printf("  [%d] (%.0f, %.0f) %.0fx%.0f\n", i, regions[i].x, regions[i].y, regions[i].w, regions[i].h);
         }
         if (regions) free(regions);
         return 0;
@@ -537,15 +573,25 @@ int main(int argc, char ** argv) {
         }
         int w, h, ch;
         unsigned char * data = stbi_load(pan_sr_path.c_str(), &w, &h, &ch, 3);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", pan_sr_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", pan_sr_path.c_str());
+            return 1;
+        }
         void * pctx = crispembed_pan_sr_init(pan_model.c_str(), n_threads);
-        if (!pctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load PAN model '%s'\n", pan_model.c_str()); return 1; }
+        if (!pctx) {
+            stbi_image_free(data);
+            fprintf(stderr, "error: cannot load PAN model '%s'\n", pan_model.c_str());
+            return 1;
+        }
         uint8_t * out = nullptr;
         int ow = 0, oh = 0;
         int rc = crispembed_pan_sr_process(pctx, data, w, h, 0, 0, &out, &ow, &oh);
         stbi_image_free(data);
         crispembed_pan_sr_free(pctx);
-        if (rc != 0 || !out) { fprintf(stderr, "error: PAN SR processing failed\n"); return 1; }
+        if (rc != 0 || !out) {
+            fprintf(stderr, "error: PAN SR processing failed\n");
+            return 1;
+        }
         // Write result as PPM (RGB) to stdout
         printf("P6\n%d %d\n255\n", ow, oh);
         fwrite(out, 1, (size_t)ow * oh * 3, stdout);
@@ -559,15 +605,25 @@ int main(int argc, char ** argv) {
         }
         int w, h, ch;
         unsigned char * data = stbi_load(dat_sr_path.c_str(), &w, &h, &ch, 3);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", dat_sr_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", dat_sr_path.c_str());
+            return 1;
+        }
         void * dctx = crispembed_dat_sr_init(dat_model.c_str(), n_threads);
-        if (!dctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load DAT model '%s'\n", dat_model.c_str()); return 1; }
+        if (!dctx) {
+            stbi_image_free(data);
+            fprintf(stderr, "error: cannot load DAT model '%s'\n", dat_model.c_str());
+            return 1;
+        }
         uint8_t * out = nullptr;
         int ow = 0, oh = 0;
         int rc = crispembed_dat_sr_process(dctx, data, w, h, 0, 0, &out, &ow, &oh);
         stbi_image_free(data);
         crispembed_dat_sr_free(dctx);
-        if (rc != 0 || !out) { fprintf(stderr, "error: DAT SR processing failed\n"); return 1; }
+        if (rc != 0 || !out) {
+            fprintf(stderr, "error: DAT SR processing failed\n");
+            return 1;
+        }
         printf("P6\n%d %d\n255\n", ow, oh);
         fwrite(out, 1, (size_t)ow * oh * 3, stdout);
         crispembed_dat_sr_free_image(out);
@@ -580,15 +636,25 @@ int main(int argc, char ** argv) {
         }
         int w, h, ch;
         unsigned char * data = stbi_load(hat_sr_path.c_str(), &w, &h, &ch, 3);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", hat_sr_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", hat_sr_path.c_str());
+            return 1;
+        }
         void * hctx = crispembed_hat_sr_init(hat_model.c_str(), n_threads);
-        if (!hctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load HAT model '%s'\n", hat_model.c_str()); return 1; }
+        if (!hctx) {
+            stbi_image_free(data);
+            fprintf(stderr, "error: cannot load HAT model '%s'\n", hat_model.c_str());
+            return 1;
+        }
         uint8_t * out = nullptr;
         int ow = 0, oh = 0;
         int rc = crispembed_hat_sr_process(hctx, data, w, h, 0, 0, &out, &ow, &oh);
         stbi_image_free(data);
         crispembed_hat_sr_free(hctx);
-        if (rc != 0 || !out) { fprintf(stderr, "error: HAT SR processing failed\n"); return 1; }
+        if (rc != 0 || !out) {
+            fprintf(stderr, "error: HAT SR processing failed\n");
+            return 1;
+        }
         printf("P6\n%d %d\n255\n", ow, oh);
         fwrite(out, 1, (size_t)ow * oh * 3, stdout);
         crispembed_hat_sr_free_image(out);
@@ -601,15 +667,25 @@ int main(int argc, char ** argv) {
         }
         int w, h, ch;
         unsigned char * data = stbi_load(safmn_sr_path.c_str(), &w, &h, &ch, 3);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", safmn_sr_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", safmn_sr_path.c_str());
+            return 1;
+        }
         void * sctx = crispembed_safmn_sr_init(safmn_model.c_str(), n_threads);
-        if (!sctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load SAFMN model '%s'\n", safmn_model.c_str()); return 1; }
+        if (!sctx) {
+            stbi_image_free(data);
+            fprintf(stderr, "error: cannot load SAFMN model '%s'\n", safmn_model.c_str());
+            return 1;
+        }
         uint8_t * out = nullptr;
         int ow = 0, oh = 0;
         int rc = crispembed_safmn_sr_process(sctx, data, w, h, 0, 0, &out, &ow, &oh);
         stbi_image_free(data);
         crispembed_safmn_sr_free(sctx);
-        if (rc != 0 || !out) { fprintf(stderr, "error: SAFMN SR processing failed\n"); return 1; }
+        if (rc != 0 || !out) {
+            fprintf(stderr, "error: SAFMN SR processing failed\n");
+            return 1;
+        }
         printf("P6\n%d %d\n255\n", ow, oh);
         fwrite(out, 1, (size_t)ow * oh * 3, stdout);
         crispembed_safmn_sr_free_image(out);
@@ -622,15 +698,25 @@ int main(int argc, char ** argv) {
         }
         int w, h, ch;
         unsigned char * data = stbi_load(esrgan_sr_path.c_str(), &w, &h, &ch, 3);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", esrgan_sr_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", esrgan_sr_path.c_str());
+            return 1;
+        }
         void * ectx = crispembed_esrgan_sr_init(esrgan_model.c_str(), n_threads);
-        if (!ectx) { stbi_image_free(data); fprintf(stderr, "error: cannot load Real-ESRGAN model '%s'\n", esrgan_model.c_str()); return 1; }
+        if (!ectx) {
+            stbi_image_free(data);
+            fprintf(stderr, "error: cannot load Real-ESRGAN model '%s'\n", esrgan_model.c_str());
+            return 1;
+        }
         uint8_t * out = nullptr;
         int ow = 0, oh = 0;
         int rc = crispembed_esrgan_sr_process(ectx, data, w, h, 0, 0, &out, &ow, &oh);
         stbi_image_free(data);
         crispembed_esrgan_sr_free(ectx);
-        if (rc != 0 || !out) { fprintf(stderr, "error: Real-ESRGAN SR processing failed\n"); return 1; }
+        if (rc != 0 || !out) {
+            fprintf(stderr, "error: Real-ESRGAN SR processing failed\n");
+            return 1;
+        }
         printf("P6\n%d %d\n255\n", ow, oh);
         fwrite(out, 1, (size_t)ow * oh * 3, stdout);
         crispembed_esrgan_sr_free_image(out);
@@ -643,15 +729,25 @@ int main(int argc, char ** argv) {
         }
         int w, h, ch;
         unsigned char * data = stbi_load(swinir_sr_path.c_str(), &w, &h, &ch, 3);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", swinir_sr_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", swinir_sr_path.c_str());
+            return 1;
+        }
         void * sctx = crispembed_swinir_sr_init(swinir_model.c_str(), n_threads);
-        if (!sctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load SwinIR model '%s'\n", swinir_model.c_str()); return 1; }
+        if (!sctx) {
+            stbi_image_free(data);
+            fprintf(stderr, "error: cannot load SwinIR model '%s'\n", swinir_model.c_str());
+            return 1;
+        }
         uint8_t * out = nullptr;
         int ow = 0, oh = 0;
         int rc = crispembed_swinir_sr_process(sctx, data, w, h, 0, 0, &out, &ow, &oh);
         stbi_image_free(data);
         crispembed_swinir_sr_free(sctx);
-        if (rc != 0 || !out) { fprintf(stderr, "error: SwinIR SR processing failed\n"); return 1; }
+        if (rc != 0 || !out) {
+            fprintf(stderr, "error: SwinIR SR processing failed\n");
+            return 1;
+        }
         // Write result as PPM (RGB) to stdout
         printf("P6\n%d %d\n255\n", ow, oh);
         fwrite(out, 1, (size_t)ow * oh * 3, stdout);
@@ -665,15 +761,25 @@ int main(int argc, char ** argv) {
         }
         int w, h, ch;
         unsigned char * data = stbi_load(tbsrn_sr_path.c_str(), &w, &h, &ch, 3);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", tbsrn_sr_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", tbsrn_sr_path.c_str());
+            return 1;
+        }
         void * tctx = crispembed_tbsrn_sr_init(tbsrn_model.c_str(), n_threads);
-        if (!tctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load TBSRN model '%s'\n", tbsrn_model.c_str()); return 1; }
+        if (!tctx) {
+            stbi_image_free(data);
+            fprintf(stderr, "error: cannot load TBSRN model '%s'\n", tbsrn_model.c_str());
+            return 1;
+        }
         uint8_t * out = nullptr;
         int ow = 0, oh = 0;
         int rc = crispembed_tbsrn_sr_process(tctx, data, w, h, &out, &ow, &oh);
         stbi_image_free(data);
         crispembed_tbsrn_sr_free(tctx);
-        if (rc != 0 || !out) { fprintf(stderr, "error: TBSRN SR processing failed\n"); return 1; }
+        if (rc != 0 || !out) {
+            fprintf(stderr, "error: TBSRN SR processing failed\n");
+            return 1;
+        }
         // Write result as PPM (RGB) to stdout
         printf("P6\n%d %d\n255\n", ow, oh);
         fwrite(out, 1, (size_t)ow * oh * 3, stdout);
@@ -687,14 +793,24 @@ int main(int argc, char ** argv) {
         }
         int w, h, ch;
         unsigned char * data = stbi_load(restormer_path.c_str(), &w, &h, &ch, 3);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", restormer_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", restormer_path.c_str());
+            return 1;
+        }
         void * rctx = crispembed_restormer_init(restormer_model.c_str(), n_threads);
-        if (!rctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load Restormer model '%s'\n", restormer_model.c_str()); return 1; }
+        if (!rctx) {
+            stbi_image_free(data);
+            fprintf(stderr, "error: cannot load Restormer model '%s'\n", restormer_model.c_str());
+            return 1;
+        }
         uint8_t * out = nullptr;
         int rc = crispembed_restormer_process(rctx, data, w, h, 0, 0, &out);
         stbi_image_free(data);
         crispembed_restormer_free(rctx);
-        if (rc != 0 || !out) { fprintf(stderr, "error: Restormer processing failed\n"); return 1; }
+        if (rc != 0 || !out) {
+            fprintf(stderr, "error: Restormer processing failed\n");
+            return 1;
+        }
         // Write result as PPM (RGB) to stdout
         printf("P6\n%d %d\n255\n", w, h);
         fwrite(out, 1, (size_t)w * h * 3, stdout);
@@ -708,14 +824,24 @@ int main(int argc, char ** argv) {
         }
         int w, h, ch;
         unsigned char * data = stbi_load(scunet_path.c_str(), &w, &h, &ch, 3);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", scunet_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", scunet_path.c_str());
+            return 1;
+        }
         void * sctx = crispembed_scunet_init(scunet_model.c_str(), n_threads);
-        if (!sctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load SCUNet model '%s'\n", scunet_model.c_str()); return 1; }
+        if (!sctx) {
+            stbi_image_free(data);
+            fprintf(stderr, "error: cannot load SCUNet model '%s'\n", scunet_model.c_str());
+            return 1;
+        }
         uint8_t * out = nullptr;
         int rc = crispembed_scunet_process(sctx, data, w, h, &out);
         stbi_image_free(data);
         crispembed_scunet_free(sctx);
-        if (rc != 0 || !out) { fprintf(stderr, "error: SCUNet denoising failed\n"); return 1; }
+        if (rc != 0 || !out) {
+            fprintf(stderr, "error: SCUNet denoising failed\n");
+            return 1;
+        }
         // Write result as PPM (RGB) to stdout
         printf("P6\n%d %d\n255\n", w, h);
         fwrite(out, 1, (size_t)w * h * 3, stdout);
@@ -731,14 +857,24 @@ int main(int argc, char ** argv) {
         }
         int w, h, ch;
         unsigned char * data = stbi_load(nafnet_path.c_str(), &w, &h, &ch, 3);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", nafnet_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", nafnet_path.c_str());
+            return 1;
+        }
         nafnet_context * nctx = nafnet_init(nafnet_model.c_str(), n_threads);
-        if (!nctx) { stbi_image_free(data); fprintf(stderr, "error: cannot load NAFNet model '%s'\n", nafnet_model.c_str()); return 1; }
+        if (!nctx) {
+            stbi_image_free(data);
+            fprintf(stderr, "error: cannot load NAFNet model '%s'\n", nafnet_model.c_str());
+            return 1;
+        }
         std::vector<uint8_t> out((size_t)w * h * 3);
         int rc = nafnet_process(nctx, data, w, h, out.data());
         stbi_image_free(data);
         nafnet_free(nctx);
-        if (rc != 0) { fprintf(stderr, "error: NAFNet denoising failed\n"); return 1; }
+        if (rc != 0) {
+            fprintf(stderr, "error: NAFNet denoising failed\n");
+            return 1;
+        }
         // Write result as PPM (RGB) to stdout
         printf("P6\n%d %d\n255\n", w, h);
         fwrite(out.data(), 1, out.size(), stdout);
@@ -751,14 +887,24 @@ int main(int argc, char ** argv) {
         }
         int w, h, ch;
         unsigned char * data = stbi_load(instructir_path.c_str(), &w, &h, &ch, 3);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", instructir_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", instructir_path.c_str());
+            return 1;
+        }
         void * ictx = crispembed_instructir_init(instructir_model.c_str(), n_threads);
-        if (!ictx) { stbi_image_free(data); fprintf(stderr, "error: cannot load InstructIR model '%s'\n", instructir_model.c_str()); return 1; }
+        if (!ictx) {
+            stbi_image_free(data);
+            fprintf(stderr, "error: cannot load InstructIR model '%s'\n", instructir_model.c_str());
+            return 1;
+        }
         uint8_t * out = nullptr;
         int rc = crispembed_instructir_process(ictx, instructir_task, data, w, h, &out);
         stbi_image_free(data);
         crispembed_instructir_free(ictx);
-        if (rc != 0 || !out) { fprintf(stderr, "error: InstructIR processing failed (task=%d)\n", instructir_task); return 1; }
+        if (rc != 0 || !out) {
+            fprintf(stderr, "error: InstructIR processing failed (task=%d)\n", instructir_task);
+            return 1;
+        }
         // Write result as PPM (RGB) to stdout
         printf("P6\n%d %d\n255\n", w, h);
         fwrite(out, 1, (size_t)w * h * 3, stdout);
@@ -772,14 +918,24 @@ int main(int argc, char ** argv) {
         }
         int w, h, ch;
         unsigned char * data = stbi_load(adair_path.c_str(), &w, &h, &ch, 3);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", adair_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", adair_path.c_str());
+            return 1;
+        }
         void * actx = crispembed_adair_init(adair_model.c_str(), n_threads);
-        if (!actx) { stbi_image_free(data); fprintf(stderr, "error: cannot load AdaIR model '%s'\n", adair_model.c_str()); return 1; }
+        if (!actx) {
+            stbi_image_free(data);
+            fprintf(stderr, "error: cannot load AdaIR model '%s'\n", adair_model.c_str());
+            return 1;
+        }
         uint8_t * out = nullptr;
         int rc = crispembed_adair_process(actx, data, w, h, &out);
         stbi_image_free(data);
         crispembed_adair_free(actx);
-        if (rc != 0 || !out) { fprintf(stderr, "error: AdaIR restoration failed\n"); return 1; }
+        if (rc != 0 || !out) {
+            fprintf(stderr, "error: AdaIR restoration failed\n");
+            return 1;
+        }
         // Write result as PPM (RGB) to stdout
         printf("P6\n%d %d\n255\n", w, h);
         fwrite(out, 1, (size_t)w * h * 3, stdout);
@@ -802,7 +958,9 @@ int main(int argc, char ** argv) {
     mode_count += !image_raw_path.empty() ? 1 : 0;
     mode_count += !image_path.empty() ? 1 : 0;
     if (mode_count > 1) {
-        fprintf(stderr, "error: choose only one of --sparse, --colbert, --rerank, --biencoder, --audio, --image, or --image-raw\n");
+        fprintf(
+            stderr,
+            "error: choose only one of --sparse, --colbert, --rerank, --biencoder, --audio, --image, or --image-raw\n");
         return 1;
     }
 
@@ -810,7 +968,10 @@ int main(int argc, char ** argv) {
     if (!cleanup_only_path.empty()) {
         int w, h, ch;
         unsigned char * data = stbi_load(cleanup_only_path.c_str(), &w, &h, &ch, 0);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", cleanup_only_path.c_str()); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", cleanup_only_path.c_str());
+            return 1;
+        }
         auto * sctx = scan_cleanup_init(nullptr, n_threads);
         auto params = scan_cleanup_defaults();
         uint8_t * out = nullptr;
@@ -818,7 +979,10 @@ int main(int argc, char ** argv) {
         int rc = scan_cleanup_process(sctx, data, w, h, ch, params, &out, &ow, &oh);
         stbi_image_free(data);
         scan_cleanup_free(sctx);
-        if (rc != 0 || !out) { fprintf(stderr, "error: scan cleanup failed\n"); return 1; }
+        if (rc != 0 || !out) {
+            fprintf(stderr, "error: scan cleanup failed\n");
+            return 1;
+        }
         if (json_output) {
             // Programmatic: dims only on stdout (no image), preserves the JSON contract.
             printf("{\"width\":%d,\"height\":%d,\"original_width\":%d,\"original_height\":%d}\n", ow, oh, w, h);
@@ -837,27 +1001,25 @@ int main(int argc, char ** argv) {
     // routing + per-stage cleanup (classical + optional NAFNet denoise) +
     // accept-gate escalation. Models default to surya-det + qwen2vl-ocr.
     if (!ocr_pipeline_path.empty()) {
-        auto resolve = [&](const std::string & n) {
-            return crispembed_mgr::resolve_model(n, true, accepted_license);
-        };
+        auto resolve = [&](const std::string & n) { return crispembed_mgr::resolve_model(n, true, accepted_license); };
         auto eng_id = [](const std::string & n) -> int {
-            if (n == "surya")     return 1;
-            if (n == "got")       return 2;
-            if (n == "glm")       return 3;
-            if (n == "qwen2vl")   return 4;
+            if (n == "surya") return 1;
+            if (n == "got") return 2;
+            if (n == "glm") return 3;
+            if (n == "qwen2vl") return 4;
             if (n == "internvl2") return 5;
-            if (n == "tesseract")  return 6;
+            if (n == "tesseract") return 6;
             if (n == "lightonocr") return 11;
-            if (n == "qwen3vl")   return 12;
+            if (n == "qwen3vl") return 12;
             if (n == "unlimited_ocr") return 13;
             return 0; // dbnet_trocr
         };
         std::string nafnet, vlm, punct;
-        if (pipeline_denoise)            nafnet = resolve("nafnet-denoise");
-        if (!pipeline_vlm_model.empty()) vlm    = resolve(pipeline_vlm_model);
-        if (!punct_model.empty())        punct  = resolve(punct_model);
-        const int   min_chars = pipeline_min_chars >= 0 ? pipeline_min_chars : 8;
-        const float min_conf  = pipeline_min_conf  >= 0 ? pipeline_min_conf  : 0.5f;
+        if (pipeline_denoise) nafnet = resolve("nafnet-denoise");
+        if (!pipeline_vlm_model.empty()) vlm = resolve(pipeline_vlm_model);
+        if (!punct_model.empty()) punct = resolve(punct_model);
+        const int min_chars = pipeline_min_chars >= 0 ? pipeline_min_chars : 8;
+        const float min_conf = pipeline_min_conf >= 0 ? pipeline_min_conf : 0.5f;
 
         void * pctx = nullptr;
         // Keep model strings alive until the init call returns (it copies them).
@@ -867,12 +1029,13 @@ int main(int argc, char ** argv) {
             const int eid = eng_id(pipeline_engine);
             const bool is_vlm = (eid >= 2 && eid <= 5) || eid == 11 || eid == 12 || eid == 13;
             if (is_vlm) {
-                const char * dflt = (eid == 2) ? "got-ocr2"
-                                  : (eid == 3) ? "glm-ocr"
-                                  : (eid == 5) ? "internvl2-ocr"
-                                  : (eid == 11) ? "lightonocr"
-                                  : (eid == 12) ? "qwen3vl-2b"
-                                  : (eid == 13) ? "unlimited-ocr" : "qwen2vl-ocr";
+                const char * dflt = (eid == 2)    ? "got-ocr2"
+                                    : (eid == 3)  ? "glm-ocr"
+                                    : (eid == 5)  ? "internvl2-ocr"
+                                    : (eid == 11) ? "lightonocr"
+                                    : (eid == 12) ? "qwen3vl-2b"
+                                    : (eid == 13) ? "unlimited-ocr"
+                                                  : "qwen2vl-ocr";
                 ma = resolve(!ocr_rec_path.empty() ? ocr_rec_path : dflt);
             } else {
                 ma = resolve(ocr_det_path.empty() ? "dbnet-det" : ocr_det_path);
@@ -881,58 +1044,57 @@ int main(int argc, char ** argv) {
             }
             crispembed_ocr_stage st;
             std::memset(&st, 0, sizeof(st));
-            st.source_type        = 0;          // auto
-            st.engine             = eid;
-            st.model_a            = ma.c_str();
-            st.model_b            = mb.empty() ? nullptr : mb.c_str();
+            st.source_type = 0; // auto
+            st.engine = eid;
+            st.model_a = ma.c_str();
+            st.model_b = mb.empty() ? nullptr : mb.c_str();
             // VLM OCR engines (GOT/GLM/InternVL2/LightOnOCR/Qwen3VL/Unlimited-OCR)
             // ingest the original image and do their own resize/letterbox; the
             // classical scan-cleanup (deskew/crop/binarize) distorts the input and
             // shifts content into the wrong vision-grid cells. Only clean up for the
             // detection+recognition path.
-            st.cleanup_enabled    = is_vlm ? 0 : 1;
-            st.denoise            = (pipeline_denoise && !is_vlm) ? 1 : 0;
-            st.cleanup            = crispembed_scan_cleanup_defaults();
+            st.cleanup_enabled = is_vlm ? 0 : 1;
+            st.denoise = (pipeline_denoise && !is_vlm) ? 1 : 0;
+            st.cleanup = crispembed_scan_cleanup_defaults();
             st.det_prob_threshold = 0.3f;
-            st.det_box_threshold  = 0.5f;
-            st.det_target_short   = 736;
-            st.vlm_max_tokens     = 0;
-            st.vlm_prompt         = nullptr;
-            st.min_chars          = min_chars;
-            st.min_confidence     = min_conf;
+            st.det_box_threshold = 0.5f;
+            st.det_target_short = 736;
+            st.vlm_max_tokens = 0;
+            st.vlm_prompt = nullptr;
+            st.min_chars = min_chars;
+            st.min_confidence = min_conf;
             pctx = crispembed_ocr_pipeline_init_stages(
-                /*router=*/0,
-                nafnet.empty()    ? nullptr : nafnet.c_str(),
-                sr_model.empty()  ? nullptr : sr_model.c_str(),
-                punct.empty()     ? nullptr : punct.c_str(),
-                lid_model.empty()      ? nullptr : lid_model.c_str(),
+                /*router=*/0, nafnet.empty() ? nullptr : nafnet.c_str(), sr_model.empty() ? nullptr : sr_model.c_str(),
+                punct.empty() ? nullptr : punct.c_str(), lid_model.empty() ? nullptr : lid_model.c_str(),
                 truecase_model.empty() ? nullptr : truecase_model.c_str(),
-                tess_model_dir.empty() ? nullptr : tess_model_dir.c_str(),
-                &st, 1, n_threads);
+                tess_model_dir.empty() ? nullptr : tess_model_dir.c_str(), &st, 1, n_threads);
         } else {
             // Default flat path (DBNet+TrOCR + source-type routing).
             det = resolve(ocr_det_path.empty() ? "dbnet-det" : ocr_det_path);
             rec = resolve(ocr_rec_path.empty() ? "qwen2vl-ocr" : ocr_rec_path);
             crispembed_ocr_pipeline_params pp = crispembed_ocr_pipeline_defaults();
-            pp.det_model    = det.c_str();
-            pp.rec_model    = rec.c_str();
+            pp.det_model = det.c_str();
+            pp.rec_model = rec.c_str();
             pp.nafnet_model = nafnet.empty() ? nullptr : nafnet.c_str();
-            pp.vlm_model    = vlm.empty()    ? nullptr : vlm.c_str();
-            pp.vlm_engine   = pipeline_vlm_engine;
-            pp.punct_model  = punct.empty()  ? nullptr : punct.c_str();
-            pp.lid_model      = lid_model.empty()      ? nullptr : lid_model.c_str();
+            pp.vlm_model = vlm.empty() ? nullptr : vlm.c_str();
+            pp.vlm_engine = pipeline_vlm_engine;
+            pp.punct_model = punct.empty() ? nullptr : punct.c_str();
+            pp.lid_model = lid_model.empty() ? nullptr : lid_model.c_str();
             pp.truecase_model = truecase_model.empty() ? nullptr : truecase_model.c_str();
             pp.tess_model_dir = tess_model_dir.empty() ? nullptr : tess_model_dir.c_str();
-            pp.min_chars     = min_chars;
+            pp.min_chars = min_chars;
             pp.min_confidence = min_conf;
             pctx = crispembed_ocr_pipeline_init(&pp, n_threads);
         }
-        if (!pctx) { fprintf(stderr, "error: cannot init OCR pipeline\n"); return 1; }
+        if (!pctx) {
+            fprintf(stderr, "error: cannot init OCR pipeline\n");
+            return 1;
+        }
         int n_res = 0;
-        const char* full_text = nullptr;
+        const char * full_text = nullptr;
         float mean_conf = 0.0f;
-        const crispembed_ocr_result* res = crispembed_ocr_pipeline_run(
-            pctx, ocr_pipeline_path.c_str(), &n_res, &full_text, &mean_conf);
+        const crispembed_ocr_result * res =
+            crispembed_ocr_pipeline_run(pctx, ocr_pipeline_path.c_str(), &n_res, &full_text, &mean_conf);
 
         // Output in requested format
         if (!output_format.empty() && output_format != "text") {
@@ -941,24 +1103,25 @@ int main(int argc, char ** argv) {
             int pw = 0, ph = 0, pc = 0;
             unsigned char * pimg = stbi_load(ocr_pipeline_path.c_str(), &pw, &ph, &pc, 0);
             if (pimg) stbi_image_free(pimg);
-            if (pw == 0) { pw = 2480; ph = 3508; } // A4 fallback
+            if (pw == 0) {
+                pw = 2480;
+                ph = 3508;
+            } // A4 fallback
 
-            char * rendered = crispembed_ocr_render(res, n_res, pw, ph,
-                                                     output_format.c_str());
+            char * rendered = crispembed_ocr_render(res, n_res, pw, ph, output_format.c_str());
             if (rendered) {
                 printf("%s", rendered);
                 free(rendered);
             }
         } else if (json_output) {
             float lang_conf = 0.0f;
-            const char* lang = crispembed_ocr_pipeline_detected_lang(pctx, &lang_conf);
+            const char * lang = crispembed_ocr_pipeline_detected_lang(pctx, &lang_conf);
             printf("{\"n_regions\":%d,\"mean_confidence\":%.3f", n_res, mean_conf);
-            if (lang && lang[0])
-                printf(",\"detected_lang\":\"%s\",\"lang_confidence\":%.4f", lang, lang_conf);
+            if (lang && lang[0]) printf(",\"detected_lang\":\"%s\",\"lang_confidence\":%.4f", lang, lang_conf);
             printf(",\"full_text\":\"%s\"}\n", json_escape(full_text ? full_text : "").c_str());
         } else {
             float lang_conf = 0.0f;
-            const char* lang = crispembed_ocr_pipeline_detected_lang(pctx, &lang_conf);
+            const char * lang = crispembed_ocr_pipeline_detected_lang(pctx, &lang_conf);
             printf("regions=%d  mean_conf=%.2f", n_res, mean_conf);
             if (lang && lang[0]) printf("  lang=%s(%.2f)", lang, lang_conf);
             printf("\n%s\n", full_text ? full_text : "");
@@ -969,27 +1132,27 @@ int main(int argc, char ** argv) {
 
     // General OCR pipeline via --ocr-det/--ocr-rec (preferred new flags)
     if (!ocr_det_path.empty() && !ocr_rec_path.empty() && !ocr_path.empty()) {
-        void* ocr_ctx = crispembed_ocr_init(ocr_det_path.c_str(), ocr_rec_path.c_str(), n_threads);
-        if (!ocr_ctx) { fprintf(stderr, "error: cannot load OCR models\n"); return 1; }
+        void * ocr_ctx = crispembed_ocr_init(ocr_det_path.c_str(), ocr_rec_path.c_str(), n_threads);
+        if (!ocr_ctx) {
+            fprintf(stderr, "error: cannot load OCR models\n");
+            return 1;
+        }
         int n_results = 0;
-        const crispembed_ocr_result* results = crispembed_ocr(ocr_ctx, ocr_path.c_str(), &n_results);
+        const crispembed_ocr_result * results = crispembed_ocr(ocr_ctx, ocr_path.c_str(), &n_results);
         if (json_output) {
             printf("[");
             for (int i = 0; i < n_results; i++) {
                 if (i > 0) printf(",");
                 printf("{\"text\":\"%s\",\"bbox\":[%.0f,%.0f,%.0f,%.0f],\"conf\":%.3f}",
-                       json_escape(results[i].text).c_str(),
-                       results[i].x, results[i].y,
-                       results[i].x + results[i].w, results[i].y + results[i].h,
-                       results[i].confidence);
+                       json_escape(results[i].text).c_str(), results[i].x, results[i].y, results[i].x + results[i].w,
+                       results[i].y + results[i].h, results[i].confidence);
             }
             printf("]\n");
         } else {
             for (int i = 0; i < n_results; i++) {
-                printf("[%2d] (%.0f,%.0f)-(%.0f,%.0f) conf=%.2f  \"%s\"\n",
-                       i, results[i].x, results[i].y,
-                       results[i].x + results[i].w, results[i].y + results[i].h,
-                       results[i].confidence, results[i].text);
+                printf("[%2d] (%.0f,%.0f)-(%.0f,%.0f) conf=%.2f  \"%s\"\n", i, results[i].x, results[i].y,
+                       results[i].x + results[i].w, results[i].y + results[i].h, results[i].confidence,
+                       results[i].text);
             }
             if (n_results == 0) printf("(no text detected)\n");
         }
@@ -1005,32 +1168,29 @@ int main(int argc, char ** argv) {
             return 1;
         }
 
-        void* ocr_ctx = crispembed_ocr_init(det_model.c_str(), model_arg.c_str(), n_threads);
+        void * ocr_ctx = crispembed_ocr_init(det_model.c_str(), model_arg.c_str(), n_threads);
         if (!ocr_ctx) {
             fprintf(stderr, "error: cannot load OCR models\n");
             return 1;
         }
 
         int n_results = 0;
-        const crispembed_ocr_result* results = crispembed_ocr(ocr_ctx, ocr_path.c_str(), &n_results);
+        const crispembed_ocr_result * results = crispembed_ocr(ocr_ctx, ocr_path.c_str(), &n_results);
 
         if (json_output) {
             printf("[");
             for (int i = 0; i < n_results; i++) {
                 if (i > 0) printf(",");
                 printf("{\"text\":\"%s\",\"bbox\":[%.0f,%.0f,%.0f,%.0f],\"conf\":%.3f}",
-                       json_escape(results[i].text).c_str(),
-                       results[i].x, results[i].y,
-                       results[i].x + results[i].w, results[i].y + results[i].h,
-                       results[i].confidence);
+                       json_escape(results[i].text).c_str(), results[i].x, results[i].y, results[i].x + results[i].w,
+                       results[i].y + results[i].h, results[i].confidence);
             }
             printf("]\n");
         } else {
             for (int i = 0; i < n_results; i++) {
-                printf("[%2d] (%.0f,%.0f)-(%.0f,%.0f) conf=%.2f  \"%s\"\n",
-                       i, results[i].x, results[i].y,
-                       results[i].x + results[i].w, results[i].y + results[i].h,
-                       results[i].confidence, results[i].text);
+                printf("[%2d] (%.0f,%.0f)-(%.0f,%.0f) conf=%.2f  \"%s\"\n", i, results[i].x, results[i].y,
+                       results[i].x + results[i].w, results[i].y + results[i].h, results[i].confidence,
+                       results[i].text);
             }
             if (n_results == 0) printf("(no text detected)\n");
         }
@@ -1040,11 +1200,9 @@ int main(int argc, char ** argv) {
     }
 
     // Resolve model path (handles auto-download) — after OCR early exit
-    bool is_name = (model_arg.find(".gguf") == std::string::npos &&
-                    model_arg.find('/') == std::string::npos &&
+    bool is_name = (model_arg.find(".gguf") == std::string::npos && model_arg.find('/') == std::string::npos &&
                     model_arg.find('\\') == std::string::npos);
-    std::string model_path = crispembed_mgr::resolve_model(
-        model_arg, auto_download || is_name, accepted_license);
+    std::string model_path = crispembed_mgr::resolve_model(model_arg, auto_download || is_name, accepted_license);
     if (model_path.empty()) {
         return 1;
     }
@@ -1074,14 +1232,14 @@ int main(int argc, char ** argv) {
         }
 
         // Load detection model
-        cnn_embed::context* det_ctx = nullptr;
+        cnn_embed::context * det_ctx = nullptr;
         if (!cnn_embed::load(&det_ctx, det_model.c_str(), n_threads)) {
             fprintf(stderr, "error: cannot load detection model '%s'\n", det_model.c_str());
             return 1;
         }
 
         // Load recognition model (-m)
-        cnn_embed::context* rec_ctx = nullptr;
+        cnn_embed::context * rec_ctx = nullptr;
         if (!cnn_embed::load(&rec_ctx, model_path.c_str(), n_threads)) {
             fprintf(stderr, "error: cannot load recognition model '%s'\n", model_path.c_str());
             cnn_embed::free(det_ctx);
@@ -1095,9 +1253,8 @@ int main(int argc, char ** argv) {
         };
         std::vector<image_faces> all_images;
 
-        for (const auto& img_path : texts) {
-            auto results = cnn_embed::face_pipeline(det_ctx, rec_ctx, img_path.c_str(),
-                                                     conf_threshold);
+        for (const auto & img_path : texts) {
+            auto results = cnn_embed::face_pipeline(det_ctx, rec_ctx, img_path.c_str(), conf_threshold);
             // Extract filename for display
             std::string name = img_path;
             auto sl = name.find_last_of("/\\");
@@ -1106,11 +1263,10 @@ int main(int argc, char ** argv) {
             if (json_output) {
                 printf("{\"image\": \"%s\", \"faces\": [", json_escape(img_path).c_str());
                 for (size_t j = 0; j < results.size(); j++) {
-                    const auto& r = results[j];
-                    printf("{\"bbox\":[%.1f,%.1f,%.1f,%.1f],\"conf\":%.4f,\"landmarks\":[",
-                           r.det.x, r.det.y, r.det.w, r.det.h, r.det.confidence);
-                    for (int k = 0; k < 10; k++)
-                        printf("%.1f%s", r.det.landmarks[k], k < 9 ? "," : "");
+                    const auto & r = results[j];
+                    printf("{\"bbox\":[%.1f,%.1f,%.1f,%.1f],\"conf\":%.4f,\"landmarks\":[", r.det.x, r.det.y, r.det.w,
+                           r.det.h, r.det.confidence);
+                    for (int k = 0; k < 10; k++) printf("%.1f%s", r.det.landmarks[k], k < 9 ? "," : "");
                     printf("],\"embedding\":[");
                     for (size_t k = 0; k < r.embedding.size(); k++)
                         printf("%.6f%s", r.embedding[k], k + 1 < r.embedding.size() ? "," : "");
@@ -1120,14 +1276,13 @@ int main(int argc, char ** argv) {
             } else {
                 fprintf(stderr, "%s: %zu faces detected\n", name.c_str(), results.size());
                 for (size_t j = 0; j < results.size(); j++) {
-                    const auto& r = results[j];
-                    fprintf(stderr, "  face[%zu]: conf=%.4f bbox=[%.0f,%.0f,%.0f,%.0f] dim=%zu\n",
-                            j, r.det.confidence, r.det.x, r.det.y, r.det.w, r.det.h,
-                            r.embedding.size());
+                    const auto & r = results[j];
+                    fprintf(stderr, "  face[%zu]: conf=%.4f bbox=[%.0f,%.0f,%.0f,%.0f] dim=%zu\n", j, r.det.confidence,
+                            r.det.x, r.det.y, r.det.w, r.det.h, r.embedding.size());
                 }
             }
 
-            all_images.push_back({name, std::move(results)});
+            all_images.push_back({ name, std::move(results) });
         }
 
         // Cross-image face matching (if multiple images)
@@ -1135,16 +1290,15 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "\n=== Cross-image face matching ===\n");
             for (size_t i = 0; i < all_images.size(); i++) {
                 for (size_t j = i + 1; j < all_images.size(); j++) {
-                    fprintf(stderr, "\n%s vs %s:\n",
-                            all_images[i].name.c_str(), all_images[j].name.c_str());
+                    fprintf(stderr, "\n%s vs %s:\n", all_images[i].name.c_str(), all_images[j].name.c_str());
                     for (size_t a = 0; a < std::min((size_t)3, all_images[i].faces.size()); a++) {
                         for (size_t b = 0; b < std::min((size_t)3, all_images[j].faces.size()); b++) {
-                            const auto& ea = all_images[i].faces[a].embedding;
-                            const auto& eb = all_images[j].faces[b].embedding;
+                            const auto & ea = all_images[i].faces[a].embedding;
+                            const auto & eb = all_images[j].faces[b].embedding;
                             if (ea.size() != eb.size() || ea.empty()) continue;
                             float cos = 0;
                             for (size_t k = 0; k < ea.size(); k++) cos += ea[k] * eb[k];
-                            const char* tag = cos > 0.4f ? "MATCH" : "no";
+                            const char * tag = cos > 0.4f ? "MATCH" : "no";
                             fprintf(stderr, "  [%zu]vs[%zu] cos=%.4f %s\n", a, b, cos, tag);
                         }
                     }
@@ -1159,7 +1313,7 @@ int main(int argc, char ** argv) {
 
     // Check if this is a CNN face model (SFace/AuraFace/SCRFD).
     if (!face_path.empty() || !detect_path.empty()) {
-        cnn_embed::context* cctx = nullptr;
+        cnn_embed::context * cctx = nullptr;
         if (cnn_embed::load(&cctx, model_path.c_str(), n_threads)) {
             if (print_dim) {
                 printf("%d\n", cnn_embed::dim(cctx));
@@ -1168,23 +1322,21 @@ int main(int argc, char ** argv) {
             }
             // Face detection mode
             if (!detect_path.empty()) {
-                auto faces = cnn_embed::detect_file(cctx, detect_path.c_str(),
-                                                     conf_threshold);
+                auto faces = cnn_embed::detect_file(cctx, detect_path.c_str(), conf_threshold);
                 if (json_output) {
                     printf("{\"faces\": [");
                     for (size_t j = 0; j < faces.size(); j++) {
-                        const auto& f = faces[j];
+                        const auto & f = faces[j];
                         printf("{\"x\":%.1f,\"y\":%.1f,\"w\":%.1f,\"h\":%.1f,\"conf\":%.4f,"
                                "\"landmarks\":[%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f,%.1f]}",
-                               f.x, f.y, f.w, f.h, f.confidence,
-                               f.landmarks[0], f.landmarks[1], f.landmarks[2], f.landmarks[3],
-                               f.landmarks[4], f.landmarks[5], f.landmarks[6], f.landmarks[7],
+                               f.x, f.y, f.w, f.h, f.confidence, f.landmarks[0], f.landmarks[1], f.landmarks[2],
+                               f.landmarks[3], f.landmarks[4], f.landmarks[5], f.landmarks[6], f.landmarks[7],
                                f.landmarks[8], f.landmarks[9]);
                         if (j + 1 < faces.size()) printf(",");
                     }
                     printf("]}\n");
                 } else {
-                    for (const auto& f : faces) {
+                    for (const auto & f : faces) {
                         printf("%.1f %.1f %.1f %.1f %.3f", f.x, f.y, f.w, f.h, f.confidence);
                         for (int k = 0; k < 10; k++) printf(" %.1f", f.landmarks[k]);
                         printf("\n");
@@ -1202,12 +1354,10 @@ int main(int argc, char ** argv) {
             }
             if (json_output) {
                 printf("{\"face\": \"%s\", \"embedding\": [", json_escape(face_path).c_str());
-                for (size_t j = 0; j < emb.size(); j++)
-                    printf("%.6f%s", emb[j], j + 1 < emb.size() ? ", " : "");
+                for (size_t j = 0; j < emb.size(); j++) printf("%.6f%s", emb[j], j + 1 < emb.size() ? ", " : "");
                 printf("]}\n");
             } else {
-                for (size_t j = 0; j < emb.size(); j++)
-                    printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
+                for (size_t j = 0; j < emb.size(); j++) printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
             }
             cnn_embed::free(cctx);
             return 0;
@@ -1217,25 +1367,27 @@ int main(int argc, char ** argv) {
 
     // Layout detection (RT-DETRv2)
     if (!layout_path.empty()) {
-        void* lctx = crispembed_layout_init(model_path.c_str(), n_threads);
-        if (!lctx) { fprintf(stderr, "error: failed to load layout model\n"); return 1; }
+        void * lctx = crispembed_layout_init(model_path.c_str(), n_threads);
+        if (!lctx) {
+            fprintf(stderr, "error: failed to load layout model\n");
+            return 1;
+        }
         int n_regions = 0;
-        const crispembed_layout_region* regions = crispembed_layout_detect(
-            lctx, layout_path.c_str(), conf_threshold, &n_regions);
+        const crispembed_layout_region * regions =
+            crispembed_layout_detect(lctx, layout_path.c_str(), conf_threshold, &n_regions);
         if (json_output) {
             printf("{\"regions\": [");
             for (int i = 0; i < n_regions; i++) {
                 if (i > 0) printf(", ");
                 printf("{\"label\": \"%s\", \"score\": %.4f, \"bbox\": [%.1f, %.1f, %.1f, %.1f]}",
-                       regions[i].label_name, regions[i].score,
-                       regions[i].x1, regions[i].y1, regions[i].x2, regions[i].y2);
+                       regions[i].label_name, regions[i].score, regions[i].x1, regions[i].y1, regions[i].x2,
+                       regions[i].y2);
             }
             printf("]}\n");
         } else {
             printf("%d regions detected:\n", n_regions);
             for (int i = 0; i < n_regions; i++) {
-                printf("  [%d] %s (%.3f) [%.1f, %.1f, %.1f, %.1f]\n",
-                       i, regions[i].label_name, regions[i].score,
+                printf("  [%d] %s (%.3f) [%.1f, %.1f, %.1f, %.1f]\n", i, regions[i].label_name, regions[i].score,
                        regions[i].x1, regions[i].y1, regions[i].x2, regions[i].y2);
             }
         }
@@ -1246,16 +1398,22 @@ int main(int argc, char ** argv) {
     // Table structure recognition (rule-based)
     if (!table_path.empty()) {
         // Use --ocr-rec model for cell OCR if provided, else no OCR (structure only)
-        const char* ocr_model = ocr_rec_path.empty() ? nullptr : ocr_rec_path.c_str();
-        void* tctx = crispembed_table_parse_init(ocr_model, n_threads);
-        if (!tctx) { fprintf(stderr, "error: failed to init table parser\n"); return 1; }
+        const char * ocr_model = ocr_rec_path.empty() ? nullptr : ocr_rec_path.c_str();
+        void * tctx = crispembed_table_parse_init(ocr_model, n_threads);
+        if (!tctx) {
+            fprintf(stderr, "error: failed to init table parser\n");
+            return 1;
+        }
 
         int w, h, ch;
-        unsigned char* data = stbi_load(table_path.c_str(), &w, &h, &ch, 1); // grayscale
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", table_path.c_str());
-                     crispembed_table_parse_free(tctx); return 1; }
+        unsigned char * data = stbi_load(table_path.c_str(), &w, &h, &ch, 1); // grayscale
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", table_path.c_str());
+            crispembed_table_parse_free(tctx);
+            return 1;
+        }
 
-        char* html = crispembed_table_parse_to_html(tctx, data, w, h);
+        char * html = crispembed_table_parse_to_html(tctx, data, w, h);
         stbi_image_free(data);
 
         if (html) {
@@ -1276,8 +1434,11 @@ int main(int argc, char ** argv) {
 
     // Named Entity Recognition (GLiNER)
     if (!ner_text.empty()) {
-        void* nctx = crispembed_ner_init(model_path.c_str(), n_threads);
-        if (!nctx) { fprintf(stderr, "error: failed to load NER model\n"); return 1; }
+        void * nctx = crispembed_ner_init(model_path.c_str(), n_threads);
+        if (!nctx) {
+            fprintf(stderr, "error: failed to load NER model\n");
+            return 1;
+        }
 
         // Parse comma-separated labels
         std::vector<std::string> label_strs;
@@ -1287,36 +1448,29 @@ int main(int argc, char ** argv) {
             // trim whitespace
             size_t start = lbl.find_first_not_of(" \t");
             size_t end = lbl.find_last_not_of(" \t");
-            if (start != std::string::npos)
-                label_strs.push_back(lbl.substr(start, end - start + 1));
+            if (start != std::string::npos) label_strs.push_back(lbl.substr(start, end - start + 1));
         }
-        std::vector<const char*> label_ptrs;
-        for (const auto& s : label_strs) label_ptrs.push_back(s.c_str());
+        std::vector<const char *> label_ptrs;
+        for (const auto & s : label_strs) label_ptrs.push_back(s.c_str());
 
-        crispembed_ner_entity* entities = nullptr;
-        int n_entities = crispembed_ner_extract(
-            nctx, ner_text.c_str(),
-            label_ptrs.data(), (int)label_ptrs.size(),
-            ner_threshold, &entities);
+        crispembed_ner_entity * entities = nullptr;
+        int n_entities = crispembed_ner_extract(nctx, ner_text.c_str(), label_ptrs.data(), (int)label_ptrs.size(),
+                                                ner_threshold, &entities);
 
         if (json_output) {
             printf("{\"entities\": [");
             for (int i = 0; i < n_entities; i++) {
                 if (i > 0) printf(", ");
                 printf("{\"text\": \"%s\", \"label\": \"%s\", \"start\": %d, \"end\": %d, \"score\": %.4f}",
-                       json_escape(entities[i].text).c_str(),
-                       json_escape(entities[i].label).c_str(),
-                       entities[i].start_char, entities[i].end_char,
-                       entities[i].score);
+                       json_escape(entities[i].text).c_str(), json_escape(entities[i].label).c_str(),
+                       entities[i].start_char, entities[i].end_char, entities[i].score);
             }
             printf("]}\n");
         } else {
             printf("%d entities found:\n", n_entities);
             for (int i = 0; i < n_entities; i++) {
-                printf("  [%d] %s (%s) [%d, %d) score=%.4f\n",
-                       i, entities[i].text, entities[i].label,
-                       entities[i].start_char, entities[i].end_char,
-                       entities[i].score);
+                printf("  [%d] %s (%s) [%d, %d) score=%.4f\n", i, entities[i].text, entities[i].label,
+                       entities[i].start_char, entities[i].end_char, entities[i].score);
             }
         }
         crispembed_ner_free(nctx);
@@ -1331,52 +1485,45 @@ int main(int argc, char ** argv) {
         std::string det = resolve(ocr_det_path.empty() ? "dbnet-det" : ocr_det_path);
         std::string rec = resolve(ocr_rec_path.empty() ? "qwen2vl-ocr" : ocr_rec_path);
 
-        void* kctx = crispembed_kie_init(det.c_str(), rec.c_str(),
-                                          model_path.c_str(), n_threads);
-        if (!kctx) { fprintf(stderr, "error: failed to init KIE pipeline\n"); return 1; }
+        void * kctx = crispembed_kie_init(det.c_str(), rec.c_str(), model_path.c_str(), n_threads);
+        if (!kctx) {
+            fprintf(stderr, "error: failed to init KIE pipeline\n");
+            return 1;
+        }
 
         // Parse comma-separated labels (use --kie-labels, fall back to --ner-labels).
-        const std::string& labels_str = kie_labels.empty() ? ner_labels : kie_labels;
+        const std::string & labels_str = kie_labels.empty() ? ner_labels : kie_labels;
         std::vector<std::string> label_strs;
         std::istringstream lss(labels_str);
         std::string lbl;
         while (std::getline(lss, lbl, ',')) {
             size_t start = lbl.find_first_not_of(" \t");
             size_t end = lbl.find_last_not_of(" \t");
-            if (start != std::string::npos)
-                label_strs.push_back(lbl.substr(start, end - start + 1));
+            if (start != std::string::npos) label_strs.push_back(lbl.substr(start, end - start + 1));
         }
-        std::vector<const char*> label_ptrs;
-        for (const auto& s : label_strs) label_ptrs.push_back(s.c_str());
+        std::vector<const char *> label_ptrs;
+        for (const auto & s : label_strs) label_ptrs.push_back(s.c_str());
 
-        crispembed_kie_result res = crispembed_kie_extract(
-            kctx, kie_path.c_str(),
-            label_ptrs.data(), (int)label_ptrs.size(),
-            kie_threshold);
+        crispembed_kie_result res =
+            crispembed_kie_extract(kctx, kie_path.c_str(), label_ptrs.data(), (int)label_ptrs.size(), kie_threshold);
 
         if (json_output) {
-            printf("{\"n_ocr_regions\":%d,\"ocr_confidence\":%.3f,\"fields\":[",
-                   res.n_ocr_regions, res.ocr_confidence);
+            printf("{\"n_ocr_regions\":%d,\"ocr_confidence\":%.3f,\"fields\":[", res.n_ocr_regions, res.ocr_confidence);
             for (int i = 0; i < res.n_fields; i++) {
                 if (i > 0) printf(",");
                 printf("{\"label\":\"%s\",\"value\":\"%s\",\"score\":%.4f,"
                        "\"bbox\":[%.1f,%.1f,%.1f,%.1f]}",
-                       json_escape(res.fields[i].label).c_str(),
-                       json_escape(res.fields[i].value).c_str(),
-                       res.fields[i].score,
-                       res.fields[i].x, res.fields[i].y,
-                       res.fields[i].w, res.fields[i].h);
+                       json_escape(res.fields[i].label).c_str(), json_escape(res.fields[i].value).c_str(),
+                       res.fields[i].score, res.fields[i].x, res.fields[i].y, res.fields[i].w, res.fields[i].h);
             }
             printf("]}\n");
         } else {
             printf("OCR: %d regions, confidence=%.2f\n", res.n_ocr_regions, res.ocr_confidence);
             printf("%d fields extracted:\n", res.n_fields);
             for (int i = 0; i < res.n_fields; i++) {
-                printf("  %s = \"%s\"  (score=%.3f, bbox=[%.0f,%.0f,%.0f,%.0f])\n",
-                       res.fields[i].label, res.fields[i].value,
-                       res.fields[i].score,
-                       res.fields[i].x, res.fields[i].y,
-                       res.fields[i].w, res.fields[i].h);
+                printf("  %s = \"%s\"  (score=%.3f, bbox=[%.0f,%.0f,%.0f,%.0f])\n", res.fields[i].label,
+                       res.fields[i].value, res.fields[i].score, res.fields[i].x, res.fields[i].y, res.fields[i].w,
+                       res.fields[i].h);
             }
         }
         crispembed_kie_free(kctx);
@@ -1385,18 +1532,25 @@ int main(int argc, char ** argv) {
 
     // LiLT token classification from JSON input
     if (!lilt_path.empty()) {
-        void* lctx = crispembed_lilt_init(model_path.c_str(), n_threads);
-        if (!lctx) { fprintf(stderr, "error: failed to load LiLT model\n"); return 1; }
+        void * lctx = crispembed_lilt_init(model_path.c_str(), n_threads);
+        if (!lctx) {
+            fprintf(stderr, "error: failed to load LiLT model\n");
+            return 1;
+        }
 
         // Read JSON file: {"input_ids": [...], "bbox": [[x0,y0,x1,y1], ...]}
         std::ifstream jf(lilt_path);
-        if (!jf.is_open()) { fprintf(stderr, "error: cannot open %s\n", lilt_path.c_str()); crispembed_lilt_free(lctx); return 1; }
+        if (!jf.is_open()) {
+            fprintf(stderr, "error: cannot open %s\n", lilt_path.c_str());
+            crispembed_lilt_free(lctx);
+            return 1;
+        }
         std::string jstr((std::istreambuf_iterator<char>(jf)), std::istreambuf_iterator<char>());
 
         // Minimal JSON parsing for input_ids and bbox arrays
         std::vector<int32_t> ids, bbox_flat;
         {
-            auto parse_int_array = [](const std::string& s, size_t start) -> std::vector<int32_t> {
+            auto parse_int_array = [](const std::string & s, size_t start) -> std::vector<int32_t> {
                 std::vector<int32_t> result;
                 auto pos = s.find('[', start);
                 if (pos == std::string::npos) return result;
@@ -1406,7 +1560,10 @@ int main(int argc, char ** argv) {
                 std::istringstream iss(arr);
                 std::string tok;
                 while (std::getline(iss, tok, ',')) {
-                    try { result.push_back(std::stoi(tok)); } catch (...) {}
+                    try {
+                        result.push_back(std::stoi(tok));
+                    } catch (...) {
+                    }
                 }
                 return result;
             };
@@ -1420,11 +1577,15 @@ int main(int argc, char ** argv) {
                 if (outer_start != std::string::npos && outer_end != std::string::npos) {
                     std::string flat = jstr.substr(outer_start, outer_end - outer_start + 1);
                     // Remove all [ and ]
-                    for (char& c : flat) if (c == '[' || c == ']') c = ' ';
+                    for (char & c : flat)
+                        if (c == '[' || c == ']') c = ' ';
                     std::istringstream iss(flat);
                     std::string tok;
                     while (std::getline(iss, tok, ',')) {
-                        try { bbox_flat.push_back(std::stoi(tok)); } catch (...) {}
+                        try {
+                            bbox_flat.push_back(std::stoi(tok));
+                        } catch (...) {
+                        }
                     }
                 }
             }
@@ -1433,29 +1594,25 @@ int main(int argc, char ** argv) {
         int T = (int)ids.size();
         if (T == 0 || (int)bbox_flat.size() < T * 4) {
             fprintf(stderr, "error: invalid JSON (need input_ids + bbox)\n");
-            crispembed_lilt_free(lctx); return 1;
+            crispembed_lilt_free(lctx);
+            return 1;
         }
 
         int out_n = 0;
-        const crispembed_lilt_token* toks = crispembed_lilt_classify(
-            lctx, ids.data(), bbox_flat.data(), T, &out_n);
+        const crispembed_lilt_token * toks = crispembed_lilt_classify(lctx, ids.data(), bbox_flat.data(), T, &out_n);
 
         if (json_output) {
             printf("{\"tokens\":[");
             for (int i = 0; i < out_n; i++) {
                 if (i > 0) printf(",");
-                printf("{\"token_id\":%d,\"label\":\"%s\",\"score\":%.4f}",
-                       toks[i].token_id,
-                       json_escape(toks[i].label ? toks[i].label : "").c_str(),
-                       toks[i].score);
+                printf("{\"token_id\":%d,\"label\":\"%s\",\"score\":%.4f}", toks[i].token_id,
+                       json_escape(toks[i].label ? toks[i].label : "").c_str(), toks[i].score);
             }
             printf("]}\n");
         } else {
             printf("%d tokens classified:\n", out_n);
             for (int i = 0; i < out_n; i++) {
-                printf("  token=%5d  label=%-15s  score=%.3f\n",
-                       toks[i].token_id,
-                       toks[i].label ? toks[i].label : "",
+                printf("  token=%5d  label=%-15s  score=%.3f\n", toks[i].token_id, toks[i].label ? toks[i].label : "",
                        toks[i].score);
             }
         }
@@ -1466,10 +1623,17 @@ int main(int argc, char ** argv) {
     // Pix2Struct document understanding (image → text)
     if (!pix2struct_path.empty()) {
         auto * p2s = crispembed_pix2struct_init(model_path.c_str(), n_threads);
-        if (!p2s) { fprintf(stderr, "error: failed to load Pix2Struct model\n"); return 1; }
+        if (!p2s) {
+            fprintf(stderr, "error: failed to load Pix2Struct model\n");
+            return 1;
+        }
         int w, h, ch;
         unsigned char * data = stbi_load(pix2struct_path.c_str(), &w, &h, &ch, 0);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", pix2struct_path.c_str()); crispembed_pix2struct_free(p2s); return 1; }
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", pix2struct_path.c_str());
+            crispembed_pix2struct_free(p2s);
+            return 1;
+        }
 
         const char * text = crispembed_pix2struct_generate(p2s, data, w, h, pix2struct_max_tokens);
         stbi_image_free(data);
@@ -1489,12 +1653,19 @@ int main(int argc, char ** argv) {
 
     // Unified math OCR (auto-detect architecture from GGUF metadata)
     if (!ocr_path.empty()) {
-        void* octx = crispembed_ocr_model_init(model_path.c_str(), n_threads);
-        if (!octx) { fprintf(stderr, "error: failed to load OCR model\n"); return 1; }
+        void * octx = crispembed_ocr_model_init(model_path.c_str(), n_threads);
+        if (!octx) {
+            fprintf(stderr, "error: failed to load OCR model\n");
+            return 1;
+        }
         if (ocr_max_tokens > 0) crispembed_ocr_model_set_max_tokens(octx, ocr_max_tokens);
         int w, h, ch;
-        unsigned char* data = stbi_load(ocr_path.c_str(), &w, &h, &ch, 0);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", ocr_path.c_str()); crispembed_ocr_model_free(octx); return 1; }
+        unsigned char * data = stbi_load(ocr_path.c_str(), &w, &h, &ch, 0);
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", ocr_path.c_str());
+            crispembed_ocr_model_free(octx);
+            return 1;
+        }
 
         // Optional scan cleanup before OCR
         uint8_t * cleaned = nullptr;
@@ -1505,14 +1676,19 @@ int main(int argc, char ** argv) {
             if (scan_cleanup_process(sctx, data, w, h, ch, sp, &cleaned, &cw, &ch2) == 0 && cleaned) {
                 stbi_image_free(data);
                 data = cleaned;
-                w = cw; h = ch2; ch = 3;  // cleanup outputs RGB
+                w = cw;
+                h = ch2;
+                ch = 3; // cleanup outputs RGB
             }
             scan_cleanup_free(sctx);
         }
 
         int out_len = 0;
-        const char* latex = crispembed_ocr_model_recognize(octx, data, w, h, ch, &out_len);
-        if (cleaned) scan_cleanup_free_image(cleaned); else stbi_image_free(data);
+        const char * latex = crispembed_ocr_model_recognize(octx, data, w, h, ch, &out_len);
+        if (cleaned)
+            scan_cleanup_free_image(cleaned);
+        else
+            stbi_image_free(data);
         if (latex && out_len > 0) {
             // Apply punctuation restoration if --punct-model is set
             std::string output_text = latex;
@@ -1540,13 +1716,20 @@ int main(int argc, char ** argv) {
 
     // Handwritten math OCR (HMER)
     if (!hmer_path.empty()) {
-        hmer_ocr_context* hctx = hmer_ocr_init(model_path.c_str(), n_threads);
-        if (!hctx) { fprintf(stderr, "error: failed to load HMER model\n"); return 1; }
+        hmer_ocr_context * hctx = hmer_ocr_init(model_path.c_str(), n_threads);
+        if (!hctx) {
+            fprintf(stderr, "error: failed to load HMER model\n");
+            return 1;
+        }
         int w, h, ch;
-        unsigned char* data = stbi_load(hmer_path.c_str(), &w, &h, &ch, 0);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", hmer_path.c_str()); hmer_ocr_free(hctx); return 1; }
+        unsigned char * data = stbi_load(hmer_path.c_str(), &w, &h, &ch, 0);
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", hmer_path.c_str());
+            hmer_ocr_free(hctx);
+            return 1;
+        }
         int out_len = 0;
-        const char* latex = hmer_ocr_recognize_raw(hctx, data, w, h, ch, &out_len);
+        const char * latex = hmer_ocr_recognize_raw(hctx, data, w, h, ch, &out_len);
         stbi_image_free(data);
         if (latex && out_len > 0) {
             if (json_output) {
@@ -1563,13 +1746,20 @@ int main(int argc, char ** argv) {
 
     // Handwritten math OCR (BTTR)
     if (!bttr_path.empty()) {
-        bttr_ocr_context* bctx = bttr_ocr_init(model_path.c_str(), n_threads);
-        if (!bctx) { fprintf(stderr, "error: failed to load BTTR model\n"); return 1; }
+        bttr_ocr_context * bctx = bttr_ocr_init(model_path.c_str(), n_threads);
+        if (!bctx) {
+            fprintf(stderr, "error: failed to load BTTR model\n");
+            return 1;
+        }
         int w, h, ch;
-        unsigned char* data = stbi_load(bttr_path.c_str(), &w, &h, &ch, 0);
-        if (!data) { fprintf(stderr, "error: cannot load %s\n", bttr_path.c_str()); bttr_ocr_free(bctx); return 1; }
+        unsigned char * data = stbi_load(bttr_path.c_str(), &w, &h, &ch, 0);
+        if (!data) {
+            fprintf(stderr, "error: cannot load %s\n", bttr_path.c_str());
+            bttr_ocr_free(bctx);
+            return 1;
+        }
         int out_len = 0;
-        const char* latex = bttr_ocr_recognize_raw(bctx, data, w, h, ch, &out_len);
+        const char * latex = bttr_ocr_recognize_raw(bctx, data, w, h, ch, &out_len);
         stbi_image_free(data);
         if (latex && out_len > 0) {
             if (json_output) {
@@ -1585,21 +1775,21 @@ int main(int argc, char ** argv) {
     }
 
     // Check if this is a CLIP text encoder GGUF.
-    if (!texts.empty() && detect_path.empty() && face_path.empty() &&
-        image_path.empty() && image_raw_path.empty()) {
-        clip_text::context* cltx = nullptr;
+    if (!texts.empty() && detect_path.empty() && face_path.empty() && image_path.empty() && image_raw_path.empty()) {
+        clip_text::context * cltx = nullptr;
         if (clip_text::load(&cltx, model_path.c_str(), n_threads)) {
-            for (const auto& t : texts) {
+            for (const auto & t : texts) {
                 auto emb = clip_text::encode(cltx, t.c_str());
-                if (emb.empty()) { fprintf(stderr, "error: CLIP text encode failed\n"); continue; }
+                if (emb.empty()) {
+                    fprintf(stderr, "error: CLIP text encode failed\n");
+                    continue;
+                }
                 if (json_output) {
                     printf("{\"text\": \"%s\", \"embedding\": [", json_escape(t).c_str());
-                    for (size_t j = 0; j < emb.size(); j++)
-                        printf("%.6f%s", emb[j], j + 1 < emb.size() ? ", " : "");
+                    for (size_t j = 0; j < emb.size(); j++) printf("%.6f%s", emb[j], j + 1 < emb.size() ? ", " : "");
                     printf("]}\n");
                 } else {
-                    for (size_t j = 0; j < emb.size(); j++)
-                        printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
+                    for (size_t j = 0; j < emb.size(); j++) printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
                 }
             }
             clip_text::free(cltx);
@@ -1612,10 +1802,10 @@ int main(int argc, char ** argv) {
     // Route to vit_embed for --image-raw and --image.
     if (!image_path.empty() || !image_raw_path.empty()) {
         // Try loading as ViT first
-        vit_embed::context* vctx = nullptr;
+        vit_embed::context * vctx = nullptr;
         if (vit_embed::load(&vctx, model_path.c_str(), n_threads)) {
             // It's a ViT model — encode image
-            const char* img = !image_path.empty() ? image_path.c_str() : image_raw_path.c_str();
+            const char * img = !image_path.empty() ? image_path.c_str() : image_raw_path.c_str();
 
             if (print_dim) {
                 printf("%d\n", vit_embed::dim(vctx));
@@ -1626,14 +1816,23 @@ int main(int argc, char ** argv) {
                 int sz = vit_embed::image_size(vctx);
                 size_t expected = 3 * sz * sz;
                 std::ifstream pf(image_raw_path, std::ios::binary);
-                if (!pf) { fprintf(stderr, "error: cannot open %s\n", image_raw_path.c_str()); return 1; }
+                if (!pf) {
+                    fprintf(stderr, "error: cannot open %s\n", image_raw_path.c_str());
+                    return 1;
+                }
                 std::vector<float> pixels(expected);
-                pf.read(reinterpret_cast<char*>(pixels.data()), expected * sizeof(float));
+                pf.read(reinterpret_cast<char *>(pixels.data()), expected * sizeof(float));
                 auto emb = vit_embed::encode(vctx, pixels.data(), sz, sz);
-                if (emb.empty()) { fprintf(stderr, "error: ViT encoding failed\n"); return 1; }
-                if (print_dim) { printf("%d\n", vit_embed::dim(vctx)); vit_embed::free(vctx); return 0; }
-                for (size_t j = 0; j < emb.size(); j++)
-                    printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
+                if (emb.empty()) {
+                    fprintf(stderr, "error: ViT encoding failed\n");
+                    return 1;
+                }
+                if (print_dim) {
+                    printf("%d\n", vit_embed::dim(vctx));
+                    vit_embed::free(vctx);
+                    return 0;
+                }
+                for (size_t j = 0; j < emb.size(); j++) printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
             } else {
                 // Image file (JPG/PNG/BMP) — native resize + normalize
                 auto emb = vit_embed::encode_file(vctx, image_path.c_str());
@@ -1644,12 +1843,10 @@ int main(int argc, char ** argv) {
                 }
                 if (json_output) {
                     printf("{\"image\": \"%s\", \"embedding\": [", json_escape(image_path).c_str());
-                    for (size_t j = 0; j < emb.size(); j++)
-                        printf("%.6f%s", emb[j], j + 1 < emb.size() ? ", " : "");
+                    for (size_t j = 0; j < emb.size(); j++) printf("%.6f%s", emb[j], j + 1 < emb.size() ? ", " : "");
                     printf("]}\n");
                 } else {
-                    for (size_t j = 0; j < emb.size(); j++)
-                        printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
+                    for (size_t j = 0; j < emb.size(); j++) printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
                 }
             }
             vit_embed::free(vctx);
@@ -1662,13 +1859,13 @@ int main(int argc, char ** argv) {
     crispembed_context * ctx = crispembed_init(model_path.c_str(), n_threads);
     if (!ctx) {
         if (print_dim) {
-            vit_embed::context* vctx = nullptr;
+            vit_embed::context * vctx = nullptr;
             if (vit_embed::load(&vctx, model_path.c_str(), n_threads)) {
                 printf("%d\n", vit_embed::dim(vctx));
                 vit_embed::free(vctx);
                 return 0;
             }
-            cnn_embed::context* cctx = nullptr;
+            cnn_embed::context * cctx = nullptr;
             if (cnn_embed::load(&cctx, model_path.c_str(), n_threads)) {
                 printf("%d\n", cnn_embed::dim(cctx));
                 cnn_embed::free(cctx);
@@ -1685,8 +1882,7 @@ int main(int argc, char ** argv) {
     }
     if (prefix_set) {
         // Explicit --prefix (even empty "" disables auto-prefix)
-        if (!prefix.empty())
-            crispembed_set_prefix(ctx, prefix.c_str());
+        if (!prefix.empty()) crispembed_set_prefix(ctx, prefix.c_str());
     } else {
         // Auto-apply query prefix if model needs one (GGUF metadata first, name-table fallback)
         const char * auto_pfx = crispembed_ctx_query_prefix(ctx);
@@ -1731,17 +1927,11 @@ int main(int argc, char ** argv) {
         if (json_output) {
             printf("{\"dim\": %d, \"prefix\": \"%s\", \"has_sparse\": %s, "
                    "\"has_colbert\": %s, \"is_reranker\": %s}\n",
-                   dim,
-                   json_escape(crispembed_get_prefix(ctx)).c_str(),
-                   crispembed_has_sparse(ctx) ? "true" : "false",
-                   crispembed_has_colbert(ctx) ? "true" : "false",
-                   crispembed_is_reranker(ctx) ? "true" : "false");
+                   dim, json_escape(crispembed_get_prefix(ctx)).c_str(), crispembed_has_sparse(ctx) ? "true" : "false",
+                   crispembed_has_colbert(ctx) ? "true" : "false", crispembed_is_reranker(ctx) ? "true" : "false");
         } else {
-            printf("dim=%d prefix=\"%s\" has_sparse=%d has_colbert=%d is_reranker=%d\n",
-                   dim,
-                   crispembed_get_prefix(ctx),
-                   crispembed_has_sparse(ctx),
-                   crispembed_has_colbert(ctx),
+            printf("dim=%d prefix=\"%s\" has_sparse=%d has_colbert=%d is_reranker=%d\n", dim,
+                   crispembed_get_prefix(ctx), crispembed_has_sparse(ctx), crispembed_has_colbert(ctx),
                    crispembed_is_reranker(ctx));
         }
         crispembed_free(ctx);
@@ -1756,10 +1946,8 @@ int main(int argc, char ** argv) {
             return 1;
         }
         int t = 0, h = 0, w = 0;
-        if (std::sscanf(grid_thw_arg.c_str(), "%d,%d,%d", &t, &h, &w) != 3 ||
-            t <= 0 || h <= 0 || w <= 0) {
-            fprintf(stderr, "error: invalid --grid-thw '%s' (expected T,H,W)\n",
-                    grid_thw_arg.c_str());
+        if (std::sscanf(grid_thw_arg.c_str(), "%d,%d,%d", &t, &h, &w) != 3 || t <= 0 || h <= 0 || w <= 0) {
+            fprintf(stderr, "error: invalid --grid-thw '%s' (expected T,H,W)\n", grid_thw_arg.c_str());
             crispembed_free(ctx);
             return 1;
         }
@@ -1775,9 +1963,8 @@ int main(int argc, char ** argv) {
         std::fseek(imf, 0, SEEK_SET);
         const int patch_dim = 1536;
         if (sz <= 0 || sz % (long)(sizeof(float) * patch_dim) != 0) {
-            fprintf(stderr,
-                    "error: '%s' is not float32 patch rows of width %d (size=%ld)\n",
-                    image_raw_path.c_str(), patch_dim, sz);
+            fprintf(stderr, "error: '%s' is not float32 patch rows of width %d (size=%ld)\n", image_raw_path.c_str(),
+                    patch_dim, sz);
             std::fclose(imf);
             crispembed_free(ctx);
             return 1;
@@ -1792,17 +1979,14 @@ int main(int argc, char ** argv) {
         }
         std::fclose(imf);
         if (n_patches != t * h * w) {
-            fprintf(stderr,
-                    "error: --grid-thw implies %d patches but file has %d rows\n",
-                    t * h * w, n_patches);
+            fprintf(stderr, "error: --grid-thw implies %d patches but file has %d rows\n", t * h * w, n_patches);
             crispembed_free(ctx);
             return 1;
         }
 
         int32_t grid_thw[3] = { t, h, w };
         int dim = 0;
-        const float * vec = crispembed_encode_image(ctx, patches.data(), n_patches,
-                                                    grid_thw, 1, &dim);
+        const float * vec = crispembed_encode_image(ctx, patches.data(), n_patches, grid_thw, 1, &dim);
         if (!vec || dim <= 0) {
             fprintf(stderr, "error: image encoding failed (model lacks vision tower?)\n");
             crispembed_free(ctx);
@@ -1831,7 +2015,8 @@ int main(int argc, char ** argv) {
         if (!vec || dim <= 0) {
             fprintf(stderr,
                     "error: image encoding failed (model lacks vision tower or "
-                    "preprocessor failed) for '%s'\n", image_path.c_str());
+                    "preprocessor failed) for '%s'\n",
+                    image_path.c_str());
             crispembed_free(ctx);
             return 1;
         }
@@ -1863,8 +2048,7 @@ int main(int argc, char ** argv) {
         long sz = std::ftell(af);
         std::fseek(af, 0, SEEK_SET);
         if (sz <= 0 || sz % sizeof(float) != 0) {
-            fprintf(stderr, "error: '%s' is not f32le PCM (size=%ld)\n",
-                    audio_path.c_str(), sz);
+            fprintf(stderr, "error: '%s' is not f32le PCM (size=%ld)\n", audio_path.c_str(), sz);
             std::fclose(af);
             crispembed_free(ctx);
             return 1;
@@ -1879,8 +2063,7 @@ int main(int argc, char ** argv) {
         std::fclose(af);
 
         int dim = 0;
-        const float * vec = crispembed_encode_audio(ctx, pcm.data(),
-                                                    (int)pcm.size(), &dim);
+        const float * vec = crispembed_encode_audio(ctx, pcm.data(), (int)pcm.size(), &dim);
         if (!vec || dim <= 0) {
             fprintf(stderr, "error: audio encoding failed (model lacks audio tower?)\n");
             crispembed_free(ctx);
@@ -1928,8 +2111,7 @@ int main(int argc, char ** argv) {
             if (json_output) {
                 printf("  {\"text\": \"%s\", \"sparse\": [", json_escape(texts[i]).c_str());
                 for (int j = 0; j < n; ++j) {
-                    printf("{\"token_id\": %d, \"weight\": %.6f}%s",
-                           (int)indices[j], values[j], j + 1 < n ? ", " : "");
+                    printf("{\"token_id\": %d, \"weight\": %.6f}%s", (int)indices[j], values[j], j + 1 < n ? ", " : "");
                 }
                 printf("]}%s\n", i + 1 < texts.size() ? "," : "");
             } else {
@@ -2007,9 +2189,7 @@ int main(int argc, char ** argv) {
             }
             ranked.emplace_back(i, score);
         }
-        std::sort(ranked.begin(), ranked.end(), [](const auto & a, const auto & b) {
-            return a.second > b.second;
-        });
+        std::sort(ranked.begin(), ranked.end(), [](const auto & a, const auto & b) { return a.second > b.second; });
         if (top_n > 0 && (int)ranked.size() > top_n) {
             ranked.resize(top_n);
         }
@@ -2018,11 +2198,8 @@ int main(int argc, char ** argv) {
             printf("{\"query\": \"%s\", \"results\": [", json_escape(rerank_query).c_str());
             for (size_t i = 0; i < ranked.size(); ++i) {
                 const auto & item = ranked[i];
-                printf("%s{\"index\": %zu, \"score\": %.6f, \"document\": \"%s\"}",
-                       i > 0 ? ", " : "",
-                       item.first,
-                       item.second,
-                       json_escape(texts[item.first]).c_str());
+                printf("%s{\"index\": %zu, \"score\": %.6f, \"document\": \"%s\"}", i > 0 ? ", " : "", item.first,
+                       item.second, json_escape(texts[item.first]).c_str());
             }
             printf("]}\n");
         } else {
@@ -2058,9 +2235,7 @@ int main(int argc, char ** argv) {
             const float * doc_vec = vecs + (i + 1) * dim;
             ranked.emplace_back(i, dot_product(query_vec, doc_vec, dim));
         }
-        std::sort(ranked.begin(), ranked.end(), [](const auto & a, const auto & b) {
-            return a.second > b.second;
-        });
+        std::sort(ranked.begin(), ranked.end(), [](const auto & a, const auto & b) { return a.second > b.second; });
         if (top_n > 0 && (int)ranked.size() > top_n) {
             ranked.resize(top_n);
         }
@@ -2069,11 +2244,8 @@ int main(int argc, char ** argv) {
             printf("{\"query\": \"%s\", \"results\": [", json_escape(biencoder_query).c_str());
             for (size_t i = 0; i < ranked.size(); ++i) {
                 const auto & item = ranked[i];
-                printf("%s{\"index\": %zu, \"score\": %.6f, \"document\": \"%s\"}",
-                       i > 0 ? ", " : "",
-                       item.first,
-                       item.second,
-                       json_escape(texts[item.first]).c_str());
+                printf("%s{\"index\": %zu, \"score\": %.6f, \"document\": \"%s\"}", i > 0 ? ", " : "", item.first,
+                       item.second, json_escape(texts[item.first]).c_str());
             }
             printf("]}\n");
         } else {

@@ -6,7 +6,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #ifdef GGML_USE_METAL
-#  include "ggml-metal.h"
+#include "ggml-metal.h"
 #endif
 
 #include <cstdio>
@@ -14,17 +14,19 @@
 #include <vector>
 
 #define GREEN "\033[32m"
-#define RED   "\033[31m"
+#define RED "\033[31m"
 #define RESET "\033[0m"
 
 static int n_pass = 0, n_fail = 0;
 
 static void check_cos(const char * label, float cos_min, float thresh = 0.999f) {
     bool ok = cos_min >= thresh;
-    printf("  %s[%s]%s %-44s cos=%.6f  (thr=%.3f)\n",
-           ok ? GREEN : RED, ok ? "PASS" : "FAIL", RESET,
-           label, cos_min, thresh);
-    if (ok) n_pass++; else n_fail++;
+    printf("  %s[%s]%s %-44s cos=%.6f  (thr=%.3f)\n", ok ? GREEN : RED, ok ? "PASS" : "FAIL", RESET, label, cos_min,
+           thresh);
+    if (ok)
+        n_pass++;
+    else
+        n_fail++;
 }
 
 int main(int argc, char ** argv) {
@@ -33,14 +35,17 @@ int main(int argc, char ** argv) {
         return 1;
     }
     const char * model_path = argv[1];
-    const char * ref_path   = argv[2];
-    const char * text       = argc >= 4 ? argv[3] : "hello world";
+    const char * ref_path = argv[2];
+    const char * text = argc >= 4 ? argv[3] : "hello world";
 
     printf("LFM2 per-layer parity test\n");
     printf("  Model: %s\n  Ref:   %s\n  Text:  %s\n\n", model_path, ref_path, text);
 
     crispembed_diff::Ref ref;
-    if (!ref.load(ref_path)) { fprintf(stderr, "Failed to load ref\n"); return 1; }
+    if (!ref.load(ref_path)) {
+        fprintf(stderr, "Failed to load ref\n");
+        return 1;
+    }
 
     // Backend
     ggml_backend_t backend = nullptr;
@@ -48,7 +53,10 @@ int main(int argc, char ** argv) {
     backend = ggml_backend_metal_init();
 #endif
     if (!backend) backend = ggml_backend_cpu_init();
-    if (!backend) { fprintf(stderr, "No backend\n"); return 1; }
+    if (!backend) {
+        fprintf(stderr, "No backend\n");
+        return 1;
+    }
 
     // Load model
     lfm2_embed_ctx * ctx = lfm2_embed_load(model_path, backend);
@@ -89,15 +97,13 @@ int main(int argc, char ** argv) {
             printf("        max_abs=%.2e  mean_abs=%.2e\n", r.max_abs, r.mean_abs);
             // Print first few C++ values for manual inspection
             printf("        cpp[:4]:");
-            for (int k = 0; k < 4 && k < (int)e.data.size(); k++)
-                printf(" %.5f", e.data[k]);
+            for (int k = 0; k < 4 && k < (int)e.data.size(); k++) printf(" %.5f", e.data[k]);
             printf("\n");
             // And reference values
             auto [ref_data, ref_n] = ref.get_f32(e.name.c_str());
             if (ref_data) {
                 printf("        ref[:4]:");
-                for (int k = 0; k < 4 && k < (int)ref_n; k++)
-                    printf(" %.5f", ref_data[k]);
+                for (int k = 0; k < 4 && k < (int)ref_n; k++) printf(" %.5f", ref_data[k]);
                 printf("\n");
             }
         }

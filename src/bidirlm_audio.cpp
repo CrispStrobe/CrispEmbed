@@ -26,9 +26,9 @@
 namespace bidirlm_audio {
 
 struct context {
-    crisp_audio_context* ca = nullptr;
+    crisp_audio_context * ca = nullptr;
     int output_dim = 0;
-    std::vector<float> last_pooled;  // owned buffer returned to caller
+    std::vector<float> last_pooled; // owned buffer returned to caller
     bool bench = false;
 
     ~context() {
@@ -36,7 +36,7 @@ struct context {
     }
 };
 
-context* open(const char* gguf_path, int n_threads, bool use_gpu) {
+context * open(const char * gguf_path, int n_threads, bool use_gpu) {
     crisp_audio_params p = crisp_audio_params_default();
     p.n_threads = n_threads;
     p.use_gpu = use_gpu;
@@ -45,13 +45,13 @@ context* open(const char* gguf_path, int n_threads, bool use_gpu) {
     // qwen3-asr's keys when the BidirLM ones aren't present, so passing the
     // BidirLM prefix here is harmless even on a qwen3-asr GGUF.
     p.tensor_prefix = "audio_tower.";
-    p.meta_prefix   = "bidirlm.audio.";
-    p.dialect       = CRISP_AUDIO_DIALECT_QWEN_OMNI;
+    p.meta_prefix = "bidirlm.audio.";
+    p.dialect = CRISP_AUDIO_DIALECT_QWEN_OMNI;
 
-    crisp_audio_context* ca = crisp_audio_init_from_file(gguf_path, &p);
+    crisp_audio_context * ca = crisp_audio_init_from_file(gguf_path, &p);
     if (!ca) return nullptr;
 
-    auto* ctx = new context();
+    auto * ctx = new context();
     ctx->ca = ca;
     ctx->output_dim = crisp_audio_output_dim(ca);
     ctx->bench = (std::getenv("CRISPEMBED_BIDIRLM_AUDIO_BENCH") != nullptr);
@@ -65,8 +65,7 @@ static int conv_out_len_3x(int t_len) {
     return step(step(step(t_len)));
 }
 
-const float* encode(context* ctx, const float* pcm, int n_samples,
-                    int* out_dim) {
+const float * encode(context * ctx, const float * pcm, int n_samples, int * out_dim) {
     if (!ctx || !ctx->ca || !pcm || n_samples <= 0) return nullptr;
 
     const bool bench = ctx->bench;
@@ -74,8 +73,7 @@ const float* encode(context* ctx, const float* pcm, int n_samples,
 
     int n_mels = 0, T_mel = 0;
     auto t_mel0 = std::chrono::steady_clock::now();
-    float* mel = crisp_audio_compute_mel(ctx->ca, pcm, n_samples,
-                                         &n_mels, &T_mel);
+    float * mel = crisp_audio_compute_mel(ctx->ca, pcm, n_samples, &n_mels, &T_mel);
     if (bench) {
         auto t_mel1 = std::chrono::steady_clock::now();
         fprintf(stderr, "[bidirlm-audio-bench] mel: %.3f ms\n",
@@ -85,8 +83,7 @@ const float* encode(context* ctx, const float* pcm, int n_samples,
 
     int n_frames_padded = 0, dim = 0;
     auto t_enc0 = std::chrono::steady_clock::now();
-    float* enc = crisp_audio_encode(ctx->ca, mel, n_mels, T_mel,
-                                    &n_frames_padded, &dim);
+    float * enc = crisp_audio_encode(ctx->ca, mel, n_mels, T_mel, &n_frames_padded, &dim);
     std::free(mel);
     if (bench) {
         auto t_enc1 = std::chrono::steady_clock::now();
@@ -107,7 +104,7 @@ const float* encode(context* ctx, const float* pcm, int n_samples,
     // skipping them in the pooling loop catches the dominant error term.
     auto t_pool0 = std::chrono::steady_clock::now();
     const int n_window = crisp_audio_n_window(ctx->ca);
-    const int chunk_T = n_window > 0 ? n_window * 2 : 200;  // BidirLM default
+    const int chunk_T = n_window > 0 ? n_window * 2 : 200; // BidirLM default
     const int num_chunks = (T_mel + chunk_T - 1) / chunk_T;
     const int T_chunk_out = conv_out_len_3x(chunk_T);
 
@@ -115,16 +112,16 @@ const float* encode(context* ctx, const float* pcm, int n_samples,
     int n_valid = 0;
     for (int c = 0; c < num_chunks; c++) {
         const int t_start_mel = c * chunk_T;
-        const int t_len_mel   = std::min(chunk_T, T_mel - t_start_mel);
-        const int valid       = conv_out_len_3x(t_len_mel);
-        const int frame_off   = c * T_chunk_out;
+        const int t_len_mel = std::min(chunk_T, T_mel - t_start_mel);
+        const int valid = conv_out_len_3x(t_len_mel);
+        const int frame_off = c * T_chunk_out;
         for (int f = 0; f < valid; f++) {
-            const float* row = enc + (size_t)(frame_off + f) * dim;
+            const float * row = enc + (size_t)(frame_off + f) * dim;
             for (int i = 0; i < dim; i++) ctx->last_pooled[i] += row[i];
         }
         n_valid += valid;
     }
-    if (n_valid == 0) n_valid = n_frames_padded;  // safety net
+    if (n_valid == 0) n_valid = n_frames_padded; // safety net
 
     const float inv = 1.0f / (float)n_valid;
     float norm_sq = 0.0f;
@@ -149,8 +146,10 @@ const float* encode(context* ctx, const float* pcm, int n_samples,
     return ctx->last_pooled.data();
 }
 
-void close(context* ctx) { delete ctx; }
+void close(context * ctx) {
+    delete ctx;
+}
 
-}  // namespace bidirlm_audio
+} // namespace bidirlm_audio
 
-#endif  // CRISPEMBED_HAS_CRISP_AUDIO
+#endif // CRISPEMBED_HAS_CRISP_AUDIO
