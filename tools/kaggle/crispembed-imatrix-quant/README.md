@@ -35,7 +35,7 @@ cross-account attach is blocked, see kaggle_usage.md #13). Attaches **both**
 GPU build by default (`enable_gpu:true`, `-DGGML_CUDA=ON`; set `CRISP_GPU=0` to
 force CPU). `kaggle_harness.py` is bundled (also cloned from CrispASR at runtime).
 
-Push (default token is ${KAGGLE_ACCOUNT}):
+Push (${KAGGLE_ACCOUNT} is the active CLI account):
 ```
 cd tools/kaggle/crispembed-imatrix-quant && python -m kaggle kernels push -p .
 ```
