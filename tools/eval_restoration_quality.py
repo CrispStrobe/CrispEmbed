@@ -14,7 +14,13 @@ against a known-clean ground truth:
 
 Ground-truth images: pass your own with --image, or use --builtin to pull a
 free-licensed real photo from skimage.data (astronaut = NASA public domain,
-chelsea/coffee = CC0). Writes a clean|degraded|restored contact sheet per case.
+chelsea/coffee = CC0), or --builtin bookpage (rendered public-domain text).
+Writes a clean|degraded|restored contact sheet per case (visual inspection).
+
+For book scans, the metric that actually matters is downstream OCR: add
+--ocr tesseract (or --ocr crispembed --ocr-model <gguf>) in denoise mode to also
+OCR clean/noisy/denoised and report CER vs the ground-truth text — showing
+whether denoising rescues OCR on scans too noisy to read directly.
 
 Uses the miniconda python (torch/PIL/numpy/skimage); SSIM is optional.
 
@@ -77,6 +83,42 @@ def load_rgb(path):
     return np.asarray(Image.open(path).convert("RGB"))
 
 
+def _norm_text(s):
+    import re
+    return re.sub(r"\s+", " ", s.strip().lower())
+
+
+def cer(ref, hyp):
+    """Character error rate after whitespace/case normalisation (Levenshtein/len)."""
+    a, b = _norm_text(ref), _norm_text(hyp)
+    m, n = len(a), len(b)
+    if m == 0:
+        return 0.0 if n == 0 else 1.0
+    dp = list(range(n + 1))
+    for i in range(1, m + 1):
+        prev, dp[0] = dp[0], i
+        for j in range(1, n + 1):
+            cur = dp[j]
+            dp[j] = min(dp[j] + 1, dp[j - 1] + 1, prev + (a[i - 1] != b[j - 1]))
+            prev = cur
+    return dp[n] / m
+
+
+def ocr_tesseract(img_uint8):
+    import pytesseract
+    return pytesseract.image_to_string(Image.fromarray(img_uint8))
+
+
+def ocr_crispembed(bin_path, model, img_uint8, out_dir, tagpath):
+    """OCR via a CrispEmbed VLM model: crispembed -m <gguf> --ocr <img> -> stdout."""
+    p = os.path.join(out_dir, tagpath)
+    Image.fromarray(img_uint8).save(p)
+    env = dict(os.environ); env["CRISPEMBED_FORCE_CPU"] = "1"
+    r = subprocess.run([bin_path, "-m", model, "--ocr", p],
+                       stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=env)
+    return r.stdout.decode(errors="replace")
+
+
 _BOOK_TEXT = (
     "It is a truth universally acknowledged, that a single man in possession of "
     "a good fortune, must be in want of a wife. However little known the feelings "
@@ -92,10 +134,12 @@ _BOOK_TEXT = (
 )
 
 
-def synth_bookpage(w=560, h=720):
+def synth_bookpage(w=448, h=336, fontsize=18):
     """Clean synthetic book page: justified serif text on a lightly-tinted page.
-    Serves as ground truth for a scan-restoration eval (no real scan has a clean
-    reference; this does). Public-domain text (Austen)."""
+    Returns (image, rendered_text). Serves as ground truth for a scan-restoration
+    eval (no real scan has a clean reference; this does) AND for OCR-CER: the
+    default size/font is small enough that heavy noise breaks OCR (so denoising
+    can measurably help) yet clean OCR is ~0. Public-domain text (Austen)."""
     from PIL import ImageDraw, ImageFont
     import glob
     page = np.full((h, w, 3), 250, np.uint8)
@@ -105,32 +149,34 @@ def synth_bookpage(w=560, h=720):
     font = None
     for pat in ["/System/Library/Fonts/Supplemental/Times New Roman.ttf",
                 "/System/Library/Fonts/Supplemental/Georgia.ttf",
-                "/System/Library/Fonts/NewYork.ttf"]:
+                "/System/Library/Fonts/NewYork.ttf", "/Library/Fonts/*Serif*.ttf"]:
         for f in glob.glob(pat):
             try:
-                font = ImageFont.truetype(f, 20); break
+                font = ImageFont.truetype(f, fontsize); break
             except Exception:
                 pass
         if font:
             break
     if font is None:
         font = ImageFont.load_default()
-    margin, x, y, lh, maxw = 48, 48, 60, 30, w - 96
-    words, line = _BOOK_TEXT.split(), ""
+    margin, x, y, lh, maxw = 20, 24, 16, fontsize + 8, w - 48
+    words, line, rendered = _BOOK_TEXT.split(), "", []
     for wd in words:
         t = (line + " " + wd).strip()
         if d.textlength(t, font=font) > maxw:
-            d.text((x, y), line, fill=(20, 20, 22), font=font); y += lh; line = wd
+            d.text((x, y), line, fill=(25, 25, 28), font=font); rendered.append(line)
+            y += lh; line = wd
         else:
             line = t
         if y > h - lh - margin:
-            break
+            line = ""; break
     if line and y <= h - lh - margin:
-        d.text((x, y), line, fill=(20, 20, 22), font=font)
-    return np.asarray(im)[..., :3].astype(np.uint8)
+        d.text((x, y), line, fill=(25, 25, 28), font=font); rendered.append(line)
+    return np.asarray(im)[..., :3].astype(np.uint8), " ".join(rendered)
 
 
 def builtin_image(name):
+    """Returns (rgb_uint8, ground_truth_text_or_None)."""
     if name == "bookpage":
         return synth_bookpage()
     from skimage import data
@@ -140,7 +186,7 @@ def builtin_image(name):
     arr = np.asarray(fn())
     if arr.ndim == 2:
         arr = np.stack([arr] * 3, -1)
-    return arr[..., :3].astype(np.uint8)
+    return arr[..., :3].astype(np.uint8), None
 
 
 def run_engine(bin_path, argv, out_ppm, cpu_env, force_cpu):
@@ -183,6 +229,12 @@ def main():
     ap.add_argument("--force-cpu", action="store_true", default=True)
     ap.add_argument("--gpu", dest="force_cpu", action="store_false")
     ap.add_argument("--seed", type=int, default=7)
+    ap.add_argument("--ocr", choices=["none", "tesseract", "crispembed"], default="none",
+                    help="denoise mode: also OCR clean/degraded/restored and report CER vs "
+                         "ground-truth text (the metric that matters for book scans). "
+                         "'crispembed' needs --ocr-model.")
+    ap.add_argument("--ocr-model", help="GGUF for --ocr crispembed (a VLM OCR model)")
+    ap.add_argument("--gt-text", help="file with ground-truth text for --image (bookpage has it built in)")
     args = ap.parse_args()
 
     spec = ENGINES[args.engine]
@@ -191,14 +243,28 @@ def main():
     rng = np.random.RandomState(args.seed)
 
     if args.builtin:
-        clean = builtin_image(args.builtin)
+        clean, gt_text = builtin_image(args.builtin)
         tag = args.builtin
     elif args.image:
         clean = load_rgb(args.image)
         tag = os.path.splitext(os.path.basename(args.image))[0]
+        gt_text = open(args.gt_text).read() if args.gt_text else None
     else:
         sys.exit("provide --image or --builtin")
 
+    do_ocr = args.ocr != "none" and mode == "denoise"
+    if do_ocr and not gt_text:
+        sys.exit("--ocr needs ground-truth text (use --builtin bookpage or --gt-text)")
+    if args.ocr == "crispembed" and not args.ocr_model:
+        sys.exit("--ocr crispembed needs --ocr-model <gguf>")
+
+    def run_ocr(img, tagpath):
+        if args.ocr == "tesseract":
+            return ocr_tesseract(img)
+        return ocr_crispembed(args.bin, args.ocr_model, img, args.out_dir, tagpath)
+
+    if do_ocr:
+        args.max_size = 0  # keep text at readable resolution so the clean OCR baseline holds
     if args.max_size and max(clean.shape[:2]) > args.max_size:
         im = Image.fromarray(clean)
         s = args.max_size / max(clean.shape[:2])
@@ -212,6 +278,11 @@ def main():
           f"ssim={'on' if HAVE_SSIM else 'off (pip install scikit-image)'}")
 
     rows = []
+    ocr_rows = []
+    if do_ocr:
+        clean_cer = cer(gt_text, run_ocr(clean, f"{tag}_clean_ocr.png"))
+        print(f"OCR={args.ocr}  clean-baseline CER={clean_cer:.3f} "
+              f"(should be ~0; if high, text is too small for this OCR)")
     if mode == "denoise":
         for sig in [int(s) for s in args.sigmas.split(",")]:
             f = clean.astype(np.float32) / 255.0
@@ -226,6 +297,10 @@ def main():
             rows.append((f"sigma={sig}", psnr(no, c), ssim(no, c), psnr(de, c), ssim(de, c)))
             save_sheet(os.path.join(args.out_dir, f"sheet_{tag}_{args.engine}_s{sig}.png"),
                        [c, no, de], axis=1 if W >= H else 0)
+            if do_ocr:
+                cn = cer(gt_text, run_ocr(no, f"{tag}_noisy{sig}_ocr.png"))
+                cd = cer(gt_text, run_ocr(de, f"{tag}_den{sig}_ocr.png"))
+                ocr_rows.append((f"sigma={sig}", cn, cd))
     else:  # sr
         scale = args.scale or spec.get("scale", 4)
         lr = Image.fromarray(clean).resize((W // scale, H // scale), Image.BICUBIC)
@@ -244,6 +319,14 @@ def main():
     print(f"\n{'case':10} {base_lbl+' PSNR/SSIM':22} {'RESTORED PSNR/SSIM':22} gain")
     for name, pb, sb, pr, sr_ in rows:
         print(f"{name:10} {pb:6.2f}dB/{sb:.3f}        {pr:6.2f}dB/{sr_:.3f}        {pr-pb:+.2f}dB")
+
+    if ocr_rows:
+        print(f"\n[OCR-CER, {args.ocr}] lower is better; the metric that matters for scans")
+        print(f"{'case':10} {'CER(noisy)':12} {'CER(denoised)':14} verdict")
+        for name, cn, cd in ocr_rows:
+            v = "improved" if cd < cn - 1e-6 else ("no change" if abs(cd - cn) <= 1e-6 else "worse")
+            print(f"{name:10} {cn:<12.3f} {cd:<14.3f} {v}")
+
     print(f"\ncontact sheets + images in {args.out_dir}/ "
           f"(panels: clean | {base_lbl} | restored)")
 
