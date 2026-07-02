@@ -174,10 +174,14 @@ def main():
 
     kh.install_build_toolchain()
     build = repo / "build"; build.mkdir(exist_ok=True)
-    # GPU build: ggml-cuda is shared with CrispASR, so the crispasr-ccache seed
-    # warms the bulk of the CUDA compile; crispembed's CPU-side engines compile
-    # fast. crispembed-cli then runs calibration/A/B on the GPU (helps 2.5B+).
-    GPU = os.environ.get("CRISP_GPU", "1") != "0"
+    # CPU build by DEFAULT. These embedders (<=600M) calibrate + quantize fine on
+    # CPU, and a CUDA build compiles ggml-cuda's ~254 template-instance TUs
+    # (~15 min of nvcc; the CrispASR ccache seed barely hits them and the arch
+    # pin differs). We keep enable_gpu:true in kernel-metadata ONLY because
+    # Kaggle CPU workers get no internet (kaggle_usage.md #3) — the GPU is used
+    # for internet (clone/download/upload), NOT for the build. Set CRISP_GPU=1
+    # for large models (e.g. BidirLM-Omni) where GPU calibration is worth it.
+    GPU = os.environ.get("CRISP_GPU", "0") != "0"
     flags = (kh.cuda_build_flags(kh.detect_cuda_arch()) if GPU else ["-DGGML_CUDA=OFF"])
     flags += kh.cache_and_link_flags()
     cfg_cmd = (f"cmake -G Ninja -S {repo} -B {build} -DCMAKE_BUILD_TYPE=Release "
