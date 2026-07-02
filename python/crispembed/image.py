@@ -43,6 +43,24 @@ def _get_processor(model_name: str = "BidirLM/BidirLM-Omni-2.5B-Embedding"):
     return proc
 
 
+def _proc_to_np(processor, images):
+    """Run the HF image processor, returning (pixel_values, image_grid_thw) as
+    contiguous numpy (f32, i32). Prefers ``return_tensors="np"``, but some custom
+    processors (e.g. BidirLM-Omni) only support ``"pt"`` and raise ValueError on
+    "np" — fall back to torch tensors and convert."""
+    try:
+        inputs = processor(images=images, return_tensors="np")
+        pv, gt = inputs["pixel_values"], inputs["image_grid_thw"]
+    except ValueError:
+        inputs = processor(images=images, return_tensors="pt")
+        pv = inputs["pixel_values"].cpu().numpy()
+        gt = inputs["image_grid_thw"].cpu().numpy()
+    return (
+        np.ascontiguousarray(pv, dtype=np.float32),
+        np.ascontiguousarray(gt, dtype=np.int32),
+    )
+
+
 def preprocess_image(
     image,
     *,
@@ -64,9 +82,7 @@ def preprocess_image(
         processor = _get_processor(model_name)
 
     img = _coerce_image(image)
-    inputs = processor(images=img, return_tensors="np")
-    pixel_values = np.ascontiguousarray(inputs["pixel_values"], dtype=np.float32)
-    grid_thw = np.ascontiguousarray(inputs["image_grid_thw"], dtype=np.int32)
+    pixel_values, grid_thw = _proc_to_np(processor, img)
 
     if pixel_values.ndim != 2:
         raise RuntimeError(
@@ -85,9 +101,7 @@ def preprocess_images(
     if processor is None:
         processor = _get_processor(model_name)
     coerced = [_coerce_image(im) for im in images]
-    inputs = processor(images=coerced, return_tensors="np")
-    pixel_values = np.ascontiguousarray(inputs["pixel_values"], dtype=np.float32)
-    grid_thw = np.ascontiguousarray(inputs["image_grid_thw"], dtype=np.int32)
+    pixel_values, grid_thw = _proc_to_np(processor, coerced)
     return pixel_values, grid_thw
 
 
