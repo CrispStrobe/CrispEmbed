@@ -712,9 +712,14 @@ static bool modernbert_swa_enabled(const crispembed_context * ctx) {
 //   Numerically identical to encoding each sequence alone (full bidirectional within a
 //   segment, -inf across), but in one graph. Only used for absolute-position encoders
 //   (no MPNet rel-bias / DeBERTa rel-embd / RoPE), so rel_pos_bias is null here.
+// item_mask (C3): rectangular 4D batch — B sequences padded to T tokens, kept as
+//   separate 4D batch items [hd,T,nh,B], with a per-item F16 mask "pad_mask" [T,T,1,B]
+//   (−inf on padded key columns per item). Attention is O(B·T²) not O((B·T)²), so it
+//   scales far better than packing for many short sequences. ggml flash_attn_ext accepts
+//   the per-batch mask (q->ne[3] % mask->ne[3] == 0) and Metal indexes it per iq3.
 // NOLINTNEXTLINE(bugprone-easily-swappable-parameters)
 static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B = 1, int mode = 0,
-                                         bool packed_mask = false) {
+                                         bool packed_mask = false, bool item_mask = false) {
     const auto & m = ctx->model;
     const auto & hp = m.hparams;
     const int H = hp.n_embd;
@@ -774,6 +779,16 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         seg_mask = ggml_new_tensor_2d(gctx, GGML_TYPE_F16, T, T);
         ggml_set_name(seg_mask, "seg_mask");
         ggml_set_input(seg_mask);
+    }
+
+    // Rectangular 4D batch: per-item padding mask [T, T, 1, B] (F16). For item b,
+    // key column k is 0 if k is a real token, −inf if padding; broadcast over heads
+    // (ne[2]=1) and applied per batch item (ne[3]=B). Filled by fill_item_pad_mask().
+    ggml_tensor * pad_mask = nullptr;
+    if (item_mask && !packed_mask && B > 1) {
+        pad_mask = ggml_new_tensor_4d(gctx, GGML_TYPE_F16, T, T, 1, B);
+        ggml_set_name(pad_mask, "pad_mask");
+        ggml_set_input(pad_mask);
     }
 
     // ModernBERT sliding-window (local attention) mask [T, T] (F16): local layers
@@ -949,6 +964,8 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             ggml_tensor * attn_mask;
             if (packed_mask)
                 attn_mask = seg_mask;
+            else if (pad_mask)
+                attn_mask = pad_mask; // rectangular 4D per-item padding
             else if (swa_mask && is_local_layer)
                 attn_mask = swa_mask; // ModernBERT local
             else
@@ -1596,6 +1613,159 @@ static int packed_group_maxtok(const crispembed_context * ctx) {
     return 384;
 }
 
+// Pool + L2-normalize one sequence's [H, *] rows into a dim-vector.
+// rows point at the H-strided hidden states; `n` valid tokens starting at row 0.
+static std::vector<float> pool_and_norm(const float * rows, int n, int H, int dim, int pool_method) {
+    std::vector<float> pooled(dim, 0.0f);
+    if (pool_method == 1) { // CLS = first token
+        for (int h = 0; h < std::min(H, dim); h++) pooled[h] = rows[h];
+    } else if (pool_method == 2) { // last token
+        const float * last = rows + (size_t)(n - 1) * H;
+        for (int h = 0; h < std::min(H, dim); h++) pooled[h] = last[h];
+    } else { // mean
+        if (n > 0) {
+            for (int t = 0; t < n; t++)
+                for (int h = 0; h < std::min(H, dim); h++) pooled[h] += rows[(size_t)t * H + h];
+            for (int h = 0; h < dim; h++) pooled[h] /= n;
+        }
+    }
+    float norm = 0;
+    for (int h = 0; h < dim; h++) norm += pooled[h] * pooled[h];
+    norm = sqrtf(std::max(norm, 1e-12f));
+    for (int h = 0; h < dim; h++) pooled[h] /= norm;
+    return pooled;
+}
+
+// Rectangular 4D batch (C3): one group of B sequences padded to T_max, kept as
+// separate 4D batch items with a per-item padding mask. Attention is O(B·T_max²)
+// (vs packing's O((B·T)²)). Output is bit-parity with per-sequence encoding —
+// padded keys are masked to −inf so real tokens never attend to padding, and
+// padded query rows are discarded in pooling.
+static std::vector<std::vector<float>> encode_tokens_group_4d(crispembed_context * ctx,
+                                                              const std::vector<embed_tokens> & group) {
+    const auto & hp = ctx->model.hparams;
+    const int B = (int)group.size();
+    const int H = hp.n_embd;
+    int T_max = 0;
+    for (const auto & t : group) T_max = std::max(T_max, (int)t.ids.size());
+    if (T_max == 0) return {};
+    const int TB = T_max * B;
+
+    ggml_cgraph * gf = build_encoder_graph(ctx, T_max, B, 0, /*packed_mask=*/false, /*item_mask=*/true);
+    ggml_backend_sched_reset(ctx->sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
+        fprintf(stderr, "crispembed: failed to allocate 4D batch graph\n");
+        return {};
+    }
+
+    // Item-major flat layout: index (t + T_max*b) — t (position) fast, b (item) slow.
+    std::vector<int32_t> tok_data(TB, 0), pos_data(TB, ctx->pos_offset);
+    for (int b = 0; b < B; b++) {
+        const int len = (int)group[b].ids.size();
+        for (int t = 0; t < len; t++) {
+            tok_data[(size_t)b * T_max + t] = group[b].ids[t];
+            pos_data[(size_t)b * T_max + t] = t + ctx->pos_offset;
+        }
+    }
+    ggml_tensor * tok_ids = graph_tensor_or_log(gf, "tok_ids");
+    if (!tok_ids) return {};
+    ggml_backend_tensor_set(tok_ids, tok_data.data(), 0, TB * sizeof(int32_t));
+    if (ggml_tensor * pos_ids = ggml_graph_get_tensor(gf, "pos_ids")) {
+        ggml_backend_tensor_set(pos_ids, pos_data.data(), 0, TB * sizeof(int32_t));
+    } else if (ctx->model.pos_embd) {
+        fprintf(stderr, "crispembed: missing graph tensor 'pos_ids' (4D)\n");
+        return {};
+    }
+    if (ctx->model.type_embd) {
+        std::vector<int32_t> type_data(TB, 0);
+        for (int b = 0; b < B; b++) {
+            const auto & tids = group[b].type_ids;
+            const int len = std::min((int)group[b].ids.size(), (int)tids.size());
+            for (int t = 0; t < len; t++) type_data[(size_t)b * T_max + t] = tids[t];
+        }
+        ggml_tensor * type_ids = graph_tensor_or_log(gf, "type_ids");
+        if (!type_ids) return {};
+        ggml_backend_tensor_set(type_ids, type_data.data(), 0, TB * sizeof(int32_t));
+    }
+
+    // Per-item padding mask [T_max, T_max, 1, B]: mask(k, q, 0, b) = 0 if key k is a
+    // real token in item b, else −inf. Independent of q (bidirectional).
+    ggml_tensor * pad_mask = graph_tensor_or_log(gf, "pad_mask");
+    if (!pad_mask) return {};
+    std::vector<ggml_fp16_t> mask_data((size_t)TB * T_max);
+    const ggml_fp16_t zero_f16 = ggml_fp32_to_fp16(0.0f);
+    const ggml_fp16_t ninf_f16 = ggml_fp32_to_fp16(-INFINITY);
+    for (int b = 0; b < B; b++) {
+        const int len = (int)group[b].ids.size();
+        ggml_fp16_t * slab = mask_data.data() + (size_t)b * T_max * T_max; // item b
+        for (int q = 0; q < T_max; q++) {
+            ggml_fp16_t * row = slab + (size_t)q * T_max; // keys for query q
+            for (int k = 0; k < T_max; k++) row[k] = (k < len) ? zero_f16 : ninf_f16;
+        }
+    }
+    ggml_backend_tensor_set(pad_mask, mask_data.data(), 0, mask_data.size() * sizeof(ggml_fp16_t));
+
+    if (!sched_graph_compute(ctx->sched, gf, ctx->n_threads)) {
+        fprintf(stderr, "crispembed: 4D batch compute failed\n");
+        return {};
+    }
+
+    ggml_tensor * out = graph_tensor_or_log(gf, "encoder_out");
+    if (!out) return {};
+    std::vector<float> out_buf((size_t)H * TB);
+    ggml_backend_tensor_get(out, out_buf.data(), 0, (size_t)H * TB * sizeof(float));
+
+    const int dim = hp.n_output > 0 ? hp.n_output : H;
+    std::vector<std::vector<float>> results(B);
+    for (int b = 0; b < B; b++) {
+        const int len = (int)group[b].ids.size();
+        results[b] = pool_and_norm(out_buf.data() + (size_t)b * T_max * H, len, H, dim, ctx->pool_method);
+    }
+    return results;
+}
+
+// 4D batch group size (sequences per rectangular graph). Sequences are length-sorted
+// then chunked so each group pads to a similar T_max, minimizing wasted compute.
+static int four_d_group_size(const crispembed_context * ctx) {
+    (void)ctx;
+    if (const char * v = std::getenv("CRISPEMBED_ENCODER_4D_GROUP")) {
+        int n = atoi(v);
+        if (n > 0) return n;
+    }
+    return 32;
+}
+
+static bool four_d_batch_enabled(const crispembed_context * ctx) {
+    if (ctx->is_decoder) return false;
+    if (ctx->model.rel_attn_bias || ctx->model.rel_embd || ctx->use_rope) return false;
+    const char * v = std::getenv("CRISPEMBED_ENCODER_4D");
+    return v && v[0] && std::strcmp(v, "0") != 0; // opt-in until A/B-proven
+}
+
+// Rectangular 4D batch over the whole batch: length-sort, chunk into groups, run
+// each as one padded 4D graph, then restore original order.
+static std::vector<std::vector<float>> encode_tokens_4d(crispembed_context * ctx,
+                                                        const std::vector<embed_tokens> & batch) {
+    const int B = (int)batch.size();
+    std::vector<int> order(B);
+    for (int i = 0; i < B; i++) order[i] = i;
+    std::sort(order.begin(), order.end(), [&](int a, int b) { return batch[a].ids.size() < batch[b].ids.size(); });
+
+    const int G = four_d_group_size(ctx);
+    std::vector<std::vector<float>> results(B);
+    for (int start = 0; start < B; start += G) {
+        const int end = std::min(start + G, B);
+        std::vector<embed_tokens> group;
+        group.reserve(end - start);
+        for (int i = start; i < end; i++) group.push_back(batch[order[i]]);
+        auto part = (group.size() == 1) ? std::vector<std::vector<float>>{ encode_tokens(ctx, group[0]) }
+                                        : encode_tokens_group_4d(ctx, group);
+        if ((int)part.size() != (int)group.size()) return {}; // signal failure → caller falls back
+        for (int i = start; i < end; i++) results[order[i]] = std::move(part[i - start]);
+    }
+    return results;
+}
+
 // Batched encoding: multiple texts. Uses the packed block-diagonal graph (C3)
 // when eligible + enabled, greedily grouped under a token budget; otherwise
 // encodes each sequence individually.
@@ -1603,6 +1773,13 @@ static std::vector<std::vector<float>> encode_tokens_batch(crispembed_context * 
                                                            const std::vector<embed_tokens> & batch) {
     const int B = (int)batch.size();
     if (B == 0) return {};
+
+    // Rectangular 4D per-item-mask batch (C3 follow-up): O(B·T²), preferred when enabled.
+    if (B > 1 && four_d_batch_enabled(ctx)) {
+        auto r = encode_tokens_4d(ctx, batch);
+        if ((int)r.size() == B) return r;
+        fprintf(stderr, "crispembed: 4D batch failed, falling back\n");
+    }
 
     if (B > 1 && packed_batch_enabled(ctx)) {
         const int maxtok = packed_group_maxtok(ctx);
@@ -2529,7 +2706,9 @@ extern "C" const float * crispembed_encode_tokens(crispembed_context * ctx, cons
     std::string enc_text = ctx->prefix.empty() ? std::string(text) : ctx->prefix + text;
 
     embed_tokens tokens;
-    if (ctx->use_sentencepiece)
+    if (ctx->use_bpe)
+        tokens = ctx->bpe_tokenizer.encode(enc_text);
+    else if (ctx->use_sentencepiece)
         tokens = ctx->sp_tokenizer.encode(enc_text);
     else
         tokens = ctx->wp_tokenizer.encode(enc_text);
@@ -2583,7 +2762,9 @@ extern "C" const float * crispembed_encode_tokens_raw(crispembed_context * ctx, 
     std::string enc_text = ctx->prefix.empty() ? std::string(text) : ctx->prefix + text;
 
     embed_tokens tokens;
-    if (ctx->use_sentencepiece)
+    if (ctx->use_bpe)
+        tokens = ctx->bpe_tokenizer.encode(enc_text);
+    else if (ctx->use_sentencepiece)
         tokens = ctx->sp_tokenizer.encode(enc_text);
     else
         tokens = ctx->wp_tokenizer.encode(enc_text);
