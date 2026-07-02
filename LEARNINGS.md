@@ -1,5 +1,90 @@
 # CrispEmbed — Technical Learnings
 
+## Encoder batching: packed block-diagonal is O(T_total²); rectangular 4D per-item mask is O(B·T²) (2026-07)
+
+Two ways to batch B bidirectional-encoder sequences into one graph, with very different
+scaling:
+
+**Packed (block-diagonal).** Concatenate all sequences into one length-`T_total = ΣTᵢ`
+stream (`B` stays 1), build an F16 `[T_total, T_total]` mask that is 0 within each
+segment and −∞ across, feed it to `flash_attn_ext`. Positions restart per segment. This
+is the proven `bidirlm_vision` pattern and is **bit-parity** with per-sequence encoding
+(masked keys contribute `exp(−∞)=0`). BUT ggml's `flash_attn_ext` still *computes* every
+masked cell, so attention is **O(T_total²)** — for many short sequences that's
+catastrophic (packing 128×15-token texts into one 1920-token stream measured a **3.7×
+slowdown**). Capping the pack into greedy token-budget groups bounds it but never beats
+the alternative.
+
+**Rectangular 4D per-item mask.** Keep sequences as separate 4D batch items
+`[hd, T_max, nh, B]` (pad to `T_max`), and mask *padding only* with a per-item mask
+`pad_mask [T_max, T_max, 1, B]` (−∞ on key columns `k ≥ len_b`, independent of query;
+padded query rows are discarded in pooling). Attention is **O(B·T_max²)** — a factor `B`
+cheaper than packing when lengths are similar. Length-sort + chunk to keep `T_max` tight.
+Measured **1.18×–1.48× faster than sequential AND packed**, parity cos 1.0/0.9999697.
+
+**ggml/Metal support for the per-batch mask (the enabling fact).** The pinned ggml
+`flash_attn_ext` asserts only `q->ne[2] % mask->ne[2] == 0` and `q->ne[3] % mask->ne[3]
+== 0` (heads/batch broadcast) — **no** `GGML_KQ_MASK_PAD` and no `n_q` padding in this
+version. A `[T,T,1,B]` mask (ne2=1 broadcast over heads, ne3=B per item) is legal, and
+the Metal kernel indexes it per batch via `(iq3 % ne33)*nb33` (`ggml-metal.metal` ~5872).
+So a per-item 4D mask runs on Metal. (Could not empirically confirm here — this sandbox
+has **no GPU; the whole tree runs CPU with `GGML_METAL=OFF`**, so "Metal vs CPU"
+benchmarks in this env are CPU-vs-CPU. Keep GPU-default paths opt-in until a real-Metal
+A/B.) Both paths live behind env gates (`CRISPEMBED_ENCODER_PACKED` / `_4D`); default
+stays the per-sequence loop.
+
+## ModernBERT: three latent bugs — local-path converter, CLS-vs-mean pooling, missing SWA (2026-07)
+
+`gte-modernbert-base` was code-supported (shared BERT-family encoder graph) but had never
+been parity-checked; it was broken three independent ways, each masking the next:
+
+1. **Garbage tokenizer (cos 0.46).** `convert-bert-to-gguf.py` defaults to **ollama mode**
+   (`ollama_mode = not args.crisp`), which writes a WordPiece tokenizer and *never runs BPE
+   detection*. Pass **`--crisp`**. Even in `--crisp` mode, BPE/CLS-pooling/Unigram-score
+   detection called `hf_hub_download(repo_id=args.model)`, which **throws on a local path**
+   and was swallowed by a bare `except` → silent WordPiece + mean fallback. Fixed with a
+   `_resolve_file()` helper (local dir → hub) at all three sites.
+
+2. **Pooling metadata (cos 0.84 with correct tokens).** Once tokens matched, per-layer diff
+   showed **all 22 layers cos ≥ 0.99995** — the backbone was perfect — yet the pooled
+   embedding was 0.84. Root cause: the loader read `bert.pooling_type` (ollama enum, 1=mean)
+   instead of `bert.pooling_method` (crisp enum, 1=CLS), so a CLS model mean-pooled. The
+   telltale: `cos(crispembed, HF *mean*-pool) = 0.99999` while `cos(…, HF *CLS*) = 0.84`.
+   **Lesson: when the backbone matches per-layer but the final embedding doesn't, suspect
+   pooling/metadata, not the graph.**
+
+3. **Missing sliding-window local attention (long-doc only).** ModernBERT alternates global
+   (every Nth) and local layers; only the RoPE θ alternated in our graph — the local layers'
+   `±local_attention/2` (=64) window mask was absent, so they attended globally. Invisible
+   for short inputs (window ≥ seq len), but a 113-token doc dropped to 0.9826. Added a
+   per-layer `swa_mask` ([i,j]=0 iff |i−j|≤64) fed to `flash_attn_ext` on local layers only;
+   converter emits `bert.local_attention`. Gated by `CRISPEMBED_ENCODER_NO_SWA=1` as an A/B /
+   regression-bisection lever. Result: 113-tok 0.9826 → **0.999998**; the compiled
+   `test-modernbert-diff` guard uses a >64-span text so disabling SWA craters cos to −0.87.
+
+## Public raw encode APIs must mirror the main tokenizer dispatch (2026-07)
+
+`crispembed_encode_tokens_raw` (and a sibling raw path used by the diff harness) branched
+only `use_sentencepiece ? SPM : WordPiece` — **missing the `use_bpe` case** that the main
+`encode` path has. So BPE encoders (ModernBERT) were silently tokenized with WordPiece in
+the raw API (113 → 103 tokens, garbage), even though `crispembed_encode` worked. Any code
+path that re-tokenizes must use the same `use_bpe → SPM → WordPiece` dispatch as the primary
+one; a partial copy is a latent per-arch bug. (Separately: the CrispEmbed BPE tokenizer still
+diverges from HF on some longer/varied texts — an edge case, not yet chased.)
+
+## EmbeddingGemma: a non-orthogonal Dense bottleneck amplifies tiny backbone discrepancies (2026-07)
+
+EmbeddingGemma-300m is Gemma3 → mean-pool → **Dense(768→3072) → Dense(3072→768)** → L2 →
+Matryoshka. Parity vs HF sat at **~0.997, identical at f16 and f32** — so it's *not*
+precision. The Dense/pooling code and f32 weights match HF exactly (verified by reading +
+a pooling-variant probe: BOS+content+EOS mean is the best match). The residual traces to a
+sub-0.9999 discrepancy in the *Gemma3 backbone* pooled output that the learned, non-norm-
+preserving 768→3072→768 projection **amplifies** (a ~0.9995 pre-Dense cosine becomes ~0.997
+post-Dense). **Lesson: models with a post-pooling projection head amplify backbone error —
+0.997 end-to-end can hide a 0.9995 backbone bug; diff the *pre-Dense* pooled vector to
+localize.** (The gap was deemed acceptable and left open; per-stage backbone diff is the
+next step.)
+
 ## ggml v0.10.0 (8be60f83) Metal regressions: residency-set teardown abort + sched CPU-fallback assert (2026-07)
 
 Two aborts appeared *only after* the ggml submodule bump to v0.10.0 (`8be60f83`),
