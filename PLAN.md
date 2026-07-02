@@ -502,12 +502,18 @@ graph for decoder models" task. (The **decoder** batched graph already existed �
   near-linear speedup hoped for on bidirectional encoders; medians swung 0.46×–2.07×
   same-config on a 16 GB M1 under load; uncapped packing was a 3.7× loss. Real win
   for the CPU-only VPS.
-- **NEXT (the real throughput fix): rectangular 4D per-item mask, O(B·T²).** Keep
-  sequences as separate 4D batch items `[hd,T,nh,B]` (already scaffolded in
-  `build_encoder_graph`) with a per-item padding mask so attention is O(B·T²) not
-  O((B·T)²) — the pinned ggml `flash_attn_ext` accepts a per-batch mask
-  (`q->ne[3] % mask->ne[3] == 0`); needs Metal 4D-mask verification. This is the
-  prioritized C3 follow-up (after C8 EmbeddingGemma coverage).
+- **Rectangular 4D per-item mask, O(B·T²) — IMPLEMENTED, OPT-IN (`CRISPEMBED_ENCODER_4D=1`).**
+  Keeps sequences as separate 4D batch items `[hd,T,nh,B]` with a per-item padding
+  mask `pad_mask` [T,T,1,B] (−inf on padded keys per item), so attention is O(B·T²)
+  not O((B·T)²) — the real throughput fix vs packing. `encode_tokens_4d` length-sorts
+  + chunks into groups of `CRISPEMBED_ENCODER_4D_GROUP` (default 32) to minimize
+  padding. Bit-parity: `tests/test_encoder_batch.py::TestEncoder4DBatchParity` cos
+  **1.0 / 0.9999697** (single/multi group). **Consistently faster than sequential AND
+  packed** (1.18×–1.48× at N=8/32/128, stable). ggml `flash_attn_ext` takes the
+  per-batch mask (`q->ne[3] % mask->ne[3] == 0`) and the Metal kernel indexes it per
+  `iq3 % ne33` (confirmed in ggml source). **NOTE: this env is CPU-only
+  (`GGML_METAL=OFF`; sandbox has no GPU) — Metal not empirically exercised** → kept
+  opt-in pending a real-Metal A/B before flipping the default over packed.
 
 **C4 — KV prefix-sharing for the decoder-embedding path.** Port the `seq_cp`
 cell-copy idea (cells carry `{pos, set<seq_id>}`; compute shared prefix once, copy
@@ -600,14 +606,26 @@ supported but never parity-checked, and broke three ways; now **cos 0.999999**
   local layers; converter emits `bert.local_attention`, loader reads it. A/B lever
   `CRISPEMBED_ENCODER_NO_SWA=1`. No effect on non-ModernBERT encoders.
 - GGUFs published to `cstr/gte-modernbert-base-GGUF` (f16 + q8_0); registry entry in
-  `examples/cli/model_mgr.cpp`. Guard: `tests/test_modernbert_parity.py`. TODO: wire
-  a compiled `test-modernbert-diff` into the regression manifest.
+  `examples/cli/model_mgr.cpp`. Guards: `tests/test_modernbert_parity.py` **and** a
+  compiled `test-modernbert-diff` wired into the regression manifest
+  (`dump_modernbert_reference.py` → `modernbert-ref.gguf`; q8_0-vs-f32 final_hidden
+  0.9919, floor 0.99; disabling SWA craters cos to −0.87 so the entry catches an SWA
+  regression). Runs green via `run_one.py --name modernbert`.
+- *Bug found + fixed en route:* `crispembed_encode_tokens_raw` (+ a sibling raw path)
+  branched only SPM/WordPiece — **missing the BPE case**, so BPE encoders (ModernBERT)
+  were mis-tokenized via WordPiece in the raw API (113→103 tokens). Added the `use_bpe`
+  branch. Also: the CrispEmbed BPE tokenizer diverges from HF on some longer/varied
+  texts (edge case, not chased; the guardrail text is verified-aligned).
 
-**NEXT PRIORITIES (2026-07, ordered):** (1) **EmbeddingGemma Dense/Matryoshka parity
-coverage** — the projection + Matryoshka path ships with ZERO parity test; add a
-`dump_embeddinggemma_reference.py` + parity test (cos ≥ 0.999 vs HF, verify the
-Dense→L2→Matryoshka order). (2) **C3 rectangular 4D per-item-mask batch** (O(B·T²);
-see C3 above). Nomic-v2-MoE already covered (`test_moe_parity.py`).
+**NEXT PRIORITIES (2026-07, ordered):** **C3 4D batch — DONE (opt-in, see C3).**
+**EmbeddingGemma** Dense(×2)/mean/Matryoshka pipeline verified correct (~0.997, an
+accepted small Gemma3-backbone residual amplified by the Dense bottleneck); remaining:
+a committed parity test + exposing `matryoshka_dim` in the Python `encode()`. The
+registry pooling label ("last-token" → mean-pool) fix is **deferred**:
+`examples/cli/model_mgr.cpp` is Lint-broken and actively churned by the concurrent
+imatrix-repoint work (which also repoints the embeddinggemma entry), so the 1-line
+label fix should land with that work to avoid conflicts. Nomic-v2-MoE already covered
+(`test_moe_parity.py`).
 
 **C9 — preserve & document our differentiation.** MPNet, GTE-v1.5, DeBERTa-v2,
 SPLADE, bge-m3 tri-head (dense+sparse+ColBERT), standalone CLIP/SigLIP text+image
