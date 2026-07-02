@@ -277,8 +277,8 @@ static ggml_tensor* g_mha_batch(ggml_context* g, ggml_tensor* Q, ggml_tensor* K,
     V = ggml_cont(g, ggml_permute(g, ggml_reshape_4d(g, V, hd, n_heads, T, B), 0, 2, 1, 3));
     // flash_attn: Q[hd,T,nh,B] → result[hd,nh,T,B] (permuted)
     ggml_tensor* attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
-    // [hd,nh,T,B] → permute → [hd,T,nh,B] → reshape → [H,T,B]
-    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+    // flash_attn_ext already applies permute(0,2,1,3): output is [hd, nh, T, B].
+    // Reshape straight to [H, T, B] — the old manual-path permute scrambled it.
     return ggml_reshape_3d(g, attn, H, T, B);
 }
 
@@ -343,7 +343,7 @@ static ggml_tensor* g_mha_1q(ggml_context* g, ggml_tensor* Q, ggml_tensor* K, gg
 
     // flash_attn_ext: Q [hd,1,nh], K [hd,n_kv,nh], V [hd,n_kv,nh] → output [hd,1,nh]
     ggml_tensor* attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
-    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3)); // [hd, nh, 1]
+    // flash_attn_ext output is already [hd, nh, 1]; reshape straight to [H, 1].
     return ggml_reshape_2d(g, attn, H, 1);
 }
 
