@@ -1090,27 +1090,40 @@ static ggml_cgraph* build_qwen2_enc_layer_graph(ggml_context* g, ds_ocr2_ctx* ct
     K = ggml_rope_ext(g, K, pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0,
                       qhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
-    ggml_tensor* Kfull = ggml_cont(g, K);
-    ggml_tensor* Vfull = ggml_cont(g, V);
-    if (kv_repeat > 1) {  // GQA interleave (not tile)
-        Kfull = ggml_reshape_4d(g, Kfull, hd, 1, nkv, T);
-        Kfull = ggml_repeat(g, Kfull, ggml_new_tensor_4d(g, Kfull->type, hd, kv_repeat, nkv, T));
-        Kfull = ggml_reshape_3d(g, Kfull, hd, nh, T);
-        Vfull = ggml_reshape_4d(g, Vfull, hd, 1, nkv, T);
-        Vfull = ggml_repeat(g, Vfull, ggml_new_tensor_4d(g, Vfull->type, hd, kv_repeat, nkv, T));
-        Vfull = ggml_reshape_3d(g, Vfull, hd, nh, T);
+    // Attention. Default = manual masked GQA (soft_max_ext + explicit interleave
+    // repeat) — the verified-correct path. Opt-in DS_QWEN2_ENC_FLASH=1 selects
+    // ggml_flash_attn_ext (native GQA broadcast, no repeat; output is already
+    // [hd,nh,T] so reshape straight to [D,T] — NO trailing permute; see the
+    // Jun-20 perf-sweep regression). A/B-verify the flash path's decoded output
+    // equals the manual path before making it the default (per the dev-guide rule).
+    ggml_tensor* attn;
+    if (getenv("DS_QWEN2_ENC_FLASH")) {
+        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));          // [hd, T, nh]
+        ggml_tensor* Kp = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));  // [hd, T, nkv]
+        ggml_tensor* Vp = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));  // [hd, T, nkv]
+        attn = ggml_flash_attn_ext(g, Q, Kp, Vp, mask, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
+        attn = ggml_reshape_2d(g, attn, D, T);  // flash output already [hd,nh,T]
+    } else {
+        ggml_tensor* Kfull = ggml_cont(g, K);
+        ggml_tensor* Vfull = ggml_cont(g, V);
+        if (kv_repeat > 1) {  // GQA interleave (not tile)
+            Kfull = ggml_reshape_4d(g, Kfull, hd, 1, nkv, T);
+            Kfull = ggml_repeat(g, Kfull, ggml_new_tensor_4d(g, Kfull->type, hd, kv_repeat, nkv, T));
+            Kfull = ggml_reshape_3d(g, Kfull, hd, nh, T);
+            Vfull = ggml_reshape_4d(g, Vfull, hd, 1, nkv, T);
+            Vfull = ggml_repeat(g, Vfull, ggml_new_tensor_4d(g, Vfull->type, hd, kv_repeat, nkv, T));
+            Vfull = ggml_reshape_3d(g, Vfull, hd, nh, T);
+        }
+        Q     = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));      // [hd, T, nh]
+        Kfull = ggml_cont(g, ggml_permute(g, Kfull, 0, 2, 1, 3));
+        Vfull = ggml_cont(g, ggml_permute(g, Vfull, 0, 2, 1, 3));
+        ggml_tensor* scores = ggml_mul_mat(g, Kfull, Q);          // [T(keys), T(queries), nh]
+        scores = ggml_soft_max_ext(g, scores, mask, 1.0f / sqrtf((float)hd), 0.0f);
+        ggml_tensor* Vt = ggml_cont(g, ggml_permute(g, Vfull, 1, 0, 2, 3));
+        attn = ggml_mul_mat(g, Vt, scores);
+        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        attn = ggml_reshape_2d(g, attn, D, T);
     }
-
-    Q     = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));      // [hd, T, nh]
-    Kfull = ggml_cont(g, ggml_permute(g, Kfull, 0, 2, 1, 3));
-    Vfull = ggml_cont(g, ggml_permute(g, Vfull, 0, 2, 1, 3));
-
-    ggml_tensor* scores = ggml_mul_mat(g, Kfull, Q);          // [T(keys), T(queries), nh]
-    scores = ggml_soft_max_ext(g, scores, mask, 1.0f / sqrtf((float)hd), 0.0f);
-    ggml_tensor* Vt = ggml_cont(g, ggml_permute(g, Vfull, 1, 0, 2, 3));
-    ggml_tensor* attn = ggml_mul_mat(g, Vt, scores);
-    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
-    attn = ggml_reshape_2d(g, attn, D, T);
     attn = ggml_mul_mat(g, ly.o_w, attn);
     x = ggml_add(g, x, attn);
 
@@ -1569,14 +1582,22 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx &ctx, int li, int T, int 
     ggml_tensor *mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, Lk, T);
     ggml_set_name(mask, "mask"); ggml_set_input(mask);
 
-    ggml_tensor *scores = ggml_mul_mat(g, Kfull, Q);
     float attn_scale = 1.0f / sqrtf((float)hd);
-    scores = ggml_soft_max_ext(g, scores, mask, attn_scale, 0.0f);
-
-    ggml_tensor *Vt = ggml_cont(g, ggml_permute(g, Vfull, 1, 0, 2, 3));
-    ggml_tensor *attn = ggml_mul_mat(g, Vt, scores);
-    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
-    attn = ggml_reshape_2d(g, attn, D, T);
+    // Default = manual masked attention (verified-correct). Opt-in DS_LLM_FLASH=1
+    // uses ggml_flash_attn_ext (output already [hd,nh,T] → reshape straight, NO
+    // trailing permute). A/B-verify decoded output before flipping the default.
+    ggml_tensor *attn;
+    if (getenv("DS_LLM_FLASH")) {
+        attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, mask, attn_scale, 0.0f, 0.0f);
+        attn = ggml_reshape_2d(g, attn, D, T);
+    } else {
+        ggml_tensor *scores = ggml_mul_mat(g, Kfull, Q);
+        scores = ggml_soft_max_ext(g, scores, mask, attn_scale, 0.0f);
+        ggml_tensor *Vt = ggml_cont(g, ggml_permute(g, Vfull, 1, 0, 2, 3));
+        attn = ggml_mul_mat(g, Vt, scores);
+        attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+        attn = ggml_reshape_2d(g, attn, D, T);
+    }
 
     attn = ggml_mul_mat(g, ly.o_w, attn);
     x = ggml_add(g, x, attn);
