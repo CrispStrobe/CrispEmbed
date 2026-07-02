@@ -61,8 +61,10 @@ DEFAULT_BATCH = [
     # embeddinggemma-300m re-enabled: the dense.* keep-F32 guard in
     # tools/quantize.cpp fixes the "tensor read out of bounds" load failure.
     "embeddinggemma-300m",
-    # DEFERRED (f32 base 16-30GB > Kaggle ~13GB RAM for calibration; need a
-    # calibrate-on-q8 / quantize-from-f16 path): octen-4b/8b, qwen3-embed-4b/8b.
+    # group 3 — large decoder embedders (f32 base 16-30GB). Handled by the big-base
+    # path: calibrate/gold on the q8_0 (fits RAM), quantize from f32 (streaming),
+    # stage in /tmp. 4B first to validate before the 30GB 8B downloads.
+    "octen-4b", "qwen3-embed-4b", "octen-8b", "qwen3-embed-8b",
 ]
 RUN = [m.strip() for m in os.environ.get("MODELS", "").split(",") if m.strip()] or DEFAULT_BATCH
 
@@ -133,17 +135,18 @@ _QUANT_RE = re.compile(r'(^|[-.])(q\d|iq\d|q4_k|q5_k|q6_k|q8_0|q4_0|q5_0|q5_1|bf
 # retrieval model, so "largest non-quant" alone would wrongly pick one).
 _TASK_RE  = re.compile(r'-(classification|clustering|text-matching|retrieval|separation|code|sts)$', re.I)
 
-def pick_base_gguf(api, repo, name):
-    """Full-precision source. Prefer the exact base name ({name}.gguf /
-    -f16 / -f32); else the largest .gguf that is neither a quant nor a LoRA
-    task-adapter variant. Returns (filename, prefix)."""
-    info = api.repo_info(repo, files_metadata=True)
-    ggs = {s.rfilename: (s.size or 0) for s in info.siblings if s.rfilename.endswith(".gguf")}
+def pick_base_gguf(ggs, name):
+    """Full-precision source, from a {filename: size} dict. Prefer the exact base
+    name ({name}.gguf / -f16 / -f32); else the largest .gguf that is neither a
+    quant nor a LoRA task-adapter variant. Returns (filename, prefix)."""
     if not ggs:
-        raise RuntimeError(f"no .gguf in {repo}")
+        raise RuntimeError(f"no .gguf for {name}")
     for cand in (f"{name}.gguf", f"{name}-f16.gguf", f"{name}-f32.gguf"):
         if cand in ggs:
-            return cand, name
+            prefix = cand[:-5]
+            for suf in ("-f16", "-f32"):
+                if prefix.endswith(suf): prefix = prefix[:-len(suf)]
+            return cand, prefix
     def ok(stem):
         return not _QUANT_RE.search(stem) and not _TASK_RE.search(stem)
     base = {f: sz for f, sz in ggs.items() if ok(f[:-5])}
@@ -156,60 +159,80 @@ def pick_base_gguf(api, repo, name):
     return fn, prefix
 
 
+# Bases larger than this can't be loaded for inference on Kaggle's ~13GB RAM, so
+# calibrate + A/B-gold run on the q8_0 (fits RAM; the imatrix is activation stats,
+# ~identical on q8 vs f32) while quantization still reads the full-precision base
+# (streaming, per-tensor). Big files stage in /tmp (~70GB) not /kaggle/working (~20GB).
+BIG_BYTES = 10 * 1000**3
+
 def process(name, cli, quant, api, calib, eval_):
+    from huggingface_hub import hf_hub_download
     ov = OVERRIDES.get(name, {})
     hf_out = ov.get("hf_out", f"cstr/{name}-GGUF")
     quants = ov.get("quants", QSPECS)
     kh.step("model.start", model=name, repo=hf_out)
 
-    with kh.build_heartbeat(f"{name}.download_src"):
-        base_fn, prefix = pick_base_gguf(api, hf_out, name)
-        from huggingface_hub import hf_hub_download
-        f16 = Path(hf_hub_download(hf_out, base_fn, token=api.token,
-                                   local_dir=str(WORK / "src" / name)))
-    kh.step("model.source", model=name, src=f"{hf_out}/{base_fn}",
-            prefix=prefix, size_mb=round(f16.stat().st_size / 1e6, 1))
+    ggs = {s.rfilename: (s.size or 0) for s in api.repo_info(hf_out, files_metadata=True).siblings
+           if s.rfilename.endswith(".gguf")}
+    base_fn, prefix = pick_base_gguf(ggs, name)
+    base_sz = ggs.get(base_fn, 0)
+    big = base_sz > BIG_BYTES
+    stage = Path("/tmp/crisp-stage") if big else WORK
+    srcdir = stage / "src" / name
+    srcdir.mkdir(parents=True, exist_ok=True)
 
-    imat = WORK / f"{prefix}.imatrix"
-    imat.unlink(missing_ok=True)
+    with kh.build_heartbeat(f"{name}.download.quant_src"):
+        qsrc = Path(hf_hub_download(hf_out, base_fn, token=api.token, local_dir=str(srcdir)))
+    if big:
+        calib_fn = f"{prefix}-q8_0.gguf" if f"{prefix}-q8_0.gguf" in ggs else base_fn
+        with kh.build_heartbeat(f"{name}.download.calib_src"):
+            csrc = Path(hf_hub_download(hf_out, calib_fn, token=api.token, local_dir=str(srcdir)))
+    else:
+        calib_fn, csrc = base_fn, qsrc
+    goldlabel = "q8_0" if (big and calib_fn != base_fn) else "full-precision"
+    kh.step("model.source", model=name, quant_src=base_fn, calib_src=calib_fn,
+            prefix=prefix, base_gb=round(base_sz/1e9, 2), big=big)
+
+    imat = stage / f"{prefix}.imatrix"; imat.unlink(missing_ok=True)
     env = dict(os.environ, CRISPEMBED_IMATRIX_OUT=str(imat))
     with kh.build_heartbeat(f"{name}.calibrate"):
-        subprocess.run([str(cli), "-m", str(f16), "--json", *calib],
+        subprocess.run([str(cli), "-m", str(csrc), "--json", *calib],
                        env=env, check=True, capture_output=True, text=True)
 
-    gold, _ = embed(cli, f16, eval_)
+    gold, _ = embed(cli, csrc, eval_)   # gold = calib source (q8_0 for big, ~lossless)
 
     report = []
     for qtype, use_im, up_tmpl in quants:
+        if big and qtype == "q8_0" and not use_im:
+            continue  # q8_0 IS the gold for big models — no A/B needed
         tag = f"{qtype}{'-im' if use_im else ''}"
-        out = WORK / f"{prefix}-{tag}.gguf"
-        cmd = [str(quant), str(f16), str(out), qtype] + (["--imatrix", str(imat)] if use_im else [])
+        out = stage / f"{prefix}-{tag}.gguf"
+        cmd = [str(quant), str(qsrc), str(out), qtype] + (["--imatrix", str(imat)] if use_im else [])
         with kh.build_heartbeat(f"{name}.quant.{tag}"):
             subprocess.check_call(cmd)
         vecs, dt = embed(cli, out, eval_)
         cos, n = mean_cos(vecs, gold)
         mb = out.stat().st_size / 1e6
         upname = up_tmpl.format(prefix=prefix) if up_tmpl else "(A/B only)"
-        kh.step(f"{name}.ab.{tag}", imatrix=use_im, cos_vs_f16=round(cos, 6),
-                size_mb=round(mb, 1), upload=upname)
-        report.append(f"{qtype:7s} imatrix={int(use_im)}  cos_vs_f16={cos:.6f}  {mb:7.1f}MB  -> {upname}")
+        kh.step(f"{name}.ab.{tag}", imatrix=use_im, cos_vs_gold=round(cos, 6),
+                gold=goldlabel, size_mb=round(mb, 1), upload=upname)
+        report.append(f"{qtype:7s} imatrix={int(use_im)}  cos_vs_{goldlabel}={cos:.6f}  {mb:7.1f}MB  -> {upname}")
         if up_tmpl:
             with kh.build_heartbeat(f"{name}.upload.{tag}"):
                 api.upload_file(path_or_fileobj=str(out), path_in_repo=upname,
                     repo_id=hf_out, repo_type="model",
-                    commit_message=f"{qtype} +imatrix (cos_vs_f16={cos:.4f})")
+                    commit_message=f"{qtype} +imatrix (cos_vs_{goldlabel}={cos:.4f})")
         out.unlink(missing_ok=True)
 
-    summary = (f"imatrix A/B — {name} ({hf_out}), cos vs full-precision gold, "
-               f"n={len(eval_)}, calib={len(calib)}\n" + "\n".join(report) + "\n")
-    summ = WORK / f"{prefix}-imatrix-ab.txt"
-    summ.write_text(summary)
+    summary = (f"imatrix A/B — {name} ({hf_out}), cos vs {goldlabel} gold, "
+               f"n={len(eval_)}, calib={len(calib)}, quant_src={base_fn}\n" + "\n".join(report) + "\n")
+    summ = stage / f"{prefix}-imatrix-ab.txt"; summ.write_text(summary)
     for p, msg in [(summ, "A/B summary (cos vs gold)"), (imat, "importance matrix (calibration)")]:
         with kh.build_heartbeat(f"{name}.upload.meta"):
             api.upload_file(path_or_fileobj=str(p), path_in_repo=p.name,
                 repo_id=hf_out, repo_type="model", commit_message=msg)
-    f16.unlink(missing_ok=True); imat.unlink(missing_ok=True); summ.unlink(missing_ok=True)
-    shutil.rmtree(WORK / "src" / name, ignore_errors=True)  # free the multi-GB source
+    imat.unlink(missing_ok=True); summ.unlink(missing_ok=True)
+    shutil.rmtree(srcdir, ignore_errors=True)   # free the multi-GB source(s)
     kh.step("model.done", model=name)
     return name, report
 
